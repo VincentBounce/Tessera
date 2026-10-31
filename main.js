@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.2.160';
+const VERSION = '0.2.161';
 const APP_TITLE = 'Walking π';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -13751,24 +13751,25 @@ function drawActivity() {
     }
   }
   ctx.globalAlpha = 1;
-  const marks = new Map(), mark = (g, colour) => {  // (by its column: several on one, its height shared, a part each in its colour)
-    const x = Math.round(xOf(g - first, n));
-    if (!marks.has(x)) marks.set(x, []);
-    if (!marks.get(x).includes(colour)) marks.get(x).push(colour);
-  };
-  if (first < 0) mark(0, css.getPropertyValue('--muted'));  // (a reversible one's start, its past on its left)
+  // its marks: each a line through it, twice the curve's thickness, and a diamond a third of its height on its own row (gold
+  // on top, blue in the middle, green below: several on one step all seen), cropped at the edges as the curve; its start's
+  // (a reversible one's, its past on its left) a line alone
+  const marks = [], mark = (g, colour, row = null) => marks.push([xOf(g - first, n) + 0.5, colour, row]);
+  if (first < 0) mark(0, css.getPropertyValue('--muted'));
   const o = runLoop();
-  if (o && o.last > o.T) mark(o.T, css.getPropertyValue('--cell'));  // (its loop's first step, in green as its link in the title, Life's and a walk's)
+  if (o && o.last > o.T) mark(o.T, css.getPropertyValue('--cell'), 2);  // (its loop's first step, in green as its link in the title, Life's and a walk's)
   if (walk.life?.colours === 1 && lifeTime()) {  // (as their gauges: its ordered moments, a reversible one's (see orderMarks), else the most ordered; the most alive, in gold as the curve)
-    for (const g of reversibleRun() ? orderMarks(walk.life) : [peaks(walk.life).orderGen]) mark(g, css.getPropertyValue('--sector'));
-    mark(peaks(walk.life).aliveGen, accent);
-  } else if (!walk.life && walk.n && walk.maxDist) mark(walkPeak().step, accent);  // (a walk's farthest, in gold as its gauge)
-  ctx.lineWidth = 1.5;  // (as thick as the curve)
-  for (const [x, colours] of marks) colours.forEach((colour, k) => {
-    const c = Math.min(W - 0.75, Math.max(0.75, x + 0.5));  // (whole at the edges: its width inside)
-    ctx.strokeStyle = colour;
-    ctx.beginPath(); ctx.moveTo(c, (H * k) / colours.length); ctx.lineTo(c, (H * (k + 1)) / colours.length); ctx.stroke();
-  });
+    for (const g of reversibleRun() ? orderMarks(walk.life) : [peaks(walk.life).orderGen]) mark(g, css.getPropertyValue('--sector'), 1);
+    mark(peaks(walk.life).aliveGen, accent, 0);
+  } else if (!walk.life && walk.n && walk.maxDist) mark(walkPeak().step, accent, 0);  // (a walk's farthest, in gold as its gauge)
+  ctx.lineWidth = 3;
+  for (const [x, colour] of marks) { ctx.strokeStyle = colour; ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke(); }
+  const d = H / 6;  // (its half diagonal: a third of the height)
+  for (const [x, colour, row] of marks) if (row !== null) {
+    const y = (H * (2 * row + 1)) / 6;
+    ctx.fillStyle = colour;
+    ctx.beginPath(); ctx.moveTo(x, y - d); ctx.lineTo(x + d, y); ctx.lineTo(x, y + d); ctx.lineTo(x - d, y); ctx.closePath(); ctx.fill();
+  }
 }
 // One colour: fixed gauges of how it goes, not of a record, a row each: in gold as the curve and its mark (see drawActivity),
 // alive (against the most) and the most alive at once (and when, against the grid); in blue, its order (see orderOf) and the

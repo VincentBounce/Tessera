@@ -401,6 +401,7 @@ button.switch.active:hover:not(:disabled) { background: var(--pick-strong); }
 /* the number (Full number), in place of the whole view as how a rule works (.rule-tuto): its digits */
 .number-view .number-digits { max-width: none; color: var(--text); font: 13px/1.5 ui-monospace, "SF Mono", Menlo, monospace; word-break: break-all; }
 .number-view .number-digits + h3 { margin-top: 16px; }  /* (base 10's overview, then the base's digits) */
+.number-view .number-digits + .number-digits { margin-top: 1.5em; }  /* (a fraction's exact digits, a line, then all its digits) */
 .tut-tools .icon { width: 16px; height: 16px; vertical-align: middle; }
 button.wide.active, .head-btn.active { border-color: var(--accent); color: var(--accent); background: var(--pick); }
 .display-menu:hover { width: 230px; }

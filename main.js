@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.2.162';
+const VERSION = '0.2.163';
 const APP_TITLE = 'Walking π';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -11672,7 +11672,7 @@ const playsBack = () => !lifeTime() || !!walk.life.margolus;  // (◀: a walk, S
 // a Game of Life's player (+2k, +10k; no ◀ nor End), by the mode chosen: its run built or not yet (a big grid's, a moment)
 const lifePlayer = () => { const m = MODES[$('mode').value]; return !!m.life && !m.margolus && !spaceTimeOn(); };
 function reverse(on) {
-  reversing = on && playsBack() && cur > runStart();
+  reversing = on && playsBack() && (cur > runStart() || loopBack());  // (a loop known: from 0 too, a round back)
   if (reversing) play(false);
   const shown = reversing ? 'pause' : 'reverse';
   if ($('reverse').dataset.shown !== shown) $('reverse').innerHTML = icon($('reverse').dataset.shown = shown);  // (only when it changes: a click on it kept)
@@ -13898,7 +13898,7 @@ function updateStats() {
   }
   $('play').disabled = busy;  // (its run not built yet)
   $('reverse').hidden = lifePlayer();  // (played backwards: a walk, a reversible one)
-  $('reverse').disabled = cur <= runStart();
+  $('reverse').disabled = cur <= runStart() && !loopBack();
   $('step').disabled = atEnd();
   $('end').hidden = lifePlayer();  // (Life: its green link, +2k and +10k)
   if (drawing && MODES[$('mode').value].plane) renderDrawTools();  // (Draw: its tools at gen 0 only)
@@ -14077,8 +14077,10 @@ function tick(now = performance.now()) {
     acc += stepsPerSecond() * dt;  // time-based, so the speed holds whatever the frame rate
     const k = Math.floor(acc);
     acc -= k;
-    if (k > 0) advanceTo(reversing ? Math.max(runStart(), cur - k) : cur + k, now + 750 * frameMin);  // (its steps three quarters of the screen's frame at most: faster than it can, as fast as it can, its frames kept)
-    if (reversing && cur <= runStart()) reverse(false);
+    if (k > 0) {
+      advanceTo(reversing ? (cur === runStart() && loopBack() ? cur - k : Math.max(runStart(), cur - k)) : cur + k, now + 750 * frameMin);  // (from 0 round its loop, back to 0; its steps three quarters of the screen's frame at most: faster than it can, as fast as it can, its frames kept)
+      if (reversing && cur <= runStart()) reverse(false);  // (back at its start, after a step)
+    }
   }
   includeBox();
   if (walk.n && !walk.sphere && $('autoFit').checked && boundsOffscreen(viewGoal || view)) {  // 15% room to grow (a surface's frame is fixed)

@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.2.158';
+const VERSION = '0.2.159';
 const APP_TITLE = 'Walking π';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -1830,9 +1830,10 @@ const runLoop = () => {
 };
 // its link, in green (see genLink): to its first step; from there, to its last; an end alone, back to 0
 const loopLink = (text) => { const o = runLoop(); return genLink(cur !== o.T ? o.T : o.last !== o.T ? o.last : 0, text, 'loop'); };
-// The first: 0, or a reversible one's as far back as the rest of its n go (its rule run backwards from its start: its past),
-// or its loop's
-const runStart = () => (reversibleRun() ? -Math.min(walk.n - 1 - Math.ceil(walk.n / 2), walk.life.stable ? walk.life.stable.P - 1 : Infinity) : 0);
+// The first: 0, or a reversible one's as far back as the rest of its n go (its rule run backwards from its start: its past);
+// its loop known, 0 again (its past folded into it, see foldPast: a step back from 0 round it, see loopBack)
+const runStart = () => (reversibleRun() && !walk.life.stable ? -(walk.n - 1 - Math.ceil(walk.n / 2)) : 0);
+const loopBack = () => looping() && !!walk.life?.margolus;  // (a reversible one's loop known: a step back from 0 to its last)
 function setGens(n) {
   target = Math.min(targetMost(), Math.max(DIGIT_STEPS[0], Math.round(n) || 2000));
   if (spaceTimeOn()) { restart(); showAll(); }
@@ -9416,7 +9417,7 @@ function lifeFound(L, stable) {
 // Record generation gen (state already in L.alive) and detect the first repeat
 function lifeTrack(gen) {
   const L = walk.life;
-  if (L.margolus) { if (!L.stable && blockBack(L, gen)) lifeFound(L, { T: 0, P: gen, extinct: false }); return; }  // (blocks: see blockBack)
+  if (L.margolus) { if (!L.stable && blockBack(L, gen)) { lifeFound(L, { T: 0, P: gen, extinct: false }); foldPast(L); } return; }  // (blocks: see blockBack)
   if (L.stable || L.seen.size >= LIFE_TRACK) return;
   const key = L.key;  // (the graphics card's)
   const first = L.seen.get(key);
@@ -9761,11 +9762,12 @@ function lifeBack(G) {  // (G: its sums there, its births and deaths forth, back
   if (L.margolus && !L.stable && blockBack(L, -cur)) { lifeFound(L, { T: 0, P: -cur, extinct: false }); foldPast(L); }  // (its return found going back: its start again at −P)
   if (L.stable && cur < 0) cur += L.stable.P;  // (round its loop, as forth: the same state, never below 0)
 }
-// a reversible one's past, its loop found going back (at −P): each generation −h its loop's P − h, its births and deaths
-// counted from the start round the loop (a whole loop back, −P, its counts taken off); its past none after
+// a reversible one's past, its loop found: each generation −h its loop's P − h, its births and deaths counted from the start
+// round the loop (a whole loop back, −P, its counts taken off); found going forth, its loop played whole already: its past
+// dropped (the same states); its past none after
 function foldPast(L) {
   const P = L.stable.P, B = L.past.born[P];
-  if (!B) return;  // (−P not recorded: its past kept as it is)
+  if (!B) { L.past = { alive: [], by: [], born: [], order: [] }; L.peaks = null; return; }  // (found going forth: 0 … P played)
   const from = (b) => ({ born: b.born - B.born, dead: b.dead - B.dead, bornBy: b.bornBy.map((v, k) => v - B.bornBy[k]), deadBy: b.deadBy.map((v, k) => v - B.deadBy[k]) });
   for (let h = 1; h < P; h++) if (L.trace.alive[P - h] === undefined) {
     for (const k of ['alive', 'by', 'order']) L.trace[k][P - h] = L.past[k][h];
@@ -11558,7 +11560,7 @@ const loopRound = () => (playing && looping() ? runLoop().last : 0);
 function lifeTo(target, until = Infinity) {  // (one step, one generation, played on the card as many at once, see lifeStepGPU)
   const L = walk.life, known = !!runLoop();  // (its end known before: round its loop as asked)
   // (back: its rule's inverse, see lifeBack, so many steps; its return found going back, round its loop: its generations never below 0)
-  for (let back = cur - Math.max(target, runStart()); back > 0; ) {
+  for (let back = cur - Math.max(target, loopBack() ? -Infinity : runStart()); back > 0; ) {
     const batch = lifeStepGPU(L, cur - 1, true, Math.min(back, LIFE_H));
     if (!batch) break;
     cutAtReturn(L, batch, -1);
@@ -11608,7 +11610,7 @@ function lifeTo(target, until = Infinity) {  // (one step, one generation, playe
   statsDirty = true;
 }
 function advanceTo(target, until = Infinity) {  // forth or back (a walk; a reversible one, by its rule); until: a Game of Life's batches stop past it (a frame's time, see tick)
-  target = Math.max(runStart(), looping() ? target : Math.min(runEnd(), target));  // (a loop known: on round it)
+  target = loopBack() ? target : Math.max(runStart(), looping() ? target : Math.min(runEnd(), target));  // (a loop known: on round it, or back round it)
   if (target !== cur) faced = false;  // the walker moves: the camera follows it again (see faceWalk)
   if (spaceTimeOn()) { cur = Math.max(0, target); statsDirty = true; if (cur >= walk.n) play(false); return; }  // (Space-time: its layers, made, see stackUp)
   if (target < cur && !walk.life) { walkBack(target); return; }
@@ -13749,11 +13751,10 @@ function drawActivity() {
     }
   }
   ctx.globalAlpha = 1;
-  const mark = (g, colour) => {  // (as thick as the curve)
-    const x = xOf(g - first, n) + 0.5;
-    ctx.strokeStyle = colour;
-    ctx.lineWidth = 1.5;
-    ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke();
+  const marks = new Map(), mark = (g, colour) => {  // (by its column: several on one, its height shared, a part each in its colour)
+    const x = Math.round(xOf(g - first, n));
+    if (!marks.has(x)) marks.set(x, []);
+    if (!marks.get(x).includes(colour)) marks.get(x).push(colour);
   };
   if (first < 0) mark(0, css.getPropertyValue('--muted'));  // (a reversible one's start, its past on its left)
   const o = runLoop();
@@ -13762,6 +13763,11 @@ function drawActivity() {
     for (const g of reversibleRun() ? orderMarks(walk.life) : [peaks(walk.life).orderGen]) mark(g, css.getPropertyValue('--sector'));
     mark(peaks(walk.life).aliveGen, accent);
   } else if (!walk.life && walk.n && walk.maxDist) mark(walkPeak().step, accent);  // (a walk's farthest, in gold as its gauge)
+  ctx.lineWidth = 1.5;  // (as thick as the curve)
+  for (const [x, colours] of marks) colours.forEach((colour, k) => {
+    ctx.strokeStyle = colour;
+    ctx.beginPath(); ctx.moveTo(x + 0.5, (H * k) / colours.length); ctx.lineTo(x + 0.5, (H * (k + 1)) / colours.length); ctx.stroke();
+  });
 }
 // One colour: fixed gauges of how it goes, not of a record, a row each: in gold as the curve and its mark (see drawActivity),
 // alive (against the most) and the most alive at once (and when, against the grid); in blue, its order (see orderOf) and the
@@ -13879,7 +13885,7 @@ function updateStats() {
   $('restart').disabled = cur <= runStart();
   // (a Game of Life's step back: round its loop forth, at once; else played again from its start, greyed when too long)
   const tooFar = !lifeWithin(cur - 1);
-  $('back').disabled = cur <= runStart() || tooFar;
+  $('back').disabled = (cur <= runStart() && !loopBack()) || tooFar;
   $('back').dataset.greyed = tooFar ? 'so far from its start: played again from it, more than a second' : '';
   for (const b of [$('jump2k'), $('jump10k')]) {  // (Life: 2,000 and 10,000 generations ahead, while its end is not known)
     b.hidden = !lifePlayer();

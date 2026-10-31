@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.2.159';
+const VERSION = '0.2.160';
 const APP_TITLE = 'Walking π';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -13765,8 +13765,9 @@ function drawActivity() {
   } else if (!walk.life && walk.n && walk.maxDist) mark(walkPeak().step, accent);  // (a walk's farthest, in gold as its gauge)
   ctx.lineWidth = 1.5;  // (as thick as the curve)
   for (const [x, colours] of marks) colours.forEach((colour, k) => {
+    const c = Math.min(W - 0.75, Math.max(0.75, x + 0.5));  // (whole at the edges: its width inside)
     ctx.strokeStyle = colour;
-    ctx.beginPath(); ctx.moveTo(x + 0.5, (H * k) / colours.length); ctx.lineTo(x + 0.5, (H * (k + 1)) / colours.length); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(c, (H * k) / colours.length); ctx.lineTo(c, (H * (k + 1)) / colours.length); ctx.stroke();
   });
 }
 // One colour: fixed gauges of how it goes, not of a record, a row each: in gold as the curve and its mark (see drawActivity),

@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.2.176';
+const VERSION = '0.2.177';
 const APP_TITLE = 'Walking π';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -14631,8 +14631,8 @@ $('copyRle').addEventListener('click', () => {
   navigator.clipboard.writeText(text).then(() => { b.innerHTML = `${icon('check')} Copied`; setTimeout(() => { b.innerHTML = `${icon('copy')} Copy RLE`; }, 1500); }, () => {});
 });
 // Full number: the number over the view as how a rule works is (its title, all its digits, scrolling), with Copy
-// (a check once copied) and the cross; another number picked, it shows that one; a click on the button again, the cross
-// or anywhere else but on it and the Digits closes it
+// (a check once copied) and the cross; another number or base (a colour more), it shows that one; as how a rule works,
+// only a click on the button again or the cross closes it
 // the chips that show the number: Full number's, and a walk's base (its rule's chip: how it works instead)
 const numberChips = () => [$('copyNumber'), $('barBase')].filter((b) => !b.classList.contains('how-it-works'));
 function closeNumber() { $('numberPreview').hidden = true; for (const b of numberChips()) b.classList.remove('active', 'switch'); }
@@ -14676,7 +14676,6 @@ function showNumber() {
   v.hidden = false;
   for (const b of numberChips()) b.classList.add('active', 'switch');
 }
-document.addEventListener('click', (e) => { if (!$('numberPreview').hidden && !e.composedPath().some((n) => ['copyNumber', 'barBase', 'numberPreview', 'numberPicker'].includes(n.id))) closeNumber(); });
 // The start selector (hexagon sphere): − / + or a number typed, then Enter. Hovering its field
 // (not − / +) shows every start on an empty globe, turned towards the chosen one.
 function setStart(n) {

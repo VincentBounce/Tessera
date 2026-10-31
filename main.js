@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.2.179';
+const VERSION = '0.2.180';
 const APP_TITLE = 'Walking π';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -14647,20 +14647,28 @@ function ratioDigits(b, max = digitsNeeded()) {
   if (rem && at === undefined) return null;
   return `= ${int}${ds.length ? `.${rem ? `${write(ds.slice(0, at))}(${write(ds.slice(at))})` : write(ds)}` : ''}`;
 }
-// The number in base 10, an overview (up to max digits) over the base it is in (see showNumber): a fraction's exact (see
-// ratioDigits); a whole number's as it is, or its size and first digits; else from the digits known, cut (…)
-function base10Preview(max = 60) {
+// digits in base B (BigInt) as one number, its halves first (digit by digit, a million digits would take minutes)
+const digitsValue = (ds, B) => {
+  if (ds.length <= 64) return ds.reduce((n, d) => n * B + BigInt(d), 0n);
+  const m = ds.length >> 1;
+  return digitsValue(ds.subarray(0, m), B) * B ** BigInt(ds.length - m) + digitsValue(ds.subarray(m), B);
+};
+// The number in base 10 over the base it is in (see showNumber), as many digits as those in use tell: a fraction's exact
+// (see ratioDigits), a whole number's whole; a whole number cut (more digits than in use), its size and first digits
+function base10Preview() {
   const exact = current.ratio && ratioDigits(10);
   if (exact) return exact;
-  const { head, frac } = digitsInUse(), B = BigInt(current.base), need = Math.ceil(((max + 2) * Math.LN10) / Math.log(current.base));
-  const value = (ds) => ds.reduce((n, d) => n * B + BigInt(d), 0n);
-  if (head.length > need) {  // (a whole part too long to write: its first digits and its power of 10, from its first digits)
-    const s = value(head.subarray(0, need)).toString(), l = s.length - 1 + Math.log10(Number(`${s[0]}.${s.slice(1, 16)}`)) + (head.length - need) * Math.log10(current.base);
+  const { head, frac } = digitsInUse(), B = BigInt(current.base), lb = Math.log10(current.base);
+  if (head.length < current.total && !frac.length) {  // (its first digits and its power of 10, from its first digits)
+    const s = digitsValue(head.subarray(0, 40), B).toString(), l = s.length - 1 + Math.log10(Number(`${s[0]}.${s.slice(1, 16)}`)) + (current.total - Math.min(40, head.length)) * lb;
     return `≈ ${(10 ** (l % 1)).toFixed(14)}… × 10^${fmt(Math.floor(l))}`;
   }
-  const f = frac.subarray(0, need), N = value([...head, ...f]), D = B ** BigInt(f.length), int = (N / D).toString();
-  if (!f.length) return `${!current.digits.length && head.length === current.total ? '=' : '≈'} ${int}`;
-  const m = Math.max(1, Math.min(max - int.length, Math.floor(f.length * Math.log10(current.base)) - 1));  // (as many as its digits known tell)
+  const ds = new Uint8Array(head.length + frac.length);
+  ds.set(head);
+  ds.set(frac, head.length);
+  const N = digitsValue(ds, B), D = B ** BigInt(frac.length), int = (N / D).toString();
+  if (!frac.length) return `= ${int}`;
+  const m = Math.max(1, Math.floor(frac.length * lb) - 1);  // (as many as its digits in use tell)
   return `≈ ${int}.${(((N % D) * 10n ** BigInt(m)) / D).toString().padStart(m, '0')}…`;
 }
 function showNumber() {

@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.2.174';
+const VERSION = '0.2.175';
 const APP_TITLE = 'Walking π';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -14637,10 +14637,32 @@ $('copyRle').addEventListener('click', () => {
 const numberChips = () => [$('copyNumber'), $('barBase')].filter((b) => !b.classList.contains('how-it-works'));
 function closeNumber() { $('numberPreview').hidden = true; for (const b of numberChips()) b.classList.remove('active', 'switch'); }
 for (const b of [$('copyNumber'), $('barBase')]) b.addEventListener('click', () => { if (b.classList.contains('how-it-works')) return; if (!$('numberPreview').hidden) closeNumber(); else showNumber(); });
+// The number in base 10, an overview (up to max digits) over the base it is in (see showNumber): a fraction's exact, its
+// period in brackets; a whole number's as it is, or its size and first digits; else from the digits known, cut (…)
+function base10Preview(max = 60) {
+  if (current.ratio) {
+    const [p0, q] = current.ratio, p = p0 < 0n ? -p0 : p0, seen = new Map(), ds = [];
+    let rem = p % q;
+    while (rem && !seen.has(rem) && ds.length < max) { seen.set(rem, ds.length); rem *= 10n; ds.push(rem / q); rem %= q; }
+    const at = seen.get(rem), body = ds.join(''), int = `${p0 < 0n ? '−' : ''}${p / q}`;
+    if (rem && at === undefined) return `≈ ${int}.${body}…`;  // (its period longer than shown)
+    return `= ${int}${body ? `.${rem ? `${body.slice(0, at)}(${body.slice(at)})` : body}` : ''}`;
+  }
+  const { head, frac } = digitsInUse(), B = BigInt(current.base), need = Math.ceil(((max + 2) * Math.LN10) / Math.log(current.base));
+  const value = (ds) => ds.reduce((n, d) => n * B + BigInt(d), 0n);
+  if (head.length > need) {  // (a whole part too long to write: its first digits and its power of 10, from its first digits)
+    const s = value(head.subarray(0, need)).toString(), l = s.length - 1 + Math.log10(Number(`${s[0]}.${s.slice(1, 16)}`)) + (head.length - need) * Math.log10(current.base);
+    return `≈ ${(10 ** (l % 1)).toFixed(14)}… × 10^${fmt(Math.floor(l))}`;
+  }
+  const f = frac.subarray(0, need), N = value([...head, ...f]), D = B ** BigInt(f.length), int = (N / D).toString();
+  if (!f.length) return `${!current.digits.length && head.length === current.total ? '=' : '≈'} ${int}`;
+  const m = Math.max(1, Math.min(max - int.length, Math.floor(f.length * Math.log10(current.base)) - 1));  // (as many as its digits known tell)
+  return `≈ ${int}.${(((N % D) * 10n ** BigInt(m)) / D).toString().padStart(m, '0')}…`;
+}
 function showNumber() {
-  const text = numberText(), name = `${formulaInUse} base ${current.base} `, v = $('numberPreview');
-  v.innerHTML = `<div class="tut-body"><h3>${withIcons(formulaInUse)} <code>base ${current.base}</code></h3><p class="number-digits"></p></div>`;
-  v.querySelector('.number-digits').textContent = text.slice(name.length);
+  const text = numberText(), name = `${formulaInUse} base ${current.base} `, v = $('numberPreview'), title = (b) => `<h3>${withIcons(formulaInUse)} <code>base ${b}</code></h3>`;
+  v.innerHTML = `<div class="tut-body">${current.base === 10 ? '' : `${title(10)}<p class="number-digits">${base10Preview()}</p>`}${title(current.base)}<p class="number-digits"></p></div>`;  // (base 10 first, an overview)
+  v.querySelector('.number-digits:last-child').textContent = `${text.slice(name.length)}${text.includes(' ≈ ') ? '…' : ''}`;  // (cut: … as base 10's)
   v.prepend(tutTools({ copy: (e) => {
     const b = e.currentTarget;
     navigator.clipboard.writeText(text).then(() => { b.innerHTML = icon('check'); setTimeout(() => { b.innerHTML = icon('copy'); }, 1500); }, () => {});

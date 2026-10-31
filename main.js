@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.2.161';
+const VERSION = '0.2.162';
 const APP_TITLE = 'Walking π';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -11559,13 +11559,16 @@ function cutAtReturn(L, batch, dir) {
 const loopRound = () => (playing && looping() ? runLoop().last : 0);
 function lifeTo(target, until = Infinity) {  // (one step, one generation, played on the card as many at once, see lifeStepGPU)
   const L = walk.life, known = !!runLoop();  // (its end known before: round its loop as asked)
-  // (back: its rule's inverse, see lifeBack, so many steps; its return found going back, round its loop: its generations never below 0)
-  for (let back = cur - Math.max(target, loopBack() ? -Infinity : runStart()); back > 0; ) {
+  // (back: its rule's inverse, see lifeBack, so many steps; its return found going back, round its loop: its generations never
+  // below 0; found on the way, the steps left round it only, to its start none: at 0 then)
+  const looped = loopBack(), toStart = target <= runStart();
+  for (let back = cur - Math.max(target, looped ? -Infinity : runStart()); back > 0; ) {
     const batch = lifeStepGPU(L, cur - 1, true, Math.min(back, LIFE_H));
     if (!batch) break;
     cutAtReturn(L, batch, -1);
     for (const G of batch) lifeBack(G);
     back -= batch.length;
+    if (!looped && loopBack()) back = toStart ? 0 : back % L.stable.P;
     target = cur;  // (where it is: round its loop, its number the loop's)
     if (performance.now() >= until) break;  // (a batch at least)
   }

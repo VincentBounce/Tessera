@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.2.163';
+const VERSION = '0.2.164';
 const APP_TITLE = 'Walking π';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -13770,8 +13770,8 @@ function drawActivity() {
   const d = H / 6;  // (its half diagonal: a third of the height)
   for (const [x, colour, row] of marks) if (row !== null) {
     const y = (H * (2 * row + 1)) / 6;
-    ctx.fillStyle = colour;
-    ctx.beginPath(); ctx.moveTo(x, y - d); ctx.lineTo(x + d, y); ctx.lineTo(x, y + d); ctx.lineTo(x - d, y); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = ctx.strokeStyle = colour;  // (outlined as its line is: as thick, its colour)
+    ctx.beginPath(); ctx.moveTo(x, y - d); ctx.lineTo(x + d, y); ctx.lineTo(x, y + d); ctx.lineTo(x - d, y); ctx.closePath(); ctx.fill(); ctx.stroke();
   }
 }
 // One colour: fixed gauges of how it goes, not of a record, a row each: in gold as the curve and its mark (see drawActivity),

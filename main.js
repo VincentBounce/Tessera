@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.2.172';
+const VERSION = '0.2.173';
 const APP_TITLE = 'Walking π';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -932,7 +932,7 @@ const TILINGS = {
 // the tilings on a strip: those mirrored along their lattice's first side (see tilingStrip; the others are mirrored
 // along none, and a strip turns its tiles over round it); the strip's edges along their tiles' sides where that mirror
 // runs there (Prismatic, Tetrakis, Kisrhombille), else teeth of whole tiles, as the hexagons' strip
-const MOBIUS_TILINGS = ['rhombille', 'rhombitri', 'elongated', 'prismatic', 'pent10', 'pent11', 'pent13', 'pent15', 'tetrakis', 'kischecker', 'snubsquare', 'kisrhombille', 'trihex', 'truncsquare', 'trunchex', 'trunctrihex', 'dual16', 'dual56', 'dual314'];
+const MOBIUS_TILINGS = ['rhombille', 'rhombitri', 'elongated', 'prismatic', 'pent9', 'pent10', 'pent11', 'pent13', 'pent15', 'tetrakis', 'kischecker', 'snubsquare', 'kisrhombille', 'trihex', 'truncsquare', 'trunchex', 'trunctrihex', 'dual16', 'dual56', 'dual314'];
 // the flat solids with hexagons too, folded over their edges (see hexSolidMesh): each one's name, its family's, its size
 // (as its triangles', see SPHERES) and its cells (one a corner of its triangles, those at its corners walls)
 const HEX_SOLIDS = { tetra: { a: 'a tetrahedron', name: 'Tetrahedron', radius: (f) => f / (2 * Math.SQRT2), cells: (f) => 2 * f * f + 2 },
@@ -4803,7 +4803,7 @@ function mobiusMirror(kind, [a, b] = TILINGS[kind].basis) {
   const near = (z) => Math.abs(z - Math.round(z)) < 1e-4, among = (set) => (p) => { const [u, v] = frac(p); return set.some(([s, t]) => near(u - s) && near(v - t)); };
   const mids = polys.map((P) => W([0, 1].map((d) => P.reduce((t, q) => t + q[d], 0) / P.length))), corners = polys.flat().map(W);
   const [inMids, inCorners] = [among(mids.map(frac)), among(corners.map(frac))], ys = [...mids, ...corners].map((p) => p[1]);
-  const cs = [...new Set([0, ...ys.flatMap((y) => ys.map((z) => Math.round(((y + z) / 2) * 1e6) / 1e6))])].sort((p, q) => Math.abs(p) - Math.abs(q));  // (through the origin first)
+  const cs = [...new Map([0, ...ys.flatMap((y) => ys.map((z) => (y + z) / 2))].map((c) => [Math.round(c * 1e6), c])).values()].sort((p, q) => Math.abs(p) - Math.abs(q));  // (through the origin first; each once, as found: rounded, a strip's twin corners 10⁻⁶ apart, off their fine grid, see stripFrame)
   const [A, B] = [W([1, 0]), W([0, 1])], tiles = [-3, -2, -1, 0, 1, 2, 3].flatMap((i) => [-3, -2, -1, 0, 1, 2, 3].flatMap((j) => polys.map((P) => P.map(W).map(([, y]) => y + i * A[1] + j * B[1]))));
   const between = (c) => !tiles.some((ys) => Math.min(...ys) < c - 1e-6 && Math.max(...ys) > c + 1e-6);  // (no tile across the line)
   let through = null;
@@ -4953,10 +4953,13 @@ function tilingStrip(kind, kind0, size) {
 // corners on a fine grid (in steps along and rows across from the middle: the twist (x + L, y) → (x, W − y) maps the grid
 // onto itself, so a corner and its twin meet exactly; the polygons' 6 decimals leave them 10⁻⁶ apart), the lattice cells
 // over its rectangle (its corners in the lattice's units, a cell more round them)
+// its fine grid: a step along and a row across cut in so many (a power of 2: a corner's 6 decimals, and their halves (a mirror
+// midway between two corners), never land on half a cut, where a corner and its twin, 10⁻¹⁴ apart, would round apart)
+const STRIP_GRID = 8192;
 function stripFrame(kind, kind0, size) {
   const t = TILINGS[kind], [a, b] = MOBIUS_STRIPS[kind0].basis, turn = -Math.atan2(a[1], a[0]), m = t.polys.length, { step } = MOBIUS_ALONG[kind0], { c } = mobiusMirror(kind, [a, b]);
   const [nv, own] = mobiusSize(size), W = nv * turnPoint(b, turn)[1], n = stripSteps(kind0, nv, W, own, Math.round(MOBIUS_ALONG[kind0].copy / step));  // (its colours' stretches whole copies along)
-  const L = n * step, sides = Math.max(...t.polys.map((P) => P.length)), by = W / nv, Q = 12000;
+  const L = n * step, sides = Math.max(...t.polys.map((P) => P.length)), by = W / nv, Q = STRIP_GRID;
   const snap = ([x, y]) => [(Math.round((x / step) * Q) / Q) * step, W / 2 + (Math.round(((y - W / 2) / by) * Q) / Q) * by];
   const [ta, tb] = t.basis.map((v) => turnPoint(v, turn)), det = ta[0] * tb[1] - ta[1] * tb[0];  // (the tiling's own cells)
   const ends = [[0, 0], [L, 0], [0, W], [L, W]].map(([x, y]) => [(x * tb[1] - y * tb[0]) / det, (ta[0] * y - ta[1] * x) / det]);
@@ -5009,7 +5012,7 @@ function kleinLength(kindK, size) {
 function kleinTilingMesh(kindK, size) {
   const key = `${kindK}${size}|${ringColours()}`;  // (its length its colours': see kleinLength)
   if (meshCache[key]) return meshCache[key];
-  const { kind, turn, L, W, n, nv, step, by, sides, tiles, mids, bricks, originCell } = kleinTilingSheet(kindK, size), Q = 12000, ids = new Map(), verts = [];
+  const { kind, turn, L, W, n, nv, step, by, sides, tiles, mids, bricks, originCell } = kleinTilingSheet(kindK, size), Q = STRIP_GRID, ids = new Map(), verts = [];
   const id = ([x, y]) => {  // a corner by its place on tilingStrip's fine grid, brought within the sheet (turned over past its end)
     let i = Math.round((x / step) * Q), j = Math.round((y / by) * Q);
     const k = Math.floor(i / (n * Q));

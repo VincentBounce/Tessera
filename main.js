@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.2.168';
+const VERSION = '0.2.169';
 const APP_TITLE = 'Walking π';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -13781,9 +13781,9 @@ function drawActivity() {
 // most ordered so far (and when); then its turnover, this generation's births and deaths against the cells alive before and
 // after (100 %: every cell changes; 0: nothing moves), the cells ever alive (against the grid), its growth, births less
 // deaths, in figures (a bar for it swung too much)
-// a generation of the run in view, as a link (but the one shown): clicked, it goes there (see seekTo: a reversible one's by its rule, Life's
-// played again from its start)
-const genLink = (g, text = `${walk.life ? 'gen' : 'step'} ${fmt(g)}`, kind = '') => (g === cur && !kind ? text : `<a class="gen-link${kind && ` gen-${kind}`}" href="#" data-gen="${g}" title="Go to ${walk.life ? 'gen' : 'step'} ${fmt(g)}">${text}</a>`);  // (the one shown: no link; kind: its colour, see style.css, always a link)
+// a generation of the run in view, as a link, always (the one shown too: one look, the same everywhere): clicked, it goes
+// there (see seekTo: a reversible one's by its rule, Life's played again from its start)
+const genLink = (g, text = `${walk.life ? 'gen' : 'step'} ${fmt(g)}`, kind = '') => `<a class="gen-link${kind && ` gen-${kind}`}" href="#" data-gen="${g}" title="Go to ${walk.life ? 'gen' : 'step'} ${fmt(g)}">${text}</a>`;  // (kind: its colour, see style.css)
 document.addEventListener('click', (e) => { const a = e.target.closest?.('.gen-link'); if (!a) return; e.preventDefault(); seekTo(Number(a.dataset.gen)); });
 function renderGauges(L) {
   const box = $('gauges'), n = L.seed.length;

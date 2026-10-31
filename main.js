@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.2.170';
+const VERSION = '0.2.172';
 const APP_TITLE = 'Walking π';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -1426,7 +1426,7 @@ function describe(base, available) {
   // the title: the rule (its name, or the rule itself), not the number that may have seeded it
   const known = [...$('lifePreset').options].find((o) => o.dataset.name && o.value === walk.life.ruleText);
   $('barBase').textContent = walk.life.ruleText;  // on the right, the lifetime in the middle (the title: the generation, see updateStats)
-  $('barBase').title = known ? known.dataset.name : '';
+  $('barBase').title = [known && known.dataset.name !== walk.life.ruleText ? known.dataset.name : '', 'A click: how it works'].filter(Boolean).join(' · ');  // (its name, when not its words: a loop's)
   $('barBase').classList.add('how-it-works');  // (Life's rule: a click, how it works)
   $('barBase').parentElement.classList.add('life');
   $('description').innerHTML = `Neighbours share an edge or a corner · ${lead}`;  // (the rule, a newborn's colour too: How it works)
@@ -13756,7 +13756,7 @@ function drawActivity() {
     }
   }
   ctx.globalAlpha = 1;
-  // its marks: each a line through it, twice the curve's thickness, and a diamond a third of its height on its own row (gold
+  // its marks: each a line through it, as thick as the curve, and a diamond a third of its height on its own row (gold
   // on top, blue in the middle, green below: several on one step all seen), cropped at the edges as the curve; its start's
   // (a reversible one's, its past on its left) a line alone
   const marks = [], mark = (g, colour, row = null) => marks.push([xOf(g - first, n) + 0.5, colour, row]);
@@ -13767,7 +13767,7 @@ function drawActivity() {
     for (const g of reversibleRun() ? orderMarks(walk.life) : [peaks(walk.life).orderGen]) mark(g, css.getPropertyValue('--sector'), 1);
     mark(peaks(walk.life).aliveGen, accent, 0);
   } else if (!walk.life && walk.n && walk.maxDist) mark(walkPeak().step, accent, 0);  // (a walk's farthest, in gold as its gauge)
-  ctx.lineWidth = 3;
+  ctx.lineWidth = 1.5;
   for (const [x, colour] of marks) { ctx.strokeStyle = colour; ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke(); }
   const d = H / 6;  // (its half diagonal: a third of the height)
   for (const [x, colour, row] of marks) if (row !== null) {

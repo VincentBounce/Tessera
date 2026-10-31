@@ -6946,6 +6946,15 @@ const DRAW_PATTERNS = [
   ['kisdrifters-ship', 'kischecker', ['B347/S017/C4'], 'Spaceship', '9.A$4.A2.A4.C.C2.2A$7.A2.2C3.C!', 'flies, period 32 · 11 cells'],
   ['kisdrifters-osc', 'kischecker', ['B347/S017/C4'], 'Oscillator', '4.A2.A2.A.BC$10.A!', 'period 4 · 6 cells'],
   ['kisdrifters-meth', 'kischecker', ['B347/S017/C4'], 'Methuselah', 'A4.A.A3.A.A$A3.A.A.2A.A.A!', 'settles at generation 563 · 12 cells'],
+  ['type9ships-ship', 'pent9', ['B236/S0/C4'], 'Spaceship', '3.3C$B2.3A2B!', 'flies, period 2 · 9 cells'],
+  ['type9ships-slow', 'pent9', ['B236/S0/C4'], 'Spaceship', '.2B2.C5.A$.B3.2C.A2.A!', 'flies, period 4 · 9 cells'],
+  ['type9ships-osc', 'pent9', ['B236/S0/C4'], 'Oscillator', '10.C2.A6.B$.CA6.BAC2B2CB2.A3.A$8.A5.2A!', 'period 121 · 18 cells'],
+  ['type10life-osc', 'pent10', ['B257/S0345/C4'], 'Oscillator', '2A.2A!', 'period 4 · 4 cells'],
+  ['type10life-meth', 'pent10', ['B257/S0345/C4'], 'Methuselah', 'A4.2A7.A$A5.2A2.A4.3A!', 'settles at generation 1,050 · 11 cells'],
+  ['type11life-osc', 'pent11', ['B247/S0345/C4'], 'Oscillator', '5.A4.CB$.A2.BAC2A.A3.C!', 'period 4 · 11 cells'],
+  ['type11life-meth', 'pent11', ['B247/S0345/C4'], 'Methuselah', '3.A9.A4.3A$2A7.A3.2A3.A!', 'settles at generation 542 · 11 cells'],
+  ['type13ships-ship', 'pent13', ['B25/S0345/C4'], 'Spaceship', 'CA2.C3.A4.AC!', 'flies, period 12 · 6 cells'],
+  ['type13ships-osc', 'pent13', ['B25/S0345/C4'], 'Oscillator', '.A2.AC2.AB2.C.BA$10.BA3.A7.C!', 'period 4 · 12 cells'],
   ['prismaticlife-ship', 'prismatic', ['B25/S157/C5'], 'Spaceship', 'A.B.BAD.D2.C$.A.BABCD.D!', 'flies, period 4 · 14 cells'],
   ['prismtrails-ship', 'prismatic', ['B2/S1/C8'], 'Spaceship', '2.G.GFEDE.C.CB3A$F2.G.GDEBE.C.C.A.A!', 'flies, period 4 · 23 cells'],
   ['longprisms-ship', 'prismatic', ['B245/S16/C5'], 'Spaceship', 'A.B.BAD.D2.C$.2AB.B.DCD!', 'flies, period 4 · 14 cells'],
@@ -8781,6 +8790,7 @@ const RULE_ICONS = {
   'B24/S0345/C4': '+.o.+,.o+o.,o...o,.+o+.,..o..',
   'B389/S0157/C3': 'o+.+o,+o.o+,..o..,+o.o+,o+.+o', 'B36/S0158/C3': '..o..,..+..,.o+o.,o+.+o,ooooo', 'B37/S0159/C3': 'ooooo,o.+.o,o+o+o,o.+.o,ooooo',  // (Kis Life, Long kis, Kis steady)
   'B367/S127/C4': '+.o.+,.+o+.,ooooo,.+o+.,+.o.+', 'B347/S017/C4': 'o.+..,.o.+.,..o.+,.o.+.,o.+..',  // (Kis ships, Kis drifters)
+  'B236/S0/C4': '.o.o.,o.o.o,.o.o.,o.o.o,.o.o.', 'B257/S0345/C4': '..o..,.ooo.,o+o+o,.ooo.,..o..', 'B247/S0345/C4': 'oo.oo,o...o,..+..,o...o,oo.oo', 'B25/S0345/C4': '+o+o+,o...o,+...+,o...o,+o+o+',  // (Type 9 ships, Type 10 Life, Type 11 Life, Type 13 ships)
   'B34/S2357': 'o.o.o,..o..,ooooo,.....,.o.o.',
   'B349/S0134/C5': '.....,....o,.oooo,..o..,.....',
   'B348/S0134/C5': '.....,o..o.,..oo.,oo..o,.....',

@@ -39,6 +39,7 @@ Never delete the bundles in `Walking Pi resources` (old versions included): the 
 `python3 tools/lines.py [from] [to]` (from: HEAD; to: the files now, or a commit) gives each changed code file's lines
 of code only (no comment, no blank line, see `tools/uncomment.py`): before, and +y or −y, nothing else: the « solde » of each
 delivery, e.g. `python3 tools/lines.py HEAD~1 HEAD` after a commit.
+Written with the version it brings first: « Solde v0.2.180 : main.js 12,143 +7 » (the app's files only, not tools/*).
 
 ## Versions
 - `const VERSION = '0.2.N'` (main.js, line 40) is the only source; every commit's message ends with it, `(v0.2.N)`.

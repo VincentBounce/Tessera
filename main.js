@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.2.177';
+const VERSION = '0.2.178';
 const APP_TITLE = 'Walking π';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -14637,9 +14637,9 @@ $('copyRle').addEventListener('click', () => {
 const numberChips = () => [$('copyNumber'), $('barBase')].filter((b) => !b.classList.contains('how-it-works'));
 function closeNumber() { $('numberPreview').hidden = true; for (const b of numberChips()) b.classList.remove('active', 'switch'); }
 for (const b of [$('copyNumber'), $('barBase')]) b.addEventListener('click', () => { if (b.classList.contains('how-it-works')) return; if (!$('numberPreview').hidden) closeNumber(); else showNumber(); });
-// A fraction's digits in base b, exact (up to max after the point), its period in brackets: = 0.(005291); null when it
-// does not end or repeat within them (see showNumber)
-function ratioDigits(b, max = 60) {
+// A fraction's digits in base b, exact, its period in brackets: = 0.(005291); null when it does not end or repeat within
+// the digits in use (the walk's digits, or the cells a start lays: see digitsNeeded, showNumber)
+function ratioDigits(b, max = digitsNeeded()) {
   const [p0, q] = current.ratio, p = p0 < 0n ? -p0 : p0, B = BigInt(b), seen = new Map(), ds = [];
   let rem = p % q;
   while (rem && !seen.has(rem) && ds.length < max) { seen.set(rem, ds.length); rem *= B; ds.push(Number(rem / q)); rem %= q; }
@@ -14650,7 +14650,7 @@ function ratioDigits(b, max = 60) {
 // The number in base 10, an overview (up to max digits) over the base it is in (see showNumber): a fraction's exact (see
 // ratioDigits); a whole number's as it is, or its size and first digits; else from the digits known, cut (…)
 function base10Preview(max = 60) {
-  const exact = current.ratio && ratioDigits(10, max);
+  const exact = current.ratio && ratioDigits(10);
   if (exact) return exact;
   const { head, frac } = digitsInUse(), B = BigInt(current.base), need = Math.ceil(((max + 2) * Math.LN10) / Math.log(current.base));
   const value = (ds) => ds.reduce((n, d) => n * B + BigInt(d), 0n);

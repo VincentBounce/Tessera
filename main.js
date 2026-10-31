@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.2.157';
+const VERSION = '0.2.158';
 const APP_TITLE = 'Walking π';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -9758,8 +9758,21 @@ function lifeBack(G) {  // (G: its sums there, its births and deaths forth, back
   L.aliveCount = traced(L, cur).alive;
   L.order = traced(L, cur).order;
   L.byColour = traced(L, cur).by ?? L.byColour;
-  if (L.margolus && !L.stable && blockBack(L, -cur)) lifeFound(L, { T: 0, P: -cur, extinct: false });  // (its return found going back: its start again at −P)
-  if (L.stable && cur <= -L.stable.P) cur += L.stable.P;  // (round its loop, as forth: the same state)
+  if (L.margolus && !L.stable && blockBack(L, -cur)) { lifeFound(L, { T: 0, P: -cur, extinct: false }); foldPast(L); }  // (its return found going back: its start again at −P)
+  if (L.stable && cur < 0) cur += L.stable.P;  // (round its loop, as forth: the same state, never below 0)
+}
+// a reversible one's past, its loop found going back (at −P): each generation −h its loop's P − h, its births and deaths
+// counted from the start round the loop (a whole loop back, −P, its counts taken off); its past none after
+function foldPast(L) {
+  const P = L.stable.P, B = L.past.born[P];
+  if (!B) return;  // (−P not recorded: its past kept as it is)
+  const from = (b) => ({ born: b.born - B.born, dead: b.dead - B.dead, bornBy: b.bornBy.map((v, k) => v - B.bornBy[k]), deadBy: b.deadBy.map((v, k) => v - B.deadBy[k]) });
+  for (let h = 1; h < P; h++) if (L.trace.alive[P - h] === undefined) {
+    for (const k of ['alive', 'by', 'order']) L.trace[k][P - h] = L.past[k][h];
+    L.trace.born[P - h] = from(L.past.born[h]);
+  }
+  L.past = { alive: [], by: [], born: [], order: [] };
+  L.peaks = null;  // (its marks, again from its generations: see peaks)
 }
 // a generation's record (see lifeStep, lifeBack): its live cells, each colour's, its births and deaths so far; one before the
 // start (a reversible one's past) its own; one not played, by its loop once found (g and g ± P the same state: forth or back)
@@ -11544,11 +11557,14 @@ function cutAtReturn(L, batch, dir) {
 const loopRound = () => (playing && looping() ? runLoop().last : 0);
 function lifeTo(target, until = Infinity) {  // (one step, one generation, played on the card as many at once, see lifeStepGPU)
   const L = walk.life, known = !!runLoop();  // (its end known before: round its loop as asked)
-  while ((target = Math.max(target, runStart())) < cur) {  // (back: its rule's inverse, see lifeBack; its return found going back, as far as its loop)
-    const batch = lifeStepGPU(L, cur - 1, true, Math.min(cur - target, LIFE_H));
+  // (back: its rule's inverse, see lifeBack, so many steps; its return found going back, round its loop: its generations never below 0)
+  for (let back = cur - Math.max(target, runStart()); back > 0; ) {
+    const batch = lifeStepGPU(L, cur - 1, true, Math.min(back, LIFE_H));
     if (!batch) break;
     cutAtReturn(L, batch, -1);
     for (const G of batch) lifeBack(G);
+    back -= batch.length;
+    target = cur;  // (where it is: round its loop, its number the loop's)
     if (performance.now() >= until) break;  // (a batch at least)
   }
   statsDirty = true;

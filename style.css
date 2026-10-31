@@ -31,8 +31,8 @@
   --pick-strong: color-mix(in srgb, rgb(240 180 41) 22%, var(--panel));
   --motif: #8250df;
   --face: #c4161c;
-  --sector: #0969da;
-  --cell: #1a7f37;
+  --sector: #54aeff;
+  --cell: #4ac26b;
   color-scheme: light;
 }
 

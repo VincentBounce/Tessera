@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.2.156';
+const VERSION = '0.2.157';
 const APP_TITLE = 'Walking π';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -6827,6 +6827,7 @@ const DRAW_PATTERNS = [
   ['highlife-ship0', 'square', ['B36/S23'], 'Glider', 'A$A.A$2A!', 'flies, period 4 · 5 cells'],
   ['highlife-osc', 'square', ['B36/S23'], 'Oscillator', '5.A2.A$2A2.A3.A$2A2.2A.2A!', 'period 10 · 12 cells'],
   ['highlife-meth', 'square', ['B36/S23'], 'Seed', 'A.2A$3.2A$2A$3.2A$3A!', 'keeps spreading · 12 cells'],
+  ['highlife-rep', 'square', ['B36/S23'], 'Replicator', '2b3o$bo2bo$o3bo$o2bo$3o!', 'copies of itself every 12 generations, along a diagonal · 12 cells', '..ooo,.o..o,o...o,o..o.,ooo..'],
   ['hexlife-osc', 'hex', ['B24/S35'], 'Oscillator', '3.A$2.A$.A$A!', 'period 6 · 4 cells'],
   ['hbrink-ship0', 'hex', ['B24/S134/C4'], 'Glider', '3.AC$.AB.B$ACACAC$AB.B$.AC!', 'flies, period 2 · 16 cells'],
   ['hbrink-meth', 'hex', ['B24/S134/C4'], 'Methuselah', '4.A$.A2.A$A.2A$A2.A$.A!', 'settles at generation 1,810 · 9 cells'],
@@ -8759,7 +8760,7 @@ function renderColours() {
 const NEIGHBOURS = { '◈': 12, '■': 8, '⬡': 6, '▲': 12, '⬠': 7, '◆': 9, '🎩': 7, '✧': 11, '◺': 17, '✺': 7, '✵': 12, '❄': 12, '❅': 16, '❀': 8, '✾': 8, '✽': 10, '❊': 10, '✸': 7, '✷': 7, '✹': 11, '❇': 7, '✲': 7, '✻': 7, '✴': 7, '❈': 7 };  // (hats: 6 or 7, a few 4 or 5; Penrose's rhombi: 7 to 11, a few fewer)
 for (const t of Object.values(TILINGS)) NEIGHBOURS[t.mark] = t.most;
 const RULE_ICONS = {
-  'B3/S23': '.....,..o..,...o.,.ooo.', 'B36/S23': '..ooo,.o..o,o...o,o..o.,ooo..', 'B3678/S34678': 'ooooo,oo.oo,o...o,oo.oo,ooooo',
+  'B3/S23': '.....,..o..,...o.,.ooo.', 'B36/S23': '..ooo,.o..o,o...o,o..o.,ooo..', 'B1357/S1357': 'o.o.o,.....,o...o,.....,o.o.o', 'B3678/S34678': 'ooooo,oo.oo,o...o,oo.oo,ooooo',
   'B3/S12345': 'o.ooo,o.o..,o.o.o,o...o,ooooo', 'B3/S1234': 'o.o.o,o.o.o,o.o.o,o...o,ooooo', 'B2/S/C3': '.o+..,.o+..,..+o.,..+o.', 'B2/S2/C25': 'oo+++,o.+++,.+...,.+...,.+...', 'B34/S23/C12': '..o..,.ooo.,.+++.,.+++.,.+.+.', 'B24/S13/C12': 'o....,.++..,..++.,...++,....+', 'B2/S1/C8': '.....,oo+++,o.+++,.....,.....', 'B23/S13/C8': '..o..,..+..,..+..,..+..,..+..', 'B2/S24/C8': '.....,.o++.,oo+++,.....,.....', 'B2/S28/C8': '....o,...o+,..++.,.++..,++...',
   'B2/S345/C4': '..o..,.ooo.,o+o+o,..o..,.+.+.', 'B2/S': 'o...o,..o..,o...o,.....,.o.o.', 'B45/S345/C4': 'o....,...o.,.....,.o...,....o',
   'B34/S2/C4': '.....,..o..,.o+o.,..+..', 'B34/S123/C3': '.ooo.,o...o,o...o,o...o,.ooo.', 'B24/S134/C4': '.....,..o..,.o+o.,..+..',

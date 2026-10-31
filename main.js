@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.2.181';
+const VERSION = '0.2.182';
 const APP_TITLE = 'Walking π';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -9254,6 +9254,9 @@ function walkTutorial(w) {
   $('ruleTuto').prepend(tutTools({ replay: () => walkTutorial(w), close: () => ruleTutorial(null) }));  // (its steps appearing again)
 }
 const walkTutorialToggle = () => ($('ruleTuto').hidden ? walkTutorial($('mode').value) : ruleTutorial(null));
+// a rule's words without its name when they open with it ("Maze, grows corridors": grows corridors), else as they are (Byl's
+// loop, Fredkin's Replicator, the Ising model)
+const unnamed = (words, name) => (words.startsWith(name) && /^(?:[,:]|\s\(|$)/.test(words.slice(name.length)) ? words.slice(name.length).replace(/^[,:]?\s*/, '') : words);
 let customOpen = false;  // the Custom rule card clicked: its states, births and survivals shown, a known rule in use or not
 function renderRuleSection() {
   const mode = MODES[$('mode').value];
@@ -9267,7 +9270,7 @@ function renderRuleSection() {
     const picked = o.value === now && !customOpen;  // (picked: a click shows how it works, see ruleTutorial)
     const bw = MODES[$('mode').value].margolus && !carriesColours(parseRule(o.value));  // (a block rule its cells carry no colour on: black and white)
     return card({ pic: RULE_ICONS[o.value] ? pixelIcon(RULE_ICONS[o.value]) : '', name: `${o.dataset.name}${bw ? ' · B&W' : ''}`, on: picked, again: picked && HOW_AGAIN, byDefault: i ? '' : 'yes',  // (the first: the shape's, see fitRuleToShape)
-      detail: `${o.value} · ${(o.text.split(' — ')[1] ?? '').replace(o.dataset.name, '').replace(/^[,:]?\s*/, '')}`, click: () => {  // its words, without its name
+      detail: `${o.value} · ${unnamed(o.text.split(' — ')[1] ?? '', o.dataset.name)}`, click: () => {  // its words, without its name
         if (picked) { ruleTutorial(!$('ruleTuto').hidden ? null : o); return; }
         customOpen = false;
         if (o.value === now) { renderRuleSection(); return; }

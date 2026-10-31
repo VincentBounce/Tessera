@@ -1,19 +1,20 @@
-# The self-reproducing loops (Langton, Byl, Chou-Reggia, SDSR, Evoloop) as Golly has them: each rule's table and colours
-# (Golly's Rules/*.rule, from its repository) and its start (Golly's Patterns/Loops/*.rle, from Debian's copy of Golly
-# 2.3): python3 tools/loops.py. Out: loops.js, LOOP_RULES, read by parseLoops in main.js
-import json, re, urllib.request
+# The self-reproducing loops (Langton, Byl, Chou-Reggia 1 and 2, SDSR, Evoloop) as Golly has them: each rule's table and
+# colours (Golly's Rules/*.rule) and its start (Golly's Patterns/Loops/*.rle), from Golly 5.0 as installed:
+# python3 tools/loops.py. Out: loops.js, LOOP_RULES, read by parseLoops in main.js
+import json, re
 
-RULES = 'https://sourceforge.net/p/golly/code/ci/master/tree/Rules/{}.rule?format=raw'
-PATTERNS = 'https://sources.debian.org/data/main/g/golly/2.3-1/Patterns/Loops/{}.rle'
+GOLLY = '/Applications/golly-5.0-mac'
+RULES, PATTERNS = GOLLY + '/Rules/{}.rule', GOLLY + '/Patterns/Loops/{}.rle'
 # the app's name of each, Golly's rule and pattern, its year and words
 LOOPS = [
     ('Langton', 'Langtons-Loops', 'Langtons-Loops', 1984, "Langton's loops: a loop whose signals turning round in it build a copy of it, every 151 generations, into a colony growing as a coral, its dead loops in the middle"),
     ('Byl', 'Byl-Loop', 'Byl-Loop', 1989, "Byl's loop: Langton's without its inner sheath, 12 cells copied every 25 generations"),
     ('Chou-Reggia', 'Chou-Reggia-1', 'Chou-Reggia-Loop-1', 1993, "Chou and Reggia's loop: no sheath at all, 5 cells copied every 15 generations"),
+    ('Chou-Reggia 2', 'Chou-Reggia-2', 'Chou-Reggia-Loop-2', 1993, "Chou and Reggia's second loop: 5 cells too, copied every 15 generations too, by a table of 65 rules, not 174"),
     ('SDSR', 'SDSR-Loop', 'SDSR-Loop', 1998, "Sayama's structurally dissolvable loop: Langton's, its dead loops dissolving, so the colony goes on growing and turning over"),
     ('Evoloop', 'Evoloop', 'Evoloop', 1999, "Sayama's evoloop: loops that meet change, the smaller ones copying faster and taking the room: natural selection"),
 ]
-get = lambda url: urllib.request.urlopen(url).read().decode()
+get = lambda path: open(path).read()
 out = {}
 for name, rule, pattern, year, words in LOOPS:
     text = get(RULES.format(rule))

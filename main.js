@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.2.165';
+const VERSION = '0.2.166';
 const APP_TITLE = 'Walking π';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -13762,7 +13762,7 @@ function drawActivity() {
   const marks = [], mark = (g, colour, row = null) => marks.push([xOf(g - first, n) + 0.5, colour, row]);
   if (first < 0) mark(0, css.getPropertyValue('--muted'));
   const o = runLoop();
-  if (o && o.last > o.T) mark(o.T, css.getPropertyValue('--cell'), 2);  // (its loop's first step, in green as its link in the title, Life's and a walk's)
+  if (o) mark(o.T, css.getPropertyValue('--cell'), 2);  // (its loop's first step, or where it stops (frozen, dead, a walk's end): in green as its link in the title)
   if (walk.life?.colours === 1 && lifeTime()) {  // (as their gauges: its ordered moments, a reversible one's (see orderMarks), else the most ordered; the most alive, in gold as the curve)
     for (const g of reversibleRun() ? orderMarks(walk.life) : [peaks(walk.life).orderGen]) mark(g, css.getPropertyValue('--sector'), 1);
     mark(peaks(walk.life).aliveGen, accent, 0);

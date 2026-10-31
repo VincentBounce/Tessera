@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.2.173';
+const VERSION = '0.2.174';
 const APP_TITLE = 'Walking π';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -9845,8 +9845,9 @@ function bordersOf(L, a) {
  * ==============================================================================================
  *
  * On any grid, in the Hunt start: random starts in a zone and tweaks of the best, on and on until
- * stopped, the 8 best kept.
- * One colour: the start that lasts longest (a methuselah); colours: the longest, most even battle.
+ * stopped (a zone of at most 20,000 starts: each once), the 8 best kept.
+ * One colour: the start that lasts longest (a methuselah), dies out the latest, peaks highest or reaches
+ * all cells soonest (see HUNT_GOALS); colours: the longest, most even battle.
  * The zone: the whole grid, as dense as said, or patches of a radius; in colours, a patch (or a part
  * of the grid) for each colour, at fair spots of the figure (see huntPatches).
  */
@@ -9858,7 +9859,8 @@ function bordersOf(L, a) {
  * patterns), each colour in its part. A zone with at most 20,000 starts has them all tried (the true
  * record), then the hunt is done.
  * - One colour, the longest life: the generation the run starts repeating at (fewer cells first); its death: the
- *   same, of the runs dying out; its peak: the most cells alive at once (fewer cells first).
+ *   same, of the runs dying out; its peak: the most cells alive at once (fewer cells first); reach all: every cell
+ *   alive once, the soonest (else the most reached).
  * - Colours, a battle: it lasts and every colour keeps spreading, as much as the others.
  *   S_c = Σ g × (cells born of colour c at generation g), the later the more it counts; the balance,
  *   1 − CV / √(K − 1), CV the standard deviation of the S_c over their mean (1: all even, 0: one colour
@@ -10043,10 +10045,11 @@ function pickGoal(goal) {
   renderHunt();
   syncLink();
 }
-// The zones: patches of radius 1 to 6 round each spot (Spark … Meadow), the whole grid (Wild), the rule's
-// patterns (Famous); their random starts each as dense as drawn between 10 and 70 % (the records often
-// come from sparse starts, the long lives on average from dense ones: PATTERNS.md, Densities)
-const HUNT_ZONES = { icon24: [null, 'Icon 24'], iconMax: [null, 'Icon max'], punk24: [null, 'Punk 24'], punkMax: [null, 'Punk max'],  // (Punk: a CryptoPunk, as an icon)  // one of Pixelarticons' icons at random, 12, 24 or 48 cells wide (see iconCells)
+// The zones: a picture (Icon, Punk, Emoji), patches of radius 1 to 8 round each spot (Spark … Jungle), each colour's face
+// or part (Realm), its two opposite ones (Mirror), the whole grid (Wild), a number's digits (Formula), the rule's patterns
+// (Famous, Anywhere); their random starts each as dense as drawn between 10 and 70 % (the records often come from sparse
+// starts, the long lives on average from dense ones: PATTERNS.md, Densities)
+const HUNT_ZONES = { icon24: [null, 'Icon 24'], iconMax: [null, 'Icon max'], punk24: [null, 'Punk 24'], punkMax: [null, 'Punk max'],  // (Punk: a CryptoPunk, as an icon)  // one of Pixelarticons' icons at random, 24 cells wide or as wide as fits (see iconCells)
                      emoji: [null, 'Emoji'],  // one of Unicode's at random, as big as fits, a picture as an icon (see ICON_SETS)
                      radius1: ['zone1', 'Spark'], radius2: ['zone2', 'Seed'], radius3: ['zone3', 'Sprout'], radius4: ['zone4', 'Bloom'],
                      radius5: ['zone5', 'Grove'], radius6: ['zone6', 'Meadow'], radius7: ['zone7', 'Forest'], radius8: ['zone8', 'Jungle'],
@@ -10478,7 +10481,7 @@ function renderHunt() {
   $('huntBtn').hidden = !!walk.life.margolus;  // (the hunt's own step: births and survivals; blocks, their zones' starts only)
 
   const K = lifeParts(), { perColour, all } = huntPlan(), busy = !!hunt.run, sym = walk.plane ? symmetryOf(walk.plane.kind) : 'none';
-  const what = K > 1 ? 'the longest battle' : { longest: 'the longest life', dies: 'the longest death', peak: 'the highest peak', cover: 'the fastest to reach all cells' }[hunt.goal];
+  const what = K > 1 ? 'the longest battle' : { longest: 'the longest life', dies: 'the longest life dying out', peak: 'the highest peak', cover: 'the fastest to reach all cells' }[hunt.goal];
   $('huntGoals').hidden = $('huntModeLabel').hidden = !!walk.life.margolus;
   for (const b of $('huntGoals').querySelectorAll('button')) { const battle = b.dataset.goal === 'battle'; setTile(b, { on: battle ? K > 1 : K === 1 && b.dataset.goal === hunt.goal, can: battle === K > 1 }); }
   renderSymmetry();  // (Famous: none)
@@ -10494,17 +10497,18 @@ function renderHunt() {
     : N ? (K === 1 ? `${iconSet(z).word[0].toUpperCase()}${iconSet(z).word.slice(1)} ${names}, ${N} cells wide` : `${iconSet(z).word[0].toUpperCase()}${iconSet(z).word.slice(1)}s ${names}, ${N} cells wide, one a colour`)
     : z === 'patterns' ? `${K === 1 ? 'A pattern' : 'Patterns'} of the rule, anywhere${K > 1 ? ', one a colour' : ''} (${fmt(perColour)} ways and places)`
     : z === 'centred' ? `${K === 1 ? 'A pattern of the rule, in the middle' : "Patterns of the rule, each at its colour's spot"} (${fmt(perColour)} of them)`
-    : r ? `Random cells within ${r} of ${K === 1 ? 'the middle' : "each colour's spot"}, ${d} % of ${fmt(perColour)}${K > 1 ? ' each' : ''}`
+    : r ? `Random cells within ${r} step${r > 1 ? 's' : ''} of ${K === 1 ? 'the middle' : "each colour's spot"}, ${d} % of ${fmt(perColour)}${K > 1 ? ' each' : ''}`
     : z === 'realm' ? `Random cells on each colour's face, ${d} % of ${fmt(perColour)} each`
     : z === 'mirror' ? `Each colour a soup of its two opposite parts, ${d} % alive`
     : z === 'numbers' ? `The binary digits of ${plane.number}, a digit a cell${K > 1 ? (colourMixed() ? ', each live cell a colour at random' : ', each colour in its part') : ''}`
     : K === 1 ? `A random soup, ${d} % alive` : `Each colour a soup of its part, ${d} % alive`;
-  const hunts = z === 'custom' ? 'pick a zone to hunt in' : all ? `all ${fmt(all)}${N ? ' icons' : z === 'emoji' ? ' emoji' : z === 'patterns' || z === 'centred' ? '' : ' starts'}, the 8 best kept`
-    : N ? 'icons at random, a colour each' : famousZone(z) ? 'patterns at random' : z === 'full' || z === 'mirror' ? 'soups at random' : 'starts at random';
-  const zone = shown + (sym !== 'none' ? ` · ${SYMMETRIES[sym][2]}` : '') + (life ? ` · Hunt: ${hunts}` : '');
+  const tried = N || z === 'emoji' ? 'pictures' : famousZone(z) ? 'patterns' : z === 'numbers' ? 'numbers' : z === 'full' || z === 'mirror' ? 'soups' : 'starts';
+  const hunts = z === 'custom' ? 'A start found by a hunt, from a link: pick a zone to hunt in'
+    : `${all ? `All its ${fmt(all)} ${tried} tried, each once, then done` : `On and on until stopped: ${tried} at random one in 3, the others tweaks of the best`}; the 8 best kept, a click on one plays it`;
+  const zone = shown + (sym !== 'none' ? ` · ${SYMMETRIES[sym][2]}` : '');
   $('huntBtn').innerHTML = busy ? `${icon('stop')} Stop hunt and play` : `${icon('search')} Hunt ${what}`;
   $('huntBtn').disabled = !busy && hunt.zone === 'custom';  // a start from a link: a zone to hunt in first
-  $('huntBtn').title = `${hunt.zone === 'custom' ? 'A start found by a hunt, from a link: pick a zone to hunt in' : 'On and on until stopped: random starts and tweaks of the best, the 8 best kept; a click on one plays it'}\n${zone}`;
+  $('huntBtn').title = `${hunts}\n${zone}`;
   $('huntStatus').innerHTML = withIcons(hunt.status);  // (its zone: in its button's tooltip)
   // each result's light: a battle by its balance (green 0.6 and up: even; orange from 0.3; red: one-sided;
   // grey: the colours never touched, no battle); a life (one colour), whatever its goal, by how far it spreads:
@@ -14446,16 +14450,16 @@ $('huntZones').replaceChildren(...Object.entries(HUNT_ZONES).map(([zone, [pic, n
   b.dataset.zone = zone;
   if (zone === 'full') b.dataset.default = 'yes';  // (see hunt)
   b.title = zone === 'custom' ? 'A start found by a hunt, from a link'
-    : zone === 'centred' ? "Famous: the rule's patterns, one for each colour at its spot, turned or mirrored"
-    : zone === 'patterns' ? "Anywhere: Famous, the rule's patterns, one for each colour anywhere in its part, turned or mirrored"
-    : zone === 'mirror' ? "Mirror: each colour's two opposite faces (a solid where a colour has two), random soups in them"
-    : zone === 'numbers' ? "Formula: a number at random, its binary digits laid a digit a cell, 1 alive (in colours, each colour alive in its part, as Wild; Mixed, a colour at random): half the time a fraction p/q (q from 2 to 999, p under it), else a root √n (n from 2 to 9,999, no square); a click, another. The hunt tries each once, in a mixed order, its results each with its number"
-    : zone === 'emoji' ? "An emoji at random, of Unicode's 1,923 (Emoji 18.0), as wide as fits, its outline and dark marks alive, in the middle of each colour's part: a click, another"
-    : isIcon(zone) && zone.startsWith('punk') ? `A CryptoPunk at random, ${zone.endsWith('Max') ? 'as wide as fits, its width and height whole, cut off in its corners only (on squares 96, 72, 48 or 24 cells, elsewhere to the cell)' : '24 cells wide'}, one of the 10,000 of Larva Labs (2017), its line drawing alive (its outline, dark marks and contrasts), in the middle of each colour's part: a click, another`
-    : isIcon(zone) ? `An icon at random, ${zone.endsWith('Max') ? 'as wide as fits, its width and height whole, cut off in its corners only (on squares 96, 72, 48 or 24 cells, elsewhere to the cell)' : '24 cells wide'}, one of the 1,036 of Pixelarticons (MIT), its pixels alive, in the middle of each colour's part: a click, another`
-    : zone === 'realm' ? "Realm: on a solid, each colour's whole face (greyed when its spots are corners or edges); elsewhere, its whole part but its cells next to another's: random starts in it (two colours or more)"
-    : zoneRadius(zone) ? `Radius ${zoneRadius(zone)}: random starts within ${zoneRadius(zone)} steps of each spot`
-    : 'Wild: the whole grid, random soups (a colour with two parts: side by side)';
+    : `${zone === 'centred' ? "The rule's patterns, one for each colour at its spot, turned or mirrored"
+    : zone === 'patterns' ? "The rule's patterns, as Famous, one for each colour anywhere in its part, turned or mirrored"
+    : zone === 'mirror' ? "Each colour's two opposite faces (a solid where a colour has two), random soups in them"
+    : zone === 'numbers' ? "A number at random, its binary digits laid a digit a cell, 1 alive (in colours, each colour alive in its part, as Wild; Mixed, a colour at random): half the time a fraction p/q (q from 2 to 999, p under it), else a root √n (n from 2 to 9,999, no square). The hunt tries each once, in a mixed order, its results each with its number"
+    : zone === 'emoji' ? "An emoji at random, of Unicode's 1,923 (Emoji 18.0), as wide as fits, its outline and dark marks alive, in the middle of each colour's part"
+    : isIcon(zone) && zone.startsWith('punk') ? `A CryptoPunk at random, ${zone.endsWith('Max') ? 'as wide as fits, its width and height whole, cut off in its corners only (on squares 96, 72, 48 or 24 cells, elsewhere to the cell)' : '24 cells wide'}, one of the 10,000 of Larva Labs (2017), its line drawing alive (its outline, dark marks and contrasts), in the middle of each colour's part`
+    : isIcon(zone) ? `An icon at random, ${zone.endsWith('Max') ? 'as wide as fits, its width and height whole, cut off in its corners only (on squares 96, 72, 48 or 24 cells, elsewhere to the cell)' : '24 cells wide'}, one of the 1,036 of Pixelarticons (MIT), its pixels alive, in the middle of each colour's part`
+    : zone === 'realm' ? "On a solid, each colour's whole face (greyed when its spots are corners or edges); elsewhere, its whole part but its cells next to another's: random starts in it (two colours or more)"
+    : zoneRadius(zone) ? `Random starts within ${zoneRadius(zone)} step${zoneRadius(zone) > 1 ? 's' : ''} of each spot (radius ${zoneRadius(zone)})`
+    : 'The whole grid, random soups (a colour with two parts: side by side)'} · Clicked again: another start`;  // (as a card's, see card; picked: a click draws another, see renderHunt)
   if (zone === 'custom') { b.hidden = true; return b; }  // shown, lit, for a start from a link
   b.addEventListener('click', () => pickZone(zone));
   return b;

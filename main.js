@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.2.164';
+const VERSION = '0.2.165';
 const APP_TITLE = 'Walking π';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -1831,9 +1831,11 @@ const runLoop = () => {
 // its link, in green (see genLink): to its first step; from there, to its last; an end alone, back to 0
 const loopLink = (text) => { const o = runLoop(); return genLink(cur !== o.T ? o.T : o.last !== o.T ? o.last : 0, text, 'loop'); };
 // The first: 0, or a reversible one's as far back as the rest of its n go (its rule run backwards from its start: its past);
-// its loop known, 0 again (its past folded into it, see foldPast: a step back from 0 round it, see loopBack)
+// its loop known, 0 again (its past folded into it, see foldPast)
 const runStart = () => (reversibleRun() && !walk.life.stable ? -(walk.n - 1 - Math.ceil(walk.n / 2)) : 0);
-const loopBack = () => looping() && !!walk.life?.margolus;  // (a reversible one's loop known: a step back from 0 to its last)
+// a run's loop known from its start (any Life's: a reversible one's, an oscillator's from gen 0): a step back from 0 round it,
+// to its last (a reversible one's by its rule backwards, see lifeTo; a Game of Life's round it forth, see advanceTo)
+const loopBack = () => looping() && walk.life.stable.T === 0;
 function setGens(n) {
   target = Math.min(targetMost(), Math.max(DIGIT_STEPS[0], Math.round(n) || 2000));
   if (spaceTimeOn()) { restart(); showAll(); }
@@ -11619,7 +11621,7 @@ function advanceTo(target, until = Infinity) {  // forth or back (a walk; a reve
   if (target < cur && !walk.life) { walkBack(target); return; }
   if (target < cur && lifeTime() && !walk.life.margolus) {  // a Game of Life back: no rule backwards; round its loop forth (the same
     const o = looping() && runLoop(), P = o && o.last - o.T + 1;  // state, nothing played again), else from its start again
-    if (o && target >= o.T) target += P * Math.ceil((cur - target) / P); else restart();
+    if (o && (target >= o.T || loopBack())) target += P * Math.ceil((cur - target) / P); else restart();
   }
   if (walk.life) { lifeTo(target, until); if (cur >= runEnd()) play(false); return; }
   const { xs, ys, wx, wy, wz, is3d } = walk;
@@ -13401,7 +13403,7 @@ const LIFE_PASSES = 2 ** 18, LIFE_REPLAY_MOST = 2 ** 28;
 // a Game of Life's way to generation g within it: forth from where it is, back round its loop, else again from its start
 const lifeWithin = (g) => {
   if (!lifeTime() || walk.life.margolus) return true;
-  const gens = g >= cur ? g - cur : looping() && g >= runLoop().T ? 0 : g;
+  const gens = g >= cur ? g - cur : looping() && (g >= runLoop().T || loopBack()) ? 0 : g;
   return gens * (walk.life.seed.length + LIFE_PASSES) <= LIFE_REPLAY_MOST;
 };
 const LIFE_H = 16;  // (generations a read back: the game's, a hunt's; more, a batch longer than a frame on a large grid)

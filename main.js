@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.3.23';
+const VERSION = '0.3.24';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -1354,7 +1354,7 @@ function updateRuleText() {}  // the rule is shown by describe (the Play card)
 // Game of Life needs one base-(K + 1) digit per cell; walks use the requested number of digits
 function digitsNeeded() {
   const mode = MODES[$('mode').value], size = randomPrimeSize();
-  if (mode.life) return plane.start !== 'digits' ? 256 : mode.elementary ? 2 * targetAsked() + 1 : mode.plane ? gridSize(planeKind(mode.plane), plane.side)[2] : SPHERES[surfaceOf(mode)].tiles(sphereSize());  // all the digits for a start by the digits (a cell each); else a hunt's patch
+  if (mode.life) return plane.start !== 'digits' ? 256 : mode.elementary ? 2 * targetAsked() + 16 : mode.plane ? gridSize(planeKind(mode.plane), plane.side)[2] : SPHERES[surfaceOf(mode)].tiles(sphereSize());  // all the digits for a start by the digits (a cell each); else a hunt's patch
   // a random prime is walked whole: its size (decimal digits) written in the walk's base
   return size ? Math.ceil((size * Math.log(10)) / Math.log(mode.base)) + 1 : targetAsked();
 }
@@ -1791,7 +1791,7 @@ const renderSkyButtons = () => {
 // nearest it allows (targetAsked: a walk's digits or steps, a reversible rule's or Space-time's generations up to 100,000;
 // a walk that loops stops sooner, as its stepper says); its ladder DIGIT_STEPS
 let target = 20000;
-const targetMost = () => (MODES[$('mode').value].elementary ? 5000 : gensShown() ? 100000 : 50_000_000);  // (Elementary's: its cells the square of it, see elementaryRows)
+const targetMost = () => (MODES[$('mode').value].elementary ? 100000 : gensShown() ? 100000 : 50_000_000);  // (Elementary's: its cells the square of it, drawn as a picture, see elementaryRows)
 const targetAsked = () => Math.min(targetMost(), Math.max(10, Math.round(target) || 10));
 
 // The number of digits as a stepper, like the surface size: [ − ] 20,000 digits [ + ] goes through
@@ -1967,20 +1967,36 @@ const dots = (list, r) => list.map(([x, y]) => `<circle class="f" cx="${x}" cy="
 const pathEl = (d, cls) => `<path${cls ? ` class="${cls}"` : ''} d="${d}"/>`;
 // an elementary rule's cell (see parseElementary): the bit 4l + 2c + r of its number, l, c, r the three cells above it
 const wolframBit = (N, l, c, r) => (N >> (4 * l + 2 * c + r)) & 1;
-// its rows, h of them from the first (0 and 1), each(row, t) in turn (the row read then, not kept): Elementary's (see
-// elementaryRows), its icons and its page's. Past its ends: wrapping round (its left end its right end's neighbour), or, not,
-// each end carried on for ever (its cells past it as it is: a row that never ends, alike past where anything reached)
-function wolframRows(N, first, h, each, wrap = true) {
-  const W = first.length;
-  let r = Uint8Array.from(first), next = new Uint8Array(W);
-  for (let t = 0; t < h; t++) {
-    each(r, t);
-    for (let x = 0; x < W; x++) next[x] = wolframBit(N, r[x ? x - 1 : wrap ? W - 1 : 0], r[x], r[x < W - 1 ? x + 1 : wrap ? 0 : W - 1]);
-    [r, next] = [next, r];
+// Its rows in words of 16 cells (bit 15 the leftmost), each word's next by one look-up (its rule's table, see wolframTable): its
+// 18 bits, its left neighbour's rightmost cell, its 16, its right neighbour's leftmost. Elementary's (see elementaryRows), its
+// icons and its page's. Past its ends (words lo to hi): wrapping round (its left end its right end's neighbour), or, not, each end
+// carried on for ever (its cells past it as it is: a row that never ends, alike past where anything reached)
+const wolframTables = new Map();
+const wolframTable = (N) => {
+  if (!wolframTables.has(N)) {
+    const T = new Uint16Array(1 << 18);
+    for (let i = 0; i < 1 << 18; i++) for (let k = 0; k < 16; k++) T[i] |= ((N >> ((i >> k) & 7)) & 1) << k;  // (cell k: bits k + 2, k + 1, k)
+    wolframTables.set(N, T);
+  }
+  return wolframTables.get(N);
+};
+function wolframStep(T, r, next, lo, hi, wrap) {
+  for (let i = lo; i <= hi; i++) {
+    const l = i > lo ? r[i - 1] & 1 : wrap ? r[hi] & 1 : r[lo] >> 15, rr = i < hi ? r[i + 1] >> 15 : wrap ? r[lo] >> 15 : r[hi] & 1;
+    next[i] = T[(l << 17) | (r[i] << 1) | rr];
   }
 }
+const POP16 = new Uint8Array(1 << 16);  // (a word's live cells)
+for (let i = 1; i < 1 << 16; i++) POP16[i] = POP16[i >> 1] + (i & 1);
+const wordsOf = (cells) => { const r = new Uint16Array(Math.ceil(cells.length / 16)); cells.forEach((v, x) => { if (v) r[x >> 4] |= 0x8000 >> (x & 15); }); return r; };
+const cellOf = (r, x) => (r[x >> 4] >> (15 - (x & 15))) & 1;
 // One cell's h rows, 2h − 1 wide (their ends never reached: as the app draws them), each a list
-const wolframFromCell = (N, h) => { const first = new Uint8Array(2 * h - 1), rows = []; first[h - 1] = 1; wolframRows(N, first, h, (r) => rows.push([...r])); return rows; };
+const wolframFromCell = (N, h) => {
+  const W = 2 * h - 1, T = wolframTable(N), rows = [];
+  let r = wordsOf(Array.from({ length: W }, (_, x) => +(x === h - 1))), next = new Uint16Array(r.length);
+  for (let t = 0; t < h; t++) { rows.push(Array.from({ length: W }, (_, x) => cellOf(r, x))); wolframStep(T, r, next, 0, r.length - 1, false); [r, next] = [next, r]; }
+  return rows;
+};
 // a shape walled (a convex one's corners): its outline doubled, its inside d in, and short strokes across between them, about
 // one each 5 units along its sides (its bricks), nothing filled
 const walledEl = (P, d = 2.6) => {
@@ -6643,34 +6659,56 @@ function parseElementary(text) {
   const N = Number(ruleBody(text).trim().match(/^W(\d{1,3})$/i)?.[1]);
   return N <= 255 ? { elementary: true, wolfram: N, B: new Uint8Array(16), S: new Uint8Array(16), C: 2, two: false, colours: 1, iso: false, base: 2, text: `W${N}` } : null;
 }
-// Elementary on the plane: its rows on the processor, as many as the generations asked, a walk's steps (a step a generation, its
-// walker down the middle, see buildWalkOf), its live cells drawn as a walk's (see glFlat), each in its row's rainbow. Its rows
-// 2 × its generations + 1 wide, wrapping round (the left end the right end's neighbour): One cell's never reaches their ends.
-// Digits: the number's first digit in the middle, the next ones to its right; at the right end the row wraps round, so they
-// go on from the left end back to the middle, the last just left of the first. The only seam, where the last digit meets the
-// first, is in the middle: what it starts spreads from there as One cell's does, a triangle (a fraction's repeating digits
-// elsewhere, as a row that never ends). upTo: its cells up to each row; wide: its first row's reach (each next one more);
-// digits: its first row, its digits written over it (see drawOverlay). Its other starts on a row that never ends (its ends
-// carried on, see wolframRows): One cell; Two cells, G apart (their triangles meet halfway down; the row G / 2 wider each side, so
-// their outer sides never reach its ends); Half, its left half alive (one frontier, in the middle). c: its middle; wide: its
-// first row's reach (each next one more, up to c)
-const ELEMENTARY_STARTS = ['cell', 'two', 'half', 'digits'];
+// Elementary on the plane: its rows on the processor (in words, see wolframStep), as many as the generations asked, a walk's
+// steps (a step a generation, its walker down the middle, see buildWalkOf), drawn as one picture (see drawElementary). Its rows
+// W wide (16 a word), wrapping round for Digits (the left end the right end's neighbour): the number's first digit in the middle,
+// the next ones to its right; at the right end the row wraps round, so they go on from the left end back to the middle, the last
+// just left of the first. The only seam, where the last digit meets the first, is in the middle: what it starts spreads from
+// there as One cell's does, a triangle (a fraction's repeating digits elsewhere, as a row that never ends). Its other starts on a
+// row that never ends (its ends carried on): One cell; Two cells, G apart (their triangles meet halfway down; the row G / 2 wider
+// each side, so their outer sides never reach its ends); Half, its left half alive (one frontier, in the middle).
+// Kept: c, its middle; wide, its first row's reach (each next one more, up to c); upTo, its live cells up to each row; its
+// picture, counts (each pixel B × B cells, B 1 up to 16 million cells, else a multiple of 16: 4 million pixels or so); one row
+// in KEEP (to draw a part near enough again, see elementaryPart); digits, its first row, its digits written over it (see drawOverlay)
+const ELEMENTARY_STARTS = ['cell', 'two', 'half', 'digits'], KEEP = 64;
 function elementaryRows(digits) {
-  const G = targetAsked(), start = plane.start, c = G + (start === 'two' ? G >> 1 : 0), W = 2 * c + 1, first = new Uint8Array(W), upTo = new Int32Array(G + 2);
-  let inst = new Float32Array(1 << 16), m = 0;
-  if (start === 'digits') for (let i = 0; i < W; i++) first[(c + i) % W] = digits[i] ?? 0;  // (from the middle, round by the right)
+  const G = targetAsked(), start = plane.start, wrap = start === 'digits', N = lifeRuleNow()?.wolfram ?? 30, T = wolframTable(N);
+  const n = Math.ceil((2 * (G + (start === 'two' ? G >> 1 : 0)) + 1) / 16), W = 16 * n, c = W >> 1, first = new Uint8Array(W);
+  if (wrap) for (let i = 0; i < W; i++) first[(c + i) % W] = digits[i] ?? 0;  // (from the middle, round by the right)
   else if (start === 'half') first.fill(1, 0, c);
   else for (const x of start === 'two' ? [c - (G >> 1), c + (G >> 1)] : [c]) first[x] = 1;
-  wolframRows(lifeRuleNow()?.wolfram ?? 30, first, G + 1, (r, t) => {
-    const band = Math.floor((t * BANDS) / (G + 1));
-    for (let x = 0; x < W; x++) {
-      if (!r[x]) continue;
-      if (m + 4 > inst.length) { const a = new Float32Array(2 * inst.length); a.set(inst); inst = a; }  // (twice as long when full)
-      inst[m++] = x - c; inst[m++] = t; inst[m++] = band; inst[m++] = 0;  // (down: the view's y)
+  const B = W * (G + 1) <= 16e6 ? 1 : 16 * Math.ceil(Math.sqrt((W * (G + 1)) / 4e6) / 16), PW = Math.ceil(W / B), PH = Math.ceil((G + 1) / B);
+  const counts = new Uint32Array(PW * PH), upTo = new Float64Array(G + 2), kept = [];
+  let r = wordsOf(first), next = new Uint16Array(n);
+  for (let t = 0; t <= G; t++) {
+    if (t % KEEP === 0) kept.push(r.slice());
+    const at = Math.floor(t / B) * PW;
+    let live = 0;
+    for (let i = 0; i < n; i++) {
+      const w = r[i];
+      if (!w) continue;
+      live += POP16[w];
+      if (B > 1) counts[at + Math.floor((16 * i) / B)] += POP16[w];
+      else for (let k = 0; k < 16; k++) counts[at + 16 * i + k] += (w >> (15 - k)) & 1;
     }
-    upTo[t + 1] = m / 4;
-  }, start === 'digits');
-  return { G, inst: inst.subarray(0, m), upTo, c, wide: start === 'digits' || start === 'half' ? c : start === 'two' ? G >> 1 : 0, digits: start === 'digits' ? first : null };
+    upTo[t + 1] = upTo[t] + live;
+    wolframStep(T, r, next, 0, n - 1, wrap);
+    [r, next] = [next, r];
+  }
+  return { G, N, n, W, c, B, PW, PH, counts, upTo, kept, wrap, wide: wrap || start === 'half' ? c : start === 'two' ? G >> 1 : 0, digits: wrap ? first : null };
+}
+// a part of its rows near enough to draw cell by cell (x0 to x1, rows t0 to t1): again from the kept row above it, on its words and
+// as many more each side as rows walked (what lies past them cannot reach it); its cells, a row after another
+function elementaryPart(R, x0, x1, t0, t1) {
+  const k = Math.floor(t0 / KEEP), from = k * KEEP, m = t1 - from + 1, lo = Math.max(0, (x0 - m) >> 4), hi = Math.min(R.n - 1, (x1 + m) >> 4), full = lo === 0 && hi === R.n - 1;
+  const T = wolframTable(R.N), w = x1 - x0 + 1, out = new Uint8Array(w * (t1 - t0 + 1));
+  let r = R.kept[k].slice(), next = new Uint16Array(R.n);
+  for (let t = from; t <= t1; t++) {
+    if (t >= t0) for (let x = x0; x <= x1; x++) out[(t - t0) * w + x - x0] = cellOf(r, x);
+    wolframStep(T, r, next, lo, hi, R.wrap && full);
+    [r, next] = [next, r];
+  }
+  return out;
 }
 function parseRule(text) {
   if (/^\s*(M|Q2R)/i.test(text)) return parseBlocks(text);
@@ -13111,8 +13149,37 @@ const templateArray = (templates) => {
 };
 // how many of the sorted values are ≤ v
 const countUpTo = (sorted, n, v) => { let lo = 0, hi = n; while (lo < hi) { const m = (lo + hi) >> 1; if (sorted[m] <= v) lo = m + 1; else hi = m; } return lo; };
+// Elementary's rows (see elementaryRows), up to the one shown, on the walk's layer: far, its picture (each pixel B × B cells, as
+// many alive as it is opaque); near (a cell a pixel or more, its picture coarser), its cells there again (see elementaryPart).
+// Each row its rainbow (Age), or Life's live colour (States)
+function drawElementary(to) {
+  const R = walk.rows, ctx = layers.path, { scale: s, ox, oy } = view, last = Math.min(to, R.G), mono = $('colourMode').value === 'mono';
+  const rgb = (t) => rgbCached(mono ? LIFE_ALIVE : GRADIENT[Math.floor((t * BANDS) / (R.G + 1))]);
+  const paint = (w, h, alpha, rowOf) => {  // (w × h pixels, each its opacity and its row)
+    const img = new ImageData(w, h), px = new Uint32Array(img.data.buffer);  // (a pixel a word: its alpha, blue, green, red)
+    for (let y = 0; y < h; y++) { const [cr, cg, cb] = rgb(rowOf(y)), c = (cb << 16) | (cg << 8) | cr; for (let x = 0; x < w; x++) { const a = alpha(x, y); if (a) px[y * w + x] = ((a << 24) | c) >>> 0; } }
+    const cv = Object.assign(document.createElement('canvas'), { width: w, height: h });
+    cv.getContext('2d').putImageData(img, 0, 0);
+    return cv;
+  };
+  ctx.clearRect(0, 0, cw, ch);
+  ctx.imageSmoothingEnabled = false;
+  if (R.B > 1 && s >= 1) {  // near: the cells in view
+    const x0 = Math.max(0, Math.floor(-ox / s + R.c)), x1 = Math.min(R.W - 1, Math.ceil((cw - ox) / s + R.c)), t0 = Math.max(0, Math.floor(-oy / s)), t1 = Math.min(last, Math.ceil((ch - oy) / s));
+    if (x1 < x0 || t1 < t0) return;
+    const w = x1 - x0 + 1, cells = elementaryPart(R, x0, x1, t0, t1);
+    ctx.drawImage(paint(w, t1 - t0 + 1, (x, y) => cells[y * w + x] * 255, (y) => t0 + y), ox + (x0 - R.c - 0.5) * s, oy + (t0 - 0.5) * s, w * s, (t1 - t0 + 1) * s);
+    return;
+  }
+  const key = `${mono}|${LIFE_ALIVE}`;  // (its picture, once a look)
+  if (R.picture?.key !== key) R.picture = { key, cv: paint(R.PW, R.PH, (x, y) => Math.round((255 * R.counts[y * R.PW + x]) / (R.B * R.B)), (y) => y * R.B + (R.B >> 1)) };
+  const h = Math.min(R.PH, Math.ceil((last + 1) / R.B));
+  ctx.imageSmoothingEnabled = R.B > 1;
+  ctx.drawImage(R.picture.cv, 0, 0, R.PW, h, ox + (-R.c - 0.5) * s, oy - 0.5 * s, R.PW * R.B * s, h * R.B * s);  // (its last pixels past the row's end: empty)
+}
 function glFlat(to) {
   if (cubesWalk()) return glCubes(to + 1, walk.wx, walkCubes, walk.maxDist[walk.n]);
+  if (walk.rows) { glClear(); drawElementary(to); return true; }  // (Elementary: a picture, see drawElementary)
   const S = glSetup();
   if (!S) return false;
   const { gl, prog } = S, mode = $('colourMode').value, { scale: s, ox, oy } = view;
@@ -13133,14 +13200,14 @@ function glFlat(to) {
     upload(S.flatKeys, keys);
     S.keys.flatKeys = walk.keys; S.keys.flatKeysMode = keysKey;
   }
-  if (S.keys.pal !== `${walk.base}|${walk.ant}|${antRamp}|${walk.skipZeros}|${current.mode}|${MONO}|${walk.rows ? LIFE_ALIVE : ''}`) {  // the digits' colours (an ant's; Elementary's: its live cells', States)
+  if (S.keys.pal !== `${walk.base}|${walk.ant}|${antRamp}|${walk.skipZeros}|${current.mode}|${MONO}`) {  // the digits' colours (an ant's)
     const pal = new Uint8Array(4 * 256);
-    for (let k = 0; k < 256; k++) pal.set([...rgbCached(walk.rows ? LIFE_ALIVE : digitColour(walk.ant ? k : Math.min(k, walk.base - 1))), 255], 4 * k);
+    for (let k = 0; k < 256; k++) pal.set([...rgbCached(digitColour(walk.ant ? k : Math.min(k, walk.base - 1))), 255], 4 * k);
     gl.bindTexture(gl.TEXTURE_2D, S.pal);
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 256, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, pal);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-    S.keys.pal = `${walk.base}|${walk.ant}|${antRamp}|${walk.skipZeros}|${current.mode}|${MONO}|${walk.rows ? LIFE_ALIVE : ''}`;
+    S.keys.pal = `${walk.base}|${walk.ant}|${antRamp}|${walk.skipZeros}|${current.mode}|${MONO}`;
   }
   // the fill's vertices, with their colour band, once per fill
   let fillCount = 0;
@@ -13158,12 +13225,9 @@ function glFlat(to) {
     }
   }
   // the cells: each point's tile, with its colour band (the heatmap: its visits so far), once per walk
-  const cells = !walk.is3d && (flatCellsOn() || !!walk.rows);
+  const cells = !walk.is3d && flatCellsOn();
   let cellCount = 0;
-  if (walk.rows) {  // Elementary's: its rows up to the one shown, each its rainbow (see elementaryRows)
-    if (S.keys.flatCells !== walk.rows) { upload(S.flatCells, walk.rows.inst); S.cellTpl = templateArray(CELL_TEMPLATES.square); S.keys.flatCells = walk.rows; }
-    cellCount = walk.rows.upTo[Math.min(to, walk.n) + 1];
-  } else if (cells) {
+  if (cells) {
     const cellsKey = `${mode}|${walk.keys === walk.antStates}`;
     if (S.keys.flatCells !== walk.xs || S.keys.flatCellsMode !== cellsKey) {
       const lat = walk.lattice, inst = new Float32Array(4 * (walk.n + 1)), at = new Int32Array(walk.n + 1);
@@ -13183,7 +13247,7 @@ function glFlat(to) {
     }
     cellCount = countUpTo(S.cellAt, S.cellN, to);
   }
-  const line = !walk.rows && (!cells || ($('showPath').checked && !$('showPath').disabled));  // (Elementary: its cells only)
+  const line = !cells || ($('showPath').checked && !$('showPath').disabled);
   // the frame
   gl.viewport(0, 0, glCanvas.width, glCanvas.height);
   gl.clearColor(0, 0, 0, 0);
@@ -13199,7 +13263,7 @@ function glFlat(to) {
     gl.uniform3f(u('uView'), s, ox, oy);
     gl.uniform2f(u('uScreen'), cw, ch);
     gl.uniform1i(u('uGrad'), 0);
-    gl.uniform1i(u('uColour'), mode === 'digit' || (walk.rows && mode === 'mono') ? 2 : 0);  // (Elementary's States: its live cells' colour)
+    gl.uniform1i(u('uColour'), mode === 'digit' ? 2 : 0);
     return u;
   };
   const attrib = (p, name, buffer, size, type, stride, offset, divisor) => {

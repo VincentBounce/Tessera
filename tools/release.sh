@@ -20,4 +20,7 @@ last=$(gh release list --limit 1 --json tagName -q '.[0].tagName')
 notes=$([[ -n $last ]] && git log --format='- %s' "$last..HEAD" || echo "The first release; its history: https://github.com/VincentBounce/Walking-Pi/commits/main")  # (the first: its thousands of commits linked, not listed)
 echo "v$v: $packed\n      $plain\n\n$notes"
 [[ $1 == --dry ]] && exit 0
-gh release create "v$v" "$packed" "$plain" --title "Walking Pi v$v" --notes "$notes" --target "$(git rev-parse HEAD)"
+# (sent from a folder with no # in its path: gh reads « file#label », and the repo's folder is « #Code »)
+up=$(mktemp -d) && cp "$packed" "$plain" "$up/" || exit 1
+gh release create "v$v" "$up/${packed:t}" "$up/${plain:t}" --title "Walking Pi v$v" --notes "$notes" --target "$(git rev-parse HEAD)"
+rm -rf "$up"

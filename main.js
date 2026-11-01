@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.3.46';
+const VERSION = '0.3.47';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -13235,6 +13235,7 @@ function drawElementary(to) {
   };
   ctx.clearRect(0, 0, cw, ch);
   ctx.imageSmoothingEnabled = false;
+  const d = window.devicePixelRatio || 1, pin = (v) => Math.round(v * d) / d;  // (its corner on a screen pixel: unsmoothed, its rows' pixels then still as it pans, a moiré moving with it)
   const fine = Math.max(1, 2 ** Math.floor(Math.log2(1 / s))), inView = ((cw / s) * ch) / s;  // (about a cell a screen pixel; the cells in view)
   const b = fine < 16 && inView > PART_CELLS ? 16 : fine, snap = (v) => Math.floor(v / b) * b;  // (its blocks on the grid of b: still while it pans)
   const x0 = Math.max(0, snap(-ox / s + R.c)), x1 = Math.min(R.W - 1, Math.ceil((cw - ox) / s + R.c)), t0 = Math.max(0, snap(-oy / s)), t1 = Math.min(R.G, Math.ceil((ch - oy) / s));
@@ -13246,7 +13247,7 @@ function drawElementary(to) {
       R.part = { key, w, h, cv: paint(w, h, (x, y) => Math.round((255 * counts[y * w + x]) / (b * b)), (y) => t0 + y * b + (b >> 1)) };
     }
     const h = Math.min(R.part.h, Math.ceil((last - t0 + 1) / b));  // (up to the row shown)
-    if (h > 0) ctx.drawImage(R.part.cv, 0, 0, R.part.w, h, ox + (x0 - R.c - 0.5) * s, oy + (t0 - 0.5) * s, R.part.w * b * s, h * b * s);
+    if (h > 0) ctx.drawImage(R.part.cv, 0, 0, R.part.w, h, pin(ox + (x0 - R.c - 0.5) * s), pin(oy + (t0 - 0.5) * s), R.part.w * b * s, h * b * s);
     return;
   }
   const key = `${mono}|${LIFE_ALIVE}`;  // (its picture, once a look)
@@ -13254,7 +13255,7 @@ function drawElementary(to) {
   const h = Math.min(R.PH, Math.ceil((last + 1) / R.B));
   ctx.imageSmoothingEnabled = R.B * s < 1;  // (made smaller: its pixels averaged, no bands; larger: sharp)
   ctx.imageSmoothingQuality = 'high';
-  ctx.drawImage(R.picture.cv, 0, 0, R.PW, h, ox + (-R.c - 0.5) * s, oy - 0.5 * s, R.PW * R.B * s, h * R.B * s);  // (its last pixels past the row's end: empty)
+  ctx.drawImage(R.picture.cv, 0, 0, R.PW, h, pin(ox + (-R.c - 0.5) * s), pin(oy - 0.5 * s), R.PW * R.B * s, h * R.B * s);  // (its last pixels past the row's end: empty)
 }
 function glFlat(to) {
   if (cubesWalk()) return glCubes(to + 1, walk.wx, walkCubes, walk.maxDist[walk.n]);

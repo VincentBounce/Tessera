@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.3.34';
+const VERSION = '0.3.35';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -9446,16 +9446,16 @@ const walkTutorialToggle = () => ($('ruleTuto').hidden ? walkTutorial($('mode').
 // loop, Fredkin's Replicator, the Ising model)
 const unnamed = (words, name) => (words.startsWith(name) && /^(?:[,:]|\s\(|$)/.test(words.slice(name.length)) ? words.slice(name.length).replace(/^[,:]?\s*/, '') : words);
 let customOpen = false;  // the Custom rule card clicked: its states, births and survivals shown, a known rule in use or not
-let ruleTab = null;  // Elementary's tab clicked (Main, Others; null: the rule in use's, see renderRuleSection)
+let ruleTab = null;  // Elementary's tab clicked and the rule then in use ({ tab, now }: kept while it is, see renderRuleSection)
 function renderRuleSection() {
   const mode = MODES[$('mode').value];
   if (!mode.life) { if (!$('ruleTuto').hidden && walkTutorialFits($('mode').value)) walkTutorial($('mode').value); else ruleTutorial(null); return; }  // (a walk's: it follows the walk)
   const mark = lifeMark(mode), now = ruleBody($('lifeRule').value);
   const listed = [...$('lifePreset').options].filter((o) => o.dataset.name && o.text.includes(mark) && (!mode.margolus || blocksFit(parseRule(o.value), mode)) && (!mode.loops || loopFits(parseRule(o.value), mode))), mine = listed.find((o) => o.value === now);
-  // Elementary's, in two tabs over How it works: Main, the known ones; Others, the rest (the one in use's, until one is clicked)
-  const main = (o) => ELEMENTARY_MAIN.has(parseRule(o.value).wolfram), tab = ruleTab ?? (mine && !main(mine) ? 'others' : 'main');
+  // Elementary's, in two tabs over How it works: Main, the known ones; Others, the rest (the rule in use's; one clicked, while that rule stays)
+  const main = (o) => ELEMENTARY_MAIN.has(parseRule(o.value).wolfram), tab = ruleTab?.now === now ? ruleTab.tab : mine && !main(mine) ? 'others' : 'main';
   $('ruleTabs').replaceChildren(...(mode.elementary ? [tileGroup([['main', pixelIcon(RULE_ICONS.W90), 'Main', `The ${ELEMENTARY_MAIN.size} known ones`], ['others', pixelIcon(RULE_ICONS.W184), 'Others', `The ${listed.length - ELEMENTARY_MAIN.size} others, by number`]]
-    .map(([k, pic, text, title]) => tile({ pic, text, title, on: tab === k, click: () => { ruleTab = k; renderRuleSection(); } })), true)] : []));
+    .map(([k, pic, text, title]) => tile({ pic, text, title, on: tab === k, click: () => { ruleTab = { tab: k, now }; renderRuleSection(); } })), true)] : []));
   const known = mode.elementary ? listed.filter((o) => main(o) === (tab === 'main')) : listed;
   const yours = { value: now, dataset: { name: 'Custom rule' } }, mineNot = !mine || (customOpen && !mode.loops);  // (your own, for how a rule works; none for a loop: a table is not typed)
   const shown = mineNot ? yours : mine;

@@ -80,6 +80,7 @@ main { flex: 1; display: flex; min-height: 0; }
 #paramsPane > section:first-child, #galleryPane > section:first-child, #yourList > section:first-child { padding-top: 6px; border-top: 0; }  /* the first, always there: no line, no gap under the header */
 :is(#paramsPane, #galleryPane, #yourList) > section:first-child h2 { margin-top: 0; }  /* its title as high in every pane */
 .row-delete { padding: 0 6px; font-size: 16px; color: var(--muted); border-radius: 4px; }  /* × on a saved setup */
+:not(:hover) > .row-delete { visibility: hidden; }  /* (shown while its row is hovered, its place kept) */
 .row-delete:hover { color: var(--text); background: var(--border); }
 .panel .muted:empty { display: none; }  /* an empty status line takes no room */
 /* a section's title: its gold picture, then its name; a sub-section's (field-label): semibold */

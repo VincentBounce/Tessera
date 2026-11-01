@@ -6,7 +6,7 @@ import re, math, sys, json
 from collections import Counter
 src = open(sys.argv[1]).read()
 polys = []
-for d in [d for d in re.findall(r'<path d="([^"]+)"', src) if d.strip()[-1] in "Zz"]:
+for d in [d for d in re.findall(r'<path\b[^>]*?\sd="([^"]+)"', src) if d.strip()[-1] in "Zz"]:
     toks = re.findall(r'[MmLlZz]|-?\d*\.?\d+(?:e-?\d+)?', d); pts = []; cmd = None; i = 0; cur = [0.0, 0.0]
     while i < len(toks):
         t = toks[i]
@@ -95,8 +95,8 @@ def where(p):  # a corner as (motif index, lattice offset)
     if i is None: return None
     gu, gv = fr[i]
     return (i, round(u - gu), round(v - gv))
-# the check: as many corners as its faces' share of the cell's area (each corner: 1/3 of its triangles, 1/4 of its squares, 1/6 of its hexagons)
-share = sum(sum({3: math.sqrt(3) / 4 / 3, 4: 1 / 4, 6: 3 * math.sqrt(3) / 2 / 6}[n] for n in t) for t in [full[k][1] for k in full]) / len(full)
+# the check: as many corners as its faces' share of the cell's area (each corner: 1/n of each n-gon round it)
+share = sum(sum(1 / (4 * math.tan(math.pi / n)) for n in t) for t in [full[k][1] for k in full]) / len(full)  # (a regular n-gon of side 1: n / (4 tan(π/n)), its n corners a share each)
 print('corners', len(motif), 'by area', round(D / share, 3))
 # the constraints: each polygon near the middle, regular of side 1 (all its corners' distances)
 cons = set()

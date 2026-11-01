@@ -273,11 +273,22 @@ jaapCell('pent10', [[0, 0], [1, 0], [1, 0.5], [0.5, 1], [0, 1]], [[0, 0, 0, 0, 0
   const motif = [[0, 0], [4 * c - 3 * s, c], [c - s, c - s], [3 * c - s, 3 * c - s], [3 * c - 2 * s, s], [c, 2 * c - s], [2 * c - s, c], [c - s, 3 * c - s],
                  [0, 2 * c], [2 * c - 2 * s, 0], [2 * c - s, 3 * c - 2 * s], [3 * c - 2 * s, 2 * c - s]];
   cell('dual16', a, b, polygons(points(a, b, motif, 6), true)); }
-// more duals of k-uniform tilings of pentagons (Wikipedia's Pentagonal tiling, dual k-uniform tilings): their tilings read off
-// Wikimedia's drawings, made exact (kuniform.py, kuniform.json); each dual its pentagons of k kinds, a cell each corner
-for (const [name, { a, b, motif }] of Object.entries(JSON.parse(Deno.readTextFileSync(new URL('./kuniform.json', import.meta.url))))) {
+// 2-uniform tilings (Wikipedia's Euclidean tilings by convex regular polygons; Wikimedia's 2-uniform_nN.svg, its number N):
+// [3.12.12; 3.4.3.12] (n2): dodecagons side by side on a square lattice (their middles 2 + √3 apart), a square between four
+// of them, its corners theirs at 45° ((1 + √3) / 2 each way), triangles between
+{ const s = 2 + R3, R = 1 / (2 * Math.sin(Math.PI / 12)), h = (1 + R3) / 2, a = [s, 0], b = [0, s];
+  cell('demi2', a, b, polygons(points(a, b, [...Array.from({ length: 12 }, (_, k) => mul(dir(15 + 30 * k), R)), ...[[1, 1], [-1, 1], [-1, -1], [1, -1]].map(([x, y]) => [s / 2 + x * (s / 2 - h), s / 2 + y * (s / 2 - h)])], 6), false)); }
+// [3⁶; 3².6²] (n10): the unit triangular lattice, a hexagon round two points of nine (a lattice 3 apart; each hexagon a side
+// with three others), a star of six triangles between
+{ const a = [3, 0], b = mul(dir(60), 3), motif = [];
+  for (let i = 0; i < 3; i++) for (let j = 0; j < 3; j++) if (!(i === j && i > 0)) motif.push(add(mul(tri[0], i), mul(tri[1], j)));
+  cell('demi10', a, b, polygons(points(a, b, motif, 7), false)); }
+// more k-uniform tilings, read off Wikimedia's drawings, made exact (kuniform.py, kuniform.json): the duals of those of
+// pentagons (Wikipedia's Pentagonal tiling, dual k-uniform tilings), their pentagons of k kinds, a cell each corner; with
+// faces, the tiling itself (2-uniform: [3⁶; 3².4.12], n13; [3⁶; 3⁴.6]₂, n20)
+for (const [name, { a, b, motif, faces }] of Object.entries(JSON.parse(Deno.readTextFileSync(new URL('./kuniform.json', import.meta.url))))) {
   const N = Math.ceil(18 / Math.min(Math.hypot(...a), Math.hypot(...b)));  // (a patch some 18 sides each way: its middle's corners whole)
-  cell(name, a, b, polygons(points(a, b, motif, N), true));
+  cell(name, a, b, polygons(points(a, b, motif, N), !faces));
 }
 
 // the check: a torus of 5 × 5 cells, its polygons by their corners; each edge of a polygon (between corners in turn) one

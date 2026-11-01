@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.3.29';
+const VERSION = '0.3.30';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -13196,10 +13196,11 @@ const templateArray = (templates) => {
 // how many of the sorted values are ≤ v
 const countUpTo = (sorted, n, v) => { let lo = 0, hi = n; while (lo < hi) { const m = (lo + hi) >> 1; if (sorted[m] <= v) lo = m + 1; else hi = m; } return lo; };
 // Elementary's rows (see elementaryRows), up to the one shown, on the walk's layer, each pixel as opaque as its cells are alive:
-// the part in view again at about a cell a screen pixel (b × b cells, b a power of 2; see elementaryPart) when finer than its
-// picture and quick enough (PART_MOST words stepped; under blocks of 16 its cells counted one by one, PART_CELLS of them at most,
-// else blocks of 16), kept while the view stays; else its picture (B × B cells a pixel), never smoothed. Each row its rainbow
-// (Age), or Life's live colour (States)
+// the part in view again at about a cell a screen pixel (b × b cells, b a power of 2; see elementaryPart) when its picture's
+// pixels are not so (finer or coarser: never a cell picked out of many, nor one pixel stretched) and quick enough (PART_MOST words
+// stepped; under blocks of 16 its cells counted one by one, PART_CELLS of them at most, else blocks of 16), kept while the view
+// stays; else its picture (B × B cells a pixel), smoothed only made smaller. Each row its rainbow (Age), or Life's live colour
+// (States)
 const PART_MOST = 80e6, PART_CELLS = 32e6;
 function drawElementary(to) {
   const R = walk.rows, ctx = layers.path, { scale: s, ox, oy } = view, last = Math.min(to, R.G), mono = $('colourMode').value === 'mono';
@@ -13217,7 +13218,7 @@ function drawElementary(to) {
   const b = fine < 16 && inView > PART_CELLS ? 16 : fine, snap = (v) => Math.floor(v / b) * b;  // (its blocks on the grid of b: still while it pans)
   const x0 = Math.max(0, snap(-ox / s + R.c)), x1 = Math.min(R.W - 1, Math.ceil((cw - ox) / s + R.c)), t0 = Math.max(0, snap(-oy / s)), t1 = Math.min(R.G, Math.ceil((ch - oy) / s));
   if (x1 < x0 || t1 < t0) return;
-  if (R.B > 1 && b < R.B && partWork(R, x0, x1, t0, t1) <= PART_MOST) {
+  if (b !== R.B && partWork(R, x0, x1, t0, t1) <= PART_MOST) {
     const key = `${x0}|${x1}|${t0}|${t1}|${b}|${mono}|${LIFE_ALIVE}`;
     if (R.part?.key !== key) {
       const counts = elementaryPart(R, x0, x1, t0, t1, b), w = Math.ceil((x1 - x0 + 1) / b), h = Math.ceil((t1 - t0 + 1) / b);
@@ -13230,6 +13231,8 @@ function drawElementary(to) {
   const key = `${mono}|${LIFE_ALIVE}`;  // (its picture, once a look)
   if (R.picture?.key !== key) R.picture = { key, cv: paint(R.PW, R.PH, (x, y) => Math.round((255 * R.counts[y * R.PW + x]) / (R.B * R.B)), (y) => y * R.B + (R.B >> 1)) };
   const h = Math.min(R.PH, Math.ceil((last + 1) / R.B));
+  ctx.imageSmoothingEnabled = R.B * s < 1;  // (made smaller: its pixels averaged, no bands; larger: sharp)
+  ctx.imageSmoothingQuality = 'high';
   ctx.drawImage(R.picture.cv, 0, 0, R.PW, h, ox + (-R.c - 0.5) * s, oy - 0.5 * s, R.PW * R.B * s, h * R.B * s);  // (its last pixels past the row's end: empty)
 }
 function glFlat(to) {

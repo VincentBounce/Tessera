@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.2.187';
+const VERSION = '0.2.188';
 const APP_TITLE = 'Walking π';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -3084,7 +3084,7 @@ function renderModePicker() {
     }, modeWhere(navPick(2, sh)));
     if (again) { setTile(b, { on: true, again }); b.title += plane.torus ? '\nA torus · Clicked again: walls' : '\nWalls · Clicked again: a torus'; }  // (its words kept, then what a click does, as a card's: see card)
     return b;
-  }), ...(g === SHAPE_GROUPS[1][0] && MODES[w].life && MODES[w].plane ? [spaceTimeTile] : [])];  // (Stacks: Life on squares')
+  }), ...(these.some((sh) => planeOf(sh) === 'square') && MODES[w].life && MODES[w].plane ? [spaceTimeTile] : [])];  // (Stacks: after the squares' group, Life's or the loops' alone)
   }));
   // a family picked: its tilings as tabs, the same walk (along the grid or on cells) on another one
   const inFamily = familyOf(w);
@@ -9277,7 +9277,7 @@ function renderRuleSection() {
   if (!mode.life) { if (!$('ruleTuto').hidden && walkTutorialFits($('mode').value)) walkTutorial($('mode').value); else ruleTutorial(null); return; }  // (a walk's: it follows the walk)
   const mark = lifeMark(mode), now = ruleBody($('lifeRule').value);
   const known = [...$('lifePreset').options].filter((o) => o.dataset.name && o.text.includes(mark) && (!mode.margolus || blocksFit(parseRule(o.value), mode)) && (!mode.loops || loopFits(parseRule(o.value), mode))), mine = known.find((o) => o.value === now);
-  const yours = { value: now, dataset: { name: 'Custom rule' } }, mineNot = !mine || customOpen;  // (your own, for how a rule works)
+  const yours = { value: now, dataset: { name: 'Custom rule' } }, mineNot = !mine || (customOpen && !mode.loops);  // (your own, for how a rule works; none for a loop: a table is not typed)
   const shown = mineNot ? yours : mine;
   if (!$('ruleTuto').hidden && $('ruleTuto').dataset.shown !== tutorialKey(shown)) ruleTutorial(shown);  // how a rule works follows the grid and the rule
   $('ruleCards').replaceChildren(...known.map((o, i) => {
@@ -9291,9 +9291,9 @@ function renderRuleSection() {
         setRuleText(o.value); compute();
       } });
   }));
-  // after them, your own: picked when the rule in use is none of them, or clicked (its states, births and survivals below)
+  // after them, your own: picked when the rule in use is none of them, or clicked (its states, births and survivals below); none for a loop
   $('watchRule').onclick = () => ruleTutorial(!$('ruleTuto').hidden ? null : shown);  // (the rule in use: a card's, or your own)
-  $('ruleCards').append(card({ pic: pixelIcon('..o..,..o..,ooooo,..o..,..o..'), name: 'Custom rule', on: mineNot, again: mineNot && HOW_AGAIN,
+  if (!mode.loops) $('ruleCards').append(card({ pic: pixelIcon('..o..,..o..,ooooo,..o..,..o..'), name: 'Custom rule', on: mineNot, again: mineNot && HOW_AGAIN,
     detail: mineNot ? `${now} · your own` : 'your own: its states, births and survivals', click: () => {
       if (mineNot) { ruleTutorial(!$('ruleTuto').hidden ? null : yours); return; }
       customOpen = true;

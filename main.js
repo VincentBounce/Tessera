@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.3.36';
+const VERSION = '0.3.37';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -9537,17 +9537,23 @@ function renderRuleSection() {
 }
 let ruleFittedTo = null;
 const shapeRules = {};  // each shape's last rule, by its mark: back on a shape, its rule again (as its size and colours: the last picked)
+// a rule's text fits a grid's automaton: its kind (blocks: a block rule fitting them only; loops, a table; Elementary, Wolfram's;
+// else none of them) and its letters, if any (Callahan's hexagons, Hensel's squares on the plane; v: any)
+function ruleFits(text, mode) {
+  const r = parseRule(text);
+  if (!r) return false;
+  const kind = mode.elementary ? !!r.elementary : mode.margolus ? blocksFit(r, mode) : mode.loops ? loopFits(r, mode) : !r.margolus && !r.loops && !r.elementary;
+  return kind && (!r.iso || r.iso === 'vertex' || (r.iso === 'hex' ? lifeMark(mode) === '⬡' : lifeMark(mode) === '■'));
+}
 function fitRuleToShape() {
   const w = $('mode').value, mode = MODES[w];
   if (!mode.life) return;
   // a rule known, even without its dying states (none with colours: B34/S123 is B34/S123/C3)
   const rule = $('lifeRule').value, options = [...$('lifePreset').options], now = options.find((o) => o.value === rule || o.value.replace(/\/C\d+$/, '') === rule);
-  const iso = parseRule(rule)?.iso, lettersFit = !iso || (iso === 'vertex' ? true : iso === 'hex' ? lifeMark(mode) === '⬡' : lifeMark(mode) === '■');
-  const kindFits = mode.elementary ? !!parseRule(rule)?.elementary : mode.margolus ? blocksFit(parseRule(rule), mode) : mode.loops ? loopFits(parseRule(rule), mode) : !parseRule(rule)?.margolus && !parseRule(rule)?.loops && !parseRule(rule)?.elementary;  // (blocks: a block rule fitting them only; loops, a table; else neither)
-  const mark = lifeMark(mode);
-  if (ruleFittedTo === w && kindFits && lettersFit) { shapeRules[mark] = rule; return; }  // (fitted already, a link's as it is: if it fits the grid at all)
+  const fits = ruleFits(rule, mode), mark = lifeMark(mode);
+  if (ruleFittedTo === w && fits) { shapeRules[mark] = rule; return; }  // (fitted already, a link's as it is: if it fits the grid at all)
   ruleFittedTo = w;
-  if (kindFits && lettersFit && (!now || now.text.includes(mark))) { shapeRules[mark] = rule; return; }  // a rule typed (its letters, if any, this shape's: Callahan's hexagons, Hensel's squares on the plane), or one for this shape: kept
+  if (fits && (!now || now.text.includes(mark))) { shapeRules[mark] = rule; return; }  // a rule typed (its letters, if any, this shape's: Callahan's hexagons, Hensel's squares on the plane), or one for this shape: kept
   const fit = shapeRules[mark] ?? options.find((o) => o.text.includes(mark))?.value;
   if (fit) { customOpen = false; setRuleText(fit); }  // (this shape's last, else its first: its card)
 }
@@ -14878,7 +14884,13 @@ document.addEventListener('click', (e) => {
   if (!$('ruleTuto').hidden && !e.composedPath().some((n) => n.classList?.contains('how-it-works') || ['ruleTuto', 'ruleCards', 'watchRule', 'colourBlocks', 'statesRow', 'ruleBirth', 'ruleSurvive', 'lifeCustomRow', 'navSpace', 'navShapes', 'torusTiles', 'planeRow', 'sizeRow', 'navRules', 'walkOn', 'antRuleSection', 'antStartSection', 'backBtn'].includes(n.id))) ruleTutorial(null);
 });
 $('lifeRule').addEventListener('change', () => {
-  if (!parseRule(ruleBody($('lifeRule').value))) { $('status').textContent = 'Enter a rule like B3/S23, B2/S/C3 (2 to 25 states) or, on hexagons, B2o/S2m34 (the colours: Colors, above)'; return; }
+  const mode = MODES[$('mode').value];
+  if (!ruleFits(ruleBody($('lifeRule').value), mode)) {  // (not a rule, or not this grid's: the one in use back in the field)
+    $('status').textContent = mode.elementary ? 'Enter W and its number, 0 to 255: W30, W110' : mode.margolus ? 'Enter a block rule of this grid, as its cards show it'
+      : 'Enter a rule like B3/S23, B2/S/C3 (2 to 25 states) or, on hexagons, B2o/S2m34 (the colours: Colors, above)';
+    $('lifeRule').value = ruleBody(shapeRules[lifeMark(mode)] ?? $('lifePreset').value);
+    return;
+  }
   // typed: a known one's card picked (its own text), else your own
   const typed = parseRule(ruleBody($('lifeRule').value)), known = [...$('lifePreset').options].find((o) => o.dataset.name && parseRule(o.value)?.text === typed.text);
   customOpen = !known;

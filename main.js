@@ -6743,7 +6743,10 @@ const elementaryRows = () => (elementaryReady(compute) ? elementaryMade : null);
 // a part of its rows in view (x0 to x1, rows t0 to t1): again from the kept row above it, on its words and as many more each side
 // as rows walked (what lies past them cannot reach it); its live cells counted in blocks of b × b (b 1: its cells; 16 or more, a
 // word at a time, x0 a multiple of b), a row of blocks after another. partWork: its words stepped, what it costs
-const partSpan = (R, x0, x1, t0, t1) => { const from = Math.floor(t0 / KEEP) * KEEP, m = t1 - from + 1; return { from, lo: Math.max(0, (x0 - m) >> 4), hi: Math.min(R.n - 1, (x1 + m) >> 4) }; };
+const partSpan = (R, x0, x1, t0, t1) => {  // (the words its cone reaches from the row kept; a ring's (Digits) reaching an end: all of it, the other end its neighbour)
+  const from = Math.floor(t0 / KEEP) * KEEP, m = t1 - from + 1, lo = Math.max(0, (x0 - m) >> 4), hi = Math.min(R.n - 1, (x1 + m) >> 4);
+  return R.wrap && (lo === 0 || hi === R.n - 1) ? { from, lo: 0, hi: R.n - 1 } : { from, lo, hi };
+};
 const partWork = (R, x0, x1, t0, t1) => { const { from, lo, hi } = partSpan(R, x0, x1, t0, t1); return (t1 - from + 1) * (hi - lo + 1); };
 function elementaryPart(R, x0, x1, t0, t1, b = 1) {
   const { from, lo, hi } = partSpan(R, x0, x1, t0, t1), k = from / KEEP, full = lo === 0 && hi === R.n - 1;

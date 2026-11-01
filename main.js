@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.3.19';
+const VERSION = '0.3.20';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -1447,10 +1447,11 @@ const DISPLAY_BY_TAB = {
   'Automata on surfaces': ['shape', 'colours', 'digit', 'mono', 'grid', 'sky', ...VIEW_3D],
   '2D spirals': ['heatmap', 'fill', 'translucent', 'cells', 'visits', 'digit', 'grid'],  // the 2D walks' menu, some of it greyed out
 };
-// Shown but greyed out: a spiral never crosses itself, so it closes no area and visits each cell once;
-// and its marks read as cells, the line along the spiral (Rainbow along the walk) shows nothing more
-const DISPLAY_GREYED = { '2D spirals': ['fill', 'visits', 'line'] };
-const greyed = (item) => !!DISPLAY_GREYED[$('mode').selectedOptions[0].parentElement.label]?.includes(item);
+// Shown but greyed out, by the menu's group or the tab: a spiral never crosses itself, so it closes no area and visits each
+// cell once; and its marks read as cells, the line along the spiral (Rainbow along the walk) shows nothing more. Elementary's
+// cells never change once made: no Activity
+const DISPLAY_GREYED = { '2D spirals': ['fill', 'visits', 'line'], Elementary: ['digit'] };
+const greyed = (item) => [$('mode').selectedOptions[0].parentElement.label, NAV[$('mode').value]?.[0]].some((k) => DISPLAY_GREYED[k]?.includes(item));
 const shows = (item) => DISPLAY_BY_TAB[$('mode').selectedOptions[0].parentElement.label].includes(item) || (spaceTimeOn() && VIEW_3D.includes(item));
 const useful = (item) => shows(item) && !greyed(item);
 function updateDisplayMenu() {
@@ -1582,6 +1583,7 @@ function relabelColours(mode) {
   for (const v of ['cells', 'visits', 'digit', 'mono']) byValue[v].hidden = !shows(v);
   byValue.gradient.disabled = greyed('line');  // Rainbow along the walk: no use on a spiral
   byValue.visits.disabled = !useful('visits');
+  byValue.digit.disabled = greyed('digit');  // (Elementary's Activity)
   if (sel.selectedOptions[0]?.hidden || sel.selectedOptions[0]?.disabled) {
     sel.value = Array.from(sel.options).find((o) => !o.hidden && !o.disabled).value;  // the first one left
   }
@@ -1684,7 +1686,7 @@ function renderColourButtons() {
   const picture = (v) => (L ? lifeLookPicture(v) : cellModePicture(v === 'gradient' ? 'cells' : v));
   const looks = Array.from(sel.options).filter((o) => !o.hidden && names[o.value]);
   const buttons = looks.map((o) => tile({ pic: picture(o.value), text: names[o.value], title: o.text, on: o.value === sel.value, can: !o.disabled, byDefault: o.value === defaultLook(MODES[$('mode').value]) ? 'yes' : '',
-    greyed: { gradient: L ? '' : 'on a spiral (its line no use)', visits: 'on a spiral (each cell visited once)' }[o.value] ?? '',
+    greyed: { gradient: L ? '' : 'on a spiral (its line no use)', visits: 'on a spiral (each cell visited once)', digit: 'on Elementary (a cell never changes once made: no activity)' }[o.value] ?? '',
     click: () => { sel.value = o.value; sel.dispatchEvent(new Event('change')); } }));
   if (MODES[$('mode').value].margolus) renderBlocksButton();
   box.replaceChildren(...(buttons.length > 1 ? [tileGroup(buttons)] : buttons), ...(L ? [MODES[$('mode').value].margolus ? blocksButton : trailButton] : []));  // then Life's Trail, a switch (Reversible's Blocks)

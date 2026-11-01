@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.3.35';
+const VERSION = '0.3.36';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -14879,7 +14879,10 @@ document.addEventListener('click', (e) => {
 });
 $('lifeRule').addEventListener('change', () => {
   if (!parseRule(ruleBody($('lifeRule').value))) { $('status').textContent = 'Enter a rule like B3/S23, B2/S/C3 (2 to 25 states) or, on hexagons, B2o/S2m34 (the colours: Colors, above)'; return; }
-  customOpen = true;  // (typed: your own still, even as a known one)
+  // typed: a known one's card picked (its own text), else your own
+  const typed = parseRule(ruleBody($('lifeRule').value)), known = [...$('lifePreset').options].find((o) => o.dataset.name && parseRule(o.value)?.text === typed.text);
+  customOpen = !known;
+  if (known) setRuleText(known.value);
   if (MODES[$('mode').value].life) compute();  // restart from generation 0; a new state count needs a new base
 });
 // Copy RLE: the generation shown as an RLE file, Golly's and LifeWiki's (its size and rule on top, rows of runs, 70
@@ -15030,7 +15033,12 @@ for (const [id, digits] of [['antByRule', false], ['antByDigits', true]]) {  // 
     compute();
   });
 }
-$('antRule').addEventListener('change', () => creatureRules($('mode').value).set($('antRule').value));
+$('antRule').addEventListener('change', () => {
+  const w = $('mode').value;
+  creatureRules(w).set($('antRule').value);
+  const R = creatureRules(w);
+  if (R.cards.some(([r]) => r === R.now)) { antCustomOpen = false; renderAntRow(); }  // (typed: a known one's card picked, as Life's)
+});
 // Heatmap of visits on a surface: the cells by their visits, else the rainbow line
 $('heatmap').addEventListener('change', () => {
   $('colourMode').value = $('heatmap').checked ? 'visits' : 'gradient';

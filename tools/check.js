@@ -488,9 +488,20 @@ async function checkKnown(fail) {
   return checked;
 }
 
+// each tiling's mark (its rules' options begin with it, see lifeMark) its own: shared only with its torus, strip and bottle,
+// and the solids made of its cells
+function checkMarks(fail) {
+  for (const [kind, t] of Object.entries(TILINGS)) {
+    const others = Object.keys(MODES).filter((w) => MODES[w].life && !MODES[w].margolus && !MODES[w].loops && !MODES[w].elementary && lifeMark(MODES[w]) === t.mark && MODES[w].plane !== kind && FOLDED[MODES[w].sphere]?.kind !== kind
+      && !(kind === 'tetrakis' && MODES[w].sphere?.endsWith('Tetrakis')));  // (the solids of squares cut as tetrakis: its triangles, see TETRAKIS_SOLIDS)
+    if (others.length) fail(`${t.name}'s mark ${t.mark} also ${others.join(', ')}'s: their rules shown on it`);
+  }
+  return 1;
+}
+
 window.tesseraCheck = async ({ known = false, crawl: andCrawl = false, deep: andDeep = false, fuzz: actions = 0, cold = false, colours = false, seed = Date.now() % 1e6, from, only } = {}) => {
   const failures = [], fail = (s) => { failures.push(s); localStorage.tesseraDeepFailures = JSON.stringify(failures); };
-  let checked = checkMeshes(fail) + checkBlockWraps(fail) + checkDiscs(fail) + checkTips(fail);
+  let checked = checkMeshes(fail) + checkBlockWraps(fail) + checkDiscs(fail) + checkTips(fail) + checkMarks(fail);
   if (known) checked += await checkKnown(fail);
   if (andCrawl) checked += await crawl(fail);
   if (actions) checked += await fuzz(fail, actions, seed, cold);

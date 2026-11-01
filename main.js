@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.2.190';
+const VERSION = '0.2.191';
 const APP_TITLE = 'Walking π';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -6554,7 +6554,7 @@ function parseBlocks(text) {
 // The self-reproducing loops (see loops.js: Golly's tables, colours and starts), each by its name: a cell's next state by
 // itself and its 4 sides clockwise from the top (C N E S W → C'), the same turned by quarter turns; a table's variables
 // ({…}) the same value wherever one is again in its line; its first line that fits, the one; a cell none fits, kept.
-// Alone, a cell its state (its colour: each state its own); in K lineages (Populations: /Colours K), a cell of state s > 0
+// Alone, a cell its state (its colour: each state its own); in K lineages (Teams: /Colours K), a cell of state s > 0
 // of lineage k is k + K × (s − 1), shown in its lineage's colour, fainter by its state (see civColours), a cell coming
 // to life taking the lineage most of its neighbours have: each loop's daughters its colour
 // a loop's start, from its RLE (. 0, A 1, B 2…, $ a row; see loops.js): its cells [x, y, state], none of the empty ones
@@ -9040,7 +9040,7 @@ function loopTutorial(option) {
   const cross = ([c, N, E, S, W]) => `<svg viewBox="-0.1 -0.1 3.2 3.2">${cell(1, 0, N)}${cell(2, 1, E)}${cell(1, 2, S)}${cell(0, 1, W)}${cell(1, 1, c)}</svg>`;
   const lines = table.split('\n').filter((l) => /^[0-9,]+$/.test(l)).map((l) => (l.includes(',') ? l.split(',') : [...l]).map(Number)), shown = lines.filter((t) => t[0] !== t[5]).slice(0, 12);
   const start = loopCells(pattern.rle).map(([x, y, v]) => cell(x, y, v));
-  $('ruleTuto').innerHTML = `<div class="tut-body"><h3>${option.dataset.name}${option.dataset.name === name ? '' : ` <code>${name}</code>`}</h3><p>${words[0].toUpperCase()}${words.slice(1)} (${year}). Each cell looks at itself and its 4 neighbours by a side, in turn round it (von Neumann): ${fmt(table.split('\n').filter((l) => !l.includes(':') && !l.startsWith('var')).length)} lines of Golly's table, each also turned a quarter, a half and three quarters round; a cell none fits stays as it is. In colours (Populations), a loop's daughters take its colour: lineages fighting for room.</p>`
+  $('ruleTuto').innerHTML = `<div class="tut-body"><h3>${option.dataset.name}${option.dataset.name === name ? '' : ` <code>${name}</code>`}</h3><p>${words[0].toUpperCase()}${words.slice(1)} (${year}). Each cell looks at itself and its 4 neighbours by a side, in turn round it (von Neumann): ${fmt(table.split('\n').filter((l) => !l.includes(':') && !l.startsWith('var')).length)} lines of Golly's table, each also turned a quarter, a half and three quarters round; a cell none fits stays as it is. In colours (Teams), a loop's daughters take its colour: lineages fighting for room.</p>`
     + `<h4>States</h4><div class="tut-row">${Array.from({ length: n }, (_, v) => `<figure><div><svg viewBox="-0.1 -0.1 1.2 1.2">${cell(0, 0, v)}</svg></div><figcaption>${v}</figcaption></figure>`).join('')}</div>`
     + `<h4>Changing</h4><div class="tut-row">${shown.map((t) => `<figure><div>${cross(t)}<span>→</span><svg viewBox="-1.1 -1.1 3.2 3.2">${cell(0, 0, t[5])}</svg></div><figcaption>${t[0]} → ${t[5]}</figcaption></figure>`).join('')}</div>`
     + `<h4>Start</h4><div class="tut-row"><figure><div><svg class="tut-start" viewBox="-0.2 -0.2 ${pattern.w + 0.4} ${pattern.h + 0.4}">${start.join('')}</svg></div><figcaption>${pattern.w} × ${pattern.h}</figcaption></figure></div></div>`;

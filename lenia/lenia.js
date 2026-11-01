@@ -219,6 +219,7 @@ const CORES = [
   (r) => Math.exp(4 - 1 / (r * (1 - r))),
   (r) => (r >= 0.25 && r <= 0.75 ? 1 : 0),
   (r) => (r >= 0.25 && r <= 0.75 ? 1 : r < 0.25 ? 0.5 : 0),
+  () => 1,  // (a disc, for the meetings)
 ];
 
 // A kernel's image on the torus, centred at 0, summing to 1/N² (the inverse FFT's scale folded in).
@@ -238,28 +239,38 @@ function kernelImage(k) {
 
 /* ---- 2.2 Laws -------------------------------------------------------------------------------- */
 
-// Eight life channels, held four to a layer (an RGBA texture): a zoo species a channel.
+// Eight life channels, held four to a layer (an RGBA texture).
 const CH = 8, LAYERS = CH / 4;
 const unitW = (c) => Array.from({ length: CH }, (_, i) => (i === c ? 1 : 0));
-// The channels in use (a zoo's species, or an organism's three) and the layers holding them.
-const channelsOf = (w) => (w.kind === 'zoo' ? w.slots.flatMap((sp, c) => (sp ? [c] : [])) : [0, 1, 2]);
-const layersOf = (w) => Math.floor(Math.max(0, ...channelsOf(w)) / 4) + 1;
+const range = (a, n) => Array.from({ length: n }, (_, i) => a + i);
 
-// The kernels and time steps of a world: the zoo (one single-channel species a channel) or an
-// organism (Chan's multi-channel creature, one law for its channels).
+// A team: a species on a block of channels from `at`, as many as its cells have (a zoo species 1,
+// an organism 2 or 3), its law moved there (a kernel from its channel i to j: from at + i to at + j).
+// The zoo's teams, or the organism alone at 0.
+const width = (sp) => sp.cells.length;
+const teamsOf = (w) => (w.kind === 'zoo' ? w.teams : [{ sp: w.organism, at: 0 }]);
+const teamChannels = ({ sp, at }) => range(at, width(sp));
+const channelsOf = (w) => teamsOf(w).flatMap(teamChannels);
+const layersOf = (w) => Math.floor(Math.max(0, ...channelsOf(w)) / 4) + 1;
+// The first block of n free channels, or −1.
+function freeBlock(w, n) {
+  const used = channelsOf(w);
+  for (let at = 0; at + n <= CH; at++) if (!range(at, n).some((c) => used.includes(c))) return at;
+  return -1;
+}
+
+// How teams meet: through a disc of radius reach × R, each team's growth lowered by h × the other
+// teams' life in it. Push and Fight feel from afar; Territory only at contact, but hard: borders.
+const MEETINGS = { Ghosts: null, Push: { h: 0.6, reach: 1 }, Fight: { h: 2, reach: 1 }, Territory: { h: 6, reach: 0.35 } };
+
+// The kernels and time steps of a world: each team's law on its channels, and the meetings.
 function lawOf(world) {
-  const kernels = [], dt = Array(CH).fill(0), live = channelsOf(world);
-  if (world.kind === 'zoo') {
-    for (const c of live) {
-      const sp = world.slots[c];
-      for (const k of sp.kernels) kernels.push({ ...k, R: world.R, kind: 0, dst: c, w: unitW(c) });
-      if (world.meet > 0 && live.length > 1) kernels.push({ ...sp.kernels[0], R: world.R, kind: 1, dst: c, w: unitW(c).map((_, i) => (i !== c && live.includes(i) ? 1 : 0)), h: world.meet });
-      dt[c] = 1 / sp.T;
-    }
-  } else {
-    const sp = world.organism;
-    for (const k of sp.kernels) kernels.push({ ...k, R: world.R, kind: 0, dst: k.c[1], w: unitW(k.c[0]) });
-    for (const c of live) dt[c] = 1 / sp.T;
+  const kernels = [], dt = Array(CH).fill(0), teams = teamsOf(world), live = channelsOf(world), meet = MEETINGS[world.meet];
+  for (const team of teams) {
+    const { sp, at } = team, own = teamChannels(team);
+    for (const k of sp.kernels) kernels.push({ ...k, R: world.R, kind: 0, dst: at + k.c[1], w: unitW(at + k.c[0]) });
+    if (meet && teams.length > 1) for (const c of own) kernels.push({ R: world.R * meet.reach, r: 1, b: '1', kn: 5, kind: 1, dst: c, w: unitW(c).map((_, i) => (live.includes(i) && !own.includes(i) ? 1 : 0)), h: meet.h });
+    for (const c of own) dt[c] = 1 / sp.T;
   }
   const sumH = dt.map((_, c) => kernels.filter((k) => k.kind === 0 && k.dst === c).reduce((a, k) => a + k.h, 0));
   return { kernels, dt, sumH, layers: layersOf(world) };
@@ -495,18 +506,13 @@ function patternTex(sp) {
   return patterns.get(sp);
 }
 
-// The species of slot i (the zoo's channel i, or the organism).
-const speciesOf = (i) => (world.kind === 'zoo' ? world.slots[i] : world.organism);
-const slotsInUse = () => (world.kind === 'zoo' ? channelsOf(world) : [0]);
-
-// Slot i's species placed at (x, y) in world cells, turned by angle: a zoo species into its own
-// channel, an organism's channels into the first ones (uRoute: a pattern channel to a layer channel).
+// Team i's creature placed at (x, y) in world cells, turned by angle: its pattern's channel j into
+// the team's channel at + j (uRoute, a layer at a time: a pattern channel to a layer channel).
 function place(i, x, y, angle = Math.random() * TAU) {
-  const sp = speciesOf(i), pt = patternTex(sp), s = world.R / sp.R;
+  const { sp, at } = teamsOf(world)[i], pt = patternTex(sp), s = world.R / sp.R;
   apply(P.stamp, (t) => {
     const route = new Float32Array(12);
-    if (world.kind === 'zoo') { if (Math.floor(i / 4) === t) route[i % 4] = 1; }
-    else if (t === 0) route[0] = route[5] = route[10] = 1;
+    for (let j = 0; j < width(sp); j++) if (Math.floor((at + j) / 4) === t) route[j * 4 + (at + j) % 4] = 1;
     return { uCenter: [x, y], uCos: Math.cos(angle), uSin: Math.sin(angle), uInv: 1 / s, uRoute: { m34: route }, uN: { i: N } };
   }, { uPat: pt.tex });
 }
@@ -525,17 +531,17 @@ function freeSpot(radius, taken) {
   return null;
 }
 
-// A few of each species of the world (or of the slots given), on free spots (as many more as the
-// world is larger, fewer as there are more species).
-function seed(slots = slotsInUse()) {
-  const each = Math.max(1, Math.round((world.kind === 'zoo' ? 12 / Math.max(3, channelsOf(world).length) : 5) * (N / 512) ** 2)), taken = [];
-  for (let n = 0; n < each; n++) for (const i of slots) {
-    const r = footprint(speciesOf(i)), at = freeSpot(r, taken);
+// A few of each team of the world (or of the teams given), on free spots (as many more as the world
+// is larger, fewer as there are more teams).
+function seed(teams = teamsOf(world).map((_, i) => i)) {
+  const each = Math.max(1, Math.round((world.kind === 'zoo' ? 12 / Math.max(3, teamsOf(world).length) : 5) * (N / 512) ** 2)), taken = [];
+  for (let n = 0; n < each; n++) for (const i of teams) {
+    const r = footprint(teamsOf(world)[i].sp), at = freeSpot(r, taken);
     if (at) { place(i, ...at); taken.push([...at, r]); }
   }
 }
 
-// Keep alive: a species whose whole mass fell under half a creature's gets one more, on a spot
+// Keep alive: a team whose whole mass fell under half a creature's gets one more, on a spot
 // free of walls and of life (read from the census of 8×8 blocks). The census is read back without
 // waiting: into a buffer, taken once its fence is passed (a plain readPixels stalled a busy GPU
 // for a second on ANGLE Metal).
@@ -567,18 +573,18 @@ function keepAlive() {
     for (let c = 0; c < CH; c++) { const v = buf[(Math.floor(c / 4) * cells + i) * 4 + (c % 4)]; total[c] += v; m += v; }
     if (m > 0.5) taken.push([(i % CENSUS + 0.5) * BLOCK, (Math.floor(i / CENSUS) + 0.5) * BLOCK, BLOCK]);
   }
-  for (const i of slotsInUse()) {
-    const sp = speciesOf(i), mass = world.kind === 'zoo' ? total[i] : total[0] + total[1] + total[2];
+  for (const [i, team] of teamsOf(world).entries()) {
+    const sp = team.sp, mass = teamChannels(team).reduce((a, c) => a + total[c], 0);
     if (mass >= 0.5 * creatureMass(sp)) continue;
     const at = freeSpot(footprint(sp), taken);
     if (at) { place(i, ...at); taken.push([...at, footprint(sp)]); }
   }
 }
 
-// All life gone, or one channel's (a species taken out of the zoo).
-function clearLife(channel = -1) {
-  apply(P.keep, (t) => ({ uKeep: [0, 1, 2, 3].map((k) => (channel >= 0 && 4 * t + k !== channel ? 1 : 0)) }));
-  if (channel < 0) fadeTrails(0);
+// All life gone, or some channels' (a team taken out of the zoo).
+function clearLife(channels = range(0, CH)) {
+  apply(P.keep, (t) => ({ uKeep: [0, 1, 2, 3].map((k) => (channels.includes(4 * t + k) ? 0 : 1)) }));
+  if (channels.length === CH) fadeTrails(0);
 }
 
 /* ---- 3.4 Walls ------------------------------------------------------------------------------- */
@@ -651,11 +657,11 @@ function setDecor(name) {
 const COLOURS = [[1.0, 0.36, 0.18], [0.22, 1.0, 0.5], [0.32, 0.52, 1.0], [1.0, 0.85, 0.2], [1.0, 0.3, 0.85], [0.2, 0.9, 1.0], [0.65, 0.4, 1.0], [0.92, 0.92, 0.92]];
 const GREY = [0.75, 0.75, 0.75];
 const byCode = (list, code) => list.find((s) => s.code === code);
-// The zoo at first: six of the species that move and stand walls, Orbium among them; two slots free.
-const ZOO_START = ['212·12', '213·72', '213·58', '213·0', '213·10', 'O2u', null, null].map((c) => c && byCode(SPECIES.single, c));
-// A species in a list: Chan's name if it has one, its code, how it lives.
-const label = (s) => `${s.name ? `${s.name} · ` : ''}${s.code} — ${s.life}`;
-let world = { kind: 'zoo', slots: [...ZOO_START], organism: SPECIES.multi[0], R: 13, meet: 0.6 };
+// The zoo at first: six of the species that move and stand walls, Orbium among them; two channels free.
+const ZOO_START = ['212·12', '213·72', '213·58', '213·0', '213·10', 'O2u'].map((c, at) => ({ sp: byCode(SPECIES.single, c), at }));
+// A species in a list: Chan's name if it has one, its code, how it lives (and its channels, if more than one).
+const label = (s) => `${s.name ? `${s.name} · ` : ''}${s.code} — ${s.life}${width(s) > 1 ? ` · ${width(s)} ch` : ''}`;
+let world = { kind: 'zoo', teams: [...ZOO_START], organism: SPECIES.multi[0], R: 13, meet: 'Push' };
 let decor = 'Maze', tool = 'Creature', selected = 0, speed = 2, running = true, alive = true, trails = true;
 
 function rebuild(reseed = true) {
@@ -689,8 +695,8 @@ function tabs(el, options, get, set) {
 }
 function paintTabs(el, get) { for (const b of el.children) b.classList.toggle('on', b.dataset.v === String(get())); }
 
-// A species' thumbnail: its channels in their colours, or all in one colour (a zoo species).
-function thumbnail(cv, sp, colour) {
+// A species' thumbnail: its channels in their colours (a colour a channel, the first ones by default).
+function thumbnail(cv, sp, colours = COLOURS) {
   const pt = patternTex(sp), side = 88;
   cv.width = cv.height = side;
   const ctx = cv.getContext('2d'), img = ctx.createImageData(side, side), sc = Math.max(pt.w, pt.h) / side;
@@ -698,7 +704,7 @@ function thumbnail(cv, sp, colour) {
     const px = Math.floor(x * sc - (side * sc - pt.w) / 2), py = Math.floor((side - 1 - y) * sc - (side * sc - pt.h) / 2);
     const rgb = [0, 0, 0];
     if (px >= 0 && py >= 0 && px < pt.w && py < pt.h) for (let c = 0; c < 3; c++) {
-      const v = pt.data[(py * pt.w + px) * 4 + c], col = colour ?? COLOURS[c];
+      const v = pt.data[(py * pt.w + px) * 4 + c], col = colours[c] ?? GREY;
       for (let k = 0; k < 3; k++) rgb[k] += col[k] * v;
     }
     const i = (y * side + x) * 4;
@@ -712,29 +718,36 @@ function thumbnail(cv, sp, colour) {
 
 const rgb = (c) => `rgb(${c.map((v) => Math.round(v * 255))})`;
 
-// A zoo species' row: in the world (its colour), a click selects it for placing and × takes it
-// out; out of it, a click brings it in on a free channel (greyed when all eight are taken).
+// A zoo species' row: in the world (its team's colours), a click selects it for placing and ×
+// takes it out; out of it, a click brings it in on the first free block of channels, greyed when
+// none is free or its kernels would pass the engine's 32.
 function speciesRow(sp) {
-  const c = world.slots.indexOf(sp), inWorld = c >= 0, full = !inWorld && !world.slots.includes(null);
+  const i = world.teams.findIndex((t) => t.sp === sp), team = world.teams[i], inWorld = i >= 0;
+  const at = inWorld ? team.at : freeBlock(world, width(sp));
+  const tooMany = !inWorld && at >= 0 && lawOf({ ...world, teams: [...world.teams, { sp, at }] }).kernels.length > MAX_K;
+  const why = inWorld ? '' : at < 0 ? `No ${width(sp)} channel${width(sp) > 1 ? 's' : ''} free (eight in all): take a species out (×) first`
+    : tooMany ? `Its ${sp.kernels.length} kernels would pass the engine's ${MAX_K}: take a species out (×) first` : '';
   const row = button('', inWorld ? 'In the world: a click selects it, then a click on the world places it'
-    : full ? 'Eight species at most: take one out (×) first' : 'A click brings it into the world, a few of it placed', () => {
-    if (!inWorld) { const free = world.slots.indexOf(null); world.slots[free] = sp; selected = free; setLaw(lawOf(world)); seed([free]); }
-    else selected = c;
+    : why || 'A click brings it into the world, a few of it placed', () => {
+    if (!inWorld) { world.teams.push({ sp, at }); selected = world.teams.length - 1; setLaw(lawOf(world)); seed([selected]); }
+    else selected = i;
     tool = 'Creature'; buildPanel(); render();
   });
-  row.disabled = full;
+  row.disabled = Boolean(why);
   row.classList.add('slot');
-  row.classList.toggle('on', inWorld && selected === c && tool === 'Creature');
+  row.classList.toggle('on', inWorld && selected === i && tool === 'Creature');
   row.classList.toggle('out', !inWorld);
-  const cv = document.createElement('canvas'); thumbnail(cv, sp, inWorld ? COLOURS[c] : GREY);
-  const dot = document.createElement('span'); dot.className = 'dot'; dot.style.background = inWorld ? rgb(COLOURS[c]) : 'transparent';
+  const colours = inWorld ? teamChannels(team).map((c) => COLOURS[c]) : [GREY, GREY, GREY];
+  const cv = document.createElement('canvas'); thumbnail(cv, sp, colours);
+  const dot = document.createElement('span'); dot.className = 'dot';
+  dot.style.background = inWorld ? `linear-gradient(90deg,${[...colours, colours[0]].map(rgb)})` : 'transparent';
   const name = document.createElement('span'); name.className = 'name'; name.textContent = label(sp);
   row.append(cv, dot, name);
   const line = document.createElement('div'); line.className = 'line';
   line.append(row);
-  if (inWorld && channelsOf(world).length > 1) line.append(button('×', 'Take it out of the world, its creatures with it', () => {
-    world.slots[c] = null; clearLife(c);
-    if (selected === c) selected = channelsOf(world)[0];
+  if (inWorld && world.teams.length > 1) line.append(button('×', 'Take it out of the world, its creatures with it', () => {
+    world.teams.splice(i, 1); clearLife(teamChannels(team));
+    selected = Math.min(selected > i ? selected - 1 : selected, world.teams.length - 1);
     setLaw(lawOf(world)); buildPanel(); render();
   }));
   return line;
@@ -757,15 +770,16 @@ function organismRow() {
 
 function buildPanel() {
   tabs($('worldTabs'), [['zoo', 'Zoo', 'Up to eight species of one channel each, each its own law and colour'], ['organism', 'Organisms', 'Chan\'s two- and three-channel creatures: one law over the colours']],
-    () => world.kind, (v) => { world.kind = v; selected = v === 'zoo' ? channelsOf(world)[0] : 0; world.R = v === 'zoo' ? 13 : 12; buildPanel(); rebuild(); });
-  $('slots').replaceChildren(...(world.kind === 'zoo' ? SPECIES.single.map(speciesRow) : [organismRow()]));
+    () => world.kind, (v) => { world.kind = v; selected = 0; world.R = v === 'zoo' ? 13 : 12; buildPanel(); rebuild(); });
+  $('slots').replaceChildren(...(world.kind === 'zoo' ? [...SPECIES.single, ...SPECIES.multi].map(speciesRow) : [organismRow()]));
   tabs($('decorTabs'), Object.keys(DECORS).map((d) => [d, d, d === 'Empty' ? 'No walls (the world is a torus)' : `A new random ${d.toLowerCase()} at each click; the creatures placed again`]),
     () => decor, (v) => { setDecor(v); clearLife(); seed(); });
   tabs($('toolTabs'), [['Creature', 'Creature', 'A click places the selected species; a drag moves the view'], ['Wall', 'Wall', 'Draw walls by dragging'], ['Eraser', 'Eraser', 'Erase walls and life by dragging']],
     () => tool, (v) => { tool = v; buildPanel(); });
   $('othersBox').style.display = world.kind === 'zoo' ? '' : 'none';
-  tabs($('othersTabs'), [['0', 'Ghosts', 'The species do not feel each other: they cross'], ['0.6', 'Push', 'Each species is pushed away by the others, through its own kernel'], ['2', 'Fight', 'Pushed hard: a meeting erodes both']],
-    () => String(world.meet), (v) => { world.meet = +v; rebuild(false); });
+  tabs($('othersTabs'), [['Ghosts', 'Ghosts', 'The species do not feel each other: they cross'], ['Push', 'Push', 'Each species is pushed away by the others, felt from a kernel\'s radius'],
+    ['Fight', 'Fight', 'Pushed hard from a kernel\'s radius: a meeting erodes both'], ['Territory', 'Territory', 'Felt only at contact, but hard: no species grows where another is, borders form']],
+    () => world.meet, (v) => { world.meet = v; rebuild(false); });
   tabs($('sizeTabs'), [10, 13, 18, 24].map((r) => [String(r), `R ${r}`, `Kernel radius ${r} cells: the creatures' size; species and walls made again`]),
     () => String(world.R), (v) => { world.R = +v; setDecor(decor); rebuild(); });
   tabs($('spaceTabs'), [512, 1024].map((n) => [String(n), `${n}²`, `A world of ${n}×${n} cells${n > 512 ? ': room for more, four times the work' : ''}`]),
@@ -841,7 +855,7 @@ canvas.addEventListener('pointermove', (e) => {
   if (grab.moved) { view.centre = grab.centre.map((c, k) => c - d[k] * view.scale); frameView(); render(); }
 });
 canvas.addEventListener('pointerup', (e) => {
-  if (grab && !grab.moved && inWorld(worldAt(e)) && speciesOf(selected)) { place(selected, ...worldAt(e)); render(); }
+  if (grab && !grab.moved && inWorld(worldAt(e)) && teamsOf(world)[selected]) { place(selected, ...worldAt(e)); render(); }
   grab = null; last = null;
 });
 // The wheel zooms about the pointer, 1 to 8 times.
@@ -938,19 +952,27 @@ window.leniaCheck = function (steps = 400) {
   for (let i = 0; i < N * N; i += 97) { const a = -TAU * ((i % N) + 2 * Math.floor(i / N)) / N; errI = Math.max(errI, Math.abs(back[i * 4] - Math.cos(a)), Math.abs(back[i * 4 + 1] - Math.sin(a))); }
   out.push({ test: 'fft of an impulse', ok: errI < 1e-3, err: errI });
   walls.fill(0); decor = 'Empty'; uploadWalls();
-  const trial = (kind, sp) => {
-    world = kind === 'zoo' ? { ...world, kind, slots: [sp, ...Array(CH - 1).fill(null)] } : { ...world, kind, organism: sp };
+  // A species alone as the zoo's team at channel `at` (an organism alone at 0): its mass ratio after
+  // the steps, the same wherever its team stands (a team across the two layers too).
+  const ratio = (kind, sp, at) => {
+    world = kind === 'zoo' ? { ...world, kind, teams: [{ sp, at }] } : { ...world, kind, organism: sp };
     world.R = kind === 'zoo' ? 13 : 12;
-    world.meet = 0;
+    world.meet = 'Ghosts';
     setLaw(lawOf(world)); clearLife(); place(0, N / 2, N / 2, 0);
-    const m0 = masses();
+    const mass = () => { const { m, nan } = masses(); return { m: teamChannels(teamsOf(world)[0]).reduce((s, c) => s + m[c], 0), nan }; };
+    const a = mass();
     for (let k = 0; k < steps; k++) step();
-    const m1 = masses();
-    const a = kind === 'zoo' ? m0.m[0] : m0.m[0] + m0.m[1] + m0.m[2], b = kind === 'zoo' ? m1.m[0] : m1.m[0] + m1.m[1] + m1.m[2];
-    out.push({ test: `${kind} ${label(sp)}`, ok: !m1.nan && b > a * 0.4 && (sp.life === 'grows' || b < a * 2.5), ratio: +(b / a).toFixed(3) });
+    const b = mass();
+    return { r: b.m / a.m, nan: b.nan };
   };
-  for (const sp of SPECIES.single) trial('zoo', sp);
-  for (const sp of SPECIES.multi) trial('organism', sp);
+  for (const [kind, sp] of [...SPECIES.single.map((sp) => ['zoo', sp]), ...SPECIES.multi.map((sp) => ['organism', sp])]) {
+    const { r, nan } = ratio(kind, sp, 0);
+    out.push({ test: `${kind} ${label(sp)}`, ok: !nan && r > 0.4 && (sp.life === 'grows' || r < 2.5), ratio: +r.toFixed(3) });
+  }
+  for (const [code, at] of [['221·22', 3], ['232·22', 2], ['232·22', 5]]) {
+    const sp = byCode(SPECIES.multi, code), r0 = ratio('zoo', sp, 0).r, r1 = ratio('zoo', sp, at).r;
+    out.push({ test: `team ${code} at channel ${at} as at 0`, ok: Math.abs(r1 - r0) < 1e-3 * r0, ratio: +r1.toFixed(4), at0: +r0.toFixed(4) });
+  }
   console.table(out);
   ({ world, running } = was);
   allocate(was.N); frameView(); setDecor(was.decor); buildPanel(); rebuild();

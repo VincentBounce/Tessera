@@ -55,6 +55,6 @@ that opens it as it was, and why it left.
 
 ## Lenia prototype (lenia/)
 A separate page (`lenia/index.html`, `lenia.js`, `species.js`), not part of main.js: Bert Chan's Lenia on the GPU (FFT),
-eight life channels (two layers of four) and a wall texture. `species.js` is made by `lenia/make_species.py` from Chan's repo
+eight life channels (two layers of four) and a wall texture; a species is a team on a block of 1 to 3 channels, its law moved there. `species.js` is made by `lenia/make_species.py` from Chan's repo
 (Chakazul/Lenia, `Python/animals.json` and `found/*.json`), each pick tested for moving and standing walls;
-`leniaCheck()` in its console: the FFT's round trip and each species alive alone.
+`leniaCheck()` in its console: the FFT's round trip and an impulse, each species alive alone, a team the same on any channels.

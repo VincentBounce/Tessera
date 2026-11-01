@@ -10,7 +10,8 @@ import json, re, sys, os
 # entry), and how it lives. The found ones first: fast, and standing walls.
 SINGLE = [('212', 12, 'moves'), ('213', 72, 'moves'), ('213', 58, 'moves'), ('212', 13, 'moves'), ('213', 16, 'moves'),
           ('213', 0, 'moves'), ('213', 10, 'moves'), ('213', 15, 'moves'), ('213', 4, 'moves'), ('213', 63, 'moves'),
-          ('animals', 'O2u', 'moves'), ('animals', 'S1s', 'moves'), ('animals', 'OG2g', 'turns'), ('animals', 'PG1c', 'turns')]
+          ('animals', 'O2u', 'moves'), ('animals', 'S1s', 'moves'), ('animals', 'OG2g', 'turns'), ('animals', 'PG1c', 'turns'),
+          ('213', 76, 'grows'), ('213', 7, 'grows')]
 # Organisms: Chan's two- and three-channel creatures, one law over the colours (the movers merge
 # into a growing tissue when two meet).
 MULTI = [('232', 22, 'still'), ('232', 25, 'still'), ('232', 39, 'still'), ('232', 4, 'still'), ('232', 9, 'still'),

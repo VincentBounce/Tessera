@@ -249,7 +249,7 @@ async function fuzz(fail, count, seedv, cold = false) {
   const actions = [
     [3, clickIn('#modeTabs [role=tab]')], [2, clickIn('#navSpace button')], [4, clickIn('#navShapes button')], [2, clickIn('#torusTiles button')],
     [2, clickIn('#navRules button, #antCreatures button')], [2, clickIn('#colourBlocks button')], [2, clickIn('#huntZones button')], [2, clickIn('#ruleCards button')],
-    [1, clickIn('#lifeStartTabs button, #antStartTabs button')], [1, clickIn('#cellModes button, #colorButtons button, #areaModes button, #symmetryTiles button')],
+    [1, clickIn('#lifeStartTabs button, #antStartTabs button')], [1, clickIn('#cellModes button, #colourButtons button, #areaModes button, #symmetryTiles button')],
     [3, () => { const down = shown('#sizeDown, #planeDown')[0]; if (!down) return null; for (let k = 0; k < 14 && !down.disabled; k++) down.click(); return 'smallest'; }],
     [1, () => { const up = shown('#sizeUp, #planeUp')[0]; if (!up) return null; up.click(); return 'size up'; }],
     [2, () => { const b = shown('#step')[0]; if (!b) return null; for (let k = 0; k < 3; k++) b.click(); return '3 steps'; }],

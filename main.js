@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.2.184';
+const VERSION = '0.2.185';
 const APP_TITLE = 'Walking π';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -1433,7 +1433,7 @@ function describe(base, available) {
 }
 
 // What the Display menu offers depends only on the walk tab (the group of the mode in the menu).
-// Colours: a list (colors: Rainbow along the walk always; cells, visits, one per digit, one colour
+// Colours: a list (colours: Rainbow along the walk always; cells, visits, one per digit, one colour
 // where listed), or the toggles Heatmap of visits and Digits (heatmap); the walks on cells or along
 // the grid are chosen beside the list of walks (Grid / Cells).
 // Walks on surfaces, on cells: the walk as a rainbow line over the tiles, the tiles it passes through
@@ -1442,10 +1442,10 @@ function describe(base, available) {
 const VIEW_3D = ['autoRotate', 'upright', 'perspective', 'light'];  // a 3D view's: Default, Free, Upright, Auto-rotate, Perspective, Side light (Space-time's too)
 const DISPLAY_BY_TAB = {
   '2D walks': ['heatmap', 'fill', 'translucent', 'cells', 'visits', 'digit', 'grid'],
-  '3D walks': ['colors', 'digit', 'grid', 'sky', ...VIEW_3D],
+  '3D walks': ['colours', 'digit', 'grid', 'sky', ...VIEW_3D],
   'Walks on surfaces': ['shape', 'heatmap', 'visits', 'fill', 'translucent', 'grid', 'sky', ...VIEW_3D],
-  'Automata on the plane': ['colors', 'digit', 'mono', 'grid', 'sky'],
-  'Automata on surfaces': ['shape', 'colors', 'digit', 'mono', 'grid', 'sky', ...VIEW_3D],
+  'Automata on the plane': ['colours', 'digit', 'mono', 'grid', 'sky'],
+  'Automata on surfaces': ['shape', 'colours', 'digit', 'mono', 'grid', 'sky', ...VIEW_3D],
   '2D spirals': ['heatmap', 'fill', 'translucent', 'cells', 'visits', 'digit', 'grid'],  // the 2D walks' menu, some of it greyed out
 };
 // Shown but greyed out: a spiral never crosses itself, so it closes no area and visits each cell once;
@@ -1455,7 +1455,7 @@ const greyed = (item) => !!DISPLAY_GREYED[$('mode').selectedOptions[0].parentEle
 const shows = (item) => DISPLAY_BY_TAB[$('mode').selectedOptions[0].parentElement.label].includes(item) || (spaceTimeOn() && VIEW_3D.includes(item));
 const useful = (item) => shows(item) && !greyed(item);
 function updateDisplayMenu() {
-  const rows = { colors: 'colorsRow', grid: 'gridRow',
+  const rows = { colours: 'coloursRow', grid: 'gridRow',
                  autoRotate: 'autoRotateRow', upright: 'uprightRow', perspective: 'perspectiveRow', light: 'lightRow' };
   for (const [item, id] of Object.entries(rows)) $(id).hidden = !shows(item);
   skyButton.style.visibility = shows('sky') ? '' : 'hidden';  // the sky's switch, among the themes (no sky: its place kept, the row as everywhere)
@@ -1470,7 +1470,7 @@ function updateDisplayMenu() {
   // in 2D, Path fades the cells under the rainbow line (on a layer of its own), so that it shows all along
   $('pathLayer').style.opacity = shows('cells') && $('showPath').checked && !$('showPath').disabled ? 0.15 : '';
   $('heatmap').disabled = !mode.cells;
-  $('heatmap').checked = $('colorMode').value === 'visits';
+  $('heatmap').checked = $('colourMode').value === 'visits';
   // Grid stays in sight, Auto-fit beside it while the box is open; then Centered pattern (Default view), the view's
   // switches as tiles (Perspective, Side light, Autoplay, Auto-rotate: see renderViewTiles) and the shape
   const spin = shows('autoRotate');
@@ -1564,7 +1564,7 @@ function relabelColours(mode) {
     : { mono: two ? `Civilisations: ${LIFE_COLOUR_NAMES.slice(0, K).join(' · ')} · dead` : `States: alive${dying} · dead`,
         gradient: C > 2 ? 'Age of live cells, warm newborns to cold old ones + dying stages' : 'Age of live cells, warm newborns to cold old ones + fading trail',
         digit: 'Activity (state changes)', cells: '', visits: '' };
-  const sel = $('colorMode');
+  const sel = $('colourMode');
   if (mode.antOf && !shows('cells')) antRamp ??= 'ink';  // an ant on a surface: its cells by their state
   sel.querySelector('option[value="digit"]').text = mode.antOf ? "The ant's colours" : names.digit;
   if (shows('cells')) {  // 2D: along lines the rainbow line; on cells the rainbow cells or the heatmap (Digits writes over either); an ant its colours
@@ -1586,7 +1586,7 @@ function relabelColours(mode) {
   if (sel.selectedOptions[0]?.hidden || sel.selectedOptions[0]?.disabled) {
     sel.value = Array.from(sel.options).find((o) => !o.hidden && !o.disabled).value;  // the first one left
   }
-  renderColorButtons();
+  renderColourButtons();
 }
 
 // Choices as buttons clicked directly (colours, sky); the (hidden) menu stays the source of truth
@@ -1649,11 +1649,11 @@ const card = ({ pic = '', name = '', detail = '', base = '', title = '', on = fa
   return b;
 };
 // Trail: a dead cell fades through greys for a few generations (States and Age, in colours too; two states)
-const trailApplies = () => !!walk.life && walk.life.C === 2 && !walk.life.margolus && $('colorMode').value !== 'digit';  // (a reversible rule's blocks: none, their cells move, none dies, and backwards a trail would show where they are born)
+const trailApplies = () => !!walk.life && walk.life.C === 2 && !walk.life.margolus && $('colourMode').value !== 'digit';  // (a reversible rule's blocks: none, their cells move, none dies, and backwards a trail would show where they are born)
 const trailOn = () => $('lifeTrail').checked && trailApplies();
 // Trail, a tile turned on and off (see tile): its picture a live cell with its comet of fading Ink behind; greyed for Activity
 // and dying stages
-let trailButton = null;  // kept: it goes after Life's looks, in their row (see renderColorButtons)
+let trailButton = null;  // kept: it goes after Life's looks, in their row (see renderColourButtons)
 function renderTrailButton() {
   const sq = (k, c) => `<rect x="${(17 * k) / 3}" y="${17 - (17 * k) / 3}" width="7" height="7" rx="1" fill="${c}"/>`;
   trailButton ??= tile({ pic: `<svg viewBox="0 0 24 24" aria-hidden="true">${sq(0, LIFE_FADE[5]) + sq(1, LIFE_FADE[3]) + sq(2, LIFE_FADE[1])}${sq(3, LIFE_ALIVE)}</svg>`, text: 'Trail', id: 'lifeTrailButton', toggle: true,  // up the diagonal
@@ -1676,8 +1676,8 @@ const spaceTimeApplies = () => { const m = MODES[$('mode').value]; return !!m.pl
 const spaceTimeOn = () => spaceTime && spaceTimeApplies();
 // Life's looks as square buttons with pictures (States or Colours, Age, Activity); a walk's, a list
 const defaultLook = (mode) => (mode.life ? 'mono' : 'gradient');  // (the simplest: Life's States, a walk's Rainbow)
-function renderColorButtons() {
-  const sel = $('colorMode'), box = $('colorButtons'), L = MODES[$('mode').value]?.life;
+function renderColourButtons() {
+  const sel = $('colourMode'), box = $('colourButtons'), L = MODES[$('mode').value]?.life;
   box.className = 'nav-shapes cell-modes';
   renderTrailButton();
   // a walk's (Space): Rainbow, Directions, as the looks of its cells
@@ -8492,7 +8492,7 @@ function cellsIcon(kind, rle) {
 // lifeLookGPU): States (each colour, its dying stages, its trail after death), Age or Activity; lift: a surface's rainbow, lighter
 function lifeLook(L, lift = (c) => c) {
   const pack = (c) => { const [r, g, b] = rgbOf(motifShown ? faded(c, FADING) : c); return ((255 << 24) | (b << 16) | (g << 8) | r) >>> 0; };
-  const colour = $('colorMode').value, trail = LIFE_TRAIL.map(pack), inked = LIFE_FADE.map(pack), alive = pack(LIFE_ALIVE), civ = [0, ...civColours(L.colours, L.C).map(pack)];
+  const colour = $('colourMode').value, trail = LIFE_TRAIL.map(pack), inked = LIFE_FADE.map(pack), alive = pack(LIFE_ALIVE), civ = [0, ...civColours(L.colours, L.C).map(pack)];
   const grad = Array.from({ length: 32 }, (_, i) => pack(lift(GRADIENT[Math.round((i / 31) * (BANDS - 1))])));
   // the colours on a log scale, in tables (millions of cells): of an age (up to 64), of an activity
   const level = (v, max) => Math.min(31, Math.round((Math.log(v) / Math.log(Math.max(2, max))) * 31));
@@ -11938,9 +11938,9 @@ function draw3DFrame(ctx) {
   const o = [44, 44];
   ctx.lineWidth = 2;
   ctx.font = '11px system-ui, sans-serif';
-  [['E', [1, 0, 0], '#ff7b72'], ['N', [0, 1, 0], '#3fb950'], ['Up', [0, 0, 1], '#4ea1ff']].forEach(([label, v, color]) => {
+  [['E', [1, 0, 0], '#ff7b72'], ['N', [0, 1, 0], '#3fb950'], ['Up', [0, 0, 1], '#4ea1ff']].forEach(([label, v, colour]) => {
     const [px, py] = orthoPoint(...v);
-    ctx.strokeStyle = ctx.fillStyle = color;
+    ctx.strokeStyle = ctx.fillStyle = colour;
     ctx.beginPath();
     ctx.moveTo(o[0], o[1]); ctx.lineTo(o[0] + px * 26, o[1] + py * 26);
     ctx.stroke();
@@ -12145,7 +12145,7 @@ function drawSphere() {
   // palette[0] is the unlit background; levelOf(t) picks each tile's palette entry
   let palette = [null, ...grad];
   let levelOf = (t) => (visits[t] ? logLevel(visits[t], maxVisits) : 0);  // walk: visits, log scale
-  const L = walk.life, line = !L && ['gradient', 'cells'].includes($('colorMode').value);  // Rainbow (the tiles Rainbow picks: cells)
+  const L = walk.life, line = !L && ['gradient', 'cells'].includes($('colourMode').value);  // Rainbow (the tiles Rainbow picks: cells)
   const path = !L && (MODES[$('mode').value].cells ? $('showPath').checked : line);  // on cells, with Show path only
   if (line) {  // Rainbow along the walk: a tile walked through (Fill cells), enclosed (Fill areas), or dark
     const cells = MODES[$('mode').value].cells && firstVisits(), areas = !walk.ant && $('fillAreas').checked && areaSteps();
@@ -12158,7 +12158,7 @@ function drawSphere() {
   // an ant's cells, as in 2D (see CELL_MODES): by their colour in Ink or Amber (the times it was on each, the
   // one under it as it will be), Path's faded under its line, Directions by the turn it took there last;
   // Rainbow and Heatmap as a walk's
-  const look = $('colorMode').value;
+  const look = $('colourMode').value;
   if (walk.ant && look === 'digit' && antRamp) {
     const ramp = Array.from({ length: walk.ant }, (_, k) => rampColour(k, walk.ant));
     palette = [null, ...(path ? ramp.map((c) => faded(c, FADING)) : ramp)];
@@ -12974,8 +12974,8 @@ function glSurface(paint, path) {  // paint: its tiles' colours into their textu
  *    one colour or a colour per digit. */
 // cells: always on a spiral (its line is greyed out), else, a walk on cells, for Rainbow, Heatmap and, in 2D, Directions
 // (a colour per digit; an ant's turns or states); along the lines, none: its line (a look left from cells, its colours)
-const flatCellsOn = () => greyed('line') || (!!MODES[current.mode]?.cells && (($('colorMode').value === 'cells' && shows('cells'))
-  || ($('colorMode').value === 'visits' && useful('visits')) || ($('colorMode').value === 'digit' && shows('cells'))));
+const flatCellsOn = () => greyed('line') || (!!MODES[current.mode]?.cells && (($('colourMode').value === 'cells' && shows('cells'))
+  || ($('colourMode').value === 'visits' && useful('visits')) || ($('colourMode').value === 'digit' && shows('cells'))));
 // the templates of the polygons around a cell's centre, per tiling, and which one a cell takes
 const CELL_TEMPLATES = {
   square: [[[-0.5, -0.5], [0.5, -0.5], [0.5, 0.5], [-0.5, 0.5]]],
@@ -12996,7 +12996,7 @@ function glFlat(to) {
   if (cubesWalk()) return glCubes(to + 1, walk.wx, walkCubes, walk.maxDist[walk.n]);
   const S = glSetup();
   if (!S) return false;
-  const { gl, prog } = S, mode = $('colorMode').value, { scale: s, ox, oy } = view;
+  const { gl, prog } = S, mode = $('colourMode').value, { scale: s, ox, oy } = view;
   const upload = (buffer, data) => { gl.bindBuffer(gl.ARRAY_BUFFER, buffer); gl.bufferData(gl.ARRAY_BUFFER, data, gl.STATIC_DRAW); };
   // the walk's points (again after each projection of a 3D walk), and a key per step: its digit's
   // colour, 255 for a step that draws nothing
@@ -13171,7 +13171,7 @@ function walkCubes(mode) {
 function glCubes(count, of, make, reach) {
   const S = glSetup();
   if (!S) return false;
-  const { gl, prog } = S, mode = $('colorMode').value, shape = cellShape();
+  const { gl, prog } = S, mode = $('colourMode').value, shape = cellShape();
   if (!S.cube) { S.cube = gl.createBuffer(); S.cubeAt = gl.createBuffer(); S.cubeCol = gl.createBuffer(); }
   if (S.keys.cubeShape !== shape) {
     gl.bindBuffer(gl.ARRAY_BUFFER, S.cube); gl.bufferData(gl.ARRAY_BUFFER, shape.triangles, gl.STATIC_DRAW);
@@ -13532,7 +13532,7 @@ function visitCells() {
 // tile the plane, so the fill follows the path exactly.
 let fill = null;                   // { at, cx, cy, tpl, templates, count, tooBig } for the current walk (see computeFill)
 // Fill areas goes with the colours where the path has one colour per step (not Visits, not By digit)
-const fillAreasApply = () => useful('fill') && MODES[$('mode').value].fill !== false && !['visits', 'digit'].includes($('colorMode').value);
+const fillAreasApply = () => useful('fill') && MODES[$('mode').value].fill !== false && !['visits', 'digit'].includes($('colourMode').value);
 // (the walk drawn may still be the last mode's while the new one is computed: a tiling with a fill)
 const fillOn = () => $('fillAreas').checked && fillAreasApply() && walk.n && !walk.is3d && !!FILL_GRIDS[walk.lattice];
 // the fill, computed once per walk; beside the toggle, a word when the walk is too big to fill
@@ -14284,7 +14284,7 @@ $('activity').addEventListener('pointermove', (e) => {
 });
 $('back').addEventListener('click', () => seekTo(cur - 1));
 $('drawFromStart').addEventListener('click', () => seekTo(0));
-$('colorMode').addEventListener('change', () => { needsFull = true; renderColorButtons(); updateDisplayMenu(); });
+$('colourMode').addEventListener('change', () => { needsFull = true; renderColourButtons(); updateDisplayMenu(); });
 $('lifeTrail').addEventListener('change', () => { needsFull = true; renderTrailButton(); });
 $('fillAreas').addEventListener('change', () => { needsFull = true; updateDisplayMenu(); syncLink(); });
 $('fillTranslucent').addEventListener('change', () => { needsFull = true; updateDisplayMenu(); });
@@ -14567,7 +14567,7 @@ function applyTheme() {
   setPalette(theme);
   glColour.clear();
   glPalette();
-  renderColorButtons();
+  renderColourButtons();
   renderSkyButtons();
   renderColours();  // Life's colour blocks, in the theme's colours
   needsFull = statsDirty = true;  // (Life's gauges and curve in the theme's colours too)
@@ -14764,8 +14764,8 @@ for (const [id, digits] of [['antByRule', false], ['antByDigits', true]]) {  // 
 $('antRule').addEventListener('change', () => creatureRules($('mode').value).set($('antRule').value));
 // Heatmap of visits on a surface: the cells by their visits, else the rainbow line
 $('heatmap').addEventListener('change', () => {
-  $('colorMode').value = $('heatmap').checked ? 'visits' : 'gradient';
-  $('colorMode').dispatchEvent(new Event('change'));
+  $('colourMode').value = $('heatmap').checked ? 'visits' : 'gradient';
+  $('colourMode').dispatchEvent(new Event('change'));
 });
 // an ant's cells: by their turn (Directions) or their state (Ink, Amber)
 function setAntRamp(ramp) {
@@ -14795,8 +14795,8 @@ function renderAreaModes() {
 const CELL_MODES = [['ink', 'Ink', 'An ant’s cells by their state, pale to deep'], ['amber', 'Amber', 'An ant’s cells by their state, in amber'],
   ['path', 'Path', 'The walk’s rainbow line over its cells, faded'], ['cells', 'Rainbow', 'The cells in the rainbow along the walk'],
   ['digit', 'Directions', 'A colour per digit: the direction of each step (an ant’s, the turn it took: left blue, right pink, straight on gold)'], ['visits', 'Heatmap', 'The cells by how often the walk comes back to them']];
-const cellModeOf = (mode) => ($('showPath').checked ? 'path' : mode.antOf && $('colorMode').value === 'digit' && antRamp ? antRamp
-  : $('colorMode').value === 'gradient' ? 'cells' : $('colorMode').value);  // (a surface's Rainbow: gradient)
+const cellModeOf = (mode) => ($('showPath').checked ? 'path' : mode.antOf && $('colourMode').value === 'digit' && antRamp ? antRamp
+  : $('colourMode').value === 'gradient' ? 'cells' : $('colourMode').value);  // (a surface's Rainbow: gradient)
 let pictureIds = 0;  // the gradients of the pictures, each its own id
 function cellModePicture(look) {  // a 2 × 2 swatch, or the rainbow line over faded cells
   const theme = document.documentElement.dataset.theme === 'light' ? 'light' : 'dark', g = (f) => GRADIENT[Math.round(f * (BANDS - 1))];
@@ -14830,8 +14830,8 @@ function pickCellMode(look) {
   const ant = !!MODES[$('mode').value].antOf;
   $('showPath').checked = look === 'path';
   if (ant) setAntRamp(look === 'ink' ? 'ink' : look === 'amber' || look === 'path' ? 'amber' : null);
-  $('colorMode').value = look === 'ink' || look === 'amber' || (look === 'path' && ant) ? 'digit' : look === 'path' ? 'cells' : look === 'cells' && !MODES[$('mode').value].cells ? 'gradient' : look;
-  $('colorMode').dispatchEvent(new Event('change'));
+  $('colourMode').value = look === 'ink' || look === 'amber' || (look === 'path' && ant) ? 'digit' : look === 'path' ? 'cells' : look === 'cells' && !MODES[$('mode').value].cells ? 'gradient' : look;
+  $('colourMode').dispatchEvent(new Event('change'));
   needsFull = true;
   updateDisplayMenu();
 }
@@ -14873,7 +14873,7 @@ let displayTab = null;
 const modeTabOf = () => $('mode').selectedOptions[0].parentElement.label;
 function displayDefaults() {
   const mode = MODES[$('mode').value];
-  $('colorMode').value = defaultLook(mode);  // simplest view by default
+  $('colourMode').value = defaultLook(mode);  // simplest view by default
   $('autoFit').checked = true;  // framed
   $('centered').checked = true;  // on a solid, the walker in front
   $('fillAreas').checked = true;

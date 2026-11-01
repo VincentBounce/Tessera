@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.3.43';
+const VERSION = '0.3.44';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -1795,7 +1795,7 @@ const renderSkyButtons = () => {
 // nearest it allows (targetAsked: a walk's digits or steps, a reversible rule's or Space-time's generations up to 100,000;
 // a walk that loops stops sooner, as its stepper says); its ladder DIGIT_STEPS
 let target = 20000;
-const targetMost = () => (MODES[$('mode').value].elementary ? 100000 : gensShown() ? 100000 : 50_000_000);  // (Elementary's: its cells the square of it, drawn as a picture, see elementaryRows)
+const targetMost = () => (MODES[$('mode').value].elementary ? 50_000 : gensShown() ? 100000 : 50_000_000);  // (Elementary's: its cells the square of it, drawn as a picture, see elementaryRows)
 const targetAsked = () => Math.min(targetMost(), Math.max(10, Math.round(target) || 10));
 
 // The number of digits as a stepper, like the surface size: [ − ] 20,000 digits [ + ] goes through

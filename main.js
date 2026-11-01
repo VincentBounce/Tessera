@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.3.21';
+const VERSION = '0.3.22';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -11593,7 +11593,7 @@ function fillSetupList() {
     section.append(cards);
     return [section];
   }));
-  for (const b of [...$('setupTools').children].slice(1)) setTile(b, { can: list.length > 0, greyed: 'with no Treasures' });  // (Export, Erase all: none to take)
+  for (const b of [...$('setupTools').children].slice(1, 3)) setTile(b, { can: list.length > 0, greyed: 'with no Treasures' });  // (Export, Erase all: none to take)
   $('eraseConfirm').hidden ||= !list.length;
   syncSaveButton();
 }
@@ -14770,13 +14770,14 @@ function lifeRle() {
   return [`#N ${formulaInUse}, generation ${cur}`, `#C Tessera: ${location.href}`, ...(kind === 'square' ? [] : [`#C On the app's ${PLANE_CELLS[base]} (not Golly's squares): cells as its slanted grid numbers them`]),
     `x = ${Math.max(...xs) - Math.min(...xs) + 1}, y = ${Math.max(...ys) - Math.min(...ys) + 1}, rule = ${rule}`, ...lines].join('\n');
 }
-// Share: the page link (the setup shown, see syncLink), copied
-$('shareLink').innerHTML = `${icon('link')} Share`;
-$('shareLink').addEventListener('click', () => {
-  const b = $('shareLink');
+// Share: the page link (the setup shown, see syncLink), copied; its button (the header's, Management's) a check and Copied a moment
+function shareView(b) {
   syncLink();
-  navigator.clipboard.writeText(location.href).then(() => { b.innerHTML = `${icon('check')} Copied`; setTimeout(() => { b.innerHTML = `${icon('link')} Share`; }, 1500); }, () => {});
-});
+  const was = b.innerHTML;
+  navigator.clipboard.writeText(location.href).then(() => { b.innerHTML = was.replace(icon('link'), icon('check')).replace('Share', 'Copied'); setTimeout(() => { b.innerHTML = was; }, 1500); }, () => {});
+}
+$('shareLink').innerHTML = `${icon('link')} Share`;
+$('shareLink').addEventListener('click', () => shareView($('shareLink')));
 $('copyRle').addEventListener('click', () => {
   const text = lifeRle(), b = $('copyRle');
   if (!text) return;
@@ -15156,9 +15157,11 @@ function galleryTab() {
 }
 
 $('setupSave').addEventListener('click', saveSetup);
-// Treasures' tools, tiles: Import (added to them, a name already used numbered), Export, Erase all (then Confirm erase, under them)
+// Treasures' tools, tiles: Import (added to them, a name already used numbered), Export, Erase all (then Confirm erase, under them),
+// then Share, the header's (the link to what is shown)
 $('setupTools').replaceChildren(tile({ pic: icon('import'), text: 'Import', title: 'Add the setups of a JSON file to Treasures (those of a name already used numbered: none replaced)', click: () => $('setupFile').click() }),
-  tile({ pic: icon('export'), text: 'Export', title: 'Treasures as a JSON file', click: exportSetups }), tile({ pic: icon('trash'), text: 'Erase all', title: 'Erase Treasures from this browser (asked again under it)', click: () => { $('eraseConfirm').hidden = !$('eraseConfirm').hidden; } }));
+  tile({ pic: icon('export'), text: 'Export', title: 'Treasures as a JSON file', click: exportSetups }), tile({ pic: icon('trash'), text: 'Erase all', title: 'Erase Treasures from this browser (asked again under it)', click: () => { $('eraseConfirm').hidden = !$('eraseConfirm').hidden; } }),
+  tile({ pic: icon('link'), text: 'Share', title: 'Copy the link to what is shown', click: () => shareView($('setupTools').lastElementChild) }));
 $('eraseConfirm').innerHTML = `${icon('trash')} Confirm erase`;
 $('setupToolsHead').insertAdjacentHTML('afterbegin', icon('star'));  // (Treasures', as the header's ☆)
 $('eraseConfirm').addEventListener('click', () => { writeSetups([]); $('eraseConfirm').hidden = true; fillSetupList(); });

@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.3.37';
+const VERSION = '0.3.38';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -6715,8 +6715,9 @@ const elementaryAsk = () => {
   return { key: `${N}|${G}|${start}|${start === 'digits' ? `${formulaInUse}/${current.base}` : ''}`, args: [G, start, N, start === 'digits' ? Uint8Array.from([...head, ...frac].slice(0, 2 * G + 16)) : null] };
 };
 function elementaryReady(then) {
+  if (!MODES[current.mode].elementary) { elementaryMade = null; return true; }  // (another grid: its rows let go, tens of MB)
   const a = elementaryAsk();
-  if (!MODES[current.mode].elementary || elementaryMade?.key === a.key) return true;
+  if (elementaryMade?.key === a.key) return true;
   elementaryWorker?.terminate();
   elementaryWorker = null;
   if (a.args[0] <= ELEMENTARY_NOW) { elementaryMade = { key: a.key, ...elementaryRowsOf(...a.args) }; return true; }
@@ -14749,7 +14750,7 @@ $('huntZones').replaceChildren(...Object.entries(HUNT_ZONES).map(([zone, [pic, n
     : isIcon(zone) ? `An icon at random, ${zone.endsWith('Max') ? 'as wide as fits, its width and height whole, cut off in its corners only (on squares 96, 72, 48 or 24 cells, elsewhere to the cell)' : '24 cells wide'}, one of the 1,036 of Pixelarticons (MIT), its pixels alive, in the middle of each colour's part`
     : zone === 'realm' ? "On a solid, each colour's whole face (greyed when its spots are corners or edges); elsewhere, its whole part but its cells next to another's: random starts in it (two colours or more)"
     : zoneRadius(zone) ? `Random starts within ${zoneRadius(zone)} step${zoneRadius(zone) > 1 ? 's' : ''} of each spot (radius ${zoneRadius(zone)})`
-    : 'The whole grid, random soups (a colour with two parts: side by side)'} · Clicked again: another start`;  // (as a card's, see card; picked: a click draws another, see renderHunt)
+    : 'The whole grid, random soups (a colour with two parts: side by side)'} · Clicked again: another start`;  // (picked: a click draws another, see renderHunt)
   if (zone === 'custom') { b.hidden = true; return b; }  // shown, lit, for a start from a link
   b.addEventListener('click', () => pickZone(zone));
   return b;

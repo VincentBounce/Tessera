@@ -3,15 +3,16 @@
  * LENIA WORLDS — lenia.js
  * ==============================================================================================
  *
- * Bert Chan's Lenia (continuous Life) on the GPU, in three life channels and one wall channel.
+ * Bert Chan's Lenia (continuous Life) on the GPU, in eight life channels (two layers of four) and
+ * a wall texture.
  * How it fits together:
  *   PART 1 — GPU: programs, float textures, the FFT
  *   PART 2 — LAWS: kernels and growth from Chan's species, a law for each world
  *   PART 3 — THE WORLD: one step, creatures placed, walls drawn
  *   PART 4 — VIEW AND CONTROLS
  *
- * A step: the four channels (r, g, b, wall) packed as two complex numbers per texel go through one
- * FFT; each kernel's spectrum times its source's spectrum, four kernels per inverse FFT, gives each
+ * A step: each layer's four channels packed as two complex numbers per texel go through one FFT;
+ * each kernel's spectrum times its source's spectrum, four kernels per inverse FFT, gives each
  * kernel's potential; the update turns potentials into growth (Chan's own formulas), then clips to
  * [0, 1] and kills what stands on a wall (as the walls of Hamon et al.'s sensorimotor Lenia do).
  */
@@ -32,7 +33,7 @@ const TAU = 2 * Math.PI;
 /* ---- 1.1 Context and passes ------------------------------------------------------------------ */
 
 let N = 512;
-const MAX_K = 16, GROUPS = MAX_K / 4;
+const MAX_K = 32, GROUPS = MAX_K / 4;
 const canvas = $('view');
 const gl = canvas.getContext('webgl2', { antialias: false, alpha: false });
 const floatOk = gl && gl.getExtension('EXT_color_buffer_float');
@@ -82,7 +83,7 @@ function setUniform(p, name, v) {
   else if (v.iv) gl.uniform1iv(loc, v.iv);
   else if (v.v4) gl.uniform4fv(loc, v.v4);
   else if (v.v3) gl.uniform3fv(loc, v.v3);
-  else if (v.m3) gl.uniformMatrix3fv(loc, false, v.m3);
+  else if (v.m34) gl.uniformMatrix3x4fv(loc, false, v.m34);
   else [, , gl.uniform2fv, gl.uniform3fv, gl.uniform4fv][v.length].call(gl, loc, v);
 }
 
@@ -174,7 +175,7 @@ function fft(src, dst, inverse) {
  * ==============================================================================================
  *
  * A kernel: a ring shell of radius R (Chan's kernel_shell: rings b, core kn, relative radius r),
- * read from a mix of channels (w: weights over r, g, b, wall), adding to one channel (dst):
+ * read from a mix of life channels (w: a weight a channel), adding to one channel (dst):
  * kind 0 is Chan's growth (gn, m, s, weight h, averaged over the channel's growth kernels),
  * kind 1 a push away (−h × potential), from the other species.
  */
@@ -237,60 +238,74 @@ function kernelImage(k) {
 
 /* ---- 2.2 Laws -------------------------------------------------------------------------------- */
 
-const LIFE = [0, 1, 2];
-const unit = (c) => [0, 1, 2, 3].map((i) => (i === c ? 1 : 0));
+// Eight life channels, held four to a layer (an RGBA texture): a zoo species a channel.
+const CH = 8, LAYERS = CH / 4;
+const unitW = (c) => Array.from({ length: CH }, (_, i) => (i === c ? 1 : 0));
+// The channels in use (a zoo's species, or an organism's three) and the layers holding them.
+const channelsOf = (w) => (w.kind === 'zoo' ? w.slots.flatMap((sp, c) => (sp ? [c] : [])) : [0, 1, 2]);
+const layersOf = (w) => Math.floor(Math.max(0, ...channelsOf(w)) / 4) + 1;
 
 // The kernels and time steps of a world: the zoo (one single-channel species a channel) or an
-// organism (Chan's three-channel creature, one law for all three).
+// organism (Chan's multi-channel creature, one law for its channels).
 function lawOf(world) {
-  const kernels = [], dt = [0, 0, 0];
+  const kernels = [], dt = Array(CH).fill(0), live = channelsOf(world);
   if (world.kind === 'zoo') {
-    world.slots.forEach((sp, c) => {
-      for (const k of sp.kernels) kernels.push({ ...k, R: world.R, kind: 0, dst: c, w: unit(c) });
-      if (world.meet > 0) kernels.push({ ...sp.kernels[0], R: world.R, kind: 1, dst: c, w: LIFE.map((i) => (i === c ? 0 : 1)).concat(0), h: world.meet });
+    for (const c of live) {
+      const sp = world.slots[c];
+      for (const k of sp.kernels) kernels.push({ ...k, R: world.R, kind: 0, dst: c, w: unitW(c) });
+      if (world.meet > 0 && live.length > 1) kernels.push({ ...sp.kernels[0], R: world.R, kind: 1, dst: c, w: unitW(c).map((_, i) => (i !== c && live.includes(i) ? 1 : 0)), h: world.meet });
       dt[c] = 1 / sp.T;
-    });
+    }
   } else {
     const sp = world.organism;
-    for (const k of sp.kernels) kernels.push({ ...k, R: world.R, kind: 0, dst: k.c[1], w: unit(k.c[0]) });
-    for (const c of LIFE) dt[c] = 1 / sp.T;
+    for (const k of sp.kernels) kernels.push({ ...k, R: world.R, kind: 0, dst: k.c[1], w: unitW(k.c[0]) });
+    for (const c of live) dt[c] = 1 / sp.T;
   }
-  const sumH = LIFE.map((c) => kernels.filter((k) => k.kind === 0 && k.dst === c).reduce((a, k) => a + k.h, 0));
-  return { kernels, dt, sumH };
+  const sumH = dt.map((_, c) => kernels.filter((k) => k.kind === 0 && k.dst === c).reduce((a, k) => a + k.h, 0));
+  return { kernels, dt, sumH, layers: layersOf(world) };
 }
 
 /* ==============================================================================================
  * PART 3 — THE WORLD: ONE STEP, CREATURES PLACED, WALLS DRAWN
  * ==============================================================================================
  *
- * The state: r, g, b life in [0, 1], a = wall (0 or 1). Walls live on the CPU too (walls, one
- * byte a cell), the one source the GPU's wall channel is copied from.
+ * The state: two layers of four life channels in [0, 1], each a pair of textures (now, next); the
+ * walls apart (one byte a cell on the CPU, the one source of the GPU's wall texture). Passes that
+ * touch life run once a layer in use.
  */
 
 /* ---- 3.1 Shaders ----------------------------------------------------------------------------- */
 
-// The world's spectrum unpacked (r + i·g, b + i·wall), mixed by each kernel's weights, times the
-// kernel's real spectrum; four kernels packed back as two complex numbers for one inverse FFT.
+// The layers' spectra unpacked (each: ch0 + i·ch1, ch2 + i·ch3), mixed by each kernel's weights
+// (two vec4s, one a layer), times the kernel's real spectrum; four kernels packed back as two
+// complex numbers for one inverse FFT.
 const MUL_FS = `
-uniform sampler2D uSpec, uKer; uniform vec4 uW[4]; uniform int uN;
+uniform sampler2D uSpec0, uSpec1, uKer; uniform vec4 uW[8]; uniform int uN;
+void unpack(sampler2D s, ivec2 k, ivec2 km, inout vec2 X[4]) {
+  vec4 z = texelFetch(s, k, 0), zm = texelFetch(s, km, 0);
+  vec2 d1 = (z.xy - vec2(zm.x, -zm.y)) * 0.5, d2 = (z.zw - vec2(zm.z, -zm.w)) * 0.5;
+  X[0] = (z.xy + vec2(zm.x, -zm.y)) * 0.5; X[1] = vec2(d1.y, -d1.x);
+  X[2] = (z.zw + vec2(zm.z, -zm.w)) * 0.5; X[3] = vec2(d2.y, -d2.x);
+}
 void main() {
   ivec2 k = ivec2(gl_FragCoord.xy), km = (uN - k) % uN;
-  vec4 z = texelFetch(uSpec, k, 0), zm = texelFetch(uSpec, km, 0);
-  vec2 a1 = (z.xy + vec2(zm.x, -zm.y)) * 0.5, d1 = (z.xy - vec2(zm.x, -zm.y)) * 0.5;
-  vec2 a2 = (z.zw + vec2(zm.z, -zm.w)) * 0.5, d2 = (z.zw - vec2(zm.z, -zm.w)) * 0.5;
-  vec2 X[4] = vec2[4](a1, vec2(d1.y, -d1.x), a2, vec2(d2.y, -d2.x));
+  vec2 A[4], B[4];
+  unpack(uSpec0, k, km, A); unpack(uSpec1, k, km, B);
   vec4 K = texelFetch(uKer, k, 0);
   vec2 P[4];
-  for (int i = 0; i < 4; i++) P[i] = K[i] * (uW[i].x * X[0] + uW[i].y * X[1] + uW[i].z * X[2] + uW[i].w * X[3]);
+  for (int i = 0; i < 4; i++) {
+    vec4 a = uW[2 * i], b = uW[2 * i + 1];
+    P[i] = K[i] * (a.x * A[0] + a.y * A[1] + a.z * A[2] + a.w * A[3] + b.x * B[0] + b.y * B[1] + b.z * B[2] + b.w * B[3]);
+  }
   o = vec4(P[0].x - P[1].y, P[0].y + P[1].x, P[2].x - P[3].y, P[2].y + P[3].x);
 }`;
 
-// Chan's update: A + dt·(Σ h·G(U) / Σ h), here minus dt·Σ h·U for the push-away kernels.
+// Chan's update of one layer: A + dt·(Σ h·G(U) / Σ h), here minus dt·Σ h·U for the push-away
+// kernels; nothing lives on a wall.
 const STEP_FS = `
-uniform sampler2D uState, uPot0, uPot1, uPot2, uPot3;
-uniform int uK, uKind[${MAX_K}], uDst[${MAX_K}], uGn[${MAX_K}];
-uniform float uM[${MAX_K}], uS[${MAX_K}], uH[${MAX_K}];
-uniform vec3 uDt, uSumH;
+uniform sampler2D uState, uWalls, uPot0, uPot1, uPot2, uPot3, uPot4, uPot5, uPot6, uPot7;
+uniform int uLayer, uK, uKind[${MAX_K}], uDst[${MAX_K}], uGn[${MAX_K}];
+uniform float uM[${MAX_K}], uS[${MAX_K}], uH[${MAX_K}], uDt[8], uSumH[8];
 float growth(int gn, float n, float m, float s) {
   float d = n - m;
   if (gn == 1) { float q = max(0.0, 1.0 - d * d / (9.0 * s * s)); q *= q; return q * q * 2.0 - 1.0; }
@@ -299,23 +314,32 @@ float growth(int gn, float n, float m, float s) {
 }
 void main() {
   ivec2 p = ivec2(gl_FragCoord.xy);
-  vec4 a = texelFetch(uState, p, 0);
-  vec4 q[4] = vec4[4](texelFetch(uPot0, p, 0), texelFetch(uPot1, p, 0), texelFetch(uPot2, p, 0), texelFetch(uPot3, p, 0));
-  vec3 g = vec3(0.0), push = vec3(0.0);
+  vec4 a = texelFetch(uState, p, 0), q[8];
+  q[0] = texelFetch(uPot0, p, 0);
+  if (uK > 4) q[1] = texelFetch(uPot1, p, 0);
+  if (uK > 8) q[2] = texelFetch(uPot2, p, 0);
+  if (uK > 12) q[3] = texelFetch(uPot3, p, 0);
+  if (uK > 16) q[4] = texelFetch(uPot4, p, 0);
+  if (uK > 20) q[5] = texelFetch(uPot5, p, 0);
+  if (uK > 24) q[6] = texelFetch(uPot6, p, 0);
+  if (uK > 28) q[7] = texelFetch(uPot7, p, 0);
+  vec4 g = vec4(0.0), push = vec4(0.0);
   for (int i = 0; i < ${MAX_K}; i++) {
     if (i >= uK) break;
+    if (uDst[i] / 4 != uLayer) continue;
+    int c = uDst[i] % 4;
     float n = q[i / 4][i % 4];
-    vec3 to = vec3(uDst[i] == 0, uDst[i] == 1, uDst[i] == 2);
-    if (uKind[i] == 0) g += to * uH[i] * growth(uGn[i], n, uM[i], uS[i]);
-    else push += to * uH[i] * max(n, 0.0);
+    if (uKind[i] == 0) g[c] += uH[i] * growth(uGn[i], n, uM[i], uS[i]);
+    else push[c] += uH[i] * max(n, 0.0);
   }
-  vec3 grown = a.rgb + uDt * (g / max(uSumH, vec3(1e-9)) - push);
-  o = vec4(clamp(grown, 0.0, 1.0) * (1.0 - a.a), a.a);
+  int b = 4 * uLayer;
+  vec4 dt = vec4(uDt[b], uDt[b + 1], uDt[b + 2], uDt[b + 3]), sumH = vec4(uSumH[b], uSumH[b + 1], uSumH[b + 2], uSumH[b + 3]);
+  o = clamp(a + dt * (g / max(sumH, vec4(1e-9)) - push), 0.0, 1.0) * (1.0 - texelFetch(uWalls, p, 0).r);
 }`;
 
-// A pattern stamped at uCenter, turned and scaled; its channels routed (uRoute) into the world's.
+// A pattern stamped at uCenter, turned and scaled; its channels routed (uRoute) into the layer's.
 const STAMP_FS = `
-uniform sampler2D uState, uPat; uniform vec2 uCenter; uniform float uCos, uSin, uInv; uniform mat3 uRoute; uniform int uN;
+uniform sampler2D uState, uPat, uWalls; uniform vec2 uCenter; uniform float uCos, uSin, uInv; uniform mat3x4 uRoute; uniform int uN;
 vec3 at(ivec2 i) {
   ivec2 s = textureSize(uPat, 0);
   return i.x < 0 || i.y < 0 || i.x >= s.x || i.y >= s.y ? vec3(0.0) : texelFetch(uPat, i, 0).rgb;
@@ -328,19 +352,18 @@ void main() {
   vec2 q = vec2(uCos * d.x + uSin * d.y, -uSin * d.x + uCos * d.y) * uInv + vec2(textureSize(uPat, 0)) * 0.5 - 0.5;
   ivec2 i = ivec2(floor(q)); vec2 f = fract(q);
   vec3 v = mix(mix(at(i), at(i + ivec2(1, 0)), f.x), mix(at(i + ivec2(0, 1)), at(i + ivec2(1, 1)), f.x), f.y);
-  o = vec4(max(a.rgb, uRoute * v) * (1.0 - a.a), a.a);
+  o = max(a, uRoute * v) * (1.0 - texelFetch(uWalls, p, 0).r);
 }`;
 
-// The walls copied in from the CPU's bytes; life under them gone, and all life gone if uClear.
-const WALLS_FS = `
-uniform sampler2D uState, uWalls; uniform float uClear;
+// A layer's life kept (uKeep, a channel at a time) where there is no wall.
+const KEEP_FS = `
+uniform sampler2D uState, uWalls; uniform vec4 uKeep;
 void main() {
   ivec2 p = ivec2(gl_FragCoord.xy);
-  vec4 a = texelFetch(uState, p, 0); float w = texelFetch(uWalls, p, 0).r;
-  o = vec4(a.rgb * (1.0 - w) * (1.0 - uClear), w);
+  o = texelFetch(uState, p, 0) * uKeep * (1.0 - texelFetch(uWalls, p, 0).r);
 }`;
 
-// Each B×B block of the world summed: one texel of a (N/B)² census.
+// Each B×B block of a layer summed: one texel of a (N/B)² census.
 const CENSUS_FS = `
 uniform sampler2D uState; uniform int uB;
 void main() {
@@ -350,12 +373,20 @@ void main() {
   o = s;
 }`;
 
-// The trails: each channel's life, kept as it fades (uFade a frame), shown dimmed under it.
+// The colour of life: each channel its colour, added.
+const COLOUR_GLSL = `
+uniform vec3 uCol[8];
+vec3 colour(vec4 a, vec4 b) {
+  return uCol[0] * a.x + uCol[1] * a.y + uCol[2] * a.z + uCol[3] * a.w + uCol[4] * b.x + uCol[5] * b.y + uCol[6] * b.z + uCol[7] * b.w;
+}`;
+
+// The trails: the colour of life, kept as it fades (uFade a frame), shown dimmed under it.
 const TRAIL_FS = `
-uniform sampler2D uTrail, uState; uniform float uFade;
+uniform sampler2D uTrail, uL0, uL1; uniform float uFade;
+${COLOUR_GLSL}
 void main() {
   ivec2 p = ivec2(gl_FragCoord.xy);
-  o = vec4(max(texelFetch(uTrail, p, 0).rgb * uFade, texelFetch(uState, p, 0).rgb), 1.0);
+  o = vec4(max(texelFetch(uTrail, p, 0).rgb * uFade, colour(texelFetch(uL0, p, 0), texelFetch(uL1, p, 0))), 1.0);
 }`;
 
 // Life erased in a disc (the walls are erased on the CPU).
@@ -363,24 +394,22 @@ const ERASE_FS = `
 uniform sampler2D uState; uniform vec2 uCenter; uniform float uRadius; uniform int uN;
 void main() {
   ivec2 p = ivec2(gl_FragCoord.xy);
-  vec4 a = texelFetch(uState, p, 0);
   vec2 d = vec2(p) + 0.5 - uCenter;
   d -= float(uN) * floor(d / float(uN) + 0.5);
-  o = length(d) < uRadius ? vec4(0.0, 0.0, 0.0, a.a) : a;
+  o = length(d) < uRadius ? vec4(0.0) : texelFetch(uState, p, 0);
 }`;
 
-// The world on screen: each channel its colour, added and softly saturated; walls over it.
+// The world on screen: the colour of life and of its trails, softly saturated; walls over it.
 const SHOW_FS = `
-uniform sampler2D uState, uTrail; uniform vec2 uOrigin; uniform float uScale, uTrails; uniform vec3 uCol[3], uBg, uWall; uniform int uN, uLinear;
+uniform sampler2D uL0, uL1, uTrail, uWalls; uniform vec2 uOrigin; uniform float uScale, uTrails; uniform vec3 uBg, uWall; uniform int uN, uLinear;
+${COLOUR_GLSL}
 vec4 at(sampler2D t, vec2 w) { return uLinear == 1 ? texture(t, w / float(uN)) : texelFetch(t, ivec2(w), 0); }
 void main() {
   vec2 w = (gl_FragCoord.xy - uOrigin) * uScale;
   if (w.x < 0.0 || w.y < 0.0 || w.x >= float(uN) || w.y >= float(uN)) { o = vec4(uBg * 0.6, 1.0); return; }
-  vec4 a = at(uState, w);
-  vec3 tr = at(uTrail, w).rgb * uTrails;
-  vec3 c = uCol[0] * (a.r + 0.28 * tr.r) + uCol[1] * (a.g + 0.28 * tr.g) + uCol[2] * (a.b + 0.28 * tr.b);
+  vec3 c = colour(at(uL0, w), at(uL1, w)) + 0.28 * uTrails * at(uTrail, w).rgb;
   c = uBg + (1.0 - uBg) * (1.0 - exp(-1.7 * c));
-  o = vec4(mix(c, uWall, clamp(a.a, 0.0, 1.0)), 1.0);
+  o = vec4(mix(c, uWall, texture(uWalls, w / float(uN)).r), 1.0);
 }`;
 
 /* ---- 3.2 State and step ---------------------------------------------------------------------- */
@@ -390,31 +419,32 @@ const BLOCK = 8;
 let CENSUS, walls;
 
 function setupGPU() {
-  P = { fft: program(FFT_FS), mul: program(MUL_FS), step: program(STEP_FS), stamp: program(STAMP_FS), walls: program(WALLS_FS), erase: program(ERASE_FS), census: program(CENSUS_FS), trail: program(TRAIL_FS), show: program(SHOW_FS) };
+  P = { fft: program(FFT_FS), mul: program(MUL_FS), step: program(STEP_FS), stamp: program(STAMP_FS), keep: program(KEEP_FS), erase: program(ERASE_FS), census: program(CENSUS_FS), trail: program(TRAIL_FS), show: program(SHOW_FS) };
   fftProgram = P.fft;
 }
 
 // The world's textures for an n×n torus (n a power of 2), the old ones let go.
 function allocate(n) {
-  for (const t of [state, scratch, spec, kernelSpecs, pots, wallsTex, census, trail].flat().filter(Boolean)) {
+  for (const t of [state, scratch, spec, kernelSpecs, pots, wallsTex, census, trail].flat(2).filter(Boolean)) {
     if (t.fb) gl.deleteFramebuffer(t.fb);
     gl.deleteTexture(t);
   }
   if (censusFence) { gl.deleteSync(censusFence); censusFence = null; }
   N = n; CENSUS = N / BLOCK; walls = new Uint8Array(N * N);
-  const lin = linearOk ? gl.LINEAR : gl.NEAREST;
-  state = [texture(N, N, null, gl.RGBA32F, gl.RGBA, gl.FLOAT, lin), texture(N, N, null, gl.RGBA32F, gl.RGBA, gl.FLOAT, lin)];
+  const lin = linearOk ? gl.LINEAR : gl.NEAREST, field = () => texture(N, N, null, gl.RGBA32F, gl.RGBA, gl.FLOAT, lin);
+  state = Array.from({ length: LAYERS }, () => [field(), field()]);
   scratch = [texture(N, N), texture(N, N)];
-  spec = texture(N, N);
+  spec = Array.from({ length: LAYERS }, () => texture(N, N));
   kernelSpecs = Array.from({ length: GROUPS }, () => texture(N, N));
   pots = Array.from({ length: GROUPS }, () => texture(N, N));
-  wallsTex = texture(N, N, walls, gl.R8, gl.RED, gl.UNSIGNED_BYTE);
-  census = texture(CENSUS, CENSUS);
-  trail = [texture(N, N, null, gl.RGBA32F, gl.RGBA, gl.FLOAT, lin), texture(N, N, null, gl.RGBA32F, gl.RGBA, gl.FLOAT, lin)];
+  wallsTex = texture(N, N, walls, gl.R8, gl.RED, gl.UNSIGNED_BYTE, gl.LINEAR);
+  census = Array.from({ length: LAYERS }, () => texture(CENSUS, CENSUS));
+  trail = [field(), field()];
 }
 
+const layerTextures = () => ({ uL0: state[0][0], uL1: state[1][0] });
 function fadeTrails(fade) {
-  pass(P.trail, trail[1], { uFade: fade }, { uTrail: trail[0], uState: state[0] });
+  pass(P.trail, trail[1], { uFade: fade, uCol: { v3: COLOURS.flat() } }, { uTrail: trail[0], ...layerTextures() });
   trail.reverse();
 }
 
@@ -422,11 +452,9 @@ function fadeTrails(fade) {
 function setLaw(l) {
   law = l; kernelCount = l.kernels.length;
   if (kernelCount > MAX_K) throw new Error(`${kernelCount} kernels, ${MAX_K} at most`);
-  for (let g = 0; g < GROUPS; g++) {
-    const four = l.kernels.slice(4 * g, 4 * g + 4);
-    if (!four.length) continue;
+  for (let g = 0; g * 4 < kernelCount; g++) {
     const packed = new Float32Array(N * N * 4);
-    four.forEach((k, j) => { const img = kernelImage(k); for (let i = 0; i < N * N; i++) packed[i * 4 + j] = img[i]; });
+    l.kernels.slice(4 * g, 4 * g + 4).forEach((k, j) => { const img = kernelImage(k); for (let i = 0; i < N * N; i++) packed[i * 4 + j] = img[i]; });
     const t = texture(N, N, packed);
     fft(t, kernelSpecs[g], false);
     gl.deleteTexture(t);
@@ -434,26 +462,29 @@ function setLaw(l) {
   const list = (f) => Array.from({ length: MAX_K }, (_, i) => (i < kernelCount ? f(l.kernels[i]) : 0));
   law.uniforms = {
     uK: { i: kernelCount }, uKind: { iv: list((k) => k.kind) }, uDst: { iv: list((k) => k.dst) }, uGn: { iv: list((k) => k.gn || 1) },
-    uM: { f: list((k) => k.m || 0) }, uS: { f: list((k) => k.s || 1) }, uH: { f: list((k) => k.h ?? 1) }, uDt: l.dt, uSumH: l.sumH,
+    uM: { f: list((k) => k.m || 0) }, uS: { f: list((k) => k.s || 1) }, uH: { f: list((k) => k.h ?? 1) }, uDt: { f: l.dt }, uSumH: { f: l.sumH },
   };
 }
 
-function step() {
-  fft(state[0], spec, false);
-  for (let g = 0; g * 4 < kernelCount; g++) {
-    const w = [];
-    for (let j = 0; j < 4; j++) w.push(...(law.kernels[4 * g + j]?.w ?? [0, 0, 0, 0]));
-    pass(P.mul, scratch[1], { uW: { v4: w }, uN: { i: N } }, { uSpec: spec, uKer: kernelSpecs[g] });
-    fft(scratch[1], pots[g], true);
+// A pass over each layer in use (all of them by default), each into its next texture, then swapped.
+function apply(p, uniforms, textures = {}, layers = LAYERS) {
+  for (let t = 0; t < layers; t++) {
+    pass(p, state[t][1], typeof uniforms === 'function' ? uniforms(t) : uniforms, { uState: state[t][0], uWalls: wallsTex, ...textures });
+    state[t].reverse();
   }
-  pass(P.step, state[1], law.uniforms, { uState: state[0], uPot0: pots[0], uPot1: pots[1], uPot2: pots[2], uPot3: pots[3] });
-  state.reverse();
-  stepCount++;
 }
 
-function apply(p, uniforms, textures = {}) {
-  pass(p, state[1], uniforms, { uState: state[0], ...textures });
-  state.reverse();
+function step() {
+  for (let t = 0; t < law.layers; t++) fft(state[t][0], spec[t], false);
+  for (let g = 0; g * 4 < kernelCount; g++) {
+    const w = [];
+    for (let j = 0; j < 4; j++) { const kw = law.kernels[4 * g + j]?.w ?? Array(CH).fill(0); w.push(...kw.slice(0, 4), ...kw.slice(4, 8)); }
+    pass(P.mul, scratch[1], { uW: { v4: w }, uN: { i: N } }, { uSpec0: spec[0], uSpec1: law.layers > 1 ? spec[1] : spec[0], uKer: kernelSpecs[g] });
+    fft(scratch[1], pots[g], true);
+  }
+  const potTextures = Object.fromEntries(pots.map((t, g) => [`uPot${g}`, t]));
+  apply(P.step, (t) => ({ ...law.uniforms, uLayer: { i: t } }), potTextures, law.layers);
+  stepCount++;
 }
 
 /* ---- 3.3 Creatures --------------------------------------------------------------------------- */
@@ -466,14 +497,18 @@ function patternTex(sp) {
 
 // The species of slot i (the zoo's channel i, or the organism).
 const speciesOf = (i) => (world.kind === 'zoo' ? world.slots[i] : world.organism);
+const slotsInUse = () => (world.kind === 'zoo' ? channelsOf(world) : [0]);
 
-// Slot i's species placed at (x, y) in world cells, turned by angle; a zoo species into its own channel.
+// Slot i's species placed at (x, y) in world cells, turned by angle: a zoo species into its own
+// channel, an organism's channels into the first ones (uRoute: a pattern channel to a layer channel).
 function place(i, x, y, angle = Math.random() * TAU) {
   const sp = speciesOf(i), pt = patternTex(sp), s = world.R / sp.R;
-  const route = new Float32Array(9);
-  if (world.kind === 'zoo') route[i] = 1;
-  else route[0] = route[4] = route[8] = 1;
-  apply(P.stamp, { uCenter: [x, y], uCos: Math.cos(angle), uSin: Math.sin(angle), uInv: 1 / s, uRoute: { m3: route }, uN: { i: N } }, { uPat: pt.tex });
+  apply(P.stamp, (t) => {
+    const route = new Float32Array(12);
+    if (world.kind === 'zoo') { if (Math.floor(i / 4) === t) route[i % 4] = 1; }
+    else if (t === 0) route[0] = route[5] = route[10] = 1;
+    return { uCenter: [x, y], uCos: Math.cos(angle), uSin: Math.sin(angle), uInv: 1 / s, uRoute: { m34: route }, uN: { i: N } };
+  }, { uPat: pt.tex });
 }
 
 const footprint = (sp) => { const pt = patternTex(sp); return Math.hypot(pt.w, pt.h) * 0.5 * world.R / sp.R; };
@@ -490,10 +525,10 @@ function freeSpot(radius, taken) {
   return null;
 }
 
-// A few of each species of the world, on free spots (as many more as the world is larger).
-function seed() {
-  const slots = world.kind === 'zoo' ? [0, 1, 2] : [0];
-  const each = (world.kind === 'zoo' ? 3 : 5) * (N / 512) ** 2, taken = [];
+// A few of each species of the world (or of the slots given), on free spots (as many more as the
+// world is larger, fewer as there are more species).
+function seed(slots = slotsInUse()) {
+  const each = Math.max(1, Math.round((world.kind === 'zoo' ? 12 / Math.max(3, channelsOf(world).length) : 5) * (N / 512) ** 2)), taken = [];
   for (let n = 0; n < each; n++) for (const i of slots) {
     const r = footprint(speciesOf(i)), at = freeSpot(r, taken);
     if (at) { place(i, ...at); taken.push([...at, r]); }
@@ -507,30 +542,32 @@ function seed() {
 const creatureMass = (sp) => { const pt = patternTex(sp); let m = 0; for (let i = 0; i < pt.w * pt.h; i++) m += pt.data[i * 4] + pt.data[i * 4 + 1] + pt.data[i * 4 + 2]; return m * (world.R / sp.R) ** 2; };
 let censusBuffer = null, censusFence = null;
 function keepAlive() {
+  const cells = CENSUS * CENSUS;
   if (!censusFence) {
-    pass(P.census, census, { uB: { i: BLOCK } }, { uState: state[0] });
     censusBuffer ??= gl.createBuffer();
     gl.bindBuffer(gl.PIXEL_PACK_BUFFER, censusBuffer);
-    gl.bufferData(gl.PIXEL_PACK_BUFFER, CENSUS * CENSUS * 16, gl.STREAM_READ);
-    gl.readPixels(0, 0, CENSUS, CENSUS, gl.RGBA, gl.FLOAT, 0);
+    gl.bufferData(gl.PIXEL_PACK_BUFFER, LAYERS * cells * 16, gl.STREAM_READ);
+    for (let t = 0; t < LAYERS; t++) {
+      pass(P.census, census[t], { uB: { i: BLOCK } }, { uState: state[t][0] });
+      gl.readPixels(0, 0, CENSUS, CENSUS, gl.RGBA, gl.FLOAT, t * cells * 16);
+    }
     gl.bindBuffer(gl.PIXEL_PACK_BUFFER, null);
     censusFence = gl.fenceSync(gl.SYNC_GPU_COMMANDS_COMPLETE, 0);
     return;
   }
   if (gl.getSyncParameter(censusFence, gl.SYNC_STATUS) !== gl.SIGNALED) return;
   gl.deleteSync(censusFence); censusFence = null;
-  const buf = new Float32Array(CENSUS * CENSUS * 4);
+  const buf = new Float32Array(LAYERS * cells * 4);
   gl.bindBuffer(gl.PIXEL_PACK_BUFFER, censusBuffer);
   gl.getBufferSubData(gl.PIXEL_PACK_BUFFER, 0, buf);
   gl.bindBuffer(gl.PIXEL_PACK_BUFFER, null);
-  const total = [0, 0, 0], taken = [];
-  for (let i = 0; i < CENSUS * CENSUS; i++) {
-    const m = buf[i * 4] + buf[i * 4 + 1] + buf[i * 4 + 2];
-    for (const c of LIFE) total[c] += buf[i * 4 + c];
+  const total = Array(CH).fill(0), taken = [];
+  for (let i = 0; i < cells; i++) {
+    let m = 0;
+    for (let c = 0; c < CH; c++) { const v = buf[(Math.floor(c / 4) * cells + i) * 4 + (c % 4)]; total[c] += v; m += v; }
     if (m > 0.5) taken.push([(i % CENSUS + 0.5) * BLOCK, (Math.floor(i / CENSUS) + 0.5) * BLOCK, BLOCK]);
   }
-  const slots = world.kind === 'zoo' ? [0, 1, 2] : [0];
-  for (const i of slots) {
+  for (const i of slotsInUse()) {
     const sp = speciesOf(i), mass = world.kind === 'zoo' ? total[i] : total[0] + total[1] + total[2];
     if (mass >= 0.5 * creatureMass(sp)) continue;
     const at = freeSpot(footprint(sp), taken);
@@ -538,7 +575,11 @@ function keepAlive() {
   }
 }
 
-function clearLife() { apply(P.walls, { uClear: 1 }, { uWalls: wallsTex }); fadeTrails(0); }
+// All life gone, or one channel's (a species taken out of the zoo).
+function clearLife(channel = -1) {
+  apply(P.keep, (t) => ({ uKeep: [0, 1, 2, 3].map((k) => (channel >= 0 && 4 * t + k !== channel ? 1 : 0)) }));
+  if (channel < 0) fadeTrails(0);
+}
 
 /* ---- 3.4 Walls ------------------------------------------------------------------------------- */
 
@@ -546,7 +587,7 @@ function clearLife() { apply(P.walls, { uClear: 1 }, { uWalls: wallsTex }); fade
 function uploadWalls() {
   gl.bindTexture(gl.TEXTURE_2D, wallsTex);
   gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, N, N, gl.RED, gl.UNSIGNED_BYTE, walls);
-  apply(P.walls, { uClear: 0 }, { uWalls: wallsTex });
+  apply(P.keep, { uKeep: [1, 1, 1, 1] });
 }
 
 function rect(x0, y0, w, h, v = 255) {
@@ -606,9 +647,12 @@ function setDecor(name) {
 
 /* ---- 4.1 Settings ---------------------------------------------------------------------------- */
 
-const COLOURS = [[1.0, 0.36, 0.18], [0.22, 1.0, 0.5], [0.32, 0.52, 1.0]];
+// A colour a channel: the first three also an organism's.
+const COLOURS = [[1.0, 0.36, 0.18], [0.22, 1.0, 0.5], [0.32, 0.52, 1.0], [1.0, 0.85, 0.2], [1.0, 0.3, 0.85], [0.2, 0.9, 1.0], [0.65, 0.4, 1.0], [0.92, 0.92, 0.92]];
+const GREY = [0.75, 0.75, 0.75];
 const byCode = (list, code) => list.find((s) => s.code === code);
-const ZOO_START = SPECIES.single.slice(0, 3);
+// The zoo at first: six of the species that move and stand walls, Orbium among them; two slots free.
+const ZOO_START = ['212·12', '213·72', '213·58', '213·0', '213·10', 'O2u', null, null].map((c) => c && byCode(SPECIES.single, c));
 // A species in a list: Chan's name if it has one, its code, how it lives.
 const label = (s) => `${s.name ? `${s.name} · ` : ''}${s.code} — ${s.life}`;
 let world = { kind: 'zoo', slots: [...ZOO_START], organism: SPECIES.multi[0], R: 13, meet: 0.6 };
@@ -645,16 +689,16 @@ function tabs(el, options, get, set) {
 }
 function paintTabs(el, get) { for (const b of el.children) b.classList.toggle('on', b.dataset.v === String(get())); }
 
-// A species' thumbnail: its channels in their colours.
-function thumbnail(cv, sp, slot) {
-  const pt = pattern(sp), side = 88;
+// A species' thumbnail: its channels in their colours, or all in one colour (a zoo species).
+function thumbnail(cv, sp, colour) {
+  const pt = patternTex(sp), side = 88;
   cv.width = cv.height = side;
   const ctx = cv.getContext('2d'), img = ctx.createImageData(side, side), sc = Math.max(pt.w, pt.h) / side;
   for (let y = 0; y < side; y++) for (let x = 0; x < side; x++) {
     const px = Math.floor(x * sc - (side * sc - pt.w) / 2), py = Math.floor((side - 1 - y) * sc - (side * sc - pt.h) / 2);
     const rgb = [0, 0, 0];
     if (px >= 0 && py >= 0 && px < pt.w && py < pt.h) for (let c = 0; c < 3; c++) {
-      const v = pt.data[(py * pt.w + px) * 4 + c], col = COLOURS[slot ?? c];
+      const v = pt.data[(py * pt.w + px) * 4 + c], col = colour ?? COLOURS[c];
       for (let k = 0; k < 3; k++) rgb[k] += col[k] * v;
     }
     const i = (y * side + x) * 4;
@@ -666,28 +710,55 @@ function thumbnail(cv, sp, slot) {
 
 /* ---- 4.3 Panel ------------------------------------------------------------------------------- */
 
-function slotRow(i, sp, list, onPick) {
-  const row = button('', 'Click places it: select it, then click the world', () => { selected = i; tool = 'Creature'; buildPanel(); });
+const rgb = (c) => `rgb(${c.map((v) => Math.round(v * 255))})`;
+
+// A zoo species' row: in the world (its colour), a click selects it for placing and × takes it
+// out; out of it, a click brings it in on a free channel (greyed when all eight are taken).
+function speciesRow(sp) {
+  const c = world.slots.indexOf(sp), inWorld = c >= 0, full = !inWorld && !world.slots.includes(null);
+  const row = button('', inWorld ? 'In the world: a click selects it, then a click on the world places it'
+    : full ? 'Eight species at most: take one out (×) first' : 'A click brings it into the world, a few of it placed', () => {
+    if (!inWorld) { const free = world.slots.indexOf(null); world.slots[free] = sp; selected = free; setLaw(lawOf(world)); seed([free]); }
+    else selected = c;
+    tool = 'Creature'; buildPanel(); render();
+  });
+  row.disabled = full;
   row.classList.add('slot');
-  row.classList.toggle('on', selected === i && tool === 'Creature');
-  const cv = document.createElement('canvas'); thumbnail(cv, sp, world.kind === 'zoo' ? i : undefined);
+  row.classList.toggle('on', inWorld && selected === c && tool === 'Creature');
+  row.classList.toggle('out', !inWorld);
+  const cv = document.createElement('canvas'); thumbnail(cv, sp, inWorld ? COLOURS[c] : GREY);
+  const dot = document.createElement('span'); dot.className = 'dot'; dot.style.background = inWorld ? rgb(COLOURS[c]) : 'transparent';
+  const name = document.createElement('span'); name.className = 'name'; name.textContent = label(sp);
+  row.append(cv, dot, name);
+  const line = document.createElement('div'); line.className = 'line';
+  line.append(row);
+  if (inWorld && channelsOf(world).length > 1) line.append(button('×', 'Take it out of the world, its creatures with it', () => {
+    world.slots[c] = null; clearLife(c);
+    if (selected === c) selected = channelsOf(world)[0];
+    setLaw(lawOf(world)); buildPanel(); render();
+  }));
+  return line;
+}
+
+// The organism's row: its thumbnail and the list to pick another (one law for the world).
+function organismRow() {
+  const row = button('', 'Click places it: select it, then click the world', () => { tool = 'Creature'; buildPanel(); });
+  row.classList.add('slot');
+  row.classList.toggle('on', tool === 'Creature');
+  const cv = document.createElement('canvas'); thumbnail(cv, world.organism);
   const sel = document.createElement('select');
-  for (const s of list) sel.append(new Option(label(s), s.code, false, s === sp));
+  for (const s of SPECIES.multi) sel.append(new Option(label(s), s.code, false, s === world.organism));
   sel.onclick = (e) => e.stopPropagation();
-  sel.onchange = () => onPick(byCode(list, sel.value));
-  const dot = document.createElement('span'); dot.className = 'dot';
-  dot.style.background = world.kind === 'zoo' ? `rgb(${COLOURS[i].map((v) => v * 255)})` : 'linear-gradient(90deg,#ff5c2e,#38ff80,#5285ff)';
+  sel.onchange = () => { world.organism = byCode(SPECIES.multi, sel.value); buildPanel(); rebuild(); };
+  const dot = document.createElement('span'); dot.className = 'dot'; dot.style.background = `linear-gradient(90deg,${COLOURS.slice(0, 3).map(rgb)})`;
   row.append(cv, dot, sel);
   return row;
 }
 
 function buildPanel() {
-  tabs($('worldTabs'), [['zoo', 'Zoo', 'Three species of one channel each, each its own law and colour'], ['organism', 'Organisms', 'Chan\'s two- and three-channel creatures: one law over the colours']],
-    () => world.kind, (v) => { world.kind = v; selected = 0; world.R = v === 'zoo' ? 13 : 12; buildPanel(); rebuild(); });
-  const slots = world.kind === 'zoo'
-    ? world.slots.map((sp, i) => slotRow(i, sp, SPECIES.single, (s) => { world.slots[i] = s; selected = i; buildPanel(); rebuild(); }))
-    : [slotRow(0, world.organism, SPECIES.multi, (s) => { world.organism = s; buildPanel(); rebuild(); })];
-  $('slots').replaceChildren(...slots);
+  tabs($('worldTabs'), [['zoo', 'Zoo', 'Up to eight species of one channel each, each its own law and colour'], ['organism', 'Organisms', 'Chan\'s two- and three-channel creatures: one law over the colours']],
+    () => world.kind, (v) => { world.kind = v; selected = v === 'zoo' ? channelsOf(world)[0] : 0; world.R = v === 'zoo' ? 13 : 12; buildPanel(); rebuild(); });
+  $('slots').replaceChildren(...(world.kind === 'zoo' ? SPECIES.single.map(speciesRow) : [organismRow()]));
   tabs($('decorTabs'), Object.keys(DECORS).map((d) => [d, d, d === 'Empty' ? 'No walls (the world is a torus)' : `A new random ${d.toLowerCase()} at each click; the creatures placed again`]),
     () => decor, (v) => { setDecor(v); clearLife(); seed(); });
   tabs($('toolTabs'), [['Creature', 'Creature', 'A click places the selected species; a drag moves the view'], ['Wall', 'Wall', 'Draw walls by dragging'], ['Eraser', 'Eraser', 'Erase walls and life by dragging']],
@@ -730,7 +801,7 @@ function resize() {
 }
 
 function render() {
-  pass(P.show, null, { uOrigin: view.origin, uScale: view.scale, uTrails: trails ? 1 : 0, uCol: { v3: COLOURS.flat() }, uBg: [0.043, 0.051, 0.071], uWall: [0.23, 0.25, 0.3], uN: { i: N }, uLinear: { i: linearOk ? 1 : 0 } }, { uState: state[0], uTrail: trail[0] });
+  pass(P.show, null, { uOrigin: view.origin, uScale: view.scale, uTrails: trails ? 1 : 0, uCol: { v3: COLOURS.flat() }, uBg: [0.043, 0.051, 0.071], uWall: [0.23, 0.25, 0.3], uN: { i: N }, uLinear: { i: linearOk ? 1 : 0 } }, { ...layerTextures(), uTrail: trail[0], uWalls: wallsTex });
 }
 
 // A pointer's place in canvas pixels, and in world cells (the world's y goes up, the page's down).
@@ -770,7 +841,7 @@ canvas.addEventListener('pointermove', (e) => {
   if (grab.moved) { view.centre = grab.centre.map((c, k) => c - d[k] * view.scale); frameView(); render(); }
 });
 canvas.addEventListener('pointerup', (e) => {
-  if (grab && !grab.moved && inWorld(worldAt(e))) { place(selected, ...worldAt(e)); render(); }
+  if (grab && !grab.moved && inWorld(worldAt(e)) && speciesOf(selected)) { place(selected, ...worldAt(e)); render(); }
   grab = null; last = null;
 });
 // The wheel zooms about the pointer, 1 to 8 times.
@@ -831,15 +902,16 @@ function frame() {
 }
 
 // The state read back: per channel its mass and centre (on the torus, by angles).
-function readState() {
-  const buf = new Float32Array(N * N * 4);
-  bindTarget(state[0]);
-  gl.readPixels(0, 0, N, N, gl.RGBA, gl.FLOAT, buf);
-  return buf;
-}
-function masses(buf) {
-  const m = [0, 0, 0], nan = buf.some(Number.isNaN);
-  for (let i = 0; i < N * N; i++) for (let c = 0; c < 3; c++) m[c] += buf[i * 4 + c];
+// Each channel's whole mass, read back (checks only: it waits for the GPU), and whether a NaN came.
+function masses() {
+  const buf = new Float32Array(N * N * 4), m = Array(CH).fill(0);
+  let nan = false;
+  for (let t = 0; t < LAYERS; t++) {
+    bindTarget(state[t][0]);
+    gl.readPixels(0, 0, N, N, gl.RGBA, gl.FLOAT, buf);
+    nan ||= buf.some(Number.isNaN);
+    for (let i = 0; i < N * N; i++) for (let k = 0; k < 4; k++) m[4 * t + k] += buf[i * 4 + k];
+  }
   return { m, nan };
 }
 
@@ -853,27 +925,27 @@ window.leniaCheck = function (steps = 400) {
   const out = [];
   const buf = new Float32Array(N * N * 4).map(() => Math.random());
   const t = texture(N, N, buf);
-  fft(t, spec, false); fft(spec, scratch[1], true);
+  fft(t, spec[0], false); fft(spec[0], scratch[1], true);
   const back = new Float32Array(N * N * 4);
   bindTarget(scratch[1]); gl.readPixels(0, 0, N, N, gl.RGBA, gl.FLOAT, back);
   let err = 0; for (let i = 0; i < buf.length; i++) err = Math.max(err, Math.abs(back[i] / (N * N) - buf[i]));
   out.push({ test: 'fft round trip', ok: err < 1e-4, err });
   // An impulse at (1, 2) transforms to exp(−2πi(kx + 2ky)/N): checks the order, not only the inverse.
   const imp = new Float32Array(N * N * 4); imp[(2 * N + 1) * 4] = 1;
-  const ti = texture(N, N, imp); fft(ti, spec, false); gl.deleteTexture(ti);
-  bindTarget(spec); gl.readPixels(0, 0, N, N, gl.RGBA, gl.FLOAT, back);
+  const ti = texture(N, N, imp); fft(ti, spec[0], false); gl.deleteTexture(ti);
+  bindTarget(spec[0]); gl.readPixels(0, 0, N, N, gl.RGBA, gl.FLOAT, back);
   let errI = 0;
   for (let i = 0; i < N * N; i += 97) { const a = -TAU * ((i % N) + 2 * Math.floor(i / N)) / N; errI = Math.max(errI, Math.abs(back[i * 4] - Math.cos(a)), Math.abs(back[i * 4 + 1] - Math.sin(a))); }
   out.push({ test: 'fft of an impulse', ok: errI < 1e-3, err: errI });
   walls.fill(0); decor = 'Empty'; uploadWalls();
   const trial = (kind, sp) => {
-    world = kind === 'zoo' ? { ...world, kind, slots: [sp, ZOO_START[1], ZOO_START[2]] } : { ...world, kind, organism: sp };
+    world = kind === 'zoo' ? { ...world, kind, slots: [sp, ...Array(CH - 1).fill(null)] } : { ...world, kind, organism: sp };
     world.R = kind === 'zoo' ? 13 : 12;
     world.meet = 0;
     setLaw(lawOf(world)); clearLife(); place(0, N / 2, N / 2, 0);
-    const m0 = masses(readState());
+    const m0 = masses();
     for (let k = 0; k < steps; k++) step();
-    const m1 = masses(readState());
+    const m1 = masses();
     const a = kind === 'zoo' ? m0.m[0] : m0.m[0] + m0.m[1] + m0.m[2], b = kind === 'zoo' ? m1.m[0] : m1.m[0] + m1.m[1] + m1.m[2];
     out.push({ test: `${kind} ${label(sp)}`, ok: !m1.nan && b > a * 0.4 && (sp.life === 'grows' || b < a * 2.5), ratio: +(b / a).toFixed(3) });
   };

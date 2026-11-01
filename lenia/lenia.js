@@ -29,7 +29,8 @@ const TAU = 2 * Math.PI;
 
 /* ---- 1.1 Context and passes ------------------------------------------------------------------ */
 
-const N = 512, MAX_K = 16, GROUPS = MAX_K / 4;
+let N = 1024;
+const MAX_K = 16, GROUPS = MAX_K / 4;
 const canvas = $('view');
 const gl = canvas.getContext('webgl2', { antialias: false, alpha: false });
 const floatOk = gl && gl.getExtension('EXT_color_buffer_float');
@@ -369,12 +370,21 @@ void main() {
 /* ---- 3.2 State and step ---------------------------------------------------------------------- */
 
 let P, state, spec, kernelSpecs, pots, wallsTex, census, trail, law, kernelCount = 0;
-const BLOCK = 8, CENSUS = N / BLOCK;
-const walls = new Uint8Array(N * N);
+const BLOCK = 8;
+let CENSUS, walls;
 
 function setupGPU() {
   P = { fft: program(FFT_FS), mul: program(MUL_FS), step: program(STEP_FS), stamp: program(STAMP_FS), walls: program(WALLS_FS), erase: program(ERASE_FS), census: program(CENSUS_FS), trail: program(TRAIL_FS), show: program(SHOW_FS) };
   fftProgram = P.fft;
+}
+
+// The world's textures for an n×n torus (n a power of 2), the old ones let go.
+function allocate(n) {
+  for (const t of [state, scratch, spec, kernelSpecs, pots, wallsTex, census, trail].flat().filter(Boolean)) {
+    if (t.fb) gl.deleteFramebuffer(t.fb);
+    gl.deleteTexture(t);
+  }
+  N = n; CENSUS = N / BLOCK; walls = new Uint8Array(N * N);
   const lin = linearOk ? gl.LINEAR : gl.NEAREST;
   state = [texture(N, N, null, gl.RGBA32F, gl.RGBA, gl.FLOAT, lin), texture(N, N, null, gl.RGBA32F, gl.RGBA, gl.FLOAT, lin)];
   scratch = [texture(N, N), texture(N, N)];
@@ -463,10 +473,10 @@ function freeSpot(radius, taken) {
   return null;
 }
 
-// A few of each species of the world, on free spots.
+// A few of each species of the world, on free spots (as many more as the world is larger).
 function seed() {
   const slots = world.kind === 'zoo' ? [0, 1, 2] : [0];
-  const each = world.kind === 'zoo' ? 3 : 5, taken = [];
+  const each = (world.kind === 'zoo' ? 3 : 5) * (N / 512) ** 2, taken = [];
   for (let n = 0; n < each; n++) for (const i of slots) {
     const r = footprint(speciesOf(i)), at = freeSpot(r, taken);
     if (at) { place(i, ...at); taken.push([...at, r]); }
@@ -557,8 +567,8 @@ function setDecor(name) {
  * PART 4 — VIEW AND CONTROLS
  * ==============================================================================================
  *
- * The world fits the stage, centred. A click places the selected species (turned at random);
- * Wall and Eraser draw along the drag.
+ * The world fits the stage at zoom 1; the wheel zooms, a drag moves the view. A click places the
+ * selected species (turned at random); Wall and Eraser draw along the drag.
  */
 
 /* ---- 4.1 Settings ---------------------------------------------------------------------------- */
@@ -640,7 +650,7 @@ function slotRow(i, sp, list, onPick) {
 }
 
 function buildPanel() {
-  tabs($('worldTabs'), [['zoo', 'Zoo', 'Three species of one channel each, each of its own law (Orbium, Scutium…)'], ['organism', 'Organisms', 'Chan\'s three-channel creatures: one law over the three colours']],
+  tabs($('worldTabs'), [['zoo', 'Zoo', 'Three species of one channel each, each its own law and colour'], ['organism', 'Organisms', 'Chan\'s two- and three-channel creatures: one law over the colours']],
     () => world.kind, (v) => { world.kind = v; selected = 0; world.R = v === 'zoo' ? 13 : 12; buildPanel(); rebuild(); });
   const slots = world.kind === 'zoo'
     ? world.slots.map((sp, i) => slotRow(i, sp, SPECIES.single, (s) => { world.slots[i] = s; selected = i; buildPanel(); rebuild(); }))
@@ -648,13 +658,15 @@ function buildPanel() {
   $('slots').replaceChildren(...slots);
   tabs($('decorTabs'), Object.keys(DECORS).map((d) => [d, d, d === 'Empty' ? 'No walls (the world is a torus)' : `A new random ${d.toLowerCase()} at each click; the creatures placed again`]),
     () => decor, (v) => { setDecor(v); clearLife(); seed(); });
-  tabs($('toolTabs'), [['Creature', 'Creature', 'A click places the selected species'], ['Wall', 'Wall', 'Draw walls by dragging'], ['Eraser', 'Eraser', 'Erase walls and life by dragging']],
+  tabs($('toolTabs'), [['Creature', 'Creature', 'A click places the selected species; a drag moves the view'], ['Wall', 'Wall', 'Draw walls by dragging'], ['Eraser', 'Eraser', 'Erase walls and life by dragging']],
     () => tool, (v) => { tool = v; buildPanel(); });
   $('othersBox').style.display = world.kind === 'zoo' ? '' : 'none';
   tabs($('othersTabs'), [['0', 'Ghosts', 'The species do not feel each other: they cross'], ['0.6', 'Push', 'Each species is pushed away by the others, through its own kernel'], ['2', 'Fight', 'Pushed hard: a meeting erodes both']],
     () => String(world.meet), (v) => { world.meet = +v; rebuild(false); });
   tabs($('sizeTabs'), [10, 13, 18, 24].map((r) => [String(r), `R ${r}`, `Kernel radius ${r} cells: the creatures' size; species and walls made again`]),
     () => String(world.R), (v) => { world.R = +v; setDecor(decor); rebuild(); });
+  tabs($('spaceTabs'), [512, 1024].map((n) => [String(n), `${n}²`, `A world of ${n}×${n} cells${n > 512 ? ': room for more, four times the work' : ''}`]),
+    () => String(N), (v) => { allocate(+v); view.centre = [N / 2, N / 2]; frameView(); setDecor(decor); rebuild(); });
   tabs($('speedTabs'), [1, 2, 4, 8].map((s) => [String(s), `×${s}`, `${s} step${s > 1 ? 's' : ''} a frame`]), () => String(speed), (v) => { speed = +v; });
   $('runRow').replaceChildren(
     button(running ? 'Pause' : 'Play', 'Run or stop time', () => { running = !running; buildPanel(); }),
@@ -667,22 +679,35 @@ function buildPanel() {
 
 /* ---- 4.4 Drawing and the pointer ------------------------------------------------------------- */
 
-let view = { origin: [0, 0], scale: 1 };
+// The view: a zoom (1: the whole world fits) and the world cell at the stage's centre; scale
+// (world cells a canvas pixel) and origin derived from them, the centre kept inside the world.
+let view = { zoom: 1, centre: [N / 2, N / 2], scale: 1, origin: [0, 0] };
+function frameView() {
+  const side = Math.min(canvas.width, canvas.height), scale = N / (side * view.zoom);
+  view.centre = view.centre.map((c, k) => {
+    const half = [canvas.width, canvas.height][k] * scale / 2;
+    return half >= N / 2 ? N / 2 : Math.min(Math.max(c, half), N - half);
+  });
+  view.scale = scale;
+  view.origin = [canvas.width / 2 - view.centre[0] / scale, canvas.height / 2 - view.centre[1] / scale];
+}
 function resize() {
   const dpr = devicePixelRatio || 1, r = canvas.getBoundingClientRect();
   canvas.width = Math.max(1, Math.round(r.width * dpr)); canvas.height = Math.max(1, Math.round(r.height * dpr));
-  const side = Math.min(canvas.width, canvas.height);
-  view = { scale: N / side, origin: [(canvas.width - side) / 2, (canvas.height - side) / 2] };
+  frameView();
 }
 
 function render() {
   pass(P.show, null, { uOrigin: view.origin, uScale: view.scale, uTrails: trails ? 1 : 0, uCol: { v3: COLOURS.flat() }, uBg: [0.043, 0.051, 0.071], uWall: [0.23, 0.25, 0.3], uN: { i: N }, uLinear: { i: linearOk ? 1 : 0 } }, { uState: state[0], uTrail: trail[0] });
 }
 
-// A pointer's place in world cells (the world's y goes up, the page's down).
-function worldAt(e) {
+// A pointer's place in canvas pixels, and in world cells (the world's y goes up, the page's down).
+function canvasAt(e) {
   const r = canvas.getBoundingClientRect(), dpr = canvas.width / r.width;
-  const x = (e.clientX - r.left) * dpr, y = canvas.height - (e.clientY - r.top) * dpr;
+  return [(e.clientX - r.left) * dpr, canvas.height - (e.clientY - r.top) * dpr];
+}
+function worldAt(e) {
+  const [x, y] = canvasAt(e);
   return [(x - view.origin[0]) * view.scale, (y - view.origin[1]) * view.scale];
 }
 
@@ -697,14 +722,34 @@ function stroke(to) {
   uploadWalls();
   last = to;
 }
+// Creature: a click places the species, a drag moves the view. Wall and Eraser draw along the drag.
+let grab = null;
+const inWorld = ([x, y]) => x >= 0 && y >= 0 && x < N && y < N;
 canvas.addEventListener('pointerdown', (e) => {
-  const at = worldAt(e);
-  if (at[0] < 0 || at[1] < 0 || at[0] >= N || at[1] >= N) return;
-  if (tool === 'Creature') { place(selected, ...at); render(); return; }
-  canvas.setPointerCapture(e.pointerId); last = null; stroke(at);
+  canvas.setPointerCapture(e.pointerId);
+  if (tool === 'Creature') { grab = { at: canvasAt(e), centre: [...view.centre], moved: false }; return; }
+  if (inWorld(worldAt(e))) { last = null; stroke(worldAt(e)); }
 });
-canvas.addEventListener('pointermove', (e) => { if (last) stroke(worldAt(e)); });
-canvas.addEventListener('pointerup', () => { last = null; });
+canvas.addEventListener('pointermove', (e) => {
+  if (last) stroke(worldAt(e));
+  if (!grab) return;
+  const [x, y] = canvasAt(e), d = [x - grab.at[0], y - grab.at[1]];
+  if (Math.hypot(...d) > 5) grab.moved = true;
+  if (grab.moved) { view.centre = grab.centre.map((c, k) => c - d[k] * view.scale); frameView(); render(); }
+});
+canvas.addEventListener('pointerup', (e) => {
+  if (grab && !grab.moved && inWorld(worldAt(e))) { place(selected, ...worldAt(e)); render(); }
+  grab = null; last = null;
+});
+// The wheel zooms about the pointer, 1 to 8 times.
+canvas.addEventListener('wheel', (e) => {
+  e.preventDefault();
+  const before = worldAt(e), [x, y] = canvasAt(e);
+  view.zoom = Math.min(8, Math.max(1, view.zoom * Math.exp(-e.deltaY * 0.0015)));
+  const scale = N / (Math.min(canvas.width, canvas.height) * view.zoom);
+  view.centre = [before[0] - (x - canvas.width / 2) * scale, before[1] - (y - canvas.height / 2) * scale];
+  frameView(); render();
+}, { passive: false });
 
 /* ---- 4.5 Loop and check ---------------------------------------------------------------------- */
 
@@ -736,10 +781,12 @@ function masses(buf) {
 }
 
 // leniaCheck(): the FFT's round trip, then each species alone in an empty world for a while:
-// alive (its mass kept within a band, a species that grows only kept) and no NaN; the world as it was after.
+// alive (its mass kept within a band, a species that grows only kept) and no NaN; in a 512² world
+// (quick), the world as it was after.
 window.leniaCheck = function (steps = 400) {
-  const was = { world, decor, running };
+  const was = { world, decor, running, N };
   running = false;
+  allocate(512);
   const out = [];
   const buf = new Float32Array(N * N * 4).map(() => Math.random());
   const t = texture(N, N, buf);
@@ -764,7 +811,7 @@ window.leniaCheck = function (steps = 400) {
   for (const sp of SPECIES.multi) trial('organism', sp);
   console.table(out);
   ({ world, running } = was);
-  setDecor(was.decor); buildPanel(); rebuild();
+  allocate(was.N); frameView(); setDecor(was.decor); buildPanel(); rebuild();
   return { ok: out.every((r) => r.ok), out };
 };
 
@@ -773,6 +820,7 @@ window.leniaCheck = function (steps = 400) {
 if (!floatOk) $('fail').style.display = 'flex';
 else {
   setupGPU();
+  allocate(N);
   resize();
   addEventListener('resize', () => { resize(); render(); });
   buildPanel();

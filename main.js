@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.3.9';
+const VERSION = '0.3.10';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -1798,7 +1798,7 @@ const renderSkyButtons = () => {
 // nearest it allows (targetAsked: a walk's digits or steps, a reversible rule's or Space-time's generations up to 100,000;
 // a walk that loops stops sooner, as its stepper says); its ladder DIGIT_STEPS
 let target = 20000;
-const targetMost = () => (elementaryPlane() ? 2000 : gensShown() ? 100000 : 50_000_000);  // (Elementary's: its cells the square of it, see elementaryRows)
+const targetMost = () => (elementaryPlane() ? 5000 : gensShown() ? 100000 : 50_000_000);  // (Elementary's: its cells the square of it, see elementaryRows)
 const targetAsked = () => Math.min(targetMost(), Math.max(10, Math.round(target) || 10));
 
 // The number of digits as a stepper, like the surface size: [ − ] 20,000 digits [ + ] goes through
@@ -6653,17 +6653,21 @@ function parseElementary(text) {
 // 2 × its generations + 1 wide, wrapping round: One cell's never reaches their ends; the digits fill the first (a row
 // repeating for ever, as Wolfram's). upTo: its cells up to each row; wide: its first row's reach (each next one more)
 function elementaryRows(digits) {
-  const G = targetAsked(), W = 2 * G + 1, N = lifeRuleNow()?.wolfram ?? 30, cells = [], upTo = new Int32Array(G + 2);
-  let r = new Uint8Array(W), next = new Uint8Array(W);
+  const G = targetAsked(), W = 2 * G + 1, N = lifeRuleNow()?.wolfram ?? 30, upTo = new Int32Array(G + 2);
+  let r = new Uint8Array(W), next = new Uint8Array(W), inst = new Float32Array(1 << 16), m = 0;
   if (plane.start === 'digits') r.set(digits.subarray(0, W)); else r[G] = 1;
   for (let t = 0; t <= G; t++) {
     const band = Math.floor((t * BANDS) / (G + 1));
-    for (let x = 0; x < W; x++) if (r[x]) cells.push(x - G, t, band, 0);  // (down: the view's y)
-    upTo[t + 1] = cells.length / 4;
+    for (let x = 0; x < W; x++) {
+      if (!r[x]) continue;
+      if (m + 4 > inst.length) { const a = new Float32Array(2 * inst.length); a.set(inst); inst = a; }  // (twice as long when full)
+      inst[m++] = x - G; inst[m++] = t; inst[m++] = band; inst[m++] = 0;  // (down: the view's y)
+    }
+    upTo[t + 1] = m / 4;
     for (let x = 0; x < W; x++) next[x] = (N >> (4 * r[(x + W - 1) % W] + 2 * r[x] + r[(x + 1) % W])) & 1;
     [r, next] = [next, r];
   }
-  return { G, inst: new Float32Array(cells), upTo, wide: plane.start === 'digits' ? G : 0 };
+  return { G, inst: inst.subarray(0, m), upTo, wide: plane.start === 'digits' ? G : 0 };
 }
 function parseRule(text) {
   if (/^\s*(M|Q2R)/i.test(text)) return parseBlocks(text);
@@ -11802,7 +11806,7 @@ function play(on) {
 const lifeTime = () => !!walk.life && !spaceTimeOn();
 const playsBack = () => !lifeTime() || !!walk.life.margolus;  // (◀: a walk, Space-time, a reversible one)
 // a Game of Life's player (+2k, +10k; no ◀ nor End), by the mode chosen: its run built or not yet (a big grid's, a moment)
-const lifePlayer = () => { const m = MODES[$('mode').value]; return !!m.life && !m.margolus && !spaceTimeOn(); };
+const lifePlayer = () => { const m = MODES[$('mode').value]; return !!m.life && !m.margolus && !elementaryPlane() && !spaceTimeOn(); };  // (Elementary's rows: a walk's, its end known)
 function reverse(on) {
   reversing = on && playsBack() && (cur > runStart() || loopBack());  // (a loop known: from 0 too, a round back)
   if (reversing) play(false);
@@ -13123,14 +13127,14 @@ function glFlat(to) {
     upload(S.flatKeys, keys);
     S.keys.flatKeys = walk.keys; S.keys.flatKeysMode = keysKey;
   }
-  if (S.keys.pal !== `${walk.base}|${walk.ant}|${antRamp}|${walk.skipZeros}|${current.mode}|${MONO}`) {  // the digits' colours (an ant's)
+  if (S.keys.pal !== `${walk.base}|${walk.ant}|${antRamp}|${walk.skipZeros}|${current.mode}|${MONO}|${walk.rows ? LIFE_ALIVE : ''}`) {  // the digits' colours (an ant's; Elementary's: its live cells', States)
     const pal = new Uint8Array(4 * 256);
-    for (let k = 0; k < 256; k++) pal.set([...rgbCached(digitColour(walk.ant ? k : Math.min(k, walk.base - 1))), 255], 4 * k);
+    for (let k = 0; k < 256; k++) pal.set([...rgbCached(walk.rows ? LIFE_ALIVE : digitColour(walk.ant ? k : Math.min(k, walk.base - 1))), 255], 4 * k);
     gl.bindTexture(gl.TEXTURE_2D, S.pal);
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 256, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, pal);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-    S.keys.pal = `${walk.base}|${walk.ant}|${antRamp}|${walk.skipZeros}|${current.mode}|${MONO}`;
+    S.keys.pal = `${walk.base}|${walk.ant}|${antRamp}|${walk.skipZeros}|${current.mode}|${MONO}|${walk.rows ? LIFE_ALIVE : ''}`;
   }
   // the fill's vertices, with their colour band, once per fill
   let fillCount = 0;
@@ -13189,7 +13193,7 @@ function glFlat(to) {
     gl.uniform3f(u('uView'), s, ox, oy);
     gl.uniform2f(u('uScreen'), cw, ch);
     gl.uniform1i(u('uGrad'), 0);
-    gl.uniform1i(u('uColour'), mode === 'digit' ? 2 : 0);
+    gl.uniform1i(u('uColour'), mode === 'digit' || (walk.rows && mode === 'mono') ? 2 : 0);  // (Elementary's States: its live cells' colour)
     return u;
   };
   const attrib = (p, name, buffer, size, type, stride, offset, divisor) => {

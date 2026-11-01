@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.3.7';
+const VERSION = '0.3.8';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -1354,7 +1354,7 @@ function updateRuleText() {}  // the rule is shown by describe (the Play card)
 // Game of Life needs one base-(K + 1) digit per cell; walks use the requested number of digits
 function digitsNeeded() {
   const mode = MODES[$('mode').value], size = randomPrimeSize();
-  if (mode.life) return plane.start !== 'digits' ? 256 : mode.plane ? gridSize(planeKind(mode.plane), plane.side)[2] : SPHERES[surfaceOf(mode)].tiles(sphereSize());  // all the digits for a start by the digits (a cell each); else a hunt's patch
+  if (mode.life) return plane.start !== 'digits' ? 256 : mode.elementary && mode.plane ? 2 * targetAsked() + 1 : mode.plane ? gridSize(planeKind(mode.plane), plane.side)[2] : SPHERES[surfaceOf(mode)].tiles(sphereSize());  // all the digits for a start by the digits (a cell each); else a hunt's patch
   // a random prime is walked whole: its size (decimal digits) written in the walk's base
   return size ? Math.ceil((size * Math.log(10)) / Math.log(mode.base)) + 1 : targetAsked();
 }
@@ -1417,6 +1417,14 @@ function describe(base, available) {
         return c;
       }));
     }
+    return;
+  }
+  if (walk.rows) {  // (Elementary on the plane: built as a walk, see elementaryRows)
+    $('barBase').textContent = lifeRuleNow()?.text ?? '';
+    $('barBase').title = 'A click: how it works';
+    $('barBase').classList.add('how-it-works');
+    $('barBase').parentElement.classList.add('life');
+    $('description').innerHTML = `${plane.start === 'digits' ? `<span class="walking">${sym}</span> in base 2` : 'One live cell'} its first row, ${fmt(walk.n)} rows down · ${fmt(walk.rows.upTo.at(-1))} live cells`;
     return;
   }
   const cells = walk.life.seed.length, C = base;
@@ -1790,7 +1798,7 @@ const renderSkyButtons = () => {
 // nearest it allows (targetAsked: a walk's digits or steps, a reversible rule's or Space-time's generations up to 100,000;
 // a walk that loops stops sooner, as its stepper says); its ladder DIGIT_STEPS
 let target = 20000;
-const targetMost = () => (elementaryPlane() ? 511 : gensShown() ? 100000 : 50_000_000);  // (Elementary's grid: 1,024 wide at most, see elementaryW)
+const targetMost = () => (elementaryPlane() ? 2000 : gensShown() ? 100000 : 50_000_000);  // (Elementary's: its cells the square of it, see elementaryRows)
 const targetAsked = () => Math.min(targetMost(), Math.max(10, Math.round(target) || 10));
 
 // The number of digits as a stepper, like the surface size: [ − ] 20,000 digits [ + ] goes through
@@ -1812,10 +1820,7 @@ const wholeTotal = () => (current?.whole && current.formula === $('formula').val
 // In generations (a reversible one's length, its slider's; Space-time's height): [ − ] 2,000 generations [ + ]; going back, a
 // reversible one plays again from its start; Space-time made again
 const gensShown = () => !!MODES[$('mode').value].margolus || !!MODES[$('mode').value].elementary || spaceTimeOn();
-// Elementary on the plane: a row a generation (its side, see plane), wrapping round, 2 × its generations + 1 wide (its row, see
-// planeRow): One cell's never reaches its edges; the digits fill its first row (a row repeating for ever, as Wolfram's)
-const elementaryPlane = () => !!MODES[$('mode').value].elementary && !!MODES[$('mode').value].plane;
-const elementaryW = () => 2 * targetAsked() + 1;
+const elementaryPlane = () => !!MODES[$('mode').value].elementary && !!MODES[$('mode').value].plane;  // (its rows, see elementaryRows)
 // The last step or generation: walk.n; a reversible one's half of it, rounded up (its n generations from 1 − n/2 to n/2, its
 // start among them: 10, from −4 to 5; see runStart), or sooner its last before its loop comes round, once found (its slider,
 // its end, its stepper's max)
@@ -3190,7 +3195,7 @@ function compute() {
   syncDigitsStepper();
   relabelColours(mode);
   $('automataSection').hidden = !mode.life;  // rule and hunt, for the cellular automata only
-  $('planeRow').hidden = !mode.plane || !!mode.elementary;  // Life on the plane: its grid (Elementary's by its generations, see elementaryW)
+  $('planeRow').hidden = !mode.plane || !!mode.elementary;  // Life on the plane: its grid (Elementary's: none, see elementaryRows)
   $('lifeStartRow').hidden = !mode.life;
   $('copyRle').hidden = !mode.plane;  // (the plane's cells only)  // its start: Hunt, Draw (the plane only), Digits
   if (mode.life) plane.start = mode.elementary ? (plane.start === 'digits' ? 'digits' : 'cell') : plane.start === 'cell' ? 'random' : plane.start;  // (Elementary's starts: One cell, Digits)
@@ -3393,15 +3398,17 @@ function buildWalkOf() {
   glClear();  // a surface drawn by WebGL before (see 11.4b)
   fill = null;  // a new walk: its enclosed areas are computed again, and its layer starts empty
   walk.ant = 0; walk.highway = null; walk.bridges = null;  // set by an ant's walk only
-  walk.plane = null;  // set by Life on the plane only
+  walk.plane = walk.rows = null;  // set by Life on the plane only; Elementary's rows (see elementaryRows)
   $('fillTooBig').hidden = true;
   layers.fill.clearRect(0, 0, cw, ch);
   walk.shape = null;  // only tiled surfaces that can change shape get one (see initShape)
   const { head, frac } = digitsInUse();
-  const seq = new Uint8Array(head.length + frac.length);
+  let seq = new Uint8Array(head.length + frac.length);
   seq.set(head);
   seq.set(frac, head.length);
-  if (MODES[current.mode].life) {
+  const rows = MODES[current.mode].elementary && MODES[current.mode].plane ? elementaryRows(seq) : null;  // (Elementary: a step a generation, see elementaryRows)
+  if (rows) seq = new Uint8Array(rows.G);
+  else if (MODES[current.mode].life) {
     buildLife(seq, MODES[current.mode]);
     return;
   }
@@ -3423,7 +3430,7 @@ function buildWalkOf() {
   const wz = is3d ? new Float64Array(len + 1) : null;
   const cells = new Int32Array(len + 1);
   const maxDist = new Float64Array(len + 1);
-  const ant = !!MODES[current.mode].antOf, isWorm = !!MODES[current.mode].worm, step = STEPPERS[current.mode](seq);
+  const ant = !!MODES[current.mode].antOf, isWorm = !!MODES[current.mode].worm, step = rows ? ((y = 0) => () => [key(0, ++y), 0, y, 0])() : STEPPERS[current.mode](seq);  // (Elementary's walker: down its middle, a row a step)
   // an ant by its rule: counted by the colour it turned on (each colour its turn), not by digit; by the
   // digits: by the turn it took (left or right), the other way from its digit on a dark cell
   const byColour = ant && !antByDigits, base = byColour ? step.colours : MODES[current.mode].base;
@@ -3431,7 +3438,7 @@ function buildWalkOf() {
   const origin = is3d ? key3(0, 0, 0) : key(0, 0), seen = new Set([origin]);
   // a fraction's walk repeats (see walkRepeat), walked 8 rounds; not an ant's, whose state is all its
   // cells, nor a spiral's, whose path the digits do not steer (its sides grow: it never repeats)
-  let loop = current.ratio && !ant && !isWorm && !MODES[current.mode].skipZeros ? walkRepeat() : null;  // (a worm: its digits only at its new corners)
+  let loop = current.ratio && !ant && !isWorm && !rows && !MODES[current.mode].skipZeros ? walkRepeat() : null;  // (a worm: its digits only at its new corners)
   let steps = loop ? Math.min(len, loop.cap) : len, m = 0, walked = 0, nextLook = 2000;
   // an ant on a highway goes on along it for ever: stopped as far as its cloud is wide (driftRounds;
   // looked for every 2,000 steps, then every 5 % of them so far, and at the end). Its last stretch on
@@ -3496,7 +3503,7 @@ function buildWalkOf() {
                         lattice: MODES[current.mode].lattice, lines: !!MODES[current.mode].lines,
                         skipZeros: !!MODES[current.mode].skipZeros, ant: ant ? step.colours : 0, turns, antStates, antTurns,
                         highway: ant ? highwayOf(wx, wy, steps) : null, bridges, wormEnd: isWorm && step.end, wormMade: isWorm ? step.made ?? 0 : 0,
-                        keys, sphere: false, life: null,
+                        keys, sphere: false, life: null, rows,
                         xs: is3d ? new Float64Array(len + 1) : wx,
                         ys: is3d ? new Float64Array(len + 1) : wy });
   if (is3d) { setPerspective(); project(); } else walk.persp = null;
@@ -6641,6 +6648,23 @@ function parseElementary(text) {
   const T = loopTable(elementaryTable(N));
   return { loops: T.to, loopStates: T.n, loopRing: T.k, loopTurns: T.turns, elementary: true, wolfram: N, lineages: false, B: new Uint8Array(16), S: new Uint8Array(16), C: 2, two: false, colours: 1, iso: false, base: 2, text: `W${N}` };
 }
+// Elementary on the plane: its rows on the processor, as many as the generations asked, a walk's steps (a step a generation, its
+// walker down the middle, see buildWalkOf), its live cells drawn as a walk's (see glFlat), each in its row's rainbow. Its rows
+// 2 × its generations + 1 wide, wrapping round: One cell's never reaches their ends; the digits fill the first (a row
+// repeating for ever, as Wolfram's). upTo: its cells up to each row; wide: its first row's reach (each next one more)
+function elementaryRows(digits) {
+  const G = targetAsked(), W = 2 * G + 1, N = lifeRuleNow()?.wolfram ?? 30, cells = [], upTo = new Int32Array(G + 2);
+  let r = new Uint8Array(W), next = new Uint8Array(W);
+  if (plane.start === 'digits') r.set(digits.subarray(0, W)); else r[G] = 1;
+  for (let t = 0; t <= G; t++) {
+    const band = Math.floor((t * BANDS) / (G + 1));
+    for (let x = 0; x < W; x++) if (r[x]) cells.push(x - G, t, band, 0);  // (down: the view's y)
+    upTo[t + 1] = cells.length / 4;
+    for (let x = 0; x < W; x++) next[x] = (N >> (4 * r[(x + W - 1) % W] + 2 * r[x] + r[(x + 1) % W])) & 1;
+    [r, next] = [next, r];
+  }
+  return { G, inst: new Float32Array(cells), upTo, wide: plane.start === 'digits' ? G : 0 };
+}
 function parseRule(text) {
   if (/^\s*(M|Q2R)/i.test(text)) return parseBlocks(text);
   if (/^\s*W\d/i.test(text)) return parseElementary(text);
@@ -6847,7 +6871,7 @@ const planeSides = (kind, k = planeKind(kind), W = (f) => (shaped(kind) ? sideW 
   [...(MODES[$('mode').value]?.margolus ? [6, 8] : []), ...SIDES.filter((f) => cells(f) >= CELLS.least && cells(f) <= CELLS.most)].filter((f, i, a) => W(f) >= 2 && (!i || grid(f) !== grid(a[i - 1])));
 // side: the grid's, the nearest it offers to the last picked (by hand or a link: kept, whatever grid comes); icons: an Icon
 // zone's, one a colour (or one for all)
-const plane = { get side() { const k = planeKind(MODES[$('mode').value].plane); return elementaryPlane() ? targetAsked() + 1 : nearCells(planeSides(k), (f) => planeCells(f, k), picked ?? planeCells(48, k)); },
+const plane = { get side() { const k = planeKind(MODES[$('mode').value].plane); return nearCells(planeSides(k), (f) => planeCells(f, k), picked ?? planeCells(48, k)); },
                 torus: true, shape: 'hex', text: APP_TITLE, font: 'sans', icons: [0],
                 start: 'random', density: 30, seed: 1 + Math.floor(Math.random() * 999999999), sym: 'none', number: '1/7' };  // (number: Formula's, see numberSeed)  // a soup of its own each visit (a link keeps its seed)
 // Draw's brush: a cell or a pattern (squares only), turned by quarter turns and mirrored, in a colour
@@ -7131,7 +7155,7 @@ const ROOT3_2 = Math.sqrt(3) / 2;
 // The rows of a grid of side `side` (the squares' side): about as many cells as side × side squares (as the surfaces'
 // sizes, see SIDES), its cells regular: triangles 2 a rhombus, Cairo pentagons 2 a square (an even side, so
 // that it wraps round), kites 6 a rhombus (on triangles twice as big)
-const planeTorus = (kind) => (plane.torus || elementaryPlane()) && !APERIODIC[kind];  // hats and Penrose's rhombi never wrap round: they never repeat
+const planeTorus = (kind) => plane.torus && !APERIODIC[kind];  // hats and Penrose's rhombi never wrap round: they never repeat
 const PLANE_PER = { square: 1, hex: 1, tri: 2, cairo: 2, kite: 6, hat: 1, penrose: 1, pinwheel: 1, spectre: 1, ammann: 1, rhombs12: 1, rhombs14: 1, flower: 1, flower5: 1, flower7: 1, mirror7: 1, flower3: 1, flower4: 1, flower8: 1, flower9: 1, flower10: 1, ring7: 1, ring8: 1, ring9: 1, ring10: 1, ring12: 1 };
 for (const [kind, t] of Object.entries(TILINGS)) PLANE_PER[kind] = t.polys.length;
 // (a grid that never repeats, in a circle: its size its diameter, its W² cells as many as the disc's, π side² / 4)
@@ -7155,7 +7179,7 @@ function blockWrapW(kind, W) {
   return blockWraps.get(key);
 }
 const planeCols = (kind, W, K = lifeColours) => colourW(kind, W * (RECT_ASPECT[kind] ?? 1), K);  // its motifs a row: as many as make it square (its motif's height over its width)
-const planeRow = (kind, W) => (elementaryPlane() && kind === 'square' ? elementaryW() : tilingOf(kind) ? tilingOf(kind).polys.length * planeCols(kind, W) : kind === 'kite' ? 6 * W : kind === 'tri' || kind === 'cairo' ? 2 * W : W);  // cells a row (two a rhombus, two a square of Cairo pentagons, six kites a rhombus)
+const planeRow = (kind, W) => (tilingOf(kind) ? tilingOf(kind).polys.length * planeCols(kind, W) : kind === 'kite' ? 6 * W : kind === 'tri' || kind === 'cairo' ? 2 * W : W);  // cells a row (two a rhombus, two a square of Cairo pentagons, six kites a rhombus)
 // kite x of row y: kite x % 3 of triangle ⌊x / 3⌋ (as the triangles' x), its corners on the triangles' lattice
 const kiteCorners = (x, y) => { const t = Math.floor(x / 3), i = t >> 1; return kitesOf(t & 1 ? [[i + 1, y], [i + 1, y + 1], [i, y + 1]] : [[i, y], [i + 1, y], [i, y + 1]])[((x % 3) + 3) % 3]; };
 const latticeAt = (a, b) => [a + b / 2, b * ROOT3_2];  // a corner of the triangles, a centre of the hexagons
@@ -7929,15 +7953,14 @@ function partMiddle(k, K) {
   return part.reduce((best, u) => (Math.hypot(...[0, 1, 2].map((d) => c[3 * u + d] - mid[d])) < Math.hypot(...[0, 1, 2].map((d) => c[3 * best + d] - mid[d])) ? u : best), part[0]);
 }
 // Elementary's start (see parseElementary): every cell not reached but its first row, dead, and alive as the Start says: its
-// middle cell (One cell), or the number's digits in base 2 along it (Digits). Its row: on the plane its row 0, left to right
-// (see elementaryW); on a torus the one through its middle, east by the cells' sides round
-// (one north, see loopFits)
+// first cell (One cell), or the number's digits in base 2 along it (Digits). Its row: on the torus the one through its middle,
+// east by the cells' sides round (one north, see loopFits; the plane's: see elementaryRows)
 function layElementary(seed) {
-  const P = walk.plane, row = P ? Array.from({ length: P.row }, (_, x) => P.at(x, 0)) : [partMiddle(0, 1)];
-  if (!P) for (let t = walk.life.ring[8 * row[0] + 2]; t >= 0 && t !== row[0]; t = walk.life.ring[8 * t + 2]) row.push(t);  // (east: its ring's third, see mooreOf)
-  const { head, frac } = digitsInUse(), digits = [...head, ...frac], mid = P ? row[row.length >> 1] : row[0];  // (One cell: the plane's top's middle, the torus's middle)
+  const row = [partMiddle(0, 1)];
+  for (let t = walk.life.ring[8 * row[0] + 2]; t >= 0 && t !== row[0]; t = walk.life.ring[8 * t + 2]) row.push(t);  // (east: its ring's third, see mooreOf)
+  const { head, frac } = digitsInUse(), digits = [...head, ...frac];
   seed.fill(2);
-  row.forEach((t, i) => { seed[t] = plane.start === 'digits' ? digits[i] ?? 0 : +(t === mid); });
+  row.forEach((t, i) => { seed[t] = plane.start === 'digits' ? digits[i] ?? 0 : +!i; });
 }
 function layLoops(seed) {
   const L = walk.life, K = L.lineages ? L.colours : 1, sides = L.loopRing === 8 ? L.ring.filter((_, i) => i % 2 === 0) : L.ring, { w, h, rle } = LOOP_RULES[L.ruleText].pattern, m = Math.max(w, h);
@@ -7984,7 +8007,6 @@ function buildLifePlane(seq) {
   countSeed(walk.life);
   updateHint();
   restart();
-  if (walk.life.elementary) seekTo(walk.n);  // (Elementary: shown built, its generations all run)
   hunt.top = [];  // a new grid, rule or colours: the starts found were another game's
   hunt.status = '';
   stopHunt();
@@ -8082,7 +8104,7 @@ function zoneWords(zone) {
 }
 function startLead(number, seeded) {  // its start in words, on any grid (the plane's: its side, its symmetry)
   const kind = walk.plane?.kind, side = kind && fmt(walk.plane.W), soup = `${plane.density} % alive (seed ${plane.seed})`;
-  const sym = kind && !walk.life.elementary ? SYMMETRIES[symmetryOf(kind)][2] : '', where = kind ? `a ${walk.life.elementary ? fmt(walk.plane.row) : side} × ${side} grid of ${PLANE_CELLS[kind]}${{ tri: ' (two a rhombus)', cairo: ' (two a square)', kite: ' (six a rhombus)', hat: ' (an aperiodic tiling: one tile that never repeats)', penrose: ' (an aperiodic tiling)', pinwheel: ' (an aperiodic tiling: one right triangle, turned every way)', ammann: ' (an aperiodic tiling, eightfold)', rhombs12: ' (an aperiodic tiling, twelvefold)', rhombs14: ' (an aperiodic tiling, fourteenfold)', flower: " (Hirschhorn's flower: one pentagon, six-fold, never repeating)", flower5: ' (a rosette: one pentagon, five-fold, never repeating)', flower7: ' (a rosette: one pentagon, seven-fold, never repeating)', mirror7: ' (a mirrored rosette: one pentagon, a house, seven-fold, never repeating)', flower3: ' (a rosette: one pentagon, three-fold, never repeating)', flower4: ' (a rosette: one pentagon, four-fold, never repeating)', flower8: ' (a rosette: one pentagon, eight-fold, never repeating)', flower9: ' (a rosette: one pentagon, nine-fold, never repeating)', flower10: ' (a rosette: one pentagon, ten-fold, never repeating)', ring7: ' (a ring: one pentagon round a heptagonal hole, seven-fold, never repeating)', ring8: ' (a ring: one pentagon round an octagonal hole, eight-fold, never repeating)', ring9: ' (a ring: one pentagon round a nonagonal hole, nine-fold, never repeating)', ring10: ' (a ring: one pentagon round a decagonal hole, ten-fold, never repeating)', ring12: ' (a ring: one pentagon round a dodecagonal hole, twelve-fold, never repeating)', spectre: ' (an aperiodic tiling: one tile that never repeats, never turned over)' }[kind] ?? ''} ${planeTorus(kind) ? 'wrapping around (a torus)' : planeShape(kind, walk.plane.W) ? 'walled in a hexagon' : 'with dead edges'}` : MODES[$('mode').value].where;
+  const sym = kind && !walk.life.elementary ? SYMMETRIES[symmetryOf(kind)][2] : '', where = kind ? `a ${side} × ${side} grid of ${PLANE_CELLS[kind]}${{ tri: ' (two a rhombus)', cairo: ' (two a square)', kite: ' (six a rhombus)', hat: ' (an aperiodic tiling: one tile that never repeats)', penrose: ' (an aperiodic tiling)', pinwheel: ' (an aperiodic tiling: one right triangle, turned every way)', ammann: ' (an aperiodic tiling, eightfold)', rhombs12: ' (an aperiodic tiling, twelvefold)', rhombs14: ' (an aperiodic tiling, fourteenfold)', flower: " (Hirschhorn's flower: one pentagon, six-fold, never repeating)", flower5: ' (a rosette: one pentagon, five-fold, never repeating)', flower7: ' (a rosette: one pentagon, seven-fold, never repeating)', mirror7: ' (a mirrored rosette: one pentagon, a house, seven-fold, never repeating)', flower3: ' (a rosette: one pentagon, three-fold, never repeating)', flower4: ' (a rosette: one pentagon, four-fold, never repeating)', flower8: ' (a rosette: one pentagon, eight-fold, never repeating)', flower9: ' (a rosette: one pentagon, nine-fold, never repeating)', flower10: ' (a rosette: one pentagon, ten-fold, never repeating)', ring7: ' (a ring: one pentagon round a heptagonal hole, seven-fold, never repeating)', ring8: ' (a ring: one pentagon round an octagonal hole, eight-fold, never repeating)', ring9: ' (a ring: one pentagon round a nonagonal hole, nine-fold, never repeating)', ring10: ' (a ring: one pentagon round a decagonal hole, ten-fold, never repeating)', ring12: ' (a ring: one pentagon round a dodecagonal hole, twelve-fold, never repeating)', spectre: ' (an aperiodic tiling: one tile that never repeats, never turned over)' }[kind] ?? ''} ${planeTorus(kind) ? 'wrapping around (a torus)' : planeShape(kind, walk.plane.W) ? 'walled in a hexagon' : 'with dead edges'}` : MODES[$('mode').value].where;
   const found = { hunt: 'A start found by the hunt', saved: 'A saved start', battle: 'A battle found by the hunt' }[lifeStart];
   if (lifeStart?.zone) return `${zoneWords(lifeStart.zone)}${sym ? `, ${sym},` : ''} on ${where}, the others dead`;
   if (lifeStart?.radius) return `${number} the ${fmt(lifeStart.cells)} cells within radius ${lifeStart.radius} of the middle of ${where}, the others dead`;
@@ -11373,7 +11395,7 @@ function getSetup() {
   if (mode.life && !mode.margolus && lifeColours > 1) s.k = lifeColours;
   if (mode.life && colourMixed()) s.mx = 1;  // (Mixed)
   if (mode.plane) {  // the grid's side, dead edges (e=1), its start ("random.30.7", "draw" with p=, "digits"), its symmetry (y=)
-    if (!mode.elementary) s.s = plane.side;  // (Elementary's: by its generations, see elementaryW)
+    if (!mode.elementary) s.s = plane.side;  // (Elementary's: none, see elementaryRows)
     if (!plane.torus) s.e = 1;
     const ol = outlineOf(MODES[w].plane);
     if (ol !== outlineOf(MODES[w].plane, 'hex')) s.ol = ol[0];
@@ -11746,6 +11768,7 @@ function advanceTo(target, until = Infinity) {  // forth or back (a walk; a reve
     if (xs[i] > bounds.maxX) bounds.maxX = xs[i];
     if (ys[i] < bounds.minY) bounds.minY = ys[i];
     if (ys[i] > bounds.maxY) bounds.maxY = ys[i];
+    if (walk.rows) { const r = Math.max(walk.rows.wide, i); bounds.minX = Math.min(bounds.minX, -r); bounds.maxX = Math.max(bounds.maxX, r); }  // (Elementary's: its row's reach, see elementaryRows)
   }
   const reachedEnd = target >= walk.n && cur < walk.n;
   if (target !== cur) statsDirty = true;
@@ -13125,9 +13148,12 @@ function glFlat(to) {
     }
   }
   // the cells: each point's tile, with its colour band (the heatmap: its visits so far), once per walk
-  const cells = !walk.is3d && flatCellsOn();
+  const cells = !walk.is3d && (flatCellsOn() || !!walk.rows);
   let cellCount = 0;
-  if (cells) {
+  if (walk.rows) {  // Elementary's: its rows up to the one shown, each its rainbow (see elementaryRows)
+    if (S.keys.flatCells !== walk.rows) { upload(S.flatCells, walk.rows.inst); S.cellTpl = templateArray(CELL_TEMPLATES.square); S.keys.flatCells = walk.rows; }
+    cellCount = walk.rows.upTo[Math.min(to, walk.n) + 1];
+  } else if (cells) {
     const cellsKey = `${mode}|${walk.keys === walk.antStates}`;
     if (S.keys.flatCells !== walk.xs || S.keys.flatCellsMode !== cellsKey) {
       const lat = walk.lattice, inst = new Float32Array(4 * (walk.n + 1)), at = new Int32Array(walk.n + 1);
@@ -13147,7 +13173,7 @@ function glFlat(to) {
     }
     cellCount = countUpTo(S.cellAt, S.cellN, to);
   }
-  const line = !cells || ($('showPath').checked && !$('showPath').disabled);
+  const line = !walk.rows && (!cells || ($('showPath').checked && !$('showPath').disabled));  // (Elementary: its cells only)
   // the frame
   gl.viewport(0, 0, glCanvas.width, glCanvas.height);
   gl.clearColor(0, 0, 0, 0);
@@ -13762,7 +13788,7 @@ function computeFill() {
 function drawOverlay() {
   const ctx = layers.overlay;
   ctx.clearRect(0, 0, cw, ch);
-  if (!walk.n || walk.life || startsShown) return;  // no walker in the Game of Life
+  if (!walk.n || walk.life || walk.rows || startsShown) return;  // no walker in the Game of Life, nor Elementary
   const { scale: s, ox, oy } = view;
   const r = Math.max(3, Math.min(s * 0.35, 8));
   // start (hidden on the far side of the sphere)
@@ -14021,13 +14047,14 @@ function updateStats() {
   $('seekCount').hidden = !finite || busy || lifePlayer();  // (folded: the step alone, beside the title; Life's, in its title)
   if (finite) { $('seekCount').textContent = fmt(cur); $('seekCountOpen').textContent = `${fmt(cur)} / ${fmt(far)}`; }
   if (!walk.life) $('ranking').hidden = $('rankTitles').hidden = true;
-  const time = spaceTimeOn() && !!stack;
-  document.querySelector('.stage-bar .stats').hidden = !time;
-  if (time) {  // Space-time: its generation, its cubes up to it
+  const time = spaceTimeOn() && !!stack, rows = walk.rows;
+  document.querySelector('.stage-bar .stats').hidden = !time && !rows;
+  if (time || rows) {  // Space-time: its generation, its cubes up to it; Elementary: its live cells up to it (see elementaryRows)
     $('ranking').hidden = $('gauges').hidden = $('rankTitles').hidden = true;
     setLinks($('barNum'), `Gen ${fmt(cur)}`);
     $('sGen').textContent = `${fmt(cur)} / ${fmt(walk.n)}`;
-    $('sCubes').textContent = fmt(stack.layers[cur] + 1);
+    $('sWhat').textContent = rows ? 'Live cells' : 'Cubes';
+    $('sCubes').textContent = fmt(rows ? rows.upTo[cur + 1] : stack.layers[cur] + 1);
     $('digitStrip').textContent = '';
     drawActivity();
     return;

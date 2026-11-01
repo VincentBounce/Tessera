@@ -11,7 +11,7 @@
   <meta property="og:type" content="website">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='7' fill='%23bf8700'/><path d='M7 11.5Q8 9 11 9H25M12.5 9.5Q12.5 19 9.5 24M19.5 9.5V21Q19.5 24 23 23' fill='none' stroke='white' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'/></svg>">  <!-- a white π on gold -->
   <meta name="description" content="A walk on a grid in 2D or 3D driven by the base-2 to base-6 digits of π, other constants and large primes.">
-  <link rel="stylesheet" href="style.css?v=20261214x">
+  <link rel="stylesheet" href="style.css?v=20261214y">
   <script>  // the theme before the first paint (see applyTheme)
     try { const t = localStorage.getItem('tesseraTheme') || 'system'; document.documentElement.dataset.theme = t === 'system' ? (matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark') : t; } catch { document.documentElement.dataset.theme = 'dark'; }
   </script>
@@ -247,35 +247,6 @@
               <option value="life2dRing9">Life — a 9-fold ring of pentagons round a hole</option>
               <option value="life2dRing10">Life — a 10-fold ring of pentagons</option>
               <option value="life2dRing12">Life — a 12-fold ring of pentagons round a hole</option>
-              <option value="life2dRhombille">Life — rhombille grid</option>
-              <option value="life2dRhombitri">Life — rhombitrihexagonal grid</option>
-              <option value="life2dFloret">Life — floret pentagons grid</option>
-              <option value="life2dSnubtri">Life — snub trihexagonal grid</option>
-              <option value="life2dPythagorean">Life — Pythagorean grid</option>
-              <option value="life2dElongated">Life — elongated triangular grid</option>
-              <option value="life2dPrismatic">Life — prismatic pentagons grid</option>
-              <option value="life2dCapitalI">Life — capital 𝙸 grid</option>
-              <option value="life2dTetrakis">Life — tetrakis grid</option>
-              <option value="life2dKischecker">Life — squares and tetrakis squares grid</option>
-              <option value="life2dKisrhombille">Life — kisrhombille grid</option>
-              <option value="life2dPent9">Life — type 9 pentagon grid</option>
-              <option value="life2dPent10">Life — type 10 pentagon grid</option>
-              <option value="life2dPent11">Life — type 11 pentagon grid</option>
-              <option value="life2dPent13">Life — type 13 pentagon grid</option>
-              <option value="life2dPent14">Life — Stein pentagon grid</option>
-              <option value="life2dPent15">Life — 15th pentagon grid</option>
-              <option value="life2dTrihex">Life — trihexagonal grid</option>
-              <option value="life2dTruncsquare">Life — octagons and squares grid</option>
-              <option value="life2dSnubsquare">Life — snub square grid</option>
-              <option value="life2dTrunchex">Life — dodecagons and triangles grid</option>
-              <option value="life2dTrunctrihex">Life — truncated trihexagonal grid</option>
-              <option value="life2dDual16">Life — pentagons of the 16th 2-uniform dual grid</option>
-              <option value="life2dDual56">Life — pentagons of a 3-uniform dual grid</option>
-              <option value="life2dDual314">Life — pentagons of a 5-uniform dual grid</option>
-              <option value="life2dDemi2">Life — dodecagons, squares and triangles of the 2nd 2-uniform grid</option>
-              <option value="life2dDemi10">Life — hexagons and triangles of the 10th 2-uniform grid</option>
-              <option value="life2dDemi13">Life — dodecagons, squares and triangles of the 13th 2-uniform grid</option>
-              <option value="life2dDemi20">Life — hexagons and triangles of the 20th 2-uniform grid</option>
             </optgroup>
             <optgroup label="Automata on surfaces">
               <option value="lifeCube">Life — cube</option>
@@ -304,50 +275,6 @@
               <option value="lifeTorusCairo">Life — torus</option>
               <option value="lifeTorusTri">Life — torus</option>
               <option value="lifeTorusKite">Life — torus</option>
-              <option value="lifeTorusRhombille">Life — torus</option>
-              <option value="lifeTorusRhombitri">Life — torus</option>
-              <option value="lifeTorusFloret">Life — torus</option>
-              <option value="lifeTorusSnubtri">Life — torus</option>
-              <option value="lifeTorusPythagorean">Life — torus</option>
-              <option value="lifeTorusElongated">Life — torus</option>
-              <option value="lifeTorusPrismatic">Life — torus</option>
-              <option value="lifeTorusTetrakis">Life — torus</option>
-              <option value="lifeTorusKischecker">Life — torus</option>
-              <option value="lifeTorusPent9">Life — torus</option>
-              <option value="lifeTorusPent10">Life — torus</option>
-              <option value="lifeTorusPent11">Life — torus</option>
-              <option value="lifeTorusPent13">Life — torus</option>
-              <option value="lifeTorusKisrhombille">Life — torus</option>
-              <option value="lifeTorusPent15">Life — torus</option>
-              <option value="lifeTorusTrihex">Life — torus</option>
-              <option value="lifeTorusTruncsquare">Life — torus</option>
-              <option value="lifeTorusSnubsquare">Life — torus</option>
-              <option value="lifeTorusTrunchex">Life — torus</option>
-              <option value="lifeTorusTrunctrihex">Life — torus</option>
-              <option value="lifeTorusDual16">Life — torus</option>
-              <option value="lifeTorusDual56">Life — torus</option>
-              <option value="lifeTorusDual314">Life — torus</option>
-              <option value="lifeTorusPent14">Life — torus</option>
-              <option value="lifeMobiusRhombille">Life — Möbius strip</option>
-              <option value="lifeMobiusRhombitri">Life — Möbius strip</option>
-              <option value="lifeMobiusElongated">Life — Möbius strip</option>
-              <option value="lifeMobiusPrismatic">Life — Möbius strip</option>
-              <option value="lifeMobiusTetrakis">Life — Möbius strip</option>
-              <option value="lifeMobiusKischecker">Life — Möbius strip</option>
-              <option value="lifeMobiusPent15">Life — Möbius strip</option>
-              <option value="lifeMobiusSnubsquare">Life — Möbius strip</option>
-              <option value="lifeMobiusPent9">Life — Möbius strip</option>
-              <option value="lifeMobiusPent10">Life — Möbius strip</option>
-              <option value="lifeMobiusPent11">Life — Möbius strip</option>
-              <option value="lifeMobiusPent13">Life — Möbius strip</option>
-              <option value="lifeMobiusKisrhombille">Life — Möbius strip</option>
-              <option value="lifeMobiusTrihex">Life — Möbius strip</option>
-              <option value="lifeMobiusTruncsquare">Life — Möbius strip</option>
-              <option value="lifeMobiusTrunchex">Life — Möbius strip</option>
-              <option value="lifeMobiusDual16">Life — Möbius strip</option>
-              <option value="lifeMobiusDual56">Life — Möbius strip</option>
-              <option value="lifeMobiusDual314">Life — Möbius strip</option>
-              <option value="lifeMobiusTrunctrihex">Life — Möbius strip</option>
               <option value="lifeMobius">Life — Möbius strip</option>
               <option value="lifeMobiusHex">Life — Möbius strip</option>
               <option value="lifeMobiusTri">Life — Möbius strip</option>
@@ -358,26 +285,6 @@
               <option value="lifeKleinTri">Life — Klein bottle</option>
               <option value="lifeKleinCairo">Life — Klein bottle</option>
               <option value="lifeKleinKite">Life — Klein bottle</option>
-              <option value="lifeKleinRhombille">Life — Klein bottle</option>
-              <option value="lifeKleinRhombitri">Life — Klein bottle</option>
-              <option value="lifeKleinElongated">Life — Klein bottle</option>
-              <option value="lifeKleinPrismatic">Life — Klein bottle</option>
-              <option value="lifeKleinTetrakis">Life — Klein bottle</option>
-              <option value="lifeKleinKischecker">Life — Klein bottle</option>
-              <option value="lifeKleinPent15">Life — Klein bottle</option>
-              <option value="lifeKleinSnubsquare">Life — Klein bottle</option>
-              <option value="lifeKleinPent9">Life — Klein bottle</option>
-              <option value="lifeKleinPent10">Life — Klein bottle</option>
-              <option value="lifeKleinPent11">Life — Klein bottle</option>
-              <option value="lifeKleinPent13">Life — Klein bottle</option>
-              <option value="lifeKleinKisrhombille">Life — Klein bottle</option>
-              <option value="lifeKleinTrihex">Life — Klein bottle</option>
-              <option value="lifeKleinTruncsquare">Life — Klein bottle</option>
-              <option value="lifeKleinTrunchex">Life — Klein bottle</option>
-              <option value="lifeKleinDual16">Life — Klein bottle</option>
-              <option value="lifeKleinDual56">Life — Klein bottle</option>
-              <option value="lifeKleinDual314">Life — Klein bottle</option>
-              <option value="lifeKleinTrunctrihex">Life — Klein bottle</option>
               <option value="lifeTetra">Life — tetrahedron</option>
               <option value="lifeOcta">Life — octahedron</option>
               <option value="lifeTetraKite">Life — tetrahedron</option>
@@ -826,10 +733,10 @@
     </div>
   </main>
 
-  <script src="pixelarticons.js?v=20261214x"></script>
-  <script src="punks.js?v=20261214x"></script>
-  <script src="loops.js?v=20261214x"></script>
-  <script src="emoji.js?v=20261214x"></script>
-  <script src="main.js?v=20261214x"></script>
+  <script src="pixelarticons.js?v=20261214y"></script>
+  <script src="punks.js?v=20261214y"></script>
+  <script src="loops.js?v=20261214y"></script>
+  <script src="emoji.js?v=20261214y"></script>
+  <script src="main.js?v=20261214y"></script>
 </body>
 </html>

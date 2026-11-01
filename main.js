@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.3.49';
+const VERSION = '0.3.50';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -2846,8 +2846,11 @@ for (const [k, { a, name }] of Object.entries(HEX_SOLIDS)) {  // the solids of h
   MODE_ICONS[m] = MODE_ICONS[kite];
   NAV[m] = ['Life', 'Surfaces', name, 'Life', ''];
 }
+// each with its option in the mode list (index.html), in its group: made here with the mode, never written apart
+const modeOption = (m, group, text) => document.querySelector(`#mode optgroup[label="${group}"]`).append(new Option(`Life — ${text}`, m));
 for (const [kind, t] of Object.entries(TILINGS)) {
   MODES[tilingMode(kind)] = { base: 2, lattice: kind, life: true, plane: kind, where: t.where };
+  modeOption(tilingMode(kind), 'Automata on the plane', t.where);
   MODE_ICONS[tilingMode(kind)] = `tiling-${kind}`;
   NAV[tilingMode(kind)] = ['Life', '2D', t.name, 'Life', ''];
   for (const [fold, F] of Object.entries(FOLDS)) if (F.has(kind)) {  // folded (see FOLDS)
@@ -2855,6 +2858,7 @@ for (const [kind, t] of Object.entries(TILINGS)) {
     MODES[m] = { base: 2, lattice: 'sphere', sphere: F.of(kind), life: true, ...(F.perspective ? { perspective: true } : {}), round: true, where: `${F.a} of ${t.where.replace(/^a grid of /, '')}${F.tail}` };
     MODE_ICONS[m] = fold;
     NAV[m] = ['Life', 'Surfaces', F.name, 'Life', ''];
+    modeOption(m, 'Automata on surfaces', MODES[m].where);
   }
 }
 // Reversible on the tori: Life's, in blocks as the plane's (its blocks' grid, so many cells a block, see meshBlocks), 3 squares

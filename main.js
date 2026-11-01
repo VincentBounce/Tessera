@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.3.32';
+const VERSION = '0.3.33';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -9454,8 +9454,8 @@ function renderRuleSection() {
   const listed = [...$('lifePreset').options].filter((o) => o.dataset.name && o.text.includes(mark) && (!mode.margolus || blocksFit(parseRule(o.value), mode)) && (!mode.loops || loopFits(parseRule(o.value), mode))), mine = listed.find((o) => o.value === now);
   // Elementary's, in two tabs over How it works: Main, the known ones; Others, the rest (the one in use's, until one is clicked)
   const main = (o) => ELEMENTARY_MAIN.has(parseRule(o.value).wolfram), tab = ruleTab ?? (mine && !main(mine) ? 'others' : 'main');
-  $('ruleTabs').replaceChildren(...(mode.elementary ? [tileGroup([['main', 'star', 'Main', `The ${ELEMENTARY_MAIN.size} known ones`], ['others', 'elementary', 'Others', `The ${listed.length - ELEMENTARY_MAIN.size} others, by number`]]
-    .map(([k, pic, text, title]) => tile({ pic: icon(pic), text, title, on: tab === k, click: () => { ruleTab = k; renderRuleSection(); } })), true)] : []));
+  $('ruleTabs').replaceChildren(...(mode.elementary ? [tileGroup([['main', icon('elementary'), 'Main', `The ${ELEMENTARY_MAIN.size} known ones`], ['others', pixelIcon(RULE_ICONS.W184), 'Others', `The ${listed.length - ELEMENTARY_MAIN.size} others, by number`]]
+    .map(([k, pic, text, title]) => tile({ pic, text, title, on: tab === k, click: () => { ruleTab = k; renderRuleSection(); } })), true)] : []));
   const known = mode.elementary ? listed.filter((o) => main(o) === (tab === 'main')) : listed;
   const yours = { value: now, dataset: { name: 'Custom rule' } }, mineNot = !mine || (customOpen && !mode.loops);  // (your own, for how a rule works; none for a loop: a table is not typed)
   const shown = mineNot ? yours : mine;

@@ -248,13 +248,14 @@ button.wide.how-it-works { margin-bottom: 4px; }  /* on its rules' first card, t
 /* icons: 24 px in a tile, a tab or by a section's title, 20 px on a card, 16 px in a line of text */
 /* a group of tiles, one choice among them: joined in one frame, 2 or 3 columns of tiles */
 .tile-group { display: flex; grid-column: span 2; }
-.tile-group:has(> :nth-child(3)) { grid-column: span 3; }
-.tile-group:has(> :nth-child(4)) { grid-column: span 4; }
+.tile-group:has(> :nth-child(3 of :not([hidden]))) { grid-column: span 3; }  /* (its buttons shown only: a group's hidden ones never count) */
+.tile-group:has(> :nth-child(4 of :not([hidden]))) { grid-column: span 4; }
 .tile-group.wide { grid-column: 1 / -1; }  /* a section's big choice: across its row, its buttons as wide as it shares (2, 3 or 4) */
 .tile-group > button { flex: 1 1 0; border-radius: 0; }
-.tile-group > button + button { margin-left: -1px; }  /* one line between them */
-.tile-group > button:first-child { border-radius: 6px 0 0 6px; }
-.tile-group > button:last-child { border-radius: 0 6px 6px 0; }
+.tile-group > button:nth-child(n + 2 of :not([hidden])) { margin-left: -1px; }  /* one line between them */
+.tile-group > button:nth-child(1 of :not([hidden])) { border-radius: 6px 0 0 6px; }
+.tile-group > button:nth-last-child(1 of :not([hidden])) { border-radius: 0 6px 6px 0; }
+.tile-group > button:nth-child(1 of :not([hidden])):nth-last-child(1 of :not([hidden])) { border-radius: 6px; }  /* (one shown alone: round all round) */
 .tile-group > button.active, .tile-group > button:hover { position: relative; z-index: 1; }  /* its border over its neighbour's (every button its own layer: above the next one) */
 button.switch:hover:not(:disabled) { background: var(--pick); }  /* a switch (a button that a click changes again) answers the hover: off, in the pale gold of a choice picked; on, deeper (Dawn sky) */
 button.switch.active:hover:not(:disabled) { background: var(--pick-strong); }

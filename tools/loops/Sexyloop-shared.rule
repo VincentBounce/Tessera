@@ -1,0 +1,23 @@
+@RULE Sexyloop-shared
+
+This file contains colors and/or icons shared by Sexyloop-* rules.
+
+@TABLE
+
+n_states:10
+neighborhood:vonNeumann
+symmetries:none
+# do nothing
+
+@COLORS
+
+0  000 000 000   black
+1  000 000 255   blue
+2  255 000 000   red
+3  255 000 255   dark pink
+4  000 255 000   green
+5  000 255 255   cyan
+6  255 255 000   yellow
+7  255 255 255   white
+8  150 150 150   light gray
+9  255 200 000   orange

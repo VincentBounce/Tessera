@@ -160,7 +160,7 @@ function checkTips(fail) {
   return 1;
 }
 function checker(fail) {
-  const errors = [], onError = (e) => errors.push(e.message);
+  const errors = [], onError = (e) => errors.push(`${e.message} (${(e.error?.stack ?? '').split('\n')[1]?.trim().replace(/\?v=\w+/, '') ?? ''})`);  // (where: its first frame, main.js:line)
   window.addEventListener('error', onError);
   const c = { checked: 0, stop: () => window.removeEventListener('error', onError) };
   c.look = async (what, ms = 450) => {
@@ -227,8 +227,13 @@ async function crawl(fail) {
 const offered = (w) => {
   const d = w.document, row = (sel, all = false) => [...d.querySelectorAll(sel)].filter((b) => (all ? !b.hidden : !b.closest('[hidden]'))).map((b) => `${b.textContent.trim().slice(0, 16)}${b.disabled ? '⊘' : ''}${b.classList.contains('active') ? '•' : ''}`).join(' ');
   return { size: d.getElementById('sizeLabel').closest('[hidden]') ? '' : d.getElementById('sizeLabel').innerText, plane: d.getElementById('planeLabel').closest('[hidden]') ? '' : d.getElementById('planeLabel').innerText,
-    tiles: row('#torusTiles button'), colours: row('#colourBlocks button'), zones: row('#huntZones button', w === window && surfaceDraw && huntOn()), rules: row('#navRules button') };  // (Draw open on a surface here: a view, a hunt's zones out of sight, not gone; a link loaded cold has it not)
+    tiles: row('#torusTiles button'), colours: row('#colourBlocks button'), zones: row('#huntZones button', w === window && surfaceDraw && huntOn()), rules: row('#navRules button'),
+    ...panel(d) };  // (Draw open on a surface here: a view, a hunt's zones out of sight, not gone; a link loaded cold has it not)
 };
+// the whole left panel, section by section (its sections' ids): each button shown, its name, greyed or not, picked or not
+// (what a path through the menus left there, a link loaded cold must show the same)
+const panel = (d) => Object.fromEntries([...d.querySelectorAll('#paramsPane > *')].map((s, i) => [s, `#${s.id || i}`]).filter(([s]) => !s.hidden).map(([s, k]) => [k,
+  [...s.querySelectorAll('button')].filter((b) => !b.closest('[hidden]') && getComputedStyle(b).display !== 'none').map((b) => `${b.textContent.trim().slice(0, 16)}${b.disabled ? '⊘' : ''}${b.classList.contains('active') ? '•' : ''}`).join(' ')]));
 async function coldLike(fail, what) {
   const f = document.createElement('iframe');
   f.style.cssText = 'position:fixed;left:0;top:0;width:1200px;height:900px;opacity:0;pointer-events:none';
@@ -238,7 +243,7 @@ async function coldLike(fail, what) {
   await wait(1500);
   const a = offered(window), b = offered(f.contentWindow);
   f.remove();
-  const diff = Object.keys(a).filter((k) => a[k] !== b[k]).map((k) => `${k}: «${a[k]}» here, «${b[k]}» cold`);
+  const diff = [...new Set([...Object.keys(a), ...Object.keys(b)])].filter((k) => a[k] !== b[k]).map((k) => `${k}: «${a[k]}» here, «${b[k]}» cold`);
   if (diff.length) fail(`${what} ${location.hash}: ${diff.join('; ')}`);
 }
 async function fuzz(fail, count, seedv, cold = false) {

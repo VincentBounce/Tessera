@@ -24,12 +24,14 @@ const TAU = 2 * Math.PI;
  * ==============================================================================================
  *
  * Every pass draws one triangle over its target. Textures are RGBA32F, N×N, NEAREST, read by
- * texelFetch. The FFT is Stockham's radix 2 (natural order in and out), a pass per stage and axis.
+ * texelFetch. The FFT is Stockham's (natural order in and out), radix 4 with one radix-2 stage when
+ * log2 N is odd: a pass per stage and axis, each reading and writing the whole texture, so half
+ * the passes of radix 2 is nearly half the time.
  */
 
 /* ---- 1.1 Context and passes ------------------------------------------------------------------ */
 
-let N = 1024;
+let N = 512;
 const MAX_K = 16, GROUPS = MAX_K / 4;
 const canvas = $('view');
 const gl = canvas.getContext('webgl2', { antialias: false, alpha: false });
@@ -124,32 +126,46 @@ function pass(p, out, uniforms = {}, textures = {}) {
 
 /* ---- 1.2 FFT --------------------------------------------------------------------------------- */
 
-// A texel holds two complex numbers (xy, zw), both transformed at once.
+// One stage of radix r (2 or 4) making subtransforms of size uSize from r of size uSize/r, read
+// N/r apart: out[i] = Σk w^(k·(i mod uSize)) in[e + k·N/r], w = exp(±2πi/uSize). A texel holds two
+// complex numbers (xy, zw), both transformed at once.
 const FFT_FS = `
-uniform sampler2D uSrc; uniform int uSize, uHoriz, uHalfN; uniform float uSign;
+uniform sampler2D uSrc; uniform int uSize, uRadix, uHoriz, uStride; uniform float uSign;
 vec2 cmul(vec2 a, vec2 b) { return vec2(a.x * b.x - a.y * b.y, a.x * b.y + a.y * b.x); }
 void main() {
   ivec2 p = ivec2(gl_FragCoord.xy);
-  int index = uHoriz == 1 ? p.x : p.y, half_ = uSize / 2;
-  int e = (index / uSize) * half_ + index % half_;
-  ivec2 pe = p, po = p;
-  if (uHoriz == 1) { pe.x = e; po.x = e + uHalfN; } else { pe.y = e; po.y = e + uHalfN; }
-  vec4 ev = texelFetch(uSrc, pe, 0), od = texelFetch(uSrc, po, 0);
-  float a = uSign * 6.283185307179586 * float(index % uSize) / float(uSize);
-  vec2 w = vec2(cos(a), sin(a));
-  o = vec4(ev.xy + cmul(w, od.xy), ev.zw + cmul(w, od.zw));
+  int index = uHoriz == 1 ? p.x : p.y, q = uSize / uRadix;
+  int e = (index / uSize) * q + index % q;
+  float base = uSign * 6.283185307179586 * float(index % uSize) / float(uSize);
+  vec4 sum = vec4(0.0);
+  for (int k = 0; k < 4; k++) {
+    if (k >= uRadix) break;
+    ivec2 at = p;
+    if (uHoriz == 1) at.x = e + k * uStride; else at.y = e + k * uStride;
+    vec4 v = texelFetch(uSrc, at, 0);
+    vec2 w = vec2(cos(base * float(k)), sin(base * float(k)));
+    sum += vec4(cmul(w, v.xy), cmul(w, v.zw));
+  }
+  o = sum;
 }`;
 
 let fftProgram, scratch;
 
+// The radices of one axis: a 2 first when log2 N is odd, then 4s.
+const radices = () => { const b = Math.log2(N); return [...(b % 2 ? [2] : []), ...Array((b - (b % 2)) / 2).fill(4)]; };
+
 // src transformed into dst (forward, or inverse unscaled); src is left as it was.
 function fft(src, dst, inverse) {
-  const stages = Math.log2(N), total = 2 * stages;
+  const rs = radices(), total = 2 * rs.length;
   let input = src, k = 0;
-  for (const horiz of [1, 0]) for (let s = 1; s <= stages; s++, k++) {
-    const out = k === total - 1 ? dst : scratch[(k + (src === scratch[0] ? 1 : 0)) % 2];
-    pass(fftProgram, out, { uSize: { i: 1 << s }, uHoriz: { i: horiz }, uHalfN: { i: N / 2 }, uSign: inverse ? 1 : -1 }, { uSrc: input });
-    input = out;
+  for (const horiz of [1, 0]) {
+    let size = 1;
+    for (const r of rs) {
+      size *= r;
+      const out = k === total - 1 ? dst : scratch[(k + (src === scratch[0] ? 1 : 0)) % 2];
+      pass(fftProgram, out, { uSize: { i: size }, uRadix: { i: r }, uHoriz: { i: horiz }, uStride: { i: N / r }, uSign: inverse ? 1 : -1 }, { uSrc: input });
+      input = out; k++;
+    }
   }
 }
 
@@ -384,6 +400,7 @@ function allocate(n) {
     if (t.fb) gl.deleteFramebuffer(t.fb);
     gl.deleteTexture(t);
   }
+  if (censusFence) { gl.deleteSync(censusFence); censusFence = null; }
   N = n; CENSUS = N / BLOCK; walls = new Uint8Array(N * N);
   const lin = linearOk ? gl.LINEAR : gl.NEAREST;
   state = [texture(N, N, null, gl.RGBA32F, gl.RGBA, gl.FLOAT, lin), texture(N, N, null, gl.RGBA32F, gl.RGBA, gl.FLOAT, lin)];
@@ -431,7 +448,7 @@ function step() {
   }
   pass(P.step, state[1], law.uniforms, { uState: state[0], uPot0: pots[0], uPot1: pots[1], uPot2: pots[2], uPot3: pots[3] });
   state.reverse();
-  generation++;
+  stepCount++;
 }
 
 function apply(p, uniforms, textures = {}) {
@@ -484,12 +501,28 @@ function seed() {
 }
 
 // Keep alive: a species whose whole mass fell under half a creature's gets one more, on a spot
-// free of walls and of life (read from the census of 8×8 blocks).
+// free of walls and of life (read from the census of 8×8 blocks). The census is read back without
+// waiting: into a buffer, taken once its fence is passed (a plain readPixels stalled a busy GPU
+// for a second on ANGLE Metal).
 const creatureMass = (sp) => { const pt = patternTex(sp); let m = 0; for (let i = 0; i < pt.w * pt.h; i++) m += pt.data[i * 4] + pt.data[i * 4 + 1] + pt.data[i * 4 + 2]; return m * (world.R / sp.R) ** 2; };
+let censusBuffer = null, censusFence = null;
 function keepAlive() {
-  pass(P.census, census, { uB: { i: BLOCK } }, { uState: state[0] });
+  if (!censusFence) {
+    pass(P.census, census, { uB: { i: BLOCK } }, { uState: state[0] });
+    censusBuffer ??= gl.createBuffer();
+    gl.bindBuffer(gl.PIXEL_PACK_BUFFER, censusBuffer);
+    gl.bufferData(gl.PIXEL_PACK_BUFFER, CENSUS * CENSUS * 16, gl.STREAM_READ);
+    gl.readPixels(0, 0, CENSUS, CENSUS, gl.RGBA, gl.FLOAT, 0);
+    gl.bindBuffer(gl.PIXEL_PACK_BUFFER, null);
+    censusFence = gl.fenceSync(gl.SYNC_GPU_COMMANDS_COMPLETE, 0);
+    return;
+  }
+  if (gl.getSyncParameter(censusFence, gl.SYNC_STATUS) !== gl.SIGNALED) return;
+  gl.deleteSync(censusFence); censusFence = null;
   const buf = new Float32Array(CENSUS * CENSUS * 4);
-  gl.readPixels(0, 0, CENSUS, CENSUS, gl.RGBA, gl.FLOAT, buf);
+  gl.bindBuffer(gl.PIXEL_PACK_BUFFER, censusBuffer);
+  gl.getBufferSubData(gl.PIXEL_PACK_BUFFER, 0, buf);
+  gl.bindBuffer(gl.PIXEL_PACK_BUFFER, null);
   const total = [0, 0, 0], taken = [];
   for (let i = 0; i < CENSUS * CENSUS; i++) {
     const m = buf[i * 4] + buf[i * 4 + 1] + buf[i * 4 + 2];
@@ -579,12 +612,11 @@ const ZOO_START = SPECIES.single.slice(0, 3);
 // A species in a list: Chan's name if it has one, its code, how it lives.
 const label = (s) => `${s.name ? `${s.name} · ` : ''}${s.code} — ${s.life}`;
 let world = { kind: 'zoo', slots: [...ZOO_START], organism: SPECIES.multi[0], R: 13, meet: 0.6 };
-let decor = 'Maze', tool = 'Creature', selected = 0, speed = 2, running = true, alive = true, trails = true, generation = 0;
+let decor = 'Maze', tool = 'Creature', selected = 0, speed = 2, running = true, alive = true, trails = true;
 
 function rebuild(reseed = true) {
   setLaw(lawOf(world));
   if (reseed) { clearLife(); seed(); }
-  generation = 0;
   render();
 }
 
@@ -667,14 +699,14 @@ function buildPanel() {
     () => String(world.R), (v) => { world.R = +v; setDecor(decor); rebuild(); });
   tabs($('spaceTabs'), [512, 1024].map((n) => [String(n), `${n}²`, `A world of ${n}×${n} cells${n > 512 ? ': room for more, four times the work' : ''}`]),
     () => String(N), (v) => { allocate(+v); view.centre = [N / 2, N / 2]; frameView(); setDecor(decor); rebuild(); });
-  tabs($('speedTabs'), [1, 2, 4, 8].map((s) => [String(s), `×${s}`, `${s} step${s > 1 ? 's' : ''} a frame`]), () => String(speed), (v) => { speed = +v; });
+  tabs($('speedTabs'), [1, 2, 4, 8].map((s) => [String(s), `×${s}`, `${s} step${s > 1 ? 's' : ''} a frame at most: fewer when the GPU cannot keep up (the steps a second under Run)`]), () => String(speed), (v) => { speed = +v; });
   $('runRow').replaceChildren(
     button(running ? 'Pause' : 'Play', 'Run or stop time', () => { running = !running; buildPanel(); }),
     toggle('Trails', 'Where the creatures went, fading', () => trails, () => { trails = !trails; render(); }),
     toggle('Keep alive', 'A species gone is given one more creature, on a free spot', () => alive, () => { alive = !alive; }),
     button('Step', 'One step', () => { step(); render(); }),
-    button('Seed', 'Life cleared, a few of each species placed again', () => { clearLife(); seed(); generation = 0; }),
-    button('Clear', 'All life cleared (the walls stay)', () => { clearLife(); generation = 0; }));
+    button('Seed', 'Life cleared, a few of each species placed again', () => { clearLife(); seed(); }),
+    button('Clear', 'All life cleared (the walls stay)', () => clearLife()));
 }
 
 /* ---- 4.4 Drawing and the pointer ------------------------------------------------------------- */
@@ -753,16 +785,47 @@ canvas.addEventListener('wheel', (e) => {
 
 /* ---- 4.5 Loop and check ---------------------------------------------------------------------- */
 
-let frames = 0, fpsAt = performance.now(), fps = 0, aliveTick = 0;
+// The steps of a frame: the speed asked, as many as fit in 60% of a frame of GPU time (each step
+// timed on the GPU, where the browser can), run only once the GPU has done the last ones (a fence),
+// a frame skipped so leaving its steps to the next (credit). A speed out of reach so neither
+// queues up (the queue grew, then stalled everything for a second) nor runs the GPU flat out; the
+// stats give the steps a second.
+const timer = gl && gl.getExtension('EXT_disjoint_timer_query_webgl2');
+let frames = 0, fpsAt = performance.now(), fps = 0, aliveTick = 0, fence = null, stepCount = 0, stepsAt = 0;
+let stepGpu = 0, frameMs = 1000 / 60, lastFrame = performance.now(), query = null, timed = 0, credit = 0;
+function stepsPerFrame() {
+  if (query && gl.getQueryParameter(query, gl.QUERY_RESULT_AVAILABLE)) {
+    if (!gl.getParameter(timer.GPU_DISJOINT_EXT)) stepGpu = gl.getQueryParameter(query, gl.QUERY_RESULT) / 1e6 / timed;
+    gl.deleteQuery(query); query = null;
+  }
+  if (!timer) return speed;
+  return stepGpu > 0 ? Math.min(speed, 0.6 * frameMs / stepGpu) : 1;
+}
 function frame() {
-  if (running) { for (let k = 0; k < speed; k++) step(); fadeTrails(0.985); }
-  if (running && alive && ++aliveTick % 30 === 0) keepAlive();
+  const now0 = performance.now();
+  frameMs = 0.9 * frameMs + 0.1 * Math.min(now0 - lastFrame, 50); lastFrame = now0;
+  const perFrame = stepsPerFrame();
+  if (running) credit = Math.min(credit + perFrame, 3 * Math.max(1, perFrame));
+  const gpuDone = !fence || gl.getSyncParameter(fence, gl.SYNC_STATUS) === gl.SIGNALED;
+  if (running && gpuDone && credit >= 1) {
+    if (fence) gl.deleteSync(fence);
+    const n = Math.floor(credit), timing = timer && !query;
+    credit -= n;
+    if (timing) { timed = n; query = gl.createQuery(); gl.beginQuery(timer.TIME_ELAPSED_EXT, query); }
+    for (let k = 0; k < n; k++) step();
+    if (timing) gl.endQuery(timer.TIME_ELAPSED_EXT);
+    fadeTrails(0.985);
+    fence = gl.fenceSync(gl.SYNC_GPU_COMMANDS_COMPLETE, 0);
+  }
+  if (running && alive && (censusFence || ++aliveTick % 30 === 0)) keepAlive();
   render();
   frames++;
   const now = performance.now();
   if (now - fpsAt > 500) {
-    fps = frames * 1000 / (now - fpsAt); frames = 0; fpsAt = now;
-    $('stats').textContent = `${fps.toFixed(0)} fps · ${N}×${N} · ${kernelCount} kernels · step ${generation}`;
+    const perSecond = 1000 / (now - fpsAt);
+    fps = frames * perSecond; frames = 0; fpsAt = now;
+    $('stats').textContent = `${fps.toFixed(0)} fps · ${((stepCount - stepsAt) * perSecond).toFixed(0)} steps/s · ${N}² · ${kernelCount} kernels`;
+    stepsAt = stepCount;
   }
   requestAnimationFrame(frame);
 }
@@ -795,6 +858,13 @@ window.leniaCheck = function (steps = 400) {
   bindTarget(scratch[1]); gl.readPixels(0, 0, N, N, gl.RGBA, gl.FLOAT, back);
   let err = 0; for (let i = 0; i < buf.length; i++) err = Math.max(err, Math.abs(back[i] / (N * N) - buf[i]));
   out.push({ test: 'fft round trip', ok: err < 1e-4, err });
+  // An impulse at (1, 2) transforms to exp(−2πi(kx + 2ky)/N): checks the order, not only the inverse.
+  const imp = new Float32Array(N * N * 4); imp[(2 * N + 1) * 4] = 1;
+  const ti = texture(N, N, imp); fft(ti, spec, false); gl.deleteTexture(ti);
+  bindTarget(spec); gl.readPixels(0, 0, N, N, gl.RGBA, gl.FLOAT, back);
+  let errI = 0;
+  for (let i = 0; i < N * N; i += 97) { const a = -TAU * ((i % N) + 2 * Math.floor(i / N)) / N; errI = Math.max(errI, Math.abs(back[i * 4] - Math.cos(a)), Math.abs(back[i * 4 + 1] - Math.sin(a))); }
+  out.push({ test: 'fft of an impulse', ok: errI < 1e-3, err: errI });
   walls.fill(0); decor = 'Empty'; uploadWalls();
   const trial = (kind, sp) => {
     world = kind === 'zoo' ? { ...world, kind, slots: [sp, ZOO_START[1], ZOO_START[2]] } : { ...world, kind, organism: sp };

@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.2.192';
+const VERSION = '0.2.193';
 const APP_TITLE = 'Walking π';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -8629,20 +8629,21 @@ function drawMotifFace(ctx, t0) {
 // hexagon, a tetrakis square's 4 triangles, a triangle (of 3 kites)
 function motifTiles() {
   const g = walk.geo, sh = walk.shape, proj = projector(), { scale: s, ox, oy } = view, at = (t) => [0, 1, 2].map((d) => sh.cen[3 * t + d] * walk.R);
-  const nears = [-1, -1], best = [-Infinity, -Infinity];  // (a solid of squares and triangles: a triangle, and a square apart, see drawMotif)
+  const nears = [-1, -1], best = [-Infinity, -Infinity], score = new Float64Array(g.n).fill(-Infinity);  // (a solid of squares and triangles: a triangle, and a square apart, see drawMotif)
   for (let t = 0; t < g.n; t++) {
     const n = [0, 1, 2].map((d) => sh.nrm[3 * t + d]), k = +(t < g.triFirst);
     if (!planeVisible(n, at(t))) continue;
-    const [x, y] = proj(...at(t)), score = towardViewer(...n) + towardViewer(...at(t)) / (walk.R * (g.extent || 1)) - 0.2 * (Math.hypot(ox + x * s - cw / 2, oy + y * s - ch / 2) / Math.min(cw, ch));  // (facing the viewer, near it: in front, not a far side seen through a hole)
-    if (score > best[k]) { best[k] = score; nears[k] = t; }
+    const [x, y] = proj(...at(t)), sc = towardViewer(...n) + towardViewer(...at(t)) / (walk.R * (g.extent || 1)) - 0.2 * (Math.hypot(ox + x * s - cw / 2, oy + y * s - ch / 2) / Math.min(cw, ch));  // (facing the viewer, near it: in front, not a far side seen through a hole)
+    score[t] = sc;
+    if (sc > best[k]) { best[k] = sc; nears[k] = t; }
   }
   const near = nears[0] >= 0 ? nears[0] : nears[1];
   if (near < 0) return [];
   if (g.triFaces) return Object.assign([near], { square: near === nears[1] ? -1 : nears[1] });
-  if (g.torus) {  // a sheet: its bricks as laid (g.bricks, else brickOf(g) tiles at a time as listed, a strip's back as its front); its first whole and seen, else the one in front
-    const m = brickOf(g), id = (t) => g.bricks?.[t] ?? Math.floor(tilePlace(g, t) / m), bricks = Map.groupBy([...Array(g.n).keys()], id);
-    const seen = (ts) => ts.filter((t) => planeVisible([0, 1, 2].map((d) => sh.nrm[3 * t + d]), at(t)));
-    return [...bricks.values()].map(seen).find((ts) => ts.length === m) ?? bricks.get(id(near));
+  if (g.torus) {  // a sheet: its bricks as laid (g.bricks, else brickOf(g) tiles at a time as listed, a strip's back as its front); the whole one seen most in front (its tiles' best, as a solid's tile), else the one in front
+    const m = brickOf(g), id = (t) => g.bricks?.[t] ?? Math.floor(tilePlace(g, t) / m), bricks = Map.groupBy([...Array(g.n).keys()], id), front = (ts) => Math.max(...ts.map((t) => score[t]));
+    const whole = [...bricks.values()].filter((ts) => ts.every((t) => score[t] > -Infinity));  // (seen: scored)
+    return whole.length ? whole.reduce((a, b) => (front(b) > front(a) ? b : a)) : bricks.get(id(near));
   }
   const m = g.kite ? 3 : g.squares ? 4 : 1;  // (a kite's triangle, 3 kites; a tetrakis square, 4 triangles)
   return Array.from({ length: m }, (_, j) => Math.floor(near / m) * m + j);  // (a cell, a triangle: what a face counts, f² of them; not the plane's rhombus, a face not whole ones)

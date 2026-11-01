@@ -1,0 +1,34 @@
+# Publishes the repo as it is (a static site: index.html, main.js…) to GitHub Pages at each push to main.
+# Needs Settings → Pages → Source: GitHub Actions (not "Deploy from a branch", whose deployments collide when pushes
+# come minutes apart: a finished one kept its lock, every next one refused, 2026-11-01).
+name: Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# one deployment at a time: a push while one runs waits its turn (only the latest waiting one kept)
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: .
+      - id: deployment
+        uses: actions/deploy-pages@v4

@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.3.41';
+const VERSION = '0.3.42';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -3229,7 +3229,7 @@ function compute() {
   renderViewTiles();
   renderColours();
   renderRuleSection();
-  if (!mode.life) { stopHunt(); $('huntRow').hidden = true; }
+  if (!mode.life || mode.elementary) { stopHunt(); $('huntRow').hidden = true; }  // (no hunt: a walk, or Elementary's rows, built by buildWalk)
   renderPlaneRow();
   // a new number, surface, size or rule ends any hunt: its champion would not fit any more
   $('digitsRow').hidden = !!mode.life && !gensShown();  // Life takes one digit per cell of the surface; a reversible one, Elementary, Space-time, its generations
@@ -15160,7 +15160,7 @@ function computeFramed() {
 }
 // Another mode in the same tab keeps the Display settings; another tab starts from its defaults
 let displayTab = null;
-const modeTabOf = () => $('mode').selectedOptions[0].parentElement.label;
+const modeTabOf = () => `${NAV[$('mode').value]?.[0]}|${$('mode').selectedOptions[0].parentElement.label}`;  // (the menu's tab, Life or Elementary, and its space: the select's group holds several tabs)
 function displayDefaults() {
   const mode = MODES[$('mode').value];
   $('colourMode').value = defaultLook(mode);  // simplest view by default

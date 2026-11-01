@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.3.16';
+const VERSION = '0.3.17';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -9831,11 +9831,23 @@ for (const [name, { year, words, pattern: { w, h, rle } }] of Object.entries(LOO
   option.dataset.name = name === 'Langton' ? "Langton's loops" : name;
   $('lifePreset').insertBefore(option, $('lifePreset').querySelector('option[value="custom"]'));
 }
-// Elementary's known rules (see parseElementary): each its number and words; its picture its first 5 rows from one cell
+// Elementary's rules (see parseElementary), each its number and words, its picture its first 5 rows from one cell: the known
+// ones first, then Wolfram's 88 the rest (the 256 alike mirrored or in negative counted once: each its least, its words its
+// twins). A known one stands for its twins (220, not 140: its picture from one cell, Mersenne's numbers)
 const ELEMENTARY_RULES = [[30, "chaos from one cell: its middle column looks random (Wolfram's random numbers)"], [90, "each cell its two neighbours' XOR: from one cell, Sierpiński's triangle"],
   [110, 'gliders on a regular background; universal: it can compute anything (Cook, 2004)'], [184, 'traffic: a live cell moves right when the cell ahead is free, as cars'],
   [150, 'each cell the XOR of the three above it: a fractal of triangles'], [54, 'gliders and walls, between order and chaos'],
-  [60, "each cell its own and its left neighbour's XOR: Sierpiński's triangle, leaning"], [18, "Sierpiński's triangle from one cell; from the digits, chaos broken by kinks"]];
+  [60, "each cell its own and its left neighbour's XOR: Sierpiński's triangle, leaning"], [18, "Sierpiński's triangle from one cell; from the digits, chaos broken by kinks"],
+  [22, "Sierpiński's triangle from one cell; from the digits, chaos"], [45, 'chaos leaning to one side'], [73, 'walls standing down the rows, disorder shut between them'],
+  [105, "150's negative: triangles nested in triangles"], [126, "a filled Sierpiński's triangle from one cell; from the digits, chaos"],
+  [28, "Jacobsthal's numbers, each row read in base 2"], [220, "Mersenne's numbers, 1, 11, 111…: a triangle filling one side"], [62, 'patterns repeating, between order and chaos']];
+const mirrorRule = (N) => Array.from({ length: 8 }, (_, b) => ((N >> b) & 1) << (((b & 1) << 2) | (b & 2) | (b >> 2))).reduce((a, v) => a | v, 0);  // (left and right swapped)
+const negativeRule = (N) => Array.from({ length: 8 }, (_, b) => (1 - ((N >> (7 - b)) & 1)) << b).reduce((a, v) => a | v, 0);  // (alive and dead swapped)
+const ruleTwins = (N) => [...new Set([N, mirrorRule(N), negativeRule(N), mirrorRule(negativeRule(N))])].sort((a, b) => a - b);
+for (let n = 0; n < 256; n++) {
+  const twins = ruleTwins(n);
+  if (twins[0] === n && !ELEMENTARY_RULES.some(([k]) => twins.includes(k))) ELEMENTARY_RULES.push([n, twins.length > 1 ? `alike, mirrored or in negative: ${twins.slice(1).map((k) => `W${k}`).join(', ')}` : 'its own mirror and negative']);
+}
 for (const [n, words] of ELEMENTARY_RULES) {
   RULE_ICONS[`W${n}`] = wolframRows(n, 5, 5).map((r) => r.map((c) => (c ? 'o' : '.')).join('')).join(',');
   const option = new Option(`${ELEMENTARY_MARK} W${n} — ${words}`, `W${n}`);

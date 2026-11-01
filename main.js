@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.3.30';
+const VERSION = '0.3.31';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -9446,11 +9446,17 @@ const walkTutorialToggle = () => ($('ruleTuto').hidden ? walkTutorial($('mode').
 // loop, Fredkin's Replicator, the Ising model)
 const unnamed = (words, name) => (words.startsWith(name) && /^(?:[,:]|\s\(|$)/.test(words.slice(name.length)) ? words.slice(name.length).replace(/^[,:]?\s*/, '') : words);
 let customOpen = false;  // the Custom rule card clicked: its states, births and survivals shown, a known rule in use or not
+let ruleTab = null;  // Elementary's tab clicked (Main, Others; null: the rule in use's, see renderRuleSection)
 function renderRuleSection() {
   const mode = MODES[$('mode').value];
   if (!mode.life) { if (!$('ruleTuto').hidden && walkTutorialFits($('mode').value)) walkTutorial($('mode').value); else ruleTutorial(null); return; }  // (a walk's: it follows the walk)
   const mark = lifeMark(mode), now = ruleBody($('lifeRule').value);
-  const known = [...$('lifePreset').options].filter((o) => o.dataset.name && o.text.includes(mark) && (!mode.margolus || blocksFit(parseRule(o.value), mode)) && (!mode.loops || loopFits(parseRule(o.value), mode))), mine = known.find((o) => o.value === now);
+  const listed = [...$('lifePreset').options].filter((o) => o.dataset.name && o.text.includes(mark) && (!mode.margolus || blocksFit(parseRule(o.value), mode)) && (!mode.loops || loopFits(parseRule(o.value), mode))), mine = listed.find((o) => o.value === now);
+  // Elementary's, in two tabs: Main, the known ones; Others, the rest (the one in use's, until one is clicked)
+  const main = (o) => ELEMENTARY_MAIN.has(parseRule(o.value).wolfram), tab = ruleTab ?? (mine && !main(mine) ? 'others' : 'main');
+  $('ruleTabs').replaceChildren(...(mode.elementary ? [tileGroup([['main', 'star', 'Main', `The ${ELEMENTARY_MAIN.size} known ones`], ['others', 'elementary', 'Others', `The ${listed.length - ELEMENTARY_MAIN.size} others, by number`]]
+    .map(([k, pic, text, title]) => tile({ pic: icon(pic), text, title, on: tab === k, click: () => { ruleTab = k; renderRuleSection(); } })), true)] : []));
+  const known = mode.elementary ? listed.filter((o) => main(o) === (tab === 'main')) : listed;
   const yours = { value: now, dataset: { name: 'Custom rule' } }, mineNot = !mine || (customOpen && !mode.loops);  // (your own, for how a rule works; none for a loop: a table is not typed)
   const shown = mineNot ? yours : mine;
   if (!$('ruleTuto').hidden && $('ruleTuto').dataset.shown !== tutorialKey(shown)) ruleTutorial(shown);  // how a rule works follows the grid and the rule
@@ -9901,7 +9907,7 @@ for (const [name, { year, words, pattern: { w, h, rle } }] of Object.entries(LOO
   $('lifePreset').insertBefore(option, $('lifePreset').querySelector('option[value="custom"]'));
 }
 // Elementary's rules (see parseElementary), each its number and words, its picture its first 5 rows from one cell: the known
-// ones first, then Wolfram's 88 the rest (the 256 alike mirrored or in negative counted once: each its least, its words its
+// ones first (Wikipedia's from one cell among them), then Wolfram's 88 the rest (the 256 alike mirrored or in negative counted once: each its least, its words its
 // twins). A known one stands for its twins (220, not 140: its picture from one cell, Mersenne's numbers)
 const ELEMENTARY_RULES = [[30, "chaos from one cell: its middle column looks random (Wolfram's random numbers)"], [90, "each cell its two neighbours' XOR: from one cell, Sierpiński's triangle"],
   [110, 'gliders on a regular background; universal: it can compute anything (Cook, 2004)'], [184, 'traffic: a live cell moves right when the cell ahead is free, as cars'],
@@ -9909,7 +9915,11 @@ const ELEMENTARY_RULES = [[30, "chaos from one cell: its middle column looks ran
   [60, "each cell its own and its left neighbour's XOR: Sierpiński's triangle, leaning"], [18, "Sierpiński's triangle from one cell; from the digits, chaos broken by kinks"],
   [22, "Sierpiński's triangle from one cell; from the digits, chaos"], [45, 'chaos leaning to one side'], [73, 'walls standing down the rows, disorder shut between them'],
   [105, "150's negative: triangles nested in triangles"], [126, "a filled Sierpiński's triangle from one cell; from the digits, chaos"],
-  [28, "Jacobsthal's numbers, each row read in base 2"], [220, "Mersenne's numbers, 1, 11, 111…: a triangle filling one side"], [62, 'patterns repeating, between order and chaos']];
+  [28, "Jacobsthal's numbers, each row read in base 2"], [220, "Mersenne's numbers, 1, 11, 111…: a triangle filling one side"], [62, 'patterns repeating, between order and chaos'],
+  [50, 'from one cell, its rows read in base 2 a closed form in powers of 4 (Wikipedia)'], [94, 'from one cell, its rows read in base 2 a closed form, one for even generations, one for odd (Wikipedia)'],
+  [158, 'from one cell, its rows read in base 2 a sequence with a generating function (Wikipedia)'], [188, 'from one cell, its rows read in base 2 a sequence with a generating function (Wikipedia)'],
+  [190, 'from one cell, its rows read in base 2 a sequence with a generating function (Wikipedia)'], [222, 'every other Mersenne number, 2·4ⁿ − 1: a triangle filled both ways']];
+const ELEMENTARY_MAIN = new Set(ELEMENTARY_RULES.map(([n]) => n));  // (the known ones: its Main tab, see renderRuleSection)
 const mirrorRule = (N) => Array.from({ length: 8 }, (_, b) => ((N >> b) & 1) << (((b & 1) << 2) | (b & 2) | (b >> 2))).reduce((a, v) => a | v, 0);  // (left and right swapped)
 const negativeRule = (N) => Array.from({ length: 8 }, (_, b) => (1 - ((N >> (7 - b)) & 1)) << b).reduce((a, v) => a | v, 0);  // (alive and dead swapped)
 const ruleTwins = (N) => [...new Set([N, mirrorRule(N), negativeRule(N), mirrorRule(negativeRule(N))])].sort((a, b) => a - b);

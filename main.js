@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.3.25';
+const VERSION = '0.3.26';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -6734,14 +6734,15 @@ function elementaryReady(then) {
   return false;
 }
 const elementaryRows = () => (elementaryReady(compute) ? elementaryMade : null);  // (not made yet: all again once they are)
-// a part of its rows near enough to draw cell by cell (x0 to x1, rows t0 to t1): again from the kept row above it, on its words and
-// as many more each side as rows walked (what lies past them cannot reach it); its cells, a row after another
-function elementaryPart(R, x0, x1, t0, t1) {
+// a part of its rows in view (x0 to x1, rows t0 to t1): again from the kept row above it, on its words and as many more each side
+// as rows walked (what lies past them cannot reach it); its live cells counted in blocks of b × b (b 1: its cells), a row of
+// blocks after another
+function elementaryPart(R, x0, x1, t0, t1, b = 1) {
   const k = Math.floor(t0 / KEEP), from = k * KEEP, m = t1 - from + 1, lo = Math.max(0, (x0 - m) >> 4), hi = Math.min(R.n - 1, (x1 + m) >> 4), full = lo === 0 && hi === R.n - 1;
-  const T = wolframTable(R.N), w = x1 - x0 + 1, out = new Uint8Array(w * (t1 - t0 + 1));
+  const T = wolframTable(R.N), w = Math.ceil((x1 - x0 + 1) / b), out = new Uint32Array(w * Math.ceil((t1 - t0 + 1) / b));
   let r = R.kept[k].slice(), next = new Uint16Array(R.n);
   for (let t = from; t <= t1; t++) {
-    if (t >= t0) for (let x = x0; x <= x1; x++) out[(t - t0) * w + x - x0] = cellOf(r, x);
+    if (t >= t0) { const at = Math.floor((t - t0) / b) * w; for (let x = x0; x <= x1; x++) out[at + Math.floor((x - x0) / b)] += cellOf(r, x); }
     wolframStep(T, r, next, lo, hi, R.wrap && full);
     [r, next] = [next, r];
   }
@@ -13186,9 +13187,11 @@ const templateArray = (templates) => {
 };
 // how many of the sorted values are ≤ v
 const countUpTo = (sorted, n, v) => { let lo = 0, hi = n; while (lo < hi) { const m = (lo + hi) >> 1; if (sorted[m] <= v) lo = m + 1; else hi = m; } return lo; };
-// Elementary's rows (see elementaryRows), up to the one shown, on the walk's layer: far, its picture (each pixel B × B cells, as
-// many alive as it is opaque); near (a cell a pixel or more, its picture coarser), its cells there again (see elementaryPart).
+// Elementary's rows (see elementaryRows), up to the one shown, on the walk's layer, each pixel as opaque as its cells are alive:
+// the part in view again at about a cell a screen pixel (b × b cells, b a power of 2; see elementaryPart) when finer than its
+// picture and not too many cells (PART_MOST), kept while the view stays; else its picture (B × B cells a pixel), never smoothed.
 // Each row its rainbow (Age), or Life's live colour (States)
+const PART_MOST = 32e6;
 function drawElementary(to) {
   const R = walk.rows, ctx = layers.path, { scale: s, ox, oy } = view, last = Math.min(to, R.G), mono = $('colourMode').value === 'mono';
   const rgb = (t) => rgbCached(mono ? LIFE_ALIVE : GRADIENT[Math.floor((t * BANDS) / (R.G + 1))]);
@@ -13201,17 +13204,22 @@ function drawElementary(to) {
   };
   ctx.clearRect(0, 0, cw, ch);
   ctx.imageSmoothingEnabled = false;
-  if (R.B > 1 && s >= 1) {  // near: the cells in view
-    const x0 = Math.max(0, Math.floor(-ox / s + R.c)), x1 = Math.min(R.W - 1, Math.ceil((cw - ox) / s + R.c)), t0 = Math.max(0, Math.floor(-oy / s)), t1 = Math.min(last, Math.ceil((ch - oy) / s));
-    if (x1 < x0 || t1 < t0) return;
-    const w = x1 - x0 + 1, cells = elementaryPart(R, x0, x1, t0, t1);
-    ctx.drawImage(paint(w, t1 - t0 + 1, (x, y) => cells[y * w + x] * 255, (y) => t0 + y), ox + (x0 - R.c - 0.5) * s, oy + (t0 - 0.5) * s, w * s, (t1 - t0 + 1) * s);
+  const b = Math.max(1, 2 ** Math.floor(Math.log2(1 / s))), snap = (v) => Math.floor(v / b) * b;  // (its blocks on the grid of b: still while it pans)
+  const x0 = Math.max(0, snap(-ox / s + R.c)), x1 = Math.min(R.W - 1, Math.ceil((cw - ox) / s + R.c)), t0 = Math.max(0, snap(-oy / s)), t1 = Math.min(R.G, Math.ceil((ch - oy) / s));
+  if (x1 < x0 || t1 < t0) return;
+  if (R.B > 1 && b < R.B && (x1 - x0 + 1) * (t1 - t0 + 1) <= PART_MOST) {
+    const key = `${x0}|${x1}|${t0}|${t1}|${b}|${mono}|${LIFE_ALIVE}`;
+    if (R.part?.key !== key) {
+      const counts = elementaryPart(R, x0, x1, t0, t1, b), w = Math.ceil((x1 - x0 + 1) / b), h = Math.ceil((t1 - t0 + 1) / b);
+      R.part = { key, w, h, cv: paint(w, h, (x, y) => Math.round((255 * counts[y * w + x]) / (b * b)), (y) => t0 + y * b + (b >> 1)) };
+    }
+    const h = Math.min(R.part.h, Math.ceil((last - t0 + 1) / b));  // (up to the row shown)
+    if (h > 0) ctx.drawImage(R.part.cv, 0, 0, R.part.w, h, ox + (x0 - R.c - 0.5) * s, oy + (t0 - 0.5) * s, R.part.w * b * s, h * b * s);
     return;
   }
   const key = `${mono}|${LIFE_ALIVE}`;  // (its picture, once a look)
   if (R.picture?.key !== key) R.picture = { key, cv: paint(R.PW, R.PH, (x, y) => Math.round((255 * R.counts[y * R.PW + x]) / (R.B * R.B)), (y) => y * R.B + (R.B >> 1)) };
   const h = Math.min(R.PH, Math.ceil((last + 1) / R.B));
-  ctx.imageSmoothingEnabled = R.B > 1;
   ctx.drawImage(R.picture.cv, 0, 0, R.PW, h, ox + (-R.c - 0.5) * s, oy - 0.5 * s, R.PW * R.B * s, h * R.B * s);  // (its last pixels past the row's end: empty)
 }
 function glFlat(to) {

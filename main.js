@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.3.12';
+const VERSION = '0.3.13';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -6650,12 +6650,16 @@ function parseElementary(text) {
 }
 // Elementary on the plane: its rows on the processor, as many as the generations asked, a walk's steps (a step a generation, its
 // walker down the middle, see buildWalkOf), its live cells drawn as a walk's (see glFlat), each in its row's rainbow. Its rows
-// 2 × its generations + 1 wide, wrapping round: One cell's never reaches their ends; the digits fill the first (a row
-// repeating for ever, as Wolfram's). upTo: its cells up to each row; wide: its first row's reach (each next one more)
+// 2 × its generations + 1 wide, wrapping round (the left end the right end's neighbour): One cell's never reaches their ends.
+// Digits: the number's first digit in the middle, the next ones to its right; at the right end the row wraps round, so they
+// go on from the left end back to the middle, the last just left of the first. The only seam, where the last digit meets the
+// first, is in the middle: what it starts spreads from there as One cell's does, a triangle (a fraction's repeating digits
+// elsewhere, as a row that never ends). upTo: its cells up to each row; wide: its first row's reach (each next one more)
 function elementaryRows(digits) {
   const G = targetAsked(), W = 2 * G + 1, N = lifeRuleNow()?.wolfram ?? 30, upTo = new Int32Array(G + 2);
   let r = new Uint8Array(W), next = new Uint8Array(W), inst = new Float32Array(1 << 16), m = 0;
-  if (plane.start === 'digits') r.set(digits.subarray(0, W)); else r[G] = 1;
+  if (plane.start === 'digits') for (let i = 0; i < W; i++) r[(G + i) % W] = digits[i] ?? 0;  // (from the middle, round by the right)
+  else r[G] = 1;
   for (let t = 0; t <= G; t++) {
     const band = Math.floor((t * BANDS) / (G + 1));
     for (let x = 0; x < W; x++) {

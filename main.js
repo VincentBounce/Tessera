@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.2.183';
+const VERSION = '0.2.184';
 const APP_TITLE = 'Walking π';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -1522,7 +1522,7 @@ function renderViewModes() {
     $('upright').dispatchEvent(new Event('change'));
     renderViewModes();
   };
-  viewModes ??= [tile({ pic: icon('viewDefault'), text: 'Default', click: set(true, false) }), tile({ pic: icon('free'), text: 'Free', title: 'Free: the view as turned by hand (a drag frees it)', click: set(false, false) }),
+  viewModes ??= [tile({ pic: icon('viewDefault'), text: 'Default', click: set(true, false) }), tile({ pic: icon('free'), text: 'Free', title: 'The view as turned by hand (a drag frees it)', click: set(false, false) }),
     tile({ pic: icon('upright'), text: 'Upright', title: $('uprightRow').title, click: set(false, true) })];
   rotateTile ??= tile({ pic: icon('autoRotate'), text: 'Auto-rotate', title: $('autoRotateRow').title, toggle: true, click: () => { $('autoRotate').checked = !$('autoRotate').checked; $('autoRotate').dispatchEvent(new Event('change')); renderViewModes(); } });
   if (!$('viewModes').children.length) $('viewModes').replaceChildren(tileGroup(viewModes), rotateTile);
@@ -1657,7 +1657,7 @@ let trailButton = null;  // kept: it goes after Life's looks, in their row (see 
 function renderTrailButton() {
   const sq = (k, c) => `<rect x="${(17 * k) / 3}" y="${17 - (17 * k) / 3}" width="7" height="7" rx="1" fill="${c}"/>`;
   trailButton ??= tile({ pic: `<svg viewBox="0 0 24 24" aria-hidden="true">${sq(0, LIFE_FADE[5]) + sq(1, LIFE_FADE[3]) + sq(2, LIFE_FADE[1])}${sq(3, LIFE_ALIVE)}</svg>`, text: 'Trail', id: 'lifeTrailButton', toggle: true,  // up the diagonal
-    title: 'Trail: a dead cell fades through Ink for a few generations (States and Age)', click: () => { $('lifeTrail').checked = !$('lifeTrail').checked; $('lifeTrail').dispatchEvent(new Event('change')); } });
+    title: 'A dead cell fades through Ink for a few generations (States and Age)', click: () => { $('lifeTrail').checked = !$('lifeTrail').checked; $('lifeTrail').dispatchEvent(new Event('change')); } });
   setTile(trailButton, { on: $('lifeTrail').checked && trailApplies(), can: trailApplies(), byDefault: 'On by default in Classic\nOff by default in colours', greyed: 'with dying stages (Generations), on Reversible and with Activity' });  // (not for these looks: off)
 }
 // Blocks (Reversible, in Trail's place: no trail there), a tile turned on and off: the blocks of the set the next generation
@@ -1665,7 +1665,7 @@ function renderTrailButton() {
 let showBlocks = false, blocksButton = null;
 function renderBlocksButton() {
   blocksButton ??= tile({ pic: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="8" height="8" rx="1" fill="currentColor" opacity="0.35"/><rect x="13" y="13" width="8" height="8" rx="1" fill="currentColor" opacity="0.35"/><rect x="3" y="3" width="18" height="18" rx="1.5" fill="none" style="stroke: var(--sector)" stroke-width="1.8"/></svg>',  // (its outline the blocks' blue)
-    text: 'Blocks', toggle: true, title: 'Blocks: the blocks the next generation is worked out by, outlined (a set at a time, in turn)', click: () => { showBlocks = !showBlocks; needsFull = true; renderBlocksButton(); } });
+    text: 'Blocks', toggle: true, title: 'The blocks the next generation is worked out by, outlined (a set at a time, in turn)', click: () => { showBlocks = !showBlocks; needsFull = true; renderBlocksButton(); } });
   const flat = !!MODES[$('mode').value].plane, can = flat && !lifeRuleNow()?.ising;  // (the mode and rule picked: the grid not built yet)
   setTile(blocksButton, { on: showBlocks && can, can, byDefault: 'off', greyed: flat ? 'in Ising (its squares in turn, no blocks)' : 'on a surface' });
 }
@@ -2183,7 +2183,7 @@ const OUTLINES = [['square', true, 'Square', 'Square: a rectangle, a torus'], ['
 $('planeEdges').append(tileGroup(OUTLINES.map(([shape, torus, text, title]) => tile({ pic: icon({ square: 'square', hex: 'hexagon', rhombus: 'rhombus' }[shape] + (torus ? '' : 'Walled')), text, id: `outline-${shape}-${torus ? 'torus' : 'walled'}`, byDefault: text === 'Square' ? 'yes' : '', title,
   click: () => { plane.shape = shape; plane.torus = torus; if (torus) spaceTime = false; compute(); } }))));  // (Stacks off on a torus)
 // Stacks (Space-time, in 3D: walls with it, left on when it goes off; a torus, Stacks off too), on squares: under Natural squares
-const spaceTimeTile = tile({ pic: icon('stacks'), text: 'Stacks', toggle: true, byDefault: 'off', title: 'Stacks: the generations stacked up, in 3D, time going up, a cube a live cell, as many generations as asked under the play buttons (a glider: a slanting line; an oscillator: a column); turned as a 3D walk. With walls: through a torus\'s edges no tree grows',
+const spaceTimeTile = tile({ pic: icon('stacks'), text: 'Stacks', toggle: true, byDefault: 'off', title: 'The generations stacked up, in 3D, time going up, a cube a live cell, as many generations as asked under the play buttons (a glider: a slanting line; an oscillator: a column); turned as a 3D walk. With walls: through a torus\'s edges no tree grows',
   click: () => { spaceTime = !spaceTime; if (spaceTime) plane.torus = false; $('perspective').checked = perspectiveFor(MODES[$('mode').value], 0); compute(); } });
 // an element's HTML with links in it, written again only when it changes: against what was written, not its HTML now (a link
 // hovered has its title turned into data-tip, see the tooltips: rewritten each frame, the link under the mouse replaced, its click
@@ -3082,7 +3082,7 @@ function renderModePicker() {
       plane.torus = !plane.torus;
       compute();
     }, modeWhere(navPick(2, sh)));
-    if (again) { setTile(b, { on: true, again }); b.title += plane.torus ? '\nA torus (a click: walls)' : '\nWalls (a click: a torus)'; }  // (its words kept, then what a click does)
+    if (again) { setTile(b, { on: true, again }); b.title += plane.torus ? '\nA torus · Clicked again: walls' : '\nWalls · Clicked again: a torus'; }  // (its words kept, then what a click does, as a card's: see card)
     return b;
   }), ...(g === SHAPE_GROUPS[1][0] && MODES[w].life && MODES[w].plane ? [spaceTimeTile] : [])];  // (Stacks: Life on squares')
   }));
@@ -8778,7 +8778,7 @@ function renderColours() {
     on: k === lifeColours, can: coloursFit(k), mark: colourMissing(k), byDefault: k === 1 ? 'yes' : '', greyed: k > 1 ? 'where the shape has no parts alike for so many colours' : '', click: () => { if (k !== lifeColours) { coloursPicked = lifeColours = k; $('lifeTrail').checked = k === 1; compute(); } } })),  // (Trail: on in Classic, off in colours, at first)
     // Mixed, a switch: the colours' cells mixed at random in one place, as one colour's (greyed in one colour and where no zone mixes, see mixable)
     tile({ pic: `<svg viewBox="0 0 4 4" aria-hidden="true">${[[0, 0], [2, 0], [1, 1], [3, 1], [0, 2], [2, 2], [1, 3], [3, 3]].map(([x, y], i) => `<rect x="${x}" y="${y}" width="1" height="1" fill="${LIFE_COLOURS[[0, 4, 2, 6, 5, 1, 7, 3][i]]}"/>`).join('')}</svg>`, text: 'Mixed',
-      title: 'Mixed: the colours placed as one colour is (one patch, a soup), each cell a colour at random', toggle: true, byDefault: 'off', greyed: 'in Classic, in Replicators, Text and Draw, and in the hunt zones that lay each colour\'s own picture or part (Icon, Punk, Emoji, Famous, Anywhere, Realm, Mirror)', on: colourMixed(), can: lifeColours > 1 && mixable(hunt.zone), click: () => { colourMix = !colourMix; compute(); } }));
+      title: 'The colours placed as one colour is (one patch, a soup), each cell a colour at random', toggle: true, byDefault: 'off', greyed: 'in Classic, in Replicators, Text and Draw, and in the hunt zones that lay each colour\'s own picture or part (Icon, Punk, Emoji, Famous, Anywhere, Realm, Mirror)', on: colourMixed(), can: lifeColours > 1 && mixable(hunt.zone), click: () => { colourMix = !colourMix; compute(); } }));
 
 }
 // The Rule section: the rules known for the grid's shape, as cards, each with a picture (5 × 5 pixels of

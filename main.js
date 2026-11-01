@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.3.22';
+const VERSION = '0.3.23';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -11390,7 +11390,7 @@ const zoneOfWord = (w) => Object.keys(HUNT_ZONES).find((z) => z !== 'full' && z 
 // (git log --grep "(v0.2.0)", its bundle, tools/at.sh 0.2.0); changed, the version now. Not read otherwise (no old links
 // handled), nor part of what tells setups apart (see isInUse)
 let setupFrom = null;  // { setup, v }
-const sameSetup = (a, b) => [...new Set([...Object.keys(a), ...Object.keys(b)])].every((k) => k === 'v' || String(a[k] ?? '') === String(b[k] ?? ''));
+const sameSetup = (a, b, apart = ['v']) => [...new Set([...Object.keys(a), ...Object.keys(b)])].every((k) => apart.includes(k) || String(a[k] ?? '') === String(b[k] ?? ''));  // (apart: the keys not compared)
 function getSetup() {
   const w = $('mode').value, mode = MODES[w], s = readsDigits(w) ? { x: formulaInUse, w } : { w };
   if (!mode.life || gensShown()) s.d = targetAsked();  // (the length asked: digits, or generations)
@@ -11601,7 +11601,7 @@ function fillSetupList() {
 // Saved under its number's name, with no question (the same setup twice is saved once; another one of
 // the same number gets "(2)", "(3)", …); its row tells the walk, size, start and rule (see setupDetail)
 // the saved setup that is the one in view (same number, walk, size, start, turn and rule), if any
-const savedInView = () => readSetups().find((x) => isInUse(x.setup) && String(x.setup.r ?? '') === String(getSetup().r ?? ''));
+const savedInView = () => readSetups().find((x) => isInUse(x.setup));
 // ☆ Save, or ★ (in yellow) while the setup in view is one of Treasures: clicked again, taken out of them
 function syncSaveButton() {
   const saved = savedInView(), b = $('setupSave');
@@ -15068,10 +15068,11 @@ const BUILT_IN = [
 ];
 // the walk's name, as in the walk list ("Squares turtle"; a surface's own name)
 const walkName = (w) => splitModeLabel($('mode').querySelector(`option[value="${w}"]`)?.text ?? w).name;
-// the setup in use: same number, walk, size and start (the digits may have been cut by a loop)
-// the same setup: the same number, mode, size, start and form; for Life, also its colours, start, symmetry,
-// edges and cells drawn or found (what is seen; not the tools that found it: the hunt's buttons, Draw's brush)
-const isInUse = (setup) => { const now = getSetup(); return ['x', 'w', 's', 'st', 'o', 'q', 'k', 'pop', 'tf', 'y', 'e', 'p', 'ch'].every((k) => String(setup[k] ?? '') === String(now[k] ?? '')); };
+// the setup in use (a Treasure's row lit, the ☆ lit): all of it the same (its number, walk, size, start, rule, colours,
+// symmetry, edges, cells drawn or found…) but its version, its length (a hover cuts it, see preview) and how it is looked at
+// (Fill areas, Space-time)
+const SETUP_LOOKS = ['v', 'd', 'fa', 'sp'];
+const isInUse = (setup) => sameSetup(setup, getSetup(), SETUP_LOOKS);
 let galleryBefore = null, galleryHover = 0;  // the setup in use while others are shown on hover
 // and its view (Auto-fit, Auto-rotate, camera, framing): a setup shown on hover is framed (Auto-fit on)
 // and, in 3D, turning (Auto-rotate on); a click keeps that, turning on; leaving the list brings back

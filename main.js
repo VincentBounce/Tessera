@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.3.5';
+const VERSION = '0.3.6';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -1675,7 +1675,7 @@ let spaceTime = false;
 const spaceTimeApplies = () => { const m = MODES[$('mode').value]; return !!m.plane && !m.margolus && planeKind(m.plane) === 'square'; };
 const spaceTimeOn = () => spaceTime && spaceTimeApplies();
 // Life's looks as square buttons with pictures (States or Colours, Age, Activity); a walk's, a list
-const defaultLook = (mode) => (mode.life ? 'mono' : 'gradient');  // (the simplest: Life's States, a walk's Rainbow)
+const defaultLook = (mode) => (mode.life && !mode.elementary ? 'mono' : 'gradient');  // (the simplest: Life's States, a walk's Rainbow; Elementary's Age, its rows by their generation)
 function renderColourButtons() {
   const sel = $('colourMode'), box = $('colourButtons'), L = MODES[$('mode').value]?.life;
   box.className = 'nav-shapes cell-modes';
@@ -1790,7 +1790,7 @@ const renderSkyButtons = () => {
 // nearest it allows (targetAsked: a walk's digits or steps, a reversible rule's or Space-time's generations up to 100,000;
 // a walk that loops stops sooner, as its stepper says); its ladder DIGIT_STEPS
 let target = 20000;
-const targetMost = () => (elementaryPlane() ? (plane.start === 'digits' ? 341 : 511) : gensShown() ? 100000 : 50_000_000);  // (Elementary's grid: 1,024 wide at most, see elementaryW)
+const targetMost = () => (elementaryPlane() ? 511 : gensShown() ? 100000 : 50_000_000);  // (Elementary's grid: 1,024 wide at most, see elementaryW)
 const targetAsked = () => Math.min(targetMost(), Math.max(10, Math.round(target) || 10));
 
 // The number of digits as a stepper, like the surface size: [ − ] 20,000 digits [ + ] goes through
@@ -1812,11 +1812,10 @@ const wholeTotal = () => (current?.whole && current.formula === $('formula').val
 // In generations (a reversible one's length, its slider's; Space-time's height): [ − ] 2,000 generations [ + ]; going back, a
 // reversible one plays again from its start; Space-time made again
 const gensShown = () => !!MODES[$('mode').value].margolus || !!MODES[$('mode').value].elementary || spaceTimeOn();
-// Elementary on the plane: a grid with no edge in reach, by construction: wrapping round, a row a generation (its side, see
-// plane), as wide as its first row (One cell, or as many digits as generations) and one cell more on both sides each
-// generation (its row, see planeRow and layElementary)
+// Elementary on the plane: a row a generation (its side, see plane), wrapping round, 2 × its generations + 1 wide (its row, see
+// planeRow): One cell's never reaches its edges; the digits fill its first row (a row repeating for ever, as Wolfram's)
 const elementaryPlane = () => !!MODES[$('mode').value].elementary && !!MODES[$('mode').value].plane;
-const elementaryW = () => (plane.start === 'digits' ? 3 : 2) * targetAsked() + (plane.start === 'digits' ? 0 : 1);
+const elementaryW = () => 2 * targetAsked() + 1;
 // The last step or generation: walk.n; a reversible one's half of it, rounded up (its n generations from 1 − n/2 to n/2, its
 // start among them: 10, from −4 to 5; see runStart), or sooner its last before its loop comes round, once found (its slider,
 // its end, its stepper's max)
@@ -1891,7 +1890,7 @@ function loopText() {
       + ` it stops after ${rounds === 1 ? 'one round' : `${rounds} rounds`}, ${fmt(total)} digits, and more would draw nothing new.`;
 }
 function stepDigits(delta) {
-  if (gensShown()) { const next = delta > 0 ? DIGIT_STEPS.find((v) => v > targetAsked() && v <= targetMost()) : DIGIT_STEPS.findLast((v) => v < targetAsked()); if (next !== undefined) setGens(next); return; }
+  if (gensShown()) { const next = delta > 0 ? DIGIT_STEPS.find((v) => v > targetAsked() && v <= targetMost()) ?? (targetAsked() < targetMost() ? targetMost() : undefined) : DIGIT_STEPS.findLast((v) => v < targetAsked()); if (next !== undefined) setGens(next); return; }  // (+ past the ladder's last below the most: the most)
   const size = randomPrimeSize(), steps = size ? PRIME_STEPS : DIGIT_STEPS;
   const n = size ?? Math.min(targetAsked(), wholeTotal() ?? Infinity, walk.loop ? walk.loop.cap ?? walk.n : Infinity);  // what is walked (a loop's: its rounds)
   const next = delta > 0 ? steps.find((v) => v > n) : steps.findLast((v) => v < n);
@@ -7930,17 +7929,15 @@ function partMiddle(k, K) {
   return part.reduce((best, u) => (Math.hypot(...[0, 1, 2].map((d) => c[3 * u + d] - mid[d])) < Math.hypot(...[0, 1, 2].map((d) => c[3 * best + d] - mid[d])) ? u : best), part[0]);
 }
 // Elementary's start (see parseElementary): every cell not reached but its first row, dead, and alive as the Start says: its
-// middle cell (One cell), or the number's digits in base 2 along it (Digits). Its row: on the plane its top, its cells by
-// their place, left to right (whatever its outline); on a torus the one through its middle, east by the cells' sides round
+// middle cell (One cell), or the number's digits in base 2 along it (Digits). Its row: on the plane its row 0, left to right
+// (see elementaryW); on a torus the one through its middle, east by the cells' sides round
 // (one north, see loopFits)
 function layElementary(seed) {
-  const P = walk.plane, top = P && Math.min(...Array.from({ length: P.n }, (_, t) => P.xy(t)[1]));
-  const row = P ? Array.from({ length: P.n }, (_, t) => t).filter((t) => P.xy(t)[1] === top).sort((a, b) => P.xy(a)[0] - P.xy(b)[0]) : [partMiddle(0, 1)];
+  const P = walk.plane, row = P ? Array.from({ length: P.row }, (_, x) => P.at(x, 0)) : [partMiddle(0, 1)];
   if (!P) for (let t = walk.life.ring[8 * row[0] + 2]; t >= 0 && t !== row[0]; t = walk.life.ring[8 * t + 2]) row.push(t);  // (east: its ring's third, see mooreOf)
-  // its first row's cells: on the plane in its middle (see elementaryW), one or as many digits as generations; round the torus all
-  const { head, frac } = digitsInUse(), digits = [...head, ...frac], D = !P ? row.length : plane.start === 'digits' ? targetAsked() : 1, off = (row.length - D) >> 1;
+  const { head, frac } = digitsInUse(), digits = [...head, ...frac], mid = P ? row[row.length >> 1] : row[0];  // (One cell: the plane's top's middle, the torus's middle)
   seed.fill(2);
-  row.forEach((t, i) => { seed[t] = plane.start === 'digits' ? (i - off < D && digits[i - off]) | 0 : +(i === off); });
+  row.forEach((t, i) => { seed[t] = plane.start === 'digits' ? digits[i] ?? 0 : +(t === mid); });
 }
 function layLoops(seed) {
   const L = walk.life, K = L.lineages ? L.colours : 1, sides = L.loopRing === 8 ? L.ring.filter((_, i) => i % 2 === 0) : L.ring, { w, h, rle } = LOOP_RULES[L.ruleText].pattern, m = Math.max(w, h);
@@ -8085,7 +8082,7 @@ function zoneWords(zone) {
 }
 function startLead(number, seeded) {  // its start in words, on any grid (the plane's: its side, its symmetry)
   const kind = walk.plane?.kind, side = kind && fmt(walk.plane.W), soup = `${plane.density} % alive (seed ${plane.seed})`;
-  const sym = kind && !walk.life.elementary ? SYMMETRIES[symmetryOf(kind)][2] : '', where = kind ? `a ${side} × ${side} grid of ${PLANE_CELLS[kind]}${{ tri: ' (two a rhombus)', cairo: ' (two a square)', kite: ' (six a rhombus)', hat: ' (an aperiodic tiling: one tile that never repeats)', penrose: ' (an aperiodic tiling)', pinwheel: ' (an aperiodic tiling: one right triangle, turned every way)', ammann: ' (an aperiodic tiling, eightfold)', rhombs12: ' (an aperiodic tiling, twelvefold)', rhombs14: ' (an aperiodic tiling, fourteenfold)', flower: " (Hirschhorn's flower: one pentagon, six-fold, never repeating)", flower5: ' (a rosette: one pentagon, five-fold, never repeating)', flower7: ' (a rosette: one pentagon, seven-fold, never repeating)', mirror7: ' (a mirrored rosette: one pentagon, a house, seven-fold, never repeating)', flower3: ' (a rosette: one pentagon, three-fold, never repeating)', flower4: ' (a rosette: one pentagon, four-fold, never repeating)', flower8: ' (a rosette: one pentagon, eight-fold, never repeating)', flower9: ' (a rosette: one pentagon, nine-fold, never repeating)', flower10: ' (a rosette: one pentagon, ten-fold, never repeating)', ring7: ' (a ring: one pentagon round a heptagonal hole, seven-fold, never repeating)', ring8: ' (a ring: one pentagon round an octagonal hole, eight-fold, never repeating)', ring9: ' (a ring: one pentagon round a nonagonal hole, nine-fold, never repeating)', ring10: ' (a ring: one pentagon round a decagonal hole, ten-fold, never repeating)', ring12: ' (a ring: one pentagon round a dodecagonal hole, twelve-fold, never repeating)', spectre: ' (an aperiodic tiling: one tile that never repeats, never turned over)' }[kind] ?? ''} ${planeTorus(kind) ? 'wrapping around (a torus)' : planeShape(kind, walk.plane.W) ? 'walled in a hexagon' : 'with dead edges'}` : MODES[$('mode').value].where;
+  const sym = kind && !walk.life.elementary ? SYMMETRIES[symmetryOf(kind)][2] : '', where = kind ? `a ${walk.life.elementary ? fmt(walk.plane.row) : side} × ${side} grid of ${PLANE_CELLS[kind]}${{ tri: ' (two a rhombus)', cairo: ' (two a square)', kite: ' (six a rhombus)', hat: ' (an aperiodic tiling: one tile that never repeats)', penrose: ' (an aperiodic tiling)', pinwheel: ' (an aperiodic tiling: one right triangle, turned every way)', ammann: ' (an aperiodic tiling, eightfold)', rhombs12: ' (an aperiodic tiling, twelvefold)', rhombs14: ' (an aperiodic tiling, fourteenfold)', flower: " (Hirschhorn's flower: one pentagon, six-fold, never repeating)", flower5: ' (a rosette: one pentagon, five-fold, never repeating)', flower7: ' (a rosette: one pentagon, seven-fold, never repeating)', mirror7: ' (a mirrored rosette: one pentagon, a house, seven-fold, never repeating)', flower3: ' (a rosette: one pentagon, three-fold, never repeating)', flower4: ' (a rosette: one pentagon, four-fold, never repeating)', flower8: ' (a rosette: one pentagon, eight-fold, never repeating)', flower9: ' (a rosette: one pentagon, nine-fold, never repeating)', flower10: ' (a rosette: one pentagon, ten-fold, never repeating)', ring7: ' (a ring: one pentagon round a heptagonal hole, seven-fold, never repeating)', ring8: ' (a ring: one pentagon round an octagonal hole, eight-fold, never repeating)', ring9: ' (a ring: one pentagon round a nonagonal hole, nine-fold, never repeating)', ring10: ' (a ring: one pentagon round a decagonal hole, ten-fold, never repeating)', ring12: ' (a ring: one pentagon round a dodecagonal hole, twelve-fold, never repeating)', spectre: ' (an aperiodic tiling: one tile that never repeats, never turned over)' }[kind] ?? ''} ${planeTorus(kind) ? 'wrapping around (a torus)' : planeShape(kind, walk.plane.W) ? 'walled in a hexagon' : 'with dead edges'}` : MODES[$('mode').value].where;
   const found = { hunt: 'A start found by the hunt', saved: 'A saved start', battle: 'A battle found by the hunt' }[lifeStart];
   if (lifeStart?.zone) return `${zoneWords(lifeStart.zone)}${sym ? `, ${sym},` : ''} on ${where}, the others dead`;
   if (lifeStart?.radius) return `${number} the ${fmt(lifeStart.cells)} cells within radius ${lifeStart.radius} of the middle of ${where}, the others dead`;

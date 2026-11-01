@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.3.18';
+const VERSION = '0.3.19';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -1425,7 +1425,7 @@ function describe(base, available) {
   $('barBase').title = [known && known.dataset.name !== ruleText ? known.dataset.name : '', 'A click: how it works'].filter(Boolean).join(' · ');  // (its name, when not its words: a loop's)
   $('barBase').classList.add('how-it-works');  // (the rule: a click, how it works)
   $('barBase').parentElement.classList.add('life');
-  if (walk.rows) { $('description').innerHTML = `${plane.start === 'digits' ? `<span class="walking">${sym}</span> in base 2` : 'One live cell'} its first row, ${fmt(walk.n)} rows down · ${fmt(walk.rows.upTo.at(-1))} live cells`; return; }  // (Elementary, see elementaryRows)
+  if (walk.rows) { $('description').innerHTML = `${{ digits: `<span class="walking">${sym}</span> in base 2`, cell: 'One live cell', two: 'Two live cells', half: 'Its left half alive' }[plane.start]} its first row, ${fmt(walk.n)} rows down · ${fmt(walk.rows.upTo.at(-1))} live cells`; return; }  // (Elementary, see elementaryRows)
   const cells = walk.life.seed.length;
   const seeded = available < cells ? `the first ${fmt(available)} of the ${fmt(cells)} cells (the others start dead)` : `the ${fmt(cells)} cells`;
   $('description').innerHTML = `Neighbours share an edge or a corner · ${startLead(`<span class="walking">${sym}</span> in base ${base} seeds`, seeded)}`;  // (the rule, a newborn's colour too: How it works)
@@ -1965,14 +1965,15 @@ const dots = (list, r) => list.map(([x, y]) => `<circle class="f" cx="${x}" cy="
 const pathEl = (d, cls) => `<path${cls ? ` class="${cls}"` : ''} d="${d}"/>`;
 // an elementary rule's cell (see parseElementary): the bit 4l + 2c + r of its number, l, c, r the three cells above it
 const wolframBit = (N, l, c, r) => (N >> (4 * l + 2 * c + r)) & 1;
-// its rows, h of them from the first (0 and 1, wrapping round: its left end its right end's neighbour), each(row, t) in turn
-// (the row read then, not kept): Elementary's (see elementaryRows), its icons and its page's
-function wolframRows(N, first, h, each) {
+// its rows, h of them from the first (0 and 1), each(row, t) in turn (the row read then, not kept): Elementary's (see
+// elementaryRows), its icons and its page's. Past its ends: wrapping round (its left end its right end's neighbour), or, not,
+// each end carried on for ever (its cells past it as it is: a row that never ends, alike past where anything reached)
+function wolframRows(N, first, h, each, wrap = true) {
   const W = first.length;
   let r = Uint8Array.from(first), next = new Uint8Array(W);
   for (let t = 0; t < h; t++) {
     each(r, t);
-    for (let x = 0; x < W; x++) next[x] = wolframBit(N, r[(x + W - 1) % W], r[x], r[(x + 1) % W]);
+    for (let x = 0; x < W; x++) next[x] = wolframBit(N, r[x ? x - 1 : wrap ? W - 1 : 0], r[x], r[x < W - 1 ? x + 1 : wrap ? 0 : W - 1]);
     [r, next] = [next, r];
   }
 }
@@ -2152,6 +2153,8 @@ const ICONS = (() => {
     symHalf: flags([[0, false], [Math.PI, false]]),
     ...Object.fromEntries([2.2, 3.5, 4.8, 6, 7.2, 8.4, 9.6, 11].map((r, i) => [`zone${i + 1}`, dots([[12, 12]], r)])),
     zoneFace: '<rect x="3" y="3" width="18" height="18" rx="2"/>' + [[6, 6], [13.5, 6], [6, 13.5], [13.5, 13.5]].map(([x, y]) => `<rect class="f" x="${x}" y="${y}" width="4.5" height="4.5" rx="0.8"/>`).join(''),  // Realm: each colour its part, apart
+    twoCells: '<circle class="f" cx="7" cy="12" r="2.2"/><circle class="f" cx="17" cy="12" r="2.2"/>',  // Elementary's Two cells
+    halfRow: '<rect x="3" y="9" width="18" height="6" rx="1"/><path class="f" d="M3 9H12V15H3Z"/>',  // its Half: a row, its left half alive
     zoneMirror: '<path d="M8 7L16 4M8 20L16 17" stroke-dasharray="1.6 2"/><path class="f" d="M3 7H8V20H3Z"/><path class="f" d="M16 4H21V17H16Z"/>',  // two opposite faces: a box's two ends
     duel: dots([[6.5, 12], [17.5, 12]], 3.5),
     // Life's grid edges: walls, a square in a frame
@@ -3194,7 +3197,7 @@ function compute() {
   $('planeRow').hidden = !mode.plane || !!mode.elementary;  // Life on the plane: its grid (Elementary's: none, see elementaryRows)
   $('lifeStartRow').hidden = !mode.life;
   $('copyRle').hidden = !mode.plane;  // (the plane's cells only)  // its start: Hunt, Draw (the plane only), Digits
-  if (mode.life) plane.start = mode.elementary ? (plane.start === 'digits' ? 'digits' : 'cell') : plane.start === 'cell' ? 'random' : plane.start;  // (Elementary's starts: One cell, Digits)
+  if (mode.life) plane.start = mode.elementary ? (ELEMENTARY_STARTS.includes(plane.start) ? plane.start : 'cell') : ELEMENTARY_STARTS.includes(plane.start) && plane.start !== 'digits' ? 'random' : plane.start;  // (Elementary's starts, see elementaryRows)
   $('startSection').hidden = !mode.life || !!mode.loops;  // (loops: their start their loops, one a lineage, see layLoops)
   $('returnSection').hidden = !mode.margolus;  // (a reversible one's return to its start, wherever it is)
   fitRuleToShape();
@@ -6645,22 +6648,27 @@ function parseElementary(text) {
 // go on from the left end back to the middle, the last just left of the first. The only seam, where the last digit meets the
 // first, is in the middle: what it starts spreads from there as One cell's does, a triangle (a fraction's repeating digits
 // elsewhere, as a row that never ends). upTo: its cells up to each row; wide: its first row's reach (each next one more);
-// digits: its first row, its digits written over it (see drawOverlay)
+// digits: its first row, its digits written over it (see drawOverlay). Its other starts on a row that never ends (its ends
+// carried on, see wolframRows): One cell; Two cells, G apart (their triangles meet halfway down; the row G / 2 wider each side, so
+// their outer sides never reach its ends); Half, its left half alive (one frontier, in the middle). c: its middle; wide: its
+// first row's reach (each next one more, up to c)
+const ELEMENTARY_STARTS = ['cell', 'two', 'half', 'digits'];
 function elementaryRows(digits) {
-  const G = targetAsked(), W = 2 * G + 1, first = new Uint8Array(W), upTo = new Int32Array(G + 2);
+  const G = targetAsked(), start = plane.start, c = G + (start === 'two' ? G >> 1 : 0), W = 2 * c + 1, first = new Uint8Array(W), upTo = new Int32Array(G + 2);
   let inst = new Float32Array(1 << 16), m = 0;
-  if (plane.start === 'digits') for (let i = 0; i < W; i++) first[(G + i) % W] = digits[i] ?? 0;  // (from the middle, round by the right)
-  else first[G] = 1;
+  if (start === 'digits') for (let i = 0; i < W; i++) first[(c + i) % W] = digits[i] ?? 0;  // (from the middle, round by the right)
+  else if (start === 'half') first.fill(1, 0, c);
+  else for (const x of start === 'two' ? [c - (G >> 1), c + (G >> 1)] : [c]) first[x] = 1;
   wolframRows(lifeRuleNow()?.wolfram ?? 30, first, G + 1, (r, t) => {
     const band = Math.floor((t * BANDS) / (G + 1));
     for (let x = 0; x < W; x++) {
       if (!r[x]) continue;
       if (m + 4 > inst.length) { const a = new Float32Array(2 * inst.length); a.set(inst); inst = a; }  // (twice as long when full)
-      inst[m++] = x - G; inst[m++] = t; inst[m++] = band; inst[m++] = 0;  // (down: the view's y)
+      inst[m++] = x - c; inst[m++] = t; inst[m++] = band; inst[m++] = 0;  // (down: the view's y)
     }
     upTo[t + 1] = m / 4;
-  });
-  return { G, inst: inst.subarray(0, m), upTo, wide: plane.start === 'digits' ? G : 0, digits: plane.start === 'digits' ? first : null };
+  }, start === 'digits');
+  return { G, inst: inst.subarray(0, m), upTo, c, wide: start === 'digits' || start === 'half' ? c : start === 'two' ? G >> 1 : 0, digits: start === 'digits' ? first : null };
 }
 function parseRule(text) {
   if (/^\s*(M|Q2R)/i.test(text)) return parseBlocks(text);
@@ -8116,7 +8124,7 @@ function startFromSetup(s) {
     plane.seed = Number(b) || 1;
     if (isIcon(hunt.zone)) plane.icons = String(s.pop).split('.').slice(1).map((name) => iconIndex(name));  // (pop=icon24.star.heart: each colour's)
     if (hunt.zone === 'numbers') plane.number = NUMBER_DRAWN.test(a) ? a : '1/7';  // (pop=formula.16/9, formula.sqrt(7))
-  } else plane.start = ['draw', 'digits', 'text', 'cell'].includes(kind) ? kind : 'random';
+  } else plane.start = ['draw', 'text', ...ELEMENTARY_STARTS].includes(kind) ? kind : 'random';
   if (kind === 'text') plane.text = String(s.pop).slice(5) || APP_TITLE;
   plane.font = TEXT_FONTS[s.tf] ? s.tf : 'sans';  // (Text's font, tf=)
   population = plane.start === 'draw' ? populationOf(s.p) : population;
@@ -8139,7 +8147,7 @@ function renderPlaneRow() {
   const blocks = !!MODES[$('mode').value].margolus;
   for (const b of $('lifeStartTabs').querySelectorAll('button')) {  // the starts, on any grid (Draw on a surface: its patterns, to see)
     const s = b.dataset.start, on = surfaceDraw ? s === 'draw' : s === plane.start;
-    b.hidden = MODES[$('mode').value].elementary ? s !== 'cell' && s !== 'digits' : s === 'cell';  // (Elementary's starts, see compute)
+    b.hidden = MODES[$('mode').value].elementary !== ELEMENTARY_STARTS.includes(s) && s !== 'digits';  // (Elementary's starts, see elementaryRows)
     if (s === 'random') b.innerHTML = `${icon(blocks ? 'dice' : 'search')}<span>${blocks ? 'Random' : 'Hunt'}</span>`;  // (blocks: no hunt, its zones' starts)
     if (s === 'draw') setTile(b, { on, can: !(!kind && blocks), greyed: 'on a reversible surface (no patterns of a block rule to show, nor drawing)' });  // (Draw on a surface: its rule's patterns, none for blocks)
     else if (s === 'text') setTile(b, { on, can: !(!!walk.life && current?.mode === $('mode').value && !setFits(iconMax(textSet()), textSet())), greyed: 'where no picture can be laid, as Emoji (a grid too small for it, a solid\'s faces none)' });  // (its grid's, once built)
@@ -11765,7 +11773,7 @@ function advanceTo(target, until = Infinity) {  // forth or back (a walk; a reve
     if (xs[i] > bounds.maxX) bounds.maxX = xs[i];
     if (ys[i] < bounds.minY) bounds.minY = ys[i];
     if (ys[i] > bounds.maxY) bounds.maxY = ys[i];
-    if (walk.rows) { const r = Math.max(walk.rows.wide, i); bounds.minX = Math.min(bounds.minX, -r); bounds.maxX = Math.max(bounds.maxX, r); }  // (Elementary's: its row's reach, see elementaryRows)
+    if (walk.rows) { const r = Math.min(walk.rows.c, walk.rows.wide + i); bounds.minX = Math.min(bounds.minX, -r); bounds.maxX = Math.max(bounds.maxX, r); }  // (Elementary's: its row's reach, see elementaryRows)
   }
   const reachedEnd = target >= walk.n && cur < walk.n;
   if (target !== cur) statsDirty = true;
@@ -13791,12 +13799,12 @@ function drawOverlay() {
   const { scale: s, ox, oy } = view;
   if (walk.rows?.digits && s >= 12) {  // Elementary's Digits, near enough: each digit on its cell of the first row, in monospace, 1 in
     // white on its live cell, 0 in the theme's text colour on the page (see elementaryRows)
-    const { G, digits } = walk.rows, text = getComputedStyle(document.documentElement).getPropertyValue('--text');
+    const { c, digits } = walk.rows, text = getComputedStyle(document.documentElement).getPropertyValue('--text');
     ctx.font = `${Math.round(s * 0.7)}px ui-monospace, Menlo, monospace`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    for (let x = Math.max(-G, Math.floor(-ox / s)); x <= Math.min(G, Math.ceil((cw - ox) / s)); x++) {
-      const d = digits[x + G];
+    for (let x = Math.max(-c, Math.floor(-ox / s)); x <= Math.min(c, Math.ceil((cw - ox) / s)); x++) {
+      const d = digits[x + c];
       ctx.fillStyle = d ? '#fff' : text;
       ctx.fillText(d, ox + x * s, oy);
     }
@@ -14500,9 +14508,10 @@ for (const [id, k] of [['planeDown', -1], ['planeUp', 1]]) {
 }
 
 // Life's starts, one choice: a tab group of tiles, its pictures over its names (Hunt's and Random's, see renderPlaneRow)
-const START_TABS = [['cell', 'zone1', 'One cell', 'One live cell in the middle of the first row'], ['random', 'search', 'Hunt', 'Random cells to start, or a hunt among them (its goal below); random zones in a reversible rule'],
+const START_TABS = [['cell', 'zone1', 'One cell', 'One live cell in the middle of the first row'], ['two', 'twoCells', 'Two cells', 'Two live cells on the first row, half its width apart: their triangles meet'],
+  ['half', 'halfRow', 'Half', 'The left half of the first row alive, the right half dead: one frontier'], ['random', 'search', 'Hunt', 'Random cells to start, or a hunt among them (its goal below); random zones in a reversible rule'],
   ['text', 'letter', 'Text', 'Words typed, laid as cells in the font picked'], ['digits', 'barcode', 'Digits', "The number's digits laid as cells, one digit a cell, as many as the grid has cells: the same number, the same start.\nIn base K + 1, live cells only: one colour, base 2, 0 dead, 1 alive; in K colours, digit k alive in colour k (Mixed: base 2, each live cell a colour at random, as the Formula hunt's).\nIn turn: a rectangle row by row, a grid in a hexagon or a circle from its middle out, wound round it.\nThe number: Number's (a constant, a fraction, a formula)"],
-  ['draw', 'pencil', 'Draw', 'Cells drawn by hand, or patterns laid with the brushes, at gen 0']];  // (start, picture, name, tooltip; One cell then Digits: Elementary's, as Ant's rule then Digits, see elementaryRows)
+  ['draw', 'pencil', 'Draw', 'Cells drawn by hand, or patterns laid with the brushes, at gen 0']];  // (start, picture, name, tooltip; One cell, Two cells, Half then Digits: Elementary's, as Ant's rule then Digits, see elementaryRows)
 $('lifeStartTabs').append(tileGroup(START_TABS.map(([start, pic, text, title]) => { const b = tile({ pic: icon(pic), text, title }); b.dataset.start = start; return b; }), true));
 for (const b of $('lifeStartTabs').querySelectorAll('button')) {
   b.addEventListener('click', () => {

@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.3.6';
+const VERSION = '0.3.7';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -8551,9 +8551,10 @@ function lifeLook(L, lift = (c) => c) {
   const pack = (c) => { const [r, g, b] = rgbOf(motifShown ? faded(c, FADING) : c); return ((255 << 24) | (b << 16) | (g << 8) | r) >>> 0; };
   const colour = $('colourMode').value, trail = LIFE_TRAIL.map(pack), inked = LIFE_FADE.map(pack), alive = pack(LIFE_ALIVE), civ = [0, ...civColours(L.colours, L.C).map(pack)];
   const grad = Array.from({ length: 32 }, (_, i) => pack(lift(GRADIENT[Math.round((i / 31) * (BANDS - 1))])));
-  // the colours on a log scale, in tables (millions of cells): of an age (up to 64), of an activity
+  // the colours on a log scale, in tables (millions of cells): of an age (up to 64; up to 511, Elementary's), of an activity
   const level = (v, max) => Math.min(31, Math.round((Math.log(v) / Math.log(Math.max(2, max))) * 31));
-  const byAge = Uint32Array.from({ length: 65 }, (_, a) => grad[31 - level(a + 1, 65)]);  // the rainbow backwards: warm newborns, cold old cells
+  const byAge = Uint32Array.from({ length: 512 }, (_, a) => (L.elementary ? pack(lift(GRADIENT[Math.round((Math.max(0, L.gen - a) / Math.max(1, walk.n)) * (BANDS - 1))]))  // (Elementary: by its row, the generation it was born, as its curve)
+    : grad[31 - level(Math.min(a, 64) + 1, 65)]));  // the rainbow backwards: warm newborns, cold old cells
   const byActivity = colour === 'digit' ? Uint32Array.from({ length: Math.min(L.maxActivity, 65535) + 1 }, (_, v) => (v ? grad[level(v + 1, L.maxActivity + 1)] : 0)) : null;
   const byDying = Uint32Array.from({ length: L.C }, (_, st) => (st < 2 ? 0 : trail[Math.min(trail.length - 1, Math.round(((st - 1) / (L.C - 1)) * trail.length))]));
   const fade = L.C === 2 && trailOn() ? trail.length : 0, K = L.colours;  // the trail after death (Trail)
@@ -12658,7 +12659,7 @@ void main() {
   if (uNeg && I(uIn, t) > 0) st = 1 - st;  // (a block rule's, shown negative)
   if (st == uUnseen) { o = uDead; return; }  // (Elementary's cells not reached yet: as dead, see parseElementary)
   if (uBy == 2) { o = look(4096 + int(min(U(uAct, t), 65535u))); return; }  // (its changes)
-  if (live(st)) { o = uBy == 1 ? look(512 + int(min(U(uAge, t), 64u))) : look(st); return; }  // (its age, or its state)
+  if (live(st)) { o = uBy == 1 ? look(512 + int(min(U(uAge, t), 511u))) : look(st); return; }  // (its age, or its state)
   if (st > 0) { o = look(256 + st); return; }
   int d = uGen - I(uDied, t);
   o = d >= 0 && d < uTrail ? look(1024 + d) : uDead;
@@ -13832,7 +13833,7 @@ function drawActivity() {
     series = [[columns(n, (i) => E[i] - (i ? E[i - 1] : -1)), rainbow()]];
   } else if (walk.life) {
     const L = walk.life;
-    series = [[columns(n, (i) => traced(L, first + i)?.alive ?? 0), accent]];
+    series = [[columns(n, (i) => traced(L, first + i)?.alive ?? 0), L.elementary ? rainbow() : accent]];  // (Elementary's: in its rainbow, a row a generation, as its cells)
   } else {
     if (!walk.n || !walk.wx) return;
     const { wx, wy, wz } = walk;

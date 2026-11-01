@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.3.2';
+const VERSION = '0.3.3';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -8937,11 +8937,12 @@ const pixelIcon = (art, pad = 0) => { const rows = art.split(','), n = Math.max(
 // How a block rule works (see ruleTutorial): the grid's sets of blocks in turn, on a piece of it (each block its own tint),
 // then a block's states and the one each turns into, one of each turned the same (the rule turns with its block), those
 // changing then those kept, by their live cells; the state before shown a moment, fading
-// a page's tools over it (how a rule or a walk works, the number): Letters (a switch), play it again, copy it, back; each its click
-function tutTools({ letters = null, replay = null, copy = null, close, back = 'the grid' }) {
+// a page's tools over it (how a rule or a walk works, the number): a switch (Letters, Base 10: its text, title, on, click), play
+// it again, copy it, back; each its click
+function tutTools({ toggle = null, replay = null, copy = null, close, back = 'the grid' }) {
   const d = document.createElement('div'), add = (cls, html, title, click) => { const b = document.createElement('button'); b.type = 'button'; b.className = cls; b.title = title; b.innerHTML = html; b.addEventListener('click', click); d.append(b); };
   d.className = 'tut-tools';
-  if (letters) add(`tut-letters${letters.on ? ' active' : ''}`, 'Letters', 'The letters of this grid, for a rule of your own', letters.click);
+  if (toggle) add(`tut-letters${toggle.on ? ' active' : ''}`, toggle.text, toggle.title, toggle.click);
   if (replay) add('tut-replay', '↻', 'Play it again', replay);
   if (copy) add('tut-copy', icon('copy'), 'Copy it', copy);
   add('tut-close', '✕', `Back to ${back}`, close);
@@ -9087,7 +9088,7 @@ function loopTutorial(option) {
 function elementaryTutorial(option) {
   const N = parseRule(option.value).wolfram, words = ELEMENTARY_RULES.find(([n]) => n === N)?.[1];
   const cell = (x, y, v) => `<rect x="${x}" y="${y}" width="1" height="1" fill="${v ? LIFE_ALIVE : UNLIT}" stroke="var(--border)" stroke-width="0.04"/>`;
-  const cases = [7, 6, 5, 4, 3, 2, 1, 0].map((b) => `<figure><div><svg viewBox="-0.1 -0.1 3.2 2.2">${cell(0, 0, b >> 2)}${cell(1, 0, (b >> 1) & 1)}${cell(2, 0, b & 1)}${cell(1, 1, (N >> b) & 1)}</svg></div><figcaption>${(N >> b) & 1}</figcaption></figure>`).join('');
+  const cases = [7, 6, 5, 4, 3, 2, 1, 0].map((b) => `<figure><div><svg viewBox="-0.1 -0.1 3.2 3.2">${cell(0, 0, b >> 2)}${cell(1, 0, (b >> 1) & 1)}${cell(2, 0, b & 1)}<text x="1.5" y="1.72" text-anchor="middle" font-size="0.8" fill="var(--muted)">↓</text>${cell(1, 2, (N >> b) & 1)}</svg></div><figcaption>${(N >> b) & 1}</figcaption></figure>`).join('');
   const picture = wolframRows(N, [1], 16).flatMap((r, y) => r.map((c, x) => (c ? cell(x - y + 15, y, 1) : ''))).join('');
   $('ruleTuto').innerHTML = `<div class="tut-body"><h3>${option.dataset.name} <code>W${N}</code></h3><p>${words ? `${words[0].toUpperCase()}${words.slice(1)}. ` : ''}A row of cells, each generation the next row down: each cell looks at the three above it (on its left, above it, on its right), 8 cases, and the rule's number in base 2, ${N} = ${N.toString(2).padStart(8, '0')}, gives each one its cell, from 111 to 000 (Wolfram, 1983).</p>`
     + `<h4>Its 8 cases</h4><div class="tut-row">${cases}</div>`
@@ -9211,7 +9212,7 @@ function ruleTutorial(option) {
     + `<h4>Death</h4><div class="tut-row">${dies.map((cs) => pair(cs, LIFE_ALIVE, after, 'dies')).join('')}</div>`
     + (stages.length ? `<h4>Dying stages${part('C')}</h4><div class="tut-row"><figure><div>${[LIFE_ALIVE, ...stages, UNLIT].map((f) => cell(f, new Set())).join('<span>→</span>')}</div><figcaption>${rule.C - 1} stages alive including ${stages.length} dying ✝ (whatever its neighbours) and 1 dead (able to be born again)</figcaption></figure></div>` : '') + '</div>');
   for (const f of $('ruleTuto').querySelectorAll('.tut-shapes figure')) f.addEventListener('click', () => { tutShape.at = Number(f.dataset.at); ruleTutorial(option); });
-  $('ruleTuto').prepend(tutTools({ letters: lettersOf2 && { on: tutLetters.on, click: () => { tutLetters.on = !tutLetters.on; ruleTutorial(option); } }, replay: replayPictures, close: () => ruleTutorial(null) }));
+  $('ruleTuto').prepend(tutTools({ toggle: lettersOf2 && { text: 'Letters', title: 'The letters of this grid, for a rule of your own', on: tutLetters.on, click: () => { tutLetters.on = !tutLetters.on; ruleTutorial(option); } }, replay: replayPictures, close: () => ruleTutorial(null) }));
 }
 // How a walk works: a figure for each digit, its step lit, the way in (a relative walk's) muted, the other digits'
 // ends as dots; on cells, the cells. On the plane by the walk's own stepper; on a surface, a cell of it or a corner
@@ -11496,6 +11497,8 @@ function readSetups() {
 // added later (a batch number past the last one taken) once too: deleted afterwards, they stay deleted
 function seedCurated() {
   try {
+    const old = JSON.parse(localStorage.getItem('walkingPi.setups'));  // (Walking Pi's, its name before v0.3.0: moved once, before the curated ones)
+    if (old) { const list = readSetups(); writeSetups([...old, ...list.filter((x) => !old.some((y) => JSON.stringify(y.setup) === JSON.stringify(x.setup)))]); localStorage.removeItem('walkingPi.setups'); }
     const taken = Number(localStorage.getItem(CURATED_KEY)) || 0, last = Math.max(...BUILT_IN.map((b) => b[3] ?? 1));
     if (taken >= last) return;
     const list = readSetups(), same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
@@ -14732,11 +14735,9 @@ const digitsValue = (ds, B) => {
   const m = ds.length >> 1;
   return digitsValue(ds.subarray(0, m), B) * B ** BigInt(ds.length - m) + digitsValue(ds.subarray(m), B);
 };
-// The number in base 10 over the base it is in (see showNumber), as many digits as those in use tell: a fraction's exact
-// (see ratioDigits), a whole number's whole; a whole number cut (more digits than in use), its size and first digits
-function base10Preview() {
-  const exact = current.ratio && ratioDigits(10);
-  if (exact) return exact;
+// The number in base 10 over the base it is in (see showNumber), as many digits as those in use tell, a whole number's whole;
+// a whole number cut (more digits than in use), its size and first digits
+function base10Digits() {
   const { head, frac } = digitsInUse(), B = BigInt(current.base), lb = Math.log10(current.base);
   if (head.length < current.total && !frac.length) {  // (its first digits and its power of 10, from its first digits)
     const s = digitsValue(head.subarray(0, 40), B).toString(), l = s.length - 1 + Math.log10(Number(`${s[0]}.${s.slice(1, 16)}`)) + (current.total - Math.min(40, head.length)) * lb;
@@ -14750,12 +14751,14 @@ function base10Preview() {
   const m = Math.max(1, Math.floor(frac.length * lb) - 1);  // (as many as its digits in use tell)
   return `≈ ${int}.${(((N % D) * 10n ** BigInt(m)) / D).toString().padStart(m, '0')}…`;
 }
+const base10 = { on: false };  // (Base 10 switched on: the number in base 10 too, see showNumber)
 function showNumber() {
-  const text = numberText(), name = `${formulaInUse} base ${current.base} `, v = $('numberPreview'), title = (b) => `<h3>${withIcons(formulaInUse)} <code>base ${b}</code></h3>`;
-  const period = current.ratio && current.base !== 10 && ratioDigits(current.base);  // (its own base's too, over its digits: = 0.(101))
-  v.innerHTML = `<div class="tut-body">${current.base === 10 ? '' : `${title(10)}<p class="number-digits">${base10Preview()}</p>`}${title(current.base)}${period ? `<p class="number-digits">${period}</p>` : ''}<p class="number-digits"></p></div>`;  // (base 10 first, an overview)
-  v.querySelector('.number-digits:last-child').textContent = `${text.slice(name.length)}${text.includes(' ≈ ') ? '…' : ''}`;  // (cut: … as base 10's)
-  v.prepend(tutTools({ copy: (e) => {
+  const text = numberText(), name = `${formulaInUse} base ${current.base} `, v = $('numberPreview'), ten = base10.on && current.base !== 10;
+  // a base's: its title, a fraction's period (= 0.(101)), then its digits in use (cut: …); base 10 first when switched on
+  const part = (b, digits) => { const period = current.ratio && ratioDigits(b); return `<h3>${withIcons(formulaInUse)} <code>base ${b}</code></h3>${period ? `<p class="number-digits">${period}</p>` : ''}<p class="number-digits">${digits}</p>`; };
+  v.innerHTML = `<div class="tut-body">${ten ? part(10, base10Digits()) : ''}${part(current.base, '')}</div>`;
+  v.querySelector('.number-digits:last-child').textContent = `${text.slice(name.length)}${text.includes(' ≈ ') ? '…' : ''}`;
+  v.prepend(tutTools({ toggle: current.base !== 10 && { text: 'Base 10', title: 'The number in base 10 too, over its digits in base ' + current.base, on: base10.on, click: () => { base10.on = !base10.on; showNumber(); } }, copy: (e) => {
     const b = e.currentTarget;
     navigator.clipboard.writeText(text).then(() => { b.innerHTML = icon('check'); setTimeout(() => { b.innerHTML = icon('copy'); }, 1500); }, () => {});
   }, close: closeNumber, back: 'the walk' }));

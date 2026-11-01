@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.3.31';
+const VERSION = '0.3.32';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -9452,7 +9452,7 @@ function renderRuleSection() {
   if (!mode.life) { if (!$('ruleTuto').hidden && walkTutorialFits($('mode').value)) walkTutorial($('mode').value); else ruleTutorial(null); return; }  // (a walk's: it follows the walk)
   const mark = lifeMark(mode), now = ruleBody($('lifeRule').value);
   const listed = [...$('lifePreset').options].filter((o) => o.dataset.name && o.text.includes(mark) && (!mode.margolus || blocksFit(parseRule(o.value), mode)) && (!mode.loops || loopFits(parseRule(o.value), mode))), mine = listed.find((o) => o.value === now);
-  // Elementary's, in two tabs: Main, the known ones; Others, the rest (the one in use's, until one is clicked)
+  // Elementary's, in two tabs over How it works: Main, the known ones; Others, the rest (the one in use's, until one is clicked)
   const main = (o) => ELEMENTARY_MAIN.has(parseRule(o.value).wolfram), tab = ruleTab ?? (mine && !main(mine) ? 'others' : 'main');
   $('ruleTabs').replaceChildren(...(mode.elementary ? [tileGroup([['main', 'star', 'Main', `The ${ELEMENTARY_MAIN.size} known ones`], ['others', 'elementary', 'Others', `The ${listed.length - ELEMENTARY_MAIN.size} others, by number`]]
     .map(([k, pic, text, title]) => tile({ pic: icon(pic), text, title, on: tab === k, click: () => { ruleTab = k; renderRuleSection(); } })), true)] : []));
@@ -9477,7 +9477,7 @@ function renderRuleSection() {
       renderRuleSection();
     } }));
   document.querySelector('.rule-build').hidden = $('lifeCustomRow').hidden = !mineNot;  // (its states and chips, its text: your own's only)
-  if (mode.margolus || mode.loops) { document.querySelector('.rule-build').hidden = true; return; }  // (a block rule, a table: typed only, no births nor survivals)
+  if (mode.margolus || mode.loops || mode.elementary) { document.querySelector('.rule-build').hidden = true; return; }  // (a block rule, a table, Wolfram's: typed only, no births nor survivals)
   // your own: the chips of the rule in use, a count a row; beside 2, 3 and 4 on hexagons, Callahan's letters (where
   // they sit: o side by side, m one cell apart, p opposite); on squares, with a rule written with them, Hensel's
   // (1 to 7, see henselClass); a count partly on when only some of its letters are

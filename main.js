@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.3.28';
+const VERSION = '0.3.29';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -1637,17 +1637,21 @@ const setTile = (b, { on = false, can = true, mark = false, again = false, turn 
 };
 // A card, every one alike (the rules, an ant's, the walks', the brushes, the gallery's setups, the hunt's finds): a row, its
 // picture on the left, its name over its words (base: a walk's base on its right); a tile all the same (see tile, setTile:
-// on, can, again); its words as text (a setup's name typed), and its tooltip (in full: the row may cut them short)
-// (again: what a click on it, picked, does still, in its tooltip: a rule's card, how it works, see HOW_AGAIN)
-const HOW_AGAIN = 'how it works';
-const card = ({ pic = '', name = '', detail = '', base = '', title = '', on = false, can = true, again = false, byDefault, click = null }) => {
-  const tip = [title || detail, typeof again === 'string' ? `Clicked again: ${again}` : ''].filter(Boolean).join(' · ');
-  const b = tile({ html: '', title: tip, on, can, again: !!again, byDefault, click }), part = (cls, text) => Object.assign(document.createElement('span'), { className: cls, textContent: text });
+// on, can); its words as text (a setup's name typed), and its tooltip (in full: the row may cut them short); how: a rule's,
+// how it works, its ⓘ at its end (see rowAction)
+const card = ({ pic = '', name = '', detail = '', base = '', title = '', on = false, can = true, byDefault, click = null, how = null }) => {
+  const b = tile({ html: '', title: title || detail, on, can, byDefault, click }), part = (cls, text) => Object.assign(document.createElement('span'), { className: cls, textContent: text });
   const picture = part('mode-icon', ''), words = document.createElement('span');
   picture.innerHTML = pic;
   words.append(part('mode-name', name), ...(detail ? [part('mode-detail', detail)] : []));
-  b.append(picture, words, ...(base ? [part('mode-base', base)] : []));
+  b.append(picture, words, ...(base ? [part('mode-base', base)] : []), ...(how ? [rowAction(icon('info'), `How ${name} works`, how)] : []));
   return b;
+};
+// a row's action at its end (a rule's ⓘ, a setup's ×): seen while its row is hovered (see .row-act), a click its own
+const rowAction = (html, title, click) => {
+  const x = Object.assign(document.createElement('span'), { className: 'row-act', innerHTML: html, title });
+  x.addEventListener('click', (e) => { e.stopPropagation(); click(); });
+  return x;
 };
 // Trail: a dead cell fades through greys for a few generations (States and Age, in colours too; two states)
 const trailApplies = () => !!walk.life && walk.life.C === 2 && !walk.life.margolus && $('colourMode').value !== 'digit';  // (a reversible rule's blocks: none, their cells move, none dies, and backwards a trail would show where they are born)
@@ -2171,6 +2175,7 @@ const ICONS = (() => {
     symHalf: flags([[0, false], [Math.PI, false]]),
     ...Object.fromEntries([2.2, 3.5, 4.8, 6, 7.2, 8.4, 9.6, 11].map((r, i) => [`zone${i + 1}`, dots([[12, 12]], r)])),
     zoneFace: '<rect x="3" y="3" width="18" height="18" rx="2"/>' + [[6, 6], [13.5, 6], [6, 13.5], [13.5, 13.5]].map(([x, y]) => `<rect class="f" x="${x}" y="${y}" width="4.5" height="4.5" rx="0.8"/>`).join(''),  // Realm: each colour its part, apart
+    info: '<circle cx="12" cy="12" r="9"/><path d="M12 10.5V17"/><circle class="f" cx="12" cy="7.3" r="1.3"/>',  // How it works: on its buttons and on each rule's card
     twoCells: '<circle class="f" cx="7" cy="12" r="2.2"/><circle class="f" cx="17" cy="12" r="2.2"/>',  // Elementary's Two cells
     halfRow: '<rect x="3" y="9" width="18" height="6" rx="1"/><path class="f" d="M3 9H12V15H3Z"/>',  // its Half: a row, its left half alive
     zoneMirror: '<path d="M8 7L16 4M8 20L16 17" stroke-dasharray="1.6 2"/><path class="f" d="M3 7H8V20H3Z"/><path class="f" d="M16 4H21V17H16Z"/>',  // two opposite faces: a box's two ends
@@ -3039,10 +3044,10 @@ function renderAntRow() {
   $('antRuleTitle').textContent = R.byDigits ? 'Turns' : 'Rule';  // (Digits: a turn per digit, not a rule of colours)
   setTile($('antByRule'), { on: !R.byDigits });
   setTile($('antByDigits'), { on: !!R.byDigits, can: !m.turmite, greyed: 'for a turmite (by its rule only)' });
-  const rulesCard = (pic, name, detail, on, click) => card({ pic, name, detail, on, again: on && HOW_AGAIN, click });  // (picked: a click shows how it works, as Life's rules)
+  const rulesCard = (pic, name, detail, on, click) => card({ pic, name, detail, on, click, how: () => { if (on) walkTutorialToggle(); else { click(); walkTutorial(w); } } });  // (its ⓘ: how it works, picked first)
   const known = R.cards.some(([r]) => r === R.now), mine = !known || antCustomOpen, pic = icon(m.worm ? 'worm' : m.turmite ? 'turmite' : 'ant');
-  $('antRuleCards').replaceChildren(...R.cards.map(([r, words]) => rulesCard(pic, r, words, r === R.now && !antCustomOpen, () => { if (r === R.now && !antCustomOpen) { walkTutorialToggle(); return; } antCustomOpen = false; if (r === R.now) renderAntRow(); else R.set(r); })),
-    ...(R.typed ? [rulesCard(pixelIcon('..o..,..o..,ooooo,..o..,..o..'), 'Custom rule', mine ? `${R.now} · your own` : 'your own, typed', mine, () => { if (mine) { walkTutorialToggle(); return; } antCustomOpen = true; renderAntRow(); })] : []));
+  $('antRuleCards').replaceChildren(...R.cards.map(([r, words]) => rulesCard(pic, r, words, r === R.now && !antCustomOpen, () => { antCustomOpen = false; if (r === R.now) renderAntRow(); else R.set(r); })),
+    ...(R.typed ? [rulesCard(pixelIcon('..o..,..o..,ooooo,..o..,..o..'), 'Custom rule', mine ? `${R.now} · your own` : 'your own, typed', mine, () => { antCustomOpen = true; renderAntRow(); })] : []));
   $('antCustomRow').hidden = !R.typed || !mine;
   $('antRuleName').textContent = R.name;
   if (document.activeElement !== $('antRule')) $('antRule').value = R.now;
@@ -3174,9 +3179,9 @@ function renderModePicker() {
     const v = here ?? Object.keys(NAV).find((m) => NAV[m][0] === kind && NAV[m][1] === space && NAV[m][3] === r);  // (elsewhere: its first shape)
     const { base, detail } = splitModeLabel(optionOf(v).text), alone = NAV[v][4] === '';  // a spiral: its base here, no Grid | Cells
     const pic = icon(r === 'Turtle' ? 'turtle' : r === 'Pivot' ? 'pivot' : r === 'Parity' ? 'walk2d' : r === 'Ant' ? 'ant' : MODE_ICONS[v]);  // a turtle for the walks turning relative to their heading
-    const how = !creatures && r === rule && walkTutorialFits(w);  // (picked: a click shows how it works, as Life's rules)
-    const go = () => { if (how) { walkTutorialToggle(); return; } if (here) { navGo(3, r); return; } $('mode').value = v; $('mode').dispatchEvent(new Event('change')); };
-    const b = creatures ? button(`${pic}<span>${r}</span>`, r === rule, go, CREATURE_TIPS[r], { byDefault: i ? '' : 'yes' }) : card({ pic, name: r, base: alone && base && !r.includes('base') ? base : '', title: detail, on: r === rule, again: how && HOW_AGAIN, byDefault: i ? '' : 'yes', click: go });  // (its digits' turns in its tooltip)  // (the first: where a shape starts)
+    const go = () => { if (here) { navGo(3, r); return; } $('mode').value = v; $('mode').dispatchEvent(new Event('change')); };
+    const how = !creatures && walkTutorialFits(here ?? v) && (() => { if (r === rule) walkTutorialToggle(); else { go(); walkTutorial($('mode').value); } });  // (its ⓘ: how it works, picked first)
+    const b = creatures ? button(`${pic}<span>${r}</span>`, r === rule, go, CREATURE_TIPS[r], { byDefault: i ? '' : 'yes' }) : card({ pic, name: r, base: alone && base && !r.includes('base') ? base : '', title: detail, on: r === rule, how, byDefault: i ? '' : 'yes', click: go });  // (its digits' turns in its tooltip)  // (the first: where a shape starts)
     b.disabled = !has(kind, r);
     return b;
   }));
@@ -9450,21 +9455,18 @@ function renderRuleSection() {
   const shown = mineNot ? yours : mine;
   if (!$('ruleTuto').hidden && $('ruleTuto').dataset.shown !== tutorialKey(shown)) ruleTutorial(shown);  // how a rule works follows the grid and the rule
   $('ruleCards').replaceChildren(...known.map((o, i) => {
-    const picked = o.value === now && !customOpen;  // (picked: a click shows how it works, see ruleTutorial)
+    const picked = o.value === now && !customOpen;
     const bw = MODES[$('mode').value].margolus && !carriesColours(parseRule(o.value));  // (a block rule its cells carry no colour on: black and white)
-    return card({ pic: RULE_ICONS[o.value] ? pixelIcon(RULE_ICONS[o.value]) : '', name: `${o.dataset.name}${bw ? ' · B&W' : ''}`, on: picked, again: picked && HOW_AGAIN, byDefault: i ? '' : 'yes',  // (the first: the shape's, see fitRuleToShape)
-      detail: `${mode.loops ? loopCode(o.value) : o.value} · ${unnamed(o.text.split(' — ')[1] ?? '', o.dataset.name)}`, click: () => {  // its code (a loop's: its table's), its words without its name
-        if (picked) { ruleTutorial(!$('ruleTuto').hidden ? null : o); return; }
-        customOpen = false;
-        if (o.value === now) { renderRuleSection(); return; }
-        setRuleText(o.value); compute();
-      } });
+    const pick = () => { customOpen = false; if (o.value === now) { renderRuleSection(); return; } setRuleText(o.value); compute(); };
+    return card({ pic: RULE_ICONS[o.value] ? pixelIcon(RULE_ICONS[o.value]) : '', name: `${o.dataset.name}${bw ? ' · B&W' : ''}`, on: picked, byDefault: i ? '' : 'yes',
+      how: () => { if (picked) ruleTutorial(howShown(o) ? null : o); else { pick(); ruleTutorial(o); } },  // (its ⓘ: how it works, picked first, as the walks')  // (the first: the shape's, see fitRuleToShape)
+      detail: `${mode.loops ? loopCode(o.value) : o.value} · ${unnamed(o.text.split(' — ')[1] ?? '', o.dataset.name)}`, click: pick });  // its code (a loop's: its table's), its words without its name
   }));
   // after them, your own: picked when the rule in use is none of them, or clicked (its states, births and survivals below); none for a loop
   $('watchRule').onclick = () => ruleTutorial(!$('ruleTuto').hidden ? null : shown);  // (the rule in use: a card's, or your own)
-  if (!mode.loops) $('ruleCards').append(card({ pic: pixelIcon('..o..,..o..,ooooo,..o..,..o..'), name: 'Custom rule', on: mineNot, again: mineNot && HOW_AGAIN,
+  const howShown = (o) => !$('ruleTuto').hidden && $('ruleTuto').dataset.shown === tutorialKey(o);  // (a card's ⓘ again: closed)
+  if (!mode.loops) $('ruleCards').append(card({ pic: pixelIcon('..o..,..o..,ooooo,..o..,..o..'), name: 'Custom rule', on: mineNot, how: mineNot && (() => ruleTutorial(howShown(yours) ? null : yours)),
     detail: mineNot ? `${now} · your own` : mode.elementary ? 'your own: W and its number, 0 to 255' : 'your own: its states, births and survivals', click: () => {
-      if (mineNot) { ruleTutorial(!$('ruleTuto').hidden ? null : yours); return; }
       customOpen = true;
       renderRuleSection();
     } }));
@@ -15213,10 +15215,7 @@ const preview = (setup) => (setup.d > 5000 ? { ...setup, d: 5000 } : setup);  //
 function setupRow(name, detail, setup, onDelete) {
   const b = card({ pic: icon(SHAPE_ICONS[NAV[setup.w]?.[2]] ?? MODE_ICONS[setup.w]), name, detail, title: `${name}\n${detail}`, on: !galleryBefore && isInUse(setup) });  // (its shape's picture, as the Grid's; its title in full, as the row may cut them short)
   if (onDelete) {
-    const x = Object.assign(document.createElement('span'), { className: 'row-delete', textContent: '×' });
-    x.title = `Delete “${name}”`;
-    x.addEventListener('click', (e) => { e.stopPropagation(); onDelete(); });
-    b.append(x);
+    b.append(rowAction('×', `Delete “${name}”`, onDelete));
   }
   b.setAttribute('role', 'option');
   b.addEventListener('mouseenter', () => {

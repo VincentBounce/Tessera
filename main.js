@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.2.182';
+const VERSION = '0.2.183';
 const APP_TITLE = 'Walking π';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -2817,7 +2817,7 @@ for (const [w, life, blocks, k] of REVERSIBLE_SHEETS) {
 }
 // Replicators: Langton's self-reproducing loops on Life's grid of squares, by a table of transitions (see parseLoops)
 for (const [w, life] of [['loops2d', 'life2d'], ['loopsTorus', 'lifeTorus'], ['loopsCube', 'lifeCube'], ['loopsPits', 'lifePits'], ['loopsBumps', 'lifeBumps'], ['loopsFrame', 'lifeFrame']]) {  // (squares: 4 sides each, the same way round on each: no Möbius strip nor Klein bottle; nor Menger's sponge, its flat pieces narrower than a loop)
-  MODES[w] = { ...MODES[life], loops: true, where: `${MODES[life].where.split(' (')[0]}, each cell by its 4 sides in turn (von Neumann)` };
+  MODES[w] = { ...MODES[life], loops: true, ...(['loops2d', 'loopsTorus'].includes(w) && { north: true }), where: `${MODES[life].where.split(' (')[0]}, each cell by its 4 sides in turn (von Neumann), or its 8 (Moore)` };  // (north: every cell's the same, the plane's and the torus's sheet's: a table with no turns, see loopFits)
   MODE_ICONS[w] = MODE_ICONS[life];
   NAV[w] = ['Replicators', NAV[life][1], NAV[life][2], 'Langton', ''];
 }
@@ -6574,30 +6574,32 @@ function parseLoops(text) {
   const name = loopName(text);
   if (!name) return null;
   const T = (loopTables[name] ??= (() => {
-    const vars = {}, lines = [];
-    let n = 0;
+    const vars = {}, lines = [], to = new Map();
+    let n = 0, k = 4, turns = true;
     for (const line of LOOP_RULES[name].table.split('\n')) {
       if (line.startsWith('n_states:')) n = Number(line.slice(9));
+      else if (line === 'neighborhood:Moore') k = 8;
+      else if (line === 'symmetries:none') turns = false;
       else if (line.startsWith('var ')) { const [, v, set] = line.match(/^var (\w+)=\{(.*)\}$/); vars[v] = set.split(',').map(Number); }
       else if (!line.includes(':')) lines.push(line.includes(',') ? line.split(',') : [...line]);
     }
-    const to = new Int32Array(n ** 5).fill(-1);
     for (const terms of lines) {
       const names = [...new Set(terms.filter((x) => vars[x]))], bound = {};
-      const each = (k) => {
-        if (k < names.length) { for (const v of vars[names[k]]) { bound[names[k]] = v; each(k + 1); } return; }
+      const each = (j) => {
+        if (j < names.length) { for (const v of vars[names[j]]) { bound[names[j]] = v; each(j + 1); } return; }
         const [c, ...rest] = terms.map((x) => (x in bound ? bound[x] : Number(x))), next = rest.pop();
-        for (let r = 0; r < 4; r++) {
-          const i = [c, ...[0, 1, 2, 3].map((q) => rest[(q + r) % 4])].reduce((m, v) => n * m + v, 0);
-          if (to[i] < 0) to[i] = next;
+        for (let r = 0; r < (turns ? 4 : 1); r++) {  // (turned: by a quarter, its neighbours k / 4 further round)
+          const i = [c, ...rest.map((_, q) => rest[(q + (r * k) / 4) % k])].reduce((m, v) => n * m + v, 0);
+          if (!to.has(i)) to.set(i, next);  // (the first line that fits, as Golly reads them)
         }
       };
       each(0);
     }
-    return { n, to };
+    const keys = [...to.keys()].sort((a, b) => a - b);
+    return { n, k, turns, to: Int32Array.from(keys.flatMap((i) => [i, to.get(i)])) };  // (its keys in order, each with its state: found by halves, see GL_SHADERS.lifeRule)
   })());
   const K = /\/Immigration$/i.test(text) ? 2 : Number(text.match(/\/Colours(\d+)$/i)?.[1] ?? 1);
-  return { loops: T.to, loopStates: T.n, lineages: K > 1, B: new Uint8Array(16), S: new Uint8Array(16), C: K > 1 ? T.n : 2, two: false, colours: K > 1 ? K : T.n - 1, iso: false, base: T.n, text: name };
+  return { loops: T.to, loopStates: T.n, loopRing: T.k, loopTurns: T.turns, lineages: K > 1, B: new Uint8Array(16), S: new Uint8Array(16), C: K > 1 ? T.n : 2, two: false, colours: K > 1 ? K : T.n - 1, iso: false, base: T.n, text: name };
 }
 function parseRule(text) {
   if (/^\s*(M|Q2R)/i.test(text)) return parseBlocks(text);
@@ -6757,8 +6759,8 @@ function buildLife(seq, mode) {
   const seed = surfaceSeed(seq, g.n, rule.colours, g.walls);
   for (const t of g.walls ?? []) seed[t] = 0;
   const n = g.n;
-  walk.life = { nbr, ring: rule.loops ? meshSides(g) : rule.iso && rule.iso !== 'vertex' ? ring : null, side: rule.iso === 'vertex' ? meshSide(g, nbr) : null, ringMore: rule.iso === 'hensel' && ring ? cornerNeighbours(g, 8).more : null, B: rule.B, S: rule.S, C: rule.C, two: rule.two, colours: rule.colours, ruleText: ruleBody(rule.text), seed,
-                margolus: mode.margolus && rule.margolus ? ruleBlocks(rule, blocksGrid(mode), g.nu, true, g.nv, g) : null, loops: rule.loops ?? null, loopStates: rule.loopStates, lineages: !!rule.lineages, alive: new Uint8Array(n) };
+  walk.life = { nbr, ring: rule.loops ? loopRing(rule, meshSides(g)) : rule.iso && rule.iso !== 'vertex' ? ring : null, side: rule.iso === 'vertex' ? meshSide(g, nbr) : null, ringMore: rule.iso === 'hensel' && ring ? cornerNeighbours(g, 8).more : null, B: rule.B, S: rule.S, C: rule.C, two: rule.two, colours: rule.colours, ruleText: ruleBody(rule.text), seed,
+                margolus: mode.margolus && rule.margolus ? ruleBlocks(rule, blocksGrid(mode), g.nu, true, g.nv, g) : null, loops: rule.loops ?? null, loopStates: rule.loopStates, loopRing: rule.loopRing, loopTurns: rule.loopTurns, lineages: !!rule.lineages, alive: new Uint8Array(n) };
   if (walk.life.margolus?.flips) blockCells(walk.life.margolus, n);
   lifeCells(walk.life);  // (its cells' arrays: the graphics card's copies too)
   countSeed(walk.life);
@@ -7858,11 +7860,21 @@ function meshSides(g) {
   for (let t = 0; t < g.n; t++) for (let q = 0; q < 4; q++) out[4 * t + q] = across.get(edge(g.poly[4 * t + q], g.poly[4 * t + ((q + 1) % 4)])).find((u) => u !== t) ?? -1;
   return (g.loopSides = out);
 }
+// a grid of squares' cells by their 8 neighbours, clockwise from the top (N, NE, E, … NW): each corner its side's cell's next
+// side round (N's E: NE), as the sides list them (see sidesOf, meshSides; a table with no turns: one north, the plane's or the torus's)
+function mooreOf(sides) {
+  const out = new Int32Array(2 * sides.length), at = (t, q) => (t < 0 ? -1 : sides[4 * t + q]);
+  for (let t = 0; t < sides.length / 4; t++) for (let q = 0; q < 4; q++) { out[8 * t + 2 * q] = sides[4 * t + q]; out[8 * t + 2 * q + 1] = at(sides[4 * t + q], (q + 1) % 4); }
+  return out;
+}
+const loopRing = (rule, sides) => (rule.loopRing === 8 ? mooreOf(sides) : sides);  // (a loop table's neighbours: its 4 sides, or its 8)
+// a loop table fits a grid of squares: turned, any; with no turns (Tempesti's), only where every cell has the same north
+const loopFits = (rule, mode) => !!rule?.loops && (rule.loopTurns || !!mode.north);
 // The loops' start (see loops.js) on empty cells: its RLE's states (. 0, A 1, B 2…), its rows ($), laid tile by tile from the
 // middle of each colour's part (see partMiddle): up and left half its box, then its rows down and its cells right, each
 // step across a side to the tile beyond, its sides turned as they come (so it crosses a cube's edges as its faces); in K
 // lineages, each its colour (see parseLoops), the k-th turned by k quarter turns (the rule the same turned: its daughters
-// each their own ways, not copies of the others' moves)
+// each their own ways, not copies of the others' moves; a table with no turns, all the right way up)
 // a colour's part's middle cell (see middleCells); a solid with no frame for it (a frame, a sponge): the cell facing the view
 // for one, else the part's cell nearest its middle
 function partMiddle(k, K) {
@@ -7873,7 +7885,7 @@ function partMiddle(k, K) {
   return part.reduce((best, u) => (Math.hypot(...[0, 1, 2].map((d) => c[3 * u + d] - mid[d])) < Math.hypot(...[0, 1, 2].map((d) => c[3 * best + d] - mid[d])) ? u : best), part[0]);
 }
 function layLoops(seed) {
-  const L = walk.life, K = L.lineages ? L.colours : 1, sides = L.ring, { w, h, rle } = LOOP_RULES[L.ruleText].pattern, m = Math.max(w, h);
+  const L = walk.life, K = L.lineages ? L.colours : 1, sides = L.loopRing === 8 ? L.ring.filter((_, i) => i % 2 === 0) : L.ring, { w, h, rle } = LOOP_RULES[L.ruleText].pattern, m = Math.max(w, h);
   const go = ([t, o], j, k = 1) => {  // (k steps the way j, o the turn from its ways to its sides)
     for (let i = 0; i < k && t >= 0; i++) {
       const d = (j + o) % 4, u = sides[4 * t + d], b = u < 0 ? -1 : sides[4 * u + ((d + 2) % 4)] === t ? (d + 2) % 4 : [0, 1, 2, 3].find((q) => sides[4 * u + q] === t);
@@ -7886,7 +7898,7 @@ function layLoops(seed) {
   for (let k = 0; k < K; k++) {
     const corner = go(go([partMiddle(k, K), 0], 0, Math.floor(m / 2)), 3, Math.floor(m / 2));
     for (const [x, y, st] of loopCells(rle)) {
-      const [u, v] = turn(x, y, k % 4), [t] = go(go(corner, 2, v), 1, u);
+      const [u, v] = turn(x, y, L.loopTurns ? k % 4 : 0), [t] = go(go(corner, 2, v), 1, u);  // (no turns: each the right way up)
       if (t >= 0) seed[t] = K > 1 ? k + 1 + K * (st - 1) : st;
     }
   }
@@ -7901,8 +7913,8 @@ function buildLifePlane(seq) {
   }
   $('lifeRule').value = ruleBody(rule.text);  // the colours apart (see lifeColours)
   const nbr = planeNeighbours(kind, W, planeTorus(kind), rule.iso === 'hensel');
-  walk.life = { nbr, ring: rule.loops ? sidesOf(row, W, planeTorus(kind)) : rule.iso && rule.iso !== 'vertex' ? nbr.ring : null, side: rule.iso === 'vertex' ? sideOf(kind, W, nbr) : null, B: rule.B, S: rule.S, C: rule.C, two: rule.two, colours: rule.colours, ruleText: ruleBody(rule.text),
-                margolus: MODES[current.mode].margolus && rule.margolus ? ruleBlocks(rule, kind, W) : null, loops: rule.loops ?? null, loopStates: rule.loopStates, lineages: !!rule.lineages,
+  walk.life = { nbr, ring: rule.loops ? loopRing(rule, sidesOf(row, W, planeTorus(kind))) : rule.iso && rule.iso !== 'vertex' ? nbr.ring : null, side: rule.iso === 'vertex' ? sideOf(kind, W, nbr) : null, B: rule.B, S: rule.S, C: rule.C, two: rule.two, colours: rule.colours, ruleText: ruleBody(rule.text),
+                margolus: MODES[current.mode].margolus && rule.margolus ? ruleBlocks(rule, kind, W) : null, loops: rule.loops ?? null, loopStates: rule.loopStates, loopRing: rule.loopRing, loopTurns: rule.loopTurns, lineages: !!rule.lineages,
                 seed: planeSeed(kind, seq, rule.C, rule.colours), alive: new Uint8Array(n) };
   if (walk.life.margolus?.flips) blockCells(walk.life.margolus, n);  // (Critters, Tron: their cells in blocks, see GL_SHADERS.blockRule)
   lifeCells(walk.life);  // (its cells' arrays: the graphics card's copies too)
@@ -9262,7 +9274,7 @@ function renderRuleSection() {
   const mode = MODES[$('mode').value];
   if (!mode.life) { if (!$('ruleTuto').hidden && walkTutorialFits($('mode').value)) walkTutorial($('mode').value); else ruleTutorial(null); return; }  // (a walk's: it follows the walk)
   const mark = lifeMark(mode), now = ruleBody($('lifeRule').value);
-  const known = [...$('lifePreset').options].filter((o) => o.dataset.name && o.text.includes(mark) && (!mode.margolus || blocksFit(parseRule(o.value), mode))), mine = known.find((o) => o.value === now);
+  const known = [...$('lifePreset').options].filter((o) => o.dataset.name && o.text.includes(mark) && (!mode.margolus || blocksFit(parseRule(o.value), mode)) && (!mode.loops || loopFits(parseRule(o.value), mode))), mine = known.find((o) => o.value === now);
   const yours = { value: now, dataset: { name: 'Custom rule' } }, mineNot = !mine || customOpen;  // (your own, for how a rule works)
   const shown = mineNot ? yours : mine;
   if (!$('ruleTuto').hidden && $('ruleTuto').dataset.shown !== tutorialKey(shown)) ruleTutorial(shown);  // how a rule works follows the grid and the rule
@@ -9352,7 +9364,7 @@ function fitRuleToShape() {
   // a rule known, even without its dying states (none with colours: B34/S123 is B34/S123/C3)
   const rule = $('lifeRule').value, options = [...$('lifePreset').options], now = options.find((o) => o.value === rule || o.value.replace(/\/C\d+$/, '') === rule);
   const iso = parseRule(rule)?.iso, lettersFit = !iso || (iso === 'vertex' ? true : iso === 'hex' ? lifeMark(mode) === '⬡' : lifeMark(mode) === '■');
-  const kindFits = mode.margolus ? blocksFit(parseRule(rule), mode) : mode.loops ? !!parseRule(rule)?.loops : !parseRule(rule)?.margolus && !parseRule(rule)?.loops;  // (blocks: a block rule fitting them only; loops, a table; else neither)
+  const kindFits = mode.margolus ? blocksFit(parseRule(rule), mode) : mode.loops ? loopFits(parseRule(rule), mode) : !parseRule(rule)?.margolus && !parseRule(rule)?.loops;  // (blocks: a block rule fitting them only; loops, a table; else neither)
   const mark = lifeMark(mode);
   if (ruleFittedTo === w && kindFits && lettersFit) { shapeRules[mark] = rule; return; }  // (fitted already, a link's as it is: if it fits the grid at all)
   ruleFittedTo = w;
@@ -12391,22 +12403,23 @@ const GL_SHADERS = {
 precision highp float; uniform sampler2D uA; out vec4 o;
 void main() { o = texelFetch(uA, ivec2(gl_FragCoord.xy), 0); }`],
   lifeRule: [GL_QUAD, `${GL_LIFE}
-uniform isampler2D uList, uRing, uMoreStart, uMoreList, uSide, uB, uS, uLoops; uniform int uC, uR, uMode, uLoop; uniform bool uMore, uLin; out vec4 o;
+uniform isampler2D uList, uRing, uMoreStart, uMoreList, uSide, uB, uS, uLoops; uniform int uC, uR, uMode, uLoop, uLoopN; uniform bool uMore, uLin; out vec4 o;
 int base;  // (its run's first cell: t below its run's)
 int A(int t) { return state(uA, base + t); }
 int next(int t) {
   if (t >= uN) return 0;
   int was = A(t), s0 = I(uStart, t), s1 = I(uStart, t + 1), last = uK * (uC - 1);
   if (s0 == s1) return 0;  // (a wall)
-  if (uLoop > 0) {  // (a loop's table, its uLoop states: its next state by its 4 sides in turn, see parseLoops; none fits, kept)
+  if (uLoop > 0) {  // (a loop's table, its uLoop states: its next state by its uR neighbours in turn, see parseLoops; none fits, kept)
     int i = uLin && was > 0 ? (was - 1) / uK + 1 : was, around[13], k = 0, most = 0;
     for (int j = 0; j < 13; j++) around[j] = 0;
-    for (int q = 0; q < 4; q++) {
-      int v = I(uRing, 4 * t + q), u = v >= 0 ? A(v) : 0;
+    for (int q = 0; q < uR; q++) {
+      int v = I(uRing, uR * t + q), u = v >= 0 ? A(v) : 0;
       i = uLoop * i + (uLin && u > 0 ? (u - 1) / uK + 1 : u);
       if (uLin && u > 0) around[(u - 1) % uK + 1]++;
     }
-    int to = I(uLoops, i);
+    int to = -1, lo = 0, hi = uLoopN - 1;  // (its key among the table's, in order, by halves)
+    while (lo <= hi) { int m = (lo + hi) / 2, key = I(uLoops, 2 * m); if (key == i) { to = I(uLoops, 2 * m + 1); break; } if (key < i) lo = m + 1; else hi = m - 1; }
     if (to < 0) return was;
     if (!uLin || to == 0) return to;
     if (was > 0) k = (was - 1) % uK + 1; else for (int j = 1; j <= uK; j++) if (around[j] > most) { most = around[j]; k = j; }  // (its lineage, or its neighbours' most)
@@ -13437,7 +13450,7 @@ function lifeStepGPU(L, gen, back = false, k = 1) {
 function lifeRulePass(E, [r0, r1] = [0, E.runs]) {  // (r0 … r1: its runs played, see lifeRows)
   const L = E.L, [y0, y1] = lifeRows(E, r0, r1);
   lifePass(E, 'lifeRule', { uA: E.now.state, uStart: E.start, uList: E.list, uRing: E.ring, uMoreStart: E.moreStart, uMoreList: E.moreList, uSide: E.side, uB: E.B, uS: E.S, uLoops: E.loops },
-    { uN: E.n, uK: L.colours, uStride: E.stride, uC: L.C, uR: L.ring ? L.ring.length / E.n : 0, uMode: L.ring ? 1 : L.side ? 2 : 0, uMore: L.ringMore ? 1 : 0, uLoop: L.loops ? L.loopStates : 0, uLin: L.lineages ? 1 : 0 }, [E.next.state], 1024, y1 - y0, undefined, 0, y0);
+    { uN: E.n, uK: L.colours, uStride: E.stride, uC: L.C, uR: L.ring ? L.ring.length / E.n : 0, uMode: L.ring ? 1 : L.side ? 2 : 0, uMore: L.ringMore ? 1 : 0, uLoop: L.loops ? L.loopStates : 0, uLoopN: L.loops ? L.loops.length / 2 : 0, uLin: L.lineages ? 1 : 0 }, [E.next.state], 1024, y1 - y0, undefined, 0, y0);
 }
 // runs r0 … r1's rows of cells (4,096 a row): a hunt's passes over its runs going on only
 const lifeRows = (E, r0, r1) => [Math.floor((r0 * E.stride) / 4096), Math.ceil((r1 * E.stride) / 4096)];

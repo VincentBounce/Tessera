@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.3.13';
+const VERSION = '0.3.14';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -6654,12 +6654,14 @@ function parseElementary(text) {
 // Digits: the number's first digit in the middle, the next ones to its right; at the right end the row wraps round, so they
 // go on from the left end back to the middle, the last just left of the first. The only seam, where the last digit meets the
 // first, is in the middle: what it starts spreads from there as One cell's does, a triangle (a fraction's repeating digits
-// elsewhere, as a row that never ends). upTo: its cells up to each row; wide: its first row's reach (each next one more)
+// elsewhere, as a row that never ends). upTo: its cells up to each row; wide: its first row's reach (each next one more);
+// digits: its first row, its digits written over it (see drawOverlay)
 function elementaryRows(digits) {
   const G = targetAsked(), W = 2 * G + 1, N = lifeRuleNow()?.wolfram ?? 30, upTo = new Int32Array(G + 2);
   let r = new Uint8Array(W), next = new Uint8Array(W), inst = new Float32Array(1 << 16), m = 0;
   if (plane.start === 'digits') for (let i = 0; i < W; i++) r[(G + i) % W] = digits[i] ?? 0;  // (from the middle, round by the right)
   else r[G] = 1;
+  const first = plane.start === 'digits' ? r.slice() : null;
   for (let t = 0; t <= G; t++) {
     const band = Math.floor((t * BANDS) / (G + 1));
     for (let x = 0; x < W; x++) {
@@ -6671,7 +6673,7 @@ function elementaryRows(digits) {
     for (let x = 0; x < W; x++) next[x] = (N >> (4 * r[(x + W - 1) % W] + 2 * r[x] + r[(x + 1) % W])) & 1;
     [r, next] = [next, r];
   }
-  return { G, inst: inst.subarray(0, m), upTo, wide: plane.start === 'digits' ? G : 0 };
+  return { G, inst: inst.subarray(0, m), upTo, wide: plane.start === 'digits' ? G : 0, digits: first };
 }
 function parseRule(text) {
   if (/^\s*(M|Q2R)/i.test(text)) return parseBlocks(text);
@@ -13800,8 +13802,20 @@ function computeFill() {
 function drawOverlay() {
   const ctx = layers.overlay;
   ctx.clearRect(0, 0, cw, ch);
-  if (!walk.n || walk.life || walk.rows || startsShown) return;  // no walker in the Game of Life, nor Elementary
   const { scale: s, ox, oy } = view;
+  if (walk.rows?.digits && s >= 12) {  // Elementary's Digits, near enough: each digit on its cell of the first row, in monospace, 1 in
+    // white on its live cell, 0 in the theme's text colour on the page (see elementaryRows)
+    const { G, digits } = walk.rows, text = getComputedStyle(document.documentElement).getPropertyValue('--text');
+    ctx.font = `${Math.round(s * 0.7)}px ui-monospace, Menlo, monospace`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    for (let x = Math.max(-G, Math.floor(-ox / s)); x <= Math.min(G, Math.ceil((cw - ox) / s)); x++) {
+      const d = digits[x + G];
+      ctx.fillStyle = d ? '#fff' : text;
+      ctx.fillText(d, ox + x * s, oy);
+    }
+  }
+  if (!walk.n || walk.life || walk.rows || startsShown) return;  // no walker in the Game of Life, nor Elementary
   const r = Math.max(3, Math.min(s * 0.35, 8));
   // start (hidden on the far side of the sphere)
   if (!walk.sphere || facing(0)) {

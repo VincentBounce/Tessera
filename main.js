@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.2.189';
+const VERSION = '0.2.190';
 const APP_TITLE = 'Walking π';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -3084,7 +3084,7 @@ function renderModePicker() {
     }, modeWhere(navPick(2, sh)));
     if (again) { setTile(b, { on: true, again }); b.title += plane.torus ? '\nA torus · Clicked again: walls' : '\nWalls · Clicked again: a torus'; }  // (its words kept, then what a click does, as a card's: see card)
     return b;
-  }), ...(these.some((sh) => planeOf(sh) === 'square') && MODES[w].life && MODES[w].plane ? [spaceTimeTile] : [])];  // (Stacks: after the squares' group, Life's or the loops' alone)
+  }), ...(g === SHAPE_GROUPS[1][0] && MODES[w].life && MODES[w].plane ? [spaceTimeTile] : [])];  // (Stacks: Life on squares')
   }));
   // a family picked: its tilings as tabs, the same walk (along the grid or on cells) on another one
   const inFamily = familyOf(w);

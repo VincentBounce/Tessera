@@ -8,11 +8,11 @@ v=$(grep -o "VERSION = '[^']*'" main.js | cut -d"'" -f2)
 [[ $(git rev-parse HEAD) == $(git rev-parse @{u}) ]] || { echo "HEAD not pushed: push first"; exit 1; }
 gh release view "v$v" >/dev/null 2>&1 && { echo "v$v released already"; exit 1; }
 plain=$(python3 tools/bundle.py --plain) && packed=$(python3 tools/bundle.py) || exit 1
-# the compressed one: no comment left (its base64 and its URLs aside)
+# the compressed one: no comment left (its base64, its URLs and its file types aside)
 python3 - "$packed" <<'EOF' || exit 1
 import re, sys
 t = re.sub(r'[A-Za-z0-9+/=]{200,}', '', open(sys.argv[1], encoding='utf-8').read())
-t = re.sub(r'\b[a-z]+://', '', t)
+t = re.sub(r'\b[a-z]+://|\b[a-z]+/\*', '', t)  # (a URL's //, a file type's /*: image/*)
 bad = [m for m in ('//', '/*', '<!--') if m in t]
 if bad: sys.exit(f'comments left in the compressed bundle: {bad}')
 EOF

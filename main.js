@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.3.8';
+const VERSION = '0.3.9';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -14799,14 +14799,14 @@ function base10Digits() {
   const m = Math.max(1, Math.floor(frac.length * lb) - 1);  // (as many as its digits in use tell)
   return `≈ ${int}.${(((N % D) * 10n ** BigInt(m)) / D).toString().padStart(m, '0')}…`;
 }
-const base10 = { on: false };  // (Base 10 switched on: the number in base 10 too, see showNumber)
+const base10 = { on: false };  // (Base 10 switched on: the number in base 10 instead, see showNumber)
 function showNumber() {
   const text = numberText(), name = `${formulaInUse} base ${current.base} `, v = $('numberPreview'), ten = base10.on && current.base !== 10;
-  // a base's: its title, a fraction's period (= 0.(101)), then its digits in use (cut: …); base 10 first when switched on
+  // a base's: its title, a fraction's period (= 0.(101)), then its digits in use (cut: …); base 10's instead when switched on
   const part = (b, digits) => { const period = current.ratio && ratioDigits(b); return `<h3>${withIcons(formulaInUse)} <code>base ${b}</code></h3>${period ? `<p class="number-digits">${period}</p>` : ''}<p class="number-digits">${digits}</p>`; };
-  v.innerHTML = `<div class="tut-body">${ten ? part(10, base10Digits()) : ''}${part(current.base, '')}</div>`;
-  v.querySelector('.number-digits:last-child').textContent = `${text.slice(name.length)}${text.includes(' ≈ ') ? '…' : ''}`;
-  v.prepend(tutTools({ toggle: current.base !== 10 && { text: 'Base 10', title: 'The number in base 10 too, over its digits in base ' + current.base, on: base10.on, click: () => { base10.on = !base10.on; showNumber(); } }, copy: (e) => {
+  v.innerHTML = `<div class="tut-body">${ten ? part(10, base10Digits()) : part(current.base, '')}</div>`;
+  if (!ten) v.querySelector('.number-digits:last-child').textContent = `${text.slice(name.length)}${text.includes(' ≈ ') ? '…' : ''}`;
+  v.prepend(tutTools({ toggle: current.base !== 10 && { text: 'Base 10', title: `The number in base 10 instead of base ${current.base}`, on: base10.on, click: () => { base10.on = !base10.on; showNumber(); } }, copy: (e) => {
     const b = e.currentTarget;
     navigator.clipboard.writeText(text).then(() => { b.innerHTML = icon('check'); setTimeout(() => { b.innerHTML = icon('copy'); }, 1500); }, () => {});
   }, close: closeNumber, back: 'the walk' }));

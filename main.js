@@ -1,7 +1,7 @@
 'use strict';
 
 /* ==============================================================================================
- * WALKING π — main.js
+ * TESSERA — main.js
  * ==============================================================================================
  *
  * A walk (or a Game of Life) driven by the digits of a number. Everything runs in the browser,
@@ -37,8 +37,8 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.2.197';
-const APP_TITLE = 'Walking π';  // (its name, as its page's heading; Text's words at first)
+const VERSION = '0.3.0';
+const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
  * PART 1 — DIGITS: THE FORMULA WORKER
@@ -3638,7 +3638,7 @@ function updateHint() {
 new MutationObserver((ms) => { for (const { target: el } of ms) if (el.title && el.matches(':hover')) { el.dataset.tip = el.title; el.removeAttribute('title'); } })  // (a title set again under the mouse: not the browser's)
   .observe(document.body, { attributes: true, attributeFilter: ['title'], subtree: true });
 // What it tells of the element under the mouse: the control (its words, its default, why it is greyed) and its words, each
-// button its own (a box that is one control, as Size's − label +: the box's); a title kept as data-tip (see walkingCheck)
+// button its own (a box that is one control, as Size's − label +: the box's); a title kept as data-tip (see tesseraCheck)
 const tipOf = (target) => {
   const el = target.closest?.('[title], [data-tip], [data-default]:not([data-default=""]), [data-greyed]:not([data-greyed=""])');
   if (el?.title) { el.dataset.tip = el.title; el.removeAttribute('title'); }
@@ -11429,7 +11429,7 @@ function syncLink() {
 
 /* ---- 10.4 Saved setups and JSON files -------------------------------------------------------- */
 // Saved setups in this browser (localStorage), as { name, setup, saved }
-const SETUPS_KEY = 'walkingPi.setups', CURATED_KEY = 'walkingPi.curated';
+const SETUPS_KEY = 'tessera.setups', CURATED_KEY = 'tessera.curated';
 function readSetups() {
   try { return JSON.parse(localStorage.getItem(SETUPS_KEY)) || []; } catch { return []; }
 }
@@ -11517,10 +11517,10 @@ function deleteSetup(name) {
 function exportSetups() {
   const list = readSetups();
   if (!list.length) return;  // nothing to export yet
-  const blob = new Blob([JSON.stringify({ app: 'Walking Pi', version: 1, setups: list }, null, 2)], { type: 'application/json' });
+  const blob = new Blob([JSON.stringify({ app: 'Tessera', version: 1, setups: list }, null, 2)], { type: 'application/json' });
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
-  a.download = 'walking-pi-setups.json';
+  a.download = 'tessera-setups.json';
   a.click();
   URL.revokeObjectURL(a.href);
 }
@@ -11539,7 +11539,7 @@ async function importSetups(file) {
     writeSetups(list);
     fillSetupList();
   } catch {
-    alert('This file is not a Walking Pi setups file.');
+    alert('This file is not a Tessera setups file.');
   }
 }
 
@@ -14552,12 +14552,12 @@ renderSkyButtons();
 // (System, clicked again: back to the last of Light and Dark chosen, else to the one the system shows)
 const systemLight = matchMedia('(prefers-color-scheme: light)');
 let themeWas = null, themeLast = null;
-try { themeLast = localStorage.getItem('walkingThemeLast'); } catch { /* none */ }
+try { themeLast = localStorage.getItem('tesseraThemeLast'); } catch { /* none */ }
 function applyTheme() {
   const t = $('theme').value, theme = t === 'system' ? (systemLight.matches ? 'light' : 'dark') : t;
   themeWas = t;
   if (t !== 'system') themeLast = t;
-  try { localStorage.setItem('walkingTheme', t); if (t !== 'system') localStorage.setItem('walkingThemeLast', t); } catch { /* not kept */ }
+  try { localStorage.setItem('tesseraTheme', t); if (t !== 'system') localStorage.setItem('tesseraThemeLast', t); } catch { /* not kept */ }
   renderChoiceButtons($('theme'), $('themeButtons'), { light: 'sun', dark: 'moon', system: 'halfDisc' }, 'system');
   const [light, dark, system] = ['light', 'dark', 'system'].map((v) => $('themeButtons').querySelector(`[data-value="${v}"]`));
   $('themeButtons').prepend(tileGroup([light, dark]), skyButton);  // Light | Dark, then System: open, the sky first
@@ -14575,7 +14575,7 @@ function applyTheme() {
   renderColours();  // Life's colour blocks, in the theme's colours
   needsFull = statsDirty = true;  // (Life's gauges and curve in the theme's colours too)
 }
-try { $('theme').value = localStorage.getItem('walkingTheme') || 'system'; } catch { $('theme').value = 'system'; }
+try { $('theme').value = localStorage.getItem('tesseraTheme') || 'system'; } catch { $('theme').value = 'system'; }
 if (!$('theme').value) $('theme').value = 'system';
 $('theme').addEventListener('change', () => {
   if ($('theme').value === 'system' && themeWas === 'system') $('theme').value = themeLast ?? (systemLight.matches ? 'light' : 'dark');
@@ -14634,7 +14634,7 @@ function lifeRle() {
   if (L.C === 2) body = body.replace(/\./g, 'b').replace(/A/g, 'o');
   const lines = [], rule = ruleBody($('lifeRule').value);
   for (let i = 0; i < body.length; i += 70) lines.push(body.slice(i, i + 70));
-  return [`#N ${formulaInUse}, generation ${cur}`, `#C Walking Pi: ${location.href}`, ...(kind === 'square' ? [] : [`#C On the app's ${PLANE_CELLS[base]} (not Golly's squares): cells as its slanted grid numbers them`]),
+  return [`#N ${formulaInUse}, generation ${cur}`, `#C Tessera: ${location.href}`, ...(kind === 'square' ? [] : [`#C On the app's ${PLANE_CELLS[base]} (not Golly's squares): cells as its slanted grid numbers them`]),
     `x = ${Math.max(...xs) - Math.min(...xs) + 1}, y = ${Math.max(...ys) - Math.min(...ys) + 1}, rule = ${rule}`, ...lines].join('\n');
 }
 // Share: the page link (the setup shown, see syncLink), copied

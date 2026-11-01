@@ -1,7 +1,7 @@
-# Walking Pi as one HTML file, to send: index.html with style.css and its scripts in it, the scripts minified (esbuild),
+# Tessera as one HTML file, to send: index.html with style.css and its scripts in it, the scripts minified (esbuild),
 # gzipped (base64) and unzipped by the page as it opens (DecompressionStream, every browser since 2023), or as they are,
 # comments and all (--plain).
-# python3 tools/bundle.py [--plain] [out.html]   (out: « Walking Pi resources/Walking Pi v<version> compressed|plain.html », beside the repo)
+# python3 tools/bundle.py [--plain] [out.html]   (out: « Tessera resources/Tessera v<version> compressed|plain.html », beside the repo)
 import base64, gzip, os, re, shutil, subprocess, sys
 from uncomment import tidy, uncommented, uncommented_css  # (code without its comments)
 
@@ -11,7 +11,7 @@ plain = '--plain' in sys.argv
 read = lambda name: open(os.path.join(root, name), encoding='utf-8').read()
 html, main = read('index.html'), read('main.js')
 version = re.search(r"VERSION = '([^']+)'", main).group(1)
-out = args[0] if args else os.path.join(os.path.dirname(root), 'Walking Pi resources', f'Walking Pi v{version}{" plain" if plain else " compressed"}.html')
+out = args[0] if args else os.path.join(os.path.dirname(root), 'Tessera resources', f'Tessera v{version}{" plain" if plain else " compressed"}.html')
 
 # a script or a style minified by esbuild (brew install esbuild): a script's local names shortened, its top-level names
 # kept (a script, not a module: the quick check calls them), comments gone; without it, comments gone only (see uncommented)

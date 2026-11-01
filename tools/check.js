@@ -1,11 +1,11 @@
-// Walking Pi's self-check, run in the page (it uses the app's own functions) before a commit:
-//   await import(`/tools/check.js?${Date.now()}`); await walkingCheck();   // the meshes, a few seconds
-//   await walkingCheck({ crawl: true });                                   // and every tab, shape and tiling, a few minutes
-//   await walkingCheck({ fuzz: 400, seed: 7 });                            // 400 actions at random, menu to menu (transitions, smallest sizes)
-//   await walkingCheck({ fuzz: 100, cold: true });                          // and after each, its link loaded cold beside: the same menus offered
-//   await walkingCheck({ colours: true });                                 // every Life surface offers colours (more than Classic) at one of its sizes at least
-//   await walkingCheck({ deep: true });                                    // every grid's rules (yours too), How it works, colours, zones, smallest size: a night's
-//   await walkingCheck({ known: true });                                   // Life's known results, played on the graphics card: a minute
+// Tessera's self-check, run in the page (it uses the app's own functions) before a commit:
+//   await import(`/tools/check.js?${Date.now()}`); await tesseraCheck();   // the meshes, a few seconds
+//   await tesseraCheck({ crawl: true });                                   // and every tab, shape and tiling, a few minutes
+//   await tesseraCheck({ fuzz: 400, seed: 7 });                            // 400 actions at random, menu to menu (transitions, smallest sizes)
+//   await tesseraCheck({ fuzz: 100, cold: true });                          // and after each, its link loaded cold beside: the same menus offered
+//   await tesseraCheck({ colours: true });                                 // every Life surface offers colours (more than Classic) at one of its sizes at least
+//   await tesseraCheck({ deep: true });                                    // every grid's rules (yours too), How it works, colours, zones, smallest size: a night's
+//   await tesseraCheck({ known: true });                                   // Life's known results, played on the graphics card: a minute
 // Returns { ok, failures, checked }. The meshes: a torus straight and turned, its tiles' neighbours alike; a Möbius
 // strip's cells away from its edges, as many neighbours as the torus of its tiles, a Klein bottle's all; each surface its cells as many as
 // said; the grids that never repeat, their walls closed; every button shown its tooltip; those in a hexagon, their walls closed, turning onto themselves, as many cells as said. The crawl: no error, the link's mode the one shown, the size said its cells' count. Known:
@@ -274,7 +274,7 @@ async function fuzz(fail, count, seedv, cold = false) {
 // The deep crawl (a night's): every grid of Life and Reversible from its link, then on each: every rule of its menu and one of
 // your own (B36/S23; blocks: their menu's), each with How it works (and its Letters page); every colour (and Mixed); every zone of
 // Hunt; its smallest size; 30 generations played. No error anywhere (a click's included), the link's mode the one shown.
-// only: those grids alone; from: the grid it starts at (after a crash: localStorage.walkingDeep holds the one it was on, and its failures so far)
+// only: those grids alone; from: the grid it starts at (after a crash: localStorage.tesseraDeep holds the one it was on, and its failures so far)
 async function deep(fail, from, only) {
   const wait = (ms) => new Promise((go) => setTimeout(go, ms)), errors = [];
   const onError = (e) => errors.push(e.message);
@@ -295,7 +295,7 @@ async function deep(fail, from, only) {
   };
   const all = (only ?? Object.keys(MODES)).filter((m) => MODES[m].life && [...$('mode').options].some((o) => o.value === m));
   for (const w of all.slice(Math.max(0, all.indexOf(from)))) {
-    localStorage.walkingDeep = `${w} ${Math.round((performance.memory?.usedJSHeapSize ?? 0) / 1e6)} MB`;  // (the page's memory too)
+    localStorage.tesseraDeep = `${w} ${Math.round((performance.memory?.usedJSHeapSize ?? 0) / 1e6)} MB`;  // (the page's memory too)
     location.hash = `w=${w}`;
     await look(`${w} from its link`, 900);
     if ($('mode').value !== w) fail(`${w}: the link opened ${$('mode').value}`);
@@ -482,8 +482,8 @@ async function checkKnown(fail) {
   return checked;
 }
 
-window.walkingCheck = async ({ known = false, crawl: andCrawl = false, deep: andDeep = false, fuzz: actions = 0, cold = false, colours = false, seed = Date.now() % 1e6, from, only } = {}) => {
-  const failures = [], fail = (s) => { failures.push(s); localStorage.walkingDeepFailures = JSON.stringify(failures); };
+window.tesseraCheck = async ({ known = false, crawl: andCrawl = false, deep: andDeep = false, fuzz: actions = 0, cold = false, colours = false, seed = Date.now() % 1e6, from, only } = {}) => {
+  const failures = [], fail = (s) => { failures.push(s); localStorage.tesseraDeepFailures = JSON.stringify(failures); };
   let checked = checkMeshes(fail) + checkBlockWraps(fail) + checkDiscs(fail) + checkTips(fail);
   if (known) checked += await checkKnown(fail);
   if (andCrawl) checked += await crawl(fail);

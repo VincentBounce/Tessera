@@ -1,8 +1,10 @@
-# Walking π
+# Tessera
+
+An automata atlas and walking on digits.
 
 A walk driven by the digits of **π**, other famous numbers, formulas and large primes. The walker moves on square, triangle or hexagon tiles, through a 3D lattice, around the Ulam spiral, or across a torus, a Möbius strip, a cube and other polyhedra. The same digits can also seed a **Game of Life** on those surfaces.
 
-**▶ Live demo: https://vincentbounce.github.io/Walking-Pi/**
+**▶ Live demo: https://vincentbounce.github.io/Tessera/**
 
 π₃ = 10.0102110122220102110021111102212222201112012121212001…
 
@@ -187,9 +189,9 @@ Of the duals of the k-uniform tilings of pentagons (Wikipedia, *Pentagonal tilin
 
 A fraction's digits repeat, so its walk makes the same moves again and again: it draws regular patterns, and many of them close on themselves, which the app sees (`… digits max ↻`). A few of them:
 
-- **Rosettes** in 2D: [11/604](https://vincentbounce.github.io/Walking-Pi/#x=11/604&w=triTurtle&d=451) on Triangles turtle, [3/497](https://vincentbounce.github.io/Walking-Pi/#x=3/497&w=hexTurtle&d=631) on Hexagons turtle, [2/541](https://vincentbounce.github.io/Walking-Pi/#x=2/541&w=turtle&d=541) on Squares turtle.
-- **Loops on surfaces**: [96/95](https://vincentbounce.github.io/Walking-Pi/#x=96/95&w=torusGrid&d=5760&s=64x160) on the square torus, [189/188](https://vincentbounce.github.io/Walking-Pi/#x=189/188&w=cubeGrid&d=6625&s=48) round the cube, [149/148](https://vincentbounce.github.io/Walking-Pi/#x=149/148&w=icosaGrid&d=8641&s=48) round the triangle sphere.
-- **Braids on the sphere of hexagons**: [318/305](https://vincentbounce.github.io/Walking-Pi/#x=318/305&w=hexSphereGrid&d=10000&s=32&st=3).
+- **Rosettes** in 2D: [11/604](https://vincentbounce.github.io/Tessera/#x=11/604&w=triTurtle&d=451) on Triangles turtle, [3/497](https://vincentbounce.github.io/Tessera/#x=3/497&w=hexTurtle&d=631) on Hexagons turtle, [2/541](https://vincentbounce.github.io/Tessera/#x=2/541&w=turtle&d=541) on Squares turtle.
+- **Loops on surfaces**: [96/95](https://vincentbounce.github.io/Tessera/#x=96/95&w=torusGrid&d=5760&s=64x160) on the square torus, [189/188](https://vincentbounce.github.io/Tessera/#x=189/188&w=cubeGrid&d=6625&s=48) round the cube, [149/148](https://vincentbounce.github.io/Tessera/#x=149/148&w=icosaGrid&d=8641&s=48) round the triangle sphere.
+- **Braids on the sphere of hexagons**: [318/305](https://vincentbounce.github.io/Tessera/#x=318/305&w=hexSphereGrid&d=10000&s=32&st=3).
 
 **[PATTERNS.md](PATTERNS.md)** lists the most striking ones walk by walk, with how they were found; the **Gallery**'s Treasures start with a curated choice.
 

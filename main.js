@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.3.24';
+const VERSION = '0.3.25';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -1986,8 +1986,8 @@ function wolframStep(T, r, next, lo, hi, wrap) {
     next[i] = T[(l << 17) | (r[i] << 1) | rr];
   }
 }
-const POP16 = new Uint8Array(1 << 16);  // (a word's live cells)
-for (let i = 1; i < 1 << 16; i++) POP16[i] = POP16[i >> 1] + (i & 1);
+function popCounts() { const P = new Uint8Array(1 << 16); for (let i = 1; i < 1 << 16; i++) P[i] = P[i >> 1] + (i & 1); return P; }  // (a word's live cells)
+const POP16 = popCounts();
 const wordsOf = (cells) => { const r = new Uint16Array(Math.ceil(cells.length / 16)); cells.forEach((v, x) => { if (v) r[x >> 4] |= 0x8000 >> (x & 15); }); return r; };
 const cellOf = (r, x) => (r[x >> 4] >> (15 - (x & 15))) & 1;
 // One cell's h rows, 2h − 1 wide (their ends never reached: as the app draws them), each a list
@@ -3232,6 +3232,7 @@ function compute() {
   syncSizeStepper();
   updateRuleText();
   if (worker) { worker.terminate(); worker = null; setBusy(false); }
+  if (elementaryWorker) { elementaryWorker.terminate(); elementaryWorker = null; setBusy(false); }  // (Elementary's rows, see elementaryReady)
   const job = ++computeJob;  // a walk built later is this one's only if no other compute came since
   championCode = null;  // a new start: no loaded champion any more
   const F = readFormula();
@@ -3252,6 +3253,7 @@ function compute() {
 
   if (kind === 'seq') {
     setCurrent(seqDigits(F.ast, want, base), base, kind, kind === 'rat' ? smallExact(F.ast) : null);
+    if (!elementaryReady(compute)) return;  // (Elementary's rows on their way: then all again, its digits cached)
     $('status').textContent = note;
     buildWalk();
     describe(base, n);
@@ -3263,6 +3265,7 @@ function compute() {
 
   const done = (entry, how) => {
     setCurrent(entry, base, kind, kind === 'rat' ? smallExact(F.ast) : null);
+    if (!elementaryReady(() => done(entry, how))) return;  // (Elementary's rows on their way, see elementaryReady)
     const total = entry.total ?? current.head.length + current.digits.length;
     // the digits' time, then the walk's (millions of an ant's steps take far longer than its digits)
     const t0 = performance.now();
@@ -3423,7 +3426,8 @@ function buildWalkOf() {
   let seq = new Uint8Array(head.length + frac.length);
   seq.set(head);
   seq.set(frac, head.length);
-  const rows = MODES[current.mode].elementary ? elementaryRows(seq) : null;  // (Elementary: a step a generation, see elementaryRows)
+  const rows = MODES[current.mode].elementary ? elementaryRows() : null;  // (Elementary: a step a generation, see elementaryRows)
+  if (MODES[current.mode].elementary && !rows) return;  // (its rows on their way)
   if (rows) seq = new Uint8Array(rows.G);
   else if (MODES[current.mode].life) {
     buildLife(seq, MODES[current.mode]);
@@ -6671,8 +6675,8 @@ function parseElementary(text) {
 // picture, counts (each pixel B × B cells, B 1 up to 16 million cells, else a multiple of 16: 4 million pixels or so); one row
 // in KEEP (to draw a part near enough again, see elementaryPart); digits, its first row, its digits written over it (see drawOverlay)
 const ELEMENTARY_STARTS = ['cell', 'two', 'half', 'digits'], KEEP = 64;
-function elementaryRows(digits) {
-  const G = targetAsked(), start = plane.start, wrap = start === 'digits', N = lifeRuleNow()?.wolfram ?? 30, T = wolframTable(N);
+function elementaryRowsOf(G, start, N, digits) {  // (alone: in the page or in a worker, see elementaryReady)
+  const wrap = start === 'digits', T = wolframTable(N);
   const n = Math.ceil((2 * (G + (start === 'two' ? G >> 1 : 0)) + 1) / 16), W = 16 * n, c = W >> 1, first = new Uint8Array(W);
   if (wrap) for (let i = 0; i < W; i++) first[(c + i) % W] = digits[i] ?? 0;  // (from the middle, round by the right)
   else if (start === 'half') first.fill(1, 0, c);
@@ -6697,6 +6701,39 @@ function elementaryRows(digits) {
   }
   return { G, N, n, W, c, B, PW, PH, counts, upTo, kept, wrap, wide: wrap || start === 'half' ? c : start === 'two' ? G >> 1 : 0, digits: wrap ? first : null };
 }
+// Its rows asked now (rule, generations, start, digits), made once: past ELEMENTARY_NOW generations apart, in a worker (the page
+// never stops; a new ask stops it), then then(); fewer at once. elementaryRows: those made, for the walk (see buildWalkOf)
+const ELEMENTARY_NOW = 3000;
+let elementaryMade = null, elementaryWorker = null;
+const elementaryAsk = () => {
+  const G = targetAsked(), start = plane.start, N = lifeRuleNow()?.wolfram ?? 30, { head, frac } = digitsInUse();
+  return { key: `${N}|${G}|${start}|${start === 'digits' ? `${formulaInUse}/${current.base}` : ''}`, args: [G, start, N, start === 'digits' ? Uint8Array.from([...head, ...frac].slice(0, 2 * G + 16)) : null] };
+};
+function elementaryReady(then) {
+  const a = elementaryAsk();
+  if (!MODES[current.mode].elementary || elementaryMade?.key === a.key) return true;
+  elementaryWorker?.terminate();
+  elementaryWorker = null;
+  if (a.args[0] <= ELEMENTARY_NOW) { elementaryMade = { key: a.key, ...elementaryRowsOf(...a.args) }; return true; }
+  const src = `const wolframTables = new Map(), KEEP = ${KEEP}, wolframTable = ${wolframTable}, wordsOf = ${wordsOf};\n${popCounts}\nconst POP16 = popCounts();\n${wolframStep}\n${elementaryRowsOf}\n`
+    + 'onmessage = (e) => { const t = performance.now(), R = elementaryRowsOf(...e.data); R.ms = performance.now() - t; postMessage(R, [R.counts.buffer, R.upTo.buffer, ...R.kept.map((k) => k.buffer)]); };';
+  const job = computeJob;
+  elementaryWorker = new Worker(URL.createObjectURL(new Blob([src], { type: 'text/javascript' })));
+  setBusy(true);
+  $('status').textContent = `Computing ${fmt(a.args[0])} rows…`;
+  elementaryWorker.onmessage = (e) => {
+    elementaryWorker.terminate();
+    elementaryWorker = null;
+    setBusy(false);
+    if (job !== computeJob) return;  // (asked since: another)
+    elementaryMade = { key: a.key, ...e.data };
+    then();
+    $('status').textContent += ` · ${fmt(a.args[0])} rows in ${(e.data.ms / 1000).toFixed(2)} s`;  // (apart, the page going on)
+  };
+  elementaryWorker.postMessage(a.args);
+  return false;
+}
+const elementaryRows = () => (elementaryReady(compute) ? elementaryMade : null);  // (not made yet: all again once they are)
 // a part of its rows near enough to draw cell by cell (x0 to x1, rows t0 to t1): again from the kept row above it, on its words and
 // as many more each side as rows walked (what lies past them cannot reach it); its cells, a row after another
 function elementaryPart(R, x0, x1, t0, t1) {

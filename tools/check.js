@@ -145,7 +145,7 @@ function checkMeshes(fail) {
   return checked;
 }
 
-// after an action: no error, the link's mode the one shown, a surface's cells as many as said (the crawl's, the fuzz's)
+// after an action: no error, the link's mode the one shown, a surface's cells as many as said, more than one start (the crawl's, the fuzz's)
 const wait = (ms) => new Promise((go) => setTimeout(go, ms));
 // the buttons shown with no words of their own in their tooltip, or only their name (see tipOf; Size's − +, the words of
 // their box, one control)
@@ -170,8 +170,9 @@ function checker(fail) {
     const w = $('mode').value, hashW = (location.hash.match(/w=([^&]*)/) ?? [])[1], said = [...($('sizeLabel').innerText.split('\n').at(-1).matchAll(/([\d,]+)\s+[a-z]+/gi))].reduce((sum, m) => sum + Number(m[1].replace(/,/g, '')), 0);  // (its cells, its terms summed: 1,910 hexagons + 12 pentagons)
     const n = MODES[w].sphere && !MODES[w].plane ? walk.geo?.n : null;
     const nan = document.querySelectorAll('svg[viewBox*="NaN"], svg[viewBox*="Infinity"]').length;  // (a picture with nothing to frame: no error thrown, drawn empty)
+    const starts = $('startSection').hidden ? 2 : [...$('lifeStartTabs').querySelectorAll('button')].filter((b) => !b.hidden).length;  // (an automaton's starts: never Digits alone)
     const none = untipped();
-    const bad = [errors.length && errors.splice(0).join(' / '), none.length && `no tooltip on ${none.join(', ')}`, hashW !== w && `the link says ${hashW}`, n && said && said !== n && `${n} cells, said ${said}`, nan && `${nan} pictures framed NaN`].filter(Boolean);
+    const bad = [errors.length && errors.splice(0).join(' / '), none.length && `no tooltip on ${none.join(', ')}`, hashW !== w && `the link says ${hashW}`, n && said && said !== n && `${n} cells, said ${said}`, nan && `${nan} pictures framed NaN`, starts < 2 && `${starts} start offered`].filter(Boolean);
     if (bad.length) fail(`${what} → ${w}: ${bad.join('; ')}`);
     return !bad.length;
   };

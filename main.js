@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.3.48';
+const VERSION = '0.3.49';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -8252,7 +8252,7 @@ function renderPlaneRow() {
   const blocks = !!MODES[$('mode').value].margolus;
   for (const b of $('lifeStartTabs').querySelectorAll('button')) {  // the starts, on any grid (Draw on a surface: its patterns, to see)
     const s = b.dataset.start, on = surfaceDraw ? s === 'draw' : s === plane.start;
-    b.hidden = MODES[$('mode').value].elementary !== ELEMENTARY_STARTS.includes(s) && s !== 'digits';  // (Elementary's starts, see elementaryRows)
+    b.hidden = !!MODES[$('mode').value].elementary !== ELEMENTARY_STARTS.includes(s) && s !== 'digits';  // (Elementary's starts, see elementaryRows)
     if (s === 'random') b.innerHTML = `${icon(blocks ? 'dice' : 'search')}<span>${blocks ? 'Random' : 'Hunt'}</span>`;  // (blocks: no hunt, its zones' starts)
     if (s === 'draw') setTile(b, { on, can: !(!kind && blocks), greyed: 'on a reversible surface (no patterns of a block rule to show, nor drawing)' });  // (Draw on a surface: its rule's patterns, none for blocks)
     else if (s === 'text') setTile(b, { on, can: !(!!walk.life && current?.mode === $('mode').value && !setFits(iconMax(textSet()), textSet())), greyed: 'where no picture can be laid, as Emoji (a grid too small for it, a solid\'s faces none)' });  // (its grid's, once built)

@@ -52,3 +52,9 @@ Written with the version it brings first: « Solde v0.2.180 : main.js 12,143 +7 
 ## Removed features
 A feature taken out gets a row in `REMOVED.md` (in English) at once: its last version, date, commit, a raw.githack link
 that opens it as it was, and why it left.
+
+## Lenia prototype (lenia/)
+A separate page (`lenia/index.html`, `lenia.js`, `species.js`), not part of main.js: Bert Chan's Lenia on the GPU (FFT),
+three life channels and a wall channel. `species.js` is made by `lenia/make_species.py` from Chan's repo
+(Chakazul/Lenia, `Python/animals.json` and `found/*.json`), each pick tested for moving and standing walls;
+`leniaCheck()` in its console: the FFT's round trip and each species alive alone.

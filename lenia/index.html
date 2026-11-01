@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lenia Worlds</title>
+<style>
+  :root { --bg: #0b0d12; --panel: #141821; --line: #262c39; --text: #d8dde8; --dim: #8a93a6; --accent: #7aa2ff; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; background: var(--bg); color: var(--text); font: 13px/1.35 system-ui, -apple-system, Segoe UI, sans-serif; }
+  body { display: flex; }
+  #panel { width: 270px; flex: none; height: 100%; overflow-y: auto; background: var(--panel); border-right: 1px solid var(--line); padding: 12px; }
+  #stage { flex: 1; position: relative; min-width: 0; }
+  #view { position: absolute; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; cursor: crosshair; }
+  h1 { font-size: 15px; margin: 0 0 2px; letter-spacing: .02em; }
+  .sub { color: var(--dim); font-size: 11.5px; margin-bottom: 10px; }
+  .sec { margin: 12px 0 5px; color: var(--dim); font-size: 11px; text-transform: uppercase; letter-spacing: .06em; }
+  /* The one button; .on is its active state, [disabled] its greyed one */
+  .btn { appearance: none; border: 1px solid var(--line); background: #1b202b; color: var(--text); font: inherit; padding: 5px 9px; border-radius: 6px; cursor: pointer; }
+  .btn:hover { background: #222838; }
+  .btn.on { background: #2b3a5e; border-color: var(--accent); color: #fff; }
+  .btn[disabled] { opacity: .4; cursor: default; }
+  /* One choice among several: buttons joined in one frame */
+  .tabs { display: flex; flex-wrap: wrap; }
+  .tabs .btn { border-radius: 0; margin-left: -1px; flex: 1 1 auto; }
+  .tabs .btn:first-child { border-radius: 6px 0 0 6px; margin-left: 0; }
+  .tabs .btn:last-child { border-radius: 0 6px 6px 0; }
+  .tabs .btn.on { position: relative; z-index: 1; }
+  .row { display: flex; gap: 6px; flex-wrap: wrap; }
+  .slot { display: flex; align-items: center; gap: 8px; padding: 4px; margin-bottom: 5px; width: 100%; text-align: left; }
+  .slot canvas { width: 44px; height: 44px; border-radius: 4px; background: #07080b; flex: none; }
+  .slot select { flex: 1; min-width: 0; background: #0f1219; color: var(--text); border: 1px solid var(--line); border-radius: 4px; font: inherit; padding: 3px; }
+  .slot .dot { width: 8px; height: 8px; border-radius: 50%; flex: none; }
+  #stats { margin-top: 12px; color: var(--dim); font-size: 11.5px; font-variant-numeric: tabular-nums; }
+  #help { margin-top: 10px; color: var(--dim); font-size: 11.5px; }
+  #fail { position: absolute; inset: 0; display: none; align-items: center; justify-content: center; text-align: center; padding: 20px; }
+  @media (max-width: 700px) {
+    body { flex-direction: column-reverse; }
+    #panel { width: 100%; height: 45%; border-right: 0; border-top: 1px solid var(--line); }
+  }
+</style>
+</head>
+<body>
+<div id="panel">
+  <h1>Lenia Worlds</h1>
+  <div class="sub">Continuous Life after Bert Chan: species of their own laws, a maze to roam. A wall kills what it touches; the robust species mostly come away whole.</div>
+  <div class="sec">World</div>
+  <div class="tabs" id="worldTabs"></div>
+  <div id="slots" style="margin-top:8px"></div>
+  <div class="sec">Decor</div>
+  <div class="tabs" id="decorTabs"></div>
+  <div class="sec">Click to</div>
+  <div class="tabs" id="toolTabs"></div>
+  <div id="othersBox">
+    <div class="sec">Species meeting</div>
+    <div class="tabs" id="othersTabs"></div>
+  </div>
+  <div class="sec">Size</div>
+  <div class="tabs" id="sizeTabs"></div>
+  <div class="sec">Speed</div>
+  <div class="tabs" id="speedTabs"></div>
+  <div class="sec">Run</div>
+  <div class="row" id="runRow"></div>
+  <div id="stats"></div>
+  <div id="help">Click places the selected species, turned at random. Wall and Eraser draw by dragging. Species by Bert Chan (<a href="https://github.com/Chakazul/Lenia" style="color:var(--accent)">Lenia</a>).</div>
+</div>
+<div id="stage">
+  <canvas id="view"></canvas>
+  <div id="fail">This needs WebGL2 with float render targets (EXT_color_buffer_float).</div>
+</div>
+<script src="species.js"></script>
+<script src="lenia.js"></script>
+</body>
+</html>

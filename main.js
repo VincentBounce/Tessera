@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.2.186';
+const VERSION = '0.2.187';
 const APP_TITLE = 'Walking π';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -7868,6 +7868,8 @@ function mooreOf(sides) {
   return out;
 }
 const loopRing = (rule, sides) => (rule.loopRing === 8 ? mooreOf(sides) : sides);  // (a loop table's neighbours: its 4 sides, or its 8)
+// a loop table's code, as a rule's B/S is (its name its value): Golly's name for it, its states, its neighbours if 8
+const loopCode = (name) => { const R = parseLoops(name); return `${LOOP_RULES[name].golly} · ${R.loopStates} states${R.loopRing === 8 ? ', 8 neighbours' : ''}`; };
 // a loop table fits a grid of squares: turned, any; with no turns (Tempesti's), only where every cell has the same north
 const loopFits = (rule, mode) => !!rule?.loops && (rule.loopTurns || !!mode.north);
 // The loops' start (see loops.js) on empty cells: its RLE's states (. 0, A 1, B 2…), its rows ($), laid tile by tile from the
@@ -9282,7 +9284,7 @@ function renderRuleSection() {
     const picked = o.value === now && !customOpen;  // (picked: a click shows how it works, see ruleTutorial)
     const bw = MODES[$('mode').value].margolus && !carriesColours(parseRule(o.value));  // (a block rule its cells carry no colour on: black and white)
     return card({ pic: RULE_ICONS[o.value] ? pixelIcon(RULE_ICONS[o.value]) : '', name: `${o.dataset.name}${bw ? ' · B&W' : ''}`, on: picked, again: picked && HOW_AGAIN, byDefault: i ? '' : 'yes',  // (the first: the shape's, see fitRuleToShape)
-      detail: `${o.value} · ${unnamed(o.text.split(' — ')[1] ?? '', o.dataset.name)}`, click: () => {  // its words, without its name
+      detail: `${mode.loops ? loopCode(o.value) : o.value} · ${unnamed(o.text.split(' — ')[1] ?? '', o.dataset.name)}`, click: () => {  // its code (a loop's: its table's), its words without its name
         if (picked) { ruleTutorial(!$('ruleTuto').hidden ? null : o); return; }
         customOpen = false;
         if (o.value === now) { renderRuleSection(); return; }

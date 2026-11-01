@@ -17,7 +17,7 @@ bad = [m for m in ('//', '/*', '<!--') if m in t]
 if bad: sys.exit(f'comments left in the compressed bundle: {bad}')
 EOF
 last=$(gh release list --limit 1 --json tagName -q '.[0].tagName')
-notes=$(git log --format='- %s' ${last:+$last..}HEAD)
+notes=$([[ -n $last ]] && git log --format='- %s' "$last..HEAD" || echo "The first release; its history: https://github.com/VincentBounce/Walking-Pi/commits/main")  # (the first: its thousands of commits linked, not listed)
 echo "v$v: $packed\n      $plain\n\n$notes"
 [[ $1 == --dry ]] && exit 0
 gh release create "v$v" "$packed" "$plain" --title "Walking Pi v$v" --notes "$notes" --target "$(git rev-parse HEAD)"

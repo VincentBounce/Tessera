@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.3.4';
+const VERSION = '0.3.5';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -1812,8 +1812,9 @@ const wholeTotal = () => (current?.whole && current.formula === $('formula').val
 // In generations (a reversible one's length, its slider's; Space-time's height): [ − ] 2,000 generations [ + ]; going back, a
 // reversible one plays again from its start; Space-time made again
 const gensShown = () => !!MODES[$('mode').value].margolus || !!MODES[$('mode').value].elementary || spaceTimeOn();
-// Elementary on the plane: a grid with no edge in reach, by construction: wrapping round, as wide as its first row (One cell, or
-// as many digits as generations) and one cell more on both sides each generation (see layElementary)
+// Elementary on the plane: a grid with no edge in reach, by construction: wrapping round, a row a generation (its side, see
+// plane), as wide as its first row (One cell, or as many digits as generations) and one cell more on both sides each
+// generation (its row, see planeRow and layElementary)
 const elementaryPlane = () => !!MODES[$('mode').value].elementary && !!MODES[$('mode').value].plane;
 const elementaryW = () => (plane.start === 'digits' ? 3 : 2) * targetAsked() + (plane.start === 'digits' ? 0 : 1);
 // The last step or generation: walk.n; a reversible one's half of it, rounded up (its n generations from 1 − n/2 to n/2, its
@@ -6847,7 +6848,7 @@ const planeSides = (kind, k = planeKind(kind), W = (f) => (shaped(kind) ? sideW 
   [...(MODES[$('mode').value]?.margolus ? [6, 8] : []), ...SIDES.filter((f) => cells(f) >= CELLS.least && cells(f) <= CELLS.most)].filter((f, i, a) => W(f) >= 2 && (!i || grid(f) !== grid(a[i - 1])));
 // side: the grid's, the nearest it offers to the last picked (by hand or a link: kept, whatever grid comes); icons: an Icon
 // zone's, one a colour (or one for all)
-const plane = { get side() { const k = planeKind(MODES[$('mode').value].plane); return elementaryPlane() ? elementaryW() : nearCells(planeSides(k), (f) => planeCells(f, k), picked ?? planeCells(48, k)); },
+const plane = { get side() { const k = planeKind(MODES[$('mode').value].plane); return elementaryPlane() ? targetAsked() + 1 : nearCells(planeSides(k), (f) => planeCells(f, k), picked ?? planeCells(48, k)); },
                 torus: true, shape: 'hex', text: APP_TITLE, font: 'sans', icons: [0],
                 start: 'random', density: 30, seed: 1 + Math.floor(Math.random() * 999999999), sym: 'none', number: '1/7' };  // (number: Formula's, see numberSeed)  // a soup of its own each visit (a link keeps its seed)
 // Draw's brush: a cell or a pattern (squares only), turned by quarter turns and mirrored, in a colour
@@ -7155,7 +7156,7 @@ function blockWrapW(kind, W) {
   return blockWraps.get(key);
 }
 const planeCols = (kind, W, K = lifeColours) => colourW(kind, W * (RECT_ASPECT[kind] ?? 1), K);  // its motifs a row: as many as make it square (its motif's height over its width)
-const planeRow = (kind, W) => (tilingOf(kind) ? tilingOf(kind).polys.length * planeCols(kind, W) : kind === 'kite' ? 6 * W : kind === 'tri' || kind === 'cairo' ? 2 * W : W);  // cells a row (two a rhombus, two a square of Cairo pentagons, six kites a rhombus)
+const planeRow = (kind, W) => (elementaryPlane() && kind === 'square' ? elementaryW() : tilingOf(kind) ? tilingOf(kind).polys.length * planeCols(kind, W) : kind === 'kite' ? 6 * W : kind === 'tri' || kind === 'cairo' ? 2 * W : W);  // cells a row (two a rhombus, two a square of Cairo pentagons, six kites a rhombus)
 // kite x of row y: kite x % 3 of triangle ⌊x / 3⌋ (as the triangles' x), its corners on the triangles' lattice
 const kiteCorners = (x, y) => { const t = Math.floor(x / 3), i = t >> 1; return kitesOf(t & 1 ? [[i + 1, y], [i + 1, y + 1], [i, y + 1]] : [[i, y], [i + 1, y], [i, y + 1]])[((x % 3) + 3) % 3]; };
 const latticeAt = (a, b) => [a + b / 2, b * ROOT3_2];  // a corner of the triangles, a centre of the hexagons

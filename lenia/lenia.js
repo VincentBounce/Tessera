@@ -246,9 +246,9 @@ const range = (a, n) => Array.from({ length: n }, (_, i) => a + i);
 
 // A team: a species on a block of channels from `at`, as many as its cells have (a zoo species 1,
 // an organism 2 or 3), its law moved there (a kernel from its channel i to j: from at + i to at + j).
-// The zoo's teams, or the organism alone at 0.
+// The zoo's teams, a battle's, or the organism alone at 0.
 const width = (sp) => sp.cells.length;
-const teamsOf = (w) => (w.kind === 'zoo' ? w.teams : [{ sp: w.organism, at: 0 }]);
+const teamsOf = (w) => (w.kind === 'organism' ? [{ sp: w.organism, at: 0 }] : w.kind === 'battle' ? w.fighters : w.teams);
 const teamChannels = ({ sp, at }) => range(at, width(sp));
 const channelsOf = (w) => teamsOf(w).flatMap(teamChannels);
 const layersOf = (w) => Math.floor(Math.max(0, ...channelsOf(w)) / 4) + 1;
@@ -500,6 +500,16 @@ function step() {
 
 /* ---- 3.3 Creatures --------------------------------------------------------------------------- */
 
+// The world's chance: Math.random, or a seeded draw (mulberry32) while a battle is laid, so that
+// its seed, in its link, lays the same walls and creatures again.
+let chance = Math.random;
+const mulberry = (a) => () => { a = (a + 0x6D2B79F5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+function seeded(n, f) {
+  const was = chance;
+  chance = mulberry(n);
+  try { f(); } finally { chance = was; }
+}
+
 const patterns = new Map();
 function patternTex(sp) {
   if (!patterns.has(sp)) { const pt = pattern(sp); pt.tex = texture(pt.w, pt.h, pt.data); patterns.set(sp, pt); }
@@ -508,7 +518,7 @@ function patternTex(sp) {
 
 // Team i's creature placed at (x, y) in world cells, turned by angle: its pattern's channel j into
 // the team's channel at + j (uRoute, a layer at a time: a pattern channel to a layer channel).
-function place(i, x, y, angle = Math.random() * TAU) {
+function place(i, x, y, angle = chance() * TAU) {
   const { sp, at } = teamsOf(world)[i], pt = patternTex(sp), s = world.R / sp.R;
   apply(P.stamp, (t) => {
     const route = new Float32Array(12);
@@ -520,25 +530,54 @@ function place(i, x, y, angle = Math.random() * TAU) {
 const footprint = (sp) => { const pt = patternTex(sp); return Math.hypot(pt.w, pt.h) * 0.5 * world.R / sp.R; };
 const wallAt = (x, y) => walls[(((y | 0) % N + N) % N) * N + (((x | 0) % N + N) % N)];
 
-// A free spot: no wall within the creature's footprint, away from the spots already taken.
+// A spot free for a creature of that radius: no wall within it, away from the spots already taken.
+function spotFree(x, y, radius, taken) {
+  if (wallAt(x, y) || !taken.every(([u, v, r]) => Math.hypot(u - x, v - y) > r + radius)) return false;
+  for (let a = 0; a < 16; a++) for (const f of [0.3, 0.65, 1]) if (wallAt(x + Math.cos(a * TAU / 16) * radius * f, y + Math.sin(a * TAU / 16) * radius * f)) return false;
+  return true;
+}
+// A free spot drawn anywhere, or null.
 function freeSpot(radius, taken) {
   for (let tries = 0; tries < 400; tries++) {
-    const x = Math.random() * N, y = Math.random() * N;
-    let ok = taken.every(([u, v, r]) => Math.hypot(u - x, v - y) > r + radius);
-    for (let a = 0; ok && a < 16; a++) for (const f of [0.3, 0.65, 1]) if (wallAt(x + Math.cos(a * TAU / 16) * radius * f, y + Math.sin(a * TAU / 16) * radius * f)) ok = false;
-    if (ok && !wallAt(x, y)) return [x, y];
+    const x = chance() * N, y = chance() * N;
+    if (spotFree(x, y, radius, taken)) return [x, y];
   }
   return null;
 }
 
 // A few of each team of the world (or of the teams given), on free spots (as many more as the world
-// is larger, fewer as there are more teams).
+// is larger, fewer as there are more teams); a battle laid by its own rule.
 function seed(teams = teamsOf(world).map((_, i) => i)) {
+  if (world.kind === 'battle') return layBattle();
   const each = Math.max(1, Math.round((world.kind === 'zoo' ? 12 / Math.max(3, teamsOf(world).length) : 5) * (N / 512) ** 2)), taken = [];
   for (let n = 0; n < each; n++) for (const i of teams) {
     const r = footprint(teamsOf(world)[i].sp), at = freeSpot(r, taken);
     if (at) { place(i, ...at); taken.push([...at, r]); }
   }
+}
+
+// A battle laid from its seed: Sides gives each team the same spots and turns, the first team's
+// drawn in its sector (an angle 2π/K wide about the centre) and turned by 2πk/K for team k, a spot
+// kept only if free for every team; Mixed draws each creature anywhere. Each team `each` creatures
+// (as many more as the world is larger).
+function layBattle() {
+  const K = world.fighters.length, each = world.each * (N / 512) ** 2, taken = [], c = N / 2;
+  const r = Math.max(...world.fighters.map(({ sp }) => footprint(sp)));
+  seeded(world.seed + 1, () => {
+    for (let n = 0; n < each; n++) {
+      if (world.layout === 'Mixed') {
+        for (let k = 0; k < K; k++) { const at = freeSpot(r, taken); if (at) { place(k, ...at); taken.push([...at, r]); } }
+        continue;
+      }
+      for (let tries = 0; tries < 400; tries++) {
+        const a = (chance() - 0.5) * TAU / K, d = N * (0.12 + 0.3 * chance()), turn = chance() * TAU;
+        const spots = range(0, K).map((k) => [c + d * Math.cos(a + k * TAU / K), c + d * Math.sin(a + k * TAU / K)]);
+        if (!spots.every(([x, y], k) => spotFree(x, y, r, [...taken, ...spots.slice(0, k).map((q) => [...q, r])]))) continue;
+        spots.forEach(([x, y], k) => { place(k, x, y, turn + k * TAU / K); taken.push([x, y, r]); });
+        break;
+      }
+    }
+  });
 }
 
 // Keep alive: a team whose whole mass fell under half a creature's gets one more, on a spot
@@ -614,7 +653,7 @@ function maze() {
     const [i, j] = stack[stack.length - 1];
     const next = [[1, 0], [-1, 0], [0, 1], [0, -1]].map(([di, dj]) => [i + di, j + dj]).filter(([a, b]) => a >= 0 && b >= 0 && a < n && b < n && !seen[b * n + a]);
     if (!next.length) { stack.pop(); continue; }
-    const [a, b] = next[Math.floor(Math.random() * next.length)];
+    const [a, b] = next[Math.floor(chance() * next.length)];
     open[[Math.min(i, a), Math.min(j, b), a !== i ? 'v' : 'h']] = true;
     seen[b * n + a] = 1; stack.push([a, b]);
   }
@@ -624,22 +663,31 @@ function maze() {
   }
 }
 
-// A closed arena with round pillars and a few bars.
+// A closed arena with round pillars and a few bars; in a battle, pillars only, each drawn in an
+// eighth of the square and laid by its eight symmetries (the same for every side).
 function arena() {
-  const t = Math.max(4, world.R * 0.45);
+  const t = Math.max(4, world.R * 0.45), c = N / 2;
   rect(-t / 2, 0, t, N); rect(0, -t / 2, N, t);
-  for (let k = 0; k < 14; k++) disc(t + Math.random() * (N - 2 * t), t + Math.random() * (N - 2 * t), world.R * (0.6 + Math.random() * 1.2));
+  if (world.kind === 'battle') {
+    for (let k = 0; k < 3; k++) {
+      const u = (0.1 + 0.3 * chance()) * N, v = chance() * u, r = world.R * (0.6 + chance());
+      for (const [p, q] of [[u, v], [v, u]]) for (const [sx, sy] of [[1, 1], [1, -1], [-1, 1], [-1, -1]]) disc(c + sx * p, c + sy * q, r);
+    }
+    return;
+  }
+  for (let k = 0; k < 14; k++) disc(t + chance() * (N - 2 * t), t + chance() * (N - 2 * t), world.R * (0.6 + chance() * 1.2));
   for (let k = 0; k < 4; k++) {
-    const len = world.R * (4 + Math.random() * 5), x = Math.random() * N, y = Math.random() * N;
-    Math.random() < 0.5 ? rect(x, y, len, t) : rect(x, y, t, len);
+    const len = world.R * (4 + chance() * 5), x = chance() * N, y = chance() * N;
+    chance() < 0.5 ? rect(x, y, len, t) : rect(x, y, t, len);
   }
 }
 
 const DECORS = { Empty: () => {}, Maze: maze, Arena: arena };
+// The walls of a decor (a battle's from its seed).
 function setDecor(name) {
   decor = name;
   walls.fill(0);
-  DECORS[name]();
+  if (world.kind === 'battle') seeded(world.seed, DECORS[name]); else DECORS[name]();
   uploadWalls();
 }
 
@@ -661,7 +709,13 @@ const byCode = (list, code) => list.find((s) => s.code === code);
 const ZOO_START = ['212·12', '213·72', '213·58', '213·0', '213·10', 'O2u'].map((c, at) => ({ sp: byCode(SPECIES.single, c), at }));
 // A species in a list: Chan's name if it has one, its code, how it lives (and its channels, if more than one).
 const label = (s) => `${s.name ? `${s.name} · ` : ''}${s.code} — ${s.life}${width(s) > 1 ? ` · ${width(s)} ch` : ''}`;
-let world = { kind: 'zoo', teams: [...ZOO_START], organism: SPECIES.multi[0], R: 13, meet: 'Push' };
+const ALL = [...SPECIES.single, ...SPECIES.multi];
+// A battle's teams packed on the channels in their order; the battle at first: Chan's colony 221·13
+// against the replicator 213·76, a side each.
+const packed = (sps) => { let at = 0; return sps.map((sp) => { const t = { sp, at }; at += width(sp); return t; }); };
+const newSeed = () => 1 + Math.floor(Math.random() * 99999);
+let world = { kind: 'zoo', teams: [...ZOO_START], organism: SPECIES.multi[0], R: 13, meet: 'Push',
+  fighters: packed(['221·13', '213·76'].map((c) => byCode(ALL, c))), layout: 'Sides', each: 3, seed: newSeed() };
 let decor = 'Maze', tool = 'Creature', selected = 0, speed = 2, running = true, alive = true, trails = true;
 
 function rebuild(reseed = true) {
@@ -682,6 +736,12 @@ function button(text, title, click) {
 function toggle(text, title, get, flip) {
   const b = button(text, title, () => { flip(); b.classList.toggle('on', get()); });
   b.classList.toggle('on', get());
+  return b;
+}
+// Keep alive's switch: greyed in a battle (a team given creatures would not have won them).
+function keepAliveSwitch() {
+  const b = toggle('Keep alive', 'A species gone is given one more creature, on a free spot', () => alive && world.kind !== 'battle', () => { alive = !alive; });
+  if (world.kind === 'battle') { b.disabled = true; b.title = 'Not in a battle: a team gone has lost'; }
   return b;
 }
 // One choice among several, joined: options [value, text, title]; the chosen one .on.
@@ -768,29 +828,92 @@ function organismRow() {
   return row;
 }
 
+// Teams that fit together: their channels within the eight, their kernels within the engine's 32.
+const fits = (sps) => sps.reduce((a, sp) => a + width(sp), 0) <= CH && lawOf({ ...world, kind: 'battle', fighters: packed(sps) }).kernels.length <= MAX_K;
+const fighterSpecies = () => world.fighters.map((t) => t.sp);
+
+// A battle laid again from its seed: its walls, its law, its creatures; its link in the address bar.
+function startBattle() {
+  setDecor(decor); rebuild(); updateLink();
+}
+
+// A battle team's row: a click selects it for placing; its list changes its species (one that
+// would not fit marked and refused); × takes it out (two teams at least).
+function fighterRow(k) {
+  const team = world.fighters[k], colours = teamChannels(team).map((c) => COLOURS[c]);
+  const row = button('', 'A click selects this team, then a click on the world places one of it', () => { selected = k; tool = 'Creature'; buildPanel(); });
+  row.classList.add('slot');
+  row.classList.toggle('on', selected === k && tool === 'Creature');
+  const cv = document.createElement('canvas'); thumbnail(cv, team.sp, colours);
+  const dot = document.createElement('span'); dot.className = 'dot'; dot.style.background = `linear-gradient(90deg,${[...colours, colours[0]].map(rgb)})`;
+  const sel = document.createElement('select');
+  for (const sp of ALL) {
+    const sps = fighterSpecies().map((q, j) => (j === k ? sp : q)), ok = sp === team.sp || fits(sps);
+    sel.append(new Option(label(sp) + (ok ? '' : ' (no room)'), sp.code, false, sp === team.sp));
+    sel.lastChild.disabled = !ok;
+  }
+  sel.onclick = (e) => e.stopPropagation();
+  sel.onchange = () => { world.fighters = packed(fighterSpecies().map((q, j) => (j === k ? byCode(ALL, sel.value) : q))); buildPanel(); startBattle(); };
+  row.append(cv, dot, sel);
+  const line = document.createElement('div'); line.className = 'line';
+  line.append(row);
+  if (world.fighters.length > 2) line.append(button('×', 'Take this team out of the battle', () => {
+    world.fighters = packed(fighterSpecies().filter((_, j) => j !== k)); selected = 0; buildPanel(); startBattle();
+  }));
+  return line;
+}
+
+// A battle's teams, one more (the first species that fits and is not in yet, a spreading one
+// first), its layout, its creatures a team, its seed and link.
+function battlePanel() {
+  const more = [...ALL.filter((sp) => sp.life.includes('grow')), ...ALL].find((sp) => !fighterSpecies().includes(sp) && fits([...fighterSpecies(), sp]));
+  const add = button('+ Team', world.fighters.length >= 4 ? 'Four teams at most' : more ? `One more team (${label(more)}); its species changed in its list`
+    : 'No species fits beside these (eight channels, 32 kernels in all)', () => { world.fighters = packed([...fighterSpecies(), more]); buildPanel(); startBattle(); });
+  add.disabled = world.fighters.length >= 4 || !more;
+  const section = (title, el) => { const h = document.createElement('div'); h.className = 'sec'; h.textContent = title; return [h, el]; };
+  const layout = document.createElement('div'); layout.className = 'tabs';
+  tabs(layout, [['Sides', 'Sides', 'Each team the same spots and turns, turned about the centre: a fair start'], ['Mixed', 'Mixed', 'Each creature anywhere, at random (from the seed)']],
+    () => world.layout, (v) => { world.layout = v; startBattle(); });
+  const each = document.createElement('div'); each.className = 'tabs';
+  tabs(each, [1, 3, 6].map((n) => [String(n), String(n), `${n} creature${n > 1 ? 's' : ''} a team at first (four times as many in a 1024² world)`]),
+    () => String(world.each), (v) => { world.each = +v; startBattle(); });
+  const seedRow = document.createElement('div'); seedRow.className = 'row';
+  const shown = document.createElement('span'); shown.className = 'seed'; shown.textContent = `Seed ${world.seed}`;
+  seedRow.append(shown,
+    button('New seed', 'Another start: other spots, turns and walls', () => { world.seed = newSeed(); buildPanel(); startBattle(); }),
+    button('Copy link', 'The link to this battle: the same teams, start and walls', () => { updateLink(); navigator.clipboard?.writeText(location.href); }));
+  return [...world.fighters.map((_, k) => fighterRow(k)), add, ...section('Start', layout), ...section('Creatures a team', each), ...section('Seed', seedRow)];
+}
+
 function buildPanel() {
-  tabs($('worldTabs'), [['zoo', 'Zoo', 'Up to eight species of one channel each, each its own law and colour'], ['organism', 'Organisms', 'Chan\'s two- and three-channel creatures: one law over the colours']],
-    () => world.kind, (v) => { world.kind = v; selected = 0; world.R = v === 'zoo' ? 13 : 12; buildPanel(); rebuild(); });
-  $('slots').replaceChildren(...(world.kind === 'zoo' ? [...SPECIES.single, ...SPECIES.multi].map(speciesRow) : [organismRow()]));
+  tabs($('worldTabs'), [['zoo', 'Zoo', 'Up to eight species, each its own law and colours'], ['organism', 'Organisms', 'Chan\'s two- and three-channel creatures: one law over the colours'],
+    ['battle', 'Battle', 'Two to four teams laid alike, to see which spreads: its seed and link give the same start']],
+    () => world.kind, (v) => {
+      world.kind = v; selected = 0; world.R = v === 'organism' ? 12 : 13;
+      if (v === 'battle') world.meet = 'Territory';
+      buildPanel(); if (v === 'battle') startBattle(); else { setDecor(decor); rebuild(); updateLink(); }
+    });
+  $('slots').replaceChildren(...(world.kind === 'zoo' ? ALL.map(speciesRow) : world.kind === 'battle' ? battlePanel() : [organismRow()]));
   tabs($('decorTabs'), Object.keys(DECORS).map((d) => [d, d, d === 'Empty' ? 'No walls (the world is a torus)' : `A new random ${d.toLowerCase()} at each click; the creatures placed again`]),
-    () => decor, (v) => { setDecor(v); clearLife(); seed(); });
+    () => decor, (v) => { setDecor(v); clearLife(); seed(); updateLink(); });
   tabs($('toolTabs'), [['Creature', 'Creature', 'A click places the selected species; a drag moves the view'], ['Wall', 'Wall', 'Draw walls by dragging'], ['Eraser', 'Eraser', 'Erase walls and life by dragging']],
     () => tool, (v) => { tool = v; buildPanel(); });
-  $('othersBox').style.display = world.kind === 'zoo' ? '' : 'none';
+  $('othersBox').style.display = world.kind === 'organism' ? 'none' : '';
   tabs($('othersTabs'), [['Ghosts', 'Ghosts', 'The species do not feel each other: they cross'], ['Push', 'Push', 'Each species is pushed away by the others, felt from a kernel\'s radius'],
     ['Fight', 'Fight', 'Pushed hard from a kernel\'s radius: a meeting erodes both'], ['Territory', 'Territory', 'Felt only at contact, but hard: no species grows where another is, borders form']],
-    () => world.meet, (v) => { world.meet = v; rebuild(false); });
+    () => world.meet, (v) => { world.meet = v; rebuild(false); updateLink(); });
   tabs($('sizeTabs'), [10, 13, 18, 24].map((r) => [String(r), `R ${r}`, `Kernel radius ${r} cells: the creatures' size; species and walls made again`]),
-    () => String(world.R), (v) => { world.R = +v; setDecor(decor); rebuild(); });
+    () => String(world.R), (v) => { world.R = +v; setDecor(decor); rebuild(); updateLink(); });
   tabs($('spaceTabs'), [512, 1024].map((n) => [String(n), `${n}²`, `A world of ${n}×${n} cells${n > 512 ? ': room for more, four times the work' : ''}`]),
-    () => String(N), (v) => { allocate(+v); view.centre = [N / 2, N / 2]; frameView(); setDecor(decor); rebuild(); });
+    () => String(N), (v) => { allocate(+v); view.centre = [N / 2, N / 2]; frameView(); setDecor(decor); rebuild(); updateLink(); });
   tabs($('speedTabs'), [1, 2, 4, 8].map((s) => [String(s), `×${s}`, `${s} step${s > 1 ? 's' : ''} a frame at most: fewer when the GPU cannot keep up (the steps a second under Run)`]), () => String(speed), (v) => { speed = +v; });
   $('runRow').replaceChildren(
     button(running ? 'Pause' : 'Play', 'Run or stop time', () => { running = !running; buildPanel(); }),
     toggle('Trails', 'Where the creatures went, fading', () => trails, () => { trails = !trails; render(); }),
-    toggle('Keep alive', 'A species gone is given one more creature, on a free spot', () => alive, () => { alive = !alive; }),
+    keepAliveSwitch(),
     button('Step', 'One step', () => { step(); render(); }),
-    button('Seed', 'Life cleared, a few of each species placed again', () => { clearLife(); seed(); }),
+    world.kind === 'battle' ? button('Restart', 'The battle laid again from its seed', startBattle)
+      : button('Seed', 'Life cleared, a few of each species placed again', () => { clearLife(); seed(); }),
     button('Clear', 'All life cleared (the walls stay)', () => clearLife()));
 }
 
@@ -868,6 +991,30 @@ canvas.addEventListener('wheel', (e) => {
   frameView(); render();
 }, { passive: false });
 
+/* ---- 4.4b Battle links ------------------------------------------------------------------------ */
+
+// A battle's link: its teams, meeting, layout, creatures a team, decor, seed, R and world size,
+// in the address bar while a battle is shown (the page's bare address otherwise).
+function battleParams() {
+  return new URLSearchParams({ battle: fighterSpecies().map((sp) => sp.code).join(','), meet: world.meet, layout: world.layout, each: world.each, decor, seed: world.seed, R: world.R, N });
+}
+function updateLink() { history.replaceState(null, '', world.kind === 'battle' ? `?${battleParams()}` : location.pathname); }
+// A battle link read at start-up: each value kept only if it is one the page offers.
+function readLink() {
+  const q = new URLSearchParams(location.search), sps = (q.get('battle') ?? '').split(',').map((c) => byCode(ALL, c)).filter(Boolean);
+  if (sps.length < 2 || sps.length > 4 || !fits(sps)) return;
+  const pick = (key, allowed, to) => { const v = q.get(key); if (allowed.map(String).includes(v)) to(v); };
+  world.kind = 'battle'; world.fighters = packed(sps); world.meet = 'Territory';
+  pick('meet', Object.keys(MEETINGS), (v) => { world.meet = v; });
+  pick('layout', ['Sides', 'Mixed'], (v) => { world.layout = v; });
+  pick('each', [1, 3, 6], (v) => { world.each = +v; });
+  pick('decor', Object.keys(DECORS), (v) => { decor = v; });
+  pick('R', [10, 13, 18, 24], (v) => { world.R = +v; });
+  pick('N', [512, 1024], (v) => { N = +v; });
+  const n = Number(q.get('seed'));
+  if (Number.isInteger(n) && n > 0) world.seed = n;
+}
+
 /* ---- 4.5 Loop and check ---------------------------------------------------------------------- */
 
 // The steps of a frame: the speed asked, as many as fit in 60% of a frame of GPU time (each step
@@ -902,7 +1049,7 @@ function frame() {
     fadeTrails(0.985);
     fence = gl.fenceSync(gl.SYNC_GPU_COMMANDS_COMPLETE, 0);
   }
-  if (running && alive && (censusFence || ++aliveTick % 30 === 0)) keepAlive();
+  if (running && alive && world.kind !== 'battle' && (censusFence || ++aliveTick % 30 === 0)) keepAlive();
   render();
   frames++;
   const now = performance.now();
@@ -984,11 +1131,14 @@ window.leniaCheck = function (steps = 400) {
 if (!floatOk) $('fail').style.display = 'flex';
 else {
   setupGPU();
+  readLink();
   allocate(N);
+  view.centre = [N / 2, N / 2];
   resize();
   addEventListener('resize', () => { resize(); render(); });
   buildPanel();
   setDecor(decor);
   rebuild();
+  updateLink();
   requestAnimationFrame(frame);
 }

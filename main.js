@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.3.20';
+const VERSION = '0.3.21';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -11577,14 +11577,14 @@ const setupTitle = (x) => {
 // Your setups, as rows like the built-in ones (see setupRow), each with × to delete it
 function fillSetupList() {
   const list = readSetups();
-  // in groups as the tabs, Life, Ant, Walk, each under its name; by their titles, two rows alike numbered (2), (3)…
+  // the tab in use's only (Life, Ant, Walk…), under its name; by their titles, two rows alike numbered (2), (3)…
   const rows = list.filter((x) => NAV[x.setup.w]).map((x) => [setupTitle(x), [x.note, setupDetail(x.setup)].filter(Boolean).join(' · '), x]), seen = new Map();
   const kindOf = (x) => NAV[x.setup.w][0];
-  $('yourList').replaceChildren(...NAV_KINDS.flatMap(([kind]) => {
+  $('yourList').replaceChildren(...NAV_KINDS.filter(([kind]) => kind === NAV[$('mode').value]?.[0]).flatMap(([kind]) => {
     const mine = rows.filter(([, , x]) => kindOf(x) === kind).sort((a, b) => a[0].localeCompare(b[0]));
-    if (!mine.length) return [];
     const section = document.createElement('section'), cards = Object.assign(document.createElement('div'), { className: 'mode-list' });  // a section each, as Life's, its picture as the tab's
-    section.innerHTML = `<h2>${icon(NAV_KINDS.find(([k]) => k === kind)[1])}${kind}<button type="button" class="head-btn gallery-close">Close</button></h2>`;
+    section.innerHTML = `<h2>${icon(NAV_KINDS.find(([k]) => k === kind)[1])}${kind}</h2>`;  // (Close: Management's, above)
+    if (!mine.length) cards.innerHTML = `<p class="caption">None in ${kind} yet: ☆ in the header keeps the setup in view</p>`;
     cards.append(...mine.map(([title, detail, x]) => {
       const k = (seen.get(title + detail) ?? 0) + 1;
       seen.set(title + detail, k);

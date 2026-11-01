@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.3.42';
+const VERSION = '0.3.43';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -11980,6 +11980,7 @@ function restart() {
 // works on this form: the scale on a log scale (a steady feeling of zoom at any size) and the
 // centre in world units, so zooming out does not drift sideways.
 const MIN_SCALE = 1e-6;  // pixels per cell, the farthest zoom out
+const VIEW_GAP = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--view-gap'));  // pixels: a fit's margin, the player's and the view's boxes' (style.css)
 // how far the wheel zooms: from the view's fit (the whole of it framed, see viewFor; a walk's as it is now) ZOOM_OUT times
 // farther, whatever its size; nearer, in 3D ZOOM_IN times, in 2D down to ZOOM_CELLS cells across the screen (a cell's size,
 // whatever the size of the whole: a big Sierpiński's cells seen)
@@ -11989,12 +11990,12 @@ const zoomRange = () => {
   return [Math.max(MIN_SCALE, fit / ZOOM_OUT), flat ? Math.max(fit, Math.min(cw, ch) / ZOOM_CELLS) : fit * ZOOM_IN];
 };
 function viewFor(b) {
-  const tight = walk.is3d;  // a surface or a 3D walk: the sphere round it touches the sides, at most (see surfaceBounds, includeBox)
-  const w = b.maxX - b.minX + (tight ? 0 : 2);
-  const h = b.maxY - b.minY + (tight ? 0 : 2);
+  const half = walk.is3d || walk.plane || walk.sphere ? 0 : 1;  // a walk's bounds its cells' middles: half a cell more each side (a grid's, a surface's: its corners, its sphere)
+  const w = b.maxX - b.minX + half;
+  const h = b.maxY - b.minY + half;
   // down to 10⁻⁶ pixel per cell: a walk of 10 million steps can drift millions of cells away
   const fixed = walk.sphere || walk.plane;  // a surface or a grid fills the view at any size; a walk starts no closer than 40 px a cell
-  const scale = Math.min(fixed ? Infinity : 40, Math.max(MIN_SCALE, Math.min(cw / w, ch / h) * (tight ? 0.99 : 0.925)));  // else a 7.5 % margin
+  const scale = Math.min(fixed ? Infinity : 40, Math.max(MIN_SCALE, Math.min((cw - 2 * VIEW_GAP) / w, (ch - 2 * VIEW_GAP) / h)));  // (the view's gap each side, as the player's)
   return { scale, cx: (b.minX + b.maxX) / 2, cy: (b.minY + b.maxY) / 2 };
 }
 function setView(v) {
@@ -12012,10 +12013,10 @@ function fitToBounds(b) {
 }
 
 // Does the walk go past the edges of view v (the current view, or where auto-fit is heading)? Within
-// 16 px of them in 2D, less in a small view, where a fit leaves 3.75 % (see viewFor); a 3D walk's frame
-// (a sphere, see includeBox) touches them on purpose: past them
+// the view's gap of them in 2D, where a fit leaves it (half a pixel: a fit's own rounding, see viewFor); a 3D
+// walk's frame (a sphere, see includeBox) turns: past them
 function boundsOffscreen(v = view) {
-  const m = walk.is3d ? -1 : Math.min(16, 0.03 * Math.min(cw, ch)), ox = v.ox ?? cw / 2 - v.cx * v.scale, oy = v.oy ?? ch / 2 - v.cy * v.scale;
+  const m = walk.is3d ? -1 : VIEW_GAP - 0.5, ox = v.ox ?? cw / 2 - v.cx * v.scale, oy = v.oy ?? ch / 2 - v.cy * v.scale;
   return ox + bounds.minX * v.scale < m ||
          ox + bounds.maxX * v.scale > cw - m ||
          oy + bounds.minY * v.scale < m ||

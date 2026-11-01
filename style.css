@@ -1,4 +1,5 @@
 :root {
+  --view-gap: 12px;  /* the view's boxes from its edges (player, display, hint), a fit's margin too (see viewFor) */
   --bg: #0e1116;
   --panel: #161b22;
   --border: #2a313c;
@@ -399,7 +400,7 @@ button.switch.active:hover:not(:disabled) { background: var(--pick-strong); }
 .stage-more { display: none; }
 .stage-box:hover .stage-more { display: block; }
 @media (hover: none) { .stage-box:focus-within .stage-more { display: block; } }
-.display-menu { top: 12px; right: 12px; }
+.display-menu { top: var(--view-gap); right: var(--view-gap); }
 /* the number (Full number), in place of the whole view as how a rule works (.rule-tuto): its digits */
 .number-view .number-digits { max-width: none; color: var(--text); font: 13px/1.5 ui-monospace, "SF Mono", Menlo, monospace; word-break: break-all; }
 .number-view .number-digits + h3 { margin-top: 16px; }  /* (base 10's overview, then the base's digits) */
@@ -441,7 +442,7 @@ button.wide.active, .head-btn.active { border-color: var(--accent); color: var(-
 #walkOn button.active .mode-base { border-color: var(--accent); color: var(--accent); }
 /* the ant's rules to start from, written as they are typed */
 .choice-list button.active { border-color: var(--accent); color: var(--accent); background: var(--pick); }
-.stage-bar { left: 12px; bottom: 12px; width: 386px; max-width: calc(100% - 24px); padding: 10px 12px; border-radius: 12px; outline: none; }  /* grows upwards: the Play row stays at the bottom (no focus ring: a tap opens it, see index.html) */
+.stage-bar { left: var(--view-gap); bottom: var(--view-gap); width: 386px; max-width: calc(100% - 2 * var(--view-gap)); padding: 10px 12px; border-radius: 12px; outline: none; }  /* grows upwards: the Play row stays at the bottom (no focus ring: a tap opens it, see index.html) */
 .stage-bar:hover { width: 680px; }
 @media (hover: none) { .stage-bar:focus-within { width: 680px; } }
 /* what is walked: the number, its loop and base; on hover the walk, its rule and the stats */
@@ -542,8 +543,8 @@ button.bar-chip.active { color: var(--accent); border-color: var(--accent); }
 .stage-bar #play.on, .stage-bar #reverse.on { background: var(--accent); color: var(--accent-text); }
 .hint {
   position: absolute;
-  right: 12px;
-  bottom: 10px;
+  right: var(--view-gap);
+  bottom: var(--view-gap);
   font-size: 12px;
   line-height: 1.5;
   white-space: pre-line;  /* its lines stacked in the bottom right corner, each a box (below) */

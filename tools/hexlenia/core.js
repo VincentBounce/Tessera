@@ -1,89 +1,150 @@
-// Lenia on a hexagonal grid, a small radius: each cell a value in [0, 1], its neighbours within R (centres 1 apart)
-// weighted by Chan's kernel (rings of a bell, beta their heights), then growth G(u) = 2·exp(−(u−μ)²/2σ²) − 1, A += dt·G.
-// The grid: N × N cells in axial coordinates (q, r), a torus by the translations (N, 0) and (0, N); centre x = q + r/2,
-// y = r·√3/2. Shared by search.js (Deno) and view.html (the browser).
+// Lenia on any tiling's torus, small radii: each cell a value in [0, 1], the cells whose middles are within R units
+// weighted by Chan's kernel (rings of a bell, beta their heights; per cell, summing to 1), then growth
+// G(u) = 2·exp(−(u−μ)²/2σ²) − 1, A += dt·G. A space: its cells' middles (x, y, world units), their places on the torus
+// (u, v in [0, 1)), its two periods, its unit (the spacing of hexagons as dense: R and sizes are counted in it), the cells touching
+// (adj, for the pieces) and each cell's corners (for drawing). The hexagons: hexSpace; Tessera's periodic tilings
+// (tools/tilings/tilings.json): tilingSpace. Shared by the searches (Deno) and view.html, index.html (the browser).
+import { tilingGrid } from '../tilings/grid.js';
 
 export const mulberry32 = (a) => () => { a |= 0; a = (a + 0x6d2b79f5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
 
-// The kernel's offsets (dq, dr) and weights, summing to 1
-export function kernel(R, beta) {
-  const core = (r) => (r > 0 && r < 1 ? Math.exp(4 - 1 / (r * (1 - r))) : 0), B = beta.length, out = [];
-  const m = Math.ceil(R) + 1;
-  for (let dr = -2 * m; dr <= 2 * m; dr++) for (let dq = -2 * m; dq <= 2 * m; dq++) {
-    const d = Math.hypot(dq + dr / 2, (dr * Math.sqrt(3)) / 2) / R;
-    if (d <= 0 || d >= 1) continue;
-    const i = Math.min(B - 1, Math.floor(d * B)), w = beta[i] * core(d * B - i);
-    if (w > 1e-6) out.push([dq, dr, w]);
+/* ---- Spaces ---------------------------------------------------------------------------------- */
+
+// N × N hexagons in axial coordinates (q, r), cell r·N + q; middle x = q + r/2, y = r·√3/2 (1 apart)
+export function hexSpace(N) {
+  const n = N * N, x = new Float64Array(n), y = new Float64Array(n), u = new Float64Array(n), v = new Float64Array(n), start = new Int32Array(n + 1), list = [];
+  const D = [[1, 0], [-1, 0], [0, 1], [0, -1], [1, -1], [-1, 1]];
+  for (let r = 0; r < N; r++) for (let q = 0; q < N; q++) {
+    const c = r * N + q;
+    x[c] = q + r / 2; y[c] = (r * Math.sqrt(3)) / 2; u[c] = q / N; v[c] = r / N;
+    start[c] = list.length;
+    for (const [dq, dr] of D) list.push(((r + dr + N) % N) * N + ((q + dq + N) % N));
   }
-  const sum = out.reduce((a, o) => a + o[2], 0);
-  return out.map(([dq, dr, w]) => [dq, dr, w / sum]);
+  start[n] = list.length;
+  const s = 1 / Math.sqrt(3);
+  const shape = (c) => Array.from({ length: 6 }, (_, i) => { const a = Math.PI / 6 + (i * Math.PI) / 3; return [x[c] + Math.cos(a) * s, y[c] + Math.sin(a) * s]; });
+  return { name: 'hex', N, n, x, y, u, v, pa: [N, 0], pb: [N / 2, (N * Math.sqrt(3)) / 2], unit: 1, adj: { start, list: Int32Array.from(list) }, shape };
 }
 
-// A world: its cells, the neighbours' table, one step
-export function world(N, p) {
-  const K = kernel(p.R, p.beta), n = N * N, k = K.length, nb = new Int32Array(n * k), w = new Float32Array(K.map((o) => o[2]));
-  for (let r = 0; r < N; r++) for (let q = 0; q < N; q++) K.forEach(([dq, dr], j) => { nb[(r * N + q) * k + j] = ((r + dr + N) % N) * N + ((q + dq + N) % N); });
-  let A = new Float32Array(n), B = new Float32Array(n);
-  const s2 = 2 * p.sigma * p.sigma;
+// A tiling of tilings.json on W × W lattice cells, as the app lays it (tools/tilings/grid.js); its unit the spacing of
+// hexagons of a cell's mean area (hexagons 1 apart have √3/2 each)
+export function tilingSpace(name, W) {
+  const G = tilingGrid(name, W), n = G.n, x = new Float64Array(n), y = new Float64Array(n), u = new Float64Array(n), v = new Float64Array(n);
+  const [a, b] = G.basis;
+  for (let c = 0; c < n; c++) {
+    const [p, q] = G.lat(c), fu = (((p / W) % 1) + 1) % 1, fv = (((q / W) % 1) + 1) % 1;
+    u[c] = fu; v[c] = fv; x[c] = (fu * a[0] + fv * b[0]) * W; y[c] = (fu * a[1] + fv * b[1]) * W;
+  }
+  const area = Math.abs(a[0] * b[1] - a[1] * b[0]) / G.per;
+  return { name, N: W, n, x, y, u, v, pa: [a[0] * W, a[1] * W], pb: [b[0] * W, b[1] * W], unit: Math.sqrt((area * 2) / Math.sqrt(3)), adj: { start: G.start, list: G.list }, shape: G.shape };
+}
+
+export const space = (name, N) => (name === 'hex' ? hexSpace(N) : tilingSpace(name, N));
+
+// The shortest way from cell i to a point (u, v) on the torus, world units (the 9 images of the nearest)
+export const towards = (S, du, dv) => {
+  du -= Math.round(du); dv -= Math.round(dv);
+  let best = null;
+  for (let i = -1; i <= 1; i++) for (let j = -1; j <= 1; j++) {
+    const dx = (du + i) * S.pa[0] + (dv + j) * S.pb[0], dy = (du + i) * S.pa[1] + (dv + j) * S.pb[1];
+    if (!best || dx * dx + dy * dy < best[0] * best[0] + best[1] * best[1]) best = [dx, dy];
+  }
+  return best;
+};
+
+// Every pair of cells within D units, its distance (in units): one table a space and reach, kept
+const pairsKept = new Map();
+function pairs(S, D) {
+  const key = `${S.name}|${S.N}|${D}`;
+  if (pairsKept.has(key)) return pairsKept.get(key);
+  const start = new Int32Array(S.n + 1), list = [], dist = [], lim = D * S.unit;
+  for (let i = 0; i < S.n; i++) {
+    start[i] = list.length;
+    for (let j = 0; j < S.n; j++) {
+      if (i === j) continue;
+      const [dx, dy] = towards(S, S.u[j] - S.u[i], S.v[j] - S.v[i]);
+      if (Math.abs(dx) < lim && Math.abs(dy) < lim) { const d = Math.hypot(dx, dy); if (d < lim) { list.push(j); dist.push(d / S.unit); } }
+    }
+  }
+  start[S.n] = list.length;
+  const out = { start, list: Int32Array.from(list), dist: Float64Array.from(dist) };
+  pairsKept.set(key, out);
+  return out;
+}
+
+/* ---- Lenia ----------------------------------------------------------------------------------- */
+
+// A world: its space, its cells' values, the kernel's neighbours and weights (each cell's summing to 1), one step
+export function world(S, p) {
+  const P = pairs(S, Math.ceil(p.R)), B = p.beta.length, core = (r) => (r > 0 && r < 1 ? Math.exp(4 - 1 / (r * (1 - r))) : 0);
+  const start = new Int32Array(S.n + 1), nb = [], w = [];
+  for (let c = 0; c < S.n; c++) {
+    start[c] = nb.length;
+    let sum = 0;
+    for (let k = P.start[c]; k < P.start[c + 1]; k++) {
+      const d = P.dist[k] / p.R;
+      if (d >= 1) continue;
+      const i = Math.min(B - 1, Math.floor(d * B)), x = p.beta[i] * core(d * B - i);
+      if (x > 1e-6) { nb.push(P.list[k]); w.push(x); sum += x; }
+    }
+    for (let k = start[c]; k < w.length; k++) w[k] /= sum || 1;
+  }
+  start[S.n] = nb.length;
+  const NB = Int32Array.from(nb), Wt = Float32Array.from(w), n = S.n, s2 = 2 * p.sigma * p.sigma;
+  let A = new Float32Array(n), A2 = new Float32Array(n);
   const step = () => {
     for (let c = 0; c < n; c++) {
       let u = 0;
-      for (let j = 0, o = c * k; j < k; j++) u += w[j] * A[nb[o + j]];
+      for (let k = start[c], e = start[c + 1]; k < e; k++) u += Wt[k] * A[NB[k]];
       const g = 2 * Math.exp(-((u - p.mu) ** 2) / s2) - 1, v = A[c] + p.dt * g;
-      B[c] = v < 0 ? 0 : v > 1 ? 1 : v;
+      A2[c] = v < 0 ? 0 : v > 1 ? 1 : v;
     }
-    [A, B] = [B, A];
+    [A, A2] = [A2, A];
   };
-  return { N, n, k, get A() { return A; }, set A(x) { A = x; }, step };
+  return { S, n, get A() { return A; }, set A(x) { A = x; }, step };
 }
 
-// A start: a disc of radius r0 cells at the centre, random values (the seed's); tilted, rising from one side to the
-// other (a push one way: a mover more likely)
+// A start: a disc of radius r0 units at the torus' middle, random values (the seed's); tilted, rising from one side to
+// the other (a push one way: a mover more likely)
 export function seedDisc(W, r0, seed, density = 1, tilt = false) {
-  const rnd = mulberry32(seed), N = W.N, A = new Float32Array(W.n), c = N / 2;
-  for (let r = 0; r < N; r++) for (let q = 0; q < N; q++) {
-    const x = q - c + (r - c) / 2, y = ((r - c) * Math.sqrt(3)) / 2;
-    if (Math.hypot(x, y) < r0) { const v = rnd(); A[r * N + q] = v < density ? rnd() * (tilt ? (1 + x / r0) / 2 : 1) : 0; }
+  const rnd = mulberry32(seed), S = W.S, A = new Float32Array(W.n);
+  for (let c = 0; c < W.n; c++) {
+    const [x, y] = towards(S, S.u[c] - 0.5, S.v[c] - 0.5).map((t) => t / S.unit);
+    if (Math.hypot(x, y) < r0) { const v = rnd(); A[c] = v < density ? rnd() * (tilt ? (1 + x / r0) / 2 : 1) : 0; }
   }
   W.A = A;
 }
 
-// The mass, its centre (circular means in q and r) and spread (Euclidean, in cells), the live cells (> 0.1)
+// The mass, its centre (circular means of u and v) and spread (units), the live cells (> 0.1)
 export function measure(W) {
-  const { N, A } = W, t = (2 * Math.PI) / N;
-  let m = 0, live = 0, cq = 0, sq = 0, cr = 0, sr = 0;
-  for (let r = 0; r < N; r++) for (let q = 0; q < N; q++) {
-    const a = A[r * N + q];
+  const { S, A } = W, t = 2 * Math.PI;
+  let m = 0, live = 0, cu = 0, su = 0, cv = 0, sv = 0;
+  for (let c = 0; c < W.n; c++) {
+    const a = A[c];
     if (!a) continue;
     m += a; if (a > 0.1) live++;
-    cq += a * Math.cos(q * t); sq += a * Math.sin(q * t); cr += a * Math.cos(r * t); sr += a * Math.sin(r * t);
+    cu += a * Math.cos(S.u[c] * t); su += a * Math.sin(S.u[c] * t); cv += a * Math.cos(S.v[c] * t); sv += a * Math.sin(S.v[c] * t);
   }
-  const wrap = (x) => ((x % N) + N) % N, Q = wrap(Math.atan2(sq, cq) / t), Rr = wrap(Math.atan2(sr, cr) / t), d = (a, b) => ((a - b + 1.5 * N) % N) - N / 2;
+  const U = (((Math.atan2(su, cu) / t) % 1) + 1) % 1, V = (((Math.atan2(sv, cv) / t) % 1) + 1) % 1;
   let g = 0;
-  if (m) for (let r = 0; r < N; r++) for (let q = 0; q < N; q++) {
-    const a = A[r * N + q];
-    if (!a) continue;
-    const dq = d(q, Q), dr = d(r, Rr);
-    g += a * ((dq + dr / 2) ** 2 + (dr * dr * 3) / 4);
-  }
-  return { m, live, q: Q, r: Rr, rg: m ? Math.sqrt(g / m) : 0 };
+  if (m) for (let c = 0; c < W.n; c++) { const a = A[c]; if (a) { const [dx, dy] = towards(S, S.u[c] - U, S.v[c] - V); g += a * (dx * dx + dy * dy); } }
+  return { m, live, u: U, v: V, rg: m ? Math.sqrt(g / m) / S.unit : 0 };
 }
 
-// The pieces: cells > 0.1 joined by the 6 neighbours
+// The pieces: cells > 0.1 joined by the cells touching
 export function pieces(W) {
-  const { N, A } = W, seen = new Uint8Array(W.n), D = [[1, 0], [-1, 0], [0, 1], [0, -1], [1, -1], [-1, 1]];
+  const { A } = W, { start, list } = W.S.adj, seen = new Uint8Array(W.n);
   let n = 0;
   for (let c = 0; c < W.n; c++) {
     if (seen[c] || A[c] <= 0.1) continue;
     n++; seen[c] = 1;
     const st = [c];
-    while (st.length) {
-      const x = st.pop(), q = x % N, r = (x / N) | 0;
-      for (const [dq, dr] of D) { const y = ((r + dr + N) % N) * N + ((q + dq + N) % N); if (!seen[y] && A[y] > 0.1) { seen[y] = 1; st.push(y); } }
-    }
+    while (st.length) { const x = st.pop(); for (let k = start[x]; k < start[x + 1]; k++) { const y = list[k]; if (!seen[y] && A[y] > 0.1) { seen[y] = 1; st.push(y); } } }
   }
   return n;
 }
+
+/* ---- Patterns -------------------------------------------------------------------------------- */
 
 // Chan's RLE (as lenia.js reads it): counts, '.' empty, 'A'–'X' 1–24, 'p'–'y' then 'A'–'X' 25–255, '$' row end
 export function decodeRLE(st) {
@@ -106,51 +167,52 @@ export function decodeRLE(st) {
   return rows;
 }
 
-// A square grid's pattern laid on the hexagons at the centre, scaled by k (hex cells a square cell), bilinear
-export function placeSquare(W, rows, k) {
-  const N = W.N, A = new Float32Array(W.n), H = rows.length, Wd = Math.max(...rows.map((r) => r.length)), c = N / 2;
-  const at = (x, y) => rows[y]?.[x] ?? 0;
-  for (let r = 0; r < N; r++) for (let q = 0; q < N; q++) {
-    const x = (q - c + (r - c) / 2) / k + Wd / 2, y = (((r - c) * Math.sqrt(3)) / 2) / k + H / 2, x0 = Math.floor(x), y0 = Math.floor(y), fx = x - x0, fy = y - y0;
-    A[r * N + q] = at(x0, y0) * (1 - fx) * (1 - fy) + at(x0 + 1, y0) * fx * (1 - fy) + at(x0, y0 + 1) * (1 - fx) * fy + at(x0 + 1, y0 + 1) * fx * fy;
+// A square raster laid at the torus' middle, scaled by k (units a pixel), bilinear
+export function placeRows(W, rows, k) {
+  const S = W.S, A = new Float32Array(W.n), H = rows.length, Wd = Math.max(...rows.map((r) => r.length)), at = (x, y) => rows[y]?.[x] ?? 0;
+  for (let c = 0; c < W.n; c++) {
+    const [dx, dy] = towards(S, S.u[c] - 0.5, S.v[c] - 0.5), x = dx / S.unit / k + Wd / 2, y = dy / S.unit / k + H / 2, x0 = Math.floor(x), y0 = Math.floor(y), fx = x - x0, fy = y - y0;
+    A[c] = at(x0, y0) * (1 - fx) * (1 - fy) + at(x0 + 1, y0) * fx * (1 - fy) + at(x0, y0 + 1) * (1 - fx) * fy + at(x0 + 1, y0 + 1) * fx * fy;
   }
   W.A = A;
 }
 
-// A creature's hexagons sampled on a square raster (1 unit = 1 hex cell apart), around its centre (q, r), side S:
-// each pixel the hexagon it falls in (axial rounding); laid again by placeSquare at another scale
-export function hexRows(cells, N, Q, Rr, S) {
+// A world's cells sampled on a square raster around (u, v), side pixels of px units: each pixel the nearest cell's
+// value; laid again by placeRows (k = px, or more to enlarge) on this space or another
+export function sampleRows(W, U, V, side, px = 1) {
+  const S = W.S, near = [];
+  for (let c = 0; c < W.n; c++) { const [dx, dy] = towards(S, S.u[c] - U, S.v[c] - V); if (Math.hypot(dx, dy) < side * px * S.unit) near.push([dx / S.unit / px, dy / S.unit / px, W.A[c]]); }
   const rows = [];
-  for (let j = 0; j < S; j++) {
+  for (let j = 0; j < side; j++) {
     const row = [];
-    for (let i = 0; i < S; i++) {
-      const x = i - S / 2, y = j - S / 2, fr = y / (Math.sqrt(3) / 2), fq = x - fr / 2;
-      let rq = Math.round(fq), rr = Math.round(fr), rs = Math.round(-fq - fr);
-      const dq = Math.abs(rq - fq), dr = Math.abs(rr - fr), ds = Math.abs(rs + fq + fr);
-      if (dq > dr && dq > ds) rq = -rr - rs; else if (dr > ds) rr = -rq - rs;
-      const q = (((Math.round(Q) + rq) % N) + N) % N, r = (((Math.round(Rr) + rr) % N) + N) % N;
-      row.push(cells[r * N + q]);
+    for (let i = 0; i < side; i++) {
+      const x = i - side / 2, y = j - side / 2;
+      let best = 0, bd = Infinity;
+      for (const [cx, cy, a] of near) { const d = (cx - x) ** 2 + (cy - y) ** 2; if (d < bd) { bd = d; best = a; } }
+      row.push(best);
     }
     rows.push(row);
   }
   return rows;
 }
 
-// One run: a disc started (or the cells given), T steps; what it became. Stops early when it dies or fills the world
-export function run(p, N = 48, T = 2000, cells = null) {
-  const W = world(N, p);
+/* ---- Runs ------------------------------------------------------------------------------------ */
+
+// One run on a space (p.space, its size p.N; hexagons 48 by default): a disc started (or the cells given), T steps;
+// what it became. Stops early when it dies or fills the world
+export function run(p, N, T = 2000, cells = null) {
+  const S = space(p.space ?? 'hex', p.N ?? N ?? 48), W = world(S, p);
   if (cells) W.A = Float32Array.from(cells); else seedDisc(W, p.r0, p.seed, 1, p.tilt);
   const masses = [];
   let last = measure(W), x = 0, y = 0, x0 = 0, y0 = 0, end = 'alive';
-  const d = (a, b) => ((a - b + 1.5 * N) % N) - N / 2;
   for (let t = 1; t <= T; t++) {
     W.step();
     if (t % 10) continue;
     const s = measure(W);
-    if (s.m < 0.5) { end = 'died'; last = s; return { ...p, end, t }; }
-    if (s.live > W.n * 0.3) { end = 'filled'; return { ...p, end, t }; }
-    const dq = d(s.q, last.q), dr = d(s.r, last.r);
-    x += dq + dr / 2; y += (dr * Math.sqrt(3)) / 2;
+    if (s.m < 0.5) return { ...p, end: 'died', t };
+    if (s.live > W.n * 0.3) return { ...p, end: 'filled', t };
+    const [dx, dy] = towards(S, s.u - last.u, s.v - last.v);
+    x += dx / S.unit; y += dy / S.unit;
     if (t === T / 2) { x0 = x; y0 = y; }
     if (t > T / 2) masses.push(s.m);
     last = s;

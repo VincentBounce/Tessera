@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Hex Lenia creatures</title>
+<title>Lenia on tilings</title>
 <style>
   :root { --bg: #111; --fg: #ddd; --dim: #888; --card: #1b1b1b; }
   body { margin: 0; padding: 16px; background: var(--bg); color: var(--fg); font: 13px system-ui, sans-serif; }
@@ -18,34 +18,35 @@
 </style>
 </head>
 <body>
-<h1>Hex Lenia creatures</h1>
-<p>Lenia on hexagons, small radii: the movers found (out/creatures.json, made by gather.js), the smallest first. Each one plays here, a click opens it big.</p>
+<h1>Lenia on tilings</h1>
+<p>Lenia on hexagons and Tessera's tilings, small radii: the movers found (out/creatures.json, made by gather.js), the smallest first. Each one plays here, a click opens it big.</p>
 <div id="grid"></div>
 <script type="module">
 // Every creature from out/creatures.json, a card each: its own world playing, followed (the view centred on its mass)
-import { world, measure } from './core.js';
+import { space, world, measure, towards } from './core.js';
 const list = await (await fetch('out/creatures.json?' + Date.now())).json();
 const cards = list.map((o, i) => {
-  const N = Math.sqrt(o.cells.length), W = world(N, o);
+  const S = space(o.space ?? 'hex', o.N ?? Math.sqrt(o.cells.length)), W = world(S, o);
   W.A = Float32Array.from(o.cells, (v) => v / 255);
   const a = document.createElement('a');
   a.className = 'card'; a.href = `view.html#from=out/creatures.json&i=${i}`;
-  a.innerHTML = `<canvas width="200" height="200"></canvas><div class="name">${o.name || 'Hex creature'} · R ${o.R}</div><div class="info">${o.live} cells · speed ${o.speed} · β ${o.beta} μ ${o.mu} σ ${o.sigma} dt ${o.dt}</div>`;
+  a.innerHTML = `<canvas width="200" height="200"></canvas><div class="name">${o.name || 'Creature'} · ${S.name} · R ${o.R}</div><div class="info">${o.live} cells · speed ${o.speed} · β ${o.beta} μ ${o.mu} σ ${o.sigma} dt ${o.dt}</div>`;
   document.getElementById('grid').append(a);
   return { o, W, g: a.querySelector('canvas').getContext('2d') };
 });
-// A hexagon a cell within 7 radii of the creature's centre
+// Each cell its own shape, around the creature's centre, 3.5 radii across
 const draw = ({ o, W, g }) => {
-  const N = W.N, s = measure(W), span = Math.max(8, o.R * 3.5), size = 100 / span / Math.sqrt(3), d = (a, b) => ((a - b + 1.5 * N) % N) - N / 2;
+  const S = W.S, s = measure(W), sc = 100 / Math.max(8, o.R * 3.5) / S.unit;
   g.fillStyle = '#05051a'; g.fillRect(0, 0, 200, 200);
-  for (let r = 0; r < N; r++) for (let q = 0; q < N; q++) {
-    const v = W.A[r * N + q];
+  for (let c = 0; c < W.n; c++) {
+    const v = W.A[c];
     if (v < 0.01) continue;
-    const dq = d(q, s.q), dr = d(r, s.r), x = 100 + (dq + dr / 2) * size * Math.sqrt(3), y = 100 + dr * size * 1.5;
-    if (x < -size || x > 200 + size || y < -size || y > 200 + size) continue;
+    const [dx, dy] = towards(S, S.u[c] - s.u, S.v[c] - s.v), x = 100 + dx * sc, y = 100 + dy * sc;
+    if (x < -20 || x > 220 || y < -20 || y > 220) continue;
+    const P = S.shape(c), mx = P.reduce((a, q) => a + q[0], 0) / P.length, my = P.reduce((a, q) => a + q[1], 0) / P.length;
     g.fillStyle = `hsl(${240 - v * 190}, 90%, ${6 + v * 60}%)`;
     g.beginPath();
-    for (let k = 0; k < 6; k++) { const t = Math.PI / 6 + (k * Math.PI) / 3; g[k ? 'lineTo' : 'moveTo'](x + Math.cos(t) * size, y + Math.sin(t) * size); }
+    P.forEach(([px, py], k) => g[k ? 'lineTo' : 'moveTo'](x + (px - mx) * sc, y + (py - my) * sc));
     g.fill();
   }
 };

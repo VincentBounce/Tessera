@@ -1,7 +1,9 @@
 // A tiling's torus of W × W lattice cells (see build.js, tilings.json), as the app builds it: cell x of row y polygon
 // x % m of lattice cell ⌊x / m⌋; neighbours: the cells sharing a corner (wrapping round), by a side (two corners shared)
-// or a corner only (side: the letters); mid(t): its middle, world units
-const T = JSON.parse(Deno.readTextFileSync(new URL('./tilings.json', import.meta.url)));
+// or a corner only (side: the letters); mid(t): its middle, world units; lat(t): its middle in lattice cells; shape(t):
+// its corners, world units. Read by Deno or a page (hexlenia/view.html)
+const url = new URL('./tilings.json', import.meta.url);
+const T = typeof Deno !== 'undefined' ? JSON.parse(Deno.readTextFileSync(url)) : await (await fetch(url)).json();
 // the Cairo pentagons as main.js has them (cairoCorners): one pentagon across each side of a square grid, a bar in each
 // square level or upright by the parity of i + j; a lattice cell of 2 × 2 squares, 8 pentagons
 {
@@ -29,7 +31,8 @@ export function tilingGrid(name, W) {
     for (const u of [...around.keys()].sort((a, b) => a - b)) { list.push(u); side.push(around.get(u) >= 2 ? 1 : 0); }
   }
   start[n] = list.length;
-  const [a, b] = T[name].basis, mid = (t) => { const c = corners(t), u = c.reduce((s, p) => s + p[0], 0) / c.length, v = c.reduce((s, p) => s + p[1], 0) / c.length; return [u * a[0] + v * b[0], u * a[1] + v * b[1]]; };
-  return { W, row, n, start, list: Int32Array.from(list), side: Uint8Array.from(side), per: m, mid };
+  const [a, b] = T[name].basis, world = ([u, v]) => [u * a[0] + v * b[0], u * a[1] + v * b[1]];
+  const lat = (t) => { const c = corners(t); return [c.reduce((s, p) => s + p[0], 0) / c.length, c.reduce((s, p) => s + p[1], 0) / c.length]; };
+  return { W, row, n, start, list: Int32Array.from(list), side: Uint8Array.from(side), per: m, mid: (t) => world(lat(t)), lat, shape: (t) => corners(t).map(world), basis: [a, b] };
 }
 export const tilingCells = (name) => T[name].polys.length;

@@ -20,11 +20,11 @@
 // disc started, as search.js does; space: hex or a tiling of tilings.json, N its size; flow=true: Flow Lenia), or a creature a result file
 // kept: #from=out/creatures.json&i=3 (its setting and cells)
 import { space, world, seedDisc, measure } from './core.js';
-let h = Object.fromEntries(new URLSearchParams(location.hash.slice(1)));
-if (h.from) { const o = (await (await fetch(h.from)).json())[+h.i || 0]; h = { ...o, beta: o.beta.join(','), N: o.N ?? Math.sqrt(o.cells.length), kept: o.cells }; }
-const p = { R: +h.R || 4, beta: (h.beta || '1').split(',').map(Number), mu: +h.mu || 0.2, sigma: +h.sigma || 0.02, dt: +h.dt || 0.1, r0: +h.r0 || 6, seed: +h.seed || 1, flow: h.flow === 'true' || h.flow === true };
+let h = Object.fromEntries(new URLSearchParams(location.hash.slice(1))), p;
+if (h.from) { const o = (await (await fetch(h.from)).json())[+h.i || 0]; h = { ...o, N: o.N ?? Math.sqrt(o.cells.length), kept: o.cells }; p = o; }
+else p = { R: +h.R || 4, beta: (h.beta || '1').split(',').map(Number), mu: +h.mu || 0.2, sigma: +h.sigma || 0.02, dt: +h.dt || 0.1, r0: +h.r0 || 6, seed: +h.seed || 1, flow: h.flow === 'true' };
 const S = space(h.space || 'hex', +h.N || 48), W = world(S, p), cv = document.getElementById('c'), g = cv.getContext('2d');
-document.getElementById('info').textContent = `${h.name ? h.name + ' · ' : ''}${p.flow ? 'Flow Lenia · ' : ''}${S.name} ${S.N} · R ${p.R} · β ${p.beta} · μ ${p.mu} · σ ${p.sigma} · dt ${p.dt}`;
+document.getElementById('info').textContent = `${h.name ? h.name + ' · ' : ''}${p.flow ? 'Flow Lenia · ' : ''}${S.name} ${S.N} · R ${p.R} · ${p.kernels ? p.kernels.length + ' kernels' : `β ${p.beta} · μ ${p.mu} · σ ${p.sigma}`} · dt ${p.dt}`;
 let t = 0, on = true;
 const start = () => {
   if (h.kept) W.A = Float32Array.from(h.kept, (v) => v / 255);
@@ -32,11 +32,18 @@ const start = () => {
   t = 0;
 };
 start();
-// Each cell its own shape, the torus' parallelogram fitting the window
+// Each cell its own shape, the torus' parallelogram fitting the window (again when it changes: a page opened hidden
+// has no size yet)
 const shapes = Array.from({ length: S.n }, (_, c) => S.shape(c)), xs = shapes.flat().map((q) => q[0]), ys = shapes.flat().map((q) => q[1]);
-const x0 = Math.min(...xs), y0 = Math.min(...ys), sc = Math.min((innerWidth - 24) / (Math.max(...xs) - x0), (innerHeight - 60) / (Math.max(...ys) - y0));
-cv.width = (Math.max(...xs) - x0) * sc; cv.height = (Math.max(...ys) - y0) * sc;
-const paths = shapes.map((s) => { const P = new Path2D(); s.forEach(([x, y], i) => P[i ? 'lineTo' : 'moveTo']((x - x0) * sc, (y - y0) * sc)); P.closePath(); return P; });
+const x0 = Math.min(...xs), y0 = Math.min(...ys), sw = Math.max(...xs) - x0, sh = Math.max(...ys) - y0;
+let paths;
+const fit = () => {
+  const sc = Math.max(1, Math.min((innerWidth - 24) / sw, (innerHeight - 60) / sh));
+  cv.width = sw * sc; cv.height = sh * sc;
+  paths = shapes.map((s) => { const P = new Path2D(); s.forEach(([x, y], i) => P[i ? 'lineTo' : 'moveTo']((x - x0) * sc, (y - y0) * sc)); P.closePath(); return P; });
+};
+fit();
+addEventListener('resize', fit);
 const colour = (v) => `hsl(${240 - v * 190}, 90%, ${6 + v * 60}%)`;
 function draw() {
   g.fillStyle = '#111'; g.fillRect(0, 0, cv.width, cv.height);

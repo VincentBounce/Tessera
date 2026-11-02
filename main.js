@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.3.54';
+const VERSION = '0.3.55';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -7180,6 +7180,15 @@ const DRAW_PATTERNS = [
   ['dual16gliders-ship', 'dual16', ['B236/S046/C4'], 'Spaceship', '7.AB5.BA2.A3.AB!', 'flies, period 10 · 7 cells'],
   ['dual16gliders-fast', 'dual16', ['B236/S046/C4'], 'Fast ship', 'BC3A.BCB.BA2.C$11.C!', 'flies, period 5 · 12 cells'],
   ['dual16ships-ship', 'dual16', ['B237/S056/C4'], 'Spaceship', '.B4.ABA.A3.AB!', 'flies, period 10 · 7 cells'],
+  ['demi2ships-ship', 'demi2', ['B23/S1478/C5'], 'Spaceship', '6.CD5.A$3.D2.C.DACD2.A2.A!', 'flies, period 3 · 11 cells'],
+  ['demi2ships-osc', 'demi2', ['B23/S1478/C5'], 'Oscillator', '6.A5.2BA2.A$A2.B4.B.BADC2.D$B.A.A3.AC.AC.D.2C!', 'period 52 · 23 cells'],
+  ['demi2life-meth', 'demi2', ['B35/S0138'], 'Methuselah', '.A.A6.A$.A2.A2.A3.4A!', 'settles at generation 157 · 10 cells'],
+  ['demi10life-meth', 'demi10', ['B2/S129'], 'Methuselah', '3A2.A3.2A$.3A.2A6.A!', 'settles at generation 3,424 · 12 cells'],
+  ['demi10long-meth', 'demi10', ['B2/S0179'], 'Methuselah', 'A5.5A$.3A.A2.A6.A!', 'settles at generation 3,139 · 12 cells'],
+  ['demi13life-meth', 'demi13', ['B357/S0345'], 'Methuselah', '.A.2A8.A$8.A!', 'settles at generation 1,255 · 5 cells'],
+  ['demi13clocks-osc', 'demi13', ['B369/S3458'], 'Oscillator', '3.A17.3A4.A!', 'period 22 · 5 cells'],
+  ['demi20embers-meth', 'demi20', ['B379/S0237/C4'], 'Methuselah', '11.A5.A.2A!', 'settles at generation 2,146 · 4 cells'],
+  ['demi20sparks-meth', 'demi20', ['B367/S023/C4'], 'Methuselah', '2.A7.A3.A2.A!', 'settles at generation 1,590 · 4 cells'],
   ['dodecagonlife-osc', 'trunchex', ['B238/S0457/C5'], 'Oscillator', '3.AB.A$AB.2B.A$A2.A!', 'period 30 · 10 cells'],
   ['dodecagonlife-meth', 'trunchex', ['B238/S0457/C5'], 'Methuselah', '7.A$.A.A.A2.A2.A$5.A!', 'settles at generation 699 · 7 cells'],
   ['dodecagonsparks-osc', 'trunchex', ['B235/S0457/C5'], 'Oscillator', '3.A2.A$A2.B.BA.B$A2.A.B!', 'period 30 · 10 cells'],

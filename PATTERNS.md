@@ -1602,3 +1602,20 @@ revive.js (tools/kitesearch) on any torus grid: `deno run --allow-read --allow-w
 
 Tetrakis's B3v12/S1247/C4 (born with 3, one or two by a corner only; surviving with 1, 2, 4 or 7; 4 states) wakes its ash up for twice as long as Life, often past 300 generations, and is the most Life-like of these. Few grids have any: on Rhombitri, Snub, Pythagoras, Capital I, Type 14 and the octagons, the rules that wake up long are not Life-like at all (or have no ships: Type 14). Runs: the wake-ups measured, of 8 soups × 2 ships (fewer: some soups never froze, or a ship found nothing); under 8, a lead only.
 
+
+## ✜ ✬ ✪ ✯ The four 2-uniform tilings (night of 2026-11-01)
+
+Four tilings of two kinds of corners (Wikipedia, *Euclidean tilings by convex regular polygons*, 2-uniform; Wikimedia's numbers): Demi 2 [3.12.12; 3.4.3.12], Demi 10 [3⁶; 3².6²], Demi 13 [3⁶; 3².4.12], Demi 20 [3⁶; 3⁴.6]₂. Each searched over 103,448 rules (tools/tilings/search.js), the three best of each, then twelve more, for ships, oscillators and methuselahs (famous.js, meths.js); every pattern below played again in the app (Famous, its start in the middle), the same generation each.
+
+| Grid | Rule | Score | Soups settle | Pattern |
+|---|---|---|---|---|
+| Demi 2 | **B23/S1478/C5** (Demi 2 ships) | 0.19 | 482–3,949 | ships of 11 cells, period 3, along both ways; an oscillator of 23 cells, period 52 ([ship](https://vincentbounce.github.io/Tessera/#w=life2dDemi2&r=B23/S1478/C5&s=48&pop=famous.30.1)) |
+| Demi 2 | **B35/S0138** (Demi 2 Life) | 0.148 | 278 or more | a methuselah of 10 cells, gen 157 |
+| Demi 10 | **B2/S129** (Demi 10 Life) | 0.557 | 295–4,606 | a methuselah of 12 cells, gen 3,424, its ash period 12 ([meth](https://vincentbounce.github.io/Tessera/#w=life2dDemi10&r=B2/S129&s=96&pop=famous.30.1)) |
+| Demi 10 | **B2/S0179** (Demi 10 long) | 0.389 | 284–3,448 | a methuselah of 12 cells, gen 3,139, its ash period 40 |
+| Demi 13 | **B357/S0345** (Demi 13 Life) | 0.841 | 366–2,253 | a methuselah of **5 cells**, gen 1,255 ([meth](https://vincentbounce.github.io/Tessera/#w=life2dDemi13&r=B357/S0345&s=96&pop=famous.30.1)) |
+| Demi 13 | **B369/S3458** (Demi 13 clocks) | 0.727 | 325 or more | an oscillator of 5 cells, period 22 |
+| Demi 20 | **B379/S0237/C4** (Demi 20 embers) | 0.181 | 437–2,252 | a methuselah of **4 cells**, gen 2,146 ([meth](https://vincentbounce.github.io/Tessera/#w=life2dDemi20&r=B379/S0237/C4&s=96&pop=famous.30.1)) |
+| Demi 20 | **B367/S023/C4** (Demi 20 sparks) | 0.162 | 321–2,383 | a methuselah of 4 cells, gen 1,590 |
+
+Demi 13's B357/S0345 scores best of the four (0.84). Ships only on Demi 2 so far.

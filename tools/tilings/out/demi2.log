@@ -1,0 +1,10 @@
+demi2 103448 rules 1256 candidates 124s
+demi2 done 319s
+  B23/S1478/C5    0.19   T 1028 (482–3949) spread 0.64 plateau 0.46 at200 10% ash 0.43% osc 100%
+  B35/S0138       0.148  T 349 (278–6000) spread 0.8 plateau 0.45 at200 7.2% ash 3.21% osc 83%
+  B23/S147/C5     0.13   T 1082 (673–4562) spread 0.54 plateau 0.48 at200 11% ash 0.38% osc 100%
+  B367/S0128/C5   0.096  T 589 (455–6000) spread 0.66 plateau 0.42 at200 12.9% ash 5.41% osc 83%
+  B246/S2478/C5   0.088  T 607 (87–2614) spread 1.03 plateau 0.65 at200 3.6% ash 1.53% osc 36%
+  B348/S123       0.077  T 308 (244–6000) spread 1.12 plateau 0.49 at200 6.5% ash 2.95% osc 83%
+  B245/S158/C5    0.075  T 969 (221–6000) spread 1.2 plateau 0.34 at200 3.8% ash 0.41% osc 58%
+  B2/S28/C3       0.063  T 896 (252–6000) spread 0.89 plateau 0.48 at200 6.3% ash 0.14% osc 86%

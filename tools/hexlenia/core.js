@@ -136,7 +136,8 @@ function growth(K, A, out) {
 export function world(S, p) {
   if (p.flow) return flowWorld(S, p);
   const K = kernel(S, p), n = S.n, H = K.ks.reduce((a, k) => a + k.h, 0);
-  let A = new Float32Array(n), G = new Float32Array(n);
+  let A = new Float32Array(n);
+  const G = new Float64Array(n);
   const step = () => {
     growth(K, A, G);
     for (let c = 0; c < n; c++) { const v = A[c] + (p.dt * G[c]) / H; A[c] = v < 0 ? 0 : v > 1 ? 1 : v; }
@@ -172,7 +173,7 @@ function flowWorld(S, p) {
   ns[n] = nl.length;
   const NL = Int32Array.from(nl), OX = Float32Array.from(ox), OY = Float32Array.from(oy), w = new Float32Array(Math.max(...Array.from({ length: n }, (_, c) => ns[c + 1] - ns[c])));
   let A = new Float32Array(n), A2 = new Float32Array(n);
-  const G = new Float32Array(n), slope = (f, c) => { let x = 0, y = 0; for (let k = start[c]; k < start[c + 1]; k++) { const e = f[list[k]] - f[c]; x += gx[k] * e; y += gy[k] * e; } return [x, y]; };
+  const G = new Float64Array(n), slope = (f, c) => { let x = 0, y = 0; for (let k = start[c]; k < start[c + 1]; k++) { const e = f[list[k]] - f[c]; x += gx[k] * e; y += gy[k] * e; } return [x, y]; };
   const step = () => {
     growth(K, A, G);
     A2.fill(0);

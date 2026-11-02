@@ -513,9 +513,9 @@ async function checkSheets(fail) {
   const sizeOne = (S) => S.sizes?.[1] ?? S.sizes?.[0];
   for (const name of foldedIn('torus')) {
     const S = SPHERES[name], g = S.mesh(sizeOne(S)), m = TILINGS[g.tiling].polys.length;
-    const bricks = Map.groupBy([...Array(g.n).keys()], (t) => g.bricks[t]), odd = [...bricks.values()].filter((ts) => ts.length !== m);
+    const bricks = Map.groupBy([...Array(g.n).keys()], (t) => g.latticeCells[t]), odd = [...bricks.values()].filter((ts) => ts.length !== m);
     if (odd.length) fail(`${name}: ${odd.length} bricks not one lattice cell (${m} tiles): ${odd[0].length}`);
-    const place = brickPlaces(g), units = Map.groupBy([...Array(g.n).keys()], (t) => `${place[2 * t].toFixed(4)},${place[2 * t + 1].toFixed(4)}`);
+    const place = colourUnitPlaces(g), units = Map.groupBy([...Array(g.n).keys()], (t) => `${place[2 * t].toFixed(4)},${place[2 * t + 1].toFixed(4)}`);
     const spread = (ts, d) => { const x = ts.map((t) => g.uvMid[2 * t + d]); return Math.max(...x) - Math.min(...x); };
     const apart = [...units.values()].filter((ts) => spread(ts, 0) > 1.5 || spread(ts, 1) > 1.5);
     if (apart.length) fail(`${name}: ${apart.length} colour units across its seam (${spread(apart[0], 0).toFixed(1)} sheet cells along)`);

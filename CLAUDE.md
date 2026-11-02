@@ -60,3 +60,9 @@ A separate page (`lenia/index.html`, `lenia.js`, `species.js`), not part of main
 eight life channels (two layers of four) and a wall texture; a species is a team on a block of 1 to 3 channels, its law moved there. `species.js` is made by `lenia/make_species.py` from Chan's repo
 (Chakazul/Lenia, `Python/animals.json` and `found/*.json`), each pick tested for moving and standing walls;
 `leniaCheck()` in its console: the FFT's round trip and an impulse, each species alive alone, a team the same on any channels.
+
+## Particle Life prototype (particles/)
+A separate page (`particles/index.html`, `particles.js`), not part of main.js: Particle Life (Tom Mohr's) on the GPU,
+particles of 3 to 8 kinds on a torus, each kind drawn to or pushed from each other kind by a K × K rule matrix (clicked
+to change), every pair felt (a fragment shader a particle); the link keeps kinds, count, seed and changed rules.
+`particlesCheck()` in its console: one GPU step against the same step on the CPU.

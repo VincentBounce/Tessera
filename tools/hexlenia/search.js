@@ -30,7 +30,8 @@ await Promise.all(workers.map((w) => new Promise((res) => {
     const p = tries[next++];
     w.onmessage = ({ data }) => {
       const o = data.out; ends[o.end] = (ends[o.end] ?? 0) + 1;
-      if (o.end === 'alive') out.push(creature(o) ? o : { ...o, cells: undefined });
+      // (Flow Lenia: cells kept too where the centre moved a little, its pieces for isolate.js)
+      if (o.end === 'alive') out.push(creature(o) || (FLOW && o.speed > 0.003) ? o : { ...o, cells: undefined });
       if (++done % 200 === 0) console.log(done, Math.round((Date.now() - t0) / 1000) + 's', JSON.stringify(ends));
       go();
     };

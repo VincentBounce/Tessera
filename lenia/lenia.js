@@ -649,8 +649,8 @@ function clearLife(channels = range(0, CH)) {
 // cells held, its individuals (its blocks held by a quarter or more, joined side by side on the
 // torus) and its territory (below), a reading a time in the history; the winner, once 500 steps
 // are played: the last team alive, or one whose territory is two thirds of the free cells, or the
-// leader in territory at 20,000 steps; a draw if all are gone.
-const score = { start: 0, history: [], winner: null, fence: null, buffer: null };
+// leader in territory at the limit (20,000 steps; a tournament's own); a draw if all are gone.
+const score = { start: 0, history: [], winner: null, fence: null, buffer: null, limit: 20000 };
 function resetScore() { Object.assign(score, { start: stepCount, history: [], winner: null }); }
 
 function teamGroups(held, k) {
@@ -738,7 +738,72 @@ function judge({ step, area, land }) {
   if (!alive.length) score.winner = { team: -1, step, why: 'all gone: a draw' };
   else if (alive.length === 1) score.winner = { team: alive[0], step, why: 'the last alive' };
   else if (land[lead] >= freeCells * 2 / 3) score.winner = { team: lead, step, why: 'two thirds of the world' };
-  else if (step >= 20000) score.winner = { team: lead, step, why: 'the leader in territory at 20,000 steps' };
+  else if (step >= score.limit) score.winner = { team: lead, step, why: `the leader in territory at ${score.limit.toLocaleString('en')} steps` };
+}
+
+/* ---- 3.3c Tournament ------------------------------------------------------------------------- */
+
+// A tournament: every pair of a pool's species, two seeds a pair, each match a battle of the
+// page's decor, meeting, start and creatures a team, played off the frame loop (the world shown
+// now and then) until its verdict, at the tournament's limit at most. Each match its link; each
+// species its wins, draws, losses, mean territory at the end and Elo (32 a match, from 1,500).
+const tour = { on: false, matches: [], played: [], table: [] };
+// A turn of the event loop (fences and the census only move between tasks), through one channel
+// kept (not timers, slowed in a hidden page).
+const turnChannel = new MessageChannel(), turnWaiting = [];
+turnChannel.port1.onmessage = () => turnWaiting.shift()?.();
+const yieldTask = () => new Promise((r) => { turnWaiting.push(r); turnChannel.port2.postMessage(0); });
+// Steps sent 50 at a time, each lot waited for on the GPU (a long queue of work froze, then crashed the page).
+async function stepsWaited(n) {
+  for (let done = 0; done < n; done += 50) {
+    for (let k = 0; k < Math.min(50, n - done); k++) step();
+    const f = gl.fenceSync(gl.SYNC_GPU_COMMANDS_COMPLETE, 0);
+    gl.flush();
+    while (gl.getSyncParameter(f, gl.SYNC_STATUS) !== gl.SIGNALED) await yieldTask();
+    gl.deleteSync(f);
+  }
+}
+
+// One match, from its own seed: its verdict (team −1 a draw) and each team's territory at the end.
+async function playMatch(a, b, seed, limit) {
+  world.fighters = packed([a, b]); world.seed = seed;
+  setDecor(decor); setLaw(lawOf(world)); clearLife(); layBattle(); resetScore(); score.limit = limit;
+  while (tour.on && !score.winner) {
+    await stepsWaited(200);
+    battleCensus();
+    while (score.fence) { await yieldTask(); battleCensus(); }
+    render();
+  }
+  const last = score.history.at(-1);
+  return { a, b, seed, winner: score.winner, land: last ? last.land.map((v) => v / Math.max(1, freeCells)) : [0, 0], link: `?${battleParams()}` };
+}
+
+async function runTournament(pool, limit, onProgress) {
+  const was = { fighters: world.fighters, seed: world.seed, running };
+  tour.on = true; running = false; tour.played = [];
+  tour.matches = pool.flatMap((a, i) => pool.slice(i + 1).flatMap((b) => (fits([a, b]) ? [[a, b, 1], [a, b, 2]] : [])));
+  onProgress();
+  for (const [a, b, n] of tour.matches) {
+    if (!tour.on) break;
+    tour.played.push(await playMatch(a, b, 1000 * n + tour.played.length, limit));
+    tour.table = standings(pool, tour.played);
+    onProgress();
+  }
+  tour.on = false; score.limit = 20000;
+  Object.assign(world, { fighters: was.fighters, seed: was.seed }); running = was.running;
+  startBattle(); onProgress();
+}
+
+function standings(pool, played) {
+  const row = new Map(pool.map((sp) => [sp, { sp, w: 0, d: 0, l: 0, land: 0, n: 0, elo: 1500 }]));
+  for (const m of played) {
+    const [A, B] = [row.get(m.a), row.get(m.b)], s = m.winner.team === 0 ? 1 : m.winner.team === 1 ? 0 : 0.5;
+    const e = 1 / (1 + 10 ** ((B.elo - A.elo) / 400));
+    A.elo += 32 * (s - e); B.elo -= 32 * (s - e);
+    if (s === 1) { A.w++; B.l++; } else if (s === 0) { B.w++; A.l++; } else { A.d++; B.d++; }
+    A.land += m.land[0]; B.land += m.land[1]; A.n++; B.n++;
+  }
+  return [...row.values()].filter((r) => r.n).sort((u, v) => v.elo - u.elo);
 }
 
 /* ---- 3.4 Walls ------------------------------------------------------------------------------- */
@@ -1003,7 +1068,50 @@ function battlePanel() {
     button('New seed', 'Another start: other spots, turns and walls', () => { world.seed = newSeed(); buildPanel(); startBattle(); }),
     button('Copy link', 'The link to this battle: the same teams, start and walls', () => { updateLink(); navigator.clipboard?.writeText(location.href); }));
   const board = document.createElement('div'); board.id = 'score';
-  return [...world.fighters.map((_, k) => fighterRow(k)), add, ...section('Start', layout), ...section('Creatures a team', each), ...section('Seed', seedRow), ...section('Score', board)];
+  const cup = document.createElement('div'); cup.id = 'tournament';
+  return [...world.fighters.map((_, k) => fighterRow(k)), add, ...section('Start', layout), ...section('Creatures a team', each), ...section('Seed', seedRow), ...section('Score', board), ...section('Tournament', cup)];
+}
+
+// The tournament's pools and lengths; the pool and length chosen.
+const POOLS = { Spreaders: () => ALL.filter((sp) => sp.life.includes('grow')), Movers: () => ALL.filter((sp) => sp.life.startsWith('moves') && !sp.life.includes('grow')), All: () => ALL };
+Object.assign(tour, { pool: 'Spreaders', limit: 6000 });
+
+// The tournament under the score: its pool, length, Start or Stop and progress (the panel inert
+// meanwhile), then its standings and each match's link.
+function showTournament() {
+  const box = $('tournament');
+  if (!box) return;
+  $('panel').classList.toggle('busy', tour.on);
+  const pairs = (sps) => sps.flatMap((a, i) => sps.slice(i + 1).filter((b) => fits([a, b]))).length * 2;
+  const pool = document.createElement('div'); pool.className = 'tabs';
+  tabs(pool, Object.entries(POOLS).map(([k, f]) => [k, k, `${f().length} species, ${pairs(f())} matches (each pair twice, two seeds)`]), () => tour.pool, (v) => { tour.pool = v; showTournament(); });
+  const length = document.createElement('div'); length.className = 'tabs';
+  tabs(length, [3000, 6000, 20000].map((n) => [String(n), n.toLocaleString('en'), `A match ends at ${n.toLocaleString('en')} steps at most, its leader in territory the winner`]), () => String(tour.limit), (v) => { tour.limit = +v; showTournament(); });
+  const n = pairs(POOLS[tour.pool]()), minutes = Math.ceil(n * tour.limit * (stepGpu || 3) / 60000);
+  const go = button(tour.on ? 'Stop' : 'Start', tour.on ? 'Stop after this match: the standings so far kept'
+    : `Play the ${n} matches, off screen (the world shown now and then): about ${minutes} min at most`, () => {
+    if (tour.on) { tour.on = false; return; }
+    runTournament(POOLS[tour.pool](), tour.limit, showTournament);
+  });
+  const progress = document.createElement('span'); progress.className = 'seed';
+  progress.textContent = tour.on ? `Match ${tour.played.length + 1} of ${tour.matches.length}` : tour.played.length ? `${tour.played.length} matches played` : `${n} matches, ≤ ${minutes} min`;
+  const row = document.createElement('div'); row.className = 'row'; row.append(go, progress);
+  const table = tour.table.map((r, i) => {
+    const line = document.createElement('div'); line.className = 'tally';
+    const name = document.createElement('span'); name.className = 'name'; name.textContent = `${i + 1}. ${r.sp.name || r.sp.code}`; name.title = label(r.sp);
+    const nums = document.createElement('span'); nums.className = 'nums';
+    nums.textContent = `${r.w}-${r.d}-${r.l} · ${(100 * r.land / r.n).toFixed(0)}% · ${Math.round(r.elo)}`;
+    nums.title = 'Wins-draws-losses, mean territory at the end, Elo';
+    line.append(name, nums);
+    return line;
+  });
+  const matches = tour.played.map((m) => {
+    const a = document.createElement('a'); a.className = 'match'; a.href = m.link; a.target = '_blank';
+    const who = m.winner.team < 0 ? 'draw' : `${[m.a, m.b][m.winner.team].code} wins`;
+    a.textContent = `${m.a.code} vs ${m.b.code} · ${who} at ${m.winner.step}`; a.title = m.winner.why;
+    return a;
+  });
+  box.replaceChildren(pool, length, row, ...table, ...matches);
 }
 
 // The score under the battle: the winner (or the step), each team's territory and life as shares
@@ -1068,7 +1176,7 @@ function buildPanel() {
     world.kind === 'battle' ? button('Restart', 'The battle laid again from its seed', startBattle)
       : button('Seed', 'Life cleared, a few of each species placed again', () => { clearLife(); seed(); }),
     button('Clear', 'All life cleared (the walls stay)', () => clearLife()));
-  showScore();
+  showScore(); showTournament();
 }
 
 /* ---- 4.4 Drawing and the pointer ------------------------------------------------------------- */
@@ -1191,9 +1299,9 @@ function frame() {
   const now0 = performance.now();
   frameMs = 0.9 * frameMs + 0.1 * Math.min(now0 - lastFrame, 50); lastFrame = now0;
   const perFrame = stepsPerFrame();
-  if (running) credit = Math.min(credit + perFrame, 3 * Math.max(1, perFrame));
+  if (running && !tour.on) credit = Math.min(credit + perFrame, 3 * Math.max(1, perFrame));
   const gpuDone = !fence || gl.getSyncParameter(fence, gl.SYNC_STATUS) === gl.SIGNALED;
-  if (running && gpuDone && credit >= 1) {
+  if (running && !tour.on && gpuDone && credit >= 1) {
     if (fence) gl.deleteSync(fence);
     const n = Math.floor(credit), timing = timer && !query;
     credit -= n;
@@ -1204,7 +1312,7 @@ function frame() {
     fence = gl.fenceSync(gl.SYNC_GPU_COMMANDS_COMPLETE, 0);
   }
   if (running && alive && world.kind !== 'battle' && (censusFence || ++aliveTick % 30 === 0)) keepAlive();
-  if (world.kind === 'battle' && (score.fence || (running && ++aliveTick % 10 === 0)) && battleCensus()) showScore();
+  if (world.kind === 'battle' && !tour.on && (score.fence || (running && ++aliveTick % 10 === 0)) && battleCensus()) showScore();
   render();
   frames++;
   const now = performance.now();

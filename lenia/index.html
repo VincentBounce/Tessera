@@ -38,6 +38,12 @@
   .tally .name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .tally .nums { color: var(--dim); font-variant-numeric: tabular-nums; }
   #score canvas { display: block; margin-top: 6px; background: #0f1219; border: 1px solid var(--line); border-radius: 4px; }
+  #tournament .tabs { margin-bottom: 6px; }
+  #tournament .row { margin-bottom: 6px; }
+  .match { display: block; color: var(--dim); font-size: 11.5px; text-decoration: none; padding: 1px 0; }
+  .match:hover { color: var(--accent); }
+  #panel.busy * { pointer-events: none; }
+  #panel.busy #tournament .btn { pointer-events: auto; }
   .seed { align-self: center; color: var(--dim); font-variant-numeric: tabular-nums; margin-right: 4px; }
   .slot .name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .slot select { flex: 1; min-width: 0; background: #0f1219; color: var(--text); border: 1px solid var(--line); border-radius: 4px; font: inherit; padding: 3px; }

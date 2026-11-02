@@ -241,6 +241,7 @@ async function coldLike(fail, what) {
   document.body.append(f);
   await new Promise((go) => f.addEventListener('load', go, { once: true }));
   await wait(1500);
+  for (let t = 0; f.contentWindow.eval('busy') && t < 600; t++) await wait(100);  // (its digits still computed: as the page's own look waits, see checker)
   const a = offered(window), b = offered(f.contentWindow);
   f.remove();
   const diff = [...new Set([...Object.keys(a), ...Object.keys(b)])].filter((k) => a[k] !== b[k]).map((k) => `${k}: «${a[k]}» here, «${b[k]}» cold`);

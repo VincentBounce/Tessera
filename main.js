@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.3.55';
+const VERSION = '0.3.56';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -7185,6 +7185,8 @@ const DRAW_PATTERNS = [
   ['demi2life-meth', 'demi2', ['B35/S0138'], 'Methuselah', '.A.A6.A$.A2.A2.A3.4A!', 'settles at generation 157 · 10 cells'],
   ['demi10life-meth', 'demi10', ['B2/S129'], 'Methuselah', '3A2.A3.2A$.3A.2A6.A!', 'settles at generation 3,424 · 12 cells'],
   ['demi10long-meth', 'demi10', ['B2/S0179'], 'Methuselah', 'A5.5A$.3A.A2.A6.A!', 'settles at generation 3,139 · 12 cells'],
+  ['demi10ships-ship', 'demi10', ['B29/S168'], 'Spaceship', '3.2A2.A.2A$2A3.A!', 'flies, period 24 · 8 cells'],
+  ['demi10ships-meth', 'demi10', ['B29/S168'], 'Methuselah', '3.2A.A10.A$4.2A3.A2.2A.A6.2A!', 'settles at generation 926 · 12 cells'],
   ['demi13life-meth', 'demi13', ['B357/S0345'], 'Methuselah', '.A.2A8.A$8.A!', 'settles at generation 1,255 · 5 cells'],
   ['demi13clocks-osc', 'demi13', ['B369/S3458'], 'Oscillator', '3.A17.3A4.A!', 'period 22 · 5 cells'],
   ['demi20embers-meth', 'demi20', ['B379/S0237/C4'], 'Methuselah', '11.A5.A.2A!', 'settles at generation 2,146 · 4 cells'],
@@ -11529,7 +11531,7 @@ function getSetup() {
   if (!$('fillAreas').checked) s.fa = 0;
   if (mode.life) s.r = ruleBody($('lifeRule').value);
   if (mode.life && !mode.margolus && lifeColours > 1) s.k = lifeColours;
-  if (mode.life && colourMixed()) s.mx = 1;  // (Mixed)
+  if (mode.life && colourMix && lifeColours > 1) s.mx = 1;  // (Mixed, kept where its zone greys it: the other zones' fits by it, see huntFits)
   if (mode.plane) {  // the grid's side, dead edges (e=1), its start ("random.30.7", "draw" with p=, "digits"), its symmetry (y=)
     if (!mode.elementary) s.s = plane.side;  // (Elementary's: none, see elementaryRows)
     if (!plane.torus) s.e = 1;

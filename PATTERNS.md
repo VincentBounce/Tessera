@@ -1612,10 +1612,11 @@ Four tilings of two kinds of corners (Wikipedia, *Euclidean tilings by convex re
 | Demi 2 | **B23/S1478/C5** (Demi 2 ships) | 0.19 | 482–3,949 | ships of 11 cells, period 3, along both ways; an oscillator of 23 cells, period 52 ([ship](https://vincentbounce.github.io/Tessera/#w=life2dDemi2&r=B23/S1478/C5&s=48&pop=famous.30.1)) |
 | Demi 2 | **B35/S0138** (Demi 2 Life) | 0.148 | 278 or more | a methuselah of 10 cells, gen 157 |
 | Demi 10 | **B2/S129** (Demi 10 Life) | 0.557 | 295–4,606 | a methuselah of 12 cells, gen 3,424, its ash period 12 ([meth](https://vincentbounce.github.io/Tessera/#w=life2dDemi10&r=B2/S129&s=96&pop=famous.30.1)) |
+| Demi 10 | **B29/S168** (Demi 10 ships) | 0.36 | 337–4,436 | ships of 8 cells, period 24, both ways; a methuselah of 12 cells, gen 926 ([ship](https://vincentbounce.github.io/Tessera/#w=life2dDemi10&r=B29/S168&s=96&pop=famous.30.1)) |
 | Demi 10 | **B2/S0179** (Demi 10 long) | 0.389 | 284–3,448 | a methuselah of 12 cells, gen 3,139, its ash period 40 |
 | Demi 13 | **B357/S0345** (Demi 13 Life) | 0.841 | 366–2,253 | a methuselah of **5 cells**, gen 1,255 ([meth](https://vincentbounce.github.io/Tessera/#w=life2dDemi13&r=B357/S0345&s=96&pop=famous.30.1)) |
 | Demi 13 | **B369/S3458** (Demi 13 clocks) | 0.727 | 325 or more | an oscillator of 5 cells, period 22 |
 | Demi 20 | **B379/S0237/C4** (Demi 20 embers) | 0.181 | 437–2,252 | a methuselah of **4 cells**, gen 2,146 ([meth](https://vincentbounce.github.io/Tessera/#w=life2dDemi20&r=B379/S0237/C4&s=96&pop=famous.30.1)) |
 | Demi 20 | **B367/S023/C4** (Demi 20 sparks) | 0.162 | 321–2,383 | a methuselah of 4 cells, gen 1,590 |
 
-Demi 13's B357/S0345 scores best of the four (0.84). Ships only on Demi 2 so far.
+Demi 13's B357/S0345 scores best of the four (0.84). Ships on Demi 2 and Demi 10 (B29/S168, B29/S169); none on Demi 13 (15 rules tried, 6 of them with births on 2) nor Demi 20 (9).

@@ -12,7 +12,7 @@
  * sides, red (0) and blue (1); across the sides a creature is drawn more (or less) by its side's own
  * say (red to blue, blue to red, by |Δh|: one chasing while the other flees makes them meet), and
  * a shade turns towards the side most of its neighbours hold (contagion; `tip` the share of blue it
- * takes to go blue): fronts, conquests. (Two shades alone, without kinds, only make still drops.)
+ * takes to go blue; a share right at it changes nothing): fronts, conquests; even sides win by luck. (Two shades alone, without kinds, only make still drops.)
  * Wheel: no kinds, a rainbow (h round a circle): each shade drawn to the shade `chase` ahead and
  * pushed from the one opposite (a = cos 2π(Δh − chase)): endless chases, spirals.
  * A particle's w: its kind + its shade × 0.999 (the kind the whole part).
@@ -43,7 +43,7 @@ const mulberry32 = (a) => () => { a |= 0; a = (a + 0x6d2b79f5) | 0; let t = Math
 // contagion=1&tip=0.5&chase=0.15 and, once a rule is changed, m= its K² rules
 const hash = Object.fromEntries(new URLSearchParams(location.hash.slice(1)));
 const num = (v, d) => (v === undefined || v === '' || isNaN(+v) ? d : +v);
-const set = { redBlue: num(hash.redBlue, 0.5), blueRed: num(hash.blueRed, -0.3), mode: MODES.includes(hash.mode) ? hash.mode : 'kinds', swirl: num(hash.swirl, 0), contagion: num(hash.contagion, 1), tip: num(hash.tip, 0.5), chase: num(hash.chase, 0.15), space: SPACES.includes(hash.space) ? hash.space : 'torus', k: KINDS.includes(+hash.k) ? +hash.k : 6, n: COUNTS.includes(+hash.n) ? +hash.n : 65536, seed: +hash.seed || 1, reach: +hash.reach || 0.1, friction: +hash.friction || 0.04, steps: STEPS.includes(+hash.steps) ? +hash.steps : 1, m: hash.m ? hash.m.split(',').map(Number) : null };
+const set = { redBlue: num(hash.redBlue, 0.3), blueRed: num(hash.blueRed, 0.3), mode: MODES.includes(hash.mode) ? hash.mode : 'kinds', swirl: num(hash.swirl, 0), contagion: num(hash.contagion, 1), tip: num(hash.tip, 0.5), chase: num(hash.chase, 0.15), space: SPACES.includes(hash.space) ? hash.space : 'torus', k: KINDS.includes(+hash.k) ? +hash.k : 6, n: COUNTS.includes(+hash.n) ? +hash.n : 65536, seed: +hash.seed || 1, reach: +hash.reach || 0.1, friction: +hash.friction || 0.04, steps: STEPS.includes(+hash.steps) ? +hash.steps : 1, m: hash.m ? hash.m.split(',').map(Number) : null };
 const rules = () => set.m ?? (() => { const r = mulberry32(set.seed * 7919); return Array.from({ length: set.k * set.k }, () => Math.round((r() * 2 - 1) * 4) / 4); })();
 let M = rules();
 const keep = () => { const h = { redBlue: set.redBlue, blueRed: set.blueRed, mode: set.mode, swirl: set.swirl, contagion: set.contagion, tip: set.tip, chase: set.chase, space: set.space, k: set.k, n: set.n, seed: set.seed, reach: set.reach, friction: set.friction, steps: set.steps }; if (set.m) h.m = set.m.join(','); history.replaceState(null, '', '#' + new URLSearchParams(h)); };
@@ -152,7 +152,7 @@ fn across(p: vec3f, u: vec3f) -> vec3f { if (P.a.z == 1u) { return cross(p / RHO
   if (sphere) { p = normalize(p + v * P.f.z) * RHO; v -= p * dot(p, v) / (RHO * RHO); }
   else { p = vec3f(fract(p.xy + v.xy * P.f.z), 0.0); }
   var h = shadeOf(me.w);
-  if (P.g.w == 1u && held > 0.0) { h = clamp(h + P.h.x * P.f.z * (select(0.0, 1.0, blue / held > P.h.y) - h), 0.0, 1.0); }
+  if (P.g.w == 1u && held > 0.0 && blue / held != P.h.y) { h = clamp(h + P.h.x * P.f.z * (select(0.0, 1.0, blue / held > P.h.y) - h), 0.0, 1.0); }
   sOut[2u * i] = vec4f(p, f32(kindOf(me.w)) + h * 0.999); sOut[2u * i + 1u] = vec4f(v, 0.0);
 }`;
 // A particle drawn as a quad: the torus as its square round the place in the middle, wrapped; the sphere turned, its near
@@ -428,7 +428,7 @@ async function checkStep(which) {
         held += 1 - r; blue += (1 - r) * shadeOf(S[j * 8 + 3]);
       }
     }
-    const hs = shadeOf(hi), h = kindOf(hi) + 0.999 * (set.mode === 'battle' && held > 0 ? Math.min(1, Math.max(0, hs + set.contagion * DT * (+(blue / held > set.tip) - hs))) : hs);
+    const hs = shadeOf(hi), h = kindOf(hi) + 0.999 * (set.mode === 'battle' && held > 0 && Math.fround(blue / held) !== Math.fround(set.tip) ? Math.min(1, Math.max(0, hs + set.contagion * DT * (+(blue / held > set.tip) - hs))) : hs);
     let v = at(i, 4).map((x, c) => x * damp + f[c] * rr * 10 * DT), q;
     if (sphere) { const m = p.map((x, c) => x + v[c] * DT), l = len(m); q = m.map((x) => (x / l) * RHO); const d = dot(q, v) / (RHO * RHO); v = v.map((x, c) => x - q[c] * d); }
     else q = [((p[0] + v[0] * DT) % 1 + 1) % 1, ((p[1] + v[1] * DT) % 1 + 1) % 1, 0];

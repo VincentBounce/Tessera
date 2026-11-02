@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.3.101';
+const VERSION = '0.3.102';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -4762,7 +4762,7 @@ function globeMesh(E) {
     along.push((i + 0.5) / N[j]);  // (its middle's way round, a share of a turn: its colour's quarter, see partPlaces)
   }
   tiles.push(run(B + 1, 0, points(B + 1) - 1)); along.push(0.5);  // (the north cap)
-  const sides = Math.max(...tiles.map((c) => c.length));
+  const sides = tiles.reduce((most, c) => Math.max(most, c.length), 0);  // (not Math.max(...): its 353,154 tiles at 1024 past the call stack, the size not made)
   return (meshCache[key] = Object.assign(finishMesh(verts, tiles.map((c) => [...c, ...Array(sides - c.length).fill(c.at(-1))]), sides, E), { globe: true, columns: N, along: Float64Array.from(along) }));
 }
 

@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.3.95';
+const VERSION = '0.3.96';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -4714,24 +4714,43 @@ function flatPolyhedron(name, f, kites = false) {
 }
 
 /* ---- 7.3b Globe ------------------------------------------------------------------------------ */
-/* A globe of f bands: its parallels f − 1 apart from pole to pole, its 2f meridians, each band's cells between two of each (squares at
- * the equator, narrower towards the poles); its two polar bands one cell each, a 2f-gon round its pole (not 2f triangles meeting
- * there: each would touch all the others at the pole, 2f + 1 neighbours). Its radius f / π: its equator's cells a unit wide. Every
- * tile listed with 2f corners, a square's last one repeated (as the sphere's pentagons); f ≤ 64 (an edge's number a byte, see
- * finishMesh) */
+/* A globe of f bands, its parallels π / f apart from pole to pole; each band's cells between two meridians, 2f round the equator
+ * (squares there, a unit a side: its radius f / π), halved towards a pole as they narrow (see globeColumns: as square as can be, as a
+ * reduced grid of the weather maps' is); its two polar bands one cell each, round its pole (not triangles meeting there, each
+ * touching all the others). A band's cell under a band of twice as many: 5 corners, the line between them its neighbours' (a
+ * square's 4); a cap's, its band's columns, 12 to 23 (every tile listed with as many corners, its last again: see finishMesh) */
+// each band's columns, south to north (a cap's its neighbour's): 2f, halved while its cells stay half as wide as high at least
+// (their width over their height at the band's middle: 2f cos(its latitude) / columns), never below 12 (its caps 12 to 23 sides:
+// the colours, the divisors of its fewest, see colourFairOwn); a tie halved (cos 60°: 1/2 on the dot)
+function globeColumns(f) {
+  const bands = [];
+  for (let j = 1; j < f - 1; j++) {
+    const wide = 2 * f * Math.cos(-Math.PI / 2 + ((j + 0.5) * Math.PI) / f);
+    let N = 2 * f;
+    while (N % 2 === 0 && N / 2 >= 12 && N / 2 >= wide - 1e-9) N /= 2;
+    bands.push(N);
+  }
+  return [bands[0], ...bands, bands.at(-1)];
+}
 function globeMesh(f) {
   const key = `globe${f}`;
   if (meshCache[key]) return meshCache[key];
-  const N = 2 * f, R = f / Math.PI, { verts, add } = vertexStore(), tiles = [];
-  const at = (j, i) => {  // (parallel j from the south pole, 1 to f − 1; meridian i, round)
-    const lat = -Math.PI / 2 + (j * Math.PI) / f, lon = (2 * Math.PI * (((i % N) + N) % N)) / N;
+  const N = globeColumns(f), R = f / Math.PI, { verts, add } = vertexStore(), tiles = [], along = [];
+  const points = (b) => Math.max(N[b - 1], N[b]);  // (parallel b, between bands b − 1 and b: the finer one's corners)
+  const at = (b, k) => {
+    const lat = -Math.PI / 2 + (b * Math.PI) / f, lon = (2 * Math.PI * (k % points(b))) / points(b);
     return add(R * Math.cos(lat) * Math.cos(lon), R * Math.cos(lat) * Math.sin(lon), R * Math.sin(lat));
   };
-  const pad = (c) => [...c, ...Array(N - c.length).fill(c.at(-1))], round = Array.from({ length: N }, (_, i) => i);
-  tiles.push(pad(round.map((i) => at(1, N - 1 - i))));  // (the south cap, seen from below)
-  for (let j = 1; j < f - 1; j++) for (let i = 0; i < N; i++) tiles.push(pad([at(j, i), at(j, i + 1), at(j + 1, i + 1), at(j + 1, i)]));
-  tiles.push(pad(round.map((i) => at(f - 1, i))));  // (the north cap)
-  return (meshCache[key] = Object.assign(finishMesh(verts, tiles, N, f), { globe: true, columns: N }));
+  const run = (b, from, to) => Array.from({ length: Math.abs(to - from) + 1 }, (_, s) => at(b, from + Math.sign(to - from) * s));  // (parallel b's corners, from to to)
+  tiles.push(run(1, points(1) - 1, 0)); along.push(0.5);  // (the south cap, seen from below)
+  for (let j = 1; j < f - 1; j++) for (let i = 0; i < N[j]; i++) {
+    const r0 = points(j) / N[j], r1 = points(j + 1) / N[j];  // (its bottom's and its top's corners a cell: 1, or 2 under or over a band of twice as many)
+    tiles.push([...run(j, i * r0, (i + 1) * r0), ...run(j + 1, (i + 1) * r1, i * r1)]);
+    along.push((i + 0.5) / N[j]);  // (its middle's way round, a share of a turn: its colour's quarter, see partPlaces)
+  }
+  tiles.push(run(f - 1, 0, points(f - 1) - 1)); along.push(0.5);  // (the north cap)
+  const sides = Math.max(...tiles.map((c) => c.length));
+  return (meshCache[key] = Object.assign(finishMesh(verts, tiles.map((c) => [...c, ...Array(sides - c.length).fill(c.at(-1))]), sides, f), { globe: true, columns: N, along: Float64Array.from(along) }));
 }
 
 /* ---- 7.4 Torus ------------------------------------------------------------------------------- */
@@ -5662,8 +5681,8 @@ const SPHERES = {
   pyramid: { mesh: (f) => hullMesh('pyramid', f), radius: (f) => f / 2, tiles: (f) => 5 * f * f, unit: 'cells', edges: [12, 24, 48] },  // edge 2
   rhombi: { mesh: (f) => hullMesh('rhombi', f), radius: (f) => f / 2, tiles: (f) => 26 * f * f, unit: 'cells', edges: [12, 24, 48] },  // edge 2: 18 squares, 8 triangles
   bicupola: { mesh: (f) => hullMesh('bicupola', f), radius: (f) => f / 2, tiles: (f) => 18 * f * f, unit: 'cells', edges: [12, 24, 48] },
-  globe: { mesh: globeMesh, radius: (f) => f / Math.PI, tiles: (f) => 2 * f * (f - 2) + 2, unit: 'cells', least: 4, most: 64,
-           how: (f) => `{y:${fmt(f - 2)} bands} × {k:${fmt(2 * f)} cells each} + {r:2 caps}` },  // (f bands, 2f meridians, see globeMesh)  // edge 2: 10 squares, 8 triangles
+  globe: { mesh: globeMesh, radius: (f) => f / Math.PI, tiles: (f) => globeColumns(f).slice(1, -1).reduce((s, N) => s + N, 2), unit: 'cells', least: 4,
+           how: (f) => { const N = globeColumns(f); return `{y:${fmt(f - 2)} bands} of {k:${fmt(N[N.length >> 1])} cells} at the equator, halved towards the poles down to {k:${fmt(N[1])}} + {r:2 caps}`; } },  // (see globeMesh)
   dodecaKite: { mesh: (f) => flatPolyhedron('dodeca', f, true), radius: (f) => (f * PHI) / 2, tiles: (f) => 180 * f * f, unit: 'kites', how: (f) => `{r:12 pentagonal faces} × {s:5 sectors} × {y:(Edge=${fmt(f)})² triangles} × {k:3 kites each}` },
 };
 // the solids of squares as tetrakis triangles (see tetrakisOf): sized as their squares, 4 cells a square
@@ -9057,9 +9076,9 @@ const MIRRORED_DISCS = ['ammann', 'rhombs12', 'rhombs14', 'penrose'];  // the di
 const figureTurns = (kind) => ROSETTES[kind]?.[0] ?? { ammann: 8, rhombs12: 12, rhombs14: 14, penrose: 5, hat: 1, spectre: 1, pinwheel: 1 }[kind] ?? PATTERN_TURNS[baseOf(kind)] ?? 1;
 // (twice a fair count: each part halved, 2 4 giving 8, 5 10, 3 6 12; 3 without 6, thrice: 9, each third in 3: on the plane and a
 // solid; never on a grid that never repeats, a disc: no symmetry halves its parts, a rosette's a spiral's (Flower 6's 12 colours 63 to
-// 65 cells, Penrose's 10, 72 to 77, before v0.3.90); nor on a sheet, its blocks or slices made for K itself (Klein Type 15's 10, its
-// twist odd, before v0.3.94))
-const colourFair = (K, g = walk.geo) => colourFairOwn(K, g) || (!g?.torus && !APERIODIC[MODES[$('mode').value]?.plane] && (([8, 10, 12].includes(K) && colourFairOwn(K / 2, g)) || (K === 9 && colourFairOwn(3, g) && !colourFairOwn(6, g))));
+// 65 cells, Penrose's 10, 72 to 77, before v0.3.90); nor on a sheet or a globe, its blocks, slices or quarters made for K itself
+// (Klein Type 15's 10, its twist odd, before v0.3.94))
+const colourFair = (K, g = walk.geo) => colourFairOwn(K, g) || (!g?.torus && !g?.globe && !APERIODIC[MODES[$('mode').value]?.plane] && (([8, 10, 12].includes(K) && colourFairOwn(K / 2, g)) || (K === 9 && colourFairOwn(3, g) && !colourFairOwn(6, g))));
 const colourFairOwn = (K, g) => {
   const mode = MODES[$('mode').value], kind = mode?.plane;
   if (K === 1) return true;
@@ -9071,7 +9090,7 @@ const colourFairOwn = (K, g) => {
     return n > 1 && (n % K === 0 || (mirror && K === 2 * n));
   }
   if (solidCounts(mode?.sphere)) return solidCounts(mode.sphere).includes(K);
-  if (g?.globe) return g.columns % K === 0;  // (a globe: quarters of whole meridians' columns, see partPlaces)
+  if (g?.globe) return g.columns.every((N) => N % K === 0);  // (a globe: quarters of whole columns in every band, see partPlaces; its fewest's divisors)
   if (g?.mobius) return true;
   if (g?.copyLength) { const { n, step } = kleinLength(g.kindK, g.size, K), x = (n * step) / torusBlocks(K, g)[0] / g.copyLength; return Math.abs(x - Math.round(x)) < 1e-6; }  // (a tiling's bottle: slices a whole count of its copies along, see MOBIUS_ALONG: a glide's turned over)
   if (g?.nu) return g.nv % torusBlocks(K, g)[1] === 0;  // (a torus: its blocks' rows dividing its rows; its columns made for its colours, see ringColumns)
@@ -10732,9 +10751,10 @@ function partPlaces(r, K, mirror, mixed) {
     if (!r) { for (let t = 0; t < n; t++) parts[block(t)].push(t); return parts; }
     return parts.map((_, i) => lifePatch(r, middleCells(i, K)));  // at their middles (a tile there, as on the plane)
   }
-  // a globe: K quarters, each its columns' cells between two meridians (2f / K columns, every band), its two caps no one's
+  // a globe: K quarters, each the cells between two meridians, whole columns of every band (each band's a multiple of K), its two
+  // caps no one's
   if (g.globe) {
-    const quarter = (t) => (t > 0 && t < g.n - 1 ? Math.floor((((t - 1) % g.columns) * K) / g.columns) : -1);  // (its cells listed cap, bands, cap: see globeMesh)
+    const quarter = (t) => (t > 0 && t < g.n - 1 ? Math.floor(g.along[t] * K) : -1);  // (its middle's way round, as laid: see globeMesh)
     if (!r) { for (let t = 0; t < n; t++) if (quarter(t) >= 0) parts[quarter(t)].push(t); return parts; }
     return parts.map((_, i) => lifePatch(r, middleCells(i, K)));
   }

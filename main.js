@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.3.82';
+const VERSION = '0.3.83';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -4712,12 +4712,12 @@ for (const k of Object.keys(TUBE_SHAPE)) TUBE_SHAPE[k.replace('torus', 'klein')]
 const tubeFor = (kind, nv, nu) => (TUBE_SHAPE[kind] * nv) / nu;
 // One length for every ring and strip (a torus's, a Klein bottle's round its ring, a Möbius strip's along it), in its steps: near
 // x (its usual), its colours' blocks square (as long round as across: square) when that is 20 % shorter to 60 % longer, a whole
-// count of unit (each colour's block whole) as ok allows (a twist's), else the nearest ok allows. Life's colours only (a walk's: one)
+// count of unit (each colour's block whole) as ok allows (a twist's), else the nearest ok allows. Life's colours only (a walk's: one).
+// Square or not by the shape asked, then rounded (by its rounding, Duel's square, 0.8 x on the dot, went one size in two)
 const ringColours = () => (MODES[$('mode').value]?.margolus ? 3 : MODES[$('mode').value]?.life ? lifeColours : 1);  // (a reversible torus: Trio's, its start on the middle square)
 function ringLength(x, square, unit, ok = () => true) {
   const near = (t, u) => { for (let d = 0; d <= t / u + 1; d++) for (const n of [Math.round(t / u) + d, Math.round(t / u) - d]) if (n >= 1 && ok(n * u)) return n * u; };
-  const sq = near(square, unit) ?? near(square, 1);
-  return sq >= 0.8 * x - 1e-9 && sq <= 1.6 * x + 1e-9 ? sq : near(x, unit) ?? near(x, 1);
+  return square >= 0.8 * x - 1e-9 && square <= 1.6 * x + 1e-9 ? near(square, unit) ?? near(square, 1) : near(x, unit) ?? near(x, 1);
 }
 // a torus's (a Klein bottle's) columns round the ring near x: its colours' blocks a × b (see torusBlocks; a bottle's, slices
 // along its ring), a whole count of them and of step (the hexagons' and the triangles': even)

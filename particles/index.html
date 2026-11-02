@@ -33,8 +33,10 @@
   label.range span { width: 62px; color: var(--dim); }
   label.range input { flex: 1; }
   label.range b { width: 38px; text-align: right; font-weight: normal; font-variant-numeric: tabular-nums; }
-  .kindsOnly, .battleOnly, .wheelOnly { display: none; }
-  body.kinds .kindsOnly, body.battle .battleOnly, body.battle .battleShows, body.wheel .wheelOnly { display: block; }
+  .kindsOnly, .battleOnly, .wheelOnly, .evolveOnly, .contagionShows { display: none; }
+  body.kinds .kindsOnly, body.battle .battleOnly, body.battle .battleShows, body.wheel .wheelOnly, body.evolve .evolveOnly, body.evolve .evolveShows,
+  body.battle .contagionShows, body.evolve .contagionShows { display: block; }
+  #census { margin-top: 6px; font-size: 11.5px; line-height: 1.5; font-variant-numeric: tabular-nums; }
   #matrix { display: block; margin-top: 4px; cursor: pointer; image-rendering: pixelated; }
   #stats { white-space: pre-line; }
   #stats, #help { margin-top: 12px; color: var(--dim); font-size: 11.5px; font-variant-numeric: tabular-nums; }
@@ -48,25 +50,29 @@
 <body>
 <div id="panel">
   <h1>Particle Life</h1>
-  <div class="sub">Particles of a few kinds, each kind drawn to or pushed from each other kind at its own strength, or of shades at war or chasing round a rainbow, on a torus or a sphere</div>
+  <div class="sub">Particles of a few kinds, each kind drawn to or pushed from each other kind at its own strength, or of shades at war, chasing round a rainbow, or species evolving, on a torus or a sphere</div>
   <div class="sec">Mode</div>
   <div class="tabs" id="modes"></div>
   <div class="sec">Space</div>
   <div class="tabs" id="spaces"></div>
-  <div class="kindsOnly battleShows"><div class="sec">Kinds</div>
+  <div class="kindsOnly battleShows evolveShows"><div class="sec">Kinds</div>
   <div class="tabs" id="kinds"></div></div>
   <div class="sec">Particles</div>
   <div class="tabs" id="counts"></div>
   <div class="sec">Steps a frame</div>
   <div class="tabs" id="steps"></div>
-  <div class="kindsOnly battleShows"><div class="sec">Rules</div>
+  <div class="kindsOnly battleShows evolveShows"><div class="sec">Rules</div>
   <div class="row"><button class="btn" id="newRules">New rules</button><span class="seed" id="seed"></span></div>
   <canvas id="matrix"></canvas></div>
   <div class="battleOnly"><div class="sec">Battle</div>
   <label class="range"><span>Red → blue</span><input id="redBlue" type="range" min="-1" max="1" step="0.05"><b></b></label>
   <label class="range"><span>Blue → red</span><input id="blueRed" type="range" min="-1" max="1" step="0.05"><b></b></label>
-  <label class="range"><span>Contagion</span><input id="contagion" type="range" min="0" max="5" step="0.1"><b></b></label>
   <label class="range"><span>Tip</span><input id="tip" type="range" min="0.2" max="0.8" step="0.01"><b></b></label></div>
+  <div class="evolveOnly"><div class="sec">Evolve</div>
+  <label class="range"><span>Mutate</span><input id="mutate" type="range" min="0" max="10" step="0.5"><b></b></label>
+  <label class="range"><span>Change</span><input id="change" type="range" min="0" max="1" step="0.05"><b></b></label>
+  <div id="census"></div></div>
+  <div class="contagionShows"><label class="range"><span>Contagion</span><input id="contagion" type="range" min="0" max="5" step="0.1"><b></b></label></div>
   <div class="wheelOnly"><div class="sec">Wheel</div>
   <label class="range"><span>Chase</span><input id="chase" type="range" min="0" max="0.5" step="0.01"><b></b></label></div>
   <div class="sec">Motion</div>
@@ -75,7 +81,7 @@
   <label class="range"><span>Swirl</span><input id="swirl" type="range" min="-1" max="1" step="0.05"><b></b></label>
   <div class="row" style="margin-top:8px"><button class="btn" id="play">Pause</button><button class="btn" id="scatter">Scatter</button><button class="btn" id="spin">Spin</button></div>
   <div id="stats"></div>
-  <div id="help">Battle: the kinds' creatures in two sides, red (0) and blue (1), dark to light by kind; Red → blue, how much more red is drawn to blue (negative: flees it), Blue → red the same for blue; a particle turns to the side most of its neighbours hold, blue once their share passes Tip (above ½ favours red). Wheel: each shade drawn to the one Chase ahead round the rainbow, pushed from the opposite. Swirl: a push to the left of each neighbour, turning creatures (negative: right). A rule square: row the kind that feels, column the kind it feels; green draws, red pushes. Click raises it by ½, shift-click lowers it (−1 to 1). The reach is for 4,096 particles, shrunk with more: more particles, a larger world. The wheel zooms; a drag turns the sphere or moves over the torus. The link keeps all the settings and changed rules.</div>
+  <div id="help">Battle: the kinds' creatures in two sides, red (0) and blue (1), dark to light by kind; Red → blue, how much more red is drawn to blue (negative: flees it), Blue → red the same for blue; a particle turns to the side most of its neighbours hold, blue once their share passes Tip (above ½ favours red). Wheel: each shade drawn to the one Chase ahead round the rainbow, pushed from the opposite. Evolve: species, each its own rules (the commonest's drawn above), shown by colour; a particle takes the species most of its neighbours hold (Contagion, how often); every Mutate seconds a mutant species, its rules each moved by up to Change, laid on a small patch. Swirl: a push to the left of each neighbour, turning creatures (negative: right). A rule square: row the kind that feels, column the kind it feels; green draws, red pushes. Click raises it by ½, shift-click lowers it (−1 to 1). The reach is for 4,096 particles, shrunk with more: more particles, a larger world. The wheel zooms; a drag turns the sphere or moves over the torus. The link keeps all the settings and changed rules.</div>
 </div>
 <div id="stage"><canvas id="view"></canvas><div id="fail"></div></div>
 <script src="particles.js"></script>

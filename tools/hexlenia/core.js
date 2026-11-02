@@ -74,8 +74,8 @@ function pairs(S, D) {
 
 /* ---- Lenia ----------------------------------------------------------------------------------- */
 
-// A world: its space, its cells' values, the kernel's neighbours and weights (each cell's summing to 1), one step
-export function world(S, p) {
+// Chan's kernel on a space: each cell's neighbours within R units and their weights (rings of a bell, summing to 1)
+function kernel(S, p) {
   const P = pairs(S, Math.ceil(p.R)), B = p.beta.length, core = (r) => (r > 0 && r < 1 ? Math.exp(4 - 1 / (r * (1 - r))) : 0);
   const start = new Int32Array(S.n + 1), nb = [], w = [];
   for (let c = 0; c < S.n; c++) {
@@ -90,14 +90,72 @@ export function world(S, p) {
     for (let k = start[c]; k < w.length; k++) w[k] /= sum || 1;
   }
   start[S.n] = nb.length;
-  const NB = Int32Array.from(nb), Wt = Float32Array.from(w), n = S.n, s2 = 2 * p.sigma * p.sigma;
-  let A = new Float32Array(n), A2 = new Float32Array(n);
+  return { start, NB: Int32Array.from(nb), Wt: Float32Array.from(w) };
+}
+
+// The kernel's sum at each cell, then growth G(u) = 2·exp(−(u−μ)²/2σ²) − 1 into out
+function growth(K, p, A, out) {
+  const { start, NB, Wt } = K, s2 = 2 * p.sigma * p.sigma;
+  for (let c = 0; c < out.length; c++) {
+    let u = 0;
+    for (let k = start[c], e = start[c + 1]; k < e; k++) u += Wt[k] * A[NB[k]];
+    out[c] = 2 * Math.exp(-((u - p.mu) ** 2) / s2) - 1;
+  }
+}
+
+// A world: its space, its cells' values, the kernel, one step (A += dt·G, kept in [0, 1])
+export function world(S, p) {
+  if (p.flow) return flowWorld(S, p);
+  const K = kernel(S, p), n = S.n;
+  let A = new Float32Array(n), G = new Float32Array(n);
   const step = () => {
+    growth(K, p, A, G);
+    for (let c = 0; c < n; c++) { const v = A[c] + p.dt * G[c]; A[c] = v < 0 ? 0 : v > 1 ? 1 : v; }
+  };
+  return { S, n, get A() { return A; }, set A(x) { A = x; }, step };
+}
+
+/* ---- Flow Lenia ------------------------------------------------------------------------------ */
+
+// Plantec et al.'s Flow Lenia (2022): matter is never made or lost, only moved. Each cell's matter flows up the growth's
+// slope, and down its own where it is crowded: F = (1 − α)·∇G − α·∇A, α = min(1, (A/θ)²); it goes dt·F away (at most
+// one unit), spread over the cells within h units of where it lands (tent weights h − d, summing to 1: the mass kept
+// exactly). h 1.13: matter that stays keeps 59% in its cell, the rest to its six, as Plantec's square of s = 0.65 does.
+// Slopes by least squares over the cells touching (6 on hexagons), so any tiling works
+function flowWorld(S, p) {
+  const K = kernel(S, p), n = S.n, theta = p.theta ?? 2, h = p.spread ?? 1.13, near = pairs(S, Math.ceil(1 + h)), at = (c, j) => towards(S, S.u[j] - S.u[c], S.v[j] - S.v[c]).map((t) => t / S.unit);
+  // Slope weights: ∇f(c) = Σ_j g_j·(f_j − f_c), g_j = M⁻¹·d_j, M = Σ d·dᵀ over the cells touching
+  const { start, list } = S.adj, gx = new Float32Array(list.length), gy = new Float32Array(list.length);
+  for (let c = 0; c < n; c++) {
+    let a = 0, b = 0, d = 0;
+    const ds = [];
+    for (let k = start[c]; k < start[c + 1]; k++) { const v = at(c, list[k]); ds.push(v); a += v[0] * v[0]; b += v[0] * v[1]; d += v[1] * v[1]; }
+    const det = a * d - b * b;
+    ds.forEach(([x, y], i) => { gx[start[c] + i] = (d * x - b * y) / det; gy[start[c] + i] = (a * y - b * x) / det; });
+  }
+  // Where matter may land: the cell itself and those within 1 + h units, their offsets
+  const ns = new Int32Array(n + 1), nl = [], ox = [], oy = [];
+  for (let c = 0; c < n; c++) {
+    ns[c] = nl.length; nl.push(c); ox.push(0); oy.push(0);
+    for (let k = near.start[c]; k < near.start[c + 1]; k++) { const j = near.list[k], [x, y] = at(c, j); nl.push(j); ox.push(x); oy.push(y); }
+  }
+  ns[n] = nl.length;
+  const NL = Int32Array.from(nl), OX = Float32Array.from(ox), OY = Float32Array.from(oy), w = new Float32Array(Math.max(...Array.from({ length: n }, (_, c) => ns[c + 1] - ns[c])));
+  let A = new Float32Array(n), A2 = new Float32Array(n);
+  const G = new Float32Array(n), slope = (f, c) => { let x = 0, y = 0; for (let k = start[c]; k < start[c + 1]; k++) { const e = f[list[k]] - f[c]; x += gx[k] * e; y += gy[k] * e; } return [x, y]; };
+  const step = () => {
+    growth(K, p, A, G);
+    A2.fill(0);
     for (let c = 0; c < n; c++) {
-      let u = 0;
-      for (let k = start[c], e = start[c + 1]; k < e; k++) u += Wt[k] * A[NB[k]];
-      const g = 2 * Math.exp(-((u - p.mu) ** 2) / s2) - 1, v = A[c] + p.dt * g;
-      A2[c] = v < 0 ? 0 : v > 1 ? 1 : v;
+      const m = A[c];
+      if (m < 1e-9) continue;
+      const al = Math.min(1, (m / theta) ** 2), [ux, uy] = slope(G, c), [ax, ay] = slope(A, c);
+      let dx = p.dt * ((1 - al) * ux - al * ax), dy = p.dt * ((1 - al) * uy - al * ay);
+      const len = Math.hypot(dx, dy);
+      if (len > 1) { dx /= len; dy /= len; }
+      let sum = 0;
+      for (let k = ns[c], i = 0; k < ns[c + 1]; k++, i++) { const t = h - Math.hypot(OX[k] - dx, OY[k] - dy); w[i] = t > 0 ? t : 0; sum += w[i]; }
+      for (let k = ns[c], i = 0; k < ns[c + 1]; k++, i++) if (w[i]) A2[NL[k]] += (m * w[i]) / sum;
     }
     [A, A2] = [A2, A];
   };

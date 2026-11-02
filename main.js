@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.3.56';
+const VERSION = '0.3.57';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -7191,6 +7191,8 @@ const DRAW_PATTERNS = [
   ['demi13clocks-osc', 'demi13', ['B369/S3458'], 'Oscillator', '3.A17.3A4.A!', 'period 22 · 5 cells'],
   ['demi20embers-meth', 'demi20', ['B379/S0237/C4'], 'Methuselah', '11.A5.A.2A!', 'settles at generation 2,146 · 4 cells'],
   ['demi20sparks-meth', 'demi20', ['B367/S023/C4'], 'Methuselah', '2.A7.A3.A2.A!', 'settles at generation 1,590 · 4 cells'],
+  ['demi20ships-ship', 'demi20', ['B348/S135/C5'], 'Spaceship', '6.A5.2A8.2BA3.BCB.D2.AB$21.D2.A13.D2C!', 'flies, period 14 · 17 cells'],
+  ['demi20ships-big', 'demi20', ['B348/S135/C5'], 'Big ship', '6.B5.2A8.D2AC2ACB2AC2.2A4.A$21.D2.C8.2A2.B.ABC.3D5.A.A2.D!', 'flies, period 14 · 31 cells'],
   ['dodecagonlife-osc', 'trunchex', ['B238/S0457/C5'], 'Oscillator', '3.AB.A$AB.2B.A$A2.A!', 'period 30 · 10 cells'],
   ['dodecagonlife-meth', 'trunchex', ['B238/S0457/C5'], 'Methuselah', '7.A$.A.A.A2.A2.A$5.A!', 'settles at generation 699 · 7 cells'],
   ['dodecagonsparks-osc', 'trunchex', ['B235/S0457/C5'], 'Oscillator', '3.A2.A$A2.B.BA.B$A2.A.B!', 'period 30 · 10 cells'],

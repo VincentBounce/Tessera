@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.3.102';
+const VERSION = '0.3.103';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -1401,6 +1401,7 @@ function describe(base, available) {
   const colours = antColours($('mode').value);
   $('barBase').textContent = colours ? `${colours} colours` : `base ${base}`;
   $('barBase').classList.remove('how-it-works');  // (a walk's base: a click, its number; see barBase's click)
+  $('barBase').title = 'A click: the number, its digits in this base';
   $('barBase').parentElement.classList.toggle('life', !!creature);  // (a creature laid out as Life's: its title, its chips under it)
   if (colours) base = colours;  // its chips, one per colour
   $('barLoop').hidden = true;  // (a reversible one's: not back yet; a walk's loop, its title's link, see updateStats)
@@ -2582,6 +2583,11 @@ const NUMBER_TABS = [['Formulas', ['Fractions', '𝑓'], 'Fractions, their digit
   ['Constants', ['Constants', 'Sequences'], 'Famous constants (π, e, φ…) and sequences laid as digits (Champernowne, random, prime gaps)'],
   ['Primes', ['Primes'], 'Primes as whole numbers (Mersenne, primorial, random) and the prime constant']];  // (name, its groups, its tooltip)
 let numberTab = null, numberShown = null;  // (the tab picked; the number shown when it was)
+// Digits picked (a Life start, a creature's turns): the numbers open on Formulas, the number as it was
+function numbersOnFormulas() {
+  [numberShown, numberTab] = [presetOf($('formula').value).id, NUMBER_TABS[0][0]];
+  syncNumberMenu();
+}
 function renderNumberPicker(active) {
   if (active !== numberShown) [numberShown, numberTab] = [active, null];
   const tab = numberTab ?? NUMBER_TABS.find(([, groups]) => groups.includes(PRESETS[active]?.group))?.[0] ?? NUMBER_TABS[0][0];
@@ -14960,7 +14966,9 @@ for (const b of $('lifeStartTabs').querySelectorAll('button')) {
       if (off) seekTo(cur - off);
       population = new Map([...L.alive].flatMap((c, t) => (c ? [[key(...walk.plane.xy(t)), L.margolus ? 1 : c]] : [])));
     }
-    plane.start = b.dataset.start; cleared = null; compute();
+    plane.start = b.dataset.start; cleared = null;
+    if (plane.start === 'digits') numbersOnFormulas();
+    compute();
   });
 }
 // Text's fonts, one choice: a tab group of tiles, Aa in each (see TEXT_FONTS)
@@ -15334,6 +15342,7 @@ for (const [id, digits] of [['antByRule', false], ['antByDigits', true]]) {  // 
     const w = MODES[$('mode').value];
     if ((w.worm ? worm.byDigits : antByDigits) === digits) return;
     if (w.worm) worm.byDigits = digits; else antByDigits = digits;
+    if (digits) numbersOnFormulas();
     renderModePicker();
     compute();
   });

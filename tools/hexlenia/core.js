@@ -285,6 +285,32 @@ export function sampleRows(W, U, V, side, px = 1) {
   return rows;
 }
 
+/* ---- Bodies ---------------------------------------------------------------------------------- */
+
+// A hex creature of a result (its setting and cells) as a body: its cells (> 0.001) as axial offsets from its centre,
+// its mass, size (2·spread + R) and heading (a unit vector, its way in 100 steps alone)
+export function hexBody(o) {
+  const N = Math.sqrt(o.cells.length), S = space('hex', N), W = world(S, o);
+  W.A = Float32Array.from(o.cells, (v) => v / 255);
+  const m = measure(W), q0 = Math.round(m.u * N), r0 = Math.round(m.v * N), wrap = (d) => ((((d % N) + N + N / 2) % N) - N / 2), body = [];
+  for (let k = 0; k < W.n; k++) if (W.A[k] > 0.001) body.push([wrap((k % N) - q0), wrap(Math.floor(k / N) - r0), W.A[k]]);
+  for (let t = 0; t < 100; t++) W.step();
+  const m1 = measure(W), du = ((((m1.u - m.u) % 1) + 1.5) % 1) - 0.5, dv = ((((m1.v - m.v) % 1) + 1.5) % 1) - 0.5;
+  const head = [du * S.pa[0] + dv * S.pb[0], dv * S.pb[1]], len = Math.hypot(...head);
+  return { body, m: m.m, size: 2 * m.rg + o.R, dir: [head[0] / len, head[1] / len] };
+}
+
+// A body laid into A, the cells of an N × N hex torus, at the cell nearest world point (x, y), turned by k sixths (exact
+// on hexagons: (q, r) → (−r, q + r), its heading turned k·60°); where bodies overlap, the larger value
+export function layBody(A, N, body, x, y, k) {
+  const r = Math.round(y / (Math.sqrt(3) / 2)), q = Math.round(x - r / 2);
+  for (let [dq, dr, v] of body) {
+    for (let i = 0; i < k; i++) [dq, dr] = [-dr, dq + dr];
+    const c = ((((r + dr) % N) + N) % N) * N + ((((q + dq) % N) + N) % N);
+    A[c] = Math.max(A[c], v);
+  }
+}
+
 /* ---- Runs ------------------------------------------------------------------------------------ */
 
 // One run on a space (p.space, its size p.N; hexagons 48 by default): a disc started (or the cells given), T steps;

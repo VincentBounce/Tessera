@@ -28,15 +28,17 @@
 <p id="about"></p>
 <div id="list"></div>
 <script type="module">
-// The results of tools/hexlenia, a tab a file: creatures (each followed, the view centred on its mass) and meetings
-// (the whole torus, grouped by what became of them). A card's world is made when it comes into view and plays while
-// in view, as many steps a frame as 12 ms allow (Flow Lenia's worlds are heavy); a click opens it big in view.html
+// The results of tools/hexlenia, a tab a file: creatures (each followed, the view centred on its mass), meetings (the
+// whole torus, grouped by what became of them) and zoos (the whole torus). A card's world is made when it comes into
+// view and plays while in view, as many steps a frame as 12 ms allow (Flow Lenia's worlds are heavy); a click opens it
+// big in view.html
 import { space, world, measure, towards } from './core.js';
 const TABS = [
   { key: 'lenia', title: 'Lenia', file: 'creatures.json', about: 'Lenia on hexagons and Tessera\'s tilings, small radii: the movers found (gather.js), the smallest first.' },
   { key: 'lenia-meet', title: 'Lenia meetings', file: 'collide-creatures.json', meet: true, about: 'Six hex movers, each met by a copy of itself turned 60°, 120° or 180°, its path shifted aside (collide.js).' },
   { key: 'flow', title: 'Flow Lenia', file: 'flow-creatures.json', about: 'Flow Lenia (Plantec\'s, matter kept) on hexagons: single movers cut out of random settings\' results (search.js, isolate.js), the smallest first.' },
   { key: 'flow-meet', title: 'Flow Lenia meetings', file: 'collide-flow-creatures.json', meet: true, about: 'Every pair of one rule among the Flow Lenia movers (each with itself, and two pairs found together): none dies, the mass being kept.' },
+  { key: 'zoo', title: 'Zoo', file: 'zoo.json', whole: true, about: 'Creatures of one rule thrown on a large hex torus, at random places and headings (zoo.js): what happens when many meet.' },
   { key: 'born', title: 'Born of meetings', file: 'born-flow-creatures.json', about: 'The movers left by the Flow Lenia meetings ending in 3 pieces or more, each played alone: one of the two whole, both, or a new smaller one of the same rule (at: the meeting).' },
 ];
 let tab = TABS.find((t) => t.key === new URLSearchParams(location.hash.slice(1)).get('tab')) ?? TABS[0], cards = [];
@@ -45,7 +47,7 @@ for (const t of TABS) { const b = document.createElement('button'); b.textConten
 addEventListener('hashchange', () => { tab = TABS.find((t) => t.key === new URLSearchParams(location.hash.slice(1)).get('tab')) ?? TABS[0]; show(); });
 // One card: its canvas, its setting; its world made on first sight
 const seen = new IntersectionObserver((es) => es.forEach((e) => { const c = e.target.card; c.visible = e.isIntersecting; if (c.visible && !c.W) { const S = space(c.o.space ?? 'hex', c.o.N ?? Math.sqrt(c.o.cells.length)); c.W = world(S, c.o); c.W.A = Float32Array.from(c.o.cells, (v) => v / 255); draw(c); } }));
-const info = (o) => `${o.live ?? ''}${o.live ? ' cells · ' : ''}speed ${o.speed} · ${o.kernels ? o.kernels.length + ' kernels' : `β ${o.beta} μ ${o.mu} σ ${o.sigma}`} · dt ${o.dt}`;
+const info = (o) => `${o.live ? o.live + ' cells · ' : ''}${o.speed !== undefined ? `speed ${o.speed} · ` : ''}${o.kernels ? o.kernels.length + ' kernels' : `β ${o.beta} μ ${o.mu} σ ${o.sigma}`} · dt ${o.dt}`;
 async function show() {
   for (const t of TABS) t.button.classList.toggle('on', t === tab);
   document.getElementById('about').textContent = tab.about;
@@ -61,10 +63,10 @@ async function show() {
     for (const i of is) {
       const o = all[i], a = document.createElement('a');
       a.className = 'card'; a.href = `view.html#from=out/${tab.file}&i=${i}`;
-      const title = tab.meet ? o.name.split(' → ')[0] : o.at !== undefined ? `Born of meeting ${o.at} · ${o.space ?? 'hex'} · R ${o.R}` : `${o.name || 'Creature'} · ${o.space ?? 'hex'} · R ${o.R}`;
+      const title = tab.meet ? o.name.split(' → ')[0] : tab.whole ? `${o.name} · ${o.count} creatures` : o.at !== undefined ? `Born of meeting ${o.at} · ${o.space ?? 'hex'} · R ${o.R}` : `${o.name || 'Creature'} · ${o.space ?? 'hex'} · R ${o.R}`;
       a.innerHTML = `<canvas width="200" height="200"></canvas><div class="name"></div><div class="info"></div>`;
       a.querySelector('.name').textContent = `${i} · ${title}`; a.querySelector('.info').textContent = info(o);
-      const c = { o, g: a.querySelector('canvas').getContext('2d'), whole: tab.meet };
+      const c = { o, g: a.querySelector('canvas').getContext('2d'), whole: tab.meet || tab.whole };
       a.card = c; cards.push(c); seen.observe(a); grid.append(a);
     }
     list.append(grid);

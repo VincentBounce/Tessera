@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.3.76';
+const VERSION = '0.3.77';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -8904,7 +8904,9 @@ function motifTiles() {
   if (g.triFaces) return Object.assign([near], { square: near === nears[1] ? -1 : nears[1] });
   if (g.torus) {  // a sheet: its bricks (see brickKey); the whole one seen most in front (its tiles' best, as a solid's tile), else the one in front
     const id = (t) => brickKey(g, t), bricks = Map.groupBy([...Array(g.n).keys()], id), front = (ts) => Math.max(...ts.map((t) => score[t]));
-    const whole = [...bricks.values()].filter((ts) => ts.length === brickOf(g) && ts.every((t) => score[t] > -Infinity));  // (all its tiles: none cut by a strip's edge or a bottle's end, a face's own; seen: scored)
+    // (side by side as laid on its sheet: not across a seam, drawn at both ends once unrolled; a strip's loop 2L along)
+    const P = g.mobius ? [2 * g.L, g.W] : [g.nu, g.nv], laid = (ts) => [0, 1].every((d) => { const x = ts.map((t) => sheetPlace(g, t)[d]); return Math.max(...x) - Math.min(...x) < P[d] / 2; });
+    const whole = [...bricks.values()].filter((ts) => ts.length === brickOf(g) && ts.every((t) => score[t] > -Infinity) && laid(ts));  // (all its tiles: none cut by a strip's edge or a bottle's end, a face's own; seen: scored)
     return whole.length ? whole.reduce((a, b) => (front(b) > front(a) ? b : a)) : bricks.get(id(near));
   }
   const m = g.kite ? 3 : g.squares ? 4 : 1;  // (a kite's triangle, 3 kites; a tetrakis square, 4 triangles)

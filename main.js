@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.3.72';
+const VERSION = '0.3.73';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -5234,14 +5234,22 @@ function tilingTorusMesh(kind, nv, nu, turned = false) {  // turned: B round the
     if (!ids.has(k)) ids.set(k, add(...torusPoint(i, j, nu, nv, 1, tube)));
     return ids.get(k);
   };
-  for (let j0 = 0; j0 < nv; j0++) for (let i0 = 0; i0 < nu; i0++) for (const P of polys) {
-    const c = P.map(([u, v]) => [u + i0, v + j0]);
+  // each tile's brick its lattice cell (a slanted one's sheet cell holds det of them): its plane cell's (nat: x = n·m + k, row
+  // y), as (i, j) sheet cells along and det classes, each its own whatever sheet cell it falls in
+  const det = p * s - q * r, cls = new Map(), place = nat.map(([x, y]) => {
+    const n = [Math.floor(x / t.polys.length), y], i = Math.floor((n[0] * s - n[1] * r) / det + 1e-9), j = Math.floor((p * n[1] - q * n[0]) / det + 1e-9), key = `${n[0] - i * p - j * r},${n[1] - i * q - j * s}`;
+    if (!cls.has(key)) cls.set(key, cls.size);
+    return [i, j, cls.get(key)];
+  }), bricks = [];
+  for (let j0 = 0; j0 < nv; j0++) for (let i0 = 0; i0 < nu; i0++) polys.forEach((P, k) => {
+    const c = P.map(([u, v]) => [u + i0, v + j0]), [i, j, d] = place[k];
     mid.push(...[0, 1].map((k) => c.reduce((sum, x) => sum + x[k], 0) / c.length));
     while (c.length < sides) c.push(c.at(-1));
     tiles.push(c.map(([i, j]) => corner(i, j)));
     uv.push(...c.flat());
-  }
-  return (meshCache[key] = Object.assign(finishTorus(verts, tiles, sides, nu, nv, uv, mid, true), { tiling: kind, sheet, tube, uvMid: new Float64Array(mid), originCell: nat[0] }));
+    bricks.push((((((j0 + j) % nv) + nv) % nv) * nu + ((((i0 + i) % nu) + nu) % nu)) * Math.abs(det) + d);
+  });
+  return (meshCache[key] = Object.assign(finishTorus(verts, tiles, sides, nu, nv, uv, mid, true), { tiling: kind, sheet, tube, uvMid: new Float64Array(mid), bricks, originCell: nat[0] }));
 }
 
 /* Sphere of hexagons (a Goldberg polyhedron, the football's pattern): the dual of the icosahedron
@@ -5755,11 +5763,14 @@ const sizeSides = (kind, f) => {
 // (its total out of it, in the tooltip's title, see sizeTips: = its count, a formula's; else its words, capitalised)
 const sizeHow = (kind, f) => { const how = howCounted(kind, f).replace(/ = [\d,]+ [a-z ]+$/, ''); return /^[\d{(]/.test(how) ? `= ${how.replace(/ ([×+]) /g, '\n$1 ')}` : how.replace(/^./, (c) => c.toUpperCase()); };  // (a formula: each factor, each term on its line)
 // a sheet's brick, so many tiles: a torus's sheet cell (a tiling's: g.sheet's, see tilingTorusMesh); a tiling's Möbius strip's, Klein
-// bottle's, its lattice cell (g.bricks: each tile's, see tilingStrip); the others', the plane's
+// bottle's, its lattice cell (g.bricks: each tile's, see tilingStrip, tilingTorusMesh); the others', the plane's
 const brickOf = (g) => (g.bricks ? TILINGS[g.tiling].polys.length : g.torus && !g.mobius && !g.klein ? g.n / (g.nu * g.nv) : PER_RHOMBUS[cellKind(g)] ?? 1);
 // a sheet's tile's brick, as laid (g.bricks, else brickOf(g) tiles at a time as listed), a Möbius strip's back's apart from its
 // front's (the same bricks listed twice, see mobiusMesh)
 const brickKey = (g, t) => 2 * (g.bricks?.[t] ?? Math.floor(tilePlace(g, t) / brickOf(g))) + (g.mobius && t >= g.front ? 1 : 0);
+// a brick that repeats turned, not by sliding alone (Cairo's 2 pentagons: the next 2 the same a quarter turn round; its least
+// cell that slides onto itself, 4)
+const brickTurn = (kind) => (kind === 'cairo' ? ' (the next ones the same turned by a quarter)' : '');
 const howCounted = (kind, f) => {
   const S = SPHERES[kind], d = gridSize(kind, f), n = S?.tiles?.(f) ?? d?.[2], unit = S?.unit ?? d?.[3];
   if (S?.how) return `${S.how(f)} = ${fmt(n)} ${unit}`;
@@ -5775,11 +5786,12 @@ const howCounted = (kind, f) => {
   // (a disc ⌀ side: as big as a square of side × √π / 2, in whole rows of its items, see sideW: W² of them nearest its middle)
   if (d && APERIODIC[kind]) return `a disc ⌀ ${fmt(discOf(d[0]))} round its ${middle()} (it never repeats: no rows)\n= the ${fmt(d[0])}² ${d[3]} nearest it (whole rows: a square as big as the disc, ${fmt(discOf(d[0]))} × √π / 2 = ${fmt(d[0])})${d[0] ** 2 > d[2] ? ` − ${fmt(d[0] ** 2 - d[2])} in the wall` : ''} = ${fmt(d[2])} ${d[3]}`;
   if (d && TORI.includes(kind)) {  // a sheet's (a torus, a Möbius strip, a Klein bottle): its rows × its lattice cells (its motif, violet) × their cells (green)
-    const m = brickOf((facesMemo[kind] ??= S.mesh(S.sizes[0]))), L = d[2] / d[0] / m, whole = Number.isInteger(L);
-    return `(Edge=${fmt(d[0])}) rows × {y:${whole ? '' : '≈ '}${fmt(Math.round(L * 10) / 10)} ${m > 1 ? 'bricks' : d[3]}} a row${whole ? '' : ' (its edges cut them)'}${m > 1 ? ` × {k:${m} ${d[3]} each}` : ''} = ${fmt(d[2])} ${d[3]}`;
+    // (a tiling's torus: its sheet a rectangle, det lattice cells when its cell is slanted, each a brick, see tilingTorusMesh)
+    const g = (facesMemo[kind] ??= S.mesh(S.sizes[0])), m = brickOf(g), L = d[2] / d[0] / m, whole = Number.isInteger(L), [[p, q], [r, s]] = g.sheet ?? [[1, 0], [0, 1]], det = Math.abs(p * s - q * r);
+    return `(Edge=${fmt(d[0])}) rows × {y:${whole ? '' : '≈ '}${fmt(Math.round(L * 10) / 10)} ${m > 1 ? 'bricks' : d[3]}} a row${whole ? '' : ' (its edges cut them)'}${det > 1 ? ` (${det} a rectangle of the sheet: its cell slanted, the sheet straight)` : ''}${m > 1 ? ` × {k:${m} ${d[3]} each}${brickTurn(cellKind(g))}` : ''} = ${fmt(d[2])} ${d[3]}`;
   }
   // the plane's: its rows × its lattice cells (its motif, violet) × their cells (green), less its wall's
-  if (d) return `(Edge=${fmt(d[0])}) rows × {y:${fmt(d[1])} ${per > 1 ? 'lattice cells' : d[3]}} a row${per > 1 ? ` × {k:${per} ${d[3]} each}` : ''}${all > d[2] ? ` − ${fmt(all - d[2])} in the wall` : ''} = ${fmt(d[2])} ${d[3]}`;
+  if (d) return `(Edge=${fmt(d[0])}) rows × {y:${fmt(d[1])} ${per > 1 ? 'lattice cells' : d[3]}} a row${per > 1 ? ` × {k:${per} ${d[3]} each}${brickTurn(kind)}` : ''}${all > d[2] ? ` − ${fmt(all - d[2])} in the wall` : ''} = ${fmt(d[2])} ${d[3]}`;
   // a solid of flat faces: each face's cells, f to an edge (its faces as its least size's mesh has them, the same at every size)
   const base = kind.endsWith('Tetrakis') && SPHERES[kind.slice(0, -8)] ? kind.slice(0, -8) : kind, B = SPHERES[base];  // (a solid of tetrakis triangles: its squares', 4 each)
   const g = B && !TORI.includes(base) && (facesMemo[base] ??= B.mesh(B.sizes[0])), cut = base !== kind ? 4 : g?.kite ? 3 : 1;

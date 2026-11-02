@@ -2006,11 +2006,11 @@ function popCounts() { const P = new Uint8Array(1 << 16); for (let i = 1; i < 1 
 const POP16 = popCounts();
 const wordsOf = (cells) => { const r = new Uint16Array(Math.ceil(cells.length / 16)); cells.forEach((v, x) => { if (v) r[x >> 4] |= 0x8000 >> (x & 15); }); return r; };
 const cellOf = (r, x) => (r[x >> 4] >> (15 - (x & 15))) & 1;
-// One cell's h rows, 2h − 1 wide (their ends never reached: as the app draws them), each a list
+// One cell's h rows, 2h − 1 wide (their ends never reached: as the app draws them), each a list; each cell by its rule's
+// bit for its three above, no table (wolframTable's 2¹⁸ entries, 512 KB a rule: its 88 icons at load took 0.8 s)
 const wolframFromCell = (N, h) => {
-  const W = 2 * h - 1, T = wolframTable(N), rows = [];
-  let r = wordsOf(Array.from({ length: W }, (_, x) => +(x === h - 1))), next = new Uint16Array(r.length);
-  for (let t = 0; t < h; t++) { rows.push(Array.from({ length: W }, (_, x) => cellOf(r, x))); wolframStep(T, r, next, 0, r.length - 1, false); [r, next] = [next, r]; }
+  const W = 2 * h - 1, rows = [Array.from({ length: W }, (_, x) => +(x === h - 1))];
+  while (rows.length < h) { const r = rows.at(-1); rows.push(r.map((c, x) => (N >> (4 * (r[x - 1] ?? r[0]) + 2 * c + (r[x + 1] ?? r[W - 1]))) & 1)); }
   return rows;
 };
 // a shape walled (a convex one's corners): its outline doubled, its inside d in, and short strokes across between them, about

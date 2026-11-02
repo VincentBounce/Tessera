@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.3.70';
+const VERSION = '0.3.71';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -5757,6 +5757,9 @@ const sizeHow = (kind, f) => { const how = howCounted(kind, f).replace(/ = [\d,]
 // a sheet's brick, so many tiles: a torus's sheet cell (a tiling's: g.sheet's, see tilingTorusMesh); a tiling's Möbius strip's, Klein
 // bottle's, its lattice cell (g.bricks: each tile's, see tilingStrip); the others', the plane's
 const brickOf = (g) => (g.bricks ? TILINGS[g.tiling].polys.length : g.torus && !g.mobius && !g.klein ? g.n / (g.nu * g.nv) : PER_RHOMBUS[cellKind(g)] ?? 1);
+// a sheet's tile's brick, as laid (g.bricks, else brickOf(g) tiles at a time as listed), a Möbius strip's back's apart from its
+// front's (the same bricks listed twice, see mobiusMesh)
+const brickKey = (g, t) => 2 * (g.bricks?.[t] ?? Math.floor(tilePlace(g, t) / brickOf(g))) + (g.mobius && t >= g.front ? 1 : 0);
 const howCounted = (kind, f) => {
   const S = SPHERES[kind], d = gridSize(kind, f), n = S?.tiles?.(f) ?? d?.[2], unit = S?.unit ?? d?.[3];
   if (S?.how) return `${S.how(f)} = ${fmt(n)} ${unit}`;
@@ -8867,9 +8870,9 @@ function motifTiles() {
   const near = nears[0] >= 0 ? nears[0] : nears[1];
   if (near < 0) return [];
   if (g.triFaces) return Object.assign([near], { square: near === nears[1] ? -1 : nears[1] });
-  if (g.torus) {  // a sheet: its bricks as laid (g.bricks, else brickOf(g) tiles at a time as listed, a strip's back as its front); the whole one seen most in front (its tiles' best, as a solid's tile), else the one in front
-    const m = brickOf(g), id = (t) => g.bricks?.[t] ?? Math.floor(tilePlace(g, t) / m), bricks = Map.groupBy([...Array(g.n).keys()], id), front = (ts) => Math.max(...ts.map((t) => score[t]));
-    const whole = [...bricks.values()].filter((ts) => ts.every((t) => score[t] > -Infinity));  // (seen: scored)
+  if (g.torus) {  // a sheet: its bricks (see brickKey); the whole one seen most in front (its tiles' best, as a solid's tile), else the one in front
+    const id = (t) => brickKey(g, t), bricks = Map.groupBy([...Array(g.n).keys()], id), front = (ts) => Math.max(...ts.map((t) => score[t]));
+    const whole = [...bricks.values()].filter((ts) => ts.length === brickOf(g) && ts.every((t) => score[t] > -Infinity));  // (all its tiles: none cut by a strip's edge or a bottle's end, a face's own; seen: scored)
     return whole.length ? whole.reduce((a, b) => (front(b) > front(a) ? b : a)) : bricks.get(id(near));
   }
   const m = g.kite ? 3 : g.squares ? 4 : 1;  // (a kite's triangle, 3 kites; a tetrakis square, 4 triangles)
@@ -10595,8 +10598,8 @@ function planeFrame() {
 // a brick), its tiles' middles the shortest way round from its first one's: its colours' blocks of whole bricks, as the plane's
 function brickPlaces(g) {
   if (g.brickPlaces) return g.brickPlaces;
-  const m = brickOf(g), [P, Q] = g.mobius ? [2 * g.L, Infinity] : g.klein ? [Infinity, Infinity] : [g.nu, g.nv], near = (d, p) => (p < Infinity ? d - p * Math.round(d / p) : d);
-  const key = (t) => 2 * (g.bricks?.[t] ?? Math.floor(tilePlace(g, t) / m)) + (g.mobius && t >= g.front ? 1 : 0), sums = new Map(), out = new Float64Array(2 * g.n);
+  const [P, Q] = g.mobius ? [2 * g.L, Infinity] : g.klein ? [Infinity, Infinity] : [g.nu, g.nv], near = (d, p) => (p < Infinity ? d - p * Math.round(d / p) : d);
+  const key = (t) => brickKey(g, t), sums = new Map(), out = new Float64Array(2 * g.n);
   for (let t = 0; t < g.n; t++) { const [u, v] = sheetPlace(g, t), s = sums.get(key(t)); if (!s) sums.set(key(t), [u, v, u, v, 1]); else { s[0] += s[2] + near(u - s[2], P); s[1] += s[3] + near(v - s[3], Q); s[4]++; } }
   const wrap = (x, p) => (p < Infinity ? ((x % p) + p) % p : x);
   for (let t = 0; t < g.n; t++) { const s = sums.get(key(t)); out[2 * t] = wrap(s[0] / s[4], P); out[2 * t + 1] = wrap(s[1] / s[4], Q); }

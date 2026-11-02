@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.3.100';
+const VERSION = '0.3.101';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -4714,8 +4714,9 @@ function flatPolyhedron(name, f, kites = false) {
 }
 
 /* ---- 7.3b Globe ------------------------------------------------------------------------------ */
-/* A globe made for its colours: E columns round its equator (its size), each band's cells between two meridians, as high as wide
- * (each band's height its cells' width: Mercator's, see globeBands), its columns halved towards a pole as they shrink, never below
+/* A globe made for its colours: E columns round its equator (its size), each band's cells between two meridians, its parallels a
+ * unit apart (its equator's cells square, the others 0.71 to 1.41 as wide as high, see globeBands), its columns halved towards a
+ * pole as they narrow, never below
  * its fewest F, the least multiple of its colours from 12 (each band a multiple of them: as many cells a colour, see partPlaces);
  * its two caps one cell each, round its pole (not triangles meeting there, each touching all the others). A band's cell under a
  * band of twice as many: 5 corners, the line between them its neighbours' (a square's 4); a cap's, its band's F, 12 to 20 (every
@@ -4725,21 +4726,21 @@ function flatPolyhedron(name, f, kites = false) {
 // for 5, 16 for 8, 18 for 9, 20 for 10)
 const globeFewest = (K) => K * Math.ceil(12 / K);
 // its bands, south to north, each its columns (N, its caps' first and last: their bands'), and its parallels' latitudes between
-// them (lines): from the equator, each band as high as its cells are wide, y + 2π / N in Mercator's y (lat = 2 atan(e^y) − π/2),
-// its columns halved where its cells, at its middle, would be under 1/√2 of the equator's (cos(lat) E / N), down to F; the cap the
-// rest, once they would be at F (else ever thinner rings to the pole), or less than a band's height is left; the south its mirror
+// them (lines): from the equator, its parallels 2π / E apart (a unit: its equator's cells' width), its columns halved where its
+// cells, at a band's middle, would be under 1/√2 as wide as high (cos(lat) E / N), down to F; the cap the rest, once they would be
+// at F, or less than a band's height is left; the south its mirror (before v0.3.101 each band as high as wide, Mercator's: its
+// cells square, its parallels 0.71 to 1.40 apart, a jump at each halving)
 function globeBands(E, K = ringColours()) {
-  const F = globeFewest(K), lat = (y) => 2 * Math.atan(Math.exp(y)) - Math.PI / 2, north = [];
-  for (let y = 0, N = E; ;) {
-    if ((Math.cos(lat(y + Math.PI / N)) * E) / N < Math.SQRT1_2) {  // (its cells shrunk: halved, or, at F already, the cap)
+  const F = globeFewest(K), h = (2 * Math.PI) / E, north = [];
+  for (let lat = 0, N = E; ;) {
+    if ((Math.cos(lat + h / 2) * E) / N < Math.SQRT1_2) {  // (its cells narrowed: halved, or, at F already, the cap)
       if (N / 2 < F || N % 2) break;
       N /= 2;
       continue;
     }
-    const top = y + (2 * Math.PI) / N;
-    if (Math.PI / 2 - lat(top) < lat(top) - lat(y)) break;
-    north.push([N, lat(top)]);
-    y = top;
+    if (Math.PI / 2 - (lat + h) < h) break;
+    north.push([N, lat + h]);
+    lat += h;
   }
   const N = [...north.map(([n]) => n).reverse(), ...north.map(([n]) => n)];
   return { N: [N[0], ...N, N.at(-1)], lines: [...north.map(([, t]) => -t).reverse(), 0, ...north.map(([, t]) => t)] };
@@ -5694,7 +5695,7 @@ const SPHERES = {
   rhombi: { mesh: (f) => hullMesh('rhombi', f), radius: (f) => f / 2, tiles: (f) => 26 * f * f, unit: 'cells', edges: [12, 24, 48] },  // edge 2: 18 squares, 8 triangles
   bicupola: { mesh: (f) => hullMesh('bicupola', f), radius: (f) => f / 2, tiles: (f) => 18 * f * f, unit: 'cells', edges: [12, 24, 48] },
   globe: { mesh: globeMesh, radius: (E) => E / (2 * Math.PI), tiles: (E) => globeBands(E).N.slice(1, -1).reduce((sum, n) => sum + n, 2), unit: 'cells',
-           how: (E) => { const { N } = globeBands(E); return `{y:${fmt(N.length - 2)} bands}, each as high as wide, of {k:${fmt(E)} cells} at the equator, halved towards the poles down to {k:${fmt(N[1])}} + {r:2 caps}`; },
+           how: (E) => { const { N } = globeBands(E); return `{y:${fmt(N.length - 2)} bands}, a unit high, of {k:${fmt(E)} cells} at the equator, halved towards the poles down to {k:${fmt(N[1])}} + {r:2 caps}`; },
            // (its sizes its colours': its equator's columns F, 2F, 4F…, each halving down to F, see globeBands; as many cells as the others')
            ownSizes: () => { const out = []; for (let E = globeFewest(ringColours()); SPHERES.globe.tiles(E) <= CELLS.most; E *= 2) if (SPHERES.globe.tiles(E) >= CELLS.least) out.push(E); return out; } },  // (E: its equator's columns, see globeMesh)
   dodecaKite: { mesh: (f) => flatPolyhedron('dodeca', f, true), radius: (f) => (f * PHI) / 2, tiles: (f) => 180 * f * f, unit: 'kites', how: (f) => `{r:12 pentagonal faces} × {s:5 sectors} × {y:(Edge=${fmt(f)})² triangles} × {k:3 kites each}` },

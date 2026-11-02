@@ -507,7 +507,7 @@ function checkMarks(fail) {
 //    side as laid, within 1.5 sheet cells (not across the seam, drawn at both ends once unrolled);
 //  - a tiling's Klein bottle in Duel and Quartet, from 24 rows: its colours' slices square, 0.85 to 1.15 (by the shape asked,
 //    not its rounding: before v0.3.83, one size in two its usual length);
-//  - the globe: its bands' cells square, each band a multiple of its colours, at every size of every count (see globeBands);
+//  - the globe: its parallels a unit apart, its cells 0.70 to 1.42 as wide as high, each band a multiple of its colours, at every size of every count (see globeBands);
 //  - the colours offered the same whatever is picked (a bottle's length its count's: before v0.3.80, Prismatic's 3 in Trio, 8 in
 //    Nonet), each offered count as many cells a colour once taken
 async function checkSheets(fail) {
@@ -528,13 +528,14 @@ async function checkSheets(fail) {
     if (off.length) fail(`${name} in ${K} colours: its slices not square at ${off.map(([s, r]) => `${s} (${r.toFixed(2)})`).join(', ')}`);
     checked++;
   }
-  // the globe, made for its colours (see globeBands): every band's cells as high as wide, 0.95 to 1.05, at every size of every count
+  // the globe, made for its colours (see globeBands): its parallels a unit apart, every band's cells 0.70 to 1.42 as wide as high, at
+  // every size of every count
   for (const K of COLOUR_STEPS) {
     const keep = lifeColours;
     lifeColours = K;
     for (const E of SPHERES.globe.sizes) {
-      const { N, lines } = globeBands(E, K), off = N.slice(1, -1).map((n, j) => (2 * Math.PI * Math.cos((lines[j] + lines[j + 1]) / 2)) / n / (lines[j + 1] - lines[j])).filter((r) => r < 0.95 || r > 1.05);
-      if (off.length || N.slice(1, -1).some((n) => n % K)) fail(`the globe at ${E} in ${K} colours: ${off.length} bands not square${N.some((n) => n % K) ? ', a band not a multiple of its colours' : ''}`);
+      const { N, lines } = globeBands(E, K), off = N.slice(1, -1).map((n, j) => (2 * Math.PI * Math.cos((lines[j] + lines[j + 1]) / 2)) / n / (lines[j + 1] - lines[j])).filter((r) => r < 0.70 || r > 1.42), uneven = lines.slice(1).some((l, j) => Math.abs(l - lines[j] - (2 * Math.PI) / E) > 1e-9);
+      if (off.length || uneven || N.slice(1, -1).some((n) => n % K)) fail(`the globe at ${E} in ${K} colours: ${off.length} bands past 0.70 to 1.42${uneven ? ', its parallels not a unit apart' : ''}${N.some((n) => n % K) ? ', a band not a multiple of its colours' : ''}`);
     }
     lifeColours = keep;
     checked++;

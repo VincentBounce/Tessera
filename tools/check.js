@@ -536,6 +536,7 @@ async function checkSheets(fail) {
       offered.push(COLOUR_STEPS.filter((k) => coloursFit(k)).join(','));
     }
     if (offered[0] !== offered[1]) fail(`${w}: colours offered ${offered[0]} in Classic, ${offered[1]} in Trio`);
+    if (w === 'lifeKleinPent15' && offered[0].split(',').some((k) => k % 2 === 0)) fail(`${w}: an even count of colours offered (${offered[0]}), its twist asking an odd length`);  // (v0.3.88 to 0.3.93: g.period left by the rename, every count offered)
     for (const K of [2, 3, 5].filter((k) => offered[0].split(',').includes(`${k}`))) {
       location.hash = `#w=${w}&k=${K}`;
       await wait(500);

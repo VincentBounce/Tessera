@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.3.93';
+const VERSION = '0.3.94';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -4731,7 +4731,7 @@ function globeMesh(f) {
   tiles.push(pad(round.map((i) => at(1, N - 1 - i))));  // (the south cap, seen from below)
   for (let j = 1; j < f - 1; j++) for (let i = 0; i < N; i++) tiles.push(pad([at(j, i), at(j, i + 1), at(j + 1, i + 1), at(j + 1, i)]));
   tiles.push(pad(round.map((i) => at(f - 1, i))));  // (the north cap)
-  return (meshCache[key] = finishMesh(verts, tiles, N, f));
+  return (meshCache[key] = Object.assign(finishMesh(verts, tiles, N, f), { globe: true, columns: N }));
 }
 
 /* ---- 7.4 Torus ------------------------------------------------------------------------------- */
@@ -9034,8 +9034,8 @@ function coloursFit(k, g = walk.geo) {  // g: the surface (a torus's sizes)
     return true;  // its blocks (rounded down when they do not divide it, as on a torus); with dead edges, its halves, quarters, or slices round the middle (see planeSlices)
   }
   if (solidCounts(mode.sphere)) return solidCounts(mode.sphere).includes(k);
-  if (g?.mobius) return true;  // a Möbius strip: in turn along it (see huntParts)
-  if (g?.nu) { const [u, v] = torusBlocks(k, g); return u <= g.nu && v <= g.nv; }  // a torus: its blocks (see torusBlocks)
+  if (g?.mobius || g?.globe) return true;  // a Möbius strip: in turn along it (see huntParts); a globe: its quarters (see colourFairOwn)
+  if (g?.nu) return true;  // a torus: its blocks (see torusBlocks), its columns made for its colours (see ringColumns), its rows judged by colourFairOwn; not the torus in view's columns (before v0.3.94: Rhombitri at 5, 8 to 12 colours offered or not by the count picked)
   return false;
 }
 // a new figure: as many colours as last picked, else the nearest count of colours it places (colours still, never Classic;
@@ -9055,12 +9055,12 @@ const COLOUR_STEP_NAMES = { 1: 'Classic', 2: 'Duel', 3: 'Trio', 4: 'Quartet', 5:
 // solid, its fair spots (see colouring); on a torus, blocks that divide it; on a Möbius strip, any
 const MIRRORED_DISCS = ['ammann', 'rhombs12', 'rhombs14', 'penrose'];  // the discs that mirror (the rosettes turn as a spiral): their parts a turn's, from half of one (its corner)
 const figureTurns = (kind) => ROSETTES[kind]?.[0] ?? { ammann: 8, rhombs12: 12, rhombs14: 14, penrose: 5, hat: 1, spectre: 1, pinwheel: 1 }[kind] ?? PATTERN_TURNS[baseOf(kind)] ?? 1;
-// (twice a fair count: each part halved, 2 4 giving 8, 5 10, 3 6 12; 3 without 6, thrice: 9, each third in 3; never on a grid that
-// never repeats, a disc: no symmetry halves its parts, a rosette's a spiral's: Flower 6's 12 colours 63 to 65 cells, Penrose's 10, 72
-// to 77, before v0.3.90)
-// (total: the colours in all, a tiling's bottle as long as made for them, see kleinLength: judged on its own, not the one in view)
-const colourFair = (K, g = walk.geo) => colourFairOwn(K, g) || (!APERIODIC[MODES[$('mode').value]?.plane] && (([8, 10, 12].includes(K) && colourFairOwn(K / 2, g, K)) || (K === 9 && colourFairOwn(3, g, 9) && !colourFairOwn(6, g, 9))));
-const colourFairOwn = (K, g, total = K) => {
+// (twice a fair count: each part halved, 2 4 giving 8, 5 10, 3 6 12; 3 without 6, thrice: 9, each third in 3: on the plane and a
+// solid; never on a grid that never repeats, a disc: no symmetry halves its parts, a rosette's a spiral's (Flower 6's 12 colours 63 to
+// 65 cells, Penrose's 10, 72 to 77, before v0.3.90); nor on a sheet, its blocks or slices made for K itself (Klein Type 15's 10, its
+// twist odd, before v0.3.94))
+const colourFair = (K, g = walk.geo) => colourFairOwn(K, g) || (!g?.torus && !APERIODIC[MODES[$('mode').value]?.plane] && (([8, 10, 12].includes(K) && colourFairOwn(K / 2, g)) || (K === 9 && colourFairOwn(3, g) && !colourFairOwn(6, g))));
+const colourFairOwn = (K, g) => {
   const mode = MODES[$('mode').value], kind = mode?.plane;
   if (K === 1) return true;
   if (kind && (planeTorus(kind) || figureTurns(kind) === 1)) return true;  // (a torus: blocks of its side, see colourW, all alike; no turns, a hat's, a spectre's or a pinwheel's circle, as many cells each, see planeSlices)
@@ -9071,8 +9071,9 @@ const colourFairOwn = (K, g, total = K) => {
     return n > 1 && (n % K === 0 || (mirror && K === 2 * n));
   }
   if (solidCounts(mode?.sphere)) return solidCounts(mode.sphere).includes(K);
+  if (g?.globe) return g.columns % K === 0;  // (a globe: quarters of whole meridians' columns, see partPlaces)
   if (g?.mobius) return true;
-  if (g?.period) { const { n, step } = kleinLength(g.kindK, g.size, total), x = (n * step) / torusBlocks(K, g)[0] / g.copyLength; return Math.abs(x - Math.round(x)) < 1e-6; }  // (a tiling's bottle: slices a whole count of its copies along, see MOBIUS_ALONG: a glide's turned over)
+  if (g?.copyLength) { const { n, step } = kleinLength(g.kindK, g.size, K), x = (n * step) / torusBlocks(K, g)[0] / g.copyLength; return Math.abs(x - Math.round(x)) < 1e-6; }  // (a tiling's bottle: slices a whole count of its copies along, see MOBIUS_ALONG: a glide's turned over)
   if (g?.nu) return g.nv % torusBlocks(K, g)[1] === 0;  // (a torus: its blocks' rows dividing its rows; its columns made for its colours, see ringColumns)
   return false;
 };
@@ -10730,6 +10731,12 @@ function partPlaces(r, K, mirror, mixed) {
     const block = (t) => { const [u, v] = g.klein ? sheetMiddle(g, t) : colourUnitPlaces(g).subarray(2 * t, 2 * t + 2); return at(u, g.nu, a) * b + at(v, g.nv, b); };
     if (!r) { for (let t = 0; t < n; t++) parts[block(t)].push(t); return parts; }
     return parts.map((_, i) => lifePatch(r, middleCells(i, K)));  // at their middles (a tile there, as on the plane)
+  }
+  // a globe: K quarters, each its columns' cells between two meridians (2f / K columns, every band), its two caps no one's
+  if (g.globe) {
+    const quarter = (t) => (t > 0 && t < g.n - 1 ? Math.floor((((t - 1) % g.columns) * K) / g.columns) : -1);  // (its cells listed cap, bands, cap: see globeMesh)
+    if (!r) { for (let t = 0; t < n; t++) if (quarter(t) >= 0) parts[quarter(t)].push(t); return parts; }
+    return parts.map((_, i) => lifePatch(r, middleCells(i, K)));
   }
   const hull = hullColours(MODES[$('mode').value].sphere, K);
   if (hull) {  // a hull solid (see hullColourings): Wild, a colour's faces its own (two opposite faces a colour: its first), the others' cells each to the nearest colour's face's middle; Mirror, its two faces; a zone, round each colour's first face's middle

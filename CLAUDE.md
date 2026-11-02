@@ -66,3 +66,10 @@ A separate page (`particles/index.html`, `particles.js`), not part of main.js: P
 particles of 3 to 8 kinds on a torus, each kind drawn to or pushed from each other kind by a K × K rule matrix (clicked
 to change), every pair felt (a fragment shader a particle); the link keeps kinds, count, seed and changed rules.
 `particlesCheck()` in its console: one GPU step against the same step on the CPU.
+
+## Artificial chemistry prototype (chemistry/)
+A separate page (`chemistry/index.html`, `chemistry.js`), not part of main.js: Tim Hutton's Squirm3 (2002) on a torus
+of hexagons, on the CPU: atoms of types a to f with a state and bonds, moving at random (a partner never further than
+two cells), reacting with the six beside them by his eight rules (shown with how often each fired); the chain e8–a1–b1–
+c1–f1 copies itself, and his rule 4's flaw makes shorter mutants that win. `chemistryCheck()` in its console: types,
+bonds and cells kept right over 10,000 steps, and the chain copied.

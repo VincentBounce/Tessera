@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Artificial Chemistry</title>
+<style>
+  /* Lenia Worlds' look (lenia/index.html): its panel, its one button and its tabs */
+  :root { --bg: #0b0d12; --panel: #141821; --line: #262c39; --text: #d8dde8; --dim: #8a93a6; --accent: #7aa2ff; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; background: var(--bg); color: var(--text); font: 13px/1.35 system-ui, -apple-system, Segoe UI, sans-serif; }
+  body { display: flex; }
+  #panel { width: 270px; flex: none; height: 100%; overflow-y: auto; background: var(--panel); border-right: 1px solid var(--line); padding: 12px; }
+  #stage { flex: 1; position: relative; min-width: 0; }
+  #view { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+  h1 { font-size: 15px; margin: 0 0 2px; letter-spacing: .02em; }
+  .sub { color: var(--dim); font-size: 11.5px; margin-bottom: 10px; }
+  .sec { margin: 12px 0 5px; color: var(--dim); font-size: 11px; text-transform: uppercase; letter-spacing: .06em; }
+  /* The one button; .on is its active state, [disabled] its greyed one */
+  .btn { appearance: none; border: 1px solid var(--line); background: #1b202b; color: var(--text); font: inherit; padding: 5px 9px; border-radius: 6px; cursor: pointer; }
+  .btn:hover { background: #222838; }
+  .btn.on { background: #2b3a5e; border-color: var(--accent); color: #fff; }
+  .btn[disabled] { opacity: .4; cursor: default; }
+  /* One choice among several: buttons joined in one frame */
+  .tabs { display: flex; flex-wrap: wrap; }
+  .tabs .btn { border-radius: 0; margin-left: -1px; flex: 1 1 auto; }
+  .tabs .btn:first-child { border-radius: 6px 0 0 6px; margin-left: 0; }
+  .tabs .btn:last-child { border-radius: 0 6px 6px 0; }
+  .tabs .btn.on { position: relative; z-index: 1; }
+  .row { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+  #rules { white-space: pre; font: 12px ui-monospace, Menlo, monospace; color: var(--text); }
+  #stats, #help { margin-top: 12px; color: var(--dim); font-size: 11.5px; font-variant-numeric: tabular-nums; white-space: pre-wrap; }
+  @media (max-width: 700px) {
+    body { flex-direction: column-reverse; }
+    #panel { width: 100%; height: 45%; border-right: 0; border-top: 1px solid var(--line); }
+  }
+</style>
+</head>
+<body>
+<div id="panel">
+  <h1>Artificial Chemistry</h1>
+  <div class="sub">Tim Hutton's atoms on a torus of hexagons: a type, a state, bonds; rules for atoms that meet</div>
+  <div class="sec">Steps a frame</div>
+  <div class="tabs" id="speeds"></div>
+  <div class="row" style="margin-top:8px"><button class="btn" id="play">Pause</button><button class="btn" id="restart">New soup</button></div>
+  <div class="sec">Rules</div>
+  <div id="rules"></div>
+  <div id="stats"></div>
+  <div id="help">Types a to f by colour, dim in state 0 (free). "+" not bonded, side by side bonded; x and y any type, the same letter the same type. The chain eabcf in the middle copies itself; the list counts the molecules.</div>
+</div>
+<div id="stage"><canvas id="view"></canvas></div>
+<script src="chemistry.js"></script>
+</body>
+</html>

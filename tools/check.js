@@ -4,6 +4,7 @@
 //   await tesseraCheck({ fuzz: 400, seed: 7 });                            // 400 actions at random, menu to menu (transitions, smallest sizes)
 //   await tesseraCheck({ fuzz: 100, cold: true });                          // and after each, its link loaded cold beside: the same menus offered
 //   await tesseraCheck({ colours: true });                                 // every Life surface offers colours (more than Classic) at one of its sizes at least
+//   await tesseraCheck({ parts: true });                                   // every count of colours offered, as many cells a colour: plane and solids, 7 minutes
 //   await tesseraCheck({ deep: true });                                    // every grid's rules (yours too), How it works, colours, zones, smallest size: a night's
 //   await tesseraCheck({ known: true });                                   // Life's known results, played on the graphics card: a minute
 // Returns { ok, failures, checked }. The meshes: a torus straight and turned, its tiles' neighbours alike; a Möbius
@@ -547,13 +548,36 @@ async function checkSheets(fail) {
   return checked;
 }
 
-window.tesseraCheck = async ({ known = false, crawl: andCrawl = false, deep: andDeep = false, fuzz: actions = 0, cold = false, colours = false, seed = Date.now() % 1e6, from, only } = {}) => {
+// Every count of colours offered, as many cells a colour once taken: each Life grid of the plane, walled and on a torus (one cell
+// apart at most: a slice's cells whole), each solid (none apart), at its first size (before v0.3.90: the rosettes' halves and
+// Penrose's mirror halves, 2 to 9 cells apart; the bicupola's 5 and 10, the rhombicuboctahedron's 9, up to 97)
+async function partsEqual(fail) {
+  let checked = 0;
+  const lifeModes = Object.keys(MODES).filter((w) => MODES[w].life && !MODES[w].margolus && !MODES[w].elementary && !MODES[w].loops && [...$('mode').options].some((o) => o.value === w));
+  const runs = [...lifeModes.filter((w) => MODES[w].plane).flatMap((w) => [[w, '', 1], [w, '&e=1', 1]]), ...lifeModes.filter((w) => MODES[w].sphere && !TORI.includes(surfaceOf(MODES[w]))).map((w) => [w, '', 0])];
+  for (const [w, walls, slack] of runs) {
+    location.hash = `#w=${w}${walls}&k=1`;
+    await wait(350);
+    for (const K of COLOUR_STEPS.filter((k) => k > 1 && coloursFit(k))) {
+      location.hash = `#w=${w}${walls}&k=${K}`;
+      await wait(350);
+      const sizes = huntParts(null, K).map((p) => p.length);
+      if (lifeColours !== K) fail(`${w}${walls}: ${K} colours offered, ${lifeColours} taken`);
+      else if (Math.max(...sizes) - Math.min(...sizes) > slack) fail(`${w}${walls} in ${K} colours: ${Math.min(...sizes)} to ${Math.max(...sizes)} cells a colour`);
+      checked++;
+    }
+  }
+  return checked;
+}
+
+window.tesseraCheck = async ({ parts = false, known = false, crawl: andCrawl = false, deep: andDeep = false, fuzz: actions = 0, cold = false, colours = false, seed = Date.now() % 1e6, from, only } = {}) => {
   const failures = [], fail = (s) => { failures.push(s); localStorage.tesseraDeepFailures = JSON.stringify(failures); };
   let checked = checkMeshes(fail) + checkBlockWraps(fail) + checkDiscs(fail) + checkTips(fail) + checkMarks(fail) + await checkSheets(fail);
   if (known) checked += await checkKnown(fail);
   if (andCrawl) checked += await crawl(fail);
   if (actions) checked += await fuzz(fail, actions, seed, cold);
   if (colours) checked += await coloursOffered(fail);
+  if (parts) checked += await partsEqual(fail);
   if (andDeep) checked += await deep(fail, from, only);
   return { ok: !failures.length, failures, checked };
 };

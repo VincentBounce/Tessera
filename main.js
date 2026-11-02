@@ -1454,9 +1454,9 @@ const VIEW_3D = ['autoRotate', 'upright', 'perspective', 'light'];  // a 3D view
 const DISPLAY_BY_TAB = {
   '2D walks': ['heatmap', 'fill', 'translucent', 'cells', 'visits', 'digit', 'grid'],
   '3D walks': ['colours', 'digit', 'grid', 'sky', ...VIEW_3D],
-  'Walks on surfaces': ['shape', 'heatmap', 'visits', 'fill', 'translucent', 'grid', 'sky', ...VIEW_3D],
+  'Walks on surfaces': ['shape', 'heatmap', 'visits', 'fill', 'translucent', 'grid', 'sky', ...VIEW_3D, 'glass'],
   'Automata on the plane': ['colours', 'digit', 'mono', 'grid', 'sky'],
-  'Automata on surfaces': ['shape', 'colours', 'digit', 'mono', 'grid', 'sky', ...VIEW_3D],
+  'Automata on surfaces': ['shape', 'colours', 'digit', 'mono', 'grid', 'sky', ...VIEW_3D, 'glass'],  // (Glass: the surfaces' tiles only, see glGlass)
   '2D spirals': ['heatmap', 'fill', 'translucent', 'cells', 'visits', 'digit', 'grid'],  // the 2D walks' menu, some of it greyed out
 };
 // Shown but greyed out, by the menu's group or the tab: a spiral never crosses itself, so it closes no area and visits each
@@ -1468,7 +1468,7 @@ const shows = (item) => DISPLAY_BY_TAB[$('mode').selectedOptions[0].parentElemen
 const useful = (item) => shows(item) && !greyed(item);
 function updateDisplayMenu() {
   const rows = { colours: 'coloursRow', grid: 'gridRow',
-                 autoRotate: 'autoRotateRow', upright: 'uprightRow', perspective: 'perspectiveRow', light: 'lightRow' };
+                 autoRotate: 'autoRotateRow', upright: 'uprightRow', perspective: 'perspectiveRow', light: 'lightRow', glass: 'glassRow' };
   for (const [item, id] of Object.entries(rows)) $(id).hidden = !shows(item);
   skyButton.style.visibility = shows('sky') ? '' : 'hidden';  // the sky's switch, among the themes (no sky: its place kept, the row as everywhere)
   // Heatmap of visits and Digits instead of a list of colours, on cells only (Digits in 2D only;
@@ -1505,7 +1505,7 @@ function updateDisplayMenu() {
 // The view's switches, standard tiles (toggle): each its checkbox's (the source, kept out of sight), on as it is checked,
 // greyed where its row is hidden (it does not apply: Autoplay but in Life, the others but in 3D); drawn again with the
 // display box and when the box opens (a hand rotation, a new mode: their boxes changed)
-const VIEW_TILES = [['perspective', 'perspectiveRow', 'perspective', 'Perspective', 'Perspective: what is nearer looks bigger'], ['light', 'lightRow', 'sideLight', 'Side light']];
+const VIEW_TILES = [['perspective', 'perspectiveRow', 'perspective', 'Perspective', 'Perspective: what is nearer looks bigger'], ['light', 'lightRow', 'sideLight', 'Side light'], ['glass', 'glassRow', 'glass', 'Glass']];
 let viewTiles = null;
 function renderViewTiles() {
   viewTiles ??= VIEW_TILES.map(([id, row, pic, text, title]) => tile({ pic: icon(pic), text, title: title ?? $(row).title, toggle: true,
@@ -1518,7 +1518,7 @@ function renderViewTiles() {
     ways[perspectiveFor(MODES[w], MODES[w].round ? 1 : 0) ? 'on' : 'off'].push(SHAPE_SHORT[sh] ?? sh);
   }
   const perspective = !ways.on.length ? 'off' : !ways.off.length ? 'on' : `On by default on ${ways.on.join(', ')}\nOff by default on ${ways.off.join(', ')}`;
-  const first = { perspective, light: 'on' }, why = {};
+  const first = { perspective, light: 'on', glass: 'off' }, why = {};
   VIEW_TILES.forEach(([id, row], k) => setTile(viewTiles[k], { on: $(id).checked, can: !$(row).hidden && !$(id).disabled, byDefault: first[id], greyed: why[id] ?? '' }));
   $('viewTiles').hidden = VIEW_TILES.every(([, row]) => $(row).hidden);
 }
@@ -2173,6 +2173,7 @@ const ICONS = (() => {
     // Auto-rotate (a turn round a slanted orbit)
     perspective: pathEl('M6.14 4.16L18.14 5.88A1 1 0 0 1 19 6.87V17.13A1 1 0 0 1 18.14 18.12L6.14 19.84A1 1 0 0 1 5 18.85V5.15A1 1 0 0 1 6.14 4.16Z'),
     sideLight: pathEl('M2.5 10.2H7.5V13.8H2.5Z') + pathEl('M7.5 9.6L10 8.2V15.8L7.5 14.4Z') + pathEl('M12.5 8.6L21 4.8M13 12H21.5M12.5 15.4L21 19.2'),
+    glass: pathEl('M3 12A9 9 0 1 0 21 12A9 9 0 1 0 3 12Z') + pathEl('M3 12A9 3.5 0 0 0 21 12A9 3.5 0 0 0 3 12Z'),  // a ball, its equator seen through
     viewDefault: pathEl('M12 3L20 7.5V16.5L12 21L4 16.5V7.5Z') + pathEl('M4 7.5L12 12L20 7.5M12 12V21'),  // (a cube from its usual corner)
     upright: pathEl('M12 3V17M8 7L12 3L16 7M4 20.5H20'),  // (up, over a level line)
     free: pathEl('M12 7L16.3 9.5V14.5L12 17L7.7 14.5V9.5Z') + pathEl('M12 7V12M7.7 14.5L12 12L16.3 14.5')  // (a cube turned any way by hand: two arrows round it)
@@ -12608,16 +12609,26 @@ void light(vec3 col, vec3 n, vec3 p) {
 // 2 texels; never on a torus or a Klein bottle, a tile a place. Drawing each tile as triangles round its middle instead:
 // some 10 lines more, a corner more a tile to work out each time the shape moves, k triangles a tile, not k − 2, and its
 // folds only halved, not gone)
+// Glass (see glGlass), a fragment's output: uGlass 0, as it is; 1, its colour and its share weighed (the nearer the viewer,
+// the heavier), summed; 2, its share, what it lets through multiplied (McGuire and Bavoil's weighted blended transparency,
+// 2013: every layer seen, in no order, nothing sorted; at a quarter of the depth span each side, weights 1 to 60)
+const GL_GLASS = `
+uniform int uGlass;
+vec4 glass(vec3 c, float a) {
+  if (uGlass == 0) return vec4(c, a);
+  float w = clamp(a * 1e3 * pow(1.0 - gl_FragCoord.z, 8.0), 1e-2, 3e3);
+  return uGlass == 1 ? vec4(c * a * w, a * w) : vec4(a);
+}`;
 const GL_SHADOWED = `#version 300 es
 precision highp float; precision highp int; precision highp sampler2DShadow; precision highp usampler2D; in vec3 vDark, vLit, vSh; flat in uint vId;
-uniform sampler2DShadow uShadow; uniform usampler2D uShadowId; out vec4 o;
+uniform sampler2DShadow uShadow; uniform usampler2D uShadowId; uniform float uAlpha; out vec4 o;${GL_GLASS}
 void main() {
   float t = 1.0 / ${SHADOW_SIZE}.0, s = 0.0;
   for (int i = -1; i <= 1; i++) for (int j = -1; j <= 1; j++) {
     vec2 at = vSh.xy + vec2(i, j) * t;
     s += texture(uShadowId, at).r == vId + 1u ? 1.0 : texture(uShadow, vec3(at, vSh.z - 2.0 * t));
   }
-  o = vec4(vDark + vLit * s / 9.0, 1.0);
+  o = glass(vDark + vLit * s / 9.0, uGlass > 0 ? uAlpha : 1.0);
 }`;
 // Life on the plane (see glPlane): world (u, v) turned by uTurn (its cos and sin), then to pixels by uView (scale, ox, oy)
 const GL_PLANE_AT = `
@@ -12858,8 +12869,8 @@ void main() {  // an edge whose two tiles are both turned away is not drawn (the
   vFacing = uBoth ? 1.0 : max(dot(aNrm, eye), dot(aNrm2, eye));  // a Klein bottle: seen from both sides
   gl_Position = clipOf(toScreen(aPos), uBias);
 }`, `#version 300 es
-precision mediump float; uniform float uEdge; uniform vec3 uEdgeRgb; in float vFacing; out vec4 o;
-void main() { if (vFacing < 0.0) discard; o = vec4(uEdgeRgb, uEdge); }`],
+precision mediump float; uniform float uEdge; uniform vec3 uEdgeRgb; in float vFacing; out vec4 o;${GL_GLASS}
+void main() { if (vFacing < 0.0) discard; o = glass(uEdgeRgb, uEdge); }`],
   // the path printed on a surface's tiles (see pathSegments): one flat ribbon per segment, in its
   // tile's plane (aN its normal), as wide as the path on screen, its ends going on half that width
   // where aE says; seen from its tile's face only (see glSurface)
@@ -12873,7 +12884,15 @@ void main() {
   vec3 p = mix(aA, aB, aQuad.x) + side * aQuad.y + d * (aQuad.x * 2.0 - 1.0) * uHalf * on;
   gl_Position = clipOf(toScreen(p), uBias);  // over the grid lines, as the other paths
 }`, `#version 300 es
-precision mediump float; in vec3 vCol; out vec4 o; void main() { o = vec4(vCol, 1.0); }`],
+precision mediump float; in vec3 vCol; out vec4 o;${GL_GLASS}
+void main() { o = glass(vCol, 1.0); }`],
+  // Glass's last step (see glGlass): the layers' mean colour, over what shows through them all (premultiplied, as the canvas)
+  glassMix: [GL_QUAD, `#version 300 es
+precision highp float; uniform sampler2D uAcc, uRev; out vec4 o;
+void main() {
+  ivec2 p = ivec2(gl_FragCoord.xy); vec4 a = texelFetch(uAcc, p, 0); float r = texelFetch(uRev, p, 0).r;
+  o = vec4(a.rgb / max(a.a, 1e-5) * (1.0 - r), 1.0 - r);
+}`],
   // the cubes of a 3D walk on cells (see glCubes): a unit cube around each point, shaded as the tiles
   cube: [`#version 300 es
 in vec3 aCorner; in vec3 aNrm; in vec3 aAt; in vec3 aCol;${GL_PROJECT}${GL_LIGHT}
@@ -13150,70 +13169,127 @@ function glSurface(paint, path) {  // paint: its tiles' colours into their textu
     gl.vertexAttribDivisor(loc, divisor);
   };
   const off = (p, names) => names.forEach((name) => { const loc = gl.getAttribLocation(p, name); if (loc >= 0) { gl.disableVertexAttribArray(loc); gl.vertexAttribDivisor(loc, 0); } });
-  // tiles
-  let u = uniforms(prog.tile);
-  // drawn on their face only (a strip's faces each show their own; an unrolled torus, its top), the
-  // back of an open sheet plain; the corners of a torus are listed against its normals (shapeSign)
-  // a Klein bottle, one-sided: both sides of each tile, in its colours
-  const open = g.torus && !g.mobius && !g.klein && sh.m < 1, front = shapeSign(g) < 0 ? gl.FRONT : gl.BACK, back = front === gl.BACK ? gl.FRONT : gl.BACK;
-  gl.uniform4f(u('uPlain'), 0, 0, 0, 0);
-  attrib(prog.tile, 'aPos', S.pos, 3);
-  attrib(prog.tile, 'aNrm', S.nrm, 3);
-  attrib(prog.tile, 'aId', S.tileIds, 1);
-  gl.activeTexture(gl.TEXTURE2); gl.bindTexture(gl.TEXTURE_2D, S.tileCol); gl.uniform1i(u('uTileCol'), 2); gl.activeTexture(gl.TEXTURE0);
-  gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, S.fan);
-  if (!g.klein) gl.enable(gl.CULL_FACE);
-  gl.cullFace(front);
-  gl.drawElements(gl.TRIANGLES, S.fanCount, gl.UNSIGNED_INT, 0);
-  if (open) {
-    gl.cullFace(back);
-    gl.uniform4f(u('uPlain'), ...rgbCached(undersideColour()).map((c) => c / 255), 1);
+  // the tiles, their grid and the path; pass 0 as they are, 1 and 2 one of Glass's (see GL_GLASS, glGlass): every side
+  // of every tile, no depth test, the blending set by glGlass
+  const drawAll = (pass) => {
+    // tiles
+    let u = uniforms(prog.tile);
+    // drawn on their face only (a strip's faces each show their own; an unrolled torus, its top), the
+    // back of an open sheet plain; the corners of a torus are listed against its normals (shapeSign)
+    // a Klein bottle, one-sided: both sides of each tile, in its colours
+    const open = !pass && g.torus && !g.mobius && !g.klein && sh.m < 1, front = shapeSign(g) < 0 ? gl.FRONT : gl.BACK, back = front === gl.BACK ? gl.FRONT : gl.BACK;
+    gl.uniform4f(u('uPlain'), 0, 0, 0, 0);
+    gl.uniform1i(u('uGlass'), pass); gl.uniform1f(u('uAlpha'), GLASS_ALPHA);
+    attrib(prog.tile, 'aPos', S.pos, 3);
+    attrib(prog.tile, 'aNrm', S.nrm, 3);
+    attrib(prog.tile, 'aId', S.tileIds, 1);
+    gl.activeTexture(gl.TEXTURE2); gl.bindTexture(gl.TEXTURE_2D, S.tileCol); gl.uniform1i(u('uTileCol'), 2); gl.activeTexture(gl.TEXTURE0);
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, S.fan);
+    if (!g.klein && !pass) gl.enable(gl.CULL_FACE);
+    gl.cullFace(front);
     gl.drawElements(gl.TRIANGLES, S.fanCount, gl.UNSIGNED_INT, 0);
-  }
-  gl.disable(gl.CULL_FACE);
-  off(prog.tile, ['aPos', 'aNrm', 'aId']);
-  // grid: the tile edges, when the tiles are big enough on screen
-  if ($('showGrid').checked && view.scale > 6) {
-    gl.enable(gl.BLEND);
-    gl.blendFuncSeparate(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA, gl.ONE, gl.ONE_MINUS_SRC_ALPHA);  // the canvas stays opaque under the lines
-    u = uniforms(prog.edge);
-    gl.uniform1f(u('uEdge'), edgeAlpha(sh));
-    gl.uniform3f(u('uEdgeRgb'), ...EDGE_RGB.map((c) => c / 255));
-    gl.uniform1f(u('uBias'), edgeBias);
-    gl.uniform1i(u('uBoth'), g.klein ? 1 : 0);
-    attrib(prog.edge, 'aPos', S.ePos, 3);
-    attrib(prog.edge, 'aNrm', S.eN1, 3);
-    attrib(prog.edge, 'aNrm2', S.eN2, 3);
-    gl.drawArrays(gl.LINES, 0, S.eCount);
-    off(prog.edge, ['aPos', 'aNrm', 'aNrm2']);
-    gl.disable(gl.BLEND);
-  }
-  // path: the steps walked so far, printed on their tiles (see pathSegments)
-  if (path && cur > 0) {
-    if (S.keys.segs !== walk.wx || S.keys.segsM !== sh.m) {
-      const segs = pathSegments();
-      gl.bindBuffer(gl.ARRAY_BUFFER, S.ribbon); gl.bufferData(gl.ARRAY_BUFFER, segs.data, gl.DYNAMIC_DRAW);
-      S.segsAt = segs.at; S.keys.segs = walk.wx; S.keys.segsM = sh.m;
+    if (open) {
+      gl.cullFace(back);
+      gl.uniform4f(u('uPlain'), ...rgbCached(undersideColour()).map((c) => c / 255), 1);
+      gl.drawElements(gl.TRIANGLES, S.fanCount, gl.UNSIGNED_INT, 0);
     }
-    u = uniforms(prog.ribbon);
-    gl.uniform1f(u('uN'), Math.max(1, walk.n));
-    gl.uniform1f(u('uHalf'), surfaceLineWidth() / 2 / view.scale);  // the screen width, in world units
-    gl.uniform1f(u('uBias'), pathBias);
-    gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, S.grad); gl.uniform1i(u('uGrad'), 0);
-    attrib(prog.ribbon, 'aQuad', S.quad, 2);
-    attrib(prog.ribbon, 'aA', S.ribbon, 3, gl.FLOAT, false, 44, 0, 1);
-    attrib(prog.ribbon, 'aB', S.ribbon, 3, gl.FLOAT, false, 44, 12, 1);
-    attrib(prog.ribbon, 'aN', S.ribbon, 3, gl.FLOAT, false, 44, 24, 1);
-    attrib(prog.ribbon, 'aE', S.ribbon, 1, gl.FLOAT, false, 44, 36, 1);
-    attrib(prog.ribbon, 'aI', S.ribbon, 1, gl.FLOAT, false, 44, 40, 1);
-    if (!twoSidedNow()) { gl.enable(gl.CULL_FACE); gl.cullFace(gl.BACK); }  // from its tile's face only (an unrolled torus: both)
-    gl.drawArraysInstanced(gl.TRIANGLE_STRIP, 0, 4, S.segsAt[cur]);
     gl.disable(gl.CULL_FACE);
-    off(prog.ribbon, ['aQuad', 'aA', 'aB', 'aN', 'aE', 'aI']);
-  }
+    off(prog.tile, ['aPos', 'aNrm', 'aId']);
+    // grid: the tile edges, when the tiles are big enough on screen
+    if ($('showGrid').checked && view.scale > 6) {
+      if (!pass) {
+        gl.enable(gl.BLEND);
+        gl.blendFuncSeparate(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA, gl.ONE, gl.ONE_MINUS_SRC_ALPHA);  // the canvas stays opaque under the lines
+      }
+      u = uniforms(prog.edge);
+      gl.uniform1i(u('uGlass'), pass);
+      gl.uniform1f(u('uEdge'), edgeAlpha(sh));
+      gl.uniform3f(u('uEdgeRgb'), ...EDGE_RGB.map((c) => c / 255));
+      gl.uniform1f(u('uBias'), edgeBias);
+      gl.uniform1i(u('uBoth'), g.klein || pass ? 1 : 0);
+      attrib(prog.edge, 'aPos', S.ePos, 3);
+      attrib(prog.edge, 'aNrm', S.eN1, 3);
+      attrib(prog.edge, 'aNrm2', S.eN2, 3);
+      gl.drawArrays(gl.LINES, 0, S.eCount);
+      off(prog.edge, ['aPos', 'aNrm', 'aNrm2']);
+      if (!pass) gl.disable(gl.BLEND);
+    }
+    // path: the steps walked so far, printed on their tiles (see pathSegments)
+    if (path && cur > 0) {
+      if (S.keys.segs !== walk.wx || S.keys.segsM !== sh.m) {
+        const segs = pathSegments();
+        gl.bindBuffer(gl.ARRAY_BUFFER, S.ribbon); gl.bufferData(gl.ARRAY_BUFFER, segs.data, gl.DYNAMIC_DRAW);
+        S.segsAt = segs.at; S.keys.segs = walk.wx; S.keys.segsM = sh.m;
+      }
+      u = uniforms(prog.ribbon);
+      gl.uniform1i(u('uGlass'), pass);
+      gl.uniform1f(u('uN'), Math.max(1, walk.n));
+      gl.uniform1f(u('uHalf'), surfaceLineWidth() / 2 / view.scale);  // the screen width, in world units
+      gl.uniform1f(u('uBias'), pathBias);
+      gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, S.grad); gl.uniform1i(u('uGrad'), 0);
+      attrib(prog.ribbon, 'aQuad', S.quad, 2);
+      attrib(prog.ribbon, 'aA', S.ribbon, 3, gl.FLOAT, false, 44, 0, 1);
+      attrib(prog.ribbon, 'aB', S.ribbon, 3, gl.FLOAT, false, 44, 12, 1);
+      attrib(prog.ribbon, 'aN', S.ribbon, 3, gl.FLOAT, false, 44, 24, 1);
+      attrib(prog.ribbon, 'aE', S.ribbon, 1, gl.FLOAT, false, 44, 36, 1);
+      attrib(prog.ribbon, 'aI', S.ribbon, 1, gl.FLOAT, false, 44, 40, 1);
+      if (!twoSidedNow() && !pass) { gl.enable(gl.CULL_FACE); gl.cullFace(gl.BACK); }  // from its tile's face only (an unrolled torus: both)
+      gl.drawArraysInstanced(gl.TRIANGLE_STRIP, 0, 4, S.segsAt[cur]);
+      gl.disable(gl.CULL_FACE);
+      off(prog.ribbon, ['aQuad', 'aA', 'aB', 'aN', 'aE', 'aI']);
+    }
+  };
+  if (glassOn()) glGlass(drawAll); else drawAll(0);
   S.drawn = true;
   layers.path.clearRect(0, 0, cw, ch);  // the 2D tiles of a drawing before, if any
   return true;
+}
+// Glass: the surface see-through (see GL_GLASS), every layer showing, its grid and path too: drawn by draw twice, into two
+// pictures of its own, 4 samples a pixel as the canvas: 1, the weighted colours summed (half floats); 2, what shows through
+// (bytes); then the two mixed on the canvas. Made again when the canvas's size changes; without float pictures
+// (EXT_color_buffer_float, in every WebGL 2 of the last years), drawn as it is
+const GLASS_ALPHA = 0.4;  // (a tile's share: a layer behind seen at 60%, two at 36%…)
+const glassOn = () => $('glass').checked && !$('glassRow').hidden;
+function glGlass(draw) {
+  const S = GLS, gl = S.gl, w = glCanvas.width, h = glCanvas.height;
+  if (S.glass?.w !== w || S.glass?.h !== h) {
+    S.glass?.free.forEach((f) => f());
+    S.glass = null;
+    if (!gl.getExtension('EXT_color_buffer_float')) return draw(0);
+    const samples = Math.min(4, gl.getParameter(gl.MAX_SAMPLES)), free = [];
+    const target = (format) => {  // a picture drawn with its samples, and the texture it is resolved into
+      const rb = gl.createRenderbuffer(), ms = gl.createFramebuffer(), tex = gl.createTexture(), fb = gl.createFramebuffer();
+      gl.bindRenderbuffer(gl.RENDERBUFFER, rb); gl.renderbufferStorageMultisample(gl.RENDERBUFFER, samples, format, w, h);
+      gl.bindFramebuffer(gl.FRAMEBUFFER, ms); gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.RENDERBUFFER, rb);
+      gl.bindTexture(gl.TEXTURE_2D, tex); gl.texStorage2D(gl.TEXTURE_2D, 1, format, w, h);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+      gl.bindFramebuffer(gl.FRAMEBUFFER, fb); gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, tex, 0);
+      free.push(() => { gl.deleteRenderbuffer(rb); gl.deleteFramebuffer(ms); gl.deleteTexture(tex); gl.deleteFramebuffer(fb); });
+      return { ms, tex, fb };
+    };
+    S.glass = { w, h, free, sum: target(gl.RGBA16F), through: target(gl.RGBA8) };
+  }
+  const { sum, through } = S.glass;
+  gl.disable(gl.DEPTH_TEST);
+  gl.enable(gl.BLEND);
+  for (const [pass, t, clear, blend] of [[1, sum, 0, [gl.ONE, gl.ONE]], [2, through, 1, [gl.ZERO, gl.ONE_MINUS_SRC_COLOR]]]) {
+    gl.bindFramebuffer(gl.FRAMEBUFFER, t.ms);
+    gl.clearColor(clear, clear, clear, clear);
+    gl.clear(gl.COLOR_BUFFER_BIT);
+    gl.blendFunc(...blend);
+    draw(pass);
+    gl.bindFramebuffer(gl.READ_FRAMEBUFFER, t.ms); gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, t.fb);
+    gl.blitFramebuffer(0, 0, w, h, 0, 0, w, h, gl.COLOR_BUFFER_BIT, gl.NEAREST);
+  }
+  gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+  gl.disable(gl.BLEND);
+  const p = S.prog.glassMix;
+  gl.useProgram(p);
+  gl.activeTexture(gl.TEXTURE4); gl.bindTexture(gl.TEXTURE_2D, sum.tex); gl.uniform1i(gl.getUniformLocation(p, 'uAcc'), 4);
+  gl.activeTexture(gl.TEXTURE5); gl.bindTexture(gl.TEXTURE_2D, through.tex); gl.uniform1i(gl.getUniformLocation(p, 'uRev'), 5);
+  gl.activeTexture(gl.TEXTURE0);
+  gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+  gl.enable(gl.DEPTH_TEST);
 }
 
 /* Flat drawings by WebGL as well: the 2D walks, and the 3D walks once projected (their projection
@@ -14895,6 +14971,7 @@ for (const type of ['pointerdown', 'dblclick', 'wheel']) {
   $('viewTools').addEventListener(type, (e) => e.stopPropagation());  // Inflate and the Display menu too
 }
 $('light').addEventListener('change', () => { needsFull = true; });
+$('glass').addEventListener('change', () => { needsFull = true; });
 $('perspective').addEventListener('change', () => {
   setPerspective();
   rotateView([0, 0, 0]);  // the projection again

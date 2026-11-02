@@ -1,5 +1,5 @@
 // Tessera's self-check, run in the page (it uses the app's own functions) before a commit:
-//   await import(`/tools/check.js?${Date.now()}`); await tesseraCheck();   // the meshes, a few seconds
+//   await import(`/tools/check.js?${Date.now()}`); await tesseraCheck();   // the meshes and the sheets' rules (see checkSheets), 25 to 40 s
 //   await tesseraCheck({ crawl: true });                                   // and every tab, shape and tiling, a few minutes
 //   await tesseraCheck({ fuzz: 400, seed: 7 });                            // 400 actions at random, menu to menu (transitions, smallest sizes)
 //   await tesseraCheck({ fuzz: 100, cold: true });                          // and after each, its link loaded cold beside: the same menus offered
@@ -500,9 +500,56 @@ function checkMarks(fail) {
   return 1;
 }
 
+// The sheets (tori, Möbius strips, Klein bottles), each rule as the app means it, so that a change of one never breaks another
+// (v0.3.73 made the motif's lattice cell the colours' unit too: a slanted cell across a torus's seam, its tiles in the other colour):
+//  - a tiling's torus: each brick (the motif) one lattice cell, its tiles all there; each colour unit (its sheet's cell) side by
+//    side as laid, within 1.5 sheet cells (not across the seam, drawn at both ends once unrolled);
+//  - a tiling's Klein bottle in Duel and Quartet, from 24 rows: its colours' slices square, 0.85 to 1.15 (by the shape asked,
+//    not its rounding: before v0.3.83, one size in two its usual length);
+//  - the colours offered the same whatever is picked (a bottle's length its count's: before v0.3.80, Prismatic's 3 in Trio, 8 in
+//    Nonet), each offered count as many cells a colour once taken
+async function checkSheets(fail) {
+  let checked = 0;
+  const sizeOne = (S) => S.sizes?.[1] ?? S.sizes?.[0];
+  for (const name of foldedIn('torus')) {
+    const S = SPHERES[name], g = S.mesh(sizeOne(S)), m = TILINGS[g.tiling].polys.length;
+    const bricks = Map.groupBy([...Array(g.n).keys()], (t) => g.bricks[t]), odd = [...bricks.values()].filter((ts) => ts.length !== m);
+    if (odd.length) fail(`${name}: ${odd.length} bricks not one lattice cell (${m} tiles): ${odd[0].length}`);
+    const place = brickPlaces(g), units = Map.groupBy([...Array(g.n).keys()], (t) => `${place[2 * t].toFixed(4)},${place[2 * t + 1].toFixed(4)}`);
+    const spread = (ts, d) => { const x = ts.map((t) => g.uvMid[2 * t + d]); return Math.max(...x) - Math.min(...x); };
+    const apart = [...units.values()].filter((ts) => spread(ts, 0) > 1.5 || spread(ts, 1) > 1.5);
+    if (apart.length) fail(`${name}: ${apart.length} colour units across its seam (${spread(apart[0], 0).toFixed(1)} sheet cells along)`);
+    checked += 2;
+  }
+  for (const name of foldedIn('klein')) for (const K of [2, 4]) {
+    const off = SPHERES[name].sizes.filter((s) => Number(s) >= 24).map((s) => { const L = kleinLength(name, s, K); return [s, (L.n * L.step) / K / L.W]; }).filter(([, r]) => r < 0.85 || r > 1.15);
+    if (off.length) fail(`${name} in ${K} colours: its slices not square at ${off.map(([s, r]) => `${s} (${r.toFixed(2)})`).join(', ')}`);
+    checked++;
+  }
+  for (const w of ['lifeKleinPrismatic', 'lifeKleinPent15', 'lifeTorusRhombitri', 'lifeMobiusPent10']) {
+    const offered = [];
+    for (const K of [1, 3]) {
+      coloursPicked = lifeColours = K;
+      location.hash = `#w=${w}&k=${K}`;
+      await wait(500);
+      offered.push(COLOUR_STEPS.filter((k) => coloursFit(k)).join(','));
+    }
+    if (offered[0] !== offered[1]) fail(`${w}: colours offered ${offered[0]} in Classic, ${offered[1]} in Trio`);
+    for (const K of [2, 3, 5].filter((k) => offered[0].split(',').includes(`${k}`))) {
+      location.hash = `#w=${w}&k=${K}`;
+      await wait(500);
+      const sizes = huntParts(null, K).map((p) => p.length);
+      if (lifeColours !== K) fail(`${w}: ${K} colours offered, ${lifeColours} taken`);
+      else if (new Set(sizes).size > 1) fail(`${w} in ${K} colours: its parts ${sizes.join(' / ')}`);
+    }
+    checked += 2;
+  }
+  return checked;
+}
+
 window.tesseraCheck = async ({ known = false, crawl: andCrawl = false, deep: andDeep = false, fuzz: actions = 0, cold = false, colours = false, seed = Date.now() % 1e6, from, only } = {}) => {
   const failures = [], fail = (s) => { failures.push(s); localStorage.tesseraDeepFailures = JSON.stringify(failures); };
-  let checked = checkMeshes(fail) + checkBlockWraps(fail) + checkDiscs(fail) + checkTips(fail) + checkMarks(fail);
+  let checked = checkMeshes(fail) + checkBlockWraps(fail) + checkDiscs(fail) + checkTips(fail) + checkMarks(fail) + await checkSheets(fail);
   if (known) checked += await checkKnown(fail);
   if (andCrawl) checked += await crawl(fail);
   if (actions) checked += await fuzz(fail, actions, seed, cold);

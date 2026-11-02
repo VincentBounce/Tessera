@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.3.79';
+const VERSION = '0.3.80';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -5103,13 +5103,13 @@ function kleinTilingSheet(kindK, size) {
 }
 // its frame, without its tiles: its strip, its rows and its length (see kleinTilingSheet); its tiles' count (see stripCount)
 const kleinCount = (kindK, size) => { const { kind, strip, nv, n } = kleinLength(kindK, size); return stripCount(kind, strip, `${nv}x${n}`, true); };
-function kleinLength(kindK, size) {
+function kleinLength(kindK, size, K = ringColours()) {  // (K: the colours it is made for, the count asked when judging one, see colourFairOwn)
   const { strip } = FOLDED[kindK], { kind, basis: [a, b] } = MOBIUS_STRIPS[strip], { step, ok, copy } = MOBIUS_ALONG[strip];
   const [nv, own] = mobiusSize(size), turn = -Math.atan2(a[1], a[0]), by = turnPoint(b, turn)[1], W = nv * by;
   // its length as a ring's (see ringLength): near its usual (W / TORUS_TUBE), its colours' slices square, each whole copies along
   // (a glide's half a brick, turned over: as colourFair counts them, each tile in its own middle's, see partPlaces), as the twist
   // allows (whole bricks, Pent 15's twist asking an odd length, had none for Trio)
-  const K = ringColours(), x = W / TORUS_TUBE / step, n = own ?? ringLength(x, x * TORUS_TUBE * K, K * Math.round(copy / step), (c) => ok(c, nv));
+  const x = W / TORUS_TUBE / step, n = own ?? ringLength(x, x * TORUS_TUBE * K, K * Math.round(copy / step), (c) => ok(c, nv));
   return { kind, strip, turn, nv, n, W, step, by, a };
 }
 function kleinTilingMesh(kindK, size) {
@@ -5126,7 +5126,7 @@ function kleinTilingMesh(kindK, size) {
     return ids.get(i * nv * Q + j);
   };
   const sheet = tiles.map(turnOver), mesh = finishMesh(verts, sheet.map((t) => t.map(id)), sides, nv, null);  // one-sided: as listed, turned over (see kleinMesh)
-  return (meshCache[key] = Object.assign(mesh, { torus: true, klein: true, nu: L, nv: W, tube: W / L, period: MOBIUS_ALONG[FOLDED[kindK].strip].copy, tiling: kind, stripTurn: turn, uv: new Float64Array(sheet.flat(2)), uvMid: new Float64Array(mids), bricks, originCell }));
+  return (meshCache[key] = Object.assign(mesh, { torus: true, klein: true, nu: L, nv: W, tube: W / L, period: MOBIUS_ALONG[FOLDED[kindK].strip].copy, kindK, size, tiling: kind, stripTurn: turn, uv: new Float64Array(sheet.flat(2)), uvMid: new Float64Array(mids), bricks, originCell }));
 }
 // a tile's corners the other way round, its last one repeated still last (a tile with fewer corners than the strip's:
 // repeated first, its normal, from its first corners, was none, and the back's tiles all but black)
@@ -9013,8 +9013,9 @@ const COLOUR_STEP_NAMES = { 1: 'Classic', 2: 'Duel', 3: 'Trio', 4: 'Quartet', 5:
 const MIRRORED_DISCS = ['ammann', 'rhombs12', 'rhombs14', 'penrose'];  // the discs that mirror (the rosettes turn as a spiral): their parts a turn's, from half of one (its corner)
 const figureTurns = (kind) => ROSETTES[kind]?.[0] ?? { ammann: 8, rhombs12: 12, rhombs14: 14, penrose: 5, hat: 1, spectre: 1, pinwheel: 1 }[kind] ?? PATTERN_TURNS[baseOf(kind)] ?? 1;
 // (twice a fair count: each part halved, 2 4 giving 8, 5 10, 3 6 12; 3 without 6, thrice: 9, each third in 3)
-const colourFair = (K, g = walk.geo) => colourFairOwn(K, g) || ([8, 10, 12].includes(K) && colourFairOwn(K / 2, g)) || (K === 9 && colourFairOwn(3, g) && !colourFairOwn(6, g));
-const colourFairOwn = (K, g) => {
+// (total: the colours in all, a tiling's bottle as long as made for them, see kleinLength: judged on its own, not the one in view)
+const colourFair = (K, g = walk.geo) => colourFairOwn(K, g) || ([8, 10, 12].includes(K) && colourFairOwn(K / 2, g, K)) || (K === 9 && colourFairOwn(3, g, 9) && !colourFairOwn(6, g, 9));
+const colourFairOwn = (K, g, total = K) => {
   const mode = MODES[$('mode').value], kind = mode?.plane;
   if (K === 1) return true;
   if (kind && (planeTorus(kind) || figureTurns(kind) === 1)) return true;  // (a torus: blocks of its side, see colourW, all alike; no turns, a hat's, a spectre's or a pinwheel's circle, as many cells each, see planeSlices)
@@ -9024,7 +9025,7 @@ const colourFairOwn = (K, g) => {
   }
   if (solidCounts(mode?.sphere)) return solidCounts(mode.sphere).includes(K);
   if (g?.mobius) return true;
-  if (g?.period) { const x = g.nu / torusBlocks(K, g)[0] / g.period; return Math.abs(x - Math.round(x)) < 1e-6; }  // (a tiling's bottle: slices a whole count of its copies along, see MOBIUS_ALONG: a glide's turned over)
+  if (g?.period) { const { n, step } = kleinLength(g.kindK, g.size, total), x = (n * step) / torusBlocks(K, g)[0] / g.period; return Math.abs(x - Math.round(x)) < 1e-6; }  // (a tiling's bottle: slices a whole count of its copies along, see MOBIUS_ALONG: a glide's turned over)
   if (g?.nu) return g.nv % torusBlocks(K, g)[1] === 0;  // (a torus: its blocks' rows dividing its rows; its columns made for its colours, see ringColumns)
   return false;
 };

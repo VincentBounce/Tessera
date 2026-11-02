@@ -40,6 +40,8 @@ Never delete the bundles in `Tessera resources` (old versions included, the `Wal
 of code only (no comment, no blank line, see `tools/uncomment.py`): before, and +y or −y, nothing else: the « solde » of each
 delivery, e.g. `python3 tools/lines.py HEAD~1 HEAD` after a commit.
 Written with the version it brings first: « Solde v0.2.180 : main.js 12,143 +7 » (the app's files only, not tools/*).
+No code line gained or lost: the count and +0 all the same (« main.js 12,531 +0 »), never a sentence instead; a file
+touched shows (+0 if its code lines are as many).
 
 ## Versions
 - `const VERSION = '0.3.N'` (main.js, line 40) is the only source; every commit's message ends with it, `(v0.3.N)`.

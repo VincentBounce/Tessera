@@ -21,8 +21,8 @@ change = lambda a, b: f'{a:>7,} {b - a:+,}'.replace('-', '−')  # (before, then
 rows, total = [], [0, 0]
 for name in sorted(set(A) | set(B)):
     c0, c1 = count(name, A.get(name, '')), count(name, B.get(name, ''))
-    if c0 == c1: continue
+    if A.get(name) == B.get(name): continue  # (a file touched shows, +0 if its code lines are as many)
     rows.append(f'{name:22} {change(c0, c1)}')
     total = [total[0] + c0, total[1] + c1]
-print('\n'.join(rows) or 'no code line changed')
+print('\n'.join(rows) or f'{"all":22} {change(*[sum(count(n, F[n]) for n in F) for F in (A, B)])}')  # (nothing touched: the whole, +0)
 if len(rows) > 1: print(f'{"all":22} {change(*total)}')

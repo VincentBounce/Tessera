@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.3.99';
+const VERSION = '0.3.100';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -4714,43 +4714,55 @@ function flatPolyhedron(name, f, kites = false) {
 }
 
 /* ---- 7.3b Globe ------------------------------------------------------------------------------ */
-/* A globe of f bands, its parallels π / f apart from pole to pole; each band's cells between two meridians, 2f round the equator
- * (squares there, a unit a side: its radius f / π, see SPHERES.globe), halved towards a pole as they narrow (see globeColumns: as square as can be, as a
- * reduced grid of the weather maps' is); its two polar bands one cell each, round its pole (not triangles meeting there, each
- * touching all the others). A band's cell under a band of twice as many: 5 corners, the line between them its neighbours' (a
- * square's 4); a cap's, its band's columns, 12 to 23 (every tile listed with as many corners, its last again: see finishMesh) */
-// each band's columns, south to north (a cap's its neighbour's): 2f, halved while its cells stay half as wide as high at least
-// (their width over their height at the band's middle: 2f cos(its latitude) / columns), never below 12 (its caps 12 to 23 sides:
-// the colours, the divisors of its fewest, see colourFairOwn); a tie halved (cos 60°: 1/2 on the dot)
-function globeColumns(f) {
-  const bands = [];
-  for (let j = 1; j < f - 1; j++) {
-    const wide = 2 * f * Math.cos(-Math.PI / 2 + ((j + 0.5) * Math.PI) / f);
-    let N = 2 * f;
-    while (N % 2 === 0 && N / 2 >= 12 && N / 2 >= wide - 1e-9) N /= 2;
-    bands.push(N);
+/* A globe made for its colours: E columns round its equator (its size), each band's cells between two meridians, as high as wide
+ * (each band's height its cells' width: Mercator's, see globeBands), its columns halved towards a pole as they shrink, never below
+ * its fewest F, the least multiple of its colours from 12 (each band a multiple of them: as many cells a colour, see partPlaces);
+ * its two caps one cell each, round its pole (not triangles meeting there, each touching all the others). A band's cell under a
+ * band of twice as many: 5 corners, the line between them its neighbours' (a square's 4); a cap's, its band's F, 12 to 20 (every
+ * tile listed with as many corners, its last again: see finishMesh). On the unit sphere, as every solid's (its radius E / 2π: its
+ * equator's cells a unit a side, see SPHERES.globe) */
+// its fewest columns, a pole's band's and its cap's sides: the least multiple of K from 12 (12 for 2, 3, 4, 6 and 12; 14 for 7, 15
+// for 5, 16 for 8, 18 for 9, 20 for 10)
+const globeFewest = (K) => K * Math.ceil(12 / K);
+// its bands, south to north, each its columns (N, its caps' first and last: their bands'), and its parallels' latitudes between
+// them (lines): from the equator, each band as high as its cells are wide, y + 2π / N in Mercator's y (lat = 2 atan(e^y) − π/2),
+// its columns halved where its cells, at its middle, would be under 1/√2 of the equator's (cos(lat) E / N), down to F; the cap the
+// rest, once they would be at F (else ever thinner rings to the pole), or less than a band's height is left; the south its mirror
+function globeBands(E, K = ringColours()) {
+  const F = globeFewest(K), lat = (y) => 2 * Math.atan(Math.exp(y)) - Math.PI / 2, north = [];
+  for (let y = 0, N = E; ;) {
+    if ((Math.cos(lat(y + Math.PI / N)) * E) / N < Math.SQRT1_2) {  // (its cells shrunk: halved, or, at F already, the cap)
+      if (N / 2 < F || N % 2) break;
+      N /= 2;
+      continue;
+    }
+    const top = y + (2 * Math.PI) / N;
+    if (Math.PI / 2 - lat(top) < lat(top) - lat(y)) break;
+    north.push([N, lat(top)]);
+    y = top;
   }
-  return [bands[0], ...bands, bands.at(-1)];
+  const N = [...north.map(([n]) => n).reverse(), ...north.map(([n]) => n)];
+  return { N: [N[0], ...N, N.at(-1)], lines: [...north.map(([, t]) => -t).reverse(), 0, ...north.map(([, t]) => t)] };
 }
-function globeMesh(f) {
-  const key = `globe${f}`;
+function globeMesh(E) {
+  const K = ringColours(), key = `globe${E}|${globeFewest(K)}`;
   if (meshCache[key]) return meshCache[key];
-  const N = globeColumns(f), { verts, add } = vertexStore(), tiles = [], along = [];  // (on the unit sphere, as every solid's: the app's radius scales it, see SPHERES.globe; before v0.3.98 at f / π, scaled again, the view and its grid lost)
+  const { N, lines } = globeBands(E, K), B = N.length - 2, { verts, add } = vertexStore(), tiles = [], along = [];
   const points = (b) => Math.max(N[b - 1], N[b]);  // (parallel b, between bands b − 1 and b: the finer one's corners)
   const at = (b, k) => {
-    const lat = -Math.PI / 2 + (b * Math.PI) / f, lon = (2 * Math.PI * (k % points(b))) / points(b);
+    const lat = lines[b - 1], lon = (2 * Math.PI * (k % points(b))) / points(b);
     return add(Math.cos(lat) * Math.cos(lon), Math.cos(lat) * Math.sin(lon), Math.sin(lat));
   };
   const run = (b, from, to) => Array.from({ length: Math.abs(to - from) + 1 }, (_, s) => at(b, from + Math.sign(to - from) * s));  // (parallel b's corners, from to to)
   tiles.push(run(1, points(1) - 1, 0)); along.push(0.5);  // (the south cap, seen from below)
-  for (let j = 1; j < f - 1; j++) for (let i = 0; i < N[j]; i++) {
+  for (let j = 1; j <= B; j++) for (let i = 0; i < N[j]; i++) {
     const r0 = points(j) / N[j], r1 = points(j + 1) / N[j];  // (its bottom's and its top's corners a cell: 1, or 2 under or over a band of twice as many)
     tiles.push([...run(j, i * r0, (i + 1) * r0), ...run(j + 1, (i + 1) * r1, i * r1)]);
     along.push((i + 0.5) / N[j]);  // (its middle's way round, a share of a turn: its colour's quarter, see partPlaces)
   }
-  tiles.push(run(f - 1, 0, points(f - 1) - 1)); along.push(0.5);  // (the north cap)
+  tiles.push(run(B + 1, 0, points(B + 1) - 1)); along.push(0.5);  // (the north cap)
   const sides = Math.max(...tiles.map((c) => c.length));
-  return (meshCache[key] = Object.assign(finishMesh(verts, tiles.map((c) => [...c, ...Array(sides - c.length).fill(c.at(-1))]), sides, f), { globe: true, columns: N, along: Float64Array.from(along) }));
+  return (meshCache[key] = Object.assign(finishMesh(verts, tiles.map((c) => [...c, ...Array(sides - c.length).fill(c.at(-1))]), sides, E), { globe: true, columns: N, along: Float64Array.from(along) }));
 }
 
 /* ---- 7.4 Torus ------------------------------------------------------------------------------- */
@@ -5681,8 +5693,10 @@ const SPHERES = {
   pyramid: { mesh: (f) => hullMesh('pyramid', f), radius: (f) => f / 2, tiles: (f) => 5 * f * f, unit: 'cells', edges: [12, 24, 48] },  // edge 2
   rhombi: { mesh: (f) => hullMesh('rhombi', f), radius: (f) => f / 2, tiles: (f) => 26 * f * f, unit: 'cells', edges: [12, 24, 48] },  // edge 2: 18 squares, 8 triangles
   bicupola: { mesh: (f) => hullMesh('bicupola', f), radius: (f) => f / 2, tiles: (f) => 18 * f * f, unit: 'cells', edges: [12, 24, 48] },
-  globe: { mesh: globeMesh, radius: (f) => f / Math.PI, tiles: (f) => globeColumns(f).slice(1, -1).reduce((s, N) => s + N, 2), unit: 'cells', least: 4,
-           how: (f) => { const N = globeColumns(f); return `{y:${fmt(f - 2)} bands} of {k:${fmt(N[N.length >> 1])} cells} at the equator, halved towards the poles down to {k:${fmt(N[1])}} + {r:2 caps}`; } },  // (see globeMesh)
+  globe: { mesh: globeMesh, radius: (E) => E / (2 * Math.PI), tiles: (E) => globeBands(E).N.slice(1, -1).reduce((sum, n) => sum + n, 2), unit: 'cells',
+           how: (E) => { const { N } = globeBands(E); return `{y:${fmt(N.length - 2)} bands}, each as high as wide, of {k:${fmt(E)} cells} at the equator, halved towards the poles down to {k:${fmt(N[1])}} + {r:2 caps}`; },
+           // (its sizes its colours': its equator's columns F, 2F, 4F…, each halving down to F, see globeBands; as many cells as the others')
+           ownSizes: () => { const out = []; for (let E = globeFewest(ringColours()); SPHERES.globe.tiles(E) <= CELLS.most; E *= 2) if (SPHERES.globe.tiles(E) >= CELLS.least) out.push(E); return out; } },  // (E: its equator's columns, see globeMesh)
   dodecaKite: { mesh: (f) => flatPolyhedron('dodeca', f, true), radius: (f) => (f * PHI) / 2, tiles: (f) => 180 * f * f, unit: 'kites', how: (f) => `{r:12 pentagonal faces} × {s:5 sectors} × {y:(Edge=${fmt(f)})² triangles} × {k:3 kites each}` },
 };
 // the solids of squares as tetrakis triangles (see tetrakisOf): sized as their squares, 4 cells a square
@@ -5981,7 +5995,7 @@ for (const [kind, S] of Object.entries(SPHERES)) {
     for (const e of S.edges ?? []) { const k = sizes.reduce((best, f, i) => (Math.abs(Math.log(S.tiles(f) / S.tiles(e))) < Math.abs(Math.log(S.tiles(sizes[best]) / S.tiles(e))) ? i : best), 0); sizes[k] = e; }
     return sizes;
   };
-  Object.defineProperty(S, 'sizes', { get: () => (lists[stripKey()] ??= edged(ladder())) });
+  Object.defineProperty(S, 'sizes', { get: () => S.ownSizes?.() ?? (lists[stripKey()] ??= edged(ladder())) });  // (ownSizes: a surface's own, the globe's)
   Object.defineProperty(S, 'initial', { get: () => S.near(START[TORI.includes(kind) ? 'surface' : 'solid']) });
   S.near = (n) => nearCells(S.sizes, S.tiles, n);  // the usual size with about n cells
   S.nearest = (f) => S.near(S.tiles(f));  // a mode's own size: the usual one with about as many cells
@@ -9090,7 +9104,7 @@ const colourFairOwn = (K, g) => {
     return n > 1 && (n % K === 0 || (mirror && K === 2 * n));
   }
   if (solidCounts(mode?.sphere)) return solidCounts(mode.sphere).includes(K);
-  if (g?.globe) return g.columns.every((N) => N % K === 0);  // (a globe: quarters of whole columns in every band, see partPlaces; its fewest's divisors)
+  if (g?.globe) return true;  // (a globe: each count its own, its bands all multiples of it, see globeMesh)
   if (g?.mobius) return true;
   if (g?.copyLength) { const { n, step } = kleinLength(g.kindK, g.size, K), x = (n * step) / torusBlocks(K, g)[0] / g.copyLength; return Math.abs(x - Math.round(x)) < 1e-6; }  // (a tiling's bottle: slices a whole count of its copies along, see MOBIUS_ALONG: a glide's turned over)
   if (g?.nu) return g.nv % torusBlocks(K, g)[1] === 0;  // (a torus: its blocks' rows dividing its rows; its columns made for its colours, see ringColumns)

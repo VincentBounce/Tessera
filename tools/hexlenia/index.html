@@ -5,11 +5,16 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Lenia on tilings</title>
 <style>
-  :root { --bg: #111; --fg: #ddd; --dim: #888; --card: #1b1b1b; }
+  :root { --bg: #111; --fg: #ddd; --dim: #888; --card: #1b1b1b; --line: #444; --on: #2a3f5c; }
   body { margin: 0; padding: 16px; background: var(--bg); color: var(--fg); font: 13px system-ui, sans-serif; }
   h1 { font-size: 18px; margin: 0 0 4px; }
-  p { color: var(--dim); margin: 0 0 16px; max-width: 70ch; }
-  #grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 12px; }
+  h2 { font-size: 14px; margin: 18px 0 8px; color: var(--dim); font-weight: 600; }
+  p { color: var(--dim); margin: 0 0 12px; max-width: 80ch; }
+  #tabs { display: inline-flex; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; margin-bottom: 12px; flex-wrap: wrap; }
+  #tabs button { background: none; color: var(--fg); border: 0; border-right: 1px solid var(--line); padding: 6px 12px; font: inherit; font-weight: 600; cursor: pointer; }
+  #tabs button:last-child { border-right: 0; }
+  #tabs button.on { background: var(--on); }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 12px; }
   a.card { display: block; background: var(--card); border-radius: 8px; padding: 8px; color: var(--fg); text-decoration: none; }
   a.card:hover { outline: 1px solid #555; }
   canvas { display: block; width: 100%; aspect-ratio: 1; }
@@ -19,38 +24,77 @@
 </head>
 <body>
 <h1>Lenia on tilings</h1>
-<p>Lenia on hexagons and Tessera's tilings, small radii: the movers found (out/creatures.json, made by gather.js), the smallest first. Each one plays here, a click opens it big.</p>
-<div id="grid"></div>
+<div id="tabs"></div>
+<p id="about"></p>
+<div id="list"></div>
 <script type="module">
-// Every creature from out/creatures.json, a card each: its own world playing, followed (the view centred on its mass)
+// The results of tools/hexlenia, a tab a file: creatures (each followed, the view centred on its mass) and meetings
+// (the whole torus, grouped by what became of them). A card's world is made when it comes into view and plays while
+// in view, as many steps a frame as 12 ms allow (Flow Lenia's worlds are heavy); a click opens it big in view.html
 import { space, world, measure, towards } from './core.js';
-const list = await (await fetch('out/creatures.json?' + Date.now())).json();
-const cards = list.map((o, i) => {
-  const S = space(o.space ?? 'hex', o.N ?? Math.sqrt(o.cells.length)), W = world(S, o);
-  W.A = Float32Array.from(o.cells, (v) => v / 255);
-  const a = document.createElement('a');
-  a.className = 'card'; a.href = `view.html#from=out/creatures.json&i=${i}`;
-  a.innerHTML = `<canvas width="200" height="200"></canvas><div class="name">${o.name || 'Creature'} · ${S.name} · R ${o.R}</div><div class="info">${o.live} cells · speed ${o.speed} · β ${o.beta} μ ${o.mu} σ ${o.sigma} dt ${o.dt}</div>`;
-  document.getElementById('grid').append(a);
-  return { o, W, g: a.querySelector('canvas').getContext('2d') };
-});
-// Each cell its own shape, around the creature's centre, 3.5 radii across
-const draw = ({ o, W, g }) => {
-  const S = W.S, s = measure(W), sc = 100 / Math.max(8, o.R * 3.5) / S.unit;
+const TABS = [
+  { key: 'lenia', title: 'Lenia', file: 'creatures.json', about: 'Lenia on hexagons and Tessera\'s tilings, small radii: the movers found (gather.js), the smallest first.' },
+  { key: 'lenia-meet', title: 'Lenia meetings', file: 'collide-creatures.json', meet: true, about: 'Six hex movers, each met by a copy of itself turned 60°, 120° or 180°, its path shifted aside (collide.js).' },
+  { key: 'flow', title: 'Flow Lenia', file: 'flow-creatures.json', about: 'Flow Lenia (Plantec\'s, matter kept) on hexagons: single movers cut out of random settings\' results (search.js, isolate.js), the smallest first.' },
+  { key: 'flow-meet', title: 'Flow Lenia meetings', file: 'collide-flow-creatures.json', meet: true, about: 'Every pair of one rule among the Flow Lenia movers (each with itself, and two pairs found together): none dies, the mass being kept.' },
+  { key: 'born', title: 'Born of meetings', file: 'born-flow-creatures.json', about: 'The movers left by the Flow Lenia meetings ending in 3 pieces or more, each played alone: one of the two whole, both, or a new smaller one of the same rule (at: the meeting).' },
+];
+let tab = TABS.find((t) => t.key === new URLSearchParams(location.hash.slice(1)).get('tab')) ?? TABS[0], cards = [];
+const tabs = document.getElementById('tabs');
+for (const t of TABS) { const b = document.createElement('button'); b.textContent = t.title; b.onclick = () => { location.hash = 'tab=' + t.key; }; t.button = b; tabs.append(b); }
+addEventListener('hashchange', () => { tab = TABS.find((t) => t.key === new URLSearchParams(location.hash.slice(1)).get('tab')) ?? TABS[0]; show(); });
+// One card: its canvas, its setting; its world made on first sight
+const seen = new IntersectionObserver((es) => es.forEach((e) => { const c = e.target.card; c.visible = e.isIntersecting; if (c.visible && !c.W) { const S = space(c.o.space ?? 'hex', c.o.N ?? Math.sqrt(c.o.cells.length)); c.W = world(S, c.o); c.W.A = Float32Array.from(c.o.cells, (v) => v / 255); draw(c); } }));
+const info = (o) => `${o.live ?? ''}${o.live ? ' cells · ' : ''}speed ${o.speed} · ${o.kernels ? o.kernels.length + ' kernels' : `β ${o.beta} μ ${o.mu} σ ${o.sigma}`} · dt ${o.dt}`;
+async function show() {
+  for (const t of TABS) t.button.classList.toggle('on', t === tab);
+  document.getElementById('about').textContent = tab.about;
+  const list = document.getElementById('list'), all = await (await fetch(`out/${tab.file}?${Date.now()}`)).json();
+  seen.disconnect(); list.innerHTML = ''; cards = [];
+  // Meetings grouped by what became of them (their name's end), the largest group first; creatures in one grid
+  const groups = new Map();
+  all.forEach((o, i) => { const g = tab.meet ? o.name.split('→ ')[1].replace(/mass ×[\d.]+ ?/, '').replace(/,\s*$/, '').replace(/\d+ pieces/, (s) => (+s.split(' ')[0] >= 3 ? '3+ pieces' : s)) : ''; if (!groups.has(g)) groups.set(g, []); groups.get(g).push(i); });
+  for (const [g, is] of [...groups].sort((a, b) => b[1].length - a[1].length)) {
+    if (tab.meet) { const h = document.createElement('h2'); h.textContent = `${g} (${is.length})`; list.append(h); }
+    const grid = document.createElement('div');
+    grid.className = 'grid';
+    for (const i of is) {
+      const o = all[i], a = document.createElement('a');
+      a.className = 'card'; a.href = `view.html#from=out/${tab.file}&i=${i}`;
+      const title = tab.meet ? o.name.split(' → ')[0] : o.at !== undefined ? `Born of meeting ${o.at} · ${o.space ?? 'hex'} · R ${o.R}` : `${o.name || 'Creature'} · ${o.space ?? 'hex'} · R ${o.R}`;
+      a.innerHTML = `<canvas width="200" height="200"></canvas><div class="name"></div><div class="info"></div>`;
+      a.querySelector('.name').textContent = `${i} · ${title}`; a.querySelector('.info').textContent = info(o);
+      const c = { o, g: a.querySelector('canvas').getContext('2d'), whole: tab.meet };
+      a.card = c; cards.push(c); seen.observe(a); grid.append(a);
+    }
+    list.append(grid);
+  }
+}
+// A card's world: each cell its own shape, around the creature's centre (3.5 radii across), or the whole torus
+function draw({ o, W, g, whole }) {
+  const S = W.S, s = measure(W), sc = whole ? 200 / Math.hypot(S.pa[0] + S.pb[0], S.pa[1] + S.pb[1]) : 100 / Math.max(8, o.R * 3.5) / S.unit;
   g.fillStyle = '#05051a'; g.fillRect(0, 0, 200, 200);
   for (let c = 0; c < W.n; c++) {
     const v = W.A[c];
     if (v < 0.01) continue;
-    const [dx, dy] = towards(S, S.u[c] - s.u, S.v[c] - s.v), x = 100 + dx * sc, y = 100 + dy * sc;
+    const [dx, dy] = whole ? [S.x[c] - (S.pa[0] + S.pb[0]) / 2, S.y[c] - (S.pa[1] + S.pb[1]) / 2] : towards(S, S.u[c] - s.u, S.v[c] - s.v), x = 100 + dx * sc, y = 100 + dy * sc;
     if (x < -20 || x > 220 || y < -20 || y > 220) continue;
     const P = S.shape(c), mx = P.reduce((a, q) => a + q[0], 0) / P.length, my = P.reduce((a, q) => a + q[1], 0) / P.length;
-    g.fillStyle = `hsl(${240 - v * 190}, 90%, ${6 + v * 60}%)`;
+    g.fillStyle = `hsl(${240 - Math.min(1, v) * 190}, 90%, ${6 + Math.min(1, v) * 60}%)`;
     g.beginPath();
     P.forEach(([px, py], k) => g[k ? 'lineTo' : 'moveTo'](x + (px - mx) * sc, y + (py - my) * sc));
     g.fill();
   }
+}
+// Steps for the cards in view, in turn, while 12 ms last; then each drawn
+let turn = 0;
+const frame = () => {
+  const live = cards.filter((c) => c.visible && c.W), t0 = performance.now();
+  for (let k = 0; live.length && performance.now() - t0 < 12; k++) { live[turn++ % live.length].W.step(); if (k >= live.length * 4) break; }
+  live.forEach(draw);
+  requestAnimationFrame(frame);
 };
-const frame = () => { for (const c of cards) { c.W.step(); c.W.step(); draw(c); } requestAnimationFrame(frame); };
+show();
 frame();
 </script>
 </body>

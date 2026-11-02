@@ -4757,11 +4757,8 @@ let kleinEight = false;  // (in a link: k8=1)
 function kleinPoint(x, y, nu, nv, m, tube = TORUS_TUBE) {
   const t = (x / nu - 0.5) * 2 * Math.PI, f = (y / nv) * 2 * Math.PI, a = tube, c = Math.cos(t / 2), s = Math.sin(t / 2);
   const r = 1 + a * (c * Math.sin(f) - s * Math.sin(2 * f));
-  // the bottle: the sheet's ends at the top of the neck's arch (2.5π: unrolled, it opens there), past its own ends (4π)
-  // turned over (u to π − u)
-  const w = (x / nu + 0.625) * 4 * Math.PI, past = w >= 4 * Math.PI;
-  const K = kleinEight ? [r * Math.sin(t), -r * Math.cos(t), a * (s * Math.sin(f) + c * Math.sin(2 * f))]
-    : kleinBottlePoint(past ? w - 4 * Math.PI : w, past ? Math.PI / 2 - f : f + Math.PI / 2);
+  // (the bottle's sheet ends where the neck opens into the bowl: unrolled, it opens there)
+  const K = kleinEight ? [r * Math.sin(t), -r * Math.cos(t), a * (s * Math.sin(f) + c * Math.sin(2 * f))] : kleinBottlePoint((x / nu) * 4 * Math.PI, f + Math.PI / 2);
   if (m >= 1) return K;
   const F = torusPoint(x, y, nu, nv, 0, tube);
   return F.map((v, d) => v + (K[d] - v) * m);

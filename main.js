@@ -4768,12 +4768,13 @@ function kleinPoint(x, y, nu, nv, m, tube = TORUS_TUBE) {
 }
 // The bottle at v along it (0 to 4π), u round it (Paul Bourke's, four pieces): a bowl from the neck's mouth out to the
 // body's widest (radius 1 to 4), the body narrowing up into the neck (back to 1, 3π high), the neck arching over, then
-// down through the body's side into the bowl; B(4π, u) = B(0, π − u). Standing, centred, 0.2 its size (15 high: 3)
+// down through the body's side into the bowl; B(4π, u) = B(0, π − u). Standing, centred, 0.2 its size (15 high: 3),
+// turned half a turn round the vertical: its handle (Bourke's at −x) east
 function kleinBottlePoint(v, u) {
   const cu = Math.cos(u), su = Math.sin(u), cv = Math.cos(v), sv = Math.sin(v), P = Math.PI, r = 2.5 - 1.5 * cv, k = 0.2;
   const [x, y, z] = v < P ? [r * cu, r * su, -2.5 * sv] : v < 2 * P ? [r * cu, r * su, 3 * v - 3 * P]
     : v < 3 * P ? [-2 + (2 + cu) * cv, su, (2 + cu) * sv + 3 * P] : [-2 + 2 * cv - cu, su, 12 * P - 3 * v];
-  return [(x + 0.5) * k, y * k, (z - 4.96) * k];
+  return [-(x + 0.5) * k, -y * k, (z - 4.96) * k];
 }
 // Its tiles as the torus's (squares, hexagons, triangles, Cairo pentagons; tiles in the same order), their
 // corners one vertex per point of the bottle, found by their place on the sheet (not in space: it crosses

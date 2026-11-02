@@ -62,11 +62,13 @@ eight life channels (two layers of four) and a wall texture; a species is a team
 `leniaCheck()` in its console: the FFT's round trip and an impulse, each species alive alone, a team the same on any channels.
 
 ## Particle Life prototype (particles/)
-A separate page (`particles/index.html`, `particles.js`), not part of main.js: Particle Life (Tom Mohr's) on the GPU,
-particles of 3 to 8 kinds on a torus or a sphere (of area 1, the same crowd), each kind drawn to or pushed from each
-other kind by a K × K rule matrix (clicked to change), every pair felt (a fragment shader a particle; one geometry
-function a space: the way and distance, along the surface on the sphere); the link keeps space, kinds, count, seed and
-changed rules. `particlesCheck('both')` in its console: one GPU step against the same step on the CPU, each space.
+A separate page (`particles/index.html`, `particles.js`), not part of main.js: Particle Life (Tom Mohr's) on WebGPU,
+4k to 1M particles of 3 to 8 kinds on a torus or a sphere (of area 1), each kind drawn to or pushed from each other kind
+by a K × K rule matrix (clicked to change); the reach set for 4,096 and shrunk with more (a larger world, the creatures
+the same). A step in five compute passes: particles counted into bins a reach wide, the bins' starts summed, the
+particles sorted (their places copied in bin order), then each feels those in the bins round its own. Wheel zooms, drag
+turns the sphere or moves over the torus; the link keeps every setting. `particlesCheck('both')` in its console: one GPU
+step (bins) against the same step on the CPU (every pair), each space.
 
 ## Artificial chemistry prototype (chemistry/)
 A separate page (`chemistry/index.html`, `chemistry.js`), not part of main.js: Tim Hutton's Squirm3 (2002) on a torus

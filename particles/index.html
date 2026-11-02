@@ -34,6 +34,7 @@
   label.range input { flex: 1; }
   label.range b { width: 38px; text-align: right; font-weight: normal; font-variant-numeric: tabular-nums; }
   #matrix { display: block; margin-top: 4px; cursor: pointer; image-rendering: pixelated; }
+  #stats { white-space: pre-line; }
   #stats, #help { margin-top: 12px; color: var(--dim); font-size: 11.5px; font-variant-numeric: tabular-nums; }
   #fail { position: absolute; inset: 0; display: none; align-items: center; justify-content: center; text-align: center; padding: 20px; }
   @media (max-width: 700px) {
@@ -52,6 +53,8 @@
   <div class="tabs" id="kinds"></div>
   <div class="sec">Particles</div>
   <div class="tabs" id="counts"></div>
+  <div class="sec">Steps a frame</div>
+  <div class="tabs" id="steps"></div>
   <div class="sec">Rules</div>
   <div class="row"><button class="btn" id="newRules">New rules</button><span class="seed" id="seed"></span></div>
   <canvas id="matrix"></canvas>
@@ -60,7 +63,7 @@
   <label class="range"><span>Friction</span><input id="friction" type="range" min="0.01" max="0.5" step="0.01"><b></b></label>
   <div class="row" style="margin-top:8px"><button class="btn" id="play">Pause</button><button class="btn" id="scatter">Scatter</button><button class="btn" id="spin">Spin</button></div>
   <div id="stats"></div>
-  <div id="help">A rule square: row the kind that feels, column the kind it feels; green draws, red pushes. Click raises it by ½, shift-click lowers it (−1 to 1). The sphere turns by a drag. The link keeps space, kinds, count, seed and changed rules.</div>
+  <div id="help">A rule square: row the kind that feels, column the kind it feels; green draws, red pushes. Click raises it by ½, shift-click lowers it (−1 to 1). The reach is for 4,096 particles, shrunk with more: more particles, a larger world. The wheel zooms; a drag turns the sphere or moves over the torus. The link keeps all the settings and changed rules.</div>
 </div>
 <div id="stage"><canvas id="view"></canvas><div id="fail"></div></div>
 <script src="particles.js"></script>

@@ -1454,9 +1454,9 @@ const VIEW_3D = ['autoRotate', 'upright', 'perspective', 'light'];  // a 3D view
 const DISPLAY_BY_TAB = {
   '2D walks': ['heatmap', 'fill', 'translucent', 'cells', 'visits', 'digit', 'grid'],
   '3D walks': ['colours', 'digit', 'grid', 'sky', ...VIEW_3D],
-  'Walks on surfaces': ['shape', 'heatmap', 'visits', 'fill', 'translucent', 'grid', 'sky', ...VIEW_3D, 'glass'],
+  'Walks on surfaces': ['shape', 'heatmap', 'visits', 'fill', 'translucent', 'grid', 'sky', ...VIEW_3D, 'glass', 'cut'],
   'Automata on the plane': ['colours', 'digit', 'mono', 'grid', 'sky'],
-  'Automata on surfaces': ['shape', 'colours', 'digit', 'mono', 'grid', 'sky', ...VIEW_3D, 'glass'],  // (Glass: the surfaces' tiles only, see glGlass)
+  'Automata on surfaces': ['shape', 'colours', 'digit', 'mono', 'grid', 'sky', ...VIEW_3D, 'glass', 'cut'],  // (Glass, Cut: the surfaces' tiles only, see glGlass, GL_CUT)
   '2D spirals': ['heatmap', 'fill', 'translucent', 'cells', 'visits', 'digit', 'grid'],  // the 2D walks' menu, some of it greyed out
 };
 // Shown but greyed out, by the menu's group or the tab: a spiral never crosses itself, so it closes no area and visits each
@@ -1468,7 +1468,7 @@ const shows = (item) => DISPLAY_BY_TAB[$('mode').selectedOptions[0].parentElemen
 const useful = (item) => shows(item) && !greyed(item);
 function updateDisplayMenu() {
   const rows = { colours: 'coloursRow', grid: 'gridRow',
-                 autoRotate: 'autoRotateRow', upright: 'uprightRow', perspective: 'perspectiveRow', light: 'lightRow', glass: 'glassRow' };
+                 autoRotate: 'autoRotateRow', upright: 'uprightRow', perspective: 'perspectiveRow', light: 'lightRow', glass: 'glassRow', cut: 'cutRow' };
   for (const [item, id] of Object.entries(rows)) $(id).hidden = !shows(item);
   skyButton.style.visibility = shows('sky') ? '' : 'hidden';  // the sky's switch, among the themes (no sky: its place kept, the row as everywhere)
   // Heatmap of visits and Digits instead of a list of colours, on cells only (Digits in 2D only;
@@ -1505,7 +1505,7 @@ function updateDisplayMenu() {
 // The view's switches, standard tiles (toggle): each its checkbox's (the source, kept out of sight), on as it is checked,
 // greyed where its row is hidden (it does not apply: Autoplay but in Life, the others but in 3D); drawn again with the
 // display box and when the box opens (a hand rotation, a new mode: their boxes changed)
-const VIEW_TILES = [['perspective', 'perspectiveRow', 'perspective', 'Perspective', 'Perspective: what is nearer looks bigger'], ['light', 'lightRow', 'sideLight', 'Side light'], ['glass', 'glassRow', 'glass', 'Glass']];
+const VIEW_TILES = [['perspective', 'perspectiveRow', 'perspective', 'Perspective', 'Perspective: what is nearer looks bigger'], ['light', 'lightRow', 'sideLight', 'Side light'], ['glass', 'glassRow', 'glass', 'Glass'], ['cut', 'cutRow', 'cut', 'Cut']];
 let viewTiles = null;
 function renderViewTiles() {
   viewTiles ??= VIEW_TILES.map(([id, row, pic, text, title]) => tile({ pic: icon(pic), text, title: title ?? $(row).title, toggle: true,
@@ -1518,7 +1518,7 @@ function renderViewTiles() {
     ways[perspectiveFor(MODES[w], MODES[w].round ? 1 : 0) ? 'on' : 'off'].push(SHAPE_SHORT[sh] ?? sh);
   }
   const perspective = !ways.on.length ? 'off' : !ways.off.length ? 'on' : `On by default on ${ways.on.join(', ')}\nOff by default on ${ways.off.join(', ')}`;
-  const first = { perspective, light: 'on', glass: 'off' }, why = {};
+  const first = { perspective, light: 'on', glass: 'off', cut: 'off' }, why = {};
   VIEW_TILES.forEach(([id, row], k) => setTile(viewTiles[k], { on: $(id).checked, can: !$(row).hidden && !$(id).disabled, byDefault: first[id], greyed: why[id] ?? '' }));
   $('viewTiles').hidden = VIEW_TILES.every(([, row]) => $(row).hidden);
 }
@@ -2174,6 +2174,7 @@ const ICONS = (() => {
     perspective: pathEl('M6.14 4.16L18.14 5.88A1 1 0 0 1 19 6.87V17.13A1 1 0 0 1 18.14 18.12L6.14 19.84A1 1 0 0 1 5 18.85V5.15A1 1 0 0 1 6.14 4.16Z'),
     sideLight: pathEl('M2.5 10.2H7.5V13.8H2.5Z') + pathEl('M7.5 9.6L10 8.2V15.8L7.5 14.4Z') + pathEl('M12.5 8.6L21 4.8M13 12H21.5M12.5 15.4L21 19.2'),
     klein8: pathEl('M12 12C9 12 7 10 7 7.5S9 3 12 3S17 5 17 7.5S15 12 12 12ZM12 12C9 12 7 14 7 16.5S9 21 12 21S17 19 17 16.5S15 12 12 12Z'),  // a figure 8
+    cut: pathEl('M3 12A9 9 0 0 1 21 12Z') + pathEl('M2 15.5H22'),  // a ball's back half, the cut's line
     glass: pathEl('M3 12A9 9 0 1 0 21 12A9 9 0 1 0 3 12Z') + pathEl('M3 12A9 3.5 0 0 0 21 12A9 3.5 0 0 0 3 12Z'),  // a ball, its equator seen through
     viewDefault: pathEl('M12 3L20 7.5V16.5L12 21L4 16.5V7.5Z') + pathEl('M4 7.5L12 12L20 7.5M12 12V21'),  // (a cube from its usual corner)
     upright: pathEl('M12 3V17M8 7L12 3L16 7M4 20.5H20'),  // (up, over a level line)
@@ -3142,14 +3143,23 @@ function renderModePicker() {
     const these = shapes.filter(has);
     if (!these.length) return [];
     const title = g && some > 1 ? [Object.assign(document.createElement('div'), { className: 'block-label', textContent: g })] : [];
-    return [...title, ...these.map((sh) => {
+    return [...title, ...these.flatMap((sh) => {
+    // a Klein bottle, two buttons: its forms (see kleinPoint), the same tiles and neighbours, at the same size
+    if (sh === 'Klein bottle') return [[false, 'klein', 'Klein', 'A Klein bottle: its neck through its side, opening into its bottom'], [true, 'klein8', 'Klein 8', 'A Klein bottle as a ring whose tube is a figure 8, turned half a turn round it']].map(([eight, pic, text, title]) =>
+      button(`${icon(pic)}<span>${text}</span>`, sh === shape && kleinEight === eight, () => {
+        if (sh !== shape) { kleinEight = eight; navGo(2, sh); return; }
+        if (kleinEight === eight) return;
+        kleinEight = eight;
+        renderModePicker();
+        $('sphereF').dispatchEvent(new Event('change'));
+      }, title));
     const again = sh === shape && !!MODES[w].plane && !APERIODIC[MODES[w].plane], b = button(`${icon(SHAPE_ICONS[sh])}<span>${shapeLabel(sh)}</span>`, sh === shape, () => {
       if (!again) { navGo(2, sh); return; }
       plane.torus = !plane.torus;
       compute();
     }, modeWhere(navPick(2, sh)));
     if (again) { setTile(b, { on: true, again }); b.title += plane.torus ? '\nA torus · Clicked again: walls' : '\nWalls · Clicked again: a torus'; }  // (its words kept, then what a click does, as a card's: see card)
-    return b;
+    return [b];
   }), ...(g === SHAPE_GROUPS[1][0] && MODES[w].life && MODES[w].plane ? [spaceTimeTile] : [])];  // (Stacks: Life on squares')
   }));
   // a family picked: its tilings as tabs, the same walk (along the grid or on cells) on another one
@@ -3157,10 +3167,6 @@ function renderModePicker() {
   if (inFamily) inFamily.F.tab = inFamily.tab;
   $('torusTiles').hidden = !inFamily;
   $('tilesLabel').hidden = !inFamily;  // (two blocks: the surface, then its tiles; an ant's: its shape, then its creatures)
-  // a Klein bottle: its form, Bottle | Figure 8 (see kleinPoint), the same tiles and neighbours, at the same size
-  $('kleinForms').hidden = inFamily?.F.name !== 'Klein bottle';
-  if (!$('kleinForms').hidden) $('kleinForms').replaceChildren(tileGroup([[false, 'klein', 'Bottle', 'Its neck through its side, opening into its bottom'], [true, 'klein8', 'Figure 8', 'A ring whose tube is a figure 8, turned half a turn round it']].map(([eight, pic, text, title]) =>
-    tile({ pic: icon(pic), text, title, on: kleinEight === eight, byDefault: eight ? '' : 'yes', click: () => { if (kleinEight === eight) return; kleinEight = eight; renderModePicker(); $('sphereF').dispatchEvent(new Event('change')); } }))));
   $('shapesLabel').textContent = SPACES[space][0];  // (its tab's name, as Size its section's title; its groups' titles under it)
   if (inFamily) $('tilesLabel').textContent = `${inFamily.F.name} tiles`;
   if (inFamily) {
@@ -4743,8 +4749,7 @@ function torusPoint(i, j, nu, nv, m, tube = TORUS_TUBE) {
  * A torus whose sheet is glued with its ends turned over: (x + nu, y) ≡ (x, nv − y), as the Möbius strip's,
  * and (x, y + nv) ≡ (x, y). One-sided and closed; in space it must cross itself, in one of two forms (kleinEight):
  *  - the bottle: its tube along the sheet's x, a neck that goes in through its side and opens into its bottom
- *    (the parametrisation on Wikipedia's Klein bottle page, u along it over [0, π], v round it: B(π, v) = B(0, π − v),
- *    the sheet's gluing with v a quarter turn on), its tiles narrow in the neck, wide in the body;
+ *    (see kleinBottlePoint: the sheet's gluing with u a quarter turn on), its tiles narrow in the neck, wide in the body;
  *  - the figure 8: its tube's cross-section a figure 8 that turns half a turn round the ring (the ends meet turned
  *    over), crossing itself along the circle through the 8's middle.
  * Flat (m = 0) as the torus's sheet. */
@@ -4752,18 +4757,19 @@ let kleinEight = false;  // (in a link: k8=1)
 function kleinPoint(x, y, nu, nv, m, tube = TORUS_TUBE) {
   const t = (x / nu - 0.5) * 2 * Math.PI, f = (y / nv) * 2 * Math.PI, a = tube, c = Math.cos(t / 2), s = Math.sin(t / 2);
   const r = 1 + a * (c * Math.sin(f) - s * Math.sin(2 * f));
-  const K = kleinEight ? [r * Math.sin(t), -r * Math.cos(t), a * (s * Math.sin(f) + c * Math.sin(2 * f))] : kleinBottlePoint((x / nu) * Math.PI, f + Math.PI / 2);
+  const K = kleinEight ? [r * Math.sin(t), -r * Math.cos(t), a * (s * Math.sin(f) + c * Math.sin(2 * f))] : kleinBottlePoint((x / nu) * 4 * Math.PI, f + Math.PI / 2);
   if (m >= 1) return K;
   const F = torusPoint(x, y, nu, nv, 0, tube);
   return F.map((v, d) => v + (K[d] - v) * m);
 }
-// The bottle at (u, v): standing, its length up (z), centred, 0.7 its size (4.2 high: 2.9, as the figure 8's ring)
-function kleinBottlePoint(u, v) {
-  const cu = Math.cos(u), su = Math.sin(u), cv = Math.cos(v), k = 0.7;
-  const x = (-2 / 15) * cu * (3 * cv - 30 * su + 90 * cu ** 4 * su - 60 * cu ** 6 * su + 5 * cu * cv * su);
-  const y = (-1 / 15) * su * (3 * cv - 3 * cu ** 2 * cv - 48 * cu ** 4 * cv + 48 * cu ** 6 * cv - 60 * su + 5 * cu * cv * su - 5 * cu ** 3 * cv * su - 80 * cu ** 5 * cv * su + 80 * cu ** 7 * cv * su);
-  const z = (2 / 15) * (3 + 5 * cu * su) * Math.sin(v);
-  return [(x - 0.153) * k, z * k, (2.103 - y) * k];  // (its body up, its neck coming back up into it from below)
+// The bottle at v along it (0 to 4π), u round it (Paul Bourke's, four pieces): a bowl from the neck's mouth out to the
+// body's widest (radius 1 to 4), the body narrowing up into the neck (back to 1, 3π high), the neck arching over, then
+// down through the body's side into the bowl; B(4π, u) = B(0, π − u). Standing, centred, 0.2 its size (15 high: 3)
+function kleinBottlePoint(v, u) {
+  const cu = Math.cos(u), su = Math.sin(u), cv = Math.cos(v), sv = Math.sin(v), P = Math.PI, r = 2.5 - 1.5 * cv, k = 0.2;
+  const [x, y, z] = v < P ? [r * cu, r * su, -2.5 * sv] : v < 2 * P ? [r * cu, r * su, 3 * v - 3 * P]
+    : v < 3 * P ? [-2 + (2 + cu) * cv, su, (2 + cu) * sv + 3 * P] : [-2 + 2 * cv - cu, su, 12 * P - 3 * v];
+  return [(x + 0.5) * k, y * k, (z - 4.96) * k];
 }
 // Its tiles as the torus's (squares, hexagons, triangles, Cairo pentagons; tiles in the same order), their
 // corners one vertex per point of the bottle, found by their place on the sheet (not in space: it crosses
@@ -12601,8 +12607,9 @@ function edgeAlpha(sh) {
 const glCanvas = $('glLayer');
 let GLS = null;  // { gl, programs, buffers, keys } once set up; false when WebGL 2 is missing
 const GL_PROJECT = `
-uniform vec3 uR, uU, uV; uniform vec4 uPersp; uniform vec2 uCC; uniform vec3 uView; uniform vec2 uScreen; uniform float uDepth;
+uniform vec3 uR, uU, uV; uniform vec4 uPersp; uniform vec2 uCC; uniform vec3 uView; uniform vec2 uScreen; uniform float uDepth; out float vCut;
 vec3 toScreen(vec3 p) {  // pixels on the stage, and the depth towards the viewer
+  vCut = dot(p, uV);  // (its side of the plane through the centre facing the viewer, see GL_CUT)
   float X = dot(p, uR), Y = -dot(p, uU), t = dot(p - uPersp.xyz, uV);
   if (uPersp.w > 0.0) { float k = uPersp.w / (uPersp.w - t); X = uCC.x + (X - uCC.x) * k; Y = uCC.y + (Y - uCC.y) * k; }
   return vec3(uView.y + X * uView.x, uView.z + Y * uView.x, t);
@@ -12633,6 +12640,10 @@ void light(vec3 col, vec3 n, vec3 p) {
 // Glass (see glGlass), a fragment's output: uGlass 0, as it is; 1, its colour and its share weighed (the nearer the viewer,
 // the heavier), summed; 2, its share, what it lets through multiplied (McGuire and Bavoil's weighted blended transparency,
 // 2013: every layer seen, in no order, nothing sorted; at a quarter of the depth span each side, weights 1 to 60)
+// Cut (see cutOn), in a fragment shader: the half nearer the viewer gone, cut by the plane through the centre facing them
+const GL_CUT = `
+in float vCut; uniform bool uCut;
+#define CUT if (uCut && vCut > 0.0) discard;`;
 const GL_GLASS = `
 uniform int uGlass;
 vec4 glass(vec3 c, float a) {
@@ -12642,8 +12653,9 @@ vec4 glass(vec3 c, float a) {
 }`;
 const GL_SHADOWED = `#version 300 es
 precision highp float; precision highp int; precision highp sampler2DShadow; precision highp usampler2D; in vec3 vDark, vLit, vSh; flat in uint vId;
-uniform sampler2DShadow uShadow; uniform usampler2D uShadowId; uniform float uAlpha; out vec4 o;${GL_GLASS}
+uniform sampler2DShadow uShadow; uniform usampler2D uShadowId; uniform float uAlpha; out vec4 o;${GL_GLASS}${GL_CUT}
 void main() {
+  CUT
   float t = 1.0 / ${SHADOW_SIZE}.0, s = 0.0;
   for (int i = -1; i <= 1; i++) for (int j = -1; j <= 1; j++) {
     vec2 at = vSh.xy + vec2(i, j) * t;
@@ -12880,8 +12892,9 @@ void main() {  // its colour its tile's texel (1024 a row, see glSurface); uPlai
   // its number + 1 (a tile's place, a cube's: its instance)
   depth: [`#version 300 es
 in vec3 aPos; in vec3 aAt; in float aId;${GL_PROJECT}${GL_LIGHT}
-void main() { vId = place(uint(aId) + uint(gl_InstanceID)); gl_Position = vec4(lightSpace(aPos + aAt), 1.0); }`, `#version 300 es
-precision mediump float; precision highp int; flat in uint vId; out uint o; void main() { o = vId + 1u; }`],
+void main() { vId = place(uint(aId) + uint(gl_InstanceID)); vCut = dot(aPos + aAt, uV); gl_Position = vec4(lightSpace(aPos + aAt), 1.0); }`, `#version 300 es
+precision mediump float; precision highp int; flat in uint vId; out uint o;${GL_CUT}
+void main() { CUT o = vId + 1u; }`],
   edge: [`#version 300 es
 in vec3 aPos; in vec3 aNrm; in vec3 aNrm2; uniform float uBias; uniform bool uBoth; out float vFacing;${GL_PROJECT}
 void main() {  // an edge whose two tiles are both turned away is not drawn (the back of an open sheet, or of a strip's
@@ -12890,8 +12903,8 @@ void main() {  // an edge whose two tiles are both turned away is not drawn (the
   vFacing = uBoth ? 1.0 : max(dot(aNrm, eye), dot(aNrm2, eye));  // a Klein bottle: seen from both sides
   gl_Position = clipOf(toScreen(aPos), uBias);
 }`, `#version 300 es
-precision mediump float; uniform float uEdge; uniform vec3 uEdgeRgb; in float vFacing; out vec4 o;${GL_GLASS}
-void main() { if (vFacing < 0.0) discard; o = glass(uEdgeRgb, uEdge); }`],
+precision mediump float; uniform float uEdge; uniform vec3 uEdgeRgb; in float vFacing; out vec4 o;${GL_GLASS}${GL_CUT}
+void main() { CUT if (vFacing < 0.0) discard; o = glass(uEdgeRgb, uEdge); }`],
   // the path printed on a surface's tiles (see pathSegments): one flat ribbon per segment, in its
   // tile's plane (aN its normal), as wide as the path on screen, its ends going on half that width
   // where aE says; seen from its tile's face only (see glSurface)
@@ -12905,8 +12918,8 @@ void main() {
   vec3 p = mix(aA, aB, aQuad.x) + side * aQuad.y + d * (aQuad.x * 2.0 - 1.0) * uHalf * on;
   gl_Position = clipOf(toScreen(p), uBias);  // over the grid lines, as the other paths
 }`, `#version 300 es
-precision mediump float; in vec3 vCol; out vec4 o;${GL_GLASS}
-void main() { o = glass(vCol, 1.0); }`],
+precision mediump float; in vec3 vCol; out vec4 o;${GL_GLASS}${GL_CUT}
+void main() { CUT o = glass(vCol, 1.0); }`],
   // Glass's last step (see glGlass): the layers' mean colour, over what shows through them all (premultiplied, as the canvas)
   glassMix: [GL_QUAD, `#version 300 es
 precision highp float; uniform sampler2D uAcc, uRev; out vec4 o;
@@ -13050,6 +13063,7 @@ function glView(gl, p, depth) {
   gl.uniform3f(u('uView'), view.scale, view.ox, view.oy);
   gl.uniform2f(u('uScreen'), cw, ch);
   gl.uniform1f(u('uDepth'), depth);
+  gl.uniform1i(u('uCut'), cutOn() ? 1 : 0);
   // the light, and its view for the shadows: across it, over the ball round the origin that holds what is drawn
   const L = lightDir(), x = cam.r.map((r, d) => r - L[d] * (cam.r[0] * L[0] + cam.r[1] * L[1] + cam.r[2] * L[2])), m = Math.hypot(...x);
   const lx = x.map((v) => v / m), ly = [L[1] * lx[2] - L[2] * lx[1], L[2] * lx[0] - L[0] * lx[2], L[0] * lx[1] - L[1] * lx[0]];
@@ -13170,7 +13184,7 @@ function glSurface(paint, path) {  // paint: its tiles' colours into their textu
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, S.fan);
     gl.drawElements(gl.TRIANGLES, S.fanCount, gl.UNSIGNED_INT, 0);
     gl.disableVertexAttribArray(aPos); gl.disableVertexAttribArray(aId);
-  }, `${S.geoGen}|${lightDir()}|${cam.r}|${depth}|${lamp()}`);  // (again when the shape, the light or the view moves, not the colours)
+  }, `${S.geoGen}|${lightDir()}|${cam.r}|${depth}|${lamp()}|${cutOn()}`);  // (again when the shape, the light, the view or the cut moves, not the colours)
   // the frame, the projection and the view
   gl.viewport(0, 0, glCanvas.width, glCanvas.height);
   gl.clearColor(0, 0, 0, 0);
@@ -13191,14 +13205,15 @@ function glSurface(paint, path) {  // paint: its tiles' colours into their textu
   };
   const off = (p, names) => names.forEach((name) => { const loc = gl.getAttribLocation(p, name); if (loc >= 0) { gl.disableVertexAttribArray(loc); gl.vertexAttribDivisor(loc, 0); } });
   // the tiles, their grid and the path; pass 0 as they are, 1 and 2 one of Glass's (see GL_GLASS, glGlass): every side
-  // of every tile, no depth test, the blending set by glGlass
+  // of every tile, no depth test, the blending set by glGlass; cut (see cutOn), every side too: its inside shows
   const drawAll = (pass) => {
+    const both = pass || cutOn();
     // tiles
     let u = uniforms(prog.tile);
     // drawn on their face only (a strip's faces each show their own; an unrolled torus, its top), the
     // back of an open sheet plain; the corners of a torus are listed against its normals (shapeSign)
     // a Klein bottle, one-sided: both sides of each tile, in its colours
-    const open = !pass && g.torus && !g.mobius && !g.klein && sh.m < 1, front = shapeSign(g) < 0 ? gl.FRONT : gl.BACK, back = front === gl.BACK ? gl.FRONT : gl.BACK;
+    const open = !both && g.torus && !g.mobius && !g.klein && sh.m < 1, front = shapeSign(g) < 0 ? gl.FRONT : gl.BACK, back = front === gl.BACK ? gl.FRONT : gl.BACK;
     gl.uniform4f(u('uPlain'), 0, 0, 0, 0);
     gl.uniform1i(u('uGlass'), pass); gl.uniform1f(u('uAlpha'), GLASS_ALPHA);
     attrib(prog.tile, 'aPos', S.pos, 3);
@@ -13206,7 +13221,7 @@ function glSurface(paint, path) {  // paint: its tiles' colours into their textu
     attrib(prog.tile, 'aId', S.tileIds, 1);
     gl.activeTexture(gl.TEXTURE2); gl.bindTexture(gl.TEXTURE_2D, S.tileCol); gl.uniform1i(u('uTileCol'), 2); gl.activeTexture(gl.TEXTURE0);
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, S.fan);
-    if (!g.klein && !pass) gl.enable(gl.CULL_FACE);
+    if (!g.klein && !both) gl.enable(gl.CULL_FACE);
     gl.cullFace(front);
     gl.drawElements(gl.TRIANGLES, S.fanCount, gl.UNSIGNED_INT, 0);
     if (open) {
@@ -13227,7 +13242,7 @@ function glSurface(paint, path) {  // paint: its tiles' colours into their textu
       gl.uniform1f(u('uEdge'), edgeAlpha(sh));
       gl.uniform3f(u('uEdgeRgb'), ...EDGE_RGB.map((c) => c / 255));
       gl.uniform1f(u('uBias'), edgeBias);
-      gl.uniform1i(u('uBoth'), g.klein || pass ? 1 : 0);
+      gl.uniform1i(u('uBoth'), g.klein || both ? 1 : 0);
       attrib(prog.edge, 'aPos', S.ePos, 3);
       attrib(prog.edge, 'aNrm', S.eN1, 3);
       attrib(prog.edge, 'aNrm2', S.eN2, 3);
@@ -13254,7 +13269,7 @@ function glSurface(paint, path) {  // paint: its tiles' colours into their textu
       attrib(prog.ribbon, 'aN', S.ribbon, 3, gl.FLOAT, false, 44, 24, 1);
       attrib(prog.ribbon, 'aE', S.ribbon, 1, gl.FLOAT, false, 44, 36, 1);
       attrib(prog.ribbon, 'aI', S.ribbon, 1, gl.FLOAT, false, 44, 40, 1);
-      if (!twoSidedNow() && !pass) { gl.enable(gl.CULL_FACE); gl.cullFace(gl.BACK); }  // from its tile's face only (an unrolled torus: both)
+      if (!twoSidedNow() && !both) { gl.enable(gl.CULL_FACE); gl.cullFace(gl.BACK); }  // from its tile's face only (an unrolled torus: both)
       gl.drawArraysInstanced(gl.TRIANGLE_STRIP, 0, 4, S.segsAt[cur]);
       gl.disable(gl.CULL_FACE);
       off(prog.ribbon, ['aQuad', 'aA', 'aB', 'aN', 'aE', 'aI']);
@@ -13271,6 +13286,7 @@ function glSurface(paint, path) {  // paint: its tiles' colours into their textu
 // (EXT_color_buffer_float, in every WebGL 2 of the last years), drawn as it is
 const GLASS_ALPHA = 0.4;  // (a tile's share: a layer behind seen at 60%, two at 36%…)
 const glassOn = () => $('glass').checked && !$('glassRow').hidden;
+const cutOn = () => $('cut').checked && !$('cutRow').hidden;  // (see GL_CUT)
 function glGlass(draw) {
   const S = GLS, gl = S.gl, w = glCanvas.width, h = glCanvas.height;
   if (S.glass?.w !== w || S.glass?.h !== h) {
@@ -14993,6 +15009,7 @@ for (const type of ['pointerdown', 'dblclick', 'wheel']) {
 }
 $('light').addEventListener('change', () => { needsFull = true; });
 $('glass').addEventListener('change', () => { needsFull = true; });
+$('cut').addEventListener('change', () => { needsFull = true; });
 $('perspective').addEventListener('change', () => {
   setPerspective();
   rotateView([0, 0, 0]);  // the projection again

@@ -35,7 +35,8 @@
  * sorted by bin (their places copied in that order, side by side in memory: a million 3 times
  * faster), then each particle feels those in the bins round its own only, and moves. Drawn as
  * quads, each its kind's colour, zoomed by the wheel (the sphere turned by a drag, its far side
- * dim; the torus moved over by a drag).
+ * dim; the torus moved over by a drag), into a picture of its own that keeps `trails` of itself
+ * each frame (faded by that much; 0: none), then shown over the background.
  * particlesCheck('all') in the console: one GPU step against the same step on the CPU (every
  * pair, no bins), each mode and space.
  */
@@ -51,7 +52,7 @@ const mulberry32 = (a) => () => { a |= 0; a = (a + 0x6d2b79f5) | 0; let t = Math
 // contagion=1&tip=0.5&chase=0.15&mutate=3&change=0.3 and, once a rule is changed, m= its K² rules
 const hash = Object.fromEntries(new URLSearchParams(location.hash.slice(1)));
 const num = (v, d) => (v === undefined || v === '' || isNaN(+v) ? d : +v);
-const set = { mutate: num(hash.mutate, 3), change: num(hash.change, 0.3), redBlue: num(hash.redBlue, 0.3), blueRed: num(hash.blueRed, 0.3), mode: MODES.includes(hash.mode) ? hash.mode : 'kinds', swirl: num(hash.swirl, 0), contagion: num(hash.contagion, 1), tip: num(hash.tip, 0.5), chase: num(hash.chase, 0.15), space: SPACES.includes(hash.space) ? hash.space : 'torus', k: KINDS.includes(+hash.k) ? +hash.k : 6, n: COUNTS.includes(+hash.n) ? +hash.n : 65536, seed: +hash.seed || 1, reach: +hash.reach || 0.1, friction: +hash.friction || 0.04, steps: STEPS.includes(+hash.steps) ? +hash.steps : 1, m: hash.m ? hash.m.split(',').map(Number) : null };
+const set = { trails: num(hash.trails, 0), mutate: num(hash.mutate, 3), change: num(hash.change, 0.3), redBlue: num(hash.redBlue, 0.3), blueRed: num(hash.blueRed, 0.3), mode: MODES.includes(hash.mode) ? hash.mode : 'kinds', swirl: num(hash.swirl, 0), contagion: num(hash.contagion, 1), tip: num(hash.tip, 0.5), chase: num(hash.chase, 0.15), space: SPACES.includes(hash.space) ? hash.space : 'torus', k: KINDS.includes(+hash.k) ? +hash.k : 6, n: COUNTS.includes(+hash.n) ? +hash.n : 65536, seed: +hash.seed || 1, reach: +hash.reach || 0.1, friction: +hash.friction || 0.04, steps: STEPS.includes(+hash.steps) ? +hash.steps : 1, m: hash.m ? hash.m.split(',').map(Number) : null };
 const rules = () => set.m ?? (() => { const r = mulberry32(set.seed * 7919); return Array.from({ length: set.k * set.k }, () => Math.round((r() * 2 - 1) * 4) / 4); })();
 let M = rules();
 // Evolve's species: each a K × K matrix (species 0 the rules shown in Kinds) and a virulence (0.5 at first); four at
@@ -69,7 +70,7 @@ const ruleTable = () => {
   (set.mode === 'evolve' ? genomes : [{ rules: M, virulence: 0 }]).forEach((g, s) => { if (!g) return; for (let i = 0; i < set.k; i++) for (let j = 0; j < set.k; j++) t[s * 72 + i * 8 + j] = g.rules[i * set.k + j]; t[s * 72 + 64] = g.virulence; });
   return t;
 };
-const keep = () => { const h = { mutate: set.mutate, change: set.change, redBlue: set.redBlue, blueRed: set.blueRed, mode: set.mode, swirl: set.swirl, contagion: set.contagion, tip: set.tip, chase: set.chase, space: set.space, k: set.k, n: set.n, seed: set.seed, reach: set.reach, friction: set.friction, steps: set.steps }; if (set.m) h.m = set.m.join(','); history.replaceState(null, '', '#' + new URLSearchParams(h)); };
+const keep = () => { const h = { trails: set.trails, mutate: set.mutate, change: set.change, redBlue: set.redBlue, blueRed: set.blueRed, mode: set.mode, swirl: set.swirl, contagion: set.contagion, tip: set.tip, chase: set.chase, space: set.space, k: set.k, n: set.n, seed: set.seed, reach: set.reach, friction: set.friction, steps: set.steps }; if (set.m) h.m = set.m.join(','); history.replaceState(null, '', '#' + new URLSearchParams(h)); };
 // The reach in the world: the slider's, for 4,096, shrunk with the count
 const reach = () => set.reach * Math.sqrt(BASE / set.n);
 
@@ -78,7 +79,8 @@ const reach = () => set.reach * Math.sqrt(BASE / set.n);
 const PARAMS = `
 struct Params { a: vec4u, g: vec4u, f: vec4f, v: vec4f, t0: vec4f, t1: vec4f, t2: vec4f, h: vec4f, e: vec4f, m: vec4u, u: vec4f };
 // a: n, k, sphere, bins; g: the grid's size, the mode (0 kinds, 1 battle, 2 wheel, 3 evolve); f: reach, damp, dt, a bin's side;
-// v: scale x, y, a dot's half size x, y; h: contagion, tip, chase, swirl; e: red to blue, blue to red (Battle);
+// v: scale x, y, a dot's half size x, y; h: contagion, tip, chase, swirl; e: red to blue, blue to red (Battle), a dot's
+// gain (√(1 − trails): a still one, kept frame after frame, not burnt);
 // m: a mutation's parent and mutant species, 1 while it happens; u: its centre and radius;
 // t0..t2: the sphere's turn (columns), their w the zoom and, on the torus, the place shown in the middle
 const RHO = ${RHO}; const BETA = ${BETA};`;
@@ -215,19 +217,27 @@ struct Out { @builtin(position) pos: vec4f, @location(0) uv: vec2f, @location(1)
     centre = q.xy * P.v.xy * 0.92 * P.t0.w; z = 0.5 - q.z * 0.5;
     if (q.z > 0.0) { size *= 0.6 + 0.4 * q.z; } else { size *= 0.6; o.c *= 0.22; }
   } else { centre = (fract(p.xy - vec2f(P.t1.w, P.t2.w) + 0.5) - 0.5) * 2.0 * P.t0.w * P.v.xy * vec2f(1.0, -1.0); }
-  o.pos = vec4f(centre + o.uv * P.v.zw * size, z, 1.0);
+  o.pos = vec4f(centre + o.uv * P.v.zw * size, z, 1.0); o.c *= P.e.z;
   return o;
 }
 @fragment fn fs(i: Out) -> @location(0) vec4f {
   let d = dot(i.uv, i.uv); if (d > 1.0) { discard; }
   return vec4f(i.c * (1.0 - d), 1.0);
 }`;
+// The trails' picture: faded (a full-screen triangle drawn with nothing, the picture kept by the blend constant), and
+// shown (its pixels over the background, their brightest softened: 1 − e^(−1.6 x))
+const PICTURE = `
+@group(0) @binding(0) var picture: texture_2d<f32>;
+@vertex fn full(@builtin(vertex_index) v: u32) -> @builtin(position) vec4f { return vec4f(f32(v & 1u) * 4.0 - 1.0, f32(v >> 1u) * 4.0 - 1.0, 0.0, 1.0); }
+@fragment fn fade() -> @location(0) vec4f { return vec4f(0.0); }
+@fragment fn show(@builtin(position) p: vec4f) -> @location(0) vec4f { return vec4f(1.0 - exp(-textureLoad(picture, vec2i(p.xy), 0).rgb * 1.6) + vec3f(0.03, 0.035, 0.05), 1.0); }`;
+const TRAIL = 'rgba16float';
 
 /* ---- 1.3 GPU --------------------------------------------------------------------------------- */
 
 const view = document.getElementById('view');
 const fail = (text) => { const f = document.getElementById('fail'); f.style.display = 'flex'; f.textContent = text; throw new Error(text); };
-let device, context, format, pipes, drawPipe, params, ruleBuf, colourBuf, states = [], bins = {}, binCount = 0, groups = [], drawGroups = [], flip = 0;
+let device, context, format, pipes, drawPipe, fadePipe, showPipe, trail = null, showGroup, params, ruleBuf, colourBuf, states = [], bins = {}, binCount = 0, groups = [], drawGroups = [], flip = 0;
 async function gpu() {
   const adapter = navigator.gpu && (await navigator.gpu.requestAdapter());
   if (!adapter) fail('This page needs WebGPU (Chrome, Edge, or a recent Safari).');
@@ -240,7 +250,10 @@ async function gpu() {
   const pl = device.createPipelineLayout({ bindGroupLayouts: [layout] });
   pipes = Object.fromEntries(['clear', 'tally', 'scan', 'place', 'feel'].map((e) => [e, device.createComputePipeline({ layout: pl, compute: { module: cm, entryPoint: e } })]));
   pipes.layout = layout;
-  drawPipe = device.createRenderPipeline({ layout: 'auto', vertex: { module: dm, entryPoint: 'vs' }, fragment: { module: dm, entryPoint: 'fs', targets: [{ format, blend: { color: { srcFactor: 'one', dstFactor: 'one' }, alpha: { srcFactor: 'one', dstFactor: 'one' } } }] }, primitive: { topology: 'triangle-list' } });
+  drawPipe = device.createRenderPipeline({ layout: 'auto', vertex: { module: dm, entryPoint: 'vs' }, fragment: { module: dm, entryPoint: 'fs', targets: [{ format: TRAIL, blend: { color: { srcFactor: 'one', dstFactor: 'one' }, alpha: { srcFactor: 'one', dstFactor: 'one' } } }] }, primitive: { topology: 'triangle-list' } });
+  const pm = device.createShaderModule({ code: PICTURE }), keepBlend = { srcFactor: 'zero', dstFactor: 'constant' };
+  fadePipe = device.createRenderPipeline({ layout: 'auto', vertex: { module: pm, entryPoint: 'full' }, fragment: { module: pm, entryPoint: 'fade', targets: [{ format: TRAIL, blend: { color: keepBlend, alpha: keepBlend } }] } });
+  showPipe = device.createRenderPipeline({ layout: 'auto', vertex: { module: pm, entryPoint: 'full' }, fragment: { module: pm, entryPoint: 'show', targets: [{ format }] } });
   params = device.createBuffer({ size: 176, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST });
   ruleBuf = device.createBuffer({ size: SPECIES * 288, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST });
   colourBuf = device.createBuffer({ size: 128, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST });
@@ -285,7 +298,7 @@ function write() {
   const dot = Math.max(1.5, (m * (sphere ? 0.92 * Math.sqrt(Math.PI) : 1)) / Math.sqrt(set.n) / 2.2) / 2;
   const buf = new ArrayBuffer(176), u = new Uint32Array(buf), f = new Float32Array(buf);
   u.set([set.n, set.k, sphere ? 1 : 0, binCount, ...g, MODES.indexOf(set.mode)]);
-  f.set([reach(), Math.pow(0.5, DT / set.friction), DT, side, m / w, m / h, (dot * 2) / w, (dot * 2) / h, turn[0], turn[1], turn[2], look.zoom, turn[3], turn[4], turn[5], look.x, turn[6], turn[7], turn[8], look.y, set.contagion, set.tip, set.chase, set.swirl, set.redBlue, set.blueRed, 0, 0], 8);
+  f.set([reach(), Math.pow(0.5, DT / set.friction), DT, side, m / w, m / h, (dot * 2) / w, (dot * 2) / h, turn[0], turn[1], turn[2], look.zoom, turn[3], turn[4], turn[5], look.x, turn[6], turn[7], turn[8], look.y, set.contagion, set.tip, set.chase, set.swirl, set.redBlue, set.blueRed, Math.sqrt(1 - set.trails), 0], 8);
   u.set([mutation?.parent ?? 0, mutation?.mutant ?? 0, mutation ? 1 : 0, 0], 36);
   f.set(mutation ? [...mutation.at, mutation.radius] : [0, 0, 0, 0], 40);
   device.queue.writeBuffer(params, 0, buf);
@@ -307,11 +320,21 @@ function steps(count) {
   }
   device.queue.submit([enc.finish()]);
 }
+// The particles drawn into the trails' picture (kept `trails` of itself, or cleared), then the picture shown
 function draw() {
-  const enc = device.createCommandEncoder();
-  const pass = enc.beginRenderPass({ colorAttachments: [{ view: context.getCurrentTexture().createView(), loadOp: 'clear', storeOp: 'store', clearValue: { r: 0.03, g: 0.035, b: 0.05, a: 1 } }] });
+  if (!trail || trail.width !== view.width || trail.height !== view.height) {
+    trail?.destroy();
+    trail = device.createTexture({ size: [view.width, view.height], format: TRAIL, usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING });
+    showGroup = device.createBindGroup({ layout: showPipe.getBindGroupLayout(0), entries: [{ binding: 0, resource: trail.createView() }] });
+  }
+  const enc = device.createCommandEncoder(), keep = set.trails > 0;
+  const pass = enc.beginRenderPass({ colorAttachments: [{ view: trail.createView(), loadOp: keep ? 'load' : 'clear', storeOp: 'store', clearValue: { r: 0, g: 0, b: 0, a: 0 } }] });
+  if (keep) { pass.setPipeline(fadePipe); pass.setBlendConstant([set.trails, set.trails, set.trails, set.trails]); pass.draw(3); }
   pass.setPipeline(drawPipe); pass.setBindGroup(0, drawGroups[flip]); pass.draw(6, set.n);
   pass.end();
+  const out = enc.beginRenderPass({ colorAttachments: [{ view: context.getCurrentTexture().createView(), loadOp: 'clear', storeOp: 'store', clearValue: { r: 0, g: 0, b: 0, a: 1 } }] });
+  out.setPipeline(showPipe); out.setBindGroup(0, showGroup); out.draw(3);
+  out.end();
   device.queue.submit([enc.finish()]);
 }
 // The sphere's turn: a rotation matrix (columns), changed by drags and the spin; the zoom (the wheel) and, on the torus,
@@ -370,7 +393,7 @@ function panel() {
   // Spin: a switch (its name never changes, .on its state), the sphere turning slowly by itself
   spinButton.classList.toggle('on', spin);
   spinButton.onclick = () => { spin = !spin; spinButton.classList.toggle('on', spin); };
-  for (const id of ['reach', 'friction', 'swirl', 'contagion', 'tip', 'chase', 'redBlue', 'blueRed', 'mutate', 'change']) {
+  for (const id of ['reach', 'friction', 'swirl', 'contagion', 'tip', 'chase', 'redBlue', 'blueRed', 'mutate', 'change', 'trails']) {
     const input = document.getElementById(id), out = input.nextElementSibling;
     input.value = set[id]; out.textContent = set[id];
     input.oninput = () => { set[id] = +input.value; out.textContent = input.value; keep(); };

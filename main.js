@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.3.105';
+const VERSION = '0.3.106';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -10890,7 +10890,7 @@ function huntFits() {
   // stuck: the globe in Nonet)
   hunt.fits = Object.fromEntries(Object.keys(HUNT_ZONES).map((zone) => {
     const r = zoneRadius(zone);
-    if (walk.geo?.globe && zone !== 'full') return [zone, false];  // (a globe: its soup only, no frame yet to lay a pattern on, see patternPlace)
+    if (walk.geo?.globe && zone !== 'full' && zone !== 'numbers') return [zone, false];  // (a globe: the zones on its whole grid only, a soup or a number's digits; no frame yet to lay a patch or pattern on, see patternPlace)
     if (famousZone(zone)) return [zone, (hunt.laid[zone] ??= patternsOn() && laidChoices(zone === 'centred', true).every((c) => c.length > 0))];  // (whether some, not them all)
     if (zone === 'realm' && !realmParts(K)) return [zone, false];  // (one colour, corners: greyed)
     if (zone === 'mirror') return [zone, !walk.plane && !walk.geo.torus && K > 1 && (!!colouring(MODES[$('mode').value].sphere, K, true) || !!hullColours(MODES[$('mode').value].sphere, K)?.pairs)];  // (a solid, two parts a colour)

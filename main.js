@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.3.74';
+const VERSION = '0.3.75';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -5791,7 +5791,9 @@ const howCounted = (kind, f) => {
     return `(Edge=${fmt(d[0])}) rows × {y:${whole ? '' : '≈ '}${fmt(Math.round(L * 10) / 10)} ${m > 1 ? 'bricks' : d[3]}} a row${whole ? '' : ' (its edges cut them)'}${det > 1 ? ` (${det} a rectangle of the sheet: its cell slanted, the sheet straight)` : ''}${m > 1 ? ` × {k:${m} ${d[3]} each}${brickTurn(cellKind(g))}` : ''} = ${fmt(d[2])} ${d[3]}`;
   }
   // the plane's: its rows × its lattice cells (its motif, violet) × their cells (green), less its wall's
-  if (d) return `(Edge=${fmt(d[0])}) rows × {y:${fmt(d[1])} ${per > 1 ? 'lattice cells' : d[3]}} a row${per > 1 ? ` × {k:${per} ${d[3]} each}${brickTurn(kind)}` : ''}${all > d[2] ? ` − ${fmt(all - d[2])} in the wall` : ''} = ${fmt(d[2])} ${d[3]}`;
+  // (a slanted grid's rectangle, det lattice cells of its tiling: each one its motif, see latticeCell)
+  const m = PLANE_CELLS[kind] ? PER_RHOMBUS[baseOf(kind)] ?? 1 : 1, det = per / m;
+  if (d) return `(Edge=${fmt(d[0])}) rows × {y:${fmt(d[1] * det)} ${m > 1 ? 'lattice cells' : d[3]}} a row${det > 1 ? ` (${det} a rectangle of the grid: its cell slanted, the grid straight)` : ''}${m > 1 ? ` × {k:${m} ${d[3]} each}${brickTurn(kind)}` : ''}${all > d[2] ? ` − ${fmt(all - d[2])} in the wall` : ''} = ${fmt(d[2])} ${d[3]}`;
   // a solid of flat faces: each face's cells, f to an edge (its faces as its least size's mesh has them, the same at every size)
   const base = kind.endsWith('Tetrakis') && SPHERES[kind.slice(0, -8)] ? kind.slice(0, -8) : kind, B = SPHERES[base];  // (a solid of tetrakis triangles: its squares', 4 each)
   const g = B && !TORI.includes(base) && (facesMemo[base] ??= B.mesh(B.sizes[0])), cut = base !== kind ? 4 : g?.kite ? 3 : 1;
@@ -8804,6 +8806,24 @@ function drawBlocks(ctx) {
 // cell, at the top left (the top row's first cells, as many as a lattice cell has). On a surface (see motifTiles), on its
 // tiles as drawn flat (see drawSphere), the sides facing the viewer
 let motifShown = false;
+// a plane cell's cell of its tiling (x = k + per·n, row y): a slanted grid's rectangle's (see RECTS) as its tiling numbers it,
+// by its rectangle's cells' (nat) and its rectangle's place
+function baseCell(kind, x, y) {
+  const R = RECTS[kind];
+  if (!R) return [x, y];
+  const m = R.polys.length, per = PER_RHOMBUS[baseOf(kind)] ?? 1, [[sp, sq], [sr, st]] = R.step, s = x % m, I = Math.floor(x / m);
+  return [R.nat[s][0] + per * (I * sp + y * sr), R.nat[s][1] + I * sq + y * st];
+}
+// the plane's motif: its tiling's lattice cell, the first one whole in the grid (its first rows), its cells as the grid has
+// them (a slanted grid's rectangle holds several, its bricks mixing their polygons: by baseCell)
+const latticeCell = () => {
+  const { kind, n, row, xy } = walk.plane, per = PER_RHOMBUS[baseOf(kind)] ?? 1, cells = new Map();
+  for (let t = 0; t < Math.min(n, 4 * row); t++) {
+    const [x, y] = baseCell(kind, ...xy(t)), k = `${Math.floor(x / per)},${y}`;
+    cells.set(k, [...(cells.get(k) ?? []), t]);
+  }
+  return [...cells.values()].find((ts) => ts.length === per) ?? [0];
+};
 const FADING = 0.3;  // (the cells this pale: under the motif's outlines, on the plane and on a surface; under a walk's line, or Translucent)
 function drawMotif(ctx) {
   if (!motifShown) return;
@@ -8818,17 +8838,17 @@ function drawMotif(ctx) {
     if (tiles.length) drawMotifFace(ctx, tiles[0]);
     return;
   }
-  const { kind, W } = walk.plane, motif = APERIODIC[kind]?.(W).core ?? planeShape(kind, W)?.core ?? Array.from({ length: PER_RHOMBUS[kind] ?? 1 }, (_, k) => planeCorners(kind, k, 0)), sides = new Map();
+  const { kind, W, xy } = walk.plane, cell = !APERIODIC[kind] && !planeShape(kind, W) && latticeCell(), motif = APERIODIC[kind]?.(W).core ?? planeShape(kind, W)?.core ?? cell.map((t) => planeCorners(kind, ...xy(t))), sides = new Map();
   for (const P of motif) P.forEach((p, i) => { const q = P[(i + 1) % P.length], key = [pointKey(...p), pointKey(...q)].sort().join('|'); sides.set(key, sides.has(key) ? null : [p, q]); });
   turnLayer(ctx);
   ctx.strokeStyle = motifColour();
   ctx.beginPath();
   for (const side of sides.values()) if (side) { ctx.moveTo(ox + side[0][0] * s, oy + side[0][1] * s); ctx.lineTo(ox + side[1][0] * s, oy + side[1][1] * s); }
   ctx.stroke();
-  if (!APERIODIC[kind] && !planeShape(kind, W) && (PER_RHOMBUS[kind] ?? 1) > 1) {  // (a lattice cell of several: its first in green, as its tooltip's cells)
+  if (cell && cell.length > 1) {  // (a lattice cell of several: its first in green, as its tooltip's cells)
     ctx.strokeStyle = cssColour('--cell');
     ctx.beginPath();
-    planeCorners(kind, 0, 0).forEach(([u, v], j) => ctx[j ? 'lineTo' : 'moveTo'](ox + u * s, oy + v * s));
+    planeCorners(kind, ...xy(cell[0])).forEach(([u, v], j) => ctx[j ? 'lineTo' : 'moveTo'](ox + u * s, oy + v * s));
     ctx.closePath();
     ctx.stroke();
   }
@@ -15079,8 +15099,7 @@ $('lifeRule').addEventListener('change', () => {
 // RECTS) as its slanted grid numbers them; from a whole lattice cell (its cells' kinds kept, as the Famous are)
 function lifeRle() {
   const L = walk.life, { kind, xy } = walk.plane, K = L.colours, base = baseOf(kind), per = PER_RHOMBUS[base] ?? 1, cells = [];
-  const R = RECTS[kind], m = R?.polys.length, [[sp, sq], [sr, st]] = R?.step ?? [[0, 0], [0, 0]];
-  const at = (t) => { const [x, y] = xy(t); if (!R) return [x, y]; const s = x % m, I = Math.floor(x / m); return [R.nat[s][0] + per * (I * sp + y * sr), R.nat[s][1] + I * sq + y * st]; };  // (its grid's cell)
+  const at = (t) => baseCell(kind, ...xy(t));  // (its grid's cell)
   L.alive.forEach((v, t) => { if (v) cells.push([...at(t), v <= K ? 1 : 1 + Math.floor((v - 1) / K)]); });
   if (!cells.length) return null;
   const x0 = per * Math.floor(cells.reduce((e, c) => Math.min(e, c[0]), Infinity) / per), y0 = cells.reduce((e, c) => Math.min(e, c[1]), Infinity) - (base === 'cairo' && (x0 / 2 + cells.reduce((e, c) => Math.min(e, c[1]), Infinity)) & 1 ? 1 : 0);

@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.3.97';
+const VERSION = '0.3.98';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -4715,7 +4715,7 @@ function flatPolyhedron(name, f, kites = false) {
 
 /* ---- 7.3b Globe ------------------------------------------------------------------------------ */
 /* A globe of f bands, its parallels π / f apart from pole to pole; each band's cells between two meridians, 2f round the equator
- * (squares there, a unit a side: its radius f / π), halved towards a pole as they narrow (see globeColumns: as square as can be, as a
+ * (squares there, a unit a side: its radius f / π, see SPHERES.globe), halved towards a pole as they narrow (see globeColumns: as square as can be, as a
  * reduced grid of the weather maps' is); its two polar bands one cell each, round its pole (not triangles meeting there, each
  * touching all the others). A band's cell under a band of twice as many: 5 corners, the line between them its neighbours' (a
  * square's 4); a cap's, its band's columns, 12 to 23 (every tile listed with as many corners, its last again: see finishMesh) */
@@ -4735,11 +4735,11 @@ function globeColumns(f) {
 function globeMesh(f) {
   const key = `globe${f}`;
   if (meshCache[key]) return meshCache[key];
-  const N = globeColumns(f), R = f / Math.PI, { verts, add } = vertexStore(), tiles = [], along = [];
+  const N = globeColumns(f), { verts, add } = vertexStore(), tiles = [], along = [];  // (on the unit sphere, as every solid's: the app's radius scales it, see SPHERES.globe; before v0.3.98 at f / π, scaled again, the view and its grid lost)
   const points = (b) => Math.max(N[b - 1], N[b]);  // (parallel b, between bands b − 1 and b: the finer one's corners)
   const at = (b, k) => {
     const lat = -Math.PI / 2 + (b * Math.PI) / f, lon = (2 * Math.PI * (k % points(b))) / points(b);
-    return add(R * Math.cos(lat) * Math.cos(lon), R * Math.cos(lat) * Math.sin(lon), R * Math.sin(lat));
+    return add(Math.cos(lat) * Math.cos(lon), Math.cos(lat) * Math.sin(lon), Math.sin(lat));
   };
   const run = (b, from, to) => Array.from({ length: Math.abs(to - from) + 1 }, (_, s) => at(b, from + Math.sign(to - from) * s));  // (parallel b's corners, from to to)
   tiles.push(run(1, points(1) - 1, 0)); along.push(0.5);  // (the south cap, seen from below)
@@ -10756,7 +10756,7 @@ function partPlaces(r, K, mirror, mixed) {
   if (g.globe) {
     const quarter = (t) => (t > 0 && t < g.n - 1 ? Math.floor(g.along[t] * K) : -1);  // (its middle's way round, as laid: see globeMesh)
     if (!r) { for (let t = 0; t < n; t++) if (quarter(t) >= 0) parts[quarter(t)].push(t); return parts; }
-    return parts.map((_, i) => lifePatch(r, middleCells(i, K)));
+    return parts;  // (no patch: no frame to lay one on, its zones greyed, see huntFits)
   }
   const hull = hullColours(MODES[$('mode').value].sphere, K);
   if (hull) {  // a hull solid (see hullColourings): Wild, a colour's faces its own (two opposite faces a colour: its first), the others' cells each to the nearest colour's face's middle; Mirror, its two faces; a zone, round each colour's first face's middle
@@ -10859,9 +10859,11 @@ function huntFits() {
   const K = lifeParts(), laid = `${gridKey()}|${K}|${walk.life.ruleText}`, key = `${laid}|${lifeParts() === 1 ? hunt.goal : colourMixed('full')}`;  // (Mixed as it counts in the soups' zones: their places)
   if (hunt.laidKey !== laid) { hunt.laidKey = laid; hunt.laid = {}; }  // (Famous, Anywhere: whether some fit, once a grid, its colours and rule)
   if (hunt.fitKey === key) return hunt.fits;
-  hunt.fitKey = key;
-  return (hunt.fits = Object.fromEntries(Object.keys(HUNT_ZONES).map((zone) => {
+  // (its key kept once its fits are made: before v0.3.98 kept first, a throw on the way left them none for every call after, the page
+  // stuck: the globe in Nonet)
+  hunt.fits = Object.fromEntries(Object.keys(HUNT_ZONES).map((zone) => {
     const r = zoneRadius(zone);
+    if (walk.geo?.globe && zone !== 'full') return [zone, false];  // (a globe: its soup only, no frame yet to lay a pattern on, see patternPlace)
     if (famousZone(zone)) return [zone, (hunt.laid[zone] ??= patternsOn() && laidChoices(zone === 'centred', true).every((c) => c.length > 0))];  // (whether some, not them all)
     if (zone === 'realm' && !realmParts(K)) return [zone, false];  // (one colour, corners: greyed)
     if (zone === 'mirror') return [zone, !walk.plane && !walk.geo.torus && K > 1 && (!!colouring(MODES[$('mode').value].sphere, K, true) || !!hullColours(MODES[$('mode').value].sphere, K)?.pairs)];  // (a solid, two parts a colour)
@@ -10870,13 +10872,15 @@ function huntFits() {
     if (!r && zone !== 'realm') return [zone, !peakHunt()];  // (the whole grid: no peak to look for, a soup full already)
     const parts = zoneParts(zone, K);  // (each its own cells, none without: a face for each colour)
     return [zone, parts.every((p) => p.length) && new Set(parts.flat()).size === parts.reduce((sum, p) => sum + p.length, 0)];
-  })));
+  }));
+  hunt.fitKey = key;
+  return hunt.fits;
 }
 // when a zone is greyed (as huntFits finds it), its tooltip's words
 const zoneGreyed = (zone) => (isIcon(zone) ? 'where it cannot fit' : zone === 'realm' ? 'in Classic, where a colour has no whole face, and on a grid too small to keep the colours apart' : zone === 'mirror' ? 'on a grid or a torus, in Classic, and where no colouring has its parts opposite'
   : famousZone(zone) ? 'where the rule has no famous patterns, or they cannot fit' : zone === 'full' ? 'hunting the highest peak (a soup full already), and on a solid of squares and triangles where its colours\' parts differ'
   : zone === 'numbers' ? 'hunting the highest peak or all reached (the grid full already: its digits on each cell)'
-  : 'where its patch cannot fit each colour\'s part');
+  : 'where its patch cannot fit each colour\'s part, and on a globe (its soup only, for now)');
 // blocks: the search for its return, whatever the start (see searchBack)
 function renderBack() {
   const L = walk.life;

@@ -5104,11 +5104,12 @@ function kleinTilingSheet(kindK, size) {
 // its frame, without its tiles: its strip, its rows and its length (see kleinTilingSheet); its tiles' count (see stripCount)
 const kleinCount = (kindK, size) => { const { kind, strip, nv, n } = kleinLength(kindK, size); return stripCount(kind, strip, `${nv}x${n}`, true); };
 function kleinLength(kindK, size) {
-  const { strip } = FOLDED[kindK], { kind, basis: [a, b] } = MOBIUS_STRIPS[strip], { step, ok } = MOBIUS_ALONG[strip];
+  const { strip } = FOLDED[kindK], { kind, basis: [a, b] } = MOBIUS_STRIPS[strip], { step, ok, copy } = MOBIUS_ALONG[strip];
   const [nv, own] = mobiusSize(size), turn = -Math.atan2(a[1], a[0]), by = turnPoint(b, turn)[1], W = nv * by;
-  // its length as a ring's (see ringLength): near its usual (W / TORUS_TUBE), its colours' slices square, each whole bricks along
-  // (|a|: whole copies too, a glide's two; see brickPlaces), as the twist allows
-  const K = ringColours(), x = W / TORUS_TUBE / step, n = own ?? ringLength(x, x * TORUS_TUBE * K, K * Math.round(Math.hypot(...a) / step), (c) => ok(c, nv));
+  // its length as a ring's (see ringLength): near its usual (W / TORUS_TUBE), its colours' slices square, each whole copies along
+  // (a glide's half a brick, turned over: as colourFair counts them, each tile in its own middle's, see partPlaces), as the twist
+  // allows (whole bricks, Pent 15's twist asking an odd length, had none for Trio)
+  const K = ringColours(), x = W / TORUS_TUBE / step, n = own ?? ringLength(x, x * TORUS_TUBE * K, K * Math.round(copy / step), (c) => ok(c, nv));
   return { kind, strip, turn, nv, n, W, step, by, a };
 }
 function kleinTilingMesh(kindK, size) {
@@ -10635,7 +10636,9 @@ function partPlaces(r, K, mirror, mixed) {
   }
   if (g.torus) {  // a torus, a Klein bottle: its blocks on the sheet (see torusBlocks), each tile in the one its brick's middle is in
     const [a, b] = torusBlocks(K), at = (x, m, k) => Math.max(0, Math.min(k - 1, Math.floor((x * k) / m + 1e-6)));
-    const block = (t) => { const [u, v] = brickPlaces(g).subarray(2 * t, 2 * t + 2); return at(u, g.nu, a) * b + at(v, g.nv, b); };  // (a tile where its brick is)
+    // (a tile where its brick is; a Klein bottle's by its own middle: its slices whole copies along, a glide's half a brick, the
+    // middles a copy apart alike, as many in each, see kleinLength)
+    const block = (t) => { const [u, v] = g.klein ? sheetMiddle(g, t) : brickPlaces(g).subarray(2 * t, 2 * t + 2); return at(u, g.nu, a) * b + at(v, g.nv, b); };
     if (!r) { for (let t = 0; t < n; t++) parts[block(t)].push(t); return parts; }
     return parts.map((_, i) => lifePatch(r, middleCells(i, K)));  // at their middles (a tile there, as on the plane)
   }

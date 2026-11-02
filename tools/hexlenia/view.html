@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hex Lenia</title>
+<style>
+  :root { --bg: #111; --fg: #ddd; }
+  body { margin: 0; background: var(--bg); color: var(--fg); font: 13px system-ui, sans-serif; }
+  #bar { padding: 8px 12px; display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+  canvas { display: block; margin: 0 auto; }
+  a { color: #8cf; }
+</style>
+</head>
+<body>
+<div id="bar"><span id="info"></span><button id="play">Pause</button><button id="restart">Restart</button><label>Speed <input id="speed" type="range" min="1" max="20" value="4"></label><span id="stats"></span></div>
+<canvas id="c"></canvas>
+<script type="module">
+// Shows one setting from the hash: #R=4&beta=1,0.25&mu=0.2&sigma=0.02&dt=0.1&r0=6&seed=1&N=48 (a disc started, as
+// search.js does), or a creature a result file kept: #from=out/shrink.json&i=3 (its setting and cells)
+import { world, seedDisc, measure } from './core.js';
+let h = Object.fromEntries(new URLSearchParams(location.hash.slice(1)));
+if (h.from) { const o = (await (await fetch(h.from)).json())[+h.i || 0]; h = { ...o, beta: o.beta.join(','), N: Math.sqrt(o.cells.length), kept: o.cells }; }
+const p = { R: +h.R || 4, beta: (h.beta || '1').split(',').map(Number), mu: +h.mu || 0.2, sigma: +h.sigma || 0.02, dt: +h.dt || 0.1, r0: +h.r0 || 6, seed: +h.seed || 1 };
+const N = +h.N || 48, W = world(N, p), cv = document.getElementById('c'), g = cv.getContext('2d');
+document.getElementById('info').textContent = `${h.name ? h.name + ' · ' : ''}R ${p.R} · β ${p.beta} · μ ${p.mu} · σ ${p.sigma} · dt ${p.dt} · ${N}×${N}`;
+const start = () => {
+  if (h.kept) W.A = Float32Array.from(h.kept, (v) => v / 255);
+  else seedDisc(W, p.r0, p.seed, 1, h.tilt === 'true' || h.tilt === true);
+  t = 0;
+};
+let t = 0, on = true;
+start();
+// A pointy hexagon a cell, its size fitting the window; the torus' rhombus drawn sheared as it is
+const size = Math.min((innerWidth - 24) / (N * 1.5 + 1), (innerHeight - 60) / (N * 0.866 * 1 + 1)) / Math.sqrt(3) * 1.0;
+const sx = Math.sqrt(3) * size, sy = 1.5 * size;
+cv.width = sx * (N * 1.5 + 1); cv.height = sy * N + size * 2;
+const hex = new Path2D();
+for (let i = 0; i < 6; i++) { const a = Math.PI / 6 + (i * Math.PI) / 3; hex[i ? 'lineTo' : 'moveTo'](Math.cos(a) * size, Math.sin(a) * size); }
+hex.closePath();
+const colour = (v) => `hsl(${240 - v * 190}, 90%, ${6 + v * 60}%)`;
+function draw() {
+  g.fillStyle = '#111'; g.fillRect(0, 0, cv.width, cv.height);
+  const A = W.A;
+  for (let r = 0; r < N; r++) for (let q = 0; q < N; q++) {
+    const v = A[r * N + q];
+    g.setTransform(1, 0, 0, 1, sx * (q + r / 2) + sx / 2, sy * r + size);
+    g.fillStyle = colour(v); g.fill(hex);
+  }
+  g.setTransform(1, 0, 0, 1, 0, 0);
+  const s = measure(W);
+  document.getElementById('stats').textContent = `step ${t} · mass ${s.m.toFixed(1)} · live ${s.live}`;
+}
+function frame() {
+  if (on) for (let i = 0; i < +document.getElementById('speed').value; i++) { W.step(); t++; }
+  draw();
+  requestAnimationFrame(frame);
+}
+document.getElementById('play').onclick = (e) => { on = !on; e.target.textContent = on ? 'Pause' : 'Play'; };
+document.getElementById('restart').onclick = start;
+window.hexLenia = { W, p, get t() { return t; } };
+frame();
+</script>
+</body>
+</html>

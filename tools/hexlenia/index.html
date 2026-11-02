@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hex Lenia creatures</title>
+<style>
+  :root { --bg: #111; --fg: #ddd; --dim: #888; --card: #1b1b1b; }
+  body { margin: 0; padding: 16px; background: var(--bg); color: var(--fg); font: 13px system-ui, sans-serif; }
+  h1 { font-size: 18px; margin: 0 0 4px; }
+  p { color: var(--dim); margin: 0 0 16px; max-width: 70ch; }
+  #grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 12px; }
+  a.card { display: block; background: var(--card); border-radius: 8px; padding: 8px; color: var(--fg); text-decoration: none; }
+  a.card:hover { outline: 1px solid #555; }
+  canvas { display: block; width: 100%; aspect-ratio: 1; }
+  .name { font-weight: 600; margin-top: 6px; }
+  .info { color: var(--dim); font-size: 12px; }
+</style>
+</head>
+<body>
+<h1>Hex Lenia creatures</h1>
+<p>Lenia on hexagons, small radii: the movers found (out/creatures.json, made by gather.js), the smallest first. Each one plays here, a click opens it big.</p>
+<div id="grid"></div>
+<script type="module">
+// Every creature from out/creatures.json, a card each: its own world playing, followed (the view centred on its mass)
+import { world, measure } from './core.js';
+const list = await (await fetch('out/creatures.json?' + Date.now())).json();
+const cards = list.map((o, i) => {
+  const N = Math.sqrt(o.cells.length), W = world(N, o);
+  W.A = Float32Array.from(o.cells, (v) => v / 255);
+  const a = document.createElement('a');
+  a.className = 'card'; a.href = `view.html#from=out/creatures.json&i=${i}`;
+  a.innerHTML = `<canvas width="200" height="200"></canvas><div class="name">${o.name || 'Hex creature'} · R ${o.R}</div><div class="info">${o.live} cells · speed ${o.speed} · β ${o.beta} μ ${o.mu} σ ${o.sigma} dt ${o.dt}</div>`;
+  document.getElementById('grid').append(a);
+  return { o, W, g: a.querySelector('canvas').getContext('2d') };
+});
+// A hexagon a cell within 7 radii of the creature's centre
+const draw = ({ o, W, g }) => {
+  const N = W.N, s = measure(W), span = Math.max(8, o.R * 3.5), size = 100 / span / Math.sqrt(3), d = (a, b) => ((a - b + 1.5 * N) % N) - N / 2;
+  g.fillStyle = '#05051a'; g.fillRect(0, 0, 200, 200);
+  for (let r = 0; r < N; r++) for (let q = 0; q < N; q++) {
+    const v = W.A[r * N + q];
+    if (v < 0.01) continue;
+    const dq = d(q, s.q), dr = d(r, s.r), x = 100 + (dq + dr / 2) * size * Math.sqrt(3), y = 100 + dr * size * 1.5;
+    if (x < -size || x > 200 + size || y < -size || y > 200 + size) continue;
+    g.fillStyle = `hsl(${240 - v * 190}, 90%, ${6 + v * 60}%)`;
+    g.beginPath();
+    for (let k = 0; k < 6; k++) { const t = Math.PI / 6 + (k * Math.PI) / 3; g[k ? 'lineTo' : 'moveTo'](x + Math.cos(t) * size, y + Math.sin(t) * size); }
+    g.fill();
+  }
+};
+const frame = () => { for (const c of cards) { c.W.step(); c.W.step(); draw(c); } requestAnimationFrame(frame); };
+frame();
+</script>
+</body>
+</html>

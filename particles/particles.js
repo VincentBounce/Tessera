@@ -15,12 +15,14 @@
  * takes to go blue; a share right at it changes nothing): fronts, conquests; even sides win by luck. (Two shades alone, without kinds, only make still drops.)
  * Wheel: no kinds, a rainbow (h round a circle): each shade drawn to the shade `chase` ahead and
  * pushed from the one opposite (a = cos 2π(Δh − chase)): endless chases, spirals.
- * Evolve: up to 16 species, each its own rule matrix, a particle's shade its species (s/15);
- * starting with four, one a quarter of the world. A particle feels by its species' matrix, and
- * now and then (contagion × dt, a chance) takes the species most of its neighbours hold (itself
- * counted once). Every `mutate` seconds a mutant: a particle's species copied with each rule moved
- * a little (`change`), into a species gone (or the rarest), laid on the particles of that species
- * within two reaches of it: species whose creatures hold together spread, others are swallowed.
+ * Evolve: up to 16 species, each its own rule matrix and virulence, a particle's shade its
+ * species (s/15); starting with four, one a quarter of the world. A particle feels by its species'
+ * matrix, and is caught by the species touching it (within the push, the first 30% of the reach):
+ * each other species presses by its virulence, more the nearer, and the strongest takes it by
+ * chance (contagion × dt × its press). (A vote of the neighbours, tried first, froze the borders:
+ * nothing moved a particle into another's land.) Every `mutate` seconds a mutant: a particle's
+ * species copied, each rule and the virulence moved by up to `change`, into a species gone (or the
+ * rarest), laid on that species' particles within two reaches of it: hunters spread.
  * A particle's w: its kind + its shade × 0.999 (the kind the whole part).
  * Swirl, in every mode: a push across the way to each neighbour (to its left), turning creatures.
  * The reach is set for 4,096 particles and shrinks with more (by √(4096/n)): each creature keeps
@@ -52,15 +54,21 @@ const num = (v, d) => (v === undefined || v === '' || isNaN(+v) ? d : +v);
 const set = { mutate: num(hash.mutate, 3), change: num(hash.change, 0.3), redBlue: num(hash.redBlue, 0.3), blueRed: num(hash.blueRed, 0.3), mode: MODES.includes(hash.mode) ? hash.mode : 'kinds', swirl: num(hash.swirl, 0), contagion: num(hash.contagion, 1), tip: num(hash.tip, 0.5), chase: num(hash.chase, 0.15), space: SPACES.includes(hash.space) ? hash.space : 'torus', k: KINDS.includes(+hash.k) ? +hash.k : 6, n: COUNTS.includes(+hash.n) ? +hash.n : 65536, seed: +hash.seed || 1, reach: +hash.reach || 0.1, friction: +hash.friction || 0.04, steps: STEPS.includes(+hash.steps) ? +hash.steps : 1, m: hash.m ? hash.m.split(',').map(Number) : null };
 const rules = () => set.m ?? (() => { const r = mulberry32(set.seed * 7919); return Array.from({ length: set.k * set.k }, () => Math.round((r() * 2 - 1) * 4) / 4); })();
 let M = rules();
-// Evolve's species: each a K × K matrix (species 0 the rules shown in Kinds); four at first (the others drawn from the seed)
+// Evolve's species: each a K × K matrix (species 0 the rules shown in Kinds) and a virulence (0.5 at first); four at
+// first (the others' rules drawn from the seed)
 let genomes = [];
-const firstGenomes = () => { genomes = Array.from({ length: SPECIES }, (_, s) => (s === 0 ? M.slice() : s < 4 ? (() => { const r = mulberry32(set.seed * 7919 + s * 104729); return Array.from({ length: set.k * set.k }, () => Math.round((r() * 2 - 1) * 4) / 4); })() : null)); };
-// Every species' matrix laid for the GPU: 16 of 64 rules (a row 8 wide whatever K); Kinds and Battle use species 0
+const firstGenomes = () => { genomes = Array.from({ length: SPECIES }, (_, s) => (s >= 4 ? null : { rules: s === 0 ? M.slice() : (() => { const r = mulberry32(set.seed * 7919 + s * 104729); return Array.from({ length: set.k * set.k }, () => Math.round((r() * 2 - 1) * 4) / 4); })(), virulence: 0.5 })); };
 // A species' colour (as the shader draws it: hues a golden turn apart)
 const speciesColour = (sp) => { const h = (sp * 0.618034) % 1, c = [0, 2 / 3, 1 / 3].map((o) => Math.min(1, Math.max(0, Math.abs(((h + o) % 1) * 6 - 3) - 1)) * 0.75 + 0.2); return `rgb(${c.map((x) => Math.round(x * 255)).join(',')})`; };
 // A mutation under way (laid during one frame's steps), or null
 let mutation = null, lastMutation = 0;
-const ruleTable = () => { const t = new Float32Array(SPECIES * 64); (set.mode === 'evolve' ? genomes : [M]).forEach((g, s) => { if (g) for (let i = 0; i < set.k; i++) for (let j = 0; j < set.k; j++) t[s * 64 + i * 8 + j] = g[i * set.k + j]; }); return t; };
+// Every species laid for the GPU: 16 of 72, its 64 rules (a row 8 wide whatever K) then its virulence; Kinds and Battle
+// use species 0
+const ruleTable = () => {
+  const t = new Float32Array(SPECIES * 72);
+  (set.mode === 'evolve' ? genomes : [{ rules: M, virulence: 0 }]).forEach((g, s) => { if (!g) return; for (let i = 0; i < set.k; i++) for (let j = 0; j < set.k; j++) t[s * 72 + i * 8 + j] = g.rules[i * set.k + j]; t[s * 72 + 64] = g.virulence; });
+  return t;
+};
 const keep = () => { const h = { mutate: set.mutate, change: set.change, redBlue: set.redBlue, blueRed: set.blueRed, mode: set.mode, swirl: set.swirl, contagion: set.contagion, tip: set.tip, chase: set.chase, space: set.space, k: set.k, n: set.n, seed: set.seed, reach: set.reach, friction: set.friction, steps: set.steps }; if (set.m) h.m = set.m.join(','); history.replaceState(null, '', '#' + new URLSearchParams(h)); };
 // The reach in the world: the slider's, for 4,096, shrunk with the count
 const reach = () => set.reach * Math.sqrt(BASE / set.n);
@@ -76,7 +84,7 @@ struct Params { a: vec4u, g: vec4u, f: vec4f, v: vec4f, t0: vec4f, t1: vec4f, t2
 const RHO = ${RHO}; const BETA = ${BETA};`;
 const COMPUTE = PARAMS + `
 @group(0) @binding(0) var<uniform> P: Params;
-@group(0) @binding(1) var<uniform> R: array<vec4f, 256>;   // 16 species of 64 rules (rows 8 wide)
+@group(0) @binding(1) var<uniform> R: array<vec4f, 288>;   // 16 species of 72: 64 rules (rows 8 wide), its virulence
 @group(0) @binding(2) var<storage, read_write> sIn: array<vec4f>;   // a particle i: place 2i (its kind and shade in w), speed 2i + 1
 @group(0) @binding(3) var<storage, read_write> sOut: array<vec4f>;
 @group(0) @binding(4) var<storage, read_write> near: array<vec4f>;  // the places (and kinds) in the bins' order
@@ -84,7 +92,8 @@ const COMPUTE = PARAMS + `
 @group(0) @binding(6) var<storage, read_write> start: array<u32>;
 @group(0) @binding(7) var<storage, read_write> at: array<vec2u>;    // a particle's bin and place in it
 @group(0) @binding(8) var<storage, read_write> sorted: array<u32>;
-fn rule(s: u32, ki: u32, kj: u32) -> f32 { let i = s * 64u + ki * 8u + kj; return R[i / 4u][i % 4u]; }
+fn rule(s: u32, ki: u32, kj: u32) -> f32 { let i = s * 72u + ki * 8u + kj; return R[i / 4u][i % 4u]; }
+fn virulence(s: u32) -> f32 { return R[s * 18u + 16u].x; }
 // A particle's w: its kind (the whole part) and shade
 fn kindOf(w: f32) -> u32 { return u32(floor(w)); }
 fn shadeOf(w: f32) -> f32 { return fract(w) / 0.999; }
@@ -155,7 +164,7 @@ fn across(p: vec3f, u: vec3f) -> vec3f { if (P.a.z == 1u) { return cross(p / RHO
   let sphere = P.a.z == 1u; let g = vec3i(P.g.xyz); let reach = P.f.x;
   let me = sIn[2u * i]; var p = me.xyz; var v = sIn[2u * i + 1u].xyz; var f = vec3f(0.0);
   let c = cellOf(p); let zr = select(0, 1, sphere); var held = 0.0; var blue = 0.0;
-  var tally: array<f32, 16>; tally[speciesOf(me.w)] = 1.0;
+  let mine = speciesOf(me.w); var press: array<f32, 16>;
   for (var dz = -zr; dz <= zr; dz++) { for (var dy = -1; dy <= 1; dy++) { for (var dx = -1; dx <= 1; dx++) {
     var q = c + vec3i(dx, dy, dz);
     if (sphere) { if (any(q < vec3i(0)) || any(q >= g)) { continue; } }
@@ -167,7 +176,8 @@ fn across(p: vec3f, u: vec3f) -> vec3f { if (P.a.z == 1u) { return cross(p / RHO
       if (w.w > 0.0 && w.w < reach) {
         let r = w.w / reach;
         f += w.xyz * force(r, affinity(me.w, o.w)) + across(p, w.xyz) * P.h.w * (1.0 - r);
-        held += 1.0 - r; blue += (1.0 - r) * shadeOf(o.w); tally[speciesOf(o.w)] += 1.0 - r;
+        held += 1.0 - r; blue += (1.0 - r) * shadeOf(o.w);
+        let so = speciesOf(o.w); if (r < BETA && so != mine) { press[so] += virulence(so) * (1.0 - r / BETA); }
       }
     }
   } } }
@@ -177,8 +187,9 @@ fn across(p: vec3f, u: vec3f) -> vec3f { if (P.a.z == 1u) { return cross(p / RHO
   var h = shadeOf(me.w);
   if (P.g.w == 1u && held > 0.0 && blue / held != P.h.y) { h = clamp(h + P.h.x * P.f.z * (select(0.0, 1.0, blue / held > P.h.y) - h), 0.0, 1.0); }
   if (P.g.w == 3u) {
-    var s = speciesOf(me.w);
-    if (chance(i, me.xyz) < P.h.x * P.f.z) { var best = 0u; for (var t = 1u; t < 16u; t++) { if (tally[t] > tally[best]) { best = t; } } s = best; }
+    var s = mine; var best = 0u;
+    for (var t = 1u; t < 16u; t++) { if (press[t] > press[best]) { best = t; } }
+    if (press[best] > 0.0 && chance(i, me.xyz) < P.h.x * P.f.z * press[best]) { s = best; }
     if (P.m.z == 1u && s == P.m.x && towards(P.u.xyz, me.xyz).w < P.u.w) { s = P.m.y; }
     h = f32(s) / 15.0;
   }
@@ -231,7 +242,7 @@ async function gpu() {
   pipes.layout = layout;
   drawPipe = device.createRenderPipeline({ layout: 'auto', vertex: { module: dm, entryPoint: 'vs' }, fragment: { module: dm, entryPoint: 'fs', targets: [{ format, blend: { color: { srcFactor: 'one', dstFactor: 'one' }, alpha: { srcFactor: 'one', dstFactor: 'one' } } }] }, primitive: { topology: 'triangle-list' } });
   params = device.createBuffer({ size: 176, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST });
-  ruleBuf = device.createBuffer({ size: SPECIES * 256, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST });
+  ruleBuf = device.createBuffer({ size: SPECIES * 288, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST });
   colourBuf = device.createBuffer({ size: 128, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST });
   device.queue.writeBuffer(colourBuf, 0, Float32Array.from(COLOURS.flatMap((c) => [...c, 1])));
 }
@@ -327,7 +338,7 @@ let markModes, markSpaces, markKinds, markCounts, markSteps;
 const mat = document.getElementById('matrix'), mg = mat.getContext('2d'), CELL = 26;
 let shown = 0; // the species whose rules are drawn (Evolve: the commonest)
 function drawMatrix() {
-  const k = set.k, G = set.mode === 'evolve' ? genomes[shown] ?? M : M; mat.width = mat.height = (k + 1) * CELL; mat.style.width = mat.style.height = (k + 1) * CELL + 'px';
+  const k = set.k, G = set.mode === 'evolve' ? genomes[shown]?.rules ?? M : M; mat.width = mat.height = (k + 1) * CELL; mat.style.width = mat.style.height = (k + 1) * CELL + 'px';
   mg.clearRect(0, 0, mat.width, mat.height);
   for (let i = 0; i < k; i++) {
     const c = `rgb(${COLOURS[i].map((x) => x * 255).join(',')})`;
@@ -401,21 +412,22 @@ async function measure() {
   for (let i = 0; i < n; i++) if ((S[i * 8 + 3] % 1) / 0.999 < 0.5) red++;
   shares = `\nred ${((100 * red) / n).toFixed(1)}% · blue ${((100 * (n - red)) / n).toFixed(1)}%`;
 }
-// Evolve's census (each species' share; the commonest's rules drawn) and, every `mutate` seconds, a mutation: a random
-// particle's species copied, each rule moved by up to ±`change`, into a species gone (or the rarest), laid on the
-// particles of that species within two reaches of it
+// Evolve's census (each species' share and virulence; the commonest's rules drawn) and, every `mutate` seconds, a
+// mutation: a random particle's species copied, each rule and the virulence moved by up to ±`change`, into a species gone
+// (or the rarest), laid on the particles of that species within two reaches of it
 async function census() {
   const S = await readState(), n = set.n, count = new Array(SPECIES).fill(0), sp = (i) => Math.round((((S[i * 8 + 3] % 1) + 1) % 1 / 0.999) * 15);
   for (let i = 0; i < n; i++) count[sp(i)]++;
   shown = count.indexOf(Math.max(...count)); drawMatrix();
   const live = count.map((c, s) => [s, c]).filter(([, c]) => c).sort((a, b) => b[1] - a[1]);
   shares = '\n' + live.slice(0, 5).map(([s, c]) => `s${s} ${((100 * c) / n).toFixed(0)}%`).join(' · ') + ` · ${live.length} species`;
-  document.getElementById('census').innerHTML = live.map(([s, c]) => `<span style="color:${speciesColour(s)}">■ s${s} ${((100 * c) / n).toFixed(1)}%</span>`).join(' ');
+  document.getElementById('census').innerHTML = live.map(([s, c]) => `<span style="color:${speciesColour(s)}">■ s${s} ${((100 * c) / n).toFixed(1)}% v${genomes[s].virulence.toFixed(2)}</span>`).join('<br>');
   if (!set.mutate || performance.now() - lastMutation < set.mutate * 1000) return;
   lastMutation = performance.now();
   const i = Math.floor(Math.random() * n), parent = sp(i), gone = count.findIndex((c, s) => !c && s !== parent);
   const mutant = gone >= 0 ? gone : count.indexOf(Math.min(...count.map((c, s) => (s === parent ? Infinity : c))));
-  genomes[mutant] = genomes[parent].map((a) => Math.max(-1, Math.min(1, a + (Math.random() * 2 - 1) * set.change)));
+  const moved = (a, lo) => Math.max(lo, Math.min(1, a + (Math.random() * 2 - 1) * set.change));
+  genomes[mutant] = { rules: genomes[parent].rules.map((a) => moved(a, -1)), virulence: moved(genomes[parent].virulence, 0) };
   mutation = { parent, mutant, at: [S[i * 8], S[i * 8 + 1], S[i * 8 + 2]], radius: 2 * reach() };
 }
 // The particles' places (shade in w) and speeds, read back: 8 floats a particle
@@ -463,7 +475,7 @@ async function checkStep(which) {
   const G = ruleTable();
   const affinity = (wi, wj) => {
     if (set.mode === 'wheel') return Math.cos(2 * Math.PI * ((((shadeOf(wj) - shadeOf(wi) + 0.5) % 1) + 1) % 1 - 0.5 - set.chase));
-    const a = G[(set.mode === 'evolve' ? speciesOf(wi) : 0) * 64 + kindOf(wi) * 8 + kindOf(wj)], hi = shadeOf(wi);
+    const a = G[(set.mode === 'evolve' ? speciesOf(wi) : 0) * 72 + kindOf(wi) * 8 + kindOf(wj)], hi = shadeOf(wi);
     return set.mode === 'battle' ? a + Math.abs(shadeOf(wj) - hi) * (set.redBlue + (set.blueRed - set.redBlue) * hi) : a;
   };
   const across = (p, u) => (sphere ? [p[1] * u[2] - p[2] * u[1], p[2] * u[0] - p[0] * u[2], p[0] * u[1] - p[1] * u[0]].map((x) => x / RHO) : [-u[1], u[0], 0]);
@@ -474,19 +486,23 @@ async function checkStep(which) {
   for (let i = 0; i < set.n; i++) {
     const p = at(i), f = [0, 0, 0], hi = S[i * 8 + 3];
     let held = 0, blue = 0;
-    const tally = new Float64Array(SPECIES); tally[speciesOf(hi)] = 1;
+    const mine = speciesOf(hi), press = new Float32Array(SPECIES);
     for (let j = 0; j < set.n; j++) {
       if (j === i) continue;
       const [u, d] = towards(p, at(j));
       if (d > 0 && d < rr) {
         const r = d / rr, g = force(r, affinity(hi, S[j * 8 + 3])), x = across(p, u);
         for (let c = 0; c < 3; c++) f[c] += u[c] * g + x[c] * set.swirl * (1 - r);
-        held += 1 - r; blue += (1 - r) * shadeOf(S[j * 8 + 3]); tally[speciesOf(S[j * 8 + 3])] += 1 - r;
+        held += 1 - r; blue += (1 - r) * shadeOf(S[j * 8 + 3]);
+        const so = speciesOf(S[j * 8 + 3]); if (r < BETA && so !== mine) press[so] += G[so * 72 + 64] * (1 - r / BETA);
       }
     }
     let hs = shadeOf(hi);
     if (set.mode === 'battle' && held > 0 && Math.fround(blue / held) !== Math.fround(set.tip)) hs = Math.min(1, Math.max(0, hs + set.contagion * DT * (+(blue / held > set.tip) - hs)));
-    if (set.mode === 'evolve') { let sp = speciesOf(hi); if (chance(i) < Math.fround(set.contagion * DT)) { sp = 0; for (let t = 1; t < SPECIES; t++) if (tally[t] > tally[sp]) sp = t; } hs = sp / 15; }
+    if (set.mode === 'evolve') {
+      let best = 0; for (let t = 1; t < SPECIES; t++) if (press[t] > press[best]) best = t;
+      hs = (press[best] > 0 && chance(i) < Math.fround(set.contagion * DT) * press[best] ? best : mine) / 15;
+    }
     const h = kindOf(hi) + 0.999 * hs;
     let v = at(i, 4).map((x, c) => x * damp + f[c] * rr * 10 * DT), q;
     if (sphere) { const m = p.map((x, c) => x + v[c] * DT), l = len(m); q = m.map((x) => (x / l) * RHO); const d = dot(q, v) / (RHO * RHO); v = v.map((x, c) => x - q[c] * d); }
@@ -496,7 +512,7 @@ async function checkStep(which) {
   steps(1);
   const got = await readState();
   let worst = 0;
-  let other = 0; // (Evolve: a species taken otherwise, two neighbourhoods' tallies a hair apart summed in another order)
+  let other = 0; // (Evolve: a species taken otherwise, a press summed in another order a hair across the chance)
   for (let i = 0; i < got.length; i++) {
     let d = Math.abs(got[i] - want[i]); if (!sphere && i % 8 < 2) d = Math.min(d, 1 - d);
     if (i % 8 === 3 && set.mode === 'evolve' && d > 1e-3) { other++; continue; }

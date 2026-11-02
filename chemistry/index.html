@@ -49,6 +49,7 @@
   <div id="help">Types a to f by colour, dim in state 0 (free). "+" not bonded, side by side bonded; x and y any type, the same letter the same type. The chain eabcf in the middle copies itself; the list counts the molecules.</div>
 </div>
 <div id="stage"><canvas id="view"></canvas></div>
-<script src="chemistry.js"></script>
+<!-- The script fetched fresh each time (a prototype changing often: never an old one from the cache) -->
+<script>const js = document.createElement('script'); js.src = 'chemistry.js?' + Date.now(); document.body.append(js);</script>
 </body>
 </html>

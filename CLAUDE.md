@@ -64,11 +64,13 @@ eight life channels (two layers of four) and a wall texture; a species is a team
 ## Particle Life prototype (particles/)
 A separate page (`particles/index.html`, `particles.js`), not part of main.js: Particle Life (Tom Mohr's) on WebGPU,
 4k to 1M particles of 3 to 8 kinds on a torus or a sphere (of area 1), each kind drawn to or pushed from each other kind
-by a K × K rule matrix (clicked to change); the reach set for 4,096 and shrunk with more (a larger world, the creatures
+by a K × K rule matrix (clicked to change); modes Kinds, Battle (the kinds' creatures in a red and a blue side, each
+side's pull on the other, and contagion turning a particle to its neighbours' side) and Wheel (shades round a rainbow,
+each chasing the one ahead); Swirl turns creatures; the reach set for 4,096 and shrunk with more (a larger world, the creatures
 the same). A step in five compute passes: particles counted into bins a reach wide, the bins' starts summed, the
 particles sorted (their places copied in bin order), then each feels those in the bins round its own. Wheel zooms, drag
-turns the sphere or moves over the torus; the link keeps every setting. `particlesCheck('both')` in its console: one GPU
-step (bins) against the same step on the CPU (every pair), each space.
+turns the sphere or moves over the torus; the link keeps every setting. `particlesCheck('all')` in its console: one GPU
+step (bins) against the same step on the CPU (every pair), each mode and space.
 
 ## Artificial chemistry prototype (chemistry/)
 A separate page (`chemistry/index.html`, `chemistry.js`), not part of main.js: Tim Hutton's Squirm3 (2002) on a torus

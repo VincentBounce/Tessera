@@ -63,9 +63,10 @@ eight life channels (two layers of four) and a wall texture; a species is a team
 
 ## Particle Life prototype (particles/)
 A separate page (`particles/index.html`, `particles.js`), not part of main.js: Particle Life (Tom Mohr's) on the GPU,
-particles of 3 to 8 kinds on a torus, each kind drawn to or pushed from each other kind by a K × K rule matrix (clicked
-to change), every pair felt (a fragment shader a particle); the link keeps kinds, count, seed and changed rules.
-`particlesCheck()` in its console: one GPU step against the same step on the CPU.
+particles of 3 to 8 kinds on a torus or a sphere (of area 1, the same crowd), each kind drawn to or pushed from each
+other kind by a K × K rule matrix (clicked to change), every pair felt (a fragment shader a particle; one geometry
+function a space: the way and distance, along the surface on the sphere); the link keeps space, kinds, count, seed and
+changed rules. `particlesCheck('both')` in its console: one GPU step against the same step on the CPU, each space.
 
 ## Artificial chemistry prototype (chemistry/)
 A separate page (`chemistry/index.html`, `chemistry.js`), not part of main.js: Tim Hutton's Squirm3 (2002) on a torus

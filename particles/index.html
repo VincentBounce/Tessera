@@ -45,7 +45,9 @@
 <body>
 <div id="panel">
   <h1>Particle Life</h1>
-  <div class="sub">Particles of a few kinds, each kind drawn to or pushed from each other kind at its own strength, on a torus</div>
+  <div class="sub">Particles of a few kinds, each kind drawn to or pushed from each other kind at its own strength, on a torus or a sphere</div>
+  <div class="sec">Space</div>
+  <div class="tabs" id="spaces"></div>
   <div class="sec">Kinds</div>
   <div class="tabs" id="kinds"></div>
   <div class="sec">Particles</div>
@@ -56,9 +58,9 @@
   <div class="sec">Motion</div>
   <label class="range"><span>Reach</span><input id="reach" type="range" min="0.03" max="0.2" step="0.005"><b></b></label>
   <label class="range"><span>Friction</span><input id="friction" type="range" min="0.01" max="0.5" step="0.01"><b></b></label>
-  <div class="row" style="margin-top:8px"><button class="btn" id="play">Pause</button><button class="btn" id="scatter">Scatter</button></div>
+  <div class="row" style="margin-top:8px"><button class="btn" id="play">Pause</button><button class="btn" id="scatter">Scatter</button><button class="btn" id="spin">Spin</button></div>
   <div id="stats"></div>
-  <div id="help">A rule square: row the kind that feels, column the kind it feels; green draws, red pushes. Click raises it by ½, shift-click lowers it (−1 to 1). The link keeps kinds, count and seed.</div>
+  <div id="help">A rule square: row the kind that feels, column the kind it feels; green draws, red pushes. Click raises it by ½, shift-click lowers it (−1 to 1). The sphere turns by a drag. The link keeps space, kinds, count, seed and changed rules.</div>
 </div>
 <div id="stage"><canvas id="view"></canvas><div id="fail"></div></div>
 <script src="particles.js"></script>

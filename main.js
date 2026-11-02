@@ -4757,7 +4757,11 @@ let kleinEight = false;  // (in a link: k8=1)
 function kleinPoint(x, y, nu, nv, m, tube = TORUS_TUBE) {
   const t = (x / nu - 0.5) * 2 * Math.PI, f = (y / nv) * 2 * Math.PI, a = tube, c = Math.cos(t / 2), s = Math.sin(t / 2);
   const r = 1 + a * (c * Math.sin(f) - s * Math.sin(2 * f));
-  const K = kleinEight ? [r * Math.sin(t), -r * Math.cos(t), a * (s * Math.sin(f) + c * Math.sin(2 * f))] : kleinBottlePoint((x / nu) * 4 * Math.PI, f + Math.PI / 2);
+  // the bottle: the sheet's ends at the top of the neck's arch (2.5π: unrolled, it opens there), past its own ends (4π)
+  // turned over (u to π − u)
+  const w = (x / nu + 0.625) * 4 * Math.PI, past = w >= 4 * Math.PI;
+  const K = kleinEight ? [r * Math.sin(t), -r * Math.cos(t), a * (s * Math.sin(f) + c * Math.sin(2 * f))]
+    : kleinBottlePoint(past ? w - 4 * Math.PI : w, past ? Math.PI / 2 - f : f + Math.PI / 2);
   if (m >= 1) return K;
   const F = torusPoint(x, y, nu, nv, 0, tube);
   return F.map((v, d) => v + (K[d] - v) * m);
@@ -12640,10 +12644,11 @@ void light(vec3 col, vec3 n, vec3 p) {
 // Glass (see glGlass), a fragment's output: uGlass 0, as it is; 1, its colour and its share weighed (the nearer the viewer,
 // the heavier), summed; 2, its share, what it lets through multiplied (McGuire and Bavoil's weighted blended transparency,
 // 2013: every layer seen, in no order, nothing sorted; at a quarter of the depth span each side, weights 1 to 60)
-// Cut (see cutOn), in a fragment shader: the half nearer the viewer gone, cut by the plane through the centre facing them
+// Cut (see cutOn), in a fragment shader: the half nearer the viewer, by the plane through the centre facing them, gone
+// (uCut 1), or with Glass, see-through, the other half not (2, see GL_SHADOWED)
 const GL_CUT = `
-in float vCut; uniform bool uCut;
-#define CUT if (uCut && vCut > 0.0) discard;`;
+in float vCut; uniform int uCut;
+#define CUT if (uCut == 1 && vCut > 0.0) discard;`;
 const GL_GLASS = `
 uniform int uGlass;
 vec4 glass(vec3 c, float a) {
@@ -12661,7 +12666,7 @@ void main() {
     vec2 at = vSh.xy + vec2(i, j) * t;
     s += texture(uShadowId, at).r == vId + 1u ? 1.0 : texture(uShadow, vec3(at, vSh.z - 2.0 * t));
   }
-  o = glass(vDark + vLit * s / 9.0, uGlass > 0 ? uAlpha : 1.0);
+  o = glass(vDark + vLit * s / 9.0, uGlass == 0 ? 1.0 : uCut == 2 && vCut <= 0.0 ? 1.0 : uAlpha);
 }`;
 // Life on the plane (see glPlane): world (u, v) turned by uTurn (its cos and sin), then to pixels by uView (scale, ox, oy)
 const GL_PLANE_AT = `
@@ -13063,7 +13068,7 @@ function glView(gl, p, depth) {
   gl.uniform3f(u('uView'), view.scale, view.ox, view.oy);
   gl.uniform2f(u('uScreen'), cw, ch);
   gl.uniform1f(u('uDepth'), depth);
-  gl.uniform1i(u('uCut'), cutOn() ? 1 : 0);
+  gl.uniform1i(u('uCut'), cutOn() ? 1 : 0);  // (the shadows: its half gone; the tiles', see glSurface)
   // the light, and its view for the shadows: across it, over the ball round the origin that holds what is drawn
   const L = lightDir(), x = cam.r.map((r, d) => r - L[d] * (cam.r[0] * L[0] + cam.r[1] * L[1] + cam.r[2] * L[2])), m = Math.hypot(...x);
   const lx = x.map((v) => v / m), ly = [L[1] * lx[2] - L[2] * lx[1], L[2] * lx[0] - L[0] * lx[2], L[0] * lx[1] - L[1] * lx[0]];
@@ -13207,7 +13212,7 @@ function glSurface(paint, path) {  // paint: its tiles' colours into their textu
   // the tiles, their grid and the path; pass 0 as they are, 1 and 2 one of Glass's (see GL_GLASS, glGlass): every side
   // of every tile, no depth test, the blending set by glGlass; cut (see cutOn), every side too: its inside shows
   const drawAll = (pass) => {
-    const both = pass || cutOn();
+    const both = pass || cutOn(), cut = cutOn() ? (pass ? 2 : 1) : 0;  // (Cut with Glass: its half see-through, not gone)
     // tiles
     let u = uniforms(prog.tile);
     // drawn on their face only (a strip's faces each show their own; an unrolled torus, its top), the
@@ -13215,7 +13220,7 @@ function glSurface(paint, path) {  // paint: its tiles' colours into their textu
     // a Klein bottle, one-sided: both sides of each tile, in its colours
     const open = !both && g.torus && !g.mobius && !g.klein && sh.m < 1, front = shapeSign(g) < 0 ? gl.FRONT : gl.BACK, back = front === gl.BACK ? gl.FRONT : gl.BACK;
     gl.uniform4f(u('uPlain'), 0, 0, 0, 0);
-    gl.uniform1i(u('uGlass'), pass); gl.uniform1f(u('uAlpha'), GLASS_ALPHA);
+    gl.uniform1i(u('uGlass'), pass); gl.uniform1i(u('uCut'), cut); gl.uniform1f(u('uAlpha'), GLASS_ALPHA);
     attrib(prog.tile, 'aPos', S.pos, 3);
     attrib(prog.tile, 'aNrm', S.nrm, 3);
     attrib(prog.tile, 'aId', S.tileIds, 1);
@@ -13238,7 +13243,7 @@ function glSurface(paint, path) {  // paint: its tiles' colours into their textu
         gl.blendFuncSeparate(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA, gl.ONE, gl.ONE_MINUS_SRC_ALPHA);  // the canvas stays opaque under the lines
       }
       u = uniforms(prog.edge);
-      gl.uniform1i(u('uGlass'), pass);
+      gl.uniform1i(u('uGlass'), pass); gl.uniform1i(u('uCut'), cut);
       gl.uniform1f(u('uEdge'), edgeAlpha(sh));
       gl.uniform3f(u('uEdgeRgb'), ...EDGE_RGB.map((c) => c / 255));
       gl.uniform1f(u('uBias'), edgeBias);
@@ -13258,7 +13263,7 @@ function glSurface(paint, path) {  // paint: its tiles' colours into their textu
         S.segsAt = segs.at; S.keys.segs = walk.wx; S.keys.segsM = sh.m;
       }
       u = uniforms(prog.ribbon);
-      gl.uniform1i(u('uGlass'), pass);
+      gl.uniform1i(u('uGlass'), pass); gl.uniform1i(u('uCut'), cut);
       gl.uniform1f(u('uN'), Math.max(1, walk.n));
       gl.uniform1f(u('uHalf'), surfaceLineWidth() / 2 / view.scale);  // the screen width, in world units
       gl.uniform1f(u('uBias'), pathBias);

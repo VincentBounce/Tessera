@@ -74,42 +74,48 @@ function pairs(S, D) {
 
 /* ---- Lenia ----------------------------------------------------------------------------------- */
 
-// Chan's kernel on a space: each cell's neighbours within R units and their weights (rings of a bell, summing to 1)
+// The kernels of a setting: p.kernels, each { r (its radius, a share of R), beta, mu, sigma, h (its weight) }, or the one
+// of p.R, p.beta, p.mu, p.sigma
+const kernelsOf = (p) => p.kernels ?? [{ r: 1, beta: p.beta, mu: p.mu, sigma: p.sigma, h: 1 }];
+
+// Chan's kernels on a space: each cell's neighbours within R units, and each kernel's weights over them (rings of a bell
+// out to r·R, summing to 1)
 function kernel(S, p) {
-  const P = pairs(S, Math.ceil(p.R)), B = p.beta.length, core = (r) => (r > 0 && r < 1 ? Math.exp(4 - 1 / (r * (1 - r))) : 0);
-  const start = new Int32Array(S.n + 1), nb = [], w = [];
+  const P = pairs(S, Math.ceil(p.R)), ks = kernelsOf(p), core = (r) => (r > 0 && r < 1 ? Math.exp(4 - 1 / (r * (1 - r))) : 0);
+  const start = new Int32Array(S.n + 1), nb = [], w = ks.map(() => []);
   for (let c = 0; c < S.n; c++) {
     start[c] = nb.length;
-    let sum = 0;
+    const sum = ks.map(() => 0);
     for (let k = P.start[c]; k < P.start[c + 1]; k++) {
-      const d = P.dist[k] / p.R;
-      if (d >= 1) continue;
-      const i = Math.min(B - 1, Math.floor(d * B)), x = p.beta[i] * core(d * B - i);
-      if (x > 1e-6) { nb.push(P.list[k]); w.push(x); sum += x; }
+      const x = ks.map(({ r, beta }) => { const d = P.dist[k] / (p.R * r), B = beta.length, i = Math.min(B - 1, Math.floor(d * B)); return d < 1 ? beta[i] * core(d * B - i) : 0; });
+      if (Math.max(...x) <= 1e-6) continue;
+      nb.push(P.list[k]); x.forEach((v, j) => { w[j].push(v); sum[j] += v; });
     }
-    for (let k = start[c]; k < w.length; k++) w[k] /= sum || 1;
+    w.forEach((wj, j) => { for (let k = start[c]; k < wj.length; k++) wj[k] /= sum[j] || 1; });
   }
   start[S.n] = nb.length;
-  return { start, NB: Int32Array.from(nb), Wt: Float32Array.from(w) };
+  return { start, NB: Int32Array.from(nb), Wt: w.map((wj) => Float32Array.from(wj)), ks };
 }
 
-// The kernel's sum at each cell, then growth G(u) = 2·exp(−(u−μ)²/2σ²) − 1 into out
-function growth(K, p, A, out) {
-  const { start, NB, Wt } = K, s2 = 2 * p.sigma * p.sigma;
+// Each kernel's sum at each cell, its growth 2·exp(−(u−μ)²/2σ²) − 1, their mean weighted by h into out
+function growth(K, A, out) {
+  const { start, NB, Wt, ks } = K, H = ks.reduce((a, k) => a + k.h, 0), u = new Float64Array(ks.length);
   for (let c = 0; c < out.length; c++) {
-    let u = 0;
-    for (let k = start[c], e = start[c + 1]; k < e; k++) u += Wt[k] * A[NB[k]];
-    out[c] = 2 * Math.exp(-((u - p.mu) ** 2) / s2) - 1;
+    u.fill(0);
+    for (let k = start[c], e = start[c + 1]; k < e; k++) { const a = A[NB[k]]; if (a) for (let j = 0; j < ks.length; j++) u[j] += Wt[j][k] * a; }
+    let g = 0;
+    for (let j = 0; j < ks.length; j++) { const { mu, sigma, h } = ks[j]; g += h * (2 * Math.exp(-((u[j] - mu) ** 2) / (2 * sigma * sigma)) - 1); }
+    out[c] = g / H;
   }
 }
 
-// A world: its space, its cells' values, the kernel, one step (A += dt·G, kept in [0, 1])
+// A world: its space, its cells' values, the kernels, one step (A += dt·G, kept in [0, 1])
 export function world(S, p) {
   if (p.flow) return flowWorld(S, p);
   const K = kernel(S, p), n = S.n;
   let A = new Float32Array(n), G = new Float32Array(n);
   const step = () => {
-    growth(K, p, A, G);
+    growth(K, A, G);
     for (let c = 0; c < n; c++) { const v = A[c] + p.dt * G[c]; A[c] = v < 0 ? 0 : v > 1 ? 1 : v; }
   };
   return { S, n, get A() { return A; }, set A(x) { A = x; }, step };
@@ -144,7 +150,7 @@ function flowWorld(S, p) {
   let A = new Float32Array(n), A2 = new Float32Array(n);
   const G = new Float32Array(n), slope = (f, c) => { let x = 0, y = 0; for (let k = start[c]; k < start[c + 1]; k++) { const e = f[list[k]] - f[c]; x += gx[k] * e; y += gy[k] * e; } return [x, y]; };
   const step = () => {
-    growth(K, p, A, G);
+    growth(K, A, G);
     A2.fill(0);
     for (let c = 0; c < n; c++) {
       const m = A[c];

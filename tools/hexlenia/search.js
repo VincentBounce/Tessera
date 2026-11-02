@@ -1,23 +1,25 @@
 // Hex Lenia's parameters searched at random: deno run --allow-read --allow-write search.js count [workers] [seed] [Rs] [space] [flow]
-// (Rs: the radii to try, e.g. 2.5,3,3.5; space: hex or a tiling of tilings.json, about 2,300 cells; flow: Flow Lenia, its
-// σ wider, 0.1 to 0.6 of μ; out/search-<space>-<seed>.json, out/search-flow-<space>-<seed>.json)
+// (Rs: the radii to try, e.g. 2.5,3,3.5; space: hex (48 across, or 8 of the largest R) or a tiling of tilings.json, about 2,300 cells; flow: Flow Lenia with
+// 2 to 5 kernels, each its radius 0.3 to 1 of R, rings, μ, σ (0.1 to 0.6 of μ) and weight h 0.1 to 1, a disc of 1.5 to 2.5 R;
+// out/search-<space>-<seed>.json, out/search-flow-<space>-<seed>.json)
 // Each try a radius R (3 to 6), a kernel of 1 to 3 rings (beta), μ (0.1 to 0.4), σ (0.08 to 0.25 of μ, Lenia's
 // creatures' range), dt and a random disc tilted (see seedDisc); kept when it neither dies
 // nor fills the world in 2,000 steps. Out: out/search.json, the lasting ones, the compact single pieces first
-// (a creature: one piece, small spread, steady mass), the moving ones first among those.
+// (a creature: one piece, small spread, steady mass; on Flow Lenia gathered and moving), the moving ones first among those.
 import { mulberry32 } from './core.js';
 import { tilingCells } from '../tilings/grid.js';
 const count = Number(Deno.args[0] ?? 200), P = Number(Deno.args[1] ?? 9), SEED = Number(Deno.args[2] ?? 1), rnd = mulberry32(SEED);
-const RS = (Deno.args[3] ?? '3,3.5,4,4.5,5,5.5,6').split(',').map(Number), SPACE = Deno.args[4] ?? 'hex', N = SPACE === 'hex' ? 48 : Math.round(Math.sqrt(2304 / tilingCells(SPACE))), FLOW = Deno.args[5] === 'flow';
+const RS = (Deno.args[3] ?? '3,3.5,4,4.5,5,5.5,6').split(',').map(Number), SPACE = Deno.args[4] ?? 'hex', N = SPACE === 'hex' ? Math.max(48, Math.ceil(8 * Math.max(...RS))) : Math.round(Math.sqrt(2304 / tilingCells(SPACE))), FLOW = Deno.args[5] === 'flow';
 const workers = Array.from({ length: P }, () => new Worker(new URL('./worker.js', import.meta.url).href, { type: 'module' }));
 const pick = (a) => a[Math.floor(rnd() * a.length)], round = (x, k) => +x.toFixed(k);
 const BETAS = [[1], [1], [1, 0.5], [0.5, 1], [1, 0.25], [1, 1], [1, 0.5, 0.25], [0.5, 1, 0.5]];
 const tries = Array.from({ length: count }, (_, i) => {
   const R = pick(RS), mu = round(0.1 + rnd() * 0.3, 3);
-  return { R, beta: pick(BETAS), mu, sigma: round(mu * (FLOW ? 0.1 + rnd() * 0.5 : 0.08 + rnd() * 0.17), 4), dt: pick([0.05, 0.1, 0.2]), ...(FLOW ? { flow: true } : {}), r0: round(R * (0.8 + rnd() * 1.2), 1), seed: i + 1, tilt: true, keep: true, ...(SPACE === 'hex' ? {} : { space: SPACE, N }) };
+  const kernels = FLOW ? Array.from({ length: 2 + Math.floor(rnd() * 4) }, () => { const mu = round(0.1 + rnd() * 0.3, 3); return { r: round(0.3 + rnd() * 0.7, 2), beta: pick(BETAS), mu, sigma: round(mu * (0.1 + rnd() * 0.5), 4), h: round(0.1 + rnd() * 0.9, 2) }; }) : null;
+  return { R, ...(FLOW ? { kernels, flow: true } : { beta: pick(BETAS), mu, sigma: round(mu * (0.08 + rnd() * 0.17), 4) }), dt: pick([0.05, 0.1, 0.2]), r0: round(R * (FLOW ? 1.5 + rnd() : 0.8 + rnd() * 1.2), 1), seed: i + 1, tilt: true, keep: true, ...(SPACE === 'hex' ? {} : { space: SPACE, N }) };
 });
 // (not a disc full at 1; Flow Lenia's mass never changes, a creature there: gathered, in one or two pieces)
-const creature = (o) => (FLOW ? o.pieces <= 2 && o.rg < 6 : o.pieces === 1 && o.rg < 8 && o.cv < 0.1 && o.mass < o.live * 0.9);
+const creature = (o) => (FLOW ? o.pieces <= 2 && o.rg < 6 && o.speed > 0.02 : o.pieces === 1 && o.rg < 8 && o.cv < 0.1 && o.mass < o.live * 0.9);
 const t0 = Date.now(), out = [], ends = {};
 let next = 0, done = 0;
 await Promise.all(workers.map((w) => new Promise((res) => {

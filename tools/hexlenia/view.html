@@ -20,11 +20,11 @@
 // disc started, as search.js does; space: hex or a tiling of tilings.json, N its size; flow=true: Flow Lenia), or a creature a result file
 // kept: #from=out/creatures.json&i=3 (its setting and cells)
 import { space, world, seedDisc, measure } from './core.js';
-let h = Object.fromEntries(new URLSearchParams(location.hash.slice(1)));
-if (h.from) { const o = (await (await fetch(h.from)).json())[+h.i || 0]; h = { ...o, beta: o.beta.join(','), N: o.N ?? Math.sqrt(o.cells.length), kept: o.cells }; }
-const p = { R: +h.R || 4, beta: (h.beta || '1').split(',').map(Number), mu: +h.mu || 0.2, sigma: +h.sigma || 0.02, dt: +h.dt || 0.1, r0: +h.r0 || 6, seed: +h.seed || 1, flow: h.flow === 'true' || h.flow === true };
+let h = Object.fromEntries(new URLSearchParams(location.hash.slice(1))), p;
+if (h.from) { const o = (await (await fetch(h.from)).json())[+h.i || 0]; h = { ...o, N: o.N ?? Math.sqrt(o.cells.length), kept: o.cells }; p = o; }
+else p = { R: +h.R || 4, beta: (h.beta || '1').split(',').map(Number), mu: +h.mu || 0.2, sigma: +h.sigma || 0.02, dt: +h.dt || 0.1, r0: +h.r0 || 6, seed: +h.seed || 1, flow: h.flow === 'true' };
 const S = space(h.space || 'hex', +h.N || 48), W = world(S, p), cv = document.getElementById('c'), g = cv.getContext('2d');
-document.getElementById('info').textContent = `${h.name ? h.name + ' · ' : ''}${p.flow ? 'Flow Lenia · ' : ''}${S.name} ${S.N} · R ${p.R} · β ${p.beta} · μ ${p.mu} · σ ${p.sigma} · dt ${p.dt}`;
+document.getElementById('info').textContent = `${h.name ? h.name + ' · ' : ''}${p.flow ? 'Flow Lenia · ' : ''}${S.name} ${S.N} · R ${p.R} · ${p.kernels ? p.kernels.length + ' kernels' : `β ${p.beta} · μ ${p.mu} · σ ${p.sigma}`} · dt ${p.dt}`;
 let t = 0, on = true;
 const start = () => {
   if (h.kept) W.A = Float32Array.from(h.kept, (v) => v / 255);

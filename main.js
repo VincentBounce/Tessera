@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.3.103';
+const VERSION = '0.3.104';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -778,27 +778,27 @@ const PRESETS = {
   frac22_7: { group: 'Fractions', sym: '22/7', name: "Archimedes' π", detail: '22/7 = 3.142857…, π to 2 decimals', f: '22/7' },
   frac355_113: { group: 'Fractions', sym: '355/113', name: "Zu Chongzhi's π (Milü)", detail: '355/113 = 3.1415929…, π to 6 decimals', f: '355/113' },
   // (the rosettes: picked among the fractions up to /999 for big rosettes drawn with few overlaps, four per walk)
-  rose1_923: { group: 'Fractions', sym: '1/923', name: 'A 4-fold rosette on Squares turtle', detail: '1/923 in base 3', f: '1/923' },
-  rose2_541: { group: 'Fractions', sym: '2/541', name: 'A 4-fold rosette on Squares turtle', detail: '2/541 in base 3', f: '2/541' },
-  rose1_709: { group: 'Fractions', sym: '1/709', name: 'A 4-fold rosette on Squares turtle', detail: '1/709 in base 3', f: '1/709' },
   rose1_983: { group: 'Fractions', sym: '1/983', name: 'A 4-fold rosette on Squares turtle', detail: '1/983 in base 3', f: '1/983' },
+  rose1_923: { group: 'Fractions', sym: '1/923', name: 'A 4-fold rosette on Squares turtle', detail: '1/923 in base 3', f: '1/923' },
+  rose1_709: { group: 'Fractions', sym: '1/709', name: 'A 4-fold rosette on Squares turtle', detail: '1/709 in base 3', f: '1/709' },
+  rose2_541: { group: 'Fractions', sym: '2/541', name: 'A 4-fold rosette on Squares turtle', detail: '2/541 in base 3', f: '2/541' },
+  rose1_967: { group: 'Fractions', sym: '1/967', name: 'A 6-fold rosette on Hexagons turtle', detail: '1/967 in base 2', f: '1/967' },
+  rose1_463: { group: 'Fractions', sym: '1/463', name: 'A 6-fold rosette on Hexagons turtle', detail: '1/463 in base 2', f: '1/463' },
   rose1_383: { group: 'Fractions', sym: '1/383', name: 'A 6-fold rosette on Hexagons turtle', detail: '1/383 in base 2', f: '1/383' },
   rose3_497: { group: 'Fractions', sym: '3/497', name: 'A 6-fold rosette on Hexagons turtle', detail: '3/497 in base 2', f: '3/497' },
-  rose1_463: { group: 'Fractions', sym: '1/463', name: 'A 6-fold rosette on Hexagons turtle', detail: '1/463 in base 2', f: '1/463' },
-  rose1_967: { group: 'Fractions', sym: '1/967', name: 'A 6-fold rosette on Hexagons turtle', detail: '1/967 in base 2', f: '1/967' },
-  rose11_604: { group: 'Fractions', sym: '11/604', name: 'A 6-fold rosette on Triangles turtle', detail: '11/604 in base 5', f: '11/604' },
-  rose1_599: { group: 'Fractions', sym: '1/599', name: 'A 3-fold rosette on Triangles turtle', detail: '1/599 in base 5', f: '1/599' },
   rose1_856: { group: 'Fractions', sym: '1/856', name: 'A 6-fold rosette on Triangles turtle', detail: '1/856 in base 5', f: '1/856' },
+  rose1_599: { group: 'Fractions', sym: '1/599', name: 'A 3-fold rosette on Triangles turtle', detail: '1/599 in base 5', f: '1/599' },
+  rose11_604: { group: 'Fractions', sym: '11/604', name: 'A 6-fold rosette on Triangles turtle', detail: '11/604 in base 5', f: '11/604' },
   rose21_976: { group: 'Fractions', sym: '21/976', name: 'A 6-fold rosette on Triangles turtle', detail: '21/976 in base 5', f: '21/976' },
   // and for an ant by the digits, late highways (searched up to /1000 on squares, /255 on Cairo
-  // pentagons, 3 million steps), the 1/xx last
-  ant1_429: { group: 'Fractions', sym: '1/429', name: 'A highway from step 2,779,332 for the square ant by the digits', detail: '1/429 in base 2', f: '1/429' },
+  // pentagons, 3 million steps); each kind (a turtle's grid, an ant's) by value
   ant1_917: { group: 'Fractions', sym: '1/917', name: 'A highway from step 2,126,365 for the square ant by the digits', detail: '1/917 in base 2', f: '1/917' },
+  ant1_429: { group: 'Fractions', sym: '1/429', name: 'A highway from step 2,779,332 for the square ant by the digits', detail: '1/429 in base 2', f: '1/429' },
   ant1_112: { group: 'Fractions', sym: '1/112', name: 'A highway from step 2,051,674 for the square ant by the digits', detail: '1/112 in base 2', f: '1/112' },
-  ant1_189: { group: 'Fractions', sym: '1/189', name: 'A highway from step 1,642,864 for the Cairo ant by the digits', detail: '1/189 in base 2', f: '1/189' },
   ant1_28: { group: 'Fractions', sym: '1/28', name: 'A highway from step 1,909,973 for the square ant by the digits', detail: '1/28 in base 2', f: '1/28' },
-  ant1_90: { group: 'Fractions', sym: '1/90', name: 'A highway from step 2,350,822 for the Cairo ant by the digits', detail: '1/90 in base 2', f: '1/90' },
+  ant1_189: { group: 'Fractions', sym: '1/189', name: 'A highway from step 1,642,864 for the Cairo ant by the digits', detail: '1/189 in base 2', f: '1/189' },
   ant1_94: { group: 'Fractions', sym: '1/94', name: 'A highway from step 2,275,153 for the Cairo ant by the digits', detail: '1/94 in base 2', f: '1/94' },
+  ant1_90: { group: 'Fractions', sym: '1/90', name: 'A highway from step 2,350,822 for the Cairo ant by the digits', detail: '1/90 in base 2', f: '1/90' },
   ant1_47: { group: 'Fractions', sym: '1/47', name: 'A highway from step 1,123,492 for the Cairo ant by the digits', detail: '1/47 in base 2', f: '1/47' },
   mersenne: { group: 'Primes', sym: 'Mₚ', name: 'Mersenne prime', detail: '2^p-1', f: () => `2^${$('mersenneP').value}-1` },
   primorial: { group: 'Primes', sym: 'p#±1', name: 'Primorial prime', detail: 'primorial(p)±1',
@@ -5700,10 +5700,10 @@ const SPHERES = {
   pyramid: { mesh: (f) => hullMesh('pyramid', f), radius: (f) => f / 2, tiles: (f) => 5 * f * f, unit: 'cells', edges: [12, 24, 48] },  // edge 2
   rhombi: { mesh: (f) => hullMesh('rhombi', f), radius: (f) => f / 2, tiles: (f) => 26 * f * f, unit: 'cells', edges: [12, 24, 48] },  // edge 2: 18 squares, 8 triangles
   bicupola: { mesh: (f) => hullMesh('bicupola', f), radius: (f) => f / 2, tiles: (f) => 18 * f * f, unit: 'cells', edges: [12, 24, 48] },
-  globe: { mesh: globeMesh, radius: (E) => E / (2 * Math.PI), tiles: (E) => globeBands(E).N.slice(1, -1).reduce((sum, n) => sum + n, 2), unit: 'cells',
+  globe: { mesh: globeMesh, radius: (E) => E / (2 * Math.PI), tiles: (E, K = ringColours()) => globeBands(E, K).N.slice(1, -1).reduce((sum, n) => sum + n, 2), unit: 'cells',
            how: (E) => { const { N } = globeBands(E); return `{y:${fmt(N.length - 2)} bands}, a unit high, of {k:${fmt(E)} cells} at the equator, halved towards the poles down to {k:${fmt(N[1])}} + {r:2 caps}`; },
            // (its sizes its colours': its equator's columns F, 2F, 4F…, each halving down to F, see globeBands; as many cells as the others')
-           ownSizes: () => { const out = []; for (let E = globeFewest(ringColours()); SPHERES.globe.tiles(E) <= CELLS.most; E *= 2) if (SPHERES.globe.tiles(E) >= CELLS.least) out.push(E); return out; } },  // (E: its equator's columns, see globeMesh)
+           ownSizes: (K = ringColours()) => { const out = []; for (let E = globeFewest(K); SPHERES.globe.tiles(E, K) <= CELLS.most; E *= 2) if (SPHERES.globe.tiles(E, K) >= CELLS.least) out.push(E); return out; } },  // (E: its equator's columns, see globeMesh)
   dodecaKite: { mesh: (f) => flatPolyhedron('dodeca', f, true), radius: (f) => (f * PHI) / 2, tiles: (f) => 180 * f * f, unit: 'kites', how: (f) => `{r:12 pentagonal faces} × {s:5 sectors} × {y:(Edge=${fmt(f)})² triangles} × {k:3 kites each}` },
 };
 // the solids of squares as tetrakis triangles (see tetrakisOf): sized as their squares, 4 cells a square

@@ -533,13 +533,10 @@ async function checkSheets(fail) {
   // the globe, made for its colours (see globeBands): its parallels a unit apart, every band's cells 0.70 to 1.42 as wide as high, at
   // every size of every count
   for (const K of COLOUR_STEPS) {
-    const keep = lifeColours;
-    lifeColours = K;
-    for (const E of SPHERES.globe.sizes) {
+    for (const E of SPHERES.globe.ownSizes(K)) {  // (K's own sizes, not those offered for the mode and colours in use)
       const { N, lines } = globeBands(E, K), off = N.slice(1, -1).map((n, j) => (2 * Math.PI * Math.cos((lines[j] + lines[j + 1]) / 2)) / n / (lines[j + 1] - lines[j])).filter((r) => r < 0.70 || r > 1.42), uneven = lines.slice(1).some((l, j) => Math.abs(l - lines[j] - (2 * Math.PI) / E) > 1e-9);
       if (off.length || uneven || N.slice(1, -1).some((n) => n % K)) fail(`the globe at ${E} in ${K} colours: ${off.length} bands past 0.70 to 1.42${uneven ? ', its parallels not a unit apart' : ''}${N.some((n) => n % K) ? ', a band not a multiple of its colours' : ''}`);
     }
-    lifeColours = keep;
     checked++;
   }
   for (const w of ['lifeKleinPrismatic', 'lifeKleinPent15', 'lifeTorusRhombitri', 'lifeMobiusPent10', 'lifeGlobe']) {

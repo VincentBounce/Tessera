@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.3.77';
+const VERSION = '0.3.78';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -8894,7 +8894,7 @@ function motifTiles() {
   const nears = [-1, -1], best = [-Infinity, -Infinity], score = new Float64Array(g.n).fill(-Infinity);  // (a solid of squares and triangles: a triangle, and a square apart, see drawMotif)
   for (let t = 0; t < g.n; t++) {
     const n = [0, 1, 2].map((d) => sh.nrm[3 * t + d]), k = +(t < g.triFirst);
-    if (!planeVisible(n, at(t))) continue;
+    if (!planeVisible(n, at(t)) || (cutOn() && towardViewer(...at(t)) > 0)) continue;  // (Cut: its half nearer the viewer gone, as GL_CUT)
     const [x, y] = proj(...at(t)), sc = towardViewer(...n) + towardViewer(...at(t)) / (walk.R * (g.extent || 1)) - 0.2 * (Math.hypot(ox + x * s - cw / 2, oy + y * s - ch / 2) / Math.min(cw, ch));  // (facing the viewer, near it: in front, not a far side seen through a hole)
     score[t] = sc;
     if (sc > best[k]) { best[k] = sc; nears[k] = t; }

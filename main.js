@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.3.84';
+const VERSION = '0.3.85';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -10630,11 +10630,13 @@ function planeFrame() {
   });
 }
 // a sheet's tiles where their bricks are (see brickOf): each its brick's middle on the sheet (a Möbius strip's on its loop, 2L, a side
-// a brick), its tiles' middles the shortest way round from its first one's: its colours' blocks of whole bricks, as the plane's
+// a brick), its tiles' middles the shortest way round from its first one's: its colours' blocks of whole bricks, as the plane's. A
+// tiling's torus's by its sheet's cells, not its lattice cells (its motif's, see brickKey): rectangles of the sheet, never across its
+// seam (a slanted cell is: v0.3.73 to 0.3.84, its tiles past the seam in the other colour, drawn at the sheet's other end)
 function brickPlaces(g) {
   if (g.brickPlaces) return g.brickPlaces;
   const [P, Q] = g.mobius ? [2 * g.L, Infinity] : g.klein ? [Infinity, Infinity] : [g.nu, g.nv], near = (d, p) => (p < Infinity ? d - p * Math.round(d / p) : d);
-  const key = (t) => brickKey(g, t), sums = new Map(), out = new Float64Array(2 * g.n);
+  const key = (t) => (g.sheet ? Math.floor(t / (g.n / (g.nu * g.nv))) : brickKey(g, t)), sums = new Map(), out = new Float64Array(2 * g.n);  // (a sheet cell's tiles listed together, see tilingTorusMesh)
   for (let t = 0; t < g.n; t++) { const [u, v] = sheetPlace(g, t), s = sums.get(key(t)); if (!s) sums.set(key(t), [u, v, u, v, 1]); else { s[0] += s[2] + near(u - s[2], P); s[1] += s[3] + near(v - s[3], Q); s[4]++; } }
   const wrap = (x, p) => (p < Infinity ? ((x % p) + p) % p : x);
   for (let t = 0; t < g.n; t++) { const s = sums.get(key(t)); out[2 * t] = wrap(s[0] / s[4], P); out[2 * t + 1] = wrap(s[1] / s[4], Q); }

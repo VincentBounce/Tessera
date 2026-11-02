@@ -33,6 +33,11 @@
   .line .slot { flex: 1; }
   .slot.out { opacity: .55; }
   .slot canvas { width: 34px; height: 34px; border-radius: 4px; background: #07080b; flex: none; }
+  .verdict { margin-bottom: 4px; }
+  .tally { display: flex; align-items: center; gap: 8px; padding: 2px 0; }
+  .tally .name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .tally .nums { color: var(--dim); font-variant-numeric: tabular-nums; }
+  #score canvas { display: block; margin-top: 6px; background: #0f1219; border: 1px solid var(--line); border-radius: 4px; }
   .seed { align-self: center; color: var(--dim); font-variant-numeric: tabular-nums; margin-right: 4px; }
   .slot .name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .slot select { flex: 1; min-width: 0; background: #0f1219; color: var(--text); border: 1px solid var(--line); border-radius: 4px; font: inherit; padding: 3px; }

@@ -374,6 +374,21 @@ void main() {
   o = texelFetch(uState, p, 0) * uKeep * (1.0 - texelFetch(uWalls, p, 0).r);
 }`;
 
+// Each B×B block's cells held by each team (its channels' life summed over 0.1): one texel of a
+// (N/B)² census, a team a component (four at most). uTeam: a channel's team, or −1.
+const TEAMS_FS = `
+uniform sampler2D uL0, uL1; uniform int uB, uTeam[8];
+void main() {
+  ivec2 p = ivec2(gl_FragCoord.xy) * uB;
+  vec4 held = vec4(0.0);
+  for (int y = 0; y < uB; y++) for (int x = 0; x < uB; x++) {
+    vec4 a = texelFetch(uL0, p + ivec2(x, y), 0), b = texelFetch(uL1, p + ivec2(x, y), 0), team = vec4(0.0);
+    for (int c = 0; c < 8; c++) if (uTeam[c] >= 0) team[uTeam[c]] += c < 4 ? a[c] : b[c - 4];
+    held += step(0.1, team);
+  }
+  o = held;
+}`;
+
 // Each B×B block of a layer summed: one texel of a (N/B)² census.
 const CENSUS_FS = `
 uniform sampler2D uState; uniform int uB;
@@ -425,22 +440,23 @@ void main() {
 
 /* ---- 3.2 State and step ---------------------------------------------------------------------- */
 
-let P, state, spec, kernelSpecs, pots, wallsTex, census, trail, law, kernelCount = 0;
+let P, state, spec, kernelSpecs, pots, wallsTex, census, teamCensus, trail, law, kernelCount = 0;
 const BLOCK = 8;
 let CENSUS, walls;
 
 function setupGPU() {
-  P = { fft: program(FFT_FS), mul: program(MUL_FS), step: program(STEP_FS), stamp: program(STAMP_FS), keep: program(KEEP_FS), erase: program(ERASE_FS), census: program(CENSUS_FS), trail: program(TRAIL_FS), show: program(SHOW_FS) };
+  P = { fft: program(FFT_FS), mul: program(MUL_FS), step: program(STEP_FS), stamp: program(STAMP_FS), keep: program(KEEP_FS), erase: program(ERASE_FS), census: program(CENSUS_FS), teams: program(TEAMS_FS), trail: program(TRAIL_FS), show: program(SHOW_FS) };
   fftProgram = P.fft;
 }
 
 // The world's textures for an n×n torus (n a power of 2), the old ones let go.
 function allocate(n) {
-  for (const t of [state, scratch, spec, kernelSpecs, pots, wallsTex, census, trail].flat(2).filter(Boolean)) {
+  for (const t of [state, scratch, spec, kernelSpecs, pots, wallsTex, census, teamCensus, trail].flat(2).filter(Boolean)) {
     if (t.fb) gl.deleteFramebuffer(t.fb);
     gl.deleteTexture(t);
   }
-  if (censusFence) { gl.deleteSync(censusFence); censusFence = null; }
+  for (const f of [censusFence, score.fence]) if (f) gl.deleteSync(f);
+  censusFence = score.fence = null;
   N = n; CENSUS = N / BLOCK; walls = new Uint8Array(N * N);
   const lin = linearOk ? gl.LINEAR : gl.NEAREST, field = () => texture(N, N, null, gl.RGBA32F, gl.RGBA, gl.FLOAT, lin);
   state = Array.from({ length: LAYERS }, () => [field(), field()]);
@@ -450,6 +466,7 @@ function allocate(n) {
   pots = Array.from({ length: GROUPS }, () => texture(N, N));
   wallsTex = texture(N, N, walls, gl.R8, gl.RED, gl.UNSIGNED_BYTE, gl.LINEAR);
   census = Array.from({ length: LAYERS }, () => texture(CENSUS, CENSUS));
+  teamCensus = texture(CENSUS, CENSUS);
   trail = [field(), field()];
 }
 
@@ -626,10 +643,79 @@ function clearLife(channels = range(0, CH)) {
   if (channels.length === CH) fadeTrails(0);
 }
 
+/* ---- 3.3b Battle score ------------------------------------------------------------------------ */
+
+// A battle's score, from the team census read back without waiting (as Keep alive's): each team's
+// cells held and individuals (its blocks held by a quarter or more, joined side by side on the
+// torus), a reading a time in the history; the winner, once 500 steps are played: the last team
+// alive, or one with 90% of the life once life covers a third of the free cells (not an early
+// lead in an empty world), or the leader at 20,000 steps; a draw if all are gone.
+const score = { start: 0, history: [], winner: null, fence: null, buffer: null };
+function resetScore() { Object.assign(score, { start: stepCount, history: [], winner: null }); }
+
+function teamGroups(held, k) {
+  const C = CENSUS, seen = new Uint8Array(C * C), on = (i) => held[i * 4 + k] >= BLOCK * BLOCK / 4;
+  let groups = 0;
+  for (let i = 0; i < C * C; i++) {
+    if (seen[i] || !on(i)) continue;
+    groups++;
+    const todo = [i]; seen[i] = 1;
+    while (todo.length) {
+      const j = todo.pop(), x = j % C, y = (j - x) / C;
+      for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+        const n = ((y + dy + C) % C) * C + (x + dx + C) % C;
+        if (!seen[n] && on(n)) { seen[n] = 1; todo.push(n); }
+      }
+    }
+  }
+  return groups;
+}
+
+// Asks the GPU for a census, or reads the one asked for once it is ready: true when a reading came.
+function battleCensus() {
+  const cells = CENSUS * CENSUS, teams = world.fighters;
+  if (!score.fence) {
+    const owner = Array(CH).fill(-1);
+    teams.forEach((t, k) => { for (const c of teamChannels(t)) owner[c] = k; });
+    pass(P.teams, teamCensus, { uB: { i: BLOCK }, uTeam: { iv: owner } }, layerTextures());
+    score.buffer ??= gl.createBuffer();
+    gl.bindBuffer(gl.PIXEL_PACK_BUFFER, score.buffer);
+    gl.bufferData(gl.PIXEL_PACK_BUFFER, cells * 16, gl.STREAM_READ);
+    gl.readPixels(0, 0, CENSUS, CENSUS, gl.RGBA, gl.FLOAT, 0);
+    gl.bindBuffer(gl.PIXEL_PACK_BUFFER, null);
+    score.fence = gl.fenceSync(gl.SYNC_GPU_COMMANDS_COMPLETE, 0);
+    score.asked = stepCount;
+    return false;
+  }
+  if (gl.getSyncParameter(score.fence, gl.SYNC_STATUS) !== gl.SIGNALED) return false;
+  gl.deleteSync(score.fence); score.fence = null;
+  const held = new Float32Array(cells * 4);
+  gl.bindBuffer(gl.PIXEL_PACK_BUFFER, score.buffer);
+  gl.getBufferSubData(gl.PIXEL_PACK_BUFFER, 0, held);
+  gl.bindBuffer(gl.PIXEL_PACK_BUFFER, null);
+  const area = teams.map((_, k) => { let a = 0; for (let i = 0; i < cells; i++) a += held[i * 4 + k]; return a; });
+  const reading = { step: score.asked - score.start, area, groups: teams.map((_, k) => teamGroups(held, k)) };
+  score.history.push(reading);
+  if (score.history.length > 4000) score.history = score.history.filter((_, i) => i % 2 === 0);
+  judge(reading);
+  return true;
+}
+
+function judge({ step, area }) {
+  if (score.winner || step < 500) return;
+  const total = area.reduce((a, b) => a + b, 0), alive = area.flatMap((a, k) => (a > 0 ? [k] : [])), lead = area.indexOf(Math.max(...area));
+  if (!alive.length) score.winner = { team: -1, step, why: 'all gone: a draw' };
+  else if (alive.length === 1) score.winner = { team: alive[0], step, why: 'the last alive' };
+  else if (area[lead] >= 0.9 * total && total >= freeCells / 3) score.winner = { team: lead, step, why: '90% of the life' };
+  else if (step >= 20000) score.winner = { team: lead, step, why: 'the leader at 20,000 steps' };
+}
+
 /* ---- 3.4 Walls ------------------------------------------------------------------------------- */
 
-// The CPU's walls sent to the GPU.
+// The CPU's walls sent to the GPU; the cells free of them counted (a battle's area is out of those).
+let freeCells = 0;
 function uploadWalls() {
+  freeCells = walls.reduce((a, w) => a + (w ? 0 : 1), 0);
   gl.bindTexture(gl.TEXTURE_2D, wallsTex);
   gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, N, N, gl.RED, gl.UNSIGNED_BYTE, walls);
   apply(P.keep, { uKeep: [1, 1, 1, 1] });
@@ -834,7 +920,7 @@ const fighterSpecies = () => world.fighters.map((t) => t.sp);
 
 // A battle laid again from its seed: its walls, its law, its creatures; its link in the address bar.
 function startBattle() {
-  setDecor(decor); rebuild(); updateLink();
+  setDecor(decor); rebuild(); updateLink(); resetScore(); showScore();
 }
 
 // A battle team's row: a click selects it for placing; its list changes its species (one that
@@ -882,7 +968,38 @@ function battlePanel() {
   seedRow.append(shown,
     button('New seed', 'Another start: other spots, turns and walls', () => { world.seed = newSeed(); buildPanel(); startBattle(); }),
     button('Copy link', 'The link to this battle: the same teams, start and walls', () => { updateLink(); navigator.clipboard?.writeText(location.href); }));
-  return [...world.fighters.map((_, k) => fighterRow(k)), add, ...section('Start', layout), ...section('Creatures a team', each), ...section('Seed', seedRow)];
+  const board = document.createElement('div'); board.id = 'score';
+  return [...world.fighters.map((_, k) => fighterRow(k)), add, ...section('Start', layout), ...section('Creatures a team', each), ...section('Seed', seedRow), ...section('Score', board)];
+}
+
+// The score under the battle: the winner (or the step), each team's share of the free cells and
+// its individuals, and the shares over time, a line a team in its colour.
+function showScore() {
+  const board = $('score');
+  if (!board) return;
+  const last = score.history.at(-1), colour = (k) => rgb(COLOURS[world.fighters[k].at]);
+  const head = document.createElement('div'); head.className = 'verdict';
+  head.textContent = score.winner ? (score.winner.team < 0 ? `Step ${score.winner.step}: ${score.winner.why}` : `${world.fighters[score.winner.team].sp.code} wins at step ${score.winner.step}: ${score.winner.why}`)
+    : `Step ${last?.step ?? 0}`;
+  const rows = world.fighters.map((t, k) => {
+    const row = document.createElement('div'); row.className = 'tally';
+    const dot = document.createElement('span'); dot.className = 'dot'; dot.style.background = colour(k);
+    const name = document.createElement('span'); name.className = 'name'; name.textContent = t.sp.name || t.sp.code;
+    const nums = document.createElement('span'); nums.className = 'nums';
+    nums.textContent = last ? `${(100 * last.area[k] / Math.max(1, freeCells)).toFixed(1)}% · ${last.groups[k]} ind.` : '';
+    row.append(dot, name, nums);
+    return row;
+  });
+  const cv = document.createElement('canvas'), w = 236, h = 80, dpr = devicePixelRatio || 1;
+  cv.width = w * dpr; cv.height = h * dpr; cv.style.width = `${w}px`; cv.style.height = `${h}px`;
+  const ctx = cv.getContext('2d'), H = score.history, top = Math.max(0.05, ...H.flatMap((r) => r.area.map((a) => a / Math.max(1, freeCells))));
+  ctx.scale(dpr, dpr);
+  world.fighters.forEach((_, k) => {
+    ctx.strokeStyle = colour(k); ctx.lineWidth = 1.5; ctx.beginPath();
+    H.forEach((r, i) => ctx[i ? 'lineTo' : 'moveTo'](w * i / Math.max(1, H.length - 1), h - 2 - (h - 4) * r.area[k] / Math.max(1, freeCells) / top));
+    ctx.stroke();
+  });
+  board.replaceChildren(head, ...rows, cv);
 }
 
 function buildPanel() {
@@ -915,6 +1032,7 @@ function buildPanel() {
     world.kind === 'battle' ? button('Restart', 'The battle laid again from its seed', startBattle)
       : button('Seed', 'Life cleared, a few of each species placed again', () => { clearLife(); seed(); }),
     button('Clear', 'All life cleared (the walls stay)', () => clearLife()));
+  showScore();
 }
 
 /* ---- 4.4 Drawing and the pointer ------------------------------------------------------------- */
@@ -1050,6 +1168,7 @@ function frame() {
     fence = gl.fenceSync(gl.SYNC_GPU_COMMANDS_COMPLETE, 0);
   }
   if (running && alive && world.kind !== 'battle' && (censusFence || ++aliveTick % 30 === 0)) keepAlive();
+  if (world.kind === 'battle' && (score.fence || (running && ++aliveTick % 10 === 0)) && battleCensus()) showScore();
   render();
   frames++;
   const now = performance.now();

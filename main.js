@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.3.104';
+const VERSION = '0.3.105';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -2529,7 +2529,12 @@ function checkFormula(root) {
 
 /* ---- 4.5 Reading the Formula field ----------------------------------------------------------- */
 // The formula of the Formula field, checked and written back in canonical form
-let formulaInUse = 'pi';  // the last formula that was valid, for the link and the saved setups
+let formulaInUse = '1/112';  // the last formula that was valid, for the link and the saved setups
+// The number in use till one is picked: π on a walk, 1/112 elsewhere (a Life start's digits, an ant's turns: a highway for
+// the square ant). One picked, typed or linked other than its mode's own is kept from mode to mode
+const defaultNumber = (w) => (NAV[w]?.[0] === 'Walk' ? 'pi' : '1/112');
+let numberPicked = false;
+const pickNumber = (text, w = $('mode').value) => { numberPicked = text !== defaultNumber(w); };
 function readFormula() {
   try {
     const ast = parseFormula($('formula').value);
@@ -3244,6 +3249,7 @@ function renderModePicker() {
 /* ---- 5.2 compute(): from the formula to a built walk ----------------------------------------- */
 function compute() {
   const mode = MODES[$('mode').value];
+  if (!numberPicked) $('formula').value = defaultNumber($('mode').value);
   surfaceDraw = false;
   if (torusTurned && !blocksTurn($('mode').value, true)) torusTurned = false;  // (a reversible sheet turned only where its blocks are: a link's too)
   renderModePicker();
@@ -11736,6 +11742,7 @@ function applySetup(s) {
   if (typeof s.x === 'string') {  // (none: the number kept, not read)
     $('formula').value = s.x;
     if (readFormula().error) return false;
+    pickNumber(formulaInUse, s.w);
   }
   if (s.d !== undefined) target = Number(s.d);
   set('mode', s.w);
@@ -15114,7 +15121,7 @@ for (const [low, top, label] of [[0, 1e3, 'up to 1,000 digits'], [1e3, 1e4, '1,0
 }
 $('primorialP').value = '392113,1';
 // A menu choice, or a new value in its helper menu, writes its formula
-const pickPreset = (id) => { $('formula').value = presetFormula(id); computeFramed(); };
+const pickPreset = (id) => { $('formula').value = presetFormula(id); pickNumber($('formula').value); computeFramed(); };
 $('mersenneP').addEventListener('change', () => pickPreset('mersenne'));
 $('primorialP').addEventListener('change', () => pickPreset('primorial'));
 $('sky').addEventListener('change', () => { needsFull = true; renderSkyButtons(); });
@@ -15450,7 +15457,7 @@ $('sphereF').addEventListener('change', () => {
 // A formula left wrong (by clicking elsewhere) is undone: the one in use comes back
 $('formula').addEventListener('change', () => {
   const { error } = readFormula();
-  if (!error) { computeFramed(); return; }
+  if (!error) { pickNumber(formulaInUse); computeFramed(); return; }
   $('formula').value = formulaInUse;
   $('status').textContent = `Formula: ${error} · ${formulaInUse} kept`;
 });
@@ -15626,8 +15633,8 @@ window.addEventListener('hashchange', () => { const s = parseHash(); if (s) appl
 
 
 /* ---- 12.3 Start-up --------------------------------------------------------------------------- */
-// A link with a setup opens that setup; otherwise π on the turtle walk. The link then follows the
-// setup on its events (see syncLink).
+// A link with a setup opens that setup; otherwise Life on the cube. The link then follows the setup on its events (see
+// syncLink).
 new ResizeObserver(resize).observe(stage);
 new ResizeObserver(() => { statsDirty = true; }).observe($('animBar'));  // the bar opened or closed: its digits fill its new width
 updateSpeedLabel();

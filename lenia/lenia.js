@@ -646,10 +646,10 @@ function clearLife(channels = range(0, CH)) {
 /* ---- 3.3b Battle score ------------------------------------------------------------------------ */
 
 // A battle's score, from the team census read back without waiting (as Keep alive's): each team's
-// cells held and individuals (its blocks held by a quarter or more, joined side by side on the
-// torus), a reading a time in the history; the winner, once 500 steps are played: the last team
-// alive, or one with 90% of the life once life covers a third of the free cells (not an early
-// lead in an empty world), or the leader at 20,000 steps; a draw if all are gone.
+// cells held, its individuals (its blocks held by a quarter or more, joined side by side on the
+// torus) and its territory (below), a reading a time in the history; the winner, once 500 steps
+// are played: the last team alive, or one whose territory is two thirds of the free cells, or the
+// leader in territory at 20,000 steps; a draw if all are gone.
 const score = { start: 0, history: [], winner: null, fence: null, buffer: null };
 function resetScore() { Object.assign(score, { start: stepCount, history: [], winner: null }); }
 
@@ -669,6 +669,37 @@ function teamGroups(held, k) {
     }
   }
   return groups;
+}
+
+// Territory: the free cells nearer a team's life than any other's, within two kernel radii of it,
+// by 8×8 blocks: a block with life goes to the team holding most of it; then, a ring of blocks a
+// time on the torus, a block reached by one team only is its, by two or more at once nobody's;
+// walls (a block with no free cell) stop it. Each team's free cells in its blocks.
+function territories(held) {
+  const C = CENSUS, K = world.fighters.length, owner = new Int8Array(C * C).fill(-1), reach = Math.ceil(2 * world.R / BLOCK);
+  let ring = [];
+  for (let i = 0; i < C * C; i++) {
+    let best = -1, most = 0;
+    for (let k = 0; k < K; k++) if (held[i * 4 + k] > most) { most = held[i * 4 + k]; best = k; }
+    if (best >= 0 && freeInBlock[i]) { owner[i] = best; ring.push(i); }
+  }
+  for (let d = 0; d < reach && ring.length; d++) {
+    const claims = new Map();
+    for (const j of ring) {
+      const x = j % C, y = (j - x) / C;
+      for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+        const n = ((y + dy + C) % C) * C + (x + dx + C) % C;
+        if (owner[n] !== -1 || !freeInBlock[n]) continue;
+        const was = claims.get(n);
+        claims.set(n, was === undefined || was === owner[j] ? owner[j] : -2);
+      }
+    }
+    ring = [];
+    for (const [n, k] of claims) { owner[n] = k; if (k >= 0) ring.push(n); }
+  }
+  const land = Array(K).fill(0);
+  for (let i = 0; i < C * C; i++) if (owner[i] >= 0) land[owner[i]] += freeInBlock[i];
+  return land;
 }
 
 // Asks the GPU for a census, or reads the one asked for once it is ready: true when a reading came.
@@ -694,28 +725,31 @@ function battleCensus() {
   gl.getBufferSubData(gl.PIXEL_PACK_BUFFER, 0, held);
   gl.bindBuffer(gl.PIXEL_PACK_BUFFER, null);
   const area = teams.map((_, k) => { let a = 0; for (let i = 0; i < cells; i++) a += held[i * 4 + k]; return a; });
-  const reading = { step: score.asked - score.start, area, groups: teams.map((_, k) => teamGroups(held, k)) };
+  const reading = { step: score.asked - score.start, area, land: territories(held), groups: teams.map((_, k) => teamGroups(held, k)) };
   score.history.push(reading);
   if (score.history.length > 4000) score.history = score.history.filter((_, i) => i % 2 === 0);
   judge(reading);
   return true;
 }
 
-function judge({ step, area }) {
+function judge({ step, area, land }) {
   if (score.winner || step < 500) return;
-  const total = area.reduce((a, b) => a + b, 0), alive = area.flatMap((a, k) => (a > 0 ? [k] : [])), lead = area.indexOf(Math.max(...area));
+  const alive = area.flatMap((a, k) => (a > 0 ? [k] : [])), lead = land.indexOf(Math.max(...land));
   if (!alive.length) score.winner = { team: -1, step, why: 'all gone: a draw' };
   else if (alive.length === 1) score.winner = { team: alive[0], step, why: 'the last alive' };
-  else if (area[lead] >= 0.9 * total && total >= freeCells / 3) score.winner = { team: lead, step, why: '90% of the life' };
-  else if (step >= 20000) score.winner = { team: lead, step, why: 'the leader at 20,000 steps' };
+  else if (land[lead] >= freeCells * 2 / 3) score.winner = { team: lead, step, why: 'two thirds of the world' };
+  else if (step >= 20000) score.winner = { team: lead, step, why: 'the leader in territory at 20,000 steps' };
 }
 
 /* ---- 3.4 Walls ------------------------------------------------------------------------------- */
 
-// The CPU's walls sent to the GPU; the cells free of them counted (a battle's area is out of those).
-let freeCells = 0;
+// The CPU's walls sent to the GPU; the cells free of them counted, in all and by 8×8 blocks (a
+// battle's shares are out of those).
+let freeCells = 0, freeInBlock = new Int32Array(0);
 function uploadWalls() {
   freeCells = walls.reduce((a, w) => a + (w ? 0 : 1), 0);
+  freeInBlock = new Int32Array(CENSUS * CENSUS);
+  for (let i = 0; i < N * N; i++) if (!walls[i]) freeInBlock[Math.floor(Math.floor(i / N) / BLOCK) * CENSUS + Math.floor((i % N) / BLOCK)]++;
   gl.bindTexture(gl.TEXTURE_2D, wallsTex);
   gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, N, N, gl.RED, gl.UNSIGNED_BYTE, walls);
   apply(P.keep, { uKeep: [1, 1, 1, 1] });
@@ -972,8 +1006,8 @@ function battlePanel() {
   return [...world.fighters.map((_, k) => fighterRow(k)), add, ...section('Start', layout), ...section('Creatures a team', each), ...section('Seed', seedRow), ...section('Score', board)];
 }
 
-// The score under the battle: the winner (or the step), each team's share of the free cells and
-// its individuals, and the shares over time, a line a team in its colour.
+// The score under the battle: the winner (or the step), each team's territory and life as shares
+// of the free cells and its individuals, and the territories over time, a line a team in its colour.
 function showScore() {
   const board = $('score');
   if (!board) return;
@@ -986,17 +1020,19 @@ function showScore() {
     const dot = document.createElement('span'); dot.className = 'dot'; dot.style.background = colour(k);
     const name = document.createElement('span'); name.className = 'name'; name.textContent = t.sp.name || t.sp.code;
     const nums = document.createElement('span'); nums.className = 'nums';
-    nums.textContent = last ? `${(100 * last.area[k] / Math.max(1, freeCells)).toFixed(1)}% · ${last.groups[k]} ind.` : '';
+    const pc = (v) => `${(100 * v / Math.max(1, freeCells)).toFixed(1)}%`;
+    nums.textContent = last ? `${pc(last.land[k])} land · ${pc(last.area[k])} life · ${last.groups[k]} ind.` : '';
+    nums.title = 'Territory (the free cells nearer its life than any other, within two kernel radii), its life\'s cells, its individuals';
     row.append(dot, name, nums);
     return row;
   });
   const cv = document.createElement('canvas'), w = 236, h = 80, dpr = devicePixelRatio || 1;
   cv.width = w * dpr; cv.height = h * dpr; cv.style.width = `${w}px`; cv.style.height = `${h}px`;
-  const ctx = cv.getContext('2d'), H = score.history, top = Math.max(0.05, ...H.flatMap((r) => r.area.map((a) => a / Math.max(1, freeCells))));
+  const ctx = cv.getContext('2d'), H = score.history, top = Math.max(0.05, ...H.flatMap((r) => r.land.map((a) => a / Math.max(1, freeCells))));
   ctx.scale(dpr, dpr);
   world.fighters.forEach((_, k) => {
     ctx.strokeStyle = colour(k); ctx.lineWidth = 1.5; ctx.beginPath();
-    H.forEach((r, i) => ctx[i ? 'lineTo' : 'moveTo'](w * i / Math.max(1, H.length - 1), h - 2 - (h - 4) * r.area[k] / Math.max(1, freeCells) / top));
+    H.forEach((r, i) => ctx[i ? 'lineTo' : 'moveTo'](w * i / Math.max(1, H.length - 1), h - 2 - (h - 4) * r.land[k] / Math.max(1, freeCells) / top));
     ctx.stroke();
   });
   board.replaceChildren(head, ...rows, cv);

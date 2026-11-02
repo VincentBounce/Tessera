@@ -24,6 +24,12 @@
  * species copied, each rule and the virulence moved by up to `change`, into a species gone (or the
  * rarest), laid on that species' particles within two reaches of it: hunters spread.
  * A particle's w: its kind + its shade × 0.999 (the kind the whole part).
+ * Physarum (Jeff Jones' slime mould, 2010), the torus only: no forces, agents of 1 to 4 species on
+ * a trail map (a square of 2√n cells a side, a channel a species). Each agent smells three points
+ * ahead (straight, `angle` left and right, `sensor` cells away; its own species' trail, less `repel`
+ * of the others'), turns `turn` towards the strongest (at random when both sides beat the front),
+ * steps `speed` cells and lays its trail; the map then spreads (a 3 × 3 mean) and fades (`decay`).
+ * Veins form, branch and merge; species keep to their own networks. The map is drawn, not the agents.
  * Swirl, in every mode: a push across the way to each neighbour (to its left), turning creatures.
  * The reach is set for 4,096 particles and shrinks with more (by √(4096/n)): each creature keeps
  * its particles, a larger crowd is a larger world, more creatures.
@@ -43,7 +49,7 @@
 
 /* ---- 1.1 Setting ----------------------------------------------------------------------------- */
 
-const MODES = ['kinds', 'battle', 'wheel', 'evolve'], SPECIES = 16, KINDS = [3, 4, 5, 6, 7, 8], COUNTS = [4096, 16384, 65536, 262144, 1048576], SPACES = ['torus', 'sphere'], STEPS = [1, 2, 4, 8];
+const MODES = ['kinds', 'battle', 'wheel', 'evolve', 'physarum'], SPECIES = 16, KINDS = [3, 4, 5, 6, 7, 8], COUNTS = [4096, 16384, 65536, 262144, 1048576], SPACES = ['torus', 'sphere'], STEPS = [1, 2, 4, 8];
 const BETA = 0.3, DT = 0.02, BASE = 4096;
 const RHO = 1 / Math.sqrt(4 * Math.PI); // the sphere's radius: its area 1, as the torus'
 const COLOURS = [[1, 0.35, 0.35], [0.35, 0.85, 0.4], [0.4, 0.6, 1], [1, 0.85, 0.3], [0.85, 0.45, 1], [0.3, 0.9, 0.95], [1, 0.6, 0.25], [0.9, 0.9, 0.9]];
@@ -52,7 +58,7 @@ const mulberry32 = (a) => () => { a |= 0; a = (a + 0x6d2b79f5) | 0; let t = Math
 // contagion=1&tip=0.5&chase=0.15&mutate=3&change=0.3 and, once a rule is changed, m= its K² rules
 const hash = Object.fromEntries(new URLSearchParams(location.hash.slice(1)));
 const num = (v, d) => (v === undefined || v === '' || isNaN(+v) ? d : +v);
-const set = { trails: num(hash.trails, 0), mutate: num(hash.mutate, 3), change: num(hash.change, 0.3), redBlue: num(hash.redBlue, 0.3), blueRed: num(hash.blueRed, 0.3), mode: MODES.includes(hash.mode) ? hash.mode : 'kinds', swirl: num(hash.swirl, 0), contagion: num(hash.contagion, 1), tip: num(hash.tip, 0.5), chase: num(hash.chase, 0.15), space: SPACES.includes(hash.space) ? hash.space : 'torus', k: KINDS.includes(+hash.k) ? +hash.k : 6, n: COUNTS.includes(+hash.n) ? +hash.n : 65536, seed: +hash.seed || 1, reach: +hash.reach || 0.1, friction: +hash.friction || 0.04, steps: STEPS.includes(+hash.steps) ? +hash.steps : 1, m: hash.m ? hash.m.split(',').map(Number) : null };
+const set = { species: [1, 2, 3, 4].includes(+hash.species) ? +hash.species : 3, angle: num(hash.angle, 45), sensor: num(hash.sensor, 9), turn: num(hash.turn, 45), speed: num(hash.speed, 1), decay: num(hash.decay, 0.9), repel: num(hash.repel, 1), trails: num(hash.trails, 0), mutate: num(hash.mutate, 3), change: num(hash.change, 0.3), redBlue: num(hash.redBlue, 0.3), blueRed: num(hash.blueRed, 0.3), mode: MODES.includes(hash.mode) ? hash.mode : 'kinds', swirl: num(hash.swirl, 0), contagion: num(hash.contagion, 1), tip: num(hash.tip, 0.5), chase: num(hash.chase, 0.15), space: SPACES.includes(hash.space) ? hash.space : 'torus', k: KINDS.includes(+hash.k) ? +hash.k : 6, n: COUNTS.includes(+hash.n) ? +hash.n : 65536, seed: +hash.seed || 1, reach: +hash.reach || 0.1, friction: +hash.friction || 0.04, steps: STEPS.includes(+hash.steps) ? +hash.steps : 1, m: hash.m ? hash.m.split(',').map(Number) : null };
 const rules = () => set.m ?? (() => { const r = mulberry32(set.seed * 7919); return Array.from({ length: set.k * set.k }, () => Math.round((r() * 2 - 1) * 4) / 4); })();
 let M = rules();
 // Evolve's species: each a K × K matrix (species 0 the rules shown in Kinds) and a virulence (0.5 at first); four at
@@ -70,18 +76,25 @@ const ruleTable = () => {
   (set.mode === 'evolve' ? genomes : [{ rules: M, virulence: 0 }]).forEach((g, s) => { if (!g) return; for (let i = 0; i < set.k; i++) for (let j = 0; j < set.k; j++) t[s * 72 + i * 8 + j] = g.rules[i * set.k + j]; t[s * 72 + 64] = g.virulence; });
   return t;
 };
-const keep = () => { const h = { trails: set.trails, mutate: set.mutate, change: set.change, redBlue: set.redBlue, blueRed: set.blueRed, mode: set.mode, swirl: set.swirl, contagion: set.contagion, tip: set.tip, chase: set.chase, space: set.space, k: set.k, n: set.n, seed: set.seed, reach: set.reach, friction: set.friction, steps: set.steps }; if (set.m) h.m = set.m.join(','); history.replaceState(null, '', '#' + new URLSearchParams(h)); };
+const keep = () => { const h = { species: set.species, angle: set.angle, sensor: set.sensor, turn: set.turn, speed: set.speed, decay: set.decay, repel: set.repel, trails: set.trails, mutate: set.mutate, change: set.change, redBlue: set.redBlue, blueRed: set.blueRed, mode: set.mode, swirl: set.swirl, contagion: set.contagion, tip: set.tip, chase: set.chase, space: set.space, k: set.k, n: set.n, seed: set.seed, reach: set.reach, friction: set.friction, steps: set.steps }; if (set.m) h.m = set.m.join(','); history.replaceState(null, '', '#' + new URLSearchParams(h)); };
 // The reach in the world: the slider's, for 4,096, shrunk with the count
 const reach = () => set.reach * Math.sqrt(BASE / set.n);
 
 /* ---- 1.2 Shaders ----------------------------------------------------------------------------- */
 
+// A chance in [0, 1) for particle i at place p (its bits differ each step: PCG of both)
+const CHANCE = `
+fn chance(i: u32, p: vec3f) -> f32 {
+  var x = i * 747796405u + (bitcast<u32>(p.x) ^ (bitcast<u32>(p.y) * 2891336453u) ^ (bitcast<u32>(p.z) * 1181783497u));
+  x = ((x >> ((x >> 28u) + 4u)) ^ x) * 277803737u; x = (x >> 22u) ^ x; return f32(x) / 4294967296.0;
+}`;
 const PARAMS = `
-struct Params { a: vec4u, g: vec4u, f: vec4f, v: vec4f, t0: vec4f, t1: vec4f, t2: vec4f, h: vec4f, e: vec4f, m: vec4u, u: vec4f };
+struct Params { a: vec4u, g: vec4u, f: vec4f, v: vec4f, t0: vec4f, t1: vec4f, t2: vec4f, h: vec4f, e: vec4f, m: vec4u, u: vec4f, q: vec4f, r: vec4f, s: vec4f };
 // a: n, k, sphere, bins; g: the grid's size, the mode (0 kinds, 1 battle, 2 wheel, 3 evolve); f: reach, damp, dt, a bin's side;
 // v: scale x, y, a dot's half size x, y; h: contagion, tip, chase, swirl; e: red to blue, blue to red (Battle), a dot's
 // gain (√(1 − trails): a still one, kept frame after frame, not burnt);
-// m: a mutation's parent and mutant species, 1 while it happens; u: its centre and radius;
+// m: a mutation's parent and mutant species, 1 while it happens; u: its centre and radius; Physarum's q: angle, turn
+// (radians), sensor, speed (cells); r: decay, the trail laid a step, repel, the map's side; s: the canvas' width, height;
 // t0..t2: the sphere's turn (columns), their w the zoom and, on the torus, the place shown in the middle
 const RHO = ${RHO}; const BETA = ${BETA};`;
 const COMPUTE = PARAMS + `
@@ -100,11 +113,7 @@ fn virulence(s: u32) -> f32 { return R[s * 18u + 16u].x; }
 fn kindOf(w: f32) -> u32 { return u32(floor(w)); }
 fn shadeOf(w: f32) -> f32 { return fract(w) / 0.999; }
 fn speciesOf(w: f32) -> u32 { return u32(round(shadeOf(w) * 15.0)); }
-// A chance in [0, 1) for particle i at place p (its bits differ each step: PCG of both)
-fn chance(i: u32, p: vec3f) -> f32 {
-  var x = i * 747796405u + (bitcast<u32>(p.x) ^ (bitcast<u32>(p.y) * 2891336453u) ^ (bitcast<u32>(p.z) * 1181783497u));
-  x = ((x >> ((x >> 28u) + 4u)) ^ x) * 277803737u; x = (x >> 22u) ^ x; return f32(x) / 4294967296.0;
-}
+${CHANCE}
 // How much a particle (its w, wi) is drawn to another (wj): the rule matrix, plus across Battle's sides its side's say;
 // on the Wheel by their shades
 fn affinity(wi: f32, wj: f32) -> f32 {
@@ -232,12 +241,60 @@ const PICTURE = `
 @fragment fn fade() -> @location(0) vec4f { return vec4f(0.0); }
 @fragment fn show(@builtin(position) p: vec4f) -> @location(0) vec4f { return vec4f(1.0 - exp(-textureLoad(picture, vec2i(p.xy), 0).rgb * 1.6) + vec3f(0.03, 0.035, 0.05), 1.0); }`;
 const TRAIL = 'rgba16float';
+// Physarum: the map's cell at a place (wrapped), shared by the step and the drawing
+const MAPCELL = `
+fn side() -> i32 { return i32(P.r.w); }
+fn cell(p: vec2f) -> u32 { let w = side(); let c = min(vec2i(floor(fract(p) * f32(w))), vec2i(w - 1)); return u32(c.y * w + c.x); }`;
+const PHYSARUM = PARAMS + CHANCE + `
+@group(0) @binding(0) var<uniform> P: Params;
+@group(0) @binding(1) var<storage, read_write> aIn: array<vec4f>;   // an agent i: place 2i (its species in w), heading 2i + 1 (x)
+@group(0) @binding(2) var<storage, read_write> aOut: array<vec4f>;
+@group(0) @binding(3) var<storage, read_write> tIn: array<vec4f>;   // the trail map, a channel a species
+@group(0) @binding(4) var<storage, read_write> tOut: array<vec4f>;
+@group(0) @binding(5) var<storage, read_write> laid: array<atomic<u32>>; // this step's trail, 4 a cell, fixed point (× 256)
+` + MAPCELL + `
+// What species s smells at p: its own trail, less repel times the others'
+fn smell(p: vec2f, s: u32) -> f32 { let t = tIn[cell(p)]; var own = vec4f(0.0); own[s] = 1.0 + P.r.z; return dot(t, own - vec4f(P.r.z)); }
+fn way(h: f32) -> vec2f { return vec2f(cos(h), sin(h)); }
+// One agent: smell ahead, turn, step, lay
+@compute @workgroup_size(256) fn crawl(@builtin(global_invocation_id) id: vec3u) {
+  let i = id.x; if (i >= P.a.x) { return; }
+  let a = aIn[2u * i]; let s = u32(a.w); var h = aIn[2u * i + 1u].x; let far = P.q.z / f32(side());
+  let F = smell(a.xy + way(h) * far, s); let L = smell(a.xy + way(h + P.q.x) * far, s); let R = smell(a.xy + way(h - P.q.x) * far, s);
+  if (F < L && F < R) { h += select(-P.q.y, P.q.y, chance(i, a.xyz) < 0.5); }
+  else if (!(F > L && F > R)) { if (L > R) { h += P.q.y; } else if (R > L) { h -= P.q.y; } }
+  h = h - 6.2831853 * floor(h / 6.2831853);
+  let p = fract(a.xy + way(h) * P.q.w / f32(side()));
+  atomicAdd(&laid[cell(p) * 4u + s], u32(P.r.y * 256.0));
+  aOut[2u * i] = vec4f(p, 0.0, a.w); aOut[2u * i + 1u] = vec4f(h, 0.0, 0.0, 0.0);
+}
+// One cell: the mean of its 3 × 3 and this step's trail, faded; the step's trail cleared
+@compute @workgroup_size(16, 16) fn spread(@builtin(global_invocation_id) id: vec3u) {
+  let w = side(); let x = i32(id.x); let y = i32(id.y); if (x >= w || y >= w) { return; }
+  var sum = vec4f(0.0);
+  for (var dy = -1; dy <= 1; dy++) { for (var dx = -1; dx <= 1; dx++) { sum += tIn[((y + dy + w) % w) * w + (x + dx + w) % w]; } }
+  let c = u32(y * w + x); var d = vec4f(0.0);
+  for (var k = 0u; k < 4u; k++) { d[k] = f32(atomicExchange(&laid[c * 4u + k], 0u)) / 256.0; }
+  tOut[c] = (sum / 9.0 + d) * P.r.x;
+}`;
+// The map drawn: each pixel the cell under it (zoomed, moved over), the species' colours summed, softened
+const MAP = PARAMS + `
+@group(0) @binding(0) var<uniform> P: Params;
+@group(0) @binding(1) var<storage, read> t: array<vec4f>;
+@group(0) @binding(2) var<uniform> colour: array<vec4f, 8>;
+` + MAPCELL + `
+@vertex fn full(@builtin(vertex_index) v: u32) -> @builtin(position) vec4f { return vec4f(f32(v & 1u) * 4.0 - 1.0, f32(v >> 1u) * 4.0 - 1.0, 0.0, 1.0); }
+@fragment fn map(@builtin(position) px: vec4f) -> @location(0) vec4f {
+  let at = vec2f(P.t1.w, P.t2.w) + (px.xy - P.s.xy * 0.5) / (P.t0.w * min(P.s.x, P.s.y));
+  let v = t[cell(at)] * 0.04; let c = v.x * colour[0].rgb + v.y * colour[1].rgb + v.z * colour[2].rgb + v.w * colour[3].rgb;
+  return vec4f(1.0 - exp(-c) + vec3f(0.03, 0.035, 0.05), 1.0);
+}`;
 
 /* ---- 1.3 GPU --------------------------------------------------------------------------------- */
 
 const view = document.getElementById('view');
 const fail = (text) => { const f = document.getElementById('fail'); f.style.display = 'flex'; f.textContent = text; throw new Error(text); };
-let device, context, format, pipes, drawPipe, fadePipe, showPipe, trail = null, showGroup, params, ruleBuf, colourBuf, states = [], bins = {}, binCount = 0, groups = [], drawGroups = [], flip = 0;
+let device, context, format, pipes, drawPipe, phys, mapPipe, mapSide = 0, maps = [], laid = null, physGroups = [], mapGroups = [], fadePipe, showPipe, trail = null, showGroup, params, ruleBuf, colourBuf, states = [], bins = {}, binCount = 0, groups = [], drawGroups = [], flip = 0;
 async function gpu() {
   const adapter = navigator.gpu && (await navigator.gpu.requestAdapter());
   if (!adapter) fail('This page needs WebGPU (Chrome, Edge, or a recent Safari).');
@@ -254,7 +311,12 @@ async function gpu() {
   const pm = device.createShaderModule({ code: PICTURE }), keepBlend = { srcFactor: 'zero', dstFactor: 'constant' };
   fadePipe = device.createRenderPipeline({ layout: 'auto', vertex: { module: pm, entryPoint: 'full' }, fragment: { module: pm, entryPoint: 'fade', targets: [{ format: TRAIL, blend: { color: keepBlend, alpha: keepBlend } }] } });
   showPipe = device.createRenderPipeline({ layout: 'auto', vertex: { module: pm, entryPoint: 'full' }, fragment: { module: pm, entryPoint: 'show', targets: [{ format }] } });
-  params = device.createBuffer({ size: 176, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST });
+  const ph = device.createShaderModule({ code: PHYSARUM }), mp = device.createShaderModule({ code: MAP });
+  const physLayout = device.createBindGroupLayout({ entries: [{ binding: 0, visibility: S.COMPUTE, buffer: {} }, ...[1, 2, 3, 4, 5].map(storage)] });
+  const ppl = device.createPipelineLayout({ bindGroupLayouts: [physLayout] });
+  phys = { layout: physLayout, crawl: device.createComputePipeline({ layout: ppl, compute: { module: ph, entryPoint: 'crawl' } }), spread: device.createComputePipeline({ layout: ppl, compute: { module: ph, entryPoint: 'spread' } }) };
+  mapPipe = device.createRenderPipeline({ layout: 'auto', vertex: { module: mp, entryPoint: 'full' }, fragment: { module: mp, entryPoint: 'map', targets: [{ format }] } });
+  params = device.createBuffer({ size: 224, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST });
   ruleBuf = device.createBuffer({ size: SPECIES * 288, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST });
   colourBuf = device.createBuffer({ size: 128, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST });
   device.queue.writeBuffer(colourBuf, 0, Float32Array.from(COLOURS.flatMap((c) => [...c, 1])));
@@ -268,10 +330,12 @@ function grid() {
 }
 // A fresh world: n particles at random places (the seed's; on the sphere, evenly over it), at rest, each in its place's w
 // its kind (in turn) and shade: Battle, red on one half (the torus' left, the sphere's south) and blue on the other;
-// Wheel, kind 0 and any shade; Evolve, four species, one a quarter (the torus' quarters, the sphere's by x and y)
+// Wheel, kind 0 and any shade; Evolve, four species, one a quarter (the torus' quarters, the sphere's by x and y);
+// Physarum, its species in turn, any heading (in the speed's x), an empty map
 function scatter() {
   const r = mulberry32(set.seed), s = new Float32Array(set.n * 8);
-  for (let i = 0; i < set.n; i++) {
+  if (set.mode === 'physarum') for (let i = 0; i < set.n; i++) s.set([r(), r(), 0, i % set.species, r() * 2 * Math.PI], i * 8);
+  else for (let i = 0; i < set.n; i++) {
     if (set.space === 'sphere') { const z = r() * 2 - 1, a = r() * 2 * Math.PI, q = Math.sqrt(1 - z * z); s.set([q * Math.cos(a) * RHO, q * Math.sin(a) * RHO, z * RHO], i * 8); }
     else s.set([r(), r(), 0], i * 8);
     const quarter = set.space === 'sphere' ? 2 * +(s[i * 8 + 1] > 0) + +(s[i * 8] > 0) : 2 * +(s[i * 8 + 1] > 0.5) + +(s[i * 8] > 0.5);
@@ -279,7 +343,16 @@ function scatter() {
   }
   for (const b of states) b.destroy();
   states = [0, 1].map(() => buffer(s.byteLength)); device.queue.writeBuffer(states[0], 0, s);
+  remap();
   rebin();
+}
+// Physarum's map (2√n cells a side, zero), its step's trail, and the bind groups of both ways
+function remap() {
+  for (const b of [...maps, laid]) b?.destroy();
+  mapSide = 2 * Math.round(Math.sqrt(set.n));
+  maps = [0, 1].map(() => buffer(mapSide * mapSide * 16)); laid = buffer(mapSide * mapSide * 16);
+  physGroups = [0, 1].map((f) => device.createBindGroup({ layout: phys.layout, entries: [params, states[f], states[1 - f], maps[f], maps[1 - f], laid].map((buffer, binding) => ({ binding, resource: { buffer } })) }));
+  mapGroups = [0, 1].map((f) => device.createBindGroup({ layout: mapPipe.getBindGroupLayout(0), entries: [params, maps[f], colourBuf].map((buffer, binding) => ({ binding, resource: { buffer } })) }));
 }
 // The bins for the grid now (again when the reach or space changes), and the bind groups of both ways
 function rebin() {
@@ -296,17 +369,30 @@ function write() {
   const { g, side } = grid(), w = view.width, h = view.height, m = Math.min(w, h), sphere = set.space === 'sphere';
   if (binCount !== g[0] * g[1] * g[2]) rebin();
   const dot = Math.max(1.5, (m * (sphere ? 0.92 * Math.sqrt(Math.PI) : 1)) / Math.sqrt(set.n) / 2.2) / 2;
-  const buf = new ArrayBuffer(176), u = new Uint32Array(buf), f = new Float32Array(buf);
+  const buf = new ArrayBuffer(224), u = new Uint32Array(buf), f = new Float32Array(buf);
   u.set([set.n, set.k, sphere ? 1 : 0, binCount, ...g, MODES.indexOf(set.mode)]);
   f.set([reach(), Math.pow(0.5, DT / set.friction), DT, side, m / w, m / h, (dot * 2) / w, (dot * 2) / h, turn[0], turn[1], turn[2], look.zoom, turn[3], turn[4], turn[5], look.x, turn[6], turn[7], turn[8], look.y, set.contagion, set.tip, set.chase, set.swirl, set.redBlue, set.blueRed, Math.sqrt(1 - set.trails), 0], 8);
   u.set([mutation?.parent ?? 0, mutation?.mutant ?? 0, mutation ? 1 : 0, 0], 36);
   f.set(mutation ? [...mutation.at, mutation.radius] : [0, 0, 0, 0], 40);
+  const rad = Math.PI / 180;
+  f.set([set.angle * rad, set.turn * rad, set.sensor, set.speed, set.decay, 5, set.repel, mapSide, w, h, 0, 0], 44);
   device.queue.writeBuffer(params, 0, buf);
   device.queue.writeBuffer(ruleBuf, 0, ruleTable());
 }
-// `count` steps, each its five passes, in one submission
+// `count` steps in one submission: each five passes (Physarum: two, crawl and spread)
 function steps(count) {
   const enc = device.createCommandEncoder(), n = Math.ceil(set.n / 256);
+  if (set.mode === 'physarum') {
+    for (let s = 0; s < count; s++) {
+      const pass = enc.beginComputePass();
+      pass.setBindGroup(0, physGroups[flip]);
+      pass.setPipeline(phys.crawl); pass.dispatchWorkgroups(n);
+      pass.setPipeline(phys.spread); pass.dispatchWorkgroups(Math.ceil(mapSide / 16), Math.ceil(mapSide / 16));
+      pass.end();
+      flip = 1 - flip;
+    }
+    return device.queue.submit([enc.finish()]);
+  }
   for (let s = 0; s < count; s++) {
     const pass = enc.beginComputePass();
     pass.setBindGroup(0, groups[flip]);
@@ -320,8 +406,14 @@ function steps(count) {
   }
   device.queue.submit([enc.finish()]);
 }
-// The particles drawn into the trails' picture (kept `trails` of itself, or cleared), then the picture shown
+// The particles drawn into the trails' picture (kept `trails` of itself, or cleared), then the picture shown; Physarum's
+// map drawn instead
 function draw() {
+  if (set.mode === 'physarum') {
+    const enc = device.createCommandEncoder(), out = enc.beginRenderPass({ colorAttachments: [{ view: context.getCurrentTexture().createView(), loadOp: 'clear', storeOp: 'store', clearValue: { r: 0, g: 0, b: 0, a: 1 } }] });
+    out.setPipeline(mapPipe); out.setBindGroup(0, mapGroups[flip]); out.draw(3); out.end();
+    return device.queue.submit([enc.finish()]);
+  }
   if (!trail || trail.width !== view.width || trail.height !== view.height) {
     trail?.destroy();
     trail = device.createTexture({ size: [view.width, view.height], format: TRAIL, usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING });
@@ -356,7 +448,7 @@ const tabs = (el, values, get, pick, name = (v) => v) => {
   const mark = () => [...el.children].forEach((b, i) => b.classList.toggle('on', values[i] === get()));
   mark(); return mark;
 };
-let markModes, markSpaces, markKinds, markCounts, markSteps;
+let markModes, markSpaces, markKinds, markCounts, markSteps, markSpecies;
 // The rules as a K × K picture: rows the kind that feels, columns the kind felt (their colours on the edges)
 const mat = document.getElementById('matrix'), mg = mat.getContext('2d'), CELL = 26;
 let shown = 0; // the species whose rules are drawn (Evolve: the commonest)
@@ -384,6 +476,7 @@ const spinButton = document.getElementById('spin');
 function panel() {
   markModes = tabs(document.getElementById('modes'), MODES, () => set.mode, (v) => { set.mode = v; fresh(); }, (v) => v[0].toUpperCase() + v.slice(1));
   markSpaces = tabs(document.getElementById('spaces'), SPACES, () => set.space, (v) => { set.space = v; fresh(); }, (v) => v[0].toUpperCase() + v.slice(1));
+  markSpecies = tabs(document.getElementById('species'), [1, 2, 3, 4], () => set.species, (v) => { set.species = v; fresh(); });
   markKinds = tabs(document.getElementById('kinds'), KINDS, () => set.k, (v) => { set.k = v; set.m = null; M = rules(); fresh(); });
   markCounts = tabs(document.getElementById('counts'), COUNTS, () => set.n, (v) => { set.n = v; fresh(); }, (v) => (v >= 1048576 ? v / 1048576 + 'M' : v / 1024 + 'k'));
   markSteps = tabs(document.getElementById('steps'), STEPS, () => set.steps, (v) => { set.steps = v; markSteps(); keep(); });
@@ -393,7 +486,7 @@ function panel() {
   // Spin: a switch (its name never changes, .on its state), the sphere turning slowly by itself
   spinButton.classList.toggle('on', spin);
   spinButton.onclick = () => { spin = !spin; spinButton.classList.toggle('on', spin); };
-  for (const id of ['reach', 'friction', 'swirl', 'contagion', 'tip', 'chase', 'redBlue', 'blueRed', 'mutate', 'change', 'trails']) {
+  for (const id of ['reach', 'friction', 'swirl', 'contagion', 'tip', 'chase', 'redBlue', 'blueRed', 'mutate', 'change', 'trails', 'angle', 'sensor', 'turn', 'speed', 'decay', 'repel']) {
     const input = document.getElementById(id), out = input.nextElementSibling;
     input.value = set[id]; out.textContent = set[id];
     input.oninput = () => { set[id] = +input.value; out.textContent = input.value; keep(); };
@@ -413,8 +506,11 @@ function panel() {
   view.dragging = () => drag;
 }
 function fresh() {
+  if (set.mode === 'physarum') set.space = 'torus';
   document.body.className = set.mode; shares = ''; msStep = 0; shown = 0; mutation = null; lastMutation = performance.now(); firstGenomes();
-  markModes(); markSpaces(); markKinds(); markCounts(); markSteps(); spinButton.disabled = set.space !== 'sphere'; spinButton.title = set.space === 'sphere' ? '' : 'The torus does not turn';
+  markModes(); markSpaces(); markKinds(); markCounts(); markSteps(); markSpecies();
+  const sphereTab = document.getElementById('spaces').children[1];
+  sphereTab.disabled = set.mode === 'physarum'; sphereTab.title = set.mode === 'physarum' ? 'Physarum runs on the torus only: its trail map is a square' : ''; spinButton.disabled = set.space !== 'sphere'; spinButton.title = set.space === 'sphere' ? '' : 'The torus does not turn';
   document.getElementById('seed').textContent = 'seed ' + set.seed; drawMatrix(); scatter(); keep();
 }
 
@@ -467,7 +563,7 @@ function frame(t) {
   draw();
   fps = fps * 0.95 + 50 / Math.max(1, t - last); last = t;
   if (++frames % 120 === 1 && on) measure();
-  document.getElementById('stats').textContent = `${set.n.toLocaleString('en')} particles · ${set.mode === 'kinds' ? set.k + ' kinds' : set.mode} · ${grid().g.join(' × ')} bins\n${msStep ? msStep.toFixed(2) : '…'} ms a step · ${fps.toFixed(0)} frames a second${shares}`;
+  document.getElementById('stats').textContent = `${set.n.toLocaleString('en')} particles · ${set.mode === 'kinds' ? set.k + ' kinds' : set.mode} · ${set.mode === 'physarum' ? `${mapSide} × ${mapSide} map` : `${grid().g.join(' × ')} bins`}\n${msStep ? msStep.toFixed(2) : '…'} ms a step · ${fps.toFixed(0)} frames a second${shares}`;
   requestAnimationFrame(frame);
 }
 (async () => { await gpu(); panel(); fit(); fresh(); requestAnimationFrame(frame); })();
@@ -485,10 +581,11 @@ window.particlesCheck = async (which) => {
 async function checkStep(which) {
   if (which === 'all') {
     const was = { ...set }, ok = [];
-    for (const mode of MODES) for (const s of SPACES) { Object.assign(set, { mode, space: s, n: 4096, swirl: 0.3 }); fresh(); for (let i = 0; i < 200; i++) { write(); steps(1); } ok.push(await checkStep()); }
+    for (const mode of MODES) for (const s of mode === 'physarum' ? ['torus'] : SPACES) { Object.assign(set, { mode, space: s, n: 4096, swirl: 0.3 }); fresh(); for (let i = 0; i < 200; i++) { write(); steps(1); } ok.push(await checkStep()); }
     Object.assign(set, was); fresh(); return ok.every(Boolean);
   }
   write();
+  if (set.mode === 'physarum') return checkPhysarum();
   const S = await readState(), k = set.k, sphere = set.space === 'sphere', rr = Math.fround(reach()), damp = Math.fround(Math.pow(0.5, DT / set.friction)), want = new Float32Array(S.length);
   const force = (r, a) => (r < BETA ? r / BETA - 1 : a * (1 - Math.abs(2 * r - 1 - BETA) / (1 - BETA)));
   const dot = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2], len = (a) => Math.hypot(...a), at = (i, o = 0) => [S[i * 8 + o], S[i * 8 + o + 1], S[i * 8 + o + 2]];
@@ -543,5 +640,49 @@ async function checkStep(which) {
   }
   const ok = worst < 1e-4 && other <= set.n * 0.002;
   console.log(`particlesCheck: one step of ${set.n} particles, ${set.mode} on the ${set.space}, GPU (bins) against CPU (every pair), largest difference ${worst.toExponential(2)}${set.mode === 'evolve' ? `, species taken otherwise ${other}` : ''}: ${ok ? 'ok' : 'FAILED'}`);
+  return ok;
+}
+
+// Physarum's step on the CPU from the agents and map read back: each agent's smell, turn and step (in float32 as the GPU,
+// but its cos and sin its own: an agent whose sensor falls a hair the other side of a cell's edge may turn otherwise, a
+// few counted apart), then the map spread
+// from the agents' new places as the GPU left them (so the map is checked on its own, exactly)
+async function checkPhysarum() {
+  const read = async (b, floats) => { await device.queue.onSubmittedWorkDone(); const t = device.createBuffer({ size: floats * 4, usage: GPUBufferUsage.MAP_READ | GPUBufferUsage.COPY_DST }), e = device.createCommandEncoder(); e.copyBufferToBuffer(b, 0, t, 0, floats * 4); device.queue.submit([e.finish()]); await t.mapAsync(GPUMapMode.READ); const a = new Float32Array(t.getMappedRange().slice(0)); t.destroy(); return a; };
+  const n = set.n, W = mapSide, A = await read(states[flip], n * 8), T = await read(maps[flip], W * W * 4), bits = new Uint32Array(A.buffer), rad = Math.PI / 180;
+  const fract = (x) => x - Math.floor(x), cell = (x, y) => Math.min(Math.floor(fract(x) * W), W - 1) + Math.min(Math.floor(fract(y) * W), W - 1) * W;
+  const smell = (x, y, s) => { const c = cell(x, y) * 4; let v = 0; for (let k = 0; k < 4; k++) v += T[c + k] * (k === s ? 1 : -set.repel); return v; };
+  const chance = (i) => { let x = (Math.imul(i, 747796405) + (bits[i * 8] ^ Math.imul(bits[i * 8 + 1], 2891336453) ^ Math.imul(bits[i * 8 + 2], 1181783497))) >>> 0; x = Math.imul(((x >>> ((x >>> 28) + 4)) ^ x) >>> 0, 277803737) >>> 0; x = ((x >>> 22) ^ x) >>> 0; return x / 4294967296; };
+  const f32 = Math.fround, SA = f32(set.angle * rad), RA = f32(set.turn * rad), far = f32(f32(set.sensor) / W), want = new Float32Array(n * 8);
+  const at = (x, h, c) => f32(x + f32(f32(c(h)) * far));
+  for (let i = 0; i < n; i++) {
+    const x = A[i * 8], y = A[i * 8 + 1], s = A[i * 8 + 3];
+    let h = A[i * 8 + 4];
+    const hl = f32(h + SA), hr = f32(h - SA);
+    const F = smell(at(x, h, Math.cos), at(y, h, Math.sin), s), L = smell(at(x, hl, Math.cos), at(y, hl, Math.sin), s), R = smell(at(x, hr, Math.cos), at(y, hr, Math.sin), s);
+    if (F < L && F < R) h = f32(h + (chance(i) < 0.5 ? RA : -RA));
+    else if (!(F > L && F > R)) { if (L > R) h = f32(h + RA); else if (R > L) h = f32(h - RA); }
+    h = f32(h - f32(6.2831853 * Math.floor(f32(h / f32(6.2831853)))));
+    want.set([fract(x + (Math.cos(h) * set.speed) / W), fract(y + (Math.sin(h) * set.speed) / W), 0, s, h], i * 8);
+  }
+  steps(1);
+  const got = await read(states[flip], n * 8), map = await read(maps[flip], W * W * 4);
+  let apart = 0, worst = 0;
+  const torus = (d) => Math.min(d, 1 - d), angle = (d) => Math.min(d, 2 * Math.PI - d);
+  for (let i = 0; i < n; i++) {
+    const d = Math.max(torus(Math.abs(got[i * 8] - want[i * 8])), torus(Math.abs(got[i * 8 + 1] - want[i * 8 + 1])), angle(Math.abs(got[i * 8 + 4] - want[i * 8 + 4])), Math.abs(got[i * 8 + 3] - want[i * 8 + 3]));
+    if (d > 1e-3) apart++; else worst = Math.max(worst, d);
+  }
+  const laid = new Float32Array(W * W * 4);
+  for (let i = 0; i < n; i++) laid[cell(got[i * 8], got[i * 8 + 1]) * 4 + got[i * 8 + 3]] += Math.floor(5 * 256) / 256;
+  let mapWorst = 0;
+  for (let y = 0; y < W; y++) for (let x = 0; x < W; x++) for (let k = 0; k < 4; k++) {
+    let sum = 0;
+    for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) sum += T[(((y + dy + W) % W) * W + ((x + dx + W) % W)) * 4 + k];
+    const c = (y * W + x) * 4 + k, v = (sum / 9 + laid[c]) * set.decay;
+    mapWorst = Math.max(mapWorst, Math.abs(map[c] - v) / Math.max(1, v));
+  }
+  const ok = worst < 1e-4 && apart <= n * 0.002 && mapWorst < 1e-4;
+  console.log(`particlesCheck: one step of ${n} agents, physarum on the torus, GPU against CPU: agents ${worst.toExponential(2)} apart (${apart} turned otherwise), map ${mapWorst.toExponential(2)}: ${ok ? 'ok' : 'FAILED'}`);
   return ok;
 }

@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.11';
+const VERSION = '0.4.12';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -5016,7 +5016,7 @@ function kleinPoint(x, y, nu, nv, m, tube = TORUS_TUBE) {
   // its own ends (4π) turned over (u to π − u)
   const w = (x / nu + 0.125) * 4 * Math.PI, past = w >= 4 * Math.PI;
   const K = kleinEight ? [r * Math.sin(t), -r * Math.cos(t), a * (s * Math.sin(f) + c * Math.sin(2 * f))]
-    : kleinBottlePoint(past ? w - 4 * Math.PI : w, past ? Math.PI / 2 - f : f + Math.PI / 2);
+    : kleinBottlePoint(past ? w - 4 * Math.PI : w, past ? -Math.PI / 2 - f : f + 1.5 * Math.PI);  // (its sheet half a turn round the tube: its middle, its pictures, in front)
   if (m >= 1) return K;
   const F = torusPoint(x, y, nu, nv, 0, tube);
   return F.map((v, d) => v + (K[d] - v) * m);

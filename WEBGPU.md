@@ -31,8 +31,8 @@ Turning the 96 cube by hand, blind tests (pages A to E at random, WebGL's bundle
 - MacBook Pro M1 Max built-in screen, Chrome: the smooth one picked was WebGPU.
 - Asus, Safari: WebGPU clearly smoother than WebGL.
 - In the page, nothing differs: frame intervals (144 or 120 a second, none missed, a 250 Hz drag too), key to picture
-  (Event Timing: 19 ms against 21), allocations (327 KB a frame both: Life's look table made again each frame, to
-  fix), flicker (WebGPU's fewer big pixel jumps). So: how Chrome sends a WebGPU canvas to an external screen on macOS.
+  (Event Timing: 19 ms against 21), allocations (327 KB a frame both: Life's look table made again each frame;
+  kept since v0.4.1, 40 KB a frame, no GC in 4 s of drag), flicker (WebGPU's fewer big pixel jumps). So: how Chrome sends a WebGPU canvas to an external screen on macOS.
 
 ## Not checked yet
 - `{ deep }` (every grid's rules, a night's).

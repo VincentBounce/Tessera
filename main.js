@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.0';
+const VERSION = '0.4.1';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -8829,16 +8829,24 @@ function cellsIcon(kind, rle) {
   return `<svg class="icon rule-icon" viewBox="${x0 - (size - w) / 2 - 0.2} ${y0 - (size - h) / 2 - 0.2} ${size + 0.4} ${size + 0.4}" aria-hidden="true">${polys
     .map(([pts, v]) => `<polygon points="${pts.map((p) => p.map((c) => c.toFixed(2)).join(',')).join(' ')}"${v > 1 ? ' class="dim"' : ''}/>`).join('')}</svg>`;
 }
+// a surface's tile colour mixed with white by the theme's TILE_LIFT (lighter on a light page; the path keeps the plain rainbow)
+const liftTile = (c) => { if (!TILE_LIFT) return c; const v = rgbOf(c).map((x) => Math.round(x + (255 - x) * TILE_LIFT)); return `rgb(${v})`; };
 // Life's look on any grid (Life, Reversible; the plane, a surface), its colours by the graphics card in tables (see
-// gpuLook): States (each colour, its dying stages, its trail after death), Age or Activity; lift: a surface's rainbow, lighter
-function lifeLook(L, lift = (c) => c) {
+// gpuLook): States (each colour, its dying stages, its trail after death), Age or Activity; lifted: a surface's rainbow,
+// lighter (liftTile). Made again only when what it is made of changes (the look, the theme's colours, the rule's colours and
+// states, Trail, the motif shown; Activity's, its most changes), kept on L: not each frame a view turns (272 KB, before v0.4.1)
+function lifeLook(L, lifted = false) {
+  const colour = $('colourMode').value, maxAct = colour === 'digit' ? L.maxActivity : 0;
+  const key = [colour, lifted, TILE_LIFT, motifShown, L.C, L.colours, trailOn(), maxAct, LIFE_ALIVE, LIFE_TRAIL[0], LIFE_FADE[0], GRADIENT[0], LIFE_COLOURS[0]].join('|');
+  if (L.look?.key === key) return L.look.value;
+  const lift = lifted ? liftTile : (c) => c;
   const pack = (c) => { const [r, g, b] = rgbOf(motifShown ? faded(c, FADING) : c); return ((255 << 24) | (b << 16) | (g << 8) | r) >>> 0; };
-  const colour = $('colourMode').value, trail = LIFE_TRAIL.map(pack), inked = LIFE_FADE.map(pack), alive = pack(LIFE_ALIVE), civ = [0, ...civColours(L.colours, L.C).map(pack)];
+  const trail = LIFE_TRAIL.map(pack), inked = LIFE_FADE.map(pack), alive = pack(LIFE_ALIVE), civ = [0, ...civColours(L.colours, L.C).map(pack)];
   const grad = Array.from({ length: 32 }, (_, i) => pack(lift(GRADIENT[Math.round((i / 31) * (BANDS - 1))])));
   // the colours on a log scale, in tables (millions of cells): of an age (up to 64), of an activity
   const level = (v, max) => Math.min(31, Math.round((Math.log(v) / Math.log(Math.max(2, max))) * 31));
   const byAge = Uint32Array.from({ length: 65 }, (_, a) => grad[31 - level(a + 1, 65)]);  // the rainbow backwards: warm newborns, cold old cells
-  const byActivity = colour === 'digit' ? Uint32Array.from({ length: Math.min(L.maxActivity, 65535) + 1 }, (_, v) => (v ? grad[level(v + 1, L.maxActivity + 1)] : 0)) : null;
+  const byActivity = colour === 'digit' ? Uint32Array.from({ length: Math.min(maxAct, 65535) + 1 }, (_, v) => (v ? grad[level(v + 1, maxAct + 1)] : 0)) : null;
   const byDying = Uint32Array.from({ length: L.C }, (_, st) => (st < 2 ? 0 : trail[Math.min(trail.length - 1, Math.round(((st - 1) / (L.C - 1)) * trail.length))]));
   const fade = L.C === 2 && trailOn() ? trail.length : 0, K = L.colours;  // the trail after death (Trail)
   // its colours by the graphics card, by these tables (see gpuLook)
@@ -8850,7 +8858,8 @@ function lifeLook(L, lift = (c) => c) {
   table.set(byAge, 512);
   table.set(inked.slice(0, fade), 1024);
   if (byActivity) table.set(byActivity, 4096);
-  return { table, by: colour === 'digit' ? 2 : colour === 'mono' ? 0 : 1, trail: fade };
+  L.look = { key, value: { table, by: colour === 'digit' ? 2 : colour === 'mono' ? 0 : 1, trail: fade } };
+  return L.look.value;
 }
 function drawLifePlane() {
   const L = walk.life, ctx = layers.path;
@@ -12586,9 +12595,8 @@ function drawSphere() {
   layers.line.clearRect(0, 0, cw, ch);  // the 2D path over cells, if any was left
   const { geo: g, visits, maxVisits } = walk;
   const LEVELS = 32;
-  // the rainbow of the tiles (lighter on a light page; the path keeps the plain rainbow)
-  const lift = (c) => { if (!TILE_LIFT) return c; const v = rgbOf(c).map((x) => Math.round(x + (255 - x) * TILE_LIFT)); return `rgb(${v})`; };
-  const grad = Array.from({ length: LEVELS }, (_, i) => lift(GRADIENT[Math.round((i / (LEVELS - 1)) * (BANDS - 1))]));
+  // the rainbow of the tiles (lighter on a light page, see liftTile)
+  const grad = Array.from({ length: LEVELS }, (_, i) => liftTile(GRADIENT[Math.round((i / (LEVELS - 1)) * (BANDS - 1))]));
   const logLevel = (v, max) => 1 + Math.round((Math.log(v) / Math.log(Math.max(2, max))) * (LEVELS - 1));
   // palette[0] is the unlit background; levelOf(t) picks each tile's palette entry
   let palette = [null, ...grad];
@@ -12627,7 +12635,7 @@ function drawSphere() {
     return;
   }
   if (L) {  // Life's look, the plane's (see lifeLook): the walls, the pentagons of the hexagon sphere, in stone grey
-    const rgba = (c) => [...rgbCached(c).map((x) => x / 255), 1], look = { ...lifeLook(L, lift), wall: rgba(LIFE_WALL), dead: rgba(UNLIT) };
+    const rgba = (c) => [...rgbCached(c).map((x) => x / 255), 1], look = { ...lifeLook(L, true), wall: rgba(LIFE_WALL), dead: rgba(UNLIT) };
     gpuSurface((out) => gpuLook(L, out, look), path);
   } else gpuSurface(paintLevels(palette, levelOf), path);  // (see 11.4d)
   drawMotif(ctx);  // the motif's outlines over it
@@ -13321,9 +13329,9 @@ function gpuLook(L, out, look) {
   const E = lifeGPU(L), { device } = GPU;
   if (!E) return false;
   if (L.gpuOld && !E.pending) { gpuLifePut(E, L.cells.alive); gpuShow(E); L.gpuOld = false; }
-  const table = new Uint32Array(look.table.buffer, look.table.byteOffset, look.table.length / 4);
-  if (!E.look || E.look.size < table.byteLength) { E.look?.destroy(); E.look = device.createBuffer({ size: table.byteLength, usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST }); E.looks = new Map(); }
-  device.queue.writeBuffer(E.look, 0, table);
+  const { table } = look;  // (sent again only when made again, see lifeLook)
+  if (!E.look || E.look.size < table.byteLength) { E.look?.destroy(); E.look = device.createBuffer({ size: table.byteLength, usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST }); E.looks = new Map(); E.lookSent = null; }
+  if (E.lookSent !== table) { device.queue.writeBuffer(E.look, 0, table); E.lookSent = table; }
   if (!E.looks.has(out.buffer)) E.looks.set(out.buffer, device.createBindGroup({ layout: GPU.looks, entries: [E.look, out.buffer, E.shown].map((b, i) => ({ binding: i, resource: { buffer: b } })) }));
   const pack = (c) => (Math.round(c[0] * 255) | (Math.round(c[1] * 255) << 8) | (Math.round(c[2] * 255) << 16) | (Math.round(c[3] * 255) << 24));
   const words = new Int32Array(64), enc = device.createCommandEncoder();

@@ -568,12 +568,13 @@ button.bar-chip.active { color: var(--accent); border-color: var(--accent); }
 }
 
 /* Save, the first of Treasures' icons: yellow, its star filled, while the setup in view is one of them */
+.pane-tab .fav { border: 1px solid transparent; border-radius: 7px; padding: 3px; margin: -4px; }  /* (its frame round it as an icon button's, its tab's size the same) */
 .pane-tab .fav.saved { color: var(--accent); }  /* Gallery's ☆: as its tab's colour, ★ gold while the setup in view is one of Treasures */
 .fav.saved .icon path { fill: currentColor; }
 .icon-btn .icon { width: 16px; height: 16px; }
 /* Treasures: Export and Import as two small icons at the right of its heading */
 .icon-btn { display: grid; place-items: center; width: 28px; height: 28px; padding: 0; border-radius: 7px; background: transparent; border-color: transparent; color: var(--muted); }
-.icon-btn:hover:not(:disabled) { color: var(--accent); border-color: var(--border); background: var(--bg); }
+.icon-btn:hover:not(:disabled), .pane-tab .fav:hover { color: var(--accent); border-color: var(--border); background: var(--bg); }  /* (Gallery's ☆ too: a button in its tab) */
 .icon-btn svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
 /* Gallery, the first tab at the top: a click opens the gallery in the left pane, lit as the tab in use (the walk's tab not, till
    it is closed) */

@@ -4934,7 +4934,7 @@ function rosetteSphereMesh(kind, W) {
     tiles[m + t] = ccw ? b : b.reverse();
   }
   const most = tiles.reduce((s2, c) => Math.max(s2, c.length), 0);
-  return (meshCache[key] = Object.assign(finishMesh(verts, tiles.map((c) => [...c, ...Array(most - c.length).fill(c.at(-1))]), most, W, null), { rosette: true }));
+  return (meshCache[key] = Object.assign(finishMesh(verts, tiles.map((c) => [...c, ...Array(most - c.length).fill(c.at(-1))]), most, W, null), { rosette: true, middles: [F.coreIds, F.coreIds.map((t) => m + t)] }));  // (middles: each half's, the north's and the south's)
 }
 
 // Life on them: a mode each, one shape (Rosettes) with a tab each, its rosette's name and picture
@@ -5886,7 +5886,7 @@ const SPHERES = {
 for (const [k, Ws] of Object.entries(ROSETTE_SPHERES)) {
   SPHERES[`${k}Sphere`] = { mesh: (W) => rosetteSphereMesh(k, W), radius: (W) => Math.sqrt(SPHERES[`${k}Sphere`].tiles(W) / (4 * Math.PI)), unit: 'cells', ownSizes: () => Ws, disc: true,
     tiles: (W) => 2 * APERIODIC[k](W).m,  // (its disc's houses, walls too, counted flat)
-    how: (W) => { const F = APERIODIC[k](W); return `{y:2 discs ⌀ ${fmt(discOf(W))}} × (${fmt(F.n)} cells + ${fmt(F.m - F.n)} of their walls)`; } };
+    how: (W) => { const F = APERIODIC[k](W), c = F.coreIds.length; return `2 discs ⌀ ${fmt(discOf(W))}, each round its {y:middle (${c} cell${c > 1 ? 's' : ''})} × (${fmt(F.n)} cells + ${fmt(F.m - F.n)} of their walls)`; } };
 }
 // the solids of squares as tetrakis triangles (see tetrakisOf): sized as their squares, 4 cells a square
 for (const k of Object.keys(TETRAKIS_SOLIDS)) {
@@ -6009,6 +6009,7 @@ const facesMemo = {};  // (a solid's least mesh: its faces, see howCounted)
 // and rows as many); a solid's, a face's as a square (its cells shared out among its faces: a carved cube's, its walls' too)
 const sizeSides = (kind, f) => {
   const d = gridSize(kind, f), S = SPHERES[kind];
+  if (S?.disc) return `{g:${fmt(f)} × ${fmt(f)} cells a disc, as the plane's}`;  // (a rosette sphere: no face, its two discs)
   if (!d) {
     const g = (facesMemo[kind] ??= S.mesh(S.sizes[0])), F = { tetra: 4, octa: 8, icosa: 20, stella: 24, dodeca: 12 }[FACE_BASE[kind] ?? kind.replace(/Kite$/, '')] ?? (g.triFaces ? g.triFaces.length + g.squareFaces.length : 6), a = fmt(Math.round(Math.sqrt(S.tiles(f) / F)));
     return `{g:≈ ${a} × ${a} ${S.unit} a face}`;
@@ -7671,7 +7672,8 @@ function discPatch(items, W, mid, norm = Math.hypot, each = flatEach) {  // wall
   const F = flatPolys(k, start.subarray(0, k + 1), xy.subarray(0, at));
   let area = 0;
   for (let t = 0; t < rows.length; t++) area += polyArea(F.poly(t));
-  return { ...F, n: rows.length, core: rows.flatMap((h, t) => (h.core ? [F.poly(t)] : [])), norm, width: Math.sqrt(area / rows.length) };  // (n: its cells, then its walls; norm: its way to measure, its disc's; width: its cells', see cellWidth)
+  const coreIds = rows.flatMap((h, t) => (h.core ? [t] : []));  // (its middle's cells: a rosette sphere's motif, see motifTiles)
+  return { ...F, n: rows.length, coreIds, core: coreIds.map((t) => F.poly(t)), norm, width: Math.sqrt(area / rows.length) };  // (n: its cells, then its walls; norm: its way to measure, its disc's; width: its cells', see cellWidth)
 }
 // a grid that never repeats, built once a size: kept while in use (its polygons some hundred MB at a million cells: the plane's, see walk.plane.flat)
 const discMemo = (build) => { const cache = weakCache(); return (W) => (cache[W] ??= build(W)); };
@@ -9225,6 +9227,7 @@ function motifTiles() {
   const near = nears[0] >= 0 ? nears[0] : nears[1];
   if (near < 0) return [];
   if (g.triFaces) return Object.assign([near], { square: near === nears[1] ? -1 : nears[1] });
+  if (g.rosette) return g.middles.reduce((a, b) => (Math.max(...b.map((t) => score[t])) > Math.max(...a.map((t) => score[t])) ? b : a));  // (a rosette sphere: its disc's middle, as the plane's, the half's most in front)
   if (g.torus) {  // a sheet: its lattice cells (see latticeCellOf); the whole one seen most in front (its tiles' best, as a solid's tile), else the one in front
     const id = (t) => latticeCellOf(g, t), byLatticeCell = Map.groupBy([...Array(g.n).keys()], id), front = (ts) => Math.max(...ts.map((t) => score[t]));
     // (side by side as laid on its sheet: not across a seam, drawn at both ends once unrolled; a strip's loop 2L along)

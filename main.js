@@ -12955,10 +12955,18 @@ const surfaceEdges = (g) => (g.edgeList ??= (() => {
 })());
 // a surface's tiles as triangles, their corners' slots (k·t + q): each tile its corners once (one with fewer listed with its
 // last again), cut into ears in its own plane (across its normal, Newell's): a tile not convex as well (Mirror 7's houses on
-// the rosette sphere: a fan from its first corner left holes, before v0.4.3); made once a mesh
+// the rosette sphere: a fan from its first corner left holes, before v0.4.3); a Möbius strip's back tile its front's
+// triangles, turned over as turnOver lists it (its corner d − 1 − q the front's q): its own ears took the other diagonals,
+// two folds crossing in one place, spots where each shadowed the other; made once a mesh
 const surfaceTriangles = (g) => (g.triangles ??= (() => {
-  const k = g.sides, out = [];
+  const k = g.sides, out = [], own = [];
   for (let t = 0; t < g.n; t++) {
+    if (g.mobius && t >= g.front) {
+      const f = t - g.front, d = own[f].d;
+      for (let e = own[f].from; e < own[f].to; e += 3) for (const s of [2, 1, 0]) out.push(k * t + d - 1 - (out[e + s] - k * f));
+      continue;
+    }
+    own[t] = { from: out.length, d: 0 };
     const slots = [], P = [];
     for (let q = 0; q < k; q++) {
       const v = g.poly[k * t + q];
@@ -12969,6 +12977,7 @@ const surfaceTriangles = (g) => (g.triangles ??= (() => {
     P.forEach((a, i) => { const b = P[(i + 1) % P.length]; N[0] += (a[1] - b[1]) * (a[2] + b[2]); N[1] += (a[2] - b[2]) * (a[0] + b[0]); N[2] += (a[0] - b[0]) * (a[1] + b[1]); });
     const u = cross(N, Math.abs(N[0]) < 0.9 * Math.hypot(...N) ? [1, 0, 0] : [0, 1, 0]), w = cross(N, u), on = (p, a) => p[0] * a[0] + p[1] * a[1] + p[2] * a[2];
     for (const i of ears(P.map((p) => [on(p, u), on(p, w)]))) out.push(slots[i]);
+    Object.assign(own[t], { to: out.length, d: slots.length });
   }
   return Uint32Array.from(out);
 })());

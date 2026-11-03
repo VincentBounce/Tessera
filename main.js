@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.8';
+const VERSION = '0.4.9';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -1451,7 +1451,7 @@ function describe(base, available) {
     return;
   }
   // the title: the rule (its name, or the rule itself), not the number that may have seeded it (Elementary's: built as a walk)
-  const ruleText = walk.life?.ruleText ?? lifeRuleNow()?.text ?? '', known = [...$('lifePreset').options].find((o) => o.dataset.name && o.value === ruleText);
+  const ruleText = walk.life?.ruleText ?? lifeRuleNow()?.text ?? '', known = ruleCard(ruleText);
   $('barBase').textContent = ruleText;  // on the right, the lifetime in the middle (the title: the generation, see updateStats)
   $('barBase').title = [known && known.dataset.name !== ruleText ? known.dataset.name : '', 'A click: how it works'].filter(Boolean).join(' · ');  // (its name, when not its words: a loop's)
   $('barBase').classList.add('how-it-works');  // (the rule: a click, how it works)
@@ -8707,7 +8707,7 @@ function renderPlaneRow() {
   $('startText').hidden = plane.start !== 'text';
   $('startDigits').hidden = plane.start !== 'digits';
   // Draw: the brushes (the patterns on squares only), the colours and the eraser, the turns (greyed for a cell)
-  const rule = ruleBody(parseRule(ruleBody($('lifeRule').value))?.text ?? ''), mine = ![...$('lifePreset').options].some((o) => o.dataset.name && o.value === rule);
+  const rule = ruleBody(parseRule(ruleBody($('lifeRule').value))?.text ?? ''), mine = !ruleCard(rule);
   const fits = (p) => p[0] === 'cell' || (p[1] === baseOf(kind) && (mine || p[2].includes(rule)));  // the rule's patterns; your own rule: all the grid's
   if (!fits(DRAW_BY_ID.get(brush.id))) brush.id = 'cell';
   brush.turn %= PATTERN_TURNS[kind];
@@ -9278,6 +9278,9 @@ const PLANE_OF_MARK = Object.fromEntries(Object.entries(PLANE_MARKS).map(([k, m]
 for (const k of Object.keys(ROSETTE_SPHERES)) SURFACE_CELLS[`${k}Sphere`] = PLANE_MARKS[k];  // (a rosette sphere: its rosette's cells, rules and all)
 const blocksGrid = (mode) => mode.blocks ?? mode.plane;  // (a block rule's grid: the plane's, or a surface's, its cells' shape)
 const LOOPS_MARK = '⟲';  // (the loops' rules' mark)
+// a rule's card on a grid: its option among its own rules (those of its cells' mark, as its rule cards: see renderRuleSection),
+// none if not one of them (another grid's of the same words: not its)
+const ruleCard = (rule, w = $('mode').value) => { const m = MODES[w], mark = m && lifeMark(m); return [...$('lifePreset').options].find((o) => o.dataset.name && o.value === rule && o.text.includes(mark)); };
 const lifeMark = (mode) => (mode.elementary ? ELEMENTARY_MARK : mode.loops ? LOOPS_MARK : mode.margolus ? (BLOCKS[blocksGrid(mode)] ?? STARS[blocksGrid(mode)]).mark : mode.plane ? PLANE_MARKS[mode.plane] : SURFACE_CELLS[mode.sphere] ?? '▲');
 // Life's colours, apart from its rule (which they do not change): 1, alive or dead (and a Generations
 // rule's dying stages), or 2 to 6 civilisations (k= in a link). The engine reads them as the rule's tail
@@ -11923,7 +11926,7 @@ function patternChoices(centred = false) {  // (once a grid, its colours and rul
 }
 function laidChoices(centred, any = false) {  // any: the first one of each colour only (whether there are some)
   const L = walk.life, g = walk.geo, K = lifeParts(), kind = patternKind(), rule = L.ruleText, [cols, rows] = COLOUR_GRID[K];
-  const mine = ![...$('lifePreset').options].some((o) => o.dataset.name && o.value === rule);
+  const mine = !ruleCard(rule);
   if (flatGrid() && APERIODIC[kind]) return centredChoices(kind, K, rule, mine, any, centred);
   // (centred: a rectangle's room and its patterns' spans in its grid's lattice cells, as on that grid)
   const R = RECTS[kind], cellsAcross = R ? Math.min(...R.basis.map((v) => Math.hypot(...v))) / Math.hypot(...latticeStep(R.base)) : 1, pk = R ? R.base : kind, pper = TILES_PER_GRID_CELL[pk] ?? 1;
@@ -12337,15 +12340,15 @@ function writeSetups(list) {
   try { localStorage.setItem(SETUPS_KEY, JSON.stringify(list)); return true; } catch { return false; }
 }
 // What tells a saved setup apart: its walk, then its surface's size, start, turn and rule
-// a setup's row: 2D, 3D or Lattice, the walk, size, start, turn and rule (Life's rule is its title)
-const setupDetail = (s) => [SPACES[NAV[s.w]?.[1]]?.[0], walkName(s.w), s.s && `size ${String(s.s).replace('x', ' × ')}`, s.st > 1 && `start ${s.st}`,
-  Number(s.o) === 1 && 'turned 30°', Number(s.q) === 1 && 'square sheet', s.r && !MODES[s.w]?.life && `rule ${s.r}`].filter(Boolean).join(' · ');
-// its title: a walk's number; a Game of Life's rule (its name) and colours, its number being only its start
-const setupTitle = (x) => {
-  if (!MODES[x.setup.w]?.life) return x.name;
-  const r = String(x.setup.r ?? ''), named = [...$('lifePreset').options].find((o) => o.dataset.name && o.value === r)?.dataset.name;
-  return [named ? `${named} ${r}` : r || 'Life', Number(x.setup.k) > 1 && `${x.setup.k} colours`].filter(Boolean).join(' · ');
+// a setup's row: a walk's 2D, 3D or Lattice, its walk, size, start, turn and rule; a Game of Life's rule (its name on its grid,
+// see ruleCard), colours (Newcomer's), size and start
+const setupDetail = (s) => {
+  const life = MODES[s.w]?.life, r = String(s.r ?? ''), named = life && ruleCard(r, s.w)?.dataset.name;
+  return [life ? (named ? `${named} ${r}` : r || 'Life') : SPACES[NAV[s.w]?.[1]]?.[0], life ? Number(s.k) > 1 && `${s.k} colours${Number(s.nc) === 1 ? ', the last a newcomer' : ''}` : walkName(s.w),
+    s.s && `size ${String(s.s).replace('x', ' × ')}`, s.st > 1 && `start ${s.st}`, Number(s.o) === 1 && 'turned 30°', Number(s.q) === 1 && 'square sheet', s.r && !life && `rule ${s.r}`].filter(Boolean).join(' · ');
 };
+// its title: a walk's number; a Game of Life's shape and tiles (see shapeAndTiles), its number being only its start
+const setupTitle = (x) => (MODES[x.setup.w]?.life ? shapeAndTiles(x.setup.w) : x.name);
 // Your setups, as rows like the built-in ones (see setupRow), each with × to delete it
 function fillSetupList() {
   const list = readSetups();
@@ -12378,7 +12381,7 @@ const savedInView = () => readSetups().find((x) => isInUse(x.setup));
 function syncSaveButton() {
   const saved = savedInView(), b = galleryTab().querySelector('.fav');
   b.classList.toggle('saved', !!saved);
-  b.title = saved ? `Saved in Treasures as “${saved.name}”: a click takes it out` : 'Save the setup in view in Treasures, in this browser';
+  b.title = saved ? `Saved in Treasures as “${setupTitle(saved)}”: a click takes it out` : 'Save the setup in view in Treasures, in this browser';
 }
 function saveSetup() {
   const setup = getSetup(), list = readSetups();
@@ -15855,6 +15858,10 @@ const BUILT_IN = [
 ];
 // the walk's name, as in the walk list ("Squares turtle"; a surface's own name)
 const walkName = (w) => splitModeLabel($('mode').querySelector(`option[value="${w}"]`)?.text ?? w).name;
+// a mode's shape and its tiles, as the Grid's menu names them: a surface of a family (a torus, a strip, a bottle, the
+// rosettes' spheres) and its tiles there (Torus · Kites, Rosettes · Flower 9); else its space and its shape, its tiles in its
+// name (2D circles · Flower 9, 3D solids · Cube)
+const shapeAndTiles = (w) => { const f = familyOf(w), t = f?.F.tabs.find(([m]) => m === f.m); return t ? `${NAV[w][2]} · ${shapeLabel(t[3])}` : `${SPACES[NAV[w][1]]?.[0]} · ${NAV[w][2]}`; };
 // the setup in use (a Treasure's row lit, the ☆ lit): all of it the same (its number, walk, size, start, rule, colours,
 // symmetry, edges, cells drawn or found…) but its version, its length (a hover cuts it, see preview) and how it is looked at
 // (Fill areas, Space-time)
@@ -15881,7 +15888,7 @@ function showSetup(setup) {  // framed and faced once built (see showAll), not b
 }
 const preview = (setup) => (setup.d > 5000 ? { ...setup, d: 5000 } : setup);  // (a setup hovered: its first 5,000 digits or steps, at once; clicked, all of them)
 function setupRow(name, detail, setup, onDelete) {
-  const b = card({ pic: icon(SHAPE_ICONS[NAV[setup.w]?.[2]] ?? MODE_ICONS[setup.w]), name, detail, title: `${name}\n${detail}`, on: !galleryBefore && isInUse(setup) });  // (its shape's picture, as the Grid's; its title in full, as the row may cut them short)
+  const b = card({ pic: icon(SHAPE_ICONS[NAV[setup.w]?.[2]] ?? MODE_ICONS[setup.w]), name, detail, on: !galleryBefore && isInUse(setup) });  // (its shape's picture, as the Grid's; its tooltip its name and its detail in full, as the row may cut them short)
   if (onDelete) {
     b.append(rowAction('×', `Delete “${name}”`, onDelete));
   }

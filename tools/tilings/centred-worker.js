@@ -4,9 +4,10 @@ import { patchGrid } from './patch.js';
 import { ROSETTES } from './rosette.js';
 import { PINWHEEL } from './pinwheel.js';
 import { HOUSES } from './houses.js';
+import { HEXAS } from './hexas.js';
 import { RHOMBS14 } from './ammann.js';
 const patches = {};
-const patchOf = (kind, W) => patches[kind] ??= (kind === 'pinwheel' ? PINWHEEL(W) : kind.startsWith('mirror') ? HOUSES(Number(kind.slice(6)))(W) : kind === 'rhombs14' ? RHOMBS14(W) : ROSETTES[kind][1](W));
+const patchOf = (kind, W) => patches[kind] ??= (kind === 'pinwheel' ? PINWHEEL(W) : kind.startsWith('mirror') ? HOUSES(Number(kind.slice(6)))(W) : kind.startsWith('hexa') ? HEXAS(Number(kind.slice(4)))(W) : kind === 'rhombs14' ? RHOMBS14(W) : ROSETTES[kind][1](W));
 self.onmessage = ({ data: { kind, rule, W, trials, from, at = [0, 0] } }) => {  // at: where the starts are, from the middle (colours: away from it)
   const h = patchOf(kind, W), G = patchGrid(h, W), n = G.n, o = (W - 1) / 2;
   const mid = h.polys.map((p) => [p.reduce((s, q) => s + q[0], 0) / p.length - o, p.reduce((s, q) => s + q[1], 0) / p.length - o]);

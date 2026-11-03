@@ -1016,7 +1016,7 @@ const CONED = {
   mirror: { name: 'Mirror', build: HOUSES, icon: housesIcon, cells: 'pentagons', one: 'one pentagon, a house', how: 'mirrored', tile: 'houses: a rectangle under a triangle',
     most: (n) => n + 2, marks: { 5: '✩', 6: '✫', 7: '❊', 8: '✱', 9: '✭', 10: '✮', 11: '✰', 12: '⊛' } },
   hexa: { name: 'Hexa', build: HEXAS, icon: hexasIcon, cells: 'hexagons', one: "one hexagon, Sugimoto's", how: 'hexagonal', tile: 'equilateral hexagons, tips of 360°/n',
-    most: (n) => n + 3, marks: { 4: '⎔', 5: '⬢', 6: '⏣', 7: '◉', 8: '◎', 9: '◍', 10: '◌', 11: '◐', 12: '◑' } },
+    most: (n) => n + 3, rules: '⬡', marks: { 4: '⎔', 5: '⬢', 6: '⏣', 7: '◉', 8: '◎', 9: '◍', 10: '◌', 11: '◐', 12: '◑' } },
 };
 // f(kind, n, F): a table's [key, value] for each coned rosette (kind: mirror7, hexa5…; F its family)
 const conedOf = (f) => Object.fromEntries(Object.entries(CONED).flatMap(([fam, F]) => Object.keys(F.marks).map((n) => f(`${fam}${n}`, Number(n), F))));
@@ -2897,6 +2897,11 @@ for (const [k, [n, F]] of Object.entries(conedOf((k, n, F) => [k, [n, F]]))) {  
   modeOption(w, 'Automata on the plane', where);
   MODE_ICONS[w] = k;
   NAV[w] = ['Life', '2D', `${F.name} ${n}`, 'Life', ''];
+}
+// a family whose grid is another's but at its middle (rules: that grid's mark): that grid's rules its own too, their option
+// marked with its marks; those counting neighbours only (no letters: a letter tells where a neighbour is round a ring of 6)
+for (const F of Object.values(CONED)) if (F.rules) for (const o of $('lifePreset').options) {
+  if (o.dataset.name && o.text.startsWith(F.rules) && !/[a-z]/.test(o.value)) o.text = Object.values(F.marks).join('') + o.text;
 }
 // Reversible on the tori: Life's, in blocks as the plane's (its blocks' grid, so many cells a block, see meshBlocks), 3 squares
 // round it (see ringColours), its start on the middle one (see startColours)

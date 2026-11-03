@@ -14484,13 +14484,13 @@ function tick(now = performance.now()) {
       rotateView(screenTurn(...axis));
     }
   }
-  if (!playing && !reversing && lifeGoal !== null && walk.life && !spaceTimeOn()) lifeTo(lifeGoal, now + 750 * frameMin);  // (Space-time's: its own, see stackUp)  // (a generation asked, its batch back: on to it)
+  if (!playing && !reversing && lifeGoal !== null && walk.life && !spaceTimeOn()) lifeTo(lifeGoal, now + 750 * frameMin);  // (a generation asked, its batch back: on to it; Space-time's: its own, see stackUp)
   if (playing || reversing) {
     acc += stepsPerSecond() * dt;  // time-based, so the speed holds whatever the frame rate
-    const k = Math.floor(acc);
+    const k = Math.floor(acc), from = walk.life && lifeGoal !== null ? lifeGoal : cur;  // (on from where it was going: a batch on the card, its steps not lost)
     acc -= k;
-    if (k > 0) {
-      advanceTo(reversing ? (cur === runStart() && loopBack() ? cur - k : Math.max(runStart(), cur - k)) : cur + k, now + 750 * frameMin);  // (from 0 round its loop, back to 0; its steps three quarters of the screen's frame at most: faster than it can, as fast as it can, its frames kept)
+    if (k > 0 || (walk.life && lifeGoal !== null)) {  // (no step this frame: its batch back taken all the same, the next one sent)
+      advanceTo(reversing ? (from === runStart() && loopBack() ? from - k : Math.max(runStart(), from - k)) : from + k, now + 750 * frameMin);  // (from 0 round its loop, back to 0; its steps three quarters of the screen's frame at most: faster than it can, as fast as it can, its frames kept)
       if (reversing && cur <= runStart()) reverse(false);  // (back at its start, after a step)
     }
   }

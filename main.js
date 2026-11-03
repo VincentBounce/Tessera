@@ -7531,6 +7531,10 @@ const DRAW_PATTERNS = [
   ['type15classic-osc', 'pent15', ['B256/S67'], 'Oscillator', '5.A$5.A!', 'period 2 · 2 cells'],
   ['type15classic-meth', 'pent15', ['B256/S67'], 'Methuselah', '22.A$14.A$13.A4.A3.A$5.A14.A$19.A!', 'settles at generation 1,277 · 8 cells'],
   ['type15trails-ship', 'pent15', ['B24/S13/C12'], 'Spaceship', '9.A$6.3ABCD$4.D2.AB.EF$F2.GCJ4.G7.K$GHKFH5.F7.J$2I.HG!', 'flies, period 14 · 29 cells'],
+  ['twistsparks-ship', 'twisttri', ['B246/S0348/C5'], 'Spaceship', '12.D$3.CD.DC.D.AC.C$B2.C2BC.2A$A2.B2.A!', 'flies, period 34 · 19 cells'],
+  ['twistsparks-osc', 'twisttri', ['B246/S0348/C5'], 'Oscillator', '.B.A$A4.B!', 'period 12 · 4 cells'],
+  ['twistembers-osc', 'twisttri', ['B235/S0457/C5'], 'Oscillator', '3.AB.A$AB.2B.A$A2.A!', 'period 30 · 10 cells'],
+  ['twistembers-meth', 'twisttri', ['B235/S0457/C5'], 'Methuselah', '8.A$A.A.2A.A!', 'settles at generation 863 · 6 cells'],
 ];
 const DRAW_BY_ID = new Map([BRUSH_CELL, ...DRAW_PATTERNS].map((p) => [p[0], p]));
 // the symmetries a start may have (see planeSymmetries): [picture, name, as said, tooltip], in their tiles' order

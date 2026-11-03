@@ -1548,6 +1548,10 @@ The hexagons' grid, each hexagon turned 15° and shrunk to touch its neighbours 
 | [Twisted embers B235/S0457/C5](https://vincentbounce.github.io/Tessera/#w=life2dTwisttri&r=B235/S0457/C5&s=48&pop=random.30.7) | 0.348 | 611–2,403 | 1.04 % | 92 % |
 | [Twisted sparks B246/S0348/C5](https://vincentbounce.github.io/Tessera/#w=life2dTwisttri&r=B246/S0348/C5&s=48&pop=random.30.7) | 0.295 | 334–3,025 | 0.95 % | 58 % |
 
+Their patterns (tools/tilings/famous.js, 2026-11-03; in Famous, each played again in the app from an empty grid, the same):
+- **Twisted sparks** has ships: [a spaceship of 19 cells, period 34](https://vincentbounce.github.io/Tessera/#w=life2dTwisttri&r=B246/S0348/C5&s=96&p=24,14:4.C5.2D3.ADC.D.2C$2B2.A.ACB.B2.C2.A2.A!&pop=draw) (six found, 19 to 26 cells, all of period 34, along three ways, rare: 2 starts each in thousands); [an oscillator of 4 cells, period 12](https://vincentbounce.github.io/Tessera/#w=life2dTwisttri&r=B246/S0348/C5&s=48&p=8,7:B.A2.A.B!&pop=draw).
+- **Twisted embers**: [a methuselah of 6 cells, settling at generation 863](https://vincentbounce.github.io/Tessera/#w=life2dTwisttri&r=B235/S0457/C5&s=96&p=18,14:15.A$A5.2A6.A5.A!&pop=draw) (its ash period 10); [an oscillator of 10 cells, period 30](https://vincentbounce.github.io/Tessera/#w=life2dTwisttri&r=B235/S0457/C5&s=48&p=10,7:A2.AB.2B.A2.AB$3.A5.A!&pop=draw); no ship.
+
 ## ⎔ Hexa 4 to 12: Sugimoto's rosettes of equilateral hexagons
 
 His hexagon (tips 360°/n, the other corners 180° − 180°/n) in 2n cones of translates (HEXAS): away from its middle the hexagons' grid, so it has that grid's rules (those counting neighbours) as well as its own best, searched as the others.

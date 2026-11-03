@@ -2105,6 +2105,7 @@ const ICONS = (() => {
     goalPeak: pathEl('M12 4L21 19H3Z', 'f'),
     goalCover: pathEl(pathOf(sq)) + pathEl('M9.33 4V20M14.67 4V20M4 9.33H20M4 14.67H20'),  // (all cells: a grid)
     goalBattle: pathEl('M4 4L17 17M20 4L7 17M14 20L20 14M4 14L10 20M17.5 17.5L20.5 20.5M6.5 17.5L3.5 20.5'),  // (crossed swords)
+    pi: pathEl('M5.3 8.6Q6 6.8 8.3 6.8H18.8M9.4 7.1Q9.4 14.3 7.1 18M14.6 7.1V15.8Q14.6 18 17.3 17.3'),  // the app's π (its favicon's, index.html)
     king: pathEl('M12 3V21M3 12H21M5.6 5.6L18.4 18.4M18.4 5.6L5.6 18.4'),  // the 8 ways out
     pentagons: pathEl('M7 7L9.3 12H14.7L17 7L12 4.7ZM7 17L12 19.3L17 17L14.7 12H9.3ZM7 7L9.3 12L7 17L2 14.7V9.3ZM17 7L22 9.3V14.7L17 17L14.7 12Z'),  // four of the Cairo tiling's: two across a bar, two at its ends
     ammann: [0, 1, 2, 3, 4, 5, 6, 7].map((k) => { const e = (j) => [Math.cos((j * Math.PI) / 4), Math.sin((j * Math.PI) / 4)], a = e(k), b = e(k + 1), s = 10 / (2 * Math.cos(Math.PI / 8)), pt = ([x, y]) => `${(12 + x * s).toFixed(1)} ${(12 - y * s).toFixed(1)}`;
@@ -9521,10 +9522,11 @@ const pixelIcon = (art, pad = 0) => { const rows = art.split(','), n = Math.max(
 // changing then those kept, by their live cells; the state before shown a moment, fading
 // a page's tools over it (how a rule or a walk works, the number): a switch (Letters, Base 10: its text, title, on, click), play
 // it again, copy it, back; each its click
-function tutTools({ toggle = null, replay = null, copy = null, close, back = 'the grid' }) {
+function tutTools({ toggle = null, words = [], replay = null, copy = null, close, back = 'the grid' }) {  // (words: [text, title, click], buttons of a word)
   const d = document.createElement('div'), add = (cls, html, title, click) => { const b = document.createElement('button'); b.type = 'button'; b.className = cls; b.title = title; b.innerHTML = html; b.addEventListener('click', click); d.append(b); };
   d.className = 'tut-tools';
-  if (toggle) add(`tut-letters${toggle.on ? ' active' : ''}`, toggle.text, toggle.title, toggle.click);
+  if (toggle) add(`tut-word tut-letters${toggle.on ? ' active' : ''}`, toggle.text, toggle.title, toggle.click);
+  for (const [text, title, click] of words) add('tut-word', text, title, click);
   if (replay) add('tut-replay', '↻', 'Play it again', replay);
   if (copy) add('tut-copy', icon('copy'), 'Copy it', copy);
   add('tut-close', '✕', `Back to ${back}`, close);
@@ -9678,7 +9680,7 @@ function elementaryTutorial(option) {
   $('ruleTuto').prepend(tutTools({ close: () => ruleTutorial(null) }));
 }
 function ruleTutorial(option) {
-  $('version').classList.remove('active');  // (Credits' tab: off, another page or none)
+  $('appTab').classList.remove('open');  // (the app's tab, Credits': off, another page or none)
   $('ruleTuto').hidden = !option;
   for (const b of document.querySelectorAll('.how-it-works')) { b.classList.toggle('active', !!option); b.classList.toggle('switch', !!option); }  // (lit while it shows, as Full number)
   if (!option) return;
@@ -15322,7 +15324,7 @@ document.addEventListener('click', (e) => {
 });
 // how a rule works closes on a click anywhere but on it, the rules (your own's too), the populations and the grids (it follows them: renderRuleSection)
 document.addEventListener('click', (e) => {
-  if (!$('ruleTuto').hidden && !e.composedPath().some((n) => n.classList?.contains('how-it-works') || ['ruleTuto', 'ruleCards', 'watchRule', 'colourBlocks', 'statesRow', 'ruleBirth', 'ruleSurvive', 'lifeCustomRow', 'navSpace', 'navShapes', 'torusTiles', 'planeRow', 'sizeRow', 'navRules', 'walkOn', 'antRuleSection', 'antStartSection', 'backBtn', 'version'].includes(n.id))) ruleTutorial(null);
+  if (!$('ruleTuto').hidden && !e.composedPath().some((n) => n.classList?.contains('how-it-works') || ['ruleTuto', 'ruleCards', 'watchRule', 'colourBlocks', 'statesRow', 'ruleBirth', 'ruleSurvive', 'lifeCustomRow', 'navSpace', 'navShapes', 'torusTiles', 'planeRow', 'sizeRow', 'navRules', 'walkOn', 'antRuleSection', 'antStartSection', 'backBtn', 'appTab'].includes(n.id))) ruleTutorial(null);
 });
 $('lifeRule').addEventListener('change', () => {
   const mode = MODES[$('mode').value];
@@ -15738,7 +15740,7 @@ function galleryTab() {
   if (galleryButton.dataset.ready) return galleryButton;
   const b = galleryButton;
   b.dataset.ready = '1';
-  b.className = 'gallery-tab';
+  b.className = 'pane-tab';
   b.innerHTML = `${icon('gallery')} Gallery`;
   b.title = 'Treasures and the curated setups: hover one to see it, click it to keep it';
   b.addEventListener('click', () => showPane($('galleryPane').hidden));
@@ -15770,9 +15772,9 @@ new ResizeObserver(() => { statsDirty = true; }).observe($('animBar'));  // the 
 updateSpeedLabel();
 resize();
 requestAnimationFrame(tick);
-$('version').textContent = `v${VERSION}`;
-// Credits: the people whose work it shows, a page in the middle pane as How it works, opened and closed by the version's tab
-// (lit while it shows); closed as How it works is, by a click elsewhere
+$('appTab').innerHTML = `${icon('pi')} ${APP_TITLE} v${VERSION}`;
+// Credits: the people whose work it shows, a page in the middle pane as How it works, opened and closed by the app's tab (π,
+// its name and version; lit while it shows, as Gallery's); closed as How it works is, by a click elsewhere; Share and Home there
 const creditsShown = () => !$('ruleTuto').hidden && $('ruleTuto').dataset.shown === 'credits';
 const CREDITS = [
   ['Life and its kin', "John Conway's Game of Life; Edward Fredkin's Replicator; Rudy Rucker and John Walker's Faders; Alan Hensel's letters for squares, Paul Callahan's for hexagons; Norman Margolus and Tommaso Toffoli's blocks; Gérard Vichniac's Q2R; Tim Tyler's cell-auto.com (Q*Bert, Square-4, stellated blocks); Stephen Wolfram's elementary rules; Chris Langton's ant and loop, John Byl's loop; Mike Paterson and John Conway's worms; Golly and LifeWiki (RLE, patterns)"],
@@ -15783,15 +15785,15 @@ const CREDITS = [
 function credits(open) {
   ruleTutorial(null);
   if (!open) return;
-  $('version').classList.add('active');
+  $('appTab').classList.add('open');
   $('ruleTuto').hidden = false;
   $('ruleTuto').dataset.shown = 'credits';
   $('ruleTuto').innerHTML = `<div class="tut-body"><h3>${APP_TITLE} <code>v${VERSION}</code></h3><p>Cellular automata on tilings, surfaces and solids, and walks on the digits of numbers: the work of many, here.</p>`
     + CREDITS.map(([title, who]) => `<h4>${title}</h4><p>${who}.</p>`).join('')
     + `<p><a href="https://github.com/VincentBounce/Tessera#readme" target="_blank" rel="noopener">Its README</a> · <a href="https://github.com/VincentBounce/Tessera" target="_blank" rel="noopener">its code</a></p></div>`;
-  $('ruleTuto').prepend(tutTools({ close: () => credits(false) }));
+  $('ruleTuto').prepend(tutTools({ words: [['Share', 'Copy the link to what is shown', (e) => shareView(e.currentTarget)], ['Home', 'Back to the start', () => { location.href = location.pathname; }]], close: () => credits(false) }));
 }
-$('version').addEventListener('click', () => credits(!creditsShown()));
+$('appTab').addEventListener('click', () => credits(!creditsShown()));
 for (const b of document.querySelectorAll('[data-icon]')) b.insertAdjacentHTML('afterbegin', icon(b.dataset.icon));
 play(false);  // the Play button with its icon
 seedCurated();

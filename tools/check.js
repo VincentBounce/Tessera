@@ -148,6 +148,8 @@ function checkMeshes(fail) {
 
 // after an action: no error, the link's mode the one shown, a surface's cells as many as said, more than one start (the crawl's, the fuzz's)
 const wait = (ms) => new Promise((go) => setTimeout(go, ms));
+// to generation g, its batches awaited (Life's on the card come back later, see lifeSettle)
+const goTo = async (g) => { advanceTo(g); await lifeSettle(); };
 // the buttons shown with no words of their own in their tooltip, or only their name (see tipOf; Size's − +, the words of
 // their box, one control)
 const untipped = () => [...document.querySelectorAll('button, label')].filter((b) => {
@@ -293,7 +295,7 @@ async function deep(fail, from, only) {
     checked++;
     if (errors.length) fail(`${what}: ${errors.splice(0).join(' / ')}`);
   };
-  const play = (what) => { try { for (let g = 0; g < 30; g++) lifeStep(); } catch (e) { fail(`${what}: playing: ${e.message}`); } };
+  const play = async (what) => { try { await goTo(cur + 30); } catch (e) { fail(`${what}: playing: ${e.message}`); } };
   const how = async (what) => {  // its How it works, then its Letters, closed again
     $('watchRule').click();
     await look(`${what} How it works`);
@@ -312,14 +314,14 @@ async function deep(fail, from, only) {
       if (/Custom/.test(name)) continue;
       b.click();
       await look(`${w} rule ${name}`, 500);
-      play(`${w} rule ${name}`);
+      await play(`${w} rule ${name}`);
       if (i < 2) await how(`${w} rule ${name}`);  // (How it works: the first two, and your own)
     }
     if (!MODES[w].margolus) {  // (blocks: their rules tables of their own size, all in the menu)
       $('lifeRule').value = 'B36/S23';
       $('lifeRule').dispatchEvent(new Event('change'));
       await look(`${w} a rule of your own`, 500);
-      play(`${w} a rule of your own`);
+      await play(`${w} a rule of your own`);
       await how(`${w} a rule of your own`);
     }
     for (const b of [...$('colourBlocks').children].filter((x) => !x.disabled)) { b.click(); await look(`${w} colours ${b.textContent.trim()}`); }
@@ -327,7 +329,7 @@ async function deep(fail, from, only) {
     const down = MODES[w].plane ? $('planeDown') : $('sizeDown');
     for (let k = 0; k < 12 && !down.disabled; k++) { down.click(); await wait(250); }
     await look(`${w} smallest`, 500);
-    play(`${w} smallest`);
+    await play(`${w} smallest`);
   }
   window.removeEventListener('error', onError);
   return checked;
@@ -405,7 +407,7 @@ async function checkKnown(fail) {
     const L = walk.life;
     lifeReset();
     cur = 0;
-    for (const far = (T ?? 600) + (P ?? 600); !L.stable && cur < far; cur++) lifeStep();
+    for (const far = (T ?? 600) + (P ?? 600); !L.stable && cur < far; ) await goTo(Math.min(far, cur + LIFE_BATCH));
     checked++;
     if ((T !== null && L.stable?.T !== T) || (P !== null && L.stable?.P !== P)) fail(`${link}: repeats from ${L.stable?.T} with period ${L.stable?.P}, known ${T} and ${P}`);
   }
@@ -426,19 +428,19 @@ async function checkKnown(fail) {
   await wait(800);
   restart();
   const at = [], cells = () => Uint8Array.from(walk.life.alive, (v) => +(v > 0));
-  for (let g = 0; g <= 16; g++) { if (g) advanceTo(g); at.push(cells()); }
+  for (let g = 0; g <= 16; g++) { if (g) await goTo(g); at.push(cells()); }
   checked++;
   if (walk.life.stable?.T !== 1 || walk.life.stable?.P !== 15) fail(`a pentadecathlon and a domino: repeats from ${walk.life.stable?.T} with period ${walk.life.stable?.P}, known 1 and 15`);
   for (const [from, to] of [[15, 1], [12, 3], [15, 0]]) {
-    advanceTo(from);
-    advanceTo(to);
+    await goTo(from);
+    await goTo(to);
     checked++;
     if (cur !== to || !cells().every((v, t) => v === at[to][t])) fail(`a Game of Life back from ${from} to ${to}: at ${cur}, ${cur === to ? 'not the state played to' : ''}`);
   }
   location.hash = '#x=1/28&w=blocks2d&d=200&r=M15,1,2,3,4,5,6,7,8,9,10,11,12,13,14,0&s=16&e=1&pop=digits';
   await wait(1500);
   restart();
-  advanceTo(30);
+  await goTo(30);
   checked++;
   if (cur !== 11) fail(`1/28's blocks, a jump to 30 across its return (12): at ${cur}, not its end (11)`);
   // a start's symmetry (see symmetricStart): its shape the same on every copy; in colours, a start by parts each colour as many
@@ -469,7 +471,7 @@ async function checkKnown(fail) {
       lifeReseed();
       await wait(600);
       restart();
-      advanceTo(60);
+      await goTo(60);
       const a = walk.life.alive;
       let bad = 0;
       for (let t = 0; t < a.length; t++) for (const c of cellCopies(kind, W, t)) if ((a[c] > 0) !== (a[t] > 0)) bad++;

@@ -2961,10 +2961,13 @@ function tilingIcon(kind) {
   return near.map((P) => pathEl(`M${P.map(([x, y]) => `${(12 + (x - o[0]) * s).toFixed(1)} ${(12 + (y - o[1]) * s).toFixed(1)}`).join('L')}Z`)).join('');  // (y down, as the grids are drawn)
 }
 for (const kind of Object.keys(TILINGS)) ICONS[`tiling-${kind}`] = tilingIcon(kind);
-// The 2D grids by their natural shape: none repeating (round walls), a square lattice (quarter turns), a lattice of 60°
-// rhombi (sixth turns), else a parallelogram (half turns only); each its title
-const SHAPE_GROUPS = [['Circles · Walls only', (k) => !!APERIODIC[k]], ['Natural squares', (k) => PATTERN_TURNS[k] % 4 === 0 || TILINGS[k]?.turns === 4],
-                      ['Rectangle torus · Walled hexagon', (k) => [3, 6].includes(TILINGS[k]?.turns ?? PATTERN_TURNS[k])], ['Parallelograms', () => true]];
+// The 2D grids in groups, each its title, in this order: the circles (none repeating, round walls) by how they are built, the
+// aperiodic tilings, Sugimoto's flowers, the mirrored houses (MIRRORS), the rings round a hole; the others by their natural
+// shape, a square lattice (quarter turns), a parallelogram (half turns only), else a lattice of 60° rhombi (sixth turns)
+const isMirror = (k) => Object.keys(MIRRORS).some((n) => k === `mirror${n}`);
+const SHAPE_GROUPS = [['Never repeating', (k) => !!APERIODIC[k] && !ROSETTES[k]], ['Flowers', (k) => !!ROSETTES[k] && !ROSETTES[k][2] && !isMirror(k)],
+                      ['Mirrors', isMirror], ['Rings', (k) => !!ROSETTES[k]?.[2]], ['Natural squares', (k) => PATTERN_TURNS[k] % 4 === 0 || TILINGS[k]?.turns === 4],
+                      ['Parallelograms', (k) => ![3, 6].includes(TILINGS[k]?.turns ?? PATTERN_TURNS[k])], ['Rectangle torus · Walled hexagon', () => true]];
 const shapeGroup = (kind) => SHAPE_GROUPS.find(([, is]) => is(kind))[0];
 const SHAPE_ICONS = { Squares: 'grid', Triangles: 'triangle', Hexagons: 'hexagon', Cairo: 'pentagons', Kites: 'kites', Hats: 'hat', Penrose: 'penrose', Pinwheel: 'pinwheel', Spectre: 'spectre', Ammann: 'ammann', 'Rhombs 12': 'rhombs12', 'Rhombs 14': 'rhombs14', 'Flower 6': 'flower', 'Flower 5': 'flower5', 'Flower 7': 'flower7', ...mirrorsOf((n) => [`Mirror ${n}`, `mirror${n}`]), 'Flower 3': 'flower3', 'Flower 4': 'flower4', 'Flower 8': 'flower8', 'Flower 9': 'flower9', 'Flower 10': 'flower10', 'Ring 7': 'ring7', 'Ring 8': 'ring8', 'Ring 9': 'ring9', 'Ring 10': 'ring10', 'Ring 12': 'ring12', Cubes: 'cube', Diamond: 'tetrahedron',
   Cube: 'cube', Torus: 'torus', 'Möbius strip': 'mobius', Tetrahedron: 'tetrahedron', Octahedron: 'octahedron', 'Stella octangula': 'stella',
@@ -3159,7 +3162,7 @@ function renderModePicker() {
   // triangles, the surfaces)
   const SQUARED = ['Cube', 'Globe', 'Pits', 'Bumps', 'Frame', 'Sponge'], MIXED = ['Cuboctahedron', 'Rhombicuboctahedron', 'Bicupola', 'Pyramid'];
   const grouped = flat && shapes.length > 8, groupOf = (sh) => shapeGroup(planeOf(sh)), sheet = (sh) => SHEETS.includes(sh);
-  const groups = grouped ? [1, 3, 0, 2].map((i) => [SHAPE_GROUPS[i][0], (sh) => groupOf(sh) === SHAPE_GROUPS[i][0]])  // (squares, parallelograms, the circles, rhombi)
+  const groups = grouped ? SHAPE_GROUPS.map(([g]) => [g, (sh) => groupOf(sh) === g])  // (in their order: the circles' four, squares, parallelograms, rhombi)
     : solid ? [['Squares', (sh) => SQUARED.includes(sh), SQUARED], ['Solid', (sh) => !sheet(sh) && !SQUARED.includes(sh) && !MIXED.includes(sh)], ['Squares & triangles', (sh) => MIXED.includes(sh)], ['Surface', sheet]]
     : [[null, () => true]];
   const some = groups.filter(([, has]) => shapes.some(has)).length;  // (one group: its title none, its tab's name says it)
@@ -3184,7 +3187,7 @@ function renderModePicker() {
     }, modeWhere(navPick(2, sh)));
     if (again) { setTile(b, { on: true, again }); b.title += plane.torus ? '\nA torus · Clicked again: walls' : '\nWalls · Clicked again: a torus'; }  // (its words kept, then what a click does, as a card's: see card)
     return [b];
-  }), ...(g === SHAPE_GROUPS[1][0] && MODES[w].life && MODES[w].plane ? [spaceTimeTile] : [])];  // (Stacks: Life on squares')
+  }), ...(g === shapeGroup('square') && MODES[w].life && MODES[w].plane ? [spaceTimeTile] : [])];  // (Stacks: Life on squares')
   }));
   // a family picked: its tilings as tabs, the same walk (along the grid or on cells) on another one
   const inFamily = familyOf(w);

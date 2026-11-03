@@ -14064,6 +14064,275 @@ function lifeLookGPU(L, target, rows, look) {
   gl.bindFramebuffer(gl.FRAMEBUFFER, null);
   return true;
 }
+/* ---- 11.4c Life on WebGPU -------------------------------------------------------------------- *
+ * Life's engine as compute passes (being moved from 11.4b, see WEBGPU.md; checked against it by gpuLifeCheck). Storage
+ * buffers only, no textures: the grid's numbers in one (each list at its offset), the cells' five fields (state, age,
+ * changes, last death, colours had) twice (now and next, side 0 or 1) in another, a cell a word, runs of cells side by side
+ * (a hunt's starts, each its n rounded up to 64: a workgroup's cells in one run); the sums, a generation's column of each
+ * run's, added by atomics. A pass's numbers (its column, its side, its generation…) a slot of 256 bytes, by a dynamic
+ * offset: a batch's passes written at once, then played in one submit. */
+let GPU = null;  // { device, pipes, layout } once set up (see gpuSetup); false without WebGPU
+async function gpuSetup() {
+  if (GPU !== null) return GPU;
+  const adapter = await navigator.gpu?.requestAdapter();
+  if (!adapter) return (GPU = false);
+  const { maxStorageBufferBindingSize, maxBufferSize } = adapter.limits;
+  const device = await adapter.requestDevice({ requiredLimits: { maxStorageBufferBindingSize, maxBufferSize } });
+  const entry = (binding, type, dynamic = false) => ({ binding, visibility: GPUShaderStage.COMPUTE, buffer: { type, hasDynamicOffset: dynamic } });
+  const layout = device.createBindGroupLayout({ entries: [entry(0, 'read-only-storage'), entry(1, 'storage'), entry(2, 'storage'), entry(3, 'uniform', true)] });
+  const module = device.createShaderModule({ code: GPU_LIFE }), errors = (await module.getCompilationInfo()).messages.filter((m) => m.type === 'error');
+  if (errors.length) throw new Error(`GPU_LIFE: ${errors.map((m) => `${m.lineNum}:${m.linePos} ${m.message}`).join('; ')}`);
+  const pipe = (entryPoint) => device.createComputePipeline({ layout: device.createPipelineLayout({ bindGroupLayouts: [layout] }), compute: { module, entryPoint } });
+  GPU = { device, layout, pipes: Object.fromEntries(['lifeRule', 'blockRule', 'lifeBook', 'lifeCount'].map((e) => [e, pipe(e)])) };
+  return GPU;
+}
+// a pass's numbers (see P in GPU_LIFE), in this order, a word each
+const GPU_PARAMS = ['n', 'K', 'stride', 'C', 'R', 'mode', 'more', 'loops', 'loopN', 'lin', 'gen', 'back', 'negA', 'negB', 'x', 'r0', 'r1', 'side', 'J', 'runs',
+  'total', 'phase', 'kb', 'ising', 'flips', 'stars', 'oStart', 'oList', 'oRing', 'oMoreStart', 'oMoreList', 'oSide', 'oB', 'oS', 'oLoops', 'oIn', 'oWhere',
+  'oTurns', 'oMove', 'oTo'];
+const GPU_LIFE = `
+struct P { ${GPU_PARAMS.map((k) => `${k}: i32`).join(', ')} }
+@group(0) @binding(0) var<storage, read> num: array<i32>;
+@group(0) @binding(1) var<storage, read_write> cell: array<u32>;
+@group(0) @binding(2) var<storage, read_write> sums: array<atomic<u32>>;
+@group(0) @binding(3) var<uniform> p: P;
+var<private> base: i32;
+fn I(o: i32, i: i32) -> i32 { return num[o + i]; }
+fn F(s: i32, f: i32, g: i32) -> u32 { return u32((s * 5 + f) * p.total + g); }  // (field f of side s: 0 state, 1 age, 2 changes, 3 last death, 4 colours had)
+fn live(v: i32) -> bool { return v > 0 && v <= p.K; }
+fn A(t: i32) -> i32 { return i32(cell[F(p.side, 0, base + t)]); }
+fn cellAt(id: vec3u) -> i32 { return p.r0 * p.stride + i32(id.x + id.y * 4194240u); }  // (a cell's number: 65,535 workgroups of 64 a row)
+// a generation of Life (as GL_SHADERS.lifeRule): cell t of its run's next state
+fn next(t: i32) -> i32 {
+  if (t >= p.n) { return 0; }
+  let was = A(t); let s0 = I(p.oStart, t); let s1 = I(p.oStart, t + 1); let last = p.K * (p.C - 1);
+  if (s0 == s1) { return 0; }
+  if (p.loops > 0) {
+    var i = select(was, (was - 1) / p.K + 1, p.lin == 1 && was > 0);
+    var around: array<i32, 13>; var k = 0; var most = 0;
+    for (var q = 0; q < p.R; q++) {
+      let v = I(p.oRing, p.R * t + q); var u = 0; if (v >= 0) { u = A(v); }
+      i = p.loops * i + select(u, (u - 1) / p.K + 1, p.lin == 1 && u > 0);
+      if (p.lin == 1 && u > 0) { around[(u - 1) % p.K + 1]++; }
+    }
+    var to = -1; var lo = 0; var hi = p.loopN - 1;
+    while (lo <= hi) { let m = (lo + hi) / 2; let key = I(p.oLoops, 2 * m); if (key == i) { to = I(p.oLoops, 2 * m + 1); break; } if (key < i) { lo = m + 1; } else { hi = m - 1; } }
+    if (to < 0) { return was; }
+    if (p.lin == 0 || to == 0) { return to; }
+    if (was > 0) { k = (was - 1) % p.K + 1; } else { for (var j = 1; j <= p.K; j++) { if (around[j] > most) { most = around[j]; k = j; } } }
+    return max(k, 1) + p.K * (to - 1);
+  }
+  if (was > p.K) { if (was + p.K <= last) { return was + p.K; } return 0; }
+  var around: array<i32, 13>; var c = 0;
+  if (p.mode == 1) {
+    for (var q = 0; q < p.R; q++) {
+      var v = I(p.oRing, p.R * t + q);
+      if (p.more == 1 && !(v >= 0 && live(A(v)))) {
+        for (var i = I(p.oMoreStart, p.R * t + q); i < I(p.oMoreStart, p.R * t + q + 1); i++) { if (live(A(I(p.oMoreList, i)))) { v = I(p.oMoreList, i); break; } }
+      }
+      if (v >= 0 && live(A(v))) { c |= 1 << u32(q); around[A(v)]++; }
+    }
+    c += 16;
+  } else if (p.mode == 2) {
+    var k = 0;
+    for (var q = s0; q < s1; q++) { let v = A(I(p.oList, q)); if (live(v)) { c++; around[v]++; if (I(p.oSide, q) == 0) { k++; } } }
+    c = 16 + 4 * c + min(k, 3);
+  } else { for (var q = s0; q < s1; q++) { let v = A(I(p.oList, q)); if (live(v)) { c++; around[v]++; } } }
+  if (was > 0) { if (I(p.oS, c) > 0) { return was; } if (p.C > 2) { return was + p.K; } return 0; }
+  if (I(p.oB, c) == 0) { return 0; }
+  if (p.K < 2) { return 1; }
+  var now = 0; var most = 0; var tied = 0; var missing = 0; var gone = 0;
+  for (var k = 1; k <= p.K; k++) {
+    if (around[k] > most) { most = around[k]; tied = 1; now = k; } else if (around[k] == most) { tied++; }
+    if (around[k] == 0) { gone++; missing = k; }
+  }
+  if (tied > 1) { if (gone == 1) { return missing; } return 0; }
+  return now;
+}
+@compute @workgroup_size(64) fn lifeRule(@builtin(global_invocation_id) id: vec3u) {
+  let g = cellAt(id);
+  if (g >= p.r1 * p.stride) { return; }
+  base = g / p.stride * p.stride;
+  cell[F(1 - p.side, 0, g)] = u32(next(g - base));
+}
+// a generation of a block rule (as GL_SHADERS.blockRule; one run): oTo its rule, or its inverse going back
+fn B(t: i32) -> i32 { return i32(cell[F(p.side, 0, select(t, I(p.oMove, t), p.stars == 1 && p.back == 0))]); }
+fn blockNext(t: i32) -> i32 {
+  let w = I(p.oWhere, p.phase * p.n + t); let was = B(t);
+  if (w < 0) { if (p.flips == 1 && I(p.oIn, t) > 0) { return 1 - was; } return was; }
+  if (p.ising == 1) { var c = 0; for (var q = 0; q < 4; q++) { let u = I(p.oTurns, w + q); if (u >= 0 && B(u) > 0) { c++; } } if (c == 2) { return 1 - was; } return was; }
+  let j = w % p.kb; var st = 0;
+  for (var q = 0; q < p.kb; q++) { if (B(I(p.oTurns, w - j + q)) > 0) { st |= 1 << u32(q); } }
+  return (I(p.oTo, st) >> u32(j)) & 1;
+}
+@compute @workgroup_size(64) fn blockRule(@builtin(global_invocation_id) id: vec3u) {
+  let t = cellAt(id);
+  if (t >= p.stride) { return; }
+  var v = 0;
+  if (t < p.n) { v = blockNext(select(t, I(p.oMove, t), p.stars == 1 && p.back == 1)); }
+  cell[F(1 - p.side, 0, t)] = u32(v);
+}
+// a generation's counts (as GL_SHADERS.lifeBook): age, changes, last death, colours had (bit 0: it ever lived); back, one less
+@compute @workgroup_size(64) fn lifeBook(@builtin(global_invocation_id) id: vec3u) {
+  let g = cellAt(id);
+  if (g >= p.r1 * p.stride) { return; }
+  let a = p.side; let b = 1 - p.side;
+  if (g - g / p.stride * p.stride >= p.n) { cell[F(b, 1, g)] = 0u; cell[F(b, 2, g)] = 0u; cell[F(b, 3, g)] = 0u; cell[F(b, 4, g)] = 0u; return; }
+  let was = i32(cell[F(a, 0, g)]); let now = i32(cell[F(b, 0, g)]);
+  var age = cell[F(a, 1, g)]; var act = cell[F(a, 2, g)]; var died = bitcast<i32>(cell[F(a, 3, g)]); var ever = cell[F(a, 4, g)];
+  let on = live(now); let wasOn = live(was);
+  if (p.back == 1) { if (now == was) { if (now > 0) { age = max(1u, age - 1u); } } else { age = u32(now > 0); if (act > 0u) { act--; } } }
+  else {
+    if (p.K > 1 && on && !wasOn) { ever |= 1u << u32(now); }
+    if (now == was) { if (on && age < 65535u) { age++; } }
+    else { act++; if (on) { age = 1u; ever |= 1u; } else if (wasOn) { age = 0u; died = p.gen; } }
+  }
+  cell[F(b, 1, g)] = age; cell[F(b, 2, g)] = act; cell[F(b, 3, g)] = bitcast<u32>(died); cell[F(b, 4, g)] = ever;
+}
+// a generation's sums (as GL_SHADERS.lifeCount, then lifePart and lifeSum): a workgroup's 64 cells added in its own memory,
+// then into its run's column x (the most changes, sum 5: a max)
+var<workgroup> acc: array<atomic<u32>, 64>;
+fn mixed(v: u32) -> u32 { var x = (v ^ (v >> 16u)) * 0x7feb352du; x = (x ^ (x >> 15u)) * 0x846ca68bu; return x ^ (x >> 16u); }
+fn shown(v: i32, t: i32, neg: bool) -> bool { return live(v) != (neg && I(p.oIn, t) > 0); }
+fn add(j: i32, v: u32) { if (v != 0u) { atomicAdd(&acc[j], v); } }
+@compute @workgroup_size(64) fn lifeCount(@builtin(global_invocation_id) id: vec3u, @builtin(local_invocation_index) li: u32) {
+  atomicStore(&acc[li], 0u);
+  workgroupBarrier();
+  let g = cellAt(id); let a = p.side; let b = 1 - p.side;
+  base = g / p.stride * p.stride;
+  let c = g - base;
+  if (g < p.r1 * p.stride && c < p.n) {
+    let was = i32(cell[F(a, 0, g)]); let now = i32(cell[F(b, 0, g)]);
+    let on = shown(now, g, p.negB == 1); let wasOn = shown(was, g, p.negA == 1);
+    let e0 = cell[F(a, 4, g)]; let e1 = cell[F(b, 4, g)];
+    add(0, u32(on)); add(1, u32(now > 0 && !live(now))); add(2, u32(on && !wasOn)); add(3, u32(wasOn && !on));
+    add(4, u32((e0 & 1u) == 0u && (e1 & 1u) == 1u)); atomicMax(&acc[5], cell[F(b, 2, g)]);
+    if (now > 0) { add(6, mixed(u32(c) * 0x9e3779b9u + u32(now))); add(7, mixed((u32(c) * 0x85ebca6bu) ^ (u32(now) * 0xc2b2ae35u))); }
+    if (p.K > 1 && live(now)) {
+      var odd = 0u;
+      for (var q = I(p.oStart, c); q < I(p.oStart, c + 1); q++) { let u = i32(cell[F(b, 0, base + I(p.oList, q))]); if (live(u) && u != now) { odd = 1u; break; } }
+      add(8, odd);
+    }
+    if (now >= 1 && now <= p.K && on) { add(9 + 4 * (now - 1), 1u); if (!wasOn) { add(10 + 4 * (now - 1), 1u); } }
+    if (was >= 1 && was <= p.K && wasOn && !on) { add(11 + 4 * (was - 1), 1u); }
+    let d = ~e0 & e1 & ~1u;
+    for (var k = 1; k <= p.K; k++) { if (((d >> u32(k)) & 1u) != 0u) { add(12 + 4 * (k - 1), 1u); } }
+    if (on) {
+      var edges = 0u;
+      for (var q = I(p.oStart, c); q < I(p.oStart, c + 1); q++) { let u = base + I(p.oList, q); if (!shown(i32(cell[F(b, 0, u)]), u, p.negB == 1)) { edges++; } }
+      add(9 + 4 * p.K, edges);
+    }
+  }
+  workgroupBarrier();
+  let j = i32(li);
+  if (j < p.J && base < p.r1 * p.stride) {  // (a workgroup past the cells, the last row's: none)
+    let v = atomicLoad(&acc[li]); let s = u32((p.x * p.runs + base / p.stride) * p.J + j);
+    if (j == 5) { atomicMax(&sums[s], v); } else if (v != 0u) { atomicAdd(&sums[s], v); }
+  }
+}`;
+// An engine for L (as lifeEngine): its runs side by side, h generations' sums kept a batch; null where the card can't hold it
+function gpuLifeEngine(L, runs = 1, h = 1) {
+  const { device } = GPU, n = L.seed.length, stride = Math.ceil(n / 64) * 64, total = runs * stride, J = 10 + 4 * L.colours;
+  if (10 * total * 4 > device.limits.maxStorageBufferBindingSize) return null;
+  const M = L.margolus, none = [0], { start, list } = L.nbr, more = L.ringMore, table = (T) => Int32Array.from({ length: Math.max(1024, T?.length ?? 0) }, (_, c) => (T?.[c] ? 1 : 0));
+  const blocks = M ? (() => {  // (as blockGPU)
+    const where = new Int32Array(M.turns.length * n).fill(-1), cells = new Int32Array(M.ising ? 4 * n : M.turns.reduce((m, turn) => m + turn.length, 0)).fill(-1);
+    let at = 0;
+    M.turns.forEach((turn, ph) => { turn.forEach((t, i) => { where[ph * n + t] = M.ising ? 4 * t : at + i; }); if (!M.ising) { cells.set(turn, at); at += turn.length; } });
+    if (M.ising) M.sides.forEach((s, t) => cells.set(s, 4 * t));
+    return { where, turns: cells, move: M.move ?? none, to: M.to, inverse: blockInverse(M) };
+  })() : {};
+  // the grid's numbers, one list after another, each at its offset
+  const lists = { oStart: start, oList: list, oRing: L.ring ?? none, oMoreStart: more?.start ?? none, oMoreList: more?.list ?? none, oSide: L.side ? Int32Array.from(L.side, Number) : none,
+    oB: table(L.B), oS: table(L.S), oLoops: L.loops ?? none, oIn: M ? Int32Array.from(blockCells(M, n)) : none, oWhere: blocks.where ?? none, oTurns: blocks.turns ?? none,
+    oMove: blocks.move ?? none, oTo: blocks.to ?? none, oInverse: blocks.inverse ?? none };
+  const off = {}, size = Object.values(lists).reduce((s, a) => s + Math.max(1, a.length), 0), nums = new Int32Array(size);
+  let o = 0;
+  for (const [k, a] of Object.entries(lists)) { off[k] = o; nums.set(a, o); o += Math.max(1, a.length); }
+  const buffer = (bytes, usage) => device.createBuffer({ size: Math.max(16, Math.ceil(bytes / 16) * 16), usage });
+  const S = GPUBufferUsage.STORAGE, D = GPUBufferUsage.COPY_DST, C = GPUBufferUsage.COPY_SRC;
+  const E = { L, n, runs, stride, total, h, J, off, side: 0, slots: 4 * 3 * h + 8,
+    num: buffer(4 * size, S | D), cell: buffer(4 * 10 * total, S | D | C), sums: buffer(4 * h * runs * J, S | D | C),
+    read: buffer(4 * (h * runs * J + total), GPUBufferUsage.MAP_READ | D) };
+  E.params = buffer(256 * E.slots, GPUBufferUsage.UNIFORM | D);
+  device.queue.writeBuffer(E.num, 0, nums);
+  E.group = device.createBindGroup({ layout: GPU.layout, entries: [E.num, E.cell, E.sums].map((b, i) => ({ binding: i, resource: { buffer: b } })).concat({ binding: 3, resource: { buffer: E.params, size: 256 } }) });
+  return E;
+}
+const gpuLifeFree = (E) => ['num', 'cell', 'sums', 'read', 'params'].forEach((k) => E[k].destroy());
+// a start's cells into run r (as lifeToGPU): states, a live one 1 old, ever alive and of its colour, no change, no death yet
+function gpuLifePut(E, alive, r = 0) {
+  const { device } = GPU, L = E.L, live = (v) => v > 0 && v <= L.colours, at = (f) => 4 * ((E.side * 5 + f) * E.total + r * E.stride);
+  const field = (f, make) => { const a = new Uint32Array(E.stride); for (let t = 0; t < E.n; t++) a[t] = make(t); device.queue.writeBuffer(E.cell, at(f), a); };
+  field(0, (t) => alive[t]); field(1, (t) => (live(alive[t]) ? 1 : 0)); field(2, () => 0); field(3, () => -1e9 >>> 0);
+  field(4, (t) => (live(alive[t]) ? 1 : 0) | (L.colours > 1 && L.seed[t] ? 1 << L.seed[t] : 0));
+}
+// k generations of runs r0 … r1 (as lifeStepGPU, lifeTally): their sums a column each, read back with run 0's states once all
+// are played. Resolves to read(j, r, x), sum j of run r at column x, and the states
+async function gpuLifeSteps(E, { gen = 0, back = false, k = 1, r0 = 0, r1 = E.runs, phase = null, negOf = null } = {}) {
+  const { device, pipes } = GPU, L = E.L, M = L.margolus, words = new Int32Array(64 * E.slots), enc = device.createCommandEncoder(), cells = (r1 - r0) * E.stride;
+  enc.clearBuffer(E.sums);
+  let slot = 0;
+  const pass = (pipe, numbers, count) => {
+    const v = { n: E.n, K: L.colours, stride: E.stride, C: L.C, R: L.ring ? L.ring.length / E.n : 0, mode: L.ring ? 1 : L.side ? 2 : 0, more: L.ringMore ? 1 : 0,
+      loops: L.loops ? L.loopStates : 0, loopN: L.loops ? L.loops.length / 2 : 0, lin: L.lineages ? 1 : 0, J: E.J, runs: E.runs, total: E.total, r0, r1, side: E.side, kb: M?.k ?? 0,
+      ising: M?.ising ? 1 : 0, flips: M?.flips ? 1 : 0, stars: M?.move ? 1 : 0, ...E.off, ...numbers };
+    GPU_PARAMS.forEach((name, i) => { words[64 * slot + i] = v[name] ?? 0; });
+    const c = enc.beginComputePass(), w = Math.ceil(count / 64);
+    c.setPipeline(pipes[pipe]); c.setBindGroup(0, E.group, [256 * slot++]); c.dispatchWorkgroups(Math.min(w, 65535), Math.ceil(w / 65535)); c.end();
+  };
+  for (let x = 0; x < k; x++) {
+    const g = back ? gen - x : gen + x, [negA, negB] = negOf ? negOf(g) : [false, false];
+    if (M) pass('blockRule', { phase: mod(back ? g : g - 1, M.turns.length), back: back ? 1 : 0, oTo: back ? E.off.oInverse : E.off.oTo }, E.stride);
+    else pass('lifeRule', {}, cells);
+    pass('lifeBook', { gen: L.gen + 1 + x, back: back ? 1 : 0 }, cells);
+    pass('lifeCount', { x, negA: negA ? 1 : 0, negB: negB ? 1 : 0 }, cells);
+    E.side = 1 - E.side;
+  }
+  device.queue.writeBuffer(E.params, 0, words.subarray(0, 64 * slot));
+  const sumBytes = 4 * k * E.runs * E.J;
+  enc.copyBufferToBuffer(E.sums, 0, E.read, 0, sumBytes);
+  enc.copyBufferToBuffer(E.cell, 4 * E.side * 5 * E.total, E.read, sumBytes, 4 * E.n);
+  device.queue.submit([enc.finish()]);
+  await E.read.mapAsync(GPUMapMode.READ, 0, sumBytes + 4 * E.n);
+  const got = new Uint32Array(E.read.getMappedRange(0, sumBytes + 4 * E.n)).slice();
+  E.read.unmap();
+  return { read: (j, r, x = 0) => got[(x * E.runs + r) * E.J + j], states: Uint8Array.from(got.subarray(k * E.runs * E.J)) };
+}
+// The engine checked against WebGL's (11.4b): the walk's Life played from its start on both, batch by batch, every sum of
+// every generation and every state alike. In the console: await gpuLifeCheck() (the walk shown), or a list of links
+async function gpuLifeCheck(links = null, gens = 64) {
+  if (!(await gpuSetup())) return { ok: false, failures: ['no WebGPU'] };
+  const wait = (ms) => new Promise((r) => setTimeout(r, ms)), failures = [], done = [];
+  for (const link of links ?? [null]) {
+    if (link) { location.hash = link; await wait(1500); }
+    const L = walk.life, name = link ?? location.hash;
+    if (!L) { failures.push(`${name}: no Life`); continue; }
+    play(false); seekTo(0);
+    const E = gpuLifeEngine(L, 1, LIFE_H);
+    gpuLifePut(E, L.alive.slice());
+    const neg = !!L.margolus?.flips;
+    let bad = null;
+    for (let at = 0; at < gens && !bad; at += LIFE_H) {
+      const k = Math.min(LIFE_H, gens - at), gl = lifeStepGPU(L, cur + 1, false, k);
+      const gp = await gpuLifeSteps(E, { gen: cur + 1, k, negOf: (g) => [neg && mod(g, 2) === 0, neg && mod(g, 2) === 1] });
+      gl.forEach((s, x) => {
+        const want = [s.alive, s.dying, s.born, s.dead, s.everNew, s.maxAct];
+        want.forEach((v, j) => { if (!bad && gp.read(j, 0, x) !== v) bad = `gen ${cur + 1 + x}: sum ${j} ${gp.read(j, 0, x)}, WebGL ${v}`; });
+        if (!bad && lifeKey(gp.read(6, 0, x), gp.read(7, 0, x)) !== s.key) bad = `gen ${cur + 1 + x}: its key`;
+        if (!bad && gp.read(9 + 4 * L.colours, 0, x) !== s.edges) bad = `gen ${cur + 1 + x}: edges ${gp.read(9 + 4 * L.colours, 0, x)}, WebGL ${s.edges}`;
+        for (let c = 1; c <= L.colours && !bad; c++) for (const [q, arr] of [[0, s.byColour], [1, s.bornBy], [2, s.deadBy], [3, s.everBy]]) if (!bad && gp.read(9 + 4 * (c - 1) + q, 0, x) !== arr[c]) bad = `gen ${cur + 1 + x}: colour ${c} sum ${q}`;
+      });
+      for (let x = 0; x < k; x++) { lifeStep(gl[x]); cur++; }  // (as lifeTo)
+      const a = L.alive;
+      for (let t = 0; t < E.n && !bad; t++) if (a[t] !== gp.states[t]) bad = `gen ${cur}: cell ${t} ${gp.states[t]}, WebGL ${a[t]}`;
+    }
+    gpuLifeFree(E);
+    if (bad) failures.push(`${name}: ${bad}`); else done.push(name);
+  }
+  return { ok: !failures.length, failures, checked: done.length };
+}
+
 /* ---- 11.5 Path, overlay and stats ------------------------------------------------------------ */
 
 // Visits: the cell of every point and the most visits of any cell over the whole walk, which fixes

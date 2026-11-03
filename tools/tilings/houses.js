@@ -24,5 +24,5 @@ const HOUSES = function HOUSES(n) {
     return discPatch(items, W, (it) => it.p, [0, 0]);
   })();
 };
-export const housesGrid = (W) => patchGrid(HOUSES(7)(W), W);
+export const housesGrid = (n, W) => patchGrid(HOUSES(n)(W), W);  // (n: its turns, Mirror n)
 export { HOUSES };

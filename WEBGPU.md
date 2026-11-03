@@ -23,6 +23,17 @@ WebGL is gone from main.js: everything runs on WebGPU (11.4b shared pieces, 11.4
   same 0.7 s (LIFE_PASSES 2^15, LIFE_REPLAY_MOST 2^29: 15,000 generations at 48 a side, 500 at 2^20 cells; before 1,000
   and 200).
 
+## Judder in Chrome on an external screen (2026-11-03)
+Turning the 96 cube by hand, blind tests (pages A to E at random, WebGL's bundle v0.3.107 against WebGPU's):
+- Asus external screen, Chrome: WebGL found smoother in 4 tests of 5 (5/5 in the first; in the dark theme, none);
+  three WebGPU variants just as jerky: presented as an ImageBitmap, without 4x antialiasing, the 2D sky copied into the
+  same picture. The same at 60, 120 and 144 Hz.
+- MacBook Pro M1 Max built-in screen, Chrome: the smooth one picked was WebGPU.
+- Asus, Safari: WebGPU clearly smoother than WebGL.
+- In the page, nothing differs: frame intervals (144 or 120 a second, none missed, a 250 Hz drag too), key to picture
+  (Event Timing: 19 ms against 21), allocations (327 KB a frame both: Life's look table made again each frame, to
+  fix), flicker (WebGPU's fewer big pixel jumps). So: how Chrome sends a WebGPU canvas to an external screen on macOS.
+
 ## Not checked yet
 - `{ deep }` (every grid's rules, a night's).
 - A visible pane: requestAnimationFrame stops while the browser pane is hidden; play was checked by calling tick by

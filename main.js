@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.3.107';
+const VERSION = '0.4.0';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -13339,7 +13339,11 @@ function gpuLook(L, out, look) {
  * same projection as projectPoint (orthographic, or perspective around walk.persp); the walker's arrow, the starts and the
  * sky stay on their 2D layers. Shadows: the light's depths and what is nearest it, compared 9 times a pixel; Glass:
  * weighted blended, two pictures then mixed; Cut; 4 samples a pixel. A draw's numbers a slot of 512 bytes (see GPU_VIEW), by
- * a dynamic offset: a frame's draws written at once. Without WebGPU, nothing (every browser of the last years has it) */
+ * a dynamic offset: a frame's draws written at once. Without WebGPU, nothing (every browser of the last years has it).
+ * Judder in Chrome on an external screen on a Mac (an Asus, at 60, 120 and 144 Hz alike, v0.4.0): WebGL's smoother there in
+ * 4 blind tests of 5, Safari's WebGPU smoother than WebGL on the same screen, Chrome's WebGPU smooth on the MacBook's own;
+ * nothing in the page shows it (frames, input to picture, allocations, flicker the same), nor did presenting as an image,
+ * no antialiasing or the sky in the same picture change it: Chrome's way to that screen, not ours (see WEBGPU.md) */
 const gpuCanvas = $('gpuLayer');
 // a draw's numbers, in this order (vec3s padded to 4 words; see struct U)
 const GPU_VIEW = `

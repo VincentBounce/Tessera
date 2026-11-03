@@ -1474,6 +1474,15 @@ From Wikimedia's [Pentagonal tiling with 7-fold rotational symmetry](https://com
 | [Mirror 7 embers B248/S0348/C4](https://vincentbounce.github.io/Tessera/#w=life2dMirror7&r=B248/S0348/C4&s=48&pop=random.30.7) | 0.023 | 158–668 | 3.45 % | 0 % |
 | [Mirror 7 sparks B24/S0346/C4](https://vincentbounce.github.io/Tessera/#w=life2dMirror7&r=B24/S0346/C4&s=48&pop=random.30.7) | 0.009 | 226–609 | 3.53 % | 0 % |
 
+## ✱ Mirror 8: the mirrored 8-fold rosette
+
+Mirror 7's construction for 8 (HOUSES(8)): 8 houses round the middle, then 16 cones. Searched as the others (103,448 rules, 1,152 candidates, 8 minutes): three times Mirror 7's best, oscillators in the ash.
+
+| Rule | Score | Soups settle after | Alive at the end | Oscillators in the ash |
+|---|---|---|---|---|
+| [Mirror 8 embers B26/S0345/C4](https://vincentbounce.github.io/Tessera/#w=life2dMirror8&r=B26/S0345/C4&s=48&pop=random.30.7) | 0.069 | 726–2,826 | 3.53 % | 42 % |
+| [Mirror 8 sparks B248/S0346/C4](https://vincentbounce.github.io/Tessera/#w=life2dMirror8&r=B248/S0346/C4&s=48&pop=random.30.7) | 0.041 | 223–1,489 | 3.39 % | 0 % |
+
 ## ▣ Ising (Q2R) and Square-4, on squares (Tim Tyler's cell-auto.com)
 
 | Rule | What it does |

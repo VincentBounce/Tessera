@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.5';
+const VERSION = '0.4.6';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -2237,9 +2237,9 @@ const ICONS = (() => {
   };
 })();
 const icon = (name) => `<svg class="icon" viewBox="0 0 24 24" aria-hidden="true">${ICONS[name]}</svg>`;
-// the app's logo, its one picture (its tab's, and its favicon's, set at start-up): a white π on its gold, the page's accent
-// (the favicon's, no page's style there: the accent's colour then)
-const appLogo = (gold = 'var(--accent)') => `<svg xmlns="http://www.w3.org/2000/svg" class="icon" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="7" style="fill: ${gold}; stroke: none"/>`
+// the app's logo, its one picture (its tab's, and its favicon's, set at start-up): a white π on its square, in its tab the
+// tab's colour as every tab's picture (greyed, its text's hovered, gold lit); the favicon's, no page's style there, the accent's
+const appLogo = (gold = 'currentColor') => `<svg xmlns="http://www.w3.org/2000/svg" class="icon" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="7" style="fill: ${gold}; stroke: none"/>`
   + '<path d="M7 11.5Q8 9 11 9H25M12.5 9.5Q12.5 19 9.5 24M19.5 9.5V21Q19.5 24 23 23" style="fill: none; stroke: white; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round"/></svg>';
 // the plane's outline: its shape and its edges, one choice (see outlineOf): a rectangle, a torus or walled; a six-fold grid
 // walled in a hexagon round its middle (see planeShape); a slanted one's rhombus of cells as stored, a torus or walled.

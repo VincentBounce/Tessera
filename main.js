@@ -4843,7 +4843,7 @@ function rosetteSeam(F) {
   const index = new Map(), X = [], Y = [], links = [], sides = new Map();
   const id = (k) => {
     const c = at(k);
-    if (!index.has(c)) { index.set(c, X.length); X.push(F.xy[2 * k]); Y.push(F.xy[2 * k + 1]); links.push(new Set()); }
+    if (!index.has(c)) { index.set(c, X.length); X.push(F.xy[2 * k]); Y.push(-F.xy[2 * k + 1]); links.push(new Set()); }  // (y up: the plane drawn y down, its disc seen from outside as drawn, not mirrored)
     return index.get(c);
   };
   for (let t = 0; t < m; t++) for (let i = F.start[t]; i < F.start[t + 1]; i++) {
@@ -4934,7 +4934,7 @@ function rosetteSphereMesh(kind, W) {
     tiles[m + t] = ccw ? b : b.reverse();
   }
   const most = tiles.reduce((s2, c) => Math.max(s2, c.length), 0);
-  return (meshCache[key] = Object.assign(finishMesh(verts, tiles.map((c) => [...c, ...Array(most - c.length).fill(c.at(-1))]), most, W, null), { rosette: true, middles: [F.coreIds, F.coreIds.map((t) => m + t)] }));  // (middles: each half's, the north's and the south's)
+  return (meshCache[key] = Object.assign(finishMesh(verts, tiles.map((c) => [...c, ...Array(most - c.length).fill(c.at(-1))]), most, W, null), { rosette: true, middles: [F.coreIds, F.coreIds.map((t) => m + t)], disc: { kind, W, row: planeRow(kind, W), torus: false, ...planeGrid(kind, W) } }));  // (middles: each half's, the north's and the south's; disc: its north half's flat grid, its cells the plane's, see flatGrid)
 }
 
 // Life on them: a mode each, one shape (Rosettes) with a tab each, its rosette's name and picture
@@ -8118,6 +8118,9 @@ const ROSETTES = { flower3: [3, ROSETTE(3)], flower4: [4, ROSETTE(4)], flower5: 
 const APERIODIC = { hat: HAT, penrose: PENROSE, spectre: SPECTRE, ammann: AMMANN, rhombs12: RHOMBS12, rhombs14: RHOMBS14, pinwheel: PINWHEEL, ...Object.fromEntries(Object.entries(ROSETTES).map(([k, [, r]]) => [k, r])) };  // the grids that never repeat: a disc of them, walls round it, never a torus
 // the grids in their spaces (see SPACES): everyone's surfaces, sheets or solids; the automata's plane, round (these) or not
 for (const [w, n] of Object.entries(NAV)) if (n[1] === 'Surfaces') n[1] = SHEETS.includes(n[2]) ? '3D surfaces' : '3D solids'; else if (n[1] === '2D' && MODES[w].life) n[1] = APERIODIC[MODES[w].plane] ? '2D circles' : '2D squares';
+// the flat grid cells lie on: the plane's; a rosette sphere's, its disc's (its north half's cells numbered as the plane's: a start
+// laid on it as on the plane, see rosetteSphereMesh)
+function flatGrid() { return walk.plane ?? walk.geo?.disc ?? null; }
 function planeCorners(kind, x, y) {  // a cell's corners, in world units
   if (kind === 'square') return [[x - 0.5, y - 0.5], [x + 0.5, y - 0.5], [x + 0.5, y + 0.5], [x - 0.5, y + 0.5]];
   if (kind === 'hex') {  // pointy-topped, the centres 1 apart
@@ -8126,7 +8129,7 @@ function planeCorners(kind, x, y) {  // a cell's corners, in world units
   }
   if (kind === 'kite') return kiteCorners(x, y).map(([a, b]) => latticeAt(a, b));
   if (tilingOf(kind)) return tilingAt(kind, x, y).map((p) => tilingWorld(kind, p));
-  if (APERIODIC[kind]) return APERIODIC[kind](walk.plane.W).poly(y * walk.plane.W + x);
+  if (APERIODIC[kind]) { const { W } = flatGrid(); return APERIODIC[kind](W).poly(y * W + x); }  // (a rosette sphere's: its disc's, see flatGrid)
   const i = x >> 1;
   if (kind === 'cairo') return cairoCorners(i, y, x & 1).map(([u, v]) => [(u - CAIRO_0[0]) * CAIRO, (v - CAIRO_0[1]) * CAIRO]);  // the walks' pentagons
   return x & 1 ? [latticeAt(i + 1, y), latticeAt(i + 1, y + 1), latticeAt(i, y + 1)] : [latticeAt(i, y), latticeAt(i + 1, y), latticeAt(i, y + 1)];
@@ -8237,7 +8240,7 @@ const iconPixel = (b64) => { const bits = atob(b64); return (x, y) => (bits.char
 // a cell's width: the root of its grid's cells' mean area (a lattice cell's, two rows of them; a grid that never repeats,
 // all its cells')
 const cellWidth = (kind) => {
-  if (APERIODIC[kind]) return APERIODIC[kind](walk.plane.W).width;
+  if (APERIODIC[kind]) return APERIODIC[kind](flatGrid().W).width;
   const per = TILES_PER_GRID_CELL[kind] ?? 1; return Math.sqrt([0, 1].flatMap((y) => Array.from({ length: per }, (_, x) => polyArea(planeCorners(kind, x, y)))).reduce((sum, v) => sum + v, 0) / (2 * per)); };
 // a list of n items, each made when first read (its length, its items by index: the 10,000 punks' cells not all at once, only
 // those drawn; a hunt's, all: see huntClick)
@@ -8263,14 +8266,14 @@ const iconCellsOf = (K) => {
 };
 // the plane's colours cut round its middle in walls a hexagon's or a circle's (a grid that never repeats): their pictures
 // out, against their walls (see iconLay)
-const roundWalls = (K) => !!walk.plane && K > 1 && wallSlices(K) && (shaped(walk.plane.kind) || !!APERIODIC[walk.plane.kind]);
+const roundWalls = (K) => !!walk.plane && K > 1 && wallSlices(K) && (shaped(walk.plane.kind) || !!APERIODIC[walk.plane.kind]);  // (a rosette sphere: none, its lunes go on south)
 // Colour i's picture's way, by construction (see patternFrame: where the plane's x and y go there): tilt, the plane's angle
 // its x lies along (its bottom a quarter turn on: the plane's y down as drawn), and whether it shows mirrored (the plane
 // landing there seen from the other side). Its bottom: down as drawn on the plane; out in a hexagon's walls; on a solid's
 // face or a sheet (unrolled: a level face), down it as a marble rolls (a level face: south)
 function iconWay(i, K) {
   const frame = patternFrame(i, K), { ex, ey, n } = frame;
-  if (walk.plane) { const w = roundWalls(K) && planeSlices(K); return { ...frame, tilt: (w ? w.angles[i] - Math.PI / 2 : 0) - planeTurn(), mirror: false }; }  // (as drawn: the plane turned by planeTurn)
+  if (flatGrid()) { const w = roundWalls(K) && planeSlices(K); return { ...frame, tilt: (w ? w.angles[i] - Math.PI / 2 : 0) - planeTurn(), mirror: false }; }  // (as drawn: the plane turned by planeTurn)
   // (its bottom's way there, by its parts along ex and ey: their dot products, solved)
   const down = downOn(n), xx = dot3(ex, ex), xy = dot3(ex, ey), yy = dot3(ey, ey), dx = dot3(down, ex), dy = dot3(down, ey), D = xx * yy - xy * xy;
   return { ...frame, tilt: Math.atan2((dy * xx - dx * xy) / D, (dx * yy - dy * xy) / D) - Math.PI / 2, mirror: dot3(cross(ex, ey), n) > 0 };
@@ -8282,7 +8285,7 @@ function iconWay(i, K) {
 function iconRoom(K) {
   const kind = patternKind(), g = walk.geo, { part } = iconCellsOf(K);
   const cw = cellWidth(kind);
-  const at = walk.plane ? (t) => cellMiddle(kind, ...walk.plane.xy(t)) : g.torus ? (t) => sheetPoint(g, ...sheetPlace(g, t), 0) : (t) => Array.from(g.cen.subarray(3 * t, 3 * t + 3));  // (where it is: on the plane, on the sheet unrolled, in space)
+  const at = flatGrid() ? (t) => cellMiddle(kind, ...flatGrid().xy(t)) : g.torus ? (t) => sheetPoint(g, ...sheetPlace(g, t), 0) : (t) => Array.from(g.cen.subarray(3 * t, 3 * t + 3));  // (where it is: on the plane, on the sheet unrolled, in space)
   return Math.min(...Array.from({ length: K }, (_, i) => {
     const { ex, ey, tilt, on = () => true } = iconWay(i, K), place = patternPlace(i, K), go = ([u, v]) => ex.map((c, d) => u * c + v * ey[d]);  // (on: its face's cells)
     const R = go([Math.cos(tilt), Math.sin(tilt)]), Dn = go([-Math.sin(tilt), Math.cos(tilt)]), scale = Math.hypot(...R), Ru = R.map((v) => v / scale), Du = Dn.map((v) => v / Math.hypot(...Dn));
@@ -8538,7 +8541,7 @@ function stackCubes(mode) {
 // The angle the view turns its world by (drawn turned, see turnLayer; a frame or the pointer in the turned world): a
 // rectangle's (a slanted grid's straight sheet, see planeKind), its side U across; any other grid's, as it is (its tiles as
 // their picture, their torus's)
-const planeTurn = (kind = walk.plane?.kind) => (RECTS[kind] ? -Math.atan2(RECTS[kind].basis[0][1], RECTS[kind].basis[0][0]) : 0);
+const planeTurn = (kind = flatGrid()?.kind) => (RECTS[kind] ? -Math.atan2(RECTS[kind].basis[0][1], RECTS[kind].basis[0][0]) : 0);
 const turnPoint = ([u, v], a) => [u * Math.cos(a) - v * Math.sin(a), u * Math.sin(a) + v * Math.cos(a)];
 // a layer drawn turned by a (the grid's turn, 0: as it is), about the view's origin, at the screen's resolution
 function turnLayer(ctx, a = planeTurn()) {
@@ -8547,7 +8550,7 @@ function turnLayer(ctx, a = planeTurn()) {
 }
 // the grid's frame: the corners of its four corner cells, turned as it is drawn (turn 0: as they are)
 function planeBounds(turn = planeTurn()) {
-  const { kind, W, row } = walk.plane, b = { minX: Infinity, maxX: -Infinity, minY: Infinity, maxY: -Infinity };
+  const { kind, W, row } = flatGrid(), b = { minX: Infinity, maxX: -Infinity, minY: Infinity, maxY: -Infinity };
   const per = TILES_PER_GRID_CELL[kind] ?? 1, corner = [[0, 0], [row - per, 0], [0, W - 1], [row - per, W - 1]].flatMap(([x, y]) => Array.from({ length: per }, (_, k) => [x + k, y]));  // (a corner rhombus's or grid cell's all)
   const grow = ([u, v]) => { b.minX = Math.min(b.minX, u); b.maxX = Math.max(b.maxX, u); b.minY = Math.min(b.minY, v); b.maxY = Math.max(b.maxY, v); };
   if (APERIODIC[kind]) {  // (a circle: all its cells' corners, flat)
@@ -8843,7 +8846,7 @@ for (const [kind, t] of Object.entries(TILINGS)) TILES_PER_GRID_CELL[kind] = t.p
 // and its place's only, see planeCorners)
 let gridMiddles = null;
 const cellMiddle = (kind, x, y) => {
-  const g = walk.plane, mean = (p) => [0, 1].map((a) => p.reduce((sum, q) => sum + q[a], 0) / p.length);
+  const g = flatGrid(), mean = (p) => [0, 1].map((a) => p.reduce((sum, q) => sum + q[a], 0) / p.length);
   if (g?.kind !== kind || !(x >= 0 && y >= 0 && x < g.row && y < g.W) || (x | 0) !== x || (y | 0) !== y) return mean(planeCorners(kind, x, y));
   if (gridMiddles?.g !== g) {
     const m = new Float64Array(2 * g.W * g.row);
@@ -10860,9 +10863,9 @@ const patchSpots = (sphere, K) => { const c = colouring(sphere, K); return c.pat
 // angle from it, as many in each (a colour from the middle out to the wall, as much wall as the others); a slice's
 // spot: its cell nearest halfway out along its middle angle. Kept per grid
 let sliceMemo = null;
-const wallSlices = (K, kind = walk.plane?.kind) => !!kind && !planeTorus(kind) && K > 1 && ((K !== 2 && K !== 4) || !!APERIODIC[kind] || shaped(kind));  // (in a circle or a hexagon: always; kind: the plane's in use, else a size's to tell)
+const wallSlices = (K, kind = flatGrid()?.kind) => !!kind && !planeTorus(kind) && K > 1 && ((K !== 2 && K !== 4) || !!APERIODIC[kind] || shaped(kind));  // (in a circle or a hexagon: always; kind: the plane's in use, else a size's to tell)
 function planeSlices(K) {
-  const { kind, W, n, xy } = walk.plane, turn = planeTurn(), key = `${gridKey()}|${K}|${turn}`;
+  const { kind, W, n, xy } = flatGrid(), turn = planeTurn(), key = `${gridKey()}|${K}|${turn}`;
   if (sliceMemo?.key === key) return sliceMemo;
   // as seen (turned, see planeTurn), from red's, its middle up and to the left (½ a slice left of straight up), clockwise;
   // in a circle or a hexagon: round its own middle, slices of one angle each (a hexagon's from a corner: on 3, 6 or 12
@@ -10972,6 +10975,14 @@ function huntParts(r, K, mirror = hunt.zone === 'mirror', mixed = colourMixed())
   const { start } = walk.life.nbr;
   return partPlaces(r, K, mirror, mixed).map((part) => part.filter((t) => start[t] < start[t + 1]));
 }
+// a rosette sphere's K lunes, pole to pole: its cells by their middle's longitude round its axis in turn, dealt out as many to
+// each (as a disc that never turns on the plane, see planeSlices); a cell on the axis, a pole's, no one's; each cell's lune
+const rosetteLunes = (g, K) => ((g.lunes ??= {})[K] ??= (() => {
+  const out = new Int32Array(g.n).fill(-1), at = (t) => Math.atan2(g.cen[3 * t + 1], g.cen[3 * t]);
+  const round = [...Array(g.n).keys()].filter((t) => Math.hypot(g.cen[3 * t], g.cen[3 * t + 1]) > 1e-9).sort((a, b) => at(a) - at(b));
+  round.forEach((t, k) => { out[t] = Math.floor((k * K) / round.length); });
+  return out;
+})());
 function partPlaces(r, K, mirror, mixed) {
   if (K === 1 && walk.life?.margolus && walk.geo?.torus) return [huntParts(r, 3, false, false)[1]];  // (a reversible sheet: one colour's, Trio's second, in view: a torus's middle square, see lifeParts, patternFrame)
   if (mixed && K > 1) {  // Mixed: one colour's place, its cells shuffled (by its seed) and dealt out in turn: each colour as many, give or take one
@@ -11016,17 +11027,10 @@ function partPlaces(r, K, mirror, mixed) {
     if (!r) { for (let t = 0; t < n; t++) if (quarter(t) >= 0) parts[quarter(t)].push(t); return parts; }
     return parts;  // (no patch: no frame to lay one on, its zones greyed, see huntFits)
   }
-  // a rosette sphere: K lunes, pole to pole, its cells by their middle's longitude round its axis in turn, dealt out as many
-  // to each (as a disc that never turns on the plane, see planeSlices); a cell on the axis, a pole's, no one's
-  if (g.rosette) {
-    const lune = (g.lunes ??= {})[K] ??= (() => {
-      const out = new Int32Array(n).fill(-1), at = (t) => Math.atan2(g.cen[3 * t + 1], g.cen[3 * t]);
-      const round = [...Array(n).keys()].filter((t) => Math.hypot(g.cen[3 * t], g.cen[3 * t + 1]) > 1e-9).sort((a, b) => at(a) - at(b));
-      round.forEach((t, k) => { out[t] = Math.floor((k * K) / round.length); });
-      return out;
-    })();
+  if (g.rosette) {  // (its lunes, see rosetteLunes)
+    const lune = rosetteLunes(g, K);
     if (!r) { for (let t = 0; t < n; t++) if (lune[t] >= 0) parts[lune[t]].push(t); return parts; }
-    return parts;  // (no patch: no frame to lay one on, its zones greyed, see huntFits)
+    return parts.map((_, i) => lifePatch(r, middleCells(i, K)));  // (a patch at each colour's spot on its disc, see patternFrame)
   }
   const hull = hullColours(MODES[$('mode').value].sphere, K);
   if (hull) {  // a hull solid (see hullColourings): Wild, a colour's faces its own (two opposite faces a colour: its first), the others' cells each to the nearest colour's face's middle; Mirror, its two faces; a zone, round each colour's first face's middle
@@ -11133,7 +11137,7 @@ function huntFits() {
   // stuck: the globe in Nonet)
   hunt.fits = Object.fromEntries(Object.keys(HUNT_ZONES).map((zone) => {
     const r = zoneRadius(zone);
-    if ((walk.geo?.globe || walk.geo?.rosette) && zone !== 'full' && zone !== 'numbers') return [zone, false];  // (a globe, a rosette sphere: the zones on its whole grid only, a soup or a number's digits; no frame yet to lay a patch or pattern on, see patternPlace)
+    if (walk.geo?.globe && zone !== 'full' && zone !== 'numbers') return [zone, false];  // (a globe: the zones on its whole grid only, a soup or a number's digits; no frame yet to lay a patch or pattern on, see patternPlace)
     if (famousZone(zone)) return [zone, (hunt.laid[zone] ??= patternsOn() && laidChoices(zone === 'centred', true).every((c) => c.length > 0))];  // (whether some, not them all)
     if (zone === 'realm' && !realmParts(K)) return [zone, false];  // (one colour, corners: greyed)
     if (zone === 'mirror') return [zone, !walk.plane && !walk.geo.torus && K > 1 && (!!colouring(MODES[$('mode').value].sphere, K, true) || !!hullColours(MODES[$('mode').value].sphere, K)?.pairs)];  // (a solid, two parts a colour)
@@ -11325,12 +11329,12 @@ for (const k of ['dodeca', 'stella']) TRI_FACES[`${k}Kite`] = () => TRI_FACES[k]
 const triFace = (sphere, K, i) => (colouring(sphere, K)?.faces ? patchSpots(sphere, K)[i] : TRI_FACES[sphere]?.()[K]?.[i] ?? null);
 const patternsOn = () => {
   const m = MODES[$('mode').value], K = walk.life?.colours;
-  return !!walk.life && (!!m.plane || !!walk.geo?.torus || (['cube', 'pits', 'bumps'].includes(m.sphere.replace(/Tetrakis$/, '')) && CUBE_FACES.includes(K))
+  return !!walk.life && (!!flatGrid() || !!walk.geo?.torus || (['cube', 'pits', 'bumps'].includes(m.sphere.replace(/Tetrakis$/, '')) && CUBE_FACES.includes(K))
     || (!!HULL_SOLIDS[m.sphere] && (K === 1 || ['square', 'tri'].includes(hullColours(m.sphere, K)?.kind))) || (!!walk.geo?.hexagons && !m.plane) || (!!TRI_FACES[m.sphere] && (K === 1 || !!triFace(m.sphere, K, 0))));
 };
 // the grid the patterns are of: the plane's, else the cells' (the cube's squares, the sheets', the solids' triangles)
 const cellKind = (g) => g.tiling ?? (g.squares ? 'tetrakis' : g.kite ? 'kite' : (g.hexagons ? 'hex' : { 3: 'tri', 5: 'cairo', 6: 'hex' }[g.sides]) ?? 'square');  // (a mesh's cells, as the plane's grids)
-const patternKind = () => { const h = hullColours(MODES[$('mode').value].sphere, walk.life?.colours); return walk.plane?.kind ?? (h && h.groups[0][0] >= h.squares && !walk.geo.tiling ? 'tri' : cellKind(walk.geo)); };  // (a hull solid's: its first colour's face's, a square or a triangle)
+const patternKind = () => { const h = hullColours(MODES[$('mode').value].sphere, walk.life?.colours); return flatGrid()?.kind ?? (h && h.groups[0][0] >= h.squares && !walk.geo.tiling ? 'tri' : cellKind(walk.geo)); };  // (a hull solid's: its first colour's face's, a square or a triangle)
 // a face's level way (its normal n: across it, square to the world's up; a face looking straight up or down, east) and the
 // way down it, as a marble rolls (a face looking straight up or down: south)
 const levelOf = (n) => { const l = cross([0, 0, 1], n); return Math.hypot(...l) < 1e-9 ? [1, 0, 0] : unit(l); };
@@ -11365,7 +11369,7 @@ function cellIndex(g) {
 // turned: q its level side, AB, BC or CA); on a hull solid's square, a solid of hexagons' or the cube's face, its face
 function patternPlace(i, K) {
   const g = walk.geo, sphere = MODES[$('mode').value].sphere;
-  if (walk.plane) return { on: 'plane' };
+  if (flatGrid()) return { on: 'plane' };
   if (g.torus) return { on: 'sheet' };
   const hull = hullColours(sphere, K), squares = g.squareFaces?.length ?? 0;  // (a hull solid's colour: its first face, see hullColourings)
   if (hull) { const f = hull.groups[i][0]; return f < squares ? { on: 'square', f } : triPlace(f - squares); }  // (a square or a triangle, its own face's: a pyramid's both)
@@ -11395,7 +11399,7 @@ function triPlace(face) {
 // way); null on none (a solid of hexagons' cell folded over an edge)
 function cellPlace(t) {
   const g = walk.geo;
-  if (walk.plane) return { on: 'plane' };
+  if (flatGrid()) return { on: 'plane' };
   if (g.torus) return { on: 'sheet' };
   if (g.squareFaces && t < g.triFirst) return { on: 'square', f: Math.floor(t / g.size ** 2) };
   if (g.triFaces || (g.sides === 3 && !g.squares) || g.kite) return triPlace(Math.floor((t - (g.triFirst ?? 0)) / (g.triFaces ? g.size * g.size : g.perFace)));
@@ -11439,16 +11443,18 @@ function patternFrame(i, K, place = patternPlace(i, K)) {  // place: another fac
   const back = (X, Y) => (q) => { const xx = dot(X, X), xy = dot(X, Y), yy = dot(Y, Y), dx = dot(q, X), dy = dot(q, Y), D = xx * yy - xy * xy; return [(dx * yy - dy * xy) / D, (dy * xx - dx * xy) / D]; };
   const [cols, rows] = COLOUR_GRID[K];
   if (place.on === 'plane') {
-    const { W, n, xy, at } = walk.plane;
+    const flat = flatGrid(), { W, n, xy, at, torus } = flat;
     const mid = (u) => cellMiddle(kind, ...xy(u)), box = () => {  // (its cells' middles' box's middle, once a grid: walk.plane a new one each)
-      if (boxMemo?.g === walk.plane) return boxMemo.box;
+      if (boxMemo?.g === flat) return boxMemo.box;
       const lo = [Infinity, Infinity], hi = [-Infinity, -Infinity];
       for (let t = 0; t < n; t++) { const m = mid(t); for (const d of [0, 1]) { lo[d] = Math.min(lo[d], m[d]); hi[d] = Math.max(hi[d], m[d]); } }
-      return (boxMemo = { g: walk.plane, box: [0, 1].map((d) => (lo[d] + hi[d]) / 2) }).box;
+      return (boxMemo = { g: flat, box: [0, 1].map((d) => (lo[d] + hi[d]) / 2) }).box;
     };
     // (its centre: a slice's spot; one colour's, the grid's very middle: a grid that never repeats, its circle's; in a hexagon, its centre of turns; else its frame's middle)
-    const centre = () => (wallSlices(K) ? mid(planeSlices(K).spots[i]) : K > 1 ? planeFrame().middle(i, cols, rows) : APERIODIC[kind] ? [(W - 1) / 2, (W - 1) / 2] : planeShape(kind, W)?.o ?? box());
-    return { at: (p) => p, from: (q) => q, place: mid, get centre() { return centre(); }, far: (t, c) => Math.hypot(mid(t)[0] - c[0], mid(t)[1] - c[1]), ex: [1, 0], ey: [0, 1], cellAt: (q, cut) => { const c = planeCellAt(kind, W, ...q, walk.plane.torus && !cut ? 'round' : 'in'); return c ? at(...c) : -1; }, cellOf: (q) => { const c = planeCellAt(kind, W, ...q); return c ? at(...c) : -1; } };
+    const lune = () => { const L = rosetteLunes(walk.geo, K), own = [...Array(n).keys()].filter((t) => L[t] === i); return [0, 1].map((d) => own.reduce((sum, t) => sum + mid(t)[d], 0) / own.length); };  // (a rosette sphere's colour: its lune's north cells' middle)
+    const centre = () => (K > 1 && !walk.plane ? lune() : wallSlices(K) ? mid(planeSlices(K).spots[i]) : K > 1 ? planeFrame().middle(i, cols, rows) : APERIODIC[kind] ? [(W - 1) / 2, (W - 1) / 2] : planeShape(kind, W)?.o ?? box());
+    return { at: (p) => p, from: (q) => q, place: mid, get centre() { return centre(); }, far: (t, c) => Math.hypot(mid(t)[0] - c[0], mid(t)[1] - c[1]), ex: [1, 0], ey: [0, 1], cellAt: (q, cut) => { const c = planeCellAt(kind, W, ...q, torus && !cut ? 'round' : 'in'); return c ? at(...c) : -1; }, cellOf: (q) => { const c = planeCellAt(kind, W, ...q); return c ? at(...c) : -1; },
+      ...(walk.plane ? {} : { on: (t) => t < n }) };  // (a rosette sphere's disc: its north half's cells)
   }
   if (place.on === 'sheet') {  // (its rows the plane's, round the ring; unrolled, it lies flat: its orientation's)
     const L = sheetUnits(g, kind), O = sheetOrigin(g, kind), X = sub(L([1, 0]), L([0, 0])), Y = sub(L([0, 1]), L([0, 0])), { find } = sheetIndex(g);
@@ -11674,14 +11680,14 @@ const CENTRED = {
 };
 // with colours (K dividing its turns): those found 6 from the middle (CENTRED_OFF), a copy a colour, in its slice
 function centredChoices(kind, K, rule, mine, any, centred = true) {
-  const { W, xy } = walk.plane, o = (W - 1) / 2, n = figureTurns(kind), out = Array.from({ length: K }, () => []);
+  const { W, xy, n: cells } = flatGrid(), o = (W - 1) / 2, n = figureTurns(kind), out = Array.from({ length: K }, () => []);
   if (K > 1 && n % K) return out;
   const sets = centred ? [(K > 1 ? CENTRED_OFF : CENTRED)[kind]] : [CENTRED[kind], CENTRED_OFF[kind]], figs = sets.flatMap((x) => x ?? []).filter((p) => mine || p[0] === rule);
   // the cell whose middle is at a place, within 0.05 (its middles by squares of 0.1: the 9 round a place looked in; those within
   // the figures' reach only)
   const reach = Math.max(0, ...figs.flatMap(([, , cells]) => cells.map(([x, y]) => Math.hypot(x, y)))) + 1;
   const box = new Map(), mid = [], sq = (x, y) => `${Math.floor(x * 10)},${Math.floor(y * 10)}`;
-  for (let t = 0; t < walk.plane.n; t++) {
+  for (let t = 0; t < cells; t++) {
     const m = cellMiddle(kind, ...xy(t)), p = [m[0] - o, m[1] - o];
     if (Math.hypot(...p) < reach) { mid[t] = p; (box.get(sq(...p)) ?? box.set(sq(...p), []).get(sq(...p))).push(t); }
   }
@@ -11711,14 +11717,14 @@ function centredChoices(kind, K, rule, mine, any, centred = true) {
 // in its colour
 const choicesMemo = {}, FAMOUS_ALL = 20000;  // (Famous's, Centered's; see laidChoices)
 function patternChoices(centred = false) {  // (once a grid, its colours and rule)
-  const L = walk.life, id = `${walk.plane ? `${gridKey()}|${planeTurn()}` : ''}|${L.colours}|${L.ruleText}`, m = choicesMemo[centred];
+  const L = walk.life, id = `${flatGrid() ? `${gridKey()}|${planeTurn()}` : ''}|${L.colours}|${L.ruleText}`, m = choicesMemo[centred];
   if (m?.id !== id || m.g !== walk.geo) choicesMemo[centred] = { id, g: walk.geo, choices: laidChoices(centred) };
   return choicesMemo[centred].choices;
 }
 function laidChoices(centred, any = false) {  // any: the first one of each colour only (whether there are some)
   const L = walk.life, g = walk.geo, K = L.colours, kind = patternKind(), rule = L.ruleText, [cols, rows] = COLOUR_GRID[K];
   const mine = ![...$('lifePreset').options].some((o) => o.dataset.name && o.value === rule);
-  if (walk.plane && APERIODIC[kind]) return centredChoices(kind, K, rule, mine, any, centred);
+  if (flatGrid() && APERIODIC[kind]) return centredChoices(kind, K, rule, mine, any, centred);
   // (centred: a rectangle's room and its patterns' spans in its grid's lattice cells, as on that grid)
   const R = RECTS[kind], cellsAcross = R ? Math.min(...R.basis.map((v) => Math.hypot(...v))) / Math.hypot(...latticeStep(R.base)) : 1, pk = R ? R.base : kind, pper = TILES_PER_GRID_CELL[pk] ?? 1;
   const span = (rle, t, f) => { const cs = orientPattern(pk, rle, t, f); return Math.max(...cs.map((c) => Math.floor(c[0] / pper)), ...cs.map((c) => c[1])) + 1; };

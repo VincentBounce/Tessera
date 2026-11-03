@@ -621,6 +621,13 @@ function checkRosetteSpheres(fail) {
     if (!(rough < ROSETTE_BITE)) fail(`${k} sphere W${W}: its rims ${rough.toFixed(3)} of a tile apart`);
     if (open) fail(`${k} sphere W${W}: ${open} sides not shared by two tiles`);
     if (g.n !== SPHERES[`${k}Sphere`].tiles(W)) fail(`${k} sphere W${W}: ${g.n} cells, said ${SPHERES[`${k}Sphere`].tiles(W)}`);
+    // its north disc seen from outside as the plane draws it (the plane's y down, the sphere's y up seen from its north: not
+    // mirrored), its cells the plane's (its start laid as there, see flatGrid)
+    const F = APERIODIC[k](W), o = (W - 1) / 2;
+    let xx = 0, yy = 0;
+    for (let t = 0; t < g.disc.n; t++) { const P = F.poly(t), X = P.reduce((s, p) => s + p[0], 0) / P.length - o, Y = P.reduce((s, p) => s + p[1], 0) / P.length - o; xx += X * g.cen[3 * t]; yy += Y * g.cen[3 * t + 1]; }
+    if (!(xx > 0 && yy < 0)) fail(`${k} sphere W${W}: its north disc mirrored, seen from outside`);
+    if (g.disc.n !== F.n) fail(`${k} sphere W${W}: its disc ${g.disc.n} cells, the plane's ${F.n}`);
   }
   return checked;
 }

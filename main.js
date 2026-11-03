@@ -3632,7 +3632,7 @@ const perspectiveAllowed = () => walk.is3d;
 function setPerspective() {
   if (!perspectiveAllowed() || !$('perspective').checked) { walk.persp = null; return; }
   if (walk.plane) {  // Space-time: its cubes' box
-    const b = stack.box;
+    const b = stack?.box ?? bounds3;  // (its cubes being made: the box till then)
     walk.persp = { c: [(b[0] + b[1]) / 2, (b[2] + b[3]) / 2, (b[4] + b[5]) / 2], D: 2.5 * Math.max(3, Math.hypot(b[1] - b[0], b[3] - b[2], b[5] - b[4]) / 2) };
     return;
   }
@@ -8277,14 +8277,19 @@ function buildLifePlane(seq) {
 let stack = null;
 const STACK_MOST = 2 ** 21;  // its cubes at most: drawn turning in 19 ms, shadows and all, 40 MB (measured at 128 a side)
 const STACK_ENDS = { dead: ['✝', 'All died out'], loop: ['↻', 'Its loop gone round 5 times: more would draw the same'], full: ['᪣', `Its memory full: ${fmt(STACK_MOST)} cubes at most (drawn turning in 19 ms, 40 MB)`] };  // (᪣: a chip, its memory; not ▣, read as Stop)
-function stackUp() {
+// its layers made generation by generation, each awaited (see lifeSettle): true once made, false if another took its place
+async function stackUp() {
   const L = walk.life, { W, row, n, xy } = walk.plane, K = L.colours;
-  if (stack?.L === L && stack.gens === targetAsked() && stack.seed.every((v, t) => v === L.seed[t])) return;
+  if (stack?.L === L && stack.gens === targetAsked() && stack.seed.every((v, t) => v === L.seed[t])) return true;
+  stack = null;  // (none drawn while it is made)
   walk.n = Infinity;
+  cur = 0;
   const at = [], keys = [], layers = [];
   let end = 'gens';
   for (let g = 0; g < targetAsked(); g++) {
     lifeTo(g);
+    await lifeSettle();
+    if (walk.life !== L) return false;
     const a = L.alive;  // (its states: 1 … K alive, of that colour; past them, dying)
     let alive = 0;
     for (let t = 0; t < n; t++) if (a[t] >= 1 && a[t] <= K) alive++;
@@ -8301,6 +8306,7 @@ function stackUp() {
   walk.n = Math.max(0, h - 1);
   lifeReset();
   syncDigitsStepper();  // (its generations max, if it ended before)
+  return true;
 }
 // its cubes' colours by the look: States in colours, each its colour; else the rainbow up, by its generation (time)
 function stackCubes(mode) {
@@ -12135,6 +12141,7 @@ function reverse(on) {
 // A new walk is shown complete at once; Play replays it from the start
 function showAll() {
   if (lifeTime()) return;  // the Game of Life starts at generation 0 instead (Space-time: its layers all)
+  if (spaceTimeOn() && !stack) return;  // (Space-time: once its cubes are made, see stackUp)
   advanceTo(walk.n);
   faceWalk();
   if ($('autoFit').checked && !choosingStart) fitWhole();  // framed like F or a double-click, without the margin kept for growing
@@ -12178,8 +12185,17 @@ function restart() {
   } else if (walk.plane) {  // the frame is the grid (Space-time: its cubes', made from its start, see stackUp)
     lifeReset();
     walk.is3d = spaceTimeOn();
-    if (walk.is3d) { stackUp(); cur = 0; bounds3 = stack.box.slice(); setPerspective(); includeBox(); }
-    else bounds = planeBounds();
+    if (walk.is3d) {
+      bounds3 = [-1, 1, -1, 1, -1, 1];  // (till its cubes are made)
+      stackUp().then((made) => {
+        if (!made) return;
+        cur = 0; bounds3 = stack.box.slice(); setPerspective(); includeBox();
+        advanceTo(walk.n);  // (its layers all, see buildWalk's end)
+        faceWalk();
+        if ($('autoFit').checked) fitWhole();
+        needsFull = true; statsDirty = true;
+      });
+    } else bounds = planeBounds();
   }
   if ($('autoFit').checked) fitToBounds(walk.sphere || walk.plane ? padBounds(bounds) : { minX: -3, maxX: 3, minY: -3, maxY: 3 });
   needsFull = true;
@@ -15565,7 +15581,7 @@ function tick(now = performance.now()) {
       rotateView(screenTurn(...axis));
     }
   }
-  if (!playing && !reversing && lifeGoal !== null && walk.life) lifeTo(lifeGoal, now + 750 * frameMin);  // (a generation asked, its batch back: on to it)
+  if (!playing && !reversing && lifeGoal !== null && walk.life && !spaceTimeOn()) lifeTo(lifeGoal, now + 750 * frameMin);  // (Space-time's: its own, see stackUp)  // (a generation asked, its batch back: on to it)
   if (playing || reversing) {
     acc += stepsPerSecond() * dt;  // time-based, so the speed holds whatever the frame rate
     const k = Math.floor(acc);
@@ -15585,7 +15601,7 @@ function tick(now = performance.now()) {
   if (walk.n && !walk.sphere && !walk.plane) showZoom();  // (a walk: its fit grows with it)
   if (walk.plane) {  // Life on the plane: the grid as one picture, each generation (Space-time: its cubes, up to the layer shown)
     if (needsFull) glClear();
-    if (spaceTimeOn()) { if (needsFull || statsDirty) { drawGrid(); glCubes(stack.layers[cur] + 1, stack, stackCubes, stack.reach); updateStats(); } }
+    if (spaceTimeOn()) { if (stack && (needsFull || statsDirty)) { drawGrid(); glCubes(stack.layers[cur] + 1, stack, stackCubes, stack.reach); updateStats(); } }
     else {
       if (needsFull) drawPlaneGrid();
       if (needsFull || statsDirty) { drawLifePlane(); updateStats(); }

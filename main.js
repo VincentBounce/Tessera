@@ -4789,17 +4789,18 @@ function globeMesh(E) {
 // A rosette's whole disc (its cells and its walls, houses alike) on each half of the unit sphere, the south's turned over and
 // round so that its rim's teeth fall in the north's notches, glued corner to corner: a crenellated seam, each tooth biting
 // into the other half. Its rim's corners paired in turn, one disc's forth and the other's back, sides of the same length in
-// pairs, the pair's radii adding up evenly (a tooth's out as far as the notch facing it is in); a size where they do
-// (ROSETTE_SPHERES; each rosette has several, a mirrored one every few: Mirror 8 at W 10, 14, 18…; at the others the rims, cut
-// otherwise, meet tooth to tooth). Each pair one point: its longitude the two's mean,
-// its latitude half the two's radii apart (the tooth's bite); each half's other corners the mean of their neighbours weighed
-// by Floater's mean value coordinates from where they were (Tutte's embedding), again till still; then on the sphere by their
-// distance from its pole (azimuthal equidistant: a tooth's bite the same on both halves)
-const ROSETTE_SPHERES = { mirror7: 32, flower8: 24, flower9: 72 };  // (each its size, the plane's, see planeSides)
-function rosetteSphereMesh(kind) {
-  const f = ROSETTE_SPHERES[kind], key = `rosetteSphere${kind}`;
-  if (meshCache[key]) return meshCache[key];
-  const F = APERIODIC[kind]((shaped(kind) ? sideW : planeW)(planeKind(kind), f)), m = F.m, at = (k) => pointKey(F.xy[2 * k], F.xy[2 * k + 1]);  // (a corner's key: two houses' the same though not to the last bit)
+// pairs, the pair's radii adding up evenly (a tooth's out as far as the notch facing it is in), within ROSETTE_BITE of a tile;
+// the sizes where they do, each rosette's (ROSETTE_SPHERES, made by rosetteSphereSizes() in tools/check.js: a few each, a
+// mirrored one every few; at the others the rims, cut otherwise, meet tooth to tooth, about a tile out). Each pair one point:
+// its longitude the two's mean, its latitude half the two's radii apart (the tooth's bite); each half's other corners the
+// mean of their neighbours weighed by Floater's mean value coordinates from where they were (Tutte's embedding), again till
+// still; then on the sphere by their distance from its pole (azimuthal equidistant: a tooth's bite the same on both halves)
+const ROSETTE_BITE = 0.25;
+const ROSETTE_SPHERES = { flower: [13, 17, 28, 34, 51, 68], flower7: [11, 15, 16, 25, 26, 29, 48, 71], flower8: [11, 12, 13, 16, 17, 18, 21, 22, 26, 31, 71], flower9: [12, 13, 14, 17, 18, 19, 38, 44, 45, 64, 71, 90, 97], flower10: [9, 13, 18, 19, 20, 29, 30, 31, 40, 41, 42, 51, 52, 53, 62, 63, 73, 84], mirror7: [13, 28], mirror8: [10, 14, 18, 22, 26, 30, 34, 42, 50] };  // (each rosette's sizes, its discs' W: made by rosetteSphereSizes())
+// a disc's rim and its pairing (see above): its corners, sides and rim; best, [s, rough]: corner i paired with the other's
+// s − i, rough the most the pairs' radii's sum moves (Infinity: no pairing with sides alike)
+function rosetteSeam(F) {
+  const m = F.m, at = (k) => pointKey(F.xy[2 * k], F.xy[2 * k + 1]);  // (a corner's key: two houses' the same though not to the last bit)
   // its corners, each once (by its key); its sides, linking them; its rim, the sides no other house has, in turn anticlockwise
   const index = new Map(), X = [], Y = [], links = [], sides = new Map();
   const id = (k) => {
@@ -4833,6 +4834,12 @@ function rosetteSphereMesh(kind) {
     }
     if (rough < best[1]) best = [s, rough];
   }
+  return { id, X, Y, links, ring, N, th, r, best };
+}
+function rosetteSphereMesh(kind, W) {
+  const key = `rosetteSphere${kind}${W}`;
+  if (meshCache[key]) return meshCache[key];
+  const F = APERIODIC[kind](W), m = F.m, { id, X, Y, links, ring, N, th, r, best } = rosetteSeam(F);
   const pair = (i) => (((best[0] - i) % N) + N) % N;
   // the south's longitudes the disc's turned over and round, C − its angle: C the pairs' angles' sum, their mean way round
   const C = Math.atan2(th.reduce((s2, a, i) => s2 + Math.sin(a + th[pair(i)]), 0), th.reduce((s2, a, i) => s2 + Math.cos(a + th[pair(i)]), 0));
@@ -4889,7 +4896,7 @@ function rosetteSphereMesh(kind) {
     tiles[m + t] = ccw ? b : b.reverse();
   }
   const most = tiles.reduce((s2, c) => Math.max(s2, c.length), 0);
-  return (meshCache[key] = Object.assign(finishMesh(verts, tiles.map((c) => [...c, ...Array(most - c.length).fill(c.at(-1))]), most, f, null), { rosette: true }));
+  return (meshCache[key] = Object.assign(finishMesh(verts, tiles.map((c) => [...c, ...Array(most - c.length).fill(c.at(-1))]), most, W, null), { rosette: true }));
 }
 
 // Life on them: a mode each, one shape (Rosettes) with a tab each, its rosette's name and picture
@@ -5837,10 +5844,11 @@ const SPHERES = {
            ownSizes: (K = ringColours()) => { const out = []; for (let E = globeFewest(K); SPHERES.globe.tiles(E, K) <= CELLS.most; E *= 2) if (SPHERES.globe.tiles(E, K) >= CELLS.least) out.push(E); return out; } },  // (E: its equator's columns, see globeMesh)
   dodecaKite: { mesh: (f) => flatPolyhedron('dodeca', f, true), radius: (f) => (f * PHI) / 2, tiles: (f) => 180 * f * f, unit: 'kites', how: (f) => `{r:12 pentagonal faces} × {s:5 sectors} × {y:(Edge=${fmt(f)})² triangles} × {k:3 kites each}` },
 };
-// the rosette spheres (see rosetteSphereMesh): one size each, their discs' houses twice, a unit each
-for (const [k, f] of Object.entries(ROSETTE_SPHERES)) {
-  SPHERES[`${k}Sphere`] = { mesh: () => rosetteSphereMesh(k), radius: () => Math.sqrt(SPHERES[`${k}Sphere`].tiles() / (4 * Math.PI)), unit: 'cells', ownSizes: () => [f],
-    tiles: () => 2 * APERIODIC[k]((shaped(k) ? sideW : planeW)(planeKind(k), f)).m };  // (its disc's houses, walls too, counted flat)
+// the rosette spheres (see rosetteSphereMesh): their sizes their discs' W, their discs' houses twice, a unit each
+for (const [k, Ws] of Object.entries(ROSETTE_SPHERES)) {
+  SPHERES[`${k}Sphere`] = { mesh: (W) => rosetteSphereMesh(k, W), radius: (W) => Math.sqrt(SPHERES[`${k}Sphere`].tiles(W) / (4 * Math.PI)), unit: 'cells', ownSizes: () => Ws, disc: true,
+    tiles: (W) => 2 * APERIODIC[k](W).m,  // (its disc's houses, walls too, counted flat)
+    how: (W) => { const F = APERIODIC[k](W); return `{y:2 discs ⌀ ${fmt(discOf(W))}} × (${fmt(F.n)} cells + ${fmt(F.m - F.n)} of their walls)`; } };
 }
 // the solids of squares as tetrakis triangles (see tetrakisOf): sized as their squares, 4 cells a square
 for (const k of Object.keys(TETRAKIS_SOLIDS)) {
@@ -5936,7 +5944,7 @@ const hexagonOf = (kind, f) => {
   const N = gridSize(kind, f)[2], r = Math.round((Math.sqrt(12 * N - 3) - 3) / 6), m = Math.round(Math.sqrt(N / (3 * (TILES_PER_GRID_CELL[kind] ?? 1))));
   return kind === 'hex' && 3 * r * (r + 1) + 1 === N ? `Hexagon · ${r} rings` : 3 * m * m * (TILES_PER_GRID_CELL[kind] ?? 1) === N ? `Hexagon · ${m} a side` : 'Hexagon';
 };
-const sizeShape = (kind, f) => { const d = gridSize(kind, f); return APERIODIC[kind] ? `⌀ ${fmt(discOf(d[0]))}` : shaped(kind) ? hexagonOf(kind, f) : d ? `${fmt(d[0])} × ${fmt(d[1])}` : `Edge ${fmt(SPHERES[kind]?.edge?.(f) ?? f)}`; };  // (a circle: its diameter; a solid: its edge, a frame's and a sponge's their cube's)
+const sizeShape = (kind, f) => { const d = gridSize(kind, f); return APERIODIC[kind] ? `⌀ ${fmt(discOf(d[0]))}` : SPHERES[kind]?.disc ? `⌀ ${fmt(discOf(f))} × 2` : shaped(kind) ? hexagonOf(kind, f) : d ? `${fmt(d[0])} × ${fmt(d[1])}` : `Edge ${fmt(SPHERES[kind]?.edge?.(f) ?? f)}`; };  // (a circle: its diameter; a solid: its edge, a frame's and a sponge's their cube's)
 // how its cells are counted (the size's tooltip): its own words (Pits, Frame, Menger, theirs as tetrakis triangles), else its
 // count's form, c × f² (+ k: a sphere of hexagons' 12 pentagons, see goldberg), else the grid's rows × cells a row
 // a size's tooltip on its block, − + its label and its slider, as its motif shows on it (see drawMotif); its words

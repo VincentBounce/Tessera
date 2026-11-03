@@ -589,9 +589,45 @@ async function partsEqual(fail) {
   return checked;
 }
 
+// The rosette spheres' sizes (ROSETTE_SPHERES in main.js): each rosette's discs, W from 4 to most, whose rims pair teeth to
+// notches within ROSETTE_BITE of a tile (see rosetteSeam), one W a disc (two Ws the same tiles: the first), as many cells as the
+// others (CELLS); in the console, its line for main.js
+window.rosetteSphereSizes = (most = 100) => {
+  const out = {};
+  for (const k of Object.keys(ROSETTES)) {
+    const Ws = [], seen = new Set();
+    for (let W = 4; W <= most; W++) {
+      const F = APERIODIC[k](W);
+      if (seen.has(F.m) || 2 * F.m < CELLS.least || 2 * F.m > CELLS.most) continue;
+      seen.add(F.m);
+      if (rosetteSeam(F).best[1] < ROSETTE_BITE) Ws.push(W);
+    }
+    if (Ws.length) out[k] = Ws;
+  }
+  return `const ROSETTE_SPHERES = { ${Object.entries(out).map(([k, Ws]) => `${k}: [${Ws.join(', ')}]`).join(', ')} };`;
+};
+// each rosette sphere at its smallest and largest size: its rims paired within ROSETTE_BITE, closed (each side two tiles'),
+// its cells as many as said
+function checkRosetteSpheres(fail) {
+  let checked = 0;
+  for (const [k, Ws] of Object.entries(ROSETTE_SPHERES)) for (const W of [Ws[0], Ws.at(-1)]) {
+    const rough = rosetteSeam(APERIODIC[k](W)).best[1], g = SPHERES[`${k}Sphere`].mesh(W), uses = new Map();
+    for (let t = 0; t < g.n; t++) for (let q = 0; q < g.sides; q++) {
+      const a = g.poly[g.sides * t + q], b = g.poly[g.sides * t + ((q + 1) % g.sides)], e = `${Math.min(a, b)},${Math.max(a, b)}`;
+      if (a !== b) uses.set(e, (uses.get(e) ?? 0) + 1);
+    }
+    const open = [...uses.values()].filter((c) => c !== 2).length;
+    checked++;
+    if (!(rough < ROSETTE_BITE)) fail(`${k} sphere W${W}: its rims ${rough.toFixed(3)} of a tile apart`);
+    if (open) fail(`${k} sphere W${W}: ${open} sides not shared by two tiles`);
+    if (g.n !== SPHERES[`${k}Sphere`].tiles(W)) fail(`${k} sphere W${W}: ${g.n} cells, said ${SPHERES[`${k}Sphere`].tiles(W)}`);
+  }
+  return checked;
+}
+
 window.tesseraCheck = async ({ parts = false, known = false, crawl: andCrawl = false, deep: andDeep = false, fuzz: actions = 0, cold = false, colours = false, seed = Date.now() % 1e6, from, only } = {}) => {
   const failures = [], fail = (s) => { failures.push(s); localStorage.tesseraDeepFailures = JSON.stringify(failures); };
-  let checked = checkMeshes(fail) + checkBlockWraps(fail) + checkDiscs(fail) + checkTips(fail) + checkMarks(fail) + await checkSheets(fail);
+  let checked = checkMeshes(fail) + checkBlockWraps(fail) + checkDiscs(fail) + checkTips(fail) + checkMarks(fail) + checkRosetteSpheres(fail) + await checkSheets(fail);
   if (known) checked += await checkKnown(fail);
   if (andCrawl) checked += await crawl(fail);
   if (actions) checked += await fuzz(fail, actions, seed, cold);

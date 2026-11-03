@@ -272,29 +272,36 @@ function revive(G, rule, ships, seedv, tries = 2, d = 0.3, cap = 6000) {
 // k + 2s). Followed till one colour is left (or none), the grid repeats, or gens: the lead's changes (a colour ahead by
 // margin of the live ones, then the other: the turnarounds), the lowest share the colour ahead at the end had since
 // generation 50 (its comeback), how long
+// one generation of two colours (1 and 2, their dying states 3, 5… and 4, 6…): a birth the colour most of its live
+// neighbours have (as many of each: none), as the app's Duel; its two counts
+function duelStep(a, b, G, B, S, C) {
+  const n = G.n, last = 2 * (C - 1);
+  let p1 = 0, p2 = 0;
+  for (let t = 0; t < n; t++) {
+    const was = a[t];
+    let now;
+    if (was > 2) now = was + 2 <= last ? was + 2 : 0;
+    else {
+      let c = 0, k = 0, c1 = 0, c2 = 0;
+      for (let q = G.start[t]; q < G.start[t + 1]; q++) { const v = a[G.list[q]]; if (v === 1 || v === 2) { c++; if (v === 1) c1++; else c2++; if (G.side && !G.side[q]) k++; } }
+      const i = 4 * c + Math.min(k, 3);
+      if (was) now = S[i] ? was : C > 2 ? was + 2 : 0;
+      else now = !B[i] ? 0 : c1 > c2 ? 1 : c2 > c1 ? 2 : 0;
+    }
+    b[t] = now;
+    if (now === 1) p1++; else if (now === 2) p2++;
+  }
+  return [p1, p2];
+}
 function battle(G, rule, seedv, d = 0.35, gens = 3000, margin = 0.1) {
-  const { B, S, C } = parse(rule), n = G.n, last = 2 * (C - 1);
+  const { B, S, C } = parse(rule), n = G.n;
   seed = seedv;
   let a = new Uint8Array(n), b = new Uint8Array(n);
   for (let t = 0; t < n; t++) if (rnd() < d) a[t] = (G.left ? G.left[t] : t % G.row < G.row / 2) ? 1 : 2;
   const seen = new Map(), low = [1, 1, 1];
   let lead = 0, swaps = 0, T = gens, end = 'running', p1 = 0, p2 = 0;
   for (let g = 1; g <= gens; g++) {
-    p1 = p2 = 0;
-    for (let t = 0; t < n; t++) {
-      const was = a[t];
-      let now;
-      if (was > 2) now = was + 2 <= last ? was + 2 : 0;
-      else {
-        let c = 0, k = 0, c1 = 0, c2 = 0;
-        for (let q = G.start[t]; q < G.start[t + 1]; q++) { const v = a[G.list[q]]; if (v === 1 || v === 2) { c++; if (v === 1) c1++; else c2++; if (G.side && !G.side[q]) k++; } }
-        const i = 4 * c + Math.min(k, 3);
-        if (was) now = S[i] ? was : C > 2 ? was + 2 : 0;
-        else now = !B[i] ? 0 : c1 > c2 ? 1 : c2 > c1 ? 2 : 0;
-      }
-      b[t] = now;
-      if (now === 1) p1++; else if (now === 2) p2++;
-    }
+    [p1, p2] = duelStep(a, b, G, B, S, C);
     [a, b] = [b, a];
     if (!p1 || !p2) { T = g; end = p1 || p2 ? 'won' : 'dies'; break; }
     const share = p1 / (p1 + p2);
@@ -307,4 +314,4 @@ function battle(G, rule, seedv, d = 0.35, gens = 3000, margin = 0.1) {
   const ahead = p1 > p2 ? 1 : p2 > p1 ? 2 : 0;
   return { T, end, swaps, comeback: ahead ? +low[ahead].toFixed(3) : null };
 }
-export { parse, step, soup, seeds, behaviour, components, normal, trace, settle, revive, battle };
+export { parse, step, duelStep, soup, seeds, behaviour, components, normal, trace, settle, revive, battle };

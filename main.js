@@ -13514,7 +13514,7 @@ const GPU_VIEW = `
 struct U {
   R: vec3f, depth: f32, Uu: vec3f, shade: f32, V: vec3f, glint: f32, L: vec3f, lr: f32, H: vec3f, alpha: f32, Lx: vec3f, edge: f32,
   Ly: vec3f, bias: f32, edgeRgb: vec3f, halfW: f32, persp: vec4f, plain: vec4f, view: vec3f, N: f32, cc: vec2f, screen: vec2f,
-  front: u32, cut: i32, glass: i32, both: i32, colour: i32, alphaF: f32, bright: f32, width: f32, loopFrom: f32, period: f32, turnC: f32, turnS: f32,
+  cut: i32, glass: i32, both: i32, colour: i32, alphaF: f32, bright: f32, width: f32, loopFrom: f32, period: f32, turnC: f32, turnS: f32,
   tpl: array<vec4f, 12>,  // (the polygons' corners, two a vec4)
 }
 @group(0) @binding(0) var<uniform> u: U;
@@ -13530,7 +13530,6 @@ fn clipOf(s: vec3f, bias: f32) -> vec4f {  // (depth 0 to 1)
   return vec4f(s.x / u.screen.x * 2.0 - 1.0, 1.0 - s.y / u.screen.y * 2.0, clamp(-s.z / u.depth - bias, -1.0, 1.0) * 0.5 + 0.5, 1.0);
 }
 fn flatAt(q: vec2f) -> vec4f { return vec4f(q.x / u.screen.x * 2.0 - 1.0, 1.0 - q.y / u.screen.y * 2.0, 0.0, 1.0); }
-fn place(id: u32) -> u32 { if (u.front > 0u) { return id % u.front; } return id; }
 fn lightSpace(p: vec3f) -> vec3f { return vec3f(dot(p, u.Lx), dot(p, u.Ly), -dot(p, u.L)) / u.lr; }
 fn band(t: texture_2d<f32>, x: f32) -> vec3f { let w = i32(textureDimensions(t).x); return textureLoad(t, vec2i(clamp(i32(floor(x * f32(w))), 0, w - 1), 0), 0).rgb; }
 fn glass(c: vec3f, a: f32, z: f32) -> vec4f {
@@ -13539,28 +13538,25 @@ fn glass(c: vec3f, a: f32, z: f32) -> vec4f {
   if (u.glass == 1) { return vec4f(c * a * w, a * w); }
   return vec4f(a);
 }
-struct Lit { @builtin(position) pos: vec4f, @location(0) dark: vec3f, @location(1) lit: vec3f, @location(2) sh: vec3f, @location(3) @interpolate(flat) id: u32, @location(4) cutv: f32 }
-fn light(col: vec3f, n0: vec3f, p: vec3f, id: u32, bias: f32) -> Lit {  // (as tileLight; sh: its place in the shadows' texture, rows down)
+struct Lit { @builtin(position) pos: vec4f, @location(0) dark: vec3f, @location(1) lit: vec3f, @location(2) sh: vec3f, @location(3) cutv: f32 }
+fn light(col: vec3f, n0: vec3f, p: vec3f, bias: f32) -> Lit {  // (as tileLight; sh: its place in the shadows' texture, rows down)
   var o: Lit; var n = n0;
   if (dot(n, u.V) < 0.0) { n = -n; }
   o.dark = col * (1.0 - u.shade);
   o.lit = col * u.shade * max(0.0, dot(n, u.L)) + u.glint * pow(max(0.0, dot(n, u.H)), ${LIGHT_SHINE}.0);
   let l = lightSpace(p);
   o.sh = vec3f(l.x * 0.5 + 0.5, 0.5 - l.y * 0.5, l.z * 0.5 + 0.5);
-  o.id = id; o.cutv = dot(p, u.V); o.pos = clipOf(toScreen(p), bias);
+  o.cutv = dot(p, u.V); o.pos = clipOf(toScreen(p), bias);
   return o;
 }
 @group(1) @binding(0) var shadowMap: texture_depth_2d;
-@group(1) @binding(1) var shadowIds: texture_2d<u32>;
-@group(1) @binding(2) var shadowCmp: sampler_comparison;
-@fragment fn shadowedF(i: Lit) -> @location(0) vec4f {  // (the share of the light: 9 looks round it, each softened by the hardware's compare; a look that finds its own tile or cube lit: a piece never shadows itself, a tile not flat drawn folded)
+@group(1) @binding(1) var shadowCmp: sampler_comparison;
+@fragment fn shadowedF(i: Lit) -> @location(0) vec4f {  // (the share of the light: 9 looks round it, each softened by the hardware's compare)
   if (u.cut == 1 && i.cutv > 0.0) { discard; }
   let t = 1.0 / ${SHADOW_SIZE}.0; var s = 0.0;
   for (var a = -1; a <= 1; a++) { for (var b = -1; b <= 1; b++) {
     let at = i.sh.xy + vec2f(f32(a), f32(b)) * t;
-    let lit = textureSampleCompareLevel(shadowMap, shadowCmp, at, i.sh.z - 2.0 * t);
-    let px = clamp(vec2i(floor(at * ${SHADOW_SIZE}.0)), vec2i(0), vec2i(${SHADOW_SIZE - 1}));
-    s += select(lit, 1.0, textureLoad(shadowIds, px, 0).r == i.id + 1u);
+    s += textureSampleCompareLevel(shadowMap, shadowCmp, at, i.sh.z - 2.0 * t);
   } }
   var a = u.alpha;
   if (u.glass == 0 || (u.cut == 2 && i.cutv <= 0.0)) { a = 1.0; }
@@ -13569,17 +13565,17 @@ fn light(col: vec3f, n0: vec3f, p: vec3f, id: u32, bias: f32) -> Lit {  // (as t
 @vertex fn tileV(@location(0) pos: vec3f, @location(1) nrm: vec3f, @location(2) id: u32) -> Lit {
   var col = u.plain.rgb;  // (the back of an open sheet; else its tile's colour)
   if (u.plain.a <= 0.0) { col = unpack4x8unorm(tileCol[id]).rgb; }
-  return light(col, nrm, pos, place(id), 0.0);
+  return light(col, nrm, pos, 0.0);
 }
-@vertex fn cubeV(@location(0) corner: vec3f, @location(1) nrm: vec3f, @location(2) at: vec3f, @location(3) col: vec4f, @builtin(instance_index) k: u32) -> Lit {
-  return light(col.rgb, nrm, at + corner, k, 0.0);
+@vertex fn cubeV(@location(0) corner: vec3f, @location(1) nrm: vec3f, @location(2) at: vec3f, @location(3) col: vec4f) -> Lit {
+  return light(col.rgb, nrm, at + corner, 0.0);
 }
-// the depths seen from the light: a tile's corner or a cube's, and what is nearest it, its number + 1
-struct Deep { @builtin(position) pos: vec4f, @location(0) @interpolate(flat) id: u32, @location(1) cutv: f32 }
-fn deep(p: vec3f, id: u32) -> Deep { var o: Deep; let l = lightSpace(p); o.pos = vec4f(l.x, l.y, l.z * 0.5 + 0.5, 1.0); o.id = id; o.cutv = dot(p, u.V); return o; }
-@vertex fn depthTileV(@location(0) pos: vec3f, @location(1) id: u32) -> Deep { return deep(pos, place(id)); }
-@vertex fn depthCubeV(@location(0) corner: vec3f, @location(1) at: vec3f, @builtin(instance_index) k: u32) -> Deep { return deep(at + corner, k); }
-@fragment fn depthF(i: Deep) -> @location(0) u32 { if (u.cut == 1 && i.cutv > 0.0) { discard; } return i.id + 1u; }
+// the depths seen from the light: a tile's corner or a cube's
+struct Deep { @builtin(position) pos: vec4f, @location(0) cutv: f32 }
+fn deep(p: vec3f) -> Deep { var o: Deep; let l = lightSpace(p); o.pos = vec4f(l.x, l.y, l.z * 0.5 + 0.5, 1.0); o.cutv = dot(p, u.V); return o; }
+@vertex fn depthTileV(@location(0) pos: vec3f) -> Deep { return deep(pos); }
+@vertex fn depthCubeV(@location(0) corner: vec3f, @location(1) at: vec3f) -> Deep { return deep(at + corner); }
+@fragment fn depthF(i: Deep) { if (u.cut == 1 && i.cutv > 0.0) { discard; } }
 // the grid: the tile edges, pulled a little towards the viewer; an edge whose two tiles both face away not drawn, pixel by pixel
 struct Edge { @builtin(position) pos: vec4f, @location(0) facing: f32, @location(1) cutv: f32 }
 @vertex fn edgeV(@location(0) pos: vec3f, @location(1) n1: vec3f, @location(2) n2: vec3f) -> Edge {
@@ -13651,9 +13647,9 @@ function gpuView(words, k, depth, more = {}) {
   const lx = x.map((v) => v / m), ly = [L[1] * lx[2] - L[2] * lx[1], L[2] * lx[0] - L[0] * lx[2], L[0] * lx[1] - L[1] * lx[0]];
   f.set(cam.r, 0); f[3] = depth; f.set(cam.u, 4); f[7] = SHADE; f.set(cam.v, 8); f[11] = glint(); f.set(L, 12); f[15] = depth / 4; f.set(halfway(L), 16);
   f.set(lx, 20); f.set(ly, 24); f.set([...(P ? P.c : [0, 0, 0]), P ? P.D : 0], 32); f.set([view.scale, view.ox, view.oy], 40); f.set(cc, 44); f.set([cw, ch], 46);
-  i[48] = walk.geo?.mobius ? walk.geo.front : 0; i[49] = cutOn() ? 1 : 0;
-  const at = { alpha: [19, 'f'], edge: [23, 'f'], bias: [27, 'f'], halfW: [31, 'f'], N: [43, 'f'], cut: [49, 'i'], glass: [50, 'i'], both: [51, 'i'], colour: [52, 'i'],
-    alphaF: [53, 'f'], bright: [54, 'f'], width: [55, 'f'], loopFrom: [56, 'f'], period: [57, 'f'], turnC: [58, 'f'], turnS: [59, 'f'] };
+  i[48] = cutOn() ? 1 : 0;
+  const at = { alpha: [19, 'f'], edge: [23, 'f'], bias: [27, 'f'], halfW: [31, 'f'], N: [43, 'f'], cut: [48, 'i'], glass: [49, 'i'], both: [50, 'i'], colour: [51, 'i'],
+    alphaF: [52, 'f'], bright: [53, 'f'], width: [54, 'f'], loopFrom: [55, 'f'], period: [56, 'f'], turnC: [57, 'f'], turnS: [58, 'f'] };
   for (const [k2, v] of Object.entries(more)) {
     if (k2 === 'edgeRgb') f.set(v, 28); else if (k2 === 'plain') f.set(v, 36); else if (k2 === 'tpl') f.set(v, 60);
     else (at[k2][1] === 'f' ? f : i)[at[k2][0]] = v;
@@ -13672,8 +13668,7 @@ function gpuDrawSetup() {
   const T = GPUShaderStage, B = (binding, visibility, x) => ({ binding, visibility, ...x });
   const g0 = device.createBindGroupLayout({ entries: [B(0, T.VERTEX | T.FRAGMENT, { buffer: { type: 'uniform', hasDynamicOffset: true } }), B(1, T.VERTEX, { buffer: { type: 'read-only-storage' } }),
     B(2, T.VERTEX | T.FRAGMENT, { texture: { sampleType: 'unfilterable-float' } }), B(3, T.VERTEX | T.FRAGMENT, { texture: { sampleType: 'unfilterable-float' } })] });
-  const shadowed = device.createBindGroupLayout({ entries: [B(0, T.FRAGMENT, { texture: { sampleType: 'depth' } }), B(1, T.FRAGMENT, { texture: { sampleType: 'uint' } }),
-    B(2, T.FRAGMENT, { sampler: { type: 'comparison' } })] });
+  const shadowed = device.createBindGroupLayout({ entries: [B(0, T.FRAGMENT, { texture: { sampleType: 'depth' } }), B(1, T.FRAGMENT, { sampler: { type: 'comparison' } })] });
   const mixed = device.createBindGroupLayout({ entries: [B(0, T.FRAGMENT, { texture: { sampleType: 'unfilterable-float' } }), B(1, T.FRAGMENT, { texture: { sampleType: 'unfilterable-float' } })] });
   const texture = (w, data) => { const t = device.createTexture({ size: [w, 1], format: 'rgba8unorm', usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST }); device.queue.writeTexture({ texture: t }, data, { bytesPerRow: 4 * w }, [w, 1]); return t; };
   const D = (GPU.draw = { device, ctx, format, module, g0, shadowed, mixed, pipes: new Map(), keys: {}, uni: device.createBuffer({ size: 512 * GPU_SLOTS, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST }),
@@ -13743,17 +13738,17 @@ const gpuPass = (enc, colour = null, clear = [0, 0, 0, 0], depth = true) => {
   return enc.beginRenderPass({ colorAttachments: [colour ?? { view: S.colour.createView(), resolveTarget: D.ctx.getCurrentTexture().createView(), loadOp: 'clear', storeOp: 'discard', clearValue: clear }],
     depthStencilAttachment: depth ? { view: S.depth.createView(), depthLoadOp: 'clear', depthClearValue: 1, depthStoreOp: 'discard' } : undefined });
 };
-// the shadows: the light's depths and what is nearest it, again only when key changes; draw(pass) draws the pieces
+// the shadows: the light's depths, again only when key changes; draw(pass) draws the pieces
 function gpuShadows(enc, slot, draw, key) {
   const D = GPU.draw, { device } = D;
   if (!D.shadow) {
     const make = (format) => device.createTexture({ size: [SHADOW_SIZE, SHADOW_SIZE], format, usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING });
-    D.shadow = { depth: make('depth24plus'), ids: make('r32uint') };
-    D.shadow.group = device.createBindGroup({ layout: D.shadowed, entries: [{ binding: 0, resource: D.shadow.depth.createView() }, { binding: 1, resource: D.shadow.ids.createView() }, { binding: 2, resource: D.cmp }] });
+    D.shadow = { depth: make('depth24plus') };
+    D.shadow.group = device.createBindGroup({ layout: D.shadowed, entries: [{ binding: 0, resource: D.shadow.depth.createView() }, { binding: 1, resource: D.cmp }] });
   }
   if (key !== null && D.keys.shadow === key) return;
   D.keys.shadow = key;
-  const p = enc.beginRenderPass({ colorAttachments: [{ view: D.shadow.ids.createView(), loadOp: 'clear', storeOp: 'store', clearValue: [0, 0, 0, 0] }],
+  const p = enc.beginRenderPass({ colorAttachments: [],
     depthStencilAttachment: { view: D.shadow.depth.createView(), depthLoadOp: 'clear', depthClearValue: 1, depthStoreOp: 'store' } });
   p.setBindGroup(0, gpuGroup(), [slot]);
   if (lamp()) draw(p);
@@ -13761,7 +13756,7 @@ function gpuShadows(enc, slot, draw, key) {
 }
 // a shadows' pipeline: its vertex entry, its buffers (a lit face does not shadow itself: depth bias, as polygonOffset(2, 4))
 const gpuDepthPipe = (entry, buffers) => gpuPipe(`depth|${entry}`, (D) => ({ layout: D.device.createPipelineLayout({ bindGroupLayouts: [D.g0] }),
-  vertex: { module: D.module, entryPoint: entry, buffers }, fragment: { module: D.module, entryPoint: 'depthF', targets: [{ format: 'r32uint' }] },
+  vertex: { module: D.module, entryPoint: entry, buffers }, fragment: { module: D.module, entryPoint: 'depthF', targets: [] },
   primitive: { topology: 'triangle-list' }, depthStencil: { format: 'depth24plus', depthWriteEnabled: true, depthCompare: 'less', depthBias: 4, depthBiasSlopeScale: 2 } }));
 // a picture's pipeline: pass 0 on the frame (blend: null or a blend), 1 and 2 Glass's (see gpuFrame), no depth test there
 const BLEND_OVER = { color: { srcFactor: 'src-alpha', dstFactor: 'one-minus-src-alpha' }, alpha: { srcFactor: 'one', dstFactor: 'one-minus-src-alpha' } };
@@ -13822,8 +13817,8 @@ function gpuSurface(paint, path) {
   const enc = device.createCommandEncoder(), shadowSlot = slotOf({});
   const tileBufs = [vbuf(12, [VA(0, 'float32x3')]), vbuf(12, [VA(1, 'float32x3')]), vbuf(4, [VA(2, 'uint32')])];
   gpuShadows(enc, shadowSlot, (p) => {
-    p.setPipeline(gpuDepthPipe('depthTileV', [vbuf(12, [VA(0, 'float32x3')]), vbuf(4, [VA(1, 'uint32')])]));
-    p.setVertexBuffer(0, D.pos); p.setVertexBuffer(1, D.tileIds); p.setIndexBuffer(D.fan, 'uint32'); p.drawIndexed(D.fanCount);
+    p.setPipeline(gpuDepthPipe('depthTileV', [vbuf(12, [VA(0, 'float32x3')])]));
+    p.setVertexBuffer(0, D.pos); p.setIndexBuffer(D.fan, 'uint32'); p.drawIndexed(D.fanCount);
   }, `${D.geoGen}|${lightDir()}|${cam.r}|${depth}|${lamp()}|${cutOn()}`);
   const segs = path && cur > 0 && (D.keys.segs !== walk.wx || D.keys.segsM !== sh.m) ? pathSegments() : null;
   if (segs) { gpuBuffer('ribbon', segs.data); D.segsAt = segs.at; D.keys.segs = walk.wx; D.keys.segsM = sh.m; }

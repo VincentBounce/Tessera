@@ -54,6 +54,12 @@ touched shows (+0 if its code lines are as many).
 ## Removed features
 A feature taken out gets a row in `REMOVED.md` (in English) at once: its last version, date, commit, a raw.githack link
 that opens it as it was, and why it left.
+- Its rows sorted by date, the oldest first (a row added later goes at its date, not at the end).
+- Its link straight to the feature in a state that shows it: its mode, size, rule, colours, start, the switch that turns
+  it on (`https://raw.githack.com/VincentBounce/Tessera/<commit>/index.html#w=…&s=…&r=…`), never the bare page; what a link
+  could not hold then (a hunt zone, a colour mode), written after it as the click to make ("then Hunt › …").
+- A feature that was only tried, on a branch never merged, gets its row too (its commit kept on GitHub even once its
+  branch is gone), and one taken back at once (its last version the one that had it).
 
 ## Lenia prototype (lenia/)
 A separate page (`lenia/index.html`, `lenia.js`, `species.js`), not part of main.js: Bert Chan's Lenia on the GPU (FFT),

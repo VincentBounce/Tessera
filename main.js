@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.3';
+const VERSION = '0.4.4';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -14679,7 +14679,7 @@ function renderGauges(L) {
   const avg = loopMeans(L), varies = avg && L.loopMax[1] > L.loopMin[1], b = L.bornNow, d = L.deadNow, before = L.aliveCount - b + d, both = L.aliveCount + before;
   const turnover = both ? (b + d) / both : 0, gold = 'var(--accent)', blue = 'var(--sector)', P = peaks(L);
   const rows = [  // name, colour (none: the theme's live cells'), its bar's share (none: figures only), its figures
-    ['Alive', gold, (varies ? avg[1] : L.aliveCount) / P.alive, `<b>${varies ? `≈ ${fmt(Math.round(avg[1] * 10) / 10)}` : fmt(L.aliveCount)}</b>`],
+    ['Alive', gold, (varies ? avg[1] : L.aliveCount) / P.alive, `<b>${varies ? meanText(avg[1]) : fmt(L.aliveCount)}</b>`],
     ['Peak alive', gold, P.alive / n, `${fmt(P.alive)} · ${genLink(P.aliveGen)}`],
     ['Order', blue, L.order, `${Math.round(100 * L.order)} %`],
     ['Peak order', blue, P.order, `${Math.round(100 * P.order)} % · ${genLink(P.orderGen)}`],
@@ -14739,6 +14739,8 @@ function renderWalkGauges() {
 // start; its loop's means with it
 const endShown = (L) => (L.stable && (cur >= L.stable.T || cur < 0) ? L.stable : null);  // (a reversible one's past: in its loop too)
 const loopMeans = (L) => endShown(L) && L.loopAvg;
+// a loop's mean, as written: ≈, to a tenth, its tenth always (≈ 3,120.0 beside ≈ 2,881.5)
+const meanText = (v) => `≈ ${v.toLocaleString('en', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}`;
 const colourGone = (L, k) => (loopMeans(L) ? L.loopMax[k] === 0 : L.extinctAt?.[k] !== null && L.extinctAt?.[k] !== undefined);
 function renderRanking(L) {
   const box = $('ranking'), K = L.colours, H = 18;
@@ -14767,7 +14769,7 @@ function renderRanking(L) {
     r.style.transform = `translateY(${top + place * H}px)`;
     r.classList.toggle('dead', off);
     r.children[0].textContent = place + 1;  // (then its colour, its bar, its table)
-    const num = (v) => (mean && L.loopMax[k] > L.loopMin[k] ? `≈ ${fmt(Math.round(v * 10) / 10)}` : fmt(v));
+    const num = (v) => (mean && L.loopMax[k] > L.loopMin[k] ? meanText(v) : fmt(v));
     r.children[2].firstChild.style.width = off ? '0' : `${(100 * live(k)) / total}%`;
     [off ? `✝ ${genLink(L.extinctAt[k])}` : `<b>${num(live(k))}</b>`, fmt(Math.round((foot ?? L.sumBy)[k] / (foot ? Math.max(1, L.stable.T) : L.gen + 1))), fmt(L.bornBy[k]), fmt(L.deadBy[k]), fmt(L.everBy[k])].forEach((v, c) => setLinks(r.children[3 + c], v));
   });

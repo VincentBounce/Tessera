@@ -221,9 +221,9 @@ button.wide.how-it-works { margin-bottom: 4px; }  /* on its rules' first card, t
 /* Walk mode: one tab per category, then every choice of that category */
 /* Tabs: text only, the active one in yellow and underlined on the header's hairline; always bold,
    so the active tab keeps its width */
-.tabs { display: flex; flex-wrap: wrap; gap: 0 4px; align-self: stretch; }
+.tabs { display: flex; flex-wrap: wrap; gap: 0; align-self: stretch; }  /* (no gap: the underlines meet, tab to tab; the 4px between the words in their padding) */
 .tabs button {
-  padding: 14px 12px 11px;
+  padding: 14px 14px 11px;
   margin-bottom: -1px;               /* the underline covers the hairline */
   background: none;
   border: 0;

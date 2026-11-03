@@ -11,7 +11,7 @@
   <meta property="og:type" content="website">
   <link id="favicon" rel="icon">  <!-- the app's logo, set at start-up (see appLogo) -->
   <meta name="description" content="A walk on a grid in 2D or 3D driven by the base-2 to base-6 digits of π, other constants and large primes.">
-  <link rel="stylesheet" href="style.css?v=20261103k">
+  <link rel="stylesheet" href="style.css?v=20261103l">
   <script>  // the theme before the first paint (see applyTheme)
     try { const t = localStorage.getItem('tesseraTheme') || 'system'; document.documentElement.dataset.theme = t === 'system' ? (matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark') : t; } catch { document.documentElement.dataset.theme = 'dark'; }
   </script>
@@ -587,10 +587,18 @@
             <option value="B369/S3457" data-name="Flower 9 Life">✼ B369/S3457 — soups settling after 150 to 1,950 generations (1.61 % alive at the end), oscillators in all their ash</option>
             <option value="B279/S0345/C5" data-name="Flower 10 embers">✥ B279/S0345/C5 — soups settling after 172 to 2,921 generations (3.45 % alive at the end), oscillators in 67 % of their ash (5 states)</option>
             <option value="B368/S3457" data-name="Flower 10 Life">✥ B368/S3457 — soups settling after 143 to 1,336 generations (1.38 % alive at the end), oscillators in all their ash</option>
+            <option value="B24/S038/C4" data-name="Flower 11 embers">⁕ B24/S038/C4 — soups settling after 312 to 3,720 generations (3.39 % alive at the end), no oscillator in their ash (4 states)</option>
+            <option value="B245/S037/C4" data-name="Flower 11 sparks">⁕ B245/S037/C4 — soups settling after 284 to 1,650 generations (3.42 % alive at the end), no oscillator in their ash (4 states)</option>
+            <option value="B278/S0345/C5" data-name="Flower 12 embers">⚘ B278/S0345/C5 — soups settling after 227 to over 6,000 generations (3.42 % alive at the end), oscillators in 42 % of their ash (5 states)</option>
+            <option value="B268/S0345/C5" data-name="Flower 12 sparks">⚘ B268/S0345/C5 — soups settling after 225 to 1,871 generations (3.25 % alive at the end), oscillators in 33 % of their ash (5 states)</option>
             <option value="B248/S0348/C4" data-name="Mirror 7 embers">❊ B248/S0348/C4 — soups settling after 158 to 668 generations (3.45 % alive at the end), no oscillator in their ash (4 states)</option>
             <option value="B24/S0346/C4" data-name="Mirror 7 sparks">❊ B24/S0346/C4 — soups settling after 226 to 609 generations (3.53 % alive at the end), no oscillator in their ash (4 states)</option>
             <option value="B26/S0345/C4" data-name="Mirror 8 embers">✱ B26/S0345/C4 — soups settling after 726 to 2,826 generations (3.53 % alive at the end), oscillators in 42 % of their ash (4 states)</option>
             <option value="B248/S0346/C4" data-name="Mirror 8 sparks">✱ B248/S0346/C4 — soups settling after 223 to 1,489 generations (3.39 % alive at the end), no oscillator in their ash (4 states)</option>
+            <option value="B245/S0346/C4" data-name="Mirror 3 embers">⚝ B245/S0346/C4 — soups settling after 362 to 1,608 generations (3.36 % alive at the end), no oscillator in their ash (4 states)</option>
+            <option value="B247/S0346/C4" data-name="Mirror 3 sparks">⚝ B247/S0346/C4 — soups settling after 384 to 1,817 generations (3.39 % alive at the end), no oscillator in their ash (4 states)</option>
+            <option value="B245/S0346/C4" data-name="Mirror 4 embers">※ B245/S0346/C4 — soups settling after 191 to 2,424 generations (3.27 % alive at the end), no oscillator in their ash (4 states)</option>
+            <option value="B246/S0347/C4" data-name="Mirror 4 sparks">※ B246/S0347/C4 — soups settling after 274 to 1,330 generations (3.19 % alive at the end), no oscillator in their ash (4 states)</option>
             <option value="B245/S0346/C4" data-name="Mirror 5 embers">✩ B245/S0346/C4 — soups settling after 232 to 3,062 generations (3.45 % alive at the end), no oscillator in their ash (4 states)</option>
             <option value="B347/S0237" data-name="Mirror 5 Life">✩ B347/S0237 — soups settling after 289 to over 6,000 generations (4.48 % alive at the end), oscillators in 25 % of their ash</option>
             <option value="B245/S0345/C5" data-name="Mirror 6 embers">✫ B245/S0345/C5 — soups settling after 293 to 933 generations (3.25 % alive at the end), oscillators in 8 % of their ash (5 states)</option>
@@ -613,6 +621,8 @@
             <option value="B2/S034/C4" data-name="Ring 9 sparks">✻ B2/S034/C4 — soups settling after 305 to 2,929 generations (3.27 % alive at the end), no oscillator in their ash (4 states)</option>
             <option value="B26/S034/C4" data-name="Ring 10 embers">✴ B26/S034/C4 — soups settling after 235 to 2,337 generations (3.16 % alive at the end), no oscillator in their ash (4 states)</option>
             <option value="B27/S0345/C5" data-name="Ring 10 sparks">✴ B27/S0345/C5 — soups settling after 218 to over 6,000 generations (3.27 % alive at the end), oscillators in two thirds of their ash (5 states)</option>
+            <option value="B267/S0346/C4" data-name="Ring 11 embers">⊚ B267/S0346/C4 — soups settling after 348 to 3,790 generations (3.39 % alive at the end), no oscillator in their ash (4 states)</option>
+            <option value="B278/S0347/C4" data-name="Ring 11 sparks">⊚ B278/S0347/C4 — soups settling after 209 to 1,407 generations (3.25 % alive at the end), no oscillator in their ash (4 states)</option>
             <option value="B2/S0345/C5" data-name="Ring 12 sparks">❈ B2/S0345/C5 — soups settling after 439 to over 6,000 generations (3.71 % alive at the end), oscillators in 58 % of their ash (5 states)</option>
             <option value="B257/S0346/C4" data-name="Ring 12 embers">❈ B257/S0346/C4 — soups settling after 355 to 3,188 generations (3.25 % alive at the end), no oscillator in their ash (4 states)</option>
             <option value="B356/S0345/C4" data-name="Ammann Life">✵ B356/S0345/C4 — soups settling after 336 to 1,174 generations (2.56 % alive at the end), oscillators in 25 % of their ash (4 states)</option>
@@ -771,10 +781,10 @@
     </div>
   </main>
 
-  <script src="pixelarticons.js?v=20261103k"></script>
-  <script src="punks.js?v=20261103k"></script>
-  <script src="loops.js?v=20261103k"></script>
-  <script src="emoji.js?v=20261103k"></script>
-  <script src="main.js?v=20261103k"></script>
+  <script src="pixelarticons.js?v=20261103l"></script>
+  <script src="punks.js?v=20261103l"></script>
+  <script src="loops.js?v=20261103l"></script>
+  <script src="emoji.js?v=20261103l"></script>
+  <script src="main.js?v=20261103l"></script>
 </body>
 </html>

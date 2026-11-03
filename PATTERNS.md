@@ -1568,6 +1568,23 @@ His hexagon (tips 360°/n, the other corners 180° − 180°/n) in 2n cones of t
 | [Hexa 11 Life B34/S2456](https://vincentbounce.github.io/Tessera/#w=life2dHexa11&r=B34/S2456&s=48&pop=random.30.7) | 0.28 | 116–6,000+ | 3.02 % | 92 % |
 | [Hexa 12 embers B238/S0456/C5](https://vincentbounce.github.io/Tessera/#w=life2dHexa12&r=B238/S0456/C5&s=48&pop=random.30.7) | 0.041 | 59–807 | 4.34 % | 17 % |
 
+## ⁕ Five more circles: Flower 11 and 12, Mirror 3 and 4, Ring 11 (2026-11-03)
+
+The circles' families to 12 (Flowers 3 to 12, Mirrors 3 to 12, Rings 7 to 12; Hexa 3 the hexagons' grid itself, a ring's tile a pentagon from 7 only), each searched as the others (tools/tilings/search.js: 103,448 rules on the flowers and the ring, 22,168 on the Mirrors, their few neighbours), its two best kept. Flower 11 and 12 also as spheres (their rims pairing at 15 and 47 sizes); Mirror 3, Mirror 4 and Ring 11 never.
+
+| Rule | Score | Soups settle after | Alive at the end | Oscillators in the ash |
+|---|---|---|---|---|
+| [Flower 11 embers B24/S038/C4](https://vincentbounce.github.io/Tessera/#w=life2dFlower11&r=B24/S038/C4&s=48&pop=random.30.7) | 0.15 | 312–3,720 | 3.39 % | 0 % |
+| [Flower 11 sparks B245/S037/C4](https://vincentbounce.github.io/Tessera/#w=life2dFlower11&r=B245/S037/C4&s=48&pop=random.30.7) | 0.148 | 284–1,650 | 3.42 % | 0 % |
+| [Flower 12 embers B278/S0345/C5](https://vincentbounce.github.io/Tessera/#w=life2dFlower12&r=B278/S0345/C5&s=48&pop=random.30.7) | 0.257 | 227–6,000+ | 3.42 % | 42 % |
+| [Flower 12 sparks B268/S0345/C5](https://vincentbounce.github.io/Tessera/#w=life2dFlower12&r=B268/S0345/C5&s=48&pop=random.30.7) | 0.245 | 225–1,871 | 3.25 % | 33 % |
+| [Mirror 3 embers B245/S0346/C4](https://vincentbounce.github.io/Tessera/#w=life2dMirror3&r=B245/S0346/C4&s=48&pop=random.30.7) | 0.249 | 362–1,608 | 3.36 % | 0 % |
+| [Mirror 3 sparks B247/S0346/C4](https://vincentbounce.github.io/Tessera/#w=life2dMirror3&r=B247/S0346/C4&s=48&pop=random.30.7) | 0.221 | 384–1,817 | 3.39 % | 0 % |
+| [Mirror 4 embers B245/S0346/C4](https://vincentbounce.github.io/Tessera/#w=life2dMirror4&r=B245/S0346/C4&s=48&pop=random.30.7) | 0.121 | 191–2,424 | 3.27 % | 0 % |
+| [Mirror 4 sparks B246/S0347/C4](https://vincentbounce.github.io/Tessera/#w=life2dMirror4&r=B246/S0347/C4&s=48&pop=random.30.7) | 0.112 | 274–1,330 | 3.19 % | 0 % |
+| [Ring 11 embers B267/S0346/C4](https://vincentbounce.github.io/Tessera/#w=life2dRing11&r=B267/S0346/C4&s=48&pop=random.30.7) | 0.226 | 348–3,790 | 3.39 % | 0 % |
+| [Ring 11 sparks B278/S0347/C4](https://vincentbounce.github.io/Tessera/#w=life2dRing11&r=B278/S0347/C4&s=48&pop=random.30.7) | 0.177 | 209–1,407 | 3.25 % | 0 % |
+
 ## 🎯 Patterns at the middle of the new rosettes (2026-11-03)
 
 tools/tilings/centred.js on Flower 9 and 10, Mirror 5 to 12 and Hexa 4 to 12, their own rules (the Hexas' hexagon rules, ⬡, not searched): 4,800 small starts of the 30 cells nearest the middle, at it (one colour) and 6 from it (colours); kept the smallest oscillator, the longest-lived start, the smallest that keeps spreading; in Famous (CENTRED, CENTRED_OFF). The Hexas' Life rules (B25/S3467, B256/S3467) give methuselahs of 600 to 1,000 generations on Hexa 8 to 10; Hexa 11's B34/S2456 has an oscillator only off the middle.

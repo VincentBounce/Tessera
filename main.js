@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.1';
+const VERSION = '0.4.2';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -3145,15 +3145,16 @@ function renderModePicker() {
   // in 2D, many of them: in groups by their grid's natural shape (see SHAPE_GROUPS), each its title; in 3D, the solids,
   // then the surfaces (a sheet rolled up: Torus, Möbius, Klein)
   const shapes = navValues(2, [kind, space]), flat = space.startsWith('2D'), solid = space.startsWith('3D ');
-  // (in 3D: the regular solids, the cubes carved, the solids of squares and triangles, the surfaces)
-  const CARVED = ['Pits', 'Bumps', 'Frame', 'Sponge'], MIXED = ['Cuboctahedron', 'Rhombicuboctahedron', 'Bicupola', 'Pyramid'];
+  // (in 3D: the solids of squares first (the cube, the globe, the cubes carved), the other solids, those of squares and
+  // triangles, the surfaces)
+  const SQUARED = ['Cube', 'Globe', 'Pits', 'Bumps', 'Frame', 'Sponge'], MIXED = ['Cuboctahedron', 'Rhombicuboctahedron', 'Bicupola', 'Pyramid'];
   const grouped = flat && shapes.length > 8, groupOf = (sh) => shapeGroup(planeOf(sh)), sheet = (sh) => SHEETS.includes(sh);
   const groups = grouped ? [1, 3, 0, 2].map((i) => [SHAPE_GROUPS[i][0], (sh) => groupOf(sh) === SHAPE_GROUPS[i][0]])  // (squares, parallelograms, the circles, rhombi)
-    : solid ? [['Solid', (sh) => !sheet(sh) && !CARVED.includes(sh) && !MIXED.includes(sh)], ['Carved cubes', (sh) => CARVED.includes(sh)], ['Squares & triangles', (sh) => MIXED.includes(sh)], ['Surface', sheet]]
+    : solid ? [['Squares', (sh) => SQUARED.includes(sh), SQUARED], ['Solid', (sh) => !sheet(sh) && !SQUARED.includes(sh) && !MIXED.includes(sh)], ['Squares & triangles', (sh) => MIXED.includes(sh)], ['Surface', sheet]]
     : [[null, () => true]];
   const some = groups.filter(([, has]) => shapes.some(has)).length;  // (one group: its title none, its tab's name says it)
-  $('navShapes').replaceChildren(...groups.flatMap(([g, has]) => {
-    const these = shapes.filter(has);
+  $('navShapes').replaceChildren(...groups.flatMap(([g, has, order]) => {
+    const these = (order ?? shapes).filter((sh) => shapes.includes(sh) && has(sh));  // (in its own order, if it has one; else the menu's)
     if (!these.length) return [];
     const title = g && some > 1 ? [Object.assign(document.createElement('div'), { className: 'block-label', textContent: g })] : [];
     return [...title, ...these.flatMap((sh) => {

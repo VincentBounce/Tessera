@@ -36,8 +36,6 @@ Turning the 96 cube by hand, blind tests (pages A to E at random, WebGL's bundle
 
 ## Not checked yet
 - `{ deep }` (every grid's rules, a night's).
-- A visible pane: requestAnimationFrame stops while the browser pane is hidden; play was checked by calling tick by
-  hand (and once visible: 90 generations in 3 s).
 - Speeds at very large grids while playing (one batch in flight a frame: its latency a frame).
-- The bundles (tools/bundle.py) with WebGPU.
-- Firefox / Safari.
+- Firefox. (Checked since: a visible pane, play at its speed again in v0.3.107's branch; the bundles, plain and
+  compressed; Safari, see above.)

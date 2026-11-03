@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.13';
+const VERSION = '0.4.14';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -1093,7 +1093,7 @@ const MODES = {
                 rule: 'on a Möbius strip of squares: <b>0</b> turn left, <b>1</b> straight on, <b>2</b> turn right (over its edge, onto the face behind)' },
   mobiusHexWalk: { base: 5, arrows: '↙↖↑↗↘', lattice: 'sphere', cells: true, twin: 'mobiusHexGrid', sphere: 'mobiusHex', turns: [5, 4, 3, 2, 1], perspective: true, round: true,
                    rule: 'on a Möbius strip of hexagons: <b>0</b> sharp left, <b>1</b> left, <b>2</b> straight, <b>3</b> right, <b>4</b> sharp right (over its edge, onto the face behind)' },
-  // a Klein bottle (its tube a figure 8 crossing itself): on cells, as the torus's walks
+  // a Klein bottle (its neck through its side, opening into its bottom): on cells, as the torus's walks
   kleinWalk: { base: 3, arrows: '←↑→', lattice: 'sphere', cells: true, sphere: 'klein', turns: [3, 2, 1], round: true,
                rule: 'on a Klein bottle of squares: <b>0</b> turn left, <b>1</b> straight on, <b>2</b> turn right' },
   kleinHexWalk: { base: 5, arrows: '↙↖↑↗↘', lattice: 'sphere', cells: true, sphere: 'kleinHex', turns: [5, 4, 3, 2, 1], round: true,
@@ -2181,7 +2181,6 @@ const ICONS = (() => {
     // Auto-rotate (a turn round a slanted orbit)
     perspective: pathEl('M6.14 4.16L18.14 5.88A1 1 0 0 1 19 6.87V17.13A1 1 0 0 1 18.14 18.12L6.14 19.84A1 1 0 0 1 5 18.85V5.15A1 1 0 0 1 6.14 4.16Z'),
     sideLight: pathEl('M2.5 10.2H7.5V13.8H2.5Z') + pathEl('M7.5 9.6L10 8.2V15.8L7.5 14.4Z') + pathEl('M12.5 8.6L21 4.8M13 12H21.5M12.5 15.4L21 19.2'),
-    klein8: pathEl('M12 12C9 12 7 10 7 7.5S9 3 12 3S17 5 17 7.5S15 12 12 12ZM12 12C9 12 7 14 7 16.5S9 21 12 21S17 19 17 16.5S15 12 12 12Z'),  // a figure 8
     cut: pathEl('M3 12A9 9 0 0 1 21 12Z') + pathEl('M2 15.5H22'),  // a ball's back half, the cut's line
     glass: pathEl('M3 12A9 9 0 1 0 21 12A9 9 0 1 0 3 12Z') + pathEl('M3 12A9 3.5 0 0 0 21 12A9 3.5 0 0 0 3 12Z'),  // a ball, its equator seen through
     viewDefault: pathEl('M12 3L20 7.5V16.5L12 21L4 16.5V7.5Z') + pathEl('M4 7.5L12 12L20 7.5M12 12V21'),  // (a cube from its usual corner)
@@ -2979,7 +2978,7 @@ const SHAPE_GROUPS = [['Never repeating', (k) => !!APERIODIC[k] && !ROSETTES[k]]
                       ...Object.entries(CONED).map(([fam, F]) => [`${F.name}s`, (k) => conedFamily(k) === fam]), ['Rings', (k) => !!ROSETTES[k]?.[2]], ['Natural squares', (k) => PATTERN_TURNS[k] % 4 === 0 || TILINGS[k]?.turns === 4],
                       ['Parallelograms', (k) => ![3, 6].includes(TILINGS[k]?.turns ?? PATTERN_TURNS[k])], ['Rectangle torus · Walled hexagon', () => true]];
 const shapeGroup = (kind) => SHAPE_GROUPS.find(([, is]) => is(kind))[0];
-const SHAPE_ICONS = { Squares: 'grid', Triangles: 'triangle', Hexagons: 'hexagon', Cairo: 'pentagons', Kites: 'kites', Hats: 'hat', Penrose: 'penrose', Pinwheel: 'pinwheel', Spectre: 'spectre', Ammann: 'ammann', 'Rhombs 12': 'rhombs12', 'Rhombs 14': 'rhombs14', 'Flower 6': 'flower', 'Flower 5': 'flower5', 'Flower 7': 'flower7', ...Object.fromEntries(Object.values(conedOf((k, n, F) => [k, [`${F.name} ${n}`, k]]))), 'Flower 3': 'flower3', 'Flower 4': 'flower4', 'Flower 8': 'flower8', 'Flower 9': 'flower9', 'Flower 10': 'flower10', 'Flower 11': 'flower11', 'Flower 12': 'flower12', 'Ring 7': 'ring7', 'Ring 8': 'ring8', 'Ring 9': 'ring9', 'Ring 10': 'ring10', 'Ring 11': 'ring11', 'Ring 12': 'ring12', Cubes: 'cube', Diamond: 'tetrahedron',
+const SHAPE_ICONS = { 'Klein bottle': 'klein', Squares: 'grid', Triangles: 'triangle', Hexagons: 'hexagon', Cairo: 'pentagons', Kites: 'kites', Hats: 'hat', Penrose: 'penrose', Pinwheel: 'pinwheel', Spectre: 'spectre', Ammann: 'ammann', 'Rhombs 12': 'rhombs12', 'Rhombs 14': 'rhombs14', 'Flower 6': 'flower', 'Flower 5': 'flower5', 'Flower 7': 'flower7', ...Object.fromEntries(Object.values(conedOf((k, n, F) => [k, [`${F.name} ${n}`, k]]))), 'Flower 3': 'flower3', 'Flower 4': 'flower4', 'Flower 8': 'flower8', 'Flower 9': 'flower9', 'Flower 10': 'flower10', 'Flower 11': 'flower11', 'Flower 12': 'flower12', 'Ring 7': 'ring7', 'Ring 8': 'ring8', 'Ring 9': 'ring9', 'Ring 10': 'ring10', 'Ring 11': 'ring11', 'Ring 12': 'ring12', Cubes: 'cube', Diamond: 'tetrahedron',
   Cube: 'cube', Torus: 'torus', 'Möbius strip': 'mobius', Tetrahedron: 'tetrahedron', Octahedron: 'octahedron', 'Stella octangula': 'stella',
   Dodecahedron: 'dodecahedron', Cuboctahedron: 'cubocta', Pyramid: 'pyramid', Rhombicuboctahedron: 'rhombi', Bicupola: 'bicupola', Globe: 'globe', Rosettes: 'rosettes', Sphere: 'icosahedron', Pits: 'pits', Bumps: 'bumps', Frame: 'frame', Sponge: 'menger', 'Klein bottle': 'klein' };
 for (const [kind, t] of Object.entries(TILINGS)) SHAPE_ICONS[t.name] = `tiling-${kind}`;
@@ -3181,15 +3180,6 @@ function renderModePicker() {
     if (!these.length) return [];
     const title = g && some > 1 ? [Object.assign(document.createElement('div'), { className: 'block-label', textContent: g })] : [];
     return [...title, ...these.flatMap((sh) => {
-    // a Klein bottle, two buttons: its forms (see kleinPoint), the same tiles and neighbours, at the same size
-    if (sh === 'Klein bottle') return [[false, 'klein', 'Klein', 'A Klein bottle: its neck through its side, opening into its bottom'], [true, 'klein8', 'Klein 8', 'A Klein bottle as a ring whose tube is a figure 8, turned half a turn round it']].map(([eight, pic, text, title]) =>
-      button(`${icon(pic)}<span>${text}</span>`, sh === shape && kleinEight === eight, () => {
-        if (sh !== shape) { kleinEight = eight; navGo(2, sh); return; }
-        if (kleinEight === eight) return;
-        kleinEight = eight;
-        renderModePicker();
-        $('sphereF').dispatchEvent(new Event('change'));
-      }, title));
     const again = sh === shape && !!MODES[w].plane && !APERIODIC[MODES[w].plane], b = button(`${icon(SHAPE_ICONS[sh])}<span>${shapeLabel(sh)}</span>`, sh === shape, () => {
       if (!again) { navGo(2, sh); return; }
       plane.torus = !plane.torus;
@@ -5002,21 +4992,16 @@ function torusPoint(i, j, nu, nv, m, tube = TORUS_TUBE) {
 
 /* ---- Klein bottle ----
  * A torus whose sheet is glued with its ends turned over: (x + nu, y) ≡ (x, nv − y), as the Möbius strip's,
- * and (x, y + nv) ≡ (x, y). One-sided and closed; in space it must cross itself, in one of two forms (kleinEight):
- *  - the bottle: its tube along the sheet's x, a neck that goes in through its side and opens into its bottom
- *    (see kleinBottlePoint: the sheet's gluing with u a quarter turn on), its tiles narrow in the neck, wide in the body;
- *  - the figure 8: its tube's cross-section a figure 8 that turns half a turn round the ring (the ends meet turned
- *    over), crossing itself along the circle through the 8's middle.
+ * and (x, y + nv) ≡ (x, y). One-sided and closed; in space it must cross itself: the bottle, its tube along the sheet's x,
+ * a neck that goes in through its side and opens into its bottom (see kleinBottlePoint: the sheet's gluing with u a
+ * quarter turn on), its tiles narrow in the neck, wide in the body (the figure 8 too before v0.4.14, see REMOVED.md).
  * Flat (m = 0) as the torus's sheet. */
-let kleinEight = false;  // (in a link: k8=1)
 function kleinPoint(x, y, nu, nv, m, tube = TORUS_TUBE) {
-  const t = (x / nu - 0.5) * 2 * Math.PI, f = (y / nv) * 2 * Math.PI, a = tube, c = Math.cos(t / 2), s = Math.sin(t / 2);
-  const r = 1 + a * (c * Math.sin(f) - s * Math.sin(2 * f));
+  const f = (y / nv) * 2 * Math.PI;
   // the bottle: the sheet's ends on the circle it stands on (the bowl's lowest, v = π/2: unrolled, it opens there), past
   // its own ends (4π) turned over (u to π − u)
   const w = (x / nu + 0.125) * 4 * Math.PI, past = w >= 4 * Math.PI;
-  const K = kleinEight ? [r * Math.sin(t), -r * Math.cos(t), a * (s * Math.sin(f) + c * Math.sin(2 * f))]
-    : kleinBottlePoint(past ? w - 4 * Math.PI : w, past ? -Math.PI / 2 - f : f + 1.5 * Math.PI);  // (its sheet half a turn round the tube: its middle, its pictures, in front)
+  const K = kleinBottlePoint(past ? w - 4 * Math.PI : w, past ? -Math.PI / 2 - f : f + 1.5 * Math.PI);  // (its sheet half a turn round the tube: its middle, its pictures, in front)
   if (m >= 1) return K;
   const F = torusPoint(x, y, nu, nv, 0, tube);
   return F.map((v, d) => v + (K[d] - v) * m);
@@ -5040,7 +5025,7 @@ kleinColumns.kleinKite = kleinColumns.kleinTri;  // kites: the triangles', each 
 kleinColumns.kleinTriTurned = kleinColumns.kleinKiteTurned = (nv) => turnedTriColumns(nv);  // turned by 30° (as the tori, see turnedTorus)
 kleinColumns.kleinHexTurned = (nv) => turnedHexColumns(nv, true);
 function kleinMesh(kind, nv, nu = kleinColumns[kind](nv)) {
-  const key = `${kind}${nv}x${nu}${kleinEight ? '|8' : ''}`;  // (its form: see kleinEight)
+  const key = `${kind}${nv}x${nu}`;
   if (meshCache[key]) return meshCache[key];
   const tiles = [];
   if (kind === 'klein') for (let i = 0; i < nu; i++) for (let j = 0; j < nv; j++) tiles.push([[i, j], [i + 1, j], [i + 1, j + 1], [i, j + 1]]);
@@ -5368,7 +5353,7 @@ function kleinLength(kindK, size, K = ringColours()) {  // (K: the colours it is
   return { kind, strip, turn, nv, n, W, step, by, a };
 }
 function kleinTilingMesh(kindK, size) {
-  const key = `${kindK}${size}|${ringColours()}${kleinEight ? '|8' : ''}`;  // (its length its colours': see kleinLength)
+  const key = `${kindK}${size}|${ringColours()}`;  // (its length its colours': see kleinLength)
   if (meshCache[key]) return meshCache[key];
   const { kind, turn, L, W, n, nv, step, by, sides, tiles, mids, latticeCells, originCell } = kleinTilingSheet(kindK, size), Q = STRIP_GRID, ids = new Map(), verts = [];
   const id = ([x, y]) => {  // a corner by its place on tilingStrip's fine grid, brought within the sheet (turned over past its end)
@@ -12168,7 +12153,6 @@ function getSetup() {
   if (mode.lattice === 'sphere') s.s = $('sphereF').value;
   if (modeStarts() && startNo() > 1) s.st = startNo();
   if (torusTurned && TURNED[mode.sphere]) s.o = 1;
-  if (kleinEight && familyOf(w)?.F.name === 'Klein bottle') s.k8 = 1;
   if (!$('fillAreas').checked) s.fa = 0;
   if (mode.life) s.r = ruleBody($('lifeRule').value);
   if (mode.life && !mode.margolus && lifeColours > 1) s.k = lifeColours;
@@ -12206,7 +12190,6 @@ function applySetup(s) {
   set('mode', s.w);
   $('startNo').value = s.st ?? 1;
   torusTurned = Number(s.o) === 1;
-  kleinEight = Number(s.k8) === 1;
   if (MODES[s.w].sphere) {
     const kind = surfaceOf(MODES[s.w]);
     fillSphereSizes(kind, MODES[s.w].initial);

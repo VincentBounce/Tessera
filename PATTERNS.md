@@ -1483,6 +1483,60 @@ Mirror 7's construction for 8 (HOUSES(8)): 8 houses round the middle, then 16 co
 | [Mirror 8 embers B26/S0345/C4](https://vincentbounce.github.io/Tessera/#w=life2dMirror8&r=B26/S0345/C4&s=48&pop=random.30.7) | 0.069 | 726–2,826 | 3.53 % | 42 % |
 | [Mirror 8 sparks B248/S0346/C4](https://vincentbounce.github.io/Tessera/#w=life2dMirror8&r=B248/S0346/C4&s=48&pop=random.30.7) | 0.041 | 223–1,489 | 3.39 % | 0 % |
 
+## ✩ Mirror 5: the mirrored 5-fold rosette
+
+Mirror 7's construction for 5 (HOUSES(5)), searched as the others.
+
+| Rule | Score | Soups settle after | Alive at the end | Oscillators in the ash |
+|---|---|---|---|---|
+| [Mirror 5 embers B245/S0346/C4](https://vincentbounce.github.io/Tessera/#w=life2dMirror5&r=B245/S0346/C4&s=48&pop=random.30.7) | 0.1 | 232–3,062 | 3.45 % | 0 % |
+| [Mirror 5 Life B347/S0237](https://vincentbounce.github.io/Tessera/#w=life2dMirror5&r=B347/S0237&s=48&pop=random.30.7) | 0.059 | 289–6,000+ | 4.48 % | 25 % |
+
+## ✫ Mirror 6: the mirrored 6-fold rosette
+
+Mirror 7's construction for 6 (HOUSES(6)), searched as the others.
+
+| Rule | Score | Soups settle after | Alive at the end | Oscillators in the ash |
+|---|---|---|---|---|
+| [Mirror 6 embers B245/S0345/C5](https://vincentbounce.github.io/Tessera/#w=life2dMirror6&r=B245/S0345/C5&s=48&pop=random.30.7) | 0.115 | 293–933 | 3.25 % | 8 % |
+| [Mirror 6 sparks B267/S0345/C4](https://vincentbounce.github.io/Tessera/#w=life2dMirror6&r=B267/S0345/C4&s=48&pop=random.30.7) | 0.108 | 623–3,363 | 3.62 % | 42 % |
+
+## ✭ Mirror 9: the mirrored 9-fold rosette
+
+Mirror 7's construction for 9 (HOUSES(9)), searched as the others.
+
+| Rule | Score | Soups settle after | Alive at the end | Oscillators in the ash |
+|---|---|---|---|---|
+| [Mirror 9 embers B269/S0345/C4](https://vincentbounce.github.io/Tessera/#w=life2dMirror9&r=B269/S0345/C4&s=48&pop=random.30.7) | 0.118 | 592–6,000+ | 3.62 % | 25 % |
+| [Mirror 9 Life B268/S678](https://vincentbounce.github.io/Tessera/#w=life2dMirror9&r=B268/S678&s=48&pop=random.30.7) | 0.038 | 713–6,000+ | 1.29 % | 83 % |
+
+## ✮ Mirror 10: the mirrored 10-fold rosette
+
+Mirror 7's construction for 10 (HOUSES(10)), searched as the others.
+
+| Rule | Score | Soups settle after | Alive at the end | Oscillators in the ash |
+|---|---|---|---|---|
+| [Mirror 10 Life B278/S](https://vincentbounce.github.io/Tessera/#w=life2dMirror10&r=B278/S&s=48&pop=random.30.7) | 0.36 | 306–6,000+ | 1.69 % | 67 % |
+| [Mirror 10 embers B24/S0345/C5](https://vincentbounce.github.io/Tessera/#w=life2dMirror10&r=B24/S0345/C5&s=48&pop=random.30.7) | 0.299 | 297–1,630 | 3.42 % | 33 % |
+
+## ✰ Mirror 11: the mirrored 11-fold rosette
+
+Mirror 7's construction for 11 (HOUSES(11)), searched as the others.
+
+| Rule | Score | Soups settle after | Alive at the end | Oscillators in the ash |
+|---|---|---|---|---|
+| [Mirror 11 Life B268/S5](https://vincentbounce.github.io/Tessera/#w=life2dMirror11&r=B268/S5&s=48&pop=random.30.7) | 0.424 | 519–6,000+ | 1.49 % | 92 % |
+| [Mirror 11 embers B24/S0345/C5](https://vincentbounce.github.io/Tessera/#w=life2dMirror11&r=B24/S0345/C5&s=48&pop=random.30.7) | 0.229 | 300–1,050 | 3.5 % | 17 % |
+
+## ⊛ Mirror 12: the mirrored 12-fold rosette
+
+Mirror 7's construction for 12 (HOUSES(12)), searched as the others.
+
+| Rule | Score | Soups settle after | Alive at the end | Oscillators in the ash |
+|---|---|---|---|---|
+| [Mirror 12 Life B267/S5](https://vincentbounce.github.io/Tessera/#w=life2dMirror12&r=B267/S5&s=48&pop=random.30.7) | 0.44 | 351–6,000+ | 1.47 % | 92 % |
+| [Mirror 12 sparks B289/S568](https://vincentbounce.github.io/Tessera/#w=life2dMirror12&r=B289/S568&s=48&pop=random.30.7) | 0.378 | 497–6,000+ | 1.69 % | 58 % |
+
 ## ▣ Ising (Q2R) and Square-4, on squares (Tim Tyler's cell-auto.com)
 
 | Rule | What it does |

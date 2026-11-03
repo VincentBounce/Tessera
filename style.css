@@ -568,8 +568,8 @@ button.bar-chip.active { color: var(--accent); border-color: var(--accent); }
 }
 
 /* Save, the first of Treasures' icons: yellow, its star filled, while the setup in view is one of them */
-.icon-btn.save-btn.saved, .icon-btn.save-btn.saved:hover:not(:disabled) { color: var(--accent); }
-.save-btn.saved .icon path { fill: currentColor; }
+.pane-tab .fav.saved { color: var(--accent); }  /* Gallery's ☆: as its tab's colour, ★ gold while the setup in view is one of Treasures */
+.fav.saved .icon path { fill: currentColor; }
 .icon-btn .icon { width: 16px; height: 16px; }
 /* Treasures: Export and Import as two small icons at the right of its heading */
 .icon-btn { display: grid; place-items: center; width: 28px; height: 28px; padding: 0; border-radius: 7px; background: transparent; border-color: transparent; color: var(--muted); }

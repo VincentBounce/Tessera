@@ -11,7 +11,7 @@
   <meta property="og:type" content="website">
   <link id="favicon" rel="icon">  <!-- the app's logo, set at start-up (see appLogo) -->
   <meta name="description" content="A walk on a grid in 2D or 3D driven by the base-2 to base-6 digits of π, other constants and large primes.">
-  <link rel="stylesheet" href="style.css?v=20261103j">
+  <link rel="stylesheet" href="style.css?v=20261103k">
   <script>  // the theme before the first paint (see applyTheme)
     try { const t = localStorage.getItem('tesseraTheme') || 'system'; document.documentElement.dataset.theme = t === 'system' ? (matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark') : t; } catch { document.documentElement.dataset.theme = 'dark'; }
   </script>
@@ -21,7 +21,6 @@
     <div class="header-row">
       <div id="modeTabs" class="tabs" role="tablist"></div>
       <div class="header-end">
-        <button id="setupSave" type="button" class="icon-btn save-btn" data-icon="star" title="Save the setup in view in Treasures, in this browser" aria-label="Save"></button>  <!-- ☆, ★ while the setup in view is one of Treasures -->
         <div class="tabs"><button id="appTab" type="button" class="pane-tab" title="Credits: the people whose work it shows, Share and Home (its version: 0.1.0 its first commit, +1 a commit)"></button></div>  <!-- the app's tab: π, its name and version, a pane's tab as Gallery's -->
       </div>
     </div>
@@ -638,7 +637,7 @@
 
       </div>
       <div id="galleryPane" hidden>
-      <section>  <!-- Treasures (kept in this browser only) as a JSON file: to keep, or to bring to another browser; or erased (Save: the ☆ in the header) -->
+      <section>  <!-- Treasures (kept in this browser only) as a JSON file: to keep, or to bring to another browser; or erased (Save: the ☆ of Gallery's tab) -->
         <h2 id="setupToolsHead">Management<button type="button" class="head-btn gallery-close" title="Close the Gallery: back to the settings">Close</button></h2>  <!-- (its picture: see the tools below) -->
         <div id="setupTools" class="nav-shapes"></div>  <!-- Import, Export, Erase all -->
         <button id="eraseConfirm" type="button" class="wide" hidden></button>  <!-- Erase all, then this to confirm -->
@@ -772,10 +771,10 @@
     </div>
   </main>
 
-  <script src="pixelarticons.js?v=20261103j"></script>
-  <script src="punks.js?v=20261103j"></script>
-  <script src="loops.js?v=20261103j"></script>
-  <script src="emoji.js?v=20261103j"></script>
-  <script src="main.js?v=20261103j"></script>
+  <script src="pixelarticons.js?v=20261103k"></script>
+  <script src="punks.js?v=20261103k"></script>
+  <script src="loops.js?v=20261103k"></script>
+  <script src="emoji.js?v=20261103k"></script>
+  <script src="main.js?v=20261103k"></script>
 </body>
 </html>

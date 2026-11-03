@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.6';
+const VERSION = '0.4.7';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -12325,7 +12325,7 @@ function fillSetupList() {
     const mine = rows.filter(([, , x]) => kindOf(x) === kind).sort((a, b) => a[0].localeCompare(b[0]));
     const section = document.createElement('section'), cards = Object.assign(document.createElement('div'), { className: 'mode-list' });  // a section each, as Life's, its picture as the tab's
     section.innerHTML = `<h2>${icon(NAV_KINDS.find(([k]) => k === kind)[1])}${kind}</h2>`;  // (Close: Management's, above)
-    if (!mine.length) cards.innerHTML = `<p class="caption">None in ${kind} yet: ☆ in the header keeps the setup in view</p>`;
+    if (!mine.length) cards.innerHTML = `<p class="caption">None in ${kind} yet: the ☆ of Gallery's tab keeps the setup in view</p>`;
     cards.append(...mine.map(([title, detail, x]) => {
       const k = (seen.get(title + detail) ?? 0) + 1;
       seen.set(title + detail, k);
@@ -12343,9 +12343,9 @@ function fillSetupList() {
 // the same number gets "(2)", "(3)", …); its row tells the walk, size, start and rule (see setupDetail)
 // the saved setup that is the one in view (same number, walk, size, start, turn and rule), if any
 const savedInView = () => readSetups().find((x) => isInUse(x.setup));
-// ☆ Save, or ★ (in yellow) while the setup in view is one of Treasures: clicked again, taken out of them
+// Gallery's ☆ (its tab's picture, clicked: Save), ★ gold while the setup in view is one of Treasures: clicked again, taken out of them
 function syncSaveButton() {
-  const saved = savedInView(), b = $('setupSave');
+  const saved = savedInView(), b = galleryTab().querySelector('.fav');
   b.classList.toggle('saved', !!saved);
   b.title = saved ? `Saved in Treasures as “${saved.name}”: a click takes it out` : 'Save the setup in view in Treasures, in this browser';
 }
@@ -15904,20 +15904,19 @@ function galleryTab() {
   const b = galleryButton;
   b.dataset.ready = '1';
   b.className = 'pane-tab';
-  b.innerHTML = `${icon('gallery')} Gallery`;
+  b.innerHTML = `<span class="fav" role="button">${icon('star')}</span> Gallery`;  // (its picture the ☆ Save, see syncSaveButton)
   b.title = 'Treasures and the curated setups: hover one to see it, click it to keep it';
-  b.addEventListener('click', () => showPane($('galleryPane').hidden));
+  b.addEventListener('click', (e) => { if (e.target.closest('.fav')) saveSetup(); else showPane($('galleryPane').hidden); });
   return b;
 }
 
-$('setupSave').addEventListener('click', saveSetup);
 // Treasures' tools, tiles: Import (added to them, a name already used numbered), Export, Erase all (then Confirm erase, under them),
 // then Share (the link to what is shown)
 $('setupTools').replaceChildren(tile({ pic: icon('import'), text: 'Import', title: 'Add the setups of a JSON file to Treasures (those of a name already used numbered: none replaced)', click: () => $('setupFile').click() }),
   tile({ pic: icon('export'), text: 'Export', title: 'Treasures as a JSON file', click: exportSetups }), tile({ pic: icon('trash'), text: 'Erase all', title: 'Erase Treasures from this browser (asked again under it)', click: () => { $('eraseConfirm').hidden = !$('eraseConfirm').hidden; } }),
   tile({ pic: icon('link'), text: 'Share', title: 'Copy the link to what is shown', click: () => shareView($('setupTools').lastElementChild) }));
 $('eraseConfirm').innerHTML = `${icon('trash')} Confirm erase`;
-$('setupToolsHead').insertAdjacentHTML('afterbegin', icon('star'));  // (Treasures', as the header's ☆)
+$('setupToolsHead').insertAdjacentHTML('afterbegin', icon('star'));  // (Treasures', as Gallery's ☆)
 $('eraseConfirm').addEventListener('click', () => { writeSetups([]); $('eraseConfirm').hidden = true; fillSetupList(); });
 $('setupFile').addEventListener('change', () => {
   if ($('setupFile').files[0]) importSetups($('setupFile').files[0]);

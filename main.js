@@ -8273,7 +8273,11 @@ const roundWalls = (K) => !!walk.plane && K > 1 && wallSlices(K) && (shaped(walk
 // face or a sheet (unrolled: a level face), down it as a marble rolls (a level face: south)
 function iconWay(i, K) {
   const frame = patternFrame(i, K), { ex, ey, n } = frame;
-  if (flatGrid()) { const w = roundWalls(K) && planeSlices(K); return { ...frame, tilt: (w ? w.angles[i] - Math.PI / 2 : 0) - planeTurn(), mirror: false }; }  // (as drawn: the plane turned by planeTurn)
+  if (flatGrid()) {  // (as drawn: the plane turned by planeTurn; out, its bottom to its slice's wall, a rosette sphere's to its lune's way out from the pole)
+    const w = roundWalls(K) && planeSlices(K), o = (flatGrid().W - 1) / 2, c = !walk.plane && K > 1 && frame.centre;
+    const out = w ? w.angles[i] : c ? Math.atan2(c[1] - o, c[0] - o) : null;
+    return { ...frame, tilt: (out === null ? 0 : out - Math.PI / 2) - planeTurn(), mirror: false };
+  }
   // (its bottom's way there, by its parts along ex and ey: their dot products, solved)
   const down = downOn(n), xx = dot3(ex, ex), xy = dot3(ex, ey), yy = dot3(ey, ey), dx = dot3(down, ex), dy = dot3(down, ey), D = xx * yy - xy * xy;
   return { ...frame, tilt: Math.atan2((dy * xx - dx * xy) / D, (dx * yy - dy * xy) / D) - Math.PI / 2, mirror: dot3(cross(ex, ey), n) > 0 };

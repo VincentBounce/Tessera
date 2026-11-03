@@ -1546,6 +1546,22 @@ The hexagons' grid, each hexagon turned 15° and shrunk to touch its neighbours 
 | [Twisted embers B235/S0457/C5](https://vincentbounce.github.io/Tessera/#w=life2dTwisttri&r=B235/S0457/C5&s=48&pop=random.30.7) | 0.348 | 611–2,403 | 1.04 % | 92 % |
 | [Twisted sparks B246/S0348/C5](https://vincentbounce.github.io/Tessera/#w=life2dTwisttri&r=B246/S0348/C5&s=48&pop=random.30.7) | 0.295 | 334–3,025 | 0.95 % | 58 % |
 
+## ⎔ Hexa 4 to 12: Sugimoto's rosettes of equilateral hexagons
+
+His hexagon (tips 360°/n, the other corners 180° − 180°/n) in 2n cones of translates (HEXAS): away from its middle the hexagons' grid, so it has that grid's rules (those counting neighbours) as well as its own best, searched as the others.
+
+| Rule | Score | Soups settle after | Alive at the end | Oscillators in the ash |
+|---|---|---|---|---|
+| [Hexa 4 Life B346/S1246](https://vincentbounce.github.io/Tessera/#w=life2dHexa4&r=B346/S1246&s=48&pop=random.30.7) | 0.018 | 192–411 | 2.5 % | 100 % |
+| [Hexa 5 Life B34/S2358](https://vincentbounce.github.io/Tessera/#w=life2dHexa5&r=B34/S2358&s=48&pop=random.30.7) | 0.028 | 147–414 | 3.53 % | 100 % |
+| [Hexa 6 Life B348/S2359](https://vincentbounce.github.io/Tessera/#w=life2dHexa6&r=B348/S2359&s=48&pop=random.30.7) | 0.029 | 186–412 | 3.22 % | 92 % |
+| [Hexa 7 embers B239/S0456/C5](https://vincentbounce.github.io/Tessera/#w=life2dHexa7&r=B239/S0456/C5&s=48&pop=random.30.7) | 0.025 | 121–1,741 | 4.25 % | 25 % |
+| [Hexa 8 Life B256/S3467](https://vincentbounce.github.io/Tessera/#w=life2dHexa8&r=B256/S3467&s=48&pop=random.30.7) | 0.091 | 196–1,075 | 1.26 % | 100 % |
+| [Hexa 9 Life B25/S3467](https://vincentbounce.github.io/Tessera/#w=life2dHexa9&r=B25/S3467&s=48&pop=random.30.7) | 0.009 | 143–1,282 | 1.35 % | 100 % |
+| [Hexa 10 Life B256/S3467](https://vincentbounce.github.io/Tessera/#w=life2dHexa10&r=B256/S3467&s=48&pop=random.30.7) | 0.043 | 208–842 | 1.32 % | 100 % |
+| [Hexa 11 Life B34/S2456](https://vincentbounce.github.io/Tessera/#w=life2dHexa11&r=B34/S2456&s=48&pop=random.30.7) | 0.28 | 116–6,000+ | 3.02 % | 92 % |
+| [Hexa 12 embers B238/S0456/C5](https://vincentbounce.github.io/Tessera/#w=life2dHexa12&r=B238/S0456/C5&s=48&pop=random.30.7) | 0.041 | 59–807 | 4.34 % | 17 % |
+
 ## ▣ Ising (Q2R) and Square-4, on squares (Tim Tyler's cell-auto.com)
 
 | Rule | What it does |

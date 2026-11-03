@@ -15362,17 +15362,22 @@ function lifeRle() {
   return [`#N ${formulaInUse}, generation ${cur}`, `#C Tessera: ${location.href}`, ...(kind === 'square' ? [] : [`#C On the app's ${PLANE_CELLS[base]} (not Golly's squares): cells as its slanted grid numbers them`]),
     `x = ${Math.max(...xs) - Math.min(...xs) + 1}, y = ${Math.max(...ys) - Math.min(...ys) + 1}, rule = ${rule}`, ...lines].join('\n');
 }
-// Share: the page link (the setup shown, see syncLink), copied; its tile (Management's) a check and Copied a moment
+// A copy to the clipboard, its button told a moment: its picture a check (none: a check before its word), its word Copied;
+// then as it was (a tile's, a word's, a picture's alone: the same everywhere)
+function copyFlash(b, text) {
+  navigator.clipboard.writeText(text).then(() => {
+    const was = b.innerHTML, svg = b.querySelector('svg'), words = [b, ...b.querySelectorAll('*')].flatMap((n) => [...n.childNodes].filter((c) => c.nodeType === 3 && c.textContent.trim()));
+    if (svg) svg.outerHTML = icon('check'); else if (words.length) b.insertAdjacentHTML('afterbegin', `${icon('check')} `);
+    words.forEach((w, i) => { w.textContent = i ? '' : w.textContent.replace(/\S(.*\S)?/, 'Copied'); });
+    setTimeout(() => { b.innerHTML = was; }, 1500);
+  }, () => {});
+}
+// Share: the page link (the setup shown, see syncLink), copied
 function shareView(b) {
   syncLink();
-  const was = b.innerHTML;
-  navigator.clipboard.writeText(location.href).then(() => { b.innerHTML = was.replace(icon('link'), icon('check')).replace('Share', 'Copied'); setTimeout(() => { b.innerHTML = was; }, 1500); }, () => {});
+  copyFlash(b, location.href);
 }
-$('copyRle').addEventListener('click', () => {
-  const text = lifeRle(), b = $('copyRle');
-  if (!text) return;
-  navigator.clipboard.writeText(text).then(() => { b.innerHTML = `${icon('check')} Copied`; setTimeout(() => { b.innerHTML = `${icon('copy')} Copy RLE`; }, 1500); }, () => {});
-});
+$('copyRle').addEventListener('click', () => { const text = lifeRle(); if (text) copyFlash($('copyRle'), text); });
 // Full number: the number over the view as how a rule works is (its title, all its digits, scrolling), with Copy
 // (a check once copied) and the cross; another number or base (a colour more), it shows that one; as how a rule works,
 // only a click on the button again or the cross closes it
@@ -15419,10 +15424,7 @@ function showNumber() {
   const part = (b, digits) => { const period = current.ratio && ratioDigits(b); return `<h3>${withIcons(formulaInUse)} <code>base ${b}</code></h3>${period ? `<p class="number-digits">${period}</p>` : ''}<p class="number-digits">${digits}</p>`; };
   v.innerHTML = `<div class="tut-body">${ten ? part(10, base10Digits()) : part(current.base, '')}</div>`;
   if (!ten) v.querySelector('.number-digits:last-child').textContent = `${text.slice(name.length)}${text.includes(' ≈ ') ? '…' : ''}`;
-  v.prepend(tutTools({ toggle: current.base !== 10 && { text: 'Base 10', title: `The number in base 10 instead of base ${current.base}`, on: base10.on, click: () => { base10.on = !base10.on; showNumber(); } }, copy: (e) => {
-    const b = e.currentTarget;
-    navigator.clipboard.writeText(text).then(() => { b.innerHTML = icon('check'); setTimeout(() => { b.innerHTML = icon('copy'); }, 1500); }, () => {});
-  }, close: closeNumber, back: 'the walk' }));
+  v.prepend(tutTools({ toggle: current.base !== 10 && { text: 'Base 10', title: `The number in base 10 instead of base ${current.base}`, on: base10.on, click: () => { base10.on = !base10.on; showNumber(); } }, copy: (e) => copyFlash(e.currentTarget, text), close: closeNumber, back: 'the walk' }));
   v.querySelector('.tut-body').scrollTop = 0;
   v.hidden = false;
   for (const b of numberChips()) b.classList.add('active', 'switch');

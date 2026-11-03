@@ -10298,27 +10298,15 @@ function bordersOf(L, a) {
  * ended (repeating, all reached, or the cap), its place a new start's. */
 function huntRuns(L, { cells, copies, all, choices, nth }, cap, goal, report) {  // goal: one colour's (see HUNT_GOALS)
   const n = L.seed.length, K = L.colours, { start, list } = L.nbr, dense = DENSITY, live = (v) => v > 0 && v <= K;
-  const E = lifeEngine(L, Math.max(1, Math.min(2048, Math.floor(2 ** 21 / (Math.ceil(n / 64) * 64)))), 8 * LIFE_H);
+  const E = gpuLifeEngine(L, Math.max(1, Math.min(2048, Math.floor(2 ** 21 / (Math.ceil(n / 64) * 64)))), 8 * LIFE_H);
   if (!E) return null;
-  const { gl } = GLS, cover = goal === 'cover', open = Array.from({ length: n }, (_, t) => t).filter((t) => start[t] !== start[t + 1]).length;
-  // a start's cells into run r's place (its counts as a start's: lifeReset's), now
-  const put = (tex, w, format, type, data, r) => {  // (a run's span of texels, along its rows)
-    const k = w === 1024 ? 4 : 1, from = (r * E.stride) / k, len = E.stride / k;
-    gl.bindTexture(gl.TEXTURE_2D, tex);
-    for (let i = 0; i < len; ) {
-      const x = (from + i) % w, y = Math.floor((from + i) / w), m = Math.min(w - x, len - i);
-      gl.texSubImage2D(gl.TEXTURE_2D, 0, x, y, m, 1, format, type, data.subarray(i * k, (i + m) * k));
-      i += m;
-    }
-  };
-  const zero = new Uint32Array(E.stride), state = new Uint8Array(E.stride), ever = new Uint32Array(E.stride);
+  const cover = goal === 'cover', open = Array.from({ length: n }, (_, t) => t).filter((t) => start[t] !== start[t + 1]).length;
+  // a start's cells into run r's place, now: its states, no age, change or death yet, ever alive where alive
+  const zero = new Uint32Array(E.stride), state = new Uint32Array(E.stride), ever = new Uint32Array(E.stride);
   const upload = (seed, r) => {
     state.set(seed);
     for (let t = 0; t < n; t++) ever[t] = live(seed[t]) ? 1 : 0;
-    put(E.now.state, 1024, gl.RGBA, gl.UNSIGNED_BYTE, state, r);
-    for (const tex of [E.now.age, E.now.act]) put(tex, 4096, gl.RED_INTEGER, gl.UNSIGNED_INT, zero, r);
-    put(E.now.died, 4096, gl.RED_INTEGER, gl.INT, new Int32Array(zero.buffer), r);
-    put(E.now.ever, 4096, gl.RED_INTEGER, gl.UNSIGNED_INT, ever, r);
+    [state, zero, zero, zero, ever].forEach((a, f) => GPU.device.queue.writeBuffer(E.cell, 4 * ((E.side * 5 + f) * E.total + r * E.stride), a));
   };
   // a run: from its start (generation 0), then a generation at a time from its sums (see step)
   const begin = (seed) => {
@@ -10433,15 +10421,15 @@ function huntRuns(L, { cells, copies, all, choices, nth }, cap, goal, report) { 
     }
     return copy(seed);
   };
-  const runs = new Array(E.runs).fill(null), hunt = { stopped: false, stop: () => { hunt.stopped = true; lifeFree(E); } };
-  const slice = () => {
-    if (hunt.stopped) return;
+  const runs = new Array(E.runs).fill(null), hunt = { stopped: false, stop: () => { hunt.stopped = true; } };  // (its buffers let go by slice, its batch back)
+  const slice = async () => {
+    if (hunt.stopped) { gpuLifeFree(E); return; }
     for (let r = 0; r < E.runs; r++) if (!runs[r]) { const seed = nextSeed(); if (seed) { runs[r] = begin(seed); upload(seed, r); } }  // (its place free: the next start)
     if (runs.every((s) => !s)) { report(top, tried, true); return; }  // (all tried)
     // (the runs going on only, from the first to the last; as many generations a slice as they're fewer, as much work)
     const on = runs.flatMap((s, r) => (s ? [r] : [])), span = [on[0], on.at(-1) + 1], k = Math.min(E.h, LIFE_H * Math.floor(E.runs / on.length));
-    for (let x = 0; x < k; x++) { lifeRulePass(E, span); lifeTally(E, 0, false, false, false, x, span); }
-    const v = lifeRead(E);
+    const got = await gpuLifeSteps(E, { k, r0: span[0], r1: span[1] }), v = got.read;
+    if (hunt.stopped) { gpuLifeFree(E); return; }
     let changed = false;
     runs.forEach((s, r) => {
       if (!s) return;

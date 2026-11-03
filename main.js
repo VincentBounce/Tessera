@@ -3680,10 +3680,14 @@ const polyArea = (P) => Math.abs(signedArea(P));
 // with no other corner in its triangle cut off; one in line with its neighbours dropped), a hat's, a spectre's too: once a
 // shape (its sides and its turns, in their order: the same, turned or mirrored, the same triangles)
 const earsMemo = new Map();
-const ears = (P) => {
+const ears = (shown) => {
+  // (its shape at size 1, its longest side: its tolerances and its memo the same at any size; before v0.4.3 a surface's tiles,
+  // on the unit sphere, shared the memo's keys: one's triangles taken for another's, holes)
+  const size = Math.max(...shown.map((p, i) => Math.hypot(shown[(i + 1) % shown.length][0] - p[0], shown[(i + 1) % shown.length][1] - p[1]))) || 1;
+  const P = shown.map(([x, y]) => [(x - shown[0][0]) / size, (y - shown[0][1]) / size]);
   const way = Math.sign(signedArea(P)), turn = (a, b, c) => ((P[b][0] - P[a][0]) * (P[c][1] - P[a][1]) - (P[b][1] - P[a][1]) * (P[c][0] - P[a][0])) * way, L = P.length, out = [];
   if (P.every((_, i) => turn((i + L - 1) % L, i, (i + 1) % L) >= 0)) { for (let i = 1; i < L - 1; i++) out.push(0, i, i + 1); return out; }
-  const shape = P.map((p, i) => `${Math.round(Math.hypot(P[(i + 1) % L][0] - p[0], P[(i + 1) % L][1] - p[1]) * 1e4)},${Math.round(turn(i, (i + 1) % L, (i + 2) % L) * 1e4)}`).join(';');
+  const shape = P.map((p, i) => `${Math.round(Math.hypot(P[(i + 1) % L][0] - p[0], P[(i + 1) % L][1] - p[1]) * 1e9)},${Math.round(turn(i, (i + 1) % L, (i + 2) % L) * 1e9)}`).join(';');  // (the same shape to a billionth: a corner nearly in line, in or out, not another's; before v0.4.3 to 1/10,000, holes on the rosette sphere)
   if (earsMemo.has(shape)) return earsMemo.get(shape);
   earsMemo.set(shape, out);
   const left = [...P.keys()];
@@ -4782,43 +4786,72 @@ function globeMesh(E) {
 
 /* ---- 7.3c Rosette sphere --------------------------------------------------------------------- */
 // A rosette's disc (Mirror 7's, see ROSETTES) on each half of the unit sphere, glued edge to edge at the equator: its middle at
-// a pole, each corner along its own ray, its rim on the equator (its distance out along the ray over the rim's there: its
-// angle from the pole, a quarter turn at the rim); the south its mirror (the same disc, upside down). Its rim's corners the
-// same points on both halves: each rim cell shares its edge with its twin, nothing cut. f: the plane's size (see planeSides)
+// a pole, each corner along its own ray, its rim on the equator; the south its mirror (the same disc, upside down). Its rim's
+// corners the same points on both halves: each rim cell shares its edge with its twin, nothing cut. f: the plane's size (see
+// planeSides)
 function rosetteSphereMesh(kind, f) {
   const key = `rosetteSphere${kind}${f}`;
   if (meshCache[key]) return meshCache[key];
   const F = APERIODIC[kind]((shaped(kind) ? sideW : planeW)(planeKind(kind), f)), n = F.n, at = (k) => pointKey(F.xy[2 * k], F.xy[2 * k + 1]);  // (a corner's key: two cells' the same though not to the last bit)
-  // its rim: the cells' sides no other cell has, in turn round it, each corner's angle round the middle
-  const sides = new Map();
-  for (let t = 0; t < n; t++) for (let i = F.start[t]; i < F.start[t + 1]; i++) {
-    const j = i + 1 < F.start[t + 1] ? i + 1 : F.start[t], e = [at(i), at(j)].sort().join('|');
-    sides.set(e, sides.has(e) ? null : [i, j]);
-  }
-  const rim = [...sides.values()].filter(Boolean).flatMap(([i, j]) => [[F.xy[2 * i], F.xy[2 * i + 1]], [F.xy[2 * j], F.xy[2 * j + 1]]]);
-  const cx = rim.reduce((s, p) => s + p[0], 0) / rim.length, cy = rim.reduce((s, p) => s + p[1], 0) / rim.length;
-  const ring = [...new Map(rim.map(([x, y]) => [pointKey(x, y), [Math.atan2(y - cy, x - cx), x - cx, y - cy]])).values()].sort((a, b) => a[0] - b[0]);
-  // the rim's distance along the ray at angle a: where it meets the side between the corners round a
-  const rimAt = (a, dx, dy) => {
-    let lo = 0, hi = ring.length;  // (the first corner at a or past it, by halves; past the last, the first)
-    while (lo < hi) { const m = (lo + hi) >> 1; if (ring[m][0] < a) lo = m + 1; else hi = m; }
-    const k = lo % ring.length;
-    const [, x1, y1] = ring[(k + ring.length - 1) % ring.length], [, x2, y2] = ring[k], ux = Math.cos(a), uy = Math.sin(a);
-    const den = ux * (y2 - y1) - uy * (x2 - x1);
-    return Math.abs(den) < 1e-12 ? Math.hypot(dx, dy) : (x1 * (y2 - y1) - y1 * (x2 - x1)) / den;
+  // its corners, each once (by its key), round the middle; its sides, linking them; its rim, the sides no other cell has
+  const index = new Map(), X = [], Y = [], links = [], sides = new Map();
+  const id = (k) => {
+    const c = at(k);
+    if (!index.has(c)) { index.set(c, X.length); X.push(F.xy[2 * k]); Y.push(F.xy[2 * k + 1]); links.push(new Set()); }
+    return index.get(c);
   };
+  for (let t = 0; t < n; t++) for (let i = F.start[t]; i < F.start[t + 1]; i++) {
+    const a = id(i), b = id(i + 1 < F.start[t + 1] ? i + 1 : F.start[t]), e = a < b ? `${a},${b}` : `${b},${a}`;
+    links[a].add(b); links[b].add(a);
+    sides.set(e, !sides.has(e));
+  }
+  const rim = new Set([...sides].filter(([, alone]) => alone).flatMap(([e]) => e.split(',').map(Number)));
+  const cx = [...rim].reduce((s, v) => s + X[v], 0) / rim.size, cy = [...rim].reduce((s, v) => s + Y[v], 0) / rim.size;
+  for (let v = 0; v < X.length; v++) { X[v] -= cx; Y[v] -= cy; }
+  // the disc on the plane made round, then on the half sphere keeping areas (Lambert's: the circle of radius R on the equator).
+  // Round: its rim's corners on that circle, each along its ray (R the rim's mean), each other corner the mean of its
+  // neighbours weighed by Floater's mean value coordinates, from where they were (Tutte's embedding: a convex rim, nothing
+  // folded over; the weights' own, the disc unchanged if its rim were), again till still. Before v0.4.3 each ray stretched
+  // alone: a tooth's sides, nearly along their rays, shrank on the circle, cells folded over, holes
+  const radii = [...rim].map((v) => Math.hypot(X[v], Y[v])), R = radii.reduce((s, r) => s + r, 0) / radii.length;
+  const PX = Float64Array.from(X, (x, v) => (rim.has(v) ? (x * R) / Math.hypot(x, Y[v]) : x)), PY = Float64Array.from(Y, (y, v) => (rim.has(v) ? (y * R) / Math.hypot(X[v], y) : y));
+  const weights = [];  // (a corner inside: its neighbours, round it in turn, each its weight, as they add up to 1)
+  for (let v = 0; v < X.length; v++) {
+    if (rim.has(v)) continue;
+    const round = [...links[v]].map((u) => [u, Math.atan2(Y[u] - Y[v], X[u] - X[v]), Math.hypot(X[u] - X[v], Y[u] - Y[v])]).sort((a, b) => a[1] - b[1]);
+    // (half the angle to the next, its tangent; under a half turn always, a corner on a straight side (a house's on the
+    // next one's) its two neighbours there in line: every weight above 0, as Tutte's embedding asks)
+    const half = round.map(([, a], j) => Math.tan(Math.min(0.99 * Math.PI, (((round[(j + 1) % round.length][1] - a) % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI)) / 2));
+    const w = round.map(([, , d], j) => (half[(j + round.length - 1) % round.length] + half[j]) / d), sum = w.reduce((s, x) => s + x, 0);
+    weights.push([v, round.map(([u], j) => [u, w[j] / sum])]);
+  }
+  for (let still = false, turn = 0; !still && turn < 10000; turn++) {  // (still: within a millionth of R)
+    still = true;
+    for (const [v, nb] of weights) {
+      let x = 0, y = 0;
+      for (const [u, w] of nb) { x += w * PX[u]; y += w * PY[u]; }
+      if (Math.abs(x - PX[v]) + Math.abs(y - PY[v]) > 1e-6 * R) still = false;
+      PX[v] = x; PY[v] = y;
+    }
+  }
   const { verts, add } = vertexStore(), tiles = [];
-  const point = (x, y, z) => {  // (z: +1 the north, −1 the south)
-    const dx = x - cx, dy = y - cy, r = Math.hypot(dx, dy), a = Math.atan2(dy, dx), p = r ? (Math.min(1, r / rimAt(a, dx, dy)) * Math.PI) / 2 : 0;
+  const point = (v, z) => {  // (z: +1 the north, −1 the south)
+    const x = PX[v], y = PY[v], a = Math.atan2(y, x), p = 2 * Math.asin(Math.min(1, Math.hypot(x, y) / (R * Math.SQRT2)));
     return add(Math.sin(p) * Math.cos(a), Math.sin(p) * Math.sin(a), z * Math.cos(p));
   };
-  for (const z of [1, -1]) for (let t = 0; t < n; t++) {
-    const c = [];
-    for (let i = F.start[t]; i < F.start[t + 1]; i++) c.push(point(F.xy[2 * i], F.xy[2 * i + 1], z));
-    tiles.push(z > 0 ? c : c.reverse());  // (the south's turned over: its tiles' corners the other way round, outwards)
+  // each tile's corners round it outwards, by construction: anticlockwise seen from outside, the disc's way round on the north
+  // (seen from above) if it is anticlockwise, the other way on the south (seen from below); finishMesh then keeps them as listed
+  // (its own test, a normal from two diagonals, turned some curved houses over at the equator before v0.4.3: holes)
+  const ccw = F.start[1] > 2 && signedArea(Array.from({ length: F.start[1] }, (_, i) => [F.xy[2 * i], F.xy[2 * i + 1]])) > 0;
+  for (let t = 0; t < n; t++) {
+    const P = [];
+    for (let i = F.start[t]; i < F.start[t + 1]; i++) P.push(id(i));
+    const north = P.map((v) => point(v, 1)), south = P.map((v) => point(v, -1));
+    tiles[t] = ccw ? north : north.reverse();
+    tiles[n + t] = ccw ? south.reverse() : south;
   }
   const most = tiles.reduce((m, c) => Math.max(m, c.length), 0);
-  return (meshCache[key] = Object.assign(finishMesh(verts, tiles.map((c) => [...c, ...Array(most - c.length).fill(c.at(-1))]), most, f), { rosette: true }));
+  return (meshCache[key] = Object.assign(finishMesh(verts, tiles.map((c) => [...c, ...Array(most - c.length).fill(c.at(-1))]), most, f, null), { rosette: true }));
 }
 
 /* ---- 7.4 Torus ------------------------------------------------------------------------------- */
@@ -5754,8 +5787,9 @@ const SPHERES = {
            // (its sizes its colours': its equator's columns F, 2F, 4F…, each halving down to F, see globeBands; as many cells as the others')
            ownSizes: (K = ringColours()) => { const out = []; for (let E = globeFewest(K); SPHERES.globe.tiles(E, K) <= CELLS.most; E *= 2) if (SPHERES.globe.tiles(E, K) >= CELLS.least) out.push(E); return out; } },  // (E: its equator's columns, see globeMesh)
   // two Mirror 7 discs glued at the equator (see rosetteSphereMesh): the plane's sizes, its cells twice, a unit each
-  mirror7Sphere: { mesh: (f) => rosetteSphereMesh('mirror7', f), radius: (f) => Math.sqrt(rosetteSphereMesh('mirror7', f).n / (4 * Math.PI)), tiles: (f) => rosetteSphereMesh('mirror7', f).n,
-                   unit: 'cells', ownSizes: () => planeSides('mirror7').filter((f) => 2 * planeCells(f, 'mirror7', planeKind('mirror7')) <= 2 ** 16) },  // (a prototype: its sizes each built to count them, up to some 50,000 cells)
+  mirror7Sphere: { mesh: (f) => rosetteSphereMesh('mirror7', f), radius: (f) => Math.sqrt(SPHERES.mirror7Sphere.tiles(f) / (4 * Math.PI)), unit: 'cells',
+                   tiles: (f) => 2 * APERIODIC.mirror7((shaped('mirror7') ? sideW : planeW)(planeKind('mirror7'), f)).n,  // (its disc's cells twice: counted flat, not built)
+                   ownSizes: () => planeSides('mirror7').filter((f) => 2 * planeCells(f, 'mirror7', planeKind('mirror7')) <= 2 ** 16) },  // (a prototype: up to some 50,000 cells, 4 s to make)
   dodecaKite: { mesh: (f) => flatPolyhedron('dodeca', f, true), radius: (f) => (f * PHI) / 2, tiles: (f) => 180 * f * f, unit: 'kites', how: (f) => `{r:12 pentagonal faces} × {s:5 sectors} × {y:(Edge=${fmt(f)})² triangles} × {k:3 kites each}` },
 };
 // the solids of squares as tetrakis triangles (see tetrakisOf): sized as their squares, 4 cells a square
@@ -12871,6 +12905,25 @@ const surfaceEdges = (g) => (g.edgeList ??= (() => {
   }
   return Int32Array.from(list);
 })());
+// a surface's tiles as triangles, their corners' slots (k·t + q): each tile its corners once (one with fewer listed with its
+// last again), cut into ears in its own plane (across its normal, Newell's): a tile not convex as well (Mirror 7's houses on
+// the rosette sphere: a fan from its first corner left holes, before v0.4.3); made once a mesh
+const surfaceTriangles = (g) => (g.triangles ??= (() => {
+  const k = g.sides, out = [];
+  for (let t = 0; t < g.n; t++) {
+    const slots = [], P = [];
+    for (let q = 0; q < k; q++) {
+      const v = g.poly[k * t + q];
+      if (q && v === g.poly[k * t + q - 1]) continue;
+      slots.push(k * t + q); P.push([g.verts[3 * v], g.verts[3 * v + 1], g.verts[3 * v + 2]]);
+    }
+    const N = [0, 0, 0];
+    P.forEach((a, i) => { const b = P[(i + 1) % P.length]; N[0] += (a[1] - b[1]) * (a[2] + b[2]); N[1] += (a[2] - b[2]) * (a[0] + b[0]); N[2] += (a[0] - b[0]) * (a[1] + b[1]); });
+    const u = cross(N, Math.abs(N[0]) < 0.9 * Math.hypot(...N) ? [1, 0, 0] : [0, 1, 0]), w = cross(N, u), on = (p, a) => p[0] * a[0] + p[1] * a[1] + p[2] * a[2];
+    for (const i of ears(P.map((p) => [on(p, u), on(p, w)]))) out.push(slots[i]);
+  }
+  return Uint32Array.from(out);
+})());
 // a surface's tiles' colours from a palette (null: unlit) and each tile's place in it (out of it: unlit), into their buffer
 // (out.put, see gpuSurface)
 const paintLevels = (palette, levelOf) => (out, n) => {
@@ -13689,15 +13742,17 @@ function gpuSurface(paint, path) {
     }
     gpuBuffer('ePos', ends); gpuBuffer('eN1', n1); gpuBuffer('eN2', n2);
     D.eCount = 2 * E;
-    if (D.keys.topo !== `${n}|${k}`) {
-      const fan = new Uint32Array(3 * (k - 2) * n);
-      for (let t = 0, f = 0; t < n; t++) for (let q = 1; q < k - 1; q++) { fan[f++] = k * t; fan[f++] = k * t + q; fan[f++] = k * t + q + 1; }
+    if (D.keys.fanOf !== g) {
+      const fan = surfaceTriangles(g);
       gpuBuffer('fan', fan, GPUBufferUsage.INDEX);
+      D.fanCount = fan.length; D.keys.fanOf = g;
+    }
+    if (D.keys.topo !== `${n}|${k}`) {
       const ids = new Uint32Array(k * n);
       for (let t = 0; t < n; t++) ids.fill(t, k * t, k * t + k);
       gpuBuffer('tileIds', ids);
       D.tileCol?.destroy(); D.tileCol = device.createBuffer({ size: 4 * Math.max(4, n), usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST }); D.groups = null;
-      D.fanCount = fan.length; D.keys.topo = `${n}|${k}`;
+      D.keys.topo = `${n}|${k}`;
     }
     D.keys.geo = geoKey; D.keys.geoObj = g; D.geoGen = (D.geoGen ?? 0) + 1;
   }

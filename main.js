@@ -9778,6 +9778,7 @@ function lifeReset() {
   // its run's record, its start's (the same start, the same run: kept while its fingerprint is, played again or not)
   L.seedKey = lifeFingerprint(L.seed);
   L.gpuOld = true;  // (written here: the graphics card's copy old)
+  lifeGoal = null;  // (nothing asked of it yet, see lifeTo)
   if (L.recordKey === L.seedKey) return;
   L.recordKey = L.seedKey;
   L.footBy = null;  // (the same up to where it settles or loops: its own, held)
@@ -12008,20 +12009,24 @@ function setSpeed(s) {
 function cutAtReturn(L, batch, dir) {
   if (!L.margolus || L.stable) return;
   const j = batch.findIndex((G, x) => mod(cur + dir * (1 + x), L.margolus.turns.length) === 0 && G.key === L.seedKey);
-  for (let x = batch.length - 1; j >= 0 && x > j; x--) lifeStepGPU(L, cur + dir * x, dir > 0);
-  if (j >= 0) batch.length = j + 1;
+  if (j < 0 || j === batch.length - 1) return;
+  batch.length = j + 1;
+  L.alive = L.seed.slice();  // (its cells there its start's: sent again, see gpuOld)
 }
 // a run's loop's last generation (T + P − 1, see runLoop) while it plays: Play stops there, a round of it played (Play again:
 // another round, see looping); none still, frozen or dead
 const loopRound = () => (playing && looping() ? runLoop().last : 0);
+// the generation asked while its batch is on the card (see lifeStepGPU): tick asks it again, frame after frame; null, none
+let lifeGoal = null;
 function lifeTo(target, until = Infinity) {  // (one step, one generation, played on the card as many at once, see lifeStepGPU)
   const L = walk.life, known = !!runLoop();  // (its end known before: round its loop as asked)
+  let waiting = null;  // (where it was going when its batch was not back yet)
   // (back: its rule's inverse, see lifeBack, so many steps; its return found going back, round its loop: its generations never
   // below 0; found on the way, the steps left round it only, to its start none: at 0 then)
   const looped = loopBack(), toStart = target <= runStart();
   for (let back = cur - Math.max(target, looped ? -Infinity : runStart()); back > 0; ) {
-    const batch = lifeStepGPU(L, cur - 1, true, Math.min(back, LIFE_H));
-    if (!batch) break;
+    const batch = lifeStepGPU(L, cur - 1, true, Math.min(back, LIFE_BATCH));
+    if (!batch) { if (GPU?.game?.pending) waiting = cur - back; break; }
     cutAtReturn(L, batch, -1);
     for (const G of batch) lifeBack(G);
     back -= batch.length;
@@ -12032,8 +12037,8 @@ function lifeTo(target, until = Infinity) {  // (one step, one generation, playe
   statsDirty = true;
   let k = target - cur, ended = false;
   while (k > 0 && !ended && !lifeEnded()) {
-    const round = loopRound(), batch = lifeStepGPU(L, cur + 1, false, Math.min(k, LIFE_H, round ? Math.max(1, round - cur) : Infinity));  // (playing round a loop: to its last generation at most)
-    if (!batch) break;  // (no WebGL 2)
+    const round = loopRound(), batch = lifeStepGPU(L, cur + 1, false, Math.min(k, LIFE_BATCH, round ? Math.max(1, round - cur) : Infinity));  // (playing round a loop: to its last generation at most)
+    if (!batch) { if (GPU?.game?.pending) waiting = cur + k; break; }  // (its batch on the card; none: no WebGPU)
     cutAtReturn(L, batch, 1);
     for (const G of batch) {
       if (!ended) ended = lifeEnded();
@@ -12067,6 +12072,7 @@ function lifeTo(target, until = Infinity) {  // (one step, one generation, playe
     if (!known && end !== undefined) k = Math.min(k, end - cur);  // (its end found on the way: to it, not round it on)
     if (performance.now() >= until) break;  // (a batch at least)
   }
+  lifeGoal = waiting;
   statsDirty = true;
 }
 function advanceTo(target, until = Infinity) {  // forth or back (a walk; a reversible one, by its rule); until: a Game of Life's batches stop past it (a frame's time, see tick)
@@ -13301,7 +13307,7 @@ const paintLevels = (palette, levelOf) => Object.assign((tex, n) => {
   if (tex.put) tex.put(col); else glPut(GLS.gl, tex, col);
 }, { cpu: true });
 function glSurface(paint, path) {  // paint: its tiles' colours into their texture (see paintLevels, lifeLookGPU)
-  if (gpuDrawing(!!paint.cpu)) return gpuSurface(paint, path);
+  if (gpuDrawing()) return gpuSurface(paint, path);
   const S = glSetup();
   if (!S) return false;
   const { gl, prog } = S, g = walk.geo, sh = walk.shape, R = walk.R, k = g.sides, n = g.n;
@@ -13817,7 +13823,7 @@ function planeFlat(kind, W, torus) {  // a plane's cells then its walls (a grid 
   return flatPolys(m, start, xy.subarray(0, at));
 }
 function glPlane(paint) {
-  gpuDrawing(false);  // (Life's colours: WebGL's engine's, till stage 3)
+  if (gpuDrawing()) return gpuPlane(paint);
   const S = glSetup();
   if (!S) return;
   const { gl, prog } = S, { n } = walk.plane, { scale: s, ox, oy } = view, key = gridKey();
@@ -13886,12 +13892,14 @@ function glPlane(paint) {
 // a texel) and the cells' counts (age, changes, last death, colours had; now and next) kept there, sent again when the
 // processor wrote them (L.gpuOld), read back when read here (see lifeCells); null without WebGL 2 (no Life then)
 function lifeGPU(L) {
-  const S = glSetup();
-  if (!S || S.life?.L === L) return S?.life ?? null;
-  if (S.life) lifeFree(S.life);
-  S.life = lifeEngine(L, 1, LIFE_H);
+  if (!GPU) return null;
+  if (GPU.game?.L === L) return GPU.game;
+  if (GPU.game && !GPU.game.pending) gpuLifeFree(GPU.game);  // (one with a batch on the card: let go once it is back, see gpuLifeFree)
+  else if (GPU.game) GPU.game.free = true;
+  const E = (GPU.game = gpuLifeEngine(L, 1, LIFE_BATCH));
+  if (E) E.shown = GPU.device.createBuffer({ size: 4 * 5 * E.total, usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST | GPUBufferUsage.COPY_SRC });  // (read back by gpuShownCheck)
   L.gpuOld = true;
-  return S.life;
+  return E;
 }
 // its textures: runs of its cells side by side (a hunt's starts, see huntRuns), each its n rounded up to 64 (stride: a sum's
 // 64 cells in one run); each generation's sums a run's, h of them kept (a column each, see lifeTally)
@@ -13992,7 +14000,7 @@ function lifeFromGPU(L) {
 // had, there only
 function lifeCells(L) {
   L.cells = { alive: L.alive };
-  Object.defineProperty(L, 'alive', { get: () => { if (L.onGPU) lifeFromGPU(L); return L.cells.alive; }, set: (v) => { L.cells.alive = v; L.gpuOld = true; }, enumerable: true, configurable: true });
+  Object.defineProperty(L, 'alive', { get: () => L.cells.alive, set: (v) => { L.cells.alive = v; L.gpuOld = true; }, enumerable: true, configurable: true });
   L.gpuOld = true;
   L.onGPU = false;
 }
@@ -14010,22 +14018,39 @@ const lifeWithin = (g) => {
   const gens = g >= cur ? g - cur : looping() && (g >= runLoop().T || loopBack()) ? 0 : g;
   return gens * (walk.life.seed.length + LIFE_PASSES) <= LIFE_REPLAY_MOST;
 };
-const LIFE_H = 16;  // (generations a read back: the game's, a hunt's; more, a batch longer than a frame on a large grid)
+const LIFE_H = 16, LIFE_BATCH = 256;  // (generations a read back: a hunt's; the game's, at most, as many as a frame asks)
+// k generations there (as before on WebGL, now on WebGPU): a batch read back once played, never at once. Asked, its batch
+// starts and null comes back (lifeTo stops there, lifeGoal kept: see tick); asked again once back, its sums, and its cells
+// adopted (L.alive, the cells shown: see gpuShow). One batch at a time; the cells written here sent again first (L.gpuOld)
 function lifeStepGPU(L, gen, back = false, k = 1) {
   const E = lifeGPU(L);
-  if (!E || !L.cells) return null;
-  const K = L.colours, M = L.margolus, neg = !!M?.flips;
-  if (L.gpuOld) lifeToGPU(L, E);
-  for (let x = 0; x < k; x++) {
-    const g = back ? gen - x : gen + x;
-    if (M) blockPass(L, E, E.now.state, E.next.state, back ? g : g - 1, back);
-    else lifeRulePass(E);
-    lifeTally(E, L.gen + 1 + x, back, neg && mod(g, 2) === 0, neg && mod(g, 2) === 1, x);  // (shown negative: a generation odd)
+  if (!E || !L.cells || E.pending) return null;
+  const R = E.ready, neg = !!L.margolus?.flips;
+  E.ready = null;
+  if (L.gpuOld || (R && (R.gen !== gen || R.back !== back))) { gpuLifePut(E, L.cells.alive); gpuShow(E); L.gpuOld = false; }  // (a batch not asked any more: played again from here)
+  else if (R) { L.cells.alive.set(R.states); gpuShow(E); return R.list; }
+  E.pending = gpuLifeSteps(E, { gen, back, k, negOf: (g) => [neg && mod(g, 2) === 0, neg && mod(g, 2) === 1] }).then((r) => {
+    E.pending = null;
+    if (E.free) { gpuLifeFree(E); return; }
+    const K = L.colours, by = (q, x) => Int32Array.from({ length: K + 1 }, (_, c) => (c ? r.read(9 + 4 * (c - 1) + q, 0, x) : 0));
+    E.ready = { gen, back, states: r.states, list: Array.from({ length: k }, (_, x) => ({ alive: r.read(0, 0, x), dying: r.read(1, 0, x), born: r.read(2, 0, x), dead: r.read(3, 0, x),
+      everNew: r.read(4, 0, x), maxAct: r.read(5, 0, x), key: lifeKey(r.read(6, 0, x), r.read(7, 0, x)), byColour: by(0, x), bornBy: by(1, x), deadBy: by(2, x), everBy: by(3, x), edges: r.read(9 + 4 * K, 0, x) })) };
+  }, (e) => { E.pending = null; console.warn('Life on WebGPU:', e.message); });
+  return null;
+}
+// the cells shown (E.shown): its cells now, copied once a batch is adopted or its cells sent (the card's own run ahead with the next)
+function gpuShow(E) {
+  const enc = GPU.device.createCommandEncoder();
+  enc.copyBufferToBuffer(E.cell, 4 * E.side * 5 * E.total, E.shown, 0, 4 * 5 * E.total);
+  GPU.device.queue.submit([enc.finish()]);
+}
+// the Life asked (lifeGoal, see lifeTo) played to its end: each batch awaited (a check's, Space-time's)
+async function lifeSettle() {
+  while (lifeGoal !== null) {
+    const E = GPU?.game;
+    if (E?.pending) await E.pending; else await new Promise((r) => setTimeout(r, 0));
+    if (lifeGoal !== null) lifeTo(lifeGoal);
   }
-  L.onGPU = true;
-  const v = lifeRead(E), by = (q, x) => Int32Array.from({ length: K + 1 }, (_, c) => (c ? v(9 + 4 * (c - 1) + q, 0, x) : 0));
-  return Array.from({ length: k }, (_, x) => ({ alive: v(0, 0, x), dying: v(1, 0, x), born: v(2, 0, x), dead: v(3, 0, x), everNew: v(4, 0, x), maxAct: v(5, 0, x),
-    key: lifeKey(v(6, 0, x), v(7, 0, x)), byColour: by(0, x), bornBy: by(1, x), deadBy: by(2, x), everBy: by(3, x), edges: v(9 + 4 * K, 0, x) }));
 }
 // Life's rule, from E.now's states into E.next's
 function lifeRulePass(E, [r0, r1] = [0, E.runs]) {  // (r0 … r1: its runs played, see lifeRows)
@@ -14067,6 +14092,7 @@ function blockPass(L, E, a, b, g, back = false) {
 // RGBA, see GL_SHADERS.lifeLook), how it colours its live cells (look.by: 0 by state, 1 by age, 2 all by their changes), its
 // cells in blocks shown negative every other generation (its own: see negative, on every grid), its trail's length, a wall's and a dead cell's colours
 function lifeLookGPU(L, target, rows, look) {
+  if (target.buffer) return gpuLook(L, target, look);
   const E = lifeGPU(L);
   if (!E) return false;
   const { gl } = GLS;
@@ -14097,13 +14123,15 @@ async function gpuSetup() {
   const module = device.createShaderModule({ code: GPU_LIFE }), errors = (await module.getCompilationInfo()).messages.filter((m) => m.type === 'error');
   if (errors.length) throw new Error(`GPU_LIFE: ${errors.map((m) => `${m.lineNum}:${m.linePos} ${m.message}`).join('; ')}`);
   const pipe = (entryPoint) => device.createComputePipeline({ layout: device.createPipelineLayout({ bindGroupLayouts: [layout] }), compute: { module, entryPoint } });
-  GPU = { device, layout, pipes: Object.fromEntries(['lifeRule', 'blockRule', 'lifeBook', 'lifeCount'].map((e) => [e, pipe(e)])) };
+  const looks = device.createBindGroupLayout({ entries: [entry(0, 'read-only-storage'), entry(1, 'storage'), entry(2, 'read-only-storage')] });
+  GPU = { device, layout, looks, pipes: Object.fromEntries(['lifeRule', 'blockRule', 'lifeBook', 'lifeCount'].map((e) => [e, pipe(e)])) };
+  GPU.pipes.lifeLook = device.createComputePipeline({ layout: device.createPipelineLayout({ bindGroupLayouts: [layout, looks] }), compute: { module, entryPoint: 'lifeLook' } });
   return GPU;
 }
 // a pass's numbers (see P in GPU_LIFE), in this order, a word each
 const GPU_PARAMS = ['n', 'K', 'stride', 'C', 'R', 'mode', 'more', 'loops', 'loopN', 'lin', 'gen', 'back', 'negA', 'negB', 'x', 'r0', 'r1', 'side', 'J', 'runs',
   'total', 'phase', 'kb', 'ising', 'flips', 'stars', 'oStart', 'oList', 'oRing', 'oMoreStart', 'oMoreList', 'oSide', 'oB', 'oS', 'oLoops', 'oIn', 'oWhere',
-  'oTurns', 'oMove', 'oTo'];
+  'oTurns', 'oMove', 'oTo', 'trail', 'by', 'neg', 'wall', 'dead', 'outN'];
 const GPU_LIFE = `
 struct P { ${GPU_PARAMS.map((k) => `${k}: i32`).join(', ')} }
 @group(0) @binding(0) var<storage, read> num: array<i32>;
@@ -14243,6 +14271,26 @@ fn add(j: i32, v: u32) { if (v != 0u) { atomicAdd(&acc[j], v); } }
     let v = atomicLoad(&acc[li]); let s = u32((p.x * p.runs + base / p.stride) * p.J + j);
     if (j == 5) { atomicMax(&sums[s], v); } else if (v != 0u) { atomicAdd(&sums[s], v); }
   }
+}
+// each cell's colour (as GL_SHADERS.lifeLook), from the cells shown (a batch's last adopted, see gpuShow): by the look's
+// table (packed RGBA: its live states' from 0, dying from 256, ages from 512, trail from 1024, changes from 4096); a wall's,
+// a dead one's; past the cells, clear
+@group(1) @binding(0) var<storage, read> look: array<u32>;
+@group(1) @binding(1) var<storage, read_write> outCol: array<u32>;
+@group(1) @binding(2) var<storage, read> shownCells: array<u32>;
+fn S(f: i32, t: i32) -> u32 { return shownCells[u32(f * p.total + t)]; }
+@compute @workgroup_size(64) fn lifeLook(@builtin(global_invocation_id) id: vec3u) {
+  let t = cellAt(id);
+  if (t >= p.outN) { return; }
+  if (t >= p.n) { outCol[t] = 0u; return; }
+  if (I(p.oStart, t) == I(p.oStart, t + 1)) { outCol[t] = u32(p.wall); return; }
+  var st = i32(S(0, t));
+  if (p.neg == 1 && I(p.oIn, t) > 0) { st = 1 - st; }
+  if (p.by == 2) { outCol[t] = look[4096u + min(S(2, t), 65535u)]; return; }
+  if (live(st)) { if (p.by == 1) { outCol[t] = look[512u + min(S(1, t), 64u)]; } else { outCol[t] = look[st]; } return; }
+  if (st > 0) { outCol[t] = look[256 + st]; return; }
+  let d = p.gen - bitcast<i32>(S(3, t));
+  if (d >= 0 && d < p.trail) { outCol[t] = look[1024 + d]; } else { outCol[t] = u32(p.dead); }
 }`;
 // An engine for L (as lifeEngine): its runs side by side, h generations' sums kept a batch; null where the card can't hold it
 function gpuLifeEngine(L, runs = 1, h = 1) {
@@ -14281,20 +14329,24 @@ function gpuLifePut(E, alive, r = 0) {
   field(0, (t) => alive[t]); field(1, (t) => (live(alive[t]) ? 1 : 0)); field(2, () => 0); field(3, () => -1e9 >>> 0);
   field(4, (t) => (live(alive[t]) ? 1 : 0) | (L.colours > 1 && L.seed[t] ? 1 << L.seed[t] : 0));
 }
+// a compute pass of E's: its numbers into slot k of words (the grid's, then numbers), count cells, more: its look's group
+function gpuPass1(E, enc, words, k, pipe, numbers, count, more = null) {
+  const L = E.L, M = L.margolus, v = { n: E.n, K: L.colours, stride: E.stride, C: L.C, R: L.ring ? L.ring.length / E.n : 0, mode: L.ring ? 1 : L.side ? 2 : 0, more: L.ringMore ? 1 : 0,
+    loops: L.loops ? L.loopStates : 0, loopN: L.loops ? L.loops.length / 2 : 0, lin: L.lineages ? 1 : 0, J: E.J, runs: E.runs, total: E.total, r0: 0, r1: E.runs, side: E.side, kb: M?.k ?? 0,
+    ising: M?.ising ? 1 : 0, flips: M?.flips ? 1 : 0, stars: M?.move ? 1 : 0, ...E.off, ...numbers };
+  GPU_PARAMS.forEach((name, i) => { words[64 * k + i] = v[name] ?? 0; });
+  const c = enc.beginComputePass(), w = Math.ceil(count / 64);
+  c.setPipeline(pipe); c.setBindGroup(0, E.group, [256 * k]);
+  if (more) c.setBindGroup(1, more);
+  c.dispatchWorkgroups(Math.min(w, 65535), Math.ceil(w / 65535)); c.end();
+}
 // k generations of runs r0 … r1 (as lifeStepGPU, lifeTally): their sums a column each, read back with run 0's states once all
 // are played. Resolves to read(j, r, x), sum j of run r at column x, and the states
 async function gpuLifeSteps(E, { gen = 0, back = false, k = 1, r0 = 0, r1 = E.runs, phase = null, negOf = null } = {}) {
   const { device, pipes } = GPU, L = E.L, M = L.margolus, words = new Int32Array(64 * E.slots), enc = device.createCommandEncoder(), cells = (r1 - r0) * E.stride;
   enc.clearBuffer(E.sums);
   let slot = 0;
-  const pass = (pipe, numbers, count) => {
-    const v = { n: E.n, K: L.colours, stride: E.stride, C: L.C, R: L.ring ? L.ring.length / E.n : 0, mode: L.ring ? 1 : L.side ? 2 : 0, more: L.ringMore ? 1 : 0,
-      loops: L.loops ? L.loopStates : 0, loopN: L.loops ? L.loops.length / 2 : 0, lin: L.lineages ? 1 : 0, J: E.J, runs: E.runs, total: E.total, r0, r1, side: E.side, kb: M?.k ?? 0,
-      ising: M?.ising ? 1 : 0, flips: M?.flips ? 1 : 0, stars: M?.move ? 1 : 0, ...E.off, ...numbers };
-    GPU_PARAMS.forEach((name, i) => { words[64 * slot + i] = v[name] ?? 0; });
-    const c = enc.beginComputePass(), w = Math.ceil(count / 64);
-    c.setPipeline(pipes[pipe]); c.setBindGroup(0, E.group, [256 * slot++]); c.dispatchWorkgroups(Math.min(w, 65535), Math.ceil(w / 65535)); c.end();
-  };
+  const pass = (pipe, numbers, count) => { gpuPass1(E, enc, words, slot++, pipes[pipe], { r0, r1, ...numbers }, count); };
   for (let x = 0; x < k; x++) {
     const g = back ? gen - x : gen + x, [negA, negB] = negOf ? negOf(g) : [false, false];
     if (M) pass('blockRule', { phase: mod(back ? g : g - 1, M.turns.length), back: back ? 1 : 0, oTo: back ? E.off.oInverse : E.off.oTo }, E.stride);
@@ -14346,6 +14398,37 @@ async function gpuLifeCheck(links = null, gens = 64) {
   }
   return { ok: !failures.length, failures, checked: done.length };
 }
+// the cells shown (see gpuShow) as the game's at cur (L.alive): how many apart (0: the picture the generation's)
+async function gpuShownCheck() {
+  await lifeSettle();
+  const E = lifeGPU(walk.life), { device } = GPU, rb = device.createBuffer({ size: 4 * E.n, usage: GPUBufferUsage.MAP_READ | GPUBufferUsage.COPY_DST }), enc = device.createCommandEncoder();
+  if (walk.life.gpuOld) { gpuLifePut(E, walk.life.alive); gpuShow(E); walk.life.gpuOld = false; }
+  enc.copyBufferToBuffer(E.shown, 0, rb, 0, 4 * E.n);
+  device.queue.submit([enc.finish()]);
+  await rb.mapAsync(GPUMapMode.READ);
+  const shown = new Uint32Array(rb.getMappedRange()), a = walk.life.alive;
+  let apart = 0;
+  for (let t = 0; t < E.n; t++) apart += shown[t] !== a[t];
+  rb.destroy();
+  return apart;
+}
+
+// its colours (as lifeLookGPU) into out (out.buffer, out.n: a texel's worth a cell, clear past them), by a look
+function gpuLook(L, out, look) {
+  const E = lifeGPU(L), { device } = GPU;
+  if (!E) return false;
+  if (L.gpuOld && !E.pending) { gpuLifePut(E, L.cells.alive); gpuShow(E); L.gpuOld = false; }
+  const table = new Uint32Array(look.table.buffer, look.table.byteOffset, look.table.length / 4);
+  if (!E.look || E.look.size < table.byteLength) { E.look?.destroy(); E.look = device.createBuffer({ size: table.byteLength, usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST }); E.looks = new Map(); }
+  device.queue.writeBuffer(E.look, 0, table);
+  if (!E.looks.has(out.buffer)) E.looks.set(out.buffer, device.createBindGroup({ layout: GPU.looks, entries: [E.look, out.buffer, E.shown].map((b, i) => ({ binding: i, resource: { buffer: b } })) }));
+  const pack = (c) => (Math.round(c[0] * 255) | (Math.round(c[1] * 255) << 8) | (Math.round(c[2] * 255) << 16) | (Math.round(c[3] * 255) << 24));
+  const words = new Int32Array(64), enc = device.createCommandEncoder();
+  gpuPass1(E, enc, words, 0, GPU.pipes.lifeLook, { gen: L.gen, trail: look.trail, by: look.by, neg: negative(L) ? 1 : 0, wall: pack(look.wall), dead: pack(look.dead), outN: out.n }, out.n, E.looks.get(out.buffer));
+  device.queue.writeBuffer(E.params, 0, words);
+  device.queue.submit([enc.finish()]);
+  return true;
+}
 
 /* ---- 11.4d Drawing on WebGPU ----------------------------------------------------------------- *
  * The surfaces, the flat walks and the 3D walks' cubes as 11.4b draws them, on WebGPU (being moved, see WEBGPU.md): its own
@@ -14353,14 +14436,14 @@ async function gpuLifeCheck(links = null, gens = 64) {
  * Life's colours come with the engine (stage 3). The same projection, light, shadows (the light's depths and what is
  * nearest it, compared 9 times a pixel), grid, path, Glass (weighted blended, two pictures then mixed) and Cut; 4 samples a
  * pixel. A draw's numbers a slot of 512 bytes (see GPU_VIEW), by a dynamic offset: a frame's draws written at once */
-let gpuDraw = false;
+let gpuDraw = true;
 const gpuCanvas = $('gpuLayer');
 // a draw's numbers, in this order (vec3s padded to 4 words; see struct U)
 const GPU_VIEW = `
 struct U {
   R: vec3f, depth: f32, Uu: vec3f, shade: f32, V: vec3f, glint: f32, L: vec3f, lr: f32, H: vec3f, alpha: f32, Lx: vec3f, edge: f32,
   Ly: vec3f, bias: f32, edgeRgb: vec3f, halfW: f32, persp: vec4f, plain: vec4f, view: vec3f, N: f32, cc: vec2f, screen: vec2f,
-  front: u32, cut: i32, glass: i32, both: i32, colour: i32, alphaF: f32, bright: f32, width: f32, loopFrom: f32, period: f32, pad0: f32, pad1: f32,
+  front: u32, cut: i32, glass: i32, both: i32, colour: i32, alphaF: f32, bright: f32, width: f32, loopFrom: f32, period: f32, turnC: f32, turnS: f32,
   tpl: array<vec4f, 12>,  // (the polygons' corners, two a vec4)
 }
 @group(0) @binding(0) var<uniform> u: U;
@@ -14480,7 +14563,16 @@ struct Col { @builtin(position) pos: vec4f, @location(0) col: vec4f }
   o.pos = flatAt(u.view.yz + (c.xy + select(t4.xy, t4.zw, (k & 1u) == 1u)) * u.view.x);
   return o;
 }
-@fragment fn colF(i: Col) -> @location(0) vec4f { return i.col; }`;
+@fragment fn colF(i: Col) -> @location(0) vec4f { return i.col; }
+// Life on the plane (as GL_SHADERS.planeCells, planeLines): world (x, y) turned (turnC, turnS), then to pixels; a cell's colour
+// its texel's word (clear: off the screen); the outlines in plain (premultiplied)
+fn planeAt(p: vec2f) -> vec4f { return flatAt(u.view.yz + vec2f(u.turnC * p.x - u.turnS * p.y, u.turnS * p.x + u.turnC * p.y) * u.view.x); }
+@vertex fn planeCellsV(@location(0) pos: vec2f, @location(1) id: u32) -> Col {
+  var o: Col; o.col = unpack4x8unorm(tileCol[id]);
+  o.pos = select(planeAt(pos), vec4f(2.0, 2.0, 2.0, 1.0), o.col.a < 0.5);
+  return o;
+}
+@vertex fn planeLinesV(@location(0) pos: vec2f) -> Col { var o: Col; o.col = u.plain; o.pos = planeAt(pos); return o; }`;
 // a draw's numbers into slot k of the frame's (as glView: the camera, the light and its view for the shadows)
 function gpuView(words, k, depth, more = {}) {
   const f = new Float32Array(words, 512 * k, 128), i = new Int32Array(words, 512 * k, 128), P = walk.persp, cc = P ? orthoPoint(...P.c) : [0, 0];
@@ -14490,7 +14582,7 @@ function gpuView(words, k, depth, more = {}) {
   f.set(lx, 20); f.set(ly, 24); f.set([...(P ? P.c : [0, 0, 0]), P ? P.D : 0], 32); f.set([view.scale, view.ox, view.oy], 40); f.set(cc, 44); f.set([cw, ch], 46);
   i[48] = walk.geo?.mobius ? walk.geo.front : 0; i[49] = cutOn() ? 1 : 0;
   const at = { alpha: [19, 'f'], edge: [23, 'f'], bias: [27, 'f'], halfW: [31, 'f'], N: [43, 'f'], cut: [49, 'i'], glass: [50, 'i'], both: [51, 'i'], colour: [52, 'i'],
-    alphaF: [53, 'f'], bright: [54, 'f'], width: [55, 'f'], loopFrom: [56, 'f'], period: [57, 'f'] };
+    alphaF: [53, 'f'], bright: [54, 'f'], width: [55, 'f'], loopFrom: [56, 'f'], period: [57, 'f'], turnC: [58, 'f'], turnS: [59, 'f'] };
   for (const [k2, v] of Object.entries(more)) {
     if (k2 === 'edgeRgb') f.set(v, 28); else if (k2 === 'plain') f.set(v, 36); else if (k2 === 'tpl') f.set(v, 60);
     else (at[k2][1] === 'f' ? f : i)[at[k2][0]] = v;
@@ -14528,7 +14620,7 @@ function gpuPalette() {
   D.grad?.destroy();
   D.grad = D.texture(BANDS, Uint8Array.from(GRADIENT.flatMap((c) => [...rgbOf(c), 255])));
   D.keys.pal = null; D.keys.cubes = null;
-  D.group = null;
+  D.groups = null;
 }
 // a pipeline, made once by its key: its vertex and fragment entries, its buffers, its targets' formats, blending, depth…
 function gpuPipe(key, make) {
@@ -14553,16 +14645,19 @@ const gpuTargets = () => {
 // a vertex buffer, made again only when it grows
 const gpuBuffer = (name, data, usage = GPUBufferUsage.VERTEX) => {
   const D = GPU.draw, bytes = Math.max(16, Math.ceil(data.byteLength / 4) * 4);
-  if (!D[name] || D[name].size < bytes) { D[name]?.destroy(); D[name] = D.device.createBuffer({ size: bytes, usage: usage | GPUBufferUsage.COPY_DST }); D.group = null; }
+  if (!D[name] || D[name].size < bytes) { D[name]?.destroy(); D[name] = D.device.createBuffer({ size: bytes, usage: usage | GPUBufferUsage.COPY_DST }); D.groups = null; }
   D.device.queue.writeBuffer(D[name], 0, data.buffer, data.byteOffset, data.byteLength - (data.byteLength % 4));
   return D[name];
 };
 // the bind group of the frame's numbers, the tiles' colours, the rainbow and the digits' colours
-const gpuGroup = () => {
+const gpuGroup = (col = null) => {
   const D = GPU.draw;
   if (!D.tileCol) D.tileCol = D.device.createBuffer({ size: 16, usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST });
-  return (D.group ??= D.device.createBindGroup({ layout: D.g0, entries: [{ binding: 0, resource: { buffer: D.uni, size: 512 } }, { binding: 1, resource: { buffer: D.tileCol } },
+  col ??= D.tileCol;
+  D.groups ??= new Map();
+  if (!D.groups.has(col)) D.groups.set(col, D.device.createBindGroup({ layout: D.g0, entries: [{ binding: 0, resource: { buffer: D.uni, size: 512 } }, { binding: 1, resource: { buffer: col } },
     { binding: 2, resource: D.grad.createView() }, { binding: 3, resource: D.pal.createView() }] }));
+  return D.groups.get(col);
 };
 // is this draw WebGPU's? (gpuDraw on and the card set up); its canvas shown, WebGL's hidden, or back
 function gpuDrawing(can = true) {
@@ -14644,12 +14739,12 @@ function gpuSurface(paint, path) {
       const ids = new Uint32Array(k * n);
       for (let t = 0; t < n; t++) ids.fill(t, k * t, k * t + k);
       gpuBuffer('tileIds', ids);
-      D.tileCol?.destroy(); D.tileCol = device.createBuffer({ size: 4 * Math.max(4, n), usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST }); D.group = null;
+      D.tileCol?.destroy(); D.tileCol = device.createBuffer({ size: 4 * Math.max(4, n), usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST }); D.groups = null;
       D.fanCount = fan.length; D.keys.topo = `${n}|${k}`;
     }
     D.keys.geo = geoKey; D.keys.geoObj = g; D.geoGen = (D.geoGen ?? 0) + 1;
   }
-  paint({ put: (col) => device.queue.writeBuffer(D.tileCol, 0, col) }, n);
+  paint({ put: (col) => device.queue.writeBuffer(D.tileCol, 0, col), buffer: D.tileCol, n }, n);
   const depth = 4 * R * Math.max(sh.extent, sh.maxExtent ?? sh.extent), tileSize = R * sh.extent * Math.sqrt((4 * Math.PI) / n);
   const edgeBias = (0.07 * tileSize) / depth, pathBias = (0.15 * tileSize) / depth, w = new Uint8Array(D.words);
   w.fill(0);
@@ -14810,6 +14905,62 @@ function gpuCubes(count, of, make, reach) {
   device.queue.writeBuffer(D.uni, 0, D.words, 0, 512);
   device.queue.submit([enc.finish()]);
   return true;
+}
+
+// Life on the plane (as glPlane): its cells' triangles and walls', once a grid; the page's colour on the cells and the walls'
+// on the walls under all, zoomed in enough the outlines, over all the generation's colours (paint: into their buffer)
+function gpuPlane(paint) {
+  const D = GPU.draw, { device } = D, { n } = walk.plane, { scale: s } = view, key = gridKey(), F = walk.plane.flat;
+  if (D.keys.plane !== key) {
+    const N = F.start[F.m], pos = new Float32Array(2 * N), ids = new Uint32Array(N), tris = new Uint32Array(3 * N);
+    const straight = (P, i) => { const [a, b, c] = [P.at(i - 1), P[i], P[(i + 1) % P.length]]; return Math.abs((b[0] - a[0]) * (c[1] - a[1]) - (b[1] - a[1]) * (c[0] - a[0])) <= 1e-12; };
+    let v = 0, c = 0;
+    for (let k = 0; k < F.m; k++) {
+      const P = F.poly(k).filter((_, i, P2) => !straight(P2, i)), v0 = v;
+      for (const [x, y] of P) { pos[2 * v] = x; pos[2 * v + 1] = y; ids[v++] = k; }
+      for (const i of ears(P)) tris[c++] = v0 + i;
+    }
+    gpuBuffer('planePos', pos.subarray(0, 2 * v)); gpuBuffer('planeIds', ids.subarray(0, v)); gpuBuffer('planeTris', tris.subarray(0, c), GPUBufferUsage.INDEX);
+    for (const b of ['planeBase', 'planeCol']) { D[b]?.destroy(); D[b] = device.createBuffer({ size: 4 * Math.max(4, F.m), usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST }); }
+    D.groups = null;
+    Object.assign(D, { planeCount: c, planeLines: null });
+    D.keys.plane = key; D.keys.planeBase = null;
+  }
+  const bg = getComputedStyle(document.documentElement).getPropertyValue('--bg') || '#fff';
+  if (D.keys.planeBase !== bg) {
+    const page = packed(bg.trim()), walled = packed(LIFE_WALL);
+    device.queue.writeBuffer(D.planeBase, 0, Uint32Array.from({ length: F.m }, (_, t) => (t >= n ? walled : page)));
+    D.keys.planeBase = bg;
+  }
+  paint({ put: (col) => device.queue.writeBuffer(D.planeCol, 0, col), buffer: D.planeCol, n: F.m }, F.m);
+  const outline = $('showGrid').checked && s >= 6;
+  if (outline && !D.planeLines) {
+    const { start, xy } = F, seen = new Set(), ends = new Float32Array(4 * start[n]);
+    let e = 0;
+    for (let t = 0; t < n; t++) for (let i = start[t]; i < start[t + 1]; i++) {
+      const j = i + 1 < start[t + 1] ? i + 1 : start[t], k = pointKey((xy[2 * i] + xy[2 * j]) / 2, (xy[2 * i + 1] + xy[2 * j + 1]) / 2);
+      if (!seen.has(k)) { seen.add(k); ends.set([xy[2 * i], xy[2 * i + 1], xy[2 * j], xy[2 * j + 1]], 4 * e++); }
+    }
+    gpuBuffer('planeEdges', ends.subarray(0, 4 * e));
+    D.planeLines = 2 * e;
+  }
+  new Uint8Array(D.words).fill(0);
+  const turn = { turnC: Math.cos(planeTurn()), turnS: Math.sin(planeTurn()) }, enc = device.createCommandEncoder(), rp = gpuPass(enc, null, [0, 0, 0, 0], false);
+  const cells = (col, slot) => {
+    rp.setPipeline(gpuDrawPipe('planeCells', { vertex: 'planeCellsV', fragment: 'colF', depth: false, buffers: [vbuf(8, [VA(0, 'float32x2')]), vbuf(4, [VA(1, 'uint32')])] }));
+    rp.setBindGroup(0, gpuGroup(col), [gpuView(D.words, slot, 1, turn)]);
+    rp.setVertexBuffer(0, D.planePos); rp.setVertexBuffer(1, D.planeIds); rp.setIndexBuffer(D.planeTris, 'uint32'); rp.drawIndexed(D.planeCount);
+  };
+  cells(D.planeBase, 0);
+  if (outline) {
+    rp.setPipeline(gpuDrawPipe('planeLines', { vertex: 'planeLinesV', fragment: 'colF', topology: 'line-list', blend: BLEND_PRE, depth: false, buffers: [vbuf(8, [VA(0, 'float32x2')])] }));
+    rp.setBindGroup(0, gpuGroup(), [gpuView(D.words, 1, 1, { ...turn, plain: [...EDGE_RGB.map((c) => (c / 255) * EDGE_ALPHA), EDGE_ALPHA] })]);
+    rp.setVertexBuffer(0, D.planeEdges); rp.draw(D.planeLines);
+  }
+  cells(D.planeCol, 2);
+  rp.end();
+  device.queue.writeBuffer(D.uni, 0, D.words, 0, 512 * 3);
+  device.queue.submit([enc.finish()]);
 }
 
 /* ---- 11.5 Path, overlay and stats ------------------------------------------------------------ */
@@ -15426,6 +15577,7 @@ function tick(now = performance.now()) {
       rotateView(screenTurn(...axis));
     }
   }
+  if (!playing && !reversing && lifeGoal !== null && walk.life) lifeTo(lifeGoal, now + 750 * frameMin);  // (a generation asked, its batch back: on to it)
   if (playing || reversing) {
     acc += stepsPerSecond() * dt;  // time-based, so the speed holds whatever the frame rate
     const k = Math.floor(acc);
@@ -16395,8 +16547,8 @@ for (const b of document.querySelectorAll('[data-icon]')) b.insertAdjacentHTML('
 play(false);  // the Play button with its icon
 seedCurated();
 fillSetupList();
-gpuSetup().catch((e) => { console.warn('WebGPU off:', e.message); GPU = false; });  // (the card's, see 11.4c: stage 1 and 2 beside WebGL)
-// a link with a setup opens that setup; otherwise Life, the first tab: 6 colours at war on the cube
+// the card first (its device asked once, see gpuSetup); then a link with a setup opens that setup; otherwise Life, the first
+// tab: 6 colours at war on the cube
 const linked = parseHash() ?? { w: 'lifeCube', s: '48', r: 'B3/S23', k: '6', pop: 'random.49.8259995' };
-if (!linked || !applySetup(linked)) compute();
+gpuSetup().catch((e) => { console.warn('WebGPU off:', e.message); GPU = false; }).then(() => { if (!linked || !applySetup(linked)) compute(); });
 showPane(false);

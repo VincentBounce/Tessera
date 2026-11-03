@@ -7650,11 +7650,11 @@ function discPatch(items, W, mid, norm = Math.hypot, each = flatEach) {  // wall
   // as far (within 10⁻⁶) cut in two: the last of the W² ones and those as far out of it
   let live = W * W;
   while (live > 1 && far(items[live]) - far(items[live - 1]) < 1e-6) live--;
-  const rows = items.slice(0, live).filter((h) => !h.dead);  // (a ring's hole, dead: of the wall)
-  // its core: the items nearest the middle, all those as far (then the next ones, till a cell)
-  for (let k = 0; k < 1 || !items.slice(0, k).some((h) => !h.dead);) { const d = far(items[k]); while (far(items[k]) - d < 1e-6) items[k++].core = true; }
-  // the walls: a ring's hole and the items beyond touching a cell (sharing a corner: the few ones' corners, those of a cell among them)
-  const edge = far(items[live - 1]) + 3, out = items.slice(0, live).filter((h) => h.dead);  // (the items just beyond: the next ones by distance)
+  const rows = items.slice(0, live);
+  // its core: the items nearest the middle, all those as far (a ring's: its hole)
+  for (let k = 0, d = far(items[0]); far(items[k]) - d < 1e-6;) items[k++].core = true;
+  // the walls: the items beyond touching a cell (sharing a corner: the few ones' corners, those of a cell among them)
+  const edge = far(items[live - 1]) + 3, out = [];  // (the items just beyond: the next ones by distance)
   for (let k = live; k < items.length && far(items[k]) < edge; k++) out.push(items[k]);
   const ids = (h) => { const r = []; each(h, (x, y) => r.push(pointKey(x, y))); return r; };
   const theirs = new Set(out.flatMap(ids)), touched = new Set();
@@ -7959,7 +7959,7 @@ const AMMANN = DEBRUIJN(4), RHOMBS12 = DEBRUIJN(6), RHOMBS14 = DEBRUIJN(7);  // 
  * 120°/n, D = 90° − 60°/n, E = 90° + 60°/n; its sides 1 but DE, 2 sin(B / 2)): a tiling n-fold round its middle, never
  * repeating, built as Sugimoto builds it (see direct: any n, and round any hole), or, for Hirschhorn's flower, grown (see
  * HIRSCHHORN). Round a hole (Sugimoto's (3): A = 180° − 720°/n, B = 1080°/n, C = 180° − 360°/n, D = 90° − 180°/n, E = 90° ±
- * 180°/n), its middle a regular n-gon, a cell of the wall. As the hats (see discPatch): its W² tiles nearest its middle, each
+ * 180°/n), its middle a regular n-gon, a cell too (n neighbours by its sides). As the hats (see discPatch): its W² tiles nearest its middle, each
  * a square unit. (tools/tilings/rosette.js: a copy, for the searches) */
 function ROSETTE(n, grow = null, hole = false) {  // grow: its own tiles (Hirschhorn's); hole: round a regular n-gon left empty (its own pentagon: Sugimoto's (3))
   const deg = hole ? [180 - 720 / n, 1080 / n, 180 - 360 / n, 90 - 180 / n, 90 + 180 / n] : [180 - 240 / n, 360 / n, 180 - 120 / n, 90 - 60 / n, 90 + 60 / n];  // A B C D E
@@ -8006,10 +8006,10 @@ function ROSETTE(n, grow = null, hole = false) {  // grow: its own tiles (Hirsch
   const U = 1 / Math.sqrt(polyArea(P0));  // (a tile a square unit)
   return discMemo((W) => {
     const R = discReach(W) / U;  // (round the disc and its walls' room: see discReach)
-    const items = (grow ?? direct)(R).map((P, i) => {  // (the hole: a cell of the wall)
+    const items = (grow ?? direct)(R).map((P) => {  // (round a hole: the hole a cell, its n sides each a tile's)
       const p = [], m = [0, 0];
       for (const [x, y] of P) { p.push(x * U, y * U); m[0] += x * U; m[1] += y * U; }
-      return { p, m: [m[0] / P.length, m[1] / P.length], dead: hole && i === 0 };
+      return { p, m: [m[0] / P.length, m[1] / P.length] };
     });
     return discPatch(items, W, [0, 0]);  // (round its middle)
   });
@@ -8114,7 +8114,7 @@ function hexasIcon(n) {
 // 7- and 8-fold rings (round a hole)
 const ROSETTES = { flower3: [3, ROSETTE(3)], flower4: [4, ROSETTE(4)], flower5: [5, ROSETTE(5)], flower: [6, ROSETTE(6, HIRSCHHORN)], flower7: [7, ROSETTE(7)], flower8: [8, ROSETTE(8)], flower9: [9, ROSETTE(9)], flower10: [10, ROSETTE(10)], ...conedOf((k, n, F) => [k, [n, F.build(n)]]),
                    ring7: [7, ROSETTE(7, null, true), 1], ring8: [8, ROSETTE(8, null, true), 1],
-                   ring9: [9, ROSETTE(9, null, true), 1], ring10: [10, ROSETTE(10, null, true), 1], ring12: [12, ROSETTE(12, null, true), 1] };  // (n, it, its cells of the wall: a ring's hole)
+                   ring9: [9, ROSETTE(9, null, true), 1], ring10: [10, ROSETTE(10, null, true), 1], ring12: [12, ROSETTE(12, null, true), 1] };  // (n, it; 1: a ring, round its hole)
 const APERIODIC = { hat: HAT, penrose: PENROSE, spectre: SPECTRE, ammann: AMMANN, rhombs12: RHOMBS12, rhombs14: RHOMBS14, pinwheel: PINWHEEL, ...Object.fromEntries(Object.entries(ROSETTES).map(([k, [, r]]) => [k, r])) };  // the grids that never repeat: a disc of them, walls round it, never a torus
 // the grids in their spaces (see SPACES): everyone's surfaces, sheets or solids; the automata's plane, round (these) or not
 for (const [w, n] of Object.entries(NAV)) if (n[1] === 'Surfaces') n[1] = SHEETS.includes(n[2]) ? '3D surfaces' : '3D solids'; else if (n[1] === '2D' && MODES[w].life) n[1] = APERIODIC[MODES[w].plane] ? '2D circles' : '2D squares';
@@ -9384,7 +9384,7 @@ function renderColours() {
 // The Rule section: the rules known for the grid's shape, as cards, each with a picture (5 × 5 pixels of
 // what it is known for: "o" alive, "+" dying); then your own, as chips (how many live neighbours give
 // birth, let survive) and the states, and the rule as text
-const NEIGHBOURS = { '◈': 12, '■': 8, '⬡': 6, '▲': 12, '⬠': 7, '◆': 9, '🎩': 7, '✧': 11, '◺': 17, '✺': 7, '✵': 12, '❄': 12, '❅': 16, '❀': 8, '✾': 8, '✽': 10, ...Object.fromEntries(Object.values(conedOf((k, n, F) => [k, [F.marks[n], F.most(n)]]))), '✸': 7, '✷': 7, '✹': 11, '❇': 7, '✲': 7, '✻': 7, '✴': 7, '❈': 7 };  // (hats: 6 or 7, a few 4 or 5; Penrose's rhombi: 7 to 11, a few fewer)
+const NEIGHBOURS = { '◈': 12, '■': 8, '⬡': 6, '▲': 12, '⬠': 7, '◆': 9, '🎩': 7, '✧': 11, '◺': 17, '✺': 7, '✵': 12, '❄': 12, '❅': 16, '❀': 8, '✾': 8, '✽': 10, ...Object.fromEntries(Object.values(conedOf((k, n, F) => [k, [F.marks[n], F.most(n)]]))), '✸': 7, '✷': 7, '✹': 11, '❇': 7, '✲': 8, '✻': 9, '✴': 10, '❈': 12 };  // (hats: 6 or 7, a few 4 or 5; Penrose's rhombi: 7 to 11, a few fewer)
 for (const t of Object.values(TILINGS)) NEIGHBOURS[t.mark] = t.most;
 const RULE_ICONS = {
   'B3/S23': '.....,..o..,...o.,.ooo.', 'B36/S23': '..ooo,.o..o,o...o,o..o.,ooo..', 'B1357/S1357': 'o.o.o,.....,o...o,.....,o.o.o', 'B3678/S34678': 'ooooo,oo.oo,o...o,oo.oo,ooooo',
@@ -11579,21 +11579,23 @@ const CENTRED_OFF = {  // (the same, 6 from the middle: with colours)
     ['B248/S0348/C4', 'Seed', [[7.507,0,1],[4.966,1.331,1],[6.186,-1.918,1],[6.186,1.918,1],[4.093,-1.441,1],[8.246,-1.433,1],[3.32,0,1],[6.645,2.67,1]], 'keeps spreading · 8 cells'],
     ['B24/S0346/C4', 'Seed', [[5.414,0.478,1],[7.507,0,1],[7.06,1.809,1],[7.06,-1.809,1],[8.246,0.478,1],[4.093,1.441,1],[4.552,-2.192,1],[2.873,0.853,1]], 'keeps spreading · 8 cells']],
   ring7: [
-    ['B2/S0345/C5', 'Seed', [[5.148,0.234,1],[6.196,-1.378,1],[7.744,1.484,1],[6.443,-2.267,1],[3.846,-1.017,1],[3.548,0.234,1],[4.844,-2.267,1],[8.042,-2.267,1]], 'keeps spreading · 8 cells'],
-    ['B267/S0346/C4', 'Seed', [[5.148,0.234,1],[6.196,-1.378,1],[7.744,1.484,1],[6.443,-2.267,1],[3.846,-1.017,1],[3.548,0.234,1],[4.844,-2.267,1],[8.042,-2.267,1]], 'keeps spreading · 8 cells']],
+    ['B2/S0345/C5', 'Seed', [[5.997,-0.128,1],[5.395,1.123,1],[6.994,1.123,1],[7.596,-0.128,1],[3.846,-1.017,1],[4.844,-2.267,1],[5.543,2.735,1]], 'keeps spreading · 7 cells'],
+    ['B267/S0346/C4', 'Seed', [[5.997,-0.128,1],[5.395,1.123,1],[6.994,1.123,1],[7.596,-0.128,1],[3.846,-1.017,1],[4.844,-2.267,1],[5.543,2.735,1]], 'keeps spreading · 7 cells']],
   ring8: [
-    ['B267/S0346/C4', 'Seed', [[4.68,-0.267,1],[6.681,1.259,1],[4.918,-1.456,1],[7.47,-1.12,1],[5.295,-2.309,1],[8.363,1.259,1],[8.856,0.07,1],[4.507,2.448,1]], 'keeps spreading · 8 cells'],
-    ['B25/S034/C4', 'Seed', [[4.68,-0.267,1],[6.681,1.259,1],[4.918,-1.456,1],[7.47,-1.12,1],[5.295,-2.309,1],[8.363,1.259,1],[8.856,0.07,1],[4.507,2.448,1]], 'keeps spreading · 8 cells']],
+    ['B267/S0346/C4', 'Seed', [[5.492,0.07,1],[4.68,-0.267,1],[6.681,1.259,1],[3.81,0.07,1],[5.295,-2.309,1],[6.107,-2.645,1]], 'keeps spreading · 6 cells'],
+    ['B25/S034/C4', 'Seed', [[5.492,0.07,1],[4.68,-0.267,1],[6.681,1.259,1],[3.81,0.07,1],[5.295,-2.309,1],[6.107,-2.645,1]], 'keeps spreading · 6 cells']],
   ring9: [
-    ['B25/S0346/C4', 'Seed', [[6.115,-1.231,1],[7.171,1.036,1],[6.985,-1.548,1],[5.889,1.854,1],[4.994,2.17,1],[4.125,1.854,1],[7.467,-2.365,1],[3.186,-0.414,1]], 'keeps spreading · 8 cells'],
-    ['B2/S034/C4', 'Seed', [[6.115,-1.231,1],[7.171,1.036,1],[6.985,-1.548,1],[5.889,1.854,1],[4.994,2.17,1],[4.125,1.854,1],[7.467,-2.365,1],[3.186,-0.414,1]], 'keeps spreading · 8 cells']],
+    ['B25/S0346/C4', 'Seed', [[5.819,-0.098,1],[5.407,1.036,1],[4.538,0.72,1],[5.221,-1.548,1],[5.703,-2.365,1],[3.643,1.036,1],[7.467,-2.365,1]], 'keeps spreading · 7 cells'],
+    ['B2/S034/C4', 'Seed', [[5.819,-0.098,1],[5.407,1.036,1],[4.538,0.72,1],[5.221,-1.548,1],[5.703,-2.365,1],[3.643,1.036,1],[7.467,-2.365,1]], 'keeps spreading · 7 cells']],
   ring10: [
-    ['B26/S034/C4', 'Seed', [[4.856,0.517,1],[6.429,-1.352,1],[7.623,0.816,1],[4.585,-1.352,1],[6.077,-2.437,1],[3.364,-0.568,1],[3.662,-1.652,1],[5.155,-2.736,1]], 'keeps spreading · 8 cells'],
-    ['B27/S0345/C5', 'Seed', [[4.856,0.517,1],[6.429,-1.352,1],[7.623,0.816,1],[4.585,-1.352,1],[6.077,-2.437,1],[3.364,-0.568,1],[3.662,-1.652,1],[5.155,-2.736,1]], 'keeps spreading · 8 cells']],
+    ['B26/S034/C4', 'Seed', [[5.778,0.816,1],[4.856,0.517,1],[6.429,-1.352,1],[7.352,-1.652,1],[6.077,-2.437,1],[5.996,2.685,1]], 'keeps spreading · 6 cells'],
+    ['B27/S0345/C5', 'Oscillator', [[9.414,-3.521,1],[3.31,-2.736,1],[5.208,-0.568,4],[7.053,-0.568,1],[6.131,-0.268,2],[6.701,0.517,1],[5.778,0.816,1],[4.504,1.601,2],[5.426,1.9,1],[6.349,1.601,1],[7.271,1.9,1],[4.547,2.602,4],[5.996,2.685,1],[5.117,3.387,2],[6.04,3.686,1]], 'period 5 · 15 cells'],
+    ['B27/S0345/C5', 'Seed', [[5.778,0.816,1],[4.856,0.517,1],[6.429,-1.352,1],[7.352,-1.652,1],[6.077,-2.437,1],[5.996,2.685,1]], 'keeps spreading · 6 cells']],
   ring12: [
-    ['B2/S0345/C5', 'Oscillator', [[2.752,-2.62,1],[7.02,-1.62,2],[9.02,-1.62,3],[6.712,-0.62,3],[7.693,-0.893,1],[8.712,-0.62,1],[6.444,0.38,1],[7.425,0.107,1],[8.444,0.38,1],[9.425,0.107,3],[7.157,1.107,2],[9.157,1.107,2],[4.644,2.805,1]], 'period 5 · 13 cells'],
-    ['B2/S0345/C5', 'Seed', [[5.157,1.107,1],[7.425,0.107,1],[5.02,-1.62,1],[6.039,-1.893,1],[3.693,-0.893,1],[6.752,-2.62,1],[8.712,-0.62,1],[8.039,-1.893,1]], 'keeps spreading · 8 cells'],
-    ['B257/S0346/C4', 'Seed', [[5.157,1.107,1],[7.425,0.107,1],[5.02,-1.62,1],[6.039,-1.893,1],[3.693,-0.893,1],[6.752,-2.62,1],[8.712,-0.62,1],[8.039,-1.893,1]], 'keeps spreading · 8 cells']],
+    ['B2/S0345/C5', 'Oscillator', [[3.771,-2.893,1],[9.693,-0.893,2],[8.444,0.38,2],[9.425,0.107,1],[10.444,0.38,1],[1.62,1.02,1],[9.157,1.107,1],[8.177,1.38,1],[8.889,2.107,3],[10.177,1.38,1],[2.893,3.771,1]], 'period 5 · 11 cells'],
+    ['B2/S0345/C5', 'Seed', [[5.425,0.107,1],[5.157,1.107,1],[7.425,0.107,1],[5.377,2.073,1],[3.693,-0.893,1],[3.644,1.073,1]], 'keeps spreading · 6 cells'],
+    ['B257/S0346/C4', 'Oscillator', [[5.771,-2.893,1],[6.444,0.38,3],[5.157,1.107,1],[7.157,1.107,2],[4.391,1.82,3],[5.377,2.073,1],[6.177,1.38,1],[3.659,2.552,2],[4.644,2.805,1],[6.123,2.82,1],[3.912,3.537,1]], 'period 4 · 11 cells'],
+    ['B257/S0346/C4', 'Seed', [[5.425,0.107,1],[5.157,1.107,1],[7.425,0.107,1],[5.377,2.073,1],[3.693,-0.893,1],[3.644,1.073,1]], 'keeps spreading · 6 cells']],
   rhombs14: [
     ['B378/S023', 'Oscillator', [[6.277,-0.788,1],[6.657,0,1],[7.285,0.788,1]], 'period 2 · 3 cells'],
     ['B378/S023', 'Seed', [[6.277,-0.788,1],[5.214,-0.545,1],[5.842,1.334,1],[7.285,0.788,1],[7.914,0,1],[4.934,-1.771,1],[3.832,0,1],[7.759,-1.771,1],[7.759,1.771,1],[8.387,-0.983,1],[8.387,0.983,1],[6.906,2.451,1],[5.998,-2.888,1],[5.998,2.888,1],[3.453,-1.663,1],[2.98,-0.68,1],[2.98,0.68,1]], 'settles at generation 216 · 17 cells'],
@@ -11634,22 +11636,22 @@ const CENTRED = {
     ['B248/S0348/C4', 'Seed', [[0.193,-0.844,1],[0.78,0.376,1],[1.226,-1.538,1],[1.226,1.538,1],[2,-0.963,1],[1.124,2.779,1],[-1.471,2.611,1],[-2.959,-0.478,1]], 'keeps spreading · 8 cells'],
     ['B24/S0346/C4', 'Seed', [[0.193,-0.844,1],[0.78,0.376,1],[1.226,-1.538,1],[1.226,1.538,1],[2,-0.963,1],[1.124,2.779,1],[-1.471,2.611,1],[-2.959,-0.478,1]], 'keeps spreading · 8 cells']],
   ring7: [
-    ['B2/S0345/C5', 'Oscillator', [[-2.576,-1.099,2],[-3.298,-0.059,3],[-2.466,-0.059,1],[-1.135,-0.405,1],[-1.857,0.635,1],[-1.025,0.635,1],[-2.466,1.329,1],[-3.024,2.585,4],[-2.103,2.542,2],[-1.583,1.891,1],[-0.498,2.756,1]], 'period 5 · 11 cells'],
-    ['B2/S0345/C5', 'Seed', [[-1.025,0.635,1],[0.648,-1.017,1],[0.491,2.417,1],[-1.491,-1.964,1],[-1.583,1.891,1],[2.196,1.123,1],[2.798,-0.128,1],[0.791,-3.203,1]], 'keeps spreading · 8 cells'],
-    ['B267/S0346/C4', 'Oscillator', [[3.995,-2.628,3],[4.844,-2.267,2],[-2.576,-1.099,1],[4.597,-1.378,1],[3.846,-1.017,1],[4.397,-0.128,1],[3.548,0.234,3],[5.148,0.234,1],[3.795,1.123,1],[-1.583,1.891,1],[2.946,1.484,2],[3.193,2.373,1],[-0.221,5.535,1]], 'period 4 · 13 cells'],
-    ['B267/S0346/C4', 'Seed', [[-1.025,0.635,1],[0.648,-1.017,1],[0.491,2.417,1],[-1.491,-1.964,1],[-1.583,1.891,1],[2.196,1.123,1],[2.798,-0.128,1],[0.791,-3.203,1]], 'keeps spreading · 8 cells']],
+    ['B2/S0345/C5', 'Oscillator', [[-0.562,-3.512,1],[-2.01,-2.616,1],[-0.747,-2.699,1],[0.606,-2.391,1],[-3.096,-1.75,1],[-1.491,-1.964,1],[-0.206,-1.952,1],[-2.576,-1.099,4],[-0.391,-1.14,1],[0.648,-1.017,1],[3.846,-1.017,1],[0,0,1]], 'period 5 · 12 cells'],
+    ['B2/S0345/C5', 'Seed', [[0.847,0.858,1],[-1.135,-0.405,1],[-1.025,0.635,1],[-0.206,-1.952,1],[0.491,2.417,1],[-2.466,1.329,1],[1.645,-2.267,1]], 'keeps spreading · 7 cells'],
+    ['B267/S0346/C4', 'Seed', [[0.847,0.858,1],[0.648,-1.017,1],[-1.025,0.635,1],[-0.662,1.848,1],[-2.466,-0.059,1],[2.196,1.123,1]], 'keeps spreading · 6 cells']],
   ring8: [
-    ['B267/S0346/C4', 'Seed', [[-1.12,-0.742,1],[1.12,0.742,1],[-1.456,-1.554,1],[1.554,-1.456,1],[-2.424,1.12,1],[2.506,0.923,1],[2.998,-0.267,1],[0.267,2.998,1]], 'keeps spreading · 8 cells'],
-    ['B25/S034/C4', 'Seed', [[-1.12,-0.742,1],[1.12,0.742,1],[-1.456,-1.554,1],[1.554,-1.456,1],[-2.424,1.12,1],[2.506,0.923,1],[2.998,-0.267,1],[0.267,2.998,1]], 'keeps spreading · 8 cells']],
+    ['B267/S0346/C4', 'Seed', [[-1.12,-0.742,1],[0.742,-1.12,1],[-2.129,-0.07,1],[1.554,-1.456,1],[2.424,-1.12,1],[-2.506,-0.923,1],[-0.923,2.506,1],[2.998,-0.267,1]], 'keeps spreading · 8 cells'],
+    ['B25/S034/C4', 'Seed', [[-1.12,-0.742,1],[0.742,-1.12,1],[-2.129,-0.07,1],[1.554,-1.456,1],[2.424,-1.12,1],[-2.506,-0.923,1],[-0.923,2.506,1],[2.998,-0.267,1]], 'keeps spreading · 8 cells']],
   ring9: [
-    ['B25/S0346/C4', 'Seed', [[0.824,-1.231,1],[1.356,0.597,1],[2.292,-0.098,1],[0.302,-2.274,1],[-2.36,-1.625,1],[1.191,-2.607,1],[-2.01,2.042,1],[-0.227,2.857,1]], 'keeps spreading · 8 cells'],
-    ['B2/S034/C4', 'Seed', [[0.824,-1.231,1],[1.356,0.597,1],[2.292,-0.098,1],[0.302,-2.274,1],[-2.36,-1.625,1],[1.191,-2.607,1],[-2.01,2.042,1],[-0.227,2.857,1]], 'keeps spreading · 8 cells']],
+    ['B25/S0346/C4', 'Seed', [[1.422,-0.414,1],[-0.353,1.439,1],[-0.161,-1.473,1],[0.302,-2.274,1],[0.494,2.24,1],[-0.227,2.857,1]], 'keeps spreading · 6 cells'],
+    ['B2/S034/C4', 'Seed', [[1.422,-0.414,1],[-0.353,1.439,1],[-0.161,-1.473,1],[0.302,-2.274,1],[0.494,2.24,1],[-0.227,2.857,1]], 'keeps spreading · 6 cells']],
   ring10: [
-    ['B26/S034/C4', 'Seed', [[-1.009,-1.269,1],[1.009,1.269,1],[-0.5,2.405,1],[0.5,-2.405,1],[-2.442,0.268,1],[2.133,2.188,1],[3.012,0.517,1],[-0.439,-3.024,1]], 'keeps spreading · 8 cells'],
-    ['B27/S0345/C5', 'Seed', [[-1.009,-1.269,1],[1.009,1.269,1],[-0.5,2.405,1],[0.5,-2.405,1],[-2.442,0.268,1],[2.133,2.188,1],[3.012,0.517,1],[-0.439,-3.024,1]], 'keeps spreading · 8 cells']],
+    ['B26/S034/C4', 'Seed', [[0,0,1],[1.563,0.434,1],[1.519,-0.568,1],[-1.519,0.568,1],[-1.818,1.652,1],[0.439,3.024,1],[3.012,0.517,1]], 'keeps spreading · 7 cells'],
+    ['B27/S0345/C5', 'Oscillator', [[-1.579,-3.994,1],[2.442,-0.268,3],[3.012,0.517,1],[4.286,-0.268,2],[4.856,0.517,1],[1.009,1.269,3],[2.133,1.218,1],[3.055,1.518,1],[3.934,0.816,1],[1.009,2.239,1],[2.133,2.188,1],[3.625,2.302,1]], 'period 5 · 12 cells'],
+    ['B27/S0345/C5', 'Seed', [[0,0,1],[1.563,0.434,1],[1.519,-0.568,1],[-1.519,0.568,1],[-1.818,1.652,1],[0.439,3.024,1],[3.012,0.517,1]], 'keeps spreading · 7 cells']],
   ring12: [
-    ['B2/S0345/C5', 'Seed', [[1.62,1.02,1],[1.912,0.073,1],[0.073,-1.912,1],[-1.912,-0.073,1],[2.659,0.82,1],[-2.712,0.62,1],[1.805,-2.912,1],[3.425,0.107,1]], 'keeps spreading · 8 cells'],
-    ['B257/S0346/C4', 'Seed', [[1.62,1.02,1],[1.912,0.073,1],[0.073,-1.912,1],[-1.912,-0.073,1],[2.659,0.82,1],[-2.712,0.62,1],[1.805,-2.912,1],[3.425,0.107,1]], 'keeps spreading · 8 cells']],
+    ['B2/S0345/C5', 'Seed', [[0,0,1],[-1.62,-1.02,1],[-0.073,1.912,1],[-0.893,-1.693,1],[2.039,-1.893,1],[-2.712,0.62,1],[-0.82,2.659,1]], 'keeps spreading · 7 cells'],
+    ['B257/S0346/C4', 'Seed', [[0,0,1],[-1.62,-1.02,1],[-0.073,1.912,1],[-0.893,-1.693,1],[2.039,-1.893,1],[-2.712,0.62,1],[-0.82,2.659,1]], 'keeps spreading · 7 cells']],
   rhombs14: [
     ['B378/S023', 'Oscillator', [[-2.39,-2.996,1],[-2.39,-1.906,1],[-1.916,-0.923,1]], 'period 2 · 3 cells'],
     ['B378/S023', 'Seed', [[-1.063,0.243,1],[-0.473,-0.983,1],[-0.473,0.983,1],[-0.853,-0.68,1],[-0.853,0.68,1],[-1.063,-0.243,1],[1.063,-0.243,1],[0,-1.091,1],[0.853,-0.68,1],[0.473,0.983,1],[0.853,0.68,1],[1.916,-0.923,1],[-2.127,0,1],[2.127,0,1],[-0.473,-2.074,1],[1.326,-1.663,1],[1.326,1.663,1],[-1.916,0.923,1],[0.473,-2.074,1],[-1.326,2.754,1]], 'settles at generation 259 · 20 cells'],

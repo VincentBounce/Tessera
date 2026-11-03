@@ -47,7 +47,7 @@ function ROSETTE(n, grow = null, hole = false) {  // grow: its own tiles (Hirsch
   const cache = {};
   return (W) => cache[W] ??= (() => {
     const R = (0.525 * W * Math.SQRT2 + 5) / U;  // (round the W² tiles' square, its walls too)
-    const items = (grow ?? direct)(R).map((P, i) => { const p = P.map(([x, y]) => [x * U, y * U]); return { p, m: mid(p), dead: hole && i === 0 }; });  // (the hole: a cell of the wall)
+    const items = (grow ?? direct)(R).map((P) => { const p = P.map(([x, y]) => [x * U, y * U]); return { p, m: mid(p) }; });  // (round a hole: the hole a cell, as main.js's)
     return discPatch(items, W, (h) => h.p, [0, 0]);  // (round its middle)
   })();
 }

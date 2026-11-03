@@ -4833,6 +4833,7 @@ function globeMesh(E) {
 // its longitude the two's mean, its latitude half the two's radii apart (the tooth's bite); each half's other corners the
 // mean of their neighbours weighed by Floater's mean value coordinates from where they were (Tutte's embedding), again till
 // still; then on the sphere by their distance from its pole (azimuthal equidistant: a tooth's bite the same on both halves)
+const ROSETTE_LENTIL = 0.15;  // (flat: its half thickness, see rosetteSphereMesh's flatVerts)
 const ROSETTE_BITE = 0.28;  // (Ring 12's 0.26 to 0.27 in, a tooth on a tooth about a tile out)
 const ROSETTE_SPHERES = { flower: [13, 17, 28, 34, 49, 51, 68], flower7: [11, 15, 16, 25, 26, 29, 48, 71], flower8: [11, 12, 13, 16, 17, 18, 21, 22, 26, 31, 71], flower9: [12, 13, 14, 17, 18, 19, 38, 44, 45, 64, 71, 90, 97], flower10: [9, 13, 18, 19, 20, 29, 30, 31, 40, 41, 42, 51, 52, 53, 62, 63, 73, 84], mirror5: [11, 14], mirror6: [12, 19], mirror7: [13, 28], mirror8: [10, 14, 18, 22, 26, 30, 34, 42, 50], mirror9: [10, 19, 36, 53], mirror10: [11, 20, 29, 38, 47], mirror11: [11, 16, 21, 35, 68, 82], mirror12: [12, 17, 22, 27, 66, 71], hexa5: [18, 27], hexa6: [10, 15, 27], hexa7: [11, 16, 45, 53], hexa8: [17, 34, 51], hexa9: [9, 12, 15, 18, 21, 24, 27, 30, 33, 36, 39, 42, 45, 48, 51, 54, 57, 60, 63, 66, 69, 72, 75, 78, 81, 84, 87, 90, 93, 96, 99], hexa10: [13, 16, 19, 38, 57, 76], hexa11: [10, 14, 20, 30, 40, 73], hexa12: [14, 21, 28, 52, 97], ring12: [10, 17, 31, 38, 45] };  // (each rosette's sizes, its discs' W: made by rosetteSphereSizes())
 // a disc's rim and its pairing (see above): its corners, sides and rim; best, [s, rough]: corner i paired with the other's
@@ -4934,7 +4935,13 @@ function rosetteSphereMesh(kind, W) {
     tiles[m + t] = ccw ? b : b.reverse();
   }
   const most = tiles.reduce((s2, c) => Math.max(s2, c.length), 0);
-  return (meshCache[key] = Object.assign(finishMesh(verts, tiles.map((c) => [...c, ...Array(most - c.length).fill(c.at(-1))]), most, W, null), { rosette: true, middles: [F.coreIds, F.coreIds.map((t) => m + t)], disc: { kind, W, row: planeRow(kind, W), torus: false, ...planeGrid(kind, W) } }));  // (middles: each half's, the north's and the south's; disc: its north half's flat grid, its cells the plane's, see flatGrid)
+  // flat, its two discs a lentil (see shapeAt): each corner its way from its pole round it flat (the discs' own, as on the
+  // sphere), its height a half ellipse from its pole to the seam, flat in the middle and rounded to it
+  const flatVerts = Float64Array.from({ length: verts.length }, (_, i) => {
+    const v = i - (i % 3), [x, y, z] = [verts[v], verts[v + 1], verts[v + 2]], r = Math.acos(Math.abs(z)), a = Math.atan2(y, x);
+    return [r * Math.cos(a), r * Math.sin(a), Math.sign(z) * ROSETTE_LENTIL * Math.sqrt(Math.max(0, 1 - (r / (Math.PI / 2)) ** 2))][i % 3];
+  });
+  return (meshCache[key] = Object.assign(finishMesh(verts, tiles.map((c) => [...c, ...Array(most - c.length).fill(c.at(-1))]), most, W, null), { flatVerts, rosette: true, middles: [F.coreIds, F.coreIds.map((t) => m + t)], disc: { kind, W, row: planeRow(kind, W), torus: false, ...planeGrid(kind, W) } }));  // (middles: each half's, the north's and the south's; disc: its north half's flat grid, its cells the plane's, see flatGrid)
 }
 
 // Life on them: a mode each, one shape (Rosettes) with a tab each, its rosette's name and picture
@@ -5606,8 +5613,9 @@ const turnedTorusHexMesh = (nv, nu = turnedHexColumns(nv)) => turnedTorus('torus
 
 /* ---- 7.5 Flat ↔ round: the same tiles and neighbours, shown flat or inflated ----------------- */
 /* walk.shape = { m, target, corners, cen, nrm, extent, bent } for surfaces that can change shape:
- * polyhedra (each vertex slides from its face towards the circumscribed sphere) and the torus
- * (rolled up from a flat rectangle). The cells and their neighbours never change, so a walk or a
+ * polyhedra (each vertex slides from its face towards the circumscribed sphere), the torus
+ * (rolled up from a flat rectangle) and a mesh with a flat form of its own (flatVerts: a rosette sphere's lentil,
+ * each vertex straight from there to the sphere). The cells and their neighbours never change, so a walk or a
  * Game of Life run goes on unchanged: only the drawing and the 3D positions move. */
 const MORPHABLE = [...Object.keys(TETRAKIS_SOLIDS).map((k) => `${k}Tetrakis`), 'klein', 'kleinHex', 'kleinTri', 'kleinCairo', 'kleinKite', 'kleinHexTurned', 'kleinTriTurned', 'kleinKiteTurned', ...foldedIn('klein'), 'torusKite', 'torusKiteTurned', 'cube', 'pits', 'bumps', 'frame', 'menger', 'tetra', 'octa', 'stella', 'dodeca', 'icosa', 'tetraKite', 'octaKite', 'icosaKite', 'stellaKite', 'dodecaKite', ...hexSolids.map((k) => `${k}Hex`), 'cubocta', 'pyramid', 'rhombi', 'bicupola', 'globe', ...Object.keys(ROSETTE_SPHERES).map((k) => `${k}Sphere`), 'torus', 'torusHex', 'torusTri', 'torusCairo', 'torusHexTurned', 'torusTriTurned', 'hexsphere', ...MOBIUS_KINDS,
   ...foldedIn('torus')];
@@ -5621,7 +5629,8 @@ function shapeAt(g, m) {
     for (let q = 0; q < k * n; q++) corners.set(sheetPoint(g, uv[2 * q], uv[2 * q + 1], m), 3 * q);
   } else {
     const nv = g.verts.length / 3, R0 = g.extent, moved = new Float64Array(3 * nv);
-    for (let v = 0; v < nv; v++) {  // slide towards the sphere through the corners
+    if (g.flatVerts) for (let i = 0; i < 3 * nv; i++) moved[i] = g.flatVerts[i] + m * (g.verts[i] - g.flatVerts[i]);  // (a form flat of its own: straight to the round one)
+    else for (let v = 0; v < nv; v++) {  // slide towards the sphere through the corners
       const x = g.verts[3 * v], y = g.verts[3 * v + 1], z = g.verts[3 * v + 2], s = 1 + m * (R0 / Math.hypot(x, y, z) - 1);
       moved.set([x * s, y * s, z * s], 3 * v);
     }
@@ -15348,14 +15357,12 @@ function lifeRle() {
   return [`#N ${formulaInUse}, generation ${cur}`, `#C Tessera: ${location.href}`, ...(kind === 'square' ? [] : [`#C On the app's ${PLANE_CELLS[base]} (not Golly's squares): cells as its slanted grid numbers them`]),
     `x = ${Math.max(...xs) - Math.min(...xs) + 1}, y = ${Math.max(...ys) - Math.min(...ys) + 1}, rule = ${rule}`, ...lines].join('\n');
 }
-// Share: the page link (the setup shown, see syncLink), copied; its button (the header's, Management's) a check and Copied a moment
+// Share: the page link (the setup shown, see syncLink), copied; its tile (Management's) a check and Copied a moment
 function shareView(b) {
   syncLink();
   const was = b.innerHTML;
   navigator.clipboard.writeText(location.href).then(() => { b.innerHTML = was.replace(icon('link'), icon('check')).replace('Share', 'Copied'); setTimeout(() => { b.innerHTML = was; }, 1500); }, () => {});
 }
-$('shareLink').innerHTML = `${icon('link')} Share`;
-$('shareLink').addEventListener('click', () => shareView($('shareLink')));
 $('copyRle').addEventListener('click', () => {
   const text = lifeRle(), b = $('copyRle');
   if (!text) return;
@@ -15740,7 +15747,7 @@ function galleryTab() {
 
 $('setupSave').addEventListener('click', saveSetup);
 // Treasures' tools, tiles: Import (added to them, a name already used numbered), Export, Erase all (then Confirm erase, under them),
-// then Share, the header's (the link to what is shown)
+// then Share (the link to what is shown)
 $('setupTools').replaceChildren(tile({ pic: icon('import'), text: 'Import', title: 'Add the setups of a JSON file to Treasures (those of a name already used numbered: none replaced)', click: () => $('setupFile').click() }),
   tile({ pic: icon('export'), text: 'Export', title: 'Treasures as a JSON file', click: exportSetups }), tile({ pic: icon('trash'), text: 'Erase all', title: 'Erase Treasures from this browser (asked again under it)', click: () => { $('eraseConfirm').hidden = !$('eraseConfirm').hidden; } }),
   tile({ pic: icon('link'), text: 'Share', title: 'Copy the link to what is shown', click: () => shareView($('setupTools').lastElementChild) }));

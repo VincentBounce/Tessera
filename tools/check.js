@@ -572,7 +572,7 @@ async function partsEqual(fail) {
   picked = null;  // (each grid at its own first size, whatever was picked by hand: a picked one of 350,000 cells, a build longer than the waits)
   let checked = 0;
   const lifeModes = Object.keys(MODES).filter((w) => MODES[w].life && !MODES[w].margolus && !MODES[w].elementary && !MODES[w].loops && [...$('mode').options].some((o) => o.value === w));
-  const runs = [...lifeModes.filter((w) => MODES[w].plane).flatMap((w) => [[w, '', 1], [w, '&e=1', 1]]), ...lifeModes.filter((w) => MODES[w].sphere && !TORI.includes(surfaceOf(MODES[w]))).map((w) => [w, '', 0])];
+  const runs = [...lifeModes.filter((w) => MODES[w].plane).flatMap((w) => [[w, '', 1], [w, '&e=1', 1]]), ...lifeModes.filter((w) => MODES[w].sphere && !TORI.includes(surfaceOf(MODES[w]))).map((w) => [w, '', SPHERES[MODES[w].sphere]?.disc ? 1 : 0])];  // (a rosette sphere: its discs' lunes, cells whole, one apart as the plane's)
   for (const [w, walls, slack] of runs) {
     location.hash = `#w=${w}${walls}&k=1`;
     await wait(350);

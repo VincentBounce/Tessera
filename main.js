@@ -9318,7 +9318,7 @@ function coloursFit(k, g = walk.geo) {  // g: the surface (a torus's sizes)
     return true;  // its blocks (rounded down when they do not divide it, as on a torus); with dead edges, its halves, quarters, or slices round the middle (see planeSlices)
   }
   if (solidCounts(mode.sphere)) return solidCounts(mode.sphere).includes(k);
-  if (g?.mobius || g?.globe) return true;  // a Möbius strip: in turn along it (see huntParts); a globe: its quarters (see colourFairOwn)
+  if (g?.mobius || g?.globe || g?.rosette) return true;  // a Möbius strip: in turn along it (see huntParts); a globe: its quarters (see colourFairOwn); a rosette sphere: its lunes
   if (g?.nu) return true;  // a torus: its blocks (see torusBlocks), its columns made for its colours (see ringColumns), its rows judged by colourFairOwn; not the torus in view's columns (before v0.3.94: Rhombitri at 5, 8 to 12 colours offered or not by the count picked)
   return false;
 }
@@ -9356,6 +9356,7 @@ const colourFairOwn = (K, g) => {
   }
   if (solidCounts(mode?.sphere)) return solidCounts(mode.sphere).includes(K);
   if (g?.globe) return true;  // (a globe: each count its own, its bands all multiples of it, see globeMesh)
+  if (g?.rosette) return true;  // (a rosette sphere: its lunes dealt out alike, see partPlaces)
   if (g?.mobius) return true;
   if (g?.copyLength) { const { n, step } = kleinLength(g.kindK, g.size, K), x = (n * step) / torusBlocks(K, g)[0] / g.copyLength; return Math.abs(x - Math.round(x)) < 1e-6; }  // (a tiling's bottle: slices a whole count of its copies along, see MOBIUS_ALONG: a glide's turned over)
   if (g?.nu) return g.nv % torusBlocks(K, g)[1] === 0;  // (a torus: its blocks' rows dividing its rows; its columns made for its colours, see ringColumns)
@@ -11013,6 +11014,18 @@ function partPlaces(r, K, mirror, mixed) {
   if (g.globe) {
     const quarter = (t) => (t > 0 && t < g.n - 1 ? Math.floor(g.along[t] * K) : -1);  // (its middle's way round, as laid: see globeMesh)
     if (!r) { for (let t = 0; t < n; t++) if (quarter(t) >= 0) parts[quarter(t)].push(t); return parts; }
+    return parts;  // (no patch: no frame to lay one on, its zones greyed, see huntFits)
+  }
+  // a rosette sphere: K lunes, pole to pole, its cells by their middle's longitude round its axis in turn, dealt out as many
+  // to each (as a disc that never turns on the plane, see planeSlices); a cell on the axis, a pole's, no one's
+  if (g.rosette) {
+    const lune = (g.lunes ??= {})[K] ??= (() => {
+      const out = new Int32Array(n).fill(-1), at = (t) => Math.atan2(g.cen[3 * t + 1], g.cen[3 * t]);
+      const round = [...Array(n).keys()].filter((t) => Math.hypot(g.cen[3 * t], g.cen[3 * t + 1]) > 1e-9).sort((a, b) => at(a) - at(b));
+      round.forEach((t, k) => { out[t] = Math.floor((k * K) / round.length); });
+      return out;
+    })();
+    if (!r) { for (let t = 0; t < n; t++) if (lune[t] >= 0) parts[lune[t]].push(t); return parts; }
     return parts;  // (no patch: no frame to lay one on, its zones greyed, see huntFits)
   }
   const hull = hullColours(MODES[$('mode').value].sphere, K);

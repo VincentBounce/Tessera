@@ -4359,13 +4359,26 @@ function vertexStore() {
   return { verts, add };
 }
 
+// A tile's normal, Newell's, into out (not unit: its length twice the tile's area): the sum over its sides of (y_a − y_b)
+// (z_a + z_b) and so on, its k corners in C from o, three numbers each; any polygon, flat or not, the plane nearest all its
+// corners (a corner listed twice: a side of nothing). Two diagonals (corners 0 to 2, 1 to the last) were a square's: a house
+// of 7 corners on a rosette sphere lit by its tip's slope, 38° off on average, its neighbours light and dark in turn
+function newellNormal(C, o, k, out) {
+  let x = 0, y = 0, z = 0;
+  for (let q = 0; q < k; q++) {
+    const a = o + 3 * q, b = o + 3 * ((q + 1) % k);
+    x += (C[a + 1] - C[b + 1]) * (C[a + 2] + C[b + 2]); y += (C[a + 2] - C[b + 2]) * (C[a] + C[b]); z += (C[a] - C[b]) * (C[a + 1] + C[b + 1]);
+  }
+  out[0] = x; out[1] = y; out[2] = z;
+  return out;
+}
 // Orient every tile counterclockwise, compute centres, outward normals and edge adjacency.
 // outwardRef(centre) gives a vector pointing outwards near a tile (default: from the solid's centre);
 // null keeps the tiles as listed (the Möbius strip has no outside)
 function finishMesh(verts, tiles, sides, size, outwardRef = (m) => m) {
   const n = tiles.length;
   const poly = new Int32Array(sides * n), cen = new Float64Array(3 * n), nrmOut = new Float64Array(3 * n);
-  const at = (t, q, d) => verts[3 * t[q] + d];
+  const at = (t, q, d) => verts[3 * t[q] + d], corners = new Float64Array(3 * sides), nrm = [0, 0, 0];
   for (let i = 0; i < n; i++) {
     const t = tiles[i], m = [0, 0, 0];
     let u = 0;
@@ -4375,9 +4388,8 @@ function finishMesh(verts, tiles, sides, size, outwardRef = (m) => m) {
       u++;
     }
     for (let d = 0; d < 3; d++) m[d] /= u;
-    // normal from the diagonals (works for triangles and for slightly non-planar quads)
-    const a = [0, 1, 2].map((d) => at(t, 2, d) - at(t, 0, d)), b = [0, 1, 2].map((d) => at(t, sides - 1, d) - at(t, 1, d));
-    const nrm = [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
+    for (let q = 0; q < sides; q++) for (let d = 0; d < 3; d++) corners[3 * q + d] = at(t, q, d);
+    newellNormal(corners, 0, sides, nrm);
     const ref = outwardRef && outwardRef(m);
     const inward = !!ref && nrm[0] * ref[0] + nrm[1] * ref[1] + nrm[2] * ref[2] < 0;  // no ref: as listed
     poly[sides * i] = t[0];
@@ -5599,9 +5611,10 @@ function shapeAt(g, m) {
       for (let q = 0; q < k; q++) corners.set(moved.subarray(3 * g.poly[k * t + q], 3 * g.poly[k * t + q] + 3), 3 * (k * t + q));
     }
   }
-  // per tile: centre, normal (from two diagonals), the farthest corner; plain numbers, no arrays,
+  // per tile: centre, normal (Newell's, see newellNormal), the farthest corner; plain numbers, no arrays,
   // as this runs at every frame of a morph
   let extent = 0;
+  const N = [0, 0, 0];
   const sign = shapeSign(g), bent = new Map(), C = corners;
   const folds = !g.torus && !g.faces && m < 1;  // only the hexagon sphere, when not round, has folded tiles
   for (let t = 0; t < n; t++) {
@@ -5614,10 +5627,8 @@ function shapeAt(g, m) {
       cx += x; cy += y; cz += z; u++;
     }
     cx /= u; cy /= u; cz /= u;
-    const i0 = o, i1 = o + 3, i2 = o + 6, il = o + 3 * (k - 1);
-    const ax = C[i2] - C[i0], ay = C[i2 + 1] - C[i0 + 1], az = C[i2 + 2] - C[i0 + 2];
-    const bx = C[il] - C[i1], by = C[il + 1] - C[i1 + 1], bz = C[il + 2] - C[i1 + 2];
-    let nx = ay * bz - az * by, ny = az * bx - ax * bz, nz = ax * by - ay * bx;
+    newellNormal(C, o, k, N);
+    let [nx, ny, nz] = N;
     const l = (Math.hypot(nx, ny, nz) || 1) * sign;
     nx /= l; ny /= l; nz /= l;
     cen[3 * t] = cx; cen[3 * t + 1] = cy; cen[3 * t + 2] = cz;
@@ -13006,8 +13017,7 @@ const surfaceTriangles = (g) => (g.triangles ??= (() => {
       if (q && v === g.poly[k * t + q - 1]) continue;
       slots.push(k * t + q); P.push([g.verts[3 * v], g.verts[3 * v + 1], g.verts[3 * v + 2]]);
     }
-    const N = [0, 0, 0];
-    P.forEach((a, i) => { const b = P[(i + 1) % P.length]; N[0] += (a[1] - b[1]) * (a[2] + b[2]); N[1] += (a[2] - b[2]) * (a[0] + b[0]); N[2] += (a[0] - b[0]) * (a[1] + b[1]); });
+    const N = newellNormal(P.flat(), 0, P.length, [0, 0, 0]);
     const u = cross(N, Math.abs(N[0]) < 0.9 * Math.hypot(...N) ? [1, 0, 0] : [0, 1, 0]), w = cross(N, u), on = (p, a) => p[0] * a[0] + p[1] * a[1] + p[2] * a[2];
     const Q = P.map((p) => [on(p, u), on(p, w)]);
     for (const i of outwardFolds([...ears(Q)], P, Q, N)) out.push(slots[i]);

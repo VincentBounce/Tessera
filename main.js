@@ -1219,6 +1219,7 @@ const MODES = {
   lifeRhombi: { base: 2, lattice: 'sphere', sphere: 'rhombi', life: true, where: 'a rhombicuboctahedron of squares and triangles' },
   lifeBicupola: { base: 2, lattice: 'sphere', sphere: 'bicupola', life: true, where: 'a square orthobicupola of squares and triangles' },
   lifeGlobe: { base: 2, lattice: 'sphere', sphere: 'globe', life: true, round: true, where: 'a globe: squares between its parallels and meridians, one cell round each pole' },
+  lifeRosetteSphere: { base: 2, lattice: 'sphere', sphere: 'mirror7Sphere', life: true, round: true, where: 'a sphere of two Mirror 7 rosettes, one on each half, glued edge to edge at the equator' },
   lifeStella: { base: 2, lattice: 'sphere', sphere: 'stella', life: true,
                 where: 'a stella octangula (two tetrahedra) of triangles' },
   lifeDodeca: { base: 2, lattice: 'sphere', sphere: 'dodeca', life: true,
@@ -2775,7 +2776,7 @@ const MODE_ICONS = {
   icosaGrid: 'icosahedron', hexSphereWalk: 'hexagon', /* icosaGrid2: 'icosahedron', icosaGrid3: 'icosahedron', */ hexSphereGrid: 'hexagon',
   life2dKite: 'kites', life2dHat: 'hat', life2dPenrose: 'penrose', life2dPinwheel: 'pinwheel', life2dSpectre: 'spectre', life2dAmmann: 'ammann', life2dRhombs12: 'rhombs12', life2dRhombs14: 'rhombs14', life2dFlower: 'flower', life2dFlower5: 'flower5', life2dFlower7: 'flower7', life2dMirror7: 'mirror7', life2dFlower3: 'flower3', life2dFlower4: 'flower4', life2dFlower8: 'flower8', life2dFlower9: 'flower9', life2dFlower10: 'flower10', life2dRing7: 'ring7', life2dRing8: 'ring8', life2dRing9: 'ring9', life2dRing10: 'ring10', life2dRing12: 'ring12', lifeTorusKite: 'torus', lifeMobiusKite: 'mobius', lifeKleinKite: 'klein',
   life2d: 'grid', blocks2d: 'grid', blocks2dTri: 'triangle', blocks2dHex: 'hexagon', blocks2dCairo: 'pentagons', blocks2dTetrakis: 'tetrakis', life2dTri: 'triangle', life2dHex: 'hexagon', life2dCairo: 'pentagons', lifeTorus: 'torus', lifeTorusHex: 'torus', lifeTorusCairo: 'torus', lifeTorusTri: 'torus', torusCairoWalk: 'torus', lifeMobius: 'mobius', lifeMobiusHex: 'mobius', lifeMobiusTri: 'mobius', lifeMobiusCairo: 'mobius', mobiusCairoWalk: 'mobius', kleinWalk: 'klein', kleinHexWalk: 'klein', kleinTriWalk: 'klein', kleinCairoWalk: 'klein',
-  lifeKlein: 'klein', lifeKleinHex: 'klein', lifeKleinTri: 'klein', lifeKleinCairo: 'klein', lifeCube: 'cube', lifeTetra: 'tetrahedron', lifeOcta: 'octahedron', lifeIcosa: 'icosahedron', lifeTetraKite: 'tetrahedron', lifeOctaKite: 'octahedron', lifeIcosaKite: 'icosahedron', lifeStellaKite: 'stella', lifeDodecaKite: 'dodecahedron', lifeCubocta: 'cubocta', lifePyramid: 'pyramid', lifeRhombi: 'rhombi', lifeBicupola: 'bicupola', lifeGlobe: 'globe', lifeHexSphere: 'hexagon',
+  lifeKlein: 'klein', lifeKleinHex: 'klein', lifeKleinTri: 'klein', lifeKleinCairo: 'klein', lifeCube: 'cube', lifeTetra: 'tetrahedron', lifeOcta: 'octahedron', lifeIcosa: 'icosahedron', lifeTetraKite: 'tetrahedron', lifeOctaKite: 'octahedron', lifeIcosaKite: 'icosahedron', lifeStellaKite: 'stella', lifeDodecaKite: 'dodecahedron', lifeCubocta: 'cubocta', lifePyramid: 'pyramid', lifeRhombi: 'rhombi', lifeBicupola: 'bicupola', lifeGlobe: 'globe', lifeRosetteSphere: 'mirror7', lifeHexSphere: 'hexagon',
   spiral: 'spiral', triSpiral: 'triSpiral', hexSpiral: 'hexSpiral', cairoSpiral: 'pentagons',
 };
 
@@ -2840,7 +2841,7 @@ const NAV = {
   lifeHexSphere: ['Life', 'Surfaces', 'Sphere', 'Life', ''], lifeTorusKite: ['Life', 'Surfaces', 'Torus', 'Life', ''],
   lifeMobiusKite: ['Life', 'Surfaces', 'Möbius strip', 'Life', ''], lifeKleinKite: ['Life', 'Surfaces', 'Klein bottle', 'Life', ''], lifeTetraKite: ['Life', 'Surfaces', 'Tetrahedron', 'Life', ''],
   lifeOctaKite: ['Life', 'Surfaces', 'Octahedron', 'Life', ''], lifeIcosaKite: ['Life', 'Surfaces', 'Sphere', 'Life', ''],
-  lifeStellaKite: ['Life', 'Surfaces', 'Stella octangula', 'Life', ''], lifeDodecaKite: ['Life', 'Surfaces', 'Dodecahedron', 'Life', ''], lifeCubocta: ['Life', 'Surfaces', 'Cuboctahedron', 'Life', ''], lifePyramid: ['Life', 'Surfaces', 'Pyramid', 'Life', ''], lifeRhombi: ['Life', 'Surfaces', 'Rhombicuboctahedron', 'Life', ''], lifeBicupola: ['Life', 'Surfaces', 'Bicupola', 'Life', ''], lifeGlobe: ['Life', 'Surfaces', 'Globe', 'Life', ''],
+  lifeStellaKite: ['Life', 'Surfaces', 'Stella octangula', 'Life', ''], lifeDodecaKite: ['Life', 'Surfaces', 'Dodecahedron', 'Life', ''], lifeCubocta: ['Life', 'Surfaces', 'Cuboctahedron', 'Life', ''], lifePyramid: ['Life', 'Surfaces', 'Pyramid', 'Life', ''], lifeRhombi: ['Life', 'Surfaces', 'Rhombicuboctahedron', 'Life', ''], lifeBicupola: ['Life', 'Surfaces', 'Bicupola', 'Life', ''], lifeGlobe: ['Life', 'Surfaces', 'Globe', 'Life', ''], lifeRosetteSphere: ['Life', 'Surfaces', 'Rosettes', 'Life', ''],
   squareParity: ['Walk', '2D', 'Squares', 'Parity', 'grid'], squareParityCells: ['Walk', '2D', 'Squares', 'Parity', 'cells'],
   triParity: ['Walk', '2D', 'Triangles', 'Parity', 'grid'], hexParityCells: ['Walk', '2D', 'Hexagons', 'Parity', 'cells'],
   squarePivot: ['Walk', '2D', 'Squares', 'Pivot', 'grid'], squarePivotCells: ['Walk', '2D', 'Squares', 'Pivot', 'cells'],
@@ -2958,7 +2959,7 @@ const SHAPE_GROUPS = [['Circles · Walls only', (k) => !!APERIODIC[k]], ['Natura
 const shapeGroup = (kind) => SHAPE_GROUPS.find(([, is]) => is(kind))[0];
 const SHAPE_ICONS = { Squares: 'grid', Triangles: 'triangle', Hexagons: 'hexagon', Cairo: 'pentagons', Kites: 'kites', Hats: 'hat', Penrose: 'penrose', Pinwheel: 'pinwheel', Spectre: 'spectre', Ammann: 'ammann', 'Rhombs 12': 'rhombs12', 'Rhombs 14': 'rhombs14', 'Flower 6': 'flower', 'Flower 5': 'flower5', 'Flower 7': 'flower7', 'Mirror 7': 'mirror7', 'Flower 3': 'flower3', 'Flower 4': 'flower4', 'Flower 8': 'flower8', 'Flower 9': 'flower9', 'Flower 10': 'flower10', 'Ring 7': 'ring7', 'Ring 8': 'ring8', 'Ring 9': 'ring9', 'Ring 10': 'ring10', 'Ring 12': 'ring12', Cubes: 'cube', Diamond: 'tetrahedron',
   Cube: 'cube', Torus: 'torus', 'Möbius strip': 'mobius', Tetrahedron: 'tetrahedron', Octahedron: 'octahedron', 'Stella octangula': 'stella',
-  Dodecahedron: 'dodecahedron', Cuboctahedron: 'cubocta', Pyramid: 'pyramid', Rhombicuboctahedron: 'rhombi', Bicupola: 'bicupola', Globe: 'globe', Sphere: 'icosahedron', Pits: 'pits', Bumps: 'bumps', Frame: 'frame', Sponge: 'menger', 'Klein bottle': 'klein' };
+  Dodecahedron: 'dodecahedron', Cuboctahedron: 'cubocta', Pyramid: 'pyramid', Rhombicuboctahedron: 'rhombi', Bicupola: 'bicupola', Globe: 'globe', Rosettes: 'mirror7', Sphere: 'icosahedron', Pits: 'pits', Bumps: 'bumps', Frame: 'frame', Sponge: 'menger', 'Klein bottle': 'klein' };
 for (const [kind, t] of Object.entries(TILINGS)) SHAPE_ICONS[t.name] = `tiling-${kind}`;
 const SHAPE_SHORT = { 'Klein bottle': 'Klein', 'Möbius strip': 'Möbius', 'Stella octangula': 'Stella', Tetrahedron: 'Tetra', Octahedron: 'Octa', Dodecahedron: 'Dodeca', Cuboctahedron: 'Cubocta', Rhombicuboctahedron: 'Rhombi' };
 const shapeLabel = (shape) => SHAPE_SHORT[shape] ?? shape;
@@ -4779,6 +4780,47 @@ function globeMesh(E) {
   return (meshCache[key] = Object.assign(finishMesh(verts, tiles.map((c) => [...c, ...Array(sides - c.length).fill(c.at(-1))]), sides, E), { globe: true, columns: N, along: Float64Array.from(along) }));
 }
 
+/* ---- 7.3c Rosette sphere --------------------------------------------------------------------- */
+// A rosette's disc (Mirror 7's, see ROSETTES) on each half of the unit sphere, glued edge to edge at the equator: its middle at
+// a pole, each corner along its own ray, its rim on the equator (its distance out along the ray over the rim's there: its
+// angle from the pole, a quarter turn at the rim); the south its mirror (the same disc, upside down). Its rim's corners the
+// same points on both halves: each rim cell shares its edge with its twin, nothing cut. f: the plane's size (see planeSides)
+function rosetteSphereMesh(kind, f) {
+  const key = `rosetteSphere${kind}${f}`;
+  if (meshCache[key]) return meshCache[key];
+  const F = APERIODIC[kind]((shaped(kind) ? sideW : planeW)(planeKind(kind), f)), n = F.n, at = (k) => pointKey(F.xy[2 * k], F.xy[2 * k + 1]);  // (a corner's key: two cells' the same though not to the last bit)
+  // its rim: the cells' sides no other cell has, in turn round it, each corner's angle round the middle
+  const sides = new Map();
+  for (let t = 0; t < n; t++) for (let i = F.start[t]; i < F.start[t + 1]; i++) {
+    const j = i + 1 < F.start[t + 1] ? i + 1 : F.start[t], e = [at(i), at(j)].sort().join('|');
+    sides.set(e, sides.has(e) ? null : [i, j]);
+  }
+  const rim = [...sides.values()].filter(Boolean).flatMap(([i, j]) => [[F.xy[2 * i], F.xy[2 * i + 1]], [F.xy[2 * j], F.xy[2 * j + 1]]]);
+  const cx = rim.reduce((s, p) => s + p[0], 0) / rim.length, cy = rim.reduce((s, p) => s + p[1], 0) / rim.length;
+  const ring = [...new Map(rim.map(([x, y]) => [pointKey(x, y), [Math.atan2(y - cy, x - cx), x - cx, y - cy]])).values()].sort((a, b) => a[0] - b[0]);
+  // the rim's distance along the ray at angle a: where it meets the side between the corners round a
+  const rimAt = (a, dx, dy) => {
+    let lo = 0, hi = ring.length;  // (the first corner at a or past it, by halves; past the last, the first)
+    while (lo < hi) { const m = (lo + hi) >> 1; if (ring[m][0] < a) lo = m + 1; else hi = m; }
+    const k = lo % ring.length;
+    const [, x1, y1] = ring[(k + ring.length - 1) % ring.length], [, x2, y2] = ring[k], ux = Math.cos(a), uy = Math.sin(a);
+    const den = ux * (y2 - y1) - uy * (x2 - x1);
+    return Math.abs(den) < 1e-12 ? Math.hypot(dx, dy) : (x1 * (y2 - y1) - y1 * (x2 - x1)) / den;
+  };
+  const { verts, add } = vertexStore(), tiles = [];
+  const point = (x, y, z) => {  // (z: +1 the north, −1 the south)
+    const dx = x - cx, dy = y - cy, r = Math.hypot(dx, dy), a = Math.atan2(dy, dx), p = r ? (Math.min(1, r / rimAt(a, dx, dy)) * Math.PI) / 2 : 0;
+    return add(Math.sin(p) * Math.cos(a), Math.sin(p) * Math.sin(a), z * Math.cos(p));
+  };
+  for (const z of [1, -1]) for (let t = 0; t < n; t++) {
+    const c = [];
+    for (let i = F.start[t]; i < F.start[t + 1]; i++) c.push(point(F.xy[2 * i], F.xy[2 * i + 1], z));
+    tiles.push(z > 0 ? c : c.reverse());  // (the south's turned over: its tiles' corners the other way round, outwards)
+  }
+  const most = tiles.reduce((m, c) => Math.max(m, c.length), 0);
+  return (meshCache[key] = Object.assign(finishMesh(verts, tiles.map((c) => [...c, ...Array(most - c.length).fill(c.at(-1))]), most, f), { rosette: true }));
+}
+
 /* ---- 7.4 Torus ------------------------------------------------------------------------------- */
 /* Torus (a ring or "donut"): nu × nv squares, nu around the ring and nv around the tube, with
  * major radius 1 and tube radius TORUS_TUBE. Every square has 4 edge neighbours and 8 corner
@@ -5439,7 +5481,7 @@ const turnedTorusHexMesh = (nv, nu = turnedHexColumns(nv)) => turnedTorus('torus
  * polyhedra (each vertex slides from its face towards the circumscribed sphere) and the torus
  * (rolled up from a flat rectangle). The cells and their neighbours never change, so a walk or a
  * Game of Life run goes on unchanged: only the drawing and the 3D positions move. */
-const MORPHABLE = [...Object.keys(TETRAKIS_SOLIDS).map((k) => `${k}Tetrakis`), 'klein', 'kleinHex', 'kleinTri', 'kleinCairo', 'kleinKite', 'kleinHexTurned', 'kleinTriTurned', 'kleinKiteTurned', ...foldedIn('klein'), 'torusKite', 'torusKiteTurned', 'cube', 'pits', 'bumps', 'frame', 'menger', 'tetra', 'octa', 'stella', 'dodeca', 'icosa', 'tetraKite', 'octaKite', 'icosaKite', 'stellaKite', 'dodecaKite', ...hexSolids.map((k) => `${k}Hex`), 'cubocta', 'pyramid', 'rhombi', 'bicupola', 'globe', 'torus', 'torusHex', 'torusTri', 'torusCairo', 'torusHexTurned', 'torusTriTurned', 'hexsphere', ...MOBIUS_KINDS,
+const MORPHABLE = [...Object.keys(TETRAKIS_SOLIDS).map((k) => `${k}Tetrakis`), 'klein', 'kleinHex', 'kleinTri', 'kleinCairo', 'kleinKite', 'kleinHexTurned', 'kleinTriTurned', 'kleinKiteTurned', ...foldedIn('klein'), 'torusKite', 'torusKiteTurned', 'cube', 'pits', 'bumps', 'frame', 'menger', 'tetra', 'octa', 'stella', 'dodeca', 'icosa', 'tetraKite', 'octaKite', 'icosaKite', 'stellaKite', 'dodecaKite', ...hexSolids.map((k) => `${k}Hex`), 'cubocta', 'pyramid', 'rhombi', 'bicupola', 'globe', 'mirror7Sphere', 'torus', 'torusHex', 'torusTri', 'torusCairo', 'torusHexTurned', 'torusTriTurned', 'hexsphere', ...MOBIUS_KINDS,
   ...foldedIn('torus')];
 
 function shapeAt(g, m) {
@@ -5711,6 +5753,9 @@ const SPHERES = {
            how: (E) => { const { N } = globeBands(E); return `{y:${fmt(N.length - 2)} bands}, a unit high, of {k:${fmt(E)} cells} at the equator, halved towards the poles down to {k:${fmt(N[1])}} + {r:2 caps}`; },
            // (its sizes its colours': its equator's columns F, 2F, 4F…, each halving down to F, see globeBands; as many cells as the others')
            ownSizes: (K = ringColours()) => { const out = []; for (let E = globeFewest(K); SPHERES.globe.tiles(E, K) <= CELLS.most; E *= 2) if (SPHERES.globe.tiles(E, K) >= CELLS.least) out.push(E); return out; } },  // (E: its equator's columns, see globeMesh)
+  // two Mirror 7 discs glued at the equator (see rosetteSphereMesh): the plane's sizes, its cells twice, a unit each
+  mirror7Sphere: { mesh: (f) => rosetteSphereMesh('mirror7', f), radius: (f) => Math.sqrt(rosetteSphereMesh('mirror7', f).n / (4 * Math.PI)), tiles: (f) => rosetteSphereMesh('mirror7', f).n,
+                   unit: 'cells', ownSizes: () => planeSides('mirror7').filter((f) => 2 * planeCells(f, 'mirror7', planeKind('mirror7')) <= 2 ** 16) },  // (a prototype: its sizes each built to count them, up to some 50,000 cells)
   dodecaKite: { mesh: (f) => flatPolyhedron('dodeca', f, true), radius: (f) => (f * PHI) / 2, tiles: (f) => 180 * f * f, unit: 'kites', how: (f) => `{r:12 pentagonal faces} × {s:5 sectors} × {y:(Edge=${fmt(f)})² triangles} × {k:3 kites each}` },
 };
 // the solids of squares as tetrakis triangles (see tetrakisOf): sized as their squares, 4 cells a square
@@ -9020,7 +9065,7 @@ function motifTiles() {
 // the shape a Life mode's cells have, as the rule menu marks the rules that suit it (■ ▲ ⬡); on
 // coming to another mode, a rule marked for another shape gives way to the first one for this shape
 // the cells of each surface (else triangles): one table for every surface, whatever its shape
-const SURFACE_CELLS = { cube: '■', globe: '■', pits: '■', bumps: '■', frame: '■', menger: '■', torus: '■', mobius: '■', klein: '■', torusHex: '⬡', hexsphere: '⬡', mobiusHex: '⬡', kleinHex: '⬡',
+const SURFACE_CELLS = { cube: '■', globe: '■', mirror7Sphere: '❊', pits: '■', bumps: '■', frame: '■', menger: '■', torus: '■', mobius: '■', klein: '■', torusHex: '⬡', hexsphere: '⬡', mobiusHex: '⬡', kleinHex: '⬡',
                         torusCairo: '⬠', mobiusCairo: '⬠', kleinCairo: '⬠', ...Object.fromEntries(hexSolids.map((k) => [`${k}Hex`, '⬡'])), ...Object.fromEntries(Object.keys(TETRAKIS_SOLIDS).map((k) => [`${k}Tetrakis`, '◩'])), torusKite: '◆', mobiusKite: '◆', kleinKite: '◆', torusKiteTurned: '◆', mobiusKiteTurned: '◆', kleinKiteTurned: '◆', kleinHexTurned: '⬡', kleinTriTurned: '▲', tetraKite: '◆', octaKite: '◆', icosaKite: '◆', stellaKite: '◆', dodecaKite: '◆', cubocta: '◈', pyramid: '◈', rhombi: '◈', bicupola: '◈' };
 for (const [s, { kind }] of Object.entries(FOLDED)) SURFACE_CELLS[s] = TILINGS[kind].mark;
 // each plane's mark (its rules', see the rule menu), and the plane of a mark
@@ -10894,7 +10939,7 @@ function huntFits() {
   // stuck: the globe in Nonet)
   hunt.fits = Object.fromEntries(Object.keys(HUNT_ZONES).map((zone) => {
     const r = zoneRadius(zone);
-    if (walk.geo?.globe && zone !== 'full' && zone !== 'numbers') return [zone, false];  // (a globe: the zones on its whole grid only, a soup or a number's digits; no frame yet to lay a patch or pattern on, see patternPlace)
+    if ((walk.geo?.globe || walk.geo?.rosette) && zone !== 'full' && zone !== 'numbers') return [zone, false];  // (a globe, a rosette sphere: the zones on its whole grid only, a soup or a number's digits; no frame yet to lay a patch or pattern on, see patternPlace)
     if (famousZone(zone)) return [zone, (hunt.laid[zone] ??= patternsOn() && laidChoices(zone === 'centred', true).every((c) => c.length > 0))];  // (whether some, not them all)
     if (zone === 'realm' && !realmParts(K)) return [zone, false];  // (one colour, corners: greyed)
     if (zone === 'mirror') return [zone, !walk.plane && !walk.geo.torus && K > 1 && (!!colouring(MODES[$('mode').value].sphere, K, true) || !!hullColours(MODES[$('mode').value].sphere, K)?.pairs)];  // (a solid, two parts a colour)

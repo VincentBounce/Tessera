@@ -1564,6 +1564,40 @@ His hexagon (tips 360°/n, the other corners 180° − 180°/n) in 2n cones of t
 | [Hexa 11 Life B34/S2456](https://vincentbounce.github.io/Tessera/#w=life2dHexa11&r=B34/S2456&s=48&pop=random.30.7) | 0.28 | 116–6,000+ | 3.02 % | 92 % |
 | [Hexa 12 embers B238/S0456/C5](https://vincentbounce.github.io/Tessera/#w=life2dHexa12&r=B238/S0456/C5&s=48&pop=random.30.7) | 0.041 | 59–807 | 4.34 % | 17 % |
 
+## 🎯 Patterns at the middle of the new rosettes (2026-11-03)
+
+tools/tilings/centred.js on Flower 9 and 10, Mirror 5 to 12 and Hexa 4 to 12, their own rules (the Hexas' hexagon rules, ⬡, not searched): 4,800 small starts of the 30 cells nearest the middle, at it (one colour) and 6 from it (colours); kept the smallest oscillator, the longest-lived start, the smallest that keeps spreading; in Famous (CENTRED, CENTRED_OFF). The Hexas' Life rules (B25/S3467, B256/S3467) give methuselahs of 600 to 1,000 generations on Hexa 8 to 10; Hexa 11's B34/S2456 has an oscillator only off the middle.
+
+| Grid | Rule | At the middle | 6 from it |
+|---|---|---|---|
+| Flower 9 | [B278/S0345/C5](https://vincentbounce.github.io/Tessera/#w=life2dFlower9&r=B278/S0345/C5&s=48&pop=famous.30.1) | spreads from 7 cells | oscillator p5, 14 cells; spreads from 7 cells |
+| Flower 9 | [B369/S3457](https://vincentbounce.github.io/Tessera/#w=life2dFlower9&r=B369/S3457&s=48&pop=famous.30.1) | oscillator p2, 4 cells | oscillator p2, 4 cells; spreads from 16 cells |
+| Flower 10 | [B279/S0345/C5](https://vincentbounce.github.io/Tessera/#w=life2dFlower10&r=B279/S0345/C5&s=48&pop=famous.30.1) | spreads from 7 cells | spreads from 7 cells |
+| Flower 10 | [B368/S3457](https://vincentbounce.github.io/Tessera/#w=life2dFlower10&r=B368/S3457&s=48&pop=famous.30.1) | oscillator p2, 4 cells | oscillator p2, 4 cells; **methuselah 274 gens**, 19 cells; spreads from 14 cells |
+| Mirror 5 | [B245/S0346/C4](https://vincentbounce.github.io/Tessera/#w=life2dMirror5&r=B245/S0346/C4&s=48&pop=famous.30.1) | spreads from 8 cells | spreads from 8 cells |
+| Mirror 5 | [B347/S0237](https://vincentbounce.github.io/Tessera/#w=life2dMirror5&r=B347/S0237&s=48&pop=famous.30.1) | oscillator p2, 6 cells | oscillator p2, 5 cells |
+| Mirror 6 | [B245/S0345/C5](https://vincentbounce.github.io/Tessera/#w=life2dMirror6&r=B245/S0345/C5&s=48&pop=famous.30.1) | spreads from 7 cells | oscillator p5, 11 cells; spreads from 6 cells |
+| Mirror 6 | [B267/S0345/C4](https://vincentbounce.github.io/Tessera/#w=life2dMirror6&r=B267/S0345/C4&s=48&pop=famous.30.1) | oscillator p8, 8 cells; spreads from 6 cells | oscillator p4, 10 cells; spreads from 7 cells |
+| Mirror 8 | [B26/S0345/C4](https://vincentbounce.github.io/Tessera/#w=life2dMirror8&r=B26/S0345/C4&s=48&pop=famous.30.1) | oscillator p4, 10 cells; spreads from 7 cells | oscillator p4, 14 cells; spreads from 6 cells |
+| Mirror 8 | [B248/S0346/C4](https://vincentbounce.github.io/Tessera/#w=life2dMirror8&r=B248/S0346/C4&s=48&pop=famous.30.1) | spreads from 6 cells | spreads from 8 cells |
+| Mirror 9 | [B269/S0345/C4](https://vincentbounce.github.io/Tessera/#w=life2dMirror9&r=B269/S0345/C4&s=48&pop=famous.30.1) | oscillator p4, 7 cells; spreads from 7 cells | oscillator p4, 12 cells; spreads from 6 cells |
+| Mirror 9 | [B268/S678](https://vincentbounce.github.io/Tessera/#w=life2dMirror9&r=B268/S678&s=48&pop=famous.30.1) | oscillator p2, 2 cells; spreads from 9 cells | oscillator p2, 2 cells; spreads from 8 cells |
+| Mirror 10 | [B278/S](https://vincentbounce.github.io/Tessera/#w=life2dMirror10&r=B278/S&s=48&pop=famous.30.1) | oscillator p2, 2 cells; spreads from 13 cells | oscillator p2, 2 cells; spreads from 8 cells |
+| Mirror 10 | [B24/S0345/C5](https://vincentbounce.github.io/Tessera/#w=life2dMirror10&r=B24/S0345/C5&s=48&pop=famous.30.1) | spreads from 6 cells | oscillator p5, 12 cells; spreads from 7 cells |
+| Mirror 11 | [B268/S5](https://vincentbounce.github.io/Tessera/#w=life2dMirror11&r=B268/S5&s=48&pop=famous.30.1) | oscillator p2, 2 cells; spreads from 12 cells | oscillator p2, 2 cells; spreads from 7 cells |
+| Mirror 11 | [B24/S0345/C5](https://vincentbounce.github.io/Tessera/#w=life2dMirror11&r=B24/S0345/C5&s=48&pop=famous.30.1) | oscillator p5, 10 cells; spreads from 6 cells | oscillator p5, 9 cells; spreads from 6 cells |
+| Mirror 12 | [B267/S5](https://vincentbounce.github.io/Tessera/#w=life2dMirror12&r=B267/S5&s=48&pop=famous.30.1) | oscillator p2, 2 cells; spreads from 11 cells | oscillator p2, 2 cells; spreads from 8 cells |
+| Mirror 12 | [B289/S568](https://vincentbounce.github.io/Tessera/#w=life2dMirror12&r=B289/S568&s=48&pop=famous.30.1) | oscillator p2, 2 cells; spreads from 11 cells | oscillator p2, 2 cells; spreads from 8 cells |
+| Hexa 4 | [B346/S1246](https://vincentbounce.github.io/Tessera/#w=life2dHexa4&r=B346/S1246&s=48&pop=famous.30.1) | oscillator p3, 4 cells | oscillator p2, 4 cells |
+| Hexa 5 | [B34/S2358](https://vincentbounce.github.io/Tessera/#w=life2dHexa5&r=B34/S2358&s=48&pop=famous.30.1) | oscillator p2, 6 cells | oscillator p2, 4 cells |
+| Hexa 6 | [B348/S2359](https://vincentbounce.github.io/Tessera/#w=life2dHexa6&r=B348/S2359&s=48&pop=famous.30.1) | oscillator p2, 4 cells | oscillator p2, 8 cells |
+| Hexa 7 | [B239/S0456/C5](https://vincentbounce.github.io/Tessera/#w=life2dHexa7&r=B239/S0456/C5&s=48&pop=famous.30.1) | spreads from 7 cells | spreads from 6 cells |
+| Hexa 8 | [B256/S3467](https://vincentbounce.github.io/Tessera/#w=life2dHexa8&r=B256/S3467&s=48&pop=famous.30.1) | oscillator p2, 2 cells; **methuselah 1,043 gens**, 16 cells; spreads from 7 cells | oscillator p2, 2 cells; **methuselah 968 gens**, 15 cells; spreads from 9 cells |
+| Hexa 9 | [B25/S3467](https://vincentbounce.github.io/Tessera/#w=life2dHexa9&r=B25/S3467&s=48&pop=famous.30.1) | oscillator p2, 2 cells; **methuselah 717 gens**, 18 cells; spreads from 6 cells | oscillator p2, 2 cells; **methuselah 869 gens**, 14 cells; spreads from 6 cells |
+| Hexa 10 | [B256/S3467](https://vincentbounce.github.io/Tessera/#w=life2dHexa10&r=B256/S3467&s=48&pop=famous.30.1) | oscillator p2, 2 cells; **methuselah 667 gens**, 15 cells; spreads from 8 cells | oscillator p2, 2 cells; **methuselah 599 gens**, 13 cells; spreads from 8 cells |
+| Hexa 11 | [B34/S2456](https://vincentbounce.github.io/Tessera/#w=life2dHexa11&r=B34/S2456&s=48&pop=famous.30.1) | — | oscillator p4, 7 cells |
+| Hexa 12 | [B238/S0456/C5](https://vincentbounce.github.io/Tessera/#w=life2dHexa12&r=B238/S0456/C5&s=48&pop=famous.30.1) | oscillator p5, 11 cells; spreads from 7 cells | spreads from 6 cells |
+
 ## ▣ Ising (Q2R) and Square-4, on squares (Tim Tyler's cell-auto.com)
 
 | Rule | What it does |

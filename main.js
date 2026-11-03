@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.10';
+const VERSION = '0.4.11';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -2149,6 +2149,7 @@ const ICONS = (() => {
     rhombi: pathEl('M8 3H16L21 8V16L16 21H8L3 16V8Z') + pathEl('M8 8H16V16H8Z') + pathEl('M8 3V8H3M16 3V8H21M8 21V16H3M16 21V16H21'),  // a rhombicuboctahedron face on: its square, 4 squares round, 4 triangles in the corners
     bicupola: pathEl('M8 3H16L21 9V15L16 21H8L3 15V9Z') + pathEl('M3 12H21M8 3L6 12L8 21M16 3L18 12L16 21'),  // a square orthobicupola from the side: its two cupolas on its middle
     globe: pathEl('M12 3A9 9 0 1 0 12.01 3Z') + pathEl('M3.5 9H20.5M3.5 15H20.5M12 3C8 6 8 18 12 21M12 3C16 6 16 18 12 21'),  // a globe: its parallels and meridians
+    rosettes: pathEl('M12 3A9 9 0 1 0 12.01 3Z') + pathEl('M3 10.6L5.25 13.4L7.5 10.6L9.75 13.4L12 10.6L14.25 13.4L16.5 10.6L18.75 13.4L21 10.6'),  // a rosette sphere: the globe, its seam crenellated (one disc's teeth in the other's notches)
     spiral: pathEl(pathOf(spiralOf(4, 11), false)),
     triSpiral: pathEl(pathOf(spiralOf(3, 7), false)),
     hexSpiral: pathEl(pathOf(spiralOf(6, 15), false)),
@@ -2980,7 +2981,7 @@ const SHAPE_GROUPS = [['Never repeating', (k) => !!APERIODIC[k] && !ROSETTES[k]]
 const shapeGroup = (kind) => SHAPE_GROUPS.find(([, is]) => is(kind))[0];
 const SHAPE_ICONS = { Squares: 'grid', Triangles: 'triangle', Hexagons: 'hexagon', Cairo: 'pentagons', Kites: 'kites', Hats: 'hat', Penrose: 'penrose', Pinwheel: 'pinwheel', Spectre: 'spectre', Ammann: 'ammann', 'Rhombs 12': 'rhombs12', 'Rhombs 14': 'rhombs14', 'Flower 6': 'flower', 'Flower 5': 'flower5', 'Flower 7': 'flower7', ...Object.fromEntries(Object.values(conedOf((k, n, F) => [k, [`${F.name} ${n}`, k]]))), 'Flower 3': 'flower3', 'Flower 4': 'flower4', 'Flower 8': 'flower8', 'Flower 9': 'flower9', 'Flower 10': 'flower10', 'Flower 11': 'flower11', 'Flower 12': 'flower12', 'Ring 7': 'ring7', 'Ring 8': 'ring8', 'Ring 9': 'ring9', 'Ring 10': 'ring10', 'Ring 11': 'ring11', 'Ring 12': 'ring12', Cubes: 'cube', Diamond: 'tetrahedron',
   Cube: 'cube', Torus: 'torus', 'Möbius strip': 'mobius', Tetrahedron: 'tetrahedron', Octahedron: 'octahedron', 'Stella octangula': 'stella',
-  Dodecahedron: 'dodecahedron', Cuboctahedron: 'cubocta', Pyramid: 'pyramid', Rhombicuboctahedron: 'rhombi', Bicupola: 'bicupola', Globe: 'globe', Rosettes: 'mirror7', Sphere: 'icosahedron', Pits: 'pits', Bumps: 'bumps', Frame: 'frame', Sponge: 'menger', 'Klein bottle': 'klein' };
+  Dodecahedron: 'dodecahedron', Cuboctahedron: 'cubocta', Pyramid: 'pyramid', Rhombicuboctahedron: 'rhombi', Bicupola: 'bicupola', Globe: 'globe', Rosettes: 'rosettes', Sphere: 'icosahedron', Pits: 'pits', Bumps: 'bumps', Frame: 'frame', Sponge: 'menger', 'Klein bottle': 'klein' };
 for (const [kind, t] of Object.entries(TILINGS)) SHAPE_ICONS[t.name] = `tiling-${kind}`;
 const SHAPE_SHORT = { 'Klein bottle': 'Klein', 'Möbius strip': 'Möbius', 'Stella octangula': 'Stella', Tetrahedron: 'Tetra', Octahedron: 'Octa', Dodecahedron: 'Dodeca', Cuboctahedron: 'Cubocta', Rhombicuboctahedron: 'Rhombi' };
 const shapeLabel = (shape) => SHAPE_SHORT[shape] ?? shape;

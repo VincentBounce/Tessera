@@ -2105,7 +2105,6 @@ const ICONS = (() => {
     goalPeak: pathEl('M12 4L21 19H3Z', 'f'),
     goalCover: pathEl(pathOf(sq)) + pathEl('M9.33 4V20M14.67 4V20M4 9.33H20M4 14.67H20'),  // (all cells: a grid)
     goalBattle: pathEl('M4 4L17 17M20 4L7 17M14 20L20 14M4 14L10 20M17.5 17.5L20.5 20.5M6.5 17.5L3.5 20.5'),  // (crossed swords)
-    pi: pathEl('M5.3 8.6Q6 6.8 8.3 6.8H18.8M9.4 7.1Q9.4 14.3 7.1 18M14.6 7.1V15.8Q14.6 18 17.3 17.3'),  // the app's π (its favicon's, index.html)
     king: pathEl('M12 3V21M3 12H21M5.6 5.6L18.4 18.4M18.4 5.6L5.6 18.4'),  // the 8 ways out
     pentagons: pathEl('M7 7L9.3 12H14.7L17 7L12 4.7ZM7 17L12 19.3L17 17L14.7 12H9.3ZM7 7L9.3 12L7 17L2 14.7V9.3ZM17 7L22 9.3V14.7L17 17L14.7 12Z'),  // four of the Cairo tiling's: two across a bar, two at its ends
     ammann: [0, 1, 2, 3, 4, 5, 6, 7].map((k) => { const e = (j) => [Math.cos((j * Math.PI) / 4), Math.sin((j * Math.PI) / 4)], a = e(k), b = e(k + 1), s = 10 / (2 * Math.cos(Math.PI / 8)), pt = ([x, y]) => `${(12 + x * s).toFixed(1)} ${(12 - y * s).toFixed(1)}`;
@@ -2248,6 +2247,10 @@ const ICONS = (() => {
   };
 })();
 const icon = (name) => `<svg class="icon" viewBox="0 0 24 24" aria-hidden="true">${ICONS[name]}</svg>`;
+// the app's logo, its one picture (its tab's, and its favicon's, set at start-up): a white π on its gold, the page's accent
+// (the favicon's, no page's style there: the accent's colour then)
+const appLogo = (gold = 'var(--accent)') => `<svg xmlns="http://www.w3.org/2000/svg" class="icon" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="7" style="fill: ${gold}; stroke: none"/>`
+  + '<path d="M7 11.5Q8 9 11 9H25M12.5 9.5Q12.5 19 9.5 24M19.5 9.5V21Q19.5 24 23 23" style="fill: none; stroke: white; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round"/></svg>';
 // the plane's outline: its shape and its edges, one choice (see outlineOf): a rectangle, a torus or walled; a six-fold grid
 // walled in a hexagon round its middle (see planeShape); a slanted one's rhombus of cells as stored, a torus or walled.
 // Its picture doubled with bricks: walled (the cells past its edges always dead); else a torus (its edges glued: what leaves on one side comes back
@@ -15772,10 +15775,12 @@ new ResizeObserver(() => { statsDirty = true; }).observe($('animBar'));  // the 
 updateSpeedLabel();
 resize();
 requestAnimationFrame(tick);
-$('appTab').innerHTML = `${icon('pi')} ${APP_TITLE} v${VERSION}`;
+$('appTab').innerHTML = `${appLogo()} ${APP_TITLE} v${VERSION}`;
+$('favicon').href = `data:image/svg+xml,${encodeURIComponent(appLogo(cssColour('--accent')))}`;
 // Credits: the people whose work it shows, a page in the middle pane as How it works, opened and closed by the app's tab (π,
 // its name and version; lit while it shows, as Gallery's); closed as How it works is, by a click elsewhere; Share and Home there
 const creditsShown = () => !$('ruleTuto').hidden && $('ruleTuto').dataset.shown === 'credits';
+const AUTHOR = '🇫🇷 Vincent ᗱƆᑌᑎϹᗴ 👾 · <b>𝕏 <a href="https://x.com/VincentBounce" target="_blank" rel="noopener">@VincentBounce</a></b>';  // (its author, as signed)
 const CREDITS = [
   ['Life and its kin', "John Conway's Game of Life; Edward Fredkin's Replicator; Rudy Rucker and John Walker's Faders; Alan Hensel's letters for squares, Paul Callahan's for hexagons; Norman Margolus and Tommaso Toffoli's blocks; Gérard Vichniac's Q2R; Tim Tyler's cell-auto.com (Q*Bert, Square-4, stellated blocks); Stephen Wolfram's elementary rules; Chris Langton's ant and loop, John Byl's loop; Mike Paterson and John Conway's worms; Golly and LifeWiki (RLE, patterns)"],
   ['Numbers', "the Chudnovsky brothers (π), Brent and McMillan (γ), Amdeberhan and Zeilberger (ζ(3)), Lupaș (Catalan's constant), all by binary splitting; Stanisław Ulam's spiral"],
@@ -15788,7 +15793,7 @@ function credits(open) {
   $('appTab').classList.add('open');
   $('ruleTuto').hidden = false;
   $('ruleTuto').dataset.shown = 'credits';
-  $('ruleTuto').innerHTML = `<div class="tut-body"><h3>${APP_TITLE} <code>v${VERSION}</code></h3><p>Cellular automata on tilings, surfaces and solids, and walks on the digits of numbers: the work of many, here.</p>`
+  $('ruleTuto').innerHTML = `<div class="tut-body"><h3>${APP_TITLE} <code>v${VERSION}</code></h3><p>Made by ${AUTHOR}</p><p>Cellular automata on tilings, surfaces and solids, and walks on the digits of numbers: the work of many, here.</p>`
     + CREDITS.map(([title, who]) => `<h4>${title}</h4><p>${who}.</p>`).join('')
     + `<p><a href="https://github.com/VincentBounce/Tessera#readme" target="_blank" rel="noopener">Its README</a> · <a href="https://github.com/VincentBounce/Tessera" target="_blank" rel="noopener">its code</a></p></div>`;
   $('ruleTuto').prepend(tutTools({ words: [['Share', 'Copy the link to what is shown', (e) => shareView(e.currentTarget)], ['Home', 'Back to the start', () => { location.href = location.pathname; }]], close: () => credits(false) }));

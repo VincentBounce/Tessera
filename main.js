@@ -1235,7 +1235,7 @@ const MODES = {
           rule: 'along the diagonals of the cubes, to one of their 8 corners (the 3 bits of each digit the signs of east, north and up): <b>0</b> SW down, <b>1</b> SW up, <b>2</b> NW down, <b>3</b> NW up, <b>4</b> SE down, <b>5</b> SE up, <b>6</b> NE down, <b>7</b> NE up' },
   diamond: { base: 3, arrows: '↖↑↗', lattice: 'cube', perspective: true,
              rule: 'along the bonds of a diamond, as a polymer chain: <b>0</b> gauche left, <b>1</b> trans (the zigzag goes on), <b>2</b> gauche right' },
-  // the same steps from cell to cell (their centres make the same lattice), the cells coloured (see glCubes)
+  // the same steps from cell to cell (their centres make the same lattice), the cells coloured (see gpuCubes)
   cubeRelCells: { base: 5, arrows: '←⊙↑⊗→', lattice: 'cube', cells: true, twin: 'cubeRel', perspective: true,
               rule: 'from cube to cube, relative to your heading: <b>0</b> turn left, <b>1</b> up, <b>2</b> straight, <b>3</b> down, <b>4</b> turn right' },
   cubeFixedCells: { base: 6, arrows: '↑→⊙↓←⊗', lattice: 'cube', cells: true, twin: 'cubeFixed', perspective: true,
@@ -1458,7 +1458,7 @@ const DISPLAY_BY_TAB = {
   '3D walks': ['colours', 'digit', 'grid', 'sky', ...VIEW_3D],
   'Walks on surfaces': ['shape', 'heatmap', 'visits', 'fill', 'translucent', 'grid', 'sky', ...VIEW_3D, 'glass', 'cut'],
   'Automata on the plane': ['colours', 'digit', 'mono', 'grid', 'sky'],
-  'Automata on surfaces': ['shape', 'colours', 'digit', 'mono', 'grid', 'sky', ...VIEW_3D, 'glass', 'cut'],  // (Glass, Cut: the surfaces' tiles only, see glGlass, GL_CUT)
+  'Automata on surfaces': ['shape', 'colours', 'digit', 'mono', 'grid', 'sky', ...VIEW_3D, 'glass', 'cut'],  // (Glass, Cut: the surfaces' tiles only, see gpuFrame, cutOn)
   '2D spirals': ['heatmap', 'fill', 'translucent', 'cells', 'visits', 'digit', 'grid'],  // the 2D walks' menu, some of it greyed out
 };
 // Shown but greyed out, by the menu's group or the tab: a spiral never crosses itself, so it closes no area and visits each
@@ -3462,7 +3462,7 @@ function walkRepeat() {
 function buildWalkOf() {
   previousShape = walk.shape && { target: walk.shape.target, mode: walk.shape.mode };
   visitData = firstVisitData = areaData = null;  // and its cells' visits and areas too
-  glClear();  // a surface drawn by WebGL before (see 11.4b)
+  gpuClear();  // a surface drawn before (see 11.4d)
   fill = null;  // a new walk: its enclosed areas are computed again, and its layer starts empty
   walk.ant = 0; walk.highway = null; walk.bridges = null;  // set by an ant's walk only
   walk.plane = walk.rows = null;  // set by Life on the plane only; Elementary's rows (see elementaryRows)
@@ -3616,7 +3616,7 @@ function projector() {
   };
 }
 
-// Projection of the whole 3D walk (xs, ys), same formula as projectPoint; projected counts them (see glFlat)
+// Projection of the whole 3D walk (xs, ys), same formula as projectPoint; projected counts them (see gpuFlat)
 let projected = 0;
 function project() {
   const { wx, wy, wz, xs, ys } = walk, proj = projector();
@@ -6780,7 +6780,7 @@ function loopCells(rle) {
 const loopName = (text) => Object.keys(LOOP_RULES).find((k) => k.toLowerCase() === ruleBody(text).trim().toLowerCase());
 const loopTables = {};
 // a table of transitions (Golly's: its states, neighbourhood, symmetries, variables, lines C N … C'), its keys in order
-// (see GL_SHADERS.lifeRule), once each
+// (see GPU_LIFE's lifeRule), once each
 function loopTable(table) {
   return (loopTables[table] ??= (() => {
     const vars = {}, lines = [], to = new Map();
@@ -6805,7 +6805,7 @@ function loopTable(table) {
       each(0);
     }
     const keys = [...to.keys()].sort((a, b) => a - b);
-    return { n, k, turns, to: Int32Array.from(keys.flatMap((i) => [i, to.get(i)])) };  // (its keys in order, each with its state: found by halves, see GL_SHADERS.lifeRule)
+    return { n, k, turns, to: Int32Array.from(keys.flatMap((i) => [i, to.get(i)])) };  // (its keys in order, each with its state: found by halves, see GPU_LIFE's lifeRule)
   })());
 }
 function parseLoops(text) {
@@ -8248,7 +8248,7 @@ function buildLifePlane(seq) {
   walk.life = { nbr, ring: rule.loops ? loopRing(rule, sidesOf(row, W, planeTorus(kind))) : rule.iso && rule.iso !== 'vertex' ? nbr.ring : null, side: rule.iso === 'vertex' ? sideOf(kind, W, nbr) : null, B: rule.B, S: rule.S, C: rule.C, two: rule.two, colours: rule.colours, ruleText: ruleBody(rule.text),
                 margolus: MODES[current.mode].margolus && rule.margolus ? ruleBlocks(rule, kind, W) : null, loops: rule.loops ?? null, loopStates: rule.loopStates, loopRing: rule.loopRing, loopTurns: rule.loopTurns, lineages: !!rule.lineages,
                 seed: planeSeed(kind, seq, rule.C, rule.colours), alive: new Uint8Array(n) };
-  if (walk.life.margolus?.flips) blockCells(walk.life.margolus, n);  // (Critters, Tron: their cells in blocks, see GL_SHADERS.blockRule)
+  if (walk.life.margolus?.flips) blockCells(walk.life.margolus, n);  // (Critters, Tron: their cells in blocks, see GPU_LIFE's blockRule)
   lifeCells(walk.life);  // (its cells' arrays: the graphics card's copies too)
   countSeed(walk.life);
   lifeStart = null;
@@ -8606,7 +8606,7 @@ function planeWalls(kind, W) {
   return (wallsMemo = { key: `${kind}|${W}|${planeRow(kind, W)}`, cells }).cells;
 }
 // Behind the grid (grid layer, at each view): the sky or the page outside it (the grid itself, its page, its walls and its
-// outlines, see glPlane)
+// outlines, see gpuPlane)
 function drawPlaneGrid() {
   layers.grid.clearRect(0, 0, cw, ch);
   drawSky(layers.grid);
@@ -8830,7 +8830,7 @@ function cellsIcon(kind, rle) {
     .map(([pts, v]) => `<polygon points="${pts.map((p) => p.map((c) => c.toFixed(2)).join(',')).join(' ')}"${v > 1 ? ' class="dim"' : ''}/>`).join('')}</svg>`;
 }
 // Life's look on any grid (Life, Reversible; the plane, a surface), its colours by the graphics card in tables (see
-// lifeLookGPU): States (each colour, its dying stages, its trail after death), Age or Activity; lift: a surface's rainbow, lighter
+// gpuLook): States (each colour, its dying stages, its trail after death), Age or Activity; lift: a surface's rainbow, lighter
 function lifeLook(L, lift = (c) => c) {
   const pack = (c) => { const [r, g, b] = rgbOf(motifShown ? faded(c, FADING) : c); return ((255 << 24) | (b << 16) | (g << 8) | r) >>> 0; };
   const colour = $('colourMode').value, trail = LIFE_TRAIL.map(pack), inked = LIFE_FADE.map(pack), alive = pack(LIFE_ALIVE), civ = [0, ...civColours(L.colours, L.C).map(pack)];
@@ -8841,7 +8841,7 @@ function lifeLook(L, lift = (c) => c) {
   const byActivity = colour === 'digit' ? Uint32Array.from({ length: Math.min(L.maxActivity, 65535) + 1 }, (_, v) => (v ? grad[level(v + 1, L.maxActivity + 1)] : 0)) : null;
   const byDying = Uint32Array.from({ length: L.C }, (_, st) => (st < 2 ? 0 : trail[Math.min(trail.length - 1, Math.round(((st - 1) / (L.C - 1)) * trail.length))]));
   const fade = L.C === 2 && trailOn() ? trail.length : 0, K = L.colours;  // the trail after death (Trail)
-  // its colours by the graphics card, by these tables (see lifeLookGPU)
+  // its colours by the graphics card, by these tables (see gpuLook)
   const table = new Uint32Array(4096 * 17);
   for (let st = 1; st < 256; st++) {
     table[st] = colour !== 'mono' ? 0 : K > 1 ? civ[st] ?? 0 : st === 1 ? alive : 0;
@@ -8856,12 +8856,12 @@ function drawLifePlane() {
   const L = walk.life, ctx = layers.path;
   for (const c of [layers.path, layers.line, layers.fill, layers.overlay]) c.clearRect(0, 0, cw, ch);  // no walker
   const look = { ...lifeLook(L), wall: [0, 0, 0, 0], dead: [0, 0, 0, 0] };  // (the plane's walls and dead cells: its own, under)
-  glPlane((tex, size) => lifeLookGPU(L, tex, Math.ceil(size / 1024), look));
+  gpuPlane((out) => gpuLook(L, out, look));
   drawBlocks(ctx);
   drawMotif(ctx);
   drawGhost();
 }
-// Reversible's blocks (Blocks on): those of the set the generation shown goes on by, its next (see GL_SHADERS.blockRule), each outlined, the
+// Reversible's blocks (Blocks on): those of the set the generation shown goes on by, its next (see GPU_LIFE's blockRule), each outlined, the
 // sides of its cells not shared by two of them; masked by the grid's outline: its sides on it never drawn (a block cut by the
 // torus's edges: its parts' sides between them only)
 let outlineMemo = null;
@@ -8989,7 +8989,7 @@ function motifTiles() {
   const nears = [-1, -1], best = [-Infinity, -Infinity], score = new Float64Array(g.n).fill(-Infinity);  // (a solid of squares and triangles: a triangle, and a square apart, see drawMotif)
   for (let t = 0; t < g.n; t++) {
     const n = [0, 1, 2].map((d) => sh.nrm[3 * t + d]), k = +(t < g.triFirst);
-    if (!planeVisible(n, at(t)) || (cutOn() && towardViewer(...at(t)) > 0)) continue;  // (Cut: its half nearer the viewer gone, as GL_CUT)
+    if (!planeVisible(n, at(t)) || (cutOn() && towardViewer(...at(t)) > 0)) continue;  // (Cut: its half nearer the viewer gone, as gpuSurface's cuT)
     const [x, y] = proj(...at(t)), sc = towardViewer(...n) + towardViewer(...at(t)) / (walk.R * (g.extent || 1)) - 0.2 * (Math.hypot(ox + x * s - cw / 2, oy + y * s - ch / 2) / Math.min(cw, ch));  // (facing the viewer, near it: in front, not a far side seen through a hole)
     score[t] = sc;
     if (sc > best[k]) { best[k] = sc; nears[k] = t; }
@@ -9031,7 +9031,7 @@ const colourMixed = (zone = hunt.zone) => colourMix && lifeColours > 1 && mixabl
 // Margolus showed Critters: its picture then the same way round, its cells as particles that keep their count)
 const negative = (L) => !!L.margolus?.flips && mod(cur, 2) === 1;  // (its past's too: a phase by its generation, below 0 as above)
 // the cells in a block (of any phase): the only ones shown negative (a wall's, out of every block, as they are), and turned
-// over by a phase leaving them out (by a wall), as their block would (see GL_SHADERS.blockRule)
+// over by a phase leaving them out (by a wall), as their block would (see GPU_LIFE's blockRule)
 function blockCells(M, n) {
   if (M.cells) return M.cells;
   const c = new Uint8Array(n);
@@ -9765,8 +9765,7 @@ function fitRuleToShape() {
 
 function lifeReset() {
   const L = walk.life;
-  L.onGPU = false;  // (its cells all written here: the graphics card's not read back first, sent again, see gpuOld)
-  L.alive.set(L.seed);  // cell states: 0 dead, 1 alive, 2 … C−1 dying (two civilisations: 1 red, 2 blue); their ages… there, from them (see lifeToGPU)
+  L.alive.set(L.seed);  // cell states: 0 dead, 1 alive, 2 … C−1 dying (two civilisations: 1 red, 2 blue); their ages… there, from them (see gpuLifePuU)
   L.gen = 0;  // generations computed, never wound back by a loop (the trail fades on, see died)
   L.extinctAt = Array.from({ length: L.colours + 1 }, (_, k) => (k && (L.colours === 1 ? L.seedAlive : L.seedByColour[k]) === 0 ? 0 : null));  // each colour's last generation alive, once all died out
   L.maxActivity = 0;
@@ -9806,7 +9805,7 @@ function lifeReset() {
  * period g − T (1 = frozen). With N cells there are 2^N states, so this always happens eventually. */
 const LIFE_TRACK = 200000;  // generations remembered before giving up
 // (two sums over the cells not dead, each a cell's number and state mixed: in any order, as the graphics card sums them, see
-// GL_LIFE's key)
+// GPU_LIFE's key)
 const lifeMix = (x) => { x = Math.imul(x ^ (x >>> 16), 0x7feb352d); x = Math.imul(x ^ (x >>> 15), 0x846ca68b); return (x ^ (x >>> 16)) >>> 0; };
 function lifeFingerprint(state) {
   let h1 = 0, h2 = 0;
@@ -9873,7 +9872,7 @@ function searchBack(on) {
   };
   slice();
 }
-// a block rule's generation g there, from a into b (as GL_SHADERS.blockRule: Ising's 4 sides, stellated cells across first,
+// a block rule's generation g there, from a into b (as GPU_LIFE's blockRule: Ising's 4 sides, stellated cells across first,
 // flips' cells left out by a wall turned over)
 function blockStep(M, a, b, g) {
   const p = mod(g, M.turns.length), turn = M.turns[p];
@@ -10156,7 +10155,7 @@ for (const [kind, names] of Object.entries(BLOCK_ORDER)) {
 function lifeStep(G = lifeStepGPU(walk.life, cur + 1)?.[0]) {  // (G: its sums, played on the graphics card, see lifeStepGPU)
   const L = walk.life, gen = cur + 1, K = L.colours, two = K > 1;
   const born0 = L.born, dead0 = L.dead;  // before this generation
-  if (!G) return;  // (no WebGL 2)
+  if (!G) return;  // (no WebGPU)
   const { alive, dying } = G, byColour = two ? G.byColour : new Int32Array(K + 1);
   L.gen++;
   L.key = G.key;
@@ -10229,7 +10228,7 @@ function record(L, g, alive, by, order) {
 }
 // How ordered a state is: 1 − its live cells' dead neighbours (their borders) by as many as they would have at random (each
 // neighbour dead as often as a cell is, 1 − p): about 0 a soup, near 1 a picture in one piece (a start's, a return's); none
-// alive or all, 0. Its borders: the graphics card's (see GL_SHADERS.lifeCount), a start's here (bordersOf)
+// alive or all, 0. Its borders: the graphics card's (see GPU_LIFE's lifeCount), a start's here (bordersOf)
 function orderOf(L, alive, borders) {
   const { start } = L.nbr, n = start.length - 1;
   L.open ??= start.reduce((m, v, t) => m + (t < n && start[t + 1] > v ? 1 : 0), 0);  // (its cells not the wall's, and their neighbours)
@@ -10299,7 +10298,7 @@ function bordersOf(L, a) {
  *   1 − CV / √(K − 1), CV the standard deviation of the S_c over their mean (1: all even, 0: one colour
  *   spreading alone); score = the generations with two colours side by side, before the run repeats
  *   (or the cap), × the balance.
- * On the graphics card, in batches (see lifeEngine): the starts side by side, a generation of them all at once, their sums
+ * On the graphics card, in batches (see gpuLifeEngine): the starts side by side, a generation of them all at once, their sums
  * (alive, the key, born of each colour, cells beside another colour's) kept LIFE_H generations (more as fewer runs go on), read back then; a run
  * ended (repeating, all reached, or the cap), its place a new start's. */
 function huntRuns(L, { cells, copies, all, choices, nth }, cap, goal, report) {  // goal: one colour's (see HUNT_GOALS)
@@ -12276,8 +12275,8 @@ function resize() {
     ctx.canvas.height = Math.round(ch * dpr);
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   }
-  glCanvas.width = gpuCanvas.width = Math.round(cw * dpr);
-  glCanvas.height = gpuCanvas.height = Math.round(ch * dpr);
+  gpuCanvas.width = Math.round(cw * dpr);
+  gpuCanvas.height = Math.round(ch * dpr);
   if (walk.plane) bounds = planeBounds();  // (a rhombus turns as the view changes shape)
   if (first || $('autoFit').checked) fitToBounds(padBounds(bounds));
   needsFull = true;
@@ -12553,7 +12552,7 @@ function towardViewer(x, y, z) {
 // The light (Light checked): from the top left, in front, turning with the view (a lamp on the camera's shoulder),
 // with its shadows; a tile is darkened by SHADE as it turns away from it, with a white glint where it faces half-way
 // between the light and the viewer (glint(), as the shaders' light). Light unchecked: lit from the viewer, no glint, no shadows
-const LIGHT_GLINT = 0.22, LIGHT_SHINE = 24, SHADOW_SIZE = 2048;  // SHADOW_SIZE: the shadows' texture (see glShadows)
+const LIGHT_GLINT = 0.22, LIGHT_SHINE = 24, SHADOW_SIZE = 2048;  // SHADOW_SIZE: the shadows' texture (see gpuShadows)
 const lamp = () => $('light').checked, glint = () => (lamp() ? LIGHT_GLINT : 0);
 function lightDir() {
   if (!lamp()) return [...cam.v];
@@ -12623,14 +12622,14 @@ function drawSphere() {
   if (motifShown) palette = palette.map((c) => c && (c === LIFE_WALL ? c : faded(c, FADING)));  // (the motif shown: the cells pale under its outlines, the walls not: ochre, as its tooltip says them)
   if (startsShown) {  // an empty globe under the distinct starts, its 12 pentagons as the walls they are in a Life run
     const wall = new Set(g.walls);
-    glSurface(paintLevels([null, LIFE_WALL], (t) => (wall.has(t) ? 1 : 0)), false);
+    gpuSurface(paintLevels([null, LIFE_WALL], (t) => (wall.has(t) ? 1 : 0)), false);
     drawStarts(ctx);
     return;
   }
   if (L) {  // Life's look, the plane's (see lifeLook): the walls, the pentagons of the hexagon sphere, in stone grey
     const rgba = (c) => [...rgbCached(c).map((x) => x / 255), 1], look = { ...lifeLook(L, lift), wall: rgba(LIFE_WALL), dead: rgba(UNLIT) };
-    glSurface((tex, n) => lifeLookGPU(L, tex, Math.ceil(n / 1024), look), path);
-  } else glSurface(paintLevels(palette, levelOf), path);  // (see 11.4b)
+    gpuSurface((out) => gpuLook(L, out, look), path);
+  } else gpuSurface(paintLevels(palette, levelOf), path);  // (see 11.4d)
   drawMotif(ctx);  // the motif's outlines over it
 }
 
@@ -12760,436 +12759,16 @@ function edgeAlpha(sh) {
 }
 
 
-/* ---- 11.4b Surfaces in WebGL ----------------------------------------------------------------
- * The tiles, their grid and the rainbow path on a surface, drawn by the graphics card (WebGL 2) in
- * one go, its depth buffer hiding what lies behind (no sorting of the tiles, no path cut in halves):
- * fast enough to turn a big surface smoothly. The same projection as projectPoint (orthographic, or
- * perspective around walk.persp); the walker's arrow, the starts and the sky stay on their 2D layers.
- * Everything is drawn by WebGL 2: without it, nothing (every browser of the last years has it).
- *  - tiles: each tile a fan of triangles, its number with each corner, its colour a texel (sent at each drawing: the
- *    walk paints tiles as it goes), its normal for the shading (rebuilt when the shape changes); the shadows again only
- *    when the shape, the light or the view moves;
- *  - grid: the tile edges as lines, pulled a little towards the viewer;
- *  - path: one instance per step, a quad from point i to point i + 1, as wide on screen as
- *    surfaceLineWidth, coloured by its band of the rainbow; the points are stored once. */
-const glCanvas = $('glLayer');
-let GLS = null;  // { gl, programs, buffers, keys } once set up; false when WebGL 2 is missing
-const GL_PROJECT = `
-uniform vec3 uR, uU, uV; uniform vec4 uPersp; uniform vec2 uCC; uniform vec3 uView; uniform vec2 uScreen; uniform float uDepth; out float vCut;
-vec3 toScreen(vec3 p) {  // pixels on the stage, and the depth towards the viewer
-  vCut = dot(p, uV);  // (its side of the plane through the centre facing the viewer, see GL_CUT)
-  float X = dot(p, uR), Y = -dot(p, uU), t = dot(p - uPersp.xyz, uV);
-  if (uPersp.w > 0.0) { float k = uPersp.w / (uPersp.w - t); X = uCC.x + (X - uCC.x) * k; Y = uCC.y + (Y - uCC.y) * k; }
-  return vec3(uView.y + X * uView.x, uView.z + Y * uView.x, t);
-}
-vec4 clipOf(vec3 s, float bias) {
-  return vec4(s.x / uScreen.x * 2.0 - 1.0, 1.0 - s.y / uScreen.y * 2.0, clamp(-s.z / uDepth - bias, -1.0, 1.0), 1.0);
-}`;
-// The light (after GL_PROJECT), as tileLight: the normal turned to the viewer, darkened away from the light, a glint;
-// vDark what stays in the shadow, vLit what the light adds, vSh where the point falls in the shadows' texture (see glShadows)
-const GL_LIGHT = `
-uniform vec3 uL, uH, uLx, uLy; uniform float uShade, uGlint, uLr; uniform uint uFront; out vec3 vDark, vLit, vSh; flat out uint vId;
-uint place(uint id) { return uFront > 0u ? id % uFront : id; }  // (as tilePlace: a Möbius strip's two faces one piece for the light)
-vec3 lightSpace(vec3 p) { return vec3(dot(p, uLx), dot(p, uLy), -dot(p, uL)) / uLr; }  // seen from the light, within ±1
-void light(vec3 col, vec3 n, vec3 p) {
-  if (dot(n, uV) < 0.0) n = -n;
-  vDark = col * (1.0 - uShade);
-  vLit = col * uShade * max(0.0, dot(n, uL)) + uGlint * pow(max(0.0, dot(n, uH)), ${LIGHT_SHINE}.0);
-  vSh = lightSpace(p) * 0.5 + 0.5;
-}`;
-// the share of the light a pixel gets: 9 looks round it in the shadows' texture, each softened by the hardware's compare; a
-// look that finds its own tile or cube there lit: a piece never shadows itself (a tile not flat, its corners on a curved
-// sheet, is drawn folded, lit as flat; a Möbius strip's two faces, folded along other diagonals, cross in the middle: before
-// v0.1.1515, spots in the tiles' middles on every Möbius strip but those of triangles (Triangles, Tetrakis, Kisrhombille:
-// flat): squares at 6 a side, Cairo at 4, Rhombille, Octagons, Dodecagons…, gone by 12, its folds then under the offset's
-// 2 texels; never on a torus or a Klein bottle, a tile a place. Drawing each tile as triangles round its middle instead:
-// some 10 lines more, a corner more a tile to work out each time the shape moves, k triangles a tile, not k − 2, and its
-// folds only halved, not gone)
-// Glass (see glGlass), a fragment's output: uGlass 0, as it is; 1, its colour and its share weighed (the nearer the viewer,
-// the heavier), summed; 2, its share, what it lets through multiplied (McGuire and Bavoil's weighted blended transparency,
-// 2013: every layer seen, in no order, nothing sorted; at a quarter of the depth span each side, weights 1 to 60)
-// Cut (see cutOn), in a fragment shader: the half nearer the viewer, by the plane through the centre facing them, gone
-// (uCut 1), or with Glass, see-through, the other half not (2, see GL_SHADOWED)
-const GL_CUT = `
-in float vCut; uniform int uCut;
-#define CUT if (uCut == 1 && vCut > 0.0) discard;`;
-const GL_GLASS = `
-uniform int uGlass;
-vec4 glass(vec3 c, float a) {
-  if (uGlass == 0) return vec4(c, a);
-  float w = clamp(a * 1e3 * pow(1.0 - gl_FragCoord.z, 8.0), 1e-2, 3e3);
-  return uGlass == 1 ? vec4(c * a * w, a * w) : vec4(a);
-}`;
-const GL_SHADOWED = `#version 300 es
-precision highp float; precision highp int; precision highp sampler2DShadow; precision highp usampler2D; in vec3 vDark, vLit, vSh; flat in uint vId;
-uniform sampler2DShadow uShadow; uniform usampler2D uShadowId; uniform float uAlpha; out vec4 o;${GL_GLASS}${GL_CUT}
-void main() {
-  CUT
-  float t = 1.0 / ${SHADOW_SIZE}.0, s = 0.0;
-  for (int i = -1; i <= 1; i++) for (int j = -1; j <= 1; j++) {
-    vec2 at = vSh.xy + vec2(i, j) * t;
-    s += texture(uShadowId, at).r == vId + 1u ? 1.0 : texture(uShadow, vec3(at, vSh.z - 2.0 * t));
-  }
-  o = glass(vDark + vLit * s / 9.0, uGlass == 0 ? 1.0 : uCut == 2 && vCut <= 0.0 ? 1.0 : uAlpha);
-}`;
-// Life on the plane (see glPlane): world (u, v) turned by uTurn (its cos and sin), then to pixels by uView (scale, ox, oy)
-const GL_PLANE_AT = `
-uniform vec3 uView; uniform vec2 uScreen, uTurn;
-vec4 planeAt(vec2 p) {
-  vec2 q = uView.yz + vec2(uTurn.x * p.x - uTurn.y * p.y, uTurn.y * p.x + uTurn.x * p.y) * uView.x;
-  return vec4(q.x / uScreen.x * 2.0 - 1.0, 1.0 - q.y / uScreen.y * 2.0, 0.0, 1.0);
-}`;
-// Life on the graphics card (see lifeEngine): a quad over its target; the states 4 a texel (RGBA, /255), 1024 a row (4096
-// cells); the grid's numbers and the cells' counts one a texel, 4096 a row; runs of its cells side by side (a hunt's starts,
-// see huntRuns), uStride apart (its n rounded up to 64), a cell t its run's t − base
-const GL_QUAD = `#version 300 es
-void main() { gl_Position = vec4(gl_VertexID % 2 == 0 ? -1.0 : 1.0, gl_VertexID < 2 ? -1.0 : 1.0, 0.0, 1.0); }`;
-const GL_LIFE = `#version 300 es
-precision highp float; precision highp int; precision highp isampler2D; precision highp usampler2D;
-uniform sampler2D uA; uniform isampler2D uStart; uniform int uN, uK, uStride;
-int I(isampler2D s, int i) { return texelFetch(s, ivec2(i & 4095, i >> 12), 0).r; }
-uint U(usampler2D s, int i) { return texelFetch(s, ivec2(i & 4095, i >> 12), 0).r; }
-int state(sampler2D s, int t) { return int(round(texelFetch(s, ivec2((t >> 2) & 1023, t >> 12), 0)[t & 3] * 255.0)); }
-bool live(int v) { return v > 0 && v <= uK; }
-uniform isampler2D uIn;  // (blocks: the cells in one, shown negative every other generation, see negative)
-bool shown(int v, int t, bool neg) { return live(v) != (neg && I(uIn, t) > 0); }
-uint mixed(uint x) { x = (x ^ (x >> 16)) * 0x7feb352du; x = (x ^ (x >> 15)) * 0x846ca68bu; return x ^ (x >> 16); }
-int baseOf(int t) { return t / uStride * uStride; }`;
-// sums' passes (see lifeTally): 16 sums in 4 targets, added (the 5th, the most changes: their most)
-const GL_SUMS = `#version 300 es
-precision highp float; precision highp int; precision highp usampler2D;
-uniform usampler2D uC0, uC1, uC2, uC3; uniform int uFrom;
-layout(location = 0) out uvec4 o0; layout(location = 1) out uvec4 o1; layout(location = 2) out uvec4 o2; layout(location = 3) out uvec4 o3;
-uvec4 plus(uvec4 v, uvec4 c, int i) { return uFrom + 4 * i == 4 ? uvec4(v.x + c.x, max(v.y, c.y), v.z + c.z, v.w + c.w) : v + c; }`;
-const GL_SHADERS = {
-  // a generation of Life (see lifeStep's words): a texel 4 cells' states (RGBA, /255), 1024 a row; the grid's numbers (its
-  // neighbours' lists, rings, folds, letters, B and S) one a texel, 4096 a row
-  // a texture copied as it is (Life's states: from the one written by the processor, see lifeToGPU)
-  lifeCopy: [GL_QUAD, `#version 300 es
-precision highp float; uniform sampler2D uA; out vec4 o;
-void main() { o = texelFetch(uA, ivec2(gl_FragCoord.xy), 0); }`],
-  lifeRule: [GL_QUAD, `${GL_LIFE}
-uniform isampler2D uList, uRing, uMoreStart, uMoreList, uSide, uB, uS, uLoops; uniform int uC, uR, uMode, uLoop, uLoopN; uniform bool uMore, uLin; out vec4 o;
-int base;  // (its run's first cell: t below its run's)
-int A(int t) { return state(uA, base + t); }
-int next(int t) {
-  if (t >= uN) return 0;
-  int was = A(t), s0 = I(uStart, t), s1 = I(uStart, t + 1), last = uK * (uC - 1);
-  if (s0 == s1) return 0;  // (a wall)
-  if (uLoop > 0) {  // (a loop's table, its uLoop states: its next state by its uR neighbours in turn, see parseLoops; none fits, kept)
-    int i = uLin && was > 0 ? (was - 1) / uK + 1 : was, around[13], k = 0, most = 0;
-    for (int j = 0; j < 13; j++) around[j] = 0;
-    for (int q = 0; q < uR; q++) {
-      int v = I(uRing, uR * t + q), u = v >= 0 ? A(v) : 0;
-      i = uLoop * i + (uLin && u > 0 ? (u - 1) / uK + 1 : u);
-      if (uLin && u > 0) around[(u - 1) % uK + 1]++;
-    }
-    int to = -1, lo = 0, hi = uLoopN - 1;  // (its key among the table's, in order, by halves)
-    while (lo <= hi) { int m = (lo + hi) / 2, key = I(uLoops, 2 * m); if (key == i) { to = I(uLoops, 2 * m + 1); break; } if (key < i) lo = m + 1; else hi = m - 1; }
-    if (to < 0) return was;
-    if (!uLin || to == 0) return to;
-    if (was > 0) k = (was - 1) % uK + 1; else for (int j = 1; j <= uK; j++) if (around[j] > most) { most = around[j]; k = j; }  // (its lineage, or its neighbours' most)
-    return max(k, 1) + uK * (to - 1);
-  }
-  if (was > uK) return was + uK <= last ? was + uK : 0;  // (one more dying stage, or dead)
-  int around[13];
-  for (int k = 0; k < 13; k++) around[k] = 0;
-  int c = 0;
-  if (uMode == 1) {  // (a ring: where its live neighbours sit; round a fold, any of its)
-    for (int q = 0; q < uR; q++) {
-      int v = I(uRing, uR * t + q);
-      if (uMore && !(v >= 0 && live(A(v)))) for (int i = I(uMoreStart, uR * t + q); i < I(uMoreStart, uR * t + q + 1); i++) if (live(A(I(uMoreList, i)))) { v = I(uMoreList, i); break; }
-      if (v >= 0 && live(A(v))) { c |= 1 << q; around[A(v)]++; }
-    }
-    c += 16;
-  } else if (uMode == 2) {  // (the flowers' letters: the live ones by a corner only, apart)
-    int k = 0;
-    for (int q = s0; q < s1; q++) { int v = A(I(uList, q)); if (live(v)) { c++; around[v]++; if (I(uSide, q) == 0) k++; } }
-    c = 16 + 4 * c + min(k, 3);
-  } else for (int q = s0; q < s1; q++) { int v = A(I(uList, q)); if (live(v)) { c++; around[v]++; } }
-  if (was > 0) return I(uS, c) > 0 ? was : uC > 2 ? was + uK : 0;
-  if (I(uB, c) == 0) return 0;
-  if (uK < 2) return 1;
-  int now = 0, most = 0, tied = 0, missing = 0, gone = 0;  // (the colour most of its live neighbours have; on a tie, the one missing, else none)
-  for (int k = 1; k <= uK; k++) {
-    if (around[k] > most) { most = around[k]; tied = 1; now = k; } else if (around[k] == most) tied++;
-    if (around[k] == 0) { gone++; missing = k; }
-  }
-  return tied > 1 ? (gone == 1 ? missing : 0) : now;
-}
-void main() {
-  int t = 4 * (int(gl_FragCoord.y) * 1024 + int(gl_FragCoord.x));  // (its 4 in one run: uStride a multiple of 64)
-  base = baseOf(t);
-  t -= base;
-  o = vec4(next(t), next(t + 1), next(t + 2), next(t + 3)) / 255.0;
-}`],
-  // a generation of a block rule (see planeBlocks, blockPass): a cell's place this phase (uWhere, a phase's n after the
-  // last's): its block's, in the blocks' cells (uTurns, its block from the k-th before), Ising's, its 4 sides there (−1:
-  // none); none, -1 (with flips, a cell of a block another phase turned over); stellated, the cells moved across first
-  // (uMove), back after (uBack: the rule's inverse in uTo)
-  blockRule: [GL_QUAD, `${GL_LIFE}
-uniform isampler2D uWhere, uTurns, uMove, uTo; uniform int uPhase, uKb; uniform bool uIsing, uFlips, uStars, uBack; out vec4 o;
-int A(int t) { return state(uA, uStars && !uBack ? I(uMove, t) : t); }
-int rule(int t) {
-  int w = I(uWhere, uPhase * uN + t), was = A(t), st = 0;
-  if (w < 0) return uFlips && I(uIn, t) > 0 ? 1 - was : was;
-  if (uIsing) { int c = 0; for (int q = 0; q < 4; q++) { int u = I(uTurns, w + q); if (u >= 0 && A(u) > 0) c++; } return c == 2 ? 1 - was : was; }
-  int j = w % uKb;
-  for (int q = 0; q < uKb; q++) if (A(I(uTurns, w - j + q)) > 0) st |= 1 << q;
-  return (I(uTo, st) >> j) & 1;
-}
-int next(int t) { return t >= uN ? 0 : rule(uStars && uBack ? I(uMove, t) : t); }
-void main() {
-  int t = 4 * (int(gl_FragCoord.y) * 1024 + int(gl_FragCoord.x));
-  o = vec4(next(t), next(t + 1), next(t + 2), next(t + 3)) / 255.0;
-}`],
-  // a cell's triangles, its number with each corner: its colour a texel of uCol (1024 a row), none where it is clear
-  planeCells: [`#version 300 es
-in vec2 aPos; in float aId; uniform sampler2D uCol; flat out vec4 vCol;${GL_PLANE_AT}
-void main() {
-  int id = int(aId);
-  vCol = texelFetch(uCol, ivec2(id % 1024, id / 1024), 0);
-  gl_Position = vCol.a < 0.5 ? vec4(2.0, 2.0, 2.0, 1.0) : planeAt(aPos);  // (clear: off the screen)
-}`, `#version 300 es
-precision mediump float; flat in vec4 vCol; out vec4 o; void main() { o = vCol; }`],
-  // a generation's counts, a cell at a time (see lifeStepGPU): before (uA, uAge, uAct, uDied, uEver) and after (uB): its
-  // age, its changes, its last death, the colours it had (bit 0: it ever lived); a generation back (uBack, see lifeBack): its
-  // age and changes one less
-  lifeBook: [GL_QUAD, `${GL_LIFE}
-uniform sampler2D uB; uniform usampler2D uAge, uAct, uEver; uniform isampler2D uDied; uniform int uGen; uniform bool uBack;
-layout(location = 0) out uint oAge; layout(location = 1) out uint oAct; layout(location = 2) out int oDied; layout(location = 3) out uint oEver;
-void main() {
-  int t = int(gl_FragCoord.y) * 4096 + int(gl_FragCoord.x);
-  if (t - baseOf(t) >= uN) { oAge = 0u; oAct = 0u; oDied = 0; oEver = 0u; return; }
-  int was = state(uA, t), now = state(uB, t);
-  uint age = U(uAge, t), act = U(uAct, t), ever = U(uEver, t); int died = I(uDied, t);
-  bool on = live(now), wasOn = live(was);
-  if (uBack) { if (now == was) { if (now > 0) age = max(1u, age - 1u); } else { age = uint(now > 0); if (act > 0u) act--; } }
-  else {
-    if (uK > 1 && on && !wasOn) ever |= 1u << now;
-    if (now == was) { if (on && age < 65535u) age++; }
-    else { act++; if (on) { age = 1u; ever |= 1u; } else if (wasOn) { age = 0u; died = uGen; } }
-  }
-  oAge = age; oAct = act; oDied = died; oEver = ever;
-}`],
-  // 64 cells' sums (see lifeTally): 16 a pass (uFrom), its 4 targets' 4 each: alive, dying, born, dead, newly ever alive,
-  // the most changes (a max), the key's two sums, the live cells beside another colour's, then each colour's alive, born,
-  // dead, newly had, then the live cells' dead neighbours (their borders, see orderOf); alive, born and dead as shown (uNegA, uNegB: a block rule's generation before, after, shown negative)
-  lifeCount: [GL_QUAD, `${GL_LIFE}
-uniform sampler2D uB; uniform isampler2D uList; uniform usampler2D uEver, uEverNow, uActNow; uniform int uFrom; uniform bool uNegA, uNegB;
-layout(location = 0) out uvec4 o0; layout(location = 1) out uvec4 o1; layout(location = 2) out uvec4 o2; layout(location = 3) out uvec4 o3;
-void main() {
-  uint v[16];
-  for (int i = 0; i < 16; i++) v[i] = 0u;
-  int from = (int(gl_FragCoord.y) * 64 + int(gl_FragCoord.x)) * 64, base = baseOf(from);  // (its 64 in one run)
-  bool beside = uK > 1 && uFrom <= 8 && uFrom + 16 > 8;
-  #define ADD(j, n) { int i_ = (j) - uFrom; if (i_ >= 0 && i_ < 16) v[i_] += (n); }
-  for (int x = 0; x < 64; x++) {
-    int t = from + x, c = t - base;
-    if (c >= uN) break;
-    int was = state(uA, t), now = state(uB, t);
-    bool on = shown(now, t, uNegB), wasOn = shown(was, t, uNegA), odd = false;
-    if (beside && live(now)) for (int q = I(uStart, c); q < I(uStart, c + 1); q++) { int u = state(uB, base + I(uList, q)); if (live(u) && u != now) { odd = true; break; } }
-    uint e0 = U(uEver, t), e1 = U(uEverNow, t);
-    // (only the sums it adds to: its own, then its colours' before and after; each its place in this pass's 16, if there)
-    ADD(0, uint(on)); ADD(1, uint(now > 0 && !live(now))); ADD(2, uint(on && !wasOn)); ADD(3, uint(wasOn && !on));
-    ADD(4, uint((e0 & 1u) == 0u && (e1 & 1u) == 1u)); if (uFrom == 0) v[5] = max(v[5], U(uActNow, t));
-    if (now > 0) { ADD(6, mixed(uint(c) * 0x9e3779b9u + uint(now))); ADD(7, mixed(uint(c) * 0x85ebca6bu ^ uint(now) * 0xc2b2ae35u)); }
-    ADD(8, uint(odd));
-    if (now >= 1 && now <= uK && on) { ADD(9 + 4 * (now - 1), 1u); if (!wasOn) ADD(10 + 4 * (now - 1), 1u); }
-    if (was >= 1 && was <= uK && wasOn && !on) ADD(11 + 4 * (was - 1), 1u);
-    uint d = ~e0 & e1 & ~1u;  // (the colours it had just now)
-    if (d != 0u) for (int k = 1; k <= uK; k++) if ((d >> uint(k) & 1u) != 0u) ADD(12 + 4 * (k - 1), 1u);
-    if (on && uFrom <= 9 + 4 * uK && uFrom + 16 > 9 + 4 * uK) {  // (in the pass that has it only)
-      uint b = 0u;
-      for (int q = I(uStart, c); q < I(uStart, c + 1); q++) { int u = base + I(uList, q); if (!shown(state(uB, u), u, uNegB)) b++; }
-      ADD(9 + 4 * uK, b);
-    }
-  }
-  o0 = uvec4(v[0], v[1], v[2], v[3]); o1 = uvec4(v[4], v[5], v[6], v[7]); o2 = uvec4(v[8], v[9], v[10], v[11]); o3 = uvec4(v[12], v[13], v[14], v[15]);
-}`],
-  // and a run's: its uBlocks sums of 64 added in two steps (one fragment's alone, each waiting for the last: 16,384 at 2^20
-  // cells, the generation's longest wait), its 64 parts (each every 64th block) then them (the most changes, the most of
-  // theirs), a row a run (its column: a hunt's generation, see huntRuns)
-  lifePart: [GL_QUAD, `${GL_SUMS}
-uniform int uBlocks;
-uvec4 add(usampler2D s, int i) {
-  uvec4 v = uvec4(0u);
-  for (int b = int(gl_FragCoord.y) * uBlocks + int(gl_FragCoord.x), e = (int(gl_FragCoord.y) + 1) * uBlocks; b < e; b += 64) v = plus(v, texelFetch(s, ivec2(b & 63, b >> 6), 0), i);
-  return v;
-}
-void main() { o0 = add(uC0, 0); o1 = add(uC1, 1); o2 = add(uC2, 2); o3 = add(uC3, 3); }`],
-  lifeSum: [GL_QUAD, `${GL_SUMS}
-uvec4 add(usampler2D s, int i) {
-  uvec4 v = uvec4(0u);
-  for (int k = 0; k < 64; k++) v = plus(v, texelFetch(s, ivec2(k, int(gl_FragCoord.y)), 0), i);
-  return v;
-}
-void main() { o0 = add(uC0, 0); o1 = add(uC1, 1); o2 = add(uC2, 2); o3 = add(uC3, 3); }`],
-  // each cell's colour (see lifeLookGPU), a texel a cell, 1024 a row: by uLook's tables (4096 a row: its live states' from 0,
-  // its dying states' from 256, its ages' from 512, its trail's from 1024 (uTrail long: generations since it died), its
-  // changes' from 4096); a wall's uWall, a dead one's uDead
-  lifeLook: [GL_QUAD, `${GL_LIFE}
-uniform usampler2D uAge, uAct; uniform isampler2D uDied; uniform sampler2D uLook; uniform int uGen, uTrail, uBy; uniform bool uNeg; uniform vec4 uWall, uDead; out vec4 o;
-vec4 look(int i) { return texelFetch(uLook, ivec2(i & 4095, i >> 12), 0); }
-void main() {
-  int t = int(gl_FragCoord.y) * 1024 + int(gl_FragCoord.x);
-  if (t >= uN) { o = vec4(0.0); return; }
-  if (I(uStart, t) == I(uStart, t + 1)) { o = uWall; return; }
-  int st = state(uA, t);
-  if (uNeg && I(uIn, t) > 0) st = 1 - st;  // (a block rule's, shown negative)
-  if (uBy == 2) { o = look(4096 + int(min(U(uAct, t), 65535u))); return; }  // (its changes)
-  if (live(st)) { o = uBy == 1 ? look(512 + int(min(U(uAge, t), 64u))) : look(st); return; }  // (its age, or its state)
-  if (st > 0) { o = look(256 + st); return; }
-  int d = uGen - I(uDied, t);
-  o = d >= 0 && d < uTrail ? look(1024 + d) : uDead;
-}`],
-  // the cells' outlines, in one colour (premultiplied)
-  planeLines: [`#version 300 es
-in vec2 aPos;${GL_PLANE_AT}
-void main() { gl_Position = planeAt(aPos); }`, `#version 300 es
-precision mediump float; uniform vec4 uRgba; out vec4 o; void main() { o = uRgba; }`],
-  tile: [`#version 300 es
-in vec3 aPos; in vec3 aNrm; in float aId; uniform vec4 uPlain; uniform sampler2D uTileCol;${GL_PROJECT}${GL_LIGHT}
-void main() {  // its colour its tile's texel (1024 a row, see glSurface); uPlain: the back of an open sheet
-  int id = int(aId);
-  vId = place(uint(id));
-  light(uPlain.a > 0.0 ? uPlain.rgb : texelFetch(uTileCol, ivec2(id % 1024, id / 1024), 0).rgb, aNrm, aPos);
-  gl_Position = clipOf(toScreen(aPos), 0.0);
-}`, GL_SHADOWED],
-  // the depths seen from the light (see glShadows): a tile's corner, or a cube's at its point; and what is nearest it there,
-  // its number + 1 (a tile's place, a cube's: its instance)
-  depth: [`#version 300 es
-in vec3 aPos; in vec3 aAt; in float aId;${GL_PROJECT}${GL_LIGHT}
-void main() { vId = place(uint(aId) + uint(gl_InstanceID)); vCut = dot(aPos + aAt, uV); gl_Position = vec4(lightSpace(aPos + aAt), 1.0); }`, `#version 300 es
-precision mediump float; precision highp int; flat in uint vId; out uint o;${GL_CUT}
-void main() { CUT o = vId + 1u; }`],
-  edge: [`#version 300 es
-in vec3 aPos; in vec3 aNrm; in vec3 aNrm2; uniform float uBias; uniform bool uBoth; out float vFacing;${GL_PROJECT}
-void main() {  // an edge whose two tiles are both turned away is not drawn (the back of an open sheet, or of a strip's
-  // face): cut pixel by pixel, as its two ends may face apart (a strip's twist); an end sent off the screen drew a wire to it
-  vec3 eye = uPersp.w > 0.0 ? uPersp.xyz + uV * uPersp.w - aPos : uV;
-  vFacing = uBoth ? 1.0 : max(dot(aNrm, eye), dot(aNrm2, eye));  // a Klein bottle: seen from both sides
-  gl_Position = clipOf(toScreen(aPos), uBias);
-}`, `#version 300 es
-precision mediump float; uniform float uEdge; uniform vec3 uEdgeRgb; in float vFacing; out vec4 o;${GL_GLASS}${GL_CUT}
-void main() { CUT if (vFacing < 0.0) discard; o = glass(uEdgeRgb, uEdge); }`],
-  // the path printed on a surface's tiles (see pathSegments): one flat ribbon per segment, in its
-  // tile's plane (aN its normal), as wide as the path on screen, its ends going on half that width
-  // where aE says; seen from its tile's face only (see glSurface)
-  ribbon: [`#version 300 es
-in vec2 aQuad; in vec3 aA; in vec3 aB; in vec3 aN; in float aE; in float aI; uniform float uN, uHalf, uBias; uniform sampler2D uGrad; out vec3 vCol;${GL_PROJECT}
-void main() {
-  vCol = texture(uGrad, vec2((aI + 0.5) / uN, 0.5)).rgb;
-  vec3 d = aB - aA; d = length(d) > 1e-9 ? normalize(d) : vec3(1.0, 0.0, 0.0);
-  vec3 side = normalize(cross(d, aN)) * uHalf;  // counterclockwise seen from the face, as its tile
-  float on = aQuad.x < 0.5 ? mod(aE, 2.0) : floor(aE / 2.0);  // this end goes on past its point
-  vec3 p = mix(aA, aB, aQuad.x) + side * aQuad.y + d * (aQuad.x * 2.0 - 1.0) * uHalf * on;
-  gl_Position = clipOf(toScreen(p), uBias);  // over the grid lines, as the other paths
-}`, `#version 300 es
-precision mediump float; in vec3 vCol; out vec4 o;${GL_GLASS}${GL_CUT}
-void main() { CUT o = glass(vCol, 1.0); }`],
-  // Glass's last step (see glGlass): the layers' mean colour, over what shows through them all (premultiplied, as the canvas)
-  glassMix: [GL_QUAD, `#version 300 es
-precision highp float; uniform sampler2D uAcc, uRev; out vec4 o;
-void main() {
-  ivec2 p = ivec2(gl_FragCoord.xy); vec4 a = texelFetch(uAcc, p, 0); float r = texelFetch(uRev, p, 0).r;
-  o = vec4(a.rgb / max(a.a, 1e-5) * (1.0 - r), 1.0 - r);
-}`],
-  // the cubes of a 3D walk on cells (see glCubes): a unit cube around each point, shaded as the tiles
-  cube: [`#version 300 es
-in vec3 aCorner; in vec3 aNrm; in vec3 aAt; in vec3 aCol;${GL_PROJECT}${GL_LIGHT}
-void main() {
-  vId = uint(gl_InstanceID);
-  light(aCol, aNrm, aAt + aCorner);
-  gl_Position = clipOf(toScreen(aAt + aCorner), 0.0);
-}`, GL_SHADOWED],
-  // flat drawings, 2D walks and projected 3D walks (see glFlat): world (x, y) → pixels by uView (scale, ox, oy)
-  flatPath: [`#version 300 es
-in vec2 aQuad; in vec2 aA; in vec2 aB; in float aKey; uniform float uN, uWidth, uFrom, uPeriod; uniform int uColour; uniform vec3 uView; uniform vec2 uScreen; uniform sampler2D uGrad, uPal; out vec3 vCol;
-void main() {
-  if (aKey > 254.5) { gl_Position = vec4(2.0, 2.0, 2.0, 1.0); return; }  // a step that draws nothing (a spiral's 0)
-  float i = float(gl_InstanceID);
-  if (uPeriod > 0.0 && i >= uFrom + uPeriod) i = uFrom + mod(i - uFrom, uPeriod);  // each round of a loop as the first (see roundStep)
-  vCol = uColour == 2 ? texture(uPal, vec2((aKey + 0.5) / 256.0, 0.5)).rgb : texture(uGrad, vec2((i + 0.5) / uN, 0.5)).rgb;
-  vec2 a = uView.yz + aA * uView.x, b = uView.yz + aB * uView.x, p = mix(a, b, aQuad.x);
-  vec2 d = b - a; d = length(d) > 1e-4 ? normalize(d) : vec2(1.0, 0.0);
-  p += (vec2(-d.y, d.x) * aQuad.y + d * (aQuad.x * 2.0 - 1.0)) * uWidth * 0.5;
-  gl_Position = vec4(p.x / uScreen.x * 2.0 - 1.0, 1.0 - p.y / uScreen.y * 2.0, 0.0, 1.0);
-}`, `#version 300 es
-precision mediump float; in vec3 vCol; out vec4 o; void main() { o = vec4(vCol, 1.0); }`],
-  // tiles: one instance per tile, (x, y, colour band, template), its polygon from the templates (6
-  // corners each, the last repeated)
-  flatTiles: [`#version 300 es
-in vec4 aC; uniform vec2 uTpl[24]; uniform float uAlpha, uBright; uniform int uColour; uniform vec3 uView; uniform vec2 uScreen; uniform sampler2D uGrad, uPal; out vec4 vCol;
-void main() {  // aC.z: the band of the rainbow, or the key of the digits' colours (uColour 2)
-  vec3 c = (uColour == 2 ? texture(uPal, vec2((aC.z + 0.5) / 256.0, 0.5)) : texture(uGrad, vec2((aC.z + 0.5) / 256.0, 0.5))).rgb * uBright;
-  vCol = vec4(c * uAlpha, uAlpha);  // premultiplied
-  vec2 p = uView.yz + (aC.xy + uTpl[int(aC.w) * 6 + gl_VertexID]) * uView.x;
-  gl_Position = vec4(p.x / uScreen.x * 2.0 - 1.0, 1.0 - p.y / uScreen.y * 2.0, 0.0, 1.0);
-}`, `#version 300 es
-precision mediump float; in vec4 vCol; out vec4 o; void main() { o = vCol; }`],
-};
-function glSetup() {
-  if (GLS !== null) return GLS;
-  const gl = glCanvas.getContext('webgl2', { antialias: true, premultipliedAlpha: true });
-  if (!gl) return (GLS = false);
-  const program = ([vs, fs]) => {
-    const p = gl.createProgram();
-    for (const [type, src] of [[gl.VERTEX_SHADER, vs], [gl.FRAGMENT_SHADER, fs]]) {
-      const sh = gl.createShader(type);
-      gl.shaderSource(sh, src);
-      gl.compileShader(sh);
-      if (!gl.getShaderParameter(sh, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(sh));
-      gl.attachShader(p, sh);
-    }
-    gl.linkProgram(p);
-    if (!gl.getProgramParameter(p, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(p));
-    return p;
-  };
-  try {
-    const prog = Object.fromEntries(Object.entries(GL_SHADERS).map(([k, v]) => [k, program(v)]));
-    const buf = () => gl.createBuffer();
-    const grad = gl.createTexture();  // the rainbow, one texel per band (again when the theme changes, see glPalette)
-    gl.bindTexture(gl.TEXTURE_2D, grad);
-    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, BANDS, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, Uint8Array.from(GRADIENT.flatMap((c) => [...rgbOf(c), 255])));
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-    const quad = buf();
-    gl.bindBuffer(gl.ARRAY_BUFFER, quad);
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([0, -1, 0, 1, 1, -1, 1, 1]), gl.STATIC_DRAW);
-    GLS = { gl, prog, grad, quad, pos: buf(), nrm: buf(), tileIds: buf(), fan: buf(), ePos: buf(), eN1: buf(), eN2: buf(), ribbon: buf(), flatPts: buf(), flatKeys: buf(), flatFill: buf(), flatCells: buf(), planePos: buf(), planeIds: buf(), planeTris: buf(), planeEdges: buf(), pal: gl.createTexture(), keys: {}, drawn: false };
-  } catch (e) {
-    console.warn('WebGL surfaces off:', e.message);
-    GLS = false;
-  }
-  return GLS;
-}
-// The theme changed the walk's colours: the rainbow texture again, the one colour and the digits' made again
-function glPalette() {
-  gpuPalette();
-  if (!GLS) return;
-  const { gl } = GLS;
-  gl.bindTexture(gl.TEXTURE_2D, GLS.grad);
-  gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, BANDS, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, Uint8Array.from(GRADIENT.flatMap((c) => [...rgbOf(c), 255])));
-  GLS.keys.cubes = null;
-  GLS.keys.pal = null;
-}
-function glClear() {
-  gpuClear();
-  if (!GLS || !GLS.drawn) return;
-  GLS.gl.clearColor(0, 0, 0, 0);
-  GLS.gl.clear(GLS.gl.COLOR_BUFFER_BIT | GLS.gl.DEPTH_BUFFER_BIT);
-  GLS.drawn = false;
-}
+/* ---- 11.4b Surfaces: shared pieces --------------------------------------------------------- *
+ * What the card's drawing (11.4d) reads from the walk: the colours as numbers, the path printed on the tiles, the edges, the
+ * tiles' colours from a palette; Glass and Cut. */
 const glColour = new Map();  // CSS colour → [r, g, b]
 const rgbCached = (c) => { if (!glColour.has(c)) glColour.set(c, rgbOf(c)); return glColour.get(c); };
 const packed = (c) => { const [r, g, b] = rgbCached(c); return ((255 << 24) | (b << 16) | (g << 8) | r) >>> 0; };  // (RGBA in a number, a texel's)
 // The path on a surface, in its current form, printed flat on its tiles: from tile to tile, each
 // step as two halves, from a tile's centre to the middle of the edge it crosses, then on to the next
 // tile's centre, each in its own tile's plane (over a solid's edge, it folds round it); along the
-// grid, each step on each tile beside its edge. Seen from the tile's face only (glSurface), a step on
+// grid, each step on each tile beside its edge. Seen from the tile's face only (gpuSurface), a step on
 // a face turned away is not drawn at all, and nothing jumps across an unrolled sheet's seams.
 // Per segment [Ax, Ay, Az, Bx, By, Bz, Nx, Ny, Nz, ends, step]: ends, which ends go on half the
 // width past their point (1 the start, 2 the end: where two segments of the same plane meet, not at
@@ -13223,71 +12802,6 @@ function pathSegments() {
   return { data: out.subarray(0, 11 * j), at };
 }
 
-// Draw the surface with its palette and levelOf (as drawSphere picks them); false if WebGL is missing
-// The camera of a program on GL_PROJECT, as projectPoint's; depth: the span of the depths drawn
-function glView(gl, p, depth) {
-  gl.useProgram(p);
-  const u = (name) => gl.getUniformLocation(p, name), P = walk.persp, cc = P ? orthoPoint(...P.c) : [0, 0];
-  gl.uniform3fv(u('uR'), cam.r); gl.uniform3fv(u('uU'), cam.u); gl.uniform3fv(u('uV'), cam.v);
-  gl.uniform4f(u('uPersp'), ...(P ? P.c : [0, 0, 0]), P ? P.D : 0);
-  gl.uniform2f(u('uCC'), cc[0], cc[1]);
-  gl.uniform3f(u('uView'), view.scale, view.ox, view.oy);
-  gl.uniform2f(u('uScreen'), cw, ch);
-  gl.uniform1f(u('uDepth'), depth);
-  gl.uniform1i(u('uCut'), cutOn() ? 1 : 0);  // (the shadows: its half gone; the tiles', see glSurface)
-  // the light, and its view for the shadows: across it, over the ball round the origin that holds what is drawn
-  const L = lightDir(), x = cam.r.map((r, d) => r - L[d] * (cam.r[0] * L[0] + cam.r[1] * L[1] + cam.r[2] * L[2])), m = Math.hypot(...x);
-  const lx = x.map((v) => v / m), ly = [L[1] * lx[2] - L[2] * lx[1], L[2] * lx[0] - L[0] * lx[2], L[0] * lx[1] - L[1] * lx[0]];
-  gl.uniform3fv(u('uL'), L); gl.uniform3fv(u('uH'), halfway(L)); gl.uniform1f(u('uShade'), SHADE); gl.uniform1f(u('uGlint'), glint());
-  gl.uniform3fv(u('uLx'), lx); gl.uniform3fv(u('uLy'), ly); gl.uniform1f(u('uLr'), depth / 4);
-  gl.uniform1i(u('uShadow'), 1); gl.uniform1i(u('uShadowId'), 3); gl.uniform1ui(u('uFront'), walk.geo?.mobius ? walk.geo.front : 0);
-  return u;
-}
-// A texture of a texel an item (a cell, a tile: see glPlane, glSurface), 1024 a row; its texels from a packed array (RGBA a
-// value), its full rows, then what is left of its last
-const glTexels = (gl, n) => { const t = gl.createTexture(); gl.bindTexture(gl.TEXTURE_2D, t); gl.texStorage2D(gl.TEXTURE_2D, 1, gl.RGBA8, 1024, Math.max(1, Math.ceil(n / 1024))); return t; };
-function glPut(gl, tex, data) {
-  const full = Math.floor(data.length / 1024), rest = data.length % 1024, bytes = new Uint8Array(data.buffer, data.byteOffset, 4 * data.length);
-  gl.bindTexture(gl.TEXTURE_2D, tex);
-  if (full) gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, 1024, full, gl.RGBA, gl.UNSIGNED_BYTE, bytes, 0);
-  if (rest) gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, full, rest, 1, gl.RGBA, gl.UNSIGNED_BYTE, bytes, 4096 * full);
-}
-// The shadows: the depths of what the light sees (draw draws it with the program depth; nothing, Light unchecked), in a
-// texture on unit 1 (SHADOW_SIZE square), which the tiles and cubes then compare their own depths from the light with; what
-// it is, its number, in another on unit 3 (see GL_SHADOWED)
-function glShadows(depth, draw, key = null) {  // key: what they depend on (the shape, the light, the view): the same, kept
-  const S = GLS, { gl } = S;
-  const bind = (on) => { gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D, on ? S.shadow.tex : null); gl.activeTexture(gl.TEXTURE3); gl.bindTexture(gl.TEXTURE_2D, on ? S.shadow.ids : null); gl.activeTexture(gl.TEXTURE0); };
-  if (key !== null && S.keys.shadow === key) { bind(true); return; }
-  S.keys.shadow = key;
-  if (!S.shadow) {
-    const tex = gl.createTexture(), fb = gl.createFramebuffer();
-    gl.bindTexture(gl.TEXTURE_2D, tex);
-    gl.texStorage2D(gl.TEXTURE_2D, 1, gl.DEPTH_COMPONENT24, SHADOW_SIZE, SHADOW_SIZE);
-    for (const [k, v] of [[gl.TEXTURE_MIN_FILTER, gl.LINEAR], [gl.TEXTURE_MAG_FILTER, gl.LINEAR], [gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE],
-      [gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE], [gl.TEXTURE_COMPARE_MODE, gl.COMPARE_REF_TO_TEXTURE], [gl.TEXTURE_COMPARE_FUNC, gl.LEQUAL]]) gl.texParameteri(gl.TEXTURE_2D, k, v);
-    gl.bindFramebuffer(gl.FRAMEBUFFER, fb);
-    gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.TEXTURE_2D, tex, 0);
-    const ids = gl.createTexture();
-    gl.bindTexture(gl.TEXTURE_2D, ids);
-    gl.texStorage2D(gl.TEXTURE_2D, 1, gl.R32UI, SHADOW_SIZE, SHADOW_SIZE);
-    for (const k of [gl.TEXTURE_MIN_FILTER, gl.TEXTURE_MAG_FILTER]) gl.texParameteri(gl.TEXTURE_2D, k, gl.NEAREST);
-    gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, ids, 0);
-    S.shadow = { tex, ids, fb };
-  }
-  bind(false);  // not read while written
-  gl.bindFramebuffer(gl.FRAMEBUFFER, S.shadow.fb);
-  gl.viewport(0, 0, SHADOW_SIZE, SHADOW_SIZE);
-  gl.clear(gl.DEPTH_BUFFER_BIT);
-  gl.clearBufferuiv(gl.COLOR, 0, [0, 0, 0, 0]);  // (nothing: 0)
-  gl.enable(gl.DEPTH_TEST); gl.depthFunc(gl.LESS);
-  gl.enable(gl.POLYGON_OFFSET_FILL); gl.polygonOffset(2, 4);  // a lit face does not shadow itself
-  glView(gl, S.prog.depth, depth);
-  if (lamp()) draw(...['aPos', 'aAt', 'aId'].map((a) => gl.getAttribLocation(S.prog.depth, a)));
-  gl.disable(gl.POLYGON_OFFSET_FILL);
-  gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-  bind(true);
-}
 // a surface's edges, each once (two tiles' strokes over each other were twice as strong as the outline's): by the corners of the
 // surface, so that an unrolled seam is drawn on one side only (the other's open, to be glued); none of no length (a repeated
 // corner). Four numbers an edge: its two corners' slots, its tile, the other tile (−1: none); made once a grid
@@ -13303,214 +12817,26 @@ const surfaceEdges = (g) => (g.edgeList ??= (() => {
   }
   return Int32Array.from(list);
 })());
-// a surface's tiles' colours from a palette (null: unlit) and each tile's place in it (out of it: unlit), into their texture
-// (WebGPU's: its buffer, by put); cpu: made here, not by the card (see gpuDrawing)
-const paintLevels = (palette, levelOf) => Object.assign((tex, n) => {
+// a surface's tiles' colours from a palette (null: unlit) and each tile's place in it (out of it: unlit), into their buffer
+// (out.put, see gpuSurface)
+const paintLevels = (palette, levelOf) => (out, n) => {
   const rgb = palette.map((c) => packed(c ?? UNLIT)), col = new Uint32Array(n);
   for (let t = 0; t < n; t++) col[t] = rgb[levelOf(t)] ?? rgb[0];
-  if (tex.put) tex.put(col); else glPut(GLS.gl, tex, col);
-}, { cpu: true });
-function glSurface(paint, path) {  // paint: its tiles' colours into their texture (see paintLevels, lifeLookGPU)
-  if (gpuDrawing()) return gpuSurface(paint, path);
-  const S = glSetup();
-  if (!S) return false;
-  const { gl, prog } = S, g = walk.geo, sh = walk.shape, R = walk.R, k = g.sides, n = g.n;
-  // the corners of each tile in their current form (k per tile), with the tile's normal
-  const geoKey = `${n}|${k}|${R}|${sh.m}|${g.verts.length}|${walk.geo.torus ? g.nu + 'x' + g.nv : ''}`;
-  if (S.keys.geo !== geoKey || S.keys.geoObj !== g) {
-    const pos = new Float32Array(3 * k * n), nrm = new Float32Array(3 * k * n);
-    for (let t = 0; t < n; t++) for (let q = 0; q < k; q++) {
-      const i = 3 * (k * t + q);
-      pos[i] = sh.corners[i] * R; pos[i + 1] = sh.corners[i + 1] * R; pos[i + 2] = sh.corners[i + 2] * R;
-      nrm[i] = sh.nrm[3 * t]; nrm[i + 1] = sh.nrm[3 * t + 1]; nrm[i + 2] = sh.nrm[3 * t + 2];
-    }
-    gl.bindBuffer(gl.ARRAY_BUFFER, S.pos); gl.bufferData(gl.ARRAY_BUFFER, pos, gl.DYNAMIC_DRAW);
-    gl.bindBuffer(gl.ARRAY_BUFFER, S.nrm); gl.bufferData(gl.ARRAY_BUFFER, nrm, gl.DYNAMIC_DRAW);
-    // the edges (see surfaceEdges), with both their tiles' normals (drawn if either faces the viewer)
-    S.edgeList = surfaceEdges(g);
-    const E = S.edgeList.length / 4, ends = new Float32Array(6 * E), n1 = new Float32Array(ends.length), n2 = new Float32Array(ends.length);
-    for (let e = 0; e < E; e++) {
-      const [i, j, t, o] = S.edgeList.subarray(4 * e, 4 * e + 4);
-      ends.set(pos.subarray(3 * i, 3 * i + 3), 6 * e); ends.set(pos.subarray(3 * j, 3 * j + 3), 6 * e + 3);
-      for (const [arr, u] of [[n1, t], [n2, o < 0 ? t : o]]) for (const z of [0, 3]) arr.set(sh.nrm.subarray(3 * u, 3 * u + 3), 6 * e + z);
-    }
-    for (const [name, data] of [['ePos', ends], ['eN1', n1], ['eN2', n2]]) { gl.bindBuffer(gl.ARRAY_BUFFER, S[name]); gl.bufferData(gl.ARRAY_BUFFER, data, gl.DYNAMIC_DRAW); }
-    S.eCount = 2 * E;
-    if (S.keys.topo !== `${n}|${k}`) {  // the fans only change with the tiling
-      const fan = new Uint32Array(3 * (k - 2) * n);
-      for (let t = 0, f = 0; t < n; t++) for (let q = 1; q < k - 1; q++) { fan[f++] = k * t; fan[f++] = k * t + q; fan[f++] = k * t + q + 1; }
-      gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, S.fan); gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, fan, gl.STATIC_DRAW);
-      const ids = new Float32Array(k * n);  // (each corner its tile's number: its colour's texel)
-      for (let t = 0; t < n; t++) ids.fill(t, k * t, k * t + k);
-      gl.bindBuffer(gl.ARRAY_BUFFER, S.tileIds); gl.bufferData(gl.ARRAY_BUFFER, ids, gl.STATIC_DRAW);
-      if (S.tileCol) gl.deleteTexture(S.tileCol);
-      S.tileCol = glTexels(gl, n);
-      S.fanCount = fan.length;
-      S.keys.topo = `${n}|${k}`;
-    }
-    S.keys.geo = geoKey; S.keys.geoObj = g; S.geoGen = (S.geoGen ?? 0) + 1;  // (its corners sent again: its shadows too)
-  }
-  paint(S.tileCol, n);  // (each tile's colour: its texel)
-  const depth = 4 * R * Math.max(sh.extent, sh.maxExtent ?? sh.extent), tileSize = R * sh.extent * Math.sqrt((4 * Math.PI) / n);
-  glShadows(depth, (aPos, aAt, aId) => {  // every tile, both its sides, its number
-    gl.bindBuffer(gl.ARRAY_BUFFER, S.pos); gl.enableVertexAttribArray(aPos); gl.vertexAttribPointer(aPos, 3, gl.FLOAT, false, 0, 0);
-    gl.bindBuffer(gl.ARRAY_BUFFER, S.tileIds); gl.enableVertexAttribArray(aId); gl.vertexAttribPointer(aId, 1, gl.FLOAT, false, 0, 0);
-    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, S.fan);
-    gl.drawElements(gl.TRIANGLES, S.fanCount, gl.UNSIGNED_INT, 0);
-    gl.disableVertexAttribArray(aPos); gl.disableVertexAttribArray(aId);
-  }, `${S.geoGen}|${lightDir()}|${cam.r}|${depth}|${lamp()}|${cutOn()}`);  // (again when the shape, the light, the view or the cut moves, not the colours)
-  // the frame, the projection and the view
-  gl.viewport(0, 0, glCanvas.width, glCanvas.height);
-  gl.clearColor(0, 0, 0, 0);
-  gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-  gl.enable(gl.DEPTH_TEST);
-  gl.depthFunc(gl.LEQUAL);
-  // the grid lines, then the path, pulled towards the viewer by a share of a tile (not of the solid:
-  // on a big one, a fixed share let lines on the faces just behind an edge show through)
-  const edgeBias = (0.07 * tileSize) / depth, pathBias = (0.15 * tileSize) / depth;
-  const uniforms = (p) => glView(gl, p, depth);
-  const attrib = (p, name, buffer, size, type = gl.FLOAT, normalized = false, stride = 0, offset = 0, divisor = 0) => {
-    const loc = gl.getAttribLocation(p, name);
-    if (loc < 0) return;
-    gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
-    gl.enableVertexAttribArray(loc);
-    gl.vertexAttribPointer(loc, size, type, normalized, stride, offset);
-    gl.vertexAttribDivisor(loc, divisor);
-  };
-  const off = (p, names) => names.forEach((name) => { const loc = gl.getAttribLocation(p, name); if (loc >= 0) { gl.disableVertexAttribArray(loc); gl.vertexAttribDivisor(loc, 0); } });
-  // the tiles, their grid and the path; pass 0 as they are, 1 and 2 one of Glass's (see GL_GLASS, glGlass): every side
-  // of every tile, no depth test, the blending set by glGlass; cut (see cutOn), every side too: its inside shows
-  const drawAll = (pass) => {
-    const both = pass || cutOn(), cut = cutOn() ? (pass ? 2 : 1) : 0;  // (Cut with Glass: its half see-through, not gone)
-    // tiles
-    let u = uniforms(prog.tile);
-    // drawn on their face only (a strip's faces each show their own; an unrolled torus, its top), the
-    // back of an open sheet plain; the corners of a torus are listed against its normals (shapeSign)
-    // a Klein bottle, one-sided: both sides of each tile, in its colours
-    const open = !both && g.torus && !g.mobius && !g.klein && sh.m < 1, front = shapeSign(g) < 0 ? gl.FRONT : gl.BACK, back = front === gl.BACK ? gl.FRONT : gl.BACK;
-    gl.uniform4f(u('uPlain'), 0, 0, 0, 0);
-    gl.uniform1i(u('uGlass'), pass); gl.uniform1i(u('uCut'), cut); gl.uniform1f(u('uAlpha'), GLASS_ALPHA);
-    attrib(prog.tile, 'aPos', S.pos, 3);
-    attrib(prog.tile, 'aNrm', S.nrm, 3);
-    attrib(prog.tile, 'aId', S.tileIds, 1);
-    gl.activeTexture(gl.TEXTURE2); gl.bindTexture(gl.TEXTURE_2D, S.tileCol); gl.uniform1i(u('uTileCol'), 2); gl.activeTexture(gl.TEXTURE0);
-    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, S.fan);
-    if (!g.klein && !both) gl.enable(gl.CULL_FACE);
-    gl.cullFace(front);
-    gl.drawElements(gl.TRIANGLES, S.fanCount, gl.UNSIGNED_INT, 0);
-    if (open) {
-      gl.cullFace(back);
-      gl.uniform4f(u('uPlain'), ...rgbCached(undersideColour()).map((c) => c / 255), 1);
-      gl.drawElements(gl.TRIANGLES, S.fanCount, gl.UNSIGNED_INT, 0);
-    }
-    gl.disable(gl.CULL_FACE);
-    off(prog.tile, ['aPos', 'aNrm', 'aId']);
-    // grid: the tile edges, when the tiles are big enough on screen
-    if ($('showGrid').checked && view.scale > 6) {
-      if (!pass) {
-        gl.enable(gl.BLEND);
-        gl.blendFuncSeparate(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA, gl.ONE, gl.ONE_MINUS_SRC_ALPHA);  // the canvas stays opaque under the lines
-      }
-      u = uniforms(prog.edge);
-      gl.uniform1i(u('uGlass'), pass); gl.uniform1i(u('uCut'), cut);
-      gl.uniform1f(u('uEdge'), edgeAlpha(sh));
-      gl.uniform3f(u('uEdgeRgb'), ...EDGE_RGB.map((c) => c / 255));
-      gl.uniform1f(u('uBias'), edgeBias);
-      gl.uniform1i(u('uBoth'), g.klein || both ? 1 : 0);
-      attrib(prog.edge, 'aPos', S.ePos, 3);
-      attrib(prog.edge, 'aNrm', S.eN1, 3);
-      attrib(prog.edge, 'aNrm2', S.eN2, 3);
-      gl.drawArrays(gl.LINES, 0, S.eCount);
-      off(prog.edge, ['aPos', 'aNrm', 'aNrm2']);
-      if (!pass) gl.disable(gl.BLEND);
-    }
-    // path: the steps walked so far, printed on their tiles (see pathSegments)
-    if (path && cur > 0) {
-      if (S.keys.segs !== walk.wx || S.keys.segsM !== sh.m) {
-        const segs = pathSegments();
-        gl.bindBuffer(gl.ARRAY_BUFFER, S.ribbon); gl.bufferData(gl.ARRAY_BUFFER, segs.data, gl.DYNAMIC_DRAW);
-        S.segsAt = segs.at; S.keys.segs = walk.wx; S.keys.segsM = sh.m;
-      }
-      u = uniforms(prog.ribbon);
-      gl.uniform1i(u('uGlass'), pass); gl.uniform1i(u('uCut'), cut);
-      gl.uniform1f(u('uN'), Math.max(1, walk.n));
-      gl.uniform1f(u('uHalf'), surfaceLineWidth() / 2 / view.scale);  // the screen width, in world units
-      gl.uniform1f(u('uBias'), pathBias);
-      gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, S.grad); gl.uniform1i(u('uGrad'), 0);
-      attrib(prog.ribbon, 'aQuad', S.quad, 2);
-      attrib(prog.ribbon, 'aA', S.ribbon, 3, gl.FLOAT, false, 44, 0, 1);
-      attrib(prog.ribbon, 'aB', S.ribbon, 3, gl.FLOAT, false, 44, 12, 1);
-      attrib(prog.ribbon, 'aN', S.ribbon, 3, gl.FLOAT, false, 44, 24, 1);
-      attrib(prog.ribbon, 'aE', S.ribbon, 1, gl.FLOAT, false, 44, 36, 1);
-      attrib(prog.ribbon, 'aI', S.ribbon, 1, gl.FLOAT, false, 44, 40, 1);
-      if (!twoSidedNow() && !both) { gl.enable(gl.CULL_FACE); gl.cullFace(gl.BACK); }  // from its tile's face only (an unrolled torus: both)
-      gl.drawArraysInstanced(gl.TRIANGLE_STRIP, 0, 4, S.segsAt[cur]);
-      gl.disable(gl.CULL_FACE);
-      off(prog.ribbon, ['aQuad', 'aA', 'aB', 'aN', 'aE', 'aI']);
-    }
-  };
-  if (glassOn()) glGlass(drawAll); else drawAll(0);
-  S.drawn = true;
-  layers.path.clearRect(0, 0, cw, ch);  // the 2D tiles of a drawing before, if any
-  return true;
-}
-// Glass: the surface see-through (see GL_GLASS), every layer showing, its grid and path too: drawn by draw twice, into two
-// pictures of its own, 4 samples a pixel as the canvas: 1, the weighted colours summed (half floats); 2, what shows through
-// (bytes); then the two mixed on the canvas. Made again when the canvas's size changes; without float pictures
-// (EXT_color_buffer_float, in every WebGL 2 of the last years), drawn as it is
+  out.put(col);
+};
+// Glass: the surface see-through, every layer showing, its grid and path too (weighted blended, see gpuFrame); Cut: the half
+// nearer the viewer gone, by the plane through the centre facing them (with Glass: see-through)
 const GLASS_ALPHA = 0.4;  // (a tile's share: a layer behind seen at 60%, two at 36%…)
 const glassOn = () => $('glass').checked && !$('glassRow').hidden;
-const cutOn = () => $('cut').checked && !$('cutRow').hidden;  // (see GL_CUT)
-function glGlass(draw) {
-  const S = GLS, gl = S.gl, w = glCanvas.width, h = glCanvas.height;
-  if (S.glass?.w !== w || S.glass?.h !== h) {
-    S.glass?.free.forEach((f) => f());
-    S.glass = null;
-    if (!gl.getExtension('EXT_color_buffer_float')) return draw(0);
-    const samples = Math.min(4, gl.getParameter(gl.MAX_SAMPLES)), free = [];
-    const target = (format) => {  // a picture drawn with its samples, and the texture it is resolved into
-      const rb = gl.createRenderbuffer(), ms = gl.createFramebuffer(), tex = gl.createTexture(), fb = gl.createFramebuffer();
-      gl.bindRenderbuffer(gl.RENDERBUFFER, rb); gl.renderbufferStorageMultisample(gl.RENDERBUFFER, samples, format, w, h);
-      gl.bindFramebuffer(gl.FRAMEBUFFER, ms); gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.RENDERBUFFER, rb);
-      gl.bindTexture(gl.TEXTURE_2D, tex); gl.texStorage2D(gl.TEXTURE_2D, 1, format, w, h);
-      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-      gl.bindFramebuffer(gl.FRAMEBUFFER, fb); gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, tex, 0);
-      free.push(() => { gl.deleteRenderbuffer(rb); gl.deleteFramebuffer(ms); gl.deleteTexture(tex); gl.deleteFramebuffer(fb); });
-      return { ms, tex, fb };
-    };
-    S.glass = { w, h, free, sum: target(gl.RGBA16F), through: target(gl.RGBA8) };
-  }
-  const { sum, through } = S.glass;
-  gl.disable(gl.DEPTH_TEST);
-  gl.enable(gl.BLEND);
-  for (const [pass, t, clear, blend] of [[1, sum, 0, [gl.ONE, gl.ONE]], [2, through, 1, [gl.ZERO, gl.ONE_MINUS_SRC_COLOR]]]) {
-    gl.bindFramebuffer(gl.FRAMEBUFFER, t.ms);
-    gl.clearColor(clear, clear, clear, clear);
-    gl.clear(gl.COLOR_BUFFER_BIT);
-    gl.blendFunc(...blend);
-    draw(pass);
-    gl.bindFramebuffer(gl.READ_FRAMEBUFFER, t.ms); gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, t.fb);
-    gl.blitFramebuffer(0, 0, w, h, 0, 0, w, h, gl.COLOR_BUFFER_BIT, gl.NEAREST);
-  }
-  gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-  gl.disable(gl.BLEND);
-  const p = S.prog.glassMix;
-  gl.useProgram(p);
-  gl.activeTexture(gl.TEXTURE4); gl.bindTexture(gl.TEXTURE_2D, sum.tex); gl.uniform1i(gl.getUniformLocation(p, 'uAcc'), 4);
-  gl.activeTexture(gl.TEXTURE5); gl.bindTexture(gl.TEXTURE_2D, through.tex); gl.uniform1i(gl.getUniformLocation(p, 'uRev'), 5);
-  gl.activeTexture(gl.TEXTURE0);
-  gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
-  gl.enable(gl.DEPTH_TEST);
-}
-
-/* Flat drawings by WebGL as well: the 2D walks, and the 3D walks once projected (their projection
+const cutOn = () => $('cut').checked && !$('cutRow').hidden;
+/* Flat drawings by the card as well (see gpuFlat): the 2D walks, and the 3D walks once projected (their projection
  * is redone on the CPU when the view turns). The whole walk so far is redrawn at each frame, fast
  * enough to pan, zoom and turn walks of millions of steps smoothly:
  *  - fill: one instance per enclosed vertex of the fill (see computeFill), in the colour of the step
  *    that closed it;
  *  - cells: one instance per point (Fill cells, the heatmap of visits, the spirals' marks), painted in
  *    the walk's order, so that a cell shows its last colour; Digits are written in 2D over them;
- *  - path: one instance per step, a quad from point i to point i + 1 (as in glSurface), in the rainbow,
+ *  - path: one instance per step, a quad from point i to point i + 1 (as in gpuSurface), in the rainbow,
  *    one colour or a colour per digit. */
 // cells: always on a spiral (its line is greyed out), else, a walk on cells, for Rainbow, Heatmap and, in 2D, Directions
 // (a colour per digit; an ant's turns or states); along the lines, none: its line (a look left from cells, its colours)
@@ -13588,134 +12914,6 @@ function flatCellInstances(mode) {
   }
   return { inst, at, m };
 }
-function glFlat(to) {
-  if (cubesWalk()) return glCubes(to + 1, walk.wx, walkCubes, walk.maxDist[walk.n]);
-  if (walk.rows) { glClear(); drawElementary(to); return true; }  // (Elementary: a picture, see drawElementary)
-  if (gpuDrawing()) return gpuFlat(to);
-  const S = glSetup();
-  if (!S) return false;
-  const { gl, prog } = S, mode = $('colourMode').value, { scale: s, ox, oy } = view;
-  const upload = (buffer, data) => { gl.bindBuffer(gl.ARRAY_BUFFER, buffer); gl.bufferData(gl.ARRAY_BUFFER, data, gl.STATIC_DRAW); };
-  // the walk's points (again after each projection of a 3D walk), and a key per step: its digit's
-  // colour, 255 for a step that draws nothing
-  const ptsKey = `${walk.is3d ? projected : 0}`;
-  if (S.keys.flatPts !== walk.xs || S.keys.flatProj !== ptsKey) {
-    const pts = new Float32Array(2 * (walk.n + 1));
-    for (let i = 0; i <= walk.n; i++) { pts[2 * i] = walk.xs[i]; pts[2 * i + 1] = walk.ys[i]; }
-    upload(S.flatPts, pts);
-    S.keys.flatPts = walk.xs; S.keys.flatProj = ptsKey;
-  }
-  const keysKey = `${mode === 'digit'}|${walk.keys === walk.antStates}`;
-  if (S.keys.flatKeys !== walk.keys || S.keys.flatKeysMode !== keysKey) {  // (a worm's turns: its keys, its digits the same)
-    const keys = new Uint8Array(Math.max(1, walk.n));
-    for (let i = 0; i < walk.n; i++) keys[i] = walk.skipZeros && walk.digits[i] === 0 ? 255 : mode === 'digit' ? walk.keys[i] : 0;
-    upload(S.flatKeys, keys);
-    S.keys.flatKeys = walk.keys; S.keys.flatKeysMode = keysKey;
-  }
-  if (S.keys.pal !== `${walk.base}|${walk.ant}|${antRamp}|${walk.skipZeros}|${current.mode}|${MONO}`) {  // the digits' colours (an ant's)
-    const pal = new Uint8Array(4 * 256);
-    for (let k = 0; k < 256; k++) pal.set([...rgbCached(digitColour(walk.ant ? k : Math.min(k, walk.base - 1))), 255], 4 * k);
-    gl.bindTexture(gl.TEXTURE_2D, S.pal);
-    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 256, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, pal);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-    S.keys.pal = `${walk.base}|${walk.ant}|${antRamp}|${walk.skipZeros}|${current.mode}|${MONO}`;
-  }
-  // the fill's vertices, with their colour band, once per fill
-  let fillCount = 0;
-  if (fillOn()) {
-    fillNow();
-    if (fill.count && fill.templates.length <= 4) {
-      if (S.keys.flatFill !== fill) {
-        const inst = new Float32Array(4 * fill.count);
-        for (let k = 0; k < fill.count; k++) inst.set([fill.cx[k], fill.cy[k], Math.floor((roundStep(fill.at[k] - 1) * BANDS) / rainbowLength()), fill.tpl[k]], 4 * k);
-        upload(S.flatFill, inst);
-        S.fillTpl = templateArray(fill.templates);
-        S.keys.flatFill = fill;
-      }
-      fillCount = countUpTo(fill.at, fill.count, to);
-    }
-  }
-  // the cells: each point's tile, with its colour band (the heatmap: its visits so far), once per walk
-  const cells = !walk.is3d && flatCellsOn();
-  let cellCount = 0;
-  if (cells) {
-    const cellsKey = `${mode}|${walk.keys === walk.antStates}`;
-    if (S.keys.flatCells !== walk.xs || S.keys.flatCellsMode !== cellsKey) {
-      const { inst, at, m } = flatCellInstances(mode);
-      upload(S.flatCells, inst.subarray(0, 4 * m));
-      S.cellAt = at; S.cellN = m;
-      S.cellTpl = templateArray(CELL_TEMPLATES[walk.lattice]);
-      S.keys.flatCells = walk.xs; S.keys.flatCellsMode = cellsKey;
-    }
-    cellCount = countUpTo(S.cellAt, S.cellN, to);
-  }
-  const line = !cells || ($('showPath').checked && !$('showPath').disabled);
-  // the frame
-  gl.viewport(0, 0, glCanvas.width, glCanvas.height);
-  gl.clearColor(0, 0, 0, 0);
-  gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-  gl.disable(gl.DEPTH_TEST);
-  gl.enable(gl.BLEND);
-  gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
-  gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, S.grad);
-  gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D, S.pal);
-  const common = (p) => {
-    gl.useProgram(p);
-    const u = (name) => gl.getUniformLocation(p, name);
-    gl.uniform3f(u('uView'), s, ox, oy);
-    gl.uniform2f(u('uScreen'), cw, ch);
-    gl.uniform1i(u('uGrad'), 0);
-    gl.uniform1i(u('uColour'), mode === 'digit' ? 2 : 0);
-    return u;
-  };
-  const attrib = (p, name, buffer, size, type, stride, offset, divisor) => {
-    const loc = gl.getAttribLocation(p, name);
-    gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
-    gl.enableVertexAttribArray(loc);
-    gl.vertexAttribPointer(loc, size, type, false, stride, offset);
-    gl.vertexAttribDivisor(loc, divisor);
-    return loc;
-  };
-  const off = (locs) => locs.forEach((loc) => { gl.disableVertexAttribArray(loc); gl.vertexAttribDivisor(loc, 0); });
-  const tiles = (buffer, tpl, count, alpha, bright) => {
-    const u = common(prog.flatTiles);
-    gl.uniform2fv(u('uTpl'), tpl);
-    gl.uniform1f(u('uAlpha'), alpha);
-    gl.uniform1f(u('uBright'), bright);
-    gl.uniform1i(u('uPal'), 1);
-    const locs = [attrib(prog.flatTiles, 'aC', buffer, 4, gl.FLOAT, 16, 0, 1)];
-    gl.drawArraysInstanced(gl.TRIANGLE_FAN, 0, 6, count);
-    off(locs);
-  };
-  if (fillCount) tiles(S.flatFill, S.fillTpl, fillCount, $('fillTranslucent').checked && !$('fillTranslucent').disabled ? 0.35 : 1, 1);
-  // the cells, faded under Path (as the 2D layer, see updateDisplayMenu)
-  if (cellCount) tiles(S.flatCells, S.cellTpl, cellCount, shows('cells') && line ? 0.15 : 1, 1);
-  if (line && to > 0) {
-    const u = common(prog.flatPath);
-    if (cells) gl.uniform1i(u('uColour'), 0);  // Path: the rainbow line over the cells, whatever colours them
-    gl.uniform1f(u('uN'), Math.max(1, rainbowLength()));
-    gl.uniform1f(u('uFrom'), walk.loop?.from ?? 0);
-    gl.uniform1f(u('uPeriod'), closedLoop() ? walk.loop.period : 0);
-    gl.uniform1f(u('uWidth'), cells ? Math.max(0.6, Math.min(s * 0.12, 3)) : Math.max(0.6, Math.min(s * 0.3, 6)));
-    gl.uniform1i(u('uPal'), 1);
-    const locs = [attrib(prog.flatPath, 'aQuad', S.quad, 2, gl.FLOAT, 0, 0, 0), attrib(prog.flatPath, 'aA', S.flatPts, 2, gl.FLOAT, 8, 0, 1),
-                  attrib(prog.flatPath, 'aB', S.flatPts, 2, gl.FLOAT, 8, 8, 1)];
-    const k = gl.getAttribLocation(prog.flatPath, 'aKey');
-    gl.bindBuffer(gl.ARRAY_BUFFER, S.flatKeys);
-    gl.enableVertexAttribArray(k);
-    gl.vertexAttribPointer(k, 1, gl.UNSIGNED_BYTE, false, 1, 0);
-    gl.vertexAttribDivisor(k, 1);
-    gl.drawArraysInstanced(gl.TRIANGLE_STRIP, 0, 4, to);
-    off([...locs, k]);
-  }
-  gl.disable(gl.BLEND);
-  gl.activeTexture(gl.TEXTURE0);
-  S.drawn = true;
-  layers.path.clearRect(0, 0, cw, ch);
-  return true;
-}
-
 // A convex solid's triangles from its corners and its faces' outward normals: each face the corners
 // furthest along its normal, in turn around it (6 floats per corner: position, normal)
 function solidTriangles(corners, normals) {
@@ -13757,55 +12955,7 @@ function walkCubes(mode) {
   return { at, col };
 }
 // count cubes (of: theirs, made by make(the look) once; reach: how far from the middle they go)
-function glCubes(count, of, make, reach) {
-  if (gpuDrawing()) return gpuCubes(count, of, make, reach);
-  const S = glSetup();
-  if (!S) return false;
-  const { gl, prog } = S, mode = $('colourMode').value, shape = cellShape();
-  if (!S.cube) { S.cube = gl.createBuffer(); S.cubeAt = gl.createBuffer(); S.cubeCol = gl.createBuffer(); }
-  if (S.keys.cubeShape !== shape) {
-    gl.bindBuffer(gl.ARRAY_BUFFER, S.cube); gl.bufferData(gl.ARRAY_BUFFER, shape.triangles, gl.STATIC_DRAW);
-    S.keys.cubeShape = shape;
-  }
-  if (S.keys.cubes !== of || S.keys.cubesMode !== mode) {  // once per walk (Space-time's cubes) and colouring
-    const { at, col } = make(mode);
-    gl.bindBuffer(gl.ARRAY_BUFFER, S.cubeAt); gl.bufferData(gl.ARRAY_BUFFER, at, gl.STATIC_DRAW);
-    gl.bindBuffer(gl.ARRAY_BUFFER, S.cubeCol); gl.bufferData(gl.ARRAY_BUFFER, col, gl.STATIC_DRAW);
-    S.keys.cubes = of; S.keys.cubesMode = mode;
-  }
-  // the depths: no point is further than twice the cubes' reach from the perspective's centre
-  const depth = 4 * (reach + 2);
-  glShadows(depth, (aPos, aAt) => {
-    gl.bindBuffer(gl.ARRAY_BUFFER, S.cube); gl.enableVertexAttribArray(aPos); gl.vertexAttribPointer(aPos, 3, gl.FLOAT, false, 24, 0);
-    gl.bindBuffer(gl.ARRAY_BUFFER, S.cubeAt); gl.enableVertexAttribArray(aAt); gl.vertexAttribPointer(aAt, 3, gl.FLOAT, false, 0, 0);
-    gl.vertexAttribDivisor(aAt, 1);
-    gl.drawArraysInstanced(gl.TRIANGLES, 0, shape.triangles.length / 6, count);
-    gl.vertexAttribDivisor(aAt, 0); gl.disableVertexAttribArray(aAt); gl.disableVertexAttribArray(aPos);
-  });
-  gl.viewport(0, 0, glCanvas.width, glCanvas.height);
-  gl.clearColor(0, 0, 0, 0);
-  gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-  gl.enable(gl.DEPTH_TEST);
-  gl.depthFunc(gl.LEQUAL);  // a later visit paints over
-  glView(gl, prog.cube, depth);
-  const attrib = (name, buffer, size, type, normalized, stride, offset, divisor) => {
-    const loc = gl.getAttribLocation(prog.cube, name);
-    gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
-    gl.enableVertexAttribArray(loc);
-    gl.vertexAttribPointer(loc, size, type, normalized, stride, offset);
-    gl.vertexAttribDivisor(loc, divisor);
-    return loc;
-  };
-  const locs = [attrib('aCorner', S.cube, 3, gl.FLOAT, false, 24, 0, 0), attrib('aNrm', S.cube, 3, gl.FLOAT, false, 24, 12, 0),
-                attrib('aAt', S.cubeAt, 3, gl.FLOAT, false, 0, 0, 1), attrib('aCol', S.cubeCol, 3, gl.UNSIGNED_BYTE, true, 0, 0, 1)];
-  gl.drawArraysInstanced(gl.TRIANGLES, 0, shape.triangles.length / 6, count);
-  locs.forEach((loc) => { gl.disableVertexAttribArray(loc); gl.vertexAttribDivisor(loc, 0); });
-  gl.disable(gl.DEPTH_TEST);
-  S.drawn = true;
-  return true;
-}
-
-// Life on the plane in WebGL (see drawLifePlane): the cells' triangles, and the walls' round them, once a grid; then at each
+// Life on the plane (see drawLifePlane, gpuPlane): the cells' triangles, and the walls' round them, once a grid; then at each
 // drawing, under all, the page's colour on the cells and the walls' on the walls (a texture once a grid and a theme), zoomed
 // in enough the cells' outlines (once a grid), over all the generation's colours (paint: into their texture, its texels;
 // a cell's, 0 dead: clear). A move or a zoom moves nothing but uView. A texel a cell, 1024 a row
@@ -13826,75 +12976,8 @@ function planeFlat(kind, W, torus) {  // a plane's cells then its walls (a grid 
   }
   return flatPolys(m, start, xy.subarray(0, at));
 }
-function glPlane(paint) {
-  if (gpuDrawing()) return gpuPlane(paint);
-  const S = glSetup();
-  if (!S) return;
-  const { gl, prog } = S, { n } = walk.plane, { scale: s, ox, oy } = view, key = gridKey();
-  if (S.keys.plane !== key) {  // (its polygons' corners that turn, each with its polygon's number; their triangles by them: 3 numbers a corner past 2)
-    const F = walk.plane.flat, N = F.start[F.m], pos = new Float32Array(2 * N), ids = new Float32Array(N), tris = new Uint32Array(3 * N);
-    const straight = (P, i) => { const [a, b, c] = [P.at(i - 1), P[i], P[(i + 1) % P.length]]; return Math.abs((b[0] - a[0]) * (c[1] - a[1]) - (b[1] - a[1]) * (c[0] - a[0])) <= 1e-12; };  // (a hat's side cut where a neighbour's corner can be: none drawn)
-    let v = 0, c = 0;
-    for (let k = 0; k < F.m; k++) {
-      const P = F.poly(k).filter((_, i, P) => !straight(P, i)), v0 = v;
-      for (const [x, y] of P) { pos[2 * v] = x; pos[2 * v + 1] = y; ids[v++] = k; }
-      for (const i of ears(P)) tris[c++] = v0 + i;
-    }
-    gl.bindBuffer(gl.ARRAY_BUFFER, S.planePos); gl.bufferData(gl.ARRAY_BUFFER, pos.subarray(0, 2 * v), gl.STATIC_DRAW);
-    gl.bindBuffer(gl.ARRAY_BUFFER, S.planeIds); gl.bufferData(gl.ARRAY_BUFFER, ids.subarray(0, v), gl.STATIC_DRAW);
-    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, S.planeTris); gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, tris.subarray(0, c), gl.STATIC_DRAW);
-    for (const t of [S.planeBase, S.planeCol]) if (t) gl.deleteTexture(t);
-    Object.assign(S, { planeCount: c, planeBase: glTexels(gl, F.m), planeCol: glTexels(gl, F.m), planeLines: null });
-    S.keys.plane = key;
-    S.keys.planeBase = null;
-  }
-  const bg = getComputedStyle(document.documentElement).getPropertyValue('--bg') || '#fff';
-  if (S.keys.planeBase !== bg) {  // (the page's colour on the cells, the walls')
-    const pack = (c) => { const [r, g, b] = rgbOf(c); return ((255 << 24) | (b << 16) | (g << 8) | r) >>> 0; }, page = pack(bg), walled = pack(LIFE_WALL);
-    glPut(gl, S.planeBase, Uint32Array.from({ length: walk.plane.flat.m }, (_, t) => (t >= n ? walled : page)));
-    S.keys.planeBase = bg;
-  }
-  paint(S.planeCol, walk.plane.flat.m);
-  const outline = $('showGrid').checked && s >= 6;
-  if (outline && !S.planeLines) {  // (each side once, the cells': by its middle, a side's own, as sides never cross)
-    const { start, xy } = walk.plane.flat, seen = new Set(), ends = new Float32Array(4 * start[n]);
-    let e = 0;
-    for (let t = 0; t < n; t++) for (let i = start[t]; i < start[t + 1]; i++) {
-      const j = i + 1 < start[t + 1] ? i + 1 : start[t], k = pointKey((xy[2 * i] + xy[2 * j]) / 2, (xy[2 * i + 1] + xy[2 * j + 1]) / 2);
-      if (!seen.has(k)) { seen.add(k); ends.set([xy[2 * i], xy[2 * i + 1], xy[2 * j], xy[2 * j + 1]], 4 * e++); }
-    }
-    gl.bindBuffer(gl.ARRAY_BUFFER, S.planeEdges); gl.bufferData(gl.ARRAY_BUFFER, ends.subarray(0, 4 * e), gl.STATIC_DRAW);
-    S.planeLines = 2 * e;
-  }
-  gl.viewport(0, 0, glCanvas.width, glCanvas.height);
-  gl.clearColor(0, 0, 0, 0);
-  gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-  const draw = (p, buffers, mode, count, more, tris = null) => {  // (its attributes: aPos, and aId for the cells; tris: its corners by their numbers)
-    gl.useProgram(p);
-    gl.uniform3f(gl.getUniformLocation(p, 'uView'), s, ox, oy);
-    gl.uniform2f(gl.getUniformLocation(p, 'uScreen'), cw, ch);
-    gl.uniform2f(gl.getUniformLocation(p, 'uTurn'), Math.cos(planeTurn()), Math.sin(planeTurn()));
-    more();
-    const locs = buffers.map(([name, buffer, size]) => { const loc = gl.getAttribLocation(p, name); gl.bindBuffer(gl.ARRAY_BUFFER, buffer); gl.enableVertexAttribArray(loc); gl.vertexAttribPointer(loc, size, gl.FLOAT, false, 0, 0); return loc; });
-    if (tris) { gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, tris); gl.drawElements(mode, count, gl.UNSIGNED_INT, 0); } else gl.drawArrays(mode, 0, count);
-    locs.forEach((loc) => gl.disableVertexAttribArray(loc));
-  };
-  const cells = (tex) => draw(prog.planeCells, [['aPos', S.planePos, 2], ['aId', S.planeIds, 1]], gl.TRIANGLES, S.planeCount, () => {
-    gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, tex); gl.uniform1i(gl.getUniformLocation(prog.planeCells, 'uCol'), 0);
-  }, S.planeTris);
-  cells(S.planeBase);
-  if (outline) {
-    gl.enable(gl.BLEND); gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
-    draw(prog.planeLines, [['aPos', S.planeEdges, 2]], gl.LINES, S.planeLines, () => gl.uniform4f(gl.getUniformLocation(prog.planeLines, 'uRgba'), ...EDGE_RGB.map((c) => (c / 255) * EDGE_ALPHA), EDGE_ALPHA));
-    gl.disable(gl.BLEND);
-  }
-  cells(S.planeCol);
-  S.drawn = true;
-}
-
-// Life on the graphics card (see GL_LIFE), its own textures (L's): the grid's numbers sent once; the states (now and next, 4
-// a texel) and the cells' counts (age, changes, last death, colours had; now and next) kept there, sent again when the
-// processor wrote them (L.gpuOld), read back when read here (see lifeCells); null without WebGL 2 (no Life then)
+// Life on the graphics card (see 11.4c), the game's engine: L's, made again for another L; the cells sent again when the
+// processor wrote them (L.gpuOld); null without WebGPU (no Life then)
 function lifeGPU(L) {
   if (!GPU) return null;
   if (GPU.game?.L === L) return GPU.game;
@@ -13905,113 +12988,14 @@ function lifeGPU(L) {
   L.gpuOld = true;
   return E;
 }
-// its textures: runs of its cells side by side (a hunt's starts, see huntRuns), each its n rounded up to 64 (stride: a sum's
-// 64 cells in one run); each generation's sums a run's, h of them kept (a column each, see lifeTally)
-function lifeEngine(L, runs = 1, h = 1) {
-  const S = glSetup(), n = L.seed.length, stride = Math.ceil(n / 64) * 64, rows = Math.ceil((runs * stride) / 4096), { gl } = S;
-  if (rows > gl.getParameter(gl.MAX_TEXTURE_SIZE)) return null;
-  const all = [], keep = (t) => { all.push(t); return t; };
-  const store = (format, w = 4096, h = rows) => {  // (read texel by texel: whole numbers' textures not whole else)
-    const t = keep(gl.createTexture());
-    gl.bindTexture(gl.TEXTURE_2D, t);
-    gl.texStorage2D(gl.TEXTURE_2D, 1, format, w, h);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-    return t;
-  };
-  const ints = (data) => {  // (whole numbers, one a texel, 4096 a row)
-    const h = Math.max(1, Math.ceil(data.length / 4096)), t = store(gl.R32I, 4096, h), padded = new Int32Array(4096 * h);
-    padded.set(data);
-    gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, 4096, h, gl.RED_INTEGER, gl.INT, padded);
-    return t;
-  };
-  const table = (T) => ints(Int32Array.from({ length: Math.max(1024, T.length ?? 0) }, (_, c) => (T[c] ? 1 : 0)));  // (B, S: by the count, its letters' code)
-  const cells = () => ({ state: store(gl.RGBA8, 1024), age: store(gl.R32UI), act: store(gl.R32UI), died: store(gl.R32I), ever: store(gl.R32UI) });
-  const { start, list } = L.nbr, none = new Int32Array(1), more = L.ringMore, M = L.margolus;
-  return { L, n, runs, stride, rows, h, all, fb: gl.createFramebuffer(), fbs: new Map(), now: cells(), next: cells(), load: store(gl.RGBA8, 1024), pad: new Uint8Array(4096 * rows), u32: new Uint32Array(4096 * rows), i32: new Int32Array(4096 * rows),
-           start: ints(start), list: ints(list), ring: ints(L.ring ?? none), moreStart: ints(more?.start ?? none), moreList: ints(more?.list ?? none),
-           side: ints(L.side ? Int32Array.from(L.side, Number) : none), B: table(L.B), S: table(L.S), count: [0, 1, 2, 3].map(() => store(gl.RGBA32UI, 64)), part: [0, 1, 2, 3].map(() => store(gl.RGBA32UI, 64, runs)),
-           sum: Array.from({ length: Math.ceil((10 + 4 * L.colours) / 16) }, () => [0, 1, 2, 3].map(() => store(gl.RGBA32UI, h, runs))), look: store(gl.RGBA8, 4096, 17),
-           in: ints(M ? Int32Array.from(blockCells(M, n)) : none), loops: ints(L.loops ?? none), ...(M && blockGPU(M, n, ints)) };
-}
-function lifeFree(E) {
-  const { gl } = GLS;
-  for (const t of E.all) gl.deleteTexture(t);
-  for (const f of [E.fb, ...E.fbs.values()]) gl.deleteFramebuffer(f);
-}
-// a block rule's numbers there (see GL_SHADERS.blockRule): each cell's place each phase, the blocks' cells (Ising: each
-// cell's 4 sides, −1 none), the cells across (stellated), its rule and its inverse
-function blockGPU(M, n, ints) {
-  const where = new Int32Array(M.turns.length * n).fill(-1), cells = new Int32Array(M.ising ? 4 * n : M.turns.reduce((m, turn) => m + turn.length, 0)).fill(-1);
-  let at = 0;
-  M.turns.forEach((turn, p) => {
-    turn.forEach((t, i) => { where[p * n + t] = M.ising ? 4 * t : at + i; });
-    if (!M.ising) { cells.set(turn, at); at += turn.length; }
-  });
-  if (M.ising) M.sides.forEach((s, t) => cells.set(s, 4 * t));
-  return { where: ints(where), turns: ints(cells), move: ints(M.move ?? new Int32Array(1)), to: ints(M.to), inverse: ints(blockInverse(M)) };
-}
-// a pass: its program, its textures by their uniforms' names, its whole numbers (and more: its other uniforms), into its
-// targets (w × h), drawn over them. A framebuffer a set of targets (by its first: each in one set), its uniforms' places
-// a program's, made once (a pass then a few microseconds, not 40)
-function lifePass(E, program, textures, ints, targets, w, h, more = () => {}, x = 0, y = 0) {  // (x, y: its targets' first column, first row)
-  const { gl, prog } = GLS, p = prog[program], at = (GLS.uniforms ??= new Map()), u = (name) => { const k = `${program}|${name}`; if (!at.has(k)) at.set(k, gl.getUniformLocation(p, name)); return at.get(k); };
-  if (!E.fbs.has(targets[0])) {
-    E.fbs.set(targets[0], gl.createFramebuffer());
-    gl.bindFramebuffer(gl.FRAMEBUFFER, E.fbs.get(targets[0]));
-    targets.forEach((t, i) => gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0 + i, gl.TEXTURE_2D, t, 0));
-    gl.drawBuffers(targets.map((_, i) => gl.COLOR_ATTACHMENT0 + i));
-  }
-  gl.bindFramebuffer(gl.FRAMEBUFFER, E.fbs.get(targets[0]));
-  gl.viewport(x, y, w, h);
-  gl.disable(gl.BLEND); gl.disable(gl.DEPTH_TEST);
-  gl.useProgram(p);
-  Object.entries(textures).forEach(([name, t], i) => { gl.activeTexture(gl.TEXTURE3 + i); gl.bindTexture(gl.TEXTURE_2D, t); gl.uniform1i(u(name), 3 + i); });
-  for (const [name, v] of Object.entries(ints)) gl.uniform1i(u(name), v);
-  more(u);
-  gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
-  gl.activeTexture(gl.TEXTURE0);
-}
-// the processor's cells sent there (now): states 4 a texel, counts one a texel (colours had: bit 0 ever alive)
-function lifeToGPU(L, E) {
-  const { gl } = GLS, c = L.cells, put = (t, format, type, data) => { gl.bindTexture(gl.TEXTURE_2D, t); gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, format === gl.RGBA ? 1024 : 4096, E.rows, format, type, data); };
-  // (its states written into E.load, never read back, then drawn into now's: a texture read back, then written by the processor,
-  // was seen sampled as it was before by the next pass, ANGLE on Metal: a game's start again played wrong)
-  E.pad.fill(0); E.pad.set(c.alive); put(E.load, gl.RGBA, gl.UNSIGNED_BYTE, E.pad);
-  lifePass(E, 'lifeCopy', { uA: E.load }, {}, [E.now.state], 1024, E.rows);
-  // (its start's: a live cell 1 old, ever alive and of its colour; no change, no death yet)
-  const live = (v) => v > 0 && v <= L.colours;
-  E.u32.fill(0); for (let t = 0; t < E.n; t++) E.u32[t] = live(c.alive[t]) ? 1 : 0; put(E.now.age, gl.RED_INTEGER, gl.UNSIGNED_INT, E.u32);
-  E.u32.fill(0); put(E.now.act, gl.RED_INTEGER, gl.UNSIGNED_INT, E.u32);
-  E.i32.fill(-1e9); put(E.now.died, gl.RED_INTEGER, gl.INT, E.i32);
-  E.u32.fill(0); for (let t = 0; t < E.n; t++) E.u32[t] = (live(c.alive[t]) ? 1 : 0) | (L.colours > 1 && L.seed[t] ? 1 << L.seed[t] : 0); put(E.now.ever, gl.RED_INTEGER, gl.UNSIGNED_INT, E.u32);
-  L.gpuOld = false;
-}
-// and back (see lifeCells): its states
-function lifeFromGPU(L) {
-  const E = GLS.life, { gl } = GLS;
-  L.onGPU = false;
-  if (E?.L !== L) return;
-  gl.bindFramebuffer(gl.FRAMEBUFFER, E.fb);
-  for (let i = 1; i < 4; i++) gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0 + i, gl.TEXTURE_2D, null, 0);  // (its size the least of its targets')
-  gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, E.now.state, 0);
-  gl.readBuffer(gl.COLOR_ATTACHMENT0);
-  gl.readPixels(0, 0, 1024, E.rows, gl.RGBA, gl.UNSIGNED_BYTE, E.pad);
-  L.cells.alive.set(E.pad.subarray(0, E.n));
-  gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-}
-// Life's cells' states: the processor's copy (L.cells.alive), made current from the graphics card's when read after it stepped
-// (L.onGPU); written here (lifeReset), sent there again before its next (L.gpuOld); their ages, changes, deaths and colours
-// had, there only
+// Life's cells' states: the processor's copy (L.cells.alive), the generation shown's (its batch's, adopted: see lifeStepGPU);
+// written here (lifeReset), sent there again before its next (L.gpuOld); their ages, changes, deaths and colours had, there
+// only
 function lifeCells(L) {
   L.cells = { alive: L.alive };
   Object.defineProperty(L, 'alive', { get: () => L.cells.alive, set: (v) => { L.cells.alive = v; L.gpuOld = true; }, enumerable: true, configurable: true });
   L.gpuOld = true;
-  L.onGPU = false;
 }
-// k generations there (gen: the first one shown; back, the first one undone's before it): its rule (a block rule's, back: its
-// inverse's, see lifeBack; their phase the generation shown's), its cells' counts, their sums (10 + 4 a colour) a column each, read back once (each
-// read waits for the card: 50 times a generation's own time on a small grid); its deaths dated by L.gen, the generations
-// played (as the look's, see lifeLookGPU: the shown one goes round a loop); null without WebGL 2. The cells stay there (L.onGPU)
 // a Game of Life played again from its start to step back (no rule backwards, see advanceTo): about 2.6 ns a cell and 0.53 ms
 // a generation whatever its size (its passes: 2^18 cells' worth), measured at 48 and 512 a side; Step back greyed past
 // 2^28 (about a second: 1,000 generations at 48 a side, 200 at 2^20 cells)
@@ -14023,7 +13007,7 @@ const lifeWithin = (g) => {
   return gens * (walk.life.seed.length + LIFE_PASSES) <= LIFE_REPLAY_MOST;
 };
 const LIFE_H = 16, LIFE_BATCH = 256;  // (generations a read back: a hunt's; the game's, at most, as many as a frame asks)
-// k generations there (as before on WebGL, now on WebGPU): a batch read back once played, never at once. Asked, its batch
+// k generations there (gen: the first one shown; back, its rule's inverse, see lifeBack): a batch read back once played, never at once. Asked, its batch
 // starts and null comes back (lifeTo stops there, lifeGoal kept: see tick); asked again once back, its sums, and its cells
 // adopted (L.alive, the cells shown: see gpuShow). One batch at a time; the cells written here sent again first (L.gpuOld)
 function lifeStepGPU(L, gen, back = false, k = 1) {
@@ -14056,60 +13040,8 @@ async function lifeSettle() {
     if (lifeGoal !== null) lifeTo(lifeGoal);
   }
 }
-// Life's rule, from E.now's states into E.next's
-function lifeRulePass(E, [r0, r1] = [0, E.runs]) {  // (r0 … r1: its runs played, see lifeRows)
-  const L = E.L, [y0, y1] = lifeRows(E, r0, r1);
-  lifePass(E, 'lifeRule', { uA: E.now.state, uStart: E.start, uList: E.list, uRing: E.ring, uMoreStart: E.moreStart, uMoreList: E.moreList, uSide: E.side, uB: E.B, uS: E.S, uLoops: E.loops },
-    { uN: E.n, uK: L.colours, uStride: E.stride, uC: L.C, uR: L.ring ? L.ring.length / E.n : 0, uMode: L.ring ? 1 : L.side ? 2 : 0, uMore: L.ringMore ? 1 : 0, uLoop: L.loops ? L.loopStates : 0, uLoopN: L.loops ? L.loops.length / 2 : 0, uLin: L.lineages ? 1 : 0 }, [E.next.state], 1024, y1 - y0, undefined, 0, y0);
-}
-// runs r0 … r1's rows of cells (4,096 a row): a hunt's passes over its runs going on only
-const lifeRows = (E, r0, r1) => [Math.floor((r0 * E.stride) / 4096), Math.ceil((r1 * E.stride) / 4096)];
-// then its cells' counts (back: see lifeBack) and its runs' sums, into column x of E.sum (negA, negB: shown negative), now
-// and next swapped
-function lifeTally(E, gen, back = false, negA = false, negB = false, x = 0, [r0, r1] = [0, E.runs]) {  // (r0 … r1: its runs played)
-  const { now, next } = E, base = { uN: E.n, uK: E.L.colours, uStride: E.stride }, [y0, y1] = lifeRows(E, r0, r1);
-  lifePass(E, 'lifeBook', { uA: now.state, uB: next.state, uAge: now.age, uAct: now.act, uDied: now.died, uEver: now.ever }, { ...base, uGen: gen, uBack: back ? 1 : 0 }, [next.age, next.act, next.died, next.ever], 4096, y1 - y0, undefined, 0, y0);
-  E.sum.forEach((targets, p) => {
-    lifePass(E, 'lifeCount', { uA: now.state, uB: next.state, uIn: E.in, uStart: E.start, uList: E.list, uEver: now.ever, uEverNow: next.ever, uActNow: next.act }, { ...base, uFrom: 16 * p, uNegA: negA ? 1 : 0, uNegB: negB ? 1 : 0 }, E.count, 64, y1 - y0, undefined, 0, y0);
-    lifePass(E, 'lifePart', { uC0: E.count[0], uC1: E.count[1], uC2: E.count[2], uC3: E.count[3] }, { uFrom: 16 * p, uBlocks: E.stride / 64 }, E.part, 64, r1 - r0, undefined, 0, r0);
-    lifePass(E, 'lifeSum', { uC0: E.part[0], uC1: E.part[1], uC2: E.part[2], uC3: E.part[3] }, { uFrom: 16 * p }, targets, 1, r1 - r0, undefined, x, r0);
-  });
-  GLS.gl.bindFramebuffer(GLS.gl.FRAMEBUFFER, null);
-  [E.now, E.next] = [next, now];
-}
-// its sums read back: sum j of run r at column x (see GL_SHADERS.lifeCount)
-function lifeRead(E) {
-  const { gl } = GLS, w = E.h, out = E.sum.map((targets) => {
-    gl.bindFramebuffer(gl.FRAMEBUFFER, E.fbs.get(targets[0]));
-    return targets.map((_, i) => { const b = new Uint32Array(4 * w * E.runs); gl.readBuffer(gl.COLOR_ATTACHMENT0 + i); gl.readPixels(0, 0, w, E.runs, gl.RGBA_INTEGER, gl.UNSIGNED_INT, b); return b; });
-  });
-  gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-  return (j, r, x = 0) => out[j >> 4][(j >> 2) & 3][4 * (r * w + x) + (j & 3)];
-}
-// a block rule's generation g (its phase's), from the states a into b (back: by its inverse)
-function blockPass(L, E, a, b, g, back = false) {
-  const M = L.margolus;
-  lifePass(E, 'blockRule', { uA: a, uIn: E.in, uWhere: E.where, uTurns: E.turns, uMove: E.move, uTo: back ? E.inverse : E.to },
-    { uN: E.n, uK: 1, uPhase: mod(g, M.turns.length), uKb: M.k, uIsing: M.ising ? 1 : 0, uFlips: M.flips ? 1 : 0, uStars: M.move ? 1 : 0, uBack: back ? 1 : 0 }, [b], 1024, E.rows);
-}
-// its colours into a texture (target: a texel a cell, 1024 a row; see lifeLook), by a look: its tables (look.table: packed
-// RGBA, see GL_SHADERS.lifeLook), how it colours its live cells (look.by: 0 by state, 1 by age, 2 all by their changes), its
-// cells in blocks shown negative every other generation (its own: see negative, on every grid), its trail's length, a wall's and a dead cell's colours
-function lifeLookGPU(L, target, rows, look) {
-  if (target.buffer) return gpuLook(L, target, look);
-  const E = lifeGPU(L);
-  if (!E) return false;
-  const { gl } = GLS;
-  if (L.gpuOld) lifeToGPU(L, E);
-  gl.bindTexture(gl.TEXTURE_2D, E.look);
-  gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, 4096, look.table.length / 4096, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array(look.table.buffer));
-  lifePass(E, 'lifeLook', { uA: E.now.state, uStart: E.start, uIn: E.in, uAge: E.now.age, uAct: E.now.act, uDied: E.now.died, uLook: E.look }, { uN: E.n, uK: L.colours, uGen: L.gen, uTrail: look.trail, uBy: look.by, uNeg: negative(L) ? 1 : 0 }, [target], 1024, rows,
-    (u) => { gl.uniform4fv(u('uWall'), look.wall); gl.uniform4fv(u('uDead'), look.dead); });
-  gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-  return true;
-}
 /* ---- 11.4c Life on WebGPU -------------------------------------------------------------------- *
- * Life's engine as compute passes (being moved from 11.4b, see WEBGPU.md; checked against it by gpuLifeCheck). Storage
+ * Life's engine as compute passes (checked by tesseraCheck's known results, and gpuShownCheck: the picture the game's). Storage
  * buffers only, no textures: the grid's numbers in one (each list at its offset), the cells' five fields (state, age,
  * changes, last death, colours had) twice (now and next, side 0 or 1) in another, a cell a word, runs of cells side by side
  * (a hunt's starts, each its n rounded up to 64: a workgroup's cells in one run); the sums, a generation's column of each
@@ -14148,7 +13080,7 @@ fn F(s: i32, f: i32, g: i32) -> u32 { return u32((s * 5 + f) * p.total + g); }  
 fn live(v: i32) -> bool { return v > 0 && v <= p.K; }
 fn A(t: i32) -> i32 { return i32(cell[F(p.side, 0, base + t)]); }
 fn cellAt(id: vec3u) -> i32 { return p.r0 * p.stride + i32(id.x + id.y * 4194240u); }  // (a cell's number: 65,535 workgroups of 64 a row)
-// a generation of Life (as GL_SHADERS.lifeRule): cell t of its run's next state
+// a generation of Life: cell t of its run's next state
 fn next(t: i32) -> i32 {
   if (t >= p.n) { return 0; }
   let was = A(t); let s0 = I(p.oStart, t); let s1 = I(p.oStart, t + 1); let last = p.K * (p.C - 1);
@@ -14201,7 +13133,7 @@ fn next(t: i32) -> i32 {
   base = g / p.stride * p.stride;
   cell[F(1 - p.side, 0, g)] = u32(next(g - base));
 }
-// a generation of a block rule (as GL_SHADERS.blockRule; one run): oTo its rule, or its inverse going back
+// a generation of a block rule (one run): oTo its rule, or its inverse going back
 fn B(t: i32) -> i32 { return i32(cell[F(p.side, 0, select(t, I(p.oMove, t), p.stars == 1 && p.back == 0))]); }
 fn blockNext(t: i32) -> i32 {
   let w = I(p.oWhere, p.phase * p.n + t); let was = B(t);
@@ -14218,7 +13150,7 @@ fn blockNext(t: i32) -> i32 {
   if (t < p.n) { v = blockNext(select(t, I(p.oMove, t), p.stars == 1 && p.back == 1)); }
   cell[F(1 - p.side, 0, t)] = u32(v);
 }
-// a generation's counts (as GL_SHADERS.lifeBook): age, changes, last death, colours had (bit 0: it ever lived); back, one less
+// a generation's counts: age, changes, last death, colours had (bit 0: it ever lived); back, one less
 @compute @workgroup_size(64) fn lifeBook(@builtin(global_invocation_id) id: vec3u) {
   let g = cellAt(id);
   if (g >= p.r1 * p.stride) { return; }
@@ -14235,7 +13167,7 @@ fn blockNext(t: i32) -> i32 {
   }
   cell[F(b, 1, g)] = age; cell[F(b, 2, g)] = act; cell[F(b, 3, g)] = bitcast<u32>(died); cell[F(b, 4, g)] = ever;
 }
-// a generation's sums (as GL_SHADERS.lifeCount, then lifePart and lifeSum): a workgroup's 64 cells added in its own memory,
+// a generation's sums: a workgroup's 64 cells added in its own memory,
 // then into its run's column x (the most changes, sum 5: a max)
 var<workgroup> acc: array<atomic<u32>, 64>;
 fn mixed(v: u32) -> u32 { var x = (v ^ (v >> 16u)) * 0x7feb352du; x = (x ^ (x >> 15u)) * 0x846ca68bu; return x ^ (x >> 16u); }
@@ -14276,7 +13208,7 @@ fn add(j: i32, v: u32) { if (v != 0u) { atomicAdd(&acc[j], v); } }
     if (j == 5) { atomicMax(&sums[s], v); } else if (v != 0u) { atomicAdd(&sums[s], v); }
   }
 }
-// each cell's colour (as GL_SHADERS.lifeLook), from the cells shown (a batch's last adopted, see gpuShow): by the look's
+// each cell's colour, from the cells shown (a batch's last adopted, see gpuShow): by the look's
 // table (packed RGBA: its live states' from 0, dying from 256, ages from 512, trail from 1024, changes from 4096); a wall's,
 // a dead one's; past the cells, clear
 @group(1) @binding(0) var<storage, read> look: array<u32>;
@@ -14296,12 +13228,12 @@ fn S(f: i32, t: i32) -> u32 { return shownCells[u32(f * p.total + t)]; }
   let d = p.gen - bitcast<i32>(S(3, t));
   if (d >= 0 && d < p.trail) { outCol[t] = look[1024 + d]; } else { outCol[t] = u32(p.dead); }
 }`;
-// An engine for L (as lifeEngine): its runs side by side, h generations' sums kept a batch; null where the card can't hold it
+// An engine for L: its runs side by side, h generations' sums kept a batch; null where the card can't hold it
 function gpuLifeEngine(L, runs = 1, h = 1) {
   const { device } = GPU, n = L.seed.length, stride = Math.ceil(n / 64) * 64, total = runs * stride, J = 10 + 4 * L.colours;
   if (10 * total * 4 > device.limits.maxStorageBufferBindingSize) return null;
   const M = L.margolus, none = [0], { start, list } = L.nbr, more = L.ringMore, table = (T) => Int32Array.from({ length: Math.max(1024, T?.length ?? 0) }, (_, c) => (T?.[c] ? 1 : 0));
-  const blocks = M ? (() => {  // (as blockGPU)
+  const blocks = M ? (() => {  // (a block rule's: each cell's place each phase, the blocks' cells or Ising's 4 sides, the cells across, its rule and its inverse)
     const where = new Int32Array(M.turns.length * n).fill(-1), cells = new Int32Array(M.ising ? 4 * n : M.turns.reduce((m, turn) => m + turn.length, 0)).fill(-1);
     let at = 0;
     M.turns.forEach((turn, ph) => { turn.forEach((t, i) => { where[ph * n + t] = M.ising ? 4 * t : at + i; }); if (!M.ising) { cells.set(turn, at); at += turn.length; } });
@@ -14326,7 +13258,7 @@ function gpuLifeEngine(L, runs = 1, h = 1) {
   return E;
 }
 const gpuLifeFree = (E) => ['num', 'cell', 'sums', 'read', 'params'].forEach((k) => E[k].destroy());
-// a start's cells into run r (as lifeToGPU): states, a live one 1 old, ever alive and of its colour, no change, no death yet
+// a start's cells into run r: states, a live one 1 old, ever alive and of its colour, no change, no death yet
 function gpuLifePut(E, alive, r = 0) {
   const { device } = GPU, L = E.L, live = (v) => v > 0 && v <= L.colours, at = (f) => 4 * ((E.side * 5 + f) * E.total + r * E.stride);
   const field = (f, make) => { const a = new Uint32Array(E.stride); for (let t = 0; t < E.n; t++) a[t] = make(t); device.queue.writeBuffer(E.cell, at(f), a); };
@@ -14344,7 +13276,7 @@ function gpuPass1(E, enc, words, k, pipe, numbers, count, more = null) {
   if (more) c.setBindGroup(1, more);
   c.dispatchWorkgroups(Math.min(w, 65535), Math.ceil(w / 65535)); c.end();
 }
-// k generations of runs r0 … r1 (as lifeStepGPU, lifeTally): their sums a column each, read back with run 0's states once all
+// k generations of runs r0 … r1: their sums a column each, read back with run 0's states once all
 // are played. Resolves to read(j, r, x), sum j of run r at column x, and the states
 async function gpuLifeSteps(E, { gen = 0, back = false, k = 1, r0 = 0, r1 = E.runs, phase = null, negOf = null } = {}) {
   const { device, pipes } = GPU, L = E.L, M = L.margolus, words = new Int32Array(64 * E.slots), enc = device.createCommandEncoder(), cells = (r1 - r0) * E.stride;
@@ -14369,39 +13301,6 @@ async function gpuLifeSteps(E, { gen = 0, back = false, k = 1, r0 = 0, r1 = E.ru
   E.read.unmap();
   return { read: (j, r, x = 0) => got[(x * E.runs + r) * E.J + j], states: Uint8Array.from(got.subarray(k * E.runs * E.J)) };
 }
-// The engine checked against WebGL's (11.4b): the walk's Life played from its start on both, batch by batch, every sum of
-// every generation and every state alike. In the console: await gpuLifeCheck() (the walk shown), or a list of links
-async function gpuLifeCheck(links = null, gens = 64) {
-  if (!(await gpuSetup())) return { ok: false, failures: ['no WebGPU'] };
-  const wait = (ms) => new Promise((r) => setTimeout(r, ms)), failures = [], done = [];
-  for (const link of links ?? [null]) {
-    if (link) { location.hash = link; await wait(1500); }
-    const L = walk.life, name = link ?? location.hash;
-    if (!L) { failures.push(`${name}: no Life`); continue; }
-    play(false); seekTo(0);
-    const E = gpuLifeEngine(L, 1, LIFE_H);
-    gpuLifePut(E, L.alive.slice());
-    const neg = !!L.margolus?.flips;
-    let bad = null;
-    for (let at = 0; at < gens && !bad; at += LIFE_H) {
-      const k = Math.min(LIFE_H, gens - at), gl = lifeStepGPU(L, cur + 1, false, k);
-      const gp = await gpuLifeSteps(E, { gen: cur + 1, k, negOf: (g) => [neg && mod(g, 2) === 0, neg && mod(g, 2) === 1] });
-      gl.forEach((s, x) => {
-        const want = [s.alive, s.dying, s.born, s.dead, s.everNew, s.maxAct];
-        want.forEach((v, j) => { if (!bad && gp.read(j, 0, x) !== v) bad = `gen ${cur + 1 + x}: sum ${j} ${gp.read(j, 0, x)}, WebGL ${v}`; });
-        if (!bad && lifeKey(gp.read(6, 0, x), gp.read(7, 0, x)) !== s.key) bad = `gen ${cur + 1 + x}: its key`;
-        if (!bad && gp.read(9 + 4 * L.colours, 0, x) !== s.edges) bad = `gen ${cur + 1 + x}: edges ${gp.read(9 + 4 * L.colours, 0, x)}, WebGL ${s.edges}`;
-        for (let c = 1; c <= L.colours && !bad; c++) for (const [q, arr] of [[0, s.byColour], [1, s.bornBy], [2, s.deadBy], [3, s.everBy]]) if (!bad && gp.read(9 + 4 * (c - 1) + q, 0, x) !== arr[c]) bad = `gen ${cur + 1 + x}: colour ${c} sum ${q}`;
-      });
-      for (let x = 0; x < k; x++) { lifeStep(gl[x]); cur++; }  // (as lifeTo)
-      const a = L.alive;
-      for (let t = 0; t < E.n && !bad; t++) if (a[t] !== gp.states[t]) bad = `gen ${cur}: cell ${t} ${gp.states[t]}, WebGL ${a[t]}`;
-    }
-    gpuLifeFree(E);
-    if (bad) failures.push(`${name}: ${bad}`); else done.push(name);
-  }
-  return { ok: !failures.length, failures, checked: done.length };
-}
 // the cells shown (see gpuShow) as the game's at cur (L.alive): how many apart (0: the picture the generation's)
 async function gpuShownCheck() {
   await lifeSettle();
@@ -14417,7 +13316,7 @@ async function gpuShownCheck() {
   return apart;
 }
 
-// its colours (as lifeLookGPU) into out (out.buffer, out.n: a texel's worth a cell, clear past them), by a look
+// its colours into out (out.buffer, out.n: a texel's worth a cell, clear past them), by a look
 function gpuLook(L, out, look) {
   const E = lifeGPU(L), { device } = GPU;
   if (!E) return false;
@@ -14435,12 +13334,12 @@ function gpuLook(L, out, look) {
 }
 
 /* ---- 11.4d Drawing on WebGPU ----------------------------------------------------------------- *
- * The surfaces, the flat walks and the 3D walks' cubes as 11.4b draws them, on WebGPU (being moved, see WEBGPU.md): its own
- * canvas (gpuLayer, over glLayer's place), drawn instead of WebGL's while gpuDraw is on (in the console, to compare them);
- * Life's colours come with the engine (stage 3). The same projection, light, shadows (the light's depths and what is
- * nearest it, compared 9 times a pixel), grid, path, Glass (weighted blended, two pictures then mixed) and Cut; 4 samples a
- * pixel. A draw's numbers a slot of 512 bytes (see GPU_VIEW), by a dynamic offset: a frame's draws written at once */
-let gpuDraw = true;
+ * The surfaces, the flat walks, the 3D walks' cubes and Life on the plane, by the graphics card, in one go, its depth buffer
+ * hiding what lies behind (no sorting of the tiles, no path cut in halves): fast enough to turn a big surface smoothly. The
+ * same projection as projectPoint (orthographic, or perspective around walk.persp); the walker's arrow, the starts and the
+ * sky stay on their 2D layers. Shadows: the light's depths and what is nearest it, compared 9 times a pixel; Glass:
+ * weighted blended, two pictures then mixed; Cut; 4 samples a pixel. A draw's numbers a slot of 512 bytes (see GPU_VIEW), by
+ * a dynamic offset: a frame's draws written at once. Without WebGPU, nothing (every browser of the last years has it) */
 const gpuCanvas = $('gpuLayer');
 // a draw's numbers, in this order (vec3s padded to 4 words; see struct U)
 const GPU_VIEW = `
@@ -14454,12 +13353,12 @@ struct U {
 @group(0) @binding(1) var<storage, read> tileCol: array<u32>;
 @group(0) @binding(2) var grad: texture_2d<f32>;
 @group(0) @binding(3) var pal: texture_2d<f32>;
-fn toScreen(p: vec3f) -> vec3f {  // pixels on the stage, and the depth towards the viewer (as GL_PROJECT)
+fn toScreen(p: vec3f) -> vec3f {  // pixels on the stage, and the depth towards the viewer, as projectPoint's
   var X = dot(p, u.R); var Y = -dot(p, u.Uu); let t = dot(p - u.persp.xyz, u.V);
   if (u.persp.w > 0.0) { let k = u.persp.w / (u.persp.w - t); X = u.cc.x + (X - u.cc.x) * k; Y = u.cc.y + (Y - u.cc.y) * k; }
   return vec3f(u.view.y + X * u.view.x, u.view.z + Y * u.view.x, t);
 }
-fn clipOf(s: vec3f, bias: f32) -> vec4f {  // (depth 0 to 1, WebGL's −1 to 1 halved)
+fn clipOf(s: vec3f, bias: f32) -> vec4f {  // (depth 0 to 1)
   return vec4f(s.x / u.screen.x * 2.0 - 1.0, 1.0 - s.y / u.screen.y * 2.0, clamp(-s.z / u.depth - bias, -1.0, 1.0) * 0.5 + 0.5, 1.0);
 }
 fn flatAt(q: vec2f) -> vec4f { return vec4f(q.x / u.screen.x * 2.0 - 1.0, 1.0 - q.y / u.screen.y * 2.0, 0.0, 1.0); }
@@ -14473,7 +13372,7 @@ fn glass(c: vec3f, a: f32, z: f32) -> vec4f {
   return vec4f(a);
 }
 struct Lit { @builtin(position) pos: vec4f, @location(0) dark: vec3f, @location(1) lit: vec3f, @location(2) sh: vec3f, @location(3) @interpolate(flat) id: u32, @location(4) cutv: f32 }
-fn light(col: vec3f, n0: vec3f, p: vec3f, id: u32, bias: f32) -> Lit {  // (as GL_LIGHT; sh: its place in the shadows' texture, rows down)
+fn light(col: vec3f, n0: vec3f, p: vec3f, id: u32, bias: f32) -> Lit {  // (as tileLight; sh: its place in the shadows' texture, rows down)
   var o: Lit; var n = n0;
   if (dot(n, u.V) < 0.0) { n = -n; }
   o.dark = col * (1.0 - u.shade);
@@ -14486,7 +13385,7 @@ fn light(col: vec3f, n0: vec3f, p: vec3f, id: u32, bias: f32) -> Lit {  // (as G
 @group(1) @binding(0) var shadowMap: texture_depth_2d;
 @group(1) @binding(1) var shadowIds: texture_2d<u32>;
 @group(1) @binding(2) var shadowCmp: sampler_comparison;
-@fragment fn shadowedF(i: Lit) -> @location(0) vec4f {  // (as GL_SHADOWED: a piece never shadows itself)
+@fragment fn shadowedF(i: Lit) -> @location(0) vec4f {  // (the share of the light: 9 looks round it, each softened by the hardware's compare; a look that finds its own tile or cube lit: a piece never shadows itself, a tile not flat drawn folded)
   if (u.cut == 1 && i.cutv > 0.0) { discard; }
   let t = 1.0 / ${SHADOW_SIZE}.0; var s = 0.0;
   for (var a = -1; a <= 1; a++) { for (var b = -1; b <= 1; b++) {
@@ -14507,13 +13406,13 @@ fn light(col: vec3f, n0: vec3f, p: vec3f, id: u32, bias: f32) -> Lit {  // (as G
 @vertex fn cubeV(@location(0) corner: vec3f, @location(1) nrm: vec3f, @location(2) at: vec3f, @location(3) col: vec4f, @builtin(instance_index) k: u32) -> Lit {
   return light(col.rgb, nrm, at + corner, k, 0.0);
 }
-// the depths seen from the light (as GL_SHADERS.depth): a tile's corner or a cube's, and what is nearest it, its number + 1
+// the depths seen from the light: a tile's corner or a cube's, and what is nearest it, its number + 1
 struct Deep { @builtin(position) pos: vec4f, @location(0) @interpolate(flat) id: u32, @location(1) cutv: f32 }
 fn deep(p: vec3f, id: u32) -> Deep { var o: Deep; let l = lightSpace(p); o.pos = vec4f(l.x, l.y, l.z * 0.5 + 0.5, 1.0); o.id = id; o.cutv = dot(p, u.V); return o; }
 @vertex fn depthTileV(@location(0) pos: vec3f, @location(1) id: u32) -> Deep { return deep(pos, place(id)); }
 @vertex fn depthCubeV(@location(0) corner: vec3f, @location(1) at: vec3f, @builtin(instance_index) k: u32) -> Deep { return deep(at + corner, k); }
 @fragment fn depthF(i: Deep) -> @location(0) u32 { if (u.cut == 1 && i.cutv > 0.0) { discard; } return i.id + 1u; }
-// the grid (as GL_SHADERS.edge): an edge whose two tiles both face away not drawn, pixel by pixel
+// the grid: the tile edges, pulled a little towards the viewer; an edge whose two tiles both face away not drawn, pixel by pixel
 struct Edge { @builtin(position) pos: vec4f, @location(0) facing: f32, @location(1) cutv: f32 }
 @vertex fn edgeV(@location(0) pos: vec3f, @location(1) n1: vec3f, @location(2) n2: vec3f) -> Edge {
   var o: Edge; var eye = u.V;
@@ -14523,7 +13422,7 @@ struct Edge { @builtin(position) pos: vec4f, @location(0) facing: f32, @location
   return o;
 }
 @fragment fn edgeF(i: Edge) -> @location(0) vec4f { if ((u.cut == 1 && i.cutv > 0.0) || i.facing < 0.0) { discard; } return glass(u.edgeRgb, u.edge, i.pos.z); }
-// the path printed on the tiles (as GL_SHADERS.ribbon): a flat ribbon a segment, in its tile's plane
+// the path printed on the tiles (see pathSegments): a flat ribbon a segment, in its tile's plane, as wide as the path on screen
 struct Rib { @builtin(position) pos: vec4f, @location(0) col: vec3f, @location(1) cutv: f32 }
 @vertex fn ribbonV(@location(0) quad: vec2f, @location(1) a: vec3f, @location(2) b: vec3f, @location(3) n: vec3f, @location(4) e: f32, @location(5) i: f32) -> Rib {
   var o: Rib;
@@ -14536,7 +13435,7 @@ struct Rib { @builtin(position) pos: vec4f, @location(0) col: vec3f, @location(1
   return o;
 }
 @fragment fn ribbonF(i: Rib) -> @location(0) vec4f { if (u.cut == 1 && i.cutv > 0.0) { discard; } return glass(i.col, 1.0, i.pos.z); }
-// Glass's last step (as GL_SHADERS.glassMix): the layers' mean colour over what shows through them all
+// Glass's last step: the layers' mean colour over what shows through them all
 @group(1) @binding(0) var acc: texture_2d<f32>;
 @group(1) @binding(1) var rev: texture_2d<f32>;
 @vertex fn quadV(@builtin(vertex_index) v: u32) -> @builtin(position) vec4f { return vec4f(select(-1.0, 1.0, (v & 1u) == 1u), select(-1.0, 1.0, v >= 2u), 0.0, 1.0); }
@@ -14544,7 +13443,7 @@ struct Rib { @builtin(position) pos: vec4f, @location(0) col: vec3f, @location(1
   let p = vec2i(q.xy); let a = textureLoad(acc, p, 0); let r = textureLoad(rev, p, 0).r;
   return vec4f(a.rgb / max(a.a, 1e-5) * (1.0 - r), 1.0 - r);
 }
-// flat drawings (as GL_SHADERS.flatPath, flatTiles): world (x, y) to pixels by view (scale, ox, oy)
+// flat drawings (2D walks, projected 3D walks): world (x, y) to pixels by view (scale, ox, oy)
 struct Col { @builtin(position) pos: vec4f, @location(0) col: vec4f }
 @vertex fn flatPathV(@location(0) quad: vec2f, @location(1) a0: vec2f, @location(2) b0: vec2f, @location(3) key: u32, @builtin(instance_index) k: u32) -> Col {
   var o: Col;
@@ -14568,7 +13467,7 @@ struct Col { @builtin(position) pos: vec4f, @location(0) col: vec4f }
   return o;
 }
 @fragment fn colF(i: Col) -> @location(0) vec4f { return i.col; }
-// Life on the plane (as GL_SHADERS.planeCells, planeLines): world (x, y) turned (turnC, turnS), then to pixels; a cell's colour
+// Life on the plane: world (x, y) turned (turnC, turnS), then to pixels; a cell's colour
 // its texel's word (clear: off the screen); the outlines in plain (premultiplied)
 fn planeAt(p: vec2f) -> vec4f { return flatAt(u.view.yz + vec2f(u.turnC * p.x - u.turnS * p.y, u.turnS * p.x + u.turnC * p.y) * u.view.x); }
 @vertex fn planeCellsV(@location(0) pos: vec2f, @location(1) id: u32) -> Col {
@@ -14577,7 +13476,7 @@ fn planeAt(p: vec2f) -> vec4f { return flatAt(u.view.yz + vec2f(u.turnC * p.x - 
   return o;
 }
 @vertex fn planeLinesV(@location(0) pos: vec2f) -> Col { var o: Col; o.col = u.plain; o.pos = planeAt(pos); return o; }`;
-// a draw's numbers into slot k of the frame's (as glView: the camera, the light and its view for the shadows)
+// a draw's numbers into slot k of the frame's: the camera, the light and its view for the shadows (across it, over the ball that holds what is drawn)
 function gpuView(words, k, depth, more = {}) {
   const f = new Float32Array(words, 512 * k, 128), i = new Int32Array(words, 512 * k, 128), P = walk.persp, cc = P ? orthoPoint(...P.c) : [0, 0];
   const L = lightDir(), x = cam.r.map((r, d) => r - L[d] * (cam.r[0] * L[0] + cam.r[1] * L[1] + cam.r[2] * L[2])), m = Math.hypot(...x);
@@ -14617,7 +13516,7 @@ function gpuDrawSetup() {
   device.queue.writeBuffer(D.quad, 0, new Float32Array([0, -1, 0, 1, 1, -1, 1, 1]));
   return D;
 }
-// the rainbow again (the theme changed, see glPalette)
+// the rainbow again (the theme changed): the digits' colours made again too
 function gpuPalette() {
   const D = GPU?.draw;
   if (!D) return;
@@ -14663,14 +13562,8 @@ const gpuGroup = (col = null) => {
     { binding: 2, resource: D.grad.createView() }, { binding: 3, resource: D.pal.createView() }] }));
   return D.groups.get(col);
 };
-// is this draw WebGPU's? (gpuDraw on and the card set up); its canvas shown, WebGL's hidden, or back
-function gpuDrawing(can = true) {
-  const on = gpuDraw && can && !!GPU && !!gpuDrawSetup();
-  gpuCanvas.hidden = !on; glCanvas.hidden = on;
-  return on;
-}
 function gpuClear() {
-  const D = GPU?.draw;
+  const D = gpuDrawSetup();
   if (!D) return;
   const enc = D.device.createCommandEncoder();
   enc.beginRenderPass({ colorAttachments: [{ view: D.ctx.getCurrentTexture().createView(), loadOp: 'clear', storeOp: 'store', clearValue: [0, 0, 0, 0] }] }).end();
@@ -14682,7 +13575,7 @@ const gpuPass = (enc, colour = null, clear = [0, 0, 0, 0], depth = true) => {
   return enc.beginRenderPass({ colorAttachments: [colour ?? { view: S.colour.createView(), resolveTarget: D.ctx.getCurrentTexture().createView(), loadOp: 'clear', storeOp: 'discard', clearValue: clear }],
     depthStencilAttachment: depth ? { view: S.depth.createView(), depthLoadOp: 'clear', depthClearValue: 1, depthStoreOp: 'discard' } : undefined });
 };
-// the shadows (as glShadows): the light's depths and what is nearest it, again only when key changes; draw(pass) draws the pieces
+// the shadows: the light's depths and what is nearest it, again only when key changes; draw(pass) draws the pieces
 function gpuShadows(enc, slot, draw, key) {
   const D = GPU.draw, { device } = D;
   if (!D.shadow) {
@@ -14702,7 +13595,7 @@ function gpuShadows(enc, slot, draw, key) {
 const gpuDepthPipe = (entry, buffers) => gpuPipe(`depth|${entry}`, (D) => ({ layout: D.device.createPipelineLayout({ bindGroupLayouts: [D.g0] }),
   vertex: { module: D.module, entryPoint: entry, buffers }, fragment: { module: D.module, entryPoint: 'depthF', targets: [{ format: 'r32uint' }] },
   primitive: { topology: 'triangle-list' }, depthStencil: { format: 'depth24plus', depthWriteEnabled: true, depthCompare: 'less', depthBias: 4, depthBiasSlopeScale: 2 } }));
-// a picture's pipeline: pass 0 on the frame (blend: null or a blend), 1 and 2 Glass's (see glGlass), no depth test there
+// a picture's pipeline: pass 0 on the frame (blend: null or a blend), 1 and 2 Glass's (see gpuFrame), no depth test there
 const BLEND_OVER = { color: { srcFactor: 'src-alpha', dstFactor: 'one-minus-src-alpha' }, alpha: { srcFactor: 'one', dstFactor: 'one-minus-src-alpha' } };
 const BLEND_PRE = { color: { srcFactor: 'one', dstFactor: 'one-minus-src-alpha' }, alpha: { srcFactor: 'one', dstFactor: 'one-minus-src-alpha' } };
 const GLASS_BLEND = [null, { color: { srcFactor: 'one', dstFactor: 'one' }, alpha: { srcFactor: 'one', dstFactor: 'one' } },
@@ -14716,9 +13609,11 @@ function gpuDrawPipe(name, { vertex, fragment, buffers, topology = 'triangle-lis
     depthStencil: pass || !depth ? undefined : { format: 'depth24plus', depthWriteEnabled: true, depthCompare: 'less-equal' },
     multisample: { count: 4 } }));
 }
-// A surface (as glSurface), its tiles' colours by paint (paintLevels' only for now: Life's with stage 3)
+// A surface, its tiles' colours by paint (paintLevels', or Life's by gpuLook)
 function gpuSurface(paint, path) {
-  const D = GPU.draw, { device } = D, g = walk.geo, sh = walk.shape, R = walk.R, k = g.sides, n = g.n;
+  const D = gpuDrawSetup();
+  if (!D) return false;
+  const { device } = D, g = walk.geo, sh = walk.shape, R = walk.R, k = g.sides, n = g.n;
   const geoKey = `${n}|${k}|${R}|${sh.m}|${g.verts.length}|${walk.geo.torus ? g.nu + 'x' + g.nv : ''}`;
   if (D.keys.geo !== geoKey || D.keys.geoObj !== g) {
     const pos = new Float32Array(3 * k * n), nrm = new Float32Array(3 * k * n);
@@ -14792,7 +13687,7 @@ function gpuSurface(paint, path) {
   layers.path.clearRect(0, 0, cw, ch);
   return true;
 }
-// the frame's passes (as glGlass): as it is, or Glass's two pictures then mixed on the canvas
+// the frame's passes: as it is, or Glass's two pictures then mixed on the canvas
 function gpuFrame(enc, drawAll) {
   const D = GPU.draw, S = gpuTargets();
   if (!glassOn()) { const p = gpuPass(enc); drawAll(p, 0); p.end(); return; }
@@ -14807,9 +13702,13 @@ function gpuFrame(enc, drawAll) {
   p.setBindGroup(0, gpuGroup(), [0]); p.setBindGroup(1, S.mix); p.draw(4);
   p.end();
 }
-// A flat drawing (as glFlat): the fill, the cells, the path
+// A flat drawing: the fill, the cells, the path
 function gpuFlat(to) {
-  const D = GPU.draw, { device } = D, mode = $('colourMode').value, s = view.scale;
+  if (cubesWalk()) return gpuCubes(to + 1, walk.wx, walkCubes, walk.maxDist[walk.n]);
+  if (walk.rows) { gpuClear(); drawElementary(to); return true; }  // (Elementary: a picture, see drawElementary)
+  const D = gpuDrawSetup();
+  if (!D) return false;
+  const { device } = D, mode = $('colourMode').value, s = view.scale;
   const ptsKey = `${walk.is3d ? projected : 0}`;
   if (D.keys.flatPts !== walk.xs || D.keys.flatProj !== ptsKey) {
     const pts = new Float32Array(2 * (walk.n + 1));
@@ -14883,9 +13782,11 @@ function gpuFlat(to) {
   layers.path.clearRect(0, 0, cw, ch);
   return true;
 }
-// count cubes (as glCubes): of, theirs, made by make(the look) once; reach, how far from the middle they go
+// count cubes: of, theirs, made by make(the look) once; reach, how far from the middle they go
 function gpuCubes(count, of, make, reach) {
-  const D = GPU.draw, { device } = D, mode = $('colourMode').value, shape = cellShape();
+  const D = gpuDrawSetup();
+  if (!D) return false;
+  const { device } = D, mode = $('colourMode').value, shape = cellShape();
   if (D.keys.cubeShape !== shape) { gpuBuffer('cube', shape.triangles); D.keys.cubeShape = shape; }
   if (D.keys.cubes !== of || D.keys.cubesMode !== mode) {
     const { at, col } = make(mode), rgba = new Uint8Array((4 * col.length) / 3);
@@ -14911,10 +13812,12 @@ function gpuCubes(count, of, make, reach) {
   return true;
 }
 
-// Life on the plane (as glPlane): its cells' triangles and walls', once a grid; the page's colour on the cells and the walls'
+// Life on the plane: its cells' triangles and walls', once a grid; the page's colour on the cells and the walls'
 // on the walls under all, zoomed in enough the outlines, over all the generation's colours (paint: into their buffer)
 function gpuPlane(paint) {
-  const D = GPU.draw, { device } = D, { n } = walk.plane, { scale: s } = view, key = gridKey(), F = walk.plane.flat;
+  const D = gpuDrawSetup();
+  if (!D) return;
+  const { device } = D, { n } = walk.plane, { scale: s } = view, key = gridKey(), F = walk.plane.flat;
   if (D.keys.plane !== key) {
     const N = F.start[F.m], pos = new Float32Array(2 * N), ids = new Uint32Array(N), tris = new Uint32Array(3 * N);
     const straight = (P, i) => { const [a, b, c] = [P.at(i - 1), P[i], P[(i + 1) % P.length]]; return Math.abs((b[0] - a[0]) * (c[1] - a[1]) - (b[1] - a[1]) * (c[0] - a[0])) <= 1e-12; };
@@ -15600,8 +14503,8 @@ function tick(now = performance.now()) {
   easeView(dt);
   if (walk.n && !walk.sphere && !walk.plane) showZoom();  // (a walk: its fit grows with it)
   if (walk.plane) {  // Life on the plane: the grid as one picture, each generation (Space-time: its cubes, up to the layer shown)
-    if (needsFull) glClear();
-    if (spaceTimeOn()) { if (stack && (needsFull || statsDirty)) { drawGrid(); glCubes(stack.layers[cur] + 1, stack, stackCubes, stack.reach); updateStats(); } }
+    if (needsFull) gpuClear();
+    if (spaceTimeOn()) { if (stack && (needsFull || statsDirty)) { drawGrid(); gpuCubes(stack.layers[cur] + 1, stack, stackCubes, stack.reach); updateStats(); } }
     else {
       if (needsFull) drawPlaneGrid();
       if (needsFull || statsDirty) { drawLifePlane(); updateStats(); }
@@ -15636,10 +14539,10 @@ function tick(now = performance.now()) {
     layers.fill.clearRect(0, 0, cw, ch);
     drawn = 0;
   }
-  // a walk in WebGL, redrawn whole when anything changes (see glFlat)
-  if (needsFull && !walk.n) glClear();
+  // a walk on the card, redrawn whole when anything changes (see gpuFlat)
+  if (needsFull && !walk.n) gpuClear();
   if (walk.n && (needsFull || drawn !== cur)) {
-    glFlat(cur);
+    gpuFlat(cur);
     if (drawn !== cur) { drawn = cur; statsDirty = true; }
   }
   if (needsFull || statsDirty) {
@@ -16053,7 +14956,7 @@ function applyTheme() {
   document.documentElement.dataset.theme = theme;
   setPalette(theme);
   glColour.clear();
-  glPalette();
+  gpuPalette();
   renderColourButtons();
   renderSkyButtons();
   renderColours();  // Life's colour blocks, in the theme's colours

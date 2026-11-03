@@ -33,7 +33,7 @@ function checkMeshes(fail) {
   // the tori: their cells as many as said; a tiling's, straight and turned alike
   const tori = Object.keys(SPHERES).filter((k) => /torus/.test(k) && !/Turned$/.test(k));
   const ref = {};
-  // each tile's sheet corners its corners, in the same order (unrolled, its grid's edges drawn from them, see glSurface)
+  // each tile's sheet corners its corners, in the same order (unrolled, its grid's edges drawn from them, see gpuSurface)
   const sheetOff = (g) => { let bad = 0; for (let s = 0; s < g.n * g.sides; s++) { const v = g.poly[s], P = sheetPoint(g, g.uv[2 * s], g.uv[2 * s + 1], 1); bad += Math.hypot(P[0] - g.verts[3 * v], P[1] - g.verts[3 * v + 1], P[2] - g.verts[3 * v + 2]) > 1e-6; } return bad; };
   // a tiling's lattice: b a quarter turn clockwise from a on screen (see tools/tilings/build.js); its sheets alike, B from A:
   // the plane's tiles turned on its tori, not mirrored (see torusSheets)

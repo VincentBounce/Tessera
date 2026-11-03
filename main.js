@@ -11142,7 +11142,7 @@ function numberSeed(x, own) {
   return seed;
 }
 function huntPlan() {
-  const { colours: K } = walk.life, r = zoneRadius(hunt.zone), zone = new Set(), mine = new Map();  // mine: each cell's colour
+  const K = lifeParts(), r = zoneRadius(hunt.zone), zone = new Set(), mine = new Map();  // mine: each cell's colour; K: the start's teams (Newcomer's none, see lifeParts)
   if (hunt.zone === 'custom') return { cells: [], copies: [], perColour: 0, density: 0, all: 0 };
   if (hunt.zone === 'numbers') { const own = huntOwn(); return { cells: [], copies: [], nth: (k) => numberSeed(nthNumber(k), own), perColour: 0, density: 0, all: DRAWN, space: [DRAWN, 1] }; }  // (its starts: p/q, √n, each once)
   if (famousZone(hunt.zone) || isIcon(hunt.zone)) {  // (patterns, icons: their choices, one a colour)

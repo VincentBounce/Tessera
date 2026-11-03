@@ -233,12 +233,14 @@ const offered = (w) => {
     tiles: row('#torusTiles button'), colours: row('#colourBlocks button'), zones: row('#huntZones button'), rules: row('#navRules button'),
     ...panel(d) };
 };
-// the page as its link has it: Draw open on a surface (a view of its rule's patterns, the start as it was, see surfaceDraw)
-// closed while looked at, then open again
+// the page as its link has it, its views closed while looked at, then open again: Draw open on a surface (a view of its
+// rule's patterns, the start as it was, see surfaceDraw); Custom rule open (see customOpen: a link opens it only on a rule
+// no card has, a card's rule its card's)
 const linked = () => {
-  if (!surfaceDraw) return offered(window);
-  surfaceDraw = false; renderPlaneRow(); renderHunt();
-  try { return offered(window); } finally { surfaceDraw = true; renderPlaneRow(); renderHunt(); }
+  const draw = surfaceDraw, custom = customOpen, views = () => { renderPlaneRow(); renderHunt(); renderRuleSection(); };
+  if (!draw && !custom) return offered(window);
+  surfaceDraw = customOpen = false; views();
+  try { return offered(window); } finally { surfaceDraw = draw; customOpen = custom; views(); }
 };
 // the whole left panel, section by section (its sections' ids): each button shown, its name, greyed or not, picked or not
 // (what a path through the menus left there, a link loaded cold must show the same)

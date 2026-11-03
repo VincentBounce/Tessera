@@ -2947,8 +2947,8 @@ const NAV_KINDS = [['Life', 'glider', 'Cells born and dying by their neighbours,
 // (a sheet rolled up); the walks through a 3D lattice
 const SPACES = { '2D': ['2D infinite', 'grid', 'An endless plane, the walk going as far as its digits take it'],
                  '2D squares': ['2D squares', 'grid', 'A flat grid, its edges walls or wrapping round'], '2D circles': ['2D circles', 'ring12', 'Grids of rings round a middle, as flowers'],
-                 '3D solids': ['3D solids', 'cube', 'The faces of a solid (a cube…), the grid going round it'], '3D surfaces': ['3D surfaces', 'torus', 'A sheet rolled up: torus, Möbius strip, Klein bottle…'],
-                 '3D': ['Lattice', 'cubeFilled', 'A 3D lattice, the walk going in space'] }, SHEETS = ['Torus', 'Möbius strip', 'Klein bottle'];
+                 '3D solids': ['3D solids', 'cube', 'The faces of a solid (a cube…), the grid going round it'], '3D surfaces': ['3D surfaces', 'torus', 'A sheet rolled up or two discs glued: torus, Möbius strip, Klein bottle, rosettes…'],
+                 '3D': ['Lattice', 'cubeFilled', 'A 3D lattice, the walk going in space'] }, SHEETS = ['Torus', 'Möbius strip', 'Klein bottle', 'Rosettes'];  // (3D surfaces' shapes)
 // a tiling's icon: its polygons round a cell's middle, fitted in the 24 × 24 box
 function tilingIcon(kind) {
   const m = TILINGS[kind].polys.length, polys = [];
@@ -3153,7 +3153,7 @@ function renderModePicker() {
   // the shapes, as pictures with their (short) names
   // (a grid of Life picked that can wrap round: a switch, a click again its edges a torus or walls)
   // in 2D, many of them: in groups by their grid's natural shape (see SHAPE_GROUPS), each its title; in 3D, the solids,
-  // then the surfaces (a sheet rolled up: Torus, Möbius, Klein)
+  // then the surfaces (a sheet rolled up: Torus, Möbius, Klein; two discs glued: Rosettes)
   const shapes = navValues(2, [kind, space]), flat = space.startsWith('2D'), solid = space.startsWith('3D ');
   // (in 3D: the solids of squares first (the cube, the globe, the cubes carved), the other solids, those of squares and
   // triangles, the surfaces)

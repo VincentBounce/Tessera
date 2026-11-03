@@ -8,7 +8,12 @@ const N = Number(Deno.args[0] ?? 4), only = Deno.args[2], off = Deno.args[1] ===
 const html = Deno.readTextFileSync(new URL('../../index.html', import.meta.url));
 const MARKS = { '◺': 'pinwheel', '❀': 'flower', '✾': 'flower5', '✽': 'flower7', '✸': 'flower3', '✷': 'flower4', '✹': 'flower8', '✼': 'flower9', '✥': 'flower10', '⁕': 'flower11', '⚘': 'flower12', '❇': 'ring7', '✲': 'ring8', '✻': 'ring9', '✴': 'ring10', '⊚': 'ring11', '❈': 'ring12', '⚝': 'mirror3', '※': 'mirror4', '✩': 'mirror5', '✫': 'mirror6', '❊': 'mirror7', '✱': 'mirror8', '✭': 'mirror9', '✮': 'mirror10', '✰': 'mirror11', '⊛': 'mirror12', '⎔': 'hexa4', '⬢': 'hexa5', '⏣': 'hexa6', '◉': 'hexa7', '◎': 'hexa8', '◍': 'hexa9', '◌': 'hexa10', '◐': 'hexa11', '◑': 'hexa12', '❅': 'rhombs14' };
 const jobs = [];
-for (const [, rule, mark] of html.matchAll(/<option value="([^"]+)" data-name="[^"]*">(\S+) /g)) if (MARKS[mark] && /^B/.test(rule) && (!only || MARKS[mark] === only)) jobs.push([MARKS[mark], rule]);
+// (the Hexas take the hexagons' rules too, those counting neighbours only, no letter: see main.js's CONED)
+const hexas = Object.values(MARKS).filter((k) => k.startsWith('hexa'));
+for (const [, rule, mark] of html.matchAll(/<option value="([^"]+)" data-name="[^"]*">(\S+) /g)) {
+  const kinds = MARKS[mark] ? [MARKS[mark]] : mark === '⬡' && /^B\d*\/S\d*(\/C\d+)?$/.test(rule) ? hexas : [];
+  for (const k of kinds) if (/^B/.test(rule) && (!only || k === only)) jobs.push([k, rule]);
+}
 const workers = Array.from({ length: N }, () => new Worker(new URL('./centred-worker.js', import.meta.url).href, { type: 'module' }));
 const call = (w, msg) => new Promise((res) => { w.onmessage = (e) => res(e.data); w.postMessage(msg); });
 const out = only ? JSON.parse(Deno.readTextFileSync(new URL(`./out/${file}`, import.meta.url))) : {}, t0 = Date.now();

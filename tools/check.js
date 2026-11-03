@@ -230,8 +230,15 @@ async function crawl(fail) {
 const offered = (w) => {
   const d = w.document, row = (sel, all = false) => [...d.querySelectorAll(sel)].filter((b) => (all ? !b.hidden : !b.closest('[hidden]'))).map((b) => `${b.textContent.trim().slice(0, 16)}${b.disabled ? '⊘' : ''}${b.classList.contains('active') ? '•' : ''}`).join(' ');
   return { size: d.getElementById('sizeLabel').closest('[hidden]') ? '' : d.getElementById('sizeLabel').innerText, plane: d.getElementById('planeLabel').closest('[hidden]') ? '' : d.getElementById('planeLabel').innerText,
-    tiles: row('#torusTiles button'), colours: row('#colourBlocks button'), zones: row('#huntZones button', w === window && surfaceDraw && huntOn()), rules: row('#navRules button'),
-    ...panel(d) };  // (Draw open on a surface here: a view, a hunt's zones out of sight, not gone; a link loaded cold has it not)
+    tiles: row('#torusTiles button'), colours: row('#colourBlocks button'), zones: row('#huntZones button'), rules: row('#navRules button'),
+    ...panel(d) };
+};
+// the page as its link has it: Draw open on a surface (a view of its rule's patterns, the start as it was, see surfaceDraw)
+// closed while looked at, then open again
+const linked = () => {
+  if (!surfaceDraw) return offered(window);
+  surfaceDraw = false; renderPlaneRow(); renderHunt();
+  try { return offered(window); } finally { surfaceDraw = true; renderPlaneRow(); renderHunt(); }
 };
 // the whole left panel, section by section (its sections' ids): each button shown, its name, greyed or not, picked or not
 // (what a path through the menus left there, a link loaded cold must show the same)
@@ -245,7 +252,7 @@ async function coldLike(fail, what) {
   await new Promise((go) => f.addEventListener('load', go, { once: true }));
   await wait(1500);
   for (let t = 0; f.contentWindow.eval('busy') && t < 600; t++) await wait(100);  // (its digits still computed: as the page's own look waits, see checker)
-  const a = offered(window), b = offered(f.contentWindow);
+  const a = linked(), b = offered(f.contentWindow);
   f.remove();
   const diff = [...new Set([...Object.keys(a), ...Object.keys(b)])].filter((k) => a[k] !== b[k]).map((k) => `${k}: «${a[k]}» here, «${b[k]}» cold`);
   if (diff.length) fail(`${what} ${location.hash}: ${diff.join('; ')}`);

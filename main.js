@@ -12266,8 +12266,8 @@ function resize() {
     ctx.canvas.height = Math.round(ch * dpr);
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   }
-  glCanvas.width = Math.round(cw * dpr);
-  glCanvas.height = Math.round(ch * dpr);
+  glCanvas.width = gpuCanvas.width = Math.round(cw * dpr);
+  glCanvas.height = gpuCanvas.height = Math.round(ch * dpr);
   if (walk.plane) bounds = planeBounds();  // (a rhombus turns as the view changes shape)
   if (first || $('autoFit').checked) fitToBounds(padBounds(bounds));
   needsFull = true;
@@ -13158,6 +13158,7 @@ function glSetup() {
 }
 // The theme changed the walk's colours: the rainbow texture again, the one colour and the digits' made again
 function glPalette() {
+  gpuPalette();
   if (!GLS) return;
   const { gl } = GLS;
   gl.bindTexture(gl.TEXTURE_2D, GLS.grad);
@@ -13166,6 +13167,7 @@ function glPalette() {
   GLS.keys.pal = null;
 }
 function glClear() {
+  gpuClear();
   if (!GLS || !GLS.drawn) return;
   GLS.gl.clearColor(0, 0, 0, 0);
   GLS.gl.clear(GLS.gl.COLOR_BUFFER_BIT | GLS.gl.DEPTH_BUFFER_BIT);
@@ -13276,13 +13278,30 @@ function glShadows(depth, draw, key = null) {  // key: what they depend on (the 
   gl.bindFramebuffer(gl.FRAMEBUFFER, null);
   bind(true);
 }
+// a surface's edges, each once (two tiles' strokes over each other were twice as strong as the outline's): by the corners of the
+// surface, so that an unrolled seam is drawn on one side only (the other's open, to be glued); none of no length (a repeated
+// corner). Four numbers an edge: its two corners' slots, its tile, the other tile (−1: none); made once a grid
+const surfaceEdges = (g) => (g.edgeList ??= (() => {
+  const at = new Map(), list = [], nv = g.verts.length / 3, k = g.sides;
+  for (let t = 0; t < g.n; t++) for (let q = 0; q < k; q++) {
+    const a = g.poly[k * t + q], b = g.poly[k * t + ((q + 1) % k)], e = Math.min(a, b) * nv + Math.max(a, b);
+    if (a === b) continue;
+    const m = at.get(e);
+    if (m !== undefined) { if (list[4 * m + 3] < 0) list[4 * m + 3] = t; continue; }
+    at.set(e, list.length / 4);
+    list.push(k * t + q, k * t + ((q + 1) % k), t, -1);
+  }
+  return Int32Array.from(list);
+})());
 // a surface's tiles' colours from a palette (null: unlit) and each tile's place in it (out of it: unlit), into their texture
-const paintLevels = (palette, levelOf) => (tex, n) => {
+// (WebGPU's: its buffer, by put); cpu: made here, not by the card (see gpuDrawing)
+const paintLevels = (palette, levelOf) => Object.assign((tex, n) => {
   const rgb = palette.map((c) => packed(c ?? UNLIT)), col = new Uint32Array(n);
   for (let t = 0; t < n; t++) col[t] = rgb[levelOf(t)] ?? rgb[0];
-  glPut(GLS.gl, tex, col);
-};
+  if (tex.put) tex.put(col); else glPut(GLS.gl, tex, col);
+}, { cpu: true });
 function glSurface(paint, path) {  // paint: its tiles' colours into their texture (see paintLevels, lifeLookGPU)
+  if (gpuDrawing(!!paint.cpu)) return gpuSurface(paint, path);
   const S = glSetup();
   if (!S) return false;
   const { gl, prog } = S, g = walk.geo, sh = walk.shape, R = walk.R, k = g.sides, n = g.n;
@@ -13297,22 +13316,8 @@ function glSurface(paint, path) {  // paint: its tiles' colours into their textu
     }
     gl.bindBuffer(gl.ARRAY_BUFFER, S.pos); gl.bufferData(gl.ARRAY_BUFFER, pos, gl.DYNAMIC_DRAW);
     gl.bindBuffer(gl.ARRAY_BUFFER, S.nrm); gl.bufferData(gl.ARRAY_BUFFER, nrm, gl.DYNAMIC_DRAW);
-    // the edges, each once (two tiles' strokes over each other were twice as strong as the outline's): by the corners of
-    // the surface, so that an unrolled seam is drawn on one side only (the other's open, to be glued), with both its
-    // tiles' normals (drawn if either faces the viewer); none of no length (a repeated corner)
-    if (S.keys.edgesOf !== g) {
-      const at = new Map(), list = [], nv = g.verts.length / 3;
-      for (let t = 0; t < n; t++) for (let q = 0; q < k; q++) {
-        const a = g.poly[k * t + q], b = g.poly[k * t + ((q + 1) % k)], e = Math.min(a, b) * nv + Math.max(a, b);
-        if (a === b) continue;
-        const m = at.get(e);
-        if (m !== undefined) { if (list[4 * m + 3] < 0) list[4 * m + 3] = t; continue; }
-        at.set(e, list.length / 4);
-        list.push(k * t + q, k * t + ((q + 1) % k), t, -1);  // its two corners' slots, its tile, the other tile
-      }
-      S.edgeList = Int32Array.from(list);
-      S.keys.edgesOf = g;
-    }
+    // the edges (see surfaceEdges), with both their tiles' normals (drawn if either faces the viewer)
+    S.edgeList = surfaceEdges(g);
     const E = S.edgeList.length / 4, ends = new Float32Array(6 * E), n1 = new Float32Array(ends.length), n2 = new Float32Array(ends.length);
     for (let e = 0; e < E; e++) {
       const [i, j, t, o] = S.edgeList.subarray(4 * e, 4 * e + 4);
@@ -13558,9 +13563,25 @@ function drawElementary(to) {
   ctx.imageSmoothingQuality = 'high';
   ctx.drawImage(R.picture.cv, 0, 0, R.PW, h, pin(ox + (-R.c - 0.5) * s), pin(oy - 0.5 * s), R.PW * R.B * s, h * R.B * s);  // (its last pixels past the row's end: empty)
 }
+// the walk's cells, each point's tile with its colour band (the heatmap: its visits so far), in the walk's order: (x, y, band,
+// template) each, at: its point
+function flatCellInstances(mode) {
+  const lat = walk.lattice, inst = new Float32Array(4 * (walk.n + 1)), at = new Int32Array(walk.n + 1);
+  let m = 0, V = null, scale = 0;
+  if (mode === 'visits') { V = visitCells(); V.seen.fill(0); scale = (BANDS - 1) / Math.log(Math.max(2, V.max)); }
+  for (let p = 0; p <= walk.n; p++) {
+    if (walk.skipZeros && p > 0 && walk.digits[p - 1] === 0) continue;
+    const band = mode === 'digit' ? walk.keys[Math.max(0, p - 1)]  // an ant's colour, a spiral's digit
+      : V ? Math.round(Math.log(++V.seen[V.cell[p]]) * scale) : Math.floor((roundStep(Math.max(0, p - 1)) * BANDS) / rainbowLength());
+    inst.set([walk.xs[p], walk.ys[p], band, cellTemplate(lat, walk.xs[p], walk.ys[p])], 4 * m);
+    at[m++] = p;
+  }
+  return { inst, at, m };
+}
 function glFlat(to) {
   if (cubesWalk()) return glCubes(to + 1, walk.wx, walkCubes, walk.maxDist[walk.n]);
   if (walk.rows) { glClear(); drawElementary(to); return true; }  // (Elementary: a picture, see drawElementary)
+  if (gpuDrawing()) return gpuFlat(to);
   const S = glSetup();
   if (!S) return false;
   const { gl, prog } = S, mode = $('colourMode').value, { scale: s, ox, oy } = view;
@@ -13611,19 +13632,10 @@ function glFlat(to) {
   if (cells) {
     const cellsKey = `${mode}|${walk.keys === walk.antStates}`;
     if (S.keys.flatCells !== walk.xs || S.keys.flatCellsMode !== cellsKey) {
-      const lat = walk.lattice, inst = new Float32Array(4 * (walk.n + 1)), at = new Int32Array(walk.n + 1);
-      let m = 0, V = null, scale = 0;
-      if (mode === 'visits') { V = visitCells(); V.seen.fill(0); scale = (BANDS - 1) / Math.log(Math.max(2, V.max)); }
-      for (let p = 0; p <= walk.n; p++) {
-        if (walk.skipZeros && p > 0 && walk.digits[p - 1] === 0) continue;
-        const band = mode === 'digit' ? walk.keys[Math.max(0, p - 1)]  // an ant's colour, a spiral's digit
-          : V ? Math.round(Math.log(++V.seen[V.cell[p]]) * scale) : Math.floor((roundStep(Math.max(0, p - 1)) * BANDS) / rainbowLength());
-        inst.set([walk.xs[p], walk.ys[p], band, cellTemplate(lat, walk.xs[p], walk.ys[p])], 4 * m);
-        at[m++] = p;
-      }
+      const { inst, at, m } = flatCellInstances(mode);
       upload(S.flatCells, inst.subarray(0, 4 * m));
       S.cellAt = at; S.cellN = m;
-      S.cellTpl = templateArray(CELL_TEMPLATES[lat]);
+      S.cellTpl = templateArray(CELL_TEMPLATES[walk.lattice]);
       S.keys.flatCells = walk.xs; S.keys.flatCellsMode = cellsKey;
     }
     cellCount = countUpTo(S.cellAt, S.cellN, to);
@@ -13736,6 +13748,7 @@ function walkCubes(mode) {
 }
 // count cubes (of: theirs, made by make(the look) once; reach: how far from the middle they go)
 function glCubes(count, of, make, reach) {
+  if (gpuDrawing()) return gpuCubes(count, of, make, reach);
   const S = glSetup();
   if (!S) return false;
   const { gl, prog } = S, mode = $('colourMode').value, shape = cellShape();
@@ -13804,6 +13817,7 @@ function planeFlat(kind, W, torus) {  // a plane's cells then its walls (a grid 
   return flatPolys(m, start, xy.subarray(0, at));
 }
 function glPlane(paint) {
+  gpuDrawing(false);  // (Life's colours: WebGL's engine's, till stage 3)
   const S = glSetup();
   if (!S) return;
   const { gl, prog } = S, { n } = walk.plane, { scale: s, ox, oy } = view, key = gridKey();
@@ -14331,6 +14345,471 @@ async function gpuLifeCheck(links = null, gens = 64) {
     if (bad) failures.push(`${name}: ${bad}`); else done.push(name);
   }
   return { ok: !failures.length, failures, checked: done.length };
+}
+
+/* ---- 11.4d Drawing on WebGPU ----------------------------------------------------------------- *
+ * The surfaces, the flat walks and the 3D walks' cubes as 11.4b draws them, on WebGPU (being moved, see WEBGPU.md): its own
+ * canvas (gpuLayer, over glLayer's place), drawn instead of WebGL's while gpuDraw is on (in the console, to compare them);
+ * Life's colours come with the engine (stage 3). The same projection, light, shadows (the light's depths and what is
+ * nearest it, compared 9 times a pixel), grid, path, Glass (weighted blended, two pictures then mixed) and Cut; 4 samples a
+ * pixel. A draw's numbers a slot of 512 bytes (see GPU_VIEW), by a dynamic offset: a frame's draws written at once */
+let gpuDraw = false;
+const gpuCanvas = $('gpuLayer');
+// a draw's numbers, in this order (vec3s padded to 4 words; see struct U)
+const GPU_VIEW = `
+struct U {
+  R: vec3f, depth: f32, Uu: vec3f, shade: f32, V: vec3f, glint: f32, L: vec3f, lr: f32, H: vec3f, alpha: f32, Lx: vec3f, edge: f32,
+  Ly: vec3f, bias: f32, edgeRgb: vec3f, halfW: f32, persp: vec4f, plain: vec4f, view: vec3f, N: f32, cc: vec2f, screen: vec2f,
+  front: u32, cut: i32, glass: i32, both: i32, colour: i32, alphaF: f32, bright: f32, width: f32, loopFrom: f32, period: f32, pad0: f32, pad1: f32,
+  tpl: array<vec4f, 12>,  // (the polygons' corners, two a vec4)
+}
+@group(0) @binding(0) var<uniform> u: U;
+@group(0) @binding(1) var<storage, read> tileCol: array<u32>;
+@group(0) @binding(2) var grad: texture_2d<f32>;
+@group(0) @binding(3) var pal: texture_2d<f32>;
+fn toScreen(p: vec3f) -> vec3f {  // pixels on the stage, and the depth towards the viewer (as GL_PROJECT)
+  var X = dot(p, u.R); var Y = -dot(p, u.Uu); let t = dot(p - u.persp.xyz, u.V);
+  if (u.persp.w > 0.0) { let k = u.persp.w / (u.persp.w - t); X = u.cc.x + (X - u.cc.x) * k; Y = u.cc.y + (Y - u.cc.y) * k; }
+  return vec3f(u.view.y + X * u.view.x, u.view.z + Y * u.view.x, t);
+}
+fn clipOf(s: vec3f, bias: f32) -> vec4f {  // (depth 0 to 1, WebGL's −1 to 1 halved)
+  return vec4f(s.x / u.screen.x * 2.0 - 1.0, 1.0 - s.y / u.screen.y * 2.0, clamp(-s.z / u.depth - bias, -1.0, 1.0) * 0.5 + 0.5, 1.0);
+}
+fn flatAt(q: vec2f) -> vec4f { return vec4f(q.x / u.screen.x * 2.0 - 1.0, 1.0 - q.y / u.screen.y * 2.0, 0.0, 1.0); }
+fn place(id: u32) -> u32 { if (u.front > 0u) { return id % u.front; } return id; }
+fn lightSpace(p: vec3f) -> vec3f { return vec3f(dot(p, u.Lx), dot(p, u.Ly), -dot(p, u.L)) / u.lr; }
+fn band(t: texture_2d<f32>, x: f32) -> vec3f { let w = i32(textureDimensions(t).x); return textureLoad(t, vec2i(clamp(i32(floor(x * f32(w))), 0, w - 1), 0), 0).rgb; }
+fn glass(c: vec3f, a: f32, z: f32) -> vec4f {
+  if (u.glass == 0) { return vec4f(c, a); }
+  let w = clamp(a * 1e3 * pow(1.0 - z, 8.0), 1e-2, 3e3);
+  if (u.glass == 1) { return vec4f(c * a * w, a * w); }
+  return vec4f(a);
+}
+struct Lit { @builtin(position) pos: vec4f, @location(0) dark: vec3f, @location(1) lit: vec3f, @location(2) sh: vec3f, @location(3) @interpolate(flat) id: u32, @location(4) cutv: f32 }
+fn light(col: vec3f, n0: vec3f, p: vec3f, id: u32, bias: f32) -> Lit {  // (as GL_LIGHT; sh: its place in the shadows' texture, rows down)
+  var o: Lit; var n = n0;
+  if (dot(n, u.V) < 0.0) { n = -n; }
+  o.dark = col * (1.0 - u.shade);
+  o.lit = col * u.shade * max(0.0, dot(n, u.L)) + u.glint * pow(max(0.0, dot(n, u.H)), ${LIGHT_SHINE}.0);
+  let l = lightSpace(p);
+  o.sh = vec3f(l.x * 0.5 + 0.5, 0.5 - l.y * 0.5, l.z * 0.5 + 0.5);
+  o.id = id; o.cutv = dot(p, u.V); o.pos = clipOf(toScreen(p), bias);
+  return o;
+}
+@group(1) @binding(0) var shadowMap: texture_depth_2d;
+@group(1) @binding(1) var shadowIds: texture_2d<u32>;
+@group(1) @binding(2) var shadowCmp: sampler_comparison;
+@fragment fn shadowedF(i: Lit) -> @location(0) vec4f {  // (as GL_SHADOWED: a piece never shadows itself)
+  if (u.cut == 1 && i.cutv > 0.0) { discard; }
+  let t = 1.0 / ${SHADOW_SIZE}.0; var s = 0.0;
+  for (var a = -1; a <= 1; a++) { for (var b = -1; b <= 1; b++) {
+    let at = i.sh.xy + vec2f(f32(a), f32(b)) * t;
+    let lit = textureSampleCompareLevel(shadowMap, shadowCmp, at, i.sh.z - 2.0 * t);
+    let px = clamp(vec2i(floor(at * ${SHADOW_SIZE}.0)), vec2i(0), vec2i(${SHADOW_SIZE - 1}));
+    s += select(lit, 1.0, textureLoad(shadowIds, px, 0).r == i.id + 1u);
+  } }
+  var a = u.alpha;
+  if (u.glass == 0 || (u.cut == 2 && i.cutv <= 0.0)) { a = 1.0; }
+  return glass(i.dark + i.lit * s / 9.0, a, i.pos.z);
+}
+@vertex fn tileV(@location(0) pos: vec3f, @location(1) nrm: vec3f, @location(2) id: u32) -> Lit {
+  var col = u.plain.rgb;  // (the back of an open sheet; else its tile's colour)
+  if (u.plain.a <= 0.0) { col = unpack4x8unorm(tileCol[id]).rgb; }
+  return light(col, nrm, pos, place(id), 0.0);
+}
+@vertex fn cubeV(@location(0) corner: vec3f, @location(1) nrm: vec3f, @location(2) at: vec3f, @location(3) col: vec4f, @builtin(instance_index) k: u32) -> Lit {
+  return light(col.rgb, nrm, at + corner, k, 0.0);
+}
+// the depths seen from the light (as GL_SHADERS.depth): a tile's corner or a cube's, and what is nearest it, its number + 1
+struct Deep { @builtin(position) pos: vec4f, @location(0) @interpolate(flat) id: u32, @location(1) cutv: f32 }
+fn deep(p: vec3f, id: u32) -> Deep { var o: Deep; let l = lightSpace(p); o.pos = vec4f(l.x, l.y, l.z * 0.5 + 0.5, 1.0); o.id = id; o.cutv = dot(p, u.V); return o; }
+@vertex fn depthTileV(@location(0) pos: vec3f, @location(1) id: u32) -> Deep { return deep(pos, place(id)); }
+@vertex fn depthCubeV(@location(0) corner: vec3f, @location(1) at: vec3f, @builtin(instance_index) k: u32) -> Deep { return deep(at + corner, k); }
+@fragment fn depthF(i: Deep) -> @location(0) u32 { if (u.cut == 1 && i.cutv > 0.0) { discard; } return i.id + 1u; }
+// the grid (as GL_SHADERS.edge): an edge whose two tiles both face away not drawn, pixel by pixel
+struct Edge { @builtin(position) pos: vec4f, @location(0) facing: f32, @location(1) cutv: f32 }
+@vertex fn edgeV(@location(0) pos: vec3f, @location(1) n1: vec3f, @location(2) n2: vec3f) -> Edge {
+  var o: Edge; var eye = u.V;
+  if (u.persp.w > 0.0) { eye = u.persp.xyz + u.V * u.persp.w - pos; }
+  o.facing = select(max(dot(n1, eye), dot(n2, eye)), 1.0, u.both == 1);
+  o.cutv = dot(pos, u.V); o.pos = clipOf(toScreen(pos), u.bias);
+  return o;
+}
+@fragment fn edgeF(i: Edge) -> @location(0) vec4f { if ((u.cut == 1 && i.cutv > 0.0) || i.facing < 0.0) { discard; } return glass(u.edgeRgb, u.edge, i.pos.z); }
+// the path printed on the tiles (as GL_SHADERS.ribbon): a flat ribbon a segment, in its tile's plane
+struct Rib { @builtin(position) pos: vec4f, @location(0) col: vec3f, @location(1) cutv: f32 }
+@vertex fn ribbonV(@location(0) quad: vec2f, @location(1) a: vec3f, @location(2) b: vec3f, @location(3) n: vec3f, @location(4) e: f32, @location(5) i: f32) -> Rib {
+  var o: Rib;
+  o.col = band(grad, (i + 0.5) / u.N);
+  var d = b - a; if (length(d) > 1e-9) { d = normalize(d); } else { d = vec3f(1.0, 0.0, 0.0); }
+  let side = normalize(cross(d, n)) * u.halfW;
+  var on = floor(e / 2.0); if (quad.x < 0.5) { on = e - 2.0 * floor(e / 2.0); }
+  let p = mix(a, b, quad.x) + side * quad.y + d * (quad.x * 2.0 - 1.0) * u.halfW * on;
+  o.cutv = dot(p, u.V); o.pos = clipOf(toScreen(p), u.bias);
+  return o;
+}
+@fragment fn ribbonF(i: Rib) -> @location(0) vec4f { if (u.cut == 1 && i.cutv > 0.0) { discard; } return glass(i.col, 1.0, i.pos.z); }
+// Glass's last step (as GL_SHADERS.glassMix): the layers' mean colour over what shows through them all
+@group(1) @binding(0) var acc: texture_2d<f32>;
+@group(1) @binding(1) var rev: texture_2d<f32>;
+@vertex fn quadV(@builtin(vertex_index) v: u32) -> @builtin(position) vec4f { return vec4f(select(-1.0, 1.0, (v & 1u) == 1u), select(-1.0, 1.0, v >= 2u), 0.0, 1.0); }
+@fragment fn glassMixF(@builtin(position) q: vec4f) -> @location(0) vec4f {
+  let p = vec2i(q.xy); let a = textureLoad(acc, p, 0); let r = textureLoad(rev, p, 0).r;
+  return vec4f(a.rgb / max(a.a, 1e-5) * (1.0 - r), 1.0 - r);
+}
+// flat drawings (as GL_SHADERS.flatPath, flatTiles): world (x, y) to pixels by view (scale, ox, oy)
+struct Col { @builtin(position) pos: vec4f, @location(0) col: vec4f }
+@vertex fn flatPathV(@location(0) quad: vec2f, @location(1) a0: vec2f, @location(2) b0: vec2f, @location(3) key: u32, @builtin(instance_index) k: u32) -> Col {
+  var o: Col;
+  if (key == 255u) { o.pos = vec4f(2.0, 2.0, 2.0, 1.0); return o; }  // (a step that draws nothing: a spiral's 0)
+  var i = f32(k);
+  if (u.period > 0.0 && i >= u.loopFrom + u.period) { i = u.loopFrom + (i - u.loopFrom) - u.period * floor((i - u.loopFrom) / u.period); }
+  if (u.colour == 2) { o.col = vec4f(band(pal, (f32(key) + 0.5) / 256.0), 1.0); } else { o.col = vec4f(band(grad, (i + 0.5) / u.N), 1.0); }
+  let a = u.view.yz + a0 * u.view.x; let b = u.view.yz + b0 * u.view.x;
+  var d = b - a; if (length(d) > 1e-4) { d = normalize(d); } else { d = vec2f(1.0, 0.0); }
+  o.pos = flatAt(mix(a, b, quad.x) + (vec2f(-d.y, d.x) * quad.y + d * (quad.x * 2.0 - 1.0)) * u.width * 0.5);
+  return o;
+}
+@vertex fn flatTilesV(@location(0) c: vec4f, @builtin(vertex_index) v: u32) -> Col {  // (a fan of 6 corners as 4 triangles: 0, q, q + 1)
+  var o: Col;
+  let q = array<u32, 12>(0u, 1u, 2u, 0u, 2u, 3u, 0u, 3u, 4u, 0u, 4u, 5u)[v];
+  var col = band(grad, (c.z + 0.5) / 256.0);
+  if (u.colour == 2) { col = band(pal, (c.z + 0.5) / 256.0); }
+  o.col = vec4f(col * u.bright * u.alphaF, u.alphaF);
+  let k = u32(c.w) * 6u + q; let t4 = u.tpl[k / 2u];
+  o.pos = flatAt(u.view.yz + (c.xy + select(t4.xy, t4.zw, (k & 1u) == 1u)) * u.view.x);
+  return o;
+}
+@fragment fn colF(i: Col) -> @location(0) vec4f { return i.col; }`;
+// a draw's numbers into slot k of the frame's (as glView: the camera, the light and its view for the shadows)
+function gpuView(words, k, depth, more = {}) {
+  const f = new Float32Array(words, 512 * k, 128), i = new Int32Array(words, 512 * k, 128), P = walk.persp, cc = P ? orthoPoint(...P.c) : [0, 0];
+  const L = lightDir(), x = cam.r.map((r, d) => r - L[d] * (cam.r[0] * L[0] + cam.r[1] * L[1] + cam.r[2] * L[2])), m = Math.hypot(...x);
+  const lx = x.map((v) => v / m), ly = [L[1] * lx[2] - L[2] * lx[1], L[2] * lx[0] - L[0] * lx[2], L[0] * lx[1] - L[1] * lx[0]];
+  f.set(cam.r, 0); f[3] = depth; f.set(cam.u, 4); f[7] = SHADE; f.set(cam.v, 8); f[11] = glint(); f.set(L, 12); f[15] = depth / 4; f.set(halfway(L), 16);
+  f.set(lx, 20); f.set(ly, 24); f.set([...(P ? P.c : [0, 0, 0]), P ? P.D : 0], 32); f.set([view.scale, view.ox, view.oy], 40); f.set(cc, 44); f.set([cw, ch], 46);
+  i[48] = walk.geo?.mobius ? walk.geo.front : 0; i[49] = cutOn() ? 1 : 0;
+  const at = { alpha: [19, 'f'], edge: [23, 'f'], bias: [27, 'f'], halfW: [31, 'f'], N: [43, 'f'], cut: [49, 'i'], glass: [50, 'i'], both: [51, 'i'], colour: [52, 'i'],
+    alphaF: [53, 'f'], bright: [54, 'f'], width: [55, 'f'], loopFrom: [56, 'f'], period: [57, 'f'] };
+  for (const [k2, v] of Object.entries(more)) {
+    if (k2 === 'edgeRgb') f.set(v, 28); else if (k2 === 'plain') f.set(v, 36); else if (k2 === 'tpl') f.set(v, 60);
+    else (at[k2][1] === 'f' ? f : i)[at[k2][0]] = v;
+  }
+  return 512 * k;
+}
+const GPU_SLOTS = 32;
+// set up once (after gpuSetup): the canvas, the programs, the textures that last (the rainbow, the digits' colours)
+function gpuDrawSetup() {
+  if (!GPU) return null;
+  if (GPU.draw) return GPU.draw;
+  const { device } = GPU, format = navigator.gpu.getPreferredCanvasFormat(), ctx = gpuCanvas.getContext('webgpu');
+  ctx.configure({ device, format, alphaMode: 'premultiplied' });
+  const module = device.createShaderModule({ code: GPU_VIEW });
+  module.getCompilationInfo().then((info) => info.messages.filter((m) => m.type === 'error').forEach((m) => console.error(`GPU_VIEW ${m.lineNum}:${m.linePos} ${m.message}`)));
+  const T = GPUShaderStage, B = (binding, visibility, x) => ({ binding, visibility, ...x });
+  const g0 = device.createBindGroupLayout({ entries: [B(0, T.VERTEX | T.FRAGMENT, { buffer: { type: 'uniform', hasDynamicOffset: true } }), B(1, T.VERTEX, { buffer: { type: 'read-only-storage' } }),
+    B(2, T.VERTEX | T.FRAGMENT, { texture: { sampleType: 'unfilterable-float' } }), B(3, T.VERTEX | T.FRAGMENT, { texture: { sampleType: 'unfilterable-float' } })] });
+  const shadowed = device.createBindGroupLayout({ entries: [B(0, T.FRAGMENT, { texture: { sampleType: 'depth' } }), B(1, T.FRAGMENT, { texture: { sampleType: 'uint' } }),
+    B(2, T.FRAGMENT, { sampler: { type: 'comparison' } })] });
+  const mixed = device.createBindGroupLayout({ entries: [B(0, T.FRAGMENT, { texture: { sampleType: 'unfilterable-float' } }), B(1, T.FRAGMENT, { texture: { sampleType: 'unfilterable-float' } })] });
+  const texture = (w, data) => { const t = device.createTexture({ size: [w, 1], format: 'rgba8unorm', usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST }); device.queue.writeTexture({ texture: t }, data, { bytesPerRow: 4 * w }, [w, 1]); return t; };
+  const D = (GPU.draw = { device, ctx, format, module, g0, shadowed, mixed, pipes: new Map(), keys: {}, uni: device.createBuffer({ size: 512 * GPU_SLOTS, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST }),
+    words: new ArrayBuffer(512 * GPU_SLOTS), grad: null, pal: texture(256, new Uint8Array(1024)), texture,
+    cmp: device.createSampler({ compare: 'less-equal', minFilter: 'linear', magFilter: 'linear' }) });
+  gpuPalette();
+  D.quad = device.createBuffer({ size: 32, usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST });
+  device.queue.writeBuffer(D.quad, 0, new Float32Array([0, -1, 0, 1, 1, -1, 1, 1]));
+  return D;
+}
+// the rainbow again (the theme changed, see glPalette)
+function gpuPalette() {
+  const D = GPU?.draw;
+  if (!D) return;
+  D.grad?.destroy();
+  D.grad = D.texture(BANDS, Uint8Array.from(GRADIENT.flatMap((c) => [...rgbOf(c), 255])));
+  D.keys.pal = null; D.keys.cubes = null;
+  D.group = null;
+}
+// a pipeline, made once by its key: its vertex and fragment entries, its buffers, its targets' formats, blending, depth…
+function gpuPipe(key, make) {
+  const D = GPU.draw;
+  if (!D.pipes.has(key)) D.pipes.set(key, D.device.createRenderPipeline(make(D)));
+  return D.pipes.get(key);
+}
+const VA = (shaderLocation, format, offset = 0) => ({ shaderLocation, format, offset });
+const vbuf = (arrayStride, attributes, stepMode = 'vertex') => ({ arrayStride, attributes, stepMode });
+// the frame's own pictures, made again when the canvas's size changes: its 4 samples a pixel and its depths; Glass's two
+const gpuTargets = () => {
+  const D = GPU.draw, { device } = D, w = gpuCanvas.width, h = gpuCanvas.height;
+  if (D.size?.w === w && D.size?.h === h) return D.size;
+  if (D.size) for (const t of D.size.all) t.destroy();
+  const make = (format, sampleCount = 4, more = 0) => device.createTexture({ size: [w, h], format, sampleCount, usage: GPUTextureUsage.RENDER_ATTACHMENT | more });
+  const S = { w, h, colour: make(D.format), depth: make('depth24plus'), sum: make('rgba16float'), sumOne: make('rgba16float', 1, GPUTextureUsage.TEXTURE_BINDING),
+    through: make('rgba8unorm'), throughOne: make('rgba8unorm', 1, GPUTextureUsage.TEXTURE_BINDING) };
+  S.all = Object.values(S).filter((t) => t instanceof GPUTexture);
+  S.mix = device.createBindGroup({ layout: D.mixed, entries: [{ binding: 0, resource: S.sumOne.createView() }, { binding: 1, resource: S.throughOne.createView() }] });
+  return (D.size = S);
+};
+// a vertex buffer, made again only when it grows
+const gpuBuffer = (name, data, usage = GPUBufferUsage.VERTEX) => {
+  const D = GPU.draw, bytes = Math.max(16, Math.ceil(data.byteLength / 4) * 4);
+  if (!D[name] || D[name].size < bytes) { D[name]?.destroy(); D[name] = D.device.createBuffer({ size: bytes, usage: usage | GPUBufferUsage.COPY_DST }); D.group = null; }
+  D.device.queue.writeBuffer(D[name], 0, data.buffer, data.byteOffset, data.byteLength - (data.byteLength % 4));
+  return D[name];
+};
+// the bind group of the frame's numbers, the tiles' colours, the rainbow and the digits' colours
+const gpuGroup = () => {
+  const D = GPU.draw;
+  if (!D.tileCol) D.tileCol = D.device.createBuffer({ size: 16, usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST });
+  return (D.group ??= D.device.createBindGroup({ layout: D.g0, entries: [{ binding: 0, resource: { buffer: D.uni, size: 512 } }, { binding: 1, resource: { buffer: D.tileCol } },
+    { binding: 2, resource: D.grad.createView() }, { binding: 3, resource: D.pal.createView() }] }));
+};
+// is this draw WebGPU's? (gpuDraw on and the card set up); its canvas shown, WebGL's hidden, or back
+function gpuDrawing(can = true) {
+  const on = gpuDraw && can && !!GPU && !!gpuDrawSetup();
+  gpuCanvas.hidden = !on; glCanvas.hidden = on;
+  return on;
+}
+function gpuClear() {
+  const D = GPU?.draw;
+  if (!D) return;
+  const enc = D.device.createCommandEncoder();
+  enc.beginRenderPass({ colorAttachments: [{ view: D.ctx.getCurrentTexture().createView(), loadOp: 'clear', storeOp: 'store', clearValue: [0, 0, 0, 0] }] }).end();
+  D.device.queue.submit([enc.finish()]);
+}
+// a render pass on the frame (colour: 4 samples resolved on the canvas, or another picture), cleared, its depths too
+const gpuPass = (enc, colour = null, clear = [0, 0, 0, 0], depth = true) => {
+  const D = GPU.draw, S = gpuTargets();
+  return enc.beginRenderPass({ colorAttachments: [colour ?? { view: S.colour.createView(), resolveTarget: D.ctx.getCurrentTexture().createView(), loadOp: 'clear', storeOp: 'discard', clearValue: clear }],
+    depthStencilAttachment: depth ? { view: S.depth.createView(), depthLoadOp: 'clear', depthClearValue: 1, depthStoreOp: 'discard' } : undefined });
+};
+// the shadows (as glShadows): the light's depths and what is nearest it, again only when key changes; draw(pass) draws the pieces
+function gpuShadows(enc, slot, draw, key) {
+  const D = GPU.draw, { device } = D;
+  if (!D.shadow) {
+    const make = (format) => device.createTexture({ size: [SHADOW_SIZE, SHADOW_SIZE], format, usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING });
+    D.shadow = { depth: make('depth24plus'), ids: make('r32uint') };
+    D.shadow.group = device.createBindGroup({ layout: D.shadowed, entries: [{ binding: 0, resource: D.shadow.depth.createView() }, { binding: 1, resource: D.shadow.ids.createView() }, { binding: 2, resource: D.cmp }] });
+  }
+  if (key !== null && D.keys.shadow === key) return;
+  D.keys.shadow = key;
+  const p = enc.beginRenderPass({ colorAttachments: [{ view: D.shadow.ids.createView(), loadOp: 'clear', storeOp: 'store', clearValue: [0, 0, 0, 0] }],
+    depthStencilAttachment: { view: D.shadow.depth.createView(), depthLoadOp: 'clear', depthClearValue: 1, depthStoreOp: 'store' } });
+  p.setBindGroup(0, gpuGroup(), [slot]);
+  if (lamp()) draw(p);
+  p.end();
+}
+// a shadows' pipeline: its vertex entry, its buffers (a lit face does not shadow itself: depth bias, as polygonOffset(2, 4))
+const gpuDepthPipe = (entry, buffers) => gpuPipe(`depth|${entry}`, (D) => ({ layout: D.device.createPipelineLayout({ bindGroupLayouts: [D.g0] }),
+  vertex: { module: D.module, entryPoint: entry, buffers }, fragment: { module: D.module, entryPoint: 'depthF', targets: [{ format: 'r32uint' }] },
+  primitive: { topology: 'triangle-list' }, depthStencil: { format: 'depth24plus', depthWriteEnabled: true, depthCompare: 'less', depthBias: 4, depthBiasSlopeScale: 2 } }));
+// a picture's pipeline: pass 0 on the frame (blend: null or a blend), 1 and 2 Glass's (see glGlass), no depth test there
+const BLEND_OVER = { color: { srcFactor: 'src-alpha', dstFactor: 'one-minus-src-alpha' }, alpha: { srcFactor: 'one', dstFactor: 'one-minus-src-alpha' } };
+const BLEND_PRE = { color: { srcFactor: 'one', dstFactor: 'one-minus-src-alpha' }, alpha: { srcFactor: 'one', dstFactor: 'one-minus-src-alpha' } };
+const GLASS_BLEND = [null, { color: { srcFactor: 'one', dstFactor: 'one' }, alpha: { srcFactor: 'one', dstFactor: 'one' } },
+  { color: { srcFactor: 'zero', dstFactor: 'one-minus-src' }, alpha: { srcFactor: 'zero', dstFactor: 'one-minus-src' } }];
+function gpuDrawPipe(name, { vertex, fragment, buffers, topology = 'triangle-list', cull = 'none', pass = 0, blend = null, shadowed = false, depth = true }) {
+  return gpuPipe(`${name}|${cull}|${pass}|${!!blend}|${depth}`, (D) => ({
+    layout: D.device.createPipelineLayout({ bindGroupLayouts: shadowed ? [D.g0, D.shadowed] : [D.g0] }),
+    vertex: { module: D.module, entryPoint: vertex, buffers },
+    fragment: { module: D.module, entryPoint: fragment, targets: [{ format: [D.format, 'rgba16float', 'rgba8unorm'][pass], blend: pass ? GLASS_BLEND[pass] : blend ?? undefined }] },
+    primitive: { topology, cullMode: cull, frontFace: 'ccw' },
+    depthStencil: pass || !depth ? undefined : { format: 'depth24plus', depthWriteEnabled: true, depthCompare: 'less-equal' },
+    multisample: { count: 4 } }));
+}
+// A surface (as glSurface), its tiles' colours by paint (paintLevels' only for now: Life's with stage 3)
+function gpuSurface(paint, path) {
+  const D = GPU.draw, { device } = D, g = walk.geo, sh = walk.shape, R = walk.R, k = g.sides, n = g.n;
+  const geoKey = `${n}|${k}|${R}|${sh.m}|${g.verts.length}|${walk.geo.torus ? g.nu + 'x' + g.nv : ''}`;
+  if (D.keys.geo !== geoKey || D.keys.geoObj !== g) {
+    const pos = new Float32Array(3 * k * n), nrm = new Float32Array(3 * k * n);
+    for (let t = 0; t < n; t++) for (let q = 0; q < k; q++) {
+      const i = 3 * (k * t + q);
+      pos[i] = sh.corners[i] * R; pos[i + 1] = sh.corners[i + 1] * R; pos[i + 2] = sh.corners[i + 2] * R;
+      nrm[i] = sh.nrm[3 * t]; nrm[i + 1] = sh.nrm[3 * t + 1]; nrm[i + 2] = sh.nrm[3 * t + 2];
+    }
+    gpuBuffer('pos', pos); gpuBuffer('nrm', nrm);
+    const edges = surfaceEdges(g), E = edges.length / 4, ends = new Float32Array(6 * E), n1 = new Float32Array(ends.length), n2 = new Float32Array(ends.length);
+    for (let e = 0; e < E; e++) {
+      const [i, j, t, o] = edges.subarray(4 * e, 4 * e + 4);
+      ends.set(pos.subarray(3 * i, 3 * i + 3), 6 * e); ends.set(pos.subarray(3 * j, 3 * j + 3), 6 * e + 3);
+      for (const [arr, w] of [[n1, t], [n2, o < 0 ? t : o]]) for (const z of [0, 3]) arr.set(sh.nrm.subarray(3 * w, 3 * w + 3), 6 * e + z);
+    }
+    gpuBuffer('ePos', ends); gpuBuffer('eN1', n1); gpuBuffer('eN2', n2);
+    D.eCount = 2 * E;
+    if (D.keys.topo !== `${n}|${k}`) {
+      const fan = new Uint32Array(3 * (k - 2) * n);
+      for (let t = 0, f = 0; t < n; t++) for (let q = 1; q < k - 1; q++) { fan[f++] = k * t; fan[f++] = k * t + q; fan[f++] = k * t + q + 1; }
+      gpuBuffer('fan', fan, GPUBufferUsage.INDEX);
+      const ids = new Uint32Array(k * n);
+      for (let t = 0; t < n; t++) ids.fill(t, k * t, k * t + k);
+      gpuBuffer('tileIds', ids);
+      D.tileCol?.destroy(); D.tileCol = device.createBuffer({ size: 4 * Math.max(4, n), usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST }); D.group = null;
+      D.fanCount = fan.length; D.keys.topo = `${n}|${k}`;
+    }
+    D.keys.geo = geoKey; D.keys.geoObj = g; D.geoGen = (D.geoGen ?? 0) + 1;
+  }
+  paint({ put: (col) => device.queue.writeBuffer(D.tileCol, 0, col) }, n);
+  const depth = 4 * R * Math.max(sh.extent, sh.maxExtent ?? sh.extent), tileSize = R * sh.extent * Math.sqrt((4 * Math.PI) / n);
+  const edgeBias = (0.07 * tileSize) / depth, pathBias = (0.15 * tileSize) / depth, w = new Uint8Array(D.words);
+  w.fill(0);
+  let slot = 0;
+  const slotOf = (more) => gpuView(D.words, slot++, depth, more);
+  const enc = device.createCommandEncoder(), shadowSlot = slotOf({});
+  const tileBufs = [vbuf(12, [VA(0, 'float32x3')]), vbuf(12, [VA(1, 'float32x3')]), vbuf(4, [VA(2, 'uint32')])];
+  gpuShadows(enc, shadowSlot, (p) => {
+    p.setPipeline(gpuDepthPipe('depthTileV', [vbuf(12, [VA(0, 'float32x3')]), vbuf(4, [VA(1, 'uint32')])]));
+    p.setVertexBuffer(0, D.pos); p.setVertexBuffer(1, D.tileIds); p.setIndexBuffer(D.fan, 'uint32'); p.drawIndexed(D.fanCount);
+  }, `${D.geoGen}|${lightDir()}|${cam.r}|${depth}|${lamp()}|${cutOn()}`);
+  const segs = path && cur > 0 && (D.keys.segs !== walk.wx || D.keys.segsM !== sh.m) ? pathSegments() : null;
+  if (segs) { gpuBuffer('ribbon', segs.data); D.segsAt = segs.at; D.keys.segs = walk.wx; D.keys.segsM = sh.m; }
+  // the tiles, their grid and the path, into pass p (0 the frame; 1, 2 Glass's)
+  const drawAll = (rp, pass) => {
+    const both = pass || cutOn(), cut = cutOn() ? (pass ? 2 : 1) : 0, open = !both && g.torus && !g.mobius && !g.klein && sh.m < 1;
+    const front = shapeSign(g) < 0 ? 'front' : 'back', cull = g.klein || both ? 'none' : front;
+    const tiles = (plain, c) => {
+      rp.setPipeline(gpuDrawPipe('tile', { vertex: 'tileV', fragment: 'shadowedF', buffers: tileBufs, cull: c, pass, shadowed: true }));
+      rp.setBindGroup(0, gpuGroup(), [slotOf({ glass: pass, cut, alpha: GLASS_ALPHA, plain })]); rp.setBindGroup(1, D.shadow.group);
+      rp.setVertexBuffer(0, D.pos); rp.setVertexBuffer(1, D.nrm); rp.setVertexBuffer(2, D.tileIds); rp.setIndexBuffer(D.fan, 'uint32'); rp.drawIndexed(D.fanCount);
+    };
+    tiles([0, 0, 0, 0], cull);
+    if (open) tiles([...rgbCached(undersideColour()).map((c) => c / 255), 1], front === 'back' ? 'front' : 'back');
+    if ($('showGrid').checked && view.scale > 6) {
+      rp.setPipeline(gpuDrawPipe('edge', { vertex: 'edgeV', fragment: 'edgeF', topology: 'line-list', pass, blend: BLEND_OVER,
+        buffers: [vbuf(12, [VA(0, 'float32x3')]), vbuf(12, [VA(1, 'float32x3')]), vbuf(12, [VA(2, 'float32x3')])] }));
+      rp.setBindGroup(0, gpuGroup(), [slotOf({ glass: pass, cut, edge: edgeAlpha(sh), edgeRgb: EDGE_RGB.map((c) => c / 255), bias: edgeBias, both: g.klein || both ? 1 : 0 })]);
+      rp.setVertexBuffer(0, D.ePos); rp.setVertexBuffer(1, D.eN1); rp.setVertexBuffer(2, D.eN2); rp.draw(D.eCount);
+    }
+    if (path && cur > 0 && D.segsAt?.[cur]) {
+      rp.setPipeline(gpuDrawPipe('ribbon', { vertex: 'ribbonV', fragment: 'ribbonF', topology: 'triangle-strip', pass, cull: !twoSidedNow() && !both ? 'back' : 'none',
+        buffers: [vbuf(8, [VA(0, 'float32x2')]), vbuf(44, [VA(1, 'float32x3', 0), VA(2, 'float32x3', 12), VA(3, 'float32x3', 24), VA(4, 'float32', 36), VA(5, 'float32', 40)], 'instance')] }));
+      rp.setBindGroup(0, gpuGroup(), [slotOf({ glass: pass, cut, N: Math.max(1, walk.n), halfW: surfaceLineWidth() / 2 / view.scale, bias: pathBias })]);
+      rp.setVertexBuffer(0, D.quad); rp.setVertexBuffer(1, D.ribbon); rp.draw(4, D.segsAt[cur]);
+    }
+  };
+  gpuFrame(enc, drawAll);
+  device.queue.writeBuffer(D.uni, 0, D.words, 0, 512 * slot);
+  device.queue.submit([enc.finish()]);
+  layers.path.clearRect(0, 0, cw, ch);
+  return true;
+}
+// the frame's passes (as glGlass): as it is, or Glass's two pictures then mixed on the canvas
+function gpuFrame(enc, drawAll) {
+  const D = GPU.draw, S = gpuTargets();
+  if (!glassOn()) { const p = gpuPass(enc); drawAll(p, 0); p.end(); return; }
+  for (const [pass, ms, one, clear] of [[1, S.sum, S.sumOne, 0], [2, S.through, S.throughOne, 1]]) {
+    const p = enc.beginRenderPass({ colorAttachments: [{ view: ms.createView(), resolveTarget: one.createView(), loadOp: 'clear', storeOp: 'discard', clearValue: [clear, clear, clear, clear] }] });
+    drawAll(p, pass);
+    p.end();
+  }
+  const p = enc.beginRenderPass({ colorAttachments: [{ view: S.colour.createView(), resolveTarget: D.ctx.getCurrentTexture().createView(), loadOp: 'clear', storeOp: 'discard', clearValue: [0, 0, 0, 0] }] });
+  p.setPipeline(gpuPipe('glassMix', (D2) => ({ layout: D2.device.createPipelineLayout({ bindGroupLayouts: [D2.g0, D2.mixed] }), vertex: { module: D2.module, entryPoint: 'quadV' },
+    fragment: { module: D2.module, entryPoint: 'glassMixF', targets: [{ format: D2.format }] }, primitive: { topology: 'triangle-strip' }, multisample: { count: 4 } })));
+  p.setBindGroup(0, gpuGroup(), [0]); p.setBindGroup(1, S.mix); p.draw(4);
+  p.end();
+}
+// A flat drawing (as glFlat): the fill, the cells, the path
+function gpuFlat(to) {
+  const D = GPU.draw, { device } = D, mode = $('colourMode').value, s = view.scale;
+  const ptsKey = `${walk.is3d ? projected : 0}`;
+  if (D.keys.flatPts !== walk.xs || D.keys.flatProj !== ptsKey) {
+    const pts = new Float32Array(2 * (walk.n + 1));
+    for (let i = 0; i <= walk.n; i++) { pts[2 * i] = walk.xs[i]; pts[2 * i + 1] = walk.ys[i]; }
+    gpuBuffer('flatPts', pts);
+    D.keys.flatPts = walk.xs; D.keys.flatProj = ptsKey;
+  }
+  const keysKey = `${mode === 'digit'}|${walk.keys === walk.antStates}`;
+  if (D.keys.flatKeys !== walk.keys || D.keys.flatKeysMode !== keysKey) {
+    const keys = new Uint32Array(Math.max(1, walk.n));
+    for (let i = 0; i < walk.n; i++) keys[i] = walk.skipZeros && walk.digits[i] === 0 ? 255 : mode === 'digit' ? walk.keys[i] : 0;
+    gpuBuffer('flatKeys', keys);
+    D.keys.flatKeys = walk.keys; D.keys.flatKeysMode = keysKey;
+  }
+  const palKey = `${walk.base}|${walk.ant}|${antRamp}|${walk.skipZeros}|${current.mode}|${MONO}`;
+  if (D.keys.pal !== palKey) {
+    const pal = new Uint8Array(4 * 256);
+    for (let k = 0; k < 256; k++) pal.set([...rgbCached(digitColour(walk.ant ? k : Math.min(k, walk.base - 1))), 255], 4 * k);
+    device.queue.writeTexture({ texture: D.pal }, pal, { bytesPerRow: 1024 }, [256, 1]);
+    D.keys.pal = palKey;
+  }
+  let fillCount = 0;
+  if (fillOn()) {
+    fillNow();
+    if (fill.count && fill.templates.length <= 4) {
+      if (D.keys.flatFill !== fill) {
+        const inst = new Float32Array(4 * fill.count);
+        for (let k = 0; k < fill.count; k++) inst.set([fill.cx[k], fill.cy[k], Math.floor((roundStep(fill.at[k] - 1) * BANDS) / rainbowLength()), fill.tpl[k]], 4 * k);
+        gpuBuffer('flatFill', inst);
+        D.fillTpl = templateArray(fill.templates);
+        D.keys.flatFill = fill;
+      }
+      fillCount = countUpTo(fill.at, fill.count, to);
+    }
+  }
+  const cells = !walk.is3d && flatCellsOn();
+  let cellCount = 0;
+  if (cells) {
+    const cellsKey = `${mode}|${walk.keys === walk.antStates}`;
+    if (D.keys.flatCells !== walk.xs || D.keys.flatCellsMode !== cellsKey) {
+      const { inst, at, m } = flatCellInstances(mode);
+      gpuBuffer('flatCells', inst.subarray(0, 4 * m));
+      D.cellAt = at; D.cellN = m;
+      D.cellTpl = templateArray(CELL_TEMPLATES[walk.lattice]);
+      D.keys.flatCells = walk.xs; D.keys.flatCellsMode = cellsKey;
+    }
+    cellCount = countUpTo(D.cellAt, D.cellN, to);
+  }
+  const line = !cells || ($('showPath').checked && !$('showPath').disabled);
+  new Uint8Array(D.words).fill(0);
+  let slot = 0;
+  const enc = device.createCommandEncoder(), rp = gpuPass(enc, null, [0, 0, 0, 0], false), colour = mode === 'digit' ? 2 : 0;
+  const tiles = (buffer, tpl, count, alpha) => {
+    rp.setPipeline(gpuDrawPipe('flatTiles', { vertex: 'flatTilesV', fragment: 'colF', blend: BLEND_PRE, depth: false, buffers: [vbuf(16, [VA(0, 'float32x4')], 'instance')] }));
+    rp.setBindGroup(0, gpuGroup(), [gpuView(D.words, slot++, 1, { colour, tpl, alphaF: alpha, bright: 1 })]);
+    rp.setVertexBuffer(0, buffer); rp.draw(12, count);
+  };
+  if (fillCount) tiles(D.flatFill, D.fillTpl, fillCount, $('fillTranslucent').checked && !$('fillTranslucent').disabled ? 0.35 : 1);
+  if (cellCount) tiles(D.flatCells, D.cellTpl, cellCount, shows('cells') && line ? 0.15 : 1);
+  if (line && to > 0) {
+    rp.setPipeline(gpuDrawPipe('flatPath', { vertex: 'flatPathV', fragment: 'colF', topology: 'triangle-strip', blend: BLEND_PRE, depth: false,
+      buffers: [vbuf(8, [VA(0, 'float32x2')]), vbuf(8, [VA(1, 'float32x2')], 'instance'), vbuf(8, [VA(2, 'float32x2')], 'instance'), vbuf(4, [VA(3, 'uint32')], 'instance')] }));
+    rp.setBindGroup(0, gpuGroup(), [gpuView(D.words, slot++, 1, { colour: cells ? 0 : colour, N: Math.max(1, rainbowLength()), loopFrom: walk.loop?.from ?? 0,
+      period: closedLoop() ? walk.loop.period : 0, width: cells ? Math.max(0.6, Math.min(s * 0.12, 3)) : Math.max(0.6, Math.min(s * 0.3, 6)) })]);
+    rp.setVertexBuffer(0, D.quad); rp.setVertexBuffer(1, D.flatPts, 0); rp.setVertexBuffer(2, D.flatPts, 8); rp.setVertexBuffer(3, D.flatKeys);
+    rp.draw(4, to);
+  }
+  rp.end();
+  device.queue.writeBuffer(D.uni, 0, D.words, 0, 512 * Math.max(1, slot));
+  device.queue.submit([enc.finish()]);
+  layers.path.clearRect(0, 0, cw, ch);
+  return true;
+}
+// count cubes (as glCubes): of, theirs, made by make(the look) once; reach, how far from the middle they go
+function gpuCubes(count, of, make, reach) {
+  const D = GPU.draw, { device } = D, mode = $('colourMode').value, shape = cellShape();
+  if (D.keys.cubeShape !== shape) { gpuBuffer('cube', shape.triangles); D.keys.cubeShape = shape; }
+  if (D.keys.cubes !== of || D.keys.cubesMode !== mode) {
+    const { at, col } = make(mode), rgba = new Uint8Array((4 * col.length) / 3);
+    for (let p = 0; p < col.length / 3; p++) rgba.set(col.subarray(3 * p, 3 * p + 3), 4 * p);
+    gpuBuffer('cubeAt', at); gpuBuffer('cubeCol', rgba);
+    D.keys.cubes = of; D.keys.cubesMode = mode;
+  }
+  const depth = 4 * (reach + 2), verts = shape.triangles.length / 6;
+  new Uint8Array(D.words).fill(0);
+  const enc = device.createCommandEncoder(), slot = gpuView(D.words, 0, depth);
+  gpuShadows(enc, slot, (p) => {
+    p.setPipeline(gpuDepthPipe('depthCubeV', [vbuf(24, [VA(0, 'float32x3')]), vbuf(12, [VA(1, 'float32x3')], 'instance')]));
+    p.setVertexBuffer(0, D.cube); p.setVertexBuffer(1, D.cubeAt); p.draw(verts, count);
+  }, null);
+  const rp = gpuPass(enc);
+  rp.setPipeline(gpuDrawPipe('cube', { vertex: 'cubeV', fragment: 'shadowedF', shadowed: true,
+    buffers: [vbuf(24, [VA(0, 'float32x3', 0), VA(1, 'float32x3', 12)]), vbuf(12, [VA(2, 'float32x3')], 'instance'), vbuf(4, [VA(3, 'unorm8x4')], 'instance')] }));
+  rp.setBindGroup(0, gpuGroup(), [slot]); rp.setBindGroup(1, D.shadow.group);
+  rp.setVertexBuffer(0, D.cube); rp.setVertexBuffer(1, D.cubeAt); rp.setVertexBuffer(2, D.cubeCol); rp.draw(verts, count);
+  rp.end();
+  device.queue.writeBuffer(D.uni, 0, D.words, 0, 512);
+  device.queue.submit([enc.finish()]);
+  return true;
 }
 
 /* ---- 11.5 Path, overlay and stats ------------------------------------------------------------ */
@@ -15916,6 +16395,7 @@ for (const b of document.querySelectorAll('[data-icon]')) b.insertAdjacentHTML('
 play(false);  // the Play button with its icon
 seedCurated();
 fillSetupList();
+gpuSetup().catch((e) => { console.warn('WebGPU off:', e.message); GPU = false; });  // (the card's, see 11.4c: stage 1 and 2 beside WebGL)
 // a link with a setup opens that setup; otherwise Life, the first tab: 6 colours at war on the cube
 const linked = parseHash() ?? { w: 'lifeCube', s: '48', r: 'B3/S23', k: '6', pop: 'random.49.8259995' };
 if (!linked || !applySetup(linked)) compute();

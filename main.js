@@ -9669,6 +9669,7 @@ function elementaryTutorial(option) {
   $('ruleTuto').prepend(tutTools({ close: () => ruleTutorial(null) }));
 }
 function ruleTutorial(option) {
+  $('version').classList.remove('active');  // (Credits' tab: off, another page or none)
   $('ruleTuto').hidden = !option;
   for (const b of document.querySelectorAll('.how-it-works')) { b.classList.toggle('active', !!option); b.classList.toggle('switch', !!option); }  // (lit while it shows, as Full number)
   if (!option) return;
@@ -9890,7 +9891,7 @@ function walkTutorial(w) {
     + `<div class="tut-row tut-walk">${figs.map((f) => `<figure><div>${fig(f)}</div><figcaption>${f.label ?? `<b>${f.d}</b>`} ${f.caption ?? ''}</figcaption></figure>`).join('')}</div></div>`;
   $('ruleTuto').prepend(tutTools({ replay: () => walkTutorial(w), close: () => ruleTutorial(null) }));  // (its steps appearing again)
 }
-const walkTutorialToggle = () => ($('ruleTuto').hidden ? walkTutorial($('mode').value) : ruleTutorial(null));
+const walkTutorialToggle = () => ($('ruleTuto').hidden || creditsShown() ? walkTutorial($('mode').value) : ruleTutorial(null));
 // a rule's words without its name when they open with it ("Maze, grows corridors": grows corridors), else as they are (Byl's
 // loop, Fredkin's Replicator, the Ising model)
 const unnamed = (words, name) => (words.startsWith(name) && /^(?:[,:]|\s\(|$)/.test(words.slice(name.length)) ? words.slice(name.length).replace(/^[,:]?\s*/, '') : words);
@@ -9898,7 +9899,7 @@ let customOpen = false;  // the Custom rule card clicked: its states, births and
 let ruleTab = null;  // Elementary's tab clicked and the rule then in use ({ tab, now }: kept while it is, see renderRuleSection)
 function renderRuleSection() {
   const mode = MODES[$('mode').value];
-  if (!mode.life) { if (!$('ruleTuto').hidden && walkTutorialFits($('mode').value)) walkTutorial($('mode').value); else ruleTutorial(null); return; }  // (a walk's: it follows the walk)
+  if (!mode.life) { if (!creditsShown()) { if (!$('ruleTuto').hidden && walkTutorialFits($('mode').value)) walkTutorial($('mode').value); else ruleTutorial(null); } return; }  // (a walk's: it follows the walk; Credits stay)
   const mark = lifeMark(mode), now = ruleBody($('lifeRule').value);
   const listed = [...$('lifePreset').options].filter((o) => o.dataset.name && o.text.includes(mark) && (!mode.margolus || blocksFit(parseRule(o.value), mode)) && (!mode.loops || loopFits(parseRule(o.value), mode))), mine = listed.find((o) => o.value === now);
   // Elementary's, in two tabs over How it works: Main, the known ones; Others, the rest (the rule in use's; one clicked, while that rule stays)
@@ -9908,7 +9909,7 @@ function renderRuleSection() {
   const known = mode.elementary ? listed.filter((o) => main(o) === (tab === 'main')) : listed;
   const yours = { value: now, dataset: { name: 'Custom rule' } }, mineNot = !mine || (customOpen && !mode.loops);  // (your own, for how a rule works; none for a loop: a table is not typed)
   const shown = mineNot ? yours : mine;
-  if (!$('ruleTuto').hidden && $('ruleTuto').dataset.shown !== tutorialKey(shown)) ruleTutorial(shown);  // how a rule works follows the grid and the rule
+  if (!$('ruleTuto').hidden && !creditsShown() && $('ruleTuto').dataset.shown !== tutorialKey(shown)) ruleTutorial(shown);  // how a rule works follows the grid and the rule (Credits stay)
   $('ruleCards').replaceChildren(...known.map((o, i) => {
     const picked = o.value === now && !customOpen;
     const bw = MODES[$('mode').value].margolus && !carriesColours(parseRule(o.value));  // (a block rule its cells carry no colour on: black and white)
@@ -9918,7 +9919,7 @@ function renderRuleSection() {
       detail: `${mode.loops ? loopCode(o.value) : o.value} · ${unnamed(o.text.split(' — ')[1] ?? '', o.dataset.name)}`, click: pick });  // its code (a loop's: its table's), its words without its name
   }));
   // after them, your own: picked when the rule in use is none of them, or clicked (its states, births and survivals below); none for a loop
-  $('watchRule').onclick = () => ruleTutorial(!$('ruleTuto').hidden ? null : shown);  // (the rule in use: a card's, or your own)
+  $('watchRule').onclick = () => ruleTutorial(!$('ruleTuto').hidden && !creditsShown() ? null : shown);  // (the rule in use: a card's, or your own)
   const howShown = (o) => !$('ruleTuto').hidden && $('ruleTuto').dataset.shown === tutorialKey(o);  // (a card's ⓘ again: closed)
   if (!mode.loops) $('ruleCards').append(card({ pic: pixelIcon('..o..,..o..,ooooo,..o..,..o..'), name: 'Custom rule', on: mineNot, how: mineNot && (() => ruleTutorial(howShown(yours) ? null : yours)),
     detail: mineNot ? `${now} · your own` : mode.elementary ? 'your own: W and its number, 0 to 255' : 'your own: its states, births and survivals', click: () => {
@@ -15312,7 +15313,7 @@ document.addEventListener('click', (e) => {
 });
 // how a rule works closes on a click anywhere but on it, the rules (your own's too), the populations and the grids (it follows them: renderRuleSection)
 document.addEventListener('click', (e) => {
-  if (!$('ruleTuto').hidden && !e.composedPath().some((n) => n.classList?.contains('how-it-works') || ['ruleTuto', 'ruleCards', 'watchRule', 'colourBlocks', 'statesRow', 'ruleBirth', 'ruleSurvive', 'lifeCustomRow', 'navSpace', 'navShapes', 'torusTiles', 'planeRow', 'sizeRow', 'navRules', 'walkOn', 'antRuleSection', 'antStartSection', 'backBtn'].includes(n.id))) ruleTutorial(null);
+  if (!$('ruleTuto').hidden && !e.composedPath().some((n) => n.classList?.contains('how-it-works') || ['ruleTuto', 'ruleCards', 'watchRule', 'colourBlocks', 'statesRow', 'ruleBirth', 'ruleSurvive', 'lifeCustomRow', 'navSpace', 'navShapes', 'torusTiles', 'planeRow', 'sizeRow', 'navRules', 'walkOn', 'antRuleSection', 'antStartSection', 'backBtn', 'version'].includes(n.id))) ruleTutorial(null);
 });
 $('lifeRule').addEventListener('change', () => {
   const mode = MODES[$('mode').value];
@@ -15763,6 +15764,27 @@ updateSpeedLabel();
 resize();
 requestAnimationFrame(tick);
 $('version').textContent = `v${VERSION}`;
+// Credits: the people whose work it shows, a page in the middle pane as How it works, opened and closed by the version's tab
+// (lit while it shows); closed as How it works is, by a click elsewhere
+const creditsShown = () => !$('ruleTuto').hidden && $('ruleTuto').dataset.shown === 'credits';
+const CREDITS = [
+  ['Life and its kin', "John Conway's Game of Life; Edward Fredkin's Replicator; Rudy Rucker and John Walker's Faders; Alan Hensel's letters for squares, Paul Callahan's for hexagons; Norman Margolus and Tommaso Toffoli's blocks; Gérard Vichniac's Q2R; Tim Tyler's cell-auto.com (Q*Bert, Square-4, stellated blocks); Stephen Wolfram's elementary rules; Chris Langton's ant and loop, John Byl's loop; Mike Paterson and John Conway's worms; Golly and LifeWiki (RLE, patterns)"],
+  ['Numbers', "the Chudnovsky brothers (π), Brent and McMillan (γ), Amdeberhan and Zeilberger (ζ(3)), Lupaș (Catalan's constant), all by binary splitting; Stanisław Ulam's spiral"],
+  ['Tilings', "Roger Penrose; Robert Ammann and F. Beenker; N. G. de Bruijn's multigrids; Smith, Myers, Kaplan and Goodman-Strauss's hat and spectre; Conway and Radin's pinwheel; Hirschhorn and Hunt's flower; Teruhisa Sugimoto's rosettes, rings and hexagon rosettes; Bernhard Klaassen's rotational tilings; Tom Ruen's mirrored rosette (Wikimedia); Adams, Edgar, Hollander and Jacoby's kaleidoscope; Rolf Stein's pentagon; Jaap Scherphuis's Tiling Viewer; Goldberg's polyhedra, Menger's sponge, Paul Bourke's Klein bottle; Tutte's embedding and Floater's mean value weights (the rosette spheres)"],
+  ['Prototypes', "Bert Chan's Lenia, Tom Mohr's Particle Life, Jeff Jones's Physarum, Tim Hutton's Squirm3"],
+];
+function credits(open) {
+  ruleTutorial(null);
+  if (!open) return;
+  $('version').classList.add('active');
+  $('ruleTuto').hidden = false;
+  $('ruleTuto').dataset.shown = 'credits';
+  $('ruleTuto').innerHTML = `<div class="tut-body"><h3>${APP_TITLE} <code>v${VERSION}</code></h3><p>Cellular automata on tilings, surfaces and solids, and walks on the digits of numbers: the work of many, here.</p>`
+    + CREDITS.map(([title, who]) => `<h4>${title}</h4><p>${who}.</p>`).join('')
+    + `<p><a href="https://github.com/VincentBounce/Tessera#readme" target="_blank" rel="noopener">Its README</a> · <a href="https://github.com/VincentBounce/Tessera" target="_blank" rel="noopener">its code</a></p></div>`;
+  $('ruleTuto').prepend(tutTools({ close: () => credits(false) }));
+}
+$('version').addEventListener('click', () => credits(!creditsShown()));
 for (const b of document.querySelectorAll('[data-icon]')) b.insertAdjacentHTML('afterbegin', icon(b.dataset.icon));
 play(false);  // the Play button with its icon
 seedCurated();

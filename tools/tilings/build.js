@@ -254,6 +254,24 @@ jaapCell('pent10', [[0, 0], [1, 0], [1, 0.5], [0.5, 1], [0, 1]], [[0, 0, 0, 0, 0
 
 // trihexagonal (3.6.3.6, the kagome): the rhombille's points, their faces (hexagons, triangles between)
 { const a = [2, 0], b = [1, R3], pts = points(a, b, [0, 1, 2, 3, 4, 5].map((k) => dir(60 * k)), 7); cell('trihex', a, b, polygons(pts, false)); }
+// the Trihex twisted (the kaleidoscope of Adams, Edgar, Hollander and Jacoby, on the plane): the hexagons' grid (middles 2
+// apart), each hexagon turned 15° round its middle and shrunk to touch its neighbours still along their sides (apothem
+// cos 15°), the gap at each 3-fold point an equilateral triangle of the three hexagons' corners facing it; each hexagon's
+// sides with its neighbours' corners lying on them (12 corners: neighbours by a shared corner). 0° the hexagons, 30° the
+// Trihex; between, the same neighbours whatever the turn (a hexagon 6 hexagons and 6 triangles, a triangle its 3 hexagons)
+{ const t = 15, a = [2, 0], b = [1, R3], R = (2 * Math.cos((t * Math.PI) / 180)) / R3, at = (u, v) => add(mul(a, u), mul(b, v));
+  const hex = (u, v) => [0, 1, 2, 3, 4, 5].map((k) => add(at(u, v), mul(dir(30 + t + 60 * k), R)));
+  const facing = (u, v, m) => { const c = at(u, v), k = Math.round((Math.atan2(m[1] - c[1], m[0] - c[0]) * 180 / Math.PI - 30 - t) / 60); return hex(u, v)[((k % 6) + 6) % 6]; };
+  const on = (p, q, r) => Math.abs((q[0] - p[0]) * (r[1] - p[1]) - (q[1] - p[1]) * (r[0] - p[0])) < 1e-9
+    && (r[0] - p[0]) * (q[0] - p[0]) + (r[1] - p[1]) * (q[1] - p[1]) > 1e-9 && (r[0] - q[0]) * (p[0] - q[0]) + (r[1] - q[1]) * (p[1] - q[1]) > 1e-9;
+  const polys = [];
+  for (let v = -3; v <= 3; v++) for (let u = -3; u <= 3; u++) {
+    const H = hex(u, v), others = [[1, 0], [0, 1], [-1, 1], [-1, 0], [0, -1], [1, -1]].flatMap(([du, dv]) => hex(u + du, v + dv)), c = at(u, v);
+    polys.push(H.flatMap((p, k) => [p, ...others.filter((r) => on(p, H[(k + 1) % 6], r))]));
+    const up = add(c, [1, 1 / R3]), down = add(c, [-1, -1 / R3]);
+    polys.push([[u, v], [u + 1, v], [u, v + 1]].map(([x, y]) => facing(x, y, up)), [[u, v], [u - 1, v], [u, v - 1]].map(([x, y]) => facing(x, y, down)));
+  }
+  cell('twisttri', a, b, polys); }
 // truncated square (4.8.8): the tetrakis's points, their faces (octagons, squares)
 { const s = 1 + Math.SQRT2, h = 0.5 + Math.SQRT1_2, a = [s, 0], b = [0, s], pts = points(a, b, [[0.5, h], [-0.5, h], [-h, 0.5], [-h, -0.5], [-0.5, -h], [0.5, -h], [h, -0.5], [h, 0.5]], 6);
   cell('truncsquare', a, b, polygons(pts, false)); }

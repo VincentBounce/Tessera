@@ -907,6 +907,9 @@ const TILINGS = {
   trihex: { name: 'Trihex', mark: '✡', cells: 'tiles', where: "a grid of hexagons and triangles meeting at their corners (the trihexagonal tiling, the kagome)", most: 12, turns: 6, mirror: true, pivot: [0, 0], torus: true,
     basis: [[2, 0], [1, 1.7320508075688772]],
     polys: [[[0.5,1],[1,0.5],[1.5,0.5],[1.5,1],[1,1.5],[0.5,1.5]],[[1.5,1],[1.5,1.5],[1,1.5]],[[0.5,1],[0.5,0.5],[1,0.5]]] },
+  twisttri: { name: 'Twisted', mark: '❍', cells: 'tiles', where: 'a grid of hexagons turned 15° and triangles between (the Trihex twisted, the kaleidoscope on the plane: a hexagon 6 hexagons and 6 triangles round it, a triangle 3 hexagons)', most: 12, turns: 6, mirror: false, pivot: [0, 0], torus: true,
+    basis: [[2, 0], [1, 1.7320508075688772]],
+    polys: [[[1.166667,1.455342],[0.833333,1.544658],[0.544658,1.622008],[0.455342,1.377992],[0.377992,1.166667],[0.622008,0.833333],[0.833333,0.544658],[1.166667,0.455342],[1.455342,0.377992],[1.544658,0.622008],[1.622008,0.833333],[1.377992,1.166667]],[[1.166667,1.455342],[1.377992,1.166667],[1.455342,1.377992]],[[0.833333,0.544658],[0.622008,0.833333],[0.544658,0.622008]]] },  // (tools/tilings/build.js: each hexagon turned 15°, its sides holding its neighbours' corners)
   truncsquare: { name: 'Octagons', mark: '❖', cells: 'tiles', where: "a grid of octagons and squares (the truncated square tiling)", most: 8, turns: 4, mirror: true, pivot: [0, 0], torus: true,
     basis: [[2.414213562373095, 0], [0, 2.414213562373095]],
     polys: [[[0.5,0.792893],[0.792893,0.5],[1.207107,0.5],[1.5,0.792893],[1.5,1.207107],[1.207107,1.5],[0.792893,1.5],[0.5,1.207107]],[[0.207107,0.5],[0.5,0.207107],[0.792893,0.5],[0.5,0.792893]]] },

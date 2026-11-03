@@ -17,10 +17,14 @@ WebGL is gone from main.js: everything runs on WebGPU (11.4b shared pieces, 11.4
 - **Space-time**: its layers made generation by generation, awaited (454 layers in 0.5 s).
 - **Drawing**: surfaces (shadows, grid, path, Glass, Cut), flat walks, cubes, Life on the plane and on surfaces: the
   same pictures as WebGL's side by side (sphere, torus, Glass, Cut, cubes, a 2D walk).
-- **Checks**: tesseraCheck 855 and its known results 908 pass (periods, methuselahs, reversible returns, backs).
+- **Checks**: tesseraCheck 855, known 908, crawl 955, fuzz 400 (seed 7) 1,099, parts 1,608, colours 990: all pass.
+- **The compressed bundle**: opened from the local server, Life on the cube at gen 200, the picture the game's, no error.
+- **Step back's replay**: 1.26 ns a cell and 0.05 ms a generation (WebGL's 2.6 ns, 0.53 ms): its limit set again for the
+  same 0.7 s (LIFE_PASSES 2^15, LIFE_REPLAY_MOST 2^29: 15,000 generations at 48 a side, 500 at 2^20 cells; before 1,000
+  and 200).
 
 ## Not checked yet
-- Long sweeps: `{ crawl }`, `{ fuzz }`, `{ parts }`, `{ deep }` (a night's).
+- `{ deep }` (every grid's rules, a night's).
 - A visible pane: requestAnimationFrame stops while the browser pane is hidden; play was checked by calling tick by
   hand (and once visible: 90 generations in 3 s).
 - Speeds at very large grids while playing (one batch in flight a frame: its latency a frame).

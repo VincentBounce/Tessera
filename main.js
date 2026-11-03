@@ -12996,10 +12996,10 @@ function lifeCells(L) {
   Object.defineProperty(L, 'alive', { get: () => L.cells.alive, set: (v) => { L.cells.alive = v; L.gpuOld = true; }, enumerable: true, configurable: true });
   L.gpuOld = true;
 }
-// a Game of Life played again from its start to step back (no rule backwards, see advanceTo): about 2.6 ns a cell and 0.53 ms
-// a generation whatever its size (its passes: 2^18 cells' worth), measured at 48 and 512 a side; Step back greyed past
-// 2^28 (about a second: 1,000 generations at 48 a side, 200 at 2^20 cells)
-const LIFE_PASSES = 2 ** 18, LIFE_REPLAY_MOST = 2 ** 28;
+// a Game of Life played again from its start to step back (no rule backwards, see advanceTo): about 1.26 ns a cell and 0.05 ms
+// a generation whatever its size (its passes: 2^15 cells' worth), measured on WebGPU at 48 and 512 a side (WebGL's: 2.6 ns,
+// 0.53 ms); Step back greyed past 2^29 (about 0.7 s, as before: 15,000 generations at 48 a side, 500 at 2^20 cells)
+const LIFE_PASSES = 2 ** 15, LIFE_REPLAY_MOST = 2 ** 29;
 // a Game of Life's way to generation g within it: forth from where it is, back round its loop, else again from its start
 const lifeWithin = (g) => {
   if (!lifeTime() || walk.life.margolus) return true;

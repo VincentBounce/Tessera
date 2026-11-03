@@ -4938,14 +4938,14 @@ function rosetteSphereMesh(kind, W) {
     tiles[t] = ccw ? a : a.reverse();
     tiles[m + t] = ccw ? b : b.reverse();
   }
-  const most = tiles.reduce((s2, c) => Math.max(s2, c.length), 0);
+  const most = tiles.reduce((s2, c) => Math.max(s2, c.length), 0), plane = planeGrid(kind, W);
   // flat, its two discs a lentil (see shapeAt): each corner its way from its pole round it flat (the discs' own, as on the
   // sphere), its height a half ellipse from its pole to the seam, flat in the middle and rounded to it
   const flatVerts = Float64Array.from({ length: verts.length }, (_, i) => {
     const v = i - (i % 3), [x, y, z] = [verts[v], verts[v + 1], verts[v + 2]], r = Math.acos(Math.abs(z)), a = Math.atan2(y, x);
     return [r * Math.cos(a), r * Math.sin(a), Math.sign(z) * ROSETTE_LENTIL * Math.sqrt(Math.max(0, 1 - (r / (Math.PI / 2)) ** 2))][i % 3];
   });
-  return (meshCache[key] = Object.assign(finishMesh(verts, tiles.map((c) => [...c, ...Array(most - c.length).fill(c.at(-1))]), most, W, null), { flatVerts, rosette: true, south: m, middles: [F.coreIds, F.coreIds.map((t) => m + t)], disc: { kind, W, row: planeRow(kind, W), torus: false, ...planeGrid(kind, W) } }));  // (south: the south half's first cell, its cells the north's m on, walls and all; middles: each half's, the north's and the south's; disc: its north half's flat grid, its cells the plane's, see flatGrid)
+  return (meshCache[key] = Object.assign(finishMesh(verts, tiles.map((c) => [...c, ...Array(most - c.length).fill(c.at(-1))]), most, W, null), { flatVerts, rosette: true, south: m, middles: [F.coreIds, F.coreIds.map((t) => m + t)], disc: { kind, W, row: planeRow(kind, W), torus: false, ...plane, xy: (t) => plane.xy(t >= m ? t - m : t) } }));  // (south: the south half's first cell, its cells the north's m on, walls and all; middles: each half's, the north's and the south's; disc: its flat grid, its cells the plane's, a south cell's place its north twin's, see flatGrid)
 }
 
 // Life on them: a mode each, one shape (Rosettes) with a tab each, its rosette's name and picture
@@ -11472,7 +11472,7 @@ function patternFrame(i, K, place = patternPlace(i, K)) {  // place: another fac
   const [cols, rows] = COLOUR_GRID[K];
   if (place.on === 'plane') {
     const flat = flatGrid(), { W, n, xy, at, torus } = flat, disc = poleColours(g, K) ? i * g.south : 0;  // (disc: its first cell, see poleColours)
-    const mid = (u) => cellMiddle(kind, ...xy(g?.south && u >= g.south ? u - g.south : u)), box = () => {  // (its cells' middles' box's middle, once a grid: walk.plane a new one each)
+    const mid = (u) => cellMiddle(kind, ...xy(u)), box = () => {  // (its cells' middles' box's middle, once a grid: walk.plane a new one each)
       if (boxMemo?.g === flat) return boxMemo.box;
       const lo = [Infinity, Infinity], hi = [-Infinity, -Infinity];
       for (let t = 0; t < n; t++) { const m = mid(t); for (const d of [0, 1]) { lo[d] = Math.min(lo[d], m[d]); hi[d] = Math.max(hi[d], m[d]); } }

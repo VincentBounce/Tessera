@@ -12988,11 +12988,36 @@ const surfaceTriangles = (g) => (g.triangles ??= (() => {
     const N = [0, 0, 0];
     P.forEach((a, i) => { const b = P[(i + 1) % P.length]; N[0] += (a[1] - b[1]) * (a[2] + b[2]); N[1] += (a[2] - b[2]) * (a[0] + b[0]); N[2] += (a[0] - b[0]) * (a[1] + b[1]); });
     const u = cross(N, Math.abs(N[0]) < 0.9 * Math.hypot(...N) ? [1, 0, 0] : [0, 1, 0]), w = cross(N, u), on = (p, a) => p[0] * a[0] + p[1] * a[1] + p[2] * a[2];
-    for (const i of ears(P.map((p) => [on(p, u), on(p, w)]))) out.push(slots[i]);
+    const Q = P.map((p) => [on(p, u), on(p, w)]);
+    for (const i of outwardFolds([...ears(Q)], P, Q, N)) out.push(slots[i]);
     Object.assign(own[t], { to: out.length, d: slots.length });
   }
   return Uint32Array.from(out);
 })());
+// a tile not flat folded outwards, as its surface bulges: each inner side whose two triangles fold inwards (the far corner of
+// one above the other's plane, along N, the tile's outward normal) turned to the quad's other diagonal (Lawson's flip), where
+// the quad is convex on the tile's plane (Q), till none; corners round a cap (a rosette sphere's houses) end as their hull, a
+// fold that no light shadows (ears' own diagonals folded half of them inwards: stripes of shadow on Mirror 8's houses at 10)
+function outwardFolds(tri, P, Q, N) {
+  const sub = (a, b) => [a[0] - b[0], a[1] - b[1], a[2] - b[2]], dot = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+  const inward = (a, b, c, d) => { const n = cross(sub(P[b], P[a]), sub(P[c], P[a])); return dot(n, sub(P[d], P[a])) * Math.sign(dot(n, N)) > 1e-12 * dot(n, n); };
+  const turn = (a, b, c) => (Q[b][0] - Q[a][0]) * (Q[c][1] - Q[a][1]) - (Q[b][1] - Q[a][1]) * (Q[c][0] - Q[a][0]);
+  for (let flips = 0, again = true; again && flips < tri.length; ) {
+    again = false;
+    for (let x = 0; x < tri.length && !again; x += 3) for (let y = x + 3; y < tri.length && !again; y += 3) {
+      for (let s = 0; s < 3 && !again; s++) {
+        const p = tri[x + s], q = tri[x + ((s + 1) % 3)], c = tri[x + ((s + 2) % 3)];  // (x: p → q → c; y holds q → p)
+        const o = [0, 1, 2].find((r) => tri[y + r] === q && tri[y + ((r + 1) % 3)] === p);
+        if (o === undefined) continue;
+        const d = tri[y + ((o + 2) % 3)], sense = Math.sign(turn(p, q, c));  // (the quad c, p, d, q round the tile, as its triangles)
+        if (!inward(p, q, c, d) || [[c, p, d], [p, d, q], [d, q, c], [q, c, p]].some(([a, b, e]) => Math.sign(turn(a, b, e)) !== sense)) continue;
+        tri.splice(x, 3, c, p, d); tri.splice(y, 3, d, q, c);
+        again = true; flips++;
+      }
+    }
+  }
+  return tri;
+}
 // a surface's tiles' colours from a palette (null: unlit) and each tile's place in it (out of it: unlit), into their buffer
 // (out.put, see gpuSurface)
 const paintLevels = (palette, levelOf) => (out, n) => {

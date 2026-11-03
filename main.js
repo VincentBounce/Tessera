@@ -9146,12 +9146,13 @@ function motifTiles() {
 // the shape a Life mode's cells have, as the rule menu marks the rules that suit it (■ ▲ ⬡); on
 // coming to another mode, a rule marked for another shape gives way to the first one for this shape
 // the cells of each surface (else triangles): one table for every surface, whatever its shape
-const SURFACE_CELLS = { cube: '■', globe: '■', ...Object.fromEntries(Object.keys(ROSETTE_SPHERES).map((k) => [`${k}Sphere`, '❊'])), pits: '■', bumps: '■', frame: '■', menger: '■', torus: '■', mobius: '■', klein: '■', torusHex: '⬡', hexsphere: '⬡', mobiusHex: '⬡', kleinHex: '⬡',
+const SURFACE_CELLS = { cube: '■', globe: '■', pits: '■', bumps: '■', frame: '■', menger: '■', torus: '■', mobius: '■', klein: '■', torusHex: '⬡', hexsphere: '⬡', mobiusHex: '⬡', kleinHex: '⬡',
                         torusCairo: '⬠', mobiusCairo: '⬠', kleinCairo: '⬠', ...Object.fromEntries(hexSolids.map((k) => [`${k}Hex`, '⬡'])), ...Object.fromEntries(Object.keys(TETRAKIS_SOLIDS).map((k) => [`${k}Tetrakis`, '◩'])), torusKite: '◆', mobiusKite: '◆', kleinKite: '◆', torusKiteTurned: '◆', mobiusKiteTurned: '◆', kleinKiteTurned: '◆', kleinHexTurned: '⬡', kleinTriTurned: '▲', tetraKite: '◆', octaKite: '◆', icosaKite: '◆', stellaKite: '◆', dodecaKite: '◆', cubocta: '◈', pyramid: '◈', rhombi: '◈', bicupola: '◈' };
 for (const [s, { kind }] of Object.entries(FOLDED)) SURFACE_CELLS[s] = TILINGS[kind].mark;
 // each plane's mark (its rules', see the rule menu), and the plane of a mark
 const PLANE_MARKS = { ...Object.fromEntries(Object.entries(TILINGS).map(([k, t]) => [k, t.mark])), square: '■', tri: '▲', hex: '⬡', cairo: '⬠', kite: '◆', hat: '🎩', penrose: '✧', pinwheel: '◺', spectre: '✺', ammann: '✵', rhombs12: '❄', rhombs14: '❅', flower: '❀', flower5: '✾', flower7: '✽', mirror7: '❊', flower3: '✸', flower4: '✷', flower8: '✹', flower9: '✼', flower10: '✥', ring7: '❇', ring8: '✲', ring9: '✻', ring10: '✴', ring12: '❈' };
 const PLANE_OF_MARK = Object.fromEntries(Object.entries(PLANE_MARKS).map(([k, m]) => [m, k]));
+for (const k of Object.keys(ROSETTE_SPHERES)) SURFACE_CELLS[`${k}Sphere`] = PLANE_MARKS[k];  // (a rosette sphere: its rosette's cells, rules and all)
 const blocksGrid = (mode) => mode.blocks ?? mode.plane;  // (a block rule's grid: the plane's, or a surface's, its cells' shape)
 const LOOPS_MARK = '⟲';  // (the loops' rules' mark)
 const lifeMark = (mode) => (mode.elementary ? ELEMENTARY_MARK : mode.loops ? LOOPS_MARK : mode.margolus ? (BLOCKS[blocksGrid(mode)] ?? STARS[blocksGrid(mode)]).mark : mode.plane ? PLANE_MARKS[mode.plane] : SURFACE_CELLS[mode.sphere] ?? '▲');

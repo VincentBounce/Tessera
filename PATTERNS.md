@@ -1537,6 +1537,15 @@ Mirror 7's construction for 12 (HOUSES(12)), searched as the others.
 | [Mirror 12 Life B267/S5](https://vincentbounce.github.io/Tessera/#w=life2dMirror12&r=B267/S5&s=48&pop=random.30.7) | 0.44 | 351–6,000+ | 1.47 % | 92 % |
 | [Mirror 12 sparks B289/S568](https://vincentbounce.github.io/Tessera/#w=life2dMirror12&r=B289/S568&s=48&pop=random.30.7) | 0.378 | 497–6,000+ | 1.69 % | 58 % |
 
+## ❍ Twisted: the Trihex twisted
+
+The hexagons' grid, each hexagon turned 15° and shrunk to touch its neighbours along their sides, a triangle in each gap (the kaleidoscope of Adams, Edgar, Hollander and Jacoby, on the plane): a hexagon 6 hexagons and 6 triangles round it, a triangle its 3 hexagons. Searched as the others (103,448 rules, 2,026 candidates).
+
+| Rule | Score | Soups settle after | Alive at the end | Oscillators in the ash |
+|---|---|---|---|---|
+| [Twisted embers B235/S0457/C5](https://vincentbounce.github.io/Tessera/#w=life2dTwisttri&r=B235/S0457/C5&s=48&pop=random.30.7) | 0.348 | 611–2,403 | 1.04 % | 92 % |
+| [Twisted sparks B246/S0348/C5](https://vincentbounce.github.io/Tessera/#w=life2dTwisttri&r=B246/S0348/C5&s=48&pop=random.30.7) | 0.295 | 334–3,025 | 0.95 % | 58 % |
+
 ## ▣ Ising (Q2R) and Square-4, on squares (Tim Tyler's cell-auto.com)
 
 | Rule | What it does |

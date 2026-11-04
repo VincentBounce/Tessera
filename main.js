@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.52';
+const VERSION = '0.4.53';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -6911,13 +6911,13 @@ function buildSphereWalk(seq, mode, ahead = new Uint8Array(0)) {
 }
 
 /* ---- 7.6b Duel: two numbers' walks on one surface -------------------------------------------- */
-/* Walk › Duel: A's number (Digits) and B's (Digits B) walk the sphere's cells at once, a digit each a step, B from the
+/* Walk › Duel: A's number (Digits) and B's (Digits B) walk the cells of the sphere or the cube at once, a digit each a step, B from the
  * tile opposite A's start (antipodeStart), turning as A does. Each holds the cells it walked, its body, from its tail
  * (its oldest) to its head; a head stepping on the other's body cuts it there: the other loses that cell and all those
  * behind it, to its tail (its own body: nothing). The heads meet (on one tile, or passing each other): the end, the
  * longer body wins. Both walks are built at once (buildSphereWalk), the bodies replayed to the step shown (duelPlayer). */
 let walkTeams = 1;  // a walk's teams: 1 Classic, 2 Duel (as Life's, see renderColours)
-const DUEL_MODES = ['hexSphereWalk', 'icosaLR'];  // (the sphere's cells, to start with)
+const DUEL_MODES = ['hexSphereWalk', 'icosaLR', 'cubeFlat'];  // (the cells of the sphere and the cube)
 const duelOn = () => walkTeams === 2 && DUEL_MODES.includes($('mode').value);
 // Classic or Duel, under the size and start of a walk on a surface (Life's tiles, see renderColours); Digits B in a duel
 function renderWalkTeams() {
@@ -6927,10 +6927,10 @@ function renderWalkTeams() {
   if (!here) return;
   $('walkTeams').replaceChildren(...[1, 2].map((k) => tile({ pic: colourBlock(k), text: COLOUR_STEP_NAMES[k],
     title: k === 1 ? 'One number walks' : "Two numbers walk, A's (Digits) and B's (Digits B), from opposite tiles: a head on the other's body cuts it there, to its tail; the heads meeting ends it, the longer body wins",
-    on: k === (duelOn() ? 2 : 1), can: k === 1 || DUEL_MODES.includes(w), byDefault: k === 1 ? 'yes' : '', greyed: k === 2 ? "outside the sphere's cells" : '',
+    on: k === (duelOn() ? 2 : 1), can: k === 1 || DUEL_MODES.includes(w), byDefault: k === 1 ? 'yes' : '', greyed: k === 2 ? 'outside the cells of the sphere and the cube' : '',
     click: () => { if (k !== walkTeams) { walkTeams = k; compute(); } } })));
 }
-// B's start: the tile opposite A's (the sphere's centre halfway, its mesh its own mirror through it), come in from the
+// B's start: the tile opposite A's (the solid's centre halfway, its mesh its own mirror through it), come in from the
 // tile opposite the one A comes in from
 function antipodeStart(g, [t, entry]) {
   const k = g.sides, key = (u, s) => [0, 1, 2].map((d) => Math.round(s * g.cen[3 * u + d] * 1e4)).join();

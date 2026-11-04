@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.61';
+const VERSION = '0.4.62';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -2797,7 +2797,7 @@ function digitsWorker(F, base, n, then) {
   w.postMessage({ ast: F.ast, n, base, mag: F.mag, nodes: F.nodes });
   return w;
 }
-// Digits B, a duel's second number (see duelOn): its formula read as the Digits' (formulaOf), as many digits as A's in
+// Digits B, a battle's second number (see battleOn): its formula read as the Digits' (formulaOf), as many digits as A's in
 // the same base. Null while its worker computes them (then: called once they are there), { error } for a wrong formula
 let rivalWorker = null;
 function rivalDigits(base, n, then) {
@@ -3566,7 +3566,7 @@ function buildWalkOf() {
   gpuClear();  // a surface drawn before (see 11.4d)
   fill = null;  // a new walk: its enclosed areas are computed again, and its layer starts empty
   walk.ant = 0; walk.highway = null; walk.bridges = null;  // set by an ant's walk only
-  walk.duel = null;  // set by a duel only (see 7.6b)
+  walk.battle = null;  // set by a battle only (see 7.6b)
   walk.plane = walk.rows = null;  // set by Life on the plane only; Elementary's rows (see elementaryRows)
   $('fillTooBig').hidden = true;
   layers.fill.clearRect(0, 0, cw, ch);
@@ -6866,11 +6866,11 @@ function buildGridWalk(seq, mode, ahead = new Uint8Array(0)) {
   const key = () => ((v * G.nv + from) * N + ((p + N) % N)) * 2 + q, put = (i) => { rec.put(i, v, G.tileOf[v], at(v)); vert[i] = v; };
   put(0);
   rec.begin(key());  // (corner, the corner it came from)
-  // a duel (see 7.6b): both walks (duelWalks), A's recorded; B's digits null while they are computed: A alone meanwhile
-  const B = duelOn() ? rivalDigits(base, len, buildWalk) : null;
+  // a battle (see 7.6b): both walks (battleWalks), A's recorded; B's digits null while they are computed: A alone meanwhile
+  const B = battleOn() ? rivalDigits(base, len, buildWalk) : null;
   if (B?.error) $('status').textContent = `Formula B: ${B.error}`;
   if (B instanceof Uint8Array) {
-    const D = duelWalks(g, surfaceSteps(g, mode), [v, from], seq, B, true);
+    const D = battleWalks(g, surfaceSteps(g, mode), [v, from], seq, B, true);
     for (let i = 1; i <= D.steps; i++) {
       v = D.places[0][i];
       const sides = G.edgeTiles.get(G.key(vert[i - 1], v));
@@ -6879,7 +6879,7 @@ function buildGridWalk(seq, mode, ahead = new Uint8Array(0)) {
       rec.step(i, seq[i - 1], null);  // (its state: both walks', not watched)
     }
     rec.finish(kind, g, { vert, stepTiles, n: D.steps });
-    walk.duel = duelOf(D, G.nv);
+    walk.battle = battleOf(D, G.nv);
     return;
   }
   for (let i = 0; i < len; i++) {
@@ -6912,14 +6912,14 @@ function buildSphereWalk(seq, mode, ahead = new Uint8Array(0)) {
   const put = (i, t = state[0]) => rec.put(i, t, t, [g.cen[3 * t], g.cen[3 * t + 1], g.cen[3 * t + 2]]);
   put(0);
   rec.begin(S.key(state));  // (tile, the edge it came in by)
-  // a duel (see 7.6b): both walks (duelWalks), A's recorded; B's digits null while they are computed: A alone meanwhile
-  const B = duelOn() && !ant ? rivalDigits(mode.base, len, buildWalk) : null;
+  // a battle (see 7.6b): both walks (battleWalks), A's recorded; B's digits null while they are computed: A alone meanwhile
+  const B = battleOn() && !ant ? rivalDigits(mode.base, len, buildWalk) : null;
   if (B?.error) $('status').textContent = `Formula B: ${B.error}`;
   if (B instanceof Uint8Array) {
-    const D = duelWalks(g, S, state, seq, B, false);
+    const D = battleWalks(g, S, state, seq, B, false);
     for (let i = 1; i <= D.steps; i++) { put(i, D.places[0][i]); rec.step(i, seq[i - 1], null); }  // (its state: both walks', not watched)
     rec.finish(kind, g, { ant: 0, turns, vert: null, stepTiles: null, n: D.steps });
-    walk.duel = duelOf(D, g.n);
+    walk.battle = battleOf(D, g.n);
     return;
   }
   for (let i = 0; i < len; i++) {
@@ -6937,21 +6937,21 @@ function buildSphereWalk(seq, mode, ahead = new Uint8Array(0)) {
  * cuts it there: the other loses that place and all those behind it, to its tail (its own body: nothing). The heads meet
  * (on one place, or passing each other): the end, the longer body wins. Along the grid a body is drawn as a line along
  * its edges, as a walk's path. Both walks are built at once (buildSphereWalk, buildGridWalk), the bodies replayed to the step shown
- * (duelPlayer). */
+ * (battlePlayer). */
 let walkTeams = 1;  // a walk's teams: 1 Classic, 2 Duel (as Life's, see renderColours)
-const DUEL_MODES = ['hexSphereWalk', 'icosaLR', 'cubeFlat', 'hexSphereGrid', 'icosaGrid', 'cubeGrid'];  // (the turtles of the sphere and the cube, on cells and along the grid)
-const duelOn = () => walkTeams === 2 && DUEL_MODES.includes($('mode').value);
-// Classic or Duel, under the size and start of a walk on a surface (Life's tiles, see renderColours); Digits B in a duel
+const BATTLE_MODES = ['hexSphereWalk', 'icosaLR', 'cubeFlat', 'hexSphereGrid', 'icosaGrid', 'cubeGrid'];  // (the turtles of the sphere and the cube, on cells and along the grid)
+const battleOn = () => walkTeams === 2 && BATTLE_MODES.includes($('mode').value);
+// Classic or Duel, under the size and start of a walk on a surface (Life's tiles, see renderColours); Digits B in a battle
 function renderWalkTeams() {
   const w = $('mode').value, here = NAV[w]?.[0] === 'Walk' && MODES[w].lattice === 'sphere';
   $('walkTeams').hidden = !here;
-  $('digitsBSection').hidden = !duelOn();
-  if (duelHunt.run && (!duelOn() || duelHunt.key !== duelHuntKey())) stopDuelHunt();  // (its duels fought elsewhere: it stops)
-  if (duelOn()) renderDuelHunt();
+  $('digitsBSection').hidden = !battleOn();
+  if (battleHunt.run && (!battleOn() || battleHunt.key !== battleHuntKey())) stopBattleHunt();  // (its battles fought elsewhere: it stops)
+  if (battleOn()) renderBattleHunt();
   if (!here) return;
   $('walkTeams').replaceChildren(...[1, 2].map((k) => tile({ pic: colourBlock(k), text: COLOUR_STEP_NAMES[k],
     title: k === 1 ? 'One number walks' : "Two numbers walk, A's (Digits) and B's (Digits B), from opposite tiles: a head on the other's body cuts it there, to its tail; the heads meeting ends it, the longer body wins",
-    on: k === (duelOn() ? 2 : 1), can: k === 1 || DUEL_MODES.includes(w), byDefault: k === 1 ? 'yes' : '', greyed: k === 2 ? "outside the sphere's and the cube's turtles" : '',
+    on: k === (battleOn() ? 2 : 1), can: k === 1 || BATTLE_MODES.includes(w), byDefault: k === 1 ? 'yes' : '', greyed: k === 2 ? "outside the sphere's and the cube's turtles" : '',
     click: () => { if (k !== walkTeams) { walkTeams = k; compute(); } } })));
 }
 // B's start: the tile opposite A's (the solid's centre halfway, its mesh its own mirror through it), come in from the
@@ -6971,12 +6971,12 @@ function antipodeStart(g, start, grid) {
   for (let e = 0; e < k; e++) if (g.nbr[k * b + e] === from) return [b, e];
   throw new Error('no tile opposite the start');
 }
-// a duel's places: on cells its surface's tiles, along the grid their corners (how many)
-const duelPlaces = (g, mode) => (mode.grid ? gridGraph(g).nv : g.n);
-// Both walks of a duel, A's from start, B's from the place opposite (S: surfaceSteps'): their places (tiles, or corners
+// a battle's places: on cells its surface's tiles, along the grid their corners (how many)
+const battlePlaces = (g, mode) => (mode.grid ? gridGraph(g).nv : g.n);
+// Both walks of a battle, A's from start, B's from the place opposite (S: surfaceSteps'): their places (tiles, or corners
 // along the grid), a step each a digit, up to the step the heads meet (met: on one place, or passing each other) or a
 // number's digits end
-function duelWalks(g, S, start, A, B, grid) {
+function battleWalks(g, S, start, A, B, grid) {
   const len = Math.min(A.length, B.length), places = [new Int32Array(len + 1), new Int32Array(len + 1)];
   let a = start, b = antipodeStart(g, start, grid), steps = len, met = false;
   places[0][0] = a[0]; places[1][0] = b[0];
@@ -6994,7 +6994,7 @@ function duelWalks(g, S, start, A, B, grid) {
 // walk (1 A, 2 B, 0 none) and the step it was taken; a walk's body, its steps from from[s] on, all of them (only a cut
 // takes a place from it, and a cut takes its steps up to that place's last), its places alive, size[s] of them. At the
 // step the heads meet, nothing more taken or cut.
-function duelPlayer(places, count, n, met) {
+function battlePlayer(places, count, n, met) {
   const owner = new Uint8Array(count), at = new Int32Array(count), from = [0, 0], size = [0, 0];
   let i = -1;
   const alive = (s, c) => owner[c] === s + 1 && at[c] >= from[s];
@@ -7020,16 +7020,16 @@ function duelPlayer(places, count, n, met) {
     },
   };
 }
-// a duel built (D: duelWalks'), on count places: its player, B's name, the longest body of the whole duel (the gauges' full bar)
-function duelOf(D, count) {
-  const player = duelPlayer(D.places, count, D.steps, D.met);
+// a battle built (D: battleWalks'), on count places: its player, B's name, the longest body of the whole battle (the gauges' full bar)
+function battleOf(D, count) {
+  const player = battlePlayer(D.places, count, D.steps, D.met);
   let peak = 1;
   for (let i = 0; i <= D.steps; i++) { player.to(i); peak = Math.max(peak, ...player.size); }
   return { met: D.met, nameB: formulaOf($('formulaB').value).sym, player, peak };
 }
-// the duel's score at the step shown, after the walk's title: each body's size; at its end, who won
-function duelScore() {
-  const { player: P, met, nameB } = walk.duel, a = withIcons(shownSym), b = withIcons(nameB);
+// the battle's score at the step shown, after the walk's title: each body's size; at its end, who won
+function battleScore() {
+  const { player: P, met, nameB } = walk.battle, a = withIcons(shownSym), b = withIcons(nameB);
   P.to(cur);
   const [x, y] = P.size;
   if (cur < walk.n) return `${a} ${fmt(x)} · ${b} ${fmt(y)}`;
@@ -7037,72 +7037,72 @@ function duelScore() {
   return x === y ? `Draw, ${fmt(x)} each (${how})` : `${x > y ? a : b} wins, ${fmt(Math.max(x, y))} to ${fmt(Math.min(x, y))} (${how})`;
 }
 
-/* ---- 7.6c Hunting the longest duels ---------------------------------------------------------- */
+/* ---- 7.6c Hunting the longest battles ---------------------------------------------------------- */
 /* Duel's hunt (under Digits B): pairs of numbers drawn at random, each pair once, fought at the surface, size, start and
  * digits shown, on and on until stopped. Its numbers: the Number cards' reals and sequences (but Random) and the square
  * roots of Life's Formula hunt (√2 to √9999, see DRAWN_ROOTS); no fraction, whose digits go round. Two lists apart: the
- * duels ended (the heads met), the 8 longest; and those still on when the digits end (at least as long: ≥), the first 8. */
-const DUEL_CARDS = Object.values(PRESETS).filter((p) => ['Constants', '𝑓', 'Sequences'].includes(p.group) && typeof p.f === 'string').map((p) => p.f).concat('rho');
-const DUEL_FRESH = () => ({ ended: [], open: [], endedCount: 0, tried: new Set(), key: duelHuntKey(), status: '' });  // (a hunt's results, none yet)
-const duelHunt = { run: null, ended: [], open: [], endedCount: 0, tried: new Set(), key: '', status: '' };
-const duelHuntKey = () => `${$('mode').value}|${sphereSize()}|${startNo()}|${digitsNeeded()}`;  // (what its duels are fought at)
+ * battles ended (the heads met), the 8 longest; and those still on when the digits end (at least as long: ≥), the first 8. */
+const BATTLE_CARDS = Object.values(PRESETS).filter((p) => ['Constants', '𝑓', 'Sequences'].includes(p.group) && typeof p.f === 'string').map((p) => p.f).concat('rho');
+const BATTLE_FRESH = () => ({ ended: [], open: [], endedCount: 0, tried: new Set(), key: battleHuntKey(), status: '' });  // (a hunt's results, none yet)
+const battleHunt = { run: null, ended: [], open: [], endedCount: 0, tried: new Set(), key: '', status: '' };
+const battleHuntKey = () => `${$('mode').value}|${sphereSize()}|${startNo()}|${digitsNeeded()}`;  // (what its battles are fought at)
 // √r's first n digits in base b, its integer part first (on the page: one integer root, as numberSeed's)
 const rootDigits = (r, base, n) => Uint8Array.from(iroot(BigInt(r) * BigInt(base) ** BigInt(2 * n), 2).toString(base).slice(0, n), (c) => c.charCodeAt(0) - 48);
-async function startDuelHunt() {
-  if (duelHunt.key !== duelHuntKey()) Object.assign(duelHunt, DUEL_FRESH());
-  const run = (duelHunt.run = { stop: false }), mode = MODES[$('mode').value], n = digitsNeeded(), base = mode.base;
+async function startBattleHunt() {
+  if (battleHunt.key !== battleHuntKey()) Object.assign(battleHunt, BATTLE_FRESH());
+  const run = (battleHunt.run = { stop: false }), mode = MODES[$('mode').value], n = digitsNeeded(), base = mode.base;
   // the cards' digits first, once (a worker each, cached as A's); the roots' made as they are drawn
-  for (const f of DUEL_CARDS) {
+  for (const f of BATTLE_CARDS) {
     const F = formulaOf(f);
-    duelHunt.status = `Computing ${F.sym}…`;
-    renderDuelHunt();
+    battleHunt.status = `Computing ${F.sym}…`;
+    renderBattleHunt();
     if (!knownDigits(F, base, n)) await new Promise((ok) => { run.worker = digitsWorker(F, base, n, ok); });
     if (run.stop) return;
   }
-  const g = walk.geo, S = surfaceSteps(g, mode), start = S.start(startNo() - 1), places = duelPlaces(g, mode), numbers = [...DUEL_CARDS, ...DRAWN_ROOTS], N = numbers.length, pairs = N * (N - 1);
-  const cards = new Map(DUEL_CARDS.map((f) => [f, knownDigits(formulaOf(f), base, n)]));
+  const g = walk.geo, S = surfaceSteps(g, mode), start = S.start(startNo() - 1), places = battlePlaces(g, mode), numbers = [...BATTLE_CARDS, ...DRAWN_ROOTS], N = numbers.length, pairs = N * (N - 1);
+  const cards = new Map(BATTLE_CARDS.map((f) => [f, knownDigits(formulaOf(f), base, n)]));
   const digitsOf = (f) => cards.get(f) ?? rootDigits(Number(f.slice(5, -1)), base, n);
   const slice = () => {
     if (run.stop) return;
-    for (const t0 = performance.now(); performance.now() - t0 < 30 && duelHunt.tried.size < pairs;) {
+    for (const t0 = performance.now(); performance.now() - t0 < 30 && battleHunt.tried.size < pairs;) {
       const i = Math.floor(Math.random() * N), j = Math.floor(Math.random() * N), key = i * N + j;
-      if (i === j || duelHunt.tried.has(key)) continue;
-      duelHunt.tried.add(key);
-      const [a, b] = [numbers[i], numbers[j]], D = duelWalks(g, S, start, digitsOf(a), digitsOf(b), !!mode.grid), P = duelPlayer(D.places, places, D.steps, D.met);
+      if (i === j || battleHunt.tried.has(key)) continue;
+      battleHunt.tried.add(key);
+      const [a, b] = [numbers[i], numbers[j]], D = battleWalks(g, S, start, digitsOf(a), digitsOf(b), !!mode.grid), P = battlePlayer(D.places, places, D.steps, D.met);
       P.to(D.steps);
       const r = { a, b, steps: D.steps, met: D.met, sizes: [...P.size] };
-      if (!D.met) { if (duelHunt.open.length < 8) duelHunt.open.push(r); continue; }  // (still on: the first 8)
-      duelHunt.endedCount++;
-      duelHunt.ended.push(r);
-      duelHunt.ended.sort((x, y) => y.steps - x.steps);  // (ended: the 8 longest)
-      duelHunt.ended.length = Math.min(8, duelHunt.ended.length);
+      if (!D.met) { if (battleHunt.open.length < 8) battleHunt.open.push(r); continue; }  // (still on: the first 8)
+      battleHunt.endedCount++;
+      battleHunt.ended.push(r);
+      battleHunt.ended.sort((x, y) => y.steps - x.steps);  // (ended: the 8 longest)
+      battleHunt.ended.length = Math.min(8, battleHunt.ended.length);
     }
-    duelHunt.status = `${fmt(duelHunt.tried.size)} duels of ${fmt(pairs)} fought · ${fmt(duelHunt.endedCount)} ended`;
-    renderDuelHunt();
-    if (duelHunt.tried.size < pairs) setTimeout(slice, 0); else stopDuelHunt();
+    battleHunt.status = `${fmt(battleHunt.tried.size)} battles of ${fmt(pairs)} fought · ${fmt(battleHunt.endedCount)} ended`;
+    renderBattleHunt();
+    if (battleHunt.tried.size < pairs) setTimeout(slice, 0); else stopBattleHunt();
   };
   slice();
 }
-function stopDuelHunt() {
-  if (!duelHunt.run) return;
-  duelHunt.run.stop = true;
-  duelHunt.run.worker?.terminate();
-  duelHunt.run = null;
-  renderDuelHunt();
+function stopBattleHunt() {
+  if (!battleHunt.run) return;
+  battleHunt.run.stop = true;
+  battleHunt.run.worker?.terminate();
+  battleHunt.run = null;
+  renderBattleHunt();
 }
 // its button (Hunt, or Stop), its count, its two lists as cards under their labels: a click plays one (A's and B's formulas)
-function renderDuelHunt() {
-  if (duelHunt.key !== duelHuntKey() && !duelHunt.run) Object.assign(duelHunt, DUEL_FRESH());
-  $('duelHuntBtn').innerHTML = duelHunt.run ? `${icon('stop')} Stop hunt` : `${icon('search')} Hunt the longest duels`;
-  $('duelHuntStatus').textContent = duelHunt.status;
+function renderBattleHunt() {
+  if (battleHunt.key !== battleHuntKey() && !battleHunt.run) Object.assign(battleHunt, BATTLE_FRESH());
+  $('battleHuntBtn').innerHTML = battleHunt.run ? `${icon('stop')} Stop hunt` : `${icon('search')} Hunt the longest battles`;
+  $('battleHuntStatus').textContent = battleHunt.status;
   const sym = (f) => formulaOf(f).sym, A = formulaInUse, B = formulaOf($('formulaB').value).text;
   const cardOf = (r) => {
     const [x, y] = r.sizes, end = x === y ? `a draw, ${fmt(x)} each` : `${sym(x > y ? r.a : r.b)} wins, ${fmt(Math.max(x, y))} to ${fmt(Math.min(x, y))}`;
     return card({ pic: colourBlock(2), name: `${sym(r.a)} vs ${sym(r.b)} · ${r.met ? '' : '≥ '}${fmt(r.steps)} steps`, detail: r.met ? `the heads meet · ${end}` : `still on as the digits end · ${end}`,
-                  on: r.a === A && r.b === B, click: () => { stopDuelHunt(); $('formula').value = r.a; readFormula(); pickNumber(formulaInUse); $('formulaB').value = r.b; compute(); } });
+                  on: r.a === A && r.b === B, click: () => { stopBattleHunt(); $('formula').value = r.a; readFormula(); pickNumber(formulaInUse); $('formulaB').value = r.b; compute(); } });
   };
   const list = (label, rs) => (rs.length ? [Object.assign(document.createElement('div'), { className: 'field-label', textContent: label }), ...rs.map(cardOf)] : []);
-  $('duelHuntTop').replaceChildren(...list('Ended: the longest', duelHunt.ended), ...list('Still on as the digits end', duelHunt.open));
+  $('battleHuntTop').replaceChildren(...list('Ended: the longest', battleHunt.ended), ...list('Still on as the digits end', battleHunt.open));
 }
 
 /* ==============================================================================================
@@ -12921,7 +12921,7 @@ function getSetup() {
   if (!$('fillAreas').checked) s.fa = 0;
   if (mode.life) s.r = ruleBody($('lifeRule').value);
   if (mode.life && !mode.margolus && lifeColours > 1) s.k = lifeColours;
-  if (duelOn()) { s.k = 2; s.xb = formulaOf($('formulaB').value).text ?? $('formulaB').value; }  // (a walk's Duel, as Life's: its teams; B's number)
+  if (battleOn()) { s.k = 2; s.xb = formulaOf($('formulaB').value).text ?? $('formulaB').value; }  // (a walk's Duel, as Life's: its teams; B's number)
   if (mode.life && colourMix && lifeColours > 1) s.mx = 1;
   if (mode.life && newcomerOn()) s.nc = 1;  // (Newcomer)  // (Mixed, kept where its zone greys it: the other zones' fits by it, see huntFits)
   if (mode.plane) {  // the grid's side, dead edges (e=1), its start ("random.30.7", "draw" with p=, "digits"), its symmetry (y=)
@@ -12953,7 +12953,7 @@ function applySetup(s) {
     pickNumber(formulaInUse, s.w);
   }
   if (s.d !== undefined) target = Number(s.d);
-  walkTeams = !MODES[s.w].life && Number(s.k) === 2 ? 2 : 1;  // (a walk's Duel, see duelOn)
+  walkTeams = !MODES[s.w].life && Number(s.k) === 2 ? 2 : 1;  // (a walk's Duel, see battleOn)
   set('formulaB', s.xb);
   set('mode', s.w);
   $('startNo').value = s.st ?? 1;
@@ -13689,7 +13689,7 @@ const sphereDraw = { at: 0, cost: 0 };
 
 // Cursor lying on the sphere: an arrow in the tangent plane at the walker, pointing along the
 // last step, built in 3D and then projected so it is foreshortened like the tiles around it. P(i), tileAt(i): the walker's
-// point and tile at step i (the walk's; a duel's B, see drawOverlay), fill: its colour
+// point and tile at step i (the walk's; a battle's B, see drawOverlay), fill: its colour
 function drawSphereCursor(ctx, P = (i) => [walk.wx[i], walk.wy[i], walk.wz[i]], tileAt = (i) => walk.tile[i], fill = '#ffffff') {
   const p = P(cur);
   const t = tileAt(cur), nr = walk.shape.nrm;
@@ -13808,7 +13808,7 @@ function drawSphere() {
   let palette = [null, ...grad];
   let levelOf = (t) => (visits[t] ? logLevel(visits[t], maxVisits) : 0);  // walk: visits, log scale
   const L = walk.life, line = !L && ['gradient', 'cells'].includes($('colourMode').value);  // Rainbow (the tiles Rainbow picks: cells)
-  const path = !L && !walk.duel && (MODES[$('mode').value].cells ? $('showPath').checked : line);  // on cells, with Show path only (a duel: its bodies, no path)
+  const path = !L && !walk.battle && (MODES[$('mode').value].cells ? $('showPath').checked : line);  // on cells, with Show path only (a battle: its bodies, no path)
   if (line) {  // Rainbow along the walk: a tile walked through (Fill cells), enclosed (Fill areas), or dark
     const cells = MODES[$('mode').value].cells && firstVisits(), areas = !walk.ant && $('fillAreas').checked && areaSteps();
     const band = (step) => Math.min(LEVELS - 1, Math.floor((step * LEVELS) / (walk.n + 1)));
@@ -13831,8 +13831,8 @@ function drawSphere() {
     palette = [null, ...arrows.map(antTurnColour)];
     levelOf = (t) => (visits[t] && last[t] >= 0 ? 1 + last[t] : 0);
   }
-  if (walk.duel) {  // a duel: A's body red, B's blue (Duel's colours, see colourBlock), paler than their heads
-    const P = walk.duel.player;
+  if (walk.battle) {  // a battle: A's body red, B's blue (Duel's colours, see colourBlock), paler than their heads
+    const P = walk.battle.player;
     P.to(cur);
     const [hA, hB] = P.heads();
     palette = [null, faded(LIFE_COLOURS[0], 0.6), faded(LIFE_COLOURS[1], 0.6), LIFE_COLOURS[0], LIFE_COLOURS[1]];
@@ -13994,8 +13994,8 @@ const packed = (c) => { const [r, g, b] = rgbCached(c); return ((255 << 24) | (b
 // a face turned away is not drawn at all, and nothing jumps across an unrolled sheet's seams.
 // Per segment [Ax, Ay, Az, Bx, By, Bz, Nx, Ny, Nz, ends, step]: ends, which ends go on half the
 // width past their point (1 the start, 2 the end: where two segments of the same plane meet, not at
-// a fold); and the first segment of each step (at). P: a duel's player along the grid (see 7.6b): its two bodies' edges at
-// the step shown instead, step's place their colour's in the palette (duelPalette: A, B), all of them at[cur]
+// a fold); and the first segment of each step (at). P: a battle's player along the grid (see 7.6b): its two bodies' edges at
+// the step shown instead, step's place their colour's in the palette (battlePalette: A, B), all of them at[cur]
 function pathSegments(P = null) {
   const g = walk.geo, sh = walk.shape, R = walk.R, k = g.sides, C = sh.corners, n = walk.n;
   const corner = (t, q) => [C[3 * (k * t + q)] * R, C[3 * (k * t + q) + 1] * R, C[3 * (k * t + q) + 2] * R];
@@ -14709,7 +14709,7 @@ struct Edge { @builtin(position) pos: vec4f, @location(0) facing: f32, @location
 struct Rib { @builtin(position) pos: vec4f, @location(0) col: vec3f, @location(1) cutv: f32 }
 @vertex fn ribbonV(@location(0) quad: vec2f, @location(1) a: vec3f, @location(2) b: vec3f, @location(3) n: vec3f, @location(4) e: f32, @location(5) i: f32) -> Rib {
   var o: Rib;
-  if (u.colour == 3) { o.col = band(pal, (i + 0.5) / 256.0); } else { o.col = band(grad, (i + 0.5) / u.N); }  // (a duel's bodies: their colours, see duelPalette)
+  if (u.colour == 3) { o.col = band(pal, (i + 0.5) / 256.0); } else { o.col = band(grad, (i + 0.5) / u.N); }  // (a battle's bodies: their colours, see battlePalette)
   var d = b - a; if (length(d) > 1e-9) { d = normalize(d); } else { d = vec3f(1.0, 0.0, 0.0); }
   let side = normalize(cross(d, n)) * u.halfW;
   var on = floor(e / 2.0); if (quad.x < 0.5) { on = e - 2.0 * floor(e / 2.0); }
@@ -14891,9 +14891,9 @@ function gpuDrawPipe(name, { vertex, fragment, buffers, topology = 'triangle-lis
     depthStencil: pass || !depth ? undefined : { format: 'depth24plus', depthWriteEnabled: true, depthCompare: 'less-equal' },
     multisample: { count: 4 } }));
 }
-// a duel's colours in the palette (pal), for its lines along the grid: A's body, B's (their heads: their arrows, see drawOverlay)
-function duelPalette(D) {
-  const key = `duel|${LIFE_COLOURS[0]}|${LIFE_COLOURS[1]}`;  // (as the theme makes them)
+// a battle's colours in the palette (pal), for its lines along the grid: A's body, B's (their heads: their arrows, see drawOverlay)
+function battlePalette(D) {
+  const key = `battle|${LIFE_COLOURS[0]}|${LIFE_COLOURS[1]}`;  // (as the theme makes them)
   if (D.keys.pal === key) return;
   const pal = new Uint8Array(4 * 256);
   LIFE_COLOURS.slice(0, 2).forEach((c, k) => pal.set([...rgbCached(c), 255], 4 * k));
@@ -14948,11 +14948,11 @@ function gpuSurface(paint, path) {
     p.setPipeline(gpuDepthPipe('depthTileV', [vbuf(12, [VA(0, 'float32x3')])]));
     p.setVertexBuffer(0, D.pos); p.setIndexBuffer(D.fan, 'uint32'); p.drawIndexed(D.fanCount);
   }, `${D.geoGen}|${lightDir()}|${cam.r}|${depth}|${lamp()}|${cutOn()}`);
-  // the path's segments, made once a walk; a duel along the grid's, its bodies', made again each step (see pathSegments)
-  const lines = !!walk.duel && !!walk.vert;
-  if (lines) { walk.duel.player.to(cur); duelPalette(D); }
+  // the path's segments, made once a walk; a battle along the grid's, its bodies', made again each step (see pathSegments)
+  const lines = !!walk.battle && !!walk.vert;
+  if (lines) { walk.battle.player.to(cur); battlePalette(D); }
   const segs = (path || lines) && cur > 0 && (D.keys.segs !== walk.wx || D.keys.segsM !== sh.m || (lines && D.keys.segsCur !== cur))
-    ? pathSegments(lines ? walk.duel.player : null) : null;
+    ? pathSegments(lines ? walk.battle.player : null) : null;
   if (segs) { gpuBuffer('ribbon', segs.data); D.segsAt = segs.at; D.keys.segs = walk.wx; D.keys.segsM = sh.m; D.keys.segsCur = lines ? cur : null; }
   // the tiles, their grid and the path, into pass p (0 the frame; 1, 2 Glass's)
   const drawAll = (rp, pass) => {
@@ -15360,8 +15360,8 @@ function drawOverlay() {
     }
   }
   if (!walk.n || walk.life || walk.rows || startsShown) return;  // no walker in the Game of Life, nor Elementary
-  if (walk.duel) {  // a duel: no start (its tails cut), each head an arrow in its colour
-    const B = walk.duel.player.places[1], P = (i) => placePoint(B[i]), tileAt = (i) => (walk.vert ? walk.geo.grid.tileOf[B[i]] : B[i]);
+  if (walk.battle) {  // a battle: no start (its tails cut), each head an arrow in its colour
+    const B = walk.battle.player.places[1], P = (i) => placePoint(B[i]), tileAt = (i) => (walk.vert ? walk.geo.grid.tileOf[B[i]] : B[i]);
     if (facing(cur)) drawSphereCursor(ctx, undefined, undefined, LIFE_COLOURS[0]);
     if (twoSidedNow() || tileVisible(tileAt(cur))) drawSphereCursor(ctx, P, tileAt, LIFE_COLOURS[1]);
     return;
@@ -15543,8 +15543,8 @@ function renderWalkGauges() {
   $('gauges').hidden = !walk.n || !walk.maxDist;
   if ($('gauges').hidden) return;
   const x = walk.wx[cur], y = walk.is3d ? walk.wy[cur] : -walk.wy[cur], z = walk.is3d ? walk.wz[cur] : 0, d = Math.hypot(x, y, z);
-  if (walk.duel) {  // a duel: each body's length, in its colour, its bar full at the longest body of the whole duel
-    const { player: D, peak, nameB } = walk.duel;
+  if (walk.battle) {  // a battle: each body's length, in its colour, its bar full at the longest body of the whole battle
+    const { player: D, peak, nameB } = walk.battle;
     D.to(cur);
     paintGauges([[withIcons(shownSym), LIFE_COLOURS[0], D.size[0] / peak, `<b>${fmt(D.size[0])}</b>`],
                  [withIcons(nameB), LIFE_COLOURS[1], D.size[1] / peak, `<b>${fmt(D.size[1])}</b>`]]);
@@ -15607,7 +15607,7 @@ function renderRanking(L) {
   box.querySelector('.all-dead').textContent = alive.length ? '' : 'All dead';
 }
 function updateStats() {
-  $('ruleChips').hidden = !!walk.duel;  // (a battle: its walkers' turns not shown, see the walk's part below)
+  $('ruleChips').hidden = !!walk.battle;  // (a battle: its walkers' turns not shown, see the walk's part below)
   // Jump to start and Step back greyed at the start (a reversible one's, as far back as it goes), Step at the end (a loop's:
   // round it on)
   $('restart').disabled = cur <= runStart();
@@ -15673,12 +15673,12 @@ function updateStats() {
   }
   // a walk's loop (its digits' round, an ant's highway) or a worm's end, after its title: a link in green, as Life's (see loopLink)
   const o = runLoop();
-  if (walk.duel) setLinks($('barNum'), duelScore());  // (a duel: its score, its end)
+  if (walk.battle) setLinks($('barNum'), battleScore());  // (a battle: its score, its end)
   else setLinks($('barNum'), !o ? barTitle : `${barTitle} ${loopLink(walk.wormEnd ? `✝ ${fmt(walk.n)}`
     : `${walk.loop.drift ? '→' : '↻'} ${fmt(walk.loop.period ?? walk.n)}${o.T ? ` from ${fmt(o.T)}` : ''}`)}`);  // (as short: its digits' period, its first step)
   drawActivity();
   renderWalkGauges();
-  if (walk.duel) {  // a battle: its gauges only, no turns nor digits (A's alone, not the battle's)
+  if (walk.battle) {  // a battle: its gauges only, no turns nor digits (A's alone, not the battle's)
     $('digitStrip').classList.remove('line', 'turns');
     $('digitStrip').textContent = '';
     return;
@@ -16597,8 +16597,8 @@ $('formula').addEventListener('change', () => {
   $('formula').value = formulaInUse;
   $('status').textContent = `Formula: ${error} · ${formulaInUse} kept`;
 });
-// B's (a duel's): computed again, or its error said (see rivalDigits)
-$('duelHuntBtn').addEventListener('click', () => (duelHunt.run ? stopDuelHunt() : startDuelHunt()));
+// B's (a battle's): computed again, or its error said (see rivalDigits)
+$('battleHuntBtn').addEventListener('click', () => (battleHunt.run ? stopBattleHunt() : startBattleHunt()));
 $('formulaB').addEventListener('change', () => {
   const F = formulaOf($('formulaB').value);
   if (F.error) { $('status').textContent = `Formula B: ${F.error}`; return; }

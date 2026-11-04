@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.104';
+const VERSION = '0.4.105';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -6980,15 +6980,15 @@ function buildSphereWalk(seq, mode, ahead = new Uint8Array(0)) {
  * a body is drawn as a line along its edges, as a walk's path. The walks are made as the battle is first played
  * (battlePlayer), then replayed to the step shown. */
 let walkTeams = 1;  // a walk's teams: 1 Classic, 2 Duel, 3 Trio (as Life's, see renderColours)
-let penetration = 0;  // a battle's way with an enemy's body: 0 Cut, 1 Land grid 2, 4 Land grid 3, 5 Land grid, 6 Land cells (see battlePlayer, PENETRATIONS)
+let penetration = 0;  // a battle's way with an enemy's body: 5 Land grid, 6 Land cells, 0 Cut, 1 Land grid 2, 4 Land grid 3 (see battlePlayer, PENETRATIONS)
 // its choice (one tab group under the teams): its number (a link's pe=), its name, its picture (a red head and a blue body
 // or land), its words; along the grid Cut and the Land grids, on cells Cut and Land cells (each greyed in the other's place)
 const PENETRATIONS = [
+  [5, 'Land grid', 'M1.5 0H2.5V4H1.5ZM0 1.5H4V2.5H0ZM0 0H1V1H0Z', "Along the grid: as Land grid 3, but going along an enemy's line pierces it too (up to its forks): each walker keeps its land, no line of another in it. A loop closed has its empty tiles painted its colour; an enemy's land surrounded there stays its own, taken only by piercing its line. The first two heads meeting end it: the most land wins"],
+  [6, 'Land cells', 'M0 0H4V4H0ZM1 1H3V3H1Z', "On cells: no body; each walker paints the tile it goes into its colour, whatever it was, and a zone its colour closes (the tiles not of its colour cut off, the largest outside) is painted inside. The first two heads meeting end it: the most tiles win"],
   [0, 'Cut', 'M0 1.5H4V2.5H0Z', "A head on another's body cuts it there, to its tail; two heads meeting, the shorter dies; the last one left wins (as the digits end: the longest)"],
   [1, 'Land grid 2', 'M0 1.5H2.5V2.5H0Z', "Along the grid: each walker's land, the tiles its body closes stay its own (an enemy's too); a head on another's body cuts it; a head going into an enemy's land takes the tiles it goes through. The first two heads meeting end it: the most land wins"],
-  [4, 'Land grid 3', 'M1.5 0H2.5V4H1.5ZM0 1.5H4V2.5H0Z', "Along the grid: a walker's line, the edges it went along, stays (crossing it: a fork); its land the regions it closes. A head pierces an enemy's line only going through it: on it, it goes along it (their borders glued); off it again by the other side, the line is pierced there, let go each way up to a fork or its end, its land there let go too; by the same side, nothing. Going along an enemy's line inside its land (its land on both sides), that line becomes the head's. The first two heads meeting end it: the most land wins"],
-  [5, 'Land grid', 'M1.5 0H2.5V4H1.5ZM0 1.5H4V2.5H0ZM0 0H1V1H0Z', "Along the grid: as Land grid 3, but going along an enemy's line pierces it too (up to its forks): each walker keeps its land, no line of another in it. A loop closed has its empty tiles painted its colour; an enemy's land surrounded there stays its own, taken only by piercing its line. The first two heads meeting end it: the most land wins"],
-  [6, 'Land cells', 'M0 0H4V4H0ZM1 1H3V3H1Z', "On cells: no body; each walker paints the tile it goes into its colour, whatever it was, and a zone its colour closes (the tiles not of its colour cut off, the largest outside) is painted inside. The first two heads meeting end it: the most tiles win"]];
+  [4, 'Land grid 3', 'M1.5 0H2.5V4H1.5ZM0 1.5H4V2.5H0Z', "Along the grid: a walker's line, the edges it went along, stays (crossing it: a fork); its land the regions it closes. A head pierces an enemy's line only going through it: on it, it goes along it (their borders glued); off it again by the other side, the line is pierced there, let go each way up to a fork or its end, its land there let go too; by the same side, nothing. Going along an enemy's line inside its land (its land on both sides), that line becomes the head's. The first two heads meeting end it: the most land wins"]];
 const BATTLE_MODES = ['hexSphereWalk', 'icosaLR', 'cubeFlat', 'hexSphereGrid', 'icosaGrid', 'cubeGrid'];  // (the turtles of the sphere and the cube, on cells and along the grid)
 const battleOn = () => walkTeams > 1 && BATTLE_MODES.includes($('mode').value);
 // Classic, Duel or Trio (the larger counts greyed: not yet), under the size and start of a walk on a surface (Life's tiles, see renderColours); Digits B, and

@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.115';
+const VERSION = '0.4.116';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -3603,6 +3603,7 @@ function buildWalkOf() {
   visitData = firstVisitData = areaData = null;  // and its cells' visits and areas too
   gpuClear();  // a surface drawn before (see 11.4d)
   fill = null;  // a new walk: its enclosed areas are computed again, and its layer starts empty
+  walk.mode = current.mode;  // (the mode it is built for: its colours by it, current.mode ahead of it while another is made, see compute)
   walk.ant = 0; walk.highway = null; walk.bridges = null;  // set by an ant's walk only
   walk.battle = null;  // set by a battle only (see 7.6b)
   walk.plane = walk.rows = null;  // set by Life on the plane only; Elementary's rows (see elementaryRows)
@@ -14302,10 +14303,10 @@ const deeper = (c) => `rgb(${rgbOf(c).map((v) => Math.round(v * 0.62)).join(', '
 const antTurnColour = (a) => ({ '↖': DIRECTION_COLOURS['←'], '↗': DIRECTION_COLOURS['→'], '↙': deeper(DIRECTION_COLOURS['←']), '↘': deeper(DIRECTION_COLOURS['→']) }[a]
   ?? DIRECTION_COLOURS[a] ?? GREY);
 // an ant's chips: by the digits, its turns (left, right); by its rule, its states
-const antChipColour = (k) => antByDigits ? antTurnColour(arrowsOf(current.mode)[ANTS[current.mode].turns[turnWords(antDigitRules[current.mode])[k]]])
-  : rampColour(k, antColours(current.mode));
+const antChipColour = (k) => antByDigits ? antTurnColour(arrowsOf(walk.mode)[ANTS[walk.mode].turns[turnWords(antDigitRules[walk.mode])[k]]])
+  : rampColour(k, antColours(walk.mode));  // (the walk's own mode: see buildWalkOf)
 // a digit's colour: its direction's (an ant's: the turn it took, or its state), else in the digits' order
-const digitColour = (k) => walk.ant ? (antRamp ? rampColour(k, walk.ant) : antTurnColour(arrowsOf(current.mode)[k]))
+const digitColour = (k) => walk.ant ? (antRamp ? rampColour(k, walk.ant) : antTurnColour(arrowsOf(walk.mode)[k]))
   : walk.skipZeros ? (k ? DIGIT_COLORS[0] : GREY)  // a spiral: 1 blue, drawn; 0 grey, moved without drawing
   : arrowsOf(current.mode)[k] ? (['Turtle', 'Pivot', 'Parity'].includes(NAV[current.mode]?.[3]) ? antTurnColour : (a) => DIRECTION_COLOURS[a])(arrowsOf(current.mode)[k])  // fixed directions: by the compass
   : walk.base <= DIGIT_COLORS.length ? DIGIT_COLORS[k] : `hsl(${(k * 360) / walk.base}, 80%, 62%)`;
@@ -16416,7 +16417,7 @@ function updateStats() {
   const strip = $('digitStrip');
   strip.classList.remove('line', 'turns');  // one line of digits; the other texts may wrap
   if (!walk.n) { strip.textContent = ''; return; }
-  if (walk.ant && !antByDigits) { strip.textContent = `Rule ${MODES[current.mode].turmite ? turmite.rule : antRules[current.mode]} · the number's digits are not used`; return; }  // an ant by its rule
+  if (walk.ant && !antByDigits) { strip.textContent = `Rule ${MODES[walk.mode].turmite ? turmite.rule : antRules[walk.mode]} · the number's digits are not used`; return; }  // an ant by its rule
   // One line of digits, exactly as many as fit (the strip is monospace, so it is a column count).
   // The head sits at 60 % of the line; at the start the line begins with the first digit, at the
   // end it finishes with the last one. The window then shrinks until "…", "0." and "." fit too.

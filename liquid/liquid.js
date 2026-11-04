@@ -38,10 +38,10 @@ const MASSES = [1, 1.6, 2.5, 4], COLOURS = [[1, 0.82, 0.3], [0.35, 0.85, 0.45], 
 const BETA = 0.3, FILL = 0.5, REST = 4, THRESHOLD = 1, PULL = 0.004, CFL = 0.3; // (CFL: the fastest a step can move a
 // particle, in reaches, and stay stable)
 const mulberry32 = (a) => () => { a |= 0; a = (a + 0x6d2b79f5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
-// The setting from the link: #n=65536&steps=4&seed=1&gravity=0.03&stiffness=0.01&near=0.02&same=4&other=3&viscosity=0.1&brush=0.1&dots=false
+// The setting from the link: #n=65536&steps=4&seed=1&gravity=0.03&stiffness=0.01&near=0.02&same=4&other=3&viscosity=0.1&brush=0.1&dots=false&dot=0.1
 const hash = Object.fromEntries(new URLSearchParams(location.hash.slice(1)));
 const num = (v, d) => (v === undefined || v === '' || isNaN(+v) ? d : +v);
-const set = { n: COUNTS.includes(+hash.n) ? +hash.n : 65536, steps: STEPS.includes(+hash.steps) ? +hash.steps : 4, seed: +hash.seed || 1, gravity: num(hash.gravity, 0.03), stiffness: num(hash.stiffness, 0.01), near: num(hash.near, 0.02), same: num(hash.same, REST), other: num(hash.other, 3), viscosity: num(hash.viscosity, 0.1), brush: num(hash.brush, 0.1), dots: hash.dots === 'true', tool: 'drag' };
+const set = { n: COUNTS.includes(+hash.n) ? +hash.n : 65536, steps: STEPS.includes(+hash.steps) ? +hash.steps : 4, seed: +hash.seed || 1, gravity: num(hash.gravity, 0.03), stiffness: num(hash.stiffness, 0.01), near: num(hash.near, 0.02), same: num(hash.same, REST), other: num(hash.other, 3), viscosity: num(hash.viscosity, 0.1), brush: num(hash.brush, 0.1), dots: hash.dots === 'true', dot: num(hash.dot, 0.1), tool: 'drag' };
 const keep = () => { const { tool, ...h } = set; history.replaceState(null, '', '#' + new URLSearchParams(h)); };
 // The box and its reach, fixed by a scatter: its width a (the screen's aspect then), the reach h such that n particles at
 // the rest density fill FILL of it, the grid of bins (each a reach wide at least)
@@ -62,7 +62,7 @@ const pull = () => set.gravity * world.h;
 const PARAMS = `
 struct Params { a: vec4u, f: vec4f, k: vec4f, v: vec4f, p: vec4f, q: vec4f, m: vec4f, s: vec4f };
 // a: n, the grid's columns and rows, bins; f: the reach h, a bin's width and height, the box's width; k: stiffness, near
-// stiffness, rest density of one liquid, of two; v: gravity (reaches a step²), viscosity σ, β; p: the pointer's place,
+// stiffness, rest density of one liquid, of two; v: gravity (reaches a step²), viscosity σ, β, a dot's radius (reaches); p: the pointer's place,
 // its brush (radius), its pull; q: its speed (a step), its tool (0 none, 1 drag, 2 attract, 3 repel); m: the four masses;
 // s: pixels a unit of the box, the canvas' width and height, the liquid's threshold`;
 const COMPUTE = PARAMS + `
@@ -205,8 +205,9 @@ fn quad(vi: u32, ii: u32, size: f32) -> Out {
   return o;
 }
 @vertex fn vs(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> Out { return quad(vi, ii, P.f.x * 0.6); }
-// Particles shown: each a small dot over the liquid (a tenth of the reach, a pixel at least), its liquid's colour darker
-@vertex fn dotVs(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> Out { return quad(vi, ii, max(P.f.x * 0.1, 1.0 / P.s.x)); }
+// Particles shown: each a small dot over the liquid (its radius Dot size reaches, a pixel at least), its liquid's colour
+// darker
+@vertex fn dotVs(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> Out { return quad(vi, ii, max(P.f.x * P.v.w, 1.0 / P.s.x)); }
 @fragment fn dotFs(i: Out) -> @location(0) vec4f { if (dot(i.uv, i.uv) > 1.0) { discard; } return vec4f(i.c * 0.45, 1.0); }
 @fragment fn fs(i: Out) -> @location(0) vec4f {
   let d = dot(i.uv, i.uv); if (d > 1.0) { discard; }
@@ -268,7 +269,7 @@ function scatter() {
 function write() {
   const w = view.width, h = view.height, buf = new ArrayBuffer(128), u = new Uint32Array(buf), f = new Float32Array(buf);
   u.set([set.n, world.gx, world.gy, world.bins]);
-  f.set([world.h, world.a / world.gx, 1 / world.gy, world.a, set.stiffness, set.near, set.same, set.other, pull(), set.viscosity, BETA, 0], 4);
+  f.set([world.h, world.a / world.gx, 1 / world.gy, world.a, set.stiffness, set.near, set.same, set.other, pull(), set.viscosity, BETA, set.dot], 4);
   f.set([pointer.x, pointer.y, set.brush, PULL, pointer.vx, pointer.vy, pointer.down ? TOOLS.indexOf(set.tool) + 1 : 0, 0, ...MASSES, Math.min(w / world.a, h), w, h, THRESHOLD], 16);
   device.queue.writeBuffer(params, 0, buf);
 }
@@ -327,12 +328,14 @@ function panel() {
   const markSteps = tabs(document.getElementById('steps'), STEPS, () => set.steps, (v) => { set.steps = v; markSteps(); keep(); });
   const markTools = tabs(document.getElementById('tools'), TOOLS, () => set.tool, (v) => { set.tool = v; markTools(); }, (v) => v[0].toUpperCase() + v.slice(1));
   document.getElementById('scatter').onclick = () => scatter();
-  // Particles: a switch (its name never changes, .on its state), the particles drawn as dots over the liquid
-  const dots = document.getElementById('dots');
-  dots.classList.toggle('on', set.dots);
-  dots.onclick = () => { set.dots = !set.dots; dots.classList.toggle('on', set.dots); keep(); };
+  // Particles: a switch (its name never changes, .on its state), the particles drawn as dots over the liquid; Dot
+  // size greyed while they are not
+  const dots = document.getElementById('dots'), dot = document.getElementById('dot');
+  const markDots = () => { dots.classList.toggle('on', set.dots); dot.disabled = !set.dots; dot.parentElement.title = set.dots ? '' : 'The particles are not shown: Particles shows them'; };
+  markDots();
+  dots.onclick = () => { set.dots = !set.dots; markDots(); keep(); };
   document.getElementById('play').onclick = (e) => { on = !on; e.target.textContent = on ? 'Pause' : 'Play'; };
-  for (const id of ['brush', 'gravity', 'stiffness', 'near', 'same', 'other', 'viscosity']) {
+  for (const id of ['brush', 'gravity', 'stiffness', 'near', 'same', 'other', 'viscosity', 'dot']) {
     const input = document.getElementById(id), out = input.nextElementSibling;
     input.value = set[id]; out.textContent = set[id];
     input.oninput = () => { set[id] = +input.value; out.textContent = input.value; keep(); };

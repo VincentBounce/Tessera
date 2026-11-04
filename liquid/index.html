@@ -31,6 +31,7 @@
   label.range { display: flex; align-items: center; gap: 8px; margin: 4px 0; }
   label.range span { width: 62px; color: var(--dim); }
   label.range input { flex: 1; }
+  label.range:has(input[disabled]) { opacity: .4; } /* (a greyed slider, as a greyed button) */
   label.range b { width: 38px; text-align: right; font-weight: normal; font-variant-numeric: tabular-nums; }
   #stats { white-space: pre-line; }
   #stats, #help { margin-top: 12px; color: var(--dim); font-size: 11.5px; font-variant-numeric: tabular-nums; }
@@ -60,8 +61,9 @@
   <label class="range"><span>Rest other</span><input id="other" type="range" min="1" max="8" step="0.1"><b></b></label>
   <label class="range"><span>Viscosity</span><input id="viscosity" type="range" min="0" max="1" step="0.01"><b></b></label>
   <div class="row" style="margin-top:8px"><button class="btn" id="play">Pause</button><button class="btn" id="scatter">Scatter</button><button class="btn" id="dots">Particles</button></div>
+  <label class="range"><span>Dot size</span><input id="dot" type="range" min="0.05" max="0.5" step="0.01"><b></b></label>
   <div id="stats"></div>
-  <div id="help">Each particle pushed from its neighbours by the pressure of their density (Stiffness) against the rest density (Rest same between particles of one liquid, Rest other between two liquids: lower, they shun each other), and from those very near (Near: never clumped). A heavier particle moves less under the same push: it sinks. Viscosity: the share of a particle's closing speed its neighbours take away each step (0 to 1). A drag in the box: Drag carries the liquid along, Attract draws it, Repel pushes it, within the Brush. Particles: each particle shown as a dot over the liquid. The link keeps all the settings.</div>
+  <div id="help">Each particle pushed from its neighbours by the pressure of their density (Stiffness) against the rest density (Rest same between particles of one liquid, Rest other between two liquids: lower, they shun each other), and from those very near (Near: never clumped). A heavier particle moves less under the same push: it sinks. Viscosity: the share of a particle's closing speed its neighbours take away each step (0 to 1). A drag in the box: Drag carries the liquid along, Attract draws it, Repel pushes it, within the Brush. Particles: each particle shown as a dot over the liquid, Dot size its radius, in reaches. The link keeps all the settings.</div>
 </div>
 <div id="stage"><canvas id="view"></canvas><div id="fail"></div></div>
 <!-- The script fetched fresh each time (a prototype changing often: never an old one from the cache) -->

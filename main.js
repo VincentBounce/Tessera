@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.36';
+const VERSION = '0.4.37';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -7539,6 +7539,30 @@ const DRAW_PATTERNS = [
   ['twistsparks-osc', 'twisttri', ['B246/S0348/C5'], 'Oscillator', '.B.A$A4.B!', 'period 12 · 4 cells'],
   ['twistembers-osc', 'twisttri', ['B235/S0457/C5'], 'Oscillator', '3.AB.A$AB.2B.A$A2.A!', 'period 30 · 10 cells'],
   ['twistembers-meth', 'twisttri', ['B235/S0457/C5'], 'Methuselah', '8.A$A.A.2A.A!', 'settles at generation 863 · 6 cells'],
+  // the rules with none before (tools/tilings/famous.js, 2026-11-04: squares, triangles, Cairo and kites too, as the app lays
+  // them; each played in the app by Draw: its period the same, a methuselah's end counted as Life's, its ships taken away)
+  ['tri-b346s01458-osc', 'tri', ['B346/S01458'], 'Oscillator', '2.A$A.A!', 'period 2 · 3 cells'],
+  ['cairo-b2v023v1s156v2-meth', 'cairo', ['B2v02.3v1/S156v2'], 'Methuselah', '.A.A2.2A2$.A.A3.A$A4.A!', 'settles at generation 4,359 · 9 cells'],
+  ['cairo-b2v023v1s156v2-osc', 'cairo', ['B2v02.3v1/S156v2'], 'Oscillator', '3.A$A.2A!', 'period 2 · 4 cells'],
+  ['square-b346s01458-osc', 'square', ['B346/S01458'], 'Oscillator', 'A.A$.A$3A$3A!', 'period 44 · 9 cells'],
+  ['square-b347s2c3-osc', 'square', ['B347/S2/C3'], 'Oscillator', '.A$A.BA$B3A!', 'period 4 · 8 cells'],
+  ['square-b3478s2c3-osc', 'square', ['B3478/S2/C3'], 'Oscillator', '.A$A.BA$B3A!', 'period 4 · 8 cells'],
+  ['square-b389s23-ship', 'square', ['B389/S23'], 'Glider', '.A$2.A$3A!', 'flies, period 4 · 5 cells'],
+  ['square-b389s23-meth', 'square', ['B389/S23'], 'Methuselah', '4.2A$A.A2.A$6A!', 'settles at generation 1,108 · 11 cells'],
+  ['square-b39s2389-ship', 'square', ['B39/S2389'], 'Glider', '.A$2.A$3A!', 'flies, period 4 · 5 cells'],
+  ['square-b39s2389-meth', 'square', ['B39/S2389'], 'Methuselah', '3A2.A$A2.2A2$A.A.A!', 'settles at generation 1,243 · 10 cells'],
+  ['kite-b3v1235v23s123v012c5-ship', 'kite', ['B3v1235v23/S123v012/C5'], 'Spaceship', '3.AB.2AB2.B$.B.B2.B!', 'flies, period 6 · 9 cells'],
+  ['kite-b3v1235v23s123v012c5-osc', 'kite', ['B3v1235v23/S123v012/C5'], 'Oscillator', '7.AD2.DA$.A.A!', 'period 5 · 6 cells'],
+  ['kite-b3s123v0257c5-meth', 'kite', ['B3/S123v0257/C5'], 'Methuselah', '2A2.2A5.A$2A4.A3.2A!', 'settles at generation 788 · 10 cells'],
+  ['kite-b3s123v0257c5-osc', 'kite', ['B3/S123v0257/C5'], 'Oscillator', '4.A3.A$3.DA.D$6.A!', 'period 5 · 6 cells'],
+  ['kite-b34v1236s0127c4-meth', 'kite', ['B34v1236/S0127/C4'], 'Methuselah', '3.A.A3.2A.A$2.2A6.A6.A!', 'settles at generation 581 · 9 cells'],
+  ['kite-b34v1236s0127c4-osc', 'kite', ['B34v1236/S0127/C4'], 'Oscillator', '4.A$.A.A2.A.A$3.A!', 'period 8 · 6 cells'],
+  ['kite-b2v013v234s08c5-ship', 'kite', ['B2v01.3v234/S08/C5'], 'Spaceship', '3.AB.A.B2.C$.C.D2.D!', 'flies, period 3 · 8 cells'],
+  ['kite-b2v0137s0c5-ship', 'kite', ['B2v01.37/S0/C5'], 'Spaceship', '3.AB.A.B2.C$.C.D2.D!', 'flies, period 3 · 8 cells'],
+  ['kite-b3v012s0234v3-meth', 'kite', ['B3v012/S0234v3'], 'Methuselah', '6.A.2A5.A.A$2A.A3.A2.2A!', 'settles at generation 544 · 11 cells'],
+  ['kite-b3v012s0234v3-osc', 'kite', ['B3v012/S0234v3'], 'Oscillator', '2A.A!', 'period 2 · 3 cells'],
+  ['kite-b3s12v13-meth', 'kite', ['B3/S12v1.3'], 'Methuselah', '2A5.2A$2A.A2.4A.A!', 'settles at generation 432 · 12 cells'],
+  ['kite-b3s12v13-osc', 'kite', ['B3/S12v1.3'], 'Oscillator', '2A.2A!', 'period 6 · 4 cells'],
 ];
 // the symmetries a start may have (see planeSymmetries): [picture, name, as said, tooltip], in their tiles' order
 const SYMMETRIES = { none: ['symNone', 'None', '', 'The start as it is laid, no copy'],

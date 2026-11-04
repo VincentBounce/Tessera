@@ -1785,3 +1785,27 @@ Four tilings of two kinds of corners (Wikipedia, *Euclidean tilings by convex re
 | Demi 20 | **B367/S023/C4** (Demi 20 sparks) | 0.162 | 321–2,383 | a methuselah of 4 cells, gen 1,590 |
 
 Demi 13's B357/S0345 scores best of the four (0.84). Ships on Demi 2, Demi 10 (B29/S168, B29/S169) and Demi 20 (B348/S135/C5, its 17th rule tried); none on Demi 13 in 23 rules (6 with births on 2).
+
+## ◆ ▦ The rules that had no famous pattern (2026-11-04)
+
+22 rules of the 2D grids had none in Draw; `tools/tilings/famous.js`, taught squares, triangles, Cairo and kites as the
+app lays them (its finds played in the app by Draw: the same periods, the kites' methuselahs to the same generation),
+found some for 14 (17 minutes):
+
+| Grid | Rule | Found |
+|---|---|---|
+| Cairo | B2v02.3v1/S156v2 | a methuselah of 9 cells, gen 4,359 ([famous](http://localhost:8340/#w=life2dCairo&r=B2v02.3v1/S156v2&s=96&pop=famous.30.1)); an oscillator of 4 cells, period 2 |
+| Squares | B39/S2389 | the glider; a methuselah of 10 cells, gen 1,243 ([famous](http://localhost:8340/#w=life2d&r=B39/S2389&s=96&pop=famous.30.1)) |
+| Squares | B389/S23 | the glider; a methuselah of 11 cells, gen 1,108 |
+| Squares | B346/S01458 | an oscillator of 9 cells, **period 44** ([famous](http://localhost:8340/#w=life2d&r=B346/S01458&s=96&pop=famous.30.1)) |
+| Squares | B347/S2/C3, B3478/S2/C3 | an oscillator of 8 cells (2 dying), period 4 |
+| Triangles | B346/S01458 | an oscillator of 3 cells, period 2 |
+| Kites | B3/S123v0257/C5 | a methuselah of 10 cells, gen 788; an oscillator of 6 cells, period 5 |
+| Kites | B34v1236/S0127/C4 | a methuselah of 9 cells, gen 581; an oscillator of 6 cells, period 8 |
+| Kites | B3v012/S0234v3 | a methuselah of 11 cells, gen 544; an oscillator of 3 cells, period 2 |
+| Kites | B3/S12v1.3 | a methuselah of 12 cells, gen 432; an oscillator of 4 cells, period 6 |
+| Kites | B3v1235v23/S123v012/C5 | a ship of 9 cells, period 6; an oscillator of 6 cells, period 5 |
+| Kites | B2v01.3v234/S08/C5, B2v01.37/S0/C5 | a ship of 8 cells, period 3 |
+
+None for B346/S01458 on Rhombitri, Snub tri, Tetrakis, Kisrhombille, Snub square and kites, B24/S0345/C4 on Elongated,
+and B2/S2/C25 and B1357/S1357 on squares (their small starts all die or fill the grid).

@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.22';
+const VERSION = '0.4.23';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -7306,7 +7306,9 @@ let ghost = null;  // the cell under the pointer while drawing, where the brush 
 let cleared = null;  // the cells Clear took away, back with Undo until something else is drawn or started
 // Draw's patterns, each for the rules it was found with (a rule of your own: all its grid's): [id, grid,
 // rules, name, RLE (the plane's rows: two triangles or pentagons a square, its first square an even one
-// on Cairo; o or A alive, B C… dying), what it does, its picture (5 × 5 pixels; else its cells)]
+// on Cairo; o or A alive, B C… dying), what it does, its picture (5 × 5 pixels; else its cells)]; a disc's (the grids that
+// never repeat, see CENTRED), its cells [x, y, state] by their middles from the disc's middle instead of an RLE, then null,
+// then whether it lies 6 from the middle (for colours: a copy a colour) or at it
 const BRUSH_CELL = ['cell', '', [], 'Cell', 'o!', 'one cell, again to change its state', '.....,.....,..o..'];
 const DRAW_PATTERNS = [
   ['glider', 'square', ['B3/S23', 'B36/S23', 'B3/S2-i34q', 'B2i34c/S2-i3'], 'Glider', 'bo$2bo$3o!', 'flies off diagonally', '.....,..o..,...o.,.ooo.'],
@@ -7538,7 +7540,6 @@ const DRAW_PATTERNS = [
   ['twistembers-osc', 'twisttri', ['B235/S0457/C5'], 'Oscillator', '3.AB.A$AB.2B.A$A2.A!', 'period 30 · 10 cells'],
   ['twistembers-meth', 'twisttri', ['B235/S0457/C5'], 'Methuselah', '8.A$A.A.2A.A!', 'settles at generation 863 · 6 cells'],
 ];
-const DRAW_BY_ID = new Map([BRUSH_CELL, ...DRAW_PATTERNS].map((p) => [p[0], p]));
 // the symmetries a start may have (see planeSymmetries): [picture, name, as said, tooltip], in their tiles' order
 const SYMMETRIES = { none: ['symNone', 'None', '', 'The start as it is laid, no copy'],
                      half: ['symHalf', 'Half turn', 'turned by half a turn', 'Half of the start turned by half a turn: two copies'],
@@ -8694,6 +8695,7 @@ function renderPlaneRow() {
       b.hidden = !(p[1] === cells && p[2].includes(rule));
       b.disabled = true;
       b.classList.remove('active');
+      if (!b.hidden) discCard(b, p);
     }
     $('drawNote').hidden = [...$('brushCards').children].some((b) => !b.hidden);
     return;
@@ -8727,6 +8729,7 @@ function renderPlaneRow() {
     b.classList.toggle('active', p[0] === brush.id);
     b.hidden = !fits(p);
     b.querySelector('.mode-detail').textContent = p[5] + (mine && p[2].length ? ` · ${p[2][0]}` : '');  // your own rule: which rule it is for
+    if (!b.hidden) discCard(b, p);
     if (p[0] === 'cell' && b.dataset.kind !== kind) {  // the cell: one of this grid's (a hat: its drawing), at the patterns' scale
       b.querySelector('.mode-icon').innerHTML = APERIODIC[kind] ? icon(kind) : cellsIcon(kind, 'A!');
       b.dataset.kind = kind;
@@ -8758,13 +8761,19 @@ function renderDrawTools() {
   const kind = MODES[$('mode').value].plane, away = drawAway(), why = "away from gen 0: its start's cells are drawn there";
   const grey = (b, own = false, ownWhy = '') => { b.disabled = away || own; b.dataset.greyed = away ? why : own ? ownWhy : ''; };
   for (const b of $('brushCards').children) grey(b);
-  grey($('brushTurn'), brush.id === 'cell' || PATTERN_TURNS[kind] === 1, 'for a cell, or on a grid a pattern cannot turn on');
+  grey($('brushTurn'), brush.id === 'cell' || PATTERN_TURNS[kind] === 1, 'for a cell, or on a grid a pattern cannot turn on (a disc\'s: turned towards the cell clicked)');
   grey($('brushFlip'), brush.id === 'cell' || !canMirror(kind), 'for a cell, or on a grid a pattern cannot mirror on');
   grey($('clearDrawn'), !cleared && !population.size, 'no cell drawn');
   grey($('openPng'), kind !== 'square', 'on a grid of squares only (a pixel a square)');
   $('brushColours').classList.toggle('off', away);
   $('drawFromStart').disabled = !away;
   $('drawFromStart').dataset.greyed = away ? '' : 'at gen 0 already';
+}
+// a disc pattern's card: its picture once its disc is built (see discIcon; made as it first shows, not 535 at the start)
+function discCard(b, p) {
+  if (!discPattern(p) || b.dataset.kind === p[1] || flatGrid()?.kind !== p[1]) return;
+  b.querySelector('.mode-icon').innerHTML = discIcon(p[1], p[4]);
+  b.dataset.kind = p[1];
 }
 // A grid's wall (dead edges): the cells just outside it that touch one of its cells, a cell thick whatever the tiling (its
 // rhombus's or lattice cell's row round it, kept where it touches); once a grid
@@ -9051,7 +9060,11 @@ function brushCells() {
 // cell's; round a torus, else cut off at the grid's edges): [x, y, state]
 function brushAt([cx, cy]) {
   if (brush.id === 'cell') return [[cx, cy, 1]];  // one cell: the one pointed at, whichever way it lies
-  const { kind, xy } = walk.plane;
+  const { kind, xy } = walk.plane, p = DRAW_BY_ID.get(brush.id);
+  if (discPattern(p)) {  // a disc's: at its middle (no move keeps the disc), turned (as the figure turns) the nearest towards the cell pointed at
+    const D = discCells(kind), m = cellMiddle(kind, cx, cy), step = (2 * Math.PI) / figureTurns(kind);
+    return (D.laid(p[4], Math.round((Math.atan2(m[1] - D.o, m[0] - D.o) - D.way(p[4])) / step) * step) ?? []).map(([t, v]) => [...xy(t), v]);
+  }
   return patternAt(0, 1, brushCells(), true, cellMiddle(kind, cx, cy), true).map(([t, v]) => [...xy(t), v]);
 }
 // the brush under the pointer, half seen
@@ -9073,8 +9086,11 @@ function drawGhost() {
   turnLayer(ctx, 0);
 }
 // a pattern's picture: its own cells, fitted in the icon (dying ones fainter)
-function cellsIcon(kind, rle) {
-  const polys = orientPattern(kind, rle, 0, false).map(([x, y, v]) => [planeCorners(kind, x, y), v]), all = polys.flatMap((p) => p[0]);
+const cellsIcon = (kind, rle) => polysIcon(orientPattern(kind, rle, 0, false).map(([x, y, v]) => [planeCorners(kind, x, y), v]));
+// a disc's pattern (see DRAW_PATTERNS), on the disc shown (see flatGrid): its cells as they lie at its middle
+const discIcon = (kind, cells) => polysIcon((discCells(kind).laid(cells, 0) ?? []).map(([t, v]) => [planeCorners(kind, ...flatGrid().xy(t)), v]));
+function polysIcon(polys) {  // (cells' corners and states)
+  const all = polys.flatMap((p) => p[0]);
   const x0 = Math.min(...all.map((p) => p[0])), y0 = Math.min(...all.map((p) => p[1])), w = Math.max(...all.map((p) => p[0])) - x0, h = Math.max(...all.map((p) => p[1])) - y0;
   const size = Math.max(w, h, 3);  // (at least 3 cells: a small one as big as in the others), the cells in its middle
   return `<svg class="icon rule-icon" viewBox="${x0 - (size - w) / 2 - 0.2} ${y0 - (size - h) / 2 - 0.2} ${size + 0.4} ${size + 0.4}" aria-hidden="true">${polys
@@ -11588,8 +11604,8 @@ function sheetIndex(g) {
   return (g.famousIndex = { find });
 }
 // The grids that never repeat: patterns found at their middle (tools/tilings/centred.js; no lattice to move them on, so
-// Famous as Centered, one colour), their cells as their middles' offsets from the patch's middle, each turned as the
-// figure turns: [rule, what, cells [x, y, state], words]
+// Famous as Centered, one colour; Draw lays them at the middle), their cells as their middles' offsets from the patch's
+// middle, each turned as the figure turns: [rule, what, cells [x, y, state], words]; Draw's patterns (see DRAW_PATTERNS)
 const CENTRED_OFF = {  // (the same, 6 from the middle: with colours)
   pinwheel: [
     ['B37/S016', 'Oscillator', [[3.921,-3.412,1],[3.004,-1.996,1],[4.588,-3.079,1]], 'period 2 · 3 cells'],
@@ -12227,37 +12243,54 @@ const CENTRED = {
     ['B39/S3457/C4', 'Methuselah', [[-0.762,-0.762,1],[0.762,-0.762,1],[-0.279,-1.041,1],[-1.041,-0.279,1],[-1.041,0.279,1],[1.041,-0.279,1],[-0.279,1.041,1],[0.279,1.041,1],[1.041,-1.802,1],[1.802,-1.041,1],[-1.802,1.041,1],[-1.041,1.802,1],[1.041,1.802,1],[0,-2.081,1],[0,2.081,1],[0.762,-2.843,1],[2.843,-0.762,1],[-2.843,0.762,1],[2.843,0.762,1]], 'settles at generation 210 · 19 cells'],
     ['B39/S3457/C4', 'Seed', [[-0.762,-0.762,1],[0.762,-0.762,1],[-0.279,-1.041,1],[1.041,-0.279,1],[0.279,1.041,1],[-1.041,-1.802,1],[0,-2.081,1],[-0.762,-2.843,1]], 'keeps spreading · 8 cells']],
 };
-// with colours (K dividing its turns): those found 6 from the middle (CENTRED_OFF), a copy a colour, in its slice
-function centredChoices(kind, K, rule, mine, any, centred = true) {
-  const { W, xy, n: cells } = flatGrid(), o = (W - 1) / 2, n = figureTurns(kind), out = Array.from({ length: K }, () => []);
-  // (a rosette sphere's two colours: one colour's, the same at each pole, see poleColours)
-  if (poleColours(walk.geo, K)) return [0, 1].map((i) => centredChoices(kind, 1, rule, mine, any, centred)[0].map((cs) => cs.map((v, j) => (j % 2 ? colourState(i, Math.floor((v - 1) / walk.life.colours) + 1) : v + i * walk.geo.south))));
-  if (K > 1 && n % K) return out;
-  const sets = centred ? [(K > 1 ? CENTRED_OFF : CENTRED)[kind]] : [CENTRED[kind], CENTRED_OFF[kind]], figs = sets.flatMap((x) => x ?? []).filter((p) => mine || p[0] === rule);
-  // the cell whose middle is at a place, within 0.05 (its middles by squares of 0.1: the 9 round a place looked in; those within
-  // the figures' reach only)
-  const reach = Math.max(0, ...figs.flatMap(([, , cells]) => cells.map(([x, y]) => Math.hypot(x, y)))) + 1;
+// the discs' patterns among Draw's (one list for Draw, Famous and Centered), each its rule's, in the tables' order
+for (const [table, off] of [[CENTRED, false], [CENTRED_OFF, true]]) for (const [kind, list] of Object.entries(table)) {
+  list.forEach(([rule, name, cells, what], i) => DRAW_PATTERNS.push([`${kind}-${off ? 'off' : 'mid'}-${i}`, kind, [rule], name, cells, what, null, off]));
+}
+const DRAW_BY_ID = new Map([BRUSH_CELL, ...DRAW_PATTERNS].map((p) => [p[0], p]));
+const discPattern = (p) => typeof p[4] !== 'string';  // (a disc's: its cells by their middles, see DRAW_PATTERNS)
+// a disc's cells by their middles, from its middle (the shown grid's, see flatGrid): laid(cells, a), a disc pattern's cells
+// turned by a round the middle, [cell, state] (null if one falls off: each the cell whose middle is within 0.05 of its place,
+// by squares of 0.1, the 9 round it looked in; those within its patterns' reach only); way(cells), the way a pattern lies from
+// the middle (its cells' sum)
+let discCellsMemo = null;
+function discCells(kind) {
+  const { W, xy, n } = flatGrid(), id = `${kind}|${W}|${n}`;
+  if (discCellsMemo?.id === id) return discCellsMemo;
+  const o = (W - 1) / 2, reach = Math.max(0, ...DRAW_PATTERNS.filter((p) => p[1] === kind && discPattern(p)).flatMap((p) => p[4].map(([x, y]) => Math.hypot(x, y)))) + 1;
   const box = new Map(), mid = [], sq = (x, y) => `${Math.floor(x * 10)},${Math.floor(y * 10)}`;
-  for (let t = 0; t < cells; t++) {
+  for (let t = 0; t < n; t++) {
     const m = cellMiddle(kind, ...xy(t)), p = [m[0] - o, m[1] - o];
     if (Math.hypot(...p) < reach) { mid[t] = p; (box.get(sq(...p)) ?? box.set(sq(...p), []).get(sq(...p))).push(t); }
   }
-  const at = { get: (x, y) => { for (let i = -1; i <= 1; i++) for (let j = -1; j <= 1; j++) for (const t of box.get(sq(x + i / 10, y + j / 10)) ?? []) if (Math.hypot(mid[t][0] - x, mid[t][1] - y) < 0.05) return t; } };
-  const laid = (cells, a, i) => {  // (its cells turned by a, in colour i's states; none if one falls off)
-    const c = Math.cos(a), s = Math.sin(a), cs = [];
-    for (const [x, y, v] of cells) { const t = at.get(c * x - s * y, s * x + c * y); if (t === undefined) return null; cs.push(t, colourState(i, v)); }
-    return Int32Array.from(cs);
+  const at = (x, y) => { for (let i = -1; i <= 1; i++) for (let j = -1; j <= 1; j++) for (const t of box.get(sq(x + i / 10, y + j / 10)) ?? []) if (Math.hypot(mid[t][0] - x, mid[t][1] - y) < 0.05) return t; };
+  const laid = (cells, a) => {
+    const c = Math.cos(a), s = Math.sin(a), out = [];
+    for (const [x, y, v] of cells) { const t = at(c * x - s * y, s * x + c * y); if (t === undefined) return null; out.push([t, v]); }
+    return out;
   };
+  const way = (cells) => Math.atan2(cells.reduce((a, c) => a + c[1], 0), cells.reduce((a, c) => a + c[0], 0));
+  return (discCellsMemo = { id, o, laid, way });
+}
+// with colours (K dividing its turns): those found 6 from the middle (CENTRED_OFF), a copy a colour, in its slice
+function centredChoices(kind, K, rule, mine, any, centred = true) {
+  const { W, xy } = flatGrid(), o = (W - 1) / 2, n = figureTurns(kind), out = Array.from({ length: K }, () => []);
+  // (a rosette sphere's two colours: one colour's, the same at each pole, see poleColours)
+  if (poleColours(walk.geo, K)) return [0, 1].map((i) => centredChoices(kind, 1, rule, mine, any, centred)[0].map((cs) => cs.map((v, j) => (j % 2 ? colourState(i, Math.floor((v - 1) / walk.life.colours) + 1) : v + i * walk.geo.south))));
+  if (K > 1 && n % K) return out;
+  const figs = DRAW_PATTERNS.filter((p) => p[1] === kind && discPattern(p) && (!centred || p[7] === K > 1) && (mine || p[2].includes(rule)));
+  const D = discCells(kind), laid = (cells, a, i) => D.laid(cells, a)?.flatMap(([t, v]) => [t, colourState(i, v)]);  // (in colour i's states)
+  const lay = (cells, a, i) => { const cs = laid(cells, a, i); return cs && Int32Array.from(cs); };
   // (colours: each copy turned onto its colour's slice, as near its middle line as the figure's turns allow, see planeSlices;
   // one colour: every way the figure turns)
   const mids = K > 1 && centred ? planeSlices(K).spots.map((t) => { const m = cellMiddle(kind, ...xy(t)); return Math.atan2(m[1] - o, m[0] - o); }) : null, step = (2 * Math.PI) / n;
   // Famous (not centred): all of them, the middle's and those off it, every way the figure turns them, each copy whole in its
   // colour's part
   const parts = !centred ? huntParts(0, K, false, false).map((p) => new Set(p)) : null, inPart = (cs, i) => !parts || cs.every((t, j) => j % 2 || parts[i].has(t));
-  for (const [, , cells] of figs) {
-    const own = Math.atan2(cells.reduce((a, c) => a + c[1], 0), cells.reduce((a, c) => a + c[0], 0));  // (its way from the middle)
+  for (const [, , , , cells] of figs) {
+    const own = D.way(cells);
     for (let k = 0; k < (centred && K > 1 ? 1 : n); k++) {
-      const per = Array.from({ length: K }, (_, i) => laid(cells, centred && K > 1 ? Math.round((mids[i] - own) / step) * step : k * step + (2 * Math.PI * i) / K, i));
+      const per = Array.from({ length: K }, (_, i) => lay(cells, centred && K > 1 ? Math.round((mids[i] - own) / step) * step : k * step + (2 * Math.PI * i) / K, i));
       if (per.every((cs, i) => cs && inPart(cs, i))) { per.forEach((cs, i) => out[i].push(cs)); if (any) break; }
     }
   }
@@ -15698,7 +15731,7 @@ $('exportPng').addEventListener('click', () => {
 });
 stage.addEventListener('pointerleave', () => { if (ghost) { ghost = null; drawGhost(); } });
 $('brushCards').replaceChildren(...[BRUSH_CELL, ...DRAW_PATTERNS].map(([id, kind, , name, rle, what, art]) => {
-  const b = card({ pic: art ? pixelIcon(art) : cellsIcon(kind, rle), name, detail: what, byDefault: id === 'cell' ? 'yes' : '', click: () => { brush.id = id; renderPlaneRow(); } });  // (see brush)
+  const b = card({ pic: art ? pixelIcon(art) : typeof rle === 'string' ? cellsIcon(kind, rle) : '', name, detail: what, byDefault: id === 'cell' ? 'yes' : '', click: () => { brush.id = id; renderPlaneRow(); } });  // (see brush)
   b.dataset.brush = id;
   return b;
 }));

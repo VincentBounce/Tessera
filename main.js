@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.109';
+const VERSION = '0.4.110';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -1910,7 +1910,7 @@ function runStop() {
     return end && { n, label: `${fmt(n)} generations max ${end[0]}`, why: end[1] };
   }
   if (randomPrimeSize()) return null;
-  const asked = targetAsked(), unit = readsDigits() ? 'digits' : 'steps', L = walk.loop, total = wholeTotal();
+  const asked = targetAsked(), unit = stepperUnit(), L = walk.loop, total = wholeTotal();
   // (a battle's own end, known as it was fought: not the digits asked meanwhile)
   if (walk.battle?.winner.until) return { n: walk.n, label: `${fmt(walk.n)} steps until ${walk.battle.winner.until} ■`, why: `■ The battle ends at step ${fmt(walk.n)}, ${walk.battle.winner.how}: more digits would change nothing` };
   if (walk.wormEnd && walk.n < asked) return { n: walk.n, label: `${fmt(walk.n)} steps max ✝`, why: loopText() };
@@ -1918,9 +1918,12 @@ function runStop() {
   if (total !== null && total <= asked) return { n: total, label: `all ${fmt(total)} ${unit}`, why: `The number has ${fmt(total)} digits: all walked` };
   return null;
 }
+// what the digits' stepper counts: a walk's steps (a digit read a step); a start by the digits, its digits; a creature by
+// its rule, its steps (no digit read)
+const stepperUnit = () => (NAV[$('mode').value]?.[0] === 'Walk' || !readsDigits() ? 'steps' : 'digits');
 function syncDigitsStepper() {
   const stop = runStop(), size = randomPrimeSize(), gens = gensShown(), asked = size ?? targetAsked(), steps = size ? PRIME_STEPS : DIGIT_STEPS;
-  const unit = gens ? 'generations' : readsDigits() ? 'digits' : 'steps', total = gens || size || walk.loop ? null : wholeTotal();  // (a creature by its rule: steps, no digit read; a loop's, its rounds: see runStop)
+  const unit = gens ? 'generations' : stepperUnit(), total = gens || size || walk.loop ? null : wholeTotal();  // (a loop's, its rounds: see runStop)
   $('digitsLabel').value = stop ? stop.label : size ? `${fmt(size)} digits (p)` : total !== null ? `${fmt(asked)} of ${fmt(total)}` : `${fmt(asked)} ${unit}`;
   $('digitsLabel').title = size ? 'The size of the random prime p, in decimal digits: 100 to 2,000, then Enter (it is walked whole)'
     : `${stop ? `${stop.why}\n` : ''}Type a number of ${unit}, from ${fmt(DIGIT_STEPS[0])} to ${fmt(targetMost())}, then Enter\nLast picked: ${fmt(target)}`;

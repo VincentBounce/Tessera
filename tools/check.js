@@ -506,7 +506,7 @@ async function checkKnown(fail) {
 function checkMarks(fail) {
   for (const [kind, t] of Object.entries(TILINGS)) {
     const others = Object.keys(MODES).filter((w) => MODES[w].life && !MODES[w].margolus && !MODES[w].loops && !MODES[w].elementary && lifeMark(MODES[w]) === t.mark && MODES[w].plane !== kind && FOLDED[MODES[w].sphere]?.kind !== kind
-      && !(kind === 'tetrakis' && MODES[w].sphere?.endsWith('Tetrakis')));  // (the solids of squares cut as tetrakis: its triangles, see TETRAKIS_SOLIDS)
+      && !(kind === 'tetrakis' && MODES[w].sphere?.endsWith('Tetrakis')) && SPHERES[MODES[w].sphere]?.tiling !== kind);  // (a surface of its cells: see SPHERES' tiling)  // (the solids of squares cut as tetrakis: its triangles, see TETRAKIS_SOLIDS)
     if (others.length) fail(`${t.name}'s mark ${t.mark} also ${others.join(', ')}'s: their rules shown on it`);
   }
   return 1;
@@ -615,6 +615,23 @@ window.rosetteSphereSizes = (most = 100) => {
   }
   return `const ROSETTE_SPHERES = { ${Object.entries(out).map(([k, Ws]) => `${k}: [${Ws.join(', ')}]`).join(', ')} };`;
 };
+// the twisted sphere at a few sizes: its cells as many as said (3F − 4), each corner of three of them (two cells and a triangle:
+// closed, no gap), a hexagon 12 neighbours, a pentagon 10, a triangle 3 (Twisted's, see twistedSphereMesh)
+function checkTwistedSphere(fail) {
+  let checked = 0;
+  for (const f of [2, 5, 16]) {
+    const g = SPHERES.twistedsphere.mesh(f), k = g.sides, corners = (t) => [...new Set(g.poly.subarray(k * t, k * t + k))], at = new Map();
+    if (g.n !== SPHERES.twistedsphere.tiles(f)) fail(`twisted sphere ${f}: ${g.n} cells, ${SPHERES.twistedsphere.tiles(f)} said`);
+    for (let t = 0; t < g.n; t++) for (const v of corners(t)) (at.get(v) ?? at.set(v, []).get(v)).push(t);
+    if ([...at.values()].some((ts) => ts.length !== 3)) fail(`twisted sphere ${f}: a corner not of three cells`);
+    const kinds = {};  // (by its corners: its neighbours, those sharing one)
+    for (let t = 0; t < g.n; t++) { const c = corners(t), nb = new Set(c.flatMap((v) => at.get(v))).size - 1, key = `${c.length}:${nb}`; kinds[key] = (kinds[key] ?? 0) + 1; }
+    const want = { '12:12': 10 * f * f - 10, '10:10': 12, '3:3': 20 * f * f };
+    if (Object.keys(kinds).length !== 3 || JSON.stringify(kinds, Object.keys(want)) !== JSON.stringify(want)) fail(`twisted sphere ${f}: cells (corners:neighbours) ${JSON.stringify(kinds)}, ${JSON.stringify(want)} by construction`);
+    checked++;
+  }
+  return checked;
+}
 // each rosette sphere at its smallest and largest size: its rims paired within ROSETTE_BITE, closed (each side two tiles'),
 // its cells as many as said
 function checkRosetteSpheres(fail) {
@@ -643,7 +660,7 @@ function checkRosetteSpheres(fail) {
 
 window.tesseraCheck = async ({ parts = false, known = false, crawl: andCrawl = false, deep: andDeep = false, fuzz: actions = 0, cold = false, colours = false, seed = Date.now() % 1e6, from, only } = {}) => {
   const failures = [], fail = (s) => { failures.push(s); localStorage.tesseraDeepFailures = JSON.stringify(failures); };
-  let checked = checkMeshes(fail) + checkBlockWraps(fail) + checkDiscs(fail) + checkTips(fail) + checkMarks(fail) + checkRosetteSpheres(fail) + await checkSheets(fail);
+  let checked = checkMeshes(fail) + checkBlockWraps(fail) + checkDiscs(fail) + checkTips(fail) + checkMarks(fail) + checkRosetteSpheres(fail) + checkTwistedSphere(fail) + await checkSheets(fail);
   if (known) checked += await checkKnown(fail);
   if (andCrawl) checked += await crawl(fail);
   if (actions) checked += await fuzz(fail, actions, seed, cold);

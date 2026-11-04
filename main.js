@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.70';
+const VERSION = '0.4.71';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -7143,7 +7143,7 @@ function battlePlayer(g, grid, S, starts, digits, pen = penetration) {
     if (chained) {  // (heads added, their walls, then each head on an enemy's chain dents it: see dent)
       const hits = i > 0 ? rest.flatMap((s) => rest.filter((o) => o !== s && alive(o, places[s][i])).map((o) => [o, s])) : [];
       rest.forEach((s) => take(s, i));
-      if (i > 0) rest.forEach(grow);
+      if (i > 0) rest.forEach((s) => { grow(s); eraseLoop(s); });  // (back on its own line with no land closed: the loop let go all the same)
       for (const [o, s] of hits) dent(o, places[s][i], s);
       peak = Math.max(peak, ...size);
       return;
@@ -7292,10 +7292,27 @@ function battlePlayer(g, grid, S, starts, digits, pen = penetration) {
       cut(s, i - 1);
       return;
     }
+    // along the grid: its head back on its own chain, only the loop let go (its chain after its corner's earlier node,
+    // its head among them): its line stays, a path with no loop; else (a loop closed by a way round) its body only its head
+    if (eraseLoop(s)) return;
     const C = chains[s];
     for (let x = C.prev[C.head]; x >= 0; x = C.prev[C.head]) unlink(s, x);
     cutsOf[s].fill(0);
     freshWalls(s);
+  };
+  // s's head on a corner already in its chain: the loop since let go (its walls with it), its line a path again (false: none)
+  const eraseLoop = (s) => {
+    const C = chains[s], h = C.head, earlier = C.nodes.get(C.corner[h]).filter((x) => x !== h).at(-1);
+    if (earlier === undefined) return false;
+    for (let x = C.next[earlier]; x >= 0; x = C.next[earlier]) {
+      const j = L.index.get(G.key(C.corner[C.prev[x]], C.corner[x]));
+      if (j !== undefined) cutsOf[s][j]--;
+      unlink(s, x);
+    }
+    const parent = wallsOf[s], Q = chainOf(s);
+    freshWalls(s);
+    for (let m = 1; m < Q.length; m++) { const a = unionFind(parent, Q[m - 1]), b = unionFind(parent, Q[m]); if (a !== b) parent[b] = a; }
+    return true;
   };
   // each walker's worth as it is: its body; with bite, its land (its tiles, counted)
   const worth = () => (bite ? [...landCount] : [...size]);
@@ -15386,7 +15403,7 @@ function gpuSurface(paint, path) {
   // (Penetrating 2 along the grid: its chains made again each step, see pathSegments)
   const segs = (path || lines) && cur > 0 && (D.keys.segs !== walk.wx || D.keys.segsM !== sh.m || (P?.chained && D.keys.segsCur !== cur)) ? pathSegments(P) : null;
   if (segs) { gpuBuffer('ribbon', segs.data); D.segsAt = segs.at; D.segsRanges = segs.ranges; D.keys.segs = walk.wx; D.keys.segsM = sh.m; D.keys.segsCur = cur; }
-  const ranges = !(path || lines) || cur <= 0 || !D.segsAt ? [] : !lines ? [[0, D.segsAt[cur]]] : P.chained ? D.segsRanges
+  const ranges = !(path || lines) || cur <= 0 || !(P?.chained ? D.segsRanges : D.segsAt) ? [] : !lines ? [[0, D.segsAt[cur]]] : P.chained ? D.segsRanges
     : P.living().map((s) => [D.segsAt[s][Math.max(1, P.from[s])], D.segsAt[s][P.step + 1]]);
   // the tiles, their grid and the path, into pass p (0 the frame; 1, 2 Glass's)
   const drawAll = (rp, pass) => {

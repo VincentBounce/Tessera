@@ -58,7 +58,7 @@ const SPECTRE = (() => {
     // as many as 20 W² spectres (the disc well inside); round their mean place, the disc of W² (radius W / √π) and its walls'
     // room only
     let sys = base;
-    while (sizeOf(sys.Delta).n < 20 * W * W) sys = supertiles(sys);
+    while (sizeOf(sys.Delta).n < 20 * 1024 ** 2) sys = supertiles(sys);  // (one tiling for every size, the largest's: main.js's DISC_TOP)
     const mid = sizeOf(sys.Delta).c;
     const items = spectresNear(sys.Delta, ident, mid, (W / Math.sqrt(Math.PI) + 6) / S, []).map((T) => { const p = spectre.map((q) => at(T, q)).map(([x, y]) => [x * S, -y * S]); return { p, m: [0, 1].map((d) => p.reduce((s, q) => s + q[d], 0) / 14) }; });
     return discPatch(items, W, (h) => h.p, [mid[0] * S, -mid[1] * S]);

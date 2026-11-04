@@ -11,7 +11,7 @@ const PINWHEEL = (() => {
     // the big triangle, its legs 2L and L, inflated n times (L = √5ⁿ: its tiles' legs 2 and 1, a square unit each), its
     // incircle (radius L (3 − √5) / 2, its middle that far from both legs) round the disc of W² tiles (radius W / √π) and its walls
     let n = 0;
-    while ((5 ** (n / 2) * (3 - Math.sqrt(5))) / 2 < W / Math.sqrt(Math.PI) + 5) n++;
+    while ((5 ** (n / 2) * (3 - Math.sqrt(5))) / 2 < 1024 / Math.sqrt(Math.PI) + 5) n++;  // (one tiling for every size, the largest's: main.js's DISC_TOP)
     const L = 5 ** (n / 2), r = (L * (3 - Math.sqrt(5))) / 2;
     let tris = [[[0, 0], [2 * L, 0], [0, L]]];  // a tile: its right angle's corner, its long leg's end, its short leg's
     for (let k = 0; k < n; k++) tris = trianglesNear(tris.flatMap(([R, P, Q]) => {

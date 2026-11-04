@@ -8,7 +8,7 @@ self.onmessage = ({ data: { kind, rule, W, trials, from, at = [0, 0] } }) => {  
   const r = mid.map(([x, y]) => Math.hypot(x, y)), dead = new Set(h.dead), live = (t) => !dead.has(t) && G.start[t] < G.start[t + 1];
   const d = mid.map(([x, y]) => Math.hypot(x - at[0], y - at[1]));
   const core = [...Array(n).keys()].filter(live).sort((u, v) => d[u] - d[v]).slice(0, 30), far = W / 2 - 5;  // (the 30 nearest it: round a ring's hole too)
-  const { B, S, C } = parse(rule.replace(/v([0-3]+)/gi, (_, d) => [...d].map((k) => 'abcd'[k]).join('')));  // (the app's v0… as the engine's a…)
+  const { B, S, C } = parse(rule);  // (the app's own notation: see parse)
   let seed = 977 + from;
   const rnd = () => ((seed = (seed * 1103515245 + 12345) >>> 0) / 4294967296);
   let osc = null, meth = null, spread = null;

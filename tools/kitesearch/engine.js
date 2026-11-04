@@ -7,7 +7,9 @@
 // The engine: a soup until it repeats, small starts and what they leave, a pattern alone (a ship: back moved)
 // a rule's counts: B and S by c live neighbours and k of them by a corner only (c·4 + k); a digit alone, any k; a digit and
 // letters (a, b, c, d: 0, 1, 2, 3 by a corner), those k only (the flowers' letters: B3a, born with 3 all by a side)
-const parse = (rule) => {
+// a rule, the engine's letters (3abc: 3 with none to two by a corner only) or the app's (3v012, a "." ending them before a count)
+const parse = (text) => {
+  const rule = text.replace(/v([0-3]+)/gi, (_, d) => [...d].map((k) => 'abcd'[k]).join('')).replace(/\./g, '');
   const m = rule.match(/B([\da-d]*)\/S([\da-d]*)(?:\/C(\d+))?/), B = new Uint8Array(40), S = new Uint8Array(40);
   for (const [X, text] of [[B, m[1]], [S, m[2]]]) for (const [, d, ls] of text.matchAll(/(\d)([a-d]*)/g)) for (let k = 0; k < 4; k++) if (!ls || ls.includes('abcd'[k])) X[4 * d + k] = 1;
   return { B, S, C: Number(m[3] ?? 2) };

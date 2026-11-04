@@ -113,7 +113,7 @@ const HAT = (() => {
     // the patch: as many as 20 W² hats (the disc well inside); round its hats' mean place, the disc of W² (radius W / √π) and
     // its walls' room only
     let shapes = { H: H0, T: T0, P: P0, F: F0 };
-    while (sizeOf(patchOf(shapes)).n < 20 * W * W) shapes = metatilesOf(patchOf(shapes));
+    while (sizeOf(patchOf(shapes)).n < 20 * 1024 ** 2) shapes = metatilesOf(patchOf(shapes));  // (one tiling for every size, the largest's: main.js's DISC_TOP)
     const patch = patchOf(shapes), mid = sizeOf(patch).c;
     const hats = hatsNear(patch, ident, mid, (W / Math.sqrt(Math.PI) + 6) / S, []).map((T) => { const q = transPt(T, c); return { T, m: [q.x * S, -q.y * S] }; });
     const poly = (h) => (h.p ??= corners.map((q) => transPt(h.T, q)).map((q) => [q.x * S, -q.y * S]));

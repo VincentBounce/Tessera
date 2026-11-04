@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.87';
+const VERSION = '0.4.88';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -6043,7 +6043,7 @@ function syncSizeStepper() {
   const kind = surfaceOf(MODES[$('mode').value]), f = sphereSize();
   // (a torus that turns: its turn too, 0° or its own)
   const turn = kind && TURNED[kind.replace(/Turned$/, '')] ? ` · ${Math.round(Math.abs(tilesTurn(kind)))}°` : '';  // (as its tiles lie)
-  const label = (f) => { $('sizeLabel').innerHTML = `${sizeShape(kind, f)}${turn}<small>${sizeCells(kind, f)}</small>`; };
+  const label = (f) => { $('sizeLabel').innerHTML = `${sizeShape(kind, f)}${turn}<small>${shortCells(sizeCells(kind, f))}</small>`; };
   if (SPHERES[kind]?.tiles && sel.selectedOptions[0]) label(f);
   else $('sizeLabel').textContent = sel.selectedOptions[0]?.text ?? '';
   sizeTips('size', SPHERES[kind] && sel.selectedOptions[0] ? sizeCells(kind, f, true) : '', [SPHERES[kind] && sel.selectedOptions[0] ? `${sizeHow(kind, f)}\n${sizeSides(kind, f)}`.trim() : '', `\n${lastPicked()}`].filter(Boolean).join('\n'));
@@ -6225,6 +6225,8 @@ const sizeCells = (kind, f, marked = false) => {  // (a solid of hexagons: its h
   if (S.unit === 'hexagons') { const { at, walls } = hexCorners(kind), hex = `${fmt(S.tiles(f) - walls)} hexagons`; return marked ? `{y:${hex}} + {o:${at}}` : `${hex} + ${at}`; }
   return `${fmt(S.tiles(f))} ${S.unit}`;
 };
+// a size's cells as its stepper shows them, short (hexas, pentas: its − and + as wide; its tooltip says them whole)
+const shortCells = (text) => text.replace(/hexagons/g, 'hexas').replace(/pentagons/g, 'pentas');
 const sizeLabel = (kind, f) => (gridSize(kind, f) ? `${sizeShape(kind, f)} ${sizeCells(kind, f)}` : sizeCells(kind, f));
 // A size of its own (a link, a loop found): an extra entry among the usual ones, by rows (a torus,
 // a Möbius strip) or tiles across (a solid); a torus with the usual tiles per row is the usual size
@@ -9713,7 +9715,7 @@ function renderPlaneRow() {
   $('drawNote').hidden = true;
   setTile($('exportPng'), { can: kind === 'square', greyed: 'on a grid of squares only (a pixel a square)' });
   const sides = planeSides(kind);
-  const label = (side) => { $('planeLabel').innerHTML = `${sizeShape(planeKind(kind), side)}<small>${sizeCells(planeKind(kind), side)}</small>`; };  // the size (see gridSize; a rectangle's, if so)
+  const label = (side) => { $('planeLabel').innerHTML = `${sizeShape(planeKind(kind), side)}<small>${shortCells(sizeCells(planeKind(kind), side))}</small>`; };  // the size (see gridSize; a rectangle's, if so)
   label(plane.side);
   sizeTips('plane', sizeCells(planeKind(kind), plane.side), `${gridSize(planeKind(kind), plane.side) ? `${sizeHow(planeKind(kind), plane.side)}\n${sizeSides(planeKind(kind), plane.side)}\n\n` : ''}${lastPicked()}`);
   $('planeDown').disabled = plane.side <= sides[0];

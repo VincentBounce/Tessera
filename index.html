@@ -11,7 +11,7 @@
   <meta property="og:type" content="website">
   <link id="favicon" rel="icon">  <!-- the app's logo, set at start-up (see appLogo) -->
   <meta name="description" content="A walk on a grid in 2D or 3D driven by the base-2 to base-6 digits of π, other constants and large primes.">
-  <link rel="stylesheet" href="style.css?v=0.4.84">
+  <link rel="stylesheet" href="style.css?v=0.4.85">
   <script>  // the theme before the first paint (see applyTheme)
     try { const t = localStorage.getItem('tesseraTheme') || 'system'; document.documentElement.dataset.theme = t === 'system' ? (matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark') : t; } catch { document.documentElement.dataset.theme = 'dark'; }
   </script>
@@ -714,7 +714,7 @@
             <span id="seekCountOpen" class="seek-count"></span>
           </div>
         </div>
-        <div class="bar-title"><span id="barNum" class="bar-num"></span><button id="barRule" class="bar-chip how-it-works" type="button" hidden></button><span id="barLoop" class="bar-chip loop" hidden></span><button id="barBase" class="bar-chip" type="button"></button><span id="rankTitles" class="rank-titles" hidden><span>Alive</span><span title="Its live cells summed over the generations, by how many, till it settles or loops (its size while it lives)">Mean</span><span>Born</span><span>Died</span><span>Ever alive</span></span><span id="seekCount" class="seek-count"></span></div>  <!-- a battle: the ranking's column titles, on the rule's line (folded: Alive) -->
+        <div class="bar-title"><span id="barNum" class="bar-num"></span><button id="barRule" class="bar-chip how-it-works" type="button" hidden></button><span id="barLoop" class="bar-chip loop" hidden></span><button id="barBase" class="bar-chip" type="button"></button><span id="rankTitles" class="rank-titles" hidden></span><span id="seekCount" class="seek-count"></span></div>  <!-- the ranking's column titles (see paintRanking), on the rule's line (folded: its first) -->
         <div id="ranking" class="ranking" hidden></div>  <!-- a battle: the colours ranked by live cells, those died out last -->
         <div class="player-controls">  <!-- the buttons, as wide folded or not; on hover, the speed on their right -->
           <div class="player-main">
@@ -806,10 +806,10 @@
     </div>
   </main>
 
-  <script src="pixelarticons.js?v=0.4.84"></script>
-  <script src="punks.js?v=0.4.84"></script>
-  <script src="loops.js?v=0.4.84"></script>
-  <script src="emoji.js?v=0.4.84"></script>
-  <script src="main.js?v=0.4.84"></script>
+  <script src="pixelarticons.js?v=0.4.85"></script>
+  <script src="punks.js?v=0.4.85"></script>
+  <script src="loops.js?v=0.4.85"></script>
+  <script src="emoji.js?v=0.4.85"></script>
+  <script src="main.js?v=0.4.85"></script>
 </body>
 </html>

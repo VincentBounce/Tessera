@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.84';
+const VERSION = '0.4.85';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -1433,7 +1433,7 @@ function describe(base, available) {
   $('barBase').textContent = colours ? `${colours} colours` : `base ${base}`;
   $('barBase').classList.remove('how-it-works');  // (a walk's base: a click, its number; see barBase's click)
   $('barBase').title = 'A click: the number, its digits in this base';
-  $('barBase').parentElement.classList.toggle('life', !!creature);  // (a creature laid out as Life's: its title, its chips under it)
+  $('barBase').parentElement.classList.toggle('life', !!creature || battleOn());  // (a creature, a battle laid out as Life's: its title, its chips and ranking's titles under it)
   if (colours) base = colours;  // its chips, one per colour
   $('barLoop').hidden = true;  // (a reversible one's: not back yet; a walk's loop, its title's link, see updateStats)
   $('ruleChips').replaceChildren();
@@ -6910,8 +6910,7 @@ function buildGridWalk(seq, mode, ahead = new Uint8Array(0)) {
       put(i);
       rec.step(i, seq[i - 1], null);  // (its state: all the walks', not watched)
     }
-    rec.finish(kind, g, { vert, stepTiles, n: P.n });
-    walk.battle = battleOf(P);
+    rec.finish(kind, g, { vert, stepTiles, n: P.n, battle: battleOf(P) });  // (the battle set as the walk is: shown at once)
     return;
   }
   for (let i = 0; i < len; i++) {
@@ -6952,8 +6951,7 @@ function buildSphereWalk(seq, mode, ahead = new Uint8Array(0)) {
     const P = battlePlayer(g, false, S, battleStarts(g, state, false, rivals.length + 1), [seq, ...rivals]);
     P.to(Infinity);  // (the whole battle: its end known)
     for (let i = 1; i <= P.n; i++) { put(i, P.places[0][i]); rec.step(i, seq[i - 1], null); }  // (its state: all the walks', not watched)
-    rec.finish(kind, g, { ant: 0, turns, vert: null, stepTiles: null, n: P.n });
-    walk.battle = battleOf(P);
+    rec.finish(kind, g, { ant: 0, turns, vert: null, stepTiles: null, n: P.n, battle: battleOf(P) });  // (the battle set as the walk is: shown at once)
     return;
   }
   for (let i = 0; i < len; i++) {
@@ -7570,6 +7568,9 @@ function battlePlayer(g, grid, S, starts, digits, pen = penetration) {
   };
   // each walker's worth as it is: its body; with bite, its land (its tiles, counted)
   const worth = () => { freshLand(); return bite ? [...landCount] : [...size]; };
+  // each walker's best worth up to each step (its peak), kept as it is played
+  const bestOf = starts.map(() => new Int32Array(len + 1));
+  const keepBest = () => { const w = worth(); for (let s = 0; s < K; s++) bestOf[s][i] = Math.max(i > 0 ? bestOf[s][i - 1] : 0, w[s]); };
   const P = {
     K, g, grid, pen, bite, chained, lined, ownLines: chained || lined, chainOf, lineLinks, places, from, size, dead, alive, living, worth, heads: () => places.map((p) => p[i]),
     get land() { freshLand(); return land; }, remakeLine,  // (remakeLine: a line's land made again whole, to check it)
@@ -7582,8 +7583,9 @@ function battlePlayer(g, grid, S, starts, digits, pen = penetration) {
         contact.forEach((row) => row.fill(null));
       }
       if (i < 0) for (let s = 0; s < K && bite; s++) { freshWalls(s); if (lined) freshLine(s); }
-      while (i < Math.min(j, n)) step();
+      while (i < Math.min(j, n)) { step(); keepBest(); }
     },
+    bestAt: (s) => bestOf[s][Math.max(0, i)],  // (s's peak worth up to the step it is at)
   };
   return P;
 }
@@ -16276,11 +16278,11 @@ function renderWalkGauges() {
   if (walk.battle) {  // a battle: its walkers ranked as Life's colours are (paintRanking): each its body's length, Penetrating its land; ✝ dead
     const { player: D, names } = walk.battle;
     D.to(cur);
-    const w = D.worth();
+    const w = D.worth(), Q = D.places, from = (s) => { const a = placePoint(Q[s][0]), b = placePoint(Q[s][D.step]); return Math.hypot(b[0] - a[0], b[1] - a[1], b[2] - a[2]); };
     $('gauges').hidden = true;
-    $('ranking').hidden = false;
     paintRanking(names.map((name, s) => ({ colour: LIFE_COLOURS[s], name, value: w[s], dead: D.dead[s] >= 0, diedAt: D.dead[s],
-                                             cells: [D.dead[s] < 0 ? `<b>${fmt(w[s])}</b>` : `✝ ${genLink(D.dead[s])}`] })));
+                                             cells: [D.dead[s] < 0 ? `<b>${fmt(w[s])}</b>` : `✝ ${genLink(D.dead[s])}`,
+                                                     D.pen === 6 ? '–' : fmt(D.size[s]), fmt(D.bestAt(s)), from(s).toFixed(1)] })), BATTLE_TITLES);
     return;
   }
   const p = (v) => fmt(Math.round(v * 100) / 100 || 0), P = walkPeak(), gold = 'var(--accent)', c = walk.cells[cur];
@@ -16306,6 +16308,9 @@ const loopMeans = (L) => endShown(L) && L.loopAvg;
 // a loop's mean, as written: ≈, to a tenth, its tenth always (≈ 3,120.0 beside ≈ 2,881.5)
 const meanText = (v) => `≈ ${v.toLocaleString('en', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}`;
 const colourGone = (L, k) => (loopMeans(L) ? L.loopMax[k] === 0 : L.extinctAt?.[k] !== null && L.extinctAt?.[k] !== undefined);
+// the ranking's column titles (a tip: what it counts), Life's and a battle's
+const LIFE_TITLES = [['Alive'], ['Mean', 'Its live cells summed over the generations, by how many, till it settles or loops (its size while it lives)'], ['Born'], ['Died'], ['Ever alive']];
+const BATTLE_TITLES = [['Score', 'Its land (Cut: its body\'s length)'], ['Body', 'Its body\'s length now'], ['Peak', 'Its best score so far'], ['Distance', 'Its head from its start']];
 function renderRanking(L) {
   const K = L.colours;
   $('ranking').hidden = $('rankTitles').hidden = K < 2 || (!!L.loops && !L.lineages);  // (a loop alone: its states, no colours fighting)
@@ -16316,13 +16321,16 @@ function renderRanking(L) {
     const k = c + 1, num = (v) => (mean && L.loopMax[k] > L.loopMin[k] ? meanText(v) : fmt(v));
     return { colour: LIFE_COLOURS[c], name: LIFE_COLOUR_NAMES[c], value: live(k), dead: dead(k), diedAt: L.extinctAt[k],
              cells: [dead(k) ? `✝ ${genLink(L.extinctAt[k])}` : `<b>${num(live(k))}</b>`, fmt(Math.round((foot ?? L.sumBy)[k] / (foot ? Math.max(1, L.stable.T) : L.gen + 1))), fmt(L.bornBy[k]), fmt(L.deadBy[k]), fmt(L.everBy[k])] };
-  }));
+  }), LIFE_TITLES);
 }
 // A ranking, the same for Life's battles and a walk's: a row each (its colour, name, value, dead or not and when, its
 // table's cells, the first its value or ✝ when), its place, its colour, its bar (its share of the living ones' values) and
 // its cells in its colour; the living by value, then the dead, the last died first; each row sliding to its place; all
 // dead, said
-function paintRanking(rows) {
+function paintRanking(rows, titles) {
+  const T = $('rankTitles'), names = titles.map((t) => t[0]).join();
+  if (T.dataset.key !== names) { T.replaceChildren(...titles.map(([name, tip]) => Object.assign(document.createElement('span'), { textContent: name, title: tip ?? '' }))); T.dataset.key = names; }
+  $('ranking').hidden = T.hidden = false;
   const box = $('ranking'), H = 18, key = rows.map((r) => `${r.colour}|${r.name}|${r.cells.length}`).join();
   if (box.dataset.key !== key) {
     box.replaceChildren(...rows.map((row) => {

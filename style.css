@@ -479,7 +479,7 @@ button.bar-chip.active { color: var(--accent); border-color: var(--accent); }
 .bar-title.life > :not(.bar-num, .seek-count) { order: 2; }
 .bar-title.life .seek-count { position: static; flex: none; }  /* (in the line: the title cut short where it meets it, not before) */
 .bar-title .rank-titles { margin-left: auto; align-self: flex-end; display: grid; grid-template-columns: 76px; gap: 6px; font-size: 11px; color: var(--muted); text-align: right; }  /* over the ranking's columns, as wide */
-.bar-title .rank-titles span:not(:first-child) { display: none; }  /* folded: Alive */
+.bar-title .rank-titles span:not(:first-child) { display: none; }  /* folded: its first */
 .stage-bar:hover .bar-title .rank-titles { grid-template-columns: 70px 56px 56px 56px 70px; }
 .stage-bar:hover .bar-title .rank-titles span { display: block; }
 @media (hover: none) { .stage-bar:focus-within .bar-title .rank-titles { grid-template-columns: 70px 56px 56px 56px 70px; } .stage-bar:focus-within .bar-title .rank-titles span { display: block; } }

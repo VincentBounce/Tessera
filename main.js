@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.55';
+const VERSION = '0.4.56';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -6869,6 +6869,22 @@ function buildGridWalk(seq, mode, ahead = new Uint8Array(0)) {
   const key = () => ((v * G.nv + from) * N + ((p + N) % N)) * 2 + q, put = (i) => { rec.put(i, v, G.tileOf[v], at(v)); vert[i] = v; };
   put(0);
   rec.begin(key());  // (corner, the corner it came from)
+  // a duel (see 7.6b): both walks (duelWalks), A's recorded; B's digits null while they are computed: A alone meanwhile
+  const B = duelOn() ? rivalDigits(base, len, buildWalk) : null;
+  if (B?.error) $('status').textContent = `Formula B: ${B.error}`;
+  if (B instanceof Uint8Array) {
+    const D = duelWalks(g, surfaceSteps(g, mode), [v, from], seq, B, true);
+    for (let i = 1; i <= D.steps; i++) {
+      v = D.places[0][i];
+      const sides = G.edgeTiles.get(G.key(vert[i - 1], v));
+      stepTiles[2 * i - 2] = sides[0]; stepTiles[2 * i - 1] = sides[1] ?? sides[0];
+      put(i);
+      rec.step(i, seq[i - 1], null);  // (its state: both walks', not watched)
+    }
+    rec.finish(kind, g, { vert, stepTiles, n: D.steps });
+    walk.duel = duelOf(D, G.nv);
+    return;
+  }
   for (let i = 0; i < len; i++) {
     if (mode.pivot && seq[i]) {  // a turn on the spot: no step
       p = (p + 1) % mode.pivot;
@@ -6903,13 +6919,10 @@ function buildSphereWalk(seq, mode, ahead = new Uint8Array(0)) {
   const B = duelOn() && !ant ? rivalDigits(mode.base, len, buildWalk) : null;
   if (B?.error) $('status').textContent = `Formula B: ${B.error}`;
   if (B instanceof Uint8Array) {
-    const D = duelWalks(g, S, state, seq, B);
-    for (let i = 1; i <= D.steps; i++) { put(i, D.tiles[0][i]); rec.step(i, seq[i - 1], null); }  // (its state: both walks', not watched)
+    const D = duelWalks(g, S, state, seq, B, false);
+    for (let i = 1; i <= D.steps; i++) { put(i, D.places[0][i]); rec.step(i, seq[i - 1], null); }  // (its state: both walks', not watched)
     rec.finish(kind, g, { ant: 0, turns, vert: null, stepTiles: null, n: D.steps });
-    const player = duelPlayer(D.tiles, g.n, D.steps, D.met);
-    let peak = 1;  // (the longest body of the whole duel: the gauges' full bar)
-    for (let i = 0; i <= D.steps; i++) { player.to(i); peak = Math.max(peak, ...player.size); }
-    walk.duel = { met: D.met, nameB: formulaOf($('formulaB').value).sym, player, peak };
+    walk.duel = duelOf(D, g.n);
     return;
   }
   for (let i = 0; i < len; i++) {
@@ -6921,13 +6934,15 @@ function buildSphereWalk(seq, mode, ahead = new Uint8Array(0)) {
 }
 
 /* ---- 7.6b Duel: two numbers' walks on one surface -------------------------------------------- */
-/* Walk › Duel: A's number (Digits) and B's (Digits B) walk the cells of the sphere or the cube at once, a digit each a step, B from the
- * tile opposite A's start (antipodeStart), turning as A does. Each holds the cells it walked, its body, from its tail
- * (its oldest) to its head; a head stepping on the other's body cuts it there: the other loses that cell and all those
- * behind it, to its tail (its own body: nothing). The heads meet (on one tile, or passing each other): the end, the
- * longer body wins. Both walks are built at once (buildSphereWalk), the bodies replayed to the step shown (duelPlayer). */
+/* Walk › Duel: A's number (Digits) and B's (Digits B) walk the sphere or the cube at once, on its cells or along its
+ * grid, a digit each a step, B from the place (tile, or corner) opposite A's start (antipodeStart), turning as A does.
+ * Each holds the places it walked, its body, from its tail (its oldest) to its head; a head stepping on the other's body
+ * cuts it there: the other loses that place and all those behind it, to its tail (its own body: nothing). The heads meet
+ * (on one place, or passing each other): the end, the longer body wins. Along the grid a body is drawn as the tiles
+ * beside its edges. Both walks are built at once (buildSphereWalk, buildGridWalk), the bodies replayed to the step shown
+ * (duelPlayer). */
 let walkTeams = 1;  // a walk's teams: 1 Classic, 2 Duel (as Life's, see renderColours)
-const DUEL_MODES = ['hexSphereWalk', 'icosaLR', 'cubeFlat'];  // (the cells of the sphere and the cube)
+const DUEL_MODES = ['hexSphereWalk', 'icosaLR', 'cubeFlat', 'hexSphereGrid', 'icosaGrid', 'cubeGrid'];  // (the turtles of the sphere and the cube, on cells and along the grid)
 const duelOn = () => walkTeams === 2 && DUEL_MODES.includes($('mode').value);
 // Classic or Duel, under the size and start of a walk on a surface (Life's tiles, see renderColours); Digits B in a duel
 function renderWalkTeams() {
@@ -6939,62 +6954,82 @@ function renderWalkTeams() {
   if (!here) return;
   $('walkTeams').replaceChildren(...[1, 2].map((k) => tile({ pic: colourBlock(k), text: COLOUR_STEP_NAMES[k],
     title: k === 1 ? 'One number walks' : "Two numbers walk, A's (Digits) and B's (Digits B), from opposite tiles: a head on the other's body cuts it there, to its tail; the heads meeting ends it, the longer body wins",
-    on: k === (duelOn() ? 2 : 1), can: k === 1 || DUEL_MODES.includes(w), byDefault: k === 1 ? 'yes' : '', greyed: k === 2 ? 'outside the cells of the sphere and the cube' : '',
+    on: k === (duelOn() ? 2 : 1), can: k === 1 || DUEL_MODES.includes(w), byDefault: k === 1 ? 'yes' : '', greyed: k === 2 ? "outside the sphere's and the cube's turtles" : '',
     click: () => { if (k !== walkTeams) { walkTeams = k; compute(); } } })));
 }
 // B's start: the tile opposite A's (the solid's centre halfway, its mesh its own mirror through it), come in from the
 // tile opposite the one A comes in from
-function antipodeStart(g, [t, entry]) {
-  const k = g.sides, key = (u, s) => [0, 1, 2].map((d) => Math.round(s * g.cen[3 * u + d] * 1e4)).join();
+// Along the grid: the corner opposite A's, come from the corner opposite the one A comes from
+function antipodeStart(g, start, grid) {
+  if (grid) {
+    const V = g.verts, key = (v, s) => [0, 1, 2].map((d) => Math.round(s * V[3 * v + d] * 1e4)).join(), nv = gridGraph(g).nv;
+    g.oppositeCorner ??= new Map(Array.from({ length: nv }, (_, v) => [key(v, 1), v]));
+    const [v, from] = start.map((u) => g.oppositeCorner.get(key(u, -1)));
+    if (v === undefined || from === undefined) throw new Error('no corner opposite the start');
+    return [v, from];
+  }
+  const [t, entry] = start, k = g.sides, key = (u, s) => [0, 1, 2].map((d) => Math.round(s * g.cen[3 * u + d] * 1e4)).join();
   g.opposite ??= new Map(Array.from({ length: g.n }, (_, u) => [key(u, 1), u]));
   const across = (u) => g.opposite.get(key(u, -1)), b = across(t), from = across(g.nbr[k * t + entry]);
   for (let e = 0; e < k; e++) if (g.nbr[k * b + e] === from) return [b, e];
   throw new Error('no tile opposite the start');
 }
-// Both walks of a duel, A's from start, B's from the tile opposite (S: surfaceSteps'): their tiles, a step each a digit,
-// up to the step the heads meet (met: on one tile, or passing each other) or a number's digits end
-function duelWalks(g, S, start, A, B) {
-  const len = Math.min(A.length, B.length), tiles = [new Int32Array(len + 1), new Int32Array(len + 1)];
-  let a = start, b = antipodeStart(g, start), steps = len, met = false;
-  tiles[0][0] = a[0]; tiles[1][0] = b[0];
+// a duel's places: on cells its surface's tiles, along the grid their corners (how many)
+const duelPlaces = (g, mode) => (mode.grid ? gridGraph(g).nv : g.n);
+// Both walks of a duel, A's from start, B's from the place opposite (S: surfaceSteps'): their places (tiles, or corners
+// along the grid), a step each a digit, up to the step the heads meet (met: on one place, or passing each other) or a
+// number's digits end
+function duelWalks(g, S, start, A, B, grid) {
+  const len = Math.min(A.length, B.length), places = [new Int32Array(len + 1), new Int32Array(len + 1)];
+  let a = start, b = antipodeStart(g, start, grid), steps = len, met = false;
+  places[0][0] = a[0]; places[1][0] = b[0];
   for (let i = 0; i < len && !met; i++) {
     const was = [a[0], b[0]];
     a = S.step(a, A[i]); b = S.step(b, B[i]);
-    tiles[0][i + 1] = a[0]; tiles[1][i + 1] = b[0];
+    places[0][i + 1] = a[0]; places[1][i + 1] = b[0];
     met = a[0] === b[0] || (a[0] === was[1] && b[0] === was[0]);
     if (met) steps = i + 1;
   }
-  return { tiles, steps, met };
+  return { places, steps, met };
 }
 
-// The bodies at step i (to(i): on from the step it was at, from the start again to go back): owner and at, each tile's
-// walk (1 A, 2 B, 0 none) and the step it was taken; a walk's body, its tiles taken from step from[s] on (alive), size[s]
-// of them. At the step the heads meet, nothing more taken or cut.
-function duelPlayer(tiles, cells, n, met) {
-  const owner = new Uint8Array(cells), at = new Int32Array(cells), from = [0, 0], size = [0, 0];
+// The bodies at step i (to(i): on from the step it was at, from the start again to go back): owner and at, each place's
+// walk (1 A, 2 B, 0 none) and the step it was taken; a walk's body, its places taken from step from[s] on (alive), size[s]
+// of them; held(s, j): step j's place still s's, taken then (along the grid: the edge it came by, its body's). At the step
+// the heads meet, nothing more taken or cut.
+function duelPlayer(places, count, n, met) {
+  const owner = new Uint8Array(count), at = new Int32Array(count), from = [0, 0], size = [0, 0];
   let i = -1;
   const alive = (s, c) => owner[c] === s + 1 && at[c] >= from[s];
-  const take = (s, j) => { const c = tiles[s][j]; if (!alive(s, c)) size[s]++; owner[c] = s + 1; at[c] = j; };
+  const take = (s, j) => { const c = places[s][j]; if (!alive(s, c)) size[s]++; owner[c] = s + 1; at[c] = j; };
   const cut = (s, j) => {  // s's body from its tail to step j, gone
-    for (let q = from[s]; q <= j; q++) { const c = tiles[s][q]; if (owner[c] === s + 1 && at[c] === q) { owner[c] = 0; size[s]--; } }
+    for (let q = from[s]; q <= j; q++) { const c = places[s][q]; if (owner[c] === s + 1 && at[c] === q) { owner[c] = 0; size[s]--; } }
     from[s] = j + 1;
   };
   const step = () => {
     i++;
     if (i === n && met) return;
-    const heads = [tiles[0][i], tiles[1][i]], hit = [alive(1, heads[0]) ? at[heads[0]] : -1, alive(0, heads[1]) ? at[heads[1]] : -1];
+    const heads = [places[0][i], places[1][i]], hit = [alive(1, heads[0]) ? at[heads[0]] : -1, alive(0, heads[1]) ? at[heads[1]] : -1];
     if (hit[0] >= 0) cut(1, hit[0]);
     if (hit[1] >= 0) cut(0, hit[1]);
     take(0, i);
     take(1, i);
   };
   return {
-    size, alive, heads: () => [tiles[0][i], tiles[1][i]],
+    size, alive, from, places, heads: () => [places[0][i], places[1][i]], get step() { return i; },
+    held: (s, j) => j >= from[s] && owner[places[s][j]] === s + 1 && at[places[s][j]] === j,
     to(j) {
       if (j < i) { owner.fill(0); from[0] = from[1] = size[0] = size[1] = 0; i = -1; }
       while (i < Math.min(j, n)) step();
     },
   };
+}
+// a duel built (D: duelWalks'), on count places: its player, B's name, the longest body of the whole duel (the gauges' full bar)
+function duelOf(D, count) {
+  const player = duelPlayer(D.places, count, D.steps, D.met);
+  let peak = 1;
+  for (let i = 0; i <= D.steps; i++) { player.to(i); peak = Math.max(peak, ...player.size); }
+  return { met: D.met, nameB: formulaOf($('formulaB').value).sym, player, peak };
 }
 // the duel's score at the step shown, after the walk's title: each body's size; at its end, who won
 function duelScore() {
@@ -7028,7 +7063,7 @@ async function startDuelHunt() {
     if (!knownDigits(F, base, n)) await new Promise((ok) => { run.worker = digitsWorker(F, base, n, ok); });
     if (run.stop) return;
   }
-  const g = walk.geo, S = surfaceSteps(g, mode), start = S.start(startNo() - 1), numbers = [...DUEL_CARDS, ...DRAWN_ROOTS], N = numbers.length, pairs = N * (N - 1);
+  const g = walk.geo, S = surfaceSteps(g, mode), start = S.start(startNo() - 1), places = duelPlaces(g, mode), numbers = [...DUEL_CARDS, ...DRAWN_ROOTS], N = numbers.length, pairs = N * (N - 1);
   const cards = new Map(DUEL_CARDS.map((f) => [f, knownDigits(formulaOf(f), base, n)]));
   const digitsOf = (f) => cards.get(f) ?? rootDigits(Number(f.slice(5, -1)), base, n);
   const slice = () => {
@@ -7037,7 +7072,7 @@ async function startDuelHunt() {
       const i = Math.floor(Math.random() * N), j = Math.floor(Math.random() * N), key = i * N + j;
       if (i === j || duelHunt.tried.has(key)) continue;
       duelHunt.tried.add(key);
-      const [a, b] = [numbers[i], numbers[j]], D = duelWalks(g, S, start, digitsOf(a), digitsOf(b)), P = duelPlayer(D.tiles, g.n, D.steps, D.met);
+      const [a, b] = [numbers[i], numbers[j]], D = duelWalks(g, S, start, digitsOf(a), digitsOf(b), !!mode.grid), P = duelPlayer(D.places, places, D.steps, D.met);
       P.to(D.steps);
       const r = { a, b, steps: D.steps, met: D.met, sizes: [...P.size] };
       if (!D.met) { if (duelHunt.open.length < 8) duelHunt.open.push(r); continue; }  // (still on: the first 8)
@@ -13777,7 +13812,7 @@ function drawSphere() {
   let palette = [null, ...grad];
   let levelOf = (t) => (visits[t] ? logLevel(visits[t], maxVisits) : 0);  // walk: visits, log scale
   const L = walk.life, line = !L && ['gradient', 'cells'].includes($('colourMode').value);  // Rainbow (the tiles Rainbow picks: cells)
-  const path = !L && (MODES[$('mode').value].cells ? $('showPath').checked : line);  // on cells, with Show path only
+  const path = !L && !walk.duel && (MODES[$('mode').value].cells ? $('showPath').checked : line);  // on cells, with Show path only (a duel: its bodies, no path)
   if (line) {  // Rainbow along the walk: a tile walked through (Fill cells), enclosed (Fill areas), or dark
     const cells = MODES[$('mode').value].cells && firstVisits(), areas = !walk.ant && $('fillAreas').checked && areaSteps();
     const band = (step) => Math.min(LEVELS - 1, Math.floor((step * LEVELS) / (walk.n + 1)));
@@ -13806,6 +13841,12 @@ function drawSphere() {
     const [hA, hB] = P.heads();
     palette = [null, faded(LIFE_COLOURS[0], 0.6), faded(LIFE_COLOURS[1], 0.6), LIFE_COLOURS[0], LIFE_COLOURS[1]];
     levelOf = (t) => (t === hA ? 3 : t === hB ? 4 : P.alive(0, t) ? 1 : P.alive(1, t) ? 2 : 0);
+    if (walk.vert) {  // along the grid: the tiles beside each edge a body came by (B's over A's), its head's last edge full
+      const G = gridGraph(g), level = new Uint8Array(g.n), edge = (s, j, l) => { for (const t of G.edgeTiles.get(G.key(P.places[s][j - 1], P.places[s][j]))) level[t] = l; };
+      for (let s = 0; s < 2; s++) for (let j = Math.max(1, P.from[s]); j <= P.step; j++) if (P.held(s, j)) edge(s, j, s + 1);
+      if (P.step > 0) for (let s = 0; s < 2; s++) edge(s, P.step, s + 3);
+      levelOf = (t) => level[t];
+    }
   }
   // the torus, and any polyhedron that is not flat, is drawn tile by tile from its current form;
   // a flat polyhedron is drawn face by face below

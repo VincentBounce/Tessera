@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.68';
+const VERSION = '0.4.69';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -6975,7 +6975,12 @@ function buildSphereWalk(seq, mode, ahead = new Uint8Array(0)) {
  * a body is drawn as a line along its edges, as a walk's path. The walks are made as the battle is first played
  * (battlePlayer), then replayed to the step shown. */
 let walkTeams = 1;  // a walk's teams: 1 Classic, 2 Duel, 3 Trio (as Life's, see renderColours)
-let penetrating = false;  // Penetrating, a switch: each walker's land, closed, counted and bitten into (see battlePlayer)
+let penetration = 0;  // a battle's way with an enemy's body: 0 Cut, 1 Penetrating, 2 Penetrating 2 (see battlePlayer, PENETRATIONS)
+// its choice (a tile group under the teams): its name, its picture (a red head and a blue body or land), its words
+const PENETRATIONS = [
+  ['Cut', 'M0 1.5H4V2.5H0Z', "A head on another's body cuts it there, to its tail; two heads meeting, the shorter dies; the last one left wins (as the digits end: the longest)"],
+  ['Penetrating', 'M0 1.5H2.5V2.5H0Z', "Each walker's land: the tiles its body closes stay its own (an enemy's too); a head on another's body cuts it; a head going into an enemy's land takes the tiles it goes through. The first two heads meeting end it: the most land wins"],
+  ['Penetrating 2', 'M1.5 0H2.5V1.5H1.5Z', "As Penetrating, but a head never crosses an enemy's body: going onto it, it takes that place and the body goes on round it, not cut (along it: nothing). The first two heads meeting end it: the most land wins"]];
 const BATTLE_MODES = ['hexSphereWalk', 'icosaLR', 'cubeFlat', 'hexSphereGrid', 'icosaGrid', 'cubeGrid'];  // (the turtles of the sphere and the cube, on cells and along the grid)
 const battleOn = () => walkTeams > 1 && BATTLE_MODES.includes($('mode').value);
 // Classic, Duel or Trio, under the size and start of a walk on a surface (Life's tiles, see renderColours); Digits B, and
@@ -6983,6 +6988,7 @@ const battleOn = () => walkTeams > 1 && BATTLE_MODES.includes($('mode').value);
 function renderWalkTeams() {
   const w = $('mode').value, here = NAV[w]?.[0] === 'Walk' && MODES[w].lattice === 'sphere';
   $('walkTeams').hidden = !here;
+  $('walkPenetration').hidden = !battleOn();
   $('digitsBSection').hidden = !battleOn();
   $('digitsCSection').hidden = !battleOn() || walkTeams < 3;
   $('battleHuntSection').hidden = !battleOn();
@@ -6991,13 +6997,15 @@ function renderWalkTeams() {
   if (!here) return;
   const words = { 1: 'One number walks', 2: "Two numbers walk, A's (Digits) and B's (Digits B), from opposite places", 3: "Three numbers walk, A's, B's and C's (Digits, Digits B, Digits C), a third of a turn apart" };
   $('walkTeams').replaceChildren(...[1, 2, 3].map((k) => tile({ pic: colourBlock(k), text: COLOUR_STEP_NAMES[k],
-    title: k === 1 ? words[1] : `${words[k]}: a head on another's body cuts it there, to its tail; two heads meeting, the shorter dies; the last one left wins (as the digits end: the longest)`,
+    title: k === 1 ? words[1] : `${words[k]} (how they fight: Cut, Penetrating, Penetrating 2, below)`,
     on: k === (battleOn() ? walkTeams : 1), can: k === 1 || BATTLE_MODES.includes(w), byDefault: k === 1 ? 'yes' : '', greyed: k > 1 ? "outside the sphere's and the cube's turtles" : '',
-    click: () => { if (k !== walkTeams) { walkTeams = k; compute(); } } })),
-    // Penetrating, a switch (as Life's Mixed and Newcomer beside its teams): a red head biting into a blue territory
-    tile({ pic: `<svg viewBox="0 0 4 4" aria-hidden="true"><path d="M0 0H4V4H0Z" fill="${LIFE_COLOURS[1]}"/><path d="M0 1.5H2.5V2.5H0Z" fill="${LIFE_COLOURS[0]}"/></svg>`, text: 'Penetrating', toggle: true, byDefault: 'off',
-      title: "A walker's land: the tiles its body closes stay its own (an enemy's too), counted with its body (as two heads meet, the weaker dies; as the digits end, the worthiest wins); another's head going in takes the tiles it goes through, its border pulled back as far as it goes",
-      on: battleOn() && penetrating, can: battleOn(), greyed: 'in Classic', click: () => { penetrating = !penetrating; compute(); } }));
+    click: () => { if (k !== walkTeams) { walkTeams = k; compute(); } } })));
+  if (!battleOn()) return;
+  if (penetration === 2 && MODES[w].grid) penetration = 1;  // (Penetrating 2 on cells only, for now)
+  $('walkPenetration').replaceChildren(tileGroup(PENETRATIONS.map(([name, head, title], p) => tile({
+    pic: `<svg viewBox="0 0 4 4" aria-hidden="true"><path d="M0 0H4V4H0Z" fill="${LIFE_COLOURS[1]}"/><path d="${head}" fill="${LIFE_COLOURS[0]}"/></svg>`, text: name, title,
+    on: p === penetration, can: p < 2 || !MODES[w].grid, byDefault: p === 0 ? 'yes' : '', greyed: p === 2 ? "along the grid, for now: a body's line would have to go round the head" : '',
+    click: () => { if (p !== penetration) { penetration = p; compute(); } } }))));
 }
 // A battle's starts: A's, then each turned by the solid's own symmetry, as the walk's state ([tile, the edge it comes in
 // by], along the grid [corner, the corner it comes from]): in a Duel B's through the centre (−p: its mesh its own mirror),
@@ -7084,18 +7092,19 @@ function smallerSide(L, cut, j) {
 // died); owner and at, each place's walker (1, 2, 3; 0 none) and the step it took it; from[s], size[s]: a walker's body,
 // its steps from from[s] on and its places (only a cut takes a place from it, with all its steps up to that place's
 // last); dead[s]: the step it died (−1: alive); n: its last step (one walker left or none, else the digits' end), peak:
-// its longest body (the gauges' full bar). Its surface g, along its grid or not. bite (Penetrating): each walker holds land,
-// land[t] its tiles' walker + 1: a wall of its body closing a loop (its walls' pieces a union-find, step by step, joined
-// again from its body after a cut) gives it the loop's smaller side (smallerSide), an enemy's land too; its head bites
-// into an enemy's land, taking the tiles it goes through (on cells its tile, along the grid the edge's two); a dead one's
-// is let go. Its worth, its body and its land: who dies as two heads meet, who wins; else its body
-function battlePlayer(g, grid, S, starts, digits, bite = penetrating) {
-  const count = grid ? gridGraph(g).nv : g.n, k = g.sides, G = gridGraph(g), L = bite ? battleLinks(g, grid) : null;
+// its longest body (the gauges' full bar). Its surface g, along its grid or not. pen, its penetration (see PENETRATIONS):
+// 0 Cut, as above. 1 or 2 (bite): each walker holds land, land[t] its tiles' walker + 1: a wall of its body closing a
+// loop (its walls' pieces a union-find, step by step, joined again from its body after a cut) gives it the loop's smaller
+// side (smallerSide), an enemy's land too; its head bites into an enemy's land, taking the tiles it goes through (on
+// cells its tile, along the grid the edge's two). With 2, a head on an enemy's body takes that place only, the body not
+// cut (a dent); with 1 it cuts it. The first two heads meeting end it (met), none dies: its worth, its land, who wins
+function battlePlayer(g, grid, S, starts, digits, pen = penetration) {
+  const bite = pen > 0, count = grid ? gridGraph(g).nv : g.n, k = g.sides, G = gridGraph(g), L = bite ? battleLinks(g, grid) : null;
   const wallsOf = bite ? starts.map(() => new Int32Array(count)) : [], cutsOf = bite ? starts.map(() => new Uint16Array(L.eu.length)) : [];
   const land = new Uint8Array(g.n), landCount = starts.map(() => 0), seenFrom = starts.map(() => 0);
   const K = starts.length, len = Math.min(...digits.map((d) => d.length)), places = starts.map(() => new Int32Array(len + 1));
   const states = [...starts], owner = new Uint8Array(count), at = new Int32Array(count), from = Array(K).fill(0), size = Array(K).fill(0), dead = Array(K).fill(-1);
-  let i = -1, made = 0, n = len, peak = 1;
+  let i = -1, made = 0, n = len, peak = 1, met = false;
   starts.forEach((st, s) => { places[s][0] = st[0]; });
   const alive = (s, c) => owner[c] === s + 1 && at[c] >= from[s];
   const take = (s, j) => { const c = places[s][j]; if (!alive(s, c)) size[s]++; owner[c] = s + 1; at[c] = j; };
@@ -7111,15 +7120,16 @@ function battlePlayer(g, grid, S, starts, digits, bite = penetrating) {
       made = i;
     }
     const now = living();
-    if (i > 0) {  // two heads meeting: the weaker dies (its worth before the step; as worthy: both), its body gone
-      const met = [];
+    if (i > 0) {  // two heads meeting: with bite the end, there; else the weaker dies (its worth before the step; as worthy: both), its body gone
+      const meet = [];
       for (const s of now) for (const t of now) {
         if (t <= s) continue;
         const [a, b] = [places[s], places[t]];
-        if (a[i] === b[i] || (a[i] === b[i - 1] && b[i] === a[i - 1])) met.push([s, t]);
+        if (a[i] === b[i] || (a[i] === b[i - 1] && b[i] === a[i - 1])) meet.push([s, t]);
       }
-      const lost = new Set(), w = met.length ? worth() : null;
-      for (const [s, t] of met) { if (w[s] <= w[t]) lost.add(s); if (w[t] <= w[s]) lost.add(t); }
+      if (bite && meet.length) { met = true; n = i; return; }
+      const lost = new Set(), w = meet.length ? worth() : null;
+      for (const [s, t] of meet) { if (w[s] <= w[t]) lost.add(s); if (w[t] <= w[s]) lost.add(t); }
       for (const s of lost) {
         cut(s, i - 1); dead[s] = i;
         if (bite) for (let t = 0; t < g.n; t++) if (land[t] === s + 1) { land[t] = 0; landCount[s]--; }  // (its land let go)
@@ -7127,7 +7137,7 @@ function battlePlayer(g, grid, S, starts, digits, bite = penetrating) {
     }
     const rest = living();
     const hits = rest.map((s) => { const c = places[s][i], t = rest.find((o) => o !== s && alive(o, c)); return t === undefined ? null : [t, at[c]]; });
-    hits.forEach((h) => h && cut(...h));
+    hits.forEach((h) => h && (pen === 2 ? size[h[0]]-- : cut(...h)));  // (Penetrating 2: a dent, the place its biter's as it takes it)
     rest.forEach((s) => take(s, i));
     if (bite && i > 0) rest.forEach(grow);
     peak = Math.max(peak, ...size);
@@ -7162,14 +7172,14 @@ function battlePlayer(g, grid, S, starts, digits, bite = penetrating) {
     }
     for (const t of grid ? G.edgeTiles.get(G.key(w.a, w.b)) : [Q[i]]) if (land[t] && land[t] !== s + 1) own(t, s);  // (a bite)
   };
-  // each walker's worth as it is: its body, with bite its land too
-  const worth = () => size.map((x, s) => x + (bite ? landCount[s] : 0));
+  // each walker's worth as it is: its body; with bite, its land (its tiles, counted)
+  const worth = () => (bite ? [...landCount] : [...size]);
   const P = {
-    K, g, grid, bite, places, from, size, dead, land, alive, living, worth, heads: () => places.map((p) => p[i]),
-    get step() { return i; }, get n() { return n; }, get peak() { return peak; },
+    K, g, grid, pen, bite, places, from, size, dead, land, alive, living, worth, heads: () => places.map((p) => p[i]),
+    get step() { return i; }, get n() { return n; }, get peak() { return peak; }, get met() { return met; },
     to(j) {
       if (j < i) {
-        owner.fill(0); from.fill(0); size.fill(0); dead.fill(-1); i = -1;
+        owner.fill(0); from.fill(0); size.fill(0); dead.fill(-1); i = -1; met = false;
         land.fill(0); landCount.fill(0); seenFrom.fill(0); cutsOf.forEach((c) => c.fill(0));
       }
       if (i < 0) for (let s = 0; s < K && bite; s++) freshWalls(s);
@@ -7181,7 +7191,8 @@ function battlePlayer(g, grid, S, starts, digits, bite = penetrating) {
 // a battle played (P: battlePlayer's, to its end): its winner (−1: a draw) and why, as the battle's end
 function battleWinner(P) {
   P.to(Infinity);
-  const left = P.living(), w = P.worth(), how = left.length === 1 ? 'the last one left' : left.length ? `the ${P.bite ? 'worthiest' : 'longest'} as the digits end` : `the last ones met, as ${P.bite ? 'worthy' : 'long'}`;
+  const left = P.living(), w = P.worth(), how = P.bite ? `the most land as ${P.met ? 'two heads met' : 'the digits end'}`
+    : left.length === 1 ? 'the last one left' : left.length ? 'the longest as the digits end' : 'the last ones met, as long';
   const top = Math.max(0, ...left.map((s) => w[s])), best = left.filter((s) => w[s] === top);
   return { s: best.length === 1 ? best[0] : -1, how, size: top };
 }
@@ -7190,7 +7201,7 @@ function battleOf(P) {
   const names = [shownSym, ...RIVALS.slice(0, P.K - 1).map((id) => formulaOf($(id).value).sym)];
   return { player: P, names, winner: battleWinner(P) };
 }
-// the battle's score at the step shown, after the walk's title: each body's size (✝ dead); at its end, who won
+// the battle's score at the step shown, after the walk's title: each body's size, with bite its land (✝ dead); at its end, who won
 function battleScore() {
   const { player: P, names, winner } = walk.battle, name = (s) => withIcons(names[s]);
   P.to(cur);
@@ -7297,7 +7308,7 @@ function battleAreas(P) {
 const BATTLE_CARDS = Object.values(PRESETS).filter((p) => ['Constants', '𝑓', 'Sequences'].includes(p.group) && typeof p.f === 'string').map((p) => p.f).concat('rho');
 const BATTLE_FRESH = () => ({ ended: [], open: [], endedCount: 0, tried: new Set(), key: battleHuntKey(), status: '' });  // (a hunt's results, none yet)
 const battleHunt = { run: null, ended: [], open: [], endedCount: 0, tried: new Set(), key: '', status: '' };
-const battleHuntKey = () => `${$('mode').value}|${walkTeams}|${penetrating}|${sphereSize()}|${startNo()}|${digitsNeeded()}`;  // (what its battles are fought at)
+const battleHuntKey = () => `${$('mode').value}|${walkTeams}|${penetration}|${sphereSize()}|${startNo()}|${digitsNeeded()}`;  // (what its battles are fought at)
 // √r's first n digits in base b, its integer part first (on the page: one integer root, as numberSeed's)
 const rootDigits = (r, base, n) => Uint8Array.from(iroot(BigInt(r) * BigInt(base) ** BigInt(2 * n), 2).toString(base).slice(0, n), (c) => c.charCodeAt(0) - 48);
 async function startBattleHunt() {
@@ -7322,7 +7333,7 @@ async function startBattleHunt() {
       if (new Set(picks).size < K || battleHunt.tried.has(key)) continue;
       battleHunt.tried.add(key);
       const fs = picks.map((j) => numbers[j]), P = battlePlayer(g, !!mode.grid, S, starts, fs.map(digitsOf)), win = battleWinner(P);
-      const r = { fs, steps: P.n, ended: P.living().length <= 1, win };
+      const r = { fs, steps: P.n, ended: P.bite ? P.met : P.living().length <= 1, win };
       if (!r.ended) { if (battleHunt.open.length < 8) battleHunt.open.push(r); continue; }  // (still on: the first 8)
       battleHunt.endedCount++;
       battleHunt.ended.push(r);
@@ -13177,7 +13188,7 @@ function getSetup() {
   if (battleOn()) {  // (a walk's Duel or Trio, as Life's: its teams; B's number, C's)
     s.k = walkTeams;
     RIVALS.slice(0, walkTeams - 1).forEach((id, j) => { s[['xb', 'xc'][j]] = formulaOf($(id).value).text ?? $(id).value; });
-    if (penetrating) s.pe = 1;  // (Penetrating)
+    if (penetration) s.pe = penetration;  // (Penetrating, Penetrating 2)
   }
   if (mode.life && colourMix && lifeColours > 1) s.mx = 1;
   if (mode.life && newcomerOn()) s.nc = 1;  // (Newcomer)  // (Mixed, kept where its zone greys it: the other zones' fits by it, see huntFits)
@@ -13211,7 +13222,7 @@ function applySetup(s) {
   }
   if (s.d !== undefined) target = Number(s.d);
   walkTeams = !MODES[s.w].life && [2, 3].includes(Number(s.k)) ? Number(s.k) : 1;  // (a walk's Duel or Trio, see battleOn)
-  penetrating = walkTeams > 1 && Number(s.pe) === 1;
+  penetration = walkTeams > 1 && [1, 2].includes(Number(s.pe)) ? Number(s.pe) : 0;
   set('formulaB', s.xb);
   set('formulaC', s.xc);
   set('mode', s.w);
@@ -15831,7 +15842,7 @@ function renderWalkGauges() {
   if (walk.battle) {  // a battle: each body's length, in its colour, its bar full at the longest body of the whole battle; ✝ dead
     const { player: D, names } = walk.battle;
     D.to(cur);
-    const w = D.worth(), full = Math.max(D.peak, ...w);  // (Penetrating: its body and territory, the bar full at the worthiest if more)
+    const w = D.worth(), full = D.bite ? Math.max(1, ...w) : D.peak;  // (Penetrating: its land, the bar full at the most)
     paintGauges(names.map((name, s) => [withIcons(name), LIFE_COLOURS[s], w[s] / full, D.dead[s] < 0 ? `<b>${fmt(w[s])}</b>` : `✝ ${fmt(D.dead[s])}`]));
     return;
   }

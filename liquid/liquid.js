@@ -33,15 +33,15 @@
 
 /* ---- 1.1 Setting ----------------------------------------------------------------------------- */
 
-const COUNTS = [4096, 16384, 65536, 262144], STEPS = [1, 2, 4, 8], TOOLS = ['drag', 'attract', 'repel'];
+const COUNTS = [1024, 2048, 4096, 16384, 65536, 262144], STEPS = [1, 2, 4, 8], TOOLS = ['drag', 'attract', 'repel'], VIEWS = ['liquid', 'particles'];
 const MASSES = [1, 1.6, 2.5, 4], COLOURS = [[1, 0.82, 0.3], [0.35, 0.85, 0.45], [0.35, 0.6, 1], [0.9, 0.35, 0.65]];
 const BETA = 0.3, FILL = 0.5, REST = 4, THRESHOLD = 1, PULL = 0.004, CFL = 0.3; // (CFL: the fastest a step can move a
 // particle, in reaches, and stay stable)
 const mulberry32 = (a) => () => { a |= 0; a = (a + 0x6d2b79f5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
-// The setting from the link: #n=65536&steps=4&seed=1&gravity=0.03&stiffness=0.01&near=0.02&same=4&other=3&viscosity=0.1&brush=0.1&dots=false&dot=0.45
+// The setting from the link: #n=65536&steps=4&seed=1&gravity=0.03&stiffness=0.01&near=0.02&same=4&other=3&viscosity=0.1&brush=0.1&view=particles
 const hash = Object.fromEntries(new URLSearchParams(location.hash.slice(1)));
 const num = (v, d) => (v === undefined || v === '' || isNaN(+v) ? d : +v);
-const set = { n: COUNTS.includes(+hash.n) ? +hash.n : 65536, steps: STEPS.includes(+hash.steps) ? +hash.steps : 4, seed: +hash.seed || 1, gravity: num(hash.gravity, 0.03), stiffness: num(hash.stiffness, 0.01), near: num(hash.near, 0.02), same: num(hash.same, REST), other: num(hash.other, 3), viscosity: num(hash.viscosity, 0.1), brush: num(hash.brush, 0.1), dots: hash.dots === 'true', dot: num(hash.dot, 0.45), tool: 'drag' };
+const set = { n: COUNTS.includes(+hash.n) ? +hash.n : 65536, steps: STEPS.includes(+hash.steps) ? +hash.steps : 4, seed: +hash.seed || 1, gravity: num(hash.gravity, 0.03), stiffness: num(hash.stiffness, 0.01), near: num(hash.near, 0.02), same: num(hash.same, REST), other: num(hash.other, 3), viscosity: num(hash.viscosity, 0.1), brush: num(hash.brush, 0.1), view: VIEWS.includes(hash.view) ? hash.view : 'liquid', tool: 'drag' };
 const keep = () => { const { tool, ...h } = set; history.replaceState(null, '', '#' + new URLSearchParams(h)); };
 // The box and its reach, fixed by a scatter: its width a (the screen's aspect then), the reach h such that n particles at
 // the rest density fill FILL of it, the grid of bins (each a reach wide at least)
@@ -62,7 +62,7 @@ const pull = () => set.gravity * world.h;
 const PARAMS = `
 struct Params { a: vec4u, f: vec4f, k: vec4f, v: vec4f, p: vec4f, q: vec4f, m: vec4f, s: vec4f, o: vec4f };
 // a: n, the grid's columns and rows, bins; f: the reach h, a bin's width and height, the box's width; k: stiffness, near
-// stiffness, rest density of one liquid, of two; v: gravity (reaches a step²), viscosity σ, β, a dot's radius (the box's units); p: the pointer's place,
+// stiffness, rest density of one liquid, of two; v: gravity (reaches a step²), viscosity σ, β, a particle's radius as drawn (the box's units); p: the pointer's place,
 // its brush (radius), its pull; q: its speed (a step), its tool (0 none, 1 drag, 2 attract, 3 repel); m: the four masses;
 // s: pixels a unit of the box (zoomed), the canvas' width and height, the liquid's threshold; o: the box's corner (0, 0)
 // in the canvas' pixels (y up)`;
@@ -189,42 +189,46 @@ fn way(e: vec2f, l: f32, i: u32, j: u32) -> vec2f {
   let x = clamp(me.xy + dx, vec2f(0.0), vec2f(P.f.w, 1.0));
   next[2u * i] = vec4f(x, me.zw); next[2u * i + 1u] = vec4f(x - (me.xy - v), 0.0, 0.0);
 }`;
-// A particle drawn as a soft disc (its weight (1 − d²)² in alpha, its liquid's colour times it), summed into a picture;
-// the box letterboxed in the canvas
+// A particle drawn as a soft disc, its weight (1 − d²)² in its liquid's channel (one each: r, g, b, a), summed into a
+// picture; the box letterboxed in the canvas
 const DRAW = PARAMS + `
 @group(0) @binding(0) var<uniform> P: Params;
 @group(0) @binding(1) var<storage, read> s: array<vec4f>;
 @group(0) @binding(2) var<uniform> colour: array<vec4f, 4>;
-struct Out { @builtin(position) pos: vec4f, @location(0) uv: vec2f, @location(1) c: vec3f };
+struct Out { @builtin(position) pos: vec4f, @location(0) uv: vec2f, @location(1) c: vec3f, @location(2) @interpolate(flat) k: u32 };
 fn origin() -> vec2f { return P.o.xy; }
 // A particle's quad, its size in the box's units round it
 fn quad(vi: u32, ii: u32, size: f32) -> Out {
   var corners = array(vec2f(-1, -1), vec2f(1, -1), vec2f(-1, 1), vec2f(-1, 1), vec2f(1, -1), vec2f(1, 1));
-  let p = s[2u * ii]; var o: Out; o.uv = corners[vi]; o.c = colour[u32(p.z)].rgb;
+  let p = s[2u * ii]; var o: Out; o.uv = corners[vi]; o.k = u32(p.z); o.c = colour[o.k].rgb;
   let px = origin() + (p.xy + o.uv * size) * P.s.x;
   o.pos = vec4f(px / P.s.yz * 2.0 - 1.0, 0.0, 1.0);
   return o;
 }
 @vertex fn vs(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> Out { return quad(vi, ii, P.f.x * 0.6); }
-// Particles shown, the liquid drawn by them alone: each a disc of its liquid's colour ringed darker (its radius Dot size
-// times the particles' spacing, a pixel at least) on the box's background
+// The Particles view, the liquid drawn by its particles alone: each a disc of its liquid's colour ringed darker (its
+// radius half the particles' spacing: neighbours at rest touch; a pixel at least) on the box's background
 @vertex fn dotVs(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> Out { return quad(vi, ii, max(P.v.w, 1.0 / P.s.x)); }
 @fragment fn dotFs(i: Out) -> @location(0) vec4f { let d = dot(i.uv, i.uv); if (d > 1.0) { discard; } return vec4f(i.c * select(1.0, 0.5, d > 0.55), 1.0); }
 @fragment fn fs(i: Out) -> @location(0) vec4f {
   let d = dot(i.uv, i.uv); if (d > 1.0) { discard; }
-  let w = (1.0 - d) * (1.0 - d); return vec4f(i.c * w, w);
+  var w = vec4f(0.0); w[i.k] = (1.0 - d) * (1.0 - d); return w;
 }
 @group(0) @binding(3) var picture: texture_2d<f32>;
 @vertex fn full(@builtin(vertex_index) v: u32) -> @builtin(position) vec4f { return vec4f(f32(v & 1u) * 4.0 - 1.0, f32(v >> 1u) * 4.0 - 1.0, 0.0, 1.0); }
-// The liquid where the summed weight passes the threshold (its edge smoothed), the mean colour under it, deeper where
-// thicker; the box's background, darker outside
+// The liquid where the liquids' summed weight passes the threshold, each pixel the colour of the strongest there
+// (no shading by the weight: it spread over a disc's width, a blur at large particles); both edges (liquid and background, two liquids) a pixel wide whatever the particles' size
+// (their weights' change from a pixel to the next, fwidth); the box's background, darker outside
 @fragment fn show(@builtin(position) px: vec4f) -> @location(0) vec4f {
   let t = textureLoad(picture, vec2i(px.xy), 0); let at = (vec2f(px.x, P.s.z - px.y) - origin()) / P.s.x;
+  var k = 0u; var j = 1u;
+  for (var c = 1u; c < 4u; c++) { let up = t[c] > t[k]; j = select(select(j, c, t[c] > t[j] || j == k), k, up); k = select(k, c, up); }
+  let sum = t.x + t.y + t.z + t.w; let lead = t[k] - t[j]; let es = fwidth(sum); let el = fwidth(lead);
   let inside = all(at >= vec2f(0.0)) && all(at <= vec2f(P.f.w, 1.0));
   let bg = select(vec3f(0.02, 0.022, 0.03), vec3f(0.05, 0.055, 0.075), inside);
-  if (t.a < 1e-4) { return vec4f(bg, 1.0); }
-  let T = P.s.w; let body = t.rgb / t.a * (0.65 + 0.35 * smoothstep(T, 3.0 * T, t.a));
-  return vec4f(mix(bg, body, smoothstep(T * 0.85, T * 1.15, t.a)), 1.0);
+  if (sum < 1e-4) { return vec4f(bg, 1.0); }
+  let T = P.s.w; let hue = mix(colour[j].rgb, colour[k].rgb, 0.5 + 0.5 * smoothstep(0.0, el, lead));
+  return vec4f(mix(bg, hue, smoothstep(T - es, T + es, sum)), 1.0);
 }`;
 const PICTURE = 'rgba16float';
 
@@ -270,7 +274,7 @@ function scatter() {
 function write() {
   const w = view.width, h = view.height, frame = frameOf(w, h), buf = new ArrayBuffer(144), u = new Uint32Array(buf), f = new Float32Array(buf);
   u.set([set.n, world.gx, world.gy, world.bins]);
-  f.set([world.h, world.a / world.gx, 1 / world.gy, world.a, set.stiffness, set.near, set.same, set.other, pull(), set.viscosity, BETA, set.dot * world.s], 4);
+  f.set([world.h, world.a / world.gx, 1 / world.gy, world.a, set.stiffness, set.near, set.same, set.other, pull(), set.viscosity, BETA, 0.5 * world.s], 4);
   f.set([pointer.x, pointer.y, set.brush, PULL, pointer.vx, pointer.vy, pointer.down ? TOOLS.indexOf(set.tool) + 1 : 0, 0, ...MASSES, frame.sc, w, h, THRESHOLD, frame.ox, frame.oy, 0, 0], 16);
   device.queue.writeBuffer(params, 0, buf);
 }
@@ -297,17 +301,17 @@ function draw() {
   if (!picture || picture.width !== view.width || picture.height !== view.height) {
     picture?.destroy();
     picture = device.createTexture({ size: [view.width, view.height], format: PICTURE, usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING });
-    showGroup = device.createBindGroup({ layout: showPipe.getBindGroupLayout(0), entries: [{ binding: 0, resource: { buffer: params } }, { binding: 3, resource: picture.createView() }] });
+    showGroup = device.createBindGroup({ layout: showPipe.getBindGroupLayout(0), entries: [{ binding: 0, resource: { buffer: params } }, { binding: 2, resource: { buffer: colourBuf } }, { binding: 3, resource: picture.createView() }] });
   }
   const groupsOf = (pipe) => [0, 1].map((f) => device.createBindGroup({ layout: pipe.getBindGroupLayout(0), entries: [params, states[f], colourBuf].map((buffer, binding) => ({ binding, resource: { buffer } })) }));
   if (!drawGroups.length) { drawGroups = groupsOf(drawPipe); dotGroups = groupsOf(dotPipe); }
   const enc = device.createCommandEncoder();
   const pass = enc.beginRenderPass({ colorAttachments: [{ view: picture.createView(), loadOp: 'clear', storeOp: 'store', clearValue: { r: 0, g: 0, b: 0, a: 0 } }] });
-  if (!set.dots) { pass.setPipeline(drawPipe); pass.setBindGroup(0, drawGroups[flip]); pass.draw(6, set.n); } // (Particles: the picture empty, the background only)
+  if (set.view === 'liquid') { pass.setPipeline(drawPipe); pass.setBindGroup(0, drawGroups[flip]); pass.draw(6, set.n); } // (Particles: the picture empty, the background only)
   pass.end();
   const out = enc.beginRenderPass({ colorAttachments: [{ view: context.getCurrentTexture().createView(), loadOp: 'clear', storeOp: 'store', clearValue: { r: 0, g: 0, b: 0, a: 1 } }] });
   out.setPipeline(showPipe); out.setBindGroup(0, showGroup); out.draw(3);
-  if (set.dots) { out.setPipeline(dotPipe); out.setBindGroup(0, dotGroups[flip]); out.draw(6, set.n); }
+  if (set.view === 'particles') { out.setPipeline(dotPipe); out.setBindGroup(0, dotGroups[flip]); out.draw(6, set.n); }
   out.end();
   device.queue.submit([enc.finish()]);
 }
@@ -340,14 +344,10 @@ function panel() {
   const markSteps = tabs(document.getElementById('steps'), STEPS, () => set.steps, (v) => { set.steps = v; markSteps(); keep(); });
   const markTools = tabs(document.getElementById('tools'), TOOLS, () => set.tool, (v) => { set.tool = v; markTools(); }, (v) => v[0].toUpperCase() + v.slice(1));
   document.getElementById('scatter').onclick = () => scatter();
-  // Particles: a switch (its name never changes, .on its state), the liquid drawn by its particles alone; Dot
-  // size greyed while they are not
-  const dots = document.getElementById('dots'), dot = document.getElementById('dot');
-  const markDots = () => { dots.classList.toggle('on', set.dots); dot.disabled = !set.dots; dot.parentElement.title = set.dots ? '' : 'The particles are not shown: Particles shows them'; };
-  markDots();
-  dots.onclick = () => { set.dots = !set.dots; markDots(); keep(); };
+  // The view: the liquid (metaballs) or its particles alone
+  const markViews = tabs(document.getElementById('views'), VIEWS, () => set.view, (v) => { set.view = v; markViews(); keep(); }, (v) => v[0].toUpperCase() + v.slice(1));
   document.getElementById('play').onclick = (e) => { on = !on; e.target.textContent = on ? 'Pause' : 'Play'; };
-  for (const id of ['brush', 'gravity', 'stiffness', 'near', 'same', 'other', 'viscosity', 'dot']) {
+  for (const id of ['brush', 'gravity', 'stiffness', 'near', 'same', 'other', 'viscosity']) {
     const input = document.getElementById(id), out = input.nextElementSibling;
     input.value = set[id]; out.textContent = set[id];
     input.oninput = () => { set[id] = +input.value; out.textContent = input.value; keep(); };

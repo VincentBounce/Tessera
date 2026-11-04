@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.95';
+const VERSION = '0.4.96';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -14488,10 +14488,10 @@ function drawSphere() {
   if (walk.battle) {  // a battle: its walkers' bodies in Life's colours (A red, B blue, C gold, see colourBlock), paler than their heads
     const P = walk.battle.player, K = P.K, colours = LIFE_COLOURS.slice(0, K);
     P.to(cur);
-    // each tile's level once, from the areas each body closes (Area: Light translucent, Plain as its body), then the
-    // bodies over them and their heads (along the grid its bodies are lines, see pathSegments: the areas only)
-    // (Penetrating: its land; Land cells: its painted tiles, always, as its bodies are)
-    const closed = P.pen === 6 ? P.land : !$('fillAreas').checked || !fillAreasApply() ? null : P.bite ? P.land : battleAreas(P), light = P.pen !== 6 && shows('translucent') && $('fillTranslucent').checked;
+    // each tile's level once: with land (Penetrating to Land cells) its land, always, plain as its bodies are (Area, the
+    // classic walks' look, not used); in Cut the areas each body closes, by Area (Light translucent, Plain as its body);
+    // then the bodies over them and their heads (along the grid its bodies are lines, see pathSegments: the land only)
+    const closed = P.bite ? P.land : !$('fillAreas').checked || !fillAreasApply() ? null : battleAreas(P), light = !P.bite && shows('translucent') && $('fillTranslucent').checked;
     palette = [null, ...colours.map((c) => faded(c, 0.6)), ...colours, ...colours.map((c) => faded(c, light ? FADING : 0.6))];
     const level = new Uint8Array(g.n);
     if (closed) for (let t = 0; t < g.n; t++) if (closed[t]) level[t] = 2 * K + closed[t];

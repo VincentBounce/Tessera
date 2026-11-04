@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.77';
+const VERSION = '0.4.78';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -6982,7 +6982,8 @@ const PENETRATIONS = [
   ['Penetrating', 'M0 1.5H2.5V2.5H0Z', "Each walker's land: the tiles its body closes stay its own (an enemy's too); a head on another's body cuts it; a head going into an enemy's land takes the tiles it goes through. The first two heads meeting end it: the most land wins"],
   ['Penetrating 2', 'M1.5 0H2.5V1.5H1.5Z', "As Penetrating, but a head never crosses an enemy's body: going onto it, it takes that place and the body goes on round it, not cut, pushed back (along the grid its line round the corner, the tiles it goes round the biter's land; along it: nothing). A body closing a loop makes it land, inside and itself, and starts again from its head. The first two heads meeting end it: the most land wins"],
   ['Penetrating 3', 'M1.5 0H2.5V4H1.5Z', "Along the grid: a walker's line, the edges it went along, stays (crossing it: a fork); its land the regions it closes. Along an enemy's line: nothing; a head on it pierces it: the line let go each way up to a fork or its end, its land there let go too. The first two heads meeting end it: the most land wins"],
-  ['Penetrating 4', 'M1.5 0H2.5V4H1.5ZM0 1.5H4V2.5H0Z', "As Penetrating 3, but a head pierces an enemy's line only going through it: on it, it goes along it (their borders glued); off it again by the other side, the line is pierced there; by the same side, nothing. Going along an enemy's line inside its land (its land on both sides), that line becomes the head's"]];
+  ['Penetrating 4', 'M1.5 0H2.5V4H1.5ZM0 1.5H4V2.5H0Z', "As Penetrating 3, but a head pierces an enemy's line only going through it: on it, it goes along it (their borders glued); off it again by the other side, the line is pierced there; by the same side, nothing. Going along an enemy's line inside its land (its land on both sides), that line becomes the head's"],
+  ['Penetrating 5', 'M1.5 0H2.5V4H1.5ZM0 1.5H4V2.5H0ZM0 0H1V1H0Z', "As Penetrating 4, but going along an enemy's line pierces it too (up to its forks): each walker keeps its land, no line of another in it"]];
 const BATTLE_MODES = ['hexSphereWalk', 'icosaLR', 'cubeFlat', 'hexSphereGrid', 'icosaGrid', 'cubeGrid'];  // (the turtles of the sphere and the cube, on cells and along the grid)
 const battleOn = () => walkTeams > 1 && BATTLE_MODES.includes($('mode').value);
 // Classic, Duel or Trio, under the size and start of a walk on a surface (Life's tiles, see renderColours); Digits B, and
@@ -7173,6 +7174,7 @@ function battlePlayer(g, grid, S, starts, digits, pen = penetration) {
         }
         // and going along an edge of o's line inside o's land (its land on both sides): that edge s's only, o's let go
         const j = i > 0 ? linkOf(places[s][i - 1], c) : undefined;
+        if (pen === 5 && j !== undefined && lineOf[o][j] > 0) { pierce(o, c); contact[s][o] = null; continue; }  // (Penetrating 5: going along its line pierces it too)
         if (j !== undefined && lineOf[o][j] > 0 && landOwner(L.eu[j]) === o && landOwner(L.ev[j]) === o) { cutLine(o, places[s][i - 1], c); contact[s][o]?.taken.add(j); }
       }
       peak = Math.max(peak, ...size);
@@ -13546,7 +13548,7 @@ function applySetup(s) {
   }
   if (s.d !== undefined) target = Number(s.d);
   walkTeams = !MODES[s.w].life && [2, 3].includes(Number(s.k)) ? Number(s.k) : 1;  // (a walk's Duel or Trio, see battleOn)
-  penetration = walkTeams > 1 && [1, 2, 3, 4].includes(Number(s.pe)) ? Number(s.pe) : 0;
+  penetration = walkTeams > 1 && [1, 2, 3, 4, 5].includes(Number(s.pe)) ? Number(s.pe) : 0;
   set('formulaB', s.xb);
   set('formulaC', s.xc);
   set('mode', s.w);

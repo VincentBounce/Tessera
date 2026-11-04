@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.114';
+const VERSION = '0.4.115';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -7007,11 +7007,10 @@ const PENETRATIONS = [
   [6, 'Land cells', 'M0 0H4V4H0ZM1 1H3V3H1Z', "On cells: no body; each walker paints the tile it goes into its colour, whatever it was, and a zone its colour closes (the tiles not of its colour cut off, the largest outside) is painted inside. Heads meeting (two or more at once) all die: they stop painting, their tiles stay, the others' to take; with one walker left or none, it ends: the most tiles win, the dead's too"],
   [0, 'Cut', 'M0 1.5H4V2.5H0Z', "A head on another's body cuts it there, to its tail; heads meeting (two or more at once), all but the longest die (as long: all); the last one left wins (as the digits end: the longest)"],
   [1, 'Land grid 2', 'M0 1.5H2.5V2.5H0Z', "Along the grid: each walker's land, the tiles its body closes stay its own (an enemy's too); a head on another's body cuts it; a head going into an enemy's land takes the tiles it goes through. Heads meeting (two or more at once) all die: they stop conquering, their land stays, the others' to take; with one walker left or none, it ends: the most land wins, the dead's too"]];
-// a walk that can be a battle: one on a closed solid (its rotations: its walkers start alike, see battleStarts), on cells
-// or along the grid, its steps surfaceSteps'
-const battleMode = (w) => NAV[w]?.[0] === 'Walk' && MODES[w].lattice === 'sphere' && !!SPHERES[MODES[w].sphere] && !solidMesh(MODES[w].sphere).torus;
-const solidMesh = (kind) => (facesMemo[kind] ??= SPHERES[kind].mesh(SPHERES[kind].sizes[0]));  // (a surface's least mesh: its rotations the same at any size)
-const battleOn = () => walkTeams > 1 && battleMode($('mode').value);
+// a walk that can be a battle: one on a surface (on cells or along the grid, its steps surfaceSteps'), with as many
+// walkers as its turns allow at its size (see battleCounts: its walkers start alike, see battleStarts)
+const battleMode = (w) => NAV[w]?.[0] === 'Walk' && MODES[w].lattice === 'sphere' && !!SPHERES[surfaceOf(MODES[w])];
+const battleOn = () => walkTeams > 1 && battleCounts($('mode').value).includes(walkTeams);
 // Classic, Duel, Trio… (those the solid has no group of turns for greyed, see battleCounts), under the size and start
 // of a walk on a surface (Life's tiles, see renderColours); then a battle's numbers in its Hunt section
 function renderWalkTeams() {
@@ -7034,7 +7033,7 @@ function renderWalkTeams() {
   $('walkTeams').replaceChildren(...COLOUR_STEPS.map((k) => tile({ pic: colourBlock(k), text: COLOUR_STEP_NAMES[k],
     title: words(k),
     on: k === (battleOn() ? walkTeams : 1), can: k === 1 || battleCounts(w).includes(k), byDefault: k === 1 ? 'yes' : '',
-    greyed: k === 1 ? '' : battleMode(w) ? 'no group of so many of the solid\'s turns: its walkers would not start alike' : 'on the closed solids only',
+    greyed: k === 1 ? '' : 'no group of so many of the surface\'s turns at this size: its walkers would not start alike',
     click: () => { if (k !== walkTeams) { walkTeams = k; compute(); } } })));
   if (!battleOn()) return;
   const button = ([p, name, head, title]) => tile({
@@ -7077,22 +7076,25 @@ function battleStarts(g, start, grid, K) {
     for (let a = 0; a < K; a++) for (let b = a + 1; b < K; b++) least = Math.min(least, Math.hypot(...q[a].map((x, d) => x - q[b][d])));
     return least;
   };
-  const G = battleGroups(g, K).reduce((a, b) => (spread(b) > spread(a) + 1e-9 ? b : a));
-  if (spread(G) < 1e-9) return null;  // (A's place on an axis of the solid: K walkers cannot start apart from it)
+  const groups = battleGroups(g, K), G = groups.length ? groups.reduce((a, b) => (spread(b) > spread(a) + 1e-9 ? b : a)) : null;
+  if (!G || spread(G) < 1e-9) return null;  // (none of K; or A's place on an axis: K walkers cannot start apart from it)
   return [start, ...G.slice(1).map(turned)];
 }
 // a battle's starts (see battleStarts), or none, said in the status: A's place on an axis of the solid
 function battleStartsOrSay(g, start, grid, K) {
   const starts = battleStarts(g, start, grid, K);
-  if (!starts) walkSaid = `This start lies on an axis of the solid: ${K} walkers cannot start apart from it (another start, or fewer walkers)`;
+  if (!starts) walkSaid = battleGroups(g, K, 1).length ? `This start lies on an axis of the surface: ${K} walkers cannot start apart from it (another start, or fewer walkers)`
+    : `This surface has no ${K} turns alike at this size: ${K} walkers cannot start alike (another size, or another count)`;
   return starts;
 }
-// The solid's rotations' groups of K (each its matrices, the identity first), once a mesh: made from one or two of its
-// rotations, closed under their products (the icosahedron's: 2, 3, 4, 5, 6, 10, 12; the cube's: 2, 3, 4, 6, 8, 12)
-function rotationGroups(g, K) {
+// The surface's turns' groups of K (each its matrices, the identity first), once a mesh: made from one or two of its
+// turns (see surfaceRotations), closed under their products (the icosahedron's: 2, 3, 4, 5, 6, 10, 12; the cube's: 2,
+// 3, 4, 6, 8, 12; a torus's: by its columns round it)
+function rotationGroups(g, K, enough = Infinity) {  // (enough: as many found, the search stops: whether there is one)
   const memo = (g.rotationGroups ??= {});
   if (memo[K]) return memo[K];
-  const R = (g.rotations ??= solidRotations(solidCorners(g))), I = I3;
+  const R = surfaceRotations(g), I = I3;
+  if (R.length % K) return (memo[K] = []);  // (a group's order divides its whole group's: Lagrange)
   const key = (M) => M.flat().map((x) => Math.round(x * 1e6)).join(), times = (A, B) => A.map((row) => [0, 1, 2].map((j) => row[0] * B[0][j] + row[1] * B[1][j] + row[2] * B[2][j]));
   const close = (gens) => {  // (the group they make, if of K)
     const list = [I], keys = new Set([key(I)]);
@@ -7104,10 +7106,22 @@ function rotationGroups(g, K) {
     }
     return list.length === K ? { list, id: [...keys].sort().join('|') } : null;
   };
-  const seen = new Set(), out = [];
+  // (only turns whose order divides K make one; a pair both in a group found makes it again, or less)
+  // (a turn's order from its angle, its trace 1 + 2 cos θ: the least q with q θ a whole turn)
+  const order = (g.rotationOrders ??= R.map((M) => {
+    const turns = Math.acos(Math.max(-1, Math.min(1, (M[0][0] + M[1][1] + M[2][2] - 1) / 2))) / (2 * Math.PI);
+    for (let q = 1; q <= R.length; q++) if (Math.abs(q * turns - Math.round(q * turns)) < 1e-6) return q;
+    return 0;
+  }));
+  const ok = R.map((_, a) => K % order[a] === 0), seen = new Set(), out = [], inFound = R.map(() => []);
+  const index = new Map(R.map((M, a) => [key(M), a]));
   for (let a = 0; a < R.length; a++) for (let b = a; b < R.length; b++) {
+    if (!ok[a] || !ok[b] || inFound[a].some((h) => inFound[b].includes(h))) continue;
     const G = close(a === b ? [R[a]] : [R[a], R[b]]);
-    if (G && !seen.has(G.id)) { seen.add(G.id); out.push(G.list); }
+    if (!G || seen.has(G.id)) continue;
+    seen.add(G.id); out.push(G.list);
+    if (out.length >= enough) return out;
+    for (const M of G.list) inFound[index.get(key(M))]?.push(out.length - 1);
   }
   return (memo[K] = out);
 }
@@ -7120,14 +7134,39 @@ const centred = (g) => (g.centred ??= (() => {
   for (let u = 0; u < g.verts.length / 3; u++) if (!all.has(key(-g.verts[3 * u], -g.verts[3 * u + 1], -g.verts[3 * u + 2]))) return false;
   return true;
 })());
-const battleGroups = (g, K) => [...rotationGroups(g, K), ...(K === 2 && centred(g) ? [[I3, MINUS_I3]] : [])];
+const battleGroups = (g, K, enough = Infinity) => [...rotationGroups(g, K, enough), ...(K === 2 && centred(g) ? [[I3, MINUS_I3]] : [])];
 // the teams a battle can have on mode w's surface (see battleMode): each K its solid has a group of K turns for (see
 // battleGroups); none elsewhere
 const battleCounts = (w) => {
   if (!battleMode(w)) return [];
-  const g0 = solidMesh(MODES[w].sphere);
-  return (g0.battleCounts ??= COLOUR_STEPS.filter((K) => K > 1 && battleGroups(g0, K).length));
+  const g = SPHERES[surfaceOf(MODES[w])].mesh(sphereSize());  // (its mesh at the size picked, as the walk's: a ring's turns by its columns round it)
+  return (g.battleCounts ??= COLOUR_STEPS.filter((K) => K > 1 && battleGroups(g, K, 1).length));  // (one group is enough to know)
 };
+// A surface's turns in space that lay its mesh onto itself (each a matrix, the identity among them), once a mesh: a closed
+// solid's rotations (see solidRotations); a ring's (a torus, a Möbius strip, a Klein bottle), its turns round its axis by
+// 2π/m (m from a corner's fellows round the axis at its height and distance, the least angle between them) and its
+// half-turns about the x and y axes, those that fit, closed under their products
+function surfaceRotations(g) {
+  if (g.rotations) return g.rotations;
+  if (!g.torus) return (g.rotations = solidRotations(solidCorners(g)));
+  const V = g.verts, n = V.length / 3, key = (p) => p.map((v) => Math.round(v * 1e4)).join(), all = new Set();
+  for (let u = 0; u < n; u++) all.add(key([V[3 * u], V[3 * u + 1], V[3 * u + 2]]));
+  const fits = (M) => { for (let u = 0; u < n; u++) if (!all.has(key(M.map((row) => dot3(row, [V[3 * u], V[3 * u + 1], V[3 * u + 2]]))))) return false; return true; };
+  const turn = (t) => [[Math.cos(t), -Math.sin(t), 0], [Math.sin(t), Math.cos(t), 0], [0, 0, 1]];
+  const r0 = Math.hypot(V[0], V[1]), a0 = Math.atan2(V[1], V[0]);
+  let least = 2 * Math.PI;
+  for (let u = 1; u < n; u++) {
+    if (Math.abs(Math.hypot(V[3 * u], V[3 * u + 1]) - r0) > 1e-6 || Math.abs(V[3 * u + 2] - V[2]) > 1e-6) continue;
+    const d = (((Math.atan2(V[3 * u + 1], V[3 * u]) - a0) % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI);
+    if (d > 1e-6) least = Math.min(least, d);
+  }
+  const m = Math.round((2 * Math.PI) / least), gens = [];
+  for (let d = m; d > 1; d--) if (fits(turn((2 * Math.PI) / d))) { gens.push(turn((2 * Math.PI) / d)); break; }  // (its turn, or a coarser one: its corners round it not all evenly spaced)
+  for (const M of [[[1, 0, 0], [0, -1, 0], [0, 0, -1]], [[-1, 0, 0], [0, 1, 0], [0, 0, -1]]]) if (fits(M)) gens.push(M);
+  const list = [I3], seen = new Set([key(I3.flat())]), times = (A, B) => A.map((row) => [0, 1, 2].map((j) => row[0] * B[0][j] + row[1] * B[1][j] + row[2] * B[2][j]));
+  for (let x = 0; x < list.length; x++) for (const h of gens) { const y = times(list[x], h), k = key(y.flat()); if (!seen.has(k)) { seen.add(k); list.push(y); } }
+  return (g.rotations = list);
+}
 
 // A battle's regions' graph (see battleAreas), once a mesh: its links (along the grid tile pairs, an edge's two tiles; on
 // cells corner pairs, a tile edge's two corners), eu and ev their ends, index each surface edge's link; each node's links
@@ -13536,7 +13575,7 @@ function applySetup(s) {
     pickNumber(formulaInUse, s.w);
   }
   if (s.d !== undefined) target = Number(s.d);
-  walkTeams = battleCounts(s.w).includes(Number(s.k)) ? Number(s.k) : 1;  // (a walk's battle, see battleOn)
+  walkTeams = !MODES[s.w].life && COLOUR_STEPS.includes(Number(s.k)) ? Number(s.k) : 1;  // (a walk's battle, if its surface allows it at its size: see battleOn)
   penetration = walkTeams > 1 && PENETRATIONS.some(([p]) => p && p === Number(s.pe)) ? Number(s.pe) : 0;
   for (const id of RIVALS) set(id, s[`x${id.slice(-1).toLowerCase()}`]);
   set('mode', s.w);

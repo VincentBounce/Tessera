@@ -42,6 +42,15 @@ Never delete the bundles in `Tessera resources` (old versions included, the `Wal
   tools' copies and the checks too), in its own commit, verified by `tesseraCheck()`; a name that would change a link's
   words (`w=`, `r=`…) is asked first.
 
+## Sessions and branches
+- One branch, `main`, the only one on GitHub; no branch for a prototype or an experiment (it falls behind as others
+  push, and only a force push fixes it). A prototype is a folder of its own (`lenia/`, `particles/`, `chemistry/`,
+  `liquid/`…), its own page, apart from main.js; one that joins the app moves into main.js in a session of its own.
+- One session a piece of work, named as it, each in its own worktree (`.claude/worktrees/…`), never two in one folder:
+  `tools/ship.sh` sets aside a folder's uncommitted changes while it rebases, another session's work in progress among
+  them. Each ships to main by `tools/ship.sh`.
+- A prototype or experiment given up keeps its row in `REMOVED.md` (its commit stays in main's history).
+
 ## Line balance
 `python3 tools/lines.py [from] [to]` (from: HEAD; to: the files now, or a commit) gives each changed code file's lines
 of code only (no comment, no blank line, see `tools/uncomment.py`): before, and +y or −y, nothing else: the « solde » of each

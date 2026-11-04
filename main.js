@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.19';
+const VERSION = '0.4.20';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -1481,9 +1481,12 @@ const DISPLAY_BY_TAB = {
 // Shown but greyed out, by the menu's group or the tab: a spiral never crosses itself, so it closes no area and visits each
 // cell once; and its marks read as cells, the line along the spiral (Rainbow along the walk) shows nothing more. Elementary's
 // cells never change once made: no Activity
+// a mode's option in the menu; the menu's group of the mode on (its space: 2D, Surfaces…)
+const modeOptionOf = (w) => $('mode').querySelector(`option[value="${w}"]`);
+const modeGroup = () => $('mode').selectedOptions[0].parentElement.label;
 const DISPLAY_GREYED = { '2D spirals': ['fill', 'visits', 'line'], Elementary: ['digit'] };
-const greyed = (item) => [$('mode').selectedOptions[0].parentElement.label, NAV[$('mode').value]?.[0]].some((k) => DISPLAY_GREYED[k]?.includes(item));
-const shows = (item) => DISPLAY_BY_TAB[$('mode').selectedOptions[0].parentElement.label].includes(item) || (spaceTimeOn() && VIEW_3D.includes(item));
+const greyed = (item) => [modeGroup(), NAV[$('mode').value]?.[0]].some((k) => DISPLAY_GREYED[k]?.includes(item));
+const shows = (item) => DISPLAY_BY_TAB[modeGroup()].includes(item) || (spaceTimeOn() && VIEW_3D.includes(item));
 const useful = (item) => shows(item) && !greyed(item);
 function updateDisplayMenu() {
   const rows = { colours: 'coloursRow', grid: 'gridRow',
@@ -2986,7 +2989,7 @@ for (const [kind, t] of Object.entries(TILINGS)) SHAPE_ICONS[t.name] = `tiling-$
 const SHAPE_SHORT = { 'Klein bottle': 'Klein', 'Möbius strip': 'Möbius', 'Stella octangula': 'Stella', Tetrahedron: 'Tetra', Octahedron: 'Octa', Dodecahedron: 'Dodeca', Cuboctahedron: 'Cubocta', Rhombicuboctahedron: 'Rhombi' };
 const shapeLabel = (shape) => SHAPE_SHORT[shape] ?? shape;
 // a mode in words, a shape's tooltip (the mode its click goes to): an automaton's grid (where), else a walk's or an ant's label
-const modeWhere = (w) => (MODES[w].where ?? $('mode').querySelector(`option[value="${w}"]`).text).replace(/^./, (c) => c.toUpperCase());  // a shape's name on its button, wherever (the 2D grids, a surface's tilings)
+const modeWhere = (w) => (MODES[w].where ?? modeOptionOf(w).text).replace(/^./, (c) => c.toUpperCase());  // a shape's name on its button, wherever (the 2D grids, a surface's tilings)
 // the section's title
 const CREATURE_TIPS = { Ant: "Langton's ant: the cell's colour turns it, then the cell takes the next colour", Turmite: "An ant with states: the cell's colour and its own state turn it",
   Worm: "Paterson's worm: along the triangles' lines, never the same edge twice; it ends with none left" };
@@ -3227,13 +3230,13 @@ function renderModePicker() {
   const tiling = inFamily?.F.modes[inFamily.m], has = (...n) => !tiling || tiling.some((v) => n.every((x, i) => NAV[v][[0, 3, 4][i]] === x));
   // an ant's creatures as the shapes, tiles in its Rule section, all of them on whatever shape (Ant, Turmite on squares,
   // Worm on triangles: one of another shape, a click takes it there); a walk's rules a list, each with its base
-  const creatures = kind === 'Ant', optionOf = (v) => $('mode').querySelector(`option[value="${v}"]`);
+  const creatures = kind === 'Ant';
   const rules = creatures ? [...new Set(Object.values(NAV).filter((n) => n[0] === kind && n[1] === space).map((n) => n[3]))] : navValues(3, [kind, space, shape]);
   $('navRules').hidden = creatures || rules.length < 2;
   (creatures ? $('antCreatures') : $('navRules')).replaceChildren(...rules.map((r, i) => {
     const here = Object.keys(NAV).find((m) => NAV[m].slice(0, 4).join() === [kind, space, shape, r].join());
     const v = here ?? Object.keys(NAV).find((m) => NAV[m][0] === kind && NAV[m][1] === space && NAV[m][3] === r);  // (elsewhere: its first shape)
-    const { base, detail } = splitModeLabel(optionOf(v).text), alone = NAV[v][4] === '';  // a spiral: its base here, no Grid | Cells
+    const { base, detail } = splitModeLabel(modeOptionOf(v).text), alone = NAV[v][4] === '';  // a spiral: its base here, no Grid | Cells
     const pic = icon(r === 'Turtle' ? 'turtle' : r === 'Pivot' ? 'pivot' : r === 'Parity' ? 'walk2d' : r === 'Ant' ? 'ant' : MODE_ICONS[v]);  // a turtle for the walks turning relative to their heading
     const go = () => { if (here) { navGo(3, r); return; } $('mode').value = v; $('mode').dispatchEvent(new Event('change')); };
     const how = !creatures && walkTutorialFits(here ?? v) && (() => { if (r === rule) walkTutorialToggle(); else { go(); walkTutorial($('mode').value); } });  // (its ⓘ: how it works, picked first)
@@ -3249,7 +3252,7 @@ function renderModePicker() {
   $('walkRuleHow').hidden = !walkTutorialFits(w);
   const side = (b, s, word, none) => {
     const v = alone ? (s === 'cells' ? w : null) : sides.includes(s) ? navPick(4, s) : null, here = alone ? s === 'cells' : NAV[w][4] === s;
-    const info = !v ? null : MODES[v].turmite ? { base: '', detail: turmite.rule } : MODES[v].antOf ? { base: '', detail: antByDigits ? `digits ${antDigitRules[v]}` : antRules[v] } : splitModeLabel(optionOf(v).text);
+    const info = !v ? null : MODES[v].turmite ? { base: '', detail: turmite.rule } : MODES[v].antOf ? { base: '', detail: antByDigits ? `digits ${antDigitRules[v]}` : antRules[v] } : splitModeLabel(modeOptionOf(v).text);
     b.innerHTML = `<span class="walk-on-name">${word}${info?.base ? ` <span class="mode-base">${info.base}</span>` : ''}</span>`
       + `<span class="mode-detail">${info ? info.detail : none}</span>`;
     b.disabled = !v;
@@ -4682,11 +4685,11 @@ POLYHEDRA.dodeca = (() => {
     for (const c of [1, -1]) P.push([a, b, c]);
     P.push([0, a * PHI, b / PHI], [a / PHI, 0, b * PHI], [a * PHI, b / PHI, 0]);
   }
-  const dot = (p, q) => p[0] * q[0] + p[1] * q[1] + p[2] * q[2], faces = [];
+  const faces = [];
   for (const n of POLYHEDRA.icosa.P) {
-    const top = Math.max(...P.map((p) => dot(p, n))), ring = P.map((_, i) => i).filter((i) => dot(P[i], n) > top - 1e-9);
+    const top = Math.max(...P.map((p) => dot3(p, n))), ring = P.map((_, i) => i).filter((i) => dot3(P[i], n) > top - 1e-9);
     const c = [0, 1, 2].map((d) => ring.reduce((sum, i) => sum + P[i][d], 0) / 5), u = P[ring[0]].map((x, d) => x - c[d]), v = cross(n, u);
-    ring.sort((i, j) => Math.atan2(dot(P[i], v), dot(P[i], u) - dot(c, u)) - Math.atan2(dot(P[j], v), dot(P[j], u) - dot(c, u)));
+    ring.sort((i, j) => Math.atan2(dot3(P[i], v), dot3(P[i], u) - dot3(c, u)) - Math.atan2(dot3(P[j], v), dot3(P[j], u) - dot3(c, u)));
     P.push(c);
     ring.forEach((i, k) => faces.push([P.length - 1, i, ring[(k + 1) % 5]]));
   }
@@ -6257,14 +6260,13 @@ function mobiusStarts(g) {
 // corner onto a corner (12 for the tetrahedron, 24 for the cube and the octahedron, 60 for the
 // icosahedron)
 function solidRotations(C) {
-  const dot = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
-  const frame = (a, b) => { const u = unit(b.map((x, d) => x - dot(a, b) * a[d])); return [a, u, cross(a, u)]; };
-  const c1 = C.slice(1).reduce((best, c) => (dot(C[0], c) > dot(C[0], best) ? c : best)), cos = dot(C[0], c1), F0 = frame(C[0], c1);
+  const frame = (a, b) => { const u = unit(b.map((x, d) => x - dot3(a, b) * a[d])); return [a, u, cross(a, u)]; };
+  const c1 = C.slice(1).reduce((best, c) => (dot3(C[0], c) > dot3(C[0], best) ? c : best)), cos = dot3(C[0], c1), F0 = frame(C[0], c1);
   const rots = [];
   for (const a of C) for (const b of C) {
-    if (a === b || Math.abs(dot(a, b) - cos) > 1e-6) continue;
+    if (a === b || Math.abs(dot3(a, b) - cos) > 1e-6) continue;
     const F = frame(a, b), M = [0, 1, 2].map((i) => [0, 1, 2].map((j) => F[0][i] * F0[0][j] + F[1][i] * F0[1][j] + F[2][i] * F0[2][j]));
-    if (C.every((c) => C.some((e) => dot(M.map((row) => dot(row, c)), e) > 1 - 1e-6))) rots.push(M);
+    if (C.every((c) => C.some((e) => dot3(M.map((row) => dot3(row, c)), e) > 1 - 1e-6))) rots.push(M);
   }
   return rots;
 }
@@ -6286,12 +6288,12 @@ const firstStart = (g, G) => g.gridStart ?? [g.poly[0], G.nbrs[g.poly[0]][0]];
 // The solid's face centres: its own faces' (the dodecahedron's pentagons), of its faces, or of the
 // icosahedron's 20 (3 corners side by side)
 function solidFaceCentres(g, C) {
-  const dot = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2], sum = (ps) => unit([0, 1, 2].map((d) => ps.reduce((s, p) => s + p[d], 0)));
+  const sum = (ps) => unit([0, 1, 2].map((d) => ps.reduce((s, p) => s + p[d], 0)));
   if (g.solid) return g.solid.centres;
   if (g.faces) return g.faces.map((f) => sum(f.corners));
   const O = [];
   for (let i = 0; i < 12; i++) for (let j = i + 1; j < 12; j++) for (let k = j + 1; k < 12; k++) {
-    if (dot(C[i], C[j]) > 0.3 && dot(C[i], C[k]) > 0.3 && dot(C[j], C[k]) > 0.3) O.push(sum([C[i], C[j], C[k]]));
+    if (dot3(C[i], C[j]) > 0.3 && dot3(C[i], C[k]) > 0.3 && dot3(C[j], C[k]) > 0.3) O.push(sum([C[i], C[j], C[k]]));
   }
   return O;
 }
@@ -6309,7 +6311,7 @@ function startList(g) {
   if (g.mobius) return (g.starts = mobiusStarts(g));
   if (g.torus) return (g.starts = torusStarts(g));
   const G = gridGraph(g), V = g.verts, nv = G.nv, at = (v) => [V[3 * v], V[3 * v + 1], V[3 * v + 2]];
-  const dot = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2], mid = (a, b) => unit([0, 1, 2].map((d) => V[3 * a + d] + V[3 * b + d]));
+  const mid = (a, b) => unit([0, 1, 2].map((d) => V[3 * a + d] + V[3 * b + d]));
   const C = solidCorners(g), rots = solidRotations(C);
   // a turned corner is found again as the corner within 1e-6 of it (it is off by rounding errors
   // only), among those of its cell of a coarse grid and of the 26 cells around (one is enough
@@ -6325,13 +6327,13 @@ function startList(g) {
     return w;
   };
   const [v0, f0] = firstStart(g, G), q0 = mid(v0, f0);
-  const nearest = (ps, q) => ps.reduce((b, p) => (dot(p, q) > dot(b, q) ? p : b));
-  const centres = solidFaceCentres(g, C), O = nearest(centres, q0), top = Math.max(...C.map((c) => dot(c, O)));
-  const F = C.filter((c) => dot(c, O) > top - 1e-6), A = nearest(F, q0);  // the face's corners, the kite's
+  const nearest = (ps, q) => ps.reduce((b, p) => (dot3(p, q) > dot3(b, q) ? p : b));
+  const centres = solidFaceCentres(g, C), O = nearest(centres, q0), top = Math.max(...C.map((c) => dot3(c, O)));
+  const F = C.filter((c) => dot3(c, O) > top - 1e-6), A = nearest(F, q0);  // the face's corners, the kite's
   // the face's other corners, the next one counterclockwise from A (seen from outside) first: B
-  const otherCentres = centres.filter((c) => c !== O), turn = (c) => dot(cross(A, c), O);
+  const otherCentres = centres.filter((c) => c !== O), turn = (c) => dot3(cross(A, c), O);
   const otherCorners = F.filter((c) => c !== A).sort((c1, c2) => turn(c2) - turn(c1));
-  const depth = (q) => Math.min(dot(q, O) - Math.max(...otherCentres.map((c) => dot(q, c))), dot(q, A) - Math.max(...otherCorners.map((c) => dot(q, c))));
+  const depth = (q) => Math.min(dot3(q, O) - Math.max(...otherCentres.map((c) => dot3(q, c))), dot3(q, A) - Math.max(...otherCorners.map((c) => dot3(q, c))));
   const edgeKey = (a, b) => Math.min(a, b) * nv + Math.max(a, b), done = new Set(), picks = [];
   for (let v = 0; v < nv; v++) for (const w of G.nbrs[v]) {
     if (done.has(edgeKey(v, w))) continue;
@@ -6342,7 +6344,7 @@ function startList(g) {
       flipped ||= a === w && b === v;
       // an edge across the kite's border has a copy on each of its sides, as deep: the one on the
       // side of the face's next corner, always, so that the border's half edges stick out on one side
-      const side = dot(mid(a, b), otherCorners[0]);
+      const side = dot3(mid(a, b), otherCorners[0]);
       if (!best || near > best.near + 1e-9 || (near > best.near - 1e-9 && side > best.side)) best = { a, b, near, side };
     }
     picks.push({ ...best, flipped });
@@ -6355,20 +6357,20 @@ function startList(g) {
   // A: the one towards B first, as on the kite's border (else rounding errors would pick)
   let h = 0, L = 0;
   for (let v = 0; v < nv; v++) {
-    h = Math.max(h, dot(at(v), O));
+    h = Math.max(h, dot3(at(v), O));
     for (const w of G.nbrs[v]) L = Math.max(L, Math.hypot(...[0, 1, 2].map((d) => V[3 * w + d] - V[3 * v + d])));
   }
-  const corner = (c) => c.map((x) => (x * h) / dot(c, O)), As = corner(A), AB = corner(otherCorners[0]).map((x, d) => x - As[d]);
+  const corner = (c) => c.map((x) => (x * h) / dot3(c, O)), As = corner(A), AB = corner(otherCorners[0]).map((x, d) => x - As[d]);
   const fromA = (v) => Math.hypot(...[0, 1, 2].map((d) => V[3 * v + d] - As[d]));
   for (const e of picks) {
     e.far = Math.sqrt((fromA(e.a) ** 2 + fromA(e.b) ** 2) / 2 - (L * L) / 4);
-    e.along = dot([0, 1, 2].map((d) => V[3 * e.a + d] + V[3 * e.b + d] - 2 * As[d]), AB);
+    e.along = dot3([0, 1, 2].map((d) => V[3 * e.a + d] + V[3 * e.b + d] - 2 * As[d]), AB);
   }
   picks.sort((e1, e2) => (Math.abs(e1.far - e2.far) > 1e-9 ? e1.far - e2.far : e2.along - e1.along));
   const starts = [];
   for (const { a, b, flipped } of picks) {  // first the way to the end nearer A, then back
     // ends as far from A (a pentagon's edge): the way round A counterclockwise first
-    const ccw = dot(cross([0, 1, 2].map((d) => V[3 * a + d] - As[d]), [0, 1, 2].map((d) => V[3 * b + d] - As[d])), O) > 0;
+    const ccw = dot3(cross([0, 1, 2].map((d) => V[3 * a + d] - As[d]), [0, 1, 2].map((d) => V[3 * b + d] - As[d])), O) > 0;
     const [n, f] = Math.abs(fromA(a) - fromA(b)) > 1e-9 ? (fromA(a) < fromA(b) ? [a, b] : [b, a]) : ccw ? [b, a] : [a, b];
     starts.push(...(flipped ? [[n, f]] : [[n, f], [f, n]]));
   }
@@ -6552,7 +6554,6 @@ function torusLoops() {
   if (H.length + D.length < s0 + 2 * L) return loops;
   const digit = (i) => (i < H.length ? H[i] : D[i - H.length]);
   const kind = surfaceOf(mode), S = SPHERES[kind], g = S.mesh(sphereSize()), walker = surfaceSteps(g, mode);
-  const gcdN = (x, y) => (y ? gcdN(y, x % y) : x);
   startList(g).forEach((_, i) => {
     let state = walker.start(i), x = 0, y = 0;
     const at = [], band = [];
@@ -6590,8 +6591,8 @@ function torusLoops() {
     for (let rows = 32; rows <= 64; rows += S.steps[0]) {
       for (let e = Math.ceil(rows / usual / TORUS_RATIO[1]); e <= rows / usual / TORUS_RATIO[0]; e++) {
         if (e % S.steps[1]) continue;
-        const cols = e / S.perRow, mu = (2 * cols) / gcdN(2 * cols, Math.abs(U)), mv = (2 * rows) / gcdN(2 * rows, Math.abs(V));
-        const m = (mu / gcdN(mu, mv)) * mv, laps = [Math.round((m * Math.abs(T[0])) / cols), Math.round((m * Math.abs(T[1])) / rows)];
+        const cols = e / S.perRow, mu = (2 * cols) / gcd(2 * cols, Math.abs(U)), mv = (2 * rows) / gcd(2 * rows, Math.abs(V));
+        const m = (mu / gcd(mu, mv)) * mv, laps = [Math.round((m * Math.abs(T[0])) / cols), Math.round((m * Math.abs(T[1])) / rows)];
         const steps = m * L + s0 + L, off = Math.abs(Math.log(rows / e / usual));
         if (steps > LOOP_STEPS || (cols * rows) / (m * len) < width + LOOP_GAP) continue;
         keep({ start: i + 1, size: `${rows}x${e}`, laps, steps, off });
@@ -10183,14 +10184,13 @@ function blockStep(M, a, b, g) {
 // its place on the grid's lattice of corners (squares, triangles, hexagons with their middles: o, e1, e2 from cell 0), Cairo's
 // by its neighbours' (no two of a set on one pentagon). A block's cells in turn round its corner (a rule's ring)
 const mod = (x, m) => ((x % m) + m) % m;
+// (lattice: a set's lattice from a cell's corners c and middle o, in any coordinates: the plane's, a torus's sheet)
 const BLOCKS = {
-  square: { k: 4, set: ([i, j]) => `${mod(i, 2)},${mod(j, 2)}`, turn: ['1,1', '0,0'], lattice: (c) => [c[0], minus(c[1], c[0]), minus(c[3], c[0])] },
-  tri: { k: 6, set: ([i, j]) => `${mod(i - j, 3)}`, turn: ['0', '1', '2'], lattice: (c) => [c[0], minus(c[1], c[0]), minus(c[2], c[0])] },
-  hex: { k: 3, set: ([i, j]) => `${mod(i, 3)},${mod(j, 3)}`, turn: ['1,0', '0,1'], lattice: (c, o) => [o, minus(c[0], o), minus(c[1], o)] },
+  square: { k: 4, set: ([i, j]) => `${mod(i, 2)},${mod(j, 2)}`, turn: ['1,1', '0,0'], lattice: (c) => [c[0], sub(c[1], c[0]), sub(c[3], c[0])] },
+  tri: { k: 6, set: ([i, j]) => `${mod(i - j, 3)}`, turn: ['0', '1', '2'], lattice: (c) => [c[0], sub(c[1], c[0]), sub(c[2], c[0])] },
+  hex: { k: 3, set: ([i, j]) => `${mod(i, 3)},${mod(j, 3)}`, turn: ['1,0', '0,1'], lattice: (c, o) => [o, sub(c[0], o), sub(c[1], o)] },
   cairo: { k: 4, set: null, turn: ['0', '1'] },
 };
-// (a set's lattice from a cell's corners c and middle o, in any coordinates: the plane's, a torus's sheet)
-const minus = (p, q) => [p[0] - q[0], p[1] - q[1]];
 // stellated (Tim Tyler's, cell-auto.com; its rule ends with *): one set of blocks, each cell first swapped with the one across its side away from
 // its block's corner (its block's neighbour facing it), then the block's rule: particles that fly from block to block, a
 // lattice gas (FHP's on triangles, HPP's on the tetrakis squares)
@@ -10352,6 +10352,14 @@ const RING_RULES = [
   ['Single rotation', () => true, 'a block of one turned a step round, the others kept', (st, k) => (ringAlive(st) === 1 ? ringTurn(st, 1, k) : st), '..o..,.....,o...o,.....,..o..'],
   ['Swirl', () => true, 'a block of one turned a step round, one of one empty cell a step the other way', (st, k) => (ringAlive(st) === 1 ? ringTurn(st, 1, k) : ringAlive(st) === k - 1 ? ringTurn(st, -1, k) : st), 'oo..o,....o,.....,o....,o..oo'],
 ];
+// a rule's option in the rules' menu, before Custom: its words, value, name, its picture (see RULE_ICONS)
+const beforeCustom = (option) => $('lifePreset').insertBefore(option, $('lifePreset').querySelector('option[value="custom"]'));
+function addPreset(text, value, name, icon) {
+  RULE_ICONS[value] = icon;
+  const option = new Option(text, value);
+  option.dataset.name = name;
+  beforeCustom(option);
+}
 const BLOCK_MARKS = { square: '▣', tri: '⟐', hex: '⬣', cairo: '⌬' };  // (the rules' menu, by grid: marks of their own)
 for (const [kind, mark] of Object.entries(BLOCK_MARKS)) BLOCKS[kind].mark = mark;
 const BLOCK_FIRST = { square: 'Tron', cairo: 'Tron' };  // a grid's first rule (its rule at first), else the list's
@@ -10361,10 +10369,7 @@ for (const [kind, mark] of Object.entries(BLOCK_MARKS)) {  // each grid's rules,
   for (const [name, fits, words, rule, art] of [...RING_RULES].sort((a, b) => first(a) - first(b))) {
     if (!fits(k)) continue;
     const value = `M${Array.from({ length: 1 << k }, (_, st) => rule(st, k)).join(',')}`;
-    RULE_ICONS[value] = art;
-    const option = new Option(`${mark} ${value} — ${words}${BLOCK_WORDS[`${kind}|${name}`] ?? ''}`, value);
-    option.dataset.name = name;
-    $('lifePreset').insertBefore(option, $('lifePreset').querySelector('option[value="custom"]'));
+    addPreset(`${mark} ${value} — ${words}${BLOCK_WORDS[`${kind}|${name}`] ?? ''}`, value, name, art);
   }
 }
 // on squares, more: Tyler's Square-4 (its blocks' 4 sets in turn round a square, /4) for the billiard balls and the critters; the
@@ -10373,10 +10378,7 @@ for (const [name, words, value, art] of [
   ...RING_RULES.filter(([name]) => name === 'Billiard balls' || name === 'Critters').map(([name, , words, rule, art]) => [`${name}, 4 phases`, `${words}; Tim Tyler's Square-4, its blocks' 4 sets of corners in turn round a square`, `M${Array.from({ length: 16 }, (_, st) => rule(st, 4)).join(',')}/4`, art]),
   ['Ising', "the Ising model of a magnet (Vichniac's Q2R): a checkerboard, its colours in turn, a square turned over when just 2 of its 4 sides are alive; the walls between alive and dead as long, ever", 'Q2R', 'oo...,ooo..,.ooo.,..ooo,...oo'],
 ]) {
-  RULE_ICONS[value] = art;
-  const option = new Option(`${BLOCK_MARKS.square} ${value} — ${words}`, value);
-  option.dataset.name = name;
-  $('lifePreset').insertBefore(option, $('lifePreset').querySelector('option[value="custom"]'));
+  addPreset(`${BLOCK_MARKS.square} ${value} — ${words}`, value, name, art);
 }
 // the stellated grids' rules, on the cells come in across (a cell j: a particle come in from that side, its way the one across):
 // FHP's (Frisch, Hasslacher and Pomeau, 1986) and HPP's (Hardy, de Pazzis and Pomeau, 1973) lattice gases: the particles fly
@@ -10388,18 +10390,13 @@ const STAR_RULES = [
 for (const [kind, { k }] of Object.entries(STARS)) for (const [name, size, words, rule, art] of STAR_RULES) {
   if (size !== k) continue;
   const mark = (BLOCKS[kind] ?? STARS[kind]).mark, value = `M${Array.from({ length: 1 << k }, (_, st) => rule(st, k)).join(',')}*`;
-  RULE_ICONS[value] = art;
-  const option = new Option(`${mark} ${value} — ${words}`, value);
-  option.dataset.name = name;
-  $('lifePreset').insertBefore(option, $('lifePreset').querySelector('option[value="custom"]'));
+  addPreset(`${mark} ${value} — ${words}`, value, name, art);
 }
 // the loops' rules (see parseLoops), before Custom
 for (const [name, { year, words, pattern: { w, h, rle } }] of Object.entries(LOOP_RULES)) {
   const on = new Set(loopCells(rle).map(([x, y]) => `${Math.floor((5 * x) / Math.max(w, h, 5))},${Math.floor((5 * y) / Math.max(w, h, 5))}`));  // (its picture: its start in 5 × 5, a pixel where any of its cells is)
-  RULE_ICONS[name] = Array.from({ length: 5 }, (_, Y) => Array.from({ length: 5 }, (_, X) => (on.has(`${X},${Y}`) ? 'o' : '.')).join('')).join(',');
-  const option = new Option(`${LOOPS_MARK} ${name} — ${words} (${year})`, name);
-  option.dataset.name = name === 'Langton' ? "Langton's loops" : name;
-  $('lifePreset').insertBefore(option, $('lifePreset').querySelector('option[value="custom"]'));
+  addPreset(`${LOOPS_MARK} ${name} — ${words} (${year})`, name, name === 'Langton' ? "Langton's loops" : name,
+    Array.from({ length: 5 }, (_, Y) => Array.from({ length: 5 }, (_, X) => (on.has(`${X},${Y}`) ? 'o' : '.')).join('')).join(','));
 }
 // Elementary's rules (see parseElementary), each its number and words, its picture its first 5 rows from one cell: the known
 // ones first (Wikipedia's from one cell among them), then Wolfram's 88 the rest (the 256 alike mirrored or in negative counted once: each its least, its words its
@@ -10423,10 +10420,7 @@ for (let n = 0; n < 256; n++) {
   if (twins[0] === n && !ELEMENTARY_RULES.some(([k]) => twins.includes(k))) ELEMENTARY_RULES.push([n, twins.length > 1 ? `alike, mirrored or in negative: ${twins.slice(1).map((k) => `W${k}`).join(', ')}` : 'its own mirror and negative']);
 }
 for (const [n, words] of ELEMENTARY_RULES) {
-  RULE_ICONS[`W${n}`] = wolframFromCell(n, 5).map((r) => r.slice(2, 7).map((c) => (c ? 'o' : '.')).join('')).join(',');  // (its middle 5 columns)
-  const option = new Option(`${ELEMENTARY_MARK} W${n} — ${words}`, `W${n}`);
-  option.dataset.name = `Rule ${n}`;
-  $('lifePreset').insertBefore(option, $('lifePreset').querySelector('option[value="custom"]'));
+  addPreset(`${ELEMENTARY_MARK} W${n} — ${words}`, `W${n}`, `Rule ${n}`, wolframFromCell(n, 5).map((r) => r.slice(2, 7).map((c) => (c ? 'o' : '.')).join('')).join(','));  // (its picture: its middle 5 columns)
 }
 // each grid's block rules in this order (its first: the one it starts with), before Custom
 const BLOCK_ORDER = { square: ['Tron', 'Ising', 'Critters', 'Swirl', 'Billiard balls, 4 phases', 'Critters, 4 phases', 'Billiard balls', 'Single rotation'],
@@ -10434,7 +10428,7 @@ const BLOCK_ORDER = { square: ['Tron', 'Ising', 'Critters', 'Swirl', 'Billiard b
                       cairo: ['Tron', 'Critters', 'Swirl', 'Billiard balls', 'Single rotation'] };
 for (const [kind, names] of Object.entries(BLOCK_ORDER)) {
   const mine = [...$('lifePreset').options].filter((o) => o.text.startsWith(`${BLOCK_MARKS[kind]} `));
-  for (const name of names) { const o = mine.find((x) => x.dataset.name === name); if (o) $('lifePreset').insertBefore(o, $('lifePreset').querySelector('option[value="custom"]')); }
+  for (const name of names) { const o = mine.find((x) => x.dataset.name === name); if (o) beforeCustom(o); }
 }
 function lifeStep(G = lifeStepGPU(walk.life, cur + 1)?.[0]) {  // (G: its sums, played on the graphics card, see lifeStepGPU)
   const L = walk.life, gen = cur + 1, K = L.colours, two = K > 1;
@@ -13663,8 +13657,8 @@ const surfaceTriangles = (g) => (g.triangles ??= (() => {
       slots.push(k * t + q); P.push([g.verts[3 * v], g.verts[3 * v + 1], g.verts[3 * v + 2]]);
     }
     const N = newellNormal(P.flat(), 0, P.length, [0, 0, 0]);
-    const u = cross(N, Math.abs(N[0]) < 0.9 * Math.hypot(...N) ? [1, 0, 0] : [0, 1, 0]), w = cross(N, u), on = (p, a) => p[0] * a[0] + p[1] * a[1] + p[2] * a[2];
-    const Q = P.map((p) => [on(p, u), on(p, w)]);
+    const u = cross(N, Math.abs(N[0]) < 0.9 * Math.hypot(...N) ? [1, 0, 0] : [0, 1, 0]), w = cross(N, u);
+    const Q = P.map((p) => [dot3(p, u), dot3(p, w)]);
     for (const i of outwardFolds([...ears(Q)], P, Q, N)) out.push(slots[i]);
     Object.assign(own[t], { to: out.length, d: slots.length });
   }
@@ -13675,8 +13669,7 @@ const surfaceTriangles = (g) => (g.triangles ??= (() => {
 // the quad is convex on the tile's plane (Q), till none; corners round a cap (a rosette sphere's houses) end as their hull, a
 // fold that no light shadows (ears' own diagonals folded half of them inwards: stripes of shadow on Mirror 8's houses at 10)
 function outwardFolds(tri, P, Q, N) {
-  const sub = (a, b) => [a[0] - b[0], a[1] - b[1], a[2] - b[2]], dot = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
-  const inward = (a, b, c, d) => { const n = cross(sub(P[b], P[a]), sub(P[c], P[a])); return dot(n, sub(P[d], P[a])) * Math.sign(dot(n, N)) > 1e-12 * dot(n, n); };
+  const inward = (a, b, c, d) => { const n = cross(sub(P[b], P[a]), sub(P[c], P[a])); return dot3(n, sub(P[d], P[a])) * Math.sign(dot3(n, N)) > 1e-12 * dot3(n, n); };
   const turn = (a, b, c) => (Q[b][0] - Q[a][0]) * (Q[c][1] - Q[a][1]) - (Q[b][1] - Q[a][1]) * (Q[c][0] - Q[a][0]);
   for (let flips = 0, again = true; again && flips < tri.length; ) {
     again = false;
@@ -13794,11 +13787,11 @@ function flatCellInstances(mode) {
 // A convex solid's triangles from its corners and its faces' outward normals: each face the corners
 // furthest along its normal, in turn around it (6 floats per corner: position, normal)
 function solidTriangles(corners, normals) {
-  const out = [], dot = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+  const out = [];
   for (const n of normals) {
-    const top = Math.max(...corners.map((p) => dot(p, n))), face = corners.filter((p) => dot(p, n) > top - 1e-9);
+    const top = Math.max(...corners.map((p) => dot3(p, n))), face = corners.filter((p) => dot3(p, n) > top - 1e-9);
     const c = [0, 1, 2].map((i) => face.reduce((sum, p) => sum + p[i], 0) / face.length), off = (p) => p.map((v, i) => v - c[i]);
-    const a = off(face[0]), b = cross(n, a), angle = (p) => Math.atan2(dot(off(p), b), dot(off(p), a));
+    const a = off(face[0]), b = cross(n, a), angle = (p) => Math.atan2(dot3(off(p), b), dot3(off(p), a));
     face.sort((p, q) => angle(p) - angle(q));
     const N = n.map((v) => v / Math.hypot(...n));
     for (let k = 1; k < face.length - 1; k++) out.push(...face[0], ...N, ...face[k], ...N, ...face[k + 1], ...N);
@@ -16161,7 +16154,7 @@ function computeFramed() {
 }
 // Another mode in the same tab keeps the Display settings; another tab starts from its defaults
 let displayTab = null;
-const modeTabOf = () => `${NAV[$('mode').value]?.[0]}|${$('mode').selectedOptions[0].parentElement.label}`;  // (the menu's tab, Life or Elementary, and its space: the select's group holds several tabs)
+const modeTabOf = () => `${NAV[$('mode').value]?.[0]}|${modeGroup()}`;  // (the menu's tab, Life or Elementary, and its space: the select's group holds several tabs)
 function displayDefaults() {
   const mode = MODES[$('mode').value];
   $('colourMode').value = defaultLook(mode);  // simplest view by default
@@ -16221,7 +16214,7 @@ const BUILT_IN = [
   ['π', '20,000 digits', { x: 'pi', w: 'turtle', d: 20000 }],
 ];
 // the walk's name, as in the walk list ("Squares turtle"; a surface's own name)
-const walkName = (w) => splitModeLabel($('mode').querySelector(`option[value="${w}"]`)?.text ?? w).name;
+const walkName = (w) => splitModeLabel(modeOptionOf(w)?.text ?? w).name;
 // a mode's shape and its tiles, as the Grid's menu names them: a surface of a family (a torus, a strip, a bottle, the
 // rosettes' spheres) and its tiles there (Torus · Kites, Rosettes · Flower 9); else its space and its shape, its tiles in its
 // name (2D circles · Flower 9, 3D solids · Cube)

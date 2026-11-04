@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.25';
+const VERSION = '0.4.26';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -8613,7 +8613,7 @@ for (const [kind, t] of Object.entries(TILINGS)) PLANE_CELLS[kind] = t.cells;
 // a zone of the hunt, a random start in it, in words
 function zoneWords(zone) {
   const K = lifeParts(), r = zoneRadius(zone), d = plane.density;
-  if (famousZone(zone)) return `${K === 1 ? 'A pattern of the rule' : 'Patterns of the rule, one for each colour'} ${zone === 'centred' ? (K === 1 ? 'in the middle' : 'at its spot') : 'anywhere'}, turned or mirrored at random`;
+  if (famousZone(zone)) return `${K === 1 ? 'A pattern of the rule' : 'Patterns of the rule, one for each colour'} ${zone === 'centred' ? `${K === 1 ? 'in the middle' : 'at its spot'}, ${onDisc() ? 'turned' : 'turned or mirrored'} at random` : onDisc() ? 'pivoted at random round the middle (a disc: no move keeps it, only its turns)' : 'anywhere, turned or mirrored at random'}`;
   if (zone === 'mirror') return `Each colour a soup of its two opposite parts, ${d} % alive`;
   if (zone === 'numbers') return `The binary digits of ${plane.number}, a digit a cell${K > 1 ? (colourMixed() ? ', each live cell a colour at random' : ', each colour in its part') : ''}`;
   if (zone === 'realm' && !r) return 'Each colour random cells on its face';
@@ -10763,6 +10763,7 @@ const HUNT_ZONES = { icon24: [null, 'Icon 24'], iconMax: [null, 'Icon max'], pun
                      patterns: [null, 'Anywhere'],  // the same, mixed, anywhere in each colour's part
                      custom: ['link', 'Found'] };  // a start from a link with its cells (a hunt's result), from none of these: shown then only
 const famousZone = (zone) => zone === 'patterns' || zone === 'centred';
+const onDisc = () => !!flatGrid() && !!APERIODIC[patternKind()];  // (a grid that never repeats, a disc: its patterns by their middles, see centredChoices)
 // the Icon and Punk zones' pictures (pixelarticons.js, punks.js): 24 × 24 bits each, their names (a link's: an icon's, a
 // punk's number), what one is called, where they come from
 const ICON_SETS = { icon: { P: 24, pixel: (i) => iconPixel(ICON_BITS[i]), names: ICON_NAMES, word: 'icon', label: (i) => `“${ICON_NAMES[i]}”`, source: 'Pixelarticons' },
@@ -12308,7 +12309,7 @@ function patternChoices(centred = false) {  // (once a grid, its colours and rul
 function laidChoices(centred, any = false) {  // any: the first one of each colour only (whether there are some)
   const L = walk.life, g = walk.geo, K = lifeParts(), kind = patternKind(), rule = L.ruleText, [cols, rows] = COLOUR_GRID[K];
   const mine = !ruleCard(rule);
-  if (flatGrid() && APERIODIC[kind]) return centredChoices(kind, K, rule, mine, any, centred);
+  if (onDisc()) return centredChoices(kind, K, rule, mine, any, centred);
   // (centred: a rectangle's room and its patterns' spans in its grid's lattice cells, as on that grid)
   const R = RECTS[kind], cellsAcross = R ? Math.min(...R.basis.map((v) => Math.hypot(...v))) / Math.hypot(...latticeStep(R.base)) : 1, pk = R ? R.base : kind, pper = TILES_PER_GRID_CELL[pk] ?? 1;
   const span = (rle, t, f) => { const cs = orientPattern(pk, rle, t, f); return Math.max(...cs.map((c) => Math.floor(c[0] / pper)), ...cs.map((c) => c[1])) + 1; };
@@ -15755,7 +15756,7 @@ $('huntZones').replaceChildren(...Object.entries(HUNT_ZONES).map(([zone, [pic, n
   if (zone === 'full') b.dataset.default = 'yes';  // (see hunt)
   b.title = zone === 'custom' ? 'A start found by a hunt, from a link'
     : `${zone === 'centred' ? "The rule's patterns, one for each colour at its spot, turned or mirrored"
-    : zone === 'patterns' ? "The rule's patterns, as Famous, one for each colour anywhere in its part, turned or mirrored"
+    : zone === 'patterns' ? "The rule's patterns, as Famous, one for each colour anywhere in its part, turned or mirrored (on a disc, only pivoted round its middle: no move keeps a disc)"
     : zone === 'mirror' ? "Each colour's two opposite faces (a solid where a colour has two), random soups in them"
     : zone === 'numbers' ? "A number at random, its binary digits laid a digit a cell, 1 alive (in colours, each colour alive in its part, as Wild; Mixed, a colour at random): half the time a fraction p/q (q from 2 to 999, p under it), else a root √n (n from 2 to 9,999, no square). The hunt tries each once, in a mixed order, its results each with its number"
     : zone === 'emoji' ? "An emoji at random, of Unicode's 1,923 (Emoji 18.0), as wide as fits, its outline and dark marks alive, in the middle of each colour's part"

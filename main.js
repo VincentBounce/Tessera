@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.40';
+const VERSION = '0.4.41';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -7309,11 +7309,13 @@ let cleared = null;  // the cells Clear took away, back with Undo until somethin
 // on Cairo; o or A alive, B C… dying), what it does, its picture (5 × 5 pixels; else its cells)]; a disc's (the grids that
 // never repeat, see CENTRED), its cells [x, y, state] by their middles from the disc's middle instead of an RLE, then null,
 // then whether it lies 6 from the middle (for colours: a copy a colour) or at it
+// (a methuselah's end counted as Life counts it, its ships flying off taken away: they are named after it, as they
+// come round a torus and meet the rest, the end later there)
 const BRUSH_CELL = ['cell', '', [], 'Cell', 'o!', 'one cell, again to change its state', '.....,.....,..o..'];
 const DRAW_PATTERNS = [
   ['glider', 'square', ['B3/S23', 'B36/S23', 'B3/S2-i34q', 'B2i34c/S2-i3'], 'Glider', 'bo$2bo$3o!', 'flies off diagonally', '.....,..o..,...o.,.ooo.'],
-  ['rpentomino', 'square', ['B3/S23'], 'R-pentomino', 'b2o$2o$bo!', 'settles at generation 1,103', '.....,..oo.,.oo..,..o..'],
-  ['acorn', 'square', ['B3/S23'], 'Acorn', 'bo$3bo$2o2b3o!', 'settles at generation 5,206', '.....,.o...,...o.,oo.oo'],
+  ['rpentomino', 'square', ['B3/S23'], 'R-pentomino', 'b2o$2o$bo!', 'settles at generation 1,103, 6 gliders flying off', '.....,..oo.,.oo..,..o..'],
+  ['acorn', 'square', ['B3/S23'], 'Acorn', 'bo$3bo$2o2b3o!', 'settles at generation 5,206, 13 gliders flying off', '.....,.o...,...o.,oo.oo'],
   ['diehard', 'square', ['B3/S23'], 'Diehard', '6bo$2o$bo3b3o!', 'dies out at generation 130', '.....,....o,oo...,.o.oo'],
   ['pulsar', 'square', ['B3/S23'], 'Pulsar', '2b3o3b3o$$o4bobo4bo$o4bobo4bo$o4bobo4bo$2b3o3b3o$$2b3o3b3o$o4bobo4bo$o4bobo4bo$o4bobo4bo$$2b3o3b3o!', 'beats with period 3', 'oo.oo,o...o,.....,o...o,oo.oo'],
   ['gosper', 'square', ['B3/S23'], 'Gosper gun', '24bo$22bobo$12b2o6b2o12b2o$11bo3bo4b2o12b2o$2o8bo5bo3b2o$2o8bo3bob2o4bobo$10bo5bo7bo$11bo3bo$12b2o!', 'a glider every 30 generations', 'oo.oo,oo.oo,...+.,....+,..+++'],
@@ -7488,9 +7490,9 @@ const DRAW_PATTERNS = [
   ['dual56-b246s0467c5-ship', 'dual56', ['B246/S0467/C5'], 'Spaceship', '5.A5.A$2.A3.2B2D2.D.B3.A!', 'flies, period 10 · 10 cells'],
   ['dual56-b25s046c5-ship', 'dual56', ['B25/S046/C5'], 'Spaceship', '3.D.B2.D2.B.B2.D$2.A3.A7.A7.A!', 'flies, period 10 · 10 cells'],
   ['dual314-b258s0456c4-ship', 'dual314', ['B258/S0456/C4'], 'Spaceship', '19.3B2.A$3.A!', 'flies, period 8 · 5 cells'],
-  ['dual314-b258s0456c4-meth', 'dual314', ['B258/S0456/C4'], 'Methuselah', '8.A13.A5.A$3.A3.A4.A.A5.A6.A!', 'settles at generation 190 · 9 cells'],
+  ['dual314-b258s0456c4-meth', 'dual314', ['B258/S0456/C4'], 'Methuselah', '8.A13.A5.A$3.A3.A4.A.A5.A6.A!', 'settles at generation 190, 3 ships flying off · 9 cells'],
   ['dual314-b25s0456c4-ship', 'dual314', ['B25/S0456/C4'], 'Spaceship', '19.3B2.A$3.A!', 'flies, period 8 · 5 cells'],
-  ['dual314-b25s0456c4-meth', 'dual314', ['B25/S0456/C4'], 'Methuselah', '8.A13.A5.A$3.A3.A4.A.A5.A6.A!', 'settles at generation 190 · 9 cells'],
+  ['dual314-b25s0456c4-meth', 'dual314', ['B25/S0456/C4'], 'Methuselah', '8.A13.A5.A$3.A3.A4.A.A5.A6.A!', 'settles at generation 190, 3 ships flying off · 9 cells'],
   ['dual16gliders-ship', 'dual16', ['B236/S046/C4'], 'Spaceship', '7.AB5.BA2.A3.AB!', 'flies, period 10 · 7 cells'],
   ['dual16gliders-fast', 'dual16', ['B236/S046/C4'], 'Fast ship', 'BC3A.BCB.BA2.C$11.C!', 'flies, period 5 · 12 cells'],
   ['dual16ships-ship', 'dual16', ['B237/S056/C4'], 'Spaceship', '.B4.ABA.A3.AB!', 'flies, period 10 · 7 cells'],
@@ -7548,9 +7550,9 @@ const DRAW_PATTERNS = [
   ['square-b347s2c3-osc', 'square', ['B347/S2/C3'], 'Oscillator', '.A$A.BA$B3A!', 'period 4 · 8 cells'],
   ['square-b3478s2c3-osc', 'square', ['B3478/S2/C3'], 'Oscillator', '.A$A.BA$B3A!', 'period 4 · 8 cells'],
   ['square-b389s23-ship', 'square', ['B389/S23'], 'Glider', '.A$2.A$3A!', 'flies, period 4 · 5 cells'],
-  ['square-b389s23-meth', 'square', ['B389/S23'], 'Methuselah', '4.2A$A.A2.A$6A!', 'settles at generation 1,108 · 11 cells'],
+  ['square-b389s23-meth', 'square', ['B389/S23'], 'Methuselah', '4.2A$A.A2.A$6A!', 'settles at generation 1,108, a glider flying off · 11 cells'],
   ['square-b39s2389-ship', 'square', ['B39/S2389'], 'Glider', '.A$2.A$3A!', 'flies, period 4 · 5 cells'],
-  ['square-b39s2389-meth', 'square', ['B39/S2389'], 'Methuselah', '3A2.A$A2.2A2$A.A.A!', 'settles at generation 1,243 · 10 cells'],
+  ['square-b39s2389-meth', 'square', ['B39/S2389'], 'Methuselah', '3A2.A$A2.2A2$A.A.A!', 'settles at generation 1,243, 2 gliders flying off · 10 cells'],
   ['kite-b3v1235v23s123v012c5-ship', 'kite', ['B3v1235v23/S123v012/C5'], 'Spaceship', '3.AB.2AB2.B$.B.B2.B!', 'flies, period 6 · 9 cells'],
   ['kite-b3v1235v23s123v012c5-osc', 'kite', ['B3v1235v23/S123v012/C5'], 'Oscillator', '7.AD2.DA$.A.A!', 'period 5 · 6 cells'],
   ['kite-b3s123v0257c5-meth', 'kite', ['B3/S123v0257/C5'], 'Methuselah', '2A2.2A5.A$2A4.A3.2A!', 'settles at generation 788 · 10 cells'],

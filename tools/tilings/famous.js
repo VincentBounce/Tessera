@@ -1,4 +1,5 @@
-// Famous patterns for the tilings' rules: deno run --allow-read --allow-write famous.js rules.json out.json [workers]
+// Famous patterns for the tilings' rules: deno run --allow-read --allow-write famous.js rules.json out.json [workers] [wider]
+// (wider: the starts that many times as wide and high, for rules whose small ones all die or fill the grid)
 // rules.json: [[tiling, rule], …]. For each: small random starts (2 × 2 and 3 × 2 lattice cells, many) run on a torus,
 // the longest-lived of 12 cells or fewer measured as Life counts a methuselah (../kitesearch/engine.js, settle: on a big
 // grid, until its debris repeat, the ships flying off taken away); bigger starts (3 × 3, 4 × 4) for what they leave:
@@ -10,7 +11,7 @@ import { tilingCells } from './grid.js';
 const PLANE_CELLS = { square: 1, tri: 2, kite: 6 };  // (a lattice cell's, as the engine's grids: see ../kitesearch/worker.js)
 // a Cairo cell of grid.js (lattice cell x / 8, its square x % 8 / 2 of 2 × 2, its pentagon x % 2) as the app's (x: two a square)
 const cairoApp = ([x, y, s]) => { const p = x % 8, q = [[0, 0], [1, 0], [0, 1], [1, 1]][p >> 1]; return [2 * (2 * Math.floor(x / 8) + q[0]) + (p & 1), 2 * y + q[1], s]; };
-const rules = JSON.parse(Deno.readTextFileSync(Deno.args[0])), N = Number(Deno.args[2] ?? 6), P = pool(N), res = {}, t0 = Date.now();
+const rules = JSON.parse(Deno.readTextFileSync(Deno.args[0])), N = Number(Deno.args[2] ?? 6), WIDER = Number(Deno.args[3] ?? 1), P = pool(N), res = {}, t0 = Date.now();
 const rle = (found, name) => {
   const cells = name === 'cairo' ? found.map(cairoApp) : found;
   const h = Math.max(...cells.map((c) => c[1])) + 1, rows = [];
@@ -31,7 +32,7 @@ const merge = (parts) => {
 const cool = () => new Promise((r) => setTimeout(r, 20000));  // a rest between rules (the machine cools)
 const spread = async (task, W, rule, trials, args) => merge(await Promise.all(P.workers.map((w, k) => P.call(w, { task, W, rule, opts: [trials, k * trials + args.from, ...args.opts] }))));
 for (const [name, rule] of rules) {
-  const z = name === 'square' ? 2 : 1, m = PLANE_CELLS[name] ?? tilingCells(name), small = `${name}:${Math.round(Math.sqrt(12000 / m))}`, big = `${name}:${Math.round(Math.sqrt(90000 / m))}`;
+  const z = (name === 'square' ? 2 : 1) * WIDER, m = PLANE_CELLS[name] ?? tilingCells(name), small = `${name}:${Math.round(Math.sqrt(12000 / m))}`, big = `${name}:${Math.round(Math.sqrt(90000 / m))}`;
   // methuselahs: the longest-lived small starts on the torus, then measured
   const a = await spread('seeds', small, rule, 80, { from: 0, opts: [2 * z, 2 * z, 0.4, 1500] });
   const b = await spread('seeds', small, rule, 80, { from: 50000, opts: [2 * z, 3 * z, 0.35, 1500] });

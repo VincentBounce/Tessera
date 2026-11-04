@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.81';
+const VERSION = '0.4.82';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -7192,10 +7192,37 @@ function battlePlayer(g, grid, S, starts, digits, pen = penetration) {
     hits.forEach((h) => h && (pen === 2 || pen === 5 ? size[h[0]]-- : cut(...h)));  // (Penetrating 2 on cells: a dent, the place its biter's as it takes it)
     rest.forEach((s) => take(s, i));
     if (bite && i > 0) rest.forEach(grow);
+    if (pen === 5 && !grid && i > 0) rest.forEach((s) => pocketsAt(s, places[s][i]));  // (Penetrating 5 on cells: its head's tile may cut a pocket off)
     peak = Math.max(peak, ...size);
     if (i > 0 && rest.length <= 1) n = i;
   };
   const own = (t, s) => { if (land[t]) landCount[land[t] - 1]--; land[t] = s + 1; landCount[s]++; };
+  // Penetrating 5 on cells: s's pockets filled: the tiles not s's (its land or body), joined across their sides, in
+  // regions; the largest the outside, every other one wholly round by s's, whatever is in it, s's land
+  const fillPockets = (s) => {
+    const mine = (t) => land[t] === s + 1 || alive(s, t), region = new Int32Array(g.n).fill(-1), sizes = [];
+    for (let t0 = 0; t0 < g.n; t0++) {
+      if (region[t0] >= 0 || mine(t0)) continue;
+      const r = sizes.length, queue = [t0];
+      region[t0] = r; sizes.push(0);
+      while (queue.length) {
+        const t = queue.pop();
+        sizes[r]++;
+        for (let e = 0; e < k; e++) { const u = g.nbr[k * t + e]; if (u >= 0 && region[u] < 0 && !mine(u)) { region[u] = r; queue.push(u); } }
+      }
+    }
+    const out = sizes.indexOf(Math.max(...sizes));
+    for (let t = 0; t < g.n; t++) if (region[t] >= 0 && region[t] !== out) own(t, s);
+  };
+  // tile t just s's (its land or body): whether it may cut a pocket off, the tiles round it not s's in two arcs or more
+  // (one arc, or none: nothing parted); then its pockets filled
+  const pocketsAt = (s, t) => {
+    const ring = [];
+    for (let e = 0; e < k; e++) { const u = g.nbr[k * t + e]; if (u >= 0) ring.push(land[u] !== s + 1 && !alive(s, u)); }
+    let arcs = 0;
+    for (let e = 0; e < ring.length; e++) if (ring[e] && !ring[(e + ring.length - 1) % ring.length]) arcs++;
+    if (arcs >= 2) fillPockets(s);
+  };
   // the link s's step q's wall cuts (−1: none), found once (battleWall's lookups, again on every cut, were most of the time)
   const wallLinks = bite ? starts.map(() => new Int32Array(len + 1).fill(-2)) : null;
   const wallOf = (s, q) => { let j = wallLinks[s][q]; if (j === -2) j = wallLinks[s][q] = battleWall(g, grid, L, places[s], q)?.j ?? -1; return j; };
@@ -7226,9 +7253,10 @@ function battlePlayer(g, grid, S, starts, digits, pen = penetration) {
           if (all) own(t, s);
         }
         if (X && pen === 2) restart(s);
+        if (X && pen === 5) fillPockets(s);
       }
     }
-    for (const t of grid ? G.edgeTiles.get(G.key(w.a, w.b)) : [Q[i]]) if (land[t] && land[t] !== s + 1) own(t, s);  // (a bite)
+    for (const t of grid ? G.edgeTiles.get(G.key(w.a, w.b)) : [Q[i]]) if (land[t] && land[t] !== s + 1) { own(t, s); if (pen === 5 && !grid) pocketsAt(s, t); }  // (a bite: on cells with Penetrating 5, its pockets filled too)
   };
   // a chain's corner c added after node after (its head unless said; −1: before its tail), or node x let go; its corners
   // counted (refs, size)

@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.97';
+const VERSION = '0.4.98';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -6987,7 +6987,7 @@ const PENETRATIONS = [
   [1, 'Penetrating', 'M0 1.5H2.5V2.5H0Z', "Each walker's land: the tiles its body closes stay its own (an enemy's too); a head on another's body cuts it; a head going into an enemy's land takes the tiles it goes through. The first two heads meeting end it: the most land wins"],
   [2, 'Penetrating 2', 'M1.5 0H2.5V1.5H1.5Z', "As Penetrating, but a head never crosses an enemy's body: going onto it, it takes that place and the body goes on round it, not cut, pushed back (along the grid its line round the corner, the tiles it goes round the biter's land; along it: nothing). A body closing a loop makes it land, inside and itself, and starts again from its head. The first two heads meeting end it: the most land wins"],
   [4, 'Penetrating 4', 'M1.5 0H2.5V4H1.5ZM0 1.5H4V2.5H0Z', "Along the grid: a walker's line, the edges it went along, stays (crossing it: a fork); its land the regions it closes. A head pierces an enemy's line only going through it: on it, it goes along it (their borders glued); off it again by the other side, the line is pierced there, let go each way up to a fork or its end, its land there let go too; by the same side, nothing. Going along an enemy's line inside its land (its land on both sides), that line becomes the head's. The first two heads meeting end it: the most land wins"],
-  [5, 'Land grid', 'M1.5 0H2.5V4H1.5ZM0 1.5H4V2.5H0ZM0 0H1V1H0Z', "Along the grid: as Penetrating 4, but going along an enemy's line pierces it too (up to its forks): each walker keeps its land, no line of another in it. A loop closed is painted its colour, whatever is in it (the last one closed wins). The first two heads meeting end it: the most land wins"],
+  [5, 'Land grid', 'M1.5 0H2.5V4H1.5ZM0 1.5H4V2.5H0ZM0 0H1V1H0Z', "Along the grid: as Penetrating 4, but going along an enemy's line pierces it too (up to its forks): each walker keeps its land, no line of another in it. A loop closed has its empty tiles painted its colour; an enemy's land surrounded there stays its own, taken only by piercing its line. The first two heads meeting end it: the most land wins"],
   [6, 'Land cells', 'M0 0H4V4H0ZM1 1H3V3H1Z', "On cells: no body; each walker paints the tile it goes into its colour, whatever it was (an enemy's land pierced), and a zone its colour closes (the tiles not of its colour cut off, the largest outside) has its empty tiles painted; an enemy's land surrounded there stays its own. The first two heads meeting end it: the most tiles win"]];
 const BATTLE_MODES = ['hexSphereWalk', 'icosaLR', 'cubeFlat', 'hexSphereGrid', 'icosaGrid', 'cubeGrid'];  // (the turtles of the sphere and the cube, on cells and along the grid)
 const battleOn = () => walkTeams > 1 && BATTLE_MODES.includes($('mode').value);
@@ -7442,7 +7442,7 @@ function battlePlayer(g, grid, S, starts, digits, pen = penetration) {
     if (!X || closedOf[s][X[0]]) return;
     outside[s] -= X.length; largest[s] = Math.max(largest[s], X.length);
     if (outside[s] < largest[s]) { remakeLine(s); return; }
-    for (const t of X) { closedOf[s][t] = 1; closedCount[s]++; own(t, s); }  // (painted its colour, whatever it was: the last loop closed wins)
+    for (const t of X) { closedOf[s][t] = 1; closedCount[s]++; if (!land[t]) own(t, s); }  // (its empty tiles painted: an enemy's land surrounded stays, as Land cells)
   };
   // s's line's pieces and closed tiles made again whole: its corners joined by its edges; the tiles joined by the links
   // its line does not cut, the largest region outside
@@ -7463,7 +7463,7 @@ function battlePlayer(g, grid, S, starts, digits, pen = penetration) {
     for (let t = 0; t < g.n; t++) {
       const was = closedOf[s][t];
       closedOf[s][t] = unionFind(region, t) !== out ? 1 : 0; closedCount[s] += closedOf[s][t];
-      if (closedOf[s][t] && !was) own(t, s); else if (was && !closedOf[s][t]) release(t, s);
+      if (closedOf[s][t] && !was && !land[t]) own(t, s); else if (was && !closedOf[s][t]) release(t, s);
     }
   };
   // link j's two corners (along the grid: its edge's), from the surface's edges once a mesh
@@ -7529,8 +7529,9 @@ function battlePlayer(g, grid, S, starts, digits, pen = penetration) {
     }
     return false;
   };
-  // Penetrating 4 and Land grid: the land painted as lines close (see splitLine: the last loop closed wins, as Land cells); tile t
-  // no longer closed by s: s's land no more, another's that still closes it (a living one's), else none
+  // Penetrating 4 and Land grid: the land painted as lines close (see splitLine: a loop closed paints its empty tiles, an
+  // enemy's land surrounded stays, as Land cells); tile t no longer closed by s (its line pierced): s's land no more,
+  // another's that still closes it (a living one's), else none
   const release = (t, s) => {
     if (land[t] !== s + 1) return;
     let o = 0;

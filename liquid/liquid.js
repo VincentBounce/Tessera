@@ -33,7 +33,7 @@
 
 /* ---- 1.1 Setting ----------------------------------------------------------------------------- */
 
-const COUNTS = [1024, 2048, 4096, 16384, 65536, 262144], STEPS = [1, 2, 4, 8], TOOLS = ['drag', 'attract', 'repel', 'emit', 'delete'], VIEWS = ['liquid', 'particles'];
+const COUNTS = [1024, 2048, 4096, 16384, 65536, 262144], STEPS = [1, 2, 4, 8], TOOLS = ['drag', 'attract', 'repel', 'emit', 'delete', 'vortex', 'lock', 'unlock', 'collide'], VIEWS = ['liquid', 'particles'];
 const DEAD = 4; // (a particle's liquid once deleted)
 const MASSES = [1, 1.6, 2.5, 4], LIQUIDS = ['yellow', 'green', 'blue', 'pink'], COLOURS = [[1, 0.82, 0.3], [0.35, 0.85, 0.45], [0.35, 0.6, 1], [0.9, 0.35, 0.65]];
 const EMIT = 3, BETA = 0.3, FILL = 0.5, REST = 4, THRESHOLD = 1, PULL = 0.004, CFL = 0.3; // (CFL: the fastest a step can move a
@@ -66,7 +66,8 @@ struct Params { a: vec4u, f: vec4f, k: vec4f, v: vec4f, p: vec4f, q: vec4f, m: v
 // a: n, the grid's columns and rows, bins; f: the reach h, a bin's width and height, the box's width; k: stiffness, near
 // stiffness, rest density of one liquid, of two; v: gravity's pull (x, y, reaches a step²), viscosity σ, β; p: the pointer's place,
 // its brush (radius), its pull; q: its speed (a step), its tool (0 none, 1 drag, 2 attract, 3 repel, 4 emit:
-// the CPU's, 5 delete); m: the four masses;
+// the CPU's, 5 delete, 6 vortex, 7 lock, 8 unlock, 9 collide); m: the four masses; a particle's place w: 1 locked (held,
+// a solid: it moves not, and pushes as a wall would, its mass endless);
 // s: pixels a unit of the box (zoomed), the canvas' width and height, the liquid's threshold; o: the box's corner (0, 0)
 // in the canvas' pixels (y up), a particle's radius as drawn (the box's units)`;
 const COMPUTE = PARAMS + `
@@ -82,20 +83,24 @@ const COMPUTE = PARAMS + `
 fn cellOf(p: vec2f) -> vec2i { return clamp(vec2i(floor(p / P.f.yz)), vec2i(0), vec2i(P.a.yz) - 1); }
 fn binOf(c: vec2i) -> u32 { return u32(c.y * i32(P.a.y) + c.x); }
 fn inGrid(c: vec2i) -> bool { return all(c >= vec2i(0)) && all(c < vec2i(P.a.yz)); }
-// One particle: gravity and the pointer's tool on its speed, then moved by it
+// One particle: the pointer's tool, gravity on its speed, then moved by it (held still once locked)
 @compute @workgroup_size(256) fn advance(@builtin(global_invocation_id) id: vec3u) {
   let i = id.x; if (i >= P.a.x) { return; }
   let x = state[2u * i]; var v = state[2u * i + 1u].xy; let h = P.f.x; if (x.z >= DEAD) { return; }
+  let d = P.p.xy - x.xy; let l = length(d); let tool = u32(P.q.z); let brushed = l < P.p.z; let w = 1.0 - l / P.p.z;
+  if (brushed && tool == 5u) { state[2u * i] = vec4f(x.xy, DEAD, 0.0); return; } // (deleted: dead till the CPU packs them out)
+  var locked = x.w;
+  if (brushed && tool == 7u) { locked = 1.0; }
+  if (brushed && tool == 8u) { locked = 0.0; }
+  if (locked == 1.0) { state[2u * i] = vec4f(x.xyz, 1.0); state[2u * i + 1u] = vec4f(0.0); return; }
   v += P.v.xy * h;
-  let d = P.p.xy - x.xy; let l = length(d);
-  if (P.q.z == 5.0 && l < P.p.z) { state[2u * i] = vec4f(x.xy, DEAD, 0.0); return; } // (deleted: dead till the CPU packs them out)
-  if (P.q.z > 0.0 && P.q.z < 4.0 && l < P.p.z) {
-    let w = 1.0 - l / P.p.z;
-    if (P.q.z == 1.0) { v = mix(v, P.q.xy, w * 0.3); }
-    else if (l > 0.0) { v += d / l * w * P.p.w * h * select(1.0, -1.0, P.q.z == 3.0); }
-  }
-  state[2u * i] = vec4f(x.xy + v, x.zw); state[2u * i + 1u] = vec4f(v, 0.0, 0.0);
+  if (brushed && tool == 1u) { v = mix(v, P.q.xy, w * 0.3); }
+  if (brushed && l > 0.0 && (tool == 2u || tool == 3u)) { v += d / l * w * P.p.w * h * select(1.0, -1.0, tool == 3u); }
+  if (brushed && l > 0.0 && tool == 6u) { v += vec2f(-d.y, d.x) / l * w * P.p.w * h; } // (round the pointer)
+  state[2u * i] = vec4f(x.xy + v, x.z, 0.0); state[2u * i + 1u] = vec4f(v, 0.0, 0.0);
 }
+// A particle's mass: its liquid's, endless when locked
+fn massOf(p: vec4f) -> f32 { return select(P.m[u32(p.z)], 1e9, p.w == 1.0); }
 @compute @workgroup_size(256) fn clear(@builtin(global_invocation_id) id: vec3u) {
   if (id.x < P.a.w) { atomicStore(&count[id.x], 0u); }
 }
@@ -163,8 +168,8 @@ fn way(e: vec2f, l: f32, i: u32, j: u32) -> vec2f {
 @compute @workgroup_size(128) fn relax(@builtin(global_invocation_id) id: vec3u) {
   let s = id.x; if (s >= P.a.x) { return; }
   let me = near[2u * s]; let i = sorted[s];
-  if (me.z >= DEAD) { next[2u * i] = me; next[2u * i + 1u] = vec4f(0.0); return; }
-  let v = near[2u * s + 1u].xy; let ri = dens[s]; let mi = P.m[u32(me.z)]; let h = P.f.x;
+  if (me.z >= DEAD || me.w == 1.0) { next[2u * i] = me; next[2u * i + 1u] = vec4f(0.0); return; }
+  let v = near[2u * s + 1u].xy; let ri = dens[s]; let mi = massOf(me); let h = P.f.x;
   let c = cellOf(me.xy); var dx = vec2f(0.0);
   for (var dy = -1; dy <= 1; dy++) { for (var ex = -1; ex <= 1; ex++) {
     let q = c + vec2i(ex, dy); if (!inGrid(q)) { continue; }
@@ -173,7 +178,7 @@ fn way(e: vec2f, l: f32, i: u32, j: u32) -> vec2f {
       if (t == s) { continue; }
       let o = near[2u * t]; let e = o.xy - me.xy; let l = length(e); let r = l / h;
       if (r < 1.0) {
-        let u = way(e, l, i, sorted[t]); let w = 1.0 - r; let rj = dens[t]; let mj = P.m[u32(o.z)];
+        let u = way(e, l, i, sorted[t]); let w = 1.0 - r; let rj = dens[t]; let mj = massOf(o);
         let pressure = P.k.x * ((ri.x + rj.x) * 0.5 - select(P.k.w, P.k.z, o.z == me.z)) * w + P.k.y * (ri.y + rj.y) * 0.5 * w * w;
         let closing = dot(v - near[2u * t + 1u].xy, u) / h;
         let viscous = select(0.0, w * (P.v.z * closing + P.v.w * closing * closing) / max(ri.z, rj.z), closing > 0.0);
@@ -193,7 +198,11 @@ fn way(e: vec2f, l: f32, i: u32, j: u32) -> vec2f {
       dx -= u * h * (pressure + viscous) * 0.5;
     }
   }
-  let x = clamp(me.xy + dx, vec2f(0.0), vec2f(P.f.w, 1.0));
+  var x = me.xy + dx;
+  // (Collide: the brush an obstacle, a particle in it put back on its rim)
+  let e = x - P.p.xy; let el = length(e);
+  if (u32(P.q.z) == 9u && el < P.p.z) { x = P.p.xy + select(vec2f(0.0, 1.0), e / el, el > 0.0) * P.p.z; }
+  x = clamp(x, vec2f(0.0), vec2f(P.f.w, 1.0));
   next[2u * i] = vec4f(x, me.zw); next[2u * i + 1u] = vec4f(x - (me.xy - v), 0.0, 0.0);
 }`;
 // A particle drawn as a soft disc, its weight (1 − d²)² in its liquid's channel (one each: r, g, b, a), summed into a
@@ -207,7 +216,7 @@ fn origin() -> vec2f { return P.o.xy; }
 // A particle's quad, its size in the box's units round it
 fn quad(vi: u32, ii: u32, size: f32) -> Out {
   var corners = array(vec2f(-1, -1), vec2f(1, -1), vec2f(-1, 1), vec2f(-1, 1), vec2f(1, -1), vec2f(1, 1));
-  let p = s[2u * ii]; var o: Out; o.uv = corners[vi]; o.k = min(u32(p.z), 3u); o.c = colour[o.k].rgb;
+  let p = s[2u * ii]; var o: Out; o.uv = corners[vi]; o.k = min(u32(p.z), 3u); o.c = mix(colour[o.k].rgb, vec3f(0.85), select(0.0, 0.55, p.w == 1.0)); // (locked: paler)
   let px = origin() + (p.xy + o.uv * size) * P.s.x;
   o.pos = select(vec4f(px / P.s.yz * 2.0 - 1.0, 0.0, 1.0), vec4f(2.0, 2.0, 2.0, 1.0), p.z >= DEAD); // (a dead one: off the canvas)
   return o;
@@ -233,9 +242,11 @@ fn quad(vi: u32, ii: u32, size: f32) -> Out {
   let sum = t.x + t.y + t.z + t.w; let lead = t[k] - t[j]; let es = fwidth(sum); let el = fwidth(lead);
   let inside = all(at >= vec2f(0.0)) && all(at <= vec2f(P.f.w, 1.0));
   let bg = select(vec3f(0.02, 0.022, 0.03), vec3f(0.05, 0.055, 0.075), inside);
-  if (sum < 1e-4) { return vec4f(bg, 1.0); }
   let T = P.s.w; let hue = mix(colour[j].rgb, colour[k].rgb, 0.5 + 0.5 * smoothstep(0.0, el, lead));
-  return vec4f(mix(bg, hue, smoothstep(T - es, T + es, sum)), 1.0);
+  let liquid = select(mix(bg, hue, smoothstep(T - es, T + es, sum)), bg, sum < 1e-4);
+  // (Collide's obstacle: its rim, a pixel and a half wide)
+  let rim = select(0.0, 1.0 - smoothstep(0.0, 1.5, abs(length(at - P.p.xy) - P.p.z) * P.s.x), u32(P.q.z) == 9u);
+  return vec4f(mix(liquid, vec3f(0.9), rim), 1.0);
 }`;
 const PICTURE = 'rgba16float';
 

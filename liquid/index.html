@@ -55,15 +55,17 @@
   <div class="tabs" id="tools"></div>
   <label class="range"><span>Brush</span><input id="brush" type="range" min="0.02" max="0.3" step="0.01"><b></b></label>
   <div class="sec">Liquid</div>
-  <label class="range"><span>Gravity</span><input id="gravity" type="range" min="0" max="0.1" step="0.001"><b></b></label>
+  <label class="range"><span>Weight</span><input id="weight" type="range" min="0" max="0.1" step="0.001"><b></b></label>
+  <label class="range"><span>Gravity X</span><input id="gravX" type="range" min="-1" max="1" step="0.1"><b></b></label>
+  <label class="range"><span>Gravity Y</span><input id="gravY" type="range" min="-1" max="1" step="0.1"><b></b></label>
   <label class="range"><span>Stiffness</span><input id="stiffness" type="range" min="0.001" max="0.03" step="0.001"><b></b></label>
   <label class="range"><span>Near</span><input id="near" type="range" min="0" max="0.05" step="0.001"><b></b></label>
   <label class="range"><span>Rest same</span><input id="same" type="range" min="1" max="8" step="0.1"><b></b></label>
   <label class="range"><span>Rest other</span><input id="other" type="range" min="1" max="8" step="0.1"><b></b></label>
   <label class="range"><span>Viscosity</span><input id="viscosity" type="range" min="0" max="1" step="0.01"><b></b></label>
-  <div class="row" style="margin-top:8px"><button class="btn" id="play">Pause</button><button class="btn" id="scatter">Scatter</button></div>
+  <div class="row" style="margin-top:8px"><button class="btn" id="play">Pause</button><button class="btn" id="scatter">Scatter</button><button class="btn" id="tilt">Tilt</button></div>
   <div id="stats"></div>
-  <div id="help">Each particle pushed from its neighbours by the pressure of their density (Stiffness) against the rest density (Rest same between particles of one liquid, Rest other between two liquids: lower, they shun each other), and from those very near (Near: never clumped). A heavier particle moves less under the same push: it sinks. Viscosity: the share of a particle's closing speed its neighbours take away each step (0 to 1). A drag in the box: Drag carries the liquid along, Attract draws it, Repel pushes it, within the Brush. View: Liquid, the liquid as one body (metaballs); Particles, the liquid drawn by its particles alone, each a disc of its liquid's colour ringed darker, neighbours at rest touching. Fewer particles (1k, 2k): larger ones. The wheel zooms round the cursor: at 64k and more the particles are a pixel or two apart, seen one by one only zoomed in. The link keeps all the settings.</div>
+  <div id="help">Each particle pushed from its neighbours by the pressure of their density (Stiffness) against the rest density (Rest same between particles of one liquid, Rest other between two liquids: lower, they shun each other), and from those very near (Near: never clumped). A heavier particle moves less under the same push: it sinks. Viscosity: the share of a particle's closing speed its neighbours take away each step (0 to 1). A drag in the box: Drag carries the liquid along, Attract draws it, Repel pushes it, within the Brush. View: Liquid, the liquid as one body (metaballs); Particles, the liquid drawn by its particles alone, each a disc of its liquid's colour ringed darker, neighbours at rest touching. Fewer particles (1k, 2k): larger ones. The wheel zooms round the cursor: at 64k and more the particles are a pixel or two apart, seen one by one only zoomed in. Weight: how hard gravity pulls (the weight on the bottom); Gravity X and Y its way (−1 to 1, Y −1 down); Tilt: its way the device's, tilted (a phone or a tablet). The link keeps all the settings.</div>
 </div>
 <div id="stage"><canvas id="view"></canvas><div id="fail"></div></div>
 <!-- The script fetched fresh each time (a prototype changing often: never an old one from the cache) -->

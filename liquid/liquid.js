@@ -38,10 +38,10 @@ const MASSES = [1, 1.6, 2.5, 4], COLOURS = [[1, 0.82, 0.3], [0.35, 0.85, 0.45], 
 const BETA = 0.3, FILL = 0.5, REST = 4, THRESHOLD = 1, PULL = 0.004, CFL = 0.3; // (CFL: the fastest a step can move a
 // particle, in reaches, and stay stable)
 const mulberry32 = (a) => () => { a |= 0; a = (a + 0x6d2b79f5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
-// The setting from the link: #n=65536&steps=4&seed=1&gravity=0.03&stiffness=0.01&near=0.02&same=4&other=3&viscosity=0.1&brush=0.1&view=particles
+// The setting from the link: #n=65536&steps=4&seed=1&weight=0.03&gravX=0&gravY=-1&stiffness=0.01&near=0.02&same=4&other=3&viscosity=0.1&brush=0.1&view=particles
 const hash = Object.fromEntries(new URLSearchParams(location.hash.slice(1)));
 const num = (v, d) => (v === undefined || v === '' || isNaN(+v) ? d : +v);
-const set = { n: COUNTS.includes(+hash.n) ? +hash.n : 65536, steps: STEPS.includes(+hash.steps) ? +hash.steps : 4, seed: +hash.seed || 1, gravity: num(hash.gravity, 0.03), stiffness: num(hash.stiffness, 0.01), near: num(hash.near, 0.02), same: num(hash.same, REST), other: num(hash.other, 3), viscosity: num(hash.viscosity, 0.1), brush: num(hash.brush, 0.1), view: VIEWS.includes(hash.view) ? hash.view : 'liquid', tool: 'drag' };
+const set = { n: COUNTS.includes(+hash.n) ? +hash.n : 65536, steps: STEPS.includes(+hash.steps) ? +hash.steps : 4, seed: +hash.seed || 1, weight: num(hash.weight, 0.03), gravX: num(hash.gravX, 0), gravY: num(hash.gravY, -1), stiffness: num(hash.stiffness, 0.01), near: num(hash.near, 0.02), same: num(hash.same, REST), other: num(hash.other, 3), viscosity: num(hash.viscosity, 0.1), brush: num(hash.brush, 0.1), view: VIEWS.includes(hash.view) ? hash.view : 'liquid', tool: 'drag' };
 const keep = () => { const { tool, ...h } = set; history.replaceState(null, '', '#' + new URLSearchParams(h)); };
 // The box and its reach, fixed by a scatter: its width a (the screen's aspect then), the reach h such that n particles at
 // the rest density fill FILL of it, the grid of bins (each a reach wide at least)
@@ -52,20 +52,20 @@ function box() {
   const gx = Math.max(3, Math.floor(a / h)), gy = Math.max(3, Math.floor(1 / h));
   return { a, h, gx, gy, bins: gx * gy, s: Math.sqrt((FILL * a) / set.n) }; // (s: the particles' spacing at rest)
 }
-// Gravity's pull on a particle in reaches a step²: the slider is the weight on the bottom (the pull times the box's
-// height in reaches), the same whatever the count (a fixed pull would squeeze a taller column of reaches more, till
-// the step blows up)
-const pull = () => set.gravity * world.h;
+// Gravity's pull on a particle in reaches a step², its way Gravity X and Y (−1 to 1, y up; tilted with the device by
+// Tilt): Weight is the weight on the bottom (the pull times the box's height in reaches), the same whatever the count
+// (a fixed pull would squeeze a taller column of reaches more, till the step blows up)
+const pull = () => [set.gravX, set.gravY].map((g) => g * set.weight * world.h);
 
 /* ---- 1.2 Shaders ----------------------------------------------------------------------------- */
 
 const PARAMS = `
 struct Params { a: vec4u, f: vec4f, k: vec4f, v: vec4f, p: vec4f, q: vec4f, m: vec4f, s: vec4f, o: vec4f };
 // a: n, the grid's columns and rows, bins; f: the reach h, a bin's width and height, the box's width; k: stiffness, near
-// stiffness, rest density of one liquid, of two; v: gravity (reaches a step²), viscosity σ, β, a particle's radius as drawn (the box's units); p: the pointer's place,
+// stiffness, rest density of one liquid, of two; v: gravity's pull (x, y, reaches a step²), viscosity σ, β; p: the pointer's place,
 // its brush (radius), its pull; q: its speed (a step), its tool (0 none, 1 drag, 2 attract, 3 repel); m: the four masses;
 // s: pixels a unit of the box (zoomed), the canvas' width and height, the liquid's threshold; o: the box's corner (0, 0)
-// in the canvas' pixels (y up)`;
+// in the canvas' pixels (y up), a particle's radius as drawn (the box's units)`;
 const COMPUTE = PARAMS + `
 @group(0) @binding(0) var<uniform> P: Params;
 @group(0) @binding(1) var<storage, read_write> state: array<vec4f>; // a particle i: place 2i (its liquid in z), speed 2i + 1
@@ -83,7 +83,7 @@ fn inGrid(c: vec2i) -> bool { return all(c >= vec2i(0)) && all(c < vec2i(P.a.yz)
 @compute @workgroup_size(256) fn advance(@builtin(global_invocation_id) id: vec3u) {
   let i = id.x; if (i >= P.a.x) { return; }
   let x = state[2u * i]; var v = state[2u * i + 1u].xy; let h = P.f.x;
-  v.y -= P.v.x * h;
+  v += P.v.xy * h;
   let d = P.p.xy - x.xy; let l = length(d);
   if (P.q.z > 0.0 && l < P.p.z) {
     let w = 1.0 - l / P.p.z;
@@ -169,7 +169,7 @@ fn way(e: vec2f, l: f32, i: u32, j: u32) -> vec2f {
         let u = way(e, l, i, sorted[t]); let w = 1.0 - r; let rj = dens[t]; let mj = P.m[u32(o.z)];
         let pressure = P.k.x * ((ri.x + rj.x) * 0.5 - select(P.k.w, P.k.z, o.z == me.z)) * w + P.k.y * (ri.y + rj.y) * 0.5 * w * w;
         let closing = dot(v - near[2u * t + 1u].xy, u) / h;
-        let viscous = select(0.0, w * (P.v.y * closing + P.v.z * closing * closing) / max(ri.z, rj.z), closing > 0.0);
+        let viscous = select(0.0, w * (P.v.z * closing + P.v.w * closing * closing) / max(ri.z, rj.z), closing > 0.0);
         dx -= u * h * (pressure + viscous) * mj / (mi + mj);
       }
     }
@@ -182,7 +182,7 @@ fn way(e: vec2f, l: f32, i: u32, j: u32) -> vec2f {
       let u = wallOut(k); let w = 1.0 - r;
       let pressure = max(0.0, P.k.x * (ri.x - P.k.z) * w + P.k.y * ri.y * w * w);
       let closing = 2.0 * dot(v, u) / h;
-      let viscous = select(0.0, w * (P.v.y * closing + P.v.z * closing * closing) / ri.z, closing > 0.0);
+      let viscous = select(0.0, w * (P.v.z * closing + P.v.w * closing * closing) / ri.z, closing > 0.0);
       dx -= u * h * (pressure + viscous) * 0.5;
     }
   }
@@ -208,7 +208,7 @@ fn quad(vi: u32, ii: u32, size: f32) -> Out {
 @vertex fn vs(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> Out { return quad(vi, ii, P.f.x * 0.6); }
 // The Particles view, the liquid drawn by its particles alone: each a disc of its liquid's colour ringed darker (its
 // radius half the particles' spacing: neighbours at rest touch; a pixel at least) on the box's background
-@vertex fn dotVs(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> Out { return quad(vi, ii, max(P.v.w, 1.0 / P.s.x)); }
+@vertex fn dotVs(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> Out { return quad(vi, ii, max(P.o.z, 1.0 / P.s.x)); }
 @fragment fn dotFs(i: Out) -> @location(0) vec4f { let d = dot(i.uv, i.uv); if (d > 1.0) { discard; } return vec4f(i.c * select(1.0, 0.5, d > 0.55), 1.0); }
 @fragment fn fs(i: Out) -> @location(0) vec4f {
   let d = dot(i.uv, i.uv); if (d > 1.0) { discard; }
@@ -274,8 +274,8 @@ function scatter() {
 function write() {
   const w = view.width, h = view.height, frame = frameOf(w, h), buf = new ArrayBuffer(144), u = new Uint32Array(buf), f = new Float32Array(buf);
   u.set([set.n, world.gx, world.gy, world.bins]);
-  f.set([world.h, world.a / world.gx, 1 / world.gy, world.a, set.stiffness, set.near, set.same, set.other, pull(), set.viscosity, BETA, 0.5 * world.s], 4);
-  f.set([pointer.x, pointer.y, set.brush, PULL, pointer.vx, pointer.vy, pointer.down ? TOOLS.indexOf(set.tool) + 1 : 0, 0, ...MASSES, frame.sc, w, h, THRESHOLD, frame.ox, frame.oy, 0, 0], 16);
+  f.set([world.h, world.a / world.gx, 1 / world.gy, world.a, set.stiffness, set.near, set.same, set.other, ...pull(), set.viscosity, BETA], 4);
+  f.set([pointer.x, pointer.y, set.brush, PULL, pointer.vx, pointer.vy, pointer.down ? TOOLS.indexOf(set.tool) + 1 : 0, 0, ...MASSES, frame.sc, w, h, THRESHOLD, frame.ox, frame.oy, 0.5 * world.s, 0], 16);
   device.queue.writeBuffer(params, 0, buf);
 }
 // `count` steps in one submission: each seven passes
@@ -339,6 +339,18 @@ const zoomAt = (e) => {
   if (z === 1) Object.assign(look, { x: world.a / 2, y: 0.5 });
 };
 let on = true;
+// A slider shown at its setting
+const showSlider = (id) => { const input = document.getElementById(id); input.value = set[id]; input.nextElementSibling.textContent = set[id]; };
+// Tilt's gravity: the sensor's (accelerationIncludingGravity, the device's x right and y up, 9.81 at rest, pointing
+// away from the ground) turned by the screen's orientation into the box's way, each a tenth (as the sliders)
+let tilt = false, felt = false;
+function tilted(e) {
+  const a = e.accelerationIncludingGravity; if (a?.x == null) return;
+  felt = true;
+  const t = ((screen.orientation?.angle ?? 0) * Math.PI) / 180, x = -a.x / 9.81, y = -a.y / 9.81, tenth = (v) => Math.round(Math.min(1, Math.max(-1, v)) * 10) / 10;
+  set.gravX = tenth(x * Math.cos(t) - y * Math.sin(t)); set.gravY = tenth(x * Math.sin(t) + y * Math.cos(t));
+  showSlider('gravX'); showSlider('gravY');
+}
 function panel() {
   const markCounts = tabs(document.getElementById('counts'), COUNTS, () => set.n, (v) => { set.n = v; markCounts(); keep(); scatter(); }, (v) => v / 1024 + 'k');
   const markSteps = tabs(document.getElementById('steps'), STEPS, () => set.steps, (v) => { set.steps = v; markSteps(); keep(); });
@@ -347,11 +359,22 @@ function panel() {
   // The view: the liquid (metaballs) or its particles alone
   const markViews = tabs(document.getElementById('views'), VIEWS, () => set.view, (v) => { set.view = v; markViews(); keep(); }, (v) => v[0].toUpperCase() + v.slice(1));
   document.getElementById('play').onclick = (e) => { on = !on; e.target.textContent = on ? 'Pause' : 'Play'; };
-  for (const id of ['brush', 'gravity', 'stiffness', 'near', 'same', 'other', 'viscosity']) {
-    const input = document.getElementById(id), out = input.nextElementSibling;
-    input.value = set[id]; out.textContent = set[id];
-    input.oninput = () => { set[id] = +input.value; out.textContent = input.value; keep(); };
+  for (const id of ['brush', 'weight', 'gravX', 'gravY', 'stiffness', 'near', 'same', 'other', 'viscosity']) {
+    const input = document.getElementById(id);
+    showSlider(id);
+    input.oninput = () => { set[id] = +input.value; showSlider(id); keep(); };
   }
+  // Tilt: a switch (its name never changes, .on its state), gravity's way the device's, greyed where it has no motion
+  // sensor (iOS asks leave first)
+  const tiltButton = document.getElementById('tilt'), noSensor = (why) => { tilt = false; tiltButton.classList.remove('on'); tiltButton.disabled = true; tiltButton.title = why; removeEventListener('devicemotion', tilted); };
+  if (!('DeviceMotionEvent' in window)) noSensor('No motion sensor here: Tilt needs a phone or a tablet');
+  tiltButton.onclick = async () => {
+    if (!tilt && typeof DeviceMotionEvent.requestPermission === 'function' && (await DeviceMotionEvent.requestPermission().catch(() => 'denied')) !== 'granted') return noSensor('The motion sensor was not allowed');
+    tilt = !tilt; tiltButton.classList.toggle('on', tilt);
+    if (!tilt) return removeEventListener('devicemotion', tilted);
+    felt = false; addEventListener('devicemotion', tilted);
+    setTimeout(() => { if (tilt && !felt) noSensor('No motion sensor here: Tilt needs a phone or a tablet'); }, 1500);
+  };
   view.onpointerdown = (e) => { [pointer.x, pointer.y] = toBox(e); pointer.moved = [0, 0]; pointer.down = true; view.setPointerCapture(e.pointerId); };
   view.onpointermove = (e) => { const [x, y] = toBox(e); pointer.moved[0] += x - pointer.x; pointer.moved[1] += y - pointer.y; pointer.x = x; pointer.y = y; };
   view.onpointerup = view.onpointercancel = () => { pointer.down = false; };
@@ -392,29 +415,30 @@ function frame(t) {
 /* ---- 1.6 Check ------------------------------------------------------------------------------- */
 
 // One GPU step (bins) against the same step on the CPU (every pair, no bins), the largest difference in places and
-// speeds (at 4,096 particles, the CPU's every pair); then a fresh scatter of 4,096 run 3,000 steps: every particle in
+// speeds (at 4,096 particles, the CPU's every pair, gravity slanted); then a fresh scatter of 4,096 run 3,000 steps: every particle in
 // the box, and the liquids' mean heights in the order of their weights (the lightest on top); back to the setting shown
 window.liquidCheck = async () => {
-  const playing = on, was = set.n;
+  const playing = on, was = { n: set.n, gravX: set.gravX, gravY: set.gravY };
   on = false; // (the loop stepping meanwhile would change what is read)
   try {
-    set.n = 4096; scatter();
+    Object.assign(set, { n: 4096, gravX: 0.3, gravY: -1 }); scatter(); // (a slant: both ways checked)
     for (let i = 0; i < 300; i++) { write(); steps(1); }
     const step = await checkStep();
-    scatter(); write(); steps(3000);
+    set.gravX = 0; scatter(); write(); steps(3000);
     const S = await readState(), y = [0, 0, 0, 0], c = [0, 0, 0, 0];
     let out = 0;
     for (let i = 0; i < set.n; i++) { const x = S[i * 8], h = S[i * 8 + 1]; if (!(x >= 0 && x <= world.a && h >= 0 && h <= 1)) out++; y[S[i * 8 + 2]] += h; c[S[i * 8 + 2]]++; }
     const mean = y.map((v, k) => v / c[k]), layered = mean.every((v, k) => !k || v < mean[k - 1]);
     console.log(`liquidCheck: 3,000 steps of ${set.n} particles from a scatter: ${out} out of the box, mean heights ${mean.map((v) => v.toFixed(3)).join(' > ')} (lightest to heaviest): ${!out && layered ? 'ok' : 'FAILED'}`);
     return step && !out && layered;
-  } finally { set.n = was; scatter(); on = playing; }
+  } finally { Object.assign(set, was); scatter(); on = playing; }
 };
 async function checkStep() {
   pointer.down = false; write();
   const S = await readState(), n = set.n, f = Math.fround, { h, a } = world, want = new Float32Array(S.length);
   const M = S.slice();
-  for (let i = 0; i < n; i++) { const vy = f(S[i * 8 + 5] - f(f(pull()) * f(h))); M[i * 8 + 5] = vy; M[i * 8] = f(S[i * 8] + S[i * 8 + 4]); M[i * 8 + 1] = f(S[i * 8 + 1] + vy); }
+  const [gx, gy] = pull().map((g) => f(f(g) * f(h)));
+  for (let i = 0; i < n; i++) { const vx = f(S[i * 8 + 4] + gx), vy = f(S[i * 8 + 5] + gy); M[i * 8 + 4] = vx; M[i * 8 + 5] = vy; M[i * 8] = f(S[i * 8] + vx); M[i * 8 + 1] = f(S[i * 8 + 1] + vy); }
   const way = (ex, ey, l, i, j) => { if (l > 0) return [ex / l, ey / l]; const a = ((Math.imul(Math.min(i, j), 2654435761) + Math.max(i, j)) >>> 8) * ((2 * Math.PI) / 16777216), s = i < j ? 1 : -1; return [Math.cos(a) * s, Math.sin(a) * s]; };
   const D = new Float64Array(n * 3);
   for (let i = 0; i < n; i++) for (let j = 0; j < n; j++) {

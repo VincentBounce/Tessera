@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.54';
+const VERSION = '0.4.55';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -7008,16 +7008,17 @@ function duelScore() {
 
 /* ---- 7.6c Hunting the longest duels ---------------------------------------------------------- */
 /* Duel's hunt (under Digits B): pairs of numbers drawn at random, each pair once, fought at the surface, size, start and
- * digits shown, on and on until stopped; the 8 longest kept. Its numbers: the Number cards' reals and sequences (but
- * Random) and the square roots of Life's Formula hunt (√2 to √9999, see DRAWN_ROOTS); no fraction, whose digits go round.
- * A duel's length: its steps till the heads meet; one still on when the digits end, at least as long (≥, first). */
+ * digits shown, on and on until stopped. Its numbers: the Number cards' reals and sequences (but Random) and the square
+ * roots of Life's Formula hunt (√2 to √9999, see DRAWN_ROOTS); no fraction, whose digits go round. Two lists apart: the
+ * duels ended (the heads met), the 8 longest; and those still on when the digits end (at least as long: ≥), the first 8. */
 const DUEL_CARDS = Object.values(PRESETS).filter((p) => ['Constants', '𝑓', 'Sequences'].includes(p.group) && typeof p.f === 'string').map((p) => p.f).concat('rho');
-const duelHunt = { run: null, top: [], tried: new Set(), key: '', status: '' };
+const DUEL_FRESH = () => ({ ended: [], open: [], endedCount: 0, tried: new Set(), key: duelHuntKey(), status: '' });  // (a hunt's results, none yet)
+const duelHunt = { run: null, ended: [], open: [], endedCount: 0, tried: new Set(), key: '', status: '' };
 const duelHuntKey = () => `${$('mode').value}|${sphereSize()}|${startNo()}|${digitsNeeded()}`;  // (what its duels are fought at)
 // √r's first n digits in base b, its integer part first (on the page: one integer root, as numberSeed's)
 const rootDigits = (r, base, n) => Uint8Array.from(iroot(BigInt(r) * BigInt(base) ** BigInt(2 * n), 2).toString(base).slice(0, n), (c) => c.charCodeAt(0) - 48);
 async function startDuelHunt() {
-  if (duelHunt.key !== duelHuntKey()) Object.assign(duelHunt, { top: [], tried: new Set(), key: duelHuntKey() });
+  if (duelHunt.key !== duelHuntKey()) Object.assign(duelHunt, DUEL_FRESH());
   const run = (duelHunt.run = { stop: false }), mode = MODES[$('mode').value], n = digitsNeeded(), base = mode.base;
   // the cards' digits first, once (a worker each, cached as A's); the roots' made as they are drawn
   for (const f of DUEL_CARDS) {
@@ -7038,11 +7039,14 @@ async function startDuelHunt() {
       duelHunt.tried.add(key);
       const [a, b] = [numbers[i], numbers[j]], D = duelWalks(g, S, start, digitsOf(a), digitsOf(b)), P = duelPlayer(D.tiles, g.n, D.steps, D.met);
       P.to(D.steps);
-      duelHunt.top.push({ a, b, steps: D.steps, met: D.met, sizes: [...P.size] });
-      duelHunt.top.sort((x, y) => x.met - y.met || y.steps - x.steps);  // (still on at the end first, then the longest)
-      duelHunt.top.length = Math.min(8, duelHunt.top.length);
+      const r = { a, b, steps: D.steps, met: D.met, sizes: [...P.size] };
+      if (!D.met) { if (duelHunt.open.length < 8) duelHunt.open.push(r); continue; }  // (still on: the first 8)
+      duelHunt.endedCount++;
+      duelHunt.ended.push(r);
+      duelHunt.ended.sort((x, y) => y.steps - x.steps);  // (ended: the 8 longest)
+      duelHunt.ended.length = Math.min(8, duelHunt.ended.length);
     }
-    duelHunt.status = `${fmt(duelHunt.tried.size)} duels of ${fmt(pairs)} fought`;
+    duelHunt.status = `${fmt(duelHunt.tried.size)} duels of ${fmt(pairs)} fought · ${fmt(duelHunt.endedCount)} ended`;
     renderDuelHunt();
     if (duelHunt.tried.size < pairs) setTimeout(slice, 0); else stopDuelHunt();
   };
@@ -7055,17 +7059,19 @@ function stopDuelHunt() {
   duelHunt.run = null;
   renderDuelHunt();
 }
-// its button (Hunt, or Stop), its count, its 8 longest as cards: a click plays it (A's and B's formulas, as typed)
+// its button (Hunt, or Stop), its count, its two lists as cards under their labels: a click plays one (A's and B's formulas)
 function renderDuelHunt() {
-  if (duelHunt.key !== duelHuntKey() && !duelHunt.run) Object.assign(duelHunt, { top: [], tried: new Set(), key: duelHuntKey(), status: '' });
+  if (duelHunt.key !== duelHuntKey() && !duelHunt.run) Object.assign(duelHunt, DUEL_FRESH());
   $('duelHuntBtn').innerHTML = duelHunt.run ? `${icon('stop')} Stop hunt` : `${icon('search')} Hunt the longest duels`;
   $('duelHuntStatus').textContent = duelHunt.status;
   const sym = (f) => formulaOf(f).sym, A = formulaInUse, B = formulaOf($('formulaB').value).text;
-  $('duelHuntTop').replaceChildren(...duelHunt.top.map((r) => {
+  const cardOf = (r) => {
     const [x, y] = r.sizes, end = x === y ? `a draw, ${fmt(x)} each` : `${sym(x > y ? r.a : r.b)} wins, ${fmt(Math.max(x, y))} to ${fmt(Math.min(x, y))}`;
     return card({ pic: colourBlock(2), name: `${sym(r.a)} vs ${sym(r.b)} · ${r.met ? '' : '≥ '}${fmt(r.steps)} steps`, detail: r.met ? `the heads meet · ${end}` : `still on as the digits end · ${end}`,
                   on: r.a === A && r.b === B, click: () => { stopDuelHunt(); $('formula').value = r.a; readFormula(); pickNumber(formulaInUse); $('formulaB').value = r.b; compute(); } });
-  }));
+  };
+  const list = (label, rs) => (rs.length ? [Object.assign(document.createElement('div'), { className: 'field-label', textContent: label }), ...rs.map(cardOf)] : []);
+  $('duelHuntTop').replaceChildren(...list('Ended: the longest', duelHunt.ended), ...list('Still on as the digits end', duelHunt.open));
 }
 
 /* ==============================================================================================

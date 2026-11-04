@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.105';
+const VERSION = '0.4.106';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -7003,6 +7003,7 @@ function renderWalkTeams() {
   if (battleOn() && fieldA.parentElement !== $('formulaAHome')) $('formulaAHome').append(fieldA);
   if (!battleOn() && fieldA.parentElement !== $('numberPicker')) $('numberList').before(fieldA);
   if (battleOn()) $('digitsSection').hidden = true;
+  battleAsked = BATTLE_FORMULAS.map((id) => $(id).value);  // (a battle computed: its numbers as sent)
   tintBattleFormulas();
   if (battleHunt.run && (!battleOn() || battleHunt.key !== battleHuntKey())) stopBattleHunt();  // (its battles fought elsewhere: it stops)
   if (battleOn()) renderBattleHunt();
@@ -7019,12 +7020,13 @@ function renderWalkTeams() {
     click: () => { if (p !== penetration) { penetration = p; compute(); } } });
   $('walkPenetration').replaceChildren(tileGroup(PENETRATIONS.map(button)));
 }
-// a battle's formula fields, each bold in its walker's colour once its battle is built with it (typed since: plain again)
+// a battle's formula fields, each bold in its walker's colour once sent to be fought (computed, from Enter, Random or a
+// hunt's pick: battleAsked, see renderWalkTeams; typed since: plain again)
 const BATTLE_FORMULAS = ['formula', ...RIVALS];
+let battleAsked = [];
 function tintBattleFormulas() {
-  const B = walk.battle;
   BATTLE_FORMULAS.forEach((id, s) => {
-    const on = battleOn() && !!B && s < B.formulas.length && B.formulas[s] === $(id).value;
+    const on = battleOn() && s < walkTeams && battleAsked[s] === $(id).value;
     $(id).classList.toggle('battle-formula', on);  // (see .battle-formula)
     $(id).style.setProperty('--walker', LIFE_COLOURS[s]);
   });
@@ -7431,7 +7433,7 @@ function battleWinner(P) {
 // a battle built: its player (played to its end), its walkers' names (A's, B's, C's) and winner
 function battleOf(P) {
   const names = [shownSym, ...RIVALS.slice(0, P.K - 1).map((id) => formulaOf($(id).value).sym)];
-  return { player: P, names, formulas: BATTLE_FORMULAS.slice(0, P.K).map((id) => $(id).value), winner: battleWinner(P) };
+  return { player: P, names, winner: battleWinner(P) };
 }
 // the battle's title: its walkers' numbers, to its end (their scores, and who won, in the ranking under it)
 function battleScore() {
@@ -16114,7 +16116,6 @@ function renderWalkGauges() {
     const w = D.worth(), Q = D.places, from = (s) => { const a = placePoint(Q[s][0]), b = placePoint(Q[s][D.step]); return Math.hypot(b[0] - a[0], b[1] - a[1], b[2] - a[2]); };
     const C = battleColumns(D);
     $('gauges').hidden = true;
-    tintBattleFormulas();  // (its battle built: its fields in their colours)
     paintRanking(names.map((name, s) => ({ colour: LIFE_COLOURS[s], name, value: w[s], dead: D.dead[s] >= 0, diedAt: D.dead[s],
                                              cells: [D.dead[s] < 0 ? `<b>${fmt(w[s])}</b>` : `✝ ${genLink(D.dead[s])}`,
                                                      fmt(D.bestAt(s)), ...(C.body ? [fmt(D.size[s])] : []), from(s).toFixed(1)] })), C.titles);

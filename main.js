@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.83';
+const VERSION = '0.4.84';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -7600,12 +7600,10 @@ function battleOf(P) {
   const names = [shownSym, ...RIVALS.slice(0, P.K - 1).map((id) => formulaOf($(id).value).sym)];
   return { player: P, names, winner: battleWinner(P) };
 }
-// the battle's score at the step shown, after the walk's title: each body's size, with bite its land (✝ dead); at its end, who won
+// the battle's title: its walkers' numbers (their scores in the ranking under it); at its end, who won
 function battleScore() {
-  const { player: P, names, winner } = walk.battle, name = (s) => withIcons(names[s]);
-  P.to(cur);
-  const w = P.worth();
-  if (cur < walk.n) return names.map((_, s) => `${name(s)} ${P.dead[s] < 0 ? fmt(w[s]) : '✝'}`).join(' · ');
+  const { names, winner } = walk.battle, name = (s) => withIcons(names[s]);
+  if (cur < walk.n) return names.map((_, s) => name(s)).join(' · ');  // (their scores in the ranking under it)
   return winner.s < 0 ? `Draw (${winner.how})` : `${name(winner.s)} wins, ${fmt(winner.size)} (${winner.how})`;
 }
 // A battle's closed areas at the step it is at (P: its player; Area, see drawSphere), each tile's walker + 1 (0: none):

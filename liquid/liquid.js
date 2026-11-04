@@ -38,10 +38,10 @@ const MASSES = [1, 1.6, 2.5, 4], COLOURS = [[1, 0.82, 0.3], [0.35, 0.85, 0.45], 
 const BETA = 0.3, FILL = 0.5, REST = 4, THRESHOLD = 1, PULL = 0.004, CFL = 0.3; // (CFL: the fastest a step can move a
 // particle, in reaches, and stay stable)
 const mulberry32 = (a) => () => { a |= 0; a = (a + 0x6d2b79f5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
-// The setting from the link: #n=65536&steps=4&seed=1&gravity=0.03&stiffness=0.01&near=0.02&same=4&other=3&viscosity=0.1&brush=0.1&dots=false&dot=0.3
+// The setting from the link: #n=65536&steps=4&seed=1&gravity=0.03&stiffness=0.01&near=0.02&same=4&other=3&viscosity=0.1&brush=0.1&dots=false&dot=0.45
 const hash = Object.fromEntries(new URLSearchParams(location.hash.slice(1)));
 const num = (v, d) => (v === undefined || v === '' || isNaN(+v) ? d : +v);
-const set = { n: COUNTS.includes(+hash.n) ? +hash.n : 65536, steps: STEPS.includes(+hash.steps) ? +hash.steps : 4, seed: +hash.seed || 1, gravity: num(hash.gravity, 0.03), stiffness: num(hash.stiffness, 0.01), near: num(hash.near, 0.02), same: num(hash.same, REST), other: num(hash.other, 3), viscosity: num(hash.viscosity, 0.1), brush: num(hash.brush, 0.1), dots: hash.dots === 'true', dot: num(hash.dot, 0.3), tool: 'drag' };
+const set = { n: COUNTS.includes(+hash.n) ? +hash.n : 65536, steps: STEPS.includes(+hash.steps) ? +hash.steps : 4, seed: +hash.seed || 1, gravity: num(hash.gravity, 0.03), stiffness: num(hash.stiffness, 0.01), near: num(hash.near, 0.02), same: num(hash.same, REST), other: num(hash.other, 3), viscosity: num(hash.viscosity, 0.1), brush: num(hash.brush, 0.1), dots: hash.dots === 'true', dot: num(hash.dot, 0.45), tool: 'drag' };
 const keep = () => { const { tool, ...h } = set; history.replaceState(null, '', '#' + new URLSearchParams(h)); };
 // The box and its reach, fixed by a scatter: its width a (the screen's aspect then), the reach h such that n particles at
 // the rest density fill FILL of it, the grid of bins (each a reach wide at least)
@@ -206,10 +206,10 @@ fn quad(vi: u32, ii: u32, size: f32) -> Out {
   return o;
 }
 @vertex fn vs(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> Out { return quad(vi, ii, P.f.x * 0.6); }
-// Particles shown: each a small dot over the liquid (its radius Dot size times the particles' spacing, a pixel at least), its liquid's colour
-// darker
+// Particles shown, the liquid drawn by them alone: each a disc of its liquid's colour ringed darker (its radius Dot size
+// times the particles' spacing, a pixel at least) on the box's background
 @vertex fn dotVs(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> Out { return quad(vi, ii, max(P.v.w, 1.0 / P.s.x)); }
-@fragment fn dotFs(i: Out) -> @location(0) vec4f { if (dot(i.uv, i.uv) > 1.0) { discard; } return vec4f(i.c * 0.45, 1.0); }
+@fragment fn dotFs(i: Out) -> @location(0) vec4f { let d = dot(i.uv, i.uv); if (d > 1.0) { discard; } return vec4f(i.c * select(1.0, 0.5, d > 0.55), 1.0); }
 @fragment fn fs(i: Out) -> @location(0) vec4f {
   let d = dot(i.uv, i.uv); if (d > 1.0) { discard; }
   let w = (1.0 - d) * (1.0 - d); return vec4f(i.c * w, w);
@@ -303,7 +303,8 @@ function draw() {
   if (!drawGroups.length) { drawGroups = groupsOf(drawPipe); dotGroups = groupsOf(dotPipe); }
   const enc = device.createCommandEncoder();
   const pass = enc.beginRenderPass({ colorAttachments: [{ view: picture.createView(), loadOp: 'clear', storeOp: 'store', clearValue: { r: 0, g: 0, b: 0, a: 0 } }] });
-  pass.setPipeline(drawPipe); pass.setBindGroup(0, drawGroups[flip]); pass.draw(6, set.n); pass.end();
+  if (!set.dots) { pass.setPipeline(drawPipe); pass.setBindGroup(0, drawGroups[flip]); pass.draw(6, set.n); } // (Particles: the picture empty, the background only)
+  pass.end();
   const out = enc.beginRenderPass({ colorAttachments: [{ view: context.getCurrentTexture().createView(), loadOp: 'clear', storeOp: 'store', clearValue: { r: 0, g: 0, b: 0, a: 1 } }] });
   out.setPipeline(showPipe); out.setBindGroup(0, showGroup); out.draw(3);
   if (set.dots) { out.setPipeline(dotPipe); out.setBindGroup(0, dotGroups[flip]); out.draw(6, set.n); }
@@ -339,7 +340,7 @@ function panel() {
   const markSteps = tabs(document.getElementById('steps'), STEPS, () => set.steps, (v) => { set.steps = v; markSteps(); keep(); });
   const markTools = tabs(document.getElementById('tools'), TOOLS, () => set.tool, (v) => { set.tool = v; markTools(); }, (v) => v[0].toUpperCase() + v.slice(1));
   document.getElementById('scatter').onclick = () => scatter();
-  // Particles: a switch (its name never changes, .on its state), the particles drawn as dots over the liquid; Dot
+  // Particles: a switch (its name never changes, .on its state), the liquid drawn by its particles alone; Dot
   // size greyed while they are not
   const dots = document.getElementById('dots'), dot = document.getElementById('dot');
   const markDots = () => { dots.classList.toggle('on', set.dots); dot.disabled = !set.dots; dot.parentElement.title = set.dots ? '' : 'The particles are not shown: Particles shows them'; };

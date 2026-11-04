@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.18';
+const VERSION = '0.4.19';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -7511,6 +7511,24 @@ const DRAW_PATTERNS = [
   ['type15classic-osc', 'pent15', ['B256/S67'], 'Oscillator', '5.A$5.A!', 'period 2 · 2 cells'],
   ['type15classic-meth', 'pent15', ['B256/S67'], 'Methuselah', '22.A$14.A$13.A4.A3.A$5.A14.A$19.A!', 'settles at generation 1,277 · 8 cells'],
   ['type15trails-ship', 'pent15', ['B24/S13/C12'], 'Spaceship', '9.A$6.3ABCD$4.D2.AB.EF$F2.GCJ4.G7.K$GHKFH5.F7.J$2I.HG!', 'flies, period 14 · 29 cells'],
+  ['rhombille-b346s01458-osc', 'rhombille', ['B346/S01458'], 'Oscillator', '2A$2A!', 'period 2 · 4 cells'],
+  ['rhombitri-b2v0145v1236s08c3-osc', 'rhombitri', ['B2v0145v1236/S08/C3'], 'Oscillator', '2B$2.2A!', 'period 12 · 4 cells'],
+  ['rhombitri-b246v3s045c5-osc', 'rhombitri', ['B246v3/S045/C5'], 'Oscillator', 'BA2.AB.CDCD!', 'period 12 · 8 cells'],
+  ['rhombitri-b3s02358-osc', 'rhombitri', ['B3/S02358'], 'Oscillator', '.A$.A.A!', 'period 2 · 3 cells'],
+  ['rhombitri-b3s02358-meth', 'rhombitri', ['B3/S02358'], 'Methuselah', '3.3A.2A.A$3.2A2.2A.A!', 'settles at generation 2,188 · 11 cells'],
+  ['floret-b346s01458-osc', 'floret', ['B346/S01458'], 'Oscillator', '3.2A.A!', 'period 2 · 3 cells'],
+  ['floret-b346s01458-meth', 'floret', ['B346/S01458'], 'Methuselah', '.A2.A2.A.A3.2A2.A$2.A2.A.2A6.A!', 'settles at generation 467 · 12 cells'],
+  ['tetrakis-b3v12s1247c4-ship', 'tetrakis', ['B3v12/S1247/C4'], 'Spaceship', '4.A2.A$.A6.3A$5.CB2C!', 'flies, period 26 · 10 cells'],
+  ['tetrakis-b3v12s1247c4-osc', 'tetrakis', ['B3v12/S1247/C4'], 'Oscillator', '.2AB$B2A!', 'period 4 · 6 cells'],
+  ['tetrakis-b2v14v2s23v238-ship', 'tetrakis', ['B2v14v2/S23v238'], 'Spaceship', 'A.A$A.A$.A!', 'flies, period 3 · 5 cells'],
+  ['tetrakis-b2v14v2s23v238-osc', 'tetrakis', ['B2v14v2/S23v238'], 'Oscillator', '2A!', 'period 3 · 2 cells'],
+  ['tetrakis-b3v23s056-osc', 'tetrakis', ['B3v23/S056'], 'Oscillator', '6.A$3.A4.A$3.A4.A$5.A!', 'period 2 · 6 cells'],
+  ['tetrakis-b3v23s056-meth', 'tetrakis', ['B3v23/S056'], 'Methuselah', 'A5.A3.2A$4.A6.A!', 'settles at generation 340 · 6 cells'],
+  ['prismatic-b23v14v0s0467c4-ship', 'prismatic', ['B23v14v0/S0467/C4'], 'Spaceship', 'A.B.C$.A.B.C!', 'flies, period 1 · 6 cells'],
+  ['trihex-b346s01458-ship', 'trihex', ['B346/S01458'], 'Spaceship', '3.2A.A$.A.A.2A.A$3.A!', 'flies, period 9 · 9 cells'],
+  ['trihex-b346s01458-osc', 'trihex', ['B346/S01458'], 'Oscillator', '3.A2.A$A!', 'period 2 · 3 cells'],
+  ['dual56-b346s01458-osc', 'dual56', ['B346/S01458'], 'Oscillator', '3.A4.A3.A!', 'period 2 · 3 cells'],
+  ['dual314-b346s01458-osc', 'dual314', ['B346/S01458'], 'Oscillator', '2.2A10.A!', 'period 2 · 3 cells'],
   ['twistsparks-ship', 'twisttri', ['B246/S0348/C5'], 'Spaceship', '12.D$3.CD.DC.D.AC.C$B2.C2BC.2A$A2.B2.A!', 'flies, period 34 · 19 cells'],
   ['twistsparks-osc', 'twisttri', ['B246/S0348/C5'], 'Oscillator', '.B.A$A4.B!', 'period 12 · 4 cells'],
   ['twistembers-osc', 'twisttri', ['B235/S0457/C5'], 'Oscillator', '3.AB.A$AB.2B.A$A2.A!', 'period 30 · 10 cells'],

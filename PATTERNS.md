@@ -1585,6 +1585,25 @@ The circles' families to 12 (Flowers 3 to 12, Mirrors 3 to 12, Rings 7 to 12; He
 | [Ring 11 embers B267/S0346/C4](https://vincentbounce.github.io/Tessera/#w=life2dRing11&r=B267/S0346/C4&s=48&pop=random.30.7) | 0.226 | 348–3,790 | 3.39 % | 0 % |
 | [Ring 11 sparks B278/S0347/C4](https://vincentbounce.github.io/Tessera/#w=life2dRing11&r=B278/S0347/C4&s=48&pop=random.30.7) | 0.177 | 209–1,407 | 3.25 % | 0 % |
 
+## 🔍 Famous for the tilings' rules that had none (2026-11-04)
+
+tools/tilings/famous.js on the periodic tilings' rules with no pattern yet (18 rules, B346/S01458's war on ten of them): the smallest ship and oscillator, the longest methuselah; each played again in the app from an empty grid at size 96 and kept only when the same (a ship its cells the same every period, an oscillator its period, a methuselah its generation): 18 kept, 6 left out (four methuselahs counted as Life counts them, their ships flying off, settling otherwise in the app's walls: Rhombitri B2v0145v1236/S08/C3 758 there 392, Rhombitri B246v3/S045/C5 963 there 1,083, Tetrakis B3v12/S1247/C4 1,600 there 229, Tetrakis B2v14v2/S23v238 160 there 339; Prismatic B23v14v0/S0467/C4's oscillator of period 77, 93 there; a Rhombitri ship its cells changing at its 6th period). Nothing found for B346/S01458 on Rhombitri, Snubtri, Tetrakis, Kisrhombille and Snub square, nor for Elongated B24/S0345/C4. Dual 314's two older methuselahs (190) settle at 420 in the app: to measure again.
+
+| Grid | Rule | Patterns |
+|---|---|---|
+| Rhombille | [B346/S01458](https://vincentbounce.github.io/Tessera/#w=life2dRhombille&r=B346/S01458&s=96&pop=famous.30.1) | oscillator, period 2 · 4 cells |
+| Rhombitri | [B2v0145v1236/S08/C3](https://vincentbounce.github.io/Tessera/#w=life2dRhombitri&r=B2v0145v1236/S08/C3&s=96&pop=famous.30.1) | oscillator, period 12 · 4 cells |
+| Rhombitri | [B246v3/S045/C5](https://vincentbounce.github.io/Tessera/#w=life2dRhombitri&r=B246v3/S045/C5&s=96&pop=famous.30.1) | oscillator, period 12 · 8 cells |
+| Rhombitri | [B3/S02358](https://vincentbounce.github.io/Tessera/#w=life2dRhombitri&r=B3/S02358&s=96&pop=famous.30.1) | oscillator, period 2 · 3 cells; methuselah, settles at generation 2,188 · 11 cells |
+| Florets | [B346/S01458](https://vincentbounce.github.io/Tessera/#w=life2dFloret&r=B346/S01458&s=96&pop=famous.30.1) | oscillator, period 2 · 3 cells; methuselah, settles at generation 467 · 12 cells |
+| Tetrakis | [B3v12/S1247/C4](https://vincentbounce.github.io/Tessera/#w=life2dTetrakis&r=B3v12/S1247/C4&s=96&pop=famous.30.1) | spaceship, flies, period 26 · 10 cells; oscillator, period 4 · 6 cells |
+| Tetrakis | [B2v14v2/S23v238](https://vincentbounce.github.io/Tessera/#w=life2dTetrakis&r=B2v14v2/S23v238&s=96&pop=famous.30.1) | spaceship, flies, period 3 · 5 cells; oscillator, period 3 · 2 cells |
+| Tetrakis | [B3v23/S056](https://vincentbounce.github.io/Tessera/#w=life2dTetrakis&r=B3v23/S056&s=96&pop=famous.30.1) | oscillator, period 2 · 6 cells; methuselah, settles at generation 340 · 6 cells |
+| Prismatic | [B23v14v0/S0467/C4](https://vincentbounce.github.io/Tessera/#w=life2dPrismatic&r=B23v14v0/S0467/C4&s=96&pop=famous.30.1) | spaceship, flies, period 1 · 6 cells |
+| Trihex | [B346/S01458](https://vincentbounce.github.io/Tessera/#w=life2dTrihex&r=B346/S01458&s=96&pop=famous.30.1) | spaceship, flies, period 9 · 9 cells; oscillator, period 2 · 3 cells |
+| Dual 56 | [B346/S01458](https://vincentbounce.github.io/Tessera/#w=life2dDual56&r=B346/S01458&s=96&pop=famous.30.1) | oscillator, period 2 · 3 cells |
+| Dual 314 | [B346/S01458](https://vincentbounce.github.io/Tessera/#w=life2dDual314&r=B346/S01458&s=96&pop=famous.30.1) | oscillator, period 2 · 3 cells |
+
 ## 🎯 Patterns at the middle of the new rosettes (2026-11-03)
 
 tools/tilings/centred.js on Flower 9 and 10, Mirror 5 to 12 and Hexa 4 to 12, their own rules (the Hexas' hexagon rules, ⬡, not searched): 4,800 small starts of the 30 cells nearest the middle, at it (one colour) and 6 from it (colours); kept the smallest oscillator, the longest-lived start, the smallest that keeps spreading; in Famous (CENTRED, CENTRED_OFF). The Hexas' Life rules (B25/S3467, B256/S3467) give methuselahs of 600 to 1,000 generations on Hexa 8 to 10; Hexa 11's B34/S2456 has an oscillator only off the middle.

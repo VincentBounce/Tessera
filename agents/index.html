@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Agents</title>
+<style>
+  /* Particle Life's look (particles/index.html): its panel, its one button and its tabs */
+  :root { --bg: #0b0d12; --panel: #141821; --line: #262c39; --text: #d8dde8; --dim: #8a93a6; --accent: #7aa2ff; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; background: var(--bg); color: var(--text); font: 13px/1.35 system-ui, -apple-system, Segoe UI, sans-serif; }
+  body { display: flex; }
+  #panel { width: 270px; flex: none; height: 100%; overflow-y: auto; background: var(--panel); border-right: 1px solid var(--line); padding: 12px; }
+  #stage { flex: 1; position: relative; min-width: 0; }
+  #view { position: absolute; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; }
+  h1 { font-size: 15px; margin: 0 0 2px; letter-spacing: .02em; }
+  .sub { color: var(--dim); font-size: 11.5px; margin-bottom: 10px; }
+  .sec { margin: 12px 0 5px; color: var(--dim); font-size: 11px; text-transform: uppercase; letter-spacing: .06em; }
+  /* The one button; .on is its active state, [disabled] its greyed one */
+  .btn { appearance: none; border: 1px solid var(--line); background: #1b202b; color: var(--text); font: inherit; padding: 5px 9px; border-radius: 6px; cursor: pointer; }
+  .btn:hover { background: #222838; }
+  .btn.on { background: #2b3a5e; border-color: var(--accent); color: #fff; }
+  .btn[disabled] { opacity: .4; cursor: default; }
+  /* One choice among several: buttons joined in one frame */
+  .tabs { display: flex; flex-wrap: wrap; }
+  .tabs .btn { border-radius: 0; margin-left: -1px; flex: 1 1 auto; }
+  .tabs .btn:first-child { border-radius: 6px 0 0 6px; margin-left: 0; }
+  .tabs .btn:last-child { border-radius: 0 6px 6px 0; }
+  .tabs .btn.on { position: relative; z-index: 1; }
+  .row { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+  .seed { color: var(--dim); font-variant-numeric: tabular-nums; }
+  label.range { display: flex; align-items: center; gap: 8px; margin: 4px 0; }
+  label.range span { width: 62px; color: var(--dim); }
+  label.range input { flex: 1; }
+  label.range b { width: 44px; text-align: right; font-weight: normal; font-variant-numeric: tabular-nums; }
+  #census { margin-top: 6px; font-size: 11.5px; line-height: 1.5; font-variant-numeric: tabular-nums; }
+  #stats { white-space: pre-line; }
+  #stats, #help { margin-top: 12px; color: var(--dim); font-size: 11.5px; font-variant-numeric: tabular-nums; }
+  #fail { position: absolute; inset: 0; display: none; align-items: center; justify-content: center; text-align: center; padding: 20px; }
+  @media (max-width: 700px) {
+    body { flex-direction: column-reverse; }
+    #panel { width: 100%; height: 45%; border-right: 0; border-top: 1px solid var(--line); }
+  }
+</style>
+</head>
+<body>
+<div id="panel">
+  <h1>Agents</h1>
+  <div class="sub">Dots with small random brains, never trained, on a field of food that grows back: living, moving and eating cost energy, a dot with none dies, one that splits halves its energy with a child whose brain is its own, mutated; selection alone makes them forage</div>
+  <div class="sec">Slots</div>
+  <div class="tabs" id="slots"></div>
+  <div class="sec">Steps a frame</div>
+  <div class="tabs" id="steps"></div>
+  <div class="sec">Energy (a step)</div>
+  <label class="range"><span>Living</span><input id="live" type="range" min="0" max="0.01" step="0.0005"><b></b></label>
+  <label class="range"><span>Moving</span><input id="move" type="range" min="0" max="0.01" step="0.0005"><b></b></label>
+  <label class="range"><span>Eating</span><input id="effort" type="range" min="0" max="0.01" step="0.0005"><b></b></label>
+  <div class="sec">Field</div>
+  <label class="range"><span>Regrow</span><input id="regrow" type="range" min="0" max="0.05" step="0.001"><b></b></label>
+  <label class="range"><span>Diffuse</span><input id="diffuse" type="range" min="0" max="0.5" step="0.01"><b></b></label>
+  <div class="sec">Evolution</div>
+  <label class="range"><span>Mutate</span><input id="mutate" type="range" min="0" max="1" step="0.01"><b></b></label>
+  <div class="row" style="margin-top:8px"><button class="btn" id="play">Pause</button><button class="btn" id="restart">Restart</button><button class="btn" id="newWorld">New world</button><span class="seed" id="seed"></span></div>
+  <div class="sec">Lineages</div>
+  <div id="census"></div>
+  <div id="stats"></div>
+  <div id="help">Each dot has a brain of its own, 16 senses → 16 → 8 (5 used: thrust, turn, eat, split, a memory), its weights random at first and never trained. It senses its energy, the food under it and at three points ahead, its nearest neighbour (how near, which way, how akin, its energy), the crowd round it, its speed, age, memory, last meal and some noise. Each step costs it Living, Moving times its thrust and Eating times its appetite; the food in a cell is shared by those eating it. With no energy left it dies; when it wants to split and has enough, it halves its energy with a child, its brain copied with a tenth of its weights moved by up to Mutate. A dot's colour comes from its brain's weights (near brains, near colours): lineages show. When fewer than a sixteenth of the slots live, random dots are laid. The field grows back towards its richness (brighter green patches) by Regrow and spreads by Diffuse. Lineages: the founders whose children live, the largest first. The wheel zooms, a drag moves over the torus. The link keeps all the settings.</div>
+</div>
+<div id="stage"><canvas id="view"></canvas><div id="fail"></div></div>
+<!-- The script fetched fresh each time (a prototype changing often: never an old one from the cache) -->
+<script>const js = document.createElement('script'); js.src = 'agents.js?' + Date.now(); document.body.append(js);</script>
+</body>
+</html>

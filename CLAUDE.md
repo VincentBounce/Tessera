@@ -134,3 +134,18 @@ Rest other 2.5, Heat 0.01; less heat and they starve). A step in eight passes (l
 with the densities, the species changed with the push, then a clock ticked: the last slot of the bins' counts, the 8
 storage buffers WebGPU allows taken). `protocellsCheck()` in its console: one GPU step against the CPU (every pair, the
 reactions too, none differing), F + D + W = n, and a run from one droplet till it divides.
+
+## Agents prototype (agents/)
+A separate page (`agents/index.html`, `agents.js`), not part of main.js: Darwinian agents with no training (after
+Fraser Price's evolving dots) on WebGPU, on a torus: each agent a brain of its own (16 senses → 16 tanh → 8 outputs, 5
+used: thrust, turn, appetite, split, a memory; the last 3 kept for signals, sharing, fights), random at its founder and
+only mutated; a field of food (√slots cells a side, a cell a slot) growing back towards its richness (patches from the
+seed) and spreading. Living, moving and eating cost energy; a cell's food shared out by appetite (summed fixed-point,
+atomics); none left, the agent dies; a split halves its energy with a child, its brain copied with a tenth of its
+weights mutated (a hash PRNG). Slots, not agents: a fixed array (4k, 16k, 64k), alive or not, a free stack (an atomic
+top) giving births their slots; random founders laid while fewer than a sixteenth live. A colour from the brain's
+weights (near brains, near colours), each founder's lineage carried by its children. A step in nine passes (clear,
+particles/'s bins: bin, scan, place; think, grow, eat, birth, spawn); 64k slots ≈ 50k alive at 1.4 ms a step.
+`agentsCheck()` in its console: each pass on the GPU against the CPU from the same buffers (births and spawns found by
+their parent: the slots they land in depend on the atomics' order), then a run of 16k slots for 6,000 steps living by
+itself (above the spawning floor) and its lineages narrowing (4,096 founders → ~150).

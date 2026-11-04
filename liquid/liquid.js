@@ -38,10 +38,10 @@ const MASSES = [1, 1.6, 2.5, 4], COLOURS = [[1, 0.82, 0.3], [0.35, 0.85, 0.45], 
 const BETA = 0.3, FILL = 0.5, REST = 4, THRESHOLD = 1, PULL = 0.004, CFL = 0.3; // (CFL: the fastest a step can move a
 // particle, in reaches, and stay stable)
 const mulberry32 = (a) => () => { a |= 0; a = (a + 0x6d2b79f5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
-// The setting from the link: #n=65536&steps=4&seed=1&gravity=0.03&stiffness=0.01&near=0.02&same=4&other=3&viscosity=0.1&brush=0.1&dots=false&dot=0.1
+// The setting from the link: #n=65536&steps=4&seed=1&gravity=0.03&stiffness=0.01&near=0.02&same=4&other=3&viscosity=0.1&brush=0.1&dots=false&dot=0.3
 const hash = Object.fromEntries(new URLSearchParams(location.hash.slice(1)));
 const num = (v, d) => (v === undefined || v === '' || isNaN(+v) ? d : +v);
-const set = { n: COUNTS.includes(+hash.n) ? +hash.n : 65536, steps: STEPS.includes(+hash.steps) ? +hash.steps : 4, seed: +hash.seed || 1, gravity: num(hash.gravity, 0.03), stiffness: num(hash.stiffness, 0.01), near: num(hash.near, 0.02), same: num(hash.same, REST), other: num(hash.other, 3), viscosity: num(hash.viscosity, 0.1), brush: num(hash.brush, 0.1), dots: hash.dots === 'true', dot: num(hash.dot, 0.1), tool: 'drag' };
+const set = { n: COUNTS.includes(+hash.n) ? +hash.n : 65536, steps: STEPS.includes(+hash.steps) ? +hash.steps : 4, seed: +hash.seed || 1, gravity: num(hash.gravity, 0.03), stiffness: num(hash.stiffness, 0.01), near: num(hash.near, 0.02), same: num(hash.same, REST), other: num(hash.other, 3), viscosity: num(hash.viscosity, 0.1), brush: num(hash.brush, 0.1), dots: hash.dots === 'true', dot: num(hash.dot, 0.3), tool: 'drag' };
 const keep = () => { const { tool, ...h } = set; history.replaceState(null, '', '#' + new URLSearchParams(h)); };
 // The box and its reach, fixed by a scatter: its width a (the screen's aspect then), the reach h such that n particles at
 // the rest density fill FILL of it, the grid of bins (each a reach wide at least)
@@ -50,7 +50,7 @@ function box() {
   const a = Math.min(3, Math.max(0.5, view.clientWidth / Math.max(1, view.clientHeight)));
   const h = Math.sqrt((FILL * a) / set.n) * Math.sqrt((6 * REST) / Math.PI); // (ρ = (π/6) (h/s)² at a spacing s)
   const gx = Math.max(3, Math.floor(a / h)), gy = Math.max(3, Math.floor(1 / h));
-  return { a, h, gx, gy, bins: gx * gy };
+  return { a, h, gx, gy, bins: gx * gy, s: Math.sqrt((FILL * a) / set.n) }; // (s: the particles' spacing at rest)
 }
 // Gravity's pull on a particle in reaches a step²: the slider is the weight on the bottom (the pull times the box's
 // height in reaches), the same whatever the count (a fixed pull would squeeze a taller column of reaches more, till
@@ -60,11 +60,12 @@ const pull = () => set.gravity * world.h;
 /* ---- 1.2 Shaders ----------------------------------------------------------------------------- */
 
 const PARAMS = `
-struct Params { a: vec4u, f: vec4f, k: vec4f, v: vec4f, p: vec4f, q: vec4f, m: vec4f, s: vec4f };
+struct Params { a: vec4u, f: vec4f, k: vec4f, v: vec4f, p: vec4f, q: vec4f, m: vec4f, s: vec4f, o: vec4f };
 // a: n, the grid's columns and rows, bins; f: the reach h, a bin's width and height, the box's width; k: stiffness, near
-// stiffness, rest density of one liquid, of two; v: gravity (reaches a step²), viscosity σ, β, a dot's radius (reaches); p: the pointer's place,
+// stiffness, rest density of one liquid, of two; v: gravity (reaches a step²), viscosity σ, β, a dot's radius (the box's units); p: the pointer's place,
 // its brush (radius), its pull; q: its speed (a step), its tool (0 none, 1 drag, 2 attract, 3 repel); m: the four masses;
-// s: pixels a unit of the box, the canvas' width and height, the liquid's threshold`;
+// s: pixels a unit of the box (zoomed), the canvas' width and height, the liquid's threshold; o: the box's corner (0, 0)
+// in the canvas' pixels (y up)`;
 const COMPUTE = PARAMS + `
 @group(0) @binding(0) var<uniform> P: Params;
 @group(0) @binding(1) var<storage, read_write> state: array<vec4f>; // a particle i: place 2i (its liquid in z), speed 2i + 1
@@ -195,7 +196,7 @@ const DRAW = PARAMS + `
 @group(0) @binding(1) var<storage, read> s: array<vec4f>;
 @group(0) @binding(2) var<uniform> colour: array<vec4f, 4>;
 struct Out { @builtin(position) pos: vec4f, @location(0) uv: vec2f, @location(1) c: vec3f };
-fn origin() -> vec2f { return (P.s.yz - vec2f(P.f.w, 1.0) * P.s.x) * 0.5; }
+fn origin() -> vec2f { return P.o.xy; }
 // A particle's quad, its size in the box's units round it
 fn quad(vi: u32, ii: u32, size: f32) -> Out {
   var corners = array(vec2f(-1, -1), vec2f(1, -1), vec2f(-1, 1), vec2f(-1, 1), vec2f(1, -1), vec2f(1, 1));
@@ -205,9 +206,9 @@ fn quad(vi: u32, ii: u32, size: f32) -> Out {
   return o;
 }
 @vertex fn vs(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> Out { return quad(vi, ii, P.f.x * 0.6); }
-// Particles shown: each a small dot over the liquid (its radius Dot size reaches, a pixel at least), its liquid's colour
+// Particles shown: each a small dot over the liquid (its radius Dot size times the particles' spacing, a pixel at least), its liquid's colour
 // darker
-@vertex fn dotVs(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> Out { return quad(vi, ii, max(P.f.x * P.v.w, 1.0 / P.s.x)); }
+@vertex fn dotVs(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> Out { return quad(vi, ii, max(P.v.w, 1.0 / P.s.x)); }
 @fragment fn dotFs(i: Out) -> @location(0) vec4f { if (dot(i.uv, i.uv) > 1.0) { discard; } return vec4f(i.c * 0.45, 1.0); }
 @fragment fn fs(i: Out) -> @location(0) vec4f {
   let d = dot(i.uv, i.uv); if (d > 1.0) { discard; }
@@ -248,14 +249,14 @@ async function gpu() {
   drawPipe = device.createRenderPipeline({ layout: 'auto', vertex: { module: dm, entryPoint: 'vs' }, fragment: { module: dm, entryPoint: 'fs', targets: [{ format: PICTURE, blend: { color: add, alpha: add } }] }, primitive: { topology: 'triangle-list' } });
   dotPipe = device.createRenderPipeline({ layout: 'auto', vertex: { module: dm, entryPoint: 'dotVs' }, fragment: { module: dm, entryPoint: 'dotFs', targets: [{ format }] }, primitive: { topology: 'triangle-list' } });
   showPipe = device.createRenderPipeline({ layout: 'auto', vertex: { module: dm, entryPoint: 'full' }, fragment: { module: dm, entryPoint: 'show', targets: [{ format }] } });
-  params = device.createBuffer({ size: 128, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST });
+  params = device.createBuffer({ size: 144, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST });
   colourBuf = device.createBuffer({ size: 64, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST });
   device.queue.writeBuffer(colourBuf, 0, Float32Array.from(COLOURS.flatMap((c) => [...c, 1])));
 }
 const buffer = (bytes) => device.createBuffer({ size: Math.max(16, bytes), usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST | GPUBufferUsage.COPY_SRC });
 // A fresh box: n particles at random places over it (the seed's), at rest, the liquids in turn; its bins and bind groups
 function scatter() {
-  world = box();
+  world = box(); Object.assign(look, { zoom: 1, x: world.a / 2, y: 0.5 });
   const r = mulberry32(set.seed), s = new Float32Array(set.n * 8);
   for (let i = 0; i < set.n; i++) s.set([r() * world.a, r(), i % 4, 0], i * 8);
   for (const b of [...states, ...Object.values(bins)]) b.destroy();
@@ -267,10 +268,10 @@ function scatter() {
 }
 // The parameters for a step and a drawing
 function write() {
-  const w = view.width, h = view.height, buf = new ArrayBuffer(128), u = new Uint32Array(buf), f = new Float32Array(buf);
+  const w = view.width, h = view.height, frame = frameOf(w, h), buf = new ArrayBuffer(144), u = new Uint32Array(buf), f = new Float32Array(buf);
   u.set([set.n, world.gx, world.gy, world.bins]);
-  f.set([world.h, world.a / world.gx, 1 / world.gy, world.a, set.stiffness, set.near, set.same, set.other, pull(), set.viscosity, BETA, set.dot], 4);
-  f.set([pointer.x, pointer.y, set.brush, PULL, pointer.vx, pointer.vy, pointer.down ? TOOLS.indexOf(set.tool) + 1 : 0, 0, ...MASSES, Math.min(w / world.a, h), w, h, THRESHOLD], 16);
+  f.set([world.h, world.a / world.gx, 1 / world.gy, world.a, set.stiffness, set.near, set.same, set.other, pull(), set.viscosity, BETA, set.dot * world.s], 4);
+  f.set([pointer.x, pointer.y, set.brush, PULL, pointer.vx, pointer.vy, pointer.down ? TOOLS.indexOf(set.tool) + 1 : 0, 0, ...MASSES, frame.sc, w, h, THRESHOLD, frame.ox, frame.oy, 0, 0], 16);
   device.queue.writeBuffer(params, 0, buf);
 }
 // `count` steps in one submission: each seven passes
@@ -321,7 +322,17 @@ const tabs = (el, values, get, pick, name = (v) => v) => {
 };
 // The pointer in the box's units, its speed a step (the frame's move shared by its steps), its tool on while pressed
 const pointer = { x: 0, y: 0, vx: 0, vy: 0, down: false, moved: [0, 0] };
-const toBox = (e) => { const r = view.getBoundingClientRect(), sc = Math.min(r.width / world.a, r.height); return [(e.clientX - r.left - (r.width - world.a * sc) / 2) / sc, (r.bottom - e.clientY - (r.height - sc) / 2) / sc]; };
+// The view: the box whole at zoom 1, zoom times nearer round the place look (in the box) at the middle; for a canvas
+// w × h (its device or CSS pixels), its pixels a unit of the box and the box's corner (0, 0) in them (y up)
+const look = { zoom: 1, x: 0.5, y: 0.5 };
+const frameOf = (w, h) => { const sc = Math.min(w / world.a, h) * look.zoom; return { sc, ox: w / 2 - look.x * sc, oy: h / 2 - look.y * sc }; };
+const toBox = (e) => { const r = view.getBoundingClientRect(), v = frameOf(r.width, r.height); return [(e.clientX - r.left - v.ox) / v.sc, (r.bottom - e.clientY - v.oy) / v.sc]; };
+// The wheel zooms (1 to 32 times) round the place under the cursor, kept there; the place looked at kept in the box
+const zoomAt = (e) => {
+  const [x, y] = toBox(e), z = Math.min(32, Math.max(1, look.zoom * Math.exp(-e.deltaY * 0.002)));
+  look.x = Math.min(world.a, Math.max(0, x - ((x - look.x) * look.zoom) / z)); look.y = Math.min(1, Math.max(0, y - ((y - look.y) * look.zoom) / z)); look.zoom = z;
+  if (z === 1) Object.assign(look, { x: world.a / 2, y: 0.5 });
+};
 let on = true;
 function panel() {
   const markCounts = tabs(document.getElementById('counts'), COUNTS, () => set.n, (v) => { set.n = v; markCounts(); keep(); scatter(); }, (v) => v / 1024 + 'k');
@@ -343,6 +354,7 @@ function panel() {
   view.onpointerdown = (e) => { [pointer.x, pointer.y] = toBox(e); pointer.moved = [0, 0]; pointer.down = true; view.setPointerCapture(e.pointerId); };
   view.onpointermove = (e) => { const [x, y] = toBox(e); pointer.moved[0] += x - pointer.x; pointer.moved[1] += y - pointer.y; pointer.x = x; pointer.y = y; };
   view.onpointerup = view.onpointercancel = () => { pointer.down = false; };
+  view.onwheel = (e) => { e.preventDefault(); zoomAt(e); };
 }
 
 /* ---- 1.5 Loop -------------------------------------------------------------------------------- */
@@ -371,7 +383,7 @@ function frame(t) {
   draw();
   fps = fps * 0.95 + 50 / Math.max(1, t - last); last = t;
   if (++frames % 120 === 1 && on) measure();
-  document.getElementById('stats').textContent = `${set.n.toLocaleString('en')} particles · ${world.gx} × ${world.gy} bins\n${msStep ? msStep.toFixed(2) : '…'} ms a step · ${fps.toFixed(0)} frames a second`;
+  document.getElementById('stats').textContent = `${set.n.toLocaleString('en')} particles · ${world.gx} × ${world.gy} bins · zoom ×${look.zoom.toFixed(1)}\n${msStep ? msStep.toFixed(2) : '…'} ms a step · ${fps.toFixed(0)} frames a second`;
   requestAnimationFrame(frame);
 }
 (async () => { await gpu(); fit(); panel(); scatter(); requestAnimationFrame(frame); })();

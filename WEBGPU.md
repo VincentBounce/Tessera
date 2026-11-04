@@ -1,6 +1,6 @@
 # WebGPU port (branch `webgpu`)
 
-The last WebGL 2 version: tag `webgl-v0.3.107`, its bundles in `Tessera resources`.
+The last WebGL 2 version: v0.3.107 (commit 07f1744, its row in REMOVED.md), its bundles in `Tessera resources`.
 
 ## Where it stands (2026-11-03, night)
 WebGL is gone from main.js: everything runs on WebGPU (11.4b shared pieces, 11.4c Life's engine, 11.4d drawing).

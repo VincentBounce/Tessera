@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.45';
+const VERSION = '0.4.46';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -2975,8 +2975,8 @@ const NAV_KINDS = [['Life', 'glider', 'Cells born and dying by their neighbours,
 // (a sheet rolled up); the walks through a 3D lattice
 const SPACES = { '2D': ['2D infinite', 'grid', 'An endless plane, the walk going as far as its digits take it'],
                  '2D squares': ['2D squares', 'grid', 'A flat grid, its edges walls or wrapping round'], '2D circles': ['2D circles', 'ring12', 'Grids of rings round a middle, as flowers'],
-                 '3D solids': ['3D solids', 'cube', 'The faces of a solid (a cube…), the grid going round it'], '3D surfaces': ['3D surfaces', 'torus', 'A sheet rolled up or two discs glued: torus, Möbius strip, Klein bottle, rosettes…'],
-                 '3D': ['Lattice', 'cubeFilled', 'A 3D lattice, the walk going in space'] }, SHEETS = ['Torus', 'Möbius strip', 'Klein bottle', 'Rosettes'];  // (3D surfaces' shapes)
+                 '3D solids': ['3D solids', 'cube', 'The faces of a solid (a cube…), the grid going round it'], '3D surfaces': ['3D surfaces', 'globe', 'Round surfaces, a ball or a sheet rolled up: globe, sphere, rosettes, torus, Möbius strip, Klein bottle'],
+                 '3D': ['Lattice', 'cubeFilled', 'A 3D lattice, the walk going in space'] }, SHEETS = ['Globe', 'Sphere', 'Rosettes', 'Torus', 'Möbius strip', 'Klein bottle'];  // (3D surfaces' shapes, in their order: the balls, then the sheets)
 // a tiling's icon: its polygons round a cell's middle, fitted in the 24 × 24 box
 function tilingIcon(kind) {
   const m = TILINGS[kind].polys.length, polys = [];
@@ -3183,15 +3183,15 @@ function renderModePicker() {
   $('navSpace').replaceChildren(tileGroup(Object.keys(SPACES).filter((sp) => navValues(1, [kind]).includes(sp)).map((sp) => button(`${icon(SPACES[sp][1])}<span>${SPACES[sp][0]}</span>`, sp === space, () => navGo(1, sp), SPACES[sp][2])), true));  // (name, picture, tooltip)
   // the shapes, as pictures with their (short) names
   // (a grid of Life picked that can wrap round: a switch, a click again its edges a torus or walls)
-  // in 2D, many of them: in groups by their grid's natural shape (see SHAPE_GROUPS), each its title; in 3D, the solids,
-  // then the surfaces (a sheet rolled up: Torus, Möbius, Klein; two discs glued: Rosettes)
+  // in 2D, many of them: in groups by their grid's natural shape (see SHAPE_GROUPS), each its title; in 3D, the solids, and
+  // the surfaces (the balls: Globe, Sphere, Rosettes; a sheet rolled up: Torus, Möbius, Klein; see SHEETS)
   const shapes = navValues(2, [kind, space]), flat = space.startsWith('2D'), solid = space.startsWith('3D ');
-  // (in 3D: the solids of squares first (the cube, the globe, the cubes carved), the other solids, those of squares and
-  // triangles, the surfaces)
-  const SQUARED = ['Cube', 'Globe', 'Pits', 'Bumps', 'Frame', 'Sponge'], MIXED = ['Cuboctahedron', 'Rhombicuboctahedron', 'Bicupola', 'Pyramid'];
+  // (in 3D: the solids of squares first (the cube, the cubes carved), the other solids, those of squares and triangles, the
+  // surfaces)
+  const SQUARED = ['Cube', 'Pits', 'Bumps', 'Frame', 'Sponge'], MIXED = ['Cuboctahedron', 'Rhombicuboctahedron', 'Bicupola', 'Pyramid'];
   const grouped = flat && shapes.length > 8, groupOf = (sh) => shapeGroup(planeOf(sh)), sheet = (sh) => SHEETS.includes(sh);
   const groups = grouped ? SHAPE_GROUPS.map(([g]) => [g, (sh) => groupOf(sh) === g])  // (in their order: the circles' four, squares, parallelograms, rhombi)
-    : solid ? [['Squares', (sh) => SQUARED.includes(sh), SQUARED], ['Solid', (sh) => !sheet(sh) && !SQUARED.includes(sh) && !MIXED.includes(sh)], ['Squares & triangles', (sh) => MIXED.includes(sh)], ['Surface', sheet]]
+    : solid ? [['Squares', (sh) => SQUARED.includes(sh), SQUARED], ['Solid', (sh) => !sheet(sh) && !SQUARED.includes(sh) && !MIXED.includes(sh)], ['Squares & triangles', (sh) => MIXED.includes(sh)], ['Surface', sheet, SHEETS]]
     : [[null, () => true]];
   const some = groups.filter(([, has]) => shapes.some(has)).length;  // (one group: its title none, its tab's name says it)
   $('navShapes').replaceChildren(...groups.flatMap(([g, has, order]) => {
@@ -7210,9 +7210,10 @@ function lifeReseed() {
 }
 // A start as the Start says, once the grid is built: in Hunt, a soup's colours each in its part of the
 // grid (see huntParts)
-// the parts a start is laid in: its colours'; a reversible sheet's (a torus's, a Klein bottle's 3 squares round it, see ringColours;
-// a Möbius strip's 3 stretches along it): Icon 24's and Punk 24's one each, the others' one colour's, Trio's second, in view
-// (see huntParts), Wild and Digits all over
+// the teams a start lays, one source for all that lays them (its parts, patterns, icons, hunts; never its colours read for it):
+// its colours, but Newcomer's one fewer (the last colour born only); a reversible sheet's (a torus's, a Klein bottle's 3 squares
+// round it, see ringColours; a Möbius strip's 3 stretches along it): Icon 24's and Punk 24's one each, the others' one
+// colour's, Trio's second, in view (see huntParts), Wild and Digits all over
 const lifeParts = () => (walk.life.margolus && walk.geo.torus ? (plane.start === 'random' && /24$/.test(hunt.zone) ? 3 : 1) : walk.life.colours - (newcomerOn() ? 1 : 0));  // (any sheet's mesh a torus's; Newcomer: the teams below's)
 // colour i's (from 0) cell at stage v (1 alive, then its dying states), as the colours alive count them (see parseRule): a
 // start's teams fewer with Newcomer, its states the same
@@ -11457,14 +11458,15 @@ TRI_FACES.stella = () => ({ 2: [CORNERS8[0], CORNERS8[7]], 4: TETRA4, 8: CORNERS
 for (const k of ['dodeca', 'stella']) TRI_FACES[`${k}Kite`] = () => TRI_FACES[k]();
 // colour i's face for its pattern, as a direction (null: none for this count)
 const triFace = (sphere, K, i) => (colouring(sphere, K)?.faces ? patchSpots(sphere, K)[i] : TRI_FACES[sphere]?.()[K]?.[i] ?? null);
-const patternsOn = () => {
-  const m = MODES[$('mode').value], K = walk.life?.colours;
-  return !!walk.life && (!!flatGrid() || !!walk.geo?.torus || (['cube', 'pits', 'bumps'].includes(m.sphere.replace(/Tetrakis$/, '')) && CUBE_FACES.includes(K))
+const patternsOn = () => {  // (by the teams laid, lifeParts: with Newcomer, one fewer than the colours, as patternPlace lays them)
+  if (!walk.life) return false;
+  const m = MODES[$('mode').value], K = lifeParts();
+  return (!!flatGrid() || !!walk.geo?.torus || (['cube', 'pits', 'bumps'].includes(m.sphere.replace(/Tetrakis$/, '')) && CUBE_FACES.includes(K))
     || (!!HULL_SOLIDS[m.sphere] && (K === 1 || ['square', 'tri'].includes(hullColours(m.sphere, K)?.kind))) || (!!walk.geo?.hexagons && !m.plane) || (!!TRI_FACES[m.sphere] && (K === 1 || !!triFace(m.sphere, K, 0))));
 };
 // the grid the patterns are of: the plane's, else the cells' (the cube's squares, the sheets', the solids' triangles)
 const cellKind = (g) => g.tiling ?? (g.squares ? 'tetrakis' : g.kite ? 'kite' : (g.hexagons ? 'hex' : { 3: 'tri', 5: 'cairo', 6: 'hex' }[g.sides]) ?? 'square');  // (a mesh's cells, as the plane's grids)
-const patternKind = () => { const h = hullColours(MODES[$('mode').value].sphere, walk.life?.colours); return flatGrid()?.kind ?? (h && h.groups[0][0] >= h.squares && !walk.geo.tiling ? 'tri' : cellKind(walk.geo)); };  // (a hull solid's: its first colour's face's, a square or a triangle)
+const patternKind = () => { const h = hullColours(MODES[$('mode').value].sphere, walk.life && lifeParts()); return flatGrid()?.kind ?? (h && h.groups[0][0] >= h.squares && !walk.geo.tiling ? 'tri' : cellKind(walk.geo)); };  // (a hull solid's: its first colour's face's, a square or a triangle)
 // a face's level way (its normal n: across it, square to the world's up; a face looking straight up or down, east) and the
 // way down it, as a marble rolls (a face looking straight up or down: south)
 const levelOf = (n) => { const l = cross([0, 0, 1], n); return Math.hypot(...l) < 1e-9 ? [1, 0, 0] : unit(l); };
@@ -12387,7 +12389,7 @@ function centredChoices(kind, K, rule, mine, any, centred = true) {
 // in its colour
 const choicesMemo = {}, FAMOUS_ALL = 20000;  // (Famous's, Centered's; see laidChoices)
 function patternChoices(centred = false) {  // (once a grid, its colours and rule)
-  const L = walk.life, id = `${flatGrid() ? `${gridKey()}|${planeTurn()}` : ''}|${L.colours}|${L.ruleText}`, m = choicesMemo[centred];
+  const L = walk.life, id = `${flatGrid() ? `${gridKey()}|${planeTurn()}` : ''}|${L.colours}|${lifeParts()}|${L.ruleText}`, m = choicesMemo[centred];  // (its teams laid too: Newcomer's one fewer, see lifeParts)
   if (m?.id !== id || m.g !== walk.geo) choicesMemo[centred] = { id, g: walk.geo, choices: laidChoices(centred) };
   return choicesMemo[centred].choices;
 }

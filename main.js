@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.56';
+const VERSION = '0.4.57';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -6938,8 +6938,8 @@ function buildSphereWalk(seq, mode, ahead = new Uint8Array(0)) {
  * grid, a digit each a step, B from the place (tile, or corner) opposite A's start (antipodeStart), turning as A does.
  * Each holds the places it walked, its body, from its tail (its oldest) to its head; a head stepping on the other's body
  * cuts it there: the other loses that place and all those behind it, to its tail (its own body: nothing). The heads meet
- * (on one place, or passing each other): the end, the longer body wins. Along the grid a body is drawn as the tiles
- * beside its edges. Both walks are built at once (buildSphereWalk, buildGridWalk), the bodies replayed to the step shown
+ * (on one place, or passing each other): the end, the longer body wins. Along the grid a body is drawn as a line along
+ * its edges, as a walk's path. Both walks are built at once (buildSphereWalk, buildGridWalk), the bodies replayed to the step shown
  * (duelPlayer). */
 let walkTeams = 1;  // a walk's teams: 1 Classic, 2 Duel (as Life's, see renderColours)
 const DUEL_MODES = ['hexSphereWalk', 'icosaLR', 'cubeFlat', 'hexSphereGrid', 'icosaGrid', 'cubeGrid'];  // (the turtles of the sphere and the cube, on cells and along the grid)
@@ -13841,12 +13841,7 @@ function drawSphere() {
     const [hA, hB] = P.heads();
     palette = [null, faded(LIFE_COLOURS[0], 0.6), faded(LIFE_COLOURS[1], 0.6), LIFE_COLOURS[0], LIFE_COLOURS[1]];
     levelOf = (t) => (t === hA ? 3 : t === hB ? 4 : P.alive(0, t) ? 1 : P.alive(1, t) ? 2 : 0);
-    if (walk.vert) {  // along the grid: the tiles beside each edge a body came by (B's over A's), its head's last edge full
-      const G = gridGraph(g), level = new Uint8Array(g.n), edge = (s, j, l) => { for (const t of G.edgeTiles.get(G.key(P.places[s][j - 1], P.places[s][j]))) level[t] = l; };
-      for (let s = 0; s < 2; s++) for (let j = Math.max(1, P.from[s]); j <= P.step; j++) if (P.held(s, j)) edge(s, j, s + 1);
-      if (P.step > 0) for (let s = 0; s < 2; s++) edge(s, P.step, s + 3);
-      levelOf = (t) => level[t];
-    }
+    if (walk.vert) levelOf = () => 0;  // along the grid: its bodies are lines (see pathSegments), over the tiles unlit
   }
   // the torus, and any polyhedron that is not flat, is drawn tile by tile from its current form;
   // a flat polyhedron is drawn face by face below
@@ -14003,24 +13998,34 @@ const packed = (c) => { const [r, g, b] = rgbCached(c); return ((255 << 24) | (b
 // a face turned away is not drawn at all, and nothing jumps across an unrolled sheet's seams.
 // Per segment [Ax, Ay, Az, Bx, By, Bz, Nx, Ny, Nz, ends, step]: ends, which ends go on half the
 // width past their point (1 the start, 2 the end: where two segments of the same plane meet, not at
-// a fold); and the first segment of each step (at)
-function pathSegments() {
+// a fold); and the first segment of each step (at). P: a duel's player along the grid (see 7.6b): its two bodies' edges at
+// the step shown instead, step's place their colour's in the palette (duelPalette: A, B, A's head, B's), all of them at[cur]
+function pathSegments(P = null) {
   const g = walk.geo, sh = walk.shape, R = walk.R, k = g.sides, C = sh.corners, n = walk.n;
   const corner = (t, q) => [C[3 * (k * t + q)] * R, C[3 * (k * t + q) + 1] * R, C[3 * (k * t + q) + 2] * R];
   const centre = (t) => [sh.cen[3 * t] * R, sh.cen[3 * t + 1] * R, sh.cen[3 * t + 2] * R];
   const normal = (t) => [sh.nrm[3 * t], sh.nrm[3 * t + 1], sh.nrm[3 * t + 2]];
   const mid = (p, q) => p.map((x, d) => (x + q[d]) / 2);
-  const out = new Float32Array(11 * 2 * Math.max(1, n)), at = new Int32Array(n + 1);
+  const out = new Float32Array(11 * (P ? 8 : 2) * Math.max(1, n)), at = new Int32Array(n + 1);
   let j = 0;
   const put = (a, b, nr, ends, i) => { out.set([...a, ...b, ...nr, ends, i], 11 * j++); };
+  const edge = (v0, v1, t0, t1, i) => {  // along the grid: the edge from v0 to v1, on each tile beside it (t0, t1)
+    for (const t of t0 === t1 ? [t0] : [t0, t1]) {
+      const ends = [v0, v1].map((v) => { for (let q = 0; q < k; q++) if (g.poly[k * t + q] === v) return corner(t, q); return null; });
+      if (ends[0] && ends[1]) put(ends[0], ends[1], normal(t), 3, i);
+    }
+  };
+  if (P) {
+    const G = gridGraph(g), body = (s, q, i) => { const a = P.places[s][q - 1], b = P.places[s][q], sides = G.edgeTiles.get(G.key(a, b)); edge(a, b, sides[0], sides[1] ?? sides[0], i); };
+    for (let s = 0; s < 2; s++) for (let q = Math.max(1, P.from[s]); q < P.step; q++) if (P.held(s, q)) body(s, q, s);
+    if (P.step > 0) for (let s = 0; s < 2; s++) body(s, P.step, s + 2);  // (the heads' last edges)
+    at[cur] = j;
+    return { data: out.subarray(0, 11 * j), at };
+  }
   for (let i = 0; i < n; i++) {
     at[i] = j;
-    if (walk.vert) {  // along the grid: the edge, on each tile beside it
-      const [t0, t1] = [walk.stepTiles[2 * i], walk.stepTiles[2 * i + 1]];
-      for (const t of t0 === t1 ? [t0] : [t0, t1]) {
-        const ends = [walk.vert[i], walk.vert[i + 1]].map((v) => { for (let q = 0; q < k; q++) if (g.poly[k * t + q] === v) return corner(t, q); return null; });
-        if (ends[0] && ends[1]) put(ends[0], ends[1], normal(t), 3, i);
-      }
+    if (walk.vert) {
+      edge(walk.vert[i], walk.vert[i + 1], walk.stepTiles[2 * i], walk.stepTiles[2 * i + 1], i);
       continue;
     }
     const a = walk.tile[i], b = walk.tile[i + 1], qa = [], qb = [];  // on cells
@@ -14708,7 +14713,7 @@ struct Edge { @builtin(position) pos: vec4f, @location(0) facing: f32, @location
 struct Rib { @builtin(position) pos: vec4f, @location(0) col: vec3f, @location(1) cutv: f32 }
 @vertex fn ribbonV(@location(0) quad: vec2f, @location(1) a: vec3f, @location(2) b: vec3f, @location(3) n: vec3f, @location(4) e: f32, @location(5) i: f32) -> Rib {
   var o: Rib;
-  o.col = band(grad, (i + 0.5) / u.N);
+  if (u.colour == 3) { o.col = band(pal, (i + 0.5) / 256.0); } else { o.col = band(grad, (i + 0.5) / u.N); }  // (a duel's bodies: their colours, see duelPalette)
   var d = b - a; if (length(d) > 1e-9) { d = normalize(d); } else { d = vec3f(1.0, 0.0, 0.0); }
   let side = normalize(cross(d, n)) * u.halfW;
   var on = floor(e / 2.0); if (quad.x < 0.5) { on = e - 2.0 * floor(e / 2.0); }
@@ -14890,6 +14895,15 @@ function gpuDrawPipe(name, { vertex, fragment, buffers, topology = 'triangle-lis
     depthStencil: pass || !depth ? undefined : { format: 'depth24plus', depthWriteEnabled: true, depthCompare: 'less-equal' },
     multisample: { count: 4 } }));
 }
+// a duel's colours in the palette (pal), for its lines along the grid: A's body, B's, paler, then their heads
+function duelPalette(D) {
+  const key = `duel|${MONO}|${UNLIT}`;
+  if (D.keys.pal === key) return;
+  const pal = new Uint8Array(4 * 256);
+  [faded(LIFE_COLOURS[0], 0.6), faded(LIFE_COLOURS[1], 0.6), LIFE_COLOURS[0], LIFE_COLOURS[1]].forEach((c, k) => pal.set([...rgbCached(c), 255], 4 * k));
+  D.device.queue.writeTexture({ texture: D.pal }, pal, { bytesPerRow: 1024 }, [256, 1]);
+  D.keys.pal = key;  // (a flat walk's palette written again after it, see its palKey)
+}
 // A surface, its tiles' colours by paint (paintLevels', or Life's by gpuLook)
 function gpuSurface(paint, path) {
   const D = gpuDrawSetup();
@@ -14938,8 +14952,12 @@ function gpuSurface(paint, path) {
     p.setPipeline(gpuDepthPipe('depthTileV', [vbuf(12, [VA(0, 'float32x3')])]));
     p.setVertexBuffer(0, D.pos); p.setIndexBuffer(D.fan, 'uint32'); p.drawIndexed(D.fanCount);
   }, `${D.geoGen}|${lightDir()}|${cam.r}|${depth}|${lamp()}|${cutOn()}`);
-  const segs = path && cur > 0 && (D.keys.segs !== walk.wx || D.keys.segsM !== sh.m) ? pathSegments() : null;
-  if (segs) { gpuBuffer('ribbon', segs.data); D.segsAt = segs.at; D.keys.segs = walk.wx; D.keys.segsM = sh.m; }
+  // the path's segments, made once a walk; a duel along the grid's, its bodies', made again each step (see pathSegments)
+  const lines = !!walk.duel && !!walk.vert;
+  if (lines) { walk.duel.player.to(cur); duelPalette(D); }
+  const segs = (path || lines) && cur > 0 && (D.keys.segs !== walk.wx || D.keys.segsM !== sh.m || (lines && D.keys.segsCur !== cur))
+    ? pathSegments(lines ? walk.duel.player : null) : null;
+  if (segs) { gpuBuffer('ribbon', segs.data); D.segsAt = segs.at; D.keys.segs = walk.wx; D.keys.segsM = sh.m; D.keys.segsCur = lines ? cur : null; }
   // the tiles, their grid and the path, into pass p (0 the frame; 1, 2 Glass's)
   const drawAll = (rp, pass) => {
     const both = pass || cutOn(), cut = cutOn() ? (pass ? 2 : 1) : 0, open = !both && g.torus && !g.mobius && !g.klein && sh.m < 1;
@@ -14957,10 +14975,10 @@ function gpuSurface(paint, path) {
       rp.setBindGroup(0, gpuGroup(), [slotOf({ glass: pass, cut, edge: edgeAlpha(sh), edgeRgb: EDGE_RGB.map((c) => c / 255), bias: edgeBias, both: g.klein || both ? 1 : 0 })]);
       rp.setVertexBuffer(0, D.ePos); rp.setVertexBuffer(1, D.eN1); rp.setVertexBuffer(2, D.eN2); rp.draw(D.eCount);
     }
-    if (path && cur > 0 && D.segsAt?.[cur]) {
+    if ((path || lines) && cur > 0 && D.segsAt?.[cur]) {
       rp.setPipeline(gpuDrawPipe('ribbon', { vertex: 'ribbonV', fragment: 'ribbonF', topology: 'triangle-strip', pass, cull: !twoSidedNow() && !both ? 'back' : 'none',
         buffers: [vbuf(8, [VA(0, 'float32x2')]), vbuf(44, [VA(1, 'float32x3', 0), VA(2, 'float32x3', 12), VA(3, 'float32x3', 24), VA(4, 'float32', 36), VA(5, 'float32', 40)], 'instance')] }));
-      rp.setBindGroup(0, gpuGroup(), [slotOf({ glass: pass, cut, N: Math.max(1, walk.n), halfW: surfaceLineWidth() / 2 / view.scale, bias: pathBias })]);
+      rp.setBindGroup(0, gpuGroup(), [slotOf({ glass: pass, cut, N: Math.max(1, walk.n), halfW: surfaceLineWidth() / 2 / view.scale, bias: pathBias, colour: lines ? 3 : 0 })]);
       rp.setVertexBuffer(0, D.quad); rp.setVertexBuffer(1, D.ribbon); rp.draw(4, D.segsAt[cur]);
     }
   };

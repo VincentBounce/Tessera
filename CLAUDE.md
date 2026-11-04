@@ -96,3 +96,12 @@ of hexagons, on the CPU: atoms of types a to f with a state and bonds, moving at
 two cells), reacting with the six beside them by his eight rules (shown with how often each fired); the chain e8–a1–b1–
 c1–f1 copies itself, and his rule 4's flaw makes shorter mutants that win. `chemistryCheck()` in its console: types,
 bonds and cells kept right over 10,000 steps, and the chain copied.
+
+## Liquid prototype (liquid/)
+A separate page (`liquid/index.html`, `liquid.js`), not part of main.js, to join Tessera later: four liquids of different
+weights in a box on WebGPU, Clavet, Beaudoin and Poulin's double density relaxation (2005, as in Grant Kot's Liquid
+Layers) done at once for every particle (Jacobi): a pair's push by their densities' pressure against a rest density
+(one for a liquid, a lower one for two: they part), shared by their masses (the heavy sink); the walls mirrors, gravity
+the bottom's weight; drawn as metaballs. Tools Drag, Attract, Repel. A step in seven passes (moved, the particles binned
+as in particles/, densities, pushes). `liquidCheck()` in its console: one GPU step against the CPU (every pair), and four
+layers settled from a scatter, the heaviest at the bottom.

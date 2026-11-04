@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Liquid</title>
+<style>
+  /* Lenia Worlds' look (lenia/index.html): its panel, its one button and its tabs */
+  :root { --bg: #0b0d12; --panel: #141821; --line: #262c39; --text: #d8dde8; --dim: #8a93a6; --accent: #7aa2ff; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; background: var(--bg); color: var(--text); font: 13px/1.35 system-ui, -apple-system, Segoe UI, sans-serif; }
+  body { display: flex; }
+  #panel { width: 270px; flex: none; height: 100%; overflow-y: auto; background: var(--panel); border-right: 1px solid var(--line); padding: 12px; }
+  #stage { flex: 1; position: relative; min-width: 0; }
+  #view { position: absolute; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; }
+  h1 { font-size: 15px; margin: 0 0 2px; letter-spacing: .02em; }
+  .sub { color: var(--dim); font-size: 11.5px; margin-bottom: 10px; }
+  .sec { margin: 12px 0 5px; color: var(--dim); font-size: 11px; text-transform: uppercase; letter-spacing: .06em; }
+  /* The one button; .on is its active state, [disabled] its greyed one */
+  .btn { appearance: none; border: 1px solid var(--line); background: #1b202b; color: var(--text); font: inherit; padding: 5px 9px; border-radius: 6px; cursor: pointer; }
+  .btn:hover { background: #222838; }
+  .btn.on { background: #2b3a5e; border-color: var(--accent); color: #fff; }
+  .btn[disabled] { opacity: .4; cursor: default; }
+  /* One choice among several: buttons joined in one frame */
+  .tabs { display: flex; flex-wrap: wrap; }
+  .tabs .btn { border-radius: 0; margin-left: -1px; flex: 1 1 auto; }
+  .tabs .btn:first-child { border-radius: 6px 0 0 6px; margin-left: 0; }
+  .tabs .btn:last-child { border-radius: 0 6px 6px 0; }
+  .tabs .btn.on { position: relative; z-index: 1; }
+  .row { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+  label.range { display: flex; align-items: center; gap: 8px; margin: 4px 0; }
+  label.range span { width: 62px; color: var(--dim); }
+  label.range input { flex: 1; }
+  label.range b { width: 38px; text-align: right; font-weight: normal; font-variant-numeric: tabular-nums; }
+  #stats { white-space: pre-line; }
+  #stats, #help { margin-top: 12px; color: var(--dim); font-size: 11.5px; font-variant-numeric: tabular-nums; }
+  #fail { position: absolute; inset: 0; display: none; align-items: center; justify-content: center; text-align: center; padding: 20px; }
+  @media (max-width: 700px) {
+    body { flex-direction: column-reverse; }
+    #panel { width: 100%; height: 45%; border-right: 0; border-top: 1px solid var(--line); }
+  }
+</style>
+</head>
+<body>
+<div id="panel">
+  <h1>Liquid</h1>
+  <div class="sub">Four liquids of different weights in a box, each particle pushed by its neighbours' pressure (Clavet, Beaudoin and Poulin's double density relaxation): they settle into layers</div>
+  <div class="sec">Particles</div>
+  <div class="tabs" id="counts"></div>
+  <div class="sec">Steps a frame</div>
+  <div class="tabs" id="steps"></div>
+  <div class="sec">Tool</div>
+  <div class="tabs" id="tools"></div>
+  <label class="range"><span>Brush</span><input id="brush" type="range" min="0.02" max="0.3" step="0.01"><b></b></label>
+  <div class="sec">Liquid</div>
+  <label class="range"><span>Gravity</span><input id="gravity" type="range" min="0" max="0.1" step="0.001"><b></b></label>
+  <label class="range"><span>Stiffness</span><input id="stiffness" type="range" min="0.001" max="0.03" step="0.001"><b></b></label>
+  <label class="range"><span>Near</span><input id="near" type="range" min="0" max="0.05" step="0.001"><b></b></label>
+  <label class="range"><span>Rest same</span><input id="same" type="range" min="1" max="8" step="0.1"><b></b></label>
+  <label class="range"><span>Rest other</span><input id="other" type="range" min="1" max="8" step="0.1"><b></b></label>
+  <label class="range"><span>Viscosity</span><input id="viscosity" type="range" min="0" max="1" step="0.01"><b></b></label>
+  <div class="row" style="margin-top:8px"><button class="btn" id="play">Pause</button><button class="btn" id="scatter">Scatter</button></div>
+  <div id="stats"></div>
+  <div id="help">Each particle pushed from its neighbours by the pressure of their density (Stiffness) against the rest density (Rest same between particles of one liquid, Rest other between two liquids: lower, they shun each other), and from those very near (Near: never clumped). A heavier particle moves less under the same push: it sinks. Viscosity slows particles closing on each other. A drag in the box: Drag carries the liquid along, Attract draws it, Repel pushes it, within the Brush. The link keeps all the settings.</div>
+</div>
+<div id="stage"><canvas id="view"></canvas><div id="fail"></div></div>
+<!-- The script fetched fresh each time (a prototype changing often: never an old one from the cache) -->
+<script>const js = document.createElement('script'); js.src = 'liquid.js?' + Date.now(); document.body.append(js);</script>
+</body>
+</html>

@@ -38,10 +38,10 @@ const MASSES = [1, 1.6, 2.5, 4], COLOURS = [[1, 0.82, 0.3], [0.35, 0.85, 0.45], 
 const BETA = 0.3, FILL = 0.5, REST = 4, THRESHOLD = 1, PULL = 0.004, CFL = 0.3; // (CFL: the fastest a step can move a
 // particle, in reaches, and stay stable)
 const mulberry32 = (a) => () => { a |= 0; a = (a + 0x6d2b79f5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
-// The setting from the link: #n=65536&steps=4&seed=1&gravity=0.03&stiffness=0.01&near=0.02&same=4&other=3&viscosity=0.1&brush=0.1
+// The setting from the link: #n=65536&steps=4&seed=1&gravity=0.03&stiffness=0.01&near=0.02&same=4&other=3&viscosity=0.1&brush=0.1&dots=false
 const hash = Object.fromEntries(new URLSearchParams(location.hash.slice(1)));
 const num = (v, d) => (v === undefined || v === '' || isNaN(+v) ? d : +v);
-const set = { n: COUNTS.includes(+hash.n) ? +hash.n : 65536, steps: STEPS.includes(+hash.steps) ? +hash.steps : 4, seed: +hash.seed || 1, gravity: num(hash.gravity, 0.03), stiffness: num(hash.stiffness, 0.01), near: num(hash.near, 0.02), same: num(hash.same, REST), other: num(hash.other, 3), viscosity: num(hash.viscosity, 0.1), brush: num(hash.brush, 0.1), tool: 'drag' };
+const set = { n: COUNTS.includes(+hash.n) ? +hash.n : 65536, steps: STEPS.includes(+hash.steps) ? +hash.steps : 4, seed: +hash.seed || 1, gravity: num(hash.gravity, 0.03), stiffness: num(hash.stiffness, 0.01), near: num(hash.near, 0.02), same: num(hash.same, REST), other: num(hash.other, 3), viscosity: num(hash.viscosity, 0.1), brush: num(hash.brush, 0.1), dots: hash.dots === 'true', tool: 'drag' };
 const keep = () => { const { tool, ...h } = set; history.replaceState(null, '', '#' + new URLSearchParams(h)); };
 // The box and its reach, fixed by a scatter: its width a (the screen's aspect then), the reach h such that n particles at
 // the rest density fill FILL of it, the grid of bins (each a reach wide at least)
@@ -196,13 +196,18 @@ const DRAW = PARAMS + `
 @group(0) @binding(2) var<uniform> colour: array<vec4f, 4>;
 struct Out { @builtin(position) pos: vec4f, @location(0) uv: vec2f, @location(1) c: vec3f };
 fn origin() -> vec2f { return (P.s.yz - vec2f(P.f.w, 1.0) * P.s.x) * 0.5; }
-@vertex fn vs(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> Out {
+// A particle's quad, its size in the box's units round it
+fn quad(vi: u32, ii: u32, size: f32) -> Out {
   var corners = array(vec2f(-1, -1), vec2f(1, -1), vec2f(-1, 1), vec2f(-1, 1), vec2f(1, -1), vec2f(1, 1));
   let p = s[2u * ii]; var o: Out; o.uv = corners[vi]; o.c = colour[u32(p.z)].rgb;
-  let px = origin() + (p.xy + o.uv * P.f.x * 0.6) * P.s.x;
+  let px = origin() + (p.xy + o.uv * size) * P.s.x;
   o.pos = vec4f(px / P.s.yz * 2.0 - 1.0, 0.0, 1.0);
   return o;
 }
+@vertex fn vs(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> Out { return quad(vi, ii, P.f.x * 0.6); }
+// Particles shown: each a small dot over the liquid (a tenth of the reach, a pixel at least), its liquid's colour darker
+@vertex fn dotVs(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> Out { return quad(vi, ii, max(P.f.x * 0.1, 1.0 / P.s.x)); }
+@fragment fn dotFs(i: Out) -> @location(0) vec4f { if (dot(i.uv, i.uv) > 1.0) { discard; } return vec4f(i.c * 0.45, 1.0); }
 @fragment fn fs(i: Out) -> @location(0) vec4f {
   let d = dot(i.uv, i.uv); if (d > 1.0) { discard; }
   let w = (1.0 - d) * (1.0 - d); return vec4f(i.c * w, w);
@@ -225,7 +230,7 @@ const PICTURE = 'rgba16float';
 
 const view = document.getElementById('view');
 const fail = (text) => { const f = document.getElementById('fail'); f.style.display = 'flex'; f.textContent = text; throw new Error(text); };
-let device, context, format, pipes, drawPipe, showPipe, params, colourBuf, states = [], bins = {}, groups = [], drawGroups = [], picture = null, showGroup, flip = 0;
+let device, context, format, pipes, drawPipe, showPipe, dotPipe, dotGroups = [], params, colourBuf, states = [], bins = {}, groups = [], drawGroups = [], picture = null, showGroup, flip = 0;
 async function gpu() {
   const adapter = navigator.gpu && (await navigator.gpu.requestAdapter());
   if (!adapter) fail('This page needs WebGPU (Chrome, Edge, or a recent Safari).');
@@ -240,6 +245,7 @@ async function gpu() {
   pipes.layout = layout;
   const add = { srcFactor: 'one', dstFactor: 'one' };
   drawPipe = device.createRenderPipeline({ layout: 'auto', vertex: { module: dm, entryPoint: 'vs' }, fragment: { module: dm, entryPoint: 'fs', targets: [{ format: PICTURE, blend: { color: add, alpha: add } }] }, primitive: { topology: 'triangle-list' } });
+  dotPipe = device.createRenderPipeline({ layout: 'auto', vertex: { module: dm, entryPoint: 'dotVs' }, fragment: { module: dm, entryPoint: 'dotFs', targets: [{ format }] }, primitive: { topology: 'triangle-list' } });
   showPipe = device.createRenderPipeline({ layout: 'auto', vertex: { module: dm, entryPoint: 'full' }, fragment: { module: dm, entryPoint: 'show', targets: [{ format }] } });
   params = device.createBuffer({ size: 128, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST });
   colourBuf = device.createBuffer({ size: 64, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST });
@@ -291,12 +297,15 @@ function draw() {
     picture = device.createTexture({ size: [view.width, view.height], format: PICTURE, usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING });
     showGroup = device.createBindGroup({ layout: showPipe.getBindGroupLayout(0), entries: [{ binding: 0, resource: { buffer: params } }, { binding: 3, resource: picture.createView() }] });
   }
-  if (!drawGroups.length) drawGroups = [0, 1].map((f) => device.createBindGroup({ layout: drawPipe.getBindGroupLayout(0), entries: [params, states[f], colourBuf].map((buffer, binding) => ({ binding, resource: { buffer } })) }));
+  const groupsOf = (pipe) => [0, 1].map((f) => device.createBindGroup({ layout: pipe.getBindGroupLayout(0), entries: [params, states[f], colourBuf].map((buffer, binding) => ({ binding, resource: { buffer } })) }));
+  if (!drawGroups.length) { drawGroups = groupsOf(drawPipe); dotGroups = groupsOf(dotPipe); }
   const enc = device.createCommandEncoder();
   const pass = enc.beginRenderPass({ colorAttachments: [{ view: picture.createView(), loadOp: 'clear', storeOp: 'store', clearValue: { r: 0, g: 0, b: 0, a: 0 } }] });
   pass.setPipeline(drawPipe); pass.setBindGroup(0, drawGroups[flip]); pass.draw(6, set.n); pass.end();
   const out = enc.beginRenderPass({ colorAttachments: [{ view: context.getCurrentTexture().createView(), loadOp: 'clear', storeOp: 'store', clearValue: { r: 0, g: 0, b: 0, a: 1 } }] });
-  out.setPipeline(showPipe); out.setBindGroup(0, showGroup); out.draw(3); out.end();
+  out.setPipeline(showPipe); out.setBindGroup(0, showGroup); out.draw(3);
+  if (set.dots) { out.setPipeline(dotPipe); out.setBindGroup(0, dotGroups[flip]); out.draw(6, set.n); }
+  out.end();
   device.queue.submit([enc.finish()]);
 }
 
@@ -318,6 +327,10 @@ function panel() {
   const markSteps = tabs(document.getElementById('steps'), STEPS, () => set.steps, (v) => { set.steps = v; markSteps(); keep(); });
   const markTools = tabs(document.getElementById('tools'), TOOLS, () => set.tool, (v) => { set.tool = v; markTools(); }, (v) => v[0].toUpperCase() + v.slice(1));
   document.getElementById('scatter').onclick = () => scatter();
+  // Particles: a switch (its name never changes, .on its state), the particles drawn as dots over the liquid
+  const dots = document.getElementById('dots');
+  dots.classList.toggle('on', set.dots);
+  dots.onclick = () => { set.dots = !set.dots; dots.classList.toggle('on', set.dots); keep(); };
   document.getElementById('play').onclick = (e) => { on = !on; e.target.textContent = on ? 'Pause' : 'Play'; };
   for (const id of ['brush', 'gravity', 'stiffness', 'near', 'same', 'other', 'viscosity']) {
     const input = document.getElementById(id), out = input.nextElementSibling;

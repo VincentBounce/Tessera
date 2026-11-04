@@ -112,7 +112,7 @@ input[type=number], input[type=text], select, textarea {
    is hovered or used; in yellow bold when it is the number chosen (no card matches it) */
 /* a value of one's own, in yellow bold: a formula no card matches, a rule no preset matches */
 .field :is(input, textarea).custom { color: var(--accent); font-weight: 600; }
-.field input.battle-formula { background: color-mix(in srgb, var(--walker) 22%, var(--bg)); color: var(--text); font-weight: 700; }  /* a battle's formula, its battle built with it: its walker's colour behind, bold in the text's colour (over .custom's yellow) */
+.field input.battle-formula { color: var(--walker); font-weight: 700; }  /* a battle's formula, its battle built with it: bold in its walker's colour (over .custom's yellow) */
 textarea { resize: none; line-height: 1.35; }  /* (Text's lines, a new line by Enter) */
 .field textarea { height: 200px; }  /* (fixed, as a line's 34 px: edited or not, whatever its font; more lines scroll) */
 .field textarea:not(:focus) { font-family: var(--face, inherit); }  /* at rest, in the font it is drawn in (see TEXT_FONTS) */

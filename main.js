@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.103';
+const VERSION = '0.4.104';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -7019,7 +7019,7 @@ function renderWalkTeams() {
     click: () => { if (p !== penetration) { penetration = p; compute(); } } });
   $('walkPenetration').replaceChildren(tileGroup(PENETRATIONS.map(button)));
 }
-// a battle's formula fields, each tinted its walker's colour and bold once its battle is built with it (typed since: plain again)
+// a battle's formula fields, each bold in its walker's colour once its battle is built with it (typed since: plain again)
 const BATTLE_FORMULAS = ['formula', ...RIVALS];
 function tintBattleFormulas() {
   const B = walk.battle;

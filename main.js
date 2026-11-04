@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.57';
+const VERSION = '0.4.58';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -6994,9 +6994,9 @@ function duelWalks(g, S, start, A, B, grid) {
 }
 
 // The bodies at step i (to(i): on from the step it was at, from the start again to go back): owner and at, each place's
-// walk (1 A, 2 B, 0 none) and the step it was taken; a walk's body, its places taken from step from[s] on (alive), size[s]
-// of them; held(s, j): step j's place still s's, taken then (along the grid: the edge it came by, its body's). At the step
-// the heads meet, nothing more taken or cut.
+// walk (1 A, 2 B, 0 none) and the step it was taken; a walk's body, its steps from from[s] on, all of them (only a cut
+// takes a place from it, and a cut takes its steps up to that place's last), its places alive, size[s] of them. At the
+// step the heads meet, nothing more taken or cut.
 function duelPlayer(places, count, n, met) {
   const owner = new Uint8Array(count), at = new Int32Array(count), from = [0, 0], size = [0, 0];
   let i = -1;
@@ -7017,7 +7017,6 @@ function duelPlayer(places, count, n, met) {
   };
   return {
     size, alive, from, places, heads: () => [places[0][i], places[1][i]], get step() { return i; },
-    held: (s, j) => j >= from[s] && owner[places[s][j]] === s + 1 && at[places[s][j]] === j,
     to(j) {
       if (j < i) { owner.fill(0); from[0] = from[1] = size[0] = size[1] = 0; i = -1; }
       while (i < Math.min(j, n)) step();
@@ -13692,11 +13691,11 @@ const digitColour = (k) => walk.ant ? (antRamp ? rampColour(k, walk.ant) : antTu
 const sphereDraw = { at: 0, cost: 0 };
 
 // Cursor lying on the sphere: an arrow in the tangent plane at the walker, pointing along the
-// last step, built in 3D and then projected so it is foreshortened like the tiles around it
-function drawSphereCursor(ctx) {
-  const P = (i) => [walk.wx[i], walk.wy[i], walk.wz[i]];
+// last step, built in 3D and then projected so it is foreshortened like the tiles around it. P(i), tileAt(i): the walker's
+// point and tile at step i (the walk's; a duel's B, see drawOverlay), fill: its colour
+function drawSphereCursor(ctx, P = (i) => [walk.wx[i], walk.wy[i], walk.wz[i]], tileAt = (i) => walk.tile[i], fill = '#ffffff') {
   const p = P(cur);
-  const t = walk.tile[cur], nr = walk.shape.nrm;
+  const t = tileAt(cur), nr = walk.shape.nrm;
   const nrm = [nr[3 * t], nr[3 * t + 1], nr[3 * t + 2]];  // outward normal of the current tile
   const pos = p.map((v, d) => v + nrm[d] * walk.R * 0.003);  // just above the surface
   // heading: last step (or the next one at the start), minus its normal component
@@ -13716,7 +13715,7 @@ function drawSphereCursor(ctx) {
     return [view.ox + x * view.scale, view.oy + y * view.scale];
   };
   const pts = [at(1, 0), at(-0.6, 0.7), at(-0.3, 0), at(-0.6, -0.7)];
-  ctx.fillStyle = '#ffffff';
+  ctx.fillStyle = fill;
   ctx.strokeStyle = '#0e1116';
   ctx.lineWidth = 1.5;
   ctx.lineJoin = 'round';
@@ -13999,7 +13998,7 @@ const packed = (c) => { const [r, g, b] = rgbCached(c); return ((255 << 24) | (b
 // Per segment [Ax, Ay, Az, Bx, By, Bz, Nx, Ny, Nz, ends, step]: ends, which ends go on half the
 // width past their point (1 the start, 2 the end: where two segments of the same plane meet, not at
 // a fold); and the first segment of each step (at). P: a duel's player along the grid (see 7.6b): its two bodies' edges at
-// the step shown instead, step's place their colour's in the palette (duelPalette: A, B, A's head, B's), all of them at[cur]
+// the step shown instead, step's place their colour's in the palette (duelPalette: A, B), all of them at[cur]
 function pathSegments(P = null) {
   const g = walk.geo, sh = walk.shape, R = walk.R, k = g.sides, C = sh.corners, n = walk.n;
   const corner = (t, q) => [C[3 * (k * t + q)] * R, C[3 * (k * t + q) + 1] * R, C[3 * (k * t + q) + 2] * R];
@@ -14017,8 +14016,7 @@ function pathSegments(P = null) {
   };
   if (P) {
     const G = gridGraph(g), body = (s, q, i) => { const a = P.places[s][q - 1], b = P.places[s][q], sides = G.edgeTiles.get(G.key(a, b)); edge(a, b, sides[0], sides[1] ?? sides[0], i); };
-    for (let s = 0; s < 2; s++) for (let q = Math.max(1, P.from[s]); q < P.step; q++) if (P.held(s, q)) body(s, q, s);
-    if (P.step > 0) for (let s = 0; s < 2; s++) body(s, P.step, s + 2);  // (the heads' last edges)
+    for (let s = 0; s < 2; s++) for (let q = P.from[s] + 1; q <= P.step; q++) body(s, q, s);  // (its steps' edges, from its tail on)
     at[cur] = j;
     return { data: out.subarray(0, 11 * j), at };
   }
@@ -14895,12 +14893,12 @@ function gpuDrawPipe(name, { vertex, fragment, buffers, topology = 'triangle-lis
     depthStencil: pass || !depth ? undefined : { format: 'depth24plus', depthWriteEnabled: true, depthCompare: 'less-equal' },
     multisample: { count: 4 } }));
 }
-// a duel's colours in the palette (pal), for its lines along the grid: A's body, B's, paler, then their heads
+// a duel's colours in the palette (pal), for its lines along the grid: A's body, B's (their heads: their arrows, see drawOverlay)
 function duelPalette(D) {
-  const key = `duel|${MONO}|${UNLIT}`;
+  const key = `duel|${LIFE_COLOURS[0]}|${LIFE_COLOURS[1]}`;  // (as the theme makes them)
   if (D.keys.pal === key) return;
   const pal = new Uint8Array(4 * 256);
-  [faded(LIFE_COLOURS[0], 0.6), faded(LIFE_COLOURS[1], 0.6), LIFE_COLOURS[0], LIFE_COLOURS[1]].forEach((c, k) => pal.set([...rgbCached(c), 255], 4 * k));
+  LIFE_COLOURS.slice(0, 2).forEach((c, k) => pal.set([...rgbCached(c), 255], 4 * k));
   D.device.queue.writeTexture({ texture: D.pal }, pal, { bytesPerRow: 1024 }, [256, 1]);
   D.keys.pal = key;  // (a flat walk's palette written again after it, see its palKey)
 }
@@ -15364,6 +15362,13 @@ function drawOverlay() {
     }
   }
   if (!walk.n || walk.life || walk.rows || startsShown) return;  // no walker in the Game of Life, nor Elementary
+  if (walk.duel) {  // a duel: no start (its tails cut), each head an arrow in its colour
+    const g = walk.geo, G = walk.vert && gridGraph(g), X = walk.vert ? g.verts : g.cen, B = walk.duel.player.places[1];
+    const P = (i) => [0, 1, 2].map((d) => X[3 * B[i] + d] * walk.R), tileAt = (i) => (G ? G.tileOf[B[i]] : B[i]);
+    if (facing(cur)) drawSphereCursor(ctx, undefined, undefined, LIFE_COLOURS[0]);
+    if (twoSidedNow() || tileVisible(tileAt(cur))) drawSphereCursor(ctx, P, tileAt, LIFE_COLOURS[1]);
+    return;
+  }
   const r = Math.max(3, Math.min(s * 0.35, 8));
   // start (hidden on the far side of the sphere)
   if (!walk.sphere || facing(0)) {

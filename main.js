@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.63';
+const VERSION = '0.4.64';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -7065,6 +7065,43 @@ function battleScore() {
   if (cur < walk.n) return names.map((_, s) => `${name(s)} ${P.dead[s] < 0 ? fmt(P.size[s]) : '✝'}`).join(' · ');
   return winner.s < 0 ? `Draw (${winner.how})` : `${name(winner.s)} wins, ${fmt(winner.size)} (${winner.how})`;
 }
+// A battle's closed areas at the step it is at (P: its player; Area, see drawSphere), each tile's walker + 1 (0: none):
+// for each living walker, the regions its body cuts off, as a walk's (see areaSteps: along the grid tiles parted by its
+// edges; on cells corners parted by the edges it crossed, a tile closed once all its corners are), the largest left out;
+// a tile closed by two or three, the one closing fewer tiles's. The surface's links (tile pairs, or corner pairs) once a mesh
+function battleAreas(P) {
+  const g = walk.geo, k = g.sides, G = gridGraph(g), grid = !!walk.vert;
+  const L = (g.battleLinks ??= {})[grid ? 'grid' : 'cells'] ??= (() => {
+    const eu = [], ev = [], index = new Map();
+    for (const [e, sides] of G.edgeTiles) {
+      if (grid && sides.length < 2) continue;
+      index.set(e, eu.length);
+      eu.push(grid ? sides[0] : Math.floor(e / G.nv)); ev.push(grid ? sides[1] : e % G.nv);
+    }
+    return { eu, ev, index, nodes: grid ? g.n : G.nv };
+  })();
+  // the link a body's step q goes along (the grid) or across (cells: the edge its two tiles share)
+  const link = (s, q) => {
+    const a = P.places[s][q - 1], b = P.places[s][q];
+    if (grid) return L.index.get(G.key(a, b));
+    const shared = [];
+    for (let p = 0; p < k; p++) for (let r = 0; r < k; r++) if (g.poly[k * a + p] === g.poly[k * b + r]) shared.push(g.poly[k * a + p]);
+    return shared.length === 2 ? L.index.get(G.key(shared[0], shared[1])) : undefined;
+  };
+  const out = new Uint8Array(g.n), fewest = new Float64Array(g.n).fill(Infinity);
+  for (const s of P.living()) {
+    const crossed = new Int32Array(L.eu.length).fill(-1);
+    for (let q = Math.max(1, P.from[s]); q <= P.step; q++) { const j = link(s, q); if (j !== undefined) crossed[j] = 0; }
+    const at = enclosedFrom(L.nodes, L.eu, L.ev, crossed), mine = [];
+    for (let t = 0; t < g.n; t++) {
+      let shut = grid ? at[t] >= 0 : true;
+      for (let q = 0; !grid && shut && q < k; q++) shut = at[g.poly[k * t + q]] >= 0;
+      if (shut) mine.push(t);
+    }
+    for (const t of mine) if (mine.length < fewest[t]) { fewest[t] = mine.length; out[t] = s + 1; }
+  }
+  return out;
+}
 
 /* ---- 7.6c Hunting the longest battles -------------------------------------------------------- */
 /* A battle's hunt (under Digits B): as many numbers as walkers (Duel 2, Trio 3) drawn at random, each set once, fought
@@ -13870,9 +13907,12 @@ function drawSphere() {
     const P = walk.battle.player, K = P.K, colours = LIFE_COLOURS.slice(0, K);
     P.to(cur);
     const heads = new Map(P.living().map((s) => [P.heads()[s], s]));
-    palette = [null, ...colours.map((c) => faded(c, 0.6)), ...colours];
-    levelOf = (t) => { if (heads.has(t)) return 1 + K + heads.get(t); for (const s of P.living()) if (P.alive(s, t)) return 1 + s; return 0; };
-    if (walk.vert) levelOf = () => 0;  // along the grid: its bodies are lines (see pathSegments), over the tiles unlit
+    // the areas each body closes (Area: Light translucent, Plain as its body), under its body and head
+    const closed = $('fillAreas').checked && fillAreasApply() ? battleAreas(P) : null, light = shows('translucent') && $('fillTranslucent').checked;
+    palette = [null, ...colours.map((c) => faded(c, 0.6)), ...colours, ...colours.map((c) => faded(c, light ? FADING : 0.6))];
+    const area = (t) => (closed?.[t] ? 2 * K + closed[t] : 0);
+    levelOf = (t) => { if (heads.has(t)) return 1 + K + heads.get(t); for (const s of P.living()) if (P.alive(s, t)) return 1 + s; return area(t); };
+    if (walk.vert) levelOf = area;  // along the grid: its bodies are lines (see pathSegments), over the tiles unlit but its areas
   }
   // the torus, and any polyhedron that is not flat, is drawn tile by tile from its current form;
   // a flat polyhedron is drawn face by face below

@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.79';
+const VERSION = '0.4.80';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -6983,7 +6983,7 @@ const PENETRATIONS = [
   ['Penetrating 2', 'M1.5 0H2.5V1.5H1.5Z', "As Penetrating, but a head never crosses an enemy's body: going onto it, it takes that place and the body goes on round it, not cut, pushed back (along the grid its line round the corner, the tiles it goes round the biter's land; along it: nothing). A body closing a loop makes it land, inside and itself, and starts again from its head. The first two heads meeting end it: the most land wins"],
   ['Penetrating 3', 'M1.5 0H2.5V4H1.5Z', "Along the grid: a walker's line, the edges it went along, stays (crossing it: a fork); its land the regions it closes. Along an enemy's line: nothing; a head on it pierces it: the line let go each way up to a fork or its end, its land there let go too. The first two heads meeting end it: the most land wins"],
   ['Penetrating 4', 'M1.5 0H2.5V4H1.5ZM0 1.5H4V2.5H0Z', "As Penetrating 3, but a head pierces an enemy's line only going through it: on it, it goes along it (their borders glued); off it again by the other side, the line is pierced there; by the same side, nothing. Going along an enemy's line inside its land (its land on both sides), that line becomes the head's"],
-  ['Penetrating 5', 'M1.5 0H2.5V4H1.5ZM0 1.5H4V2.5H0ZM0 0H1V1H0Z', "As Penetrating 4, but going along an enemy's line pierces it too (up to its forks): each walker keeps its land, no line of another in it"]];
+  ['Penetrating 5', 'M1.5 0H2.5V4H1.5ZM0 1.5H4V2.5H0ZM0 0H1V1H0Z', "As Penetrating 4, but going along an enemy's line pierces it too (up to its forks): each walker keeps its land, no line of another in it. On cells: a loop closed filled with its colour, whatever is in it"]];
 const BATTLE_MODES = ['hexSphereWalk', 'icosaLR', 'cubeFlat', 'hexSphereGrid', 'icosaGrid', 'cubeGrid'];  // (the turtles of the sphere and the cube, on cells and along the grid)
 const battleOn = () => walkTeams > 1 && BATTLE_MODES.includes($('mode').value);
 // Classic, Duel or Trio, under the size and start of a walk on a surface (Life's tiles, see renderColours); Digits B, and
@@ -7006,7 +7006,7 @@ function renderWalkTeams() {
   if (!battleOn()) return;
   $('walkPenetration').replaceChildren(tileGroup(PENETRATIONS.map(([name, head, title], p) => tile({
     pic: `<svg viewBox="0 0 4 4" aria-hidden="true"><path d="M0 0H4V4H0Z" fill="${LIFE_COLOURS[1]}"/><path d="${head}" fill="${LIFE_COLOURS[0]}"/></svg>`, text: name, title,
-    on: p === penetration, can: p < 3 || !!MODES[w].grid, greyed: p >= 3 ? 'on cells: no line to pierce' : '', byDefault: p === 0 ? 'yes' : '',
+    on: p === penetration, can: p < 3 || p === 5 || !!MODES[w].grid, greyed: p === 3 || p === 4 ? 'on cells: no line to pierce' : '', byDefault: p === 0 ? 'yes' : '',
     click: () => { if (p !== penetration) { penetration = p; compute(); } } }))));
 }
 // A battle's starts: A's, then each turned by the solid's own symmetry, as the walk's state ([tile, the edge it comes in
@@ -7103,7 +7103,7 @@ function smallerSide(L, cut, j) {
 // its head (restart); with 1 it cuts it; with 3 or 4 (along the grid), lines and their land as lined says (4: pierced only gone through). The first two heads
 // meeting end it (met), none dies: its worth, its land, who wins
 function battlePlayer(g, grid, S, starts, digits, pen = penetration) {
-  if (pen >= 3 && !grid) pen = 2;  // (Penetrating 3 and 4 along the grid only: their lines; on cells, 2's)
+  if (pen >= 3 && !grid) pen = pen === 5 ? 1 : 2;  // (on cells, no line: Penetrating 5, a loop closed filled whatever is in it, Penetrating's; 3 and 4 greyed)
   const bite = pen > 0, count = grid ? gridGraph(g).nv : g.n, k = g.sides, G = gridGraph(g), L = bite ? battleLinks(g, grid) : null;
   const wallsOf = bite ? starts.map(() => new Int32Array(count)) : [], cutsOf = bite ? starts.map(() => new Uint16Array(L.eu.length)) : [];
   const land = new Uint8Array(g.n), landCount = starts.map(() => 0), seenFrom = starts.map(() => 0);
@@ -16201,11 +16201,14 @@ function renderWalkGauges() {
   $('gauges').hidden = !walk.n || !walk.maxDist;
   if ($('gauges').hidden) return;
   const x = walk.wx[cur], y = walk.is3d ? walk.wy[cur] : -walk.wy[cur], z = walk.is3d ? walk.wz[cur] : 0, d = Math.hypot(x, y, z);
-  if (walk.battle) {  // a battle: each body's length, in its colour, its bar full at the longest body of the whole battle; ✝ dead
+  if (walk.battle) {  // a battle: its walkers ranked as Life's colours are (paintRanking): each its body's length, Penetrating its land; ✝ dead
     const { player: D, names } = walk.battle;
     D.to(cur);
-    const w = D.worth(), full = D.bite ? Math.max(1, ...w) : D.peak;  // (Penetrating: its land, the bar full at the most)
-    paintGauges(names.map((name, s) => [withIcons(name), LIFE_COLOURS[s], w[s] / full, D.dead[s] < 0 ? `<b>${fmt(w[s])}</b>` : `✝ ${fmt(D.dead[s])}`]));
+    const w = D.worth();
+    $('gauges').hidden = true;
+    $('ranking').hidden = false;
+    paintRanking(names.map((name, s) => ({ colour: LIFE_COLOURS[s], name, value: w[s], dead: D.dead[s] >= 0, diedAt: D.dead[s],
+                                             cells: [D.dead[s] < 0 ? `<b>${fmt(w[s])}</b>` : `✝ ${genLink(D.dead[s])}`] })));
     return;
   }
   const p = (v) => fmt(Math.round(v * 100) / 100 || 0), P = walkPeak(), gold = 'var(--accent)', c = walk.cells[cur];
@@ -16232,35 +16235,46 @@ const loopMeans = (L) => endShown(L) && L.loopAvg;
 const meanText = (v) => `≈ ${v.toLocaleString('en', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}`;
 const colourGone = (L, k) => (loopMeans(L) ? L.loopMax[k] === 0 : L.extinctAt?.[k] !== null && L.extinctAt?.[k] !== undefined);
 function renderRanking(L) {
-  const box = $('ranking'), K = L.colours, H = 18;
-  box.hidden = $('rankTitles').hidden = K < 2 || (!!L.loops && !L.lineages);  // (a loop alone: its states, no colours fighting)
-  if (box.hidden) return;
-  if (box.dataset.k !== String(K)) {
-    box.replaceChildren(...Array.from({ length: K }, (_, k) => {
+  const K = L.colours;
+  $('ranking').hidden = $('rankTitles').hidden = K < 2 || (!!L.loops && !L.lineages);  // (a loop alone: its states, no colours fighting)
+  if ($('ranking').hidden) return;
+  const dead = (k) => colourGone(L, k), foot = endShown(L) && L.footBy;
+  const avg = loopMeans(L), live = (k) => avg?.[k] ?? L.byColour[k], mean = !!avg;  // (a loop: each colour's mean over it, ≈)
+  paintRanking(Array.from({ length: K }, (_, c) => {
+    const k = c + 1, num = (v) => (mean && L.loopMax[k] > L.loopMin[k] ? meanText(v) : fmt(v));
+    return { colour: LIFE_COLOURS[c], name: LIFE_COLOUR_NAMES[c], value: live(k), dead: dead(k), diedAt: L.extinctAt[k],
+             cells: [dead(k) ? `✝ ${genLink(L.extinctAt[k])}` : `<b>${num(live(k))}</b>`, fmt(Math.round((foot ?? L.sumBy)[k] / (foot ? Math.max(1, L.stable.T) : L.gen + 1))), fmt(L.bornBy[k]), fmt(L.deadBy[k]), fmt(L.everBy[k])] };
+  }));
+}
+// A ranking, the same for Life's battles and a walk's: a row each (its colour, name, value, dead or not and when, its
+// table's cells, the first its value or ✝ when), its place, its colour, its bar (its share of the living ones' values) and
+// its cells in its colour; the living by value, then the dead, the last died first; each row sliding to its place; all
+// dead, said
+function paintRanking(rows) {
+  const box = $('ranking'), H = 18, key = rows.map((r) => `${r.colour}|${r.name}|${r.cells.length}`).join();
+  if (box.dataset.key !== key) {
+    box.replaceChildren(...rows.map((row) => {
       const r = document.createElement('div');
       r.className = 'rank-row';
-      r.innerHTML = `<span></span><i style="background:${LIFE_COLOURS[k]}"></i><span class="rank-bar"><i style="background:${LIFE_COLOURS[k]}"></i></span>`
-        + `<span class="rank-cell" style="color:${LIFE_COLOURS[k]}"></span>`.repeat(5);
-      r.title = LIFE_COLOUR_NAMES[k];
+      r.innerHTML = `<span></span><i style="background:${row.colour}"></i><span class="rank-bar"><i style="background:${row.colour}"></i></span>`
+        + `<span class="rank-cell" style="color:${row.colour}"></span>`.repeat(row.cells.length);
+      r.title = row.name;
       return r;
     }), Object.assign(document.createElement('span'), { className: 'all-dead' }));
-    box.dataset.k = K;
+    box.dataset.key = key;
   }
-  const dead = (k) => colourGone(L, k), foot = endShown(L) && L.footBy, alive = [], gone = [];
-  for (let k = 1; k <= K; k++) (dead(k) ? gone : alive).push(k);
-  const avg = loopMeans(L), live = (k) => avg?.[k] ?? L.byColour[k], mean = !!avg;  // (a loop: each colour's mean over it, ≈)
-  alive.sort((a, b) => live(b) - live(a) || a - b);
-  gone.sort((a, b) => L.extinctAt[b] - L.extinctAt[a] || a - b);
-  const total = alive.reduce((sum, k) => sum + live(k), 0) || 1, top = alive.length ? 0 : H;  // (all dead: a line for it on top)
-  box.style.height = `${K * H + top}px`;
+  const order = rows.map((_, k) => k), alive = order.filter((k) => !rows[k].dead), gone = order.filter((k) => rows[k].dead);
+  alive.sort((a, b) => rows[b].value - rows[a].value || a - b);
+  gone.sort((a, b) => rows[b].diedAt - rows[a].diedAt || a - b);
+  const total = alive.reduce((sum, k) => sum + rows[k].value, 0) || 1, top = alive.length ? 0 : H;  // (all dead: a line for it on top)
+  box.style.height = `${rows.length * H + top}px`;
   [...alive, ...gone].forEach((k, place) => {
-    const r = box.children[k - 1], off = dead(k);
+    const r = box.children[k], row = rows[k];
     r.style.transform = `translateY(${top + place * H}px)`;
-    r.classList.toggle('dead', off);
+    r.classList.toggle('dead', row.dead);
     r.children[0].textContent = place + 1;  // (then its colour, its bar, its table)
-    const num = (v) => (mean && L.loopMax[k] > L.loopMin[k] ? meanText(v) : fmt(v));
-    r.children[2].firstChild.style.width = off ? '0' : `${(100 * live(k)) / total}%`;
-    [off ? `✝ ${genLink(L.extinctAt[k])}` : `<b>${num(live(k))}</b>`, fmt(Math.round((foot ?? L.sumBy)[k] / (foot ? Math.max(1, L.stable.T) : L.gen + 1))), fmt(L.bornBy[k]), fmt(L.deadBy[k]), fmt(L.everBy[k])].forEach((v, c) => setLinks(r.children[3 + c], v));
+    r.children[2].firstChild.style.width = row.dead ? '0' : `${(100 * row.value) / total}%`;
+    row.cells.forEach((v, c) => setLinks(r.children[3 + c], v));
   });
   box.querySelector('.all-dead').textContent = alive.length ? '' : 'All dead';
 }

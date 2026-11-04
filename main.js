@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.108';
+const VERSION = '0.4.109';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -1911,7 +1911,8 @@ function runStop() {
   }
   if (randomPrimeSize()) return null;
   const asked = targetAsked(), unit = readsDigits() ? 'digits' : 'steps', L = walk.loop, total = wholeTotal();
-  if (walk.battle && walk.n < asked) return { n: walk.n, label: `${fmt(walk.n)} steps until ${walk.battle.winner.until} ■`, why: `■ The battle ends at step ${fmt(walk.n)}, ${walk.battle.winner.how}: more digits would change nothing` };
+  // (a battle's own end, known as it was fought: not the digits asked meanwhile)
+  if (walk.battle?.winner.until) return { n: walk.n, label: `${fmt(walk.n)} steps until ${walk.battle.winner.until} ■`, why: `■ The battle ends at step ${fmt(walk.n)}, ${walk.battle.winner.how}: more digits would change nothing` };
   if (walk.wormEnd && walk.n < asked) return { n: walk.n, label: `${fmt(walk.n)} steps max ✝`, why: loopText() };
   if (L && asked >= (L.cap ?? walk.n)) return { n: L.cap ?? walk.n, label: `${fmt(L.cap ?? walk.n)} ${unit} max ${L.drift ? '→' : '↻'}`, why: loopText() };
   if (total !== null && total <= asked) return { n: total, label: `all ${fmt(total)} ${unit}`, why: `The number has ${fmt(total)} digits: all walked` };

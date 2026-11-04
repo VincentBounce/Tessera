@@ -27,6 +27,8 @@
   .tabs .btn:first-child { border-radius: 6px 0 0 6px; margin-left: 0; }
   .tabs .btn:last-child { border-radius: 0 6px 6px 0; }
   .tabs .btn.on { position: relative; z-index: 1; }
+  /* A group of many choices (the counts, the tools): its buttons' sides tighter, to fit the panel */
+  .tabs.tight .btn { padding-left: 4px; padding-right: 4px; }
   .row { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
   label.range { display: flex; align-items: center; gap: 8px; margin: 4px 0; }
   label.range span { width: 62px; color: var(--dim); }
@@ -46,13 +48,13 @@
   <h1>Liquid</h1>
   <div class="sub">Four liquids of different weights in a box, each particle pushed by its neighbours' pressure (Clavet, Beaudoin and Poulin's double density relaxation): they settle into layers</div>
   <div class="sec">Particles</div>
-  <div class="tabs" id="counts"></div>
+  <div class="tabs tight" id="counts"></div>
   <div class="sec">Steps a frame</div>
   <div class="tabs" id="steps"></div>
   <div class="sec">View</div>
   <div class="tabs" id="views"></div>
   <div class="sec">Tool</div>
-  <div class="tabs" id="tools"></div>
+  <div class="tabs tight" id="tools"></div>
   <div class="sec">Pour</div>
   <div class="tabs" id="pours"></div>
   <label class="range"><span>Brush</span><input id="brush" type="range" min="0.02" max="0.3" step="0.01"><b></b></label>

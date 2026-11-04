@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.94';
+const VERSION = '0.4.95';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -1898,31 +1898,33 @@ function setGens(n) {
   syncDigitsStepper();
   syncLink();
 }
-// a battle over before its digits: its last step (more digits would change nothing; − goes below it); null: none
-const battleEnded = () => (walk.battle && walk.n < targetAsked() ? walk.n : null);
-function syncDigitsStepper() {
-  if (gensShown()) {  // (a run that ends before: its generations max, and why, as a walk that loops: Space-time's, or a game's once it repeats)
-    const s = !spaceTimeOn() && walk.life?.stable, far = runEnd() + 1;
+// A run's own end before what was asked, the same for all (null: none): n, the steps or generations it walks; label, the
+// stepper's words; why, its tooltip's first line. Life's: Space-time's end, or its game dead (✝), frozen (■) or back
+// round (↻); a walk's: a battle over (■, see battleWinner), a worm stopped (✝), its loop's rounds (↻, → a drift: more
+// would draw nothing new), a whole number shorter (all its digits). The stepper's − goes below it, its + greyed
+function runStop() {
+  if (gensShown()) {
+    const s = !spaceTimeOn() && walk.life?.stable, n = runEnd() + 1;
     const end = spaceTimeOn() && stack?.end !== 'gens' ? STACK_ENDS[stack?.end]
       : s && runEnd() < walk.n ? (s.extinct ? STACK_ENDS.dead : s.P === 1 ? ['■', 'Frozen: more would draw the same'] : ['↻', `Back to gen ${fmt(s.T)} every ${fmt(s.P)}: more would draw the same`]) : null;
-    $('digitsLabel').value = end ? `${fmt(far)} generations max ${end[0]}` : `${fmt(targetAsked())} generations`;
-    $('digitsLabel').title = `${end ? `${end[1]}\n` : ''}Type a number of generations, from ${fmt(DIGIT_STEPS[0])} to ${fmt(targetMost())}, then Enter\nLast picked: ${fmt(target)}`;
-    $('digitsDown').disabled = targetAsked() <= DIGIT_STEPS[0];
-    $('digitsUp').disabled = targetAsked() >= targetMost() || !!end;
-    return;
+    return end && { n, label: `${fmt(n)} generations max ${end[0]}`, why: end[1] };
   }
-  const size = randomPrimeSize(), n = size ?? targetAsked(), steps = size ? PRIME_STEPS : DIGIT_STEPS;
-  // a walk that loops uses only the digits of its first round on a surface (see buildGridWalk), of 8 rounds
-  // in 2D and 3D: more would change nothing
-  const L = !size && walk.loop, total = size ? null : L ? L.cap ?? walk.n : wholeTotal(), unit = readsDigits() ? 'digits' : 'steps';  // (a creature by its rule: steps, no digit read)
-  const ended = size ? null : battleEnded();
-  $('digitsLabel').value = size ? `${fmt(size)} digits (p)` : ended !== null ? `${fmt(ended)} steps until ${walk.battle.winner.until} ■` : L && n >= total ? `${fmt(total)} ${unit} max ${L.drift ? '→' : '↻'}`
-    : L ? `${fmt(n)} ${unit}` : total === null ? `${fmt(n)} ${unit}` : total <= n ? `all ${fmt(total)} ${unit}` : `${fmt(n)} of ${fmt(total)}`;
+  if (randomPrimeSize()) return null;
+  const asked = targetAsked(), unit = readsDigits() ? 'digits' : 'steps', L = walk.loop, total = wholeTotal();
+  if (walk.battle && walk.n < asked) return { n: walk.n, label: `${fmt(walk.n)} steps until ${walk.battle.winner.until} ■`, why: `■ The battle ends at step ${fmt(walk.n)}, ${walk.battle.winner.how}: more digits would change nothing` };
+  if (walk.wormEnd && walk.n < asked) return { n: walk.n, label: `${fmt(walk.n)} steps max ✝`, why: loopText() };
+  if (L && asked >= (L.cap ?? walk.n)) return { n: L.cap ?? walk.n, label: `${fmt(L.cap ?? walk.n)} ${unit} max ${L.drift ? '→' : '↻'}`, why: loopText() };
+  if (total !== null && total <= asked) return { n: total, label: `all ${fmt(total)} ${unit}`, why: `The number has ${fmt(total)} digits: all walked` };
+  return null;
+}
+function syncDigitsStepper() {
+  const stop = runStop(), size = randomPrimeSize(), gens = gensShown(), asked = size ?? targetAsked(), steps = size ? PRIME_STEPS : DIGIT_STEPS;
+  const unit = gens ? 'generations' : readsDigits() ? 'digits' : 'steps', total = gens || size || walk.loop ? null : wholeTotal();  // (a creature by its rule: steps, no digit read; a loop's, its rounds: see runStop)
+  $('digitsLabel').value = stop ? stop.label : size ? `${fmt(size)} digits (p)` : total !== null ? `${fmt(asked)} of ${fmt(total)}` : `${fmt(asked)} ${unit}`;
   $('digitsLabel').title = size ? 'The size of the random prime p, in decimal digits: 100 to 2,000, then Enter (it is walked whole)'
-    : `${ended !== null ? `■ The battle ends at step ${fmt(ended)}, ${walk.battle.winner.how}: more digits would change nothing\n` : ''}Type a number of ${unit}, from 10 to 50,000,000, then Enter\nLast picked: ${fmt(target)}`;
-  // − goes below what is walked: the whole number's own length when it is shorter than the count
-  $('digitsDown').disabled = Math.min(n, total ?? n, ended ?? n) <= steps[0];
-  $('digitsUp').disabled = n >= steps.at(-1) || (total !== null && total <= n) || ended !== null;
+    : `${stop ? `${stop.why}\n` : ''}Type a number of ${unit}, from ${fmt(DIGIT_STEPS[0])} to ${fmt(targetMost())}, then Enter\nLast picked: ${fmt(target)}`;
+  $('digitsDown').disabled = (stop?.n ?? asked) <= steps[0];  // (− goes below what is walked)
+  $('digitsUp').disabled = asked >= (size ? steps.at(-1) : targetMost()) || !!stop;
 }
 // Why a walk that repeats has a most of digits: the loop (or drift), from its first step, and how many
 // rounds are walked; '' when it does not repeat
@@ -1942,12 +1944,11 @@ function loopText() {
       + ` it stops after ${rounds === 1 ? 'one round' : `${rounds} rounds`}, ${fmt(total)} digits, and more would draw nothing new.`;
 }
 function stepDigits(delta) {
-  if (gensShown()) { const next = delta > 0 ? DIGIT_STEPS.find((v) => v > targetAsked() && v <= targetMost()) ?? (targetAsked() < targetMost() ? targetMost() : undefined) : DIGIT_STEPS.findLast((v) => v < targetAsked()); if (next !== undefined) setGens(next); return; }  // (+ past the ladder's last below the most: the most)
-  const size = randomPrimeSize(), steps = size ? PRIME_STEPS : DIGIT_STEPS;
-  const n = size ?? Math.min(targetAsked(), wholeTotal() ?? Infinity, walk.loop ? walk.loop.cap ?? walk.n : Infinity, battleEnded() ?? Infinity);  // what is walked (a loop's: its rounds; a battle's, to its end)
-  const next = delta > 0 ? steps.find((v) => v > n) : steps.findLast((v) => v < n);
+  const size = randomPrimeSize(), steps = size ? PRIME_STEPS : DIGIT_STEPS, n = runStop()?.n ?? size ?? targetAsked();  // (what is walked, see runStop)
+  const next = delta > 0 ? steps.find((v) => v > n && (size || v <= targetMost())) ?? (!size && n < targetMost() ? targetMost() : undefined) : steps.findLast((v) => v < n);  // (+ past the ladder's last below the most: the most)
   if (next === undefined) return;
   if (size) setPrimeSize(next);
+  else if (gensShown()) setGens(next);
   else { target = next; compute(); }
 }
 // Another size for the random prime: a new prime of that size, from the same seed

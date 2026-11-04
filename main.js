@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.50';
+const VERSION = '0.4.51';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -2100,18 +2100,11 @@ const ICONS = (() => {
   const bumps = carved((F, P, at) => pathEl(pathOf(at(-1))));
   const menger = carved((F, P) => pathEl(pathOf(P), 'f') + [1, 2].map((t) => pathEl(seg(...[F[0], F[3]].map((p, j) => p.map((x, d) => x + (t / 3) * (F[1][d] - F[0][d])))) + seg(...[F[0], F[1]].map((p) => p.map((x, d) => x + (t / 3) * (F[3][d] - F[0][d])))))).join(''));
   const torus = '<ellipse cx="12" cy="12" rx="10" ry="7"/>' + pathEl('M5.5 11Q12 17 18.5 11M7.8 12.6Q12 8 16.2 12.6');
-  // the Möbius strip: a band round a rounded triangle (its corners V, its middle c), its two sides drawn, folded flat at its top
-  // right corner (its half twist: the inner side's corner sharp, the fold across the band from it to the outer side's curve)
-  const mobius = (() => {
-    const c = [12, 12.8], R = 7.6, w = 2.2, V = [-150, -30, 90].map((a) => [c[0] + R * Math.cos((a * Math.PI) / 180), c[1] + R * Math.sin((a * Math.PI) / 180)]);
-    const side = (d) => V.map(([x, y]) => [x + (2 * d * (x - c[0])) / R, y + (2 * d * (y - c[1])) / R]), toward = (q, r, k) => { const L = Math.hypot(r[0] - q[0], r[1] - q[1]); return [q[0] + ((r[0] - q[0]) * k) / L, q[1] + ((r[1] - q[1]) * k) / L]; };
-    const f = ([x, y]) => `${r2(x)} ${r2(y)}`, curve = (P, i, s) => [toward(P[i], P[(i + 2) % 3], s), P[i], toward(P[i], P[(i + 1) % 3], s)];  // (a corner rounded: in, its point, out)
-    const O = side(w), I = side(-w), so = 7.8, si = 2.6;
-    const outer = O.map((_, i) => { const [a, p, b] = curve(O, i, so); return `${i ? 'L' : 'M'}${f(a)}Q${f(p)} ${f(b)}`; }).join('') + 'Z';
-    const inner = I.map((p, i) => { if (i === 1) return `L${f(p)}`; const [a, q, b] = curve(I, i, si); return `${i ? 'L' : 'M'}${f(a)}Q${f(q)} ${f(b)}`; }).join('') + 'Z';
-    const [a, p, b] = curve(O, 1, so), fold = [0, 1].map((d) => 0.25 * a[d] + 0.5 * p[d] + 0.25 * b[d]);  // (the outer curve's middle)
-    return pathEl(outer) + pathEl(inner) + pathEl(`M${f(I[1])}L${f(fold)}`);
-  })();
+  // the Möbius strip, traced from a drawing of one (a band of three sides round a triangular hole): its outline, the hole,
+  // and the three folds where one side of the band passes behind the next
+  const mobius = pathEl('M6.7 3.1C9 1.8 15 2 18.7 4.9C21.5 7.5 22.6 13 21.2 16.7C19.8 20 16 22.3 13 21.9C10 21.5 7 20 5.7 18.7C3.3 16.5 1.8 12 2.4 9.5C2.9 7.2 4.7 4.8 6.7 3.1Z')
+    + pathEl('M6.8 6.6C11 6.8 16 8 19.5 10.2C16.5 13.5 13 16.5 9.8 18.1Z')
+    + pathEl('M6.7 3.1Q6.1 5 6.8 6.6M20.1 6.8L19.5 10.2M9.8 18.1Q7.5 18.2 5.7 18.7');
   // the Klein bottle: its body a round flask, its neck a tube (along a curve through P: [x, y, half its width], Catmull-Rom)
   // up out of it, over and down into its side, on inside it
   const tube = (P, n = 160) => {
@@ -2272,6 +2265,7 @@ const ICONS = (() => {
     check: pathEl('M5 12.5L10 17.5L19 7'),
     copy: '<rect x="8.5" y="8.5" width="12" height="12" rx="2"/>' + pathEl('M15.5 8.5V5.5A2 2 0 0 0 13.5 3.5H5.5A2 2 0 0 0 3.5 5.5V13.5A2 2 0 0 0 5.5 15.5H8.5'),
     import: pathEl('M12 3v12M7 10l5 5 5-5M4 14v5a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-5'), export: pathEl('M12 15V3M7 8l5-5 5 5M4 14v5a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-5'),
+    undo: pathEl('M9 14L4 9L9 4') + pathEl('M4 9H15A5 5 0 0 1 15 19H11'),
     eye: pathEl('M2.5 12Q12 3.5 21.5 12Q12 20.5 2.5 12Z') + '<circle cx="12" cy="12" r="3"/>',
     trash: pathEl('M4 7h16M9 7V4.5h6V7M6 7l1 13h10l1-13M10 11v6M14 11v6'),
     floppy: pathEl('M6 3h10l4 4v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2ZM8 3v5h7V3M12.5 4.5v2M7 21v-6h10v6'),  // a floppy disk: its shutter and its window, its label (Management's)
@@ -3133,7 +3127,7 @@ function renderAntRow() {
   drawing = !!m.plane && plane.start === 'draw' && !spaceTimeOn();  // Life on the plane draws in its Draw start (not in Space-time)
   if (antRowMode !== w) antCustomOpen = false;
   antRowMode = w;
-  stage.classList.toggle('drawing', drawing);
+  stage.classList.toggle('drawing', drawsHere());  // (the crosshair: a click draws, as renderDrawTools keeps it)
   $('antStartSection').hidden = $('antRuleSection').hidden = !ant;
   if (!ant) return;
   if (m.turmite) antByDigits = false;  // (by its rule only: its Digits greyed)
@@ -8852,8 +8846,11 @@ function renderPlaneRow() {
 }
 // Draw's tools on the plane, each as it can (a cell: no turn), all greyed away from gen 0 (the cells drawn are its start's:
 // drawn there only; Go to gen 0, the way back)
+let drawToolsAway = null;  // (whether Draw's tools were last drawn away from gen 0, see updateStats)
 function renderDrawTools() {
   const kind = MODES[$('mode').value].plane, away = drawAway(), why = "away from gen 0: its start's cells are drawn there";
+  drawToolsAway = away;
+  stage.classList.toggle('drawing', drawsHere());  // (the crosshair: a click draws, see drawsHere)
   const grey = (b, own = false, ownWhy = '') => { b.disabled = away || own; b.dataset.greyed = away ? why : own ? ownWhy : ''; };
   const tooBig = (p) => discPattern(p) && flatGrid()?.kind === p[1] && !discCells(p[1]).laid(p[4], 0);  // (a disc's pattern past the disc shown)
   for (const b of $('brushCards').children) if (b.dataset.brush !== 'view') grey(b, tooBig(DRAW_BY_ID.get(b.dataset.brush)), 'too big for this disc: at a larger size');  // (View: at any generation)
@@ -8865,7 +8862,7 @@ function renderDrawTools() {
   $('brushColours').classList.toggle('off', away);
   // the start's cells: away, back to them (gen 0); there, Clear, then Undo clear (Clear again once undone)
   const b = $('startCells'), [pic, words, tip] = away ? ['start', 'Go to gen 0 to draw', "The cells drawn are its start's (gen 0): there, to see them as they are"]
-    : cleared ? ['back', 'Undo clear', 'The cells cleared back'] : ['trash', 'Clear', 'Clears the cells drawn (Undo clear then brings them back)'];
+    : cleared ? ['undo', 'Undo clear', 'The cells cleared back'] : ['trash', 'Clear', 'Clears the cells drawn (Undo clear then brings them back)'];
   b.innerHTML = `${icon(pic)}${words}`;
   b.title = tip;
   b.disabled = !away && !cleared && !population.size;
@@ -15330,7 +15327,7 @@ function updateStats() {
   $('reverse').disabled = cur <= runStart() && !loopBack();
   $('step').disabled = atEnd();
   $('end').hidden = lifePlayer();  // (Life: its green link, +2k and +10k)
-  if (drawing && MODES[$('mode').value].plane) renderDrawTools();  // (Draw: its tools at gen 0 only)
+  if (drawing && MODES[$('mode').value].plane && drawAway() !== drawToolsAway) renderDrawTools();  // (Draw: its tools at gen 0 only; drawn again as play leaves it or comes back, not each frame: 785 cards)
   $('end').disabled = !runStops().some((g) => g > cur);
   // the step: folded, alone on the title's line (Life's, in its title); open, with the last, under the curve (its slider, see
   // drawActivity)
@@ -15775,7 +15772,7 @@ function recentre() {
   }
   fitNow();
 }
-stage.addEventListener('dblclick', () => { if (!drawing) recentre(); });  // drawing: a double click is two cells
+stage.addEventListener('dblclick', () => { if (!drawsHere()) recentre(); });  // (a click drawing: a double click is two cells; else, View or away from gen 0, Auto-fit)
 // Life's Draw start: a click on a cell draws (see the pointerup below); a drag still pans
 let drawing = false, drawFrom = null;
 const drawsHere = () => drawing && !drawAway() && brush.id !== 'view';  // (a click draws: in Draw, at gen 0, a brush picked, not View)

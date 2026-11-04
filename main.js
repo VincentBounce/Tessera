@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.88';
+const VERSION = '0.4.89';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -6976,16 +6976,16 @@ function buildSphereWalk(seq, mode, ahead = new Uint8Array(0)) {
  * a body is drawn as a line along its edges, as a walk's path. The walks are made as the battle is first played
  * (battlePlayer), then replayed to the step shown. */
 let walkTeams = 1;  // a walk's teams: 1 Classic, 2 Duel, 3 Trio (as Life's, see renderColours)
-let penetration = 0;  // a battle's way with an enemy's body: 0 Cut, 1 Penetrating, 2 Penetrating 2 (see battlePlayer, PENETRATIONS)
-// its choice (a tile group under the teams): its name, its picture (a red head and a blue body or land), its words
+let penetration = 0;  // a battle's way with an enemy's body: 0 Cut, 1 Penetrating, 2, 4, 5 Penetrating 2, 4, 5, 6 Cells 1 (see battlePlayer, PENETRATIONS)
+// its choice (a tile group under the teams): its number (a link's pe=), its name, its picture (a red head and a blue body
+// or land), its words
 const PENETRATIONS = [
-  ['Cut', 'M0 1.5H4V2.5H0Z', "A head on another's body cuts it there, to its tail; two heads meeting, the shorter dies; the last one left wins (as the digits end: the longest)"],
-  ['Penetrating', 'M0 1.5H2.5V2.5H0Z', "Each walker's land: the tiles its body closes stay its own (an enemy's too); a head on another's body cuts it; a head going into an enemy's land takes the tiles it goes through. The first two heads meeting end it: the most land wins"],
-  ['Penetrating 2', 'M1.5 0H2.5V1.5H1.5Z', "As Penetrating, but a head never crosses an enemy's body: going onto it, it takes that place and the body goes on round it, not cut, pushed back (along the grid its line round the corner, the tiles it goes round the biter's land; along it: nothing). A body closing a loop makes it land, inside and itself, and starts again from its head. The first two heads meeting end it: the most land wins"],
-  ['Penetrating 3', 'M1.5 0H2.5V4H1.5Z', "Along the grid: a walker's line, the edges it went along, stays (crossing it: a fork); its land the regions it closes. Along an enemy's line: nothing; a head on it pierces it: the line let go each way up to a fork or its end, its land there let go too. The first two heads meeting end it: the most land wins"],
-  ['Penetrating 4', 'M1.5 0H2.5V4H1.5ZM0 1.5H4V2.5H0Z', "As Penetrating 3, but a head pierces an enemy's line only going through it: on it, it goes along it (their borders glued); off it again by the other side, the line is pierced there; by the same side, nothing. Going along an enemy's line inside its land (its land on both sides), that line becomes the head's"],
-  ['Penetrating 5', 'M1.5 0H2.5V4H1.5ZM0 1.5H4V2.5H0ZM0 0H1V1H0Z', "As Penetrating 4, but going along an enemy's line pierces it too (up to its forks): each walker keeps its land, no line of another in it. On cells: a head on an enemy's body takes that tile only, never cuts it; a loop closed filled with its colour, whatever is in it"],
-  ['Cells 1', 'M0 0H4V4H0ZM1 1H3V3H1Z', "On cells: no body; each walker paints the tile it goes into its colour, whatever it was, and a zone its colour closes (the tiles not of its colour cut off, the largest outside) is painted inside. The first two heads meeting end it: the most tiles win"]];
+  [0, 'Cut', 'M0 1.5H4V2.5H0Z', "A head on another's body cuts it there, to its tail; two heads meeting, the shorter dies; the last one left wins (as the digits end: the longest)"],
+  [1, 'Penetrating', 'M0 1.5H2.5V2.5H0Z', "Each walker's land: the tiles its body closes stay its own (an enemy's too); a head on another's body cuts it; a head going into an enemy's land takes the tiles it goes through. The first two heads meeting end it: the most land wins"],
+  [2, 'Penetrating 2', 'M1.5 0H2.5V1.5H1.5Z', "As Penetrating, but a head never crosses an enemy's body: going onto it, it takes that place and the body goes on round it, not cut, pushed back (along the grid its line round the corner, the tiles it goes round the biter's land; along it: nothing). A body closing a loop makes it land, inside and itself, and starts again from its head. The first two heads meeting end it: the most land wins"],
+  [4, 'Penetrating 4', 'M1.5 0H2.5V4H1.5ZM0 1.5H4V2.5H0Z', "Along the grid: a walker's line, the edges it went along, stays (crossing it: a fork); its land the regions it closes. A head pierces an enemy's line only going through it: on it, it goes along it (their borders glued); off it again by the other side, the line is pierced there, let go each way up to a fork or its end, its land there let go too; by the same side, nothing. Going along an enemy's line inside its land (its land on both sides), that line becomes the head's. The first two heads meeting end it: the most land wins"],
+  [5, 'Penetrating 5', 'M1.5 0H2.5V4H1.5ZM0 1.5H4V2.5H0ZM0 0H1V1H0Z', "As Penetrating 4, but going along an enemy's line pierces it too (up to its forks): each walker keeps its land, no line of another in it. On cells: a head on an enemy's body takes that tile only, never cuts it; a loop closed filled with its colour, whatever is in it"],
+  [6, 'Cells 1', 'M0 0H4V4H0ZM1 1H3V3H1Z', "On cells: no body; each walker paints the tile it goes into its colour, whatever it was, and a zone its colour closes (the tiles not of its colour cut off, the largest outside) is painted inside. The first two heads meeting end it: the most tiles win"]];
 const BATTLE_MODES = ['hexSphereWalk', 'icosaLR', 'cubeFlat', 'hexSphereGrid', 'icosaGrid', 'cubeGrid'];  // (the turtles of the sphere and the cube, on cells and along the grid)
 const battleOn = () => walkTeams > 1 && BATTLE_MODES.includes($('mode').value);
 // Classic, Duel or Trio, under the size and start of a walk on a surface (Life's tiles, see renderColours); Digits B, and
@@ -7006,9 +7006,9 @@ function renderWalkTeams() {
     on: k === (battleOn() ? walkTeams : 1), can: k === 1 || BATTLE_MODES.includes(w), byDefault: k === 1 ? 'yes' : '', greyed: k > 1 ? "outside the sphere's and the cube's turtles" : '',
     click: () => { if (k !== walkTeams) { walkTeams = k; compute(); } } })));
   if (!battleOn()) return;
-  $('walkPenetration').replaceChildren(tileGroup(PENETRATIONS.map(([name, head, title], p) => tile({
+  $('walkPenetration').replaceChildren(tileGroup(PENETRATIONS.map(([p, name, head, title]) => tile({
     pic: `<svg viewBox="0 0 4 4" aria-hidden="true"><path d="M0 0H4V4H0Z" fill="${LIFE_COLOURS[1]}"/><path d="${head}" fill="${LIFE_COLOURS[0]}"/></svg>`, text: name, title,
-    on: p === penetration, can: p === 6 ? !MODES[w].grid : p < 3 || p === 5 || !!MODES[w].grid, greyed: p === 6 ? 'along the grid: cells only' : p === 3 || p === 4 ? 'on cells: no line to pierce' : '', byDefault: p === 0 ? 'yes' : '',
+    on: p === penetration, can: p === 6 ? !MODES[w].grid : p !== 4 || !!MODES[w].grid, greyed: p === 6 ? 'along the grid: cells only' : p === 4 ? 'on cells: no line to pierce' : '', byDefault: p === 0 ? 'yes' : '',
     click: () => { if (p !== penetration) { penetration = p; compute(); } } }))));
 }
 // A battle's starts: A's, then each turned by the solid's own symmetry, as the walk's state ([tile, the edge it comes in
@@ -7105,7 +7105,7 @@ function smallerSide(L, cut, j) {
 // its head (restart); with 1 it cuts it; with 3 or 4 (along the grid), lines and their land as lined says (4: pierced only gone through). The first two heads
 // meeting end it (met), none dies: its worth, its land, who wins
 function battlePlayer(g, grid, S, starts, digits, pen = penetration) {
-  if ((pen === 3 || pen === 4) && !grid) pen = 2;  // (on cells, no line: 3 and 4 greyed; Penetrating 5 there, a head on an enemy's body a dent, never a cut, a loop closed filled whatever is in it)
+  if (pen === 4 && !grid) pen = 2;  // (on cells, no line: 4 greyed; Penetrating 5 there, a head on an enemy's body a dent, never a cut, a loop closed filled whatever is in it)
   if (pen === 6 && grid) pen = 5;  // (Cells 1 on cells only, greyed along the grid)
   // Cells 1 (painted): no body; each walker paints the tile it goes into its colour (land[t], whatever it was), and a zone
   // closed by its colour (see closeAt) is painted inside
@@ -7121,11 +7121,11 @@ function battlePlayer(g, grid, S, starts, digits, pen = penetration) {
   // each step, a dent replacing a corner by a way round it (see dent); refs[s][c], how often corner c is in s's chain
   const chained = pen === 2 && grid, chains = chained ? starts.map(() => ({ corner: [], next: [], prev: [], tail: -1, head: -1, nodes: new Map() })) : null;
   const refs = chained ? starts.map(() => new Uint16Array(count)) : null;
-  // Penetrating 3 along the grid (lined): a walker's line the edges it went along, never let go by itself (crossing it:
+  // Penetrating 4 and 5 along the grid (lined): a walker's line the edges it went along, never let go by itself (crossing it:
   // a fork); its land the regions its line closes; a head on an enemy's line pierces it (see pierce). Each line's links
   // (lineOf: their count, linksOf: the set), its corners' edges (degree), its pieces (a union-find of its corners), the
   // tiles it closes (closedOf, as battleAreas: outside its largest region, its size, the largest closed one's)
-  const lined = pen >= 3 && grid, E = lined ? L.eu.length : 0;
+  const lined = pen >= 4 && grid, E = lined ? L.eu.length : 0;
   const lineOf = lined ? starts.map(() => new Uint16Array(E)) : null, linksOf = lined ? starts.map(() => new Set()) : null;
   const degree = lined ? starts.map(() => new Uint8Array(count)) : null, piecesOf = lined ? starts.map(() => new Int32Array(count)) : null;
   const closedOf = lined ? starts.map(() => new Uint8Array(g.n)) : null, closedCount = starts.map(() => 0), outside = starts.map(() => 0), largest = starts.map(() => 0);
@@ -7171,7 +7171,6 @@ function battlePlayer(g, grid, S, starts, digits, pen = penetration) {
       for (const s of rest) for (const o of rest) {
         if (o === s) continue;
         const c = places[s][i], on = degree[o][c] > 0;
-        if (pen === 3) { if (on) pierce(o, c); continue; }
         // Penetrating 4: on o's line, s goes along it (its corners kept, and the side it came from: a tile by its edge in);
         // off it again, by the other side, it went through it: pierced where it left it; by the same side, nothing
         const touch = contact[s][o], edgeTile = (a, b) => G.edgeTiles.get(G.key(a, b))[0];
@@ -7442,7 +7441,7 @@ function battlePlayer(g, grid, S, starts, digits, pen = penetration) {
     }
     return true;  // (its walls' union-find kept: too joined now, which a closing's own search sees, see closeWall)
   };
-  // Penetrating 3: a line's edge from corner a to b, its link (undefined: none)
+  // Penetrating 4 and 5: a line's edge from corner a to b, its link (undefined: none)
   const linkOf = (a, b) => L.index.get(G.key(a, b));
   const freshLine = (s) => {  // (no line yet: all outside)
     lineOf[s].fill(0); linksOf[s].clear(); degree[s].fill(0); closedOf[s].fill(0);
@@ -7554,7 +7553,7 @@ function battlePlayer(g, grid, S, starts, digits, pen = penetration) {
   };
   // the walker whose land tile t shows (−1: none): of those closing it, the one closing fewer tiles (as freshLand)
   const landOwner = (t) => { let best = -1; for (let s = 0; s < K; s++) if (closedOf[s][t] && (best < 0 || closedCount[s] < closedCount[best])) best = s; return best; };
-  // the land as one (Penetrating 3, when changed): each closed tile its closer's, a tile closed by two or three the one
+  // the land as one (Penetrating 4 and 5, when changed): each closed tile its closer's, a tile closed by two or three the one
   // closing fewer's (as battleAreas)
   const freshLand = () => {
     if (!lined || !landDirty) return;
@@ -7562,7 +7561,7 @@ function battlePlayer(g, grid, S, starts, digits, pen = penetration) {
     for (let t = 0; t < g.n; t++) { land[t] = landOwner(t) + 1; if (land[t]) landCount[land[t] - 1]++; }
     landDirty = false;
   };
-  // the edges of s's line as drawn (Penetrating 2: its chain's, Penetrating 3 and 4: its line's), their links
+  // the edges of s's line as drawn (Penetrating 2: its chain's, Penetrating 4 and 5: its line's), their links
   const lineLinks = (s) => {
     if (lined) return [...linksOf[s]];
     const Q = chainOf(s), out = [];
@@ -13631,7 +13630,7 @@ function applySetup(s) {
   }
   if (s.d !== undefined) target = Number(s.d);
   walkTeams = !MODES[s.w].life && [2, 3].includes(Number(s.k)) ? Number(s.k) : 1;  // (a walk's Duel or Trio, see battleOn)
-  penetration = walkTeams > 1 && [1, 2, 3, 4, 5, 6].includes(Number(s.pe)) ? Number(s.pe) : 0;
+  penetration = walkTeams > 1 && PENETRATIONS.some(([p]) => p && p === Number(s.pe)) ? Number(s.pe) : 0;
   set('formulaB', s.xb);
   set('formulaC', s.xc);
   set('mode', s.w);

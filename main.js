@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.111';
+const VERSION = '0.4.112';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -2806,11 +2806,22 @@ function digitsWorker(F, base, n, then) {
   w.postMessage({ ast: F.ast, n, base, mag: F.mag, nodes: F.nodes });
   return w;
 }
-// Digits B and C, a battle's other numbers (see battleOn): their formulas (RIVALS: their fields) read as the Digits'
+// Digits B to L, a battle's other numbers (see battleOn): their formulas (RIVALS: their fields, made by rivalField) read as the Digits'
 // (formulaOf), as many digits as A's in the same base, for the walkers but A (walkTeams − 1). Null while a worker computes
 // some (then: called once they are all there), { error } for a wrong formula
-const RIVALS = ['formulaB', 'formulaC'], rivalWorkers = {};
-const rivalName = (id) => `Formula ${id.slice(-1)}`;  // (Formula B, Formula C)
+const RIVALS = [...'BCDEFGHIJKL'].map((c) => `formula${c}`), rivalWorkers = {};
+const rivalName = (id) => `Formula ${id.slice(-1)}`;  // (Formula B, Formula C…)
+// a rival's field, as the Digits' (its number at first, its tooltip), in the battle's Hunt section (see renderWalkTeams)
+const RIVAL_FIRSTS = ['e', 'sqrt(2)', 'phi', 'sqrt(3)', 'sqrt(5)', 'ln(2)', 'zeta(3)', 'sqrt(7)', 'cbrt(2)', 'gamma', 'catalan'];
+function rivalField(id, j) {
+  const box = document.createElement('div'), c = id.slice(-1);
+  box.className = 'field formula-field';
+  box.innerHTML = `<input id="${id}" type="text" value="${RIVAL_FIRSTS[j]}" spellcheck="false" autocomplete="off" aria-label="${rivalName(id)}"`
+    + ` title="${c}'s number, typed as the Digits' formula (pi, e, sqrt(2), 22/7, champernowne…), written in the walk's base. Press Enter to compute">`
+    + '<button class="enter" type="button" tabindex="-1" title="Compute (Enter)">↵</button>';
+  return box;
+}
+$('rivalFormulas').append(...RIVALS.map(rivalField));
 function rivalsDigits(base, n, then) {
   const out = [];
   for (const id of RIVALS.slice(0, walkTeams - 1)) {
@@ -6983,7 +6994,7 @@ function buildSphereWalk(seq, mode, ahead = new Uint8Array(0)) {
  * with one walker left, the winner (none: a draw), or as the digits end: the longest wins (as long: a draw). Along the grid
  * a body is drawn as a line along its edges, as a walk's path. The walks are made as the battle is first played
  * (battlePlayer), then replayed to the step shown. */
-let walkTeams = 1;  // a walk's teams: 1 Classic, 2 Duel, 3 Trio (as Life's, see renderColours)
+let walkTeams = 1;  // a walk's teams: 1 Classic, 2 Duel, 3 Trio… 12 Dozen (as Life's, see renderColours; which, see battleCounts)
 let penetration = 0;  // a battle's way with an enemy's body: 5 Land grid, 6 Land cells, 0 Cut, 1 Land grid 2 (see battlePlayer, PENETRATIONS)
 // its choice (one tab group under the teams): its number (a link's pe=), its name, its picture (a red head and a blue body
 // or land), its words; along the grid Cut and the Land grids, on cells Cut and Land cells (each greyed in the other's place)
@@ -6994,14 +7005,14 @@ const PENETRATIONS = [
   [1, 'Land grid 2', 'M0 1.5H2.5V2.5H0Z', "Along the grid: each walker's land, the tiles its body closes stay its own (an enemy's too); a head on another's body cuts it; a head going into an enemy's land takes the tiles it goes through. Heads meeting (two or more at once) all die: they stop conquering, their land stays, the others' to take; with one walker left or none, it ends: the most land wins, the dead's too"]];
 const BATTLE_MODES = ['hexSphereWalk', 'icosaLR', 'cubeFlat', 'hexSphereGrid', 'icosaGrid', 'cubeGrid'];  // (the turtles of the sphere and the cube, on cells and along the grid)
 const battleOn = () => walkTeams > 1 && BATTLE_MODES.includes($('mode').value);
-// Classic, Duel or Trio (the larger counts greyed: not yet), under the size and start of a walk on a surface (Life's tiles, see renderColours); Digits B, and
-// C in a Trio, then
+// Classic, Duel, Trio… (those the solid has no group of turns for greyed, see battleCounts), under the size and start
+// of a walk on a surface (Life's tiles, see renderColours); then a battle's numbers in its Hunt section
 function renderWalkTeams() {
   const w = $('mode').value, here = NAV[w]?.[0] === 'Walk' && MODES[w].lattice === 'sphere';
   $('walkTeams').hidden = !here;
-  // a battle: its numbers in its Hunt section, A's formula field moved there from the Digits' (hidden then), C's in a Trio
+  // a battle: its numbers in its Hunt section, A's formula field moved there from the Digits' (hidden then), then B's on
   $('battleHuntSection').hidden = !battleOn();
-  $('formulaCRow').hidden = walkTeams < 3;
+  RIVALS.forEach((id, j) => { $(id).parentElement.hidden = j >= walkTeams - 1; });  // (the walkers' but A's)
   const fieldA = $('formula').parentElement;
   if (battleOn() && fieldA.parentElement !== $('formulaAHome')) $('formulaAHome').append(fieldA);
   if (!battleOn() && fieldA.parentElement !== $('numberPicker')) $('numberList').before(fieldA);
@@ -7011,10 +7022,12 @@ function renderWalkTeams() {
   if (battleHunt.run && (!battleOn() || battleHunt.key !== battleHuntKey())) stopBattleHunt();  // (its battles fought elsewhere: it stops)
   if (battleOn()) renderBattleHunt();
   if (!here) return;
-  const words = { 1: 'One number walks', 2: "Two numbers walk, A's (Digits) and B's (Digits B), from opposite places", 3: "Three numbers walk, A's, B's and C's (Digits, Digits B, Digits C), a third of a turn apart" };
+  const words = (k) => (k === 1 ? 'One number walks' : k === 2 ? "Two numbers walk, A's and B's, from opposite places (how they fight: below)"
+    : `${k} numbers walk, A's to ${'ABCDEFGHIJKL'[k - 1]}'s, from A's place turned by ${k} of the solid's turns (how they fight: below)`);
   $('walkTeams').replaceChildren(...COLOUR_STEPS.map((k) => tile({ pic: colourBlock(k), text: COLOUR_STEP_NAMES[k],
-    title: k === 1 ? words[1] : k <= 3 ? `${words[k]} (how they fight: below)` : `${k} numbers walking`,
-    on: k === (battleOn() ? walkTeams : 1), can: k === 1 || (k <= 3 && BATTLE_MODES.includes(w)), byDefault: k === 1 ? 'yes' : '', greyed: k > 3 ? 'not yet: battles of 2 or 3' : k > 1 ? "outside the sphere's and the cube's turtles" : '',
+    title: words(k),
+    on: k === (battleOn() ? walkTeams : 1), can: k === 1 || battleCounts(w).includes(k), byDefault: k === 1 ? 'yes' : '',
+    greyed: k === 1 ? '' : BATTLE_MODES.includes(w) ? 'no group of so many of the solid\'s turns: its walkers would not start alike' : "outside the sphere's and the cube's turtles",
     click: () => { if (k !== walkTeams) { walkTeams = k; compute(); } } })));
   if (!battleOn()) return;
   const button = ([p, name, head, title]) => tile({
@@ -7051,10 +7064,48 @@ function battleStarts(g, start, grid, K) {
     throw new Error('no tile turned from the start');
   };
   if (K === 2) return [start, turned([[-1, 0, 0], [0, -1, 0], [0, 0, -1]])];
-  const p = point(start[0]), far = (M) => Math.hypot(...times(M, p).map((x, d) => x - p[d]));
-  const R = solidRotations(solidCorners(g)).filter((M) => Math.abs(M[0][0] + M[1][1] + M[2][2]) < 1e-6).reduce((a, b) => (far(b) > far(a) + 1e-9 ? b : a));
-  return [start, turned(R), turned(R.map((row) => [0, 1, 2].map((j) => row[0] * R[0][j] + row[1] * R[1][j] + row[2] * R[2][j])))];
+  // K: the group of K of the solid's rotations whose turns of A's place lie the furthest apart (their nearest pair)
+  const p = point(start[0]), spread = (G) => {
+    const q = G.map((M) => times(M, p));
+    let least = Infinity;
+    for (let a = 0; a < K; a++) for (let b = a + 1; b < K; b++) least = Math.min(least, Math.hypot(...q[a].map((x, d) => x - q[b][d])));
+    return least;
+  };
+  const G = rotationGroups(g, K).reduce((a, b) => (spread(b) > spread(a) + 1e-9 ? b : a));
+  return [start, ...G.slice(1).map(turned)];
 }
+// The solid's rotations' groups of K (each its matrices, the identity first), once a mesh: made from one or two of its
+// rotations, closed under their products (the icosahedron's: 2, 3, 4, 5, 6, 10, 12; the cube's: 2, 3, 4, 6, 8, 12)
+function rotationGroups(g, K) {
+  const memo = (g.rotationGroups ??= {});
+  if (memo[K]) return memo[K];
+  const R = (g.rotations ??= solidRotations(solidCorners(g))), I = [[1, 0, 0], [0, 1, 0], [0, 0, 1]];
+  const key = (M) => M.flat().map((x) => Math.round(x * 1e6)).join(), times = (A, B) => A.map((row) => [0, 1, 2].map((j) => row[0] * B[0][j] + row[1] * B[1][j] + row[2] * B[2][j]));
+  const close = (gens) => {  // (the group they make, if of K)
+    const list = [I], keys = new Set([key(I)]);
+    for (let x = 0; x < list.length; x++) for (const h of gens) {
+      const y = times(list[x], h), k = key(y);
+      if (keys.has(k)) continue;
+      if (list.length === K) return null;
+      keys.add(k); list.push(y);
+    }
+    return list.length === K ? { list, id: [...keys].sort().join('|') } : null;
+  };
+  const seen = new Set(), out = [];
+  for (let a = 0; a < R.length; a++) for (let b = a; b < R.length; b++) {
+    const G = close(a === b ? [R[a]] : [R[a], R[b]]);
+    if (G && !seen.has(G.id)) { seen.add(G.id); out.push(G.list); }
+  }
+  return (memo[K] = out);
+}
+// the teams a battle can have on mode w's surface (see BATTLE_MODES): 2 (opposite), and each K its solid has a group of
+// K rotations for (from its least mesh: the same rotations at any size); none elsewhere
+const battleCounts = (w) => {
+  const kind = MODES[w]?.sphere;
+  if (!BATTLE_MODES.includes(w) || !SPHERES[kind]) return [];
+  const g0 = (facesMemo[kind] ??= SPHERES[kind].mesh(SPHERES[kind].sizes[0]));
+  return (g0.battleCounts ??= [2, ...COLOUR_STEPS.filter((K) => K > 2 && rotationGroups(g0, K).length)]);
+};
 
 // A battle's regions' graph (see battleAreas), once a mesh: its links (along the grid tile pairs, an edge's two tiles; on
 // cells corner pairs, a tile edge's two corners), eu and ev their ends, index each surface edge's link; each node's links
@@ -13438,7 +13489,7 @@ function getSetup() {
   if (mode.life && !mode.margolus && lifeColours > 1) s.k = lifeColours;
   if (battleOn()) {  // (a walk's Duel or Trio, as Life's: its teams; B's number, C's)
     s.k = walkTeams;
-    RIVALS.slice(0, walkTeams - 1).forEach((id, j) => { s[['xb', 'xc'][j]] = formulaOf($(id).value).text ?? $(id).value; });
+    RIVALS.slice(0, walkTeams - 1).forEach((id) => { s[`x${id.slice(-1).toLowerCase()}`] = formulaOf($(id).value).text ?? $(id).value; });  // (xb, xc…)
     if (penetration) s.pe = penetration;  // (the Land ones)
   }
   if (mode.life && colourMix && lifeColours > 1) s.mx = 1;
@@ -13472,10 +13523,9 @@ function applySetup(s) {
     pickNumber(formulaInUse, s.w);
   }
   if (s.d !== undefined) target = Number(s.d);
-  walkTeams = !MODES[s.w].life && [2, 3].includes(Number(s.k)) ? Number(s.k) : 1;  // (a walk's Duel or Trio, see battleOn)
+  walkTeams = battleCounts(s.w).includes(Number(s.k)) ? Number(s.k) : 1;  // (a walk's battle, see battleOn)
   penetration = walkTeams > 1 && PENETRATIONS.some(([p]) => p && p === Number(s.pe)) ? Number(s.pe) : 0;
-  set('formulaB', s.xb);
-  set('formulaC', s.xc);
+  for (const id of RIVALS) set(id, s[`x${id.slice(-1).toLowerCase()}`]);
   set('mode', s.w);
   $('startNo').value = s.st ?? 1;
   torusTurned = Number(s.o) === 1;
@@ -15466,7 +15516,7 @@ function gpuDrawPipe(name, { vertex, fragment, buffers, topology = 'triangle-lis
 }
 // a battle's colours in the palette (pal), for its lines along the grid: A's body, B's (their heads: their arrows, see drawOverlay)
 function battlePalette(D) {
-  const colours = LIFE_COLOURS.slice(0, 3), key = `battle|${colours}`;  // (as the theme makes them)
+  const colours = LIFE_COLOURS.slice(0, 12), key = `battle|${colours}`;  // (as the theme makes them: a battle's 12 at most)
   if (D.keys.pal === key) return;
   const pal = new Uint8Array(4 * 256);
   colours.forEach((c, k) => pal.set([...rgbCached(c), 255], 4 * k));

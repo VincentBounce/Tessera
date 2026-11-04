@@ -615,6 +615,19 @@ window.rosetteSphereSizes = (most = 100) => {
   }
   return `const ROSETTE_SPHERES = { ${Object.entries(out).map(([k, Ws]) => `${k}: [${Ws.join(', ')}]`).join(', ')} };`;
 };
+// Penrose's discs one tiling cut to their sizes: every cell of a small one in a large one, at its place round the middle
+// (its wheel cut n ≡ 1 mod 4 times, see PENROSE: its middle the same, its famous patterns laid at every size)
+function checkPenroseDiscs(fail) {
+  const keyOf = (P, o) => P.map(([x, y]) => pointKey(x - o, y - o, 1e4)).sort().join('|'), big = APERIODIC.penrose(113), inBig = new Set();
+  for (let t = 0; t < big.n; t++) inBig.add(keyOf(big.poly(t), 56));
+  for (const W of [21, 28, 43, 57]) {
+    const A = APERIODIC.penrose(W);
+    let found = 0;
+    for (let t = 0; t < A.n; t++) found += inBig.has(keyOf(A.poly(t), (W - 1) / 2));
+    if (found !== A.n) fail(`Penrose's disc of ${W}: ${found} of its ${A.n} cells in the disc of 113`);
+  }
+  return 4;
+}
 // the twisted sphere at a few sizes: its cells as many as said (3F − 4), each corner of three of them (two cells and a triangle:
 // closed, no gap), a hexagon 12 neighbours, a pentagon 10, a triangle 3 (Twisted's, see twistedSphereMesh)
 function checkTwistedSphere(fail) {
@@ -660,7 +673,7 @@ function checkRosetteSpheres(fail) {
 
 window.tesseraCheck = async ({ parts = false, known = false, crawl: andCrawl = false, deep: andDeep = false, fuzz: actions = 0, cold = false, colours = false, seed = Date.now() % 1e6, from, only } = {}) => {
   const failures = [], fail = (s) => { failures.push(s); localStorage.tesseraDeepFailures = JSON.stringify(failures); };
-  let checked = checkMeshes(fail) + checkBlockWraps(fail) + checkDiscs(fail) + checkTips(fail) + checkMarks(fail) + checkRosetteSpheres(fail) + checkTwistedSphere(fail) + await checkSheets(fail);
+  let checked = checkMeshes(fail) + checkBlockWraps(fail) + checkDiscs(fail) + checkTips(fail) + checkMarks(fail) + checkRosetteSpheres(fail) + checkTwistedSphere(fail) + checkPenroseDiscs(fail) + await checkSheets(fail);
   if (known) checked += await checkKnown(fail);
   if (andCrawl) checked += await crawl(fail);
   if (actions) checked += await fuzz(fail, actions, seed, cold);

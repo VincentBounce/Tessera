@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.20';
+const VERSION = '0.4.21';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -609,6 +609,18 @@ function formulaWorker() {
 // right on a half, as many of the tiles' corners and middles are, would round either side); a point's key, so: to find
 // a place again however it was computed
 const roundOff = (x, k = 1000) => Math.round(x * k + 0.37);
+// points' mean (their first dims coordinates): a polygon's middle, by its corners
+const meanPoint = (P, dims = 2) => Array.from({ length: dims }, (_, d) => P.reduce((sum, p) => sum + p[d], 0) / P.length);
+// a point's parts along two sides a and b of the plane: p = u a + v b (Cramer's rule)
+const inBasis = (p, a, b) => { const d = a[0] * b[1] - a[1] * b[0]; return [(p[0] * b[1] - p[1] * b[0]) / d, (a[0] * p[1] - a[1] * p[0]) / d]; };
+// a polygon's sides, each [corner, next corner]; the rim of sides (an outline): those whose key (keyOf, the same either way
+// round) no other side has
+const polySides = (P) => P.map((p, j) => [p, P[(j + 1) % P.length]]);
+const rimSides = (sides, keyOf) => {
+  const count = new Map();
+  for (const e of sides) count.set(keyOf(e), (count.get(keyOf(e)) ?? 0) + 1);
+  return sides.filter((e) => count.get(keyOf(e)) === 1);
+};
 // two whole numbers' greatest common divisor (≥ 0)
 const gcd = (a, b) => (b ? gcd(b, a % b) : Math.abs(a));
 // cells' corners (polys: each its corners in turn, either way) whole round: their cells' angles there a whole turn (not by
@@ -2968,7 +2980,7 @@ function tilingIcon(kind) {
   const m = TILINGS[kind].polys.length, polys = [];
   for (let j = -2; j <= 2; j++) for (let i = -2; i <= 2; i++) for (let k = 0; k < m; k++) polys.push(tilingAt(kind, i * m + k, j).map((p) => tilingWorld(kind, p)));
   const c = tilingWorld(kind, [0.5, 0.5]), r = Math.sqrt(Math.abs(TILINGS[kind].basis[0][0] * TILINGS[kind].basis[1][1] - TILINGS[kind].basis[0][1] * TILINGS[kind].basis[1][0]) / m) * 1.6;
-  const far = (P, o = c) => { const q = [0, 1].map((d) => P.reduce((sum, p) => sum + p[d], 0) / P.length); return Math.hypot(q[0] - o[0], q[1] - o[1]); };
+  const far = (P, o = c) => { const q = meanPoint(P); return Math.hypot(q[0] - o[0], q[1] - o[1]); };
   const few = { capitalI: [4, c], truncsquare: [5, tilingWorld(kind, [0, 0])], elongated: [8, tilingWorld(kind, [0.8660254, 0.2679492])] }[kind];  // (Capital I's: 4 tiles; Octagons': an octagon and its 4 squares; Elongated's: 2 squares round their side's middle, the triangles over and under them)
   const near = few ? [...polys].sort((P, Q) => far(P, few[1]) - far(Q, few[1])).slice(0, few[0]) : polys.filter((P) => far(P) < r);
   const o = few?.[1] ?? c, s = 10 / Math.max(...near.flat().map(([x, y]) => Math.max(Math.abs(x - o[0]), Math.abs(y - o[1]))));  // (round its middle)
@@ -3429,17 +3441,17 @@ function buildWalk() {
 /* A fraction's digits repeat, L of them from digit s0 on: the order of the base modulo the part of the
  * denominator prime to it, after as many digits as the base's factors take out of it (and the head);
  * digit(i): any digit of the number, from the first s0 + L. Null when they are not all at hand. */
-function fractionPeriod() {
+function fractionPeriod(most = 2_000_000n, periods = 1) {  // (most: the largest denominator tried; periods: the digits needed, after s0)
   if (!current.ratio) return null;
   const b = BigInt(current.base), gcd = (x, y) => (y ? gcd(y, x % y) : x);
   let d = current.ratio[1], pre = 0;
   for (let c = gcd(d, b); c > 1n; c = gcd(d, b)) { d /= c; pre++; }
-  if (d > 2_000_000n) return null;
+  if (d > most) return null;
   const q = Number(d);
   let L = 1;
   for (let r = current.base % q; q > 1 && r !== 1; r = (r * current.base) % q) L++;
   const H = current.head, D = current.digits, s0 = H.length + pre + 1;
-  if (H.length + D.length < s0 + L) return null;
+  if (H.length + D.length < s0 + periods * L) return null;
   return { s0, L, digit: (i) => { const j = i < s0 + L ? i : s0 + ((i - s0) % L); return j < H.length ? H[j] : D[j - H.length]; } };
 }
 /* A fraction's 2D or 3D walk: once its digits repeat, it goes the same way every L steps, only turned
@@ -4602,7 +4614,7 @@ const hullColourMemo = {};
 function hullColourings(sphere) {
   if (hullColourMemo[sphere]) return hullColourMemo[sphere];
   const all = hullFaces(HULL_SOLIDS[sphere]()), faces = [...all.filter((fc) => fc.corners.length === 4), ...all.filter((fc) => fc.corners.length === 3)];
-  const mids = faces.map(({ corners }) => [0, 1, 2].map((d) => corners.reduce((sum, c) => sum + c[d], 0) / corners.length)), out = {};
+  const mids = faces.map(({ corners }) => meanPoint(corners, 3)), out = {};
   const far = (p, q) => Math.hypot(...[0, 1, 2].map((d) => mids[p][d] - mids[q][d]));
   // (each colour's first face, where its pattern goes: the middle one of its part as Wild has it, its faces and the others nearest
   // them (see huntParts: a rhombicuboctahedron's 4 triangles, its cap square in their middle), the nearest their mean; as near:
@@ -5144,10 +5156,10 @@ MOBIUS_ALONG.mobiusKiteTurned = MOBIUS_ALONG.mobiusTriTurned;
 function mobiusMirror(kind, [a, b] = TILINGS[kind].basis) {
   const { basis: [a0, b0], polys } = TILINGS[kind], la = Math.hypot(...a), [ca, sa] = [a[0] / la, -a[1] / la];
   const W = ([u, v]) => { const x = u * a0[0] + v * b0[0], y = u * a0[1] + v * b0[1]; return [x * ca - y * sa, x * sa + y * ca]; };  // (turned: a along x)
-  const turned = ([x, y]) => [x * ca - y * sa, x * sa + y * ca], [ta, tb] = [turned(a), turned(b)], det = ta[0] * tb[1] - ta[1] * tb[0];
-  const frac = ([x, y]) => [(x * tb[1] - y * tb[0]) / det, (ta[0] * y - ta[1] * x) / det];  // (in lattice cells: a point, as all its copies)
+  const turned = ([x, y]) => [x * ca - y * sa, x * sa + y * ca], [ta, tb] = [turned(a), turned(b)];
+  const frac = (p) => inBasis(p, ta, tb);  // (in lattice cells: a point, as all its copies)
   const near = (z) => Math.abs(z - Math.round(z)) < 1e-4, among = (set) => (p) => { const [u, v] = frac(p); return set.some(([s, t]) => near(u - s) && near(v - t)); };
-  const mids = polys.map((P) => W([0, 1].map((d) => P.reduce((t, q) => t + q[d], 0) / P.length))), corners = polys.flat().map(W);
+  const mids = polys.map((P) => W(meanPoint(P))), corners = polys.flat().map(W);
   const [inMids, inCorners] = [among(mids.map(frac)), among(corners.map(frac))], ys = [...mids, ...corners].map((p) => p[1]);
   const cs = [...new Map([0, ...ys.flatMap((y) => ys.map((z) => (y + z) / 2))].map((c) => [Math.round(c * 1e6), c])).values()].sort((p, q) => Math.abs(p) - Math.abs(q));  // (through the origin first; each once, as found: rounded, a strip's twin corners 10⁻⁶ apart, off their fine grid, see stripFrame)
   const [A, B] = [W([1, 0]), W([0, 1])], tiles = [-3, -2, -1, 0, 1, 2, 3].flatMap((i) => [-3, -2, -1, 0, 1, 2, 3].flatMap((j) => polys.map((P) => P.map(W).map(([, y]) => y + i * A[1] + j * B[1]))));
@@ -5307,8 +5319,8 @@ function stripFrame(kind, kind0, size) {
   const [nv, own] = mobiusSize(size), W = nv * turnPoint(b, turn)[1], n = stripSteps(kind0, nv, W, own, Math.round(MOBIUS_ALONG[kind0].copyLength / step));  // (its colours' stretches whole copies along)
   const L = n * step, sides = Math.max(...t.polys.map((P) => P.length)), by = W / nv, Q = STRIP_GRID;
   const snap = ([x, y]) => [(Math.round((x / step) * Q) / Q) * step, W / 2 + (Math.round(((y - W / 2) / by) * Q) / Q) * by];
-  const [ta, tb] = t.basis.map((v) => turnPoint(v, turn)), det = ta[0] * tb[1] - ta[1] * tb[0];  // (the tiling's own cells)
-  const ends = [[0, 0], [L, 0], [0, W], [L, W]].map(([x, y]) => [(x * tb[1] - y * tb[0]) / det, (ta[0] * y - ta[1] * x) / det]);
+  const [ta, tb] = t.basis.map((v) => turnPoint(v, turn));  // (the tiling's own cells)
+  const ends = [[0, 0], [L, 0], [0, W], [L, W]].map((p) => inBasis(p, ta, tb));
   const [i0, i1, j0, j1] = [0, 1].flatMap((d) => [Math.floor(Math.min(...ends.map((e) => e[d]))) - 1, Math.ceil(Math.max(...ends.map((e) => e[d]))) + 1]);
   const cells = (i, j, k) => tilingPolys(kind)[k].map(([u, v]) => { const [x, y] = turnPoint(tilingWorld(kind, [u + i, v + j]), turn); return snap([x, y - c]); });  // (its mirror on y = 0)
   return { t, m, nv, L, W, sides, cells, i0, i1, j0, j1, ta, tb, la: Math.hypot(...a) };
@@ -5487,7 +5499,7 @@ function tilingTorusMesh(kind, nv, nu, turned = false) {  // turned: B round the
   }), latticeCells = [];
   for (let j0 = 0; j0 < nv; j0++) for (let i0 = 0; i0 < nu; i0++) polys.forEach((P, k) => {
     const c = P.map(([u, v]) => [u + i0, v + j0]), [i, j, d] = place[k];
-    mid.push(...[0, 1].map((k) => c.reduce((sum, x) => sum + x[k], 0) / c.length));
+    mid.push(...meanPoint(c));
     while (c.length < sides) c.push(c.at(-1));
     tiles.push(c.map(([i, j]) => corner(i, j)));
     uv.push(...c.flat());
@@ -6541,18 +6553,9 @@ function torusLoops() {
   if (torusLoopList?.key === key) return torusLoopList.loops;
   const loops = [];
   torusLoopList = { key, loops };
-  if (!current.ratio) return loops;
-  // the period: the order of the base modulo the denominator's part prime to it, after pre digits
-  const b = BigInt(current.base), gcd = (x, y) => (y ? gcd(y, x % y) : x);
-  let d = current.ratio[1], pre = 0;
-  for (let c = gcd(d, b); c > 1n; c = gcd(d, b)) { d /= c; pre++; }
-  if (d > 20000n) return loops;
-  const q = Number(d);
-  let L = 1;
-  for (let r = current.base % q; q > 1 && r !== 1; r = (r * current.base) % q) L++;
-  const H = current.head, D = current.digits, s0 = H.length + pre + 1;
-  if (H.length + D.length < s0 + 2 * L) return loops;
-  const digit = (i) => (i < H.length ? H[i] : D[i - H.length]);
+  const P = fractionPeriod(20000n, 2);  // (two periods' digits)
+  if (!P) return loops;
+  const { s0, L, digit } = P;
   const kind = surfaceOf(mode), S = SPHERES[kind], g = S.mesh(sphereSize()), walker = surfaceSteps(g, mode);
   startList(g).forEach((_, i) => {
     let state = walker.start(i), x = 0, y = 0;
@@ -8077,7 +8080,7 @@ function HOUSES(n) {
       const c = Math.cos(k * t), s = Math.sin(k * t), off = k % 2 ? 0 : 2;  // (on the axes through a tile, from the middle)
       for (let j = 1; j <= J; j++) for (const out of [false, true]) for (let i = 0; i < j; i++) {
         const p = house(off + (j - 1) * P + (out ? h + 1 : 0), (i - (j - 1) / 2) * b, out).map(([x, y]) => [(c * x - s * y) * U, (s * x + c * y) * U]);
-        items.push({ p: p.flat(), m: [0, 1].map((d) => p.reduce((sum, q) => sum + q[d], 0) / p.length) });
+        items.push({ p: p.flat(), m: meanPoint(p) });
       }
     }
     return discPatch(items, W, [0, 0]);
@@ -8110,7 +8113,7 @@ function HEXAS(n) {
       const co = Math.cos(k * t), si = Math.sin(k * t), o = k % 2 ? [co, si] : [0, 0];
       for (let i = 0; i < J; i++) for (let j = 0; j <= i; j++) {
         const p = hexa.map(([x, y]) => [x + i * (c + 1), y + (i - 2 * j) * s]).map(([x, y]) => [(o[0] + co * x - si * y) * U, (o[1] + si * x + co * y) * U]);
-        items.push({ p: p.flat(), m: [0, 1].map((d) => p.reduce((sum, q) => sum + q[d], 0) / p.length) });
+        items.push({ p: p.flat(), m: meanPoint(p) });
       }
     }
     return discPatch(items, W, [0, 0]);
@@ -8177,7 +8180,7 @@ function planeCellAt(kind, W, wx, wy, how = 'in') {
   let x, y, row = planeRow(kind, W);  // (W rows, row cells each: see planeCols)
   const on = (x, y) => (how === 'free' ? [x, y] : how === 'round' ? [((x % row) + row) % row, ((y % W) + W) % W] : planeGrid(kind, W).at(x, y) >= 0 ? [x, y] : null);  // ('in': a cell of the grid's, see planeGrid)
   if (tilingOf(kind)) {  // its lattice cell's polygons, and those of the cells round it (the point moved back by the lattice step: its polygons' corners once)
-    const [a, b] = tilingOf(kind).basis, det = a[0] * b[1] - a[1] * b[0], u = (wx * b[1] - wy * b[0]) / det, v = (a[0] * wy - a[1] * wx) / det, m = tilingOf(kind).polys.length;
+    const [a, b] = tilingOf(kind).basis, [u, v] = inBasis([wx, wy], a, b), m = tilingOf(kind).polys.length;
     const cell0 = (cellAtMemo[kind] ??= Array.from({ length: m }, (_, k) => planeCorners(kind, k, 0)));
     for (let j = Math.floor(v) - 1; j <= Math.floor(v) + 1; j++) for (let i = Math.floor(u) - 1; i <= Math.floor(u) + 1; i++) {
       for (let k = 0; k < m; k++) if (insidePolygon(cell0[k], wx - i * a[0] - j * b[0], wy - i * a[1] - j * b[1])) return on(i * m + k, j);
@@ -8877,11 +8880,11 @@ for (const [kind, t] of Object.entries(TILINGS)) TILES_PER_GRID_CELL[kind] = t.p
 // and its place's only, see planeCorners)
 let gridMiddles = null;
 const cellMiddle = (kind, x, y) => {
-  const g = flatGrid(), mean = (p) => [0, 1].map((a) => p.reduce((sum, q) => sum + q[a], 0) / p.length);
-  if (g?.kind !== kind || !(x >= 0 && y >= 0 && x < g.row && y < g.W) || (x | 0) !== x || (y | 0) !== y) return mean(planeCorners(kind, x, y));
+  const g = flatGrid();
+  if (g?.kind !== kind || !(x >= 0 && y >= 0 && x < g.row && y < g.W) || (x | 0) !== x || (y | 0) !== y) return meanPoint(planeCorners(kind, x, y));
   if (gridMiddles?.g !== g) {
     const m = new Float64Array(2 * g.W * g.row);
-    for (let t = 0; t < g.W * g.row; t++) m.set(mean(planeCorners(kind, t % g.row, Math.floor(t / g.row))), 2 * t);
+    for (let t = 0; t < g.W * g.row; t++) m.set(meanPoint(planeCorners(kind, t % g.row, Math.floor(t / g.row))), 2 * t);
     gridMiddles = { g, m };
   }
   const i = 2 * (y * g.row + x);
@@ -8938,33 +8941,26 @@ function torusSheets(kind) {
 // sticking out of it least kept, then the shortest outline (outlineFirst: the other way, a rectangle's compact cells). P: a lattice cell's polygons in the frame's units (its
 // sides U, V: 1), la, lb: the lattice's steps in them; its cells [k, n, m]: polygon k moved by n·la + m·lb
 function placeCells(P, la, lb, U, V, outlineFirst) {
-  const lu = Math.hypot(...U), lv = Math.hypot(...V), mid = (Q) => [0, 1].map((i) => Q.reduce((t, q) => t + q[i], 0) / Q.length);
+  const lu = Math.hypot(...U), lv = Math.hypot(...V);
   const at = ([u, v], n, m) => [u + n * la[0] + m * lb[0], v + n * la[1] + m * lb[1]], far = (du, dv) => Math.hypot(du * U[0] + dv * V[0], du * U[1] + dv * V[1]);
   const out = (k, n, m, sa, sb) => P[k].reduce((t, q) => { const [u, v] = at(q, n, m); return t + lu * Math.max(0, sa - u, u - sa - 1) + lv * Math.max(0, sb - v, v - sb - 1); }, 0);
-  const dl = la[0] * lb[1] - la[1] * lb[0], frac = (x) => Math.round((((x % 1) + 1) % 1) * 1e4) % 1e4;  // (once each: a lattice step apart, the same)
-  const centres = new Map(P.flatMap((Q) => [mid(Q), ...Q]).map((c) => [`${frac((c[0] * lb[1] - c[1] * lb[0]) / dl)},${frac((la[0] * c[1] - la[1] * c[0]) / dl)}`, c]));
+  const frac = (x) => Math.round((((x % 1) + 1) % 1) * 1e4) % 1e4;  // (once each: a lattice step apart, the same)
+  const centres = new Map(P.flatMap((Q) => [meanPoint(Q), ...Q]).map((c) => [inBasis(c, la, lb).map(frac).join(), c]));
   // the outline: its cells' sides not shared by two of them (in world units), once a set of cells
-  const outline = (cells) => {
-    const count = new Map(), sides = [];
-    for (const [k, n, m] of cells) P[k].forEach((q, i) => {
-      const [u1, v1] = at(q, n, m), [u2, v2] = at(P[k][(i + 1) % P[k].length], n, m), e = [pointKey(u1, v1, 1e4), pointKey(u2, v2, 1e4)].sort().join(' ');
-      count.set(e, (count.get(e) ?? 0) + 1);
-      sides.push([e, far(u2 - u1, v2 - v1)]);
-    });
-    return sides.reduce((t, [e, l]) => t + (count.get(e) === 1 ? l : 0), 0);
-  }, outlines = new Map();
+  const outline = (cells) => rimSides(cells.flatMap(([k, n, m]) => polySides(P[k].map((q) => at(q, n, m)))), (e) => e.map(([u, v]) => pointKey(u, v, 1e4)).sort().join(' '))
+    .reduce((t, [[u1, v1], [u2, v2]]) => t + far(u2 - u1, v2 - v1), 0), outlines = new Map();
   let pick = null, least = [Infinity, Infinity];
   for (const c of [null, ...centres.values()]) {  // (null: each cell alone)
     const compactCell = P.map((Q) => {  // (cell k's lattice point, the one nearest its middle)
       if (!c) return [0, 0];
-      const m = mid(Q), w = (x, y) => far(m[0] - c[0] - x * la[0] - y * lb[0], m[1] - c[1] - x * la[1] - y * lb[1]);
+      const m = meanPoint(Q), w = (x, y) => far(m[0] - c[0] - x * la[0] - y * lb[0], m[1] - c[1] - x * la[1] - y * lb[1]);
       let near = null;
       for (let j = -3; j <= 3; j++) for (let i = -3; i <= 3; i++) if (!near || w(i, j) < w(...near) - 1e-9) near = [i, j];
       return near;
     });
     const points = [];  // (each compact cell's point in the frame, its cells [k, n, m])
     for (let m = -8; m <= 8; m++) for (let n = -8; n <= 8; n++) {
-      if (!c) { P.forEach((Q, k) => points.push([at(mid(Q), n, m), [[k, n, m]]])); continue; }
+      if (!c) { P.forEach((Q, k) => points.push([at(meanPoint(Q), n, m), [[k, n, m]]])); continue; }
       points.push([at(c, n, m), compactCell.map(([i, j], k) => [k, n - i, m - j])]);
     }
     for (let sb = 0; sb < 1; sb += 1 / 16) for (let sa = 0; sa < 1; sa += 1 / 16) {
@@ -8999,11 +8995,11 @@ for (const base of ['hex', 'tri', 'kite', ...Object.keys(TILINGS)]) {
   if (straight(step)) STRAIGHT_RECTS.add(base);
   // its cells when first asked for (RECTS[kind]: built then, kept)
   const kind = `${base}Rect`, build = () => {
-    const { U, V, det, step } = best, D = U[0] * V[1] - U[1] * V[0], inRect = ([wx, wy]) => [(wx * V[1] - wy * V[0]) / D, (U[0] * wy - U[1] * wx) / D];
+    const { U, V, det, step } = best, inRect = (w) => inBasis(w, U, V);
     // a sub-rectangle for the least rectangle its sides are whole times of (U = ku steps of a lattice side, V = kv), laid ku × kv
     // times: every one of its parts the same, as the rectangle's copies are (Snub: 2 across)
     const [[sp, sq], [sr, st]] = step, ku = gcd(sp, sq), kv = gcd(sr, st);
-    const U0 = U.map((x) => x / ku), V0 = V.map((x) => x / kv), D0 = D / ku / kv, inSubRect = ([wx, wy]) => [(wx * V0[1] - wy * V0[0]) / D0, (U0[0] * wy - U0[1] * wx) / D0];
+    const U0 = U.map((x) => x / ku), V0 = V.map((x) => x / kv), inSubRect = (w) => inBasis(w, U0, V0);
     const pick = placeCells(Array.from({ length: per }, (_, k) => planeCorners(base, k, 0).map(inSubRect)), inSubRect(a), inSubRect(b), U0, V0, true);  // (compact cells in a rectangle: the shortest outline first)
     const tiles = pick.flatMap(([k, n, m]) => Array.from({ length: ku * kv }, (_, c) => [k, n + ((c % ku) * sp) / ku + (Math.floor(c / ku) * sr) / kv, m + ((c % ku) * sq) / ku + (Math.floor(c / ku) * st) / kv])).map(([k, n, m]) => { const x = k + n * per, [al, be] = inRect(cellMiddle(base, x, m)); return { x, y: m, al, be, polys: planeCorners(base, x, m).map(inRect) }; });
     if (tiles.length !== det * per) return undefined;  // (a rectangle of whole lattice cells: as many as their cells)
@@ -9132,10 +9128,10 @@ let outlineMemo = null;
 const gridOutline = () => {  // (the grid's sides of one cell only, as keys: its outline as laid flat)
   const { kind, n, xy } = walk.plane, key = gridKey();
   if (outlineMemo?.key === key) return outlineMemo.sides;
-  const count = new Map();
-  for (let t = 0; t < n; t++) { const P = planeCorners(kind, ...xy(t)); P.forEach((p, q) => { const k = [pointKey(...p), pointKey(...P[(q + 1) % P.length])].sort().join('|'); count.set(k, (count.get(k) ?? 0) + 1); }); }
-  return (outlineMemo = { key, sides: new Set([...count].filter(([, c]) => c === 1).map(([k]) => k)) }).sides;
+  const sides = [...Array(n).keys()].flatMap((t) => polySides(planeCorners(kind, ...xy(t))));
+  return (outlineMemo = { key, sides: new Set(rimSides(sides, sideKey).map(sideKey)) }).sides;
 };
+const sideKey = (e) => e.map((p) => pointKey(...p)).sort().join('|');  // (a side of the plane's, either way round)
 function drawBlocks(ctx) {
   const M = walk.life?.margolus;
   if (!showBlocks || !M || M.ising || !walk.plane) return;
@@ -9144,12 +9140,8 @@ function drawBlocks(ctx) {
   if (!(M.paths ??= new Map()).has(key)) M.paths.set(key, M.turns.map((blocks) => {
     const path = new Path2D(), outline = gridOutline();
     for (let i = 0; i < blocks.length; i += M.k) {
-      const sides = new Map();
-      for (let j = i; j < i + M.k; j++) {
-        const P = planeCorners(kind, ...xy(blocks[j]));
-        P.forEach((p, q) => { const r = P[(q + 1) % P.length], k = [pointKey(...p), pointKey(...r)].sort().join('|'); sides.set(k, sides.has(k) ? null : [p, r]); });
-      }
-      for (const [k, side] of sides) if (side && !outline.has(k)) { path.moveTo(...side[0]); path.lineTo(...side[1]); }
+      const sides = blocks.slice(i, i + M.k).flatMap((t) => polySides(planeCorners(kind, ...xy(t))));
+      for (const side of rimSides(sides, sideKey)) if (!outline.has(sideKey(side))) { path.moveTo(...side[0]); path.lineTo(...side[1]); }
     }
     return path;
   }));
@@ -9215,12 +9207,12 @@ function drawMotif(ctx) {
 }
 // a surface's tiles outlined in a colour: their sides not shared by two of them, as the shape has them now, facing the viewer
 function outlineTiles(ctx, colour, tiles) {
-  const g = walk.geo, sh = walk.shape, k = g.sides, proj = projector(), { scale: s, ox, oy } = view, sides = new Map();
+  const g = walk.geo, sh = walk.shape, k = g.sides, proj = projector(), { scale: s, ox, oy } = view;
   const at = (t, j) => { const c = 3 * (k * t + j); return [sh.corners[c], sh.corners[c + 1], sh.corners[c + 2]].map((v) => v * walk.R); };
-  for (const t of tiles) for (let j = 0; j < k; j++) { const key = [g.poly[k * t + j], g.poly[k * t + ((j + 1) % k)]].sort().join('|'); sides.set(key, sides.has(key) ? null : [at(t, j), at(t, (j + 1) % k), t]); }
+  const rim = rimSides([...tiles].flatMap((t) => Array.from({ length: k }, (_, j) => [t, j])), ([t, j]) => [g.poly[k * t + j], g.poly[k * t + ((j + 1) % k)]].sort().join('|'));
   ctx.strokeStyle = colour;
   ctx.beginPath();
-  for (const side of sides.values()) if (side && planeVisible([0, 1, 2].map((d) => sh.nrm[3 * side[2] + d]), side[0])) for (const [i, p] of [side[0], side[1]].entries()) { const [u, v] = proj(...p); ctx[i ? 'lineTo' : 'moveTo'](ox + u * s, oy + v * s); }
+  for (const side of rim.map(([t, j]) => [at(t, j), at(t, (j + 1) % k), t])) if (planeVisible([0, 1, 2].map((d) => sh.nrm[3 * side[2] + d]), side[0])) for (const [i, p] of [side[0], side[1]].entries()) { const [u, v] = proj(...p); ctx[i ? 'lineTo' : 'moveTo'](ox + u * s, oy + v * s); }
   ctx.stroke();
 }
 // a solid's face of its tile t, as listed: its tiles from … to, and its sector's (a face of several of the mesh's in one plane:
@@ -9572,7 +9564,7 @@ function blockTutorial(option, to) {
   if (!ising && to.length !== 1 << k) { ruleTutorial(null); return; }  // (a rule of another grid's blocks, on its way out)
   const mid = cellMids(kind, W), poly = cellPolys(kind, W);
   // a block of the first set, the nearest the grid's middle, as the picture of a block
-  const all = [...Array(planeGrid(kind, W).n).keys()].filter((t) => poly(t)).map(mid), g = [0, 1].map((d) => all.reduce((a, p) => a + p[d], 0) / all.length);
+  const all = [...Array(planeGrid(kind, W).n).keys()].filter((t) => poly(t)).map(mid), g = meanPoint(all);
   const centreOf = (cells) => [0, 1].map((d) => cells.reduce((a, t) => a + mid(t)[d], 0) / cells.length);
   let best = 0, close = Infinity;
   for (let i = 0; i < turns[0].length; i += k) {
@@ -9602,10 +9594,7 @@ function blockTutorial(option, to) {
   const shown = [...Array(planeGrid(kind, W).n).keys()].filter((t) => poly(t) && inView(poly(t)));
   const wall = torus ? [] : planeWalls(kind, W).map(([x, y]) => planeCorners(kind, x, y)).filter(inView);
   const outlineOf = (polys) => {
-    const sides = polys.flatMap((ps) => ps.map((p, j) => [p, ps[(j + 1) % ps.length]]));
-    const keyOf = ([a, b]) => [at(a), at(b)].sort().join(' '), count = new Map();
-    for (const e of sides) count.set(keyOf(e), (count.get(keyOf(e)) ?? 0) + 1);
-    return sides.filter((e) => count.get(keyOf(e)) === 1).map(([a, b]) => `M${a.join(',')}L${b.join(',')}`).join('');  // (its rim: sides not shared, either way round)
+    return rimSides(polys.flatMap(polySides), (e) => e.map(at).sort().join(' ')).map(([a, b]) => `M${a.join(',')}L${b.join(',')}`).join('');  // (its rim: sides not shared, either way round)
   };
   const phase = (blocks) => {
     // all its blocks in view (Ising: its squares turning), each whole, the picture's edge cutting them: on a torus, a block's
@@ -9674,7 +9663,7 @@ function shapeBubbles(kinds, c, corners, count, shapeOf, own) {  // own: the til
   // each at one scale (the biggest fills its bubble), its neighbours' count in it
   const span = (P, d) => Math.max(...P.map((p) => p[d])) - Math.min(...P.map((p) => p[d])), S = Math.max(...kinds.flatMap((t) => [span(corners(t), 0), span(corners(t), 1)])), pad = S * 0.08;
   const pic = (t) => {
-    const pts = corners(t), m = [0, 1].map((d) => pts.reduce((a, p) => a + p[d], 0) / pts.length);
+    const pts = corners(t), m = meanPoint(pts);
     return `<svg viewBox="${m[0] - S / 2 - pad} ${m[1] - S / 2 - pad} ${S + 2 * pad} ${S + 2 * pad}"><polygon points="${pts.map((p) => p.join(',')).join(' ')}" fill="${t === c ? LIFE_ALIVE : UNLIT}" stroke="var(--border)" stroke-width="${S / 30}"/>`
       + `<text x="${m[0]}" y="${m[1]}" font-size="${S * 0.3}" font-weight="600" fill="${t === c ? '#fff' : 'var(--text)'}" text-anchor="middle" dominant-baseline="central">${count(t)}</text></svg>`;  // (the one shown filled)
   };
@@ -9731,7 +9720,7 @@ function ruleTutorial(option) {
   const shapeKey = (P) => { const Q = P.filter((p, i) => { const a = P.at(i - 1), b = P[(i + 1) % P.length]; return Math.abs((p[0] - a[0]) * (b[1] - p[1]) - (p[1] - a[1]) * (b[0] - p[0])) > 1e-4; });
     const angle = (i) => { const p = Q[i], [u, v] = [Q[(i + 1) % Q.length], Q.at(i - 1)].map((q) => [q[0] - p[0], q[1] - p[1]]); return Math.abs(Math.atan2(u[0] * v[1] - u[1] * v[0], u[0] * v[0] + u[1] * v[1])).toFixed(2); };
     return `${Q.map((p, i) => Math.hypot(Q[(i + 1) % Q.length][0] - p[0], Q[(i + 1) % Q.length][1] - p[1]).toFixed(2)).sort()}|${Q.map((_, i) => angle(i)).sort()}`; };  // (its sides and its angles: a rhombus not a square)
-  const centre = [0, 1].map((d) => all.flat().reduce((a, p) => a + p[d], 0) / all.flat().length), far = (t) => Math.hypot(all[t][0][0] - centre[0], all[t][0][1] - centre[1]);
+  const centre = meanPoint(all.flat()), far = (t) => Math.hypot(all[t][0][0] - centre[0], all[t][0][1] - centre[1]);
   const shapes = new Map(), shapeOf = new Map();
   for (let t = 0; t < n; t++) {
     if (!all[t].every(whole)) continue;
@@ -9742,7 +9731,7 @@ function ruleTutorial(option) {
   const kinds = [...shapes.values()].sort((u, v) => count(v) - count(u));
   if (tutShape.mode !== $('mode').value) Object.assign(tutShape, { mode: $('mode').value, at: 0 });
   const c = kinds[Math.min(tutShape.at, kinds.length - 1)];
-  const mid = (t) => [0, 1].map((d) => corners(t).reduce((a, p) => a + p[d], 0) / corners(t).length), o = mid(c);
+  const mid = (t) => meanPoint(corners(t)), o = mid(c);
   const around = [...nb.list.subarray(nb.start[c], nb.start[c + 1])]
     .sort((u, v) => Math.atan2(mid(u)[1] - o[1], mid(u)[0] - o[0]) - Math.atan2(mid(v)[1] - o[1], mid(v)[0] - o[0]));
   const pts = [c, ...around].flatMap(corners), x0 = Math.min(...pts.map((p) => p[0])), y0 = Math.min(...pts.map((p) => p[1]));
@@ -11530,12 +11519,12 @@ function patternFrame(i, K, place = patternPlace(i, K)) {  // place: another fac
     const own = new Set(); for (let r = 0; r < sq.a; r++) for (let c = 0; c < sq.a; c++) own.add(sq.square(r, c));
     on = (t) => own.has(g.squares ? t >> 2 : t);  // (tetrakis: its triangles, 4 a square)
   }
-  const D = a[0] * b[1] - a[1] * b[0], lin = ([x, y]) => { const al = (x * b[1] - y * b[0]) / D, be = (a[0] * y - a[1] * x) / D; return A3.map((v, d) => al * v + be * B3[d]); };  // (a plane step: its parts along a and b, the same parts of theirs)
+  const lin = (p) => { const [al, be] = inBasis(p, a, b); return A3.map((v, d) => al * v + be * B3[d]); };  // (a plane step: its parts along a and b, the same parts of theirs)
   const ex = lin([1, 0]), ey = lin([0, 1]), O = o3.map((v, d) => v - lin(op)[d]), { find } = cellIndex(g);
   return holding({ at: (p) => O.map((v, d) => v + p[0] * ex[d] + p[1] * ey[d]), from: (q) => back(ex, ey)(sub(q, O)), place: cen, centre, far: (t, c) => Math.hypot(...sub(cen(t), c)), ex, ey, n, on, face, cellAt: (q) => find(q, on) });
 }
 // the move by whole steps (see translations) nearest a plane vector e
-const latticeNear = (kind, e) => { const [A, B] = translations(kind), D = A[0] * B[1] - A[1] * B[0], near = (v) => Math.ceil(v - 0.5 - 1e-9), k = near((e[0] * B[1] - e[1] * B[0]) / D), l = near((A[0] * e[1] - A[1] * e[0]) / D); return [k * A[0] + l * B[0], k * A[1] + l * B[1]]; };
+const latticeNear = (kind, e) => { const [A, B] = translations(kind), [k, l] = inBasis(e, A, B).map((v) => Math.ceil(v - 0.5 - 1e-9)); return [k * A[0] + l * B[0], k * A[1] + l * B[1]]; };
 // colour i's cells [cell, pattern state], the pattern moved by whole steps (see translations: its shape kept) to lie its
 // middle nearest its part's (see patternFrame), or to, a place there; each cell the one at its place (partial, an icon's,
 // a brush's: those there only; else all, or none)
@@ -11561,8 +11550,8 @@ const sheetOrigin = (g, kind) => { const L = sheetUnits(g, kind), s = sheetPlace
 function sheetUnits(g, kind) {  // a point of the plane (its world units) in the sheet's
   if (TILINGS[kind] && (g.mobius || g.klein)) return (p) => turnPoint(p, g.stripTurn);  // (a strip, a bottle: the plane turned, see tilingStrip)
   if (TILINGS[kind]) {  // its lattice's units, then the sheet's cell's (see tilingTorusMesh)
-    const [a, b] = TILINGS[kind].basis, det = a[0] * b[1] - a[1] * b[0], [[p, q], [r, s]] = g.sheet, d = p * s - q * r;
-    return ([x, y]) => { const u = (x * b[1] - y * b[0]) / det, v = (a[0] * y - a[1] * x) / det; return [(s * u - r * v) / d, (p * v - q * u) / d]; };
+    const [a, b] = TILINGS[kind].basis;
+    return (w) => inBasis(inBasis(w, a, b), ...g.sheet);
   }
   // the others (squares, Cairo pentagons, triangles, kites, hexagons; a torus, a Klein bottle, a Möbius strip): the plane
   // turned as its tiles lie (see tilesTurn: by 30° turned), as big as its tiles, in the sheet's units as its first tile
@@ -13790,7 +13779,7 @@ function solidTriangles(corners, normals) {
   const out = [];
   for (const n of normals) {
     const top = Math.max(...corners.map((p) => dot3(p, n))), face = corners.filter((p) => dot3(p, n) > top - 1e-9);
-    const c = [0, 1, 2].map((i) => face.reduce((sum, p) => sum + p[i], 0) / face.length), off = (p) => p.map((v, i) => v - c[i]);
+    const c = meanPoint(face, 3), off = (p) => p.map((v, i) => v - c[i]);
     const a = off(face[0]), b = cross(n, a), angle = (p) => Math.atan2(dot3(off(p), b), dot3(off(p), a));
     face.sort((p, q) => angle(p) - angle(q));
     const N = n.map((v) => v / Math.hypot(...n));

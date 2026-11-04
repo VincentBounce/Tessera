@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.51';
+const VERSION = '0.4.52';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -2580,14 +2580,19 @@ const defaultNumber = (w) => (NAV[w]?.[0] === 'Walk' ? 'pi' : '1/112');
 let numberPicked = false;
 const pickNumber = (text, w = $('mode').value) => { numberPicked = text !== defaultNumber(w); };
 function readFormula() {
+  const F = formulaOf($('formula').value);
+  if (!F.error) $('formula').value = formulaInUse = F.text;
+  return F;
+}
+// a formula's text read and checked: its tree, canonical text, symbol, kind and size; or its error
+function formulaOf(typed) {
   try {
-    const ast = parseFormula($('formula').value);
+    const ast = parseFormula(typed);
     checkFormula(ast);
     const text = canonical(ast), nodes = formulaNodes(ast);
     const mag = Math.max(...nodes.map((x) => Math.abs(formulaLog10(x))));
     if (ast.kind === 'int' && formulaLog10(ast) > 45e6) throw new Error('too large: more than 45 million decimal digits');
     if (ast.kind === 'real' && mag > 1e5) throw new Error('too large or too small for a computation with guard digits');
-    $('formula').value = formulaInUse = text;
     const m = text.match(/^2\^(\d+)-1$/);  // a Mersenne prime shows as M₁₂₇
     const sym = m && MERSENNE.includes(Number(m[1])) ? `M${SUB(m[1])}` : pretty(ast);
     const root = ast.k === 'name' ? ast.v : ast.k === 'call' ? ast.f : null;
@@ -2756,13 +2761,46 @@ function sieve(limit) {
 
 // kind: the formula's ('int', 'rat' for a fraction, 'real' or 'seq'); ratio: a fraction's [p, q] (BigInt)
 function setCurrent(entry, base, kind, ratio = null) {
-  const t = entry.intPart.replace(/^0+/, '');   // integer part without leading zeros
-  const head = new Uint8Array(t.length);
-  for (let i = 0; i < t.length; i++) { const c = t.charCodeAt(i); head[i] = base < 64 && c >= 97 ? c - 87 : c - 48; }  // past base 10: a, b, c…
+  const head = headDigits(entry.intPart, base);
   // total: how many digits the whole number has (a whole number's are only sent up to the count used)
   current = { head, digits: entry.digits, base, total: entry.total ?? head.length + entry.digits.length, mode: $('mode').value,
               whole: entry.total !== undefined, formula: formulaInUse,  // whole: a whole number, its digits all known
               fraction: kind === 'rat', ratio };  // its digits end up repeating (see LOOP_FILL, torusLoops)
+}
+// an integer part's digits (its text, without its leading zeros), one a byte
+function headDigits(intPart, base) {
+  const t = intPart.replace(/^0+/, ''), head = new Uint8Array(t.length);
+  for (let i = 0; i < t.length; i++) { const c = t.charCodeAt(i); head[i] = base < 64 && c >= 97 ? c - 87 : c - 48; }  // past base 10: a, b, c…
+  return head;
+}
+
+// Digits B, a duel's second number (see duelOn): its formula read as the Digits' (formulaOf), as many digits as A's in
+// the same base, the integer part first, cached as A's (cache). Null while its worker computes them (then: called once
+// they are there), { error } for a wrong formula
+let rivalWorker = null;
+function rivalDigits(base, n, then) {
+  const F = formulaOf($('formulaB').value);
+  if (F.error) return F;
+  if (F.kind === 'seq') return seqDigits(F.ast, n, base).digits;
+  const key = `${F.text}/${base}`, hit = cache[key];
+  if (hit && (hit.intPart.length + hit.digits.length >= n || hit.total !== undefined)) {
+    const head = headDigits(hit.intPart, base), all = new Uint8Array(head.length + hit.digits.length);
+    all.set(head);
+    all.set(hit.digits, head.length);
+    return all.subarray(0, n);
+  }
+  rivalWorker?.terminate();
+  rivalWorker = newFormulaWorker();
+  rivalWorker.onmessage = ({ data: d }) => {
+    if (d.type === 'progress') return;
+    rivalWorker.terminate();
+    rivalWorker = null;
+    if (d.type === 'error') { $('status').textContent = `Formula B: ${d.message}`; return; }
+    cache[key] = { intPart: d.intPart, digits: d.digits, total: d.total, tests: d.tests, uncertain: d.uncertain };
+    then();
+  };
+  rivalWorker.postMessage({ ast: F.ast, n, base, mag: F.mag, nodes: F.nodes });
+  return null;
 }
 
 // The digits in use: n in total, the integer part (always included) then the digits after the point
@@ -3298,6 +3336,8 @@ function renderModePicker() {
 }
 
 /* ---- 5.2 compute(): from the formula to a built walk ----------------------------------------- */
+// a worker of formulaWorker, which also needs digitString, seededRandom, exactValue and iroot (A's digits, B's: see rivalDigits)
+const newFormulaWorker = () => new Worker(URL.createObjectURL(new Blob([[digitString, seededRandom, exactValue, iroot].map(String).join('\n') + `\n(${formulaWorker.toString()})()`], { type: 'text/javascript' })));
 function compute() {
   const mode = MODES[$('mode').value];
   if (!numberPicked) $('formula').value = defaultNumber($('mode').value);
@@ -3321,6 +3361,7 @@ function compute() {
   $('autoPlayRow').hidden = !mode.life;
   renderViewTiles();
   renderColours();
+  renderWalkTeams();
   renderRuleSection();
   if (!mode.life || mode.elementary) { stopHunt(); $('huntRow').hidden = true; }  // (no hunt: a walk, or Elementary's rows, built by buildWalk)
   renderPlaneRow();
@@ -3330,6 +3371,7 @@ function compute() {
   syncSizeStepper();
   updateRuleText();
   if (worker) { worker.terminate(); worker = null; setBusy(false); }
+  if (rivalWorker) { rivalWorker.terminate(); rivalWorker = null; }  // (B's digits, see rivalDigits)
   if (elementaryWorker) { elementaryWorker.terminate(); elementaryWorker = null; setBusy(false); }  // (Elementary's rows, see elementaryReady)
   const job = ++computeJob;  // a walk built later is this one's only if no other compute came since
   championCode = null;  // a new start: no loaded champion any more
@@ -3387,9 +3429,7 @@ function compute() {
     done(hit, 'Digits cached');
     return;
   }
-  // the worker also needs digitString, seededRandom, exactValue and iroot
-  const src = [digitString, seededRandom, exactValue, iroot].map(String).join('\n') + `\n(${formulaWorker.toString()})()`;
-  worker = new Worker(URL.createObjectURL(new Blob([src], { type: 'text/javascript' })));
+  worker = newFormulaWorker();
   setBusy(true);
   // π, e, ln 2, roots, exact numbers and sequences stay fast at millions of digits; the other series
   // grow as the square of the digits
@@ -3516,6 +3556,7 @@ function buildWalkOf() {
   gpuClear();  // a surface drawn before (see 11.4d)
   fill = null;  // a new walk: its enclosed areas are computed again, and its layer starts empty
   walk.ant = 0; walk.highway = null; walk.bridges = null;  // set by an ant's walk only
+  walk.duel = null;  // set by a duel only (see 7.6b)
   walk.plane = walk.rows = null;  // set by Life on the plane only; Elementary's rows (see elementaryRows)
   $('fillTooBig').hidden = true;
   layers.fill.clearRect(0, 0, cw, ch);
@@ -6845,15 +6886,96 @@ function buildSphereWalk(seq, mode, ahead = new Uint8Array(0)) {
   const antStep = ant ? antStepper(w, (d) => { state = S.step(state, d); return state; }, S.start(startNo() - 1)[0]) : null;
   const base = ant && !antByDigits ? antStep.colours : mode.base, turns = ant ? new Uint8Array(len) : null, rec = walkRecorder(seq, ahead, base, R, g.n);
   let state = S.start(startNo() - 1);
+  // a duel (see 7.6b): B's digits (null while they are computed: A alone meanwhile), B from the tile opposite A's, its
+  // tiles; it stops where the heads meet, or B's digits end
+  const digitsB = duelOn() && !ant ? rivalDigits(mode.base, len, buildWalk) : null;
+  if (digitsB?.error) $('status').textContent = `Formula B: ${digitsB.error}`;
+  const B = digitsB instanceof Uint8Array ? digitsB : null, tilesB = B && new Int32Array(len + 1);
+  let rival = B && antipodeStart(g, state), steps = len, met = false;
+  if (B) tilesB[0] = rival[0];
   const put = (i) => { const t = state[0]; rec.put(i, t, t, [g.cen[3 * t], g.cen[3 * t + 1], g.cen[3 * t + 2]]); };
   put(0);
   rec.begin(S.key(state));  // (tile, the edge it came in by)
   for (let i = 0; i < len; i++) {
+    if (B && i >= B.length) { steps = i; break; }
+    const was = [state[0], rival?.[0]];
     if (ant) { antStep(seq[i]); turns[i] = antStep.turn; } else state = S.step(state, seq[i]);
+    if (B) { rival = S.step(rival, B[i]); tilesB[i + 1] = rival[0]; }
     put(i + 1);
-    if (rec.step(i + 1, ant ? antStep.took : seq[i], ant ? null : S.key(state))) break;  // (an ant's state: all its cells, not watched)
+    met = !!B && (state[0] === rival[0] || (state[0] === was[1] && rival[0] === was[0]));  // (on one tile, or passing each other)
+    if (met) { rec.step(i + 1, seq[i], null); steps = i + 1; break; }
+    if (rec.step(i + 1, ant ? antStep.took : seq[i], ant || B ? null : S.key(state))) break;  // (an ant's state: all its cells, not watched; a duel's: both walks', not watched)
   }
-  rec.finish(kind, g, { ant: ant ? antStep.colours : 0, turns, vert: null, stepTiles: null });
+  rec.finish(kind, g, { ant: ant ? antStep.colours : 0, turns, vert: null, stepTiles: null, ...(B && { n: steps }) });
+  if (B) walk.duel = { met, nameB: formulaOf($('formulaB').value).sym, player: duelPlayer([walk.tile, tilesB], g.n, steps, met) };
+}
+
+/* ---- 7.6b Duel: two numbers' walks on one surface -------------------------------------------- */
+/* Walk › Duel: A's number (Digits) and B's (Digits B) walk the sphere's cells at once, a digit each a step, B from the
+ * tile opposite A's start (antipodeStart), turning as A does. Each holds the cells it walked, its body, from its tail
+ * (its oldest) to its head; a head stepping on the other's body cuts it there: the other loses that cell and all those
+ * behind it, to its tail (its own body: nothing). The heads meet (on one tile, or passing each other): the end, the
+ * longer body wins. Both walks are built at once (buildSphereWalk), the bodies replayed to the step shown (duelPlayer). */
+let walkTeams = 1;  // a walk's teams: 1 Classic, 2 Duel (as Life's, see renderColours)
+const DUEL_MODES = ['hexSphereWalk', 'icosaLR'];  // (the sphere's cells, to start with)
+const duelOn = () => walkTeams === 2 && DUEL_MODES.includes($('mode').value);
+// Classic or Duel, under the size and start of a walk on a surface (Life's tiles, see renderColours); Digits B in a duel
+function renderWalkTeams() {
+  const w = $('mode').value, here = NAV[w]?.[0] === 'Walk' && MODES[w].lattice === 'sphere';
+  $('walkTeams').hidden = !here;
+  $('digitsBSection').hidden = !duelOn();
+  if (!here) return;
+  $('walkTeams').replaceChildren(...[1, 2].map((k) => tile({ pic: colourBlock(k), text: COLOUR_STEP_NAMES[k],
+    title: k === 1 ? 'One number walks' : "Two numbers walk, A's (Digits) and B's (Digits B), from opposite tiles: a head on the other's body cuts it there, to its tail; the heads meeting ends it, the longer body wins",
+    on: k === (duelOn() ? 2 : 1), can: k === 1 || DUEL_MODES.includes(w), byDefault: k === 1 ? 'yes' : '', greyed: k === 2 ? "outside the sphere's cells" : '',
+    click: () => { if (k !== walkTeams) { walkTeams = k; compute(); } } })));
+}
+// B's start: the tile opposite A's (the sphere's centre halfway, its mesh its own mirror through it), come in from the
+// tile opposite the one A comes in from
+function antipodeStart(g, [t, entry]) {
+  const k = g.sides, key = (u, s) => [0, 1, 2].map((d) => Math.round(s * g.cen[3 * u + d] * 1e4)).join();
+  g.opposite ??= new Map(Array.from({ length: g.n }, (_, u) => [key(u, 1), u]));
+  const across = (u) => g.opposite.get(key(u, -1)), b = across(t), from = across(g.nbr[k * t + entry]);
+  for (let e = 0; e < k; e++) if (g.nbr[k * b + e] === from) return [b, e];
+  throw new Error('no tile opposite the start');
+}
+// The bodies at step i (to(i): on from the step it was at, from the start again to go back): owner and at, each tile's
+// walk (1 A, 2 B, 0 none) and the step it was taken; a walk's body, its tiles taken from step from[s] on (alive), size[s]
+// of them. At the step the heads meet, nothing more taken or cut.
+function duelPlayer(tiles, cells, n, met) {
+  const owner = new Uint8Array(cells), at = new Int32Array(cells), from = [0, 0], size = [0, 0];
+  let i = -1;
+  const alive = (s, c) => owner[c] === s + 1 && at[c] >= from[s];
+  const take = (s, j) => { const c = tiles[s][j]; if (!alive(s, c)) size[s]++; owner[c] = s + 1; at[c] = j; };
+  const cut = (s, j) => {  // s's body from its tail to step j, gone
+    for (let q = from[s]; q <= j; q++) { const c = tiles[s][q]; if (owner[c] === s + 1 && at[c] === q) { owner[c] = 0; size[s]--; } }
+    from[s] = j + 1;
+  };
+  const step = () => {
+    i++;
+    if (i === n && met) return;
+    const heads = [tiles[0][i], tiles[1][i]], hit = [alive(1, heads[0]) ? at[heads[0]] : -1, alive(0, heads[1]) ? at[heads[1]] : -1];
+    if (hit[0] >= 0) cut(1, hit[0]);
+    if (hit[1] >= 0) cut(0, hit[1]);
+    take(0, i);
+    take(1, i);
+  };
+  return {
+    size, alive, heads: () => [tiles[0][i], tiles[1][i]],
+    to(j) {
+      if (j < i) { owner.fill(0); from[0] = from[1] = size[0] = size[1] = 0; i = -1; }
+      while (i < Math.min(j, n)) step();
+    },
+  };
+}
+// the duel's score at the step shown, after the walk's title: each body's size; at its end, who won
+function duelScore() {
+  const { player: P, met, nameB } = walk.duel, a = withIcons(shownSym), b = withIcons(nameB);
+  P.to(cur);
+  const [x, y] = P.size;
+  if (cur < walk.n) return `${a} ${fmt(x)} · ${b} ${fmt(y)}`;
+  const how = met ? 'the heads met' : 'the digits ended';
+  return x === y ? `Draw, ${fmt(x)} each (${how})` : `${x > y ? a : b} wins, ${fmt(Math.max(x, y))} to ${fmt(Math.min(x, y))} (${how})`;
 }
 
 /* ==============================================================================================
@@ -12672,6 +12794,7 @@ function getSetup() {
   if (!$('fillAreas').checked) s.fa = 0;
   if (mode.life) s.r = ruleBody($('lifeRule').value);
   if (mode.life && !mode.margolus && lifeColours > 1) s.k = lifeColours;
+  if (duelOn()) { s.k = 2; s.xb = formulaOf($('formulaB').value).text ?? $('formulaB').value; }  // (a walk's Duel, as Life's: its teams; B's number)
   if (mode.life && colourMix && lifeColours > 1) s.mx = 1;
   if (mode.life && newcomerOn()) s.nc = 1;  // (Newcomer)  // (Mixed, kept where its zone greys it: the other zones' fits by it, see huntFits)
   if (mode.plane) {  // the grid's side, dead edges (e=1), its start ("random.30.7", "draw" with p=, "digits"), its symmetry (y=)
@@ -12703,6 +12826,8 @@ function applySetup(s) {
     pickNumber(formulaInUse, s.w);
   }
   if (s.d !== undefined) target = Number(s.d);
+  walkTeams = !MODES[s.w].life && Number(s.k) === 2 ? 2 : 1;  // (a walk's Duel, see duelOn)
+  set('formulaB', s.xb);
   set('mode', s.w);
   $('startNo').value = s.st ?? 1;
   torusTurned = Number(s.o) === 1;
@@ -13578,6 +13703,13 @@ function drawSphere() {
     for (let p = 1; p <= Math.min(cur, walk.n - 1); p++) last[walk.tile[p]] = walk.turns[p];  // the turn it took on leaving it
     palette = [null, ...arrows.map(antTurnColour)];
     levelOf = (t) => (visits[t] && last[t] >= 0 ? 1 + last[t] : 0);
+  }
+  if (walk.duel) {  // a duel: A's body red, B's blue (Duel's colours, see colourBlock), paler than their heads
+    const P = walk.duel.player;
+    P.to(cur);
+    const [hA, hB] = P.heads();
+    palette = [null, faded(LIFE_COLOURS[0], 0.6), faded(LIFE_COLOURS[1], 0.6), LIFE_COLOURS[0], LIFE_COLOURS[1]];
+    levelOf = (t) => (t === hA ? 3 : t === hB ? 4 : P.alive(0, t) ? 1 : P.alive(1, t) ? 2 : 0);
   }
   // the torus, and any polyhedron that is not flat, is drawn tile by tile from its current form;
   // a flat polyhedron is drawn face by face below
@@ -15376,7 +15508,8 @@ function updateStats() {
   }
   // a walk's loop (its digits' round, an ant's highway) or a worm's end, after its title: a link in green, as Life's (see loopLink)
   const o = runLoop();
-  setLinks($('barNum'), !o ? barTitle : `${barTitle} ${loopLink(walk.wormEnd ? `✝ ${fmt(walk.n)}`
+  if (walk.duel) setLinks($('barNum'), duelScore());  // (a duel: its score, its end)
+  else setLinks($('barNum'), !o ? barTitle : `${barTitle} ${loopLink(walk.wormEnd ? `✝ ${fmt(walk.n)}`
     : `${walk.loop.drift ? '→' : '↻'} ${fmt(walk.loop.period ?? walk.n)}${o.T ? ` from ${fmt(o.T)}` : ''}`)}`);  // (as short: its digits' period, its first step)
   drawActivity();
   renderWalkGauges();
@@ -16293,6 +16426,13 @@ $('formula').addEventListener('change', () => {
   if (!error) { pickNumber(formulaInUse); computeFramed(); return; }
   $('formula').value = formulaInUse;
   $('status').textContent = `Formula: ${error} · ${formulaInUse} kept`;
+});
+// B's (a duel's): computed again, or its error said (see rivalDigits)
+$('formulaB').addEventListener('change', () => {
+  const F = formulaOf($('formulaB').value);
+  if (F.error) { $('status').textContent = `Formula B: ${F.error}`; return; }
+  $('formulaB').value = F.text;
+  compute();
 });
 // A new number (or a new prime, size or fraction) starts framed
 function computeFramed() {

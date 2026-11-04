@@ -11,7 +11,7 @@
   <meta property="og:type" content="website">
   <link id="favicon" rel="icon">  <!-- the app's logo, set at start-up (see appLogo) -->
   <meta name="description" content="A walk on a grid in 2D or 3D driven by the base-2 to base-6 digits of π, other constants and large primes.">
-  <link rel="stylesheet" href="style.css?v=0.4.51">
+  <link rel="stylesheet" href="style.css?v=0.4.52">
   <script>  // the theme before the first paint (see applyTheme)
     try { const t = localStorage.getItem('tesseraTheme') || 'system'; document.documentElement.dataset.theme = t === 'system' ? (matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark') : t; } catch { document.documentElement.dataset.theme = 'dark'; }
   </script>
@@ -75,7 +75,85 @@
             <span id="loopLabel"></span>
             <button id="loopUp" title="Next loop">+</button>
           </div>
+          <div id="walkTeams" class="nav-shapes colour-blocks" hidden></div>  <!-- a walk: Classic, or Duel (two numbers, see duelOn) -->
         </div>
+      </section>
+
+      <section id="antStartSection" hidden>  <!-- a creature's start: by its rule or by the digits (a turmite: by its rule only) -->
+        <h2 data-icon="play">Start</h2>
+        <div id="antStartTabs" class="nav-shapes"></div>  <!-- by its rule or by the digits: one choice, a tab group of tiles (as Life's starts) -->
+        <div id="antStartDigits"></div>  <!-- by the digits: the number (see numberPicker) -->
+      </section>
+
+      <section id="antRuleSection" hidden>  <!-- an ant's creature (Ant, Turmite, Worm), and its rule: cards as Life's, your own typed -->
+        <h2 data-icon="ant"><span id="antRuleTitle">Rule</span></h2>
+        <div class="block-label">Creature</div>
+        <div id="antCreatures" class="nav-shapes"></div>
+        <button class="wide how-it-works" data-icon="info" type="button" title="The rule in use, step by step: what each cell (each step) sees, and what it does (each rule's ⓘ, too)">How it works</button>  <!-- on its first card -->
+        <div id="antRuleCards" class="mode-list rule-cards" role="listbox"></div>
+        <div id="antCustomRow" hidden><div id="antRuleName" class="field-label"></div>  <!-- not a label: a click on ↵ would focus the field again -->
+          <span class="field"><input id="antRule" class="custom" type="text" autocomplete="off" spellcheck="false" title="Type a rule, then Enter"><button class="enter" type="button" tabindex="-1" title="Apply (Enter)">↵</button></span>
+        </div>
+      </section>
+
+      <section id="colourSection" hidden>  <!-- Life: alive or dead, or 2 to 12 civilisations -->
+        <h2 data-icon="duel">Teams</h2>
+        <div id="colourBlocks" class="nav-shapes colour-blocks"></div>
+      </section>
+
+      <section id="startSection" hidden>  <!-- Life: how the cells start (the plane), or the hunt for a lasting start (the surfaces) -->
+        <h2 data-icon="play">Start<button id="copyRle" class="head-btn" data-icon="copy" type="button" title="Copies the generation shown as an RLE file, as Golly and LifeWiki read it">Copy RLE</button></h2>  <!-- the generation shown, as Golly's and LifeWiki's RLE (the plane) -->
+        <div id="lifeStartRow" hidden>  <!-- Life on the plane: how the cells start -->
+          <div id="lifeStartTabs" class="nav-shapes"></div>  <!-- the starts: Hunt (Random for blocks), Text, Digits, Draw: one choice, a tab group of tiles (see START_TABS) -->
+          <div id="startText" class="start-panel" hidden>  <!-- Text: a word or an emoji drawn on the grid, its dark pixels alive -->
+            <span class="field"><textarea id="startTextInput" class="custom" rows="10" maxlength="240" autocomplete="off" spellcheck="false" title="Words, letters or emoji, a line each (Enter: a new line); drawn by a click outside or ⌘ Enter"></textarea></span>
+            <div id="textFonts" class="nav-shapes"></div>  <!-- its font (see TEXT_FONTS) -->
+          </div>
+          <div id="startDraw" class="start-panel">  <!-- Draw: a brush (a cell, or a pattern turned as chosen), in a colour or the eraser -->
+            <button id="startCells" type="button" class="wide"></button>  <!-- the start's cells: Go to gen 0, Clear, Undo clear (see renderDrawTools) -->
+            <div id="brushCards" class="mode-list rule-cards" role="listbox"></div>
+            <p id="drawNote" class="caption" hidden>No known patterns for this rule on this grid</p>  <!-- a surface, a rule with none -->
+            <div class="draw-row turn-row"><button id="brushTurn" type="button" title="A quarter turn more">↻ 0°</button><button id="brushFlip" type="button" title="Mirrored">⇋ Mirror</button></div>
+            <div class="draw-row"><span id="brushColours" class="colour-swatches"></span></div>
+            <div class="draw-row turn-row"><button id="openPng" type="button" title="Opens a black and white picture as the start, a pixel a square">Open PNG</button><button id="exportPng" type="button" title="Saves the generation shown as a black and white picture, a square a pixel">Export PNG</button><input id="pngFile" type="file" accept="image/*" hidden></div>  <!-- a black and white picture, a pixel a square (the grid fitted to it), or the generation shown as one -->
+          </div>
+          <div id="startDigits" class="start-panel" hidden></div>  <!-- Digits: the number whose digits lay the cells (see numberPicker) -->
+        </div>
+        <div id="huntZones" class="nav-shapes" hidden></div>  <!-- the hunt's zones (a reversible rule's: its random starts'), with the hunt -->
+        <div id="symmetryRow" hidden>  <!-- Life on the plane: the start copied by a symmetry of the grid, under the zones (a zone's sub-mode) -->
+          <div class="block-label">Symmetry</div>
+          <div id="symmetryTiles" class="nav-shapes"></div>
+        </div>
+        <div id="huntRow" hidden>  <!-- Life, in 1 to 12 colours: a hunt for the longest life, or long, even battles -->
+          <div id="huntModeLabel" class="field-label">Hunt mode</div>
+          <div id="huntGoals" class="nav-shapes"></div>  <!-- what the hunt looks for, over its button -->
+          <button id="huntBtn" type="button" class="wide"></button>  <!-- its words in its tooltip: the hunt and the zone (see renderHunt) -->
+          <p id="huntStatus" class="muted"></p>
+          <div id="huntTop" class="mode-list" role="listbox"></div>
+        </div>
+      </section>
+
+      <section id="digitsSection">  <!-- the number walked: a walk's (a start's by the digits, under its Digits tab, see renderAntRow) -->
+        <h2 data-icon="barcode">Digits</h2>
+        <div id="numberPicker">  <!-- the number, its formula, its tabs, its primes' menus: one block, placed by the mode -->
+          <div class="field-label with-btn">Formula<button id="copyNumber" class="bar-chip" type="button" hidden title="The number with all its digits, in the base its use needs, over the view, to scroll or copy"></button></div>  <!-- not a label: a click on ↵ would focus the field again -->
+          <div class="field formula-field"><input id="formula" type="text" value="1/112" spellcheck="false" autocomplete="off" aria-label="Formula"
+                   title="Typed in base 10, then written in the base its use needs (the walk's, or Life's: K + 1, its colours and dead), as the chip beside it says. Any number as a formula: pi, e, phi, gamma, catalan, erdos, rho, sqrt(3), cbrt(2), root(x, k), ln(x), exp(x), log(x, b), zeta(k), 22/7, 2^pi, 8^(1/3), 2^127-1, primorial(p)+1, randprime(size, seed), and + − × ÷ ^ ( ). Digit sequences, used alone: random(seed), champernowne, primes, primegaps, dragon. Press Enter to compute"><button class="enter" type="button" tabindex="-1" title="Compute (Enter)">↵</button></div>
+          <div id="numberList"></div>
+          <label id="mersenneRow" hidden>Prime
+            <select id="mersenneP"></select>
+          </label>
+          <label id="primorialRow" hidden>Prime
+            <select id="primorialP"></select>
+          </label>
+        </div>
+      </section>
+
+      <section id="digitsBSection" hidden>  <!-- a duel's second number (Walk › Duel): B's formula, read as the Digits' -->
+        <h2 data-icon="barcode">Digits B</h2>
+        <div class="field-label">Formula</div>
+        <div class="field formula-field"><input id="formulaB" type="text" value="e" spellcheck="false" autocomplete="off" aria-label="Formula B"
+                 title="B's number, typed as the Digits' formula (pi, e, sqrt(2), 22/7, champernowne…), written in the walk's base. Press Enter to compute"><button class="enter" type="button" tabindex="-1" title="Compute (Enter)">↵</button></div>
       </section>
 
       <section id="walkRuleSection">  <!-- a walk's rule: Turtle, Pivot…, along the grid or on cells -->
@@ -320,76 +398,6 @@
             </optgroup>
           </select>
         </label>
-      </section>
-
-      <section id="antStartSection" hidden>  <!-- a creature's start: by its rule or by the digits (a turmite: by its rule only) -->
-        <h2 data-icon="play">Start</h2>
-        <div id="antStartTabs" class="nav-shapes"></div>  <!-- by its rule or by the digits: one choice, a tab group of tiles (as Life's starts) -->
-        <div id="antStartDigits"></div>  <!-- by the digits: the number (see numberPicker) -->
-      </section>
-
-      <section id="antRuleSection" hidden>  <!-- an ant's creature (Ant, Turmite, Worm), and its rule: cards as Life's, your own typed -->
-        <h2 data-icon="ant"><span id="antRuleTitle">Rule</span></h2>
-        <div class="block-label">Creature</div>
-        <div id="antCreatures" class="nav-shapes"></div>
-        <button class="wide how-it-works" data-icon="info" type="button" title="The rule in use, step by step: what each cell (each step) sees, and what it does (each rule's ⓘ, too)">How it works</button>  <!-- on its first card -->
-        <div id="antRuleCards" class="mode-list rule-cards" role="listbox"></div>
-        <div id="antCustomRow" hidden><div id="antRuleName" class="field-label"></div>  <!-- not a label: a click on ↵ would focus the field again -->
-          <span class="field"><input id="antRule" class="custom" type="text" autocomplete="off" spellcheck="false" title="Type a rule, then Enter"><button class="enter" type="button" tabindex="-1" title="Apply (Enter)">↵</button></span>
-        </div>
-      </section>
-
-      <section id="colourSection" hidden>  <!-- Life: alive or dead, or 2 to 12 civilisations -->
-        <h2 data-icon="duel">Teams</h2>
-        <div id="colourBlocks" class="nav-shapes colour-blocks"></div>
-      </section>
-
-      <section id="startSection" hidden>  <!-- Life: how the cells start (the plane), or the hunt for a lasting start (the surfaces) -->
-        <h2 data-icon="play">Start<button id="copyRle" class="head-btn" data-icon="copy" type="button" title="Copies the generation shown as an RLE file, as Golly and LifeWiki read it">Copy RLE</button></h2>  <!-- the generation shown, as Golly's and LifeWiki's RLE (the plane) -->
-        <div id="lifeStartRow" hidden>  <!-- Life on the plane: how the cells start -->
-          <div id="lifeStartTabs" class="nav-shapes"></div>  <!-- the starts: Hunt (Random for blocks), Text, Digits, Draw: one choice, a tab group of tiles (see START_TABS) -->
-          <div id="startText" class="start-panel" hidden>  <!-- Text: a word or an emoji drawn on the grid, its dark pixels alive -->
-            <span class="field"><textarea id="startTextInput" class="custom" rows="10" maxlength="240" autocomplete="off" spellcheck="false" title="Words, letters or emoji, a line each (Enter: a new line); drawn by a click outside or ⌘ Enter"></textarea></span>
-            <div id="textFonts" class="nav-shapes"></div>  <!-- its font (see TEXT_FONTS) -->
-          </div>
-          <div id="startDraw" class="start-panel">  <!-- Draw: a brush (a cell, or a pattern turned as chosen), in a colour or the eraser -->
-            <button id="startCells" type="button" class="wide"></button>  <!-- the start's cells: Go to gen 0, Clear, Undo clear (see renderDrawTools) -->
-            <div id="brushCards" class="mode-list rule-cards" role="listbox"></div>
-            <p id="drawNote" class="caption" hidden>No known patterns for this rule on this grid</p>  <!-- a surface, a rule with none -->
-            <div class="draw-row turn-row"><button id="brushTurn" type="button" title="A quarter turn more">↻ 0°</button><button id="brushFlip" type="button" title="Mirrored">⇋ Mirror</button></div>
-            <div class="draw-row"><span id="brushColours" class="colour-swatches"></span></div>
-            <div class="draw-row turn-row"><button id="openPng" type="button" title="Opens a black and white picture as the start, a pixel a square">Open PNG</button><button id="exportPng" type="button" title="Saves the generation shown as a black and white picture, a square a pixel">Export PNG</button><input id="pngFile" type="file" accept="image/*" hidden></div>  <!-- a black and white picture, a pixel a square (the grid fitted to it), or the generation shown as one -->
-          </div>
-          <div id="startDigits" class="start-panel" hidden></div>  <!-- Digits: the number whose digits lay the cells (see numberPicker) -->
-        </div>
-        <div id="huntZones" class="nav-shapes" hidden></div>  <!-- the hunt's zones (a reversible rule's: its random starts'), with the hunt -->
-        <div id="symmetryRow" hidden>  <!-- Life on the plane: the start copied by a symmetry of the grid, under the zones (a zone's sub-mode) -->
-          <div class="block-label">Symmetry</div>
-          <div id="symmetryTiles" class="nav-shapes"></div>
-        </div>
-        <div id="huntRow" hidden>  <!-- Life, in 1 to 12 colours: a hunt for the longest life, or long, even battles -->
-          <div id="huntModeLabel" class="field-label">Hunt mode</div>
-          <div id="huntGoals" class="nav-shapes"></div>  <!-- what the hunt looks for, over its button -->
-          <button id="huntBtn" type="button" class="wide"></button>  <!-- its words in its tooltip: the hunt and the zone (see renderHunt) -->
-          <p id="huntStatus" class="muted"></p>
-          <div id="huntTop" class="mode-list" role="listbox"></div>
-        </div>
-      </section>
-
-      <section id="digitsSection">  <!-- the number walked: a walk's (a start's by the digits, under its Digits tab, see renderAntRow) -->
-        <h2 data-icon="barcode">Digits</h2>
-        <div id="numberPicker">  <!-- the number, its formula, its tabs, its primes' menus: one block, placed by the mode -->
-          <div class="field-label with-btn">Formula<button id="copyNumber" class="bar-chip" type="button" hidden title="The number with all its digits, in the base its use needs, over the view, to scroll or copy"></button></div>  <!-- not a label: a click on ↵ would focus the field again -->
-          <div class="field formula-field"><input id="formula" type="text" value="1/112" spellcheck="false" autocomplete="off" aria-label="Formula"
-                   title="Typed in base 10, then written in the base its use needs (the walk's, or Life's: K + 1, its colours and dead), as the chip beside it says. Any number as a formula: pi, e, phi, gamma, catalan, erdos, rho, sqrt(3), cbrt(2), root(x, k), ln(x), exp(x), log(x, b), zeta(k), 22/7, 2^pi, 8^(1/3), 2^127-1, primorial(p)+1, randprime(size, seed), and + − × ÷ ^ ( ). Digit sequences, used alone: random(seed), champernowne, primes, primegaps, dragon. Press Enter to compute"><button class="enter" type="button" tabindex="-1" title="Compute (Enter)">↵</button></div>
-          <div id="numberList"></div>
-          <label id="mersenneRow" hidden>Prime
-            <select id="mersenneP"></select>
-          </label>
-          <label id="primorialRow" hidden>Prime
-            <select id="primorialP"></select>
-          </label>
-        </div>
       </section>
 
       <section id="returnSection" hidden>  <!-- a reversible one: its return to its start, past what is played -->
@@ -782,10 +790,10 @@
     </div>
   </main>
 
-  <script src="pixelarticons.js?v=0.4.51"></script>
-  <script src="punks.js?v=0.4.51"></script>
-  <script src="loops.js?v=0.4.51"></script>
-  <script src="emoji.js?v=0.4.51"></script>
-  <script src="main.js?v=0.4.51"></script>
+  <script src="pixelarticons.js?v=0.4.52"></script>
+  <script src="punks.js?v=0.4.52"></script>
+  <script src="loops.js?v=0.4.52"></script>
+  <script src="emoji.js?v=0.4.52"></script>
+  <script src="main.js?v=0.4.52"></script>
 </body>
 </html>

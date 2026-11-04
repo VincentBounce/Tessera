@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.47';
+const VERSION = '0.4.48';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -2100,6 +2100,25 @@ const ICONS = (() => {
   const bumps = carved((F, P, at) => pathEl(pathOf(at(-1))));
   const menger = carved((F, P) => pathEl(pathOf(P), 'f') + [1, 2].map((t) => pathEl(seg(...[F[0], F[3]].map((p, j) => p.map((x, d) => x + (t / 3) * (F[1][d] - F[0][d])))) + seg(...[F[0], F[1]].map((p) => p.map((x, d) => x + (t / 3) * (F[3][d] - F[0][d])))))).join(''));
   const torus = '<ellipse cx="12" cy="12" rx="10" ry="7"/>' + pathEl('M5.5 11Q12 17 18.5 11M7.8 12.6Q12 8 16.2 12.6');
+  // the Möbius strip: a band round a rounded triangle, its width turned over once at its top right corner (a half twist, seen
+  // edge on there): its one edge, twice round
+  const mobius = pathEl(pathOf(Array.from({ length: 241 }, (_, j) => {
+    const u = (4 * Math.PI * j) / 240, C = (v) => { const r = 7 * (1 + 0.13 * Math.cos(3 * (v - Math.PI))), a = v - 1.25 * Math.PI; return [12 + r * Math.cos(a), 12.4 + r * Math.sin(a)]; };
+    const p = C(u), q = C(u + 1e-3), t = Math.hypot(q[0] - p[0], q[1] - p[1]), w = 2.4 * Math.tanh(4 * Math.cos(u / 2));
+    return [p[0] - (w * (q[1] - p[1])) / t, p[1] + (w * (q[0] - p[0])) / t];
+  })));
+  // the Klein bottle: its body a round flask, its neck a tube (along a curve through P: [x, y, half its width], Catmull-Rom)
+  // up out of it, over and down into its side, on inside it
+  const tube = (P, n = 160) => {
+    const at = (s) => { const x = Math.min(P.length - 1 - 1e-9, s * (P.length - 1)), i = Math.floor(x), t = x - i, [p0, p1, p2, p3] = [P[Math.max(0, i - 1)], P[i], P[i + 1], P[Math.min(P.length - 1, i + 2)]];
+      return [0, 1, 2].map((d) => 0.5 * (2 * p1[d] + (p2[d] - p0[d]) * t + (2 * p0[d] - 5 * p1[d] + 4 * p2[d] - p3[d]) * t * t + (3 * p1[d] - p0[d] - 3 * p2[d] + p3[d]) * t * t * t)); };
+    const sides = [1, -1].map((e) => Array.from({ length: n + 1 }, (_, j) => {
+      const s = j / n, [x, y, w] = at(s), [qx, qy] = at(Math.min(1, s + 1e-3)), [ox, oy] = at(Math.max(0, s - 1e-3)), t = Math.hypot(qx - ox, qy - oy);
+      return [x - (e * w * (qy - oy)) / t, y + (e * w * (qx - ox)) / t];
+    }));
+    return sides.map((ps) => pathEl(pathOf(ps, false))).join('');
+  };
+  const klein = '<circle cx="8.8" cy="15.6" r="6.4"/>' + tube([[8.8, 9.2, 1.25], [9.4, 5.6, 1.25], [12.2, 3, 1.25], [16.4, 3.2, 1.25], [19, 6.6, 1.25], [18.6, 11, 1.25], [15.8, 14.2, 1.25], [12, 15.6, 1.25]]);
   const [a, b, c, d] = [[12, 3], [3, 19], [21, 19], [13, 14.5]];
   const icoOut = ngon(6, 10), icoIn = ngon(3, 5, 90);
   // the dodecahedron seen face on: a pentagon in the middle, its 5 neighbours' edges out to the rim
@@ -2154,8 +2173,7 @@ const ICONS = (() => {
     tilesSq: pathEl(pathOf(sq)) + pathEl('M12 4V20M4 12H20'),
     tilesTri: tiledTriangle(-90), tilesTriTurned: tiledTriangle(0),
     tilesHex: hexCluster(30), tilesHexTurned: hexCluster(0),  // (pointy as the plane's; turned, flat)
-    klein: pathEl('M14 4.5C17 4.5 19 7 19 10.5S16.5 19.5 12 19.5S5 17 5 13.5S8 9 11 10.5S13 15 11 15.5') + pathEl('M14 4.5C12.5 4.5 11.5 6 12 8.5S13.5 13 11 15.5'),  // a bottle going into itself
-    mobius: pathEl('M3 12C3 7.5 8.5 7.5 12 12S21 16.5 21 12S15.5 7.5 12 12S3 16.5 3 12Z') + pathEl('M6.5 10.4Q9 9.6 10.6 11.2M13.4 12.8Q15 14.4 17.5 13.6'),
+    klein, mobius,  // (see above: a flask its neck going into itself; a band with a half twist)
     tetrahedron: pathEl(pathOf([a, b, c])) + [a, b, c].map((p) => pathEl(seg(p, d))).join(''),
     stella: pathEl(pathOf(ngon(3, 10))) + pathEl(pathOf(ngon(3, 10, 90))),  // two tetrahedra: two triangles, a star
     octahedron: pathEl('M12 2L21 12L12 22L3 12Z') + [[12, 2], [21, 12], [12, 22], [3, 12]].map((p) => pathEl(seg(p, [10, 14]))).join(''),

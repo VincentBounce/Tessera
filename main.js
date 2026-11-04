@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.59';
+const VERSION = '0.4.60';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -14013,7 +14013,8 @@ function pathSegments(P = null) {
   };
   if (P) {
     const G = gridGraph(g), body = (s, q, i) => { const a = P.places[s][q - 1], b = P.places[s][q], sides = G.edgeTiles.get(G.key(a, b)); edge(a, b, sides[0], sides[1] ?? sides[0], i); };
-    for (let s = 0; s < 2; s++) for (let q = P.from[s] + 1; q <= P.step; q++) body(s, q, s);  // (its steps' edges, from its tail on)
+    // its steps' edges from its tail on, and the one from the corner it was cut at (bitten there: its line up to it)
+    for (let s = 0; s < 2; s++) for (let q = Math.max(1, P.from[s]); q <= P.step; q++) body(s, q, s);
     at[cur] = j;
     return { data: out.subarray(0, 11 * j), at };
   }

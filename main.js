@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.99';
+const VERSION = '0.4.100';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -1947,6 +1947,7 @@ function stepDigits(delta) {
   const size = randomPrimeSize(), steps = size ? PRIME_STEPS : DIGIT_STEPS, n = runStop()?.n ?? size ?? targetAsked();  // (what is walked, see runStop)
   const next = delta > 0 ? steps.find((v) => v > n && (size || v <= targetMost())) ?? (!size && n < targetMost() ? targetMost() : undefined) : steps.findLast((v) => v < n);  // (+ past the ladder's last below the most: the most)
   if (next === undefined) return;
+  if (playing && !gensShown()) resumeAt = cur;  // (playing: it plays on from there once built again, see showAll)
   if (size) setPrimeSize(next);
   else if (gensShown()) setGens(next);
   else { target = next; compute(); }
@@ -14008,7 +14009,10 @@ function reverse(on) {
 }
 
 // A new walk is shown complete at once; Play replays it from the start
+// A walk built again while it played (− or + of its digits, see stepDigits): the step it plays on from, not its end
+let resumeAt = null;
 function showAll() {
+  if (resumeAt !== null) { const at = Math.min(resumeAt, walk.n); resumeAt = null; seekTo(at); play(true); return; }
   if (lifeTime()) return;  // the Game of Life starts at generation 0 instead (Space-time: its layers all)
   if (spaceTimeOn() && !stack) return;  // (Space-time: once its cubes are made, see stackUp)
   advanceTo(walk.n);
@@ -16262,7 +16266,7 @@ function renderWalkGauges() {
     $('gauges').hidden = true;
     paintRanking(names.map((name, s) => ({ colour: LIFE_COLOURS[s], name, value: w[s], dead: D.dead[s] >= 0, diedAt: D.dead[s],
                                              cells: [D.dead[s] < 0 ? `<b>${fmt(w[s])}</b>` : `✝ ${genLink(D.dead[s])}`,
-                                                     ...(C.body ? [fmt(D.size[s])] : []), fmt(D.bestAt(s)), from(s).toFixed(1)] })), C.titles);
+                                                     fmt(D.bestAt(s)), ...(C.body ? [fmt(D.size[s])] : []), from(s).toFixed(1)] })), C.titles);
     return;
   }
   const p = (v) => fmt(Math.round(v * 100) / 100 || 0), P = walkPeak(), gold = 'var(--accent)', c = walk.cells[cur];
@@ -16290,13 +16294,12 @@ const meanText = (v) => `≈ ${v.toLocaleString('en', { minimumFractionDigits: 1
 const colourGone = (L, k) => (loopMeans(L) ? L.loopMax[k] === 0 : L.extinctAt?.[k] !== null && L.extinctAt?.[k] !== undefined);
 // the ranking's column titles (a tip: what it counts), Life's and a battle's
 const LIFE_TITLES = [['Alive'], ['Mean', 'Its live cells summed over the generations, by how many, till it settles or loops (its size while it lives)'], ['Born'], ['Died'], ['Ever alive']];
-// a battle's columns, by its penetration (P: its player): its worth (Cut: its body; else its land), its body if it has
-// one besides (along the grid a line, its edges; on cells its tiles), its worth's peak so far, its head from its start
+// a battle's columns, by its penetration (P: its player): its worth (Cut: its body; else its land), its worth's peak so
+// far, its body if it has one besides (along the grid a line, its edges; on cells its tiles), its head from its start
 const battleColumns = (P) => {
   const worth = P.bite ? 'Land' : 'Body', body = P.bite && P.pen !== 6 ? (P.ownLines ? 'Line' : 'Body') : null;
-  return { body, titles: [[worth, P.bite ? 'The tiles it holds' : "Its body's length"],
-    ...(body ? [[body, body === 'Line' ? 'The edges of its line now' : "Its body's tiles now"]] : []),
-    [`${worth} peak`, `Its ${worth.toLowerCase()} at its largest so far`], ['Distance', 'Its head from its start']] };
+  return { body, titles: [[worth, P.bite ? 'The tiles it holds' : "Its body's length"], [`${worth} peak`, `Its ${worth.toLowerCase()} at its largest so far`],
+    ...(body ? [[body, body === 'Line' ? 'The edges of its line now' : "Its body's tiles now"]] : []), ['Distance', 'Its head from its start']] };
 };
 function renderRanking(L) {
   const K = L.colours;

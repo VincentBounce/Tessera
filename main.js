@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.112';
+const VERSION = '0.4.113';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -7248,21 +7248,13 @@ function battlePlayer(g, grid, S, starts, digits, pen = penetration) {
       rest.forEach((s) => take(s, i));
       for (const s of rest) for (let o = 0; o < K; o++) {  // (a dead one's line too: still there, to pierce)
         if (o === s) continue;
-        const c = places[s][i], on = degree[o][c] > 0;
-        // on o's line, s goes along it (its corners kept, and the side it came from: a tile by its edge in);
-        // off it again, by the other side, it went through it: pierced where it left it; by the same side, nothing
-        const touch = contact[s][o], edgeTile = (a, b) => G.edgeTiles.get(G.key(a, b))[0];
-        if (on && !touch) contact[s][o] = { side: i > 0 ? edgeTile(places[s][i - 1], c) : -1, corners: [c] };
-        else if (on) touch.corners.push(c);
-        else if (touch) {
-          const last = touch.corners.at(-1);
-          contact[s][o] = null;
-          const held = touch.corners.findLast((x) => degree[o][x] > 0);  // (its line where it still is)
-          if (touch.side >= 0 && held !== undefined && !sameSide(o, touch.corners, touch.side, edgeTile(last, c))) pierce(o, held);
-        }
-        // and going along an edge of o's line: pierced there too
-        const j = i > 0 ? linkOf(places[s][i - 1], c) : undefined;
-        if (j !== undefined && lineOf[o][j] > 0) { pierce(o, c); contact[s][o] = null; }
+        // o's line is a frontier: going along an edge of it pierces it there; then, at the corner s just passed, going from
+        // one side of o's line to the other (its way in and out not joined round that corner but through o's edges) pierces
+        // it there too: a frontier crossed falls, freeing what it held (see pierce)
+        const c = places[s][i], p = places[s][i - 1], j = i > 0 ? linkOf(p, c) : undefined, edgeTile = (a, b) => G.edgeTiles.get(G.key(a, b))[0];
+        if (j !== undefined && lineOf[o][j] > 0) pierce(o, c);
+        const a = i > 1 ? places[s][i - 2] : p;  // (the corner before: its way in, a → p)
+        if (a !== p && p !== c && degree[o][p] > 0 && !(lineOf[o][linkOf(a, p)] > 0) && !sameSide(o, [p], edgeTile(a, p), edgeTile(p, c))) pierce(o, p);
       }
       peak = Math.max(peak, ...size);
       return;
@@ -7432,9 +7424,8 @@ function battlePlayer(g, grid, S, starts, digits, pen = penetration) {
       if (area > outside[o]) remakeLine(o); else largest[o] = Math.max(largest[o], area);
     }
   };
-  // Land grid: each walker's contact with each enemy's line (see step), and whether tiles t and u lie on one side of
-  // o's line round the corners it went along: joined by the tiles round them, through no edge of o's line
-  const contact = starts.map(() => starts.map(() => null));
+  // Land grid: whether tiles t and u lie on one side of o's line round the corners given: joined by the tiles round
+  // them, through no edge of o's line
   const sameSide = (o, corners, t, u) => {
     const next = new Map();  // (each tile round those corners, the tiles across their edges not of o's line)
     for (const c of new Set(corners)) for (const y of G.nbrs[c]) {
@@ -7474,7 +7465,6 @@ function battlePlayer(g, grid, S, starts, digits, pen = penetration) {
       if (j < i) {
         owner.fill(0); from.fill(0); size.fill(0); dead.fill(-1); i = -1;
         land.fill(0); landCount.fill(0); seenFrom.fill(0); cutsOf.forEach((c) => c.fill(0));
-        contact.forEach((row) => row.fill(null));
       }
       if (i < 0) for (let s = 0; s < K && bite; s++) { freshWalls(s); if (lined) freshLine(s); }
       while (i < Math.min(j, n)) { step(); keepBest(); }

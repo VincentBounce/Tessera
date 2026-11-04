@@ -163,7 +163,7 @@ function checkTips(fail) {
   return 1;
 }
 function checker(fail) {
-  const errors = [], onError = (e) => errors.push(`${e.message} (${(e.error?.stack ?? '').split('\n')[1]?.trim().replace(/\?v=\w+/, '') ?? ''})`);  // (where: its first frame, main.js:line)
+  const errors = [], onError = (e) => errors.push(`${e.message} (${(e.error?.stack ?? '').split('\n')[1]?.trim().replace(/\?v=[\w.]+/, '') ?? ''})`);  // (where: its first frame, main.js:line)
   window.addEventListener('error', onError);
   const c = { checked: 0, stop: () => window.removeEventListener('error', onError) };
   c.look = async (what, ms = 450) => {

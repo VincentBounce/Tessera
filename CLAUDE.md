@@ -51,11 +51,14 @@ No code line gained or lost: the count and +0 all the same (« main.js 12,531 +0
 touched shows (+0 if its code lines are as many).
 
 ## Versions
-- `const VERSION = '0.3.N'` (main.js, line 40) is the only source; every commit's message ends with it, `(v0.3.N)`.
+- `const VERSION = '0.4.N'` (main.js, line 40) is the only source; every commit's message ends with it, `(v0.4.N)`,
+  written by `tools/ship.sh`; the assets' cache key in index.html (`?v=` on style.css and the scripts) is the same
+  version, written by it too.
 - Every commit ships by `tools/ship.sh "subject" "body"` (its changes staged first, `git add`): it puts the commit on
-  origin/main, sets VERSION to main's + 1, ends the subject with it and pushes, again from main if another session
-  pushed first. Never edit VERSION or write `(v…)` yourself: several sessions work side by side, and a number picked
-  from one's own copy collides. Push only main (no branch left on GitHub: it falls behind, and only a force push fixes it).
+  origin/main, sets VERSION and the cache key to main's + 1, ends the subject with it and pushes, again from main if
+  another session pushed first (any other refusal stops it, its error shown). Never edit VERSION, the cache key or
+  write `(v…)` yourself: several sessions work side by side, and a number picked from one's own copy collides. Push
+  only main (no branch left on GitHub: it falls behind, and only a force push fixes it).
 - The last number goes up by 1 with every commit. The middle one only when the user decides, for a step they name
   (0.2: links that carry their version; 0.3: the name Tessera, Walking Pi before; 0.4: WebGPU, WebGL before); the last one then starts again at 0. 1.0 would mean links that keep working.
 - Every link ends with `v=` and the version it was made with, kept in Treasures and their JSON files (see `setupFrom`).

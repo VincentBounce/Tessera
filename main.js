@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.58';
+const VERSION = '0.4.59';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -5812,21 +5812,18 @@ function surfaceBounds() {
   return { minX: -r, maxX: r, minY: -r, maxY: r };
 }
 
-// Put the current shape in place: tile centres of the walk's points, the frame and the view
+// A walk's place on the shape shown, its point: along the grid a corner (on a tile it belongs to), else a tile's centre
+function placePoint(p) {
+  const sh = walk.shape, R = walk.R, G = walk.geo.grid, X = walk.vert ? sh.corners : sh.cen;
+  const c = walk.vert ? 3 * (walk.geo.sides * G.tileOf[p] + G.cornerOf[p]) : 3 * p;
+  return [X[c] * R, X[c + 1] * R, X[c + 2] * R];
+}
+// Put the current shape in place: the walk's points on it (see placePoint), the frame and the view
 function applyShape() {
   const sh = walk.shape, R = walk.R;
-  if (walk.vert) {  // a walk along the grid: its points sit on the tiles' corners
-    const { wx, wy, wz, vert } = walk, G = walk.geo.grid, k = walk.geo.sides;
-    for (let i = 0; i <= walk.n; i++) {
-      const c = 3 * (k * G.tileOf[vert[i]] + G.cornerOf[vert[i]]);
-      wx[i] = sh.corners[c] * R; wy[i] = sh.corners[c + 1] * R; wz[i] = sh.corners[c + 2] * R;
-    }
-  } else if (!walk.life) {  // walk points sit on their tiles' centres
-    const { wx, wy, wz, tile } = walk;
-    for (let i = 0; i <= walk.n; i++) {
-      const t = tile[i];
-      wx[i] = sh.cen[3 * t] * R; wy[i] = sh.cen[3 * t + 1] * R; wz[i] = sh.cen[3 * t + 2] * R;
-    }
+  if (!walk.life) {
+    const { wx, wy, wz } = walk;
+    for (let i = 0; i <= walk.n; i++) [wx[i], wy[i], wz[i]] = placePoint(walk.vert ? walk.vert[i] : walk.tile[i]);
   }
   project();
   const F = R * sh.extent;
@@ -15363,8 +15360,7 @@ function drawOverlay() {
   }
   if (!walk.n || walk.life || walk.rows || startsShown) return;  // no walker in the Game of Life, nor Elementary
   if (walk.duel) {  // a duel: no start (its tails cut), each head an arrow in its colour
-    const g = walk.geo, G = walk.vert && gridGraph(g), X = walk.vert ? g.verts : g.cen, B = walk.duel.player.places[1];
-    const P = (i) => [0, 1, 2].map((d) => X[3 * B[i] + d] * walk.R), tileAt = (i) => (G ? G.tileOf[B[i]] : B[i]);
+    const B = walk.duel.player.places[1], P = (i) => placePoint(B[i]), tileAt = (i) => (walk.vert ? walk.geo.grid.tileOf[B[i]] : B[i]);
     if (facing(cur)) drawSphereCursor(ctx, undefined, undefined, LIFE_COLOURS[0]);
     if (twoSidedNow() || tileVisible(tileAt(cur))) drawSphereCursor(ctx, P, tileAt, LIFE_COLOURS[1]);
     return;

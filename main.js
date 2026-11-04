@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.60';
+const VERSION = '0.4.61';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -15607,6 +15607,7 @@ function renderRanking(L) {
   box.querySelector('.all-dead').textContent = alive.length ? '' : 'All dead';
 }
 function updateStats() {
+  $('ruleChips').hidden = !!walk.duel;  // (a battle: its walkers' turns not shown, see the walk's part below)
   // Jump to start and Step back greyed at the start (a reversible one's, as far back as it goes), Step at the end (a loop's:
   // round it on)
   $('restart').disabled = cur <= runStart();
@@ -15677,6 +15678,11 @@ function updateStats() {
     : `${walk.loop.drift ? '→' : '↻'} ${fmt(walk.loop.period ?? walk.n)}${o.T ? ` from ${fmt(o.T)}` : ''}`)}`);  // (as short: its digits' period, its first step)
   drawActivity();
   renderWalkGauges();
+  if (walk.duel) {  // a battle: its gauges only, no turns nor digits (A's alone, not the battle's)
+    $('digitStrip').classList.remove('line', 'turns');
+    $('digitStrip').textContent = '';
+    return;
+  }
   if (walk.n && walk.counts) {  // each digit's count, on its chip
     const c = walk.counts.subarray(walk.base * cur, walk.base * (cur + 1));
     c.forEach((v, d) => { const e = document.getElementById(`count${d}`); if (e) e.textContent = fmt(v); });

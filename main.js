@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.76';
+const VERSION = '0.4.77';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -7163,16 +7163,17 @@ function battlePlayer(g, grid, S, starts, digits, pen = penetration) {
         // Penetrating 4: on o's line, s goes along it (its corners kept, and the side it came from: a tile by its edge in);
         // off it again, by the other side, it went through it: pierced where it left it; by the same side, nothing
         const touch = contact[s][o], edgeTile = (a, b) => G.edgeTiles.get(G.key(a, b))[0];
-        if (on && !touch) contact[s][o] = { side: i > 0 ? edgeTile(places[s][i - 1], c) : -1, corners: [c] };
+        if (on && !touch) contact[s][o] = { side: i > 0 ? edgeTile(places[s][i - 1], c) : -1, corners: [c], taken: new Set() };
         else if (on) touch.corners.push(c);
         else if (touch) {
           const last = touch.corners.at(-1);
           contact[s][o] = null;
-          if (touch.side >= 0 && degree[o][last] > 0 && !sameSide(o, touch.corners, touch.side, edgeTile(last, c))) pierce(o, last);
+          const held = touch.corners.findLast((x) => degree[o][x] > 0);  // (its line where it still is: the edges taken on the way are s's now)
+          if (touch.side >= 0 && held !== undefined && !sameSide(o, touch.corners, touch.side, edgeTile(last, c), touch.taken)) pierce(o, held);
         }
         // and going along an edge of o's line inside o's land (its land on both sides): that edge s's only, o's let go
         const j = i > 0 ? linkOf(places[s][i - 1], c) : undefined;
-        if (j !== undefined && lineOf[o][j] > 0 && landOwner(L.eu[j]) === o && landOwner(L.ev[j]) === o) cutLine(o, places[s][i - 1], c);
+        if (j !== undefined && lineOf[o][j] > 0 && landOwner(L.eu[j]) === o && landOwner(L.ev[j]) === o) { cutLine(o, places[s][i - 1], c); contact[s][o]?.taken.add(j); }
       }
       peak = Math.max(peak, ...size);
       return;
@@ -7460,11 +7461,11 @@ function battlePlayer(g, grid, S, starts, digits, pen = penetration) {
   // Penetrating 4: each walker's contact with each enemy's line (see step), and whether tiles t and u lie on one side of
   // o's line round the corners it went along: joined by the tiles round them, through no edge of o's line
   const contact = starts.map(() => starts.map(() => null));
-  const sameSide = (o, corners, t, u) => {
+  const sameSide = (o, corners, t, u, taken = new Set()) => {  // (taken: links of o's line s took from it on the way, walls still)
     const next = new Map();  // (each tile round those corners, the tiles across their edges not of o's line)
     for (const c of new Set(corners)) for (const y of G.nbrs[c]) {
       const j = linkOf(c, y);
-      if (j === undefined || lineOf[o][j]) continue;
+      if (j === undefined || lineOf[o][j] || taken.has(j)) continue;
       for (const [a, b] of [[L.eu[j], L.ev[j]], [L.ev[j], L.eu[j]]]) (next.get(a) ?? next.set(a, []).get(a)).push(b);
     }
     const seen = new Set([t]), queue = [t];

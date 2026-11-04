@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.53';
+const VERSION = '0.4.54';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -2774,32 +2774,42 @@ function headDigits(intPart, base) {
   return head;
 }
 
+// A number's first n digits in base b, its integer part first, as one array (F: formulaOf's): a sequence's made on the
+// page, the others' from the cache (A's, see compute); null when they are not there yet (see digitsWorker)
+function knownDigits(F, base, n) {
+  if (F.kind === 'seq') return seqDigits(F.ast, n, base).digits;
+  const hit = cache[`${F.text}/${base}`];
+  if (!hit || (hit.intPart.length + hit.digits.length < n && hit.total === undefined)) return null;
+  const head = headDigits(hit.intPart, base), all = new Uint8Array(head.length + hit.digits.length);
+  all.set(head);
+  all.set(hit.digits, head.length);
+  return all.subarray(0, n);
+}
+// a worker computing them, cached when done (then: called with its error, if any); it, to be stopped
+function digitsWorker(F, base, n, then) {
+  const w = newFormulaWorker();
+  w.onmessage = ({ data: d }) => {
+    if (d.type === 'progress') return;
+    w.terminate();
+    if (d.type !== 'error') cache[`${F.text}/${base}`] = { intPart: d.intPart, digits: d.digits, total: d.total, tests: d.tests, uncertain: d.uncertain };
+    then(d.type === 'error' ? d.message : null);
+  };
+  w.postMessage({ ast: F.ast, n, base, mag: F.mag, nodes: F.nodes });
+  return w;
+}
 // Digits B, a duel's second number (see duelOn): its formula read as the Digits' (formulaOf), as many digits as A's in
-// the same base, the integer part first, cached as A's (cache). Null while its worker computes them (then: called once
-// they are there), { error } for a wrong formula
+// the same base. Null while its worker computes them (then: called once they are there), { error } for a wrong formula
 let rivalWorker = null;
 function rivalDigits(base, n, then) {
   const F = formulaOf($('formulaB').value);
   if (F.error) return F;
-  if (F.kind === 'seq') return seqDigits(F.ast, n, base).digits;
-  const key = `${F.text}/${base}`, hit = cache[key];
-  if (hit && (hit.intPart.length + hit.digits.length >= n || hit.total !== undefined)) {
-    const head = headDigits(hit.intPart, base), all = new Uint8Array(head.length + hit.digits.length);
-    all.set(head);
-    all.set(hit.digits, head.length);
-    return all.subarray(0, n);
-  }
+  const known = knownDigits(F, base, n);
+  if (known) return known;
   rivalWorker?.terminate();
-  rivalWorker = newFormulaWorker();
-  rivalWorker.onmessage = ({ data: d }) => {
-    if (d.type === 'progress') return;
-    rivalWorker.terminate();
+  rivalWorker = digitsWorker(F, base, n, (error) => {
     rivalWorker = null;
-    if (d.type === 'error') { $('status').textContent = `Formula B: ${d.message}`; return; }
-    cache[key] = { intPart: d.intPart, digits: d.digits, total: d.total, tests: d.tests, uncertain: d.uncertain };
-    then();
-  };
-  rivalWorker.postMessage({ ast: F.ast, n, base, mag: F.mag, nodes: F.nodes });
+    if (error) $('status').textContent = `Formula B: ${error}`; else then();
+  });
   return null;
 }
 
@@ -6886,28 +6896,28 @@ function buildSphereWalk(seq, mode, ahead = new Uint8Array(0)) {
   const antStep = ant ? antStepper(w, (d) => { state = S.step(state, d); return state; }, S.start(startNo() - 1)[0]) : null;
   const base = ant && !antByDigits ? antStep.colours : mode.base, turns = ant ? new Uint8Array(len) : null, rec = walkRecorder(seq, ahead, base, R, g.n);
   let state = S.start(startNo() - 1);
-  // a duel (see 7.6b): B's digits (null while they are computed: A alone meanwhile), B from the tile opposite A's, its
-  // tiles; it stops where the heads meet, or B's digits end
-  const digitsB = duelOn() && !ant ? rivalDigits(mode.base, len, buildWalk) : null;
-  if (digitsB?.error) $('status').textContent = `Formula B: ${digitsB.error}`;
-  const B = digitsB instanceof Uint8Array ? digitsB : null, tilesB = B && new Int32Array(len + 1);
-  let rival = B && antipodeStart(g, state), steps = len, met = false;
-  if (B) tilesB[0] = rival[0];
-  const put = (i) => { const t = state[0]; rec.put(i, t, t, [g.cen[3 * t], g.cen[3 * t + 1], g.cen[3 * t + 2]]); };
+  const put = (i, t = state[0]) => rec.put(i, t, t, [g.cen[3 * t], g.cen[3 * t + 1], g.cen[3 * t + 2]]);
   put(0);
   rec.begin(S.key(state));  // (tile, the edge it came in by)
-  for (let i = 0; i < len; i++) {
-    if (B && i >= B.length) { steps = i; break; }
-    const was = [state[0], rival?.[0]];
-    if (ant) { antStep(seq[i]); turns[i] = antStep.turn; } else state = S.step(state, seq[i]);
-    if (B) { rival = S.step(rival, B[i]); tilesB[i + 1] = rival[0]; }
-    put(i + 1);
-    met = !!B && (state[0] === rival[0] || (state[0] === was[1] && rival[0] === was[0]));  // (on one tile, or passing each other)
-    if (met) { rec.step(i + 1, seq[i], null); steps = i + 1; break; }
-    if (rec.step(i + 1, ant ? antStep.took : seq[i], ant || B ? null : S.key(state))) break;  // (an ant's state: all its cells, not watched; a duel's: both walks', not watched)
+  // a duel (see 7.6b): both walks (duelWalks), A's recorded; B's digits null while they are computed: A alone meanwhile
+  const B = duelOn() && !ant ? rivalDigits(mode.base, len, buildWalk) : null;
+  if (B?.error) $('status').textContent = `Formula B: ${B.error}`;
+  if (B instanceof Uint8Array) {
+    const D = duelWalks(g, S, state, seq, B);
+    for (let i = 1; i <= D.steps; i++) { put(i, D.tiles[0][i]); rec.step(i, seq[i - 1], null); }  // (its state: both walks', not watched)
+    rec.finish(kind, g, { ant: 0, turns, vert: null, stepTiles: null, n: D.steps });
+    const player = duelPlayer(D.tiles, g.n, D.steps, D.met);
+    let peak = 1;  // (the longest body of the whole duel: the gauges' full bar)
+    for (let i = 0; i <= D.steps; i++) { player.to(i); peak = Math.max(peak, ...player.size); }
+    walk.duel = { met: D.met, nameB: formulaOf($('formulaB').value).sym, player, peak };
+    return;
   }
-  rec.finish(kind, g, { ant: ant ? antStep.colours : 0, turns, vert: null, stepTiles: null, ...(B && { n: steps }) });
-  if (B) walk.duel = { met, nameB: formulaOf($('formulaB').value).sym, player: duelPlayer([walk.tile, tilesB], g.n, steps, met) };
+  for (let i = 0; i < len; i++) {
+    if (ant) { antStep(seq[i]); turns[i] = antStep.turn; } else state = S.step(state, seq[i]);
+    put(i + 1);
+    if (rec.step(i + 1, ant ? antStep.took : seq[i], ant ? null : S.key(state))) break;  // (an ant's state: all its cells, not watched)
+  }
+  rec.finish(kind, g, { ant: ant ? antStep.colours : 0, turns, vert: null, stepTiles: null });
 }
 
 /* ---- 7.6b Duel: two numbers' walks on one surface -------------------------------------------- */
@@ -6924,6 +6934,8 @@ function renderWalkTeams() {
   const w = $('mode').value, here = NAV[w]?.[0] === 'Walk' && MODES[w].lattice === 'sphere';
   $('walkTeams').hidden = !here;
   $('digitsBSection').hidden = !duelOn();
+  if (duelHunt.run && (!duelOn() || duelHunt.key !== duelHuntKey())) stopDuelHunt();  // (its duels fought elsewhere: it stops)
+  if (duelOn()) renderDuelHunt();
   if (!here) return;
   $('walkTeams').replaceChildren(...[1, 2].map((k) => tile({ pic: colourBlock(k), text: COLOUR_STEP_NAMES[k],
     title: k === 1 ? 'One number walks' : "Two numbers walk, A's (Digits) and B's (Digits B), from opposite tiles: a head on the other's body cuts it there, to its tail; the heads meeting ends it, the longer body wins",
@@ -6939,6 +6951,22 @@ function antipodeStart(g, [t, entry]) {
   for (let e = 0; e < k; e++) if (g.nbr[k * b + e] === from) return [b, e];
   throw new Error('no tile opposite the start');
 }
+// Both walks of a duel, A's from start, B's from the tile opposite (S: surfaceSteps'): their tiles, a step each a digit,
+// up to the step the heads meet (met: on one tile, or passing each other) or a number's digits end
+function duelWalks(g, S, start, A, B) {
+  const len = Math.min(A.length, B.length), tiles = [new Int32Array(len + 1), new Int32Array(len + 1)];
+  let a = start, b = antipodeStart(g, start), steps = len, met = false;
+  tiles[0][0] = a[0]; tiles[1][0] = b[0];
+  for (let i = 0; i < len && !met; i++) {
+    const was = [a[0], b[0]];
+    a = S.step(a, A[i]); b = S.step(b, B[i]);
+    tiles[0][i + 1] = a[0]; tiles[1][i + 1] = b[0];
+    met = a[0] === b[0] || (a[0] === was[1] && b[0] === was[0]);
+    if (met) steps = i + 1;
+  }
+  return { tiles, steps, met };
+}
+
 // The bodies at step i (to(i): on from the step it was at, from the start again to go back): owner and at, each tile's
 // walk (1 A, 2 B, 0 none) and the step it was taken; a walk's body, its tiles taken from step from[s] on (alive), size[s]
 // of them. At the step the heads meet, nothing more taken or cut.
@@ -6976,6 +7004,68 @@ function duelScore() {
   if (cur < walk.n) return `${a} ${fmt(x)} · ${b} ${fmt(y)}`;
   const how = met ? 'the heads met' : 'the digits ended';
   return x === y ? `Draw, ${fmt(x)} each (${how})` : `${x > y ? a : b} wins, ${fmt(Math.max(x, y))} to ${fmt(Math.min(x, y))} (${how})`;
+}
+
+/* ---- 7.6c Hunting the longest duels ---------------------------------------------------------- */
+/* Duel's hunt (under Digits B): pairs of numbers drawn at random, each pair once, fought at the surface, size, start and
+ * digits shown, on and on until stopped; the 8 longest kept. Its numbers: the Number cards' reals and sequences (but
+ * Random) and the square roots of Life's Formula hunt (√2 to √9999, see DRAWN_ROOTS); no fraction, whose digits go round.
+ * A duel's length: its steps till the heads meet; one still on when the digits end, at least as long (≥, first). */
+const DUEL_CARDS = Object.values(PRESETS).filter((p) => ['Constants', '𝑓', 'Sequences'].includes(p.group) && typeof p.f === 'string').map((p) => p.f).concat('rho');
+const duelHunt = { run: null, top: [], tried: new Set(), key: '', status: '' };
+const duelHuntKey = () => `${$('mode').value}|${sphereSize()}|${startNo()}|${digitsNeeded()}`;  // (what its duels are fought at)
+// √r's first n digits in base b, its integer part first (on the page: one integer root, as numberSeed's)
+const rootDigits = (r, base, n) => Uint8Array.from(iroot(BigInt(r) * BigInt(base) ** BigInt(2 * n), 2).toString(base).slice(0, n), (c) => c.charCodeAt(0) - 48);
+async function startDuelHunt() {
+  if (duelHunt.key !== duelHuntKey()) Object.assign(duelHunt, { top: [], tried: new Set(), key: duelHuntKey() });
+  const run = (duelHunt.run = { stop: false }), mode = MODES[$('mode').value], n = digitsNeeded(), base = mode.base;
+  // the cards' digits first, once (a worker each, cached as A's); the roots' made as they are drawn
+  for (const f of DUEL_CARDS) {
+    const F = formulaOf(f);
+    duelHunt.status = `Computing ${F.sym}…`;
+    renderDuelHunt();
+    if (!knownDigits(F, base, n)) await new Promise((ok) => { run.worker = digitsWorker(F, base, n, ok); });
+    if (run.stop) return;
+  }
+  const g = walk.geo, S = surfaceSteps(g, mode), start = S.start(startNo() - 1), numbers = [...DUEL_CARDS, ...DRAWN_ROOTS], N = numbers.length, pairs = N * (N - 1);
+  const cards = new Map(DUEL_CARDS.map((f) => [f, knownDigits(formulaOf(f), base, n)]));
+  const digitsOf = (f) => cards.get(f) ?? rootDigits(Number(f.slice(5, -1)), base, n);
+  const slice = () => {
+    if (run.stop) return;
+    for (const t0 = performance.now(); performance.now() - t0 < 30 && duelHunt.tried.size < pairs;) {
+      const i = Math.floor(Math.random() * N), j = Math.floor(Math.random() * N), key = i * N + j;
+      if (i === j || duelHunt.tried.has(key)) continue;
+      duelHunt.tried.add(key);
+      const [a, b] = [numbers[i], numbers[j]], D = duelWalks(g, S, start, digitsOf(a), digitsOf(b)), P = duelPlayer(D.tiles, g.n, D.steps, D.met);
+      P.to(D.steps);
+      duelHunt.top.push({ a, b, steps: D.steps, met: D.met, sizes: [...P.size] });
+      duelHunt.top.sort((x, y) => x.met - y.met || y.steps - x.steps);  // (still on at the end first, then the longest)
+      duelHunt.top.length = Math.min(8, duelHunt.top.length);
+    }
+    duelHunt.status = `${fmt(duelHunt.tried.size)} duels of ${fmt(pairs)} fought`;
+    renderDuelHunt();
+    if (duelHunt.tried.size < pairs) setTimeout(slice, 0); else stopDuelHunt();
+  };
+  slice();
+}
+function stopDuelHunt() {
+  if (!duelHunt.run) return;
+  duelHunt.run.stop = true;
+  duelHunt.run.worker?.terminate();
+  duelHunt.run = null;
+  renderDuelHunt();
+}
+// its button (Hunt, or Stop), its count, its 8 longest as cards: a click plays it (A's and B's formulas, as typed)
+function renderDuelHunt() {
+  if (duelHunt.key !== duelHuntKey() && !duelHunt.run) Object.assign(duelHunt, { top: [], tried: new Set(), key: duelHuntKey(), status: '' });
+  $('duelHuntBtn').innerHTML = duelHunt.run ? `${icon('stop')} Stop hunt` : `${icon('search')} Hunt the longest duels`;
+  $('duelHuntStatus').textContent = duelHunt.status;
+  const sym = (f) => formulaOf(f).sym, A = formulaInUse, B = formulaOf($('formulaB').value).text;
+  $('duelHuntTop').replaceChildren(...duelHunt.top.map((r) => {
+    const [x, y] = r.sizes, end = x === y ? `a draw, ${fmt(x)} each` : `${sym(x > y ? r.a : r.b)} wins, ${fmt(Math.max(x, y))} to ${fmt(Math.min(x, y))}`;
+    return card({ pic: colourBlock(2), name: `${sym(r.a)} vs ${sym(r.b)} · ${r.met ? '' : '≥ '}${fmt(r.steps)} steps`, detail: r.met ? `the heads meet · ${end}` : `still on as the digits end · ${end}`,
+                  on: r.a === A && r.b === B, click: () => { stopDuelHunt(); $('formula').value = r.a; readFormula(); pickNumber(formulaInUse); $('formulaB').value = r.b; compute(); } });
+  }));
 }
 
 /* ==============================================================================================
@@ -15386,6 +15476,13 @@ function renderWalkGauges() {
   $('gauges').hidden = !walk.n || !walk.maxDist;
   if ($('gauges').hidden) return;
   const x = walk.wx[cur], y = walk.is3d ? walk.wy[cur] : -walk.wy[cur], z = walk.is3d ? walk.wz[cur] : 0, d = Math.hypot(x, y, z);
+  if (walk.duel) {  // a duel: each body's length, in its colour, its bar full at the longest body of the whole duel
+    const { player: D, peak, nameB } = walk.duel;
+    D.to(cur);
+    paintGauges([[withIcons(shownSym), LIFE_COLOURS[0], D.size[0] / peak, `<b>${fmt(D.size[0])}</b>`],
+                 [withIcons(nameB), LIFE_COLOURS[1], D.size[1] / peak, `<b>${fmt(D.size[1])}</b>`]]);
+    return;
+  }
   const p = (v) => fmt(Math.round(v * 100) / 100 || 0), P = walkPeak(), gold = 'var(--accent)', c = walk.cells[cur];
   paintGauges([
     ['Position', null, null, walk.is3d ? `(${p(x)}, ${p(y)}, ${p(z)})` : `(${p(x)}, ${p(y)})`],
@@ -16428,6 +16525,7 @@ $('formula').addEventListener('change', () => {
   $('status').textContent = `Formula: ${error} · ${formulaInUse} kept`;
 });
 // B's (a duel's): computed again, or its error said (see rivalDigits)
+$('duelHuntBtn').addEventListener('click', () => (duelHunt.run ? stopDuelHunt() : startDuelHunt()));
 $('formulaB').addEventListener('change', () => {
   const F = formulaOf($('formulaB').value);
   if (F.error) { $('status').textContent = `Formula B: ${F.error}`; return; }

@@ -11,7 +11,7 @@
   <meta property="og:type" content="website">
   <link id="favicon" rel="icon">  <!-- the app's logo, set at start-up (see appLogo) -->
   <meta name="description" content="A walk on a grid in 2D or 3D driven by the base-2 to base-6 digits of π, other constants and large primes.">
-  <link rel="stylesheet" href="style.css?v=0.4.53">
+  <link rel="stylesheet" href="style.css?v=0.4.54">
   <script>  // the theme before the first paint (see applyTheme)
     try { const t = localStorage.getItem('tesseraTheme') || 'system'; document.documentElement.dataset.theme = t === 'system' ? (matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark') : t; } catch { document.documentElement.dataset.theme = 'dark'; }
   </script>
@@ -154,6 +154,9 @@
         <div class="field-label">Formula</div>
         <div class="field formula-field"><input id="formulaB" type="text" value="e" spellcheck="false" autocomplete="off" aria-label="Formula B"
                  title="B's number, typed as the Digits' formula (pi, e, sqrt(2), 22/7, champernowne…), written in the walk's base. Press Enter to compute"><button class="enter" type="button" tabindex="-1" title="Compute (Enter)">↵</button></div>
+        <button id="duelHuntBtn" type="button" class="wide" title="Pairs of numbers drawn at random, each pair once, fought here (this surface, size, start and digits): the Number cards' reals and sequences, and √2 to √9999 (no fraction: their digits go round). The 8 longest kept; one still on as the digits end first (≥)"></button>  <!-- its words: see renderDuelHunt -->
+        <p id="duelHuntStatus" class="muted"></p>
+        <div id="duelHuntTop" class="mode-list" role="listbox"></div>  <!-- the 8 longest duels: a click plays one -->
       </section>
 
       <section id="walkRuleSection">  <!-- a walk's rule: Turtle, Pivot…, along the grid or on cells -->
@@ -790,10 +793,10 @@
     </div>
   </main>
 
-  <script src="pixelarticons.js?v=0.4.53"></script>
-  <script src="punks.js?v=0.4.53"></script>
-  <script src="loops.js?v=0.4.53"></script>
-  <script src="emoji.js?v=0.4.53"></script>
-  <script src="main.js?v=0.4.53"></script>
+  <script src="pixelarticons.js?v=0.4.54"></script>
+  <script src="punks.js?v=0.4.54"></script>
+  <script src="loops.js?v=0.4.54"></script>
+  <script src="emoji.js?v=0.4.54"></script>
+  <script src="main.js?v=0.4.54"></script>
 </body>
 </html>

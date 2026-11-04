@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.67';
+const VERSION = '0.4.68';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -4812,7 +4812,16 @@ function flatPolyhedron(name, f, kites = false) {
   const { verts, add } = vertexStore();
   const tris = [];
   for (const [A, B, C] of faces.map((face) => face.map((v) => P[v]))) {
-    const at = ([i, j]) => add(...[0, 1, 2].map((d) => (A[d] * (f - i - j) + B[d] * i + C[d] * j) / f));
+    // a point (i, j) of the face's grid: its corner, each whole point's kept once a face (it is up to 6 triangles'), added
+    // as first met, so the corners are numbered as ever
+    const known = new Int32Array((f + 1) * (f + 1)).fill(-1);
+    const at = ([i, j]) => {
+      const whole = Number.isInteger(i) && Number.isInteger(j), slot = i * (f + 1) + j;
+      if (whole && known[slot] >= 0) return known[slot];
+      const w = f - i - j, v = add((A[0] * w + B[0] * i + C[0] * j) / f, (A[1] * w + B[1] * i + C[1] * j) / f, (A[2] * w + B[2] * i + C[2] * j) / f);
+      if (whole) known[slot] = v;
+      return v;
+    };
     const put = (c) => { for (const t of kites ? kitesOf(c) : [c]) tris.push(t.map(at)); };  // (i, j): the face's own grid
     for (let i = 0; i < f; i++) {
       for (let j = 0; i + j < f; j++) {
@@ -5605,8 +5614,8 @@ function trianglesRound(ico) {
   for (let t = 0; t < ico.n; t++) for (let q = 0; q < 3; q++) around[ico.poly[3 * t + q]].push(t);
   return around.map((tris, v) => {
     const n = [V[3 * v], V[3 * v + 1], V[3 * v + 2]], a = cross(n, Math.abs(n[0]) < 0.9 ? [1, 0, 0] : [0, 1, 0]), b = cross(n, a);
-    const angle = (t) => { const c = [0, 1, 2].map((d) => ico.cen[3 * t + d] - n[d]); return Math.atan2(dot3(c, b), dot3(c, a)); };
-    return tris.slice().sort((x, y) => angle(x) - angle(y));
+    const angle = new Map(tris.map((t) => { const c = [0, 1, 2].map((d) => ico.cen[3 * t + d] - n[d]); return [t, Math.atan2(dot3(c, b), dot3(c, a))]; }));  // (once each, not in the sort)
+    return tris.slice().sort((x, y) => angle.get(x) - angle.get(y));
   });
 }
 /* The twisted sphere (Adams, Edgar, Hollander and Jacoby's kaleidoscope, as Twisted on the plane): the sphere of hexagons,
@@ -6269,14 +6278,14 @@ function gridGraph(g) {
   const edgeTiles = new Map(), normal = new Float64Array(3 * nv);
   const key = (a, b) => (a < b ? a * nv + b : b * nv + a);
   for (let t = 0; t < g.n; t++) {
-    const [a, b, c] = [0, 1, 2].map((j) => g.poly[k * t + j]);
-    const n = cross([0, 1, 2].map((d) => V[3 * b + d] - V[3 * a + d]), [0, 1, 2].map((d) => V[3 * c + d] - V[3 * a + d]));
+    const a = g.poly[k * t], b = g.poly[k * t + 1], c = g.poly[k * t + 2];
+    const n = cross([V[3 * b] - V[3 * a], V[3 * b + 1] - V[3 * a + 1], V[3 * b + 2] - V[3 * a + 2]], [V[3 * c] - V[3 * a], V[3 * c + 1] - V[3 * a + 1], V[3 * c + 2] - V[3 * a + 2]]);
     for (let j = 0; j < k; j++) {
       const p = g.poly[k * t + j], q = g.poly[k * t + (j + 1) % k];
       if (p === q) continue;  // a pentagon's repeated corner (sphere of hexagons)
       if (!nbrs[p].includes(q)) { nbrs[p].push(q); nbrs[q].push(p); }
-      const e = key(p, q);
-      edgeTiles.set(e, [...(edgeTiles.get(e) ?? []), t]);
+      const e = key(p, q), sides = edgeTiles.get(e);
+      if (sides) sides.push(t); else edgeTiles.set(e, [t]);
       if (tileOf[p] < 0) { tileOf[p] = t; cornerOf[p] = j; }
       for (let d = 0; d < 3; d++) normal[3 * p + d] += n[d];
     }
@@ -6444,14 +6453,23 @@ function startList(g) {
   // a turned corner is found again as the corner within 1e-6 of it (it is off by rounding errors
   // only), among those of its cell of a coarse grid and of the 26 cells around (one is enough
   // unless it lies on a cell's side)
-  const cellOf = (p) => p.map((x) => Math.floor(x * 50) + 128), cellKey = ([i, j, k]) => (i * 256 + j) * 256 + k;
+  // (in numbers, not arrays: hundreds of thousands of turns on a large grid)
+  const cellOf = (x) => Math.floor(x * 50) + 128, cellKey = (i, j, k) => (i * 256 + j) * 256 + k;
   const cells = new Map();
-  for (let v = 0; v < nv; v++) { const k = cellKey(cellOf(at(v))); cells.set(k, [...(cells.get(k) ?? []), v]); }
-  const near = (p, k) => cells.get(k)?.find((w) => Math.hypot(V[3 * w] - p[0], V[3 * w + 1] - p[1], V[3 * w + 2] - p[2]) < 1e-6);
+  for (let v = 0; v < nv; v++) {
+    const k = cellKey(cellOf(V[3 * v]), cellOf(V[3 * v + 1]), cellOf(V[3 * v + 2])), list = cells.get(k);
+    if (list) list.push(v); else cells.set(k, [v]);
+  }
+  const near = (x, y, z, k) => {
+    for (const w of cells.get(k) ?? []) { const dx = V[3 * w] - x, dy = V[3 * w + 1] - y, dz = V[3 * w + 2] - z; if (dx * dx + dy * dy + dz * dz < 1e-12) return w; }
+    return undefined;
+  };
   const turned = (m, v) => {
-    const p = m.map((row) => row[0] * V[3 * v] + row[1] * V[3 * v + 1] + row[2] * V[3 * v + 2]), c = cellOf(p);
-    let w = near(p, cellKey(c));
-    for (let d = 0; w === undefined && d < 27; d++) w = near(p, cellKey([c[0] + (d % 3) - 1, c[1] + (Math.floor(d / 3) % 3) - 1, c[2] + Math.floor(d / 9) - 1]));
+    const vx = V[3 * v], vy = V[3 * v + 1], vz = V[3 * v + 2];
+    const x = m[0][0] * vx + m[0][1] * vy + m[0][2] * vz, y = m[1][0] * vx + m[1][1] * vy + m[1][2] * vz, z = m[2][0] * vx + m[2][1] * vy + m[2][2] * vz;
+    const i = cellOf(x), j = cellOf(y), k = cellOf(z);
+    let w = near(x, y, z, cellKey(i, j, k));
+    for (let d = 0; w === undefined && d < 27; d++) w = near(x, y, z, cellKey(i + (d % 3) - 1, j + (Math.floor(d / 3) % 3) - 1, k + Math.floor(d / 9) - 1));
     return w;
   };
   const [v0, f0] = firstStart(g, G), q0 = mid(v0, f0);
@@ -6461,18 +6479,19 @@ function startList(g) {
   // the face's other corners, the next one counterclockwise from A (seen from outside) first: B
   const otherCentres = centres.filter((c) => c !== O), turn = (c) => dot3(cross(A, c), O);
   const otherCorners = F.filter((c) => c !== A).sort((c1, c2) => turn(c2) - turn(c1));
-  const depth = (q) => Math.min(dot3(q, O) - Math.max(...otherCentres.map((c) => dot3(q, c))), dot3(q, A) - Math.max(...otherCorners.map((c) => dot3(q, c))));
+  const most = (q, list) => { let m = -Infinity; for (const c of list) m = Math.max(m, dot3(q, c)); return m; };
+  const depth = (q) => Math.min(dot3(q, O) - most(q, otherCentres), dot3(q, A) - most(q, otherCorners));
   const edgeKey = (a, b) => Math.min(a, b) * nv + Math.max(a, b), done = new Set(), picks = [];
   for (let v = 0; v < nv; v++) for (const w of G.nbrs[v]) {
     if (done.has(edgeKey(v, w))) continue;
     let best = null, flipped = false;
     for (const m of rots) {
-      const a = turned(m, v), b = turned(m, w), near = depth(mid(a, b));
+      const a = turned(m, v), b = turned(m, w), q = mid(a, b), near = depth(q);
       done.add(edgeKey(a, b));
       flipped ||= a === w && b === v;
       // an edge across the kite's border has a copy on each of its sides, as deep: the one on the
       // side of the face's next corner, always, so that the border's half edges stick out on one side
-      const side = dot3(mid(a, b), otherCorners[0]);
+      const side = dot3(q, otherCorners[0]);
       if (!best || near > best.near + 1e-9 || (near > best.near - 1e-9 && side > best.side)) best = { a, b, near, side };
     }
     picks.push({ ...best, flipped });

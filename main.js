@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.85';
+const VERSION = '0.4.86';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -16384,7 +16384,7 @@ function updateStats() {
   $('seekCountOpen').hidden = !finite || busy;
   $('seekCount').hidden = !finite || busy || lifePlayer();  // (folded: the step alone, beside the title; Life's, in its title)
   if (finite) { $('seekCount').textContent = fmt(cur); $('seekCountOpen').textContent = `${fmt(cur)} / ${fmt(far)}`; }
-  if (!walk.life) $('ranking').hidden = $('rankTitles').hidden = true;
+  if (!walk.life && !walk.battle) $('ranking').hidden = $('rankTitles').hidden = true;  // (a battle's shown by renderWalkGauges: never hidden in between, its rows' slides kept)
   const time = spaceTimeOn() && !!stack, rows = walk.rows;
   document.querySelector('.stage-bar .stats').hidden = !time && !rows;
   if (time || rows) {  // Space-time: its generation, its cubes up to it; Elementary: its live cells up to it (see elementaryRows)

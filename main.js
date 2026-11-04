@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.75';
+const VERSION = '0.4.76';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -7279,8 +7279,8 @@ function battlePlayer(g, grid, S, starts, digits, pen = penetration) {
   // s's head at corner c, on enemy o's chain (Penetrating 2 along the grid): o's chain not cut but pushed back, its corner
   // there (its last time there) let go: at its tail, gone; else a way round c from the corner before to the one after,
   // on the side away from s; the tiles it goes round s's land if o's (its border pulled back). o's walls then: the two
-  // edges at c gone, its walls' pieces joined again from its chain, each new edge of the way round closing a loop giving
-  // it the loop's smaller side, as its head's do (see grow)
+  // edges at c gone, each new edge of the way round closing a loop giving it the loop's smaller side, as its head's do
+  // (see grow)
   const dent = (o, c, s) => {
     const C = chains[o], x = C.nodes.get(c)?.at(-1);
     if (x === undefined) return;
@@ -7299,20 +7299,14 @@ function battlePlayer(g, grid, S, starts, digits, pen = penetration) {
       for (const t of round.tiles) if (land[t] === o + 1) own(t, s);
     }
     for (const [a, b] of gone) { const j = L.index.get(G.key(a, b)); if (j !== undefined) cutsOf[o][j]--; }
-    const parent = wallsOf[o], fresh = new Set(added.map(([a, b]) => G.key(a, b)));
-    freshWalls(o);
-    const Q = chainOf(o);
-    for (let m = 1; m < Q.length; m++) {
-      if (Q[m] === Q[m - 1] || fresh.has(G.key(Q[m - 1], Q[m]))) continue;
-      const a = unionFind(parent, Q[m - 1]), b = unionFind(parent, Q[m]);
-      if (a !== b) parent[b] = a;
-    }
-    for (const [a, b] of added) if (closeWall(o, a, b)) break;  // (its body started again: the rest of the way round gone with it)
+    // (its walls' union-find kept: too joined after the two edges gone, which a closing's own search sees, see closeWall)
+    for (const [a, b] of added) closeWall(o, a, b, false);
+    eraseLoops(o);  // (the way round by corners its chain held: those loops let go)
   };
   // a wall of s's from corner a to b (along the grid) added: its link cut once more; closing a loop, the first time
   // that link is, s's land the smaller side (see grow); with Penetrating 2 its body then starts again from its head
-  // (true: it did)
-  const closeWall = (s, a0, b0) => {
+  // (true: it did); by a way round (head: false), the land only, its loops let go after (see eraseLoops)
+  const closeWall = (s, a0, b0, head = true) => {
     const j = L.index.get(G.key(a0, b0));
     if (j === undefined) return false;
     const first = cutsOf[s][j]++ === 0, p = wallsOf[s], a = unionFind(p, a0), b = unionFind(p, b0);
@@ -7321,8 +7315,28 @@ function battlePlayer(g, grid, S, starts, digits, pen = penetration) {
     const X = smallerSide(L, cutsOf[s], j);
     if (!X) return false;
     for (const t of X) if (land[t] !== s + 1) own(t, s);
-    if (pen === 2) { restart(s); return true; }
+    if (pen === 2 && head) { restart(s); return true; }
     return false;
+  };
+  // s's chain along the grid made a path again (a way round may go by corners it holds): from its tail, a corner met again,
+  // the loop since let go (its edges' links counted down; the edge after it the same link as before)
+  const eraseLoops = (s) => {
+    const C = chains[s], seen = new Map();
+    for (let x = C.tail; x >= 0; x = C.next[x]) {
+      const y = seen.get(C.corner[x]);
+      if (y !== undefined) {
+        for (let z = C.next[y], last = false, before = C.corner[y]; !last; z = C.next[y]) {
+          last = z === x;
+          const l = L.index.get(G.key(before, C.corner[z]));
+          if (l !== undefined) cutsOf[s][l]--;
+          before = C.corner[z];
+          if (!last) seen.delete(C.corner[z]);
+          unlink(s, z);
+        }
+        x = y;
+      }
+      seen.set(C.corner[x], x);
+    }
   };
   // Penetrating 2: a loop closed, its inside s's land and its body too (on cells its tiles; along the grid the loop's,
   // inside), its body then only its head: its walls gone with it
@@ -7349,10 +7363,7 @@ function battlePlayer(g, grid, S, starts, digits, pen = penetration) {
       if (j !== undefined) cutsOf[s][j]--;
       unlink(s, x);
     }
-    const parent = wallsOf[s], Q = chainOf(s);
-    freshWalls(s);
-    for (let m = 1; m < Q.length; m++) { const a = unionFind(parent, Q[m - 1]), b = unionFind(parent, Q[m]); if (a !== b) parent[b] = a; }
-    return true;
+    return true;  // (its walls' union-find kept: too joined now, which a closing's own search sees, see closeWall)
   };
   // Penetrating 3: a line's edge from corner a to b, its link (undefined: none)
   const linkOf = (a, b) => L.index.get(G.key(a, b));
@@ -7435,8 +7446,16 @@ function battlePlayer(g, grid, S, starts, digits, pen = penetration) {
         }
       }
       landDirty = true;
+    } else if (closed[x] && closedCount[o] >= outside[o]) {  // (two closed regions joined: as large as its outside or more, all made again)
+      let area = 0;
+      const seen = new Set([x]), queue = [x];
+      while (queue.length && area <= outside[o]) {
+        const t = queue.pop();
+        area++;
+        for (let m = L.start[t]; m < L.start[t + 1]; m++) { const u = L.other[m]; if (!seen.has(u) && !lineOf[o][L.via[m]]) { seen.add(u); queue.push(u); } }
+      }
+      if (area > outside[o]) remakeLine(o); else largest[o] = Math.max(largest[o], area);
     }
-    if (closedCount[o] >= outside[o]) remakeLine(o);
   };
   // Penetrating 4: each walker's contact with each enemy's line (see step), and whether tiles t and u lie on one side of
   // o's line round the corners it went along: joined by the tiles round them, through no edge of o's line
@@ -7466,17 +7485,17 @@ function battlePlayer(g, grid, S, starts, digits, pen = penetration) {
     for (let t = 0; t < g.n; t++) { land[t] = landOwner(t) + 1; if (land[t]) landCount[land[t] - 1]++; }
     landDirty = false;
   };
-  // the edges of s's line as drawn (Penetrating 2: its chain's, Penetrating 3: its line's), corner pairs
-  const edgesOf = (s) => {
-    if (lined) return [...linksOf[s]].map(cornersOf);
+  // the edges of s's line as drawn (Penetrating 2: its chain's, Penetrating 3 and 4: its line's), their links
+  const lineLinks = (s) => {
+    if (lined) return [...linksOf[s]];
     const Q = chainOf(s), out = [];
-    for (let q = 1; q < Q.length; q++) if (Q[q] !== Q[q - 1]) out.push([Q[q - 1], Q[q]]);
+    for (let q = 1; q < Q.length; q++) if (Q[q] !== Q[q - 1]) { const l = linkOf(Q[q - 1], Q[q]); if (l !== undefined) out.push(l); }
     return out;
   };
   // each walker's worth as it is: its body; with bite, its land (its tiles, counted)
   const worth = () => { freshLand(); return bite ? [...landCount] : [...size]; };
   const P = {
-    K, g, grid, pen, bite, chained, lined, ownLines: chained || lined, chainOf, edgesOf, places, from, size, dead, alive, living, worth, heads: () => places.map((p) => p[i]),
+    K, g, grid, pen, bite, chained, lined, ownLines: chained || lined, chainOf, lineLinks, places, from, size, dead, alive, living, worth, heads: () => places.map((p) => p[i]),
     get land() { freshLand(); return land; }, remakeLine,  // (remakeLine: a line's land made again whole, to check it)
     get step() { return i; }, get n() { return n; }, get peak() { return peak; }, get met() { return met; },
     to(j) {
@@ -14585,13 +14604,13 @@ function pathSegments(P = null) {
   const centre = (t) => [sh.cen[3 * t] * R, sh.cen[3 * t + 1] * R, sh.cen[3 * t + 2] * R];
   const normal = (t) => [sh.nrm[3 * t], sh.nrm[3 * t + 1], sh.nrm[3 * t + 2]];
   const mid = (p, q) => p.map((x, d) => (x + q[d]) / 2);
-  const chains = P?.ownLines ? P.living().map((s) => [s, P.edgesOf(s)]) : null;  // (Penetrating 2 and 3: each living walker's line as it is now, its edges)
+  const chains = P?.ownLines ? P.living().map((s) => [s, P.lineLinks(s)]) : null;  // (Penetrating 2 to 4: each living walker's line as it is now, its links)
   const out = new Float32Array(11 * 2 * Math.max(1, chains ? chains.reduce((m, [, Q]) => m + Q.length, 0) : (P ? P.K : 1) * n)), at = new Int32Array(n + 1);
-  let j = 0;
+  let j = 0, dst = out;
   const put = (a, b, nr, ends, i) => {  // (in place: millions of them)
     const o = 11 * j++;
-    out[o] = a[0]; out[o + 1] = a[1]; out[o + 2] = a[2]; out[o + 3] = b[0]; out[o + 4] = b[1]; out[o + 5] = b[2];
-    out[o + 6] = nr[0]; out[o + 7] = nr[1]; out[o + 8] = nr[2]; out[o + 9] = ends; out[o + 10] = i;
+    dst[o] = a[0]; dst[o + 1] = a[1]; dst[o + 2] = a[2]; dst[o + 3] = b[0]; dst[o + 4] = b[1]; dst[o + 5] = b[2];
+    dst[o + 6] = nr[0]; dst[o + 7] = nr[1]; dst[o + 8] = nr[2]; dst[o + 9] = ends; dst[o + 10] = i;
   };
   const edge = (v0, v1, t0, t1, i) => {  // along the grid: the edge from v0 to v1, on each tile beside it (t0, t1)
     for (const t of t0 === t1 ? [t0] : [t0, t1]) {
@@ -14599,11 +14618,28 @@ function pathSegments(P = null) {
       if (ends[0] && ends[1]) put(ends[0], ends[1], normal(t), 3, i);
     }
   };
-  if (chains) {  // (its range in ranges, walker after walker)
-    const G = gridGraph(g), ranges = [];
-    for (const [s, edges] of chains) {
+  if (chains) {  // (its range in ranges, walker after walker; each link's segments made once a shape, then copied)
+    const G = gridGraph(g), L = battleLinks(g, true), ranges = [];
+    if (g.linkSegments?.m !== sh.m || g.linkSegments.R !== R) {
+      const table = new Float32Array(11 * 2 * L.eu.length), count = new Uint8Array(L.eu.length);
+      dst = table;
+      for (const [e, sides] of G.edgeTiles) {
+        const l = L.index.get(e);
+        if (l === undefined) continue;
+        j = 2 * l;
+        edge(Math.floor(e / G.nv), e % G.nv, sides[0], sides[1] ?? sides[0], 0);
+        count[l] = j - 2 * l;
+      }
+      g.linkSegments = { m: sh.m, R, table, count };
+      dst = out; j = 0;
+    }
+    const { table, count } = g.linkSegments;
+    for (const [s, links] of chains) {
       const first = j;
-      for (const [a, b] of edges) { const sides = G.edgeTiles.get(G.key(a, b)); if (sides) edge(a, b, sides[0], sides[1] ?? sides[0], s); }
+      for (const l of links) {
+        out.set(table.subarray(22 * l, 11 * (2 * l + count[l])), 11 * j);
+        for (let q = 0; q < count[l]; q++) out[11 * j++ + 10] = s;
+      }
       ranges.push([first, j]);
     }
     return { data: out.subarray(0, 11 * j), ranges };

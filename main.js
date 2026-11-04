@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.107';
+const VERSION = '0.4.108';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -7433,9 +7433,9 @@ function battleOf(P) {
   const names = [shownSym, ...RIVALS.slice(0, P.K - 1).map((id) => formulaOf($(id).value).sym)];
   return { player: P, names, winner: battleWinner(P) };
 }
-// the battle's title: its walkers' numbers, to its end (their scores, and who won, in the ranking under it)
+// the battle's title: its walkers' numbers, each in its colour, to its end (their scores, and who won, in the ranking under it)
 function battleScore() {
-  const { names } = walk.battle, name = (s) => withIcons(names[s]);
+  const { names } = walk.battle, name = (s) => `<span style="color:${LIFE_COLOURS[s]}">${withIcons(names[s])}</span>`;  // (each in its walker's colour)
   return names.map((_, s) => name(s)).join(' · ');  // (their scores, and at the end who won, in the ranking under it)
 }
 // A battle's closed areas at the step it is at (P: its player; Area, see drawSphere), each tile's walker + 1 (0: none):

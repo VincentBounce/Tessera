@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.21';
+const VERSION = '0.4.22';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -3465,7 +3465,7 @@ function walkRepeat() {
   const P = fractionPeriod(), most = 2_000_000;
   if (!P || P.s0 + P.L > most) return null;
   const { s0, L, digit } = P, tries = Math.min(24, Math.floor((most - s0) / L)), n = s0 + tries * L;
-  const step = STEPPERS[current.mode](), { lattice: lat, cells } = MODES[current.mode], round = (v) => Math.round(v * 1e6);
+  const step = STEPPERS[current.mode](), { lattice: lat, cells } = MODES[current.mode], round = (v) => roundOff(v, 1e6);
   const pos = new Float64Array(3 * (n + 1)), code = new Int32Array(n + 1), codes = new Map();
   code[0] = -1;  // the start has no last step
   for (let i = 0; i < n; i++) {
@@ -3715,7 +3715,7 @@ const ears = (shown) => {
   const P = shown.map(([x, y]) => [(x - shown[0][0]) / size, (y - shown[0][1]) / size]);
   const way = Math.sign(signedArea(P)), turn = (a, b, c) => ((P[b][0] - P[a][0]) * (P[c][1] - P[a][1]) - (P[b][1] - P[a][1]) * (P[c][0] - P[a][0])) * way, L = P.length, out = [];
   if (P.every((_, i) => turn((i + L - 1) % L, i, (i + 1) % L) >= 0)) { for (let i = 1; i < L - 1; i++) out.push(0, i, i + 1); return out; }
-  const shape = P.map((p, i) => `${Math.round(Math.hypot(P[(i + 1) % L][0] - p[0], P[(i + 1) % L][1] - p[1]) * 1e9)},${Math.round(turn(i, (i + 1) % L, (i + 2) % L) * 1e9)}`).join(';');  // (the same shape to a billionth: a corner nearly in line, in or out, not another's; before v0.4.3 to 1/10,000, holes on the rosette sphere)
+  const shape = P.map((p, i) => `${roundOff(Math.hypot(P[(i + 1) % L][0] - p[0], P[(i + 1) % L][1] - p[1]), 1e9)},${roundOff(turn(i, (i + 1) % L, (i + 2) % L), 1e9)}`).join(';');  // (the same shape to a billionth: a corner nearly in line, in or out, not another's; before v0.4.3 to 1/10,000, holes on the rosette sphere)
   if (earsMemo.has(shape)) return earsMemo.get(shape);
   earsMemo.set(shape, out);
   const left = [...P.keys()];
@@ -4369,7 +4369,7 @@ const meshCache = weakCache();
 function vertexStore() {
   const verts = [], whole = [], first = new Map(), next = [];
   const add = (x, y, z) => {
-    const X = Math.round(x * 1e9), Y = Math.round(y * 1e9), Z = Math.round(z * 1e9), h = X + 3 * Y + 7 * Z;
+    const X = roundOff(x, 1e9), Y = roundOff(y, 1e9), Z = roundOff(z, 1e9), h = X + 3 * Y + 7 * Z;
     for (let v = first.get(h) ?? -1; v >= 0; v = next[v]) if (whole[3 * v] === X && whole[3 * v + 1] === Y && whole[3 * v + 2] === Z) return v;
     const v = verts.length / 3;
     next.push(first.get(h) ?? -1); first.set(h, v); whole.push(X, Y, Z); verts.push(x, y, z);
@@ -4636,7 +4636,7 @@ function hullColourings(sphere) {
   // swapping its groups: each group the first's image by one of them, all groups onto groups. Its symmetries, by construction:
   // the cube's 48 (axes swapped, signs changed) that keep its corners, every hull solid laid on the axes. Before v0.3.90, a
   // kind's faces taken whatever their families: the bicupola's 10 squares, its 2 caps with its 8 sides, 36 to 66 cells a colour)
-  const corners = HULL_SOLIDS[sphere](), key3 = (p) => p.map((v) => Math.round(v * 1e6)).join(), cornerKeys = new Set(corners.map(key3));
+  const corners = HULL_SOLIDS[sphere](), key3 = (p) => p.map((v) => roundOff(v, 1e6)).join(), cornerKeys = new Set(corners.map(key3));
   const signed = [[0, 1, 2], [0, 2, 1], [1, 0, 2], [1, 2, 0], [2, 0, 1], [2, 1, 0]].flatMap((ax) => [0, 1, 2, 3, 4, 5, 6, 7].map((s) => (p) => ax.map((a, d) => ((s >> d) & 1 ? -1 : 1) * p[a])));
   const symmetries = signed.filter((M) => corners.every((p) => cornerKeys.has(key3(M(p))))), faceAt = new Map(mids.map((m, q) => [key3(m), q]));
   const fair = (groups) => {
@@ -5161,7 +5161,7 @@ function mobiusMirror(kind, [a, b] = TILINGS[kind].basis) {
   const near = (z) => Math.abs(z - Math.round(z)) < 1e-4, among = (set) => (p) => { const [u, v] = frac(p); return set.some(([s, t]) => near(u - s) && near(v - t)); };
   const mids = polys.map((P) => W(meanPoint(P))), corners = polys.flat().map(W);
   const [inMids, inCorners] = [among(mids.map(frac)), among(corners.map(frac))], ys = [...mids, ...corners].map((p) => p[1]);
-  const cs = [...new Map([0, ...ys.flatMap((y) => ys.map((z) => (y + z) / 2))].map((c) => [Math.round(c * 1e6), c])).values()].sort((p, q) => Math.abs(p) - Math.abs(q));  // (through the origin first; each once, as found: rounded, a strip's twin corners 10⁻⁶ apart, off their fine grid, see stripFrame)
+  const cs = [...new Map([0, ...ys.flatMap((y) => ys.map((z) => (y + z) / 2))].map((c) => [roundOff(c, 1e6), c])).values()].sort((p, q) => Math.abs(p) - Math.abs(q));  // (through the origin first; each once, as found: rounded, a strip's twin corners 10⁻⁶ apart, off their fine grid, see stripFrame)
   const [A, B] = [W([1, 0]), W([0, 1])], tiles = [-3, -2, -1, 0, 1, 2, 3].flatMap((i) => [-3, -2, -1, 0, 1, 2, 3].flatMap((j) => polys.map((P) => P.map(W).map(([, y]) => y + i * A[1] + j * B[1]))));
   const between = (c) => !tiles.some((ys) => Math.min(...ys) < c - 1e-6 && Math.max(...ys) > c + 1e-6);  // (no tile across the line)
   let through = null;
@@ -9189,12 +9189,11 @@ function drawMotif(ctx) {
     if (tiles.length) drawMotifFace(ctx, tiles[0]);
     return;
   }
-  const { kind, W, xy } = walk.plane, cell = !APERIODIC[kind] && !planeShape(kind, W) && planeMotifCells(), motif = APERIODIC[kind]?.(W).core ?? planeShape(kind, W)?.core ?? cell.map((t) => planeCorners(kind, ...xy(t))), sides = new Map();
-  for (const P of motif) P.forEach((p, i) => { const q = P[(i + 1) % P.length], key = [pointKey(...p), pointKey(...q)].sort().join('|'); sides.set(key, sides.has(key) ? null : [p, q]); });
+  const { kind, W, xy } = walk.plane, cell = !APERIODIC[kind] && !planeShape(kind, W) && planeMotifCells(), motif = APERIODIC[kind]?.(W).core ?? planeShape(kind, W)?.core ?? cell.map((t) => planeCorners(kind, ...xy(t)));
   turnLayer(ctx);
   ctx.strokeStyle = motifColour();
   ctx.beginPath();
-  for (const side of sides.values()) if (side) { ctx.moveTo(ox + side[0][0] * s, oy + side[0][1] * s); ctx.lineTo(ox + side[1][0] * s, oy + side[1][1] * s); }
+  for (const side of rimSides(motif.flatMap(polySides), sideKey)) { ctx.moveTo(ox + side[0][0] * s, oy + side[0][1] * s); ctx.lineTo(ox + side[1][0] * s, oy + side[1][1] * s); }
   ctx.stroke();
   if (cell && cell.length > 1) {  // (a lattice cell of several: its first in green, as its tooltip's cells)
     ctx.strokeStyle = cssColour('--cell');

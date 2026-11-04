@@ -121,3 +121,16 @@ Layers) done at once for every particle (Jacobi): a pair's push by their densiti
 the bottom's weight; drawn as metaballs. Tools Drag, Attract, Repel. A step in seven passes (moved, the particles binned
 as in particles/, densities, pushes). `liquidCheck()` in its console: one GPU step against the CPU (every pair), and four
 layers settled from a scatter, the heaviest at the bottom.
+
+## Protocells prototype (protocells/)
+A separate page (`protocells/index.html`, `protocells.js`), not part of main.js: Zwicker, Seyboldt, Weber, Hyman and
+Jülicher's active droplets (Nature Physics 2017) in liquid/'s engine (copied, no gravity, one mass, Heat a random kick
+each step): particles of food F, droplet D and waste W, D shunning F and W (Rest other, lower), so D gathers into
+droplets. Each step each particle may change its own species from its neighbours' at the step's start, by a hash of its
+id and the step (PCG, the same on the CPU): F with 3 D neighbours at least turns D (Grow: a stray D feeds nothing, else
+it spreads everywhere), D turns W (Decay), W with no D near turns F (Recycle). Nothing tells a droplet to divide: from
+one droplet they grow, hollow (a waste core), split and multiply in a sea of food (Grow 0.01, Decay 0.002, Recycle 0.003,
+Rest other 2.5, Heat 0.01; less heat and they starve). A step in eight passes (liquid/'s seven, the D neighbours counted
+with the densities, the species changed with the push, then a clock ticked: the last slot of the bins' counts, the 8
+storage buffers WebGPU allows taken). `protocellsCheck()` in its console: one GPU step against the CPU (every pair, the
+reactions too, none differing), F + D + W = n, and a run from one droplet till it divides.

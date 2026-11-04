@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Protocells</title>
+<style>
+  /* Liquid's look (liquid/index.html): its panel, its one button and its tabs */
+  :root { --bg: #0b0d12; --panel: #141821; --line: #262c39; --text: #d8dde8; --dim: #8a93a6; --accent: #7aa2ff; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; background: var(--bg); color: var(--text); font: 13px/1.35 system-ui, -apple-system, Segoe UI, sans-serif; }
+  body { display: flex; }
+  #panel { width: 270px; flex: none; height: 100%; overflow-y: auto; background: var(--panel); border-right: 1px solid var(--line); padding: 12px; }
+  #stage { flex: 1; position: relative; min-width: 0; }
+  #view { position: absolute; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; }
+  h1 { font-size: 15px; margin: 0 0 2px; letter-spacing: .02em; }
+  .sub { color: var(--dim); font-size: 11.5px; margin-bottom: 10px; }
+  .sec { margin: 12px 0 5px; color: var(--dim); font-size: 11px; text-transform: uppercase; letter-spacing: .06em; }
+  /* The one button; .on is its active state, [disabled] its greyed one */
+  .btn { appearance: none; border: 1px solid var(--line); background: #1b202b; color: var(--text); font: inherit; padding: 5px 9px; border-radius: 6px; cursor: pointer; }
+  .btn:hover { background: #222838; }
+  .btn.on { background: #2b3a5e; border-color: var(--accent); color: #fff; }
+  .btn[disabled] { opacity: .4; cursor: default; }
+  /* One choice among several: buttons joined in one frame */
+  .tabs { display: flex; flex-wrap: wrap; }
+  .tabs .btn { border-radius: 0; margin-left: -1px; flex: 1 1 auto; }
+  .tabs .btn:first-child { border-radius: 6px 0 0 6px; margin-left: 0; }
+  .tabs .btn:last-child { border-radius: 0 6px 6px 0; }
+  .tabs .btn.on { position: relative; z-index: 1; }
+  /* A group of many choices (the tools): its buttons' sides tighter, to fit the panel */
+  .tabs.tight .btn { padding-left: 4px; padding-right: 4px; }
+  .row { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+  label.range { display: flex; align-items: center; gap: 8px; margin: 4px 0; }
+  label.range span { width: 62px; color: var(--dim); }
+  label.range input { flex: 1; }
+  label.range b { width: 38px; text-align: right; font-weight: normal; font-variant-numeric: tabular-nums; }
+  #stats { white-space: pre-line; }
+  #stats, #help { margin-top: 12px; color: var(--dim); font-size: 11.5px; font-variant-numeric: tabular-nums; }
+  #fail { position: absolute; inset: 0; display: none; align-items: center; justify-content: center; text-align: center; padding: 20px; }
+  @media (max-width: 700px) {
+    body { flex-direction: column-reverse; }
+    #panel { width: 100%; height: 45%; border-right: 0; border-top: 1px solid var(--line); }
+  }
+</style>
+</head>
+<body>
+<div id="panel">
+  <h1>Protocells</h1>
+  <div class="sub">Active droplets (Zwicker, Seyboldt, Weber, Hyman and Jülicher, 2017): a droplet eats the food it touches and decays into waste everywhere, the waste turned back into food far from droplets; the droplets grow, divide, drift to food and merge, with no rule for any of it</div>
+  <div class="sec">Particles</div>
+  <div class="tabs" id="counts"></div>
+  <div class="sec">Steps a frame</div>
+  <div class="tabs" id="steps"></div>
+  <div class="sec">Start</div>
+  <div class="tabs" id="starts"></div>
+  <div class="sec">View</div>
+  <div class="tabs" id="views"></div>
+  <div class="sec">Tool</div>
+  <div class="tabs tight" id="tools"></div>
+  <div class="sec">Pour</div>
+  <div class="tabs" id="pours"></div>
+  <label class="range"><span>Brush</span><input id="brush" type="range" min="0.02" max="0.3" step="0.01"><b></b></label>
+  <div class="sec">Reactions (a step)</div>
+  <label class="range"><span>Grow</span><input id="grow" type="range" min="0" max="0.05" step="0.001"><b></b></label>
+  <label class="range"><span>Decay</span><input id="decay" type="range" min="0" max="0.01" step="0.0001"><b></b></label>
+  <label class="range"><span>Recycle</span><input id="recycle" type="range" min="0" max="0.02" step="0.0005"><b></b></label>
+  <div class="sec">Liquid</div>
+  <label class="range"><span>Heat</span><input id="heat" type="range" min="0" max="0.1" step="0.001"><b></b></label>
+  <label class="range"><span>Stiffness</span><input id="stiffness" type="range" min="0.001" max="0.03" step="0.001"><b></b></label>
+  <label class="range"><span>Near</span><input id="near" type="range" min="0" max="0.05" step="0.001"><b></b></label>
+  <label class="range"><span>Rest same</span><input id="same" type="range" min="1" max="8" step="0.1"><b></b></label>
+  <label class="range"><span>Rest other</span><input id="other" type="range" min="1" max="8" step="0.1"><b></b></label>
+  <label class="range"><span>Viscosity</span><input id="viscosity" type="range" min="0" max="1" step="0.01"><b></b></label>
+  <div class="row" style="margin-top:8px"><button class="btn" id="play">Pause</button><button class="btn" id="restart">Restart</button></div>
+  <div id="stats"></div>
+  <div id="help">Three species of particle in one liquid: food (green), droplet (pink) and waste (brown). Droplet shuns the other two (Rest other, lower than Rest same: their pairs push harder), so it gathers into droplets. Each step, each particle may change its own species, by its neighbours' at the step's start: food touching a droplet (3 droplet neighbours at least: a stray droplet particle feeds nothing) turns droplet (Grow: the droplet grows at its surface), droplet turns waste (Decay: everywhere, its core too) and waste with no droplet near turns food (Recycle: the fuel, which keeps it all away from rest). Heat: a random kick on each particle each step (it stirs the food in: less, and the droplets starve). Start: one droplet in the middle, or an emulsion (droplet scattered). A drag in the box: Drag carries the liquid along, Attract draws it, Repel pushes it, Emit pours the species chosen in Pour (up to twice the particles), Delete takes the liquid away, within the Brush. View: Liquid, each species as one body (metaballs); Particles, each a disc of its species' colour. The wheel zooms round the cursor. Droplets: those of at least 24 particles, each linked within a reach. The link keeps all the settings.</div>
+</div>
+<div id="stage"><canvas id="view"></canvas><div id="fail"></div></div>
+<!-- The script fetched fresh each time (a prototype changing often: never an old one from the cache) -->
+<script>const js = document.createElement('script'); js.src = 'protocells.js?' + Date.now(); document.body.append(js);</script>
+</body>
+</html>

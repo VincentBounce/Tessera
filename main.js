@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.64';
+const VERSION = '0.4.65';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -2817,6 +2817,9 @@ function rivalsDigits(base, n, then) {
   }
   return Object.keys(rivalWorkers).length ? null : out;
 }
+// whether a battle's other numbers' digits are all there (or wrong: the walk built says it), before its walk is built:
+// else then() once they are, the walk built only then (A's alone shown meanwhile, whole, was a flash of another walk)
+const rivalsReady = (then) => !battleOn() || rivalsDigits(MODES[$('mode').value].base, digitsNeeded(), then) !== null;
 const stopRivals = () => { for (const id of Object.keys(rivalWorkers)) { rivalWorkers[id].terminate(); delete rivalWorkers[id]; } };
 
 // The digits in use: n in total, the integer part (always included) then the digits after the point
@@ -3410,6 +3413,7 @@ function compute() {
   if (kind === 'seq') {
     setCurrent(seqDigits(F.ast, want, base), base, kind, kind === 'rat' ? smallExact(F.ast) : null);
     if (!elementaryReady(compute)) return;  // (Elementary's rows on their way: then all again, its digits cached)
+    if (!rivalsReady(compute)) return;  // (a battle's other numbers on their way, see rivalsReady)
     $('status').textContent = note;
     buildWalk();
     describe(base, n);
@@ -3422,6 +3426,7 @@ function compute() {
   const done = (entry, how) => {
     setCurrent(entry, base, kind, kind === 'rat' ? smallExact(F.ast) : null);
     if (!elementaryReady(() => done(entry, how))) return;  // (Elementary's rows on their way, see elementaryReady)
+    if (!rivalsReady(() => done(entry, how))) return;  // (a battle's other numbers on their way, see rivalsReady)
     const total = entry.total ?? current.head.length + current.digits.length;
     // the digits' time, then the walk's (millions of an ant's steps take far longer than its digits)
     const t0 = performance.now();

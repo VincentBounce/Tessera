@@ -12,7 +12,8 @@
  * density Σ (1 − q)³. A pair's push D = h ((k (ρ̄ − ρ₀) (1 − q) + kₙ ρ̄ₙ (1 − q)²), their densities
  * averaged, ρ₀ the rest density of the pair (one for two of a liquid, another, lower, for two
  * liquids: they shun each other, layers), plus Clavet's viscosity when they close in (σ u + β u²,
- * u their closing speed). Each takes the share of the other's mass: a heavy particle moves less
+ * u their closing speed, over the larger of their neighbours' weights Σ (1 − q): so all a particle's neighbours
+ * together take at most σ + β u of its closing speed, never more than it has, the step stable whatever σ in [0, 1]). Each takes the share of the other's mass: a heavy particle moves less
  * under the same pressure, and sinks.
  * The paper pushes the pairs one after another (each push seen by the next): a GPU pushes every
  * particle at once (Jacobi), each from the densities and places at the step's start, the pair's
@@ -73,7 +74,7 @@ const COMPUTE = PARAMS + `
 @group(0) @binding(5) var<storage, read_write> start: array<u32>;
 @group(0) @binding(6) var<storage, read_write> at: array<vec2u>;    // a particle's bin and place in it
 @group(0) @binding(7) var<storage, read_write> sorted: array<u32>;
-@group(0) @binding(8) var<storage, read_write> dens: array<vec2f>;  // the densities in the bins' order
+@group(0) @binding(8) var<storage, read_write> dens: array<vec4f>;  // the densities in the bins' order: Σw², Σw³, Σw
 fn cellOf(p: vec2f) -> vec2i { return clamp(vec2i(floor(p / P.f.yz)), vec2i(0), vec2i(P.a.yz) - 1); }
 fn binOf(c: vec2i) -> u32 { return u32(c.y * i32(P.a.y) + c.x); }
 fn inGrid(c: vec2i) -> bool { return all(c >= vec2i(0)) && all(c < vec2i(P.a.yz)); }
@@ -126,20 +127,21 @@ var<workgroup> part: array<u32, 256>;
 // its gap to p and the way out through it
 fn wallGap(p: vec2f, k: u32) -> f32 { var g = array(p.x, P.f.w - p.x, p.y, 1.0 - p.y); return g[k]; }
 fn wallOut(k: u32) -> vec2f { var o = array(vec2f(-1.0, 0.0), vec2f(1.0, 0.0), vec2f(0.0, -1.0), vec2f(0.0, 1.0)); return o[k]; }
-// One particle (in the bins' order): its density and near density from those in the bins round its own
+// One particle (in the bins' order): its density, near density and neighbours' weight from those in the bins round
+// its own
 @compute @workgroup_size(128) fn density(@builtin(global_invocation_id) id: vec3u) {
   let s = id.x; if (s >= P.a.x) { return; }
-  let p = near[2u * s].xy; let c = cellOf(p); var r = vec2f(0.0);
+  let p = near[2u * s].xy; let c = cellOf(p); var r = vec4f(0.0);
   for (var dy = -1; dy <= 1; dy++) { for (var dx = -1; dx <= 1; dx++) {
     let q = c + vec2i(dx, dy); if (!inGrid(q)) { continue; }
     let b = binOf(q);
     for (var t = start[b]; t < start[b + 1u]; t++) {
       if (t == s) { continue; }
       let d = length(near[2u * t].xy - p) / P.f.x;
-      if (d < 1.0) { let w = 1.0 - d; r += vec2f(w * w, w * w * w); }
+      if (d < 1.0) { let w = 1.0 - d; r += vec4f(w * w, w * w * w, w, 0.0); }
     }
   } }
-  for (var k = 0u; k < 4u; k++) { let d = 2.0 * wallGap(p, k) / P.f.x; if (d < 1.0) { let w = 1.0 - d; r += vec2f(w * w, w * w * w); } }
+  for (var k = 0u; k < 4u; k++) { let d = 2.0 * wallGap(p, k) / P.f.x; if (d < 1.0) { let w = 1.0 - d; r += vec4f(w * w, w * w * w, w, 0.0); } }
   dens[s] = r;
 }
 // The way from particle i to particle j, e apart (l long); two at one place (the walls' corners gather them) a way
@@ -166,7 +168,7 @@ fn way(e: vec2f, l: f32, i: u32, j: u32) -> vec2f {
         let u = way(e, l, i, sorted[t]); let w = 1.0 - r; let rj = dens[t]; let mj = P.m[u32(o.z)];
         let pressure = P.k.x * ((ri.x + rj.x) * 0.5 - select(P.k.w, P.k.z, o.z == me.z)) * w + P.k.y * (ri.y + rj.y) * 0.5 * w * w;
         let closing = dot(v - near[2u * t + 1u].xy, u) / h;
-        let viscous = select(0.0, w * (P.v.y * closing + P.v.z * closing * closing), closing > 0.0);
+        let viscous = select(0.0, w * (P.v.y * closing + P.v.z * closing * closing) / max(ri.z, rj.z), closing > 0.0);
         dx -= u * h * (pressure + viscous) * mj / (mi + mj);
       }
     }
@@ -179,7 +181,7 @@ fn way(e: vec2f, l: f32, i: u32, j: u32) -> vec2f {
       let u = wallOut(k); let w = 1.0 - r;
       let pressure = max(0.0, P.k.x * (ri.x - P.k.z) * w + P.k.y * ri.y * w * w);
       let closing = 2.0 * dot(v, u) / h;
-      let viscous = select(0.0, w * (P.v.y * closing + P.v.z * closing * closing), closing > 0.0);
+      let viscous = select(0.0, w * (P.v.y * closing + P.v.z * closing * closing) / ri.z, closing > 0.0);
       dx -= u * h * (pressure + viscous) * 0.5;
     }
   }
@@ -251,7 +253,7 @@ function scatter() {
   for (let i = 0; i < set.n; i++) s.set([r() * world.a, r(), i % 4, 0], i * 8);
   for (const b of [...states, ...Object.values(bins)]) b.destroy();
   states = [0, 1].map(() => buffer(s.byteLength)); device.queue.writeBuffer(states[0], 0, s);
-  bins = { near: buffer(set.n * 32), count: buffer(world.bins * 4), start: buffer((world.bins + 1) * 4), at: buffer(set.n * 8), sorted: buffer(set.n * 4), dens: buffer(set.n * 8) };
+  bins = { near: buffer(set.n * 32), count: buffer(world.bins * 4), start: buffer((world.bins + 1) * 4), at: buffer(set.n * 8), sorted: buffer(set.n * 4), dens: buffer(set.n * 16) };
   groups = [0, 1].map((f) => device.createBindGroup({ layout: pipes.layout, entries: [params, states[f], states[1 - f], bins.near, bins.count, bins.start, bins.at, bins.sorted, bins.dens].map((buffer, binding) => ({ binding, resource: { buffer } })) }));
   drawGroups = [];
   flip = 0;
@@ -385,14 +387,14 @@ async function checkStep() {
   const M = S.slice();
   for (let i = 0; i < n; i++) { const vy = f(S[i * 8 + 5] - f(f(pull()) * f(h))); M[i * 8 + 5] = vy; M[i * 8] = f(S[i * 8] + S[i * 8 + 4]); M[i * 8 + 1] = f(S[i * 8 + 1] + vy); }
   const way = (ex, ey, l, i, j) => { if (l > 0) return [ex / l, ey / l]; const a = ((Math.imul(Math.min(i, j), 2654435761) + Math.max(i, j)) >>> 8) * ((2 * Math.PI) / 16777216), s = i < j ? 1 : -1; return [Math.cos(a) * s, Math.sin(a) * s]; };
-  const D = new Float64Array(n * 2);
+  const D = new Float64Array(n * 3);
   for (let i = 0; i < n; i++) for (let j = 0; j < n; j++) {
     if (j === i) continue;
     const d = Math.hypot(M[j * 8] - M[i * 8], M[j * 8 + 1] - M[i * 8 + 1]) / h;
-    if (d < 1) { const w = 1 - d; D[i * 2] += w * w; D[i * 2 + 1] += w * w * w; }
+    if (d < 1) { const w = 1 - d; D[i * 3] += w * w; D[i * 3 + 1] += w * w * w; D[i * 3 + 2] += w; }
   }
   const gaps = (i) => [M[i * 8], f(a) - M[i * 8], M[i * 8 + 1], 1 - M[i * 8 + 1]], OUT = [[-1, 0], [1, 0], [0, -1], [0, 1]];
-  for (let i = 0; i < n; i++) for (const g of gaps(i)) { const d = (2 * g) / h; if (d < 1) { const w = 1 - d; D[i * 2] += w * w; D[i * 2 + 1] += w * w * w; } }
+  for (let i = 0; i < n; i++) for (const g of gaps(i)) { const d = (2 * g) / h; if (d < 1) { const w = 1 - d; D[i * 3] += w * w; D[i * 3 + 1] += w * w * w; D[i * 3 + 2] += w; } }
   for (let i = 0; i < n; i++) {
     const xi = M[i * 8], yi = M[i * 8 + 1], vx = M[i * 8 + 4], vy = M[i * 8 + 5], mi = MASSES[M[i * 8 + 2]];
     let dx = 0, dy = 0;
@@ -401,17 +403,17 @@ async function checkStep() {
       const ex = M[j * 8] - xi, ey = M[j * 8 + 1] - yi, l = Math.hypot(ex, ey), r = l / h;
       if (r < 1) {
         const [ux, uy] = way(ex, ey, l, i, j), w = 1 - r, mj = MASSES[M[j * 8 + 2]];
-        const pressure = set.stiffness * ((D[i * 2] + D[j * 2]) / 2 - (M[j * 8 + 2] === M[i * 8 + 2] ? set.same : set.other)) * w + set.near * ((D[i * 2 + 1] + D[j * 2 + 1]) / 2) * w * w;
+        const pressure = set.stiffness * ((D[i * 3] + D[j * 3]) / 2 - (M[j * 8 + 2] === M[i * 8 + 2] ? set.same : set.other)) * w + set.near * ((D[i * 3 + 1] + D[j * 3 + 1]) / 2) * w * w;
         const closing = ((vx - M[j * 8 + 4]) * ux + (vy - M[j * 8 + 5]) * uy) / h;
-        const viscous = closing > 0 ? w * (set.viscosity * closing + BETA * closing * closing) : 0, k = (h * (pressure + viscous) * mj) / (mi + mj);
+        const viscous = closing > 0 ? (w * (set.viscosity * closing + BETA * closing * closing)) / Math.max(D[i * 3 + 2], D[j * 3 + 2]) : 0, k = (h * (pressure + viscous) * mj) / (mi + mj);
         dx -= ux * k; dy -= uy * k;
       }
     }
     gaps(i).forEach((g, k) => {
       const r = (2 * g) / h;
       if (r < 1) {
-        const [ux, uy] = OUT[k], w = 1 - r, pressure = Math.max(0, set.stiffness * (D[i * 2] - set.same) * w + set.near * D[i * 2 + 1] * w * w);
-        const closing = (2 * (vx * ux + vy * uy)) / h, viscous = closing > 0 ? w * (set.viscosity * closing + BETA * closing * closing) : 0;
+        const [ux, uy] = OUT[k], w = 1 - r, pressure = Math.max(0, set.stiffness * (D[i * 3] - set.same) * w + set.near * D[i * 3 + 1] * w * w);
+        const closing = (2 * (vx * ux + vy * uy)) / h, viscous = closing > 0 ? (w * (set.viscosity * closing + BETA * closing * closing)) / D[i * 3 + 2] : 0;
         dx -= ux * h * (pressure + viscous) * 0.5; dy -= uy * h * (pressure + viscous) * 0.5;
       }
     });

@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.78';
+const VERSION = '0.4.79';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -6991,7 +6991,7 @@ const battleOn = () => walkTeams > 1 && BATTLE_MODES.includes($('mode').value);
 function renderWalkTeams() {
   const w = $('mode').value, here = NAV[w]?.[0] === 'Walk' && MODES[w].lattice === 'sphere';
   $('walkTeams').hidden = !here;
-  $('walkPenetration').hidden = !battleOn();
+  $('walkPenetration').hidden = $('battleRandom').hidden = !battleOn();
   $('digitsBSection').hidden = !battleOn();
   $('digitsCSection').hidden = !battleOn() || walkTeams < 3;
   $('battleHuntSection').hidden = !battleOn();
@@ -7672,6 +7672,13 @@ async function startBattleHunt() {
   };
   slice();
 }
+// a battle of the numbers fs played (A's, B's, C's formulas set, then computed): a hunt's result, Random's draw
+function playBattle(fs) {
+  stopBattleHunt();
+  $('formula').value = fs[0]; readFormula(); pickNumber(formulaInUse);
+  fs.slice(1).forEach((f, j) => { $(RIVALS[j]).value = f; });
+  compute();
+}
 function stopBattleHunt() {
   if (!battleHunt.run) return;
   battleHunt.run.stop = true;
@@ -7689,7 +7696,7 @@ function renderBattleHunt() {
     const end = r.win.s < 0 ? 'a draw' : `${sym(r.fs[r.win.s])} wins, ${fmt(r.win.size)}`;
     return card({ pic: colourBlock(r.fs.length), name: `${r.fs.map(sym).join(' vs ')} · ${r.ended ? '' : '≥ '}${fmt(r.steps)} steps`, detail: `${r.win.how} · ${end}`,
                   on: r.fs.every((f, j) => f === shown[j]),
-                  click: () => { stopBattleHunt(); $('formula').value = r.fs[0]; readFormula(); pickNumber(formulaInUse); r.fs.slice(1).forEach((f, j) => { $(RIVALS[j]).value = f; }); compute(); } });
+                  click: () => playBattle(r.fs) });
   };
   const list = (label, rs) => (rs.length ? [Object.assign(document.createElement('div'), { className: 'field-label', textContent: label }), ...rs.map(cardOf)] : []);
   $('battleHuntTop').replaceChildren(...list('Ended: the longest', battleHunt.ended), ...list('Still on as the digits end', battleHunt.open));
@@ -17249,6 +17256,12 @@ $('formula').addEventListener('change', () => {
   $('status').textContent = `Formula: ${error} · ${formulaInUse} kept`;
 });
 $('battleHuntBtn').addEventListener('click', () => (battleHunt.run ? stopBattleHunt() : startBattleHunt()));
+// Random (under the battle's ways): as many numbers as walkers, each another, drawn from the hunt's (BATTLE_CARDS, DRAWN_ROOTS), fought
+$('battleRandom').addEventListener('click', () => {
+  const numbers = [...BATTLE_CARDS, ...DRAWN_ROOTS], fs = [];
+  while (fs.length < walkTeams) { const f = numbers[Math.floor(Math.random() * numbers.length)]; if (!fs.includes(f)) fs.push(f); }
+  playBattle(fs);
+});
 // B's and C's (a battle's): computed again, or its error said (see rivalsDigits)
 for (const id of RIVALS) $(id).addEventListener('change', () => {
   const F = formulaOf($(id).value);

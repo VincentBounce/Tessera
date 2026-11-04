@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.96';
+const VERSION = '0.4.97';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -6988,7 +6988,7 @@ const PENETRATIONS = [
   [2, 'Penetrating 2', 'M1.5 0H2.5V1.5H1.5Z', "As Penetrating, but a head never crosses an enemy's body: going onto it, it takes that place and the body goes on round it, not cut, pushed back (along the grid its line round the corner, the tiles it goes round the biter's land; along it: nothing). A body closing a loop makes it land, inside and itself, and starts again from its head. The first two heads meeting end it: the most land wins"],
   [4, 'Penetrating 4', 'M1.5 0H2.5V4H1.5ZM0 1.5H4V2.5H0Z', "Along the grid: a walker's line, the edges it went along, stays (crossing it: a fork); its land the regions it closes. A head pierces an enemy's line only going through it: on it, it goes along it (their borders glued); off it again by the other side, the line is pierced there, let go each way up to a fork or its end, its land there let go too; by the same side, nothing. Going along an enemy's line inside its land (its land on both sides), that line becomes the head's. The first two heads meeting end it: the most land wins"],
   [5, 'Land grid', 'M1.5 0H2.5V4H1.5ZM0 1.5H4V2.5H0ZM0 0H1V1H0Z', "Along the grid: as Penetrating 4, but going along an enemy's line pierces it too (up to its forks): each walker keeps its land, no line of another in it. A loop closed is painted its colour, whatever is in it (the last one closed wins). The first two heads meeting end it: the most land wins"],
-  [6, 'Land cells', 'M0 0H4V4H0ZM1 1H3V3H1Z', "On cells: no body; each walker paints the tile it goes into its colour, whatever it was, and a zone its colour closes (the tiles not of its colour cut off, the largest outside) is painted inside. The first two heads meeting end it: the most tiles win"]];
+  [6, 'Land cells', 'M0 0H4V4H0ZM1 1H3V3H1Z', "On cells: no body; each walker paints the tile it goes into its colour, whatever it was (an enemy's land pierced), and a zone its colour closes (the tiles not of its colour cut off, the largest outside) has its empty tiles painted; an enemy's land surrounded there stays its own. The first two heads meeting end it: the most tiles win"]];
 const BATTLE_MODES = ['hexSphereWalk', 'icosaLR', 'cubeFlat', 'hexSphereGrid', 'icosaGrid', 'cubeGrid'];  // (the turtles of the sphere and the cube, on cells and along the grid)
 const battleOn = () => walkTeams > 1 && BATTLE_MODES.includes($('mode').value);
 // Classic, Duel or Trio, under the size and start of a walk on a surface (Life's tiles, see renderColours); Digits B, and
@@ -7212,7 +7212,8 @@ function battlePlayer(g, grid, S, starts, digits, pen = penetration) {
   const own = (t, s) => { if (land[t]) landCount[land[t] - 1]--; land[t] = s + 1; landCount[s]++; };
   // Land cells: tile t just painted s's colour. The tiles round it not s's, in arcs: one arc or none, nothing closed; two or
   // more, a search from each arc at once across the tiles not s's, two meeting joined; one ended while another goes on,
-  // a zone closed: painted s's (its cost, the zones closed: the outside never searched whole)
+  // a zone closed: its empty tiles painted s's, an enemy's land in it kept (its cost, the zones closed: the outside never
+  // searched whole). An enemy's land is only taken by walking on it (see take: pierced tile by tile)
   const closeAt = (s, t) => {
     const ring = [];
     for (let e = 0; e < k; e++) { const u = g.nbr[k * t + e]; if (u >= 0) ring.push(u); }
@@ -7227,7 +7228,7 @@ function battlePlayer(g, grid, S, starts, digits, pen = penetration) {
         if (!open.has(a)) continue;
         if (next[a] >= queue[a].length) {  // (this one ended, others going on: closed)
           open.delete(a);
-          for (const u of tiles[a]) own(u, s);
+          for (const u of tiles[a]) if (!land[u]) own(u, s);  // (its empty tiles only: an enemy's land surrounded stays, its colour and outline)
           if (open.size <= 1) break;
           continue;
         }

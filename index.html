@@ -11,7 +11,7 @@
   <meta property="og:type" content="website">
   <link id="favicon" rel="icon">  <!-- the app's logo, set at start-up (see appLogo) -->
   <meta name="description" content="A walk on a grid in 2D or 3D driven by the base-2 to base-6 digits of π, other constants and large primes.">
-  <link rel="stylesheet" href="style.css?v=0.4.102">
+  <link rel="stylesheet" href="style.css?v=0.4.103">
   <script>  // the theme before the first paint (see applyTheme)
     try { const t = localStorage.getItem('tesseraTheme') || 'system'; document.documentElement.dataset.theme = t === 'system' ? (matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark') : t; } catch { document.documentElement.dataset.theme = 'dark'; }
   </script>
@@ -152,13 +152,10 @@
       <section id="battleHuntSection" hidden>  <!-- a battle's numbers and hunt: how they fight, each walker's formula (A's the Digits' own, moved here: see renderWalkTeams), Random, the longest battles (see 7.6c) -->
         <h2 data-icon="search">Hunt</h2>
         <div id="walkPenetration" class="nav-shapes"></div>  <!-- a battle's way with an enemy's body: Cut, the Land grids, Land cells (see PENETRATIONS) -->
-        <div class="field-label">Formula A</div>
         <div id="formulaAHome"></div>  <!-- (the Digits' formula field, in a battle) -->
-        <div class="field-label">Formula B</div>
         <div class="field formula-field"><input id="formulaB" type="text" value="e" spellcheck="false" autocomplete="off" aria-label="Formula B"
                  title="B's number, typed as the Digits' formula (pi, e, sqrt(2), 22/7, champernowne…), written in the walk's base. Press Enter to compute"><button class="enter" type="button" tabindex="-1" title="Compute (Enter)">↵</button></div>
         <div id="formulaCRow">  <!-- a Trio's third number -->
-          <div class="field-label">Formula C</div>
           <div class="field formula-field"><input id="formulaC" type="text" value="sqrt(2)" spellcheck="false" autocomplete="off" aria-label="Formula C"
                  title="C's number, typed as the Digits' formula (pi, e, sqrt(2), 22/7, champernowne…), written in the walk's base. Press Enter to compute"><button class="enter" type="button" tabindex="-1" title="Compute (Enter)">↵</button></div>
         </div>
@@ -802,10 +799,10 @@
     </div>
   </main>
 
-  <script src="pixelarticons.js?v=0.4.102"></script>
-  <script src="punks.js?v=0.4.102"></script>
-  <script src="loops.js?v=0.4.102"></script>
-  <script src="emoji.js?v=0.4.102"></script>
-  <script src="main.js?v=0.4.102"></script>
+  <script src="pixelarticons.js?v=0.4.103"></script>
+  <script src="punks.js?v=0.4.103"></script>
+  <script src="loops.js?v=0.4.103"></script>
+  <script src="emoji.js?v=0.4.103"></script>
+  <script src="main.js?v=0.4.103"></script>
 </body>
 </html>

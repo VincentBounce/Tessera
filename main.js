@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.80';
+const VERSION = '0.4.81';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -6983,7 +6983,7 @@ const PENETRATIONS = [
   ['Penetrating 2', 'M1.5 0H2.5V1.5H1.5Z', "As Penetrating, but a head never crosses an enemy's body: going onto it, it takes that place and the body goes on round it, not cut, pushed back (along the grid its line round the corner, the tiles it goes round the biter's land; along it: nothing). A body closing a loop makes it land, inside and itself, and starts again from its head. The first two heads meeting end it: the most land wins"],
   ['Penetrating 3', 'M1.5 0H2.5V4H1.5Z', "Along the grid: a walker's line, the edges it went along, stays (crossing it: a fork); its land the regions it closes. Along an enemy's line: nothing; a head on it pierces it: the line let go each way up to a fork or its end, its land there let go too. The first two heads meeting end it: the most land wins"],
   ['Penetrating 4', 'M1.5 0H2.5V4H1.5ZM0 1.5H4V2.5H0Z', "As Penetrating 3, but a head pierces an enemy's line only going through it: on it, it goes along it (their borders glued); off it again by the other side, the line is pierced there; by the same side, nothing. Going along an enemy's line inside its land (its land on both sides), that line becomes the head's"],
-  ['Penetrating 5', 'M1.5 0H2.5V4H1.5ZM0 1.5H4V2.5H0ZM0 0H1V1H0Z', "As Penetrating 4, but going along an enemy's line pierces it too (up to its forks): each walker keeps its land, no line of another in it. On cells: a loop closed filled with its colour, whatever is in it"]];
+  ['Penetrating 5', 'M1.5 0H2.5V4H1.5ZM0 1.5H4V2.5H0ZM0 0H1V1H0Z', "As Penetrating 4, but going along an enemy's line pierces it too (up to its forks): each walker keeps its land, no line of another in it. On cells: a head on an enemy's body takes that tile only, never cuts it; a loop closed filled with its colour, whatever is in it"]];
 const BATTLE_MODES = ['hexSphereWalk', 'icosaLR', 'cubeFlat', 'hexSphereGrid', 'icosaGrid', 'cubeGrid'];  // (the turtles of the sphere and the cube, on cells and along the grid)
 const battleOn = () => walkTeams > 1 && BATTLE_MODES.includes($('mode').value);
 // Classic, Duel or Trio, under the size and start of a walk on a surface (Life's tiles, see renderColours); Digits B, and
@@ -7103,7 +7103,7 @@ function smallerSide(L, cut, j) {
 // its head (restart); with 1 it cuts it; with 3 or 4 (along the grid), lines and their land as lined says (4: pierced only gone through). The first two heads
 // meeting end it (met), none dies: its worth, its land, who wins
 function battlePlayer(g, grid, S, starts, digits, pen = penetration) {
-  if (pen >= 3 && !grid) pen = pen === 5 ? 1 : 2;  // (on cells, no line: Penetrating 5, a loop closed filled whatever is in it, Penetrating's; 3 and 4 greyed)
+  if ((pen === 3 || pen === 4) && !grid) pen = 2;  // (on cells, no line: 3 and 4 greyed; Penetrating 5 there, a head on an enemy's body a dent, never a cut, a loop closed filled whatever is in it)
   const bite = pen > 0, count = grid ? gridGraph(g).nv : g.n, k = g.sides, G = gridGraph(g), L = bite ? battleLinks(g, grid) : null;
   const wallsOf = bite ? starts.map(() => new Int32Array(count)) : [], cutsOf = bite ? starts.map(() => new Uint16Array(L.eu.length)) : [];
   const land = new Uint8Array(g.n), landCount = starts.map(() => 0), seenFrom = starts.map(() => 0);
@@ -7189,7 +7189,7 @@ function battlePlayer(g, grid, S, starts, digits, pen = penetration) {
       return;
     }
     const hits = rest.map((s) => { const c = places[s][i], t = rest.find((o) => o !== s && alive(o, c)); return t === undefined ? null : [t, at[c]]; });
-    hits.forEach((h) => h && (pen === 2 ? size[h[0]]-- : cut(...h)));  // (Penetrating 2 on cells: a dent, the place its biter's as it takes it)
+    hits.forEach((h) => h && (pen === 2 || pen === 5 ? size[h[0]]-- : cut(...h)));  // (Penetrating 2 on cells: a dent, the place its biter's as it takes it)
     rest.forEach((s) => take(s, i));
     if (bite && i > 0) rest.forEach(grow);
     peak = Math.max(peak, ...size);

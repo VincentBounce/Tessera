@@ -8,6 +8,8 @@ const PENROSE = (() => {
   return (W) => cache[W] ??= (() => {
     let n = 0;
     while (10 * phi ** (2 * n) < 14 * W * W) n++;  // (about 6 W² rhombi, 2 triangles each)
+    while (n % 4 !== 1) n++;  // (n one more than a multiple of 4 at every size: the wheel's middle comes back every 4 cuts,
+    // its patterns found there at 43, n 9, see CENTRED; other n, another middle, none of them laid at 21 or 85 before)
     const R = 1.11 * phi ** n;  // the rhombi's sides 1.11: their mean area 1
     let tris = Array.from({ length: 10 }, (_, i) => {
       const B = [R * Math.cos(((2 * i - 1) * Math.PI) / 10), R * Math.sin(((2 * i - 1) * Math.PI) / 10)], C = [R * Math.cos(((2 * i + 1) * Math.PI) / 10), R * Math.sin(((2 * i + 1) * Math.PI) / 10)];

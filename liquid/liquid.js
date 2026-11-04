@@ -33,15 +33,16 @@
 
 /* ---- 1.1 Setting ----------------------------------------------------------------------------- */
 
-const COUNTS = [1024, 2048, 4096, 16384, 65536, 262144], STEPS = [1, 2, 4, 8], TOOLS = ['drag', 'attract', 'repel'], VIEWS = ['liquid', 'particles'];
-const MASSES = [1, 1.6, 2.5, 4], COLOURS = [[1, 0.82, 0.3], [0.35, 0.85, 0.45], [0.35, 0.6, 1], [0.9, 0.35, 0.65]];
-const BETA = 0.3, FILL = 0.5, REST = 4, THRESHOLD = 1, PULL = 0.004, CFL = 0.3; // (CFL: the fastest a step can move a
+const COUNTS = [1024, 2048, 4096, 16384, 65536, 262144], STEPS = [1, 2, 4, 8], TOOLS = ['drag', 'attract', 'repel', 'emit', 'delete'], VIEWS = ['liquid', 'particles'];
+const DEAD = 4; // (a particle's liquid once deleted)
+const MASSES = [1, 1.6, 2.5, 4], LIQUIDS = ['yellow', 'green', 'blue', 'pink'], COLOURS = [[1, 0.82, 0.3], [0.35, 0.85, 0.45], [0.35, 0.6, 1], [0.9, 0.35, 0.65]];
+const EMIT = 3, BETA = 0.3, FILL = 0.5, REST = 4, THRESHOLD = 1, PULL = 0.004, CFL = 0.3; // (CFL: the fastest a step can move a
 // particle, in reaches, and stay stable)
 const mulberry32 = (a) => () => { a |= 0; a = (a + 0x6d2b79f5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
 // The setting from the link: #n=65536&steps=4&seed=1&weight=0.03&gravX=0&gravY=-1&stiffness=0.01&near=0.02&same=4&other=3&viscosity=0.1&brush=0.1&view=particles
 const hash = Object.fromEntries(new URLSearchParams(location.hash.slice(1)));
 const num = (v, d) => (v === undefined || v === '' || isNaN(+v) ? d : +v);
-const set = { n: COUNTS.includes(+hash.n) ? +hash.n : 65536, steps: STEPS.includes(+hash.steps) ? +hash.steps : 4, seed: +hash.seed || 1, weight: num(hash.weight, 0.03), gravX: num(hash.gravX, 0), gravY: num(hash.gravY, -1), stiffness: num(hash.stiffness, 0.01), near: num(hash.near, 0.02), same: num(hash.same, REST), other: num(hash.other, 3), viscosity: num(hash.viscosity, 0.1), brush: num(hash.brush, 0.1), view: VIEWS.includes(hash.view) ? hash.view : 'liquid', tool: 'drag' };
+const set = { n: COUNTS.includes(+hash.n) ? +hash.n : 65536, steps: STEPS.includes(+hash.steps) ? +hash.steps : 4, seed: +hash.seed || 1, weight: num(hash.weight, 0.03), gravX: num(hash.gravX, 0), gravY: num(hash.gravY, -1), stiffness: num(hash.stiffness, 0.01), near: num(hash.near, 0.02), same: num(hash.same, REST), other: num(hash.other, 3), viscosity: num(hash.viscosity, 0.1), brush: num(hash.brush, 0.1), pour: [0, 1, 2, 3].includes(+hash.pour) ? +hash.pour : 0, view: VIEWS.includes(hash.view) ? hash.view : 'liquid', tool: 'drag' };
 const keep = () => { const { tool, ...h } = set; history.replaceState(null, '', '#' + new URLSearchParams(h)); };
 // The box and its reach, fixed by a scatter: its width a (the screen's aspect then), the reach h such that n particles at
 // the rest density fill FILL of it, the grid of bins (each a reach wide at least)
@@ -60,10 +61,12 @@ const pull = () => [set.gravX, set.gravY].map((g) => g * set.weight * world.h);
 /* ---- 1.2 Shaders ----------------------------------------------------------------------------- */
 
 const PARAMS = `
+const DEAD = ${DEAD.toFixed(1)};
 struct Params { a: vec4u, f: vec4f, k: vec4f, v: vec4f, p: vec4f, q: vec4f, m: vec4f, s: vec4f, o: vec4f };
 // a: n, the grid's columns and rows, bins; f: the reach h, a bin's width and height, the box's width; k: stiffness, near
 // stiffness, rest density of one liquid, of two; v: gravity's pull (x, y, reaches a step²), viscosity σ, β; p: the pointer's place,
-// its brush (radius), its pull; q: its speed (a step), its tool (0 none, 1 drag, 2 attract, 3 repel); m: the four masses;
+// its brush (radius), its pull; q: its speed (a step), its tool (0 none, 1 drag, 2 attract, 3 repel, 4 emit:
+// the CPU's, 5 delete); m: the four masses;
 // s: pixels a unit of the box (zoomed), the canvas' width and height, the liquid's threshold; o: the box's corner (0, 0)
 // in the canvas' pixels (y up), a particle's radius as drawn (the box's units)`;
 const COMPUTE = PARAMS + `
@@ -82,10 +85,11 @@ fn inGrid(c: vec2i) -> bool { return all(c >= vec2i(0)) && all(c < vec2i(P.a.yz)
 // One particle: gravity and the pointer's tool on its speed, then moved by it
 @compute @workgroup_size(256) fn advance(@builtin(global_invocation_id) id: vec3u) {
   let i = id.x; if (i >= P.a.x) { return; }
-  let x = state[2u * i]; var v = state[2u * i + 1u].xy; let h = P.f.x;
+  let x = state[2u * i]; var v = state[2u * i + 1u].xy; let h = P.f.x; if (x.z >= DEAD) { return; }
   v += P.v.xy * h;
   let d = P.p.xy - x.xy; let l = length(d);
-  if (P.q.z > 0.0 && l < P.p.z) {
+  if (P.q.z == 5.0 && l < P.p.z) { state[2u * i] = vec4f(x.xy, DEAD, 0.0); return; } // (deleted: dead till the CPU packs them out)
+  if (P.q.z > 0.0 && P.q.z < 4.0 && l < P.p.z) {
     let w = 1.0 - l / P.p.z;
     if (P.q.z == 1.0) { v = mix(v, P.q.xy, w * 0.3); }
     else if (l > 0.0) { v += d / l * w * P.p.w * h * select(1.0, -1.0, P.q.z == 3.0); }
@@ -97,7 +101,7 @@ fn inGrid(c: vec2i) -> bool { return all(c >= vec2i(0)) && all(c < vec2i(P.a.yz)
 }
 @compute @workgroup_size(256) fn tally(@builtin(global_invocation_id) id: vec3u) {
   let i = id.x; if (i >= P.a.x) { return; }
-  let b = binOf(cellOf(state[2u * i].xy));
+  let p = state[2u * i]; let b = select(binOf(cellOf(p.xy)), P.a.w - 1u, p.z >= DEAD);
   at[i] = vec2u(b, atomicAdd(&count[b], 1u));
 }
 // The bins' starts: each of 256 threads sums its run of bins, the 256 sums scanned together, then each run written
@@ -132,6 +136,7 @@ fn wallOut(k: u32) -> vec2f { var o = array(vec2f(-1.0, 0.0), vec2f(1.0, 0.0), v
 // its own
 @compute @workgroup_size(128) fn density(@builtin(global_invocation_id) id: vec3u) {
   let s = id.x; if (s >= P.a.x) { return; }
+  if (near[2u * s].z >= DEAD) { dens[s] = vec4f(0.0); return; }
   let p = near[2u * s].xy; let c = cellOf(p); var r = vec4f(0.0);
   for (var dy = -1; dy <= 1; dy++) { for (var dx = -1; dx <= 1; dx++) {
     let q = c + vec2i(dx, dy); if (!inGrid(q)) { continue; }
@@ -157,8 +162,10 @@ fn way(e: vec2f, l: f32, i: u32, j: u32) -> vec2f {
 // box; its speed what the step did
 @compute @workgroup_size(128) fn relax(@builtin(global_invocation_id) id: vec3u) {
   let s = id.x; if (s >= P.a.x) { return; }
-  let me = near[2u * s]; let v = near[2u * s + 1u].xy; let ri = dens[s]; let mi = P.m[u32(me.z)]; let h = P.f.x;
-  let c = cellOf(me.xy); var dx = vec2f(0.0); let i = sorted[s];
+  let me = near[2u * s]; let i = sorted[s];
+  if (me.z >= DEAD) { next[2u * i] = me; next[2u * i + 1u] = vec4f(0.0); return; }
+  let v = near[2u * s + 1u].xy; let ri = dens[s]; let mi = P.m[u32(me.z)]; let h = P.f.x;
+  let c = cellOf(me.xy); var dx = vec2f(0.0);
   for (var dy = -1; dy <= 1; dy++) { for (var ex = -1; ex <= 1; ex++) {
     let q = c + vec2i(ex, dy); if (!inGrid(q)) { continue; }
     let b = binOf(q);
@@ -200,9 +207,9 @@ fn origin() -> vec2f { return P.o.xy; }
 // A particle's quad, its size in the box's units round it
 fn quad(vi: u32, ii: u32, size: f32) -> Out {
   var corners = array(vec2f(-1, -1), vec2f(1, -1), vec2f(-1, 1), vec2f(-1, 1), vec2f(1, -1), vec2f(1, 1));
-  let p = s[2u * ii]; var o: Out; o.uv = corners[vi]; o.k = u32(p.z); o.c = colour[o.k].rgb;
+  let p = s[2u * ii]; var o: Out; o.uv = corners[vi]; o.k = min(u32(p.z), 3u); o.c = colour[o.k].rgb;
   let px = origin() + (p.xy + o.uv * size) * P.s.x;
-  o.pos = vec4f(px / P.s.yz * 2.0 - 1.0, 0.0, 1.0);
+  o.pos = select(vec4f(px / P.s.yz * 2.0 - 1.0, 0.0, 1.0), vec4f(2.0, 2.0, 2.0, 1.0), p.z >= DEAD); // (a dead one: off the canvas)
   return o;
 }
 @vertex fn vs(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> Out { return quad(vi, ii, P.f.x * 0.6); }
@@ -258,14 +265,16 @@ async function gpu() {
   device.queue.writeBuffer(colourBuf, 0, Float32Array.from(COLOURS.flatMap((c) => [...c, 1])));
 }
 const buffer = (bytes) => device.createBuffer({ size: Math.max(16, bytes), usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST | GPUBufferUsage.COPY_SRC });
-// A fresh box: n particles at random places over it (the seed's), at rest, the liquids in turn; its bins and bind groups
+// A fresh box: n particles at random places over it (the seed's), at rest, the liquids in turn; room for twice as many
+// (Emit's); its bins (one more, the dead's: deleted, packed out later) and bind groups
+let live = 0, cap = 0;
 function scatter() {
-  world = box(); Object.assign(look, { zoom: 1, x: world.a / 2, y: 0.5 });
+  world = box(); Object.assign(look, { zoom: 1, x: world.a / 2, y: 0.5 }); live = set.n; cap = 2 * set.n;
   const r = mulberry32(set.seed), s = new Float32Array(set.n * 8);
   for (let i = 0; i < set.n; i++) s.set([r() * world.a, r(), i % 4, 0], i * 8);
   for (const b of [...states, ...Object.values(bins)]) b.destroy();
-  states = [0, 1].map(() => buffer(s.byteLength)); device.queue.writeBuffer(states[0], 0, s);
-  bins = { near: buffer(set.n * 32), count: buffer(world.bins * 4), start: buffer((world.bins + 1) * 4), at: buffer(set.n * 8), sorted: buffer(set.n * 4), dens: buffer(set.n * 16) };
+  states = [0, 1].map(() => buffer(cap * 32)); device.queue.writeBuffer(states[0], 0, s);
+  bins = { near: buffer(cap * 32), count: buffer((world.bins + 1) * 4), start: buffer((world.bins + 2) * 4), at: buffer(cap * 8), sorted: buffer(cap * 4), dens: buffer(cap * 16) };
   groups = [0, 1].map((f) => device.createBindGroup({ layout: pipes.layout, entries: [params, states[f], states[1 - f], bins.near, bins.count, bins.start, bins.at, bins.sorted, bins.dens].map((buffer, binding) => ({ binding, resource: { buffer } })) }));
   drawGroups = [];
   flip = 0;
@@ -273,19 +282,20 @@ function scatter() {
 // The parameters for a step and a drawing
 function write() {
   const w = view.width, h = view.height, frame = frameOf(w, h), buf = new ArrayBuffer(144), u = new Uint32Array(buf), f = new Float32Array(buf);
-  u.set([set.n, world.gx, world.gy, world.bins]);
+  u.set([live, world.gx, world.gy, world.bins + 1]);
   f.set([world.h, world.a / world.gx, 1 / world.gy, world.a, set.stiffness, set.near, set.same, set.other, ...pull(), set.viscosity, BETA], 4);
   f.set([pointer.x, pointer.y, set.brush, PULL, pointer.vx, pointer.vy, pointer.down ? TOOLS.indexOf(set.tool) + 1 : 0, 0, ...MASSES, frame.sc, w, h, THRESHOLD, frame.ox, frame.oy, 0.5 * world.s, 0], 16);
   device.queue.writeBuffer(params, 0, buf);
 }
-// `count` steps in one submission: each seven passes
+// `count` steps in one submission: each seven passes (none while the dead are packed out: they would be lost)
 function steps(count) {
-  const enc = device.createCommandEncoder(), n = Math.ceil(set.n / 256), m = Math.ceil(set.n / 128);
+  if (packing) return;
+  const enc = device.createCommandEncoder(), n = Math.ceil(live / 256), m = Math.ceil(live / 128);
   for (let s = 0; s < count; s++) {
     const pass = enc.beginComputePass();
     pass.setBindGroup(0, groups[flip]);
     pass.setPipeline(pipes.advance); pass.dispatchWorkgroups(n);
-    pass.setPipeline(pipes.clear); pass.dispatchWorkgroups(Math.ceil(world.bins / 256));
+    pass.setPipeline(pipes.clear); pass.dispatchWorkgroups(Math.ceil((world.bins + 1) / 256));
     pass.setPipeline(pipes.tally); pass.dispatchWorkgroups(n);
     pass.setPipeline(pipes.scan); pass.dispatchWorkgroups(1);
     pass.setPipeline(pipes.place); pass.dispatchWorkgroups(n);
@@ -307,11 +317,11 @@ function draw() {
   if (!drawGroups.length) { drawGroups = groupsOf(drawPipe); dotGroups = groupsOf(dotPipe); }
   const enc = device.createCommandEncoder();
   const pass = enc.beginRenderPass({ colorAttachments: [{ view: picture.createView(), loadOp: 'clear', storeOp: 'store', clearValue: { r: 0, g: 0, b: 0, a: 0 } }] });
-  if (set.view === 'liquid') { pass.setPipeline(drawPipe); pass.setBindGroup(0, drawGroups[flip]); pass.draw(6, set.n); } // (Particles: the picture empty, the background only)
+  if (set.view === 'liquid') { pass.setPipeline(drawPipe); pass.setBindGroup(0, drawGroups[flip]); pass.draw(6, live); } // (Particles: the picture empty, the background only)
   pass.end();
   const out = enc.beginRenderPass({ colorAttachments: [{ view: context.getCurrentTexture().createView(), loadOp: 'clear', storeOp: 'store', clearValue: { r: 0, g: 0, b: 0, a: 1 } }] });
   out.setPipeline(showPipe); out.setBindGroup(0, showGroup); out.draw(3);
-  if (set.view === 'particles') { out.setPipeline(dotPipe); out.setBindGroup(0, dotGroups[flip]); out.draw(6, set.n); }
+  if (set.view === 'particles') { out.setPipeline(dotPipe); out.setBindGroup(0, dotGroups[flip]); out.draw(6, live); }
   out.end();
   device.queue.submit([enc.finish()]);
 }
@@ -355,6 +365,8 @@ function panel() {
   const markCounts = tabs(document.getElementById('counts'), COUNTS, () => set.n, (v) => { set.n = v; markCounts(); keep(); scatter(); }, (v) => v / 1024 + 'k');
   const markSteps = tabs(document.getElementById('steps'), STEPS, () => set.steps, (v) => { set.steps = v; markSteps(); keep(); });
   const markTools = tabs(document.getElementById('tools'), TOOLS, () => set.tool, (v) => { set.tool = v; markTools(); }, (v) => v[0].toUpperCase() + v.slice(1));
+  // The liquid Emit pours
+  const markPours = tabs(document.getElementById('pours'), [0, 1, 2, 3], () => set.pour, (v) => { set.pour = v; markPours(); keep(); }, (v) => LIQUIDS[v][0].toUpperCase() + LIQUIDS[v].slice(1));
   document.getElementById('scatter').onclick = () => scatter();
   // The view: the liquid (metaballs) or its particles alone
   const markViews = tabs(document.getElementById('views'), VIEWS, () => set.view, (v) => { set.view = v; markViews(); keep(); }, (v) => v[0].toUpperCase() + v.slice(1));
@@ -377,7 +389,7 @@ function panel() {
   };
   view.onpointerdown = (e) => { [pointer.x, pointer.y] = toBox(e); pointer.moved = [0, 0]; pointer.down = true; view.setPointerCapture(e.pointerId); };
   view.onpointermove = (e) => { const [x, y] = toBox(e); pointer.moved[0] += x - pointer.x; pointer.moved[1] += y - pointer.y; pointer.x = x; pointer.y = y; };
-  view.onpointerup = view.onpointercancel = () => { pointer.down = false; };
+  view.onpointerup = view.onpointercancel = () => { pointer.down = false; if (set.tool === 'delete') pack(); };
   view.onwheel = (e) => { e.preventDefault(); zoomAt(e); };
 }
 
@@ -394,20 +406,40 @@ async function measure() {
 // The particles' places (liquid in z) and speeds, read back: 8 floats a particle
 async function readState() {
   await device.queue.onSubmittedWorkDone();
-  const b = device.createBuffer({ size: set.n * 32, usage: GPUBufferUsage.MAP_READ | GPUBufferUsage.COPY_DST }), e = device.createCommandEncoder();
-  e.copyBufferToBuffer(states[flip], 0, b, 0, set.n * 32); device.queue.submit([e.finish()]);
+  const b = device.createBuffer({ size: live * 32, usage: GPUBufferUsage.MAP_READ | GPUBufferUsage.COPY_DST }), e = device.createCommandEncoder();
+  e.copyBufferToBuffer(states[flip], 0, b, 0, live * 32); device.queue.submit([e.finish()]);
   await b.mapAsync(GPUMapMode.READ); const a = new Float32Array(b.getMappedRange().slice(0)); b.destroy(); return a;
+}
+// Emit: a few particles a step of the liquid poured, at random in a small disc at the pointer (about as wide as they
+// need), its speed theirs; written after the live ones, up to the room
+function emit() {
+  const k = Math.min(EMIT * set.steps, cap - live); if (k <= 0) return;
+  const s = new Float32Array(k * 8), R = world.s * Math.sqrt(k);
+  for (let i = 0; i < k; i++) { const a = Math.random() * 2 * Math.PI, r = R * Math.sqrt(Math.random()); s.set([Math.min(world.a, Math.max(0, pointer.x + r * Math.cos(a))), Math.min(1, Math.max(0, pointer.y + r * Math.sin(a))), set.pour, 0, pointer.vx, pointer.vy], i * 8); }
+  device.queue.writeBuffer(states[flip], live * 32, s); live += k;
+}
+// The deleted packed out: the particles read back (no step meanwhile), the live ones written again side by side
+let packing = false;
+async function pack() {
+  if (packing) return;
+  packing = true;
+  const S = await readState(), keep = [];
+  for (let i = 0; i < live; i++) if (S[i * 8 + 2] < DEAD) keep.push(S.subarray(i * 8, i * 8 + 8));
+  const out = new Float32Array(keep.length * 8); keep.forEach((p, i) => out.set(p, i * 8));
+  device.queue.writeBuffer(states[flip], 0, out); live = keep.length; packing = false;
 }
 function frame(t) {
   // (the pointer's speed a step, no faster than the step can take)
   const [mx, my] = pointer.moved.map((d) => d / set.steps), fast = Math.max(1, Math.hypot(mx, my) / (CFL * world.h));
   [pointer.vx, pointer.vy] = [mx / fast, my / fast]; pointer.moved = [0, 0];
+  if (pointer.down && set.tool === 'emit' && on) emit();
+  if (pointer.down && set.tool === 'delete' && frames % 30 === 0) pack();
   write();
   if (on) steps(set.steps);
   draw();
   fps = fps * 0.95 + 50 / Math.max(1, t - last); last = t;
   if (++frames % 120 === 1 && on) measure();
-  document.getElementById('stats').textContent = `${set.n.toLocaleString('en')} particles · ${world.gx} × ${world.gy} bins · zoom ×${look.zoom.toFixed(1)}\n${msStep ? msStep.toFixed(2) : '…'} ms a step · ${fps.toFixed(0)} frames a second`;
+  document.getElementById('stats').textContent = `${live.toLocaleString('en')} particles${live >= cap ? ' (full)' : ''} · ${world.gx} × ${world.gy} bins · zoom ×${look.zoom.toFixed(1)}\n${msStep ? msStep.toFixed(2) : '…'} ms a step · ${fps.toFixed(0)} frames a second`;
   requestAnimationFrame(frame);
 }
 (async () => { await gpu(); fit(); panel(); scatter(); requestAnimationFrame(frame); })();
@@ -427,15 +459,15 @@ window.liquidCheck = async () => {
     set.gravX = 0; scatter(); write(); steps(3000);
     const S = await readState(), y = [0, 0, 0, 0], c = [0, 0, 0, 0];
     let out = 0;
-    for (let i = 0; i < set.n; i++) { const x = S[i * 8], h = S[i * 8 + 1]; if (!(x >= 0 && x <= world.a && h >= 0 && h <= 1)) out++; y[S[i * 8 + 2]] += h; c[S[i * 8 + 2]]++; }
+    for (let i = 0; i < live; i++) { const x = S[i * 8], h = S[i * 8 + 1]; if (!(x >= 0 && x <= world.a && h >= 0 && h <= 1)) out++; y[S[i * 8 + 2]] += h; c[S[i * 8 + 2]]++; }
     const mean = y.map((v, k) => v / c[k]), layered = mean.every((v, k) => !k || v < mean[k - 1]);
-    console.log(`liquidCheck: 3,000 steps of ${set.n} particles from a scatter: ${out} out of the box, mean heights ${mean.map((v) => v.toFixed(3)).join(' > ')} (lightest to heaviest): ${!out && layered ? 'ok' : 'FAILED'}`);
+    console.log(`liquidCheck: 3,000 steps of ${live} particles from a scatter: ${out} out of the box, mean heights ${mean.map((v) => v.toFixed(3)).join(' > ')} (lightest to heaviest): ${!out && layered ? 'ok' : 'FAILED'}`);
     return step && !out && layered;
   } finally { Object.assign(set, was); scatter(); on = playing; }
 };
 async function checkStep() {
   pointer.down = false; write();
-  const S = await readState(), n = set.n, f = Math.fround, { h, a } = world, want = new Float32Array(S.length);
+  const S = await readState(), n = live, f = Math.fround, { h, a } = world, want = new Float32Array(S.length);
   const M = S.slice();
   const [gx, gy] = pull().map((g) => f(f(g) * f(h)));
   for (let i = 0; i < n; i++) { const vx = f(S[i * 8 + 4] + gx), vy = f(S[i * 8 + 5] + gy); M[i * 8 + 4] = vx; M[i * 8 + 5] = vy; M[i * 8] = f(S[i * 8] + vx); M[i * 8 + 1] = f(S[i * 8 + 1] + vy); }

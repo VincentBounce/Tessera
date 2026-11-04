@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.48';
+const VERSION = '0.4.49';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -2267,6 +2267,7 @@ const ICONS = (() => {
     check: pathEl('M5 12.5L10 17.5L19 7'),
     copy: '<rect x="8.5" y="8.5" width="12" height="12" rx="2"/>' + pathEl('M15.5 8.5V5.5A2 2 0 0 0 13.5 3.5H5.5A2 2 0 0 0 3.5 5.5V13.5A2 2 0 0 0 5.5 15.5H8.5'),
     import: pathEl('M12 3v12M7 10l5 5 5-5M4 14v5a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-5'), export: pathEl('M12 15V3M7 8l5-5 5 5M4 14v5a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-5'),
+    eye: pathEl('M2.5 12Q12 3.5 21.5 12Q12 20.5 2.5 12Z') + '<circle cx="12" cy="12" r="3"/>',
     trash: pathEl('M4 7h16M9 7V4.5h6V7M6 7l1 13h10l1-13M10 11v6M14 11v6'),
     floppy: pathEl('M6 3h10l4 4v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2ZM8 3v5h7V3M12.5 4.5v2M7 21v-6h10v6'),  // a floppy disk: its shutter and its window, its label (Management's)
     link: pathEl('M9.5 14.5L14.5 9.5') + pathEl('M8.5 11.5L6.5 13.5A3.5 3.5 0 0 0 10.5 17.5L12.5 15.5M15.5 12.5L17.5 10.5A3.5 3.5 0 0 0 13.5 6.5L11.5 8.5'),
@@ -7370,6 +7371,7 @@ let cleared = null;  // the cells Clear took away, back with Undo until somethin
 // (a methuselah's end counted as Life counts it, its ships flying off taken away: they are named after it, as they
 // come round a torus and meet the rest, the end later there)
 const BRUSH_CELL = ['cell', '', [], 'Cell', 'o!', 'one cell, again to change its state', '.....,.....,..o..'];
+const BRUSH_VIEW = ['view', '', [], 'View', null, 'to look: a click draws nothing (picked by Play)', null];  // (its picture an eye, see brushCards)
 const DRAW_PATTERNS = [
   ['glider', 'square', ['B3/S23', 'B36/S23', 'B3/S2-i34q', 'B2i34c/S2-i3'], 'Glider', 'bo$2bo$3o!', 'flies off diagonally', '.....,..o..,...o.,.ooo.'],
   ['rpentomino', 'square', ['B3/S23'], 'R-pentomino', 'b2o$2o$bo!', 'settles at generation 1,103, 6 gliders flying off', '.....,..oo.,.oo..,..o..'],
@@ -8808,7 +8810,7 @@ function renderPlaneRow() {
   $('startDigits').hidden = plane.start !== 'digits';
   // Draw: the brushes (the patterns on squares only), the colours and the eraser, the turns (greyed for a cell)
   const rule = ruleBody(parseRule(ruleBody($('lifeRule').value))?.text ?? ''), mine = !ruleCard(rule);
-  const fits = (p) => p[0] === 'cell' || (p[1] === baseOf(kind) && (mine || p[2].includes(rule)));  // the rule's patterns; your own rule: all the grid's
+  const fits = (p) => !p[1] || (p[1] === baseOf(kind) && (mine || p[2].includes(rule)));  // the rule's patterns; your own rule: all the grid's
   if (!fits(DRAW_BY_ID.get(brush.id))) brush.id = 'cell';
   brush.turn %= PATTERN_TURNS[kind];
   const K = ruleColours();
@@ -8839,7 +8841,6 @@ function renderPlaneRow() {
     i.classList.toggle('active', brush.colour === c);
     i.addEventListener('click', () => { brush.colour = c; renderPlaneRow(); });
   });
-  $('clearDrawn').textContent = cleared ? 'Undo' : 'Clear';
   $('brushTurn').textContent = `↻ ${(brush.turn * 360) / PATTERN_TURNS[kind]}°`;
   $('brushFlip').classList.toggle('active', brush.flip && canMirror(kind));
   renderDrawTools();
@@ -8850,14 +8851,20 @@ function renderDrawTools() {
   const kind = MODES[$('mode').value].plane, away = drawAway(), why = "away from gen 0: its start's cells are drawn there";
   const grey = (b, own = false, ownWhy = '') => { b.disabled = away || own; b.dataset.greyed = away ? why : own ? ownWhy : ''; };
   const tooBig = (p) => discPattern(p) && flatGrid()?.kind === p[1] && !discCells(p[1]).laid(p[4], 0);  // (a disc's pattern past the disc shown)
-  for (const b of $('brushCards').children) grey(b, tooBig(DRAW_BY_ID.get(b.dataset.brush)), 'too big for this disc: at a larger size');
-  grey($('brushTurn'), brush.id === 'cell' || PATTERN_TURNS[kind] === 1, 'for a cell, or on a grid a pattern cannot turn on (a disc\'s: turned towards the cell clicked)');
-  grey($('brushFlip'), brush.id === 'cell' || !canMirror(kind), 'for a cell, or on a grid a pattern cannot mirror on');
-  grey($('clearDrawn'), !cleared && !population.size, 'no cell drawn');
+  for (const b of $('brushCards').children) if (b.dataset.brush !== 'view') grey(b, tooBig(DRAW_BY_ID.get(b.dataset.brush)), 'too big for this disc: at a larger size');  // (View: at any generation)
+  const tool = !DRAW_BY_ID.get(brush.id)[1];  // (View or a cell: no pattern to turn)
+  grey($('brushTurn'), tool || PATTERN_TURNS[kind] === 1, 'for View or a cell, or on a grid a pattern cannot turn on (a disc\'s: turned towards the cell clicked)');
+  grey($('brushFlip'), tool || !canMirror(kind), 'for View or a cell, or on a grid a pattern cannot mirror on');
+
   grey($('openPng'), kind !== 'square', 'on a grid of squares only (a pixel a square)');
   $('brushColours').classList.toggle('off', away);
-  $('drawFromStart').disabled = !away;
-  $('drawFromStart').dataset.greyed = away ? '' : 'at gen 0 already';
+  // the start's cells: away, back to them (gen 0); there, Clear, then Undo clear (Clear again once undone)
+  const b = $('startCells'), [pic, words, tip] = away ? ['start', 'Go to gen 0 to draw', "The cells drawn are its start's (gen 0): there, to see them as they are"]
+    : cleared ? ['back', 'Undo clear', 'The cells cleared back'] : ['trash', 'Clear', 'Clears the cells drawn (Undo clear then brings them back)'];
+  b.innerHTML = `${icon(pic)}${words}`;
+  b.title = tip;
+  b.disabled = !away && !cleared && !population.size;
+  b.dataset.greyed = b.disabled ? 'no cell drawn' : '';
 }
 // a disc pattern's card: its picture (see discIcon; made as it first shows, not 535 at the start)
 function discCard(b, p) {
@@ -9149,6 +9156,7 @@ function brushCells() {
 // where the brush's cells go, round the cell pointed at (see patternAt: moved by whole steps, its middle nearest that
 // cell's; round a torus, else cut off at the grid's edges): [x, y, state]
 function brushAt([cx, cy]) {
+  if (brush.id === 'view') return [];  // (View: nothing)
   if (brush.id === 'cell') return [[cx, cy, 1]];  // one cell: the one pointed at, whichever way it lies
   const { kind, xy } = walk.plane, p = DRAW_BY_ID.get(brush.id);
   if (discPattern(p)) {  // a disc's: at its middle (no move keeps the disc), turned (as the figure turns) the nearest towards the cell pointed at
@@ -12355,8 +12363,8 @@ const CENTRED = {
 for (const [table, off] of [[CENTRED, false], [CENTRED_OFF, true]]) for (const [kind, list] of Object.entries(table)) {
   list.forEach(([rule, name, cells, what], i) => DRAW_PATTERNS.push([`${kind}-${off ? 'off' : 'mid'}-${i}`, kind, [rule], name, cells, what, null, off]));
 }
-const DRAW_BY_ID = new Map([BRUSH_CELL, ...DRAW_PATTERNS].map((p) => [p[0], p]));
-const discPattern = (p) => typeof p[4] !== 'string';  // (a disc's: its cells by their middles, see DRAW_PATTERNS)
+const DRAW_BY_ID = new Map([BRUSH_VIEW, BRUSH_CELL, ...DRAW_PATTERNS].map((p) => [p[0], p]));
+const discPattern = (p) => Array.isArray(p[4]);  // (a disc's: its cells by their middles, see DRAW_PATTERNS)
 // a disc's cells by their middles, from its middle (its disc of W, the shown one's by default, see flatGrid): laid(cells, a), a
 // disc pattern's cells turned by a round the middle, [cell, state] (null if one falls off: each the cell whose middle is within
 // 0.05 of its place, by squares of 0.1, the 9 round it looked in; those within its patterns' reach only); way(cells), the way a
@@ -13067,6 +13075,7 @@ const lifeEnded = () => { const s = walk.life?.stable; return !!s && (s.extinct 
 const atEnd = () => (cur >= runEnd() && !looping()) || lifeEnded();
 function play(on) {
   playing = on && walk.n > 0 && !atEnd();
+  if (playing && drawing && brush.id !== 'view') { brush.id = 'view'; ghost = null; drawGhost(); renderPlaneRow(); }  // (playing: View, Draw's look only)
   if (playing) reverse(false);
   $('play').innerHTML = playing ? `${icon('pause')} Pause` : `${icon('play')} Play`;
   $('play').classList.toggle('on', playing);
@@ -15679,7 +15688,11 @@ $('activity').addEventListener('pointermove', (e) => {
   $('activity').classList.toggle('out', g !== null && !lifeWithin(g));
 });
 $('back').addEventListener('click', () => seekTo(cur - 1));
-$('drawFromStart').addEventListener('click', () => seekTo(0));
+$('startCells').addEventListener('click', () => {  // (see renderDrawTools: to gen 0, Clear, Undo clear)
+  if (drawAway()) { seekTo(0); return; }
+  [population, cleared] = cleared ? [cleared, null] : [new Map(), population];
+  planeReseed();
+});
 $('colourMode').addEventListener('change', () => { needsFull = true; renderColourButtons(); updateDisplayMenu(); });
 $('lifeTrail').addEventListener('change', () => { needsFull = true; renderTrailButton(); });
 $('fillAreas').addEventListener('change', () => { needsFull = true; updateDisplayMenu(); syncLink(); });
@@ -15717,7 +15730,7 @@ stage.addEventListener('pointerdown', (e) => {
   stage.classList.add('dragging');
 });
 stage.addEventListener('pointermove', (e) => {
-  if (drawing && !drawAway() && walk.plane && !e.target.closest('.stage-box')) {  // Draw: the brush follows the pointer (at gen 0 only)
+  if (drawsHere() && walk.plane && !e.target.closest('.stage-box')) {  // Draw: the brush follows the pointer (at gen 0 only)
     const r = stage.getBoundingClientRect();
     const cell = planeCellAt(walk.plane.kind, walk.plane.W, ...turnPoint([(e.clientX - r.left - view.ox) / view.scale, (e.clientY - r.top - view.oy) / view.scale], -planeTurn()));
     if (String(cell) !== String(ghost)) { ghost = cell; drawGhost(); }
@@ -15760,6 +15773,7 @@ function recentre() {
 stage.addEventListener('dblclick', () => { if (!drawing) recentre(); });  // drawing: a double click is two cells
 // Life's Draw start: a click on a cell draws (see the pointerup below); a drag still pans
 let drawing = false, drawFrom = null;
+const drawsHere = () => drawing && !drawAway() && brush.id !== 'view';  // (a click draws: in Draw, at gen 0, a brush picked, not View)
 const drawAway = () => drawing && cur !== 0;  // (Draw away from gen 0: its tools greyed, see renderDrawTools)
 // Life on the plane: the grid's size and edges (built again), its start (the cells only, but by the digits)
 for (const [id, k] of [['planeDown', -1], ['planeUp', 1]]) {
@@ -15805,7 +15819,6 @@ $('textFonts').append(tileGroup(Object.entries(TEXT_FONTS).map(([f, [name, face,
 // Text's lines: Enter a new line; drawn on a change (↵, a click outside, or ⌘ Enter)
 $('startTextInput').addEventListener('change', () => { plane.text = $('startTextInput').value.trim() || APP_TITLE; compute(); });
 $('startTextInput').addEventListener('keydown', (e) => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) { e.preventDefault(); $('startTextInput').blur(); } });
-$('clearDrawn').addEventListener('click', () => { [population, cleared] = cleared ? [cleared, null] : [new Map(), population]; planeReseed(); });
 // Open PNG: a picture, its dark pixels alive (its transparent ones dead), a pixel a square, on the smallest grid it fits in
 // (the plane's sizes: from 16 × 16, every rule's), in the middle; Export PNG: the generation shown, its live cells black
 $('openPng').addEventListener('click', () => $('pngFile').click());
@@ -15841,8 +15854,8 @@ $('exportPng').addEventListener('click', () => {
   c.toBlob((blob) => { const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `${APP_TITLE} gen ${cur}.png`; a.click(); URL.revokeObjectURL(a.href); });
 });
 stage.addEventListener('pointerleave', () => { if (ghost) { ghost = null; drawGhost(); } });
-$('brushCards').replaceChildren(...[BRUSH_CELL, ...DRAW_PATTERNS].map(([id, kind, , name, rle, what, art]) => {
-  const b = card({ pic: art ? pixelIcon(art) : typeof rle === 'string' ? cellsIcon(kind, rle) : '', name, detail: what, byDefault: id === 'cell' ? 'yes' : '', click: () => { brush.id = id; renderPlaneRow(); } });  // (see brush)
+$('brushCards').replaceChildren(...[BRUSH_VIEW, BRUSH_CELL, ...DRAW_PATTERNS].map(([id, kind, , name, rle, what, art]) => {
+  const b = card({ pic: id === 'view' ? icon('eye') : art ? pixelIcon(art) : typeof rle === 'string' ? cellsIcon(kind, rle) : '', name, detail: what, byDefault: id === 'cell' ? 'yes' : '', click: () => { brush.id = id; renderPlaneRow(); } });  // (see brush)
   b.dataset.brush = id;
   return b;
 }));
@@ -15890,7 +15903,7 @@ function emojiDrawn(e) {
   for (let i = 0; i < px.length; i += 4) if (px[i + 3] > 128 && Math.max(px[i], px[i + 1], px[i + 2]) - Math.min(px[i], px[i + 1], px[i + 2]) > 40) return true;
   return false;
 }
-stage.addEventListener('pointerdown', (e) => { drawFrom = drawing && !drawAway() && e.button === 0 && !e.target.closest('.stage-box') ? [e.clientX, e.clientY] : null; });  // (its start's cells: at gen 0 only)
+stage.addEventListener('pointerdown', (e) => { drawFrom = drawsHere() && e.button === 0 && !e.target.closest('.stage-box') ? [e.clientX, e.clientY] : null; });  // (its start's cells: at gen 0 only)
 stage.addEventListener('pointerup', (e) => {
   if (!drawFrom || !walk.plane || Math.hypot(e.clientX - drawFrom[0], e.clientY - drawFrom[1]) > 4) return;
   const r = stage.getBoundingClientRect();

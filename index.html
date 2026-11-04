@@ -11,7 +11,7 @@
   <meta property="og:type" content="website">
   <link id="favicon" rel="icon">  <!-- the app's logo, set at start-up (see appLogo) -->
   <meta name="description" content="A walk on a grid in 2D or 3D driven by the base-2 to base-6 digits of π, other constants and large primes.">
-  <link rel="stylesheet" href="style.css?v=0.4.48">
+  <link rel="stylesheet" href="style.css?v=0.4.49">
   <script>  // the theme before the first paint (see applyTheme)
     try { const t = localStorage.getItem('tesseraTheme') || 'system'; document.documentElement.dataset.theme = t === 'system' ? (matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark') : t; } catch { document.documentElement.dataset.theme = 'dark'; }
   </script>
@@ -353,11 +353,11 @@
             <div id="textFonts" class="nav-shapes"></div>  <!-- its font (see TEXT_FONTS) -->
           </div>
           <div id="startDraw" class="start-panel">  <!-- Draw: a brush (a cell, or a pattern turned as chosen), in a colour or the eraser -->
-            <button id="drawFromStart" type="button" class="wide" data-icon="start" title="The cells drawn are its start's (gen 0): there, to see them as they are">Go to gen 0 to draw</button>  <!-- (greyed there, see updateStats) -->
+            <button id="startCells" type="button" class="wide"></button>  <!-- the start's cells: Go to gen 0, Clear, Undo clear (see renderDrawTools) -->
             <div id="brushCards" class="mode-list rule-cards" role="listbox"></div>
             <p id="drawNote" class="caption" hidden>No known patterns for this rule on this grid</p>  <!-- a surface, a rule with none -->
             <div class="draw-row turn-row"><button id="brushTurn" type="button" title="A quarter turn more">↻ 0°</button><button id="brushFlip" type="button" title="Mirrored">⇋ Mirror</button></div>
-            <div class="draw-row"><span id="brushColours" class="colour-swatches"></span><button id="clearDrawn" type="button" title="Clears the cells drawn; clicked again (Undo), they come back">Clear</button></div>
+            <div class="draw-row"><span id="brushColours" class="colour-swatches"></span></div>
             <div class="draw-row turn-row"><button id="openPng" type="button" title="Opens a black and white picture as the start, a pixel a square">Open PNG</button><button id="exportPng" type="button" title="Saves the generation shown as a black and white picture, a square a pixel">Export PNG</button><input id="pngFile" type="file" accept="image/*" hidden></div>  <!-- a black and white picture, a pixel a square (the grid fitted to it), or the generation shown as one -->
           </div>
           <div id="startDigits" class="start-panel" hidden></div>  <!-- Digits: the number whose digits lay the cells (see numberPicker) -->
@@ -782,10 +782,10 @@
     </div>
   </main>
 
-  <script src="pixelarticons.js?v=0.4.48"></script>
-  <script src="punks.js?v=0.4.48"></script>
-  <script src="loops.js?v=0.4.48"></script>
-  <script src="emoji.js?v=0.4.48"></script>
-  <script src="main.js?v=0.4.48"></script>
+  <script src="pixelarticons.js?v=0.4.49"></script>
+  <script src="punks.js?v=0.4.49"></script>
+  <script src="loops.js?v=0.4.49"></script>
+  <script src="emoji.js?v=0.4.49"></script>
+  <script src="main.js?v=0.4.49"></script>
 </body>
 </html>

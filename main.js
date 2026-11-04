@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.89';
+const VERSION = '0.4.90';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -1914,7 +1914,7 @@ function syncDigitsStepper() {
   // in 2D and 3D: more would change nothing
   const L = !size && walk.loop, total = size ? null : L ? L.cap ?? walk.n : wholeTotal(), unit = readsDigits() ? 'digits' : 'steps';  // (a creature by its rule: steps, no digit read)
   const ended = !size && walk.battle && walk.n < n ? walk.n : null;  // (a battle over before its digits: its last step, more would change nothing)
-  $('digitsLabel').value = size ? `${fmt(size)} digits (p)` : ended !== null ? `${fmt(ended)} ${unit} max ■` : L && n >= total ? `${fmt(total)} ${unit} max ${L.drift ? '→' : '↻'}`
+  $('digitsLabel').value = size ? `${fmt(size)} digits (p)` : ended !== null ? `${fmt(ended)} steps until ${walk.battle.winner.until} ■` : L && n >= total ? `${fmt(total)} ${unit} max ${L.drift ? '→' : '↻'}`
     : L ? `${fmt(n)} ${unit}` : total === null ? `${fmt(n)} ${unit}` : total <= n ? `all ${fmt(total)} ${unit}` : `${fmt(n)} of ${fmt(total)}`;
   $('digitsLabel').title = size ? 'The size of the random prime p, in decimal digits: 100 to 2,000, then Enter (it is walked whole)'
     : `${ended !== null ? `■ The battle ends at step ${fmt(ended)}, ${walk.battle.winner.how}: more digits would change nothing\n` : ''}Type a number of ${unit}, from 10 to 50,000,000, then Enter\nLast picked: ${fmt(target)}`;
@@ -7591,24 +7591,25 @@ function battlePlayer(g, grid, S, starts, digits, pen = penetration) {
   };
   return P;
 }
-// a battle played (P: battlePlayer's, to its end): its winner (−1: a draw) and why, as the battle's end
+// a battle played (P: battlePlayer's, to its end): its winner (−1: a draw) and why, as the battle's end; until, what
+// ended it before its digits (its stepper's words, see syncDigitsStepper)
 function battleWinner(P) {
   P.to(Infinity);
   const left = P.living(), w = P.worth(), how = P.bite ? `the most land as ${P.met ? 'two heads met' : 'the digits end'}`
     : left.length === 1 ? 'the last one left' : left.length ? 'the longest as the digits end' : 'the last ones met, as long';
   const top = Math.max(0, ...left.map((s) => w[s])), best = left.filter((s) => w[s] === top);
-  return { s: best.length === 1 ? best[0] : -1, how, size: top };
+  const until = P.met ? '2 heads met' : left.length === 1 ? 'one left' : left.length ? '' : 'the last ones met';
+  return { s: best.length === 1 ? best[0] : -1, how, until, size: top };
 }
 // a battle built: its player (played to its end), its walkers' names (A's, B's, C's) and winner
 function battleOf(P) {
   const names = [shownSym, ...RIVALS.slice(0, P.K - 1).map((id) => formulaOf($(id).value).sym)];
   return { player: P, names, winner: battleWinner(P) };
 }
-// the battle's title: its walkers' numbers (their scores in the ranking under it); at its end, who won
+// the battle's title: its walkers' numbers, to its end (their scores, and who won, in the ranking under it)
 function battleScore() {
-  const { names, winner } = walk.battle, name = (s) => withIcons(names[s]);
-  if (cur < walk.n) return names.map((_, s) => name(s)).join(' · ');  // (their scores in the ranking under it)
-  return winner.s < 0 ? `Draw (${winner.how})` : `${name(winner.s)} wins, ${fmt(winner.size)} (${winner.how})`;
+  const { names } = walk.battle, name = (s) => withIcons(names[s]);
+  return names.map((_, s) => name(s)).join(' · ');  // (their scores, and at the end who won, in the ranking under it)
 }
 // A battle's closed areas at the step it is at (P: its player; Area, see drawSphere), each tile's walker + 1 (0: none):
 // for each living walker, the regions its body cuts off, as a walk's (see areaSteps: along the grid tiles parted by its

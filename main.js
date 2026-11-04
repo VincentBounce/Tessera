@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.49';
+const VERSION = '0.4.50';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -2100,13 +2100,18 @@ const ICONS = (() => {
   const bumps = carved((F, P, at) => pathEl(pathOf(at(-1))));
   const menger = carved((F, P) => pathEl(pathOf(P), 'f') + [1, 2].map((t) => pathEl(seg(...[F[0], F[3]].map((p, j) => p.map((x, d) => x + (t / 3) * (F[1][d] - F[0][d])))) + seg(...[F[0], F[1]].map((p) => p.map((x, d) => x + (t / 3) * (F[3][d] - F[0][d])))))).join(''));
   const torus = '<ellipse cx="12" cy="12" rx="10" ry="7"/>' + pathEl('M5.5 11Q12 17 18.5 11M7.8 12.6Q12 8 16.2 12.6');
-  // the Möbius strip: a band round a rounded triangle, its width turned over once at its top right corner (a half twist, seen
-  // edge on there): its one edge, twice round
-  const mobius = pathEl(pathOf(Array.from({ length: 241 }, (_, j) => {
-    const u = (4 * Math.PI * j) / 240, C = (v) => { const r = 7 * (1 + 0.13 * Math.cos(3 * (v - Math.PI))), a = v - 1.25 * Math.PI; return [12 + r * Math.cos(a), 12.4 + r * Math.sin(a)]; };
-    const p = C(u), q = C(u + 1e-3), t = Math.hypot(q[0] - p[0], q[1] - p[1]), w = 2.4 * Math.tanh(4 * Math.cos(u / 2));
-    return [p[0] - (w * (q[1] - p[1])) / t, p[1] + (w * (q[0] - p[0])) / t];
-  })));
+  // the Möbius strip: a band round a rounded triangle (its corners V, its middle c), its two sides drawn, folded flat at its top
+  // right corner (its half twist: the inner side's corner sharp, the fold across the band from it to the outer side's curve)
+  const mobius = (() => {
+    const c = [12, 12.8], R = 7.6, w = 2.2, V = [-150, -30, 90].map((a) => [c[0] + R * Math.cos((a * Math.PI) / 180), c[1] + R * Math.sin((a * Math.PI) / 180)]);
+    const side = (d) => V.map(([x, y]) => [x + (2 * d * (x - c[0])) / R, y + (2 * d * (y - c[1])) / R]), toward = (q, r, k) => { const L = Math.hypot(r[0] - q[0], r[1] - q[1]); return [q[0] + ((r[0] - q[0]) * k) / L, q[1] + ((r[1] - q[1]) * k) / L]; };
+    const f = ([x, y]) => `${r2(x)} ${r2(y)}`, curve = (P, i, s) => [toward(P[i], P[(i + 2) % 3], s), P[i], toward(P[i], P[(i + 1) % 3], s)];  // (a corner rounded: in, its point, out)
+    const O = side(w), I = side(-w), so = 7.8, si = 2.6;
+    const outer = O.map((_, i) => { const [a, p, b] = curve(O, i, so); return `${i ? 'L' : 'M'}${f(a)}Q${f(p)} ${f(b)}`; }).join('') + 'Z';
+    const inner = I.map((p, i) => { if (i === 1) return `L${f(p)}`; const [a, q, b] = curve(I, i, si); return `${i ? 'L' : 'M'}${f(a)}Q${f(q)} ${f(b)}`; }).join('') + 'Z';
+    const [a, p, b] = curve(O, 1, so), fold = [0, 1].map((d) => 0.25 * a[d] + 0.5 * p[d] + 0.25 * b[d]);  // (the outer curve's middle)
+    return pathEl(outer) + pathEl(inner) + pathEl(`M${f(I[1])}L${f(fold)}`);
+  })();
   // the Klein bottle: its body a round flask, its neck a tube (along a curve through P: [x, y, half its width], Catmull-Rom)
   // up out of it, over and down into its side, on inside it
   const tube = (P, n = 160) => {

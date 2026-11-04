@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.90';
+const VERSION = '0.4.91';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -16282,10 +16282,11 @@ function renderWalkGauges() {
     const { player: D, names } = walk.battle;
     D.to(cur);
     const w = D.worth(), Q = D.places, from = (s) => { const a = placePoint(Q[s][0]), b = placePoint(Q[s][D.step]); return Math.hypot(b[0] - a[0], b[1] - a[1], b[2] - a[2]); };
+    const C = battleColumns(D);
     $('gauges').hidden = true;
     paintRanking(names.map((name, s) => ({ colour: LIFE_COLOURS[s], name, value: w[s], dead: D.dead[s] >= 0, diedAt: D.dead[s],
                                              cells: [D.dead[s] < 0 ? `<b>${fmt(w[s])}</b>` : `✝ ${genLink(D.dead[s])}`,
-                                                     D.pen === 6 ? '–' : fmt(D.size[s]), fmt(D.bestAt(s)), from(s).toFixed(1)] })), BATTLE_TITLES);
+                                                     ...(C.body ? [fmt(D.size[s])] : []), fmt(D.bestAt(s)), from(s).toFixed(1)] })), C.titles);
     return;
   }
   const p = (v) => fmt(Math.round(v * 100) / 100 || 0), P = walkPeak(), gold = 'var(--accent)', c = walk.cells[cur];
@@ -16313,7 +16314,14 @@ const meanText = (v) => `≈ ${v.toLocaleString('en', { minimumFractionDigits: 1
 const colourGone = (L, k) => (loopMeans(L) ? L.loopMax[k] === 0 : L.extinctAt?.[k] !== null && L.extinctAt?.[k] !== undefined);
 // the ranking's column titles (a tip: what it counts), Life's and a battle's
 const LIFE_TITLES = [['Alive'], ['Mean', 'Its live cells summed over the generations, by how many, till it settles or loops (its size while it lives)'], ['Born'], ['Died'], ['Ever alive']];
-const BATTLE_TITLES = [['Score', 'Its land (Cut: its body\'s length)'], ['Body', 'Its body\'s length now'], ['Peak', 'Its best score so far'], ['Distance', 'Its head from its start']];
+// a battle's columns, by its penetration (P: its player): its worth (Cut: its body; else its land), its body if it has
+// one besides (along the grid a line, its edges; on cells its tiles), its worth's peak so far, its head from its start
+const battleColumns = (P) => {
+  const worth = P.bite ? 'Land' : 'Body', body = P.bite && P.pen !== 6 ? (P.ownLines ? 'Line' : 'Body') : null;
+  return { body, titles: [[worth, P.bite ? 'The tiles it holds' : "Its body's length"],
+    ...(body ? [[body, body === 'Line' ? 'The edges of its line now' : "Its body's tiles now"]] : []),
+    [`${worth} peak`, `Its ${worth.toLowerCase()} at its largest so far`], ['Distance', 'Its head from its start']] };
+};
 function renderRanking(L) {
   const K = L.colours;
   $('ranking').hidden = $('rankTitles').hidden = K < 2 || (!!L.loops && !L.lineages);  // (a loop alone: its states, no colours fighting)

@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.65';
+const VERSION = '0.4.66';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -7072,10 +7072,15 @@ function battleScore() {
 }
 // A battle's closed areas at the step it is at (P: its player; Area, see drawSphere), each tile's walker + 1 (0: none):
 // for each living walker, the regions its body cuts off, as a walk's (see areaSteps: along the grid tiles parted by its
-// edges; on cells corners parted by the edges it crossed, a tile closed once all its corners are), the largest left out;
-// a tile closed by two or three, the one closing fewer tiles's. The surface's links (tile pairs, or corner pairs) once a mesh
+// edges; on cells corners parted by the edges it crossed, a tile closed once all its corners are), the largest (the
+// outside) left out; a tile closed by two or three, the one closing fewer tiles's. Its walls, in both: pairs of corners
+// (an edge walked, or crossed), each cutting one link of the regions' graph (tile pairs, or corner pairs; once a mesh).
+// A body only grows by its head and shrinks by a cut, so step by step: a new wall joining two walls' pieces closes
+// nothing; one closing a loop (of the places its steps join, corners or tiles: a union-find of them) splits one region in two, the smaller side found by a search from
+// both ends of its link at once (its cost: that side's); split from the outside, it is closed. Made again whole (a
+// union-find of the regions) when a walker is cut or dies, or the outside would no longer be the largest
 function battleAreas(P) {
-  const g = walk.geo, k = g.sides, G = gridGraph(g), grid = !!walk.vert;
+  const g = walk.geo, k = g.sides, G = gridGraph(g), grid = !!walk.vert, K = P.K;
   const L = (g.battleLinks ??= {})[grid ? 'grid' : 'cells'] ??= (() => {
     const eu = [], ev = [], index = new Map();
     for (const [e, sides] of G.edgeTiles) {
@@ -7083,29 +7088,125 @@ function battleAreas(P) {
       index.set(e, eu.length);
       eu.push(grid ? sides[0] : Math.floor(e / G.nv)); ev.push(grid ? sides[1] : e % G.nv);
     }
-    return { eu, ev, index, nodes: grid ? g.n : G.nv };
+    const nodes = grid ? g.n : G.nv, start = new Int32Array(nodes + 1), E = eu.length;
+    for (let j = 0; j < E; j++) { start[eu[j] + 1]++; start[ev[j] + 1]++; }
+    for (let i = 0; i < nodes; i++) start[i + 1] += start[i];
+    const fill = start.slice(0, nodes), other = new Int32Array(2 * E), via = new Int32Array(2 * E);  // (each node's links)
+    for (let j = 0; j < E; j++) { other[fill[eu[j]]] = ev[j]; via[fill[eu[j]]++] = j; other[fill[ev[j]]] = eu[j]; via[fill[ev[j]]++] = j; }
+    const round = new Int32Array(G.nv + 1);  // (cells: each corner's tiles)
+    if (!grid) for (let t = 0; t < g.n; t++) for (let q = 0; q < k; q++) round[g.poly[k * t + q] + 1]++;
+    for (let v = 0; v < G.nv; v++) round[v + 1] += round[v];
+    const tiles = new Int32Array(grid ? 0 : round[G.nv]), put = round.slice(0, G.nv);
+    if (!grid) for (let t = 0; t < g.n; t++) for (let q = 0; q < k; q++) tiles[put[g.poly[k * t + q]]++] = t;
+    return { eu: Int32Array.from(eu), ev: Int32Array.from(ev), index, nodes, start, other, via, round, tiles };
   })();
-  // the link a body's step q goes along (the grid) or across (cells: the edge its two tiles share)
-  const link = (s, q) => {
+  // the wall a body's step q makes: the edge it goes along (the grid) or across (cells: the one its two tiles share)
+  // (a, b: the two places it joins, j: the link it cuts)
+  const wall = (s, q) => {
     const a = P.places[s][q - 1], b = P.places[s][q];
-    if (grid) return L.index.get(G.key(a, b));
-    const shared = [];
-    for (let p = 0; p < k; p++) for (let r = 0; r < k; r++) if (g.poly[k * a + p] === g.poly[k * b + r]) shared.push(g.poly[k * a + p]);
-    return shared.length === 2 ? L.index.get(G.key(shared[0], shared[1])) : undefined;
-  };
-  const out = new Uint8Array(g.n), fewest = new Float64Array(g.n).fill(Infinity);
-  for (const s of P.living()) {
-    const crossed = new Int32Array(L.eu.length).fill(-1);
-    for (let q = Math.max(1, P.from[s]); q <= P.step; q++) { const j = link(s, q); if (j !== undefined) crossed[j] = 0; }
-    const at = enclosedFrom(L.nodes, L.eu, L.ev, crossed), mine = [];
-    for (let t = 0; t < g.n; t++) {
-      let shut = grid ? at[t] >= 0 : true;
-      for (let q = 0; !grid && shut && q < k; q++) shut = at[g.poly[k * t + q]] >= 0;
-      if (shut) mine.push(t);
+    if (a === b) return null;
+    let e = G.key(a, b);
+    if (!grid) {
+      const shared = [];
+      for (let p = 0; p < k; p++) for (let r = 0; r < k; r++) if (g.poly[k * a + p] === g.poly[k * b + r]) shared.push(g.poly[k * a + p]);
+      if (shared.length !== 2 || shared[0] === shared[1]) return null;
+      e = G.key(shared[0], shared[1]);
     }
-    for (const t of mine) if (mine.length < fewest[t]) { fewest[t] = mine.length; out[t] = s + 1; }
+    const j = L.index.get(e);
+    return j === undefined ? null : { a, b, j };
+  };
+  const find = (parent, i) => { while (parent[i] !== i) { parent[i] = parent[parent[i]]; i = parent[i]; } return i; };
+  const A = walk.battle.areas ??= { step: Infinity };
+  if (P.step < A.step) {
+    Object.assign(A, { step: -1, from: [], dead: [], walls: [], cut: [], node: [], tile: [], count: Array(K).fill(0), outside: [], largest: [], out: new Uint8Array(g.n) });
+    for (let s = 0; s < K; s++) { A.walls.push(new Int32Array(grid ? G.nv : g.n)); A.cut.push(new Uint8Array(L.eu.length)); A.node.push(new Uint8Array(L.nodes)); A.tile.push(new Uint8Array(g.n)); }
   }
-  return out;
+  // a node closed, and (cells) the tiles round it whose corners all are
+  const closeNode = (s, i) => {
+    A.node[s][i] = 1;
+    if (grid) { if (!A.tile[s][i]) { A.tile[s][i] = 1; A.count[s]++; } return; }
+    for (let m = L.round[i]; m < L.round[i + 1]; m++) {
+      const t = L.tiles[m];
+      if (A.tile[s][t]) continue;
+      let all = true;
+      for (let q = 0; all && q < k; q++) all = A.node[s][g.poly[k * t + q]] === 1;
+      if (all) { A.tile[s][t] = 1; A.count[s]++; }
+    }
+  };
+  // whole: its walls from its body, the regions their links but its walls join, the largest out (its size, and the
+  // largest closed one's)
+  const remake = (s) => {
+    const parent = A.walls[s], cut = A.cut[s];
+    for (let v = 0; v < parent.length; v++) parent[v] = v;
+    cut.fill(0); A.node[s].fill(0); A.tile[s].fill(0); A.count[s] = 0;
+    if (P.dead[s] >= 0) return;
+    for (let q = Math.max(1, P.from[s]); q <= P.step; q++) {
+      const w = wall(s, q);
+      if (!w) continue;
+      const a = find(parent, w.a), b = find(parent, w.b);
+      if (a !== b) parent[b] = a;
+      cut[w.j] = 1;
+    }
+    const region = Int32Array.from({ length: L.nodes }, (_, i) => i), size = new Int32Array(L.nodes).fill(1);
+    for (let j = 0; j < L.eu.length; j++) {
+      if (cut[j]) continue;
+      const a = find(region, L.eu[j]), b = find(region, L.ev[j]);
+      if (a !== b) { region[b] = a; size[a] += size[b]; }
+    }
+    let out = find(region, 0), largest = 0;
+    for (let i = 0; i < L.nodes; i++) if (region[i] === i && size[i] > size[out]) out = i;
+    for (let i = 0; i < L.nodes; i++) if (region[i] === i && i !== out) largest = Math.max(largest, size[i]);
+    A.outside[s] = size[out]; A.largest[s] = largest;
+    for (let i = 0; i < L.nodes; i++) if (find(region, i) !== out) A.node[s][i] = 1;
+    for (let i = 0; i < L.nodes; i++) if (A.node[s][i]) closeNode(s, i);
+  };
+  // the link j just cut by a wall closing a loop: its ends still joined (a search from both at once), or the smaller
+  // side, closed if it was the outside's; false when it must be made whole again
+  const split = (s, j) => {
+    const cut = A.cut[s], ends = [L.eu[j], L.ev[j]], seen = [new Map(), new Map()], queue = [[ends[0]], [ends[1]]], at = [0, 0];
+    seen[0].set(ends[0], 0); seen[1].set(ends[1], 1);
+    for (;;) {
+      for (let side = 0; side < 2; side++) {
+        if (at[side] >= queue[side].length) {  // (this side all found: the smaller one)
+          const X = queue[side];
+          if (A.node[s][ends[side]]) return true;  // (a closed region split: both parts still closed)
+          A.outside[s] -= X.length; A.largest[s] = Math.max(A.largest[s], X.length);
+          if (A.outside[s] < A.largest[s]) return false;  // (the outside no longer the largest)
+          for (const i of X) closeNode(s, i);
+          return true;
+        }
+        const i = queue[side][at[side]++];
+        for (let m = L.start[i]; m < L.start[i + 1]; m++) {
+          if (cut[L.via[m]]) continue;
+          const o = L.other[m];
+          if (seen[1 - side].has(o)) return true;  // (still joined round it)
+          if (!seen[side].has(o)) { seen[side].set(o, 1); queue[side].push(o); }
+        }
+      }
+    }
+  };
+  let changed = false;
+  for (let s = 0; s < K; s++) {
+    if (A.step < 0 || A.from[s] !== P.from[s] || A.dead[s] !== P.dead[s]) { remake(s); changed = true; continue; }
+    if (P.dead[s] >= 0) continue;
+    for (let q = Math.max(1, A.step + 1); q <= P.step; q++) {
+      const w = wall(s, q);
+      if (!w) continue;
+      if (A.cut[s][w.j]) continue;  // (a wall again)
+      A.cut[s][w.j] = 1;
+      const a = find(A.walls[s], w.a), b = find(A.walls[s], w.b);
+      if (a !== b) { A.walls[s][b] = a; continue; }
+      changed = true;
+      if (!split(s, w.j)) { remake(s); break; }
+    }
+  }
+  if (changed) {  // the areas as one: a tile closed by two or three, the one closing fewer's
+    A.out.fill(0);
+    const order = [...Array(K).keys()].sort((a, b) => A.count[b] - A.count[a]);
+    for (const s of order) { const T = A.tile[s]; for (let t = 0; t < g.n; t++) if (T[t]) A.out[t] = s + 1; }
+  }
+  Object.assign(A, { step: P.step, from: [...P.from], dead: [...P.dead] });
+  return A.out;
 }
 
 /* ---- 7.6c Hunting the longest battles -------------------------------------------------------- */
@@ -13911,13 +14012,17 @@ function drawSphere() {
   if (walk.battle) {  // a battle: its walkers' bodies in Life's colours (A red, B blue, C gold, see colourBlock), paler than their heads
     const P = walk.battle.player, K = P.K, colours = LIFE_COLOURS.slice(0, K);
     P.to(cur);
-    const heads = new Map(P.living().map((s) => [P.heads()[s], s]));
-    // the areas each body closes (Area: Light translucent, Plain as its body), under its body and head
+    // each tile's level once, from the areas each body closes (Area: Light translucent, Plain as its body), then the
+    // bodies over them and their heads (along the grid its bodies are lines, see pathSegments: the areas only)
     const closed = $('fillAreas').checked && fillAreasApply() ? battleAreas(P) : null, light = shows('translucent') && $('fillTranslucent').checked;
     palette = [null, ...colours.map((c) => faded(c, 0.6)), ...colours, ...colours.map((c) => faded(c, light ? FADING : 0.6))];
-    const area = (t) => (closed?.[t] ? 2 * K + closed[t] : 0);
-    levelOf = (t) => { if (heads.has(t)) return 1 + K + heads.get(t); for (const s of P.living()) if (P.alive(s, t)) return 1 + s; return area(t); };
-    if (walk.vert) levelOf = area;  // along the grid: its bodies are lines (see pathSegments), over the tiles unlit but its areas
+    const level = new Uint8Array(g.n);
+    if (closed) for (let t = 0; t < g.n; t++) if (closed[t]) level[t] = 2 * K + closed[t];
+    if (!walk.vert) for (const s of P.living()) {
+      for (let q = P.from[s]; q <= P.step; q++) { const t = P.places[s][q]; if (P.alive(s, t)) level[t] = 1 + s; }
+      level[P.heads()[s]] = 1 + K + s;
+    }
+    levelOf = (t) => level[t];
   }
   // the torus, and any polyhedron that is not flat, is drawn tile by tile from its current form;
   // a flat polyhedron is drawn face by face below
@@ -14074,17 +14179,22 @@ const packed = (c) => { const [r, g, b] = rgbCached(c); return ((255 << 24) | (b
 // a face turned away is not drawn at all, and nothing jumps across an unrolled sheet's seams.
 // Per segment [Ax, Ay, Az, Bx, By, Bz, Nx, Ny, Nz, ends, step]: ends, which ends go on half the
 // width past their point (1 the start, 2 the end: where two segments of the same plane meet, not at
-// a fold); and the first segment of each step (at). P: a battle's player along the grid (see 7.6b): its two bodies' edges at
-// the step shown instead, step's place their colour's in the palette (battlePalette: A, B), all of them at[cur]
+// a fold); and the first segment of each step (at). P: a battle's player along the grid (see 7.6b), played to its end: all
+// its walkers' steps instead, walker after walker, step's place its colour's in the palette (battlePalette), at[s][q] the
+// first segment of walker s's step q (q to n + 1): a body, its steps' range (see gpuSurface)
 function pathSegments(P = null) {
   const g = walk.geo, sh = walk.shape, R = walk.R, k = g.sides, C = sh.corners, n = walk.n;
   const corner = (t, q) => [C[3 * (k * t + q)] * R, C[3 * (k * t + q) + 1] * R, C[3 * (k * t + q) + 2] * R];
   const centre = (t) => [sh.cen[3 * t] * R, sh.cen[3 * t + 1] * R, sh.cen[3 * t + 2] * R];
   const normal = (t) => [sh.nrm[3 * t], sh.nrm[3 * t + 1], sh.nrm[3 * t + 2]];
   const mid = (p, q) => p.map((x, d) => (x + q[d]) / 2);
-  const out = new Float32Array(11 * (P ? 8 : 2) * Math.max(1, n)), at = new Int32Array(n + 1);
+  const out = new Float32Array(11 * 2 * (P ? P.K : 1) * Math.max(1, n)), at = new Int32Array(n + 1);
   let j = 0;
-  const put = (a, b, nr, ends, i) => { out.set([...a, ...b, ...nr, ends, i], 11 * j++); };
+  const put = (a, b, nr, ends, i) => {  // (in place: millions of them)
+    const o = 11 * j++;
+    out[o] = a[0]; out[o + 1] = a[1]; out[o + 2] = a[2]; out[o + 3] = b[0]; out[o + 4] = b[1]; out[o + 5] = b[2];
+    out[o + 6] = nr[0]; out[o + 7] = nr[1]; out[o + 8] = nr[2]; out[o + 9] = ends; out[o + 10] = i;
+  };
   const edge = (v0, v1, t0, t1, i) => {  // along the grid: the edge from v0 to v1, on each tile beside it (t0, t1)
     for (const t of t0 === t1 ? [t0] : [t0, t1]) {
       const ends = [v0, v1].map((v) => { for (let q = 0; q < k; q++) if (g.poly[k * t + q] === v) return corner(t, q); return null; });
@@ -14092,11 +14202,19 @@ function pathSegments(P = null) {
     }
   };
   if (P) {
-    const G = gridGraph(g), body = (s, q, i) => { const a = P.places[s][q - 1], b = P.places[s][q], sides = G.edgeTiles.get(G.key(a, b)); edge(a, b, sides[0], sides[1] ?? sides[0], i); };
-    // its steps' edges from its tail on, and the one from the corner it was cut at (bitten there: its line up to it)
-    for (const s of P.living()) for (let q = Math.max(1, P.from[s]); q <= P.step; q++) body(s, q, s);
-    at[cur] = j;
-    return { data: out.subarray(0, 11 * j), at };
+    const G = gridGraph(g), ats = [];
+    for (let s = 0; s < P.K; s++) {
+      const a = new Int32Array(n + 2), Q = P.places[s];
+      for (let q = 1; q <= n; q++) {
+        a[q] = j;
+        if (Q[q] === Q[q - 1]) continue;  // (dead: on the spot)
+        const sides = G.edgeTiles.get(G.key(Q[q - 1], Q[q]));
+        edge(Q[q - 1], Q[q], sides[0], sides[1] ?? sides[0], s);
+      }
+      a[n + 1] = j;
+      ats.push(a);
+    }
+    return { data: out.subarray(0, 11 * j), at: ats };
   }
   for (let i = 0; i < n; i++) {
     at[i] = j;
@@ -15028,12 +15146,14 @@ function gpuSurface(paint, path) {
     p.setPipeline(gpuDepthPipe('depthTileV', [vbuf(12, [VA(0, 'float32x3')])]));
     p.setVertexBuffer(0, D.pos); p.setIndexBuffer(D.fan, 'uint32'); p.drawIndexed(D.fanCount);
   }, `${D.geoGen}|${lightDir()}|${cam.r}|${depth}|${lamp()}|${cutOn()}`);
-  // the path's segments, made once a walk; a battle along the grid's, its bodies', made again each step (see pathSegments)
-  const lines = !!walk.battle && !!walk.vert;
-  if (lines) { walk.battle.player.to(cur); battlePalette(D); }
-  const segs = (path || lines) && cur > 0 && (D.keys.segs !== walk.wx || D.keys.segsM !== sh.m || (lines && D.keys.segsCur !== cur))
-    ? pathSegments(lines ? walk.battle.player : null) : null;
-  if (segs) { gpuBuffer('ribbon', segs.data); D.segsAt = segs.at; D.keys.segs = walk.wx; D.keys.segsM = sh.m; D.keys.segsCur = lines ? cur : null; }
+  // the path's segments, made once a walk (a battle along the grid: all its walkers' steps, see pathSegments); drawn, the
+  // path up to the step shown, or each living walker's body: its steps from its tail to its head, a range of them
+  const lines = !!walk.battle && !!walk.vert, P = lines ? walk.battle.player : null;
+  if (lines) { P.to(cur); battlePalette(D); }
+  const segs = (path || lines) && cur > 0 && (D.keys.segs !== walk.wx || D.keys.segsM !== sh.m) ? pathSegments(P) : null;
+  if (segs) { gpuBuffer('ribbon', segs.data); D.segsAt = segs.at; D.keys.segs = walk.wx; D.keys.segsM = sh.m; }
+  const ranges = !(path || lines) || cur <= 0 || !D.segsAt ? [] : !lines ? [[0, D.segsAt[cur]]]
+    : P.living().map((s) => [D.segsAt[s][Math.max(1, P.from[s])], D.segsAt[s][P.step + 1]]);
   // the tiles, their grid and the path, into pass p (0 the frame; 1, 2 Glass's)
   const drawAll = (rp, pass) => {
     const both = pass || cutOn(), cut = cutOn() ? (pass ? 2 : 1) : 0, open = !both && g.torus && !g.mobius && !g.klein && sh.m < 1;
@@ -15051,11 +15171,12 @@ function gpuSurface(paint, path) {
       rp.setBindGroup(0, gpuGroup(), [slotOf({ glass: pass, cut, edge: edgeAlpha(sh), edgeRgb: EDGE_RGB.map((c) => c / 255), bias: edgeBias, both: g.klein || both ? 1 : 0 })]);
       rp.setVertexBuffer(0, D.ePos); rp.setVertexBuffer(1, D.eN1); rp.setVertexBuffer(2, D.eN2); rp.draw(D.eCount);
     }
-    if ((path || lines) && cur > 0 && D.segsAt?.[cur]) {
+    if (ranges.some(([a, b]) => b > a)) {
       rp.setPipeline(gpuDrawPipe('ribbon', { vertex: 'ribbonV', fragment: 'ribbonF', topology: 'triangle-strip', pass, cull: !twoSidedNow() && !both ? 'back' : 'none',
         buffers: [vbuf(8, [VA(0, 'float32x2')]), vbuf(44, [VA(1, 'float32x3', 0), VA(2, 'float32x3', 12), VA(3, 'float32x3', 24), VA(4, 'float32', 36), VA(5, 'float32', 40)], 'instance')] }));
       rp.setBindGroup(0, gpuGroup(), [slotOf({ glass: pass, cut, N: Math.max(1, walk.n), halfW: surfaceLineWidth() / 2 / view.scale, bias: pathBias, colour: lines ? 3 : 0 })]);
-      rp.setVertexBuffer(0, D.quad); rp.setVertexBuffer(1, D.ribbon); rp.draw(4, D.segsAt[cur]);
+      rp.setVertexBuffer(0, D.quad); rp.setVertexBuffer(1, D.ribbon);
+      for (const [a, b] of ranges) if (b > a) rp.draw(4, b - a, 0, a);
     }
   };
   gpuFrame(enc, drawAll);

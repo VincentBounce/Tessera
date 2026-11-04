@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.72';
+const VERSION = '0.4.73';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -7175,15 +7175,18 @@ function battlePlayer(g, grid, S, starts, digits, pen = penetration) {
     if (i > 0 && rest.length <= 1) n = i;
   };
   const own = (t, s) => { if (land[t]) landCount[land[t] - 1]--; land[t] = s + 1; landCount[s]++; };
+  // the link s's step q's wall cuts (−1: none), found once (battleWall's lookups, again on every cut, were most of the time)
+  const wallLinks = bite ? starts.map(() => new Int32Array(len + 1).fill(-2)) : null;
+  const wallOf = (s, q) => { let j = wallLinks[s][q]; if (j === -2) j = wallLinks[s][q] = battleWall(g, grid, L, places[s], q)?.j ?? -1; return j; };
   const freshWalls = (s) => { const p = wallsOf[s]; for (let v = 0; v < count; v++) p[v] = v; };
   // s's step i (Penetrating): after a cut, its walls cut off gone and its pieces joined again from its body; its new wall,
   // closing a loop, gives it the smaller side; its head bites into an enemy's land
   const grow = (s) => {
     const Q = places[s], p = wallsOf[s];
     if (from[s] !== seenFrom[s]) {
-      for (let q = Math.max(1, seenFrom[s]); q < Math.max(1, from[s]); q++) { const w = battleWall(g, grid, L, Q, q); if (w) cutsOf[s][w.j]--; }
+      for (let q = Math.max(1, seenFrom[s]); q < Math.max(1, from[s]); q++) { const j = wallOf(s, q); if (j >= 0) cutsOf[s][j]--; }
       freshWalls(s);
-      for (let q = Math.max(1, from[s]); q < i; q++) { const w = battleWall(g, grid, L, Q, q); if (w) { const a = unionFind(p, w.a), b = unionFind(p, w.b); if (a !== b) p[b] = a; } }
+      for (let q = Math.max(1, from[s]); q < i; q++) { if (wallOf(s, q) >= 0) { const a = unionFind(p, Q[q - 1]), b = unionFind(p, Q[q]); if (a !== b) p[b] = a; } }
       seenFrom[s] = from[s];
     }
     const w = battleWall(g, grid, L, Q, i);

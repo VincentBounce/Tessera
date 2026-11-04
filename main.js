@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.101';
+const VERSION = '0.4.102';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -6996,10 +6996,14 @@ const battleOn = () => walkTeams > 1 && BATTLE_MODES.includes($('mode').value);
 function renderWalkTeams() {
   const w = $('mode').value, here = NAV[w]?.[0] === 'Walk' && MODES[w].lattice === 'sphere';
   $('walkTeams').hidden = !here;
-  $('walkPenetration').hidden = $('battleRandom').hidden = !battleOn();
-  $('digitsBSection').hidden = !battleOn();
-  $('digitsCSection').hidden = !battleOn() || walkTeams < 3;
+  // a battle: its numbers in its Hunt section, A's formula field moved there from the Digits' (hidden then), C's in a Trio
   $('battleHuntSection').hidden = !battleOn();
+  $('formulaCRow').hidden = walkTeams < 3;
+  const fieldA = $('formula').parentElement;
+  if (battleOn() && fieldA.parentElement !== $('formulaAHome')) $('formulaAHome').append(fieldA);
+  if (!battleOn() && fieldA.parentElement !== $('numberPicker')) $('numberList').before(fieldA);
+  if (battleOn()) $('digitsSection').hidden = true;
+  tintBattleFormulas();
   if (battleHunt.run && (!battleOn() || battleHunt.key !== battleHuntKey())) stopBattleHunt();  // (its battles fought elsewhere: it stops)
   if (battleOn()) renderBattleHunt();
   if (!here) return;
@@ -7014,6 +7018,15 @@ function renderWalkTeams() {
     on: p === penetration, can: p === 0 || (p === 6) !== !!MODES[w].grid, greyed: p === 6 ? 'along the grid: cells only' : p ? 'on cells: along the grid only' : '', byDefault: p === 0 ? 'yes' : '',
     click: () => { if (p !== penetration) { penetration = p; compute(); } } });
   $('walkPenetration').replaceChildren(tileGroup(PENETRATIONS.map(button)));
+}
+// a battle's formula fields, each tinted its walker's colour once its battle is built with it (typed since: plain again)
+const BATTLE_FORMULAS = ['formula', ...RIVALS];
+function tintBattleFormulas() {
+  const B = walk.battle;
+  BATTLE_FORMULAS.forEach((id, s) => {
+    const on = battleOn() && !!B && s < B.formulas.length && B.formulas[s] === $(id).value, tint = on ? `color-mix(in srgb, ${LIFE_COLOURS[s]} 22%, var(--bg))` : '';
+    if ($(id).style.background !== tint) $(id).style.background = tint;
+  });
 }
 // A battle's starts: A's, then each turned by the solid's own symmetry, as the walk's state ([tile, the edge it comes in
 // by], along the grid [corner, the corner it comes from]): in a Duel B's through the centre (−p: its mesh its own mirror),
@@ -7417,7 +7430,7 @@ function battleWinner(P) {
 // a battle built: its player (played to its end), its walkers' names (A's, B's, C's) and winner
 function battleOf(P) {
   const names = [shownSym, ...RIVALS.slice(0, P.K - 1).map((id) => formulaOf($(id).value).sym)];
-  return { player: P, names, winner: battleWinner(P) };
+  return { player: P, names, formulas: BATTLE_FORMULAS.slice(0, P.K).map((id) => $(id).value), winner: battleWinner(P) };
 }
 // the battle's title: its walkers' numbers, to its end (their scores, and who won, in the ranking under it)
 function battleScore() {
@@ -16100,6 +16113,7 @@ function renderWalkGauges() {
     const w = D.worth(), Q = D.places, from = (s) => { const a = placePoint(Q[s][0]), b = placePoint(Q[s][D.step]); return Math.hypot(b[0] - a[0], b[1] - a[1], b[2] - a[2]); };
     const C = battleColumns(D);
     $('gauges').hidden = true;
+    tintBattleFormulas();  // (its battle built: its fields in their colours)
     paintRanking(names.map((name, s) => ({ colour: LIFE_COLOURS[s], name, value: w[s], dead: D.dead[s] >= 0, diedAt: D.dead[s],
                                              cells: [D.dead[s] < 0 ? `<b>${fmt(w[s])}</b>` : `✝ ${genLink(D.dead[s])}`,
                                                      fmt(D.bestAt(s)), ...(C.body ? [fmt(D.size[s])] : []), from(s).toFixed(1)] })), C.titles);
@@ -17183,6 +17197,7 @@ $('battleRandom').addEventListener('click', () => {
   playBattle(fs);
 });
 // B's and C's (a battle's): computed again, or its error said (see rivalsDigits)
+for (const id of BATTLE_FORMULAS) $(id).addEventListener('input', tintBattleFormulas);  // (typed: plain till its battle is built)
 for (const id of RIVALS) $(id).addEventListener('change', () => {
   const F = formulaOf($(id).value);
   if (F.error) { $('status').textContent = `${rivalName(id)}: ${F.error}`; return; }

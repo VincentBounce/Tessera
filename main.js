@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.82';
+const VERSION = '0.4.83';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -6983,7 +6983,8 @@ const PENETRATIONS = [
   ['Penetrating 2', 'M1.5 0H2.5V1.5H1.5Z', "As Penetrating, but a head never crosses an enemy's body: going onto it, it takes that place and the body goes on round it, not cut, pushed back (along the grid its line round the corner, the tiles it goes round the biter's land; along it: nothing). A body closing a loop makes it land, inside and itself, and starts again from its head. The first two heads meeting end it: the most land wins"],
   ['Penetrating 3', 'M1.5 0H2.5V4H1.5Z', "Along the grid: a walker's line, the edges it went along, stays (crossing it: a fork); its land the regions it closes. Along an enemy's line: nothing; a head on it pierces it: the line let go each way up to a fork or its end, its land there let go too. The first two heads meeting end it: the most land wins"],
   ['Penetrating 4', 'M1.5 0H2.5V4H1.5ZM0 1.5H4V2.5H0Z', "As Penetrating 3, but a head pierces an enemy's line only going through it: on it, it goes along it (their borders glued); off it again by the other side, the line is pierced there; by the same side, nothing. Going along an enemy's line inside its land (its land on both sides), that line becomes the head's"],
-  ['Penetrating 5', 'M1.5 0H2.5V4H1.5ZM0 1.5H4V2.5H0ZM0 0H1V1H0Z', "As Penetrating 4, but going along an enemy's line pierces it too (up to its forks): each walker keeps its land, no line of another in it. On cells: a head on an enemy's body takes that tile only, never cuts it; a loop closed filled with its colour, whatever is in it"]];
+  ['Penetrating 5', 'M1.5 0H2.5V4H1.5ZM0 1.5H4V2.5H0ZM0 0H1V1H0Z', "As Penetrating 4, but going along an enemy's line pierces it too (up to its forks): each walker keeps its land, no line of another in it. On cells: a head on an enemy's body takes that tile only, never cuts it; a loop closed filled with its colour, whatever is in it"],
+  ['Cells 1', 'M0 0H4V4H0ZM1 1H3V3H1Z', "On cells: no body; each walker paints the tile it goes into its colour, whatever it was, and a zone its colour closes (the tiles not of its colour cut off, the largest outside) is painted inside. The first two heads meeting end it: the most tiles win"]];
 const BATTLE_MODES = ['hexSphereWalk', 'icosaLR', 'cubeFlat', 'hexSphereGrid', 'icosaGrid', 'cubeGrid'];  // (the turtles of the sphere and the cube, on cells and along the grid)
 const battleOn = () => walkTeams > 1 && BATTLE_MODES.includes($('mode').value);
 // Classic, Duel or Trio, under the size and start of a walk on a surface (Life's tiles, see renderColours); Digits B, and
@@ -7006,7 +7007,7 @@ function renderWalkTeams() {
   if (!battleOn()) return;
   $('walkPenetration').replaceChildren(tileGroup(PENETRATIONS.map(([name, head, title], p) => tile({
     pic: `<svg viewBox="0 0 4 4" aria-hidden="true"><path d="M0 0H4V4H0Z" fill="${LIFE_COLOURS[1]}"/><path d="${head}" fill="${LIFE_COLOURS[0]}"/></svg>`, text: name, title,
-    on: p === penetration, can: p < 3 || p === 5 || !!MODES[w].grid, greyed: p === 3 || p === 4 ? 'on cells: no line to pierce' : '', byDefault: p === 0 ? 'yes' : '',
+    on: p === penetration, can: p === 6 ? !MODES[w].grid : p < 3 || p === 5 || !!MODES[w].grid, greyed: p === 6 ? 'along the grid: cells only' : p === 3 || p === 4 ? 'on cells: no line to pierce' : '', byDefault: p === 0 ? 'yes' : '',
     click: () => { if (p !== penetration) { penetration = p; compute(); } } }))));
 }
 // A battle's starts: A's, then each turned by the solid's own symmetry, as the walk's state ([tile, the edge it comes in
@@ -7104,6 +7105,10 @@ function smallerSide(L, cut, j) {
 // meeting end it (met), none dies: its worth, its land, who wins
 function battlePlayer(g, grid, S, starts, digits, pen = penetration) {
   if ((pen === 3 || pen === 4) && !grid) pen = 2;  // (on cells, no line: 3 and 4 greyed; Penetrating 5 there, a head on an enemy's body a dent, never a cut, a loop closed filled whatever is in it)
+  if (pen === 6 && grid) pen = 5;  // (Cells 1 on cells only, greyed along the grid)
+  // Cells 1 (painted): no body; each walker paints the tile it goes into its colour (land[t], whatever it was), and a zone
+  // closed by its colour (see closeAt) is painted inside
+  const painted = pen === 6;
   const bite = pen > 0, count = grid ? gridGraph(g).nv : g.n, k = g.sides, G = gridGraph(g), L = bite ? battleLinks(g, grid) : null;
   const wallsOf = bite ? starts.map(() => new Int32Array(count)) : [], cutsOf = bite ? starts.map(() => new Uint16Array(L.eu.length)) : [];
   const land = new Uint8Array(g.n), landCount = starts.map(() => 0), seenFrom = starts.map(() => 0);
@@ -7124,8 +7129,8 @@ function battlePlayer(g, grid, S, starts, digits, pen = penetration) {
   const degree = lined ? starts.map(() => new Uint8Array(count)) : null, piecesOf = lined ? starts.map(() => new Int32Array(count)) : null;
   const closedOf = lined ? starts.map(() => new Uint8Array(g.n)) : null, closedCount = starts.map(() => 0), outside = starts.map(() => 0), largest = starts.map(() => 0);
   let landDirty = false;
-  const alive = chained ? (s, c) => refs[s][c] > 0 : lined ? (s, c) => degree[s][c] > 0 : (s, c) => owner[c] === s + 1 && at[c] >= from[s];
-  const take = chained ? (s, j) => append(s, places[s][j]) : lined ? (s, j) => j > 0 && addLine(s, places[s][j - 1], places[s][j])
+  const alive = painted ? () => false : chained ? (s, c) => refs[s][c] > 0 : lined ? (s, c) => degree[s][c] > 0 : (s, c) => owner[c] === s + 1 && at[c] >= from[s];
+  const take = painted ? (s, j) => { const t = places[s][j]; if (land[t] !== s + 1) own(t, s); } : chained ? (s, j) => append(s, places[s][j]) : lined ? (s, j) => j > 0 && addLine(s, places[s][j - 1], places[s][j])
     : (s, j) => { const c = places[s][j]; if (!alive(s, c)) size[s]++; owner[c] = s + 1; at[c] = j; };
   const cut = (s, j) => {  // s's body from its tail to step j, gone
     for (let q = from[s]; q <= j; q++) { const c = places[s][q]; if (owner[c] === s + 1 && at[c] === q) { owner[c] = 0; size[s]--; } }
@@ -7155,6 +7160,11 @@ function battlePlayer(g, grid, S, starts, digits, pen = penetration) {
       }
     }
     const rest = living();
+    if (painted) {  // (tiles painted, then each new one may close zones: painted inside)
+      rest.forEach((s) => take(s, i));
+      if (i > 0) rest.forEach((s) => closeAt(s, places[s][i]));
+      return;
+    }
     if (lined) {  // (lines grown by their heads, then each head on an enemy's line pierces it)
       rest.forEach((s) => take(s, i));
       for (const s of rest) for (const o of rest) {
@@ -7197,6 +7207,41 @@ function battlePlayer(g, grid, S, starts, digits, pen = penetration) {
     if (i > 0 && rest.length <= 1) n = i;
   };
   const own = (t, s) => { if (land[t]) landCount[land[t] - 1]--; land[t] = s + 1; landCount[s]++; };
+  // Cells 1: tile t just painted s's colour. The tiles round it not s's, in arcs: one arc or none, nothing closed; two or
+  // more, a search from each arc at once across the tiles not s's, two meeting joined; one ended while another goes on,
+  // a zone closed: painted s's (its cost, the zones closed: the outside never searched whole)
+  const closeAt = (s, t) => {
+    const ring = [];
+    for (let e = 0; e < k; e++) { const u = g.nbr[k * t + e]; if (u >= 0) ring.push(u); }
+    const not = (u) => land[u] !== s + 1, starts = [];
+    for (let e = 0; e < ring.length; e++) if (not(ring[e]) && !not(ring[(e + ring.length - 1) % ring.length])) starts.push(ring[e]);
+    if (starts.length < 2) return;
+    const group = new Map(), parent = starts.map((_, a) => a), find = (a) => { while (parent[a] !== a) a = parent[a] = parent[parent[a]]; return a; };
+    const queue = starts.map((u, a) => { group.set(u, a); return [u]; }), next = starts.map(() => 0), tiles = starts.map((u) => [u]);
+    let open = new Set(starts.map((_, a) => a));
+    while (open.size > 1) {
+      for (const a of [...open]) {
+        if (!open.has(a)) continue;
+        if (next[a] >= queue[a].length) {  // (this one ended, others going on: closed)
+          open.delete(a);
+          for (const u of tiles[a]) own(u, s);
+          if (open.size <= 1) break;
+          continue;
+        }
+        const x = queue[a][next[a]++];
+        for (let e = 0; e < k; e++) {
+          const u = g.nbr[k * x + e];
+          if (u < 0 || !not(u)) continue;
+          const b = group.has(u) ? find(group.get(u)) : -1;
+          if (b < 0) { group.set(u, a); queue[a].push(u); tiles[a].push(u); }
+          else if (b !== a) {  // (two searches met: one zone, the other's queue and tiles its)
+            parent[b] = a; open.delete(b);
+            queue[a].push(...queue[b].slice(next[b])); tiles[a].push(...tiles[b]);
+          }
+        }
+      }
+    }
+  };
   // Penetrating 5 on cells: s's pockets filled: the tiles not s's (its land or body), joined across their sides, in
   // regions; the largest the outside, every other one wholly round by s's, whatever is in it, s's land
   const fillPockets = (s) => {
@@ -13583,7 +13628,7 @@ function applySetup(s) {
   }
   if (s.d !== undefined) target = Number(s.d);
   walkTeams = !MODES[s.w].life && [2, 3].includes(Number(s.k)) ? Number(s.k) : 1;  // (a walk's Duel or Trio, see battleOn)
-  penetration = walkTeams > 1 && [1, 2, 3, 4, 5].includes(Number(s.pe)) ? Number(s.pe) : 0;
+  penetration = walkTeams > 1 && [1, 2, 3, 4, 5, 6].includes(Number(s.pe)) ? Number(s.pe) : 0;
   set('formulaB', s.xb);
   set('formulaC', s.xc);
   set('mode', s.w);
@@ -14467,7 +14512,8 @@ function drawSphere() {
     P.to(cur);
     // each tile's level once, from the areas each body closes (Area: Light translucent, Plain as its body), then the
     // bodies over them and their heads (along the grid its bodies are lines, see pathSegments: the areas only)
-    const closed = !$('fillAreas').checked || !fillAreasApply() ? null : P.bite ? P.land : battleAreas(P), light = shows('translucent') && $('fillTranslucent').checked;  // (Penetrating: its land)
+    // (Penetrating: its land; Cells 1: its painted tiles, always, as its bodies are)
+    const closed = P.pen === 6 ? P.land : !$('fillAreas').checked || !fillAreasApply() ? null : P.bite ? P.land : battleAreas(P), light = P.pen !== 6 && shows('translucent') && $('fillTranslucent').checked;
     palette = [null, ...colours.map((c) => faded(c, 0.6)), ...colours, ...colours.map((c) => faded(c, light ? FADING : 0.6))];
     const level = new Uint8Array(g.n);
     if (closed) for (let t = 0; t < g.n; t++) if (closed[t]) level[t] = 2 * K + closed[t];

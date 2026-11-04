@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.62';
+const VERSION = '0.4.63';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -2797,21 +2797,27 @@ function digitsWorker(F, base, n, then) {
   w.postMessage({ ast: F.ast, n, base, mag: F.mag, nodes: F.nodes });
   return w;
 }
-// Digits B, a battle's second number (see battleOn): its formula read as the Digits' (formulaOf), as many digits as A's in
-// the same base. Null while its worker computes them (then: called once they are there), { error } for a wrong formula
-let rivalWorker = null;
-function rivalDigits(base, n, then) {
-  const F = formulaOf($('formulaB').value);
-  if (F.error) return F;
-  const known = knownDigits(F, base, n);
-  if (known) return known;
-  rivalWorker?.terminate();
-  rivalWorker = digitsWorker(F, base, n, (error) => {
-    rivalWorker = null;
-    if (error) $('status').textContent = `Formula B: ${error}`; else then();
-  });
-  return null;
+// Digits B and C, a battle's other numbers (see battleOn): their formulas (RIVALS: their fields) read as the Digits'
+// (formulaOf), as many digits as A's in the same base, for the walkers but A (walkTeams − 1). Null while a worker computes
+// some (then: called once they are all there), { error } for a wrong formula
+const RIVALS = ['formulaB', 'formulaC'], rivalWorkers = {};
+const rivalName = (id) => `Formula ${id.slice(-1)}`;  // (Formula B, Formula C)
+function rivalsDigits(base, n, then) {
+  const out = [];
+  for (const id of RIVALS.slice(0, walkTeams - 1)) {
+    const F = formulaOf($(id).value);
+    if (F.error) return { error: `${rivalName(id)}: ${F.error}` };
+    const known = knownDigits(F, base, n);
+    if (known) { out.push(known); continue; }
+    rivalWorkers[id]?.terminate();
+    rivalWorkers[id] = digitsWorker(F, base, n, (error) => {
+      delete rivalWorkers[id];
+      if (error) $('status').textContent = `${rivalName(id)}: ${error}`; else if (!Object.keys(rivalWorkers).length) then();
+    });
+  }
+  return Object.keys(rivalWorkers).length ? null : out;
 }
+const stopRivals = () => { for (const id of Object.keys(rivalWorkers)) { rivalWorkers[id].terminate(); delete rivalWorkers[id]; } };
 
 // The digits in use: n in total, the integer part (always included) then the digits after the point
 function digitsInUse() {
@@ -3346,7 +3352,7 @@ function renderModePicker() {
 }
 
 /* ---- 5.2 compute(): from the formula to a built walk ----------------------------------------- */
-// a worker of formulaWorker, which also needs digitString, seededRandom, exactValue and iroot (A's digits, B's: see rivalDigits)
+// a worker of formulaWorker, which also needs digitString, seededRandom, exactValue and iroot (A's digits, B's and C's: see rivalsDigits)
 const newFormulaWorker = () => new Worker(URL.createObjectURL(new Blob([[digitString, seededRandom, exactValue, iroot].map(String).join('\n') + `\n(${formulaWorker.toString()})()`], { type: 'text/javascript' })));
 function compute() {
   const mode = MODES[$('mode').value];
@@ -3381,7 +3387,7 @@ function compute() {
   syncSizeStepper();
   updateRuleText();
   if (worker) { worker.terminate(); worker = null; setBusy(false); }
-  if (rivalWorker) { rivalWorker.terminate(); rivalWorker = null; }  // (B's digits, see rivalDigits)
+  stopRivals();  // (B's and C's digits, see rivalsDigits)
   if (elementaryWorker) { elementaryWorker.terminate(); elementaryWorker = null; setBusy(false); }  // (Elementary's rows, see elementaryReady)
   const job = ++computeJob;  // a walk built later is this one's only if no other compute came since
   championCode = null;  // a new start: no loaded champion any more
@@ -6866,20 +6872,22 @@ function buildGridWalk(seq, mode, ahead = new Uint8Array(0)) {
   const key = () => ((v * G.nv + from) * N + ((p + N) % N)) * 2 + q, put = (i) => { rec.put(i, v, G.tileOf[v], at(v)); vert[i] = v; };
   put(0);
   rec.begin(key());  // (corner, the corner it came from)
-  // a battle (see 7.6b): both walks (battleWalks), A's recorded; B's digits null while they are computed: A alone meanwhile
-  const B = battleOn() ? rivalDigits(base, len, buildWalk) : null;
-  if (B?.error) $('status').textContent = `Formula B: ${B.error}`;
-  if (B instanceof Uint8Array) {
-    const D = battleWalks(g, surfaceSteps(g, mode), [v, from], seq, B, true);
-    for (let i = 1; i <= D.steps; i++) {
-      v = D.places[0][i];
-      const sides = G.edgeTiles.get(G.key(vert[i - 1], v));
+  // a battle (see 7.6b): all its walks (battlePlayer), A's recorded (still once dead); the others' digits null while they
+  // are computed: A alone meanwhile
+  const rivals = battleOn() ? rivalsDigits(base, len, buildWalk) : null;
+  if (rivals?.error) $('status').textContent = rivals.error;
+  if (Array.isArray(rivals)) {
+    const P = battlePlayer(surfaceSteps(g, mode), battleStarts(g, [v, from], true, rivals.length + 1), [seq, ...rivals], G.nv);
+    P.to(Infinity);  // (the whole battle: its end known)
+    for (let i = 1; i <= P.n; i++) {
+      v = P.places[0][i];
+      const sides = v === vert[i - 1] ? [stepTiles[2 * i - 4], stepTiles[2 * i - 3]] : G.edgeTiles.get(G.key(vert[i - 1], v));  // (dead: on the spot)
       stepTiles[2 * i - 2] = sides[0]; stepTiles[2 * i - 1] = sides[1] ?? sides[0];
       put(i);
-      rec.step(i, seq[i - 1], null);  // (its state: both walks', not watched)
+      rec.step(i, seq[i - 1], null);  // (its state: all the walks', not watched)
     }
-    rec.finish(kind, g, { vert, stepTiles, n: D.steps });
-    walk.battle = battleOf(D, G.nv);
+    rec.finish(kind, g, { vert, stepTiles, n: P.n });
+    walk.battle = battleOf(P);
     return;
   }
   for (let i = 0; i < len; i++) {
@@ -6912,14 +6920,16 @@ function buildSphereWalk(seq, mode, ahead = new Uint8Array(0)) {
   const put = (i, t = state[0]) => rec.put(i, t, t, [g.cen[3 * t], g.cen[3 * t + 1], g.cen[3 * t + 2]]);
   put(0);
   rec.begin(S.key(state));  // (tile, the edge it came in by)
-  // a battle (see 7.6b): both walks (battleWalks), A's recorded; B's digits null while they are computed: A alone meanwhile
-  const B = battleOn() && !ant ? rivalDigits(mode.base, len, buildWalk) : null;
-  if (B?.error) $('status').textContent = `Formula B: ${B.error}`;
-  if (B instanceof Uint8Array) {
-    const D = battleWalks(g, S, state, seq, B, false);
-    for (let i = 1; i <= D.steps; i++) { put(i, D.places[0][i]); rec.step(i, seq[i - 1], null); }  // (its state: both walks', not watched)
-    rec.finish(kind, g, { ant: 0, turns, vert: null, stepTiles: null, n: D.steps });
-    walk.battle = battleOf(D, g.n);
+  // a battle (see 7.6b): all its walks (battlePlayer), A's recorded (still once dead); the others' digits null while they
+  // are computed: A alone meanwhile
+  const rivals = battleOn() && !ant ? rivalsDigits(mode.base, len, buildWalk) : null;
+  if (rivals?.error) $('status').textContent = rivals.error;
+  if (Array.isArray(rivals)) {
+    const P = battlePlayer(S, battleStarts(g, state, false, rivals.length + 1), [seq, ...rivals], g.n);
+    P.to(Infinity);  // (the whole battle: its end known)
+    for (let i = 1; i <= P.n; i++) { put(i, P.places[0][i]); rec.step(i, seq[i - 1], null); }  // (its state: all the walks', not watched)
+    rec.finish(kind, g, { ant: 0, turns, vert: null, stepTiles: null, n: P.n });
+    walk.battle = battleOf(P);
     return;
   }
   for (let i = 0; i < len; i++) {
@@ -6930,127 +6940,147 @@ function buildSphereWalk(seq, mode, ahead = new Uint8Array(0)) {
   rec.finish(kind, g, { ant: ant ? antStep.colours : 0, turns, vert: null, stepTiles: null });
 }
 
-/* ---- 7.6b Duel: two numbers' walks on one surface -------------------------------------------- */
-/* Walk › Duel: A's number (Digits) and B's (Digits B) walk the sphere or the cube at once, on its cells or along its
- * grid, a digit each a step, B from the place (tile, or corner) opposite A's start (antipodeStart), turning as A does.
- * Each holds the places it walked, its body, from its tail (its oldest) to its head; a head stepping on the other's body
- * cuts it there: the other loses that place and all those behind it, to its tail (its own body: nothing). The heads meet
- * (on one place, or passing each other): the end, the longer body wins. Along the grid a body is drawn as a line along
- * its edges, as a walk's path. Both walks are built at once (buildSphereWalk, buildGridWalk), the bodies replayed to the step shown
- * (battlePlayer). */
-let walkTeams = 1;  // a walk's teams: 1 Classic, 2 Duel (as Life's, see renderColours)
+/* ---- 7.6b Battles: two or three numbers' walks on one surface -------------------------------- */
+/* Walk › Duel or Trio: A's number (Digits), B's (Digits B) and in a Trio C's (Digits C) walk the sphere or the cube at
+ * once, on its cells or along its grid, a digit each a step, from places spread by the solid's own symmetry (battleStarts):
+ * B opposite A in a Duel, B and C a third of a turn round from A in a Trio, each turning as A does.
+ * Each holds the places it walked, its body: its steps from its tail (its oldest) to its head. A head stepping on another's
+ * body cuts it there: the other loses that place and all its steps behind it, to its tail (its own body: nothing). Two
+ * heads meeting (on one place, or passing each other): the shorter dies, its body gone (as long: both). The battle ends
+ * with one walker left, the winner (none: a draw), or as the digits end: the longest wins (as long: a draw). Along the grid
+ * a body is drawn as a line along its edges, as a walk's path. The walks are made as the battle is first played
+ * (battlePlayer), then replayed to the step shown. */
+let walkTeams = 1;  // a walk's teams: 1 Classic, 2 Duel, 3 Trio (as Life's, see renderColours)
 const BATTLE_MODES = ['hexSphereWalk', 'icosaLR', 'cubeFlat', 'hexSphereGrid', 'icosaGrid', 'cubeGrid'];  // (the turtles of the sphere and the cube, on cells and along the grid)
-const battleOn = () => walkTeams === 2 && BATTLE_MODES.includes($('mode').value);
-// Classic or Duel, under the size and start of a walk on a surface (Life's tiles, see renderColours); Digits B in a battle
+const battleOn = () => walkTeams > 1 && BATTLE_MODES.includes($('mode').value);
+// Classic, Duel or Trio, under the size and start of a walk on a surface (Life's tiles, see renderColours); Digits B, and
+// C in a Trio, then
 function renderWalkTeams() {
   const w = $('mode').value, here = NAV[w]?.[0] === 'Walk' && MODES[w].lattice === 'sphere';
   $('walkTeams').hidden = !here;
   $('digitsBSection').hidden = !battleOn();
+  $('digitsCSection').hidden = !battleOn() || walkTeams < 3;
+  $('battleHuntSection').hidden = !battleOn();
   if (battleHunt.run && (!battleOn() || battleHunt.key !== battleHuntKey())) stopBattleHunt();  // (its battles fought elsewhere: it stops)
   if (battleOn()) renderBattleHunt();
   if (!here) return;
-  $('walkTeams').replaceChildren(...[1, 2].map((k) => tile({ pic: colourBlock(k), text: COLOUR_STEP_NAMES[k],
-    title: k === 1 ? 'One number walks' : "Two numbers walk, A's (Digits) and B's (Digits B), from opposite tiles: a head on the other's body cuts it there, to its tail; the heads meeting ends it, the longer body wins",
-    on: k === (battleOn() ? 2 : 1), can: k === 1 || BATTLE_MODES.includes(w), byDefault: k === 1 ? 'yes' : '', greyed: k === 2 ? "outside the sphere's and the cube's turtles" : '',
+  const words = { 1: 'One number walks', 2: "Two numbers walk, A's (Digits) and B's (Digits B), from opposite places", 3: "Three numbers walk, A's, B's and C's (Digits, Digits B, Digits C), a third of a turn apart" };
+  $('walkTeams').replaceChildren(...[1, 2, 3].map((k) => tile({ pic: colourBlock(k), text: COLOUR_STEP_NAMES[k],
+    title: k === 1 ? words[1] : `${words[k]}: a head on another's body cuts it there, to its tail; two heads meeting, the shorter dies; the last one left wins (as the digits end: the longest)`,
+    on: k === (battleOn() ? walkTeams : 1), can: k === 1 || BATTLE_MODES.includes(w), byDefault: k === 1 ? 'yes' : '', greyed: k > 1 ? "outside the sphere's and the cube's turtles" : '',
     click: () => { if (k !== walkTeams) { walkTeams = k; compute(); } } })));
 }
-// B's start: the tile opposite A's (the solid's centre halfway, its mesh its own mirror through it), come in from the
-// tile opposite the one A comes in from
-// Along the grid: the corner opposite A's, come from the corner opposite the one A comes from
-function antipodeStart(g, start, grid) {
-  if (grid) {
-    const V = g.verts, key = (v, s) => [0, 1, 2].map((d) => Math.round(s * V[3 * v + d] * 1e4)).join(), nv = gridGraph(g).nv;
-    g.oppositeCorner ??= new Map(Array.from({ length: nv }, (_, v) => [key(v, 1), v]));
-    const [v, from] = start.map((u) => g.oppositeCorner.get(key(u, -1)));
-    if (v === undefined || from === undefined) throw new Error('no corner opposite the start');
-    return [v, from];
-  }
-  const [t, entry] = start, k = g.sides, key = (u, s) => [0, 1, 2].map((d) => Math.round(s * g.cen[3 * u + d] * 1e4)).join();
-  g.opposite ??= new Map(Array.from({ length: g.n }, (_, u) => [key(u, 1), u]));
-  const across = (u) => g.opposite.get(key(u, -1)), b = across(t), from = across(g.nbr[k * t + entry]);
-  for (let e = 0; e < k; e++) if (g.nbr[k * b + e] === from) return [b, e];
-  throw new Error('no tile opposite the start');
+// A battle's starts: A's, then each turned by the solid's own symmetry, as the walk's state ([tile, the edge it comes in
+// by], along the grid [corner, the corner it comes from]): in a Duel B's through the centre (−p: its mesh its own mirror),
+// in a Trio B's and C's by a third of a turn and two (the solid's 120° turn that moves A's place the most). A turned place
+// is found again by its point (each mesh's places keyed by their rounded points, once)
+function battleStarts(g, start, grid, K) {
+  const P = grid ? g.verts : g.cen, count = grid ? gridGraph(g).nv : g.n, key = (p) => p.map((x) => Math.round(x * 1e4)).join();
+  const at = grid ? (g.cornerAt ??= new Map()) : (g.tileAt ??= new Map());
+  if (!at.size) for (let u = 0; u < count; u++) at.set(key([P[3 * u], P[3 * u + 1], P[3 * u + 2]]), u);
+  const point = (u) => [P[3 * u], P[3 * u + 1], P[3 * u + 2]], times = (M, p) => M.map((row) => dot3(row, p));
+  const turned = (M) => {
+    const across = (u) => { const w = at.get(key(times(M, point(u)))); if (w === undefined) throw new Error('no place turned from the start'); return w; };
+    if (grid) return start.map(across);
+    const [t, entry] = start, k = g.sides, b = across(t), from = across(g.nbr[k * t + entry]);
+    for (let e = 0; e < k; e++) if (g.nbr[k * b + e] === from) return [b, e];
+    throw new Error('no tile turned from the start');
+  };
+  if (K === 2) return [start, turned([[-1, 0, 0], [0, -1, 0], [0, 0, -1]])];
+  const p = point(start[0]), far = (M) => Math.hypot(...times(M, p).map((x, d) => x - p[d]));
+  const R = solidRotations(solidCorners(g)).filter((M) => Math.abs(M[0][0] + M[1][1] + M[2][2]) < 1e-6).reduce((a, b) => (far(b) > far(a) + 1e-9 ? b : a));
+  return [start, turned(R), turned(R.map((row) => [0, 1, 2].map((j) => row[0] * R[0][j] + row[1] * R[1][j] + row[2] * R[2][j])))];
 }
 // a battle's places: on cells its surface's tiles, along the grid their corners (how many)
 const battlePlaces = (g, mode) => (mode.grid ? gridGraph(g).nv : g.n);
-// Both walks of a battle, A's from start, B's from the place opposite (S: surfaceSteps'): their places (tiles, or corners
-// along the grid), a step each a digit, up to the step the heads meet (met: on one place, or passing each other) or a
-// number's digits end
-function battleWalks(g, S, start, A, B, grid) {
-  const len = Math.min(A.length, B.length), places = [new Int32Array(len + 1), new Int32Array(len + 1)];
-  let a = start, b = antipodeStart(g, start, grid), steps = len, met = false;
-  places[0][0] = a[0]; places[1][0] = b[0];
-  for (let i = 0; i < len && !met; i++) {
-    const was = [a[0], b[0]];
-    a = S.step(a, A[i]); b = S.step(b, B[i]);
-    places[0][i + 1] = a[0]; places[1][i + 1] = b[0];
-    met = a[0] === b[0] || (a[0] === was[1] && b[0] === was[0]);
-    if (met) steps = i + 1;
-  }
-  return { places, steps, met };
-}
 
-// The bodies at step i (to(i): on from the step it was at, from the start again to go back): owner and at, each place's
-// walk (1 A, 2 B, 0 none) and the step it was taken; a walk's body, its steps from from[s] on, all of them (only a cut
-// takes a place from it, and a cut takes its steps up to that place's last), its places alive, size[s] of them. At the
-// step the heads meet, nothing more taken or cut.
-function battlePlayer(places, count, n, met) {
-  const owner = new Uint8Array(count), at = new Int32Array(count), from = [0, 0], size = [0, 0];
-  let i = -1;
+// A battle, played (to(i): on to step i, from its start again to go back; to(Infinity): to its end): its walks made the
+// first time (S: surfaceSteps', from starts, by their digits), places[s] each walker's step by step (a dead one's: where it
+// died); owner and at, each place's walker (1, 2, 3; 0 none) and the step it took it; from[s], size[s]: a walker's body,
+// its steps from from[s] on and its places (only a cut takes a place from it, with all its steps up to that place's
+// last); dead[s]: the step it died (−1: alive); n: its last step (one walker left or none, else the digits' end), peak:
+// its longest body (the gauges' full bar)
+function battlePlayer(S, starts, digits, count) {
+  const K = starts.length, len = Math.min(...digits.map((d) => d.length)), places = starts.map(() => new Int32Array(len + 1));
+  const states = [...starts], owner = new Uint8Array(count), at = new Int32Array(count), from = Array(K).fill(0), size = Array(K).fill(0), dead = Array(K).fill(-1);
+  let i = -1, made = 0, n = len, peak = 1;
+  starts.forEach((st, s) => { places[s][0] = st[0]; });
   const alive = (s, c) => owner[c] === s + 1 && at[c] >= from[s];
   const take = (s, j) => { const c = places[s][j]; if (!alive(s, c)) size[s]++; owner[c] = s + 1; at[c] = j; };
   const cut = (s, j) => {  // s's body from its tail to step j, gone
     for (let q = from[s]; q <= j; q++) { const c = places[s][q]; if (owner[c] === s + 1 && at[c] === q) { owner[c] = 0; size[s]--; } }
-    from[s] = j + 1;
+    from[s] = Math.max(from[s], j + 1);
   };
+  const living = () => [...Array(K).keys()].filter((s) => dead[s] < 0);
   const step = () => {
     i++;
-    if (i === n && met) return;
-    const heads = [places[0][i], places[1][i]], hit = [alive(1, heads[0]) ? at[heads[0]] : -1, alive(0, heads[1]) ? at[heads[1]] : -1];
-    if (hit[0] >= 0) cut(1, hit[0]);
-    if (hit[1] >= 0) cut(0, hit[1]);
-    take(0, i);
-    take(1, i);
+    if (i > made) {  // (the walks made, the first time: the living ones move)
+      for (let s = 0; s < K; s++) { if (dead[s] < 0) states[s] = S.step(states[s], digits[s][i - 1]); places[s][i] = dead[s] < 0 ? states[s][0] : places[s][i - 1]; }
+      made = i;
+    }
+    const now = living();
+    if (i > 0) {  // two heads meeting: the shorter dies (as long: both), its body gone
+      const lost = new Set();
+      for (const s of now) for (const t of now) {
+        if (t <= s) continue;
+        const [a, b] = [places[s], places[t]];
+        if (a[i] !== b[i] && !(a[i] === b[i - 1] && b[i] === a[i - 1])) continue;
+        if (size[s] <= size[t]) lost.add(s);
+        if (size[t] <= size[s]) lost.add(t);
+      }
+      for (const s of lost) { cut(s, i - 1); dead[s] = i; }
+    }
+    const rest = living();
+    const hits = rest.map((s) => { const c = places[s][i], t = rest.find((o) => o !== s && alive(o, c)); return t === undefined ? null : [t, at[c]]; });
+    hits.forEach((h) => h && cut(...h));
+    rest.forEach((s) => take(s, i));
+    peak = Math.max(peak, ...size);
+    if (i > 0 && rest.length <= 1) n = i;
   };
   return {
-    size, alive, from, places, heads: () => [places[0][i], places[1][i]], get step() { return i; },
+    K, places, from, size, dead, alive, living, heads: () => places.map((p) => p[i]),
+    get step() { return i; }, get n() { return n; }, get peak() { return peak; },
     to(j) {
-      if (j < i) { owner.fill(0); from[0] = from[1] = size[0] = size[1] = 0; i = -1; }
+      if (j < i) { owner.fill(0); from.fill(0); size.fill(0); dead.fill(-1); i = -1; }
       while (i < Math.min(j, n)) step();
     },
   };
 }
-// a battle built (D: battleWalks'), on count places: its player, B's name, the longest body of the whole battle (the gauges' full bar)
-function battleOf(D, count) {
-  const player = battlePlayer(D.places, count, D.steps, D.met);
-  let peak = 1;
-  for (let i = 0; i <= D.steps; i++) { player.to(i); peak = Math.max(peak, ...player.size); }
-  return { met: D.met, nameB: formulaOf($('formulaB').value).sym, player, peak };
+// a battle played (P: battlePlayer's, to its end): its winner (−1: a draw) and why, as the battle's end
+function battleWinner(P) {
+  P.to(Infinity);
+  const left = P.living(), how = left.length === 1 ? 'the last one left' : left.length ? 'the longest as the digits end' : 'the last ones met, as long';
+  const top = Math.max(0, ...left.map((s) => P.size[s])), best = left.filter((s) => P.size[s] === top);
+  return { s: best.length === 1 ? best[0] : -1, how, size: top };
 }
-// the battle's score at the step shown, after the walk's title: each body's size; at its end, who won
+// a battle built: its player (played to its end), its walkers' names (A's, B's, C's) and winner
+function battleOf(P) {
+  const names = [shownSym, ...RIVALS.slice(0, P.K - 1).map((id) => formulaOf($(id).value).sym)];
+  return { player: P, names, winner: battleWinner(P) };
+}
+// the battle's score at the step shown, after the walk's title: each body's size (✝ dead); at its end, who won
 function battleScore() {
-  const { player: P, met, nameB } = walk.battle, a = withIcons(shownSym), b = withIcons(nameB);
+  const { player: P, names, winner } = walk.battle, name = (s) => withIcons(names[s]);
   P.to(cur);
-  const [x, y] = P.size;
-  if (cur < walk.n) return `${a} ${fmt(x)} · ${b} ${fmt(y)}`;
-  const how = met ? 'the heads met' : 'the digits ended';
-  return x === y ? `Draw, ${fmt(x)} each (${how})` : `${x > y ? a : b} wins, ${fmt(Math.max(x, y))} to ${fmt(Math.min(x, y))} (${how})`;
+  if (cur < walk.n) return names.map((_, s) => `${name(s)} ${P.dead[s] < 0 ? fmt(P.size[s]) : '✝'}`).join(' · ');
+  return winner.s < 0 ? `Draw (${winner.how})` : `${name(winner.s)} wins, ${fmt(winner.size)} (${winner.how})`;
 }
 
-/* ---- 7.6c Hunting the longest battles ---------------------------------------------------------- */
-/* Duel's hunt (under Digits B): pairs of numbers drawn at random, each pair once, fought at the surface, size, start and
- * digits shown, on and on until stopped. Its numbers: the Number cards' reals and sequences (but Random) and the square
- * roots of Life's Formula hunt (√2 to √9999, see DRAWN_ROOTS); no fraction, whose digits go round. Two lists apart: the
- * battles ended (the heads met), the 8 longest; and those still on when the digits end (at least as long: ≥), the first 8. */
+/* ---- 7.6c Hunting the longest battles -------------------------------------------------------- */
+/* A battle's hunt (under Digits B): as many numbers as walkers (Duel 2, Trio 3) drawn at random, each set once, fought
+ * at the surface, size, start and digits shown, on and on until stopped. Its numbers: the Number cards' reals and
+ * sequences (but Random) and the square roots of Life's Formula hunt (√2 to √9999, see DRAWN_ROOTS); no fraction, whose
+ * digits go round. Two lists apart: the battles ended (one walker left, or none), the 8 longest; and those still on when
+ * the digits end (at least as long: ≥), the first 8. */
 const BATTLE_CARDS = Object.values(PRESETS).filter((p) => ['Constants', '𝑓', 'Sequences'].includes(p.group) && typeof p.f === 'string').map((p) => p.f).concat('rho');
 const BATTLE_FRESH = () => ({ ended: [], open: [], endedCount: 0, tried: new Set(), key: battleHuntKey(), status: '' });  // (a hunt's results, none yet)
 const battleHunt = { run: null, ended: [], open: [], endedCount: 0, tried: new Set(), key: '', status: '' };
-const battleHuntKey = () => `${$('mode').value}|${sphereSize()}|${startNo()}|${digitsNeeded()}`;  // (what its battles are fought at)
+const battleHuntKey = () => `${$('mode').value}|${walkTeams}|${sphereSize()}|${startNo()}|${digitsNeeded()}`;  // (what its battles are fought at)
 // √r's first n digits in base b, its integer part first (on the page: one integer root, as numberSeed's)
 const rootDigits = (r, base, n) => Uint8Array.from(iroot(BigInt(r) * BigInt(base) ** BigInt(2 * n), 2).toString(base).slice(0, n), (c) => c.charCodeAt(0) - 48);
 async function startBattleHunt() {
   if (battleHunt.key !== battleHuntKey()) Object.assign(battleHunt, BATTLE_FRESH());
-  const run = (battleHunt.run = { stop: false }), mode = MODES[$('mode').value], n = digitsNeeded(), base = mode.base;
+  const run = (battleHunt.run = { stop: false }), mode = MODES[$('mode').value], n = digitsNeeded(), base = mode.base, K = walkTeams;
   // the cards' digits first, once (a worker each, cached as A's); the roots' made as they are drawn
   for (const f of BATTLE_CARDS) {
     const F = formulaOf(f);
@@ -7059,27 +7089,27 @@ async function startBattleHunt() {
     if (!knownDigits(F, base, n)) await new Promise((ok) => { run.worker = digitsWorker(F, base, n, ok); });
     if (run.stop) return;
   }
-  const g = walk.geo, S = surfaceSteps(g, mode), start = S.start(startNo() - 1), places = battlePlaces(g, mode), numbers = [...BATTLE_CARDS, ...DRAWN_ROOTS], N = numbers.length, pairs = N * (N - 1);
+  const g = walk.geo, S = surfaceSteps(g, mode), starts = battleStarts(g, S.start(startNo() - 1), !!mode.grid, K), places = battlePlaces(g, mode);
+  const numbers = [...BATTLE_CARDS, ...DRAWN_ROOTS], N = numbers.length, sets = Array.from({ length: K }, (_, j) => N - j).reduce((a, b) => a * b);
   const cards = new Map(BATTLE_CARDS.map((f) => [f, knownDigits(formulaOf(f), base, n)]));
   const digitsOf = (f) => cards.get(f) ?? rootDigits(Number(f.slice(5, -1)), base, n);
   const slice = () => {
     if (run.stop) return;
-    for (const t0 = performance.now(); performance.now() - t0 < 30 && battleHunt.tried.size < pairs;) {
-      const i = Math.floor(Math.random() * N), j = Math.floor(Math.random() * N), key = i * N + j;
-      if (i === j || battleHunt.tried.has(key)) continue;
+    for (const t0 = performance.now(); performance.now() - t0 < 30 && battleHunt.tried.size < sets;) {
+      const picks = Array.from({ length: K }, () => Math.floor(Math.random() * N)), key = picks.join();
+      if (new Set(picks).size < K || battleHunt.tried.has(key)) continue;
       battleHunt.tried.add(key);
-      const [a, b] = [numbers[i], numbers[j]], D = battleWalks(g, S, start, digitsOf(a), digitsOf(b), !!mode.grid), P = battlePlayer(D.places, places, D.steps, D.met);
-      P.to(D.steps);
-      const r = { a, b, steps: D.steps, met: D.met, sizes: [...P.size] };
-      if (!D.met) { if (battleHunt.open.length < 8) battleHunt.open.push(r); continue; }  // (still on: the first 8)
+      const fs = picks.map((j) => numbers[j]), P = battlePlayer(S, starts, fs.map(digitsOf), places), win = battleWinner(P);
+      const r = { fs, steps: P.n, ended: P.living().length <= 1, win };
+      if (!r.ended) { if (battleHunt.open.length < 8) battleHunt.open.push(r); continue; }  // (still on: the first 8)
       battleHunt.endedCount++;
       battleHunt.ended.push(r);
       battleHunt.ended.sort((x, y) => y.steps - x.steps);  // (ended: the 8 longest)
       battleHunt.ended.length = Math.min(8, battleHunt.ended.length);
     }
-    battleHunt.status = `${fmt(battleHunt.tried.size)} battles of ${fmt(pairs)} fought · ${fmt(battleHunt.endedCount)} ended`;
+    battleHunt.status = `${fmt(battleHunt.tried.size)} battles of ${fmt(sets)} fought · ${fmt(battleHunt.endedCount)} ended`;
     renderBattleHunt();
-    if (battleHunt.tried.size < pairs) setTimeout(slice, 0); else stopBattleHunt();
+    if (battleHunt.tried.size < sets) setTimeout(slice, 0); else stopBattleHunt();
   };
   slice();
 }
@@ -7090,16 +7120,17 @@ function stopBattleHunt() {
   battleHunt.run = null;
   renderBattleHunt();
 }
-// its button (Hunt, or Stop), its count, its two lists as cards under their labels: a click plays one (A's and B's formulas)
+// its button (Hunt, or Stop), its count, its two lists as cards under their labels: a click plays one (A's, B's and C's formulas)
 function renderBattleHunt() {
   if (battleHunt.key !== battleHuntKey() && !battleHunt.run) Object.assign(battleHunt, BATTLE_FRESH());
   $('battleHuntBtn').innerHTML = battleHunt.run ? `${icon('stop')} Stop hunt` : `${icon('search')} Hunt the longest battles`;
   $('battleHuntStatus').textContent = battleHunt.status;
-  const sym = (f) => formulaOf(f).sym, A = formulaInUse, B = formulaOf($('formulaB').value).text;
+  const sym = (f) => formulaOf(f).sym, shown = [formulaInUse, ...RIVALS.map((id) => formulaOf($(id).value).text)];
   const cardOf = (r) => {
-    const [x, y] = r.sizes, end = x === y ? `a draw, ${fmt(x)} each` : `${sym(x > y ? r.a : r.b)} wins, ${fmt(Math.max(x, y))} to ${fmt(Math.min(x, y))}`;
-    return card({ pic: colourBlock(2), name: `${sym(r.a)} vs ${sym(r.b)} · ${r.met ? '' : '≥ '}${fmt(r.steps)} steps`, detail: r.met ? `the heads meet · ${end}` : `still on as the digits end · ${end}`,
-                  on: r.a === A && r.b === B, click: () => { stopBattleHunt(); $('formula').value = r.a; readFormula(); pickNumber(formulaInUse); $('formulaB').value = r.b; compute(); } });
+    const end = r.win.s < 0 ? 'a draw' : `${sym(r.fs[r.win.s])} wins, ${fmt(r.win.size)}`;
+    return card({ pic: colourBlock(r.fs.length), name: `${r.fs.map(sym).join(' vs ')} · ${r.ended ? '' : '≥ '}${fmt(r.steps)} steps`, detail: `${r.win.how} · ${end}`,
+                  on: r.fs.every((f, j) => f === shown[j]),
+                  click: () => { stopBattleHunt(); $('formula').value = r.fs[0]; readFormula(); pickNumber(formulaInUse); r.fs.slice(1).forEach((f, j) => { $(RIVALS[j]).value = f; }); compute(); } });
   };
   const list = (label, rs) => (rs.length ? [Object.assign(document.createElement('div'), { className: 'field-label', textContent: label }), ...rs.map(cardOf)] : []);
   $('battleHuntTop').replaceChildren(...list('Ended: the longest', battleHunt.ended), ...list('Still on as the digits end', battleHunt.open));
@@ -12921,7 +12952,10 @@ function getSetup() {
   if (!$('fillAreas').checked) s.fa = 0;
   if (mode.life) s.r = ruleBody($('lifeRule').value);
   if (mode.life && !mode.margolus && lifeColours > 1) s.k = lifeColours;
-  if (battleOn()) { s.k = 2; s.xb = formulaOf($('formulaB').value).text ?? $('formulaB').value; }  // (a walk's Duel, as Life's: its teams; B's number)
+  if (battleOn()) {  // (a walk's Duel or Trio, as Life's: its teams; B's number, C's)
+    s.k = walkTeams;
+    RIVALS.slice(0, walkTeams - 1).forEach((id, j) => { s[['xb', 'xc'][j]] = formulaOf($(id).value).text ?? $(id).value; });
+  }
   if (mode.life && colourMix && lifeColours > 1) s.mx = 1;
   if (mode.life && newcomerOn()) s.nc = 1;  // (Newcomer)  // (Mixed, kept where its zone greys it: the other zones' fits by it, see huntFits)
   if (mode.plane) {  // the grid's side, dead edges (e=1), its start ("random.30.7", "draw" with p=, "digits"), its symmetry (y=)
@@ -12953,8 +12987,9 @@ function applySetup(s) {
     pickNumber(formulaInUse, s.w);
   }
   if (s.d !== undefined) target = Number(s.d);
-  walkTeams = !MODES[s.w].life && Number(s.k) === 2 ? 2 : 1;  // (a walk's Duel, see battleOn)
+  walkTeams = !MODES[s.w].life && [2, 3].includes(Number(s.k)) ? Number(s.k) : 1;  // (a walk's Duel or Trio, see battleOn)
   set('formulaB', s.xb);
+  set('formulaC', s.xc);
   set('mode', s.w);
   $('startNo').value = s.st ?? 1;
   torusTurned = Number(s.o) === 1;
@@ -13831,12 +13866,12 @@ function drawSphere() {
     palette = [null, ...arrows.map(antTurnColour)];
     levelOf = (t) => (visits[t] && last[t] >= 0 ? 1 + last[t] : 0);
   }
-  if (walk.battle) {  // a battle: A's body red, B's blue (Duel's colours, see colourBlock), paler than their heads
-    const P = walk.battle.player;
+  if (walk.battle) {  // a battle: its walkers' bodies in Life's colours (A red, B blue, C gold, see colourBlock), paler than their heads
+    const P = walk.battle.player, K = P.K, colours = LIFE_COLOURS.slice(0, K);
     P.to(cur);
-    const [hA, hB] = P.heads();
-    palette = [null, faded(LIFE_COLOURS[0], 0.6), faded(LIFE_COLOURS[1], 0.6), LIFE_COLOURS[0], LIFE_COLOURS[1]];
-    levelOf = (t) => (t === hA ? 3 : t === hB ? 4 : P.alive(0, t) ? 1 : P.alive(1, t) ? 2 : 0);
+    const heads = new Map(P.living().map((s) => [P.heads()[s], s]));
+    palette = [null, ...colours.map((c) => faded(c, 0.6)), ...colours];
+    levelOf = (t) => { if (heads.has(t)) return 1 + K + heads.get(t); for (const s of P.living()) if (P.alive(s, t)) return 1 + s; return 0; };
     if (walk.vert) levelOf = () => 0;  // along the grid: its bodies are lines (see pathSegments), over the tiles unlit
   }
   // the torus, and any polyhedron that is not flat, is drawn tile by tile from its current form;
@@ -14014,7 +14049,7 @@ function pathSegments(P = null) {
   if (P) {
     const G = gridGraph(g), body = (s, q, i) => { const a = P.places[s][q - 1], b = P.places[s][q], sides = G.edgeTiles.get(G.key(a, b)); edge(a, b, sides[0], sides[1] ?? sides[0], i); };
     // its steps' edges from its tail on, and the one from the corner it was cut at (bitten there: its line up to it)
-    for (let s = 0; s < 2; s++) for (let q = Math.max(1, P.from[s]); q <= P.step; q++) body(s, q, s);
+    for (const s of P.living()) for (let q = Math.max(1, P.from[s]); q <= P.step; q++) body(s, q, s);
     at[cur] = j;
     return { data: out.subarray(0, 11 * j), at };
   }
@@ -14893,10 +14928,10 @@ function gpuDrawPipe(name, { vertex, fragment, buffers, topology = 'triangle-lis
 }
 // a battle's colours in the palette (pal), for its lines along the grid: A's body, B's (their heads: their arrows, see drawOverlay)
 function battlePalette(D) {
-  const key = `battle|${LIFE_COLOURS[0]}|${LIFE_COLOURS[1]}`;  // (as the theme makes them)
+  const colours = LIFE_COLOURS.slice(0, 3), key = `battle|${colours}`;  // (as the theme makes them)
   if (D.keys.pal === key) return;
   const pal = new Uint8Array(4 * 256);
-  LIFE_COLOURS.slice(0, 2).forEach((c, k) => pal.set([...rgbCached(c), 255], 4 * k));
+  colours.forEach((c, k) => pal.set([...rgbCached(c), 255], 4 * k));
   D.device.queue.writeTexture({ texture: D.pal }, pal, { bytesPerRow: 1024 }, [256, 1]);
   D.keys.pal = key;  // (a flat walk's palette written again after it, see its palKey)
 }
@@ -15360,10 +15395,13 @@ function drawOverlay() {
     }
   }
   if (!walk.n || walk.life || walk.rows || startsShown) return;  // no walker in the Game of Life, nor Elementary
-  if (walk.battle) {  // a battle: no start (its tails cut), each head an arrow in its colour
-    const B = walk.battle.player.places[1], P = (i) => placePoint(B[i]), tileAt = (i) => (walk.vert ? walk.geo.grid.tileOf[B[i]] : B[i]);
-    if (facing(cur)) drawSphereCursor(ctx, undefined, undefined, LIFE_COLOURS[0]);
-    if (twoSidedNow() || tileVisible(tileAt(cur))) drawSphereCursor(ctx, P, tileAt, LIFE_COLOURS[1]);
+  if (walk.battle) {  // a battle: no start (its tails cut), each living head an arrow in its colour
+    const B = walk.battle.player;
+    B.to(cur);
+    for (const s of B.living()) {
+      const Q = B.places[s], P = (i) => placePoint(Q[i]), tileAt = (i) => (walk.vert ? walk.geo.grid.tileOf[Q[i]] : Q[i]);
+      if (twoSidedNow() || tileVisible(tileAt(cur))) drawSphereCursor(ctx, P, tileAt, LIFE_COLOURS[s]);
+    }
     return;
   }
   const r = Math.max(3, Math.min(s * 0.35, 8));
@@ -15543,11 +15581,10 @@ function renderWalkGauges() {
   $('gauges').hidden = !walk.n || !walk.maxDist;
   if ($('gauges').hidden) return;
   const x = walk.wx[cur], y = walk.is3d ? walk.wy[cur] : -walk.wy[cur], z = walk.is3d ? walk.wz[cur] : 0, d = Math.hypot(x, y, z);
-  if (walk.battle) {  // a battle: each body's length, in its colour, its bar full at the longest body of the whole battle
-    const { player: D, peak, nameB } = walk.battle;
+  if (walk.battle) {  // a battle: each body's length, in its colour, its bar full at the longest body of the whole battle; ✝ dead
+    const { player: D, names } = walk.battle;
     D.to(cur);
-    paintGauges([[withIcons(shownSym), LIFE_COLOURS[0], D.size[0] / peak, `<b>${fmt(D.size[0])}</b>`],
-                 [withIcons(nameB), LIFE_COLOURS[1], D.size[1] / peak, `<b>${fmt(D.size[1])}</b>`]]);
+    paintGauges(names.map((name, s) => [withIcons(name), LIFE_COLOURS[s], D.size[s] / D.peak, D.dead[s] < 0 ? `<b>${fmt(D.size[s])}</b>` : `✝ ${fmt(D.dead[s])}`]));
     return;
   }
   const p = (v) => fmt(Math.round(v * 100) / 100 || 0), P = walkPeak(), gold = 'var(--accent)', c = walk.cells[cur];
@@ -16597,12 +16634,12 @@ $('formula').addEventListener('change', () => {
   $('formula').value = formulaInUse;
   $('status').textContent = `Formula: ${error} · ${formulaInUse} kept`;
 });
-// B's (a battle's): computed again, or its error said (see rivalDigits)
 $('battleHuntBtn').addEventListener('click', () => (battleHunt.run ? stopBattleHunt() : startBattleHunt()));
-$('formulaB').addEventListener('change', () => {
-  const F = formulaOf($('formulaB').value);
-  if (F.error) { $('status').textContent = `Formula B: ${F.error}`; return; }
-  $('formulaB').value = F.text;
+// B's and C's (a battle's): computed again, or its error said (see rivalsDigits)
+for (const id of RIVALS) $(id).addEventListener('change', () => {
+  const F = formulaOf($(id).value);
+  if (F.error) { $('status').textContent = `${rivalName(id)}: ${F.error}`; return; }
+  $(id).value = F.text;
   compute();
 });
 // A new number (or a new prime, size or fraction) starts framed

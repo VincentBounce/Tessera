@@ -88,18 +88,37 @@ const HAT = (() => {
     for (const m of [H, P, F, T]) m.recentre();
     return { H, T, P, F };
   }
-  // every hat of a metatile: its transform
-  const hatsOf = (geom, T, out) => { if (geom.hat) out.push(T); else for (const ch of geom.children) hatsOf(ch.geom, mul(T, ch.T), out); return out; };
+  // a metatile's hats: how many, their mean place, how far from its origin they reach (once a metatile; a transform's
+  // stretch at most its linear part's size; as main.js's)
+  const c0 = corners.reduce((s, q) => padd(s, q), pt(0, 0)), c = pt(c0.x / corners.length, c0.y / corners.length), stretch = (T) => Math.hypot(T[0], T[1], T[3], T[4]);
+  const sizes = new WeakMap(), one = { n: 1, c, r: Math.max(...corners.map((q) => Math.hypot(q.x, q.y))) };
+  const sizeOf = (geom) => {
+    if (geom.hat) return one;
+    if (sizes.has(geom)) return sizes.get(geom);
+    let n = 0, x = 0, y = 0, r = 0;
+    for (const ch of geom.children) { const z = sizeOf(ch.geom), m = transPt(ch.T, z.c), o = transPt(ch.T, pt(0, 0)); n += z.n; x += z.n * m.x; y += z.n * m.y; r = Math.max(r, Math.hypot(o.x, o.y) + stretch(ch.T) * z.r); }
+    const z = { n, c: pt(x / n, y / n), r };
+    sizes.set(geom, z);
+    return z;
+  };
+  // its hats within R of a place (its metatiles reaching there only): their transforms
+  const hatsNear = (geom, T, mid, R, out) => {
+    if (geom.hat) { out.push(T); return out; }
+    for (const ch of geom.children) { const M = mul(T, ch.T), o = transPt(M, pt(0, 0)); if (Math.hypot(o.x - mid.x, o.y - mid.y) - stretch(M) * sizeOf(ch.geom).r <= R) hatsNear(ch.geom, M, mid, R, out); }
+    return out;
+  };
   const S = 0.54;  // world units a hatviz unit: a hat about as big as a square
   const cache = {};
   return (W) => cache[W] ??= (() => {
-    let shapes = { H: H0, T: T0, P: P0, F: F0 }, all;
-    for (;;) { all = hatsOf(patchOf(shapes), ident, []); if (all.length >= 6 * W * W) break; shapes = metatilesOf(patchOf(shapes)); }
-    // each hat: its middle (its corners' mean, moved), its corners only when wanted
-    const c0 = corners.reduce((s, q) => padd(s, q), pt(0, 0)), c = pt(c0.x / corners.length, c0.y / corners.length);
-    const hats = all.map((T) => { const q = transPt(T, c); return { T, m: [q.x * S, -q.y * S], flip: T[0] * T[4] - T[1] * T[3] < 0 }; });
+    // the patch: as many as 20 W² hats (the disc well inside); round its hats' mean place, the disc of W² (radius W / √π) and
+    // its walls' room only
+    let shapes = { H: H0, T: T0, P: P0, F: F0 };
+    while (sizeOf(patchOf(shapes)).n < 20 * W * W) shapes = metatilesOf(patchOf(shapes));
+    const patch = patchOf(shapes), mid = sizeOf(patch).c;
+    const hats = hatsNear(patch, ident, mid, (W / Math.sqrt(Math.PI) + 6) / S, []).map((T) => { const q = transPt(T, c); return { T, m: [q.x * S, -q.y * S] }; });
     const poly = (h) => (h.p ??= corners.map((q) => transPt(h.T, q)).map((q) => [q.x * S, -q.y * S]));
-    return discPatch(hats, W, poly);  // (as main.js's: the W² nearest its middle, in a circle)
+    return discPatch(hats, W, poly, [mid.x * S, -mid.y * S]);  // (as main.js's: the W² nearest its middle, in a circle)
   })();
 })();
 export const hatGrid = (W) => patchGrid(HAT(W), W);  // (the wall's cells: no neighbours)
+export { HAT };

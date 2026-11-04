@@ -34,15 +34,34 @@ const SPECTRE = (() => {
     const Tr = Ts.map((T) => mul(R, T)), sq = [at(Tr[6], q[2]), at(Tr[5], q[1]), at(Tr[3], q[2]), at(Tr[0], q[1])];
     return Object.fromEntries(NAMES.map((n) => [n, { parts: RULES[n].map((k, i) => (k ? [Tr[i], sys[k]] : null)).filter(Boolean), quad: sq }]));
   }
-  const spectresOf = (g, T, out) => { for (const [M, sub] of g.parts) { const TM = mul(T, M); if (sub) spectresOf(sub, TM, out); else out.push(TM); } return out; };
-  const count = (g) => g.parts.reduce((s, [, sub]) => s + (sub ? count(sub) : 1), 0);
+  // (as main.js's: a supertile's spectres counted, their mean place and reach, once; those near a disc only)
+  const sizes = new WeakMap(), one = { n: 1, c: [0, 1].map((d) => spectre.reduce((t, q) => t + q[d], 0) / 14), r: Math.max(...spectre.map((q) => Math.hypot(...q))) };
+  const sizeOf = (g) => {
+    if (sizes.has(g)) return sizes.get(g);
+    let n = 0, x = 0, y = 0, r = 0;
+    for (const [M, sub] of g.parts) { const z = sub ? sizeOf(sub) : one, m = at(M, z.c); n += z.n; x += z.n * m[0]; y += z.n * m[1]; r = Math.max(r, Math.hypot(M[2], M[5]) + z.r); }
+    const z = { n, c: [x / n, y / n], r };
+    sizes.set(g, z);
+    return z;
+  };
+  const spectresNear = (g, T, mid, R, out) => {
+    for (const [M, sub] of g.parts) {
+      const TM = mul(T, M);
+      if (Math.hypot(TM[2] - mid[0], TM[5] - mid[1]) - (sub ? sizeOf(sub) : one).r > R) continue;
+      if (sub) spectresNear(sub, TM, mid, R, out); else out.push(TM);
+    }
+    return out;
+  };
   const S = 1 / Math.sqrt(Math.abs(spectre.reduce((a, p, i) => a + p[0] * spectre[(i + 1) % 14][1] - spectre[(i + 1) % 14][0] * p[1], 0) / 2));  // a spectre a square unit
   const cache = {};
   return (W) => cache[W] ??= (() => {
+    // as many as 20 W² spectres (the disc well inside); round their mean place, the disc of W² (radius W / √π) and its walls'
+    // room only
     let sys = base;
-    while (count(sys.Delta) < 10 * W * W) sys = supertiles(sys);  // (room for the walls all round too)
-    const items = spectresOf(sys.Delta, ident, []).map((T) => { const p = spectre.map((q) => at(T, q)).map(([x, y]) => [x * S, -y * S]); return { p, m: [0, 1].map((d) => p.reduce((s, q) => s + q[d], 0) / 14) }; });
-    return discPatch(items, W, (h) => h.p);
+    while (sizeOf(sys.Delta).n < 20 * W * W) sys = supertiles(sys);
+    const mid = sizeOf(sys.Delta).c;
+    const items = spectresNear(sys.Delta, ident, mid, (W / Math.sqrt(Math.PI) + 6) / S, []).map((T) => { const p = spectre.map((q) => at(T, q)).map(([x, y]) => [x * S, -y * S]); return { p, m: [0, 1].map((d) => p.reduce((s, q) => s + q[d], 0) / 14) }; });
+    return discPatch(items, W, (h) => h.p, [mid[0] * S, -mid[1] * S]);
   })();
 })();
 export const spectreGrid = (W) => patchGrid(SPECTRE(W), W);

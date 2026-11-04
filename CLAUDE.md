@@ -35,6 +35,13 @@ Never delete the bundles in `Tessera resources` (old versions included, the `Wal
 - A new function goes in the part and section of its concept; a new concept with no section gets one (ask if a
   new part seems needed). PART 8 (Game of Life, ~3,000 lines) has no sections yet: to cut, when decided.
 
+## Names
+- Variables and functions named clearly, consistently and explicitly: what they hold or do, in words (`poleColours`,
+  `shapeAndTiles`, not `pc`, `sat`), the same word for the same thing everywhere (one concept, one name).
+- A name found unclear, misleading or inconsistent is renamed at its source, everywhere it is used (its comments, the
+  tools' copies and the checks too), in its own commit, verified by `tesseraCheck()`; a name that would change a link's
+  words (`w=`, `r=`…) is asked first.
+
 ## Line balance
 `python3 tools/lines.py [from] [to]` (from: HEAD; to: the files now, or a commit) gives each changed code file's lines
 of code only (no comment, no blank line, see `tools/uncomment.py`): before, and +y or −y, nothing else: the « solde » of each

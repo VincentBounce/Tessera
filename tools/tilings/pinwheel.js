@@ -1,5 +1,5 @@
 // The pinwheel as main.js builds it (a copy: PINWHEEL; discPatch in ./patch.js), and its grid for the searches
-import { discPatch, patchGrid } from './patch.js';
+import { discPatch, patchGrid, trianglesNear } from './patch.js';
 /* The pinwheel (Conway and Radin, 1994): a right triangle, its legs 1 and 2, cut in 5 of itself √5 smaller (the altitude to its
  * hypotenuse, then the larger part in 4), again and again: a tiling that never repeats, its tiles turned every way (no
  * way the others' : in a circle, round as a disc). Not edge to edge: a tile's corner may lie on another's side, kept as a
@@ -8,16 +8,18 @@ import { discPatch, patchGrid } from './patch.js';
 const PINWHEEL = (() => {
   const cache = {}, mid = (a, b) => [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2];
   return (W) => cache[W] ??= (() => {
+    // the big triangle, its legs 2L and L, inflated n times (L = √5ⁿ: its tiles' legs 2 and 1, a square unit each), its
+    // incircle (radius L (3 − √5) / 2, its middle that far from both legs) round the disc of W² tiles (radius W / √π) and its walls
     let n = 0;
-    while (5 ** (n / 2) < 1.6 * W + 12) n++;  // (its square of W² tiles and their walls inside the big triangle)
-    const L = 5 ** (n / 2);  // (its tiles' legs 2 and 1: a square unit each)
+    while ((5 ** (n / 2) * (3 - Math.sqrt(5))) / 2 < W / Math.sqrt(Math.PI) + 5) n++;
+    const L = 5 ** (n / 2), r = (L * (3 - Math.sqrt(5))) / 2;
     let tris = [[[0, 0], [2 * L, 0], [0, L]]];  // a tile: its right angle's corner, its long leg's end, its short leg's
-    for (let k = 0; k < n; k++) tris = tris.flatMap(([R, P, Q]) => {
+    for (let k = 0; k < n; k++) tris = trianglesNear(tris.flatMap(([R, P, Q]) => {
       const d = [Q[0] - P[0], Q[1] - P[1]], t = ((R[0] - P[0]) * d[0] + (R[1] - P[1]) * d[1]) / (d[0] ** 2 + d[1] ** 2), H = [P[0] + t * d[0], P[1] + t * d[1]];
       const Mr = mid(H, R), Mp = mid(H, P), Mh = mid(R, P);  // (H: the altitude's foot; the part R H P in 4: its corners at R and P,
       // and the rectangle between cut along H Mh, its two the mirror of the others: both hands, its turns ever more)
       return [[H, R, Q], [Mr, Mh, R], [Mp, P, Mh], [Mr, Mh, H], [Mp, H, Mh]];
-    });
+    }), [r, r], W / Math.sqrt(Math.PI) + 6);  // (round the disc of W² and its walls' room only)
     // the corners on another's side: each side's, in its order (a grid of unit cells over the corners, the ones near a side)
     const at = new Map(), cell = ([x, y]) => `${Math.floor(x)},${Math.floor(y)}`;
     for (const T of tris) for (const p of T) (at.get(cell(p)) ?? at.set(cell(p), []).get(cell(p))).push(p);
@@ -34,7 +36,7 @@ const PINWHEEL = (() => {
       });
       return { p, m: [0, 1].map((d) => (T[0][d] + T[1][d] + T[2][d]) / 3) };
     });
-    return discPatch(items, W, (h) => h.p);
+    return discPatch(items, W, (h) => h.p, [r, r]);  // (round its incircle's middle)
   })();
 })();
 export const pinwheelGrid = (W) => patchGrid(PINWHEEL(W), W);

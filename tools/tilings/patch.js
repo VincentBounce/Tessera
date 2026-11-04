@@ -42,6 +42,15 @@ export function discPatch(items, W, poly, middle = null, norm = Math.hypot) {  /
   const dead = rows.flatMap((h, t) => (h.dead ? [t] : []));  // (cells of the wall among them: a ring's hole)
   return { polys: rows.map((h) => at(h.p)), walls: walls.map(at), dead, core: rows.filter((h) => h.core).map((h) => at(h.p)) };
 }
+// a substitution's triangles near a disc only (round o, R): those whose corners' circle round their middle reaches it (as
+// main.js's trianglesNear; first: its first corner's place in it)
+export const trianglesNear = (tris, o, R, first = 0) => tris.filter((T) => {
+  let x = 0, y = 0, r = -Infinity;
+  for (let i = first; i < first + 3; i++) { x += T[i][0]; y += T[i][1]; }
+  x /= 3; y /= 3;
+  for (let i = first; i < first + 3; i++) r = Math.max(r, Math.hypot(T[i][0] - x, T[i][1] - y));
+  return Math.hypot(x - o[0], y - o[1]) - r <= R;
+});
 // a patch's grid: each cell's neighbours (sharing a corner), the wall's cells none and no one's
 export function patchGrid(h, W) {
   const n = W * W, by = new Map(), start = new Int32Array(n + 1), list = [], k = ([x, y]) => `${Math.round(x * 1e4)},${Math.round(y * 1e4)}`, dead = new Set(h.dead);

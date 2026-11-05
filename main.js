@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.143';
+const VERSION = '0.4.144';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -3892,7 +3892,7 @@ function key(x, y) {
 /* Each stepper takes a digit and returns [key, x, y, z]: a unique key
  * for the cell and the position of its centre (z = 0 in 2D; in 2D, y
  * points down the screen; in 3D, z points up).                       */
-// The king's moves, clockwise from north (screen y points down)
+// The squares' 8 headings, clockwise from north (screen y points down): a walk's on squares (see WALK_NETS), a king's moves
 const KING_STEPS = [[0, -1], [1, -1], [1, 0], [1, 1], [0, 1], [-1, 1], [-1, 0], [-1, -1]];
 
 /* The Cairo tiling: equal pentagons, their corners where 4 meet on a square grid (of side CAIRO, so

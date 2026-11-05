@@ -4,6 +4,7 @@
 //   await tesseraCheck({ fuzz: 400, seed: 7 });                            // 400 actions at random, menu to menu (transitions, smallest sizes)
 //   await tesseraCheck({ fuzz: 100, cold: true });                          // and after each, its link loaded cold beside: the same menus offered
 //   await tesseraCheck({ colours: true });                                 // every Life surface offers colours (more than Classic) at one of its sizes at least
+//   await tesseraCheck({ battles: true });                                 // every walk on a surface: its battles' walkers each A's path moved, 4 minutes
 //   await tesseraCheck({ parts: true });                                   // every count of colours offered, as many cells a colour: plane and solids, 7 minutes
 //   await tesseraCheck({ deep: true });                                    // every grid's rules (yours too), How it works, colours, zones, smallest size: a night's
 //   await tesseraCheck({ known: true });                                   // Life's known results, played on the graphics card: a minute
@@ -363,6 +364,34 @@ async function coloursOffered(fail) {
   return checked;
 }
 
+// Battles fair: every walk on a surface (see battleMode), at its size, offers a count of walkers past Classic, and in each
+// count offered every walker, its digits A's, walks A's path moved by its map (see battleStarts, placeMap), step for step,
+// till one dies: none its mirror. A night's (4 minutes)
+async function battlesFair(fail) {
+  let checked = 0;
+  for (const w of Object.keys(MODES).filter(battleMode)) {
+    location.hash = `#x=pi&w=${w}`;
+    await wait(900);
+    const counts = battleCounts(w), grid = !!MODES[w].grid;
+    checked++;
+    if (!counts.length) fail(`${w}: no battle at size ${sphereSize()}`);
+    for (const K of counts) {
+      location.hash = `#x=pi&w=${w}&d=3000&k=${K}&${'bcdefghijkl'.slice(0, K - 1).split('').map((c) => `x${c}=pi`).join('&')}`;
+      for (let t = 0; t < 30 && walk.battle?.player?.K !== K; t++) await wait(300);
+      const P = walk.battle?.player, g = walk.geo;
+      checked++;
+      if (P?.K !== K) { fail(`${w} ${K} walkers: no battle (${walkSaid})`); continue; }
+      P.to(Infinity);
+      const start = walkStart(g, MODES[w]), spread = startSpread(g, grid, start), G = battleGroups(g, K).reduce((a, b) => (spread(b) > spread(a) + 1e-9 ? b : a));
+      const end = Math.min(...P.dead.map((d) => (d < 0 ? P.n : d)));
+      let off = 0;
+      for (let s = 1; s < K; s++) for (let i = 0; i < end; i++) if (P.places[s][i] !== G[s](P.places[0][i], grid)) off++;
+      if (off) fail(`${w} ${K} walkers: ${off} steps off A's path moved (#x=pi&w=${w}&k=${K})`);
+    }
+  }
+  return checked;
+}
+
 // a grid that never repeats, round (by its own measure: Ammann's an octagon): in each of 72 ways from its middle, its cells as far out as the median less 3 at most (a
 // disc of its patch, never cut by the patch's edge: the pinwheel's big triangle's, v0.1.1386's), its sizes up to 128
 function checkDiscs(fail) {
@@ -678,13 +707,14 @@ function checkRosetteSpheres(fail) {
   return checked;
 }
 
-window.tesseraCheck = async ({ parts = false, known = false, crawl: andCrawl = false, deep: andDeep = false, fuzz: actions = 0, cold = false, colours = false, seed = Date.now() % 1e6, from, only } = {}) => {
+window.tesseraCheck = async ({ parts = false, known = false, crawl: andCrawl = false, deep: andDeep = false, fuzz: actions = 0, cold = false, colours = false, battles = false, seed = Date.now() % 1e6, from, only } = {}) => {
   const failures = [], fail = (s) => { failures.push(s); localStorage.tesseraDeepFailures = JSON.stringify(failures); };
   let checked = checkMeshes(fail) + checkBlockWraps(fail) + checkDiscs(fail) + checkTips(fail) + checkMarks(fail) + checkRosetteSpheres(fail) + checkTwistedSphere(fail) + checkDiscCuts(fail) + await checkSheets(fail);
   if (known) checked += await checkKnown(fail);
   if (andCrawl) checked += await crawl(fail);
   if (actions) checked += await fuzz(fail, actions, seed, cold);
   if (colours) checked += await coloursOffered(fail);
+  if (battles) checked += await battlesFair(fail);
   if (parts) checked += await partsEqual(fail);
   if (andDeep) checked += await deep(fail, from, only);
   return { ok: !failures.length, failures, checked };

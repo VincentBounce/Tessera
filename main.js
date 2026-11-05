@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.176';
+const VERSION = '0.4.177';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -634,6 +634,7 @@ const wholeTurns = (polys) => {
   return (p) => turn.get(pointKey(...p)) >= 2 * Math.PI - 1e-3;
 };
 const pointKey = (x, y, k = 1000) => roundOff(x, k) * 67108864 + roundOff(y, k);  // (a number: within 33,000 steps of 1/k of the origin)
+const mod = (x, m) => ((x % m) + m) % m;  // (x modulo m, never negative)
 
 /* ---- 1.6 Helpers shared by the page and the worker ------------------------------------------- */
 // A worker cannot see this file's functions: compute() builds its source from the text of
@@ -1020,7 +1021,7 @@ const planeKind = (kind) => (STRAIGHT_RECTS.has(kind) && outlineOf(kind) === 'sq
 // a grid's outline (shape: the one picked, else another's), as it can have it: a hexagon, a six-fold one's walled; a rhombus, a slanted
 // one's (its cells as stored); else a rectangle (a grid that never repeats: its disc)
 const outlineOf = (kind, shape = plane.shape, torus = planeTorus(kind)) => (APERIODIC[kind] ? 'disc' : RECTS[kind] ? 'square' : shape === 'hex' && hexagonFits(kind) && !torus ? 'hex' : shape === 'rhombus' && STRAIGHT_RECTS.has(kind) ? 'rhombus' : 'square');
-const tilingAt = (kind, x, y) => { const P = tilingOf(kind).polys, m = P.length, i = Math.floor(x / m); return P[((x % m) + m) % m].map(([u, v]) => [u + i, v + y]); };  // lattice units
+const tilingAt = (kind, x, y) => { const P = tilingOf(kind).polys, m = P.length, i = Math.floor(x / m); return P[mod(x, m)].map(([u, v]) => [u + i, v + y]); };  // lattice units
 // a grid's centre of its turns: a pattern turned about it (see orientPattern), a grid in a hexagon round it (see planeShape)
 const tilingPivot = (kind) => (kind === 'square' ? [0, 0] : kind === 'cairo' ? [-CAIRO_0[0] * CAIRO, -CAIRO_0[1] * CAIRO] : TILINGS[kind] ? tilingWorld(kind, TILINGS[kind].pivot) : latticeAt(0, 0));
 const tilingWorld = (kind, [u, v]) => { const [a, b] = tilingOf(kind).basis; return [u * a[0] + v * b[0], u * a[1] + v * b[1]]; };
@@ -5016,7 +5017,7 @@ function rosetteSeam(F) {
   for (let s = 0; s < N; s++) {
     let rough = 0;
     for (let i = 0; i < N && rough < best[1]; i++) {
-      const j = (((s - i) % N) + N) % N, jn = (((s - i - 1) % N) + N) % N;
+      const j = mod(s - i, N), jn = mod(s - i - 1, N);
       rough = Math.abs(L[i] - L[jn]) > 1e-6 ? Infinity : Math.max(rough, Math.abs(r[(i + 1) % N] + r[jn] - r[i] - r[j]));
     }
     if (rough < best[1]) best = [s, rough];
@@ -5027,7 +5028,7 @@ function rosetteSphereMesh(kind, W) {
   const key = `rosetteSphere${kind}${W}`;
   if (meshCache[key]) return meshCache[key];
   const F = APERIODIC[kind](W), m = F.m, { id, X, Y, links, ring, N, th, r, best } = rosetteSeam(F);
-  const pair = (i) => (((best[0] - i) % N) + N) % N;
+  const pair = (i) => mod(best[0] - i, N);
   // the south's longitudes the disc's turned over and round, C − its angle: C the pairs' angles' sum, their mean way round
   const C = Math.atan2(th.reduce((s2, a, i) => s2 + Math.sin(a + th[pair(i)]), 0), th.reduce((s2, a, i) => s2 + Math.cos(a + th[pair(i)]), 0));
   const R = r.reduce((s2, x, i) => s2 + (x + r[pair(i)]) / 2, 0) / N, k = Math.PI / 2 / R;  // (R: on the equator; k: radians a unit)
@@ -5196,7 +5197,7 @@ function kleinSheetKey(x0, y0, nu, nv, up) {
   const k = Math.floor(x / nu);
   x = r6(x - k * nu);
   if (k % 2) y = r6(nv + 2 * up - y);  // (across the seam, turned over its tiles' mirror line)
-  y = r6(((y % nv) + nv) % nv);
+  y = r6(mod(y, nv));
   return `${x},${y}`;
 }
 function kleinMesh(kind, nv, nu = kleinColumns[kind](nv)) {
@@ -5382,7 +5383,7 @@ function mobiusSheetOf(kind0, size, count = false) {  // count: its tiles counte
   if (kind === 'mobiusTriTurned') {
     const W = nv, cols = steps(W), L = cols * H;
     for (let i = -1; i <= cols; i++) {
-      const x0 = i * H, x1 = x0 + H, o0 = (((i % 2) + 2) % 2) / 2, o1 = 0.5 - o0;  // the lattice's rows on either side
+      const x0 = i * H, x1 = x0 + H, o0 = mod(i, 2) / 2, o1 = 0.5 - o0;  // the lattice's rows on either side
       for (let y = o0 - 2; y < W + 2; y += 1) {
         const right = [[x0, y], [x1, y + 0.5], [x0, y + 1]], cr = [(2 * x0 + x1) / 3, y + 0.5];  // ▶
         if (cr[0] >= 0 && cr[0] < L && cr[1] > 0.25 && cr[1] < W - 0.25) put(() => right);
@@ -5619,7 +5620,7 @@ function tilingTorusMesh(kind, nv, nu, turned = false) {  // turned: B round the
   const { verts, add } = vertexStore(), tiles = [], uv = [], mid = [], ids = new Map(), [[p, q], [r, s]] = sheet, [a, b] = t.basis;
   const tube = (nv * Math.hypot(r * a[0] + s * b[0], r * a[1] + s * b[1])) / (nu * Math.hypot(p * a[0] + q * b[0], p * a[1] + q * b[1]));  // (a sheet cell's sides: round the tube, round the ring)
   const corner = (i, j) => {  // a corner once, by its place on the sheet round the seams (not by its rounded point in space)
-    const k = `${roundOff(((i % nu) + nu) % nu, 1e4) % roundOff(nu, 1e4)},${roundOff(((j % nv) + nv) % nv, 1e4) % roundOff(nv, 1e4)}`;
+    const k = `${roundOff(mod(i, nu), 1e4) % roundOff(nu, 1e4)},${roundOff(mod(j, nv), 1e4) % roundOff(nv, 1e4)}`;
     if (!ids.has(k)) ids.set(k, add(...torusPoint(i, j, nu, nv, 1, tube)));
     return ids.get(k);
   };
@@ -5636,7 +5637,7 @@ function tilingTorusMesh(kind, nv, nu, turned = false) {  // turned: B round the
     while (c.length < sides) c.push(c.at(-1));
     tiles.push(c.map(([i, j]) => corner(i, j)));
     uv.push(...c.flat());
-    latticeCells.push((((((j0 + j) % nv) + nv) % nv) * nu + ((((i0 + i) % nu) + nu) % nu)) * Math.abs(det) + d);
+    latticeCells.push((mod(j0 + j, nv) * nu + mod(i0 + i, nu)) * Math.abs(det) + d);
   });
   return (meshCache[key] = Object.assign(finishTorus(verts, tiles, sides, nu, nv, uv, mid, true), { tiling: kind, sheet, tube, uvMid: new Float64Array(mid), latticeCells, originCell: nat[0] }));
 }
@@ -6402,7 +6403,7 @@ function torusStarts(g) {
 function edgeStarts(G, v0, way) {
   const starts = new Map();  // heading (0 … 180) → its start
   for (const f of G.nbrs[v0]) {
-    const [e, n] = way(f), h = (Math.atan2(e, n) * 180) / Math.PI, key = Math.round(((h % 180) + 180) % 180) % 180;  // (clockwise from north, −180 … 180; its direction, either way)
+    const [e, n] = way(f), h = (Math.atan2(e, n) * 180) / Math.PI, key = Math.round(mod(h, 180)) % 180;  // (clockwise from north, −180 … 180; its direction, either way)
     if (!starts.has(key)) starts.set(key, Math.abs(h - key) < 90 ? [v0, f] : [f, v0]);  // else from v0 to f, the other way
   }
   return [...starts.keys()].sort((a, b) => a - b).map((key) => starts.get(key));
@@ -6884,7 +6885,7 @@ function surfaceSteps(g, mode, acts = surfaceActs(mode)) {
       const [kind, by] = acts[d], read = parity ? 1 - q : 0;
       if (kind === 'pivot') return [t, entry, (p + by + k) % k, read];
       const ks = live[t], n = ks ? ks.length : k, at = ks ? ks.indexOf(entry) : entry;
-      const j = (((at + (kind === 'turn' ? by : k / 2) - p) % n) + n) % n, edge = ks ? ks[j] : j, next = [g.nbr[k * t + edge], g.nbrEdge[k * t + edge]];
+      const j = mod(at + (kind === 'turn' ? by : k / 2) - p, n), edge = ks ? ks[j] : j, next = [g.nbr[k * t + edge], g.nbrEdge[k * t + edge]];
       return [...next, kind === 'parity' ? (q ? -1 : 1) : 0, read];
     },
     key: ([t, entry, p, q]) => ((t * k + entry) * k + ((p + k) % k)) * 2 + q,
@@ -8716,7 +8717,7 @@ function blockWrapW(kind, W) {
 const planeCols = (kind, W, K = lifeColours) => colourW(kind, W * (RECT_ASPECT[kind] ?? 1), K);  // its motifs a row: as many as make it square (its motif's height over its width)
 const planeRow = (kind, W) => (tilingOf(kind) ? tilingOf(kind).polys.length * planeCols(kind, W) : kind === 'kite' ? 6 * W : kind === 'tri' || kind === 'cairo' ? 2 * W : W);  // cells a row (two a rhombus, two a square of Cairo pentagons, six kites a rhombus)
 // kite x of row y: kite x % 3 of triangle ⌊x / 3⌋ (as the triangles' x), its corners on the triangles' lattice
-const kiteCorners = (x, y) => { const t = Math.floor(x / 3), i = t >> 1; return kitesOf(t & 1 ? [[i + 1, y], [i + 1, y + 1], [i, y + 1]] : [[i, y], [i + 1, y], [i, y + 1]])[((x % 3) + 3) % 3]; };
+const kiteCorners = (x, y) => { const t = Math.floor(x / 3), i = t >> 1; return kitesOf(t & 1 ? [[i + 1, y], [i + 1, y + 1], [i, y + 1]] : [[i, y], [i + 1, y], [i, y + 1]])[mod(x, 3)]; };
 const latticeAt = (a, b) => [a + b / 2, b * H];  // a corner of the triangles, a centre of the hexagons
 // An aperiodic tiling's grid of side W (the hats, Penrose's rhombi): from a patch of it (items: their middles m, each
 // about a square unit; p: its corners, flat, x and y in turn, or each(item, f) for them), the W² items nearest a middle (a disc), in W bands from the top,
@@ -9123,12 +9124,12 @@ const FLOWER_SEED = [[[0,0,0,1,0,0],0,12],[[1,1,0,0,0,0],0,10],[[1,1,1,-1,-1,-2]
 function HIRSCHHORN(R) {
   const times = ([a, b, c, d, e, f]) => [-f, a, b, c + f, d, e], ZETA = [[1, 0, 0, 0, 0, 0]];  // (× ζ)
   for (let k = 1; k < 18; k++) ZETA.push(times(ZETA[k - 1]));
-  const mod = (k) => ((k % 18) + 18) % 18, turn = (p, k) => { for (let r = 0; r < mod(k); r++) p = times(p); return p; };  // (k 20°s)
+  const turn = (p, k) => { for (let r = 0; r < mod(k, 18); r++) p = times(p); return p; };  // (k 20°s)
   const CS = [Math.cos, Math.sin].map((f) => [0, 1, 2, 3, 4, 5].map((i) => f((i * Math.PI) / 9))), xy = (p) => { let x = 0, y = 0; for (let i = 0; i < 6; i++) { x += p[i] * CS[0][i]; y += p[i] * CS[1][i]; } return [x, y]; };
   const WAYS = [[0, 6, 7, 12, 16], [15, 2, 3, 9, 11]];  // its sides' ways (AB BC CD DE EA), mirrored (E'D' D'C' C'B' B'A' A'E'), counterclockwise
   const tile = (p, m, d, s = 0) => {  // from p, its corner s, its sides' ways turned d: its corners
     const P = [p];
-    for (let i = 0; i < 4; i++) { const z = ZETA[mod(WAYS[m][(s + i) % 5] + d)], q = []; for (let j = 0; j < 6; j++) q.push(P[i][j] + z[j]); P.push(q); }
+    for (let i = 0; i < 4; i++) { const z = ZETA[mod(WAYS[m][(s + i) % 5] + d, 18)], q = []; for (let j = 0; j < 6; j++) q.push(P[i][j] + z[j]); P.push(q); }
     return P.map(xy);
   };
   const tiles = [];
@@ -9262,7 +9263,7 @@ function insidePolygon(pts, u, v) {
 const cellAtMemo = {}, tilesNear = new WeakMap();  // (a tiling's lattice cell's polygons, at lattice cell 0; a grid that never repeats, its tiles by squares of 2: see planeCellAt)
 function planeCellAt(kind, W, wx, wy, how = 'in') {
   let x, y, row = planeRow(kind, W);  // (W rows, row cells each: see planeCols)
-  const on = (x, y) => (how === 'free' ? [x, y] : how === 'round' ? [((x % row) + row) % row, ((y % W) + W) % W] : planeGrid(kind, W).at(x, y) >= 0 ? [x, y] : null);  // ('in': a cell of the grid's, see planeGrid)
+  const on = (x, y) => (how === 'free' ? [x, y] : how === 'round' ? [mod(x, row), mod(y, W)] : planeGrid(kind, W).at(x, y) >= 0 ? [x, y] : null);  // ('in': a cell of the grid's, see planeGrid)
   if (tilingOf(kind)) {  // its lattice cell's polygons, and those of the cells round it (the point moved back by the lattice step: its polygons' corners once)
     const [a, b] = tilingOf(kind).basis, [u, v] = inBasis([wx, wy], a, b), m = tilingOf(kind).polys.length;
     const cell0 = (cellAtMemo[kind] ??= Array.from({ length: m }, (_, k) => planeCorners(kind, k, 0)));
@@ -10041,7 +10042,7 @@ function placeCells(P, la, lb, U, V, outlineFirst) {
   const lu = Math.hypot(...U), lv = Math.hypot(...V);
   const at = ([u, v], n, m) => [u + n * la[0] + m * lb[0], v + n * la[1] + m * lb[1]], far = (du, dv) => Math.hypot(du * U[0] + dv * V[0], du * U[1] + dv * V[1]);
   const out = (k, n, m, sa, sb) => P[k].reduce((t, q) => { const [u, v] = at(q, n, m); return t + lu * Math.max(0, sa - u, u - sa - 1) + lv * Math.max(0, sb - v, v - sb - 1); }, 0);
-  const frac = (x) => Math.round((((x % 1) + 1) % 1) * 1e4) % 1e4;  // (once each: a lattice step apart, the same)
+  const frac = (x) => Math.round(mod(x, 1) * 1e4) % 1e4;  // (once each: a lattice step apart, the same)
   const centres = new Map(P.flatMap((Q) => [meanPoint(Q), ...Q]).map((c) => [inBasis(c, la, lb).map(frac).join(), c]));
   // the outline: its cells' sides not shared by two of them (in world units), once a set of cells
   const outline = (cells) => rimSides(cells.flatMap(([k, n, m]) => polySides(P[k].map((q) => at(q, n, m)))), (e) => e.map(([u, v]) => pointKey(u, v, 1e4)).sort().join(' '))
@@ -11394,7 +11395,6 @@ function blockStep(M, a, b, g) {
 // 3; hexagons, a corner and one next to it; Cairo's pentagons, the 2 kinds of corners where 4 meet). A corner's set: by
 // its place on the grid's lattice of corners (squares, triangles, hexagons with their middles: o, e1, e2 from cell 0), Cairo's
 // by its neighbours' (no two of a set on one pentagon). A block's cells in turn round its corner (a rule's ring)
-const mod = (x, m) => ((x % m) + m) % m;
 // (lattice: a set's lattice from a cell's corners c and middle o, in any coordinates: the plane's, a torus's sheet)
 const BLOCKS = {
   square: { k: 4, set: ([i, j]) => `${mod(i, 2)},${mod(j, 2)}`, turn: ['1,1', '0,0'], lattice: (c) => [c[0], sub(c[1], c[0]), sub(c[3], c[0])] },
@@ -12225,7 +12225,7 @@ function colourUnitPlaces(g) {
   const [P, Q] = g.mobius ? [2 * g.L, Infinity] : g.klein ? [Infinity, Infinity] : [g.nu, g.nv], near = (d, p) => (p < Infinity ? d - p * Math.round(d / p) : d);
   const key = (t) => (g.sheet ? Math.floor(t / (g.n / (g.nu * g.nv))) : latticeCellOf(g, t)), sums = new Map(), out = new Float64Array(2 * g.n);  // (a sheet cell's tiles listed together, see tilingTorusMesh)
   for (let t = 0; t < g.n; t++) { const [u, v] = sheetPlace(g, t), s = sums.get(key(t)); if (!s) sums.set(key(t), [u, v, u, v, 1]); else { s[0] += s[2] + near(u - s[2], P); s[1] += s[3] + near(v - s[3], Q); s[4]++; } }
-  const wrap = (x, p) => (p < Infinity ? ((x % p) + p) % p : x);
+  const wrap = (x, p) => (p < Infinity ? mod(x, p) : x);
   for (let t = 0; t < g.n; t++) { const s = sums.get(key(t)); out[2 * t] = wrap(s[0] / s[4], P); out[2 * t + 1] = wrap(s[1] / s[4], Q); }
   return (g.colourUnitPlaces = out);
 }
@@ -12809,7 +12809,7 @@ function sheetIndex(g) {
       const k = Math.floor(u / g.nu);
       u -= k * g.nu;
       if (g.klein && k % 2) v = g.nv - v;
-      v = ((v % g.nv) + g.nv) % g.nv;
+      v = mod(v, g.nv);
     }
     const r = (x, n) => { const q = roundOff(x); return n && q === roundOff(n) ? 0 : q; };
     return r(u, g.mobius ? 2 * g.L : g.nu) * 2 ** 22 + r(v, g.mobius ? 0 : g.nv) + 2 ** 21;  // (a number: millions looked up for an icon)

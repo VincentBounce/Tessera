@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.182';
+const VERSION = '0.4.183';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -17404,13 +17404,9 @@ function showNumber() {
 }
 // The start selector (hexagon sphere): − / + or a number typed, then Enter. Hovering its field
 // (not − / +) shows every start on an empty globe, turned towards the chosen one.
-function setStart(n) {
+function setStart(n) {  // (all again, as any setting: its teams and battle hang on its start too, its digits cached)
   $('startNo').value = Math.max(1, Math.min(n, modeStarts().length));
-  syncSizeStepper();
-  if (!current) return;
-  buildWalk();
-  describe(walk.base);
-  showAll();
+  compute();
 }
 $('startDown').addEventListener('click', () => setStart(startNo() - 1));
 $('startUp').addEventListener('click', () => setStart(startNo() + 1));

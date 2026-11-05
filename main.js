@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.207';
+const VERSION = '0.4.208';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -14155,7 +14155,7 @@ function exportSetups() {
   const blob = new Blob([JSON.stringify({ app: 'Tessera', version: 1, setups: list }, null, 2)], { type: 'application/json' });
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
-  a.download = 'tessera-setups.json';
+  a.download = `${new Date().toLocaleDateString('sv')} Tessera v${VERSION} - Gallery export.json`;  // (its day, YYYY-MM-DD, here; the version that wrote it)
   a.click();
   URL.revokeObjectURL(a.href);
 }

@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.216';
+const VERSION = '0.4.217';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -713,17 +713,17 @@ const BANDS = 256;
 // The walk's colours, per theme (see applyTheme): the rainbow darker on a light page, the digits'
 // grey instead of white, the one colour a deeper amber
 const PALETTES = {
-  // unlit: the surfaces' tiles not walked (ocean: Ocean's, a sea blue); trail: a Life cell just dead, fading to unlit; alive: Life in one colour
+  // unlit: the surfaces' tiles not walked (ocean: Ocean's, a sea blue; lands: its walkers', a map's green, sand, brown); trail: a Life cell just dead, fading to unlit; alive: Life in one colour
   // directions: each step's colour by where it goes (its arrow), the same in every walk: left blue, straight
   // on (north) gold, right pink, back (south) turquoise, then the diagonals (↖ green, ↗ magenta, ↘ orange,
   // ↙ violet: the opposite turns far apart) and up, down;
   // digits: for the walks whose digits are no direction, in the same colours; grey: a spiral's 0
   dark: { light: 60, digits: ['#4f7bff', '#f0609f', '#f2b630', '#2fbdb7', '#9270f5', '#7fc244', '#f28042', '#d466f0'], grey: '#e6edf3', mono: '#f0b429',
           directions: { '←': '#4f7bff', '↑': '#f2b630', '→': '#f0609f', '↓': '#2fbdb7', '↖': '#7fc244', '↗': '#d466f0', '↘': '#f28042', '↙': '#9270f5', '⊙': '#f06b6b', '⊗': '#45c8f0' },
-          unlit: '#1f2630', ocean: '#14456b', trail: '#6b7f99', fade: '#c98f1f', alive: '#e6edf3', edgeRgb: [255, 255, 255], edgeAlpha: 0.25, shade: 0.6, fadeEdges: true },
+          unlit: '#1f2630', ocean: '#1d5fa6', lands: ['#4f9a36', '#d9b44a', '#9a5c33'], trail: '#6b7f99', fade: '#c98f1f', alive: '#e6edf3', edgeRgb: [255, 255, 255], edgeAlpha: 0.25, shade: 0.6, fadeEdges: true },
   light: { light: 48, digits: ['#2f5bea', '#e8438a', '#e0a100', '#13a8a2', '#7c4dff', '#5fa82a', '#f0702a', '#c03fe0'], grey: '#6e7781', mono: '#bf8700',
            directions: { '←': '#2f5bea', '↑': '#e0a100', '→': '#e8438a', '↓': '#13a8a2', '↖': '#5fa82a', '↗': '#c03fe0', '↘': '#f0702a', '↙': '#7c4dff', '⊙': '#e5484d', '⊗': '#1aa3d6' },
-           unlit: '#eef1f5', ocean: '#9cc7e6', trail: '#7d8896', fade: '#c98a10', alive: '#1f2328', edgeRgb: [0, 0, 0], edgeAlpha: 0.11, shade: 0.35, fadeEdges: true, tileLift: 0.22 },
+           unlit: '#eef1f5', ocean: '#3d8bd8', lands: ['#5fb043', '#ecc85c', '#a8673a'], trail: '#7d8896', fade: '#c98a10', alive: '#1f2328', edgeRgb: [0, 0, 0], edgeAlpha: 0.11, shade: 0.35, fadeEdges: true, tileLift: 0.22 },
 };
 const hexRgb = (c) => [1, 3, 5].map((i) => parseInt(c.slice(i, i + 2), 16));  // [r, g, b] of a #rrggbb colour (any CSS colour: see rgbOf)
 const GRADIENT = [], DIGIT_COLORS = [], LIFE_TRAIL = [], LIFE_FADE = [], DIRECTION_COLOURS = {};
@@ -734,11 +734,11 @@ const GRADIENT = [], DIGIT_COLORS = [], LIFE_TRAIL = [], LIFE_FADE = [], DIRECTI
 // strip, 6 × 2 round a torus (the last pair next to the first), 3 × 4 on a square torus, 4 × 3 on the plane
 const LIFE_HUES = [2, 222, 48, 135, 275, 185, 318, 25, 90, 340, 245, 160], LIFE_COLOURS = [];
 let GREY;
-let MONO, UNLIT, OCEAN, LIFE_ALIVE, EDGE_RGB, EDGE_ALPHA, SHADE, FADE_EDGES, TILE_LIFT;  // TILE_LIFT: the tiles' rainbow mixed with white  // EDGE_RGB, EDGE_ALPHA: the tile edges; SHADE: how dark a tile turned away gets
+let MONO, UNLIT, OCEAN, LANDS, LIFE_ALIVE, EDGE_RGB, EDGE_ALPHA, SHADE, FADE_EDGES, TILE_LIFT;  // TILE_LIFT: the tiles' rainbow mixed with white  // EDGE_RGB, EDGE_ALPHA: the tile edges; SHADE: how dark a tile turned away gets
 function setPalette(theme) {
   const P = PALETTES[theme];
   // the surfaces' tile edges light on a dark page, dark on a light one, as the 2D grid
-  UNLIT = P.unlit; OCEAN = P.ocean; LIFE_ALIVE = P.alive; EDGE_RGB = P.edgeRgb; EDGE_ALPHA = P.edgeAlpha;
+  UNLIT = P.unlit; OCEAN = P.ocean; LANDS = P.lands; LIFE_ALIVE = P.alive; EDGE_RGB = P.edgeRgb; EDGE_ALPHA = P.edgeAlpha;
   SHADE = P.shade; FADE_EDGES = !!P.fadeEdges; TILE_LIFT = P.tileLift ?? 0;
   const [a, b] = [hexRgb(P.trail), hexRgb(P.unlit)];
   // the 8 shades of a dying Life cell (a Generations rule's stages), from the trail colour to unlit; and of
@@ -14855,7 +14855,7 @@ function drawSphere() {
     levelOf = (t) => (visits[t] && last[t] >= 0 ? 1 + last[t] : 0);
   }
   if (walk.battle) {  // a battle: its walkers' bodies in Life's colours (A red, B blue, C gold, see colourBlock), paler than their heads
-    const P = walk.battle.player, K = P.K, colours = LIFE_COLOURS.slice(0, K);
+    const P = walk.battle.player, K = P.K, colours = Array.from({ length: K }, (_, s) => walkerColour(s));
     P.to(cur);
     // each tile's level once: with land (the Land ones) its land, always, plain as its bodies are (Area, the
     // classic walks' look, not used); in Cut the areas each body closes, by Area (Light translucent, Plain as its body);
@@ -15163,7 +15163,9 @@ const paintLevels = (palette, levelOf) => (out, n) => {
 // gone, by a fixed plane through the middle (see CUT_AXES); the two apart: with both, what is left see-through
 const GLASS_ALPHA = 0.4;  // (a tile's share: a layer behind seen at 60%, two at 36%…)
 const glassOn = () => $('glass').checked && !$('glassRow').hidden;
-const blankTile = () => ($('ocean').checked && !$('oceanRow').hidden ? OCEAN : UNLIT);  // (a surface's tile none has painted: Ocean's sea blue, or the theme's)
+const oceanOn = () => $('ocean').checked && !$('oceanRow').hidden;
+const blankTile = () => (oceanOn() ? OCEAN : UNLIT);  // (a surface's tile none has painted: Ocean's sea blue, or the theme's)
+const walkerColour = (s) => (oceanOn() && LANDS[s] ? LANDS[s] : LIFE_COLOURS[s]);  // (a battle's walker s: Ocean's lands up to a Trio, else Life's colours)
 // Cut: Off, or a fixed plane through the middle facing one of the view's axes (E, N, Up, as drawn in its corner), the half on
 // that axis's side gone: its notches on a row as Flat ── Inflated (see sizeGauge)
 const CUT_AXES = [['Off'], ['E', [1, 0, 0]], ['N', [0, 1, 0]], ['Up', [0, 0, 1]]];
@@ -15953,7 +15955,7 @@ function gpuDrawPipe(name, { vertex, fragment, buffers, topology = 'triangle-lis
 }
 // a battle's colours in the palette (pal), for its lines along the grid: A's body, B's (their heads: their arrows, see drawOverlay)
 function battlePalette(D) {
-  const colours = LIFE_COLOURS.slice(0, 12), key = `battle|${colours}`;  // (as the theme makes them: a battle's 12 at most)
+  const colours = Array.from({ length: 12 }, (_, s) => walkerColour(s)), key = `battle|${colours}`;  // (as the theme makes them: a battle's 12 at most)
   if (D.keys.pal === key) return;
   const pal = new Uint8Array(4 * 256);
   colours.forEach((c, k) => pal.set([...rgbCached(c), 255], 4 * k));
@@ -16445,7 +16447,7 @@ function drawOverlay() {
     B.to(cur);
     for (const s of B.living()) {
       const Q = B.places[s], P = (i) => placePoint(Q[i]), tileAt = (i) => (walk.vert ? walk.geo.grid.tileOf[Q[i]] : Q[i]);
-      if (tileVisible(tileAt(cur))) drawSphereCursor(ctx, P, tileAt, LIFE_COLOURS[s], placePoint(cameFrom(walk.geo, !!walk.vert, B.starts[s])));
+      if (tileVisible(tileAt(cur))) drawSphereCursor(ctx, P, tileAt, walkerColour(s), placePoint(cameFrom(walk.geo, !!walk.vert, B.starts[s])));
     }
     return;
   }

@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.186';
+const VERSION = '0.4.187';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -17582,11 +17582,7 @@ function turnTorus(turned) {
 }
 $('sphereF').addEventListener('change', () => {
   syncSizeStepper();
-  if (MODES[$('mode').value].life) { compute(); return; }  // one digit per cell: maybe more digits
-  if (!current) return;
-  buildWalk();
-  describe(walk.base);
-  showAll();
+  compute();  // (as any setting: a Life's digits, one per cell; a walk's teams and Centred, by its size)
 });
 // A formula left wrong (by clicking elsewhere) is undone: the one in use comes back
 $('formula').addEventListener('change', () => {

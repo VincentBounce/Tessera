@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.192';
+const VERSION = '0.4.193';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -14632,18 +14632,20 @@ function drawSphereCursor(ctx, P = (i) => [walk.wx[i], walk.wy[i], walk.wz[i]], 
   // scale to the tile: the arrow is 1.6·size long, about half an edge, centred on the tile centre
   const sc = walk.shape.corners, edge = walk.R * Math.hypot(sc[0] - sc[3], sc[1] - sc[4], sc[2] - sc[5]);
   const size = 0.3 * edge;
-  const at = (fwd, lat) => {
-    fwd -= 0.2;  // the arrow spans −0.6 … 1 along its axis: shift it so it is centred
+  drawArrow(ctx, fill, (fwd, lat) => {
     const [x, y] = projectPoint(...[0, 1, 2].map((d) => pos[d] + h[d] * fwd * size + side[d] * lat * size));
     return [view.ox + x * view.scale, view.oy + y * view.scale];
-  };
-  const pts = [at(1, 0), at(-0.6, 0.7), at(-0.3, 0), at(-0.6, -0.7)];
+  });
+}
+// A walker's arrow, on a plane or a surface alike: its tip ahead, its notch behind, centred on its place; at(forward,
+// across): a point of it on the screen, in its size
+function drawArrow(ctx, fill, at) {
   ctx.fillStyle = fill;
   ctx.strokeStyle = '#0e1116';
   ctx.lineWidth = 1.5;
   ctx.lineJoin = 'round';
   ctx.beginPath();
-  pts.forEach(([x, y], i) => (i ? ctx.lineTo(x, y) : ctx.moveTo(x, y)));
+  [[1, 0], [-0.6, 0.7], [-0.3, 0], [-0.6, -0.7]].forEach(([f, l], i) => { const [x, y] = at(f - 0.2, l); if (i) ctx.lineTo(x, y); else ctx.moveTo(x, y); });  // (−0.6 … 1 along: shifted to its middle)
   ctx.closePath();
   ctx.stroke();
   ctx.fill();
@@ -16366,16 +16368,7 @@ function drawOverlay() {
     if (l > 1e-6) { dx = ux / l; dy = uy / l; } else { dx = 0; dy = 0; } // step along the view axis
   }
   const a = r * 1.8;
-  ctx.fillStyle = '#ffffff';
-  ctx.strokeStyle = '#0e1116';
-  ctx.lineWidth = 1.5;
-  ctx.beginPath();
-  ctx.moveTo(x + dx * a, y + dy * a);
-  ctx.lineTo(x - dx * a * 0.6 - dy * a * 0.7, y - dy * a * 0.6 + dx * a * 0.7);
-  ctx.lineTo(x - dx * a * 0.6 + dy * a * 0.7, y - dy * a * 0.6 - dx * a * 0.7);
-  ctx.closePath();
-  ctx.stroke();
-  ctx.fill();
+  drawArrow(ctx, '#ffffff', (f, l) => [x + (dx * f - dy * l) * a, y + (dy * f + dx * l) * a]);
 }
 
 

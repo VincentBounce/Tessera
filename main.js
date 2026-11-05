@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.165';
+const VERSION = '0.4.166';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -2607,9 +2607,8 @@ function numbersOnFormulas() {
 function renderNumberPicker(active) {
   if (active !== numberShown) [numberShown, numberTab] = [active, null];
   const tab = numberTab ?? NUMBER_TABS.find(([, groups]) => groups.includes(PRESETS[active]?.group))?.[0] ?? NUMBER_TABS[0][0];
-  const shown = NUMBER_TABS.find(([name]) => name === tab)[1], tabs = document.createElement('div');
-  tabs.className = 'choice-row';
-  tabs.append(...NUMBER_TABS.map(([name, , title]) => {
+  const shown = NUMBER_TABS.find(([name]) => name === tab)[1];
+  const tabs = tileGroup(NUMBER_TABS.map(([name, , title]) => {
     const b = document.createElement('button');
     b.type = 'button';
     b.title = title;

@@ -251,6 +251,7 @@ button.wide.how-it-works { margin-bottom: 4px; }  /* on its rules' first card, t
 .tile-group:has(> :nth-child(3 of :not([hidden]))) { grid-column: span 3; }  /* (its buttons shown only: a group's hidden ones never count) */
 .tile-group:has(> :nth-child(4 of :not([hidden]))) { grid-column: span 4; }
 .tile-group.wide { grid-column: 1 / -1; }  /* a section's big choice: across its row, its buttons as wide as it shares (2, 3 or 4) */
+:not(.nav-shapes) > .tile-group { margin-bottom: 10px; }  /* (in a section's flow, not a grid of tiles: spaced as a wide button) */
 .tile-group > button { flex: 1 1 0; border-radius: 0; }
 .tile-group > button:nth-child(n + 2 of :not([hidden])) { margin-left: -1px; }  /* one line between them */
 .tile-group > button:nth-child(1 of :not([hidden])) { border-radius: 6px 0 0 6px; }
@@ -261,7 +262,7 @@ button.switch:hover:not(:disabled) { background: var(--pick); }  /* a switch (a 
 button.switch.active:hover:not(:disabled) { background: var(--pick-strong); }
 #yourList { display: contents; }  /* (its sections the pane's, as Life's: see .panel section) */
 .cell-modes button svg { width: 24px; height: 24px; border-radius: 3px; }  /* the looks of a walk on cells: swatches */
-.nav-shapes button.active { border-color: var(--accent); color: var(--accent); background: var(--pick); }
+.nav-shapes button.active, .tile-group > button.active { border-color: var(--accent); color: var(--accent); background: var(--pick); }
 .mode-list { display: flex; flex-direction: column; gap: 4px; margin-bottom: 10px; }
 .mode-list button {
   display: grid;
@@ -430,14 +431,7 @@ button.wide.active, .head-btn.active { border-color: var(--accent); color: var(-
 .form-section:not(:has(> :not([hidden]))) { display: none; }
 .choice-list { display: flex; flex-direction: column; gap: 4px; margin-bottom: 10px; }
 .choice-list button { text-align: left; padding: 5px 8px; font-size: 13px; background: var(--panel); }
-/* a few short choices side by side, as one segmented control */
-.choice-row { display: flex; margin-bottom: 10px; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
-.choice-row button { flex: 1; padding: 5px 4px; font-size: 12px; background: var(--panel); color: var(--muted); white-space: nowrap; border: 0; border-radius: 0; }
-.choice-row button + button { border-left: 1px solid var(--border); }
 #torusTiles .icon { stroke-width: 1.3; transition: transform 0.2s; }  /* the torus's tilings, as the 2D grids (nav-shapes) */
-.choice-row button:hover:not(:disabled) { border-color: var(--border); }  /* no outline on hover */
-.choice-row button:hover:not(:disabled):not(.active) { color: var(--text); }
-.choice-row button.active { background: var(--pick-strong); color: var(--accent); }
 /* Grid | Cells under the list: each side of the walk in use, its base and its digits */
 #walkOn button { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; align-items: stretch; gap: 2px; padding: 7px 10px; text-align: left; }  /* two equal halves, the digits cut with … */
 /* the ant's rules to start from, written as they are typed */

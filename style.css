@@ -286,8 +286,8 @@ button.switch.active:hover:not(:disabled) { background: var(--pick-strong); }
 button.bubble { background: none; }  /* a bubble to click: a rule's (how it works), a base's (the number) */
 button.bubble, .bubble.act { cursor: pointer; }
 button.bubble:hover, .bubble.act:hover { color: var(--text); border-color: var(--muted); }
-button.bubble.active, button.active .bubble { color: var(--accent); border-color: var(--accent); }
-.bubble.active, button.active .bubble.active { background: var(--accent); border-color: var(--accent); color: var(--panel); }  /* (lit, filled gold: the number shown, its base's) */
+button.active .bubble { color: var(--accent); border-color: var(--accent); }  /* (in a card picked) */
+.bubble.active, button.active .bubble.active { background: var(--accent); border-color: var(--accent); color: var(--panel); }  /* (lit, filled gold: the number shown, its base's; how a rule works, shown) */
 .mode-head .bubble, .mode-list .bubble { flex-shrink: 0; }  /* (a card's: whole) */
 .mode-list .bubble { align-self: start; }  /* (at the card's top right) */
 .with-btn > .bubble { margin-left: auto; }  /* (Full number's, at the Formula's right) */

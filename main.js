@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.228';
+const VERSION = '0.4.229';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -10671,7 +10671,7 @@ function renderColours() {
   if (walkTeamsHere(w)) { $('colourBlocks').replaceChildren(...walkTeamTiles(w)); return; }
   $('colourBlocks').replaceChildren(...COLOUR_STEPS.map((k) => tile({ pic: colourBlock(k), text: COLOUR_STEP_NAMES[k],
     title: `${k === 1 ? 'One colour: alive or dead' : `${k} colours: ${LIFE_COLOUR_NAMES.slice(0, k).join(', ')}`}${colourMissing(k) ? ' · a colour gone can come back: a tie, the missing one born' : ''}`,
-    on: k === lifeColours, can: coloursFit(k), mark: colourMissing(k), byDefault: k === 1 ? 'yes' : '', greyed: k > 1 ? 'where the shape has no parts alike for so many colours' : '', click: () => { if (k !== lifeColours) { coloursPicked = lifeColours = k; $('lifeTrail').checked = k === 1; compute(); } } })),  // (Trail: on in Classic, off in colours, at first)
+    on: k === lifeColours, can: coloursFit(k), mark: colourMissing(k), byDefault: k === 1 ? 'yes' : '', greyed: k > 1 ? 'where the shape has no parts alike for so many colours' : '', click: () => { if (k !== lifeColours) { coloursPicked = lifeColours = k; applyDefaults('colours'); compute(); } } })),  // (Trail: on in Classic, off in colours, at first)
     // Mixed, a switch: the colours' cells mixed at random in one place, as one colour's (greyed in one colour and where no zone mixes, see mixable)
     tile({ pic: `<svg viewBox="0 0 4 4" aria-hidden="true">${[[0, 0], [2, 0], [1, 1], [3, 1], [0, 2], [2, 2], [1, 3], [3, 3]].map(([x, y], i) => `<rect x="${x}" y="${y}" width="1" height="1" fill="${LIFE_COLOURS[[0, 4, 2, 6, 5, 1, 7, 3][i]]}"/>`).join('')}</svg>`, text: 'Mixed',
       title: 'The colours placed as one colour is (one patch, a soup), each cell a colour at random', toggle: true, byDefault: 'off', greyed: 'in Classic, in Replicators, Text and Draw, and in the hunt zones that lay each colour\'s own picture or part (Icon, Punk, Emoji, Famous, Anywhere, Realm, Mirror)', on: colourMixed(), can: lifeColours > 1 && mixable(hunt.zone), click: () => { colourMix = !colourMix; compute(); } }),
@@ -13997,7 +13997,7 @@ function applySetup(s) {
     if (MODES[s.w].plane) planeFromSetup(s);
     else startFromSetup(s);  // (a surface's)
     coloursPicked = lifeColours = Number(s.k) || 1;
-    $('lifeTrail').checked = lifeColours === 1;  // (Trail: on in Classic, off in colours, at first)
+    applyDefaults('colours');  // (Trail: see DISPLAY_DEFAULTS)
     colourMix = Number(s.mx) === 1;
     newcomer = Number(s.nc) === 1;
     if (s.r) { ruleFittedTo = s.w; setRuleText(ruleBody(s.r)); }  // a link's rule as it is
@@ -17741,7 +17741,8 @@ function computeFramed() {
 let displayTab = null;
 const modeTabOf = () => `${NAV[$('mode').value]?.[0]}|${modeGroup()}`;  // (the menu's tab, Life or Elementary, and its space: the select's group holds several tabs)
 // The Display settings' defaults, one table: each its control (a box's id), when it comes back (open: the page's opening
-// only, kept from tab to tab; tab: another tab; mode: every mode), its value: one for all, or each tab's ({ all, Life… }:
+// only, kept from tab to tab; tab: another tab; mode: every mode; colours: Life's count of colours; battle: a battle's
+// state, as long as none picks it), its value: one for all, or each tab's ({ all, Life… }:
 // a tab's own, else all's), or by the mode or a battle (a function); displayDefaults and the mode's change set them, and
 // the tiles' marks read them (see defaultOf, defaultMark)
 const DISPLAY_DEFAULTS = {
@@ -17751,6 +17752,7 @@ const DISPLAY_DEFAULTS = {
   autoFit: ['autoFit', 'mode', true], upright: ['upright', 'mode', false], shape: ['shapeM', 'mode', (mode) => (mode.round ? 1 : 0)],  // (Flat 0 ── Inflated 1: a round surface inflated, a solid flat)
   perspective: ['perspective', 'mode', (mode, w) => perspectiveFor(mode, defaultOf('shape', w))],  // (as each mode's own, hand-tuned)
   light: ['light', 'open', true], glass: ['glass', 'open', false], grid: ['showGrid', 'open', true], autoPlay: ['autoPlay', 'open', false],
+  trail: ['lifeTrail', 'colours', () => lifeColours === 1],  // (Life's Trail: on in Classic, two states, off in colours; when the colours change)
   ocean: ['ocean', 'battle', () => battleOn() && NAV[$('mode').value][0] === 'Walk'],  // (on in a walk's battle on a surface, as long as none picks it)
 };
 // its settings that come back at `at`: each box set, checked or valued

@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.130';
+const VERSION = '0.4.131';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -1363,7 +1363,7 @@ function describe(base, available) {
   $('barBase').hidden = false;
   if (creature) { const R = creatureRules(w); setLinks($('barNum'), (barTitle = walkName(w))); setLinks($('barRule'), R.byDigits ? `${withIcons(shownSym)} · ${R.now}` : R.now); $('barRule').title = R.byDigits ? `It turns by the digits of ${shownSym}` : 'It turns by its rule'; $('barBase').hidden = !R.byDigits && !antColours(w); }  // (the base: of digits read, or its colours)
   const colours = antColours($('mode').value);
-  $('barBase').textContent = colours ? `${colours} colours` : `base ${base}`;
+  $('barBase').textContent = colours ? `${colours} colours` : baseWords(base);
   $('barBase').classList.remove('how-it-works');  // (a walk's base: a click, its number; see barBase's click)
   $('barBase').title = 'A click: the number, its digits in this base';
   $('barBase').parentElement.classList.toggle('life', !!creature || battleOn());  // (a creature, a battle laid out as Life's: its title, its chips and ranking's titles under it)
@@ -1627,9 +1627,10 @@ const card = ({ pic = '', name = '', detail = '', base = '', title = '', on = fa
   return b;
 };
 // a card's bubble at its top right: its base (where digits are read); a click shows the number in it (its card picked first),
-// or hides it
+// or hides it. A base's words, every bubble's
+const baseWords = (base) => `base ${base}`;
 const cardBubble = (base, show) => {
-  const b = Object.assign(document.createElement('span'), { className: `mode-base${show ? ' act' : ''}`, textContent: base });
+  const b = Object.assign(document.createElement('span'), { className: `bubble${show ? ' act' : ''}`, textContent: base });
   if (show) { b.title = `The number in ${base}`; b.addEventListener('click', (e) => { e.stopPropagation(); show(); }); }
   return b;
 };
@@ -3134,10 +3135,7 @@ function renderAntRow() {
   drawing = !!m.plane && plane.start === 'draw' && !spaceTimeOn();  // Life on the plane draws in its Draw start (not in Space-time)
   stage.classList.toggle('drawing', drawsHere());  // (the crosshair: a click draws, as renderDrawTools keeps it)
   $('antStartSection').hidden = $('antRuleSection').hidden = !ant;
-  // your own rule's field: under a creature's cards, a walk's under its rules (see renderModePicker)
-  const fieldHome = m.net ? $('walkCustom') : $('antRuleSection');
-  if ($('antCustomRow').parentElement !== fieldHome) fieldHome.append($('antCustomRow'));
-  $('antCustomRow').hidden = true;
+  $('antCustomRow').hidden = true;  // (your own rule's field: right after its card, see ruleCards)
   if (!ant && !m.net) return;
   if (m.turmite) antByDigits = false;  // (by its rule only: its Digits greyed)
   const R = creatureRules(w);
@@ -3157,7 +3155,8 @@ function ruleCards(w, pic, here = true) {
   const make = (cardPic, name, code, on, then, why = '', title = '') => card({ pic: cardPic, name, detail: code, base: code && R.base?.(code), on, title: why || title, can: !why, click: go(then),
     how: () => { if (on) walkTutorialToggle(); else { go(then)(); walkTutorial(w); } } });  // (its ⓘ: how it works, picked first)
   return [...R.cards.map(([r, name, cardPic, why, title]) => make(cardPic ?? pic, name, r, here && r === R.now && !antCustomOpen, () => { antCustomOpen = false; if (r === R.now) renderModePicker(); else R.set(r); }, why, title)),
-    ...(R.typed ? [make(pixelIcon('..o..,..o..,ooooo,..o..,..o..'), mine ? 'Custom rule, your own' : 'Custom rule', mine ? R.now : '', mine, () => { antCustomOpen = true; renderModePicker(); }, '', 'your own, typed')] : [])];
+    ...(R.typed ? [make(pixelIcon('..o..,..o..,ooooo,..o..,..o..'), mine ? 'Custom rule, your own' : 'Custom rule', mine ? R.now : '', mine, () => { antCustomOpen = true; renderModePicker(); }, '', 'your own, typed')] : []),
+    $('antCustomRow')];  // (its field right after it, the list's next rules after the field; always in it, shown by renderAntRow)
 }
 // a creature's or a walk's rules: its presets [rule, name, picture, why greyed, tooltip], the rule in use, how to set one, whether one is typed, a rule's base
 // (where it reads digits: its card's bubble), the field's title
@@ -3168,7 +3167,7 @@ const WORM_WORDS = ['Dies at step 4,802', 'Dies at step 83,618', 'Dies at step 5
 const capitalised = (t) => t.replace(/^./, (c) => c.toUpperCase());
 function creatureRules(w) {
   const m = MODES[w], N = WALK_NETS[m.net], surface = m.lattice === 'sphere';
-  if (N) return { now: walkRules[walkKey(m)], typed: true, set: (r) => setWalkRule(w, r), base: (r) => `base ${ruleWords(r).length}`,  // (a surface: the rules it can take only)
+  if (N) return { now: walkRules[walkKey(m)], typed: true, set: (r) => setWalkRule(w, r), base: (r) => baseWords(ruleWords(r).length),  // (a surface: the rules it can take only)
                   cards: WALK_PRESETS[m.net].flatMap(([r, family, pic]) => { const words = ruleWords(r), why = words.map((t) => walkWordWhy(m, t)).find(Boolean) ?? '';
                     return surface && why ? [] : [[r, family, icon(pic), why, words.map((t, d) => `${d} ${WORD_TEXT[t]}`).join(', ')]]; }),
                   name: `Rule, a word per digit: ${surface ? surfaceWords(m.net).join(' ') : [...Object.keys(N.turns), ...Object.keys(N.ways ?? {}), ...(N.notch ? ['l', 'r', 'a'] : []), ...Object.keys(N.spots ?? {})].join(' ')}` };
@@ -3177,7 +3176,7 @@ function creatureRules(w) {
   if (MODES[w].turmite) return { now: turmite.rule, typed: true, cards: TURMITE_PRESETS.map((r, i) => [r, TURMITE_WORDS[i]]), set: setTurmiteRule,
                                  name: 'Rule, per state an entry per colour (write, turn L N R U, state), the states parted by |' };
   const A = ANTS[w], turns = antWords(w).join(' ');
-  return { byDigits: antByDigits, now: antRuleOf(w), typed: true, set: (r) => setAntRule(w, r), base: antByDigits ? (r) => `base ${ruleWords(r).length}` : null,  // (by colour: no digits read)
+  return { byDigits: antByDigits, now: antRuleOf(w), typed: true, set: (r) => setAntRule(w, r), base: antByDigits ? (r) => baseWords(ruleWords(r).length) : null,  // (by colour: no digits read)
            cards: (antByDigits ? A.digitPresets : A.presets).map((r) => antByDigits ? [r, capitalised(ruleWords(r).map((t) => WORD_TEXT[t]).join(', '))]
              : [r, (w === 'antSquare' && ANT_WORDS[r]?.split(':')[0]) || `${ruleWords(r).length} colours`, undefined, '', (w === 'antSquare' && ANT_WORDS[r]) || '']),
            name: antByDigits ? `Rule, a turn per digit, mirrored on a dark cell: ${turns}` : `Rule, a turn per colour: ${turns}` };
@@ -3317,7 +3316,7 @@ function renderModePicker() {
     const why = there && MODES[there].net && !walkWordsOf(there) ? ruleWords(walkRules[walkKey(MODES[there])]).map((t) => walkWordWhy(MODES[there], t)).find(Boolean) : '', v = why ? null : there;
     if (why) none = why;
     const info = !v ? null : MODES[v].turmite ? { base: '', detail: turmite.rule } : MODES[v].antOf ? { base: '', detail: antByDigits ? `digits ${antDigitRules[v]}` : antRules[v] }
-      : MODES[v].net ? { base: `base ${MODES[v].base}`, detail: walkRules[walkKey(MODES[v])] } : splitModeLabel(modeOptionOf(v).text);
+      : MODES[v].net ? { base: baseWords(MODES[v].base), detail: walkRules[walkKey(MODES[v])] } : splitModeLabel(modeOptionOf(v).text);
     b.replaceChildren(cardWords(word, info ? info.detail : none, info?.base, v && (() => (here ? toggleNumber() : (b.click(), showNumber())))));
     b.disabled = !v;
     b.classList.toggle('active', here);
@@ -3379,7 +3378,7 @@ function compute() {
   shownSym = sym;
   const base = mode.life ? lifeBase() : mode.base;  // Life: K + 1 (Digits mixed: 2, see lifeBase)
   const key = `${F.text}/${base}`;
-  $('copyNumber').textContent = `in base ${base}`;  // (Full number's chip: the base the digits are written in)
+  $('copyNumber').textContent = `in ${baseWords(base)}`;  // (Full number's chip: the base the digits are written in)
   // The status line under the Number: how the digits came (time, cache), what the number is, and
   // warnings; what is shown is in the description (describe)
   const note = FORMULA_NOTES[F.root] ? FORMULA_NOTES[F.root](base) : '';

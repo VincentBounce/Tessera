@@ -280,12 +280,16 @@ button.switch.active:hover:not(:disabled) { background: var(--pick-strong); }
 .mode-name { display: block; min-width: 0; font-size: 13px; font-weight: 600; }
 .mode-detail { display: block; font-size: 11px; font-weight: 400; color: var(--muted); }
 .mode-name, .mode-detail { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }  /* one line each, … when too long (in full on hover) */
-/* a base's bubble, every one (the rules' cards, Grid | Cells) */
-.mode-base { flex-shrink: 0; white-space: nowrap; font-size: 11px; padding: 1px 7px; border: 1px solid var(--border); border-radius: 999px; color: var(--muted); }
-button.active .mode-base { border-color: var(--accent); color: var(--accent); }
-.mode-list .mode-base { align-self: start; }  /* (at the card's top right) */
-.mode-base.act { cursor: pointer; }  /* a click shows the number in that base */
-.mode-base.act:hover { border-color: var(--text); color: var(--text); }
+/* a bubble, every one: a base's (the rules' cards, Grid | Cells, the bar), a rule's, a loop's, Full number's */
+.bubble { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 11px; font-weight: 400; padding: 1px 8px; border: 1px solid var(--border); border-radius: 999px; color: var(--muted); }
+.bubble.loop { border-color: rgba(240, 180, 41, 0.5); color: var(--accent); }
+button.bubble { background: none; }  /* a bubble to click: a rule's (how it works), a base's (the number) */
+button.bubble, .bubble.act { cursor: pointer; }
+button.bubble:hover, .bubble.act:hover { color: var(--text); border-color: var(--muted); }
+button.bubble.active, button.active .bubble { color: var(--accent); border-color: var(--accent); }
+.mode-head .bubble, .mode-list .bubble { flex-shrink: 0; }  /* (a card's: whole) */
+.mode-list .bubble { align-self: start; }  /* (at the card's top right) */
+.with-btn > .bubble { margin-left: auto; }  /* (Full number's, at the Formula's right) */
 .mode-icon.act { align-self: stretch; display: grid; place-items: center; border-radius: 4px; cursor: help; }  /* a card's picture, a click on how it works: */
 .mode-icon.act:hover { background: var(--border); color: var(--text); }  /* a grey square, as a row's × (see .row-act) */
 /* Number tiles: the symbol only, several per row (name and formula in the tooltip) */
@@ -460,12 +464,6 @@ button.wide.active, .head-btn.active { border-color: var(--accent); color: var(-
 .ranking .all-dead { position: absolute; left: 0; top: 0; line-height: 18px; font-weight: 600; }
 .bar-title { display: flex; align-items: baseline; gap: 8px; margin-bottom: 8px; white-space: nowrap; overflow: hidden; }
 .bar-num { flex: none; max-width: 70%; font-size: 20px; font-weight: 700; color: var(--accent); overflow: hidden; text-overflow: ellipsis; }  /* the number first */
-.bar-chip { min-width: 0; overflow: hidden; text-overflow: ellipsis; font-size: 11px; padding: 1px 8px; border: 1px solid var(--border); border-radius: 999px; color: var(--muted); }
-.bar-chip.loop { border-color: rgba(240, 180, 41, 0.5); color: var(--accent); }
-button.bar-chip { background: none; font-size: 11px; font-weight: 400; }  /* a chip to click: a rule's (how it works), a base's (the number) */
-.with-btn > .bar-chip { margin-left: auto; }  /* (Full number's, at the Formula's right) */
-button.bar-chip:hover { color: var(--text); border-color: var(--muted); }
-button.bar-chip.active { color: var(--accent); border-color: var(--accent); }
 .bar-sub { margin: -4px 0 8px; font-size: 12px; color: var(--muted); }
 .bar-sub b { color: var(--text); }
 .rule-chips { display: grid; grid-template-columns: repeat(auto-fit, minmax(80px, 1fr)); gap: 5px; margin-bottom: 9px; }

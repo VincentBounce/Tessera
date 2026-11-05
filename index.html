@@ -11,7 +11,7 @@
   <meta property="og:type" content="website">
   <link id="favicon" rel="icon">  <!-- the app's logo, set at start-up (see appLogo) -->
   <meta name="description" content="A walk on a grid in 2D or 3D driven by the base-2 to base-6 digits of π, other constants and large primes.">
-  <link rel="stylesheet" href="style.css?v=0.4.130">
+  <link rel="stylesheet" href="style.css?v=0.4.131">
   <script>  // the theme before the first paint (see applyTheme)
     try { const t = localStorage.getItem('tesseraTheme') || 'system'; document.documentElement.dataset.theme = t === 'system' ? (matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark') : t; } catch { document.documentElement.dataset.theme = 'dark'; }
   </script>
@@ -89,7 +89,7 @@
         <h2 data-icon="ant"><span id="antRuleTitle">Rule</span></h2>
         <button class="wide how-it-works" data-icon="info" type="button" title="The rule in use, step by step: what each cell (each step) sees, and what it does (each rule's ⓘ, too)">How it works</button>  <!-- on its first card -->
         <div id="antRuleCards" class="mode-list rule-cards" role="listbox"></div>
-        <div id="antCustomRow" hidden><div id="antRuleName" class="field-label"></div>  <!-- not a label: a click on ↵ would focus the field again; moved under a walk's rules (see renderAntRow) -->
+        <div id="antCustomRow" hidden><div id="antRuleName" class="field-label"></div>  <!-- not a label: a click on ↵ would focus the field again; moved right after its card (see ruleCards) -->
           <span class="field"><input id="antRule" class="custom" type="text" autocomplete="off" spellcheck="false" title="Type a rule, then Enter"><button class="enter" type="button" tabindex="-1" title="Apply (Enter)">↵</button></span>
         </div>
       </section>
@@ -134,7 +134,7 @@
       <section id="digitsSection">  <!-- the number walked: a walk's (a start's by the digits, under its Digits tab, see renderAntRow) -->
         <h2 data-icon="barcode">Digits</h2>
         <div id="numberPicker">  <!-- the number, its formula, its tabs, its primes' menus: one block, placed by the mode -->
-          <div class="field-label with-btn">Formula<button id="copyNumber" class="bar-chip" type="button" hidden title="The number with all its digits, in the base its use needs, over the view, to scroll or copy"></button></div>  <!-- not a label: a click on ↵ would focus the field again -->
+          <div class="field-label with-btn">Formula<button id="copyNumber" class="bubble" type="button" hidden title="The number with all its digits, in the base its use needs, over the view, to scroll or copy"></button></div>  <!-- not a label: a click on ↵ would focus the field again -->
           <div class="field formula-field"><input id="formula" type="text" value="1/112" spellcheck="false" autocomplete="off" aria-label="Formula"
                    title="Typed in base 10, then written in the base its use needs (the walk's, or Life's: K + 1, its colours and dead), as the chip beside it says. Any number as a formula: pi, e, phi, gamma, catalan, erdos, rho, sqrt(3), cbrt(2), root(x, k), ln(x), exp(x), log(x, b), zeta(k), 22/7, 2^pi, 8^(1/3), 2^127-1, primorial(p)+1, randprime(size, seed), and + − × ÷ ^ ( ). Digit sequences, used alone: random(seed), champernowne, primes, primegaps, dragon. Press Enter to compute"><button class="enter" type="button" tabindex="-1" title="Compute (Enter)">↵</button></div>
           <div id="numberList"></div>
@@ -165,7 +165,6 @@
         </div>  <!-- along the grid, or on cells: first, above How it works -->
         <button id="walkRuleHow" class="wide how-it-works" data-icon="info" type="button" title="The rule in use, step by step: what each cell (each step) sees, and what it does (each rule's ⓘ, too)">How it works</button>  <!-- how the rule works (see walkTutorialToggle), on its first card -->
         <div id="navRules" class="mode-list" role="listbox"></div>  <!-- the rules of that shape, where there are several; a walk by a rule: its rules' cards (see ruleCards) -->
-        <div id="walkCustom"></div>  <!-- a walk's own rule, typed (the field: see renderAntRow) -->
         <label hidden>Walk mode (menu kept as the source of truth for the tabs in the header)
           <select id="mode">
             <optgroup label="2D walks">
@@ -648,7 +647,7 @@
             <span id="seekCountOpen" class="seek-count"></span>
           </div>
         </div>
-        <div class="bar-title"><span id="barNum" class="bar-num"></span><button id="barRule" class="bar-chip how-it-works" type="button" hidden></button><span id="barLoop" class="bar-chip loop" hidden></span><button id="barBase" class="bar-chip" type="button"></button><span id="rankTitles" class="rank-titles" hidden></span><span id="seekCount" class="seek-count"></span></div>  <!-- the ranking's column titles (see paintRanking), on the rule's line (folded: its first) -->
+        <div class="bar-title"><span id="barNum" class="bar-num"></span><button id="barRule" class="bubble how-it-works" type="button" hidden></button><span id="barLoop" class="bubble loop" hidden></span><button id="barBase" class="bubble" type="button"></button><span id="rankTitles" class="rank-titles" hidden></span><span id="seekCount" class="seek-count"></span></div>  <!-- the ranking's column titles (see paintRanking), on the rule's line (folded: its first) -->
         <div id="ranking" class="ranking" hidden></div>  <!-- a battle: the colours ranked by live cells, those died out last -->
         <div class="player-controls">  <!-- the buttons, as wide folded or not; on hover, the speed on their right -->
           <div class="player-main">
@@ -740,10 +739,10 @@
     </div>
   </main>
 
-  <script src="pixelarticons.js?v=0.4.130"></script>
-  <script src="punks.js?v=0.4.130"></script>
-  <script src="loops.js?v=0.4.130"></script>
-  <script src="emoji.js?v=0.4.130"></script>
-  <script src="main.js?v=0.4.130"></script>
+  <script src="pixelarticons.js?v=0.4.131"></script>
+  <script src="punks.js?v=0.4.131"></script>
+  <script src="loops.js?v=0.4.131"></script>
+  <script src="emoji.js?v=0.4.131"></script>
+  <script src="main.js?v=0.4.131"></script>
 </body>
 </html>

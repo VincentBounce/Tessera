@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.146';
+const VERSION = '0.4.147';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -8687,6 +8687,13 @@ function discPatch(items, W, mid, norm = Math.hypot, each = flatEach) {  // wall
 // a grid that never repeats, built once a size: kept while in use (its polygons some hundred MB at a million cells: the plane's, see walk.plane.flat)
 const DISC_TOP = 1024;  // (the largest disc's side: 2²⁰ cells, see CELLS; the hats', spectres' and pinwheel's tiling built for it)
 const discMemo = (build) => { const cache = weakCache(); return (W) => (cache[W] ??= build(W)); };
+// A 2D affine transform as [a, b, c, d, e, f] (x' = ax + by + c, y' = dx + ey + f): the identity, the product AB (B first),
+// a turn by a, a shift by (x, y), a point [x, y] moved by M (the hat's and the Spectre's)
+const AFFINE_ID = [1, 0, 0, 0, 1, 0];
+const affineMul = (A, B) => [A[0] * B[0] + A[1] * B[3], A[0] * B[1] + A[1] * B[4], A[0] * B[2] + A[1] * B[5] + A[2],
+  A[3] * B[0] + A[4] * B[3], A[3] * B[1] + A[4] * B[4], A[3] * B[2] + A[4] * B[5] + A[5]];
+const affineTurn = (a) => [Math.cos(a), -Math.sin(a), 0, Math.sin(a), Math.cos(a), 0], affineShift = (x, y) => [1, 0, x, 0, 1, y];
+const affineAt = (M, [x, y]) => [M[0] * x + M[1] * y + M[2], M[3] * x + M[4] * y + M[5]];
 /* The hat (Smith, Myers, Kaplan and Goodman-Strauss, 2023): one tile, 8 kites of the kites' grid, that tiles the plane
  * only without ever repeating (about 1 in 7 turned over). Built by substitution, as Craig S. Kaplan's hatviz
  * (github.com/isohedral/hatviz, BSD 3-clause): four metatiles (H, T, P, F) are laid in a patch, which gives four
@@ -8694,15 +8701,12 @@ const discMemo = (build) => { const cache = weakCache(); return (W) => (cache[W]
  * the middle (a square, by the larger of their offsets), in W bands from the top, each by x (a cell (x, y) as on the
  * other grids); the hats round them, its walls. Points as {x, y}, transforms as [a, b, c, d, e, f] (x' = ax + by + c). */
 const HAT = (() => {
-  const hr3 = Math.sqrt(3) / 2, ident = [1, 0, 0, 0, 1, 0];
-  const pt = (x, y) => ({ x, y }), hexPt = (x, y) => pt(x + 0.5 * y, hr3 * y);
+  const ident = AFFINE_ID, mul = affineMul, trot = affineTurn, ttrans = affineShift;
+  const pt = (x, y) => ({ x, y }), hexPt = (x, y) => pt(x + 0.5 * y, H * y);
   const inv = (T) => { const det = T[0] * T[4] - T[1] * T[3]; return [T[4] / det, -T[1] / det, (T[1] * T[5] - T[2] * T[4]) / det, -T[3] / det, T[0] / det, (T[2] * T[3] - T[0] * T[5]) / det]; };
-  const mul = (A, B) => [A[0] * B[0] + A[1] * B[3], A[0] * B[1] + A[1] * B[4], A[0] * B[2] + A[1] * B[5] + A[2],
-    A[3] * B[0] + A[4] * B[3], A[3] * B[1] + A[4] * B[4], A[3] * B[2] + A[4] * B[5] + A[5]];
   const padd = (p, q) => pt(p.x + q.x, p.y + q.y), psub = (p, q) => pt(p.x - q.x, p.y - q.y);
-  const trot = (a) => [Math.cos(a), -Math.sin(a), 0, Math.sin(a), Math.cos(a), 0], ttrans = (x, y) => [1, 0, x, 0, 1, y];
   const rotAbout = (p, a) => mul(ttrans(p.x, p.y), mul(trot(a), ttrans(-p.x, -p.y)));
-  const transPt = (M, P) => pt(M[0] * P.x + M[1] * P.y + M[2], M[3] * P.x + M[4] * P.y + M[5]);
+  const transPt = (M, P) => pt(...affineAt(M, [P.x, P.y]));  // (its points {x, y})
   const matchSeg = (p, q) => [q.x - p.x, p.y - q.y, p.x, q.y - p.y, q.x - p.x, p.y];
   const matchTwo = (p1, q1, p2, q2) => mul(matchSeg(p2, q2), inv(matchSeg(p1, q1)));
   const intersect = (p1, q1, p2, q2) => {
@@ -8712,7 +8716,7 @@ const HAT = (() => {
   const outline = [hexPt(0, 0), hexPt(-1, -1), hexPt(0, -2), hexPt(2, -2), hexPt(2, -1), hexPt(4, -2), hexPt(5, -1), hexPt(4, 0), hexPt(3, 0), hexPt(2, 2), hexPt(0, 3), hexPt(0, 2), hexPt(-1, 2)];
   // the drawn hat: each edge cut at the kites' corners along it (kites' edges 1/2 and √3/2 long), where a neighbour's corner can be
   const corners = outline.flatMap((p, i) => {
-    const q = outline[(i + 1) % outline.length], L = Math.hypot(q.x - p.x, q.y - p.y), k = Math.round(Number.isInteger(Math.round(2 * L * 1e6) / 1e6) ? 2 * L : L / hr3);
+    const q = outline[(i + 1) % outline.length], L = Math.hypot(q.x - p.x, q.y - p.y), k = Math.round(Number.isInteger(Math.round(2 * L * 1e6) / 1e6) ? 2 * L : L / H);
     return Array.from({ length: k }, (_, j) => pt(p.x + ((q.x - p.x) * j) / k, p.y + ((q.y - p.y) * j) / k));
   });
   const hat = { hat: true };
@@ -8726,19 +8730,19 @@ const HAT = (() => {
       for (const ch of this.children) ch.T = mul(ttrans(-cx, -cy), ch.T);
     }
   }
-  const H0 = new Meta([pt(0, 0), pt(4, 0), pt(4.5, hr3), pt(2.5, 5 * hr3), pt(1.5, 5 * hr3), pt(-0.5, hr3)]);
+  const H0 = new Meta([pt(0, 0), pt(4, 0), pt(4.5, H), pt(2.5, 5 * H), pt(1.5, 5 * H), pt(-0.5, H)]);
   H0.add(matchTwo(outline[5], outline[7], H0.shape[5], H0.shape[0]), hat);
   H0.add(matchTwo(outline[9], outline[11], H0.shape[1], H0.shape[2]), hat);
   H0.add(matchTwo(outline[5], outline[7], H0.shape[3], H0.shape[4]), hat);
-  H0.add(mul(ttrans(2.5, hr3), mul([-0.5, -hr3, 0, hr3, -0.5, 0], [0.5, 0, 0, 0, -0.5, 0])), hat);  // the one turned over
-  const T0 = new Meta([pt(0, 0), pt(3, 0), pt(1.5, 3 * hr3)]);
-  T0.add([0.5, 0, 0.5, 0, 0.5, hr3], hat);
-  const P0 = new Meta([pt(0, 0), pt(4, 0), pt(3, 2 * hr3), pt(-1, 2 * hr3)]);
-  P0.add([0.5, 0, 1.5, 0, 0.5, hr3], hat);
-  P0.add(mul(ttrans(0, 2 * hr3), mul([0.5, hr3, 0, -hr3, 0.5, 0], [0.5, 0, 0, 0, 0.5, 0])), hat);
-  const F0 = new Meta([pt(0, 0), pt(3, 0), pt(3.5, hr3), pt(3, 2 * hr3), pt(-1, 2 * hr3)]);
-  F0.add([0.5, 0, 1.5, 0, 0.5, hr3], hat);
-  F0.add(mul(ttrans(0, 2 * hr3), mul([0.5, hr3, 0, -hr3, 0.5, 0], [0.5, 0, 0, 0, 0.5, 0])), hat);
+  H0.add(mul(ttrans(2.5, H), mul([-0.5, -H, 0, H, -0.5, 0], [0.5, 0, 0, 0, -0.5, 0])), hat);  // the one turned over
+  const T0 = new Meta([pt(0, 0), pt(3, 0), pt(1.5, 3 * H)]);
+  T0.add([0.5, 0, 0.5, 0, 0.5, H], hat);
+  const P0 = new Meta([pt(0, 0), pt(4, 0), pt(3, 2 * H), pt(-1, 2 * H)]);
+  P0.add([0.5, 0, 1.5, 0, 0.5, H], hat);
+  P0.add(mul(ttrans(0, 2 * H), mul([0.5, H, 0, -H, 0.5, 0], [0.5, 0, 0, 0, 0.5, 0])), hat);
+  const F0 = new Meta([pt(0, 0), pt(3, 0), pt(3.5, H), pt(3, 2 * H), pt(-1, 2 * H)]);
+  F0.add([0.5, 0, 1.5, 0, 0.5, H], hat);
+  F0.add(mul(ttrans(0, 2 * H), mul([0.5, H, 0, -H, 0.5, 0], [0.5, 0, 0, 0, 0.5, 0])), hat);
   // a patch of the four metatiles, each placed along an edge of one before (hatviz's rules)
   const RULES = [['H'], [0, 0, 'P', 2], [1, 0, 'H', 2], [2, 0, 'P', 2], [3, 0, 'H', 2], [4, 4, 'P', 2], [0, 4, 'F', 3], [2, 4, 'F', 3], [4, 1, 3, 2, 'F', 0],
     [8, 3, 'H', 0], [9, 2, 'P', 0], [10, 2, 'H', 0], [11, 4, 'P', 2], [12, 0, 'H', 2], [13, 0, 'F', 3], [14, 2, 'F', 1], [15, 3, 'H', 4], [8, 2, 'F', 1],
@@ -8842,13 +8846,9 @@ const PENROSE = (() => {
  * code (in AaronWebster/spectre-app, Apache 2.0): nine kinds of tiles (Gamma: two spectres, the "mystic"), each a
  * supertile of 8 smaller ones, about 8 times as many each level. As the hats' (see discPatch); each about a square unit */
 const SPECTRE = (() => {
-  const ident = [1, 0, 0, 0, 1, 0], mul = (A, B) => [A[0] * B[0] + A[1] * B[3], A[0] * B[1] + A[1] * B[4], A[0] * B[2] + A[1] * B[5] + A[2],
-    A[3] * B[0] + A[4] * B[3], A[3] * B[1] + A[4] * B[4], A[3] * B[2] + A[4] * B[5] + A[5]];
-  const at = (M, [x, y]) => [M[0] * x + M[1] * y + M[2], M[3] * x + M[4] * y + M[5]];
-  const trot = (a) => [Math.cos(a), -Math.sin(a), 0, Math.sin(a), Math.cos(a), 0], ttrans = (x, y) => [1, 0, x, 0, 1, y];
-  const r3 = Math.sqrt(3) / 2;
-  const spectre = [[0, 0], [1, 0], [1.5, -r3], [1.5 + r3, 0.5 - r3], [1.5 + r3, 1.5 - r3], [2.5 + r3, 1.5 - r3], [3 + r3, 1.5], [3, 2], [3 - r3, 1.5],
-    [2.5 - r3, 1.5 + r3], [1.5 - r3, 1.5 + r3], [0.5 - r3, 1.5 + r3], [-r3, 1.5], [0, 1]];
+  const ident = AFFINE_ID, mul = affineMul, at = affineAt, trot = affineTurn, ttrans = affineShift;
+  const spectre = [[0, 0], [1, 0], [1.5, -H], [1.5 + H, 0.5 - H], [1.5 + H, 1.5 - H], [2.5 + H, 1.5 - H], [3 + H, 1.5], [3, 2], [3 - H, 1.5],
+    [2.5 - H, 1.5 + H], [1.5 - H, 1.5 + H], [0.5 - H, 1.5 + H], [-H, 1.5], [0, 1]];
   const quad = [spectre[3], spectre[5], spectre[7], spectre[11]];
   const NAMES = ['Gamma', 'Delta', 'Theta', 'Lambda', 'Xi', 'Pi', 'Sigma', 'Phi', 'Psi'];
   // a tile kind: its parts [transform, kind or null for one spectre], its four key points

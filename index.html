@@ -11,7 +11,7 @@
   <meta property="og:type" content="website">
   <link id="favicon" rel="icon">  <!-- the app's logo, set at start-up (see appLogo) -->
   <meta name="description" content="A walk on a grid in 2D or 3D driven by the base-2 to base-6 digits of π, other constants and large primes.">
-  <link rel="stylesheet" href="style.css?v=0.4.230">
+  <link rel="stylesheet" href="style.css?v=0.4.231">
   <script>  // the theme before the first paint (see applyTheme)
     try { const t = localStorage.getItem('tesseraTheme') || 'system'; document.documentElement.dataset.theme = t === 'system' ? (matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark') : t; } catch { document.documentElement.dataset.theme = 'dark'; }
   </script>
@@ -728,7 +728,7 @@
             <div id="fillAreasRow" hidden>  <!-- the areas the walk closes: Empty, Light (translucent) or Plain -->
               <div class="field-label"><span id="fillName">Area</span> <span id="fillTooBig" class="fill-note" hidden title="Beyond 12 million tile corners in the walk's box, the areas are not filled">walk too big</span></div>
               <div id="areaModes" class="nav-shapes cell-modes"></div>
-              <input id="fillAreas" type="checkbox" hidden><input id="fillTranslucent" type="checkbox" hidden>
+              <select id="area" hidden><option value="empty"></option><option value="light"></option><option value="plain"></option></select>
             </div>
             <div id="cellsLabel" class="field-label" hidden>Cells</div>
             <div id="cellModes" class="nav-shapes cell-modes" hidden></div>  <!-- a 2D walk on cells: Ink, Amber (an ant), Path, Directions, Rainbow, Heatmap -->
@@ -741,10 +741,10 @@
     </div>
   </main>
 
-  <script src="pixelarticons.js?v=0.4.230"></script>
-  <script src="punks.js?v=0.4.230"></script>
-  <script src="loops.js?v=0.4.230"></script>
-  <script src="emoji.js?v=0.4.230"></script>
-  <script src="main.js?v=0.4.230"></script>
+  <script src="pixelarticons.js?v=0.4.231"></script>
+  <script src="punks.js?v=0.4.231"></script>
+  <script src="loops.js?v=0.4.231"></script>
+  <script src="emoji.js?v=0.4.231"></script>
+  <script src="main.js?v=0.4.231"></script>
 </body>
 </html>

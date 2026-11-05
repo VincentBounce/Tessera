@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.230';
+const VERSION = '0.4.231';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -1470,13 +1470,10 @@ function updateDisplayMenu() {
   $('centeredRow').hidden = !spin;
   $('centeredName').textContent = centersPattern() ? 'Centered pattern' : 'Default view';  // (as the hint says it)
   $('fillAreasRow').hidden = !shows('fill') || !!mode.antOf;  // an ant fills no areas
-  $('fillAreas').disabled = !fillAreasApply();  // greyed out with the colours it does not go with
-  $('fillTooBig').hidden = !(fill?.tooBig && $('fillAreas').checked && !$('fillAreas').disabled);
+  $('fillTooBig').hidden = !(fill?.tooBig && areaOn());
   $('fillName').textContent = walk.vert && current?.fraction ? 'Area · 2 cells max on ↻' : 'Area';  // a fraction along a grid (see areaSteps)
-  // Light (translucent): only over a line, which then shows through the areas it closed in its own colour
-  $('fillTranslucent').disabled = !(shows('translucent') && $('fillAreas').checked && fillAreasApply());
   renderAreaModes();
-  $('fillLayer').style.opacity = $('fillTranslucent').checked && !$('fillTranslucent').disabled ? 0.35 : 1;
+  $('fillLayer').style.opacity = areaLight() ? 0.35 : 1;
   renderTrailButton();
   renderViewTiles();
   renderViewModes();
@@ -13924,7 +13921,7 @@ function getSetup() {
   if (mode.lattice === 'sphere') s.s = $('sphereF').value;
   if (modeStarts() && startNo() > 1) s.st = startNo();
   if (torusTurned && TURNED[mode.sphere]) s.o = 1;
-  if (!$('fillAreas').checked) s.fa = 0;
+  if ($('area').value === 'empty') s.fa = 0;  // (Area Empty: the one display choice kept, it changes what is drawn)
   if (mode.life) s.r = ruleBody($('lifeRule').value);
   if (mode.life && !mode.margolus && lifeColours > 1) s.k = lifeColours;
   if (battleOn()) {  // (a walk's Duel or Trio, as Life's: its teams; B's number, C's)
@@ -14005,7 +14002,7 @@ function applySetup(s) {
   // the display is not part of a setup: it takes the defaults of the walk mode's tab, when the tab
   // changes (as picking a walk does); within a tab, what was chosen stays
   if (modeTabOf() !== displayTab) displayDefaults();
-  $('fillAreas').checked = String(s.fa ?? 1) !== '0';  // the one display choice kept: it changes what is drawn
+  if (String(s.fa ?? 1) === '0') $('area').value = 'empty'; else if ($('area').value === 'empty') $('area').value = defaultOf('area');  // the one display choice kept: it changes what is drawn
   $('perspective').checked = defaultOf('perspective', s.w);
   Object.assign(cam, CAM0);
   $('upright').checked = false;  // (the default view: free, on each surface)
@@ -14834,10 +14831,10 @@ function drawSphere() {
   const L = walk.life, line = !L && ['gradient', 'cells'].includes($('colourMode').value);  // Rainbow (the tiles Rainbow picks: cells)
   const path = !L && !walk.battle && (MODES[$('mode').value].cells ? $('showPath').checked : line);  // on cells, with Show path only (a battle: its bodies, no path)
   if (line) {  // Rainbow along the walk: a tile walked through (Fill cells), enclosed (Fill areas), or dark
-    const cells = MODES[$('mode').value].cells && firstVisits(), areas = !walk.ant && $('fillAreas').checked && areaSteps();
+    const cells = MODES[$('mode').value].cells && firstVisits(), areas = !walk.ant && areaOn() && areaSteps();
     const band = (step) => Math.min(LEVELS - 1, Math.floor((step * LEVELS) / (walk.n + 1)));
     const tiles = path && MODES[$('mode').value].cells ? grad.map((c) => faded(c, FADING)) : grad;  // Path: the tiles faded under the line
-    palette = [null, ...tiles, ...(shows('translucent') && $('fillTranslucent').checked ? grad.map((c) => faded(c, FADING)) : grad)];
+    palette = [null, ...tiles, ...(areaLight() ? grad.map((c) => faded(c, FADING)) : grad)];
     levelOf = (t) => (cells && cells[t] >= 0 && cells[t] <= cur ? 1 + band(cells[t])
       : areas && areas[t] >= 0 && areas[t] <= cur ? 1 + LEVELS + band(areas[t]) : 0);
   }
@@ -14861,7 +14858,7 @@ function drawSphere() {
     // each tile's level once: with land (the Land ones) its land, always, plain as its bodies are (Area, the
     // classic walks' look, not used); in Cut the areas each body closes, by Area (Light translucent, Plain as its body);
     // then the bodies over them and their heads (along the grid its bodies are lines, see pathSegments: the land only)
-    const closed = P.bite ? P.land : !$('fillAreas').checked || !fillAreasApply() ? null : battleAreas(P), light = !P.bite && shows('translucent') && $('fillTranslucent').checked;
+    const closed = P.bite ? P.land : !areaOn() ? null : battleAreas(P), light = !P.bite && areaLight();
     const soft = (c, a) => (oceanOn() ? c : faded(c, a));  // (Ocean: its lands in full, not faded into the page's grey)
     palette = [null, ...colours.map((c) => soft(c, 0.6)), ...colours, ...colours.map((c) => soft(c, light ? FADING : 0.6))];
     const level = new Uint8Array(g.n);
@@ -16151,7 +16148,7 @@ function gpuFlat(to) {
     rp.setBindGroup(0, gpuGroup(), [gpuView(D.words, slot++, 1, { colour, tpl, alphaF: alpha, bright: 1 })]);
     rp.setVertexBuffer(0, buffer); rp.draw(12, count);
   };
-  if (fillCount) tiles(D.flatFill, D.fillTpl, fillCount, $('fillTranslucent').checked && !$('fillTranslucent').disabled ? 0.35 : 1);
+  if (fillCount) tiles(D.flatFill, D.fillTpl, fillCount, areaLight() ? 0.35 : 1);
   if (cellCount) tiles(D.flatCells, D.cellTpl, cellCount, shows('cells') && line ? 0.15 : 1);
   if (line && to > 0) {
     rp.setPipeline(gpuDrawPipe('flatPath', { vertex: 'flatPathV', fragment: 'colF', topology: 'triangle-strip', blend: BLEND_PRE, depth: false,
@@ -16292,7 +16289,10 @@ let fill = null;                   // { at, cx, cy, tpl, templates, count, tooBi
 // Fill areas goes with the colours where the path has one colour per step (not Visits, not By digit)
 const fillAreasApply = () => useful('fill') && MODES[$('mode').value].fill !== false && !['visits', 'digit'].includes($('colourMode').value);
 // (the walk drawn may still be the last mode's while the new one is computed: a tiling with a fill)
-const fillOn = () => $('fillAreas').checked && fillAreasApply() && walk.n && !walk.is3d && !!FILL_GRIDS[walk.lattice];
+// Area (one choice: Empty, Light, Plain, see AREA_MODES): filled where it applies; Light, translucent, only over a line
+const areaOn = () => $('area').value !== 'empty' && fillAreasApply();
+const areaLight = () => areaOn() && $('area').value === 'light' && shows('translucent');
+const fillOn = () => areaOn() && walk.n && !walk.is3d && !!FILL_GRIDS[walk.lattice];
 // the fill, computed once per walk; beside the toggle, a word when the walk is too big to fill
 function fillNow() {
   if (!fill) { fill = computeFill(); updateDisplayMenu(); }
@@ -17116,8 +17116,7 @@ $('startCells').addEventListener('click', () => {  // (see renderDrawTools: to g
 });
 $('colourMode').addEventListener('change', () => { needsFull = true; renderColourButtons(); updateDisplayMenu(); });
 $('lifeTrail').addEventListener('change', () => { needsFull = true; renderTrailButton(); });
-$('fillAreas').addEventListener('change', () => { needsFull = true; updateDisplayMenu(); syncLink(); });
-$('fillTranslucent').addEventListener('change', () => { needsFull = true; updateDisplayMenu(); });
+$('area').addEventListener('change', () => { needsFull = true; updateDisplayMenu(); syncLink(); });
 $('showGrid').addEventListener('change', () => { needsFull = true; renderHeadTiles(); });
 $('autoFit').addEventListener('change', () => { if ($('autoFit').checked) fitNow(); renderHeadTiles(); });
 $('autoRotate').addEventListener('change', () => { if ($('autoRotate').checked) fitNow(); });  // turning starts framed
@@ -17637,15 +17636,14 @@ const AREA_MODES = [['empty', 'Empty', 'No area filled'], ['light', 'Light', 'Th
   ['plain', 'Plain', 'The areas the walk closes, in the colour of the step that closed them']];
 function renderAreaModes() {
   const off = !fillAreasApply(), light = shows('translucent');
-  const area = (fill, translucent) => (!fill ? 'empty' : translucent && light ? 'light' : 'plain');  // (its two boxes as one choice)
-  const now = area($('fillAreas').checked, $('fillTranslucent').checked), first = area(defaultOf('fillAreas'), defaultOf('areaLight')), c = gradientAt(0.55);
+  const shown = (v) => (v === 'light' && !light ? 'plain' : v);  // (Light only over a line: else Plain)
+  const now = shown($('area').value), first = shown(defaultOf('area')), c = gradientAt(0.55);
   const picture = (look) => `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7L11 3L20 6L19 17L9 21L3 15Z" fill="${look === 'empty' ? 'none' : c}"`
     + `${look === 'light' ? ' fill-opacity="0.35"' : ''} stroke="${gradientAt(0.2)}" stroke-width="2" stroke-linejoin="round"/></svg>`;  // a closed loop
   $('areaModes').replaceChildren(tileGroup(AREA_MODES.map(([look, name, title]) => {
     return tile({ pic: picture(look), text: name, title, on: look === now, can: !(off || (look === 'light' && !light)), byDefault: look === first ? 'yes' : '', click: () => {  // (its default: see DISPLAY_DEFAULTS)
-      $('fillAreas').checked = look !== 'empty';
-      $('fillTranslucent').checked = look === 'light';
-      $('fillAreas').dispatchEvent(new Event('change'));
+      $('area').value = look;
+      $('area').dispatchEvent(new Event('change'));
     } });
   })));
 }
@@ -17748,7 +17746,7 @@ const modeTabOf = () => `${NAV[$('mode').value]?.[0]}|${modeGroup()}`;  // (the 
 // the tiles' marks read them (see defaultOf, defaultMark)
 const DISPLAY_DEFAULTS = {
   look: ['colourMode', 'tab', { Walk: 'gradient', Ant: 'gradient', Life: 'mono', Replicators: 'mono', Reversible: 'mono', Elementary: 'gradient' }],  // (Cells: a walk's Rainbow, Life's States, Elementary's Age: the simplest)
-  fillAreas: ['fillAreas', 'tab', true], areaLight: ['fillTranslucent', 'tab', true], path: ['showPath', 'tab', false],  // (Area: Light; on cells the cells alone)
+  area: ['area', 'tab', 'light'], path: ['showPath', 'tab', false],  // (Area: Light, translucent, the line through it; on cells the cells alone)
   centered: ['centered', 'tab', true], autoRotate: ['autoRotate', 'tab', false], sky: ['sky', 'tab', 'sky'],  // (on a solid the walker in front; Dawn or Twilight after the theme)
   autoFit: ['autoFit', 'mode', true], upright: ['upright', 'mode', false], shape: ['shapeM', 'mode', (mode) => (mode.round ? 1 : 0)],  // (Flat 0 ── Inflated 1: a round surface inflated, a solid flat)
   perspective: ['perspective', 'mode', (mode, w) => perspectiveFor(mode, defaultOf('shape', w))],  // (as each mode's own, hand-tuned)

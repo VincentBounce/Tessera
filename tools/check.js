@@ -373,11 +373,12 @@ async function battlesFair(fail) {
     location.hash = `#x=pi&w=${w}`;
     await wait(900);
     const counts = battleCounts(w), grid = !!MODES[w].grid;
+    const built = (K, stops) => $('mode').value === w && walk.battle?.player?.K === K && walk.battle.player.stops === stops;  // (this link's battle, not the one before it)
     checked++;
     if (!counts.length) fail(`${w}: no battle at size ${sphereSize()}`);
     for (const K of counts) {
       location.hash = `#x=pi&w=${w}&d=3000&k=${K}&${'bcdefghijkl'.slice(0, K - 1).split('').map((c) => `x${c}=pi`).join('&')}`;
-      for (let t = 0; t < 30 && walk.battle?.player?.K !== K; t++) await wait(300);
+      for (let t = 0; t < 30 && !built(K, false); t++) await wait(300);
       const P = walk.battle?.player, g = walk.geo;
       checked++;
       if (P?.K !== K) { fail(`${w} ${K} walkers: no battle (${walkSaid})`); continue; }
@@ -393,7 +394,7 @@ async function battlesFair(fail) {
     const K = counts[0], link = `#x=pi&w=${w}&d=3000&k=${K}&pe=5&${'bcdefghijkl'.slice(0, K - 1).split('').map((c, j) => `x${c}=sqrt(${j + 2})`).join('&')}`;
     if (!K) continue;
     location.hash = link;
-    for (let t = 0; t < 30 && !(walk.battle?.player?.stops && walk.battle.player.K === K); t++) await wait(300);
+    for (let t = 0; t < 30 && !built(K, true); t++) await wait(300);
     const P = walk.battle?.player;
     checked++;
     if (!P?.stops) { fail(`${w} Land not colliding: no battle (${link})`); continue; }

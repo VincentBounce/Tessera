@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.127';
+const VERSION = '0.4.128';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -3110,7 +3110,7 @@ function familyOf(w) {
 const readsDigits = (w = $('mode').value) => !(ANTS[w] && !antByDigits) && !(MODES[w].worm && !worm.byDigits) && !(MODES[w].life && plane.start !== 'digits');
 // A creature's sections, as Life's: Start, by its rule or by the digits (a turmite by its rule only); Rule, its creature (see renderModePicker), then its rules as cards, its
 // rule and its words (see creatureRules), then your own, its rule typed
-let antRowMode = null, antCustomOpen = false;  // (the mode they were last shown for; the Custom rule card clicked)
+let antRowMode = null, antCustomOpen = false;  // (the mode the rules were last drawn for; the Custom rule card clicked)
 function renderAntRow() {
   const w = $('mode').value, m = MODES[w], ant = NAV[w][0] === 'Ant';
   // the number read (its digits, see numberPicker): a walk's in its own section; a start's by the digits (Life's, a
@@ -3119,8 +3119,6 @@ function renderAntRow() {
   $('digitsSection').hidden = !readsDigits(w) || home !== $('digitsSection');
   if ($('numberPicker').parentElement !== home) home.append($('numberPicker'));
   drawing = !!m.plane && plane.start === 'draw' && !spaceTimeOn();  // Life on the plane draws in its Draw start (not in Space-time)
-  if (antRowMode !== w) antCustomOpen = false;
-  antRowMode = w;
   stage.classList.toggle('drawing', drawsHere());  // (the crosshair: a click draws, as renderDrawTools keeps it)
   $('antStartSection').hidden = $('antRuleSection').hidden = !ant;
   // your own rule's field: under a creature's cards, a walk's under its rules (see renderModePicker)
@@ -3133,7 +3131,6 @@ function renderAntRow() {
   $('antRuleTitle').textContent = R.byDigits ? 'Turns' : 'Rule';  // (Digits: a turn per digit, not a rule of colours)
   setTile($('antByRule'), { on: !R.byDigits });
   setTile($('antByDigits'), { on: !!R.byDigits, can: !m.turmite, greyed: 'for a turmite (by its rule only)' });
-  if (ant) $('antRuleCards').replaceChildren(...ruleCards(w, icon(m.worm ? 'worm' : m.turmite ? 'turmite' : 'ant')));
   $('antCustomRow').hidden = !R.typed || !(antCustomOpen || !R.cards.some(([r]) => r === R.now));
   $('antRuleName').textContent = R.name;
   if (document.activeElement !== $('antRule')) $('antRule').value = R.now;
@@ -3198,6 +3195,8 @@ function setAntRule(w, rule) {
 }
 function renderModePicker() {
   const w = $('mode').value, [kind, space, shape, rule] = NAV[w];
+  if (antRowMode !== w) antCustomOpen = false;  // (Custom rule closed on another mode, before its cards are drawn)
+  antRowMode = w;
   const button = (html, active, go, title = '', more = {}) => tile({ html, title, on: active, click: go, ...more });
   // at the top: Walk, Ant, Life (while a gallery setup is only shown on hover, the one in use)
   const shownKind = NAV[galleryBefore?.w]?.[0] ?? kind;
@@ -3272,20 +3271,22 @@ function renderModePicker() {
   }
   // the rules, where there are several, each with its picture; in a family, those its tiling has not greyed
   const tiling = inFamily?.F.modes[inFamily.m], has = (...n) => !tiling || tiling.some((v) => n.every((x, i) => NAV[v][[0, 3, 4][i]] === x));
-  // an ant's creatures as the shapes, tiles in its Rule section, all of them on whatever shape (Ant, Turmite on squares,
-  // Worm on triangles: one of another shape, a click takes it there); a walk's rules a list, each with its base
+  // the rules, one list of cards: a walk's, its rules (a word per digit) then the others (Spiral, Diagonals); an ant's, its
+  // creatures, all of them on whatever shape (Ant, Turmite on squares, Worm on triangles: one of another shape, a click takes it
+  // there), the one in use with its rules (see ruleCards)
   const creatures = kind === 'Ant';
   const rules = creatures ? [...new Set(Object.values(NAV).filter((n) => n[0] === kind && n[1] === space).map((n) => n[3]))] : navValues(3, [kind, space, shape]);
   $('navRules').hidden = creatures || (rules.length < 2 && !MODES[w].net);
-  (creatures ? $('antCreatures') : $('navRules')).replaceChildren(...rules.flatMap((r, i) => {
+  (creatures ? $('antRuleCards') : $('navRules')).replaceChildren(...rules.flatMap((r, i) => {
     const here = Object.keys(NAV).find((m) => NAV[m].slice(0, 4).join() === [kind, space, shape, r].join());
     const v = here ?? Object.keys(NAV).find((m) => NAV[m][0] === kind && NAV[m][1] === space && NAV[m][3] === r);  // (elsewhere: its first shape)
     if (!creatures && here && MODES[here].net) return ruleCards(r === rule ? w : here, null, r === rule);  // a walk by a rule: its rules' cards (the side picked kept)
+    if (creatures && r === rule) return ruleCards(w, icon(r === 'Ant' ? 'ant' : MODE_ICONS[w]));  // (the creature in use: its rules)
     const { base, detail } = splitModeLabel(modeOptionOf(v).text), alone = NAV[v][4] === '';  // a spiral: its base here, no Grid | Cells
     const pic = icon(r === 'Turtle' ? 'turtle' : r === 'Pivot' ? 'pivot' : r === 'Parity' ? 'walk2d' : r === 'Ant' ? 'ant' : MODE_ICONS[v]);  // a turtle for the walks turning relative to their heading
     const go = () => { if (here) { navGo(3, r); return; } $('mode').value = v; $('mode').dispatchEvent(new Event('change')); };
-    const how = !creatures && walkTutorialFits(here ?? v) && (() => { if (r === rule) walkTutorialToggle(); else { go(); walkTutorial($('mode').value); } });  // (its ⓘ: how it works, picked first)
-    const b = creatures ? button(`${pic}<span>${r}</span>`, r === rule, go, CREATURE_TIPS[r], { byDefault: i ? '' : 'yes' }) : card({ pic, name: r, base: alone && base && !r.includes('base') ? base : '', title: detail, on: r === rule, how, byDefault: i ? '' : 'yes', click: go });  // (its digits' turns in its tooltip)  // (the first: where a shape starts)
+    const how = walkTutorialFits(here ?? v) && (() => { if (r === rule) walkTutorialToggle(); else { go(); walkTutorial($('mode').value); } });  // (its ⓘ: how it works, picked first)
+    const b = creatures ? card({ pic, name: r, detail: CREATURE_TIPS[r], how, click: go }) : card({ pic, name: r, base: alone && base && !r.includes('base') ? base : '', title: detail, on: r === rule, how, byDefault: i ? '' : 'yes', click: go });  // (its digits' turns in its tooltip)  // (the first: where a shape starts)
     b.disabled = !has(kind, r);
     return [b];
   }));

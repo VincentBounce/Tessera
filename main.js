@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.238';
+const VERSION = '0.4.239';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -13854,10 +13854,9 @@ function setLifeSeed(seed, how) {
  *   s   the surface size (a torus: rows, or rows x tiles per row)
  *   r   the Life rule        ch   a Life start (champion or patch)
  *   st  the start of a walk along a solid's grid (when not 1)
- *   fa  0 when Fill areas is off
- * It only holds what determines the result. Display choices (colours, grid, sky, camera, zoom…),
- * the speed and the current step are never saved: a link opens with the mode's default view, but
- * for Fill areas, which changes what is drawn. A
+ * It only holds what determines the result. Display choices (colours, areas, grid, sky, camera,
+ * zoom…), the speed and the current step are never saved: a link opens with the mode's default
+ * view (see DISPLAY_DEFAULTS). A
  * Life start does not depend on the number: it replaces the digits.
  */
 
@@ -13931,8 +13930,6 @@ function getSetup() {
   if (mode.lattice === 'sphere') s.s = $('sphereF').value;
   if (modeStarts() && startNo() > 1) s.st = startNo();
   if (torusTurned && TURNED[mode.sphere]) s.o = 1;
-  const empty = $('area').value === 'empty';
-  if (empty !== (defaultOf('area') === 'empty')) s.fa = empty ? 0 : 1;  // (Area, the one display choice kept, it changes what is drawn: fa=0 Empty, fa=1 filled, where not by default)
   if (mode.life) s.r = ruleBody($('lifeRule').value);
   if (mode.life && !mode.margolus && lifeColours > 1) s.k = lifeColours;
   if (battleOn()) {  // (a walk's Duel or Trio, as Life's: its teams; B's number, C's)
@@ -14013,8 +14010,6 @@ function applySetup(s) {
   // the display is not part of a setup: it takes the defaults of the walk mode's tab, when the tab
   // changes (as picking a walk does); within a tab, what was chosen stays
   if (modeTabOf() !== displayTab) displayDefaults();
-  if (s.fa === undefined) $('area').value = defaultOf('area', s.w);  // the one display choice kept: it changes what is drawn (fa=0 Empty, fa=1 filled, Light)
-  else $('area').value = String(s.fa) === '0' ? 'empty' : $('area').value === 'empty' ? 'light' : $('area').value;
   $('perspective').checked = defaultOf('perspective', s.w);
   Object.assign(cam, CAM0);
   $('upright').checked = false;  // (the default view: free, on each surface)
@@ -17138,7 +17133,7 @@ $('startCells').addEventListener('click', () => {  // (see renderDrawTools: to g
 });
 $('colourMode').addEventListener('change', () => { needsFull = true; renderColourButtons(); updateDisplayMenu(); });
 $('lifeTrail').addEventListener('change', () => { needsFull = true; renderTrailButton(); });
-$('area').addEventListener('change', () => { needsFull = true; updateDisplayMenu(); syncLink(); });
+$('area').addEventListener('change', () => { needsFull = true; updateDisplayMenu(); });  // (not in the link: a display choice)
 $('showGrid').addEventListener('change', () => { needsFull = true; renderHeadTiles(); });
 $('autoFit').addEventListener('change', () => { if ($('autoFit').checked) fitNow(); renderHeadTiles(); });
 $('autoRotate').addEventListener('change', () => { if ($('autoRotate').checked) fitNow(); });  // turning starts framed
@@ -17841,8 +17836,8 @@ const walkName = (w) => splitModeLabel(modeOptionOf(w)?.text ?? w).name;
 const shapeAndTiles = (w) => { const f = familyOf(w), t = f?.F.tabs.find(([m]) => m === f.m); return t ? `${NAV[w][2]} · ${shapeLabel(t[3])}` : `${SPACES[NAV[w][1]]?.[0]} · ${NAV[w][2]}`; };
 // the setup in use (its Gallery row lit, the ☆ lit): all of it the same (its number, walk, size, start, rule, colours,
 // symmetry, edges, cells drawn or found…) but its version, its length (a hover cuts it, see preview) and how it is looked at
-// (Fill areas, Space-time)
-const SETUP_LOOKS = ['v', 'd', 'fa', 'sp'];
+// (Space-time)
+const SETUP_LOOKS = ['v', 'd', 'sp'];
 const isInUse = (setup) => sameSetup(setup, getSetup(), SETUP_LOOKS);
 let galleryBefore = null, galleryHover = 0;  // the setup in use while others are shown on hover
 // and its view (Auto-fit, Auto-rotate, camera, framing): a setup shown on hover is framed (Auto-fit on)

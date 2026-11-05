@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.239';
+const VERSION = '0.4.240';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -1437,6 +1437,36 @@ const DISPLAY_BY_TAB = {
   'Automata on surfaces': ['shape', 'colours', 'digit', 'mono', 'grid', 'sky', ...VIEW_3D, 'glass', 'ocean', 'cut'],  // (Glass, Cut: the surfaces' tiles only, see gpuFrame, cutOn)
   '2D spirals': ['heatmap', 'fill', 'translucent', 'cells', 'visits', 'digit', 'grid'],  // the 2D walks' menu, some of it greyed out
 };
+// The Display settings' defaults, one table: each its control (a box's id), when it comes back (open: the page's opening
+// only, kept from tab to tab; tab: another tab; mode: every mode; colours: Life's count of colours; battle: a battle's
+// state, as long as none picks it; ant: an ant coming in), its value: one for all, or each tab's ({ all, Life… }:
+// a tab's own, else all's), or by the mode or a battle (a function); displayDefaults and the mode's change set them, and
+// the tiles' marks read them (see defaultOf, defaultMark)
+const DISPLAY_DEFAULTS = {
+  look: ['colourMode', 'tab', { Walk: 'gradient', Ant: 'gradient', Life: 'mono', Replicators: 'mono', Reversible: 'mono', Elementary: 'gradient' }],  // (Cells: a walk's Rainbow, Life's States, Elementary's Age: the simplest)
+  area: ['area', 'tab', (mode, w) => (NAV[w][0] !== 'Walk' ? 'empty' : NAV[w][1] === '2D' ? 'light' : 'plain')], path: ['showPath', 'tab', false],  // (Area: Empty, a walk's Light in 2D, Plain in 3D; on cells the cells alone)
+  centered: ['centered', 'tab', true], autoRotate: ['autoRotate', 'tab', false], sky: ['sky', 'tab', 'sky'],  // (on a solid the walker in front; Dawn or Twilight after the theme)
+  autoFit: ['autoFit', 'mode', true], upright: ['upright', 'mode', false], shape: ['shapeM', 'mode', (mode) => (mode.round ? 1 : 0)],  // (Flat 0 ── Inflated 1: a round surface inflated, a solid flat)
+  perspective: ['perspective', 'mode', (mode, w) => perspectiveFor(mode, defaultOf('shape', w))],  // (as each mode's own, hand-tuned)
+  light: ['light', 'open', true], glass: ['glass', 'open', false], grid: ['showGrid', 'open', true], autoPlay: ['autoPlay', 'open', false],
+  player: [null, 'walk', (mode) => (mode.grid ? 0.2 : 1)],  // (where a walk on a surface is shown: the step its places visited reach this share, along the grid a fifth of its corners, on cells all its cells; else its end)
+  trail: ['lifeTrail', 'colours', () => lifeColours === 1],  // (Life's Trail: on in Classic, two states, off in colours; when the colours change)
+  ocean: ['ocean', 'battle', () => battleOn() && NAV[$('mode').value][0] === 'Walk'],  // (on in a walk's battle on a surface, as long as none picks it)
+  cut: [null, 'open', 0], blocks: [null, 'open', false], sound: [null, 'open', false], speed: [null, 'open', 60],  // (Cut Off; Life's Blocks hidden; no sound; 60 steps a second: their own state, read where it is kept)
+  antLook: [null, 'ant', 'ink'],  // (an ant's cells by their state, in Ink, as it comes in)
+};
+// its settings that come back at `at`: each box set, checked or valued
+function applyDefaults(at) {
+  for (const [key, [id, when]] of Object.entries(DISPLAY_DEFAULTS)) {
+    if (when !== at || !id) continue;  // (one with no box: read where it is used, see defaultOf)
+    const v = defaultOf(key);
+    if (typeof v === 'boolean') $(id).checked = v; else $(id).value = v;
+  }
+}
+// a setting's default for mode w: its tab's, else all's, or by the mode
+const defaultOf = (key, w = $('mode').value) => { const v = DISPLAY_DEFAULTS[key][2]; return typeof v === 'function' ? v(MODES[w], w) : v && typeof v === 'object' ? v[NAV[w][0]] ?? v.all : v; };
+// a tile's mark (see setTile's byDefault): its setting's default, 'on' or 'off'
+const defaultMark = (key) => (defaultOf(key) ? 'on' : 'off');
 // Shown but greyed out, by the menu's group or the tab: a spiral never crosses itself, so it closes no area and visits each
 // cell once; and its marks read as cells, the line along the spiral (Rainbow along the walk) shows nothing more. Elementary's
 // cells never change once made: no Activity
@@ -1554,10 +1584,10 @@ function relabelColours(mode) {
         gradient: C > 2 ? 'Age of live cells, warm newborns to cold old ones + dying stages' : 'Age of live cells, warm newborns to cold old ones + fading trail',
         digit: 'Activity (state changes)', cells: '', visits: '' };
   const sel = $('colourMode');
-  if (mode.antOf && !shows('cells')) antRamp ??= 'ink';  // an ant on a surface: its cells by their state
+  if (mode.antOf && !shows('cells')) antRamp ??= defaultOf('antLook');  // an ant on a surface: its cells by their state
   sel.querySelector('option[value="digit"]').text = mode.antOf ? "The ant's colours" : names.digit;
   if (shows('cells')) {  // 2D: along lines the rainbow line; on cells the rainbow cells or the heatmap (Digits writes over either); an ant its colours
-    if (mode.antOf && sel.value !== 'digit') antRamp = 'ink';  // an ant comes in with its states, in Ink
+    if (mode.antOf && sel.value !== 'digit') antRamp = defaultOf('antLook');  // an ant comes in with its states (see DISPLAY_DEFAULTS)
     sel.value = mode.antOf ? 'digit' : mode.twin && !mode.cells ? 'gradient' : mode.cells && sel.value === 'visits' ? 'visits' : 'cells';
     return;
   }
@@ -1670,12 +1700,12 @@ function renderTrailButton() {
 }
 // Blocks (Reversible, in Trail's place: no trail there), a tile turned on and off: the blocks of the set the next generation
 // is worked out by, outlined over the cells (see drawBlocks); Ising's squares in turn are no blocks: greyed
-let showBlocks = false, blocksButton = null;
+let showBlocks = defaultOf('blocks'), blocksButton = null;
 function renderBlocksButton() {
   blocksButton ??= tile({ pic: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="8" height="8" rx="1" fill="currentColor" opacity="0.35"/><rect x="13" y="13" width="8" height="8" rx="1" fill="currentColor" opacity="0.35"/><rect x="3" y="3" width="18" height="18" rx="1.5" fill="none" style="stroke: var(--sector)" stroke-width="1.8"/></svg>',  // (its outline the blocks' blue)
     text: 'Blocks', toggle: true, title: 'The blocks the next generation is worked out by, outlined (a set at a time, in turn)', click: () => { showBlocks = !showBlocks; needsFull = true; renderBlocksButton(); } });
   const flat = !!MODES[$('mode').value].plane, can = flat && !lifeRuleNow()?.ising;  // (the mode and rule picked: the grid not built yet)
-  setTile(blocksButton, { on: showBlocks && can, can, byDefault: 'off', greyed: flat ? 'in Ising (its squares in turn, no blocks)' : 'on a surface' });
+  setTile(blocksButton, { on: showBlocks && can, can, byDefault: defaultMark('blocks'), greyed: flat ? 'in Ising (its squares in turn, no blocks)' : 'on a surface' });
 }
 // Space-time (Life on squares, the Stacks tile beside Walls): its generations stacked up, time going up, a cube a live cell (see
 // stackUp; STACK_MOST cubes at most); with walls only (through a torus's edges no tree grows: Stacks, Walls on with it)
@@ -1756,7 +1786,7 @@ function renderSoundButton() {
       }
       renderSoundButton();
     } });
-  setTile(soundButton, { on: !!music, can: true, byDefault: 'off' });
+  setTile(soundButton, { on: !!music, can: true, byDefault: defaultMark('sound') });
 }
 function lifeMusic(L) {  // (a generation's moments, see Sound)
   const now = music.ctx.currentTime, born = L.bornNow;
@@ -1781,7 +1811,7 @@ const swatch = (cs) => `<svg viewBox="0 0 2 2" aria-hidden="true">${cs.map((c, i
 const heatRings = (g) => `<svg viewBox="0 0 24 24" aria-hidden="true">${[0, 0.25, 0.5, 0.75, 1].map((f, i) => `<rect x="${2 + 2 * i}" y="${2 + 2 * i}" width="${20 - 4 * i}" height="${20 - 4 * i}" rx="${2 - 0.4 * i}" fill="${g(f)}"/>`).join('')}</svg>`;
 // the sky, a tile before the themes, on or off (see tile): named after the theme (Dawn on a light page, Twilight on a dark one),
 // its picture the sky; shown where there is a sky (see updateDisplayMenu)
-const skyButton = tile({ toggle: true, byDefault: 'on', title: 'The background: a sky in the page\'s tone, or plain', click: () => { $('sky').value = $('sky').value === 'sky' ? 'plain' : 'sky'; $('sky').dispatchEvent(new Event('change')); } });
+const skyButton = tile({ toggle: true, byDefault: defaultOf('sky') === 'sky' ? 'on' : 'off', title: 'The background: a sky in the page\'s tone, or plain', click: () => { $('sky').value = $('sky').value === 'sky' ? 'plain' : 'sky'; $('sky').dispatchEvent(new Event('change')); } });
 const renderSkyButtons = () => {
   const theme = themeName(), on = $('sky').value === 'sky';
   const name = theme === 'light' ? 'Dawn' : 'Twilight';
@@ -14220,7 +14250,7 @@ async function importGallery(file) {
 // multiples of 60, so that a screen at 60 or 120 frames a second shows as many steps at every frame
 // (50 a second at 60 Hz: one frame in 6 without a step, a stutter)
 const SPEEDS = [6, 12, 60, 120, 600, 1200, 6000, 12000, 60000, 120000, 600000, 1200000, 6000000];
-let speed = 60;
+let speed = defaultOf('speed');
 const stepsPerSecond = () => speed;
 function updateSpeedLabel() {
   if (document.activeElement !== $('speedLabel')) $('speedLabel').value = `${fmt(speed)} steps/s`;
@@ -14698,7 +14728,7 @@ const ANT_RAMPS = {
   ink: { light: ['#e7e0d0', '#b9ae98', '#6f6a60', '#2b2f3a'], dark: ['#3a4150', '#636b7c', '#959ba6', '#c8c2b5'] },  // (dark: its cream a shade lower, not glaring on the black)
   amber: { light: ['#f7e6bd', '#f0c35a', '#c98a10', '#8a5200'], dark: ['#4a3a1a', '#8a6418', '#c98f1f', '#f0b429'] },
 };
-let antRamp = 'ink';
+let antRamp = defaultOf('antLook');
 // state k of n along the ramp (Ink when Directions is on: an ant's rule chips are its states)
 function rampColour(k, n) {
   const stops = ANT_RAMPS[antRamp ?? 'ink'][themeName()];
@@ -15189,7 +15219,7 @@ const teamName = (s) => (oceanOn() && LANDS[s] ? LAND_NAMES[s] : LIFE_COLOUR_NAM
 // Cut: Off, or a fixed plane through the middle facing one of the view's axes (E, N, Up, as drawn in its corner), the half on
 // that axis's side gone: its notches on a row as Flat ── Inflated (see sizeGauge)
 const CUT_AXES = [['Off'], ['E', [1, 0, 0]], ['N', [0, 1, 0]], ['Up', [0, 0, 1]]];
-let cutAxis = 0;
+let cutAxis = defaultOf('cut');
 const cutOn = () => cutAxis > 0 && !$('cutRow').hidden;
 const cutNormal = () => CUT_AXES[cutAxis][1] ?? [0, 0, 0];
 const setCut = (k) => { needsFull ||= k !== cutAxis; cutAxis = k; };  // (a notch picked, or dragged over)
@@ -17751,34 +17781,6 @@ function computeFramed() {
 // Another mode in the same tab keeps the Display settings; another tab starts from its defaults
 let displayTab = null;
 const modeTabOf = () => `${NAV[$('mode').value]?.[0]}|${modeGroup()}`;  // (the menu's tab, Life or Elementary, and its space: the select's group holds several tabs)
-// The Display settings' defaults, one table: each its control (a box's id), when it comes back (open: the page's opening
-// only, kept from tab to tab; tab: another tab; mode: every mode; colours: Life's count of colours; battle: a battle's
-// state, as long as none picks it), its value: one for all, or each tab's ({ all, Life… }:
-// a tab's own, else all's), or by the mode or a battle (a function); displayDefaults and the mode's change set them, and
-// the tiles' marks read them (see defaultOf, defaultMark)
-const DISPLAY_DEFAULTS = {
-  look: ['colourMode', 'tab', { Walk: 'gradient', Ant: 'gradient', Life: 'mono', Replicators: 'mono', Reversible: 'mono', Elementary: 'gradient' }],  // (Cells: a walk's Rainbow, Life's States, Elementary's Age: the simplest)
-  area: ['area', 'tab', (mode, w) => (NAV[w][0] !== 'Walk' ? 'empty' : NAV[w][1] === '2D' ? 'light' : 'plain')], path: ['showPath', 'tab', false],  // (Area: Empty, a walk's Light in 2D, Plain in 3D; on cells the cells alone)
-  centered: ['centered', 'tab', true], autoRotate: ['autoRotate', 'tab', false], sky: ['sky', 'tab', 'sky'],  // (on a solid the walker in front; Dawn or Twilight after the theme)
-  autoFit: ['autoFit', 'mode', true], upright: ['upright', 'mode', false], shape: ['shapeM', 'mode', (mode) => (mode.round ? 1 : 0)],  // (Flat 0 ── Inflated 1: a round surface inflated, a solid flat)
-  perspective: ['perspective', 'mode', (mode, w) => perspectiveFor(mode, defaultOf('shape', w))],  // (as each mode's own, hand-tuned)
-  light: ['light', 'open', true], glass: ['glass', 'open', false], grid: ['showGrid', 'open', true], autoPlay: ['autoPlay', 'open', false],
-  player: [null, 'walk', (mode) => (mode.grid ? 0.2 : 1)],  // (where a walk on a surface is shown: the step its places visited reach this share, along the grid a fifth of its corners, on cells all its cells; else its end)
-  trail: ['lifeTrail', 'colours', () => lifeColours === 1],  // (Life's Trail: on in Classic, two states, off in colours; when the colours change)
-  ocean: ['ocean', 'battle', () => battleOn() && NAV[$('mode').value][0] === 'Walk'],  // (on in a walk's battle on a surface, as long as none picks it)
-};
-// its settings that come back at `at`: each box set, checked or valued
-function applyDefaults(at) {
-  for (const [key, [id, when]] of Object.entries(DISPLAY_DEFAULTS)) {
-    if (when !== at || !id) continue;  // (one with no box: read where it is used, see defaultOf)
-    const v = defaultOf(key);
-    if (typeof v === 'boolean') $(id).checked = v; else $(id).value = v;
-  }
-}
-// a setting's default for mode w: its tab's, else all's, or by the mode
-const defaultOf = (key, w = $('mode').value) => { const v = DISPLAY_DEFAULTS[key][2]; return typeof v === 'function' ? v(MODES[w], w) : v && typeof v === 'object' ? v[NAV[w][0]] ?? v.all : v; };
-// a tile's mark (see setTile's byDefault): its setting's default, 'on' or 'off'
-const defaultMark = (key) => (defaultOf(key) ? 'on' : 'off');
 function displayDefaults() {
   applyDefaults('tab');
   oceanPicked = false;

@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.161';
+const VERSION = '0.4.162';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -16214,7 +16214,8 @@ function drawActivity() {
   if (walk.life?.colours === 1 && lifeTime()) {  // (as their gauges: its ordered moments, a reversible one's (see orderMarks), else the most ordered; the most alive, in gold as the curve)
     for (const g of reversibleRun() ? orderMarks(walk.life) : [peaks(walk.life).orderGen]) mark(g, css.getPropertyValue('--sector'), 1);
     mark(peaks(walk.life).aliveGen, accent, 0);
-  } else if (!walk.life && walk.n && walk.maxDist) mark(walkPeak().step, accent, 0);  // (a walk's farthest, in gold as its gauge)
+  } else if (walk.battle) walk.battle.player.dead.forEach((g, w) => g >= 0 && mark(g, LIFE_COLOURS[w], 0));  // (a battle's deaths, each in its walker's colour)
+  else if (!walk.life && walk.n && walk.maxDist) mark(walkPeak().step, accent, 0);  // (a walk's farthest, in gold as its gauge)
   ctx.lineWidth = 1.5;
   for (const [x, colour] of marks) { ctx.strokeStyle = colour; ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke(); }
   const d = H / 6;  // (its half diagonal: a third of the height)

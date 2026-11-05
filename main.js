@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.233';
+const VERSION = '0.4.234';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -6124,7 +6124,7 @@ function sizeGauge(el, n, i, preview, pick) {
   notches.append(...Array.from({ length: n }, () => document.createElement('span')));
   el.replaceChildren(range, notches);
 }
-// A notched slider, one choice among a few on a row (Cut, Area): its title in bold, a notch each (see sizeGauge), the
+// A notched slider, one choice among a few on a row (Cut, Area): its title a sub-section's (field-label), a notch each (see sizeGauge), the
 // choice's name on its right (its words in its tooltip); can: false, greyed; live: set as it is dragged (else let go)
 function notchRow(el, title, choices, at, set, can = true, live = true) {
   const name = Object.assign(document.createElement('span'), { className: 'notch-name' }), gauge = Object.assign(document.createElement('div'), { className: 'size-gauge' });
@@ -6133,7 +6133,7 @@ function notchRow(el, title, choices, at, set, can = true, live = true) {
   gauge.querySelector('input').disabled = !can;
   [name.textContent, name.title = ''] = choices[at];
   el.classList.add('notch-row');
-  el.replaceChildren(Object.assign(document.createElement('span'), { className: 'notch-title', textContent: title }), gauge, name);
+  el.replaceChildren(Object.assign(document.createElement('span'), { className: 'field-label', textContent: title }), gauge, name);
 }
 // − / +: the usual sizes (from a torus size of its own, the usual ones just below or above it)
 function stepSize(delta) {

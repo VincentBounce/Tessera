@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.144';
+const VERSION = '0.4.145';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -3174,7 +3174,7 @@ function ruleCards(w, pic, here = true) {
   const make = (cardPic, name, code, on, then, why = '', title = '') => card({ pic: cardPic, name, detail: code, base: code && R.base?.(code), on, title: why || title, can: !why, click: go(then),
     how: () => { if (on) walkTutorialToggle(); else { go(then)(); walkTutorial(w); } } });  // (its ⓘ: how it works, picked first)
   return [...R.cards.map(([r, name, cardPic, why, title]) => make(cardPic ?? pic, name, r, here && r === R.now && !antCustomOpen, () => { antCustomOpen = false; if (r === R.now) renderModePicker(); else R.set(r); }, why, title)),
-    ...(R.typed ? [make(pixelIcon('..o..,..o..,ooooo,..o..,..o..'), mine ? 'Custom rule, your own' : 'Custom rule', mine ? R.now : '', mine, () => { antCustomOpen = true; renderModePicker(); }, '', 'your own, typed')] : []),
+    ...(R.typed ? [make(pixelIcon('..o..,..o..,ooooo,..o..,..o..'), 'Custom rule', mine ? R.now : '', mine, () => { antCustomOpen = true; renderModePicker(); }, '', 'your own, typed')] : []),
     customRow];  // (its field right after it, the list's next rules after the field; always in it, shown by renderAntRow)
 }
 // a creature's or a walk's rules: its presets [rule, name, picture, why greyed, tooltip], the rule in use, how to set one, whether one is typed, a rule's base

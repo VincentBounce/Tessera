@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.149';
+const VERSION = '0.4.150';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -5180,31 +5180,13 @@ function kleinMesh(kind, nv, nu = kleinColumns[kind](nv)) {
   if (meshCache[key]) return meshCache[key];
   const tiles = [];
   if (kind === 'klein') for (let i = 0; i < nu; i++) for (let j = 0; j < nv; j++) tiles.push([[i, j], [i + 1, j], [i + 1, j + 1], [i, j + 1]]);
-  if (kind === 'kleinHex') for (let c = 0; c < nu; c++) for (let r = 0; r < nv; r++) {
-    const cj = r + (c % 2) / 2;
-    tiles.push([0, 1, 2, 3, 4, 5].map((k) => [c + Math.cos((k * Math.PI) / 3) / 1.5, cj + Math.sin((k * Math.PI) / 3) / Math.sqrt(3)]));
-  }
-  if (kind === 'kleinTri' || kind === 'kleinKite') {
-    const P = (i, j) => [i + (j % 2) / 2, j];
-    for (let j = 0; j < nv; j++) for (let i = 0; i < nu; i++) {
-      if (j % 2 === 0) tiles.push([P(i, j), P(i + 1, j), P(i, j + 1)], [P(i + 1, j), P(i + 1, j + 1), P(i, j + 1)]);
-      else tiles.push([P(i, j), P(i + 1, j), P(i + 1, j + 1)], [P(i, j), P(i + 1, j + 1), P(i, j + 1)]);
-    }
-  }
+  if (kind === 'kleinHex') tiles.push(...hexSheet(nu, nv));
+  if (kind === 'kleinTri' || kind === 'kleinKite') tiles.push(...triSheet(nu, nv));
   // turned by 30° (as turnedTorus): the tori's, nu and nv swapped back; their mirror across the ring maps them onto themselves
   // (the triangles' corners every half step round the tube, the hexagons' columns an even count)
   const swap = (c) => [c[0], ...c.slice(1).reverse()].map(([i, j]) => [j, i]);
-  if (kind === 'kleinTriTurned' || kind === 'kleinKiteTurned') {
-    const P = (i, j) => [i + (j % 2) / 2, j];
-    for (let j = 0; j < nu; j++) for (let i = 0; i < nv; i++) {
-      if (j % 2 === 0) tiles.push(swap([P(i, j), P(i + 1, j), P(i, j + 1)]), swap([P(i + 1, j), P(i + 1, j + 1), P(i, j + 1)]));
-      else tiles.push(swap([P(i, j), P(i + 1, j), P(i + 1, j + 1)]), swap([P(i, j), P(i + 1, j + 1), P(i, j + 1)]));
-    }
-  }
-  if (kind === 'kleinHexTurned') for (let c = 0; c < nv; c++) for (let r = 0; r < nu; r++) {
-    const cj = r + (c % 2) / 2;
-    tiles.push(swap([0, 1, 2, 3, 4, 5].map((k) => [c + Math.cos((k * Math.PI) / 3) / 1.5, cj + Math.sin((k * Math.PI) / 3) / Math.sqrt(3)])));
-  }
+  if (kind === 'kleinTriTurned' || kind === 'kleinKiteTurned') tiles.push(...triSheet(nv, nu).map(swap));
+  if (kind === 'kleinHexTurned') tiles.push(...hexSheet(nv, nu).map(swap));
   if (kind === 'kleinKite' || kind === 'kleinKiteTurned') { const kites = tiles.flatMap(kitesOf); tiles.length = 0; for (const t of kites) tiles.push(t); }  // (each triangle its 3 kites)
   const up = kind === 'kleinCairo' ? 0.5 : 0;  // (Cairo's pentagons half a square up its sheet, as the torus's: their mirror line too, see id)
   if (kind === 'kleinCairo') for (let i = 0; i < nu; i++) for (let j = 0; j < nv; j++) for (const o of [0, 1]) {
@@ -5569,10 +5551,7 @@ const sheetPoint = (g, i, j, m) => {
  * are regular when nu / nv = √3 / (1.5·TUBE). Every hexagon has 6 neighbours, all across an edge. */
 const torusHexColumns = (nv, klein = false) => ringColumns((2 * nv * Math.sqrt(3)) / (3 * TORUS_TUBE), nv, 2, klein);
 function torusHexMesh(nv, nu = torusHexColumns(nv)) {
-  return sheetTorus(`torusHex${nv}x${nu}`, 'torusHex', nv, nu, 6, () => Array.from({ length: nu * nv }, (_, t) => {  // (tile c·nv + r, like the square torus)
-    const c = Math.floor(t / nv), cj = (t % nv) + (c % 2) / 2;
-    return [0, 1, 2, 3, 4, 5].map((k) => [c + Math.cos((k * Math.PI) / 3) / 1.5, cj + Math.sin((k * Math.PI) / 3) / Math.sqrt(3)]);
-  }));
+  return sheetTorus(`torusHex${nv}x${nu}`, 'torusHex', nv, nu, 6, () => hexSheet(nu, nv));  // (tile c·nv + r, like the square torus)
 }
 
 // A torus of Cairo pentagons: nv squares of the Cairo grid round the tube, nu round the ring (both even:
@@ -5728,17 +5707,28 @@ const torusTriColumns = (nv) => ringColumns((nv * Math.sqrt(3)) / (2 * TORUS_TUB
  * grid cut in 3 from its middle to its sides' middles, a kite at each corner (that corner, the middles of
  * its two sides, the triangle's middle); 6 kites round a corner of the triangles make a hexagon. A kite
  * touches 4 others by an edge and 5 more by a corner: 9 neighbours. Its corners in the triangle's turn. */
+// The sheets' tiles, in sheet units. Triangles: corner i of row j at (i + (j odd) / 2, j), the two between corners i, i + 1 of
+// rows j and j + 1, nu corners a row, nv rows; flat-topped hexagons: nu columns 1.5 apart, odd ones half a row higher, nv rows
+// √3 apart, column by column (the tori's, the Klein bottles', turned or not)
+function triSheet(nu, nv) {
+  const P = (i, j) => [i + (j % 2) / 2, j], tris = [];
+  for (let j = 0; j < nv; j++) for (let i = 0; i < nu; i++) {
+    if (j % 2 === 0) tris.push([P(i, j), P(i + 1, j), P(i, j + 1)], [P(i + 1, j), P(i + 1, j + 1), P(i, j + 1)]);
+    else tris.push([P(i, j), P(i + 1, j), P(i + 1, j + 1)], [P(i, j), P(i + 1, j + 1), P(i, j + 1)]);
+  }
+  return tris;
+}
+const hexSheet = (nu, nv) => Array.from({ length: nu * nv }, (_, t) => {
+  const c = Math.floor(t / nv), cj = (t % nv) + (c % 2) / 2;
+  return [0, 1, 2, 3, 4, 5].map((k) => [c + Math.cos((k * Math.PI) / 3) / 1.5, cj + Math.sin((k * Math.PI) / 3) / Math.sqrt(3)]);
+});
 const kitesOf = (c) => {
   const m = [0, 1].map((d) => (c[0][d] + c[1][d] + c[2][d]) / 3), half = (p, q) => [(p[0] + q[0]) / 2, (p[1] + q[1]) / 2];
   return [0, 1, 2].map((k) => [c[k], half(c[k], c[(k + 1) % 3]), m, half(c[(k + 2) % 3], c[k])]);
 };
 function torusTriMesh(nv, nu = torusTriColumns(nv), kites = false) {  // kites: each triangle cut in 3 (see kitesOf)
   return sheetTorus(`${kites ? 'kite' : 'tri'}torus${nv}x${nu}`, 'torusTri', nv, nu, kites ? 4 : 3, () => {
-    const P = (i, j) => [i + (j % 2) / 2, j], tris = [];  // (sheet coordinates of corner i of row j)
-    for (let j = 0; j < nv; j++) for (let i = 0; i < nu; i++) {  // the two triangles between corners i, i + 1 of rows j and j + 1
-      if (j % 2 === 0) tris.push([P(i, j), P(i + 1, j), P(i, j + 1)], [P(i + 1, j), P(i + 1, j + 1), P(i, j + 1)]);
-      else tris.push([P(i, j), P(i + 1, j), P(i + 1, j + 1)], [P(i, j), P(i + 1, j + 1), P(i, j + 1)]);
-    }
+    const tris = triSheet(nu, nv);
     return kites ? tris.flatMap(kitesOf) : tris;
   }, { kite: kites });
 }
@@ -5758,24 +5748,9 @@ function turnedTorus(kind, build, sides, nv, nu, kites = false) {  // kites: eac
   }, { kite: kites });
 }
 const turnedTriColumns = (nv) => ringColumns((2 * nv) / (Math.sqrt(3) * TORUS_TUBE), nv, 2);
-const turnedTorusTriMesh = (nv, nu = turnedTriColumns(nv), kites = false) => turnedTorus(kites ? 'torusKiteTurned' : 'torusTriTurned', (rows, cols, put) => {
-  const P = (i, j) => [i + (j % 2) / 2, j];  // corner i of row j, as on the usual torus (rows: around the ring)
-  for (let j = 0; j < cols; j++) {
-    for (let i = 0; i < rows; i++) {
-      if (j % 2 === 0) { put([P(i, j), P(i + 1, j), P(i, j + 1)]); put([P(i + 1, j), P(i + 1, j + 1), P(i, j + 1)]); }
-      else { put([P(i, j), P(i + 1, j), P(i + 1, j + 1)]); put([P(i, j), P(i + 1, j + 1), P(i, j + 1)]); }
-    }
-  }
-}, 3, nv, nu, kites);
+const turnedTorusTriMesh = (nv, nu = turnedTriColumns(nv), kites = false) => turnedTorus(kites ? 'torusKiteTurned' : 'torusTriTurned', (rows, cols, put) => triSheet(rows, cols).forEach(put), 3, nv, nu, kites);  // (rows: around the ring)
 const turnedHexColumns = (nv, klein = false) => ringColumns((nv * Math.sqrt(3)) / (2 * TORUS_TUBE), nv, 2, klein);
-const turnedTorusHexMesh = (nv, nu = turnedHexColumns(nv)) => turnedTorus('torusHexTurned', (cols, rows, put) => {
-  for (let c = 0; c < cols; c++) {  // as on the usual torus: columns 1.5 apart, odd ones half a row higher
-    for (let r = 0; r < rows; r++) {
-      const cj = r + (c % 2) / 2;
-      put([0, 1, 2, 3, 4, 5].map((k) => [c + Math.cos((k * Math.PI) / 3) / 1.5, cj + Math.sin((k * Math.PI) / 3) / Math.sqrt(3)]));
-    }
-  }
-}, 6, nv, nu);
+const turnedTorusHexMesh = (nv, nu = turnedHexColumns(nv)) => turnedTorus('torusHexTurned', (cols, rows, put) => hexSheet(cols, rows).forEach(put), 6, nv, nu);  // (as on the usual torus)
 
 /* ---- 7.5 Flat ↔ round: the same tiles and neighbours, shown flat or inflated ----------------- */
 /* walk.shape = { m, target, corners, cen, nrm, extent, bent } for surfaces that can change shape:

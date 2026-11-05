@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.175';
+const VERSION = '0.4.176';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -3479,7 +3479,7 @@ function compute() {
       if (job !== computeJob) return;
       busy = false;  // the link follows the walk built (the gauge stays on until it is)
       done(entry, `Digits in ${(d.ms / 1000).toFixed(2)} s`);
-      setBusy(false);
+      if (!elementaryWorker) setBusy(false);  // (Elementary's rows on their way: busy till they are, see elementaryReady)
     };
     if (n < 1e6) { finish(); return; }
     clearTimeout(busyTimer);

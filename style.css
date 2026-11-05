@@ -276,16 +276,13 @@ button.switch.active:hover:not(:disabled) { background: var(--pick-strong); }
 .mode-list button:hover { background: var(--bg); }
 .mode-icon { font-size: 15px; color: var(--muted); text-align: center; }
 .rule-cards .mode-icon svg, #yourList .mode-icon svg { width: 20px; height: 20px; }  /* a rule's picture, a treasure's shape */
-.mode-name { display: block; font-size: 13px; font-weight: 600; }
-.mode-detail { display: block; font-size: 11px; color: var(--muted); }
+.mode-head { display: flex; align-items: center; justify-content: space-between; gap: 6px; min-width: 0; }  /* a card's name, its base at its right (see cardWords) */
+.mode-name { display: block; min-width: 0; font-size: 13px; font-weight: 600; }
+.mode-detail { display: block; font-size: 11px; font-weight: 400; color: var(--muted); }
 .mode-name, .mode-detail { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }  /* one line each, … when too long (in full on hover) */
-.mode-base {
-  font-size: 11px;
-  padding: 1px 7px;
-  border: 1px solid var(--border);
-  border-radius: 999px;
-  color: var(--muted);
-}
+/* a base's bubble, every one (the rules' cards, Grid | Cells) */
+.mode-base { flex-shrink: 0; white-space: nowrap; font-size: 11px; padding: 1px 7px; border: 1px solid var(--border); border-radius: 999px; color: var(--muted); }
+button.active .mode-base { border-color: var(--accent); color: var(--accent); }
 /* Number tiles: the symbol only, several per row (name and formula in the tooltip) */
 .number-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(48px, 1fr)); gap: 4px; margin-bottom: 10px; }
 .number-grid button { padding: 6px 2px; font-size: 14px; white-space: nowrap; background: var(--panel); }
@@ -295,7 +292,6 @@ button.switch.active:hover:not(:disabled) { background: var(--pick-strong); }
 .mode-list button.active { border-color: var(--accent); background: var(--pick); }
 .mode-list button.active .mode-name,
 .mode-list button.active .mode-icon { color: var(--accent); }
-.mode-list button.active .mode-base { border-color: var(--accent); color: var(--accent); }
 .row button { white-space: nowrap; }
 .row button:first-child { flex: 1; }
 
@@ -433,10 +429,6 @@ button.wide.active, .head-btn.active { border-color: var(--accent); color: var(-
 .choice-row button.active { background: var(--pick-strong); color: var(--accent); }
 /* Grid | Cells under the list: each side of the walk in use, its base and its digits */
 #walkOn button { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; align-items: stretch; gap: 2px; padding: 7px 10px; text-align: left; }  /* two equal halves, the digits cut with … */
-#walkOn .mode-base { flex-shrink: 0; white-space: nowrap; }
-#walkOn .walk-on-name { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 2px 6px; font-size: 13px; }  /* the base under the name when narrow */
-#walkOn .mode-detail { font-weight: 400; }
-#walkOn button.active .mode-base { border-color: var(--accent); color: var(--accent); }
 /* the ant's rules to start from, written as they are typed */
 .choice-list button.active { border-color: var(--accent); color: var(--accent); background: var(--pick); }
 .stage-bar { left: var(--view-gap); bottom: var(--view-gap); width: 386px; max-width: calc(100% - 2 * var(--view-gap)); padding: 10px 12px; border-radius: 12px; outline: none; }  /* grows upwards: the Play row stays at the bottom (no focus ring: a tap opens it, see index.html) */

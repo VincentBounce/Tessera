@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.128';
+const VERSION = '0.4.129';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -1621,13 +1621,18 @@ const setTile = (b, { on = false, can = true, mark = false, again = false, turn 
 // on, can); its words as text (a setup's name typed), and its tooltip (in full: the row may cut them short); how: a rule's,
 // how it works, its ⓘ at its end (see rowAction)
 const card = ({ pic = '', name = '', detail = '', base = '', title = '', on = false, can = true, byDefault, click = null, how = null }) => {
-  const b = tile({ html: '', title: title || detail, on, can, byDefault, click }), part = (cls, text) => Object.assign(document.createElement('span'), { className: cls, textContent: text });
-  const picture = part('mode-icon', ''), words = document.createElement('span');
-  picture.innerHTML = pic;
-  words.append(part('mode-name', name), ...(detail ? [part('mode-detail', detail)] : []));
-  b.append(picture, words, ...(base ? [part('mode-base', base)] : []), ...(how ? [rowAction(icon('info'), `How ${name} works`, how)] : []));
+  const b = tile({ html: '', title: title || detail, on, can, byDefault, click }), picture = Object.assign(document.createElement('span'), { className: 'mode-icon', innerHTML: pic });
+  b.append(picture, cardWords(name, detail, base), ...(how ? [rowAction(icon('info'), `How ${name} works`, how)] : []));
   return b;
 };
+// a card's words, every card's and Grid | Cells' alike: its name, its base in its bubble at its right (where digits are read),
+// then its code or its words
+function cardWords(name, detail = '', base = '') {
+  const part = (cls, text) => Object.assign(document.createElement('span'), { className: cls, textContent: text }), head = part('mode-head', ''), words = document.createElement('span');
+  head.append(part('mode-name', name), ...(base ? [part('mode-base', base)] : []));
+  words.append(head, ...(detail ? [part('mode-detail', detail)] : []));
+  return words;
+}
 // a row's action at its end (a rule's ⓘ, a setup's ×): seen while its row is hovered (see .row-act), a click its own
 const rowAction = (html, title, click) => {
   const x = Object.assign(document.createElement('span'), { className: 'row-act', innerHTML: html, title });
@@ -3141,30 +3146,32 @@ function renderAntRow() {
 function ruleCards(w, pic, here = true) {
   const R = creatureRules(w), mine = here && (antCustomOpen || !R.cards.some(([r]) => r === R.now));
   const go = (then) => () => { if (!here) { $('mode').value = w; $('mode').dispatchEvent(new Event('change')); } then(); };
-  const make = (cardPic, name, detail, on, then, why = '', title = '') => card({ pic: cardPic, name, detail, on, title: why || title, can: !why, click: go(then),
+  const make = (cardPic, name, code, on, then, why = '', title = '') => card({ pic: cardPic, name, detail: code, base: code && R.base?.(code), on, title: why || title, can: !why, click: go(then),
     how: () => { if (on) walkTutorialToggle(); else { go(then)(); walkTutorial(w); } } });  // (its ⓘ: how it works, picked first)
-  return [...R.cards.map(([r, detail, cardPic, why, title]) => make(cardPic ?? pic, r, detail, here && r === R.now && !antCustomOpen, () => { antCustomOpen = false; if (r === R.now) renderModePicker(); else R.set(r); }, why, title)),
-    ...(R.typed ? [make(pixelIcon('..o..,..o..,ooooo,..o..,..o..'), 'Custom rule', mine ? `${R.now} · your own` : 'your own, typed', mine, () => { antCustomOpen = true; renderModePicker(); })] : [])];
+  return [...R.cards.map(([r, name, cardPic, why, title]) => make(cardPic ?? pic, name, r, here && r === R.now && !antCustomOpen, () => { antCustomOpen = false; if (r === R.now) renderModePicker(); else R.set(r); }, why, title)),
+    ...(R.typed ? [make(pixelIcon('..o..,..o..,ooooo,..o..,..o..'), mine ? 'Custom rule, your own' : 'Custom rule', mine ? R.now : '', mine, () => { antCustomOpen = true; renderModePicker(); }, '', 'your own, typed')] : [])];
 }
-// a creature's or a walk's rules: its presets [rule, words, picture, why greyed, tooltip], the rule in use, how to set one, whether one is typed, the field's title
-const ANT_WORDS = { RL: "Langton's ant: a highway from step 9,976", RLR: 'grows chaotically', LLRR: 'grows symmetrically', LRRRRRLLR: 'fills a square around itself',
-                    RRLLLRLLLRRR: 'a filled triangle, growing and moving' };  // (on squares)
-const TURMITE_WORDS = ["Langton's ant", 'a spiral', 'the widest mess', 'a square growing filled', 'a shape growing filled', 'a highway from step 3,090, every 54 steps'];
-const WORM_WORDS = ['dies at step 4,802', 'dies at step 83,618', 'dies at step 569,804', 'dies at step 918,339', 'still going at step 5,000,000', 'still going at step 5,000,000'];
+// a creature's or a walk's rules: its presets [rule, name, picture, why greyed, tooltip], the rule in use, how to set one, whether one is typed, a rule's base
+// (where it reads digits: its card's bubble), the field's title
+const ANT_WORDS = { RL: "Langton's ant: a highway from step 9,976", RLR: 'Chaotic: it grows chaotically', LLRR: 'Symmetric: it grows symmetrically', LRRRRRLLR: 'Square: it fills a square around itself',
+                    RRLLLRLLLRRR: 'Triangle: a filled triangle, growing and moving' };  // (on squares: its name, then what it does)
+const TURMITE_WORDS = ["Langton's ant", 'A spiral', 'The widest mess', 'A square growing filled', 'A shape growing filled', 'A highway from step 3,090, every 54 steps'];
+const WORM_WORDS = ['Dies at step 4,802', 'Dies at step 83,618', 'Dies at step 569,804', 'Dies at step 918,339', 'Still going at step 5,000,000', 'Still going at step 5,000,000'];
+const capitalised = (t) => t.replace(/^./, (c) => c.toUpperCase());
 function creatureRules(w) {
   const m = MODES[w], N = WALK_NETS[m.net], surface = m.lattice === 'sphere';
-  if (N) return { now: walkRules[walkKey(m)], typed: true, set: (r) => setWalkRule(w, r),  // (a surface: the rules it can take only)
+  if (N) return { now: walkRules[walkKey(m)], typed: true, set: (r) => setWalkRule(w, r), base: (r) => `base ${ruleWords(r).length}`,  // (a surface: the rules it can take only)
                   cards: WALK_PRESETS[m.net].flatMap(([r, family, pic]) => { const words = ruleWords(r), why = words.map((t) => walkWordWhy(m, t)).find(Boolean) ?? '';
-                    return surface && why ? [] : [[r, `${family} · base ${words.length}`, icon(pic), why, words.map((t, d) => `${d} ${WORD_TEXT[t]}`).join(', ')]]; }),
+                    return surface && why ? [] : [[r, family, icon(pic), why, words.map((t, d) => `${d} ${WORD_TEXT[t]}`).join(', ')]]; }),
                   name: `Rule, a word per digit: ${surface ? surfaceWords(m.net).join(' ') : [...Object.keys(N.turns), ...Object.keys(N.ways ?? {}), ...(N.notch ? ['l', 'r', 'a'] : []), ...Object.keys(N.spots ?? {})].join(' ')}` };
-  if (MODES[w].worm) return { byDigits: worm.byDigits, now: worm.rule, typed: !worm.byDigits, cards: worm.byDigits ? [] : WORM_PRESETS.map((r, i) => [r, WORM_WORDS[i]]), set: setWormRule,
+  if (MODES[w].worm) return { byDigits: worm.byDigits, now: worm.rule, typed: !worm.byDigits, cards: worm.byDigits ? [] : WORM_PRESETS.map((r, i) => [r, WORM_WORDS[i]]), set: setWormRule,  // (by its rule: no digits read)
                               name: 'Rule, a turn at each new corner: L2, L1, N, R1, R2' };
   if (MODES[w].turmite) return { now: turmite.rule, typed: true, cards: TURMITE_PRESETS.map((r, i) => [r, TURMITE_WORDS[i]]), set: setTurmiteRule,
                                  name: 'Rule, per state an entry per colour (write, turn L N R U, state), the states parted by |' };
   const A = ANTS[w], turns = antWords(w).join(' ');
-  return { byDigits: antByDigits, now: antRuleOf(w), typed: true, set: (r) => setAntRule(w, r),
-           cards: (antByDigits ? A.digitPresets : A.presets).map((r) => [r, antByDigits ? ruleWords(r).map((t, d) => `${d} ${WORD_TEXT[t]}`).join(', ')
-             : (w === 'antSquare' && ANT_WORDS[r]) || `${ruleWords(r).length} colours`]),
+  return { byDigits: antByDigits, now: antRuleOf(w), typed: true, set: (r) => setAntRule(w, r), base: antByDigits ? (r) => `base ${ruleWords(r).length}` : null,  // (by colour: no digits read)
+           cards: (antByDigits ? A.digitPresets : A.presets).map((r) => antByDigits ? [r, capitalised(ruleWords(r).map((t) => WORD_TEXT[t]).join(', '))]
+             : [r, (w === 'antSquare' && ANT_WORDS[r]?.split(':')[0]) || `${ruleWords(r).length} colours`, undefined, '', (w === 'antSquare' && ANT_WORDS[r]) || '']),
            name: antByDigits ? `Rule, a turn per digit, mirrored on a dark cell: ${turns}` : `Rule, a turn per colour: ${turns}` };
 }
 // The worm's rules, all 411 of them (a mirror the same), walked here: dying at step 918,339, 569,804, 83,618 and 4,802,
@@ -3282,11 +3289,11 @@ function renderModePicker() {
     const v = here ?? Object.keys(NAV).find((m) => NAV[m][0] === kind && NAV[m][1] === space && NAV[m][3] === r);  // (elsewhere: its first shape)
     if (!creatures && here && MODES[here].net) return ruleCards(r === rule ? w : here, null, r === rule);  // a walk by a rule: its rules' cards (the side picked kept)
     if (creatures && r === rule) return ruleCards(w, icon(r === 'Ant' ? 'ant' : MODE_ICONS[w]));  // (the creature in use: its rules)
-    const { base, detail } = splitModeLabel(modeOptionOf(v).text), alone = NAV[v][4] === '';  // a spiral: its base here, no Grid | Cells
+    const { base, detail } = splitModeLabel(modeOptionOf(v).text);  // (a spiral's, the diagonals': their base, their words)
     const pic = icon(r === 'Turtle' ? 'turtle' : r === 'Pivot' ? 'pivot' : r === 'Parity' ? 'walk2d' : r === 'Ant' ? 'ant' : MODE_ICONS[v]);  // a turtle for the walks turning relative to their heading
     const go = () => { if (here) { navGo(3, r); return; } $('mode').value = v; $('mode').dispatchEvent(new Event('change')); };
     const how = walkTutorialFits(here ?? v) && (() => { if (r === rule) walkTutorialToggle(); else { go(); walkTutorial($('mode').value); } });  // (its ⓘ: how it works, picked first)
-    const b = creatures ? card({ pic, name: r, detail: CREATURE_TIPS[r], how, click: go }) : card({ pic, name: r, base: alone && base && !r.includes('base') ? base : '', title: detail, on: r === rule, how, byDefault: i ? '' : 'yes', click: go });  // (its digits' turns in its tooltip)  // (the first: where a shape starts)
+    const b = creatures ? card({ pic, name: r, detail: CREATURE_TIPS[r], how, click: go }) : card({ pic, name: r, base, detail, on: r === rule, how, byDefault: i ? '' : 'yes', click: go });  // (the first: where a shape starts)
     b.disabled = !has(kind, r);
     return [b];
   }));
@@ -3303,8 +3310,7 @@ function renderModePicker() {
     if (why) none = why;
     const info = !v ? null : MODES[v].turmite ? { base: '', detail: turmite.rule } : MODES[v].antOf ? { base: '', detail: antByDigits ? `digits ${antDigitRules[v]}` : antRules[v] }
       : MODES[v].net ? { base: `base ${MODES[v].base}`, detail: walkRules[walkKey(MODES[v])] } : splitModeLabel(modeOptionOf(v).text);
-    b.innerHTML = `<span class="walk-on-name">${word}${info?.base ? ` <span class="mode-base">${info.base}</span>` : ''}</span>`
-      + `<span class="mode-detail">${info ? info.detail : none}</span>`;
+    b.replaceChildren(cardWords(word, info ? info.detail : none, info?.base));
     b.disabled = !v;
     b.classList.toggle('active', here);
   };

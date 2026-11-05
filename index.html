@@ -11,7 +11,7 @@
   <meta property="og:type" content="website">
   <link id="favicon" rel="icon">  <!-- the app's logo, set at start-up (see appLogo) -->
   <meta name="description" content="A walk on a grid in 2D or 3D driven by the base-2 to base-6 digits of π, other constants and large primes.">
-  <link rel="stylesheet" href="style.css?v=0.4.128">
+  <link rel="stylesheet" href="style.css?v=0.4.129">
   <script>  // the theme before the first paint (see applyTheme)
     try { const t = localStorage.getItem('tesseraTheme') || 'system'; document.documentElement.dataset.theme = t === 'system' ? (matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark') : t; } catch { document.documentElement.dataset.theme = 'dark'; }
   </script>
@@ -160,12 +160,12 @@
 
       <section id="walkRuleSection">  <!-- a walk's rule: its rules' cards (a word per digit), Spiral; along the grid or on cells -->
         <h2 data-icon="turtle">Rule</h2>
+        <div id="walkOn" class="choice-row">
+          <button id="walkOnGrid" type="button" title="Along the lines of the grid">Grid</button><button id="walkOnCells" type="button" title="From cell to cell, colouring the cells: on triangles and hexagons the choices at each step change, and so does the base">Cells</button>
+        </div>  <!-- along the grid, or on cells: first, above How it works -->
         <button id="walkRuleHow" class="wide how-it-works" data-icon="info" type="button" title="The rule in use, step by step: what each cell (each step) sees, and what it does (each rule's ⓘ, too)">How it works</button>  <!-- how the rule works (see walkTutorialToggle), on its first card -->
         <div id="navRules" class="mode-list" role="listbox"></div>  <!-- the rules of that shape, where there are several; a walk by a rule: its rules' cards (see ruleCards) -->
         <div id="walkCustom"></div>  <!-- a walk's own rule, typed (the field: see renderAntRow) -->
-        <div id="walkOn" class="choice-row">
-          <button id="walkOnGrid" type="button" title="Along the lines of the grid">Grid</button><button id="walkOnCells" type="button" title="From cell to cell, colouring the cells: on triangles and hexagons the choices at each step change, and so does the base">Cells</button>
-        </div>  <!-- under the rules: along the grid, or on cells -->
         <label hidden>Walk mode (menu kept as the source of truth for the tabs in the header)
           <select id="mode">
             <optgroup label="2D walks">
@@ -740,10 +740,10 @@
     </div>
   </main>
 
-  <script src="pixelarticons.js?v=0.4.128"></script>
-  <script src="punks.js?v=0.4.128"></script>
-  <script src="loops.js?v=0.4.128"></script>
-  <script src="emoji.js?v=0.4.128"></script>
-  <script src="main.js?v=0.4.128"></script>
+  <script src="pixelarticons.js?v=0.4.129"></script>
+  <script src="punks.js?v=0.4.129"></script>
+  <script src="loops.js?v=0.4.129"></script>
+  <script src="emoji.js?v=0.4.129"></script>
+  <script src="main.js?v=0.4.129"></script>
 </body>
 </html>

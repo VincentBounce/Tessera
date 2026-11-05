@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.147';
+const VERSION = '0.4.148';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -754,7 +754,10 @@ function setPalette(theme) {
   GREY = P.grey;
   MONO = P.mono;
 }
-setPalette(document.documentElement.dataset.theme === 'light' ? 'light' : 'dark');
+// the page's theme (light or dark) and the app's rainbow at f, from 0 to 1 (its GRADIENT, BANDS colours)
+const themeName = () => (document.documentElement.dataset.theme === 'light' ? 'light' : 'dark');
+const gradientAt = (f) => GRADIENT[Math.round(f * (BANDS - 1))];
+setPalette(themeName());
 
 
 /* ---- 2.2 Number cards ------------------------------------------------------------------------ */
@@ -1763,19 +1766,20 @@ function lifeMusic(L) {  // (a generation's moments, see Sound)
 // States: alive and dead cells (Colours: the civilisations' and dead); Age: young (warm) to old (cold), then the fading
 // trail of the dead; Activity: the cells that change most, hot in the middle
 function lifeLookPicture(look) {
-  const g = (f) => GRADIENT[Math.round(f * (BANDS - 1))];
-  const swatch = (cs) => `<svg viewBox="0 0 2 2" aria-hidden="true">${cs.map((c, i) => `<rect x="${i % 2}" y="${i >> 1}" width="1" height="1" fill="${c}"/>`).join('')}</svg>`;
+  const g = gradientAt;
   if (look === 'mono') return swatch(lifeColours > 1 ? [LIFE_COLOURS[0], UNLIT, UNLIT, LIFE_COLOURS[1]] : [LIFE_ALIVE, UNLIT, UNLIT, LIFE_ALIVE]);  // in colours: a red, a blue
   if (look === 'gradient') return swatch([g(1), g(0.5), g(0), LIFE_FADE[Math.floor(LIFE_FADE.length / 3)]]);  // warm newborns to cold old cells
   return heatRings(g);
 }
+// a 2 × 2 swatch of four colours (a look's picture, Life's and a walk's)
+const swatch = (cs) => `<svg viewBox="0 0 2 2" aria-hidden="true">${cs.map((c, i) => `<rect x="${i % 2}" y="${i >> 1}" width="1" height="1" fill="${c}"/>`).join('')}</svg>`;
 // square rings, hot inside (a heatmap, Life's activity)
 const heatRings = (g) => `<svg viewBox="0 0 24 24" aria-hidden="true">${[0, 0.25, 0.5, 0.75, 1].map((f, i) => `<rect x="${2 + 2 * i}" y="${2 + 2 * i}" width="${20 - 4 * i}" height="${20 - 4 * i}" rx="${2 - 0.4 * i}" fill="${g(f)}"/>`).join('')}</svg>`;
 // the sky, a tile before the themes, on or off (see tile): named after the theme (Dawn on a light page, Twilight on a dark one),
 // its picture the sky; shown where there is a sky (see updateDisplayMenu)
 const skyButton = tile({ toggle: true, byDefault: 'on', title: 'The background: a sky in the page\'s tone, or plain', click: () => { $('sky').value = $('sky').value === 'sky' ? 'plain' : 'sky'; $('sky').dispatchEvent(new Event('change')); } });
 const renderSkyButtons = () => {
-  const theme = document.documentElement.dataset.theme === 'light' ? 'light' : 'dark', on = $('sky').value === 'sky';
+  const theme = themeName(), on = $('sky').value === 'sky';
   const name = theme === 'light' ? 'Dawn' : 'Twilight';
   $('sky').options[0].text = name;
   // the sky's picture, its colours deeper than the sky's own (pale behind a view, they would not read so small)
@@ -10111,7 +10115,7 @@ function lifeLook(L, lifted = false) {
   const lift = lifted ? liftTile : (c) => c;
   const pack = (c) => { const [r, g, b] = rgbOf(motifShown ? faded(c, FADING) : c); return ((255 << 24) | (b << 16) | (g << 8) | r) >>> 0; };
   const trail = LIFE_TRAIL.map(pack), inked = LIFE_FADE.map(pack), alive = pack(LIFE_ALIVE), civ = [0, ...civColours(L.colours, L.C).map(pack)];
-  const grad = Array.from({ length: 32 }, (_, i) => pack(lift(GRADIENT[Math.round((i / 31) * (BANDS - 1))])));
+  const grad = Array.from({ length: 32 }, (_, i) => pack(lift(gradientAt(i / 31))));
   // the colours on a log scale, in tables (millions of cells): of an age (up to 64), of an activity
   const level = (v, max) => Math.min(31, Math.round((Math.log(v) / Math.log(Math.max(2, max))) * 31));
   const byAge = Uint32Array.from({ length: 65 }, (_, a) => grad[31 - level(a + 1, 65)]);  // the rainbow backwards: warm newborns, cold old cells
@@ -14249,7 +14253,7 @@ const SKIES = {
   dark:  [[0, '#0a1530'], [0.45, '#1c2852'], [0.75, '#433262'], [0.92, '#7a4a5e'], [1, '#9c5f52']],  // twilight
   light: [[0, '#b9d0ea'], [0.5, '#dfe3f1'], [0.8, '#f2dde2'], [1, '#f8d2bd']],                          // dawn
 };
-const skyStops = () => ((walk.is3d || walk.plane) && $('sky').value === 'sky' ? SKIES[document.documentElement.dataset.theme === 'light' ? 'light' : 'dark'] : null);
+const skyStops = () => ((walk.is3d || walk.plane) && $('sky').value === 'sky' ? SKIES[themeName()] : null);
 const darkSky = () => skyStops() === SKIES.dark;
 // the underside of an open sheet (a torus unrolled, its inside): the foot of the other theme's sky (on a light page,
 // Twilight's; on a dark one, Dawn's)
@@ -14346,7 +14350,7 @@ const ANT_RAMPS = {
 let antRamp = 'ink';
 // state k of n along the ramp (Ink when Directions is on: an ant's rule chips are its states)
 function rampColour(k, n) {
-  const stops = ANT_RAMPS[antRamp ?? 'ink'][document.documentElement.dataset.theme === 'light' ? 'light' : 'dark'];
+  const stops = ANT_RAMPS[antRamp ?? 'ink'][themeName()];
   const t = n < 2 ? 0 : (Math.min(k, n - 1) * (stops.length - 1)) / (n - 1), a = Math.floor(t), f = t - a;
   const hex = (c) => [1, 3, 5].map((i) => parseInt(c.slice(i, i + 2), 16)), A = hex(stops[a]), B = hex(stops[Math.min(a + 1, stops.length - 1)]);
   return `rgb(${A.map((v, i) => Math.round(v + (B[i] - v) * f)).join(', ')})`;
@@ -14484,7 +14488,7 @@ function drawSphere() {
   const { geo: g, visits, maxVisits } = walk;
   const LEVELS = 32;
   // the rainbow of the tiles (lighter on a light page, see liftTile)
-  const grad = Array.from({ length: LEVELS }, (_, i) => liftTile(GRADIENT[Math.round((i / (LEVELS - 1)) * (BANDS - 1))]));
+  const grad = Array.from({ length: LEVELS }, (_, i) => liftTile(gradientAt(i / (LEVELS - 1))));
   const logLevel = (v, max) => 1 + Math.round((Math.log(v) / Math.log(Math.max(2, max))) * (LEVELS - 1));
   // palette[0] is the unlit background; levelOf(t) picks each tile's palette entry
   let palette = [null, ...grad];
@@ -16172,7 +16176,7 @@ function drawActivity() {
   // one shown, a reversible one's not played yet flat; a Game of Life's end not known, up to the furthest played
   const first = runStart(), n = seekFar() - first + 1;
   let series;
-  const rainbow = () => { const g = ctx.createLinearGradient(0, 0, W, 0); for (let f = 0; f <= 1; f += 0.125) g.addColorStop(f, GRADIENT[Math.round(f * (BANDS - 1))]); return g; };
+  const rainbow = () => { const g = ctx.createLinearGradient(0, 0, W, 0); for (let f = 0; f <= 1; f += 0.125) g.addColorStop(f, gradientAt(f)); return g; };
   if (spaceTimeOn() && stack) {  // Space-time: each generation's cubes, in its rainbow (as its cubes, up)
     const E = stack.layers;
     series = [[columns(n, (i) => E[i] - (i ? E[i - 1] : -1)), rainbow()]];
@@ -17289,9 +17293,9 @@ const AREA_MODES = [['empty', 'Empty', 'No area filled'], ['light', 'Light', 'Th
   ['plain', 'Plain', 'The areas the walk closes, in the colour of the step that closed them']];
 function renderAreaModes() {
   const off = !fillAreasApply(), light = shows('translucent');
-  const now = !$('fillAreas').checked ? 'empty' : $('fillTranslucent').checked && light ? 'light' : 'plain', c = GRADIENT[Math.round(0.55 * (BANDS - 1))];
+  const now = !$('fillAreas').checked ? 'empty' : $('fillTranslucent').checked && light ? 'light' : 'plain', c = gradientAt(0.55);
   const picture = (look) => `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7L11 3L20 6L19 17L9 21L3 15Z" fill="${look === 'empty' ? 'none' : c}"`
-    + `${look === 'light' ? ' fill-opacity="0.35"' : ''} stroke="${GRADIENT[Math.round(0.2 * (BANDS - 1))]}" stroke-width="2" stroke-linejoin="round"/></svg>`;  // a closed loop
+    + `${look === 'light' ? ' fill-opacity="0.35"' : ''} stroke="${gradientAt(0.2)}" stroke-width="2" stroke-linejoin="round"/></svg>`;  // a closed loop
   $('areaModes').replaceChildren(tileGroup(AREA_MODES.map(([look, name, title]) => {
     return tile({ pic: picture(look), text: name, title, on: look === now, can: !(off || (look === 'light' && !light)), byDefault: look === 'light' ? 'yes' : '', click: () => {  // (Light areas: see displayDefaults)
       $('fillAreas').checked = look !== 'empty';
@@ -17310,8 +17314,7 @@ const cellModeOf = (mode) => ($('showPath').checked ? 'path' : mode.antOf && $('
   : $('colourMode').value === 'gradient' ? 'cells' : $('colourMode').value);  // (a surface's Rainbow: gradient)
 let pictureIds = 0;  // the gradients of the pictures, each its own id
 function cellModePicture(look) {  // a 2 × 2 swatch, or the rainbow line over faded cells
-  const theme = document.documentElement.dataset.theme === 'light' ? 'light' : 'dark', g = (f) => GRADIENT[Math.round(f * (BANDS - 1))];
-  const swatch = (cs) => `<svg viewBox="0 0 2 2" aria-hidden="true">${cs.map((c, i) => `<rect x="${i % 2}" y="${i >> 1}" width="1" height="1" fill="${c}"/>`).join('')}</svg>`;
+  const theme = themeName(), g = gradientAt;
   if (look === 'path') return `<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2" y="2" width="20" height="20" rx="2" fill="${ANT_RAMPS.amber[theme][1]}" opacity="0.2"/>`
     + [[4, 18, 9, 18], [9, 18, 9, 11], [9, 11, 15, 11], [15, 11, 15, 6], [15, 6, 20, 6]].map(([a, b, c, d], i) => `<path d="M${a} ${b}L${c} ${d}" stroke="${g(i / 4)}" stroke-width="2.4" stroke-linecap="round"/>`).join('') + '</svg>';
   if (look === 'ink' || look === 'amber') return swatch(ANT_RAMPS[look][theme]);

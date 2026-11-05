@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.226';
+const VERSION = '0.4.227';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -1496,7 +1496,7 @@ function renderViewTiles() {
   const [kind, space] = NAV[$('mode').value], ways = { on: [], off: [] };
   for (const sh of navValues(2, [kind, space])) {
     const w = Object.keys(NAV).find((v) => NAV[v][0] === kind && NAV[v][1] === space && NAV[v][2] === sh);
-    ways[perspectiveFor(MODES[w], MODES[w].round ? 1 : 0) ? 'on' : 'off'].push(SHAPE_SHORT[sh] ?? sh);
+    ways[defaultOf('perspective', MODES[w]) ? 'on' : 'off'].push(SHAPE_SHORT[sh] ?? sh);
   }
   const perspective = !ways.on.length ? 'off' : !ways.off.length ? 'on' : `On by default on ${ways.on.join(', ')}\nOff by default on ${ways.off.join(', ')}`;
   const first = { perspective, light: defaultMark('light'), glass: defaultMark('glass'), ocean: defaultMark('ocean') }, why = { ocean: 'beyond a Quintet: a map has five lands (green, yellow, ochre, lime, ice white)' };
@@ -5874,7 +5874,7 @@ function initShape(kind) {
   // the same surface (its other tilings, along the grid or on cells) keeps the form it had
   const surface = (w) => familyOf(w)?.F.name ?? MODES[w].sphere;
   const mode = current.mode, keep = previousShape && surface(previousShape.mode) === surface(mode);
-  const g = walk.geo, m = keep ? previousShape.target : MODES[mode].round ? 1 : 0;
+  const g = walk.geo, m = keep ? previousShape.target : defaultOf('shape', MODES[mode]);
   const maxExtent = Math.max(shapeAt(g, 0).extent, shapeAt(g, 1).extent);
   walk.shape = { ...shapeAt(g, m), target: m, maxExtent, mode };
 }
@@ -14007,7 +14007,7 @@ function applySetup(s) {
   // changes (as picking a walk does); within a tab, what was chosen stays
   if (modeTabOf() !== displayTab) displayDefaults();
   $('fillAreas').checked = String(s.fa ?? 1) !== '0';  // the one display choice kept: it changes what is drawn
-  $('perspective').checked = perspectiveFor(MODES[s.w], MODES[s.w].round ? 1 : 0);
+  $('perspective').checked = defaultOf('perspective', MODES[s.w]);
   Object.assign(cam, CAM0);
   $('upright').checked = false;  // (the default view: free, on each surface)
   pendingChampion = s.ch || null;
@@ -17748,21 +17748,23 @@ const DISPLAY_DEFAULTS = {
   look: ['colourMode', 'tab', (mode) => defaultLook(mode)],  // (Cells: Life's States, a walk's Rainbow)
   fillAreas: ['fillAreas', 'tab', true], areaLight: ['fillTranslucent', 'tab', true], path: ['showPath', 'tab', false],  // (Area: Light; on cells the cells alone)
   centered: ['centered', 'tab', true], autoRotate: ['autoRotate', 'tab', false], sky: ['sky', 'tab', 'sky'],  // (on a solid the walker in front; Dawn or Twilight after the theme)
-  autoFit: ['autoFit', 'mode', true], upright: ['upright', 'mode', false], perspective: ['perspective', 'mode', (mode) => perspectiveFor(mode, mode.round ? 1 : 0)],
+  autoFit: ['autoFit', 'mode', true], upright: ['upright', 'mode', false], shape: ['shapeM', 'mode', (mode) => (mode.round ? 1 : 0)],  // (Flat 0 ── Inflated 1: a round surface inflated, a solid flat)
+  perspective: ['perspective', 'mode', (mode) => perspectiveFor(mode, defaultOf('shape', mode))],
   light: ['light', 'open', true], glass: ['glass', 'open', false], grid: ['showGrid', 'open', true], autoPlay: ['autoPlay', 'open', false],
   ocean: ['ocean', 'battle', () => battleOn() && NAV[$('mode').value][0] === 'Walk'],  // (on in a walk's battle on a surface, as long as none picks it)
 };
 // its settings that come back at `at`: each box set, checked or valued
 function applyDefaults(at) {
-  const mode = MODES[$('mode').value];
-  for (const [id, when, value] of Object.values(DISPLAY_DEFAULTS)) {
+  for (const [key, [id, when]] of Object.entries(DISPLAY_DEFAULTS)) {
     if (when !== at) continue;
-    const v = typeof value === 'function' ? value(mode) : value;
+    const v = defaultOf(key);
     if (typeof v === 'boolean') $(id).checked = v; else $(id).value = v;
   }
 }
+// a setting's default for mode
+const defaultOf = (key, mode = MODES[$('mode').value]) => { const v = DISPLAY_DEFAULTS[key][2]; return typeof v === 'function' ? v(mode) : v; };
 // a tile's mark (see setTile's byDefault): its setting's default, 'on' or 'off'
-const defaultMark = (key) => { const v = DISPLAY_DEFAULTS[key][2]; return (typeof v === 'function' ? v(MODES[$('mode').value]) : v) ? 'on' : 'off'; };
+const defaultMark = (key) => (defaultOf(key) ? 'on' : 'off');
 function displayDefaults() {
   applyDefaults('tab');
   oceanPicked = false;

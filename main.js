@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.117';
+const VERSION = '0.4.118';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -7059,7 +7059,7 @@ function tintBattleFormulas() {
 // battleGroups: in a Duel, through the centre where the mesh is its own mirror). A turned place is found again by its
 // point (each mesh's places keyed by their rounded points, once)
 function battleStarts(g, start, grid, K) {
-  const P = grid ? g.verts : g.cen, count = grid ? gridGraph(g).nv : g.n, key = (p) => p.map((x) => Math.round(x * 1e4)).join();
+  const P = grid ? g.verts : g.cen, count = grid ? gridGraph(g).nv : g.n, key = roundedKey;
   const at = grid ? (g.cornerAt ??= new Map()) : (g.tileAt ??= new Map());
   if (!at.size) for (let u = 0; u < count; u++) at.set(key([P[3 * u], P[3 * u + 1], P[3 * u + 2]]), u);
   const point = (u) => [P[3 * u], P[3 * u + 1], P[3 * u + 2]], times = (M, p) => M.map((row) => dot3(row, p));
@@ -7096,7 +7096,7 @@ function rotationGroups(g, K, enough = Infinity) {  // (enough: as many found, t
   if (memo[K]) return memo[K];
   const R = surfaceRotations(g), I = I3;
   if (R.length % K) return (memo[K] = []);  // (a group's order divides its whole group's: Lagrange)
-  const key = (M) => M.flat().map((x) => Math.round(x * 1e6)).join(), times = (A, B) => A.map((row) => [0, 1, 2].map((j) => row[0] * B[0][j] + row[1] * B[1][j] + row[2] * B[2][j]));
+  const key = (M) => roundedKey(M.flat()), times = matMul;
   const close = (gens) => {  // (the group they make, if of K)
     const list = [I], keys = new Set([key(I)]);
     for (let x = 0; x < list.length; x++) for (const h of gens) {
@@ -7129,12 +7129,16 @@ function rotationGroups(g, K, enough = Infinity) {  // (enough: as many found, t
 // the solid's turns groups of K for a battle's starts: its rotations' (see rotationGroups), and for 2 the mirror through
 // its centre too (−p), where its mesh is its own (not the tetrahedron's)
 const I3 = [[1, 0, 0], [0, 1, 0], [0, 0, 1]], MINUS_I3 = [[-1, 0, 0], [0, -1, 0], [0, 0, -1]];
-const centred = (g) => (g.centred ??= (() => {
-  const key = (x, y, z) => [x, y, z].map((v) => Math.round(v * 1e4)).join(), all = new Set();
-  for (let u = 0; u < g.verts.length / 3; u++) all.add(key(g.verts[3 * u], g.verts[3 * u + 1], g.verts[3 * u + 2]));
-  for (let u = 0; u < g.verts.length / 3; u++) if (!all.has(key(-g.verts[3 * u], -g.verts[3 * u + 1], -g.verts[3 * u + 2]))) return false;
+// numbers rounded to a ten-thousandth, as a key: a place found again by its point, a turn by its matrix
+const roundedKey = (xs) => xs.map((x) => Math.round(x * 1e4)).join();
+// whether turn M (a matrix) lays the mesh's corners onto its corners (their keys, once a mesh)
+const fitsMesh = (g, M) => {
+  const V = g.verts, n = V.length / 3, corner = (u) => [V[3 * u], V[3 * u + 1], V[3 * u + 2]];
+  const all = (g.cornerKeys ??= new Set(Array.from({ length: n }, (_, u) => roundedKey(corner(u)))));
+  for (let u = 0; u < n; u++) if (!all.has(roundedKey(M.map((row) => dot3(row, corner(u)))))) return false;
   return true;
-})());
+};
+const centred = (g) => (g.centred ??= fitsMesh(g, MINUS_I3));
 const battleGroups = (g, K, enough = Infinity) => [...rotationGroups(g, K, enough), ...(K === 2 && centred(g) ? [[I3, MINUS_I3]] : [])];
 // the teams a battle can have on mode w's surface (see battleMode): each K its solid has a group of K turns for (see
 // battleGroups); none elsewhere
@@ -7150,9 +7154,7 @@ const battleCounts = (w) => {
 function surfaceRotations(g) {
   if (g.rotations) return g.rotations;
   if (!g.torus) return (g.rotations = solidRotations(solidCorners(g)));
-  const V = g.verts, n = V.length / 3, key = (p) => p.map((v) => Math.round(v * 1e4)).join(), all = new Set();
-  for (let u = 0; u < n; u++) all.add(key([V[3 * u], V[3 * u + 1], V[3 * u + 2]]));
-  const fits = (M) => { for (let u = 0; u < n; u++) if (!all.has(key(M.map((row) => dot3(row, [V[3 * u], V[3 * u + 1], V[3 * u + 2]]))))) return false; return true; };
+  const V = g.verts, n = V.length / 3, fits = (M) => fitsMesh(g, M);
   const turn = (t) => [[Math.cos(t), -Math.sin(t), 0], [Math.sin(t), Math.cos(t), 0], [0, 0, 1]];
   const r0 = Math.hypot(V[0], V[1]), a0 = Math.atan2(V[1], V[0]);
   let least = 2 * Math.PI;
@@ -7164,8 +7166,8 @@ function surfaceRotations(g) {
   const m = Math.round((2 * Math.PI) / least), gens = [];
   for (let d = m; d > 1; d--) if (fits(turn((2 * Math.PI) / d))) { gens.push(turn((2 * Math.PI) / d)); break; }  // (its turn, or a coarser one: its corners round it not all evenly spaced)
   for (const M of [[[1, 0, 0], [0, -1, 0], [0, 0, -1]], [[-1, 0, 0], [0, 1, 0], [0, 0, -1]]]) if (fits(M)) gens.push(M);
-  const list = [I3], seen = new Set([key(I3.flat())]), times = (A, B) => A.map((row) => [0, 1, 2].map((j) => row[0] * B[0][j] + row[1] * B[1][j] + row[2] * B[2][j]));
-  for (let x = 0; x < list.length; x++) for (const h of gens) { const y = times(list[x], h), k = key(y.flat()); if (!seen.has(k)) { seen.add(k); list.push(y); } }
+  const list = [I3], seen = new Set([roundedKey(I3.flat())]);
+  for (let x = 0; x < list.length; x++) for (const h of gens) { const y = matMul(list[x], h), k = roundedKey(y.flat()); if (!seen.has(k)) { seen.add(k); list.push(y); } }
   return (g.rotations = list);
 }
 

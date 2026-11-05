@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.178';
+const VERSION = '0.4.179';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -6648,7 +6648,8 @@ function sheetDelta(g, G, a, b) {
 // solid). The turn is measured on the plane tangent at v; on a torus, on its flat sheet (east, north;
 // see torusPoint): rolled up, its tiles are bent unevenly, squeezed on the inside of the ring and
 // stretched outside, which would change the edge a turn picks from place to place, so a repeating
-// pattern would not repeat.
+// pattern would not repeat. On a Möbius strip, round the corner tile by tile (see nextCornerAround); on a Klein bottle, its
+// walker's left carried (see nextCornerCarried)
 function nextCorner(g, G, v, from, angle) {
   if (Math.abs(Math.abs(angle) - Math.PI) < 1e-9) return from;  // a half turn: back
   if (g.mobius) return nextCornerAround(g, v, from, angle);
@@ -6705,6 +6706,48 @@ function nextCornerAround(g, v, from, angle) {
     if (off < err - 1e-12) { err = off; next = w; }
   }
   return next;
+}
+
+/* On a Klein bottle (one-sided: round a corner on its seam, some tiles listed one way, some the other), a walker along the
+ * grid carries its left: the tile on its left of the edge it came by, its frame. A turn is measured round the corner from
+ * that edge, through its frame and on, tile to tile by the edges they share (never by their listing), in proportion to the
+ * whole way round as nextCornerAround (its angles on the flat sheet, as nextCorner's); its new frame, the tile passed last
+ * before the edge it leaves by. Its next corner and frame */
+function nextCornerCarried(g, G, v, from, frame, angle) {
+  const k = g.sides, flat = (i) => [(g.uv[i] / g.nu) * 2 * Math.PI, (g.uv[i + 1] / g.nv) * 2 * Math.PI * tubeOf(g)];
+  const corner = (t) => {  // (tile t at v: its two edges' far corners, its angle)
+    const q = g.poly.subarray(k * t, k * t + k).indexOf(v), [o, a, b] = [0, 1, k - 1].map((r) => flat(2 * (k * t + ((q + r) % k))));
+    const u = [a[0] - o[0], a[1] - o[1]], w = [b[0] - o[0], b[1] - o[1]];
+    return [g.poly[k * t + ((q + 1) % k)], g.poly[k * t + ((q + k - 1) % k)], Math.acos(Math.max(-1, Math.min(1, (u[0] * w[0] + u[1] * w[1]) / Math.hypot(...u) / Math.hypot(...w))))];
+  };
+  const at = [];
+  let e = from, t = frame, phi = 0;
+  for (let guard = 0; guard < 16; guard++) {  // (from the edge it came by, through its left, back to it)
+    const [a, b, angleAt] = corner(t), out = a === e ? b : a;
+    phi += angleAt;
+    if (out === from) break;
+    at.push([out, phi, t]);
+    [e, t] = [out, G.edgeTiles.get(G.key(v, out)).find((s) => s !== t)];
+  }
+  const target = ((Math.PI - angle) * phi) / (2 * Math.PI);  // (its left first: a left turn of a, π − a round; straight on, halfway)
+  let best = at[0] ?? [from, 0, frame], err = Infinity;
+  for (const c of at) {
+    const off = Math.abs(c[1] - target) - (c[1] < target ? 1e-9 : 0);  // on a tie, the left one
+    if (off < err - 1e-12) { err = off; best = c; }
+  }
+  return [best[0], best[2]];
+}
+// a walk along the grid's state at its start, at v from corner from: [v, from, p, q] (p, q: a pivot's and a parity's, see
+// surfaceSteps), a Klein bottle's its frame too (its walker's left carried, see nextCornerCarried): the tile on its left
+// (on the sheet, its middle left of the step, as nextCorner turns: east, north)
+function gridState(g, [v, from]) {
+  if (!g.klein) return [v, from, 0, 0];
+  const G = gridGraph(g), k = g.sides, side = (t) => {
+    const P = Array.from(g.poly.subarray(k * t, k * t + k)), uv = (u) => { const i = 2 * (k * t + P.indexOf(u)); return [g.uv[i], g.uv[i + 1]]; };
+    const [f, o] = [uv(from), uv(v)], m = [0, 1].map((d) => P.reduce((sum, _, q) => sum + g.uv[2 * (k * t + q) + d], 0) / k);
+    return (o[0] - f[0]) * (m[1] - f[1]) - (o[1] - f[1]) * (m[0] - f[0]);
+  };
+  return [v, from, 0, 0, G.edgeTiles.get(G.key(from, v)).find((t) => side(t) > 0)];
 }
 
 /* ---- Loops of a fraction on a torus -----------------------------------------------------------
@@ -6855,14 +6898,15 @@ function surfaceSteps(g, mode, acts = surfaceActs(mode)) {
   if (mode.grid) {
     const G = gridGraph(g), k = g.sides, N = SURFACE_NOTCHES[mode.net] ?? 1;
     const corner = (v) => mobiusAt(g, G.tileOf[v], cornerUv(g, G, v));
-    return { start: (i) => [...starts[i], 0, 0],
-             step: ([v, from, p, q], d) => {
-               const [kind, by] = acts[d], read = parity ? 1 - q : 0;
-               if (kind === 'pivot') return [v, from, (p + by + N) % N, read];  // (a turn on the spot: no step)
-               const next = nextCorner(g, G, v, from, (kind === 'turn' ? (by * Math.PI) / 180 : 0) - (2 * Math.PI * p) / N);
-               return [next, v, kind === 'parity' ? (q ? -1 : 1) : 0, read];  // (−1, not N − 1: nextCorner takes the angle as it is)
+    return { start: (i) => gridState(g, starts[i]),
+             step: ([v, from, p, q, frame], d) => {
+               const [kind, by] = acts[d], read = parity ? 1 - q : 0, more = g.klein ? [frame] : [];
+               if (kind === 'pivot') return [v, from, (p + by + N) % N, read, ...more];  // (a turn on the spot: no step)
+               const angle = (kind === 'turn' ? (by * Math.PI) / 180 : 0) - (2 * Math.PI * p) / N;
+               const [next, framed] = g.klein ? nextCornerCarried(g, G, v, from, frame, angle) : [nextCorner(g, G, v, from, angle)];
+               return [next, v, kind === 'parity' ? (q ? -1 : 1) : 0, read, ...(g.klein ? [framed] : [])];  // (−1, not N − 1: nextCorner takes the angle as it is)
              },
-             key: ([v, from, p, q]) => ((v * G.nv + from) * N + ((p + N) % N)) * 2 + q,
+             key: ([v, from, p, q, frame]) => { const key = ((v * G.nv + from) * N + ((p + N) % N)) * 2 + q; return g.klein ? key * 2 + (frame === G.edgeTiles.get(G.key(v, from))[0] ? 0 : 1) : key; },
              sheet: ([a], [b]) => (g.mobius ? mobiusDelta(g, corner(a), corner(b)) : sheetDelta(g, G, a, b)) };
   }
   // Entering a tile through edge k (corners counterclockwise), the digit d leaves through edge
@@ -6900,7 +6944,7 @@ function surfaceSteps(g, mode, acts = surfaceActs(mode)) {
 // a walk's first state on surface g (see surfaceSteps): along the grid [corner, the corner it comes from], the start picked
 // where the surface has a start picker (start k of N, see STARTS_ON), else its first; on cells [tile, the edge it comes in
 // by]; then its turns on the spot and its digits' parity, p and q, at 0
-const walkStart = (g, mode) => (mode.grid ? [...(STARTS_ON.includes(surfaceOf(mode)) ? startList(g)[startNo() - 1] : firstStart(g, gridGraph(g))), 0, 0]
+const walkStart = (g, mode) => (mode.grid ? gridState(g, STARTS_ON.includes(surfaceOf(mode)) ? startList(g)[startNo() - 1] : firstStart(g, gridGraph(g)))
   : surfaceSteps(g, mode).start(startNo() - 1));
 // A walk on a surface recorded step by step (see buildGridWalk, buildSphereWalk): its points (on the unit surface, R times),
 // its tiles, its places seen (corners or tiles, nodes of them) and the step it has seen them all, its farthest from its
@@ -7072,7 +7116,7 @@ function tintBattleFormulas() {
 function battleStarts(g, start, grid, K) {
   const turned = (M) => {
     const across = (u) => M(u, grid);
-    if (grid) return [across(start[0]), across(start[1]), ...start.slice(2)];  // (its corners turned; a pivot or parity walk's p, q kept)
+    if (grid) return [across(start[0]), across(start[1]), start[2], start[3], ...start.slice(4).map((t) => M(t, false))];  // (its corners turned; a pivot or parity walk's p, q kept; a Klein bottle's frame moved)
     const [t, entry] = start, k = g.sides, b = across(t), from = across(g.nbr[k * t + entry]);
     for (let e = 0; e < k; e++) if (g.nbr[k * b + e] === from) return [b, e, ...start.slice(2)];  // (a pivot or parity walk's p, q kept)
     throw new Error('no tile turned from the start');

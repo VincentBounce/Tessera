@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.240';
+const VERSION = '0.4.241';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -13921,9 +13921,11 @@ function encodeCells(cells, C) {
   const dense = `${C}.${toB64(packed)}`, sparse = `v${C}.${toB64(bytes)}`;
   return sparse.length < dense.length ? sparse : dense;
 }
-function decodeCells(code, n) {
+function decodeCells(code, n) {  // (null: a code it cannot read, an old link's)
   const cells = new Uint8Array(n);
-  const [c, data = ''] = code.split('.'), s = fromB64(data);
+  const [c, data = ''] = code.split('.');
+  if (!/^v?\d+$/.test(c) || !/^[A-Za-z0-9_-]*$/.test(data) || data.length % 4 === 1) return null;
+  const s = fromB64(data);
   if (c.startsWith('v')) {
     let p = 0;
     const varint = () => { let x = 0, shift = 0, y; do { y = s.charCodeAt(p++); x |= (y & 127) << shift; shift += 7; } while (y & 128); return x; };
@@ -14077,11 +14079,12 @@ function applyPendingView() {
     faced = true;
     needsFull = true;
   }
-  if (ch && walk.life) {  // a start from a link: Custom in the hunt's zones
-    setLifeSeed(decodeCells(ch, walk.life.seed.length), 'saved');
+  const cells = ch && walk.life ? decodeCells(ch, walk.life.seed.length) : null;
+  if (cells) {  // a start from a link: Custom in the hunt's zones
+    setLifeSeed(cells, 'saved');
     hunt.zone = 'custom';
     renderHunt();
-  }
+  } else if (ch && walk.life) $('status').textContent = "This link's start (ch=) cannot be read: an old one; the start shown is the hunt's";
   if (huntBack && walk.life) {  // back from the Gallery: the hunt as it was (its zone, goal, results), last
     Object.assign(hunt, huntBack);
     hunt.listKey = null;

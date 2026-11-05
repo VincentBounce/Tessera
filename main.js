@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.236';
+const VERSION = '0.4.237';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -13931,7 +13931,8 @@ function getSetup() {
   if (mode.lattice === 'sphere') s.s = $('sphereF').value;
   if (modeStarts() && startNo() > 1) s.st = startNo();
   if (torusTurned && TURNED[mode.sphere]) s.o = 1;
-  if ($('area').value === 'empty') s.fa = 0;  // (Area Empty: the one display choice kept, it changes what is drawn)
+  const empty = $('area').value === 'empty';
+  if (empty !== (defaultOf('area') === 'empty')) s.fa = empty ? 0 : 1;  // (Area, the one display choice kept, it changes what is drawn: fa=0 Empty, fa=1 filled, where not by default)
   if (mode.life) s.r = ruleBody($('lifeRule').value);
   if (mode.life && !mode.margolus && lifeColours > 1) s.k = lifeColours;
   if (battleOn()) {  // (a walk's Duel or Trio, as Life's: its teams; B's number, C's)
@@ -14012,7 +14013,8 @@ function applySetup(s) {
   // the display is not part of a setup: it takes the defaults of the walk mode's tab, when the tab
   // changes (as picking a walk does); within a tab, what was chosen stays
   if (modeTabOf() !== displayTab) displayDefaults();
-  if (String(s.fa ?? 1) === '0') $('area').value = 'empty'; else if ($('area').value === 'empty') $('area').value = defaultOf('area');  // the one display choice kept: it changes what is drawn
+  if (s.fa === undefined) $('area').value = defaultOf('area', s.w);  // the one display choice kept: it changes what is drawn (fa=0 Empty, fa=1 filled, Light)
+  else $('area').value = String(s.fa) === '0' ? 'empty' : $('area').value === 'empty' ? 'light' : $('area').value;
   $('perspective').checked = defaultOf('perspective', s.w);
   Object.assign(cam, CAM0);
   $('upright').checked = false;  // (the default view: free, on each surface)

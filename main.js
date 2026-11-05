@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.229';
+const VERSION = '0.4.230';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -17637,11 +17637,12 @@ const AREA_MODES = [['empty', 'Empty', 'No area filled'], ['light', 'Light', 'Th
   ['plain', 'Plain', 'The areas the walk closes, in the colour of the step that closed them']];
 function renderAreaModes() {
   const off = !fillAreasApply(), light = shows('translucent');
-  const now = !$('fillAreas').checked ? 'empty' : $('fillTranslucent').checked && light ? 'light' : 'plain', c = gradientAt(0.55);
+  const area = (fill, translucent) => (!fill ? 'empty' : translucent && light ? 'light' : 'plain');  // (its two boxes as one choice)
+  const now = area($('fillAreas').checked, $('fillTranslucent').checked), first = area(defaultOf('fillAreas'), defaultOf('areaLight')), c = gradientAt(0.55);
   const picture = (look) => `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7L11 3L20 6L19 17L9 21L3 15Z" fill="${look === 'empty' ? 'none' : c}"`
     + `${look === 'light' ? ' fill-opacity="0.35"' : ''} stroke="${gradientAt(0.2)}" stroke-width="2" stroke-linejoin="round"/></svg>`;  // a closed loop
   $('areaModes').replaceChildren(tileGroup(AREA_MODES.map(([look, name, title]) => {
-    return tile({ pic: picture(look), text: name, title, on: look === now, can: !(off || (look === 'light' && !light)), byDefault: look === 'light' ? 'yes' : '', click: () => {  // (Light areas: see displayDefaults)
+    return tile({ pic: picture(look), text: name, title, on: look === now, can: !(off || (look === 'light' && !light)), byDefault: look === first ? 'yes' : '', click: () => {  // (its default: see DISPLAY_DEFAULTS)
       $('fillAreas').checked = look !== 'empty';
       $('fillTranslucent').checked = look === 'light';
       $('fillAreas').dispatchEvent(new Event('change'));

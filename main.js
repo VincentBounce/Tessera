@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.181';
+const VERSION = '0.4.182';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -3159,11 +3159,15 @@ const customRow = $('antCustomRow');  // (kept: out of the page while a list red
 let rulesMode = null, customOpen = false;  // (the mode the rules were last drawn for)
 function renderAntRow() {
   const w = $('mode').value, m = MODES[w], ant = NAV[w][0] === 'Ant';
-  // the number read (its digits, see numberPicker): a walk's in its own section; a start's by the digits (Life's, a
-  // creature's) under its Digits tab; read by none, back in its section, hidden
-  const home = !readsDigits(w) || (!m.life && !ant) ? $('digitsSection') : m.life ? $('startDigits') : $('antStartDigits');
-  $('digitsSection').hidden = !readsDigits(w) || home !== $('digitsSection') || battleOn();  // (a battle: A's formula in its Start section)
+  // a walk's Start: its start on a surface first (a creature's at the head of its own Start), then the number read (its
+  // digits, see numberPicker; a battle's numbers instead, see renderWalkTeams); a start's by the digits (Life's, a
+  // creature's) under its Digits tab; read by none, back in the walk's, hidden
+  const home = !readsDigits(w) || (!m.life && !ant) ? $('walkStartSection') : m.life ? $('startDigits') : $('antStartDigits');
+  $('walkStartSection').hidden = m.life || ant;
+  $('numberPicker').hidden = home === $('walkStartSection') && (!readsDigits(w) || battleOn());  // (a battle: A's formula with the others')
   if ($('numberPicker').parentElement !== home) home.append($('numberPicker'));
+  const startHead = $(ant ? 'antStartSection' : 'walkStartSection').querySelector('h2');
+  if (startHead.nextElementSibling !== $('startRow')) startHead.after($('startRow'));
   drawing = !!m.plane && plane.start === 'draw' && !spaceTimeOn();  // Life on the plane draws in its Draw start (not in Space-time)
   stage.classList.toggle('drawing', drawsHere());  // (the crosshair: a click draws, as renderDrawTools keeps it)
   $('antStartSection').hidden = $('antRuleSection').hidden = !ant;
@@ -7045,8 +7049,8 @@ const battleOn = () => walkTeams > 1 && battleCounts($('mode').value).includes(w
 const walkTeamsHere = (w) => NAV[w]?.[0] === 'Walk' && MODES[w].lattice === 'sphere';  // (a walk's teams: on a surface)
 function renderWalkTeams() {
   const w = $('mode').value, here = walkTeamsHere(w);
-  // a battle: its numbers in its Start section, A's formula field moved there from the Digits' (hidden then), then B's on
-  $('battleHuntSection').hidden = !battleOn();
+  // a battle: its numbers in its Start section, A's formula field moved there from the number's (hidden then), then B's on
+  $('battleStart').hidden = !battleOn();
   RIVALS.forEach((id, j) => { $(id).parentElement.hidden = j >= walkTeams - 1; });  // (the walkers' but A's)
   const fieldA = $('formula').parentElement;
   if (battleOn() && fieldA.parentElement !== $('formulaAHome')) $('formulaAHome').append(fieldA);

@@ -11,7 +11,7 @@
   <meta property="og:type" content="website">
   <link id="favicon" rel="icon">  <!-- the app's logo, set at start-up (see appLogo) -->
   <meta name="description" content="A walk on a grid in 2D or 3D driven by the base-2 to base-6 digits of π, other constants and large primes.">
-  <link rel="stylesheet" href="style.css?v=0.4.123">
+  <link rel="stylesheet" href="style.css?v=0.4.124">
   <script>  // the theme before the first paint (see applyTheme)
     try { const t = localStorage.getItem('tesseraTheme') || 'system'; document.documentElement.dataset.theme = t === 'system' ? (matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark') : t; } catch { document.documentElement.dataset.theme = 'dark'; }
   </script>
@@ -90,11 +90,9 @@
         <div class="block-label">Creature</div>
         <div id="antCreatures" class="nav-shapes"></div>
         <button class="wide how-it-works" data-icon="info" type="button" title="The rule in use, step by step: what each cell (each step) sees, and what it does (each rule's ⓘ, too)">How it works</button>  <!-- on its first card -->
-        <div id="ruleCards">  <!-- its rules' cards and your own: moved under a walk's Grid | Cells when it has a rule (see renderAntRow) -->
-          <div id="antRuleCards" class="mode-list rule-cards" role="listbox"></div>
-          <div id="antCustomRow" hidden><div id="antRuleName" class="field-label"></div>  <!-- not a label: a click on ↵ would focus the field again -->
-            <span class="field"><input id="antRule" class="custom" type="text" autocomplete="off" spellcheck="false" title="Type a rule, then Enter"><button class="enter" type="button" tabindex="-1" title="Apply (Enter)">↵</button></span>
-          </div>
+        <div id="antRuleCards" class="mode-list rule-cards" role="listbox"></div>
+        <div id="antCustomRow" hidden><div id="antRuleName" class="field-label"></div>  <!-- not a label: a click on ↵ would focus the field again; moved under a walk's rules (see renderAntRow) -->
+          <span class="field"><input id="antRule" class="custom" type="text" autocomplete="off" spellcheck="false" title="Type a rule, then Enter"><button class="enter" type="button" tabindex="-1" title="Apply (Enter)">↵</button></span>
         </div>
       </section>
 
@@ -165,36 +163,21 @@
       <section id="walkRuleSection">  <!-- a walk's rule: Turtle, Pivot…, along the grid or on cells -->
         <h2 data-icon="turtle">Rule</h2>
         <button id="walkRuleHow" class="wide how-it-works" data-icon="info" type="button" title="The rule in use, step by step: what each cell (each step) sees, and what it does (each rule's ⓘ, too)">How it works</button>  <!-- how the rule works (see walkTutorialToggle), on its first card -->
-        <div id="navRules" class="mode-list" role="listbox"></div>  <!-- the rules of that shape, where there are several -->
+        <div id="navRules" class="mode-list" role="listbox"></div>  <!-- the rules of that shape, where there are several; a walk by a rule: its rules' cards (see ruleCards) -->
+        <div id="walkCustom"></div>  <!-- a walk's own rule, typed (the field: see renderAntRow) -->
         <div id="walkOn" class="choice-row">
           <button id="walkOnGrid" type="button" title="Along the lines of the grid">Grid</button><button id="walkOnCells" type="button" title="From cell to cell, colouring the cells: on triangles and hexagons the choices at each step change, and so does the base">Cells</button>
         </div>  <!-- under the rules: along the grid, or on cells -->
-        <div id="walkTurns" hidden><div class="block-label">Turns</div></div>  <!-- a walk by its rule (Turtle): its rules' cards (see renderAntRow) -->
         <label hidden>Walk mode (menu kept as the source of truth for the tabs in the header)
           <select id="mode">
             <optgroup label="2D walks">
-              <option value="turtle">Squares turtle — base 3 (left / forward / right)</option>
-              <option value="cardinal">Squares cardinal — base 4 (N / E / S / W)</option>
-              <option value="triTurtle">Triangles turtle — base 5 (5 relative turns)</option>
-              <option value="triFixed">Triangles fixed — base 6 (6 fixed directions)</option>
-              <option value="hexTurtle">Hexagons turtle — base 2 (left / right)</option>
-              <option value="hexFixed">Hexagons fixed — base 3 (3 fixed edges)</option>
-              <option value="turtleCells">Squares turtle — base 3 (left / forward / right)</option>
-              <option value="cardinalCells">Squares cardinal — base 4 (N / E / S / W)</option>
-              <option value="king">Squares king — base 8 (8 squares around)</option>
-              <option value="triTurtleCells">Triangles turtle — base 2 (left / right)</option>
-              <option value="triFixedCells">Triangles fixed — base 3 (3 fixed edges)</option>
-              <option value="hexTurtleCells">Hexagons turtle — base 5 (5 relative turns)</option>
-              <option value="hexFixedCells">Hexagons fixed — base 6 (6 fixed directions)</option>
-              <option value="squareParity">Squares parity — base 2 (forward / forward then turn, right or left by the digit's place)</option>
-              <option value="squareParityCells">Squares parity — base 2 (forward / forward then turn, right or left by the digit's place)</option>
-              <option value="triParity">Triangles parity — base 2 (forward / forward then turn, right or left by the digit's place)</option>
-              <option value="hexParityCells">Hexagons parity — base 2 (forward / forward then turn, right or left by the digit's place)</option>
-              <option value="squarePivot">Squares pivot — base 2 (forward / turn right on the spot)</option>
-              <option value="squarePivotCells">Squares pivot — base 2 (forward / turn right on the spot)</option>
-              <option value="triPivot">Triangles pivot — base 2 (forward / turn right on the spot)</option>
-              <option value="hexPivotCells">Hexagons pivot — base 2 (forward / turn right on the spot)</option>
-              <option value="cairo">Cairo pentagons — base 4 (4 edges out)</option>
+              <option value="turtle">Squares (along the grid, by a rule)</option>
+              <option value="triTurtle">Triangles (along the grid, by a rule)</option>
+              <option value="hexTurtle">Hexagons (along the grid, by a rule)</option>
+              <option value="turtleCells">Squares (from cell to cell, by a rule)</option>
+              <option value="triTurtleCells">Triangles (from cell to cell, by a rule)</option>
+              <option value="hexTurtleCells">Hexagons (from cell to cell, by a rule)</option>
+              <option value="cairo">Cairo pentagons (by a rule)</option>
               <option value="antSquare">Squares ant — base 2 (Langton's ant)</option>
               <option value="turmite">Squares turmite — base 2 (an ant with states)</option>
               <option value="antTri">Triangles ant — base 2 (Langton's ant)</option>
@@ -797,10 +780,10 @@
     </div>
   </main>
 
-  <script src="pixelarticons.js?v=0.4.123"></script>
-  <script src="punks.js?v=0.4.123"></script>
-  <script src="loops.js?v=0.4.123"></script>
-  <script src="emoji.js?v=0.4.123"></script>
-  <script src="main.js?v=0.4.123"></script>
+  <script src="pixelarticons.js?v=0.4.124"></script>
+  <script src="punks.js?v=0.4.124"></script>
+  <script src="loops.js?v=0.4.124"></script>
+  <script src="emoji.js?v=0.4.124"></script>
+  <script src="main.js?v=0.4.124"></script>
 </body>
 </html>

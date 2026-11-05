@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.123';
+const VERSION = '0.4.124';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -1034,35 +1034,14 @@ const CONED = {
 const conedOf = (f) => Object.fromEntries(Object.entries(CONED).flatMap(([fam, F]) => Object.keys(F.marks).map((n) => f(`${fam}${n}`, Number(n), F))));
 const conedFamily = (kind) => Object.keys(CONED).find((fam) => CONED[fam].marks[kind.slice(fam.length)] && kind === `${fam}${kind.slice(fam.length)}`);
 const MODES = {
-  turtle:   { get base() { return walkTurnsOf('turtle').length; }, get arrows() { return walkArrows('turtle'); }, lattice: 'square', lines: true, twin: 'turtleCells', ant: 'antSquare',
-              turnsOf: 'antSquare', get rule() { return walkRuleText('turtle', 'along the lines of a square grid'); } },
-  cardinal: { base: 4, arrows: '↑→↓←', lattice: 'square', lines: true, twin: 'cardinalCells',
-              rule: 'along the lines of a square grid: <b>0</b> north, <b>1</b> east, <b>2</b> south, <b>3</b> west' },
-  triTurtle: { get base() { return walkTurnsOf('triTurtle').length; }, get arrows() { return walkArrows('triTurtle'); }, lattice: 'hex', lines: true, twin: 'triTurtleCells', ant: 'antTri',
-              turnsOf: 'antHex', get rule() { return walkRuleText('triTurtle', 'along the lines of a triangle grid, relative to where you come from'); } },
-  triFixed: { base: 6, arrows: '↑↗↘↓↙↖', lattice: 'hex', lines: true, twin: 'triFixedCells',
-              rule: 'along the lines of a triangle grid: <b>0</b> N, <b>1</b> NE, <b>2</b> SE, <b>3</b> S, <b>4</b> SW, <b>5</b> NW' },
-  hexTurtle: { get base() { return walkTurnsOf('hexTurtle').length; }, get arrows() { return walkArrows('hexTurtle'); }, lattice: 'tri', lines: true, twin: 'hexTurtleCells', ant: 'antHex',
-              turnsOf: 'antTri', get rule() { return walkRuleText('hexTurtle', 'along the lines of a hexagon grid'); } },
-  hexFixed: { base: 3, lattice: 'tri', lines: true, twin: 'hexFixedCells',
-              rule: 'along the lines of a hexagon grid: take the <b>0</b> “|”, <b>1</b> “\\” or <b>2</b> “/” edge' },
-  turtleCells: { get base() { return walkTurnsOf('turtleCells').length; }, get arrows() { return walkArrows('turtleCells'); }, lattice: 'square', cells: true, twin: 'turtle',
-              turnsOf: 'antSquare', get rule() { return walkRuleText('turtleCells', 'from cell to cell of a square grid'); } },
-  cardinalCells: { base: 4, arrows: '↑→↓←', lattice: 'square', cells: true, twin: 'cardinal',
-              rule: 'from cell to cell of a square grid: <b>0</b> north, <b>1</b> east, <b>2</b> south, <b>3</b> west' },
-  triTurtleCells: { get base() { return walkTurnsOf('triTurtleCells').length; }, get arrows() { return walkArrows('triTurtleCells'); }, lattice: 'tri', cells: true, twin: 'triTurtle',
-              turnsOf: 'antTri', get rule() { return walkRuleText('triTurtleCells', 'from cell to cell of a triangle grid, by the edge it exits through'); } },
-  triFixedCells: { base: 3, lattice: 'tri', cells: true, twin: 'triFixed',
-              rule: 'from cell to cell of a triangle grid: cross the <b>0</b> horizontal, <b>1</b> “/” or <b>2</b> “\\” edge' },
-  hexTurtleCells: { get base() { return walkTurnsOf('hexTurtleCells').length; }, get arrows() { return walkArrows('hexTurtleCells'); }, lattice: 'hex', cells: true, twin: 'hexTurtle',
-              turnsOf: 'antHex', get rule() { return walkRuleText('hexTurtleCells', 'from cell to cell of a hexagon grid, relative to the edge you came in through'); } },
-  hexFixedCells: { base: 6, arrows: '↑↗↘↓↙↖', lattice: 'hex', cells: true, twin: 'hexFixed',
-              rule: 'from cell to cell of a hexagon grid: <b>0</b> N, <b>1</b> NE, <b>2</b> SE, <b>3</b> S, <b>4</b> SW, <b>5</b> NW' },
-  // on cells only: steps that do not cross a single edge (no Fill areas, see fillAreasApply)
-  king: { base: 8, arrows: '↑↗→↘↓↙←↖', lattice: 'square', cells: true, fill: false,
-          rule: 'from square to square as a chess king, to one of the 8 around: <b>0</b> N, <b>1</b> NE, <b>2</b> E, <b>3</b> SE, <b>4</b> S, <b>5</b> SW, <b>6</b> W, <b>7</b> NW' },
-  cairo: { get base() { return walkTurnsOf('cairo').length; }, get arrows() { return walkArrows('cairo'); }, lattice: 'cairo', cells: true, fill: false, ant: 'antCairo',
-           turnsOf: 'antCairo', get rule() { return walkRuleText('cairo', 'from pentagon to pentagon of the Cairo tiling, out through one of its 4 other edges'); } },
+  // the walks by a rule, a word per digit (see 6.4b): net, the cells they go through (a grid's walk: its dual's cells)
+  turtle:   { lattice: 'square', lines: true, twin: 'turtleCells', ant: 'antSquare', net: 'square', where: 'along the lines of a square grid' },
+  triTurtle: { lattice: 'hex', lines: true, twin: 'triTurtleCells', ant: 'antTri', net: 'hex', where: 'along the lines of a triangle grid' },
+  hexTurtle: { lattice: 'tri', lines: true, twin: 'hexTurtleCells', ant: 'antHex', net: 'tri', where: 'along the lines of a hexagon grid' },
+  turtleCells: { lattice: 'square', cells: true, twin: 'turtle', net: 'square', where: 'from cell to cell of a square grid' },
+  triTurtleCells: { lattice: 'tri', cells: true, twin: 'triTurtle', net: 'tri', where: 'from cell to cell of a triangle grid' },
+  hexTurtleCells: { lattice: 'hex', cells: true, twin: 'hexTurtle', net: 'hex', where: 'from cell to cell of a hexagon grid' },
+  cairo: { lattice: 'cairo', cells: true, fill: false, ant: 'antCairo', net: 'cairo', where: 'from pentagon to pentagon of the Cairo tiling' },
   // Langton's ant on the cells of a turtle walk (antOf: its walk in the list; see ANTS), its rule in the
   // ant settings (see antRuleText)
   antSquare: { get base() { return antBase('antSquare'); }, lattice: 'square', cells: true, fill: false, antOf: 'turtle', get rule() { return antRuleText('antSquare'); } },
@@ -1273,32 +1252,13 @@ const MODES = {
               rule: 'from cube to cube: <b>0</b> north, <b>1</b> east, <b>2</b> up, <b>3</b> south, <b>4</b> west, <b>5</b> down' },
   diagCells: { base: 8, lattice: 'cube', cells: true, twin: 'diag', shape: 'truncOcta', perspective: true,
                rule: 'from truncated octahedron to truncated octahedron (they fill space), through a hexagon (the 3 bits of each digit the signs of east, north and up): <b>0</b> SW down, <b>1</b> SW up, <b>2</b> NW down, <b>3</b> NW up, <b>4</b> SE down, <b>5</b> SE up, <b>6</b> NE down, <b>7</b> NE up' },
-  // Pivot: 0 a step straight on, 1 a turn on the spot by a notch clockwise (pivot: the notches of a whole
-  // turn), with no step: the turtle of the L-systems (F and +). Thue–Morse on triangles draws Koch's
-  // snowflake. In 2D, along the fixed directions of a walk (steps), clockwise from north
-  squarePivot: { base: 2, arrows: '↑→', lattice: 'square', lines: true, twin: 'squarePivotCells', pivot: 4, steps: 'cardinal',
-                 rule: 'along the lines of a square grid: <b>0</b> step forward, <b>1</b> turn right on the spot (90°)' },
-  squarePivotCells: { base: 2, arrows: '↑→', lattice: 'square', cells: true, twin: 'squarePivot', pivot: 4, steps: 'cardinal',
-                      rule: 'from cell to cell of a square grid: <b>0</b> step forward, <b>1</b> turn right on the spot (90°)' },
-  triPivot: { base: 2, arrows: '↑→', lattice: 'hex', lines: true, pivot: 6, steps: 'triFixed',
-              rule: 'along the lines of a triangle grid: <b>0</b> step forward, <b>1</b> turn right on the spot (60°)' },
-  // Parity: a step forward at each digit, then after a 1 a turn by a notch (parity: the notches of a whole
-  // turn), right at an odd digit (the 1st, 3rd…), left at an even one: on squares, the rabbit constant (F)
-  // draws the Fibonacci word fractal. Along the fixed directions of a walk (steps), as Pivot
-  squareParity: { base: 2, arrows: '↑→', lattice: 'square', lines: true, twin: 'squareParityCells', parity: 4, steps: 'cardinal',
-                  rule: 'along the lines of a square grid: <b>0</b> step forward, <b>1</b> step forward then turn right at an odd digit, left at an even one (90°)' },
-  squareParityCells: { base: 2, arrows: '↑→', lattice: 'square', cells: true, twin: 'squareParity', parity: 4, steps: 'cardinal',
-                       rule: 'from cell to cell of a square grid: <b>0</b> step forward, <b>1</b> step forward then turn right at an odd digit, left at an even one (90°)' },
-  triParity: { base: 2, arrows: '↑→', lattice: 'hex', lines: true, parity: 6, steps: 'triFixed',
-               rule: 'along the lines of a triangle grid: <b>0</b> step forward, <b>1</b> step forward then turn right at an odd digit, left at an even one (60°)' },
-  hexParityCells: { base: 2, arrows: '↑→', lattice: 'hex', cells: true, parity: 6, steps: 'hexFixedCells',
-                    rule: 'from cell to cell of a hexagon grid: <b>0</b> step forward, <b>1</b> step forward then turn right at an odd digit, left at an even one (60°)' },
+  // Pivot: 0 a step straight on, 1 a turn on the spot by a notch clockwise (pivot: the notches of a whole turn), with no
+  // step: the turtle of the L-systems (F and +); Parity: a step forward at each digit, then after a 1 a turn by a notch,
+  // right at an odd digit (the 1st, 3rd…), left at an even one. On the plane, rules of its walks (N r, N a: see 6.4b)
   cubesPivot: { base: 3, arrows: '↑→⊙', lattice: 'cube', twin: 'cubesPivotCells', perspective: true, pivot: 4,
                 rule: 'in 3D cubes: <b>0</b> step forward, <b>1</b> turn right on the spot, <b>2</b> turn up on the spot' },
   cubesPivotCells: { base: 3, arrows: '↑→⊙', lattice: 'cube', cells: true, twin: 'cubesPivot', perspective: true, pivot: 4,
                      rule: 'from cube to cube: <b>0</b> step forward, <b>1</b> turn right on the spot, <b>2</b> turn up on the spot' },
-  hexPivotCells: { base: 2, arrows: '↑→', lattice: 'hex', cells: true, pivot: 6, steps: 'hexFixedCells',
-                   rule: 'from cell to cell of a hexagon grid: <b>0</b> step forward, <b>1</b> turn right on the spot (60°)' },
 };
 // on the surfaces, as their turtle walks (along the grid or on cells) where a step straight on exists:
 // squares, hexagons (cells), triangles (the grid); [pivot walk, its turtle walk, notches, its twin]
@@ -2887,9 +2847,9 @@ function numberText(limit = Infinity) {
 // ever deals with the menu.
 // The icon of each walk mode's shape. Filled: the relative modes (turn from your heading); outlined: the fixed directions.
 const MODE_ICONS = {
-  turtle: 'grid', cardinal: 'compass', triTurtle: 'triangleFilled', triFixed: 'triangle', hexTurtle: 'hexagonFilled', hexFixed: 'hexagon',
-  turtleCells: 'grid', cardinalCells: 'compass', triTurtleCells: 'triangleFilled', triFixedCells: 'triangle', hexTurtleCells: 'hexagonFilled', hexFixedCells: 'hexagon',
-  king: 'king', cairo: 'pentagons', antSquare: 'grid', turmite: 'turmite', antTri: 'triangleFilled', worm: 'worm', antHex: 'hexagonFilled', antCairo: 'pentagons', antCube: 'cube', antHexSphere: 'hexagon', antIcosa: 'icosahedron',
+  turtle: 'grid', triTurtle: 'triangleFilled', hexTurtle: 'hexagonFilled',
+  turtleCells: 'grid', triTurtleCells: 'triangleFilled', hexTurtleCells: 'hexagonFilled',
+  cairo: 'pentagons', antSquare: 'grid', turmite: 'turmite', antTri: 'triangleFilled', worm: 'worm', antHex: 'hexagonFilled', antCairo: 'pentagons', antCube: 'cube', antHexSphere: 'hexagon', antIcosa: 'icosahedron',
   cubeRel: 'cubeFilled', cubeFixed: 'cube', cubeRelCells: 'cubeFilled', cubeFixedCells: 'cube', diag: 'cube', diagCells: 'cube', diamond: 'tetrahedron', torusWalk: 'torus', torusTriWalk: 'torus', torusHexWalk: 'torus', cubeFlat: 'cube', mobiusWalk: 'mobius', mobiusGrid: 'mobius', mobiusHexGrid: 'mobius', mobiusHexWalk: 'mobius', mobiusTriGrid: 'mobius', mobiusTriWalk: 'mobius',
   tetraLR: 'tetrahedron', octaLR: 'octahedron', stellaLR: 'stella', stellaGrid: 'stella', lifeStella: 'stella', dodecaLR: 'dodecahedron', dodecaGrid: 'dodecahedron', lifeDodeca: 'dodecahedron', icosaLR: 'icosahedron',
   torusGrid: 'torus', torusTriGrid: 'torus', torusHexGrid: 'torus', cubeGrid: 'cube', tetraGrid: 'tetrahedron', octaGrid: 'octahedron',
@@ -2914,13 +2874,10 @@ function splitModeLabel(text) {
  * A family's tilings (Torus, Möbius strip, Sphere) share their place, picked by tabs under the shapes. */
 const NAV = {
   turtle: ['Walk', '2D', 'Squares', 'Turtle', 'grid'], turtleCells: ['Walk', '2D', 'Squares', 'Turtle', 'cells'],
-  cardinal: ['Walk', '2D', 'Squares', 'Cardinal', 'grid'], cardinalCells: ['Walk', '2D', 'Squares', 'Cardinal', 'cells'],
-  king: ['Walk', '2D', 'Squares', 'King', 'cells'], spiral: ['Walk', '2D', 'Squares', 'Spiral', ''],
+  spiral: ['Walk', '2D', 'Squares', 'Spiral', ''],
   triTurtle: ['Walk', '2D', 'Triangles', 'Turtle', 'grid'], triTurtleCells: ['Walk', '2D', 'Triangles', 'Turtle', 'cells'],
-  triFixed: ['Walk', '2D', 'Triangles', 'Fixed', 'grid'], triFixedCells: ['Walk', '2D', 'Triangles', 'Fixed', 'cells'],
   triSpiral: ['Walk', '2D', 'Triangles', 'Spiral', ''],
   hexTurtle: ['Walk', '2D', 'Hexagons', 'Turtle', 'grid'], hexTurtleCells: ['Walk', '2D', 'Hexagons', 'Turtle', 'cells'],
-  hexFixed: ['Walk', '2D', 'Hexagons', 'Fixed', 'grid'], hexFixedCells: ['Walk', '2D', 'Hexagons', 'Fixed', 'cells'],
   hexSpiral: ['Walk', '2D', 'Hexagons', 'Spiral', ''],
   cairo: ['Walk', '2D', 'Cairo', 'Turtle', 'cells'], cairoSpiral: ['Walk', '2D', 'Cairo', 'Spiral', ''],
   cubeRel: ['Walk', '3D', 'Cubes', 'Turtle', 'grid'], cubeRelCells: ['Walk', '3D', 'Cubes', 'Turtle', 'cells'],
@@ -2962,11 +2919,7 @@ const NAV = {
   lifeMobiusKite: ['Life', 'Surfaces', 'Möbius strip', 'Life', ''], lifeKleinKite: ['Life', 'Surfaces', 'Klein bottle', 'Life', ''], lifeTetraKite: ['Life', 'Surfaces', 'Tetrahedron', 'Life', ''],
   lifeOctaKite: ['Life', 'Surfaces', 'Octahedron', 'Life', ''], lifeIcosaKite: ['Life', 'Surfaces', 'Sphere', 'Life', ''],
   lifeStellaKite: ['Life', 'Surfaces', 'Stella octangula', 'Life', ''], lifeDodecaKite: ['Life', 'Surfaces', 'Dodecahedron', 'Life', ''], lifeCubocta: ['Life', 'Surfaces', 'Cuboctahedron', 'Life', ''], lifePyramid: ['Life', 'Surfaces', 'Pyramid', 'Life', ''], lifeRhombi: ['Life', 'Surfaces', 'Rhombicuboctahedron', 'Life', ''], lifeBicupola: ['Life', 'Surfaces', 'Bicupola', 'Life', ''], lifeGlobe: ['Life', 'Surfaces', 'Globe', 'Life', ''],
-  squareParity: ['Walk', '2D', 'Squares', 'Parity', 'grid'], squareParityCells: ['Walk', '2D', 'Squares', 'Parity', 'cells'],
-  triParity: ['Walk', '2D', 'Triangles', 'Parity', 'grid'], hexParityCells: ['Walk', '2D', 'Hexagons', 'Parity', 'cells'],
-  squarePivot: ['Walk', '2D', 'Squares', 'Pivot', 'grid'], squarePivotCells: ['Walk', '2D', 'Squares', 'Pivot', 'cells'],
   cubesPivot: ['Walk', '3D', 'Cubes', 'Pivot', 'grid'], cubesPivotCells: ['Walk', '3D', 'Cubes', 'Pivot', 'cells'],
-  triPivot: ['Walk', '2D', 'Triangles', 'Pivot', 'grid'], hexPivotCells: ['Walk', '2D', 'Hexagons', 'Pivot', 'cells'],
 };
 // the pivot and parity walks on the surfaces: where their turtle walks are (see MODES)
 // the tilings' Life on the plane (see TILINGS): their modes, after the hats
@@ -3206,33 +3159,43 @@ function renderAntRow() {
   antRowMode = w;
   stage.classList.toggle('drawing', drawsHere());  // (the crosshair: a click draws, as renderDrawTools keeps it)
   $('antStartSection').hidden = $('antRuleSection').hidden = !ant;
-  // its rules' cards: a creature's in its Rule section, a walk's by its rule (see walkRules) under its Grid | Cells
-  const cardsHome = m.turnsOf ? $('walkTurns') : $('antRuleSection');
-  $('walkTurns').hidden = !m.turnsOf;
-  if ($('ruleCards').parentElement !== cardsHome) cardsHome.append($('ruleCards'));
-  if (!ant && !m.turnsOf) return;
+  // your own rule's field: under a creature's cards, a walk's under its rules (see renderModePicker)
+  const fieldHome = m.net ? $('walkCustom') : $('antRuleSection');
+  if ($('antCustomRow').parentElement !== fieldHome) fieldHome.append($('antCustomRow'));
+  $('antCustomRow').hidden = true;
+  if (!ant && !m.net) return;
   if (m.turmite) antByDigits = false;  // (by its rule only: its Digits greyed)
   const R = creatureRules(w);
   $('antRuleTitle').textContent = R.byDigits ? 'Turns' : 'Rule';  // (Digits: a turn per digit, not a rule of colours)
   setTile($('antByRule'), { on: !R.byDigits });
   setTile($('antByDigits'), { on: !!R.byDigits, can: !m.turmite, greyed: 'for a turmite (by its rule only)' });
-  const rulesCard = (pic, name, detail, on, click) => card({ pic, name, detail, on, click, how: () => { if (on) walkTutorialToggle(); else { click(); walkTutorial(w); } } });  // (its ⓘ: how it works, picked first)
-  const known = R.cards.some(([r]) => r === R.now), mine = !known || antCustomOpen, pic = icon(m.worm ? 'worm' : m.turmite ? 'turmite' : m.turnsOf ? 'turtle' : 'ant');
-  $('antRuleCards').replaceChildren(...R.cards.map(([r, words]) => rulesCard(pic, r, words, r === R.now && !antCustomOpen, () => { antCustomOpen = false; if (r === R.now) renderAntRow(); else R.set(r); })),
-    ...(R.typed ? [rulesCard(pixelIcon('..o..,..o..,ooooo,..o..,..o..'), 'Custom rule', mine ? `${R.now} · your own` : 'your own, typed', mine, () => { antCustomOpen = true; renderAntRow(); })] : []));
-  $('antCustomRow').hidden = !R.typed || !mine;
+  if (ant) $('antRuleCards').replaceChildren(...ruleCards(w, icon(m.worm ? 'worm' : m.turmite ? 'turmite' : 'ant')));
+  $('antCustomRow').hidden = !R.typed || !(antCustomOpen || !R.cards.some(([r]) => r === R.now));
   $('antRuleName').textContent = R.name;
   if (document.activeElement !== $('antRule')) $('antRule').value = R.now;
 }
-// an ant's rules: its presets [rule, words], the rule in use, how to set one, whether one is typed, the field's title
+// A rules list's cards, one manager for a creature's and a walk's (see creatureRules): its presets, each with its picture (else
+// pic), one that cannot go there greyed (why, in its tooltip), then Custom rule (your own, typed in the field under the list);
+// here: w is the mode in use (else a pick goes to it first)
+function ruleCards(w, pic, here = true) {
+  const R = creatureRules(w), mine = here && (antCustomOpen || !R.cards.some(([r]) => r === R.now));
+  const go = (then) => () => { if (!here) { $('mode').value = w; $('mode').dispatchEvent(new Event('change')); } then(); };
+  const make = (cardPic, name, detail, on, then, why = '', title = '') => card({ pic: cardPic, name, detail, on, title: why || title, can: !why, click: go(then),
+    how: () => { if (on) walkTutorialToggle(); else { go(then)(); walkTutorial(w); } } });  // (its ⓘ: how it works, picked first)
+  return [...R.cards.map(([r, detail, cardPic, why, title]) => make(cardPic ?? pic, r, detail, here && r === R.now && !antCustomOpen, () => { antCustomOpen = false; if (r === R.now) renderModePicker(); else R.set(r); }, why, title)),
+    ...(R.typed ? [make(pixelIcon('..o..,..o..,ooooo,..o..,..o..'), 'Custom rule', mine ? `${R.now} · your own` : 'your own, typed', mine, () => { antCustomOpen = true; renderModePicker(); })] : [])];
+}
+// a creature's or a walk's rules: its presets [rule, words, picture, why greyed, tooltip], the rule in use, how to set one, whether one is typed, the field's title
 const ANT_WORDS = { RL: "Langton's ant: a highway from step 9,976", RLR: 'grows chaotically', LLRR: 'grows symmetrically', LRRRRRLLR: 'fills a square around itself',
                     RRLLLRLLLRRR: 'a filled triangle, growing and moving' };  // (on squares)
 const TURMITE_WORDS = ["Langton's ant", 'a spiral', 'the widest mess', 'a square growing filled', 'a shape growing filled', 'a highway from step 3,090, every 54 steps'];
 const WORM_WORDS = ['dies at step 4,802', 'dies at step 83,618', 'dies at step 569,804', 'dies at step 918,339', 'still going at step 5,000,000', 'still going at step 5,000,000'];
 function creatureRules(w) {
-  const t = MODES[w].turnsOf;
-  if (t) return { now: walkRules[t], typed: true, set: (r) => setWalkRule(w, r), cards: ANTS[t].digitPresets.map((r) => [r, turnWords(r).map((u, d) => `${d} ${TURN_WORDS[u]}`).join(', ')]),
-                  name: `Rule, a turn per digit: ${Object.keys(ANTS[t].turns).join(', ')}` };
+  const m = MODES[w], N = WALK_NETS[m.net], surface = m.lattice === 'sphere';
+  if (N) return { now: walkRules[walkKey(m)], typed: true, set: (r) => setWalkRule(w, r),  // (a surface: the rules it can take only)
+                  cards: WALK_PRESETS[m.net].flatMap(([r, family, pic]) => { const words = ruleWords(r), why = words.map((t) => walkWordWhy(m, t)).find(Boolean) ?? '';
+                    return surface && why ? [] : [[r, `${family} · base ${words.length}`, icon(pic), why, words.map((t, d) => `${d} ${WORD_TEXT[t]}`).join(', ')]]; }),
+                  name: `Rule, a word per digit: ${surface ? surfaceWords(m.net).join(' ') : [...Object.keys(N.turns), ...Object.keys(N.ways ?? {}), ...(N.notch ? ['l', 'r', 'a'] : [])].join(' ')}` };
   if (MODES[w].worm) return { byDigits: worm.byDigits, now: worm.rule, typed: !worm.byDigits, cards: worm.byDigits ? [] : WORM_PRESETS.map((r, i) => [r, WORM_WORDS[i]]), set: setWormRule,
                               name: 'Rule, a turn at each new corner: L2, L1, N, R1, R2' };
   if (MODES[w].turmite) return { now: turmite.rule, typed: true, cards: TURMITE_PRESETS.map((r, i) => [r, TURMITE_WORDS[i]]), set: setTurmiteRule,
@@ -3349,17 +3312,18 @@ function renderModePicker() {
   // Worm on triangles: one of another shape, a click takes it there); a walk's rules a list, each with its base
   const creatures = kind === 'Ant';
   const rules = creatures ? [...new Set(Object.values(NAV).filter((n) => n[0] === kind && n[1] === space).map((n) => n[3]))] : navValues(3, [kind, space, shape]);
-  $('navRules').hidden = creatures || rules.length < 2;
-  (creatures ? $('antCreatures') : $('navRules')).replaceChildren(...rules.map((r, i) => {
+  $('navRules').hidden = creatures || (rules.length < 2 && !MODES[w].net);
+  (creatures ? $('antCreatures') : $('navRules')).replaceChildren(...rules.flatMap((r, i) => {
     const here = Object.keys(NAV).find((m) => NAV[m].slice(0, 4).join() === [kind, space, shape, r].join());
     const v = here ?? Object.keys(NAV).find((m) => NAV[m][0] === kind && NAV[m][1] === space && NAV[m][3] === r);  // (elsewhere: its first shape)
+    if (!creatures && here && MODES[here].net) return ruleCards(r === rule ? w : here, null, r === rule);  // a walk by a rule: its rules' cards (the side picked kept)
     const { base, detail } = splitModeLabel(modeOptionOf(v).text), alone = NAV[v][4] === '';  // a spiral: its base here, no Grid | Cells
     const pic = icon(r === 'Turtle' ? 'turtle' : r === 'Pivot' ? 'pivot' : r === 'Parity' ? 'walk2d' : r === 'Ant' ? 'ant' : MODE_ICONS[v]);  // a turtle for the walks turning relative to their heading
     const go = () => { if (here) { navGo(3, r); return; } $('mode').value = v; $('mode').dispatchEvent(new Event('change')); };
     const how = !creatures && walkTutorialFits(here ?? v) && (() => { if (r === rule) walkTutorialToggle(); else { go(); walkTutorial($('mode').value); } });  // (its ⓘ: how it works, picked first)
     const b = creatures ? button(`${pic}<span>${r}</span>`, r === rule, go, CREATURE_TIPS[r], { byDefault: i ? '' : 'yes' }) : card({ pic, name: r, base: alone && base && !r.includes('base') ? base : '', title: detail, on: r === rule, how, byDefault: i ? '' : 'yes', click: go });  // (its digits' turns in its tooltip)  // (the first: where a shape starts)
     b.disabled = !has(kind, r);
-    return b;
+    return [b];
   }));
   // Grid | Cells (Cube in 3D): each with its base and its digits, or what it is not on (that side off)
   const sides = navValues(4, [kind, space, shape, rule]).filter((s) => has(kind, rule, s));  // (Cairo pentagons: no grid)
@@ -3368,9 +3332,12 @@ function renderModePicker() {
   $('walkRuleSection').hidden = kind !== 'Walk';  // (an ant's: its own Rule section)
   $('walkRuleHow').hidden = !walkTutorialFits(w);
   const side = (b, s, word, none) => {
-    const v = alone ? (s === 'cells' ? w : null) : sides.includes(s) ? navPick(4, s) : null, here = alone ? s === 'cells' : NAV[w][4] === s;
+    const there = alone ? (s === 'cells' ? w : null) : sides.includes(s) ? navPick(4, s) : null, here = alone ? s === 'cells' : NAV[w][4] === s;
+    // a walk by a rule: its other side greyed where the rule cannot go (a diagonal along the grid), the word why
+    const why = there && MODES[there].net && !walkWordsOf(there) ? ruleWords(walkRules[walkKey(MODES[there])]).map((t) => walkWordWhy(MODES[there], t)).find(Boolean) : '', v = why ? null : there;
+    if (why) none = why;
     const info = !v ? null : MODES[v].turmite ? { base: '', detail: turmite.rule } : MODES[v].antOf ? { base: '', detail: antByDigits ? `digits ${antDigitRules[v]}` : antRules[v] }
-      : MODES[v].turnsOf ? { base: `base ${MODES[v].base}`, detail: walkRules[MODES[v].turnsOf] } : splitModeLabel(modeOptionOf(v).text);
+      : MODES[v].net ? { base: `base ${MODES[v].base}`, detail: walkRules[walkKey(MODES[v])] } : splitModeLabel(modeOptionOf(v).text);
     b.innerHTML = `<span class="walk-on-name">${word}${info?.base ? ` <span class="mode-base">${info.base}</span>` : ''}</span>`
       + `<span class="mode-detail">${info ? info.detail : none}</span>`;
     b.disabled = !v;
@@ -4058,16 +4025,16 @@ function populationOf(text) {
  * cell it leaves takes the next colour. Per tiling: the turtle walk it goes through the cells with (a
  * turn: its digit) and their arrows, its turns, and rules to start from, by the digits and by colour. */
 const ANTS = {
-  antSquare: { arrows: '←↑→', inner: () => squareTurtleStepper(), turns: { L: 0, N: 1, R: 2 }, digitPresets: ['LR', 'LNR'], presets: ['RL', 'RLR', 'LLRR', 'LRRRRRLLR', 'RRLLLRLLLRRR'] },
+  antSquare: { arrows: '←↑→', inner: () => wordStepper('square', ['L', 'N', 'R']), turns: { L: 0, N: 1, R: 2 }, digitPresets: ['LR', 'LNR'], presets: ['RL', 'RLR', 'LLRR', 'LRRRRRLLR', 'RRLLLRLLLRRR'] },
   turmite: { arrows: '←↑→↓', inner: null, turns: { L: 0, N: 1, R: 2, U: 3 }, digitPresets: ['LR'], presets: ['RL'] },  // (its rule its own: see turmiteOf)
-  antTri: { arrows: '↖↗', inner: () => triStepper('lr'), turns: { L: 0, R: 1 }, digitPresets: ['LR'], presets: ['RL', 'RRL', 'RLL', 'RRLL'] },
-  antHex: { arrows: '↙↖↑↗↘', inner: () => hexStepper('relative'), turns: { L2: 0, L1: 1, N: 2, R1: 3, R2: 4 }, digitPresets: ['L1 R1', 'L1 N R1', 'L2 L1 R1 R2', 'L2 L1 N R1 R2'],
+  antTri: { arrows: '↖↗', inner: () => wordStepper('tri', ['L', 'R']), turns: { L: 0, R: 1 }, digitPresets: ['LR'], presets: ['RL', 'RRL', 'RLL', 'RRLL'] },
+  antHex: { arrows: '↙↖↑↗↘', inner: () => wordStepper('hex', ['L2', 'L1', 'N', 'R1', 'R2']), turns: { L2: 0, L1: 1, N: 2, R1: 3, R2: 4 }, digitPresets: ['L1 R1', 'L1 N R1', 'L2 L1 R1 R2', 'L2 L1 N R1 R2'],
             presets: ['L1 R1', 'L2 R2', 'L1 L2 R1', 'R2 L1 N L1 R2'] },
   // on a surface, the walk it goes through the cells with is the surface's (see buildSphereWalk)
   antHexSphere: { arrows: '↖↗', inner: null, turns: { L: 0, R: 1 }, digitPresets: ['LR'], presets: ['RL', 'RRL', 'RLL', 'RRLL'] },
   antIcosa: { arrows: '↖↗', inner: null, turns: { L: 0, R: 1 }, digitPresets: ['LR'], presets: ['RL', 'RRL', 'RLL', 'RRLL'] },
   antCube: { arrows: '←↑→', inner: null, turns: { L: 0, N: 1, R: 2 }, digitPresets: ['LR', 'LNR'], presets: ['RL', 'RLR', 'LLRR', 'LRRRRRLLR', 'RRLLLRLLLRRR'] },
-  antCairo: { arrows: '↙↖↗↘', inner: () => cairoStepper(), turns: { L2: 0, L1: 1, R1: 2, R2: 3 }, digitPresets: ['L1 R1', 'L2 R2', 'L2 L1 R1 R2'], presets: ['L1 R1', 'L2 R2', 'L1 R2', 'L2 L1 R1 R2'] },
+  antCairo: { arrows: '↙↖↗↘', inner: () => wordStepper('cairo', ['L2', 'L1', 'R1', 'R2']), turns: { L2: 0, L1: 1, R1: 2, R2: 3 }, digitPresets: ['L1 R1', 'L2 R2', 'L2 L1 R1 R2'], presets: ['L1 R1', 'L2 R2', 'L1 R2', 'L2 L1 R1 R2'] },
 };
 // on the tori and the Möbius strips: on the cells of their walks, as the cube's, their turns the walk's, its rules those
 // of the ant on the same cells (its place in the menus: the walk's surface and tiling)
@@ -4085,34 +4052,6 @@ for (const [w, [walkMode, like, place]] of Object.entries(SURFACE_ANTS)) {
 const antRules = Object.fromEntries(Object.entries(ANTS).map(([w, A]) => [w, A.presets[0]]));
 const antDigitRules = Object.fromEntries(Object.entries(ANTS).map(([w, A]) => [w, A.digitPresets[0]]));
 let antByDigits = false;
-// A walk turning by the digits (Turtle): its rule a turn per digit, its base their count. Its turns are those of the ant on
-// the cells it goes through (turnsOf: the cells' ant; a grid's walk goes through its dual's cells), one rule shared by the
-// walks through the same cells; its cards the ant's rules by the digits (see creatureRules)
-const WALK_RULE = { antSquare: 'LNR', antTri: 'LR', antHex: 'L2 L1 N R1 R2', antCairo: 'L2 L1 R1 R2' };  // (each one's at first)
-const walkRules = { ...WALK_RULE };
-const walkTurnsOf = (w) => antTurnsOf(MODES[w].turnsOf, walkRules[MODES[w].turnsOf]);
-const walkArrows = (w) => walkTurnsOf(w).map((t) => [...ANTS[MODES[w].turnsOf].arrows][t]).join('');
-const walkRuleText = (w, where) => `${where}, a turn then a step: ${turnWords(walkRules[MODES[w].turnsOf]).map((t, d) => `<b>${d}</b> ${TURN_WORDS[t]}`).join(', ')}`;
-const ruleOfWords = (words) => words.join(words.some((t) => t.length > 1) ? ' ' : '');  // (L1 R1 spaced, LNR not)
-// a walk's stepper by its rule: a digit, its turn, stepped by the cells' ant's walk (its grid's: its dual's cells)
-const byWalkRule = (w) => { const turns = walkTurnsOf(w), inner = ANTS[MODES[w].turnsOf].inner(); return (g) => inner(turns[g]); };
-// The surfaces' turtles by a rule too: allTurns, all their turns in order, left to right (edges on, or degrees along the
-// grid); a digit's, its rule's turn's (turns, see surfaceSteps); the cells' ant by how many (a grid's: its dual's cells)
-const TURNS_BY_COUNT = { 2: 'antTri', 3: 'antSquare', 4: 'antCairo', 5: 'antHex' };
-const ruleTurns = (m, rule) => (m.turnsMemo?.[0] === rule ? m.turnsMemo[1] : (m.turnsMemo = [rule, antTurnsOf(m.turnsOf, rule).map((t) => m.allTurns[t])])[1]);
-for (const [w, m] of Object.entries(MODES)) {
-  if (NAV[w]?.[0] !== 'Walk' || NAV[w][3] !== 'Turtle' || m.lattice !== 'sphere' || !m.turns) continue;
-  const where = m.rule.split(':')[0], tail = m.rule.match(/ \([^)]*\)$/)?.[0] ?? '';  // (its words before its digits', its note after)
-  Object.defineProperties(m, { turnsOf: { value: TURNS_BY_COUNT[m.turns.length] }, allTurns: { value: m.turns }, base: { get: () => walkTurnsOf(w).length },
-    arrows: { get: () => walkArrows(w) }, turns: { get: () => ruleTurns(m, walkRules[m.turnsOf]) }, rule: { get: () => walkRuleText(w, where) + tail } });
-}
-function setWalkRule(w, rule) {
-  const t = MODES[w].turnsOf;
-  if (!antTurnsOf(t, rule)) { $('antRule').value = walkRules[t]; return; }
-  walkRules[t] = ruleOfWords(turnWords(rule));
-  renderModePicker();
-  compute();
-}
 const MIRROR = { L: 'R', R: 'L', N: 'N', L1: 'R1', R1: 'L1', L2: 'R2', R2: 'L2' };
 const turnWords = (rule) => rule.toUpperCase().match(/[LR][12]?|N/g) ?? [];
 // by the digits, a rule's turns, one per digit: different turns, each with its mirror among them (so that
@@ -4126,7 +4065,7 @@ const antBase = (w) => (antByDigits ? turnWords(antDigitRules[w]).length : 2);
 const antRuleOf = (w) => (antByDigits ? antDigitRules[w] : antRules[w]);
 // a walk's arrows, one per digit (an ant's: per turn of the walk it goes through the cells with), none: []
 const ARROW_LISTS = {};
-const arrowsOf = (w) => { const s = (MODES[w].antOf ? ANTS[w] : MODES[w]).arrows ?? ''; return (ARROW_LISTS[s] ??= [...s]); };  // (by its arrows: a walk's rule changes them)
+const arrowsOf = (w) => { const a = (MODES[w].antOf ? ANTS[w] : MODES[w]).arrows ?? ''; return typeof a === 'string' ? (ARROW_LISTS[a] ??= [...a]) : a; };  // (a walk by a rule: its own, see walkArrows)
 // a rule's turns (the turtle walk's digits), or null when it is not one: 2 to 12 of the tiling's turns
 function antTurnsOf(w, rule) {
   const A = ANTS[w], words = turnWords(rule);
@@ -4227,33 +4166,9 @@ function highwayOf(xs, ys, n) {
   return null;
 }
 
-// the turtle on squares, by its turn (0 left, 1 straight, 2 right: see ANTS.antSquare.turns)
-function squareTurtleStepper() {
-  let x = 0, y = 0, d = 0;
-  return (t) => {
-    if (t === 0) d = (d + 3) % 4;       // left
-    else if (t === 2) d = (d + 1) % 4;  // right
-    x += DIRS[d][0]; y += DIRS[d][1];
-    return [key(x, y), x, y, 0];
-  };
-}
 const STEPPERS = {
-  turtle: () => byWalkRule('turtle'),
-  cardinal() {
-    let x = 0, y = 0;
-    return (g) => {
-      x += DIRS[g][0]; y += DIRS[g][1];  // the digit is the direction
-      return [key(x, y), x, y, 0];
-    };
-  },
-  king() {
-    let x = 0, y = 0;
-    return (g) => {
-      x += KING_STEPS[g][0]; y += KING_STEPS[g][1];
-      return [key(x, y), x, y, 0];
-    };
-  },
-  cairo: () => byWalkRule('cairo'),
+  turtle: () => walkStepper('turtle'),
+  cairo: () => walkStepper('cairo'),
   antSquare: () => antStepper('antSquare'),
   turmite: () => turmiteStepper(),
   antTri: () => antStepper('antTri'),
@@ -4272,22 +4187,13 @@ const STEPPERS = {
       return [key(x, y), x, y, 0];
     };
   },
-  turtleCells: () => byWalkRule('turtleCells'),  // squares: the same steps, the grid half a cell away
-  cardinalCells: () => STEPPERS.cardinal(),
-  triTurtle: () => byWalkRule('triTurtle'),  // along triangles: the steps of hexagon cells (see MODES)
-  triFixed: () => hexStepper('fixed'),
-  hexTurtle: () => byWalkRule('hexTurtle'),  // along hexagons: the steps of triangle cells
-  hexFixed: () => triStepper('fixed'),
-  triTurtleCells: () => byWalkRule('triTurtleCells'),
-  triFixedCells: () => triStepper('fixed'),
-  hexTurtleCells: () => byWalkRule('hexTurtleCells'),
-  hexFixedCells: () => hexStepper('fixed'),
-  squareParity: () => parityStepper('squareParity'), squareParityCells: () => parityStepper('squareParityCells'),
-  triParity: () => parityStepper('triParity'), hexParityCells: () => parityStepper('hexParityCells'),
-  squarePivot: () => pivotStepper('squarePivot'), squarePivotCells: () => pivotStepper('squarePivotCells'),
-  triPivot: () => pivotStepper('triPivot'), hexPivotCells: () => pivotStepper('hexPivotCells'),
+  turtleCells: () => walkStepper('turtleCells'),  // squares: the same steps, the grid half a cell away
+  triTurtle: () => walkStepper('triTurtle'),  // along triangles: the steps of hexagon cells (see MODES)
+  hexTurtle: () => walkStepper('hexTurtle'),  // along hexagons: the steps of triangle cells
+  triTurtleCells: () => walkStepper('triTurtleCells'),
+  hexTurtleCells: () => walkStepper('hexTurtleCells'),
   triSpiral: () => triStepper('spiral'),
-  hexSpiral: () => hexStepper('spiral'),
+  hexSpiral: () => hexSpiralStepper(),
   cairoSpiral: () => cairoStepper(true),
   cubeRel: () => cubeStepper(true),
   cubeFixed: () => cubeStepper(false),
@@ -4324,19 +4230,6 @@ function cubeStepper(relative) {
     }
     x += d[0]; y += d[1]; z += d[2];
     return [key3(x, y, z), x, y, z, relative ? u.join() : ''];  // and the roll, for walkRepeat
-  };
-}
-
-// A parity walk in 2D: its heading one of the fixed walk's directions, clockwise; the heading and the
-// digit's parity come last (as a cube's roll, see walkRepeat)
-function parityStepper(w) {
-  const { steps, parity: n } = MODES[w], step = STEPPERS[steps]();
-  let h = 0, k = 0;
-  return (g) => {
-    const at = step(h);
-    k++;
-    if (g) h = (h + (k % 2 ? 1 : n - 1)) % n;
-    return [...at, `${h} ${k % 2}`];
   };
 }
 
@@ -4430,31 +4323,19 @@ const wormRuleText = () => `along the lines of a triangle grid, never twice alon
   + (worm.byDigits ? 'it turns by the next digit, <b>0</b> sharp left, <b>1</b> left, <b>2</b> straight, <b>3</b> right, <b>4</b> sharp right (one onto an eaten line passed over)'
     : `it turns by its rule's next turn, ${worm.rule}`) + ', and the same way at that corner met again; it dies where no line is left';
 
-// kind: 'relative' (0 = sharp left … 4 = sharp right), 'fixed' (digit = direction) or
-// 'spiral' (turn left whenever that hexagon is unvisited, else go straight; the digit is ignored)
-function hexStepper(kind) {
-  let a = 0, b = 0, d = kind === 'spiral' ? 3 : 0; // start facing north (the spiral starts facing south)
+// the hexagons' spiral: turn left whenever that hexagon is unvisited, else go straight (the digit is ignored), from south
+function hexSpiralStepper() {
+  let a = 0, b = 0, d = 3;
   const visited = new Set([key(0, 0)]);
-  return (g) => {
-    if (kind === 'relative') d = (d + g - 2 + 6) % 6;
-    else if (kind === 'fixed') d = g;
-    else {
-      const l = (d + 5) % 6;
-      if (!visited.has(key(a + HEX_DIRS[l][0], b + HEX_DIRS[l][1]))) d = l;
-    }
+  return () => {
+    const l = (d + 5) % 6;
+    if (!visited.has(key(a + HEX_DIRS[l][0], b + HEX_DIRS[l][1]))) d = l;
     a += HEX_DIRS[d][0]; b += HEX_DIRS[d][1];
-    if (kind === 'spiral') visited.add(key(a, b));
-    return [key(a, b), b * H, -a - b / 2, 0];
+    visited.add(key(a, b));
+    return hexAt(a, b);
   };
 }
-
-// A pivot walk in 2D: its heading one of the fixed walk's directions, clockwise; 1 turns it, in place.
-// The heading comes last (as a cube's roll): a fraction's loop is found by it too (see walkRepeat)
-function pivotStepper(w) {
-  const { steps, pivot } = MODES[w], step = STEPPERS[steps]();
-  let h = 0, at = [key(0, 0), 0, 0, 0];
-  return (g) => { if (g) h = (h + 1) % pivot; else at = step(h); return [...at.slice(0, 4), h]; };
-}
+const hexAt = (a, b) => [key(a, b), b * H, -a - b / 2, 0];  // a hexagon (a, b): its key and its centre
 
 /* ---- 6.4 Triangles --------------------------------------------------------------------------- */
 /* Triangle tiling: cell (c, r) points up when c + r is even.
@@ -4465,28 +4346,126 @@ function pivotStepper(w) {
  * through edge e, the next edge in that order is on the right, the other on the left. */
 const TRI_CCW = { up: [2, 1, 0], down: [0, 2, 1] };
 
-// kind: 'lr' (0 = exit left, 1 = exit right), 'fixed' (digit = edge to cross) or
-// 'spiral' (exit left whenever that triangle is unvisited, else right; the digit is ignored)
+// kind: a rule's acts (see wordStepper: a turn, 0 exit left, 1 right; a way, the edge to cross) or 'spiral' (exit left
+// whenever that triangle is unvisited, else right; the digit is ignored)
 function triStepper(kind) {
   let c = 0, r = 0, entry = 0; // start: ▲ triangle at (0, 0), entered from below
   const visited = new Set([key(0, 0)]);
   const across = (edge, up) => (edge === 0 ? [c, r + (up ? 1 : -1)] : [c + ((edge === 1) === up ? -1 : 1), r]);
   return (g) => {
     const up = ((c + r) & 1) === 0;
-    let edge = g;
-    if (kind !== 'fixed') {
-      const ccw = up ? TRI_CCW.up : TRI_CCW.down;
-      const i = ccw.indexOf(entry);
-      const left = ccw[(i + 2) % 3], right = ccw[(i + 1) % 3];
-      if (kind === 'lr') edge = g === 1 ? right : left;
-      else edge = visited.has(key(...across(left, up))) ? right : left;
-    }
+    const ccw = up ? TRI_CCW.up : TRI_CCW.down, i = ccw.indexOf(entry), left = ccw[(i + 2) % 3], right = ccw[(i + 1) % 3];
+    const edge = kind === 'spiral' ? (visited.has(key(...across(left, up))) ? right : left) : kind[g][0] === 'way' ? kind[g][1] : kind[g][1] ? right : left;
     [c, r] = across(edge, up);
     entry = edge;
     visited.add(key(c, r));
     const upNow = ((c + r) & 1) === 0;
     return [key(c, r), c / 2, r * H + (upNow ? 2 * H / 3 : H / 3) + TRI_Y0, 0];
   };
+}
+
+/* ---- 6.4b Rules: a word per digit ------------------------------------------------------------ */
+/* A walk's rule: a word per digit, what the walker does on reading it, one language for every network, its base the count
+ * of its words: L N R (L1 L2 R1 R2 on hexagons and pentagons, U back) turn then a step; l r a turn on the spot, no step
+ * (Pivot); a a step, then a turn right at an odd digit (the 1st, 3rd… read), left at an even one (Parity); n ne e se s sw w
+ * nw a step that way (Cardinal; King, the diagonals, from cell to cell only; Fixed on hexagons), on the triangles' cells and
+ * the hexagons' grid | \ / (the way its step goes). A network: the cells a walk goes through (a grid's walk: its dual's
+ * cells), its headings (dirs, clockwise from north), its notch (a turn on the spot), its words and their arrows. */
+const WALK_NETS = {
+  square: { dirs: KING_STEPS, notch: 2, at: (x, y) => [key(x, y), x, y, 0], straight: 'N', diagonals: ['ne', 'se', 'sw', 'nw'],
+            turns: { L: -2, N: 0, R: 2, U: 4 }, ways: { n: 0, ne: 1, e: 2, se: 3, s: 4, sw: 5, w: 6, nw: 7 },
+            arrows: { L: '←', N: '↑', R: '→', U: '↓', n: '↑', ne: '↗', e: '→', se: '↘', s: '↓', sw: '↙', w: '←', nw: '↖' } },
+  hex: { dirs: HEX_DIRS, notch: 1, at: hexAt, straight: 'N', turns: { L2: -2, L1: -1, N: 0, R1: 1, R2: 2, U: 3 }, ways: { n: 0, ne: 1, se: 2, s: 3, sw: 4, nw: 5 },
+         arrows: { L2: '↙', L1: '↖', N: '↑', R1: '↗', R2: '↘', U: '↓', n: '↑', ne: '↗', se: '↘', s: '↓', sw: '↙', nw: '↖' } },
+  tri: { straight: 'L', turns: { L: 0, R: 1 }, ways: { '|': 0, '\\': 1, '/': 2 }, arrows: { L: '↖', R: '↗' } },  // (three ways out: no straight on, no turn on the spot)
+  cairo: { straight: 'L1', turns: { L2: 0, L1: 1, R1: 2, R2: 3 }, arrows: { L2: '↙', L1: '↖', R1: '↗', R2: '↘' } },
+};
+const SPOT_ARROWS = { l: '↺', r: '↻', a: '↝' };
+const WORD_TEXT = { ...TURN_WORDS, U: 'back', l: 'turn left on the spot', r: 'turn right on the spot', a: 'step, then turn right at an odd digit, left at an even one',
+                    n: 'north', ne: 'north-east', e: 'east', se: 'south-east', s: 'south', sw: 'south-west', w: 'west', nw: 'north-west', '|': 'up or down', '\\': 'along \\', '/': 'along /' };
+// a rule's words: spaced, else a letter each (L1, R2 one word)
+const ruleWords = (rule) => { const t = String(rule ?? '').trim(); return !t ? [] : /\s/.test(t) ? t.split(/\s+/) : t.match(/[LR][12]|./g); };
+// a rule's text: tight when its words are single letters of one case (LNR, nesw), else spaced (L1 R1, N r)
+const ruleOfWords = (words) => words.join(words.every((t) => /^[A-Z]$/.test(t)) || words.every((t) => /^[a-z]$/.test(t)) ? '' : ' ');
+// a word's act on a network: ['turn', by], ['way', heading], ['pivot', by], ['parity', by], or null
+function wordAct(net, word) {
+  const N = WALK_NETS[net];
+  if (Object.hasOwn(N.turns, word)) return ['turn', N.turns[word]];
+  if (N.ways && Object.hasOwn(N.ways, word)) return ['way', N.ways[word]];
+  if (N.notch && (word === 'l' || word === 'r')) return ['pivot', word === 'l' ? -N.notch : N.notch];
+  return N.notch && word === 'a' ? ['parity', N.notch] : null;
+}
+// The stepper of a network with headings (squares, hexagons), by a rule's acts; its hidden state last (as a cube's roll, for
+// walkRepeat): its heading after a turn on the spot, and the parity of the digits read
+function headingStepper(N, acts) {
+  const n = N.dirs.length, spot = acts.some(([k]) => k === 'pivot' || k === 'parity'), parity = acts.some(([k]) => k === 'parity');
+  let x = 0, y = 0, h = 0, read = 0, at = N.at(0, 0);
+  return (g) => {
+    const [kind, by] = acts[g];
+    read++;
+    if (kind === 'pivot') h = (h + by + n) % n;
+    else {
+      if (kind === 'turn') h = (h + by + n) % n; else if (kind === 'way') h = by;
+      x += N.dirs[h][0]; y += N.dirs[h][1];
+      at = N.at(x, y);
+      if (kind === 'parity') h = (h + (read % 2 ? by : -by) + n) % n;
+    }
+    return spot ? [...at, parity ? `${h} ${read % 2}` : h] : at;
+  };
+}
+// a stepper by words on a network
+function wordStepper(net, words) {
+  const acts = words.map((t) => wordAct(net, t));
+  if (net === 'tri') return triStepper(acts);
+  if (net === 'cairo') { const step = cairoStepper(); return (g) => step(acts[g][1]); }
+  return headingStepper(WALK_NETS[net], acts);
+}
+// Each walk's rule, kept per network, the plane's and the surfaces' apart (a surface: turns only); its defaults, the turtles'
+const WALK_RULE = { square: 'LNR', hex: 'L2 L1 N R1 R2', tri: 'LR', cairo: 'L2 L1 R1 R2' };
+const walkKey = (m) => (m.lattice === 'sphere' ? `${m.net} surface` : m.net);
+const walkRules = Object.fromEntries(Object.entries(WALK_RULE).flatMap(([net, r]) => [[net, r], [`${net} surface`, r]]));
+const surfaceWords = (net) => Object.keys(WALK_NETS[net].turns).filter((t) => t !== 'U');  // (a surface's turns, left to right)
+// why a word cannot go on a walk, or '': not its network's; a diagonal along the grid; on a surface, anything but a turn
+const walkWordWhy = (m, t) => (m.lattice === 'sphere' ? (surfaceWords(m.net).includes(t) ? '' : `${t}: on a surface, its turns only`)
+  : !wordAct(m.net, t) ? `${t}: not a word here` : m.lines && WALK_NETS[m.net].diagonals?.includes(t) ? `${t}: along the grid, a diagonal step follows no line` : '');
+// a walk's words for a rule (its own by default), or null: 2 to 12, each fitting it
+function walkWordsOf(w, rule = walkRules[walkKey(MODES[w])]) {
+  const words = ruleWords(rule);
+  return words.length >= 2 && words.length <= 12 && words.every((t) => !walkWordWhy(MODES[w], t)) ? words : null;
+}
+const walkStepper = (w) => wordStepper(MODES[w].net, walkWordsOf(w));
+// a walk's arrows, one per word (a word with none: ''), by its rule
+const walkArrows = (w) => { const m = MODES[w], r = walkRules[walkKey(m)]; return (m.arrowsMemo?.[0] === r ? m.arrowsMemo : (m.arrowsMemo = [r, walkWordsOf(w).map((t) => WALK_NETS[m.net].arrows[t] ?? SPOT_ARROWS[t] ?? '')]))[1]; };
+const walkRuleText = (w) => `${MODES[w].where}: ${walkWordsOf(w).map((t, d) => `<b>${d}</b> ${WORD_TEXT[t]}`).join(', ')}${MODES[w].tail ?? ''}`;
+// The surfaces' turtles by a rule too: allTurns, all their turns in order, left to right (edges on, or degrees along the
+// grid); a digit's, its rule's turn's (turns, see surfaceSteps); their network by how many (a grid's: its dual's cells)
+const NET_BY_TURNS = { 2: 'tri', 3: 'square', 4: 'cairo', 5: 'hex' };
+for (const [w, m] of Object.entries(MODES)) {
+  if (NAV[w]?.[0] !== 'Walk' || NAV[w][3] !== 'Turtle' || m.lattice !== 'sphere' || !m.turns) continue;
+  const all = m.turns;
+  Object.defineProperties(m, { net: { value: NET_BY_TURNS[all.length] }, allTurns: { value: all }, where: { value: m.rule.split(':')[0] },
+    tail: { value: m.rule.match(/ \([^)]*\)$/)?.[0] ?? '' },  // (its words before its digits', its note after)
+    turns: { get: () => { const r = walkRules[walkKey(m)]; return (m.turnsMemo?.[0] === r ? m.turnsMemo : (m.turnsMemo = [r, walkWordsOf(w).map((t) => all[surfaceWords(m.net).indexOf(t)])]))[1]; } } });
+}
+// every walk by a rule: its base, arrows and rule's text by it; on squares, no Fill areas with a diagonal (steps across no edge)
+for (const [w, m] of Object.entries(MODES)) if (m.net) {
+  Object.defineProperties(m, { base: { get: () => walkWordsOf(w).length }, arrows: { get: () => walkArrows(w) }, rule: { get: () => walkRuleText(w) } });
+  if (m.net === 'square' && !m.sphere) Object.defineProperty(m, 'fill', { get: () => (walkWordsOf(w).some((t) => WALK_NETS.square.diagonals.includes(t)) ? false : undefined) });
+}
+// The rules to pick, per network: [rule, its family, its picture]
+const WALK_PRESETS = {
+  square: [['LNR', 'Turtle', 'turtle'], ['LR', 'Turtle', 'turtle'], ['N r', 'Pivot', 'pivot'], ['N a', 'Parity', 'walk2d'], ['nesw', 'Cardinal', 'compass'], ['n ne e se s sw w nw', 'King', 'king']],
+  hex: [['L2 L1 N R1 R2', 'Turtle', 'turtle'], ['L1 N R1', 'Turtle', 'turtle'], ['L1 R1', 'Turtle', 'turtle'], ['N r', 'Pivot', 'pivot'], ['N a', 'Parity', 'walk2d'], ['n ne se s sw nw', 'Fixed', 'compass']],
+  tri: [['LR', 'Turtle', 'turtle'], ['| \\ /', 'Fixed', 'compass']],
+  cairo: [['L2 L1 R1 R2', 'Turtle', 'turtle'], ['L1 R1', 'Turtle', 'turtle'], ['L2 R2', 'Turtle', 'turtle']],
+};
+// a rule typed or picked for a walk: kept if its words fit it (else the field back to the rule in use)
+function setWalkRule(w, rule) {
+  const words = walkWordsOf(w, rule), k = walkKey(MODES[w]);
+  if (!words) { $('antRule').value = walkRules[k]; return; }
+  walkRules[k] = ruleOfWords(words);
+  renderModePicker();
+  compute();
 }
 
 /* ==============================================================================================
@@ -10870,7 +10849,6 @@ function ruleTutorial(option) {
 // ends as dots; on cells, the cells. On the plane by the walk's own stepper; on a surface, a cell of it or a corner
 // of its grid by its turns (as on its flat tiling). A pivot's and a parity's: the step after dashed (where it heads);
 // a spiral's: its steps so far muted, a 0's step dashed (not drawn)
-const WALK_IN = { turtle: [1], turtleCells: [1], triTurtle: [2], hexTurtleCells: [2], hexTurtle: [0], triTurtleCells: [0], cairo: [1] };  // (a straight step if any; a walk by its rule: a turn)
 const walkTutorialFits = (w) => NAV[w]?.[0] === 'Ant' || (NAV[w]?.[0] === 'Walk' && (MODES[w].lattice === 'sphere' ? !!MODES[w].turns : ['square', 'hex', 'tri', 'cairo'].includes(MODES[w].lattice)));
 // a 2D walk's cell round its middle
 function walkCell(lattice, [x, y]) {
@@ -10893,23 +10871,28 @@ function surfaceStepper(mode, n, turns = mode.turns) {
   };
 }
 // the figures: { d, caption, at (the way in, then the step), here (where it steps from), next (dashed), ends, cells, dashed (the step) };
-// a walk by its rule (turnsOf) drawn by its turns, a digit its turn; byTurns: a figure per turn (a creature's, see creatureFigures)
+// a walk by a rule drawn by its words, then its straight step (S: the way in); byTurns: a figure per turn of its network (a
+// creature's, see creatureFigures)
 function walkFigures(w, byTurns = false) {
-  const mode = MODES[w], T = mode.turnsOf && ANTS[mode.turnsOf], turns = T && !byTurns ? walkTurnsOf(w) : null, turnOf = (g) => (turns ? turns[g] : g);
-  const digits = [...Array(T && byTurns ? Object.keys(T.turns).length : mode.base).keys()], words = {}, surface = mode.lattice === 'sphere';
+  const mode = MODES[w], N = WALK_NETS[mode.net], surface = mode.lattice === 'sphere';
+  const ruled = N && [...(byTurns ? surfaceWords(mode.net) : walkWordsOf(w)), N.straight], S = ruled ? ruled.length - 1 : 0;
+  const digits = [...Array(ruled ? S : mode.base).keys()], words = {};
   for (const [, d, t] of mode.rule.matchAll(/<b>(\d+)<\/b>\s*([^<]*)/g)) words[d] = t.replace(/[,\s]+(or\s*)?$/, '');
   const n = mode.sphere === 'hexsphere' ? 6 : Math.max(...(mode.allTurns ?? mode.turns ?? [0])) + 1;  // (a surface's cell: the most it turns by and one, but on the sphere of hexagons)
   const start = surface ? [[0, 1], [0, 0]] : [[0, 0]];  // (on a surface: come in from below)
-  const path = (seq) => { const step = surface ? surfaceStepper(mode, n, mode.allTurns) : T ? T.inner() : STEPPERS[w](); return [...start, ...seq.map((g) => step(g).slice(1, 3))]; };
+  const path = (seq) => {
+    const step = surface ? surfaceStepper(mode, n, ruled ? ruled.map((t) => mode.allTurns[surfaceWords(mode.net).indexOf(t)]) : mode.turns) : ruled ? wordStepper(mode.net, ruled) : STEPPERS[w]();
+    return [...start, ...seq.map((g) => step(g).slice(1, 3))];
+  };
   const spiral = /Spiral$|^spiral$/.test(w), cells = mode.cells || spiral;
   // a surface's cell: the one it steps from, a side toward where it came from
   const polygon = (p, q) => { const t = Math.atan2(q[1] - p[1], q[0] - p[0]), R = 0.5 / Math.cos(Math.PI / n); return [...Array(n).keys()].map((k) => [p[0] + R * Math.cos(t + ((2 * k + 1) * Math.PI) / n), p[1] + R * Math.sin(t + ((2 * k + 1) * Math.PI) / n)]); };
   const figure = (d, into, after = [], caption = words[d]) => {
-    const at = path([...into, turnOf(d), ...after]), here = start.length - 1 + into.length, notches = mode.pivot ?? mode.parity;
+    const at = path([...into, d, ...after]), here = start.length - 1 + into.length, notches = mode.pivot ?? mode.parity;
     // the ways on: each digit's end; a pivot's or a parity's, round it along its fixed directions (a surface's, its notches)
     const round = () => (surface ? [...Array(notches).keys()].map((k) => [Math.cos(Math.PI / 2 + (2 * Math.PI * k) / notches), -Math.sin(Math.PI / 2 + (2 * Math.PI * k) / notches)])
       : [...Array(MODES[mode.steps].base).keys()].map((g) => STEPPERS[mode.steps]()(g).slice(1, 3))).map((o) => [at[here][0] + o[0], at[here][1] + o[1]]);
-    const ends = spiral ? [] : notches ? round() : digits.map((g) => path([...into, turnOf(g)]).at(-1));
+    const ends = spiral ? [] : notches ? round() : digits.map((g) => path([...into, g]).at(-1));
     const drawn = !cells ? [] : surface ? [polygon(at[here], at[here - 1])] : [...new Map([...at, ...ends].map((p) => [pointKey(...p), walkCell(mode.lattice, p)])).values()];
     return { d, caption, at: at.slice(0, here + 2), next: at.slice(here + 1), ends, here, dashed: spiral && !d, cells: drawn };
   };
@@ -10917,7 +10900,10 @@ function walkFigures(w, byTurns = false) {
   const way = surface ? [] : [0];  // (a step forward first, its heading: a surface's comes in already)
   if (mode.parity) return [figure(0, way, [0]), figure(1, surface ? [] : [0, 0], [0], 'step forward, then turn right (an odd digit: the 1st, 3rd…)'), figure(1, [0], [0], 'step forward, then turn left (an even digit)')];
   if (mode.pivot) return digits.map((d) => figure(d, way, d ? [0] : []));
-  return digits.map((d) => figure(d, WALK_IN[w] ?? []));
+  // by a rule: a turn on the spot, then a step to show it; a parity's, at an odd digit and at an even one
+  const into = surface ? [] : [S];
+  return digits.flatMap((d) => (ruled[d] === 'a' ? [figure(d, [S, S], [S], 'step, then turn right (at an odd digit: the 1st, 3rd…)'), figure(d, [S], [S], 'step, then turn left (at an even digit)')]
+    : [figure(d, into, ruled[d] === 'l' || ruled[d] === 'r' ? [S] : [])]));
 }
 // A creature's: an ant's, a figure per colour of its cell (by the digits: per digit, on a light cell and on a dark one, its
 // turn mirrored), the turn of the walk it goes through the cells with, its cell's colour then the one it leaves; a
@@ -13623,7 +13609,7 @@ function getSetup() {
   }
   if (mode.life && !mode.loops) s.pop = plane.start === 'random' ? zonePop() : plane.start === 'text' ? `text.${plane.text}` : plane.start;  // its start (a surface's no Draw)
   if (mode.life && !mode.loops && plane.start === 'text' && plane.font !== 'sans') s.tf = plane.font;  // (its font)
-  if (mode.turnsOf && walkRules[mode.turnsOf] !== WALK_RULE[mode.turnsOf]) s.r = walkRules[mode.turnsOf];  // (a walk's rule: none, its own)
+  if (mode.net && walkRules[walkKey(mode)] !== WALK_RULE[mode.net]) s.r = walkRules[walkKey(mode)];  // (a walk's rule: none, its own)
   if (mode.antOf) s.r = antByDigits ? `digits ${antDigitRules[w]}`.trim() : antRules[w];
   if (mode.worm) s.r = worm.byDigits ? 'digits' : worm.rule;
   if (mode.turmite) s.r = turmite.rule;  // "digits LNR"; "digits" alone: left, right
@@ -13664,9 +13650,9 @@ function applySetup(s) {
     const rule = s.r.slice(6).trim();
     if (antByDigits) antDigitRules[s.w] = antDigitTurnsOf(s.w, rule) ? rule.toUpperCase() : ANTS[s.w].digitPresets[0];
     else if (antTurnsOf(s.w, s.r)) antRules[s.w] = s.r;
-  } else if (MODES[s.w].turnsOf) {
-    const t = MODES[s.w].turnsOf;
-    walkRules[t] = s.r && antTurnsOf(t, s.r) ? ruleOfWords(turnWords(s.r)) : WALK_RULE[t];
+  } else if (MODES[s.w].net) {
+    const m = MODES[s.w], words = s.r && walkWordsOf(s.w, s.r);
+    walkRules[walkKey(m)] = words ? ruleOfWords(words) : WALK_RULE[m.net];
   } else if (s.r || MODES[s.w].life) {  // (Life: its size and start without a rule too, the grid's first then)
     if (MODES[s.w].plane) planeFromSetup(s);
     else startFromSetup(s);  // (a surface's)
@@ -14308,7 +14294,7 @@ function draw3DFrame(ctx) {
 }
 
 // Hexagons of radius 1/√3, each drawing its 3 top edges (the others belong to the neighbours below):
-// flat-topped around the hexagon cells' centres (b·H, −a − b/2, see hexStepper), or pointy-topped
+// flat-topped around the hexagon cells' centres (b·H, −a − b/2, see hexAt), or pointy-topped
 // around the corners of the triangle cells (c/2, y0 + r·H with c + r even, see triStepper), the
 // hexagons whose corners are the triangles' centres. Hidden when too small.
 // The Cairo pentagons in view, each edge twice (the pentagons on both sides)
@@ -14369,7 +14355,8 @@ function rampColour(k, n) {
 // a turn by its family, the same on every tiling (an ant's, a walk's relative to its heading): left blue,
 // right pink (a sharp one deeper), straight on gold (↖ ↗ on hexagons and triangles are a plain left or right)
 const deeper = (c) => `rgb(${rgbOf(c).map((v) => Math.round(v * 0.62)).join(', ')})`;
-const antTurnColour = (a) => ({ '↖': DIRECTION_COLOURS['←'], '↗': DIRECTION_COLOURS['→'], '↙': deeper(DIRECTION_COLOURS['←']), '↘': deeper(DIRECTION_COLOURS['→']) }[a]
+const wayWord = (w, k) => !!(MODES[w].net && WALK_NETS[MODES[w].net].ways?.[walkWordsOf(w)?.[k]] !== undefined);  // (a walk's digit k: a fixed way)
+const antTurnColour = (a) => ({ '↖': DIRECTION_COLOURS['←'], '↗': DIRECTION_COLOURS['→'], '↙': deeper(DIRECTION_COLOURS['←']), '↘': deeper(DIRECTION_COLOURS['→']), '↺': DIRECTION_COLOURS['←'], '↻': DIRECTION_COLOURS['→'], '↝': DIRECTION_COLOURS['→'] }[a]
   ?? DIRECTION_COLOURS[a] ?? GREY);
 // an ant's chips: by the digits, its turns (left, right); by its rule, its states
 const antChipColour = (k) => antByDigits ? antTurnColour(arrowsOf(walk.mode)[ANTS[walk.mode].turns[turnWords(antDigitRules[walk.mode])[k]]])
@@ -14377,7 +14364,7 @@ const antChipColour = (k) => antByDigits ? antTurnColour(arrowsOf(walk.mode)[ANT
 // a digit's colour: its direction's (an ant's: the turn it took, or its state), else in the digits' order
 const digitColour = (k) => walk.ant ? (antRamp ? rampColour(k, walk.ant) : antTurnColour(arrowsOf(walk.mode)[k]))
   : walk.skipZeros ? (k ? DIGIT_COLORS[0] : GREY)  // a spiral: 1 blue, drawn; 0 grey, moved without drawing
-  : arrowsOf(current.mode)[k] ? (['Turtle', 'Pivot', 'Parity'].includes(NAV[current.mode]?.[3]) ? antTurnColour : (a) => DIRECTION_COLOURS[a])(arrowsOf(current.mode)[k])  // fixed directions: by the compass
+  : arrowsOf(current.mode)[k] ? (wayWord(current.mode, k) || !['Turtle', 'Pivot', 'Parity'].includes(NAV[current.mode]?.[3]) ? (a) => DIRECTION_COLOURS[a] : antTurnColour)(arrowsOf(current.mode)[k])  // fixed directions: by the compass
   : walk.base <= DIGIT_COLORS.length ? DIGIT_COLORS[k] : `hsl(${(k * 360) / walk.base}, 80%, 62%)`;
 
 /* ---- 11.4 Surfaces --------------------------------------------------------------------------- */
@@ -15995,7 +15982,7 @@ const FILL_GRIDS = {
     isVertex: (u, v) => ((u + v) & 1) === 0,
     links: [[2, 0], [1, 1], [-1, 1]], step: R3, half: 0.5, templates: [ring(R3, Math.PI / 6, 6)], tpl: () => 0,
   },
-  hex: {  // the hexagons' corners (u / (2√3), v / 2): u not a multiple of 3, v of the parity of hexParity (see hexStepper)
+  hex: {  // the hexagons' corners (u / (2√3), v / 2): u not a multiple of 3, v of the parity of hexParity (see hexAt)
     u: (x) => Math.round(2 * Math.sqrt(3) * x), v: (y) => Math.round(2 * y), x: (u) => u / (2 * Math.sqrt(3)), y: (v) => v / 2,
     i: (u, v, u0) => { const t = u - u0, q = Math.floor(t / 3); return 2 * q + (t - 3 * q - 1); }, j: (u, v, v0) => (v - v0) >> 1,
     uOf: (i, j, u0) => u0 + 3 * (i >> 1) + 1 + (i & 1), vOf: (i, j, u0, v0) => v0 + 2 * j + hexParity(u0 + 3 * (i >> 1) + 1 + (i & 1)),
@@ -17454,12 +17441,12 @@ const BUILT_IN = [
   ['1/383', 'Round the tube', { x: '1/383', w: 'torusTriGrid', d: 9168, s: '63x168', st: 2, o: 1 }],
   ['120/109', 'A belt', { x: '120/109', w: 'hexSphereGrid', d: 5760, s: 32 }],
   ['Dragon', 'Paperfolding', { x: 'dragon', w: 'turtle', d: 20000 }],
-  ['Thue–Morse', 'Koch curve', { x: 'thuemorse', w: 'triPivot', d: 4096 }],
+  ['Thue–Morse', 'Koch curve', { x: 'thuemorse', w: 'triTurtle', r: 'N r', d: 4096 }],
   // added later: their batch number, so that a browser that took the first ones gets these once too (see seedCurated)
   ['Möbius battle', 'A battle of 2 colours round the strip', { w: 'lifeMobius', s: 8, r: 'B3/S23', k: 2, pop: 'random.69.711421864',
     ch: 'v3.ASqAAgAAAAEBAgEAAQAAAAEAAQIAAQQAAAAAAAIAAAEBAAEBAQAAAAAAAAAA' }, 2],
   ['1/438', 'A highway from step 534,473', { x: '1/438', w: 'antSquare', d: 540989, r: 'digits LR' }, 2],
-  ['Rabbit', 'Fibonacci word fractal', { x: 'rabbit', w: 'squareParity', d: 4181 }],
+  ['Rabbit', 'Fibonacci word fractal', { x: 'rabbit', w: 'turtle', r: 'N a', d: 4181 }],
   ['Rudin–Shapiro', 'On hexagons', { x: 'rudinshapiro', w: 'hexTurtle', d: 16384 }],
   ['Primes', 'Their barcode', { x: 'primes', w: 'spiral', d: 20000 }],
   ['π', '20,000 digits', { x: 'pi', w: 'turtle', d: 20000 }],

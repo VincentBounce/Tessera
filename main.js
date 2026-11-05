@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.174';
+const VERSION = '0.4.175';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -7096,7 +7096,7 @@ const startSpread = (g, grid, start) => {
 function battleStartsOrSay(g, start, grid, K) {
   const starts = battleStarts(g, start, grid, K);
   if (!starts) walkSaid = battleGroups(g, K, 1).length ? `This start lies on an axis of the surface: ${K} walkers cannot start apart from it (another start, or fewer walkers)`
-    : `This surface has no ${K} turns alike at this size: ${K} walkers cannot start alike (another size, or another count)`;
+    : `This surface has no ${K} symmetries alike at this size: ${K} walkers cannot start alike (another size, or another count)`;
   return starts;
 }
 // The surface's turns' groups of K (each its matrices, the identity first), once a mesh: made from one or two of its
@@ -10536,14 +10536,14 @@ function renderColours() {
       greyed: `where the teams picked have no birth of the missing colour (no mark in their corner), in Classic and Duel, in Digits and Draw${lifeColours > 2 && !coloursFit(lifeColours - 1) ? `, and where ${COLOUR_STEP_NAMES[lifeColours - 1] ?? `${lifeColours - 1} teams`} does not fit` : ''}` }));
 
 }
-// a walk's teams: Classic, Duel, Trio… as Life's (a battle: how many numbers walk; greyed, a count its surface's turns cannot
-// set apart from its start at this size, see battleCounts)
+// a walk's teams: Classic, Duel, Trio… as Life's (a battle: how many numbers walk; greyed, a count its surface's symmetries
+// cannot set apart from its start at this size, see battleCounts)
 function walkTeamTiles(w) {
   const words = (k) => (k === 1 ? 'One number walks' : k === 2 ? "Two numbers walk, A's and B's, from opposite places (how they fight: below)"
-    : `${k} numbers walk, A's to ${'ABCDEFGHIJKL'[k - 1]}'s, from A's place turned by ${k} of the solid's turns (how they fight: below)`);
+    : `${k} numbers walk, A's to ${'ABCDEFGHIJKL'[k - 1]}'s, from A's place moved by ${k} of the surface's symmetries: each walks as A would from there (how they fight: below)`);
   return COLOUR_STEPS.map((k) => tile({ pic: colourBlock(k), text: COLOUR_STEP_NAMES[k], title: words(k),
     on: k === (battleOn() ? walkTeams : 1), can: k === 1 || battleCounts(w).includes(k), byDefault: k === 1 ? 'yes' : '',
-    greyed: k === 1 ? '' : 'no group of so many of the surface\'s turns at this size that sets them apart from this start: they would not start alike (another size or start)',
+    greyed: k === 1 ? '' : 'no group of so many of the surface\'s symmetries at this size that sets them apart from this start, each walking as A (another size or start)',
     click: () => { if (k !== walkTeams) { walkTeams = k; compute(); } } }));
 }
 // The Rule section: the rules known for the grid's shape, as cards, each with a picture (5 × 5 pixels of
@@ -11087,11 +11087,14 @@ function battleCaseFigure(grid, way, scripts) {
   const linesAt = (i) => { P.to(i); return walks.map((_, s) => new Set(P.lineLinks(s))); }, before = linesAt(n - 1), after = linesAt(n);
   const pts = walks.flat().map(at), span = (a) => [Math.min(...pts.map((p) => p[a])) - 1, Math.max(...pts.map((p) => p[a])) + 1];
   const [x0, x1] = span(0), [y0, y1] = span(1), r = Math.max(x1 - x0, y1 - y0) / 2, cx = (x0 + x1) / 2, cy = (y0 + y1) / 2;
-  const xy = ([x, y]) => `${x.toFixed(3)},${(-y).toFixed(3)}`;  // (north up)
+  const shown = (v) => { const [x, y] = at(v); return [+x.toFixed(3), +(-y).toFixed(3)]; };  // (on screen: north up)
   const tiles = [...Array(g.n).keys()].filter((t) => near.includes(g.poly[k * t]) && Math.abs(at(g.poly[k * t])[0] - cx) < r + 1 && Math.abs(at(g.poly[k * t])[1] - cy) < r + 1);
-  const tile = (t, cls, fill = '') => `<polygon points="${Array.from(g.poly.subarray(k * t, k * t + k), (v) => xy(at(v))).join(' ')}" class="${cls}"${fill && ` style="fill: ${fill}; fill-opacity: 0.35"`}/>`;
-  const line = (j, s, dashed) => { const [a, b] = ends.get(j) ?? []; return a === undefined ? '' : `<line x1="${xy(at(a)).split(',')[0]}" y1="${xy(at(a)).split(',')[1]}" x2="${xy(at(b)).split(',')[0]}" y2="${xy(at(b)).split(',')[1]}" stroke="${LIFE_COLOURS[s]}" stroke-width="0.16"${dashed ? ' stroke-dasharray="0.18 0.16" stroke-opacity="0.55"' : ''}/>`; };
-  const head = (s) => { const [x, y] = xy(at(walks[s][n])).split(',').map(Number), c = LIFE_COLOURS[s];
+  const tile = (t, cls, fill = '') => `<polygon points="${Array.from(g.poly.subarray(k * t, k * t + k), (v) => shown(v).join()).join(' ')}" class="${cls}"${fill && ` style="fill: ${fill}; fill-opacity: 0.35"`}/>`;
+  const line = (j, s, dashed) => {
+    const [a, b] = (ends.get(j) ?? []).map(shown);
+    return !a ? '' : `<line x1="${a[0]}" y1="${a[1]}" x2="${b[0]}" y2="${b[1]}" stroke="${LIFE_COLOURS[s]}" stroke-width="0.16"${dashed ? ' stroke-dasharray="0.18 0.16" stroke-opacity="0.55"' : ''}/>`;
+  };
+  const head = (s) => { const [x, y] = shown(walks[s][n]), c = LIFE_COLOURS[s];
     return P.dead[s] >= 0 ? `<path d="M${x - 0.22} ${y - 0.22}L${x + 0.22} ${y + 0.22}M${x - 0.22} ${y + 0.22}L${x + 0.22} ${y - 0.22}" stroke="${c}" stroke-width="0.12"/>` : `<circle cx="${x}" cy="${y}" r="0.16" fill="${c}"/>`; };
   return `<svg viewBox="${cx - r} ${-cy - r} ${2 * r} ${2 * r}">${tiles.map((t) => tile(t, 'tut-cell')).join('')}`
     + `${tiles.filter((t) => P.land[t]).map((t) => tile(t, 'tut-cell', LIFE_COLOURS[P.land[t] - 1])).join('')}`

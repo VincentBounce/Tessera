@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.234';
+const VERSION = '0.4.235';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -14378,14 +14378,24 @@ function reverse(on) {
   statsDirty = true;
 }
 
-// A new walk is shown complete at once; Play replays it from the start
+// the step a new walk is shown at: on a surface, the first where its places visited reach the player's share (see
+// DISPLAY_DEFAULTS), its end if they never do; elsewhere its end
+function firstShown() {
+  if (!walk.sphere || !walk.nodes) return walk.n;
+  const need = Math.ceil(defaultOf('player') * walk.nodes);
+  if (walk.cells[walk.n] < need) return walk.n;
+  let lo = 0, hi = walk.n;  // (its count never goes down: the first step it reaches need)
+  while (lo < hi) { const mid = (lo + hi) >> 1; if (walk.cells[mid] >= need) hi = mid; else lo = mid + 1; }
+  return lo;
+}
+// A new walk is shown at once (complete, or at its player's share on a surface); Play replays it from the start
 // A walk built again while it played (− or + of its digits, see stepDigits): the step it plays on from, not its end
 let resumeAt = null;
 function showAll() {
   if (resumeAt !== null) { const at = Math.min(resumeAt, walk.n); resumeAt = null; seekTo(at); play(true); return; }
   if (lifeTime()) return;  // the Game of Life starts at generation 0 instead (Space-time: its layers all)
   if (spaceTimeOn() && !stack) return;  // (Space-time: once its cubes are made, see stackUp)
-  advanceTo(walk.n);
+  advanceTo(firstShown());
   faceWalk();
   if ($('autoFit').checked && !choosingStart) fitWhole();  // framed like F or a double-click, without the margin kept for growing
 }
@@ -17756,13 +17766,14 @@ const DISPLAY_DEFAULTS = {
   autoFit: ['autoFit', 'mode', true], upright: ['upright', 'mode', false], shape: ['shapeM', 'mode', (mode) => (mode.round ? 1 : 0)],  // (Flat 0 ── Inflated 1: a round surface inflated, a solid flat)
   perspective: ['perspective', 'mode', (mode, w) => perspectiveFor(mode, defaultOf('shape', w))],  // (as each mode's own, hand-tuned)
   light: ['light', 'open', true], glass: ['glass', 'open', false], grid: ['showGrid', 'open', true], autoPlay: ['autoPlay', 'open', false],
+  player: [null, 'walk', (mode) => (mode.grid ? 0.5 : 1)],  // (where a walk on a surface is shown: the step its places visited reach this share, along the grid half its corners, on cells all its cells; else its end)
   trail: ['lifeTrail', 'colours', () => lifeColours === 1],  // (Life's Trail: on in Classic, two states, off in colours; when the colours change)
   ocean: ['ocean', 'battle', () => battleOn() && NAV[$('mode').value][0] === 'Walk'],  // (on in a walk's battle on a surface, as long as none picks it)
 };
 // its settings that come back at `at`: each box set, checked or valued
 function applyDefaults(at) {
   for (const [key, [id, when]] of Object.entries(DISPLAY_DEFAULTS)) {
-    if (when !== at) continue;
+    if (when !== at || !id) continue;  // (one with no box: read where it is used, see defaultOf)
     const v = defaultOf(key);
     if (typeof v === 'boolean') $(id).checked = v; else $(id).value = v;
   }

@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.191';
+const VERSION = '0.4.192';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -2820,25 +2820,21 @@ function digitsAhead() {
   return Uint8Array.from(out);
 }
 
-// The number as copied: "pi^2 base 5 ≈ 14.41332…", with every digit in use ("=" only for a whole
-// number with all its digits, the one case where nothing is cut off). Up to base 36 one
-// character per digit (0–9, then a–z); above that each digit as a decimal number, space-separated.
-function numberText() {
-  const { head, frac } = digitsInUse(), sign = !current.digits.length && head.length === current.total ? '=' : '≈';
-  return `${formulaInUse} ${baseWords(current.base)} ${sign} ${writeDigits(Uint8Array.from([...head, ...frac]), current.base, head.length)}`;
-}
-// digits ds in base b written: the first head (its integer part), then a point and the rest (a 0 before it implicit: .001)
+// Digits ds in base b written: the first head (its integer part), then a point and the rest (a 0 before it implicit: .001).
+// Up to base 36 one character per digit (0–9, then a–z); above that each digit as a decimal number, space-separated
 const writeDigits = (ds, b, head) => {
   const write = (x) => (b <= 36 ? Array.from(x, (v) => v.toString(36)).join('') : Array.from(x).join(' '));
   return ds.length > head ? `${write(ds.subarray(0, head))}.${write(ds.subarray(head))}` : head ? write(ds) : '0';
 };
-// a battle's numbers (see showNumber): each walker's formula and its digits read, to its death or the battle's end (used)
-function battleNumbers() {
-  const P = walk.battle.player, b = current.base, { head, frac } = digitsInUse(), n = head.length + frac.length;
-  return [formulaInUse, ...RIVALS.slice(0, P.K - 1).map((id) => $(id).value)].map((f, s) => {
-    const F = formulaOf(f), ds = s ? knownDigits(F, b, n) : Uint8Array.from([...head, ...frac]), used = P.dead[s] >= 0 ? P.dead[s] : P.n;
-    const lead = !s ? head.length : F.kind === 'seq' ? ds.length : headDigits(cache[`${F.text}/${b}`].intPart, b).length;  // (its integer part's digits)
-    return { s, name: s ? F.text ?? f : f, used, ratio: s ? F.kind === 'rat' && smallExact(F.ast) : current.ratio, text: writeDigits(ds.subarray(0, used), b, Math.min(lead, used)) };
+// the numbers shown (see showNumber): the Digits' one, or a battle's, each walker's: its digits read (used: to its death or
+// the battle's end) of those in use (n), its integer part's (head) and the rest (frac), its digits in all (total), a fraction's
+// exact value (ratio, its period shown)
+function numberRows() {
+  const P = walk.battle?.player, b = current.base, { head, frac } = digitsInUse(), n = head.length + frac.length;
+  return [formulaInUse, ...RIVALS.slice(0, P ? P.K - 1 : 0).map((id) => $(id).value)].map((f, s) => {
+    const F = formulaOf(f), ds = s ? knownDigits(F, b, n) : Uint8Array.from([...head, ...frac]), used = !P ? n : P.dead[s] >= 0 ? P.dead[s] : P.n;
+    const lead = !s ? head.length : F.kind === 'seq' ? ds.length : headDigits(cache[`${F.text}/${b}`].intPart, b).length, h = Math.min(lead, used);  // (its integer part's digits)
+    return { s, name: s ? F.text ?? f : f, used, n, head: ds.subarray(0, h), frac: ds.subarray(h, used), total: s ? lead : current.total, ratio: s ? F.kind === 'rat' && smallExact(F.ast) : current.ratio };
   });
 }
 
@@ -7068,9 +7064,10 @@ function renderWalkTeams() {
   // a battle: its numbers in its Start section, A's formula field moved there from the number's (hidden then), then B's on
   $('battleStart').hidden = $('startCentred').hidden = !battleOn();
   RIVALS.forEach((id, j) => { $(id).parentElement.hidden = j >= walkTeams - 1; });  // (the walkers' but A's)
-  const fieldA = $('formula').parentElement;
-  if (battleOn() && fieldA.parentElement !== $('formulaAHome')) $('formulaAHome').append(fieldA);
-  if (!battleOn() && fieldA.parentElement !== $('numberPicker')) $('numberList').before(fieldA);
+  const fieldA = $('formula').parentElement, label = $('copyNumber').parentElement;  // (its label: Formula, Formulas in a battle, its base beside)
+  if (battleOn() && fieldA.parentElement !== $('formulaAHome')) $('formulaAHome').append(label, fieldA);
+  if (!battleOn() && fieldA.parentElement !== $('numberPicker')) $('numberList').before(label, fieldA);
+  label.firstChild.textContent = battleOn() ? 'Formulas' : 'Formula';
   battleAsked = BATTLE_FORMULAS.map((id) => $(id).value);  // (a battle computed: its numbers as sent)
   tintBattleFormulas();
   if (battleHunt.run && (!battleOn() || battleHunt.key !== battleHuntKey())) stopBattleHunt();  // (its battles fought elsewhere: it stops)
@@ -17418,10 +17415,10 @@ const digitsValue = (ds, B) => {
 };
 // The number in base 10 over the base it is in (see showNumber), as many digits as those in use tell, a whole number's whole;
 // a whole number cut (more digits than in use), its size and first digits; and how many digits it shows (a note)
-function base10Digits() {
-  const { head, frac } = digitsInUse(), B = BigInt(current.base), lb = Math.log10(current.base);
-  if (head.length < current.total && !frac.length) {  // (its first digits and its power of 10, from its first digits)
-    const s = digitsValue(head.subarray(0, 40), B).toString(), l = s.length - 1 + Math.log10(Number(`${s[0]}.${s.slice(1, 16)}`)) + (current.total - Math.min(40, head.length)) * lb;
+function base10Digits({ head, frac, total }) {
+  const B = BigInt(current.base), lb = Math.log10(current.base);
+  if (head.length < total && !frac.length) {  // (its first digits and its power of 10, from its first digits)
+    const s = digitsValue(head.subarray(0, 40), B).toString(), l = s.length - 1 + Math.log10(Number(`${s[0]}.${s.slice(1, 16)}`)) + (total - Math.min(40, head.length)) * lb;
     return [`≈ ${(10 ** (l % 1)).toFixed(14)}… × 10^${fmt(Math.floor(l))}`, `first 15 of ${fmt(Math.floor(l) + 1)} digits`];
   }
   const ds = new Uint8Array(head.length + frac.length);
@@ -17435,17 +17432,18 @@ function base10Digits() {
 }
 const base10 = { on: false };  // (Base 10 switched on: the number in base 10 instead, see showNumber)
 function showNumber() {
-  const B = current.base, v = $('numberPreview'), battle = !!walk.battle, ten = base10.on && B !== 10 && !battle, { head, frac } = digitsInUse(), n = head.length + frac.length;
-  // a number's: its title (and how many of its digits), a fraction's period (= 0.(101)), then its digits in use (cut: …); base
-  // 10's instead when switched on; a battle's, each walker's, its digits read on one line (see battleNumbers)
-  const part = (name, b, note, digits, colour = '', one = '', ratio = current.ratio) => { const period = ratio && ratioDigits(b, ratio);
-    return `<h3><span style="color:${colour}">${withIcons(name)}</span> <code>${baseWords(b)}</code> <span class="muted">${note}</span></h3>${period ? `<p class="number-digits${one}">${period}</p>` : ''}<p class="number-digits${one}">${digits}</p>`; };
-  const all = `all first ${fmt(n)} digits`, tenDigits = ten && base10Digits(), rows = battle ? battleNumbers() : null, text = battle ? rows.map((r) => `${r.name} ${baseWords(B)} ≈ ${r.text}`).join('\n') : numberText();
-  v.innerHTML = `<div class="tut-body">${battle ? rows.map((r) => part(r.name, B, r.used < n ? `truncated to ${fmt(r.used)}/${fmt(n)} digits` : all, '', LIFE_COLOURS[r.s], ' one-line', r.ratio)).join('') : ten ? part(formulaInUse, 10, tenDigits[1], tenDigits[0]) : part(formulaInUse, B, all, '')}</div>`;
-  const blank = [...v.querySelectorAll('.number-digits:empty')];  // (its digits as text)
-  if (battle) rows.forEach((r, s) => { blank[s].textContent = `≈ ${r.text}…`; });
-  else if (!ten) blank[0].textContent = `${text.slice(`${formulaInUse} ${baseWords(B)} `.length)}${text.includes(' ≈ ') ? '…' : ''}`;
-  v.prepend(tutTools({ toggle: B !== 10 && !battle && { text: 'Base 10', title: `The number in base 10 instead of base ${B}`, on: base10.on, click: () => { base10.on = !base10.on; showNumber(); } }, copy: (e) => copyFlash(e.currentTarget, text), close: closeNumber, back: 'the walk' }));
+  const B = current.base, v = $('numberPreview'), ten = base10.on && B !== 10, b = ten ? 10 : B, rows = numberRows(), one = rows.length > 1 ? ' one-line' : '';
+  // each number (see numberRows): its title, in its walker's colour in a battle, and how many of its digits; a fraction's
+  // period (= .(101)); then its digits (cut: …), a battle's on one line; in base 10 when switched on (see base10Digits)
+  const inBase = (r) => {
+    const sign = !r.frac.length && r.head.length === r.total ? '=' : '≈';
+    return [`${sign} ${writeDigits(Uint8Array.from([...r.head, ...r.frac]), B, r.head.length)}${sign === '≈' ? '…' : ''}`, r.used < r.n ? `truncated to ${fmt(r.used)}/${fmt(r.n)} digits` : `all first ${fmt(r.n)} digits`];
+  };
+  const shown = rows.map((r) => (ten ? base10Digits(r) : inBase(r))), text = rows.map((r, j) => `${r.name} ${baseWords(b)} ${shown[j][0]}`).join('\n');
+  v.innerHTML = `<div class="tut-body">${rows.map((r, j) => { const period = r.ratio && ratioDigits(b, r.ratio);
+    return `<h3><span style="color:${one ? LIFE_COLOURS[r.s] : ''}">${withIcons(r.name)}</span> <code>${baseWords(b)}</code> <span class="muted">${shown[j][1]}</span></h3>${period ? `<p class="number-digits${one}">${period}</p>` : ''}<p class="number-digits${one}"></p>`; }).join('')}</div>`;
+  [...v.querySelectorAll('.number-digits:empty')].forEach((p, j) => { p.textContent = shown[j][0]; });  // (its digits as text)
+  v.prepend(tutTools({ toggle: B !== 10 && { text: 'Base 10', title: `The number in base 10 instead of base ${B}`, on: base10.on, click: () => { base10.on = !base10.on; showNumber(); } }, copy: (e) => copyFlash(e.currentTarget, text), close: closeNumber, back: 'the walk' }));
   v.querySelector('.tut-body').scrollTop = 0;
   v.hidden = false;
   for (const b of numberChips()) b.classList.add('active', 'switch');

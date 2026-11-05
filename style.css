@@ -408,11 +408,8 @@ button.active .bubble { color: var(--accent); border-color: var(--accent); }  /*
 .display-menu { top: var(--view-gap); right: var(--view-gap); }
 /* the number (Full number), in place of the whole view as how a rule works (.rule-tuto): its digits */
 .number-view .number-digits { max-width: none; color: var(--text); font: 13px/1.5 ui-monospace, "SF Mono", Menlo, monospace; word-break: break-all; }
-.number-view .number-digits + h3 { margin-top: 16px; }  /* (base 10's overview, then the base's digits) */
-.number-view .number-digits + .number-digits { margin-top: 1.5em; }  /* (a fraction's exact digits, a line, then all its digits) */
+.number-view .number-digits + h3 { margin-top: 16px; }  /* (a battle's numbers: one, then the next's title) */
 .number-view .number-digits.one-line { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; word-break: normal; }  /* (a battle's numbers: one line each) */
-.number-view .one-line + .one-line { margin-top: 0; }
-.number-view .one-line + h3 { margin-top: 12px; }
 .tut-tools .icon { width: 16px; height: 16px; vertical-align: middle; }
 button.wide.active, .head-btn.active { border-color: var(--accent); color: var(--accent); background: var(--pick); }
 .display-menu:hover { width: 230px; }

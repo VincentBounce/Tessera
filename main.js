@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.136';
+const VERSION = '0.4.137';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -1623,22 +1623,22 @@ const setTile = (b, { on = false, can = true, mark = false, again = false, turn 
 const card = ({ pic = '', name = '', detail = '', base = '', title = '', on = false, can = true, byDefault, click = null, how = null }) => {
   const b = tile({ html: '', title: title || detail, on, can, byDefault, click }), picture = Object.assign(document.createElement('span'), { className: `mode-icon${how ? ' act' : ''}`, innerHTML: pic });
   if (how) { picture.title = `How ${name} works`; picture.addEventListener('click', (e) => { e.stopPropagation(); how(); }); }  // (its picture: a click on how it works)
-  b.append(picture, cardWords(name, detail), ...(base ? [cardBubble(base, click && (() => (on ? toggleNumber() : (click(), showNumber()))), on)] : []));
+  b.append(picture, cardWords(name, detail), ...(base ? [cardBubble(base, click && (() => (on ? toggleNumber() : (click(), showNumber()))))] : []));
   return b;
 };
 // a card's bubble at its top right: its base (where digits are read); a click shows the number in it (its card picked first),
 // or hides it. A base's words, every bubble's
 const baseWords = (base) => `base ${base}`;
-const cardBubble = (base, show, lit = false) => {
-  const b = Object.assign(document.createElement('span'), { className: `bubble${show ? ' act' : ''}${lit && !$('numberPreview').hidden ? ' active' : ''}`, textContent: base });  // (lit: the number shown in it)
+const cardBubble = (base, show) => {
+  const b = Object.assign(document.createElement('span'), { className: `bubble${show ? ' act' : ''}${baseShown(base) ? ' active' : ''}`, textContent: base });  // (lit: the number shown in its base)
   if (show) { b.title = `The number in ${base}`; b.addEventListener('click', (e) => { e.stopPropagation(); show(); }); }
   return b;
 };
 // a card's words, every card's and Grid | Cells' alike: its name (Grid | Cells': its base in its bubble at its right), then its
 // code or its words
-function cardWords(name, detail = '', base = '', show = null, lit = false) {
+function cardWords(name, detail = '', base = '', show = null) {
   const part = (cls, text) => Object.assign(document.createElement('span'), { className: cls, textContent: text }), head = part('mode-head', ''), words = document.createElement('span');
-  head.append(part('mode-name', name), ...(base ? [cardBubble(base, show, lit)] : []));
+  head.append(part('mode-name', name), ...(base ? [cardBubble(base, show)] : []));
   words.append(head, ...(detail ? [part('mode-detail', detail)] : []));
   return words;
 }
@@ -3320,7 +3320,7 @@ function renderModePicker() {
     if (why) none = why;
     const info = !v ? null : MODES[v].turmite ? { base: '', detail: turmite.rule } : MODES[v].antOf ? { base: '', detail: antByDigits ? `digits ${antDigitRules[v]}` : antRules[v] }
       : MODES[v].net ? { base: baseWords(MODES[v].base), detail: walkRules[walkKey(MODES[v])] } : splitModeLabel(modeOptionOf(v).text);
-    b.replaceChildren(cardWords(word, info ? info.detail : none, info?.base, v && (() => (here ? toggleNumber() : (b.click(), showNumber()))), here));
+    b.replaceChildren(cardWords(word, info ? info.detail : none, info?.base, v && (() => (here ? toggleNumber() : (b.click(), showNumber())))));
     b.disabled = !v;
     b.classList.toggle('active', here);
   };
@@ -17152,8 +17152,11 @@ $('copyRle').addEventListener('click', () => { const text = lifeRle(); if (text)
 // (a check once copied) and the cross; another number or base (a colour more), it shows that one; as how a rule works,
 // only a click on the button again or the cross closes it
 // the chips that show the number: Full number's, and a walk's base (its rule's chip: how it works instead)
-const numberChips = () => [$('copyNumber'), $('barBase'), ...document.querySelectorAll('button.active .bubble.act')].filter((b) => !b.classList.contains('how-it-works'));  // (and the base's bubbles in use)
-function closeNumber() { $('numberPreview').hidden = true; for (const b of numberChips()) b.classList.remove('active', 'switch'); }
+const numberChips = () => [$('copyNumber'), $('barBase')].filter((b) => !b.classList.contains('how-it-works'));
+// the bases' bubbles: lit, every one of the base shown (drawn again: lit as they are)
+const baseShown = (base) => !$('numberPreview').hidden && base === baseWords(current.base);
+const lightBases = () => { for (const b of document.querySelectorAll('.bubble.act')) b.classList.toggle('active', baseShown(b.textContent)); };
+function closeNumber() { $('numberPreview').hidden = true; for (const b of numberChips()) b.classList.remove('active', 'switch'); lightBases(); }
 const toggleNumber = () => { if (!$('numberPreview').hidden) closeNumber(); else showNumber(); };  // (a base's bubble too: see cardBubble)
 for (const b of [$('copyNumber'), $('barBase')]) b.addEventListener('click', () => { if (!b.classList.contains('how-it-works')) toggleNumber(); });
 // A fraction's digits in base b, exact, its period in brackets: = 0.(005291); null when it does not end or repeat within
@@ -17199,6 +17202,7 @@ function showNumber() {
   v.querySelector('.tut-body').scrollTop = 0;
   v.hidden = false;
   for (const b of numberChips()) b.classList.add('active', 'switch');
+  lightBases();
 }
 // The start selector (hexagon sphere): − / + or a number typed, then Enter. Hovering its field
 // (not − / +) shows every start on an empty globe, turned towards the chosen one.

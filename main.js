@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.189';
+const VERSION = '0.4.190';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -5884,6 +5884,9 @@ function surfaceBounds() {
   return { minX: -r, maxX: r, minY: -r, maxY: r };
 }
 
+// the place a walk's state comes from (see surfaceSteps): along the grid the corner it comes from, on cells the tile across
+// the edge it came in by: its heading as it starts (see drawSphereCursor)
+const cameFrom = (g, grid, state) => (grid ? state[1] : g.nbr[g.sides * state[0] + state[1]]);
 // A walk's place on the shape shown, its point: along the grid a corner (on a tile it belongs to), else a tile's centre
 function placePoint(p) {
   const sh = walk.shape, R = walk.R, G = walk.geo.grid, X = walk.vert ? sh.corners : sh.cen;
@@ -6998,7 +7001,7 @@ function buildGridWalk(seq, mode, ahead = new Uint8Array(0)) {
     put(i + 1);
     if (rec.step(i + 1, seq[i], S.key(state))) break;
   }
-  rec.finish(kind, g, { vert, stepTiles });
+  rec.finish(kind, g, { vert, stepTiles, came: cameFrom(g, true, walkStart(g, mode)) });
 }
 // a walk on a surface's tiles: from tile to tile by the digits (see surfaceSteps), or an ant's, by its turns
 function buildSphereWalk(seq, mode, ahead = new Uint8Array(0)) {
@@ -7030,7 +7033,7 @@ function buildSphereWalk(seq, mode, ahead = new Uint8Array(0)) {
     put(i + 1);
     if (rec.step(i + 1, ant ? antStep.took : seq[i], ant ? null : S.key(state))) break;  // (an ant's state: all its cells, not watched)
   }
-  rec.finish(kind, g, { ant: ant ? antStep.colours : 0, turns, vert: null, stepTiles: null });
+  rec.finish(kind, g, { ant: ant ? antStep.colours : 0, turns, vert: null, stepTiles: null, came: cameFrom(g, false, walkStart(g, mode)) });
 }
 
 /* ---- 7.6b Battles: two or three numbers' walks on one surface -------------------------------- */
@@ -7691,7 +7694,7 @@ function battlePlayer(g, grid, S, starts, digits, pen = penetration) {
   const bestOf = starts.map(() => new Int32Array(len + 1));
   const keepBest = () => { const w = worth(); for (let s = 0; s < K; s++) bestOf[s][i] = Math.max(i > 0 ? bestOf[s][i - 1] : 0, w[s]); };
   const P = {
-    K, g, grid, way, bite, lined, ownLines: lined, lineLinks, places, from, size, dead, alive, living, worth, heads: () => places.map((p) => p[i]),
+    K, g, grid, way, bite, lined, ownLines: lined, lineLinks, starts, places, from, size, dead, alive, living, worth, heads: () => places.map((p) => p[i]),
     get land() { return land; }, remakeLine,  // (remakeLine: a line's land made again whole, to check it)
     standing, get step() { return i; }, get n() { return n; }, get peak() { return peak; },
     to(j) {
@@ -14616,13 +14619,13 @@ const sphereDraw = { at: 0, cost: 0 };
 // Cursor lying on the sphere: an arrow in the tangent plane at the walker, pointing along the
 // last step, built in 3D and then projected so it is foreshortened like the tiles around it. P(i), tileAt(i): the walker's
 // point and tile at step i (the walk's; a battle's B, see drawOverlay), fill: its colour
-function drawSphereCursor(ctx, P = (i) => [walk.wx[i], walk.wy[i], walk.wz[i]], tileAt = (i) => walk.tile[i], fill = '#ffffff') {
+function drawSphereCursor(ctx, P = (i) => [walk.wx[i], walk.wy[i], walk.wz[i]], tileAt = (i) => walk.tile[i], fill = '#ffffff', before = placePoint(walk.came)) {  // (before: the place it comes from as it starts, see cameFrom)
   const p = P(cur);
   const t = tileAt(cur), nr = walk.shape.nrm;
   const nrm = [nr[3 * t], nr[3 * t + 1], nr[3 * t + 2]];  // outward normal of the current tile
   const pos = p.map((v, d) => v + nrm[d] * walk.R * 0.003);  // just above the surface
-  // heading: last step (or the next one at the start), minus its normal component
-  const [a, b] = cur > 0 ? [P(cur - 1), p] : [p, P(Math.min(1, walk.n))];
+  // heading: its last step (at the start, the one it came by), minus its normal component
+  const [a, b] = [cur > 0 ? P(cur - 1) : before, p];
   let h = [0, 1, 2].map((d) => b[d] - a[d]);
   const dot = h[0] * nrm[0] + h[1] * nrm[1] + h[2] * nrm[2];
   h = h.map((v, d) => v - dot * nrm[d]);
@@ -16339,7 +16342,7 @@ function drawOverlay() {
     B.to(cur);
     for (const s of B.living()) {
       const Q = B.places[s], P = (i) => placePoint(Q[i]), tileAt = (i) => (walk.vert ? walk.geo.grid.tileOf[Q[i]] : Q[i]);
-      if (tileVisible(tileAt(cur))) drawSphereCursor(ctx, P, tileAt, LIFE_COLOURS[s]);
+      if (tileVisible(tileAt(cur))) drawSphereCursor(ctx, P, tileAt, LIFE_COLOURS[s], placePoint(cameFrom(walk.geo, !!walk.vert, B.starts[s])));
     }
     return;
   }

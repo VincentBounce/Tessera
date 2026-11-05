@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.158';
+const VERSION = '0.4.159';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -9066,8 +9066,12 @@ function housesIcon(n) {
     const c = Math.cos(k * t), s = Math.sin(k * t);
     polys.push(house((k % 2 ? 0 : 2) + (out ? h + 1 : 0), out).map(([x, y]) => [c * x - s * y, s * x + c * y]));
   }
+  return roundIcon(polys);
+}
+// polygons round their middle (0, 0) as an icon's path: in a disc of radius 10 round (12, 12), y up (screen y down: down)
+function roundIcon(polys, up = true) {  // (a declaration: the icons are made as the page loads, before this line)
   const S = 10 / Math.max(...polys.flat().map(([x, y]) => Math.hypot(x, y)));
-  return polys.map((P) => `M${P.map(([x, y]) => `${(12 + S * x).toFixed(1)} ${(12 - S * y).toFixed(1)}`).join('L')}Z`).join('');
+  return polys.map((P) => `M${P.map(([x, y]) => `${(12 + S * x).toFixed(1)} ${(12 + (up ? -S : S) * y).toFixed(1)}`).join('L')}Z`).join('');
 }
 /* Sugimoto's rosette of equilateral hexagons (arXiv 2005.10639, its Figures 1, 6 and 16 to 19): a hexagon of sides 1, its
  * tips A and D 360°/n, its other corners 180° − 180°/n (a parallelohexagon, its sides along its axis and ±180°/n from it),
@@ -9075,9 +9079,11 @@ function housesIcon(n) {
  * (1 + cos 180°/n, ± sin 180°/n) along it): the n along the axes k · 360°/n their first tile's tip at the middle, the n
  * between theirs 1 further out (at the first ones' corner B). As the rosettes: its W² tiles nearest its middle, each a
  * square unit */
+// its hexagon, A to F, its tip A at 0, along +x (the rosette's and its icon's)
+function sugimotoHexa(n) { const t = Math.PI / n, c = Math.cos(t), s = Math.sin(t); return [[0, 0], [c, s], [c + 1, s], [2 * c + 1, 0], [c + 1, -s], [c, -s]]; }
 function HEXAS(n) {
   const t = Math.PI / n, c = Math.cos(t), s = Math.sin(t), U = 1 / Math.sqrt(2 * s * (c + 1));  // (a tile a square unit)
-  const hexa = [[0, 0], [c, s], [c + 1, s], [2 * c + 1, 0], [c + 1, -s], [c, -s]];  // (A to F, its tip A at 0, along +x)
+  const hexa = sugimotoHexa(n);
   return discMemo((W) => {
     const J = Math.ceil(discReach(W) / U / (c + 1)) + 2, items = [];  // (rows enough round the disc and its walls' room)
     for (let k = 0; k < 2 * n; k++) {
@@ -9092,13 +9098,12 @@ function HEXAS(n) {
 }
 // a Hexa's icon (see ICONS): its middle as HEXAS lays it, its n hexagons round it and the n between, in a disc of radius 10
 function hexasIcon(n) {
-  const t = Math.PI / n, c = Math.cos(t), s = Math.sin(t), hexa = [[0, 0], [c, s], [c + 1, s], [2 * c + 1, 0], [c + 1, -s], [c, -s]], polys = [];
+  const t = Math.PI / n, hexa = sugimotoHexa(n), polys = [];
   for (let k = 0; k < 2 * n; k++) {
     const co = Math.cos(k * t), si = Math.sin(k * t), o = k % 2 ? [co, si] : [0, 0];
     polys.push(hexa.map(([x, y]) => [o[0] + co * x - si * y, o[1] + si * x + co * y]));
   }
-  const S = 10 / Math.max(...polys.flat().map(([x, y]) => Math.hypot(x, y)));
-  return polys.map((P) => `M${P.map(([x, y]) => `${(12 + S * x).toFixed(1)} ${(12 - S * y).toFixed(1)}`).join('L')}Z`).join('');
+  return roundIcon(polys);
 }
 // the rosettes offered: Hirschhorn's flower (6-fold, its middle as drawn), the 3- to 12-fold flowers (from their stars),
 // the coned ones (see CONED), the 7- to 12-fold rings (round a hole)
@@ -9110,8 +9115,7 @@ const ROSETTES = { flower3: [3, ROSETTE(3)], flower4: [4, ROSETTE(4)], flower5: 
 function rosetteIcon(kind) {
   const [, build, ring] = ROSETTES[kind], W = ring ? 10 : 8, F = build(W), o = (W - 1) / 2, at = (P) => (q) => P.some(([x, y]) => Math.hypot(x - q[0], y - q[1]) < 1e-6);
   const all = Array.from({ length: F.m }, (_, t) => F.poly(t).map(([x, y]) => [x - o, y - o])), hole = ring && all.find((P) => Math.hypot(...[0, 1].map((d) => P.reduce((sum, q) => sum + q[d], 0))) < 1e-6);
-  const polys = all.filter((P) => (ring ? P !== hole && hole.some(at(P)) : at(P)([0, 0]))), S = 10 / Math.max(...polys.flat().map(([x, y]) => Math.hypot(x, y)));
-  return polys.map((P) => `M${P.map(([x, y]) => `${(12 + S * x).toFixed(1)} ${(12 + S * y).toFixed(1)}`).join('L')}Z`).join('');
+  return roundIcon(all.filter((P) => (ring ? P !== hole && hole.some(at(P)) : at(P)([0, 0]))), false);  // (its grid's y down already)
 }
 for (const k of Object.keys(ROSETTES)) if (!conedFamily(k)) {  // (made when first drawn: its disc needs what comes later, see flatPolys)
   Object.defineProperty(ICONS, k, { configurable: true, enumerable: true, get: () => { const v = pathEl(rosetteIcon(k)); Object.defineProperty(ICONS, k, { value: v, enumerable: true }); return v; } });

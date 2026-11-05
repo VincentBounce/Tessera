@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.199';
+const VERSION = '0.4.200';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -7085,10 +7085,10 @@ function renderWalkTeams() {
   if ($('startRow').previousElementSibling !== $('startWays')) $('startRow').before($('startWays'));
   const ways = [['classic', 'Classic', "A's start, picked below, moved by the surface's symmetries: each walker starts as A, the battle fair"],
     ['centred', 'Centred', "The walkers' starts side by side round one point of the surface's symmetry, each on an edge out of it, every so many edges: a face's centre (sphere of hexagons: Trio, or Duo, Trio and Sextet by its size), a corner (its pentagon: Quintet)"],
-    ['random', 'Random', 'Each walker anywhere, drawn at random (kept in the link): not fair, each walker in a place of its own']];
-  $('startWays').replaceChildren(tileGroup(ways.map(([way, text, title]) => tile({ pic: colourBlock(walkTeams), text, title, on: way === startsWayNow(), can: startsWayCan(way), byDefault: way === 'classic' ? 'yes' : '',
+    ['random', 'Random', 'Each walker anywhere, drawn at random (kept in the link): not fair, each walker in a place of its own · Clicked again: another draw']];
+  $('startWays').replaceChildren(tileGroup(ways.map(([way, text, title]) => tile({ pic: colourBlock(walkTeams), text, title, on: way === startsWayNow(), again: way === 'random', can: startsWayCan(way), byDefault: way === 'classic' ? 'yes' : '',
     greyed: 'along a closed solid\'s grid only, where a point has as many edges out as walkers, or a multiple',
-    click: () => { if (way === startsWayNow()) return; battleStartsWay = way; if (way === 'random') battleSeed = freshDraw(); compute(); } }))));
+    click: () => { if (way === startsWayNow() && way !== 'random') return; battleStartsWay = way; if (way === 'random') battleSeed = freshDraw(); compute(); } }))));  // (Random again: another draw)
 }
 // a battle's formula fields, each bold in its walker's colour once sent to be fought (computed, from Enter, Random or a
 // hunt's pick: battleAsked, see renderWalkTeams; typed since: plain again)

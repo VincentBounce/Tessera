@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.122';
+const VERSION = '0.4.123';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -1061,8 +1061,8 @@ const MODES = {
   // on cells only: steps that do not cross a single edge (no Fill areas, see fillAreasApply)
   king: { base: 8, arrows: '↑↗→↘↓↙←↖', lattice: 'square', cells: true, fill: false,
           rule: 'from square to square as a chess king, to one of the 8 around: <b>0</b> N, <b>1</b> NE, <b>2</b> E, <b>3</b> SE, <b>4</b> S, <b>5</b> SW, <b>6</b> W, <b>7</b> NW' },
-  cairo: { base: 4, arrows: '↙↖↗↘', lattice: 'cairo', cells: true, fill: false, ant: 'antCairo',
-           rule: 'from pentagon to pentagon of the Cairo tiling, out through one of its 4 other edges: <b>0</b> sharp left, <b>1</b> left, <b>2</b> right, <b>3</b> sharp right' },
+  cairo: { get base() { return walkTurnsOf('cairo').length; }, get arrows() { return walkArrows('cairo'); }, lattice: 'cairo', cells: true, fill: false, ant: 'antCairo',
+           turnsOf: 'antCairo', get rule() { return walkRuleText('cairo', 'from pentagon to pentagon of the Cairo tiling, out through one of its 4 other edges'); } },
   // Langton's ant on the cells of a turtle walk (antOf: its walk in the list; see ANTS), its rule in the
   // ant settings (see antRuleText)
   antSquare: { get base() { return antBase('antSquare'); }, lattice: 'square', cells: true, fill: false, antOf: 'turtle', get rule() { return antRuleText('antSquare'); } },
@@ -4088,7 +4088,7 @@ let antByDigits = false;
 // A walk turning by the digits (Turtle): its rule a turn per digit, its base their count. Its turns are those of the ant on
 // the cells it goes through (turnsOf: the cells' ant; a grid's walk goes through its dual's cells), one rule shared by the
 // walks through the same cells; its cards the ant's rules by the digits (see creatureRules)
-const WALK_RULE = { antSquare: 'LNR', antTri: 'LR', antHex: 'L2 L1 N R1 R2' };  // (each one's at first)
+const WALK_RULE = { antSquare: 'LNR', antTri: 'LR', antHex: 'L2 L1 N R1 R2', antCairo: 'L2 L1 R1 R2' };  // (each one's at first)
 const walkRules = { ...WALK_RULE };
 const walkTurnsOf = (w) => antTurnsOf(MODES[w].turnsOf, walkRules[MODES[w].turnsOf]);
 const walkArrows = (w) => walkTurnsOf(w).map((t) => [...ANTS[MODES[w].turnsOf].arrows][t]).join('');
@@ -4096,6 +4096,16 @@ const walkRuleText = (w, where) => `${where}, a turn then a step: ${turnWords(wa
 const ruleOfWords = (words) => words.join(words.some((t) => t.length > 1) ? ' ' : '');  // (L1 R1 spaced, LNR not)
 // a walk's stepper by its rule: a digit, its turn, stepped by the cells' ant's walk (its grid's: its dual's cells)
 const byWalkRule = (w) => { const turns = walkTurnsOf(w), inner = ANTS[MODES[w].turnsOf].inner(); return (g) => inner(turns[g]); };
+// The surfaces' turtles by a rule too: allTurns, all their turns in order, left to right (edges on, or degrees along the
+// grid); a digit's, its rule's turn's (turns, see surfaceSteps); the cells' ant by how many (a grid's: its dual's cells)
+const TURNS_BY_COUNT = { 2: 'antTri', 3: 'antSquare', 4: 'antCairo', 5: 'antHex' };
+const ruleTurns = (m, rule) => (m.turnsMemo?.[0] === rule ? m.turnsMemo[1] : (m.turnsMemo = [rule, antTurnsOf(m.turnsOf, rule).map((t) => m.allTurns[t])])[1]);
+for (const [w, m] of Object.entries(MODES)) {
+  if (NAV[w]?.[0] !== 'Walk' || NAV[w][3] !== 'Turtle' || m.lattice !== 'sphere' || !m.turns) continue;
+  const where = m.rule.split(':')[0], tail = m.rule.match(/ \([^)]*\)$/)?.[0] ?? '';  // (its words before its digits', its note after)
+  Object.defineProperties(m, { turnsOf: { value: TURNS_BY_COUNT[m.turns.length] }, allTurns: { value: m.turns }, base: { get: () => walkTurnsOf(w).length },
+    arrows: { get: () => walkArrows(w) }, turns: { get: () => ruleTurns(m, walkRules[m.turnsOf]) }, rule: { get: () => walkRuleText(w, where) + tail } });
+}
 function setWalkRule(w, rule) {
   const t = MODES[w].turnsOf;
   if (!antTurnsOf(t, rule)) { $('antRule').value = walkRules[t]; return; }
@@ -4243,7 +4253,7 @@ const STEPPERS = {
       return [key(x, y), x, y, 0];
     };
   },
-  cairo: () => cairoStepper(),
+  cairo: () => byWalkRule('cairo'),
   antSquare: () => antStepper('antSquare'),
   turmite: () => turmiteStepper(),
   antTri: () => antStepper('antTri'),
@@ -6882,7 +6892,7 @@ function surfaceSteps(g, mode) {
   // k + turns[d]: k + 1 is on the right, k − 1 on the left, k + 2 straight on (for squares). Edges
   // are counted among those with a neighbour: a pentagon of the hexagon sphere (a hexagon with an
   // edge of length 0) has 5.
-  const k = g.sides, live = Array.from({ length: g.n }, (_, u) => {
+  const turns = mode.turns, k = g.sides, live = Array.from({ length: g.n }, (_, u) => {
     const ks = [];
     for (let e = 0; e < k; e++) if (g.nbr[k * u + e] >= 0) ks.push(e);
     return ks.length < k ? ks : null;
@@ -6897,7 +6907,7 @@ function surfaceSteps(g, mode) {
     step: ([t, entry, p, q], d) => {
       if (mode.pivot && d) return [t, entry, (p + 1) % k, 0];
       const ks = live[t], n = ks ? ks.length : k, at = ks ? ks.indexOf(entry) : entry;
-      const j = (((at + (own ? k / 2 - p : mode.turns[d])) % n) + n) % n, edge = ks ? ks[j] : j, next = [g.nbr[k * t + edge], g.nbrEdge[k * t + edge]];
+      const j = (((at + (own ? k / 2 - p : turns[d])) % n) + n) % n, edge = ks ? ks[j] : j, next = [g.nbr[k * t + edge], g.nbrEdge[k * t + edge]];
       return !own ? next : mode.pivot ? [...next, 0, 0] : [...next, d ? (q ? -1 : 1) : 0, 1 - q];
     },
     key: ([t, entry, p = 0, q = 0]) => ((t * k + entry) * k + ((p + k) % k)) * 2 + q,
@@ -10871,13 +10881,13 @@ function walkCell(lattice, [x, y]) {
 }
 // a surface's walk as on its flat tiling: a step of 1, its heading turned by its turns (degrees at a corner of its grid;
 // out of a cell, the edges counted from the one come in by, of n), a pivot's on the spot, a parity's after its step
-function surfaceStepper(mode, n) {
+function surfaceStepper(mode, n, turns = mode.turns) {
   let x = 0, y = 0, a = Math.PI / 2, k = 0;  // (heading up, left positive)
   const go = () => { x += Math.cos(a); y -= Math.sin(a); return [null, x, y]; }, notch = (m) => (2 * Math.PI) / m;
   return (g) => {
     if (mode.pivot) { if (g) a -= notch(mode.pivot); else go(); return [null, x, y]; }
     if (mode.parity) { go(); k++; if (g) a += (k % 2 ? -1 : 1) * notch(mode.parity); return [null, x, y]; }
-    const t = mode.turns[g];
+    const t = turns[g];
     a += mode.grid ? (t * Math.PI) / 180 : (2 * Math.PI * t) / n - Math.PI;
     return go();
   };
@@ -10888,9 +10898,9 @@ function walkFigures(w, byTurns = false) {
   const mode = MODES[w], T = mode.turnsOf && ANTS[mode.turnsOf], turns = T && !byTurns ? walkTurnsOf(w) : null, turnOf = (g) => (turns ? turns[g] : g);
   const digits = [...Array(T && byTurns ? Object.keys(T.turns).length : mode.base).keys()], words = {}, surface = mode.lattice === 'sphere';
   for (const [, d, t] of mode.rule.matchAll(/<b>(\d+)<\/b>\s*([^<]*)/g)) words[d] = t.replace(/[,\s]+(or\s*)?$/, '');
-  const n = mode.sphere === 'hexsphere' ? 6 : Math.max(...(mode.turns ?? [0])) + 1;  // (a surface's cell: the most it turns by and one, but on the sphere of hexagons)
+  const n = mode.sphere === 'hexsphere' ? 6 : Math.max(...(mode.allTurns ?? mode.turns ?? [0])) + 1;  // (a surface's cell: the most it turns by and one, but on the sphere of hexagons)
   const start = surface ? [[0, 1], [0, 0]] : [[0, 0]];  // (on a surface: come in from below)
-  const path = (seq) => { const step = surface ? surfaceStepper(mode, n) : T ? T.inner() : STEPPERS[w](); return [...start, ...seq.map((g) => step(g).slice(1, 3))]; };
+  const path = (seq) => { const step = surface ? surfaceStepper(mode, n, mode.allTurns) : T ? T.inner() : STEPPERS[w](); return [...start, ...seq.map((g) => step(g).slice(1, 3))]; };
   const spiral = /Spiral$|^spiral$/.test(w), cells = mode.cells || spiral;
   // a surface's cell: the one it steps from, a side toward where it came from
   const polygon = (p, q) => { const t = Math.atan2(q[1] - p[1], q[0] - p[0]), R = 0.5 / Math.cos(Math.PI / n); return [...Array(n).keys()].map((k) => [p[0] + R * Math.cos(t + ((2 * k + 1) * Math.PI) / n), p[1] + R * Math.sin(t + ((2 * k + 1) * Math.PI) / n)]); };

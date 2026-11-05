@@ -358,12 +358,12 @@ button.active .bubble { color: var(--accent); border-color: var(--accent); }  /*
 .colour-blocks button:disabled { opacity: 0.3; }
 .colour-swatches { display: flex; gap: 6px; justify-content: flex-start; align-items: center; padding-left: 4px; }  /* Life's colours: a square each, from the left */
 /* the Rule section: cards with a pixel picture, then chips of neighbour counts */
-.rule-cards { margin-bottom: 10px; }
 .rule-icon rect, .rule-icon polygon { fill: currentColor; stroke: none; }
 .rule-icon rect.dim, .rule-icon polygon.dim { opacity: 0.4; }
 .rule-build { display: flex; flex-direction: column; gap: 4px; margin: 0 0 4px; }  /* your own's: one block under its card, as close as the cards */
 .rule-build > .build-cols, .rule-build > .stepper { margin-bottom: 0; }
-.rule-cards { margin-bottom: 4px; }  /* your own's block under them: all one */
+.rule-cards:has(+ .rule-build:not([hidden])) { margin-bottom: 4px; }  /* your own's block under them: all one (else a list's 10 px) */
+.stack .field { margin-bottom: 4px; }  /* fields one under another, as close as cards (a battle's formulas, then Random) */
 .build-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 10px; }  /* Birth, Survive: a frame each */
 .build-box { min-width: 0; padding: 6px 4px; border: 1px solid var(--border); border-radius: 8px; }
 .build-box h4 { margin: 0 0 6px; font-size: 11px; font-weight: 600; color: var(--muted); text-align: center; }

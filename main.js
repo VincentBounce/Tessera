@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.209';
+const VERSION = '0.4.210';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -7870,18 +7870,30 @@ function battleAreas(P) {
  * 2, Trio 3) drawn at random, the Number cards' reals and sequences (but Random) and the square roots of Life's Formula
  * hunt (√2 to √9999, see DRAWN_ROOTS; no fraction, whose digits go round), else the numbers in the fields; Starts, the
  * start picked at random (Classic: its number; Random: its draw; Centred: nothing to vary, all its centres alike), else
- * the start shown. What it ranks, its tabs beside them (huntRank): Longest, two lists apart, the battles ended (see
+ * the start shown. What it ranks, its tabs under them (HUNT_RANKS): Longest, two lists apart, the battles ended (see
  * battleWinner), the 8 longest, and those still on when the digits end (at least as long: ≥), the first 8; Even lands,
- * one list, the 8 whose smallest land at the end is the largest (lands both big and alike; with land only, not Cut).
- * Each card plays its battle again, its numbers and its start. */
+ * one list, the 8 whose smallest land at the end is the largest (lands both big and alike; with land only, not Cut);
+ * Latest first stop, one list, the 8 whose first walker to stop (or die) does so the latest, none stopping the best
+ * (walkers packed apart: in Land no collision, none touching another). Each card plays its battle again, its numbers
+ * and its start. */
 const BATTLE_CARDS = Object.values(PRESETS).filter((p) => ['Constants', '𝑓', 'Sequences'].includes(p.group) && typeof p.f === 'string').map((p) => p.f).concat('rho');
 const huntVary = { formulas: true, starts: false };
-let huntRank = 'longest';  // (Longest, or Even lands: see 7.6c)
-const huntEven = () => huntRank === 'even' && PENETRATIONS[penetration][0] !== 'cut';  // (Even lands: with land only)
+// its rankings: [picture, name, tooltip, the button's words, its list's title, a battle's score (none: Longest's two lists),
+// a card's figure]
+const firstStop = (r) => (r.stop === Infinity ? 'no stop' : `first stop ${fmt(r.stop)}`);
+const HUNT_RANKS = {
+  longest: ['goalLongest', 'Longest', 'The hunt keeps the longest battles: the ended ones, and the first still on as the digits end', 'Hunt the longest battles', '', null,
+    (r) => `${r.ended ? '' : '≥ '}${fmt(r.steps)} steps`],
+  even: ['goalBattle', 'Even lands', "The hunt keeps the battles whose smallest land at the end is the largest: every walker's land big, all alike", 'Hunt the most even lands', 'The most even lands',
+    (r) => r.even, (r) => `lands ${r.lands.map(fmt).join(' / ')}`],
+  stop: ['goalDies', 'Latest first stop', 'The hunt keeps the battles whose first walker to stop (or die) does so the latest, none stopping the best: the walkers kept apart', 'Hunt the latest first stop',
+    'The latest first stops', (r) => r.stop, firstStop] };
+let huntRank = 'longest';
+const huntGoal = () => (huntRank === 'even' && PENETRATIONS[penetration][0] === 'cut' ? 'longest' : huntRank);  // (Even lands: with land only, else Longest)
 const huntStarts = () => huntVary.starts && startsWayNow() !== 'centred';  // (Starts varied: in Classic and Random)
 const BATTLE_FRESH = () => ({ ended: [], open: [], endedCount: 0, tried: new Set(), key: battleHuntKey(), status: '' });  // (a hunt's results, none yet)
 const battleHunt = { run: null, ended: [], open: [], endedCount: 0, tried: new Set(), key: '', status: '' };
-const battleHuntKey = () => [huntEven(), $('mode').value, walkTeams, startsWayNow(), penetration, sphereSize(), digitsNeeded(), huntVary.formulas || BATTLE_FORMULAS.map((id) => $(id).value).join(),
+const battleHuntKey = () => [huntGoal(), $('mode').value, walkTeams, startsWayNow(), penetration, sphereSize(), digitsNeeded(), huntVary.formulas || BATTLE_FORMULAS.map((id) => $(id).value).join(),
   huntStarts() || `${startNo()}|${battleSeed}`].join('|');  // (what its battles are fought at: what it does not vary)
 // √r's first n digits in base b, its integer part first (on the page: one integer root, as numberSeed's)
 const rootDigits = (r, base, n) => Uint8Array.from(iroot(BigInt(r) * BigInt(base) ** BigInt(2 * n), 2).toString(base).slice(0, n), (c) => c.charCodeAt(0) - 48);
@@ -7896,7 +7908,7 @@ async function startBattleHunt() {
     if (!knownDigits(F, base, n)) await new Promise((ok) => { run.worker = digitsWorker(F, base, n, ok); });
     if (run.stop) return;
   }
-  const even = huntEven(), g = walk.geo, S = surfaceSteps(g, mode), { head, frac } = digitsInUse(), shownFs = BATTLE_FORMULAS.slice(0, K).map((id) => $(id).value);
+  const score = HUNT_RANKS[huntGoal()][5], g = walk.geo, S = surfaceSteps(g, mode), { head, frac } = digitsInUse(), shownFs = BATTLE_FORMULAS.slice(0, K).map((id) => $(id).value);
   const numbers = [...BATTLE_CARDS, ...DRAWN_ROOTS], N = numbers.length, cards = new Map(BATTLE_CARDS.map((f) => [f, knownDigits(formulaOf(f), base, n)]));
   const digitsOf = (f, s) => (!huntVary.formulas ? (s ? knownDigits(formulaOf(f), base, n) : Uint8Array.from([...head, ...frac])) : cards.get(f) ?? rootDigits(Number(f.slice(5, -1)), base, n));
   const starts = huntStarts() ? (way === 'classic' ? modeStarts().length : Infinity) : 1;  // (Random's draws: no end)
@@ -7910,9 +7922,10 @@ async function startBattleHunt() {
       battleHunt.tried.add(key);
       const fs = huntVary.formulas ? picks.map((j) => numbers[j]) : shownFs, placed = battleStartsOrSay(g, walkStart(g, mode, at.n), grid, K, at.seed);
       if (!placed) continue;  // (a start on an axis: no battle there)
-      const P = battlePlayer(g, grid, S, placed, fs.map(digitsOf)), win = battleWinner(P), lands = P.worth(), r = { fs, ...at, steps: P.n, ended: !!win.until, win, lands, even: Math.min(...lands) };
+      const P = battlePlayer(g, grid, S, placed, fs.map(digitsOf)), win = battleWinner(P), lands = P.worth();
+      const r = { fs, ...at, steps: P.n, ended: !!win.until, win, lands, even: Math.min(...lands), stop: Math.min(...P.dead.map((d) => (d < 0 ? Infinity : d))) };
       if (r.ended) battleHunt.endedCount++;
-      const [list, by] = even ? [battleHunt.ended, (x, y) => y.even - x.even] : r.ended ? [battleHunt.ended, (x, y) => y.steps - x.steps] : [battleHunt.open, null];  // (Even lands: one list; Longest: the ended ones, the still on)
+      const [list, by] = score ? [battleHunt.ended, (x, y) => (score(y) > score(x)) - (score(y) < score(x))] : r.ended ? [battleHunt.ended, (x, y) => y.steps - x.steps] : [battleHunt.open, null];  // (a score: one list; Longest: the ended ones, the still on)
       if (!by && list.length >= 8) continue;  // (still on: the first 8)
       list.push(r);
       if (by) { list.sort(by); list.length = Math.min(8, list.length); }
@@ -7946,26 +7959,25 @@ function renderBattleHunt() {
   if (battleHunt.key !== battleHuntKey() && !battleHunt.run) Object.assign(battleHunt, BATTLE_FRESH());
   const vary = (what, text, title, can = true, greyed = '') => tile({ pic: icon(what === 'formulas' ? 'search' : 'play'), text, title, toggle: true, on: huntVary[what] && can, can, greyed,
     byDefault: what === 'formulas' ? 'on' : 'off', click: () => { huntVary[what] = !huntVary[what]; stopBattleHunt(); renderBattleHunt(); } });
-  const rank = ([what, text, title], j) => tile({ pic: icon(j ? 'goalBattle' : 'goalLongest'), text, title, on: (what === 'even') === huntEven(), can: what !== 'even' || PENETRATIONS[penetration][0] !== 'cut',
-    greyed: 'in Cut: no land, bodies only', byDefault: j ? '' : 'yes', click: () => { if (huntRank !== what) { huntRank = what; stopBattleHunt(); renderBattleHunt(); } } });
+  const goal = huntGoal(), [, , , words, label, score, figure] = HUNT_RANKS[goal];
+  const rank = ([what, [pic, text, title]]) => tile({ pic: icon(pic), text, title, on: what === goal, can: what !== 'even' || PENETRATIONS[penetration][0] !== 'cut',
+    greyed: 'in Cut: no land, bodies only', byDefault: what === 'longest' ? 'yes' : '', click: () => { if (huntRank !== what) { huntRank = what; stopBattleHunt(); renderBattleHunt(); } } });
   $('battleHuntVary').replaceChildren(vary('formulas', 'Formulas', 'The hunt draws the walkers\' numbers (else those in the fields)'),
-    vary('starts', 'Starts', 'The hunt draws the start too: Classic\'s number, Random\'s draw (else the start shown)', startsWayNow() !== 'centred', 'in Centred: its centres all alike, nothing to vary'),
-    tileGroup([['longest', 'Longest', 'The hunt keeps the longest battles: the ended ones, and the first still on as the digits end'],
-      ['even', 'Even lands', "The hunt keeps the battles whose smallest land at the end is the largest: every walker's land big, all alike"]].map(rank)));
+    vary('starts', 'Starts', 'The hunt draws the start too: Classic\'s number, Random\'s draw (else the start shown)', startsWayNow() !== 'centred', 'in Centred: its centres all alike, nothing to vary'));
+  $('battleHuntRank').replaceChildren(tileGroup(Object.entries(HUNT_RANKS).map(rank), true));
   $('battleHuntBtn').disabled = !huntVary.formulas && !huntStarts();
   $('battleHuntBtn').title = $('battleHuntBtn').disabled ? 'Greyed: it varies nothing (Formulas and Starts off)' : 'Battles fought one after another, each set once: what the switches above vary drawn at random; the 8 longest kept, and the first 8 still on as the digits end';
-  $('battleHuntBtn').innerHTML = battleHunt.run ? `${icon('stop')} Stop hunt` : `${icon('search')} ${huntEven() ? 'Hunt the most even lands' : 'Hunt the longest battles'}`;
+  $('battleHuntBtn').innerHTML = battleHunt.run ? `${icon('stop')} Stop hunt` : `${icon('search')} ${words}`;
   $('battleHuntStatus').textContent = battleHunt.status;
   const sym = (f) => formulaOf(f).sym, shown = [formulaInUse, ...RIVALS.map((id) => formulaOf($(id).value).text)];
   const cardOf = (r) => {
     const end = r.win.s < 0 ? 'a draw' : `${sym(r.fs[r.win.s])} wins, ${fmt(r.win.size)}`, at = r.n ? ` · start ${fmt(r.n)}` : r.seed ? ` · draw ${r.seed}` : '';
-    const what = huntEven() ? `lands ${r.lands.map(fmt).join(' / ')}` : `${r.ended ? '' : '≥ '}${fmt(r.steps)} steps`;
-    return card({ pic: colourBlock(r.fs.length), name: `${r.fs.map(sym).join(' vs ')}${at} · ${what}`, detail: `${r.win.how} · ${end}`,
+    return card({ pic: colourBlock(r.fs.length), name: `${r.fs.map(sym).join(' vs ')}${at} · ${figure(r)}`, detail: `${r.win.how} · ${end}`,
                   on: r.fs.every((f, j) => f === shown[j]) && (!r.n || r.n === startNo()) && (!r.seed || r.seed === battleSeed),
                   click: () => playBattle(r.fs, r) });
   };
   const list = (label, rs) => (rs.length ? [Object.assign(document.createElement('div'), { className: 'field-label', textContent: label }), ...rs.map(cardOf)] : []);
-  $('battleHuntTop').replaceChildren(...(huntEven() ? list('The most even lands', battleHunt.ended) : [...list('Ended: the longest', battleHunt.ended), ...list('Still on as the digits end', battleHunt.open)]));
+  $('battleHuntTop').replaceChildren(...(score ? list(label, battleHunt.ended) : [...list('Ended: the longest', battleHunt.ended), ...list('Still on as the digits end', battleHunt.open)]));
 }
 
 /* ==============================================================================================

@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.217';
+const VERSION = '0.4.218';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -1499,8 +1499,8 @@ function renderViewTiles() {
     ways[perspectiveFor(MODES[w], MODES[w].round ? 1 : 0) ? 'on' : 'off'].push(SHAPE_SHORT[sh] ?? sh);
   }
   const perspective = !ways.on.length ? 'off' : !ways.off.length ? 'on' : `On by default on ${ways.on.join(', ')}\nOff by default on ${ways.off.join(', ')}`;
-  const first = { perspective, light: 'on', glass: 'off', cut: 'off' }, why = {};
-  VIEW_TILES.forEach(([id, row], k) => setTile(viewTiles[k], { on: $(id).checked, can: !$(row).hidden && !$(id).disabled, byDefault: first[id], greyed: why[id] ?? '' }));
+  const first = { perspective, light: 'on', glass: 'off', ocean: 'off' }, why = { ocean: 'beyond a Trio: a map has three lands (green, sand, brown)' };
+  VIEW_TILES.forEach(([id, row], k) => setTile(viewTiles[k], { on: $(id).checked, can: !$(row).hidden && !$(id).disabled && (id !== 'ocean' || oceanFits()), byDefault: first[id], greyed: why[id] ?? '' }));
   $('viewTiles').hidden = VIEW_TILES.every(([, row]) => $(row).hidden);
 }
 $('viewTools').addEventListener('mouseenter', renderViewTiles);
@@ -7111,7 +7111,7 @@ function tintBattleFormulas() {
   BATTLE_FORMULAS.forEach((id, s) => {
     const on = battleOn() && s < walkTeams && battleAsked[s] === $(id).value;
     $(id).classList.toggle('battle-formula', on);  // (see .battle-formula)
-    $(id).style.setProperty('--walker', LIFE_COLOURS[s]);
+    $(id).style.setProperty('--walker', walkerColour(s));
   });
 }
 // A battle's starts: A's, then each moved by the surface's own symmetry, as the walk's state ([tile, the edge it comes in
@@ -7780,7 +7780,7 @@ function battleOf(P) {
 }
 // the battle's title: its walkers' numbers, each in its colour, to its end (their scores, and who won, in the ranking under it)
 function battleScore() {
-  const { names } = walk.battle, name = (s) => `<span style="color:${LIFE_COLOURS[s]}">${withIcons(names[s])}</span>`;  // (each in its walker's colour)
+  const { names } = walk.battle, name = (s) => `<span style="color:${walkerColour(s)}">${withIcons(names[s])}</span>`;  // (each in its walker's colour)
   return names.map((_, s) => name(s)).join(' · ');  // (their scores, and at the end who won, in the ranking under it)
 }
 // A battle's closed areas at the step it is at (P: its player; Area, see drawSphere), each tile's walker + 1 (0: none):
@@ -15163,7 +15163,8 @@ const paintLevels = (palette, levelOf) => (out, n) => {
 // gone, by a fixed plane through the middle (see CUT_AXES); the two apart: with both, what is left see-through
 const GLASS_ALPHA = 0.4;  // (a tile's share: a layer behind seen at 60%, two at 36%…)
 const glassOn = () => $('glass').checked && !$('glassRow').hidden;
-const oceanOn = () => $('ocean').checked && !$('oceanRow').hidden;
+const oceanFits = () => !(battleOn() && walkTeams > LANDS.length);  // (its lands a Trio's at most: beyond, greyed)
+const oceanOn = () => $('ocean').checked && !$('oceanRow').hidden && oceanFits();
 const blankTile = () => (oceanOn() ? OCEAN : UNLIT);  // (a surface's tile none has painted: Ocean's sea blue, or the theme's)
 const walkerColour = (s) => (oceanOn() && LANDS[s] ? LANDS[s] : LIFE_COLOURS[s]);  // (a battle's walker s: Ocean's lands up to a Trio, else Life's colours)
 // Cut: Off, or a fixed plane through the middle facing one of the view's axes (E, N, Up, as drawn in its corner), the half on
@@ -16630,7 +16631,7 @@ function renderWalkGauges() {
     $('gauges').hidden = true;
     // (with land a dead one keeps its land and its place by it, ✝ by its land; in Cut it goes under the living, ✝ when)
     const gone = (s) => D.dead[s] >= 0;
-    paintRanking(names.map((name, s) => ({ colour: LIFE_COLOURS[s], name, value: w[s], dead: gone(s) && !D.bite, diedAt: D.dead[s],
+    paintRanking(names.map((name, s) => ({ colour: walkerColour(s), name, value: w[s], dead: gone(s) && !D.bite, diedAt: D.dead[s],
                                              cells: [!gone(s) ? `<b>${fmt(w[s])}</b>` : D.bite ? `<b>${fmt(w[s])}</b> ${genLink(D.dead[s], '✝')}` : `✝ ${genLink(D.dead[s])}`,
                                                      fmt(D.bestAt(s)), ...(C.body ? [fmt(D.size[s])] : []), from(s).toFixed(1)] })), C.titles);
     return;
@@ -17414,7 +17415,7 @@ for (const type of ['pointerdown', 'dblclick', 'wheel']) {
 }
 $('light').addEventListener('change', () => { needsFull = true; });
 $('glass').addEventListener('change', () => { needsFull = true; });
-$('ocean').addEventListener('change', () => { needsFull = true; });
+$('ocean').addEventListener('change', () => { needsFull = statsDirty = true; tintBattleFormulas(); if (walk.n) describe(walk.base); });  // (a battle's colours: its fields, its title, its ranking)
 sizeGauge($('cutGauge'), CUT_AXES.length, cutAxis, setCut, setCut); setCut(cutAxis);
 $('perspective').addEventListener('change', () => {
   setPerspective();
@@ -17543,7 +17544,7 @@ function showNumber() {
   };
   const shown = rows.map((r) => (ten ? base10Digits(r) : inBase(r))), text = rows.map((r, j) => `${r.name} ${baseWords(b)} ${shown[j][0]}`).join('\n');
   v.innerHTML = `<div class="tut-body">${rows.map((r, j) => { const period = r.ratio && ratioDigits(b, r.ratio);
-    return `<h3><span style="color:${one ? LIFE_COLOURS[r.s] : ''}">${withIcons(r.name)}</span> <code>${baseWords(b)}</code> <span class="muted">${shown[j][1]}</span></h3>${period ? `<p class="number-digits${one}">${period}</p>` : ''}<p class="number-digits${one}"></p>`; }).join('')}</div>`;
+    return `<h3><span style="color:${one ? walkerColour(r.s) : ''}">${withIcons(r.name)}</span> <code>${baseWords(b)}</code> <span class="muted">${shown[j][1]}</span></h3>${period ? `<p class="number-digits${one}">${period}</p>` : ''}<p class="number-digits${one}"></p>`; }).join('')}</div>`;
   [...v.querySelectorAll('.number-digits:empty')].forEach((p, j) => { p.textContent = shown[j][0]; });  // (its digits as text)
   v.prepend(tutTools({ toggle: B !== 10 && { text: 'Base 10', title: `The number in base 10 instead of base ${B}`, on: base10.on, click: () => { base10.on = !base10.on; showNumber(); } }, copy: (e) => copyFlash(e.currentTarget, text), close: closeNumber, back: 'the walk' }));
   v.querySelector('.tut-body').scrollTop = 0;

@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.167';
+const VERSION = '0.4.168';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -5180,6 +5180,16 @@ const kleinColumns = { klein: (nv) => ringColumns(nv / TORUS_TUBE, nv, 1, true),
 kleinColumns.kleinKite = kleinColumns.kleinTri;  // kites: the triangles', each cut in 3
 kleinColumns.kleinTriTurned = kleinColumns.kleinKiteTurned = (nv) => torusHexColumns(nv);  // turned by 30° (as the tori, see turnedTorus)
 kleinColumns.kleinHexTurned = (nv) => torusTriColumns(nv, true);
+// a point of a Klein bottle's sheet, its place brought within the sheet, as a key (up: Cairo's mirror line, see kleinMesh)
+function kleinSheetKey(x0, y0, nu, nv, up) {
+  const r6 = (v) => Math.round(v * 1e6) / 1e6;
+  let x = r6(x0), y = r6(y0);
+  const k = Math.floor(x / nu);
+  x = r6(x - k * nu);
+  if (k % 2) y = r6(nv + 2 * up - y);  // (across the seam, turned over its tiles' mirror line)
+  y = r6(((y % nv) + nv) % nv);
+  return `${x},${y}`;
+}
 function kleinMesh(kind, nv, nu = kleinColumns[kind](nv)) {
   const key = `${kind}${nv}x${nu}`;
   if (meshCache[key]) return meshCache[key];
@@ -5197,14 +5207,9 @@ function kleinMesh(kind, nv, nu = kleinColumns[kind](nv)) {
   if (kind === 'kleinCairo') for (let i = 0; i < nu; i++) for (let j = 0; j < nv; j++) for (const o of [0, 1]) {
     tiles.push(cairoCorners(i, j, o).map(([x, y]) => [x + 0.5, y + up]));  // (its first pair at the sheet's corner, as the torus's)
   }
-  const ids = new Map(), verts = [], r6 = (v) => Math.round(v * 1e6) / 1e6, tube = tubeFor(kind, nv, nu);
-  const id = (x0, y0) => {  // the point's place on the sheet, brought within it
-    let x = r6(x0), y = r6(y0);
-    const k = Math.floor(x / nu);
-    x = r6(x - k * nu);
-    if (k % 2) y = r6(nv + 2 * up - y);  // (across the seam, turned over its tiles' mirror line)
-    y = r6(((y % nv) + nv) % nv);
-    const key = `${x},${y}`;
+  const ids = new Map(), verts = [], tube = tubeFor(kind, nv, nu);
+  const id = (x0, y0) => {
+    const key = kleinSheetKey(x0, y0, nu, nv, up);
     if (!ids.has(key)) { ids.set(key, verts.length / 3); verts.push(...kleinPoint(x0, y0, nu, nv, 1, tube)); }
     return ids.get(key);
   };
@@ -7050,15 +7055,10 @@ function tintBattleFormulas() {
 }
 // A battle's starts: A's, then each turned by the solid's own symmetry, as the walk's state ([tile, the edge it comes in
 // by], along the grid [corner, the corner it comes from]): A's place turned by a group of K of the solid's turns (see
-// battleGroups: in a Duel, through the centre where the mesh is its own mirror). A turned place is found again by its
-// point (each mesh's places keyed by their rounded points, once)
+// battleGroups: in a Duel, through the centre where the mesh is its own mirror, or a Klein bottle's half turn), see turnPlace
 function battleStarts(g, start, grid, K) {
-  const P = grid ? g.verts : g.cen, count = grid ? gridGraph(g).nv : g.n, key = (p) => pointCode(p[0], p[1], p[2]);
-  const at = grid ? (g.cornerAt ??= new Map()) : (g.tileAt ??= new Map());
-  if (!at.size) for (let u = 0; u < count; u++) at.set(key([P[3 * u], P[3 * u + 1], P[3 * u + 2]]), u);
-  const point = (u) => [P[3 * u], P[3 * u + 1], P[3 * u + 2]], times = (M, p) => M.map((row) => dot3(row, p));
   const turned = (M) => {
-    const across = (u) => { const w = at.get(key(times(M, point(u)))); if (w === undefined) throw new Error('no place turned from the start'); return w; };
+    const across = (u) => turnPlace(g, grid, M, u);
     if (grid) return [across(start[0]), across(start[1]), ...start.slice(2)];  // (its corners turned; a pivot or parity walk's p, q kept)
     const [t, entry] = start, k = g.sides, b = across(t), from = across(g.nbr[k * t + entry]);
     for (let e = 0; e < k; e++) if (g.nbr[k * b + e] === from) return [b, e, ...start.slice(2)];  // (a pivot or parity walk's p, q kept)
@@ -7074,7 +7074,7 @@ function battleStarts(g, start, grid, K) {
 const startSpread = (g, grid, start) => {
   const P = grid ? g.verts : g.cen, p = [P[3 * start[0]], P[3 * start[0] + 1], P[3 * start[0] + 2]];
   return (G) => {
-    const q = G.map((M) => M.map((row) => dot3(row, p)));
+    const q = G.map((M) => (typeof M === 'function' ? [0, 1, 2].map((d) => P[3 * M(start[0]) + d]) : M.map((row) => dot3(row, p))));  // (a Klein bottle's shift: its tile's middle)
     let least = Infinity;
     for (let a = 0; a < q.length; a++) for (let b = a + 1; b < q.length; b++) least = Math.min(least, Math.hypot(...q[a].map((x, d) => x - q[b][d])));
     return least;
@@ -7126,8 +7126,6 @@ function rotationGroups(g, K, enough = Infinity, good = null) {  // (enough: as 
   memo[K] = out;
   return good ? out.filter(good) : out;
 }
-// the solid's turns groups of K for a battle's starts: its rotations' (see rotationGroups), and for 2 the mirror through
-// its centre too (−p), where its mesh is its own (not the tetrahedron's)
 const I3 = [[1, 0, 0], [0, 1, 0], [0, 0, 1]], MINUS_I3 = [[-1, 0, 0], [0, -1, 0], [0, 0, -1]];
 // numbers rounded to a ten-thousandth, as a key: a place found again by its point, a turn by its matrix (the grid of the
 // rounding shifted by an irrational part: a mesh's simple fractions, 1/32 = 312.5 ten-thousandths, never on its halves,
@@ -7151,7 +7149,38 @@ const fitsMesh = (g, M) => {
   return true;
 };
 const centred = (g) => (g.centred ??= fitsMesh(g, MINUS_I3));
-const battleGroups = (g, K, enough = Infinity, good = null) => [...rotationGroups(g, K, enough, good), ...(K === 2 && centred(g) && (!good || good([I3, MINUS_I3])) ? [[I3, MINUS_I3]] : [])];
+// A Klein bottle's half turn round its tube: (x, y) to (x, y + nv/2) on its sheet, as a function of a tile (its walks on
+// cells only). No turn in space lays the bottle onto itself, and of its sheet's shifts its gluing keeps (along it, round
+// its tube by half) only this one keeps every tile's corners' order, which its walks turn by: the same walk from a tile
+// shifted. Null where its tiling does not fit it (an odd count round the tube), once a mesh
+function kleinShift(g) {
+  if (g.kleinShift !== undefined) return g.kleinShift;
+  const k = g.sides, up = g.cairo ? 0.5 : 0, cornerAt = new Map(), tileAt = new Map(), keyOf = (t, q, dy) => kleinSheetKey(g.uv[2 * (k * t + q)], g.uv[2 * (k * t + q) + 1] + dy, g.nu, g.nv, up);
+  const cornersOf = (t) => Array.from(g.poly.subarray(k * t, k * t + k));
+  for (let t = 0; t < g.n; t++) { for (let q = 0; q < k; q++) cornerAt.set(keyOf(t, q, 0), g.poly[k * t + q]); tileAt.set(cornersOf(t).sort((a, b) => a - b).join(), t); }
+  const to = new Int32Array(g.n);
+  for (let t = 0; t < g.n; t++) {
+    const moved = cornersOf(t).map((_, q) => cornerAt.get(keyOf(t, q, g.nv / 2))), b = tileAt.get([...moved].sort((x, y) => x - y).join());
+    const there = b === undefined ? null : cornersOf(b), o = there?.indexOf(moved[0]);
+    if (!there || moved.some((c, q) => c !== there[(o + q) % k])) return (g.kleinShift = null);  // (no tile there, or its corners the other way round)
+    to[t] = b;
+  }
+  return (g.kleinShift = (t) => to[t]);
+}
+// the solid's turns' groups of K for a battle's starts (see battleStarts): its rotations' (see rotationGroups), for 2
+// the mirror through its centre too (−p) where its mesh is its own, and a Klein bottle's half turn (see kleinShift)
+const battleGroups = (g, K, enough = Infinity, good = null) => [...rotationGroups(g, K, enough, good), ...[MINUS_I3, g.klein && kleinShift(g)]
+  .filter((M) => K === 2 && M && (M !== MINUS_I3 || centred(g)) && (!good || good([I3, M]))).map((M) => [I3, M])];
+// a place u (a corner along the grid, else a tile) turned by M: a turn in space (a matrix: the place at its point turned,
+// each mesh's places keyed by their rounded points, once), or a Klein bottle's shift (a function of a tile)
+function turnPlace(g, grid, M, u) {
+  if (typeof M === 'function') return M(u);
+  const P = grid ? g.verts : g.cen, at = grid ? (g.cornerAt ??= new Map()) : (g.tileAt ??= new Map()), key = (p) => pointCode(p[0], p[1], p[2]);
+  if (!at.size) for (let w = 0; w < P.length / 3; w++) at.set(key([P[3 * w], P[3 * w + 1], P[3 * w + 2]]), w);
+  const w = at.get(key(M.map((row) => row[0] * P[3 * u] + row[1] * P[3 * u + 1] + row[2] * P[3 * u + 2])));
+  if (w === undefined) throw new Error('no place turned from the start');
+  return w;
+}
 // the teams a battle can have on mode w's surface (see battleMode), from its start: each K its surface has a group of K
 // turns for that sets them apart from A's start (see battleGroups, startSpread); none elsewhere
 const battleCounts = (w) => {

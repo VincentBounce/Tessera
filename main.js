@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.133';
+const VERSION = '0.4.134';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -7018,11 +7018,8 @@ function buildSphereWalk(seq, mode, ahead = new Uint8Array(0)) {
  * a body is drawn as a line along its edges, as a walk's path. The walks are made as the battle is first played
  * (battlePlayer), then replayed to the step shown. */
 let walkTeams = 1;  // a walk's teams: 1 Classic, 2 Duel, 3 Trio… 12 Dozen (as Life's, see renderColours; which, see battleCounts)
-let penetration = null;  // a battle's way with an enemy's body picked: 5 Land grid, 6 Land cells, 0 Cut, 1 Land grid 2 (see battlePlayer, PENETRATIONS); null, none
-// the one in use: the one picked where the walk can take it, else its Land (Land grid along the grid, Land cells on cells)
-const penetrationFits = (p, w) => p === 0 || (p === 6) !== !!MODES[w].grid;
-const penetrationByDefault = (w) => (MODES[w].grid ? 5 : 6);
-const battlePenetration = (w = $('mode').value) => (penetration !== null && penetrationFits(penetration, w) ? penetration : penetrationByDefault(w));
+let penetration = null;  // a battle's way with an enemy's body picked: 5 Land grid, 6 Land cells, 0 Cut, 1 Land grid 2 (see battlePlayer, PENETRATIONS)
+const battlePenetration = (w = $('mode').value, picked = penetration) => picked ?? (MODES[w].grid ? 5 : 6);  // (none picked: its Land, by default)
 // its choice (one tab group under the teams): its number (a link's pe=), its name, its picture (a red head and a blue body
 // or land), its words; along the grid Cut and the Land grids, on cells Cut and Land cells (each greyed in the other's place)
 const PENETRATIONS = [
@@ -7053,7 +7050,7 @@ function renderWalkTeams() {
   if (!here || !battleOn()) return;
   const button = ([p, name, head, title]) => tile({
     pic: `<svg viewBox="0 0 4 4" aria-hidden="true"><path d="M0 0H4V4H0Z" fill="${LIFE_COLOURS[1]}"/><path d="${head}" fill="${LIFE_COLOURS[0]}"/></svg>`, text: name, title,
-    on: p === battlePenetration(w), can: penetrationFits(p, w), greyed: p === 6 ? 'along the grid: cells only' : p ? 'on cells: along the grid only' : '', byDefault: p === penetrationByDefault(w) ? 'yes' : '',
+    on: p === battlePenetration(w), can: p === 0 || (p === 6) !== !!MODES[w].grid, greyed: p === 6 ? 'along the grid: cells only' : p ? 'on cells: along the grid only' : '', byDefault: p === battlePenetration(w, null) ? 'yes' : '',
     click: () => { if (p !== battlePenetration(w)) { penetration = p; compute(); } } });
   $('walkPenetration').replaceChildren(tileGroup(PENETRATIONS.map(button)));
 }
@@ -13596,7 +13593,7 @@ function getSetup() {
   if (battleOn()) {  // (a walk's Duel or Trio, as Life's: its teams; B's number, C's)
     s.k = walkTeams;
     RIVALS.slice(0, walkTeams - 1).forEach((id) => { s[`x${id.slice(-1).toLowerCase()}`] = formulaOf($(id).value).text ?? $(id).value; });  // (xb, xc…)
-    if (battlePenetration(w) !== penetrationByDefault(w)) s.pe = battlePenetration(w);  // (none: its Land)
+    if (penetration !== null) s.pe = penetration;  // (none: its Land)
   }
   if (mode.life && colourMix && lifeColours > 1) s.mx = 1;
   if (mode.life && newcomerOn()) s.nc = 1;  // (Newcomer)  // (Mixed, kept where its zone greys it: the other zones' fits by it, see huntFits)

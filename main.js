@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.219';
+const VERSION = '0.4.220';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -14861,7 +14861,8 @@ function drawSphere() {
     // classic walks' look, not used); in Cut the areas each body closes, by Area (Light translucent, Plain as its body);
     // then the bodies over them and their heads (along the grid its bodies are lines, see pathSegments: the land only)
     const closed = P.bite ? P.land : !$('fillAreas').checked || !fillAreasApply() ? null : battleAreas(P), light = !P.bite && shows('translucent') && $('fillTranslucent').checked;
-    palette = [null, ...colours.map((c) => faded(c, 0.6)), ...colours, ...colours.map((c) => faded(c, light ? FADING : 0.6))];
+    const soft = (c, a) => (oceanOn() ? c : faded(c, a));  // (Ocean: its lands in full, not faded into the page's grey)
+    palette = [null, ...colours.map((c) => soft(c, 0.6)), ...colours, ...colours.map((c) => soft(c, light ? FADING : 0.6))];
     const level = new Uint8Array(g.n);
     if (closed) for (let t = 0; t < g.n; t++) if (closed[t]) level[t] = 2 * K + closed[t];
     if (!walk.vert) for (const s of P.standing()) {

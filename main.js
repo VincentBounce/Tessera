@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.163';
+const VERSION = '0.4.164';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -7009,7 +7009,7 @@ const PENETRATIONS = [
   ['landCells', 'Land cells', 'M0 0H4V4H0ZM1 1H3V3H1Z', "On cells: no body; each walker paints the tile it goes into its colour, whatever it was, and a zone its colour closes (the tiles not of its colour cut off, the largest outside) is painted inside. Heads meeting (two or more at once) all die: they stop painting, their tiles stay, the others' to take; with one walker left or none, it ends: the most tiles win, the dead's too"],
   ['cut', 'Cut', 'M0 1.5H4V2.5H0Z', "A head on another's body cuts it there, to its tail; heads meeting (two or more at once), all but the longest die (as long: all); the last one left wins (as the digits end: the longest)"],
   ['landGrid2', 'Land grid 2', 'M0 1.5H2.5V2.5H0Z', "Along the grid: each walker's land, the tiles its body closes stay its own (an enemy's too); a head on another's body cuts it; a head going into an enemy's land takes the tiles it goes through. Heads meeting (two or more at once) all die: they stop conquering, their land stays, the others' to take; with one walker left or none, it ends: the most land wins, the dead's too"],
-  ['landGrid3', 'Land grid 3', 'M1.5 0H2.5V4H1.5ZM0 1.5H4V2.5H0Z', "As Land grid, and a walker dies by its head, its last thread, from its head to its fork, let go: its head on another's (both die), or another's head on its last thread (it dies); a head on another thread pierces it, as in Land grid"]];
+  ['landGrid3', 'Land grid 3', 'M1.5 0H2.5V4H1.5ZM0 1.5H4V2.5H0Z', "As Land grid, and a walker dies by its head, its last thread, from its head to its fork, let go: its head on another's (both die), or another's head along or across its last thread (it dies; touched, nothing); elsewhere a thread pierced, as in Land grid"]];
 // a walk that can be a battle: one on a surface (on cells or along the grid, its steps surfaceSteps'), with as many
 // walkers as its turns allow at its size (see battleCounts: its walkers start alike, see battleStarts)
 const battleMode = (w) => NAV[w]?.[0] === 'Walk' && MODES[w].lattice === 'sphere' && !!SPHERES[surfaceOf(MODES[w])];
@@ -7330,10 +7330,12 @@ function battlePlayer(g, grid, S, starts, digits, pen = penetration) {
         // it there too: a frontier crossed falls, freeing what it held (see pierce)
         const c = places[s][i], p = places[s][i - 1], j = i > 0 ? linkOf(p, c) : undefined, edgeTile = (a, b) => G.edgeTiles.get(G.key(a, b))[0];
         if (dead[s] >= 0) break;  // (killed this step by a head on its last thread)
-        if (unwinds && dead[o] < 0 && degree[o][c] > 0 && tailOf(o).has(c)) { dead[o] = i; pierce(o, places[o][i]); continue; }  // (on o's last thread: o dies)
-        if (j !== undefined && lineOf[o][j] > 0) pierce(o, c);
+        // its line broken at v (along it, or across it), on what: on its last thread (Land grid 3), o dies, that thread let go;
+        // else pierced there (a touch breaks nothing)
+        const broken = (v, ...on) => { if (unwinds && dead[o] < 0 && on.every((x) => tailOf(o).has(x))) { dead[o] = i; pierce(o, places[o][i]); } else pierce(o, v); };
+        if (j !== undefined && lineOf[o][j] > 0) broken(c, p, c);
         const a = i > 1 ? places[s][i - 2] : p;  // (the corner before: its way in, a → p)
-        if (a !== p && p !== c && degree[o][p] > 0 && !(lineOf[o][linkOf(a, p)] > 0) && !sameSide(o, [p], edgeTile(a, p), edgeTile(p, c))) pierce(o, p);
+        if (dead[o] !== i && a !== p && p !== c && degree[o][p] > 0 && !(lineOf[o][linkOf(a, p)] > 0) && !sameSide(o, [p], edgeTile(a, p), edgeTile(p, c))) broken(p, p);
       }
       if (i > 0 && living().length <= 1) n = i;  // (Land grid 3: one killed by a head on its last thread)
       peak = Math.max(peak, ...size);
@@ -7462,7 +7464,7 @@ function battlePlayer(g, grid, S, starts, digits, pen = penetration) {
   // link j's two corners (along the grid: its edge's), from the surface's edges once a mesh
   const cornersOf = (j) => { L.corners ??= (() => { const c = new Int32Array(2 * E); for (const [e, k2] of L.index) { c[2 * k2] = Math.floor(e / G.nv); c[2 * k2 + 1] = e % G.nv; } return c; })(); return [L.corners[2 * j], L.corners[2 * j + 1]]; };
   // o's last thread: the corners of its line from its head back to its first fork (not it) or its end, its turns any (a head
-  // that is a fork itself: that alone)
+  // that is a fork itself: that alone); broken there (along it or across it, not touched), o dies
   const tailOf = (o) => {
     const tail = new Set([places[o][i]]);
     let v = places[o][i], from = -1;

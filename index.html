@@ -11,7 +11,7 @@
   <meta property="og:type" content="website">
   <link id="favicon" rel="icon">  <!-- the app's logo, set at start-up (see appLogo) -->
   <meta name="description" content="A walk on a grid in 2D or 3D driven by the base-2 to base-6 digits of π, other constants and large primes.">
-  <link rel="stylesheet" href="style.css?v=0.4.131">
+  <link rel="stylesheet" href="style.css?v=0.4.132">
   <script>  // the theme before the first paint (see applyTheme)
     try { const t = localStorage.getItem('tesseraTheme') || 'system'; document.documentElement.dataset.theme = t === 'system' ? (matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark') : t; } catch { document.documentElement.dataset.theme = 'dark'; }
   </script>
@@ -75,7 +75,6 @@
             <span id="loopLabel"></span>
             <button id="loopUp" title="Next loop">+</button>
           </div>
-          <div id="walkTeams" class="nav-shapes colour-blocks" hidden></div>  <!-- a walk: Classic, Duel, Trio (two numbers, three: see battleOn), the larger counts greyed (not yet) -->
         </div>
       </section>
 
@@ -94,7 +93,7 @@
         </div>
       </section>
 
-      <section id="colourSection" hidden>  <!-- Life: alive or dead, or 2 to 12 civilisations -->
+      <section id="colourSection" hidden>  <!-- Life: alive or dead, or 2 to 12 civilisations; a walk on a surface: 1 to 12 numbers walking (see renderColours) -->
         <h2 data-icon="duel">Teams</h2>
         <div id="colourBlocks" class="nav-shapes colour-blocks"></div>
       </section>
@@ -739,10 +738,10 @@
     </div>
   </main>
 
-  <script src="pixelarticons.js?v=0.4.131"></script>
-  <script src="punks.js?v=0.4.131"></script>
-  <script src="loops.js?v=0.4.131"></script>
-  <script src="emoji.js?v=0.4.131"></script>
-  <script src="main.js?v=0.4.131"></script>
+  <script src="pixelarticons.js?v=0.4.132"></script>
+  <script src="punks.js?v=0.4.132"></script>
+  <script src="loops.js?v=0.4.132"></script>
+  <script src="emoji.js?v=0.4.132"></script>
+  <script src="main.js?v=0.4.132"></script>
 </body>
 </html>

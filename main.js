@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.131';
+const VERSION = '0.4.132';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -3124,6 +3124,7 @@ function familyOf(w) {
 const readsDigits = (w = $('mode').value) => !(ANTS[w] && !antByDigits) && !(MODES[w].worm && !worm.byDigits) && !(MODES[w].life && plane.start !== 'digits');
 // A creature's sections, as Life's: Start, by its rule or by the digits (a turmite by its rule only); Rule, its creature (see renderModePicker), then its rules as cards, its
 // rule and its words (see creatureRules), then your own, its rule typed
+const customRow = $('antCustomRow');  // (kept: out of the page while a list redrawn has it not)
 let antRowMode = null, antCustomOpen = false;  // (the mode the rules were last drawn for; the Custom rule card clicked)
 function renderAntRow() {
   const w = $('mode').value, m = MODES[w], ant = NAV[w][0] === 'Ant';
@@ -3135,14 +3136,16 @@ function renderAntRow() {
   drawing = !!m.plane && plane.start === 'draw' && !spaceTimeOn();  // Life on the plane draws in its Draw start (not in Space-time)
   stage.classList.toggle('drawing', drawsHere());  // (the crosshair: a click draws, as renderDrawTools keeps it)
   $('antStartSection').hidden = $('antRuleSection').hidden = !ant;
-  $('antCustomRow').hidden = true;  // (your own rule's field: right after its card, see ruleCards)
+  // your own rule's field: right after its card (see ruleCards); back in the creatures' section, hidden, when no list has it
+  if (!customRow.isConnected) $('antRuleSection').append(customRow);
+  customRow.hidden = true;
   if (!ant && !m.net) return;
   if (m.turmite) antByDigits = false;  // (by its rule only: its Digits greyed)
   const R = creatureRules(w);
   $('antRuleTitle').textContent = R.byDigits ? 'Turns' : 'Rule';  // (Digits: a turn per digit, not a rule of colours)
   setTile($('antByRule'), { on: !R.byDigits });
   setTile($('antByDigits'), { on: !!R.byDigits, can: !m.turmite, greyed: 'for a turmite (by its rule only)' });
-  $('antCustomRow').hidden = !R.typed || !(antCustomOpen || !R.cards.some(([r]) => r === R.now));
+  customRow.hidden = !R.typed || !(antCustomOpen || !R.cards.some(([r]) => r === R.now));
   $('antRuleName').textContent = R.name;
   if (document.activeElement !== $('antRule')) $('antRule').value = R.now;
 }
@@ -3156,7 +3159,7 @@ function ruleCards(w, pic, here = true) {
     how: () => { if (on) walkTutorialToggle(); else { go(then)(); walkTutorial(w); } } });  // (its ⓘ: how it works, picked first)
   return [...R.cards.map(([r, name, cardPic, why, title]) => make(cardPic ?? pic, name, r, here && r === R.now && !antCustomOpen, () => { antCustomOpen = false; if (r === R.now) renderModePicker(); else R.set(r); }, why, title)),
     ...(R.typed ? [make(pixelIcon('..o..,..o..,ooooo,..o..,..o..'), mine ? 'Custom rule, your own' : 'Custom rule', mine ? R.now : '', mine, () => { antCustomOpen = true; renderModePicker(); }, '', 'your own, typed')] : []),
-    $('antCustomRow')];  // (its field right after it, the list's next rules after the field; always in it, shown by renderAntRow)
+    customRow];  // (its field right after it, the list's next rules after the field; always in it, shown by renderAntRow)
 }
 // a creature's or a walk's rules: its presets [rule, name, picture, why greyed, tooltip], the rule in use, how to set one, whether one is typed, a rule's base
 // (where it reads digits: its card's bubble), the field's title
@@ -3349,7 +3352,7 @@ function compute() {
   $('startSection').hidden = !mode.life || !!mode.loops;  // (loops: their start their loops, one a lineage, see layLoops)
   $('returnSection').hidden = !mode.margolus;  // (a reversible one's return to its start, wherever it is)
   fitRuleToShape();
-  $('colourSection').hidden = !mode.life || !!mode.margolus || !!mode.elementary;  // (blocks, Elementary: one colour)
+  $('colourSection').hidden = !walkTeamsHere($('mode').value) && (!mode.life || !!mode.margolus || !!mode.elementary);  // (blocks, Elementary: one colour; a walk's on a surface)
   $('autoPlayRow').hidden = !mode.life;
   renderViewTiles();
   renderColours();
@@ -7029,9 +7032,9 @@ const battleMode = (w) => NAV[w]?.[0] === 'Walk' && MODES[w].lattice === 'sphere
 const battleOn = () => walkTeams > 1 && battleCounts($('mode').value).includes(walkTeams);
 // Classic, Duel, Trio… (those the solid has no group of turns for greyed, see battleCounts), under the size and start
 // of a walk on a surface (Life's tiles, see renderColours); then a battle's numbers in its Hunt section
+const walkTeamsHere = (w) => NAV[w]?.[0] === 'Walk' && MODES[w].lattice === 'sphere';  // (a walk's teams: on a surface)
 function renderWalkTeams() {
-  const w = $('mode').value, here = NAV[w]?.[0] === 'Walk' && MODES[w].lattice === 'sphere';
-  $('walkTeams').hidden = !here;
+  const w = $('mode').value, here = walkTeamsHere(w);
   // a battle: its numbers in its Hunt section, A's formula field moved there from the Digits' (hidden then), then B's on
   $('battleHuntSection').hidden = !battleOn();
   RIVALS.forEach((id, j) => { $(id).parentElement.hidden = j >= walkTeams - 1; });  // (the walkers' but A's)
@@ -7043,15 +7046,7 @@ function renderWalkTeams() {
   tintBattleFormulas();
   if (battleHunt.run && (!battleOn() || battleHunt.key !== battleHuntKey())) stopBattleHunt();  // (its battles fought elsewhere: it stops)
   if (battleOn()) renderBattleHunt();
-  if (!here) return;
-  const words = (k) => (k === 1 ? 'One number walks' : k === 2 ? "Two numbers walk, A's and B's, from opposite places (how they fight: below)"
-    : `${k} numbers walk, A's to ${'ABCDEFGHIJKL'[k - 1]}'s, from A's place turned by ${k} of the solid's turns (how they fight: below)`);
-  $('walkTeams').replaceChildren(...COLOUR_STEPS.map((k) => tile({ pic: colourBlock(k), text: COLOUR_STEP_NAMES[k],
-    title: words(k),
-    on: k === (battleOn() ? walkTeams : 1), can: k === 1 || battleCounts(w).includes(k), byDefault: k === 1 ? 'yes' : '',
-    greyed: k === 1 ? '' : 'no group of so many of the surface\'s turns at this size that sets them apart from this start: they would not start alike (another size or start)',
-    click: () => { if (k !== walkTeams) { walkTeams = k; compute(); } } })));
-  if (!battleOn()) return;
+  if (!here || !battleOn()) return;
   const button = ([p, name, head, title]) => tile({
     pic: `<svg viewBox="0 0 4 4" aria-hidden="true"><path d="M0 0H4V4H0Z" fill="${LIFE_COLOURS[1]}"/><path d="${head}" fill="${LIFE_COLOURS[0]}"/></svg>`, text: name, title,
     on: p === penetration, can: p === 0 || (p === 6) !== !!MODES[w].grid, greyed: p === 6 ? 'along the grid: cells only' : p ? 'on cells: along the grid only' : '', byDefault: p === 0 ? 'yes' : '',
@@ -10428,7 +10423,10 @@ const colourMissing = (K) => {
     : r.iso ? [...Array(1 << (r.iso === 'hensel' ? 8 : 6)).keys()].filter((m) => r.B[16 + m]).map(bits) : [...Array(16).keys()].filter((c) => r.B[c]);
   return counts.some((c) => c >= K - 1 && (K === 3 ? (c - 2) % 2 === 0 : c - (K - 1) !== 1));
 };
+// Teams, Life's and a walk's alike (its own: see walkTeamTiles)
 function renderColours() {
+  const w = $('mode').value;
+  if (walkTeamsHere(w)) { $('colourBlocks').replaceChildren(...walkTeamTiles(w)); return; }
   $('colourBlocks').replaceChildren(...COLOUR_STEPS.map((k) => tile({ pic: colourBlock(k), text: COLOUR_STEP_NAMES[k],
     title: `${k === 1 ? 'One colour: alive or dead' : `${k} colours: ${LIFE_COLOUR_NAMES.slice(0, k).join(', ')}`}${colourMissing(k) ? ' · a colour gone can come back: a tie, the missing one born' : ''}`,
     on: k === lifeColours, can: coloursFit(k), mark: colourMissing(k), byDefault: k === 1 ? 'yes' : '', greyed: k > 1 ? 'where the shape has no parts alike for so many colours' : '', click: () => { if (k !== lifeColours) { coloursPicked = lifeColours = k; $('lifeTrail').checked = k === 1; compute(); } } })),  // (Trail: on in Classic, off in colours, at first)
@@ -10440,6 +10438,16 @@ function renderColours() {
       title: lifeColours > 2 ? `${COLOUR_STEP_NAMES[lifeColours - 1] ?? `${lifeColours - 1} teams`} as it starts, and ${LIFE_COLOUR_NAMES[lifeColours - 1]} a newcomer: none at first, born of a tie between the others (the colour missing)` : 'The teams below\'s start, and the last colour a newcomer: none at first, born of a tie between the others (the colour missing)',
       greyed: `where the teams picked have no birth of the missing colour (no mark in their corner), in Classic and Duel, in Digits and Draw${lifeColours > 2 && !coloursFit(lifeColours - 1) ? `, and where ${COLOUR_STEP_NAMES[lifeColours - 1] ?? `${lifeColours - 1} teams`} does not fit` : ''}` }));
 
+}
+// a walk's teams: Classic, Duel, Trio… as Life's (a battle: how many numbers walk; greyed, a count its surface's turns cannot
+// set apart from its start at this size, see battleCounts)
+function walkTeamTiles(w) {
+  const words = (k) => (k === 1 ? 'One number walks' : k === 2 ? "Two numbers walk, A's and B's, from opposite places (how they fight: below)"
+    : `${k} numbers walk, A's to ${'ABCDEFGHIJKL'[k - 1]}'s, from A's place turned by ${k} of the solid's turns (how they fight: below)`);
+  return COLOUR_STEPS.map((k) => tile({ pic: colourBlock(k), text: COLOUR_STEP_NAMES[k], title: words(k),
+    on: k === (battleOn() ? walkTeams : 1), can: k === 1 || battleCounts(w).includes(k), byDefault: k === 1 ? 'yes' : '',
+    greyed: k === 1 ? '' : 'no group of so many of the surface\'s turns at this size that sets them apart from this start: they would not start alike (another size or start)',
+    click: () => { if (k !== walkTeams) { walkTeams = k; compute(); } } }));
 }
 // The Rule section: the rules known for the grid's shape, as cards, each with a picture (5 × 5 pixels of
 // what it is known for: "o" alive, "+" dying); then your own, as chips (how many live neighbours give

@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.129';
+const VERSION = '0.4.130';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -1621,19 +1621,27 @@ const setTile = (b, { on = false, can = true, mark = false, again = false, turn 
 // on, can); its words as text (a setup's name typed), and its tooltip (in full: the row may cut them short); how: a rule's,
 // how it works, its ⓘ at its end (see rowAction)
 const card = ({ pic = '', name = '', detail = '', base = '', title = '', on = false, can = true, byDefault, click = null, how = null }) => {
-  const b = tile({ html: '', title: title || detail, on, can, byDefault, click }), picture = Object.assign(document.createElement('span'), { className: 'mode-icon', innerHTML: pic });
-  b.append(picture, cardWords(name, detail, base), ...(how ? [rowAction(icon('info'), `How ${name} works`, how)] : []));
+  const b = tile({ html: '', title: title || detail, on, can, byDefault, click }), picture = Object.assign(document.createElement('span'), { className: `mode-icon${how ? ' act' : ''}`, innerHTML: pic });
+  if (how) { picture.title = `How ${name} works`; picture.addEventListener('click', (e) => { e.stopPropagation(); how(); }); }  // (its picture: a click on how it works)
+  b.append(picture, cardWords(name, detail), ...(base ? [cardBubble(base, click && (() => (on ? toggleNumber() : (click(), showNumber()))))] : []));
   return b;
 };
-// a card's words, every card's and Grid | Cells' alike: its name, its base in its bubble at its right (where digits are read),
-// then its code or its words
-function cardWords(name, detail = '', base = '') {
+// a card's bubble at its top right: its base (where digits are read); a click shows the number in it (its card picked first),
+// or hides it
+const cardBubble = (base, show) => {
+  const b = Object.assign(document.createElement('span'), { className: `mode-base${show ? ' act' : ''}`, textContent: base });
+  if (show) { b.title = `The number in ${base}`; b.addEventListener('click', (e) => { e.stopPropagation(); show(); }); }
+  return b;
+};
+// a card's words, every card's and Grid | Cells' alike: its name (Grid | Cells': its base in its bubble at its right), then its
+// code or its words
+function cardWords(name, detail = '', base = '', show = null) {
   const part = (cls, text) => Object.assign(document.createElement('span'), { className: cls, textContent: text }), head = part('mode-head', ''), words = document.createElement('span');
-  head.append(part('mode-name', name), ...(base ? [part('mode-base', base)] : []));
+  head.append(part('mode-name', name), ...(base ? [cardBubble(base, show)] : []));
   words.append(head, ...(detail ? [part('mode-detail', detail)] : []));
   return words;
 }
-// a row's action at its end (a rule's ⓘ, a setup's ×): seen while its row is hovered (see .row-act), a click its own
+// a row's action at its end (a setup's ×): seen while its row is hovered (see .row-act), a click its own
 const rowAction = (html, title, click) => {
   const x = Object.assign(document.createElement('span'), { className: 'row-act', innerHTML: html, title });
   x.addEventListener('click', (e) => { e.stopPropagation(); click(); });
@@ -3310,7 +3318,7 @@ function renderModePicker() {
     if (why) none = why;
     const info = !v ? null : MODES[v].turmite ? { base: '', detail: turmite.rule } : MODES[v].antOf ? { base: '', detail: antByDigits ? `digits ${antDigitRules[v]}` : antRules[v] }
       : MODES[v].net ? { base: `base ${MODES[v].base}`, detail: walkRules[walkKey(MODES[v])] } : splitModeLabel(modeOptionOf(v).text);
-    b.replaceChildren(cardWords(word, info ? info.detail : none, info?.base));
+    b.replaceChildren(cardWords(word, info ? info.detail : none, info?.base, v && (() => (here ? toggleNumber() : (b.click(), showNumber())))));
     b.disabled = !v;
     b.classList.toggle('active', here);
   };
@@ -17139,7 +17147,8 @@ $('copyRle').addEventListener('click', () => { const text = lifeRle(); if (text)
 // the chips that show the number: Full number's, and a walk's base (its rule's chip: how it works instead)
 const numberChips = () => [$('copyNumber'), $('barBase')].filter((b) => !b.classList.contains('how-it-works'));
 function closeNumber() { $('numberPreview').hidden = true; for (const b of numberChips()) b.classList.remove('active', 'switch'); }
-for (const b of [$('copyNumber'), $('barBase')]) b.addEventListener('click', () => { if (b.classList.contains('how-it-works')) return; if (!$('numberPreview').hidden) closeNumber(); else showNumber(); });
+const toggleNumber = () => { if (!$('numberPreview').hidden) closeNumber(); else showNumber(); };  // (a base's bubble too: see cardBubble)
+for (const b of [$('copyNumber'), $('barBase')]) b.addEventListener('click', () => { if (!b.classList.contains('how-it-works')) toggleNumber(); });
 // A fraction's digits in base b, exact, its period in brackets: = 0.(005291); null when it does not end or repeat within
 // the digits in use (the walk's digits, or the cells a start lays: see digitsNeeded, showNumber)
 function ratioDigits(b, max = digitsNeeded()) {

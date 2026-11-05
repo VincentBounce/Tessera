@@ -77,7 +77,7 @@ main { flex: 1; display: flex; min-height: 0; }
 .panel section { padding: 12px 0; border-top: 1px solid var(--border); }  /* a grey hairline between sections */
 #paramsPane > section:first-child, #galleryPane > section:first-child, #yourList > section:first-child { padding-top: 6px; border-top: 0; }  /* the first, always there: no line, no gap under the header */
 :is(#paramsPane, #galleryPane, #yourList) > section:first-child h2 { margin-top: 0; }  /* its title as high in every pane */
-.row-act { margin-left: auto; padding: 0 6px; font-size: 16px; color: var(--muted); border-radius: 4px; }  /* a row's action at its end: × on a saved setup, ⓘ on a rule */
+.row-act { margin-left: auto; padding: 0 6px; font-size: 16px; color: var(--muted); border-radius: 4px; }  /* a row's action at its end: × on a saved setup */
 :not(:hover) > .row-act { visibility: hidden; }  /* (shown while its row is hovered, its place kept) */
 .row-act:hover { color: var(--text); background: var(--border); }
 .panel .muted:empty { display: none; }  /* an empty status line takes no room */
@@ -265,7 +265,7 @@ button.switch.active:hover:not(:disabled) { background: var(--pick-strong); }
 .mode-list { display: flex; flex-direction: column; gap: 4px; margin-bottom: 10px; }
 .mode-list button {
   display: grid;
-  grid-template-columns: 34px minmax(0, 1fr) auto;  /* one icon column for every list, wide enough for ζ(3) or 16/9; the words shrink */
+  grid-template-columns: 34px minmax(0, 1fr) auto;  /* one icon column for every list, wide enough for ζ(3) or 16/9; the words shrink; the base's bubble or the × */
   align-items: center;
   gap: 8px;
   padding: 5px 8px;
@@ -283,6 +283,11 @@ button.switch.active:hover:not(:disabled) { background: var(--pick-strong); }
 /* a base's bubble, every one (the rules' cards, Grid | Cells) */
 .mode-base { flex-shrink: 0; white-space: nowrap; font-size: 11px; padding: 1px 7px; border: 1px solid var(--border); border-radius: 999px; color: var(--muted); }
 button.active .mode-base { border-color: var(--accent); color: var(--accent); }
+.mode-list .mode-base { align-self: start; }  /* (at the card's top right) */
+.mode-base.act { cursor: pointer; }  /* a click shows the number in that base */
+.mode-base.act:hover { border-color: var(--text); color: var(--text); }
+.mode-icon.act { align-self: stretch; display: grid; place-items: center; border-radius: 4px; cursor: help; }  /* a card's picture, a click on how it works: */
+.mode-icon.act:hover { background: var(--border); color: var(--text); }  /* a grey square, as a row's × (see .row-act) */
 /* Number tiles: the symbol only, several per row (name and formula in the tooltip) */
 .number-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(48px, 1fr)); gap: 4px; margin-bottom: 10px; }
 .number-grid button { padding: 6px 2px; font-size: 14px; white-space: nowrap; background: var(--panel); }

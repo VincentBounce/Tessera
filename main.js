@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.196';
+const VERSION = '0.4.197';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -3166,6 +3166,7 @@ const customRow = $('antCustomRow');  // (kept: out of the page while a list red
 let rulesMode = null, customOpen = false;  // (the mode the rules were last drawn for)
 function renderAntRow() {
   const w = $('mode').value, m = MODES[w], ant = NAV[w][0] === 'Ant';
+  if (m.turmite) antByDigits = false;  // (by its rule only: its Digits greyed; first, the number picker placed by it)
   // a walk's Start: its start on a surface first (a creature's at the head of its own Start), then the number read (its
   // digits, see numberPicker; a battle's numbers instead, see renderWalkTeams); a start's by the digits (Life's, a
   // creature's) under its Digits tab; read by none, back in the walk's, hidden
@@ -3182,7 +3183,6 @@ function renderAntRow() {
   if (!customRow.isConnected) $('antRuleSection').append(customRow);
   customRow.hidden = true;
   if (!ant && !m.net) return;
-  if (m.turmite) antByDigits = false;  // (by its rule only: its Digits greyed)
   const R = creatureRules(w);
   $('antRuleTitle').textContent = R.byDigits ? 'Turns' : 'Rule';  // (Digits: a turn per digit, not a rule of colours)
   setTile($('antByRule'), { on: !R.byDigits });

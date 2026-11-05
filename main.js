@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.155';
+const VERSION = '0.4.156';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -14578,7 +14578,7 @@ function enclosedFrom(n, eu, ev, crossed, maxSize = Infinity) {
   const parent = Int32Array.from({ length: n }, (_, i) => i), size = new Int32Array(n).fill(1), out = new Uint8Array(n);
   const head = Int32Array.from({ length: n }, (_, i) => i), tail = Int32Array.from(head), next = new Int32Array(n).fill(-1);
   const at = new Int32Array(n).fill(-1);
-  const find = (i) => { while (parent[i] !== i) { parent[i] = parent[parent[i]]; i = parent[i]; } return i; };
+  const find = (i) => unionFind(parent, i);
   const join = (e, step) => {
     let a = find(eu[e]), b = find(ev[e]);
     if (a === b) return;

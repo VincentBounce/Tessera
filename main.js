@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.152';
+const VERSION = '0.4.153';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -6066,7 +6066,7 @@ function syncSizeStepper() {
   sizeTips('size', SPHERES[kind] && sel.selectedOptions[0] ? sizeCells(kind, f, true) : '', [SPHERES[kind] && sel.selectedOptions[0] ? `${sizeHow(kind, f)}\n${sizeSides(kind, f)}`.trim() : '', `\n${lastPicked()}`].filter(Boolean).join('\n'));
   $('sizeDown').disabled = sel.selectedIndex <= 0;
   $('sizeUp').disabled = sel.selectedIndex >= sel.options.length - 1;
-  sizeGauge($('sizeGauge'), sel.options.length, sel.selectedIndex, (k) => label(sphereSizeOf(sel.options[k])), (k) => stepSize(k - sel.selectedIndex));  // (a size of its own, a link's: a notch of its own too, as long as it is picked)
+  sizeGauge($('sizeGauge'), sel.options.length, sel.selectedIndex, (k) => label(sizeOf(sel.options[k].value)), (k) => stepSize(k - sel.selectedIndex));  // (a size of its own, a link's: a notch of its own too, as long as it is picked)
   const starts = modeStarts();
   $('startRow').hidden = !starts;
   if (!starts) return;
@@ -6254,7 +6254,7 @@ function selectSize(kind, size) {
   if (usual) { sel.value = usual.value; return; }
   const own = new Option(sizeLabel(kind, size), size);
   own.dataset.own = '1';
-  sel.insertBefore(own, [...sel.options].find((o) => dims(sphereSizeOf(o))[0] > rows) ?? null);
+  sel.insertBefore(own, [...sel.options].find((o) => dims(sizeOf(o.value))[0] > rows) ?? null);
   sel.value = size;
 }
 // A size from a link: any number of rows or tiles across, from the surface's smallest that builds
@@ -6264,7 +6264,6 @@ function linkSize(kind, s) {
   const n = step * Math.round(Math.min(sizes[sizes.length - 1], Math.max(least, Math.round(Number(rows)) || sizes[0])) / step) || sizes.find((f) => f % step === 0);  // (a block rule's: a size its blocks come round at)
   return TORI.includes(kind) && along ? `${n}x${along}` : n;
 }
-const sphereSizeOf = (o) => (o.value.includes('x') ? o.value : Number(o.value));
 
 // Fill the Sphere size menu for the kind of sphere of the current mode
 // The sizes of a surface, from its default one or the walk mode's (see MODES: initial)

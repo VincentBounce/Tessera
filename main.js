@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.141';
+const VERSION = '0.4.142';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -3147,7 +3147,7 @@ function renderAntRow() {
   // the number read (its digits, see numberPicker): a walk's in its own section; a start's by the digits (Life's, a
   // creature's) under its Digits tab; read by none, back in its section, hidden
   const home = !readsDigits(w) || (!m.life && !ant) ? $('digitsSection') : m.life ? $('startDigits') : $('antStartDigits');
-  $('digitsSection').hidden = !readsDigits(w) || home !== $('digitsSection');
+  $('digitsSection').hidden = !readsDigits(w) || home !== $('digitsSection') || battleOn();  // (a battle: A's formula in its Hunt section)
   if ($('numberPicker').parentElement !== home) home.append($('numberPicker'));
   drawing = !!m.plane && plane.start === 'draw' && !spaceTimeOn();  // Life on the plane draws in its Draw start (not in Space-time)
   stage.classList.toggle('drawing', drawsHere());  // (the crosshair: a click draws, as renderDrawTools keeps it)
@@ -7045,7 +7045,6 @@ function renderWalkTeams() {
   const fieldA = $('formula').parentElement;
   if (battleOn() && fieldA.parentElement !== $('formulaAHome')) $('formulaAHome').append(fieldA);
   if (!battleOn() && fieldA.parentElement !== $('numberPicker')) $('numberList').before(fieldA);
-  if (battleOn()) $('digitsSection').hidden = true;
   battleAsked = BATTLE_FORMULAS.map((id) => $(id).value);  // (a battle computed: its numbers as sent)
   tintBattleFormulas();
   if (battleHunt.run && (!battleOn() || battleHunt.key !== battleHuntKey())) stopBattleHunt();  // (its battles fought elsewhere: it stops)

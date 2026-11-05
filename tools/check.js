@@ -100,7 +100,7 @@ function checkMeshes(fail) {
   // cells turning onto each other round its centre
   const saved = { torus: plane.torus, shape: plane.shape };
   for (const kind of ['hex', 'tri', 'kite', ...Object.keys(TILINGS), ...Object.keys(RECTS)]) {
-    if (!tilingOf(kind) && !PLANE_PER[kind] || !hexagonFits(kind)) continue;  // (a rectangle's cells: built when first asked for, if any)
+    if (!tilingOf(kind) && !TILES_PER_GRID_CELL[kind] || !hexagonFits(kind)) continue;  // (a rectangle's cells: built when first asked for, if any)
     Object.assign(plane, { torus: false, shape: 'hex' });
     const W = planeW(kind, 32), row = planeRow(kind, W), sh = planeShape(kind, W);
     if (!sh) continue;  // (started on a page of blocks: no hexagon there)
@@ -130,7 +130,7 @@ function checkMeshes(fail) {
   // every grid that repeats, as a torus (its sides round: a rectangle's columns not its rows; its size as Life's, whatever the mode): each cell's neighbours
   // touching it, a few cells' width away at most the shortest way round (not glued to far ones, as v0.1.1305's to 1371's)
   for (const kind of ['square', 'hex', 'tri', 'cairo', 'kite', ...Object.keys(TILINGS), ...Object.keys(RECTS)]) {
-    if (!tilingOf(kind) && !PLANE_PER[kind] || APERIODIC[kind]) continue;
+    if (!tilingOf(kind) && !TILES_PER_GRID_CELL[kind] || APERIODIC[kind]) continue;
     Object.assign(plane, { torus: true });
     const W = colourW(kind, sideW(kind, 32)), row = planeRow(kind, W), { start, list } = planeNeighbours(kind, W, true), c0 = cellMiddle(kind, 0, 0);
     const P = [cellMiddle(kind, row, 0), cellMiddle(kind, 0, W)].map((c) => [c[0] - c0[0], c[1] - c0[1]]), mid = cellMids(kind, W), reach = 3 * cellWidth(kind);

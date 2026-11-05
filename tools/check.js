@@ -4,7 +4,7 @@
 //   await tesseraCheck({ fuzz: 400, seed: 7 });                            // 400 actions at random, menu to menu (transitions, smallest sizes)
 //   await tesseraCheck({ fuzz: 100, cold: true });                          // and after each, its link loaded cold beside: the same menus offered
 //   await tesseraCheck({ colours: true });                                 // every Life surface offers colours (more than Classic) at one of its sizes at least
-//   await tesseraCheck({ battles: true });                                 // every walk on a surface: its battles' walkers each A's path moved, Land not colliding kept apart, 5 minutes
+//   await tesseraCheck({ battles: true });                                 // every walk on a surface: its battles' walkers each A's path moved, Land no collision kept apart, 5 minutes
 //   await tesseraCheck({ parts: true });                                   // every count of colours offered, as many cells a colour: plane and solids, 7 minutes
 //   await tesseraCheck({ deep: true });                                    // every grid's rules (yours too), How it works, colours, zones, smallest size: a night's
 //   await tesseraCheck({ known: true });                                   // Life's known results, played on the graphics card: a minute
@@ -389,7 +389,7 @@ async function battlesFair(fail) {
       for (let s = 1; s < K; s++) for (let i = 0; i < end; i++) if (P.places[s][i] !== G[s](P.places[0][i], grid)) off++;
       if (off) fail(`${w} ${K} walkers: ${off} steps off A's path moved (#x=pi&w=${w}&k=${K})`);
     }
-    // Land not colliding (pe=5), its fewest walkers: no walker's step along another's (a line's edge along the grid, a tile
+    // Land no collision (pe=5), its fewest walkers: no walker's step along another's (a line's edge along the grid, a tile
     // on cells), and none moving once stopped
     const K = counts[0], link = `#x=pi&w=${w}&d=3000&k=${K}&pe=5&${'bcdefghijkl'.slice(0, K - 1).split('').map((c, j) => `x${c}=sqrt(${j + 2})`).join('&')}`;
     if (!K) continue;
@@ -397,7 +397,7 @@ async function battlesFair(fail) {
     for (let t = 0; t < 30 && !built(K, true); t++) await wait(300);
     const P = walk.battle?.player;
     checked++;
-    if (!P?.stops) { fail(`${w} Land not colliding: no battle (${link})`); continue; }
+    if (!P?.stops) { fail(`${w} Land no collision: no battle (${link})`); continue; }
     P.to(Infinity);
     const mine = new Map();
     let shared = 0, moved = 0;
@@ -411,7 +411,7 @@ async function battlesFair(fail) {
       }
       for (let i = end + 1; i <= P.n; i++) if (Q[i] !== Q[end]) moved++;
     }
-    if (shared || moved) fail(`${w} Land not colliding: ${shared} ${grid ? 'edges' : 'tiles'} shared, ${moved} steps once stopped (${link})`);
+    if (shared || moved) fail(`${w} Land no collision: ${shared} ${grid ? 'edges' : 'tiles'} shared, ${moved} steps once stopped (${link})`);
   }
   return checked;
 }

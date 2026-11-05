@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.210';
+const VERSION = '0.4.211';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -7062,6 +7062,7 @@ const PENETRATIONS = [
   ['landGrid2', 'Land grid 2', 'M0 1.5H2.5V2.5H0Z', "Along the grid: each walker's land, the tiles its body closes stay its own (an enemy's too); a head on another's body cuts it; a head going into an enemy's land takes the tiles it goes through. Heads meeting (two or more at once) all die: they stop conquering, their land stays, the others' to take; with one walker left or none, it ends: the most land wins, the dead's too"],
   ['landGrid3', 'Land grid 3', 'M1.5 0H2.5V4H1.5ZM0 1.5H4V2.5H0Z', "As Land grid 1, and a walker dies by its head, its last thread, from its head to its fork, let go: its head on another's (both die), or another's head along or across its last thread (it dies; touched, nothing); elsewhere a thread pierced, as in Land grid 1"],
   ['landStop', 'Land no collision', 'M0 1.5H1.5V2.5H0ZM2.5 0H3.5V4H2.5Z', "As Land grid 1, and nothing is ever pierced: a walker stops for good just before its first step along or across another's line (on cells, just before its first step onto another's tile); heads meeting (two or more at once) all stop there. The others go on, until all have stopped or the digits end: the most land wins"]];
+const PENETRATIONS_SHOWN = [0, 5, 1, 2, 3, 4];  // (their cards' order: Land no collision second; their places above, a link's pe=, as they came)
 // a walk that can be a battle: one on a surface (on cells or along the grid, its steps surfaceSteps'), with as many
 // walkers as its turns allow at its size (see battleCounts: its walkers start alike, see battleStarts)
 const battleMode = (w) => NAV[w]?.[0] === 'Walk' && MODES[w].lattice === 'sphere' && !!SPHERES[surfaceOf(MODES[w])];
@@ -7090,7 +7091,7 @@ function renderWalkTeams() {
       title: can ? words : `${words}\nGreyed: ${kind === 'landCells' ? 'along the grid, cells only' : 'on cells, along the grid only'}`, on: p === penetration, can, byDefault: p === 0 ? 'yes' : '',
       click: () => { if (p !== penetration) { penetration = p; compute(); } } });
   };
-  $('walkPenetration').replaceChildren(...PENETRATIONS.map(way));
+  $('walkPenetration').replaceChildren(...PENETRATIONS_SHOWN.map((p) => way(PENETRATIONS[p], p)));
   // its starts' tabs, over the start selector (see STARTS_WAYS; the selector greyed but in Classic, see syncSizeStepper)
   if ($('startRow').previousElementSibling !== $('startWays')) $('startRow').before($('startWays'));
   const ways = [['classic', 'Classic', "A's start, picked below, moved by the surface's symmetries: each walker starts as A, the battle fair"],

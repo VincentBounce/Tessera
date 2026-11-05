@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.138';
+const VERSION = '0.4.139';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -3037,20 +3037,36 @@ const CREATURE_TIPS = { Ant: "Langton's ant: the cell's colour turns it, then th
 const WALK_HEADINGS = { Walk: 'Walk', Ant: 'Grid', Life: 'Grid', Replicators: 'Grid', Elementary: 'Grid', Reversible: 'Grid' };
 // the values at a level under the choices above it (pre), in the menu's order
 const navValues = (level, pre) => [...new Set(Object.values(NAV).filter((n) => pre.every((v, i) => n[i] === v)).map((n) => n[level]))];
+// A space's shapes in the order shown, in their groups ([title, shapes] each, those it has): in 2D, many of them, grouped by
+// their grid's natural shape (see SHAPE_GROUPS); in 3D, the solids of squares first (the cube, the cubes carved), the other
+// solids, those of squares and triangles, then the surfaces (the balls: Globe, Sphere, Rosettes; a sheet rolled up: Torus,
+// Möbius, Klein; see SHEETS); else as the menu lists them
+function shapeGroups(kind, space) {
+  const shapes = navValues(2, [kind, space]), flat = space.startsWith('2D'), solid = space.startsWith('3D ');
+  const planeOf = (sh) => MODES[Object.keys(NAV).find((m) => NAV[m][0] === kind && NAV[m][1] === space && NAV[m][2] === sh)]?.plane;
+  const SQUARED = ['Cube', 'Pits', 'Bumps', 'Frame', 'Sponge'], MIXED = ['Cuboctahedron', 'Rhombicuboctahedron', 'Bicupola', 'Pyramid'], sheet = (sh) => SHEETS.includes(sh);
+  const groups = flat && shapes.length > 8 ? SHAPE_GROUPS.map(([g]) => [g, (sh) => shapeGroup(planeOf(sh)) === g])  // (in their order: the circles' four, squares, parallelograms, rhombi)
+    : solid ? [['Squares', (sh) => SQUARED.includes(sh), SQUARED], ['Solid', (sh) => !sheet(sh) && !SQUARED.includes(sh) && !MIXED.includes(sh)], ['Squares & triangles', (sh) => MIXED.includes(sh)], ['Surface', sheet, SHEETS]]
+    : [[null, () => true]];
+  return groups.map(([g, has, order]) => [g, (order ?? shapes).filter((sh) => shapes.includes(sh) && has(sh))]).filter(([, these]) => these.length);  // (in its own order, if it has one)
+}
 // The mode for a choice at a level (values: from that level on, one or more: a space and its shape): the levels above as
-// they are, the ones below kept where they can be (a level it has none of: not kept), else the first (Grid before Cells); in
-// a family, its tiling in use or last chosen
+// they are, the ones below kept where they can be (a level it has none of: not kept), else the first as shown (its shape
+// the first of its space's, Grid before Cells); in a family, its tiling in use or last chosen
 function navPick(level, ...values) {
   const want = [...NAV[$('mode').value]], to = level + values.length;
   want.splice(level, values.length, ...values);
-  let best = null, top = -1;
+  // its key: the levels below kept (Grid before Cells), then its shape's place as shown, then in a family its tiling in use or
+  // last chosen (else the first of its tabs: a solid's Kites, Life only, then the next); the first as good, as the menu lists
+  const shown = to <= 2 ? shapeGroups(want[0], want[1]).flatMap(([, these]) => these) : [];
+  let best = null, top = null;
   for (const [w, n] of Object.entries(NAV)) {
     if (n.slice(0, to).some((v, i) => v !== want[i])) continue;
-    let score = 0;
-    for (let i = to; i < 5; i++) score = score * 4 + (n[i] && n[i] === want[i] ? 2 : 0) + (i === 4 && n[i] && n[i] !== 'cells' ? 1 : 0);  // (none: no match)
-    const fam = familyOf(w);  // (its tiling in use; else the first of its tabs: a solid's Kites, Life only, then the next)
-    if (fam) score += fam.F.modes[fam.F.tabs[fam.F.tab][0]].includes(w) ? 0.5 : 0.25 * (1 - fam.F.tabs.findIndex(([t]) => t === fam.m) / fam.F.tabs.length);
-    if (score > top) { best = w; top = score; }
+    let kept = 0;
+    for (let i = to; i < 5; i++) kept = kept * 4 + (n[i] && n[i] === want[i] ? 2 : 0) + (i === 4 && n[i] && n[i] !== 'cells' ? 1 : 0);  // (none: no match)
+    const fam = familyOf(w), key = [kept, -shown.indexOf(n[2]), !fam ? 0 : fam.F.modes[fam.F.tabs[fam.F.tab][0]].includes(w) ? 1 : 0.5 * (1 - fam.F.tabs.findIndex(([t]) => t === fam.m) / fam.F.tabs.length)];
+    const first = top && key.findIndex((v, i) => v !== top[i]);  // (where it differs from the best so far)
+    if (!top || (first >= 0 && key[first] > top[first])) { best = w; top = key; }
   }
   return best;
 }
@@ -3224,25 +3240,12 @@ function renderModePicker() {
   }));
   $('walkHeading').innerHTML = icon(kind === 'Walk' ? 'compass' : 'grid') + WALK_HEADINGS[kind];
   // its spaces (see SPACES), one choice among them: only those it has (no ant nor automaton in Lattice)
-  const planeOf = (sh) => MODES[Object.keys(NAV).find((m) => NAV[m][0] === kind && NAV[m][1] === space && NAV[m][2] === sh)]?.plane;
   $('navSpace').replaceChildren(tileGroup(Object.keys(SPACES).filter((sp) => navValues(1, [kind]).includes(sp)).map((sp) => button(`${icon(SPACES[sp][1])}<span>${SPACES[sp][0]}</span>`, sp === space, () => navGo(1, sp), SPACES[sp][2])), true));  // (name, picture, tooltip)
-  // the shapes, as pictures with their (short) names
+  // the shapes, as pictures with their (short) names, in their groups (see shapeGroups)
   // (a grid of Life picked that can wrap round: a switch, a click again its edges a torus or walls)
-  // in 2D, many of them: in groups by their grid's natural shape (see SHAPE_GROUPS), each its title; in 3D, the solids, and
-  // the surfaces (the balls: Globe, Sphere, Rosettes; a sheet rolled up: Torus, Möbius, Klein; see SHEETS)
-  const shapes = navValues(2, [kind, space]), flat = space.startsWith('2D'), solid = space.startsWith('3D ');
-  // (in 3D: the solids of squares first (the cube, the cubes carved), the other solids, those of squares and triangles, the
-  // surfaces)
-  const SQUARED = ['Cube', 'Pits', 'Bumps', 'Frame', 'Sponge'], MIXED = ['Cuboctahedron', 'Rhombicuboctahedron', 'Bicupola', 'Pyramid'];
-  const grouped = flat && shapes.length > 8, groupOf = (sh) => shapeGroup(planeOf(sh)), sheet = (sh) => SHEETS.includes(sh);
-  const groups = grouped ? SHAPE_GROUPS.map(([g]) => [g, (sh) => groupOf(sh) === g])  // (in their order: the circles' four, squares, parallelograms, rhombi)
-    : solid ? [['Squares', (sh) => SQUARED.includes(sh), SQUARED], ['Solid', (sh) => !sheet(sh) && !SQUARED.includes(sh) && !MIXED.includes(sh)], ['Squares & triangles', (sh) => MIXED.includes(sh)], ['Surface', sheet, SHEETS]]
-    : [[null, () => true]];
-  const some = groups.filter(([, has]) => shapes.some(has)).length;  // (one group: its title none, its tab's name says it)
-  $('navShapes').replaceChildren(...groups.flatMap(([g, has, order]) => {
-    const these = (order ?? shapes).filter((sh) => shapes.includes(sh) && has(sh));  // (in its own order, if it has one; else the menu's)
-    if (!these.length) return [];
-    const title = g && some > 1 ? [Object.assign(document.createElement('div'), { className: 'block-label', textContent: g })] : [];
+  const groups = shapeGroups(kind, space);
+  $('navShapes').replaceChildren(...groups.flatMap(([g, these]) => {
+    const title = g && groups.length > 1 ? [Object.assign(document.createElement('div'), { className: 'block-label', textContent: g })] : [];  // (one group: its title none, its tab's name says it)
     return [...title, ...these.flatMap((sh) => {
     const again = sh === shape && !!MODES[w].plane && !APERIODIC[MODES[w].plane], b = button(`${icon(SHAPE_ICONS[sh])}<span>${shapeLabel(sh)}</span>`, sh === shape, () => {
       if (!again) { navGo(2, sh); return; }

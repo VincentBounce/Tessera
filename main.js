@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.200';
+const VERSION = '0.4.201';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -6922,9 +6922,9 @@ function surfaceSteps(g, mode, acts = surfaceActs(mode)) {
 
 // a walk's first state on surface g (see surfaceSteps): along the grid [corner, the corner it comes from], the start picked
 // where the surface has a start picker (start k of N, see STARTS_ON), else its first; on cells [tile, the edge it comes in
-// by]; then its turns on the spot and its digits' parity, p and q, at 0
-const walkStart = (g, mode) => (mode.grid ? gridState(g, STARTS_ON.includes(surfaceOf(mode)) ? startList(g)[startNo() - 1] : firstStart(g, gridGraph(g)))
-  : surfaceSteps(g, mode).start(startNo() - 1));
+// by]; then its turns on the spot and its digits' parity, p and q, at 0 (j: another start of the list, a hunt's)
+const walkStart = (g, mode, j = startNo()) => (mode.grid ? gridState(g, STARTS_ON.includes(surfaceOf(mode)) ? startList(g)[j - 1] : firstStart(g, gridGraph(g)))
+  : surfaceSteps(g, mode).start(j - 1));
 // A walk on a surface recorded step by step (see buildGridWalk, buildSphereWalk): its points (on the unit surface, R times),
 // its tiles, its places seen (corners or tiles, nodes of them) and the step it has seen them all, its farthest from its
 // start, its digits' counts; begin(key), step(i, digit, key): stopped where it goes round (key, its state: see loopWatch;
@@ -7172,8 +7172,8 @@ const groupedCan = () => {  // (the walk shown: its K walkers can be grouped)
   return !!g && !!groupedStarts(g, walkStart(g, mode), walkTeams);
 };
 // a battle's starts (see battleStarts; grouped, groupedStarts', where it can), or none, said in the status: A's place on an axis of the solid
-function battleStartsOrSay(g, start, grid, K) {
-  const way = startsWayNow(), starts = way === 'random' ? randomStarts(g, start, grid, K, battleSeed) : (way === 'centred' && grid && groupedStarts(g, start, K)) || battleStarts(g, start, grid, K);
+function battleStartsOrSay(g, start, grid, K, seed = battleSeed) {  // (seed: Random's draw, another a hunt's)
+  const way = startsWayNow(), starts = way === 'random' ? randomStarts(g, start, grid, K, seed) : (way === 'centred' && grid && groupedStarts(g, start, K)) || battleStarts(g, start, grid, K);
   if (!starts) walkSaid = battleGroups(g, K, 1).length ? `This start lies on an axis of the surface: ${K} walkers cannot start apart from it (another start, or fewer walkers)`
     : `This surface has no ${K} symmetries alike at this size: ${K} walkers cannot start alike (another size, or another count)`;
   return starts;
@@ -7855,58 +7855,68 @@ function battleAreas(P) {
 }
 
 /* ---- 7.6c Hunting the longest battles -------------------------------------------------------- */
-/* A battle's hunt (under Digits B): as many numbers as walkers (Duel 2, Trio 3) drawn at random, each set once, fought
- * at the surface, size, start and digits shown, on and on until stopped. Its numbers: the Number cards' reals and
- * sequences (but Random) and the square roots of Life's Formula hunt (√2 to √9999, see DRAWN_ROOTS); no fraction, whose
- * digits go round. Two lists apart: the battles ended (one walker left, or none), the 8 longest; and those still on when
- * the digits end (at least as long: ≥), the first 8. */
+/* A battle's hunt (under its numbers): battles fought one after another at the surface, size and digits shown, until
+ * stopped, each set once; what it varies, its switches over it (huntVary): Formulas, as many numbers as walkers (Duel
+ * 2, Trio 3) drawn at random, the Number cards' reals and sequences (but Random) and the square roots of Life's Formula
+ * hunt (√2 to √9999, see DRAWN_ROOTS; no fraction, whose digits go round), else the numbers in the fields; Starts, the
+ * start picked at random (Classic: its number; Random: its draw; Centred: nothing to vary, all its centres alike), else
+ * the start shown. Two lists apart: the battles ended (see battleWinner), the 8 longest; and those still on when the
+ * digits end (at least as long: ≥), the first 8; each card plays its battle again, its numbers and its start. */
 const BATTLE_CARDS = Object.values(PRESETS).filter((p) => ['Constants', '𝑓', 'Sequences'].includes(p.group) && typeof p.f === 'string').map((p) => p.f).concat('rho');
+const huntVary = { formulas: true, starts: false };
+const huntStarts = () => huntVary.starts && startsWayNow() !== 'centred';  // (Starts varied: in Classic and Random)
 const BATTLE_FRESH = () => ({ ended: [], open: [], endedCount: 0, tried: new Set(), key: battleHuntKey(), status: '' });  // (a hunt's results, none yet)
 const battleHunt = { run: null, ended: [], open: [], endedCount: 0, tried: new Set(), key: '', status: '' };
-const battleHuntKey = () => `${$('mode').value}|${walkTeams}|${startsWayNow()}|${battleSeed}|${penetration}|${sphereSize()}|${startNo()}|${digitsNeeded()}`;  // (what its battles are fought at)
+const battleHuntKey = () => [$('mode').value, walkTeams, startsWayNow(), penetration, sphereSize(), digitsNeeded(), huntVary.formulas || BATTLE_FORMULAS.map((id) => $(id).value).join(),
+  huntStarts() || `${startNo()}|${battleSeed}`].join('|');  // (what its battles are fought at: what it does not vary)
 // √r's first n digits in base b, its integer part first (on the page: one integer root, as numberSeed's)
 const rootDigits = (r, base, n) => Uint8Array.from(iroot(BigInt(r) * BigInt(base) ** BigInt(2 * n), 2).toString(base).slice(0, n), (c) => c.charCodeAt(0) - 48);
 async function startBattleHunt() {
   if (battleHunt.key !== battleHuntKey()) Object.assign(battleHunt, BATTLE_FRESH());
-  const run = (battleHunt.run = { stop: false }), mode = MODES[$('mode').value], n = digitsNeeded(), base = mode.base, K = walkTeams;
+  const run = (battleHunt.run = { stop: false }), mode = MODES[$('mode').value], n = digitsNeeded(), base = mode.base, K = walkTeams, grid = !!mode.grid, way = startsWayNow();
   // the cards' digits first, once (a worker each, cached as A's); the roots' made as they are drawn
-  for (const f of BATTLE_CARDS) {
+  if (huntVary.formulas) for (const f of BATTLE_CARDS) {
     const F = formulaOf(f);
     battleHunt.status = `Computing ${F.sym}…`;
     renderBattleHunt();
     if (!knownDigits(F, base, n)) await new Promise((ok) => { run.worker = digitsWorker(F, base, n, ok); });
     if (run.stop) return;
   }
-  const g = walk.geo, S = surfaceSteps(g, mode), starts = battleStartsOrSay(g, walkStart(g, mode), !!mode.grid, K);
-  if (!starts) { $('status').textContent = walkSaid; stopBattleHunt(); return; }
-  const numbers = [...BATTLE_CARDS, ...DRAWN_ROOTS], N = numbers.length, sets = Array.from({ length: K }, (_, j) => N - j).reduce((a, b) => a * b);
-  const cards = new Map(BATTLE_CARDS.map((f) => [f, knownDigits(formulaOf(f), base, n)]));
-  const digitsOf = (f) => cards.get(f) ?? rootDigits(Number(f.slice(5, -1)), base, n);
+  const g = walk.geo, S = surfaceSteps(g, mode), { head, frac } = digitsInUse(), shownFs = BATTLE_FORMULAS.slice(0, K).map((id) => $(id).value);
+  const numbers = [...BATTLE_CARDS, ...DRAWN_ROOTS], N = numbers.length, cards = new Map(BATTLE_CARDS.map((f) => [f, knownDigits(formulaOf(f), base, n)]));
+  const digitsOf = (f, s) => (!huntVary.formulas ? (s ? knownDigits(formulaOf(f), base, n) : Uint8Array.from([...head, ...frac])) : cards.get(f) ?? rootDigits(Number(f.slice(5, -1)), base, n));
+  const starts = huntStarts() ? (way === 'classic' ? modeStarts().length : Infinity) : 1;  // (Random's draws: no end)
+  const sets = (huntVary.formulas ? Array.from({ length: K }, (_, j) => N - j).reduce((a, b) => a * b) : 1) * starts;
   const slice = () => {
     if (run.stop) return;
     for (const t0 = performance.now(); performance.now() - t0 < 30 && battleHunt.tried.size < sets;) {
-      const picks = Array.from({ length: K }, () => Math.floor(Math.random() * N)), key = picks.join();
-      if (new Set(picks).size < K || battleHunt.tried.has(key)) continue;
+      const picks = huntVary.formulas ? Array.from({ length: K }, () => Math.floor(Math.random() * N)) : [], at = !huntStarts() ? {} : way === 'classic' ? { n: 1 + Math.floor(Math.random() * starts) } : { seed: freshDraw() };
+      const key = `${picks.join()}|${at.n ?? at.seed ?? ''}`;
+      if (new Set(picks).size < picks.length || battleHunt.tried.has(key)) continue;
       battleHunt.tried.add(key);
-      const fs = picks.map((j) => numbers[j]), P = battlePlayer(g, !!mode.grid, S, starts, fs.map(digitsOf)), win = battleWinner(P);
-      const r = { fs, steps: P.n, ended: P.living().length <= 1, win };
+      const fs = huntVary.formulas ? picks.map((j) => numbers[j]) : shownFs, placed = battleStartsOrSay(g, walkStart(g, mode, at.n), grid, K, at.seed);
+      if (!placed) continue;  // (a start on an axis: no battle there)
+      const P = battlePlayer(g, grid, S, placed, fs.map(digitsOf)), win = battleWinner(P), r = { fs, ...at, steps: P.n, ended: !!win.until, win };
       if (!r.ended) { if (battleHunt.open.length < 8) battleHunt.open.push(r); continue; }  // (still on: the first 8)
       battleHunt.endedCount++;
       battleHunt.ended.push(r);
       battleHunt.ended.sort((x, y) => y.steps - x.steps);  // (ended: the 8 longest)
       battleHunt.ended.length = Math.min(8, battleHunt.ended.length);
     }
-    battleHunt.status = `${fmt(battleHunt.tried.size)} battles of ${fmt(sets)} fought · ${fmt(battleHunt.endedCount)} ended`;
+    battleHunt.status = `${fmt(battleHunt.tried.size)} battles${sets < Infinity ? ` of ${fmt(sets)}` : ''} fought · ${fmt(battleHunt.endedCount)} ended`;
     renderBattleHunt();
     if (battleHunt.tried.size < sets) setTimeout(slice, 0); else stopBattleHunt();
   };
   slice();
 }
-// a battle of the numbers fs played (A's, B's, C's formulas set, then computed): a hunt's result, Random's draw
-function playBattle(fs) {
+// a battle of the numbers fs played (A's, B's, C's formulas set, then computed), at its start (n: Classic's number; seed:
+// Random's draw; none, the one shown): a hunt's result, Random's draw
+function playBattle(fs, { n, seed } = {}) {
   stopBattleHunt();
   $('formula').value = fs[0]; readFormula(); pickNumber(formulaInUse);
   fs.slice(1).forEach((f, j) => { $(RIVALS[j]).value = f; });
+  if (n) $('startNo').value = n;
+  if (seed) battleSeed = seed;
   compute();
 }
 function stopBattleHunt() {
@@ -7916,17 +7926,24 @@ function stopBattleHunt() {
   battleHunt.run = null;
   renderBattleHunt();
 }
-// its button (Hunt, or Stop), its count, its two lists as cards under their labels: a click plays one (A's, B's and C's formulas)
+// its switches (what it varies: Formulas, Starts), its button (Hunt, or Stop; greyed varying nothing), its count, its two
+// lists as cards under their labels: a click plays one (its numbers, its start)
 function renderBattleHunt() {
   if (battleHunt.key !== battleHuntKey() && !battleHunt.run) Object.assign(battleHunt, BATTLE_FRESH());
+  const vary = (what, text, title, can = true, greyed = '') => tile({ pic: icon(what === 'formulas' ? 'search' : 'play'), text, title, toggle: true, on: huntVary[what] && can, can, greyed,
+    byDefault: what === 'formulas' ? 'on' : 'off', click: () => { huntVary[what] = !huntVary[what]; stopBattleHunt(); renderBattleHunt(); } });
+  $('battleHuntVary').replaceChildren(vary('formulas', 'Formulas', 'The hunt draws the walkers\' numbers (else those in the fields)'),
+    vary('starts', 'Starts', 'The hunt draws the start too: Classic\'s number, Random\'s draw (else the start shown)', startsWayNow() !== 'centred', 'in Centred: its centres all alike, nothing to vary'));
+  $('battleHuntBtn').disabled = !huntVary.formulas && !huntStarts();
+  $('battleHuntBtn').title = $('battleHuntBtn').disabled ? 'Greyed: it varies nothing (Formulas and Starts off)' : 'Battles fought one after another, each set once: what the switches above vary drawn at random; the 8 longest kept, and the first 8 still on as the digits end';
   $('battleHuntBtn').innerHTML = battleHunt.run ? `${icon('stop')} Stop hunt` : `${icon('search')} Hunt the longest battles`;
   $('battleHuntStatus').textContent = battleHunt.status;
   const sym = (f) => formulaOf(f).sym, shown = [formulaInUse, ...RIVALS.map((id) => formulaOf($(id).value).text)];
   const cardOf = (r) => {
-    const end = r.win.s < 0 ? 'a draw' : `${sym(r.fs[r.win.s])} wins, ${fmt(r.win.size)}`;
-    return card({ pic: colourBlock(r.fs.length), name: `${r.fs.map(sym).join(' vs ')} · ${r.ended ? '' : '≥ '}${fmt(r.steps)} steps`, detail: `${r.win.how} · ${end}`,
-                  on: r.fs.every((f, j) => f === shown[j]),
-                  click: () => playBattle(r.fs) });
+    const end = r.win.s < 0 ? 'a draw' : `${sym(r.fs[r.win.s])} wins, ${fmt(r.win.size)}`, at = r.n ? ` · start ${fmt(r.n)}` : r.seed ? ` · draw ${r.seed}` : '';
+    return card({ pic: colourBlock(r.fs.length), name: `${r.fs.map(sym).join(' vs ')}${at} · ${r.ended ? '' : '≥ '}${fmt(r.steps)} steps`, detail: `${r.win.how} · ${end}`,
+                  on: r.fs.every((f, j) => f === shown[j]) && (!r.n || r.n === startNo()) && (!r.seed || r.seed === battleSeed),
+                  click: () => playBattle(r.fs, r) });
   };
   const list = (label, rs) => (rs.length ? [Object.assign(document.createElement('div'), { className: 'field-label', textContent: label }), ...rs.map(cardOf)] : []);
   $('battleHuntTop').replaceChildren(...list('Ended: the longest', battleHunt.ended), ...list('Still on as the digits end', battleHunt.open));

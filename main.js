@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.223';
+const VERSION = '0.4.224';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -7111,7 +7111,7 @@ function tintBattleFormulas() {
   BATTLE_FORMULAS.forEach((id, s) => {
     const on = battleOn() && s < walkTeams && battleAsked[s] === $(id).value;
     $(id).classList.toggle('battle-formula', on);  // (see .battle-formula)
-    $(id).style.setProperty('--walker', walkerColour(s));
+    $(id).style.setProperty('--walker', teamColour(s));
   });
 }
 // A battle's starts: A's, then each moved by the surface's own symmetry, as the walk's state ([tile, the edge it comes in
@@ -7780,7 +7780,7 @@ function battleOf(P) {
 }
 // the battle's title: its walkers' numbers, each in its colour, to its end (their scores, and who won, in the ranking under it)
 function battleScore() {
-  const { names } = walk.battle, name = (s) => `<span style="color:${walkerColour(s)}">${withIcons(names[s])}</span>`;  // (each in its walker's colour)
+  const { names } = walk.battle, name = (s) => `<span style="color:${teamColour(s)}">${withIcons(names[s])}</span>`;  // (each in its walker's colour)
   return names.map((_, s) => name(s)).join(' · ');  // (their scores, and at the end who won, in the ranking under it)
 }
 // A battle's closed areas at the step it is at (P: its player; Area, see drawSphere), each tile's walker + 1 (0: none):
@@ -8329,7 +8329,7 @@ function countSeed(L) {
 // the civilisations' colours (1, 2… : red, blue, gold, green, violet, orange) and their names
 const LIFE_COLOUR_NAMES = ['red', 'blue', 'gold', 'green', 'violet', 'cyan', 'magenta', 'orange', 'lime', 'pink', 'indigo', 'teal'];  // (see LIFE_HUES)
 // in colours, the colour of each state from 1: alive in its colour, then fainter at each dying stage
-const civColours = (K, C) => [...LIFE_COLOURS.slice(0, K), ...Array.from({ length: K * (C - 2) }, (_, i) => faded(LIFE_COLOURS[i % K], 1 - (Math.floor(i / K) + 1) / (C - 1)))];
+const civColours = (K, C) => [...Array.from({ length: K }, (_, k) => teamColour(k)), ...Array.from({ length: K * (C - 2) }, (_, i) => faded(teamColour(i % K), 1 - (Math.floor(i / K) + 1) / (C - 1), blankTile()))];
 
 // the base the number is written in for Life: K + 1, a digit a cell, 0 dead, k alive in colour k (a start has live cells only)
 const lifeBase = () => (plane.start === 'digits' && colourMixed() ? 2 : (lifeRuleNow() || { base: 2 }).base);  // (Digits mixed: base 2, painted at random, see paintOwn)
@@ -10339,11 +10339,11 @@ const liftTile = (c) => { if (!TILE_LIFT) return c; const v = rgbOf(c).map((x) =
 // states, Trail, the motif shown; Activity's, its most changes), kept on L: not each frame a view turns (272 KB, before v0.4.1)
 function lifeLook(L, lifted = false) {
   const colour = $('colourMode').value, maxAct = colour === 'digit' ? L.maxActivity : 0;
-  const key = [colour, lifted, TILE_LIFT, L.C, L.colours, trailOn(), maxAct, LIFE_ALIVE, LIFE_TRAIL[0], LIFE_FADE[0], GRADIENT[0], LIFE_COLOURS[0]].join('|');
+  const key = [colour, lifted, TILE_LIFT, L.C, L.colours, trailOn(), maxAct, LIFE_ALIVE, LIFE_TRAIL[0], LIFE_FADE[0], GRADIENT[0], LIFE_COLOURS[0], oceanOn()].join('|');
   if (L.look?.key === key) return L.look.value;
   const lift = lifted ? liftTile : (c) => c;
   const pack = (c) => { const [r, g, b] = rgbOf(c); return ((255 << 24) | (b << 16) | (g << 8) | r) >>> 0; };
-  const trail = LIFE_TRAIL.map(pack), inked = LIFE_FADE.map(pack), alive = pack(LIFE_ALIVE), civ = [0, ...civColours(L.colours, L.C).map(pack)];
+  const trail = LIFE_TRAIL.map(pack), inked = LIFE_FADE.map(pack), alive = pack(oceanOn() ? LANDS[0] : LIFE_ALIVE), civ = [0, ...civColours(L.colours, L.C).map(pack)];
   const grad = Array.from({ length: 32 }, (_, i) => pack(lift(gradientAt(i / 31))));
   // the colours on a log scale, in tables (millions of cells): of an age (up to 64), of an activity
   const level = (v, max) => Math.min(31, Math.round((Math.log(v) / Math.log(Math.max(2, max))) * 31));
@@ -14855,7 +14855,7 @@ function drawSphere() {
     levelOf = (t) => (visits[t] && last[t] >= 0 ? 1 + last[t] : 0);
   }
   if (walk.battle) {  // a battle: its walkers' bodies in Life's colours (A red, B blue, C gold, see colourBlock), paler than their heads
-    const P = walk.battle.player, K = P.K, colours = Array.from({ length: K }, (_, s) => walkerColour(s));
+    const P = walk.battle.player, K = P.K, colours = Array.from({ length: K }, (_, s) => teamColour(s));
     P.to(cur);
     // each tile's level once: with land (the Land ones) its land, always, plain as its bodies are (Area, the
     // classic walks' look, not used); in Cut the areas each body closes, by Area (Light translucent, Plain as its body);
@@ -14975,8 +14975,8 @@ const rgbOf = (colour) => {  // [r, g, b] of any CSS colour (the canvas normalis
   return hexRgb(colourProbe.fillStyle);
 };
 // colour laid at opacity a over the dark tile background, as an rgb() string (translucent fill)
-function faded(colour, a) {
-  const [r, g, b] = rgbOf(colour), [R, G, B] = rgbOf(UNLIT);
+function faded(colour, a, under = UNLIT) {  // (under: the tile background, Ocean's sea on a surface)
+  const [r, g, b] = rgbOf(colour), [R, G, B] = rgbOf(under);
   return `rgb(${Math.round(R + (r - R) * a)}, ${Math.round(G + (g - G) * a)}, ${Math.round(B + (b - B) * a)})`;
 }
 // The tile edges' opacity on a shape: on a light page, fainter as the tiles get small on screen
@@ -15164,10 +15164,10 @@ const paintLevels = (palette, levelOf) => (out, n) => {
 // gone, by a fixed plane through the middle (see CUT_AXES); the two apart: with both, what is left see-through
 const GLASS_ALPHA = 0.4;  // (a tile's share: a layer behind seen at 60%, two at 36%…)
 const glassOn = () => $('glass').checked && !$('glassRow').hidden;
-const oceanFits = () => !(battleOn() && walkTeams > LANDS.length);  // (its lands a Quintet's at most: beyond, greyed)
+const oceanFits = () => (MODES[$('mode').value].life ? lifeColours : battleOn() ? walkTeams : 1) <= LANDS.length;  // (its lands a Quintet's at most, Life's colours or a battle's walkers: beyond, greyed)
 const oceanOn = () => $('ocean').checked && !$('oceanRow').hidden && oceanFits();
 const blankTile = () => (oceanOn() ? OCEAN : UNLIT);  // (a surface's tile none has painted: Ocean's sea blue, or the theme's)
-const walkerColour = (s) => (oceanOn() && LANDS[s] ? LANDS[s] : LIFE_COLOURS[s]);  // (a battle's walker s: Ocean's lands up to a Quintet, else Life's colours)
+const teamColour = (s) => (oceanOn() && LANDS[s] ? LANDS[s] : LIFE_COLOURS[s]);  // (team s, a battle's walker or Life's colour: Ocean's lands up to a Quintet, else Life's colours)
 // Cut: Off, or a fixed plane through the middle facing one of the view's axes (E, N, Up, as drawn in its corner), the half on
 // that axis's side gone: its notches on a row as Flat ── Inflated (see sizeGauge)
 const CUT_AXES = [['Off'], ['E', [1, 0, 0]], ['N', [0, 1, 0]], ['Up', [0, 0, 1]]];
@@ -15957,7 +15957,7 @@ function gpuDrawPipe(name, { vertex, fragment, buffers, topology = 'triangle-lis
 }
 // a battle's colours in the palette (pal), for its lines along the grid: A's body, B's (their heads: their arrows, see drawOverlay)
 function battlePalette(D) {
-  const colours = Array.from({ length: 12 }, (_, s) => walkerColour(s)), key = `battle|${colours}`;  // (as the theme makes them: a battle's 12 at most)
+  const colours = Array.from({ length: 12 }, (_, s) => teamColour(s)), key = `battle|${colours}`;  // (as the theme makes them: a battle's 12 at most)
   if (D.keys.pal === key) return;
   const pal = new Uint8Array(4 * 256);
   colours.forEach((c, k) => pal.set([...rgbCached(c), 255], 4 * k));
@@ -16449,7 +16449,7 @@ function drawOverlay() {
     B.to(cur);
     for (const s of B.living()) {
       const Q = B.places[s], P = (i) => placePoint(Q[i]), tileAt = (i) => (walk.vert ? walk.geo.grid.tileOf[Q[i]] : Q[i]);
-      if (tileVisible(tileAt(cur))) drawSphereCursor(ctx, P, tileAt, walkerColour(s), placePoint(cameFrom(walk.geo, !!walk.vert, B.starts[s])));
+      if (tileVisible(tileAt(cur))) drawSphereCursor(ctx, P, tileAt, teamColour(s), placePoint(cameFrom(walk.geo, !!walk.vert, B.starts[s])));
     }
     return;
   }
@@ -16632,7 +16632,7 @@ function renderWalkGauges() {
     $('gauges').hidden = true;
     // (with land a dead one keeps its land and its place by it, ✝ by its land; in Cut it goes under the living, ✝ when)
     const gone = (s) => D.dead[s] >= 0;
-    paintRanking(names.map((name, s) => ({ colour: walkerColour(s), name, value: w[s], dead: gone(s) && !D.bite, diedAt: D.dead[s],
+    paintRanking(names.map((name, s) => ({ colour: teamColour(s), name, value: w[s], dead: gone(s) && !D.bite, diedAt: D.dead[s],
                                              cells: [!gone(s) ? `<b>${fmt(w[s])}</b>` : D.bite ? `<b>${fmt(w[s])}</b> ${genLink(D.dead[s], '✝')}` : `✝ ${genLink(D.dead[s])}`,
                                                      fmt(D.bestAt(s)), ...(C.body ? [fmt(D.size[s])] : []), from(s).toFixed(1)] })), C.titles);
     return;
@@ -17545,7 +17545,7 @@ function showNumber() {
   };
   const shown = rows.map((r) => (ten ? base10Digits(r) : inBase(r))), text = rows.map((r, j) => `${r.name} ${baseWords(b)} ${shown[j][0]}`).join('\n');
   v.innerHTML = `<div class="tut-body">${rows.map((r, j) => { const period = r.ratio && ratioDigits(b, r.ratio);
-    return `<h3><span style="color:${one ? walkerColour(r.s) : ''}">${withIcons(r.name)}</span> <code>${baseWords(b)}</code> <span class="muted">${shown[j][1]}</span></h3>${period ? `<p class="number-digits${one}">${period}</p>` : ''}<p class="number-digits${one}"></p>`; }).join('')}</div>`;
+    return `<h3><span style="color:${one ? teamColour(r.s) : ''}">${withIcons(r.name)}</span> <code>${baseWords(b)}</code> <span class="muted">${shown[j][1]}</span></h3>${period ? `<p class="number-digits${one}">${period}</p>` : ''}<p class="number-digits${one}"></p>`; }).join('')}</div>`;
   [...v.querySelectorAll('.number-digits:empty')].forEach((p, j) => { p.textContent = shown[j][0]; });  // (its digits as text)
   v.prepend(tutTools({ toggle: B !== 10 && { text: 'Base 10', title: `The number in base 10 instead of base ${B}`, on: base10.on, click: () => { base10.on = !base10.on; showNumber(); } }, copy: (e) => copyFlash(e.currentTarget, text), close: closeNumber, back: 'the walk' }));
   v.querySelector('.tut-body').scrollTop = 0;

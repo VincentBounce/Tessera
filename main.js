@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.180';
+const VERSION = '0.4.181';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -2770,7 +2770,7 @@ function digitsWorker(F, base, n, then) {
 // some (then: called once they are all there), { error } for a wrong formula
 const RIVALS = [...'BCDEFGHIJKL'].map((c) => `formula${c}`), rivalWorkers = {};
 const rivalName = (id) => `Formula ${id.slice(-1)}`;  // (Formula B, Formula C…)
-// a rival's field, as the Digits' (its number at first, its tooltip), in the battle's Hunt section (see renderWalkTeams)
+// a rival's field, as the Digits' (its number at first, its tooltip), in the battle's Start section (see renderWalkTeams)
 const RIVAL_FIRSTS = ['e', 'sqrt(2)', 'phi', 'sqrt(3)', 'sqrt(5)', 'ln(2)', 'zeta(3)', 'sqrt(7)', 'cbrt(2)', 'gamma', 'catalan'];
 function rivalField(id, j) {
   const box = document.createElement('div'), c = id.slice(-1);
@@ -3162,7 +3162,7 @@ function renderAntRow() {
   // the number read (its digits, see numberPicker): a walk's in its own section; a start's by the digits (Life's, a
   // creature's) under its Digits tab; read by none, back in its section, hidden
   const home = !readsDigits(w) || (!m.life && !ant) ? $('digitsSection') : m.life ? $('startDigits') : $('antStartDigits');
-  $('digitsSection').hidden = !readsDigits(w) || home !== $('digitsSection') || battleOn();  // (a battle: A's formula in its Hunt section)
+  $('digitsSection').hidden = !readsDigits(w) || home !== $('digitsSection') || battleOn();  // (a battle: A's formula in its Start section)
   if ($('numberPicker').parentElement !== home) home.append($('numberPicker'));
   drawing = !!m.plane && plane.start === 'draw' && !spaceTimeOn();  // Life on the plane draws in its Draw start (not in Space-time)
   stage.classList.toggle('drawing', drawsHere());  // (the crosshair: a click draws, as renderDrawTools keeps it)
@@ -7041,11 +7041,11 @@ const PENETRATIONS = [
 const battleMode = (w) => NAV[w]?.[0] === 'Walk' && MODES[w].lattice === 'sphere' && !!SPHERES[surfaceOf(MODES[w])];
 const battleOn = () => walkTeams > 1 && battleCounts($('mode').value).includes(walkTeams);
 // Classic, Duel, Trio… (those the solid has no group of turns for greyed, see battleCounts), under the size and start
-// of a walk on a surface (Life's tiles, see renderColours); then a battle's numbers in its Hunt section
+// of a walk on a surface (Life's tiles, see renderColours); then a battle's numbers in its Start section
 const walkTeamsHere = (w) => NAV[w]?.[0] === 'Walk' && MODES[w].lattice === 'sphere';  // (a walk's teams: on a surface)
 function renderWalkTeams() {
   const w = $('mode').value, here = walkTeamsHere(w);
-  // a battle: its numbers in its Hunt section, A's formula field moved there from the Digits' (hidden then), then B's on
+  // a battle: its numbers in its Start section, A's formula field moved there from the Digits' (hidden then), then B's on
   $('battleHuntSection').hidden = !battleOn();
   RIVALS.forEach((id, j) => { $(id).parentElement.hidden = j >= walkTeams - 1; });  // (the walkers' but A's)
   const fieldA = $('formula').parentElement;

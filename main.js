@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.140';
+const VERSION = '0.4.141';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -4412,10 +4412,8 @@ function wordStepper(net, words) {
   if (net === 'cube') return cubeStepper(acts);
   return headingStepper(WALK_NETS[net], acts);
 }
-// Each walk's rule, kept per network, the plane's and the surfaces' apart (a surface: turns only); its defaults, the turtles'
-const WALK_RULE = { square: 'LNR', hex: 'L2 L1 N R1 R2', tri: 'LR', cairo: 'L2 L1 R1 R2', cube: 'L ^ N v R', diamond: 'LNR' };
+// a walk's rule's key: its network's, the plane's and the surfaces' apart (see walkRules)
 const walkKey = (m) => (m.lattice === 'sphere' ? `${m.net} surface` : m.net);
-const walkRules = Object.fromEntries(Object.entries(WALK_RULE).flatMap(([net, r]) => [[net, r], [`${net} surface`, r]]));
 const surfaceWords = (net) => Object.keys(WALK_NETS[net].turns).filter((t) => t !== 'U');  // (a surface's turns, left to right)
 // a surface walk's acts, one per digit (see surfaceSteps): by its rule's words (a turn: its edges on, or degrees along the grid,
 // as its turns list them left to right; l r a: a notch on the spot, a parity's), else by its turns (an ant's)
@@ -4457,6 +4455,9 @@ const WALK_PRESETS = {
   cube: [['L ^ N v R', 'Turtle', 'turtle'], ['L ^ v R', 'Turtle', 'turtle'], ['N r p', 'Pivot', 'pivot'], ['N a', 'Parity', 'walk2d'], ['neuswd', 'Fixed', 'compass']],
   diamond: [['LNR', 'Polymer', 'turtle'], ['LR', 'Polymer', 'turtle']],
 };
+// each network's rule in use, the plane's and the surfaces' apart (a surface: turns only); at first its list's first (see WALK_PRESETS)
+const firstWalkRule = (net) => WALK_PRESETS[net][0][0];
+const walkRules = Object.fromEntries(Object.keys(WALK_PRESETS).flatMap((net) => [[net, firstWalkRule(net)], [`${net} surface`, firstWalkRule(net)]]));
 // a rule typed or picked for a walk: kept if its words fit it (else the field back to the rule in use)
 function setWalkRule(w, rule) {
   const words = walkWordsOf(w, rule), k = walkKey(MODES[w]);
@@ -13610,7 +13611,7 @@ function getSetup() {
   }
   if (mode.life && !mode.loops) s.pop = plane.start === 'random' ? zonePop() : plane.start === 'text' ? `text.${plane.text}` : plane.start;  // its start (a surface's no Draw)
   if (mode.life && !mode.loops && plane.start === 'text' && plane.font !== 'sans') s.tf = plane.font;  // (its font)
-  if (mode.net && walkRules[walkKey(mode)] !== WALK_RULE[mode.net]) s.r = walkRules[walkKey(mode)];  // (a walk's rule: none, its own)
+  if (mode.net && walkRules[walkKey(mode)] !== firstWalkRule(mode.net)) s.r = walkRules[walkKey(mode)];  // (a walk's rule: none, its own)
   if (mode.antOf) s.r = antByDigits ? `digits ${antDigitRules[w]}`.trim() : antRules[w];
   if (mode.worm) s.r = worm.byDigits ? 'digits' : worm.rule;
   if (mode.turmite) s.r = turmite.rule;  // "digits LNR"; "digits" alone: left, right
@@ -13653,7 +13654,7 @@ function applySetup(s) {
     else if (antTurnsOf(s.w, s.r)) antRules[s.w] = ruleOfWords(ruleWords(s.r));
   } else if (MODES[s.w].net) {
     const m = MODES[s.w], words = s.r && walkWordsOf(s.w, s.r);
-    walkRules[walkKey(m)] = words ? ruleOfWords(words) : WALK_RULE[m.net];
+    walkRules[walkKey(m)] = words ? ruleOfWords(words) : firstWalkRule(m.net);
   } else if (s.r || MODES[s.w].life) {  // (Life: its size and start without a rule too, the grid's first then)
     if (MODES[s.w].plane) planeFromSetup(s);
     else startFromSetup(s);  // (a surface's)

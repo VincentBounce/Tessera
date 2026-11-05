@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.177';
+const VERSION = '0.4.178';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -11031,10 +11031,14 @@ function creatureFigures(w) {
 const BATTLE_LOOP = { square: [90, 90, 180, 180, 270, 270, 0, 0, 0, 0], tri: [120, 120, 240, 240, 0, 0, 0, 0], hex: [90, 150, 210, 270, 330, 30, 330, 30, 330, 30] };  // (blue's loop, then its tail: a fork)
 const BATTLE_LOOP_AT = { square: [0, 0, 0], tri: [0, 0, 0], hex: [330, 30, 330, 30] };  // (its start)
 const BATTLE_CASES = {
-  land: { words: 'A loop closed: the tiles on its smaller side its land (an enemy\'s land inside stays its)',
+  land: { words: 'A loop closed: the tiles on its smaller side its land',
     square: [{ moves: [90, 90, 0, 0, 270, 270, 180, 180] }, { pre: [0, 0, 0, 0], moves: [90] }],
     tri: [{ moves: [0, 0, 120, 120, 240, 240] }, { pre: [0, 0, 0, 0], moves: [60] }],
     hex: [{ moves: [90, 30, 330, 270, 210, 150] }, { pre: [210, 150, 210, 150], moves: [90] }] },
+  inside: { words: 'A loop closed round an enemy\'s land: its land the tiles round it, the enemy\'s staying its',
+    square: [{ moves: [90, 0, 270, 180] }, { pre: [180, 270], moves: [90, 90, 90, 0, 0, 0, 270, 270, 270, 180, 180, 180] }],
+    tri: [{ moves: [0, 120, 240] }, { pre: [240, 180], moves: [0, 0, 0, 0, 120, 120, 120, 120, 240, 240, 240, 240] }],
+    hex: [{ moves: [90, 30, 330, 270, 210, 150] }, { pre: [330, 30, 330], moves: [30, 90, 150, 90, 150, 210, 150, 210, 270, 210, 270, 330, 270, 330, 30, 330, 30, 90] }] },
   along: { words: { landGrid: 'Along an enemy\'s line: pierced there, cut from that corner to its forks or ends (dashed), the land it closed freed',
     landGrid3: 'Along an enemy\'s line, not its last thread: pierced there, cut from that corner to its forks or ends (dashed), the land it closed freed' },
     square: [{ pre: [0, 0, 90, 90, 90, 90], moves: [null, null, null, null, null, null, null, null, 270, 270, 180] }, 'loop'],
@@ -11054,11 +11058,16 @@ const BATTLE_CASES = {
   necks: { way: 'landGrid3', words: 'Two last threads broken at once, each by the other\'s head: both die',
     square: [{ pre: [90, 90, 90], moves: [270, 270, 270, 270, 270] }, { pre: [180, 270], moves: [0, 0, 90, 180, 180] }],
     tri: [{ pre: [60, 60, 60], moves: [240, 240, 240, 240, 240] }, { pre: [240, 180], moves: [0, 0, 60, 180, 180] }] },
-  heads: { words: { landGrid: 'Heads meeting (on a corner, or passing each other): both die, their lines and land staying',
-    landGrid3: 'Heads meeting (on a corner, or passing each other): both die, each one\'s last thread let go' },
+  heads: { words: { landGrid: 'Heads meeting on a corner: both die, their lines and land staying',
+    landGrid3: 'Heads meeting on a corner: both die, each one\'s last thread let go' },
     square: [{ pre: [180, 180], moves: [0, 0] }, { pre: [0, 0], moves: [180, 180] }],
     tri: [{ pre: [180, 180], moves: [0, 0] }, { pre: [0, 0], moves: [180, 180] }],
     hex: [{ pre: [210, 150], moves: [330, 30] }, { pre: [330, 30], moves: [210, 150] }] },
+  crossing: { words: { landGrid: 'Heads crossing, each along the edge the other comes by: both die, their lines and land staying',
+    landGrid3: 'Heads crossing, each along the edge the other comes by: both die, each one\'s last thread let go' },
+    square: [{ pre: [180, 180], moves: [0, 0] }, { pre: [0], moves: [180, 180] }],
+    tri: [{ pre: [180, 180], moves: [0, 0] }, { pre: [0], moves: [180, 180] }],
+    hex: [{ pre: [210, 150], moves: [330, 30] }, { pre: [330], moves: [150, 210] }] },
 };
 // the case's figure, its battle played (see BATTLE_CASES): an SVG, null where its moves do not fit the grid
 function battleCaseFigure(grid, way, scripts) {
@@ -11111,8 +11120,8 @@ function battleTutorial(w) {
     const svg = battleCaseFigure(grid, way, c[grid].map((x) => (x === 'loop' ? loop : x)));
     return svg && `<figure><div>${svg}</div><figcaption>${typeof c.words === 'string' ? c.words : c.words[way]}</figcaption></figure>`;
   });
-  return `<h3>Battle: ${PENETRATIONS[penetration][1]}</h3><p>Each walker's line: the edges it has gone along, never let go by itself. All walkers step at once, each step judged on the lines as it found them. Here red's last step makes the case; a line let go dashed, a walker dead crossed.</p>`
-    + `<div class="tut-row tut-walk tut-battle">${figs.filter(Boolean).join('')}</div>`;
+  return `<div class="form-section"><h3>Battle: ${PENETRATIONS[penetration][1]}</h3><p>Each walker's line: the edges it has gone along, never let go by itself. All walkers step at once, each step judged on the lines as it found them. Here red's last step makes the case; a line let go dashed, a walker dead crossed.</p>`
+    + `<div class="tut-row tut-walk tut-battle">${figs.filter(Boolean).join('')}</div></div>`;
 }
 function walkTutorial(w) {
   $('ruleTuto').hidden = false;

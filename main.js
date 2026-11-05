@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.156';
+const VERSION = '0.4.157';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -8050,8 +8050,7 @@ function parseRule(text) {
     for (const [, d, not, letters] of spec.matchAll(/(\d)(-?)([A-Z]*)/g)) {
       if (!letters) a[+d] = 1;
       for (let mask = 0; mask < 1 << ring; mask++) {
-        const bits = mask.toString(2).replace(/0/g, '').length;
-        if (bits === +d && (!letters || letters.includes(classOf(mask)) !== !!not)) a[16 + mask] = 1;
+        if (ones(mask) === +d && (!letters || letters.includes(classOf(mask)) !== !!not)) a[16 + mask] = 1;
       }
     }
     return a;
@@ -10393,9 +10392,8 @@ const colourFairOwn = (K, g) => {
 const colourMissing = (K) => {
   const r = parseRule(ruleBody($('lifeRule').value));
   if (K < 3 || !r) return false;
-  const bits = (m) => m.toString(2).replace(/0/g, '').length;
   const counts = r.iso === 'vertex' ? [...Array(16).keys()].filter((c) => [0, 1, 2, 3].some((k) => r.B[16 + 4 * c + k]))  // (any of its ways)
-    : r.iso ? [...Array(1 << (r.iso === 'hensel' ? 8 : 6)).keys()].filter((m) => r.B[16 + m]).map(bits) : [...Array(16).keys()].filter((c) => r.B[c]);
+    : r.iso ? [...Array(1 << (r.iso === 'hensel' ? 8 : 6)).keys()].filter((m) => r.B[16 + m]).map(ones) : [...Array(16).keys()].filter((c) => r.B[c]);
   return counts.some((c) => c >= K - 1 && (K === 3 ? (c - 2) % 2 === 0 : c - (K - 1) !== 1));
 };
 // Teams, Life's and a walk's alike (its own: see walkTeamTiles)
@@ -10584,7 +10582,7 @@ function blockTutorial(option, to) {
   const fading = (t, fill) => `<polygon points="${points(t)}" fill="${fill}"><animate attributeName="opacity" values="1;1;0" keyTimes="0;0.625;1" dur="0.8s" fill="freeze"/></polygon>`;
   const block = (st, before) => `<svg ${box(Math.min(...xs), Math.min(...ys), side)}>${ring.map((t, j) => shape(t, colour(st, j))).join('')}`
     + (before === undefined ? '' : ring.map((t, j) => (colour(before, j) !== colour(st, j) ? fading(t, colour(before, j)) : '')).join('')) + '</svg>';
-  const alive = ringAlive, pair = (st) => `<figure><div>${block(st)}<span>→</span>${block(to[st], st)}</div><figcaption>${alive(st)} alive${alive(to[st]) !== alive(st) ? ` → ${alive(to[st])}` : ''}</figcaption></figure>`;
+  const alive = ones, pair = (st) => `<figure><div>${block(st)}<span>→</span>${block(to[st], st)}</div><figcaption>${alive(st)} alive${alive(to[st]) !== alive(st) ? ` → ${alive(to[st])}` : ''}</figcaption></figure>`;
   const first = (st) => Math.min(...Array.from({ length: k }, (_, r) => ringTurn(st, r, k)));  // (one of each turned the same)
   const states = [...Array(1 << k).keys()].filter((st) => first(st) === st).sort((a, b) => alive(a) - alive(b) || a - b);
   const moved = states.filter((st) => to[st] !== st), kept = states.filter((st) => to[st] === st);
@@ -10752,7 +10750,7 @@ function ruleTutorial(option) {
     + `<polygon points="${points(c)}" fill="none" stroke-width="${side / 22}" class="tut-centre"/></svg>`;  // (its frame on top: the neighbours' sides hid it in part)
   // the cases: each count of live neighbours; a rule with letters (Hensel's on squares, Callahan's on hexagons), each
   // count split into its letters, where they sit (its live ones: an arrangement of that letter round the ring)
-  const iso = rule.iso, R = iso === 'hensel' ? 8 : 6, ring = iso === 'hex' || iso === 'hensel' ? [...nb.ring.subarray(R * c, R * c + R)] : null, ofCount = (m) => m.toString(2).replace(/0/g, '').length;
+  const iso = rule.iso, R = iso === 'hensel' ? 8 : 6, ring = iso === 'hex' || iso === 'hensel' ? [...nb.ring.subarray(R * c, R * c + R)] : null;
   // (the flowers' letters: its neighbours by a side, by a corner only; v and how many of the live ones by a corner, those it can have)
   const mine = new Set(corners(c).map((p) => pointKey(...p))), bySide = (u) => corners(u).filter((p) => mine.has(pointKey(...p))).length >= 2;
   const sides = around.filter(bySide), tips = around.filter((u) => !bySide(u));
@@ -10761,7 +10759,7 @@ function ruleTutorial(option) {
   const cases = Array.from({ length: around.length + 1 }, (_, k) => k).flatMap((k) => (lettersOf(k).length ? lettersOf(k) : ['']).map((x) => {
     if (!iso) return { k, x, live: new Set(around.slice(0, k)), on: (table) => table[k] === 1 };
     if (iso === 'vertex') { const j = x ? Number(x.slice(1)) : ways(k)[0]; return { k, x, live: new Set([...tips.slice(0, j), ...sides.slice(0, k - j)]), on: (table) => table[16 + 4 * k + j] === 1 }; }
-    const m = Array.from({ length: 1 << R }, (_, m) => m).find((m) => ofCount(m) === k && (!x || classOf(m) === x));
+    const m = Array.from({ length: 1 << R }, (_, m) => m).find((m) => ones(m) === k && (!x || classOf(m) === x));
     return { k, x, live: new Set(ring.filter((_, q) => (m >> q) & 1)), on: (table) => table[16 + m] === 1 };
   }));
   const pair = (cs, from, to, word) => `<figure><div>${cell(from, cs.live)}<span>→</span>${cell(to, cs.live, from)}</div><figcaption>${cs.k}${cs.x} live: ${word}</figcaption></figure>`;
@@ -10802,7 +10800,7 @@ function ruleTutorial(option) {
     }
     const R = lettersOf2 === 'hensel' ? 8 : 6, at = [...planeNeighbours(kind, W, false, true).ring.subarray(R * c, R * c + R)];
     const of = lettersOf2 === 'hensel' ? (k) => HENSEL_LETTERS[k] : (k) => (k >= 2 && k <= 4 ? ['o', 'm', 'p'] : []), classOf2 = lettersOf2 === 'hensel' ? henselClass : (m) => hexClass(m).toLowerCase();
-    const figs = [1, 2, 3, 4].flatMap((k) => of(k).map((x) => { const m = Array.from({ length: 1 << R }, (_, m) => m).find((m) => ofCount(m) === k && classOf2(m) === x); return m === undefined ? '' : card(at.filter((_, q) => (m >> q) & 1), `${k}${x}`); }));
+    const figs = [1, 2, 3, 4].flatMap((k) => of(k).map((x) => { const m = Array.from({ length: 1 << R }, (_, m) => m).find((m) => ones(m) === k && classOf2(m) === x); return m === undefined ? '' : card(at.filter((_, q) => (m >> q) & 1), `${k}${x}`); }));
     return lettersOf2 === 'hensel'
       ? `<h3>Letters</h3><p>Hensel's, for a rule of your own on squares (B2a/S23, B3-k…): where the live neighbours sit round the square, each count its letters (c corners, e edges, then their ways together); 5 to 7 as 3 to 1 with the live and the dead swapped (5c: all but 3c).</p><div class="tut-row">${figs.join('')}</div>`
       : `<h3>Letters</h3><p>Callahan's, for a rule of your own on hexagons (B2o/S2m34…): where 2, 3 or 4 live neighbours sit round the hexagon: o side by side, m one apart, p across (3p every other one; 4: as 2, the dead ones).</p><div class="tut-row">${figs.join('')}</div>`;
@@ -10978,11 +10976,11 @@ function renderRuleSection() {
   const kiteWays = (c) => { const ks = [0, 1, 2, 3].filter((k) => (k < 3 ? k <= c && k >= c - 4 : c >= 3)); return ks.length > 1 ? ks.map((k) => `v${k}`) : []; };
   const lettersOf = (c) => (hex ? (c >= 2 && c <= 4 ? ['o', 'm', 'p'] : []) : hensel ? HENSEL_LETTERS[c] : kites ? kiteWays(c) : vertex && c ? ['v0', 'v1', 'v2'].slice(0, Math.min(c, 2) + 1) : []);
   const all = (c) => (lettersOf(c).length ? lettersOf(c) : ['']);  // a count without letters: one, ''
-  const classOf = (m) => (hex ? hexClass(m).toLowerCase() : henselClass(m)), R = hex ? 6 : 8, ofCount = (m) => m.toString(2).replace(/0/g, '').length;
+  const classOf = (m) => (hex ? hexClass(m).toLowerCase() : henselClass(m)), R = hex ? 6 : 8;
   const letters = (table) => Array.from({ length: N + 1 }, (_, c) => new Set(all(c).filter((x) => (rule.iso === 'vertex' ? table[16 + 4 * c + (x ? Number(x[1]) : 0)] === 1
     : !rule.iso && vertex ? table[c] === 1
     : rule.iso
-    ? Array.from({ length: 1 << R }, (_, m) => m).some((m) => table[16 + m] && ofCount(m) === c && (x === '' || classOf(m) === x))
+    ? Array.from({ length: 1 << R }, (_, m) => m).some((m) => table[16 + m] && ones(m) === c && (x === '' || classOf(m) === x))
     : table[c] === 1))));
   const write = (B, S, C) => {
     const part = (set) => set.map((on, c) => {
@@ -11125,7 +11123,7 @@ function lifeTrack(gen) {
 // live cells (Billiard balls, Single rotation, Swirl), C(n, m) × p (m alive)
 // (its key its start's first, then cell for cell)
 const blockBack = (L, gen) => gen > 0 && gen % L.margolus.turns.length === 0 && L.key === L.seedKey && L.alive.every((v, t) => v === L.seed[t]);
-const blockKeeps = (to) => to.length > 0 && to.every((v, st) => ringAlive(v) === ringAlive(st));  // (each block as many alive after)
+const blockKeeps = (to) => to.length > 0 && to.every((v, st) => ones(v) === ones(st));  // (each block as many alive after)
 function blockBound(L, to = L.margolus.to, phases = L.margolus.turns.length) {  // its log10
   const n = L.seed.length, m = L.seedAlive, keeps = blockKeeps(to);
   let c = 0;
@@ -11333,7 +11331,7 @@ function isingOf(kind, W, torus = planeTorus(kind), row = planeRow(kind, W)) {  
 // flips: a rule that turns an empty block full (Critters, Tron), shown negative every other generation (see negative): a
 // cell's colour goes with the cells shown alive; keeps: each block as many cells shown alive after as before (the
 // billiard balls, the gases, Critters: their cells carry their colours, back by the inverse)
-const ones = (v) => { let c = 0; for (; v; v &= v - 1) c++; return c; };
+const ones = (v) => { let c = 0; for (; v; v &= v - 1) c++; return c; };  // (its 1 bits: a block's live cells, a mask's neighbours)
 const blockKind = (to) => { const full = to.length - 1, flips = to[0] === full; return { flips, keeps: to.every((n, st) => ones(flips ? full ^ n : n) === ones(st)) }; };
 // a block rule whose cells could carry colours: one that keeps them (its rule's card in colour); Tron makes and unmakes
 // cells, Q2R's never move: black and white
@@ -11341,15 +11339,14 @@ const carriesColours = (rule) => !!rule?.margolus && !rule.ising && blockKind(ru
 // The block rules, on a ring of k cells (the same on every grid with blocks of k, each turned as its block): their
 // name, the blocks they fit, their words, the state a state turns into, their picture
 const ringTurn = (st, r, k) => { r = mod(r, k); return ((st << r) | (st >> (k - r))) & ((1 << k) - 1); };
-const ringAlive = (st) => st.toString(2).replace(/0/g, '').length;
 const RING_RULES = [
   ['Billiard balls', (k) => k % 2 === 0, "Fredkin's billiard-ball machine, by Margolus: a lone cell to the far side of its block, two facing ones to the next two facing; balls fly along and bounce off walls (full blocks) and off each other",
-    (st, k) => (ringAlive(st) === 1 ? ringTurn(st, k / 2, k) : ringAlive(st) === 2 && ringTurn(st, k / 2, k) === st ? ringTurn(st, 1, k) : st), 'oo...,oo...,.....,...oo,...oo'],
+    (st, k) => (ones(st) === 1 ? ringTurn(st, k / 2, k) : ones(st) === 2 && ringTurn(st, k / 2, k) === st ? ringTurn(st, 1, k) : st), 'oo...,oo...,.....,...oo,...oo'],
   ['Critters', (k) => k % 2 === 0, "Margolus's: a block half alive kept, the others reversed (one more than half also turned round)",
-    (st, k) => { const c = ringAlive(st), t = ((1 << k) - 1) ^ st; return c === k / 2 ? st : c === k / 2 + 1 ? ringTurn(t, k / 2, k) : t; }, '.o.o.,o...o,.....,o...o,.o.o.'],
+    (st, k) => { const c = ones(st), t = ((1 << k) - 1) ^ st; return c === k / 2 ? st : c === k / 2 + 1 ? ringTurn(t, k / 2, k) : t; }, '.o.o.,o...o,.....,o...o,.o.o.'],
   ['Tron', () => true, "Toffoli and Margolus's: a block all alike reversed, the others kept", (st, k) => (st === 0 ? (1 << k) - 1 : st === (1 << k) - 1 ? 0 : st), 'ooooo,o...o,o.o.o,o...o,ooooo'],
-  ['Single rotation', () => true, 'a block of one turned a step round, the others kept', (st, k) => (ringAlive(st) === 1 ? ringTurn(st, 1, k) : st), '..o..,.....,o...o,.....,..o..'],
-  ['Swirl', () => true, 'a block of one turned a step round, one of one empty cell a step the other way', (st, k) => (ringAlive(st) === 1 ? ringTurn(st, 1, k) : ringAlive(st) === k - 1 ? ringTurn(st, -1, k) : st), 'oo..o,....o,.....,o....,o..oo'],
+  ['Single rotation', () => true, 'a block of one turned a step round, the others kept', (st, k) => (ones(st) === 1 ? ringTurn(st, 1, k) : st), '..o..,.....,o...o,.....,..o..'],
+  ['Swirl', () => true, 'a block of one turned a step round, one of one empty cell a step the other way', (st, k) => (ones(st) === 1 ? ringTurn(st, 1, k) : ones(st) === k - 1 ? ringTurn(st, -1, k) : st), 'oo..o,....o,.....,o....,o..oo'],
 ];
 // a rule's option in the rules' menu, before Custom: its words, value, name, its picture (see RULE_ICONS)
 const beforeCustom = (option) => $('lifePreset').insertBefore(option, $('lifePreset').querySelector('option[value="custom"]'));
@@ -11383,8 +11380,8 @@ for (const [name, words, value, art] of [
 // FHP's (Frisch, Hasslacher and Pomeau, 1986) and HPP's (Hardy, de Pazzis and Pomeau, 1973) lattice gases: the particles fly
 // on to the far side; two head on turned a step (a sixth of a turn, a quarter); FHP's, three a third apart back the way they came
 const STAR_RULES = [
-  ['FHP gas', 6, 'particles flying on, two head on turned a sixth of a turn, three a third apart back where they came from: a fluid', (st, k) => (ringAlive(st) === 2 && ringTurn(st, k / 2, k) === st ? ringTurn(st, 1, k) : ringAlive(st) === 3 && ringTurn(st, 2, k) === st ? st : ringTurn(st, k / 2, k)), '..o..,.o.o.,o...o,.o.o.,..o..'],
-  ['HPP gas', 4, 'particles flying on, two head on turned a quarter of a turn: a gas', (st, k) => (ringAlive(st) === 2 && ringTurn(st, k / 2, k) === st ? ringTurn(st, 1, k) : ringTurn(st, k / 2, k)), 'o...o,.....,..o..,.....,o...o'],
+  ['FHP gas', 6, 'particles flying on, two head on turned a sixth of a turn, three a third apart back where they came from: a fluid', (st, k) => (ones(st) === 2 && ringTurn(st, k / 2, k) === st ? ringTurn(st, 1, k) : ones(st) === 3 && ringTurn(st, 2, k) === st ? st : ringTurn(st, k / 2, k)), '..o..,.o.o.,o...o,.o.o.,..o..'],
+  ['HPP gas', 4, 'particles flying on, two head on turned a quarter of a turn: a gas', (st, k) => (ones(st) === 2 && ringTurn(st, k / 2, k) === st ? ringTurn(st, 1, k) : ringTurn(st, k / 2, k)), 'o...o,.....,..o..,.....,o...o'],
 ];
 for (const [kind, { k }] of Object.entries(STARS)) for (const [name, size, words, rule, art] of STAR_RULES) {
   if (size !== k) continue;

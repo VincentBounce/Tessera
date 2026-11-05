@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.241';
+const VERSION = '0.4.242';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -3265,21 +3265,26 @@ const WORM_PRESETS = ['L1 R1 R2 R2 R1 R1 L1', 'L1 R1 L2 R1 R1 L1 L1', 'L1 N R2 N
 // The turmite's rules (see turmiteOf): Langton's ant, then of the 65,536 with 2 states and 2 colours, walked here 5,000
 // steps: a spiral; the widest mess (3,765 cells); squares growing filled (97 %, and all); a highway from step 3,090
 const TURMITE_PRESETS = ['1R0 0L0', '1L1 1L1 | 1R1 0N0', '1N1 1N0 | 1R0 0L0', '1L0 0R1 | 0R0 1L1', '1L0 1U1 | 0L0 1L0', '1N1 0R1 | 1L0 1N0'];
+// a rule typed that this walk or creature cannot take: the one in use put back, and why said (its words, see creatureRules)
+function refuseRule(typed, kept) {
+  $('antRule').value = kept;
+  $('status').textContent = `“${typed}”: not a rule here · ${creatureRules($('mode').value).name} · ${kept} kept`;
+}
 function setTurmiteRule(rule) {
-  if (!turmiteOf(rule)) { $('antRule').value = turmite.rule; return; }
+  if (!turmiteOf(rule)) { refuseRule(rule, turmite.rule); return; }
   turmite.rule = turmiteOf(rule).text;
   renderModePicker();
   compute();
 }
 function setWormRule(rule) {
-  if (!wormRuleOf(rule)) { $('antRule').value = worm.rule; return; }
+  if (!wormRuleOf(rule)) { refuseRule(rule, worm.rule); return; }
   worm.rule = wormRuleOf(rule).join(' ');
   renderModePicker();
   compute();
 }
 // a rule typed or picked, by the digits (its base the number of its turns) or by colour
 function setAntRule(w, rule) {
-  if (!(antByDigits ? antDigitTurnsOf : antTurnsOf)(w, rule)) { $('antRule').value = antRuleOf(w); return; }
+  if (!(antByDigits ? antDigitTurnsOf : antTurnsOf)(w, rule)) { refuseRule(rule, antRuleOf(w)); return; }
   (antByDigits ? antDigitRules : antRules)[w] = ruleOfWords(ruleWords(rule));
   renderModePicker();
   compute();
@@ -4522,7 +4527,7 @@ const walkRules = Object.fromEntries(Object.keys(WALK_PRESETS).flatMap((net) => 
 // a rule typed or picked for a walk: kept if its words fit it (else the field back to the rule in use)
 function setWalkRule(w, rule) {
   const words = walkWordsOf(w, rule), k = walkKey(MODES[w]);
-  if (!words) { $('antRule').value = walkRules[k]; return; }
+  if (!words) { refuseRule(rule, walkRules[k]); return; }
   walkRules[k] = ruleOfWords(words);
   renderModePicker();
   compute();
@@ -17057,7 +17062,8 @@ $('digitsUp').addEventListener('click', () => stepDigits(1));
 // but a wrong formula keeps you in the field, with its error. Esc undoes the edit: back to the value
 // in use. For ↵, mousedown keeps the focus from going to the button first.
 const valueInUse = { formula: () => formulaInUse, digitsLabel: () => String(randomPrimeSize() ?? targetAsked()), startLabel: () => String(startNo()), speedLabel: () => String(speed),
-                     antRule: () => antRuleOf($('mode').value) };
+                     antRule: () => creatureRules($('mode').value).now,  // (a walk's, an ant's, a turmite's, a worm's)
+                     lifeRule: () => (walk.life?.ruleText ? ruleBody(walk.life.ruleText) : $('lifeRule').value) };  // (the rule the game plays, its colours apart)
 for (const input of document.querySelectorAll('.field input')) {
   let before = '';
   valueInUse[input.id] ??= () => before;  // Life's rule: as it was when entered

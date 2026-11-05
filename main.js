@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.148';
+const VERSION = '0.4.149';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -4566,16 +4566,15 @@ function finishMesh(verts, tiles, sides, size, outwardRef = (m) => m) {
 
 /* ---- 7.2 Cube -------------------------------------------------------------------------------- */
 /* Cube: each face cut into n × n squares. */
+// the cube's 6 faces, each [its normal, its two axes along it] (the cube's, the pitted and bumped ones')
+const CUBE_FRAMES = [[[1, 0, 0], [0, 1, 0], [0, 0, 1]], [[-1, 0, 0], [0, 1, 0], [0, 0, 1]], [[0, 1, 0], [1, 0, 0], [0, 0, 1]], [[0, -1, 0], [1, 0, 0], [0, 0, 1]],
+  [[0, 0, 1], [1, 0, 0], [0, 1, 0]], [[0, 0, -1], [1, 0, 0], [0, 1, 0]]];
 function cubeFlat(n) {
   const key = `flat${n}`;
   if (meshCache[key]) return meshCache[key];
-  const faces = [
-    [[1, 0, 0], [0, 1, 0], [0, 0, 1]], [[-1, 0, 0], [0, 1, 0], [0, 0, 1]],
-    [[0, 1, 0], [1, 0, 0], [0, 0, 1]], [[0, -1, 0], [1, 0, 0], [0, 0, 1]],
-    [[0, 0, 1], [1, 0, 0], [0, 1, 0]], [[0, 0, -1], [1, 0, 0], [0, 1, 0]]];
   const { verts, add } = vertexStore();
   const quads = [];
-  for (const [N, U, W] of faces) {
+  for (const [N, U, W] of CUBE_FRAMES) {
     const at = (i, j) => add(...[0, 1, 2].map((d) => N[d] + U[d] * (2 * i / n - 1) + W[d] * (2 * j / n - 1)));
     for (let i = 0; i < n; i++) {
       for (let j = 0; j < n; j++) quads.push([at(i, j), at(i + 1, j), at(i + 1, j + 1), at(i, j + 1)]);
@@ -4583,7 +4582,7 @@ function cubeFlat(n) {
   }
   const mesh = finishMesh(verts, quads, 4, n);
   // each face as one big square, with its grid lines, for cheap drawing
-  mesh.faces = faces.map(([N, U, W]) => {
+  mesh.faces = CUBE_FRAMES.map(([N, U, W]) => {
     const pt = (a, b) => [0, 1, 2].map((d) => N[d] + U[d] * a + W[d] * b);
     const lines = [];
     for (let i = 0; i <= n; i++) {
@@ -4616,13 +4615,9 @@ function tetrakisOf(key, g) {
 function cubePits(n, up = false) {  // up: a bump on each face instead, as high as the pit is deep (its top, its 4 walls; convex round its middle)
   const key = `${up ? 'bumps' : 'pits'}${n}`;
   if (meshCache[key]) return meshCache[key];
-  const faces = [
-    [[1, 0, 0], [0, 1, 0], [0, 0, 1]], [[-1, 0, 0], [0, 1, 0], [0, 0, 1]],
-    [[0, 1, 0], [1, 0, 0], [0, 0, 1]], [[0, -1, 0], [1, 0, 0], [0, 0, 1]],
-    [[0, 0, 1], [1, 0, 0], [0, 1, 0]], [[0, 0, -1], [1, 0, 0], [0, 1, 0]]];
   const { verts, add } = vertexStore(), quads = [], a = n / 3, c = (i) => (2 * i) / n - 1;  // c: a grid line as a coordinate
   const floors = [];  // each face's pit floor, row by row: its tiles (Patterns go there)
-  for (const [N, U, W] of faces) {
+  for (const [N, U, W] of CUBE_FRAMES) {
     const at = (h, i, j) => add(...[0, 1, 2].map((d) => N[d] * h + U[d] * c(i) + W[d] * c(j)));  // h: the height, 1 on the face
     for (let i = 0; i < n; i++) for (let j = 0; j < n; j++) {
       if (i >= a && i < 2 * a && j >= a && j < 2 * a) continue;  // the pit's mouth

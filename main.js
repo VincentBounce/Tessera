@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.198';
+const VERSION = '0.4.199';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -6104,8 +6104,10 @@ function syncSizeStepper() {
   $('startRow').hidden = !starts;
   if (!starts) return;
   if (document.activeElement !== $('startLabel')) $('startLabel').value = `start ${fmt(startNo())} of ${fmt(starts.length)}`;
-  $('startDown').disabled = startNo() <= 1;
-  $('startUp').disabled = startNo() >= starts.length;
+  const fixed = startsWayNow() !== 'classic';  // (a battle's starts not A's moved: the selector greyed, see STARTS_WAYS)
+  $('startDown').disabled = fixed || startNo() <= 1;
+  $('startUp').disabled = fixed || startNo() >= starts.length;
+  $('startLabel').disabled = fixed;
 }
 // The sizes as a slider under the stepper, across, a notch each under it, the one in use its knob (none: hidden); dragged, the label
 // shows the size under it (preview), the size picked when let go (pick: a surface is built again), a notch clicked at once
@@ -7063,7 +7065,7 @@ const walkTeamsHere = (w) => NAV[w]?.[0] === 'Walk' && MODES[w].lattice === 'sph
 function renderWalkTeams() {
   const w = $('mode').value, here = walkTeamsHere(w);
   // a battle: its numbers in its Start section, A's formula field moved there from the number's (hidden then), then B's on
-  $('battleStart').hidden = $('startCentred').hidden = !battleOn();
+  $('battleStart').hidden = $('startWays').hidden = !battleOn();
   RIVALS.forEach((id, j) => { $(id).parentElement.hidden = j >= walkTeams - 1; });  // (the walkers' but A's)
   const fieldA = $('formula').parentElement, label = $('copyNumber').parentElement;  // (its label: Formula, Formulas in a battle, its base beside)
   if (battleOn() && fieldA.parentElement !== $('formulaAHome')) $('formulaAHome').append(label, fieldA);
@@ -7079,11 +7081,14 @@ function renderWalkTeams() {
     on: p === penetration, can: way === 'cut' || way === 'landStop' || (way === 'landCells') !== !!MODES[w].grid, greyed: way === 'landCells' ? 'along the grid: cells only' : way !== 'cut' ? 'on cells: along the grid only' : '', byDefault: p === 0 ? 'yes' : '',
     click: () => { if (p !== penetration) { penetration = p; compute(); } } });
   $('walkPenetration').replaceChildren(tileGroup(PENETRATIONS.map(button)));
-  // Centred, a switch under the start row: the walkers' starts round one point (see groupedStarts)
-  if ($('startRow').nextElementSibling !== $('startCentred')) $('startRow').after($('startCentred'));
-  $('startCentred').replaceChildren(tile({ pic: colourBlock(walkTeams), text: 'Centred', toggle: true, byDefault: 'off', on: battleGrouped && groupedCan(), can: groupedCan(),
-    title: "The walkers' starts side by side round one point of the surface's symmetry, each on an edge out of it, every so many edges: a face's centre (sphere of hexagons: Trio, or Duo, Trio and Sextet by its size), a corner (its pentagon: Quintet)",
-    greyed: 'along a closed solid\'s grid only, where a point has as many edges out as walkers, or a multiple', click: () => { battleGrouped = !battleGrouped; compute(); } }));
+  // its starts' tabs, over the start selector (see STARTS_WAYS; the selector greyed but in Classic, see syncSizeStepper)
+  if ($('startRow').previousElementSibling !== $('startWays')) $('startRow').before($('startWays'));
+  const ways = [['classic', 'Classic', "A's start, picked below, moved by the surface's symmetries: each walker starts as A, the battle fair"],
+    ['centred', 'Centred', "The walkers' starts side by side round one point of the surface's symmetry, each on an edge out of it, every so many edges: a face's centre (sphere of hexagons: Trio, or Duo, Trio and Sextet by its size), a corner (its pentagon: Quintet)"],
+    ['random', 'Random', 'Each walker anywhere, drawn at random (kept in the link): not fair, each walker in a place of its own']];
+  $('startWays').replaceChildren(tileGroup(ways.map(([way, text, title]) => tile({ pic: colourBlock(walkTeams), text, title, on: way === startsWayNow(), can: startsWayCan(way), byDefault: way === 'classic' ? 'yes' : '',
+    greyed: 'along a closed solid\'s grid only, where a point has as many edges out as walkers, or a multiple',
+    click: () => { if (way === startsWayNow()) return; battleStartsWay = way; if (way === 'random') battleSeed = freshDraw(); compute(); } }))));
 }
 // a battle's formula fields, each bold in its walker's colour once sent to be fought (computed, from Enter, Random or a
 // hunt's pick: battleAsked, see renderWalkTeams; typed since: plain again)
@@ -7123,11 +7128,31 @@ const startSpread = (g, grid, start) => {
     return least;
   };
 };
-// Centred starts (see the switch Centred, renderWalkTeams): K walkers leaving side by side the point of a closed solid's
+// Centred starts (see STARTS_WAYS): K walkers leaving side by side the point of a closed solid's
 // symmetry nearest A's start (a face's centre, a corner) whose edges out of the grid's corners nearest it (one, or a ring)
 // are K or a multiple of K: each walker at an edge's outer end, come from the ring, every so many edges round it (sphere of
 // hexagons: a face's centre 3, or 6 by its size, then 2, 3 or 6 of them; a pentagon 5). None: no such point
-let battleGrouped = false;  // (a battle's walkers grouped, kept in the link: gr)
+// A battle's starts, its tabs over the start selector: Classic, A's start moved by the surface's symmetries (battleStarts,
+// the start picked); Centred, round one point (groupedStarts); Random, each walker's anywhere (randomStarts, its draw
+// battleSeed). Kept in the link: gr (1 Centred, 2 Random), rs (its draw)
+const STARTS_WAYS = ['classic', 'centred', 'random'];
+let battleStartsWay = 'classic', battleSeed = 1;
+const startsWayCan = (way) => way !== 'centred' || groupedCan();
+const startsWayNow = () => (battleOn() && startsWayCan(battleStartsWay) ? battleStartsWay : 'classic');  // (the one played: Classic where the one picked cannot be)
+// K walkers' starts anywhere, each its own place, drawn from seed: along the grid a corner and the corner it comes from,
+// on cells a tile and the edge it comes in by (A's start's other parts kept: a pivot's, a parity's)
+function randomStarts(g, start, grid, K, seed) {
+  const next = seededRandom(seed), pick = (n) => next() % n, G = gridGraph(g), k = g.sides, taken = new Set(), out = [];
+  while (out.length < K) {
+    const place = pick(grid ? G.nv : g.n);
+    if (taken.has(place)) continue;
+    taken.add(place);
+    if (grid) { const from = G.nbrs[place][pick(G.nbrs[place].length)]; out.push(gridState(g, [place, from])); continue; }
+    const edges = [...Array(k).keys()].filter((e) => g.nbr[k * place + e] >= 0);
+    out.push([place, edges[pick(edges.length)], ...start.slice(2)]);
+  }
+  return out;
+}
 function groupedStarts(g, start, K) {
   if (g.torus || g.mobius || g.klein) return null;
   const G = gridGraph(g), dir = (v) => unit([0, 1, 2].map((d) => g.verts[3 * v + d])), a = dir(start[0]), C = solidCorners(g);  // (by direction: a mesh may lie flat on the solid's faces)
@@ -7148,7 +7173,7 @@ const groupedCan = () => {  // (the walk shown: its K walkers can be grouped)
 };
 // a battle's starts (see battleStarts; grouped, groupedStarts', where it can), or none, said in the status: A's place on an axis of the solid
 function battleStartsOrSay(g, start, grid, K) {
-  const starts = (battleGrouped && grid && groupedStarts(g, start, K)) || battleStarts(g, start, grid, K);
+  const way = startsWayNow(), starts = way === 'random' ? randomStarts(g, start, grid, K, battleSeed) : (way === 'centred' && grid && groupedStarts(g, start, K)) || battleStarts(g, start, grid, K);
   if (!starts) walkSaid = battleGroups(g, K, 1).length ? `This start lies on an axis of the surface: ${K} walkers cannot start apart from it (another start, or fewer walkers)`
     : `This surface has no ${K} symmetries alike at this size: ${K} walkers cannot start alike (another size, or another count)`;
   return starts;
@@ -7838,7 +7863,7 @@ function battleAreas(P) {
 const BATTLE_CARDS = Object.values(PRESETS).filter((p) => ['Constants', '𝑓', 'Sequences'].includes(p.group) && typeof p.f === 'string').map((p) => p.f).concat('rho');
 const BATTLE_FRESH = () => ({ ended: [], open: [], endedCount: 0, tried: new Set(), key: battleHuntKey(), status: '' });  // (a hunt's results, none yet)
 const battleHunt = { run: null, ended: [], open: [], endedCount: 0, tried: new Set(), key: '', status: '' };
-const battleHuntKey = () => `${$('mode').value}|${walkTeams}|${battleGrouped}|${penetration}|${sphereSize()}|${startNo()}|${digitsNeeded()}`;  // (what its battles are fought at)
+const battleHuntKey = () => `${$('mode').value}|${walkTeams}|${startsWayNow()}|${battleSeed}|${penetration}|${sphereSize()}|${startNo()}|${digitsNeeded()}`;  // (what its battles are fought at)
 // √r's first n digits in base b, its integer part first (on the page: one integer root, as numberSeed's)
 const rootDigits = (r, base, n) => Uint8Array.from(iroot(BigInt(r) * BigInt(base) ** BigInt(2 * n), 2).toString(base).slice(0, n), (c) => c.charCodeAt(0) - 48);
 async function startBattleHunt() {
@@ -13848,7 +13873,8 @@ function getSetup() {
     s.k = walkTeams;
     RIVALS.slice(0, walkTeams - 1).forEach((id) => { s[`x${id.slice(-1).toLowerCase()}`] = formulaOf($(id).value).text ?? $(id).value; });  // (xb, xc…)
     if (penetration) s.pe = penetration;  // (none: the first, Land grid)
-    if (battleGrouped && groupedCan()) s.gr = 1;  // (its walkers grouped, see groupedStarts)
+    if (startsWayNow() !== 'classic') s.gr = STARTS_WAYS.indexOf(startsWayNow());  // (its starts: Centred, Random, see STARTS_WAYS)
+    if (startsWayNow() === 'random') s.rs = battleSeed;
   }
   if (mode.life && colourMix && lifeColours > 1) s.mx = 1;
   if (mode.life && newcomerOn()) s.nc = 1;  // (Newcomer)  // (Mixed, kept where its zone greys it: the other zones' fits by it, see huntFits)
@@ -13884,7 +13910,8 @@ function applySetup(s) {
   if (s.d !== undefined) target = Number(s.d);
   walkTeams = !MODES[s.w].life && COLOUR_STEPS.includes(Number(s.k)) ? Number(s.k) : 1;  // (a walk's battle, if its surface allows it at its size: see battleOn)
   penetration = walkTeams > 1 && PENETRATIONS[Number(s.pe)] ? Number(s.pe) : 0;  // (none: the first, Land grid)
-  battleGrouped = Number(s.gr) === 1;
+  battleStartsWay = STARTS_WAYS[Number(s.gr)] ?? 'classic';
+  battleSeed = Number(s.rs) || 1;
   for (const id of RIVALS) set(id, s[`x${id.slice(-1).toLowerCase()}`]);
   set('mode', s.w);
   $('startNo').value = s.st ?? 1;

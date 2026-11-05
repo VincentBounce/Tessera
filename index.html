@@ -11,7 +11,7 @@
   <meta property="og:type" content="website">
   <link id="favicon" rel="icon">  <!-- the app's logo, set at start-up (see appLogo) -->
   <meta name="description" content="A walk on a grid in 2D or 3D driven by the base-2 to base-6 digits of π, other constants and large primes.">
-  <link rel="stylesheet" href="style.css?v=0.4.198">
+  <link rel="stylesheet" href="style.css?v=0.4.199">
   <script>  // the theme before the first paint (see applyTheme)
     try { const t = localStorage.getItem('tesseraTheme') || 'system'; document.documentElement.dataset.theme = t === 'system' ? (matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark') : t; } catch { document.documentElement.dataset.theme = 'dark'; }
   </script>
@@ -145,7 +145,7 @@
           </label>
         </div>
         <div id="battleStart" hidden>  <!-- a battle's: how they fight, each walker's formula (A's the number's own, moved here: see renderWalkTeams), Random, the longest battles (see 7.6c) -->
-          <div id="startCentred" class="nav-shapes" hidden></div>  <!-- a battle's starts centred: a switch, under the start row (see renderWalkTeams) -->
+          <div id="startWays" class="nav-shapes" hidden></div>  <!-- a battle's starts: Classic, Centred, Random, over the start row (see renderWalkTeams) -->
           <div id="walkPenetration" class="nav-shapes"></div>  <!-- a battle's way with an enemy's body: Cut, the Land grids, Land cells (see PENETRATIONS) -->
           <div id="formulaAHome"></div>  <!-- (the number's formula field, A's in a battle) -->
           <div id="rivalFormulas"></div>  <!-- the other walkers' formulas, B to L (see rivalField) -->
@@ -741,10 +741,10 @@
     </div>
   </main>
 
-  <script src="pixelarticons.js?v=0.4.198"></script>
-  <script src="punks.js?v=0.4.198"></script>
-  <script src="loops.js?v=0.4.198"></script>
-  <script src="emoji.js?v=0.4.198"></script>
-  <script src="main.js?v=0.4.198"></script>
+  <script src="pixelarticons.js?v=0.4.199"></script>
+  <script src="punks.js?v=0.4.199"></script>
+  <script src="loops.js?v=0.4.199"></script>
+  <script src="emoji.js?v=0.4.199"></script>
+  <script src="main.js?v=0.4.199"></script>
 </body>
 </html>

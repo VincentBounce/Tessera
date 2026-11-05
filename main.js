@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.184';
+const VERSION = '0.4.185';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -7106,41 +7106,25 @@ const startSpread = (g, grid, start) => {
     return least;
   };
 };
-// Grouped fighters (see the hunt with grouped fighters): K walkers along a closed solid's grid leaving one point of its
-// symmetry side by side, a face's centre or a corner: the grid's corners nearest it (one, or a ring round it), each walker
-// on an edge leaving them, at its outer end (so many edges, so many walkers: on the sphere of hexagons a face's centre gives
-// 3 or 6 by its size, a pentagon 5). The point with K edges out nearest A's start; A's edge the nearest, the others round
-// it counterclockwise (seen from outside). None: no such point
-let battleGrouped = false;  // (a battle's walkers grouped, its starts groupedStarts'; kept in the link: gr)
+// Grouped fighters (see the hunt with grouped fighters): K walkers leaving side by side the point of a closed solid's
+// symmetry nearest A's start (a face's centre, a corner) that has K edges out of the grid's corners nearest it (one, or a
+// ring): each walker at an edge's outer end, come from the ring (sphere of hexagons: a face's centre 3 or 6 by its size, a
+// pentagon 5). None: no such point
+let battleGrouped = false;  // (a battle's walkers grouped, kept in the link: gr)
 function groupedStarts(g, start, K) {
   if (g.torus || g.mobius || g.klein) return null;
-  const G = gridGraph(g), V = g.verts, at = (v) => [V[3 * v], V[3 * v + 1], V[3 * v + 2]];
-  g.groupedPoints ??= (() => {  // (each point: its nearest corners' edges out, once a mesh)
-    const C = solidCorners(g);
-    return [...solidFaceCentres(g, C), ...C].map((P) => {
-      let top = -Infinity;  // (by direction: a mesh may lie flat on the solid's faces)
-      for (let v = 0; v < G.nv; v++) top = Math.max(top, dot3(unit(at(v)), P));
-      const ring = new Set();
-      for (let v = 0; v < G.nv; v++) if (dot3(unit(at(v)), P) > top - 1e-9) ring.add(v);
-      const out = [];
-      for (const r of ring) for (const w of G.nbrs[r]) if (!ring.has(w)) out.push([w, r]);
-      return { P, out };
-    });
-  })();
-  const a = at(start[0]), points = g.groupedPoints.filter((p) => p.out.length === K);
-  if (!points.length) return null;
-  const { P, out } = points.reduce((p, q) => (dot3(q.P, a) > dot3(p.P, a) ? q : p));
-  const off = (v) => { const x = at(v), h = dot3(x, P); return x.map((c, d) => c - h * P[d]); };  // (across P's axis)
-  const e1 = unit(off(out[0][0])), angle = ([w]) => { const x = off(w); return Math.atan2(dot3(cross(e1, x), P), dot3(x, e1)); };
-  const round = [...out].sort((x, y) => angle(x) - angle(y)), first = round.reduce((b, e, i) => (dot3(at(e[0]), a) > dot3(at(round[b][0]), a) ? i : b), 0);
-  return [...round.slice(first), ...round.slice(0, first)].map((e) => gridState(g, e));
+  const G = gridGraph(g), dir = (v) => unit([0, 1, 2].map((d) => g.verts[3 * v + d])), a = dir(start[0]), C = solidCorners(g);  // (by direction: a mesh may lie flat on the solid's faces)
+  g.groupedOut ??= [...solidFaceCentres(g, C), ...C].map((p) => {  // (each point's edges out, once a mesh)
+    let top = -Infinity, ring = [];
+    for (let v = 0; v < G.nv; v++) { const h = dot3(dir(v), p); if (h > top + 1e-9) { top = h; ring = [v]; } else if (h > top - 1e-9) ring.push(v); }
+    return { p, out: ring.flatMap((r) => G.nbrs[r].filter((w) => !ring.includes(w)).map((w) => [w, r])) };
+  });
+  const near = g.groupedOut.filter((q) => q.out.length === K).sort((x, y) => dot3(y.p, a) - dot3(x.p, a))[0];
+  return near ? near.out.map((e) => gridState(g, e)) : null;
 }
-// whether the walk shown can have its K walkers grouped (see groupedStarts): along a closed solid's grid, a point with K edges out
-const groupedCan = () => {
-  const mode = MODES[$('mode').value], size = battleMode($('mode').value) && mode.grid && sphereSize();
-  if (!size) return false;
-  const g = SPHERES[surfaceOf(mode)].mesh(size);
-  return !!groupedStarts(g, walkStart(g, mode), walkTeams);
+const groupedCan = () => {  // (the walk shown: its K walkers can be grouped)
+  const mode = MODES[$('mode').value], size = battleMode($('mode').value) && mode.grid && sphereSize(), g = size && SPHERES[surfaceOf(mode)].mesh(size);
+  return !!g && !!groupedStarts(g, walkStart(g, mode), walkTeams);
 };
 // a battle's starts (see battleStarts; grouped, groupedStarts', where it can), or none, said in the status: A's place on an axis of the solid
 function battleStartsOrSay(g, start, grid, K) {

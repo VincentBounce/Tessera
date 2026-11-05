@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.227';
+const VERSION = '0.4.228';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -1496,7 +1496,7 @@ function renderViewTiles() {
   const [kind, space] = NAV[$('mode').value], ways = { on: [], off: [] };
   for (const sh of navValues(2, [kind, space])) {
     const w = Object.keys(NAV).find((v) => NAV[v][0] === kind && NAV[v][1] === space && NAV[v][2] === sh);
-    ways[defaultOf('perspective', MODES[w]) ? 'on' : 'off'].push(SHAPE_SHORT[sh] ?? sh);
+    ways[defaultOf('perspective', w) ? 'on' : 'off'].push(SHAPE_SHORT[sh] ?? sh);
   }
   const perspective = !ways.on.length ? 'off' : !ways.off.length ? 'on' : `On by default on ${ways.on.join(', ')}\nOff by default on ${ways.off.join(', ')}`;
   const first = { perspective, light: defaultMark('light'), glass: defaultMark('glass'), ocean: defaultMark('ocean') }, why = { ocean: 'beyond a Quintet: a map has five lands (green, yellow, ochre, lime, ice white)' };
@@ -1687,7 +1687,6 @@ let spaceTime = false;
 const spaceTimeApplies = () => { const m = MODES[$('mode').value]; return !!m.plane && !m.margolus && planeKind(m.plane) === 'square'; };
 const spaceTimeOn = () => spaceTime && spaceTimeApplies();
 // Life's looks as square buttons with pictures (States or Colours, Age, Activity); a walk's, a list
-const defaultLook = (mode) => (mode.life && !mode.elementary ? 'mono' : 'gradient');  // (the simplest: Life's States, a walk's Rainbow; Elementary's Age, its rows by their generation)
 function renderColourButtons() {
   const sel = $('colourMode'), box = $('colourButtons'), L = MODES[$('mode').value]?.life;
   box.className = 'nav-shapes cell-modes';
@@ -1696,7 +1695,7 @@ function renderColourButtons() {
   const names = L ? { mono: 'States', gradient: 'Age', digit: 'Activity' } : { gradient: 'Rainbow', cells: 'Rainbow', visits: 'Heatmap', digit: 'Directions' };
   const picture = (v) => (L ? lifeLookPicture(v) : cellModePicture(v === 'gradient' ? 'cells' : v));
   const looks = Array.from(sel.options).filter((o) => !o.hidden && names[o.value]);
-  const buttons = looks.map((o) => tile({ pic: picture(o.value), text: names[o.value], title: o.text, on: o.value === sel.value, can: !o.disabled, byDefault: o.value === defaultLook(MODES[$('mode').value]) ? 'yes' : '',
+  const buttons = looks.map((o) => tile({ pic: picture(o.value), text: names[o.value], title: o.text, on: o.value === sel.value, can: !o.disabled, byDefault: o.value === defaultOf('look') ? 'yes' : '',
     greyed: { gradient: L ? '' : 'on a spiral (its line no use)', visits: 'on a spiral (each cell visited once)', digit: 'on Elementary (a cell never changes once made: no activity)' }[o.value] ?? '',
     click: () => { sel.value = o.value; sel.dispatchEvent(new Event('change')); } }));
   if (MODES[$('mode').value].margolus) renderBlocksButton();
@@ -5874,7 +5873,7 @@ function initShape(kind) {
   // the same surface (its other tilings, along the grid or on cells) keeps the form it had
   const surface = (w) => familyOf(w)?.F.name ?? MODES[w].sphere;
   const mode = current.mode, keep = previousShape && surface(previousShape.mode) === surface(mode);
-  const g = walk.geo, m = keep ? previousShape.target : defaultOf('shape', MODES[mode]);
+  const g = walk.geo, m = keep ? previousShape.target : defaultOf('shape', mode);
   const maxExtent = Math.max(shapeAt(g, 0).extent, shapeAt(g, 1).extent);
   walk.shape = { ...shapeAt(g, m), target: m, maxExtent, mode };
 }
@@ -14007,7 +14006,7 @@ function applySetup(s) {
   // changes (as picking a walk does); within a tab, what was chosen stays
   if (modeTabOf() !== displayTab) displayDefaults();
   $('fillAreas').checked = String(s.fa ?? 1) !== '0';  // the one display choice kept: it changes what is drawn
-  $('perspective').checked = defaultOf('perspective', MODES[s.w]);
+  $('perspective').checked = defaultOf('perspective', s.w);
   Object.assign(cam, CAM0);
   $('upright').checked = false;  // (the default view: free, on each surface)
   pendingChampion = s.ch || null;
@@ -17742,14 +17741,15 @@ function computeFramed() {
 let displayTab = null;
 const modeTabOf = () => `${NAV[$('mode').value]?.[0]}|${modeGroup()}`;  // (the menu's tab, Life or Elementary, and its space: the select's group holds several tabs)
 // The Display settings' defaults, one table: each its control (a box's id), when it comes back (open: the page's opening
-// only, kept from tab to tab; tab: another tab; mode: every mode), its value (by the mode, or a battle's: a function);
-// displayDefaults and the mode's change set them, and the tiles' marks read them (see defaultMark)
+// only, kept from tab to tab; tab: another tab; mode: every mode), its value: one for all, or each tab's ({ all, Life… }:
+// a tab's own, else all's), or by the mode or a battle (a function); displayDefaults and the mode's change set them, and
+// the tiles' marks read them (see defaultOf, defaultMark)
 const DISPLAY_DEFAULTS = {
-  look: ['colourMode', 'tab', (mode) => defaultLook(mode)],  // (Cells: Life's States, a walk's Rainbow)
+  look: ['colourMode', 'tab', { Walk: 'gradient', Ant: 'gradient', Life: 'mono', Replicators: 'mono', Reversible: 'mono', Elementary: 'gradient' }],  // (Cells: a walk's Rainbow, Life's States, Elementary's Age: the simplest)
   fillAreas: ['fillAreas', 'tab', true], areaLight: ['fillTranslucent', 'tab', true], path: ['showPath', 'tab', false],  // (Area: Light; on cells the cells alone)
   centered: ['centered', 'tab', true], autoRotate: ['autoRotate', 'tab', false], sky: ['sky', 'tab', 'sky'],  // (on a solid the walker in front; Dawn or Twilight after the theme)
   autoFit: ['autoFit', 'mode', true], upright: ['upright', 'mode', false], shape: ['shapeM', 'mode', (mode) => (mode.round ? 1 : 0)],  // (Flat 0 ── Inflated 1: a round surface inflated, a solid flat)
-  perspective: ['perspective', 'mode', (mode) => perspectiveFor(mode, defaultOf('shape', mode))],
+  perspective: ['perspective', 'mode', (mode, w) => perspectiveFor(mode, defaultOf('shape', w))],  // (as each mode's own, hand-tuned)
   light: ['light', 'open', true], glass: ['glass', 'open', false], grid: ['showGrid', 'open', true], autoPlay: ['autoPlay', 'open', false],
   ocean: ['ocean', 'battle', () => battleOn() && NAV[$('mode').value][0] === 'Walk'],  // (on in a walk's battle on a surface, as long as none picks it)
 };
@@ -17761,8 +17761,8 @@ function applyDefaults(at) {
     if (typeof v === 'boolean') $(id).checked = v; else $(id).value = v;
   }
 }
-// a setting's default for mode
-const defaultOf = (key, mode = MODES[$('mode').value]) => { const v = DISPLAY_DEFAULTS[key][2]; return typeof v === 'function' ? v(mode) : v; };
+// a setting's default for mode w: its tab's, else all's, or by the mode
+const defaultOf = (key, w = $('mode').value) => { const v = DISPLAY_DEFAULTS[key][2]; return typeof v === 'function' ? v(MODES[w], w) : v && typeof v === 'object' ? v[NAV[w][0]] ?? v.all : v; };
 // a tile's mark (see setTile's byDefault): its setting's default, 'on' or 'off'
 const defaultMark = (key) => (defaultOf(key) ? 'on' : 'off');
 function displayDefaults() {

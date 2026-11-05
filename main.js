@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.150';
+const VERSION = '0.4.151';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -724,6 +724,7 @@ const PALETTES = {
            directions: { '←': '#2f5bea', '↑': '#e0a100', '→': '#e8438a', '↓': '#13a8a2', '↖': '#5fa82a', '↗': '#c03fe0', '↘': '#f0702a', '↙': '#7c4dff', '⊙': '#e5484d', '⊗': '#1aa3d6' },
            unlit: '#eef1f5', trail: '#7d8896', fade: '#c98a10', alive: '#1f2328', edgeRgb: [0, 0, 0], edgeAlpha: 0.11, shade: 0.35, fadeEdges: true, tileLift: 0.22 },
 };
+const hexRgb = (c) => [1, 3, 5].map((i) => parseInt(c.slice(i, i + 2), 16));  // [r, g, b] of a #rrggbb colour (any CSS colour: see rgbOf)
 const GRADIENT = [], DIGIT_COLORS = [], LIFE_TRAIL = [], LIFE_FADE = [], DIRECTION_COLOURS = {};
 // Life's colours (civilisations), as bright as the walks' rainbow in each theme (its saturation and
 // lightness), in an order that keeps them apart: up to 8 (red, blue, gold, green, violet, cyan, magenta, orange: the
@@ -738,10 +739,10 @@ function setPalette(theme) {
   // the surfaces' tile edges light on a dark page, dark on a light one, as the 2D grid
   UNLIT = P.unlit; LIFE_ALIVE = P.alive; EDGE_RGB = P.edgeRgb; EDGE_ALPHA = P.edgeAlpha;
   SHADE = P.shade; FADE_EDGES = !!P.fadeEdges; TILE_LIFT = P.tileLift ?? 0;
-  const hex = (c) => [1, 3, 5].map((i) => parseInt(c.slice(i, i + 2), 16)), [a, b] = [hex(P.trail), hex(P.unlit)];
+  const [a, b] = [hexRgb(P.trail), hexRgb(P.unlit)];
   // the 8 shades of a dying Life cell (a Generations rule's stages), from the trail colour to unlit; and of
   // its trail once dead (Trail), in Amber (as an ant's cells, each theme its own), not to be taken for a state
-  const ink = hex(P.fade);
+  const ink = hexRgb(P.fade);
   for (let i = 0; i < 8; i++) {
     const f = 1 - i / 8, mix = (k) => Math.round(b[k] + (a[k] - b[k]) * f), inked = (k) => Math.round(b[k] + (ink[k] - b[k]) * f);
     LIFE_TRAIL[i] = `rgb(${mix(0)}, ${mix(1)}, ${mix(2)})`;
@@ -14322,7 +14323,7 @@ let antRamp = 'ink';
 function rampColour(k, n) {
   const stops = ANT_RAMPS[antRamp ?? 'ink'][themeName()];
   const t = n < 2 ? 0 : (Math.min(k, n - 1) * (stops.length - 1)) / (n - 1), a = Math.floor(t), f = t - a;
-  const hex = (c) => [1, 3, 5].map((i) => parseInt(c.slice(i, i + 2), 16)), A = hex(stops[a]), B = hex(stops[Math.min(a + 1, stops.length - 1)]);
+  const A = hexRgb(stops[a]), B = hexRgb(stops[Math.min(a + 1, stops.length - 1)]);
   return `rgb(${A.map((v, i) => Math.round(v + (B[i] - v) * f)).join(', ')})`;
 }
 // a turn by its family, the same on every tiling (an ant's, a walk's relative to its heading): left blue,
@@ -14611,8 +14612,7 @@ const surfaceLineWidth = () => {  // about a fifth of a tile edge on screen
 const colourProbe = document.createElement('canvas').getContext('2d');
 const rgbOf = (colour) => {  // [r, g, b] of any CSS colour (the canvas normalises it to #rrggbb)
   colourProbe.fillStyle = colour;
-  const hex = colourProbe.fillStyle;
-  return [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16));
+  return hexRgb(colourProbe.fillStyle);
 };
 // colour laid at opacity a over the dark tile background, as an rgb() string (translucent fill)
 function faded(colour, a) {

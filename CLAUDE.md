@@ -74,6 +74,12 @@ touched shows (+0 if its code lines are as many).
   A link that fails: `git log --grep "(v0.3.N)" -F`, its bundle in `Tessera resources`, or `tools/at.sh 0.3.N`, which
   serves that version on port 8322 beside this one.
 
+## A choice's number in a link
+- A choice among several (a tab group: Penetration's `pe=`, …) is written in a link by its place in the group, in the order
+  shown: 0 the first, and the first the default (written in no link). Never a number kept from an older order, never a
+  default set apart from the order: to change the default, change the order.
+- Every night, check this for every choice the links write as a number: its tabs' order, its numbers, its default.
+
 ## Removed features
 A feature taken out gets a row in `REMOVED.md` (in English) at once: its last version, date, commit, a raw.githack link
 that opens it as it was, and why it left.

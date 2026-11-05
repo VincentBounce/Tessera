@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.134';
+const VERSION = '0.4.135';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -7018,15 +7018,14 @@ function buildSphereWalk(seq, mode, ahead = new Uint8Array(0)) {
  * a body is drawn as a line along its edges, as a walk's path. The walks are made as the battle is first played
  * (battlePlayer), then replayed to the step shown. */
 let walkTeams = 1;  // a walk's teams: 1 Classic, 2 Duel, 3 Trio… 12 Dozen (as Life's, see renderColours; which, see battleCounts)
-let penetration = null;  // a battle's way with an enemy's body picked: 5 Land grid, 6 Land cells, 0 Cut, 1 Land grid 2 (see battlePlayer, PENETRATIONS)
-const battlePenetration = (w = $('mode').value, picked = penetration) => picked ?? (MODES[w].grid ? 5 : 6);  // (none picked: its Land, by default)
-// its choice (one tab group under the teams): its number (a link's pe=), its name, its picture (a red head and a blue body
+let penetration = 0;  // a battle's way with an enemy's body: its place in PENETRATIONS (a link's pe=), 0 the first, by default
+// its choice (one tab group under the teams), in the tab's order (its place its number: a link's pe=): its word, its name, its picture (a red head and a blue body
 // or land), its words; along the grid Cut and the Land grids, on cells Cut and Land cells (each greyed in the other's place)
 const PENETRATIONS = [
-  [5, 'Land grid', 'M1.5 0H2.5V4H1.5ZM0 1.5H4V2.5H0ZM0 0H1V1H0Z', "Along the grid: a walker's line, the edges it went along, stays (crossing it: a fork); its land the regions it closes. A head pierces an enemy's line going through it (on it, then off it by the other side) or along it: the line let go each way up to a fork or its end, its land there let go too; each walker keeps its land, no line of another in it. A loop closed has its empty tiles painted its colour; an enemy's land surrounded there stays its own, taken only by piercing its line. Heads meeting (two or more at once) all die: they stop conquering, their land stays, the others' to take; with one walker left or none, it ends: the most land wins, the dead's too"],
-  [6, 'Land cells', 'M0 0H4V4H0ZM1 1H3V3H1Z', "On cells: no body; each walker paints the tile it goes into its colour, whatever it was, and a zone its colour closes (the tiles not of its colour cut off, the largest outside) is painted inside. Heads meeting (two or more at once) all die: they stop painting, their tiles stay, the others' to take; with one walker left or none, it ends: the most tiles win, the dead's too"],
-  [0, 'Cut', 'M0 1.5H4V2.5H0Z', "A head on another's body cuts it there, to its tail; heads meeting (two or more at once), all but the longest die (as long: all); the last one left wins (as the digits end: the longest)"],
-  [1, 'Land grid 2', 'M0 1.5H2.5V2.5H0Z', "Along the grid: each walker's land, the tiles its body closes stay its own (an enemy's too); a head on another's body cuts it; a head going into an enemy's land takes the tiles it goes through. Heads meeting (two or more at once) all die: they stop conquering, their land stays, the others' to take; with one walker left or none, it ends: the most land wins, the dead's too"]];
+  ['landGrid', 'Land grid', 'M1.5 0H2.5V4H1.5ZM0 1.5H4V2.5H0ZM0 0H1V1H0Z', "Along the grid: a walker's line, the edges it went along, stays (crossing it: a fork); its land the regions it closes. A head pierces an enemy's line going through it (on it, then off it by the other side) or along it: the line let go each way up to a fork or its end, its land there let go too; each walker keeps its land, no line of another in it. A loop closed has its empty tiles painted its colour; an enemy's land surrounded there stays its own, taken only by piercing its line. Heads meeting (two or more at once) all die: they stop conquering, their land stays, the others' to take; with one walker left or none, it ends: the most land wins, the dead's too"],
+  ['landCells', 'Land cells', 'M0 0H4V4H0ZM1 1H3V3H1Z', "On cells: no body; each walker paints the tile it goes into its colour, whatever it was, and a zone its colour closes (the tiles not of its colour cut off, the largest outside) is painted inside. Heads meeting (two or more at once) all die: they stop painting, their tiles stay, the others' to take; with one walker left or none, it ends: the most tiles win, the dead's too"],
+  ['cut', 'Cut', 'M0 1.5H4V2.5H0Z', "A head on another's body cuts it there, to its tail; heads meeting (two or more at once), all but the longest die (as long: all); the last one left wins (as the digits end: the longest)"],
+  ['landGrid2', 'Land grid 2', 'M0 1.5H2.5V2.5H0Z', "Along the grid: each walker's land, the tiles its body closes stay its own (an enemy's too); a head on another's body cuts it; a head going into an enemy's land takes the tiles it goes through. Heads meeting (two or more at once) all die: they stop conquering, their land stays, the others' to take; with one walker left or none, it ends: the most land wins, the dead's too"]];
 // a walk that can be a battle: one on a surface (on cells or along the grid, its steps surfaceSteps'), with as many
 // walkers as its turns allow at its size (see battleCounts: its walkers start alike, see battleStarts)
 const battleMode = (w) => NAV[w]?.[0] === 'Walk' && MODES[w].lattice === 'sphere' && !!SPHERES[surfaceOf(MODES[w])];
@@ -7048,10 +7047,10 @@ function renderWalkTeams() {
   if (battleHunt.run && (!battleOn() || battleHunt.key !== battleHuntKey())) stopBattleHunt();  // (its battles fought elsewhere: it stops)
   if (battleOn()) renderBattleHunt();
   if (!here || !battleOn()) return;
-  const button = ([p, name, head, title]) => tile({
+  const button = ([way, name, head, title], p) => tile({
     pic: `<svg viewBox="0 0 4 4" aria-hidden="true"><path d="M0 0H4V4H0Z" fill="${LIFE_COLOURS[1]}"/><path d="${head}" fill="${LIFE_COLOURS[0]}"/></svg>`, text: name, title,
-    on: p === battlePenetration(w), can: p === 0 || (p === 6) !== !!MODES[w].grid, greyed: p === 6 ? 'along the grid: cells only' : p ? 'on cells: along the grid only' : '', byDefault: p === battlePenetration(w, null) ? 'yes' : '',
-    click: () => { if (p !== battlePenetration(w)) { penetration = p; compute(); } } });
+    on: p === penetration, can: way === 'cut' || (way === 'landCells') !== !!MODES[w].grid, greyed: way === 'landCells' ? 'along the grid: cells only' : way !== 'cut' ? 'on cells: along the grid only' : '', byDefault: p === 0 ? 'yes' : '',
+    click: () => { if (p !== penetration) { penetration = p; compute(); } } });
   $('walkPenetration').replaceChildren(tileGroup(PENETRATIONS.map(button)));
 }
 // a battle's formula fields, each bold in its walker's colour once sent to be fought (computed, from Enter, Random or a
@@ -7264,20 +7263,20 @@ function smallerSide(L, cut, j) {
 // died); owner and at, each place's walker (1, 2, 3; 0 none) and the step it took it; from[s], size[s]: a walker's body,
 // its steps from from[s] on and its places (only a cut takes a place from it, with all its steps up to that place's
 // last); dead[s]: the step it died (−1: alive); n: its last step (one walker left or none, else the digits' end), peak:
-// its longest body (the gauges' full bar). Its surface g, along its grid or not. pen, its penetration (see PENETRATIONS):
-// 0 Cut, as above. Along the grid, 1 Land grid 2 (bite): each walker holds land, land[t] its tiles' walker + 1: a wall of
+// its longest body (the gauges' full bar). Its surface g, along its grid or not. pen, its penetration (see PENETRATIONS), its way:
+// cut, as above. Along the grid, landGrid2 (bite): each walker holds land, land[t] its tiles' walker + 1: a wall of
 // its body closing a loop (its walls' pieces a union-find, step by step, joined again from its body after a cut) gives it
 // the loop's smaller side (smallerSide), an enemy's land too; its head bites into an enemy's land, taking the edge's two
-// tiles; a head on an enemy's body cuts it. 5 Land grid: lines and their land as lined says. On cells,
-// 6 Land cells: painted. With land, heads meeting all die (see collisions), their land staying: it ends with one or none
+// tiles; a head on an enemy's body cuts it. landGrid: lines and their land as lined says. On cells,
+// landCells: painted. With land, heads meeting all die (see collisions), their land staying: it ends with one or none
 // left, the most land winning (the dead's too): its worth, its land, who wins
-function battlePlayer(g, grid, S, starts, digits, pen = battlePenetration()) {
-  if (pen && !grid) pen = 6;  // (on cells Cut and Land cells only, along the grid Cut and the Land grids: each greyed in the other's place)
-  if (pen === 6 && grid) pen = 5;
+function battlePlayer(g, grid, S, starts, digits, pen = penetration) {
+  let way = PENETRATIONS[pen][0];  // (on cells Cut and Land cells only, along the grid Cut and the Land grids: each greyed in the other's place, played as it)
+  if (way !== 'cut') way = !grid ? 'landCells' : way === 'landCells' ? 'landGrid' : way;
   // Land cells (painted): no body; each walker paints the tile it goes into its colour (land[t], whatever it was), and a zone
   // closed by its colour (see closeAt) is painted inside
-  const painted = pen === 6;
-  const bite = pen > 0, count = grid ? gridGraph(g).nv : g.n, k = g.sides, G = gridGraph(g), L = bite ? battleLinks(g, grid) : null;
+  const painted = way === 'landCells';
+  const bite = way !== 'cut', count = grid ? gridGraph(g).nv : g.n, k = g.sides, G = gridGraph(g), L = bite ? battleLinks(g, grid) : null;
   const wallsOf = bite ? starts.map(() => new Int32Array(count)) : [], cutsOf = bite ? starts.map(() => new Uint16Array(L.eu.length)) : [];
   const land = new Uint8Array(g.n), landCount = starts.map(() => 0), seenFrom = starts.map(() => 0);
   const K = starts.length, len = Math.min(...digits.map((d) => d.length)), places = starts.map(() => new Int32Array(len + 1));
@@ -7288,7 +7287,7 @@ function battlePlayer(g, grid, S, starts, digits, pen = battlePenetration()) {
   // a fork); its land the regions its line closes; a head on an enemy's line pierces it (see pierce). Each line's links
   // (lineOf: their count, linksOf: the set), its corners' edges (degree), its pieces (a union-find of its corners), the
   // tiles it closes (closedOf, as battleAreas: outside its largest region, its size, the largest closed one's)
-  const lined = pen === 5 && grid, E = lined ? L.eu.length : 0;
+  const lined = way === 'landGrid', E = lined ? L.eu.length : 0;
   const lineOf = lined ? starts.map(() => new Uint16Array(E)) : null, linksOf = lined ? starts.map(() => new Set()) : null;
   const degree = lined ? starts.map(() => new Uint8Array(count)) : null, piecesOf = lined ? starts.map(() => new Int32Array(count)) : null;
   const closedOf = lined ? starts.map(() => new Uint8Array(g.n)) : null, closedCount = starts.map(() => 0), outside = starts.map(() => 0), largest = starts.map(() => 0);
@@ -7552,7 +7551,7 @@ function battlePlayer(g, grid, S, starts, digits, pen = battlePenetration()) {
   const bestOf = starts.map(() => new Int32Array(len + 1));
   const keepBest = () => { const w = worth(); for (let s = 0; s < K; s++) bestOf[s][i] = Math.max(i > 0 ? bestOf[s][i - 1] : 0, w[s]); };
   const P = {
-    K, g, grid, pen, bite, lined, ownLines: lined, lineLinks, places, from, size, dead, alive, living, worth, heads: () => places.map((p) => p[i]),
+    K, g, grid, way, bite, lined, ownLines: lined, lineLinks, places, from, size, dead, alive, living, worth, heads: () => places.map((p) => p[i]),
     get land() { return land; }, remakeLine,  // (remakeLine: a line's land made again whole, to check it)
     standing, get step() { return i; }, get n() { return n; }, get peak() { return peak; },
     to(j) {
@@ -7687,7 +7686,7 @@ function battleAreas(P) {
 const BATTLE_CARDS = Object.values(PRESETS).filter((p) => ['Constants', '𝑓', 'Sequences'].includes(p.group) && typeof p.f === 'string').map((p) => p.f).concat('rho');
 const BATTLE_FRESH = () => ({ ended: [], open: [], endedCount: 0, tried: new Set(), key: battleHuntKey(), status: '' });  // (a hunt's results, none yet)
 const battleHunt = { run: null, ended: [], open: [], endedCount: 0, tried: new Set(), key: '', status: '' };
-const battleHuntKey = () => `${$('mode').value}|${walkTeams}|${battlePenetration()}|${sphereSize()}|${startNo()}|${digitsNeeded()}`;  // (what its battles are fought at)
+const battleHuntKey = () => `${$('mode').value}|${walkTeams}|${penetration}|${sphereSize()}|${startNo()}|${digitsNeeded()}`;  // (what its battles are fought at)
 // √r's first n digits in base b, its integer part first (on the page: one integer root, as numberSeed's)
 const rootDigits = (r, base, n) => Uint8Array.from(iroot(BigInt(r) * BigInt(base) ** BigInt(2 * n), 2).toString(base).slice(0, n), (c) => c.charCodeAt(0) - 48);
 async function startBattleHunt() {
@@ -13593,7 +13592,7 @@ function getSetup() {
   if (battleOn()) {  // (a walk's Duel or Trio, as Life's: its teams; B's number, C's)
     s.k = walkTeams;
     RIVALS.slice(0, walkTeams - 1).forEach((id) => { s[`x${id.slice(-1).toLowerCase()}`] = formulaOf($(id).value).text ?? $(id).value; });  // (xb, xc…)
-    if (penetration !== null) s.pe = penetration;  // (none: its Land)
+    if (penetration) s.pe = penetration;  // (none: the first, Land grid)
   }
   if (mode.life && colourMix && lifeColours > 1) s.mx = 1;
   if (mode.life && newcomerOn()) s.nc = 1;  // (Newcomer)  // (Mixed, kept where its zone greys it: the other zones' fits by it, see huntFits)
@@ -13628,7 +13627,7 @@ function applySetup(s) {
   }
   if (s.d !== undefined) target = Number(s.d);
   walkTeams = !MODES[s.w].life && COLOUR_STEPS.includes(Number(s.k)) ? Number(s.k) : 1;  // (a walk's battle, if its surface allows it at its size: see battleOn)
-  penetration = walkTeams > 1 && s.pe !== undefined && PENETRATIONS.some(([p]) => p === Number(s.pe)) ? Number(s.pe) : null;  // (none: its Land)
+  penetration = walkTeams > 1 && PENETRATIONS[Number(s.pe)] ? Number(s.pe) : 0;  // (none: the first, Land grid)
   for (const id of RIVALS) set(id, s[`x${id.slice(-1).toLowerCase()}`]);
   set('mode', s.w);
   $('startNo').value = s.st ?? 1;
@@ -16327,7 +16326,7 @@ const LIFE_TITLES = [['Alive'], ['Mean', 'Its live cells summed over the generat
 // a battle's columns, by its penetration (P: its player): its worth (Cut: its body; else its land), its worth's peak so
 // far, its body if it has one besides (along the grid a line, its edges; on cells its tiles), its head from its start
 const battleColumns = (P) => {
-  const worth = P.bite ? 'Land' : 'Body', body = P.bite && P.pen !== 6 ? (P.ownLines ? 'Line' : 'Body') : null;
+  const worth = P.bite ? 'Land' : 'Body', body = P.bite && P.way !== 'landCells' ? (P.ownLines ? 'Line' : 'Body') : null;
   return { body, titles: [[worth, P.bite ? 'The tiles it holds' : "Its body's length"], [`${worth} peak`, `Its ${worth.toLowerCase()} at its largest so far`],
     ...(body ? [[body, body === 'Line' ? 'The edges of its line now' : "Its body's tiles now"]] : []), ['Distance', 'Its head from its start']] };
 };

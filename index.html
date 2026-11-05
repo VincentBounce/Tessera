@@ -11,7 +11,7 @@
   <meta property="og:type" content="website">
   <link id="favicon" rel="icon">  <!-- the app's logo, set at start-up (see appLogo) -->
   <meta name="description" content="A walk on a grid in 2D or 3D driven by the base-2 to base-6 digits of π, other constants and large primes.">
-  <link rel="stylesheet" href="style.css?v=0.4.203">
+  <link rel="stylesheet" href="style.css?v=0.4.204">
   <script>  // the theme before the first paint (see applyTheme)
     try { const t = localStorage.getItem('tesseraTheme') || 'system'; document.documentElement.dataset.theme = t === 'system' ? (matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark') : t; } catch { document.documentElement.dataset.theme = 'dark'; }
   </script>
@@ -80,7 +80,7 @@
       </section>
 
       <section id="antRuleSection" hidden>  <!-- an ant's creatures (Ant, Turmite, Worm) as cards, the one in use with its rules, your own typed -->
-        <h2 data-icon="ant"><span id="antRuleTitle">Rule</span></h2>
+        <h2 data-icon="ant">Walking rule</h2>
         <button class="wide how-it-works" data-icon="info" type="button" title="The rule in use, step by step: what each cell (each step) sees, and what it does (each rule's ⓘ, too)">How it works</button>  <!-- on its first card -->
         <div id="antRuleCards" class="mode-list rule-cards" role="listbox"></div>
         <div id="antCustomRow" hidden><div id="antRuleName" class="field-label"></div>  <!-- not a label: a click on ↵ would focus the field again; moved right after its card (see ruleCards) -->
@@ -743,10 +743,10 @@
     </div>
   </main>
 
-  <script src="pixelarticons.js?v=0.4.203"></script>
-  <script src="punks.js?v=0.4.203"></script>
-  <script src="loops.js?v=0.4.203"></script>
-  <script src="emoji.js?v=0.4.203"></script>
-  <script src="main.js?v=0.4.203"></script>
+  <script src="pixelarticons.js?v=0.4.204"></script>
+  <script src="punks.js?v=0.4.204"></script>
+  <script src="loops.js?v=0.4.204"></script>
+  <script src="emoji.js?v=0.4.204"></script>
+  <script src="main.js?v=0.4.204"></script>
 </body>
 </html>

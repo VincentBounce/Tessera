@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.203';
+const VERSION = '0.4.204';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -3184,7 +3184,6 @@ function renderAntRow() {
   customRow.hidden = true;
   if (!ant && !m.net) return;
   const R = creatureRules(w);
-  $('antRuleTitle').textContent = R.byDigits ? 'Turns' : 'Rule';  // (Digits: a turn per digit, not a rule of colours)
   setTile($('antByRule'), { on: !R.byDigits });
   setTile($('antByDigits'), { on: !!R.byDigits, can: !m.turmite, greyed: 'for a turmite (by its rule only)' });
   customRow.hidden = !R.typed || !(customOpen || !R.cards.some(([r]) => r === R.now));
@@ -3206,10 +3205,17 @@ function ruleCards(w, pic, here = true) {
 // a creature's or a walk's rules: its presets [rule, name, picture, why greyed, tooltip], the rule in use, how to set one, whether one is typed, a rule's base
 // (where it reads digits: its card's bubble), the field's title
 const ANT_WORDS = { RL: "Langton's ant: a highway from step 9,976", RLR: 'Chaotic: it grows chaotically', LLRR: 'Symmetric: it grows symmetrically', LRRRRRLLR: 'Square: it fills a square around itself',
-                    RRLLLRLLLRRR: 'Triangle: a filled triangle, growing and moving' };  // (on squares: its name, then what it does)
+                    RRLLLRLLLRRR: 'Triangle: a filled triangle, growing and moving' };  // (its name, on any grid; then what it does on squares)
 const TURMITE_WORDS = ["Langton's ant", 'A spiral', 'The widest mess', 'A square growing filled', 'A shape growing filled', 'A highway from step 3,090, every 54 steps'];
 const WORM_WORDS = ['Dies at step 4,802', 'Dies at step 83,618', 'Dies at step 569,804', 'Dies at step 918,339', 'Still going at step 5,000,000', 'Still going at step 5,000,000'];
 const capitalised = (t) => t.replace(/^./, (c) => c.toUpperCase());
+// a walk's or a creature's rule in use, as How it works titles it: its card's name (Custom rule: none has it) and the rule, as
+// Life's (Life B3/S23); a walk with no rules, its own name
+const ruleTitleOf = (w) => {
+  if (!WALK_NETS[MODES[w].net] && NAV[w][0] !== 'Ant') return walkName(w);
+  const R = creatureRules(w);
+  return `${R.cards.find(([r]) => r === R.now)?.[1] ?? 'Custom rule'} <code>${R.now}</code>`;
+};
 function creatureRules(w) {
   const m = MODES[w], N = WALK_NETS[m.net], surface = m.lattice === 'sphere';
   if (N) return { now: walkRules[walkKey(m)], typed: true, set: (r) => setWalkRule(w, r), base: (r) => baseWords(ruleWords(r).length),  // (a surface: the rules it can take only)
@@ -3223,7 +3229,7 @@ function creatureRules(w) {
   const A = ANTS[w], turns = antWords(w).join(' ');
   return { byDigits: antByDigits, now: antRuleOf(w), typed: true, set: (r) => setAntRule(w, r), base: antByDigits ? (r) => baseWords(ruleWords(r).length) : null,  // (by colour: no digits read)
            cards: (antByDigits ? A.digitPresets : A.presets).map((r) => antByDigits ? [r, capitalised(ruleWords(r).map((t) => WORD_TEXT[t]).join(', '))]
-             : [r, (w === 'antSquare' && ANT_WORDS[r]?.split(':')[0]) || `${ruleWords(r).length} colours`, undefined, '', (w === 'antSquare' && ANT_WORDS[r]) || '']),
+             : [r, ANT_WORDS[r]?.split(':')[0] ?? `${ruleWords(r).length} colours`, undefined, '', (w === 'antSquare' && ANT_WORDS[r]) || '']),  // (its name on any grid, what it does on squares)
            name: antByDigits ? `Rule, a turn per digit, mirrored on a dark cell: ${turns}` : `Rule, a turn per colour: ${turns}` };
 }
 // The worm's rules, all 411 of them (a mirror the same), walked here: dying at step 918,339, 569,804, 83,618 and 4,802,
@@ -11254,7 +11260,7 @@ function walkTutorial(w) {
   };
   const how = mode.lattice === 'sphere' ? `, turning as on its flat ${mode.grid ? 'grid' : 'tiling'}` : '';
   $('ruleTuto').innerHTML = `<div class="tut-body">`
-    + `<h3>${walkName(w)}</h3><p>${creature ? `${mode.rule[0].toUpperCase()}${mode.rule.slice(1)}` : `The number read digit by digit in base ${mode.base}, each digit a step ${mode.rule.replace(/:.*/, '')}${how}`}`
+    + `<h3>${ruleTitleOf(w)}</h3><p>${creature ? `${mode.rule[0].toUpperCase()}${mode.rule.slice(1)}` : `The number read digit by digit in base ${mode.base}, each digit a step ${mode.rule.replace(/:.*/, '')}${how}`}`
     + `${figs.some((f) => f.here) ? '; the way it came in grey' : ''}${figs.some((f) => f.next?.length > 1) ? ', the step after dashed' : ''}.</p>`
     + `<div class="tut-row tut-walk">${figs.map((f) => `<figure><div>${fig(f)}</div><figcaption>${f.label ?? `<b>${f.d}</b>`} ${f.caption ?? ''}</figcaption></figure>`).join('')}</div>${battleTutorial(w)}</div>`;
   $('ruleTuto').prepend(tutTools({ replay: () => walkTutorial(w), close: () => ruleTutorial(null) }));  // (its steps appearing again)

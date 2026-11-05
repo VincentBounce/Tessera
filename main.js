@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.183';
+const VERSION = '0.4.184';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -6956,14 +6956,16 @@ function buildGridWalk(seq, mode, ahead = new Uint8Array(0)) {
   const { mesh, radius } = SPHERES[kind];
   const size = sphereSize(), g = mesh(size), R = radius(size), G = gridGraph(g), V = g.verts, len = seq.length, at = (v) => [V[3 * v], V[3 * v + 1], V[3 * v + 2]];
   const rec = walkRecorder(seq, ahead, base, R, G.nv), vert = new Int32Array(len + 1), stepTiles = new Int32Array(2 * len), S = surfaceSteps(g, mode);
-  let state = walkStart(g, mode), v = state[0];
+  let state = walkStart(g, mode);
+  // a battle (see 7.6b): all its walks (battlePlayer), A's recorded (still once dead), from its own start (grouped: its
+  // group's first, see groupedStarts); the others' digits null while they are computed: A alone meanwhile
+  const rivals = battleOn() ? rivalsDigits(base, len, buildWalk) : null, starts = Array.isArray(rivals) && battleStartsOrSay(g, state, true, rivals.length + 1);
+  if (rivals?.error) walkSaid = rivals.error;
+  if (starts) state = starts[0];
+  let v = state[0];
   const put = (i) => { rec.put(i, v, G.tileOf[v], at(v)); vert[i] = v; };
   put(0);
   rec.begin(S.key(state));
-  // a battle (see 7.6b): all its walks (battlePlayer), A's recorded (still once dead); the others' digits null while they
-  // are computed: A alone meanwhile
-  const rivals = battleOn() ? rivalsDigits(base, len, buildWalk) : null, starts = Array.isArray(rivals) && battleStartsOrSay(g, state, true, rivals.length + 1);
-  if (rivals?.error) walkSaid = rivals.error;
   if (starts) {
     const P = battlePlayer(g, true, S, starts, [seq, ...rivals]);
     P.to(Infinity);  // (the whole battle: its end known)
@@ -7104,9 +7106,45 @@ const startSpread = (g, grid, start) => {
     return least;
   };
 };
-// a battle's starts (see battleStarts), or none, said in the status: A's place on an axis of the solid
+// Grouped fighters (see the hunt with grouped fighters): K walkers along a closed solid's grid leaving one point of its
+// symmetry side by side, a face's centre or a corner: the grid's corners nearest it (one, or a ring round it), each walker
+// on an edge leaving them, at its outer end (so many edges, so many walkers: on the sphere of hexagons a face's centre gives
+// 3 or 6 by its size, a pentagon 5). The point with K edges out nearest A's start; A's edge the nearest, the others round
+// it counterclockwise (seen from outside). None: no such point
+let battleGrouped = false;  // (a battle's walkers grouped, its starts groupedStarts'; kept in the link: gr)
+function groupedStarts(g, start, K) {
+  if (g.torus || g.mobius || g.klein) return null;
+  const G = gridGraph(g), V = g.verts, at = (v) => [V[3 * v], V[3 * v + 1], V[3 * v + 2]];
+  g.groupedPoints ??= (() => {  // (each point: its nearest corners' edges out, once a mesh)
+    const C = solidCorners(g);
+    return [...solidFaceCentres(g, C), ...C].map((P) => {
+      let top = -Infinity;  // (by direction: a mesh may lie flat on the solid's faces)
+      for (let v = 0; v < G.nv; v++) top = Math.max(top, dot3(unit(at(v)), P));
+      const ring = new Set();
+      for (let v = 0; v < G.nv; v++) if (dot3(unit(at(v)), P) > top - 1e-9) ring.add(v);
+      const out = [];
+      for (const r of ring) for (const w of G.nbrs[r]) if (!ring.has(w)) out.push([w, r]);
+      return { P, out };
+    });
+  })();
+  const a = at(start[0]), points = g.groupedPoints.filter((p) => p.out.length === K);
+  if (!points.length) return null;
+  const { P, out } = points.reduce((p, q) => (dot3(q.P, a) > dot3(p.P, a) ? q : p));
+  const off = (v) => { const x = at(v), h = dot3(x, P); return x.map((c, d) => c - h * P[d]); };  // (across P's axis)
+  const e1 = unit(off(out[0][0])), angle = ([w]) => { const x = off(w); return Math.atan2(dot3(cross(e1, x), P), dot3(x, e1)); };
+  const round = [...out].sort((x, y) => angle(x) - angle(y)), first = round.reduce((b, e, i) => (dot3(at(e[0]), a) > dot3(at(round[b][0]), a) ? i : b), 0);
+  return [...round.slice(first), ...round.slice(0, first)].map((e) => gridState(g, e));
+}
+// whether the walk shown can have its K walkers grouped (see groupedStarts): along a closed solid's grid, a point with K edges out
+const groupedCan = () => {
+  const mode = MODES[$('mode').value], size = battleMode($('mode').value) && mode.grid && sphereSize();
+  if (!size) return false;
+  const g = SPHERES[surfaceOf(mode)].mesh(size);
+  return !!groupedStarts(g, walkStart(g, mode), walkTeams);
+};
+// a battle's starts (see battleStarts; grouped, groupedStarts', where it can), or none, said in the status: A's place on an axis of the solid
 function battleStartsOrSay(g, start, grid, K) {
-  const starts = battleStarts(g, start, grid, K);
+  const starts = (battleGrouped && grid && groupedStarts(g, start, K)) || battleStarts(g, start, grid, K);
   if (!starts) walkSaid = battleGroups(g, K, 1).length ? `This start lies on an axis of the surface: ${K} walkers cannot start apart from it (another start, or fewer walkers)`
     : `This surface has no ${K} symmetries alike at this size: ${K} walkers cannot start alike (another size, or another count)`;
   return starts;
@@ -7788,9 +7826,15 @@ function battleAreas(P) {
 const BATTLE_CARDS = Object.values(PRESETS).filter((p) => ['Constants', '𝑓', 'Sequences'].includes(p.group) && typeof p.f === 'string').map((p) => p.f).concat('rho');
 const BATTLE_FRESH = () => ({ ended: [], open: [], endedCount: 0, tried: new Set(), key: battleHuntKey(), status: '' });  // (a hunt's results, none yet)
 const battleHunt = { run: null, ended: [], open: [], endedCount: 0, tried: new Set(), key: '', status: '' };
-const battleHuntKey = () => `${$('mode').value}|${walkTeams}|${penetration}|${sphereSize()}|${startNo()}|${digitsNeeded()}`;  // (what its battles are fought at)
+const battleHuntKey = () => `${$('mode').value}|${walkTeams}|${battleGrouped}|${penetration}|${sphereSize()}|${startNo()}|${digitsNeeded()}`;  // (what its battles are fought at)
 // √r's first n digits in base b, its integer part first (on the page: one integer root, as numberSeed's)
 const rootDigits = (r, base, n) => Uint8Array.from(iroot(BigInt(r) * BigInt(base) ** BigInt(2 * n), 2).toString(base).slice(0, n), (c) => c.charCodeAt(0) - 48);
+// a hunt, its walkers grouped or not (see groupedStarts): the battle shown first set so (its starts), any other hunt stopped
+function huntBattles(grouped) {
+  stopBattleHunt();
+  if (grouped !== battleGrouped) { battleGrouped = grouped; compute(); }
+  startBattleHunt();
+}
 async function startBattleHunt() {
   if (battleHunt.key !== battleHuntKey()) Object.assign(battleHunt, BATTLE_FRESH());
   const run = (battleHunt.run = { stop: false }), mode = MODES[$('mode').value], n = digitsNeeded(), base = mode.base, K = walkTeams;
@@ -7844,7 +7888,11 @@ function stopBattleHunt() {
 // its button (Hunt, or Stop), its count, its two lists as cards under their labels: a click plays one (A's, B's and C's formulas)
 function renderBattleHunt() {
   if (battleHunt.key !== battleHuntKey() && !battleHunt.run) Object.assign(battleHunt, BATTLE_FRESH());
-  $('battleHuntBtn').innerHTML = battleHunt.run ? `${icon('stop')} Stop hunt` : `${icon('search')} Hunt the longest battles`;
+  const label = (grouped, words) => (battleHunt.run && battleGrouped === grouped ? `${icon('stop')} Stop hunt` : `${icon('search')} ${words}`);
+  $('battleHuntBtn').innerHTML = label(false, 'Hunt the longest battles');
+  $('battleGroupedBtn').innerHTML = label(true, 'Hunt with grouped fighters');
+  $('battleGroupedBtn').disabled = !groupedCan();
+  $('battleGroupedBtn').classList.toggle('active', battleGrouped && groupedCan());  // (the battle shown grouped)
   $('battleHuntStatus').textContent = battleHunt.status;
   const sym = (f) => formulaOf(f).sym, shown = [formulaInUse, ...RIVALS.map((id) => formulaOf($(id).value).text)];
   const cardOf = (r) => {
@@ -13798,6 +13846,7 @@ function getSetup() {
     s.k = walkTeams;
     RIVALS.slice(0, walkTeams - 1).forEach((id) => { s[`x${id.slice(-1).toLowerCase()}`] = formulaOf($(id).value).text ?? $(id).value; });  // (xb, xc…)
     if (penetration) s.pe = penetration;  // (none: the first, Land grid)
+    if (battleGrouped && groupedCan()) s.gr = 1;  // (its walkers grouped, see groupedStarts)
   }
   if (mode.life && colourMix && lifeColours > 1) s.mx = 1;
   if (mode.life && newcomerOn()) s.nc = 1;  // (Newcomer)  // (Mixed, kept where its zone greys it: the other zones' fits by it, see huntFits)
@@ -13833,6 +13882,7 @@ function applySetup(s) {
   if (s.d !== undefined) target = Number(s.d);
   walkTeams = !MODES[s.w].life && COLOUR_STEPS.includes(Number(s.k)) ? Number(s.k) : 1;  // (a walk's battle, if its surface allows it at its size: see battleOn)
   penetration = walkTeams > 1 && PENETRATIONS[Number(s.pe)] ? Number(s.pe) : 0;  // (none: the first, Land grid)
+  battleGrouped = Number(s.gr) === 1;
   for (const id of RIVALS) set(id, s[`x${id.slice(-1).toLowerCase()}`]);
   set('mode', s.w);
   $('startNo').value = s.st ?? 1;
@@ -17566,7 +17616,8 @@ $('formula').addEventListener('change', () => {
   $('formula').value = formulaInUse;
   $('status').textContent = `Formula: ${error} · ${formulaInUse} kept`;
 });
-$('battleHuntBtn').addEventListener('click', () => (battleHunt.run ? stopBattleHunt() : startBattleHunt()));
+$('battleHuntBtn').addEventListener('click', () => (battleHunt.run && !battleGrouped ? stopBattleHunt() : huntBattles(false)));
+$('battleGroupedBtn').addEventListener('click', () => (battleHunt.run && battleGrouped ? stopBattleHunt() : huntBattles(true)));
 // Random (under the battle's ways): as many numbers as walkers, each another, drawn from the hunt's (BATTLE_CARDS, DRAWN_ROOTS), fought
 $('battleRandom').addEventListener('click', () => {
   const numbers = [...BATTLE_CARDS, ...DRAWN_ROOTS], fs = [];

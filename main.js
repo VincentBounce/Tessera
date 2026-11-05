@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.224';
+const VERSION = '0.4.225';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -734,21 +734,21 @@ const GRADIENT = [], DIGIT_COLORS = [], LIFE_TRAIL = [], LIFE_FADE = [], DIRECTI
 // strip, 6 × 2 round a torus (the last pair next to the first), 3 × 4 on a square torus, 4 × 3 on the plane
 const LIFE_HUES = [2, 222, 48, 135, 275, 185, 318, 25, 90, 340, 245, 160], LIFE_COLOURS = [];
 let GREY;
-let MONO, UNLIT, OCEAN, LANDS, LIFE_ALIVE, EDGE_RGB, EDGE_ALPHA, SHADE, FADE_EDGES, TILE_LIFT;  // TILE_LIFT: the tiles' rainbow mixed with white  // EDGE_RGB, EDGE_ALPHA: the tile edges; SHADE: how dark a tile turned away gets
+// the 8 shades of a dying Life cell (a Generations rule's stages), from the trail colour to the tile under it (unlit,
+// Ocean's sea); and of its trail once dead (Trail), in Amber (as an ant's cells, each theme its own), not a state
+function lifeShades(under) {
+  const b = hexRgb(under), shade = (c, f) => { const a = hexRgb(c); return `rgb(${[0, 1, 2].map((k) => Math.round(b[k] + (a[k] - b[k]) * f)).join(', ')})`; };
+  return { trail: Array.from({ length: 8 }, (_, i) => shade(PALETTE.trail, 1 - i / 8)), fade: Array.from({ length: 8 }, (_, i) => shade(PALETTE.fade, 1 - i / 8)) };
+}
+let PALETTE, MONO, UNLIT, OCEAN, LANDS, LIFE_ALIVE, EDGE_RGB, EDGE_ALPHA, SHADE, FADE_EDGES, TILE_LIFT;  // TILE_LIFT: the tiles' rainbow mixed with white  // EDGE_RGB, EDGE_ALPHA: the tile edges; SHADE: how dark a tile turned away gets
 function setPalette(theme) {
   const P = PALETTES[theme];
   // the surfaces' tile edges light on a dark page, dark on a light one, as the 2D grid
   UNLIT = P.unlit; OCEAN = P.ocean; LANDS = P.lands; LIFE_ALIVE = P.alive; EDGE_RGB = P.edgeRgb; EDGE_ALPHA = P.edgeAlpha;
   SHADE = P.shade; FADE_EDGES = !!P.fadeEdges; TILE_LIFT = P.tileLift ?? 0;
-  const [a, b] = [hexRgb(P.trail), hexRgb(P.unlit)];
-  // the 8 shades of a dying Life cell (a Generations rule's stages), from the trail colour to unlit; and of
-  // its trail once dead (Trail), in Amber (as an ant's cells, each theme its own), not to be taken for a state
-  const ink = hexRgb(P.fade);
-  for (let i = 0; i < 8; i++) {
-    const f = 1 - i / 8, mix = (k) => Math.round(b[k] + (a[k] - b[k]) * f), inked = (k) => Math.round(b[k] + (ink[k] - b[k]) * f);
-    LIFE_TRAIL[i] = `rgb(${mix(0)}, ${mix(1)}, ${mix(2)})`;
-    LIFE_FADE[i] = `rgb(${inked(0)}, ${inked(1)}, ${inked(2)})`;
-  }
+  PALETTE = P;
+  const shades = lifeShades(P.unlit);
+  LIFE_TRAIL.splice(0, 8, ...shades.trail); LIFE_FADE.splice(0, 8, ...shades.fade);
   for (let i = 0; i < BANDS; i++) GRADIENT[i] = `hsl(${190 + (200 * i) / (BANDS - 1)}, 85%, ${P.light}%)`;
   LIFE_HUES.forEach((h, k) => { LIFE_COLOURS[k] = `hsl(${h}, 85%, ${PALETTES.light.light}%)`; });  // the light page's, on a dark one too (to compare)
   DIGIT_COLORS.splice(0, DIGIT_COLORS.length, ...P.digits);
@@ -1554,7 +1554,7 @@ function relabelColours(mode) {
   const dying = C === 3 ? ' · dying' : C > 3 ? ` · ${C - 2} dying` : '';
   const names = !life ? { gradient: 'Rainbow along the walk', cells: 'Rainbow cells along the walk', visits: 'Rainbow by number of visits',
                       digit: 'One colour per digit', mono: 'One colour' }
-    : { mono: two ? `Civilisations: ${LIFE_COLOUR_NAMES.slice(0, K).join(' · ')} · dead` : `States: alive${dying} · dead`,
+    : { mono: two ? `Civilisations: ${Array.from({ length: K }, (_, k) => teamName(k)).join(' · ')} · dead` : `States: alive${dying} · dead`,
         gradient: C > 2 ? 'Age of live cells, warm newborns to cold old ones + dying stages' : 'Age of live cells, warm newborns to cold old ones + fading trail',
         digit: 'Activity (state changes)', cells: '', visits: '' };
   const sel = $('colourMode');
@@ -9855,7 +9855,7 @@ function startLead(number, seeded) {  // its start in words, on any grid (the pl
   if (lifeStart?.zone) return `${zoneWords(lifeStart.zone)}${sym ? `, ${sym},` : ''} on ${where}, the others dead`;
   if (lifeStart?.radius) return `${number} the ${fmt(lifeStart.cells)} cells within radius ${lifeStart.radius} of the middle of ${where}, the others dead`;
   if (found) return `${found} on ${where}`;
-  const how = { random: `A random soup, ${soup}${lifeParts() > 1 ? `, each colour in its part (${COLOUR_PARTS[lifeParts()]})${newcomerOn() ? `, ${LIFE_COLOUR_NAMES[lifeParts()]} none: born only (Newcomer)` : ''}` : ''},`, draw: `${fmt(walk.life.seedAlive)} cells drawn`, digits: `${number} ${seeded}`, text: `“${plane.text}” drawn` }[plane.start].replace(/,?$/, sym ? `, ${sym},` : '$&');
+  const how = { random: `A random soup, ${soup}${lifeParts() > 1 ? `, each colour in its part (${COLOUR_PARTS[lifeParts()]})${newcomerOn() ? `, ${teamName(lifeParts())} none: born only (Newcomer)` : ''}` : ''},`, draw: `${fmt(walk.life.seedAlive)} cells drawn`, digits: `${number} ${seeded}`, text: `“${plane.text}” drawn` }[plane.start].replace(/,?$/, sym ? `, ${sym},` : '$&');
   return `${how} on ${where}`;
 }
 function planeFromSetup(s) {
@@ -9966,10 +9966,10 @@ function renderPlaneRow() {
   eraser.className = 'eraser';
   eraser.title = 'eraser';
   eraser.innerHTML = icon('eraser');
-  $('brushColours').replaceChildren(...(K > 1 ? LIFE_COLOURS.slice(0, K) : [LIFE_ALIVE]).map((c, k) => {
+  $('brushColours').replaceChildren(...(K > 1 ? Array.from({ length: K }, (_, k) => teamColour(k)) : [LIFE_ALIVE]).map((c, k) => {
     const i = document.createElement('i');
     i.style.background = c;
-    i.title = K > 1 ? LIFE_COLOUR_NAMES[k] : 'alive';
+    i.title = K > 1 ? teamName(k) : 'alive';
     return i;
   }), eraser);
   [...$('brushColours').children].forEach((i, k) => {  // the colours 1, 2…, then the eraser (0)
@@ -10306,7 +10306,7 @@ function drawGhost() {
   ctx.clearRect(0, 0, cw, ch);
   if (!drawing || !ghost || !walk.plane) return;
   ctx.globalAlpha = brush.colour ? 0.55 : 0.85;  // the eraser: the dead cells' colour
-  ctx.fillStyle = !brush.colour ? UNLIT : walk.life.colours > 1 ? LIFE_COLOURS[brush.colour - 1] : LIFE_ALIVE;
+  ctx.fillStyle = !brush.colour ? UNLIT : walk.life.colours > 1 ? teamColour(brush.colour - 1) : LIFE_ALIVE;
   turnLayer(ctx);
   ctx.beginPath();
   for (const [x, y] of brushAt(ghost)) {
@@ -10343,7 +10343,8 @@ function lifeLook(L, lifted = false) {
   if (L.look?.key === key) return L.look.value;
   const lift = lifted ? liftTile : (c) => c;
   const pack = (c) => { const [r, g, b] = rgbOf(c); return ((255 << 24) | (b << 16) | (g << 8) | r) >>> 0; };
-  const trail = LIFE_TRAIL.map(pack), inked = LIFE_FADE.map(pack), alive = pack(oceanOn() ? LANDS[0] : LIFE_ALIVE), civ = [0, ...civColours(L.colours, L.C).map(pack)];
+  const shades = oceanOn() ? lifeShades(OCEAN) : { trail: LIFE_TRAIL, fade: LIFE_FADE };  // (Ocean: into its sea)
+  const trail = shades.trail.map(pack), inked = shades.fade.map(pack), alive = pack(oceanOn() ? LANDS[0] : LIFE_ALIVE), civ = [0, ...civColours(L.colours, L.C).map(pack)];
   const grad = Array.from({ length: 32 }, (_, i) => pack(lift(gradientAt(i / 31))));
   // the colours on a log scale, in tables (millions of cells): of an age (up to 64), of an activity
   const level = (v, max) => Math.min(31, Math.round((Math.log(v) / Math.log(Math.max(2, max))) * 31));
@@ -10676,7 +10677,7 @@ function renderColours() {
       title: 'The colours placed as one colour is (one patch, a soup), each cell a colour at random', toggle: true, byDefault: 'off', greyed: 'in Classic, in Replicators, Text and Draw, and in the hunt zones that lay each colour\'s own picture or part (Icon, Punk, Emoji, Famous, Anywhere, Realm, Mirror)', on: colourMixed(), can: lifeColours > 1 && mixable(hunt.zone), click: () => { colourMix = !colourMix; compute(); } }),
     // Newcomer, a switch (see newcomerCan)
     tile({ pic: colourBlock(Math.max(3, lifeColours), true), text: 'Newcomer', toggle: true, byDefault: 'off', on: newcomerOn(), can: newcomerCan(), click: () => { newcomer = !newcomer; compute(); },
-      title: lifeColours > 2 ? `${COLOUR_STEP_NAMES[lifeColours - 1] ?? `${lifeColours - 1} teams`} as it starts, and ${LIFE_COLOUR_NAMES[lifeColours - 1]} a newcomer: none at first, born of a tie between the others (the colour missing)` : 'The teams below\'s start, and the last colour a newcomer: none at first, born of a tie between the others (the colour missing)',
+      title: lifeColours > 2 ? `${COLOUR_STEP_NAMES[lifeColours - 1] ?? `${lifeColours - 1} teams`} as it starts, and ${teamName(lifeColours - 1)} a newcomer: none at first, born of a tie between the others (the colour missing)` : 'The teams below\'s start, and the last colour a newcomer: none at first, born of a tie between the others (the colour missing)',
       greyed: `where the teams picked have no birth of the missing colour (no mark in their corner), in Classic and Duel, in Digits and Draw${lifeColours > 2 && !coloursFit(lifeColours - 1) ? `, and where ${COLOUR_STEP_NAMES[lifeColours - 1] ?? `${lifeColours - 1} teams`} does not fit` : ''}` }));
 
 }
@@ -12635,7 +12636,7 @@ function renderHunt() {
         : hunt.goal === 'cover' ? (r.allAt ? [`All by gen ${fmt(r.allAt)}`, `its ${fmt(n)} cells reached · from ${fmt(r.live)}`]
           : [`${Math.floor((100 * r.reached) / n)} % of the cells reached`, `${r.P ? `till it ${r.P === 1 ? 'settles' : 'loops'} at gen ${fmt(r.T)}` : `in ${fmt(r.T)} generations`} · from ${fmt(r.live)} cells`])
         : [`${fmt(r.T)} generations${r.P ? '' : ' or more'}`, `${r.extinct ? 'dies out' : r.P === 1 ? 'settles' : r.P ? `period-${fmt(r.P)} loop` : 'still changing'} · ${fmt(r.live)} cells`]
-      : [`${fmt(r.contacts)} generation${r.contacts === 1 ? '' : 's'} in contact`, r.winner ? `${LIFE_COLOUR_NAMES[r.winner - 1]} wins at gen ${fmt(r.alone)}`
+      : [`${fmt(r.contacts)} generation${r.contacts === 1 ? '' : 's'} in contact`, r.winner ? `${teamName(r.winner - 1)} wins at gen ${fmt(r.alone)}`
         : r.P ? `of ${fmt(r.T)} before it settles` : `still fighting at gen ${fmt(r.T)}, where the hunt stops`];  // its balance: on its light
     const [colour, word] = light(r) ?? [], why = K > 1 ? (r.contacts ? `balance ${r.balance.toFixed(2)}: how evenly its colours keep being born (1 all alike, 0 one alone; green from 0.6, orange from 0.3, else red)` : 'its colours never touched: no battle')
       : `at most ${fmt(r.peak)} alive of ${fmt(n)} cells, from ${fmt(r.live)}: grown ${(r.peak / r.live).toFixed(1)} times (green from 4, orange from 2, else red)`;
@@ -15168,6 +15169,8 @@ const oceanFits = () => (MODES[$('mode').value].life ? lifeColours : battleOn() 
 const oceanOn = () => $('ocean').checked && !$('oceanRow').hidden && oceanFits();
 const blankTile = () => (oceanOn() ? OCEAN : UNLIT);  // (a surface's tile none has painted: Ocean's sea blue, or the theme's)
 const teamColour = (s) => (oceanOn() && LANDS[s] ? LANDS[s] : LIFE_COLOURS[s]);  // (team s, a battle's walker or Life's colour: Ocean's lands up to a Quintet, else Life's colours)
+const LAND_NAMES = ['green', 'yellow', 'ochre', 'lime', 'white'];  // (Ocean's lands, see PALETTES)
+const teamName = (s) => (oceanOn() && LANDS[s] ? LAND_NAMES[s] : LIFE_COLOUR_NAMES[s]);
 // Cut: Off, or a fixed plane through the middle facing one of the view's axes (E, N, Up, as drawn in its corner), the half on
 // that axis's side gone: its notches on a row as Flat ── Inflated (see sizeGauge)
 const CUT_AXES = [['Off'], ['E', [1, 0, 0]], ['N', [0, 1, 0]], ['Up', [0, 0, 1]]];
@@ -16557,7 +16560,7 @@ function drawActivity() {
     mark(peaks(walk.life).aliveGen, accent, 0);
   } else if (walk.battle) {  // (a battle's deaths, each in its walker's colour; those of one step each a row down, as the others' marks)
     const dead = walk.battle.player.dead;
-    dead.forEach((g, w) => g >= 0 && mark(g, LIFE_COLOURS[w], dead.slice(0, w).filter((h) => h === g).length % 3));
+    dead.forEach((g, w) => g >= 0 && mark(g, teamColour(w), dead.slice(0, w).filter((h) => h === g).length % 3));
   } else if (!walk.life && walk.n && walk.maxDist) mark(walkPeak().step, accent, 0);  // (a walk's farthest, in gold as its gauge)
   ctx.lineWidth = 1.5;
   for (const [x, colour] of marks) { ctx.strokeStyle = colour; ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke(); }
@@ -16677,7 +16680,7 @@ function renderRanking(L) {
   const avg = loopMeans(L), live = (k) => avg?.[k] ?? L.byColour[k], mean = !!avg;  // (a loop: each colour's mean over it, ≈)
   paintRanking(Array.from({ length: K }, (_, c) => {
     const k = c + 1, num = (v) => (mean && L.loopMax[k] > L.loopMin[k] ? meanText(v) : fmt(v));
-    return { colour: LIFE_COLOURS[c], name: LIFE_COLOUR_NAMES[c], value: live(k), dead: dead(k), diedAt: L.extinctAt[k],
+    return { colour: teamColour(c), name: teamName(c), value: live(k), dead: dead(k), diedAt: L.extinctAt[k],
              cells: [dead(k) ? `✝ ${genLink(L.extinctAt[k])}` : `<b>${num(live(k))}</b>`, fmt(Math.round((foot ?? L.sumBy)[k] / (foot ? Math.max(1, L.stable.T) : L.gen + 1))), fmt(L.bornBy[k]), fmt(L.deadBy[k]), fmt(L.everBy[k])] };
   }), LIFE_TITLES);
 }

@@ -276,7 +276,7 @@ button.switch.active:hover:not(:disabled) { background: var(--pick-strong); }
 }
 .mode-list button:hover { background: var(--bg); }
 .mode-icon { font-size: 15px; color: var(--muted); text-align: center; }
-.rule-cards .mode-icon svg, #yourList .mode-icon svg { width: 20px; height: 20px; }  /* a rule's picture, a treasure's shape */
+.mode-icon svg { width: 20px; height: 20px; }  /* every card's picture alike: a rule's, a treasure's shape, a hunt's find, a battle's way (see card) */
 .mode-head { display: flex; align-items: center; justify-content: space-between; gap: 6px; min-width: 0; }  /* a card's name, its base at its right (see cardWords) */
 .mode-name { display: block; min-width: 0; font-size: 13px; font-weight: 600; }
 .mode-detail { display: block; font-size: 11px; font-weight: 400; color: var(--muted); }

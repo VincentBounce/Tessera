@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.169';
+const VERSION = '0.4.170';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -5111,9 +5111,11 @@ for (const k of Object.keys(TUBE_SHAPE)) TUBE_SHAPE[k.replace('torus', 'klein')]
 const tubeFor = (kind, nv, nu) => (TUBE_SHAPE[kind] * nv) / nu;
 // One length for every ring and strip (a torus's, a Klein bottle's round its ring, a Möbius strip's along it), in its steps: near
 // x (its usual), its colours' blocks square (as long round as across: square) when that is 20 % shorter to 60 % longer, a whole
-// count of unit (each colour's block whole) as ok allows (a twist's), else the nearest ok allows. Life's colours only (a walk's: one).
+// count of unit (each colour's block whole) as ok allows (a twist's), else the nearest ok allows. Life's colours, a walk's battle's walkers.
 // Square or not by the shape asked, then rounded (by its rounding, Duel's square, 0.8 x on the dot, went one size in two)
-const ringColours = () => (MODES[$('mode').value]?.margolus ? 3 : MODES[$('mode').value]?.life ? lifeColours : 1);  // (a reversible torus: Trio's, its start on the middle square)
+const ringColours = (w = $('mode').value) => (MODES[w]?.margolus ? 3 : MODES[w]?.life ? lifeColours : !battleMode(w) || !SPHERES[surfaceOf(MODES[w])]?.columns ? 1
+  : teamsBuilding ?? (battleOn() ? walkTeams : 1));  // (a reversible torus: Trio's, its start on the middle square; a walk's battle on a ring: its walkers', see battleCounts)
+let teamsBuilding = null;  // (a ring's mesh made for so many walkers, to judge them: see battleCounts)
 function ringLength(x, square, unit, ok = () => true) {
   // (the whole count of u nearest t that ok allows: below and above it in turn, the nearer first; before v0.3.90 one more before one
   // less, whatever their distance: a strip 84 long, not 82, for 82.9)
@@ -7053,12 +7055,12 @@ function tintBattleFormulas() {
     $(id).style.setProperty('--walker', LIFE_COLOURS[s]);
   });
 }
-// A battle's starts: A's, then each turned by the solid's own symmetry, as the walk's state ([tile, the edge it comes in
-// by], along the grid [corner, the corner it comes from]): A's place turned by a group of K of the solid's turns (see
-// battleGroups: in a Duel, through the centre where the mesh is its own mirror, or a Klein bottle's half turn), see turnPlace
+// A battle's starts: A's, then each moved by the surface's own symmetry, as the walk's state ([tile, the edge it comes in
+// by], along the grid [corner, the corner it comes from]): A's place moved by a group of K of its maps (see battleGroups:
+// a solid's turns, a ring's shifts; each a map of its places that keeps every tile's corners' order, see placeMap)
 function battleStarts(g, start, grid, K) {
   const turned = (M) => {
-    const across = (u) => turnPlace(g, grid, M, u);
+    const across = (u) => M(u, grid);
     if (grid) return [across(start[0]), across(start[1]), ...start.slice(2)];  // (its corners turned; a pivot or parity walk's p, q kept)
     const [t, entry] = start, k = g.sides, b = across(t), from = across(g.nbr[k * t + entry]);
     for (let e = 0; e < k; e++) if (g.nbr[k * b + e] === from) return [b, e, ...start.slice(2)];  // (a pivot or parity walk's p, q kept)
@@ -7069,12 +7071,12 @@ function battleStarts(g, start, grid, K) {
   if (!G || spread(G) < 1e-9) return null;  // (none of K; or A's place on an axis: K walkers cannot start apart from it)
   return [start, ...G.slice(1).map(turned)];
 }
-// how far apart group G's turns set a battle's walkers from A's start (its place's point, along the grid a corner's, on
+// how far apart group G's maps set a battle's walkers from A's start (their places' points, along the grid a corner's, on
 // cells a tile's middle): their nearest pair's distance (0: on an axis of one of its turns, some start together)
 const startSpread = (g, grid, start) => {
-  const P = grid ? g.verts : g.cen, p = [P[3 * start[0]], P[3 * start[0] + 1], P[3 * start[0] + 2]];
+  const P = grid ? g.verts : g.cen;
   return (G) => {
-    const q = G.map((M) => (typeof M === 'function' ? [0, 1, 2].map((d) => P[3 * M(start[0]) + d]) : M.map((row) => dot3(row, p))));  // (a Klein bottle's shift: its tile's middle)
+    const q = G.map((M) => [0, 1, 2].map((d) => P[3 * M(start[0], grid) + d]));
     let least = Infinity;
     for (let a = 0; a < q.length; a++) for (let b = a + 1; b < q.length; b++) least = Math.min(least, Math.hypot(...q[a].map((x, d) => x - q[b][d])));
     return least;
@@ -7089,7 +7091,7 @@ function battleStartsOrSay(g, start, grid, K) {
 }
 // The surface's turns' groups of K (each its matrices, the identity first), once a mesh: made from one or two of its
 // turns (see surfaceRotations), closed under their products (the icosahedron's: 2, 3, 4, 5, 6, 10, 12; the cube's: 2,
-// 3, 4, 6, 8, 12; a torus's: by its columns round it)
+// 3, 4, 6, 8, 12; a torus's: by its columns round it; a Möbius strip's half turn)
 function rotationGroups(g, K, enough = Infinity, good = null) {  // (enough: as many found, the search stops; good: those kept)
   const memo = (g.rotationGroups ??= {});
   if (memo[K]) return good ? memo[K].filter(good).slice(0, enough) : memo[K].slice(0, enough);
@@ -7126,7 +7128,7 @@ function rotationGroups(g, K, enough = Infinity, good = null) {  // (enough: as 
   memo[K] = out;
   return good ? out.filter(good) : out;
 }
-const I3 = [[1, 0, 0], [0, 1, 0], [0, 0, 1]], MINUS_I3 = [[-1, 0, 0], [0, -1, 0], [0, 0, -1]];
+const I3 = [[1, 0, 0], [0, 1, 0], [0, 0, 1]];
 // numbers rounded to a ten-thousandth, as a key: a place found again by its point, a turn by its matrix (the grid of the
 // rounding shifted by an irrational part: a mesh's simple fractions, 1/32 = 312.5 ten-thousandths, never on its halves,
 // where a turned point's tiny error would round it the other way)
@@ -7148,47 +7150,91 @@ const fitsMesh = (g, M) => {
   }
   return true;
 };
-const centred = (g) => (g.centred ??= fitsMesh(g, MINUS_I3));
-// A Klein bottle's half turn round its tube: (x, y) to (x, y + nv/2) on its sheet, as a function of a tile (its walks on
-// cells only). No turn in space lays the bottle onto itself, and of its sheet's shifts its gluing keeps (along it, round
-// its tube by half) only this one keeps every tile's corners' order, which its walks turn by: the same walk from a tile
-// shifted. Null where its tiling does not fit it (an odd count round the tube), once a mesh
-function kleinShift(g) {
-  if (g.kleinShift !== undefined) return g.kleinShift;
-  const k = g.sides, up = g.cairo ? 0.5 : 0, cornerAt = new Map(), tileAt = new Map(), keyOf = (t, q, dy) => kleinSheetKey(g.uv[2 * (k * t + q)], g.uv[2 * (k * t + q) + 1] + dy, g.nu, g.nv, up);
-  const cornersOf = (t) => Array.from(g.poly.subarray(k * t, k * t + k));
-  for (let t = 0; t < g.n; t++) { for (let q = 0; q < k; q++) cornerAt.set(keyOf(t, q, 0), g.poly[k * t + q]); tileAt.set(cornersOf(t).sort((a, b) => a - b).join(), t); }
-  const to = new Int32Array(g.n);
+// A map of a surface's places from its corners' (corner(u): corner u's image, undefined where none): each tile onto the
+// tile its corners' images make, in the same order, which its walks turn by (on cells by its edges' order, along the grid
+// by its angles: a map that turns them over, a mirror, would have a walker walk as A's mirror); null where one has none. A
+// tile known by its corners in their order (a Möbius strip's two faces share theirs, the other way round; see cycleKey)
+function placeMap(g, corner) {
+  const k = g.sides, cornersOf = (t) => g.poly.subarray(k * t, k * t + k);
+  const byCycle = (g.tileByCycle ??= new Map(Array.from({ length: g.n }, (_, t) => [cycleKey(cornersOf(t)), t])));
+  const corners = Int32Array.from({ length: g.verts.length / 3 }, (_, u) => corner(u) ?? -1), tiles = new Int32Array(g.n);
   for (let t = 0; t < g.n; t++) {
-    const moved = cornersOf(t).map((_, q) => cornerAt.get(keyOf(t, q, g.nv / 2))), b = tileAt.get([...moved].sort((x, y) => x - y).join());
-    const there = b === undefined ? null : cornersOf(b), o = there?.indexOf(moved[0]);
-    if (!there || moved.some((c, q) => c !== there[(o + q) % k])) return (g.kleinShift = null);  // (no tile there, or its corners the other way round)
-    to[t] = b;
+    const b = byCycle.get(cycleKey(Array.from(cornersOf(t), (u) => corners[u])));
+    if (b === undefined) return null;
+    tiles[t] = b;
   }
-  return (g.kleinShift = (t) => to[t]);
+  return (u, grid) => (grid ? corners[u] : tiles[u]);
 }
-// the solid's turns' groups of K for a battle's starts (see battleStarts): its rotations' (see rotationGroups), for 2
-// the mirror through its centre too (−p) where its mesh is its own, and a Klein bottle's half turn (see kleinShift)
-const battleGroups = (g, K, enough = Infinity, good = null) => [...rotationGroups(g, K, enough, good), ...[MINUS_I3, g.klein && kleinShift(g)]
-  .filter((M) => K === 2 && M && (M !== MINUS_I3 || centred(g)) && (!good || good([I3, M]))).map((M) => [I3, M])];
-// a place u (a corner along the grid, else a tile) turned by M: a turn in space (a matrix: the place at its point turned,
-// each mesh's places keyed by their rounded points, once), or a Klein bottle's shift (a function of a tile)
-function turnPlace(g, grid, M, u) {
-  if (typeof M === 'function') return M(u);
-  const P = grid ? g.verts : g.cen, at = grid ? (g.cornerAt ??= new Map()) : (g.tileAt ??= new Map()), key = (p) => pointCode(p[0], p[1], p[2]);
-  if (!at.size) for (let w = 0; w < P.length / 3; w++) at.set(key([P[3 * w], P[3 * w + 1], P[3 * w + 2]]), w);
-  const w = at.get(key(M.map((row) => row[0] * P[3 * u] + row[1] * P[3 * u + 1] + row[2] * P[3 * u + 2])));
-  if (w === undefined) throw new Error('no place turned from the start');
-  return w;
-}
-// the teams a battle can have on mode w's surface (see battleMode), from its start: each K its surface has a group of K
-// turns for that sets them apart from A's start (see battleGroups, startSpread); none elsewhere
-const battleCounts = (w) => {
-  if (!battleMode(w)) return [];
-  const mode = MODES[w], g = SPHERES[surfaceOf(mode)].mesh(sphereSize()), start = walkStart(g, mode);  // (its mesh at the size picked, as the walk's: a ring's turns by its columns round it)
-  const apart = startSpread(g, !!mode.grid, start), memo = (g.battleCounts ??= {});
-  return (memo[`${!!mode.grid}|${start[0]}`] ??= COLOUR_STEPS.filter((K) => K > 1 && battleGroups(g, K, 1, (G) => apart(G) > 1e-9).length));  // (one group is enough to know)
+// a tile's corners in their order as a key, from its least one (a corner listed twice in a row once: the hexagon sphere's
+// pentagons, a hexagon with an edge of length 0, anywhere round it)
+const cycleKey = (cs) => {
+  const c = Array.from(cs).filter((u, q, all) => u !== all[(q + 1) % all.length]), o = c.indexOf(Math.min(...c));
+  return [...c.slice(o), ...c.slice(0, o)].join();
 };
+// a turn in space as its places' map (see placeMap: a corner found again by its point turned), once a turn and a mesh
+const turnMap = (g, M) => {
+  const memo = (g.turnMaps ??= new Map()), id = roundedKey(M.flat()), V = g.verts;
+  if (!memo.has(id)) {
+    const at = (g.cornerAt ??= new Map(Array.from({ length: V.length / 3 }, (_, u) => [pointCode(V[3 * u], V[3 * u + 1], V[3 * u + 2]), u])));
+    memo.set(id, placeMap(g, (u) => at.get(pointCode(...M.map((row) => row[0] * V[3 * u] + row[1] * V[3 * u + 1] + row[2] * V[3 * u + 2])))));
+  }
+  return memo.get(id);
+};
+// A ring's sheet shifted by (dx, dy) as its places' map (see placeMap; a torus, a Möbius strip's two faces, a Klein
+// bottle; once a shift): a corner found again by its place on the sheet shifted, brought within the sheet: a torus's by
+// its sides, a Möbius strip's faces a slanted torus (see mobiusAt), a Klein bottle's turned over past its ends (see
+// kleinSheetKey: a shift along it turns its tiles over past its seam, none found)
+function sheetShift(g, dx, dy) {
+  const memo = (g.sheetShifts ??= {}), id = `${dx},${dy}`;
+  if (id in memo) return memo[id];
+  const k = g.sides, near = (v, P) => v - Math.floor(v / P + 1e-7) * P, round = (v) => Math.round(v * 1e4) || 0;
+  const [P, S, Q] = g.mobius ? [g.L, g.W, 2 * g.W] : [g.nu, 0, g.nv];  // (its sheet's periods: (P, S) along, (0, Q) across)
+  const key = g.klein ? (x, y) => kleinSheetKey(x, y, g.nu, g.nv, g.cairo ? 0.5 : 0)
+    : (x, y) => { const m = Math.floor(x / P + 1e-7); return `${round(x - m * P)},${round(near(y - m * S, Q))}`; };
+  const cornerAt = new Map(), placed = [];  // (each corner's place, one of its tiles')
+  for (let t = 0; t < g.n; t++) for (let q = 0; q < k; q++) {
+    const [x, y] = g.mobius ? mobiusAt(g, t, [g.uv[2 * (k * t + q)], g.uv[2 * (k * t + q) + 1]]) : [g.uv[2 * (k * t + q)], g.uv[2 * (k * t + q) + 1]];
+    cornerAt.set(key(x, y), g.poly[k * t + q]);
+    placed[g.poly[k * t + q]] ??= [x, y];
+  }
+  return (memo[id] = placeMap(g, (u) => placed[u] && cornerAt.get(key(placed[u][0] + dx, placed[u][1] + dy))));
+}
+// a ring's group of K shifts for a battle's starts (see battleStarts), its places' maps (see sheetShift), the identity first:
+// its colours' parts as Life's, its length made for K (see ringColours): a torus's blocks, a round its ring by b round its
+// tube (see torusBlocks); a Möbius strip's K stretches along its loop, its two faces (2L); a Klein bottle's half turn round
+// its tube, a Duel only (a shift along it turns its tiles over past its seam: a walker there would walk as A's mirror);
+// null where one does not fit
+function ringGroup(g, K) {
+  const [a, b] = g.mobius ? [K, 1] : torusBlocks(K, g), along = g.mobius ? 2 * g.L : g.nu;
+  if (g.klein && K !== 2) return null;
+  const shifts = g.klein ? [[0, g.nv / 2]] : Array.from({ length: K - 1 }, (_, i) => [(((i + 1) % a) * along) / a, (Math.floor((i + 1) / a) * g.nv) / b]);
+  const G = [[0, 0], ...shifts].map(([dx, dy]) => sheetShift(g, dx, dy));
+  return G.every(Boolean) ? G : null;
+}
+// the groups of K for a battle's starts (see battleStarts), each its places' maps (see placeMap), the identity first: a
+// ring's shifts (see ringGroup); the surface's turns in space (see rotationGroups: a solid's, a ring's round its axis, a
+// Möbius strip's half turn) that keep its tiles' corners' order (see turnMap; the mirror through its centre never does)
+const battleGroups = (g, K, enough = Infinity, good = null) => {
+  const maps = (G) => { const F = G.map((M) => turnMap(g, M)); return F.every(Boolean) ? F : null; };
+  return [...(g.torus ? [ringGroup(g, K)] : []), ...rotationGroups(g, K, enough, (G) => !!maps(G) && (!good || good(maps(G)))).map(maps)].filter((G) => G && (!good || good(G)));
+};
+// the teams a battle can have on mode w's surface (see battleMode), from its start: each K its surface has a group of K
+// for that sets them apart from A's start (see battleGroups, startSpread), a ring's judged on its mesh made for K (its
+// length its walkers', as Life's colours', see ringColours); none elsewhere
+const battleCounts = (w) => {
+  const size = battleMode(w) && sphereSize();
+  if (!size) return [];  // (none, or its size not set yet: a page opening)
+  const mode = MODES[w], sphere = SPHERES[surfaceOf(mode)], grid = !!mode.grid, memo = (battleCountsMemo[`${w}|${size}|${$('startNo').value}`] ??= {});  // (the start asked: its count made by each K's mesh, see walkStart)
+  const fits = (K) => {
+    teamsBuilding = sphere.columns ? K : null;
+    try {
+      const g = sphere.mesh(size), start = walkStart(g, mode), apart = startSpread(g, grid, start);  // (its mesh at the size picked, as the walk's)
+      return battleGroups(g, K, 1, (G) => apart(G) > 1e-9).length > 0;  // (one group is enough to know)
+    } finally { teamsBuilding = null; }
+  };
+  return COLOUR_STEPS.filter((K) => K > 1 && (memo[K] ??= fits(K)));
+};
+const battleCountsMemo = {};
 // A surface's turns in space that lay its mesh onto itself (each a matrix, the identity among them), once a mesh: a closed
 // solid's rotations (see solidRotations); a ring's (a torus, a Möbius strip, a Klein bottle), its turns round its axis by
 // 2π/m (m from a corner's fellows round the axis at its height and distance, the least angle between them) and its

@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.119';
+const VERSION = '0.4.120';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -7063,7 +7063,7 @@ function tintBattleFormulas() {
 // battleGroups: in a Duel, through the centre where the mesh is its own mirror). A turned place is found again by its
 // point (each mesh's places keyed by their rounded points, once)
 function battleStarts(g, start, grid, K) {
-  const P = grid ? g.verts : g.cen, count = grid ? gridGraph(g).nv : g.n, key = roundedKey;
+  const P = grid ? g.verts : g.cen, count = grid ? gridGraph(g).nv : g.n, key = (p) => pointCode(p[0], p[1], p[2]);
   const at = grid ? (g.cornerAt ??= new Map()) : (g.tileAt ??= new Map());
   if (!at.size) for (let u = 0; u < count; u++) at.set(key([P[3 * u], P[3 * u + 1], P[3 * u + 2]]), u);
   const point = (u) => [P[3 * u], P[3 * u + 1], P[3 * u + 2]], times = (M, p) => M.map((row) => dot3(row, p));
@@ -7139,13 +7139,25 @@ function rotationGroups(g, K, enough = Infinity, good = null) {  // (enough: as 
 // the solid's turns groups of K for a battle's starts: its rotations' (see rotationGroups), and for 2 the mirror through
 // its centre too (−p), where its mesh is its own (not the tetrahedron's)
 const I3 = [[1, 0, 0], [0, 1, 0], [0, 0, 1]], MINUS_I3 = [[-1, 0, 0], [0, -1, 0], [0, 0, -1]];
-// numbers rounded to a ten-thousandth, as a key: a place found again by its point, a turn by its matrix
-const roundedKey = (xs) => xs.map((x) => Math.round(x * 1e4)).join();
-// whether turn M (a matrix) lays the mesh's corners onto its corners (their keys, once a mesh)
+// numbers rounded to a ten-thousandth, as a key: a place found again by its point, a turn by its matrix (the grid of the
+// rounding shifted by an irrational part: a mesh's simple fractions, 1/32 = 312.5 ten-thousandths, never on its halves,
+// where a turned point's tiny error would round it the other way)
+const roundedKey = (xs) => xs.map((x) => Math.round(x * 1e4 + 0.2718281828)).join();
+// a point's key as one whole number, its coordinates rounded as roundedKey's packed in 17 bits each (within ±6.5: the
+// surfaces' points, a unit's size), for the meshes' hundreds of thousands of places
+const pointCode = (x, y, z) => {
+  const q = (v) => Math.round(v * 1e4 + 0.2718281828) + 65536;
+  return (q(x) * 131072 + q(y)) * 131072 + q(z);
+};
+// whether turn M (a matrix) lays the mesh's corners onto its corners (their codes, once a mesh)
 const fitsMesh = (g, M) => {
-  const V = g.verts, n = V.length / 3, corner = (u) => [V[3 * u], V[3 * u + 1], V[3 * u + 2]];
-  const all = (g.cornerKeys ??= new Set(Array.from({ length: n }, (_, u) => roundedKey(corner(u)))));
-  for (let u = 0; u < n; u++) if (!all.has(roundedKey(M.map((row) => dot3(row, corner(u)))))) return false;
+  const V = g.verts, n = V.length / 3;
+  const all = (g.cornerCodes ??= new Set(Array.from({ length: n }, (_, u) => pointCode(V[3 * u], V[3 * u + 1], V[3 * u + 2]))));
+  const [a, b, c] = M;
+  for (let u = 0; u < n; u++) {
+    const x = V[3 * u], y = V[3 * u + 1], z = V[3 * u + 2];
+    if (!all.has(pointCode(a[0] * x + a[1] * y + a[2] * z, b[0] * x + b[1] * y + b[2] * z, c[0] * x + c[1] * y + c[2] * z))) return false;
+  }
   return true;
 };
 const centred = (g) => (g.centred ??= fitsMesh(g, MINUS_I3));
@@ -7164,7 +7176,7 @@ const battleCounts = (w) => {
 // half-turns about the x and y axes, those that fit, closed under their products
 function surfaceRotations(g) {
   if (g.rotations) return g.rotations;
-  if (!g.torus) return (g.rotations = solidRotations(solidCorners(g)));
+  if (!g.torus) return (g.rotations = solidRotations(solidCorners(g)));  // (its mesh made by them: all of them at every size, checked)
   const V = g.verts, n = V.length / 3, fits = (M) => fitsMesh(g, M);
   const turn = (t) => [[Math.cos(t), -Math.sin(t), 0], [Math.sin(t), Math.cos(t), 0], [0, 0, 1]];
   const r0 = Math.hypot(V[0], V[1]), a0 = Math.atan2(V[1], V[0]);

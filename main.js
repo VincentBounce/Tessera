@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.151';
+const VERSION = '0.4.152';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -5171,11 +5171,11 @@ function kleinBottlePoint(v, u) {
 // Its tiles as the torus's (squares, hexagons, triangles, Cairo pentagons; tiles in the same order), their
 // corners one vertex per point of the bottle, found by their place on the sheet (not in space: it crosses
 // itself, and the points where it does are two)
-const kleinColumns = { klein: (nv) => ringColumns(nv / TORUS_TUBE, nv, 1, true), kleinHex: (nv) => torusHexColumns(nv, true), kleinTri: (nv) => ringColumns((nv * Math.sqrt(3)) / (2 * TORUS_TUBE), nv, 2, true),
+const kleinColumns = { klein: (nv) => ringColumns(nv / TORUS_TUBE, nv, 1, true), kleinHex: (nv) => torusHexColumns(nv, true), kleinTri: (nv) => torusTriColumns(nv, true),
   kleinCairo: (nv) => ringColumns(nv / TORUS_TUBE, nv, 1, true, (n) => n % 2 === 1) };  // Cairo: an odd length, so that the ends turned over keep the tiling
 kleinColumns.kleinKite = kleinColumns.kleinTri;  // kites: the triangles', each cut in 3
-kleinColumns.kleinTriTurned = kleinColumns.kleinKiteTurned = (nv) => turnedTriColumns(nv);  // turned by 30° (as the tori, see turnedTorus)
-kleinColumns.kleinHexTurned = (nv) => turnedHexColumns(nv, true);
+kleinColumns.kleinTriTurned = kleinColumns.kleinKiteTurned = (nv) => torusHexColumns(nv);  // turned by 30° (as the tori, see turnedTorus)
+kleinColumns.kleinHexTurned = (nv) => torusTriColumns(nv, true);
 function kleinMesh(kind, nv, nu = kleinColumns[kind](nv)) {
   const key = `${kind}${nv}x${nu}`;
   if (meshCache[key]) return meshCache[key];
@@ -5703,7 +5703,7 @@ function hexSolidMesh(solid, f) {
  * a triangle, nu corners along each row. In sheet units a triangle is 1 wide and its row √3/2 high;
  * the sheet is 2π by 2π·TUBE, so the triangles are equilateral when nu / nv = √3 / (2·TUBE).
  * Every corner has 6 edges: the triangular grid that wraps around both ways. */
-const torusTriColumns = (nv) => ringColumns((nv * Math.sqrt(3)) / (2 * TORUS_TUBE), nv, 2);
+const torusTriColumns = (nv, klein = false) => ringColumns((nv * Math.sqrt(3)) / (2 * TORUS_TUBE), nv, 2, klein);
 /* Kites (the deltoidal trihexagonal tiling, the grid of the hat monotile): each triangle of the triangles'
  * grid cut in 3 from its middle to its sides' middles, a kite at each corner (that corner, the middles of
  * its two sides, the triangle's middle); 6 kites round a corner of the triangles make a hexagon. A kite
@@ -5748,10 +5748,9 @@ function turnedTorus(kind, build, sides, nv, nu, kites = false) {  // kites: eac
     return tiles;
   }, { kite: kites });
 }
-const turnedTriColumns = (nv) => ringColumns((2 * nv) / (Math.sqrt(3) * TORUS_TUBE), nv, 2);
-const turnedTorusTriMesh = (nv, nu = turnedTriColumns(nv), kites = false) => turnedTorus(kites ? 'torusKiteTurned' : 'torusTriTurned', (rows, cols, put) => triSheet(rows, cols).forEach(put), 3, nv, nu, kites);  // (rows: around the ring)
-const turnedHexColumns = (nv, klein = false) => ringColumns((nv * Math.sqrt(3)) / (2 * TORUS_TUBE), nv, 2, klein);
-const turnedTorusHexMesh = (nv, nu = turnedHexColumns(nv)) => turnedTorus('torusHexTurned', (cols, rows, put) => hexSheet(cols, rows).forEach(put), 6, nv, nu);  // (as on the usual torus)
+// (turned by 30°, the triangles' rows lie as the hexagons' columns, and the other way round: each the other's count)
+const turnedTorusTriMesh = (nv, nu = torusHexColumns(nv), kites = false) => turnedTorus(kites ? 'torusKiteTurned' : 'torusTriTurned', (rows, cols, put) => triSheet(rows, cols).forEach(put), 3, nv, nu, kites);  // (rows: around the ring)
+const turnedTorusHexMesh = (nv, nu = torusTriColumns(nv)) => turnedTorus('torusHexTurned', (cols, rows, put) => hexSheet(cols, rows).forEach(put), 6, nv, nu);  // (as on the usual torus)
 
 /* ---- 7.5 Flat ↔ round: the same tiles and neighbours, shown flat or inflated ----------------- */
 /* walk.shape = { m, target, corners, cen, nrm, extent, bent } for surfaces that can change shape:
@@ -5970,12 +5969,12 @@ const SPHERES = {
   // turned by 30° (see turnedTorus): rows around the ring. perColumn: tiles across a corner (a
   // column) around the tube, for the size's label
   torusTriTurned: { mesh: (s) => turnedTorusTriMesh(...torusDims('torusTriTurned', s)), radius: (s) => torusDims('torusTriTurned', s)[0] / (2 * Math.PI * TORUS_TUBE),
-                    columns: turnedTriColumns, perRow: 1, perColumn: 2, steps: [1, 2],  // an even count of rows
+                    columns: torusHexColumns, perRow: 1, perColumn: 2, steps: [1, 2],  // an even count of rows
                     least: 2, tiles: (s) => 2 * torusDims('torusTriTurned', s).reduce((a, b) => a * b), unit: 'triangles' },
   torusKiteTurned: { mesh: (s) => turnedTorusTriMesh(...torusDims('torusKiteTurned', s), true), radius: (s) => torusDims('torusKiteTurned', s)[0] / (2 * Math.PI * TORUS_TUBE),
-                     columns: turnedTriColumns, perRow: 1, perColumn: 2, steps: [1, 2], least: 2, tiles: (s) => 6 * torusDims('torusKiteTurned', s).reduce((a, b) => a * b), unit: 'kites' },
+                     columns: torusHexColumns, perRow: 1, perColumn: 2, steps: [1, 2], least: 2, tiles: (s) => 6 * torusDims('torusKiteTurned', s).reduce((a, b) => a * b), unit: 'kites' },
   torusHexTurned: { mesh: (s) => turnedTorusHexMesh(...torusDims('torusHexTurned', s)), radius: (s) => (torusDims('torusHexTurned', s)[0] * 1.5) / (2 * Math.PI * TORUS_TUBE),
-                    columns: turnedHexColumns, perRow: 1, steps: [2, 1],  // an even count of columns, around the tube
+                    columns: torusTriColumns, perRow: 1, steps: [2, 1],  // an even count of columns, around the tube
                     tiles: (s) => torusDims('torusHexTurned', s).reduce((a, b) => a * b), unit: 'hexagons' },
   // Möbius strip: its size is its rows across; square edge = 1 unit (the middle circle is nu long)
   // Möbius strips: their size is their rows across; tile edge = 1 unit (the middle circle is L long);

@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.194';
+const VERSION = '0.4.195';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -16902,9 +16902,11 @@ const valueInUse = { formula: () => formulaInUse, digitsLabel: () => String(rand
 for (const input of document.querySelectorAll('.field input')) {
   let before = '';
   valueInUse[input.id] ??= () => before;  // Life's rule: as it was when entered
+  // its value in use put back, as typed: its listeners told (a battle's formula bold in its colour again, see tintBattleFormulas)
+  const putBack = () => { input.value = valueInUse[input.id](); input.dispatchEvent(new Event('input')); };
   input.addEventListener('focus', () => {
     before = input.value;
-    input.value = valueInUse[input.id]();
+    putBack();
     input.setSelectionRange(input.value.length, input.value.length);
   });
   // a click into the field focuses it without placing the cursor (the focus puts it at the end);
@@ -16915,7 +16917,7 @@ for (const input of document.querySelectorAll('.field input')) {
     input.focus();
   });
   input.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') { input.value = valueInUse[input.id](); input.blur(); }
+    if (e.key === 'Escape') { putBack(); input.blur(); }
     if (e.key !== 'Enter') return;
     const error = input.id === 'formula' && readFormula().error;
     if (error) { e.preventDefault(); $('status').textContent = `Formula: ${error}`; } else input.blur();

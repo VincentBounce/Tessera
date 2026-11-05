@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.118';
+const VERSION = '0.4.119';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -6881,6 +6881,11 @@ function surfaceSteps(g, mode) {
   };
 }
 
+// a walk's first state on surface g (see surfaceSteps): along the grid [corner, the corner it comes from], the start picked
+// where the surface has a start picker (start k of N, see STARTS_ON), else its first; on cells [tile, the edge it comes in
+// by]; a pivot or parity walk's p, q at 0
+const walkStart = (g, mode) => (mode.grid ? [...(STARTS_ON.includes(surfaceOf(mode)) ? startList(g)[startNo() - 1] : firstStart(g, gridGraph(g))), ...(mode.pivot || mode.parity ? [0, 0] : [])]
+  : surfaceSteps(g, mode).start(startNo() - 1));
 // A walk on a surface recorded step by step (see buildGridWalk, buildSphereWalk): its points (on the unit surface, R times),
 // its tiles, its places seen (corners or tiles, nodes of them) and the step it has seen them all, its farthest from its
 // start, its digits' counts; begin(key), step(i, digit, key): stopped where it goes round (key, its state: see loopWatch;
@@ -6924,8 +6929,7 @@ function buildGridWalk(seq, mode, ahead = new Uint8Array(0)) {
   const { mesh, radius } = SPHERES[kind];
   const size = sphereSize(), g = mesh(size), R = radius(size), G = gridGraph(g), V = g.verts, len = seq.length, at = (v) => [V[3 * v], V[3 * v + 1], V[3 * v + 2]];
   const rec = walkRecorder(seq, ahead, base, R, G.nv), vert = new Int32Array(len + 1), stepTiles = new Int32Array(2 * len), S = surfaceSteps(g, mode);
-  // its state: [corner, the corner it came from] (a pivot or parity walk's: and its p, q, see surfaceSteps)
-  let state = [...(STARTS_ON.includes(kind) ? startList(g)[startNo() - 1] : firstStart(g, G)), ...(mode.pivot || mode.parity ? [0, 0] : [])], v = state[0];
+  let state = walkStart(g, mode), v = state[0];
   const put = (i) => { rec.put(i, v, G.tileOf[v], at(v)); vert[i] = v; };
   put(0);
   rec.begin(S.key(state));
@@ -6964,9 +6968,9 @@ function buildSphereWalk(seq, mode, ahead = new Uint8Array(0)) {
   const size = sphereSize(), g = mesh(size), R = radius(size), S = surfaceSteps(g, mode);
   const len = seq.length, w = current.mode, ant = !!mode.antOf;
   // an ant: it walks the surface's cells by its turns, the cells keeping their colours (see antStepper)
-  const antStep = ant ? antStepper(w, (d) => { state = S.step(state, d); return state; }, S.start(startNo() - 1)[0]) : null;
+  const antStep = ant ? antStepper(w, (d) => { state = S.step(state, d); return state; }, walkStart(g, mode)[0]) : null;
   const base = ant && !antByDigits ? antStep.colours : mode.base, turns = ant ? new Uint8Array(len) : null, rec = walkRecorder(seq, ahead, base, R, g.n);
-  let state = S.start(startNo() - 1);
+  let state = walkStart(g, mode);
   const put = (i, t = state[0]) => rec.put(i, t, t, [g.cen[3 * t], g.cen[3 * t + 1], g.cen[3 * t + 2]]);
   put(0);
   rec.begin(S.key(state));  // (tile, the edge it came in by)
@@ -7034,7 +7038,7 @@ function renderWalkTeams() {
   $('walkTeams').replaceChildren(...COLOUR_STEPS.map((k) => tile({ pic: colourBlock(k), text: COLOUR_STEP_NAMES[k],
     title: words(k),
     on: k === (battleOn() ? walkTeams : 1), can: k === 1 || battleCounts(w).includes(k), byDefault: k === 1 ? 'yes' : '',
-    greyed: k === 1 ? '' : 'no group of so many of the surface\'s turns at this size: its walkers would not start alike',
+    greyed: k === 1 ? '' : 'no group of so many of the surface\'s turns at this size that sets them apart from this start: they would not start alike (another size or start)',
     click: () => { if (k !== walkTeams) { walkTeams = k; compute(); } } })));
   if (!battleOn()) return;
   const button = ([p, name, head, title]) => tile({
@@ -7071,16 +7075,21 @@ function battleStarts(g, start, grid, K) {
     throw new Error('no tile turned from the start');
   };
   // the group of K of the solid's turns whose turns of A's place lie the furthest apart (their nearest pair)
-  const p = point(start[0]), spread = (G) => {
-    const q = G.map((M) => times(M, p));
-    let least = Infinity;
-    for (let a = 0; a < K; a++) for (let b = a + 1; b < K; b++) least = Math.min(least, Math.hypot(...q[a].map((x, d) => x - q[b][d])));
-    return least;
-  };
-  const groups = battleGroups(g, K), G = groups.length ? groups.reduce((a, b) => (spread(b) > spread(a) + 1e-9 ? b : a)) : null;
+  const spread = startSpread(g, grid, start), groups = battleGroups(g, K), G = groups.length ? groups.reduce((a, b) => (spread(b) > spread(a) + 1e-9 ? b : a)) : null;
   if (!G || spread(G) < 1e-9) return null;  // (none of K; or A's place on an axis: K walkers cannot start apart from it)
   return [start, ...G.slice(1).map(turned)];
 }
+// how far apart group G's turns set a battle's walkers from A's start (its place's point, along the grid a corner's, on
+// cells a tile's middle): their nearest pair's distance (0: on an axis of one of its turns, some start together)
+const startSpread = (g, grid, start) => {
+  const P = grid ? g.verts : g.cen, p = [P[3 * start[0]], P[3 * start[0] + 1], P[3 * start[0] + 2]];
+  return (G) => {
+    const q = G.map((M) => M.map((row) => dot3(row, p)));
+    let least = Infinity;
+    for (let a = 0; a < q.length; a++) for (let b = a + 1; b < q.length; b++) least = Math.min(least, Math.hypot(...q[a].map((x, d) => x - q[b][d])));
+    return least;
+  };
+};
 // a battle's starts (see battleStarts), or none, said in the status: A's place on an axis of the solid
 function battleStartsOrSay(g, start, grid, K) {
   const starts = battleStarts(g, start, grid, K);
@@ -7091,9 +7100,9 @@ function battleStartsOrSay(g, start, grid, K) {
 // The surface's turns' groups of K (each its matrices, the identity first), once a mesh: made from one or two of its
 // turns (see surfaceRotations), closed under their products (the icosahedron's: 2, 3, 4, 5, 6, 10, 12; the cube's: 2,
 // 3, 4, 6, 8, 12; a torus's: by its columns round it)
-function rotationGroups(g, K, enough = Infinity) {  // (enough: as many found, the search stops: whether there is one)
+function rotationGroups(g, K, enough = Infinity, good = null) {  // (enough: as many found, the search stops; good: those kept)
   const memo = (g.rotationGroups ??= {});
-  if (memo[K]) return memo[K];
+  if (memo[K]) return good ? memo[K].filter(good).slice(0, enough) : memo[K].slice(0, enough);
   const R = surfaceRotations(g), I = I3;
   if (R.length % K) return (memo[K] = []);  // (a group's order divides its whole group's: Lagrange)
   const key = (M) => roundedKey(M.flat()), times = matMul;
@@ -7121,10 +7130,11 @@ function rotationGroups(g, K, enough = Infinity) {  // (enough: as many found, t
     const G = close(a === b ? [R[a]] : [R[a], R[b]]);
     if (!G || seen.has(G.id)) continue;
     seen.add(G.id); out.push(G.list);
-    if (out.length >= enough) return out;
+    if (out.filter((G) => !good || good(G)).length >= enough) return good ? out.filter(good).slice(0, enough) : out;
     for (const M of G.list) inFound[index.get(key(M))]?.push(out.length - 1);
   }
-  return (memo[K] = out);
+  memo[K] = out;
+  return good ? out.filter(good) : out;
 }
 // the solid's turns groups of K for a battle's starts: its rotations' (see rotationGroups), and for 2 the mirror through
 // its centre too (−p), where its mesh is its own (not the tetrahedron's)
@@ -7139,13 +7149,14 @@ const fitsMesh = (g, M) => {
   return true;
 };
 const centred = (g) => (g.centred ??= fitsMesh(g, MINUS_I3));
-const battleGroups = (g, K, enough = Infinity) => [...rotationGroups(g, K, enough), ...(K === 2 && centred(g) ? [[I3, MINUS_I3]] : [])];
-// the teams a battle can have on mode w's surface (see battleMode): each K its solid has a group of K turns for (see
-// battleGroups); none elsewhere
+const battleGroups = (g, K, enough = Infinity, good = null) => [...rotationGroups(g, K, enough, good), ...(K === 2 && centred(g) && (!good || good([I3, MINUS_I3])) ? [[I3, MINUS_I3]] : [])];
+// the teams a battle can have on mode w's surface (see battleMode), from its start: each K its surface has a group of K
+// turns for that sets them apart from A's start (see battleGroups, startSpread); none elsewhere
 const battleCounts = (w) => {
   if (!battleMode(w)) return [];
-  const g = SPHERES[surfaceOf(MODES[w])].mesh(sphereSize());  // (its mesh at the size picked, as the walk's: a ring's turns by its columns round it)
-  return (g.battleCounts ??= COLOUR_STEPS.filter((K) => K > 1 && battleGroups(g, K, 1).length));  // (one group is enough to know)
+  const mode = MODES[w], g = SPHERES[surfaceOf(mode)].mesh(sphereSize()), start = walkStart(g, mode);  // (its mesh at the size picked, as the walk's: a ring's turns by its columns round it)
+  const apart = startSpread(g, !!mode.grid, start), memo = (g.battleCounts ??= {});
+  return (memo[`${!!mode.grid}|${start[0]}`] ??= COLOUR_STEPS.filter((K) => K > 1 && battleGroups(g, K, 1, (G) => apart(G) > 1e-9).length));  // (one group is enough to know)
 };
 // A surface's turns in space that lay its mesh onto itself (each a matrix, the identity among them), once a mesh: a closed
 // solid's rotations (see solidRotations); a ring's (a torus, a Möbius strip, a Klein bottle), its turns round its axis by
@@ -7671,7 +7682,7 @@ async function startBattleHunt() {
     if (!knownDigits(F, base, n)) await new Promise((ok) => { run.worker = digitsWorker(F, base, n, ok); });
     if (run.stop) return;
   }
-  const g = walk.geo, S = surfaceSteps(g, mode), starts = battleStartsOrSay(g, S.start(startNo() - 1), !!mode.grid, K);
+  const g = walk.geo, S = surfaceSteps(g, mode), starts = battleStartsOrSay(g, walkStart(g, mode), !!mode.grid, K);
   if (!starts) { $('status').textContent = walkSaid; stopBattleHunt(); return; }
   const numbers = [...BATTLE_CARDS, ...DRAWN_ROOTS], N = numbers.length, sets = Array.from({ length: K }, (_, j) => N - j).reduce((a, b) => a * b);
   const cards = new Map(BATTLE_CARDS.map((f) => [f, knownDigits(formulaOf(f), base, n)]));

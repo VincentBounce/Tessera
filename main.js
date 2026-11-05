@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.213';
+const VERSION = '0.4.214';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -15158,8 +15158,8 @@ const paintLevels = (palette, levelOf) => (out, n) => {
   for (let t = 0; t < n; t++) col[t] = rgb[levelOf(t)] ?? rgb[0];
   out.put(col);
 };
-// Glass: the surface see-through, every layer showing, its grid and path too (weighted blended, see gpuFrame); Cut: the half
-// nearer the viewer gone, by the plane through the centre facing them (with Glass: see-through)
+// Glass: the surface see-through, every layer showing, its grid and path too (weighted blended, see gpuFrame); Cut: a half
+// gone, by a fixed plane through the middle (see CUT_AXES); the two apart: with both, what is left see-through
 const GLASS_ALPHA = 0.4;  // (a tile's share: a layer behind seen at 60%, two at 36%…)
 const glassOn = () => $('glass').checked && !$('glassRow').hidden;
 // Cut: Off, or a fixed plane through the middle facing one of the view's axes (E, N, Up, as drawn in its corner), the half on
@@ -15738,7 +15738,7 @@ fn light(col: vec3f, n0: vec3f, p: vec3f, bias: f32) -> Lit {  // (as tileLight;
     s += textureSampleCompareLevel(shadowMap, shadowCmp, at, i.sh.z - 2.0 * t);
   } }
   var a = u.alpha;
-  if (u.glass == 0 || (u.cut == 2 && i.cutv <= 0.0)) { a = 1.0; }
+  if (u.glass == 0) { a = 1.0; }
   return glass(i.dark + i.lit * s / 9.0, a, i.pos.z);
 }
 @vertex fn tileV(@location(0) pos: vec3f, @location(1) nrm: vec3f, @location(2) id: u32) -> Lit {
@@ -16037,7 +16037,7 @@ function gpuSurface(paint, path) {
   // the tiles, their grid and the path, into pass p (0 the frame; 1, 2 Glass's)
   const drawAll = (rp, pass) => {
     // seen from both sides: Glass, a cut, a Klein bottle (one-sided: its tiles' face inwards in its neck and handle)
-    const both = pass || cutOn() || !!g.klein, cut = cutOn() ? (pass ? 2 : 1) : 0, open = !both && g.torus && !g.mobius && sh.m < 1;
+    const both = pass || cutOn() || !!g.klein, cut = cutOn() ? 1 : 0, open = !both && g.torus && !g.mobius && sh.m < 1;
     const front = shapeSign(g) < 0 ? 'front' : 'back', cull = both ? 'none' : front;
     const tiles = (plain, c) => {
       rp.setPipeline(gpuDrawPipe('tile', { vertex: 'tileV', fragment: 'shadowedF', buffers: tileBufs, cull: c, pass, shadowed: true }));

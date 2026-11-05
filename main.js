@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.164';
+const VERSION = '0.4.165';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -7309,7 +7309,7 @@ function battlePlayer(g, grid, S, starts, digits, pen = penetration) {
       // before the step; as worthy: none), the others die, their bodies gone
       const groups = collisions(), w = groups.length && !bite ? worth() : null;
       for (const group of groups) for (const s of group) {
-        if (bite) { take(s, i); dead[s] = i; if (unwinds) pierce(s, places[s][i]); continue; }  // (Land grid 3: its last thread let go)
+        if (bite) { if (unwinds) pierce(s, places[s][i - 1]); else take(s, i); dead[s] = i; continue; }  // (Land grid 3: its last thread let go, its step not taken)
         const top = Math.max(...group.map((t) => w[t]));
         if (w[s] < top || group.filter((t) => w[t] === top).length > 1) { cut(s, i - 1); dead[s] = i; }
       }
@@ -7321,22 +7321,24 @@ function battlePlayer(g, grid, S, starts, digits, pen = penetration) {
       if (i > 0) rest.forEach((s) => closeAt(s, places[s][i]));
       return;
     }
-    if (lined) {  // (lines grown by their heads, then each head on an enemy's line pierces it)
-      rest.forEach((s) => take(s, i));
+    if (lined) {  // (lines grown by their heads, then each head on an enemy's line pierces it; Land grid 3: all at once, see below)
+      if (!unwinds) rest.forEach((s) => take(s, i));
+      const breaks = [];  // (Land grid 3: judged on the lines as the step found them, then done, then the living's steps taken)
       for (const s of rest) for (let o = 0; o < K; o++) {  // (a dead one's line too: still there, to pierce)
         if (o === s) continue;
         // o's line is a frontier: going along an edge of it pierces it there; then, at the corner s just passed, going from
         // one side of o's line to the other (its way in and out not joined round that corner but through o's edges) pierces
         // it there too: a frontier crossed falls, freeing what it held (see pierce)
         const c = places[s][i], p = places[s][i - 1], j = i > 0 ? linkOf(p, c) : undefined, edgeTile = (a, b) => G.edgeTiles.get(G.key(a, b))[0];
-        if (dead[s] >= 0) break;  // (killed this step by a head on its last thread)
         // its line broken at v (along it, or across it), on what: on its last thread (Land grid 3), o dies, that thread let go;
         // else pierced there (a touch breaks nothing)
-        const broken = (v, ...on) => { if (unwinds && dead[o] < 0 && on.every((x) => tailOf(o).has(x))) { dead[o] = i; pierce(o, places[o][i]); } else pierce(o, v); };
+        const broken = (v, ...on) => { if (!unwinds) pierce(o, v); else breaks.push(dead[o] < 0 && on.every((x) => tailOf(o).has(x)) ? [o, places[o][i - 1], true] : [o, v, false]); };
         if (j !== undefined && lineOf[o][j] > 0) broken(c, p, c);
         const a = i > 1 ? places[s][i - 2] : p;  // (the corner before: its way in, a → p)
-        if (dead[o] !== i && a !== p && p !== c && degree[o][p] > 0 && !(lineOf[o][linkOf(a, p)] > 0) && !sameSide(o, [p], edgeTile(a, p), edgeTile(p, c))) broken(p, p);
+        if (a !== p && p !== c && degree[o][p] > 0 && !(lineOf[o][linkOf(a, p)] > 0) && !sameSide(o, [p], edgeTile(a, p), edgeTile(p, c))) broken(p, p);
       }
+      for (const [o, v, dies] of breaks) { if (dies) dead[o] = i; pierce(o, v); }  // (two necks broken at once: both dead)
+      if (unwinds) rest.forEach((s) => dead[s] < 0 && take(s, i));
       if (i > 0 && living().length <= 1) n = i;  // (Land grid 3: one killed by a head on its last thread)
       peak = Math.max(peak, ...size);
       return;
@@ -7465,9 +7467,9 @@ function battlePlayer(g, grid, S, starts, digits, pen = penetration) {
   const cornersOf = (j) => { L.corners ??= (() => { const c = new Int32Array(2 * E); for (const [e, k2] of L.index) { c[2 * k2] = Math.floor(e / G.nv); c[2 * k2 + 1] = e % G.nv; } return c; })(); return [L.corners[2 * j], L.corners[2 * j + 1]]; };
   // o's last thread: the corners of its line from its head back to its first fork (not it) or its end, its turns any (a head
   // that is a fork itself: that alone); broken there (along it or across it, not touched), o dies
-  const tailOf = (o) => {
-    const tail = new Set([places[o][i]]);
-    let v = places[o][i], from = -1;
+  const tailOf = (o) => {  // (its line as the step found it: its head the one before)
+    const tail = new Set([places[o][i - 1]]);
+    let v = places[o][i - 1], from = -1;
     if (degree[o][v] !== 1) return tail;
     for (;;) {
       const w = G.nbrs[v].find((x) => x !== from && lineOf[o][linkOf(v, x)] > 0);

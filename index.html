@@ -11,7 +11,7 @@
   <meta property="og:type" content="website">
   <link id="favicon" rel="icon">  <!-- the app's logo, set at start-up (see appLogo) -->
   <meta name="description" content="A walk on a grid in 2D or 3D driven by the base-2 to base-6 digits of π, other constants and large primes.">
-  <link rel="stylesheet" href="style.css?v=0.4.202">
+  <link rel="stylesheet" href="style.css?v=0.4.203">
   <script>  // the theme before the first paint (see applyTheme)
     try { const t = localStorage.getItem('tesseraTheme') || 'system'; document.documentElement.dataset.theme = t === 'system' ? (matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark') : t; } catch { document.documentElement.dataset.theme = 'dark'; }
   </script>
@@ -146,7 +146,8 @@
         </div>
         <div id="battleStart" hidden>  <!-- a battle's: how they fight, each walker's formula (A's the number's own, moved here: see renderWalkTeams), Random, the longest battles (see 7.6c) -->
           <div id="startWays" class="nav-shapes" hidden></div>  <!-- a battle's starts: Classic, Centred, Random, over the start row (see renderWalkTeams) -->
-          <div id="walkPenetration" class="mode-list" role="listbox"></div>  <!-- a battle's way with an enemy's body: the Land grids, Land cells, Cut, Land no collision, as cards (see PENETRATIONS) -->
+          <div class="field-label">Battle rule</div>
+          <div id="walkPenetration" class="mode-list rule-cards" role="listbox"></div>  <!-- a battle's way with an enemy's body: the Land grids, Land cells, Cut, Land no collision, as cards (see PENETRATIONS) -->
           <div id="formulaAHome"></div>  <!-- (the number's formula field, A's in a battle) -->
           <div id="rivalFormulas"></div>  <!-- the other walkers' formulas, B to L (see rivalField) -->
           <button id="battleRandom" type="button" class="wide" data-icon="dice" title="As many numbers as walkers drawn at random from the hunt's (the Number cards' reals and sequences, √2 to √9999), fought here">Random</button>  <!-- (see battleRandom) -->
@@ -158,7 +159,7 @@
       </section>
 
       <section id="walkRuleSection">  <!-- a walk's rule: its rules' cards (a word per digit), Spiral; along the grid or on cells -->
-        <h2 data-icon="turtle">Rule</h2>
+        <h2 data-icon="turtle">Walking rule</h2>
         <div id="walkOn" class="tile-group wide">
           <button id="walkOnGrid" type="button" title="Along the lines of the grid">Grid</button><button id="walkOnCells" type="button" title="From cell to cell, colouring the cells: on triangles and hexagons the choices at each step change, and so does the base">Cells</button>
         </div>  <!-- along the grid, or on cells: first, above How it works -->
@@ -742,10 +743,10 @@
     </div>
   </main>
 
-  <script src="pixelarticons.js?v=0.4.202"></script>
-  <script src="punks.js?v=0.4.202"></script>
-  <script src="loops.js?v=0.4.202"></script>
-  <script src="emoji.js?v=0.4.202"></script>
-  <script src="main.js?v=0.4.202"></script>
+  <script src="pixelarticons.js?v=0.4.203"></script>
+  <script src="punks.js?v=0.4.203"></script>
+  <script src="loops.js?v=0.4.203"></script>
+  <script src="emoji.js?v=0.4.203"></script>
+  <script src="main.js?v=0.4.203"></script>
 </body>
 </html>

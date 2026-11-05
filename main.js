@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.205';
+const VERSION = '0.4.206';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -3178,9 +3178,9 @@ function renderAntRow() {
   if (startHead.nextElementSibling !== $('startRow')) startHead.after($('startRow'));
   drawing = !!m.plane && plane.start === 'draw' && !spaceTimeOn();  // Life on the plane draws in its Draw start (not in Space-time)
   stage.classList.toggle('drawing', drawsHere());  // (the crosshair: a click draws, as renderDrawTools keeps it)
-  $('antStartSection').hidden = $('antRuleSection').hidden = !ant;
+  $('antStartSection').hidden = !ant;
   // your own rule's field: right after its card (see ruleCards); back in the creatures' section, hidden, when no list has it
-  if (!customRow.isConnected) $('antRuleSection').append(customRow);
+  if (!customRow.isConnected) $('walkRuleSection').append(customRow);
   customRow.hidden = true;
   if (!ant && !m.net) return;
   const R = creatureRules(w);
@@ -3204,8 +3204,8 @@ function ruleCards(w, pic, here = true) {
 }
 // a creature's or a walk's rules: its presets [rule, name, picture, why greyed, tooltip], the rule in use, how to set one, whether one is typed, a rule's base
 // (where it reads digits: its card's bubble), the field's title
-const ANT_WORDS = { RL: "Langton's ant: a highway from step 9,976", RLR: 'Chaotic: it grows chaotically', LLRR: 'Symmetric: it grows symmetrically', LRRRRRLLR: 'Square: it fills a square around itself',
-                    RRLLLRLLLRRR: 'Triangle: a filled triangle, growing and moving' };  // (its name, on any grid; then what it does on squares)
+const ANT_WORDS = { RL: "Langton's ant: a highway from step 9,976", RLR: 'Chaotic ant: it grows chaotically', LLRR: 'Symmetric ant: it grows symmetrically', LRRRRRLLR: 'Square ant: it fills a square around itself',
+                    RRLLLRLLLRRR: 'Triangle ant: a filled triangle, growing and moving' };  // (its name, on any grid; then what it does on squares)
 const TURMITE_WORDS = ["Langton's ant", 'A spiral', 'The widest mess', 'A square growing filled', 'A shape growing filled', 'A highway from step 3,090, every 54 steps'];
 const WORM_WORDS = ['Dies at step 4,802', 'Dies at step 83,618', 'Dies at step 569,804', 'Dies at step 918,339', 'Still going at step 5,000,000', 'Still going at step 5,000,000'];
 const capitalised = (t) => t.replace(/^./, (c) => c.toUpperCase());
@@ -3229,7 +3229,7 @@ function creatureRules(w) {
   const A = ANTS[w], turns = antWords(w).join(' ');
   return { byDigits: antByDigits, now: antRuleOf(w), typed: true, set: (r) => setAntRule(w, r), base: antByDigits ? (r) => baseWords(ruleWords(r).length) : null,  // (by colour: no digits read)
            cards: (antByDigits ? A.digitPresets : A.presets).map((r) => antByDigits ? [r, capitalised(ruleWords(r).map((t) => WORD_TEXT[t]).join(', '))]
-             : [r, ANT_WORDS[r]?.split(':')[0] ?? `${ruleWords(r).length} colours`, undefined, '', (w === 'antSquare' && ANT_WORDS[r]) || '']),  // (its name on any grid, what it does on squares)
+             : [r, ANT_WORDS[r]?.split(':')[0] ?? `${ruleWords(r).length}-colour ant`, undefined, '', (w === 'antSquare' && ANT_WORDS[r]) || '']),  // (its name on any grid, what it does on squares)
            name: antByDigits ? `Rule, a turn per digit, mirrored on a dark cell: ${turns}` : `Rule, a turn per colour: ${turns}` };
 }
 // The worm's rules, all 411 of them (a mirror the same), walked here: dying at step 918,339, 569,804, 83,618 and 4,802,
@@ -3328,8 +3328,8 @@ function renderModePicker() {
   // there), the one in use with its rules (see ruleCards)
   const creatures = kind === 'Ant';
   const rules = creatures ? [...new Set(Object.values(NAV).filter((n) => n[0] === kind && n[1] === space).map((n) => n[3]))] : navValues(3, [kind, space, shape]);
-  $('navRules').hidden = creatures || (rules.length < 2 && !MODES[w].net);
-  (creatures ? $('antRuleCards') : $('navRules')).replaceChildren(...rules.flatMap((r, i) => {
+  $('navRules').hidden = !creatures && rules.length < 2 && !MODES[w].net;
+  $('navRules').replaceChildren(...rules.flatMap((r, i) => {
     const here = Object.keys(NAV).find((m) => NAV[m].slice(0, 4).join() === [kind, space, shape, r].join());
     const v = here ?? Object.keys(NAV).find((m) => NAV[m][0] === kind && NAV[m][1] === space && NAV[m][3] === r);  // (elsewhere: its first shape)
     if (!creatures && here && MODES[here].net) return ruleCards(r === rule ? w : here, null, r === rule);  // a walk by a rule: its rules' cards (the side picked kept)
@@ -3346,7 +3346,8 @@ function renderModePicker() {
   const sides = navValues(4, [kind, space, shape, rule]).filter((s) => has(kind, rule, s));  // (Cairo pentagons: no grid)
   // (kept, the same height, where there are neither: a spiral's steps from cell to cell, its Cells picked)
   const alone = sides.includes('');
-  $('walkRuleSection').hidden = kind !== 'Walk';  // (an ant's: its own Rule section)
+  $('walkRuleSection').hidden = kind !== 'Walk' && !creatures;  // (one Walking rule, a walk's or a creature's)
+  $('walkOn').hidden = creatures;  // (a creature on cells only)
   $('walkRuleHow').hidden = !walkTutorialFits(w);
   const side = (b, s, word, none) => {
     const there = alone ? (s === 'cells' ? w : null) : sides.includes(s) ? navPick(4, s) : null, here = alone ? s === 'cells' : NAV[w][4] === s;
@@ -17404,7 +17405,7 @@ document.addEventListener('click', (e) => {
 });
 // how a rule works closes on a click anywhere but on it, the rules (your own's too), the populations and the grids (it follows them: renderRuleSection)
 document.addEventListener('click', (e) => {
-  if (!$('ruleTuto').hidden && !e.composedPath().some((n) => n.classList?.contains('how-it-works') || ['ruleTuto', 'ruleCards', 'watchRule', 'colourBlocks', 'statesRow', 'ruleBirth', 'ruleSurvive', 'lifeCustomRow', 'navSpace', 'navShapes', 'torusTiles', 'planeRow', 'sizeRow', 'navRules', 'walkOn', 'antRuleSection', 'antStartSection', 'backBtn', 'appTab'].includes(n.id))) ruleTutorial(null);
+  if (!$('ruleTuto').hidden && !e.composedPath().some((n) => n.classList?.contains('how-it-works') || ['ruleTuto', 'ruleCards', 'watchRule', 'colourBlocks', 'statesRow', 'ruleBirth', 'ruleSurvive', 'lifeCustomRow', 'navSpace', 'navShapes', 'torusTiles', 'planeRow', 'sizeRow', 'navRules', 'walkOn', 'antCustomRow', 'antStartSection', 'backBtn', 'appTab'].includes(n.id))) ruleTutorial(null);
 });
 $('lifeRule').addEventListener('change', () => {
   const mode = MODES[$('mode').value];

@@ -198,7 +198,7 @@ async function crawl(fail) {
         const b = shapeButtons()[hi], name = b.textContent.trim();
         b.click();
         await look(`shape ${name}`);
-        const rulesBox = $('antRuleSection').hidden ? $('navRules') : $('antRuleCards');  // its rules' cards (a walk's, an ant's creatures and rules)
+        const rulesBox = $('navRules');  // its rules' cards (a walk's, an ant's creatures and rules)
         const rules = () => rulesBox.querySelectorAll(':scope > button');  // (not your own rule's field)
         if (!rulesBox.closest('[hidden]')) for (let r = 0; r < rules().length; r++) {
           const rb = rules()[r];
@@ -269,7 +269,7 @@ async function fuzz(fail, count, seedv, cold = false) {
   const clickIn = (sel) => () => { const b = pick(shown(sel)); if (!b) return null; b.click(); return `${sel.split(' ')[0]} ${b.textContent.trim().slice(0, 24)}`; };
   const actions = [
     [3, clickIn('#modeTabs [role=tab]')], [2, clickIn('#navSpace button')], [4, clickIn('#navShapes button')], [2, clickIn('#torusTiles button')],
-    [2, clickIn('#navRules > button, #antRuleCards > button')], [2, clickIn('#colourBlocks button')], [2, clickIn('#huntZones button')], [2, clickIn('#ruleCards button')],
+    [2, clickIn('#navRules > button')], [2, clickIn('#colourBlocks button')], [2, clickIn('#huntZones button')], [2, clickIn('#ruleCards button')],
     [1, clickIn('#lifeStartTabs button, #antStartTabs button')], [1, clickIn('#cellModes button, #colourButtons button, #areaModes button, #symmetryTiles button')],
     [3, () => { const down = shown('#sizeDown, #planeDown')[0]; if (!down) return null; for (let k = 0; k < 14 && !down.disabled; k++) down.click(); return 'smallest'; }],
     [1, () => { const up = shown('#sizeUp, #planeUp')[0]; if (!up) return null; up.click(); return 'size up'; }],

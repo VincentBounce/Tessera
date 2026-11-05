@@ -70,7 +70,7 @@ touched shows (+0 if its code lines are as many).
   only main (no branch left on GitHub: it falls behind, and only a force push fixes it).
 - The last number goes up by 1 with every commit. The middle one only when the user decides, for a step they name
   (0.2: links that carry their version; 0.3: the name Tessera, Walking Pi before; 0.4: WebGPU, WebGL before); the last one then starts again at 0. 1.0 would mean links that keep working.
-- Every link ends with `v=` and the version it was made with, kept in Treasures and their JSON files (see `setupFrom`).
+- Every link ends with `v=` and the version it was made with, kept in the Gallery and its JSON files (see `setupFrom`).
   A link that fails: `git log --grep "(v0.3.N)" -F`, its bundle in `Tessera resources`, or `tools/at.sh 0.3.N`, which
   serves that version on port 8322 beside this one.
 

@@ -217,7 +217,7 @@ button.primary {
 .stepper button { width: 36px; padding: 5px 0; }
 button.wide { width: 100%; margin-bottom: 10px; }
 button.wide.how-it-works { margin-bottom: 4px; }  /* on its rules' first card, the list's gap */
-#huntRow .nav-shapes, #setupTools, #ruleTabs { margin-bottom: 4px; }  /* a wide button right under its tiles (Hunt, Confirm erase, How it works), as close as a row of them */
+#huntRow .nav-shapes, #galleryTools, #ruleTabs { margin-bottom: 4px; }  /* a wide button right under its tiles (Hunt, Confirm erase, How it works), as close as a row of them */
 
 /* Walk mode: one tab per category, then every choice of that category */
 /* Tabs: text only, the active one in yellow and underlined on the header's hairline; always bold,
@@ -276,7 +276,7 @@ button.switch.active:hover:not(:disabled) { background: var(--pick-strong); }
 }
 .mode-list button:hover { background: var(--bg); }
 .mode-icon { font-size: 15px; color: var(--muted); text-align: center; }
-.mode-icon svg { width: 20px; height: 20px; }  /* every card's picture alike: a rule's, a treasure's shape, a hunt's find, a battle's way (see card) */
+.mode-icon svg { width: 20px; height: 20px; }  /* every card's picture alike: a rule's, a Gallery setup's shape, a hunt's find, a battle's way (see card) */
 .mode-head { display: flex; align-items: center; justify-content: space-between; gap: 6px; min-width: 0; }  /* a card's name, its base at its right (see cardWords) */
 .mode-name { display: block; min-width: 0; font-size: 13px; font-weight: 600; }
 .mode-detail { display: block; font-size: 11px; font-weight: 400; color: var(--muted); }
@@ -558,12 +558,12 @@ button.wide.active, .head-btn.active { border-color: var(--accent); color: var(-
   .stage-bar:not(:focus-within) { width: auto; }
 }
 
-/* Save, the first of Treasures' icons: yellow, its star filled, while the setup in view is one of them */
+/* Save, the first of the Gallery's icons: yellow, its star filled, while the setup in view is one of them */
 .pane-tab .fav { border: 1px solid transparent; border-radius: 7px; padding: 3px; margin: -4px; }  /* (its frame round it as an icon button's, its tab's size the same) */
-.pane-tab .fav.saved { color: var(--accent); }  /* Gallery's ☆: as its tab's colour, ★ gold while the setup in view is one of Treasures */
+.pane-tab .fav.saved { color: var(--accent); }  /* Gallery's ☆: as its tab's colour, ★ gold while the setup in view is in the Gallery */
 .fav.saved .icon path { fill: currentColor; }
 .icon-btn .icon { width: 16px; height: 16px; }
-/* Treasures: Export and Import as two small icons at the right of its heading */
+/* The Gallery: Export and Import as two small icons at the right of its heading */
 .icon-btn { display: grid; place-items: center; width: 28px; height: 28px; padding: 0; border-radius: 7px; background: transparent; border-color: transparent; color: var(--muted); }
 .icon-btn:hover:not(:disabled), .pane-tab .fav:hover { color: var(--accent); border-color: var(--border); background: var(--bg); }  /* (Gallery's ☆ too: a button in its tab) */
 .icon-btn svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
@@ -571,7 +571,7 @@ button.wide.active, .head-btn.active { border-color: var(--accent); color: var(-
    it is closed) */
 .tabs button.pane-tab.open { color: var(--accent); border-bottom-color: var(--accent); }  /* a pane's tab (Gallery, the app's) lit while it shows */
 .tabs:has(.pane-tab.open) button.active:not(.pane-tab) { color: var(--muted); border-bottom-color: transparent; }
-.caption { margin: 3px 0 0; font-size: 11px; color: var(--muted); }  /* a line under a heading: where Treasures are kept */
+.caption { margin: 3px 0 0; font-size: 11px; color: var(--muted); }  /* a line under a heading: where the Gallery is kept */
 #barBase { flex: none; }  /* the base whole: only the loop chip shortens */
 
 /* how a rule works (ruleTutorial): over the grid, its cells as the grid's, a pair each count (before → after) */

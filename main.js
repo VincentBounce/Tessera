@@ -18,7 +18,7 @@
  *   3. The whole walk is built at once (arrays of positions, Part 5); the animation (Part 11)
  *      only reveals it step by step, so jumping anywhere is instant.
  *   4. A setup (Part 10) — number, mode, surface, rule, Life start — lives in the page link, in
- *      the saved setups and in JSON files. Display choices are never part of it.
+ *      the Gallery and in its JSON files. Display choices are never part of it.
  *
  * Contents
  *   Part 1   Digits: the formula worker (BigInt, exact or with guard digits)
@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.208';
+const VERSION = '0.4.209';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -1628,7 +1628,7 @@ const setTile = (b, { on = false, can = true, mark = false, again = false, turn 
   b.classList.toggle('switch', can && ((again && on) || 'toggle' in b.dataset));  // (its hover: on, gold; off, a pale gold)
   return b;
 };
-// A card, every one alike (the rules, an ant's, the walks', the brushes, the gallery's setups, the hunt's finds): a row, its
+// A card, every one alike (the rules, an ant's, the walks', the brushes, the Gallery's setups, the hunt's finds): a row, its
 // picture on the left, its name over its words (base: a walk's base on its right); a tile all the same (see tile, setTile:
 // on, can); its words as text (a setup's name typed), and its tooltip (in full: the row may cut them short); how: a rule's,
 // how it works, its ⓘ at its end (see rowAction)
@@ -2542,7 +2542,7 @@ function checkFormula(root) {
 
 /* ---- 4.5 Reading the Formula field ----------------------------------------------------------- */
 // The formula of the Formula field, checked and written back in canonical form
-let formulaInUse = '1/112';  // the last formula that was valid, for the link and the saved setups
+let formulaInUse = '1/112';  // the last formula that was valid, for the link and the Gallery
 // The number in use till one is picked: π on a walk, 1/112 elsewhere (a Life start's digits, an ant's turns: a highway for
 // the square ant). One picked, typed or linked other than its mode's own is kept from mode to mode
 const defaultNumber = (w) => (NAV[w]?.[0] === 'Walk' ? 'pi' : '1/112');
@@ -13819,7 +13819,7 @@ function setLifeSeed(seed, how) {
  * PART 10 — SETUPS AND LINKS
  * ==============================================================================================
  *
- * A setup is a flat object of short keys, the same for the page link (#…), the saved setups in
+ * A setup is a flat object of short keys, the same for the page link (#…), the Gallery in
  * this browser (localStorage) and the JSON export:
  *   x   the formula          w   the walk mode        d    the number of digits (walks)
  *   s   the surface size (a torus: rows, or rows x tiles per row)
@@ -13890,7 +13890,7 @@ const zoneWord = () => (lifeStart?.zone && HUNT_ZONES[lifeStart.zone] && lifeSta
 // a Punk zone's, their numbers: pop=punk24.7804)
 const zonePop = () => (isIcon(lifeStart?.zone ?? '') ? `${zoneWord()}.${plane.icons.slice(0, lifeParts()).map((i) => iconSet(lifeStart.zone).names[i]).join('.')}` : lifeStart?.zone === 'numbers' ? `${zoneWord()}.${plane.number}` : `${zoneWord()}.${plane.density}.${plane.seed}`);  // (Formula: its number, formula.16/9)
 const zoneOfWord = (w) => Object.keys(HUNT_ZONES).find((z) => z !== 'full' && z !== 'custom' && wordOfZone(z) === w);
-// The version a setup was made with (v=0.2.0, last in its link, kept in Treasures and their files): a link's or a saved
+// The version a setup was made with (v=0.2.0, last in its link, kept in the Gallery and its files): a link's or a saved
 // one's, kept in the link while the setup in view is that one still, so that a link that fails says where it was made
 // (git log --grep "(v0.2.0)", its bundle, tools/at.sh 0.2.0); changed, the version now. Not read otherwise (no old links
 // handled), nor part of what tells setups apart (see isInUse)
@@ -14060,33 +14060,33 @@ function syncLink() {
   syncSaveButton();
 }
 
-/* ---- 10.4 Saved setups and JSON files -------------------------------------------------------- */
-// Saved setups in this browser (localStorage), as { name, setup, saved }
-const SETUPS_KEY = 'tessera.setups', CURATED_KEY = 'tessera.curated';
-function readSetups() {
-  try { return JSON.parse(localStorage.getItem(SETUPS_KEY)) || []; } catch { return []; }
+/* ---- 10.4 The Gallery and its JSON files ------------------------------------------------------ */
+// The Gallery: the setups saved in this browser (localStorage), as { name, setup, saved } (its key, and its files' setups:, as they were)
+const GALLERY_KEY = 'tessera.setups', CURATED_KEY = 'tessera.curated';
+function readGallery() {
+  try { return JSON.parse(localStorage.getItem(GALLERY_KEY)) || []; } catch { return []; }
 }
-// The curated setups (BUILT_IN) come into Treasures once, on the first visit in this browser, and the ones
+// The curated setups (BUILT_IN) come into the Gallery once, on the first visit in this browser, and the ones
 // added later (a batch number past the last one taken) once too: deleted afterwards, they stay deleted
 function seedCurated() {
   try {
     const old = JSON.parse(localStorage.getItem('walkingPi.setups'));  // (Walking Pi's, its name before v0.3.0: moved once, before the curated ones)
-    if (old) { const list = readSetups(); writeSetups([...old, ...list.filter((x) => !old.some((y) => JSON.stringify(y.setup) === JSON.stringify(x.setup)))]); localStorage.removeItem('walkingPi.setups'); }
+    if (old) { const list = readGallery(); writeGallery([...old, ...list.filter((x) => !old.some((y) => JSON.stringify(y.setup) === JSON.stringify(x.setup)))]); localStorage.removeItem('walkingPi.setups'); }
     const taken = Number(localStorage.getItem(CURATED_KEY)) || 0, last = Math.max(...BUILT_IN.map((b) => b[3] ?? 1));
     if (taken >= last) return;
-    const list = readSetups(), same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+    const list = readGallery(), same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
     for (const [name, note, setup, batch = 1] of BUILT_IN) {
       if (batch <= taken || list.some((x) => same(x.setup, setup))) continue;
       let key = name;  // a name of its own (a row is deleted by its name)
       for (let k = 2; list.some((x) => x.name === key); k++) key = `${name} (${k})`;
       list.push({ name: key, note, setup, saved: new Date().toISOString() });
     }
-    writeSetups(list);
+    writeGallery(list);
     localStorage.setItem(CURATED_KEY, String(last));
   } catch { /* not kept: the next visit tries again */ }
 }
-function writeSetups(list) {
-  try { localStorage.setItem(SETUPS_KEY, JSON.stringify(list)); return true; } catch { return false; }
+function writeGallery(list) {
+  try { localStorage.setItem(GALLERY_KEY, JSON.stringify(list)); return true; } catch { return false; }
 }
 // What tells a saved setup apart: its walk, then its surface's size, start, turn and rule
 // a setup's row: a walk's 2D, 3D or Lattice, its walk, size, start, turn and rule; a Game of Life's rule (its name on its grid,
@@ -14098,9 +14098,9 @@ const setupDetail = (s) => {
 };
 // its title: a walk's number; a Game of Life's shape and tiles (see shapeAndTiles), its number being only its start
 const setupTitle = (x) => (MODES[x.setup.w]?.life ? shapeAndTiles(x.setup.w) : x.name);
-// Your setups, as rows like the built-in ones (see setupRow), each with × to delete it
-function fillSetupList() {
-  const list = readSetups();
+// The Gallery's setups, as rows like the built-in ones (see setupRow), each with × to delete it
+function fillGalleryList() {
+  const list = readGallery();
   // the tab in use's only (Life, Ant, Walk…), under its name; by their titles, two rows alike numbered (2), (3)…
   const rows = list.filter((x) => NAV[x.setup.w]).map((x) => [setupTitle(x), [x.note, setupDetail(x.setup)].filter(Boolean).join(' · '), x]), seen = new Map();
   const kindOf = (x) => NAV[x.setup.w][0];
@@ -14117,7 +14117,7 @@ function fillSetupList() {
     section.append(cards);
     return [section];
   }));
-  for (const b of [...$('setupTools').children].slice(1, 3)) setTile(b, { can: list.length > 0, greyed: 'with no Treasures' });  // (Export, Erase all: none to take)
+  for (const b of [...$('galleryTools').children].slice(1, 3)) setTile(b, { can: list.length > 0, greyed: 'with the Gallery empty' });  // (Export, Erase all: none to take)
   $('eraseConfirm').hidden ||= !list.length;
   syncSaveButton();
 }
@@ -14125,32 +14125,32 @@ function fillSetupList() {
 // Saved under its number's name, with no question (the same setup twice is saved once; another one of
 // the same number gets "(2)", "(3)", …); its row tells the walk, size, start and rule (see setupDetail)
 // the saved setup that is the one in view (same number, walk, size, start, turn and rule), if any
-const savedInView = () => readSetups().find((x) => isInUse(x.setup));
-// Gallery's ☆ (its tab's picture, clicked: Save), ★ gold while the setup in view is one of Treasures: clicked again, taken out of them
+const savedInView = () => readGallery().find((x) => isInUse(x.setup));
+// Gallery's ☆ (its tab's picture, clicked: Save), ★ gold while the setup in view is in the Gallery: clicked again, taken out of them
 function syncSaveButton() {
   const saved = savedInView(), b = galleryTab().querySelector('.fav');
   b.classList.toggle('saved', !!saved);
-  b.title = saved ? `Saved in Treasures as “${setupTitle(saved)}”: a click takes it out` : 'Save the setup in view in Treasures, in this browser';
+  b.title = saved ? `Saved in the Gallery as “${setupTitle(saved)}”: a click takes it out` : 'Save the setup in view in the Gallery, in this browser';
 }
 function saveSetup() {
-  const setup = getSetup(), list = readSetups();
+  const setup = getSetup(), list = readGallery();
   const same = savedInView();
   if (same) { deleteSetup(same.name); return; }  // already one of them (its ★ yellow): out of them
   let name = shownSym;
   for (let k = 2; list.some((x) => x.name === name); k++) name = `${shownSym} (${k})`;
   list.push({ name, setup, saved: new Date().toISOString() });
   list.sort((a, b) => a.name.localeCompare(b.name));
-  if (!writeSetups(list)) alert('This browser does not allow saving (private window?).');
-  fillSetupList();
+  if (!writeGallery(list)) alert('This browser does not allow saving (private window?).');
+  fillGalleryList();
 }
 
 function deleteSetup(name) {
-  writeSetups(readSetups().filter((x) => x.name !== name));
-  fillSetupList();
+  writeGallery(readGallery().filter((x) => x.name !== name));
+  fillGalleryList();
 }
 
-function exportSetups() {
-  const list = readSetups();
+function exportGallery() {
+  const list = readGallery();
   if (!list.length) return;  // nothing to export yet
   const blob = new Blob([JSON.stringify({ app: 'Tessera', version: 1, setups: list }, null, 2)], { type: 'application/json' });
   const a = document.createElement('a');
@@ -14160,21 +14160,21 @@ function exportSetups() {
   URL.revokeObjectURL(a.href);
 }
 
-async function importSetups(file) {
+async function importGallery(file) {
   try {
     const data = JSON.parse(await file.text());
     const incoming = (data.setups || []).filter((x) => x && x.name && x.setup && x.setup.w);
-    const list = readSetups();
+    const list = readGallery();
     for (const x of incoming) {  // a name already used gets a suffix instead of overwriting
       let name = x.name;
       for (let k = 2; list.some((y) => y.name === name); k++) name = `${x.name} (${k})`;
       list.push({ ...x, name });
     }
     list.sort((a, b) => a.name.localeCompare(b.name));
-    writeSetups(list);
-    fillSetupList();
+    writeGallery(list);
+    fillGalleryList();
   } catch {
-    alert('This file is not a Tessera setups file.');
+    alert('This file is not a Tessera Gallery file.');
   }
 }
 
@@ -17766,7 +17766,7 @@ const walkName = (w) => splitModeLabel(modeOptionOf(w)?.text ?? w).name;
 // rosettes' spheres) and its tiles there (Torus · Kites, Rosettes · Flower 9); else its space and its shape, its tiles in its
 // name (2D circles · Flower 9, 3D solids · Cube)
 const shapeAndTiles = (w) => { const f = familyOf(w), t = f?.F.tabs.find(([m]) => m === f.m); return t ? `${NAV[w][2]} · ${shapeLabel(t[3])}` : `${SPACES[NAV[w][1]]?.[0]} · ${NAV[w][2]}`; };
-// the setup in use (a Treasure's row lit, the ☆ lit): all of it the same (its number, walk, size, start, rule, colours,
+// the setup in use (its Gallery row lit, the ☆ lit): all of it the same (its number, walk, size, start, rule, colours,
 // symmetry, edges, cells drawn or found…) but its version, its length (a hover cuts it, see preview) and how it is looked at
 // (Fill areas, Space-time)
 const SETUP_LOOKS = ['v', 'd', 'fa', 'sp'];
@@ -17816,7 +17816,7 @@ function setupRow(name, detail, setup, onDelete) {
   return b;
 }
 function renderGallery() {
-  fillSetupList();
+  fillGalleryList();
 }
 for (const list of ['yourList']) {
   $(list).addEventListener('mouseleave', () => {
@@ -17847,22 +17847,22 @@ function galleryTab() {
   b.dataset.ready = '1';
   b.className = 'pane-tab';
   b.innerHTML = `<span class="fav" role="button">${icon('star')}</span> Gallery`;  // (its picture the ☆ Save, see syncSaveButton)
-  b.title = 'Treasures and the curated setups: hover one to see it, click it to keep it';
+  b.title = 'The Gallery, the curated setups and yours: hover one to see it, click it to keep it';
   b.addEventListener('click', (e) => { if (e.target.closest('.fav')) saveSetup(); else showPane($('galleryPane').hidden); });
   return b;
 }
 
-// Treasures' tools, tiles: Import (added to them, a name already used numbered), Export, Erase all (then Confirm erase, under them),
+// The Gallery's tools, tiles: Import (added to them, a name already used numbered), Export, Erase all (then Confirm erase, under them),
 // then Share (the link to what is shown)
-$('setupTools').replaceChildren(tile({ pic: icon('import'), text: 'Import', title: 'Add the setups of a JSON file to Treasures (those of a name already used numbered: none replaced)', click: () => $('setupFile').click() }),
-  tile({ pic: icon('export'), text: 'Export', title: 'Treasures as a JSON file', click: exportSetups }), tile({ pic: icon('trash'), text: 'Erase all', title: 'Erase Treasures from this browser (asked again under it)', click: () => { $('eraseConfirm').hidden = !$('eraseConfirm').hidden; } }),
-  tile({ pic: icon('link'), text: 'Share', title: 'Copy the link to what is shown', click: () => shareView($('setupTools').lastElementChild) }));
+$('galleryTools').replaceChildren(tile({ pic: icon('import'), text: 'Import', title: 'Add the setups of a JSON file to the Gallery (those of a name already used numbered: none replaced)', click: () => $('galleryFile').click() }),
+  tile({ pic: icon('export'), text: 'Export', title: 'The Gallery as a JSON file', click: exportGallery }), tile({ pic: icon('trash'), text: 'Erase all', title: 'Erase the Gallery from this browser (asked again under it)', click: () => { $('eraseConfirm').hidden = !$('eraseConfirm').hidden; } }),
+  tile({ pic: icon('link'), text: 'Share', title: 'Copy the link to what is shown', click: () => shareView($('galleryTools').lastElementChild) }));
 $('eraseConfirm').innerHTML = `${icon('trash')} Confirm erase`;
-$('setupToolsHead').insertAdjacentHTML('afterbegin', icon('floppy'));  // (Treasures' files: Import, Export, Erase)
-$('eraseConfirm').addEventListener('click', () => { writeSetups([]); $('eraseConfirm').hidden = true; fillSetupList(); });
-$('setupFile').addEventListener('change', () => {
-  if ($('setupFile').files[0]) importSetups($('setupFile').files[0]);
-  $('setupFile').value = '';
+$('galleryToolsHead').insertAdjacentHTML('afterbegin', icon('floppy'));  // (the Gallery's files: Import, Export, Erase)
+$('eraseConfirm').addEventListener('click', () => { writeGallery([]); $('eraseConfirm').hidden = true; fillGalleryList(); });
+$('galleryFile').addEventListener('change', () => {
+  if ($('galleryFile').files[0]) importGallery($('galleryFile').files[0]);
+  $('galleryFile').value = '';
 });
 // a setup link pasted into this tab
 window.addEventListener('hashchange', () => { const s = parseHash(); if (s) applySetup(s); });
@@ -17903,7 +17903,7 @@ $('appTab').addEventListener('click', () => credits(!creditsShown()));
 for (const b of document.querySelectorAll('[data-icon]')) b.insertAdjacentHTML('afterbegin', icon(b.dataset.icon));
 play(false);  // the Play button with its icon
 seedCurated();
-fillSetupList();
+fillGalleryList();
 // the card first (its device asked once, see gpuSetup); then a link with a setup opens that setup; otherwise Life, the first
 // tab: 6 colours at war on the cube
 const linked = parseHash() ?? { w: 'lifeCube', s: '48', r: 'B3/S23', k: '6', pop: 'random.49.8259995' };

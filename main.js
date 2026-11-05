@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.211';
+const VERSION = '0.4.212';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -7061,8 +7061,9 @@ const PENETRATIONS = [
   ['cut', 'Cut', 'M0 1.5H4V2.5H0Z', "A head on another's body cuts it there, to its tail; heads meeting (two or more at once), all but the longest die (as long: all); the last one left wins (as the digits end: the longest)"],
   ['landGrid2', 'Land grid 2', 'M0 1.5H2.5V2.5H0Z', "Along the grid: each walker's land, the tiles its body closes stay its own (an enemy's too); a head on another's body cuts it; a head going into an enemy's land takes the tiles it goes through. Heads meeting (two or more at once) all die: they stop conquering, their land stays, the others' to take; with one walker left or none, it ends: the most land wins, the dead's too"],
   ['landGrid3', 'Land grid 3', 'M1.5 0H2.5V4H1.5ZM0 1.5H4V2.5H0Z', "As Land grid 1, and a walker dies by its head, its last thread, from its head to its fork, let go: its head on another's (both die), or another's head along or across its last thread (it dies; touched, nothing); elsewhere a thread pierced, as in Land grid 1"],
-  ['landStop', 'Land no collision', 'M0 1.5H1.5V2.5H0ZM2.5 0H3.5V4H2.5Z', "As Land grid 1, and nothing is ever pierced: a walker stops for good just before its first step along or across another's line (on cells, just before its first step onto another's tile); heads meeting (two or more at once) all stop there. The others go on, until all have stopped or the digits end: the most land wins"]];
-const PENETRATIONS_SHOWN = [0, 5, 1, 2, 3, 4];  // (their cards' order: Land no collision second; their places above, a link's pe=, as they came)
+  ['landStop', 'Land no collision', 'M0 1.5H1.5V2.5H0ZM2.5 0H3.5V4H2.5Z', "As Land grid 1, and nothing is ever pierced: a walker stops for good just before its first step along or across another's line (on cells, just before its first step onto another's tile); heads meeting (two or more at once) all stop there. The others go on, until all have stopped or the digits end: the most land wins"],
+  ['landMerge', 'Land grid merge', 'M0 1H4V3H0Z', "As Land grid 1, and nothing is ever pierced or stopped: lines cross and run along each other; the first heads meeting (two or more at once) end the battle, every walker stopping there: the most land wins"]];
+const PENETRATIONS_SHOWN = [0, 5, 6, 1, 2, 3, 4];  // (their cards' order: Land no collision second; their places above, a link's pe=, as they came)
 // a walk that can be a battle: one on a surface (on cells or along the grid, its steps surfaceSteps'), with as many
 // walkers as its turns allow at its size (see battleCounts: its walkers start alike, see battleStarts)
 const battleMode = (w) => NAV[w]?.[0] === 'Walk' && MODES[w].lattice === 'sphere' && !!SPHERES[surfaceOf(MODES[w])];
@@ -7168,8 +7169,9 @@ function groupedStarts(g, start, K) {
   if (g.torus || g.mobius || g.klein) return null;
   const G = gridGraph(g), dir = (v) => unit([0, 1, 2].map((d) => g.verts[3 * v + d])), a = dir(start[0]), C = solidCorners(g);  // (by direction: a mesh may lie flat on the solid's faces)
   g.groupedOut ??= [...solidFaceCentres(g, C), ...C].map((p) => {  // (each point's edges out, once a mesh)
+    const D = (g.directions ??= Float64Array.from({ length: 3 * G.nv }, (_, i) => g.verts[i] / Math.hypot(g.verts[i - (i % 3)], g.verts[i - (i % 3) + 1], g.verts[i - (i % 3) + 2])));
     let top = -Infinity, ring = [];
-    for (let v = 0; v < G.nv; v++) { const h = dot3(dir(v), p); if (h > top + 1e-9) { top = h; ring = [v]; } else if (h > top - 1e-9) ring.push(v); }
+    for (let v = 0; v < G.nv; v++) { const h = D[3 * v] * p[0] + D[3 * v + 1] * p[1] + D[3 * v + 2] * p[2]; if (h > top + 1e-9) { top = h; ring = [v]; } else if (h > top - 1e-9) ring.push(v); }
     return { p, out: ring.flatMap((r) => G.nbrs[r].filter((w) => !ring.includes(w)).map((w) => [w, r])) };
   });
   const near = g.groupedOut.filter((q) => q.out.length % K === 0).sort((x, y) => dot3(y.p, a) - dot3(x.p, a))[0];
@@ -7253,31 +7255,33 @@ const fitsMesh = (g, M) => {
 // A map of a surface's places from its corners' (corner(u): corner u's image, undefined where none): each tile onto the
 // tile its corners' images make, in the same order, which its walks turn by (on cells by its edges' order, along the grid
 // by its angles: a map that turns them over, a mirror, would have a walker walk as A's mirror); null where one has none. A
-// tile known by its corners in their order (a Möbius strip's two faces share theirs, the other way round; see cycleKey)
+// tile known by its corners in their order (a Möbius strip's two faces share theirs, the other way round)
 function placeMap(g, corner) {
-  const k = g.sides, cornersOf = (t) => g.poly.subarray(k * t, k * t + k);
-  const byCycle = (g.tileByCycle ??= new Map(Array.from({ length: g.n }, (_, t) => [cycleKey(cornersOf(t)), t])));
+  const k = g.sides, G = gridGraph(g), P = g.poly, cycle = (cs) => cs.filter((u, q) => u !== cs[(q + 1) % cs.length]);  // (a corner listed twice in a row once: the pentagons)
   const corners = Int32Array.from({ length: g.verts.length / 3 }, (_, u) => corner(u) ?? -1), tiles = new Int32Array(g.n);
   for (let t = 0; t < g.n; t++) {
-    const b = byCycle.get(cycleKey(Array.from(cornersOf(t), (u) => corners[u])));
-    if (b === undefined) return null;
+    const to = cycle(Array.from(P.subarray(k * t, k * t + k), (u) => corners[u]));  // (its corners' images, in its order)
+    // its image: a tile of the edge its first two corners' images make (two, each the other way round), the one that lists
+    // all of them in the same order (round from any of them)
+    const same = (b) => { const c = cycle(Array.from(P.subarray(k * b, k * b + k))), o = c.indexOf(to[0]); return c.length === to.length && o >= 0 && to.every((u, q) => c[(o + q) % c.length] === u); };
+    const b = to.every((u) => u >= 0) && G.edgeTiles.get(G.key(to[0], to[1]))?.find(same);
+    if (b === undefined || b === false) return null;
     tiles[t] = b;
   }
   return (u, grid) => (grid ? corners[u] : tiles[u]);
 }
-// a tile's corners in their order as a key, from its least one (a corner listed twice in a row once: the hexagon sphere's
-// pentagons, a hexagon with an edge of length 0, anywhere round it)
-const cycleKey = (cs) => {
-  const c = Array.from(cs).filter((u, q, all) => u !== all[(q + 1) % all.length]), o = c.indexOf(Math.min(...c));
-  return [...c.slice(o), ...c.slice(0, o)].join();
-};
-// a turn in space as its places' map (see placeMap: a corner found again by its point turned), once a turn and a mesh
+// a turn in space as its places' map, once a turn and a mesh: a place found again by its point turned (a corner's, a tile's
+// middle), each when first asked; on a Möbius strip or a Klein bottle, one side only, every tile checked (see placeMap: a
+// turn there may lay tiles the other way round, a mirror); elsewhere a turn keeps every tile's order
 const turnMap = (g, M) => {
-  const memo = (g.turnMaps ??= new Map()), id = roundedKey(M.flat()), V = g.verts;
-  if (!memo.has(id)) {
-    const at = (g.cornerAt ??= new Map(Array.from({ length: V.length / 3 }, (_, u) => [pointCode(V[3 * u], V[3 * u + 1], V[3 * u + 2]), u])));
-    memo.set(id, placeMap(g, (u) => at.get(pointCode(...M.map((row) => row[0] * V[3 * u] + row[1] * V[3 * u + 1] + row[2] * V[3 * u + 2])))));
-  }
+  const memo = (g.turnMaps ??= new Map()), id = roundedKey(M.flat()), V = g.verts, C = g.cen;
+  if (memo.has(id)) return memo.get(id);
+  const codes = (P) => new Map(Array.from({ length: P.length / 3 }, (_, u) => [pointCode(P[3 * u], P[3 * u + 1], P[3 * u + 2]), u]));
+  const at = (g.cornerAt ??= codes(V)), turned = (P, u) => pointCode(...M.map((row) => row[0] * P[3 * u] + row[1] * P[3 * u + 1] + row[2] * P[3 * u + 2]));
+  if (g.mobius || g.klein) { memo.set(id, placeMap(g, (u) => at.get(turned(V, u)))); return memo.get(id); }
+  const tileAt = (g.tileAt ??= codes(C)), corners = new Int32Array(V.length / 3).fill(-2), tiles = new Int32Array(g.n).fill(-2);  // (-2: not asked yet; -1: none)
+  memo.set(id, (u, grid) => (grid ? (corners[u] > -2 ? corners[u] : (corners[u] = at.get(turned(V, u)) ?? -1))
+    : tiles[u] > -2 ? tiles[u] : (tiles[u] = tileAt.get(turned(C, u)) ?? -1)));
   return memo.get(id);
 };
 // A ring's sheet shifted by (dx, dy) as its places' map (see placeMap; a torus, a Möbius strip's two faces, a Klein
@@ -7430,8 +7434,9 @@ function smallerSide(L, cut, j) {
 // landCells: painted. With land, heads meeting all die (see collisions), their land staying: it ends with one or none
 // left, the most land winning (the dead's too): its worth, its land, who wins
 function battlePlayer(g, grid, S, starts, digits, pen = penetration) {
-  let way = PENETRATIONS[pen][0];
-  const stops = way === 'landStop';  // (Land no collision: as Land grid 1 or Land cells, a walker stopped before it would pierce or paint over another, see stop)  // (on cells Cut and Land cells only, along the grid Cut and the Land grids: each greyed in the other's place, played as it)
+  let way = PENETRATIONS[pen][0];  // (on cells Cut and Land cells only, along the grid Cut and the Land grids: each greyed in the other's place, played as it)
+  const stops = way === 'landStop';  // (Land no collision: as Land grid 1 or Land cells, a walker stopped before it would pierce or paint over another, see stop)
+  const merges = way === 'landMerge';  // (Land grid merge: as Land grid 1, nothing pierced nor stopped; the first heads meeting end it, see meet)
   if (way !== 'cut') way = !grid ? 'landCells' : way === 'landCells' ? 'landGrid' : way;
   // Land cells (painted): no body; each walker paints the tile it goes into its colour (land[t], whatever it was), and a zone
   // closed by its colour (see closeAt) is painted inside
@@ -7447,7 +7452,7 @@ function battlePlayer(g, grid, S, starts, digits, pen = penetration) {
   // a fork); its land the regions its line closes; a head on an enemy's line pierces it (see pierce). Each line's links
   // (lineOf: their count, linksOf: the set), its corners' edges (degree), its pieces (a union-find of its corners), the
   // tiles it closes (closedOf, as battleAreas: outside its largest region, its size, the largest closed one's)
-  const lined = way === 'landGrid' || way === 'landGrid3' || way === 'landStop', E = lined ? L.eu.length : 0;
+  const lined = ['landGrid', 'landGrid3', 'landStop', 'landMerge'].includes(way), E = lined ? L.eu.length : 0;
   const unwinds = way === 'landGrid3';  // (Land grid 3: a walker dies by its head, its last thread let go: see tailOf)
   const lineOf = lined ? starts.map(() => new Uint16Array(E)) : null, linksOf = lined ? starts.map(() => new Set()) : null;
   const degree = lined ? starts.map(() => new Uint8Array(count)) : null, piecesOf = lined ? starts.map(() => new Int32Array(count)) : null;
@@ -7460,7 +7465,16 @@ function battlePlayer(g, grid, S, starts, digits, pen = penetration) {
     from[s] = Math.max(from[s], j + 1);
   };
   const everyone = [...Array(K).keys()], living = () => everyone.filter((s) => dead[s] < 0);
-  const stop = (s) => { dead[s] = i; places[s][i] = places[s][i - 1]; };  // (Land no collision: s stopped for good before its step, on its corner or tile)
+  const stop = (s) => { dead[s] = i; places[s][i] = places[s][i - 1]; };  // (s stopped for good before its step, on its corner or tile)
+  // heads meeting (see collisions), each way's what becomes of a group of them, in one place: Cut, the worthiest lives (its
+  // worth before the step; as worthy: none), the others die, their bodies gone; Land no collision, they stop there; Land
+  // grid merge, every walker stops there, the battle over; Land grid 3, they die, each one's last thread let go, their
+  // step not taken; the other Land ways, they die, their step taken (their army gone: they stop conquering, their land and
+  // lines stay, the others' to take)
+  const meet = { cut: (group, w) => { const top = Math.max(...group.map((t) => w[t])); for (const s of group) if (w[s] < top || group.filter((t) => w[t] === top).length > 1) { cut(s, i - 1); dead[s] = i; } },
+    landStop: (group) => group.forEach(stop), landMerge: () => living().forEach(stop),
+    landGrid3: (group) => group.forEach((s) => { pierce(s, places[s][i - 1]); dead[s] = i; }) }[stops ? 'landStop' : way]
+    ?? ((group) => group.forEach((s) => { take(s, i); dead[s] = i; }));
   // the walkers on the map: the living; with land the dead too (their land, lines, bodies, paint stay)
   const standing = () => (bite ? everyone : living());
   // the collisions at step i: the living heads met, on one place or passing each other along an edge, in groups (two met,
@@ -7482,23 +7496,16 @@ function battlePlayer(g, grid, S, starts, digits, pen = penetration) {
       for (let s = 0; s < K; s++) { if (dead[s] < 0) states[s] = S.step(states[s], digits[s][i - 1]); places[s][i] = dead[s] < 0 ? states[s][0] : places[s][i - 1]; }
       made = i;
     }
-    if (i > 0) {  // heads meeting (see collisions): with land all of them die, their step taken (their army gone: they stop
-      // conquering, their land and lines stay, the others' to take); else in each group the worthiest lives (its worth
-      // before the step; as worthy: none), the others die, their bodies gone
+    if (i > 0) {  // heads meeting: each way's (see meet)
       const groups = collisions(), w = groups.length && !bite ? worth() : null;
-      for (const group of groups) for (const s of group) {
-        if (stops) { stop(s); continue; }
-        if (bite) { if (unwinds) pierce(s, places[s][i - 1]); else take(s, i); dead[s] = i; continue; }  // (Land grid 3: its last thread let go, its step not taken)
-        const top = Math.max(...group.map((t) => w[t]));
-        if (w[s] < top || group.filter((t) => w[t] === top).length > 1) { cut(s, i - 1); dead[s] = i; }
-      }
+      for (const group of groups) meet(group, w);
     }
     if (stops && i > 0) for (const s of living()) {  // (Land no collision on cells: a step onto another's tile, stopped before)
       const t = places[s][i];
       if (painted && land[t] && land[t] !== s + 1) stop(s);
     }
     const rest = living();
-    if (i > 0 && rest.length <= (stops ? 0 : 1)) n = i;  // (none or one left: the end; Land no collision, none)
+    if (i > 0 && rest.length <= (stops || merges ? 0 : 1)) n = i;  // (none or one left: the end; Land no collision and merge, none)
     if (painted) {  // (tiles painted, then each new one may close zones: painted inside)
       rest.forEach((s) => take(s, i));
       if (i > 0) rest.forEach((s) => closeAt(s, places[s][i]));
@@ -7507,7 +7514,7 @@ function battlePlayer(g, grid, S, starts, digits, pen = penetration) {
     if (lined) {  // (each head on an enemy's line pierces it, all at once: judged on the lines as the step found them, then
       // done, then the living's steps taken)
       const breaks = [];
-      for (const s of rest) for (let o = 0; o < K; o++) {  // (a dead one's line too: still there, to pierce)
+      if (!merges) for (const s of rest) for (let o = 0; o < K; o++) {  // (Land grid merge: lines run along and across each other, nothing broken)  // (a dead one's line too: still there, to pierce)
         if (o === s) continue;
         // o's line is a frontier: going along an edge of it pierces it there; then, at the corner s just passed, going from
         // one side of o's line to the other (its way in and out not joined round that corner but through o's edges) pierces
@@ -7523,7 +7530,7 @@ function battlePlayer(g, grid, S, starts, digits, pen = penetration) {
       if (stops) for (const [, , , s] of breaks) { if (dead[s] < 0) stop(s); }  // (Land no collision: nothing pierced, s stopped before)
       else for (const [o, v, dies] of breaks) { if (dies) dead[o] = i; pierce(o, v); }  // (Land grid 3: two necks broken at once, both dead)
       rest.forEach((s) => dead[s] < 0 && take(s, i));
-      if (i > 0 && living().length <= (stops ? 0 : 1)) n = i;  // (Land grid 3: one killed by a head on its last thread)
+      if (i > 0 && living().length <= (stops || merges ? 0 : 1)) n = i;  // (Land grid 3: one killed by a head on its last thread)
       peak = Math.max(peak, ...size);
       return;
     }
@@ -7739,7 +7746,7 @@ function battlePlayer(g, grid, S, starts, digits, pen = penetration) {
   const bestOf = starts.map(() => new Int32Array(len + 1));
   const keepBest = () => { const w = worth(); for (let s = 0; s < K; s++) bestOf[s][i] = Math.max(i > 0 ? bestOf[s][i - 1] : 0, w[s]); };
   const P = {
-    K, g, grid, way, bite, lined, stops, ownLines: lined, lineLinks, starts, places, from, size, dead, alive, living, worth, heads: () => places.map((p) => p[i]),
+    K, g, grid, way, bite, lined, stops, merges, ownLines: lined, lineLinks, starts, places, from, size, dead, alive, living, worth, heads: () => places.map((p) => p[i]),
     get land() { return land; }, remakeLine,  // (remakeLine: a line's land made again whole, to check it)
     standing, get step() { return i; }, get n() { return n; }, get peak() { return peak; },
     to(j) {
@@ -7758,7 +7765,7 @@ function battlePlayer(g, grid, S, starts, digits, pen = penetration) {
 // ended it before its digits (its stepper's words, see syncDigitsStepper)
 function battleWinner(P) {
   P.to(Infinity);
-  const left = P.living(), w = P.worth(), ended = P.stops ? (left.length ? '' : 'all stopped') : left.length === 1 ? 'one left' : left.length ? '' : 'the last heads met';
+  const left = P.living(), w = P.worth(), ended = P.merges ? (left.length ? '' : 'the first heads met') : P.stops ? (left.length ? '' : 'all stopped') : left.length === 1 ? 'one left' : left.length ? '' : 'the last heads met';
   const how = P.bite ? `the most land, ${ended || 'as the digits end'}`
     : left.length === 1 ? 'the last one left' : left.length ? 'the longest as the digits end' : 'the last ones met, as long';
   const among = P.bite ? P.standing() : left, top = Math.max(0, ...among.map((s) => w[s])), best = among.filter((s) => w[s] === top);  // (with land, the dead too)

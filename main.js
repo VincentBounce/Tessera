@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.154';
+const VERSION = '0.4.155';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -5104,7 +5104,7 @@ const tubeOf = (g) => g.tube ?? TORUS_TUBE;  // a grid's own tube (see TUBE_SHAP
 // A torus's (a Klein bottle's) tube its own: its tiles regular whatever its columns, the ring as long as they ask. Its
 // shape: round the tube over round the ring, of a cell of its sheet (a column, a row) as its tiles are regular: its tube
 // shape × rows / columns (0.4, TORUS_TUBE, at its natural columns, shape × rows / 0.4)
-const TUBE_SHAPE = { torus: 1, torusCairo: 1, torusHex: 2 / Math.sqrt(3), torusTri: Math.sqrt(3) / 2, torusKite: Math.sqrt(3) / 2, torusHexTurned: Math.sqrt(3) / 2, torusTriTurned: 2 / Math.sqrt(3), torusKiteTurned: 2 / Math.sqrt(3) };
+const TUBE_SHAPE = { torus: 1, torusCairo: 1, torusHex: 2 / Math.sqrt(3), torusTri: H, torusKite: H, torusHexTurned: H, torusTriTurned: 2 / Math.sqrt(3), torusKiteTurned: 2 / Math.sqrt(3) };
 for (const k of Object.keys(TUBE_SHAPE)) TUBE_SHAPE[k.replace('torus', 'klein')] = TUBE_SHAPE[k];
 const tubeFor = (kind, nv, nu) => (TUBE_SHAPE[kind] * nv) / nu;
 // One length for every ring and strip (a torus's, a Klein bottle's round its ring, a Möbius strip's along it), in its steps: near
@@ -5263,8 +5263,8 @@ const MOBIUS_ALONG = {
   mobius: { step: 1, ok: () => true },
   mobiusTri: { step: 0.5, ok: (n, nv) => n % 2 === nv % 2 },
   mobiusHex: { step: 1.5, ok: (n) => n % 2 === 1 },
-  mobiusHexTurned: { step: Math.sqrt(3) / 2, ok: (n, nv) => n % 2 === (nv % 2 ? 0 : 1) },
-  mobiusTriTurned: { step: Math.sqrt(3) / 2, ok: (n) => n % 2 === 0 },
+  mobiusHexTurned: { step: H, ok: (n, nv) => n % 2 === (nv % 2 ? 0 : 1) },
+  mobiusTriTurned: { step: H, ok: (n) => n % 2 === 0 },
   mobiusCairo: { step: 1, ok: (n, nv) => (n + nv) % 2 === 1 },
 };
 MOBIUS_ALONG.mobiusKite = MOBIUS_ALONG.mobiusTri;  // kites: the triangles', each cut in 3
@@ -5348,7 +5348,7 @@ function mobiusSheetOf(kind0, size, count = false) {  // count: its tiles counte
   const tiling = MOBIUS_STRIPS[kind0]?.kind;
   if (tiling) return count ? { ...stripFrame(tiling, kind0, size), n: stripCount(tiling, kind0, size) } : tilingStrip(tiling, kind0, size);
   // the usual length, a multiple of 12
-  const kind = kind0, [nv, own] = mobiusSize(size), steps = (W) => stripSteps(kind, nv, W, own), tiles = [], H = Math.sqrt(3) / 2;  // its length, in steps along
+  const kind = kind0, [nv, own] = mobiusSize(size), steps = (W) => stripSteps(kind, nv, W, own), tiles = [];  // its length, in steps along
   let n = 0;
   const put = (tile) => (count ? n++ : tiles.push(tile())), done = (L, W) => (count ? { L, W, n } : { L, W, tiles });  // (a tile made only when kept)
   if (kind === 'mobiusHexTurned') {
@@ -8574,7 +8574,6 @@ function partSymmetries(kind, W, K) {
 const symmetryOf = (kind, W = walk.plane?.W) => (W && symmetriesHere(kind, W).includes(plane.sym) ? plane.sym : 'none');
 // a cell and its copies under the grid's symmetry (index y × row + x)
 const cellCopies = (kind, W, t) => symmetryMaps(kind, W, symmetryOf(kind, W)).map((f) => f(t));
-const ROOT3_2 = Math.sqrt(3) / 2;
 // The rows of a grid of side `side` (the squares' side): about as many cells as side × side squares (as the surfaces'
 // sizes, see SIDES), its cells regular: triangles 2 a rhombus, Cairo pentagons 2 a square (an even side, so
 // that it wraps round), kites 6 a rhombus (on triangles twice as big)
@@ -8607,7 +8606,7 @@ const planeCols = (kind, W, K = lifeColours) => colourW(kind, W * (RECT_ASPECT[k
 const planeRow = (kind, W) => (tilingOf(kind) ? tilingOf(kind).polys.length * planeCols(kind, W) : kind === 'kite' ? 6 * W : kind === 'tri' || kind === 'cairo' ? 2 * W : W);  // cells a row (two a rhombus, two a square of Cairo pentagons, six kites a rhombus)
 // kite x of row y: kite x % 3 of triangle ⌊x / 3⌋ (as the triangles' x), its corners on the triangles' lattice
 const kiteCorners = (x, y) => { const t = Math.floor(x / 3), i = t >> 1; return kitesOf(t & 1 ? [[i + 1, y], [i + 1, y + 1], [i, y + 1]] : [[i, y], [i + 1, y], [i, y + 1]])[((x % 3) + 3) % 3]; };
-const latticeAt = (a, b) => [a + b / 2, b * ROOT3_2];  // a corner of the triangles, a centre of the hexagons
+const latticeAt = (a, b) => [a + b / 2, b * H];  // a corner of the triangles, a centre of the hexagons
 // An aperiodic tiling's grid of side W (the hats, Penrose's rhombi): from a patch of it (items: their middles m, each
 // about a square unit; p: its corners, flat, x and y in turn, or each(item, f) for them), the W² items nearest a middle (a disc), in W bands from the top,
 // each by x (a cell (x, y) as on the other grids); the items round them, its walls
@@ -9180,7 +9179,7 @@ function planeCellAt(kind, W, wx, wy, how = 'in') {
   }
   if (kind === 'square') { x = Math.round(wx); y = Math.round(wy); }
   else {
-    const b = wy / ROOT3_2, a = wx - b / 2;
+    const b = wy / H, a = wx - b / 2;
     if (kind === 'hex') {  // the nearest centre, in cube coordinates
       let q = Math.round(a), r = Math.round(b), s = Math.round(-a - b);
       const dq = Math.abs(q - a), dr = Math.abs(r - b), ds = Math.abs(s + a + b);

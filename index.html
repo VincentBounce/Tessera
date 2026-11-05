@@ -11,7 +11,7 @@
   <meta property="og:type" content="website">
   <link id="favicon" rel="icon">  <!-- the app's logo, set at start-up (see appLogo) -->
   <meta name="description" content="A walk on a grid in 2D or 3D driven by the base-2 to base-6 digits of π, other constants and large primes.">
-  <link rel="stylesheet" href="style.css?v=0.4.212">
+  <link rel="stylesheet" href="style.css?v=0.4.213">
   <script>  // the theme before the first paint (see applyTheme)
     try { const t = localStorage.getItem('tesseraTheme') || 'system'; document.documentElement.dataset.theme = t === 'system' ? (matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark') : t; } catch { document.documentElement.dataset.theme = 'dark'; }
   </script>
@@ -704,13 +704,13 @@
               <label class="check" id="perspectiveRow" hidden><input id="perspective" type="checkbox"> Perspective</label>
               <label class="check" id="lightRow" hidden title="A lamp at the top left, with its glints and shadows; off, lit from the front (from the viewer, no shadows)"><input id="light" type="checkbox" checked> Side light</label>
               <label class="check" id="glassRow" hidden title="The surface see-through: every layer shows, its grid and path too, what is nearer more"><input id="glass" type="checkbox"> Glass</label>
-              <label class="check" id="cutRow" hidden title="A cross-section: the half nearer you gone, cut through the middle facing you, the inside showing; it follows the view as it turns"><input id="cut" type="checkbox"> Cut</label>
               <label class="check" id="autoPlayRow" hidden title="Life: play as soon as anything is changed (not while drawing)"><input id="autoPlay" type="checkbox"> Autoplay</label>
               <label class="check" id="autoRotateRow" hidden title="Turn the view slowly, swaying up and down so that the top and the bottom show too; it starts Auto-fit, and a hand rotation stops it"><input id="autoRotate" type="checkbox"> Auto-rotate</label>
             </div>
             <div id="shapeRow" hidden>
               <div class="shape-slider" title="The same cells, from flat to round: drag (the walk goes on meanwhile)"><span id="shapeFlat"></span><input id="shapeM" type="range" min="0" max="1" step="0.01" aria-label="From flat to round"><span id="shapeRound"></span></div>
             </div>
+            <div id="cutRow" class="shape-slider" hidden title="A cross-section by a fixed plane through the middle, the half on its axis's side gone, the inside showing: Off, or the plane facing E, N or Up (the axes drawn in the view's corner)"><span>Cut</span><div id="cutGauge" class="size-gauge"></div><span id="cutName"></span></div>  <!-- Off, E, N, Up: a notch each (see CUT_AXES) -->
           </div>
           <div class="form-section">  <!-- what the walk shows: colours, areas, cells -->
             <div id="coloursRow"><div id="colourButtons" class="choice-list"></div></div>
@@ -740,10 +740,10 @@
     </div>
   </main>
 
-  <script src="pixelarticons.js?v=0.4.212"></script>
-  <script src="punks.js?v=0.4.212"></script>
-  <script src="loops.js?v=0.4.212"></script>
-  <script src="emoji.js?v=0.4.212"></script>
-  <script src="main.js?v=0.4.212"></script>
+  <script src="pixelarticons.js?v=0.4.213"></script>
+  <script src="punks.js?v=0.4.213"></script>
+  <script src="loops.js?v=0.4.213"></script>
+  <script src="emoji.js?v=0.4.213"></script>
+  <script src="main.js?v=0.4.213"></script>
 </body>
 </html>

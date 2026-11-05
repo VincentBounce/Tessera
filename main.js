@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.212';
+const VERSION = '0.4.213';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -1486,7 +1486,7 @@ function updateDisplayMenu() {
 // The view's switches, standard tiles (toggle): each its checkbox's (the source, kept out of sight), on as it is checked,
 // greyed where its row is hidden (it does not apply: Autoplay but in Life, the others but in 3D); drawn again with the
 // display box and when the box opens (a hand rotation, a new mode: their boxes changed)
-const VIEW_TILES = [['perspective', 'perspectiveRow', 'perspective', 'Perspective', 'Perspective: what is nearer looks bigger'], ['light', 'lightRow', 'sideLight', 'Side light'], ['glass', 'glassRow', 'glass', 'Glass'], ['cut', 'cutRow', 'cut', 'Cut']];
+const VIEW_TILES = [['perspective', 'perspectiveRow', 'perspective', 'Perspective', 'Perspective: what is nearer looks bigger'], ['light', 'lightRow', 'sideLight', 'Side light'], ['glass', 'glassRow', 'glass', 'Glass']];
 let viewTiles = null;
 function renderViewTiles() {
   viewTiles ??= VIEW_TILES.map(([id, row, pic, text, title]) => tile({ pic: icon(pic), text, title: title ?? $(row).title, toggle: true,
@@ -10502,7 +10502,7 @@ function motifTiles() {
   const nears = [-1, -1], best = [-Infinity, -Infinity], score = new Float64Array(g.n).fill(-Infinity);  // (a solid of squares and triangles: a triangle, and a square apart, see drawMotif)
   for (let t = 0; t < g.n; t++) {
     const n = [0, 1, 2].map((d) => sh.nrm[3 * t + d]), k = +(t < g.triFirst);
-    if (!planeVisible(n, at(t)) || (cutOn() && towardViewer(...at(t)) > 0)) continue;  // (Cut: its half nearer the viewer gone, as gpuSurface's cuT)
+    if (!planeVisible(n, at(t)) || (cutOn() && dot3(at(t), cutNormal()) > 0)) continue;  // (Cut: its half on the axis's side gone, as gpuSurface's)
     const [x, y] = proj(...at(t)), sc = towardViewer(...n) + towardViewer(...at(t)) / (walk.R * (g.extent || 1)) - 0.2 * (Math.hypot(ox + x * s - cw / 2, oy + y * s - ch / 2) / Math.min(cw, ch));  // (facing the viewer, near it: in front, not a far side seen through a hole)
     score[t] = sc;
     if (sc > best[k]) { best[k] = sc; nears[k] = t; }
@@ -15162,7 +15162,17 @@ const paintLevels = (palette, levelOf) => (out, n) => {
 // nearer the viewer gone, by the plane through the centre facing them (with Glass: see-through)
 const GLASS_ALPHA = 0.4;  // (a tile's share: a layer behind seen at 60%, two at 36%…)
 const glassOn = () => $('glass').checked && !$('glassRow').hidden;
-const cutOn = () => $('cut').checked && !$('cutRow').hidden;
+// Cut: Off, or a fixed plane through the middle facing one of the view's axes (E, N, Up, as drawn in its corner), the half on
+// that axis's side gone: its notches on a row as Flat ── Inflated (see sizeGauge)
+const CUT_AXES = [['Off'], ['E', [1, 0, 0]], ['N', [0, 1, 0]], ['Up', [0, 0, 1]]];
+let cutAxis = 0;
+const cutOn = () => cutAxis > 0 && !$('cutRow').hidden;
+const cutNormal = () => CUT_AXES[cutAxis][1] ?? [0, 0, 0];
+function renderCut() {
+  const set = (k) => { if (k !== cutAxis) { cutAxis = k; needsFull = true; } $('cutName').textContent = CUT_AXES[cutAxis][0]; };
+  sizeGauge($('cutGauge'), CUT_AXES.length, cutAxis, set, set);
+  $('cutName').textContent = CUT_AXES[cutAxis][0];
+}
 /* Flat drawings by the card as well (see gpuFlat): the 2D walks, and the 3D walks once projected (their projection
  * is redone on the CPU when the view turns). The whole walk so far is redrawn at each frame, fast
  * enough to pan, zoom and turn walks of millions of steps smoothly:
@@ -15683,7 +15693,7 @@ const GPU_VIEW = `
 struct U {
   R: vec3f, depth: f32, Uu: vec3f, shade: f32, V: vec3f, glint: f32, L: vec3f, lr: f32, H: vec3f, alpha: f32, Lx: vec3f, edge: f32,
   Ly: vec3f, bias: f32, edgeRgb: vec3f, halfW: f32, persp: vec4f, plain: vec4f, view: vec3f, N: f32, cc: vec2f, screen: vec2f,
-  cut: i32, glass: i32, both: i32, colour: i32, alphaF: f32, bright: f32, width: f32, loopFrom: f32, period: f32, turnC: f32, turnS: f32,
+  cut: i32, glass: i32, both: i32, colour: i32, alphaF: f32, bright: f32, width: f32, loopFrom: f32, period: f32, turnC: f32, turnS: f32, cutN: vec3f,
   tpl: array<vec4f, 12>,  // (the polygons' corners, two a vec4)
 }
 @group(0) @binding(0) var<uniform> u: U;
@@ -15715,7 +15725,7 @@ fn light(col: vec3f, n0: vec3f, p: vec3f, bias: f32) -> Lit {  // (as tileLight;
   o.lit = col * u.shade * max(0.0, dot(n, u.L)) + u.glint * pow(max(0.0, dot(n, u.H)), ${LIGHT_SHINE}.0);
   let l = lightSpace(p);
   o.sh = vec3f(l.x * 0.5 + 0.5, 0.5 - l.y * 0.5, l.z * 0.5 + 0.5);
-  o.cutv = dot(p, u.V); o.pos = clipOf(toScreen(p), bias);
+  o.cutv = dot(p, u.cutN); o.pos = clipOf(toScreen(p), bias);
   return o;
 }
 @group(1) @binding(0) var shadowMap: texture_depth_2d;
@@ -15741,7 +15751,7 @@ fn light(col: vec3f, n0: vec3f, p: vec3f, bias: f32) -> Lit {  // (as tileLight;
 }
 // the depths seen from the light: a tile's corner or a cube's
 struct Deep { @builtin(position) pos: vec4f, @location(0) cutv: f32 }
-fn deep(p: vec3f) -> Deep { var o: Deep; let l = lightSpace(p); o.pos = vec4f(l.x, l.y, l.z * 0.5 + 0.5, 1.0); o.cutv = dot(p, u.V); return o; }
+fn deep(p: vec3f) -> Deep { var o: Deep; let l = lightSpace(p); o.pos = vec4f(l.x, l.y, l.z * 0.5 + 0.5, 1.0); o.cutv = dot(p, u.cutN); return o; }
 @vertex fn depthTileV(@location(0) pos: vec3f) -> Deep { return deep(pos); }
 @vertex fn depthCubeV(@location(0) corner: vec3f, @location(1) at: vec3f) -> Deep { return deep(at + corner); }
 @fragment fn depthF(i: Deep) { if (u.cut == 1 && i.cutv > 0.0) { discard; } }
@@ -15751,7 +15761,7 @@ struct Edge { @builtin(position) pos: vec4f, @location(0) facing: f32, @location
   var o: Edge; var eye = u.V;
   if (u.persp.w > 0.0) { eye = u.persp.xyz + u.V * u.persp.w - pos; }
   o.facing = select(max(dot(n1, eye), dot(n2, eye)), 1.0, u.both == 1);
-  o.cutv = dot(pos, u.V); o.pos = clipOf(toScreen(pos), u.bias);
+  o.cutv = dot(pos, u.cutN); o.pos = clipOf(toScreen(pos), u.bias);
   return o;
 }
 @fragment fn edgeF(i: Edge) -> @location(0) vec4f { if ((u.cut == 1 && i.cutv > 0.0) || i.facing < 0.0) { discard; } return glass(u.edgeRgb, u.edge, i.pos.z); }
@@ -15765,7 +15775,7 @@ struct Rib { @builtin(position) pos: vec4f, @location(0) col: vec3f, @location(1
   let side = normalize(cross(d, n)) * u.halfW;
   var on = floor(e / 2.0); if (quad.x < 0.5) { on = e - 2.0 * floor(e / 2.0); }
   let p = mix(a, b, quad.x) + side * quad.y + d * (quad.x * 2.0 - 1.0) * u.halfW * on;
-  o.cutv = dot(p, u.V); o.pos = clipOf(toScreen(p), u.bias);
+  o.cutv = dot(p, u.cutN); o.pos = clipOf(toScreen(p), u.bias);
   return o;
 }
 @fragment fn ribbonF(i: Rib) -> @location(0) vec4f { if (u.cut == 1 && i.cutv > 0.0) { discard; } return glass(i.col, 1.0, i.pos.z); }
@@ -15818,10 +15828,11 @@ function gpuView(words, k, depth, more = {}) {
   f.set(cam.r, 0); f[3] = depth; f.set(cam.u, 4); f[7] = SHADE; f.set(cam.v, 8); f[11] = glint(); f.set(L, 12); f[15] = depth / 4; f.set(halfway(L), 16);
   f.set(lx, 20); f.set(ly, 24); f.set([...(P ? P.c : [0, 0, 0]), P ? P.D : 0], 32); f.set([view.scale, view.ox, view.oy], 40); f.set(cc, 44); f.set([cw, ch], 46);
   i[48] = cutOn() ? 1 : 0;
+  f.set(cutNormal(), 60);  // (Cut's plane, facing its axis: see CUT_AXES)
   const at = { alpha: [19, 'f'], edge: [23, 'f'], bias: [27, 'f'], halfW: [31, 'f'], N: [43, 'f'], cut: [48, 'i'], glass: [49, 'i'], both: [50, 'i'], colour: [51, 'i'],
     alphaF: [52, 'f'], bright: [53, 'f'], width: [54, 'f'], loopFrom: [55, 'f'], period: [56, 'f'], turnC: [57, 'f'], turnS: [58, 'f'] };
   for (const [k2, v] of Object.entries(more)) {
-    if (k2 === 'edgeRgb') f.set(v, 28); else if (k2 === 'plain') f.set(v, 36); else if (k2 === 'tpl') f.set(v, 60);
+    if (k2 === 'edgeRgb') f.set(v, 28); else if (k2 === 'plain') f.set(v, 36); else if (k2 === 'tpl') f.set(v, 64);
     else (at[k2][1] === 'f' ? f : i)[at[k2][0]] = v;
   }
   return 512 * k;
@@ -16013,7 +16024,7 @@ function gpuSurface(paint, path) {
   gpuShadows(enc, shadowSlot, (p) => {
     p.setPipeline(gpuDepthPipe('depthTileV', [vbuf(12, [VA(0, 'float32x3')])]));
     p.setVertexBuffer(0, D.pos); p.setIndexBuffer(D.fan, 'uint32'); p.drawIndexed(D.fanCount);
-  }, `${D.geoGen}|${lightDir()}|${cam.r}|${depth}|${lamp()}|${cutOn()}`);
+  }, `${D.geoGen}|${lightDir()}|${cam.r}|${depth}|${lamp()}|${cutOn() && cutAxis}`);
   // the path's segments, made once a walk (a battle along the grid: all its walkers' steps, see pathSegments); drawn, the
   // path up to the step shown, or each living walker's body: its steps from its tail to its head, a range of them
   const lines = !!walk.battle && !!walk.vert, P = lines ? walk.battle.player : null;
@@ -17403,7 +17414,7 @@ for (const type of ['pointerdown', 'dblclick', 'wheel']) {
 }
 $('light').addEventListener('change', () => { needsFull = true; });
 $('glass').addEventListener('change', () => { needsFull = true; });
-$('cut').addEventListener('change', () => { needsFull = true; });
+renderCut();
 $('perspective').addEventListener('change', () => {
   setPerspective();
   rotateView([0, 0, 0]);  // the projection again

@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.193';
+const VERSION = '0.4.194';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -7081,8 +7081,8 @@ function renderWalkTeams() {
   // Centred, a switch under the start row: the walkers' starts round one point (see groupedStarts)
   if ($('startRow').nextElementSibling !== $('startCentred')) $('startRow').after($('startCentred'));
   $('startCentred').replaceChildren(tile({ pic: colourBlock(walkTeams), text: 'Centred', toggle: true, byDefault: 'off', on: battleGrouped && groupedCan(), can: groupedCan(),
-    title: "The walkers' starts side by side round one point of the surface's symmetry, each on an edge out of it: a face's centre (sphere of hexagons: Trio or Sextet by its size), a corner (its pentagon: Quintet)",
-    greyed: 'along a closed solid\'s grid only, where a point has as many edges out as walkers', click: () => { battleGrouped = !battleGrouped; compute(); } }));
+    title: "The walkers' starts side by side round one point of the surface's symmetry, each on an edge out of it, every so many edges: a face's centre (sphere of hexagons: Trio, or Duo, Trio and Sextet by its size), a corner (its pentagon: Quintet)",
+    greyed: 'along a closed solid\'s grid only, where a point has as many edges out as walkers, or a multiple', click: () => { battleGrouped = !battleGrouped; compute(); } }));
 }
 // a battle's formula fields, each bold in its walker's colour once sent to be fought (computed, from Enter, Random or a
 // hunt's pick: battleAsked, see renderWalkTeams; typed since: plain again)
@@ -7123,9 +7123,9 @@ const startSpread = (g, grid, start) => {
   };
 };
 // Centred starts (see the switch Centred, renderWalkTeams): K walkers leaving side by side the point of a closed solid's
-// symmetry nearest A's start (a face's centre, a corner) that has K edges out of the grid's corners nearest it (one, or a
-// ring): each walker at an edge's outer end, come from the ring (sphere of hexagons: a face's centre 3 or 6 by its size, a
-// pentagon 5). None: no such point
+// symmetry nearest A's start (a face's centre, a corner) whose edges out of the grid's corners nearest it (one, or a ring)
+// are K or a multiple of K: each walker at an edge's outer end, come from the ring, every so many edges round it (sphere of
+// hexagons: a face's centre 3, or 6 by its size, then 2, 3 or 6 of them; a pentagon 5). None: no such point
 let battleGrouped = false;  // (a battle's walkers grouped, kept in the link: gr)
 function groupedStarts(g, start, K) {
   if (g.torus || g.mobius || g.klein) return null;
@@ -7135,8 +7135,11 @@ function groupedStarts(g, start, K) {
     for (let v = 0; v < G.nv; v++) { const h = dot3(dir(v), p); if (h > top + 1e-9) { top = h; ring = [v]; } else if (h > top - 1e-9) ring.push(v); }
     return { p, out: ring.flatMap((r) => G.nbrs[r].filter((w) => !ring.includes(w)).map((w) => [w, r])) };
   });
-  const near = g.groupedOut.filter((q) => q.out.length === K).sort((x, y) => dot3(y.p, a) - dot3(x.p, a))[0];
-  return near ? near.out.map((e) => gridState(g, e)) : null;
+  const near = g.groupedOut.filter((q) => q.out.length % K === 0).sort((x, y) => dot3(y.p, a) - dot3(x.p, a))[0];
+  if (!near) return null;
+  const { p, out } = near, across = ([w]) => { const x = dir(w), h = dot3(x, p); return x.map((c, d) => c - h * p[d]); };  // (round p: its edges by their angle)
+  const e1 = unit(across(out[0])), angle = (e) => { const x = across(e); return Math.atan2(dot3(cross(e1, x), p), dot3(x, e1)); };
+  return [...out].sort((x, y) => angle(x) - angle(y)).filter((_, i) => i % (out.length / K) === 0).map((e) => gridState(g, e));
 }
 const groupedCan = () => {  // (the walk shown: its K walkers can be grouped)
   const mode = MODES[$('mode').value], size = battleMode($('mode').value) && mode.grid && sphereSize(), g = size && SPHERES[surfaceOf(mode)].mesh(size);

@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.116';
+const VERSION = '0.4.117';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -14639,8 +14639,7 @@ function pathSegments(P = null) {
   const centre = (t) => [sh.cen[3 * t] * R, sh.cen[3 * t + 1] * R, sh.cen[3 * t + 2] * R];
   const normal = (t) => [sh.nrm[3 * t], sh.nrm[3 * t + 1], sh.nrm[3 * t + 2]];
   const mid = (p, q) => p.map((x, d) => (x + q[d]) / 2);
-  const chains = P?.ownLines ? P.standing().map((s) => [s, P.lineLinks(s)]) : null;  // (Land grid: each walker's line as it is now, its links: the dead's too)
-  const out = new Float32Array(11 * 2 * Math.max(1, chains ? chains.reduce((m, [, Q]) => m + Q.length, 0) : (P ? P.K : 1) * n)), at = new Int32Array(n + 1);
+  const out = new Float32Array(P?.ownLines ? 0 : 11 * 2 * Math.max(1, (P ? P.K : 1) * n)), at = new Int32Array(n + 1);
   let j = 0, dst = out;
   const put = (a, b, nr, ends, i) => {  // (in place: millions of them)
     const o = 11 * j++;
@@ -14653,8 +14652,8 @@ function pathSegments(P = null) {
       if (ends[0] && ends[1]) put(ends[0], ends[1], normal(t), 3, i);
     }
   };
-  if (chains) {  // (its range in ranges, walker after walker; each link's segments made once a shape, then copied)
-    const G = gridGraph(g), L = battleLinks(g, true), ranges = [];
+  if (P?.ownLines) {  // (Land grid: each link's segments, two slots a link, made once a shape; their owners see battleLinesOnGpu)
+    const G = gridGraph(g), L = battleLinks(g, true);
     if (g.linkSegments?.m !== sh.m || g.linkSegments.R !== R) {
       const table = new Float32Array(11 * 2 * L.eu.length), count = new Uint8Array(L.eu.length);
       dst = table;
@@ -14666,18 +14665,8 @@ function pathSegments(P = null) {
         count[l] = j - 2 * l;
       }
       g.linkSegments = { m: sh.m, R, table, count };
-      dst = out; j = 0;
     }
-    const { table, count } = g.linkSegments;
-    for (const [s, links] of chains) {
-      const first = j;
-      for (const l of links) {
-        out.set(table.subarray(22 * l, 11 * (2 * l + count[l])), 11 * j);
-        for (let q = 0; q < count[l]; q++) out[11 * j++ + 10] = s;
-      }
-      ranges.push([first, j]);
-    }
-    return { data: out.subarray(0, 11 * j), ranges };
+    return { links: g.linkSegments };
   }
   if (P) {
     const G = gridGraph(g), ats = [];
@@ -15385,6 +15374,7 @@ struct Edge { @builtin(position) pos: vec4f, @location(0) facing: f32, @location
 struct Rib { @builtin(position) pos: vec4f, @location(0) col: vec3f, @location(1) cutv: f32 }
 @vertex fn ribbonV(@location(0) quad: vec2f, @location(1) a: vec3f, @location(2) b: vec3f, @location(3) n: vec3f, @location(4) e: f32, @location(5) i: f32) -> Rib {
   var o: Rib;
+  if (u.colour == 3 && i > 254.5) { o.pos = vec4f(0.0, 0.0, -2.0, 1.0); o.col = vec3f(0.0); o.cutv = 0.0; return o; }  // (a link of none, see battleLinesOnGpu: off the clip space)
   if (u.colour == 3) { o.col = band(pal, (i + 0.5) / 256.0); } else { o.col = band(grad, (i + 0.5) / u.N); }  // (a battle's bodies: their colours, see battlePalette)
   var d = b - a; if (length(d) > 1e-9) { d = normalize(d); } else { d = vec3f(1.0, 0.0, 0.0); }
   let side = normalize(cross(d, n)) * u.halfW;
@@ -15576,6 +15566,21 @@ function battlePalette(D) {
   D.device.queue.writeTexture({ texture: D.pal }, pal, { bytesPerRow: 1024 }, [256, 1]);
   D.keys.pal = key;  // (a flat walk's palette written again after it, see its palKey)
 }
+// Land grid's lines on the GPU: every link's segments laid in its two slots once a shape (see pathSegments), each its
+// owner in its last float (the walker; 255: none, not drawn, see ribbonV); a frame writes again only the links whose
+// owner changed since the last (a step adds a link a head, a pierce takes a few), all of them on a new shape or a jump
+function battleLinesOnGpu(D, P) {
+  const T = pathSegments(P).links, { table, count } = T, E = count.length, owner = new Uint8Array(E).fill(255);
+  for (const s of P.standing()) for (const l of P.lineLinks(s)) owner[l] = s;
+  const was = D.ribbonOf === T ? D.lineOwner : null, changed = [];
+  if (was) for (let l = 0; l < E; l++) if (was[l] !== owner[l]) changed.push(l);
+  if (!was || changed.length > E / 16) {
+    const data = table.slice();
+    for (let l = 0; l < E; l++) for (let q = 0; q < 2; q++) data[11 * (2 * l + q) + 10] = q < count[l] ? owner[l] : 255;
+    gpuBuffer('ribbon', data);
+  } else for (const l of changed) for (let q = 0; q < count[l]; q++) D.device.queue.writeBuffer(D.ribbon, 4 * (11 * (2 * l + q) + 10), new Float32Array([owner[l]]));
+  D.ribbonOf = T; D.lineOwner = owner; D.segsRanges = [[0, 2 * E]];
+}
 // A surface, its tiles' colours by paint (paintLevels', or Life's by gpuLook)
 function gpuSurface(paint, path) {
   const D = gpuDrawSetup();
@@ -15628,9 +15633,9 @@ function gpuSurface(paint, path) {
   // path up to the step shown, or each living walker's body: its steps from its tail to its head, a range of them
   const lines = !!walk.battle && !!walk.vert, P = lines ? walk.battle.player : null;
   if (lines) { P.to(cur); battlePalette(D); }
-  // (Land grid: their lines made again each step, see pathSegments)
-  const segs = (path || lines) && cur > 0 && (D.keys.segs !== walk.wx || D.keys.segsM !== sh.m || (P?.ownLines && D.keys.segsCur !== cur)) ? pathSegments(P) : null;
-  if (segs) { gpuBuffer('ribbon', segs.data); D.segsAt = segs.at; D.segsRanges = segs.ranges; D.keys.segs = walk.wx; D.keys.segsM = sh.m; D.keys.segsCur = cur; }
+  if (P?.ownLines && cur > 0) battleLinesOnGpu(D, P);  // (Land grid: its links' owners, see battleLinesOnGpu)
+  const segs = (path || lines) && !P?.ownLines && cur > 0 && (D.keys.segs !== walk.wx || D.keys.segsM !== sh.m || D.ribbonOf) ? pathSegments(P) : null;
+  if (segs) { gpuBuffer('ribbon', segs.data); D.ribbonOf = null; D.segsAt = segs.at; D.keys.segs = walk.wx; D.keys.segsM = sh.m; }
   const ranges = !(path || lines) || cur <= 0 || !(P?.ownLines ? D.segsRanges : D.segsAt) ? [] : !lines ? [[0, D.segsAt[cur]]] : P.ownLines ? D.segsRanges
     : P.standing().map((s) => [D.segsAt[s][Math.max(1, P.from[s])], D.segsAt[s][P.step + 1]]);
   // the tiles, their grid and the path, into pass p (0 the frame; 1, 2 Glass's)

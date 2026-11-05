@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.225';
+const VERSION = '0.4.226';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -1499,7 +1499,7 @@ function renderViewTiles() {
     ways[perspectiveFor(MODES[w], MODES[w].round ? 1 : 0) ? 'on' : 'off'].push(SHAPE_SHORT[sh] ?? sh);
   }
   const perspective = !ways.on.length ? 'off' : !ways.off.length ? 'on' : `On by default on ${ways.on.join(', ')}\nOff by default on ${ways.off.join(', ')}`;
-  const first = { perspective, light: 'on', glass: 'off', ocean: 'off' }, why = { ocean: 'beyond a Quintet: a map has five lands (green, yellow, ochre, lime, ice white)' };
+  const first = { perspective, light: defaultMark('light'), glass: defaultMark('glass'), ocean: defaultMark('ocean') }, why = { ocean: 'beyond a Quintet: a map has five lands (green, yellow, ochre, lime, ice white)' };
   VIEW_TILES.forEach(([id, row], k) => setTile(viewTiles[k], { on: $(id).checked, can: !$(row).hidden && !$(id).disabled && (id !== 'ocean' || oceanFits()), byDefault: first[id], greyed: why[id] ?? '' }));
   $('viewTiles').hidden = VIEW_TILES.every(([, row]) => $(row).hidden);
 }
@@ -1525,7 +1525,7 @@ function renderViewModes() {
   setTile(viewModes[0], { on: c, byDefault: 'yes' });
   setTile(viewModes[1], { on: !c && !u });
   setTile(viewModes[2], { on: u, can: !$('uprightRow').hidden });
-  setTile(rotateTile, { on: $('autoRotate').checked, can: !$('autoRotateRow').hidden && !$('autoRotate').disabled, byDefault: 'off' });
+  setTile(rotateTile, { on: $('autoRotate').checked, can: !$('autoRotateRow').hidden && !$('autoRotate').disabled, byDefault: defaultMark('autoRotate') });
   $('viewModes').hidden = $('centeredRow').hidden;
 }
 $('viewTools').addEventListener('mouseenter', renderViewModes);
@@ -1541,9 +1541,9 @@ function renderHeadTiles() {
     $('headTiles').replaceChildren(soundButton, ...headTiles);
   }
   renderSoundButton();
-  setTile(headTiles[0], { on: $('autoPlay').checked, can: !$('autoPlayRow').hidden, byDefault: 'off', greyed: 'outside Life' });
-  setTile(headTiles[1], { on: $('autoFit').checked, byDefault: 'on' });
-  setTile(headTiles[2], { on: $('showGrid').checked, can: !$('gridRow').hidden, byDefault: 'on' });
+  setTile(headTiles[0], { on: $('autoPlay').checked, can: !$('autoPlayRow').hidden, byDefault: defaultMark('autoPlay'), greyed: 'outside Life' });
+  setTile(headTiles[1], { on: $('autoFit').checked, byDefault: defaultMark('autoFit') });
+  setTile(headTiles[2], { on: $('showGrid').checked, can: !$('gridRow').hidden, byDefault: defaultMark('grid') });
 }
 $('viewTools').addEventListener('mouseenter', renderHeadTiles);
 
@@ -7074,6 +7074,7 @@ const battleOn = () => walkTeams > 1 && battleCounts($('mode').value).includes(w
 const walkTeamsHere = (w) => NAV[w]?.[0] === 'Walk' && MODES[w].lattice === 'sphere';  // (a walk's teams: on a surface)
 function renderWalkTeams() {
   const w = $('mode').value, here = walkTeamsHere(w);
+  if (!oceanPicked) applyDefaults('battle');  // (Ocean on in a walk's battle, till it is clicked: see DISPLAY_DEFAULTS)
   // a battle: its numbers in its Start section, A's formula field moved there from the number's (hidden then), then B's on
   $('battleStart').hidden = $('startWays').hidden = !battleOn();
   RIVALS.forEach((id, j) => { $(id).parentElement.hidden = j >= walkTeams - 1; });  // (the walkers' but A's)
@@ -15166,6 +15167,7 @@ const paintLevels = (palette, levelOf) => (out, n) => {
 const GLASS_ALPHA = 0.4;  // (a tile's share: a layer behind seen at 60%, two at 36%…)
 const glassOn = () => $('glass').checked && !$('glassRow').hidden;
 const oceanFits = () => (MODES[$('mode').value].life ? lifeColours : battleOn() ? walkTeams : 1) <= LANDS.length;  // (its lands a Quintet's at most, Life's colours or a battle's walkers: beyond, greyed)
+let oceanPicked = false;  // (Ocean clicked since its default was set: kept, else it follows its default, see DISPLAY_DEFAULTS)
 const oceanOn = () => $('ocean').checked && !$('oceanRow').hidden && oceanFits();
 const blankTile = () => (oceanOn() ? OCEAN : UNLIT);  // (a surface's tile none has painted: Ocean's sea blue, or the theme's)
 const teamColour = (s) => (oceanOn() && LANDS[s] ? LANDS[s] : LIFE_COLOURS[s]);  // (team s, a battle's walker or Life's colour: Ocean's lands up to a Quintet, else Life's colours)
@@ -17419,7 +17421,7 @@ for (const type of ['pointerdown', 'dblclick', 'wheel']) {
 }
 $('light').addEventListener('change', () => { needsFull = true; });
 $('glass').addEventListener('change', () => { needsFull = true; });
-$('ocean').addEventListener('change', () => { needsFull = statsDirty = true; tintBattleFormulas(); if (walk.n) describe(walk.base); });  // (a battle's colours: its fields, its title, its ranking)
+$('ocean').addEventListener('change', () => { oceanPicked = true; needsFull = statsDirty = true; tintBattleFormulas(); if (walk.n) describe(walk.base); });  // (a battle's colours: its fields, its title, its ranking)
 sizeGauge($('cutGauge'), CUT_AXES.length, cutAxis, setCut, setCut); setCut(cutAxis);
 $('perspective').addEventListener('change', () => {
   setPerspective();
@@ -17739,16 +17741,31 @@ function computeFramed() {
 // Another mode in the same tab keeps the Display settings; another tab starts from its defaults
 let displayTab = null;
 const modeTabOf = () => `${NAV[$('mode').value]?.[0]}|${modeGroup()}`;  // (the menu's tab, Life or Elementary, and its space: the select's group holds several tabs)
-function displayDefaults() {
+// The Display settings' defaults, one table: each its control (a box's id), when it comes back (open: the page's opening
+// only, kept from tab to tab; tab: another tab; mode: every mode), its value (by the mode, or a battle's: a function);
+// displayDefaults and the mode's change set them, and the tiles' marks read them (see defaultMark)
+const DISPLAY_DEFAULTS = {
+  look: ['colourMode', 'tab', (mode) => defaultLook(mode)],  // (Cells: Life's States, a walk's Rainbow)
+  fillAreas: ['fillAreas', 'tab', true], areaLight: ['fillTranslucent', 'tab', true], path: ['showPath', 'tab', false],  // (Area: Light; on cells the cells alone)
+  centered: ['centered', 'tab', true], autoRotate: ['autoRotate', 'tab', false], sky: ['sky', 'tab', 'sky'],  // (on a solid the walker in front; Dawn or Twilight after the theme)
+  autoFit: ['autoFit', 'mode', true], upright: ['upright', 'mode', false], perspective: ['perspective', 'mode', (mode) => perspectiveFor(mode, mode.round ? 1 : 0)],
+  light: ['light', 'open', true], glass: ['glass', 'open', false], grid: ['showGrid', 'open', true], autoPlay: ['autoPlay', 'open', false],
+  ocean: ['ocean', 'battle', () => battleOn() && NAV[$('mode').value][0] === 'Walk'],  // (on in a walk's battle on a surface, as long as none picks it)
+};
+// its settings that come back at `at`: each box set, checked or valued
+function applyDefaults(at) {
   const mode = MODES[$('mode').value];
-  $('colourMode').value = defaultLook(mode);  // simplest view by default
-  $('autoFit').checked = true;  // framed
-  $('centered').checked = true;  // on a solid, the walker in front
-  $('fillAreas').checked = true;
-  $('showPath').checked = false;  // on cells, the cells alone
-  $('fillTranslucent').checked = true;  // Light areas
-  $('autoRotate').checked = false;  // the grid stays as chosen, on every tab
-  $('sky').value = 'sky';  // Dawn or Twilight, after the theme
+  for (const [id, when, value] of Object.values(DISPLAY_DEFAULTS)) {
+    if (when !== at) continue;
+    const v = typeof value === 'function' ? value(mode) : value;
+    if (typeof v === 'boolean') $(id).checked = v; else $(id).value = v;
+  }
+}
+// a tile's mark (see setTile's byDefault): its setting's default, 'on' or 'off'
+const defaultMark = (key) => { const v = DISPLAY_DEFAULTS[key][2]; return (typeof v === 'function' ? v(MODES[$('mode').value]) : v) ? 'on' : 'off'; };
+function displayDefaults() {
+  applyDefaults('tab');
+  oceanPicked = false;
   renderSkyButtons();
   displayTab = modeTabOf();
 }
@@ -17757,10 +17774,8 @@ $('mode').addEventListener('change', () => {
   // the form of the view belongs to the walk mode: its perspective, the camera's starting angle
   // (auto-fit may have turned it to follow a walker) and its flat or round form (see initShape)
   // come back with every new mode
-  $('perspective').checked = perspectiveFor(MODES[$('mode').value], MODES[$('mode').value].round ? 1 : 0);
+  applyDefaults('mode');  // (its perspective, the view free and framed)
   Object.assign(cam, CAM0);
-  $('upright').checked = false;  // (the default view: free, on each surface)
-  $('autoFit').checked = true;  // a new walk is shown framed, whatever the view did before
   $('startNo').value = 1;
   compute();
 });

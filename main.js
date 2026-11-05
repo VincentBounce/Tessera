@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.190';
+const VERSION = '0.4.191';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -2827,10 +2827,10 @@ function numberText() {
   const { head, frac } = digitsInUse(), sign = !current.digits.length && head.length === current.total ? '=' : '≈';
   return `${formulaInUse} ${baseWords(current.base)} ${sign} ${writeDigits(Uint8Array.from([...head, ...frac]), current.base, head.length)}`;
 }
-// digits ds in base b written: the first head (its integer part), then a point and the rest
+// digits ds in base b written: the first head (its integer part), then a point and the rest (a 0 before it implicit: .001)
 const writeDigits = (ds, b, head) => {
   const write = (x) => (b <= 36 ? Array.from(x, (v) => v.toString(36)).join('') : Array.from(x).join(' '));
-  return `${head ? write(ds.subarray(0, head)) : '0'}${ds.length > head ? `.${write(ds.subarray(head))}` : ''}`;
+  return ds.length > head ? `${write(ds.subarray(0, head))}.${write(ds.subarray(head))}` : head ? write(ds) : '0';
 };
 // a battle's numbers (see showNumber): each walker's formula and its digits read, to its death or the battle's end (used)
 function battleNumbers() {
@@ -17406,7 +17406,7 @@ function ratioDigits(b, ratio = current.ratio, max = digitsNeeded()) {
   const [p0, q] = ratio, p = p0 < 0n ? -p0 : p0, B = BigInt(b), seen = new Map(), ds = [];
   let rem = p % q;
   while (rem && !seen.has(rem) && ds.length < max) { seen.set(rem, ds.length); rem *= B; ds.push(Number(rem / q)); rem %= q; }
-  const at = seen.get(rem), write = (v) => (b <= 36 ? v.map((d) => d.toString(36)).join('') : v.join(' ')), int = `${p0 < 0n ? '−' : ''}${digitString(p / q, b)}`;
+  const at = seen.get(rem), write = (v) => (b <= 36 ? v.map((d) => d.toString(36)).join('') : v.join(' ')), int = `${p0 < 0n ? '−' : ''}${p < q && ds.length ? '' : digitString(p / q, b)}`;  // (a 0 before the point implicit: .001)
   if (rem && at === undefined) return null;
   return `= ${int}${ds.length ? `.${rem ? `${write(ds.slice(0, at))}(${write(ds.slice(at))})` : write(ds)}` : ''}`;
 }
@@ -17430,7 +17430,8 @@ function base10Digits() {
   const N = digitsValue(ds, B), D = B ** BigInt(frac.length), int = (N / D).toString();
   if (!frac.length) return [`= ${int}`, `all ${fmt(int.length)} digits`];
   const m = Math.max(1, Math.floor(frac.length * lb) - 1);  // (as many as its digits in use tell)
-  return [`≈ ${int}.${(((N % D) * 10n ** BigInt(m)) / D).toString().padStart(m, '0')}…`, `first ${fmt(int.length + m)} digits, as many as the first ${fmt(ds.length)} in base ${current.base} tell`];
+  const lead = int === '0' ? '' : int;  // (a 0 before the point implicit: .14)
+  return [`≈ ${lead}.${(((N % D) * 10n ** BigInt(m)) / D).toString().padStart(m, '0')}…`, `first ${fmt(lead.length + m)} digits, as many as the first ${fmt(ds.length)} in base ${current.base} tell`];
 }
 const base10 = { on: false };  // (Base 10 switched on: the number in base 10 instead, see showNumber)
 function showNumber() {

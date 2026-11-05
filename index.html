@@ -11,7 +11,7 @@
   <meta property="og:type" content="website">
   <link id="favicon" rel="icon">  <!-- the app's logo, set at start-up (see appLogo) -->
   <meta name="description" content="A walk on a grid in 2D or 3D driven by the base-2 to base-6 digits of π, other constants and large primes.">
-  <link rel="stylesheet" href="style.css?v=0.4.185">
+  <link rel="stylesheet" href="style.css?v=0.4.186">
   <script>  // the theme before the first paint (see applyTheme)
     try { const t = localStorage.getItem('tesseraTheme') || 'system'; document.documentElement.dataset.theme = t === 'system' ? (matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark') : t; } catch { document.documentElement.dataset.theme = 'dark'; }
   </script>
@@ -145,12 +145,12 @@
           </label>
         </div>
         <div id="battleStart" hidden>  <!-- a battle's: how they fight, each walker's formula (A's the number's own, moved here: see renderWalkTeams), Random, the longest battles (see 7.6c) -->
+          <div id="startCentred" class="nav-shapes" hidden></div>  <!-- a battle's starts centred: a switch, under the start row (see renderWalkTeams) -->
           <div id="walkPenetration" class="nav-shapes"></div>  <!-- a battle's way with an enemy's body: Cut, the Land grids, Land cells (see PENETRATIONS) -->
           <div id="formulaAHome"></div>  <!-- (the number's formula field, A's in a battle) -->
           <div id="rivalFormulas"></div>  <!-- the other walkers' formulas, B to L (see rivalField) -->
           <button id="battleRandom" type="button" class="wide" data-icon="dice" title="As many numbers as walkers drawn at random from the hunt's (the Number cards' reals and sequences, √2 to √9999), fought here">Random</button>  <!-- (see battleRandom) -->
           <button id="battleHuntBtn" type="button" class="wide" title="As many numbers as walkers drawn at random, each set once, fought here (this surface, size, start and digits): the Number cards' reals and sequences, and √2 to √9999 (no fraction: their digits go round). The 8 longest kept; one still on as the digits end first (≥)"></button>  <!-- its words: see renderBattleHunt -->
-          <button id="battleGroupedBtn" type="button" class="wide" title="The same hunt, the walkers leaving one point of the surface's symmetry side by side, each on an edge out of it: a face's centre (on the sphere of hexagons, 3 or 6 by its size), a corner (its pentagon: 5). Greyed where no such point has as many edges out as walkers"></button>  <!-- its words: see renderBattleHunt -->
           <p id="battleHuntStatus" class="muted"></p>
           <div id="battleHuntTop" class="mode-list" role="listbox"></div>  <!-- the 8 longest battles: a click plays one -->
         </div>
@@ -741,10 +741,10 @@
     </div>
   </main>
 
-  <script src="pixelarticons.js?v=0.4.185"></script>
-  <script src="punks.js?v=0.4.185"></script>
-  <script src="loops.js?v=0.4.185"></script>
-  <script src="emoji.js?v=0.4.185"></script>
-  <script src="main.js?v=0.4.185"></script>
+  <script src="pixelarticons.js?v=0.4.186"></script>
+  <script src="punks.js?v=0.4.186"></script>
+  <script src="loops.js?v=0.4.186"></script>
+  <script src="emoji.js?v=0.4.186"></script>
+  <script src="main.js?v=0.4.186"></script>
 </body>
 </html>

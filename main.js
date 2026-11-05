@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.215';
+const VERSION = '0.4.216';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -713,17 +713,17 @@ const BANDS = 256;
 // The walk's colours, per theme (see applyTheme): the rainbow darker on a light page, the digits'
 // grey instead of white, the one colour a deeper amber
 const PALETTES = {
-  // unlit: the surfaces' tiles not walked; trail: a Life cell just dead, fading to unlit; alive: Life in one colour
+  // unlit: the surfaces' tiles not walked (ocean: Ocean's, a sea blue); trail: a Life cell just dead, fading to unlit; alive: Life in one colour
   // directions: each step's colour by where it goes (its arrow), the same in every walk: left blue, straight
   // on (north) gold, right pink, back (south) turquoise, then the diagonals (↖ green, ↗ magenta, ↘ orange,
   // ↙ violet: the opposite turns far apart) and up, down;
   // digits: for the walks whose digits are no direction, in the same colours; grey: a spiral's 0
   dark: { light: 60, digits: ['#4f7bff', '#f0609f', '#f2b630', '#2fbdb7', '#9270f5', '#7fc244', '#f28042', '#d466f0'], grey: '#e6edf3', mono: '#f0b429',
           directions: { '←': '#4f7bff', '↑': '#f2b630', '→': '#f0609f', '↓': '#2fbdb7', '↖': '#7fc244', '↗': '#d466f0', '↘': '#f28042', '↙': '#9270f5', '⊙': '#f06b6b', '⊗': '#45c8f0' },
-          unlit: '#1f2630', trail: '#6b7f99', fade: '#c98f1f', alive: '#e6edf3', edgeRgb: [255, 255, 255], edgeAlpha: 0.25, shade: 0.6, fadeEdges: true },
+          unlit: '#1f2630', ocean: '#14456b', trail: '#6b7f99', fade: '#c98f1f', alive: '#e6edf3', edgeRgb: [255, 255, 255], edgeAlpha: 0.25, shade: 0.6, fadeEdges: true },
   light: { light: 48, digits: ['#2f5bea', '#e8438a', '#e0a100', '#13a8a2', '#7c4dff', '#5fa82a', '#f0702a', '#c03fe0'], grey: '#6e7781', mono: '#bf8700',
            directions: { '←': '#2f5bea', '↑': '#e0a100', '→': '#e8438a', '↓': '#13a8a2', '↖': '#5fa82a', '↗': '#c03fe0', '↘': '#f0702a', '↙': '#7c4dff', '⊙': '#e5484d', '⊗': '#1aa3d6' },
-           unlit: '#eef1f5', trail: '#7d8896', fade: '#c98a10', alive: '#1f2328', edgeRgb: [0, 0, 0], edgeAlpha: 0.11, shade: 0.35, fadeEdges: true, tileLift: 0.22 },
+           unlit: '#eef1f5', ocean: '#9cc7e6', trail: '#7d8896', fade: '#c98a10', alive: '#1f2328', edgeRgb: [0, 0, 0], edgeAlpha: 0.11, shade: 0.35, fadeEdges: true, tileLift: 0.22 },
 };
 const hexRgb = (c) => [1, 3, 5].map((i) => parseInt(c.slice(i, i + 2), 16));  // [r, g, b] of a #rrggbb colour (any CSS colour: see rgbOf)
 const GRADIENT = [], DIGIT_COLORS = [], LIFE_TRAIL = [], LIFE_FADE = [], DIRECTION_COLOURS = {};
@@ -734,11 +734,11 @@ const GRADIENT = [], DIGIT_COLORS = [], LIFE_TRAIL = [], LIFE_FADE = [], DIRECTI
 // strip, 6 × 2 round a torus (the last pair next to the first), 3 × 4 on a square torus, 4 × 3 on the plane
 const LIFE_HUES = [2, 222, 48, 135, 275, 185, 318, 25, 90, 340, 245, 160], LIFE_COLOURS = [];
 let GREY;
-let MONO, UNLIT, LIFE_ALIVE, EDGE_RGB, EDGE_ALPHA, SHADE, FADE_EDGES, TILE_LIFT;  // TILE_LIFT: the tiles' rainbow mixed with white  // EDGE_RGB, EDGE_ALPHA: the tile edges; SHADE: how dark a tile turned away gets
+let MONO, UNLIT, OCEAN, LIFE_ALIVE, EDGE_RGB, EDGE_ALPHA, SHADE, FADE_EDGES, TILE_LIFT;  // TILE_LIFT: the tiles' rainbow mixed with white  // EDGE_RGB, EDGE_ALPHA: the tile edges; SHADE: how dark a tile turned away gets
 function setPalette(theme) {
   const P = PALETTES[theme];
   // the surfaces' tile edges light on a dark page, dark on a light one, as the 2D grid
-  UNLIT = P.unlit; LIFE_ALIVE = P.alive; EDGE_RGB = P.edgeRgb; EDGE_ALPHA = P.edgeAlpha;
+  UNLIT = P.unlit; OCEAN = P.ocean; LIFE_ALIVE = P.alive; EDGE_RGB = P.edgeRgb; EDGE_ALPHA = P.edgeAlpha;
   SHADE = P.shade; FADE_EDGES = !!P.fadeEdges; TILE_LIFT = P.tileLift ?? 0;
   const [a, b] = [hexRgb(P.trail), hexRgb(P.unlit)];
   // the 8 shades of a dying Life cell (a Generations rule's stages), from the trail colour to unlit; and of
@@ -1432,9 +1432,9 @@ const VIEW_3D = ['autoRotate', 'upright', 'perspective', 'light'];  // a 3D view
 const DISPLAY_BY_TAB = {
   '2D walks': ['heatmap', 'fill', 'translucent', 'cells', 'visits', 'digit', 'grid'],
   '3D walks': ['colours', 'digit', 'grid', 'sky', ...VIEW_3D],
-  'Walks on surfaces': ['shape', 'heatmap', 'visits', 'fill', 'translucent', 'grid', 'sky', ...VIEW_3D, 'glass', 'cut'],
+  'Walks on surfaces': ['shape', 'heatmap', 'visits', 'fill', 'translucent', 'grid', 'sky', ...VIEW_3D, 'glass', 'ocean', 'cut'],
   'Automata on the plane': ['colours', 'digit', 'mono', 'grid', 'sky'],
-  'Automata on surfaces': ['shape', 'colours', 'digit', 'mono', 'grid', 'sky', ...VIEW_3D, 'glass', 'cut'],  // (Glass, Cut: the surfaces' tiles only, see gpuFrame, cutOn)
+  'Automata on surfaces': ['shape', 'colours', 'digit', 'mono', 'grid', 'sky', ...VIEW_3D, 'glass', 'ocean', 'cut'],  // (Glass, Cut: the surfaces' tiles only, see gpuFrame, cutOn)
   '2D spirals': ['heatmap', 'fill', 'translucent', 'cells', 'visits', 'digit', 'grid'],  // the 2D walks' menu, some of it greyed out
 };
 // Shown but greyed out, by the menu's group or the tab: a spiral never crosses itself, so it closes no area and visits each
@@ -1449,7 +1449,7 @@ const shows = (item) => DISPLAY_BY_TAB[modeGroup()].includes(item) || (spaceTime
 const useful = (item) => shows(item) && !greyed(item);
 function updateDisplayMenu() {
   const rows = { colours: 'coloursRow', grid: 'gridRow',
-                 autoRotate: 'autoRotateRow', upright: 'uprightRow', perspective: 'perspectiveRow', light: 'lightRow', glass: 'glassRow', cut: 'cutRow' };
+                 autoRotate: 'autoRotateRow', upright: 'uprightRow', perspective: 'perspectiveRow', light: 'lightRow', glass: 'glassRow', ocean: 'oceanRow', cut: 'cutRow' };
   for (const [item, id] of Object.entries(rows)) $(id).hidden = !shows(item);
   skyButton.style.visibility = shows('sky') ? '' : 'hidden';  // the sky's switch, among the themes (no sky: its place kept, the row as everywhere)
   // Heatmap of visits and Digits instead of a list of colours, on cells only (Digits in 2D only;
@@ -1486,7 +1486,7 @@ function updateDisplayMenu() {
 // The view's switches, standard tiles (toggle): each its checkbox's (the source, kept out of sight), on as it is checked,
 // greyed where its row is hidden (it does not apply: Autoplay but in Life, the others but in 3D); drawn again with the
 // display box and when the box opens (a hand rotation, a new mode: their boxes changed)
-const VIEW_TILES = [['perspective', 'perspectiveRow', 'perspective', 'Perspective', 'Perspective: what is nearer looks bigger'], ['light', 'lightRow', 'sideLight', 'Side light'], ['glass', 'glassRow', 'glass', 'Glass']];
+const VIEW_TILES = [['perspective', 'perspectiveRow', 'perspective', 'Perspective', 'Perspective: what is nearer looks bigger'], ['light', 'lightRow', 'sideLight', 'Side light'], ['glass', 'glassRow', 'glass', 'Glass'], ['ocean', 'oceanRow', 'ocean', 'Ocean']];
 let viewTiles = null;
 function renderViewTiles() {
   viewTiles ??= VIEW_TILES.map(([id, row, pic, text, title]) => tile({ pic: icon(pic), text, title: title ?? $(row).title, toggle: true,
@@ -2185,6 +2185,7 @@ const ICONS = (() => {
     sideLight: pathEl('M2.5 10.2H7.5V13.8H2.5Z') + pathEl('M7.5 9.6L10 8.2V15.8L7.5 14.4Z') + pathEl('M12.5 8.6L21 4.8M13 12H21.5M12.5 15.4L21 19.2'),
     cut: pathEl('M3 12A9 9 0 0 1 21 12Z') + pathEl('M2 15.5H22'),  // a ball's back half, the cut's line
     glass: pathEl('M3 12A9 9 0 1 0 21 12A9 9 0 1 0 3 12Z') + pathEl('M3 12A9 3.5 0 0 0 21 12A9 3.5 0 0 0 3 12Z'),  // a ball, its equator seen through
+    ocean: pathEl('M3 9C5 7 7 7 9 9S13 11 15 9S19 7 21 9M3 15C5 13 7 13 9 15S13 17 15 15S19 13 21 15'),  // two waves
     viewDefault: pathEl('M12 3L20 7.5V16.5L12 21L4 16.5V7.5Z') + pathEl('M4 7.5L12 12L20 7.5M12 12V21'),  // (a cube from its usual corner)
     upright: pathEl('M12 3V17M8 7L12 3L16 7M4 20.5H20'),  // (up, over a level line)
     free: pathEl('M12 7L16.3 9.5V14.5L12 17L7.7 14.5V9.5Z') + pathEl('M12 7V12M7.7 14.5L12 12L16.3 14.5')  // (a cube turned any way by hand: two arrows round it)
@@ -14872,7 +14873,7 @@ function drawSphere() {
   // the torus, and any polyhedron that is not flat, is drawn tile by tile from its current form;
   // a flat polyhedron is drawn face by face below
   if (L) {  // Life's look, the plane's (see lifeLook): the walls, the pentagons of the hexagon sphere, in stone grey
-    const rgba = (c) => [...rgbCached(c).map((x) => x / 255), 1], look = { ...lifeLook(L, true), wall: rgba(LIFE_WALL), dead: rgba(UNLIT) };
+    const rgba = (c) => [...rgbCached(c).map((x) => x / 255), 1], look = { ...lifeLook(L, true), wall: rgba(LIFE_WALL), dead: rgba(blankTile()) };
     gpuSurface((out) => gpuLook(L, out, look), path);
   } else gpuSurface(paintLevels(palette, levelOf), path);  // (see 11.4d)
   drawHover();
@@ -15154,7 +15155,7 @@ function outwardFolds(tri, P, Q, N) {
 // a surface's tiles' colours from a palette (null: unlit) and each tile's place in it (out of it: unlit), into their buffer
 // (out.put, see gpuSurface)
 const paintLevels = (palette, levelOf) => (out, n) => {
-  const rgb = palette.map((c) => packed(c ?? UNLIT)), col = new Uint32Array(n);
+  const rgb = palette.map((c) => packed(c ?? blankTile())), col = new Uint32Array(n);
   for (let t = 0; t < n; t++) col[t] = rgb[levelOf(t)] ?? rgb[0];
   out.put(col);
 };
@@ -15162,6 +15163,7 @@ const paintLevels = (palette, levelOf) => (out, n) => {
 // gone, by a fixed plane through the middle (see CUT_AXES); the two apart: with both, what is left see-through
 const GLASS_ALPHA = 0.4;  // (a tile's share: a layer behind seen at 60%, two at 36%…)
 const glassOn = () => $('glass').checked && !$('glassRow').hidden;
+const blankTile = () => ($('ocean').checked && !$('oceanRow').hidden ? OCEAN : UNLIT);  // (a surface's tile none has painted: Ocean's sea blue, or the theme's)
 // Cut: Off, or a fixed plane through the middle facing one of the view's axes (E, N, Up, as drawn in its corner), the half on
 // that axis's side gone: its notches on a row as Flat ── Inflated (see sizeGauge)
 const CUT_AXES = [['Off'], ['E', [1, 0, 0]], ['N', [0, 1, 0]], ['Up', [0, 0, 1]]];
@@ -17410,6 +17412,7 @@ for (const type of ['pointerdown', 'dblclick', 'wheel']) {
 }
 $('light').addEventListener('change', () => { needsFull = true; });
 $('glass').addEventListener('change', () => { needsFull = true; });
+$('ocean').addEventListener('change', () => { needsFull = true; });
 sizeGauge($('cutGauge'), CUT_AXES.length, cutAxis, setCut, setCut); setCut(cutAxis);
 $('perspective').addEventListener('change', () => {
   setPerspective();

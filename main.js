@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.214';
+const VERSION = '0.4.215';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -15168,11 +15168,7 @@ const CUT_AXES = [['Off'], ['E', [1, 0, 0]], ['N', [0, 1, 0]], ['Up', [0, 0, 1]]
 let cutAxis = 0;
 const cutOn = () => cutAxis > 0 && !$('cutRow').hidden;
 const cutNormal = () => CUT_AXES[cutAxis][1] ?? [0, 0, 0];
-function renderCut() {
-  const set = (k) => { if (k !== cutAxis) { cutAxis = k; needsFull = true; } $('cutName').textContent = CUT_AXES[cutAxis][0]; };
-  sizeGauge($('cutGauge'), CUT_AXES.length, cutAxis, set, set);
-  $('cutName').textContent = CUT_AXES[cutAxis][0];
-}
+const setCut = (k) => { needsFull ||= k !== cutAxis; cutAxis = k; $('cutName').textContent = CUT_AXES[k][0]; };  // (a notch picked, or dragged over)
 /* Flat drawings by the card as well (see gpuFlat): the 2D walks, and the 3D walks once projected (their projection
  * is redone on the CPU when the view turns). The whole walk so far is redrawn at each frame, fast
  * enough to pan, zoom and turn walks of millions of steps smoothly:
@@ -17414,7 +17410,7 @@ for (const type of ['pointerdown', 'dblclick', 'wheel']) {
 }
 $('light').addEventListener('change', () => { needsFull = true; });
 $('glass').addEventListener('change', () => { needsFull = true; });
-renderCut();
+sizeGauge($('cutGauge'), CUT_AXES.length, cutAxis, setCut, setCut); setCut(cutAxis);
 $('perspective').addEventListener('change', () => {
   setPerspective();
   rotateView([0, 0, 0]);  // the projection again

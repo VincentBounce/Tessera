@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.172';
+const VERSION = '0.4.173';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -14564,10 +14564,9 @@ function tileVisible(t) {
   const c = [cen[3 * t] * R, cen[3 * t + 1] * R, cen[3 * t + 2] * R];
   return planeVisible([nrm[3 * t], nrm[3 * t + 1], nrm[3 * t + 2]], c) || !!bent.get(t)?.some((w) => planeVisible(w, c));
 }
-// is the tile of point i on the visible side? (an unrolled torus shows both sides)
-const facing = (i) => twoSidedNow() || tileVisible(walk.tile[i]);
-// an unrolled torus is an open surface: both sides show
-const twoSidedNow = () => false;  // every surface is seen from its face only (an unrolled torus: its top; a Möbius strip: each face its own tiles)
+// is the tile of point i on the visible side? (every surface seen from its face only: an unrolled torus its top, a Möbius
+// strip each face its own tiles)
+const facing = (i) => tileVisible(walk.tile[i]);
 
 // Sphere: visible tiles coloured by visit count (log scale) and shading
 function drawSphere() {
@@ -15778,8 +15777,9 @@ function gpuSurface(paint, path) {
     : P.standing().map((s) => [D.segsAt[s][Math.max(1, P.from[s])], D.segsAt[s][P.step + 1]]);
   // the tiles, their grid and the path, into pass p (0 the frame; 1, 2 Glass's)
   const drawAll = (rp, pass) => {
-    const both = pass || cutOn(), cut = cutOn() ? (pass ? 2 : 1) : 0, open = !both && g.torus && !g.mobius && !g.klein && sh.m < 1;
-    const front = shapeSign(g) < 0 ? 'front' : 'back', cull = g.klein || both ? 'none' : front;
+    // seen from both sides: Glass, a cut, a Klein bottle (one-sided: its tiles' face inwards in its neck and handle)
+    const both = pass || cutOn() || !!g.klein, cut = cutOn() ? (pass ? 2 : 1) : 0, open = !both && g.torus && !g.mobius && sh.m < 1;
+    const front = shapeSign(g) < 0 ? 'front' : 'back', cull = both ? 'none' : front;
     const tiles = (plain, c) => {
       rp.setPipeline(gpuDrawPipe('tile', { vertex: 'tileV', fragment: 'shadowedF', buffers: tileBufs, cull: c, pass, shadowed: true }));
       rp.setBindGroup(0, gpuGroup(), [slotOf({ glass: pass, cut, alpha: GLASS_ALPHA, plain })]); rp.setBindGroup(1, D.shadow.group);
@@ -15790,11 +15790,11 @@ function gpuSurface(paint, path) {
     if ($('showGrid').checked && view.scale > 6) {
       rp.setPipeline(gpuDrawPipe('edge', { vertex: 'edgeV', fragment: 'edgeF', topology: 'line-list', pass, blend: BLEND_OVER,
         buffers: [vbuf(12, [VA(0, 'float32x3')]), vbuf(12, [VA(1, 'float32x3')]), vbuf(12, [VA(2, 'float32x3')])] }));
-      rp.setBindGroup(0, gpuGroup(), [slotOf({ glass: pass, cut, edge: edgeAlpha(sh), edgeRgb: EDGE_RGB.map((c) => c / 255), bias: edgeBias, both: g.klein || both ? 1 : 0 })]);
+      rp.setBindGroup(0, gpuGroup(), [slotOf({ glass: pass, cut, edge: edgeAlpha(sh), edgeRgb: EDGE_RGB.map((c) => c / 255), bias: edgeBias, both: both ? 1 : 0 })]);
       rp.setVertexBuffer(0, D.ePos); rp.setVertexBuffer(1, D.eN1); rp.setVertexBuffer(2, D.eN2); rp.draw(D.eCount);
     }
     if (ranges.some(([a, b]) => b > a)) {
-      rp.setPipeline(gpuDrawPipe('ribbon', { vertex: 'ribbonV', fragment: 'ribbonF', topology: 'triangle-strip', pass, cull: !twoSidedNow() && !both ? 'back' : 'none',
+      rp.setPipeline(gpuDrawPipe('ribbon', { vertex: 'ribbonV', fragment: 'ribbonF', topology: 'triangle-strip', pass, cull: both ? 'none' : 'back',
         buffers: [vbuf(8, [VA(0, 'float32x2')]), vbuf(44, [VA(1, 'float32x3', 0), VA(2, 'float32x3', 12), VA(3, 'float32x3', 24), VA(4, 'float32', 36), VA(5, 'float32', 40)], 'instance')] }));
       rp.setBindGroup(0, gpuGroup(), [slotOf({ glass: pass, cut, N: Math.max(1, walk.n), halfW: surfaceLineWidth() / 2 / view.scale, bias: pathBias, colour: lines ? 3 : 0 })]);
       rp.setVertexBuffer(0, D.quad); rp.setVertexBuffer(1, D.ribbon);
@@ -16188,7 +16188,7 @@ function drawOverlay() {
     B.to(cur);
     for (const s of B.living()) {
       const Q = B.places[s], P = (i) => placePoint(Q[i]), tileAt = (i) => (walk.vert ? walk.geo.grid.tileOf[Q[i]] : Q[i]);
-      if (twoSidedNow() || tileVisible(tileAt(cur))) drawSphereCursor(ctx, P, tileAt, LIFE_COLOURS[s]);
+      if (tileVisible(tileAt(cur))) drawSphereCursor(ctx, P, tileAt, LIFE_COLOURS[s]);
     }
     return;
   }

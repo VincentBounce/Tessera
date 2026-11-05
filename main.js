@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.121';
+const VERSION = '0.4.122';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -1038,24 +1038,24 @@ const MODES = {
               turnsOf: 'antSquare', get rule() { return walkRuleText('turtle', 'along the lines of a square grid'); } },
   cardinal: { base: 4, arrows: '↑→↓←', lattice: 'square', lines: true, twin: 'cardinalCells',
               rule: 'along the lines of a square grid: <b>0</b> north, <b>1</b> east, <b>2</b> south, <b>3</b> west' },
-  triTurtle: { base: 5, arrows: '↙↖↑↗↘', lattice: 'hex', lines: true, twin: 'triTurtleCells', ant: 'antTri',
-              rule: 'along the lines of a triangle grid, relative to where you come from: <b>0</b> sharp left, <b>1</b> left, <b>2</b> straight, <b>3</b> right, <b>4</b> sharp right' },
+  triTurtle: { get base() { return walkTurnsOf('triTurtle').length; }, get arrows() { return walkArrows('triTurtle'); }, lattice: 'hex', lines: true, twin: 'triTurtleCells', ant: 'antTri',
+              turnsOf: 'antHex', get rule() { return walkRuleText('triTurtle', 'along the lines of a triangle grid, relative to where you come from'); } },
   triFixed: { base: 6, arrows: '↑↗↘↓↙↖', lattice: 'hex', lines: true, twin: 'triFixedCells',
               rule: 'along the lines of a triangle grid: <b>0</b> N, <b>1</b> NE, <b>2</b> SE, <b>3</b> S, <b>4</b> SW, <b>5</b> NW' },
-  hexTurtle: { base: 2, arrows: '↖↗', lattice: 'tri', lines: true, twin: 'hexTurtleCells', ant: 'antHex',
-              rule: 'along the lines of a hexagon grid: <b>0</b> turn left, <b>1</b> turn right' },
+  hexTurtle: { get base() { return walkTurnsOf('hexTurtle').length; }, get arrows() { return walkArrows('hexTurtle'); }, lattice: 'tri', lines: true, twin: 'hexTurtleCells', ant: 'antHex',
+              turnsOf: 'antTri', get rule() { return walkRuleText('hexTurtle', 'along the lines of a hexagon grid'); } },
   hexFixed: { base: 3, lattice: 'tri', lines: true, twin: 'hexFixedCells',
               rule: 'along the lines of a hexagon grid: take the <b>0</b> “|”, <b>1</b> “\\” or <b>2</b> “/” edge' },
   turtleCells: { get base() { return walkTurnsOf('turtleCells').length; }, get arrows() { return walkArrows('turtleCells'); }, lattice: 'square', cells: true, twin: 'turtle',
               turnsOf: 'antSquare', get rule() { return walkRuleText('turtleCells', 'from cell to cell of a square grid'); } },
   cardinalCells: { base: 4, arrows: '↑→↓←', lattice: 'square', cells: true, twin: 'cardinal',
               rule: 'from cell to cell of a square grid: <b>0</b> north, <b>1</b> east, <b>2</b> south, <b>3</b> west' },
-  triTurtleCells: { base: 2, arrows: '↖↗', lattice: 'tri', cells: true, twin: 'triTurtle',
-              rule: 'from cell to cell of a triangle grid: exit through the <b>0</b> left or <b>1</b> right edge' },
+  triTurtleCells: { get base() { return walkTurnsOf('triTurtleCells').length; }, get arrows() { return walkArrows('triTurtleCells'); }, lattice: 'tri', cells: true, twin: 'triTurtle',
+              turnsOf: 'antTri', get rule() { return walkRuleText('triTurtleCells', 'from cell to cell of a triangle grid, by the edge it exits through'); } },
   triFixedCells: { base: 3, lattice: 'tri', cells: true, twin: 'triFixed',
               rule: 'from cell to cell of a triangle grid: cross the <b>0</b> horizontal, <b>1</b> “/” or <b>2</b> “\\” edge' },
-  hexTurtleCells: { base: 5, arrows: '↙↖↑↗↘', lattice: 'hex', cells: true, twin: 'hexTurtle',
-              rule: 'from cell to cell of a hexagon grid, relative to the edge you came in through: <b>0</b> sharp left, <b>1</b> left, <b>2</b> straight, <b>3</b> right, <b>4</b> sharp right' },
+  hexTurtleCells: { get base() { return walkTurnsOf('hexTurtleCells').length; }, get arrows() { return walkArrows('hexTurtleCells'); }, lattice: 'hex', cells: true, twin: 'hexTurtle',
+              turnsOf: 'antHex', get rule() { return walkRuleText('hexTurtleCells', 'from cell to cell of a hexagon grid, relative to the edge you came in through'); } },
   hexFixedCells: { base: 6, arrows: '↑↗↘↓↙↖', lattice: 'hex', cells: true, twin: 'hexFixed',
               rule: 'from cell to cell of a hexagon grid: <b>0</b> N, <b>1</b> NE, <b>2</b> SE, <b>3</b> S, <b>4</b> SW, <b>5</b> NW' },
   // on cells only: steps that do not cross a single edge (no Fill areas, see fillAreasApply)
@@ -4088,17 +4088,18 @@ let antByDigits = false;
 // A walk turning by the digits (Turtle): its rule a turn per digit, its base their count. Its turns are those of the ant on
 // the cells it goes through (turnsOf: the cells' ant; a grid's walk goes through its dual's cells), one rule shared by the
 // walks through the same cells; its cards the ant's rules by the digits (see creatureRules)
-const WALK_RULE = { antSquare: 'LNR' };  // (each one's at first)
+const WALK_RULE = { antSquare: 'LNR', antTri: 'LR', antHex: 'L2 L1 N R1 R2' };  // (each one's at first)
 const walkRules = { ...WALK_RULE };
 const walkTurnsOf = (w) => antTurnsOf(MODES[w].turnsOf, walkRules[MODES[w].turnsOf]);
 const walkArrows = (w) => walkTurnsOf(w).map((t) => [...ANTS[MODES[w].turnsOf].arrows][t]).join('');
-const walkRuleText = (w, where) => `${where}: ${turnWords(walkRules[MODES[w].turnsOf]).map((t, d) => `<b>${d}</b> ${TURN_WORDS[t]}`).join(', ')}, then a step`;
-// a walk's stepper by its rule: a digit, its turn (inner: the stepper by the turns)
-const byWalkRule = (w, inner) => { const turns = walkTurnsOf(w); return (g) => inner(turns[g]); };
+const walkRuleText = (w, where) => `${where}, a turn then a step: ${turnWords(walkRules[MODES[w].turnsOf]).map((t, d) => `<b>${d}</b> ${TURN_WORDS[t]}`).join(', ')}`;
+const ruleOfWords = (words) => words.join(words.some((t) => t.length > 1) ? ' ' : '');  // (L1 R1 spaced, LNR not)
+// a walk's stepper by its rule: a digit, its turn, stepped by the cells' ant's walk (its grid's: its dual's cells)
+const byWalkRule = (w) => { const turns = walkTurnsOf(w), inner = ANTS[MODES[w].turnsOf].inner(); return (g) => inner(turns[g]); };
 function setWalkRule(w, rule) {
   const t = MODES[w].turnsOf;
   if (!antTurnsOf(t, rule)) { $('antRule').value = walkRules[t]; return; }
-  walkRules[t] = turnWords(rule).join('');
+  walkRules[t] = ruleOfWords(turnWords(rule));
   renderModePicker();
   compute();
 }
@@ -4227,7 +4228,7 @@ function squareTurtleStepper() {
   };
 }
 const STEPPERS = {
-  turtle: () => byWalkRule('turtle', squareTurtleStepper()),
+  turtle: () => byWalkRule('turtle'),
   cardinal() {
     let x = 0, y = 0;
     return (g) => {
@@ -4261,15 +4262,15 @@ const STEPPERS = {
       return [key(x, y), x, y, 0];
     };
   },
-  turtleCells: () => byWalkRule('turtleCells', squareTurtleStepper()),  // squares: the same steps, the grid half a cell away
+  turtleCells: () => byWalkRule('turtleCells'),  // squares: the same steps, the grid half a cell away
   cardinalCells: () => STEPPERS.cardinal(),
-  triTurtle: () => hexStepper('relative'),  // along triangles: the steps of hexagon cells (see MODES)
+  triTurtle: () => byWalkRule('triTurtle'),  // along triangles: the steps of hexagon cells (see MODES)
   triFixed: () => hexStepper('fixed'),
-  hexTurtle: () => triStepper('lr'),        // along hexagons: the steps of triangle cells
+  hexTurtle: () => byWalkRule('hexTurtle'),  // along hexagons: the steps of triangle cells
   hexFixed: () => triStepper('fixed'),
-  triTurtleCells: () => triStepper('lr'),
+  triTurtleCells: () => byWalkRule('triTurtleCells'),
   triFixedCells: () => triStepper('fixed'),
-  hexTurtleCells: () => hexStepper('relative'),
+  hexTurtleCells: () => byWalkRule('hexTurtleCells'),
   hexFixedCells: () => hexStepper('fixed'),
   squareParity: () => parityStepper('squareParity'), squareParityCells: () => parityStepper('squareParityCells'),
   triParity: () => parityStepper('triParity'), hexParityCells: () => parityStepper('hexParityCells'),
@@ -10859,7 +10860,7 @@ function ruleTutorial(option) {
 // ends as dots; on cells, the cells. On the plane by the walk's own stepper; on a surface, a cell of it or a corner
 // of its grid by its turns (as on its flat tiling). A pivot's and a parity's: the step after dashed (where it heads);
 // a spiral's: its steps so far muted, a 0's step dashed (not drawn)
-const WALK_IN = { turtle: [1], turtleCells: [1], triTurtle: [2], hexTurtleCells: [2], hexTurtle: [0], triTurtleCells: [0], cairo: [1] };  // (a straight step if any)
+const WALK_IN = { turtle: [1], turtleCells: [1], triTurtle: [2], hexTurtleCells: [2], hexTurtle: [0], triTurtleCells: [0], cairo: [1] };  // (a straight step if any; a walk by its rule: a turn)
 const walkTutorialFits = (w) => NAV[w]?.[0] === 'Ant' || (NAV[w]?.[0] === 'Walk' && (MODES[w].lattice === 'sphere' ? !!MODES[w].turns : ['square', 'hex', 'tri', 'cairo'].includes(MODES[w].lattice)));
 // a 2D walk's cell round its middle
 function walkCell(lattice, [x, y]) {
@@ -10881,22 +10882,24 @@ function surfaceStepper(mode, n) {
     return go();
   };
 }
-// the figures: { d, caption, at (the way in, then the step), here (where it steps from), next (dashed), ends, cells, dashed (the step) }
-function walkFigures(w) {
-  const mode = MODES[w], digits = [...Array(mode.base).keys()], words = {}, surface = mode.lattice === 'sphere';
+// the figures: { d, caption, at (the way in, then the step), here (where it steps from), next (dashed), ends, cells, dashed (the step) };
+// a walk by its rule (turnsOf) drawn by its turns, a digit its turn; byTurns: a figure per turn (a creature's, see creatureFigures)
+function walkFigures(w, byTurns = false) {
+  const mode = MODES[w], T = mode.turnsOf && ANTS[mode.turnsOf], turns = T && !byTurns ? walkTurnsOf(w) : null, turnOf = (g) => (turns ? turns[g] : g);
+  const digits = [...Array(T && byTurns ? Object.keys(T.turns).length : mode.base).keys()], words = {}, surface = mode.lattice === 'sphere';
   for (const [, d, t] of mode.rule.matchAll(/<b>(\d+)<\/b>\s*([^<]*)/g)) words[d] = t.replace(/[,\s]+(or\s*)?$/, '');
   const n = mode.sphere === 'hexsphere' ? 6 : Math.max(...(mode.turns ?? [0])) + 1;  // (a surface's cell: the most it turns by and one, but on the sphere of hexagons)
   const start = surface ? [[0, 1], [0, 0]] : [[0, 0]];  // (on a surface: come in from below)
-  const path = (seq) => { const step = surface ? surfaceStepper(mode, n) : STEPPERS[w](); return [...start, ...seq.map((g) => step(g).slice(1, 3))]; };
+  const path = (seq) => { const step = surface ? surfaceStepper(mode, n) : T ? T.inner() : STEPPERS[w](); return [...start, ...seq.map((g) => step(g).slice(1, 3))]; };
   const spiral = /Spiral$|^spiral$/.test(w), cells = mode.cells || spiral;
   // a surface's cell: the one it steps from, a side toward where it came from
   const polygon = (p, q) => { const t = Math.atan2(q[1] - p[1], q[0] - p[0]), R = 0.5 / Math.cos(Math.PI / n); return [...Array(n).keys()].map((k) => [p[0] + R * Math.cos(t + ((2 * k + 1) * Math.PI) / n), p[1] + R * Math.sin(t + ((2 * k + 1) * Math.PI) / n)]); };
   const figure = (d, into, after = [], caption = words[d]) => {
-    const at = path([...into, d, ...after]), here = start.length - 1 + into.length, notches = mode.pivot ?? mode.parity;
+    const at = path([...into, turnOf(d), ...after]), here = start.length - 1 + into.length, notches = mode.pivot ?? mode.parity;
     // the ways on: each digit's end; a pivot's or a parity's, round it along its fixed directions (a surface's, its notches)
     const round = () => (surface ? [...Array(notches).keys()].map((k) => [Math.cos(Math.PI / 2 + (2 * Math.PI * k) / notches), -Math.sin(Math.PI / 2 + (2 * Math.PI * k) / notches)])
       : [...Array(MODES[mode.steps].base).keys()].map((g) => STEPPERS[mode.steps]()(g).slice(1, 3))).map((o) => [at[here][0] + o[0], at[here][1] + o[1]]);
-    const ends = spiral ? [] : notches ? round() : digits.map((g) => path([...into, g]).at(-1));
+    const ends = spiral ? [] : notches ? round() : digits.map((g) => path([...into, turnOf(g)]).at(-1));
     const drawn = !cells ? [] : surface ? [polygon(at[here], at[here - 1])] : [...new Map([...at, ...ends].map((p) => [pointKey(...p), walkCell(mode.lattice, p)])).values()];
     return { d, caption, at: at.slice(0, here + 2), next: at.slice(here + 1), ends, here, dashed: spiral && !d, cells: drawn };
   };
@@ -10912,14 +10915,14 @@ function walkFigures(w) {
 const ANT_WALKS = { antSquare: 'turtleCells', antTri: 'triTurtleCells', antHex: 'hexTurtleCells', antCairo: 'cairo' };  // (else on a surface: its walk's)
 function creatureFigures(w) {
   const m = MODES[w];
-  if (m.worm) { const figs = walkFigures('triTurtle'); return Object.entries(WORM_TURNS).map(([t, d]) => ({ ...figs[d], label: `<b>${t}</b>`, caption: TURN_WORDS[t] })); }
+  if (m.worm) { const figs = walkFigures('triTurtle', true); return Object.entries(WORM_TURNS).map(([t, d]) => ({ ...figs[d], label: `<b>${t}</b>`, caption: TURN_WORDS[t] })); }
   if (m.turmite) {
     const { table, C } = turmiteOf(turmite.rule), square = [[-0.5, -0.5], [0.5, -0.5], [0.5, 0.5], [-0.5, 0.5]];
     const step = (t) => { const a = ((90 + [90, 0, -90, 180][t]) * Math.PI) / 180; return [Math.cos(a), -Math.sin(a)]; };  // (left, straight on, right, back)
     return table.flatMap((row, st) => row.map((e, c) => ({ at: [[0, 1], [0, 0], step(e.turn)], here: 1, ends: [], cells: [square], paint: [rampColour(c, C), rampColour(e.write, C)],
       label: `<b>state ${st}, colour ${c}</b>:`, caption: `turns ${['left', 'straight on', 'right', 'back'][e.turn]}, leaves ${e.write}, then state ${e.next}` })));
   }
-  const A = ANTS[w], figs = walkFigures(ANT_WALKS[w] ?? m.antOf);
+  const A = ANTS[w], figs = walkFigures(ANT_WALKS[w] ?? m.antOf, true);
   if (antByDigits) {
     const light = rampColour(0, 2), dark = rampColour(1, 2);
     return turnWords(antDigitRules[w]).flatMap((t, d) => [[t, light, dark, 'a light'], [MIRROR[t], dark, light, 'a dark']]
@@ -13653,7 +13656,7 @@ function applySetup(s) {
     else if (antTurnsOf(s.w, s.r)) antRules[s.w] = s.r;
   } else if (MODES[s.w].turnsOf) {
     const t = MODES[s.w].turnsOf;
-    walkRules[t] = s.r && antTurnsOf(t, s.r) ? turnWords(s.r).join('') : WALK_RULE[t];
+    walkRules[t] = s.r && antTurnsOf(t, s.r) ? ruleOfWords(turnWords(s.r)) : WALK_RULE[t];
   } else if (s.r || MODES[s.w].life) {  // (Life: its size and start without a rule too, the grid's first then)
     if (MODES[s.w].plane) planeFromSetup(s);
     else startFromSetup(s);  // (a surface's)

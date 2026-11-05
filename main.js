@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.179';
+const VERSION = '0.4.180';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -6648,11 +6648,9 @@ function sheetDelta(g, G, a, b) {
 // solid). The turn is measured on the plane tangent at v; on a torus, on its flat sheet (east, north;
 // see torusPoint): rolled up, its tiles are bent unevenly, squeezed on the inside of the ring and
 // stretched outside, which would change the edge a turn picks from place to place, so a repeating
-// pattern would not repeat. On a Möbius strip, round the corner tile by tile (see nextCornerAround); on a Klein bottle, its
-// walker's left carried (see nextCornerCarried)
+// pattern would not repeat. On a Möbius strip and a Klein bottle, its walker's left carried (see nextCornerCarried)
 function nextCorner(g, G, v, from, angle) {
   if (Math.abs(Math.abs(angle) - Math.PI) < 1e-9) return from;  // a half turn: back
-  if (g.mobius) return nextCornerAround(g, v, from, angle);
   const V = g.verts, n = g.torus ? [0, 0, 1] : [0, 1, 2].map((d) => G.normal[3 * v + d]), nl = Math.hypot(...n);
   const flat = (w) => {  // the edge from v to w, flattened onto the plane tangent at v (or on the sheet)
     if (g.torus) { const [du, dv] = sheetDelta(g, G, v, w); return [(du / g.nu) * 2 * Math.PI, (dv / g.nv) * 2 * Math.PI * tubeOf(g), 0]; }
@@ -6671,50 +6669,16 @@ function nextCorner(g, G, v, from, angle) {
   return next;
 }
 
-/* On a Möbius strip's faces, the turn is measured going round the corner, tile by tile (their
- * corners' angles, counterclockwise), and in proportion to the whole way round: where the faces meet
- * on a zigzag edge (hexagons), a corner is not flat, 240° round at an outer corner, 480° at an inner
- * one; straight on is halfway round, a turn of 60° a sixth of the way. On a flat corner, the turns of
- * nextCorner. The wedges of each corner: [the corner it starts towards, the one it ends towards,
- * its angle], once per mesh. */
-function cornerWedges(g) {
-  if (g.wedges) return g.wedges;
-  const k = g.sides, W = Array.from({ length: g.verts.length / 3 }, () => []);
-  for (let t = 0; t < g.n; t++) for (let q = 0; q < k; q++) {
-    const i = 2 * (k * t + q), a = 2 * (k * t + (q + 1) % k), b = 2 * (k * t + (q + k - 1) % k), uv = g.uv;
-    const ax = uv[a] - uv[i], ay = uv[a + 1] - uv[i + 1], bx = uv[b] - uv[i], by = uv[b + 1] - uv[i + 1];
-    const angle = Math.acos(Math.max(-1, Math.min(1, (ax * bx + ay * by) / Math.hypot(ax, ay) / Math.hypot(bx, by))));
-    W[g.poly[k * t + q]].push([g.poly[k * t + (q + 1) % k], g.poly[k * t + (q + k - 1) % k], angle]);
-  }
-  return (g.wedges = W);
-}
-function nextCornerAround(g, v, from, angle) {
-  const W = cornerWedges(g)[v], at = [];
-  let e = from, phi = 0;
-  for (let guard = 0; guard < 16; guard++) {  // counterclockwise from the edge it came by, back to it
-    const wedge = W.find(([w]) => w === e);
-    if (!wedge) break;
-    phi += wedge[2];
-    e = wedge[1];
-    if (e === from) break;
-    at.push([e, phi]);
-  }
-  const target = ((Math.PI + angle) * phi) / (2 * Math.PI);  // straight on: halfway round
-  let next = at[0]?.[0] ?? from, err = Infinity;
-  for (const [w, p] of at) {
-    const off = Math.abs(p - target) - (p > target ? 1e-9 : 0);  // on a tie, the left one
-    if (off < err - 1e-12) { err = off; next = w; }
-  }
-  return next;
-}
-
-/* On a Klein bottle (one-sided: round a corner on its seam, some tiles listed one way, some the other), a walker along the
- * grid carries its left: the tile on its left of the edge it came by, its frame. A turn is measured round the corner from
- * that edge, through its frame and on, tile to tile by the edges they share (never by their listing), in proportion to the
- * whole way round as nextCornerAround (its angles on the flat sheet, as nextCorner's); its new frame, the tile passed last
- * before the edge it leaves by. Its next corner and frame */
+/* On a Möbius strip and a Klein bottle, a walker along the grid carries its left: the tile on its left of the edge it came
+ * by, its frame (a Klein bottle one-sided: round a corner on its seam, some tiles listed one way, some the other; a Möbius
+ * strip's corner on both its faces). A turn is measured round the corner from that edge, through its frame and on, tile to
+ * tile by the edges they share (on its face while there is one: over the strip's edge onto the face behind), in proportion
+ * to the whole way round: where the faces meet on a zigzag edge (hexagons), a corner is not flat, 240° round at an outer
+ * corner, 480° at an inner one; straight on is halfway round, a turn of 60° a sixth of the way; on a flat corner, the turns
+ * of nextCorner (its angles on the flat sheet). Its new frame, the tile passed last before the edge it leaves by. Its next
+ * corner and frame */
 function nextCornerCarried(g, G, v, from, frame, angle) {
-  const k = g.sides, flat = (i) => [(g.uv[i] / g.nu) * 2 * Math.PI, (g.uv[i + 1] / g.nv) * 2 * Math.PI * tubeOf(g)];
+  const k = g.sides, flat = (i) => (g.mobius ? [g.uv[i], g.uv[i + 1]] : [(g.uv[i] / g.nu) * 2 * Math.PI, (g.uv[i + 1] / g.nv) * 2 * Math.PI * tubeOf(g)]);
   const corner = (t) => {  // (tile t at v: its two edges' far corners, its angle)
     const q = g.poly.subarray(k * t, k * t + k).indexOf(v), [o, a, b] = [0, 1, k - 1].map((r) => flat(2 * (k * t + ((q + r) % k))));
     const u = [a[0] - o[0], a[1] - o[1]], w = [b[0] - o[0], b[1] - o[1]];
@@ -6727,7 +6691,7 @@ function nextCornerCarried(g, G, v, from, frame, angle) {
     phi += angleAt;
     if (out === from) break;
     at.push([out, phi, t]);
-    [e, t] = [out, G.edgeTiles.get(G.key(v, out)).find((s) => s !== t)];
+    [e, t] = [out, acrossEdge(g, G, t, v, out)];
   }
   const target = ((Math.PI - angle) * phi) / (2 * Math.PI);  // (its left first: a left turn of a, π − a round; straight on, halfway)
   let best = at[0] ?? [from, 0, frame], err = Infinity;
@@ -6737,17 +6701,16 @@ function nextCornerCarried(g, G, v, from, frame, angle) {
   }
   return [best[0], best[2]];
 }
+// the tile across edge v–w from tile t: on t's face (a Möbius strip's edge inside it has a tile each side on both faces),
+// else the other face's (over its edge)
+const acrossEdge = (g, G, t, v, w) => { const sides = G.edgeTiles.get(G.key(v, w)).filter((s) => s !== t); return sides.find((s) => !g.mobius || (s < g.front) === (t < g.front)) ?? sides[0]; };
 // a walk along the grid's state at its start, at v from corner from: [v, from, p, q] (p, q: a pivot's and a parity's, see
-// surfaceSteps), a Klein bottle's its frame too (its walker's left carried, see nextCornerCarried): the tile on its left
-// (on the sheet, its middle left of the step, as nextCorner turns: east, north)
+// surfaceSteps), a Möbius strip's and a Klein bottle's its frame too (its walker's left carried, see nextCornerCarried): the
+// tile listing the step, from then v (a Möbius strip's on its front face)
 function gridState(g, [v, from]) {
-  if (!g.klein) return [v, from, 0, 0];
-  const G = gridGraph(g), k = g.sides, side = (t) => {
-    const P = Array.from(g.poly.subarray(k * t, k * t + k)), uv = (u) => { const i = 2 * (k * t + P.indexOf(u)); return [g.uv[i], g.uv[i + 1]]; };
-    const [f, o] = [uv(from), uv(v)], m = [0, 1].map((d) => P.reduce((sum, _, q) => sum + g.uv[2 * (k * t + q) + d], 0) / k);
-    return (o[0] - f[0]) * (m[1] - f[1]) - (o[1] - f[1]) * (m[0] - f[0]);
-  };
-  return [v, from, 0, 0, G.edgeTiles.get(G.key(from, v)).find((t) => side(t) > 0)];
+  if (!g.mobius && !g.klein) return [v, from, 0, 0];
+  const G = gridGraph(g), k = g.sides, lists = (t) => g.poly[k * t + ((g.poly.subarray(k * t, k * t + k).indexOf(from) + 1) % k)] === v;
+  return [v, from, 0, 0, G.edgeTiles.get(G.key(from, v)).find((t) => (!g.mobius || t < g.front) && lists(t))];
 }
 
 /* ---- Loops of a fraction on a torus -----------------------------------------------------------
@@ -6896,17 +6859,17 @@ function surfaceSteps(g, mode, acts = surfaceActs(mode)) {
   // then p a notch right at an odd digit, left at an even one (q: the parity of the digits read)
   const parity = acts.some(([kind]) => kind === 'parity');
   if (mode.grid) {
-    const G = gridGraph(g), k = g.sides, N = SURFACE_NOTCHES[mode.net] ?? 1;
+    const G = gridGraph(g), k = g.sides, N = SURFACE_NOTCHES[mode.net] ?? 1, carried = g.mobius || g.klein;  // (its walker's left carried, see nextCornerCarried)
     const corner = (v) => mobiusAt(g, G.tileOf[v], cornerUv(g, G, v));
     return { start: (i) => gridState(g, starts[i]),
              step: ([v, from, p, q, frame], d) => {
-               const [kind, by] = acts[d], read = parity ? 1 - q : 0, more = g.klein ? [frame] : [];
+               const [kind, by] = acts[d], read = parity ? 1 - q : 0, more = carried ? [frame] : [];
                if (kind === 'pivot') return [v, from, (p + by + N) % N, read, ...more];  // (a turn on the spot: no step)
                const angle = (kind === 'turn' ? (by * Math.PI) / 180 : 0) - (2 * Math.PI * p) / N;
-               const [next, framed] = g.klein ? nextCornerCarried(g, G, v, from, frame, angle) : [nextCorner(g, G, v, from, angle)];
-               return [next, v, kind === 'parity' ? (q ? -1 : 1) : 0, read, ...(g.klein ? [framed] : [])];  // (−1, not N − 1: nextCorner takes the angle as it is)
+               const [next, framed] = carried ? nextCornerCarried(g, G, v, from, frame, angle) : [nextCorner(g, G, v, from, angle)];
+               return [next, v, kind === 'parity' ? (q ? -1 : 1) : 0, read, ...(carried ? [framed] : [])];  // (−1, not N − 1: nextCorner takes the angle as it is)
              },
-             key: ([v, from, p, q, frame]) => { const key = ((v * G.nv + from) * N + ((p + N) % N)) * 2 + q; return g.klein ? key * 2 + (frame === G.edgeTiles.get(G.key(v, from))[0] ? 0 : 1) : key; },
+             key: ([v, from, p, q, frame]) => { const key = ((v * G.nv + from) * N + ((p + N) % N)) * 2 + q; return carried ? key * 4 + G.edgeTiles.get(G.key(v, from)).indexOf(frame) : key; },
              sheet: ([a], [b]) => (g.mobius ? mobiusDelta(g, corner(a), corner(b)) : sheetDelta(g, G, a, b)) };
   }
   // Entering a tile through edge k (corners counterclockwise), the digit d leaves through edge

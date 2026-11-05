@@ -612,6 +612,7 @@ button.wide.active, .head-btn.active { border-color: var(--accent); color: var(-
 .tut-walk .tut-next { stroke: var(--accent); stroke-width: 0.07; stroke-dasharray: 0.12 0.12; }
 .tut-walk .tut-dashed { stroke-dasharray: 0.18 0.16; }
 .tut-walk .tut-cell { fill: none; stroke: var(--border); stroke-width: 0.03; }
+.tut-battle figure svg { width: 132px; height: 132px; }  /* (a battle's case: a piece of its grid, bigger) */
 .tut-walk .tut-cell-here { fill: var(--border); stroke: var(--border); stroke-width: 0.03; }
 .tut-walk .tut-cell-to { fill: color-mix(in srgb, var(--accent) 25%, transparent); stroke: var(--accent); stroke-width: 0.04; }
 .tut-row .tut-centre { stroke: var(--accent); stroke-linejoin: round; }

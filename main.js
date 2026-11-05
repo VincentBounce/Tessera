@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.125';
+const VERSION = '0.4.126';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -1237,28 +1237,14 @@ const MODES = {
                    where: 'a sphere of hexagons (its 12 pentagons are walls)' },
   lifeTwistedSphere: { base: 2, lattice: 'sphere', sphere: 'twistedsphere', life: true, round: true,
                        where: 'a sphere of hexagons turned 15°, a triangle between each three (Twisted on a sphere, its 12 pentagons too)' },
-  cubeRel:  { base: 5, arrows: '←⊙↑⊗→', lattice: 'cube', twin: 'cubeRelCells', perspective: true,
-              rule: 'in 3D cubes, relative to your heading: <b>0</b> turn left, <b>1</b> up, <b>2</b> straight, <b>3</b> down, <b>4</b> turn right' },
-  cubeFixed: { base: 6, arrows: '↑→⊙↓←⊗', lattice: 'cube', twin: 'cubeFixedCells', perspective: true,
-              rule: 'in 3D cubes: <b>0</b> north, <b>1</b> east, <b>2</b> up, <b>3</b> south, <b>4</b> west, <b>5</b> down' },
+  cubeRel:  { lattice: 'cube', twin: 'cubeRelCells', perspective: true, net: 'cube', where: 'in 3D cubes' },
   diag: { base: 8, lattice: 'cube', twin: 'diagCells', perspective: true,
           rule: 'along the diagonals of the cubes, to one of their 8 corners (the 3 bits of each digit the signs of east, north and up): <b>0</b> SW down, <b>1</b> SW up, <b>2</b> NW down, <b>3</b> NW up, <b>4</b> SE down, <b>5</b> SE up, <b>6</b> NE down, <b>7</b> NE up' },
-  diamond: { base: 3, arrows: '↖↑↗', lattice: 'cube', perspective: true,
-             rule: 'along the bonds of a diamond, as a polymer chain: <b>0</b> gauche left, <b>1</b> trans (the zigzag goes on), <b>2</b> gauche right' },
+  diamond: { lattice: 'cube', perspective: true, net: 'diamond', where: 'along the bonds of a diamond, as a polymer chain (straight: trans, the zigzag goes on; left, right: gauche)' },
   // the same steps from cell to cell (their centres make the same lattice), the cells coloured (see gpuCubes)
-  cubeRelCells: { base: 5, arrows: '←⊙↑⊗→', lattice: 'cube', cells: true, twin: 'cubeRel', perspective: true,
-              rule: 'from cube to cube, relative to your heading: <b>0</b> turn left, <b>1</b> up, <b>2</b> straight, <b>3</b> down, <b>4</b> turn right' },
-  cubeFixedCells: { base: 6, arrows: '↑→⊙↓←⊗', lattice: 'cube', cells: true, twin: 'cubeFixed', perspective: true,
-              rule: 'from cube to cube: <b>0</b> north, <b>1</b> east, <b>2</b> up, <b>3</b> south, <b>4</b> west, <b>5</b> down' },
+  cubeRelCells: { lattice: 'cube', cells: true, twin: 'cubeRel', perspective: true, net: 'cube', where: 'from cube to cube' },
   diagCells: { base: 8, lattice: 'cube', cells: true, twin: 'diag', shape: 'truncOcta', perspective: true,
                rule: 'from truncated octahedron to truncated octahedron (they fill space), through a hexagon (the 3 bits of each digit the signs of east, north and up): <b>0</b> SW down, <b>1</b> SW up, <b>2</b> NW down, <b>3</b> NW up, <b>4</b> SE down, <b>5</b> SE up, <b>6</b> NE down, <b>7</b> NE up' },
-  // Pivot: 0 a step straight on, 1 a turn on the spot by a notch clockwise (pivot: the notches of a whole turn), with no
-  // step: the turtle of the L-systems (F and +); Parity: a step forward at each digit, then after a 1 a turn by a notch,
-  // right at an odd digit (the 1st, 3rd…), left at an even one. On the plane, rules of its walks (N r, N a: see 6.4b)
-  cubesPivot: { base: 3, arrows: '↑→⊙', lattice: 'cube', twin: 'cubesPivotCells', perspective: true, pivot: 4,
-                rule: 'in 3D cubes: <b>0</b> step forward, <b>1</b> turn right on the spot, <b>2</b> turn up on the spot' },
-  cubesPivotCells: { base: 3, arrows: '↑→⊙', lattice: 'cube', cells: true, twin: 'cubesPivot', perspective: true, pivot: 4,
-                     rule: 'from cube to cube: <b>0</b> step forward, <b>1</b> turn right on the spot, <b>2</b> turn up on the spot' },
 };
 
 
@@ -2837,7 +2823,7 @@ const MODE_ICONS = {
   turtle: 'grid', triTurtle: 'triangleFilled', hexTurtle: 'hexagonFilled',
   turtleCells: 'grid', triTurtleCells: 'triangleFilled', hexTurtleCells: 'hexagonFilled',
   cairo: 'pentagons', antSquare: 'grid', turmite: 'turmite', antTri: 'triangleFilled', worm: 'worm', antHex: 'hexagonFilled', antCairo: 'pentagons', antCube: 'cube', antHexSphere: 'hexagon', antIcosa: 'icosahedron',
-  cubeRel: 'cubeFilled', cubeFixed: 'cube', cubeRelCells: 'cubeFilled', cubeFixedCells: 'cube', diag: 'cube', diagCells: 'cube', diamond: 'tetrahedron', torusWalk: 'torus', torusTriWalk: 'torus', torusHexWalk: 'torus', cubeFlat: 'cube', mobiusWalk: 'mobius', mobiusGrid: 'mobius', mobiusHexGrid: 'mobius', mobiusHexWalk: 'mobius', mobiusTriGrid: 'mobius', mobiusTriWalk: 'mobius',
+  cubeRel: 'cubeFilled', cubeRelCells: 'cubeFilled', diag: 'cube', diagCells: 'cube', diamond: 'tetrahedron', torusWalk: 'torus', torusTriWalk: 'torus', torusHexWalk: 'torus', cubeFlat: 'cube', mobiusWalk: 'mobius', mobiusGrid: 'mobius', mobiusHexGrid: 'mobius', mobiusHexWalk: 'mobius', mobiusTriGrid: 'mobius', mobiusTriWalk: 'mobius',
   tetraLR: 'tetrahedron', octaLR: 'octahedron', stellaLR: 'stella', stellaGrid: 'stella', lifeStella: 'stella', dodecaLR: 'dodecahedron', dodecaGrid: 'dodecahedron', lifeDodeca: 'dodecahedron', icosaLR: 'icosahedron',
   torusGrid: 'torus', torusTriGrid: 'torus', torusHexGrid: 'torus', cubeGrid: 'cube', tetraGrid: 'tetrahedron', octaGrid: 'octahedron',
   icosaGrid: 'icosahedron', hexSphereWalk: 'hexagon', /* icosaGrid2: 'icosahedron', icosaGrid3: 'icosahedron', */ hexSphereGrid: 'hexagon',
@@ -2868,7 +2854,6 @@ const NAV = {
   hexSpiral: ['Walk', '2D', 'Hexagons', 'Spiral', ''],
   cairo: ['Walk', '2D', 'Cairo', 'Turtle', 'cells'], cairoSpiral: ['Walk', '2D', 'Cairo', 'Spiral', ''],
   cubeRel: ['Walk', '3D', 'Cubes', 'Turtle', 'grid'], cubeRelCells: ['Walk', '3D', 'Cubes', 'Turtle', 'cells'],
-  cubeFixed: ['Walk', '3D', 'Cubes', 'Fixed', 'grid'], cubeFixedCells: ['Walk', '3D', 'Cubes', 'Fixed', 'cells'],
   diag: ['Walk', '3D', 'Cubes', 'Diagonals', 'grid'], diagCells: ['Walk', '3D', 'Cubes', 'Diagonals', 'cells'],
   diamond: ['Walk', '3D', 'Diamond', 'Polymer', 'grid'],
   cubeGrid: ['Walk', 'Surfaces', 'Cube', 'Turtle', 'grid'], cubeFlat: ['Walk', 'Surfaces', 'Cube', 'Turtle', 'cells'],
@@ -2906,7 +2891,6 @@ const NAV = {
   lifeMobiusKite: ['Life', 'Surfaces', 'Möbius strip', 'Life', ''], lifeKleinKite: ['Life', 'Surfaces', 'Klein bottle', 'Life', ''], lifeTetraKite: ['Life', 'Surfaces', 'Tetrahedron', 'Life', ''],
   lifeOctaKite: ['Life', 'Surfaces', 'Octahedron', 'Life', ''], lifeIcosaKite: ['Life', 'Surfaces', 'Sphere', 'Life', ''],
   lifeStellaKite: ['Life', 'Surfaces', 'Stella octangula', 'Life', ''], lifeDodecaKite: ['Life', 'Surfaces', 'Dodecahedron', 'Life', ''], lifeCubocta: ['Life', 'Surfaces', 'Cuboctahedron', 'Life', ''], lifePyramid: ['Life', 'Surfaces', 'Pyramid', 'Life', ''], lifeRhombi: ['Life', 'Surfaces', 'Rhombicuboctahedron', 'Life', ''], lifeBicupola: ['Life', 'Surfaces', 'Bicupola', 'Life', ''], lifeGlobe: ['Life', 'Surfaces', 'Globe', 'Life', ''],
-  cubesPivot: ['Walk', '3D', 'Cubes', 'Pivot', 'grid'], cubesPivotCells: ['Walk', '3D', 'Cubes', 'Pivot', 'cells'],
 };
 // the tilings' Life on the plane (see TILINGS): their modes, after the hats
 const tilingMode = (kind) => `life2d${kind[0].toUpperCase()}${kind.slice(1)}`;
@@ -2972,7 +2956,6 @@ for (const [w, life] of [['loops2d', 'life2d'], ['loopsTorus', 'lifeTorus'], ['l
 MODES.elementary2d = { ...MODES.life2d, elementary: true, where: 'an unbounded grid of squares, a row a generation, each cell by the three above it' };
 MODE_ICONS.elementary2d = MODE_ICONS.life2d;
 NAV.elementary2d = ['Elementary', NAV.life2d[1], NAV.life2d[2], 'Wolfram', ''];
-MODE_ICONS.cubesPivot = MODE_ICONS.cubesPivotCells = 'pivot';
 MODE_ICONS.lifePits = 'pits';
 MODE_ICONS.lifeBumps = 'bumps';
 MODE_ICONS.lifeMenger = 'menger';
@@ -3176,7 +3159,7 @@ function creatureRules(w) {
   if (N) return { now: walkRules[walkKey(m)], typed: true, set: (r) => setWalkRule(w, r),  // (a surface: the rules it can take only)
                   cards: WALK_PRESETS[m.net].flatMap(([r, family, pic]) => { const words = ruleWords(r), why = words.map((t) => walkWordWhy(m, t)).find(Boolean) ?? '';
                     return surface && why ? [] : [[r, `${family} · base ${words.length}`, icon(pic), why, words.map((t, d) => `${d} ${WORD_TEXT[t]}`).join(', ')]]; }),
-                  name: `Rule, a word per digit: ${surface ? surfaceWords(m.net).join(' ') : [...Object.keys(N.turns), ...Object.keys(N.ways ?? {}), ...(N.notch ? ['l', 'r', 'a'] : [])].join(' ')}` };
+                  name: `Rule, a word per digit: ${surface ? surfaceWords(m.net).join(' ') : [...Object.keys(N.turns), ...Object.keys(N.ways ?? {}), ...(N.notch ? ['l', 'r', 'a'] : []), ...Object.keys(N.spots ?? {})].join(' ')}` };
   if (MODES[w].worm) return { byDigits: worm.byDigits, now: worm.rule, typed: !worm.byDigits, cards: worm.byDigits ? [] : WORM_PRESETS.map((r, i) => [r, WORM_WORDS[i]]), set: setWormRule,
                               name: 'Rule, a turn at each new corner: L2, L1, N, R1, R2' };
   if (MODES[w].turmite) return { now: turmite.rule, typed: true, cards: TURMITE_PRESETS.map((r, i) => [r, TURMITE_WORDS[i]]), set: setTurmiteRule,
@@ -4176,53 +4159,46 @@ const STEPPERS = {
   triSpiral: () => triStepper('spiral'),
   hexSpiral: () => hexSpiralStepper(),
   cairoSpiral: () => cairoStepper(true),
-  cubeRel: () => cubeStepper(true),
-  cubeFixed: () => cubeStepper(false),
-  cubeRelCells: () => cubeStepper(true),
-  cubesPivot: () => cubePivotStepper(), cubesPivotCells: () => cubePivotStepper(),
-  cubeFixedCells: () => cubeStepper(false),
+  cubeRel: () => walkStepper('cubeRel'),
+  cubeRelCells: () => walkStepper('cubeRelCells'),
   diag: () => diagStepper(),
   diagCells: () => diagStepper(),
-  diamond: () => diamondStepper(),
+  diamond: () => walkStepper('diamond'),
 };
 
 /* ---- 6.2 Cubic lattice ----------------------------------------------------------------------- */
-/* Cubic lattice: x = east, y = north, z = up.
- * Fixed: 0 = N, 1 = E, 2 = up, 3 = S, 4 = W, 5 = down (opposites are 3 apart).
- * Relative: frame (forward f, up u), left = u × f.
- *   0 = left, 1 = pitch up, 2 = straight, 3 = pitch down, 4 = right. */
+/* Cubic lattice: x = east, y = north, z = up. Its ways: 0 = N, 1 = E, 2 = up, 3 = S, 4 = W, 5 = down (opposites are 3
+ * apart). Its walker's frame: forward f, up u, left = u × f. */
 const CUBE_DIRS = [[0, 1, 0], [1, 0, 0], [0, 0, 1], [0, -1, 0], [-1, 0, 0], [0, 0, -1]];
 const neg = (a) => [-a[0], -a[1], -a[2]];
 
-function cubeStepper(relative) {
-  let x = 0, y = 0, z = 0;
-  let f = [0, 1, 0], u = [0, 0, 1]; // start facing north, head up
+// The cubes' walker by a rule's acts (see wordStepper), from north, head up: a turn (0 left, 1 up, 2 straight, 3 down, 4
+// right, 5 back) then a step; a way (CUBE_DIRS), its head kept but along it (then pitched); on the spot, a quarter turn
+// right or left (pivot) or up (pitch); a parity's step, then a quarter turn right at an odd digit, left at an even one. Its
+// hidden state last, for walkRepeat: its head (a turn), its heading too (on the spot) and the digits' parity
+function cubeStepper(acts) {
+  let x = 0, y = 0, z = 0, f = [0, 1, 0], u = [0, 0, 1], read = 0;
+  const same = (a, b) => a[0] === b[0] && a[1] === b[1] && a[2] === b[2], yaw = (by) => { f = by > 0 ? cross(f, u) : cross(u, f); };
+  const relative = acts.some(([k]) => k !== 'way'), spot = acts.some(([k]) => k !== 'turn' && k !== 'way'), parity = acts.some(([k]) => k === 'parity');
   return (g) => {
-    let d;
-    if (relative) {
-      const left = cross(u, f);
-      if (g === 0) f = left;
-      else if (g === 1) [f, u] = [u, neg(f)];
-      else if (g === 3) [f, u] = [neg(u), f];
-      else if (g === 4) f = neg(left);
-      d = f;
-    } else {
-      d = CUBE_DIRS[g];
+    const [kind, by] = acts[g];
+    read++;
+    if (kind === 'pivot') yaw(by);
+    else if (kind === 'pitch') [f, u] = [u, neg(f)];
+    else {
+      if (kind === 'turn') {
+        if (by === 0 || by === 4) yaw(by - 2);
+        else if (by === 1) [f, u] = [u, neg(f)];
+        else if (by === 3) [f, u] = [neg(u), f];
+        else if (by === 5) f = neg(f);
+      } else if (kind === 'way') {
+        const d = CUBE_DIRS[by];
+        [f, u] = same(d, u) ? [d, neg(f)] : same(d, neg(u)) ? [d, f] : [d, u];
+      }
+      x += f[0]; y += f[1]; z += f[2];
+      if (kind === 'parity') yaw(read % 2 ? 1 : -1);
     }
-    x += d[0]; y += d[1]; z += d[2];
-    return [key3(x, y, z), x, y, z, relative ? u.join() : ''];  // and the roll, for walkRepeat
-  };
-}
-
-// A pivot walk in 3D cubes: 0 a step forward, 1 a quarter turn right, 2 a quarter turn up, both on the
-// spot; its heading and its head (for walkRepeat) come last
-function cubePivotStepper() {
-  let x = 0, y = 0, z = 0, f = [0, 1, 0], u = [0, 0, 1];  // facing north, head up
-  return (g) => {
-    if (g === 1) f = cross(f, u);  // right
-    else if (g === 2) [f, u] = [u, neg(f)];  // up
-    else { x += f[0]; y += f[1]; z += f[2]; }
-    return [key3(x, y, z), x, y, z, `${f} ${u}`];
+    return [key3(x, y, z), x, y, z, spot ? `${f} ${u}${parity ? ` ${read % 2}` : ''}` : relative ? u.join() : ''];
   };
 }
 
@@ -4360,9 +4336,12 @@ const WALK_NETS = {
          arrows: { L2: '↙', L1: '↖', N: '↑', R1: '↗', R2: '↘', U: '↓', n: '↑', ne: '↗', se: '↘', s: '↓', sw: '↙', nw: '↖' } },
   tri: { straight: 'L', turns: { L: 0, R: 1 }, ways: { '|': 0, '\\': 1, '/': 2 }, arrows: { L: '↖', R: '↗' } },  // (three ways out: no straight on, no turn on the spot)
   cairo: { straight: 'L1', turns: { L2: 0, L1: 1, R1: 2, R2: 3 }, arrows: { L2: '↙', L1: '↖', R1: '↗', R2: '↘' } },
+  cube: { notch: 1, straight: 'N', turns: { L: 0, '^': 1, N: 2, v: 3, R: 4, U: 5 }, ways: { n: 0, e: 1, u: 2, s: 3, w: 4, d: 5 }, spots: { p: ['pitch'] },  // (see cubeStepper)
+          arrows: { L: '←', '^': '⊙', N: '↑', v: '⊗', R: '→', U: '↓', n: '↑', e: '→', u: '⊙', s: '↓', w: '←', d: '⊗', p: '⊙' } },
+  diamond: { straight: 'N', turns: { L: 0, N: 1, R: 2 }, arrows: { L: '↖', N: '↑', R: '↗' } },  // (gauche left, trans, gauche right: see diamondStepper)
 };
 const SPOT_ARROWS = { l: '↺', r: '↻', a: '↝' };
-const WORD_TEXT = { ...TURN_WORDS, U: 'back', l: 'turn left on the spot', r: 'turn right on the spot', a: 'step, then turn right at an odd digit, left at an even one',
+const WORD_TEXT = { ...TURN_WORDS, U: 'back', '^': 'up', v: 'down', p: 'turn up on the spot', u: 'up', d: 'down', l: 'turn left on the spot', r: 'turn right on the spot', a: 'step, then turn right at an odd digit, left at an even one',
                     n: 'north', ne: 'north-east', e: 'east', se: 'south-east', s: 'south', sw: 'south-west', w: 'west', nw: 'north-west', '|': 'up or down', '\\': 'along \\', '/': 'along /' };
 // a rule's words: spaced, else a letter each (L1, R2 one word)
 const ruleWords = (rule) => { const t = String(rule ?? '').trim(); return !t ? [] : /\s/.test(t) ? t.split(/\s+/) : t.match(/[LR][12]|./g); };
@@ -4374,6 +4353,7 @@ function wordAct(net, word) {
   if (Object.hasOwn(N.turns, word)) return ['turn', N.turns[word]];
   if (N.ways && Object.hasOwn(N.ways, word)) return ['way', N.ways[word]];
   if (N.notch && (word === 'l' || word === 'r')) return ['pivot', word === 'l' ? -N.notch : N.notch];
+  if (N.spots && Object.hasOwn(N.spots, word)) return N.spots[word];
   return N.notch && word === 'a' ? ['parity', N.notch] : null;
 }
 // The stepper of a network with headings (squares, hexagons), by a rule's acts; its hidden state last (as a cube's roll, for
@@ -4399,10 +4379,12 @@ function wordStepper(net, words) {
   const acts = words.map((t) => wordAct(net, t));
   if (net === 'tri') return triStepper(acts);
   if (net === 'cairo') { const step = cairoStepper(); return (g) => step(acts[g][1]); }
+  if (net === 'diamond') { const step = diamondStepper(); return (g) => step(acts[g][1]); }
+  if (net === 'cube') return cubeStepper(acts);
   return headingStepper(WALK_NETS[net], acts);
 }
 // Each walk's rule, kept per network, the plane's and the surfaces' apart (a surface: turns only); its defaults, the turtles'
-const WALK_RULE = { square: 'LNR', hex: 'L2 L1 N R1 R2', tri: 'LR', cairo: 'L2 L1 R1 R2' };
+const WALK_RULE = { square: 'LNR', hex: 'L2 L1 N R1 R2', tri: 'LR', cairo: 'L2 L1 R1 R2', cube: 'L ^ N v R', diamond: 'LNR' };
 const walkKey = (m) => (m.lattice === 'sphere' ? `${m.net} surface` : m.net);
 const walkRules = Object.fromEntries(Object.entries(WALK_RULE).flatMap(([net, r]) => [[net, r], [`${net} surface`, r]]));
 const surfaceWords = (net) => Object.keys(WALK_NETS[net].turns).filter((t) => t !== 'U');  // (a surface's turns, left to right)
@@ -4443,6 +4425,8 @@ const WALK_PRESETS = {
   hex: [['L2 L1 N R1 R2', 'Turtle', 'turtle'], ['L1 N R1', 'Turtle', 'turtle'], ['L1 R1', 'Turtle', 'turtle'], ['N r', 'Pivot', 'pivot'], ['N a', 'Parity', 'walk2d'], ['n ne se s sw nw', 'Fixed', 'compass']],
   tri: [['LR', 'Turtle', 'turtle'], ['| \\ /', 'Fixed', 'compass']],
   cairo: [['L2 L1 R1 R2', 'Turtle', 'turtle'], ['L1 R1', 'Turtle', 'turtle'], ['L2 R2', 'Turtle', 'turtle']],
+  cube: [['L ^ N v R', 'Turtle', 'turtle'], ['L ^ v R', 'Turtle', 'turtle'], ['N r p', 'Pivot', 'pivot'], ['N a', 'Parity', 'walk2d'], ['neuswd', 'Fixed', 'compass']],
+  diamond: [['LNR', 'Polymer', 'turtle'], ['LR', 'Polymer', 'turtle']],
 };
 // a rule typed or picked for a walk: kept if its words fit it (else the field back to the rule in use)
 function setWalkRule(w, rule) {

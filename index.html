@@ -11,7 +11,7 @@
   <meta property="og:type" content="website">
   <link id="favicon" rel="icon">  <!-- the app's logo, set at start-up (see appLogo) -->
   <meta name="description" content="A walk on a grid in 2D or 3D driven by the base-2 to base-6 digits of π, other constants and large primes.">
-  <link rel="stylesheet" href="style.css?v=0.4.125">
+  <link rel="stylesheet" href="style.css?v=0.4.126">
   <script>  // the theme before the first paint (see applyTheme)
     try { const t = localStorage.getItem('tesseraTheme') || 'system'; document.documentElement.dataset.theme = t === 'system' ? (matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark') : t; } catch { document.documentElement.dataset.theme = 'dark'; }
   </script>
@@ -235,15 +235,11 @@
               <option value="hexSphereWalk">Hexagon sphere (icosahedron) — base 2 (front left / front right)</option>
             </optgroup>
             <optgroup label="3D walks">
-              <option value="cubeRel">Cubes turtle — base 5 (5 relative turns)</option>
-              <option value="cubeFixed">Cubes fixed — base 6 (6 fixed directions)</option>
+              <option value="cubeRel">Cubes (along the grid, by a rule)</option>
               <option value="diag">Diagonals — base 8 (8 cube corners)</option>
-              <option value="cubeRelCells">Cubes turtle — base 5 (5 relative turns)</option>
-              <option value="cubesPivot">Cubes pivot — base 3 (forward / turn right / turn up on the spot)</option>
-              <option value="cubesPivotCells">Cubes pivot — base 3 (forward / turn right / turn up on the spot)</option>
-              <option value="cubeFixedCells">Cubes fixed — base 6 (6 fixed directions)</option>
+              <option value="cubeRelCells">Cubes (from cube to cube, by a rule)</option>
               <option value="diagCells">Diagonals — base 8 (truncated octahedra)</option>
-              <option value="diamond">Diamond — base 3 (gauche / trans / gauche)</option>
+              <option value="diamond">Diamond (a polymer chain, by a rule)</option>
             </optgroup>
             <optgroup label="Automata on the plane">
               <option value="life2d">Life — square grid</option>
@@ -746,10 +742,10 @@
     </div>
   </main>
 
-  <script src="pixelarticons.js?v=0.4.125"></script>
-  <script src="punks.js?v=0.4.125"></script>
-  <script src="loops.js?v=0.4.125"></script>
-  <script src="emoji.js?v=0.4.125"></script>
-  <script src="main.js?v=0.4.125"></script>
+  <script src="pixelarticons.js?v=0.4.126"></script>
+  <script src="punks.js?v=0.4.126"></script>
+  <script src="loops.js?v=0.4.126"></script>
+  <script src="emoji.js?v=0.4.126"></script>
+  <script src="main.js?v=0.4.126"></script>
 </body>
 </html>

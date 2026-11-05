@@ -389,6 +389,7 @@ button.active .bubble { color: var(--accent); border-color: var(--accent); }  /*
 #lifeStartTabs button { padding-left: 2px; padding-right: 2px; font-size: 11.5px; }  /* the starts on one row */
 .stage.dragging { cursor: grabbing; }
 .stage > canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+.stage.faded > canvas:not(#hoverLayer) { opacity: 0.3; }  /* a size or the start hovered: all but its motif or its starts faded, fills and outlines alike */
 /* The two boxes over the view (Play bottom left, Display top right): the same frame and
    translucency; hovering one opens the rest of it in the same frame (on touch screens, a tap) */
 .stage-box {

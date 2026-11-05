@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.159';
+const VERSION = '0.4.160';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -1321,6 +1321,7 @@ const layers = {
   path: $('pathLayer').getContext('2d'),
   line: $('lineLayer').getContext('2d'),  // Show path over cells: above them all, the cells painted later included
   overlay: $('overlayLayer').getContext('2d'),
+  hover: $('hoverLayer').getContext('2d'),  // a size's motif, the starts: over the others, faded while it shows (see drawHover)
 };
 let cw = 0, ch = 0;
 
@@ -6561,7 +6562,7 @@ function cellStart(g, [v, f]) {
   }
 }
 const startNo = () => Math.max(1, Math.min(Number($('startNo').value) || 1, modeStarts()?.length ?? 1));
-let startsShown = false;  // while the start number is hovered: the globe shows the starts instead of the walk
+let startsShown = false;  // while the start number is hovered: the starts shown over the walk, faded (see drawHover)
 let choosingStart = false;  // while the start row is hovered: the view stays as it was
 
 // Every start's edge (two starts each, one per direction); the chosen one in yellow, an arrow in
@@ -10086,10 +10087,10 @@ const liftTile = (c) => { if (!TILE_LIFT) return c; const v = rgbOf(c).map((x) =
 // states, Trail, the motif shown; Activity's, its most changes), kept on L: not each frame a view turns (272 KB, before v0.4.1)
 function lifeLook(L, lifted = false) {
   const colour = $('colourMode').value, maxAct = colour === 'digit' ? L.maxActivity : 0;
-  const key = [colour, lifted, TILE_LIFT, motifShown, L.C, L.colours, trailOn(), maxAct, LIFE_ALIVE, LIFE_TRAIL[0], LIFE_FADE[0], GRADIENT[0], LIFE_COLOURS[0]].join('|');
+  const key = [colour, lifted, TILE_LIFT, L.C, L.colours, trailOn(), maxAct, LIFE_ALIVE, LIFE_TRAIL[0], LIFE_FADE[0], GRADIENT[0], LIFE_COLOURS[0]].join('|');
   if (L.look?.key === key) return L.look.value;
   const lift = lifted ? liftTile : (c) => c;
-  const pack = (c) => { const [r, g, b] = rgbOf(motifShown ? faded(c, FADING) : c); return ((255 << 24) | (b << 16) | (g << 8) | r) >>> 0; };
+  const pack = (c) => { const [r, g, b] = rgbOf(c); return ((255 << 24) | (b << 16) | (g << 8) | r) >>> 0; };
   const trail = LIFE_TRAIL.map(pack), inked = LIFE_FADE.map(pack), alive = pack(LIFE_ALIVE), civ = [0, ...civColours(L.colours, L.C).map(pack)];
   const grad = Array.from({ length: 32 }, (_, i) => pack(lift(gradientAt(i / 31))));
   // the colours on a log scale, in tables (millions of cells): of an age (up to 64), of an activity
@@ -10116,7 +10117,7 @@ function drawLifePlane() {
   const look = { ...lifeLook(L), wall: [0, 0, 0, 0], dead: [0, 0, 0, 0] };  // (the plane's walls and dead cells: its own, under)
   gpuPlane((out) => gpuLook(L, out, look));
   drawBlocks(ctx);
-  drawMotif(ctx);
+  drawHover();
   drawGhost();
 }
 // Reversible's blocks (Blocks on): those of the set the generation shown goes on by, its next (see GPU_LIFE's blockRule), each outlined, the
@@ -10173,9 +10174,17 @@ const planeMotifCells = () => {
   }
   return [...cells.values()].find((ts) => ts.length === per) ?? [0];
 };
-const FADING = 0.3;  // (the cells this pale: under the motif's outlines, on the plane and on a surface; under a walk's line, or Translucent)
+const FADING = 0.3;  // (the cells this pale: under a walk's line, or Translucent)
+// A size hovered (its motif) or the start (the starts): drawn on their own layer, the others faded under it, every one alike,
+// fills and outlines (the stage's class: see style.css)
+function drawHover() {
+  const ctx = layers.hover;
+  ctx.clearRect(0, 0, cw, ch);
+  stage.classList.toggle('faded', motifShown || startsShown);
+  if (motifShown) drawMotif(ctx);
+  if (startsShown && walk.geo) drawStarts(ctx);
+}
 function drawMotif(ctx) {
-  if (!motifShown) return;
   const { scale: s, ox, oy } = view;
   ctx.lineWidth = Math.max(2, Math.min(s / 6, 4));
   ctx.lineCap = 'round';
@@ -14508,18 +14517,11 @@ function drawSphere() {
   }
   // the torus, and any polyhedron that is not flat, is drawn tile by tile from its current form;
   // a flat polyhedron is drawn face by face below
-  if (motifShown) palette = palette.map((c) => c && (c === LIFE_WALL ? c : faded(c, FADING)));  // (the motif shown: the cells pale under its outlines, the walls not: ochre, as its tooltip says them)
-  if (startsShown) {  // an empty globe under the distinct starts, its 12 pentagons as the walls they are in a Life run
-    const wall = new Set(g.walls);
-    gpuSurface(paintLevels([null, LIFE_WALL], (t) => (wall.has(t) ? 1 : 0)), false);
-    drawStarts(ctx);
-    return;
-  }
   if (L) {  // Life's look, the plane's (see lifeLook): the walls, the pentagons of the hexagon sphere, in stone grey
     const rgba = (c) => [...rgbCached(c).map((x) => x / 255), 1], look = { ...lifeLook(L, true), wall: rgba(LIFE_WALL), dead: rgba(UNLIT) };
     gpuSurface((out) => gpuLook(L, out, look), path);
   } else gpuSurface(paintLevels(palette, levelOf), path);  // (see 11.4d)
-  drawMotif(ctx);  // the motif's outlines over it
+  drawHover();
 }
 
 // The step of the first visit of each tile (−1: never visited), once per walk
@@ -16073,7 +16075,7 @@ function drawOverlay() {
       ctx.fillText(d, ox + x * s, oy);
     }
   }
-  if (!walk.n || walk.life || walk.rows || startsShown) return;  // no walker in the Game of Life, nor Elementary
+  if (!walk.n || walk.life || walk.rows) return;  // no walker in the Game of Life, nor Elementary
   if (walk.battle) {  // a battle: no start (its tails cut), each living head an arrow in its colour
     const B = walk.battle.player;
     B.to(cur);

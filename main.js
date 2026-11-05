@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.188';
+const VERSION = '0.4.189';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -17414,20 +17414,20 @@ const digitsValue = (ds, B) => {
   return digitsValue(ds.subarray(0, m), B) * B ** BigInt(ds.length - m) + digitsValue(ds.subarray(m), B);
 };
 // The number in base 10 over the base it is in (see showNumber), as many digits as those in use tell, a whole number's whole;
-// a whole number cut (more digits than in use), its size and first digits
+// a whole number cut (more digits than in use), its size and first digits; and how many digits it shows (a note)
 function base10Digits() {
   const { head, frac } = digitsInUse(), B = BigInt(current.base), lb = Math.log10(current.base);
   if (head.length < current.total && !frac.length) {  // (its first digits and its power of 10, from its first digits)
     const s = digitsValue(head.subarray(0, 40), B).toString(), l = s.length - 1 + Math.log10(Number(`${s[0]}.${s.slice(1, 16)}`)) + (current.total - Math.min(40, head.length)) * lb;
-    return `≈ ${(10 ** (l % 1)).toFixed(14)}… × 10^${fmt(Math.floor(l))}`;
+    return [`≈ ${(10 ** (l % 1)).toFixed(14)}… × 10^${fmt(Math.floor(l))}`, `first 15 of ${fmt(Math.floor(l) + 1)} digits`];
   }
   const ds = new Uint8Array(head.length + frac.length);
   ds.set(head);
   ds.set(frac, head.length);
   const N = digitsValue(ds, B), D = B ** BigInt(frac.length), int = (N / D).toString();
-  if (!frac.length) return `= ${int}`;
+  if (!frac.length) return [`= ${int}`, `all ${fmt(int.length)} digits`];
   const m = Math.max(1, Math.floor(frac.length * lb) - 1);  // (as many as its digits in use tell)
-  return `≈ ${int}.${(((N % D) * 10n ** BigInt(m)) / D).toString().padStart(m, '0')}…`;
+  return [`≈ ${int}.${(((N % D) * 10n ** BigInt(m)) / D).toString().padStart(m, '0')}…`, `first ${fmt(int.length + m)} digits, as many as the first ${fmt(ds.length)} in base ${current.base} tell`];
 }
 const base10 = { on: false };  // (Base 10 switched on: the number in base 10 instead, see showNumber)
 function showNumber() {
@@ -17436,8 +17436,8 @@ function showNumber() {
   // 10's instead when switched on; a battle's, each walker's, its digits read on one line (see battleNumbers)
   const part = (name, b, note, digits, colour = '', one = '', ratio = current.ratio) => { const period = ratio && ratioDigits(b, ratio);
     return `<h3><span style="color:${colour}">${withIcons(name)}</span> <code>${baseWords(b)}</code> <span class="muted">${note}</span></h3>${period ? `<p class="number-digits${one}">${period}</p>` : ''}<p class="number-digits${one}">${digits}</p>`; };
-  const all = `all first ${fmt(n)} digits`, rows = battle ? battleNumbers() : null, text = battle ? rows.map((r) => `${r.name} ${baseWords(B)} ≈ ${r.text}`).join('\n') : numberText();
-  v.innerHTML = `<div class="tut-body">${battle ? rows.map((r) => part(r.name, B, r.used < n ? `truncated to ${fmt(r.used)}/${fmt(n)} digits` : all, '', LIFE_COLOURS[r.s], ' one-line', r.ratio)).join('') : ten ? part(formulaInUse, 10, '', base10Digits()) : part(formulaInUse, B, all, '')}</div>`;
+  const all = `all first ${fmt(n)} digits`, tenDigits = ten && base10Digits(), rows = battle ? battleNumbers() : null, text = battle ? rows.map((r) => `${r.name} ${baseWords(B)} ≈ ${r.text}`).join('\n') : numberText();
+  v.innerHTML = `<div class="tut-body">${battle ? rows.map((r) => part(r.name, B, r.used < n ? `truncated to ${fmt(r.used)}/${fmt(n)} digits` : all, '', LIFE_COLOURS[r.s], ' one-line', r.ratio)).join('') : ten ? part(formulaInUse, 10, tenDigits[1], tenDigits[0]) : part(formulaInUse, B, all, '')}</div>`;
   const blank = [...v.querySelectorAll('.number-digits:empty')];  // (its digits as text)
   if (battle) rows.forEach((r, s) => { blank[s].textContent = `≈ ${r.text}…`; });
   else if (!ten) blank[0].textContent = `${text.slice(`${formulaInUse} ${baseWords(B)} `.length)}${text.includes(' ≈ ') ? '…' : ''}`;

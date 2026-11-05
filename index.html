@@ -11,7 +11,7 @@
   <meta property="og:type" content="website">
   <link id="favicon" rel="icon">  <!-- the app's logo, set at start-up (see appLogo) -->
   <meta name="description" content="A walk on a grid in 2D or 3D driven by the base-2 to base-6 digits of π, other constants and large primes.">
-  <link rel="stylesheet" href="style.css?v=0.4.171">
+  <link rel="stylesheet" href="style.css?v=0.4.172">
   <script>  // the theme before the first paint (see applyTheme)
     try { const t = localStorage.getItem('tesseraTheme') || 'system'; document.documentElement.dataset.theme = t === 'system' ? (matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark') : t; } catch { document.documentElement.dataset.theme = 'dark'; }
   </script>
@@ -206,7 +206,10 @@
               <option value="mobiusWalk">Möbius strip — base 3 (left / forward / right)</option>
               <option value="mobiusHexGrid">Möbius strip of hexagons — base 2 (left / right)</option>
               <option value="mobiusHexWalk">Möbius strip of hexagons — base 5 (5 relative turns)</option>
+              <option value="kleinGrid">Klein bottle — base 3 (left / forward / right)</option>
               <option value="kleinWalk">Klein bottle — base 3 (left / forward / right)</option>
+              <option value="kleinHexGrid">Klein bottle of hexagons — base 2 (left / right)</option>
+              <option value="kleinTriGrid">Klein bottle of triangles — base 5 (5 relative turns)</option>
               <option value="kleinHexWalk">Klein bottle of hexagons — base 5 (5 relative turns)</option>
               <option value="kleinTriWalk">Klein bottle of triangles — base 2 (left / right)</option>
               <option value="kleinCairoWalk">Klein bottle of Cairo pentagons — base 4 (4 edges out)</option>
@@ -739,10 +742,10 @@
     </div>
   </main>
 
-  <script src="pixelarticons.js?v=0.4.171"></script>
-  <script src="punks.js?v=0.4.171"></script>
-  <script src="loops.js?v=0.4.171"></script>
-  <script src="emoji.js?v=0.4.171"></script>
-  <script src="main.js?v=0.4.171"></script>
+  <script src="pixelarticons.js?v=0.4.172"></script>
+  <script src="punks.js?v=0.4.172"></script>
+  <script src="loops.js?v=0.4.172"></script>
+  <script src="emoji.js?v=0.4.172"></script>
+  <script src="main.js?v=0.4.172"></script>
 </body>
 </html>

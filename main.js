@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.171';
+const VERSION = '0.4.172';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -1088,12 +1088,12 @@ const MODES = {
                 rule: 'on a Möbius strip of squares: <b>0</b> turn left, <b>1</b> straight on, <b>2</b> turn right (over its edge, onto the face behind)' },
   mobiusHexWalk: { base: 5, arrows: '↙↖↑↗↘', lattice: 'sphere', cells: true, twin: 'mobiusHexGrid', sphere: 'mobiusHex', turns: [5, 4, 3, 2, 1], perspective: true, round: true,
                    rule: 'on a Möbius strip of hexagons: <b>0</b> sharp left, <b>1</b> left, <b>2</b> straight, <b>3</b> right, <b>4</b> sharp right (over its edge, onto the face behind)' },
-  // a Klein bottle (its neck through its side, opening into its bottom): on cells, as the torus's walks
-  kleinWalk: { base: 3, arrows: '←↑→', lattice: 'sphere', cells: true, sphere: 'klein', turns: [3, 2, 1], round: true,
+  // a Klein bottle (its neck through its side, opening into its bottom): as the torus's walks
+  kleinWalk: { base: 3, arrows: '←↑→', lattice: 'sphere', cells: true, twin: 'kleinGrid', sphere: 'klein', turns: [3, 2, 1], round: true,
                rule: 'on a Klein bottle of squares: <b>0</b> turn left, <b>1</b> straight on, <b>2</b> turn right' },
-  kleinHexWalk: { base: 5, arrows: '↙↖↑↗↘', lattice: 'sphere', cells: true, sphere: 'kleinHex', turns: [5, 4, 3, 2, 1], round: true,
+  kleinHexWalk: { base: 5, arrows: '↙↖↑↗↘', lattice: 'sphere', cells: true, twin: 'kleinHexGrid', sphere: 'kleinHex', turns: [5, 4, 3, 2, 1], round: true,
                   rule: 'on a Klein bottle of hexagons: <b>0</b> sharp left, <b>1</b> left, <b>2</b> straight, <b>3</b> right, <b>4</b> sharp right' },
-  kleinTriWalk: { base: 2, arrows: '↖↗', lattice: 'sphere', cells: true, sphere: 'kleinTri', turns: [2, 1], round: true,
+  kleinTriWalk: { base: 2, arrows: '↖↗', lattice: 'sphere', cells: true, twin: 'kleinTriGrid', sphere: 'kleinTri', turns: [2, 1], round: true,
                   rule: 'on a Klein bottle of triangles: exit through the <b>0</b> left or <b>1</b> right edge' },
   kleinCairoWalk: { base: 4, arrows: '↙↖↗↘', lattice: 'sphere', cells: true, sphere: 'kleinCairo', turns: [4, 3, 2, 1], round: true,
                     rule: 'on a Klein bottle of Cairo pentagons: out through one of its 4 other edges, <b>0</b> sharp left, <b>1</b> left, <b>2</b> right, <b>3</b> sharp right' },
@@ -1128,6 +1128,12 @@ const MODES = {
                    rule: 'along the edges of a Möbius strip of hexagons: <b>0</b> turn left, <b>1</b> turn right (over its edge, onto the face behind)' },
   mobiusTriGrid: { base: 5, arrows: '↙↖↑↗↘', lattice: 'sphere', twin: 'mobiusTriWalk', sphere: 'mobiusTri', grid: true, turns: [120, 60, 0, -60, -120], perspective: true, round: true,
                    rule: 'along the edges of a Möbius strip of triangles: <b>0</b> sharp left, <b>1</b> left, <b>2</b> straight, <b>3</b> right, <b>4</b> sharp right (over its edge, onto the face behind)' },
+  kleinGrid: { base: 3, arrows: '←↑→', lattice: 'sphere', twin: 'kleinWalk', sphere: 'klein', grid: true, turns: [90, 0, -90], round: true,
+               rule: 'along the edges of a Klein bottle of squares: <b>0</b> turn left, <b>1</b> straight on, <b>2</b> turn right' },
+  kleinHexGrid: { base: 2, arrows: '↖↗', lattice: 'sphere', twin: 'kleinHexWalk', sphere: 'kleinHex', grid: true, turns: [60, -60], round: true,
+                  rule: 'along the edges of a Klein bottle of hexagons: <b>0</b> turn left, <b>1</b> turn right' },
+  kleinTriGrid: { base: 5, arrows: '↙↖↑↗↘', lattice: 'sphere', twin: 'kleinTriWalk', sphere: 'kleinTri', grid: true, turns: [120, 60, 0, -60, -120], round: true,
+                  rule: 'along the edges of a Klein bottle of triangles: <b>0</b> sharp left, <b>1</b> left, <b>2</b> straight, <b>3</b> right, <b>4</b> sharp right' },
   cubeGrid:  { base: 3, arrows: '←↑→', lattice: 'sphere', twin: 'cubeFlat', sphere: 'cube', grid: true, initial: 48, turns: [90, 0, -90], perspective: true,
                rule: 'along the edges of the squares of a cube: <b>0</b> turn left, <b>1</b> straight on, <b>2</b> turn right (at a corner of the cube, the nearest edge)' },
   tetraGrid: { base: 5, arrows: '↙↖↑↗↘', lattice: 'sphere', twin: 'tetraLR', sphere: 'tetra', grid: true, initial: 48, turns: [120, 60, 0, -60, -120],
@@ -2901,7 +2907,8 @@ const NAV = {
   lifeMobiusTri: ['Life', 'Surfaces', 'Möbius strip', 'Life', ''], lifeMobiusCairo: ['Life', 'Surfaces', 'Möbius strip', 'Life', ''],
   mobiusCairoWalk: ['Walk', 'Surfaces', 'Möbius strip', 'Turtle', 'cells'],
   kleinWalk: ['Walk', 'Surfaces', 'Klein bottle', 'Turtle', 'cells'], kleinHexWalk: ['Walk', 'Surfaces', 'Klein bottle', 'Turtle', 'cells'],
-  kleinTriWalk: ['Walk', 'Surfaces', 'Klein bottle', 'Turtle', 'cells'], kleinCairoWalk: ['Walk', 'Surfaces', 'Klein bottle', 'Turtle', 'cells'],
+  kleinTriWalk: ['Walk', 'Surfaces', 'Klein bottle', 'Turtle', 'cells'], kleinGrid: ['Walk', 'Surfaces', 'Klein bottle', 'Turtle', 'grid'],
+  kleinHexGrid: ['Walk', 'Surfaces', 'Klein bottle', 'Turtle', 'grid'], kleinTriGrid: ['Walk', 'Surfaces', 'Klein bottle', 'Turtle', 'grid'], kleinCairoWalk: ['Walk', 'Surfaces', 'Klein bottle', 'Turtle', 'cells'],
   lifeKlein: ['Life', 'Surfaces', 'Klein bottle', 'Life', ''], lifeKleinHex: ['Life', 'Surfaces', 'Klein bottle', 'Life', ''],
   lifeKleinTri: ['Life', 'Surfaces', 'Klein bottle', 'Life', ''], lifeKleinCairo: ['Life', 'Surfaces', 'Klein bottle', 'Life', ''], lifeTetra: ['Life', 'Surfaces', 'Tetrahedron', 'Life', ''],
   lifeOcta: ['Life', 'Surfaces', 'Octahedron', 'Life', ''], lifeStella: ['Life', 'Surfaces', 'Stella octangula', 'Life', ''],
@@ -3102,7 +3109,7 @@ const FAMILIES = [
     tabs: [[0, false, 'tilesSq', 'Squares', 'Squares'], [3, false, 'pentagons', 'Cairo', 'Cairo pentagons'],
            [2, false, 'tilesTri', 'Triangles', 'Triangles'], [2, true, 'tilesTriTurned', 'Triangles', 'Triangles, turned by 30° (pointing along the strip)'], [4, false, 'kites', 'Kites', 'Kites (each triangle cut in 3)'],
            [4, true, 'kites', 'Kites', 'Kites, turned by 30° (pointing along the strip)'], [1, false, 'tilesHex', 'Hexagons', 'Hexagons'], [1, true, 'tilesHexTurned', 'Hexagons', 'Hexagons, turned by 30° (flat-topped, columns across the strip)']] },
-  { name: 'Klein bottle', modes: [['kleinWalk', 'lifeKlein'], ['kleinCairoWalk', 'lifeKleinCairo'], ['kleinHexWalk', 'lifeKleinHex'], ['kleinTriWalk', 'lifeKleinTri'], ['lifeKleinKite']], tab: 0,
+  { name: 'Klein bottle', modes: [['kleinGrid', 'kleinWalk', 'lifeKlein'], ['kleinCairoWalk', 'lifeKleinCairo'], ['kleinHexGrid', 'kleinHexWalk', 'lifeKleinHex'], ['kleinTriGrid', 'kleinTriWalk', 'lifeKleinTri'], ['lifeKleinKite']], tab: 0,
     tabs: [[0, false, 'tilesSq', 'Squares', 'Squares'], [1, false, 'pentagons', 'Cairo', 'Cairo pentagons'],
            [3, false, 'tilesTri', 'Triangles', 'Triangles'], [3, true, 'tilesTriTurned', 'Triangles', 'Triangles, turned by 30° (rows round the tube)'], [4, false, 'kites', 'Kites', 'Kites (each triangle cut in 3)'],
            [4, true, 'kites', 'Kites', 'Kites, turned by 30° (rows round the tube)'], [2, false, 'tilesHex', 'Hexagons', 'Hexagons'], [2, true, 'tilesHexTurned', 'Hexagons', 'Hexagons, turned by 30° (flat-topped, columns round the ring)']] },
@@ -6626,10 +6633,13 @@ function drawStarts(ctx) {
 const cornerUv = (g, G, v) => { const i = 2 * (g.sides * G.tileOf[v] + G.cornerOf[v]); return [g.uv[i], g.uv[i + 1]]; };
 const sheetWrap = (g, du, dv) => [du - g.nu * Math.round(du / g.nu), dv - g.nv * Math.round(dv / g.nv)];
 const pointAt = (list, i, R) => [list[3 * i] * R, list[3 * i + 1] * R, list[3 * i + 2] * R];
-// A step on the flat sheet of a torus, from corner a to corner b across the seams: columns east, rows north
+// A step on the flat sheet of a torus, from corner a to corner b across the seams: columns east, rows north; a Klein
+// bottle's across its ends turned over ((x + nu, y) ≡ (x, nv + 2·up − y), see kleinMesh): b's nearest copy, in a's sheet
 function sheetDelta(g, G, a, b) {
   const [ua, va] = cornerUv(g, G, a), [ub, vb] = cornerUv(g, G, b);
-  return sheetWrap(g, ub - ua, vb - va);
+  if (!g.klein) return sheetWrap(g, ub - ua, vb - va);
+  const c = g.nv + (g.cairo ? 1 : 0), round = (dv) => dv - g.nv * Math.round(dv / g.nv);
+  return [-1, 0, 1].map((k) => [ub + k * g.nu - ua, round((k ? c - vb : vb) - va)]).reduce((p, q) => (Math.hypot(...q) < Math.hypot(...p) ? q : p));
 }
 
 // The corner a walk along the grid goes to from v, having come from `from`, for a turn of angle

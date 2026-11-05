@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.232';
+const VERSION = '0.4.233';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -1471,7 +1471,6 @@ function updateDisplayMenu() {
   $('centeredName').textContent = centersPattern() ? 'Centered pattern' : 'Default view';  // (as the hint says it)
   $('fillAreasRow').hidden = !shows('fill') || !!mode.antOf;  // an ant fills no areas
   $('fillTooBig').hidden = !(fill?.tooBig && areaOn());
-  $('fillName').textContent = walk.vert && current?.fraction ? 'Area · 2 cells max on ↻' : 'Area';  // a fraction along a grid (see areaSteps)
   renderAreaModes();
   $('fillLayer').style.opacity = areaLight() ? 0.35 : 1;
   renderTrailButton();
@@ -6124,6 +6123,17 @@ function sizeGauge(el, n, i, preview, pick) {
   const notches = Object.assign(document.createElement('div'), { className: 'notches' });
   notches.append(...Array.from({ length: n }, () => document.createElement('span')));
   el.replaceChildren(range, notches);
+}
+// A notched slider, one choice among a few on a row (Cut, Area): its title in bold, a notch each (see sizeGauge), the
+// choice's name on its right (its words in its tooltip); can: false, greyed; live: set as it is dragged (else let go)
+function notchRow(el, title, choices, at, set, can = true, live = true) {
+  const name = Object.assign(document.createElement('span'), { className: 'notch-name' }), gauge = Object.assign(document.createElement('div'), { className: 'size-gauge' });
+  const show = (k) => { [name.textContent, name.title = ''] = choices[k]; }, pick = (k) => { show(k); set(k); };
+  sizeGauge(gauge, choices.length, at, live ? pick : show, pick);
+  gauge.querySelector('input').disabled = !can;
+  [name.textContent, name.title = ''] = choices[at];
+  el.classList.add('notch-row');
+  el.replaceChildren(Object.assign(document.createElement('span'), { className: 'notch-title', textContent: title }), gauge, name);
 }
 // − / +: the usual sizes (from a torus size of its own, the usual ones just below or above it)
 function stepSize(delta) {
@@ -15175,7 +15185,7 @@ const CUT_AXES = [['Off'], ['E', [1, 0, 0]], ['N', [0, 1, 0]], ['Up', [0, 0, 1]]
 let cutAxis = 0;
 const cutOn = () => cutAxis > 0 && !$('cutRow').hidden;
 const cutNormal = () => CUT_AXES[cutAxis][1] ?? [0, 0, 0];
-const setCut = (k) => { needsFull ||= k !== cutAxis; cutAxis = k; $('cutName').textContent = CUT_AXES[k][0]; };  // (a notch picked, or dragged over)
+const setCut = (k) => { needsFull ||= k !== cutAxis; cutAxis = k; };  // (a notch picked, or dragged over)
 /* Flat drawings by the card as well (see gpuFlat): the 2D walks, and the 3D walks once projected (their projection
  * is redone on the CPU when the view turns). The whole walk so far is redrawn at each frame, fast
  * enough to pan, zoom and turn walks of millions of steps smoothly:
@@ -17420,7 +17430,7 @@ for (const type of ['pointerdown', 'dblclick', 'wheel']) {
 $('light').addEventListener('change', () => { needsFull = true; });
 $('glass').addEventListener('change', () => { needsFull = true; });
 $('ocean').addEventListener('change', () => { oceanPicked = true; needsFull = statsDirty = true; tintBattleFormulas(); if (walk.n) describe(walk.base); });  // (a battle's colours: its fields, its title, its ranking)
-sizeGauge($('cutGauge'), CUT_AXES.length, cutAxis, setCut, setCut); setCut(cutAxis);
+notchRow($('cutRow'), 'Cut', CUT_AXES.map(([name]) => [name]), cutAxis, setCut);
 $('perspective').addEventListener('change', () => {
   setPerspective();
   rotateView([0, 0, 0]);  // the projection again
@@ -17637,15 +17647,10 @@ const AREA_MODES = [['empty', 'Empty', 'No area filled'], ['light', 'Light', 'Th
 function renderAreaModes() {
   const off = !fillAreasApply(), light = shows('translucent');
   const shown = (v) => (v === 'light' && !light ? 'plain' : v);  // (Light only over a line: else Plain)
-  const now = shown($('area').value), first = shown(defaultOf('area')), c = gradientAt(0.55);
-  const picture = (look) => `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7L11 3L20 6L19 17L9 21L3 15Z" fill="${look === 'empty' ? 'none' : c}"`
-    + `${look === 'light' ? ' fill-opacity="0.35"' : ''} stroke="${gradientAt(0.2)}" stroke-width="2" stroke-linejoin="round"/></svg>`;  // a closed loop
-  $('areaModes').replaceChildren(tileGroup(AREA_MODES.map(([look, name, title]) => {
-    return tile({ pic: picture(look), text: name, title, on: look === now, can: !(off || (look === 'light' && !light)), byDefault: look === first ? 'yes' : '', click: () => {  // (its default: see DISPLAY_DEFAULTS)
-      $('area').value = look;
-      $('area').dispatchEvent(new Event('change'));
-    } });
-  })));
+  const now = AREA_MODES.findIndex(([look]) => look === shown($('area').value)), first = shown(defaultOf('area'));
+  const title = walk.vert && current?.fraction ? 'Area · 2 cells max on ↻' : 'Area';  // (a fraction along a grid, see areaSteps)
+  notchRow($('areaModes'), title, AREA_MODES.map(([look, name, words]) => [name, `${words}${look === first ? ' · by default' : ''}${look === 'light' && !light ? ' · greyed: over a line only (Plain here)' : ''}`]), now,
+    (k) => { if ($('area').value !== AREA_MODES[k][0]) { $('area').value = AREA_MODES[k][0]; $('area').dispatchEvent(new Event('change')); } }, !off, false);  // (let go: the row drawn again)
 }
 // The looks of a 2D walk on cells, as square buttons: an ant's states in Ink or Amber; Path, the rainbow
 // line over its cells faded (an ant's in Amber); Directions, a colour per digit (an ant's, its turns);

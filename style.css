@@ -120,7 +120,10 @@ textarea { resize: none; line-height: 1.35; }  /* (Text's lines, a new line by E
 input[type=range] { width: 100%; accent-color: var(--accent); }
 .shape-slider { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--muted); }  /* Flat ── Inflated: a surface's form */
 .shape-slider input { flex: 1; min-width: 0; }
-.shape-slider .size-gauge { flex: 1; min-width: 0; margin: 0; }  /* (Cut's notches, on a row as Flat ── Inflated) */
+.notch-row { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--muted); margin-bottom: 10px; }  /* a notched slider: Cut, Area (see notchRow) */
+.notch-row .notch-title { font-weight: 700; color: var(--text); }  /* (its title, as a section's) */
+.notch-row .size-gauge { flex: 1; min-width: 0; margin: 0; }
+.notch-row .notch-name { min-width: 3.5em; }
 /* checkboxes as switches (iOS style): a pill whose knob slides to the right, yellow when on */
 input[type=checkbox] {
   appearance: none;

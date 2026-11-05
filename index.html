@@ -11,7 +11,7 @@
   <meta property="og:type" content="website">
   <link id="favicon" rel="icon">  <!-- the app's logo, set at start-up (see appLogo) -->
   <meta name="description" content="A walk on a grid in 2D or 3D driven by the base-2 to base-6 digits of π, other constants and large primes.">
-  <link rel="stylesheet" href="style.css?v=0.4.232">
+  <link rel="stylesheet" href="style.css?v=0.4.233">
   <script>  // the theme before the first paint (see applyTheme)
     try { const t = localStorage.getItem('tesseraTheme') || 'system'; document.documentElement.dataset.theme = t === 'system' ? (matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark') : t; } catch { document.documentElement.dataset.theme = 'dark'; }
   </script>
@@ -711,7 +711,7 @@
             <div id="shapeRow" hidden>
               <div class="shape-slider" title="The same cells, from flat to round: drag (the walk goes on meanwhile)"><span id="shapeFlat"></span><input id="shapeM" type="range" min="0" max="1" step="0.01" aria-label="From flat to round"><span id="shapeRound"></span></div>
             </div>
-            <div id="cutRow" class="shape-slider" hidden title="A cross-section by a fixed plane through the middle, the half on its axis's side gone, the inside showing: Off, or the plane facing E, N or Up (the axes drawn in the view's corner)"><span>Cut</span><div id="cutGauge" class="size-gauge"></div><span id="cutName"></span></div>  <!-- Off, E, N, Up: a notch each (see CUT_AXES) -->
+            <div id="cutRow" hidden title="A cross-section by a fixed plane through the middle, the half on its axis's side gone, the inside showing: Off, or the plane facing E, N or Up (the axes drawn in the view's corner)"></div>  <!-- Off, E, N, Up: a notched slider (see notchRow, CUT_AXES) -->
           </div>
           <div class="form-section">  <!-- what the walk shows: colours, areas, cells -->
             <div id="coloursRow"><div id="colourButtons" class="choice-list"></div></div>
@@ -726,8 +726,8 @@
               <option value="mono">One colour</option>
             </select>
             <div id="fillAreasRow" hidden>  <!-- the areas the walk closes: Empty, Light (translucent) or Plain -->
-              <div class="field-label"><span id="fillName">Area</span> <span id="fillTooBig" class="fill-note" hidden title="Beyond 12 million tile corners in the walk's box, the areas are not filled">walk too big</span></div>
-              <div id="areaModes" class="nav-shapes cell-modes"></div>
+              <div id="areaModes"></div>  <!-- Empty, Light, Plain: a notched slider (see notchRow) -->
+              <span id="fillTooBig" class="fill-note" hidden title="Beyond 12 million tile corners in the walk's box, the areas are not filled">walk too big</span>
               <select id="area" hidden><option value="empty"></option><option value="light"></option><option value="plain"></option></select>
             </div>
             <div id="cellsLabel" class="field-label" hidden>Cells</div>
@@ -741,10 +741,10 @@
     </div>
   </main>
 
-  <script src="pixelarticons.js?v=0.4.232"></script>
-  <script src="punks.js?v=0.4.232"></script>
-  <script src="loops.js?v=0.4.232"></script>
-  <script src="emoji.js?v=0.4.232"></script>
-  <script src="main.js?v=0.4.232"></script>
+  <script src="pixelarticons.js?v=0.4.233"></script>
+  <script src="punks.js?v=0.4.233"></script>
+  <script src="loops.js?v=0.4.233"></script>
+  <script src="emoji.js?v=0.4.233"></script>
+  <script src="main.js?v=0.4.233"></script>
 </body>
 </html>

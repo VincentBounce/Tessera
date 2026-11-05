@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.157';
+const VERSION = '0.4.158';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -6365,8 +6365,8 @@ const STARTS_ON = [...SOLIDS, ...TORI];  // the surfaces with a start selector
 // nearest the middle of the sheet (or the next one, to head the other way), heading between north
 // and south through the east, in that order: north (or the nearest after it) first, then east.
 function torusStarts(g) {
-  const G = gridGraph(g), { nu, nv, uv } = g, k = g.sides;
-  const at = (v) => { const i = 2 * (k * G.tileOf[v] + G.cornerOf[v]); return [uv[i], uv[i + 1]]; };
+  const G = gridGraph(g), { nu, nv } = g, k = g.sides;
+  const at = (v) => cornerUv(g, G, v);
   // a step in the flat sheet, across the seams: east, north (in the sheet's units, see torusPoint)
   const step = (a, b) => {
     const [ua, va] = at(a), [ub, vb] = at(b);
@@ -6570,8 +6570,7 @@ function drawStarts(ctx) {
   const g = walk.geo, G = gridGraph(g), sh = walk.shape, R = walk.R, k = g.sides, proj = projector(), list = startList(g);
   const normal = (v) => unit([G.normal[3 * v], G.normal[3 * v + 1], G.normal[3 * v + 2]]);
   const { scale: s, ox, oy } = view;
-  const at = (v) => { const c = 3 * (k * G.tileOf[v] + G.cornerOf[v]); return [sh.corners[c] * R, sh.corners[c + 1] * R, sh.corners[c + 2] * R]; };
-  const centre = (t) => [sh.cen[3 * t] * R, sh.cen[3 * t + 1] * R, sh.cen[3 * t + 2] * R];
+  const at = (v) => pointAt(sh.corners, k * G.tileOf[v] + G.cornerOf[v], R), centre = (t) => pointAt(sh.cen, t, R);
   // a start's ends and the normal where it arrives: from corner to corner, or on cells from the
   // centre of the tile it leaves to the centre of the one it enters (see cellStart)
   const ends = MODES[$('mode').value].cells
@@ -6613,11 +6612,15 @@ function drawStarts(ctx) {
   ctx.restore();
 }
 
+// A surface's corner v (of its grid G) on its flat sheet; a step (du, dv) on a torus's sheet, the shortest across its seams;
+// point i of a shape's list (corners, centres: x, y, z each), at radius R
+const cornerUv = (g, G, v) => { const i = 2 * (g.sides * G.tileOf[v] + G.cornerOf[v]); return [g.uv[i], g.uv[i + 1]]; };
+const sheetWrap = (g, du, dv) => [du - g.nu * Math.round(du / g.nu), dv - g.nv * Math.round(dv / g.nv)];
+const pointAt = (list, i, R) => [list[3 * i] * R, list[3 * i + 1] * R, list[3 * i + 2] * R];
 // A step on the flat sheet of a torus, from corner a to corner b across the seams: columns east, rows north
 function sheetDelta(g, G, a, b) {
-  const k = g.sides, ia = 2 * (k * G.tileOf[a] + G.cornerOf[a]), ib = 2 * (k * G.tileOf[b] + G.cornerOf[b]);
-  const du = g.uv[ib] - g.uv[ia], dv = g.uv[ib + 1] - g.uv[ia + 1];
-  return [du - g.nu * Math.round(du / g.nu), dv - g.nv * Math.round(dv / g.nv)];
+  const [ua, va] = cornerUv(g, G, a), [ub, vb] = cornerUv(g, G, b);
+  return sheetWrap(g, ub - ua, vb - va);
 }
 
 // The corner a walk along the grid goes to from v, having come from `from`, for a turn of angle
@@ -6831,7 +6834,7 @@ function surfaceSteps(g, mode, acts = surfaceActs(mode)) {
   const parity = acts.some(([kind]) => kind === 'parity');
   if (mode.grid) {
     const G = gridGraph(g), k = g.sides, N = SURFACE_NOTCHES[mode.net] ?? 1;
-    const corner = (v) => { const i = 2 * (k * G.tileOf[v] + G.cornerOf[v]); return mobiusAt(g, G.tileOf[v], [g.uv[i], g.uv[i + 1]]); };
+    const corner = (v) => mobiusAt(g, G.tileOf[v], cornerUv(g, G, v));
     return { start: (i) => [...starts[i], 0, 0],
              step: ([v, from, p, q], d) => {
                const [kind, by] = acts[d], read = parity ? 1 - q : 0;
@@ -6868,8 +6871,8 @@ function surfaceSteps(g, mode, acts = surfaceActs(mode)) {
     key: ([t, entry, p, q]) => ((t * k + entry) * k + ((p + k) % k)) * 2 + q,
     sheet: ([a], [b]) => {
       if (g.mobius) return mobiusDelta(g, mobiusAt(g, a, centre(a)), mobiusAt(g, b, centre(b)));
-      const p = centre(a), q = centre(b), du = q[0] - p[0], dv = q[1] - p[1];
-      return [du - g.nu * Math.round(du / g.nu), dv - g.nv * Math.round(dv / g.nv)];
+      const p = centre(a), q = centre(b);
+      return sheetWrap(g, q[0] - p[0], q[1] - p[1]);
     },
   };
 }
@@ -14659,8 +14662,7 @@ const packed = (c) => { const [r, g, b] = rgbCached(c); return ((255 << 24) | (b
 // living walker's line as it is at the step shown instead, ranges its segments', walker after walker
 function pathSegments(P = null) {
   const g = walk.geo, sh = walk.shape, R = walk.R, k = g.sides, C = sh.corners, n = walk.n;
-  const corner = (t, q) => [C[3 * (k * t + q)] * R, C[3 * (k * t + q) + 1] * R, C[3 * (k * t + q) + 2] * R];
-  const centre = (t) => [sh.cen[3 * t] * R, sh.cen[3 * t + 1] * R, sh.cen[3 * t + 2] * R];
+  const corner = (t, q) => pointAt(C, k * t + q, R), centre = (t) => pointAt(sh.cen, t, R);
   const normal = (t) => [sh.nrm[3 * t], sh.nrm[3 * t + 1], sh.nrm[3 * t + 2]];
   const mid = (p, q) => p.map((x, d) => (x + q[d]) / 2);
   const out = new Float32Array(P?.ownLines ? 0 : 11 * 2 * Math.max(1, (P ? P.K : 1) * n)), at = new Int32Array(n + 1);

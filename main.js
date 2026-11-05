@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.166';
+const VERSION = '0.4.167';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -3146,7 +3146,9 @@ const readsDigits = (w = $('mode').value) => !(ANTS[w] && !antByDigits) && !(MOD
 // A creature's sections, as Life's: Start, by its rule or by the digits (a turmite by its rule only); Rule, its creature (see renderModePicker), then its rules as cards, its
 // rule and its words (see creatureRules), then your own, its rule typed
 const customRow = $('antCustomRow');  // (kept: out of the page while a list redrawn has it not)
-let antRowMode = null, antCustomOpen = false;  // (the mode the rules were last drawn for; the Custom rule card clicked)
+// the Custom rule card clicked (Life's, a walk's, a creature's): your own shown, a known rule in use or not (Life: its states,
+// births and survivals); closed on another mode
+let rulesMode = null, customOpen = false;  // (the mode the rules were last drawn for)
 function renderAntRow() {
   const w = $('mode').value, m = MODES[w], ant = NAV[w][0] === 'Ant';
   // the number read (its digits, see numberPicker): a walk's in its own section; a start's by the digits (Life's, a
@@ -3166,7 +3168,7 @@ function renderAntRow() {
   $('antRuleTitle').textContent = R.byDigits ? 'Turns' : 'Rule';  // (Digits: a turn per digit, not a rule of colours)
   setTile($('antByRule'), { on: !R.byDigits });
   setTile($('antByDigits'), { on: !!R.byDigits, can: !m.turmite, greyed: 'for a turmite (by its rule only)' });
-  customRow.hidden = !R.typed || !(antCustomOpen || !R.cards.some(([r]) => r === R.now));
+  customRow.hidden = !R.typed || !(customOpen || !R.cards.some(([r]) => r === R.now));
   $('antRuleName').textContent = R.name;
   if (document.activeElement !== $('antRule')) $('antRule').value = R.now;
 }
@@ -3174,12 +3176,12 @@ function renderAntRow() {
 // pic), one that cannot go there greyed (why, in its tooltip), then Custom rule (your own, typed in the field under the list);
 // here: w is the mode in use (else a pick goes to it first)
 function ruleCards(w, pic, here = true) {
-  const R = creatureRules(w), mine = here && (antCustomOpen || !R.cards.some(([r]) => r === R.now));
+  const R = creatureRules(w), mine = here && (customOpen || !R.cards.some(([r]) => r === R.now));
   const go = (then) => () => { if (!here) { $('mode').value = w; $('mode').dispatchEvent(new Event('change')); } then(); };
   const make = (cardPic, name, code, on, then, why = '', title = '') => card({ pic: cardPic, name, detail: code, base: code && R.base?.(code), on, title: why || title, can: !why, click: go(then),
     how: () => { if (on) walkTutorialToggle(); else { go(then)(); walkTutorial(w); } } });  // (its ⓘ: how it works, picked first)
-  return [...R.cards.map(([r, name, cardPic, why, title]) => make(cardPic ?? pic, name, r, here && r === R.now && !antCustomOpen, () => { antCustomOpen = false; if (r === R.now) renderModePicker(); else R.set(r); }, why, title)),
-    ...(R.typed ? [make(pixelIcon('..o..,..o..,ooooo,..o..,..o..'), 'Custom rule', mine ? R.now : '', mine, () => { antCustomOpen = true; renderModePicker(); }, '', 'your own, typed')] : []),
+  return [...R.cards.map(([r, name, cardPic, why, title]) => make(cardPic ?? pic, name, r, here && r === R.now && !customOpen, () => { customOpen = false; if (r === R.now) renderModePicker(); else R.set(r); }, why, title)),
+    ...(R.typed ? [make(pixelIcon('..o..,..o..,ooooo,..o..,..o..'), 'Custom rule', mine ? R.now : '', mine, () => { customOpen = true; renderModePicker(); }, '', 'your own, typed')] : []),
     customRow];  // (its field right after it, the list's next rules after the field; always in it, shown by renderAntRow)
 }
 // a creature's or a walk's rules: its presets [rule, name, picture, why greyed, tooltip], the rule in use, how to set one, whether one is typed, a rule's base
@@ -3233,8 +3235,8 @@ function setAntRule(w, rule) {
 }
 function renderModePicker() {
   const w = $('mode').value, [kind, space, shape, rule] = NAV[w];
-  if (antRowMode !== w) antCustomOpen = false;  // (Custom rule closed on another mode, before its cards are drawn)
-  antRowMode = w;
+  if (rulesMode !== w) customOpen = false;  // (Custom rule closed on another mode, before its cards are drawn)
+  rulesMode = w;
   const button = (html, active, go, title = '', more = {}) => tile({ html, title, on: active, click: go, ...more });
   // at the top: Walk, Ant, Life (while a gallery setup is only shown on hover, the one in use)
   const shownKind = NAV[galleryBefore?.w]?.[0] ?? kind;
@@ -10969,7 +10971,6 @@ const walkTutorialToggle = () => ($('ruleTuto').hidden || creditsShown() ? walkT
 // a rule's words without its name when they open with it ("Maze, grows corridors": grows corridors), else as they are (Byl's
 // loop, Fredkin's Replicator, the Ising model)
 const unnamed = (words, name) => (words.startsWith(name) && /^(?:[,:]|\s\(|$)/.test(words.slice(name.length)) ? words.slice(name.length).replace(/^[,:]?\s*/, '') : words);
-let customOpen = false;  // the Custom rule card clicked: its states, births and survivals shown, a known rule in use or not
 let ruleTab = null;  // Elementary's tab clicked and the rule then in use ({ tab, now }: kept while it is, see renderRuleSection)
 function renderRuleSection() {
   const mode = MODES[$('mode').value];
@@ -17271,7 +17272,7 @@ $('antRule').addEventListener('change', () => {
   const w = $('mode').value;
   creatureRules(w).set($('antRule').value);
   const R = creatureRules(w);
-  if (R.cards.some(([r]) => r === R.now)) { antCustomOpen = false; renderAntRow(); }  // (typed: a known one's card picked, as Life's)
+  if (R.cards.some(([r]) => r === R.now)) { customOpen = false; renderAntRow(); }  // (typed: a known one's card picked, as Life's)
 });
 // Heatmap of visits on a surface: the cells by their visits, else the rainbow line
 $('heatmap').addEventListener('change', () => {

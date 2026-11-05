@@ -80,6 +80,15 @@ touched shows (+0 if its code lines are as many).
   default set apart from the order: to change the default, change the order.
 - Every night, check this for every choice the links write as a number: its tabs' order, its numbers, its default.
 
+## Night audits
+While the checks run unattended (a night, a meal), also audit what they cannot see, and fix each gap at its root:
+- **The controls and their code alike**: each control's state held as it shows (one choice among several, one value, never
+  boxes that combine into it, as Area's Fill and Light did); its default from `DISPLAY_DEFAULTS` (its value and its tile's
+  mark both), a control's greyed state and tooltip true; the same component, name and title for the same thing in every
+  tab (Walk, Ant, Life, 2D and 3D).
+- **Every Custom rule**: Life's, each walk's, the ants', the turmite's, the worm's: valid and wrong rules, Enter, Escape,
+  the link made, opened cold, the card it lands on.
+
 ## Removed features
 A feature taken out gets a row in `REMOVED.md` (in English) at once: its last version, date, commit, a raw.githack link
 that opens it as it was, and why it left.

@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.235';
+const VERSION = '0.4.236';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -17761,12 +17761,12 @@ const modeTabOf = () => `${NAV[$('mode').value]?.[0]}|${modeGroup()}`;  // (the 
 // the tiles' marks read them (see defaultOf, defaultMark)
 const DISPLAY_DEFAULTS = {
   look: ['colourMode', 'tab', { Walk: 'gradient', Ant: 'gradient', Life: 'mono', Replicators: 'mono', Reversible: 'mono', Elementary: 'gradient' }],  // (Cells: a walk's Rainbow, Life's States, Elementary's Age: the simplest)
-  area: ['area', 'tab', 'light'], path: ['showPath', 'tab', false],  // (Area: Light, translucent, the line through it; on cells the cells alone)
+  area: ['area', 'tab', (mode, w) => (NAV[w][0] === 'Walk' && NAV[w][1] !== '2D' ? 'plain' : 'empty')], path: ['showPath', 'tab', false],  // (Area: Empty, a walk's in 3D Plain; on cells the cells alone)
   centered: ['centered', 'tab', true], autoRotate: ['autoRotate', 'tab', false], sky: ['sky', 'tab', 'sky'],  // (on a solid the walker in front; Dawn or Twilight after the theme)
   autoFit: ['autoFit', 'mode', true], upright: ['upright', 'mode', false], shape: ['shapeM', 'mode', (mode) => (mode.round ? 1 : 0)],  // (Flat 0 ── Inflated 1: a round surface inflated, a solid flat)
   perspective: ['perspective', 'mode', (mode, w) => perspectiveFor(mode, defaultOf('shape', w))],  // (as each mode's own, hand-tuned)
   light: ['light', 'open', true], glass: ['glass', 'open', false], grid: ['showGrid', 'open', true], autoPlay: ['autoPlay', 'open', false],
-  player: [null, 'walk', (mode) => (mode.grid ? 0.5 : 1)],  // (where a walk on a surface is shown: the step its places visited reach this share, along the grid half its corners, on cells all its cells; else its end)
+  player: [null, 'walk', (mode) => (mode.grid ? 0.2 : 1)],  // (where a walk on a surface is shown: the step its places visited reach this share, along the grid a fifth of its corners, on cells all its cells; else its end)
   trail: ['lifeTrail', 'colours', () => lifeColours === 1],  // (Life's Trail: on in Classic, two states, off in colours; when the colours change)
   ocean: ['ocean', 'battle', () => battleOn() && NAV[$('mode').value][0] === 'Walk'],  // (on in a walk's battle on a surface, as long as none picks it)
 };

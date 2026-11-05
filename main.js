@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.153';
+const VERSION = '0.4.154';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -4205,6 +4205,10 @@ const STEPPERS = {
  * apart). Its walker's frame: forward f, up u, left = u × f. */
 const CUBE_DIRS = [[0, 1, 0], [1, 0, 0], [0, 0, 1], [0, -1, 0], [-1, 0, 0], [0, 0, -1]];
 const neg = (a) => [-a[0], -a[1], -a[2]];
+const sameVec = (a, b) => a[0] === b[0] && a[1] === b[1] && a[2] === b[2];
+// the cube's 8 corners (g's bits: the signs of x, y, z) and a regular tetrahedron's 4 of them (the diamond's bonds, its spots)
+const CORNERS = [0, 1, 2, 3, 4, 5, 6, 7].map((g) => [g & 4 ? 1 : -1, g & 2 ? 1 : -1, g & 1 ? 1 : -1]);
+const TETRA_CORNERS = [[1, 1, 1], [1, -1, -1], [-1, 1, -1], [-1, -1, 1]];
 
 // The cubes' walker by a rule's acts (see wordStepper), from north, head up: a turn (0 left, 1 up, 2 straight, 3 down, 4
 // right, 5 back) then a step; a way (CUBE_DIRS), its head kept but along it (then pitched); on the spot, a quarter turn
@@ -4212,7 +4216,7 @@ const neg = (a) => [-a[0], -a[1], -a[2]];
 // hidden state last, for walkRepeat: its head (a turn), its heading too (on the spot) and the digits' parity
 function cubeStepper(acts) {
   let x = 0, y = 0, z = 0, f = [0, 1, 0], u = [0, 0, 1], read = 0;
-  const same = (a, b) => a[0] === b[0] && a[1] === b[1] && a[2] === b[2], yaw = (by) => { f = by > 0 ? cross(f, u) : cross(u, f); };
+  const yaw = (by) => { f = by > 0 ? cross(f, u) : cross(u, f); };
   const relative = acts.some(([k]) => k !== 'way'), spot = acts.some(([k]) => k !== 'turn' && k !== 'way'), parity = acts.some(([k]) => k === 'parity');
   return (g) => {
     const [kind, by] = acts[g];
@@ -4227,7 +4231,7 @@ function cubeStepper(acts) {
         else if (by === 5) f = neg(f);
       } else if (kind === 'way') {
         const d = CUBE_DIRS[by];
-        [f, u] = same(d, u) ? [d, neg(f)] : same(d, neg(u)) ? [d, f] : [d, u];
+        [f, u] = sameVec(d, u) ? [d, neg(f)] : sameVec(d, neg(u)) ? [d, f] : [d, u];
       }
       x += f[0]; y += f[1]; z += f[2];
       if (kind === 'parity') yaw(read % 2 ? 1 : -1);
@@ -4248,14 +4252,12 @@ function diagStepper() {
 /* Diamond: each atom bonded to 4, along (±1, ±1, ±1) with an even number of minus signs, or along
  * their opposites (the other half of the atoms). Coming along d, the 3 bonds ahead: 1 the bond before
  * d again (trans: the zigzag goes on in its plane), 0 and 2 the gauche ones, on either side of it. */
-const DIAMOND_BONDS = [[1, 1, 1], [1, -1, -1], [-1, 1, -1], [-1, -1, 1]];
 function diamondStepper() {
-  const same = (a, b) => a[0] === b[0] && a[1] === b[1] && a[2] === b[2];
   let x = 0, y = 0, z = 0, p = [1, -1, -1], d = [-1, -1, -1];  // the last two bonds
   return (g) => {
-    const back = neg(d), bonds = DIAMOND_BONDS.some((b) => same(b, back)) ? DIAMOND_BONDS : DIAMOND_BONDS.map(neg);
+    const back = neg(d), bonds = TETRA_CORNERS.some((b) => sameVec(b, back)) ? TETRA_CORNERS : TETRA_CORNERS.map(neg);
     const side = cross(p, d), turn = (e) => side[0] * e[0] + side[1] * e[1] + side[2] * e[2];
-    const e = g === 1 ? p : bonds.find((b) => !same(b, back) && !same(b, p) && (g === 0) === turn(b) > 0);
+    const e = g === 1 ? p : bonds.find((b) => !sameVec(b, back) && !sameVec(b, p) && (g === 0) === turn(b) > 0);
     [p, d] = [d, e];
     x += e[0]; y += e[1]; z += e[2];
     return [key3(x, y, z), x, y, z, p.join()];  // and the bond before, for walkRepeat
@@ -11830,8 +11832,7 @@ const COLOUR_PARTS = { 2: '2 halves', 3: '3 thirds', 4: '4 quarters', 5: '5 fift
 const NEAR_RULES = ['B3678/S34678', 'B34/S123/C3', 'B2/S34', 'B24/S35', 'B2o/S2m34', 'B34/S23', 'B2/S24/C3', 'B23/S6/C3'];
 // A solid's fair spots for k colours (see coloursFit), as directions: its faces, corners or edges'
 // middles, or a few of them that its turns swap (2 opposite, 3 round a corner, 4 as a tetrahedron's)
-const CORNERS8 = [[1, 1, 1], [1, 1, -1], [1, -1, 1], [1, -1, -1], [-1, 1, 1], [-1, 1, -1], [-1, -1, 1], [-1, -1, -1]];
-const TETRA4 = [[1, 1, 1], [1, -1, -1], [-1, 1, -1], [-1, -1, 1]];
+const CORNERS8 = [...CORNERS].reverse();  // (from (1, 1, 1))
 const EDGES12 = [[1, 1, 0], [1, -1, 0], [-1, 1, 0], [-1, -1, 0], [1, 0, 1], [1, 0, -1], [-1, 0, 1], [-1, 0, -1], [0, 1, 1], [0, 1, -1], [0, -1, 1], [0, -1, -1]];
 // (3 round a face's axis d: of its 4 rings of 3, the second, 117° apart, not the first, round the face, 63°)
 const ICO = () => POLYHEDRA.icosa.P, around3 = (d) => [...ICO()].sort((p, q) => dot3(q, d) / Math.hypot(...q) - dot3(p, d) / Math.hypot(...p)).slice(3, 6);
@@ -11845,7 +11846,7 @@ const SOLID_SPOTS = {
   menger: () => SOLID_SPOTS.cube(),
   octa: () => ({ 3: [AXES[0], AXES[2], AXES[4]], 6: AXES, 12: EDGES12 }),
   tetra: () => ({ 6: AXES }),
-  stella: () => ({ 2: AXES.slice(0, 2), 4: TETRA4, 6: AXES, 8: CORNERS8 }),
+  stella: () => ({ 2: AXES.slice(0, 2), 4: TETRA_CORNERS, 6: AXES, 8: CORNERS8 }),
   dodeca: () => ({}),
   icosa: ICOSA_SPOTS, hexsphere: ICOSA_SPOTS, twistedsphere: ICOSA_SPOTS,
 };
@@ -12376,7 +12377,7 @@ for (const k of ['tetra', 'octa', 'icosa']) TRI_FACES[`${k}Kite`] = () => TRI_FA
 // the dodecahedron: a pentagon's 5 triangles (cut from its middle, as the plane's), the pattern in its
 // first; the stella: a tip's 3 triangles, the pattern in the one most facing it
 TRI_FACES.dodeca = () => ({});
-TRI_FACES.stella = () => ({ 2: [CORNERS8[0], CORNERS8[7]], 4: TETRA4, 8: CORNERS8 });
+TRI_FACES.stella = () => ({ 2: [CORNERS8[0], CORNERS8[7]], 4: TETRA_CORNERS, 8: CORNERS8 });
 for (const k of ['dodeca', 'stella']) TRI_FACES[`${k}Kite`] = () => TRI_FACES[k]();
 // colour i's face for its pattern, as a direction (null: none for this count)
 const triFace = (sphere, K, i) => (colouring(sphere, K)?.faces ? patchSpots(sphere, K)[i] : TRI_FACES[sphere]?.()[K]?.[i] ?? null);
@@ -14906,7 +14907,6 @@ function solidTriangles(corners, normals) {
 // The cells of the 3D walks on cells, around their centre: the cube, and the truncated octahedron
 // of the diagonals (square faces towards the cells 2 away along an axis, hexagons towards the corners)
 const AXES = [[1, 0, 0], [-1, 0, 0], [0, 1, 0], [0, -1, 0], [0, 0, 1], [0, 0, -1]];
-const CORNERS = [0, 1, 2, 3, 4, 5, 6, 7].map((g) => [g & 4 ? 1 : -1, g & 2 ? 1 : -1, g & 1 ? 1 : -1]);
 const CELL_SHAPES = {
   cube: { half: 0.5, triangles: solidTriangles(CORNERS.map((p) => p.map((v) => v / 2)), AXES) },
   // its 24 corners: (0, ±1/2, ±1) in every order of the axes

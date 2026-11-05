@@ -235,13 +235,13 @@ const offered = (w) => {
     ...panel(d) };
 };
 // the page as its link has it, its views closed while looked at, then open again: Draw open on a surface (a view of its
-// rule's patterns, the start as it was, see surfaceDraw); Custom rule open (see customOpen: a link opens it only on a rule
-// no card has, a card's rule its card's)
+// rule's patterns, the start as it was, see surfaceDraw); Custom rule open (Life's customOpen, a walk's or a creature's
+// antCustomOpen: a link opens it only on a rule no card has, a card's rule its card's)
 const linked = () => {
-  const draw = surfaceDraw, custom = customOpen, views = () => { renderPlaneRow(); renderHunt(); renderRuleSection(); };
-  if (!draw && !custom) return offered(window);
-  surfaceDraw = customOpen = false; views();
-  try { return offered(window); } finally { surfaceDraw = draw; customOpen = custom; views(); }
+  const draw = surfaceDraw, custom = customOpen, own = antCustomOpen, views = () => { renderPlaneRow(); renderHunt(); renderRuleSection(); renderModePicker(); };
+  if (!draw && !custom && !own) return offered(window);
+  surfaceDraw = customOpen = antCustomOpen = false; views();
+  try { return offered(window); } finally { surfaceDraw = draw; customOpen = custom; antCustomOpen = own; views(); }
 };
 // the whole left panel, section by section (its sections' ids): each button shown, its name, greyed or not, picked or not
 // (what a path through the menus left there, a link loaded cold must show the same)

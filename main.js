@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.124';
+const VERSION = '0.4.125';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -1260,19 +1260,6 @@ const MODES = {
   cubesPivotCells: { base: 3, arrows: '↑→⊙', lattice: 'cube', cells: true, twin: 'cubesPivot', perspective: true, pivot: 4,
                      rule: 'from cube to cube: <b>0</b> step forward, <b>1</b> turn right on the spot, <b>2</b> turn up on the spot' },
 };
-// on the surfaces, as their turtle walks (along the grid or on cells) where a step straight on exists:
-// squares, hexagons (cells), triangles (the grid); [pivot walk, its turtle walk, notches, its twin]
-for (const [w, of, n, twin] of [['cubePivot', 'cubeFlat', 4, 'cubePivotGrid'], ['cubePivotGrid', 'cubeGrid', 4, 'cubePivot'],
-  ['torusPivot', 'torusWalk', 4, 'torusPivotGrid'], ['torusPivotGrid', 'torusGrid', 4, 'torusPivot'], ['torusHexPivot', 'torusHexWalk', 6],
-  ['torusTriPivotGrid', 'torusTriGrid', 6], ['kleinPivot', 'kleinWalk', 4], ['kleinHexPivot', 'kleinHexWalk', 6], ['mobiusPivot', 'mobiusWalk', 4, 'mobiusPivotGrid'], ['mobiusPivotGrid', 'mobiusGrid', 4, 'mobiusPivot'],
-  ['mobiusHexPivot', 'mobiusHexWalk', 6], ['mobiusTriPivotGrid', 'mobiusTriGrid', 6], ['tetraPivotGrid', 'tetraGrid', 6],
-  ['octaPivotGrid', 'octaGrid', 6], ['stellaPivotGrid', 'stellaGrid', 6], ['dodecaPivotGrid', 'dodecaGrid', 6], ['icosaPivotGrid', 'icosaGrid', 6]]) {
-  const M = MODES[of], where = M.rule.split(': ')[0], after = M.rule.match(/ \([^)]*\)$/)?.[0] ?? '';  // "(at a corner of the cube, …)"
-  MODES[w] = { ...M, base: 2, arrows: '↑→', twin, ant: undefined, pivot: n,
-               rule: `${where}: <b>0</b> step forward, <b>1</b> turn right on the spot (${360 / n}°)${after}` };
-  MODES[w.replace('Pivot', 'Parity')] = { ...MODES[w], twin: twin?.replace('Pivot', 'Parity'), pivot: undefined, parity: n,  // and its Parity walk
-    rule: `${where}: <b>0</b> step forward, <b>1</b> step forward then turn right at an odd digit, left at an even one (${360 / n}°)${after}` };
-}
 
 
 /* ---- 2.4 Known primes ------------------------------------------------------------------------ */
@@ -2921,7 +2908,6 @@ const NAV = {
   lifeStellaKite: ['Life', 'Surfaces', 'Stella octangula', 'Life', ''], lifeDodecaKite: ['Life', 'Surfaces', 'Dodecahedron', 'Life', ''], lifeCubocta: ['Life', 'Surfaces', 'Cuboctahedron', 'Life', ''], lifePyramid: ['Life', 'Surfaces', 'Pyramid', 'Life', ''], lifeRhombi: ['Life', 'Surfaces', 'Rhombicuboctahedron', 'Life', ''], lifeBicupola: ['Life', 'Surfaces', 'Bicupola', 'Life', ''], lifeGlobe: ['Life', 'Surfaces', 'Globe', 'Life', ''],
   cubesPivot: ['Walk', '3D', 'Cubes', 'Pivot', 'grid'], cubesPivotCells: ['Walk', '3D', 'Cubes', 'Pivot', 'cells'],
 };
-// the pivot and parity walks on the surfaces: where their turtle walks are (see MODES)
 // the tilings' Life on the plane (see TILINGS): their modes, after the hats
 const tilingMode = (kind) => `life2d${kind[0].toUpperCase()}${kind.slice(1)}`;
 for (const [k, name] of Object.entries(TETRAKIS_SOLIDS)) {  // the solids of squares as tetrakis triangles (see tetrakisOf): Life, as theirs
@@ -2986,16 +2972,12 @@ for (const [w, life] of [['loops2d', 'life2d'], ['loopsTorus', 'lifeTorus'], ['l
 MODES.elementary2d = { ...MODES.life2d, elementary: true, where: 'an unbounded grid of squares, a row a generation, each cell by the three above it' };
 MODE_ICONS.elementary2d = MODE_ICONS.life2d;
 NAV.elementary2d = ['Elementary', NAV.life2d[1], NAV.life2d[2], 'Wolfram', ''];
-for (const w of Object.keys(MODES)) if ((MODES[w].pivot || MODES[w].parity) && MODES[w].sphere) {
-  const of = Object.keys(NAV).find((v) => NAV[v][3] === 'Turtle' && MODES[v].sphere === MODES[w].sphere && !!MODES[v].grid === !!MODES[w].grid);
-  NAV[w] = [...NAV[of].slice(0, 3), MODES[w].pivot ? 'Pivot' : 'Parity', NAV[of][4]];
-}
-for (const w of Object.keys(MODES)) if (MODES[w].pivot || MODES[w].parity) MODE_ICONS[w] = MODES[w].pivot ? 'pivot' : 'walk2d';
+MODE_ICONS.cubesPivot = MODE_ICONS.cubesPivotCells = 'pivot';
 MODE_ICONS.lifePits = 'pits';
 MODE_ICONS.lifeBumps = 'bumps';
 MODE_ICONS.lifeMenger = 'menger';
 MODE_ICONS.lifeFrame = 'frame';
-// in each shape's rules: Turtle, then Pivot and Parity, then the others as they come; among the shapes,
+// in each shape's rules: Turtle, then Pivot (the cubes'), then the others as they come; among the shapes,
 // Cairo right after Squares, Hexagons before Triangles (right after Kites where they are), Tetrakis after Hexagons, the Klein bottle after the Möbius strip, the
 // Sphere before the Tetrahedron
 {
@@ -3092,17 +3074,17 @@ function navGo(level, ...values) {
 // cells, ants, Life);
 // tabs, [tiling, turned by 30° (see TURNED), icon, its shape (as the 2D grids name it, see shapeLabel), title]; tab, the one in use or last chosen
 const FAMILIES = [
-  { name: 'Torus', modes: [['torusGrid', 'torusWalk', 'lifeTorus', 'torusPivotGrid', 'torusPivot'], ['torusHexGrid', 'torusHexWalk', 'lifeTorusHex', 'torusHexPivot'],
-                          ['torusTriGrid', 'torusTriWalk', 'torusTriPivotGrid', 'lifeTorusTri'], ['torusCairoWalk', 'lifeTorusCairo'], ['lifeTorusKite']], tab: 0,
+  { name: 'Torus', modes: [['torusGrid', 'torusWalk', 'lifeTorus'], ['torusHexGrid', 'torusHexWalk', 'lifeTorusHex'],
+                          ['torusTriGrid', 'torusTriWalk', 'lifeTorusTri'], ['torusCairoWalk', 'lifeTorusCairo'], ['lifeTorusKite']], tab: 0,
     tabs: [[0, false, 'tilesSq', 'Squares', 'Squares'], [3, false, 'pentagons', 'Cairo', 'Cairo pentagons'],
            [2, false, 'tilesTri', 'Triangles', 'Triangles'], [2, true, 'tilesTriTurned', 'Triangles', 'Triangles, turned by 30° (rows round the tube)'], [4, false, 'kites', 'Kites', 'Kites (each triangle cut in 3)'],
            [4, true, 'kites', 'Kites', 'Kites, turned by 30° (rows round the tube)'], [1, false, 'tilesHex', 'Hexagons', 'Hexagons'], [1, true, 'tilesHexTurned', 'Hexagons', 'Hexagons, turned by 30° (flat-topped, columns round the ring)']] },
-  { name: 'Möbius strip', modes: [['mobiusGrid', 'mobiusWalk', 'mobiusPivotGrid', 'mobiusPivot', 'lifeMobius'], ['mobiusHexGrid', 'mobiusHexWalk', 'mobiusHexPivot', 'lifeMobiusHex'],
-                                 ['mobiusTriGrid', 'mobiusTriWalk', 'mobiusTriPivotGrid', 'lifeMobiusTri'], ['mobiusCairoWalk', 'lifeMobiusCairo'], ['lifeMobiusKite']], tab: 0,
+  { name: 'Möbius strip', modes: [['mobiusGrid', 'mobiusWalk', 'lifeMobius'], ['mobiusHexGrid', 'mobiusHexWalk', 'lifeMobiusHex'],
+                                 ['mobiusTriGrid', 'mobiusTriWalk', 'lifeMobiusTri'], ['mobiusCairoWalk', 'lifeMobiusCairo'], ['lifeMobiusKite']], tab: 0,
     tabs: [[0, false, 'tilesSq', 'Squares', 'Squares'], [3, false, 'pentagons', 'Cairo', 'Cairo pentagons'],
            [2, false, 'tilesTri', 'Triangles', 'Triangles'], [2, true, 'tilesTriTurned', 'Triangles', 'Triangles, turned by 30° (pointing along the strip)'], [4, false, 'kites', 'Kites', 'Kites (each triangle cut in 3)'],
            [4, true, 'kites', 'Kites', 'Kites, turned by 30° (pointing along the strip)'], [1, false, 'tilesHex', 'Hexagons', 'Hexagons'], [1, true, 'tilesHexTurned', 'Hexagons', 'Hexagons, turned by 30° (flat-topped, columns across the strip)']] },
-  { name: 'Klein bottle', modes: [['kleinWalk', 'lifeKlein', 'kleinPivot'], ['kleinCairoWalk', 'lifeKleinCairo'], ['kleinHexWalk', 'lifeKleinHex', 'kleinHexPivot'], ['kleinTriWalk', 'lifeKleinTri'], ['lifeKleinKite']], tab: 0,
+  { name: 'Klein bottle', modes: [['kleinWalk', 'lifeKlein'], ['kleinCairoWalk', 'lifeKleinCairo'], ['kleinHexWalk', 'lifeKleinHex'], ['kleinTriWalk', 'lifeKleinTri'], ['lifeKleinKite']], tab: 0,
     tabs: [[0, false, 'tilesSq', 'Squares', 'Squares'], [1, false, 'pentagons', 'Cairo', 'Cairo pentagons'],
            [3, false, 'tilesTri', 'Triangles', 'Triangles'], [3, true, 'tilesTriTurned', 'Triangles', 'Triangles, turned by 30° (rows round the tube)'], [4, false, 'kites', 'Kites', 'Kites (each triangle cut in 3)'],
            [4, true, 'kites', 'Kites', 'Kites, turned by 30° (rows round the tube)'], [2, false, 'tilesHex', 'Hexagons', 'Hexagons'], [2, true, 'tilesHexTurned', 'Hexagons', 'Hexagons, turned by 30° (flat-topped, columns round the ring)']] },
@@ -3114,13 +3096,12 @@ const FAMILIES = [
   ...[['Sphere', 'icosa'], ['Tetrahedron', 'tetra'], ['Octahedron', 'octa'], ['Stella octangula', 'stella'], ['Dodecahedron', 'dodeca']].map(([name, k]) => {
     const K = k[0].toUpperCase() + k.slice(1), sphere = k === 'icosa';
     return { name, tab: 0,
-      modes: [[`${k}Grid`, `${k}LR`, ...(MODES[`ant${K}`] ? [`ant${K}`] : []), `life${K}`, `${k}PivotGrid`], [`life${K}Kite`], sphere ? ['hexSphereGrid', 'hexSphereWalk', 'antHexSphere', 'lifeHexSphere'] : [`life${K}Hex`], ...(sphere ? [['lifeTwistedSphere']] : [])],
+      modes: [[`${k}Grid`, `${k}LR`, ...(MODES[`ant${K}`] ? [`ant${K}`] : []), `life${K}`], [`life${K}Kite`], sphere ? ['hexSphereGrid', 'hexSphereWalk', 'antHexSphere', 'lifeHexSphere'] : [`life${K}Hex`], ...(sphere ? [['lifeTwistedSphere']] : [])],
       tabs: [[1, false, 'kites', 'Kites', 'Kites (each triangle cut in 3)'], [2, false, 'tilesHex', 'Hexagons', sphere ? 'Hexagons (and 12 pentagons)' : 'Hexagons (folded over the edges, the corners walls)'],
              [0, false, 'tilesTri', 'Triangles', sphere ? 'Triangles (an icosahedron, inflated)' : 'Triangles'],
              ...(sphere ? [[3, false, 'tiling-twisttri', 'Twisted', 'Twisted: the hexagons turned 15°, a triangle between each three (and 12 pentagons)']] : [])] };
   }),
 ];
-for (const F of FAMILIES) for (const ms of F.modes) ms.push(...ms.filter((w) => w.includes('Pivot')).map((w) => w.replace('Pivot', 'Parity')));  // each tiling's parity walks too
 // the tilings folded, after the hexagons (Life only), as the plane's: by their group (squares, parallelograms, the others, see
 // SHAPE_GROUPS), each as listed (TILINGS)
 const foldGroup = (k) => ({ 4: 0, 3: 2, 6: 2 }[TILINGS[k].turns] ?? 1), TILING_KINDS = Object.keys(TILINGS);  // (SHAPE_GROUPS's, by its turns: squares, parallelograms, the others)
@@ -4425,8 +4406,15 @@ const WALK_RULE = { square: 'LNR', hex: 'L2 L1 N R1 R2', tri: 'LR', cairo: 'L2 L
 const walkKey = (m) => (m.lattice === 'sphere' ? `${m.net} surface` : m.net);
 const walkRules = Object.fromEntries(Object.entries(WALK_RULE).flatMap(([net, r]) => [[net, r], [`${net} surface`, r]]));
 const surfaceWords = (net) => Object.keys(WALK_NETS[net].turns).filter((t) => t !== 'U');  // (a surface's turns, left to right)
-// why a word cannot go on a walk, or '': not its network's; a diagonal along the grid; on a surface, anything but a turn
-const walkWordWhy = (m, t) => (m.lattice === 'sphere' ? (surfaceWords(m.net).includes(t) ? '' : `${t}: on a surface, its turns only`)
+// a surface walk's acts, one per digit (see surfaceSteps): by its rule's words (a turn: its edges on, or degrees along the grid,
+// as its turns list them left to right; l r a: a notch on the spot, a parity's), else by its turns (an ant's)
+const SURFACE_NOTCHES = { square: 4, hex: 6 };  // (a step straight on: squares' and hexagons' cells, squares' and triangles' grid)
+function surfaceActs(mode, words = mode.net && ruleWords(walkRules[walkKey(mode)])) {
+  if (!words) return mode.turns.map((t) => ['turn', t]);
+  return words.map((t) => (t === 'l' || t === 'r' ? ['pivot', t === 'r' ? 1 : -1] : t === 'a' ? ['parity'] : ['turn', mode.turns[surfaceWords(mode.net).indexOf(t)]]));
+}
+// why a word cannot go on a walk, or '': not its network's; a diagonal along the grid; on a surface, no fixed way (no north)
+const walkWordWhy = (m, t) => (m.lattice === 'sphere' ? (surfaceWords(m.net).includes(t) || (SURFACE_NOTCHES[m.net] && ['l', 'r', 'a'].includes(t)) ? '' : `${t}: not on a surface (no north there)`)
   : !wordAct(m.net, t) ? `${t}: not a word here` : m.lines && WALK_NETS[m.net].diagonals?.includes(t) ? `${t}: along the grid, a diagonal step follows no line` : '');
 // a walk's words for a rule (its own by default), or null: 2 to 12, each fitting it
 function walkWordsOf(w, rule = walkRules[walkKey(MODES[w])]) {
@@ -4437,15 +4425,12 @@ const walkStepper = (w) => wordStepper(MODES[w].net, walkWordsOf(w));
 // a walk's arrows, one per word (a word with none: ''), by its rule
 const walkArrows = (w) => { const m = MODES[w], r = walkRules[walkKey(m)]; return (m.arrowsMemo?.[0] === r ? m.arrowsMemo : (m.arrowsMemo = [r, walkWordsOf(w).map((t) => WALK_NETS[m.net].arrows[t] ?? SPOT_ARROWS[t] ?? '')]))[1]; };
 const walkRuleText = (w) => `${MODES[w].where}: ${walkWordsOf(w).map((t, d) => `<b>${d}</b> ${WORD_TEXT[t]}`).join(', ')}${MODES[w].tail ?? ''}`;
-// The surfaces' turtles by a rule too: allTurns, all their turns in order, left to right (edges on, or degrees along the
-// grid); a digit's, its rule's turn's (turns, see surfaceSteps); their network by how many (a grid's: its dual's cells)
+// The surfaces' turtles by a rule too: turns, all theirs in order, left to right (edges on, or degrees along the grid), a
+// word its turn (see surfaceActs); their network by how many (a grid's: its dual's cells)
 const NET_BY_TURNS = { 2: 'tri', 3: 'square', 4: 'cairo', 5: 'hex' };
 for (const [w, m] of Object.entries(MODES)) {
   if (NAV[w]?.[0] !== 'Walk' || NAV[w][3] !== 'Turtle' || m.lattice !== 'sphere' || !m.turns) continue;
-  const all = m.turns;
-  Object.defineProperties(m, { net: { value: NET_BY_TURNS[all.length] }, allTurns: { value: all }, where: { value: m.rule.split(':')[0] },
-    tail: { value: m.rule.match(/ \([^)]*\)$/)?.[0] ?? '' },  // (its words before its digits', its note after)
-    turns: { get: () => { const r = walkRules[walkKey(m)]; return (m.turnsMemo?.[0] === r ? m.turnsMemo : (m.turnsMemo = [r, walkWordsOf(w).map((t) => all[surfaceWords(m.net).indexOf(t)])]))[1]; } } });
+  Object.assign(m, { net: NET_BY_TURNS[m.turns.length], where: m.rule.split(':')[0], tail: m.rule.match(/ \([^)]*\)$/)?.[0] ?? '' });  // (its words before its digits', its note after)
 }
 // every walk by a rule: its base, arrows and rule's text by it; on squares, no Fill areas with a diagonal (steps across no edge)
 for (const [w, m] of Object.entries(MODES)) if (m.net) {
@@ -6851,27 +6836,28 @@ function mobiusDelta(g, p, q) {
 // on the flat sheet (columns east, rows north; on cells, from tile centre to tile centre)
 function surfaceSteps(g, mode) {
   const starts = startList(g);
-  // a pivot walk: the turns on the spot since its last step (p), and a step k/2 − p edges on from its entry (along the grid:
-  // turned back by p notches of N, a whole turn); a parity walk: the turn its last digit asked (p: 1 right, −1 left, 0) and
-  // the parity of the digits read (q)
-  const own = mode.pivot || mode.parity;
+  // by its rule's acts (see surfaceActs): a turn, then a step; a turn on the spot, p the notches turned since the last step (right
+  // positive), the next step k/2 − p edges on from its entry (along the grid: turned back by p notches of N); a parity's, a step,
+  // then p a notch right at an odd digit, left at an even one (q: the parity of the digits read)
+  const acts = surfaceActs(mode), parity = acts.some(([kind]) => kind === 'parity');
   if (mode.grid) {
-    const G = gridGraph(g), angles = mode.turns.map((a) => (a * Math.PI) / 180), k = g.sides, N = mode.pivot ?? mode.parity ?? 1;
+    const G = gridGraph(g), k = g.sides, N = SURFACE_NOTCHES[mode.net] ?? 1;
     const corner = (v) => { const i = 2 * (k * G.tileOf[v] + G.cornerOf[v]); return mobiusAt(g, G.tileOf[v], [g.uv[i], g.uv[i + 1]]); };
-    return { start: (i) => (own ? [...starts[i], 0, 0] : starts[i]),
+    return { start: (i) => [...starts[i], 0, 0],
              step: ([v, from, p, q], d) => {
-               if (mode.pivot && d) return [v, from, (p + 1) % N, 0];  // (a turn on the spot: no step)
-               const next = nextCorner(g, G, v, from, own ? (-2 * Math.PI * p) / N : angles[d]);
-               return !own ? [next, v] : mode.pivot ? [next, v, 0, 0] : [next, v, d ? (q ? -1 : 1) : 0, 1 - q];
+               const [kind, by] = acts[d], read = parity ? 1 - q : 0;
+               if (kind === 'pivot') return [v, from, (p + by + N) % N, read];  // (a turn on the spot: no step)
+               const next = nextCorner(g, G, v, from, (kind === 'turn' ? (by * Math.PI) / 180 : 0) - (2 * Math.PI * p) / N);
+               return [next, v, kind === 'parity' ? (q ? -1 : 1) : 0, read];  // (−1, not N − 1: nextCorner takes the angle as it is)
              },
-             key: ([v, from, p = 0, q = 0]) => ((v * G.nv + from) * N + ((p + N) % N)) * 2 + q,
+             key: ([v, from, p, q]) => ((v * G.nv + from) * N + ((p + N) % N)) * 2 + q,
              sheet: ([a], [b]) => (g.mobius ? mobiusDelta(g, corner(a), corner(b)) : sheetDelta(g, G, a, b)) };
   }
   // Entering a tile through edge k (corners counterclockwise), the digit d leaves through edge
   // k + turns[d]: k + 1 is on the right, k − 1 on the left, k + 2 straight on (for squares). Edges
   // are counted among those with a neighbour: a pentagon of the hexagon sphere (a hexagon with an
   // edge of length 0) has 5.
-  const turns = mode.turns, k = g.sides, live = Array.from({ length: g.n }, (_, u) => {
+  const k = g.sides, live = Array.from({ length: g.n }, (_, u) => {
     const ks = [];
     for (let e = 0; e < k; e++) if (g.nbr[k * u + e] >= 0) ks.push(e);
     return ks.length < k ? ks : null;
@@ -6882,14 +6868,15 @@ function surfaceSteps(g, mode) {
     return [u / k, v / k];
   };
   return {
-    start: (i) => (own ? [...cellStart(g, starts[i]), 0, 0] : cellStart(g, starts[i])),
+    start: (i) => [...cellStart(g, starts[i]), 0, 0],
     step: ([t, entry, p, q], d) => {
-      if (mode.pivot && d) return [t, entry, (p + 1) % k, 0];
+      const [kind, by] = acts[d], read = parity ? 1 - q : 0;
+      if (kind === 'pivot') return [t, entry, (p + by + k) % k, read];
       const ks = live[t], n = ks ? ks.length : k, at = ks ? ks.indexOf(entry) : entry;
-      const j = (((at + (own ? k / 2 - p : turns[d])) % n) + n) % n, edge = ks ? ks[j] : j, next = [g.nbr[k * t + edge], g.nbrEdge[k * t + edge]];
-      return !own ? next : mode.pivot ? [...next, 0, 0] : [...next, d ? (q ? -1 : 1) : 0, 1 - q];
+      const j = (((at + (kind === 'turn' ? by : k / 2) - p) % n) + n) % n, edge = ks ? ks[j] : j, next = [g.nbr[k * t + edge], g.nbrEdge[k * t + edge]];
+      return [...next, kind === 'parity' ? (q ? -1 : 1) : 0, read];
     },
-    key: ([t, entry, p = 0, q = 0]) => ((t * k + entry) * k + ((p + k) % k)) * 2 + q,
+    key: ([t, entry, p, q]) => ((t * k + entry) * k + ((p + k) % k)) * 2 + q,
     sheet: ([a], [b]) => {
       if (g.mobius) return mobiusDelta(g, mobiusAt(g, a, centre(a)), mobiusAt(g, b, centre(b)));
       const p = centre(a), q = centre(b), du = q[0] - p[0], dv = q[1] - p[1];
@@ -6900,8 +6887,8 @@ function surfaceSteps(g, mode) {
 
 // a walk's first state on surface g (see surfaceSteps): along the grid [corner, the corner it comes from], the start picked
 // where the surface has a start picker (start k of N, see STARTS_ON), else its first; on cells [tile, the edge it comes in
-// by]; a pivot or parity walk's p, q at 0
-const walkStart = (g, mode) => (mode.grid ? [...(STARTS_ON.includes(surfaceOf(mode)) ? startList(g)[startNo() - 1] : firstStart(g, gridGraph(g))), ...(mode.pivot || mode.parity ? [0, 0] : [])]
+// by]; then its turns on the spot and its digits' parity, p and q, at 0
+const walkStart = (g, mode) => (mode.grid ? [...(STARTS_ON.includes(surfaceOf(mode)) ? startList(g)[startNo() - 1] : firstStart(g, gridGraph(g))), 0, 0]
   : surfaceSteps(g, mode).start(startNo() - 1));
 // A walk on a surface recorded step by step (see buildGridWalk, buildSphereWalk): its points (on the unit surface, R times),
 // its tiles, its places seen (corners or tiles, nodes of them) and the step it has seen them all, its farthest from its
@@ -10859,15 +10846,17 @@ function walkCell(lattice, [x, y]) {
 }
 // a surface's walk as on its flat tiling: a step of 1, its heading turned by its turns (degrees at a corner of its grid;
 // out of a cell, the edges counted from the one come in by, of n), a pivot's on the spot, a parity's after its step
-function surfaceStepper(mode, n, turns = mode.turns) {
-  let x = 0, y = 0, a = Math.PI / 2, k = 0;  // (heading up, left positive)
-  const go = () => { x += Math.cos(a); y -= Math.sin(a); return [null, x, y]; }, notch = (m) => (2 * Math.PI) / m;
+function surfaceStepper(mode, n, acts) {
+  let x = 0, y = 0, a = Math.PI / 2, read = 0;  // (heading up, left positive)
+  const notch = (2 * Math.PI) / (mode.grid ? SURFACE_NOTCHES[mode.net] : n);
   return (g) => {
-    if (mode.pivot) { if (g) a -= notch(mode.pivot); else go(); return [null, x, y]; }
-    if (mode.parity) { go(); k++; if (g) a += (k % 2 ? -1 : 1) * notch(mode.parity); return [null, x, y]; }
-    const t = turns[g];
-    a += mode.grid ? (t * Math.PI) / 180 : (2 * Math.PI * t) / n - Math.PI;
-    return go();
+    const [kind, by] = acts[g];
+    read++;
+    if (kind === 'pivot') { a -= by * notch; return [null, x, y]; }
+    if (kind === 'turn') a += mode.grid ? (by * Math.PI) / 180 : (2 * Math.PI * by) / n - Math.PI;
+    x += Math.cos(a); y -= Math.sin(a);
+    if (kind === 'parity') a += (read % 2 ? -1 : 1) * notch;
+    return [null, x, y];
   };
 }
 // the figures: { d, caption, at (the way in, then the step), here (where it steps from), next (dashed), ends, cells, dashed (the step) };
@@ -10878,31 +10867,26 @@ function walkFigures(w, byTurns = false) {
   const ruled = N && [...(byTurns ? surfaceWords(mode.net) : walkWordsOf(w)), N.straight], S = ruled ? ruled.length - 1 : 0;
   const digits = [...Array(ruled ? S : mode.base).keys()], words = {};
   for (const [, d, t] of mode.rule.matchAll(/<b>(\d+)<\/b>\s*([^<]*)/g)) words[d] = t.replace(/[,\s]+(or\s*)?$/, '');
-  const n = mode.sphere === 'hexsphere' ? 6 : Math.max(...(mode.allTurns ?? mode.turns ?? [0])) + 1;  // (a surface's cell: the most it turns by and one, but on the sphere of hexagons)
+  const n = mode.sphere === 'hexsphere' ? 6 : Math.max(...(mode.turns ?? [0])) + 1;  // (a surface's cell: the most it turns by and one, but on the sphere of hexagons)
   const start = surface ? [[0, 1], [0, 0]] : [[0, 0]];  // (on a surface: come in from below)
   const path = (seq) => {
-    const step = surface ? surfaceStepper(mode, n, ruled ? ruled.map((t) => mode.allTurns[surfaceWords(mode.net).indexOf(t)]) : mode.turns) : ruled ? wordStepper(mode.net, ruled) : STEPPERS[w]();
+    const step = surface ? surfaceStepper(mode, n, surfaceActs(mode, ruled)) : ruled ? wordStepper(mode.net, ruled) : STEPPERS[w]();
     return [...start, ...seq.map((g) => step(g).slice(1, 3))];
   };
   const spiral = /Spiral$|^spiral$/.test(w), cells = mode.cells || spiral;
   // a surface's cell: the one it steps from, a side toward where it came from
   const polygon = (p, q) => { const t = Math.atan2(q[1] - p[1], q[0] - p[0]), R = 0.5 / Math.cos(Math.PI / n); return [...Array(n).keys()].map((k) => [p[0] + R * Math.cos(t + ((2 * k + 1) * Math.PI) / n), p[1] + R * Math.sin(t + ((2 * k + 1) * Math.PI) / n)]); };
   const figure = (d, into, after = [], caption = words[d]) => {
-    const at = path([...into, d, ...after]), here = start.length - 1 + into.length, notches = mode.pivot ?? mode.parity;
-    // the ways on: each digit's end; a pivot's or a parity's, round it along its fixed directions (a surface's, its notches)
-    const round = () => (surface ? [...Array(notches).keys()].map((k) => [Math.cos(Math.PI / 2 + (2 * Math.PI * k) / notches), -Math.sin(Math.PI / 2 + (2 * Math.PI * k) / notches)])
-      : [...Array(MODES[mode.steps].base).keys()].map((g) => STEPPERS[mode.steps]()(g).slice(1, 3))).map((o) => [at[here][0] + o[0], at[here][1] + o[1]]);
-    const ends = spiral ? [] : notches ? round() : digits.map((g) => path([...into, g]).at(-1));
+    const at = path([...into, d, ...after]), here = start.length - 1 + into.length;
+    const ends = spiral ? [] : digits.map((g) => path([...into, g]).at(-1));  // (the ways on: each digit's end)
     const drawn = !cells ? [] : surface ? [polygon(at[here], at[here - 1])] : [...new Map([...at, ...ends].map((p) => [pointKey(...p), walkCell(mode.lattice, p)])).values()];
     return { d, caption, at: at.slice(0, here + 2), next: at.slice(here + 1), ends, here, dashed: spiral && !d, cells: drawn };
   };
   if (spiral) return [figure(1, Array(7).fill(1)), figure(0, Array(7).fill(1))];
-  const way = surface ? [] : [0];  // (a step forward first, its heading: a surface's comes in already)
-  if (mode.parity) return [figure(0, way, [0]), figure(1, surface ? [] : [0, 0], [0], 'step forward, then turn right (an odd digit: the 1st, 3rd…)'), figure(1, [0], [0], 'step forward, then turn left (an even digit)')];
-  if (mode.pivot) return digits.map((d) => figure(d, way, d ? [0] : []));
-  // by a rule: a turn on the spot, then a step to show it; a parity's, at an odd digit and at an even one
-  const into = surface ? [] : [S];
-  return digits.flatMap((d) => (ruled[d] === 'a' ? [figure(d, [S, S], [S], 'step, then turn right (at an odd digit: the 1st, 3rd…)'), figure(d, [S], [S], 'step, then turn left (at an even digit)')]
+  // by a rule: a step straight on first, its heading (a surface's comes in already); a turn on the spot, then a step to show
+  // it; a parity's at an odd digit and at an even one (the digits read before it, odd or even)
+  const into = surface ? [] : [S], odd = into.length % 2 ? [...into, S] : into, even = into.length % 2 ? into : [...into, S];
+  return digits.flatMap((d) => (ruled[d] === 'a' ? [figure(d, odd, [S], 'step, then turn right (at an odd digit: the 1st, 3rd…)'), figure(d, even, [S], 'step, then turn left (at an even digit)')]
     : [figure(d, into, ruled[d] === 'l' || ruled[d] === 'r' ? [S] : [])]));
 }
 // A creature's: an ant's, a figure per colour of its cell (by the digits: per digit, on a light cell and on a dark one, its

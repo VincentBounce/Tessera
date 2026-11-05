@@ -11,7 +11,7 @@
   <meta property="og:type" content="website">
   <link id="favicon" rel="icon">  <!-- the app's logo, set at start-up (see appLogo) -->
   <meta name="description" content="A walk on a grid in 2D or 3D driven by the base-2 to base-6 digits of π, other constants and large primes.">
-  <link rel="stylesheet" href="style.css?v=0.4.124">
+  <link rel="stylesheet" href="style.css?v=0.4.125">
   <script>  // the theme before the first paint (see applyTheme)
     try { const t = localStorage.getItem('tesseraTheme') || 'system'; document.documentElement.dataset.theme = t === 'system' ? (matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark') : t; } catch { document.documentElement.dataset.theme = 'dark'; }
   </script>
@@ -160,7 +160,7 @@
         <div id="battleHuntTop" class="mode-list" role="listbox"></div>  <!-- the 8 longest battles: a click plays one -->
       </section>
 
-      <section id="walkRuleSection">  <!-- a walk's rule: Turtle, Pivot…, along the grid or on cells -->
+      <section id="walkRuleSection">  <!-- a walk's rule: its rules' cards (a word per digit), Spiral; along the grid or on cells -->
         <h2 data-icon="turtle">Rule</h2>
         <button id="walkRuleHow" class="wide how-it-works" data-icon="info" type="button" title="The rule in use, step by step: what each cell (each step) sees, and what it does (each rule's ⓘ, too)">How it works</button>  <!-- how the rule works (see walkTutorialToggle), on its first card -->
         <div id="navRules" class="mode-list" role="listbox"></div>  <!-- the rules of that shape, where there are several; a walk by a rule: its rules' cards (see ruleCards) -->
@@ -214,10 +214,6 @@
               <option value="kleinHexWalk">Klein bottle of hexagons — base 5 (5 relative turns)</option>
               <option value="kleinTriWalk">Klein bottle of triangles — base 2 (left / right)</option>
               <option value="kleinCairoWalk">Klein bottle of Cairo pentagons — base 4 (4 edges out)</option>
-              <option value="kleinPivot">Klein bottle — base 2 (forward / turn right on the spot)</option>
-              <option value="kleinHexPivot">Klein bottle of hexagons — base 2 (forward / turn right on the spot)</option>
-              <option value="kleinParity">Klein bottle — base 2 (forward / forward then turn, right or left by the digit's place)</option>
-              <option value="kleinHexParity">Klein bottle of hexagons — base 2 (forward / forward then turn, right or left by the digit's place)</option>
               <option value="mobiusCairoWalk">Möbius strip of Cairo pentagons — base 4 (4 edges out)</option>
               <option value="mobiusTriGrid">Möbius strip of triangles — base 5 (5 relative turns)</option>
               <option value="mobiusTriWalk">Möbius strip of triangles — base 2 (left / right)</option>
@@ -237,36 +233,6 @@
               -->
               <option value="hexSphereGrid">Hexagon sphere (icosahedron) — base 2 (left / right)</option>
               <option value="hexSphereWalk">Hexagon sphere (icosahedron) — base 2 (front left / front right)</option>
-              <option value="cubePivot">Cube — base 2 (forward / turn right on the spot)</option>
-              <option value="cubePivotGrid">Cube — base 2 (forward / turn right on the spot)</option>
-              <option value="torusPivot">Square torus — base 2 (forward / turn right on the spot)</option>
-              <option value="torusPivotGrid">Square torus — base 2 (forward / turn right on the spot)</option>
-              <option value="torusHexPivot">Hex torus — base 2 (forward / turn right on the spot)</option>
-              <option value="torusTriPivotGrid">Triangle torus — base 2 (forward / turn right on the spot)</option>
-              <option value="mobiusPivot">Möbius strip — base 2 (forward / turn right on the spot)</option>
-              <option value="mobiusPivotGrid">Möbius strip — base 2 (forward / turn right on the spot)</option>
-              <option value="mobiusHexPivot">Möbius strip of hexagons — base 2 (forward / turn right on the spot)</option>
-              <option value="mobiusTriPivotGrid">Möbius strip of triangles — base 2 (forward / turn right on the spot)</option>
-              <option value="tetraPivotGrid">Tetrahedron — base 2 (forward / turn right on the spot)</option>
-              <option value="octaPivotGrid">Octahedron — base 2 (forward / turn right on the spot)</option>
-              <option value="stellaPivotGrid">Stella octangula (two tetrahedra) — base 2 (forward / turn right on the spot)</option>
-              <option value="dodecaPivotGrid">Dodecahedron (pentagons cut into 5 triangles) — base 2 (forward / turn right on the spot)</option>
-              <option value="icosaPivotGrid">Triangle sphere (icosahedron) — base 2 (forward / turn right on the spot)</option>
-              <option value="cubeParity">Cube — base 2 (forward / forward then turn, right or left by the digit's place)</option>
-              <option value="cubeParityGrid">Cube — base 2 (forward / forward then turn, right or left by the digit's place)</option>
-              <option value="torusParity">Square torus — base 2 (forward / forward then turn, right or left by the digit's place)</option>
-              <option value="torusParityGrid">Square torus — base 2 (forward / forward then turn, right or left by the digit's place)</option>
-              <option value="torusHexParity">Hex torus — base 2 (forward / forward then turn, right or left by the digit's place)</option>
-              <option value="torusTriParityGrid">Triangle torus — base 2 (forward / forward then turn, right or left by the digit's place)</option>
-              <option value="mobiusParity">Möbius strip — base 2 (forward / forward then turn, right or left by the digit's place)</option>
-              <option value="mobiusParityGrid">Möbius strip — base 2 (forward / forward then turn, right or left by the digit's place)</option>
-              <option value="mobiusHexParity">Möbius strip of hexagons — base 2 (forward / forward then turn, right or left by the digit's place)</option>
-              <option value="mobiusTriParityGrid">Möbius strip of triangles — base 2 (forward / forward then turn, right or left by the digit's place)</option>
-              <option value="tetraParityGrid">Tetrahedron — base 2 (forward / forward then turn, right or left by the digit's place)</option>
-              <option value="octaParityGrid">Octahedron — base 2 (forward / forward then turn, right or left by the digit's place)</option>
-              <option value="stellaParityGrid">Stella octangula (two tetrahedra) — base 2 (forward / forward then turn, right or left by the digit's place)</option>
-              <option value="dodecaParityGrid">Dodecahedron (pentagons cut into 5 triangles) — base 2 (forward / forward then turn, right or left by the digit's place)</option>
-              <option value="icosaParityGrid">Triangle sphere (icosahedron) — base 2 (forward / forward then turn, right or left by the digit's place)</option>
             </optgroup>
             <optgroup label="3D walks">
               <option value="cubeRel">Cubes turtle — base 5 (5 relative turns)</option>
@@ -780,10 +746,10 @@
     </div>
   </main>
 
-  <script src="pixelarticons.js?v=0.4.124"></script>
-  <script src="punks.js?v=0.4.124"></script>
-  <script src="loops.js?v=0.4.124"></script>
-  <script src="emoji.js?v=0.4.124"></script>
-  <script src="main.js?v=0.4.124"></script>
+  <script src="pixelarticons.js?v=0.4.125"></script>
+  <script src="punks.js?v=0.4.125"></script>
+  <script src="loops.js?v=0.4.125"></script>
+  <script src="emoji.js?v=0.4.125"></script>
+  <script src="main.js?v=0.4.125"></script>
 </body>
 </html>

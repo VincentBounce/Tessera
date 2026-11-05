@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.139';
+const VERSION = '0.4.140';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -2816,7 +2816,7 @@ function numberText(limit = Infinity) {
   const { head, frac } = digitsInUse(), b = current.base, shown = frac.subarray(0, limit);
   const write = (ds) => (b <= 36 ? Array.from(ds, (v) => v.toString(36)).join('') : Array.from(ds).join(' '));
   const sign = !current.digits.length && head.length === current.total ? '=' : '≈';
-  return `${formulaInUse} base ${b} ${sign} ${head.length ? write(head) : '0'}${shown.length ? `.${write(shown)}` : ''}`;
+  return `${formulaInUse} ${baseWords(b)} ${sign} ${head.length ? write(head) : '0'}${shown.length ? `.${write(shown)}` : ''}`;
 }
 
 /* ==============================================================================================
@@ -17196,9 +17196,9 @@ function base10Digits() {
 }
 const base10 = { on: false };  // (Base 10 switched on: the number in base 10 instead, see showNumber)
 function showNumber() {
-  const text = numberText(), name = `${formulaInUse} base ${current.base} `, v = $('numberPreview'), ten = base10.on && current.base !== 10;
+  const text = numberText(), name = `${formulaInUse} ${baseWords(current.base)} `, v = $('numberPreview'), ten = base10.on && current.base !== 10;
   // a base's: its title, a fraction's period (= 0.(101)), then its digits in use (cut: …); base 10's instead when switched on
-  const part = (b, digits) => { const period = current.ratio && ratioDigits(b); return `<h3>${withIcons(formulaInUse)} <code>base ${b}</code></h3>${period ? `<p class="number-digits">${period}</p>` : ''}<p class="number-digits">${digits}</p>`; };
+  const part = (b, digits) => { const period = current.ratio && ratioDigits(b); return `<h3>${withIcons(formulaInUse)} <code>${baseWords(b)}</code></h3>${period ? `<p class="number-digits">${period}</p>` : ''}<p class="number-digits">${digits}</p>`; };
   v.innerHTML = `<div class="tut-body">${ten ? part(10, base10Digits()) : part(current.base, '')}</div>`;
   if (!ten) v.querySelector('.number-digits:last-child').textContent = `${text.slice(name.length)}${text.includes(' ≈ ') ? '…' : ''}`;
   v.prepend(tutTools({ toggle: current.base !== 10 && { text: 'Base 10', title: `The number in base 10 instead of base ${current.base}`, on: base10.on, click: () => { base10.on = !base10.on; showNumber(); } }, copy: (e) => copyFlash(e.currentTarget, text), close: closeNumber, back: 'the walk' }));

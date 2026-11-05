@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.132';
+const VERSION = '0.4.133';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -7018,7 +7018,11 @@ function buildSphereWalk(seq, mode, ahead = new Uint8Array(0)) {
  * a body is drawn as a line along its edges, as a walk's path. The walks are made as the battle is first played
  * (battlePlayer), then replayed to the step shown. */
 let walkTeams = 1;  // a walk's teams: 1 Classic, 2 Duel, 3 Trio… 12 Dozen (as Life's, see renderColours; which, see battleCounts)
-let penetration = 0;  // a battle's way with an enemy's body: 5 Land grid, 6 Land cells, 0 Cut, 1 Land grid 2 (see battlePlayer, PENETRATIONS)
+let penetration = null;  // a battle's way with an enemy's body picked: 5 Land grid, 6 Land cells, 0 Cut, 1 Land grid 2 (see battlePlayer, PENETRATIONS); null, none
+// the one in use: the one picked where the walk can take it, else its Land (Land grid along the grid, Land cells on cells)
+const penetrationFits = (p, w) => p === 0 || (p === 6) !== !!MODES[w].grid;
+const penetrationByDefault = (w) => (MODES[w].grid ? 5 : 6);
+const battlePenetration = (w = $('mode').value) => (penetration !== null && penetrationFits(penetration, w) ? penetration : penetrationByDefault(w));
 // its choice (one tab group under the teams): its number (a link's pe=), its name, its picture (a red head and a blue body
 // or land), its words; along the grid Cut and the Land grids, on cells Cut and Land cells (each greyed in the other's place)
 const PENETRATIONS = [
@@ -7049,8 +7053,8 @@ function renderWalkTeams() {
   if (!here || !battleOn()) return;
   const button = ([p, name, head, title]) => tile({
     pic: `<svg viewBox="0 0 4 4" aria-hidden="true"><path d="M0 0H4V4H0Z" fill="${LIFE_COLOURS[1]}"/><path d="${head}" fill="${LIFE_COLOURS[0]}"/></svg>`, text: name, title,
-    on: p === penetration, can: p === 0 || (p === 6) !== !!MODES[w].grid, greyed: p === 6 ? 'along the grid: cells only' : p ? 'on cells: along the grid only' : '', byDefault: p === 0 ? 'yes' : '',
-    click: () => { if (p !== penetration) { penetration = p; compute(); } } });
+    on: p === battlePenetration(w), can: penetrationFits(p, w), greyed: p === 6 ? 'along the grid: cells only' : p ? 'on cells: along the grid only' : '', byDefault: p === penetrationByDefault(w) ? 'yes' : '',
+    click: () => { if (p !== battlePenetration(w)) { penetration = p; compute(); } } });
   $('walkPenetration').replaceChildren(tileGroup(PENETRATIONS.map(button)));
 }
 // a battle's formula fields, each bold in its walker's colour once sent to be fought (computed, from Enter, Random or a
@@ -7270,7 +7274,7 @@ function smallerSide(L, cut, j) {
 // tiles; a head on an enemy's body cuts it. 5 Land grid: lines and their land as lined says. On cells,
 // 6 Land cells: painted. With land, heads meeting all die (see collisions), their land staying: it ends with one or none
 // left, the most land winning (the dead's too): its worth, its land, who wins
-function battlePlayer(g, grid, S, starts, digits, pen = penetration) {
+function battlePlayer(g, grid, S, starts, digits, pen = battlePenetration()) {
   if (pen && !grid) pen = 6;  // (on cells Cut and Land cells only, along the grid Cut and the Land grids: each greyed in the other's place)
   if (pen === 6 && grid) pen = 5;
   // Land cells (painted): no body; each walker paints the tile it goes into its colour (land[t], whatever it was), and a zone
@@ -7686,7 +7690,7 @@ function battleAreas(P) {
 const BATTLE_CARDS = Object.values(PRESETS).filter((p) => ['Constants', '𝑓', 'Sequences'].includes(p.group) && typeof p.f === 'string').map((p) => p.f).concat('rho');
 const BATTLE_FRESH = () => ({ ended: [], open: [], endedCount: 0, tried: new Set(), key: battleHuntKey(), status: '' });  // (a hunt's results, none yet)
 const battleHunt = { run: null, ended: [], open: [], endedCount: 0, tried: new Set(), key: '', status: '' };
-const battleHuntKey = () => `${$('mode').value}|${walkTeams}|${penetration}|${sphereSize()}|${startNo()}|${digitsNeeded()}`;  // (what its battles are fought at)
+const battleHuntKey = () => `${$('mode').value}|${walkTeams}|${battlePenetration()}|${sphereSize()}|${startNo()}|${digitsNeeded()}`;  // (what its battles are fought at)
 // √r's first n digits in base b, its integer part first (on the page: one integer root, as numberSeed's)
 const rootDigits = (r, base, n) => Uint8Array.from(iroot(BigInt(r) * BigInt(base) ** BigInt(2 * n), 2).toString(base).slice(0, n), (c) => c.charCodeAt(0) - 48);
 async function startBattleHunt() {
@@ -13592,7 +13596,7 @@ function getSetup() {
   if (battleOn()) {  // (a walk's Duel or Trio, as Life's: its teams; B's number, C's)
     s.k = walkTeams;
     RIVALS.slice(0, walkTeams - 1).forEach((id) => { s[`x${id.slice(-1).toLowerCase()}`] = formulaOf($(id).value).text ?? $(id).value; });  // (xb, xc…)
-    if (penetration) s.pe = penetration;  // (the Land ones)
+    if (battlePenetration(w) !== penetrationByDefault(w)) s.pe = battlePenetration(w);  // (none: its Land)
   }
   if (mode.life && colourMix && lifeColours > 1) s.mx = 1;
   if (mode.life && newcomerOn()) s.nc = 1;  // (Newcomer)  // (Mixed, kept where its zone greys it: the other zones' fits by it, see huntFits)
@@ -13627,7 +13631,7 @@ function applySetup(s) {
   }
   if (s.d !== undefined) target = Number(s.d);
   walkTeams = !MODES[s.w].life && COLOUR_STEPS.includes(Number(s.k)) ? Number(s.k) : 1;  // (a walk's battle, if its surface allows it at its size: see battleOn)
-  penetration = walkTeams > 1 && PENETRATIONS.some(([p]) => p && p === Number(s.pe)) ? Number(s.pe) : 0;
+  penetration = walkTeams > 1 && s.pe !== undefined && PENETRATIONS.some(([p]) => p === Number(s.pe)) ? Number(s.pe) : null;  // (none: its Land)
   for (const id of RIVALS) set(id, s[`x${id.slice(-1).toLowerCase()}`]);
   set('mode', s.w);
   $('startNo').value = s.st ?? 1;

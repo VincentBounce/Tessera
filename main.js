@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.120';
+const VERSION = '0.4.121';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -1034,8 +1034,8 @@ const CONED = {
 const conedOf = (f) => Object.fromEntries(Object.entries(CONED).flatMap(([fam, F]) => Object.keys(F.marks).map((n) => f(`${fam}${n}`, Number(n), F))));
 const conedFamily = (kind) => Object.keys(CONED).find((fam) => CONED[fam].marks[kind.slice(fam.length)] && kind === `${fam}${kind.slice(fam.length)}`);
 const MODES = {
-  turtle:   { base: 3, arrows: '←↑→', lattice: 'square', lines: true, twin: 'turtleCells', ant: 'antSquare',
-              rule: 'along the lines of a square grid: <b>0</b> turn left + step, <b>1</b> step forward, <b>2</b> turn right + step' },
+  turtle:   { get base() { return walkTurnsOf('turtle').length; }, get arrows() { return walkArrows('turtle'); }, lattice: 'square', lines: true, twin: 'turtleCells', ant: 'antSquare',
+              turnsOf: 'antSquare', get rule() { return walkRuleText('turtle', 'along the lines of a square grid'); } },
   cardinal: { base: 4, arrows: '↑→↓←', lattice: 'square', lines: true, twin: 'cardinalCells',
               rule: 'along the lines of a square grid: <b>0</b> north, <b>1</b> east, <b>2</b> south, <b>3</b> west' },
   triTurtle: { base: 5, arrows: '↙↖↑↗↘', lattice: 'hex', lines: true, twin: 'triTurtleCells', ant: 'antTri',
@@ -1046,8 +1046,8 @@ const MODES = {
               rule: 'along the lines of a hexagon grid: <b>0</b> turn left, <b>1</b> turn right' },
   hexFixed: { base: 3, lattice: 'tri', lines: true, twin: 'hexFixedCells',
               rule: 'along the lines of a hexagon grid: take the <b>0</b> “|”, <b>1</b> “\\” or <b>2</b> “/” edge' },
-  turtleCells: { base: 3, arrows: '←↑→', lattice: 'square', cells: true, twin: 'turtle',
-              rule: 'from cell to cell of a square grid: <b>0</b> turn left + step, <b>1</b> step forward, <b>2</b> turn right + step' },
+  turtleCells: { get base() { return walkTurnsOf('turtleCells').length; }, get arrows() { return walkArrows('turtleCells'); }, lattice: 'square', cells: true, twin: 'turtle',
+              turnsOf: 'antSquare', get rule() { return walkRuleText('turtleCells', 'from cell to cell of a square grid'); } },
   cardinalCells: { base: 4, arrows: '↑→↓←', lattice: 'square', cells: true, twin: 'cardinal',
               rule: 'from cell to cell of a square grid: <b>0</b> north, <b>1</b> east, <b>2</b> south, <b>3</b> west' },
   triTurtleCells: { base: 2, arrows: '↖↗', lattice: 'tri', cells: true, twin: 'triTurtle',
@@ -3206,14 +3206,18 @@ function renderAntRow() {
   antRowMode = w;
   stage.classList.toggle('drawing', drawsHere());  // (the crosshair: a click draws, as renderDrawTools keeps it)
   $('antStartSection').hidden = $('antRuleSection').hidden = !ant;
-  if (!ant) return;
+  // its rules' cards: a creature's in its Rule section, a walk's by its rule (see walkRules) under its Grid | Cells
+  const cardsHome = m.turnsOf ? $('walkTurns') : $('antRuleSection');
+  $('walkTurns').hidden = !m.turnsOf;
+  if ($('ruleCards').parentElement !== cardsHome) cardsHome.append($('ruleCards'));
+  if (!ant && !m.turnsOf) return;
   if (m.turmite) antByDigits = false;  // (by its rule only: its Digits greyed)
   const R = creatureRules(w);
   $('antRuleTitle').textContent = R.byDigits ? 'Turns' : 'Rule';  // (Digits: a turn per digit, not a rule of colours)
   setTile($('antByRule'), { on: !R.byDigits });
   setTile($('antByDigits'), { on: !!R.byDigits, can: !m.turmite, greyed: 'for a turmite (by its rule only)' });
   const rulesCard = (pic, name, detail, on, click) => card({ pic, name, detail, on, click, how: () => { if (on) walkTutorialToggle(); else { click(); walkTutorial(w); } } });  // (its ⓘ: how it works, picked first)
-  const known = R.cards.some(([r]) => r === R.now), mine = !known || antCustomOpen, pic = icon(m.worm ? 'worm' : m.turmite ? 'turmite' : 'ant');
+  const known = R.cards.some(([r]) => r === R.now), mine = !known || antCustomOpen, pic = icon(m.worm ? 'worm' : m.turmite ? 'turmite' : m.turnsOf ? 'turtle' : 'ant');
   $('antRuleCards').replaceChildren(...R.cards.map(([r, words]) => rulesCard(pic, r, words, r === R.now && !antCustomOpen, () => { antCustomOpen = false; if (r === R.now) renderAntRow(); else R.set(r); })),
     ...(R.typed ? [rulesCard(pixelIcon('..o..,..o..,ooooo,..o..,..o..'), 'Custom rule', mine ? `${R.now} · your own` : 'your own, typed', mine, () => { antCustomOpen = true; renderAntRow(); })] : []));
   $('antCustomRow').hidden = !R.typed || !mine;
@@ -3226,6 +3230,9 @@ const ANT_WORDS = { RL: "Langton's ant: a highway from step 9,976", RLR: 'grows 
 const TURMITE_WORDS = ["Langton's ant", 'a spiral', 'the widest mess', 'a square growing filled', 'a shape growing filled', 'a highway from step 3,090, every 54 steps'];
 const WORM_WORDS = ['dies at step 4,802', 'dies at step 83,618', 'dies at step 569,804', 'dies at step 918,339', 'still going at step 5,000,000', 'still going at step 5,000,000'];
 function creatureRules(w) {
+  const t = MODES[w].turnsOf;
+  if (t) return { now: walkRules[t], typed: true, set: (r) => setWalkRule(w, r), cards: ANTS[t].digitPresets.map((r) => [r, turnWords(r).map((u, d) => `${d} ${TURN_WORDS[u]}`).join(', ')]),
+                  name: `Rule, a turn per digit: ${Object.keys(ANTS[t].turns).join(', ')}` };
   if (MODES[w].worm) return { byDigits: worm.byDigits, now: worm.rule, typed: !worm.byDigits, cards: worm.byDigits ? [] : WORM_PRESETS.map((r, i) => [r, WORM_WORDS[i]]), set: setWormRule,
                               name: 'Rule, a turn at each new corner: L2, L1, N, R1, R2' };
   if (MODES[w].turmite) return { now: turmite.rule, typed: true, cards: TURMITE_PRESETS.map((r, i) => [r, TURMITE_WORDS[i]]), set: setTurmiteRule,
@@ -3362,7 +3369,8 @@ function renderModePicker() {
   $('walkRuleHow').hidden = !walkTutorialFits(w);
   const side = (b, s, word, none) => {
     const v = alone ? (s === 'cells' ? w : null) : sides.includes(s) ? navPick(4, s) : null, here = alone ? s === 'cells' : NAV[w][4] === s;
-    const info = !v ? null : MODES[v].turmite ? { base: '', detail: turmite.rule } : MODES[v].antOf ? { base: '', detail: antByDigits ? `digits ${antDigitRules[v]}` : antRules[v] } : splitModeLabel(modeOptionOf(v).text);
+    const info = !v ? null : MODES[v].turmite ? { base: '', detail: turmite.rule } : MODES[v].antOf ? { base: '', detail: antByDigits ? `digits ${antDigitRules[v]}` : antRules[v] }
+      : MODES[v].turnsOf ? { base: `base ${MODES[v].base}`, detail: walkRules[MODES[v].turnsOf] } : splitModeLabel(modeOptionOf(v).text);
     b.innerHTML = `<span class="walk-on-name">${word}${info?.base ? ` <span class="mode-base">${info.base}</span>` : ''}</span>`
       + `<span class="mode-detail">${info ? info.detail : none}</span>`;
     b.disabled = !v;
@@ -4050,7 +4058,7 @@ function populationOf(text) {
  * cell it leaves takes the next colour. Per tiling: the turtle walk it goes through the cells with (a
  * turn: its digit) and their arrows, its turns, and rules to start from, by the digits and by colour. */
 const ANTS = {
-  antSquare: { arrows: '←↑→', inner: () => STEPPERS.turtle(), turns: { L: 0, N: 1, R: 2 }, digitPresets: ['LR', 'LNR'], presets: ['RL', 'RLR', 'LLRR', 'LRRRRRLLR', 'RRLLLRLLLRRR'] },
+  antSquare: { arrows: '←↑→', inner: () => squareTurtleStepper(), turns: { L: 0, N: 1, R: 2 }, digitPresets: ['LR', 'LNR'], presets: ['RL', 'RLR', 'LLRR', 'LRRRRRLLR', 'RRLLLRLLLRRR'] },
   turmite: { arrows: '←↑→↓', inner: null, turns: { L: 0, N: 1, R: 2, U: 3 }, digitPresets: ['LR'], presets: ['RL'] },  // (its rule its own: see turmiteOf)
   antTri: { arrows: '↖↗', inner: () => triStepper('lr'), turns: { L: 0, R: 1 }, digitPresets: ['LR'], presets: ['RL', 'RRL', 'RLL', 'RRLL'] },
   antHex: { arrows: '↙↖↑↗↘', inner: () => hexStepper('relative'), turns: { L2: 0, L1: 1, N: 2, R1: 3, R2: 4 }, digitPresets: ['L1 R1', 'L1 N R1', 'L2 L1 R1 R2', 'L2 L1 N R1 R2'],
@@ -4077,6 +4085,23 @@ for (const [w, [walkMode, like, place]] of Object.entries(SURFACE_ANTS)) {
 const antRules = Object.fromEntries(Object.entries(ANTS).map(([w, A]) => [w, A.presets[0]]));
 const antDigitRules = Object.fromEntries(Object.entries(ANTS).map(([w, A]) => [w, A.digitPresets[0]]));
 let antByDigits = false;
+// A walk turning by the digits (Turtle): its rule a turn per digit, its base their count. Its turns are those of the ant on
+// the cells it goes through (turnsOf: the cells' ant; a grid's walk goes through its dual's cells), one rule shared by the
+// walks through the same cells; its cards the ant's rules by the digits (see creatureRules)
+const WALK_RULE = { antSquare: 'LNR' };  // (each one's at first)
+const walkRules = { ...WALK_RULE };
+const walkTurnsOf = (w) => antTurnsOf(MODES[w].turnsOf, walkRules[MODES[w].turnsOf]);
+const walkArrows = (w) => walkTurnsOf(w).map((t) => [...ANTS[MODES[w].turnsOf].arrows][t]).join('');
+const walkRuleText = (w, where) => `${where}: ${turnWords(walkRules[MODES[w].turnsOf]).map((t, d) => `<b>${d}</b> ${TURN_WORDS[t]}`).join(', ')}, then a step`;
+// a walk's stepper by its rule: a digit, its turn (inner: the stepper by the turns)
+const byWalkRule = (w, inner) => { const turns = walkTurnsOf(w); return (g) => inner(turns[g]); };
+function setWalkRule(w, rule) {
+  const t = MODES[w].turnsOf;
+  if (!antTurnsOf(t, rule)) { $('antRule').value = walkRules[t]; return; }
+  walkRules[t] = turnWords(rule).join('');
+  renderModePicker();
+  compute();
+}
 const MIRROR = { L: 'R', R: 'L', N: 'N', L1: 'R1', R1: 'L1', L2: 'R2', R2: 'L2' };
 const turnWords = (rule) => rule.toUpperCase().match(/[LR][12]?|N/g) ?? [];
 // by the digits, a rule's turns, one per digit: different turns, each with its mirror among them (so that
@@ -4090,7 +4115,7 @@ const antBase = (w) => (antByDigits ? turnWords(antDigitRules[w]).length : 2);
 const antRuleOf = (w) => (antByDigits ? antDigitRules[w] : antRules[w]);
 // a walk's arrows, one per digit (an ant's: per turn of the walk it goes through the cells with), none: []
 const ARROW_LISTS = {};
-const arrowsOf = (w) => (ARROW_LISTS[w] ??= [...((MODES[w].antOf ? ANTS[w] : MODES[w]).arrows ?? '')]);
+const arrowsOf = (w) => { const s = (MODES[w].antOf ? ANTS[w] : MODES[w]).arrows ?? ''; return (ARROW_LISTS[s] ??= [...s]); };  // (by its arrows: a walk's rule changes them)
 // a rule's turns (the turtle walk's digits), or null when it is not one: 2 to 12 of the tiling's turns
 function antTurnsOf(w, rule) {
   const A = ANTS[w], words = turnWords(rule);
@@ -4191,16 +4216,18 @@ function highwayOf(xs, ys, n) {
   return null;
 }
 
+// the turtle on squares, by its turn (0 left, 1 straight, 2 right: see ANTS.antSquare.turns)
+function squareTurtleStepper() {
+  let x = 0, y = 0, d = 0;
+  return (t) => {
+    if (t === 0) d = (d + 3) % 4;       // left
+    else if (t === 2) d = (d + 1) % 4;  // right
+    x += DIRS[d][0]; y += DIRS[d][1];
+    return [key(x, y), x, y, 0];
+  };
+}
 const STEPPERS = {
-  turtle() {
-    let x = 0, y = 0, d = 0;
-    return (g) => {
-      if (g === 0) d = (d + 3) % 4;       // left
-      else if (g === 2) d = (d + 1) % 4;  // right
-      x += DIRS[d][0]; y += DIRS[d][1];
-      return [key(x, y), x, y, 0];
-    };
-  },
+  turtle: () => byWalkRule('turtle', squareTurtleStepper()),
   cardinal() {
     let x = 0, y = 0;
     return (g) => {
@@ -4234,7 +4261,7 @@ const STEPPERS = {
       return [key(x, y), x, y, 0];
     };
   },
-  turtleCells: () => STEPPERS.turtle(),     // squares: the same steps, the grid half a cell away
+  turtleCells: () => byWalkRule('turtleCells', squareTurtleStepper()),  // squares: the same steps, the grid half a cell away
   cardinalCells: () => STEPPERS.cardinal(),
   triTurtle: () => hexStepper('relative'),  // along triangles: the steps of hexagon cells (see MODES)
   triFixed: () => hexStepper('fixed'),
@@ -13583,6 +13610,7 @@ function getSetup() {
   }
   if (mode.life && !mode.loops) s.pop = plane.start === 'random' ? zonePop() : plane.start === 'text' ? `text.${plane.text}` : plane.start;  // its start (a surface's no Draw)
   if (mode.life && !mode.loops && plane.start === 'text' && plane.font !== 'sans') s.tf = plane.font;  // (its font)
+  if (mode.turnsOf && walkRules[mode.turnsOf] !== WALK_RULE[mode.turnsOf]) s.r = walkRules[mode.turnsOf];  // (a walk's rule: none, its own)
   if (mode.antOf) s.r = antByDigits ? `digits ${antDigitRules[w]}`.trim() : antRules[w];
   if (mode.worm) s.r = worm.byDigits ? 'digits' : worm.rule;
   if (mode.turmite) s.r = turmite.rule;  // "digits LNR"; "digits" alone: left, right
@@ -13623,6 +13651,9 @@ function applySetup(s) {
     const rule = s.r.slice(6).trim();
     if (antByDigits) antDigitRules[s.w] = antDigitTurnsOf(s.w, rule) ? rule.toUpperCase() : ANTS[s.w].digitPresets[0];
     else if (antTurnsOf(s.w, s.r)) antRules[s.w] = s.r;
+  } else if (MODES[s.w].turnsOf) {
+    const t = MODES[s.w].turnsOf;
+    walkRules[t] = s.r && antTurnsOf(t, s.r) ? turnWords(s.r).join('') : WALK_RULE[t];
   } else if (s.r || MODES[s.w].life) {  // (Life: its size and start without a rule too, the grid's first then)
     if (MODES[s.w].plane) planeFromSetup(s);
     else startFromSetup(s);  // (a surface's)

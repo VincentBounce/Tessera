@@ -11,7 +11,7 @@
   <meta property="og:type" content="website">
   <link id="favicon" rel="icon">  <!-- the app's logo, set at start-up (see appLogo) -->
   <meta name="description" content="A walk on a grid in 2D or 3D driven by the base-2 to base-6 digits of π, other constants and large primes.">
-  <link rel="stylesheet" href="style.css?v=0.4.120">
+  <link rel="stylesheet" href="style.css?v=0.4.121">
   <script>  // the theme before the first paint (see applyTheme)
     try { const t = localStorage.getItem('tesseraTheme') || 'system'; document.documentElement.dataset.theme = t === 'system' ? (matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark') : t; } catch { document.documentElement.dataset.theme = 'dark'; }
   </script>
@@ -90,9 +90,11 @@
         <div class="block-label">Creature</div>
         <div id="antCreatures" class="nav-shapes"></div>
         <button class="wide how-it-works" data-icon="info" type="button" title="The rule in use, step by step: what each cell (each step) sees, and what it does (each rule's ⓘ, too)">How it works</button>  <!-- on its first card -->
-        <div id="antRuleCards" class="mode-list rule-cards" role="listbox"></div>
-        <div id="antCustomRow" hidden><div id="antRuleName" class="field-label"></div>  <!-- not a label: a click on ↵ would focus the field again -->
-          <span class="field"><input id="antRule" class="custom" type="text" autocomplete="off" spellcheck="false" title="Type a rule, then Enter"><button class="enter" type="button" tabindex="-1" title="Apply (Enter)">↵</button></span>
+        <div id="ruleCards">  <!-- its rules' cards and your own: moved under a walk's Grid | Cells when it has a rule (see renderAntRow) -->
+          <div id="antRuleCards" class="mode-list rule-cards" role="listbox"></div>
+          <div id="antCustomRow" hidden><div id="antRuleName" class="field-label"></div>  <!-- not a label: a click on ↵ would focus the field again -->
+            <span class="field"><input id="antRule" class="custom" type="text" autocomplete="off" spellcheck="false" title="Type a rule, then Enter"><button class="enter" type="button" tabindex="-1" title="Apply (Enter)">↵</button></span>
+          </div>
         </div>
       </section>
 
@@ -167,6 +169,7 @@
         <div id="walkOn" class="choice-row">
           <button id="walkOnGrid" type="button" title="Along the lines of the grid">Grid</button><button id="walkOnCells" type="button" title="From cell to cell, colouring the cells: on triangles and hexagons the choices at each step change, and so does the base">Cells</button>
         </div>  <!-- under the rules: along the grid, or on cells -->
+        <div id="walkTurns" hidden><div class="block-label">Turns</div></div>  <!-- a walk by its rule (Turtle): its rules' cards (see renderAntRow) -->
         <label hidden>Walk mode (menu kept as the source of truth for the tabs in the header)
           <select id="mode">
             <optgroup label="2D walks">
@@ -794,10 +797,10 @@
     </div>
   </main>
 
-  <script src="pixelarticons.js?v=0.4.120"></script>
-  <script src="punks.js?v=0.4.120"></script>
-  <script src="loops.js?v=0.4.120"></script>
-  <script src="emoji.js?v=0.4.120"></script>
-  <script src="main.js?v=0.4.120"></script>
+  <script src="pixelarticons.js?v=0.4.121"></script>
+  <script src="punks.js?v=0.4.121"></script>
+  <script src="loops.js?v=0.4.121"></script>
+  <script src="emoji.js?v=0.4.121"></script>
+  <script src="main.js?v=0.4.121"></script>
 </body>
 </html>

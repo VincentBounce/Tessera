@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.237';
+const VERSION = '0.4.238';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -17763,7 +17763,7 @@ const modeTabOf = () => `${NAV[$('mode').value]?.[0]}|${modeGroup()}`;  // (the 
 // the tiles' marks read them (see defaultOf, defaultMark)
 const DISPLAY_DEFAULTS = {
   look: ['colourMode', 'tab', { Walk: 'gradient', Ant: 'gradient', Life: 'mono', Replicators: 'mono', Reversible: 'mono', Elementary: 'gradient' }],  // (Cells: a walk's Rainbow, Life's States, Elementary's Age: the simplest)
-  area: ['area', 'tab', (mode, w) => (NAV[w][0] === 'Walk' && NAV[w][1] !== '2D' ? 'plain' : 'empty')], path: ['showPath', 'tab', false],  // (Area: Empty, a walk's in 3D Plain; on cells the cells alone)
+  area: ['area', 'tab', (mode, w) => (NAV[w][0] !== 'Walk' ? 'empty' : NAV[w][1] === '2D' ? 'light' : 'plain')], path: ['showPath', 'tab', false],  // (Area: Empty, a walk's Light in 2D, Plain in 3D; on cells the cells alone)
   centered: ['centered', 'tab', true], autoRotate: ['autoRotate', 'tab', false], sky: ['sky', 'tab', 'sky'],  // (on a solid the walker in front; Dawn or Twilight after the theme)
   autoFit: ['autoFit', 'mode', true], upright: ['upright', 'mode', false], shape: ['shapeM', 'mode', (mode) => (mode.round ? 1 : 0)],  // (Flat 0 ── Inflated 1: a round surface inflated, a solid flat)
   perspective: ['perspective', 'mode', (mode, w) => perspectiveFor(mode, defaultOf('shape', w))],  // (as each mode's own, hand-tuned)

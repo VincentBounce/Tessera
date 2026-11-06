@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.301';
+const VERSION = '0.4.302';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -3271,7 +3271,7 @@ function ruleIn(w, neutral, turmite) {
 // ant w's cards: the list, each its rule in its words, name (an ant's by its turns, with its colours; a turmite's what it
 // does on squares), picture (one state an ant, more a turmite, as the literature names them), why greyed, tooltip
 const antCards = (w) => [...ANT_LIST.map((t) => { const name = ANT_WORDS[ruleWords(t).join('')];
-    return { ...ruleIn(w, t, false), name: `${name?.split(':')[0] ?? `${t} ant`}, ${ruleWords(t).length} colours`,  // (one with no name its turns') pic: icon('ant'), title: (w === 'antSquare' && name) || '' }; }),
+    return { ...ruleIn(w, t, false), name: `${name?.split(':')[0] ?? `${t} ant`}, ${ruleWords(t).length} colours`, pic: icon('ant'), title: (w === 'antSquare' && name) || '' }; }),  // (one with no name: its turns')
   ...TURMITE_PRESETS.map((r, i) => ({ ...ruleIn(w, r, true), name: TURMITE_WORDS[i], pic: icon('turmite'), title: 'its name what it does on squares' }))];
 // The turmites (see antTableOf, ANT_LIST), of the 65,536 with 2 states and 2 colours, walked here 5,000
 // steps: a spiral; the widest mess (3,765 cells); squares growing filled (97 %, and all); a highway from step 3,090

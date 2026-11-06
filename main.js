@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.318';
+const VERSION = '0.4.319';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -2917,6 +2917,7 @@ function renderNumberPicker(active) {
     b.addEventListener('click', () => { numberTab = name; renderNumberPicker(active); });
     return b;
   }));
+  tabs.classList.add('text-tabs');
   $('numberList').replaceChildren(tabs, ...NUMBER_GROUPS.map((group) => {
     const box = document.createElement('div'), label = document.createElement('div'), grid = document.createElement('div');
     box.hidden = !shown.includes(group);

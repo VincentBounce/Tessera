@@ -257,6 +257,7 @@ button.wide.how-it-works { margin-bottom: 4px; }  /* on its rules' first card, t
 .tile-group.wide { grid-column: 1 / -1; }  /* a section's big choice: across its row, its buttons as wide as it shares (2, 3 or 4) */
 :not(.nav-shapes) > .tile-group { margin-bottom: 10px; }  /* (in a section's flow, not a grid of tiles: spaced as a wide button) */
 .tile-group > button { flex: 1 1 0; border-radius: 0; }
+.tile-group.text-tabs > button { min-width: 0; padding: 6px 2px; }  /* tabs of words only (the Number's): each its share, as tiles, whatever its word */
 .tile-group > button:nth-child(n + 2 of :not([hidden])) { margin-left: -1px; }  /* one line between them */
 .tile-group > button:nth-child(1 of :not([hidden])) { border-radius: 6px 0 0 6px; }
 .tile-group > button:nth-last-child(1 of :not([hidden])) { border-radius: 0 6px 6px 0; }

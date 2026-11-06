@@ -45,6 +45,14 @@ Never delete the bundles in `Tessera resources` (old versions included, the `Wal
   a second `function` of the same name replaces the first with no word (`battleScore`, v0.4.247: a battle frozen at its
   first step); `checkNames` in `tesseraCheck()` catches a function declared twice.
 
+## Tooltips
+- One renderer, `tipOf` and its `mouseover` (main.js, by `updateHint`): the tooltip in the view's bottom right corner, the
+  control's name in bold (a button's, a label's, a notch row's title: never written into its words), its words under it,
+  its default on a grey line (`data-default`: "Plain by default"), why it is greyed (`data-greyed`).
+- A `title` holds the words only; a default or a greyed state goes in its data attribute, never "· by default" in the text.
+- Before adding or moving a tooltip, read that renderer and route through it; check what shows (the `#tip` box after a
+  mouseover), not the attribute.
+
 ## Sessions and branches
 - One branch, `main`, the only one on GitHub; no branch for a prototype or an experiment (it falls behind as others
   push, and only a force push fixes it). A prototype is a folder of its own (`lenia/`, `particles/`, `chemistry/`,

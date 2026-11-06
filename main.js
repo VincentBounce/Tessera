@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.282';
+const VERSION = '0.4.283';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -2159,6 +2159,8 @@ const ICONS = (() => {
     replicator: pathEl('M5 4H14A1 1 0 0 1 15 5V14A1 1 0 0 1 14 15H5A1 1 0 0 1 4 14V5A1 1 0 0 1 5 4Z') + pathEl('M7.5 7H11.5A.5.5 0 0 1 12 7.5V11.5A.5.5 0 0 1 11.5 12H7.5A.5.5 0 0 1 7 11.5V7.5A.5.5 0 0 1 7.5 7Z') + pathEl('M15 12.5H20V20'),  // Langton's loop: its sheathed ring, its arm out
     // the tilings of a surface (see FAMILIES): a 2 × 2 grid, a triangle cut in 4, 3 hexagons, and turned by 30°
     tilesSq: pathEl(pathOf(sq)) + pathEl('M12 4V20M4 12H20'),
+    onGrid: pathEl('M9.33 4V20M14.67 4V20M4 9.33H20M4 14.67H20'),  // (along the grid: 3 × 3 cut, its lines, no outline)
+    onCells: pathEl(pathOf(sq)) + pathEl('M9.33 4V20M14.67 4V20M4 9.33H20M4 14.67H20') + pathEl('M9.33 9.33H14.67V14.67H9.33Z', 'f'),  // (on cells: its middle cell painted)
     tilesTri: tiledTriangle(-90), tilesTriTurned: tiledTriangle(0),
     tilesHex: hexCluster(30), tilesHexTurned: hexCluster(0),  // (pointy as the plane's; turned, flat)
     klein, mobius,  // (see above: a flask its neck going into itself; a band with a half twist)
@@ -3375,7 +3377,7 @@ function renderModePicker() {
   const cellsWord = space === '3D' ? 'Cube' : 'Cells';
   side($('walkOnGrid'), 'grid', 'Grid', creatures ? 'the worm, on triangles only' : 'not on the grid');
   side($('walkOnCells'), 'cells', cellsWord, space === '3D' ? 'not on cubes' : 'not on cells');
-  $('walkOnCells').querySelector('svg').outerHTML = icon(space === '3D' ? 'cubeFilled' : 'tilesSq');
+  $('walkOnCells').querySelector('svg').outerHTML = icon(space === '3D' ? 'cubeFilled' : 'onCells');
   renderAntRow();
 }
 
@@ -17633,8 +17635,8 @@ $('centered').addEventListener('change', () => {  // on: the camera turns to the
 });
 $('sizeDown').addEventListener('click', () => stepSize(-1));
 // Grid or Cells: the walk in use goes to its twin; while browsing another tab, only its list changes
-$('walkOn').append(tileGroup([tile({ id: 'walkOnGrid', pic: icon('grid'), text: 'Grid', title: 'Along the lines of the grid', click: () => navGo(4, 'grid') }),
-  tile({ id: 'walkOnCells', pic: icon('tilesSq'), text: 'Cells', title: 'From cell to cell, colouring the cells: on triangles and hexagons the choices at each step change, and so does the base', click: () => navGo(4, 'cells') })], true));
+$('walkOn').append(tileGroup([tile({ id: 'walkOnGrid', pic: icon('onGrid'), text: 'Grid', title: 'Along the lines of the grid', click: () => navGo(4, 'grid') }),
+  tile({ id: 'walkOnCells', pic: icon('onCells'), text: 'Cells', title: 'From cell to cell, colouring the cells: on triangles and hexagons the choices at each step change, and so does the base', click: () => navGo(4, 'cells') })], true));
 // a creature's start, one choice: a tab group of tiles, by its rule or by the digits (as Life's starts)
 $('antStartTabs').append(tileGroup([tile({ id: 'antByRule', pic: icon('ant'), text: 'Rule', title: 'Its turns by its rule, a card below' }), tile({ id: 'antByDigits', pic: icon('barcode'), text: 'Digits', title: "Its turns by the number's digits, each digit a turn" })], true));
 for (const [id, digits] of [['antByRule', false], ['antByDigits', true]]) {  // (a worm's own, by its rule or the digits)

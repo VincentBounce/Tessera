@@ -128,11 +128,11 @@ Most surfaces also have the **Pivot** rule (base 2, `0` step forward, `1` turn r
 - **Starts:** the different walks a surface allows (its rotations turn a start into another one that draws the same walk, turned), numbered alike at every size; hovering the number shows them all.
 - **Battles by start:** a walk on a solid offers as battles the counts of walkers (Duel 2, Trio 3 … Dozen 12) whose
   starts its turns place alike from the start chosen (see `battleCounts`); the others are greyed. Below, those offered at
-  the first three starts and the last three, at each solid's size. Start 1 is the farthest from the solid's corner (its
+  the first three starts and the last three, at each solid's size (Edge: a face's edge in grid edges, as the Size stepper says). Start 1 is the farthest from the solid's corner (its
   list from the farthest to the nearest). 🔴 marks the first complete set (every count the solid's turns allow)
   from the left, 🔵 the first from the right.
 
-  | Mode | Size | 1 | 2 | 3 | max−2 | max−1 | max |
+  | Mode | Edge | 1 | 2 | 3 | max−2 | max−1 | max |
   |---|:-:|---|---|---|---|---|---|
   | Tetrahedron, cells | 64 | 🔴 2, 3, 4, 12 | 2, 3, 4 | 2, 3, 4, 12 | 2, 3, 4, 12 | 2, 3, 4, 12 | 🔵 2, 3, 4, 12 |
   | Tetrahedron, grid | 64 | 🔴 2, 3, 4, 12 | 2, 3, 4, 12 | 2, 3, 4, 12 | 2, 3, 4, 12 | 🔵 2, 3, 4, 12 | 2, 3, 4 |
@@ -151,11 +151,17 @@ Most surfaces also have the **Pivot** rule (base 2, `0` step forward, `1` turn r
 
   Start 1 offers every count on 13 solids of 14 (the cube's grid: start 2); the last start on 10.
 - **Centred on the faces:** each face's centre is a grid corner (a walk along the grid can start there) or a cell's
-  centre (a walk on cells can), by the solid's edge:
-  - triangles (tetrahedron, octahedron, icosahedron): an edge a multiple of 3, a corner (grid); any other, a cell;
-  - the hexagon sphere: the other way, a multiple of 3 a cell, any other a corner;
-  - squares (cube): an even edge, a corner; an odd one, a cell (every size offered is even: the grid only);
-  - pentagons (dodecahedron) and the stella octangula: always a corner, at any size (the grid only).
+  centre (a walk on cells can), by the solid's edge, measured on every size offered:
+
+  | Solid | Rule | Grid centred at | Cells centred at |
+  |---|---|---|---|
+  | Tetrahedron | a multiple of 3: grid; else cells | 12, 24, 48, 72, 96, 120, 144, 168, 192, 384 | 8, 16, 32, 64, 128, 256, 512 |
+  | Octahedron | a multiple of 3: grid; else cells | 6, 12, 24, 48, 72, 96, 120, 144, 168, 192 | 8, 16, 32, 64, 128, 256 |
+  | Icosahedron | a multiple of 3: grid; else cells | 6, 12, 24, 48, 72, 96, 120, 144, 168, 192 | 4, 5, 8, 16, 32, 64, 128 |
+  | Hexagon sphere | a multiple of 3: cells; else grid | 8, 16, 32, 64, 128, 256 | 6, 12, 24, 48, 72, 96, 120, 144, 168, 192 |
+  | Cube | even: grid; odd: cells | every size (8 to 384, all even) | none |
+  | Dodecahedron | always grid | every size (3 to 128) | none |
+  | Stella octangula | always grid | every size (4 to 192) | none |
 - A walk that comes back onto itself stops after its first round (`↻`, see [Regular patterns](#regular-patterns)); on a torus, a fraction's **loops** button finds the sizes where it closes in fewest laps.
 - A surface can be shown **flat or round**: the torus and the Möbius strip unroll into their sheet and the polyhedra flatten, and the walk goes on during the morph.
 - The **Möbius strip** is walked as a strip of paper: each square has two faces, each with its own cells, and a walker keeps to its face; at the strip's edge it goes round onto the face just behind. Both faces make one surface with no edge (2 starts on squares, 3 on hexagons and triangles); at a hexagon strip's zigzag edge a corner is not flat, and turns there are measured as a share of the way round it.

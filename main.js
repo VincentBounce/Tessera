@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.314';
+const VERSION = '0.4.315';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -636,7 +636,7 @@ const wholeTurns = (polys) => {
 const pointKey = (x, y, k = 1000) => roundOff(x, k) * 67108864 + roundOff(y, k);  // (a number: within 33,000 steps of 1/k of the origin)
 const mod = (x, m) => ((x % m) + m) % m;  // (x modulo m, never negative)
 
-/* ---- 1.6 Helpers shared by the page and the worker ------------------------------------------- */
+/* ---- 1.6 Helpers shared by the page and the worker ---------------------------------------- */
 // A worker cannot see this file's functions: compute() builds its source from the text of
 // formulaWorker plus these helpers (digitString, seededRandom, exactValue, iroot). The page uses
 // them too, to check small exact values while reading a formula.
@@ -703,7 +703,7 @@ function iroot(v, k) {
  * The fixed lists (Number cards, walk modes, known primes) and the global state of the page.
  */
 
-/* ---- 2.1 Helpers, directions and colours ----------------------------------------------------- */
+/* ---- 2.1 Helpers, directions and colours -------------------------------------------------- */
 const $ = (id) => document.getElementById(id);
 const fmt = (v) => v.toLocaleString('en');
 const DIRS = [[0, -1], [1, 0], [0, 1], [-1, 0]]; // N, E, S, W (screen y points down)
@@ -735,7 +735,7 @@ const GRADIENT = [], DIGIT_COLORS = [], LIFE_TRAIL = [], LIFE_FADE = [], DIRECTI
 const LIFE_HUES = [2, 222, 48, 135, 275, 185, 318, 25, 90, 340, 245, 160], LIFE_COLOURS = [];
 let GREY;
 // the 8 shades of a dying Life cell (a Generations rule's stages), from the trail colour to the tile under it (unlit,
-// Ocean's sea); and of its trail once dead (Trail), in Amber (as an ant's cells, each theme its own), not a state
+// Ocean's sea); and of its trail once dead (Trail), in amber (PALETTE.fade, each theme its own), not a state
 function lifeShades(under) {
   const b = hexRgb(under), shade = (c, f) => { const a = hexRgb(c); return `rgb(${[0, 1, 2].map((k) => Math.round(b[k] + (a[k] - b[k]) * f)).join(', ')})`; };
   return { trail: Array.from({ length: 8 }, (_, i) => shade(PALETTE.trail, 1 - i / 8)), fade: Array.from({ length: 8 }, (_, i) => shade(PALETTE.fade, 1 - i / 8)) };
@@ -763,7 +763,7 @@ function rainbowHue(h) { return `hsl(${h}, 85%, ${PALETTE.light}%)`; }  // (a de
 setPalette(themeName());
 
 
-/* ---- 2.2 Number cards ------------------------------------------------------------------------ */
+/* ---- 2.2 Number cards --------------------------------------------------------------------- */
 // The formula is the single source of truth: a card only writes one, and lights up again when the
 // formula matches it (presetOf, Part 4). Nothing else remembers which card was clicked.
 // The Number cards, in groups: each card writes a formula (see Number formulas). Cards with a helper
@@ -849,7 +849,7 @@ const FORMULA_NOTES = {
   dragon: () => 'the folds of a strip folded in two again and again (0 and 1): the dragon curve, as turns',
 };
 
-/* ---- 2.3 Walk modes -------------------------------------------------------------------------- */
+/* ---- 2.3 Walk modes ----------------------------------------------------------------------- */
 // base: the base the digits are written in; arrows: each digit's step as the walker sees it, heading
 // up (⊙ up toward you, ⊗ down; a spiral's □ moved, ■ drawn), shown above the digits (none where a digit is not a turn); lattice: how a step is taken ('square', 'tri', 'hex',
 // 'cube' or 'sphere' for a tiled surface); life: a Game of Life instead of a walk. The (hidden)
@@ -1257,7 +1257,7 @@ const MODES = {
                rule: 'from truncated octahedron to truncated octahedron (they fill space), through a hexagon (the 3 bits of each digit the signs of east, north and up): <b>0</b> SW down, <b>1</b> SW up, <b>2</b> NW down, <b>3</b> NW up, <b>4</b> SE down, <b>5</b> SE up, <b>6</b> NE down, <b>7</b> NE up' },
 };
 
-/* ---- 2.3b Rules ------------------------------------------------------------------------------ */
+/* ---- 2.3b Rules --------------------------------------------------------------------------- */
 // Every rule to pick, one table: its kind, its name (the card's), its rule (as typed in the field), what it does (about,
 // its tooltip's), its tiling (the network whose words it is written in; any: an ant's or a turmite's neutral turns, L R
 // N U L2 R2, said in each grid's own, see NEUTRAL_WORDS) and its picture where not its kind's. A creature's side (Grid: along
@@ -1526,7 +1526,7 @@ const RULES = [
 const rulesOf = (kind, net) => RULES.filter((r) => r.kind === kind && (kind !== 'walk' || r.tiling === net));
 
 
-/* ---- 2.4 Known primes ------------------------------------------------------------------------ */
+/* ---- 2.4 Known primes --------------------------------------------------------------------- */
 // Exponents p of the known Mersenne primes (from 127 up)
 const MERSENNE = [127, 521, 607, 1279, 2203, 2281, 3217, 4253, 4423, 9689, 9941, 11213, 19937, 21701,
   23209, 44497, 86243, 110503, 132049, 216091, 756839, 859433, 1257787, 1398269, 2976221, 3021377,
@@ -1551,7 +1551,7 @@ const PRIMORIAL_DIGITS = {
 };
 
 
-/* ---- 2.5 Global state ------------------------------------------------------------------------ */
+/* ---- 2.5 Global state --------------------------------------------------------------------- */
 // Digits already computed stay in the cache (key: canonical formula + base), so going back to a
 // number or a mode is instant.
 const cache = {};        // key → { intPart: "10", digits: Uint8Array (fractional part) }
@@ -1604,7 +1604,7 @@ let cw = 0, ch = 0;
  * ==============================================================================================
  */
 
-/* ---- 3.1 Subtitle, colour menu and number of digits ------------------------------------------ */
+/* ---- 3.1 Subtitle, colour menu and number of digits --------------------------------------- */
 function updateRuleText() {}  // the rule is shown by describe (the Play card)
 
 // Game of Life needs one base-(K + 1) digit per cell; walks use the requested number of digits
@@ -1954,13 +1954,13 @@ const rowAction = (html, title, click) => {
 // Trail: a dead cell fades through greys for a few generations (States and Age, in colours too; two states)
 const trailApplies = () => !!walk.life && walk.life.C === 2 && !walk.life.margolus && $('colourMode').value !== 'digit';  // (a reversible rule's blocks: none, their cells move, none dies, and backwards a trail would show where they are born)
 const trailOn = () => $('lifeTrail').checked && trailApplies();
-// Trail, a tile turned on and off (see tile): its picture a live cell with its comet of fading Ink behind; greyed for Activity
+// Trail, a tile turned on and off (see tile): its picture a live cell with its comet fading in amber behind (LIFE_FADE); greyed for Activity
 // and dying stages
 let trailButton = null;  // kept: it goes after Life's looks, in their row (see renderColourButtons)
 function renderTrailButton() {
   const sq = (k, c) => `<rect x="${(17 * k) / 3}" y="${17 - (17 * k) / 3}" width="7" height="7" rx="1" fill="${c}"/>`;
   trailButton ??= tile({ pic: `<svg viewBox="0 0 24 24" aria-hidden="true">${sq(0, LIFE_FADE[5]) + sq(1, LIFE_FADE[3]) + sq(2, LIFE_FADE[1])}${sq(3, LIFE_ALIVE)}</svg>`, text: 'Trail', id: 'lifeTrailButton', toggle: true,  // up the diagonal
-    title: 'A dead cell fades through Ink for a few generations (States and Age)', click: () => { $('lifeTrail').checked = !$('lifeTrail').checked; $('lifeTrail').dispatchEvent(new Event('change')); } });
+    title: 'A dead cell fades in amber for a few generations (States and Age)', click: () => { $('lifeTrail').checked = !$('lifeTrail').checked; $('lifeTrail').dispatchEvent(new Event('change')); } });
   setTile(trailButton, { on: $('lifeTrail').checked && trailApplies(), can: trailApplies(), byDefault: 'On by default in Solo\nOff by default in colours', greyed: 'with dying stages (Generations), on Reversible and with Activity' });  // (not for these looks: off)
 }
 // Blocks (Reversible, in Trail's place: no trail there), a tile turned on and off: the blocks of the set the next generation
@@ -2216,7 +2216,7 @@ function setPrimeSize(size) {
 const subscript = (v) => String(v).replace(/\d/g, (c) => '₀₁₂₃₄₅₆₇₈₉'[c]);
 
 
-/* ---- 3.2 Seeded random draws ----------------------------------------------------------------- */
+/* ---- 3.2 Seeded random draws -------------------------------------------------------------- */
 // Random things are reproducible: random digits and random primes come from a seed written in the
 // formula (random(81244), randprime(300,81244)), so a link or a saved setup always gives back the
 // same digits. freshDraw only picks a new seed; the formula keeps it.
@@ -2233,7 +2233,7 @@ function seededRandom(seed) {
 }
 const freshDraw = () => crypto.getRandomValues(new Uint32Array(1))[0] % 1e9;
 
-/* ---- 3.3 Icons ------------------------------------------------------------------------------- */
+/* ---- 3.3 Icons ---------------------------------------------------------------------------- */
 // Every icon is a small SVG drawn here, in a 24 × 24 box, with lines in the text's colour
 // (currentColor): grey on a card, yellow when it is the active one, dark on a filled button. No
 // emoji and no icon font, so they look the same on every system and match the flat design. The
@@ -2589,7 +2589,7 @@ const withIcons = (text) => text.replace(/🎲/g, icon('dice')).replace(/🐉/g,
  * the worker. An integer is walked through its own digits only (no digits after the point).
  */
 
-/* ---- 4.1 Vocabulary -------------------------------------------------------------------------- */
+/* ---- 4.1 Vocabulary ----------------------------------------------------------------------- */
 const FORMULA_NAMES = {  // name: [kind, symbol shown]
   pi: ['real', 'π'], e: ['real', 'e'], phi: ['real', 'φ'], gamma: ['real', 'γ'], catalan: ['real', 'G'],
   erdos: ['real', 'E'], rho: ['real', 'ρ'],
@@ -2604,7 +2604,7 @@ const precOf = (x) => PREC[x.k] ?? 5;
 const formulaKids = (x) => (x.k === 'call' ? x.args : x.k === 'neg' ? [x.a] : x.a ? [x.a, x.b] : []);
 const formulaNodes = (x) => [x, ...formulaKids(x).flatMap(formulaNodes)];
 
-/* ---- 4.2 Parser ------------------------------------------------------------------------------ */
+/* ---- 4.2 Parser --------------------------------------------------------------------------- */
 // A small recursive-descent parser, one function per precedence level (expr → term → unary →
 // power → primary). Unicode input is turned into plain names first, so the rest only sees ASCII.
 // Text → tree of { k: 'num' | 'name' | 'call' | 'neg' | '+' | '-' | '*' | '/' | '^', … }.
@@ -2680,7 +2680,7 @@ function parseFormula(text) {
 }
 
 
-/* ---- 4.3 Printing: the canonical text and the symbol shown ----------------------------------- */
+/* ---- 4.3 Printing: the canonical text and the symbol shown -------------------------------- */
 // The canonical text: no spaces, lower case, explicit *, only the parentheses needed
 function canonical(x) {
   const wrap = (y, need) => (need ? `(${canonical(y)})` : canonical(y));
@@ -2719,7 +2719,7 @@ function pretty(x) {
   }
 }
 
-/* ---- 4.4 Checking: sizes, small exact values and kinds --------------------------------------- */
+/* ---- 4.4 Checking: sizes, small exact values and kinds ------------------------------------ */
 // Sizes are estimated as log10, which never overflows even for 2^136279841-1 or exp(10^9): they
 // give the guard digits, and refuse what is too large before any work starts.
 // ≈ log10 of the value of a checked node, never overflowing (sizes and guard digits)
@@ -2833,7 +2833,7 @@ function checkFormula(root) {
 }
 
 
-/* ---- 4.5 Reading the Formula field ----------------------------------------------------------- */
+/* ---- 4.5 Reading the Formula field -------------------------------------------------------- */
 // The formula of the Formula field, checked and written back in canonical form
 let formulaInUse = '1/112';  // the last formula that was valid, for the link and the Gallery
 // The number in use till one is picked: π on a walk, 1/112 elsewhere (a Life start's digits, an ant's turns: a highway for
@@ -2865,7 +2865,7 @@ function formulaOf(typed) {
 }
 
 
-/* ---- 4.6 Number cards: from a formula to its card and back ----------------------------------- */
+/* ---- 4.6 Number cards: from a formula to its card and back -------------------------------- */
 // The card a formula comes from, with the value of its helper menu; none for a formula of its own
 function presetOf(text) {
   const found = Object.keys(PRESETS).find((id) => PRESETS[id].f === text);
@@ -2941,7 +2941,7 @@ function renderNumberPicker(active) {
 }
 
 
-/* ---- 4.7 Sequences and digit helpers --------------------------------------------------------- */
+/* ---- 4.7 Sequences and digit helpers ------------------------------------------------------ */
 // Digits of a sequence (kind 'seq'), computed on the main thread
 function seqDigits(ast, n, base) {
   const digits = new Uint8Array(n), name = ast.k === 'call' ? ast.f : ast.v;
@@ -3140,7 +3140,7 @@ function numberRows() {
  * the worker, then builds the whole walk (buildWalk) and shows it complete.
  */
 
-/* ---- 5.1 Walk mode picker -------------------------------------------------------------------- */
+/* ---- 5.1 Walk mode picker ----------------------------------------------------------------- */
 // The categories of the (hidden) mode menu as tabs, and every choice of the selected tab as a
 // list. Picking a choice sets the menu and fires its change event, so the rest of the page only
 // ever deals with the menu.
@@ -3666,7 +3666,7 @@ function renderModePicker() {
   renderAntRow();
 }
 
-/* ---- 5.2 compute(): from the formula to a built walk ----------------------------------------- */
+/* ---- 5.2 compute(): from the formula to a built walk -------------------------------------- */
 // a worker of formulaWorker, which also needs digitString, seededRandom, exactValue and iroot (A's digits, B's and C's: see rivalsDigits)
 // a worker made of the page's own code (one source, nothing copied to go stale): parts, its functions and values by name
 // (a value as JSON), then main, the function it runs
@@ -3827,7 +3827,7 @@ function setBusy(on) {
   else $('digitsRow').classList.remove('busy');
 }
 
-/* ---- 5.3 Building the walk ------------------------------------------------------------------- */
+/* ---- 5.3 Building the walk ---------------------------------------------------------------- */
 // All positions, distances and counts are computed once into typed arrays: the animation, the
 // stats and the jumps only read them.
 let previousShape = null;  // the form of the surface just replaced: { target, mode }
@@ -4012,7 +4012,7 @@ function buildWalkOf() {
 }
 
 
-/* ---- 5.4 3D projection and camera ------------------------------------------------------------ */
+/* ---- 5.4 3D projection and camera --------------------------------------------------------- */
 // Orthographic projection of a 3D point onto the screen plane (world units)
 function orthoPoint(x, y, z) {
   const { r, u } = cam;
@@ -4214,7 +4214,7 @@ function showZoom() {
  * than strings in the Sets that count distinct cells; positions are the cell centres.
  */
 
-/* ---- 6.1 Square grid ------------------------------------------------------------------------- */
+/* ---- 6.1 Square grid ---------------------------------------------------------------------- */
 // Key of the 2D cell (x, y), for |x| and |y| below 2^21
 function key(x, y) {
   return (x + 2 ** 21) * 2 ** 22 + (y + 2 ** 21);
@@ -4496,7 +4496,7 @@ const STEPPERS = {
   diamond: () => walkStepper('diamond'),
 };
 
-/* ---- 6.2 Cubic lattice ----------------------------------------------------------------------- */
+/* ---- 6.2 Cubic lattice -------------------------------------------------------------------- */
 /* Cubic lattice: x = east, y = north, z = up. Its ways: 0 = N, 1 = E, 2 = up, 3 = S, 4 = W, 5 = down (opposites are 3
  * apart). Its walker's frame: forward f, up u, left = u × f. */
 const CUBE_DIRS = [[0, 1, 0], [1, 0, 0], [0, 0, 1], [0, -1, 0], [-1, 0, 0], [0, 0, -1]];
@@ -4564,7 +4564,7 @@ function key3(x, y, z) {
   return ((x + 2 ** 16) * 2 ** 17 + (y + 2 ** 16)) * 2 ** 17 + (z + 2 ** 16);
 }
 
-/* ---- 6.3 Hexagons ---------------------------------------------------------------------------- */
+/* ---- 6.3 Hexagons ------------------------------------------------------------------------- */
 /* Hexagonal tiling (flat-topped hexagons, centres 1 apart).
  * Position = a·u0 + b·u1 with u0 = N = (0, −1) and u1 = NE = (H, −1/2) on screen.
  * Directions clockwise: 0 = N, 1 = NE, 2 = SE, 3 = S, 4 = SW, 5 = NW. */
@@ -4656,7 +4656,7 @@ function hexSpiralStepper() {
 }
 const hexAt = (a, b) => [key(a, b), b * H, -a - b / 2, 0];  // a hexagon (a, b): its key and its centre
 
-/* ---- 6.4 Triangles --------------------------------------------------------------------------- */
+/* ---- 6.4 Triangles ------------------------------------------------------------------------ */
 /* Triangle tiling: cell (c, r) points up when c + r is even.
  * Edges: 0 = horizontal, 1 = “/”, 2 = “\”.
  * ▲ triangle: 0 → below (c, r+1), 1 → left (c−1, r), 2 → right (c+1, r)
@@ -4683,7 +4683,7 @@ function triStepper(kind) {
   };
 }
 
-/* ---- 6.4b Rules: a word per digit ------------------------------------------------------------ */
+/* ---- 6.4b Rules: a word per digit --------------------------------------------------------- */
 /* A walk's rule: a word per digit, what the walker does on reading it, one language for every network, its base the count
  * of its words: L N R (L1 L2 R1 R2 on hexagons and pentagons, U back) turn then a step; l r a turn on the spot, no step
  * (Pivot); a a step, then a turn right at an odd digit (the 1st, 3rd… read), left at an even one (Parity); n ne e se s sw w
@@ -4810,7 +4810,7 @@ function setWalkRule(w, rule) {
  * camera, so the middle of the sheet — where the hunt puts its small starts — stays in front.
  */
 
-/* ---- 7.1 Meshes ------------------------------------------------------------------------------ */
+/* ---- 7.1 Meshes --------------------------------------------------------------------------- */
 /* Tiled surfaces. A mesh lists each tile's vertices counterclockwise seen from outside
  * (poly[sides·t + k]); nbr[sides·t + k] is the tile across edge k (vertex k to vertex k + 1)
  * and nbrEdge[…] the index of that same edge in the neighbour. */
@@ -4888,7 +4888,7 @@ function finishMesh(verts, tiles, sides, size, outwardRef = (m) => m) {
   return { size, n, sides, extent, verts: new Float64Array(verts), poly, cen, nrm: nrmOut, nbr, nbrEdge };
 }
 
-/* ---- 7.2 Cube -------------------------------------------------------------------------------- */
+/* ---- 7.2 Cube ----------------------------------------------------------------------------- */
 /* Cube: each face cut into n × n squares. */
 // the cube's 6 faces, each [its normal, its two axes along it] (the cube's, the pitted and bumped ones')
 const CUBE_FRAMES = [[[1, 0, 0], [0, 1, 0], [0, 0, 1]], [[-1, 0, 0], [0, 1, 0], [0, 0, 1]], [[0, 1, 0], [1, 0, 0], [0, 0, 1]], [[0, -1, 0], [1, 0, 0], [0, 0, 1]],
@@ -5121,7 +5121,7 @@ const hullColours = (sphere, K) => (HULL_SOLIDS[sphere] && K > 1 ? hullColouring
 // a face's cells
 const hullFaceCells = (q) => Array.from({ length: walk.geo.size ** 2 }, (_, k) => q * walk.geo.size ** 2 + k);
 
-/* ---- 7.3 Polyhedra with triangular faces ----------------------------------------------------- */
+/* ---- 7.3 Polyhedra with triangular faces -------------------------------------------------- */
 /* Flat polyhedra with triangular faces, each face cut into f² triangles (not inflated):
  * tetrahedron (4 faces, corners shared by 3 triangles instead of 6), octahedron (8 faces,
  * corners shared by 4) and icosahedron (20 faces, corners shared by 5). */
@@ -5230,7 +5230,7 @@ function flatPolyhedron(name, f, kites = false) {
   return (meshCache[key] = mesh);
 }
 
-/* ---- 7.3b Globe ------------------------------------------------------------------------------ */
+/* ---- 7.3b Globe --------------------------------------------------------------------------- */
 /* A globe made for its colours: E columns round its equator (its size), each band's cells between two meridians, its parallels a
  * unit apart (its equator's cells square, the others 0.71 to 1.41 as wide as high, see globeBands), its columns halved towards a
  * pole as they narrow, never below
@@ -5283,7 +5283,7 @@ function globeMesh(E) {
   return (meshCache[key] = Object.assign(finishMesh(verts, tiles.map((c) => [...c, ...Array(sides - c.length).fill(c.at(-1))]), sides, E), { globe: true, columns: N, along: Float64Array.from(along) }));
 }
 
-/* ---- 7.3c Rosette spheres -------------------------------------------------------------------- */
+/* ---- 7.3c Rosette spheres ----------------------------------------------------------------- */
 // A rosette's whole disc (its cells and its walls, houses alike) on each half of the unit sphere, the south's turned over and
 // round so that its rim's teeth fall in the north's notches, glued corner to corner: a crenellated seam, each tooth biting
 // into the other half. Its rim's corners paired in turn, one disc's forth and the other's back, sides of the same length in
@@ -5416,7 +5416,7 @@ for (const k of Object.keys(ROSETTE_SPHERES)) {
   F.modes.push([w]);
 }
 
-/* ---- 7.4 Torus ------------------------------------------------------------------------------- */
+/* ---- 7.4 Torus ---------------------------------------------------------------------------- */
 /* Torus (a ring or "donut"): nu × nv squares, nu around the ring and nv around the tube, with
  * major radius 1 and tube radius TORUS_TUBE. Every square has 4 edge neighbours and 8 corner
  * neighbours with no exception: it is the square grid that wraps around both ways. */
@@ -5467,8 +5467,8 @@ function torusPoint(i, j, nu, nv, m, tube = TORUS_TUBE) {
   return [(rr + w) * Math.sin(ph), rr - c - (rr + w) * Math.cos(ph), h];  // − c: no jump from the flat sheet
 }
 
-/* ---- Klein bottle ----
- * A torus whose sheet is glued with its ends turned over: (x + nu, y) ≡ (x, nv − y), as the Möbius strip's,
+/* ---- 7.4a Klein bottle -------------------------------------------------------------------- */
+/* A torus whose sheet is glued with its ends turned over: (x + nu, y) ≡ (x, nv − y), as the Möbius strip's,
  * and (x, y + nv) ≡ (x, y). One-sided and closed; in space it must cross itself: the bottle, its tube along the sheet's x,
  * a neck that goes in through its side and opens into its bottom (see kleinBottlePoint: the sheet's gluing with u a
  * quarter turn on), its tiles narrow in the neck, wide in the body (the figure 8 too before v0.4.14, see REMOVED.md).
@@ -5574,7 +5574,7 @@ function finishTorus(verts, tiles, sides, nu, nv, uv, mids = null, placed = fals
   return mesh;
 }
 
-/* ---- 7.4b Möbius strip ---------------------------------------------------------------------- */
+/* ---- 7.4b Möbius strip -------------------------------------------------------------------- */
 /* A Möbius strip tiled with squares, hexagons or triangles: on the flat sheet, a strip L long (its
  * middle line, a circle of radius 1 once rolled up, is L tile edges long) and W wide, its ends glued
  * with a half twist, (x + L, y) ≡ (x, W − y). Its width is its tiles' (2πW / L times the circle's radius: a torus's tube
@@ -6082,7 +6082,7 @@ function turnedTorus(kind, build, sides, nv, nu, kites = false) {  // kites: eac
 const turnedTorusTriMesh = (nv, nu = torusHexColumns(nv), kites = false) => turnedTorus(kites ? 'torusKiteTurned' : 'torusTriTurned', (rows, cols, put) => triSheet(rows, cols).forEach(put), 3, nv, nu, kites);  // (rows: around the ring)
 const turnedTorusHexMesh = (nv, nu = torusTriColumns(nv)) => turnedTorus('torusHexTurned', (cols, rows, put) => hexSheet(cols, rows).forEach(put), 6, nv, nu);  // (as on the usual torus)
 
-/* ---- 7.5 Flat ↔ round: the same tiles and neighbours, shown flat or inflated ----------------- */
+/* ---- 7.5 Flat ↔ round: the same tiles and neighbours, shown flat or inflated -------------- */
 /* walk.shape = { m, target, corners, cen, nrm, extent, bent } for surfaces that can change shape:
  * polyhedra (each vertex slides from its face towards the circumscribed sphere), the torus
  * (rolled up from a flat rectangle) and a mesh with a flat form of its own (flatVerts: a rosette sphere's lentil,
@@ -6254,7 +6254,7 @@ function morphStep(dt) {
 }
 
 
-/* ---- 7.6 Surface sizes and walks on surfaces ------------------------------------------------- */
+/* ---- 7.6 Surface sizes and walks on surfaces ---------------------------------------------- */
 /* Sizes, one way for every grid and surface: one ladder (SIDES), each its own size the ladder's (the plane's side, a
  * solid's edge, a torus's, a Möbius strip's or a Klein bottle's rows; a tiling's, its sheet's), those it allows (a multiple
  * of steps[0], from least to most) with 2⁸ cells at least and 2²⁰ at most (CELLS). A new surface needs only its
@@ -6658,8 +6658,8 @@ function gridGraph(g) {
   return (g.grid = { nv, nbrs, tileOf, cornerOf, edgeTiles, normal, key });
 }
 
-/* ---- The distinct starts on the solids ---------------------------------------------------------
- * On the cube, the tetrahedron, the octahedron, the icosahedron and the sphere of hexagons, a walk
+/* ---- The distinct starts on the solids ---------------------------------------------------- */
+/* On the cube, the tetrahedron, the octahedron, the icosahedron and the sphere of hexagons, a walk
  * along the grid starts on a corner, arriving by one of its edges. The rotations that map the solid
  * onto itself map the grid onto itself, and a walk's rule only looks at its own turns, so turned
  * starts draw the same walk, turned. A mirror does not count: it swaps left and right. */
@@ -7039,8 +7039,8 @@ function gridState(g, [v, from]) {
   return [v, from, 0, 0, G.edgeTiles.get(G.key(from, v)).find((t) => (!g.mobius || t < g.front) && lists(t))];
 }
 
-/* ---- Loops of a fraction on a torus -----------------------------------------------------------
- * A fraction's digits repeat with a period L. When the turns of a period add up to 0°, each period
+/* ---- Loops of a fraction on a torus ------------------------------------------------------- */
+/* A fraction's digits repeat with a period L. When the turns of a period add up to 0°, each period
  * shifts the walk by the same T on the flat sheet (columns east, rows north). A diagonal one, T both
  * ways, closes after the fewest periods m that make m·T a whole number of turns both ways, and how
  * many depends on the torus's size. For each start, the sizes (32 to 64 rows, proportions within
@@ -7370,7 +7370,7 @@ function buildSphereWalk(seq, mode, ahead = new Uint8Array(0)) {
   rec.finish(kind, g, { ant: ant ? antStep.colours : 0, turns, vert: null, stepTiles: null, came: cameFrom(g, false, walkStart(g, mode)) });
 }
 
-/* ---- 7.6b Battles: two or three numbers' walks on one surface -------------------------------- */
+/* ---- 7.6b Battles: two or three numbers' walks on one surface ----------------------------- */
 /* Walk › Duel or Trio: A's number (Digits), B's (Digits B) and in a Trio C's (Digits C) walk the sphere or the cube at
  * once, on its cells or along its grid, a digit each a step, from places spread by the solid's own symmetry (battleStarts):
  * B opposite A in a Duel, B and C a third of a turn round from A in a Trio, each turning as A does.
@@ -8202,7 +8202,7 @@ function battleAreas(P) {
   return A.out;
 }
 
-/* ---- 7.6c Hunting the longest battles -------------------------------------------------------- */
+/* ---- 7.6c Hunting the longest battles ----------------------------------------------------- */
 /* A battle's hunt (under its numbers): battles fought one after another at the surface, size and digits shown, until
  * stopped, each set once; what it varies, its switches over it (huntVary): Formulas, as many numbers as walkers (Duel
  * 2, Trio 3) drawn at random, the Number cards' reals and sequences (but Random) and the square roots of Life's Formula
@@ -12264,7 +12264,7 @@ function bordersOf(L, a) {
  * of the grid) for each colour, at fair spots of the figure (see huntPatches).
  */
 
-/* ---- 9.1 The hunt's runs, its zones, its results ---------------------------------------------- */
+/* ---- 9.1 The hunt's runs, its zones, its results ------------------------------------------ */
 /* Life in 1 to 12 colours, on any grid, one hunt: on and on until stopped, one start in 3 at random in
  * the zone, the others a tweak of one of the 8 best (1 to 3 cells changed; patterns: one colour's);
  * the 8 best kept. The zone: see huntPlan (the whole grid as dense as said, patches of a radius,
@@ -13066,7 +13066,7 @@ function huntClick() {
   renderHunt();
 }
 
-/* ---- 9.1b Patterns ------------------------------------------------------------------------- */
+/* ---- 9.1b Patterns ------------------------------------------------------------------------ */
 // The hunt's Patterns zone: at each colour's fair spot, one of the rule's patterns (Draw's), turned or
 // mirrored; the hunt mixes them, which pattern and which way for each colour. On the plane, the torus
 // of squares, and faces: the cube's squares, the triangles of the tetrahedron, the octahedron, the
@@ -14066,7 +14066,7 @@ function laidChoices(centred, any = false) {  // any: the first one of each colo
   return Array.from({ length: K }, (_, i) => laid.map((per) => Int32Array.from(per[i].flatMap(([t, v]) => [t, colourState(i, v)]))));
 }
 
-/* ---- 9.2 Patches ----------------------------------------------------------------------------- */
+/* ---- 9.2 Patches -------------------------------------------------------------------------- */
 // a solid's cell that faces the default camera most (its face in front: one colour's, see patternPlace)
 function frontCell() {  // (once a grid: the starting view's, CAM0, never changes)
   const g = walk.geo, dir = CAM0.v;
@@ -14157,7 +14157,7 @@ function lifePatch(r, centre = centreCells()) {
 }
 
 
-/* ---- 9.3 Loading a start --------------------------------------------------------------------- */
+/* ---- 9.3 Loading a start ------------------------------------------------------------------ */
 // Replace the starting pattern of the current Life run and go back to generation 0. how: where it
 // comes from, for the description — { radius, cells } (a zone filled with the number's first
 // digits), 'hunt', 'duel' or 'saved' (a link or a saved setup). The link keeps the cells.
@@ -14192,7 +14192,7 @@ function setLifeSeed(seed, how) {
  * Life start does not depend on the number: it replaces the digits.
  */
 
-/* ---- 10.1 Life starts as short codes --------------------------------------------------------- */
+/* ---- 10.1 Life starts as short codes ------------------------------------------------------ */
 let championCode = null;  // the loaded champion's cells, encoded (see encodeCells)
 let pendingChampion = null;  // a champion to restore once a loaded setup is built
 let pendingRestore = null;   // the view to restore once the setup in use is built again (see galleryView)
@@ -14243,7 +14243,7 @@ function decodeCells(code, n) {  // (null: a code it cannot read, an old link's)
 }
 
 
-/* ---- 10.2 The setup object ------------------------------------------------------------------- */
+/* ---- 10.2 The setup object ---------------------------------------------------------------- */
 // a random start's word in a link: random (the soup), or its zone's (spark … jungle, realm, famous), with its density
 // and seed (pop=bloom.30.7); a zone from a link's word, else none
 const wordOfZone = (z) => HUNT_ZONES[z][2] ?? HUNT_ZONES[z][1].toLowerCase().replace(/ /g, '');  // a zone's word in a link: its own, else its name's (Icon 24: icon24)
@@ -14391,7 +14391,7 @@ function applyPendingView() {
   syncLink();  // with the start a setup's champion or hunt zone gave
 }
 
-/* ---- 10.3 The page link ---------------------------------------------------------------------- */
+/* ---- 10.3 The page link ------------------------------------------------------------------- */
 // The page link always holds the current setup (#x=pi&w=turtle&…), for bookmarks and sharing.
 // Readable links: #x=(1+sqrt(5))/2&w=turtle — formulas and rules keep / + ^ , : as they are
 const toHash = (s) => Object.entries(s)
@@ -14416,7 +14416,7 @@ function syncLink() {
   syncSaveButton();
 }
 
-/* ---- 10.4 The Gallery and its JSON files ------------------------------------------------------ */
+/* ---- 10.4 The Gallery and its JSON files -------------------------------------------------- */
 // The Gallery: the setups saved in this browser (localStorage), as { name, setup, saved } (its key, and its files' setups:, as they were)
 const GALLERY_KEY = 'tessera.setups', CURATED_KEY = 'tessera.curated';
 function readGallery() {
@@ -14544,7 +14544,7 @@ async function importGallery(file) {
  * far tiles first (painter's algorithm), and not more often than their drawing time allows.
  */
 
-/* ---- 11.1 Animation -------------------------------------------------------------------------- */
+/* ---- 11.1 Animation ----------------------------------------------------------------------- */
 // The speed, in steps per second: typed (1 to 5,000,000), or the turtle and the rabbit step through
 // SPEEDS (60 by default; at 12 or less the next step's chip lights, as step by step): divisors and
 // multiples of 60, so that a screen at 60 or 120 frames a second shows as many steps at every frame
@@ -14783,7 +14783,7 @@ function restart() {
   play(false);
 }
 
-/* ---- 11.2 View: zoom, pan and fit ------------------------------------------------------------ */
+/* ---- 11.2 View: zoom, pan and fit --------------------------------------------------------- */
 // A view as { scale, cx, cy }: the zoom and the world point at the centre of the screen. Easing
 // works on this form: the scale on a log scale (a steady feeling of zoom at any size) and the
 // centre in world units, so zooming out does not drift sideways.
@@ -14876,7 +14876,7 @@ function userMovedView() {
   needsFull = true;
 }
 
-/* ---- 11.3 Grids, sky and 3D frame ------------------------------------------------------------ */
+/* ---- 11.3 Grids, sky and 3D frame --------------------------------------------------------- */
 function drawGrid() {
   const ctx = layers.grid;
   ctx.clearRect(0, 0, cw, ch);
@@ -15051,7 +15051,7 @@ const digitColour = (k) => walk.ant ? rampColour(k, walk.ant)
   : arrowsOf(current.mode)[k] ? (wayWord(current.mode, k) || !['Turtle', 'Pivot', 'Parity'].includes(NAV[current.mode]?.[3]) ? (a) => DIRECTION_COLOURS[a] : antTurnColour)(arrowsOf(current.mode)[k])  // fixed directions: by the compass
   : walk.base <= DIGIT_COLORS.length ? DIGIT_COLORS[k] : `hsl(${(k * 360) / walk.base}, 80%, 62%)`;
 
-/* ---- 11.4 Surfaces --------------------------------------------------------------------------- */
+/* ---- 11.4 Surfaces ------------------------------------------------------------------------ */
 const sphereDraw = { at: 0, cost: 0 };
 
 // A walker's frame on a surface at step i: its place, heading (its last step; at the start, the one it came by), side and
@@ -15365,8 +15365,8 @@ function edgeAlpha(sh) {
 }
 
 
-/* ---- 11.4b Surfaces: shared pieces --------------------------------------------------------- *
- * What the card's drawing (11.4d) reads from the walk: the colours as numbers, the path printed on the tiles, the edges, the
+/* ---- 11.4b Surfaces: shared pieces -------------------------------------------------------- */
+/* What the card's drawing (11.4d) reads from the walk: the colours as numbers, the path printed on the tiles, the edges, the
  * tiles' colours from a palette; Glass and Cut. */
 const glColour = new Map();  // CSS colour → [r, g, b]
 const rgbCached = (c) => { if (!glColour.has(c)) glColour.set(c, rgbOf(c)); return glColour.get(c); };
@@ -15748,8 +15748,8 @@ async function lifeSettle() {
     if (lifeGoal !== null) lifeTo(lifeGoal);
   }
 }
-/* ---- 11.4c Life on WebGPU -------------------------------------------------------------------- *
- * Life's engine as compute passes (checked by tesseraCheck's known results, and gpuShownCheck: the picture the game's). Storage
+/* ---- 11.4c Life on WebGPU ----------------------------------------------------------------- */
+/* Life's engine as compute passes (checked by tesseraCheck's known results, and gpuShownCheck: the picture the game's). Storage
  * buffers only, no textures: the grid's numbers in one (each list at its offset), the cells' five fields (state, age,
  * changes, last death, colours had) twice (now and next, side 0 or 1) in another, a cell a word, runs of cells side by side
  * (a hunt's starts, each its n rounded up to 64: a workgroup's cells in one run); the sums, a generation's column of each
@@ -16041,8 +16041,8 @@ function gpuLook(L, out, look) {
   return true;
 }
 
-/* ---- 11.4d Drawing on WebGPU ----------------------------------------------------------------- *
- * The surfaces, the flat walks, the 3D walks' cubes and Life on the plane, by the graphics card, in one go, its depth buffer
+/* ---- 11.4d Drawing on WebGPU -------------------------------------------------------------- */
+/* The surfaces, the flat walks, the 3D walks' cubes and Life on the plane, by the graphics card, in one go, its depth buffer
  * hiding what lies behind (no sorting of the tiles, no path cut in halves): fast enough to turn a big surface smoothly. The
  * same projection as projectPoint (orthographic, or perspective around walk.persp); the walker's arrow, the starts and the
  * sky stay on their 2D layers. Shadows: the light's depths and what is nearest it, compared 9 times a pixel; Glass:
@@ -16625,7 +16625,7 @@ function gpuPlane(paint) {
   device.queue.submit([enc.finish()]);
 }
 
-/* ---- 11.5 Path, overlay and stats ------------------------------------------------------------ */
+/* ---- 11.5 Path, overlay and stats --------------------------------------------------------- */
 
 // Visits: the cell of every point and the most visits of any cell over the whole walk, which fixes
 // the log scale once, so a painted cell only changes colour when the walk comes back to it
@@ -16648,7 +16648,7 @@ function visitCells() {
 }
 
 
-/* ---- Area: the areas a walk closes, filled --------------------------------------------------- */
+/* ---- 11.5a Area: the areas a walk closes, filled ------------------------------------------ */
 // The regions the path closes off are filled, each at the step that closes it and in the path's
 // colour at that step. The regions are read at the vertices of the tiling: two neighbouring
 // vertices are separated by the path once the walk has crossed the tile edge between them (the
@@ -17233,7 +17233,7 @@ function stripColumns(el) {
   return stripMeasure.cols;
 }
 
-/* ---- 11.6 The frame loop --------------------------------------------------------------------- */
+/* ---- 11.6 The frame loop ------------------------------------------------------------------ */
 /* Auto-rotate tumbles the object on the screen's three axes at once, as a three.js cube does with
  * rotation.x += 0.003, rotation.y −= 0.003, rotation.z += 0.001 at each frame: Euler angles (X, then Y,
  * then Z, on the axes right, up, towards the viewer) that grow steadily, so it rolls over every way.
@@ -17347,7 +17347,7 @@ function tick(now = performance.now()) {
  * ==============================================================================================
  */
 
-/* ---- 12.1 Buttons, menus, keyboard and mouse ------------------------------------------------- */
+/* ---- 12.1 Buttons, menus, keyboard and mouse ---------------------------------------------- */
 $('digitsDown').addEventListener('click', () => stepDigits(-1));
 $('digitsUp').addEventListener('click', () => stepDigits(1));
 // A typed count: while editing, the plain number (20000), digits only; compute keeps it within
@@ -18087,8 +18087,8 @@ $('mode').addEventListener('change', () => {
   compute();
 });
 
-/* ---- 12.2 Gallery: built-in setups ----------------------------------------------------------
- * The striking setups found so far, part of the page (nothing stored): hovering one shows it in the
+/* ---- 12.2 Gallery: built-in setups -------------------------------------------------------- */
+/* The striking setups found so far, part of the page (nothing stored): hovering one shows it in the
  * view, leaving the list brings back the setup in use, a click keeps it. */
 const BUILT_IN = [
   ['1/923', '4-fold rosette', { x: '1/923', w: 'turtle', d: 421 }],
@@ -18227,7 +18227,7 @@ $('galleryFile').addEventListener('change', () => {
 window.addEventListener('hashchange', () => { const s = parseHash(); if (s) applySetup(s); });
 
 
-/* ---- 12.3 Start-up --------------------------------------------------------------------------- */
+/* ---- 12.3 Start-up ------------------------------------------------------------------------ */
 // A link with a setup opens that setup; otherwise Life on the cube. The link then follows the setup on its events (see
 // syncLink).
 new ResizeObserver(resize).observe(stage);

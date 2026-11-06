@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.359';
+const VERSION = '0.4.360';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -7436,8 +7436,9 @@ const PENETRATIONS = [
   ['landGrid2', 'Land grid 2', 'M0 1.5H2.5V2.5H0Z', "Along the grid: each walker's land, the tiles its body closes stay its own (an enemy's too); a head on another's body cuts it; a head going into an enemy's land takes the tiles it goes through. Heads meeting (two or more at once) all die: they stop conquering, their land stays, the others' to take; with one walker left or none, it ends: the most land wins, the dead's too"],
   ['landGrid3', 'Land grid 3', 'M1.5 0H2.5V4H1.5ZM0 1.5H4V2.5H0Z', "As Land grid 1, and a walker dies by its head, its last thread, from its head to its fork, let go: its head on another's (both die), or another's head along or across its last thread (it dies; touched, nothing); elsewhere a thread pierced, as in Land grid 1"],
   ['landStop', 'Land no collision', 'M0 1.5H1.5V2.5H0ZM2.5 0H3.5V4H2.5Z', "As Land grid 1, and nothing is ever pierced: a walker stops for good just before its first step along or across another's line (on cells, just before its first step onto another's tile); heads meeting (two or more at once) all stop there. The others go on, until all have stopped or the digits end: the most land wins"],
-  ['landMerge', 'Land grid merge', 'M0 1H4V3H0Z', "As Land grid 1, and nothing is ever pierced or stopped: lines cross and run along each other; the first heads meeting (two or more at once) end the battle, every walker stopping there: the most land wins"]];
-const PENETRATIONS_SHOWN = [0, 5, 6, 1, 2, 3, 4];  // (their cards' order: Land no collision second; their places above, a link's pe=, as they came)
+  ['landMerge', 'Land grid merge', 'M0 1H4V3H0Z', "As Land grid 1, and nothing is ever pierced or stopped: lines cross and run along each other; the first heads meeting (two or more at once) end the battle, every walker stopping there: the most land wins"],
+  ['snakeCells', 'Snake cells', 'M0 2.5H3V3.5H0ZM2 0.5H3V2.5H2Z', "On cells, as Cut, each walker a snake: on an even step it grows a cell, till a tenth of the surface; on an odd step a cell for each cell it has eaten; else its tail slides. A head on another's body bites it there: the bitten loses its body to its tail, the cells the biter eats. Heads meeting, all but the longest die (as long: all); the last one left wins (as the digits end: the longest)"]];
+const PENETRATIONS_SHOWN = [0, 5, 6, 1, 2, 7, 3, 4];  // (their cards' order: Land no collision second, Snake cells after Cut; their places above, a link's pe=, as they came)
 // a walk that can be a battle: one on a surface (on cells or along the grid, its steps surfaceSteps'), with as many
 // walkers as its turns allow at its size (see battleCounts: its walkers start alike, see battleStarts)
 const battleMode = (w) => NAV[w]?.[0] === 'Walk' && MODES[w].lattice === 'sphere' && !!SPHERES[surfaceOf(MODES[w])];
@@ -7462,9 +7463,9 @@ function renderWalkTeams() {
   if (!here || !battleOn()) return;
   // its ways as cards, as Life's rules: a picture (a red head, a blue body or land), its name over its words
   const way = ([kind, name, head, words], p) => {
-    const can = kind === 'cut' || kind === 'landStop' || (kind === 'landCells') !== !!MODES[w].grid;
+    const cells = kind === 'landCells' || kind === 'snakeCells', can = kind === 'cut' || kind === 'landStop' || cells !== !!MODES[w].grid;
     return card({ pic: `<svg viewBox="0 0 4 4" aria-hidden="true"><path d="M0 0H4V4H0Z" fill="${LIFE_COLOURS[1]}"/><path d="${head}" fill="${LIFE_COLOURS[0]}"/></svg>`, name, detail: words,
-      title: can ? words : `${words}\nGreyed: ${kind === 'landCells' ? 'along the grid, cells only' : 'on cells, along the grid only'}`, on: p === penetration, can, byDefault: p === 0 ? 'yes' : '',
+      title: can ? words : `${words}\nGreyed: ${cells ? 'along the grid, cells only' : 'on cells, along the grid only'}`, on: p === penetration, can, byDefault: p === 0 ? 'yes' : '',
       click: () => { if (p !== penetration) { penetration = p; compute(); } } });
   };
   $('walkPenetration').replaceChildren(...PENETRATIONS_SHOWN.map((p) => way(PENETRATIONS[p], p)));
@@ -7814,7 +7815,11 @@ function smallerSide(L, cut, j) {
 // landCells: painted. With land, heads meeting all die (see collisions), their land staying: it ends with one or none
 // left, the most land winning (the dead's too): its worth, its land, who wins
 function battlePlayer(g, grid, S, starts, digits, pen = penetration) {
-  let way = PENETRATIONS[pen][0];  // (on cells Cut and Land cells only, along the grid Cut and the Land grids: each greyed in the other's place, played as it)
+  let way = PENETRATIONS[pen][0];  // (on cells Cut, Land cells and Snake cells only, along the grid Cut and the Land grids: each greyed in the other's place, played as it)
+  // Snake cells: Cut, each body a snake's, its tail sliding unless it grows: on an even step till a tenth of the surface
+  // (cap), on an odd step a cell of those it has eaten (food: the cells its bites cut off), see slide
+  const snake = way === 'snakeCells' && !grid, cap = Math.floor(g.n / 10), food = Array(starts.length).fill(0);
+  if (way === 'snakeCells') way = 'cut';  // (along the grid: greyed, played as Cut)
   const stops = way === 'landStop';  // (Land no collision: as Land grid 1 or Land cells, a walker stopped before it would pierce or paint over another, see stop)
   const merges = way === 'landMerge';  // (Land grid merge: as Land grid 1, nothing pierced nor stopped; the first heads meeting end it, see meet)
   if (way !== 'cut') way = !grid ? 'landCells' : way === 'landCells' ? 'landGrid' : way;
@@ -7843,6 +7848,10 @@ function battlePlayer(g, grid, S, starts, digits, pen = penetration) {
   const cut = (s, j) => {  // s's body from its tail to step j, gone
     for (let q = from[s]; q <= j; q++) { const c = places[s][q]; if (owner[c] === s + 1 && at[c] === q) { owner[c] = 0; size[s]--; } }
     from[s] = Math.max(from[s], j + 1);
+  };
+  const slide = (s) => {  // a snake's tail at step i: it grows (stays), or slides a step
+    if (i % 2 === 0 ? size[s] < cap : food[s] > 0) { if (i % 2) food[s]--; return; }
+    if (from[s] < i) cut(s, from[s]);
   };
   const everyone = [...Array(K).keys()], living = () => everyone.filter((s) => dead[s] < 0);
   const stop = (s) => { dead[s] = i; places[s][i] = places[s][i - 1]; };  // (s stopped for good before its step, on its corner or tile)
@@ -7915,8 +7924,9 @@ function battlePlayer(g, grid, S, starts, digits, pen = penetration) {
       return;
     }
     const hits = rest.map((s) => { const c = places[s][i], t = everyone.find((o) => o !== s && alive(o, c)); return t === undefined ? null : [t, at[c]]; });  // (a dead one's body too, with land)
-    hits.forEach((h) => h && cut(...h));
+    hits.forEach((h, r) => { if (!h) return; const before = size[h[0]]; cut(...h); if (snake) food[rest[r]] += before - size[h[0]]; });  // (a snake eats what it cuts off)
     rest.forEach((s) => take(s, i));
+    if (snake && i > 0) rest.forEach(slide);
     if (bite && i > 0) rest.forEach(grow);
     peak = Math.max(peak, ...size);
   };
@@ -8131,7 +8141,7 @@ function battlePlayer(g, grid, S, starts, digits, pen = penetration) {
     standing, get step() { return i; }, get n() { return n; }, get peak() { return peak; },
     to(j) {
       if (j < i) {
-        owner.fill(0); from.fill(0); size.fill(0); dead.fill(-1); i = -1;
+        owner.fill(0); from.fill(0); size.fill(0); dead.fill(-1); food.fill(0); i = -1;
         land.fill(0); landCount.fill(0); seenFrom.fill(0); cutsOf.forEach((c) => c.fill(0));
       }
       if (i < 0) for (let s = 0; s < K && bite; s++) { freshWalls(s); if (lined) freshLine(s); }

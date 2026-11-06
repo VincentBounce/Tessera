@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.338';
+const VERSION = '0.4.339';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -3039,7 +3039,7 @@ function setCurrent(entry, base, kind, ratio = null) {
   // total: how many digits the whole number has (a whole number's are only sent up to the count used)
   current = { head, digits: entry.digits, base, total: entry.total ?? head.length + entry.digits.length, mode: $('mode').value,
               whole: entry.total !== undefined, formula: formulaInUse,  // whole: a whole number, its digits all known
-              fraction: kind === 'rat', ratio };  // its digits end up repeating (see LOOP_FILL, torusLoops)
+              fraction: kind === 'rat', ratio };  // its digits end up repeating (see torusLoops)
 }
 // an integer part's digits (its text, without its leading zeros), one a byte
 function headDigits(intPart, base) {
@@ -15308,31 +15308,31 @@ function firstVisits() {
   return (firstVisitData = first);
 }
 
-// Area on a surface, as for a 2D walk (see Area in 11.5). A closed surface has no
-// outside: the largest region left at the end of the walk plays it.
-// - A walk from tile to tile: the regions are read at the tiles' corners, two neighbouring corners
-//   being separated once the walk has crossed the tile edge between them; a tile is filled once all
-//   its corners are enclosed (the tiles the walk passes through are the Fill cells).
-// - A walk along the grid: the regions are made of tiles, two neighbouring tiles being separated
-//   once the walk has gone along the edge between them, so the areas follow the path exactly.
+// Area on a surface, as for a 2D walk (see Area in 11.5): a region is an area while it is a disc (its Euler
+// characteristic 1, see enclosedFrom), whatever its size or the number: a region that goes round the surface (a
+// torus' band, its χ 0) or holds the walk (the rest of a torus, χ −1) is none. A sphere's regions are all discs:
+// the largest at the end plays the outside.
+// - A walk along the grid: the regions are made of tiles, two neighbouring tiles being separated once the walk has
+//   gone along the edge between them, so the areas follow the path exactly; their faces, the corners all round.
+// - A walk from tile to tile: the regions are read at the tiles' corners, two neighbouring corners being separated
+//   once the walk has crossed the tile edge between them; their faces, the tiles; a tile is filled once all its
+//   corners are enclosed (the tiles the walk passes through are the Fill cells).
 let areaData = null;
 function areaSteps() {
   if (areaData) return areaData;
-  const g = walk.geo, k = g.sides, G = gridGraph(g), eu = [], ev = [], crossed = [];
-  if (walk.stepTiles) {  // nodes: tiles; links: the edges with a tile on each side
+  const g = walk.geo, k = g.sides, G = gridGraph(g), eu = [], ev = [], crossed = [], faces = [];
+  const sphere = G.nv - G.edgeTiles.size + g.n === 2;
+  if (walk.stepTiles) {  // nodes: tiles; links: the edges between two; faces: the corners
     const index = new Map();
-    for (const [e, sides] of G.edgeTiles) if (sides.length === 2) { index.set(e, eu.length); eu.push(sides[0]); ev.push(sides[1]); crossed.push(-1); }
+    for (const [e, sides] of G.edgeTiles) { index.set(e, eu.length); eu.push(sides[0]); ev.push(sides[1]); crossed.push(-1); faces.push([Math.floor(e / G.nv), e % G.nv]); }
     for (let i = 0; i < walk.n; i++) {
       const j = index.get(G.key(walk.vert[i], walk.vert[i + 1]));
       if (j !== undefined && crossed[j] < 0) crossed[j] = i;
     }
-    // a fraction's digits end up repeating: its walk draws the same figure again and again and comes
-    // back on itself, closing off big areas around the surface whatever it draws. Only its small
-    // areas are filled, the rings of its figures (LOOP_FILL tiles at most), whatever the digits.
-    return (areaData = enclosedFrom(g.n, eu, ev, crossed, current.fraction ? LOOP_FILL : Infinity));
+    return (areaData = enclosedFrom(g.n, G.nv, eu, ev, faces, crossed, sphere));
   }
-  const index = new Map(), tile = walk.tile;  // nodes: corners; links: the tile edges
-  for (const e of G.edgeTiles.keys()) { index.set(e, eu.length); eu.push(Math.floor(e / G.nv)); ev.push(e % G.nv); crossed.push(-1); }
+  const index = new Map(), tile = walk.tile;  // nodes: corners; links: the tile edges; faces: the tiles
+  for (const [e, sides] of G.edgeTiles) { index.set(e, eu.length); eu.push(Math.floor(e / G.nv)); ev.push(e % G.nv); crossed.push(-1); faces.push(sides); }
   for (let i = 0; i < walk.n; i++) {
     const A = tile[i], B = tile[i + 1], shared = [];
     for (let p = 0; p < k; p++) for (let q = 0; q < k; q++) if (g.poly[k * A + p] === g.poly[k * B + q]) shared.push(g.poly[k * A + p]);
@@ -15340,7 +15340,7 @@ function areaSteps() {
     const j = index.get(G.key(shared[0], shared[1]));
     if (crossed[j] < 0) crossed[j] = i;
   }
-  const at = enclosedFrom(G.nv, eu, ev, crossed), steps = new Int32Array(g.n);
+  const at = enclosedFrom(G.nv, g.n, eu, ev, faces, crossed, sphere), steps = new Int32Array(g.n);
   for (let t = 0; t < g.n; t++) {  // a tile: once all its corners are enclosed (−1: never)
     let s = 0;
     for (let j = 0; j < k && s >= 0; j++) s = at[g.poly[k * t + j]] < 0 ? -1 : Math.max(s, at[g.poly[k * t + j]]);
@@ -15349,33 +15349,34 @@ function areaSteps() {
   return (areaData = steps);
 }
 
-// The step from which each node is enclosed (−1: never), for links eu[e]–ev[e] cut at step crossed[e]
-// (−1: never): going back in time with a union–find, from the regions at the end, the links are
-// restored from the last cut to the first; restoring one that joins a region to the outside means
-// that region was enclosed from the step after it. Each region keeps its nodes as a linked list.
-const LOOP_FILL = 2;
-// maxSize: regions of more nodes at the end count as outside too, never filled
-function enclosedFrom(n, eu, ev, crossed, maxSize = Infinity) {
-  const parent = Int32Array.from({ length: n }, (_, i) => i), size = new Int32Array(n).fill(1), out = new Uint8Array(n);
+// The step from which each node is enclosed (−1: never), for links eu[e]–ev[e] cut at step crossed[e] (−1: never),
+// on a closed surface (welded: every link between two nodes) of nf faces, link e bordering faces[e]: going back in
+// time with a union–find, from the regions at the end, the links are restored from the last cut to the first. Each
+// region keeps its Euler characteristic, nodes − links + faces whole (all their links restored): 1, a disc, enclosed;
+// 0 or less, it goes round the surface or holds the walk, outside. A region only grows going back, so once outside it
+// stays so; one enclosed that stops being from the step after the cut restored. Each region keeps its nodes as a
+// linked list.
+function enclosedFrom(n, nf, eu, ev, faces, crossed, sphere) {
+  const parent = Int32Array.from({ length: n }, (_, i) => i), chi = new Int32Array(n).fill(1), size = new Int32Array(n).fill(1), out = new Uint8Array(n);
   const head = Int32Array.from({ length: n }, (_, i) => i), tail = Int32Array.from(head), next = new Int32Array(n).fill(-1);
-  const at = new Int32Array(n).fill(-1);
+  const at = new Int32Array(n).fill(-1), around = new Int32Array(nf), restored = new Int32Array(nf);
+  for (const f of faces) for (const c of f) around[c]++;
   const find = (i) => unionFind(parent, i);
+  const leave = (r, step) => { if (!out[r]) for (let m = head[r]; m >= 0; m = next[m]) at[m] = step + 1; out[r] = 1; };  // (enclosed until this step)
   const join = (e, step) => {
-    let a = find(eu[e]), b = find(ev[e]);
-    if (a === b) return;
-    if (out[a] !== out[b] && step >= 0) {  // an enclosed region meets the outside
-      const inside = out[a] ? b : a;
-      for (let m = head[inside]; m >= 0; m = next[m]) at[m] = step + 1;
-    }
-    if (out[b] && !out[a]) [a, b] = [b, a];
-    parent[b] = a; size[a] += size[b]; out[a] |= out[b];
+    let a = find(eu[e]), b = find(ev[e]), whole = 0;
+    for (const c of faces[e]) if (++restored[c] === around[c]) whole++;
+    if (a === b) { chi[a] += whole - 1; if (step >= 0 && chi[a] !== 1) leave(a, step); return; }  // (a cycle: round a face, or round the surface)
+    const outside = step >= 0 && (out[a] || out[b] || chi[a] + chi[b] - 1 + whole !== 1);  // (at the end, joined in any order: judged once whole)
+    if (outside) { leave(a, step); leave(b, step); }
+    if (size[b] > size[a]) [a, b] = [b, a];
+    parent[b] = a; size[a] += size[b]; chi[a] += chi[b] - 1 + whole; out[a] = outside ? 1 : 0;
     next[tail[a]] = head[b]; tail[a] = tail[b];
   };
   for (let e = 0; e < eu.length; e++) if (crossed[e] < 0) join(e, -1);  // the regions at the end
   let largest = find(0);
-  for (let v = 0; v < n; v++) if (find(v) === v && size[v] > size[largest]) largest = v;
-  out[largest] = 1;
-  for (let v = 0; v < n; v++) if (find(v) === v && size[v] > maxSize) out[v] = 1;
+  for (let v = 0; v < n; v++) if (find(v) === v) { out[v] = chi[v] !== 1 ? 1 : 0; if (size[v] > size[largest]) largest = v; }
+  if (sphere) out[largest] = 1;
   const byStep = Array.from(eu, (_, e) => e).filter((e) => crossed[e] >= 0).sort((x, y) => crossed[y] - crossed[x]);
   for (const e of byStep) join(e, crossed[e]);
   return at;
@@ -18033,8 +18034,7 @@ function renderAreaModes() {
   const off = !fillAreasApply(), light = shows('translucent');
   const shown = (v) => (v === 'light' && !light ? 'plain' : v);  // (Light only over a line: else Plain)
   const now = AREA_MODES.findIndex(([look]) => look === shown($('area').value)), first = shown(defaultOf('area'));
-  const title = walk.vert && current?.fraction ? 'Area · 2 cells max on ↻' : 'Area';  // (a fraction along a grid, see areaSteps)
-  notchRow($('areaModes'), title, AREA_MODES.map(([look, name, words]) => [name, `${words}${look === first ? ' · by default' : ''}${look === 'light' && !light ? ' · greyed: over a line only (Plain here)' : ''}`]), now,
+  notchRow($('areaModes'), 'Area', AREA_MODES.map(([look, name, words]) => [name, `${words}${look === first ? ' · by default' : ''}${look === 'light' && !light ? ' · greyed: over a line only (Plain here)' : ''}`]), now,
     (k) => { if ($('area').value !== AREA_MODES[k][0]) { $('area').value = AREA_MODES[k][0]; $('area').dispatchEvent(new Event('change')); } }, !off, false);  // (let go: the row drawn again)
 }
 // The looks of a 2D walk on cells, as square buttons: Path, the rainbow line over its cells faded (an ant's over its

@@ -57,9 +57,8 @@ header { padding: 0; border-bottom: 1px solid var(--border); }  /* one hairline,
 .header-end .max-steps { margin: 0; width: 176px; flex: none; }  /* the length asked: one width whatever it says (see compactCount) */
 .header-end .max-steps .field input { padding-right: 32px; }  /* (room for its unit, inside its box) */
 .header-end .max-steps .field input:not(:focus) { text-align: right; }  /* (its number against its unit; typed, as any field) */
-.max-steps .steps-glyph { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); display: flex; color: var(--accent); pointer-events: none; }  /* its unit, steps, in its words' gold */
+.max-steps .steps-glyph { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); display: flex; font-size: 20px; line-height: 1; color: var(--accent); pointer-events: none; }  /* its unit, steps, in its words' gold */
 .max-steps .field:focus-within .steps-glyph { display: none; }  /* (typing: the number alone, Enter's ↵ there) */
-.max-steps .steps-glyph .icon { width: 20px; height: 20px; }  /* Save, then the app's tab (as tall as the header: its line on the hairline, as the others') */
 .bar-sub .pi { color: var(--accent); }
 .bar-sub .walking { color: var(--text); font-weight: 600; }  /* an automaton: what seeds it */
 
@@ -601,7 +600,7 @@ button.wide.active, .head-btn.active { border-color: var(--accent); color: var(-
 .tut-walk .tut-here { fill: var(--muted); }
 .tut-walk .tut-to { fill: var(--accent); r: 0.14; }
 .tut-walk .tut-step, .tut-walk .tut-to, .tut-walk .tut-next, .tut-walk .tut-cell-to { animation: tut-appear 0.8s ease-out both; }  /* the step lit softly, as a cell's colour fades */
-.max-steps.highlit { animation: stepper-highlight 0.8s ease-out; border-radius: 8px; }  /* highlighted a moment: the length asked's footsteps clicked (see highlightStepper) */
+.max-steps.highlit { animation: stepper-highlight 0.8s ease-out; border-radius: 8px; }  /* highlighted a moment: the length asked's mark clicked (see highlightStepper) */
 @keyframes stepper-highlight { from { box-shadow: 0 0 0 0 var(--accent); } to { box-shadow: 0 0 0 10px transparent; } }
 @keyframes tut-appear { 0%, 30% { opacity: 0; } 100% { opacity: 1; } }
 .tut-walk .tut-next { stroke: var(--accent); stroke-width: 0.07; stroke-dasharray: 0.12 0.12; }

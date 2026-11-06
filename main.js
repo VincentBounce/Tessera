@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.347';
+const VERSION = '0.4.348';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -2138,11 +2138,12 @@ const runLoop = () => {
 };
 // The run's end, on the step line after its last: its mark always, its words open, the same everywhere, a link in green (see loopLink): its loop
 // (↻ every P from step T; → a walk's drift, an ant's highway), its death (✝ at step T: a worm, Life dying out) or frozen
-// (■ from gen T), the length asked (👣, its stepper's), a battle's end before its digits (■ the first heads met at step T); '' while none is known (Space-time
+// (■ from gen T), the length asked (STEPS_GLYPH, its stepper's), a battle's end before its digits (■ the first heads met at step T); '' while none is known (Space-time
 // and Elementary: none)
+const STEPS_GLYPH = '𓊍';  // the length asked's mark: its stepper's unit, a run ended by it (Egyptian hieroglyph O40, a stair)
 function endMark() {
   if (spaceTimeOn() || walk.rows) return '';
-  if (lengthUsed() && seekFar() === targetAsked() && !runLoop()) return `<a class="gen-link gen-loop" href="#" data-stepper title="The length asked: a click, the steps stepper at the top right">${icon('footsteps')}<span class="end-words"> max defined upper-right</span></a>`;  // (its end the length asked: a click highlights its stepper)
+  if (lengthUsed() && seekFar() === targetAsked() && !runLoop()) return `<a class="gen-link gen-loop" href="#" data-stepper title="The length asked: a click, the steps stepper at the top right">${STEPS_GLYPH}<span class="end-words"> max defined upper-right</span></a>`;  // (its end the length asked: a click highlights its stepper)
   if (walk.battle) { const why = walk.battle.winner.until; return why ? genLink(cur !== walk.n ? walk.n : 0, `■<span class="end-words"> ${why} at step ${fmt(walk.n)}</span>`, 'loop') : ''; }  // (its winner: the ranking's)
   const k = walk.life?.stable, o = !walk.life && runLoop();
   const [mark, words] = walk.life ? (!k ? [] : k.extinct ? ['✝', `at gen ${fmt(k.T)}`] : k.P === 1 ? ['■', `from gen ${fmt(k.T)}`] : ['↻', `every ${fmt(k.P)} from gen ${fmt(k.T)}`])
@@ -2549,7 +2550,6 @@ const ICONS = (() => {
     end: pathEl('M18.5 5V19') + pathEl('M5 5L15 12L5 19Z', 'f'),
     back: '<rect class="f" x="15.5" y="5" width="3.5" height="14" rx="1"/>' + pathEl('M13 5L4 12L13 19Z', 'f'),
     step: '<rect class="f" x="5" y="5" width="3.5" height="14" rx="1"/>' + pathEl('M11 5L20 12L11 19Z', 'f'),
-    footsteps: [[8, 7, -14], [16, 14, 14]].map(([x, y, a]) => `<g transform="rotate(${a} ${x} ${y})"><ellipse class="f" cx="${x}" cy="${y}" rx="2.6" ry="3.6"/><circle class="f" cx="${x}" cy="${y + 5.4}" r="1.7"/></g>`).join(''),  // two footprints, a sole and its heel each: the length asked's unit (steps)
     reverse: pathEl('M17 4.5L4.5 12L17 19.5Z', 'f'),  // Play backwards: Play turned round
     smiley: '<circle cx="12" cy="12" r="9"/>' + pathEl('M8 14.5Q12 18 16 14.5') + '<circle class="f" cx="9" cy="10" r="1.2"/><circle class="f" cx="15" cy="10" r="1.2"/>',  // Emoji: a smiling face
     star: pathEl(pathOf(ngon(10, 1).map((_, k) => ngon(10, k % 2 ? 4.2 : 9.5)[k]))),
@@ -17014,7 +17014,7 @@ function drawActivity() {
 // there (see seekTo: a reversible one's by its rule, Life's played again from its start)
 const genLink = (g, text = `${walk.life ? 'gen' : 'step'} ${fmt(g)}`, kind = '') => `<a class="gen-link${kind && ` gen-${kind}`}" href="#" data-gen="${g}" title="Go to ${walk.life ? 'gen' : 'step'} ${fmt(g)}">${text}</a>`;  // (kind: its colour, see style.css)
 document.addEventListener('click', (e) => { const a = e.target.closest?.('.gen-link'); if (!a) return; e.preventDefault(); if ('stepper' in a.dataset) highlightStepper(); else seekTo(Number(a.dataset.gen)); });
-// the steps stepper at the top right highlighted a moment (a click on the length asked's footsteps, see endMark)
+// the steps stepper at the top right highlighted a moment (a click on the length asked's mark, see endMark)
 function highlightStepper() { const s = document.querySelector('.max-steps'); s.classList.remove('highlit'); void s.offsetWidth; s.classList.add('highlit'); }
 function renderGauges(L) {
   const box = $('gauges'), n = L.seed.length;
@@ -17455,7 +17455,7 @@ for (const b of document.querySelectorAll('.field .enter')) {
   b.addEventListener('mousedown', (e) => { e.preventDefault(); b.previousElementSibling.blur(); });
 }
 $('digitsLabel').addEventListener('input', () => { $('digitsLabel').value = $('digitsLabel').value.replace(/\D/g, ''); });
-$('stepsGlyph').innerHTML = icon('footsteps');  // (the length asked's unit, beside it)
+$('stepsGlyph').textContent = STEPS_GLYPH;  // (the length asked's unit, beside it)
 $('digitsLabel').addEventListener('focus', () => { $('digitsLabel').value = String(randomPrimeSize() ?? targetAsked()); $('digitsLabel').select(); });  // (to type: the exact number, picked)
 $('digitsLabel').addEventListener('blur', syncDigitsStepper);  // "20,000 digits" again
 $('digitsLabel').addEventListener('change', () => {

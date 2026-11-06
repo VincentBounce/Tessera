@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.341';
+const VERSION = '0.4.342';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -15309,9 +15309,14 @@ function firstVisits() {
 }
 
 // Area on a surface, as for a 2D walk (see Area in 11.5): a region is an area while it is a disc (its Euler
-// characteristic 1, see enclosedFrom), whatever its size or the number: a region that goes round the surface (a
-// torus' band, its χ 0) or holds the walk (the rest of a torus, χ −1) is none. A sphere's regions are all discs:
-// the largest at the end plays the outside.
+// characteristic 1, see enclosedFrom): a region that goes round the surface (a torus' band, its χ 0) or holds the walk
+// (the rest of a torus, χ −1) is none. A sphere's regions are all discs: the largest at the end plays the outside.
+// A fraction along the grid: only its areas of FRACTION_AREA tiles at most (see fractionAreaCap).
+// A fraction's digits repeat: along the grid, its walk draws the same figure round and round, its strands closing off
+// big parts of the surface (half a sphere, the whole of a Klein bottle) whatever the figure: only the small areas its
+// figure rings are filled, FRACTION_AREA tiles at most (Area's tooltip says so)
+const FRACTION_AREA = 2;
+const fractionAreaCap = () => (walk.stepTiles && current?.fraction ? FRACTION_AREA : Infinity);
 // - A walk along the grid: the regions are made of tiles, two neighbouring tiles being separated once the walk has
 //   gone along the edge between them, so the areas follow the path exactly; their faces, the corners all round.
 // - A walk from tile to tile: the regions are read at the tiles' corners, two neighbouring corners being separated
@@ -15329,7 +15334,7 @@ function areaSteps() {
       const j = index.get(G.key(walk.vert[i], walk.vert[i + 1]));
       if (j !== undefined && crossed[j] < 0) crossed[j] = i;
     }
-    return (areaData = enclosedFrom(g.n, G.nv, eu, ev, faces, crossed, sphere));
+    return (areaData = enclosedFrom(g.n, G.nv, eu, ev, faces, crossed, sphere, fractionAreaCap()));
   }
   const index = new Map(), tile = walk.tile;  // nodes: corners; links: the tile edges; faces: the tiles
   for (const [e, sides] of G.edgeTiles) { index.set(e, eu.length); eu.push(Math.floor(e / G.nv)); ev.push(e % G.nv); crossed.push(-1); faces.push(sides); }
@@ -15355,8 +15360,8 @@ function areaSteps() {
 // region keeps its Euler characteristic, nodes − links + faces whole (all their links restored): 1, a disc, enclosed;
 // 0 or less, it goes round the surface or holds the walk, outside. A region only grows going back, so once outside it
 // stays so; one enclosed that stops being from the step after the cut restored. Each region keeps its nodes as a
-// linked list.
-function enclosedFrom(n, nf, eu, ev, faces, crossed, sphere) {
+// linked list. maxSize: a region of more nodes at the end is outside too.
+function enclosedFrom(n, nf, eu, ev, faces, crossed, sphere, maxSize = Infinity) {
   const parent = Int32Array.from({ length: n }, (_, i) => i), chi = new Int32Array(n).fill(1), size = new Int32Array(n).fill(1), out = new Uint8Array(n);
   const head = Int32Array.from({ length: n }, (_, i) => i), tail = Int32Array.from(head), next = new Int32Array(n).fill(-1);
   const at = new Int32Array(n).fill(-1), around = new Int32Array(nf), restored = new Int32Array(nf);
@@ -15375,7 +15380,7 @@ function enclosedFrom(n, nf, eu, ev, faces, crossed, sphere) {
   };
   for (let e = 0; e < eu.length; e++) if (crossed[e] < 0) join(e, -1);  // the regions at the end
   let largest = find(0);
-  for (let v = 0; v < n; v++) if (find(v) === v) { out[v] = chi[v] !== 1 ? 1 : 0; if (size[v] > size[largest]) largest = v; }
+  for (let v = 0; v < n; v++) if (find(v) === v) { out[v] = chi[v] !== 1 || size[v] > maxSize ? 1 : 0; if (size[v] > size[largest]) largest = v; }
   if (sphere) out[largest] = 1;
   const byStep = Array.from(eu, (_, e) => e).filter((e) => crossed[e] >= 0).sort((x, y) => crossed[y] - crossed[x]);
   for (const e of byStep) join(e, crossed[e]);
@@ -18036,7 +18041,7 @@ function renderAreaModes() {
   const off = !fillAreasApply(), light = shows('translucent');
   const shown = (v) => (v === 'light' && !light ? 'plain' : v);  // (Light only over a line: else Plain)
   const now = AREA_MODES.findIndex(([look]) => look === shown($('area').value)), first = shown(defaultOf('area'));
-  notchRow($('areaModes'), 'Area', AREA_MODES.map(([look, name, words]) => [name, `${words}${look === first ? ' · by default' : ''}${look === 'light' && !light ? ' · greyed: over a line only (Plain here)' : ''}`]), now,
+  notchRow($('areaModes'), 'Area', AREA_MODES.map(([look, name, words]) => [name, `${words}${look === first ? ' · by default' : ''}${look === 'light' && !light ? ' · greyed: over a line only (Plain here)' : ''}${look !== 'empty' && fractionAreaCap() < Infinity ? ` · a fraction: its digits repeat, its walk goes round its figure again and again, closing off big parts of the surface; only its small areas are filled, ${FRACTION_AREA} tiles at most` : ''}`]), now,
     (k) => { if ($('area').value !== AREA_MODES[k][0]) { $('area').value = AREA_MODES[k][0]; $('area').dispatchEvent(new Event('change')); } }, !off, false);  // (let go: the row drawn again)
 }
 // The looks of a 2D walk on cells, as square buttons: Path, the rainbow line over its cells faded (an ant's over its

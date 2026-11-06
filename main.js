@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.331';
+const VERSION = '0.4.332';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -6191,9 +6191,11 @@ function initShape(kind) {
   // the same surface (its other tilings, along the grid or on cells) keeps the form it had
   const surface = (w) => familyOf(w)?.F.name ?? MODES[w].sphere;
   const mode = current.mode, keep = previousShape && surface(previousShape.mode) === surface(mode);
-  const g = walk.geo, m = keep ? previousShape.target : defaultOf('shape', mode);
-  const maxExtent = Math.max(shapeAt(g, 0).extent, shapeAt(g, 1).extent);
-  walk.shape = { ...shapeAt(g, m), target: m, maxExtent, mode };
+  const g = walk.geo, m = keep ? previousShape.target : defaultOf('shape', mode), shape = shapeAt(g, m);
+  // its flat and round forms' extents, once a mesh (the form shown one of them, mostly)
+  const extents = (g.formExtents ??= {});
+  for (const f of [0, 1]) extents[f] ??= f === m ? shape.extent : shapeAt(g, f).extent;
+  walk.shape = { ...shape, target: m, maxExtent: Math.max(extents[0], extents[1]), mode };
 }
 
 // The frame of a surface: the sphere round its current form (flat or round), centred on its centre,

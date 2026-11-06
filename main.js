@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.319';
+const VERSION = '0.4.320';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -2900,10 +2900,9 @@ const NUMBER_TABS = [['Formulas', ['Fractions', '𝑓'], 'Fractions, their digit
   ['Constants', ['Constants', 'Sequences'], 'Famous constants (π, e, φ…) and sequences laid as digits (Champernowne, random, prime gaps)'],
   ['Primes', ['Primes'], 'Primes as whole numbers (Mersenne, primorial, random) and the prime constant']];  // (name, its groups, its tooltip)
 let numberTab = null, numberShown = null;  // (the tab picked; the number shown when it was)
-// the Number's tab at first: Formulas for a start by the digits (a Life start, a creature's turns), else the number's own
-// group's; a tab picked, or a number picked in one, kept while that number is shown
-const numberTabOf = (active) => (readsDigits() && (MODES[$('mode').value].life || NAV[$('mode').value][0] === 'Ant') ? NUMBER_TABS[0][0]
-  : NUMBER_TABS.find(([, groups]) => groups.includes(PRESETS[active]?.group))?.[0] ?? NUMBER_TABS[0][0]);
+// the Number's tab at first, by its value: its card's (see presetOf: a formula found among the cards), else Formulas (a
+// formula of its own); a tab picked, or a number picked in one, kept while that number is shown
+const numberTabOf = (active) => NUMBER_TABS.find(([, groups]) => groups.includes(PRESETS[active]?.group))?.[0] ?? NUMBER_TABS[0][0];
 function renderNumberPicker(active) {
   if (active !== numberShown) [numberShown, numberTab] = [active, null];
   const tab = numberTab ?? numberTabOf(active);

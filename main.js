@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.333';
+const VERSION = '0.4.334';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -17133,18 +17133,17 @@ function updateStats() {
   $('end').hidden = lifePlayer();  // (Life: its green link, +2k and +10k)
   if (drawing && MODES[$('mode').value].plane && drawAway() !== drawToolsAway) renderDrawTools();  // (Draw: its tools at gen 0 only; drawn again as play leaves it or comes back, not each frame: 785 cards)
   $('end').disabled = !runStops().some((g) => g > cur);
-  // the step: folded, alone on the title's line (Life's, in its title); open, with the last, under the curve (its slider, see
-  // drawActivity)
-  const far = seekFar(), finite = Number.isFinite(far);
-  $('seekCountOpen').hidden = !finite || busy;
-  $('seekCount').hidden = !finite || busy || lifePlayer();  // (folded: the step alone, beside the title; Life's, in its title)
-  if (finite) { $('seekCount').textContent = fmt(cur); $('seekCountOpen').textContent = `${fmt(cur)} / ${fmt(far)}`; }
+  // the step or generation shown, its own line, every mode: Step 15,964, Gen 132; open, its last after it where the run has
+  // one (a walk's, Elementary's, Space-time's: see runEnd), its slider's end (see seekFar)
+  const far = seekFar(), gens = !!walk.life || spaceTimeOn() || !!walk.rows;
+  $('stepNow').textContent = `${gens ? 'Gen' : 'Step'} ${fmt(cur)}`;
+  $('stepLast').textContent = Number.isFinite(runEnd()) && Number.isFinite(far) ? ` / ${fmt(far)}` : '';
   if (!walk.life && !walk.battle) $('ranking').hidden = $('rankTitles').hidden = true;  // (a battle's shown by renderWalkGauges: never hidden in between, its rows' slides kept)
   const time = spaceTimeOn() && !!stack, rows = walk.rows;
   document.querySelector('.stage-bar .stats').hidden = !time && !rows;
   if (time || rows) {  // Space-time: its generation, its cubes up to it; Elementary: its live cells up to it (see elementaryRows)
     $('ranking').hidden = $('gauges').hidden = $('rankTitles').hidden = true;
-    setLinks($('barNum'), `Gen ${fmt(cur)}`);
+    setLinks($('barNum'), '');  // (its generation: its own line, see stepNow; its rule in its chip)
     $('sGen').textContent = `${fmt(cur)} / ${fmt(walk.n)}`;
     $('sWhat').textContent = rows ? 'Live cells' : 'Cubes';
     $('sCubes').textContent = fmt(rows ? rows.upTo[cur + 1] : stack.layers[cur] + 1);
@@ -17154,16 +17153,15 @@ function updateStats() {
   }
   if (walk.life) {
     const L = walk.life;
-    // the title, in fixed widths so that it stays still: the generation, then how the run ended (✝ died
-    // out, ■ frozen), or its loop: its phase, its period, from which generation
+    // the title, in fixed widths so that it stays still: how the run ended (✝ died out, ■ frozen), or its loop: its phase,
+    // its period, from which generation (its generation: its own line, see stepNow)
     const s = endShown(L), pad = (v, like) => fmt(v).padStart(fmt(like).length, '\u2007');  // a figure space: as wide as a digit
     // (its end, from its glyph on: one link in green, as its loop's mark, to its loop's first generation (frozen, dead: where it
     // stopped; Play from there, a round, see loopRound; a reversible one's: its start, 0); from its first, to its last (frozen, dead: to 0))
     // (its end known, not reached yet: where it is, its period and its first; Begin back to a start keeps its record)
     const known = L.stable, ahead = known && !s, end = !known ? '' : known.extinct ? `✝${ahead ? ` ${fmt(known.T)}` : ''}` : known.P === 1 ? `■${ahead ? ` ${fmt(known.T)}` : ''}`
       : `↻ ${ahead ? fmt(known.P) : `${pad(mod(cur - known.T, known.P) + 1, known.P)}/${fmt(known.P)}`}${known.T ? ` from gen ${fmt(known.T)}` : ''}`;
-    const title = `Gen ${s && !s.extinct && s.P > 1 ? pad(cur, s.T + s.P - 1) : fmt(cur)}${end && ` ${loopLink(end)}`}`;
-    setLinks($('barNum'), title);
+    setLinks($('barNum'), end && loopLink(end));  // (its generation: its own line, see stepNow; its end here)
     $('barLoop').hidden = !L.margolus || !!L.stable;  // (blocks: not back to its start yet, and at most when; back: its title's)
     renderBack();
     if (L.margolus && !L.stable) {

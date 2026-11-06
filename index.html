@@ -11,7 +11,7 @@
   <meta property="og:type" content="website">
   <link id="favicon" rel="icon">  <!-- the app's logo, set at start-up (see appLogo) -->
   <meta name="description" content="A walk on a grid in 2D or 3D driven by the base-2 to base-6 digits of π, other constants and large primes.">
-  <link rel="stylesheet" href="style.css?v=0.4.333">
+  <link rel="stylesheet" href="style.css?v=0.4.334">
   <script>  // the theme before the first paint (see applyTheme)
     try { const t = localStorage.getItem('tesseraTheme') || 'system'; document.documentElement.dataset.theme = t === 'system' ? (matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark') : t; } catch { document.documentElement.dataset.theme = 'dark'; }
   </script>
@@ -419,14 +419,14 @@
           <div id="gauges" class="ranking gauges" hidden></div>  <!-- one colour: alive, its peak, order…; a walk: its position, its distance, its peak, its cells (open only) -->
           <div id="digitStrip" class="strip" aria-label="Recent digits"></div>
           <canvas id="activity" class="activity" aria-label="Activity: a walk's distance from its start, Life's live cells"></canvas>
-          <div class="length-row">  <!-- the length (how many digits are walked), and the step under the curve, its slider -->
+          <div class="length-row">  <!-- the digits being computed, under the curve -->
             <div id="digitsRow">  <!-- the digits being computed: their gauge, while they take long (the length asked: in the header, see max-steps) -->
               <div id="progress" class="progress"><div id="progressBar"></div><span id="progressText"></span></div>  <!-- in the length's place, while the digits take long -->
             </div>
-            <span id="seekCountOpen" class="seek-count"></span>
           </div>
         </div>
-        <div class="bar-title"><span id="barNum" class="bar-num"></span><button id="barRule" class="bubble how-it-works" type="button" hidden></button><span id="barLoop" class="bubble loop" hidden></span><button id="barBase" class="bubble" type="button"></button><span id="rankTitles" class="rank-titles" hidden></span><span id="seekCount" class="seek-count"></span></div>  <!-- the ranking's column titles (see paintRanking), on the rule's line (folded: its first) -->
+        <div class="step-line"><span id="stepNow"></span><span id="stepLast"></span></div>  <!-- the step or generation shown (open: its last after it, see updateStats) -->
+        <div class="bar-title"><span id="barNum" class="bar-num"></span><button id="barRule" class="bubble how-it-works" type="button" hidden></button><span id="barLoop" class="bubble loop" hidden></span><button id="barBase" class="bubble" type="button"></button><span id="rankTitles" class="rank-titles" hidden></span></div>  <!-- the ranking's column titles (see paintRanking), on the rule's line (folded: its first) -->
         <div id="ranking" class="ranking" hidden></div>  <!-- a battle: the colours ranked by live cells, those died out last -->
         <div class="player-controls">  <!-- the buttons, as wide folded or not; on hover, the speed on their right -->
           <div class="player-main">
@@ -519,10 +519,10 @@
     </div>
   </main>
 
-  <script src="pixelarticons.js?v=0.4.333"></script>
-  <script src="punks.js?v=0.4.333"></script>
-  <script src="loops.js?v=0.4.333"></script>
-  <script src="emoji.js?v=0.4.333"></script>
-  <script src="main.js?v=0.4.333"></script>
+  <script src="pixelarticons.js?v=0.4.334"></script>
+  <script src="punks.js?v=0.4.334"></script>
+  <script src="loops.js?v=0.4.334"></script>
+  <script src="emoji.js?v=0.4.334"></script>
+  <script src="main.js?v=0.4.334"></script>
 </body>
 </html>

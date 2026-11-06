@@ -55,7 +55,8 @@ header { padding: 0; border-bottom: 1px solid var(--border); }  /* one hairline,
 .header-row { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
 .header-end { display: flex; align-self: stretch; align-items: center; gap: 12px; }
 .header-end .max-steps { margin: 0; width: 176px; flex: none; }  /* the length asked: one width whatever it says (see compactCount) */
-.max-steps .field input { padding-right: 32px; }  /* (room for its unit, inside its box) */
+.header-end .max-steps .field input { padding-right: 32px; }  /* (room for its unit, inside its box) */
+.header-end .max-steps .field input:not(:focus) { text-align: right; }  /* (its number against its unit; typed, as any field) */
 .max-steps .steps-glyph { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); display: flex; color: var(--accent); pointer-events: none; }  /* its unit, steps, in its words' gold */
 .max-steps .field:focus-within .steps-glyph { display: none; }  /* (typing: the number alone, Enter's ↵ there) */
 .max-steps .steps-glyph .icon { width: 20px; height: 20px; }  /* Save, then the app's tab (as tall as the header: its line on the hairline, as the others') */
@@ -477,8 +478,7 @@ button.wide.active, .head-btn.active { border-color: var(--accent); color: var(-
 .bar-title.life { flex-wrap: wrap; row-gap: 4px; }
 .bar-title.life .bar-num { flex: 1 1 0; min-width: 0; }  /* Life: its rule under the generation, on the left */
 .bar-title.life::before { content: ''; flex-basis: 100%; order: 1; }  /* (the line's end: the title and, folded, its step on its right; its chips under) */
-.bar-title.life > :not(.bar-num, .seek-count) { order: 2; }
-.bar-title.life .seek-count { position: static; flex: none; }  /* (in the line: the title cut short where it meets it, not before) */
+.bar-title.life > :not(.bar-num) { order: 2; }
 .bar-title .rank-titles { margin-left: auto; align-self: flex-end; display: grid; grid-template-columns: 76px; gap: 6px; font-size: 11px; color: var(--muted); text-align: right; }  /* over the ranking's columns, as wide */
 .bar-title .rank-titles span:not(:first-child) { display: none; }  /* folded: its first */
 .stage-bar:hover .bar-title .rank-titles { grid-template-columns: 70px 56px 56px 56px 70px; }
@@ -513,12 +513,8 @@ button.wide.active, .head-btn.active { border-color: var(--accent); color: var(-
 .player-controls { display: flex; gap: 8px; align-items: flex-end; }  /* the buttons where they were, open or not */
 .player-main { flex: none; width: 360px; max-width: 100%; }  /* its six buttons, the folded bar's inner width */
 .player-side { flex: none; width: 250px; margin-left: auto; display: flex; flex-direction: column; justify-content: space-between; align-self: stretch; }
-.length-row { display: flex; align-items: flex-start; gap: 8px; }  /* open, above the title: the length, and the step on its right, just under the curve (its slider) */
+.length-row { display: flex; align-items: flex-start; gap: 8px; }  /* open, under the curve: the digits being computed (their gauge) */
 .length-row #digitsRow { flex: none; width: 360px; max-width: 100%; }  /* (as wide as the folded bar's buttons) */
-.length-row .seek-count { margin: -4px 0 0 auto; }
-.bar-title .seek-count { position: absolute; top: 12px; right: 12px; }  /* folded: the step at the card's top right; open, under the curve (its slider) */
-.stage-bar:hover .bar-title .seek-count { display: none; }
-@media (hover: none) { .stage-bar:focus-within .bar-title .seek-count { display: none; } }
 .stage-bar:not(:hover) .player-side { display: none; }
 @media (hover: none) { .stage-bar:focus-within .player-side { display: flex; } }
 .stage-bar .stepper { margin: 0 0 8px; }
@@ -536,7 +532,10 @@ button.wide.active, .head-btn.active { border-color: var(--accent); color: var(-
 /* the steps, on their own line above the buttons; the speed after ⏭, between a turtle and a rabbit */
 .speed-icon { flex: none; width: 23px; height: 23px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
 
-.seek-count { font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; text-align: right; }  /* as wide as its widest value (see updateStats) */
+.step-line { font-size: 20px; font-weight: 700; color: var(--text); font-variant-numeric: tabular-nums; white-space: nowrap; margin-bottom: 4px; }  /* the step or generation shown, as large as the title, folded or open, every mode */
+.step-line #stepLast { display: none; color: var(--muted); }  /* open: its last, after it */
+.stage-bar:hover .step-line #stepLast { display: inline; }
+@media (hover: none) { .stage-bar:focus-within .step-line #stepLast { display: inline; } }
 .stage-bar #play.on, .stage-bar #reverse.on { background: var(--accent); color: var(--accent-text); }
 .hint {
   position: absolute;

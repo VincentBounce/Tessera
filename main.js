@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.298';
+const VERSION = '0.4.299';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -1448,7 +1448,7 @@ const DISPLAY_DEFAULTS = {
   perspective: ['perspective', 'mode', (mode, w) => perspectiveFor(mode, defaultOf('shape', w))],  // (as each mode's own, hand-tuned)
   light: ['light', 'open', true], glass: ['glass', 'open', false], grid: ['showGrid', 'open', true], autoPlay: ['autoPlay', 'open', false],
   player: [null, 'walk', (mode) => (mode.grid ? 0.2 : 1)],  // (where a walk on a surface is shown: the step its places visited reach this share, along the grid a fifth of its corners, on cells all its cells; else its end)
-  trail: ['lifeTrail', 'colours', () => lifeColours === 1],  // (Life's Trail: on in Classic, two states, off in colours; when the colours change)
+  trail: ['lifeTrail', 'colours', () => lifeColours === 1],  // (Life's Trail: on in Solo, two states, off in colours; when the colours change)
   ocean: ['ocean', 'battle', () => battleOn() && NAV[$('mode').value][0] === 'Walk'],  // (on in a walk's battle on a surface, as long as none picks it)
   cut: [null, 'open', 0], blocks: [null, 'open', false], sound: [null, 'open', false], speed: [null, 'open', 60],  // (Cut Off; Life's Blocks hidden; no sound; 60 steps a second: their own state, read where it is kept)
   antLook: [null, 'ant', 'digit'],  // (an ant's look as it comes in: States, its cells by their state)
@@ -1638,7 +1638,7 @@ const tile = ({ pic = '', text = '', html = null, title = '', id = null, on = fa
   return setTile(b, { on, can, mark, again, turn, byDefault, greyed });
 };
 // (byDefault: as the tooltip tells it, see tip: 'yes', the choice picked at first; 'on' or 'off', a switch's at first)
-// (greyed: when it is, as the tooltip tells it: 'in Classic', 'outside Life'…)
+// (greyed: when it is, as the tooltip tells it: 'in Solo', 'outside Life'…)
 const setTile = (b, { on = false, can = true, mark = false, again = false, turn = 0, byDefault, greyed }) => {
   if (byDefault !== undefined) b.dataset.default = byDefault;
   if (greyed !== undefined) b.dataset.greyed = greyed;
@@ -1692,7 +1692,7 @@ function renderTrailButton() {
   const sq = (k, c) => `<rect x="${(17 * k) / 3}" y="${17 - (17 * k) / 3}" width="7" height="7" rx="1" fill="${c}"/>`;
   trailButton ??= tile({ pic: `<svg viewBox="0 0 24 24" aria-hidden="true">${sq(0, LIFE_FADE[5]) + sq(1, LIFE_FADE[3]) + sq(2, LIFE_FADE[1])}${sq(3, LIFE_ALIVE)}</svg>`, text: 'Trail', id: 'lifeTrailButton', toggle: true,  // up the diagonal
     title: 'A dead cell fades through Ink for a few generations (States and Age)', click: () => { $('lifeTrail').checked = !$('lifeTrail').checked; $('lifeTrail').dispatchEvent(new Event('change')); } });
-  setTile(trailButton, { on: $('lifeTrail').checked && trailApplies(), can: trailApplies(), byDefault: 'On by default in Classic\nOff by default in colours', greyed: 'with dying stages (Generations), on Reversible and with Activity' });  // (not for these looks: off)
+  setTile(trailButton, { on: $('lifeTrail').checked && trailApplies(), can: trailApplies(), byDefault: 'On by default in Solo\nOff by default in colours', greyed: 'with dying stages (Generations), on Reversible and with Activity' });  // (not for these looks: off)
 }
 // Blocks (Reversible, in Trail's place: no trail there), a tile turned on and off: the blocks of the set the next generation
 // is worked out by, outlined over the cells (see drawBlocks); Ising's squares in turn are no blocks: greyed
@@ -6150,7 +6150,7 @@ function syncSizeStepper() {
   $('startRow').hidden = !starts;
   if (!starts) return;
   if (document.activeElement !== $('startLabel')) $('startLabel').value = `start ${fmt(startNo())} of ${fmt(starts.length)}`;
-  const fixed = startsWayNow() !== 'classic';  // (a battle's starts not A's moved: the selector greyed, see STARTS_WAYS)
+  const fixed = startsWayNow() !== 'symmetric';  // (a battle's starts not A's moved: the selector greyed, see STARTS_WAYS)
   $('startDown').disabled = fixed || startNo() <= 1;
   $('startUp').disabled = fixed || startNo() >= starts.length;
   $('startLabel').disabled = fixed;
@@ -7128,7 +7128,7 @@ function buildSphereWalk(seq, mode, ahead = new Uint8Array(0)) {
  * with one walker left, the winner (none: a draw), or as the digits end: the longest wins (as long: a draw). Along the grid
  * a body is drawn as a line along its edges, as a walk's path. The walks are made as the battle is first played
  * (battlePlayer), then replayed to the step shown. */
-let walkTeams = 1;  // a walk's teams: 1 Classic, 2 Duel, 3 Trio… 12 Dozen (as Life's, see renderColours; which, see battleCounts)
+let walkTeams = 1;  // a walk's teams: 1 Solo, 2 Duel, 3 Trio… 12 Dozen (as Life's, see renderColours; which, see battleCounts)
 let penetration = 0;  // a battle's way with an enemy's body: its place in PENETRATIONS (a link's pe=), 0 the first, by default
 // its choice (one tab group under the teams), in the tab's order (its place its number: a link's pe=): its word, its name, its picture (a red head and a blue body
 // or land), its words; along the grid Cut and the Land grids, on cells Cut and Land cells (each greyed in the other's place)
@@ -7145,7 +7145,7 @@ const PENETRATIONS_SHOWN = [0, 5, 6, 1, 2, 3, 4];  // (their cards' order: Land 
 // walkers as its turns allow at its size (see battleCounts: its walkers start alike, see battleStarts)
 const battleMode = (w) => NAV[w]?.[0] === 'Walk' && MODES[w].lattice === 'sphere' && !!SPHERES[surfaceOf(MODES[w])];
 const battleOn = () => walkTeams > 1 && battleCounts($('mode').value).includes(walkTeams);
-// Classic, Duel, Trio… (those the solid has no group of turns for greyed, see battleCounts), under the size and start
+// Solo, Duel, Trio… (those the solid has no group of turns for greyed, see battleCounts), under the size and start
 // of a walk on a surface (Life's tiles, see renderColours); then a battle's numbers in its Start section
 const walkTeamsHere = (w) => NAV[w]?.[0] === 'Walk' && MODES[w].lattice === 'sphere';  // (a walk's teams: on a surface)
 function renderWalkTeams() {
@@ -7171,12 +7171,12 @@ function renderWalkTeams() {
       click: () => { if (p !== penetration) { penetration = p; compute(); } } });
   };
   $('walkPenetration').replaceChildren(...PENETRATIONS_SHOWN.map((p) => way(PENETRATIONS[p], p)));
-  // its starts' tabs, over the start selector (see STARTS_WAYS; the selector greyed but in Classic, see syncSizeStepper)
+  // its starts' tabs, over the start selector (see STARTS_WAYS; the selector greyed but in Symmetric, see syncSizeStepper)
   if ($('startRow').previousElementSibling !== $('startWays')) $('startRow').before($('startWays'));
-  const ways = [['classic', 'Classic', "A's start, picked below, moved by the surface's symmetries: each walker starts as A, the battle fair"],
+  const ways = [['symmetric', 'Symmetric', "A's start, picked below, moved by the surface's symmetries: each walker starts as A, the battle fair"],
     ['centred', 'Centred', "The walkers' starts side by side round one point of the surface's symmetry, each on an edge out of it, every so many edges: a face's centre (sphere of hexagons: Trio, or Duo, Trio and Sextet by its size), a corner (its pentagon: Quintet)"],
     ['random', 'Random', 'Each walker anywhere, drawn at random (kept in the link): not fair, each walker in a place of its own · Clicked again: another draw']];
-  $('startWays').replaceChildren(tileGroup(ways.map(([way, text, title]) => tile({ pic: colourBlock(walkTeams), text, title, on: way === startsWayNow(), again: way === 'random', can: startsWayCan(way), byDefault: way === 'classic' ? 'yes' : '',
+  $('startWays').replaceChildren(tileGroup(ways.map(([way, text, title]) => tile({ pic: colourBlock(walkTeams), text, title, on: way === startsWayNow(), again: way === 'random', can: startsWayCan(way), byDefault: way === 'symmetric' ? 'yes' : '',
     greyed: 'along a closed solid\'s grid only, where a point has as many edges out as walkers, or a multiple',
     click: () => { if (way === startsWayNow() && way !== 'random') return; battleStartsWay = way; if (way === 'random') battleSeed = freshDraw(); compute(); } }))));  // (Random again: another draw)
 }
@@ -7222,13 +7222,13 @@ const startSpread = (g, grid, start) => {
 // symmetry nearest A's start (a face's centre, a corner) whose edges out of the grid's corners nearest it (one, or a ring)
 // are K or a multiple of K: each walker at an edge's outer end, come from the ring, every so many edges round it (sphere of
 // hexagons: a face's centre 3, or 6 by its size, then 2, 3 or 6 of them; a pentagon 5). None: no such point
-// A battle's starts, its tabs over the start selector: Classic, A's start moved by the surface's symmetries (battleStarts,
+// A battle's starts, its tabs over the start selector: Symmetric, A's start moved by the surface's symmetries (battleStarts,
 // the start picked); Centred, round one point (groupedStarts); Random, each walker's anywhere (randomStarts, its draw
 // battleSeed). Kept in the link: gr (1 Centred, 2 Random), rs (its draw)
-const STARTS_WAYS = ['classic', 'centred', 'random'];
-let battleStartsWay = 'classic', battleSeed = 1;
+const STARTS_WAYS = ['symmetric', 'centred', 'random'];
+let battleStartsWay = 'symmetric', battleSeed = 1;
 const startsWayCan = (way) => way !== 'centred' || groupedCan();
-const startsWayNow = () => (battleOn() && startsWayCan(battleStartsWay) ? battleStartsWay : 'classic');  // (the one played: Classic where the one picked cannot be)
+const startsWayNow = () => (battleOn() && startsWayCan(battleStartsWay) ? battleStartsWay : 'symmetric');  // (the one played: Symmetric where the one picked cannot be)
 // K walkers' starts anywhere, each its own place, drawn from seed: along the grid a corner and the corner it comes from,
 // on cells a tile and the edge it comes in by (A's start's other parts kept: a pivot's, a parity's)
 function randomStarts(g, start, grid, K, seed) {
@@ -7955,7 +7955,7 @@ function battleAreas(P) {
  * stopped, each set once; what it varies, its switches over it (huntVary): Formulas, as many numbers as walkers (Duel
  * 2, Trio 3) drawn at random, the Number cards' reals and sequences (but Random) and the square roots of Life's Formula
  * hunt (√2 to √9999, see DRAWN_ROOTS; no fraction, whose digits go round), else the numbers in the fields; Starts, the
- * start picked at random (Classic: its number; Random: its draw; Centred: nothing to vary, all its centres alike), else
+ * start picked at random (Symmetric: its number; Random: its draw; Centred: nothing to vary, all its centres alike), else
  * the start shown. What it ranks, its tabs under them (HUNT_RANKS): Longest, two lists apart, the battles ended (see
  * battleWinner), the 8 longest, and those still on when the digits end (at least as long: ≥), the first 8; Even lands,
  * one list, the 8 whose smallest land at the end is the largest (lands both big and alike; with land only, not Cut);
@@ -7976,7 +7976,7 @@ const HUNT_RANKS = {
     'The latest first stops', (r) => r.stop, firstStop] };
 let huntRank = 'longest';
 const huntGoal = () => (huntRank === 'even' && PENETRATIONS[penetration][0] === 'cut' ? 'longest' : huntRank);  // (Even lands: with land only, else Longest)
-const huntStarts = () => huntVary.starts && startsWayNow() !== 'centred';  // (Starts varied: in Classic and Random)
+const huntStarts = () => huntVary.starts && startsWayNow() !== 'centred';  // (Starts varied: in Symmetric and Random)
 const BATTLE_FRESH = () => ({ ended: [], open: [], endedCount: 0, tried: new Set(), key: battleHuntKey(), status: '' });  // (a hunt's results, none yet)
 const battleHunt = { run: null, ended: [], open: [], endedCount: 0, tried: new Set(), key: '', status: '' };
 const battleHuntKey = () => [huntGoal(), $('mode').value, walkTeams, startsWayNow(), penetration, sphereSize(), digitsNeeded(), huntVary.formulas || BATTLE_FORMULAS.map((id) => $(id).value).join(),
@@ -8019,13 +8019,13 @@ async function startBattleHunt() {
   const score = HUNT_RANKS[huntGoal()][5], g = walk.geo, { head, frac } = digitsInUse(), shownFs = BATTLE_FORMULAS.slice(0, K).map((id) => $(id).value);
   const numbers = [...BATTLE_CARDS, ...DRAWN_ROOTS], N = numbers.length, cards = new Map(BATTLE_CARDS.map((f) => [f, knownDigits(formulaOf(f), base, n)]));
   const shownDigits = (f, s) => (s ? knownDigits(formulaOf(f), base, n) : Uint8Array.from([...head, ...frac]));
-  const starts = huntStarts() ? (way === 'classic' ? modeStarts().length : Infinity) : 1;  // (Random's draws: no end)
+  const starts = huntStarts() ? (way === 'symmetric' ? modeStarts().length : Infinity) : 1;  // (Random's draws: no end)
   const sets = (huntVary.formulas ? Array.from({ length: K }, (_, j) => N - j).reduce((a, b) => a * b) : 1) * starts;
   // the next battle not fought yet: its numbers and its start (none left: null)
   let id = 0, drawn = 0;
   const next = () => {
     while (battleHunt.tried.size < sets) {
-      const picks = huntVary.formulas ? Array.from({ length: K }, () => Math.floor(Math.random() * N)) : [], at = !huntStarts() ? {} : way === 'classic' ? { n: 1 + Math.floor(Math.random() * starts) } : { seed: freshDraw() };
+      const picks = huntVary.formulas ? Array.from({ length: K }, () => Math.floor(Math.random() * N)) : [], at = !huntStarts() ? {} : way === 'symmetric' ? { n: 1 + Math.floor(Math.random() * starts) } : { seed: freshDraw() };
       const key = `${picks.join()}|${at.n ?? at.seed ?? ''}`;
       if (new Set(picks).size < picks.length || battleHunt.tried.has(key)) continue;
       battleHunt.tried.add(key);
@@ -8062,7 +8062,7 @@ async function startBattleHunt() {
   }
   if (!sent.size) stopBattleHunt();
 }
-// a battle of the numbers fs played (A's, B's, C's formulas set, then computed), at its start (n: Classic's number; seed:
+// a battle of the numbers fs played (A's, B's, C's formulas set, then computed), at its start (n: Symmetric's number; seed:
 // Random's draw; none, the one shown): a hunt's result, Random's draw
 function playBattle(fs, { n, seed } = {}) {
   stopBattleHunt();
@@ -8090,7 +8090,7 @@ function renderBattleHunt() {
   const rank = ([what, [pic, text, title]]) => tile({ pic: icon(pic), text, title, on: what === goal, can: what !== 'even' || PENETRATIONS[penetration][0] !== 'cut',
     greyed: 'in Cut: no land, bodies only', byDefault: what === 'longest' ? 'yes' : '', click: () => { if (huntRank !== what) { huntRank = what; stopBattleHunt(); renderBattleHunt(); } } });
   $('battleHuntVary').replaceChildren(vary('formulas', 'Formulas', 'The hunt draws the walkers\' numbers (else those in the fields)'),
-    vary('starts', 'Starts', 'The hunt draws the start too: Classic\'s number, Random\'s draw (else the start shown)', startsWayNow() !== 'centred', 'in Centred: its centres all alike, nothing to vary'));
+    vary('starts', 'Starts', 'The hunt draws the start too: Symmetric\'s number, Random\'s draw (else the start shown)', startsWayNow() !== 'centred', 'in Centred: its centres all alike, nothing to vary'));
   $('battleHuntRank').replaceChildren(tileGroup(Object.entries(HUNT_RANKS).map(rank), true));
   $('battleHuntBtn').disabled = !huntVary.formulas && !huntStarts();
   $('battleHuntBtn').title = $('battleHuntBtn').disabled ? 'Greyed: it varies nothing (Formulas and Starts off)' : 'Battles fought one after another, each set once: what the switches above vary drawn at random; the 8 longest kept, and the first 8 still on as the digits end';
@@ -10736,17 +10736,17 @@ function coloursFit(k, g = walk.geo) {  // g: the surface (a torus's sizes)
   if (g?.nu) return true;  // a torus: its blocks (see torusBlocks), its columns made for its colours (see ringColumns), its rows judged by colourFairOwn; not the torus in view's columns (before v0.3.94: Rhombitri at 5, 8 to 12 colours offered or not by the count picked)
   return false;
 }
-// a new figure: as many colours as last picked, else the nearest count of colours it places (colours still, never Classic;
-// fewer on a tie); Classic picked, Classic (the pick kept for the next)
+// a new figure: as many colours as last picked, else the nearest count of colours it places (colours still, never Solo;
+// fewer on a tie); Solo picked, Solo (the pick kept for the next)
 function fitColours(g) {  // (blocks: one colour, Reversible's)
   lifeColours = coloursPicked === 1 || MODES[$('mode').value].margolus || MODES[$('mode').value].elementary ? 1 : COLOUR_STEPS.filter((k) => k > 1 && coloursFit(k, g)).reduce((a, k) => (Math.abs(k - coloursPicked) < Math.abs(a - coloursPicked) ? k : a), Infinity);
-  if (lifeColours === Infinity) lifeColours = 1;  // (none but Classic: Klein Dual 16 at 4 and 24)
+  if (lifeColours === Infinity) lifeColours = 1;  // (none but Solo: Klein Dual 16 at 4 and 24)
 }
 const colourBlock = (k, newcomer = false) => {  // (its colours squares all, as many a row as their blocks, else as near a square: 5, 3 and 2, a hole; newcomer: its last one's outline only, Newcomer's)
   const cols = { 5: 3, 7: 4, 10: 4 }[k] ?? COLOUR_GRID[k][0], rows = Math.ceil(k / cols), cs = k === 1 ? [LIFE_ALIVE] : LIFE_COLOURS.slice(0, k);
   return `<svg viewBox="0 0 ${cols} ${rows}" aria-hidden="true">${cs.map((c, i) => (newcomer && i === k - 1 ? `<rect x="${(i % cols) + 0.1}" y="${Math.floor(i / cols) + 0.1}" width="0.8" height="0.8" fill="none" stroke="${c}" stroke-width="0.2"/>` : `<rect x="${i % cols}" y="${Math.floor(i / cols)}" width="1" height="1" fill="${c}"/>`)).join('')}</svg>`;
 };
-const COLOUR_STEP_NAMES = { 1: 'Classic', 2: 'Duel', 3: 'Trio', 4: 'Quartet', 5: 'Quintet', 6: 'Sextet', 7: 'Septet', 8: 'Octet', 9: 'Nonet', 10: 'Decet', 12: 'Dozen' };  // one colour, then battles
+const COLOUR_STEP_NAMES = { 1: 'Solo', 2: 'Duel', 3: 'Trio', 4: 'Quartet', 5: 'Quintet', 6: 'Sextet', 7: 'Septet', 8: 'Octet', 9: 'Nonet', 10: 'Decet', 12: 'Dozen' };  // one colour, then battles
 // the counts of colours fair on the figure, every colour's part a copy of the others': on the plane, those its turns n share
 // with walls (K divides n; or K = 2n, a slice and its mirror, if it mirrors: hexagons 1, 2, 3, 6, 12; squares 1, 2, 4, 8; a hat
 // 1), on a torus any (its blocks); on a
@@ -10792,17 +10792,17 @@ function renderColours() {
   if (walkTeamsHere(w)) { $('colourBlocks').replaceChildren(...walkTeamTiles(w)); return; }
   $('colourBlocks').replaceChildren(...COLOUR_STEPS.map((k) => tile({ pic: colourBlock(k), text: COLOUR_STEP_NAMES[k],
     title: `${k === 1 ? 'One colour: alive or dead' : `${k} colours: ${LIFE_COLOUR_NAMES.slice(0, k).join(', ')}`}${colourMissing(k) ? ' · a colour gone can come back: a tie, the missing one born' : ''}`,
-    on: k === lifeColours, can: coloursFit(k), mark: colourMissing(k), byDefault: k === 1 ? 'yes' : '', greyed: k > 1 ? 'where the shape has no parts alike for so many colours' : '', click: () => { if (k !== lifeColours) { coloursPicked = lifeColours = k; applyDefaults('colours'); compute(); } } })),  // (Trail: on in Classic, off in colours, at first)
+    on: k === lifeColours, can: coloursFit(k), mark: colourMissing(k), byDefault: k === 1 ? 'yes' : '', greyed: k > 1 ? 'where the shape has no parts alike for so many colours' : '', click: () => { if (k !== lifeColours) { coloursPicked = lifeColours = k; applyDefaults('colours'); compute(); } } })),  // (Trail: on in Solo, off in colours, at first)
     // Mixed, a switch: the colours' cells mixed at random in one place, as one colour's (greyed in one colour and where no zone mixes, see mixable)
     tile({ pic: `<svg viewBox="0 0 4 4" aria-hidden="true">${[[0, 0], [2, 0], [1, 1], [3, 1], [0, 2], [2, 2], [1, 3], [3, 3]].map(([x, y], i) => `<rect x="${x}" y="${y}" width="1" height="1" fill="${LIFE_COLOURS[[0, 4, 2, 6, 5, 1, 7, 3][i]]}"/>`).join('')}</svg>`, text: 'Mixed',
-      title: 'The colours placed as one colour is (one patch, a soup), each cell a colour at random', toggle: true, byDefault: 'off', greyed: 'in Classic, in Replicators, Text and Draw, and in the hunt zones that lay each colour\'s own picture or part (Icon, Punk, Emoji, Famous, Anywhere, Realm, Mirror)', on: colourMixed(), can: lifeColours > 1 && mixable(hunt.zone), click: () => { colourMix = !colourMix; compute(); } }),
+      title: 'The colours placed as one colour is (one patch, a soup), each cell a colour at random', toggle: true, byDefault: 'off', greyed: 'in Solo, in Replicators, Text and Draw, and in the hunt zones that lay each colour\'s own picture or part (Icon, Punk, Emoji, Famous, Anywhere, Realm, Mirror)', on: colourMixed(), can: lifeColours > 1 && mixable(hunt.zone), click: () => { colourMix = !colourMix; compute(); } }),
     // Newcomer, a switch (see newcomerCan)
     tile({ pic: colourBlock(Math.max(3, lifeColours), true), text: 'Newcomer', toggle: true, byDefault: 'off', on: newcomerOn(), can: newcomerCan(), click: () => { newcomer = !newcomer; compute(); },
       title: lifeColours > 2 ? `${COLOUR_STEP_NAMES[lifeColours - 1] ?? `${lifeColours - 1} teams`} as it starts, and ${teamName(lifeColours - 1)} a newcomer: none at first, born of a tie between the others (the colour missing)` : 'The teams below\'s start, and the last colour a newcomer: none at first, born of a tie between the others (the colour missing)',
-      greyed: `where the teams picked have no birth of the missing colour (no mark in their corner), in Classic and Duel, in Digits and Draw${lifeColours > 2 && !coloursFit(lifeColours - 1) ? `, and where ${COLOUR_STEP_NAMES[lifeColours - 1] ?? `${lifeColours - 1} teams`} does not fit` : ''}` }));
+      greyed: `where the teams picked have no birth of the missing colour (no mark in their corner), in Solo and Duel, in Digits and Draw${lifeColours > 2 && !coloursFit(lifeColours - 1) ? `, and where ${COLOUR_STEP_NAMES[lifeColours - 1] ?? `${lifeColours - 1} teams`} does not fit` : ''}` }));
 
 }
-// a walk's teams: Classic, Duel, Trio… as Life's (a battle: how many numbers walk; greyed, a count its surface's symmetries
+// a walk's teams: Solo, Duel, Trio… as Life's (a battle: how many numbers walk; greyed, a count its surface's symmetries
 // cannot set apart from its start at this size, see battleCounts)
 function walkTeamTiles(w) {
   const words = (k) => (k === 1 ? 'One number walks' : k === 2 ? "Two numbers walk, A's and B's, from opposite places (how they fight: below)"
@@ -12664,7 +12664,7 @@ function huntFits() {
   return hunt.fits;
 }
 // when a zone is greyed (as huntFits finds it), its tooltip's words
-const zoneGreyed = (zone) => (isIcon(zone) ? 'where it cannot fit' : zone === 'realm' ? 'in Classic, where a colour has no whole face, and on a grid too small to keep the colours apart' : zone === 'mirror' ? 'on a grid or a torus, in Classic, and where no colouring has its parts opposite'
+const zoneGreyed = (zone) => (isIcon(zone) ? 'where it cannot fit' : zone === 'realm' ? 'in Solo, where a colour has no whole face, and on a grid too small to keep the colours apart' : zone === 'mirror' ? 'on a grid or a torus, in Solo, and where no colouring has its parts opposite'
   : famousZone(zone) ? 'where the rule has no famous patterns, or they cannot fit' : zone === 'full' ? 'hunting the highest peak (a soup full already), and on a solid of squares and triangles where its colours\' parts differ'
   : zone === 'numbers' ? 'hunting the highest peak or all reached (the grid full already: its digits on each cell)'
   : 'where its patch cannot fit each colour\'s part, and on a globe (its soup only, for now)');
@@ -14027,7 +14027,7 @@ function getSetup() {
     s.k = walkTeams;
     RIVALS.slice(0, walkTeams - 1).forEach((id) => { s[`x${id.slice(-1).toLowerCase()}`] = formulaOf($(id).value).text ?? $(id).value; });  // (xb, xc…)
     if (penetration) s.pe = penetration;  // (none: the first, Land grid 1)
-    if (startsWayNow() !== 'classic') s.gr = STARTS_WAYS.indexOf(startsWayNow());  // (its starts: Centred, Random, see STARTS_WAYS)
+    if (startsWayNow() !== 'symmetric') s.gr = STARTS_WAYS.indexOf(startsWayNow());  // (its starts: Centred, Random, see STARTS_WAYS)
     if (startsWayNow() === 'random') s.rs = battleSeed;
   }
   if (mode.life && colourMix && lifeColours > 1) s.mx = 1;
@@ -14063,7 +14063,7 @@ function applySetup(s) {
   if (s.d !== undefined) target = Number(s.d);
   walkTeams = !MODES[s.w].life && COLOUR_STEPS.includes(Number(s.k)) ? Number(s.k) : 1;  // (a walk's battle, if its surface allows it at its size: see battleOn)
   penetration = walkTeams > 1 && PENETRATIONS[Number(s.pe)] ? Number(s.pe) : 0;  // (none: the first, Land grid 1)
-  battleStartsWay = STARTS_WAYS[Number(s.gr)] ?? 'classic';
+  battleStartsWay = STARTS_WAYS[Number(s.gr)] ?? 'symmetric';
   battleSeed = Number(s.rs) || 1;
   for (const id of RIVALS) set(id, s[`x${id.slice(-1).toLowerCase()}`]);
   set('mode', s.w);

@@ -3,7 +3,7 @@
 //   await tesseraCheck({ crawl: true });                                   // and every tab, shape and tiling, a few minutes
 //   await tesseraCheck({ fuzz: 400, seed: 7 });                            // 400 actions at random, menu to menu (transitions, smallest sizes)
 //   await tesseraCheck({ fuzz: 100, cold: true });                          // and after each, its link loaded cold beside: the same menus offered
-//   await tesseraCheck({ colours: true });                                 // every Life surface offers colours (more than Classic) at one of its sizes at least
+//   await tesseraCheck({ colours: true });                                 // every Life surface offers colours (more than Solo) at one of its sizes at least
 //   await tesseraCheck({ battles: true });                                 // every walk on a surface: its battles' walkers each A's path moved, Land no collision kept apart, 5 minutes
 //   await tesseraCheck({ parts: true });                                   // every count of colours offered, as many cells a colour: plane and solids, 7 minutes
 //   await tesseraCheck({ deep: true });                                    // every grid's rules (yours too), How it works, colours, zones, smallest size: a night's
@@ -360,7 +360,7 @@ async function deep(fail, from, only) {
   return checked;
 }
 
-// Colours offered: every Life surface, its sizes from the least up till one offers a count of colours past Classic (none at
+// Colours offered: every Life surface, its sizes from the least up till one offers a count of colours past Solo (none at
 // any: its colours never fair there, as Klein Trihex's were, its length always half a period off)
 async function coloursOffered(fail) {
   let checked = 0;
@@ -373,12 +373,12 @@ async function coloursOffered(fail) {
       if (COLOUR_STEPS.some((K) => K > 1 && coloursFit(K, walk.geo))) { some = true; break; }
     }
     checked++;
-    if (!some) fail(`${w}: Classic only at every size (${sizes.join(', ')})`);
+    if (!some) fail(`${w}: Solo only at every size (${sizes.join(', ')})`);
   }
   return checked;
 }
 
-// Battles fair: every walk on a surface (see battleMode), at its size, offers a count of walkers past Classic, and in each
+// Battles fair: every walk on a surface (see battleMode), at its size, offers a count of walkers past Solo, and in each
 // count offered every walker, its digits A's, walks A's path moved by its map (see battleStarts, placeMap), step for step,
 // till one dies: none its mirror. A night's (4 minutes)
 async function battlesFair(fail) {
@@ -627,7 +627,7 @@ async function checkSheets(fail) {
       await until(shown(w, () => lifeColours === K));
       offered.push(COLOUR_STEPS.filter((k) => coloursFit(k)).join(','));
     }
-    if (offered[0] !== offered[1]) fail(`${w}: colours offered ${offered[0]} in Classic, ${offered[1]} in Trio`);
+    if (offered[0] !== offered[1]) fail(`${w}: colours offered ${offered[0]} in Solo, ${offered[1]} in Trio`);
     if (w === 'lifeKleinPent15' && offered[0].split(',').some((k) => k % 2 === 0)) fail(`${w}: an even count of colours offered (${offered[0]}), its twist asking an odd length`);  // (v0.3.88 to 0.3.93: g.period left by the rename, every count offered)
     for (const K of [2, 3, 5].filter((k) => offered[0].split(',').includes(`${k}`))) {
       location.hash = `#w=${w}&k=${K}`;

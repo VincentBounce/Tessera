@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.280';
+const VERSION = '0.4.281';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -2924,7 +2924,7 @@ const NAV = {
   dodecaGrid: ['Walk', 'Surfaces', 'Dodecahedron', 'Turtle', 'grid'], dodecaLR: ['Walk', 'Surfaces', 'Dodecahedron', 'Turtle', 'cells'],
   hexSphereGrid: ['Walk', 'Surfaces', 'Sphere', 'Turtle', 'grid'], hexSphereWalk: ['Walk', 'Surfaces', 'Sphere', 'Turtle', 'cells'],
   icosaGrid: ['Walk', 'Surfaces', 'Sphere', 'Turtle', 'grid'], icosaLR: ['Walk', 'Surfaces', 'Sphere', 'Turtle', 'cells'],
-  antSquare: ['Ant', '2D', 'Squares', 'Ant', 'cells'], antTri: ['Ant', '2D', 'Triangles', 'Ant', 'cells'], worm: ['Ant', '2D', 'Triangles', 'Worm', 'grid'],
+  antSquare: ['Ant', '2D', 'Squares', 'Ant', 'cells'], antTri: ['Ant', '2D', 'Triangles', 'Ant', 'cells'], worm: ['Ant', '2D', 'Triangles', 'Ant', 'grid'],  // (the worm: the triangles' ant along their grid, see its Grid tab)
   antHex: ['Ant', '2D', 'Hexagons', 'Ant', 'cells'], antCairo: ['Ant', '2D', 'Cairo', 'Ant', 'cells'],
   antCube: ['Ant', 'Surfaces', 'Cube', 'Ant', 'cells'], antHexSphere: ['Ant', 'Surfaces', 'Sphere', 'Ant', 'cells'],
   antIcosa: ['Ant', 'Surfaces', 'Sphere', 'Ant', 'cells'],
@@ -3074,8 +3074,6 @@ const shapeLabel = (shape) => SHAPE_SHORT[shape] ?? shape;
 // a mode in words, a shape's tooltip (the mode its click goes to): an automaton's grid (where), else a walk's or an ant's label
 const modeWhere = (w) => (MODES[w].where ?? modeOptionOf(w).text).replace(/^./, (c) => c.toUpperCase());  // a shape's name on its button, wherever (the 2D grids, a surface's tilings)
 // the section's title
-const CREATURE_TIPS = { Ant: "Langton's ant: the cell's colour turns it, then the cell takes the next colour", Turmite: "An ant with states: the cell's colour and its own state turn it",
-  Worm: "Paterson's worm: along the triangles' lines, never the same edge twice; it ends with none left" };
 const WALK_HEADINGS = { Walk: 'Walk', Ant: 'Grid', Life: 'Grid', Replicators: 'Grid', Elementary: 'Grid', Reversible: 'Grid' };
 // the values at a level under the choices above it (pre), in the menu's order
 const navValues = (level, pre) => [...new Set(Object.values(NAV).filter((n) => pre.every((v, i) => n[i] === v)).map((n) => n[level]))];
@@ -3247,8 +3245,8 @@ function creatureRules(w) {
                               name: 'Rule, a turn at each new corner: L2, L1, N, R1, R2' };
   const A = ANTS[w], turns = antWords(w).join(' ');
   return { byDigits: antByDigits, now: antRuleOf(w), typed: true, set: (r) => setAntRule(w, r), base: antByDigits ? () => baseWords(2) : null,  // (by colour: no digits read)
-           cards: [...A.presets.map((t) => [antOfTurns(w, t), ANT_WORDS[t]?.split(':')[0] ?? `${ruleWords(t).length}-colour ant`, undefined, '', (w === 'antSquare' && ANT_WORDS[t]) || '']),  // (its name on any grid, what it does on squares)
-             ...(A.turmites ?? []).map((r, i) => [r, TURMITE_WORDS[i]])],
+           cards: [...A.presets.map((t) => [antOfTurns(w, t), ANT_WORDS[t]?.split(':')[0] ?? `${ruleWords(t).length}-colour ant`, icon('ant'), '', (w === 'antSquare' && ANT_WORDS[t]) || '']),  // (its name on any grid, what it does on squares)
+             ...(A.turmites ?? []).map((r, i) => [r, TURMITE_WORDS[i], icon('turmite')])],  // (as the literature names them: one state an ant, more a turmite)
            name: `Rule, per state an entry per colour: its colour left, its turn (${turns}), its state next; the states parted by |` };
 }
 // The worm's rules, all 411 of them (a mirror the same), walked here: dying at step 918,339, 569,804, 83,618 and 4,802,
@@ -3342,22 +3340,21 @@ function renderModePicker() {
   }
   // the rules, where there are several, each with its picture; in a family, those its tiling has not greyed
   const tiling = inFamily?.F.modes[inFamily.m], has = (...n) => !tiling || tiling.some((v) => n.every((x, i) => NAV[v][[0, 3, 4][i]] === x));
-  // the rules, one list of cards: a walk's, its rules (a word per digit) then the others (Spiral, Diagonals); an ant's, its
-  // creatures, all of them on whatever shape (Ant, Turmite on squares, Worm on triangles: one of another shape, a click takes it
-  // there), the one in use with its rules (see ruleCards)
+  // the rules, one list of cards: a walk's, its rules (a word per digit) then the others (Spiral, Diagonals); a creature's, its
+  // rules (see ruleCards: the ants' and turmites' on cells, the worm's along the triangles' grid, its Grid tab)
   const creatures = kind === 'Ant';
-  const rules = creatures ? [...new Set(Object.values(NAV).filter((n) => n[0] === kind && n[1] === space).map((n) => n[3]))] : navValues(3, [kind, space, shape]);
+  const rules = navValues(3, [kind, space, shape]);
   $('navRules').hidden = !creatures && rules.length < 2 && !MODES[w].net;
   $('navRules').replaceChildren(...rules.flatMap((r, i) => {
     const here = Object.keys(NAV).find((m) => NAV[m].slice(0, 4).join() === [kind, space, shape, r].join());
     const v = here ?? Object.keys(NAV).find((m) => NAV[m][0] === kind && NAV[m][1] === space && NAV[m][3] === r);  // (elsewhere: its first shape)
     if (!creatures && here && MODES[here].net) return ruleCards(r === rule ? w : here, null, r === rule);  // a walk by a rule: its rules' cards (the side picked kept)
-    if (creatures && r === rule) return ruleCards(w, icon(r === 'Ant' ? 'ant' : MODE_ICONS[w]));  // (the creature in use: its rules)
+    if (creatures) return ruleCards(w, icon(MODES[w].worm ? MODE_ICONS[w] : 'ant'));  // (its rules: an ant's, a turmite's, the worm's)
     const { base, detail } = splitModeLabel(modeOptionOf(v).text);  // (a spiral's, the diagonals': their base, their words)
     const pic = icon(r === 'Turtle' ? 'turtle' : r === 'Pivot' ? 'pivot' : r === 'Parity' ? 'walk2d' : r === 'Ant' ? 'ant' : MODE_ICONS[v]);  // a turtle for the walks turning relative to their heading
     const go = () => { if (here) { navGo(3, r); return; } $('mode').value = v; $('mode').dispatchEvent(new Event('change')); };
     const how = walkTutorialFits(here ?? v) && (() => { if (r === rule) walkTutorialToggle(); else { go(); walkTutorial($('mode').value); } });  // (its ⓘ: how it works, picked first)
-    const b = creatures ? card({ pic, name: r, detail: CREATURE_TIPS[r], how, click: go }) : card({ pic, name: r, base, detail, on: r === rule, how, byDefault: i ? '' : 'yes', click: go });  // (the first: where a shape starts)
+    const b = card({ pic, name: r, base, detail, on: r === rule, how, byDefault: i ? '' : 'yes', click: go });  // (the first: where a shape starts)
     b.disabled = !has(kind, r);
     return [b];
   }));
@@ -3366,21 +3363,20 @@ function renderModePicker() {
   // (kept, the same height, where there are neither: a spiral's steps from cell to cell, its Cells picked)
   const alone = sides.includes('');
   $('walkRuleSection').hidden = kind !== 'Walk' && !creatures;  // (one Walking rule, a walk's or a creature's)
-  $('walkOn').hidden = creatures;  // (a creature on cells only)
   $('walkRuleHow').hidden = !walkTutorialFits(w);
   const side = (b, s, word, none) => {
     const there = alone ? (s === 'cells' ? w : null) : sides.includes(s) ? navPick(4, s) : null, here = alone ? s === 'cells' : NAV[w][4] === s;
     // a walk by a rule: its other side greyed where the rule cannot go (a diagonal along the grid), the word why
     const why = there && MODES[there].net && !walkWordsOf(there) ? ruleWords(walkRules[walkKey(MODES[there])]).map((t) => walkWordWhy(MODES[there], t)).find(Boolean) : '', v = why ? null : there;
     if (why) none = why;
-    const info = !v ? null : MODES[v].antOf ? { base: '', detail: `${antByDigits ? 'digits ' : ''}${antRuleOf(v)}` }
+    const info = !v ? null : MODES[v].antOf ? { base: '', detail: `${antByDigits ? 'digits ' : ''}${antRuleOf(v)}` } : MODES[v].worm ? { base: '', detail: worm.byDigits ? 'digits' : worm.rule }
       : MODES[v].net ? { base: baseWords(MODES[v].base), detail: walkRules[walkKey(MODES[v])] } : splitModeLabel(modeOptionOf(v).text);
     b.replaceChildren(cardWords(word, info ? info.detail : none, info?.base, v && (() => (here ? toggleNumber() : (b.click(), showNumber())))));
     b.disabled = !v;
     b.classList.toggle('active', here);
   };
   const cellsWord = space === '3D' ? 'Cube' : 'Cells';
-  side($('walkOnGrid'), 'grid', 'Grid', 'not on the grid');
+  side($('walkOnGrid'), 'grid', 'Grid', creatures ? 'the worm, on triangles only' : 'not on the grid');
   side($('walkOnCells'), 'cells', cellsWord, space === '3D' ? 'not on cubes' : 'not on cells');
   renderAntRow();
 }

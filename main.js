@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.311';
+const VERSION = '0.4.312';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -3064,7 +3064,7 @@ function digitsWorker(F, base, n, then) {
 const RIVALS = [...'BCDEFGHIJKL'].map((c) => `formula${c}`), rivalWorkers = {};
 const rivalName = (id) => `Formula ${id.slice(-1)}`;  // (Formula B, Formula C…)
 // a rival's field, as the Digits' (its number at first, its tooltip), in the battle's Start section (see renderWalkTeams)
-const RIVAL_FIRSTS = ['e', 'sqrt(2)', 'phi', 'sqrt(3)', 'sqrt(5)', 'ln(2)', 'zeta(3)', 'sqrt(7)', 'cbrt(2)', 'gamma', 'catalan'];
+const RIVAL_FIRSTS = ['e', 'phi', 'sqrt(2)', 'sqrt(3)', 'sqrt(5)', 'ln(2)', 'zeta(3)', 'sqrt(7)', 'cbrt(2)', 'gamma', 'catalan'];
 function rivalField(id, j) {
   const box = document.createElement('div'), c = id.slice(-1);
   box.className = 'field formula-field';

@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.356';
+const VERSION = '0.4.357';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -17075,7 +17075,7 @@ function renderWalkGauges() {
     // (with land a dead one keeps its land and its place by it; in Cut it goes under the living; ✝ by its worth, when: Dead at)
     const gone = (s) => D.dead[s] >= 0;
     paintRanking(names.map((name, s) => ({ colour: teamColour(s), name, value: w[s], dead: gone(s) && !D.bite, diedAt: D.dead[s],
-                                             cells: [`<b>${fmt(w[s])}</b>${gone(s) ? ' ✝' : ''}`, fmt(D.bestAt(s)), gone(s) ? genLink(D.dead[s], fmt(D.dead[s])) : '', ...(C.body ? [fmt(D.size[s])] : []), from(s).toFixed(1)] })), C.titles);
+                                             cells: [`<b>${fmt(w[s])}</b>${gone(s) ? ' ✝' : ''}`, fmt(D.bestAt(s)), gone(s) ? genLink(D.dead[s]) : '', ...(C.body ? [fmt(D.size[s])] : []), from(s).toFixed(1)] })), C.titles);
     return;
   }
   const p = (v) => fmt(Math.round(v * 100) / 100 || 0), P = walkPeak(), gold = 'var(--accent)', c = walk.cells[cur];

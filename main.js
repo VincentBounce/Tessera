@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.249';
+const VERSION = '0.4.250';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -6606,8 +6606,9 @@ function startList(g) {
   // squeezed, unlike from size to size): from the solid's corner A* to a grid corner, straight, as
   // every grid corner of the kite lies on a face around A; to an edge's middle from its two ends and
   // the grid's edge L (the longest: on the sphere of hexagons, an edge across a fold is shorter in
-  // space than on the unfolded faces). Two edges mirrored across the kite's middle lie as far from
-  // A: the one towards B first, as on the kite's border (else rounding errors would pick)
+  // space than on the unfolded faces). The starts from the farthest from A to the nearest (start 1 the farthest: there
+  // most counts of walkers fit, see battleCounts). Two edges mirrored across the kite's middle lie as far from A: the one
+  // away from B first, as on the kite's border (else rounding errors would pick)
   let h = 0, L = 0;
   for (let v = 0; v < nv; v++) {
     h = Math.max(h, dot3(at(v), O));
@@ -6619,12 +6620,12 @@ function startList(g) {
     e.far = Math.sqrt((fromA(e.a) ** 2 + fromA(e.b) ** 2) / 2 - (L * L) / 4);
     e.along = dot3([0, 1, 2].map((d) => V[3 * e.a + d] + V[3 * e.b + d] - 2 * As[d]), AB);
   }
-  picks.sort((e1, e2) => (Math.abs(e1.far - e2.far) > 1e-9 ? e1.far - e2.far : e2.along - e1.along));
+  picks.sort((e1, e2) => (Math.abs(e1.far - e2.far) > 1e-9 ? e2.far - e1.far : e1.along - e2.along));
   const starts = [];
-  for (const { a, b, flipped } of picks) {  // first the way to the end nearer A, then back
-    // ends as far from A (a pentagon's edge): the way round A counterclockwise first
+  for (const { a, b, flipped } of picks) {  // first the way to the end farther from A, then back
+    // ends as far from A (a pentagon's edge): the way round A clockwise first
     const ccw = dot3(cross([0, 1, 2].map((d) => V[3 * a + d] - As[d]), [0, 1, 2].map((d) => V[3 * b + d] - As[d])), O) > 0;
-    const [n, f] = Math.abs(fromA(a) - fromA(b)) > 1e-9 ? (fromA(a) < fromA(b) ? [a, b] : [b, a]) : ccw ? [b, a] : [a, b];
+    const [n, f] = Math.abs(fromA(a) - fromA(b)) > 1e-9 ? (fromA(a) < fromA(b) ? [b, a] : [a, b]) : ccw ? [a, b] : [b, a];
     starts.push(...(flipped ? [[n, f]] : [[n, f], [f, n]]));
   }
   return (g.starts = starts);

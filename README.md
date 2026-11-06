@@ -126,6 +126,30 @@ Most surfaces also have the **Pivot** rule (base 2, `0` step forward, `1` turn r
 - The **Klein bottle** is a torus whose sheet is glued with its ends turned over, as the Möbius strip's: one-sided and closed. In space it has to cross itself: it is shown as the bottle, its neck going in through its side and opening into its bottom, both sides of its tiles drawn.
 - The − / + under the list set the surface's size. Round a torus and along a Möbius strip the length follows from the width (the shape's proportions), rounded to a multiple of 12 so that the blocks of 2, 3, 4, 6 and 12 colours divide it.
 - **Starts:** the different walks a surface allows (its rotations turn a start into another one that draws the same walk, turned), numbered alike at every size; hovering the number shows them all.
+- **Battles by start:** a walk on a solid offers as battles the counts of walkers (Duel 2, Trio 3 … Dozen 12) whose
+  starts its turns place alike from the start chosen (see `battleCounts`); the others are greyed. Below, those offered at
+  the first three starts and the last three, at each solid's size. Start 1 is the farthest from the solid's corner (its
+  list from the farthest to the nearest). 🔴 marks the first complete set (every count the solid's turns allow)
+  from the left, 🔵 the first from the right.
+
+  | Mode | Size | 1 | 2 | 3 | max−2 | max−1 | max |
+  |---|:-:|---|---|---|---|---|---|
+  | Tetrahedron, cells | 64 | 🔴 2, 3, 4, 12 | 2, 3, 4 | 2, 3, 4, 12 | 2, 3, 4, 12 | 2, 3, 4, 12 | 🔵 2, 3, 4, 12 |
+  | Tetrahedron, grid | 64 | 🔴 2, 3, 4, 12 | 2, 3, 4, 12 | 2, 3, 4, 12 | 2, 3, 4, 12 | 🔵 2, 3, 4, 12 | 2, 3, 4 |
+  | Cube, cells | 48 | 🔴 2, 3, 4, 6, 8, 12 | 2, 3, 4, 6, 8, 12 | 2, 3, 4, 6, 8, 12 | 2, 3, 4, 6, 8, 12 | 2, 3, 4, 6, 8, 12 | 🔵 2, 3, 4, 6, 8, 12 |
+  | Cube, grid | 48 | 2, 3, 4, 6 | 🔴 2, 3, 4, 6, 8, 12 | 2, 3, 4, 6, 8, 12 | 2, 3, 4, 6, 8, 12 | 🔵 2, 3, 4, 6, 8, 12 | 2, 3, 4, 6, 8 |
+  | Octahedron, cells | 48 | 🔴 2, 3, 4, 6, 8, 12 | 2, 3, 4, 6, 8, 12 | 2, 3, 4, 6, 8, 12 | 2, 3, 4, 6, 8, 12 | 2, 3, 4, 6, 8, 12 | 🔵 2, 3, 4, 6, 8, 12 |
+  | Octahedron, grid | 48 | 🔴 2, 3, 4, 6, 8, 12 | 2, 3, 4, 6, 8, 12 | 2, 3, 4, 6, 8 | 2, 3, 4, 6, 8, 12 | 🔵 2, 3, 4, 6, 8, 12 | 2, 3, 4, 6 |
+  | Stella octangula, cells | 24 | 🔴 2, 3, 4, 6, 8, 12 | 2, 3, 4, 6, 8, 12 | 2, 3, 4, 6, 8, 12 | 2, 3, 4, 6, 8, 12 | 2, 3, 4, 6, 8, 12 | 🔵 2, 3, 4, 6, 8, 12 |
+  | Stella octangula, grid | 24 | 🔴 2, 3, 4, 6, 8, 12 | 2, 3, 4, 6, 8, 12 | 2, 3, 4, 6, 8, 12 | 2, 3, 4, 6, 8, 12 | 🔵 2, 3, 4, 6, 8, 12 | 2, 3, 4, 6 |
+  | Dodecahedron, cells | 16 | 🔴 2, 3, 4, 5, 6, 10, 12 | 2, 3, 4, 5, 6, 10, 12 | 2, 3, 4, 5, 6, 10, 12 | 2, 3, 4, 5, 6, 10, 12 | 2, 3, 4, 5, 6, 10, 12 | 🔵 2, 3, 4, 5, 6, 10, 12 |
+  | Dodecahedron, grid | 16 | 🔴 2, 3, 4, 5, 6, 10, 12 | 2, 3, 4, 5, 6, 10, 12 | 2, 3, 4, 5, 6, 10, 12 | 2, 3, 4, 5, 6, 10, 12 | 2, 3, 4, 5, 6, 10, 12 | 🔵 2, 3, 4, 5, 6, 10, 12 |
+  | Icosahedron, cells | 24 | 🔴 2, 3, 4, 5, 6, 10, 12 | 2, 3, 4, 5, 6, 10, 12 | 2, 3, 4, 5, 6, 10, 12 | 2, 3, 4, 5, 6, 10, 12 | 2, 3, 4, 5, 6, 10, 12 | 🔵 2, 3, 4, 5, 6, 10, 12 |
+  | Icosahedron, grid | 24 | 🔴 2, 3, 4, 5, 6, 10, 12 | 2, 3, 4, 5, 6, 10, 12 | 2, 3, 4, 5, 6, 10, 12 | 2, 3, 4, 5, 6, 10, 12 | 2, 3, 4, 5, 6, 10, 12 | 🔵 2, 3, 4, 5, 6, 10, 12 |
+  | Hexagon sphere, cells | 32 | 🔴 2, 3, 4, 5, 6, 10, 12 | 2, 3, 4, 5, 6, 10, 12 | 2, 3, 4, 5, 6, 10, 12 | 2, 3, 4, 5, 6, 10, 12 | 2, 3, 4, 5, 6, 10, 12 | 🔵 2, 3, 4, 5, 6, 10, 12 |
+  | Hexagon sphere, grid | 32 | 🔴 2, 3, 4, 5, 6, 10, 12 | 2, 3, 4, 5, 6, 10, 12 | 2, 3, 4, 5, 6, 10, 12 | 2, 3, 4, 5, 6, 10, 12 | 2, 3, 4, 5, 6, 10, 12 | 🔵 2, 3, 4, 5, 6, 10, 12 |
+
+  Start 1 offers every count on 13 solids of 14 (the cube's grid: start 2); the last start on 10.
 - A walk that comes back onto itself stops after its first round (`↻`, see [Regular patterns](#regular-patterns)); on a torus, a fraction's **loops** button finds the sizes where it closes in fewest laps.
 - A surface can be shown **flat or round**: the torus and the Möbius strip unroll into their sheet and the polyhedra flatten, and the walk goes on during the morph.
 - The **Möbius strip** is walked as a strip of paper: each square has two faces, each with its own cells, and a walker keeps to its face; at the strip's edge it goes round onto the face just behind. Both faces make one surface with no edge (2 starts on squares, 3 on hexagons and triangles); at a hexagon strip's zigzag edge a corner is not flat, and turns there are measured as a share of the way round it.

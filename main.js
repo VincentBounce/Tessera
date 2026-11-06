@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.324';
+const VERSION = '0.4.325';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -1620,8 +1620,9 @@ function needDigits(n) {
 }
 function digitsNeeded(whole = false) {  // (whole: the length asked, a battles' hunt's: every battle played to it)
   const mode = MODES[$('mode').value], size = randomPrimeSize();
-  if (mode.life) return plane.start !== 'digits' ? 256 : mode.elementary ? 2 * targetAsked() + 16 : mode.plane ? gridSize(planeKind(mode.plane), plane.side)[2] : SPHERES[surfaceOf(mode)].tiles(sphereSize());  // all the digits for a start by the digits (a cell each); else a hunt's patch
-  // a worm: by its rule none read; by the digits one at a new situation only (its free lines at a corner, met for the
+  if (!readsDigits()) return 0;  // (none read, none computed: a creature by its rule, Life from no digits, the loops)
+  if (mode.life) return mode.elementary ? 2 * targetAsked() + 16 : mode.plane ? gridSize(planeKind(mode.plane), plane.side)[2] : SPHERES[surfaceOf(mode)].tiles(sphereSize());  // all the digits for a start by the digits (a cell each); else a hunt's patch
+  // a worm by the digits: one read at a new situation only (its free lines at a corner, met for the
   // first time: a few dozen at most, see wormMind), the number's next that fits: WORM_DIGITS at first, more when it lacks
   // them (see needDigits), its steps the length asked
   if (mode.worm) return Math.min(targetAsked(), Math.max(WORM_DIGITS, digitsAsked[setupKey()] ?? 0));
@@ -3745,6 +3746,16 @@ function compute() {
   // warnings; what is shown is in the description (describe)
   const note = FORMULA_NOTES[F.root] ? FORMULA_NOTES[F.root](base) : '';
 
+  if (!n) {  // (no digit read: no number computed, the walk or the start built at once)
+    setCurrent({ intPart: '', digits: new Uint8Array(0) }, base, kind, null);
+    if (!elementaryReady(compute)) return;  // (Elementary's rows on their way, see elementaryReady)
+    $('status').textContent = '';
+    buildWalk();
+    $('copyNumber').hidden = true;
+    showAll();
+    applyPendingView();
+    return;
+  }
   if (kind === 'seq') {
     setCurrent(seqDigits(F.ast, want, base), base, kind, kind === 'rat' ? smallExact(F.ast) : null);
     if (!elementaryReady(compute)) return;  // (Elementary's rows on their way: then all again, its digits cached)
@@ -3953,7 +3964,7 @@ function buildWalkOf() {
     syncLoopRow();
     return;
   }
-  const len = MODES[current.mode].worm ? targetAsked() : seq.length;  // (a worm: its steps asked, its digits read at its new corners only)
+  const len = MODES[current.mode].worm || !readsDigits() ? targetAsked() : seq.length;  // (its steps asked: a worm's, its digits read at its new corners only; a creature by its rule's, none read)
   const is3d = MODES[current.mode].lattice === 'cube';
   const wx = new Float64Array(len + 1);
   const wy = new Float64Array(len + 1);
@@ -7314,7 +7325,7 @@ function buildGridWalk(seq, mode, ahead = new Uint8Array(0)) {
   const { base, initial } = mode, kind = surfaceOf(mode);
   fillSphereSizes(kind, initial);
   const { mesh, radius } = SPHERES[kind];
-  const size = sphereSize(), g = mesh(size), R = radius(size), G = gridGraph(g), V = g.verts, len = mode.worm ? targetAsked() : seq.length, at = (v) => [V[3 * v], V[3 * v + 1], V[3 * v + 2]];  // (a worm: its steps asked)
+  const size = sphereSize(), g = mesh(size), R = radius(size), G = gridGraph(g), V = g.verts, len = mode.worm || !readsDigits() ? targetAsked() : seq.length, at = (v) => [V[3 * v], V[3 * v + 1], V[3 * v + 2]];  // (a worm: its steps asked)
   const rec = walkRecorder(seq, ahead, base, R, G.nv, len), vert = new Int32Array(len + 1), stepTiles = new Int32Array(2 * len), S = surfaceSteps(g, mode);
   let state = walkStart(g, mode);
   // a battle (see 7.6b): all its walks (battlePlayer), A's recorded (still once dead), from its own start (grouped: its
@@ -7370,11 +7381,11 @@ function buildSphereWalk(seq, mode, ahead = new Uint8Array(0)) {
   const { initial } = mode, kind = surfaceOf(mode);
   fillSphereSizes(kind, initial);
   const { mesh, radius } = SPHERES[kind];
-  const len = seq.length, w = current.mode, ant = !!mode.antOf;
+  const len = readsDigits() ? seq.length : targetAsked(), w = current.mode, ant = !!mode.antOf;  // (an ant by its rule: its steps asked, no digit read)
   const size = sphereSize(), g = mesh(size), R = radius(size), S = surfaceSteps(g, mode, ant ? surfaceActs(MODES[ANTS[w].walk], antWords(w)) : undefined);  // (an ant: by its words)
   // an ant: it walks the surface's cells by its turns, the cells keeping their colours (see antStepper)
   const antStep = ant ? antStepper(w, (d) => { state = S.step(state, d); return state; }, walkStart(g, mode)[0]) : null;
-  const base = ant && !antByDigits ? antStep.colours : mode.base, turns = ant ? new Uint8Array(len) : null, rec = walkRecorder(seq, ahead, base, R, g.n);
+  const base = ant && !antByDigits ? antStep.colours : mode.base, turns = ant ? new Uint8Array(len) : null, rec = walkRecorder(seq, ahead, base, R, g.n, len);
   let state = walkStart(g, mode);
   const put = (i, t = state[0]) => rec.put(i, t, t, [g.cen[3 * t], g.cen[3 * t + 1], g.cen[3 * t + 2]]);
   put(0);

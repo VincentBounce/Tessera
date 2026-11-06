@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.251';
+const VERSION = '0.4.252';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -1829,15 +1829,14 @@ const renderSkyButtons = () => {
 // a walk that loops stops sooner, as its stepper says); its ladder DIGIT_STEPS
 let target = 20000;
 const targetMost = () => (MODES[$('mode').value].elementary ? 50_000 : gensShown() ? 100000 : 50_000_000);  // (Elementary's: its cells the square of it, drawn as a picture, see elementaryRows)
-const FEWEST_STEPS = 1;  // (typed: a single digit, step or generation; the stepper's − + keep to DIGIT_STEPS)
-const targetAsked = () => Math.min(targetMost(), Math.max(FEWEST_STEPS, Math.round(target) || 10));
+const targetAsked = () => Math.min(targetMost(), Math.max(DIGIT_STEPS[0], Math.round(target) || 10));
 
 // The number of digits as a stepper, like the surface size: [ − ] 20,000 digits [ + ] goes through
 // DIGIT_STEPS and recomputes at once. The count can also be typed in the middle; any other count
 // (typed, or from a link) then steps to the next one in DIGIT_STEPS.
 // For a random prime, walked whole, the stepper sets the prime's size instead, in decimal digits:
 // [ − ] 300 digits (p) [ + ], through PRIME_STEPS (100 to 2,000).
-const DIGIT_STEPS = [10, 20, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 50000, 100000, 200000, 500000, 1e6, 2e6, 5e6, 1e7, 2e7, 5e7];
+const DIGIT_STEPS = [1, 2, 5, 10, 20, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 50000, 100000, 200000, 500000, 1e6, 2e6, 5e6, 1e7, 2e7, 5e7];
 const PRIME_STEPS = [100, 200, 300, 500, 1000, 2000];
 const randomPrimeSize = () => {  // the size of the random prime in the Formula field, if it is one
   const m = $('formula').value.match(/^\s*randprime\(\s*(\d+)\s*,\s*\d+\s*\)\s*$/);
@@ -1876,7 +1875,7 @@ const runStart = () => (reversibleRun() && !walk.life.stable ? -(walk.n - 1 - Ma
 // to its last (a reversible one's by its rule backwards, see lifeTo; a Game of Life's round it forth, see advanceTo)
 const loopBack = () => looping() && walk.life.stable.T === 0;
 function setGens(n) {
-  target = Math.min(targetMost(), Math.max(FEWEST_STEPS, Math.round(n) || 2000));
+  target = Math.min(targetMost(), Math.max(DIGIT_STEPS[0], Math.round(n) || 2000));
   if (spaceTimeOn()) { restart(); showAll(); }
   else if (MODES[$('mode').value].elementary) compute();  // (its rows built again, see elementaryRows)
   else { walk.n = target; if (cur > walk.n) seekTo(walk.n); }
@@ -1912,7 +1911,7 @@ function syncDigitsStepper() {
   const unit = gens ? 'generations' : stepperUnit(), total = gens || size || walk.loop ? null : wholeTotal();  // (a loop's, its rounds: see runStop)
   $('digitsLabel').value = stop ? stop.label : size ? `${fmt(size)} digits (p)` : total !== null ? `${fmt(asked)} of ${fmt(total)}` : `${fmt(asked)} ${asked === 1 ? unit.slice(0, -1) : unit}`;  // (1 step, 1 digit, 1 generation)
   $('digitsLabel').title = size ? 'The size of the random prime p, in decimal digits: 100 to 2,000, then Enter (it is walked whole)'
-    : `${stop ? `${stop.why}\n` : ''}Type a number of ${unit}, from ${fmt(FEWEST_STEPS)} to ${fmt(targetMost())}, then Enter\nLast picked: ${fmt(target)}`;
+    : `${stop ? `${stop.why}\n` : ''}Type a number of ${unit}, from ${fmt(DIGIT_STEPS[0])} to ${fmt(targetMost())}, then Enter\nLast picked: ${fmt(target)}`;
   $('digitsDown').disabled = (stop?.n ?? asked) <= steps[0];  // (− goes below what is walked)
   $('digitsUp').disabled = asked >= (size ? steps.at(-1) : targetMost()) || !!stop;
 }

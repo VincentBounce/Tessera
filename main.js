@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.322';
+const VERSION = '0.4.323';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -1608,12 +1608,22 @@ let cw = 0, ch = 0;
 function updateRuleText() {}  // the rule is shown by describe (the Play card)
 
 // Game of Life needs one base-(K + 1) digit per cell; walks use the requested number of digits
+// The digits asked beyond those a walk reads at first, by number and base: a worm's, when it ran out of them, or the
+// digits' window's (see needDigits); the cache kept, more computed only when asked
+const digitsAsked = {};
+const digitsKey = () => `${formulaInUse}/${MODES[$('mode').value].life ? lifeBase() : MODES[$('mode').value].base}`;
+function needDigits(n) {
+  if ((digitsAsked[digitsKey()] ?? 0) >= n) return;
+  digitsAsked[digitsKey()] = n;
+  compute();
+}
 function digitsNeeded() {
   const mode = MODES[$('mode').value], size = randomPrimeSize();
   if (mode.life) return plane.start !== 'digits' ? 256 : mode.elementary ? 2 * targetAsked() + 16 : mode.plane ? gridSize(planeKind(mode.plane), plane.side)[2] : SPHERES[surfaceOf(mode)].tiles(sphereSize());  // all the digits for a start by the digits (a cell each); else a hunt's patch
   // a worm: by its rule none read; by the digits one at a new situation only (its free lines at a corner, met for the
-  // first time: a few dozen at most, see wormMind), the number's next that fits; WORM_DIGITS enough, its steps the length asked
-  if (mode.worm) return Math.min(targetAsked(), WORM_DIGITS);
+  // first time: a few dozen at most, see wormMind), the number's next that fits: WORM_DIGITS at first, more when it lacks
+  // them (see needDigits), its steps the length asked
+  if (mode.worm) return Math.min(targetAsked(), Math.max(WORM_DIGITS, digitsAsked[digitsKey()] ?? 0));
   // a random prime is walked whole: its size (decimal digits) written in the walk's base
   return size ? Math.ceil((size * Math.log(10)) / Math.log(mode.base)) + 1 : targetAsked();
 }
@@ -3841,6 +3851,8 @@ function buildWalk() {
   const before = walkSaid;
   walkSaid = '';
   buildWalkOf();
+  // a worm out of digits for a new corner, the number having more: ten times as many, up to the length asked
+  if (walk.wormEnd === 'digits' && digitsNeeded() < targetAsked() && digitsNeeded() < (wholeTotal() ?? Infinity)) setTimeout(() => needDigits(Math.min(targetAsked(), 10 * digitsNeeded())));
   if (walkSaid) $('status').textContent = walkSaid;  // (said at once; again after the time it took, see compute)
   else if (before && $('status').textContent.includes(before)) $('status').textContent = '';  // (said before, true no more)
   syncLink();
@@ -4580,7 +4592,7 @@ const HEX_DIRS = [[1, 0], [0, 1], [-1, 1], [-1, 0], [0, -1], [1, -1]];
 // step straight on. step.took: its turn (0 sharp left … 4 sharp right); null once it stops, step.end: why (dead: no line
 // left; eaten: its rule onto an eaten line; rule, digits: none left for a new situation, step.free: its free lines there)
 const WORM_TURNS = { L2: 0, L1: 1, N: 2, R1: 3, R2: 4 };
-const WORM_DIGITS = 1000;  // (the digits a worm by the digits is given: it reads 13 at most for π, e, φ, √2, γ, Catalan's, Erdős–Borwein's)
+const WORM_DIGITS = 1000;  // (the digits a worm is given at first: it reads 13 at most for π, e, φ, √2, γ, Catalan's, Erdős–Borwein's)
 const worm = { byDigits: false, rule: rulesOf('worm')[0].rule };  // (its rule at first: the list's first)
 const wormRuleOf = (rule) => { const words = turnWords(rule); return words.length && words.join('') === rule.toUpperCase().replace(/\s+/g, '') && words.every((t) => t in WORM_TURNS) ? words : null; };
 // its mind, the same on the plane and on a surface: at a corner the turns of its free lines (0 sharp left … 4 sharp right,
@@ -17890,6 +17902,19 @@ function base10Digits({ head, frac, total }) {
   return [`≈ ${lead}.${(((N % D) * 10n ** BigInt(m)) / D).toString().padStart(m, '0')}…`, `first ${fmt(lead.length + m)} digits, as many as the first ${fmt(ds.length)} in base ${current.base} tell`];
 }
 const base10 = { on: false };  // (Base 10 switched on: the number in base 10 instead, see showNumber)
+// the digits' stepper in their window, the Play card's (its words and its − +, see syncDigitsStepper): while fewer digits are
+// computed than asked (a worm's, see needDigits), so many of so many, a click on − or + computing them all; then the Play card's
+function numberStepper() {
+  const { head, frac } = digitsInUse(), computed = head.length + frac.length, asked = targetAsked();
+  const short = !gensShown() && !randomPrimeSize() && computed < Math.min(asked, wholeTotal() ?? Infinity);
+  const box = document.createElement('div'), label = document.createElement('span');
+  box.className = 'stepper';
+  label.textContent = short ? `${fmt(computed)} / ${fmt(asked)} digits computed` : $('digitsLabel').value;
+  label.title = short ? `${fmt(computed)} digits computed of the ${fmt(asked)} asked (a worm reads one at a new corner only): − or +, all of them` : $('digitsLabel').title;
+  const button = (text, delta, off) => { const b = document.createElement('button'); b.type = 'button'; b.textContent = text; b.disabled = !short && off; b.addEventListener('click', () => (short ? needDigits(asked) : stepDigits(delta))); return b; };
+  box.append(button('−', -1, $('digitsDown').disabled), label, button('+', 1, $('digitsUp').disabled));
+  return box;
+}
 function showNumber() {
   const B = current.base, v = $('numberPreview'), ten = base10.on && B !== 10, b = ten ? 10 : B, rows = numberRows(), one = rows.length > 1 ? ' one-line' : '';
   // each number (see numberRows): its title, in its walker's colour in a battle, and how many of its digits; a fraction's
@@ -17902,7 +17927,9 @@ function showNumber() {
   v.innerHTML = `<div class="tut-body">${rows.map((r, j) => { const period = r.ratio && ratioDigits(b, r.ratio);
     return `<h3><span style="color:${one ? teamColour(r.s) : ''}">${withIcons(r.name)}</span> <code>${baseWords(b)}</code> <span class="muted">${shown[j][1]}</span></h3>${period ? `<p class="number-digits${one}">${period}</p>` : ''}<p class="number-digits${one}"></p>`; }).join('')}</div>`;
   [...v.querySelectorAll('.number-digits:empty')].forEach((p, j) => { p.textContent = shown[j][0]; });  // (its digits as text)
-  v.prepend(tutTools({ toggle: B !== 10 && { text: 'Base 10', title: `The number in base 10 instead of base ${B}`, on: base10.on, click: () => { base10.on = !base10.on; showNumber(); } }, copy: (e) => copyFlash(e.currentTarget, text), close: closeNumber, back: 'the walk' }));
+  const tools = tutTools({ toggle: B !== 10 && { text: 'Base 10', title: `The number in base 10 instead of base ${B}`, on: base10.on, click: () => { base10.on = !base10.on; showNumber(); } }, copy: (e) => copyFlash(e.currentTarget, text), close: closeNumber, back: 'the walk' });
+  tools.prepend(numberStepper());  // (its length, beside Base 10)
+  v.prepend(tools);
   v.querySelector('.tut-body').scrollTop = 0;
   v.hidden = false;
   for (const b of numberChips()) b.classList.add('active', 'switch');

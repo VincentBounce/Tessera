@@ -150,6 +150,12 @@ Most surfaces also have the **Pivot** rule (base 2, `0` step forward, `1` turn r
   | Hexagon sphere, grid | 32 | 🔴 2, 3, 4, 5, 6, 10, 12 | 2, 3, 4, 5, 6, 10, 12 | 2, 3, 4, 5, 6, 10, 12 | 2, 3, 4, 5, 6, 10, 12 | 2, 3, 4, 5, 6, 10, 12 | 🔵 2, 3, 4, 5, 6, 10, 12 |
 
   Start 1 offers every count on 13 solids of 14 (the cube's grid: start 2); the last start on 10.
+- **Centred on the faces:** each face's centre is a grid corner (a walk along the grid can start there) or a cell's
+  centre (a walk on cells can), by the solid's edge:
+  - triangles (tetrahedron, octahedron, icosahedron): an edge a multiple of 3, a corner (grid); any other, a cell;
+  - the hexagon sphere: the other way, a multiple of 3 a cell, any other a corner;
+  - squares (cube): an even edge, a corner; an odd one, a cell (every size offered is even: the grid only);
+  - pentagons (dodecahedron) and the stella octangula: always a corner, at any size (the grid only).
 - A walk that comes back onto itself stops after its first round (`↻`, see [Regular patterns](#regular-patterns)); on a torus, a fraction's **loops** button finds the sizes where it closes in fewest laps.
 - A surface can be shown **flat or round**: the torus and the Möbius strip unroll into their sheet and the polyhedra flatten, and the walk goes on during the morph.
 - The **Möbius strip** is walked as a strip of paper: each square has two faces, each with its own cells, and a walker keeps to its face; at the strip's edge it goes round onto the face just behind. Both faces make one surface with no edge (2 starts on squares, 3 on hexagons and triangles); at a hexagon strip's zigzag edge a corner is not flat, and turns there are measured as a share of the way round it.

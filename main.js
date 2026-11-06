@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.260';
+const VERSION = '0.4.261';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -5922,7 +5922,7 @@ function surfaceBounds() {
 }
 
 // the place a walk's state comes from (see surfaceSteps): along the grid the corner it comes from, on cells the tile across
-// the edge it came in by: its heading as it starts (see drawSphereCursor)
+// the edge it came in by: its heading as it starts (see headFrame)
 const cameFrom = (g, grid, state) => (grid ? state[1] : g.nbr[g.sides * state[0] + state[1]]);
 // A walk's place on the shape shown, its point: along the grid a corner (on a tile it belongs to), else a tile's centre
 function placePoint(p) {
@@ -14815,29 +14815,39 @@ const digitColour = (k) => walk.ant ? (antRamp ? rampColour(k, walk.ant) : antTu
 /* ---- 11.4 Surfaces --------------------------------------------------------------------------- */
 const sphereDraw = { at: 0, cost: 0 };
 
-// Cursor lying on the sphere: an arrow in the tangent plane at the walker, pointing along the
-// last step, built in 3D and then projected so it is foreshortened like the tiles around it. P(i), tileAt(i): the walker's
-// point and tile at step i (the walk's; a battle's B, see drawOverlay), fill: its colour
-function drawSphereCursor(ctx, P = (i) => [walk.wx[i], walk.wy[i], walk.wz[i]], tileAt = (i) => walk.tile[i], fill = '#ffffff', before = placePoint(walk.came)) {  // (before: the place it comes from as it starts, see cameFrom)
-  const p = P(cur);
-  const t = tileAt(cur), nr = walk.shape.nrm;
-  const nrm = [nr[3 * t], nr[3 * t + 1], nr[3 * t + 2]];  // outward normal of the current tile
-  const pos = p.map((v, d) => v + nrm[d] * walk.R * 0.003);  // just above the surface
-  // heading: its last step (at the start, the one it came by), minus its normal component
+// A walker's head on a surface: its place, heading (along its last step; at the start, the one it came by), side and its
+// tile's outward normal, and its size (a third of an edge); P(i), tileAt(i): the walker's point and tile at step i (the
+// walk's; a battle's, see headsOf)
+function headFrame(P = (i) => [walk.wx[i], walk.wy[i], walk.wz[i]], tileAt = (i) => walk.tile[i], before = placePoint(walk.came)) {  // (before: the place it comes from as it starts, see cameFrom)
+  const p = P(cur), t = tileAt(cur), nr = walk.shape.nrm, nrm = [nr[3 * t], nr[3 * t + 1], nr[3 * t + 2]];
   const [a, b] = [cur > 0 ? P(cur - 1) : before, p];
   let h = [0, 1, 2].map((d) => b[d] - a[d]);
   const dot = h[0] * nrm[0] + h[1] * nrm[1] + h[2] * nrm[2];
   h = h.map((v, d) => v - dot * nrm[d]);
   const hl = Math.hypot(...h) || 1;
   h = h.map((v) => v / hl);
-  const side = cross(nrm, h);
-  // scale to the tile: the arrow is 1.6·size long, about half an edge, centred on the tile centre
-  const sc = walk.shape.corners, edge = walk.R * Math.hypot(sc[0] - sc[3], sc[1] - sc[4], sc[2] - sc[5]);
-  const size = 0.3 * edge;
-  drawArrow(ctx, fill, (fwd, lat) => {
-    const [x, y] = projectPoint(...[0, 1, 2].map((d) => pos[d] + h[d] * fwd * size + side[d] * lat * size));
-    return [view.ox + x * view.scale, view.oy + y * view.scale];
-  });
+  const sc = walk.shape.corners;
+  return { p, h, side: cross(nrm, h), nrm, size: 0.3 * walk.R * Math.hypot(sc[0] - sc[3], sc[1] - sc[4], sc[2] - sc[5]) };
+}
+// the heads on a surface, each [its frame, its colour]: a battle's living walkers, else the walk's (white); none in Life
+function headsOf() {
+  if (!walk.n || walk.life || walk.rows) return [];
+  if (!walk.battle) return [[headFrame(), '#ffffff']];
+  const B = walk.battle.player;
+  B.to(cur);
+  return B.living().map((s) => [headFrame((i) => placePoint(B.places[s][i]), (i) => (walk.vert ? walk.geo.grid.tileOf[B.places[s][i]] : B.places[s][i]),
+    placePoint(cameFrom(walk.geo, !!walk.vert, B.starts[s]))), teamColour(s)]);
+}
+// a head as a solid, the arrow turned round its axis (an ogive: a cone from its tip to its rim, then a hollow one to its
+// notch), its axis on the surface: half under it, hidden by the tiles; its triangles' corners and normals, [x, y, z, nx, ny, nz]
+function ogiveOf({ p, h, side, nrm, size }) {
+  const at = (f, r, a) => [0, 1, 2].map((d) => p[d] + (h[d] * f + (side[d] * Math.cos(a) + nrm[d] * Math.sin(a)) * r) * size), out = [];
+  const tri = (A, B, C) => { const n = unit(cross(B.map((v, d) => v - A[d]), C.map((v, d) => v - A[d]))); for (const q of [A, B, C]) out.push(...q, ...n); };
+  for (let j = 0; j < 16; j++) {
+    const a0 = (j * Math.PI) / 8, a1 = ((j + 1) * Math.PI) / 8, r0 = at(-0.8, 0.7, a0), r1 = at(-0.8, 0.7, a1);
+    tri(at(0.8, 0, 0), r0, r1); tri(at(-0.5, 0, 0), r1, r0);
+  }
+  return out;
 }
 // A walker's arrow, on a plane or a surface alike: its tip ahead, its notch behind, centred on its place; at(forward,
 // across): a point of it on the screen, in its size
@@ -16145,6 +16155,11 @@ function gpuSurface(paint, path) {
   if (segs) { gpuBuffer('ribbon', segs.data); D.ribbonOf = null; D.segsAt = segs.at; D.keys.segs = walk.wx; D.keys.segsM = sh.m; }
   const ranges = !(path || lines) || cur <= 0 || !(P?.ownLines ? D.segsRanges : D.segsAt) ? [] : !lines ? [[0, D.segsAt[cur]]] : P.ownLines ? D.segsRanges
     : P.standing().map((s) => [D.segsAt[s][Math.max(1, P.from[s])], D.segsAt[s][P.step + 1]]);
+  const heads = headsOf();  // (see ogiveOf: 96 corners each)
+  if (heads.length) {
+    gpuBuffer('headMesh', Float32Array.from(heads.flatMap(([f]) => ogiveOf(f)))); gpuBuffer('headAt', new Float32Array(3 * heads.length));
+    gpuBuffer('headCol', Uint8Array.from(heads.flatMap(([, c]) => [...rgbCached(c), 255])));
+  }
   // the tiles, their grid and the path, into pass p (0 the frame; 1, 2 Glass's)
   const drawAll = (rp, pass) => {
     // seen from both sides: Glass, a cut, a Klein bottle (one-sided: its tiles' face inwards in its neck and handle)
@@ -16170,6 +16185,12 @@ function gpuSurface(paint, path) {
       rp.setVertexBuffer(0, D.quad); rp.setVertexBuffer(1, D.ribbon);
       for (const [a, b] of ranges) if (b > a) rp.draw(4, b - a, 0, a);
     }
+    if (!heads.length) return;  // the heads: ogives lit as the cubes, each its colour (an instance), half under the tiles
+    rp.setPipeline(gpuDrawPipe('cube', { vertex: 'cubeV', fragment: 'shadowedF', shadowed: true, pass,
+      buffers: [vbuf(24, [VA(0, 'float32x3', 0), VA(1, 'float32x3', 12)]), vbuf(12, [VA(2, 'float32x3')], 'instance'), vbuf(4, [VA(3, 'unorm8x4')], 'instance')] }));
+    rp.setBindGroup(0, gpuGroup(), [slotOf({ glass: pass, cut, alpha: GLASS_ALPHA })]); rp.setBindGroup(1, D.shadow.group);
+    rp.setVertexBuffer(0, D.headMesh); rp.setVertexBuffer(1, D.headAt); rp.setVertexBuffer(2, D.headCol);
+    heads.forEach((_, j) => rp.draw(96, 1, 96 * j, j));
   };
   gpuFrame(enc, drawAll);
   device.queue.writeBuffer(D.uni, 0, D.words, 0, 512 * slot);
@@ -16556,15 +16577,7 @@ function drawOverlay() {
     }
   }
   if (!walk.n || walk.life || walk.rows) return;  // no walker in the Game of Life, nor Elementary
-  if (walk.battle) {  // a battle: no start (its tails cut), each living head an arrow in its colour
-    const B = walk.battle.player;
-    B.to(cur);
-    for (const s of B.living()) {
-      const Q = B.places[s], P = (i) => placePoint(Q[i]), tileAt = (i) => (walk.vert ? walk.geo.grid.tileOf[Q[i]] : Q[i]);
-      if (tileVisible(tileAt(cur))) drawSphereCursor(ctx, P, tileAt, teamColour(s), placePoint(cameFrom(walk.geo, !!walk.vert, B.starts[s])));
-    }
-    return;
-  }
+  if (walk.battle) return;  // a battle: no start (its tails cut), its heads drawn with its tiles (see headsOf)
   const r = Math.max(3, Math.min(s * 0.35, 8));
   // start (hidden on the far side of the sphere)
   if (!walk.sphere || facing(0)) {
@@ -16573,10 +16586,7 @@ function drawOverlay() {
     ctx.arc(ox + walk.xs[0] * s, oy + walk.ys[0] * s, r, 0, Math.PI * 2);
     ctx.fill();
   }
-  if (walk.sphere) {
-    if (facing(cur)) drawSphereCursor(ctx);
-    return;
-  }
+  if (walk.sphere) return;  // (its head drawn with its tiles, see headsOf)
   // current position + heading
   const x = ox + walk.xs[cur] * s;
   const y = oy + walk.ys[cur] * s;

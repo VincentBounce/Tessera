@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.330';
+const VERSION = '0.4.331';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -1608,27 +1608,13 @@ let cw = 0, ch = 0;
 function updateRuleText() {}  // the rule is shown by describe (the Play card)
 
 // Game of Life needs one base-(K + 1) digit per cell; walks use the requested number of digits
-// The digits asked beyond those a walk reads at first, by setup (its length apart: see setupKey): a worm's or a battle's,
-// when it ran out of them, or the digits' window's (see needDigits); the cache kept, more computed only when asked
-const digitsAsked = {};
-const BATTLE_DIGITS = 10000;  // (a battle's digits at first: most end before, see buildWalk)
-const setupKey = () => { const s = getSetup(); delete s.d; delete s.v; return JSON.stringify(s); };  // (the setup shown, its length and version apart)
-function needDigits(n) {
-  if ((digitsAsked[setupKey()] ?? 0) >= n) return;
-  digitsAsked[setupKey()] = n;
-  compute();
-}
-function digitsNeeded(whole = false) {  // (whole: the length asked, a battles' hunt's: every battle played to it)
+function digitsNeeded() {
   const mode = MODES[$('mode').value], size = randomPrimeSize();
   if (!readsDigits()) return 0;  // (none read, none computed: a creature by its rule, Life from no digits, the loops)
   if (mode.life) return mode.elementary ? 2 * targetAsked() + 16 : mode.plane ? gridSize(planeKind(mode.plane), plane.side)[2] : SPHERES[surfaceOf(mode)].tiles(sphereSize());  // all the digits for a start by the digits (a cell each); else a hunt's patch
-  // a worm by the digits: one read at a new situation only (its free lines at a corner, met for the
-  // first time: a few dozen at most, see wormMind), the number's next that fits: WORM_DIGITS at first, more when it lacks
-  // them (see needDigits), its steps the length asked
-  if (mode.worm) return Math.min(targetAsked(), Math.max(WORM_DIGITS, digitsAsked[setupKey()] ?? 0));
-  // a battle: BATTLE_DIGITS at first, more while it goes on past them (see buildWalk), its walkers known dead only theirs
-  // (see rivalsDigits)
-  if (!whole && battleOn()) return Math.min(targetAsked(), Math.max(BATTLE_DIGITS, digitsAsked[setupKey()] ?? 0));
+  // a worm by the digits: one read at a new situation only (its free lines at a corner, met for the first time: a few
+  // dozen at most, see wormMind), the number's next that fits: WORM_DIGITS enough, its steps the length asked
+  if (mode.worm) return Math.min(targetAsked(), WORM_DIGITS);
   // a random prime is walked whole: its size (decimal digits) written in the walk's base
   return size ? Math.ceil((size * Math.log(10)) / Math.log(mode.base)) + 1 : targetAsked();
 }
@@ -3100,18 +3086,15 @@ function rivalField(id, j) {
   return box;
 }
 $('rivalFormulas').append(...RIVALS.map(rivalField));
-// (a walker dead in this battle with fewer digits, at step d: its first d + 1 only, the rest never read, laid as 0s: the
-// deaths before the digits it had the same, whatever the digits after)
-let battleDeaths = null;  // { key: the battle, its length apart (see setupKey), dead: each walker's step of death, −1 alive }
 function rivalsDigits(base, n, then) {
-  const out = [], dead = battleDeaths?.key === setupKey() ? battleDeaths.dead : [];
-  for (const [j, id] of RIVALS.slice(0, walkTeams - 1).entries()) {
-    const F = formulaOf($(id).value), m = dead[j + 1] >= 0 ? Math.min(n, dead[j + 1] + 1) : n;
+  const out = [];
+  for (const id of RIVALS.slice(0, walkTeams - 1)) {
+    const F = formulaOf($(id).value);
     if (F.error) return { error: `${rivalName(id)}: ${F.error}` };
-    const known = knownDigits(F, base, m);
-    if (known) { const all = new Uint8Array(n); all.set(known); out.push(all); continue; }
+    const known = knownDigits(F, base, n);
+    if (known) { out.push(known); continue; }
     rivalWorkers[id]?.terminate();
-    rivalWorkers[id] = digitsWorker(F, base, m, (error) => {
+    rivalWorkers[id] = digitsWorker(F, base, n, (error) => {
       delete rivalWorkers[id];
       if (error) $('status').textContent = `${rivalName(id)}: ${error}`; else if (!Object.keys(rivalWorkers).length) then();
     });
@@ -3154,7 +3137,7 @@ const writeDigits = (ds, b, head) => {
 function numberRows() {
   const P = walk.battle?.player, b = current.base, { head, frac } = digitsInUse(), n = head.length + frac.length;
   return [formulaInUse, ...RIVALS.slice(0, P ? P.K - 1 : 0).map((id) => $(id).value)].map((f, s) => {
-    const F = formulaOf(f), used = !P ? n : P.dead[s] >= 0 ? P.dead[s] : P.n, ds = s ? knownDigits(F, b, used) : Uint8Array.from([...head, ...frac]);  // (a walker's digits up to its death: those computed)
+    const F = formulaOf(f), ds = s ? knownDigits(F, b, n) : Uint8Array.from([...head, ...frac]), used = !P ? n : P.dead[s] >= 0 ? P.dead[s] : P.n;
     const lead = !s ? head.length : F.kind === 'seq' ? ds.length : headDigits(cache[`${F.text}/${b}`].intPart, b).length, h = Math.min(lead, used);  // (its integer part's digits)
     return { s, name: s ? F.text ?? f : f, used, n, head: ds.subarray(0, h), frac: ds.subarray(h, used), total: s ? lead : current.total, ratio: s ? F.kind === 'rat' && smallExact(F.ast) : current.ratio };
   });
@@ -3878,12 +3861,6 @@ function buildWalk() {
   const before = walkSaid;
   walkSaid = '';
   buildWalkOf();
-  // a worm out of digits for a new corner, or a battle going on at its last digit, the number having more: ten times as
-  // many, up to the length asked
-  // a battle going on at its last digit, its deaths kept (its walkers dead need no more, see rivalsDigits): the same
-  const ranOut = walk.wormEnd === 'digits' || (walk.battle && !walk.battle.winner.until && walk.n >= digitsNeeded());
-  if (walk.battle) battleDeaths = { key: setupKey(), dead: Array.from(walk.battle.player.dead) };
-  if (ranOut && digitsNeeded() < targetAsked() && digitsNeeded() < (wholeTotal() ?? Infinity)) setTimeout(() => needDigits(Math.min(targetAsked(), 10 * digitsNeeded())));
   if (walkSaid) $('status').textContent = walkSaid;  // (said at once; again after the time it took, see compute)
   else if (before && $('status').textContent.includes(before)) $('status').textContent = '';  // (said before, true no more)
   syncLink();
@@ -4623,7 +4600,7 @@ const HEX_DIRS = [[1, 0], [0, 1], [-1, 1], [-1, 0], [0, -1], [1, -1]];
 // step straight on. step.took: its turn (0 sharp left … 4 sharp right); null once it stops, step.end: why (dead: no line
 // left; eaten: its rule onto an eaten line; rule, digits: none left for a new situation, step.free: its free lines there)
 const WORM_TURNS = { L2: 0, L1: 1, N: 2, R1: 3, R2: 4 };
-const WORM_DIGITS = 1000;  // (the digits a worm is given at first: it reads 13 at most for π, e, φ, √2, γ, Catalan's, Erdős–Borwein's)
+const WORM_DIGITS = 1000;  // (the digits a worm is given: it reads 13 at most for π, e, φ, √2, γ, Catalan's, Erdős–Borwein's)
 const worm = { byDigits: false, rule: rulesOf('worm')[0].rule };  // (its rule at first: the list's first)
 const wormRuleOf = (rule) => { const words = turnWords(rule); return words.length && words.join('') === rule.toUpperCase().replace(/\s+/g, '') && words.every((t) => t in WORM_TURNS) ? words : null; };
 // its mind, the same on the plane and on a surface: at a corner the turns of its free lines (0 sharp left … 4 sharp right,
@@ -8284,7 +8261,7 @@ const huntGoal = () => (huntRank === 'even' && PENETRATIONS[penetration][0] === 
 const huntStarts = () => huntVary.starts && startsWayNow() !== 'centred';  // (Starts varied: in Symmetric and Random)
 const BATTLE_FRESH = () => ({ ended: [], open: [], endedCount: 0, tried: new Set(), key: battleHuntKey(), status: '' });  // (a hunt's results, none yet)
 const battleHunt = { run: null, ended: [], open: [], endedCount: 0, tried: new Set(), key: '', status: '' };
-const battleHuntKey = () => [huntGoal(), $('mode').value, walkTeams, startsWayNow(), penetration, sphereSize(), digitsNeeded(true), huntVary.formulas || BATTLE_FORMULAS.map((id) => $(id).value).join(),
+const battleHuntKey = () => [huntGoal(), $('mode').value, walkTeams, startsWayNow(), penetration, sphereSize(), digitsNeeded(), huntVary.formulas || BATTLE_FORMULAS.map((id) => $(id).value).join(),
   huntStarts() || `${startNo()}|${battleSeed}`].join('|');  // (what its battles are fought at: what it does not vary)
 // √r's first n digits in base b, its integer part first (on the page: one integer root, as numberSeed's)
 const rootDigits = (r, base, n) => Uint8Array.from(iroot(BigInt(r) * BigInt(base) ** BigInt(2 * n), 2).toString(base).slice(0, n), (c) => c.charCodeAt(0) - 48);
@@ -8312,7 +8289,7 @@ function huntScore(P) {
 const meshData = (g) => Object.fromEntries(Object.entries(g).filter(([, v]) => { try { structuredClone(v); return true; } catch { return false; } }));
 async function startBattleHunt() {
   if (battleHunt.key !== battleHuntKey()) Object.assign(battleHunt, BATTLE_FRESH());
-  const run = (battleHunt.run = { stop: false, workers: [] }), mode = MODES[$('mode').value], n = digitsNeeded(true), base = mode.base, K = walkTeams, grid = !!mode.grid, way = startsWayNow();
+  const run = (battleHunt.run = { stop: false, workers: [] }), mode = MODES[$('mode').value], n = digitsNeeded(), base = mode.base, K = walkTeams, grid = !!mode.grid, way = startsWayNow();
   // the cards' digits first, once (a worker each, cached as A's); the roots' made as they are drawn
   if (huntVary.formulas) for (const f of BATTLE_CARDS) {
     const F = formulaOf(f);
@@ -17944,19 +17921,6 @@ function base10Digits({ head, frac, total }) {
   return [`≈ ${lead}.${(((N % D) * 10n ** BigInt(m)) / D).toString().padStart(m, '0')}…`, `first ${fmt(lead.length + m)} digits, as many as the first ${fmt(ds.length)} in base ${current.base} tell`];
 }
 const base10 = { on: false };  // (Base 10 switched on: the number in base 10 instead, see showNumber)
-// the digits' stepper in their window, the Play card's (its words and its − +, see syncDigitsStepper): while fewer digits are
-// computed than asked (a worm's, see needDigits), so many of so many, a click on − or + computing them all; then the Play card's
-function numberStepper() {
-  const { head, frac } = digitsInUse(), computed = head.length + frac.length, asked = targetAsked();
-  const short = !gensShown() && !randomPrimeSize() && computed < Math.min(asked, wholeTotal() ?? Infinity);
-  const box = document.createElement('div'), label = document.createElement('span');
-  box.className = 'stepper';
-  label.textContent = short ? `${fmt(computed)} / ${fmt(asked)} digits computed` : $('digitsLabel').value;
-  label.title = short ? `${fmt(computed)} digits computed of the ${fmt(asked)} asked (a worm reads one at a new corner only): − or +, all of them` : $('digitsLabel').title;
-  const button = (text, delta, off) => { const b = document.createElement('button'); b.type = 'button'; b.textContent = text; b.disabled = !short && off; b.addEventListener('click', () => (short ? needDigits(asked) : stepDigits(delta))); return b; };
-  box.append(button('−', -1, $('digitsDown').disabled), label, button('+', 1, $('digitsUp').disabled));
-  return box;
-}
 function showNumber() {
   const B = current.base, v = $('numberPreview'), ten = base10.on && B !== 10, b = ten ? 10 : B, rows = numberRows(), one = rows.length > 1 ? ' one-line' : '';
   // each number (see numberRows): its title, in its walker's colour in a battle, and how many of its digits; a fraction's
@@ -17969,9 +17933,7 @@ function showNumber() {
   v.innerHTML = `<div class="tut-body">${rows.map((r, j) => { const period = r.ratio && ratioDigits(b, r.ratio);
     return `<h3><span style="color:${one ? teamColour(r.s) : ''}">${withIcons(r.name)}</span> <code>${baseWords(b)}</code> <span class="muted">${shown[j][1]}</span></h3>${period ? `<p class="number-digits${one}">${period}</p>` : ''}<p class="number-digits${one}"></p>`; }).join('')}</div>`;
   [...v.querySelectorAll('.number-digits:empty')].forEach((p, j) => { p.textContent = shown[j][0]; });  // (its digits as text)
-  const tools = tutTools({ toggle: B !== 10 && { text: 'Base 10', title: `The number in base 10 instead of base ${B}`, on: base10.on, click: () => { base10.on = !base10.on; showNumber(); } }, copy: (e) => copyFlash(e.currentTarget, text), close: closeNumber, back: 'the walk' });
-  tools.prepend(numberStepper());  // (its length, beside Base 10)
-  v.prepend(tools);
+  v.prepend(tutTools({ toggle: B !== 10 && { text: 'Base 10', title: `The number in base 10 instead of base ${B}`, on: base10.on, click: () => { base10.on = !base10.on; showNumber(); } }, copy: (e) => copyFlash(e.currentTarget, text), close: closeNumber, back: 'the walk' }));
   v.querySelector('.tut-body').scrollTop = 0;
   v.hidden = false;
   for (const b of numberChips()) b.classList.add('active', 'switch');

@@ -1,9 +1,9 @@
-// The Klein bottle's neck (main.js, KLEIN_NECK): its line fitted to a glass bottle's silhouette, its curvature kept under
+// The Klein bottle's neck (main.js, KLEIN_NECK): its line fitted to a model's (Klein Bottle.STL, its neck's radius the unit), its curvature kept under
 // 0.52 and its change gentle (no tile much longer than its neighbour). Run: deno run --allow-write tools/klein-neck.js
 const P = Math.PI;
-const RHO = 1, RW = 4, D = 3, H = 9.5;  // the tube's radius, the body's widest, the bowl's depth, the body's height
+const RHO = 1, RW = 4.66, D = 3.5, H = 10.1;  // the tube's radius, the body's widest, the bowl's depth, the body's height
 // the neck's centreline target (x, z), from the body's top (0, H) going up, over to the west, down into the body, to the mouth (0, 0)
-const T = [[0, H], [0, 10.5], [-0.15, 12], [-0.8, 14.4], [-2.1, 15.5], [-3.4, 15], [-4.15, 13.4], [-4.3, 11.5], [-4, 9.5], [-3.3, 7.4], [-2.4, 5.5], [-1.3, 3.8], [-0.4, 2.2], [-0.05, 1], [0, 0]];
+const T = [[0, H], [0.04, 11.5], [-0.16, 12.1], [-0.36, 12.9], [-0.7, 13.5], [-1.36, 14], [-2.68, 14.3], [-4.1, 13.9], [-4.78, 13.3], [-5.24, 12.5], [-5.4, 11.5], [-5.38, 10.9], [-5.24, 10.1], [-5.02, 9.3], [-4.72, 8.5], [-4.34, 7.7], [-3.82, 6.7], [-3.36, 5.9], [-2.92, 5.3], [-2.64, 4.5], [-2.28, 3.9], [-1.8, 3.1], [-1.5, 2.3], [-0.98, 1.5], [-0.5, 0.7], [0, 0]];
 const curve = (p, t) => { const [a, b, c, d, e, f, g] = p, w = t ** 3 * (1 - t) ** 3; return [w * (a + b * t + c * t * t), H * (1 - t) + t * (1 - t) * (d + e * t + f * t * t + g * t ** 3)]; };
 function sampled(f, N = 3000) { const q = [], c = [0]; for (let i = 0; i <= N; i++) q.push(f(i / N)); for (let i = 1; i <= N; i++) c.push(c[i - 1] + Math.hypot(q[i][0] - q[i - 1][0], q[i][1] - q[i - 1][1])); return { q, c, L: c[N] }; }
 function curvMax(q) { let k = 0; for (let i = 1; i < q.length - 1; i++) { const ax = q[i][0] - q[i - 1][0], az = q[i][1] - q[i - 1][1], bx = q[i + 1][0] - q[i][0], bz = q[i + 1][1] - q[i][1]; k = Math.max(k, Math.abs(Math.atan2(ax * bz - az * bx, ax * bx + az * bz) / ((Math.hypot(ax, az) + Math.hypot(bx, bz)) / 2))); } return k; }

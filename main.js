@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.367';
+const VERSION = '0.4.368';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -5523,22 +5523,23 @@ function kleinPoint(x, y, nu, nv, m, tube = TORUS_TUBE) {
   const F = torusPoint(x, y, nu, nv, 0, tube);
   return F.map((v, d) => v + (K[d] - v) * m);
 }
-// The bottle, smooth (its curvature with no jump: its tiles as long as their neighbours), after a glass one's silhouette:
-// a body turned round the vertical, its profile (r, z) from the bowl's mouth (radius 1, the tube's, at 0) down round the
-// bowl (KLEIN_BOWL deep) out to its widest (KLEIN_WIDEST) and up, narrowing, to its top (radius 1, KLEIN_BODY high); then
+// The bottle, smooth (its curvature with no jump: its tiles as long as their neighbours), its proportions a model's (Klein
+// Bottle.STL, its neck's radius the unit; its flat bottom left for a round bowl): a body turned round the vertical, its
+// profile (r, z) from the bowl's mouth (radius 1, the tube's, at 0) down round the bowl (KLEIN_BOWL deep) out to its widest
+// (KLEIN_WIDEST) and up, narrowing as a pear (KLEIN_PEAR), to its top (radius 1, KLEIN_BODY high); then
 // the neck, a tube of radius 1 round a line in the x–z plane from that top up, over to the west and down through the body's
 // side into the mouth: x = t³(1 − t)³(a + bt + ct²), z = KLEIN_BODY (1 − t) + t(1 − t)(d + et + ft² + gt³), its ends upright
-// with no curvature (KLEIN_NECK: fitted to that silhouette, curvature at most 0.52 so its inside never folds, see
+// with no curvature (KLEIN_NECK: fitted to the model's, curvature at most 0.52 so its inside never folds, see
 // tools/klein-neck.js). Its round angle u as Bourke's: (r cos u, r sin u) round the body, along the neck's normal and y;
 // its end the mouth again, turned over: B(1, u) = B(0, π − u)
-const KLEIN_BOWL = 3, KLEIN_WIDEST = 4, KLEIN_BODY = 9.5;
-const KLEIN_NECK = [-357.0442, 127.6586, -55.2735, 58.0148, -65.6576, 28.5426, -14.6418];
+const KLEIN_BOWL = 3.5, KLEIN_WIDEST = 4.66, KLEIN_BODY = 10.1, KLEIN_PEAR = 1.07;
+const KLEIN_NECK = [-310.5599, -21.5598, -83.9749, 32.691, 66.2862, -236.1278, 144.5958];
 const kleinNeck = (t) => { const [a, b, c, d, e, f, g] = KLEIN_NECK, w = t ** 3 * (1 - t) ** 3; return [w * (a + b * t + c * t * t), KLEIN_BODY * (1 - t) + t * (1 - t) * (d + e * t + f * t * t + g * t ** 3)]; };
 // q along it: the bowl [0, 1), the body [1, 2) (its profile, r and z), the neck [2, 3] (its line, x and z)
 const kleinProfile = (q) => {
   const r = (c) => 1 + (KLEIN_WIDEST - 1) * c;
   if (q < 1) return [r((1 - Math.cos(Math.PI * q)) / 2), -KLEIN_BOWL * Math.sin(Math.PI * q)];
-  return [r((1 + Math.cos(Math.PI * (q - 1))) / 2), KLEIN_BODY * (q - 1)];
+  return [r((1 + Math.cos(Math.PI * (q - 1) ** KLEIN_PEAR)) / 2), KLEIN_BODY * (q - 1)];  // (narrowing a little later than a cosine: a pear)
 };
 function kleinAt(q, u) {
   if (q < 2) { const [r, z] = kleinProfile(q); return [r * Math.cos(u), r * Math.sin(u), z]; }

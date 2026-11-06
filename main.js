@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.303';
+const VERSION = '0.4.304';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -1255,6 +1255,38 @@ const MODES = {
   diagCells: { base: 8, lattice: 'cube', cells: true, twin: 'diag', shape: 'truncOcta', perspective: true,
                rule: 'from truncated octahedron to truncated octahedron (they fill space), through a hexagon (the 3 bits of each digit the signs of east, north and up): <b>0</b> SW down, <b>1</b> SW up, <b>2</b> NW down, <b>3</b> NW up, <b>4</b> SE down, <b>5</b> SE up, <b>6</b> NE down, <b>7</b> NE up' },
 };
+
+/* ---- 2.3b Rules ------------------------------------------------------------------------------ */
+// Every rule to pick, one table: its kind, its name (the card's), its rule (as typed in the field), what it does (about,
+// its tooltip's), its tiling (the network whose words it is written in; any: an ant's or a turmite's neutral turns, L R
+// N U L2 R2, said in each grid's own, see NEUTRAL_WORDS) and its picture where not its kind's. A creature's side (Grid: along
+// the edges; Cells: from cell to cell; a walk's: its mode's, either) and picture in RULE_KINDS. Life's (index.html's options) to join, their family
+// (Life, Replicators, Elementary, Reversible) one more field.
+const RULE_KINDS = { walk: {}, ant: { side: 'cells', pic: 'ant' }, turmite: { side: 'cells', pic: 'turmite' }, worm: { side: 'grid', pic: 'worm' } };
+const RULES = [
+  // the walks by a rule (a word per digit), per network, the first it takes its rule at first
+  ...[['LNR', 'Turtle', 'turtle'], ['LR', 'Turtle', 'turtle'], ['N r', 'Pivot', 'pivot'], ['N a', 'Parity', 'walk2d'], ['nesw', 'Cardinal', 'compass'], ['n ne e se s sw w nw', 'King', 'king']].map(([rule, name, pic]) => ({ kind: 'walk', tiling: 'square', rule, name, pic })),
+  ...[['L2 L1 N R1 R2', 'Turtle', 'turtle'], ['L1 N R1', 'Turtle', 'turtle'], ['L1 R1', 'Turtle', 'turtle'], ['N r', 'Pivot', 'pivot'], ['N a', 'Parity', 'walk2d'], ['n ne se s sw nw', 'Fixed', 'compass']].map(([rule, name, pic]) => ({ kind: 'walk', tiling: 'hex', rule, name, pic })),
+  ...[['LR', 'Turtle', 'turtle'], ['| \\ /', 'Fixed', 'compass']].map(([rule, name, pic]) => ({ kind: 'walk', tiling: 'tri', rule, name, pic })),
+  ...[['L2 L1 R1 R2', 'Turtle', 'turtle'], ['L1 R1', 'Turtle', 'turtle'], ['L2 R2', 'Turtle', 'turtle']].map(([rule, name, pic]) => ({ kind: 'walk', tiling: 'cairo', rule, name, pic })),
+  ...[['L ^ N v R', 'Turtle', 'turtle'], ['L ^ v R', 'Turtle', 'turtle'], ['N r p', 'Pivot', 'pivot'], ['N a', 'Parity', 'walk2d'], ['neuswd', 'Fixed', 'compass']].map(([rule, name, pic]) => ({ kind: 'walk', tiling: 'cube', rule, name, pic })),
+  ...[['LNR', 'Polymer', 'turtle'], ['LR', 'Polymer', 'turtle']].map(([rule, name, pic]) => ({ kind: 'walk', tiling: 'diamond', rule, name, pic })),
+  // the ants (a turn per colour), the same list on every grid (no mirror twice: LR is RL turned over); one with no name
+  // named by its turns
+  ...[['RL', "Langton's ant", 'on squares: a highway from step 9,976'], ['RLR', 'Chaotic ant', 'on squares: it grows chaotically'], ['LLRR', 'Symmetric ant', 'on squares: it grows symmetrically'],
+      ['LRRRRRLLR', 'Square ant', 'on squares: it fills a square around itself'], ['RRLLLRLLLRRR', 'Triangle ant', 'on squares: a filled triangle, growing and moving'],
+      ['RRL'], ['RLL'], ['L2 R2'], ['L L2 R'], ['R2 L N L R2'], ['L R2'], ['L2 L R R2']].map(([rule, name = `${rule} ant`, about]) => ({ kind: 'ant', tiling: 'any', rule, name, about })),
+  // the turmites (see antTableOf), of the 65,536 with 2 states and 2 colours, walked on squares 5,000 steps: a spiral; the
+  // widest mess (3,765 cells); squares growing filled (97 %, and all); a highway from step 3,090
+  ...[['1L1 1L1 | 1R1 0N0', 'A spiral'], ['1N1 1N0 | 1R0 0L0', 'The widest mess'], ['1L0 0R1 | 0R0 1L1', 'A square growing filled'],
+      ['1L0 1U1 | 0L0 1L0', 'A shape growing filled'], ['1N1 0R1 | 1L0 1N0', 'A highway from step 3,090, every 54 steps']].map(([rule, name]) => ({ kind: 'turmite', tiling: 'any', rule, name })),
+  // the worm's, of its 411 (a mirror the same), walked: the longest lives that end (all but 85 die before step 200,000, all
+  // but 81 before 5,000,000), and two still going at 5,000,000 (worm in each name: its tab only says Grid)
+  ...[['L1 R1 R2 R2 R1 R1 L1', 'Worm dying at step 4,802'], ['L1 R1 L2 R1 R1 L1 L1', 'Worm dying at step 83,618'], ['L1 N R2 N R1 L1 L2', 'Worm dying at step 569,804'],
+      ['L1 N R2 L2 N L1 N', 'Worm dying at step 918,339'], ['L2 L1 R1', 'Worm going on past 5,000,000'], ['L2 N L1 R2 L1 R2 L2', 'Worm going on past 5,000,000']].map(([rule, name]) => ({ kind: 'worm', tiling: 'tri', rule, name })),
+];
+// the rules of a kind, in the table's order (a walk's: its network's, net)
+const rulesOf = (kind, net) => RULES.filter((r) => r.kind === kind && (kind !== 'walk' || r.tiling === net));
 
 
 /* ---- 2.4 Known primes ------------------------------------------------------------------------ */
@@ -3207,57 +3239,61 @@ function renderAntRow() {
   const R = creatureRules(w);
   setTile($('antByRule'), { on: !R.byDigits });
   setTile($('antByDigits'), { on: !!R.byDigits });
-  customRow.hidden = !R.typed || !(customOpen || !R.cards.some(([r]) => r === R.now));
+  customRow.hidden = !R.typed || !(customOpen || !ruleKnown(R));
   $('antRuleName').textContent = R.name;
   if (document.activeElement !== $('antRule')) $('antRule').value = R.now;
 }
-// A rules list's cards, one manager for a creature's and a walk's (see creatureRules): its presets, each with its picture (else
-// pic), one that cannot go there greyed (why, in its tooltip), then Custom rule (your own, typed in the field under the list);
+// A rules list's cards, one manager for a creature's and a walk's (see creatureRules): its rules, each with its picture, one
+// that cannot go there greyed (why, in its tooltip), then Custom rule (your own, typed in the field under the list);
 // here: w is the mode in use (else a pick goes to it first)
-function ruleCards(w, pic, here = true) {
-  const R = creatureRules(w), mine = here && (customOpen || !R.cards.some(([r]) => r === R.now));
+function ruleCards(w, here = true) {
+  const R = creatureRules(w), mine = here && (customOpen || !ruleKnown(R));
   const go = (then) => () => { if (!here) { $('mode').value = w; $('mode').dispatchEvent(new Event('change')); } then(); };
   const make = (cardPic, name, code, on, then, why = '', title = '') => card({ pic: cardPic, name, detail: code, base: code && R.base?.(code), on, title: why || title, can: !why, click: go(then),
     how: () => { if (on) walkTutorialToggle(); else { go(then)(); walkTutorial(w); } } });  // (its ⓘ: how it works, picked first)
-  return [...R.cards.map(([r, name, cardPic, why, title]) => make(cardPic ?? pic, name, r, here && r === R.now && !customOpen, () => { customOpen = false; if (r === R.now) renderModePicker(); else R.set(r); }, why, title)),
+  return [...R.cards.map(({ rule: r, name, pic, why, title }) => make(pic, name, r, here && r === R.now && !customOpen, () => { customOpen = false; if (r === R.now) renderModePicker(); else R.set(r); }, why, title)),
     ...(R.typed ? [make(pixelIcon('..o..,..o..,ooooo,..o..,..o..'), 'Custom rule', mine ? R.now : '', mine, () => { customOpen = true; renderModePicker(); }, '', 'your own, typed')] : []),
     customRow];  // (its field right after it, the list's next rules after the field; always in it, shown by renderAntRow)
 }
-// a creature's or a walk's rules: its presets [rule, name, picture, why greyed, tooltip], the rule in use, how to set one, whether one is typed, a rule's base
-// (where it reads digits: its card's bubble), the field's title
-const ANT_WORDS = { RL: "Langton's ant: a highway from step 9,976", RLR: 'Chaotic ant: it grows chaotically', LLRR: 'Symmetric ant: it grows symmetrically', LRRRRRLLR: 'Square ant: it fills a square around itself',
-                    RRLLLRLLLRRR: 'Triangle ant: a filled triangle, growing and moving' };  // (its name, on any grid; then what it does on squares)
-const TURMITE_WORDS = ['A spiral', 'The widest mess', 'A square growing filled', 'A shape growing filled', 'A highway from step 3,090, every 54 steps'];
-const WORM_WORDS = ['Worm dying at step 4,802', 'Worm dying at step 83,618', 'Worm dying at step 569,804', 'Worm dying at step 918,339', 'Worm going on past 5,000,000', 'Worm going on past 5,000,000'];  // (worm in each name: its tab only says Grid)
+// whether a rules list has a card for the rule in use (else it is your own: Custom rule)
+const ruleKnown = (R) => R.cards.some((c) => c.rule === R.now);
 const capitalised = (t) => t.replace(/^./, (c) => c.toUpperCase());
 // a walk's or a creature's rule in use, as How it works titles it: its card's name (Custom rule: none has it) and the rule, as
 // Life's (Life B3/S23); a walk with no rules, its own name
 const ruleTitleOf = (w) => {
   if (!WALK_NETS[MODES[w].net] && NAV[w][0] !== 'Ant') return walkName(w);
   const R = creatureRules(w);
-  return `${R.cards.find(([r]) => r === R.now)?.[1] ?? 'Custom rule'} <code>${R.now}</code>`;
+  return `${R.cards.find((c) => c.rule === R.now)?.name ?? 'Custom rule'} <code>${R.now}</code>`;
 };
+// a mode's kinds of rules (see RULES): a walk's, else the creatures' of its side (Cells: the ants and turmites; Grid: the worm)
+const kindsOf = (w) => (MODES[w].net ? ['walk'] : Object.keys(RULE_KINDS).filter((k) => RULE_KINDS[k].side === NAV[w][4]));
+// a mode's rules to pick, from RULES, each in its own words: { rule, name, pic, why (greyed: the word it lacks), title (its
+// rule, then what it does) }; a walk on a surface shows only those it takes
+function rulesFor(w) {
+  const m = MODES[w];
+  return kindsOf(w).flatMap((kind) => rulesOf(kind, m.net).flatMap((r) => {
+    const card = (rule, why = '', name = r.name, about = r.about) => [{ rule, name, pic: icon(r.pic ?? RULE_KINDS[kind].pic), why, title: [rule, about].filter(Boolean).join('\n') }];
+    if (kind === 'walk') { const words = ruleWords(r.rule), why = words.map((t) => walkWordWhy(m, t)).find(Boolean) ?? '';
+      return m.lattice === 'sphere' && why ? [] : card(r.rule, why, r.name, words.map((t, d) => `${d} ${WORD_TEXT[t]}`).join(', ')); }  // (what it does: each digit's word)
+    if (kind === 'worm') return card(r.rule);
+    const { rule, why } = ruleIn(w, r.rule, kind === 'turmite');
+    return card(rule, why, kind === 'ant' ? `${r.name}, ${ruleWords(r.rule).length} colours` : r.name);
+  }));
+}
+// a creature's or a walk's rules: its cards (see rulesFor), the rule in use, how to set one, whether one is typed, a rule's base
+// (where it reads digits: its card's bubble), the field's title
 function creatureRules(w) {
   const m = MODES[w], N = WALK_NETS[m.net], surface = m.lattice === 'sphere';
-  if (N) return { now: walkRules[walkKey(m)], typed: true, set: (r) => setWalkRule(w, r), base: (r) => baseWords(ruleWords(r).length),  // (a surface: the rules it can take only)
-                  cards: WALK_PRESETS[m.net].flatMap(([r, family, pic]) => { const words = ruleWords(r), why = words.map((t) => walkWordWhy(m, t)).find(Boolean) ?? '';
-                    return surface && why ? [] : [[r, family, icon(pic), why, words.map((t, d) => `${d} ${WORD_TEXT[t]}`).join(', ')]]; }),
+  if (N) return { now: walkRules[walkKey(m)], typed: true, set: (r) => setWalkRule(w, r), base: (r) => baseWords(ruleWords(r).length), cards: rulesFor(w),
                   name: `Rule, a word per digit: ${surface ? surfaceWords(m.net).join(' ') : [...Object.keys(N.turns), ...Object.keys(N.ways ?? {}), ...(N.notch ? ['l', 'r', 'a'] : []), ...Object.keys(N.spots ?? {})].join(' ')}` };
-  if (MODES[w].worm) return { byDigits: worm.byDigits, now: worm.rule, typed: !worm.byDigits, cards: worm.byDigits ? [] : WORM_PRESETS.map((r, i) => [r, WORM_WORDS[i]]), set: setWormRule,  // (by its rule: no digits read)
+  if (MODES[w].worm) return { byDigits: worm.byDigits, now: worm.rule, typed: !worm.byDigits, cards: worm.byDigits ? [] : rulesFor(w), set: setWormRule,  // (by its rule: no digits read)
                               name: 'Rule, a turn at each new corner: L2, L1, N, R1, R2' };
-  const A = ANTS[w], turns = antWords(w).join(' ');
+  const turns = antWords(w).join(' ');
   return { byDigits: antByDigits, now: antRuleOf(w), typed: true, set: (r) => setAntRule(w, r), base: antByDigits ? () => baseWords(2) : null,  // (by colour: no digits read)
-           cards: antCards(w).map(({ rule, name, pic, why, title }) => [rule, name, pic, why, title]),
-           name: `Rule, per state an entry per colour: its colour left, its turn (${turns}), its state next; the states parted by |` };
+           cards: rulesFor(w), name: `Rule, per state an entry per colour: its colour left, its turn (${turns}), its state next; the states parted by |` };
 }
-// The worm's rules, all 411 of them (a mirror the same), walked here: dying at step 918,339, 569,804, 83,618 and 4,802,
-// the longest lives that end (all but 85 die before step 200,000, all but 81 before 5,000,000), and two of those still
-// going at 5,000,000
-const WORM_PRESETS = ['L1 R1 R2 R2 R1 R1 L1', 'L1 R1 L2 R1 R1 L1 L1', 'L1 N R2 N R1 L1 L2', 'L1 N R2 L2 N L1 N', 'L2 L1 R1', 'L2 N L1 R2 L1 R2 L2'];
-// The ants' rules, one list on every grid, the same order everywhere: the ants (their turns, one per colour) then the
-// turmites, in neutral turns (L R, N straight on, U back, L2 R2 sharp), each grid's in its own words (NEUTRAL_WORDS: L1 R1
-// on hexagons and pentagons); one a grid cannot take greyed in its place, the word it lacks in its tooltip
-const ANT_LIST = ['RL', 'RLR', 'LLRR', 'LRRRRRLLR', 'RRLLLRLLLRRR', 'RRL', 'RLL', 'L2 R2', 'L L2 R', 'R2 L N L R2', 'L R2', 'L2 L R R2'];  // (no mirror twice: LR is RL turned over)
+// The ants' and turmites' rules (see RULES) in neutral turns (L R, N straight on, U back, L2 R2 sharp), each grid's in its own
+// words (L1 R1 on hexagons and pentagons); one a grid cannot take greyed in its place, the word it lacks in its tooltip
 const NEUTRAL_WORDS = { square: { L: 'L', R: 'R', N: 'N', U: 'U' }, tri: { L: 'L', R: 'R' }, hex: { L: 'L1', R: 'R1', N: 'N', U: 'U', L2: 'L2', R2: 'R2' }, cairo: { L: 'L1', R: 'R1', L2: 'L2', R2: 'R2' } };
 // a rule of the list in ant w's words: { rule, why } (why: the first word it lacks, its rule then the list's as written)
 function ruleIn(w, neutral, turmite) {
@@ -3268,15 +3304,6 @@ function ruleIn(w, neutral, turmite) {
   const missing = table.flat().find((e) => !words[e.t] || !antWords(w).includes(e.word));
   return missing ? { rule: neutral, why: lack(missing.t) } : { rule: antText(table), why: '' };
 }
-// ant w's cards: the list, each its rule in its words, name (an ant's by its turns, with its colours; a turmite's what it
-// does on squares), picture (one state an ant, more a turmite, as the literature names them), why greyed, tooltip
-const antCards = (w) => [...ANT_LIST.map((t) => { const name = ANT_WORDS[ruleWords(t).join('')];
-    const R = ruleIn(w, t, false);
-    return { ...R, name: `${name?.split(':')[0] ?? `${t} ant`}, ${ruleWords(t).length} colours`, pic: icon('ant'), title: [R.rule, name && `on squares: ${name.split(': ')[1]}`].filter(Boolean).join('\n') }; }),  // (one with no name: its turns')
-  ...TURMITE_PRESETS.map((r, i) => { const R = ruleIn(w, r, true); return { ...R, name: TURMITE_WORDS[i], pic: icon('turmite'), title: R.rule }; })];  // (its tooltip its rule, as an ant's, then what it does on squares where its name does not say it)
-// The turmites (see antTableOf, ANT_LIST), of the 65,536 with 2 states and 2 colours, walked here 5,000
-// steps: a spiral; the widest mess (3,765 cells); squares growing filled (97 %, and all); a highway from step 3,090
-const TURMITE_PRESETS = ['1L1 1L1 | 1R1 0N0', '1N1 1N0 | 1R0 0L0', '1L0 0R1 | 0R0 1L1', '1L0 1U1 | 0L0 1L0', '1N1 0R1 | 1L0 1N0'];
 // a rule typed that this walk or creature cannot take: the one in use put back, and why said (its words, see creatureRules)
 function refuseRule(typed, kept) {
   $('antRule').value = kept;
@@ -3371,8 +3398,8 @@ function renderModePicker() {
   $('navRules').replaceChildren(...rules.flatMap((r, i) => {
     const here = Object.keys(NAV).find((m) => NAV[m].slice(0, 4).join() === [kind, space, shape, r].join());
     const v = here ?? Object.keys(NAV).find((m) => NAV[m][0] === kind && NAV[m][1] === space && NAV[m][3] === r);  // (elsewhere: its first shape)
-    if (!creatures && here && MODES[here].net) return ruleCards(r === rule ? w : here, null, r === rule);  // a walk by a rule: its rules' cards (the side picked kept)
-    if (creatures) return ruleCards(w, icon(MODES[w].worm ? MODE_ICONS[w] : 'ant'));  // (its rules: an ant's, a turmite's, the worm's)
+    if (!creatures && here && MODES[here].net) return ruleCards(r === rule ? w : here, r === rule);  // a walk by a rule: its rules' cards (the side picked kept)
+    if (creatures) return ruleCards(w);  // (its rules: an ant's, a turmite's, the worm's)
     const { base, detail } = splitModeLabel(modeOptionOf(v).text);  // (a spiral's, the diagonals': their base, their words)
     const pic = icon(r === 'Turtle' ? 'turtle' : r === 'Pivot' ? 'pivot' : r === 'Parity' ? 'walk2d' : r === 'Ant' ? 'ant' : MODE_ICONS[v]);  // a turtle for the walks turning relative to their heading
     const go = () => { if (here) { navGo(3, r); return; } $('mode').value = v; $('mode').dispatchEvent(new Event('change')); };
@@ -4087,7 +4114,7 @@ const ANTS = {
   antCairo: { walk: 'cairo' },
 };
 // on the tori, the Möbius strips and the Klein bottles: on the cells of their walks, as the cube's, their turns the walk's,
-// their rules the one list's (see ANT_LIST; its place in the menus: the walk's surface and tiling)
+// their rules the one list's (see RULES; its place in the menus: the walk's surface and tiling)
 const SURFACE_ANTS = { antTorus: ['torusWalk', 'Torus'], antTorusHex: ['torusHexWalk', 'Torus'], antTorusTri: ['torusTriWalk', 'Torus'],
                        antTorusCairo: ['torusCairoWalk', 'Torus'], antMobius: ['mobiusWalk', 'Möbius strip'], antMobiusHex: ['mobiusHexWalk', 'Möbius strip'],
                        antMobiusTri: ['mobiusTriWalk', 'Möbius strip'], antMobiusCairo: ['mobiusCairoWalk', 'Möbius strip'],
@@ -4116,7 +4143,7 @@ for (const [w, [walkMode, place]] of Object.entries(SURFACE_ANTS)) {
 // entry compact (1R0) where its words are letters, else dotted (1.R1.0); read either way. By the digits
 // (antByDigits): a digit 1 turns the other way (left and right swap, see MIRROR), its base 2
 const antRules = {};
-const antRuleOf = (w) => (antRules[w] ??= antCards(w).find((c) => !c.why).rule);  // (at first the list's first it takes)
+const antRuleOf = (w) => (antRules[w] ??= rulesFor(w).find((c) => !c.why).rule);  // (at first the list's first it takes)
 let antByDigits = false;
 const MIRROR = { L: 'R', R: 'L', N: 'N', U: 'U', L1: 'R1', R1: 'L1', L2: 'R2', R2: 'L2', l: 'r', r: 'l' };
 const turnWords = (rule) => rule.toUpperCase().match(/[LR][12]?|N/g) ?? [];
@@ -4315,7 +4342,7 @@ const HEX_DIRS = [[1, 0], [0, 1], [-1, 1], [-1, 0], [0, -1], [1, -1]];
 // step straight on. step.took: its turn (0 sharp left … 4 sharp right); null once it stops, step.end: why (dead: no line
 // left; eaten: its rule onto an eaten line; rule, digits: none left for a new situation, step.free: its free lines there)
 const WORM_TURNS = { L2: 0, L1: 1, N: 2, R1: 3, R2: 4 };
-const worm = { byDigits: false, rule: 'L1 R1 R2 R2 R1 R1 L1' };
+const worm = { byDigits: false, rule: rulesOf('worm')[0].rule };  // (its rule at first: the list's first)
 const wormRuleOf = (rule) => { const words = turnWords(rule); return words.length && words.join('') === rule.toUpperCase().replace(/\s+/g, '') && words.every((t) => t in WORM_TURNS) ? words : null; };
 // its mind, the same on the plane and on a surface: at a corner the turns of its free lines (0 sharp left … 4 sharp right,
 // each line once), the turn it takes, else null, its end said in end (free: its free lines there, when its rule has none)
@@ -4519,20 +4546,11 @@ for (const [w, m] of Object.entries(MODES)) if (m.net) {
   Object.defineProperties(m, { base: { get: () => walkWordsOf(w).length }, arrows: { get: () => walkArrows(w) }, rule: { get: () => walkRuleText(w) } });
   if (m.net === 'square' && !m.sphere) Object.defineProperty(m, 'fill', { get: () => (walkWordsOf(w).some((t) => WALK_NETS.square.diagonals.includes(t)) ? false : undefined) });
 }
-// The rules to pick, per network: [rule, its family, its picture]
-const WALK_PRESETS = {
-  square: [['LNR', 'Turtle', 'turtle'], ['LR', 'Turtle', 'turtle'], ['N r', 'Pivot', 'pivot'], ['N a', 'Parity', 'walk2d'], ['nesw', 'Cardinal', 'compass'], ['n ne e se s sw w nw', 'King', 'king']],
-  hex: [['L2 L1 N R1 R2', 'Turtle', 'turtle'], ['L1 N R1', 'Turtle', 'turtle'], ['L1 R1', 'Turtle', 'turtle'], ['N r', 'Pivot', 'pivot'], ['N a', 'Parity', 'walk2d'], ['n ne se s sw nw', 'Fixed', 'compass']],
-  tri: [['LR', 'Turtle', 'turtle'], ['| \\ /', 'Fixed', 'compass']],
-  cairo: [['L2 L1 R1 R2', 'Turtle', 'turtle'], ['L1 R1', 'Turtle', 'turtle'], ['L2 R2', 'Turtle', 'turtle']],
-  cube: [['L ^ N v R', 'Turtle', 'turtle'], ['L ^ v R', 'Turtle', 'turtle'], ['N r p', 'Pivot', 'pivot'], ['N a', 'Parity', 'walk2d'], ['neuswd', 'Fixed', 'compass']],
-  diamond: [['LNR', 'Polymer', 'turtle'], ['LR', 'Polymer', 'turtle']],
-};
 // each network's rule in use, the plane's and the surfaces' apart (a surface: turns only; one taking fewer of its network's words, its
-// own); at first its network's first that it takes (see WALK_PRESETS, walkWordWhy)
-const firstWalkRule = (m) => WALK_PRESETS[m.net].map(([r]) => r).find((r) => ruleWords(r).every((t) => !walkWordWhy(m, t)));
+// own); at first its network's first that it takes (see RULES, walkWordWhy)
+const firstWalkRule = (m) => rulesOf('walk', m.net).map((r) => r.rule).find((r) => ruleWords(r).every((t) => !walkWordWhy(m, t)));
 const walkRules = {};
-for (const m of Object.values(MODES)) if (WALK_PRESETS[m.net]) walkRules[walkKey(m)] ??= firstWalkRule(m);
+for (const m of Object.values(MODES)) if (rulesOf('walk', m.net).length) walkRules[walkKey(m)] ??= firstWalkRule(m);
 // a rule typed or picked for a walk: kept if its words fit it (else the field back to the rule in use)
 function setWalkRule(w, rule) {
   const words = walkWordsOf(w, rule), k = walkKey(MODES[w]);
@@ -17732,7 +17750,7 @@ $('antRule').addEventListener('change', () => {
   const w = $('mode').value;
   creatureRules(w).set($('antRule').value);
   const R = creatureRules(w);
-  if (R.cards.some(([r]) => r === R.now)) { customOpen = false; renderAntRow(); }  // (typed: a known one's card picked, as Life's)
+  if (ruleKnown(R)) { customOpen = false; renderAntRow(); }  // (typed: a known one's card picked, as Life's)
 });
 // Heatmap of visits on a surface: the cells by their visits, else the rainbow line
 $('heatmap').addEventListener('change', () => {

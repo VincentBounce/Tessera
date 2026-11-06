@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.291';
+const VERSION = '0.4.292';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -11149,48 +11149,34 @@ function walkCell(lattice, [x, y]) {
   if (lattice === 'tri') { const s = (((y - TRI_Y0) / H) % 1 + 1) % 1 > 0.5 ? 1 : -1; return [[x, y - s * 2 * H / 3], [x + 0.5, y + s * H / 3], [x - 0.5, y + s * H / 3]]; }  // (▲ or ▼)
   return cairoCorners(...cairoAt(x, y)).map((p) => p.map((v, a) => (v - CAIRO_0[a]) * CAIRO));
 }
-// a surface's walk as on its flat tiling: a step of 1, its heading turned by its turns (degrees at a corner of its grid;
-// out of a cell, the edges counted from the one come in by, of n), a pivot's on the spot, a parity's after its step
-function surfaceStepper(mode, n, acts) {
-  let x = 0, y = 0, a = Math.PI / 2, read = 0;  // (heading up, left positive)
-  const notch = (2 * Math.PI) / (mode.grid ? SURFACE_NOTCHES[mode.net] : n);
-  return (g) => {
-    const [kind, by] = acts[g];
-    read++;
-    if (kind === 'pivot') { a -= by * notch; return [null, x, y]; }
-    if (kind === 'turn') a += mode.grid ? (by * Math.PI) / 180 : (2 * Math.PI * by) / n - Math.PI;
-    x += Math.cos(a); y -= Math.sin(a);
-    if (kind === 'parity') a += (read % 2 ? -1 : 1) * notch;
-    return [null, x, y];
-  };
-}
+// a surface walk's flat twin: the plane's walk on the same network, on cells or along the lines as it (How it works drawn on it)
+const flatTwin = (w) => Object.keys(MODES).find((v) => NAV[v]?.[0] === 'Walk' && MODES[v].lattice !== 'sphere' && MODES[v].net === MODES[w].net && !MODES[v].cells === !!MODES[w].grid);
 // the figures: { d, caption, at (the way in, then the step), here (where it steps from), next (dashed), ends, cells, dashed (the step) };
 // a walk by a rule drawn by its words, then its straight step (S: the way in); words given: one figure each (a creature's, see
 // creatureFigures; a parity's at an odd digit)
 function walkFigures(w, given = null) {
-  const mode = MODES[w], N = WALK_NETS[mode.net], surface = mode.lattice === 'sphere';
+  if (MODES[w].lattice === 'sphere') return walkFigures(flatTwin(w), given ?? walkWordsOf(w));  // (a surface: as its flat tiling, the same words)
+  const mode = MODES[w], N = WALK_NETS[mode.net];
   const ruled = N && [...(given ?? walkWordsOf(w)), N.straight], S = ruled ? ruled.length - 1 : 0;
   const digits = [...Array(ruled ? S : mode.base).keys()], words = {};
   for (const [, d, t] of mode.rule.matchAll(/<b>(\d+)<\/b>\s*([^<]*)/g)) words[d] = t.replace(/[,\s]+(or\s*)?$/, '');
-  const n = mode.sphere === 'hexsphere' ? 6 : Math.max(...(mode.turns ?? [0])) + 1;  // (a surface's cell: the most it turns by and one, but on the sphere of hexagons)
-  const start = surface ? [[0, 1], [0, 0]] : [[0, 0]];  // (on a surface: come in from below)
+  if (ruled) ruled.slice(0, S).forEach((t, d) => { words[d] = WORD_TEXT[t]; });  // (by its words: theirs, a surface's too)
+  const start = [[0, 0]];
   const path = (seq) => {
-    const step = surface ? surfaceStepper(mode, n, surfaceActs(mode, ruled)) : ruled ? wordStepper(mode.net, ruled) : STEPPERS[w]();
+    const step = ruled ? wordStepper(mode.net, ruled) : STEPPERS[w]();
     return [...start, ...seq.map((g) => step(g).slice(1, 3))];
   };
   const spiral = /Spiral$|^spiral$/.test(w), cells = mode.cells || spiral;
-  // a surface's cell: the one it steps from, a side toward where it came from
-  const polygon = (p, q) => { const t = Math.atan2(q[1] - p[1], q[0] - p[0]), R = 0.5 / Math.cos(Math.PI / n); return [...Array(n).keys()].map((k) => [p[0] + R * Math.cos(t + ((2 * k + 1) * Math.PI) / n), p[1] + R * Math.sin(t + ((2 * k + 1) * Math.PI) / n)]); };
   const figure = (d, into, after = [], caption = words[d]) => {
     const at = path([...into, d, ...after]), here = start.length - 1 + into.length;
     const ends = spiral ? [] : digits.map((g) => path([...into, g]).at(-1));  // (the ways on: each digit's end)
-    const drawn = !cells ? [] : surface ? [polygon(at[here], at[here - 1])] : [...new Map([...at, ...ends].map((p) => [pointKey(...p), walkCell(mode.lattice, p)])).values()];
+    const drawn = !cells ? [] : [...new Map([...at, ...ends].map((p) => [pointKey(...p), walkCell(mode.lattice, p)])).values()];
     return { d, caption, at: at.slice(0, here + 2), next: at.slice(here + 1), ends, here, dashed: spiral && !d, cells: drawn };
   };
   if (spiral) return [figure(1, Array(7).fill(1)), figure(0, Array(7).fill(1))];
-  // by a rule: a step straight on first, its heading (a surface's comes in already); a turn on the spot, then a step to show
+  // by a rule: a step straight on first, its heading; a turn on the spot, then a step to show
   // it; a parity's at an odd digit and at an even one (the digits read before it, odd or even)
-  const into = surface ? [] : [S], odd = into.length % 2 ? [...into, S] : into, even = into.length % 2 ? into : [...into, S];
+  const into = [S], odd = into.length % 2 ? [...into, S] : into, even = into.length % 2 ? into : [...into, S];
   return digits.flatMap((d) => (ruled[d] === 'a' ? [figure(d, odd, [S], 'step, then turn right (at an odd digit: the 1st, 3rd…)'), ...(given ? [] : [figure(d, even, [S], 'step, then turn left (at an even digit)')])]
     : [figure(d, into, ruled[d] === 'l' || ruled[d] === 'r' ? [S] : [])]));
 }

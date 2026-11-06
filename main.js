@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.315';
+const VERSION = '0.4.316';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -3521,7 +3521,7 @@ function rulesFor(w) {
 // (where it reads digits: its card's bubble), the field's title
 function creatureRules(w) {
   const m = MODES[w], N = WALK_NETS[m.net], surface = m.lattice === 'sphere';
-  if (N) return { now: walkRules[walkKey(m)], typed: true, set: (r) => setWalkRule(w, r), base: (r) => baseWords(ruleWords(r).length), cards: rulesFor(w),
+  if (N) return { now: walkRuleOf(m), typed: true, set: (r) => setWalkRule(w, r), base: (r) => baseWords(ruleWords(r).length), cards: rulesFor(w),
                   name: `Rule, a word per digit: ${surface ? surfaceWords(m.net).join(' ') : [...Object.keys(N.turns), ...Object.keys(N.ways ?? {}), ...(N.notch ? ['l', 'r', 'a'] : []), ...Object.keys(N.spots ?? {})].join(' ')}` };
   if (MODES[w].worm) return { byDigits: worm.byDigits, now: worm.rule, typed: !worm.byDigits, cards: worm.byDigits ? [] : rulesFor(w), set: setWormRule,  // (by its rule: no digits read)
                               name: 'Rule, a turn at each new corner: L2, L1, N, R1, R2' };
@@ -3655,7 +3655,7 @@ function renderModePicker() {
   const side = (b, s, word, none) => {
     const there = alone ? (s === 'cells' ? w : null) : sides.includes(s) ? navPick(4, s) : null, here = alone ? s === 'cells' : NAV[w][4] === s;
     // a walk by a rule: its other side greyed where the rule cannot go (a diagonal along the grid), the word why
-    const why = there && MODES[there].net && !walkWordsOf(there) ? ruleWords(walkRules[walkKey(MODES[there])]).map((t) => walkWordWhy(MODES[there], t)).find(Boolean) : '';
+    const why = there && MODES[there].net && !walkWordsOf(there, walkRules[walkKey(MODES[there])]) ? ruleWords(walkRules[walkKey(MODES[there])]).map((t) => walkWordWhy(MODES[there], t)).find(Boolean) : '';
     b.querySelector('span').textContent = word;
     setTile(b, { on: here, can: !!there && !why, greyed: why || none });
   };
@@ -4751,7 +4751,7 @@ const surfaceWords = (net) => Object.keys(WALK_NETS[net].turns).filter((t) => t 
 // a surface walk's acts, one per digit (see surfaceSteps): by its rule's words (a turn: its edges on, or degrees along the grid,
 // as its turns list them left to right; l r a: a notch on the spot, a parity's), else by its turns (an ant's)
 const SURFACE_NOTCHES = { square: 4, hex: 6 };  // (a step straight on: squares' and hexagons' cells, squares' and triangles' grid)
-function surfaceActs(mode, words = mode.net && ruleWords(walkRules[walkKey(mode)])) {
+function surfaceActs(mode, words = mode.net && ruleWords(walkRuleOf(mode))) {
   if (!words) return mode.turns.map((t) => ['turn', t]);
   return words.map((t) => (t === 'l' || t === 'r' ? ['pivot', t === 'r' ? 1 : -1] : t === 'a' ? ['parity'] : ['turn', mode.turns[surfaceWords(mode.net).indexOf(t)]]));
 }
@@ -4759,14 +4759,15 @@ function surfaceActs(mode, words = mode.net && ruleWords(walkRules[walkKey(mode)
 const walkWordWhy = (m, t) => (m.lattice === 'sphere' ? ((surfaceWords(m.net).includes(t) && m.turns[surfaceWords(m.net).indexOf(t)] != null) || (SURFACE_NOTCHES[m.net] && ['l', 'r', 'a'].includes(t)) ? ''
     : surfaceWords(m.net).includes(t) ? `${t}: not on this surface (its corners)` : `${t}: not on a surface (no north there)`)
   : !wordAct(m.net, t) ? `${t}: not a word here` : m.lines && WALK_NETS[m.net].diagonals?.includes(t) ? `${t}: along the grid, a diagonal step follows no line` : '');
-// a walk's words for a rule (its own by default), or null: 2 to 12, each fitting it
-function walkWordsOf(w, rule = walkRules[walkKey(MODES[w])]) {
-  const words = ruleWords(rule);
-  return words.length >= 2 && words.length <= 12 && words.every((t) => !walkWordWhy(MODES[w], t)) ? words : null;
-}
+// a walk's words for a rule (the one it plays by default, see walkRuleOf), or null: 2 to 12, each fitting it
+const walkTakes = (m, rule) => { const words = ruleWords(rule); return words.length >= 2 && words.length <= 12 && words.every((t) => !walkWordWhy(m, t)) ? words : null; };
+const walkWordsOf = (w, rule = walkRuleOf(MODES[w])) => walkTakes(MODES[w], rule);
+// the rule a walk plays: its network's in use (walkRules), if it takes it, else its network's first it takes (a rule its twin
+// on cells took, King's diagonals, the grid's lines cannot: kept for the cells, the grid's tab greyed, see side)
+const walkRuleOf = (m) => (walkTakes(m, walkRules[walkKey(m)]) ? walkRules[walkKey(m)] : firstWalkRule(m));
 const walkStepper = (w) => wordStepper(MODES[w].net, walkWordsOf(w));
 // a walk's arrows, one per word (a word with none: ''), by its rule
-const walkArrows = (w) => { const m = MODES[w], r = walkRules[walkKey(m)]; return (m.arrowsMemo?.[0] === r ? m.arrowsMemo : (m.arrowsMemo = [r, walkWordsOf(w).map((t) => WALK_NETS[m.net].arrows[t] ?? SPOT_ARROWS[t] ?? '')]))[1]; };
+const walkArrows = (w) => { const m = MODES[w], r = walkRuleOf(m); return (m.arrowsMemo?.[0] === r ? m.arrowsMemo : (m.arrowsMemo = [r, walkWordsOf(w).map((t) => WALK_NETS[m.net].arrows[t] ?? SPOT_ARROWS[t] ?? '')]))[1]; };
 const walkRuleText = (w) => `${MODES[w].where}: ${walkWordsOf(w).map((t, d) => `<b>${d}</b> ${WORD_TEXT[t]}`).join(', ')}${MODES[w].tail ?? ''}`;
 // The surfaces' turtles by a rule too: turns, one per word of their tiles' network (its turns left to right, as the plane's
 // on the same tiles: edges on, or degrees along the grid; null, a word it has not), a word its turn (see surfaceActs); their
@@ -4783,13 +4784,13 @@ for (const [w, m] of Object.entries(MODES)) if (m.net) {
 }
 // each network's rule in use, the plane's and the surfaces' apart (a surface: turns only; one taking fewer of its network's words, its
 // own); at first its network's first that it takes (see RULES, walkWordWhy)
-const firstWalkRule = (m) => rulesOf('walk', m.net).map((r) => r.rule).find((r) => ruleWords(r).every((t) => !walkWordWhy(m, t)));
+const firstWalkRule = (m) => rulesOf('walk', m.net).map((r) => r.rule).find((r) => walkTakes(m, r));
 const walkRules = {};
 for (const m of Object.values(MODES)) if (rulesOf('walk', m.net).length) walkRules[walkKey(m)] ??= firstWalkRule(m);
 // a rule typed or picked for a walk: kept if its words fit it (else the field back to the rule in use)
 function setWalkRule(w, rule) {
   const words = walkWordsOf(w, rule), k = walkKey(MODES[w]);
-  if (!words) { refuseRule(rule, walkRules[k]); return; }
+  if (!words) { refuseRule(rule, walkRuleOf(MODES[w])); return; }
   walkRules[k] = ruleOfWords(words);
   renderModePicker();
   compute();
@@ -14286,7 +14287,7 @@ function getSetup() {
   }
   if (mode.life && !mode.loops) s.pop = plane.start === 'random' ? zonePop() : plane.start === 'text' ? `text.${plane.text}` : plane.start;  // its start (a surface's no Draw)
   if (mode.life && !mode.loops && plane.start === 'text' && plane.font !== 'sans') s.tf = plane.font;  // (its font)
-  if (mode.net && walkRules[walkKey(mode)] !== firstWalkRule(mode)) s.r = walkRules[walkKey(mode)];  // (a walk's rule: none, its own)
+  if (mode.net && walkRuleOf(mode) !== firstWalkRule(mode)) s.r = walkRuleOf(mode);  // (a walk's rule: none, its own)
   if (mode.antOf) s.r = `${antByDigits ? 'digits ' : ''}${antRuleOf(w)}`;  // ("digits 1R0 0L0": by the digits)
   if (mode.worm) s.r = worm.byDigits ? 'digits' : worm.rule;
   if (championCode) s.ch = championCode;

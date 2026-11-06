@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.246';
+const VERSION = '0.4.247';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -3399,6 +3399,9 @@ function renderModePicker() {
 
 /* ---- 5.2 compute(): from the formula to a built walk ----------------------------------------- */
 // a worker of formulaWorker, which also needs digitString, seededRandom, exactValue and iroot (A's digits, B's and C's: see rivalsDigits)
+// a worker made of the page's own code (one source, nothing copied to go stale): parts, its functions and values by name
+// (a value as JSON), then main, the function it runs
+const workerOf = (parts, main) => new Worker(URL.createObjectURL(new Blob([`${Object.entries(parts).map(([k, v]) => `const ${k} = ${typeof v === 'function' ? v : JSON.stringify(v)};`).join('\n')}\n(${main})()`], { type: 'text/javascript' })));
 const newFormulaWorker = () => new Worker(URL.createObjectURL(new Blob([[digitString, seededRandom, exactValue, iroot].map(String).join('\n') + `\n(${formulaWorker.toString()})()`], { type: 'text/javascript' })));
 function compute() {
   const mode = MODES[$('mode').value];
@@ -6913,53 +6916,59 @@ function mobiusDelta(g, p, q) {
   }
   return best;
 }
-// The steps of a walk on a surface, along the grid (from corner to corner, the state [corner, the
-// corner it came from]) or on cells (from tile to tile, [tile, the edge it came in by]): the state
-// of start i, the state after a digit, as a whole number, and on a torus or a Möbius strip the step
-// on the flat sheet (columns east, rows north; on cells, from tile centre to tile centre)
-function surfaceSteps(g, mode, acts = surfaceActs(mode)) {
-  const starts = startList(g);
-  // by its rule's acts (see surfaceActs): a turn, then a step; a turn on the spot, p the notches turned since the last step (right
-  // positive), the next step k/2 − p edges on from its entry (along the grid: turned back by p notches of N); a parity's, a step,
-  // then p a notch right at an odd digit, left at an even one (q: the parity of the digits read)
+// a walk's step on surface g (along its grid or on its cells; net, its walk's net) by its rule's acts (see surfaceActs): a
+// turn, then a step; a turn on the spot, p the notches turned since the last step (right positive), the next step k/2 − p
+// edges on from its entry (along the grid: turned back by p notches of N); a parity's, a step, then p a notch right at an
+// odd digit, left at an even one (q: the parity of the digits read). Its state and its next from a digit d, nothing of the
+// page: a battle's worker plays it too (see battle.js)
+function surfaceStep(g, grid, net, acts) {
   const parity = acts.some(([kind]) => kind === 'parity');
-  if (mode.grid) {
-    const G = gridGraph(g), k = g.sides, N = SURFACE_NOTCHES[mode.net] ?? 1, carried = g.mobius || g.klein;  // (its walker's left carried, see nextCornerCarried)
-    const corner = (v) => mobiusAt(g, G.tileOf[v], cornerUv(g, G, v));
-    return { start: (i) => gridState(g, starts[i]),
-             step: ([v, from, p, q, frame], d) => {
-               const [kind, by] = acts[d], read = parity ? 1 - q : 0, more = carried ? [frame] : [];
-               if (kind === 'pivot') return [v, from, (p + by + N) % N, read, ...more];  // (a turn on the spot: no step)
-               const angle = (kind === 'turn' ? (by * Math.PI) / 180 : 0) - (2 * Math.PI * p) / N;
-               const [next, framed] = carried ? nextCornerCarried(g, G, v, from, frame, angle) : [nextCorner(g, G, v, from, angle)];
-               return [next, v, kind === 'parity' ? (q ? -1 : 1) : 0, read, ...(carried ? [framed] : [])];  // (−1, not N − 1: nextCorner takes the angle as it is)
-             },
-             key: ([v, from, p, q, frame]) => { const key = ((v * G.nv + from) * N + ((p + N) % N)) * 2 + q; return carried ? key * 4 + G.edgeTiles.get(G.key(v, from)).indexOf(frame) : key; },
-             sheet: ([a], [b]) => (g.mobius ? mobiusDelta(g, corner(a), corner(b)) : sheetDelta(g, G, a, b)) };
+  if (grid) {
+    const G = gridGraph(g), N = SURFACE_NOTCHES[net] ?? 1, carried = g.mobius || g.klein;  // (its walker's left carried, see nextCornerCarried)
+    return ([v, from, p, q, frame], d) => {
+      const [kind, by] = acts[d], read = parity ? 1 - q : 0, more = carried ? [frame] : [];
+      if (kind === 'pivot') return [v, from, (p + by + N) % N, read, ...more];  // (a turn on the spot: no step)
+      const angle = (kind === 'turn' ? (by * Math.PI) / 180 : 0) - (2 * Math.PI * p) / N;
+      const [next, framed] = carried ? nextCornerCarried(g, G, v, from, frame, angle) : [nextCorner(g, G, v, from, angle)];
+      return [next, v, kind === 'parity' ? (q ? -1 : 1) : 0, read, ...(carried ? [framed] : [])];  // (−1, not N − 1: nextCorner takes the angle as it is)
+    };
   }
-  // Entering a tile through edge k (corners counterclockwise), the digit d leaves through edge
-  // k + turns[d]: k + 1 is on the right, k − 1 on the left, k + 2 straight on (for squares). Edges
-  // are counted among those with a neighbour: a pentagon of the hexagon sphere (a hexagon with an
-  // edge of length 0) has 5.
+  // Entering a tile through edge k (corners counterclockwise), the digit d leaves through edge k + turns[d]: k + 1 is on
+  // the right, k − 1 on the left, k + 2 straight on (for squares). Edges are counted among those with a neighbour: a
+  // pentagon of the hexagon sphere (a hexagon with an edge of length 0) has 5.
   const k = g.sides, live = Array.from({ length: g.n }, (_, u) => {
     const ks = [];
     for (let e = 0; e < k; e++) if (g.nbr[k * u + e] >= 0) ks.push(e);
     return ks.length < k ? ks : null;
   });
-  const centre = (t) => {
+  return ([t, entry, p, q], d) => {
+    const [kind, by] = acts[d], read = parity ? 1 - q : 0;
+    if (kind === 'pivot') return [t, entry, (p + by + k) % k, read];
+    const ks = live[t], n = ks ? ks.length : k, at = ks ? ks.indexOf(entry) : entry;
+    const j = mod(at + (kind === 'turn' ? by : k / 2) - p, n), edge = ks ? ks[j] : j, next = [g.nbr[k * t + edge], g.nbrEdge[k * t + edge]];
+    return [...next, kind === 'parity' ? (q ? -1 : 1) : 0, read];
+  };
+}
+// The steps of a walk on a surface, along the grid (from corner to corner, the state [corner, the corner it came from]) or
+// on cells (from tile to tile, [tile, the edge it came in by]): the state of start i, the state after a digit (surfaceStep),
+// as a whole number, and on a torus or a Möbius strip the step on the flat sheet (columns east, rows north; on cells, from
+// tile centre to tile centre)
+function surfaceSteps(g, mode, acts = surfaceActs(mode)) {
+  const starts = () => startList(g), step = surfaceStep(g, mode.grid, mode.net, acts);
+  if (mode.grid) {
+    const G = gridGraph(g), N = SURFACE_NOTCHES[mode.net] ?? 1, carried = g.mobius || g.klein;
+    const corner = (v) => mobiusAt(g, G.tileOf[v], cornerUv(g, G, v));
+    return { start: (i) => gridState(g, starts()[i]), step,
+             key: ([v, from, p, q, frame]) => { const key = ((v * G.nv + from) * N + ((p + N) % N)) * 2 + q; return carried ? key * 4 + G.edgeTiles.get(G.key(v, from)).indexOf(frame) : key; },
+             sheet: ([a], [b]) => (g.mobius ? mobiusDelta(g, corner(a), corner(b)) : sheetDelta(g, G, a, b)) };
+  }
+  const k = g.sides, centre = (t) => {
     let u = 0, v = 0;
     for (let q = 0; q < k; q++) { u += g.uv[2 * (k * t + q)]; v += g.uv[2 * (k * t + q) + 1]; }
     return [u / k, v / k];
   };
   return {
-    start: (i) => [...cellStart(g, starts[i]), 0, 0],
-    step: ([t, entry, p, q], d) => {
-      const [kind, by] = acts[d], read = parity ? 1 - q : 0;
-      if (kind === 'pivot') return [t, entry, (p + by + k) % k, read];
-      const ks = live[t], n = ks ? ks.length : k, at = ks ? ks.indexOf(entry) : entry;
-      const j = mod(at + (kind === 'turn' ? by : k / 2) - p, n), edge = ks ? ks[j] : j, next = [g.nbr[k * t + edge], g.nbrEdge[k * t + edge]];
-      return [...next, kind === 'parity' ? (q ? -1 : 1) : 0, read];
-    },
+    start: (i) => [...cellStart(g, starts()[i]), 0, 0], step,
     key: ([t, entry, p, q]) => ((t * k + entry) * k + ((p + k) % k)) * 2 + q,
     sheet: ([a], [b]) => {
       if (g.mobius) return mobiusDelta(g, mobiusAt(g, a, centre(a)), mobiusAt(g, b, centre(b)));
@@ -7948,9 +7957,31 @@ const battleHuntKey = () => [huntGoal(), $('mode').value, walkTeams, startsWayNo
   huntStarts() || `${startNo()}|${battleSeed}`].join('|');  // (what its battles are fought at: what it does not vary)
 // √r's first n digits in base b, its integer part first (on the page: one integer root, as numberSeed's)
 const rootDigits = (r, base, n) => Uint8Array.from(iroot(BigInt(r) * BigInt(base) ** BigInt(2 * n), 2).toString(base).slice(0, n), (c) => c.charCodeAt(0) - 48);
+// The hunt's battles played in workers, one a core but the page's (the page draws their numbers and starts, 1 ms; a battle,
+// 30 ms at size 32): each made of the page's own code (see workerOf: a rule changed, changed in them), set once to the
+// surface, its grid or cells, its walk's acts, the way, base and digits (the cards' made, the roots' made there), then sent
+// battles, two at a time, each sending back its score (see battleScore)
+const BATTLE_WORKERS = Math.max(1, (navigator.hardwareConcurrency || 4) - 1);
+const battleWorker = () => workerOf({ mod, cross, iroot, rootDigits, TORUS_TUBE, tubeOf, SURFACE_NOTCHES, gridGraph, cornerUv, sheetWrap, sheetDelta, nextCorner, nextCornerCarried, acrossEdge,
+  surfaceStep, PENETRATIONS, battleLinks, battleWall, unionFind, smallerSide, battlePlayer, battleWinner, battleScore }, battleWorkerMain);
+function battleWorkerMain() {  // (run in a worker: its setup, then its battles)
+  let game = null;
+  onmessage = ({ data: m }) => {
+    if (m.setup) { const s = m.setup; game = { ...s, cards: new Map(s.cards), S: { step: surfaceStep(s.g, s.grid, s.net, s.acts) } }; return; }
+    const { g, grid, pen, base, n, cards, fixed, S } = game, digits = fixed ?? m.fs.map((f) => cards.get(f) ?? rootDigits(Number(f.slice(5, -1)), base, n));
+    postMessage({ id: m.id, ...battleScore(battlePlayer(g, grid, S, m.placed, digits, pen)) });
+  };
+}
+// a battle played to its end, what the hunt ranks it by: its steps, ended or not, its winner, lands, smallest land, first stop
+function battleScore(P) {
+  const win = battleWinner(P), lands = P.worth();
+  return { steps: P.n, ended: !!win.until, win, lands, even: Math.min(...lands), stop: Math.min(...P.dead.map((d) => (d < 0 ? Infinity : d))) };
+}
+// a surface's data for a worker: its own, not its caches holding functions (made again there, see gridGraph)
+const meshData = (g) => Object.fromEntries(Object.entries(g).filter(([, v]) => { try { structuredClone(v); return true; } catch { return false; } }));
 async function startBattleHunt() {
   if (battleHunt.key !== battleHuntKey()) Object.assign(battleHunt, BATTLE_FRESH());
-  const run = (battleHunt.run = { stop: false }), mode = MODES[$('mode').value], n = digitsNeeded(), base = mode.base, K = walkTeams, grid = !!mode.grid, way = startsWayNow();
+  const run = (battleHunt.run = { stop: false, workers: [] }), mode = MODES[$('mode').value], n = digitsNeeded(), base = mode.base, K = walkTeams, grid = !!mode.grid, way = startsWayNow();
   // the cards' digits first, once (a worker each, cached as A's); the roots' made as they are drawn
   if (huntVary.formulas) for (const f of BATTLE_CARDS) {
     const F = formulaOf(f);
@@ -7959,33 +7990,51 @@ async function startBattleHunt() {
     if (!knownDigits(F, base, n)) await new Promise((ok) => { run.worker = digitsWorker(F, base, n, ok); });
     if (run.stop) return;
   }
-  const score = HUNT_RANKS[huntGoal()][5], g = walk.geo, S = surfaceSteps(g, mode), { head, frac } = digitsInUse(), shownFs = BATTLE_FORMULAS.slice(0, K).map((id) => $(id).value);
+  const score = HUNT_RANKS[huntGoal()][5], g = walk.geo, { head, frac } = digitsInUse(), shownFs = BATTLE_FORMULAS.slice(0, K).map((id) => $(id).value);
   const numbers = [...BATTLE_CARDS, ...DRAWN_ROOTS], N = numbers.length, cards = new Map(BATTLE_CARDS.map((f) => [f, knownDigits(formulaOf(f), base, n)]));
-  const digitsOf = (f, s) => (!huntVary.formulas ? (s ? knownDigits(formulaOf(f), base, n) : Uint8Array.from([...head, ...frac])) : cards.get(f) ?? rootDigits(Number(f.slice(5, -1)), base, n));
+  const shownDigits = (f, s) => (s ? knownDigits(formulaOf(f), base, n) : Uint8Array.from([...head, ...frac]));
   const starts = huntStarts() ? (way === 'classic' ? modeStarts().length : Infinity) : 1;  // (Random's draws: no end)
   const sets = (huntVary.formulas ? Array.from({ length: K }, (_, j) => N - j).reduce((a, b) => a * b) : 1) * starts;
-  const slice = () => {
-    if (run.stop) return;
-    for (const t0 = performance.now(); performance.now() - t0 < 30 && battleHunt.tried.size < sets;) {
+  // the next battle not fought yet: its numbers and its start (none left: null)
+  let id = 0, drawn = 0;
+  const next = () => {
+    while (battleHunt.tried.size < sets) {
       const picks = huntVary.formulas ? Array.from({ length: K }, () => Math.floor(Math.random() * N)) : [], at = !huntStarts() ? {} : way === 'classic' ? { n: 1 + Math.floor(Math.random() * starts) } : { seed: freshDraw() };
       const key = `${picks.join()}|${at.n ?? at.seed ?? ''}`;
       if (new Set(picks).size < picks.length || battleHunt.tried.has(key)) continue;
       battleHunt.tried.add(key);
-      const fs = huntVary.formulas ? picks.map((j) => numbers[j]) : shownFs, placed = battleStartsOrSay(g, walkStart(g, mode, at.n), grid, K, at.seed);
-      if (!placed) continue;  // (a start on an axis: no battle there)
-      const P = battlePlayer(g, grid, S, placed, fs.map(digitsOf)), win = battleWinner(P), lands = P.worth();
-      const r = { fs, ...at, steps: P.n, ended: !!win.until, win, lands, even: Math.min(...lands), stop: Math.min(...P.dead.map((d) => (d < 0 ? Infinity : d))) };
-      if (r.ended) battleHunt.endedCount++;
-      const [list, by] = score ? [battleHunt.ended, (x, y) => (score(y) > score(x)) - (score(y) < score(x))] : r.ended ? [battleHunt.ended, (x, y) => y.steps - x.steps] : [battleHunt.open, null];  // (a score: one list; Longest: the ended ones, the still on)
-      if (!by && list.length >= 8) continue;  // (still on: the first 8)
-      list.push(r);
-      if (by) { list.sort(by); list.length = Math.min(8, list.length); }
+      const placed = battleStartsOrSay(g, walkStart(g, mode, at.n), grid, K, at.seed);
+      if (placed) return { id: id++, fs: huntVary.formulas ? picks.map((j) => numbers[j]) : shownFs, at, placed };  // (a start on an axis: no battle there)
     }
-    battleHunt.status = `${fmt(battleHunt.tried.size)} battles${sets < Infinity ? ` of ${fmt(sets)}` : ''} fought · ${fmt(battleHunt.endedCount)} ended`;
-    renderBattleHunt();
-    if (battleHunt.tried.size < sets) setTimeout(slice, 0); else stopBattleHunt();
+    return null;
   };
-  slice();
+  // a battle's score kept (Longest: two lists, the ended ones, the still on; a score: one list)
+  const keep = (r) => {
+    if (r.ended) battleHunt.endedCount++;
+    const [list, by] = score ? [battleHunt.ended, (x, y) => (score(y) > score(x)) - (score(y) < score(x))] : r.ended ? [battleHunt.ended, (x, y) => y.steps - x.steps] : [battleHunt.open, null];
+    if (!by && list.length >= 8) return;  // (still on: the first 8)
+    list.push(r);
+    if (by) { list.sort(by); list.length = Math.min(8, list.length); }
+  };
+  const say = () => { drawn = performance.now(); battleHunt.status = `${fmt(battleHunt.tried.size)} battles${sets < Infinity ? ` of ${fmt(sets)}` : ''} fought · ${fmt(battleHunt.endedCount)} ended`; renderBattleHunt(); };
+  const sent = new Map(), setup = { g: meshData(g), grid, net: mode.net, acts: surfaceActs(mode), pen: penetration, base, n, cards: [...cards], fixed: huntVary.formulas ? null : shownFs.map(shownDigits) };
+  const feed = (w) => { const b = next(); if (b) { sent.set(b.id, b); w.postMessage({ id: b.id, fs: b.fs, placed: b.placed }); } };
+  for (let j = 0; j < BATTLE_WORKERS; j++) {
+    const w = battleWorker();
+    run.workers.push(w);
+    w.onmessage = ({ data: d }) => {
+      if (run.stop) return;
+      const b = sent.get(d.id);
+      sent.delete(d.id);
+      keep({ fs: b.fs, ...b.at, ...d });
+      feed(w);
+      if (!sent.size) { say(); stopBattleHunt(); } else if (performance.now() - drawn > 100) say();
+    };
+    w.onerror = (e) => { battleHunt.status = `A battle's worker failed: ${e.message}`; stopBattleHunt(); };
+    w.postMessage({ setup });
+    feed(w); feed(w);
+  }
+  if (!sent.size) stopBattleHunt();
 }
 // a battle of the numbers fs played (A's, B's, C's formulas set, then computed), at its start (n: Classic's number; seed:
 // Random's draw; none, the one shown): a hunt's result, Random's draw
@@ -8001,6 +8050,7 @@ function stopBattleHunt() {
   if (!battleHunt.run) return;
   battleHunt.run.stop = true;
   battleHunt.run.worker?.terminate();
+  battleHunt.run.workers?.forEach((w) => w.terminate());
   battleHunt.run = null;
   renderBattleHunt();
 }

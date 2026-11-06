@@ -465,12 +465,13 @@ const KNOWN = [
 async function checkKnown(fail) {
   let checked = 0;
   for (const [link, T, P] of KNOWN) {
+    const w = link.match(/w=([^&]+)/)[1], before = walk.life;
     location.hash = link;
-    await wait(800);
+    for (let t = 0; t < 100 && !($('mode').value === w && walk.life && walk.life !== before && !busy); t++) await wait(100);  // (its own game built, not the one before it)
     const L = walk.life;
     lifeReset();
     cur = 0;
-    for (const far = (T ?? 600) + (P ?? 600); !L.stable && cur < far; ) await goTo(Math.min(far, cur + LIFE_BATCH));
+    for (let far = (T ?? 600) + (P ?? 600), was = -1; !L.stable && cur < far && cur !== was; ) { was = cur; await goTo(Math.min(far, cur + LIFE_BATCH)); }  // (none going on: stopped, not spun)
     checked++;
     if ((T !== null && L.stable?.T !== T) || (P !== null && L.stable?.P !== P)) fail(`${link}: repeats from ${L.stable?.T} with period ${L.stable?.P}, known ${T} and ${P}`);
   }

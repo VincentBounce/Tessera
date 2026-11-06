@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.264';
+const VERSION = '0.4.265';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -14815,19 +14815,15 @@ const digitColour = (k) => walk.ant ? (antRamp ? rampColour(k, walk.ant) : antTu
 /* ---- 11.4 Surfaces --------------------------------------------------------------------------- */
 const sphereDraw = { at: 0, cost: 0 };
 
-// A walker's head on a surface: its place, heading (along its last step; at the start, the one it came by), side and its
-// tile's outward normal, and its size (a third of an edge); P(i), tileAt(i): the walker's point and tile at step i (the
+// A walker's head on a surface: its place, heading (its last step; at the start, the one it came by), side and up (its
+// tile's outward normal, square to the heading), and its size (a third of an edge); P(i), tileAt(i): the walker's point and tile at step i (the
 // walk's; a battle's, see headsOf)
 function headFrame(P = (i) => [walk.wx[i], walk.wy[i], walk.wz[i]], tileAt = (i) => walk.tile[i], before = placePoint(walk.came)) {  // (before: the place it comes from as it starts, see cameFrom)
   const p = P(cur), t = tileAt(cur), nr = walk.shape.nrm, nrm = [nr[3 * t], nr[3 * t + 1], nr[3 * t + 2]];
   const [a, b] = [cur > 0 ? P(cur - 1) : before, p];
-  let h = [0, 1, 2].map((d) => b[d] - a[d]);
-  const dot = h[0] * nrm[0] + h[1] * nrm[1] + h[2] * nrm[2];
-  h = h.map((v, d) => v - dot * nrm[d]);
-  const hl = Math.hypot(...h) || 1;
-  h = h.map((v) => v / hl);
+  const h = unit([0, 1, 2].map((d) => b[d] - a[d])), side = unit(cross(nrm, h));  // (its axis its last step itself, as its line)
   const sc = walk.shape.corners;
-  return { p, h, side: cross(nrm, h), nrm, size: 0.3 * walk.R * Math.hypot(sc[0] - sc[3], sc[1] - sc[4], sc[2] - sc[5]) };
+  return { p, h, side, nrm: cross(h, side), size: 0.3 * walk.R * Math.hypot(sc[0] - sc[3], sc[1] - sc[4], sc[2] - sc[5]) };
 }
 // the heads on a surface, each [its frame, its colour]: a battle's living walkers, else the walk's (white); none in Life
 function headsOf() {

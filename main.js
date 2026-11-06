@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.354';
+const VERSION = '0.4.355';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -8152,10 +8152,11 @@ function battleWinner(P) {
   const until = ended;
   return { s: best.length === 1 ? best[0] : -1, how, until, size: top };
 }
-// a battle built: its player (played to its end), its walkers' names (A's, B's, C's) and winner
+// a battle built: its player (played to its end), its walkers' names (A's, B's, C's), winner and deaths (each walker's
+// step, −1: alive at the end; kept as played to its end, its player then moved to the step shown)
 function battleOf(P) {
-  const names = [shownSym, ...RIVALS.slice(0, P.K - 1).map((id) => formulaOf($(id).value).sym)];
-  return { player: P, names, winner: battleWinner(P) };
+  const names = [shownSym, ...RIVALS.slice(0, P.K - 1).map((id) => formulaOf($(id).value).sym)], winner = battleWinner(P);
+  return { player: P, names, winner, deaths: [...P.dead] };
 }
 // the battle's title: its walkers' numbers, each in its colour, to its end (their scores, and who won, in the ranking under it)
 function battleScore() {
@@ -16995,7 +16996,7 @@ function drawActivity() {
     for (const g of reversibleRun() ? orderMarks(walk.life) : [peaks(walk.life).orderGen]) mark(g, css.getPropertyValue('--sector'), 1);
     mark(peaks(walk.life).aliveGen, accent, 0);
   } else if (walk.battle) {  // (a battle's deaths, each in its walker's colour; those of one step each a row down, as the others' marks)
-    const dead = walk.battle.player.dead;
+    const dead = walk.battle.deaths;
     dead.forEach((g, w) => g >= 0 && mark(g, teamColour(w), dead.slice(0, w).filter((h) => h === g).length % 3));
   } else if (!walk.life && walk.n && walk.maxDist) mark(walkPeak().step, accent, 0);  // (a walk's farthest, in gold as its gauge)
   ctx.lineWidth = 1.5;

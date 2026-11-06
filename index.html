@@ -11,7 +11,7 @@
   <meta property="og:type" content="website">
   <link id="favicon" rel="icon">  <!-- the app's logo, set at start-up (see appLogo) -->
   <meta name="description" content="A walk on a grid in 2D or 3D driven by the base-2 to base-6 digits of π, other constants and large primes.">
-  <link rel="stylesheet" href="style.css?v=0.4.294">
+  <link rel="stylesheet" href="style.css?v=0.4.295">
   <script>  // the theme before the first paint (see applyTheme)
     try { const t = localStorage.getItem('tesseraTheme') || 'system'; document.documentElement.dataset.theme = t === 'system' ? (matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark') : t; } catch { document.documentElement.dataset.theme = 'dark'; }
   </script>
@@ -195,6 +195,10 @@
               <option value="antKleinHex">Hexagon Klein ant — base 2 (Langton's ant)</option>
               <option value="antKleinTri">Triangle Klein ant — base 2 (Langton's ant)</option>
               <option value="antKleinCairo">Cairo Klein ant — base 2 (Langton's ant)</option>
+              <option value="wormIcosa">Triangle sphere worm — base 5 (5 relative turns)</option>
+              <option value="wormTorus">Triangle torus worm — base 5 (5 relative turns)</option>
+              <option value="wormMobius">Triangle Möbius worm — base 5 (5 relative turns)</option>
+              <option value="wormKlein">Triangle Klein worm — base 5 (5 relative turns)</option>
               <option value="torusGrid">Square torus — base 3 (left / forward / right)</option>
               <option value="torusWalk">Square torus — base 3 (left / forward / right)</option>
               <option value="torusTriGrid">Triangle torus — base 5 (5 relative turns)</option>
@@ -743,10 +747,10 @@
     </div>
   </main>
 
-  <script src="pixelarticons.js?v=0.4.294"></script>
-  <script src="punks.js?v=0.4.294"></script>
-  <script src="loops.js?v=0.4.294"></script>
-  <script src="emoji.js?v=0.4.294"></script>
-  <script src="main.js?v=0.4.294"></script>
+  <script src="pixelarticons.js?v=0.4.295"></script>
+  <script src="punks.js?v=0.4.295"></script>
+  <script src="loops.js?v=0.4.295"></script>
+  <script src="emoji.js?v=0.4.295"></script>
+  <script src="main.js?v=0.4.295"></script>
 </body>
 </html>

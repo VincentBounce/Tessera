@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.294';
+const VERSION = '0.4.295';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -4090,6 +4090,15 @@ const SURFACE_ANTS = { antTorus: ['torusWalk', 'Torus'], antTorusHex: ['torusHex
                        antMobiusTri: ['mobiusTriWalk', 'Möbius strip'], antMobiusCairo: ['mobiusCairoWalk', 'Möbius strip'],
                        antKlein: ['kleinWalk', 'Klein bottle'], antKleinHex: ['kleinHexWalk', 'Klein bottle'], antKleinTri: ['kleinTriWalk', 'Klein bottle'],
                        antKleinCairo: ['kleinCairoWalk', 'Klein bottle'] };
+// the worms on the triangles' grids of the surfaces with ants on triangles: their walks along it, its Grid tab beside the ants'
+const SURFACE_WORMS = { wormIcosa: 'icosaGrid', wormTorus: 'torusTriGrid', wormMobius: 'mobiusTriGrid', wormKlein: 'kleinTriGrid' };
+for (const [w, walkMode] of Object.entries(SURFACE_WORMS)) {
+  const { sphere, initial, turns, perspective, round } = MODES[walkMode];
+  MODES[w] = { base: 5, arrows: '↙↖↑↗↘', lattice: 'sphere', grid: true, sphere, initial, turns, perspective, round, worm: true, get rule() { return wormRuleText(); } };
+  NAV[w] = ['Ant', NAV[walkMode][1], NAV[walkMode][2], 'Ant', 'grid'];
+  MODE_ICONS[w] = 'worm';
+  FAMILIES.flatMap((F) => F.modes).find((ms) => ms.includes(walkMode)).push(w);
+}
 for (const [w, [walkMode, place]] of Object.entries(SURFACE_ANTS)) {
   const { sphere, initial, turns, perspective, round } = MODES[walkMode];
   MODES[w] = { base: 2, lattice: 'sphere', cells: true, sphere, initial, turns, perspective, round, fill: false, antOf: walkMode, get rule() { return antRuleText(w); } };
@@ -4296,7 +4305,7 @@ function key3(x, y, z) {
  * Directions clockwise: 0 = N, 1 = NE, 2 = SE, 3 = S, 4 = SW, 5 = NW. */
 const HEX_DIRS = [[1, 0], [0, 1], [-1, 1], [-1, 0], [0, -1], [1, -1]];
 
-// Paterson's worm (Mike Paterson and John Conway, 1971): along the lines of a triangle grid, as the triangles' turtle,
+// Paterson's worm (Mike Paterson and John Conway, 1971): along the lines of a triangle grid (the plane's, a surface's), as the triangles' turtle,
 // never twice along a line. At a corner, the lines ahead it has not eaten (sharp left to sharp right, as seen coming in)
 // are its situation: met for the first time, it turns by its rule's next turn (by the digits: the number's next digit,
 // base 5, one onto an eaten line passed over), met again, the same way; one line left, along it; none, it dies. Its first
@@ -4305,32 +4314,62 @@ const HEX_DIRS = [[1, 0], [0, 1], [-1, 1], [-1, 0], [0, -1], [1, -1]];
 const WORM_TURNS = { L2: 0, L1: 1, N: 2, R1: 3, R2: 4 };
 const worm = { byDigits: false, rule: 'L1 R1 R2 R2 R1 R1 L1' };
 const wormRuleOf = (rule) => { const words = turnWords(rule); return words.length && words.join('') === rule.toUpperCase().replace(/\s+/g, '') && words.every((t) => t in WORM_TURNS) ? words : null; };
-function wormStepper(digits) {
-  let a = 0, b = 0, d = 0, read = 0, made = 0, first = true;
-  const eaten = new Set(), choices = new Map(), rule = wormRuleOf(worm.rule).map((t) => WORM_TURNS[t]);
-  // a line by its corner it leaves from northwards (directions 0 to 2), a number: millions of them
-  const line = (e) => (e < 3 ? key(a, b) * 3 + e : key(a + HEX_DIRS[e][0], b + HEX_DIRS[e][1]) * 3 + e - 3), dirOf = (c) => (d + c + 4) % 6;  // (c − 2: from straight on)
-  const step = () => {
-    if (step.end) return null;
-    const free = [0, 1, 2, 3, 4].filter((c) => !eaten.has(line(dirOf(c))));
+// its mind, the same on the plane and on a surface: at a corner the turns of its free lines (0 sharp left … 4 sharp right,
+// each line once), the turn it takes, else null, its end said in end (free: its free lines there, when its rule has none)
+function wormMind(digits) {
+  let read = 0, made = 0, first = true;
+  const choices = new Map(), rule = wormRuleOf(worm.rule).map((t) => WORM_TURNS[t]), mind = { end: null, free: null, made: 0 };
+  mind.choose = (free) => {
     let c = first ? 2 : free.length === 1 ? free[0] : choices.get(`${free}`);
-    if (!free.length) step.end = 'dead';
+    if (!free.length) mind.end = 'dead';
     else if (c === undefined) {  // a new situation
       if (worm.byDigits) {
         while (read < digits.length && !free.includes(digits[read])) read++;
-        if (read < digits.length) c = digits[read++]; else step.end = 'digits';
-      } else if (made >= rule.length) { step.end = 'rule'; step.free = free; }  // (the turns it could take there)
-      else if (!free.includes((c = rule[made++]))) step.end = 'eaten';
-      if (!step.end) choices.set(`${free}`, c);
+        if (read < digits.length) c = digits[read++]; else mind.end = 'digits';
+      } else if (made >= rule.length) { mind.end = 'rule'; mind.free = free; }  // (the turns it could take there)
+      else if (!free.includes((c = rule[made++]))) mind.end = 'eaten';
+      if (!mind.end) choices.set(`${free}`, c);
     }
-    if (step.end) return null;
+    if (mind.end) return null;
     first = false;
+    mind.made = choices.size;
+    return c;
+  };
+  return mind;
+}
+// its body on the plane: the triangles' lines, its six ways (see HEX_DIRS)
+function wormStepper(digits) {
+  let a = 0, b = 0, d = 0;
+  const eaten = new Set(), mind = wormMind(digits);
+  // a line by its corner it leaves from northwards (directions 0 to 2), a number: millions of them
+  const line = (e) => (e < 3 ? key(a, b) * 3 + e : key(a + HEX_DIRS[e][0], b + HEX_DIRS[e][1]) * 3 + e - 3), dirOf = (c) => (d + c + 4) % 6;  // (c − 2: from straight on)
+  const step = () => {
+    const c = step.end ? null : mind.choose([0, 1, 2, 3, 4].filter((c) => !eaten.has(line(dirOf(c)))));
+    Object.assign(step, { end: mind.end, free: mind.free, made: mind.made });
+    if (c === null) return null;
     d = dirOf(c);
     eaten.add(line(d));
     a += HEX_DIRS[d][0]; b += HEX_DIRS[d][1];
     step.took = c;
-    step.made = choices.size;
     return [key(a, b), b * H, -a - b / 2, 0];
+  };
+  return step;
+}
+// its body on a surface: along its grid as a walk there (see surfaceStep: its folds, a Möbius strip's or a Klein bottle's
+// left carried), its five turns 120°, 60°, 0, −60°, −120°; at a corner of fewer lines (a solid's), each line once (the first
+// turn to it); state: a walk's along the grid, from its start
+function surfaceWormStepper(g, start, digits) {
+  const G = gridGraph(g), turn = surfaceStep(g, true, 'hex', [120, 60, 0, -60, -120].map((a) => ['turn', a])), eaten = new Set(), mind = wormMind(digits);
+  let state = start;
+  const step = () => {
+    const ends = [0, 1, 2, 3, 4].map((c) => turn(state, c)), to = ends.map((e) => e[0]), v = state[0];
+    const c = step.end ? null : mind.choose([0, 1, 2, 3, 4].filter((c) => to.indexOf(to[c]) === c && to[c] !== v && !eaten.has(G.key(v, to[c]))));
+    Object.assign(step, { end: mind.end, free: mind.free, made: mind.made });
+    if (c === null) return null;
+    eaten.add(G.key(v, to[c]));
+    state = ends[c];
+    step.took = c;
+    return state[0];
   };
   return step;
 }
@@ -7016,6 +7055,22 @@ function buildGridWalk(seq, mode, ahead = new Uint8Array(0)) {
       rec.step(i, seq[i - 1], null);  // (its state: all the walks', not watched)
     }
     rec.finish(kind, g, { vert, stepTiles, n: P.n, battle: battleOf(P) });  // (the battle set as the walk is: shown at once)
+    return;
+  }
+  if (mode.worm) {  // a worm: its turns its own (see surfaceWormStepper), till it stops
+    const step = surfaceWormStepper(g, state, seq), took = new Uint8Array(len);
+    let i = 0;
+    for (; i < len; i++) {
+      const next = step();
+      if (next === null) break;
+      const sides = G.edgeTiles.get(G.key(v, next));
+      stepTiles[2 * i] = sides[0]; stepTiles[2 * i + 1] = sides[1] ?? sides[0];
+      v = next;
+      took[i] = step.took;
+      put(i + 1);
+      rec.step(i + 1, step.took, null);
+    }
+    rec.finish(kind, g, { vert, stepTiles, n: i, keys: took, wormEnd: step.end, wormMade: step.made ?? 0, came: cameFrom(g, true, walkStart(g, mode)) });
     return;
   }
   for (let i = 0; i < len; i++) {

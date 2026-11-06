@@ -153,15 +153,15 @@ Most surfaces also have the **Pivot** rule (base 2, `0` step forward, `1` turn r
 - **Centred on the faces:** each face's centre is a grid corner (a walk along the grid can start there) or a cell's
   centre (a walk on cells can), by the solid's edge, measured on every size offered:
 
-  | Solid | Rule | Grid centred at | Cells centred at |
-  |---|---|---|---|
-  | Tetrahedron | a multiple of 3: grid; else cells | 12, 24, 48, 72, 96, 120, 144, 168, 192, 384 | 8, 16, 32, 64, 128, 256, 512 |
-  | Octahedron | a multiple of 3: grid; else cells | 6, 12, 24, 48, 72, 96, 120, 144, 168, 192 | 8, 16, 32, 64, 128, 256 |
-  | Icosahedron | a multiple of 3: grid; else cells | 6, 12, 24, 48, 72, 96, 120, 144, 168, 192 | 4, 5, 8, 16, 32, 64, 128 |
-  | Hexagon sphere | a multiple of 3: cells; else grid | 8, 16, 32, 64, 128, 256 | 6, 12, 24, 48, 72, 96, 120, 144, 168, 192 |
-  | Cube | even: grid; odd: cells | every size (8 to 384, all even) | none |
-  | Dodecahedron | always grid | every size (3 to 128) | none |
-  | Stella octangula | always grid | every size (4 to 192) | none |
+  | Solid | Grid: edge | Cells: edge | Grid centred at | Cells centred at |
+  |---|---|---|---|---|
+  | Tetrahedron | multiple of 3 | not a multiple of 3 | 12, 24, 48, 72, 96, 120, 144, 168, 192, 384 | 8, 16, 32, 64, 128, 256, 512 |
+  | Octahedron | multiple of 3 | not a multiple of 3 | 6, 12, 24, 48, 72, 96, 120, 144, 168, 192 | 8, 16, 32, 64, 128, 256 |
+  | Icosahedron | multiple of 3 | not a multiple of 3 | 6, 12, 24, 48, 72, 96, 120, 144, 168, 192 | 4, 5, 8, 16, 32, 64, 128 |
+  | Hexagon sphere | not a multiple of 3 | multiple of 3 | 8, 16, 32, 64, 128, 256 | 6, 12, 24, 48, 72, 96, 120, 144, 168, 192 |
+  | Cube | even | odd | every size (8 to 384, all even) | none |
+  | Dodecahedron | any | never | every size (3 to 128) | none |
+  | Stella octangula | any | never | every size (4 to 192) | none |
 - A walk that comes back onto itself stops after its first round (`↻`, see [Regular patterns](#regular-patterns)); on a torus, a fraction's **loops** button finds the sizes where it closes in fewest laps.
 - A surface can be shown **flat or round**: the torus and the Möbius strip unroll into their sheet and the polyhedra flatten, and the walk goes on during the morph.
 - The **Möbius strip** is walked as a strip of paper: each square has two faces, each with its own cells, and a walker keeps to its face; at the strip's edge it goes round onto the face just behind. Both faces make one surface with no edge (2 starts on squares, 3 on hexagons and triangles); at a hexagon strip's zigzag edge a corner is not flat, and turns there are measured as a share of the way round it.

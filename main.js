@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.293';
+const VERSION = '0.4.294';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -3247,18 +3247,33 @@ function creatureRules(w) {
                               name: 'Rule, a turn at each new corner: L2, L1, N, R1, R2' };
   const A = ANTS[w], turns = antWords(w).join(' ');
   return { byDigits: antByDigits, now: antRuleOf(w), typed: true, set: (r) => setAntRule(w, r), base: antByDigits ? () => baseWords(2) : null,  // (by colour: no digits read)
-           cards: [...A.presets.map((t) => { const name = ANT_WORDS[ruleWords(t).map((x) => x.replace(/1$/, '')).join('')];  // (its name by its turns, on any grid: L1 R1 the hexagons' L R)
-             return [antOfTurns(w, t), `${name?.split(':')[0] ?? 'Ant'}, ${ruleWords(t).length} colours`, icon('ant'), '', (w === 'antSquare' && name) || '']; }),  // (what it does on squares)
-             ...TURMITE_PRESETS.map((r, i) => [r, TURMITE_WORDS[i], icon('turmite'), antTableOf(w, r) ? '' : turmiteWhy(w, r), 'its name what it does on squares'])],  // (the turmites everywhere, greyed where a word of theirs is not, why in its tooltip; as the literature names them: one state an ant, more a turmite)
+           cards: antCards(w).map(({ rule, name, pic, why, title }) => [rule, name, pic, why, title]),
            name: `Rule, per state an entry per colour: its colour left, its turn (${turns}), its state next; the states parted by |` };
 }
 // The worm's rules, all 411 of them (a mirror the same), walked here: dying at step 918,339, 569,804, 83,618 and 4,802,
 // the longest lives that end (all but 85 die before step 200,000, all but 81 before 5,000,000), and two of those still
 // going at 5,000,000
 const WORM_PRESETS = ['L1 R1 R2 R2 R1 R1 L1', 'L1 R1 L2 R1 R1 L1 L1', 'L1 N R2 N R1 L1 L2', 'L1 N R2 L2 N L1 N', 'L2 L1 R1', 'L2 N L1 R2 L1 R2 L2'];
-// why an ant cannot take a turmite: the first of its words not among the ant's (see antWords)
-const turmiteWhy = (w, r) => { const t = r.split(/[\s|]+/).filter(Boolean).map((e) => e.replace(/^\d+\.?|\.?\d+$/g, '')).find((x) => !antWords(w).includes(x)); return t ? `its ${t} (${WORD_TEXT[t] ?? t}) is not on this grid` : 'not a rule on this grid'; };
-// The turmites (see antTableOf; listed for every ant, greyed where it cannot take them), of the 65,536 with 2 states and 2 colours, walked here 5,000
+// The ants' rules, one list on every grid, the same order everywhere: the ants (their turns, one per colour) then the
+// turmites, in neutral turns (L R, N straight on, U back, L2 R2 sharp), each grid's in its own words (NEUTRAL_WORDS: L1 R1
+// on hexagons and pentagons); one a grid cannot take greyed in its place, the word it lacks in its tooltip
+const ANT_LIST = ['RL', 'RLR', 'LLRR', 'LRRRRRLLR', 'RRLLLRLLLRRR', 'LR', 'RRL', 'RLL', 'RRLL', 'L2 R2', 'L L2 R', 'R2 L N L R2', 'L R2', 'L2 L R R2'];
+const NEUTRAL_WORDS = { square: { L: 'L', R: 'R', N: 'N', U: 'U' }, tri: { L: 'L', R: 'R' }, hex: { L: 'L1', R: 'R1', N: 'N', U: 'U', L2: 'L2', R2: 'R2' }, cairo: { L: 'L1', R: 'R1', L2: 'L2', R2: 'R2' } };
+// a rule of the list in ant w's words: { rule, why } (why: the first word it lacks, its rule then the list's as written)
+function ruleIn(w, neutral, turmite) {
+  const words = NEUTRAL_WORDS[MODES[ANTS[w].walk].net], lack = (t) => `its ${t} (${WORD_TEXT[t] ?? t}) is not on this grid`;
+  if (!turmite) { const t = ruleWords(neutral), missing = t.find((x) => !words[x] || !antWords(w).includes(words[x]));
+    return missing ? { rule: neutral, why: lack(missing) } : { rule: antOfTurns(w, t.map((x) => words[x]).join(' ')), why: '' }; }
+  const table = neutral.split(/\s*\|\s*/).map((e) => e.split(/\s+/).map((x) => { const [, write, t, next] = x.match(/^(\d+)([A-Z])(\d+)$/); return { write: +write, word: words[t] ?? t, next: +next, t }; }));
+  const missing = table.flat().find((e) => !words[e.t] || !antWords(w).includes(e.word));
+  return missing ? { rule: neutral, why: lack(missing.t) } : { rule: antText(table), why: '' };
+}
+// ant w's cards: the list, each its rule in its words, name (an ant's by its turns, with its colours; a turmite's what it
+// does on squares), picture (one state an ant, more a turmite, as the literature names them), why greyed, tooltip
+const antCards = (w) => [...ANT_LIST.map((t) => { const name = ANT_WORDS[ruleWords(t).join('')];
+    return { ...ruleIn(w, t, false), name: `${name?.split(':')[0] ?? 'Ant'}, ${ruleWords(t).length} colours`, pic: icon('ant'), title: (w === 'antSquare' && name) || '' }; }),
+  ...TURMITE_PRESETS.map((r, i) => ({ ...ruleIn(w, r, true), name: TURMITE_WORDS[i], pic: icon('turmite'), title: 'its name what it does on squares' }))];
+// The turmites (see antTableOf, ANT_LIST), of the 65,536 with 2 states and 2 colours, walked here 5,000
 // steps: a spiral; the widest mess (3,765 cells); squares growing filled (97 %, and all); a highway from step 3,090
 const TURMITE_PRESETS = ['1L1 1L1 | 1R1 0N0', '1N1 1N0 | 1R0 0L0', '1L0 0R1 | 0R0 1L1', '1L0 1U1 | 0L0 1L0', '1N1 0R1 | 1L0 1N0'];
 // a rule typed that this walk or creature cannot take: the one in use put back, and why said (its words, see creatureRules)
@@ -4060,25 +4075,25 @@ function populationOf(text) {
  * cell it leaves takes the next colour. Per tiling: the turtle walk it goes through the cells with (a
  * turn: its digit) and their arrows, its turns, and rules to start from, by the digits and by colour. */
 const ANTS = {
-  antSquare: { walk: 'turtleCells', presets: ['RL', 'RLR', 'LLRR', 'LRRRRRLLR', 'RRLLLRLLLRRR'] },
-  antTri: { walk: 'triTurtleCells', presets: ['RL', 'RRL', 'RLL', 'RRLL'] },
-  antHex: { walk: 'hexTurtleCells', presets: ['L1 R1', 'L2 R2', 'L1 L2 R1', 'R2 L1 N L1 R2'] },
-  antHexSphere: { walk: 'hexSphereWalk', presets: ['R1 L1', 'R1 R1 L1', 'R1 L1 L1', 'R1 R1 L1 L1'] },
-  antIcosa: { walk: 'icosaLR', presets: ['RL', 'RRL', 'RLL', 'RRLL'] },
-  antCube: { walk: 'cubeFlat', presets: ['RL', 'RLR', 'LLRR', 'LRRRRRLLR', 'RRLLLRLLLRRR'] },
-  antCairo: { walk: 'cairo', presets: ['L1 R1', 'L2 R2', 'L1 R2', 'L2 L1 R1 R2'] },
+  antSquare: { walk: 'turtleCells' },
+  antTri: { walk: 'triTurtleCells' },
+  antHex: { walk: 'hexTurtleCells' },
+  antHexSphere: { walk: 'hexSphereWalk' },
+  antIcosa: { walk: 'icosaLR' },
+  antCube: { walk: 'cubeFlat' },
+  antCairo: { walk: 'cairo' },
 };
-// on the tori and the Möbius strips: on the cells of their walks, as the cube's, their turns the walk's, its rules those
-// of the ant on the same cells (its place in the menus: the walk's surface and tiling)
-const SURFACE_ANTS = { antTorus: ['torusWalk', 'antCube', 'Torus'], antTorusHex: ['torusHexWalk', 'antHex', 'Torus'], antTorusTri: ['torusTriWalk', 'antIcosa', 'Torus'],
-                       antTorusCairo: ['torusCairoWalk', 'antCairo', 'Torus'], antMobius: ['mobiusWalk', 'antCube', 'Möbius strip'], antMobiusHex: ['mobiusHexWalk', 'antHex', 'Möbius strip'],
-                       antMobiusTri: ['mobiusTriWalk', 'antIcosa', 'Möbius strip'], antMobiusCairo: ['mobiusCairoWalk', 'antCairo', 'Möbius strip'],
-                       antKlein: ['kleinWalk', 'antCube', 'Klein bottle'], antKleinHex: ['kleinHexWalk', 'antHex', 'Klein bottle'], antKleinTri: ['kleinTriWalk', 'antIcosa', 'Klein bottle'],
-                       antKleinCairo: ['kleinCairoWalk', 'antCairo', 'Klein bottle'] };
-for (const [w, [walkMode, like, place]] of Object.entries(SURFACE_ANTS)) {
+// on the tori, the Möbius strips and the Klein bottles: on the cells of their walks, as the cube's, their turns the walk's,
+// their rules the one list's (see ANT_LIST; its place in the menus: the walk's surface and tiling)
+const SURFACE_ANTS = { antTorus: ['torusWalk', 'Torus'], antTorusHex: ['torusHexWalk', 'Torus'], antTorusTri: ['torusTriWalk', 'Torus'],
+                       antTorusCairo: ['torusCairoWalk', 'Torus'], antMobius: ['mobiusWalk', 'Möbius strip'], antMobiusHex: ['mobiusHexWalk', 'Möbius strip'],
+                       antMobiusTri: ['mobiusTriWalk', 'Möbius strip'], antMobiusCairo: ['mobiusCairoWalk', 'Möbius strip'],
+                       antKlein: ['kleinWalk', 'Klein bottle'], antKleinHex: ['kleinHexWalk', 'Klein bottle'], antKleinTri: ['kleinTriWalk', 'Klein bottle'],
+                       antKleinCairo: ['kleinCairoWalk', 'Klein bottle'] };
+for (const [w, [walkMode, place]] of Object.entries(SURFACE_ANTS)) {
   const { sphere, initial, turns, perspective, round } = MODES[walkMode];
   MODES[w] = { base: 2, lattice: 'sphere', cells: true, sphere, initial, turns, perspective, round, fill: false, antOf: walkMode, get rule() { return antRuleText(w); } };
-  ANTS[w] = { ...ANTS[like], walk: walkMode };
+  ANTS[w] = { walk: walkMode };
   NAV[w] = ['Ant', 'Surfaces', place, 'Ant', 'cells'];
   MODE_ICONS[w] = MODE_ICONS[walkMode];
   FAMILIES.flatMap((F) => F.modes).find((ms) => ms.includes(walkMode)).push(w);
@@ -4089,7 +4104,7 @@ for (const [w, [walkMode, like, place]] of Object.entries(SURFACE_ANTS)) {
 // entry compact (1R0) where its words are letters, else dotted (1.R1.0); read either way. By the digits
 // (antByDigits): a digit 1 turns the other way (left and right swap, see MIRROR), its base 2
 const antRules = {};
-const antRuleOf = (w) => (antRules[w] ??= antOfTurns(w, ANTS[w].presets[0]));
+const antRuleOf = (w) => (antRules[w] ??= antCards(w).find((c) => !c.why).rule);  // (at first the list's first it takes)
 let antByDigits = false;
 const MIRROR = { L: 'R', R: 'L', N: 'N', U: 'U', L1: 'R1', R1: 'L1', L2: 'R2', R2: 'L2', l: 'r', r: 'l' };
 const turnWords = (rule) => rule.toUpperCase().match(/[LR][12]?|N/g) ?? [];

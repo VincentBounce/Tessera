@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.336';
+const VERSION = '0.4.337';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -8803,7 +8803,7 @@ function startParts(seed) {
   const fits = huntFits(), r = hunt.zone === 'realm' || hunt.zone === 'full' ? Infinity : zoneRadius(hunt.zone);  // (Wild greyed, its parts unlike: the widest radius)
   if (hunt.zone === 'custom' || !fits[hunt.zone]) hunt.zone = [8, 7, 6, 5, 4, 3, 2, 1].map((k) => `radius${k}`).find((z) => zoneRadius(z) < r && fits[z]) ?? 'full';
   const z = zoneSeed();  // the zone picked, again on this grid (a radius, patterns)
-  if (z) { seed.set(z); for (const t of walk.geo.walls ?? []) seed[t] = 0; lifeStart = { zone: hunt.zone }; return; }  // (none on the wall's cells)
+  if (z) { seed.set(z); walk.life.startNames = z.names ?? null; for (const t of walk.geo.walls ?? []) seed[t] = 0; lifeStart = { zone: hunt.zone }; return; }  // (none on the wall's cells)
   if (K === 1) return;
   const coloured = new Uint8Array(seed.length);
   huntParts(0, K).forEach((part, i) => { for (const t of part) { coloured[t] = 1; if (seed[t]) seed[t] = i + 1; } });
@@ -9909,6 +9909,8 @@ const cellWidth = (kind) => {
 // a choice drawn from a list of them (random: in [0, 1)): its index; a lazy list's null (a move that does not fit, see
 // laidChoices), another drawn (a lazy list has some that fit); -1 when none
 const drawChoice = (c, random) => { for (let k; c.length; ) if (c[(k = Math.floor(random() * c.length))]) return k; return -1; };
+// a pattern laid as a choice, its name with it (a Famous start titled by its patterns, see startTitle)
+const patternNamed = (cells, name) => (cells && Object.assign(cells, { name }));
 const lazyList = (n, f) => new Proxy([], { get: (a, k) => (k === 'length' ? n : typeof k === 'string' && /^\d+$/.test(k) ? (a[k] ??= f(Number(k))) : Reflect.get(a, k)) });
 // once a grid and its colours: each cell's colour's place (part; see huntParts; Mixed's too, each colour's own), a picture
 // cut off at its own, as at the grid's edges; each colour's cells a picture may take (its part's live ones on its face, see
@@ -10258,6 +10260,8 @@ function startTitle() {
   if (plane.start === 'digits') return withIcons(shownSym);
   if (plane.start === 'text') return `«${plane.text}»`;
   if (plane.start === 'draw') return 'Drawn';
+  const names = walk.life.startNames?.filter(Boolean);  // (a Famous start's patterns: Glider vs R-pentomino)
+  if (names?.length && (lifeStart === 'hunt' || lifeStart === 'battle' || famousZone(zone ?? ''))) return names.join(' vs ');
   if (lifeStart && !lifeStart.zone) return 'Found';
   if (zone && isIcon(zone)) { const set = iconSet(zone), word = HUNT_ZONES[zone][1].split(' ')[0]; return plane.icons.slice(0, K).map((i) => `${word} ${set.label(i)}`).join(' vs '); }
   if (zone === 'numbers') return withIcons(plane.number);
@@ -12415,6 +12419,7 @@ function huntRuns(L, { cells, copies, all, choices, nth }, cap, goal, report) { 
     pick.forEach((c, i) => { const f = choices[i][c]; for (let q = 0; q < f.length; q += 2) s[f[q]] = f[q + 1]; });
     symmetricStart(s);  // (as it is laid, see startColours)
     s.pick = pick;
+    s.names = pick.map((c, i) => choices[i][c]?.name);  // (its patterns' names, its title's)
     return s;
   };
   const randomPick = () => fromPick(choices.map((c) => drawChoice(c, Math.random)));
@@ -12427,7 +12432,7 @@ function huntRuns(L, { cells, copies, all, choices, nth }, cap, goal, report) { 
     const same = top.findIndex((x) => x.T === r.T && (K === 1 ? x.P === r.P && x.peak === r.peak : x.end === r.end || (x.contacts === r.contacts && Math.abs(x.balance - r.balance) < 1e-6)));
     if (same >= 0 && top[same].score >= r.score) return false;  // the same run, as good already
     if (same >= 0) top.splice(same, 1);
-    top.push({ ...r, seed, pick: seed.pick, number: seed.number, id: ++huntKept });  // (its own number: two alike in T and end still two)
+    top.push({ ...r, seed, pick: seed.pick, names: seed.names, number: seed.number, id: ++huntKept });  // (its own number: two alike in T and end still two)
     top.sort((x, y) => y.score - x.score);
     top.length = Math.min(top.length, 8);
     return true;
@@ -13045,7 +13050,7 @@ function playHuntResult(r) {
   if (isIcon(hunt.zone) && r.pick) { plane.icons = [...r.pick]; layZone(); renderHunt(); return; }
   if (r.number) { plane.number = r.number; layZone(); renderHunt(); return; }  // (Formula: its number, the link's: formula.16/9)
   // (icons: by their names, pop=icon24.star.heart; an emoji's, pop=emoji.🙂)
-  setLifeSeed(r.seed, walk.life.colours === 1 ? 'hunt' : 'battle');
+  setLifeSeed(Object.assign(r.seed, { names: r.names }), walk.life.colours === 1 ? 'hunt' : 'battle');  // (Famous: its patterns' names, its title's)
   renderHunt();
 }
 function stopHunt() {
@@ -13062,7 +13067,7 @@ function zoneSeed() {
   if (!zoneRadius(hunt.zone) && !famousZone(hunt.zone) && hunt.zone !== 'realm') return null;  // (Found: the link's, once)
   const next = seededRandom(plane.seed), random = () => next() / 4294967296;  // (as dense as plane.density, drawn from plane.seed: a link's pop=bloom.30.7 the same start again)
   const { cells, copies, choices } = huntPlan(), seed = new Uint8Array(walk.life.seed.length), d = plane.density / 100;
-  if (choices) for (const c of choices) { const f = c[drawChoice(c, random)] ?? []; for (let q = 0; q < f.length; q += 2) seed[f[q]] = f[q + 1]; }
+  if (choices) seed.names = choices.map((c) => { const f = c[drawChoice(c, random)] ?? []; for (let q = 0; q < f.length; q += 2) seed[f[q]] = f[q + 1]; return f.name; });  // (its patterns' names, its title's)
   else {
     for (const [t, k] of cells) if (random() < d) seed[t] = k;
     for (const k of new Set(cells.map((c) => c[1]))) {  // each colour at least one cell alive (as the hunt's starts)
@@ -14053,11 +14058,11 @@ function centredChoices(kind, K, rule, mine, any, centred = true) {
   // Famous (not centred): all of them, the middle's and those off it, every way the figure turns them, each copy whole in its
   // colour's part
   const parts = !centred ? huntParts(0, K, false, false).map((p) => new Set(p)) : null, inPart = (cs, i) => !parts || cs.every((t, j) => j % 2 || parts[i].has(t));
-  for (const [, , , , cells] of figs) {
+  for (const [, , , name, cells] of figs) {
     const own = D.way(cells);
     for (let k = 0; k < (centred && K > 1 ? 1 : n); k++) {
       const per = Array.from({ length: K }, (_, i) => lay(cells, centred && K > 1 ? Math.round((mids[i] - own) / step) * step : k * step + (2 * Math.PI * i) / K, i));
-      if (per.every((cs, i) => cs && inPart(cs, i))) { per.forEach((cs, i) => out[i].push(cs)); if (any) break; }
+      if (per.every((cs, i) => cs && inPart(cs, i))) { per.forEach((cs, i) => out[i].push(patternNamed(cs, name))); if (any) break; }
     }
   }
   return out;
@@ -14085,7 +14090,7 @@ function laidChoices(centred, any = false) {  // any: the first one of each colo
   for (const p of DRAW_PATTERNS.filter((q) => q[1] === baseOf(kind) && (mine || q[2].includes(rule)))) {
     for (let t = 0; t < PATTERN_TURNS[kind]; t++) for (const f of [false, true]) {
       const cells = orientPattern(kind, p[4], t, f), k = cells.map((c) => c.join(',')).sort().join(' ');
-      if ((!centred || span(p[4], t, f) <= room - 2) && !seen.has(k)) { seen.add(k); shapes.push(cells); }
+      if ((!centred || span(p[4], t, f) <= room - 2) && !seen.has(k)) { seen.add(k); shapes.push(Object.assign(cells, { name: p[3] })); }
     }
   }
   // anywhere: every shape moved by whole steps (see translations) onto every cell of a colour's part (as Wild's), on that
@@ -14093,9 +14098,9 @@ function laidChoices(centred, any = false) {  // any: the first one of each colo
   // there) and its cells all on cells of that part; few enough moves (FAMOUS_ALL at most, as a hunt tries them all), those
   // kept; more (a big grid), every move, laid when drawn (a lazy list, null where it does not fit: see drawChoice)
   if (!centred) return huntParts(0, K, false, false).map((part, i) => {
-    const here = new Set(part), laid = shapes.map((cells) => [cells, cells.map(([x, y]) => cellMiddle(kind, x, y))]), frames = new Map();
+    const here = new Set(part), laid = shapes.map((cells) => [cells, cells.map(([x, y]) => cellMiddle(kind, x, y)), cells.name]), frames = new Map();
     const frameOf = (t) => { const pl = cellPlace(t), key = pl && `${pl.on}|${pl.face ?? pl.f ?? pl.c0 ?? ''}`; if (pl && !frames.has(key)) frames.set(key, patternFrame(i, K, pl)); return pl && frames.get(key); };
-    const lay = ([cells, ms], t) => {
+    const lay = ([cells, ms, name], t) => {
       const F = frameOf(t);
       if (!F) return null;
       const p = F.from(F.place(t)), d = latticeNear(kind, [p[0] - ms[0][0], p[1] - ms[0][1]]), at = (k) => F.cellAt(F.at([ms[k][0] + d[0], ms[k][1] + d[1]]));
@@ -14106,15 +14111,15 @@ function laidChoices(centred, any = false) {  // any: the first one of each colo
         if (c < 0 || !here.has(c)) return null;
         cs.push(c, colourState(i, cells[k][2]));
       }
-      return Int32Array.from(cs);
+      return patternNamed(Int32Array.from(cs), name);
     };
     const moves = laid.length * part.length, move = (k) => lay(laid[Math.floor(k / part.length)], part[k % part.length]), out = [];
     for (let k = 0; k < moves && !((any || moves > FAMOUS_ALL) && out.length); k++) { const f = move(k); if (f) out.push(f); }
     return moves > FAMOUS_ALL && !any && out.length ? lazyList(moves, move) : out;  // (a big grid's: one fits, so a draw ends)
   });
   // centred: a shape kept where it lays whole for every colour, at its spot (a sheet's: see sheetPatternAt)
-  const laid = shapes.map((cells) => Array.from({ length: K }, (_, i) => patternAt(i, K, cells))).filter((per) => per.every((cs) => cs.length));
-  return Array.from({ length: K }, (_, i) => laid.map((per) => Int32Array.from(per[i].flatMap(([t, v]) => [t, colourState(i, v)]))));
+  const laid = shapes.map((cells) => Object.assign(Array.from({ length: K }, (_, i) => patternAt(i, K, cells)), { name: cells.name })).filter((per) => per.every((cs) => cs.length));
+  return Array.from({ length: K }, (_, i) => laid.map((per) => patternNamed(Int32Array.from(per[i].flatMap(([t, v]) => [t, colourState(i, v)])), per.name)));
 }
 
 /* ---- 9.2 Patches -------------------------------------------------------------------------- */
@@ -14216,6 +14221,7 @@ function setLifeSeed(seed, how) {
   const L = walk.life;
   cleared = null;  // another start: no Undo
   L.seed.set(seed);
+  L.startNames = seed.names ?? null;  // (a Famous start's patterns, see startTitle)
   for (const t of walk.geo.walls ?? []) L.seed[t] = 0;
   countSeed(L);
   championCode = how && !how.zone ? encodeCells(L.seed, walk.base) : null;  // a hunt's, a battle's, a saved start, in its shortest form (a zone's or the grid's own: its pop says it, see getSetup)

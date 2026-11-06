@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.332';
+const VERSION = '0.4.333';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -2185,7 +2185,7 @@ function syncDigitsStepper() {
   const stop = runStop(), size = randomPrimeSize(), gens = gensShown(), asked = size ?? targetAsked(), steps = size ? PRIME_STEPS : DIGIT_STEPS;
   const unit = gens ? 'generations' : stepperUnit(), total = gens || size || walk.loop ? null : wholeTotal();  // (a loop's, its rounds: see runStop)
   // the length asked, steps at most, the same words in every tab (its end, a loop or a death, said by the title: see runStop)
-  if (document.activeElement !== $('digitsLabel')) $('digitsLabel').value = `${compactCount(asked)} 👣 max`;
+  if (document.activeElement !== $('digitsLabel')) $('digitsLabel').value = `≤${compactCount(asked)}`;  // (its unit, steps: the footprints beside it)
   $('digitsLabel').title = [`${fmt(asked)} ${size ? 'digits of the random prime p (100 to 2,000: it is walked whole)' : `${asked === 1 ? unit.slice(0, -1) : unit} at most`}`,
     !size && !lengthUsed() && 'Not used here (Life and Reversible play on): kept for the next tab', !size && total !== null && `The number has ${fmt(total)} digits`, stop?.why,
     `Type a number, from ${fmt(steps[0])} to ${fmt(size ? steps.at(-1) : targetMost())}, then Enter`].filter(Boolean).join('\n');
@@ -2534,6 +2534,7 @@ const ICONS = (() => {
     end: pathEl('M18.5 5V19') + pathEl('M5 5L15 12L5 19Z', 'f'),
     back: '<rect class="f" x="15.5" y="5" width="3.5" height="14" rx="1"/>' + pathEl('M13 5L4 12L13 19Z', 'f'),
     step: '<rect class="f" x="5" y="5" width="3.5" height="14" rx="1"/>' + pathEl('M11 5L20 12L11 19Z', 'f'),
+    footsteps: [[8, 7, -14], [16, 14, 14]].map(([x, y, a]) => `<g transform="rotate(${a} ${x} ${y})"><ellipse class="f" cx="${x}" cy="${y}" rx="2.6" ry="3.6"/><circle class="f" cx="${x}" cy="${y + 5.4}" r="1.7"/></g>`).join(''),  // two footprints, a sole and its heel each: the length asked's unit (steps)
     reverse: pathEl('M17 4.5L4.5 12L17 19.5Z', 'f'),  // Play backwards: Play turned round
     smiley: '<circle cx="12" cy="12" r="9"/>' + pathEl('M8 14.5Q12 18 16 14.5') + '<circle class="f" cx="9" cy="10" r="1.2"/><circle class="f" cx="15" cy="10" r="1.2"/>',  // Emoji: a smiling face
     star: pathEl(pathOf(ngon(10, 1).map((_, k) => ngon(10, k % 2 ? 4.2 : 9.5)[k]))),
@@ -17427,6 +17428,7 @@ for (const b of document.querySelectorAll('.field .enter')) {
   b.addEventListener('mousedown', (e) => { e.preventDefault(); b.previousElementSibling.blur(); });
 }
 $('digitsLabel').addEventListener('input', () => { $('digitsLabel').value = $('digitsLabel').value.replace(/\D/g, ''); });
+$('stepsGlyph').innerHTML = icon('footsteps');  // (the length asked's unit, beside it)
 $('digitsLabel').addEventListener('focus', () => { $('digitsLabel').value = String(randomPrimeSize() ?? targetAsked()); $('digitsLabel').select(); });  // (to type: the exact number, picked)
 $('digitsLabel').addEventListener('blur', syncDigitsStepper);  // "20,000 digits" again
 $('digitsLabel').addEventListener('change', () => {

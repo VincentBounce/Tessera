@@ -11,7 +11,7 @@
   <meta property="og:type" content="website">
   <link id="favicon" rel="icon">  <!-- the app's logo, set at start-up (see appLogo) -->
   <meta name="description" content="A walk on a grid in 2D or 3D driven by the base-2 to base-6 digits of π, other constants and large primes.">
-  <link rel="stylesheet" href="style.css?v=0.4.332">
+  <link rel="stylesheet" href="style.css?v=0.4.333">
   <script>  // the theme before the first paint (see applyTheme)
     try { const t = localStorage.getItem('tesseraTheme') || 'system'; document.documentElement.dataset.theme = t === 'system' ? (matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark') : t; } catch { document.documentElement.dataset.theme = 'dark'; }
   </script>
@@ -23,7 +23,7 @@
       <div class="header-end">
         <div class="stepper max-steps">  <!-- the length asked, steps at most (a walk's, a creature's, Elementary's and Space-time's generations): kept in every tab, set before going there -->
           <button id="digitsDown" type="button" title="Fewer steps">−</button>
-          <span class="field"><input id="digitsLabel" type="text" inputmode="numeric" maxlength="12" spellcheck="false" autocomplete="off"><button class="enter" type="button" tabindex="-1" title="Apply (Enter)">↵</button></span>
+          <span class="field"><input id="digitsLabel" type="text" inputmode="numeric" maxlength="12" spellcheck="false" autocomplete="off"><span id="stepsGlyph" class="steps-glyph"></span><button class="enter" type="button" tabindex="-1" title="Apply (Enter)">↵</button></span>
           <button id="digitsUp" type="button" title="More steps">+</button>
         </div>
         <div class="tabs"><button id="appTab" type="button" class="pane-tab" title="Credits: the people whose work it shows, Share link and Home (its version: 0.1.0 its first commit, +1 a commit)"></button></div>  <!-- the app's tab: π, its name and version, a pane's tab as Gallery's -->
@@ -519,10 +519,10 @@
     </div>
   </main>
 
-  <script src="pixelarticons.js?v=0.4.332"></script>
-  <script src="punks.js?v=0.4.332"></script>
-  <script src="loops.js?v=0.4.332"></script>
-  <script src="emoji.js?v=0.4.332"></script>
-  <script src="main.js?v=0.4.332"></script>
+  <script src="pixelarticons.js?v=0.4.333"></script>
+  <script src="punks.js?v=0.4.333"></script>
+  <script src="loops.js?v=0.4.333"></script>
+  <script src="emoji.js?v=0.4.333"></script>
+  <script src="main.js?v=0.4.333"></script>
 </body>
 </html>

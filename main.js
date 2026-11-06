@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.335';
+const VERSION = '0.4.336';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -10251,6 +10251,19 @@ function zoneWords(zone) {
   return K === 1 ? (r ? `Random cells within radius ${r} of a cell` : `A random soup, ${d} % alive`)
     : r ? `Each colour random cells within radius ${r} of its spot (${K} spots)` : `Each colour a soup of its part (${walk.plane ? COLOUR_PARTS[K] : `${K} parts`}), ${d} % alive`;
 }
+// a Life start's title, what is played: its picture each colour (Punk #4409 vs Punk #4565), its zone and seed (Bloom #7), its
+// number, its text, drawn, found
+function startTitle() {
+  const K = lifeParts(), zone = lifeStart?.zone ?? (plane.start === 'random' ? hunt.zone : null);
+  if (plane.start === 'digits') return withIcons(shownSym);
+  if (plane.start === 'text') return `«${plane.text}»`;
+  if (plane.start === 'draw') return 'Drawn';
+  if (lifeStart && !lifeStart.zone) return 'Found';
+  if (zone && isIcon(zone)) { const set = iconSet(zone), word = HUNT_ZONES[zone][1].split(' ')[0]; return plane.icons.slice(0, K).map((i) => `${word} ${set.label(i)}`).join(' vs '); }
+  if (zone === 'numbers') return withIcons(plane.number);
+  if (zone && famousZone(zone)) return HUNT_ZONES[zone][1];
+  return `${HUNT_ZONES[zone]?.[1] ?? 'Soup'} #${plane.seed}`;
+}
 function startLead(number, seeded) {  // its start in words, on any grid (the plane's: its side, its symmetry)
   const kind = walk.plane?.kind, side = kind && fmt(walk.plane.W), soup = `${plane.density} % alive (seed ${plane.seed})`;
   const sym = kind ? SYMMETRIES[symmetryOf(kind)][2] : '', where = kind ? `a ${side} × ${side} grid of ${PLANE_CELLS[kind]}${{ tri: ' (two a rhombus)', cairo: ' (two a square)', kite: ' (six a rhombus)', hat: ' (an aperiodic tiling: one tile that never repeats)', penrose: ' (an aperiodic tiling)', pinwheel: ' (an aperiodic tiling: one right triangle, turned every way)', ammann: ' (an aperiodic tiling, eightfold)', rhombs12: ' (an aperiodic tiling, twelvefold)', rhombs14: ' (an aperiodic tiling, fourteenfold)', flower: " (Hirschhorn's flower: one pentagon, six-fold, never repeating)", flower5: ' (a rosette: one pentagon, five-fold, never repeating)', flower7: ' (a rosette: one pentagon, seven-fold, never repeating)', ...conedOf((k, n, F) => [k, ` (a ${F.how} rosette: ${F.one}, ${n}-fold, never repeating)`]), flower3: ' (a rosette: one pentagon, three-fold, never repeating)', flower4: ' (a rosette: one pentagon, four-fold, never repeating)', flower8: ' (a rosette: one pentagon, eight-fold, never repeating)', flower9: ' (a rosette: one pentagon, nine-fold, never repeating)', flower10: ' (a rosette: one pentagon, ten-fold, never repeating)', ring7: ' (a ring: one pentagon round a heptagonal hole, seven-fold, never repeating)', ring8: ' (a ring: one pentagon round an octagonal hole, eight-fold, never repeating)', ring9: ' (a ring: one pentagon round a nonagonal hole, nine-fold, never repeating)', ring10: ' (a ring: one pentagon round a decagonal hole, ten-fold, never repeating)', ring12: ' (a ring: one pentagon round a dodecagonal hole, twelve-fold, never repeating)', spectre: ' (an aperiodic tiling: one tile that never repeats, never turned over)' }[kind] ?? ''} ${planeTorus(kind) ? 'wrapping around (a torus)' : planeShape(kind, walk.plane.W) ? 'walled in a hexagon' : 'with dead edges'}` : MODES[$('mode').value].where;
@@ -17159,7 +17172,7 @@ function updateStats() {
     // (its end known, not reached yet: where it is, its period and its first; Begin back to a start keeps its record)
     const known = L.stable, ahead = known && !s, end = !known ? '' : known.extinct ? `✝${ahead ? ` ${fmt(known.T)}` : ''}` : known.P === 1 ? `■${ahead ? ` ${fmt(known.T)}` : ''}`
       : `↻ ${ahead ? fmt(known.P) : `${pad(mod(cur - known.T, known.P) + 1, known.P)}/${fmt(known.P)}`}${known.T ? ` from gen ${fmt(known.T)}` : ''}`;
-    setLinks($('barNum'), end && loopLink(end));  // (its generation: its own line, see stepNow; its end here)
+    setLinks($('barNum'), [startTitle(), end && loopLink(end)].filter(Boolean).join(' '));  // (what it plays, then its end, as a walk's; its generation: its own line, see stepNow)
     $('barLoop').hidden = !L.margolus || !!L.stable;  // (blocks: not back to its start yet, and at most when; back: its title's)
     renderBack();
     if (L.margolus && !L.stable) {

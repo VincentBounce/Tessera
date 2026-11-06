@@ -149,6 +149,9 @@ function checkMeshes(fail) {
 
 // after an action: no error, the link's mode the one shown, a surface's cells as many as said, more than one start (the crawl's, the fuzz's)
 const wait = (ms) => new Promise((go) => setTimeout(go, ms));
+// till ok() holds and nothing is being built (10 s at most): a link's own page, not the one before it, nor a wait's guess
+const until = async (ok) => { for (let t = 0; t < 100 && !(ok() && !busy); t++) await wait(100); };
+const shown = (w, more = () => true) => () => $('mode').value === w && more();  // (mode w on the page, and more)
 // to generation g, its batches awaited (Life's on the card come back later, see lifeSettle)
 const goTo = async (g) => { advanceTo(g); await lifeSettle(); };
 // the buttons shown with no words of their own in their tooltip, or only their name (see tipOf; Size's − +, the words of
@@ -355,7 +358,7 @@ async function coloursOffered(fail) {
     let some = false;
     for (const s of sizes) {
       location.hash = `#w=${w}&s=${s}`;
-      await wait(400);
+      await until(shown(w, () => String(sphereSize()) === String(s)));
       if (COLOUR_STEPS.some((K) => K > 1 && coloursFit(K, walk.geo))) { some = true; break; }
     }
     checked++;
@@ -371,7 +374,7 @@ async function battlesFair(fail) {
   let checked = 0;
   for (const w of Object.keys(MODES).filter(battleMode)) {
     location.hash = `#x=pi&w=${w}`;
-    await wait(900);
+    await until(shown(w, () => !walk.battle && walk.geo));
     const counts = battleCounts(w), grid = !!MODES[w].grid;
     const built = (K, stops) => $('mode').value === w && walk.battle?.player?.K === K && walk.battle.player.stops === stops;  // (this link's battle, not the one before it)
     checked++;
@@ -467,7 +470,7 @@ async function checkKnown(fail) {
   for (const [link, T, P] of KNOWN) {
     const w = link.match(/w=([^&]+)/)[1], before = walk.life;
     location.hash = link;
-    for (let t = 0; t < 100 && !($('mode').value === w && walk.life && walk.life !== before && !busy); t++) await wait(100);  // (its own game built, not the one before it)
+    await until(shown(w, () => walk.life && walk.life !== before));
     const L = walk.life;
     lifeReset();
     cur = 0;
@@ -489,7 +492,7 @@ async function checkKnown(fail) {
   // start, see advanceTo) the very state played to (a pentadecathlon, a domino dying: from 1, period 15; v0.2.52); a jump across
   // a reversible one's return to its end, not its start (v0.2.50)
   location.hash = '#w=life2d&r=B3/S23&s=32&e=1&p=10,10:2A7$2.A4.A$2A.4A.2A$2.A4.A!&pop=draw';
-  await wait(800);
+  await until(shown('life2d', () => plane.side === 32 && !plane.torus));
   restart();
   const at = [], cells = () => Uint8Array.from(walk.life.alive, (v) => +(v > 0));
   for (let g = 0; g <= 16; g++) { if (g) await goTo(g); at.push(cells()); }
@@ -546,7 +549,7 @@ async function checkKnown(fail) {
   }
   // a hunt: of the 2^14 starts of 14 cells (radius 2's first), the 8 longest
   location.hash = '#w=life2d&r=B3/S23&s=48&pop=random.49.5';
-  await wait(800);
+  await until(shown('life2d', () => plane.side === 48 && plane.torus));
   hunt.zone = 'radius2';
   const plan = { cells: huntPlan().cells.slice(0, 14), copies: [], all: 2 ** 14 };
   const top = await new Promise((done) => { const h = huntRuns(walk.life, plan, 50000, 'longest', (best, n, end) => { if (best) h.best = best; if (end) { h.stop(); done(h.best); } }); });
@@ -610,14 +613,14 @@ async function checkSheets(fail) {
     for (const K of [1, 3]) {
       coloursPicked = lifeColours = K;
       location.hash = `#w=${w}&k=${K}`;
-      await wait(500);
+      await until(shown(w, () => lifeColours === K));
       offered.push(COLOUR_STEPS.filter((k) => coloursFit(k)).join(','));
     }
     if (offered[0] !== offered[1]) fail(`${w}: colours offered ${offered[0]} in Classic, ${offered[1]} in Trio`);
     if (w === 'lifeKleinPent15' && offered[0].split(',').some((k) => k % 2 === 0)) fail(`${w}: an even count of colours offered (${offered[0]}), its twist asking an odd length`);  // (v0.3.88 to 0.3.93: g.period left by the rename, every count offered)
     for (const K of [2, 3, 5].filter((k) => offered[0].split(',').includes(`${k}`))) {
       location.hash = `#w=${w}&k=${K}`;
-      await wait(500);
+      await until(shown(w, () => lifeColours === K && walk.life?.colours === K));
       const sizes = huntParts(null, K).map((p) => p.length);
       if (lifeColours !== K) fail(`${w}: ${K} colours offered, ${lifeColours} taken`);
       else if (new Set(sizes).size > 1) fail(`${w} in ${K} colours: its parts ${sizes.join(' / ')}`);
@@ -639,10 +642,10 @@ async function partsEqual(fail) {
   const runs = [...lifeModes.filter((w) => MODES[w].plane).flatMap((w) => [[w, '', 1], [w, '&e=1', 1]]), ...lifeModes.filter((w) => MODES[w].sphere && !TORI.includes(surfaceOf(MODES[w]))).map((w) => [w, '', SPHERES[MODES[w].sphere]?.disc ? 1 : 0])];  // (a rosette sphere: its discs' lunes, cells whole, one apart as the plane's)
   for (const [w, walls, slack] of runs) {
     location.hash = `#w=${w}${walls}&k=1`;
-    await wait(350);
+    await until(shown(w, () => lifeColours === 1));
     for (const K of COLOUR_STEPS.filter((k) => k > 1 && coloursFit(k))) {
       location.hash = `#w=${w}${walls}&k=${K}`;
-      for (let t = 0; t < 60 && !($('mode').value === w && lifeColours === K && walk.life?.colours === K && !busy); t++) await wait(100);  // (its own game built at K, not a wait's guess)
+      await until(shown(w, () => lifeColours === K && walk.life?.colours === K));
       const sizes = huntParts(null, K).map((p) => p.length);
       if (lifeColours !== K) fail(`${w}${walls}: ${K} colours offered, ${lifeColours} taken`);
       else if (Math.max(...sizes) - Math.min(...sizes) > slack) fail(`${w}${walls} in ${K} colours: ${Math.min(...sizes)} to ${Math.max(...sizes)} cells a colour`);

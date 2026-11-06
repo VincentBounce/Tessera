@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.245';
+const VERSION = '0.4.246';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -15658,7 +15658,7 @@ function gpuLifeEngine(L, runs = 1, h = 1) {
   E.group = device.createBindGroup({ layout: GPU.layout, entries: [E.num, E.cell, E.sums].map((b, i) => ({ binding: i, resource: { buffer: b } })).concat({ binding: 3, resource: { buffer: E.params, size: 256 } }) });
   return E;
 }
-const gpuLifeFree = (E) => ['num', 'cell', 'sums', 'read', 'params'].forEach((k) => E[k].destroy());
+const gpuLifeFree = (E) => ['num', 'cell', 'sums', 'read', 'params', 'shown', 'look'].forEach((k) => E[k]?.destroy());  // (every buffer of its own: the cells shown and its look's table too, else left on the card, game after game)
 // a start's cells into run r: states, a live one 1 old, ever alive and of its colour, no change, no death yet
 function gpuLifePut(E, alive, r = 0) {
   const { device } = GPU, L = E.L, live = (v) => v > 0 && v <= L.colours, at = (f) => 4 * ((E.side * 5 + f) * E.total + r * E.stride);

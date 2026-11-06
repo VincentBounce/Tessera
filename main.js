@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.265';
+const VERSION = '0.4.266';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -1453,7 +1453,7 @@ const DISPLAY_DEFAULTS = {
   trail: ['lifeTrail', 'colours', () => lifeColours === 1],  // (Life's Trail: on in Classic, two states, off in colours; when the colours change)
   ocean: ['ocean', 'battle', () => battleOn() && NAV[$('mode').value][0] === 'Walk'],  // (on in a walk's battle on a surface, as long as none picks it)
   cut: [null, 'open', 0], blocks: [null, 'open', false], sound: [null, 'open', false], speed: [null, 'open', 60],  // (Cut Off; Life's Blocks hidden; no sound; 60 steps a second: their own state, read where it is kept)
-  antLook: [null, 'ant', 'ink'],  // (an ant's cells by their state, in Ink, as it comes in)
+  antLook: [null, 'ant', 'digit'],  // (an ant's look as it comes in: States, its cells by their state)
 };
 // its settings that come back at `at`: each box set, checked or valued
 function applyDefaults(at) {
@@ -1584,14 +1584,12 @@ function relabelColours(mode) {
         gradient: C > 2 ? 'Age of live cells, warm newborns to cold old ones + dying stages' : 'Age of live cells, warm newborns to cold old ones + fading trail',
         digit: 'Activity (state changes)', cells: '', visits: '' };
   const sel = $('colourMode');
-  if (mode.antOf && !shows('cells')) antRamp ??= defaultOf('antLook');  // an ant on a surface: its cells by their state
   sel.querySelector('option[value="digit"]').text = mode.antOf ? "The ant's colours" : names.digit;
   if (shows('cells')) {  // 2D: along lines the rainbow line; on cells the rainbow cells or the heatmap (Digits writes over either); an ant its colours
-    if (mode.antOf && sel.value !== 'digit') antRamp = defaultOf('antLook');  // an ant comes in with its states (see DISPLAY_DEFAULTS)
-    sel.value = mode.antOf ? 'digit' : mode.twin && !mode.cells ? 'gradient' : mode.cells && sel.value === 'visits' ? 'visits' : 'cells';
+    sel.value = mode.antOf ? defaultOf('antLook') : mode.twin && !mode.cells ? 'gradient' : mode.cells && sel.value === 'visits' ? 'visits' : 'cells';
     return;
   }
-  if (shows('heatmap') && mode.antOf) { if (!['digit', 'cells', 'visits'].includes(sel.value)) sel.value = 'digit'; return; }  // an ant on a surface: its looks as in 2D
+  if (shows('heatmap') && mode.antOf) { if (!['digit', 'cells', 'visits'].includes(sel.value)) sel.value = defaultOf('antLook'); return; }  // an ant on a surface: its looks as in 2D
   if (shows('heatmap')) {  // on a surface: the rainbow line (over the tiles walked, on cells), or the heatmap on cells
     sel.value = mode.cells && sel.value === 'visits' ? 'visits' : 'gradient';
     return;
@@ -3725,18 +3723,15 @@ function buildWalkOf() {
   // an ant's cells, each coloured as it is once the ant has left it (the last one as it would be)
   // an ant's cells, each coloured as it is once the ant has left it (the last one as it would be): by
   // its state (Ink, Amber, Teal), or by the turn it took there (Directions)
-  let keys = isWorm ? took : seq, antStates = null, antTurns = null;
+  let keys = isWorm ? took : seq, antStates = null;
   if (ant) {
-    antStates = new Uint8Array(steps); antTurns = new Uint8Array(steps);
-    for (let j = 0; j < steps; j++) {
-      antStates[j] = j + 1 < walked ? left[j + 1] : step.next();
-      antTurns[j] = j + 1 < walked ? turns[j + 1] : step.would(seq[walked] ?? 0);
-    }
-    keys = antRamp ? antStates : antTurns;
+    antStates = new Uint8Array(steps);
+    for (let j = 0; j < steps; j++) antStates[j] = j + 1 < walked ? left[j + 1] : step.next();
+    keys = antStates;
   }
   Object.assign(walk, { vert: null, stepTiles: null, loop, n: steps, digits: seq, wx, wy, wz, is3d, cells, maxDist, base, counts,
                         lattice: MODES[current.mode].lattice, lines: !!MODES[current.mode].lines,
-                        skipZeros: !!MODES[current.mode].skipZeros, ant: ant ? step.colours : 0, turns, antStates, antTurns,
+                        skipZeros: !!MODES[current.mode].skipZeros, ant: ant ? step.colours : 0, turns, antStates,
                         highway: ant ? highwayOf(wx, wy, steps) : null, bridges, wormEnd: isWorm && step.end, wormMade: isWorm ? step.made ?? 0 : 0,
                         keys, sphere: false, life: null, rows,
                         xs: is3d ? new Float64Array(len + 1) : wx,
@@ -4162,7 +4157,6 @@ function antStepper(w, inner = antWalkStepper(w), here = key(0, 0)) {
   };
   step.colours = k;
   step.next = () => ((cells.get(here) % 16) + 1) % k;
-  step.would = (g) => { const c = cells.get(here) % 16; return antByDigits ? turnOf(words[took(g, c)]) : turns[c]; };  // the turn it would take
   return step;
 }
 // an ant's walk on the plane, by the index of a word it can take (see antWords): stepped by the words of its rule only (none
@@ -4207,7 +4201,6 @@ function turmiteStepper() {
   };
   step.colours = C;
   step.next = () => table[s][cells.get(here) % 16].write;
-  step.would = () => table[s][cells.get(here) % 16].turn;
   return step;
 }
 const turmiteRuleText = () => `a turmite, an ant with states: in a state, on a cell of a colour, it leaves a colour there, turns and takes a state, by its rule ${turmite.rule}`;
@@ -14781,18 +14774,13 @@ function drawHexGrid(ctx, pointy) {
 }
 
 
-// An ant's cells by their state: a ramp from pale to deep in the order of its colours (the cells it
-// never walked are the background), per theme: Ink (Langton's black on white, softened), Amber.
-// On a dark page the ramp goes the other way, from dark to bright. With Directions (antRamp null): by
-// the turn each one took, in the walk's colours (left blue as the turtle's, right red)
-const ANT_RAMPS = {
-  ink: { light: ['#e7e0d0', '#b9ae98', '#6f6a60', '#2b2f3a'], dark: ['#3a4150', '#636b7c', '#959ba6', '#c8c2b5'] },  // (dark: its cream a shade lower, not glaring on the black)
-  amber: { light: ['#f7e6bd', '#f0c35a', '#c98a10', '#8a5200'], dark: ['#4a3a1a', '#8a6418', '#c98f1f', '#f0b429'] },
-};
-let antRamp = defaultOf('antLook');
-// state k of n along the ramp (Ink when Directions is on: an ant's rule chips are its states)
+// An ant's cells by their state (States): a ramp from pale to deep in the order of its colours (the cells it never
+// walked are the background), per theme, Ink (Langton's black on white, softened); on a dark page the other way, from
+// dark to bright
+const ANT_INK = { light: ['#e7e0d0', '#b9ae98', '#6f6a60', '#2b2f3a'], dark: ['#3a4150', '#636b7c', '#959ba6', '#c8c2b5'] };  // (dark: its cream a shade lower, not glaring on the black)
+// state k of n along the ramp
 function rampColour(k, n) {
-  const stops = ANT_RAMPS[antRamp ?? 'ink'][themeName()];
+  const stops = ANT_INK[themeName()];
   const t = n < 2 ? 0 : (Math.min(k, n - 1) * (stops.length - 1)) / (n - 1), a = Math.floor(t), f = t - a;
   const A = hexRgb(stops[a]), B = hexRgb(stops[Math.min(a + 1, stops.length - 1)]);
   return `rgb(${A.map((v, i) => Math.round(v + (B[i] - v) * f)).join(', ')})`;
@@ -14807,7 +14795,7 @@ const antTurnColour = (a) => ({ '↖': DIRECTION_COLOURS['←'], '↗': DIRECTIO
 const antChipColour = (k) => antByDigits ? antTurnColour(arrowsOf(walk.mode)[antWords(walk.mode).indexOf(ruleWords(antDigitRules[walk.mode])[k])])
   : rampColour(k, antColours(walk.mode));  // (the walk's own mode: see buildWalkOf)
 // a digit's colour: its direction's (an ant's: the turn it took, or its state), else in the digits' order
-const digitColour = (k) => walk.ant ? (antRamp ? rampColour(k, walk.ant) : antTurnColour(arrowsOf(walk.mode)[k]))
+const digitColour = (k) => walk.ant ? rampColour(k, walk.ant)
   : walk.skipZeros ? (k ? DIGIT_COLORS[0] : GREY)  // a spiral: 1 blue, drawn; 0 grey, moved without drawing
   : arrowsOf(current.mode)[k] ? (wayWord(current.mode, k) || !['Turtle', 'Pivot', 'Parity'].includes(NAV[current.mode]?.[3]) ? (a) => DIRECTION_COLOURS[a] : antTurnColour)(arrowsOf(current.mode)[k])  // fixed directions: by the compass
   : walk.base <= DIGIT_COLORS.length ? DIGIT_COLORS[k] : `hsl(${(k * 360) / walk.base}, 80%, 62%)`;
@@ -14952,19 +14940,13 @@ function drawSphere() {
     levelOf = (t) => (cells && cells[t] >= 0 && cells[t] <= cur ? 1 + band(cells[t])
       : areas && areas[t] >= 0 && areas[t] <= cur ? 1 + LEVELS + band(areas[t]) : 0);
   }
-  // an ant's cells, as in 2D (see CELL_MODES): by their colour in Ink or Amber (the times it was on each, the
-  // one under it as it will be), Path's faded under its line, Directions by the turn it took there last;
-  // Rainbow and Heatmap as a walk's
+  // an ant's cells, as in 2D (see CELL_MODES): States, by their colour (the times it was on each, the one under it as it
+  // will be), Path's faded under its line; Rainbow and Heatmap as a walk's
   const look = $('colourMode').value;
-  if (walk.ant && look === 'digit' && antRamp) {
+  if (walk.ant && look === 'digit') {
     const ramp = Array.from({ length: walk.ant }, (_, k) => rampColour(k, walk.ant));
     palette = [null, ...(path ? ramp.map((c) => faded(c, FADING)) : ramp)];
     levelOf = (t) => (visits[t] ? 1 + (visits[t] % walk.ant) : 0);
-  } else if (walk.ant && look === 'digit') {
-    const arrows = arrowsOf(current.mode), last = new Int16Array(g.n).fill(-1);
-    for (let p = 1; p <= Math.min(cur, walk.n - 1); p++) last[walk.tile[p]] = walk.turns[p];  // the turn it took on leaving it
-    palette = [null, ...arrows.map(antTurnColour)];
-    levelOf = (t) => (visits[t] && last[t] >= 0 ? 1 + last[t] : 0);
   }
   if (walk.battle) {  // a battle: its walkers' bodies in Life's colours (A red, B blue, C gold, see colourBlock), paler than their heads
     const P = walk.battle.player, K = P.K, colours = Array.from({ length: K }, (_, s) => teamColour(s));
@@ -16230,7 +16212,7 @@ function gpuFlat(to) {
     gpuBuffer('flatKeys', keys);
     D.keys.flatKeys = walk.keys; D.keys.flatKeysMode = keysKey;
   }
-  const palKey = `${walk.base}|${walk.ant}|${antRamp}|${walk.skipZeros}|${current.mode}|${MONO}`;
+  const palKey = `${walk.base}|${walk.ant}|${walk.skipZeros}|${current.mode}|${MONO}`;
   if (D.keys.pal !== palKey) {
     const pal = new Uint8Array(4 * 256);
     for (let k = 0; k < 256; k++) pal.set([...rgbCached(digitColour(walk.ant ? k : Math.min(k, walk.base - 1))), 255], 4 * k);
@@ -17740,12 +17722,6 @@ $('heatmap').addEventListener('change', () => {
   $('colourMode').value = $('heatmap').checked ? 'visits' : 'gradient';
   $('colourMode').dispatchEvent(new Event('change'));
 });
-// an ant's cells: by their turn (Directions) or their state (Ink, Amber)
-function setAntRamp(ramp) {
-  antRamp = ramp;
-  if (walk.ant) walk.keys = ramp ? walk.antStates : walk.antTurns;
-  document.querySelectorAll('#ruleChips b').forEach((b, k) => { if (walk.ant) b.style.background = antChipColour(k); });
-}
 // The areas a walk closes, as tiles: Empty (none), Light (translucent, the line showing through), Plain
 const AREA_MODES = [['empty', 'Empty', 'No area filled'], ['light', 'Light', 'The areas the walk closes, translucent: its line shows through'],
   ['plain', 'Plain', 'The areas the walk closes, in the colour of the step that closed them']];
@@ -17757,20 +17733,19 @@ function renderAreaModes() {
   notchRow($('areaModes'), title, AREA_MODES.map(([look, name, words]) => [name, `${words}${look === first ? ' · by default' : ''}${look === 'light' && !light ? ' · greyed: over a line only (Plain here)' : ''}`]), now,
     (k) => { if ($('area').value !== AREA_MODES[k][0]) { $('area').value = AREA_MODES[k][0]; $('area').dispatchEvent(new Event('change')); } }, !off, false);  // (let go: the row drawn again)
 }
-// The looks of a 2D walk on cells, as square buttons: an ant's states in Ink or Amber; Path, the rainbow
-// line over its cells faded (an ant's in Amber); Directions, a colour per digit (an ant's, its turns);
-// Rainbow along the walk; Heatmap of visits. [look, name, its picture's colours or null, title]
-const CELL_MODES = [['ink', 'Ink', 'An ant’s cells by their state, pale to deep'], ['amber', 'Amber', 'An ant’s cells by their state, in amber'],
-  ['path', 'Path', 'The walk’s rainbow line over its cells, faded'], ['cells', 'Rainbow', 'The cells in the rainbow along the walk'],
+// The looks of a 2D walk on cells, as square buttons: Path, the rainbow line over its cells faded (an ant's over its
+// states); Rainbow along the walk; Directions, a colour per digit (an ant's: States, its cells by their state, see
+// ANT_STATES); Heatmap of visits. [look, name, title]
+const ANT_STATES = ['States', 'An ant’s cells by their state, pale to deep'];
+const CELL_MODES = [['path', 'Path', 'The walk’s rainbow line over its cells, faded'], ['cells', 'Rainbow', 'The cells in the rainbow along the walk'],
   ['digit', 'Directions', 'A colour per digit: the direction of each step (an ant’s, the turn it took: left blue, right pink, straight on gold)'], ['visits', 'Heatmap', 'The cells by how often the walk comes back to them']];
-const cellModeOf = (mode) => ($('showPath').checked ? 'path' : mode.antOf && $('colourMode').value === 'digit' && antRamp ? antRamp
-  : $('colourMode').value === 'gradient' ? 'cells' : $('colourMode').value);  // (a surface's Rainbow: gradient)
+const cellModeOf = (mode) => ($('showPath').checked ? 'path' : $('colourMode').value === 'gradient' ? 'cells' : $('colourMode').value);  // (a surface's Rainbow: gradient)
 let pictureIds = 0;  // the gradients of the pictures, each its own id
-function cellModePicture(look) {  // a 2 × 2 swatch, or the rainbow line over faded cells
+function cellModePicture(look, ant) {  // a 2 × 2 swatch, or the rainbow line over faded cells
   const theme = themeName(), g = gradientAt;
-  if (look === 'path') return `<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2" y="2" width="20" height="20" rx="2" fill="${ANT_RAMPS.amber[theme][1]}" opacity="0.2"/>`
+  if (look === 'path') return `<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2" y="2" width="20" height="20" rx="2" fill="${ANT_INK[theme][1]}" opacity="0.2"/>`
     + [[4, 18, 9, 18], [9, 18, 9, 11], [9, 11, 15, 11], [15, 11, 15, 6], [15, 6, 20, 6]].map(([a, b, c, d], i) => `<path d="M${a} ${b}L${c} ${d}" stroke="${g(i / 4)}" stroke-width="2.4" stroke-linecap="round"/>`).join('') + '</svg>';
-  if (look === 'ink' || look === 'amber') return swatch(ANT_RAMPS[look][theme]);
+  if (look === 'digit' && ant) return swatch(ANT_INK[theme]);  // (States)
   if (look === 'digit') {  // a square cut along its diagonals: north, east, south, west, each in its colour
     const tri = [['↑', 'M12 12L2 2H22Z'], ['→', 'M12 12L22 2V22Z'], ['↓', 'M12 12L22 22H2Z'], ['←', 'M12 12L2 22V2Z']];
     return `<svg viewBox="0 0 24 24" aria-hidden="true">${tri.map(([d, p]) => `<path d="${p}" fill="${DIRECTION_COLOURS[d]}"/>`).join('')}</svg>`;
@@ -17785,19 +17760,17 @@ function cellModePicture(look) {  // a 2 × 2 swatch, or the rainbow line over f
 function renderCellModes(mode) {
   $('cellModes').hidden = !shows('cells') && !shows('heatmap') && !mode.antOf;  // a walk in 2D or on a surface, an ant anywhere
   if ($('cellModes').hidden) return;
-  // an ant: all six; a walk in 2D: Path, Rainbow, Directions, Heatmap; on a surface: Path, Rainbow, Heatmap
-  const looks = CELL_MODES.filter(([look]) => mode.antOf || (look !== 'ink' && look !== 'amber' && (shows('cells') || look !== 'digit'))), now = cellModeOf(mode);
-  const button = ([look, name, title]) => tile({ pic: cellModePicture(look), text: name, title, on: look === now, byDefault: look === 'cells' && !mode.antOf ? 'yes' : '',  // (a walk's Rainbow, see displayDefaults)
+  // an ant: Path, Rainbow, States, Heatmap; a walk in 2D: Path, Rainbow, Directions, Heatmap; on a surface: Path, Rainbow, Heatmap
+  const looks = CELL_MODES.filter(([look]) => mode.antOf || shows('cells') || look !== 'digit'), now = cellModeOf(mode), ant = !!mode.antOf;
+  const button = ([look, name, title]) => tile({ pic: cellModePicture(look, ant), ...(look === 'digit' && ant ? { text: ANT_STATES[0], title: ANT_STATES[1] } : { text: name, title }), on: look === now,
+    byDefault: look === (ant ? defaultOf('antLook') : 'cells') ? 'yes' : '',  // (an ant's States, a walk's Rainbow: see DISPLAY_DEFAULTS)
     can: !((!mode.cells && !['cells', 'digit'].includes(look)) || (look === 'visits' && !useful('visits'))), click: () => pickCellMode(look) });  // (along the lines: Rainbow, Directions, its line's colours)
-  // joined in one frame (see tileGroup); an ant's states in one, before the walk's looks in another
-  const ants = ['ink', 'amber'], groups = [looks.filter(([look]) => ants.includes(look)), looks.filter(([look]) => !ants.includes(look))].filter((g) => g.length);
-  $('cellModes').replaceChildren(...groups.map((g) => (g.length > 1 ? tileGroup(g.map(button)) : button(g[0]))));
+  $('cellModes').replaceChildren(tileGroup(looks.map(button)));  // (joined in one frame, see tileGroup)
 }
 function pickCellMode(look) {
   const ant = !!MODES[$('mode').value].antOf;
   $('showPath').checked = look === 'path';
-  if (ant) setAntRamp(look === 'ink' ? 'ink' : look === 'amber' || look === 'path' ? 'amber' : null);
-  $('colourMode').value = look === 'ink' || look === 'amber' || (look === 'path' && ant) ? 'digit' : look === 'path' ? 'cells' : look === 'cells' && !MODES[$('mode').value].cells ? 'gradient' : look;
+  $('colourMode').value = look === 'path' && ant ? 'digit' : look === 'path' ? 'cells' : look === 'cells' && !MODES[$('mode').value].cells ? 'gradient' : look;
   $('colourMode').dispatchEvent(new Event('change'));
   needsFull = true;
   updateDisplayMenu();

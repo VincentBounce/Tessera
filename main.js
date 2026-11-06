@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.342';
+const VERSION = '0.4.343';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -1292,8 +1292,10 @@ const RULES = [
       ['1L0 1U1 | 0L0 1L0', 'A shape growing filled'], ['1N1 0R1 | 1L0 1N0', 'A highway from step 3,090, every 54 steps']].map(([rule, name, about]) => ({ kind: 'turmite', tiling: 'any', rule, name, about })),
   // the worm's, of its 411 (a mirror the same), walked: the longest lives that end (all but 85 die before step 200,000, all
   // but 81 before 5,000,000), and two still going at 5,000,000 (worm in each name: its tab only says Grid)
-  ...[['L1 R1 R2 R2 R1 R1 L1', 'Worm dying at step 4,802'], ['L1 R1 L2 R1 R1 L1 L1', 'Worm dying at step 83,618'], ['L1 N R2 N R1 L1 L2', 'Worm dying at step 569,804'],
-      ['L1 N R2 L2 N L1 N', 'Worm dying at step 918,339'], ['L2 L1 R1', 'Worm going on past 5,000,000'], ['L2 N L1 R2 L1 R2 L2', 'Worm going on past 5,000,000']].map(([rule, name]) => ({ kind: 'worm', tiling: 'tri', rule, name })),
+  // (walked on the plane: on a solid or a surface, a closed grid, it meets its own trail sooner or later, so its life varies)
+  ...[['L1 R1 R2 R2 R1 R1 L1', 'Worm dying at step 4,802 on the plane'], ['L1 R1 L2 R1 R1 L1 L1', 'Worm dying at step 83,618 on the plane'], ['L1 N R2 N R1 L1 L2', 'Worm dying at step 569,804 on the plane'],
+      ['L1 N R2 L2 N L1 N', 'Worm dying at step 918,339 on the plane'], ['L2 L1 R1', 'Worm going on past 5,000,000 on the plane'], ['L2 N L1 R2 L1 R2 L2', 'Worm going on past 5,000,000 on the plane']]
+    .map(([rule, name]) => ({ kind: 'worm', tiling: 'tri', rule, name, about: 'its life on the plane, an endless grid of triangles; on a solid or a surface, a closed grid, it meets its own trail sooner or later: its life there varies with the grid and its size' })),
   // Life's (its tiling: the marks of the grids it is known on, see lifeMark; its picture in RULE_ICONS); its families' (Elementary,
   // Replicators, Reversible, each its grid's mark) made after (see addLifeRule)
   ...[
@@ -2134,6 +2136,16 @@ const runLoop = () => {
   if (walk.life) { const s = lifeTime() && walk.life.stable; return s ? { T: s.T, last: s.extinct || s.P === 1 ? s.T : s.T + s.P - 1 } : null; }
   return walk.loop ? { T: walk.loop.from, last: walk.n } : walk.wormEnd ? { T: walk.n, last: walk.n } : null;
 };
+// The run's end, on the step line after its last, the same words everywhere, a link in green (see loopLink): its loop
+// (↻ every P from step T; → a walk's drift, an ant's highway), its death (✝ at step T: a worm, Life dying out) or frozen
+// (■ from gen T); '' while none is known (Space-time and Elementary: none)
+function endMark() {
+  if (spaceTimeOn() || walk.rows || walk.battle) return '';
+  const k = walk.life?.stable, o = !walk.life && runLoop();
+  const end = walk.life ? (!k ? '' : k.extinct ? `✝ at gen ${fmt(k.T)}` : k.P === 1 ? `■ from gen ${fmt(k.T)}` : `↻ every ${fmt(k.P)} from gen ${fmt(k.T)}`)
+    : !o ? '' : walk.wormEnd ? `✝ at step ${fmt(walk.n)}` : `${walk.loop.drift ? '→' : '↻'} every ${fmt(walk.loop.period ?? walk.n - o.T)} from step ${fmt(o.T)}`;
+  return end && loopLink(end);
+}
 // its link, in green (see genLink): to its first step; from there, to its last; an end alone, back to 0
 const loopLink = (text) => { const o = runLoop(); return genLink(cur !== o.T ? o.T : o.last !== o.T ? o.last : 0, text, 'loop'); };
 // The first: 0, or a reversible one's none (its rule run backwards from its start as far as played: its past); its return
@@ -17165,6 +17177,7 @@ function updateStats() {
   const byStepper = lengthUsed() && far === targetAsked();  // (its end the length asked, not its loop's or its death's)
   setLinks($('stepLast'), Number.isFinite(runEnd()) && Number.isFinite(far) ? ` / ${fmt(far)}${byStepper ? icon('footsteps') : ''}` : '');
   $('stepLast').title = byStepper ? 'The length asked: the steps stepper at the top' : '';
+  setLinks($('stepEnd'), endMark());
   if (!walk.life && !walk.battle) $('ranking').hidden = $('rankTitles').hidden = true;  // (a battle's shown by renderWalkGauges: never hidden in between, its rows' slides kept)
   const time = spaceTimeOn() && !!stack, rows = walk.rows;
   if (time || rows) {  // Space-time: its cubes up to the generation shown; Elementary: its live cells up to it (see elementaryRows): a gauge, as a walk's and Life's
@@ -17178,15 +17191,7 @@ function updateStats() {
   }
   if (walk.life) {
     const L = walk.life;
-    // the title, in fixed widths so that it stays still: how the run ended (✝ died out, ■ frozen), or its loop: its phase,
-    // its period, from which generation (its generation: its own line, see stepNow)
-    const s = endShown(L), pad = (v, like) => fmt(v).padStart(fmt(like).length, '\u2007');  // a figure space: as wide as a digit
-    // (its end, from its glyph on: one link in green, as its loop's mark, to its loop's first generation (frozen, dead: where it
-    // stopped; Play from there, a round, see loopRound; a reversible one's: its start, 0); from its first, to its last (frozen, dead: to 0))
-    // (its end known, not reached yet: where it is, its period and its first; Begin back to a start keeps its record)
-    const known = L.stable, ahead = known && !s, end = !known ? '' : known.extinct ? `✝${ahead ? ` ${fmt(known.T)}` : ''}` : known.P === 1 ? `■${ahead ? ` ${fmt(known.T)}` : ''}`
-      : `↻ ${ahead ? fmt(known.P) : `${pad(mod(cur - known.T, known.P) + 1, known.P)}/${fmt(known.P)}`}${known.T ? ` from gen ${fmt(known.T)}` : ''}`;
-    setLinks($('barNum'), [startTitle(), end && loopLink(end)].filter(Boolean).join(' '));  // (what it plays, then its end, as a walk's; its generation: its own line, see stepNow)
+    setLinks($('barNum'), startTitle());  // (what it plays; its generation and its end: the step line, see endMark)
     $('barLoop').hidden = !L.margolus || !!L.stable;  // (blocks: not back to its start yet, and at most when; back: its title's)
     renderBack();
     if (L.margolus && !L.stable) {
@@ -17201,11 +17206,7 @@ function updateStats() {
     drawActivity();
     return;
   }
-  // a walk's loop (its digits' round, an ant's highway) or a worm's end, after its title: a link in green, as Life's (see loopLink)
-  const o = runLoop();
-  if (walk.battle) setLinks($('barNum'), battleScore());  // (a battle: its score, its end)
-  else setLinks($('barNum'), !o ? barTitle : `${barTitle} ${loopLink(walk.wormEnd ? `✝ ${fmt(walk.n)}`
-    : `${walk.loop.drift ? '→' : '↻'} ${fmt(walk.loop.period ?? walk.n)}${o.T ? ` from ${fmt(o.T)}` : ''}`)}`);  // (as short: its digits' period, its first step)
+  setLinks($('barNum'), walk.battle ? battleScore() : barTitle);  // (a battle: its score, its end; a walk's loop or a worm's end: the step line, see endMark)
   drawActivity();
   renderWalkGauges();
   if (walk.battle) {  // a battle: its gauges only, no turns nor digits (A's alone, not the battle's)

@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.355';
+const VERSION = '0.4.356';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -17072,11 +17072,10 @@ function renderWalkGauges() {
     const w = D.worth(), Q = D.places, from = (s) => { const a = placePoint(Q[s][0]), b = placePoint(Q[s][D.step]); return Math.hypot(b[0] - a[0], b[1] - a[1], b[2] - a[2]); };
     const C = battleColumns(D);
     $('gauges').hidden = true;
-    // (with land a dead one keeps its land and its place by it, ✝ by its land; in Cut it goes under the living, ✝ when)
+    // (with land a dead one keeps its land and its place by it; in Cut it goes under the living; ✝ by its worth, when: Dead at)
     const gone = (s) => D.dead[s] >= 0;
     paintRanking(names.map((name, s) => ({ colour: teamColour(s), name, value: w[s], dead: gone(s) && !D.bite, diedAt: D.dead[s],
-                                             cells: [!gone(s) ? `<b>${fmt(w[s])}</b>` : D.bite ? `<b>${fmt(w[s])}</b> ${genLink(D.dead[s], '✝')}` : `✝ ${genLink(D.dead[s])}`,
-                                                     fmt(D.bestAt(s)), ...(C.body ? [fmt(D.size[s])] : []), from(s).toFixed(1)] })), C.titles);
+                                             cells: [`<b>${fmt(w[s])}</b>${gone(s) ? ' ✝' : ''}`, fmt(D.bestAt(s)), gone(s) ? genLink(D.dead[s], fmt(D.dead[s])) : '', ...(C.body ? [fmt(D.size[s])] : []), from(s).toFixed(1)] })), C.titles);
     return;
   }
   const p = (v) => fmt(Math.round(v * 100) / 100 || 0), P = walkPeak(), gold = 'var(--accent)', c = walk.cells[cur];
@@ -17105,11 +17104,12 @@ const colourGone = (L, k) => (loopMeans(L) ? L.loopMax[k] === 0 : L.extinctAt?.[
 // the ranking's column titles (a tip: what it counts), Life's and a battle's
 const LIFE_TITLES = [['Alive'], ['Mean', 'Its live cells summed over the generations, by how many, till it settles or loops (its size while it lives)'], ['Born'], ['Died'], ['Ever alive']];
 // a battle's columns, by its penetration (P: its player): its worth (Cut: its body; else its land), its worth's peak so
-// far, its body if it has one besides (along the grid a line, its edges; on cells its tiles), its head from its start
+// far, the step it died at, its body if it has one besides (along the grid a line, its edges; on cells its tiles), its head
+// from its start
 const battleColumns = (P) => {
   const worth = P.bite ? 'Land' : 'Body', body = P.bite && P.way !== 'landCells' ? (P.ownLines ? 'Line' : 'Body') : null;
   return { body, titles: [[worth, P.bite ? 'The tiles it holds' : "Its body's length"], [`${worth} peak`, `Its ${worth.toLowerCase()} at its largest so far`],
-    ...(body ? [[body, body === 'Line' ? 'The edges of its line now' : "Its body's tiles now"]] : []), ['Distance', 'Its head from its start']] };
+    ['Dead at', 'The step it died at (a click: there); none while it lives'], ...(body ? [[body, body === 'Line' ? 'The edges of its line now' : "Its body's tiles now"]] : []), ['Distance', 'Its head from its start']] };
 };
 function renderRanking(L) {
   const K = L.colours;

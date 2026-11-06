@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.360';
+const VERSION = '0.4.361';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -15141,10 +15141,12 @@ const sphereDraw = { at: 0, cost: 0 };
 
 // A walker's frame on a surface at step i: its place, heading (its last step; at the start, the one it came by), side and
 // up (its tile's outward normal, square to the heading), and its size (see headSize, by its tile's area); P(i), tileAt(i):
-// the walker's point and tile at step i (see walkersOf)
+// the walker's point and tile at step i (see walkersOf). Between two steps (i not whole: gliding, see glideAt), its place on
+// the way from one to the next, heading along it, on the nearer one's tile
 function headFrame({ P, tileAt, before }, i = cur) {
-  const p = P(i), t = tileAt(i), nr = walk.shape.nrm, nrm = [nr[3 * t], nr[3 * t + 1], nr[3 * t + 2]];
-  const [a, b] = [i > 0 ? P(i - 1) : before, p];
+  const j = Math.floor(i), f = i - j, q = P(j), next = f > 0 ? P(j + 1) : q, p = q.map((v, d) => v + (next[d] - v) * f);
+  const t = tileAt(f < 0.5 ? j : j + 1), nr = walk.shape.nrm, nrm = [nr[3 * t], nr[3 * t + 1], nr[3 * t + 2]];
+  const [a, b] = f > 0 ? [q, next] : [j > 0 ? P(j - 1) : before, q];
   const h = unit([0, 1, 2].map((d) => b[d] - a[d])), side = unit(cross(nrm, h));  // (its axis its last step itself, as its line)
   const k = walk.geo.sides, sc = walk.shape.corners, c = (q) => [0, 1, 2].map((d) => sc[3 * (k * t + q) + d] * walk.R);  // (its tile's corners in space)
   let area = 0;
@@ -15163,7 +15165,12 @@ function walkersOf() {
 }
 // the heads: each living walker's ogive at its step (see ogiveOf); the starts: each walker's flag in its frame at step 0
 // (see flagOf: its start's own heading, the way it came by); each [its corners, its colour]
-const headsOf = () => walkersOf().flatMap((W) => [...(W.living ? [[ogiveOf(headFrame(W)), W.colour]] : []), [flagOf(headFrame(W, 0)), W.colour]]);
+const headsOf = () => walkersOf().flatMap((W) => [...(W.living ? [[ogiveOf(headFrame(W, glideAt())), W.colour]] : []), [flagOf(headFrame(W, 0)), W.colour]]);
+// Played slower than GLIDE_BELOW steps a second, a head glides from its place to its next one, by the step's time gone
+// (stepsDue: the fraction of a step owed), drawn each frame (see tick); else on its place
+const GLIDE_BELOW = 60;
+const gliding = () => (playing || reversing) && stepsPerSecond() < GLIDE_BELOW && !!walk.sphere && !walk.life && !walk.rows;
+const glideAt = () => (!gliding() ? cur : reversing ? Math.max(0, cur - stepsDue) : Math.min(cur + stepsDue, (walk.battle?.player.n ?? walk.n)));
 // a start's flag: its pole planted in its place along the surface's normal, over a head (2.2 of its sizes high), its sail
 // at its top an arrow pointing the way it goes (both its faces); its triangles' corners and normals, as an ogive's
 function flagOf({ p, h, side, nrm, size }) {
@@ -17387,6 +17394,7 @@ function tick(now = performance.now()) {
     // auto-fit turns the camera to keep the walker in front, except on a torus: the view stays put
     // and the walk is seen covering it (a walk shown whole is faced at once: faceWalk)
     if (walk.n && !walk.life && !walk.geo.torus && !choosingStart && !faced && $('centered').checked && !$('autoRotate').checked) followWalker();
+    if (gliding()) statsDirty = true;  // (its heads gliding: drawn again each frame, as far as its cost allows)
     // a big sphere can take tens of ms to draw: while animating, redraw at most every 3× that time
     const now = performance.now();
     if (!held && (needsFull || (statsDirty && now - sphereDraw.at > 3 * sphereDraw.cost))) {

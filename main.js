@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.268';
+const VERSION = '0.4.269';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -14836,8 +14836,8 @@ function ogiveOf({ p, h, side, nrm, size }) {
   return out;
 }
 // a walker's head's unit for a tile of that area (on the screen, or in space): its arrow (the plane's, an ogive) 1.6 of
-// them long, 0.9 of the side of the square of the tile's area
-const headSize = (area) => (0.9 * Math.sqrt(area)) / 1.6;
+// them long, 0.8 of the side of the square of the tile's area
+const headSize = (area) => (0.8 * Math.sqrt(area)) / 1.6;
 // A walker's arrow on the plane (on a surface an ogive, see ogiveOf): its tip ahead, its notch behind, centred on its
 // place; at(forward, across): a point of it on the screen, in its size
 function drawArrow(ctx, fill, at) {

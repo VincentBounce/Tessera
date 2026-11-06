@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.305';
+const VERSION = '0.4.306';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -1260,8 +1260,7 @@ const MODES = {
 // Every rule to pick, one table: its kind, its name (the card's), its rule (as typed in the field), what it does (about,
 // its tooltip's), its tiling (the network whose words it is written in; any: an ant's or a turmite's neutral turns, L R
 // N U L2 R2, said in each grid's own, see NEUTRAL_WORDS) and its picture where not its kind's. A creature's side (Grid: along
-// the edges; Cells: from cell to cell; a walk's: its mode's, either) and picture in RULE_KINDS. Life's (index.html's options) to join, their family
-// (Life, Replicators, Elementary, Reversible) one more field.
+// the edges; Cells: from cell to cell; a walk's: its mode's, either) and picture in RULE_KINDS.
 const RULE_KINDS = { walk: {}, ant: { side: 'cells', pic: 'ant' }, turmite: { side: 'cells', pic: 'turmite' }, worm: { side: 'grid', pic: 'worm' } };
 const RULES = [
   // the walks by a rule (a word per digit), per network, the first it takes its rule at first
@@ -1284,6 +1283,233 @@ const RULES = [
   // but 81 before 5,000,000), and two still going at 5,000,000 (worm in each name: its tab only says Grid)
   ...[['L1 R1 R2 R2 R1 R1 L1', 'Worm dying at step 4,802'], ['L1 R1 L2 R1 R1 L1 L1', 'Worm dying at step 83,618'], ['L1 N R2 N R1 L1 L2', 'Worm dying at step 569,804'],
       ['L1 N R2 L2 N L1 N', 'Worm dying at step 918,339'], ['L2 L1 R1', 'Worm going on past 5,000,000'], ['L2 N L1 R2 L1 R2 L2', 'Worm going on past 5,000,000']].map(([rule, name]) => ({ kind: 'worm', tiling: 'tri', rule, name })),
+  // Life's (its tiling: the marks of the grids it is known on, see lifeMark; its picture in RULE_ICONS); its families' (Elementary,
+  // Replicators, Reversible, each its grid's mark) made after (see addLifeRule)
+  ...[
+    ['■▲◈', 'B3/S23', 'Life', 'Life (2 states)'],
+    ['▲', 'B45/S345/C4', 'Sparse', 'lasting sparse activity (4 states)'],
+    ['▲', 'B34/S2/C4', 'Brink', 'on the edge of extinction (4 states)'],
+    ['▲', 'B346/S01458', 'Long-lasting war', 'a long war in its walls: 2 colours 668 to 983 generations till one is left; 3 colours 1,353 to 1,855 generations till one is left'],
+    ['■', 'B2/S345/C4', 'Star Wars', 'Star Wars, square-grid classic (4 states)'],
+    ['■', 'B2/S/C3', 'Brian\'s Brain', 'Brian\'s Brain, permanent chaos (3 states)'],
+    ['■', 'B2/S2/C25', 'Faders', 'Faders, by Rudy Rucker and John Walker: Life crossed with Brian\'s Brain, sparks wandering in long fading trails, still going after 3,000 generations (25 states)'],
+    ['⎔', 'B346/S1246', 'Hexa 4 Life', 'soups settling after 192 to 411 generations (2.5 % alive at the end), oscillators in all their ash'],
+    ['⬢', 'B34/S2358', 'Hexa 5 Life', 'soups settling after 147 to 414 generations (3.53 % alive at the end), oscillators in all their ash'],
+    ['⏣', 'B348/S2359', 'Hexa 6 Life', 'soups settling after 186 to 412 generations (3.22 % alive at the end), oscillators in 92 % of their ash'],
+    ['◉', 'B239/S0456/C5', 'Hexa 7 embers', 'soups settling after 121 to 1,741 generations (4.25 % alive at the end), oscillators in 25 % of their ash (5 states)'],
+    ['◎', 'B256/S3467', 'Hexa 8 Life', 'soups settling after 196 to 1,075 generations (1.26 % alive at the end), oscillators in all their ash'],
+    ['◍', 'B25/S3467', 'Hexa 9 Life', 'soups settling after 143 to 1,282 generations (1.35 % alive at the end), oscillators in all their ash'],
+    ['◌', 'B256/S3467', 'Hexa 10 Life', 'soups settling after 208 to 842 generations (1.32 % alive at the end), oscillators in all their ash'],
+    ['◐', 'B34/S2456', 'Hexa 11 Life', 'soups settling after 116 to over 6,000 generations (3.02 % alive at the end), oscillators in 92 % of their ash'],
+    ['◑', 'B238/S0456/C5', 'Hexa 12 embers', 'soups settling after 59 to 807 generations (4.34 % alive at the end), oscillators in 17 % of their ash (5 states)'],
+    ['⬡', 'B2op3m/S12mp3p4p5', 'Swarm', 'Life-like and wilder: small starts blow up, spaceships of period 8 (o side by side, m one cell apart, p opposite)'],
+    ['⬡', 'B2345/S134/C5', 'Comets', 'gliders everywhere, more than Life\'s: small starts send them off (5 states)'],
+    ['⬡', 'B2om5/S2om4o', 'Life\'s twin', 'the closest to Life: soups thin out slowly, small starts now and then blow up'],
+    ['⬡', 'B34/S123/C3', 'Long loops', 'lasts longest, ends in long loops (3 states)'],
+    ['⬡', 'B2/S34', 'Classic hex', 'the classic hexagonal Life: oscillators, settles fast from a soup'],
+    ['⬡', 'B24/S134/C4', 'Brink', 'on the edge of extinction (4 states)'],
+    ['⬡', 'B24/S35', 'Hex Life', 'Life-like, lasting, a few survivors'],
+    ['⬡', 'B234/S234', 'Methuselahs', 'methuselahs: 3 cells can last 2,000+ generations'],
+    ['⬡', 'B234/S1234', 'Settling methuselahs', 'methuselahs, and every small start settles'],
+    ['⬡', 'B2o/S2m34', 'Callahan\'s Life', 'Callahan\'s hexagonal Life, with gliders (o side by side, m one cell apart)'],
+    ['⬡', 'B346/S2356', 'Hex battle', 'a battle: in a hexagon, 3 or 6 colours stay in contact some 600 generations, about even'],
+    ['⬡', 'B346/S0124', 'Hex war', 'a long war: in a hexagon, 3 or 6 colours fight some 1,500 generations, thinly spread'],
+    ['⬡', 'B2/S24/C3', 'Few spread', 'Life-like from a small start: most die, a few spread for a while (3 states)'],
+    ['⬡', 'B1/S0123456', 'Snowflakes', 'snowflakes, grown from a few cells'],
+    ['■', 'B36/S23', 'HighLife', 'HighLife, with a replicator'],
+    ['■', 'B1357/S1357', 'Replicator', 'Fredkin\'s Replicator: any start comes back as 8 copies of itself, again and again'],
+    ['■', 'B3/S12345', 'Maze', 'Maze, grows corridors'],
+    ['■', 'B3/S1234', 'Mazectric', 'Mazectric, longer corridors'],
+    ['■', 'B3678/S34678', 'Day & Night', 'Day & Night, alive and dead are symmetric'],
+    ['■', 'B2/S', 'Seeds', 'Seeds, explosive'],
+    ['■', 'B3/S2-i34q', 'tlife', 'tlife: Life but for two ways of surviving (Hensel\'s letters), its T-tetromino a ship'],
+    ['■', 'B2i34c/S2-i3', 'Salad', 'Salad: close to Life, many small ships (Hensel\'s letters)'],
+    ['■', 'B2-a/S12', 'Just Friends', 'Just Friends: mazes of lines, ships of 3 cells escaping (Hensel\'s letters)'],
+    ['■', 'B346/S01458', 'Long-lasting war', 'a long war in its walls: 2 colours 1,326 to 1,421 generations till one is left, 1 of 3 soups still at war at 2,000; 4 colours 1,643 to 1,656 generations till one is left, 1 of 3 soups still at war at 2,000'],
+    ['◈', 'B346/S01458', 'Long-lasting war', 'a long war between the colours, as on squares and on triangles'],
+    ['■', 'B347/S2/C3', 'Sponge wanderers', 'found on Menger\'s sponge: a bloom grows to a tenth of it and wanders on, still moving after 2,000 generations at 3 to 8 % alive, never filling it; a soup falls to 5 % and never stops (3 states)'],
+    ['■', 'B3478/S2/C3', 'Sponge bloomers', 'found on Menger\'s sponge, Sponge wanderers born with 8 too: a bloom spreads to a tenth of it more often, still moving after 2,000 generations at 4 to 6 % alive (3 states)'],
+    ['■', 'B389/S23', 'Frame Life', 'found on a cube\'s frame: Life born with 8 and 9 too, soups settling after 285 to 1,558 generations (2.44 % alive at the end), oscillators in all their ash'],
+    ['■', 'B39/S2389', 'Frame keepers', 'found on a cube\'s frame: soups settling after 312 to 2,574 generations (2.72 % alive at the end), oscillators in all their ash'],
+    ['⬠', 'B24/S346/C4', 'Cairo Wars', 'never settles: sparks and gliders of 9 cells (4 states)'],
+    ['⬠', 'B2v02.3v1/S156v2', 'Cairo duels', 'battles turning round as Life\'s: 3 changes of the lead a duel, over in 700 generations or so (2 states)'],
+    ['⬠', 'B23/S6/C3', 'Cairo gliders', 'gliders of 6 cells, soups last 2,000 generations (3 states)'],
+    ['⬠', 'B2347/S35/C3', 'Long Cairo', 'soups last 5,000 generations, gliders of 8 cells (3 states)'],
+    ['◆', 'B35/S2356/C4', 'Kite drifters', 'the most Life-like: soups settle after about 1,000 generations, a ship of 9 cells (period 26) (4 states)'],
+    ['◆', 'B346/S0127/C4', 'Kite simmer', 'the chaos most like Life\'s: a plateau about 7 % alive, then settling after 450 to 1,600 generations, oscillators in its ash (4 states)'],
+    ['◆', 'B34/S0126/C5', 'Kite marathon', 'soups last 1,400 to over 6,000 generations; an oscillator of 3 cells, period 20 (5 states)'],
+    ['◆', 'B3/S235/C3', 'Kite Life', 'Life-like on kites (9 neighbours): soups thin out and settle after about 1,000 generations (3 states)'],
+    ['◆', 'B36/S1258', 'Kite gliders', 'a glider of 4 cells (period 16); soups settle after about 300 generations (2 states)'],
+    ['◆', 'B35/S123/C5', 'Kite swarm', 'gliders of 9 cells everywhere (period 6); soups never settle, about 7 % alive (5 states)'],
+    ['◆', 'B3/S1247', 'Long kites', 'soups last about 900 generations, down to a few still lifes (2 states)'],
+    ['◆', 'B3v1235v23/S123v012/C5', 'Kite ships', 'with letters (v: of the live neighbours, how many by a corner only), the most Life-like found on kites: soups settling after 360 to 2,050 generations (4.3 % alive at the end), ships of period 6 (5 states)'],
+    ['◆', 'B3/S123v0257/C5', 'Kite embers', 'with letters: soups settling after 360 to 1,650 generations (4.5 % alive at the end), oscillators in 4 ashes of 10 (5 states)'],
+    ['◆', 'B34v1236/S0127/C4', 'Kite glow', 'Kite simmer with letters (born with 4 when 1 to 3 of them are by a corner only): soups settling after 235 to 1,040 generations (4.1 % alive at the end) (4 states)'],
+    ['◆', 'B2v01.3v234/S08/C5', 'Kite wake', 'a ship flown at its frozen ash wakes it up for long: 332 generations on average, half of the times 300 or more (Life: 65, 13 %); a sparse world (under 1 % alive) (5 states)'],
+    ['◆', 'B2v01.37/S0/C5', 'Kite waves', 'the longest awakening found on kites: a ship flown at its frozen ash wakes it up for 472 generations on average, 57 % of the times 300 or more (Life: 65, 13 %); a sparse world, surviving with 0 neighbours only (5 states)'],
+    ['◆', 'B3v012/S0234v3', 'Kite duels', 'the most Life-like found on kites, and its battles turn round twice as often as Life\'s: 6 changes of the lead a duel (Life: 3), soups settling after 560 generations or so (2 states)'],
+    ['◆', 'B3/S12v1.3', 'Kite tides', 'Life-like on kites, its battles turning round as Life\'s: 4 changes of the lead a duel (Life: 3) (2 states)'],
+    ['◆', 'B346/S01458', 'Long-lasting war', 'a long war in its walls: 2 colours 828 to 954 generations till one is left, 1 of 3 soups still at war at 2,000; 3 colours 1,218 to 1,352 generations till one is left'],
+    ['🎩', 'B245/S134/C5', 'Hat comets', 'as Comets on hexagons: soups end anywhere from 500 to 3,700 generations (5 states)'],
+    ['🎩', 'B257/S367', 'Hat bats', 'Life-like on hats, its patterns like bats: a plateau as Life\'s, soups settling after 900 to 3,500 generations, oscillators in every ash (2 states)'],
+    ['✧', 'B3/S023', 'Penrose Life', 'Life with lone cells surviving, on Penrose\'s rhombi: soups settling after 170 to 1,460 generations, oscillators in most of their ash (2 states)'],
+    ['✧', 'B39/S0239', 'Penrose stars', 'the most Life-like found on Penrose\'s rhombi: soups settling after 250 to 2,200 generations (2 states)'],
+    ['✧', 'B39/S023', 'Penrose twinkles', 'the most Life-like in a circle: soups settling after 362 to 1,361 generations (2.18 % alive at the end), oscillators in half of their ash (2 states)'],
+    ['◺', 'B37/S016', 'Pinwheel Life', 'the most Life-like of all the grids (score 0.90): soups settling after 407 to 2,016 generations (2.41 % alive at the end), oscillators in all their ash (2 states)'],
+    ['◺', 'B3/S1v0.368', 'Pinwheel duels', 'the most Life-like of the battles turning round: 4 changes of the lead a duel (Life: 3), soups settling after 980 generations or so (2 states)'],
+    ['◺', 'B3v023/S014v135v26v27', 'Pinwheel tides', 'battles turning round as Life\'s: 3 changes of the lead a duel, some 1,460 generations (2 states)'],
+    ['◺', 'B389/S0168', 'Pinwheel sparks', 'soups settling after 240 to 2,567 generations (2.36 % alive at the end), oscillators in most of their ash (2 states)'],
+    ['✧', 'B346/S01458', 'Long-lasting war', 'a long war in its walls: 5 colours 1,353 to 1,844 generations till one is left'],
+    ['✺', 'B25/S357', 'Spectre Life', 'the most Life-like found on spectres: soups settling after 370 to 1,750 generations, oscillators in all their ash (2 states)'],
+    ['✺', 'B23/S036/C4', 'Spectre sparks', 'a lasting chaos, about 5 % alive: soups settling after 270 to 2,240 generations (4 states)'],
+    ['✿', 'B24/S456/C4', 'Long florets', 'soups ending anywhere from 500 to over 6,000 generations (4 states)'],
+    ['✿', 'B26/S3578/C3', 'Floret Life', 'Life-like on floret pentagons: a plateau as Life\'s, soups settling after 300 to 2,100 generations, oscillators in all their ash (3 states)'],
+    ['✿', 'B346/S01458', 'Long-lasting war', 'a long war in its walls: 2 colours 987 to 1,275 generations till one is left; 3 colours 763 to 1,645 generations till one is left'],
+    ['◇', 'B367/S015', 'Rhombille Life', 'soups settling after 360 to 1,050 generations, oscillators in all their ash (2 states)'],
+    ['◇', 'B358/S0237/C4', 'Rhombille sparks', 'a plateau as Life\'s, soups settling after 170 to 1,500 generations (4 states)'],
+    ['◇', 'B2/S28/C8', 'Rhombille trails', 'ships of period 3 with long trails, three kinds; soups simmer for thousands of generations, then end in them going round (8 states)'],
+    ['◇', 'B346/S01458', 'Long-lasting war', 'a long war in its walls: 2 colours 1,376 to 1,670 generations till one is left, 1 of 3 soups still at war at 2,000; 3 colours 1,450 generations till one is left, 2 of 3 soups still at war at 2,000'],
+    ['✳', 'B279/S069/C4', 'Rhombitri Life', 'the most Life-like of the new tilings: a plateau as Life\'s, soups settling after 640 to 3,700 generations, oscillators in all their ash (4 states)'],
+    ['✳', 'B2v0145v1236/S08/C3', 'Rhombitri duels', 'battles turning round more than Life\'s: 4 changes of the lead a duel (Life: 3), soups settling after 550 generations or so (3 states)'],
+    ['✳', 'B246v3/S045/C5', 'Rhombitri tides', '4 changes of the lead a duel (Life: 3), soups settling after 510 generations or so (5 states)'],
+    ['✳', 'B3/S02358', 'Rhombitri battle', 'a battle: in a hexagon, 3 or 6 colours stay in contact some 400 to 450 generations, about even'],
+    ['✳', 'B29/S067/C4', 'Long rhombitri', 'soups ending anywhere from 500 to over 6,000 generations (4 states)'],
+    ['✳', 'B346/S01458', 'Long-lasting war', 'a long war in its walls: 2 colours 1,329 to 1,651 generations till one is left, 1 of 3 soups still at war at 2,000; 3 colours 1,294 generations till one is left, 2 of 3 soups still at war at 2,000'],
+    ['✶', 'B38/S1369', 'Snub Life', 'soups settling after 550 to 1,900 generations, oscillators in nearly all their ash (2 states)'],
+    ['✶', 'B359/S0146/C3', 'Snub embers', 'busier: about 10 % alive in the chaos, soups settling after 280 to 1,250 generations (3 states)'],
+    ['✶', 'B346/S01458', 'Long-lasting war', 'a long war in its walls: 2 colours, all 3 soups still at war at 2,000; 3 colours, all 3 soups still at war at 2,000'],
+    ['◰', 'B28/S28', 'Pythagoras Life', 'soups settling after 430 to 4,400 generations, oscillators in all their ash (2 states)'],
+    ['◰', 'B267/S3457', 'Pythagoras sparks', 'soups settling after 270 to 1,750 generations (2 states)'],
+    ['◰', 'B23/S13/C8', 'Pythagoras trails', 'a dozen kinds of ships of period 2, trailing their fading cells; soups end in them within a few hundred generations (8 states)'],
+    ['⊟', 'B3/S023', 'Elongated Life', 'soups settling after 228 to 1,353 generations (2.31 % alive at the end), oscillators in most of their ash (2 states)'],
+    ['⊟', 'B24/S0345/C4', 'Elongated boil', 'soups never settling: a boil, some 41 % of its cells alive at any time (4 states)'],
+    ['⊟', 'B3/S0239', 'Elongated fuses', 'soups settling after 469 to 3,097 generations, a methuselah of 7 cells: 2,183 (2 states)'],
+    ['⌂', 'B25/S157/C5', 'Prismatic Life', 'soups settling after 400 to 3,200 generations, oscillators in all their ash (5 states)'],
+    ['⌂', 'B23v14v0/S0467/C4', 'Prismatic wake', 'wakes its ash up longer than Life: a ship flown into a frozen soup sets it going again some 155 generations (Life: 65), a quarter of them past 990 (4 states)'],
+    ['⌂', 'B245/S16/C5', 'Long prisms', 'soups ending anywhere from 130 to over 6,000 generations (5 states)'],
+    ['⌂', 'B2/S1/C8', 'Prism trails', 'comets of 5 cells and their trails, period 4, out of nearly every start; soups break up into them within a hundred generations (8 states)'],
+    ['⌶', 'B345/S0236', '𝙸 Life', 'the best found with 6 neighbours: soups settling after 180 to 410 generations (2 states)'],
+    ['⌶', 'B2/S24/C8', '𝙸 trails', 'a ship of period 3 trailing its fading cells; soups end in such ships within a few dozen generations (8 states)'],
+    ['◪', 'B347/S017/C4', 'Kis drifters', 'a slow ship of period 32, soups settling after 312 to 1,925 generations, a methuselah of 12 cells: 563 (4 states)'],
+    ['◪', 'B367/S127/C4', 'Kis ships', 'ships of period 10 out of its soups, settling after 355 to 2,428 generations, no oscillator in their ash; a methuselah of 10 cells: 1,028 (4 states)'],
+    ['◪', 'B389/S0157/C3', 'Kis Life', 'soups settling after 344 to 1,461 generations, oscillators of period 3 in half their ash, a methuselah of 11 cells: 1,233 (3 states)'],
+    ['◪', 'B36/S0158/C3', 'Long kis', 'its soups the longest, settling after 559 to 2,337 generations, oscillators of period 3 in most of their ash, a methuselah of 5 cells: 723 (3 states)'],
+    ['◪', 'B37/S0159/C3', 'Kis steady', 'soups settling the most evenly, after 351 to 1,192 generations, a methuselah of 11 cells: 874 (3 states)'],
+    ['◩', 'B3v12/S1247/C4', 'Tetrakis wake', 'wakes its ash up as Life does, twice as long: a ship flown into a frozen soup sets it going again some 116 generations (Life: 65), often past 300 (4 states)'],
+    ['◩', 'B37/S1', 'Tetrakis Life', 'soups settling after 470 to over 6,000 generations (2 states)'],
+    ['◩', 'B2v14v2/S23v238', 'Tetrakis duels', 'the most Life-like found on tetrakis triangles with battles turning round as Life\'s: 3 changes of the lead a duel, soups settling after 760 generations or so (2 states)'],
+    ['◩', 'B3v23/S056', 'Tetrakis tides', 'battles turning round as Life\'s: 3 changes of the lead a duel, the colour behind coming back from a quarter (2 states)'],
+    ['◩', 'B3/S278', 'Tetrakis embers', 'soups settling after 580 to 3,800 generations, oscillators in all their ash (2 states)'],
+    ['◩', 'B34/S23/C12', 'Tetrakis trails', 'the first ships on tetrakis triangles: a dozen kinds, period 3, trailing their fading cells; soups last thousands of generations (12 states)'],
+    ['◩', 'B346/S01458', 'Long-lasting war', 'a long war in its walls: 2 colours 1,071 to 1,983 generations till one is left; 4 colours 907 generations till one is left, 2 of 3 soups still at war at 2,000'],
+    ['◬', 'B356/S6789/C5', 'Kisrhombille Life', 'a plateau as Life\'s, soups settling after 180 to 1,430 generations, oscillators in all their ash (5 states)'],
+    ['◬', 'B38/S169/C3', 'Long kisrhombille', 'soups ending anywhere from 170 to over 6,000 generations (3 states)'],
+    ['◬', 'B346/S01458', 'Long-lasting war', 'a long war in its walls: 2 colours 1,532 to 1,916 generations till one is left, 1 of 3 soups still at war at 2,000; 3 colours 864 to 1,456 generations till one is left'],
+    ['✤', 'B236/S0/C4', 'Type 9 ships', 'ships of periods 2 and 4 out of its soups, settling after 189 to 3,243 generations; an oscillator of period 121 (4 states)'],
+    ['✣', 'B257/S0345/C4', 'Type 10 Life', 'soups settling after 376 to 2,374 generations, oscillators in three quarters of their ash, a methuselah of 11 cells: 1,050 (4 states)'],
+    ['✢', 'B247/S0345/C4', 'Type 11 Life', 'soups settling after 332 to 2,490 generations, a methuselah of 11 cells: 542 (4 states)'],
+    ['❆', 'B25/S0345/C4', 'Type 13 ships', 'ships of period 12 out of its soups (6 cells), settling after 265 to 1,545 generations (4 states)'],
+    ['✦', 'B24/S0345/C4', 'Stein sparks', 'the most Life-like on Stein\'s pentagon, though far from Life: soups settling after 210 to 920 generations, an oscillator of period 14 (4 states)'],
+    ['✦', 'B34/S2357', 'Stein blinkers', 'two states, soups settling after 200 to 570 generations, blinkers in almost every end'],
+    ['✡', 'B349/S0134/C5', 'Kagome Life', 'soups settling after 485 to 1,428 generations (4.21 % alive at the end), an oscillator of 10 cells, period 5 and a methuselah of 6 cells: 355 (5 states)'],
+    ['✡', 'B348/S0134/C5', 'Kagome embers', 'soups settling after 513 to 1,722 generations (4.24 % alive at the end), an oscillator of 10 cells, period 5 and a methuselah of 9 cells: 498 (5 states)'],
+    ['✡', 'B346/S01458', 'Long-lasting war', 'a long war in its walls: 2 colours 255 to 1,224 generations till one is left; 3 colours 836 to 1,758 generations till one is left'],
+    ['❖', 'B278/S2', 'Octagon Life', 'soups settling after 359 to 5,735 generations (0.57 % alive at the end), an oscillator of 2 cells, period 2 (2 states)'],
+    ['❖', 'B27/S28', 'Octagon chimes', 'soups settling after 473 to 2,464 generations (0.57 % alive at the end), an oscillator of 2 cells, period 2 (2 states)'],
+    ['✠', 'B359/S0148/C3', 'Snub square Life', 'soups settling after 265 to 1,638 generations (4.75 % alive at the end), an oscillator of 4 cells, period 3 and a methuselah of 12 cells: 341 (3 states)'],
+    ['✠', 'B367/S1289/C3', 'Snub square fuses', 'soups settling after 350 to 1,924 generations (2.43 % alive at the end), a methuselah of 12 cells: 1,715 (3 states)'],
+    ['✠', 'B346/S01458', 'Long-lasting war', 'a long war in its walls: 2 colours, all 3 soups still at war at 2,000; 4 colours 1,851 generations till one is left, 2 of 3 soups still at war at 2,000'],
+    ['❃', 'B245/S2378/C5', 'Big rhombitri gliders', 'soups settling after 241 to 3,464 generations (1.48 % alive at the end), a ship of 25 cells, period 8 and an oscillator of 9 cells, period 12 (5 states)'],
+    ['❃', 'B27/S1389/C3', 'Big rhombitri Life', 'soups settling after 302 to 3,739 generations (1.13 % alive at the end), a ship of 6 cells, period 4 and an oscillator of 11 cells, period 6 (3 states)'],
+    ['❋', 'B246/S0467/C5', 'Dual 56 gliders', 'soups settling after 236 to over 6,000 generations (2.24 % alive at the end), a ship of 10 cells, period 10 (5 states)'],
+    ['❋', 'B25/S046/C5', 'Dual 56 ships', 'soups settling after 228 to 3,603 generations (2.32 % alive at the end), a ship of 10 cells, period 10 (5 states)'],
+    ['❋', 'B346/S01458', 'Long-lasting war', 'a long war in its walls: 2 colours 456 to 1,118 generations till one is left; 3 colours 637 to 1,052 generations till one is left'],
+    ['❉', 'B258/S0456/C4', 'Dual 314 gliders', 'soups settling after 296 to 2,584 generations (2.92 % alive at the end), a ship of 5 cells, period 8 and a methuselah of 9 cells: 190 (4 states)'],
+    ['❉', 'B346/S01458', 'Long-lasting war', 'a long war in its walls: 2 colours 753 generations till one is left, the others at peace; 3 colours 1,325 generations till one is left, the others at peace'],
+    ['❉', 'B25/S0456/C4', 'Dual 314 ships', 'soups settling after 296 to 1,721 generations (2.95 % alive at the end), a ship of 5 cells, period 8 and a methuselah of 9 cells: 190 (4 states)'],
+    ['❁', 'B236/S046/C4', 'Dual 16 gliders', 'soups settling after 361 to 2,560 generations (1.56 % alive at the end), ships of 7 cells, period 10, and of 12, period 5 (4 states)'],
+    ['❁', 'B237/S056/C4', 'Dual 16 ships', 'soups settling after 407 to 4,433 generations (1.79 % alive at the end), ships of 7 cells, period 10 (4 states)'],
+    ['✜', 'B23/S1478/C5', 'Demi 2 ships', 'soups settling after 482 to 3,949 generations (0.43 % alive at the end), ships of 11 cells, period 3, and an oscillator of period 52 (5 states)'],
+    ['✜', 'B35/S0138', 'Demi 2 Life', 'soups settling after 278 generations or more (3.21 % alive at the end), oscillators in most of their ash'],
+    ['✬', 'B2/S129', 'Demi 10 Life', 'soups settling after 295 to 4,606 generations (1.87 % alive at the end), a methuselah of 12 cells settling at generation 3,424'],
+    ['✬', 'B2/S0179', 'Demi 10 long', 'soups settling after 284 to 3,448 generations (1.13 % alive at the end), a methuselah of 12 cells settling at generation 3,139'],
+    ['✬', 'B29/S168', 'Demi 10 ships', 'soups settling after 337 to 4,436 generations (0.91 % alive at the end), ships of 8 cells, period 24, and a methuselah of 12 cells settling at generation 926'],
+    ['✪', 'B357/S0345', 'Demi 13 Life', 'soups settling after 366 to 2,253 generations (2.44 % alive at the end), a methuselah of 5 cells settling at generation 1,255'],
+    ['✪', 'B369/S3458', 'Demi 13 clocks', 'soups settling after 325 generations or more (2.75 % alive at the end), an oscillator of 5 cells, period 22'],
+    ['✯', 'B348/S135/C5', 'Demi 20 ships', 'soups settling after 273 to 1,655 generations (1.3 % alive at the end), ships of 17 and 31 cells, period 14 (5 states)'],
+    ['✯', 'B379/S0237/C4', 'Demi 20 embers', 'soups settling after 437 to 2,252 generations (1.66 % alive at the end), a methuselah of 4 cells settling at generation 2,146 (4 states)'],
+    ['✯', 'B367/S023/C4', 'Demi 20 sparks', 'soups settling after 321 to 2,383 generations (1.8 % alive at the end), a methuselah of 4 cells settling at generation 1,590 (4 states)'],
+    ['❂', 'B238/S0457/C5', 'Dodecagon Life', 'soups settling after 395 to 5,518 generations (1.12 % alive at the end), an oscillator of 10 cells, period 30 and a methuselah of 7 cells: 699 (5 states)'],
+    ['❂', 'B235/S0457/C5', 'Dodecagon sparks', 'soups settling after 243 to 1,249 generations (1.01 % alive at the end), an oscillator of 10 cells, period 30 and a methuselah of 7 cells: 791 (5 states)'],
+    ['✾', 'B368/S3457', 'Flower 5 Life', 'soups settling after 289 to 3,046 generations (1.72 % alive at the end), oscillators in all their ash'],
+    ['✾', 'B2/S0345/C5', 'Flower 5 sparks', 'soups settling after 203 to over 6,000 generations (3.56 % alive at the end), oscillators in half their ash (5 states)'],
+    ['❀', 'B345/S0238', 'Flower 6 Life', 'soups settling after 311 to 1,397 generations (4.14 % alive at the end), oscillators in all their ash'],
+    ['❀', 'B27/S0345/C5', 'Flower 6 embers', 'soups settling after 275 to 1,274 generations (3.3 % alive at the end), oscillators in 75 % of their ash (5 states)'],
+    ['✽', 'B25v08/S0345/C5', 'Flower 7 letters', 'letters: born on 2, or on 5 when none of them touch it by a corner only, or on 8; soups settling after 124 to over 6,000 generations (4.08 % alive at the end), oscillators in 75 % of their ash (5 states)'],
+    ['✽', 'B36/S3457', 'Flower 7 Life', 'soups settling after 420 to 1,864 generations (1.84 % alive at the end), oscillators in all their ash'],
+    ['✽', 'B278/S0345/C5', 'Flower 7 embers', 'soups settling after 184 to 1,805 generations (3.25 % alive at the end), oscillators in 75 % of their ash (5 states)'],
+    ['✸', 'B37/S0345', 'Flower 3 Life', 'soups settling after 116 to 1,189 generations (3.16 % alive at the end), oscillators in all their ash'],
+    ['✸', 'B345/S023', 'Flower 3 sparks', 'soups settling after 236 to 781 generations (4.25 % alive at the end), oscillators in 83 % of their ash'],
+    ['✷', 'B345/S0457', 'Flower 4 Life', 'soups settling after 121 to 774 generations (3.02 % alive at the end), oscillators in all their ash'],
+    ['✷', 'B257/S034/C4', 'Flower 4 embers', 'soups settling after 146 to over 6,000 generations (3.27 % alive at the end), no oscillator in their ash (4 states)'],
+    ['✹', 'B36v129/S3457v2', 'Flower 8 letters', 'letters: born on 3, on 6 when one or two touch it by a corner only, or on 9; soups settling after 93 to 1,878 generations (2.04 % alive at the end), oscillators in all their ash'],
+    ['✹', 'B345/S0239', 'Flower 8 Life', 'soups settling after 419 to 1,430 generations (3.56 % alive at the end), oscillators in 58 % of their ash'],
+    ['✹', 'B36/S3457', 'Flower 8 sparks', 'soups settling after 312 to 2,417 generations (1.35 % alive at the end), oscillators in all their ash'],
+    ['✼', 'B278/S0345/C5', 'Flower 9 embers', 'soups settling after 299 to 4,016 generations (3.3 % alive at the end), oscillators in 67 % of their ash (5 states)'],
+    ['✼', 'B369/S3457', 'Flower 9 Life', 'soups settling after 150 to 1,950 generations (1.61 % alive at the end), oscillators in all their ash'],
+    ['✥', 'B279/S0345/C5', 'Flower 10 embers', 'soups settling after 172 to 2,921 generations (3.45 % alive at the end), oscillators in 67 % of their ash (5 states)'],
+    ['✥', 'B368/S3457', 'Flower 10 Life', 'soups settling after 143 to 1,336 generations (1.38 % alive at the end), oscillators in all their ash'],
+    ['⁕', 'B24/S038/C4', 'Flower 11 embers', 'soups settling after 312 to 3,720 generations (3.39 % alive at the end), no oscillator in their ash (4 states)'],
+    ['⁕', 'B245/S037/C4', 'Flower 11 sparks', 'soups settling after 284 to 1,650 generations (3.42 % alive at the end), no oscillator in their ash (4 states)'],
+    ['⚘', 'B278/S0345/C5', 'Flower 12 embers', 'soups settling after 227 to over 6,000 generations (3.42 % alive at the end), oscillators in 42 % of their ash (5 states)'],
+    ['⚘', 'B268/S0345/C5', 'Flower 12 sparks', 'soups settling after 225 to 1,871 generations (3.25 % alive at the end), oscillators in 33 % of their ash (5 states)'],
+    ['❊', 'B248/S0348/C4', 'Mirror 7 embers', 'soups settling after 158 to 668 generations (3.45 % alive at the end), no oscillator in their ash (4 states)'],
+    ['❊', 'B24/S0346/C4', 'Mirror 7 sparks', 'soups settling after 226 to 609 generations (3.53 % alive at the end), no oscillator in their ash (4 states)'],
+    ['✱', 'B26/S0345/C4', 'Mirror 8 embers', 'soups settling after 726 to 2,826 generations (3.53 % alive at the end), oscillators in 42 % of their ash (4 states)'],
+    ['✱', 'B248/S0346/C4', 'Mirror 8 sparks', 'soups settling after 223 to 1,489 generations (3.39 % alive at the end), no oscillator in their ash (4 states)'],
+    ['⚝', 'B245/S0346/C4', 'Mirror 3 embers', 'soups settling after 362 to 1,608 generations (3.36 % alive at the end), no oscillator in their ash (4 states)'],
+    ['⚝', 'B247/S0346/C4', 'Mirror 3 sparks', 'soups settling after 384 to 1,817 generations (3.39 % alive at the end), no oscillator in their ash (4 states)'],
+    ['※', 'B245/S0346/C4', 'Mirror 4 embers', 'soups settling after 191 to 2,424 generations (3.27 % alive at the end), no oscillator in their ash (4 states)'],
+    ['※', 'B246/S0347/C4', 'Mirror 4 sparks', 'soups settling after 274 to 1,330 generations (3.19 % alive at the end), no oscillator in their ash (4 states)'],
+    ['✩', 'B245/S0346/C4', 'Mirror 5 embers', 'soups settling after 232 to 3,062 generations (3.45 % alive at the end), no oscillator in their ash (4 states)'],
+    ['✩', 'B347/S0237', 'Mirror 5 Life', 'soups settling after 289 to over 6,000 generations (4.48 % alive at the end), oscillators in 25 % of their ash'],
+    ['✫', 'B245/S0345/C5', 'Mirror 6 embers', 'soups settling after 293 to 933 generations (3.25 % alive at the end), oscillators in 8 % of their ash (5 states)'],
+    ['✫', 'B267/S0345/C4', 'Mirror 6 sparks', 'soups settling after 623 to 3,363 generations (3.62 % alive at the end), oscillators in 42 % of their ash (4 states)'],
+    ['✭', 'B269/S0345/C4', 'Mirror 9 embers', 'soups settling after 592 to over 6,000 generations (3.62 % alive at the end), oscillators in 25 % of their ash (4 states)'],
+    ['✭', 'B268/S678', 'Mirror 9 Life', 'soups settling after 713 to over 6,000 generations (1.29 % alive at the end), oscillators in 83 % of their ash'],
+    ['✮', 'B278/S', 'Mirror 10 Life', 'soups settling after 306 to over 6,000 generations (1.69 % alive at the end), oscillators in 67 % of their ash'],
+    ['✮', 'B24/S0345/C5', 'Mirror 10 embers', 'soups settling after 297 to 1,630 generations (3.42 % alive at the end), oscillators in 33 % of their ash (5 states)'],
+    ['✰', 'B268/S5', 'Mirror 11 Life', 'soups settling after 519 to over 6,000 generations (1.49 % alive at the end), oscillators in 92 % of their ash'],
+    ['✰', 'B24/S0345/C5', 'Mirror 11 embers', 'soups settling after 300 to 1,050 generations (3.5 % alive at the end), oscillators in 17 % of their ash (5 states)'],
+    ['⊛', 'B267/S5', 'Mirror 12 Life', 'soups settling after 351 to over 6,000 generations (1.47 % alive at the end), oscillators in 92 % of their ash'],
+    ['⊛', 'B289/S568', 'Mirror 12 sparks', 'soups settling after 497 to over 6,000 generations (1.69 % alive at the end), oscillators in 58 % of their ash'],
+    ['❍', 'B235/S0457/C5', 'Twisted embers', 'soups settling after 611 to 2,403 generations (1.04 % alive at the end), oscillators in 92 % of their ash (5 states)'],
+    ['❍', 'B246/S0348/C5', 'Twisted sparks', 'soups settling after 334 to 3,025 generations (0.95 % alive at the end), oscillators in 58 % of their ash (5 states)'],
+    ['❇', 'B2/S0345/C5', 'Ring 7 sparks', 'soups settling after 156 to over 6,000 generations (3.3 % alive at the end), oscillators in 67 % of their ash (5 states)'],
+    ['❇', 'B267/S0346/C4', 'Ring 7 embers', 'soups settling after 351 to 1,100 generations (3.22 % alive at the end), no oscillator in their ash (4 states)'],
+    ['✲', 'B267/S0346/C4', 'Ring 8 embers', 'soups settling after 324 to 1,505 generations (3.13 % alive at the end), no oscillator in their ash (4 states)'],
+    ['✲', 'B25/S034/C4', 'Ring 8 sparks', 'soups settling after 237 to 3,691 generations (3.13 % alive at the end), no oscillator in their ash (4 states)'],
+    ['✻', 'B25/S0346/C4', 'Ring 9 embers', 'soups settling after 272 to 3,741 generations (3.42 % alive at the end), no oscillator in their ash (4 states)'],
+    ['✻', 'B2/S034/C4', 'Ring 9 sparks', 'soups settling after 305 to 2,929 generations (3.27 % alive at the end), no oscillator in their ash (4 states)'],
+    ['✴', 'B26/S034/C4', 'Ring 10 embers', 'soups settling after 235 to 2,337 generations (3.16 % alive at the end), no oscillator in their ash (4 states)'],
+    ['✴', 'B27/S0345/C5', 'Ring 10 sparks', 'soups settling after 218 to over 6,000 generations (3.27 % alive at the end), oscillators in two thirds of their ash (5 states)'],
+    ['⊚', 'B267/S0346/C4', 'Ring 11 embers', 'soups settling after 348 to 3,790 generations (3.39 % alive at the end), no oscillator in their ash (4 states)'],
+    ['⊚', 'B278/S0347/C4', 'Ring 11 sparks', 'soups settling after 209 to 1,407 generations (3.25 % alive at the end), no oscillator in their ash (4 states)'],
+    ['❈', 'B2/S0345/C5', 'Ring 12 sparks', 'soups settling after 439 to over 6,000 generations (3.71 % alive at the end), oscillators in 58 % of their ash (5 states)'],
+    ['❈', 'B257/S0346/C4', 'Ring 12 embers', 'soups settling after 355 to 3,188 generations (3.25 % alive at the end), no oscillator in their ash (4 states)'],
+    ['✵', 'B356/S0345/C4', 'Ammann Life', 'soups settling after 336 to 1,174 generations (2.56 % alive at the end), oscillators in 25 % of their ash (4 states)'],
+    ['✵', 'B2v024v03/S0347', 'Ammann duels', 'battles turning round more than Life\'s: 4 changes of the lead a duel (Life: 3), soups settling after 580 generations or so (2 states)'],
+    ['✵', 'B38/S013', 'Ammann blinkers', 'soups settling after 316 to 1,261 generations (4.83 % alive at the end), oscillators in 100 % of their ash (2 states)'],
+    ['❄', 'B39/S0238', 'Rhombs 12 Life', 'soups settling after 406 to 1,963 generations (2.53 % alive at the end), oscillators in two thirds of their ash (2 states)'],
+    ['❄', 'B39/S3457/C4', 'Rhombs 12 embers', 'soups settling after 332 to 1,430 generations (2.13 % alive at the end), oscillators in a third of their ash (4 states)'],
+    ['❅', 'B378/S023', 'Rhombs 14 Life', 'soups settling after 509 to 2,221 generations (1.75 % alive at the end), oscillators in 75 % of their ash'],
+    ['❅', 'B389/S1345/C5', 'Rhombs 14 embers', 'soups settling after 276 to 1,644 generations (2.7 % alive at the end), oscillators in a quarter of their ash (5 states)'],
+    ['✵', 'B346/S01458', 'Long-lasting war', 'a long war in its walls: 2 colours 993 to 1,907 generations till one is left; 4 colours 1,622 to 1,742 generations till one is left, 1 of 3 soups still at war at 2,000'],
+    ['⬟', 'B247/S034/C4', 'Type 15 Life', 'the most Life-like on the 15th pentagon: soups settling after 270 to 2,600 generations, oscillators in most ends (4 states)'],
+    ['⬟', 'B256/S67', 'Type 15 classic', 'two states only, soups settling after 420 to 1,900 generations, oscillators in every end'],
+    ['⬟', 'B24/S13/C12', 'Type 15 trails', 'ships of period 14 with trails of a dozen stages, five kinds; soups end in them within about 150 generations (12 states)'],
+    ['⬠', 'B34/S23', 'Cairo Life', 'Life-like on Cairo pentagons (7 neighbours): settles after a few hundred generations'],
+  ].map(([tiling, rule, name, about]) => ({ kind: 'life', tiling, rule, name, about })),
 ];
 // the rules of a kind, in the table's order (a walk's: its network's, net)
 const rulesOf = (kind, net) => RULES.filter((r) => r.kind === kind && (kind !== 'walk' || r.tiling === net));
@@ -1442,7 +1668,7 @@ function describe(base, available) {
   // the title: the rule (its name, or the rule itself), not the number that may have seeded it (Elementary's: built as a walk)
   const ruleText = walk.life?.ruleText ?? lifeRuleNow()?.text ?? '', known = ruleCard(ruleText);
   $('barBase').textContent = ruleText;  // on the right, the lifetime in the middle (the title: the generation, see updateStats)
-  $('barBase').title = [known && known.dataset.name !== ruleText ? known.dataset.name : '', 'A click: how it works'].filter(Boolean).join(' · ');  // (its name, when not its words: a loop's)
+  $('barBase').title = [known && known.name !== ruleText ? known.name : '', 'A click: how it works'].filter(Boolean).join(' · ');  // (its name, when not its words: a loop's)
   $('barBase').classList.add('how-it-works');  // (the rule: a click, how it works)
   $('barBase').parentElement.classList.add('life');
   if (walk.rows) { $('description').innerHTML = `${{ digits: `<span class="walking">${sym}</span> in base 2`, cell: 'One live cell', two: 'Two live cells', half: 'Its left half alive' }[plane.start]} its first row, ${fmt(walk.n)} rows down · ${fmt(walk.rows.upTo.at(-1))} live cells`; return; }  // (Elementary, see elementaryRows)
@@ -3018,10 +3244,10 @@ for (const [k, [n, F]] of Object.entries(conedOf((k, n, F) => [k, [n, F]]))) {  
   MODE_ICONS[w] = k;
   NAV[w] = ['Life', '2D', `${F.name} ${n}`, 'Life', ''];
 }
-// a family whose grid is another's but at its middle (rules: that grid's mark): that grid's rules its own too, their option
-// marked with its marks; those counting neighbours only (no letters: a letter tells where a neighbour is round a ring of 6)
-for (const F of Object.values(CONED)) if (F.rules) for (const o of $('lifePreset').options) {
-  if (o.dataset.name && o.text.startsWith(F.rules) && !/[a-z]/.test(o.value)) o.text = Object.values(F.marks).join('') + o.text;
+// a family whose grid is another's but at its middle (rules: that grid's mark): that grid's rules its own too, their tiling
+// marked with its marks (see RULES); those counting neighbours only (no letters: a letter tells where a neighbour is round a ring of 6)
+for (const F of Object.values(CONED)) if (F.rules) for (const r of rulesOf('life')) {
+  if (r.tiling.startsWith(F.rules) && !/[a-z]/.test(r.rule)) r.tiling = Object.values(F.marks).join('') + r.tiling;
 }
 // Reversible on the tori: Life's, in blocks as the plane's (its blocks' grid, so many cells a block, see meshBlocks), 3 squares
 // round it (see ringColours), its start on the middle one (see startColours)
@@ -8572,7 +8798,6 @@ function buildLife(seq, mode) {
   const ring = rule.iso === 'hensel' && lifeMark(mode) === '■' ? cornerNeighbours(g, 8).ring : rule.iso === 'hex' ? nbr.ring : null;
   if (rule.iso && rule.iso !== 'vertex' && !ring) {  // Callahan's letters need hexagons, Hensel's squares (the flowers', any surface)
     rule = parseRule('B3/S23');
-    $('lifePreset').value = rule.text;
   }
   $('lifeRule').value = ruleBody(rule.text);  // the colours apart (see lifeColours)
   if (plane.start === 'draw') plane.start = 'random';  // no drawing on the surfaces
@@ -9866,7 +10091,6 @@ function buildLifePlane(seq) {
   let rule = lifeRuleNow() || parseRule('B3/S23');
   if (rule.iso && rule.iso !== 'vertex' && baseOf(kind) !== { hex: 'hex', hensel: 'square' }[rule.iso]) {  // Callahan's letters need hexagons, Hensel's squares (v: any plane)
     rule = parseRule('B3/S23');
-    $('lifePreset').value = rule.text;
   }
   $('lifeRule').value = ruleBody(rule.text);  // the colours apart (see lifeColours)
   const nbr = planeNeighbours(kind, W, planeTorus(kind), rule.iso === 'hensel');
@@ -10675,9 +10899,9 @@ const PLANE_OF_MARK = Object.fromEntries(Object.entries(PLANE_MARKS).map(([k, m]
 for (const k of Object.keys(ROSETTE_SPHERES)) SURFACE_CELLS[`${k}Sphere`] = PLANE_MARKS[k];  // (a rosette sphere: its rosette's cells, rules and all)
 const blocksGrid = (mode) => mode.blocks ?? mode.plane;  // (a block rule's grid: the plane's, or a surface's, its cells' shape)
 const LOOPS_MARK = '⟲';  // (the loops' rules' mark)
-// a rule's card on a grid: its option among its own rules (those of its cells' mark, as its rule cards: see renderRuleSection),
-// none if not one of them (another grid's of the same words: not its)
-const ruleCard = (rule, w = $('mode').value) => { const m = MODES[w], mark = m && lifeMark(m); return [...$('lifePreset').options].find((o) => o.dataset.name && o.value === rule && o.text.includes(mark)); };
+// a rule's card on a grid: its entry among its own rules (see RULES: those of its cells' mark, as its rule cards, see
+// renderRuleSection), none if not one of them (another grid's of the same words: not its)
+const ruleCard = (rule, w = $('mode').value) => { const m = MODES[w], mark = m && lifeMark(m); return rulesOf('life').find((r) => r.rule === rule && r.tiling.includes(mark)); };
 const lifeMark = (mode) => (mode.elementary ? ELEMENTARY_MARK : mode.loops ? LOOPS_MARK : mode.margolus ? (BLOCKS[blocksGrid(mode)] ?? STARS[blocksGrid(mode)]).mark : mode.plane ? PLANE_MARKS[mode.plane] : SURFACE_CELLS[mode.sphere] ?? '▲');
 // Life's colours, apart from its rule (which they do not change): 1, alive or dead (and a Generations
 // rule's dying stages), or 2 to 6 civilisations (k= in a link). The engine reads them as the rule's tail
@@ -10709,11 +10933,6 @@ const lifeRuleNow = () => {
   const body = ruleBody($('lifeRule').value);
   return parseRule(lifeColours === 1 ? body : `${body}${lifeColours === 2 ? '/Immigration' : `/Colours${lifeColours}`}`);
 };
-function setRuleText(rule) {  // the rule field, and its preset if it is one
-  $('lifeRule').value = rule;
-  const preset = [...$('lifePreset').options].find((o) => o.value === rule);
-  $('lifePreset').value = preset ? rule : 'custom';
-}
 // The colours, as blocks: one (black), or 2, 3, 4, 5, 6, 7, 8, 9, 10, 12 civilisations, each block its colours in
 // a cols × rows grid; a block greyed when the figure has no fair spots for that many (see coloursFit)
 const COLOUR_STEPS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12];
@@ -10966,10 +11185,10 @@ function tutTools({ toggle = null, words = [], replay = null, copy = null, close
   return d;
 }
 const replayPictures = () => $('ruleTuto').querySelectorAll('svg').forEach((v) => v.setCurrentTime(0));  // (a page's pictures from their start)
-function blockTutorial(option, to) {
+function blockTutorial(entry, to) {
   // on a small grid of its own, the grid picked's (not the one built: picked again, its rule and blocks may not be): the
   // smallest with blocks in each phase (the triangles' at 6: no whole hexagon)
-  const kind = planeKind(blocksGrid(MODES[$('mode').value])), R = parseRule(option.value), stars = !!R?.stars, ising = !!R?.ising;
+  const kind = planeKind(blocksGrid(MODES[$('mode').value])), R = parseRule(entry.rule), stars = !!R?.stars, ising = !!R?.ising;
   const blocksAt = (W, torus) => ruleBlocks(R, kind, W, torus);  // (Ising: its squares, a colour a phase)
   const W = planeW(kind, planeSides(kind).find((sd) => blocksAt(planeW(kind, sd), false).turns.every((t) => t.length))), row = planeRow(kind, W);  // (the first that fits: a large side's width long to work out)
   const blocksOf = (torus) => blocksAt(W, torus), { k, turns, move } = blocksOf(false);
@@ -11048,7 +11267,7 @@ function blockTutorial(option, to) {
   const shownPair = (st) => `<figure><div>${block(st)}<span>→</span>${block(full ^ to[st], st)}</div><figcaption>${alive(st)} alive${alive(full ^ to[st]) !== alive(st) ? ` → ${alive(full ^ to[st])}` : ''}</figcaption></figure>`;
   const asShown = !flips ? '' : `<h4>As shown</h4><p>It turns an empty block full, so every other generation is shown negative (its dead cells drawn alive), as Margolus showed Critters: the picture stays the same way round${blockKind(to).keeps ? ', and each block keeps as many cells alive, each its colour' : ''}. A block, then as the next generation shows it:</p><div class="tut-row">${states.map(shownPair).join('')}</div>`;
   $('ruleTuto').innerHTML = `<div class="tut-body">`
-    + `<h3>${option.dataset.name} <code>${option.value.replace(/,/g, ',<wbr>')}</code></h3>${BLOCK_WORDS[`${kind}|${option.dataset.name}`] ? `<p>${BLOCK_WORDS[`${kind}|${option.dataset.name}`].slice(2)}.</p>` : ''}${ising ? `<p>The Ising model of a magnet (Vichniac's Q2R, 1984; Tim Tyler's cell-auto.com): the squares a checkerboard, its two colours in turn, a generation each; a square of the colour's turn turned over when just 2 of its 4 side neighbours are alive, else kept. Turned over or not, as many sides between alive and dead (its energy kept), and the colour not turning stays as it is: so it runs back.${edges}</p>`
+    + `<h3>${entry.name} <code>${entry.rule.replace(/,/g, ',<wbr>')}</code></h3>${BLOCK_WORDS[`${kind}|${entry.name}`] ? `<p>${BLOCK_WORDS[`${kind}|${entry.name}`].slice(2)}.</p>` : ''}${ising ? `<p>The Ising model of a magnet (Vichniac's Q2R, 1984; Tim Tyler's cell-auto.com): the squares a checkerboard, its two colours in turn, a generation each; a square of the colour's turn turned over when just 2 of its 4 side neighbours are alive, else kept. Turned over or not, as many sides between alive and dead (its energy kept), and the colour not turning stays as it is: so it runs back.${edges}</p>`
       + `<div class="tut-row tut-phases">${edged.map((blocks, j) => `<figure><div>${phase(blocks)}</div><figcaption>${['even', 'odd'][j]} generations</figcaption></figure>`).join('')}</div>${cases}${maxPeriod}</div>` : ''}${ising ? '' : `<p>The grid in blocks of ${k} cells round a corner, ${stars ? `the same each generation, each cell first swapped with the one across its side away from the corner, come in from the next block (stellated: Tim Tyler's ${k === 6 ? 'Star of David' : 'isometric von Neumann'} neighbourhood, a lattice gas's)` : `${turns.length} sets of them in turn, a generation each (${R?.four ? "Tim Tyler's Square-4: Margolus's, its corners 4 sets in turn round a square" : "Margolus's neighbourhood"})`}: `
     + `each block turns into the one below, a different one for each of its ${1 << k} states, so the rule runs back too, the arrows the other way round. One of each state turned the same: the rule turns with its block.${edges}</p>`
     + `<div class="tut-row tut-phases">${edged.map((blocks, j) => `<figure><div>${phase(blocks)}</div><figcaption>${turns.length === 1 ? 'every generation' : turns.length === 2 ? ['even', 'odd'][j] : `${['1st', '2nd', '3rd', '4th'][j]} of ${turns.length}`}${turns.length === 1 ? '' : ' generations'}</figcaption></figure>`).join('')}</div>${across}`
@@ -11057,7 +11276,7 @@ function blockTutorial(option, to) {
 }
 // what a rule's page shows: the grid, the rule, its colours and edges; blocks, their max period too (the grid's size, the
 // start's live cells, its return once found)
-const tutorialKey = (option) => `${$('mode').value} ${option.value} ${option.dataset.name} ${lifeColours} ${plane.torus}`
+const tutorialKey = (entry) => `${$('mode').value} ${entry.rule} ${entry.name} ${lifeColours} ${plane.torus}`
   + (walk.life?.margolus ? ` ${walk.life.seed.length} ${walk.life.seedAlive} ${walk.life.stable?.P}` : '');
 // a tiling of several shapes: a bubble each (the cell and its neighbours, its name and how many), the one shown lit
 const tutShape = { mode: null, at: 0 }, tutLetters = { on: false };  // (Letters: their page instead of the rule's, see ruleTutorial)
@@ -11086,40 +11305,40 @@ function shapeBubbles(kinds, c, corners, count, shapeOf, own) {  // own: the til
 }
 // a loop's page (see parseLoops): its words, its states, a cell and its 4 sides, lines of its table as such crosses before → the
 // cell after (those that change it, of plain states only), its start
-function loopTutorial(option) {
-  const name = loopName(option.value), { year, words, table, pattern } = LOOP_RULES[name], n = parseLoops(name).loopStates;
+function loopTutorial(entry) {
+  const name = loopName(entry.rule), { year, words, table, pattern } = LOOP_RULES[name], n = parseLoops(name).loopStates;
   const fill = (v) => (v ? LIFE_COLOURS[v - 1] : UNLIT), cell = (x, y, v) => `<rect x="${x}" y="${y}" width="1" height="1" fill="${fill(v)}" stroke="var(--border)" stroke-width="0.04"/>`;
   const cross = ([c, N, E, S, W]) => `<svg viewBox="-0.1 -0.1 3.2 3.2">${cell(1, 0, N)}${cell(2, 1, E)}${cell(1, 2, S)}${cell(0, 1, W)}${cell(1, 1, c)}</svg>`;
   const lines = table.split('\n').filter((l) => /^[0-9,]+$/.test(l)).map((l) => (l.includes(',') ? l.split(',') : [...l]).map(Number)), shown = lines.filter((t) => t[0] !== t[5]).slice(0, 12);
   const start = loopCells(pattern.rle).map(([x, y, v]) => cell(x, y, v));
-  $('ruleTuto').innerHTML = `<div class="tut-body"><h3>${option.dataset.name}${option.dataset.name === name ? '' : ` <code>${name}</code>`}</h3><p>${words[0].toUpperCase()}${words.slice(1)} (${year}). Each cell looks at itself and its 4 neighbours by a side, in turn round it (von Neumann): ${fmt(table.split('\n').filter((l) => !l.includes(':') && !l.startsWith('var')).length)} lines of Golly's table, each also turned a quarter, a half and three quarters round; a cell none fits stays as it is. In colours (Teams), a loop's daughters take its colour: lineages fighting for room.</p>`
+  $('ruleTuto').innerHTML = `<div class="tut-body"><h3>${entry.name}${entry.name === name ? '' : ` <code>${name}</code>`}</h3><p>${words[0].toUpperCase()}${words.slice(1)} (${year}). Each cell looks at itself and its 4 neighbours by a side, in turn round it (von Neumann): ${fmt(table.split('\n').filter((l) => !l.includes(':') && !l.startsWith('var')).length)} lines of Golly's table, each also turned a quarter, a half and three quarters round; a cell none fits stays as it is. In colours (Teams), a loop's daughters take its colour: lineages fighting for room.</p>`
     + `<h4>States</h4><div class="tut-row">${Array.from({ length: n }, (_, v) => `<figure><div><svg viewBox="-0.1 -0.1 1.2 1.2">${cell(0, 0, v)}</svg></div><figcaption>${v}</figcaption></figure>`).join('')}</div>`
     + `<h4>Changing</h4><div class="tut-row">${shown.map((t) => `<figure><div>${cross(t)}<span>→</span><svg viewBox="-1.1 -1.1 3.2 3.2">${cell(0, 0, t[5])}</svg></div><figcaption>${t[0]} → ${t[5]}</figcaption></figure>`).join('')}</div>`
     + `<h4>Start</h4><div class="tut-row"><figure><div><svg class="tut-start" viewBox="-0.2 -0.2 ${pattern.w + 0.4} ${pattern.h + 0.4}">${start.join('')}</svg></div><figcaption>${pattern.w} × ${pattern.h}</figcaption></figure></div></div>`;
   $('ruleTuto').prepend(tutTools({ close: () => ruleTutorial(null) }));
 }
 // an elementary rule's page (see parseElementary): its words, its 8 cases (the three cells above → the cell), from one cell
-function elementaryTutorial(option) {
-  const N = parseRule(option.value).wolfram, words = ELEMENTARY_RULES.find(([n]) => n === N)?.[1];
+function elementaryTutorial(entry) {
+  const N = parseRule(entry.rule).wolfram, words = ELEMENTARY_RULES.find(([n]) => n === N)?.[1];
   const cell = (x, y, v) => `<rect x="${x}" y="${y}" width="1" height="1" fill="${v ? LIFE_ALIVE : UNLIT}" stroke="var(--border)" stroke-width="0.04"/>`;
   const cases = [7, 6, 5, 4, 3, 2, 1, 0].map((b) => `<figure><div><svg viewBox="-0.1 -0.1 3.2 3.2">${cell(0, 0, b >> 2)}${cell(1, 0, (b >> 1) & 1)}${cell(2, 0, b & 1)}<text x="1.5" y="1.72" text-anchor="middle" font-size="0.8" fill="var(--muted)">↓</text>${cell(1, 2, wolframBit(N, b >> 2, (b >> 1) & 1, b & 1))}</svg></div><figcaption>${wolframBit(N, b >> 2, (b >> 1) & 1, b & 1)}</figcaption></figure>`).join('');
   const picture = wolframFromCell(N, 16).flatMap((r, y) => r.map((c, x) => (c ? cell(x, y, 1) : ''))).join('');
-  $('ruleTuto').innerHTML = `<div class="tut-body"><h3>${option.dataset.name} <code>W${N}</code></h3><p>${words ? `${words[0].toUpperCase()}${words.slice(1)}. ` : ''}A row of cells, each generation the next row down: each cell looks at the three above it (on its left, above it, on its right), 8 cases, and the rule's number in base 2, ${N} = ${N.toString(2).padStart(8, '0')}, gives each one its cell, from 111 to 000 (Wolfram, 1983).</p>`
+  $('ruleTuto').innerHTML = `<div class="tut-body"><h3>${entry.name} <code>W${N}</code></h3><p>${words ? `${words[0].toUpperCase()}${words.slice(1)}. ` : ''}A row of cells, each generation the next row down: each cell looks at the three above it (on its left, above it, on its right), 8 cases, and the rule's number in base 2, ${N} = ${N.toString(2).padStart(8, '0')}, gives each one its cell, from 111 to 000 (Wolfram, 1983).</p>`
     + `<h4>Its 8 cases</h4><div class="tut-row">${cases}</div>`
     + `<h4>From one cell</h4><div class="tut-row"><figure><div><svg class="tut-start" viewBox="-0.2 -0.2 31.4 16.4">${picture}</svg></div><figcaption>16 generations</figcaption></figure></div></div>`;
   $('ruleTuto').prepend(tutTools({ close: () => ruleTutorial(null) }));
 }
-function ruleTutorial(option) {
+function ruleTutorial(entry) {
   $('appTab').classList.remove('open');  // (the app's tab, Credits': off, another page or none)
-  $('ruleTuto').hidden = !option;
-  for (const b of document.querySelectorAll('.how-it-works')) { b.classList.toggle('active', !!option); b.classList.toggle('switch', !!option); }  // (lit while it shows, as Full number)
-  if (!option) return;
-  $('ruleTuto').dataset.shown = tutorialKey(option);  // (another grid or rule: shown again, see renderRuleSection)
-  if (parseRule(option.value)?.margolus) { blockTutorial(option, parseRule(option.value).margolus); return; }
-  if (parseRule(option.value)?.elementary) { elementaryTutorial(option); return; }
-  if (loopName(option.value)) { loopTutorial(option); return; }
+  $('ruleTuto').hidden = !entry;
+  for (const b of document.querySelectorAll('.how-it-works')) { b.classList.toggle('active', !!entry); b.classList.toggle('switch', !!entry); }  // (lit while it shows, as Full number)
+  if (!entry) return;
+  $('ruleTuto').dataset.shown = tutorialKey(entry);  // (another grid or rule: shown again, see renderRuleSection)
+  if (parseRule(entry.rule)?.margolus) { blockTutorial(entry, parseRule(entry.rule).margolus); return; }
+  if (parseRule(entry.rule)?.elementary) { elementaryTutorial(entry); return; }
+  if (loopName(entry.rule)) { loopTutorial(entry); return; }
   const mark = lifeMark(MODES[$('mode').value]), kind = PLANE_OF_MARK[mark] ?? 'tri';
-  const W = APERIODIC[kind] ? 16 : 8, rule = parseRule(option.value);  // (one that never repeats: room for all its ways)
+  const W = APERIODIC[kind] ? 16 : 8, rule = parseRule(entry.rule);  // (one that never repeats: room for all its ways)
   const nb = planeNeighbours(kind, W, false, rule.iso === 'hensel');
   const turn = planeTurn(kind), poly = cellPolys(kind, W), corners = (t) => poly(t).map((p) => turnPoint(p, turn));  // (turned as the 2D grid is)
   // its cells' kinds: by their shape (its true corners' sides and angles, mirrored or turned the same) and their count of neighbours (the
@@ -11196,7 +11415,7 @@ function ruleTutorial(option) {
     return `<h4>Its colour <code>${COLOUR_STEP_NAMES[K]}</code></h4><div class="tut-row">${card([...most, ...Array(K - most.length).fill(0)], 'the most')}`
       + `${[...ties.filter((p) => gone(p) === 1), ...ties.filter((p) => gone(p) !== 1)].map((p) => card(p, gone(p) === 1 ? 'the colour missing' : 'no birth')).join('')}</div>`;
   }
-  const part = (L) => `<code>${option.value.split('/').find((x) => x[0] === L) ?? ''}</code>`;  // a section's part of the rule (B…, S…, C…)
+  const part = (L) => `<code>${entry.rule.split('/').find((x) => x[0] === L) ?? ''}</code>`;  // a section's part of the rule (B…, S…, C…)
   // the grid's letters, for a rule of one's own, on a page of their own (Letters): Hensel's on squares (where 1 to 4 live
   // neighbours sit; 5 to 7 the same, live and dead swapped), Callahan's on hexagons (2 to 4), the flowers' v (those by a
   // corner only); each drawn round the cell
@@ -11221,13 +11440,13 @@ function ruleTutorial(option) {
     return s ? `<text x="${o[0]}" y="${o[1]}" font-size="${side / 4}" text-anchor="middle" dominant-baseline="central" fill="${(1 - s / (rule.C - 1) > 0.45) === light ? '#fff' : '#1f2328'}">✝</text>` : '';
   }
   $('ruleTuto').innerHTML = `<div class="tut-body">${tutLetters.on && lettersOf2 ? lettersPage() + '</div>' : ''}`
-    + (tutLetters.on && lettersOf2 ? '' : `<h3>${option.dataset.name} <code>${option.value}</code></h3>${option.value !== 'custom' && option.text?.includes(' — ') ? `<p>${option.text.split(' — ').slice(1).join(' — ').replace(/^./, (c) => c.toUpperCase())}.</p>` : ''}${kinds.length > 1 ? shapeBubbles(kinds, c, corners, count, shapeOf, { hat: 'hat', spectre: 'spectre' }[kind]) : ''}<p>A cell with ${around.length} neighbours here (sharing an edge or a corner): ${born.length ? `born with ${list(born)} live ones` : 'never born'}, ${stays.length ? `survives with ${list(stays)}` : 'never survives'}, dies otherwise${iso === 'vertex' ? ' (after v, how many of the live ones touch it by a corner only, not a side)' : iso ? ' (the letters: where the live ones sit)' : ''}${rule.C > 2 ? `, then fades through ${rule.C - 2} dying stage${rule.C > 3 ? 's' : ''} (neither alive nor counted) before it is empty again` : ''}.</p>`
+    + (tutLetters.on && lettersOf2 ? '' : `<h3>${entry.name} <code>${entry.rule}</code></h3>${entry.about ? `<p>${capitalised(entry.about)}.</p>` : ''}${kinds.length > 1 ? shapeBubbles(kinds, c, corners, count, shapeOf, { hat: 'hat', spectre: 'spectre' }[kind]) : ''}<p>A cell with ${around.length} neighbours here (sharing an edge or a corner): ${born.length ? `born with ${list(born)} live ones` : 'never born'}, ${stays.length ? `survives with ${list(stays)}` : 'never survives'}, dies otherwise${iso === 'vertex' ? ' (after v, how many of the live ones touch it by a corner only, not a side)' : iso ? ' (the letters: where the live ones sit)' : ''}${rule.C > 2 ? `, then fades through ${rule.C - 2} dying stage${rule.C > 3 ? 's' : ''} (neither alive nor counted) before it is empty again` : ''}.</p>`
     + `<h4>Birth${part('B')}</h4><div class="tut-row">${born.map((cs) => pair(cs, UNLIT, LIFE_ALIVE, 'born')).join('') || '<p>none</p>'}</div>${colours()}`
     + `<h4>Survival${part('S')}</h4><div class="tut-row">${stays.map((cs) => pair(cs, LIFE_ALIVE, LIFE_ALIVE, 'stays')).join('') || '<p>none</p>'}</div>`
     + `<h4>Death</h4><div class="tut-row">${dies.map((cs) => pair(cs, LIFE_ALIVE, after, 'dies')).join('')}</div>`
     + (stages.length ? `<h4>Dying stages${part('C')}</h4><div class="tut-row"><figure><div>${[LIFE_ALIVE, ...stages, UNLIT].map((f) => cell(f, new Set())).join('<span>→</span>')}</div><figcaption>${rule.C - 1} stages alive including ${stages.length} dying ✝ (whatever its neighbours) and 1 dead (able to be born again)</figcaption></figure></div>` : '') + '</div>');
-  for (const f of $('ruleTuto').querySelectorAll('.tut-shapes figure')) f.addEventListener('click', () => { tutShape.at = Number(f.dataset.at); ruleTutorial(option); });
-  $('ruleTuto').prepend(tutTools({ toggle: lettersOf2 && { text: 'Letters', title: 'The letters of this grid, for a rule of your own', on: tutLetters.on, click: () => { tutLetters.on = !tutLetters.on; ruleTutorial(option); } }, replay: replayPictures, close: () => ruleTutorial(null) }));
+  for (const f of $('ruleTuto').querySelectorAll('.tut-shapes figure')) f.addEventListener('click', () => { tutShape.at = Number(f.dataset.at); ruleTutorial(entry); });
+  $('ruleTuto').prepend(tutTools({ toggle: lettersOf2 && { text: 'Letters', title: 'The letters of this grid, for a rule of your own', on: tutLetters.on, click: () => { tutLetters.on = !tutLetters.on; ruleTutorial(entry); } }, replay: replayPictures, close: () => ruleTutorial(null) }));
 }
 // How a walk works: a figure for each digit, its step lit, the way in (a relative walk's) muted, the other digits'
 // ends as dots; on cells, the cells. On the plane by the walk's own stepper; on a surface, a cell of it or a corner
@@ -11421,22 +11640,22 @@ function renderRuleSection() {
   const mode = MODES[$('mode').value];
   if (!mode.life) { if (!creditsShown()) { if (!$('ruleTuto').hidden && walkTutorialFits($('mode').value)) walkTutorial($('mode').value); else ruleTutorial(null); } return; }  // (a walk's: it follows the walk; Credits stay)
   const mark = lifeMark(mode), now = ruleBody($('lifeRule').value);
-  const listed = [...$('lifePreset').options].filter((o) => o.dataset.name && o.text.includes(mark) && (!mode.margolus || blocksFit(parseRule(o.value), mode)) && (!mode.loops || loopFits(parseRule(o.value), mode))), mine = listed.find((o) => o.value === now);
+  const listed = rulesOf('life').filter((r) => r.tiling.includes(mark) && (!mode.margolus || blocksFit(parseRule(r.rule), mode)) && (!mode.loops || loopFits(parseRule(r.rule), mode))), mine = listed.find((r) => r.rule === now);
   // Elementary's, in two tabs over How it works: Main, the known ones; Others, the rest (the rule in use's; one clicked, while that rule stays)
-  const main = (o) => ELEMENTARY_MAIN.has(parseRule(o.value).wolfram), tab = ruleTab?.now === now ? ruleTab.tab : mine && !main(mine) ? 'others' : 'main';
+  const main = (r) => ELEMENTARY_MAIN.has(parseRule(r.rule).wolfram), tab = ruleTab?.now === now ? ruleTab.tab : mine && !main(mine) ? 'others' : 'main';
   $('ruleTabs').replaceChildren(...(mode.elementary ? [tileGroup([['main', pixelIcon(RULE_ICONS.W90), 'Main', `The ${ELEMENTARY_MAIN.size} known ones`], ['others', pixelIcon(RULE_ICONS.W184), 'Others', `The ${listed.length - ELEMENTARY_MAIN.size} others, by number`]]
     .map(([k, pic, text, title]) => tile({ pic, text, title, on: tab === k, click: () => { ruleTab = { tab: k, now }; renderRuleSection(); } })), true)] : []));
   const known = mode.elementary ? listed.filter((o) => main(o) === (tab === 'main')) : listed;
-  const yours = { value: now, dataset: { name: 'Custom rule' } }, mineNot = !mine || (customOpen && !mode.loops);  // (your own, for how a rule works; none for a loop: a table is not typed)
+  const yours = { rule: now, name: 'Custom rule' }, mineNot = !mine || (customOpen && !mode.loops);  // (your own, for how a rule works; none for a loop: a table is not typed)
   const shown = mineNot ? yours : mine;
   if (!$('ruleTuto').hidden && !creditsShown() && $('ruleTuto').dataset.shown !== tutorialKey(shown)) ruleTutorial(shown);  // how a rule works follows the grid and the rule (Credits stay)
   $('ruleCards').replaceChildren(...known.map((o, i) => {
-    const picked = o.value === now && !customOpen;
-    const bw = MODES[$('mode').value].margolus && !carriesColours(parseRule(o.value));  // (a block rule its cells carry no colour on: black and white)
-    const pick = () => { customOpen = false; if (o.value === now) { renderRuleSection(); return; } setRuleText(o.value); compute(); };
-    return card({ pic: RULE_ICONS[o.value] ? pixelIcon(RULE_ICONS[o.value]) : '', name: `${o.dataset.name}${bw ? ' · B&W' : ''}`, on: picked, byDefault: i ? '' : 'yes',
+    const picked = o.rule === now && !customOpen;
+    const bw = MODES[$('mode').value].margolus && !carriesColours(parseRule(o.rule));  // (a block rule its cells carry no colour on: black and white)
+    const pick = () => { customOpen = false; if (o.rule === now) { renderRuleSection(); return; } $('lifeRule').value = o.rule; compute(); };
+    return card({ pic: RULE_ICONS[o.rule] ? pixelIcon(RULE_ICONS[o.rule]) : '', name: `${o.name}${bw ? ' · B&W' : ''}`, on: picked, byDefault: i ? '' : 'yes',
       how: () => { if (picked) ruleTutorial(howShown(o) ? null : o); else { pick(); ruleTutorial(o); } },  // (its ⓘ: how it works, picked first, as the walks')  // (the first: the shape's, see fitRuleToShape)
-      detail: `${mode.loops ? loopCode(o.value) : o.value} · ${unnamed(o.text.split(' — ')[1] ?? '', o.dataset.name)}`, click: pick });  // its code (a loop's: its table's), its words without its name
+      detail: `${mode.loops ? loopCode(o.rule) : o.rule} · ${unnamed(o.about, o.name)}`, click: pick });  // its code (a loop's: its table's), its words without its name
   }));
   // after them, your own: picked when the rule in use is none of them, or clicked (its states, births and survivals below); none for a loop
   $('watchRule').onclick = () => ruleTutorial(!$('ruleTuto').hidden && !creditsShown() ? null : shown);  // (the rule in use: a card's, or your own)
@@ -11486,7 +11705,7 @@ function renderRuleSection() {
       b.textContent = text;
       b.className = on;
       b.title = title;
-      b.addEventListener('click', () => { click(); customOpen = true; setRuleText(write(B, S, rule.C)); compute(); });  // (your own still, even as a known one)
+      b.addEventListener('click', () => { click(); customOpen = true; $('lifeRule').value = write(B, S, rule.C); compute(); });  // (your own still, even as a known one)
       return b;
     };
     const box = (className, items) => { const d = document.createElement('div'); d.className = className; d.append(...items); return d; };
@@ -11497,7 +11716,7 @@ function renderRuleSection() {
   }
   // the states (alive, its dying stages, dead): − / +, 2 to 25, as many as a cell's byte holds with the colours
   // (a state up to K × (C − 1), see parseRule)
-  const most = Math.min(25, Math.floor(255 / lifeColours) + 1), states = (C) => { customOpen = true; setRuleText(write(B, S, C)); compute(); };
+  const most = Math.min(25, Math.floor(255 / lifeColours) + 1), states = (C) => { customOpen = true; $('lifeRule').value = write(B, S, C); compute(); };
   $('statesLabel').innerHTML = `${rule.C} states<small>${rule.C > 2 ? `${rule.C - 2} dying` : 'none dying'}</small>`;
   $('statesDown').disabled = rule.C <= 2;
   $('statesUp').disabled = rule.C >= most;
@@ -11519,13 +11738,13 @@ function fitRuleToShape() {
   const w = $('mode').value, mode = MODES[w];
   if (!mode.life) return;
   // a rule known, even without its dying states (none with colours: B34/S123 is B34/S123/C3)
-  const rule = $('lifeRule').value, options = [...$('lifePreset').options], now = options.find((o) => o.value === rule || o.value.replace(/\/C\d+$/, '') === rule);
+  const rule = $('lifeRule').value, now = rulesOf('life').find((r) => r.rule === rule || r.rule.replace(/\/C\d+$/, '') === rule);
   const fits = ruleFits(rule, mode), mark = lifeMark(mode);
   if (ruleFittedTo === w && fits) { shapeRules[mark] = rule; return; }  // (fitted already, a link's as it is: if it fits the grid at all)
   ruleFittedTo = w;
-  if (fits && (!now || now.text.includes(mark))) { shapeRules[mark] = rule; return; }  // a rule typed (its letters, if any, this shape's: Callahan's hexagons, Hensel's squares on the plane), or one for this shape: kept
-  const fit = shapeRules[mark] ?? options.find((o) => o.text.includes(mark))?.value;
-  if (fit) { customOpen = false; setRuleText(fit); }  // (this shape's last, else its first: its card)
+  if (fits && (!now || now.tiling.includes(mark))) { shapeRules[mark] = rule; return; }  // a rule typed (its letters, if any, this shape's: Callahan's hexagons, Hensel's squares on the plane), or one for this shape: kept
+  const fit = shapeRules[mark] ?? rulesOf('life').find((r) => r.tiling.includes(mark))?.rule;
+  if (fit) { customOpen = false; $('lifeRule').value = fit; }  // (this shape's last, else its first: its card)
 }
 
 function lifeReset() {
@@ -11785,7 +12004,7 @@ function meshBlocks(g, kind, stars, four) {
 let blocksMemo = null;  // (the last grid's: its blocks the same whatever its start, 1 s at 2²⁰ cells)
 // a mode's surface, turned or not: one of its grid's block rules with its blocks there (any other mode: yes); not the rule
 // now, fitted after (see fitRuleToShape), then to it
-const blocksTurn = (w, turned) => !MODES[w].margolus || [...$('lifePreset').options].some((o) => o.dataset.name && o.text.includes(lifeMark(MODES[w])) && blocksFit(parseRule(o.value), MODES[w], shownSurface(MODES[w].sphere, turned)));
+const blocksTurn = (w, turned) => !MODES[w].margolus || rulesOf('life').some((r) => r.tiling.includes(lifeMark(MODES[w])) && blocksFit(parseRule(r.rule), MODES[w], shownSurface(MODES[w].sphere, turned)));
 // (a surface's, g: by its mesh, kept on it, see meshBlocks, meshIsing; null: they do not come round it)
 const surfaceBlocks = (g, kind, rule) => ((g.blocks ??= {})[`${kind}|${!!rule.ising}|${!!rule.stars}|${!!rule.four}`] ??= rule.ising ? meshIsing(g) : meshBlocks(g, kind, rule.stars, rule.four));
 const ruleBlocks = (rule, kind, W, torus = planeTorus(kind), cols = planeCols(kind, W, 1), g = null) => {
@@ -11830,24 +12049,21 @@ const RING_RULES = [
   ['Single rotation', () => true, 'a block of one turned a step round, the others kept', (st, k) => (ones(st) === 1 ? ringTurn(st, 1, k) : st), '..o..,.....,o...o,.....,..o..'],
   ['Swirl', () => true, 'a block of one turned a step round, one of one empty cell a step the other way', (st, k) => (ones(st) === 1 ? ringTurn(st, 1, k) : ones(st) === k - 1 ? ringTurn(st, -1, k) : st), 'oo..o,....o,.....,o....,o..oo'],
 ];
-// a rule's option in the rules' menu, before Custom: its words, value, name, its picture (see RULE_ICONS)
-const beforeCustom = (option) => $('lifePreset').insertBefore(option, $('lifePreset').querySelector('option[value="custom"]'));
-function addPreset(text, value, name, icon) {
-  RULE_ICONS[value] = icon;
-  const option = new Option(text, value);
-  option.dataset.name = name;
-  beforeCustom(option);
+// a rule of Life's families, after Life's own (see RULES): its grid's mark, rule, name, words, its picture (see RULE_ICONS)
+function addLifeRule(tiling, rule, name, about, pic) {
+  RULE_ICONS[rule] = pic;
+  RULES.push({ kind: 'life', tiling, rule, name, about });
 }
-const BLOCK_MARKS = { square: '▣', tri: '⟐', hex: '⬣', cairo: '⌬' };  // (the rules' menu, by grid: marks of their own)
+const BLOCK_MARKS = { square: '▣', tri: '⟐', hex: '⬣', cairo: '⌬' };  // (the block rules' tilings, by grid: marks of their own)
 for (const [kind, mark] of Object.entries(BLOCK_MARKS)) BLOCKS[kind].mark = mark;
 const BLOCK_FIRST = { square: 'Tron', cairo: 'Tron' };  // a grid's first rule (its rule at first), else the list's
 const BLOCK_WORDS = { 'hex|Single rotation': ": Tim Tyler's Q*Bert neighbourhood (cell-auto.com), able to compute anything, as the billiard balls" };  // (a rule known on a grid by a name of its own)
-for (const [kind, mark] of Object.entries(BLOCK_MARKS)) {  // each grid's rules, as Life's (see renderRuleSection), before Custom…
+for (const [kind, mark] of Object.entries(BLOCK_MARKS)) {  // each grid's rules, as Life's (see renderRuleSection)
   const k = BLOCKS[kind].k, first = (r) => (r[0] === BLOCK_FIRST[kind] ? 0 : 1);
   for (const [name, fits, words, rule, art] of [...RING_RULES].sort((a, b) => first(a) - first(b))) {
     if (!fits(k)) continue;
     const value = `M${Array.from({ length: 1 << k }, (_, st) => rule(st, k)).join(',')}`;
-    addPreset(`${mark} ${value} — ${words}${BLOCK_WORDS[`${kind}|${name}`] ?? ''}`, value, name, art);
+    addLifeRule(mark, value, name, `${words}${BLOCK_WORDS[`${kind}|${name}`] ?? ''}`, art);
   }
 }
 // on squares, more: Tyler's Square-4 (its blocks' 4 sets in turn round a square, /4) for the billiard balls and the critters; the
@@ -11856,7 +12072,7 @@ for (const [name, words, value, art] of [
   ...RING_RULES.filter(([name]) => name === 'Billiard balls' || name === 'Critters').map(([name, , words, rule, art]) => [`${name}, 4 phases`, `${words}; Tim Tyler's Square-4, its blocks' 4 sets of corners in turn round a square`, `M${Array.from({ length: 16 }, (_, st) => rule(st, 4)).join(',')}/4`, art]),
   ['Ising', "the Ising model of a magnet (Vichniac's Q2R): a checkerboard, its colours in turn, a square turned over when just 2 of its 4 sides are alive; the walls between alive and dead as long, ever", 'Q2R', 'oo...,ooo..,.ooo.,..ooo,...oo'],
 ]) {
-  addPreset(`${BLOCK_MARKS.square} ${value} — ${words}`, value, name, art);
+  addLifeRule(BLOCK_MARKS.square, value, name, words, art);
 }
 // the stellated grids' rules, on the cells come in across (a cell j: a particle come in from that side, its way the one across):
 // FHP's (Frisch, Hasslacher and Pomeau, 1986) and HPP's (Hardy, de Pazzis and Pomeau, 1973) lattice gases: the particles fly
@@ -11868,12 +12084,12 @@ const STAR_RULES = [
 for (const [kind, { k }] of Object.entries(STARS)) for (const [name, size, words, rule, art] of STAR_RULES) {
   if (size !== k) continue;
   const mark = (BLOCKS[kind] ?? STARS[kind]).mark, value = `M${Array.from({ length: 1 << k }, (_, st) => rule(st, k)).join(',')}*`;
-  addPreset(`${mark} ${value} — ${words}`, value, name, art);
+  addLifeRule(mark, value, name, words, art);
 }
 // the loops' rules (see parseLoops), before Custom
 for (const [name, { year, words, pattern: { w, h, rle } }] of Object.entries(LOOP_RULES)) {
   const on = new Set(loopCells(rle).map(([x, y]) => `${Math.floor((5 * x) / Math.max(w, h, 5))},${Math.floor((5 * y) / Math.max(w, h, 5))}`));  // (its picture: its start in 5 × 5, a pixel where any of its cells is)
-  addPreset(`${LOOPS_MARK} ${name} — ${words} (${year})`, name, name === 'Langton' ? "Langton's loops" : name,
+  addLifeRule(LOOPS_MARK, name, name === 'Langton' ? "Langton's loops" : name, `${words} (${year})`,
     Array.from({ length: 5 }, (_, Y) => Array.from({ length: 5 }, (_, X) => (on.has(`${X},${Y}`) ? 'o' : '.')).join('')).join(','));
 }
 // Elementary's rules (see parseElementary), each its number and words, its picture its first 5 rows from one cell: the known
@@ -11898,15 +12114,14 @@ for (let n = 0; n < 256; n++) {
   if (twins[0] === n && !ELEMENTARY_RULES.some(([k]) => twins.includes(k))) ELEMENTARY_RULES.push([n, twins.length > 1 ? `alike, mirrored or in negative: ${twins.slice(1).map((k) => `W${k}`).join(', ')}` : 'its own mirror and negative']);
 }
 for (const [n, words] of ELEMENTARY_RULES) {
-  addPreset(`${ELEMENTARY_MARK} W${n} — ${words}`, `W${n}`, `Rule ${n}`, wolframFromCell(n, 5).map((r) => r.slice(2, 7).map((c) => (c ? 'o' : '.')).join('')).join(','));  // (its picture: its middle 5 columns)
+  addLifeRule(ELEMENTARY_MARK, `W${n}`, `Rule ${n}`, words, wolframFromCell(n, 5).map((r) => r.slice(2, 7).map((c) => (c ? 'o' : '.')).join('')).join(','));  // (its picture: its middle 5 columns)
 }
-// each grid's block rules in this order (its first: the one it starts with), before Custom
+// each grid's block rules in this order (its first: the one it starts with), last
 const BLOCK_ORDER = { square: ['Tron', 'Ising', 'Critters', 'Swirl', 'Billiard balls, 4 phases', 'Critters, 4 phases', 'Billiard balls', 'Single rotation'],
                       tri: ['FHP gas', 'Critters', 'Tron', 'Billiard balls', 'Single rotation', 'Swirl'], hex: ['Swirl', 'Tron', 'Single rotation'],
                       cairo: ['Tron', 'Critters', 'Swirl', 'Billiard balls', 'Single rotation'] };
 for (const [kind, names] of Object.entries(BLOCK_ORDER)) {
-  const mine = [...$('lifePreset').options].filter((o) => o.text.startsWith(`${BLOCK_MARKS[kind]} `));
-  for (const name of names) { const o = mine.find((x) => x.dataset.name === name); if (o) beforeCustom(o); }
+  for (const name of names) { const at = RULES.findIndex((r) => r.kind === 'life' && r.tiling === BLOCK_MARKS[kind] && r.name === name); if (at >= 0) RULES.push(...RULES.splice(at, 1)); }
 }
 function lifeStep(G = lifeStepGPU(walk.life, cur + 1)?.[0]) {  // (G: its sums, played on the graphics card, see lifeStepGPU)
   const L = walk.life, gen = cur + 1, K = L.colours, two = K > 1;
@@ -14110,7 +14325,7 @@ function applySetup(s) {
     applyDefaults('colours');  // (Trail: see DISPLAY_DEFAULTS)
     colourMix = Number(s.mx) === 1;
     newcomer = Number(s.nc) === 1;
-    if (s.r) { ruleFittedTo = s.w; setRuleText(ruleBody(s.r)); }  // a link's rule as it is
+    if (s.r) { ruleFittedTo = s.w; $('lifeRule').value = ruleBody(s.r); }  // a link's rule as it is
   }
   // the display is not part of a setup: it takes the defaults of the walk mode's tab, when the tab
   // changes (as picking a walk does); within a tab, what was chosen stays
@@ -14224,7 +14439,7 @@ function writeGallery(list) {
 // a setup's row: a walk's 2D, 3D or Lattice, its walk, size, start, turn and rule; a Game of Life's rule (its name on its grid,
 // see ruleCard), colours (Newcomer's), size and start
 const setupDetail = (s) => {
-  const life = MODES[s.w]?.life, r = String(s.r ?? ''), named = life && ruleCard(r, s.w)?.dataset.name;
+  const life = MODES[s.w]?.life, r = String(s.r ?? ''), named = life && ruleCard(r, s.w)?.name;
   return [life ? (named ? `${named} ${r}` : r || 'Life') : SPACES[NAV[s.w]?.[1]]?.[0], life ? Number(s.k) > 1 && `${s.k} colours${Number(s.nc) === 1 ? ', the last a newcomer' : ''}` : walkName(s.w),
     s.s && `size ${String(s.s).replace('x', ' × ')}`, s.st > 1 && `start ${s.st}`, Number(s.o) === 1 && 'turned 30°', Number(s.q) === 1 && 'square sheet', s.r && !life && `rule ${s.r}`].filter(Boolean).join(' · ');
 };
@@ -17559,13 +17774,6 @@ $('perspective').addEventListener('change', () => {
   if (walk.sphere) bounds = surfaceBounds();  // its frame, larger in perspective
   if ($('autoFit').checked) fitWhole();
 });
-// Rule menu: a preset fills the rule field; Custom… shows the field to type any rule
-$('lifePreset').addEventListener('change', () => {
-  const custom = $('lifePreset').value === 'custom';
-  if (custom) { $('lifeRule').focus(); return; }
-  $('lifeRule').value = $('lifePreset').value;
-  if (MODES[$('mode').value].life) compute();
-});
 // How it works on a walk's rules or a creature's: as Life's (one on each list of rules, on its first card)
 document.addEventListener('click', (e) => {
   if (!e.target.closest?.('.how-it-works') || e.target.closest('.how-it-works') === $('watchRule')) return;
@@ -17581,13 +17789,13 @@ $('lifeRule').addEventListener('change', () => {
   if (!ruleFits(ruleBody($('lifeRule').value), mode)) {  // (not a rule, or not this grid's: the one in use back in the field)
     $('status').textContent = mode.elementary ? 'Enter W and its number, 0 to 255: W30, W110' : mode.margolus ? 'Enter a block rule of this grid, as its cards show it'
       : 'Enter a rule like B3/S23, B2/S/C3 (2 to 25 states) or, on hexagons, B2o/S2m34 (the colours: Colors, above)';
-    $('lifeRule').value = ruleBody(shapeRules[lifeMark(mode)] ?? $('lifePreset').value);
+    $('lifeRule').value = ruleBody(shapeRules[lifeMark(mode)] ?? walk.life?.ruleText ?? 'B3/S23');
     return;
   }
   // typed: a known one's card picked (its own text), else your own
-  const typed = parseRule(ruleBody($('lifeRule').value)), known = [...$('lifePreset').options].find((o) => o.dataset.name && parseRule(o.value)?.text === typed.text);
+  const typed = parseRule(ruleBody($('lifeRule').value)), known = rulesOf('life').find((r) => parseRule(r.rule)?.text === typed.text);
   customOpen = !known;
-  if (known) setRuleText(known.value);
+  if (known) $('lifeRule').value = known.rule;
   if (MODES[$('mode').value].life) compute();  // restart from generation 0; a new state count needs a new base
 });
 // Copy RLE: the generation shown as an RLE file, Golly's and LifeWiki's (its size and rule on top, rows of runs, 70

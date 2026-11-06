@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.304';
+const VERSION = '0.4.305';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -14846,9 +14846,9 @@ function walkersOf() {
   return B.places.map((Q, s) => ({ P: (i) => placePoint(Q[i]), tileAt: (i) => (walk.vert ? walk.geo.grid.tileOf[Q[i]] : Q[i]), before: placePoint(cameFrom(walk.geo, !!walk.vert, B.starts[s])),
     colour: teamColour(s), living: B.dead[s] < 0 || B.dead[s] > cur }));
 }
-// the heads: each living walker's ogive at its step (see ogiveOf); the starts: each walker's flag at its first place (see
-// flagOf), heading as its first step; each [its corners, its colour]
-const headsOf = () => walkersOf().flatMap((W) => [...(W.living ? [[ogiveOf(headFrame(W)), W.colour]] : []), [flagOf({ ...headFrame(W, Math.min(1, walk.n)), p: W.P(0) }), W.colour]]);
+// the heads: each living walker's ogive at its step (see ogiveOf); the starts: each walker's flag in its frame at step 0
+// (see flagOf: its start's own heading, the way it came by); each [its corners, its colour]
+const headsOf = () => walkersOf().flatMap((W) => [...(W.living ? [[ogiveOf(headFrame(W)), W.colour]] : []), [flagOf(headFrame(W, 0)), W.colour]]);
 // a start's flag: its pole planted in its place along the surface's normal, over a head (2.2 of its sizes high), its sail
 // at its top an arrow pointing the way it goes (both its faces); its triangles' corners and normals, as an ogive's
 function flagOf({ p, h, side, nrm, size }) {

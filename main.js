@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.263';
+const VERSION = '0.4.264';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -16173,7 +16173,7 @@ function gpuSurface(paint, path) {
     tiles([0, 0, 0, 0], cull);
     if (open) tiles([...rgbCached(undersideColour()).map((c) => c / 255), 1], front === 'back' ? 'front' : 'back');
     if ($('showGrid').checked && view.scale > 6) {
-      rp.setPipeline(gpuDrawPipe('edge', { vertex: 'edgeV', fragment: 'edgeF', topology: 'line-list', pass, blend: BLEND_OVER,
+      rp.setPipeline(gpuDrawPipe('edge', { vertex: 'edgeV', fragment: 'edgeF', topology: 'line-list', pass, blend: BLEND_OVER, writes: false,  // (a decal, as the path)
         buffers: [vbuf(12, [VA(0, 'float32x3')]), vbuf(12, [VA(1, 'float32x3')]), vbuf(12, [VA(2, 'float32x3')])] }));
       rp.setBindGroup(0, gpuGroup(), [slotOf({ glass: pass, cut, edge: edgeAlpha(sh), edgeRgb: EDGE_RGB.map((c) => c / 255), bias: edgeBias, both: both ? 1 : 0 })]);
       rp.setVertexBuffer(0, D.ePos); rp.setVertexBuffer(1, D.eN1); rp.setVertexBuffer(2, D.eN2); rp.draw(D.eCount);

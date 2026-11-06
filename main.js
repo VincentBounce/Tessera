@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.295';
+const VERSION = '0.4.296';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -3328,6 +3328,8 @@ function renderModePicker() {
   // a family picked: its tilings as tabs, the same walk (along the grid or on cells) on another one
   const inFamily = familyOf(w);
   if (inFamily) inFamily.F.tab = inFamily.tab;
+  // How it works: its tiling's picture (the tab's in a family, else its shape's), the one it opens on
+  for (const id of ['walkRuleHow', 'watchRule']) $(id).querySelector('svg').outerHTML = icon((inFamily ? inFamily.F.tabs[inFamily.F.tab][2] : SHAPE_ICONS[shape]) ?? 'info');
   $('torusTiles').hidden = !inFamily;
   $('tilesLabel').hidden = !inFamily;  // (two blocks: the surface, then its tiles; an ant's: its shape, then its creatures)
   $('shapesLabel').textContent = SPACES[space][0];  // (its tab's name, as Size its section's title; its groups' titles under it)

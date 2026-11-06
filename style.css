@@ -328,14 +328,6 @@ button.active .bubble { color: var(--accent); border-color: var(--accent); }  /*
 .muted { color: var(--muted); margin: 6px 0 0; font-size: 12px; }
 .fill-note { color: var(--muted); font-size: 12px; margin-left: auto; }  /* under Area, when it cannot fill */
 
-.stats {
-  display: grid;
-  grid-template-columns: auto 1fr;
-  gap: 4px 12px;
-  margin: 0;
-}
-.stats dt { color: var(--muted); }
-.stats dd { margin: 0; text-align: right; font-variant-numeric: tabular-nums; }
 
 .activity { display: block; width: 100%; height: 36px; margin: 8px 0 4px; touch-action: none; }
 .activity.seek { cursor: pointer; }  /* the activity curve (see drawActivity): a click or a drag goes to that step */
@@ -492,12 +484,6 @@ button.wide.active, .head-btn.active { border-color: var(--accent); color: var(-
 .rule-chip.read { border-style: dashed; }  /* an ant's digit read, turned the other way by a dark cell */
 .rule-chip small { color: var(--muted); font-size: 11px; font-variant-numeric: tabular-nums; }
 .stage-bar .stage-more { margin-bottom: 9px; }
-/* the stats in one line of columns: the label over its value */
-.stage-bar .stats { font-size: 12px; gap: 1px 14px; grid-template-rows: auto auto; grid-auto-flow: column; }
-/* columns of fixed widths, whatever their values: nothing moves sideways while it plays */
-.stage-bar .stats { grid-template-columns: minmax(0, 1fr) minmax(0, 3fr); }  /* Generation, Cubes */
-.stage-bar .stats dt, .stage-bar .stats dd { white-space: nowrap; }
-.stage-bar .stats dd { text-align: left; }
 .stage-bar .strip { margin: 8px 0 0; min-height: 0; font-size: 14px; }
 .stage-bar .strip:empty { display: none; }
 .stage-bar .row { margin: 0; align-items: center; }

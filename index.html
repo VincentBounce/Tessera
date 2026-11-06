@@ -11,7 +11,7 @@
   <meta property="og:type" content="website">
   <link id="favicon" rel="icon">  <!-- the app's logo, set at start-up (see appLogo) -->
   <meta name="description" content="A walk on a grid in 2D or 3D driven by the base-2 to base-6 digits of π, other constants and large primes.">
-  <link rel="stylesheet" href="style.css?v=0.4.334">
+  <link rel="stylesheet" href="style.css?v=0.4.335">
   <script>  // the theme before the first paint (see applyTheme)
     try { const t = localStorage.getItem('tesseraTheme') || 'system'; document.documentElement.dataset.theme = t === 'system' ? (matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark') : t; } catch { document.documentElement.dataset.theme = 'dark'; }
   </script>
@@ -412,10 +412,6 @@
         <div class="stage-more">  <!-- shown on hover, above the title: the bar grows upwards, its title, gauges and Play row stay where they were (a link in them clicked as it was seen) -->
           <p class="bar-sub"><span id="description"></span><span id="status"></span></p>  <!-- the walk, then how its digits came (computing, an error…) -->
           <div id="ruleChips" class="rule-chips"></div>
-          <dl class="stats" hidden>  <!-- Space-time: its generation, its cubes up to it; Elementary: its live cells -->
-            <dt>Generation</dt><dd id="sGen">0</dd>
-            <dt id="sWhat">Cubes</dt><dd id="sCubes">0</dd>
-          </dl>
           <div id="gauges" class="ranking gauges" hidden></div>  <!-- one colour: alive, its peak, order…; a walk: its position, its distance, its peak, its cells (open only) -->
           <div id="digitStrip" class="strip" aria-label="Recent digits"></div>
           <canvas id="activity" class="activity" aria-label="Activity: a walk's distance from its start, Life's live cells"></canvas>
@@ -519,10 +515,10 @@
     </div>
   </main>
 
-  <script src="pixelarticons.js?v=0.4.334"></script>
-  <script src="punks.js?v=0.4.334"></script>
-  <script src="loops.js?v=0.4.334"></script>
-  <script src="emoji.js?v=0.4.334"></script>
-  <script src="main.js?v=0.4.334"></script>
+  <script src="pixelarticons.js?v=0.4.335"></script>
+  <script src="punks.js?v=0.4.335"></script>
+  <script src="loops.js?v=0.4.335"></script>
+  <script src="emoji.js?v=0.4.335"></script>
+  <script src="main.js?v=0.4.335"></script>
 </body>
 </html>

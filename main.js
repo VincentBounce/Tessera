@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.334';
+const VERSION = '0.4.335';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -1644,7 +1644,7 @@ function describe(base, available) {
   const w = $('mode').value, creature = MODES[w].worm || ANTS[w];
   $('barRule').hidden = !creature;
   $('barBase').hidden = false;
-  if (creature) { const R = creatureRules(w); setLinks($('barNum'), (barTitle = walkName(w))); setLinks($('barRule'), R.byDigits ? `${withIcons(shownSym)} · ${R.now}` : R.now); $('barRule').title = R.byDigits ? `It turns by the digits of ${shownSym}` : 'It turns by its rule'; $('barBase').hidden = !R.byDigits && !antColours(w); }  // (the base: of digits read, or its colours)
+  if (creature) { const R = creatureRules(w); setLinks($('barNum'), (barTitle = walkName(w))); setLinks($('barRule'), R.byDigits ? `${withIcons(shownSym)} · ${R.now}` : R.now); $('barRule').title = [R.byDigits ? `It turns by the digits of ${shownSym}, base 2` : 'It turns by its rule', antColours(w) && `${antColours(w)} colours`].filter(Boolean).join(' · '); $('barBase').hidden = true; }  // (one chip beside the title, its rule: its base or colours in its tooltip)
   const colours = antColours($('mode').value);
   $('barBase').textContent = colours ? `${colours} colours` : baseWords(base);
   $('barBase').classList.remove('how-it-works');  // (a walk's base: a click, its number; see barBase's click)
@@ -17140,13 +17140,11 @@ function updateStats() {
   $('stepLast').textContent = Number.isFinite(runEnd()) && Number.isFinite(far) ? ` / ${fmt(far)}` : '';
   if (!walk.life && !walk.battle) $('ranking').hidden = $('rankTitles').hidden = true;  // (a battle's shown by renderWalkGauges: never hidden in between, its rows' slides kept)
   const time = spaceTimeOn() && !!stack, rows = walk.rows;
-  document.querySelector('.stage-bar .stats').hidden = !time && !rows;
-  if (time || rows) {  // Space-time: its generation, its cubes up to it; Elementary: its live cells up to it (see elementaryRows)
-    $('ranking').hidden = $('gauges').hidden = $('rankTitles').hidden = true;
+  if (time || rows) {  // Space-time: its cubes up to the generation shown; Elementary: its live cells up to it (see elementaryRows): a gauge, as a walk's and Life's
+    $('ranking').hidden = $('rankTitles').hidden = true;
+    $('gauges').hidden = false;
     setLinks($('barNum'), '');  // (its generation: its own line, see stepNow; its rule in its chip)
-    $('sGen').textContent = `${fmt(cur)} / ${fmt(walk.n)}`;
-    $('sWhat').textContent = rows ? 'Live cells' : 'Cubes';
-    $('sCubes').textContent = fmt(rows ? rows.upTo[cur + 1] : stack.layers[cur] + 1);
+    paintGauges([[rows ? 'Live cells' : 'Cubes', null, null, fmt(rows ? rows.upTo[cur + 1] : stack.layers[cur] + 1)]]);
     $('digitStrip').textContent = '';
     drawActivity();
     return;

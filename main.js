@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.325';
+const VERSION = '0.4.326';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -3751,6 +3751,7 @@ function compute() {
     if (!elementaryReady(compute)) return;  // (Elementary's rows on their way, see elementaryReady)
     $('status').textContent = '';
     buildWalk();
+    describe(base, 0);  // (the bar: a creature's name and rule, a start's)
     $('copyNumber').hidden = true;
     showAll();
     applyPendingView();

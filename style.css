@@ -53,7 +53,8 @@ body { display: flex; flex-direction: column; }
 header { padding: 0; border-bottom: 1px solid var(--border); }  /* one hairline, edge to edge, under the tabs: the first and the last at its edges */
 /* the tabs at the very top on the left, on a hairline; the app's tab on the right */
 .header-row { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
-.header-end { display: flex; align-self: stretch; align-items: center; gap: 12px; }  /* Save, then the app's tab (as tall as the header: its line on the hairline, as the others') */
+.header-end { display: flex; align-self: stretch; align-items: center; gap: 12px; }
+.header-end .max-steps { margin: 0; width: 176px; flex: none; }  /* the length asked: one width whatever it says (see compactCount) */  /* Save, then the app's tab (as tall as the header: its line on the hairline, as the others') */
 .bar-sub .pi { color: var(--accent); }
 .bar-sub .walking { color: var(--text); font-weight: 600; }  /* an automaton: what seeds it */
 

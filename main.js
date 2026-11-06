@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.329';
+const VERSION = '0.4.330';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -2189,15 +2189,22 @@ function runStop() {
 }
 // what the digits' stepper counts: a walk's steps (a digit read a step); a start by the digits, its digits; a creature by
 // its rule, its steps (no digit read)
+// a count in four characters at most: 1239, 11k, 150k, 1.5M, 20M (the exact one in its tooltip)
+const compactCount = (n) => (n < 10000 ? String(n) : n < 999500 ? `${Math.round(n / 1000)}k` : `${+(n / 1e6).toFixed(n < 9.95e6 ? 1 : 0)}M`);
+// whether the length asked is used here (a walk's steps, a creature's, Elementary's and Space-time's generations); Life's
+// and Reversible's play on, the length kept for the next tab
+const lengthUsed = () => !MODES[$('mode').value].life || gensShown();
 const stepperUnit = () => (NAV[$('mode').value]?.[0] === 'Walk' || !readsDigits() ? 'steps' : 'digits');
 function syncDigitsStepper() {
   const stop = runStop(), size = randomPrimeSize(), gens = gensShown(), asked = size ?? targetAsked(), steps = size ? PRIME_STEPS : DIGIT_STEPS;
   const unit = gens ? 'generations' : stepperUnit(), total = gens || size || walk.loop ? null : wholeTotal();  // (a loop's, its rounds: see runStop)
-  $('digitsLabel').value = stop ? stop.label : size ? `${fmt(size)} digits (p)` : total !== null ? `${fmt(asked)} of ${fmt(total)}` : `${fmt(asked)} ${asked === 1 ? unit.slice(0, -1) : unit}`;  // (1 step, 1 digit, 1 generation)
-  $('digitsLabel').title = size ? 'The size of the random prime p, in decimal digits: 100 to 2,000, then Enter (it is walked whole)'
-    : `${stop ? `${stop.why}\n` : ''}Type a number of ${unit}, from ${fmt(DIGIT_STEPS[0])} to ${fmt(targetMost())}, then Enter\nLast picked: ${fmt(target)}`;
-  $('digitsDown').disabled = (stop?.n ?? asked) <= steps[0];  // (− goes below what is walked)
-  $('digitsUp').disabled = asked >= (size ? steps.at(-1) : targetMost()) || !!stop;
+  // the length asked, steps at most, the same words in every tab (its end, a loop or a death, said by the title: see runStop)
+  if (document.activeElement !== $('digitsLabel')) $('digitsLabel').value = `${compactCount(asked)} 👣 max`;
+  $('digitsLabel').title = [`${fmt(asked)} ${size ? 'digits of the random prime p (100 to 2,000: it is walked whole)' : `${asked === 1 ? unit.slice(0, -1) : unit} at most`}`,
+    !size && !lengthUsed() && 'Not used here (Life and Reversible play on): kept for the next tab', !size && total !== null && `The number has ${fmt(total)} digits`, stop?.why,
+    `Type a number, from ${fmt(steps[0])} to ${fmt(size ? steps.at(-1) : targetMost())}, then Enter`].filter(Boolean).join('\n');
+  $('digitsDown').disabled = asked <= steps[0];
+  $('digitsUp').disabled = asked >= (size ? steps.at(-1) : targetMost());
 }
 // Why a walk that repeats has a most of digits: the loop (or drift), from its first step, and how many
 // rounds are walked; '' when it does not repeat
@@ -2217,13 +2224,13 @@ function loopText() {
       + ` it stops after ${rounds === 1 ? 'one round' : `${rounds} rounds`}, ${fmt(total)} digits, and more would draw nothing new.`;
 }
 function stepDigits(delta) {
-  const size = randomPrimeSize(), steps = size ? PRIME_STEPS : DIGIT_STEPS, n = runStop()?.n ?? size ?? targetAsked();  // (what is walked, see runStop)
+  const size = randomPrimeSize(), steps = size ? PRIME_STEPS : DIGIT_STEPS, n = size ?? targetAsked();  // (the length asked, not where it ended)
   const next = delta > 0 ? steps.find((v) => v > n && (size || v <= targetMost())) ?? (!size && n < targetMost() ? targetMost() : undefined) : steps.findLast((v) => v < n);  // (+ past the ladder's last below the most: the most)
   if (next === undefined) return;
   if (playing && !gensShown()) resumeAt = cur;  // (playing: it plays on from there once built again, see showAll)
   if (size) setPrimeSize(next);
   else if (gensShown()) setGens(next);
-  else { target = next; compute(); }
+  else { target = next; if (lengthUsed()) compute(); else syncDigitsStepper(); }  // (unused here: kept for the next tab)
 }
 // Another size for the random prime: a new prime of that size, from the same seed
 function setPrimeSize(size) {
@@ -17441,6 +17448,7 @@ for (const b of document.querySelectorAll('.field .enter')) {
   b.addEventListener('mousedown', (e) => { e.preventDefault(); b.previousElementSibling.blur(); });
 }
 $('digitsLabel').addEventListener('input', () => { $('digitsLabel').value = $('digitsLabel').value.replace(/\D/g, ''); });
+$('digitsLabel').addEventListener('focus', () => { $('digitsLabel').value = String(randomPrimeSize() ?? targetAsked()); $('digitsLabel').select(); });  // (to type: the exact number, picked)
 $('digitsLabel').addEventListener('blur', syncDigitsStepper);  // "20,000 digits" again
 $('digitsLabel').addEventListener('change', () => {
   if (!$('digitsLabel').value) return;  // emptied: the blur shows the current count again
@@ -17448,7 +17456,8 @@ $('digitsLabel').addEventListener('change', () => {
   if (gensShown()) { setGens(Number($('digitsLabel').value)); $('digitsLabel').blur(); return; }
   target = Number($('digitsLabel').value);
   target = targetAsked();  // (the number as this mode takes it, kept)
-  compute();
+  $('digitsLabel').blur();
+  if (lengthUsed()) compute(); else syncDigitsStepper();  // (unused here: kept for the next tab)
 });
 $('play').addEventListener('click', () => {
   if (atEnd()) restart();  // at the end: from the start again

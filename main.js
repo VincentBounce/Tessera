@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.357';
+const VERSION = '0.4.358';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -17109,7 +17109,7 @@ const LIFE_TITLES = [['Alive'], ['Mean', 'Its live cells summed over the generat
 const battleColumns = (P) => {
   const worth = P.bite ? 'Land' : 'Body', body = P.bite && P.way !== 'landCells' ? (P.ownLines ? 'Line' : 'Body') : null;
   return { body, titles: [[worth, P.bite ? 'The tiles it holds' : "Its body's length"], [`${worth} peak`, `Its ${worth.toLowerCase()} at its largest so far`],
-    ['Dead at', 'The step it died at (a click: there); none while it lives'], ...(body ? [[body, body === 'Line' ? 'The edges of its line now' : "Its body's tiles now"]] : []), ['Distance', 'Its head from its start']] };
+    ['Dead at', 'The step it died at (a click: there); none while it lives', 80], ...(body ? [[body, body === 'Line' ? 'The edges of its line now' : "Its body's tiles now"]] : []), ['Distance', 'Its head from its start']] };
 };
 function renderRanking(L) {
   const K = L.colours;
@@ -17123,12 +17123,15 @@ function renderRanking(L) {
              cells: [dead(k) ? `✝ ${genLink(L.extinctAt[k])}` : `<b>${num(live(k))}</b>`, fmt(Math.round((foot ?? L.sumBy)[k] / (foot ? Math.max(1, L.stable.T) : L.gen + 1))), fmt(L.bornBy[k]), fmt(L.deadBy[k]), fmt(L.everBy[k])] };
   }), LIFE_TITLES);
 }
-// A ranking, the same for Life's battles and a walk's: a row each (its colour, name, value, dead or not and when, its
+// A ranking, the same for Life's battles and a walk's (titles: [name, tip, width in px]): a row each (its colour, name, value, dead or not and when, its
 // table's cells, the first its value or ✝ when), its place, its colour, its bar (its share of the living ones' values) and
 // its cells in its colour; the living by value, then the dead, the last died first; each row sliding to its place; all
 // dead, said
 function paintRanking(rows, titles) {
   const T = $('rankTitles'), names = titles.map((t) => t[0]).join();
+  // its columns as wide as their words, open (--rank-columns: the titles' and the rows' grids alike): a title's own width,
+  // else its first and last 70 px, the others 56
+  T.closest('.stage-bar').style.setProperty('--rank-columns', titles.map(([, , w], i) => `${w ?? (i && i < titles.length - 1 ? 56 : 70)}px`).join(' '));
   if (T.dataset.key !== names) { T.replaceChildren(...titles.map(([name, tip]) => Object.assign(document.createElement('span'), { textContent: name, title: tip ?? '' }))); T.dataset.key = names; }
   $('ranking').hidden = T.hidden = false;
   const box = $('ranking'), H = 18, key = rows.map((r) => `${r.colour}|${r.name}|${r.cells.length}`).join();

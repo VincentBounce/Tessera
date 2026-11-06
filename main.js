@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.292';
+const VERSION = '0.4.293';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -3247,7 +3247,8 @@ function creatureRules(w) {
                               name: 'Rule, a turn at each new corner: L2, L1, N, R1, R2' };
   const A = ANTS[w], turns = antWords(w).join(' ');
   return { byDigits: antByDigits, now: antRuleOf(w), typed: true, set: (r) => setAntRule(w, r), base: antByDigits ? () => baseWords(2) : null,  // (by colour: no digits read)
-           cards: [...A.presets.map((t) => [antOfTurns(w, t), ANT_WORDS[t]?.split(':')[0] ?? `${ruleWords(t).length}-colour ant`, icon('ant'), '', (w === 'antSquare' && ANT_WORDS[t]) || '']),  // (its name on any grid, what it does on squares)
+           cards: [...A.presets.map((t) => { const name = ANT_WORDS[ruleWords(t).map((x) => x.replace(/1$/, '')).join('')];  // (its name by its turns, on any grid: L1 R1 the hexagons' L R)
+             return [antOfTurns(w, t), `${name?.split(':')[0] ?? 'Ant'}, ${ruleWords(t).length} colours`, icon('ant'), '', (w === 'antSquare' && name) || '']; }),  // (what it does on squares)
              ...TURMITE_PRESETS.map((r, i) => [r, TURMITE_WORDS[i], icon('turmite'), antTableOf(w, r) ? '' : turmiteWhy(w, r), 'its name what it does on squares'])],  // (the turmites everywhere, greyed where a word of theirs is not, why in its tooltip; as the literature names them: one state an ant, more a turmite)
            name: `Rule, per state an entry per colour: its colour left, its turn (${turns}), its state next; the states parted by |` };
 }

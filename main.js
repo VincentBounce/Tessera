@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.358';
+const VERSION = '0.4.359';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -8158,11 +8158,9 @@ function battleOf(P) {
   const names = [shownSym, ...RIVALS.slice(0, P.K - 1).map((id) => formulaOf($(id).value).sym)], winner = battleWinner(P);
   return { player: P, names, winner, deaths: [...P.dead] };
 }
-// the battle's title: its walkers' numbers, each in its colour, to its end (their scores, and who won, in the ranking under it)
-function battleScore() {
-  const { names } = walk.battle, name = (s) => `<span style="color:${teamColour(s)}">${withIcons(names[s])}</span>`;  // (each in its walker's colour)
-  return names.map((_, s) => name(s)).join(' · ');  // (their scores, and at the end who won, in the ranking under it)
-}
+// a fight's title, a battle's (its walkers' numbers) and Life's in colours (its pictures, its patterns): each its team's
+// name in its colour, vs between them (their scores, and who won, in the ranking under it)
+const versusTitle = (names) => names.map((name, s) => `<span style="color:${teamColour(s)}">${name}</span>`).join(' vs ');
 // A battle's closed areas at the step it is at (P: its player; Area, see drawSphere), each tile's walker + 1 (0: none):
 // for each living walker, the regions its body cuts off, as a walk's (see areaSteps: along the grid tiles parted by its
 // edges; on cells corners parted by the edges it crossed, a tile closed once all its corners are), the largest (the
@@ -10279,9 +10277,9 @@ function startTitle() {
   if (plane.start === 'text') return `«${plane.text}»`;
   if (plane.start === 'draw') return 'Drawn';
   const names = walk.life.startNames?.filter(Boolean);  // (a Famous start's patterns: Glider vs R-pentomino)
-  if (names?.length && (lifeStart === 'hunt' || lifeStart === 'battle' || famousZone(zone ?? ''))) return names.join(' vs ');
+  if (names?.length && (lifeStart === 'hunt' || lifeStart === 'battle' || famousZone(zone ?? ''))) return K > 1 ? versusTitle(names) : names.join(' vs ');  // (one colour, its patterns: no team)
   if (lifeStart && !lifeStart.zone) return 'Found';
-  if (zone && isIcon(zone)) { const set = iconSet(zone), word = HUNT_ZONES[zone][1].split(' ')[0]; return plane.icons.slice(0, K).map((i) => `${word} ${set.label(i)}`).join(' vs '); }
+  if (zone && isIcon(zone)) { const set = iconSet(zone), word = HUNT_ZONES[zone][1].split(' ')[0]; return versusTitle(plane.icons.slice(0, K).map((i) => `${word} ${set.label(i)}`)); }
   if (zone === 'numbers') return withIcons(plane.number);
   if (zone && famousZone(zone)) return HUNT_ZONES[zone][1];
   return `${HUNT_ZONES[zone]?.[1] ?? 'Soup'} #${plane.seed}`;
@@ -17215,7 +17213,7 @@ function updateStats() {
     drawActivity();
     return;
   }
-  setLinks($('barNum'), walk.battle ? battleScore() : barTitle);  // (a battle: its score, its end; a walk's loop or a worm's end: the step line, see endMark)
+  setLinks($('barNum'), walk.battle ? versusTitle(walk.battle.names.map(withIcons)) : barTitle);  // (a battle: its walkers, each in its colour; a walk's loop or a worm's end: the step line, see endMark)
   drawActivity();
   renderWalkGauges();
   if (walk.battle) {  // a battle: its gauges only, no turns nor digits (A's alone, not the battle's)

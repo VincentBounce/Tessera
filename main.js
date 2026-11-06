@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.348';
+const VERSION = '0.4.349';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -6468,10 +6468,11 @@ function sizeGauge(el, n, i, preview, pick) {
 // choice's name on its right (its words in its tooltip); can: false, greyed; live: set as it is dragged (else let go)
 function notchRow(el, title, choices, at, set, can = true, live = true) {
   const name = Object.assign(document.createElement('span'), { className: 'notch-name' }), gauge = Object.assign(document.createElement('div'), { className: 'size-gauge' });
-  const show = (k) => { [name.textContent, name.title = ''] = choices[k]; }, pick = (k) => { show(k); set(k); };
+  // the choice's words: its name on the right, its tooltip on the whole row (its title, its gauge, its name)
+  const show = (k) => { [name.textContent, el.title = ''] = choices[k]; }, pick = (k) => { show(k); set(k); };
   sizeGauge(gauge, choices.length, at, live ? pick : show, pick);
   gauge.querySelector('input').disabled = !can;
-  [name.textContent, name.title = ''] = choices[at];
+  show(at);
   el.classList.add('notch-row');
   el.replaceChildren(Object.assign(document.createElement('span'), { className: 'field-label', textContent: title }), gauge, name);
 }

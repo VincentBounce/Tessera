@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.300';
+const VERSION = '0.4.301';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -3257,7 +3257,7 @@ const WORM_PRESETS = ['L1 R1 R2 R2 R1 R1 L1', 'L1 R1 L2 R1 R1 L1 L1', 'L1 N R2 N
 // The ants' rules, one list on every grid, the same order everywhere: the ants (their turns, one per colour) then the
 // turmites, in neutral turns (L R, N straight on, U back, L2 R2 sharp), each grid's in its own words (NEUTRAL_WORDS: L1 R1
 // on hexagons and pentagons); one a grid cannot take greyed in its place, the word it lacks in its tooltip
-const ANT_LIST = ['RL', 'RLR', 'LLRR', 'LRRRRRLLR', 'RRLLLRLLLRRR', 'LR', 'RRL', 'RLL', 'RRLL', 'L2 R2', 'L L2 R', 'R2 L N L R2', 'L R2', 'L2 L R R2'];
+const ANT_LIST = ['RL', 'RLR', 'LLRR', 'LRRRRRLLR', 'RRLLLRLLLRRR', 'RRL', 'RLL', 'L2 R2', 'L L2 R', 'R2 L N L R2', 'L R2', 'L2 L R R2'];  // (no mirror twice: LR is RL turned over)
 const NEUTRAL_WORDS = { square: { L: 'L', R: 'R', N: 'N', U: 'U' }, tri: { L: 'L', R: 'R' }, hex: { L: 'L1', R: 'R1', N: 'N', U: 'U', L2: 'L2', R2: 'R2' }, cairo: { L: 'L1', R: 'R1', L2: 'L2', R2: 'R2' } };
 // a rule of the list in ant w's words: { rule, why } (why: the first word it lacks, its rule then the list's as written)
 function ruleIn(w, neutral, turmite) {
@@ -3271,7 +3271,7 @@ function ruleIn(w, neutral, turmite) {
 // ant w's cards: the list, each its rule in its words, name (an ant's by its turns, with its colours; a turmite's what it
 // does on squares), picture (one state an ant, more a turmite, as the literature names them), why greyed, tooltip
 const antCards = (w) => [...ANT_LIST.map((t) => { const name = ANT_WORDS[ruleWords(t).join('')];
-    return { ...ruleIn(w, t, false), name: `${name?.split(':')[0] ?? 'Ant'}, ${ruleWords(t).length} colours`, pic: icon('ant'), title: (w === 'antSquare' && name) || '' }; }),
+    return { ...ruleIn(w, t, false), name: `${name?.split(':')[0] ?? `${t} ant`}, ${ruleWords(t).length} colours`,  // (one with no name its turns') pic: icon('ant'), title: (w === 'antSquare' && name) || '' }; }),
   ...TURMITE_PRESETS.map((r, i) => ({ ...ruleIn(w, r, true), name: TURMITE_WORDS[i], pic: icon('turmite'), title: 'its name what it does on squares' }))];
 // The turmites (see antTableOf, ANT_LIST), of the 65,536 with 2 states and 2 colours, walked here 5,000
 // steps: a spiral; the widest mess (3,765 cells); squares growing filled (97 %, and all); a highway from step 3,090

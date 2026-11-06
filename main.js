@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.361';
+const VERSION = '0.4.362';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -15166,10 +15166,10 @@ function walkersOf() {
 // the heads: each living walker's ogive at its step (see ogiveOf); the starts: each walker's flag in its frame at step 0
 // (see flagOf: its start's own heading, the way it came by); each [its corners, its colour]
 const headsOf = () => walkersOf().flatMap((W) => [...(W.living ? [[ogiveOf(headFrame(W, glideAt())), W.colour]] : []), [flagOf(headFrame(W, 0)), W.colour]]);
-// Played slower than GLIDE_BELOW steps a second, a head glides from its place to its next one, by the step's time gone
-// (stepsDue: the fraction of a step owed), drawn each frame (see tick); else on its place
-const GLIDE_BELOW = 60;
-const gliding = () => (playing || reversing) && stepsPerSecond() < GLIDE_BELOW && !!walk.sphere && !walk.life && !walk.rows;
+// Played slower than a step a frame (the screen's: frameMin, its shortest), a head glides from its place to its next one,
+// by the step's time gone (stepsDue: the fraction of a step owed), drawn each frame (see tick), on a surface (an ogive) or
+// the plane (an arrow, see drawOverlay); else on its place
+const gliding = () => (playing || reversing) && stepsPerSecond() * frameMin < 1 && !!walk.n && !walk.life && !walk.rows;
 const glideAt = () => (!gliding() ? cur : reversing ? Math.max(0, cur - stepsDue) : Math.min(cur + stepsDue, (walk.battle?.player.n ?? walk.n)));
 // a start's flag: its pole planted in its place along the surface's normal, over a head (2.2 of its sizes high), its sail
 // at its top an arrow pointing the way it goes (both its faces); its triangles' corners and normals, as an ogive's
@@ -16923,15 +16923,16 @@ function drawOverlay() {
   if (walk.sphere) return;  // (its head and its start's flag drawn with its tiles, see headsOf)
   // the walker at step i: its place and heading, its last step's (up at the start), in a frame at(forward, across)
   const a = headSize(polyArea(FILL_GRIDS[walk.lattice]?.templates[0] ?? [[0, 0], [1, 0], [1, 1], [0, 1]]) * s * s);  // (its cell's area on the screen: a lattice's tile, else a unit square)
-  const frame = (i) => {
-    const x = ox + walk.xs[i] * s, y = oy + walk.ys[i] * s, ux = i ? walk.xs[i] - walk.xs[i - 1] : 0, uy = i ? walk.ys[i] - walk.ys[i - 1] : -1, l = Math.hypot(ux, uy);
+  const frame = (at) => {  // (between two steps, gliding: on its way from one to the next, heading along it, see glideAt)
+    const i = Math.floor(at), f = at - i, j = f > 0 ? i + 1 : i, x = ox + (walk.xs[i] + (walk.xs[j] - walk.xs[i]) * f) * s, y = oy + (walk.ys[i] + (walk.ys[j] - walk.ys[i]) * f) * s;
+    const [ux, uy] = f > 0 ? [walk.xs[j] - walk.xs[i], walk.ys[j] - walk.ys[i]] : [i ? walk.xs[i] - walk.xs[i - 1] : 0, i ? walk.ys[i] - walk.ys[i - 1] : -1], l = Math.hypot(ux, uy);
     const [dx, dy] = l > 1e-6 ? [ux / l, uy / l] : [0, 0];  // (a step along the view axis: none)
     return (f, c) => [x + (dx * f - dy * c) * a, y + (dy * f + dx * c) * a];
   };
   // its start a flag, flat, under it: from the ground's colour at its base to the rainbow's blue at its tip; it gold to the
   // rainbow's red
   drawArrow(ctx, [groundAt(oy + walk.ys[0] * s), GRADIENT[0]], frame(0), -0.6);
-  drawArrow(ctx, ['#ffd000', rainbowHue(360)], frame(cur));
+  drawArrow(ctx, ['#ffd000', rainbowHue(360)], frame(glideAt()));
 }
 
 
@@ -17425,7 +17426,7 @@ function tick(now = performance.now()) {
   if (needsFull || statsDirty) {
     drawOverlay();
     updateStats();
-  }
+  } else if (gliding()) drawOverlay();  // (its head gliding, each frame)
   needsFull = false;
   statsDirty = false;
   requestAnimationFrame(tick);

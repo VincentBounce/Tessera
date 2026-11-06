@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.313';
+const VERSION = '0.4.314';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -2213,7 +2213,7 @@ function setPrimeSize(size) {
   computeFramed();
 }
 
-const SUB = (v) => String(v).replace(/\d/g, (c) => '₀₁₂₃₄₅₆₇₈₉'[c]);
+const subscript = (v) => String(v).replace(/\d/g, (c) => '₀₁₂₃₄₅₆₇₈₉'[c]);
 
 
 /* ---- 3.2 Seeded random draws ----------------------------------------------------------------- */
@@ -2694,7 +2694,7 @@ function canonical(x) {
 }
 
 // The symbol shown in the title and the status: π², √2, e^π, 392,113# + 1, 🎲…
-const SUP = (v) => String(v).replace(/\d/g, (c) => '⁰¹²³⁴⁵⁶⁷⁸⁹'[c]);
+const superscript = (v) => String(v).replace(/\d/g, (c) => '⁰¹²³⁴⁵⁶⁷⁸⁹'[c]);
 function pretty(x) {
   const wrap = (y, need) => (need ? `(${pretty(y)})` : pretty(y));
   const arg = (y) => wrap(y, y.k !== 'num' && y.k !== 'name');
@@ -2703,14 +2703,14 @@ function pretty(x) {
     case 'name': return FORMULA_NAMES[x.v][1];
     case 'neg': return `−${wrap(x.a, precOf(x.a) <= 3)}`;
     case '^': return x.b.k === 'num' && !x.b.v.includes('.') && x.b.v.length <= 3
-      ? `${wrap(x.a, precOf(x.a) <= 4)}${SUP(x.b.v)}` : `${wrap(x.a, precOf(x.a) <= 4)}^${wrap(x.b, precOf(x.b) < 3)}`;
+      ? `${wrap(x.a, precOf(x.a) <= 4)}${superscript(x.b.v)}` : `${wrap(x.a, precOf(x.a) <= 4)}^${wrap(x.b, precOf(x.b) < 3)}`;
     case 'call': {
       const [a, b] = x.args;
-      return { sqrt: () => `√${arg(a)}`, cbrt: () => `∛${arg(a)}`, root: () => `${SUP(b.v)}√${arg(a)}`,
+      return { sqrt: () => `√${arg(a)}`, cbrt: () => `∛${arg(a)}`, root: () => `${superscript(b.v)}√${arg(a)}`,
                ln: () => (a.k === 'num' || a.k === 'name' ? `ln ${pretty(a)}` : `ln(${pretty(a)})`),
                exp: () => `exp(${pretty(a)})`, zeta: () => `ζ(${pretty(a)})`,
-               log: () => (b.k === 'num' && !b.v.includes('.') ? `log${SUB(b.v)} ${arg(a)}` : `log(${pretty(a)}, ${pretty(b)})`), primorial: () => `${fmt(Number(a.v))}#`,
-               random: () => '🎲', randprime: () => `🎲 p${SUB(a.v)}` }[x.f]();
+               log: () => (b.k === 'num' && !b.v.includes('.') ? `log${subscript(b.v)} ${arg(a)}` : `log(${pretty(a)}, ${pretty(b)})`), primorial: () => `${fmt(Number(a.v))}#`,
+               random: () => '🎲', randprime: () => `🎲 p${subscript(a.v)}` }[x.f]();
     }
     default: {
       const op = { '+': ' + ', '-': ' − ', '*': '·', '/': '/' }[x.k];
@@ -2856,7 +2856,7 @@ function formulaOf(typed) {
     if (ast.kind === 'int' && formulaLog10(ast) > 45e6) throw new Error('too large: more than 45 million decimal digits');
     if (ast.kind === 'real' && mag > 1e5) throw new Error('too large or too small for a computation with guard digits');
     const m = text.match(/^2\^(\d+)-1$/);  // a Mersenne prime shows as M₁₂₇
-    const sym = m && MERSENNE.includes(Number(m[1])) ? `M${SUB(m[1])}` : pretty(ast);
+    const sym = m && MERSENNE.includes(Number(m[1])) ? `M${subscript(m[1])}` : pretty(ast);
     const root = ast.k === 'name' ? ast.v : ast.k === 'call' ? ast.f : null;
     return { ast, text, sym, root, kind: ast.kind, mag, nodes: nodes.length, log10: formulaLog10(ast) };
   } catch (err) {
@@ -5017,12 +5017,12 @@ function mengerMesh(L, m = 1) {
  * and their turns); the square pyramid: a square (±1, ±1, z0), its tip √2 above (its volume's middle at 0); the
  * rhombicuboctahedron: (±1, ±1, ±(1 + √2)) and their turns; the square orthobicupola: an octagon (±1, ±(1 + √2), 0),
  * (±(1 + √2), ±1, 0), squares (±1, ±1, ±√2) over and under it */
-const RT2 = 1 + Math.SQRT2, PYRAMID_Z = -Math.SQRT2 / 4;
+const SILVER_RATIO = 1 + Math.SQRT2, PYRAMID_Z = -Math.SQRT2 / 4;
 const HULL_SOLIDS = {
   cubocta: () => [[1, 1, 0], [1, 0, 1], [0, 1, 1]].flatMap((v) => [-1, 1].flatMap((a) => [-1, 1].map((b) => { const s = [a, b]; return v.map((c) => (c ? c * s.shift() : 0)); }))),
   pyramid: () => [[-1, -1, PYRAMID_Z], [1, -1, PYRAMID_Z], [1, 1, PYRAMID_Z], [-1, 1, PYRAMID_Z], [0, 0, PYRAMID_Z + Math.SQRT2]],
-  rhombi: () => [[1, 1, RT2], [1, RT2, 1], [RT2, 1, 1]].flatMap((v) => [-1, 1].flatMap((a) => [-1, 1].flatMap((b) => [-1, 1].map((c) => [a * v[0], b * v[1], c * v[2]])))),
-  bicupola: () => [-1, 1].flatMap((a) => [-1, 1].flatMap((b) => [[a, b * RT2, 0], [a * RT2, b, 0], [a, b, Math.SQRT2], [a, b, -Math.SQRT2]])),
+  rhombi: () => [[1, 1, SILVER_RATIO], [1, SILVER_RATIO, 1], [SILVER_RATIO, 1, 1]].flatMap((v) => [-1, 1].flatMap((a) => [-1, 1].flatMap((b) => [-1, 1].map((c) => [a * v[0], b * v[1], c * v[2]])))),
+  bicupola: () => [-1, 1].flatMap((a) => [-1, 1].flatMap((b) => [[a, b * SILVER_RATIO, 0], [a * SILVER_RATIO, b, 0], [a, b, Math.SQRT2], [a, b, -Math.SQRT2]])),
 };
 function hullFaces(P) {
   const faces = new Map();
@@ -7527,7 +7527,7 @@ function battleStartsOrSay(g, start, grid, K, seed = battleSeed) {  // (seed: Ra
 function rotationGroups(g, K, enough = Infinity, good = null) {  // (enough: as many found, the search stops; good: those kept)
   const memo = (g.rotationGroups ??= {});
   if (memo[K]) return good ? memo[K].filter(good).slice(0, enough) : memo[K].slice(0, enough);
-  const R = surfaceRotations(g), I = I3;
+  const R = surfaceRotations(g), I = IDENTITY3;
   if (R.length % K) return (memo[K] = []);  // (a group's order divides its whole group's: Lagrange)
   const key = (M) => roundedKey(M.flat()), times = matMul;
   const close = (gens) => {  // (the group they make, if of K)
@@ -7560,7 +7560,7 @@ function rotationGroups(g, K, enough = Infinity, good = null) {  // (enough: as 
   memo[K] = out;
   return good ? out.filter(good) : out;
 }
-const I3 = [[1, 0, 0], [0, 1, 0], [0, 0, 1]];
+const IDENTITY3 = [[1, 0, 0], [0, 1, 0], [0, 0, 1]];
 // numbers rounded to a ten-thousandth, as a key: a place found again by its point, a turn by its matrix (the grid of the
 // rounding shifted by an irrational part: a mesh's simple fractions, 1/32 = 312.5 ten-thousandths, never on its halves,
 // where a turned point's tiny error would round it the other way)
@@ -7688,7 +7688,7 @@ function surfaceRotations(g) {
   const m = Math.round((2 * Math.PI) / least), gens = [];
   for (let d = m; d > 1; d--) if (fits(turn((2 * Math.PI) / d))) { gens.push(turn((2 * Math.PI) / d)); break; }  // (its turn, or a coarser one: its corners round it not all evenly spaced)
   for (const M of [[[1, 0, 0], [0, -1, 0], [0, 0, -1]], [[-1, 0, 0], [0, 1, 0], [0, 0, -1]]]) if (fits(M)) gens.push(M);
-  const list = [I3], seen = new Set([roundedKey(I3.flat())]);
+  const list = [IDENTITY3], seen = new Set([roundedKey(IDENTITY3.flat())]);
   for (let x = 0; x < list.length; x++) for (const h of gens) { const y = matMul(list[x], h), k = roundedKey(y.flat()); if (!seen.has(k)) { seen.add(k); list.push(y); } }
   return (g.rotations = list);
 }
@@ -12537,9 +12537,9 @@ const NEAR_RULES = ['B3678/S34678', 'B34/S123/C3', 'B2/S34', 'B24/S35', 'B2o/S2m
 const CORNERS8 = [...CORNERS].reverse();  // (from (1, 1, 1))
 const EDGES12 = [[1, 1, 0], [1, -1, 0], [-1, 1, 0], [-1, -1, 0], [1, 0, 1], [1, 0, -1], [-1, 0, 1], [-1, 0, -1], [0, 1, 1], [0, 1, -1], [0, -1, 1], [0, -1, -1]];
 // (3 round a face's axis d: of its 4 rings of 3, the second, 117° apart, not the first, round the face, 63°)
-const ICO = () => POLYHEDRA.icosa.P, around3 = (d) => [...ICO()].sort((p, q) => dot3(q, d) / Math.hypot(...q) - dot3(p, d) / Math.hypot(...p)).slice(3, 6);
+const icosaCorners = () => POLYHEDRA.icosa.P, around3 = (d) => [...icosaCorners()].sort((p, q) => dot3(q, d) / Math.hypot(...q) - dot3(p, d) / Math.hypot(...p)).slice(3, 6);
 // (the counts that divide its faces are dealt out whole instead, see FACE_GROUPS: these are the others)
-const ICOSA_SPOTS = () => ({ 3: around3([1, 1, 1]), 8: CORNERS8, 12: ICO() });
+const ICOSA_SPOTS = () => ({ 3: around3([1, 1, 1]), 8: CORNERS8, 12: icosaCorners() });
 const SOLID_SPOTS = {
   cube: () => ({ 4: AXES.slice(0, 4), 8: CORNERS8, 12: EDGES12 }),
   pits: () => ({ 4: AXES.slice(0, 4) }),  // the pits' floors
@@ -12560,7 +12560,7 @@ for (const k of Object.keys(TETRAKIS_SOLIDS)) SOLID_SPOTS[`${k}Tetrakis`] = SOLI
 const middles = (k) => POLYHEDRA[k].faces.map((f) => unit([0, 1, 2].map((d) => f.reduce((sum, v) => sum + POLYHEDRA[k].P[v][d], 0))));
 // (a face's middle on it, not as a direction: m · p / m · m is 1 on its plane, its faces of two sizes the cuboctahedron's)
 const faceDot = (m, p) => dot3(m, p) / dot3(m, m);
-const FACE_MIDDLES = { cube: () => AXES, tetra: () => middles('tetra'), octa: () => middles('octa'), icosa: () => middles('icosa'), dodeca: () => ICO().map(unit), stella: () => [] };
+const FACE_MIDDLES = { cube: () => AXES, tetra: () => middles('tetra'), octa: () => middles('octa'), icosa: () => middles('icosa'), dodeca: () => icosaCorners().map(unit), stella: () => [] };
 const FACE_BASE = { ...Object.fromEntries(hexSolids.map((k) => [`${k}Hex`, k])), cubeTetrakis: 'cube', pitsTetrakis: 'cube', bumpsTetrakis: 'cube', bumps: 'cube', frameTetrakis: 'cube', mengerTetrakis: 'cube', pits: 'cube', frame: 'cube', menger: 'cube', hexsphere: 'icosa', twistedsphere: 'icosa', tetraKite: 'tetra', octaKite: 'octa', icosaKite: 'icosa', stellaKite: 'stella', dodecaKite: 'dodeca' };
 for (const [k, of] of Object.entries(FACE_BASE)) FACE_MIDDLES[k] = FACE_MIDDLES[of];
 // A solid's colourings (made by tools/faceparts.js), each item's colour (base 36), each colour's patch item:
@@ -16240,7 +16240,7 @@ function gpuPipe(key, make) {
   if (!D.pipes.has(key)) D.pipes.set(key, D.device.createRenderPipeline(make(D)));
   return D.pipes.get(key);
 }
-const VA = (shaderLocation, format, offset = 0) => ({ shaderLocation, format, offset });
+const vertexAttribute = (shaderLocation, format, offset = 0) => ({ shaderLocation, format, offset });
 const vbuf = (arrayStride, attributes, stepMode = 'vertex') => ({ arrayStride, attributes, stepMode });
 // the frame's own pictures, made again when the canvas's size changes: its 4 samples a pixel and its depths; Glass's two
 const gpuTargets = () => {
@@ -16385,9 +16385,9 @@ function gpuSurface(paint, path) {
   let slot = 0;
   const slotOf = (more) => gpuView(D.words, slot++, depth, more);
   const enc = device.createCommandEncoder(), shadowSlot = slotOf({});
-  const tileBufs = [vbuf(12, [VA(0, 'float32x3')]), vbuf(12, [VA(1, 'float32x3')]), vbuf(4, [VA(2, 'uint32')])];
+  const tileBufs = [vbuf(12, [vertexAttribute(0, 'float32x3')]), vbuf(12, [vertexAttribute(1, 'float32x3')]), vbuf(4, [vertexAttribute(2, 'uint32')])];
   gpuShadows(enc, shadowSlot, (p) => {
-    p.setPipeline(gpuDepthPipe('depthTileV', [vbuf(12, [VA(0, 'float32x3')])]));
+    p.setPipeline(gpuDepthPipe('depthTileV', [vbuf(12, [vertexAttribute(0, 'float32x3')])]));
     p.setVertexBuffer(0, D.pos); p.setIndexBuffer(D.fan, 'uint32'); p.drawIndexed(D.fanCount);
   }, `${D.geoGen}|${lightDir()}|${cam.r}|${depth}|${lamp()}|${cutOn() && cutAxis}`);
   // the path's segments, made once a walk (a battle along the grid: all its walkers' steps, see pathSegments); drawn, the
@@ -16418,20 +16418,20 @@ function gpuSurface(paint, path) {
     if (open) tiles([...rgbCached(undersideColour()).map((c) => c / 255), 1], front === 'back' ? 'front' : 'back');
     if ($('showGrid').checked && view.scale > 6) {
       rp.setPipeline(gpuDrawPipe('edge', { vertex: 'edgeV', fragment: 'edgeF', topology: 'line-list', pass, blend: BLEND_OVER, writes: false,  // (a decal, as the path)
-        buffers: [vbuf(12, [VA(0, 'float32x3')]), vbuf(12, [VA(1, 'float32x3')]), vbuf(12, [VA(2, 'float32x3')])] }));
+        buffers: [vbuf(12, [vertexAttribute(0, 'float32x3')]), vbuf(12, [vertexAttribute(1, 'float32x3')]), vbuf(12, [vertexAttribute(2, 'float32x3')])] }));
       rp.setBindGroup(0, gpuGroup(), [slotOf({ glass: pass, cut, edge: edgeAlpha(sh), edgeRgb: EDGE_RGB.map((c) => c / 255), bias: edgeBias, both: both ? 1 : 0 })]);
       rp.setVertexBuffer(0, D.ePos); rp.setVertexBuffer(1, D.eN1); rp.setVertexBuffer(2, D.eN2); rp.draw(D.eCount);
     }
     if (ranges.some(([a, b]) => b > a)) {
       rp.setPipeline(gpuDrawPipe('ribbon', { vertex: 'ribbonV', fragment: 'ribbonF', topology: 'triangle-strip', pass, cull: both ? 'none' : 'back', writes: false,  // (a decal on the tiles: pulled over them, no depth of its own, a head over it, see ogiveOf)
-        buffers: [vbuf(8, [VA(0, 'float32x2')]), vbuf(44, [VA(1, 'float32x3', 0), VA(2, 'float32x3', 12), VA(3, 'float32x3', 24), VA(4, 'float32', 36), VA(5, 'float32', 40)], 'instance')] }));
+        buffers: [vbuf(8, [vertexAttribute(0, 'float32x2')]), vbuf(44, [vertexAttribute(1, 'float32x3', 0), vertexAttribute(2, 'float32x3', 12), vertexAttribute(3, 'float32x3', 24), vertexAttribute(4, 'float32', 36), vertexAttribute(5, 'float32', 40)], 'instance')] }));
       rp.setBindGroup(0, gpuGroup(), [slotOf({ glass: pass, cut, N: Math.max(1, walk.n), halfW: surfaceLineWidth() / 2 / view.scale, bias: pathBias, colour: lines ? 3 : 0 })]);
       rp.setVertexBuffer(0, D.quad); rp.setVertexBuffer(1, D.ribbon);
       for (const [a, b] of ranges) if (b > a) rp.draw(4, b - a, 0, a);
     }
     if (!heads.length) return;  // the heads: ogives lit as the cubes, each its colour (an instance), half under the tiles
     rp.setPipeline(gpuDrawPipe('cube', { vertex: 'cubeV', fragment: 'shadowedF', shadowed: true, pass,
-      buffers: [vbuf(24, [VA(0, 'float32x3', 0), VA(1, 'float32x3', 12)]), vbuf(12, [VA(2, 'float32x3')], 'instance'), vbuf(4, [VA(3, 'unorm8x4')], 'instance')] }));
+      buffers: [vbuf(24, [vertexAttribute(0, 'float32x3', 0), vertexAttribute(1, 'float32x3', 12)]), vbuf(12, [vertexAttribute(2, 'float32x3')], 'instance'), vbuf(4, [vertexAttribute(3, 'unorm8x4')], 'instance')] }));
     rp.setBindGroup(0, gpuGroup(), [slotOf({ glass: pass, cut, alpha: GLASS_ALPHA })]); rp.setBindGroup(1, D.shadow.group);
     rp.setVertexBuffer(0, D.headMesh); rp.setVertexBuffer(1, D.headAt); rp.setVertexBuffer(2, D.headCol);
     heads.forEach((_, j) => rp.draw(headFrom[j + 1] - headFrom[j], 1, headFrom[j], j));
@@ -16517,7 +16517,7 @@ function gpuFlat(to) {
   let slot = 0;
   const enc = device.createCommandEncoder(), rp = gpuPass(enc, null, [0, 0, 0, 0], false), colour = mode === 'digit' ? 2 : 0;
   const tiles = (buffer, tpl, count, alpha) => {
-    rp.setPipeline(gpuDrawPipe('flatTiles', { vertex: 'flatTilesV', fragment: 'colF', blend: BLEND_PRE, depth: false, buffers: [vbuf(16, [VA(0, 'float32x4')], 'instance')] }));
+    rp.setPipeline(gpuDrawPipe('flatTiles', { vertex: 'flatTilesV', fragment: 'colF', blend: BLEND_PRE, depth: false, buffers: [vbuf(16, [vertexAttribute(0, 'float32x4')], 'instance')] }));
     rp.setBindGroup(0, gpuGroup(), [gpuView(D.words, slot++, 1, { colour, tpl, alphaF: alpha, bright: 1 })]);
     rp.setVertexBuffer(0, buffer); rp.draw(12, count);
   };
@@ -16525,7 +16525,7 @@ function gpuFlat(to) {
   if (cellCount) tiles(D.flatCells, D.cellTpl, cellCount, shows('cells') && line ? 0.15 : 1);
   if (line && to > 0) {
     rp.setPipeline(gpuDrawPipe('flatPath', { vertex: 'flatPathV', fragment: 'colF', topology: 'triangle-strip', blend: BLEND_PRE, depth: false,
-      buffers: [vbuf(8, [VA(0, 'float32x2')]), vbuf(8, [VA(1, 'float32x2')], 'instance'), vbuf(8, [VA(2, 'float32x2')], 'instance'), vbuf(4, [VA(3, 'uint32')], 'instance')] }));
+      buffers: [vbuf(8, [vertexAttribute(0, 'float32x2')]), vbuf(8, [vertexAttribute(1, 'float32x2')], 'instance'), vbuf(8, [vertexAttribute(2, 'float32x2')], 'instance'), vbuf(4, [vertexAttribute(3, 'uint32')], 'instance')] }));
     rp.setBindGroup(0, gpuGroup(), [gpuView(D.words, slot++, 1, { colour: cells ? 0 : colour, N: Math.max(1, rainbowLength()), loopFrom: walk.loop?.from ?? 0,
       period: closedLoop() ? walk.loop.period : 0, width: cells ? Math.max(0.6, Math.min(s * 0.12, 3)) : Math.max(0.6, Math.min(s * 0.3, 6)) })]);
     rp.setVertexBuffer(0, D.quad); rp.setVertexBuffer(1, D.flatPts, 0); rp.setVertexBuffer(2, D.flatPts, 8); rp.setVertexBuffer(3, D.flatKeys);
@@ -16553,12 +16553,12 @@ function gpuCubes(count, of, make, reach) {
   new Uint8Array(D.words).fill(0);
   const enc = device.createCommandEncoder(), slot = gpuView(D.words, 0, depth);
   gpuShadows(enc, slot, (p) => {
-    p.setPipeline(gpuDepthPipe('depthCubeV', [vbuf(24, [VA(0, 'float32x3')]), vbuf(12, [VA(1, 'float32x3')], 'instance')]));
+    p.setPipeline(gpuDepthPipe('depthCubeV', [vbuf(24, [vertexAttribute(0, 'float32x3')]), vbuf(12, [vertexAttribute(1, 'float32x3')], 'instance')]));
     p.setVertexBuffer(0, D.cube); p.setVertexBuffer(1, D.cubeAt); p.draw(verts, count);
   }, null);
   const rp = gpuPass(enc);
   rp.setPipeline(gpuDrawPipe('cube', { vertex: 'cubeV', fragment: 'shadowedF', shadowed: true,
-    buffers: [vbuf(24, [VA(0, 'float32x3', 0), VA(1, 'float32x3', 12)]), vbuf(12, [VA(2, 'float32x3')], 'instance'), vbuf(4, [VA(3, 'unorm8x4')], 'instance')] }));
+    buffers: [vbuf(24, [vertexAttribute(0, 'float32x3', 0), vertexAttribute(1, 'float32x3', 12)]), vbuf(12, [vertexAttribute(2, 'float32x3')], 'instance'), vbuf(4, [vertexAttribute(3, 'unorm8x4')], 'instance')] }));
   rp.setBindGroup(0, gpuGroup(), [slot]); rp.setBindGroup(1, D.shadow.group);
   rp.setVertexBuffer(0, D.cube); rp.setVertexBuffer(1, D.cubeAt); rp.setVertexBuffer(2, D.cubeCol); rp.draw(verts, count);
   rp.end();
@@ -16609,13 +16609,13 @@ function gpuPlane(paint) {
   new Uint8Array(D.words).fill(0);
   const turn = { turnC: Math.cos(planeTurn()), turnS: Math.sin(planeTurn()) }, enc = device.createCommandEncoder(), rp = gpuPass(enc, null, [0, 0, 0, 0], false);
   const cells = (col, slot) => {
-    rp.setPipeline(gpuDrawPipe('planeCells', { vertex: 'planeCellsV', fragment: 'colF', depth: false, buffers: [vbuf(8, [VA(0, 'float32x2')]), vbuf(4, [VA(1, 'uint32')])] }));
+    rp.setPipeline(gpuDrawPipe('planeCells', { vertex: 'planeCellsV', fragment: 'colF', depth: false, buffers: [vbuf(8, [vertexAttribute(0, 'float32x2')]), vbuf(4, [vertexAttribute(1, 'uint32')])] }));
     rp.setBindGroup(0, gpuGroup(col), [gpuView(D.words, slot, 1, turn)]);
     rp.setVertexBuffer(0, D.planePos); rp.setVertexBuffer(1, D.planeIds); rp.setIndexBuffer(D.planeTris, 'uint32'); rp.drawIndexed(D.planeCount);
   };
   cells(D.planeBase, 0);
   if (outline) {
-    rp.setPipeline(gpuDrawPipe('planeLines', { vertex: 'planeLinesV', fragment: 'colF', topology: 'line-list', blend: BLEND_PRE, depth: false, buffers: [vbuf(8, [VA(0, 'float32x2')])] }));
+    rp.setPipeline(gpuDrawPipe('planeLines', { vertex: 'planeLinesV', fragment: 'colF', topology: 'line-list', blend: BLEND_PRE, depth: false, buffers: [vbuf(8, [vertexAttribute(0, 'float32x2')])] }));
     rp.setBindGroup(0, gpuGroup(), [gpuView(D.words, 1, 1, { ...turn, plain: [...EDGE_RGB.map((c) => (c / 255) * EDGE_ALPHA), EDGE_ALPHA] })]);
     rp.setVertexBuffer(0, D.planeEdges); rp.draw(D.planeLines);
   }
@@ -16685,7 +16685,7 @@ function fillNow() {
  * Returns { at: steps (sorted), cx, cy: each enclosed vertex, tpl: its polygon's template, templates:
  * [[dx, dy], …] per kind of polygon (the tile centres around a vertex), count, tooBig }. */
 const FILL_MAX_VERTICES = 12_000_000;  // beyond, the walk is too big to fill
-const R3 = 1 / Math.sqrt(3);
+const TRI_RADIUS = 1 / Math.sqrt(3);  // (the radius of a triangle with side 1: the side of a hexagon 1 across its flats)
 const ring = (r, a0, k) => Array.from({ length: k }, (_, q) => [r * Math.cos(a0 + (q * 2 * Math.PI) / k), r * Math.sin(a0 + (q * 2 * Math.PI) / k)]);
 // Per tiling: the vertices' (u, v) from (x, y) and back, which (u, v) are vertices, the packing (i, j) and back,
 // the links (forward ones get bits 1, 2, 4), the step between two tile centres, half an edge, and
@@ -16700,15 +16700,15 @@ const FILL_GRIDS = {
     u: (x) => Math.round(2 * x), v: (y) => Math.round((y - TRI_Y0) / H), x: (u) => u / 2, y: (v) => TRI_Y0 + v * H,
     i: (u, v, u0) => (u - u0) >> 1, j: (u, v, v0) => v - v0, uOf: (i, j, u0, v0) => u0 + 2 * i + ((v0 + j) & 1), vOf: (i, j, u0, v0) => v0 + j,
     isVertex: (u, v) => ((u + v) & 1) === 0,
-    links: [[2, 0], [1, 1], [-1, 1]], step: R3, half: 0.5, templates: [ring(R3, Math.PI / 6, 6)], tpl: () => 0,
+    links: [[2, 0], [1, 1], [-1, 1]], step: TRI_RADIUS, half: 0.5, templates: [ring(TRI_RADIUS, Math.PI / 6, 6)], tpl: () => 0,
   },
   hex: {  // the hexagons' corners (u / (2√3), v / 2): u not a multiple of 3, v of the parity of hexParity (see hexAt)
     u: (x) => Math.round(2 * Math.sqrt(3) * x), v: (y) => Math.round(2 * y), x: (u) => u / (2 * Math.sqrt(3)), y: (v) => v / 2,
     i: (u, v, u0) => { const t = u - u0, q = Math.floor(t / 3); return 2 * q + (t - 3 * q - 1); }, j: (u, v, v0) => (v - v0) >> 1,
     uOf: (i, j, u0) => u0 + 3 * (i >> 1) + 1 + (i & 1), vOf: (i, j, u0, v0) => v0 + 2 * j + hexParity(u0 + 3 * (i >> 1) + 1 + (i & 1)),
     isVertex: (u, v) => { const q = Math.floor(u / 3); return u - 3 * q !== 0 && (v & 1) === hexParity(u); },
-    links: [[2, 0], [1, 1], [-1, 1]], step: 1, half: R3 / 2,
-    templates: [ring(R3, Math.PI / 3, 3), ring(R3, 0, 3)], tpl: (u) => (u - 3 * Math.floor(u / 3) === 2 ? 0 : 1),  // a centre on the left, or on the right
+    links: [[2, 0], [1, 1], [-1, 1]], step: 1, half: TRI_RADIUS / 2,
+    templates: [ring(TRI_RADIUS, Math.PI / 3, 3), ring(TRI_RADIUS, 0, 3)], tpl: (u) => (u - 3 * Math.floor(u / 3) === 2 ? 0 : 1),  // a centre on the left, or on the right
   },
 };
 const hexParity = (u) => { const q = Math.floor(u / 3); return u - 3 * q === 1 ? (q + 1) & 1 : q & 1; };
@@ -17708,7 +17708,7 @@ document.addEventListener('keydown', (e) => {
 });
 
 // The prime menus, each prime with its number of digits (in base 10, as prime sizes are given)
-for (const p of MERSENNE) $('mersenneP').add(new Option(`M${SUB(p)} · ${fmt(Math.floor(p * Math.log10(2)) + 1)} digits`, p));
+for (const p of MERSENNE) $('mersenneP').add(new Option(`M${subscript(p)} · ${fmt(Math.floor(p * Math.log10(2)) + 1)} digits`, p));
 $('mersenneP').value = 44497;
 // primorial primes by size, + 1 and − 1 together
 const primorials = [...PRIMORIAL_PLUS.map((p) => [p, 1]), ...PRIMORIAL_MINUS.map((p) => [p, -1])]

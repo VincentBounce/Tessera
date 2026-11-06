@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.289';
+const VERSION = '0.4.290';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -11180,9 +11180,7 @@ function walkFigures(w, given = null) {
   const figure = (d, into, after = [], caption = words[d]) => {
     const at = path([...into, d, ...after]), here = start.length - 1 + into.length;
     const ends = spiral ? [] : digits.map((g) => path([...into, g]).at(-1));  // (the ways on: each digit's end)
-    // its cells, the path's and the ways on's, as on the plane (on a surface each its polygon, a side toward where it comes from)
-    const cellAt = (p, q) => (surface ? polygon(p, q) : walkCell(mode.lattice, p));
-    const drawn = !cells ? [] : [...new Map([...at.map((p, i) => [p, at[Math.max(0, i - 1)] === p ? at[1] : at[i - 1]]), ...ends.map((p) => [p, at[here]])].map(([p, q]) => [pointKey(...p), cellAt(p, q)])).values()];
+    const drawn = !cells ? [] : surface ? [polygon(at[here], at[here - 1])] : [...new Map([...at, ...ends].map((p) => [pointKey(...p), walkCell(mode.lattice, p)])).values()];
     return { d, caption, at: at.slice(0, here + 2), next: at.slice(here + 1), ends, here, dashed: spiral && !d, cells: drawn };
   };
   if (spiral) return [figure(1, Array(7).fill(1)), figure(0, Array(7).fill(1))];

@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.306';
+const VERSION = '0.4.307';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -749,16 +749,17 @@ function setPalette(theme) {
   PALETTE = P;
   const shades = lifeShades(P.unlit);
   LIFE_TRAIL.splice(0, 8, ...shades.trail); LIFE_FADE.splice(0, 8, ...shades.fade);
-  for (let i = 0; i < BANDS; i++) GRADIENT[i] = `hsl(${190 + (200 * i) / (BANDS - 1)}, 85%, ${P.light}%)`;
+  for (let i = 0; i < BANDS; i++) GRADIENT[i] = rainbowHue(190 + (200 * i) / (BANDS - 1));  // (from its blue, 190, round by red, 360, to orange)
   LIFE_HUES.forEach((h, k) => { LIFE_COLOURS[k] = `hsl(${h}, 85%, ${PALETTES.light.light}%)`; });  // the light page's, on a dark one too (to compare)
   DIGIT_COLORS.splice(0, DIGIT_COLORS.length, ...P.digits);
   Object.assign(DIRECTION_COLOURS, P.directions);
   GREY = P.grey;
   MONO = P.mono;
 }
-// the page's theme (light or dark) and the app's rainbow at f, from 0 to 1 (its GRADIENT, BANDS colours)
+// the page's theme (light or dark) and the app's rainbow at f, from 0 to 1 (its GRADIENT, BANDS colours); its colour of hue h
 const themeName = () => (document.documentElement.dataset.theme === 'light' ? 'light' : 'dark');
 const gradientAt = (f) => GRADIENT[Math.round(f * (BANDS - 1))];
+function rainbowHue(h) { return `hsl(${h}, 85%, ${PALETTE.light}%)`; }  // (a declaration: setPalette, above, calls it first)
 setPalette(themeName());
 
 
@@ -6901,7 +6902,7 @@ let startsShown = false;  // while the start number is hovered: the starts shown
 let choosingStart = false;  // while the start row is hovered: the view stays as it was
 
 // Every start's edge (two starts each, one per direction); the chosen one in yellow, an arrow in
-// its middle, and the start dot on the corner it arrives at
+// its middle
 function drawStarts(ctx) {
   const g = walk.geo, G = gridGraph(g), sh = walk.shape, R = walk.R, k = g.sides, proj = projector(), list = startList(g);
   const normal = (v) => unit([G.normal[3 * v], G.normal[3 * v + 1], G.normal[3 * v + 2]]);
@@ -6942,8 +6943,6 @@ function drawStarts(ctx) {
     ctx.lineTo(mx - ux * a + uy * a * 0.6, my - uy * a - ux * a * 0.6);
     ctx.closePath();
     ctx.fill();
-    ctx.fillStyle = '#3fb950';  // the start dot, as in the walk
-    ctx.beginPath(); ctx.arc(x1, y1, Math.max(3, Math.min(s * 0.15, 6)), 0, 2 * Math.PI); ctx.fill();
   }
   ctx.restore();
 }
@@ -10473,6 +10472,8 @@ function planeWalls(kind, W) {
 }
 // Behind the grid (grid layer, at each view): the sky or the page outside it (the grid itself, its page, its walls and its
 // outlines, see gpuPlane)
+// the plane's grid lines, faint: white over a dark sky, dark over a light one, else the page's grid colour
+const gridColour = () => (darkSky() ? 'rgba(255,255,255,0.06)' : skyStops() ? 'rgba(0, 0, 0, 0.08)' : getComputedStyle(document.documentElement).getPropertyValue('--grid'));
 function drawPlaneGrid() {
   layers.grid.clearRect(0, 0, cw, ch);
   drawSky(layers.grid);
@@ -14876,8 +14877,7 @@ function drawGrid() {
   const s = view.scale;
   let stepCells = 1;
   while (s * stepCells < 10) stepCells *= 5;
-  // faint lines: white over a dark sky, dark over a light one, else the page's grid colour
-  ctx.strokeStyle = darkSky() ? 'rgba(255,255,255,0.06)' : skyStops() ? 'rgba(0, 0, 0, 0.08)' : getComputedStyle(document.documentElement).getPropertyValue('--grid');
+  ctx.strokeStyle = gridColour();
   ctx.lineWidth = 1;
   ctx.beginPath();
   if (walk.is3d) {
@@ -15090,11 +15090,10 @@ function ogiveOf({ p, h, side, nrm, size }) {
 // a walker's head's unit for a tile of that area (on the screen, or in space): its arrow (the plane's, an ogive) 1.6 of
 // them long, 0.8 of the side of the square of the tile's area
 const headSize = (area) => (0.8 * Math.sqrt(area)) / 1.6;
-// A walker's arrow on the plane (on a surface an ogive, see ogiveOf): its tip ahead, its notch behind, centred on its
-// place; at(forward, across): a point of it on the screen, in its size
-// the plane's arrow's gold, from its rim (deep) to its tip (bright), on either theme
-const ARROW_GOLD = ['#a86400', '#f0a000', '#ffd000', '#fff27a'];
-function drawArrow(ctx, fill, at) {
+// A walker's arrow on the plane (on a surface an ogive, see ogiveOf): its tip ahead, its notch behind (notch: how far
+// along; −0.6, none: a start's flag, its base straight), centred on its place; at(forward, across): a point of it on the
+// screen, in its size; fill a colour, or a ramp from its base to its tip
+function drawArrow(ctx, fill, at, notch = -0.3) {
   if (Array.isArray(fill)) {  // (a ramp: along its axis, rim to tip)
     const g = ctx.createLinearGradient(...at(-0.8, 0), ...at(0.8, 0));
     fill.forEach((c, k) => g.addColorStop(k / (fill.length - 1), c));
@@ -15102,7 +15101,7 @@ function drawArrow(ctx, fill, at) {
   }
   ctx.fillStyle = fill;
   ctx.beginPath();
-  [[1, 0], [-0.6, 0.7], [-0.3, 0], [-0.6, -0.7]].forEach(([f, l], i) => { const [x, y] = at(f - 0.2, l); if (i) ctx.lineTo(x, y); else ctx.moveTo(x, y); });  // (−0.6 … 1 along: shifted to its length's middle, −0.8 … 0.8, not to the centre of gravity of the triangle it makes)
+  [[1, 0], [-0.6, 0.7], [notch, 0], [-0.6, -0.7]].forEach(([f, l], i) => { const [x, y] = at(f - 0.2, l); if (i) ctx.lineTo(x, y); else ctx.moveTo(x, y); });  // (−0.6 … 1 along: shifted to its length's middle, −0.8 … 0.8, not to the centre of gravity of the triangle it makes)
   ctx.closePath();
   ctx.fill();  // (no outline)
 }
@@ -16808,27 +16807,17 @@ function drawOverlay() {
   }
   if (!walk.n || walk.life || walk.rows) return;  // no walker in the Game of Life, nor Elementary
   if (walk.battle) return;  // a battle: its heads and flags drawn with its tiles (see headsOf)
-  const r = Math.max(3, Math.min(s * 0.35, 8));
-  // start (on a surface its flag, drawn with its tiles: see flagOf)
-  if (!walk.sphere) {
-    ctx.fillStyle = '#3fb950';
-    ctx.beginPath();
-    ctx.arc(ox + walk.xs[0] * s, oy + walk.ys[0] * s, r, 0, Math.PI * 2);
-    ctx.fill();
-  }
-  if (walk.sphere) return;  // (its head drawn with its tiles, see headsOf)
-  // current position + heading
-  const x = ox + walk.xs[cur] * s;
-  const y = oy + walk.ys[cur] * s;
-  // heading = direction of the last step (up at the start)
-  let dx = 0, dy = -1;
-  if (cur > 0) {
-    const ux = walk.xs[cur] - walk.xs[cur - 1], uy = walk.ys[cur] - walk.ys[cur - 1];
-    const l = Math.hypot(ux, uy);
-    if (l > 1e-6) { dx = ux / l; dy = uy / l; } else { dx = 0; dy = 0; } // step along the view axis
-  }
+  if (walk.sphere) return;  // (its head and its start's flag drawn with its tiles, see headsOf)
+  // the walker at step i: its place and heading, its last step's (up at the start), in a frame at(forward, across)
   const a = headSize(polyArea(FILL_GRIDS[walk.lattice]?.templates[0] ?? [[0, 0], [1, 0], [1, 1], [0, 1]]) * s * s);  // (its cell's area on the screen: a lattice's tile, else a unit square)
-  drawArrow(ctx, ARROW_GOLD, (f, l) => [x + (dx * f - dy * l) * a, y + (dy * f + dx * l) * a]);
+  const frame = (i) => {
+    const x = ox + walk.xs[i] * s, y = oy + walk.ys[i] * s, ux = i ? walk.xs[i] - walk.xs[i - 1] : 0, uy = i ? walk.ys[i] - walk.ys[i - 1] : -1, l = Math.hypot(ux, uy);
+    const [dx, dy] = l > 1e-6 ? [ux / l, uy / l] : [0, 0];  // (a step along the view axis: none)
+    return (f, c) => [x + (dx * f - dy * c) * a, y + (dy * f + dx * c) * a];
+  };
+  // its start a flag, flat, under it: from the grid's colour to the rainbow's blue at its tip; it gold to the rainbow's red
+  drawArrow(ctx, [gridColour(), GRADIENT[0]], frame(0), -0.6);
+  drawArrow(ctx, ['#ffd000', rainbowHue(360)], frame(cur));
 }
 
 

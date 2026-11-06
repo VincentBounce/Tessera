@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.323';
+const VERSION = '0.4.324';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -1608,22 +1608,26 @@ let cw = 0, ch = 0;
 function updateRuleText() {}  // the rule is shown by describe (the Play card)
 
 // Game of Life needs one base-(K + 1) digit per cell; walks use the requested number of digits
-// The digits asked beyond those a walk reads at first, by number and base: a worm's, when it ran out of them, or the
-// digits' window's (see needDigits); the cache kept, more computed only when asked
+// The digits asked beyond those a walk reads at first, by setup (its length apart: see setupKey): a worm's or a battle's,
+// when it ran out of them, or the digits' window's (see needDigits); the cache kept, more computed only when asked
 const digitsAsked = {};
-const digitsKey = () => `${formulaInUse}/${MODES[$('mode').value].life ? lifeBase() : MODES[$('mode').value].base}`;
+const BATTLE_DIGITS = 10000;  // (a battle's digits at first: most end before, see buildWalk)
+const setupKey = () => { const s = getSetup(); delete s.d; delete s.v; return JSON.stringify(s); };  // (the setup shown, its length and version apart)
 function needDigits(n) {
-  if ((digitsAsked[digitsKey()] ?? 0) >= n) return;
-  digitsAsked[digitsKey()] = n;
+  if ((digitsAsked[setupKey()] ?? 0) >= n) return;
+  digitsAsked[setupKey()] = n;
   compute();
 }
-function digitsNeeded() {
+function digitsNeeded(whole = false) {  // (whole: the length asked, a battles' hunt's: every battle played to it)
   const mode = MODES[$('mode').value], size = randomPrimeSize();
   if (mode.life) return plane.start !== 'digits' ? 256 : mode.elementary ? 2 * targetAsked() + 16 : mode.plane ? gridSize(planeKind(mode.plane), plane.side)[2] : SPHERES[surfaceOf(mode)].tiles(sphereSize());  // all the digits for a start by the digits (a cell each); else a hunt's patch
   // a worm: by its rule none read; by the digits one at a new situation only (its free lines at a corner, met for the
   // first time: a few dozen at most, see wormMind), the number's next that fits: WORM_DIGITS at first, more when it lacks
   // them (see needDigits), its steps the length asked
-  if (mode.worm) return Math.min(targetAsked(), Math.max(WORM_DIGITS, digitsAsked[digitsKey()] ?? 0));
+  if (mode.worm) return Math.min(targetAsked(), Math.max(WORM_DIGITS, digitsAsked[setupKey()] ?? 0));
+  // a battle: BATTLE_DIGITS at first, more while it goes on past them (see buildWalk), its walkers known dead only theirs
+  // (see rivalsDigits)
+  if (!whole && battleOn()) return Math.min(targetAsked(), Math.max(BATTLE_DIGITS, digitsAsked[setupKey()] ?? 0));
   // a random prime is walked whole: its size (decimal digits) written in the walk's base
   return size ? Math.ceil((size * Math.log(10)) / Math.log(mode.base)) + 1 : targetAsked();
 }
@@ -3087,15 +3091,18 @@ function rivalField(id, j) {
   return box;
 }
 $('rivalFormulas').append(...RIVALS.map(rivalField));
+// (a walker dead in this battle with fewer digits, at step d: its first d + 1 only, the rest never read, laid as 0s: the
+// deaths before the digits it had the same, whatever the digits after)
+let battleDeaths = null;  // { key: the battle, its length apart (see setupKey), dead: each walker's step of death, −1 alive }
 function rivalsDigits(base, n, then) {
-  const out = [];
-  for (const id of RIVALS.slice(0, walkTeams - 1)) {
-    const F = formulaOf($(id).value);
+  const out = [], dead = battleDeaths?.key === setupKey() ? battleDeaths.dead : [];
+  for (const [j, id] of RIVALS.slice(0, walkTeams - 1).entries()) {
+    const F = formulaOf($(id).value), m = dead[j + 1] >= 0 ? Math.min(n, dead[j + 1] + 1) : n;
     if (F.error) return { error: `${rivalName(id)}: ${F.error}` };
-    const known = knownDigits(F, base, n);
-    if (known) { out.push(known); continue; }
+    const known = knownDigits(F, base, m);
+    if (known) { const all = new Uint8Array(n); all.set(known); out.push(all); continue; }
     rivalWorkers[id]?.terminate();
-    rivalWorkers[id] = digitsWorker(F, base, n, (error) => {
+    rivalWorkers[id] = digitsWorker(F, base, m, (error) => {
       delete rivalWorkers[id];
       if (error) $('status').textContent = `${rivalName(id)}: ${error}`; else if (!Object.keys(rivalWorkers).length) then();
     });
@@ -3138,7 +3145,7 @@ const writeDigits = (ds, b, head) => {
 function numberRows() {
   const P = walk.battle?.player, b = current.base, { head, frac } = digitsInUse(), n = head.length + frac.length;
   return [formulaInUse, ...RIVALS.slice(0, P ? P.K - 1 : 0).map((id) => $(id).value)].map((f, s) => {
-    const F = formulaOf(f), ds = s ? knownDigits(F, b, n) : Uint8Array.from([...head, ...frac]), used = !P ? n : P.dead[s] >= 0 ? P.dead[s] : P.n;
+    const F = formulaOf(f), used = !P ? n : P.dead[s] >= 0 ? P.dead[s] : P.n, ds = s ? knownDigits(F, b, used) : Uint8Array.from([...head, ...frac]);  // (a walker's digits up to its death: those computed)
     const lead = !s ? head.length : F.kind === 'seq' ? ds.length : headDigits(cache[`${F.text}/${b}`].intPart, b).length, h = Math.min(lead, used);  // (its integer part's digits)
     return { s, name: s ? F.text ?? f : f, used, n, head: ds.subarray(0, h), frac: ds.subarray(h, used), total: s ? lead : current.total, ratio: s ? F.kind === 'rat' && smallExact(F.ast) : current.ratio };
   });
@@ -3851,8 +3858,12 @@ function buildWalk() {
   const before = walkSaid;
   walkSaid = '';
   buildWalkOf();
-  // a worm out of digits for a new corner, the number having more: ten times as many, up to the length asked
-  if (walk.wormEnd === 'digits' && digitsNeeded() < targetAsked() && digitsNeeded() < (wholeTotal() ?? Infinity)) setTimeout(() => needDigits(Math.min(targetAsked(), 10 * digitsNeeded())));
+  // a worm out of digits for a new corner, or a battle going on at its last digit, the number having more: ten times as
+  // many, up to the length asked
+  // a battle going on at its last digit, its deaths kept (its walkers dead need no more, see rivalsDigits): the same
+  const ranOut = walk.wormEnd === 'digits' || (walk.battle && !walk.battle.winner.until && walk.n >= digitsNeeded());
+  if (walk.battle) battleDeaths = { key: setupKey(), dead: Array.from(walk.battle.player.dead) };
+  if (ranOut && digitsNeeded() < targetAsked() && digitsNeeded() < (wholeTotal() ?? Infinity)) setTimeout(() => needDigits(Math.min(targetAsked(), 10 * digitsNeeded())));
   if (walkSaid) $('status').textContent = walkSaid;  // (said at once; again after the time it took, see compute)
   else if (before && $('status').textContent.includes(before)) $('status').textContent = '';  // (said before, true no more)
   syncLink();
@@ -8248,7 +8259,7 @@ const huntGoal = () => (huntRank === 'even' && PENETRATIONS[penetration][0] === 
 const huntStarts = () => huntVary.starts && startsWayNow() !== 'centred';  // (Starts varied: in Symmetric and Random)
 const BATTLE_FRESH = () => ({ ended: [], open: [], endedCount: 0, tried: new Set(), key: battleHuntKey(), status: '' });  // (a hunt's results, none yet)
 const battleHunt = { run: null, ended: [], open: [], endedCount: 0, tried: new Set(), key: '', status: '' };
-const battleHuntKey = () => [huntGoal(), $('mode').value, walkTeams, startsWayNow(), penetration, sphereSize(), digitsNeeded(), huntVary.formulas || BATTLE_FORMULAS.map((id) => $(id).value).join(),
+const battleHuntKey = () => [huntGoal(), $('mode').value, walkTeams, startsWayNow(), penetration, sphereSize(), digitsNeeded(true), huntVary.formulas || BATTLE_FORMULAS.map((id) => $(id).value).join(),
   huntStarts() || `${startNo()}|${battleSeed}`].join('|');  // (what its battles are fought at: what it does not vary)
 // √r's first n digits in base b, its integer part first (on the page: one integer root, as numberSeed's)
 const rootDigits = (r, base, n) => Uint8Array.from(iroot(BigInt(r) * BigInt(base) ** BigInt(2 * n), 2).toString(base).slice(0, n), (c) => c.charCodeAt(0) - 48);
@@ -8276,7 +8287,7 @@ function huntScore(P) {
 const meshData = (g) => Object.fromEntries(Object.entries(g).filter(([, v]) => { try { structuredClone(v); return true; } catch { return false; } }));
 async function startBattleHunt() {
   if (battleHunt.key !== battleHuntKey()) Object.assign(battleHunt, BATTLE_FRESH());
-  const run = (battleHunt.run = { stop: false, workers: [] }), mode = MODES[$('mode').value], n = digitsNeeded(), base = mode.base, K = walkTeams, grid = !!mode.grid, way = startsWayNow();
+  const run = (battleHunt.run = { stop: false, workers: [] }), mode = MODES[$('mode').value], n = digitsNeeded(true), base = mode.base, K = walkTeams, grid = !!mode.grid, way = startsWayNow();
   // the cards' digits first, once (a worker each, cached as A's); the roots' made as they are drawn
   if (huntVary.formulas) for (const f of BATTLE_CARDS) {
     const F = formulaOf(f);

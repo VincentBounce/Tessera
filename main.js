@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.310';
+const VERSION = '0.4.311';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -17948,7 +17948,7 @@ $('sizeDown').addEventListener('click', () => stepSize(-1));
 $('walkOn').append(tileGroup([tile({ id: 'walkOnGrid', pic: icon('onGrid'), text: 'Grid', title: 'Along the lines of the grid', click: () => navGo(4, 'grid') }),
   tile({ id: 'walkOnCells', pic: icon('onCells'), text: 'Cells', title: 'From cell to cell, colouring the cells: on triangles and hexagons the choices at each step change, and so does the base', click: () => navGo(4, 'cells') })], true));
 // a creature's start, one choice: a tab group of tiles, by its rule or by the digits (as Life's starts)
-$('antStartTabs').append(tileGroup([tile({ id: 'antByRule', pic: icon('ant'), text: 'Rule', title: 'Its turns by its rule, a card below' }), tile({ id: 'antByDigits', pic: icon('barcode'), text: 'Digits', title: "Its turns by the number's digits, each digit a turn" })], true));
+$('antStartTabs').append(tileGroup([tile({ id: 'antByRule', pic: icon('ant'), text: 'Rule', title: 'Its turns by its rule, a card below' }), tile({ id: 'antByDigits', pic: icon('barcode'), text: 'Rule × Digits', title: "Its turns by its rule and the number's digits: a digit 0 turns as its rule, a 1 the other way" })], true));
 for (const [id, digits] of [['antByRule', false], ['antByDigits', true]]) {  // (a worm's own, by its rule or the digits)
   $(id).addEventListener('click', () => {
     const w = MODES[$('mode').value];

@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.364';
+const VERSION = '0.4.365';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -15249,9 +15249,10 @@ function faceWalk() {
 // once the walker has reached the end, towards the walk's middle, as when the walk is shown whole
 function followWalker() {
   // on a torus the position does not say which way the surface faces: use the tile's normal
-  const t = walk.tile[cur], nr = walk.shape.nrm;
+  // (gliding: toward its place on the way to its next one, see glideAt, so the view moves as smoothly as it)
+  const at = glideAt(), j = Math.floor(at), f = at - j, k = f > 0 ? j + 1 : j, t = walk.tile[f < 0.5 ? j : k], nr = walk.shape.nrm;
   const d = unit(walk.geo.torus && !walk.geo.mobius ? [nr[3 * t], nr[3 * t + 1], nr[3 * t + 2]]
-    : cur >= walk.n && !walk.life ? walkMiddle() : [walk.wx[cur], walk.wy[cur], walk.wz[cur]]);
+    : cur >= walk.n && !walk.life ? walkMiddle() : [walk.wx[j] + (walk.wx[k] - walk.wx[j]) * f, walk.wy[j] + (walk.wy[k] - walk.wy[j]) * f, walk.wz[j] + (walk.wz[k] - walk.wz[j]) * f]);
   const axis = cross(d, cam.v), sin = Math.hypot(...axis), angle = Math.atan2(sin, towardViewer(...d));
   if (sin > 1e-9 && angle > 1e-4) rotateView(axis.map((x) => (x / sin) * angle * 0.12));
 }
@@ -16765,7 +16766,9 @@ function visitCells() {
 // tile the plane, so the fill follows the path exactly.
 let fill = null;                   // { at, cx, cy, tpl, templates, count, tooBig } for the current walk (see computeFill)
 // Area goes with the colours where the path has one colour per step (not Visits, not By digit)
-const fillAreasApply = () => useful('fill') && MODES[$('mode').value].fill !== false && !['visits', 'digit'].includes($('colourMode').value);
+const fillAreasApply = () => useful('fill') && MODES[$('mode').value].fill !== false && !['visits', 'digit'].includes($('colourMode').value) && !snakeBattle();
+// a battle in Snake cells: its bodies' tails slide, no area they close lasts: none filled (Area greyed)
+const snakeBattle = () => battleOn() && PENETRATIONS[penetration][0] === 'snakeCells';
 // (the walk drawn may still be the last mode's while the new one is computed: a tiling with a fill)
 // Area (one choice: Empty, Light, Plain, see AREA_MODES): filled where it applies; Light, translucent, only over a line
 const areaOn = () => $('area').value !== 'empty' && fillAreasApply();
@@ -18076,6 +18079,7 @@ function renderAreaModes() {
   const off = !fillAreasApply(), light = shows('translucent');
   const shown = (v) => (v === 'light' && !light ? 'plain' : v);  // (Light only over a line: else Plain)
   const now = AREA_MODES.findIndex(([look]) => look === shown($('area').value)), first = shown(defaultOf('area'));
+  $('areaModes').dataset.greyed = snakeBattle() ? 'in Snake cells: its tails slide, no area they close lasts' : '';
   notchRow($('areaModes'), 'Area', 'The areas the walk closes, filled', AREA_MODES.map(([look, name, words]) => [name, `${words}${look === 'light' && !light ? ' · greyed: over a line only (Plain here)' : ''}${look !== 'empty' && fractionAreaCap() < Infinity ? ` · a fraction: its digits repeat, its walk goes round its figure again and again, closing off big parts of the surface; only its small areas are filled, ${FRACTION_AREA} tiles at most` : ''}`]), now, AREA_MODES.findIndex(([look]) => look === first),
     (k) => { if ($('area').value !== AREA_MODES[k][0]) { $('area').value = AREA_MODES[k][0]; $('area').dispatchEvent(new Event('change')); } }, !off, false);  // (let go: the row drawn again)
 }

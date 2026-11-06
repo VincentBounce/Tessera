@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.283';
+const VERSION = '0.4.284';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -3228,7 +3228,7 @@ function ruleCards(w, pic, here = true) {
 const ANT_WORDS = { RL: "Langton's ant: a highway from step 9,976", RLR: 'Chaotic ant: it grows chaotically', LLRR: 'Symmetric ant: it grows symmetrically', LRRRRRLLR: 'Square ant: it fills a square around itself',
                     RRLLLRLLLRRR: 'Triangle ant: a filled triangle, growing and moving' };  // (its name, on any grid; then what it does on squares)
 const TURMITE_WORDS = ['A spiral', 'The widest mess', 'A square growing filled', 'A shape growing filled', 'A highway from step 3,090, every 54 steps'];
-const WORM_WORDS = ['Dies at step 4,802', 'Dies at step 83,618', 'Dies at step 569,804', 'Dies at step 918,339', 'Still going at step 5,000,000', 'Still going at step 5,000,000'];
+const WORM_WORDS = ['Worm dying at step 4,802', 'Worm dying at step 83,618', 'Worm dying at step 569,804', 'Worm dying at step 918,339', 'Worm going on past 5,000,000', 'Worm going on past 5,000,000'];  // (worm in each name: its tab only says Grid)
 const capitalised = (t) => t.replace(/^./, (c) => c.toUpperCase());
 // a walk's or a creature's rule in use, as How it works titles it: its card's name (Custom rule: none has it) and the rule, as
 // Life's (Life B3/S23); a walk with no rules, its own name

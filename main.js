@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.344';
+const VERSION = '0.4.345';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -2138,9 +2138,11 @@ const runLoop = () => {
 };
 // The run's end, on the step line after its last: its mark always, its words open, the same everywhere, a link in green (see loopLink): its loop
 // (↻ every P from step T; → a walk's drift, an ant's highway), its death (✝ at step T: a worm, Life dying out) or frozen
-// (■ from gen T); '' while none is known (Space-time and Elementary: none)
+// (■ from gen T), a battle's end before its digits (■ the first heads met at step T); '' while none is known (Space-time
+// and Elementary: none)
 function endMark() {
-  if (spaceTimeOn() || walk.rows || walk.battle) return '';
+  if (spaceTimeOn() || walk.rows) return '';
+  if (walk.battle) { const why = walk.battle.winner.until; return why ? genLink(cur !== walk.n ? walk.n : 0, `■<span class="end-words"> ${why} at step ${fmt(walk.n)}</span>`, 'loop') : ''; }  // (its winner: the ranking's)
   const k = walk.life?.stable, o = !walk.life && runLoop();
   const [mark, words] = walk.life ? (!k ? [] : k.extinct ? ['✝', `at gen ${fmt(k.T)}`] : k.P === 1 ? ['■', `from gen ${fmt(k.T)}`] : ['↻', `every ${fmt(k.P)} from gen ${fmt(k.T)}`])
     : !o ? [] : walk.wormEnd ? ['✝', `at step ${fmt(walk.n)}`] : [walk.loop.drift ? '→' : '↻', `every ${fmt(walk.loop.period ?? walk.n - o.T)} from step ${fmt(o.T)}`];
@@ -2196,7 +2198,7 @@ const stepperUnit = () => (NAV[$('mode').value]?.[0] === 'Walk' || !readsDigits(
 function syncDigitsStepper() {
   const stop = runStop(), size = randomPrimeSize(), gens = gensShown(), asked = size ?? targetAsked(), steps = size ? PRIME_STEPS : DIGIT_STEPS;
   const unit = gens ? 'generations' : stepperUnit(), total = gens || size || walk.loop ? null : wholeTotal();  // (a loop's, its rounds: see runStop)
-  // the length asked, steps at most, the same words in every tab (its end, a loop or a death, said by the title: see runStop)
+  // the length asked, steps at most, the same words in every tab (its end, a loop, a death, a battle's: the step line, see endMark)
   if (document.activeElement !== $('digitsLabel')) $('digitsLabel').value = `≤${compactCount(asked)}`;  // (its unit, steps: the footprints beside it)
   $('digitsLabel').title = [`${fmt(asked)} ${size ? 'digits of the random prime p (100 to 2,000: it is walked whole)' : `${asked === 1 ? unit.slice(0, -1) : unit} at most`}`,
     !size && !lengthUsed() && 'Not used here (Life and Reversible play on): kept for the next tab', !size && total !== null && `The number has ${fmt(total)} digits`, stop?.why,

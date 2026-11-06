@@ -642,7 +642,7 @@ async function partsEqual(fail) {
     await wait(350);
     for (const K of COLOUR_STEPS.filter((k) => k > 1 && coloursFit(k))) {
       location.hash = `#w=${w}${walls}&k=${K}`;
-      await wait(350);
+      for (let t = 0; t < 60 && !($('mode').value === w && lifeColours === K && walk.life?.colours === K && !busy); t++) await wait(100);  // (its own game built at K, not a wait's guess)
       const sizes = huntParts(null, K).map((p) => p.length);
       if (lifeColours !== K) fail(`${w}${walls}: ${K} colours offered, ${lifeColours} taken`);
       else if (Math.max(...sizes) - Math.min(...sizes) > slack) fail(`${w}${walls} in ${K} colours: ${Math.min(...sizes)} to ${Math.max(...sizes)} cells a colour`);

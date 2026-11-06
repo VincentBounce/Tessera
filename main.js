@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.337';
+const VERSION = '0.4.338';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -1639,17 +1639,17 @@ function describe(base, available) {
   const mode = MODES[$('mode').value], sym = `<span class="pi">${withIcons(shownSym)}</span>`;
   setLinks($('barNum'), (barTitle = withIcons(shownSym)));
   $('barNum').title = formulaInUse;
-  // a creature (an ant, a turmite, the worm): its name; what it turns by, its rule in a chip (as a block rule's), by the digits
-  // of a number: that number first
-  const w = $('mode').value, creature = MODES[w].worm || ANTS[w];
-  $('barRule').hidden = !creature;
-  $('barBase').hidden = false;
-  if (creature) { const R = creatureRules(w); setLinks($('barNum'), (barTitle = walkName(w))); setLinks($('barRule'), R.byDigits ? `${withIcons(shownSym)} · ${R.now}` : R.now); $('barRule').title = [R.byDigits ? `It turns by the digits of ${shownSym}, base 2` : 'It turns by its rule', antColours(w) && `${antColours(w)} colours`].filter(Boolean).join(' · '); $('barBase').hidden = true; }  // (one chip beside the title, its rule: its base or colours in its tooltip)
-  const colours = antColours($('mode').value);
+  // the chips after the title, in one order everywhere: a walk's base, then the rule (a walk's, a creature's, Life's: a click,
+  // how it works); a creature turns by its rule, or by the digits of a number: that number first
+  const w = $('mode').value, creature = MODES[w].worm || ANTS[w], colours = antColours(w);
+  const walkRule = !creature && !mode.life && WALK_NETS[mode.net] ? walkRuleOf(mode) : '';
+  $('barBase').hidden = !!creature || !!mode.life;  // (a creature's base or colours in its rule's tooltip; Life's digits: in its description)
   $('barBase').textContent = colours ? `${colours} colours` : baseWords(base);
-  $('barBase').classList.remove('how-it-works');  // (a walk's base: a click, its number; see barBase's click)
-  $('barBase').title = 'A click: the number, its digits in this base';
-  $('barBase').parentElement.classList.toggle('life', !!creature || battleOn());  // (a creature, a battle laid out as Life's: its title, its chips and ranking's titles under it)
+  $('barRule').hidden = !creature && !walkRule;  // (Life's: below)
+  setLinks($('barRule'), walkRule);
+  $('barRule').title = 'Its rule · A click: how it works';
+  if (creature) { const R = creatureRules(w); setLinks($('barNum'), (barTitle = walkName(w))); setLinks($('barRule'), R.byDigits ? `${withIcons(shownSym)} · ${R.now}` : R.now); $('barRule').title = [R.byDigits ? `It turns by the digits of ${shownSym}, base 2` : 'It turns by its rule', colours && `${colours} colours`].filter(Boolean).join(' · '); }
+  $('barBase').parentElement.classList.toggle('life', !!creature || battleOn());  // (a creature, a battle titled as Life is: see .bar-title.life)
   if (colours) base = colours;  // its chips, one per colour
   $('barLoop').hidden = true;  // (a reversible one's: not back yet; a walk's loop, its title's link, see updateStats)
   $('ruleChips').replaceChildren();
@@ -1682,9 +1682,9 @@ function describe(base, available) {
   }
   // the title: the rule (its name, or the rule itself), not the number that may have seeded it (Elementary's: built as a walk)
   const ruleText = walk.life?.ruleText ?? lifeRuleNow()?.text ?? '', known = ruleCard(ruleText);
-  $('barBase').textContent = ruleText;  // on the right, the lifetime in the middle (the title: the generation, see updateStats)
-  $('barBase').title = [known && known.name !== ruleText ? known.name : '', 'A click: how it works'].filter(Boolean).join(' · ');  // (its name, when not its words: a loop's)
-  $('barBase').classList.add('how-it-works');  // (the rule: a click, how it works)
+  $('barRule').hidden = !ruleText;
+  setLinks($('barRule'), ruleText);
+  $('barRule').title = [known && known.name !== ruleText ? known.name : '', 'A click: how it works'].filter(Boolean).join(' · ');  // (its name, when not its words: a loop's)
   $('barBase').parentElement.classList.add('life');
   if (walk.rows) { $('description').innerHTML = `${{ digits: `<span class="walking">${sym}</span> in base 2`, cell: 'One live cell', two: 'Two live cells', half: 'Its left half alive' }[plane.start]} its first row, ${fmt(walk.n)} rows down · ${fmt(walk.rows.upTo.at(-1))} live cells`; return; }  // (Elementary, see elementaryRows)
   const cells = walk.life.seed.length;
@@ -17899,13 +17899,13 @@ $('copyRle').addEventListener('click', () => { const text = lifeRle(); if (text)
 // (a check once copied) and the cross; another number or base (a colour more), it shows that one; as how a rule works,
 // only a click on the button again or the cross closes it
 // the chips that show the number: Full number's, and a walk's base (its rule's chip: how it works instead)
-const numberChips = () => [$('copyNumber'), $('barBase')].filter((b) => !b.classList.contains('how-it-works'));
+const numberChips = () => [$('copyNumber'), $('barBase')];
 // the bases' bubbles: lit, every one of the base shown (drawn again: lit as they are)
 const baseShown = (base) => !$('numberPreview').hidden && base === baseWords(current.base);
 const lightBases = () => { for (const b of document.querySelectorAll('.bubble.act')) b.classList.toggle('active', baseShown(b.textContent)); };
 function closeNumber() { $('numberPreview').hidden = true; for (const b of numberChips()) b.classList.remove('active', 'switch'); lightBases(); }
 const toggleNumber = () => { if (!$('numberPreview').hidden) closeNumber(); else showNumber(); };  // (a base's bubble too: see cardBubble)
-for (const b of [$('copyNumber'), $('barBase')]) b.addEventListener('click', () => { if (!b.classList.contains('how-it-works')) toggleNumber(); });
+for (const b of numberChips()) b.addEventListener('click', toggleNumber);
 // A fraction's digits in base b, exact, its period in brackets: = 0.(005291); null when it does not end or repeat within
 // the digits in use (the walk's digits, or the cells a start lays: see digitsNeeded, showNumber)
 function ratioDigits(b, ratio = current.ratio, max = digitsNeeded()) {

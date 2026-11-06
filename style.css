@@ -460,17 +460,13 @@ button.wide.active, .head-btn.active { border-color: var(--accent); color: var(-
 .ranking .rank-num { text-align: right; color: var(--muted); }
 .ranking .rank-row.dead > i { opacity: 0.35; }
 .ranking .all-dead { position: absolute; left: 0; top: 0; line-height: 18px; font-weight: 600; }
-.bar-title { display: flex; align-items: baseline; gap: 8px; margin-bottom: 8px; white-space: nowrap; overflow: hidden; }
-.bar-num { flex: none; max-width: 70%; font-size: 20px; font-weight: 700; color: var(--accent); overflow: hidden; text-overflow: ellipsis; }  /* the number first */
+.bar-title { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 8px; margin-bottom: 8px; white-space: nowrap; overflow: hidden; }  /* the title, its chips on its right, on the next line when there is no room */
+.bar-num { flex: 0 1 auto; min-width: 0; max-width: 100%; font-size: 20px; font-weight: 700; color: var(--accent); overflow: hidden; text-overflow: ellipsis; }  /* the number first */
 .bar-sub { margin: -4px 0 8px; font-size: 12px; color: var(--muted); }
 .bar-sub b { color: var(--text); }
 .rule-chips { display: grid; grid-template-columns: repeat(auto-fit, minmax(80px, 1fr)); gap: 5px; margin-bottom: 9px; }
 .rule-chips:empty { display: none; }
-.bar-title.life .bar-num { max-width: none; font-size: 18px; font-variant-numeric: tabular-nums; white-space: pre; }  /* Life: the generation's digits all as wide (see updateStats) */
-.bar-title.life { flex-wrap: wrap; row-gap: 4px; }
-.bar-title.life .bar-num { flex: 1 1 0; min-width: 0; }  /* Life: its rule under the generation, on the left */
-.bar-title.life::before { content: ''; flex-basis: 100%; order: 1; }  /* (the line's end: the title and, folded, its step on its right; its chips under) */
-.bar-title.life > :not(.bar-num) { order: 2; }
+.bar-title.life .bar-num { font-size: 18px; font-variant-numeric: tabular-nums; white-space: pre; }  /* Life's title, a creature's, a battle's */
 .bar-title .rank-titles { margin-left: auto; align-self: flex-end; display: grid; grid-template-columns: 76px; gap: 6px; font-size: 11px; color: var(--muted); text-align: right; }  /* over the ranking's columns, as wide */
 .bar-title .rank-titles span:not(:first-child) { display: none; }  /* folded: its first */
 .stage-bar:hover .bar-title .rank-titles { grid-template-columns: 70px 56px 56px 56px 70px; }

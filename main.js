@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.256';
+const VERSION = '0.4.257';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -14817,12 +14817,12 @@ const sphereDraw = { at: 0, cost: 0 };
 
 // A walker's head on a surface: its arrow in the tangent plane at the walker, pointing along its last step (at the start,
 // the one it came by), half an edge long, just above its tile, drawn with the tiles (see gpuSurface: hidden as they are).
-// P(i), tileAt(i): the walker's point and tile at step i (the walk's; a battle's, see headsOf); its corners in space
+// P(i), placeAt(i): the walker's point and place at step i (a tile, along the grid a corner; the walk's or a battle's, see
+// headsOf); its corners in space
 // (ARROW_SHAPE's) and its tile's normal
-function headCorners(P = (i) => [walk.wx[i], walk.wy[i], walk.wz[i]], tileAt = (i) => walk.tile[i], before = placePoint(walk.came)) {  // (before: the place it comes from as it starts, see cameFrom)
-  const p = P(cur);
-  const t = tileAt(cur), nr = walk.shape.nrm;
-  const nrm = [nr[3 * t], nr[3 * t + 1], nr[3 * t + 2]];  // outward normal of the current tile
+function headCorners(P = (i) => [walk.wx[i], walk.wy[i], walk.wz[i]], placeAt = (i) => (walk.vert ? walk.vert[i] : walk.tile[i]), before = placePoint(walk.came)) {  // (before: the place it comes from as it starts, see cameFrom)
+  const p = P(cur), at = placeAt(cur), nr = walk.shape.nrm;
+  const nrm = walk.vert ? cornerNormal(at) : [nr[3 * at], nr[3 * at + 1], nr[3 * at + 2]];  // (its place's outward normal: its tile's, or along the grid its corner's: never into the solid)
   const pos = p.map((v, d) => v + nrm[d] * walk.R * 0.003);  // just above the surface
   const [a, b] = [cur > 0 ? P(cur - 1) : before, p];
   let h = [0, 1, 2].map((d) => b[d] - a[d]);
@@ -14834,6 +14834,8 @@ function headCorners(P = (i) => [walk.wx[i], walk.wy[i], walk.wz[i]], tileAt = (
   const sc = walk.shape.corners, size = 0.3 * walk.R * Math.hypot(sc[0] - sc[3], sc[1] - sc[4], sc[2] - sc[5]);  // (1.6 sizes long: about half an edge)
   return { nrm, at: ARROW_SHAPE.map(([f, l]) => [0, 1, 2].map((d) => pos[d] + (h[d] * f + side[d] * l) * size)) };
 }
+// a grid corner's outward normal in the shape shown: the mean of its tiles' (an arrow on it in their mean plane, see headCorners)
+const cornerNormal = (v) => { const G = walk.geo.grid, n = walk.shape.nrm, m = [0, 0, 0]; for (const w of G.nbrs[v]) for (const t of G.edgeTiles.get(G.key(v, w))) for (let d = 0; d < 3; d++) m[d] += n[3 * t + d]; return unit(m); };
 // the heads shown on a surface: each living walker's in a battle (its colour's place in the battle's palette), else the
 // walk's (white, its place 12); none in Life or Elementary
 function headsOf() {
@@ -14841,7 +14843,7 @@ function headsOf() {
   if (!walk.battle) return [[headCorners(), 12]];
   const B = walk.battle.player;
   B.to(cur);
-  return B.living().map((s) => [headCorners((i) => placePoint(B.places[s][i]), (i) => (walk.vert ? walk.geo.grid.tileOf[B.places[s][i]] : B.places[s][i]),
+  return B.living().map((s) => [headCorners((i) => placePoint(B.places[s][i]), (i) => B.places[s][i],
     placePoint(cameFrom(walk.geo, !!walk.vert, B.starts[s]))), s]);
 }
 // an arrow's corners: tip, side, notch, side (forward, across), centred on its place (−0.8 … 0.8 along)

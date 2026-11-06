@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.340';
+const VERSION = '0.4.341';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -17158,7 +17158,7 @@ function updateStats() {
   const far = seekFar(), gens = !!walk.life || spaceTimeOn() || !!walk.rows;
   $('stepNow').textContent = `${gens ? 'Gen' : 'Step'} ${fmt(cur)}`;
   const byStepper = lengthUsed() && far === targetAsked();  // (its end the length asked, not its loop's or its death's)
-  setLinks($('stepLast'), Number.isFinite(runEnd()) && Number.isFinite(far) ? ` / ${fmt(far)}${byStepper ? ` ${icon('footsteps')}` : ''}` : '');
+  setLinks($('stepLast'), Number.isFinite(runEnd()) && Number.isFinite(far) ? ` / ${fmt(far)}${byStepper ? icon('footsteps') : ''}` : '');
   $('stepLast').title = byStepper ? 'The length asked: the steps stepper at the top' : '';
   if (!walk.life && !walk.battle) $('ranking').hidden = $('rankTitles').hidden = true;  // (a battle's shown by renderWalkGauges: never hidden in between, its rows' slides kept)
   const time = spaceTimeOn() && !!stack, rows = walk.rows;

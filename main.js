@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.320';
+const VERSION = '0.4.321';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -17835,7 +17835,7 @@ function copyFlash(b, text) {
     setTimeout(() => { b.innerHTML = was; }, 1500);
   }, () => {});
 }
-// Share: the page link (the setup shown, see syncLink), copied
+// Share link: the page link (the setup shown, see syncLink), copied
 function shareView(b) {
   syncLink();
   copyFlash(b, location.href);
@@ -18214,10 +18214,10 @@ function galleryTab() {
 }
 
 // The Gallery's tools, tiles: Import (added to them, a name already used numbered), Export, Erase all (then Confirm erase, under them),
-// then Share (the link to what is shown)
+// then Share link (the link to what is shown)
 $('galleryTools').replaceChildren(tile({ pic: icon('import'), text: 'Import', title: 'Add the setups of a JSON file to the Gallery (those of a name already used numbered: none replaced)', click: () => $('galleryFile').click() }),
   tile({ pic: icon('export'), text: 'Export', title: 'The Gallery as a JSON file', click: exportGallery }), tile({ pic: icon('trash'), text: 'Erase all', title: 'Erase the Gallery from this browser (asked again under it)', click: () => { $('eraseConfirm').hidden = !$('eraseConfirm').hidden; } }),
-  tile({ pic: icon('link'), text: 'Share', title: 'Copy the link to what is shown', click: () => shareView($('galleryTools').lastElementChild) }));
+  tile({ pic: icon('link'), text: 'Share link', title: 'Copy the link to what is shown', click: () => shareView($('galleryTools').lastElementChild) }));
 $('eraseConfirm').innerHTML = `${icon('trash')} Confirm erase`;
 $('galleryToolsHead').insertAdjacentHTML('afterbegin', icon('floppy'));  // (the Gallery's files: Import, Export, Erase)
 $('eraseConfirm').addEventListener('click', () => { writeGallery([]); $('eraseConfirm').hidden = true; fillGalleryList(); });
@@ -18240,7 +18240,7 @@ requestAnimationFrame(tick);
 $('appTab').innerHTML = `${appLogo()} ${APP_TITLE} v${VERSION}`;
 $('favicon').href = `data:image/svg+xml,${encodeURIComponent(appLogo(cssColour('--accent')))}`;
 // Credits: the people whose work it shows, a page in the middle pane as How it works, opened and closed by the app's tab (π,
-// its name and version; lit while it shows, as Gallery's); closed as How it works is, by a click elsewhere; Share and Home there
+// its name and version; lit while it shows, as Gallery's); closed as How it works is, by a click elsewhere; Share link and Home there
 const creditsShown = () => !$('ruleTuto').hidden && $('ruleTuto').dataset.shown === 'credits';
 const AUTHOR = '🇫🇷 Vincent ᗱƆᑌᑎϹᗴ 👾 · <b>𝕏 <a href="https://x.com/VincentBounce" target="_blank" rel="noopener">@VincentBounce</a></b>';  // (its author, as signed)
 const CREDITS = [
@@ -18258,7 +18258,7 @@ function credits(open) {
   $('ruleTuto').innerHTML = `<div class="tut-body"><h3>${APP_TITLE} <code>v${VERSION}</code></h3><p>Made by ${AUTHOR}</p><p>Cellular automata on tilings, surfaces and solids, and walks on the digits of numbers: the work of many, here.</p>`
     + CREDITS.map(([title, who]) => `<h4>${title}</h4><p>${who}.</p>`).join('')
     + `<p><a href="https://github.com/VincentBounce/Tessera#readme" target="_blank" rel="noopener">Its README</a> · <a href="https://github.com/VincentBounce/Tessera" target="_blank" rel="noopener">its code</a></p></div>`;
-  $('ruleTuto').prepend(tutTools({ words: [['Share', 'Copy the link to what is shown', (e) => shareView(e.currentTarget)], ['Home', 'Back to the start', () => { location.href = location.pathname; }]], close: () => credits(false) }));
+  $('ruleTuto').prepend(tutTools({ words: [['Share link', 'Copy the link to what is shown', (e) => shareView(e.currentTarget)], ['Home', 'Back to the start', () => { location.href = location.pathname; }]], close: () => credits(false) }));
 }
 $('appTab').addEventListener('click', () => credits(!creditsShown()));
 for (const b of document.querySelectorAll('[data-icon]')) b.insertAdjacentHTML('afterbegin', icon(b.dataset.icon));

@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.302';
+const VERSION = '0.4.303';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -3271,8 +3271,9 @@ function ruleIn(w, neutral, turmite) {
 // ant w's cards: the list, each its rule in its words, name (an ant's by its turns, with its colours; a turmite's what it
 // does on squares), picture (one state an ant, more a turmite, as the literature names them), why greyed, tooltip
 const antCards = (w) => [...ANT_LIST.map((t) => { const name = ANT_WORDS[ruleWords(t).join('')];
-    return { ...ruleIn(w, t, false), name: `${name?.split(':')[0] ?? `${t} ant`}, ${ruleWords(t).length} colours`, pic: icon('ant'), title: (w === 'antSquare' && name) || '' }; }),  // (one with no name: its turns')
-  ...TURMITE_PRESETS.map((r, i) => ({ ...ruleIn(w, r, true), name: TURMITE_WORDS[i], pic: icon('turmite'), title: 'its name what it does on squares' }))];
+    const R = ruleIn(w, t, false);
+    return { ...R, name: `${name?.split(':')[0] ?? `${t} ant`}, ${ruleWords(t).length} colours`, pic: icon('ant'), title: [R.rule, name && `on squares: ${name.split(': ')[1]}`].filter(Boolean).join('\n') }; }),  // (one with no name: its turns')
+  ...TURMITE_PRESETS.map((r, i) => { const R = ruleIn(w, r, true); return { ...R, name: TURMITE_WORDS[i], pic: icon('turmite'), title: R.rule }; })];  // (its tooltip its rule, as an ant's, then what it does on squares where its name does not say it)
 // The turmites (see antTableOf, ANT_LIST), of the 65,536 with 2 states and 2 colours, walked here 5,000
 // steps: a spiral; the widest mess (3,765 cells); squares growing filled (97 %, and all); a highway from step 3,090
 const TURMITE_PRESETS = ['1L1 1L1 | 1R1 0N0', '1N1 1N0 | 1R0 0L0', '1L0 0R1 | 0R0 1L1', '1L0 1U1 | 0L0 1L0', '1N1 0R1 | 1L0 1N0'];

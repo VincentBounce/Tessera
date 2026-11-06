@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.317';
+const VERSION = '0.4.318';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -2398,6 +2398,7 @@ const ICONS = (() => {
     rhombusWalled: walledEl(rhombus, 2),
     goalLongest: pathEl('M12 12C10 8.5 4 8.5 4 12C4 15.5 10 15.5 12 12C14 8.5 20 8.5 20 12C20 15.5 14 15.5 12 12Z'),  // the hunt's goals (see HUNT_GOALS): ∞
     goalDies: pathEl('M12 3V21M6 8.5H18'),  // (a cross)
+    goalFull: pathEl(pathOf(sq)) + pathEl('M4 8H20V20H4Z', 'f'),  // (a square three quarters filled)
     goalPeak: pathEl('M12 4L21 19H3Z', 'f'),
     goalCover: pathEl(pathOf(sq)) + pathEl('M9.33 4V20M14.67 4V20M4 9.33H20M4 14.67H20'),  // (all cells: a grid)
     goalBattle: pathEl('M4 4L17 17M20 4L7 17M14 20L20 14M4 14L10 20M17.5 17.5L20.5 20.5M6.5 17.5L3.5 20.5'),  // (crossed swords)
@@ -12329,10 +12330,10 @@ function huntRuns(L, { cells, copies, all, choices, nth }, cap, goal, report) { 
     if (K === 1) {
       let first = 0;  // the start's cells
       for (let t = 0; t < n; t++) first += seed[t] > 0;
-      const extinct = s.alive + s.dying === 0, { peak, peakAt, allAt, reached } = s;
+      const extinct = s.alive + s.dying === 0, full = s.alive > FULL_END * n, { peak, peakAt, allAt, reached } = s;  // (full: so many alive as it ends, its loop's state)
       // (Reach all: the sooner the better, ahead of any that never does, those by the cells they reached)
-      const score = goal === 'peak' ? peak - first / 1e6 : cover ? (allAt ? 1e9 - allAt : reached / n) - first / 1e9 : goal === 'dies' && !extinct ? -Infinity : T - first / 1e6;  // (as good: fewer cells first)
-      return { score, T, P, end, live: first, extinct, peak, peakAt, allAt, reached };  // peak: the most alive at once, at generation peakAt; allAt: all cells reached by then
+      const score = goal === 'peak' ? peak - first / 1e6 : cover ? (allAt ? 1e9 - allAt : reached / n) - first / 1e9 : (goal === 'dies' && !extinct) || (goal === 'full' && !full) ? -Infinity : T - first / 1e6;  // (as good: fewer cells first)
+      return { score, T, P, end, live: first, extinct, endAlive: s.alive, peak, peakAt, allAt, reached };  // peak: the most alive at once, at generation peakAt; allAt: all cells reached by then
     }
     const S_ = Array.from(s.spread.subarray(1)), mean = S_.reduce((x, y) => x + y, 0) / K;
     const cv = mean ? Math.sqrt(S_.reduce((x, y) => x + (y - mean) ** 2, 0) / K) / mean : Infinity;
@@ -12429,13 +12430,16 @@ function huntRuns(L, { cells, copies, all, choices, nth }, cap, goal, report) { 
 }
 const hunt = { run: null, zone: 'full', top: [], status: '', picked: null, goal: 'longest' };  // goal in one colour: longest, dies, peak or cover (colours: a battle)
 let huntKept = 0;  // the results kept so far, all hunts: each one's number its identity (picked: the one played's)
-// What the hunt looks for in one colour: the longest life, the longest till it dies out, the most cells alive at once,
+// What the hunt looks for in one colour: the longest life, the longest till it dies out, or ends full (more than FULL_END of
+// its cells alive, as it settles or loops: a rule whose soups fill the grid), the most cells alive at once,
 // or every cell alive once the soonest (seen in Activity); the last two from a start in a zone, not the whole grid
 // (colours: the longest battle, the goals hidden). Each: its picture, its name, its words
 const HUNT_GOALS = { longest: ['goalLongest', 'Longest', 'The start that lasts longest, however it ends'], dies: ['goalDies', 'Dies out', 'The start that lasts longest and dies out, to the last cell'],
+                     full: ['goalFull', 'Ends full', 'The start that lasts longest and ends with more than 3/4 of its cells alive'],
                      peak: ['goalPeak', 'Peak', 'The start that has the most cells alive at once, from a zone (not the whole grid)'],
                      cover: ['goalCover', 'Reach all', 'Fastest to reach all cells: the start whose cells are all alive once the soonest (Activity shows it), from a zone (not the whole grid)'],
                      battle: ['goalBattle', 'Battle', 'The battle that lasts longest, its colours touching and even: in colours, the only hunt'] };
+const FULL_END = 0.75;  // (Ends full: more alive than this share of the cells as it ends)
 const peakHunt = () => walk.life.colours === 1 && (hunt.goal === 'peak' || hunt.goal === 'cover');  // (a zone's: the whole grid a soup full already)
 function pickGoal(goal) {
   hunt.goal = goal;
@@ -12925,7 +12929,7 @@ function renderHunt() {
   $('huntBtn').hidden = !!walk.life.margolus;  // (the hunt's own step: births and survivals; blocks, their zones' starts only)
 
   const K = lifeParts(), { perColour, all } = huntPlan(), busy = !!hunt.run, sym = walk.plane ? symmetryOf(walk.plane.kind) : 'none';
-  const what = K > 1 ? 'the longest battle' : { longest: 'the longest life', dies: 'the longest life dying out', peak: 'the highest peak', cover: 'the fastest to reach all cells' }[hunt.goal];
+  const what = K > 1 ? 'the longest battle' : { longest: 'the longest life', dies: 'the longest life dying out', full: 'the longest life ending full', peak: 'the highest peak', cover: 'the fastest to reach all cells' }[hunt.goal];
   $('huntGoals').hidden = $('huntModeLabel').hidden = !!walk.life.margolus;
   for (const b of $('huntGoals').querySelectorAll('button')) { const battle = b.dataset.goal === 'battle'; setTile(b, { on: battle ? K > 1 : K === 1 && b.dataset.goal === hunt.goal, can: battle === K > 1 }); }
   renderSymmetry();  // (Famous: none)
@@ -12974,7 +12978,7 @@ function renderHunt() {
       ? hunt.goal === 'peak' ? [`${fmt(r.peak)} cells alive at gen ${fmt(r.peakAt)}`, `from ${fmt(r.live)} cells · ${fmt(r.T)} generations${r.P ? '' : ' or more'}`]
         : hunt.goal === 'cover' ? (r.allAt ? [`All by gen ${fmt(r.allAt)}`, `its ${fmt(n)} cells reached · from ${fmt(r.live)}`]
           : [`${Math.floor((100 * r.reached) / n)} % of the cells reached`, `${r.P ? `till it ${r.P === 1 ? 'settles' : 'loops'} at gen ${fmt(r.T)}` : `in ${fmt(r.T)} generations`} · from ${fmt(r.live)} cells`])
-        : [`${fmt(r.T)} generations${r.P ? '' : ' or more'}`, `${r.extinct ? 'dies out' : r.P === 1 ? 'settles' : r.P ? `period-${fmt(r.P)} loop` : 'still changing'} · ${fmt(r.live)} cells`]
+        : [`${fmt(r.T)} generations${r.P ? '' : ' or more'}`, `${r.extinct ? 'dies out' : r.P === 1 ? 'settles' : r.P ? `period-${fmt(r.P)} loop` : 'still changing'}${hunt.goal === 'full' ? `, ${Math.floor((100 * r.endAlive) / n)} % alive` : ''} · ${fmt(r.live)} cells`]
       : [`${fmt(r.contacts)} generation${r.contacts === 1 ? '' : 's'} in contact`, r.winner ? `${teamName(r.winner - 1)} wins at gen ${fmt(r.alone)}`
         : r.P ? `of ${fmt(r.T)} before it settles` : `still fighting at gen ${fmt(r.T)}, where the hunt stops`];  // its balance: on its light
     const [colour, word] = light(r) ?? [], why = K > 1 ? (r.contacts ? `balance ${r.balance.toFixed(2)}: how evenly its colours keep being born (1 all alike, 0 one alone; green from 0.6, orange from 0.3, else red)` : 'its colours never touched: no battle')
@@ -13054,7 +13058,7 @@ function huntClick() {
   hunt.run = huntRuns(L, plan, K === 1 ? 50000 : 4000, K === 1 ? hunt.goal : null, (top, n, done, [on, g] = []) => {
     if (top) hunt.top = top;
     if (done) {
-      hunt.status = `All ${fmt(all)} tried · ${hunt.top.length ? `${fmt(hunt.top.length)} kept` : K > 1 ? 'no battle' : hunt.goal === 'dies' ? 'none dies out' : 'nothing lasts'}`;
+      hunt.status = `All ${fmt(all)} tried · ${hunt.top.length ? `${fmt(hunt.top.length)} kept` : K > 1 ? 'no battle' : hunt.goal === 'dies' ? 'none dies out' : hunt.goal === 'full' ? 'none ends full' : 'nothing lasts'}`;
       stopHunt();
       return;
     }

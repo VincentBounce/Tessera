@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.262';
+const VERSION = '0.4.263';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -15868,7 +15868,7 @@ fn light(col: vec3f, n0: vec3f, p: vec3f, bias: f32) -> Lit {  // (as tileLight;
   return light(col, nrm, pos, 0.0);
 }
 @vertex fn cubeV(@location(0) corner: vec3f, @location(1) nrm: vec3f, @location(2) at: vec3f, @location(3) col: vec4f) -> Lit {
-  return light(col.rgb, nrm, at + corner, u.bias);  // (a walk's cubes 0; a head's the path's: what is in front of it stays so)
+  return light(col.rgb, nrm, at + corner, 0.0);
 }
 // the depths seen from the light: a tile's corner or a cube's
 struct Deep { @builtin(position) pos: vec4f, @location(0) cutv: f32 }
@@ -16065,13 +16065,13 @@ const BLEND_OVER = { color: { srcFactor: 'src-alpha', dstFactor: 'one-minus-src-
 const BLEND_PRE = { color: { srcFactor: 'one', dstFactor: 'one-minus-src-alpha' }, alpha: { srcFactor: 'one', dstFactor: 'one-minus-src-alpha' } };
 const GLASS_BLEND = [null, { color: { srcFactor: 'one', dstFactor: 'one' }, alpha: { srcFactor: 'one', dstFactor: 'one' } },
   { color: { srcFactor: 'zero', dstFactor: 'one-minus-src' }, alpha: { srcFactor: 'zero', dstFactor: 'one-minus-src' } }];
-function gpuDrawPipe(name, { vertex, fragment, buffers, topology = 'triangle-list', cull = 'none', pass = 0, blend = null, shadowed = false, depth = true }) {
-  return gpuPipe(`${name}|${cull}|${pass}|${!!blend}|${depth}`, (D) => ({
+function gpuDrawPipe(name, { vertex, fragment, buffers, topology = 'triangle-list', cull = 'none', pass = 0, blend = null, shadowed = false, depth = true, writes = true }) {  // (writes: its depth; a decal's not, see ribbon)
+  return gpuPipe(`${name}|${cull}|${pass}|${!!blend}|${depth}|${writes}`, (D) => ({
     layout: D.device.createPipelineLayout({ bindGroupLayouts: shadowed ? [D.g0, D.shadowed] : [D.g0] }),
     vertex: { module: D.module, entryPoint: vertex, buffers },
     fragment: { module: D.module, entryPoint: fragment, targets: [{ format: [D.format, 'rgba16float', 'rgba8unorm'][pass], blend: pass ? GLASS_BLEND[pass] : blend ?? undefined }] },
     primitive: { topology, cullMode: cull, frontFace: 'ccw' },
-    depthStencil: pass || !depth ? undefined : { format: 'depth24plus', depthWriteEnabled: true, depthCompare: 'less-equal' },
+    depthStencil: pass || !depth ? undefined : { format: 'depth24plus', depthWriteEnabled: writes, depthCompare: 'less-equal' },
     multisample: { count: 4 } }));
 }
 // a battle's colours in the palette (pal), for its lines along the grid: A's body, B's (their heads: their arrows, see drawOverlay)
@@ -16179,7 +16179,7 @@ function gpuSurface(paint, path) {
       rp.setVertexBuffer(0, D.ePos); rp.setVertexBuffer(1, D.eN1); rp.setVertexBuffer(2, D.eN2); rp.draw(D.eCount);
     }
     if (ranges.some(([a, b]) => b > a)) {
-      rp.setPipeline(gpuDrawPipe('ribbon', { vertex: 'ribbonV', fragment: 'ribbonF', topology: 'triangle-strip', pass, cull: both ? 'none' : 'back',
+      rp.setPipeline(gpuDrawPipe('ribbon', { vertex: 'ribbonV', fragment: 'ribbonF', topology: 'triangle-strip', pass, cull: both ? 'none' : 'back', writes: false,  // (a decal on the tiles: pulled over them, no depth of its own, a head over it, see ogiveOf)
         buffers: [vbuf(8, [VA(0, 'float32x2')]), vbuf(44, [VA(1, 'float32x3', 0), VA(2, 'float32x3', 12), VA(3, 'float32x3', 24), VA(4, 'float32', 36), VA(5, 'float32', 40)], 'instance')] }));
       rp.setBindGroup(0, gpuGroup(), [slotOf({ glass: pass, cut, N: Math.max(1, walk.n), halfW: surfaceLineWidth() / 2 / view.scale, bias: pathBias, colour: lines ? 3 : 0 })]);
       rp.setVertexBuffer(0, D.quad); rp.setVertexBuffer(1, D.ribbon);
@@ -16188,7 +16188,7 @@ function gpuSurface(paint, path) {
     if (!heads.length) return;  // the heads: ogives lit as the cubes, each its colour (an instance), half under the tiles
     rp.setPipeline(gpuDrawPipe('cube', { vertex: 'cubeV', fragment: 'shadowedF', shadowed: true, pass,
       buffers: [vbuf(24, [VA(0, 'float32x3', 0), VA(1, 'float32x3', 12)]), vbuf(12, [VA(2, 'float32x3')], 'instance'), vbuf(4, [VA(3, 'unorm8x4')], 'instance')] }));
-    rp.setBindGroup(0, gpuGroup(), [slotOf({ glass: pass, cut, alpha: GLASS_ALPHA, bias: pathBias })]); rp.setBindGroup(1, D.shadow.group);
+    rp.setBindGroup(0, gpuGroup(), [slotOf({ glass: pass, cut, alpha: GLASS_ALPHA })]); rp.setBindGroup(1, D.shadow.group);
     rp.setVertexBuffer(0, D.headMesh); rp.setVertexBuffer(1, D.headAt); rp.setVertexBuffer(2, D.headCol);
     heads.forEach((_, j) => rp.draw(96, 1, 96 * j, j));
   };

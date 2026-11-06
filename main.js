@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.363';
+const VERSION = '0.4.364';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -15166,9 +15166,9 @@ function walkersOf() {
 // the heads: each living walker's ogive at its step (see ogiveOf); the starts: each walker's flag in its frame at step 0
 // (see flagOf: its start's own heading, the way it came by); each [its corners, its colour]
 const headsOf = () => walkersOf().flatMap((W) => [...(W.living ? [[ogiveOf(headFrame(W, glideAt())), W.colour]] : []), [flagOf(headFrame(W, 0)), W.colour]]);
-// gliding, a head turns from its last step's heading to its next one's in the first TURN_SHARE of the step, as it goes on:
+// gliding, a head turns from its last step's heading to its next one's in the first TURN_SHARE of the step (a quarter), as it goes on:
 // turned round the tile's normal n by that share w of the angle between them (a U-turn: half a turn)
-const TURN_SHARE = 0.2;
+const TURN_SHARE = 0.25;
 const turnToward = (from, to, n, w) => {
   const across = cross(n, from), a = Math.atan2(dot3(across, to), dot3(from, to)) * w;
   return unit([0, 1, 2].map((d) => from[d] * Math.cos(a) + across[d] * Math.sin(a)));

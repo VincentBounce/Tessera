@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.343';
+const VERSION = '0.4.344';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -2136,15 +2136,15 @@ const runLoop = () => {
   if (walk.life) { const s = lifeTime() && walk.life.stable; return s ? { T: s.T, last: s.extinct || s.P === 1 ? s.T : s.T + s.P - 1 } : null; }
   return walk.loop ? { T: walk.loop.from, last: walk.n } : walk.wormEnd ? { T: walk.n, last: walk.n } : null;
 };
-// The run's end, on the step line after its last, the same words everywhere, a link in green (see loopLink): its loop
+// The run's end, on the step line after its last: its mark always, its words open, the same everywhere, a link in green (see loopLink): its loop
 // (↻ every P from step T; → a walk's drift, an ant's highway), its death (✝ at step T: a worm, Life dying out) or frozen
 // (■ from gen T); '' while none is known (Space-time and Elementary: none)
 function endMark() {
   if (spaceTimeOn() || walk.rows || walk.battle) return '';
   const k = walk.life?.stable, o = !walk.life && runLoop();
-  const end = walk.life ? (!k ? '' : k.extinct ? `✝ at gen ${fmt(k.T)}` : k.P === 1 ? `■ from gen ${fmt(k.T)}` : `↻ every ${fmt(k.P)} from gen ${fmt(k.T)}`)
-    : !o ? '' : walk.wormEnd ? `✝ at step ${fmt(walk.n)}` : `${walk.loop.drift ? '→' : '↻'} every ${fmt(walk.loop.period ?? walk.n - o.T)} from step ${fmt(o.T)}`;
-  return end && loopLink(end);
+  const [mark, words] = walk.life ? (!k ? [] : k.extinct ? ['✝', `at gen ${fmt(k.T)}`] : k.P === 1 ? ['■', `from gen ${fmt(k.T)}`] : ['↻', `every ${fmt(k.P)} from gen ${fmt(k.T)}`])
+    : !o ? [] : walk.wormEnd ? ['✝', `at step ${fmt(walk.n)}`] : [walk.loop.drift ? '→' : '↻', `every ${fmt(walk.loop.period ?? walk.n - o.T)} from step ${fmt(o.T)}`];
+  return mark ? loopLink(`${mark}<span class="end-words"> ${words}</span>`) : '';  // (its words: open only, see .end-words)
 }
 // its link, in green (see genLink): to its first step; from there, to its last; an end alone, back to 0
 const loopLink = (text) => { const o = runLoop(); return genLink(cur !== o.T ? o.T : o.last !== o.T ? o.last : 0, text, 'loop'); };

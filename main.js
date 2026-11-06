@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.248';
+const VERSION = '0.4.249';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -7960,20 +7960,20 @@ const rootDigits = (r, base, n) => Uint8Array.from(iroot(BigInt(r) * BigInt(base
 // The hunt's battles played in workers, one a core but the page's (the page draws their numbers and starts, 1 ms; a battle,
 // 30 ms at size 32): each made of the page's own code (see workerOf: a rule changed, changed in them), set once to the
 // surface, its grid or cells, its walk's acts, the way, base and digits (the cards' made, the roots' made there), then sent
-// battles, two at a time, each sending back its score (see battleScore)
+// battles, two at a time, each sending back its score (see huntScore)
 const BATTLE_WORKERS = Math.max(1, (navigator.hardwareConcurrency || 4) - 1);
 const battleWorker = () => workerOf({ mod, cross, iroot, rootDigits, TORUS_TUBE, tubeOf, SURFACE_NOTCHES, gridGraph, cornerUv, sheetWrap, sheetDelta, nextCorner, nextCornerCarried, acrossEdge,
-  surfaceStep, PENETRATIONS, battleLinks, battleWall, unionFind, smallerSide, battlePlayer, battleWinner, battleScore }, battleWorkerMain);
+  surfaceStep, PENETRATIONS, battleLinks, battleWall, unionFind, smallerSide, battlePlayer, battleWinner, huntScore }, battleWorkerMain);
 function battleWorkerMain() {  // (run in a worker: its setup, then its battles)
   let game = null;
   onmessage = ({ data: m }) => {
     if (m.setup) { const s = m.setup; game = { ...s, cards: new Map(s.cards), S: { step: surfaceStep(s.g, s.grid, s.net, s.acts) } }; return; }
     const { g, grid, pen, base, n, cards, fixed, S } = game, digits = fixed ?? m.fs.map((f) => cards.get(f) ?? rootDigits(Number(f.slice(5, -1)), base, n));
-    postMessage({ id: m.id, ...battleScore(battlePlayer(g, grid, S, m.placed, digits, pen)) });
+    postMessage({ id: m.id, ...huntScore(battlePlayer(g, grid, S, m.placed, digits, pen)) });
   };
 }
 // a battle played to its end, what the hunt ranks it by: its steps, ended or not, its winner, lands, smallest land, first stop
-function battleScore(P) {
+function huntScore(P) {
   const win = battleWinner(P), lands = P.worth();
   return { steps: P.n, ended: !!win.until, win, lands, even: Math.min(...lands), stop: Math.min(...P.dead.map((d) => (d < 0 ? Infinity : d))) };
 }

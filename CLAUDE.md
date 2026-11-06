@@ -41,6 +41,9 @@ Never delete the bundles in `Tessera resources` (old versions included, the `Wal
 - A name found unclear, misleading or inconsistent is renamed at its source, everywhere it is used (its comments, the
   tools' copies and the checks too), in its own commit, verified by `tesseraCheck()`; a name that would change a link's
   words (`w=`, `r=`…) is asked first.
+- A new function or variable: its name grepped first (`grep -n "\bname\b" *.js tools/*.js`), never one already in use:
+  a second `function` of the same name replaces the first with no word (`battleScore`, v0.4.247: a battle frozen at its
+  first step); `checkNames` in `tesseraCheck()` catches a function declared twice.
 
 ## Sessions and branches
 - One branch, `main`, the only one on GitHub; no branch for a prototype or an experiment (it falls behind as others
@@ -88,6 +91,8 @@ While the checks run unattended (a night, a meal), also audit what they cannot s
   tab (Walk, Ant, Life, 2D and 3D).
 - **Every Custom rule**: Life's, each walk's, the ants', the turmite's, the worm's: valid and wrong rules, Enter, Escape,
   the link made, opened cold, the card it lands on.
+- **Every night, the names**: functions and variables read through for names unclear, misleading, too short or
+  inconsistent (one concept, one name, see Names), each renamed explicitly at its source, everywhere, in its own commit.
 
 ## Removed features
 A feature taken out gets a row in `REMOVED.md` (in English) at once: its last version, date, commit, a raw.githack link

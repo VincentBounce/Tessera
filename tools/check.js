@@ -161,6 +161,17 @@ const untipped = () => [...document.querySelectorAll('button, label')].filter((b
   return b.offsetParent !== null && !(tip && tip.replace(/^[^:]*:\s*/, '') !== name && (el === b || el.dataset.tipHtml));
 })
   .map((b) => `${b.closest('[id]:not(button)')?.id ?? ''} › ${((b.querySelector('.mode-name') ?? b.querySelector('span') ?? b).textContent.trim() || b.id).slice(0, 24)}`);
+// every function declared once in each script: a second one of the same name replaces the first with no word (battleScore,
+// v0.4.247: the hunt's score over a battle's stats, a battle frozen at its first step)
+async function checkNames(fail) {
+  let checked = 0;
+  for (const file of ['main.js', 'emoji.js', 'punks.js', 'pixelarticons.js']) {
+    const names = [...(await (await fetch(`${file}?${Date.now()}`)).text()).matchAll(/^(?:async\s+)?function\*?\s+([\w$]+)/gm)].map((m) => m[1]), seen = new Set();
+    for (const n of names) { if (seen.has(n)) fail(`${file}: function ${n} declared twice, the second replacing the first`); seen.add(n); }
+    checked++;
+  }
+  return checked;
+}
 function checkTips(fail) {
   const none = untipped();
   if (none.length) fail(`buttons with no tooltip: ${none.join(', ')}`);
@@ -737,7 +748,7 @@ function checkRosetteSpheres(fail) {
 
 window.tesseraCheck = async ({ parts = false, known = false, crawl: andCrawl = false, deep: andDeep = false, fuzz: actions = 0, cold = false, colours = false, battles = false, seed = Date.now() % 1e6, from, only } = {}) => {
   const failures = [], fail = (s) => { failures.push(s); localStorage.tesseraDeepFailures = JSON.stringify(failures); };
-  let checked = checkMeshes(fail) + checkBlockWraps(fail) + checkDiscs(fail) + checkTips(fail) + checkMarks(fail) + checkRosetteSpheres(fail) + checkTwistedSphere(fail) + checkDiscCuts(fail) + await checkSheets(fail);
+  let checked = checkMeshes(fail) + checkBlockWraps(fail) + checkDiscs(fail) + checkTips(fail) + checkMarks(fail) + checkRosetteSpheres(fail) + checkTwistedSphere(fail) + checkDiscCuts(fail) + await checkSheets(fail) + await checkNames(fail);
   if (known) checked += await checkKnown(fail);
   if (andCrawl) checked += await crawl(fail);
   if (actions) checked += await fuzz(fail, actions, seed, cold);

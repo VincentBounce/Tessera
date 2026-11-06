@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.242';
+const VERSION = '0.4.243';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -1324,7 +1324,7 @@ let bounds3 = null;                        // 3D bounding box of points 0..cur
 const stage = $('stage');
 const layers = {
   grid: $('gridLayer').getContext('2d'),
-  fill: $('fillLayer').getContext('2d'),  // Fill areas, under the path
+  fill: $('fillLayer').getContext('2d'),  // Area's fill, under the path
   path: $('pathLayer').getContext('2d'),
   line: $('lineLayer').getContext('2d'),  // Show path over cells: above them all, the cells painted later included
   overlay: $('overlayLayer').getContext('2d'),
@@ -1426,7 +1426,7 @@ function describe(base, available) {
 // where listed), or the toggles Heatmap of visits and Digits (heatmap); the walks on cells or along
 // the grid are chosen beside the list of walks (Grid / Cells).
 // Walks on surfaces, on cells: the walk as a rainbow line over the tiles, the tiles it passes through
-// filled in the colour of their first visit, those it encloses (Fill areas) in the colour of the
+// filled in the colour of their first visit, those it encloses (Area) in the colour of the
 // step that closed them; or the tiles coloured by their visits (Heatmap, on cells only).
 const VIEW_3D = ['autoRotate', 'upright', 'perspective', 'light'];  // a 3D view's: Default, Free, Upright, Auto-rotate, Perspective, Side light (Space-time's too)
 const DISPLAY_BY_TAB = {
@@ -1518,7 +1518,7 @@ function renderViewTiles() {
   viewTiles ??= VIEW_TILES.map(([id, row, pic, text, title]) => tile({ pic: icon(pic), text, title: title ?? $(row).title, toggle: true,
     click: () => { $(id).checked = !$(id).checked; $(id).dispatchEvent(new Event('change')); renderViewTiles(); } }));
   if (!$('viewTiles').children.length) $('viewTiles').replaceChildren(...viewTiles);
-  // (their defaults, see displayDefaults; Perspective's, the shapes' of this kind and space: on for some, off for the others)
+  // (their defaults, see DISPLAY_DEFAULTS; Perspective's, the shapes' of this kind and space: on for some, off for the others)
   const [kind, space] = NAV[$('mode').value], ways = { on: [], off: [] };
   for (const sh of navValues(2, [kind, space])) {
     const w = Object.keys(NAV).find((v) => NAV[v][0] === kind && NAV[v][1] === space && NAV[v][2] === sh);
@@ -4507,7 +4507,7 @@ for (const [w, m] of Object.entries(MODES)) {
   if (NAV[w]?.[0] !== 'Walk' || NAV[w][3] !== 'Turtle' || m.lattice !== 'sphere' || !m.turns) continue;
   Object.assign(m, { net: NET_BY_TURNS[m.turns.length], where: m.rule.split(':')[0], tail: m.rule.match(/ \([^)]*\)$/)?.[0] ?? '' });  // (its words before its digits', its note after)
 }
-// every walk by a rule: its base, arrows and rule's text by it; on squares, no Fill areas with a diagonal (steps across no edge)
+// every walk by a rule: its base, arrows and rule's text by it; on squares, no Area with a diagonal (steps across no edge)
 for (const [w, m] of Object.entries(MODES)) if (m.net) {
   Object.defineProperties(m, { base: { get: () => walkWordsOf(w).length }, arrows: { get: () => walkArrows(w) }, rule: { get: () => walkRuleText(w) } });
   if (m.net === 'square' && !m.sphere) Object.defineProperty(m, 'fill', { get: () => (walkWordsOf(w).some((t) => WALK_NETS.square.diagonals.includes(t)) ? false : undefined) });
@@ -10469,7 +10469,7 @@ const planeMotifCells = () => {
   }
   return [...cells.values()].find((ts) => ts.length === per) ?? [0];
 };
-const FADING = 0.3;  // (the cells this pale: under a walk's line, or Translucent)
+const FADING = 0.3;  // (the cells this pale: under a walk's line, or Area's Light)
 // A size hovered (its motif) or the start (the starts): drawn on their own layer, the others faded under it, every one alike,
 // fills and outlines (the stage's class: see style.css)
 function drawHover() {
@@ -14115,7 +14115,7 @@ function parseHash() {
     return s.w ? s : null;
   } catch { return null; }
 }
-// The link is written when what it holds changes: a walk built (see buildWalk), Fill areas, a Life
+// The link is written when what it holds changes: a walk built (see buildWalk), a Life
 // start (setLifeSeed), a Gallery setup kept by a click; not for one only shown on hover
 function syncLink() {
   if (busy || pendingChampion || galleryBefore) return;  // not while a setup is still being built, nor shown on hover
@@ -14885,7 +14885,7 @@ function drawSphere() {
   let levelOf = (t) => (visits[t] ? logLevel(visits[t], maxVisits) : 0);  // walk: visits, log scale
   const L = walk.life, line = !L && ['gradient', 'cells'].includes($('colourMode').value);  // Rainbow (the tiles Rainbow picks: cells)
   const path = !L && !walk.battle && (MODES[$('mode').value].cells ? $('showPath').checked : line);  // on cells, with Show path only (a battle: its bodies, no path)
-  if (line) {  // Rainbow along the walk: a tile walked through (Fill cells), enclosed (Fill areas), or dark
+  if (line) {  // Rainbow along the walk: a tile walked through (Fill cells), enclosed (Area), or dark
     const cells = MODES[$('mode').value].cells && firstVisits(), areas = !walk.ant && areaOn() && areaSteps();
     const band = (step) => Math.min(LEVELS - 1, Math.floor((step * LEVELS) / (walk.n + 1)));
     const tiles = path && MODES[$('mode').value].cells ? grad.map((c) => faded(c, FADING)) : grad;  // Path: the tiles faded under the line
@@ -14942,7 +14942,7 @@ function firstVisits() {
   return (firstVisitData = first);
 }
 
-// Fill areas on a surface, as for a 2D walk (see Fill areas in 11.5). A closed surface has no
+// Area on a surface, as for a 2D walk (see Area in 11.5). A closed surface has no
 // outside: the largest region left at the end of the walk plays it.
 // - A walk from tile to tile: the regions are read at the tiles' corners, two neighbouring corners
 //   being separated once the walk has crossed the tile edge between them; a tile is filled once all
@@ -16330,7 +16330,7 @@ function visitCells() {
 }
 
 
-/* ---- Fill areas ------------------------------------------------------------------------------ */
+/* ---- Area: the areas a walk closes, filled --------------------------------------------------- */
 // The regions the path closes off are filled, each at the step that closes it and in the path's
 // colour at that step. The regions are read at the vertices of the tiling: two neighbouring
 // vertices are separated by the path once the walk has crossed the tile edge between them (the
@@ -16341,7 +16341,7 @@ function visitCells() {
 // under the path. A vertex is painted as the polygon of the tile centres around it: those polygons
 // tile the plane, so the fill follows the path exactly.
 let fill = null;                   // { at, cx, cy, tpl, templates, count, tooBig } for the current walk (see computeFill)
-// Fill areas goes with the colours where the path has one colour per step (not Visits, not By digit)
+// Area goes with the colours where the path has one colour per step (not Visits, not By digit)
 const fillAreasApply = () => useful('fill') && MODES[$('mode').value].fill !== false && !['visits', 'digit'].includes($('colourMode').value);
 // (the walk drawn may still be the last mode's while the new one is computed: a tiling with a fill)
 // Area (one choice: Empty, Light, Plain, see AREA_MODES): filled where it applies; Light, translucent, only over a line

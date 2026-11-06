@@ -319,7 +319,7 @@ button.active .bubble { color: var(--accent); border-color: var(--accent); }  /*
 }
 #progressBar { height: 100%; width: 0; background: var(--accent); transition: width 0.1s; }
 .muted { color: var(--muted); margin: 6px 0 0; font-size: 12px; }
-.fill-note { color: var(--muted); font-size: 12px; margin-left: auto; }  /* beside Fill areas, when it cannot fill */
+.fill-note { color: var(--muted); font-size: 12px; margin-left: auto; }  /* under Area, when it cannot fill */
 
 .stats {
   display: grid;

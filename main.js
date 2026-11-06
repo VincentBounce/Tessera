@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.275';
+const VERSION = '0.4.276';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -14841,7 +14841,14 @@ function ogiveOf({ p, h, side, nrm, size }) {
 const headSize = (area) => (0.8 * Math.sqrt(area)) / 1.6;
 // A walker's arrow on the plane (on a surface an ogive, see ogiveOf): its tip ahead, its notch behind, centred on its
 // place; at(forward, across): a point of it on the screen, in its size
+// the plane's arrow's amber, from its rim (deep) to its tip (light), per theme (the ramp Amber had, see REMOVED.md)
+const ARROW_AMBER = { light: ['#8a5200', '#c98a10', '#f0c35a', '#f7e6bd'], dark: ['#4a3a1a', '#8a6418', '#c98f1f', '#f0b429'] };
 function drawArrow(ctx, fill, at) {
+  if (Array.isArray(fill)) {  // (a ramp: along its axis, rim to tip)
+    const g = ctx.createLinearGradient(...at(-0.8, 0), ...at(0.8, 0));
+    fill.forEach((c, k) => g.addColorStop(k / (fill.length - 1), c));
+    fill = g;
+  }
   ctx.fillStyle = fill;
   ctx.strokeStyle = '#0e1116';
   ctx.lineWidth = Math.hypot(...[0, 1].map((d) => at(1, 0)[d] - at(-0.6, 0)[d])) / 10;  // (a tenth of its length: 3 px on a cell 95 px wide, as it grows and shrinks)
@@ -16582,7 +16589,7 @@ function drawOverlay() {
     if (l > 1e-6) { dx = ux / l; dy = uy / l; } else { dx = 0; dy = 0; } // step along the view axis
   }
   const a = headSize(polyArea(FILL_GRIDS[walk.lattice]?.templates[0] ?? [[0, 0], [1, 0], [1, 1], [0, 1]]) * s * s);  // (its cell's area on the screen: a lattice's tile, else a unit square)
-  drawArrow(ctx, '#ffffff', (f, l) => [x + (dx * f - dy * l) * a, y + (dy * f + dx * l) * a]);
+  drawArrow(ctx, ARROW_AMBER[themeName()], (f, l) => [x + (dx * f - dy * l) * a, y + (dy * f + dx * l) * a]);
 }
 
 

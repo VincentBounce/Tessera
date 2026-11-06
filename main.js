@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.308';
+const VERSION = '0.4.309';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -14930,17 +14930,19 @@ const darkSky = () => skyStops() === SKIES.dark;
 // the underside of an open sheet (a torus unrolled, its inside): the foot of the other theme's sky (on a light page,
 // Twilight's; on a dark one, Dawn's)
 const undersideColour = () => (document.documentElement.dataset.theme === 'light' ? SKIES.dark : SKIES.light).at(-1)[1];
-// what lies under the plane's drawings: its sky, down the view, else the page's background
-function backdrop(ctx) {
-  const stops = skyStops();
-  if (!stops) return getComputedStyle(document.documentElement).getPropertyValue('--bg');
-  const sky = ctx.createLinearGradient(0, 0, 0, ch);
-  for (const [at, colour] of stops) sky.addColorStop(at, colour);
-  return sky;
+// the plane's ground at the screen's height y, a solid colour: its sky's there, else the page's background
+function groundAt(y) {
+  const stops = skyStops(), f = Math.min(1, Math.max(0, y / ch));
+  if (!stops) return getComputedStyle(document.documentElement).getPropertyValue('--bg').trim();
+  const k = Math.max(1, stops.findIndex(([at]) => at >= f)), [a, A] = stops[k - 1], [b, B] = stops[k], t = (f - a) / (b - a || 1);
+  return `rgb(${hexRgb(A).map((v, d) => Math.round(v + (hexRgb(B)[d] - v) * t)).join(', ')})`;
 }
 function drawSky(ctx) {
-  if (!skyStops()) return;  // plain: the page background shows through
-  ctx.fillStyle = backdrop(ctx);
+  const stops = skyStops();
+  if (!stops) return;  // plain: the page background shows through
+  const sky = ctx.createLinearGradient(0, 0, 0, ch);
+  for (const [at, colour] of stops) sky.addColorStop(at, colour);
+  ctx.fillStyle = sky;
   ctx.fillRect(0, 0, cw, ch);
 }
 
@@ -16820,10 +16822,9 @@ function drawOverlay() {
     const [dx, dy] = l > 1e-6 ? [ux / l, uy / l] : [0, 0];  // (a step along the view axis: none)
     return (f, c) => [x + (dx * f - dy * c) * a, y + (dy * f + dx * c) * a];
   };
-  // its start a flag, flat, under it, solid: from the grid's colour (as it shows, over what lies under it) to the rainbow's
-  // blue at its tip; it gold to the rainbow's red
-  drawArrow(ctx, backdrop(ctx), frame(0), -0.6);
-  drawArrow(ctx, [gridColour(), GRADIENT[0]], frame(0), -0.6);
+  // its start a flag, flat, under it: from the ground's colour at its base to the rainbow's blue at its tip; it gold to the
+  // rainbow's red
+  drawArrow(ctx, [groundAt(oy + walk.ys[0] * s), GRADIENT[0]], frame(0), -0.6);
   drawArrow(ctx, ['#ffd000', rainbowHue(360)], frame(cur));
 }
 

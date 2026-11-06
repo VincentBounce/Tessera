@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.269';
+const VERSION = '0.4.270';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -14824,20 +14824,24 @@ function headsOf() {
   return B.living().map((s) => [headFrame((i) => placePoint(B.places[s][i]), (i) => (walk.vert ? walk.geo.grid.tileOf[B.places[s][i]] : B.places[s][i]),
     placePoint(cameFrom(walk.geo, !!walk.vert, B.starts[s]))), teamColour(s)]);
 }
-// a head as a solid, the arrow turned round its axis (an ogive: a cone from its tip to its rim, then a hollow one to its
+// a head as a solid, its profile (ARROW_PROFILE) turned round its axis (an ogive: a cone from its tip to its rim, then a hollow one to its
 // notch), its axis on the surface: half under it, hidden by the tiles; its triangles' corners and normals, [x, y, z, nx, ny, nz]
 function ogiveOf({ p, h, side, nrm, size }) {
   const at = (f, r, a) => [0, 1, 2].map((d) => p[d] + (h[d] * f + (side[d] * Math.cos(a) + nrm[d] * Math.sin(a)) * r) * size), out = [];
   const tri = (A, B, C) => { const n = unit(cross(B.map((v, d) => v - A[d]), C.map((v, d) => v - A[d]))); for (const q of [A, B, C]) out.push(...q, ...n); };
+  const [[tip], [back, r], [notch]] = ARROW_PROFILE;
   for (let j = 0; j < 16; j++) {
-    const a0 = (j * Math.PI) / 8, a1 = ((j + 1) * Math.PI) / 8, r0 = at(-0.8, 0.7, a0), r1 = at(-0.8, 0.7, a1);
-    tri(at(0.8, 0, 0), r0, r1); tri(at(-0.5, 0, 0), r1, r0);
+    const a0 = (j * Math.PI) / 8, a1 = ((j + 1) * Math.PI) / 8, r0 = at(back, r, a0), r1 = at(back, r, a1);
+    tri(at(tip, 0, 0), r0, r1); tri(at(notch, 0, 0), r1, r0);
   }
   return out;
 }
 // a walker's head's unit for a tile of that area (on the screen, or in space): its arrow (the plane's, an ogive) 1.6 of
 // them long, 0.8 of the side of the square of the tile's area
 const headSize = (area) => (0.8 * Math.sqrt(area)) / 1.6;
+// a head's profile, [along, across]: its tip, its rim, its notch, along its axis from its centre of gravity (the two
+// triangles tip–rim–notch, each's at a third of their sum: none of it behind or ahead of its place)
+const ARROW_PROFILE = (() => { const P = [[1, 0], [-0.6, 0.7], [-0.3, 0]], c = (P[0][0] + P[1][0] + P[2][0]) / 3; return P.map(([f, l]) => [f - c, l]); })();
 // A walker's arrow on the plane (on a surface an ogive, see ogiveOf): its tip ahead, its notch behind, centred on its
 // place; at(forward, across): a point of it on the screen, in its size
 function drawArrow(ctx, fill, at) {
@@ -14846,7 +14850,8 @@ function drawArrow(ctx, fill, at) {
   ctx.lineWidth = 1.5;
   ctx.lineJoin = 'round';
   ctx.beginPath();
-  [[1, 0], [-0.6, 0.7], [-0.3, 0], [-0.6, -0.7]].forEach(([f, l], i) => { const [x, y] = at(f - 0.2, l); if (i) ctx.lineTo(x, y); else ctx.moveTo(x, y); });  // (−0.6 … 1 along: shifted to its middle)
+  const [tip, rim, notch] = ARROW_PROFILE;
+  [tip, rim, notch, [rim[0], -rim[1]]].forEach(([f, l], i) => { const [x, y] = at(f, l); if (i) ctx.lineTo(x, y); else ctx.moveTo(x, y); });
   ctx.closePath();
   ctx.stroke();
   ctx.fill();

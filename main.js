@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.316';
+const VERSION = '0.4.317';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -2899,14 +2899,13 @@ const NUMBER_TABS = [['Formulas', ['Fractions', '𝑓'], 'Fractions, their digit
   ['Constants', ['Constants', 'Sequences'], 'Famous constants (π, e, φ…) and sequences laid as digits (Champernowne, random, prime gaps)'],
   ['Primes', ['Primes'], 'Primes as whole numbers (Mersenne, primorial, random) and the prime constant']];  // (name, its groups, its tooltip)
 let numberTab = null, numberShown = null;  // (the tab picked; the number shown when it was)
-// Digits picked (a Life start, a creature's turns): the numbers open on Formulas, the number as it was
-function numbersOnFormulas() {
-  [numberShown, numberTab] = [presetOf($('formula').value).id, NUMBER_TABS[0][0]];
-  syncNumberMenu();
-}
+// the Number's tab at first: Formulas for a start by the digits (a Life start, a creature's turns), else the number's own
+// group's; a tab picked, or a number picked in one, kept while that number is shown
+const numberTabOf = (active) => (readsDigits() && (MODES[$('mode').value].life || NAV[$('mode').value][0] === 'Ant') ? NUMBER_TABS[0][0]
+  : NUMBER_TABS.find(([, groups]) => groups.includes(PRESETS[active]?.group))?.[0] ?? NUMBER_TABS[0][0]);
 function renderNumberPicker(active) {
   if (active !== numberShown) [numberShown, numberTab] = [active, null];
-  const tab = numberTab ?? NUMBER_TABS.find(([, groups]) => groups.includes(PRESETS[active]?.group))?.[0] ?? NUMBER_TABS[0][0];
+  const tab = numberTab ?? numberTabOf(active);
   const shown = NUMBER_TABS.find(([name]) => name === tab)[1];
   const tabs = tileGroup(NUMBER_TABS.map(([name, , title]) => {
     const b = document.createElement('button');
@@ -2931,7 +2930,7 @@ function renderNumberPicker(active) {
       b.title = `${p.name} — ${p.detail ?? p.f}`;
       b.setAttribute('role', 'option');
       b.classList.toggle('active', id === active);
-      b.addEventListener('click', () => pickPreset(id));  // again on 🎲: another draw
+      b.addEventListener('click', () => { [numberShown, numberTab] = [id, tab]; pickPreset(id); });  // (its tab kept; again on 🎲: another draw)
       return b;
     }));
     box.append(label, grid);
@@ -11753,8 +11752,8 @@ function fitRuleToShape() {
   if (ruleFittedTo === w && fits) { shapeRules[mark] = rule; return; }  // (fitted already, a link's as it is: if it fits the grid at all)
   ruleFittedTo = w;
   if (fits && (!now || now.tiling.includes(mark))) { shapeRules[mark] = rule; return; }  // a rule typed (its letters, if any, this shape's: Callahan's hexagons, Hensel's squares on the plane), or one for this shape: kept
-  const fit = shapeRules[mark] ?? rulesOf('life').find((r) => r.tiling.includes(mark))?.rule;
-  if (fit) { customOpen = false; $('lifeRule').value = fit; }  // (this shape's last, else its first: its card)
+  const fit = [shapeRules[mark], ...rulesOf('life').filter((r) => r.tiling.includes(mark)).map((r) => r.rule)].find((r) => r && ruleFits(r, mode));
+  if (fit) { customOpen = false; $('lifeRule').value = fit; }  // (this shape's last, else its first, if this grid takes it: the loops' grids share a mark, not their rules)
 }
 
 function lifeReset() {
@@ -17579,7 +17578,6 @@ for (const b of $('lifeStartTabs').querySelectorAll('button')) {
       population = new Map([...L.alive].flatMap((c, t) => (c ? [[key(...walk.plane.xy(t)), L.margolus ? 1 : c]] : [])));
     }
     plane.start = b.dataset.start; cleared = null;
-    if (plane.start === 'digits') numbersOnFormulas();
     compute();
   });
 }
@@ -17955,7 +17953,6 @@ for (const [id, digits] of [['antByRule', false], ['antByDigits', true]]) {  // 
     const w = MODES[$('mode').value];
     if ((w.worm ? worm.byDigits : antByDigits) === digits) return;
     if (w.worm) worm.byDigits = digits; else antByDigits = digits;
-    if (digits) numbersOnFormulas();
     renderModePicker();
     compute();
   });

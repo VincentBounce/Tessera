@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.281';
+const VERSION = '0.4.282';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -3364,20 +3364,18 @@ function renderModePicker() {
   const alone = sides.includes('');
   $('walkRuleSection').hidden = kind !== 'Walk' && !creatures;  // (one Walking rule, a walk's or a creature's)
   $('walkRuleHow').hidden = !walkTutorialFits(w);
+  // its tabs (see walkOn): each picked where it is, greyed where there is none (why, in its tooltip)
   const side = (b, s, word, none) => {
     const there = alone ? (s === 'cells' ? w : null) : sides.includes(s) ? navPick(4, s) : null, here = alone ? s === 'cells' : NAV[w][4] === s;
     // a walk by a rule: its other side greyed where the rule cannot go (a diagonal along the grid), the word why
-    const why = there && MODES[there].net && !walkWordsOf(there) ? ruleWords(walkRules[walkKey(MODES[there])]).map((t) => walkWordWhy(MODES[there], t)).find(Boolean) : '', v = why ? null : there;
-    if (why) none = why;
-    const info = !v ? null : MODES[v].antOf ? { base: '', detail: `${antByDigits ? 'digits ' : ''}${antRuleOf(v)}` } : MODES[v].worm ? { base: '', detail: worm.byDigits ? 'digits' : worm.rule }
-      : MODES[v].net ? { base: baseWords(MODES[v].base), detail: walkRules[walkKey(MODES[v])] } : splitModeLabel(modeOptionOf(v).text);
-    b.replaceChildren(cardWords(word, info ? info.detail : none, info?.base, v && (() => (here ? toggleNumber() : (b.click(), showNumber())))));
-    b.disabled = !v;
-    b.classList.toggle('active', here);
+    const why = there && MODES[there].net && !walkWordsOf(there) ? ruleWords(walkRules[walkKey(MODES[there])]).map((t) => walkWordWhy(MODES[there], t)).find(Boolean) : '';
+    b.querySelector('span').textContent = word;
+    setTile(b, { on: here, can: !!there && !why, greyed: why || none });
   };
   const cellsWord = space === '3D' ? 'Cube' : 'Cells';
   side($('walkOnGrid'), 'grid', 'Grid', creatures ? 'the worm, on triangles only' : 'not on the grid');
   side($('walkOnCells'), 'cells', cellsWord, space === '3D' ? 'not on cubes' : 'not on cells');
+  $('walkOnCells').querySelector('svg').outerHTML = icon(space === '3D' ? 'cubeFilled' : 'tilesSq');
   renderAntRow();
 }
 
@@ -17635,8 +17633,8 @@ $('centered').addEventListener('change', () => {  // on: the camera turns to the
 });
 $('sizeDown').addEventListener('click', () => stepSize(-1));
 // Grid or Cells: the walk in use goes to its twin; while browsing another tab, only its list changes
-$('walkOnGrid').addEventListener('click', () => navGo(4, 'grid'));
-$('walkOnCells').addEventListener('click', () => navGo(4, 'cells'));
+$('walkOn').append(tileGroup([tile({ id: 'walkOnGrid', pic: icon('grid'), text: 'Grid', title: 'Along the lines of the grid', click: () => navGo(4, 'grid') }),
+  tile({ id: 'walkOnCells', pic: icon('tilesSq'), text: 'Cells', title: 'From cell to cell, colouring the cells: on triangles and hexagons the choices at each step change, and so does the base', click: () => navGo(4, 'cells') })], true));
 // a creature's start, one choice: a tab group of tiles, by its rule or by the digits (as Life's starts)
 $('antStartTabs').append(tileGroup([tile({ id: 'antByRule', pic: icon('ant'), text: 'Rule', title: 'Its turns by its rule, a card below' }), tile({ id: 'antByDigits', pic: icon('barcode'), text: 'Digits', title: "Its turns by the number's digits, each digit a turn" })], true));
 for (const [id, digits] of [['antByRule', false], ['antByDigits', true]]) {  // (a worm's own, by its rule or the digits)

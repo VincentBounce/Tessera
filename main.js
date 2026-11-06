@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.258';
+const VERSION = '0.4.259';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -15865,7 +15865,7 @@ fn light(col: vec3f, n0: vec3f, p: vec3f, bias: f32) -> Lit {  // (as tileLight;
 @vertex fn tileV(@location(0) pos: vec3f, @location(1) nrm: vec3f, @location(2) id: u32) -> Lit {
   var col = u.plain.rgb;  // (the back of an open sheet; else its tile's colour)
   if (u.plain.a <= 0.0) { col = unpack4x8unorm(tileCol[id]).rgb; }
-  return light(col, nrm, pos, u.bias);  // (a tile's 0; a head's the path's, over the grid: see gpuSurface)
+  return light(col, nrm, pos, u.bias);  // (a tile's 0; a head's over the path, see gpuSurface)
 }
 @vertex fn cubeV(@location(0) corner: vec3f, @location(1) nrm: vec3f, @location(2) at: vec3f, @location(3) col: vec4f) -> Lit {
   return light(col.rgb, nrm, at + corner, 0.0);
@@ -16195,13 +16195,13 @@ function gpuSurface(paint, path) {
       rp.setVertexBuffer(0, D.quad); rp.setVertexBuffer(1, D.ribbon);
       for (const [a, b] of ranges) if (b > a) rp.draw(4, b - a, 0, a);
     }
-    if (!heads.length) return;  // the heads: as tiles (their colours after the tiles', hidden as they are), outlined as the path
-    rp.setPipeline(gpuDrawPipe('tile', { vertex: 'tileV', fragment: 'shadowedF', buffers: tileBufs, cull: 'none', pass, shadowed: true }));
-    rp.setBindGroup(0, gpuGroup(), [slotOf({ glass: pass, cut, alpha: GLASS_ALPHA, plain: [0, 0, 0, 0], bias: pathBias })]); rp.setBindGroup(1, D.shadow.group);
-    rp.setVertexBuffer(0, D.headPos); rp.setVertexBuffer(1, D.headNrm); rp.setVertexBuffer(2, D.headIds); rp.draw(6 * heads.length);
+    if (!heads.length) return;  // the heads: outlined as the path, the outline a walk's line out of each side (under the fill: none of it eaten), then as tiles (their colours after the tiles', hidden as they are)
     rp.setPipeline(gpuDrawPipe('ribbon', { vertex: 'ribbonV', fragment: 'ribbonF', topology: 'triangle-strip', pass, cull: 'none', buffers: ribbonBufs }));
-    rp.setBindGroup(0, gpuGroup(), [slotOf({ glass: pass, cut, N: 1, halfW: surfaceLineWidth() / 4 / view.scale, bias: pathBias, colour: 3 })]);  // (half the path's width: a whole one blackens a small arrow)
+    rp.setBindGroup(0, gpuGroup(), [slotOf({ glass: pass, cut, N: 1, halfW: surfaceLineWidth() / view.scale, bias: pathBias, colour: 3 })]);
     rp.setVertexBuffer(0, D.quad); rp.setVertexBuffer(1, D.headEdges); rp.draw(4, 4 * heads.length);
+    rp.setPipeline(gpuDrawPipe('tile', { vertex: 'tileV', fragment: 'shadowedF', buffers: tileBufs, cull: 'none', pass, shadowed: true }));
+    rp.setBindGroup(0, gpuGroup(), [slotOf({ glass: pass, cut, alpha: GLASS_ALPHA, plain: [0, 0, 0, 0], bias: 2 * pathBias })]); rp.setBindGroup(1, D.shadow.group);  // (over its outline and the path: the grid, then the path and outlines, then the heads)
+    rp.setVertexBuffer(0, D.headPos); rp.setVertexBuffer(1, D.headNrm); rp.setVertexBuffer(2, D.headIds); rp.draw(6 * heads.length);
   };
   gpuFrame(enc, drawAll);
   device.queue.writeBuffer(D.uni, 0, D.words, 0, 512 * slot);

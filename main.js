@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.274';
+const VERSION = '0.4.275';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -14815,10 +14815,10 @@ function headFrame(P = (i) => [walk.wx[i], walk.wy[i], walk.wz[i]], tileAt = (i)
   for (let q = 1; q + 1 < k; q++) area += Math.hypot(...cross(c(q).map((v, d) => v - c(0)[d]), c(q + 1).map((v, d) => v - c(0)[d]))) / 2;
   return { p, h, side, nrm: cross(h, side), size: headSize(area) };
 }
-// the heads on a surface, each [its frame, its colour]: a battle's living walkers, else the walk's (Life's live colour); none in Life
+// the heads on a surface, each [its frame, its colour]: a battle's living walkers, else the walk's (white); none in Life
 function headsOf() {
   if (!walk.n || walk.life || walk.rows) return [];
-  if (!walk.battle) return [[headFrame(), LIFE_ALIVE]];  // (Life's live colour, as its 2D arrow)
+  if (!walk.battle) return [[headFrame(), '#ffffff']];
   const B = walk.battle.player;
   B.to(cur);
   return B.living().map((s) => [headFrame((i) => placePoint(B.places[s][i]), (i) => (walk.vert ? walk.geo.grid.tileOf[B.places[s][i]] : B.places[s][i]),
@@ -14843,8 +14843,8 @@ const headSize = (area) => (0.8 * Math.sqrt(area)) / 1.6;
 // place; at(forward, across): a point of it on the screen, in its size
 function drawArrow(ctx, fill, at) {
   ctx.fillStyle = fill;
-  ctx.strokeStyle = PALETTES[themeName() === 'light' ? 'dark' : 'light'].alive;  // (Life's live colour of the other theme: white round black, black round white)
-  ctx.lineWidth = Math.hypot(...[0, 1].map((d) => at(1, 0)[d] - at(-0.6, 0)[d])) / 15;  // (a fifteenth of its length: 2 px on a cell 95 px wide, as it grows and shrinks)
+  ctx.strokeStyle = '#0e1116';
+  ctx.lineWidth = Math.hypot(...[0, 1].map((d) => at(1, 0)[d] - at(-0.6, 0)[d])) / 10;  // (a tenth of its length: 3 px on a cell 95 px wide, as it grows and shrinks)
   ctx.lineJoin = 'round';
   ctx.beginPath();
   [[1, 0], [-0.6, 0.7], [-0.3, 0], [-0.6, -0.7]].forEach(([f, l], i) => { const [x, y] = at(f - 0.2, l); if (i) ctx.lineTo(x, y); else ctx.moveTo(x, y); });  // (−0.6 … 1 along: shifted to its length's middle, −0.8 … 0.8, not to the centre of gravity of the triangle it makes)
@@ -16582,7 +16582,7 @@ function drawOverlay() {
     if (l > 1e-6) { dx = ux / l; dy = uy / l; } else { dx = 0; dy = 0; } // step along the view axis
   }
   const a = headSize(polyArea(FILL_GRIDS[walk.lattice]?.templates[0] ?? [[0, 0], [1, 0], [1, 1], [0, 1]]) * s * s);  // (its cell's area on the screen: a lattice's tile, else a unit square)
-  drawArrow(ctx, LIFE_ALIVE, (f, l) => [x + (dx * f - dy * l) * a, y + (dy * f + dx * l) * a]);
+  drawArrow(ctx, '#ffffff', (f, l) => [x + (dx * f - dy * l) * a, y + (dy * f + dx * l) * a]);
 }
 
 

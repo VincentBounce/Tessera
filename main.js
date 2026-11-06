@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.345';
+const VERSION = '0.4.346';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -2138,10 +2138,11 @@ const runLoop = () => {
 };
 // The run's end, on the step line after its last: its mark always, its words open, the same everywhere, a link in green (see loopLink): its loop
 // (↻ every P from step T; → a walk's drift, an ant's highway), its death (✝ at step T: a worm, Life dying out) or frozen
-// (■ from gen T), a battle's end before its digits (■ the first heads met at step T); '' while none is known (Space-time
+// (■ from gen T), the length asked (👣, its stepper's), a battle's end before its digits (■ the first heads met at step T); '' while none is known (Space-time
 // and Elementary: none)
 function endMark() {
   if (spaceTimeOn() || walk.rows) return '';
+  if (lengthUsed() && seekFar() === targetAsked() && !runLoop()) return `<a class="gen-link gen-loop" href="#" data-stepper title="The length asked: a click, the steps stepper at the top right">${icon('footsteps')}<span class="end-words"> max defined upper-right</span></a>`;  // (its end the length asked: a click lights its stepper)
   if (walk.battle) { const why = walk.battle.winner.until; return why ? genLink(cur !== walk.n ? walk.n : 0, `■<span class="end-words"> ${why} at step ${fmt(walk.n)}</span>`, 'loop') : ''; }  // (its winner: the ranking's)
   const k = walk.life?.stable, o = !walk.life && runLoop();
   const [mark, words] = walk.life ? (!k ? [] : k.extinct ? ['✝', `at gen ${fmt(k.T)}`] : k.P === 1 ? ['■', `from gen ${fmt(k.T)}`] : ['↻', `every ${fmt(k.P)} from gen ${fmt(k.T)}`])
@@ -17012,7 +17013,9 @@ function drawActivity() {
 // a generation of the run in view, as a link, always (the one shown too: one look, the same everywhere): clicked, it goes
 // there (see seekTo: a reversible one's by its rule, Life's played again from its start)
 const genLink = (g, text = `${walk.life ? 'gen' : 'step'} ${fmt(g)}`, kind = '') => `<a class="gen-link${kind && ` gen-${kind}`}" href="#" data-gen="${g}" title="Go to ${walk.life ? 'gen' : 'step'} ${fmt(g)}">${text}</a>`;  // (kind: its colour, see style.css)
-document.addEventListener('click', (e) => { const a = e.target.closest?.('.gen-link'); if (!a) return; e.preventDefault(); seekTo(Number(a.dataset.gen)); });
+document.addEventListener('click', (e) => { const a = e.target.closest?.('.gen-link'); if (!a) return; e.preventDefault(); if ('stepper' in a.dataset) lightStepper(); else seekTo(Number(a.dataset.gen)); });
+// the steps stepper at the top right lit a moment (a click on the length asked's footsteps, see endMark)
+function lightStepper() { const s = document.querySelector('.max-steps'); s.classList.remove('lit'); void s.offsetWidth; s.classList.add('lit'); }
 function renderGauges(L) {
   const box = $('gauges'), n = L.seed.length;
   box.hidden = L.colours !== 1;
@@ -17176,9 +17179,7 @@ function updateStats() {
   // one (a walk's, Elementary's, Space-time's: see runEnd), its slider's end (see seekFar)
   const far = seekFar(), gens = !!walk.life || spaceTimeOn() || !!walk.rows;
   $('stepNow').textContent = `${gens ? 'Gen' : 'Step'} ${fmt(cur)}`;
-  const byStepper = lengthUsed() && far === targetAsked();  // (its end the length asked, not its loop's or its death's)
-  setLinks($('stepLast'), Number.isFinite(runEnd()) && Number.isFinite(far) ? ` / ${fmt(far)}${byStepper ? icon('footsteps') : ''}` : '');
-  $('stepLast').title = byStepper ? 'The length asked: the steps stepper at the top' : '';
+  setLinks($('stepLast'), Number.isFinite(runEnd()) && Number.isFinite(far) ? ` / ${fmt(far)}` : '');
   setLinks($('stepEnd'), endMark());
   if (!walk.life && !walk.battle) $('ranking').hidden = $('rankTitles').hidden = true;  // (a battle's shown by renderWalkGauges: never hidden in between, its rows' slides kept)
   const time = spaceTimeOn() && !!stack, rows = walk.rows;

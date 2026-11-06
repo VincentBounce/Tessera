@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.277';
+const VERSION = '0.4.278';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -10634,7 +10634,8 @@ const lifeMark = (mode) => (mode.elementary ? ELEMENTARY_MARK : mode.loops ? LOO
 let lifeColours = 1, coloursPicked = 1, colourMix = false, newcomer = false;  // the colours: the figure's nearest to the last picked (see fitColours); colourMix: Mixed, the colours mixed in one place (see huntParts)
 // Mixed as it counts in a zone: on, colours to mix, and a zone of cells at random (Spark … Jungle, Wild, Formula): the others lay
 // each colour's own picture or part (Icon, Punk, Emoji, Famous, Anywhere, Realm, Mirror), Mixed greyed there, kept for later
-const mixable = (zone) => !!walk.life && !walk.life.loops && (plane.start === 'digits' || (huntOn() && (zoneRadius(zone) > 0 || zone === 'full' || zone === 'numbers')));
+const mixable = (zone, mode = MODES[$('mode').value]) => !!mode.life && !mode.loops && (plane.start === 'digits' ||  // (by the mode, not its game: a link opened cold, before its game, mixes as the page did)
+  (huntOn() && (zoneRadius(zone) > 0 || zone === 'full' || zone === 'numbers')));
 const colourMixed = (zone = hunt.zone) => colourMix && lifeColours > 1 && mixable(zone);
 // Newcomer, a switch: the teams below's start (Trio's: Duel's, laid as Duel lays them), the last colour none at first, born only
 // of a tie between the others (the colour missing, see colourMissing); where a start lays teams (a soup's zones, Text)

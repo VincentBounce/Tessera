@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.368';
+const VERSION = '0.4.369';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -15672,7 +15672,7 @@ const LAND_NAMES = ['green', 'yellow', 'ochre', 'lime', 'white'];  // (Ocean's l
 const teamName = (s) => (oceanOn() && LANDS[s] ? LAND_NAMES[s] : LIFE_COLOUR_NAMES[s]);
 // Cut: Off, or a fixed plane through the middle facing one of the view's axes (E, N, Up, as drawn in its corner), the half on
 // that axis's side gone: its notches on a row as Flat ── Inflated (see sizeGauge)
-const CUT_AXES = [['Off'], ['E', [1, 0, 0]], ['N', [0, 1, 0]], ['Up', [0, 0, 1]]];
+const CUT_AXES = [['Off'], ['S', [0, -1, 0]], ['E', [1, 0, 0]], ['Up', [0, 0, 1]]];
 let cutAxis = defaultOf('cut');
 const cutOn = () => cutAxis > 0 && !$('cutRow').hidden;
 const cutNormal = () => CUT_AXES[cutAxis][1] ?? [0, 0, 0];
@@ -17908,7 +17908,7 @@ for (const type of ['pointerdown', 'dblclick', 'wheel']) {
 $('light').addEventListener('change', () => { needsFull = true; });
 $('glass').addEventListener('change', () => { needsFull = true; });
 $('ocean').addEventListener('change', () => { oceanPicked = true; needsFull = statsDirty = true; tintBattleFormulas(); if (walk.n) describe(walk.base); });  // (a battle's colours: its fields, its title, its ranking)
-notchRow($('cutRow'), 'Cut', 'A cross-section by a fixed plane through the middle, the half on its axis\'s side gone, the inside showing: Off, or the plane facing E, N or Up (the axes drawn in the view\'s corner)', CUT_AXES.map(([name]) => [name]), cutAxis, defaultOf('cut'), setCut);
+notchRow($('cutRow'), 'Cut', 'A cross-section by a fixed plane through the middle, the half on its axis\'s side gone, the inside showing: Off, or the plane facing S, E or Up (the axes drawn in the view\'s corner)', CUT_AXES.map(([name]) => [name]), cutAxis, defaultOf('cut'), setCut);
 $('perspective').addEventListener('change', () => {
   setPerspective();
   rotateView([0, 0, 0]);  // the projection again

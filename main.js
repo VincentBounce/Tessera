@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.286';
+const VERSION = '0.4.287';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -4071,7 +4071,9 @@ const ANTS = {
 // of the ant on the same cells (its place in the menus: the walk's surface and tiling)
 const SURFACE_ANTS = { antTorus: ['torusWalk', 'antCube', 'Torus'], antTorusHex: ['torusHexWalk', 'antHex', 'Torus'], antTorusTri: ['torusTriWalk', 'antIcosa', 'Torus'],
                        antTorusCairo: ['torusCairoWalk', 'antCairo', 'Torus'], antMobius: ['mobiusWalk', 'antCube', 'Möbius strip'], antMobiusHex: ['mobiusHexWalk', 'antHex', 'Möbius strip'],
-                       antMobiusTri: ['mobiusTriWalk', 'antIcosa', 'Möbius strip'], antMobiusCairo: ['mobiusCairoWalk', 'antCairo', 'Möbius strip'] };
+                       antMobiusTri: ['mobiusTriWalk', 'antIcosa', 'Möbius strip'], antMobiusCairo: ['mobiusCairoWalk', 'antCairo', 'Möbius strip'],
+                       antKlein: ['kleinWalk', 'antCube', 'Klein bottle'], antKleinHex: ['kleinHexWalk', 'antHex', 'Klein bottle'], antKleinTri: ['kleinTriWalk', 'antIcosa', 'Klein bottle'],
+                       antKleinCairo: ['kleinCairoWalk', 'antCairo', 'Klein bottle'] };
 for (const [w, [walkMode, like, place]] of Object.entries(SURFACE_ANTS)) {
   const { sphere, initial, turns, perspective, round } = MODES[walkMode];
   MODES[w] = { base: 2, lattice: 'sphere', cells: true, sphere, initial, turns, perspective, round, fill: false, antOf: walkMode, get rule() { return antRuleText(w); } };

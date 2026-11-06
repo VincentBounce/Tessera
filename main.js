@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.326';
+const VERSION = '0.4.327';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -10400,7 +10400,9 @@ function renderDrawTools() {
   stage.classList.toggle('drawing', drawsHere());  // (the crosshair: a click draws, see drawsHere)
   const grey = (b, own = false, ownWhy = '') => { b.disabled = away || own; b.dataset.greyed = away ? why : own ? ownWhy : ''; };
   const tooBig = (p) => discPattern(p) && flatGrid()?.kind === p[1] && !discCells(p[1]).laid(p[4], 0);  // (a disc's pattern past the disc shown)
-  for (const b of $('brushCards').children) if (b.dataset.brush !== 'view') grey(b, tooBig(DRAW_BY_ID.get(b.dataset.brush)), 'too big for this disc: at a larger size');  // (View: at any generation)
+  for (const b of $('brushCards').children) {
+    if (b.dataset.brush === 'view') { b.disabled = false; b.dataset.greyed = ''; } else grey(b, tooBig(DRAW_BY_ID.get(b.dataset.brush)), 'too big for this disc: at a larger size');  // (View: at any generation, a surface's greying undone)
+  }
   const tool = !DRAW_BY_ID.get(brush.id)[1];  // (View or a cell: no pattern to turn)
   grey($('brushTurn'), tool || PATTERN_TURNS[kind] === 1, 'for View or a cell, or on a grid a pattern cannot turn on (a disc\'s: turned towards the cell clicked)');
   grey($('brushFlip'), tool || !canMirror(kind), 'for View or a cell, or on a grid a pattern cannot mirror on');
@@ -14725,7 +14727,9 @@ const lifeEnded = () => { const s = walk.life?.stable; return !!s && (s.extinct 
 const atEnd = () => (cur >= runEnd() && !looping()) || lifeEnded();
 function play(on) {
   playing = on && walk.n > 0 && !atEnd();
-  if (playing && drawing && brush.id !== 'view') { brush.id = 'view'; ghost = null; drawGhost(); renderPlaneRow(); }  // (playing: View, Draw's look only)
+  // (playing: View, Draw's look only, the brush picked before given back once it stops: a link loaded cold the same)
+  if (playing && drawing && brush.id !== 'view') { brush.before = brush.id; brush.id = 'view'; ghost = null; drawGhost(); renderPlaneRow(); }
+  else if (!playing && brush.before) { brush.id = brush.before; brush.before = null; renderPlaneRow(); }
   if (playing) reverse(false);
   $('play').innerHTML = playing ? `${icon('pause')} Pause` : `${icon('play')} Play`;
   $('play').classList.toggle('on', playing);

@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.366';
+const VERSION = '0.4.367';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -5511,28 +5511,60 @@ function torusPoint(i, j, nu, nv, m, tube = TORUS_TUBE) {
 /* ---- 7.4a Klein bottle -------------------------------------------------------------------- */
 /* A torus whose sheet is glued with its ends turned over: (x + nu, y) ≡ (x, nv − y), as the Möbius strip's,
  * and (x, y + nv) ≡ (x, y). One-sided and closed; in space it must cross itself: the bottle, its tube along the sheet's x,
- * a neck that goes in through its side and opens into its bottom (see kleinBottlePoint: the sheet's gluing with u a
- * quarter turn on), its tiles narrow in the neck, wide in the body (the figure 8 too before v0.4.14, see REMOVED.md).
- * Flat (m = 0) as the torus's sheet. */
+ * a neck that goes in through its side and opens into its bottom (see kleinBottlePoint), its tiles narrow in the neck, wide
+ * in the body (Paul Bourke's four pieces before v0.4.367, their seams a tile 3 times as long as its neighbour; the figure 8
+ * before v0.4.14, see REMOVED.md). Flat (m = 0) as the torus's sheet. */
 function kleinPoint(x, y, nu, nv, m, tube = TORUS_TUBE) {
   const f = (y / nv) * 2 * Math.PI;
-  // the bottle: the sheet's ends on the circle it stands on (the bowl's lowest, v = π/2: unrolled, it opens there), past
-  // its own ends (4π) turned over (u to π − u)
-  const w = (x / nu + 0.125) * 4 * Math.PI, past = w >= 4 * Math.PI;
-  const K = kleinBottlePoint(past ? w - 4 * Math.PI : w, past ? -Math.PI / 2 - f : f + 1.5 * Math.PI);  // (its sheet half a turn round the tube: its middle, its pictures, in front)
+  // the bottle: the sheet's ends on the circle it stands on (the bowl's lowest), past its own ends turned over (u to π − u)
+  const w = x / nu + kleinBottle().bottom, past = w >= 1;
+  const K = kleinBottlePoint(past ? w - 1 : w, past ? -Math.PI / 2 - f : f + 1.5 * Math.PI);  // (its sheet half a turn round the tube: its middle, its pictures, in front)
   if (m >= 1) return K;
   const F = torusPoint(x, y, nu, nv, 0, tube);
   return F.map((v, d) => v + (K[d] - v) * m);
 }
-// The bottle at v along it (0 to 4π), u round it (Paul Bourke's, four pieces): a bowl from the neck's mouth out to the
-// body's widest (radius 1 to 4), the body narrowing up into the neck (back to 1, 3π high), the neck arching over, then
-// down through the body's side into the bowl; B(4π, u) = B(0, π − u). Standing, centred, 0.2 its size (15 high: 3),
-// turned half a turn round the vertical: its handle (Bourke's at −x) east
-function kleinBottlePoint(v, u) {
-  const cu = Math.cos(u), su = Math.sin(u), cv = Math.cos(v), sv = Math.sin(v), P = Math.PI, r = 2.5 - 1.5 * cv, k = 0.2;
-  const [x, y, z] = v < P ? [r * cu, r * su, -2.5 * sv] : v < 2 * P ? [r * cu, r * su, 3 * v - 3 * P]
-    : v < 3 * P ? [-2 + (2 + cu) * cv, su, (2 + cu) * sv + 3 * P] : [-2 + 2 * cv - cu, su, 12 * P - 3 * v];
-  return [-(x + 0.5) * k, -y * k, (z - 4.96) * k];
+// The bottle, smooth (its curvature with no jump: its tiles as long as their neighbours), after a glass one's silhouette:
+// a body turned round the vertical, its profile (r, z) from the bowl's mouth (radius 1, the tube's, at 0) down round the
+// bowl (KLEIN_BOWL deep) out to its widest (KLEIN_WIDEST) and up, narrowing, to its top (radius 1, KLEIN_BODY high); then
+// the neck, a tube of radius 1 round a line in the x–z plane from that top up, over to the west and down through the body's
+// side into the mouth: x = t³(1 − t)³(a + bt + ct²), z = KLEIN_BODY (1 − t) + t(1 − t)(d + et + ft² + gt³), its ends upright
+// with no curvature (KLEIN_NECK: fitted to that silhouette, curvature at most 0.52 so its inside never folds, see
+// tools/klein-neck.js). Its round angle u as Bourke's: (r cos u, r sin u) round the body, along the neck's normal and y;
+// its end the mouth again, turned over: B(1, u) = B(0, π − u)
+const KLEIN_BOWL = 3, KLEIN_WIDEST = 4, KLEIN_BODY = 9.5;
+const KLEIN_NECK = [-357.0442, 127.6586, -55.2735, 58.0148, -65.6576, 28.5426, -14.6418];
+const kleinNeck = (t) => { const [a, b, c, d, e, f, g] = KLEIN_NECK, w = t ** 3 * (1 - t) ** 3; return [w * (a + b * t + c * t * t), KLEIN_BODY * (1 - t) + t * (1 - t) * (d + e * t + f * t * t + g * t ** 3)]; };
+// q along it: the bowl [0, 1), the body [1, 2) (its profile, r and z), the neck [2, 3] (its line, x and z)
+const kleinProfile = (q) => {
+  const r = (c) => 1 + (KLEIN_WIDEST - 1) * c;
+  if (q < 1) return [r((1 - Math.cos(Math.PI * q)) / 2), -KLEIN_BOWL * Math.sin(Math.PI * q)];
+  return [r((1 + Math.cos(Math.PI * (q - 1))) / 2), KLEIN_BODY * (q - 1)];
+};
+function kleinAt(q, u) {
+  if (q < 2) { const [r, z] = kleinProfile(q); return [r * Math.cos(u), r * Math.sin(u), z]; }
+  const t = Math.min(1, q - 2), h = 1e-5, A = kleinNeck(Math.max(0, t - h)), B = kleinNeck(Math.min(1, t + h)), l = Math.hypot(B[0] - A[0], B[1] - A[1]), [x, z] = kleinNeck(t);
+  const nx = (B[1] - A[1]) / l, nz = -(B[0] - A[0]) / l;  // (its normal in the plane: east at the body's top, west at the mouth)
+  return [x + Math.cos(u) * nx, Math.sin(u), z + Math.cos(u) * nz];
+}
+// its length along it, once: the body's profile, then the neck's line, its share s ∈ [0, 1) to its q (the tiles as long
+// everywhere along it); the bowl's lowest's share (the sheet's ends there), and its frame (centred, 3 high)
+let kleinTable = null;
+function kleinBottle() {
+  if (kleinTable) return kleinTable;
+  const N = 6000, q = (i) => (3 * i) / N, mid = (i) => (q(i) < 2 ? kleinProfile(q(i)) : kleinNeck(q(i) - 2)), along = new Float64Array(N + 1);
+  for (let i = 1; i <= N; i++) { const a = q(i) >= 2 && q(i - 1) < 2 ? kleinNeck(0) : mid(i - 1), b = mid(i); along[i] = along[i - 1] + Math.hypot(a[0] - b[0], a[1] - b[1]); }
+  const lo = [Infinity, Infinity, Infinity], hi = [-Infinity, -Infinity, -Infinity];
+  for (let i = 0; i <= 600; i++) for (let j = 0; j < 48; j++) kleinAt((3 * i) / 600, (j * Math.PI) / 24).forEach((v, d) => { lo[d] = Math.min(lo[d], v); hi[d] = Math.max(hi[d], v); });
+  return (kleinTable = { N, along, bottom: along[N / 6] / along[N], centre: lo.map((v, d) => (v + hi[d]) / 2), scale: 3 / (hi[2] - lo[2]) });
+}
+// The bottle at s along it (0 to 1, from the bowl's mouth), u round it: standing, centred, 3 high, turned half a turn round
+// the vertical: its neck's arch east
+function kleinBottlePoint(s, u) {
+  const { N, along, centre, scale } = kleinBottle(), at = s * along[N];
+  let lo = 0, hi = N;
+  while (hi - lo > 1) { const m = (lo + hi) >> 1; if (along[m] < at) lo = m; else hi = m; }
+  const [x, y, z] = kleinAt((3 * (lo + (at - along[lo]) / (along[hi] - along[lo] || 1))) / N, u);
+  return [-(x - centre[0]) * scale, -(y - centre[1]) * scale, (z - centre[2]) * scale];
 }
 // Its tiles as the torus's (squares, hexagons, triangles, Cairo pentagons; tiles in the same order), their
 // corners one vertex per point of the bottle, found by their place on the sheet (not in space: it crosses

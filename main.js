@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.362';
+const VERSION = '0.4.363';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -15146,8 +15146,8 @@ const sphereDraw = { at: 0, cost: 0 };
 function headFrame({ P, tileAt, before }, i = cur) {
   const j = Math.floor(i), f = i - j, q = P(j), next = f > 0 ? P(j + 1) : q, p = q.map((v, d) => v + (next[d] - v) * f);
   const t = tileAt(f < 0.5 ? j : j + 1), nr = walk.shape.nrm, nrm = [nr[3 * t], nr[3 * t + 1], nr[3 * t + 2]];
-  const [a, b] = f > 0 ? [q, next] : [j > 0 ? P(j - 1) : before, q];
-  const h = unit([0, 1, 2].map((d) => b[d] - a[d])), side = unit(cross(nrm, h));  // (its axis its last step itself, as its line)
+  const dir = (a, b) => unit([0, 1, 2].map((d) => b[d] - a[d])), last = dir(j > 0 ? P(j - 1) : before, q);  // (its axis its last step itself, as its line)
+  const h = f > 0 ? turnToward(last, dir(q, next), nrm, Math.min(1, f / TURN_SHARE)) : last, side = unit(cross(nrm, h));
   const k = walk.geo.sides, sc = walk.shape.corners, c = (q) => [0, 1, 2].map((d) => sc[3 * (k * t + q) + d] * walk.R);  // (its tile's corners in space)
   let area = 0;
   for (let q = 1; q + 1 < k; q++) area += Math.hypot(...cross(c(q).map((v, d) => v - c(0)[d]), c(q + 1).map((v, d) => v - c(0)[d]))) / 2;
@@ -15166,6 +15166,13 @@ function walkersOf() {
 // the heads: each living walker's ogive at its step (see ogiveOf); the starts: each walker's flag in its frame at step 0
 // (see flagOf: its start's own heading, the way it came by); each [its corners, its colour]
 const headsOf = () => walkersOf().flatMap((W) => [...(W.living ? [[ogiveOf(headFrame(W, glideAt())), W.colour]] : []), [flagOf(headFrame(W, 0)), W.colour]]);
+// gliding, a head turns from its last step's heading to its next one's in the first TURN_SHARE of the step, as it goes on:
+// turned round the tile's normal n by that share w of the angle between them (a U-turn: half a turn)
+const TURN_SHARE = 0.2;
+const turnToward = (from, to, n, w) => {
+  const across = cross(n, from), a = Math.atan2(dot3(across, to), dot3(from, to)) * w;
+  return unit([0, 1, 2].map((d) => from[d] * Math.cos(a) + across[d] * Math.sin(a)));
+};
 // Played slower than a step a frame (the screen's: frameMin, its shortest), a head glides from its place to its next one,
 // by the step's time gone (stepsDue: the fraction of a step owed), drawn each frame (see tick), on a surface (an ogive) or
 // the plane (an arrow, see drawOverlay); else on its place
@@ -16925,7 +16932,8 @@ function drawOverlay() {
   const a = headSize(polyArea(FILL_GRIDS[walk.lattice]?.templates[0] ?? [[0, 0], [1, 0], [1, 1], [0, 1]]) * s * s);  // (its cell's area on the screen: a lattice's tile, else a unit square)
   const frame = (at) => {  // (between two steps, gliding: on its way from one to the next, heading along it, see glideAt)
     const i = Math.floor(at), f = at - i, j = f > 0 ? i + 1 : i, x = ox + (walk.xs[i] + (walk.xs[j] - walk.xs[i]) * f) * s, y = oy + (walk.ys[i] + (walk.ys[j] - walk.ys[i]) * f) * s;
-    const [ux, uy] = f > 0 ? [walk.xs[j] - walk.xs[i], walk.ys[j] - walk.ys[i]] : [i ? walk.xs[i] - walk.xs[i - 1] : 0, i ? walk.ys[i] - walk.ys[i - 1] : -1], l = Math.hypot(ux, uy);
+    const last = [i ? walk.xs[i] - walk.xs[i - 1] : 0, i ? walk.ys[i] - walk.ys[i - 1] : -1];  // (its last step; gliding, turned toward its next one, see turnToward)
+    const [ux, uy] = f > 0 ? turnToward([...last, 0], [walk.xs[j] - walk.xs[i], walk.ys[j] - walk.ys[i], 0].map((v, d, u) => v / (Math.hypot(...u) || 1)), [0, 0, -1], Math.min(1, f / TURN_SHARE)) : last, l = Math.hypot(ux, uy);
     const [dx, dy] = l > 1e-6 ? [ux / l, uy / l] : [0, 0];  // (a step along the view axis: none)
     return (f, c) => [x + (dx * f - dy * c) * a, y + (dy * f + dx * c) * a];
   };

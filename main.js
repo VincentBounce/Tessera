@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.278';
+const VERSION = '0.4.279';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -1304,7 +1304,7 @@ const walk = {
 let cur = 0;        // steps taken so far
 let drawn = 0;      // steps already drawn on the path layer
 let playing = false, reversing = false;  // reversing: a reversible one played backwards (see lifeBack)
-let acc = 0;
+let stepsDue = 0;  // the steps owed since the last frame, by the speed (its fraction carried to the next)
 let needsFull = true;
 let statsDirty = true;
 let bounds = { minX: 0, maxX: 0, minY: 0, maxY: 0 };
@@ -1971,13 +1971,13 @@ const freshDraw = () => crypto.getRandomValues(new Uint32Array(1))[0] % 1e9;
 // (currentColor): grey on a card, yellow when it is the active one, dark on a filled button. No
 // emoji and no icon font, so they look the same on every system and match the flat design. The
 // shapes are computed (regular polygons, spirals, the dragon curve), the rest is a few paths.
-const r2 = (v) => Math.round(v * 100) / 100;
-const pathOf = (pts, close = true) => `M${pts.map(([x, y]) => `${r2(x)} ${r2(y)}`).join('L')}${close ? 'Z' : ''}`;
+const hundredths = (v) => Math.round(v * 100) / 100;
+const pathOf = (pts, close = true) => `M${pts.map(([x, y]) => `${hundredths(x)} ${hundredths(y)}`).join('L')}${close ? 'Z' : ''}`;
 const ngon = (n, r, rot = -90, cx = 12, cy = 12) => Array.from({ length: n }, (_, k) => {
   const a = ((rot + (k * 360) / n) * Math.PI) / 180;
   return [cx + r * Math.cos(a), cy + r * Math.sin(a)];
 });
-const seg = (a, b) => pathOf([a, b], false);
+const segmentPath = (a, b) => pathOf([a, b], false);
 // Scale and centre a polyline in the box (size × size, around 12, 12)
 function fitIn(pts, size = 18) {
   const xs = pts.map((p) => p[0]), ys = pts.map((p) => p[1]);
@@ -2055,7 +2055,7 @@ const walledEl = (P, d = 2.6) => {
   const mortar = sides.flatMap((s, i) => {  // (along its inside's side, across to the outline: all within the double line)
     const a = inner[i], b = inner[(i + 1) % n], m = Math.max(1, Math.round(Math.hypot(b[0] - a[0], b[1] - a[1]) / 4));
     return Array.from({ length: m }, (_, j) => { const t = (j + 0.5) / m, x = a[0] + t * (b[0] - a[0]), y = a[1] + t * (b[1] - a[1]);
-      return `M${r2(x)} ${r2(y)}L${r2(x - d * s.in[0])} ${r2(y - d * s.in[1])}`; });
+      return `M${hundredths(x)} ${hundredths(y)}L${hundredths(x - d * s.in[0])} ${hundredths(y - d * s.in[1])}`; });
   }).join('');
   return pathEl(pathOf(P), 'thin') + pathEl(pathOf(inner), 'thin') + pathEl(mortar, 'thin');
 };
@@ -2078,7 +2078,7 @@ const hexCluster = (rot) => [0, 120, 240].map((d) => {
 }).join('');
 const ICONS = (() => {
   const hex = ngon(6, 9.5), tri = ngon(3, 10, -90, 12, 14), sq = [[4, 4], [20, 4], [20, 20], [4, 20]], rhombus = [[2, 17.2], [14, 17.2], [20, 6.8], [8, 6.8]];
-  const cube = (fillTop) => pathEl(pathOf(hex)) + [0, 2, 4].map((k) => pathEl(seg([12, 12], hex[k]))).join('')
+  const cube = (fillTop) => pathEl(pathOf(hex)) + [0, 2, 4].map((k) => pathEl(segmentPath([12, 12], hex[k]))).join('')
     + (fillTop ? pathEl(pathOf([[12, 12], hex[4], hex[5], hex[0]]), 'f') : '');
   // the carved cubes, as the cube: on each face seen, its middle third (P) a hole (filled), a pit (its rim), a bump (its top out of
   // it), or a grid of thirds round a hole (the sponge)
@@ -2090,7 +2090,7 @@ const ICONS = (() => {
   const frame = carved((F, P) => pathEl(pathOf(P), 'f'));
   const pits = carved((F, P) => pathEl(pathOf(P)));
   const bumps = carved((F, P, at) => pathEl(pathOf(at(-1))));
-  const menger = carved((F, P) => pathEl(pathOf(P), 'f') + [1, 2].map((t) => pathEl(seg(...[F[0], F[3]].map((p, j) => p.map((x, d) => x + (t / 3) * (F[1][d] - F[0][d])))) + seg(...[F[0], F[1]].map((p) => p.map((x, d) => x + (t / 3) * (F[3][d] - F[0][d])))))).join(''));
+  const menger = carved((F, P) => pathEl(pathOf(P), 'f') + [1, 2].map((t) => pathEl(segmentPath(...[F[0], F[3]].map((p, j) => p.map((x, d) => x + (t / 3) * (F[1][d] - F[0][d])))) + segmentPath(...[F[0], F[1]].map((p) => p.map((x, d) => x + (t / 3) * (F[3][d] - F[0][d])))))).join(''));
   const torus = '<ellipse cx="12" cy="12" rx="10" ry="7"/>' + pathEl('M5.5 11Q12 17 18.5 11M7.8 12.6Q12 8 16.2 12.6');
   // the Möbius strip, traced from a drawing of one (a band of three sides round a triangular hole): its outline, the hole,
   // and the three folds where one side of the band passes behind the next
@@ -2113,9 +2113,9 @@ const ICONS = (() => {
   const icoOut = ngon(6, 10), icoIn = ngon(3, 5, 90);
   // the dodecahedron seen face on: a pentagon in the middle, its 5 neighbours' edges out to the rim
   const dodecaIn = ngon(5, 5, 90), dodeca = pathEl(pathOf(ngon(5, 10))) + pathEl(pathOf(dodecaIn))
-    + dodecaIn.map(([x, y]) => pathEl(seg([x, y], [12 + (x - 12) * 1.618, 12 + (y - 12) * 1.618]))).join('');
+    + dodecaIn.map(([x, y]) => pathEl(segmentPath([x, y], [12 + (x - 12) * 1.618, 12 + (y - 12) * 1.618]))).join('');
   const ico = pathEl(pathOf(icoOut)) + pathEl(pathOf(icoIn))
-    + [[0, 1], [0, 2], [2, 0], [2, 2], [4, 0], [4, 1], [1, 2], [3, 0], [5, 1]].map(([o, i]) => pathEl(seg(icoOut[o], icoIn[i]))).join('');
+    + [[0, 1], [0, 2], [2, 0], [2, 2], [4, 0], [4, 1], [1, 2], [3, 0], [5, 1]].map(([o, i]) => pathEl(segmentPath(icoOut[o], icoIn[i]))).join('');
   return {
     // walk modes
     grid: pathEl(pathOf(sq)) + pathEl('M12 4V20M4 12H20'),
@@ -2145,12 +2145,12 @@ const ICONS = (() => {
     pinwheel: pathEl('M6.0 9.0L2.0 17.0L2.0 7.0ZM6.0 9.0L14.0 13.0L4.0 13.0ZM4.0 13.0L12.0 17.0L2.0 17.0ZM14.0 13.0L22.0 17.0L12.0 17.0ZM12.0 17.0L4.0 13.0L14.0 13.0Z'),  // the pinwheel's triangle cut in 5 of itself
     penrose: pathEl('M8.3 7.9L2.3 9.8L6.0 14.9L12.0 13.0ZM15.7 7.9L12.0 2.8L8.3 7.9L12.0 13.0ZM15.7 7.9L21.7 9.8L18.0 14.9L12.0 13.0ZM6.0 14.9L6.0 21.2L12.0 19.3L12.0 13.0ZM12.0 19.3L18.0 21.2L18.0 14.9L12.0 13.0Z'),  // Penrose's star: the 5 big rhombi at its middle
     hat: pathEl('M7.2 13.4L2.5 16.1L4.1 18.9L10.4 18.9L12 16.1L16.8 18.9L21.5 16.1L19.9 13.4L16.8 13.4L16.8 7.9L12 5.1L10.4 7.9L7.2 7.9Z'),  // the hat monotile
-    kites: pathEl(pathOf(hex)) + hex.map((p, i) => pathEl(seg([12, 12], [(p[0] + hex[(i + 1) % 6][0]) / 2, (p[1] + hex[(i + 1) % 6][1]) / 2]))).join(''),  // a hexagon cut in 6 kites
+    kites: pathEl(pathOf(hex)) + hex.map((p, i) => pathEl(segmentPath([12, 12], [(p[0] + hex[(i + 1) % 6][0]) / 2, (p[1] + hex[(i + 1) % 6][1]) / 2]))).join(''),  // a hexagon cut in 6 kites
     cube: cube(false),
     stacks: (() => {  // Stacks: the cube seen from above (cube's, upside down), a brick wall on its left face (Walls with it), layers on its
       // right (its generations), on its top 5 live cells here and there (its last one)
       const at = (o, a, b) => (u, v) => o.map((x, d) => x + u * (a[d] - x) + v * (b[d] - x)), L = at(hex[4], [12, 12], hex[5]), R = at([12, 12], hex[2], hex[0]), T = at(hex[3], hex[2], hex[4]);  // (its faces as cube draws them)
-      const line = (f, u0, v0, u1, v1) => pathEl(seg(f(u0, v0), f(u1, v1))), cell = (u, v, s = 1 / 6) => pathEl(pathOf([T(u, v), T(u + s, v), T(u + s, v + s), T(u, v + s)]), 'f');
+      const line = (f, u0, v0, u1, v1) => pathEl(segmentPath(f(u0, v0), f(u1, v1))), cell = (u, v, s = 1 / 6) => pathEl(pathOf([T(u, v), T(u + s, v), T(u + s, v + s), T(u, v + s)]), 'f');
       return `<g transform="matrix(1 0 0 -1 0 24)">${cube(false) + [1 / 3, 2 / 3].map((v) => line(L, 0, v, 1, v)).join('') + [[0.5, 0, 1 / 3], [0.25, 1 / 3, 2 / 3], [0.75, 1 / 3, 2 / 3], [0.5, 2 / 3, 1]].map(([u, a, b]) => line(L, u, a, u, b)).join('')
         + [0.25, 0.5, 0.75].map((v) => line(R, 0, v, 1, v)).join('') + [[0.12, 0.22], [0.52, 0.1], [0.38, 0.48], [0.7, 0.5], [0.18, 0.72]].map(([u, v]) => cell(u, v)).join('')}</g>`;
     })(),
@@ -2164,9 +2164,9 @@ const ICONS = (() => {
     tilesTri: tiledTriangle(-90), tilesTriTurned: tiledTriangle(0),
     tilesHex: hexCluster(30), tilesHexTurned: hexCluster(0),  // (pointy as the plane's; turned, flat)
     klein, mobius,  // (see above: a flask its neck going into itself; a band with a half twist)
-    tetrahedron: pathEl(pathOf([a, b, c])) + [a, b, c].map((p) => pathEl(seg(p, d))).join(''),
+    tetrahedron: pathEl(pathOf([a, b, c])) + [a, b, c].map((p) => pathEl(segmentPath(p, d))).join(''),
     stella: pathEl(pathOf(ngon(3, 10))) + pathEl(pathOf(ngon(3, 10, 90))),  // two tetrahedra: two triangles, a star
-    octahedron: pathEl('M12 2L21 12L12 22L3 12Z') + [[12, 2], [21, 12], [12, 22], [3, 12]].map((p) => pathEl(seg(p, [10, 14]))).join(''),
+    octahedron: pathEl('M12 2L21 12L12 22L3 12Z') + [[12, 2], [21, 12], [12, 22], [3, 12]].map((p) => pathEl(segmentPath(p, [10, 14]))).join(''),
     icosahedron: ico,
     dodecahedron: dodeca,
     cubocta: pathEl('M4 4H20V20H4Z') + pathEl('M12 4L20 12L12 20L4 12Z'),  // a cuboctahedron face on: a square, its 4 corners triangles
@@ -2193,7 +2193,7 @@ const ICONS = (() => {
     walk2d: pathEl('M3 20V15H8V10H12V16H17V6H21V3'),  // a walk on the square grid
     gallery: [[3.5, 3.5], [13.5, 3.5], [3.5, 13.5], [13.5, 13.5]].map(([x, y]) => `<rect x="${x}" y="${y}" width="7" height="7" rx="1.6"/>`).join(''),
     glider: pathEl(pathOf(sq)) + pathEl('M9.33 4V20M14.67 4V20M4 9.33H20M4 14.67H20')
-      + [[1, 0], [2, 1], [0, 2], [1, 2], [2, 2]].map(([x, y]) => `<rect class="f" x="${r2(4 + x * 5.33)}" y="${r2(4 + y * 5.33)}" width="5.33" height="5.33"/>`).join(''),
+      + [[1, 0], [2, 1], [0, 2], [1, 2], [2, 2]].map(([x, y]) => `<rect class="f" x="${hundredths(4 + x * 5.33)}" y="${hundredths(4 + y * 5.33)}" width="5.33" height="5.33"/>`).join(''),
     // hunt zones: the whole surface, then a patch of radius 1, 2 or 3
     zoneAll: pathEl(pathOf(sq)) + pathEl('M9.33 4V20M14.67 4V20M4 9.33H20M4 14.67H20'),
     // the symmetries of a Life start on the plane
@@ -14506,7 +14506,7 @@ function restart() {
   faced = false;
   cur = 0;
   drawn = 0;
-  acc = 0;
+  stepsDue = 0;
   bounds = { minX: 0, maxX: 0, minY: 0, maxY: 0 };
   bounds3 = [0, 0, 0, 0, 0, 0];
   if (walk.sphere) {  // the frame is the whole sphere, centred on the origin
@@ -17025,9 +17025,9 @@ function tick(now = performance.now()) {
   }
   if (!playing && !reversing && lifeGoal !== null && walk.life && !spaceTimeOn()) lifeTo(lifeGoal, now + 750 * frameMin);  // (a generation asked, its batch back: on to it; Space-time's: its own, see stackUp)
   if (playing || reversing) {
-    acc += stepsPerSecond() * dt;  // time-based, so the speed holds whatever the frame rate
-    const k = Math.floor(acc), from = walk.life && lifeGoal !== null ? lifeGoal : cur;  // (on from where it was going: a batch on the card, its steps not lost)
-    acc -= k;
+    stepsDue += stepsPerSecond() * dt;  // time-based, so the speed holds whatever the frame rate
+    const k = Math.floor(stepsDue), from = walk.life && lifeGoal !== null ? lifeGoal : cur;  // (on from where it was going: a batch on the card, its steps not lost)
+    stepsDue -= k;
     if (k > 0 || (walk.life && lifeGoal !== null)) {  // (no step this frame: its batch back taken all the same, the next one sent)
       advanceTo(reversing ? (from === runStart() && loopBack() ? from - k : Math.max(runStart(), from - k)) : from + k, now + 750 * frameMin);  // (from 0 round its loop, back to 0; its steps three quarters of the screen's frame at most: faster than it can, as fast as it can, its frames kept)
       if (reversing && cur <= runStart()) reverse(false);  // (back at its start, after a step)

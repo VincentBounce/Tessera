@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.290';
+const VERSION = '0.4.291';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -1059,7 +1059,7 @@ const MODES = {
   // on a surface: the ant on the cells of its walk there, which keep their colours (turns: as the walk's)
   antCube: { base: 2, lattice: 'sphere', cells: true, sphere: 'cube', initial: 48, turns: [3, 2, 1], perspective: true,
              fill: false, antOf: 'cubeFlat', get rule() { return antRuleText('antCube'); } },
-  antHexSphere: { base: 2, lattice: 'sphere', cells: true, sphere: 'hexsphere', turns: [-2, 2], round: true,
+  antHexSphere: { base: 2, lattice: 'sphere', cells: true, sphere: 'hexsphere', turns: [null, -2, null, 2, null], round: true,  // (its walk's, see hexSphereWalk)
                   fill: false, antOf: 'hexSphereWalk', get rule() { return antRuleText('antHexSphere'); } },
   antIcosa: { base: 2, lattice: 'sphere', cells: true, sphere: 'icosa', turns: [2, 1], round: true,
               fill: false, antOf: 'icosaLR', get rule() { return antRuleText('antIcosa'); } },
@@ -1105,7 +1105,7 @@ const MODES = {
   octaLR:   { base: 2, arrows: '↖↗', lattice: 'sphere', cells: true, twin: 'octaGrid', sphere: 'octa', initial: 48, turns: [2, 1],
               rule: 'on an octahedron of triangles: exit through the <b>0</b> left or <b>1</b> right edge' },
   // hexagons and pentagons alike: the edges two away from the one you came in through, on either side
-  hexSphereWalk: { base: 2, arrows: '↖↗', lattice: 'sphere', cells: true, twin: 'hexSphereGrid', ant: 'antHexSphere', sphere: 'hexsphere', turns: [-2, 2], round: true,
+  hexSphereWalk: { base: 2, arrows: '↖↗', lattice: 'sphere', cells: true, twin: 'hexSphereGrid', ant: 'antHexSphere', sphere: 'hexsphere', turns: [null, -2, null, 2, null], round: true,  // (the hexagons' L1, R1 only: no straight on, nor sharp, across a pentagon)
                    rule: 'on a sphere of hexagons (and 12 pentagons): exit through the <b>0</b> front left or <b>1</b> front right edge' },
   stellaLR: { base: 2, arrows: '↖↗', lattice: 'sphere', cells: true, twin: 'stellaGrid', sphere: 'stella', turns: [2, 1],
               rule: 'on a stella octangula (two tetrahedra) of triangles: exit through the <b>0</b> left or <b>1</b> right edge' },
@@ -4062,7 +4062,7 @@ const ANTS = {
   antSquare: { walk: 'turtleCells', presets: ['RL', 'RLR', 'LLRR', 'LRRRRRLLR', 'RRLLLRLLLRRR'] },
   antTri: { walk: 'triTurtleCells', presets: ['RL', 'RRL', 'RLL', 'RRLL'] },
   antHex: { walk: 'hexTurtleCells', presets: ['L1 R1', 'L2 R2', 'L1 L2 R1', 'R2 L1 N L1 R2'] },
-  antHexSphere: { walk: 'hexSphereWalk', presets: ['RL', 'RRL', 'RLL', 'RRLL'] },
+  antHexSphere: { walk: 'hexSphereWalk', presets: ['R1 L1', 'R1 R1 L1', 'R1 L1 L1', 'R1 R1 L1 L1'] },
   antIcosa: { walk: 'icosaLR', presets: ['RL', 'RRL', 'RLL', 'RRLL'] },
   antCube: { walk: 'cubeFlat', presets: ['RL', 'RLR', 'LLRR', 'LRRRRRLLR', 'RRLLLRLLLRRR'] },
   antCairo: { walk: 'cairo', presets: ['L1 R1', 'L2 R2', 'L1 R2', 'L2 L1 R1 R2'] },
@@ -4426,7 +4426,7 @@ function wordStepper(net, words) {
   return headingStepper(WALK_NETS[net], acts);
 }
 // a walk's rule's key: its network's, the plane's and the surfaces' apart (see walkRules)
-const walkKey = (m) => (m.lattice === 'sphere' ? `${m.net} surface` : m.net);
+const walkKey = (m) => (m.lattice === 'sphere' ? `${m.net} surface${m.turns?.includes(null) ? ` ${m.sphere}` : ''}` : m.net);  // (a surface with fewer of its network's words: its own)
 const surfaceWords = (net) => Object.keys(WALK_NETS[net].turns).filter((t) => t !== 'U');  // (a surface's turns, left to right)
 // a surface walk's acts, one per digit (see surfaceSteps): by its rule's words (a turn: its edges on, or degrees along the grid,
 // as its turns list them left to right; l r a: a notch on the spot, a parity's), else by its turns (an ant's)
@@ -4436,7 +4436,8 @@ function surfaceActs(mode, words = mode.net && ruleWords(walkRules[walkKey(mode)
   return words.map((t) => (t === 'l' || t === 'r' ? ['pivot', t === 'r' ? 1 : -1] : t === 'a' ? ['parity'] : ['turn', mode.turns[surfaceWords(mode.net).indexOf(t)]]));
 }
 // why a word cannot go on a walk, or '': not its network's; a diagonal along the grid; on a surface, no fixed way (no north)
-const walkWordWhy = (m, t) => (m.lattice === 'sphere' ? (surfaceWords(m.net).includes(t) || (SURFACE_NOTCHES[m.net] && ['l', 'r', 'a'].includes(t)) ? '' : `${t}: not on a surface (no north there)`)
+const walkWordWhy = (m, t) => (m.lattice === 'sphere' ? ((surfaceWords(m.net).includes(t) && m.turns[surfaceWords(m.net).indexOf(t)] != null) || (SURFACE_NOTCHES[m.net] && ['l', 'r', 'a'].includes(t)) ? ''
+    : surfaceWords(m.net).includes(t) ? `${t}: not on this surface (its corners)` : `${t}: not on a surface (no north there)`)
   : !wordAct(m.net, t) ? `${t}: not a word here` : m.lines && WALK_NETS[m.net].diagonals?.includes(t) ? `${t}: along the grid, a diagonal step follows no line` : '');
 // a walk's words for a rule (its own by default), or null: 2 to 12, each fitting it
 function walkWordsOf(w, rule = walkRules[walkKey(MODES[w])]) {
@@ -4447,8 +4448,9 @@ const walkStepper = (w) => wordStepper(MODES[w].net, walkWordsOf(w));
 // a walk's arrows, one per word (a word with none: ''), by its rule
 const walkArrows = (w) => { const m = MODES[w], r = walkRules[walkKey(m)]; return (m.arrowsMemo?.[0] === r ? m.arrowsMemo : (m.arrowsMemo = [r, walkWordsOf(w).map((t) => WALK_NETS[m.net].arrows[t] ?? SPOT_ARROWS[t] ?? '')]))[1]; };
 const walkRuleText = (w) => `${MODES[w].where}: ${walkWordsOf(w).map((t, d) => `<b>${d}</b> ${WORD_TEXT[t]}`).join(', ')}${MODES[w].tail ?? ''}`;
-// The surfaces' turtles by a rule too: turns, all theirs in order, left to right (edges on, or degrees along the grid), a
-// word its turn (see surfaceActs); their network by how many (a grid's: its dual's cells)
+// The surfaces' turtles by a rule too: turns, one per word of their tiles' network (its turns left to right, as the plane's
+// on the same tiles: edges on, or degrees along the grid; null, a word it has not), a word its turn (see surfaceActs); their
+// network so by how many
 const NET_BY_TURNS = { 2: 'tri', 3: 'square', 4: 'cairo', 5: 'hex' };
 for (const [w, m] of Object.entries(MODES)) {
   if (NAV[w]?.[0] !== 'Walk' || NAV[w][3] !== 'Turtle' || m.lattice !== 'sphere' || !m.turns) continue;
@@ -4468,9 +4470,11 @@ const WALK_PRESETS = {
   cube: [['L ^ N v R', 'Turtle', 'turtle'], ['L ^ v R', 'Turtle', 'turtle'], ['N r p', 'Pivot', 'pivot'], ['N a', 'Parity', 'walk2d'], ['neuswd', 'Fixed', 'compass']],
   diamond: [['LNR', 'Polymer', 'turtle'], ['LR', 'Polymer', 'turtle']],
 };
-// each network's rule in use, the plane's and the surfaces' apart (a surface: turns only); at first its list's first (see WALK_PRESETS)
-const firstWalkRule = (net) => WALK_PRESETS[net][0][0];
-const walkRules = Object.fromEntries(Object.keys(WALK_PRESETS).flatMap((net) => [[net, firstWalkRule(net)], [`${net} surface`, firstWalkRule(net)]]));
+// each network's rule in use, the plane's and the surfaces' apart (a surface: turns only; one taking fewer of its network's words, its
+// own); at first its network's first that it takes (see WALK_PRESETS, walkWordWhy)
+const firstWalkRule = (m) => WALK_PRESETS[m.net].map(([r]) => r).find((r) => ruleWords(r).every((t) => !walkWordWhy(m, t)));
+const walkRules = {};
+for (const m of Object.values(MODES)) if (WALK_PRESETS[m.net]) walkRules[walkKey(m)] ??= firstWalkRule(m);
 // a rule typed or picked for a walk: kept if its words fit it (else the field back to the rule in use)
 function setWalkRule(w, rule) {
   const words = walkWordsOf(w, rule), k = walkKey(MODES[w]);
@@ -13980,7 +13984,7 @@ function getSetup() {
   }
   if (mode.life && !mode.loops) s.pop = plane.start === 'random' ? zonePop() : plane.start === 'text' ? `text.${plane.text}` : plane.start;  // its start (a surface's no Draw)
   if (mode.life && !mode.loops && plane.start === 'text' && plane.font !== 'sans') s.tf = plane.font;  // (its font)
-  if (mode.net && walkRules[walkKey(mode)] !== firstWalkRule(mode.net)) s.r = walkRules[walkKey(mode)];  // (a walk's rule: none, its own)
+  if (mode.net && walkRules[walkKey(mode)] !== firstWalkRule(mode)) s.r = walkRules[walkKey(mode)];  // (a walk's rule: none, its own)
   if (mode.antOf) s.r = `${antByDigits ? 'digits ' : ''}${antRuleOf(w)}`;  // ("digits 1R0 0L0": by the digits)
   if (mode.worm) s.r = worm.byDigits ? 'digits' : worm.rule;
   if (championCode) s.ch = championCode;
@@ -14020,7 +14024,7 @@ function applySetup(s) {
     if (T) antRules[s.w] = T.text;
   } else if (MODES[s.w].net) {
     const m = MODES[s.w], words = s.r && walkWordsOf(s.w, s.r);
-    walkRules[walkKey(m)] = words ? ruleOfWords(words) : firstWalkRule(m.net);
+    walkRules[walkKey(m)] = words ? ruleOfWords(words) : firstWalkRule(m);
   } else if (s.r || MODES[s.w].life) {  // (Life: its size and start without a rule too, the grid's first then)
     if (MODES[s.w].plane) planeFromSetup(s);
     else startFromSetup(s);  // (a surface's)

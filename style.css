@@ -601,8 +601,8 @@ button.wide.active, .head-btn.active { border-color: var(--accent); color: var(-
 .tut-walk .tut-here { fill: var(--muted); }
 .tut-walk .tut-to { fill: var(--accent); r: 0.14; }
 .tut-walk .tut-step, .tut-walk .tut-to, .tut-walk .tut-next, .tut-walk .tut-cell-to { animation: tut-appear 0.8s ease-out both; }  /* the step lit softly, as a cell's colour fades */
-.max-steps.lit { animation: stepper-lit 0.6s ease-out 3; border-radius: 8px; }  /* lit a moment: the length asked's footsteps clicked (see lightStepper) */
-@keyframes stepper-lit { from { box-shadow: 0 0 0 0 var(--accent); } to { box-shadow: 0 0 0 10px transparent; } }
+.max-steps.highlit { animation: stepper-highlight 0.8s ease-out; border-radius: 8px; }  /* highlighted a moment: the length asked's footsteps clicked (see highlightStepper) */
+@keyframes stepper-highlight { from { box-shadow: 0 0 0 0 var(--accent); } to { box-shadow: 0 0 0 10px transparent; } }
 @keyframes tut-appear { 0%, 30% { opacity: 0; } 100% { opacity: 1; } }
 .tut-walk .tut-next { stroke: var(--accent); stroke-width: 0.07; stroke-dasharray: 0.12 0.12; }
 .tut-walk .tut-dashed { stroke-dasharray: 0.18 0.16; }

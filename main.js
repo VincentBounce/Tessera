@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.312';
+const VERSION = '0.4.313';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -14308,7 +14308,7 @@ function applySetup(s) {
   penetration = walkTeams > 1 && PENETRATIONS[Number(s.pe)] ? Number(s.pe) : 0;  // (none: the first, Land grid 1)
   battleStartsWay = STARTS_WAYS[Number(s.gr)] ?? 'symmetric';
   battleSeed = Number(s.rs) || 1;
-  for (const id of RIVALS) set(id, s[`x${id.slice(-1).toLowerCase()}`]);
+  RIVALS.forEach((id, j) => { $(id).value = s[`x${id.slice(-1).toLowerCase()}`] ?? RIVAL_FIRSTS[j]; });  // (one the link gives not: its number at first)
   set('mode', s.w);
   $('startNo').value = s.st ?? 1;
   torusTurned = Number(s.o) === 1;

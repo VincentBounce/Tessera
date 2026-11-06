@@ -520,7 +520,7 @@ async function checkKnown(fail) {
   restart();
   await goTo(30);
   checked++;
-  if (cur !== 11) fail(`1/28's blocks, a jump to 30 across its return (12): at ${cur}, not its end (11)`);
+  if (cur !== 6) fail(`1/28's blocks, a jump to 30 across its return (12): at ${cur}, not round its loop (6, as a Game of Life)`);
   // a start's symmetry (see symmetricStart): its shape the same on every copy; in colours, a start by parts each colour as many
   // (v0.2.79, v0.2.82); a text in colours laid at all (v0.2.78)
   for (const link of ['#w=life2d&r=B3/S23&k=4&s=48&e=1&y=rotate&pop=random.30.5', '#w=life2d&r=B3/S23&k=4&s=144&e=1&y=rotate&pop=text.Walking%0Api&tf=hand',

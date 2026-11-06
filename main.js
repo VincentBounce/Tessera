@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.272';
+const VERSION = '0.4.273';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -14844,7 +14844,7 @@ const headSize = (area) => (0.8 * Math.sqrt(area)) / 1.6;
 function drawArrow(ctx, fill, at) {
   ctx.fillStyle = fill;
   ctx.strokeStyle = '#0e1116';
-  ctx.lineWidth = 2;
+  ctx.lineWidth = Math.hypot(...[0, 1].map((d) => at(1, 0)[d] - at(-0.6, 0)[d])) / 10;  // (a tenth of its length: 3 px on a cell 95 px wide, as it grows and shrinks)
   ctx.lineJoin = 'round';
   ctx.beginPath();
   [[1, 0], [-0.6, 0.7], [-0.3, 0], [-0.6, -0.7]].forEach(([f, l], i) => { const [x, y] = at(f - 0.2, l); if (i) ctx.lineTo(x, y); else ctx.moveTo(x, y); });  // (−0.6 … 1 along: shifted to its length's middle, −0.8 … 0.8, not to the centre of gravity of the triangle it makes)

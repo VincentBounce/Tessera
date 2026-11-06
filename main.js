@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.287';
+const VERSION = '0.4.288';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -6880,18 +6880,22 @@ function surfaceStep(g, grid, net, acts) {
   }
   // Entering a tile through edge k (corners counterclockwise), the digit d leaves through edge k + turns[d]: k + 1 is on
   // the right, k − 1 on the left, k + 2 straight on (for squares). Edges are counted among those with a neighbour: a
-  // pentagon of the hexagon sphere (a hexagon with an edge of length 0) has 5.
+  // pentagon of the hexagon sphere (a hexagon with an edge of length 0) has 5. On a Klein bottle (one-sided, its tiles each
+  // once) its hand carried (the state's last, 1 or −1): across an edge both its tiles list the same way round (its twisted
+  // seam) its right is the tiles' left, its turns then read the other way round
   const k = g.sides, live = Array.from({ length: g.n }, (_, u) => {
     const ks = [];
     for (let e = 0; e < k; e++) if (g.nbr[k * u + e] >= 0) ks.push(e);
     return ks.length < k ? ks : null;
   });
-  return ([t, entry, p, q], d) => {
-    const [kind, by] = acts[d], read = parity ? 1 - q : 0;
-    if (kind === 'pivot') return [t, entry, (p + by + k) % k, read];
+  const P = g.poly, klein = !!g.klein;
+  return ([t, entry, p, q, hand = 1], d) => {
+    const [kind, by] = acts[d], read = parity ? 1 - q : 0, more = klein ? [hand] : [];
+    if (kind === 'pivot') return [t, entry, (p + by + k) % k, read, ...more];
     const ks = live[t], n = ks ? ks.length : k, at = ks ? ks.indexOf(entry) : entry;
-    const j = mod(at + (kind === 'turn' ? by : k / 2) - p, n), edge = ks ? ks[j] : j, next = [g.nbr[k * t + edge], g.nbrEdge[k * t + edge]];
-    return [...next, kind === 'parity' ? (q ? -1 : 1) : 0, read];
+    const j = mod(at + hand * ((kind === 'turn' ? by : k / 2) - p), n), edge = ks ? ks[j] : j, next = [g.nbr[k * t + edge], g.nbrEdge[k * t + edge]];
+    const turned = klein && P[k * next[0] + next[1]] === P[k * t + edge];  // (the edge the same way round in both: the seam)
+    return [...next, kind === 'parity' ? (q ? -1 : 1) : 0, read, ...(klein ? [turned ? -hand : hand] : [])];
   };
 }
 // The steps of a walk on a surface, along the grid (from corner to corner, the state [corner, the corner it came from]) or
@@ -6914,7 +6918,7 @@ function surfaceSteps(g, mode, acts = surfaceActs(mode)) {
   };
   return {
     start: (i) => [...cellStart(g, starts()[i]), 0, 0], step,
-    key: ([t, entry, p, q]) => ((t * k + entry) * k + ((p + k) % k)) * 2 + q,
+    key: ([t, entry, p, q, hand = 1]) => (((t * k + entry) * k + ((p + k) % k)) * 2 + q) * 2 + (hand < 0 ? 1 : 0),  // (its hand: a Klein bottle's, see surfaceStep)
     sheet: ([a], [b]) => {
       if (g.mobius) return mobiusDelta(g, mobiusAt(g, a, centre(a)), mobiusAt(g, b, centre(b)));
       const p = centre(a), q = centre(b);

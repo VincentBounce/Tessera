@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.328';
+const VERSION = '0.4.329';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -7699,6 +7699,11 @@ const battleGroups = (g, K, enough = Infinity, good = null) => {
 const battleCounts = (w) => {
   const size = battleMode(w) && sphereSize();
   if (!size) return [];  // (none, or its size not set yet: a page opening)
+  // a ring's by its kind, known by construction (its length made for its walkers, see ringColours): a torus takes every
+  // count (its shift of 1/K round it), a Klein bottle a Duel only (its gluing: its half turn, see ringGroup); a Möbius strip's tried
+  const ring = SPHERES[surfaceOf(MODES[w])].columns && familyOf(w)?.F.name;
+  if (ring === FOLDS.torus.name) return COLOUR_STEPS.filter((K) => K > 1);
+  if (ring === FOLDS.klein.name) return [2];
   const mode = MODES[w], sphere = SPHERES[surfaceOf(mode)], grid = !!mode.grid, memo = (battleCountsMemo[`${w}|${size}|${$('startNo').value}`] ??= {});  // (the start asked: its count made by each K's mesh, see walkStart)
   const fits = (K) => {
     teamsBuilding = sphere.columns ? K : null;

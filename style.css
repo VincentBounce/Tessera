@@ -516,6 +516,7 @@ button.wide.active, .head-btn.active { border-color: var(--accent); color: var(-
 
 .step-line { font-size: 20px; font-weight: 700; color: var(--text); font-variant-numeric: tabular-nums; white-space: nowrap; margin-bottom: 4px; }  /* the step or generation shown, as large as the title, folded or open, every mode */
 .step-line #stepLast { display: none; color: var(--muted); }  /* open: its last, after it */
+.step-line #stepLast .icon { color: var(--accent); }  /* (the length asked's footsteps, as on its stepper) */
 .stage-bar:hover .step-line #stepLast { display: inline; }
 @media (hover: none) { .stage-bar:focus-within .step-line #stepLast { display: inline; } }
 .stage-bar #play.on, .stage-bar #reverse.on { background: var(--accent); color: var(--accent-text); }

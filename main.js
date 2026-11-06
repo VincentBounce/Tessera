@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.284';
+const VERSION = '0.4.285';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -3248,14 +3248,14 @@ function creatureRules(w) {
   const A = ANTS[w], turns = antWords(w).join(' ');
   return { byDigits: antByDigits, now: antRuleOf(w), typed: true, set: (r) => setAntRule(w, r), base: antByDigits ? () => baseWords(2) : null,  // (by colour: no digits read)
            cards: [...A.presets.map((t) => [antOfTurns(w, t), ANT_WORDS[t]?.split(':')[0] ?? `${ruleWords(t).length}-colour ant`, icon('ant'), '', (w === 'antSquare' && ANT_WORDS[t]) || '']),  // (its name on any grid, what it does on squares)
-             ...(A.turmites ?? []).map((r, i) => [r, TURMITE_WORDS[i], icon('turmite')])],  // (as the literature names them: one state an ant, more a turmite)
+             ...TURMITE_PRESETS.filter((r) => MODES[A.walk].net === 'square' && antTableOf(w, r)).map((r) => [r, TURMITE_WORDS[TURMITE_PRESETS.indexOf(r)], icon('turmite')])],  // (the turmites on squares, plane or surface, where their words go: their names what they do there; as the literature names them: one state an ant, more a turmite)
            name: `Rule, per state an entry per colour: its colour left, its turn (${turns}), its state next; the states parted by |` };
 }
 // The worm's rules, all 411 of them (a mirror the same), walked here: dying at step 918,339, 569,804, 83,618 and 4,802,
 // the longest lives that end (all but 85 die before step 200,000, all but 81 before 5,000,000), and two of those still
 // going at 5,000,000
 const WORM_PRESETS = ['L1 R1 R2 R2 R1 R1 L1', 'L1 R1 L2 R1 R1 L1 L1', 'L1 N R2 N R1 L1 L2', 'L1 N R2 L2 N L1 N', 'L2 L1 R1', 'L2 N L1 R2 L1 R2 L2'];
-// The square ant's turmites (see antTableOf), of the 65,536 with 2 states and 2 colours, walked here 5,000
+// The turmites (see antTableOf; listed for every ant whose words they take), of the 65,536 with 2 states and 2 colours, walked here 5,000
 // steps: a spiral; the widest mess (3,765 cells); squares growing filled (97 %, and all); a highway from step 3,090
 const TURMITE_PRESETS = ['1L1 1L1 | 1R1 0N0', '1N1 1N0 | 1R0 0L0', '1L0 0R1 | 0R0 1L1', '1L0 1U1 | 0L0 1L0', '1N1 0R1 | 1L0 1N0'];
 // a rule typed that this walk or creature cannot take: the one in use put back, and why said (its words, see creatureRules)
@@ -4057,7 +4057,7 @@ function populationOf(text) {
  * cell it leaves takes the next colour. Per tiling: the turtle walk it goes through the cells with (a
  * turn: its digit) and their arrows, its turns, and rules to start from, by the digits and by colour. */
 const ANTS = {
-  antSquare: { walk: 'turtleCells', presets: ['RL', 'RLR', 'LLRR', 'LRRRRRLLR', 'RRLLLRLLLRRR'], turmites: TURMITE_PRESETS },
+  antSquare: { walk: 'turtleCells', presets: ['RL', 'RLR', 'LLRR', 'LRRRRRLLR', 'RRLLLRLLLRRR'] },
   antTri: { walk: 'triTurtleCells', presets: ['RL', 'RRL', 'RLL', 'RRLL'] },
   antHex: { walk: 'hexTurtleCells', presets: ['L1 R1', 'L2 R2', 'L1 L2 R1', 'R2 L1 N L1 R2'] },
   antHexSphere: { walk: 'hexSphereWalk', presets: ['RL', 'RRL', 'RLL', 'RRLL'] },

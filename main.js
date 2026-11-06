@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.261';
+const VERSION = '0.4.262';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -15868,7 +15868,7 @@ fn light(col: vec3f, n0: vec3f, p: vec3f, bias: f32) -> Lit {  // (as tileLight;
   return light(col, nrm, pos, 0.0);
 }
 @vertex fn cubeV(@location(0) corner: vec3f, @location(1) nrm: vec3f, @location(2) at: vec3f, @location(3) col: vec4f) -> Lit {
-  return light(col.rgb, nrm, at + corner, 0.0);
+  return light(col.rgb, nrm, at + corner, u.bias);  // (a walk's cubes 0; a head's the path's: what is in front of it stays so)
 }
 // the depths seen from the light: a tile's corner or a cube's
 struct Deep { @builtin(position) pos: vec4f, @location(0) cutv: f32 }
@@ -16188,7 +16188,7 @@ function gpuSurface(paint, path) {
     if (!heads.length) return;  // the heads: ogives lit as the cubes, each its colour (an instance), half under the tiles
     rp.setPipeline(gpuDrawPipe('cube', { vertex: 'cubeV', fragment: 'shadowedF', shadowed: true, pass,
       buffers: [vbuf(24, [VA(0, 'float32x3', 0), VA(1, 'float32x3', 12)]), vbuf(12, [VA(2, 'float32x3')], 'instance'), vbuf(4, [VA(3, 'unorm8x4')], 'instance')] }));
-    rp.setBindGroup(0, gpuGroup(), [slotOf({ glass: pass, cut, alpha: GLASS_ALPHA })]); rp.setBindGroup(1, D.shadow.group);
+    rp.setBindGroup(0, gpuGroup(), [slotOf({ glass: pass, cut, alpha: GLASS_ALPHA, bias: pathBias })]); rp.setBindGroup(1, D.shadow.group);
     rp.setVertexBuffer(0, D.headMesh); rp.setVertexBuffer(1, D.headAt); rp.setVertexBuffer(2, D.headCol);
     heads.forEach((_, j) => rp.draw(96, 1, 96 * j, j));
   };

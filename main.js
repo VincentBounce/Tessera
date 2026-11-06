@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.309';
+const VERSION = '0.4.310';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -1276,10 +1276,20 @@ const RULES = [
   ...[['RL', "Langton's ant", 'on squares: a highway from step 9,976'], ['RLR', 'Chaotic ant', 'on squares: it grows chaotically'], ['LLRR', 'Symmetric ant', 'on squares: it grows symmetrically'],
       ['LRRRRRLLR', 'Square ant', 'on squares: it fills a square around itself'], ['RRLLLRLLLRRR', 'Triangle ant', 'on squares: a filled triangle, growing and moving'],
       ['RRL'], ['RLL'], ['L2 R2'], ['L L2 R'], ['R2 L N L R2'], ['L R2'], ['L2 L R R2']].map(([rule, name = `${rule} ant`, about]) => ({ kind: 'ant', tiling: 'any', rule, name, about })),
-  // the turmites (see antTableOf), of the 65,536 with 2 states and 2 colours, walked on squares 5,000 steps: a spiral; the
-  // widest mess (3,765 cells); squares growing filled (97 %, and all); a highway from step 3,090
-  ...[['1L1 1L1 | 1R1 0N0', 'A spiral'], ['1N1 1N0 | 1R0 0L0', 'The widest mess'], ['1L0 0R1 | 0R0 1L1', 'A square growing filled'],
-      ['1L0 1U1 | 0L0 1L0', 'A shape growing filled'], ['1N1 0R1 | 1L0 1N0', 'A highway from step 3,090, every 54 steps']].map(([rule, name]) => ({ kind: 'turmite', tiling: 'any', rule, name })),
+  // the turmites (see antTableOf): Wikipedia's (its Turmite page's examples, their rules on Commons, Golly's turns 1 N, 2 R,
+  // 4 U, 8 L; the snowflake's entry it never reaches, 0N0; the hexagonal one's 5 a left, 6 a sharp left, Commons' the other way
+  // round making a hexagon filled, never caught), then ours, of the 65,536 with 2 states and 2 colours, walked on
+  // squares 5,000 steps: the widest mess (3,765 cells); squares growing filled (97 %, and all); a highway from step 3,090
+  ...[['1N1 1L0 | 1R1 0N0', 'Spiral growth', 'on squares: a spiral, shown at step 12,536 (Wikipedia)'],
+      ['1R1 0R1 | 1N0 1N1', 'Highway after chaos', 'on squares: a highway after chaotic growth, shown at step 27,731 (Wikipedia)'],
+      ['1R1 1L1 | 1R1 0R0', 'Chaotic texture', 'on squares: chaotic growth with a texture of its own, shown at step 65,932 (Wikipedia)'],
+      ['1L0 1R1 | 0R0 0L1', 'Expanding frame', 'on squares: a texture of its own inside a frame growing, shown at step 223,577 (Wikipedia)'],
+      ['1L1 1L1 | 1R1 0N0', 'Fibonacci spiral', 'on squares: a Fibonacci spiral, shown at step 10,211 (Wikipedia)'],
+      ['0N1 0R1 | 1L0 0N1', 'Growing diamond', 'on squares: a diamond growing, shown at step 31,380 (Wikipedia)'],
+      ['1L1 1R0 | 1U1 1U2 | 0N0 0U0', 'Snowflake', 'on squares: a fractal like a snowflake, 3 states, shown at step 306,000 (Wikipedia)'],
+      ['2.R2.1 2.U.0 2.N.2 | 0.L2.1 2.R2.1 2.L.0 | 2.U.1 2.L2.1 1.U.2', 'Hexagonal turmite', 'on hexagons: chaotic, with a texture of its own, then caught in a loop: no new cell after step 194,163 (Wikipedia)'],
+      ['1N1 1N0 | 1R0 0L0', 'The widest mess'], ['1L0 0R1 | 0R0 1L1', 'A square growing filled'],
+      ['1L0 1U1 | 0L0 1L0', 'A shape growing filled'], ['1N1 0R1 | 1L0 1N0', 'A highway from step 3,090, every 54 steps']].map(([rule, name, about]) => ({ kind: 'turmite', tiling: 'any', rule, name, about })),
   // the worm's, of its 411 (a mirror the same), walked: the longest lives that end (all but 85 die before step 200,000, all
   // but 81 before 5,000,000), and two still going at 5,000,000 (worm in each name: its tab only says Grid)
   ...[['L1 R1 R2 R2 R1 R1 L1', 'Worm dying at step 4,802'], ['L1 R1 L2 R1 R1 L1 L1', 'Worm dying at step 83,618'], ['L1 N R2 N R1 L1 L2', 'Worm dying at step 569,804'],
@@ -3527,7 +3537,7 @@ function ruleIn(w, neutral, turmite) {
   const words = NEUTRAL_WORDS[MODES[ANTS[w].walk].net], lack = (t) => `its ${t} (${WORD_TEXT[t] ?? t}) is not on this grid`;
   if (!turmite) { const t = ruleWords(neutral), missing = t.find((x) => !words[x] || !antWords(w).includes(words[x]));
     return missing ? { rule: neutral, why: lack(missing) } : { rule: antOfTurns(w, t.map((x) => words[x]).join(' ')), why: '' }; }
-  const table = neutral.split(/\s*\|\s*/).map((e) => e.split(/\s+/).map((x) => { const [, write, t, next] = x.match(/^(\d+)([A-Z])(\d+)$/); return { write: +write, word: words[t] ?? t, next: +next, t }; }));
+  const table = neutral.split(/\s*\|\s*/).map((e) => e.split(/\s+/).map((x) => { const [, write, t, next] = x.match(/^(\d+)\.([A-Z]\d?)\.(\d+)$/) ?? x.match(/^(\d+)([A-Z])(\d+)$/); return { write: +write, word: words[t] ?? t, next: +next, t }; }));  // (an entry compact, 1L0, or dotted, 1.L2.0)
   const missing = table.flat().find((e) => !words[e.t] || !antWords(w).includes(e.word));
   return missing ? { rule: neutral, why: lack(missing.t) } : { rule: antText(table), why: '' };
 }
@@ -3982,8 +3992,6 @@ function buildWalkOf() {
   }
   if (ant && !loop) highway(steps);
   // an ant's cells, each coloured as it is once the ant has left it (the last one as it would be)
-  // an ant's cells, each coloured as it is once the ant has left it (the last one as it would be): by
-  // its state (Ink, Amber, Teal), or by the turn it took there (Directions)
   let keys = isWorm ? took : seq, antStates = null;
   if (ant) {
     antStates = new Uint8Array(steps);

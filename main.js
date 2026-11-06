@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.247';
+const VERSION = '0.4.248';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -3402,7 +3402,7 @@ function renderModePicker() {
 // a worker made of the page's own code (one source, nothing copied to go stale): parts, its functions and values by name
 // (a value as JSON), then main, the function it runs
 const workerOf = (parts, main) => new Worker(URL.createObjectURL(new Blob([`${Object.entries(parts).map(([k, v]) => `const ${k} = ${typeof v === 'function' ? v : JSON.stringify(v)};`).join('\n')}\n(${main})()`], { type: 'text/javascript' })));
-const newFormulaWorker = () => new Worker(URL.createObjectURL(new Blob([[digitString, seededRandom, exactValue, iroot].map(String).join('\n') + `\n(${formulaWorker.toString()})()`], { type: 'text/javascript' })));
+const newFormulaWorker = () => workerOf({ digitString, seededRandom, exactValue, iroot }, formulaWorker);
 function compute() {
   const mode = MODES[$('mode').value];
   if (!numberPicked) $('formula').value = defaultNumber($('mode').value);
@@ -8321,6 +8321,10 @@ const elementaryAsk = () => {
   const G = targetAsked(), start = plane.start, N = lifeRuleNow()?.wolfram ?? 30, { head, frac } = digitsInUse();
   return { key: `${N}|${G}|${start}|${start === 'digits' ? `${formulaInUse}/${current.base}` : ''}`, args: [G, start, N, start === 'digits' ? Uint8Array.from([...head, ...frac].slice(0, 2 * G + 16)) : null] };
 };
+function elementaryWorkerMain() {  // (run in a worker: its rows, sent back)
+  Object.assign(self, { wolframTables: new Map(), POP16: popCounts() });  // (its tables' cache and its words' counts, made there)
+  onmessage = (e) => { const t = performance.now(), R = elementaryRowsOf(...e.data); R.ms = performance.now() - t; postMessage(R, [R.counts.buffer, R.upTo.buffer, ...R.kept.map((k) => k.buffer)]); };
+}
 function elementaryReady(then) {
   if (!MODES[current.mode].elementary) { elementaryMade = null; return true; }  // (another grid: its rows let go, tens of MB)
   const a = elementaryAsk();
@@ -8328,10 +8332,8 @@ function elementaryReady(then) {
   elementaryWorker?.terminate();
   elementaryWorker = null;
   if (a.args[0] <= ELEMENTARY_NOW) { elementaryMade = { key: a.key, ...elementaryRowsOf(...a.args) }; return true; }
-  const src = `const wolframTables = new Map(), KEEP = ${KEEP}, wolframTable = ${wolframTable}, wordsOf = ${wordsOf};\n${popCounts}\nconst POP16 = popCounts();\n${wolframStep}\n${elementaryRowsOf}\n`
-    + 'onmessage = (e) => { const t = performance.now(), R = elementaryRowsOf(...e.data); R.ms = performance.now() - t; postMessage(R, [R.counts.buffer, R.upTo.buffer, ...R.kept.map((k) => k.buffer)]); };';
   const job = computeJob;
-  elementaryWorker = new Worker(URL.createObjectURL(new Blob([src], { type: 'text/javascript' })));
+  elementaryWorker = workerOf({ KEEP, wolframTable, wordsOf, popCounts, wolframStep, elementaryRowsOf }, elementaryWorkerMain);
   setBusy(true);
   $('status').textContent = `Computing ${fmt(a.args[0])} rows…`;
   elementaryWorker.onmessage = (e) => {

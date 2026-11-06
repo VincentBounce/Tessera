@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.349';
+const VERSION = '0.4.350';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -6466,10 +6466,10 @@ function sizeGauge(el, n, i, preview, pick) {
 }
 // A notched slider, one choice among a few on a row (Cut, Area): its title a sub-section's (field-label), a notch each (see sizeGauge), the
 // choice's name on its right (its words in its tooltip); can: false, greyed; live: set as it is dragged (else let go)
-function notchRow(el, title, choices, at, set, can = true, live = true) {
+// what the row does (about) then its choice's words, its tooltip on the whole row (its title, its gauge, its name)
+function notchRow(el, title, about, choices, at, set, can = true, live = true) {
   const name = Object.assign(document.createElement('span'), { className: 'notch-name' }), gauge = Object.assign(document.createElement('div'), { className: 'size-gauge' });
-  // the choice's words: its name on the right, its tooltip on the whole row (its title, its gauge, its name)
-  const show = (k) => { [name.textContent, el.title = ''] = choices[k]; }, pick = (k) => { show(k); set(k); };
+  const show = (k) => { name.textContent = choices[k][0]; el.title = [about, choices[k][1]].filter(Boolean).join('\n'); }, pick = (k) => { show(k); set(k); };
   sizeGauge(gauge, choices.length, at, live ? pick : show, pick);
   gauge.querySelector('input').disabled = !can;
   show(at);
@@ -17842,7 +17842,7 @@ for (const type of ['pointerdown', 'dblclick', 'wheel']) {
 $('light').addEventListener('change', () => { needsFull = true; });
 $('glass').addEventListener('change', () => { needsFull = true; });
 $('ocean').addEventListener('change', () => { oceanPicked = true; needsFull = statsDirty = true; tintBattleFormulas(); if (walk.n) describe(walk.base); });  // (a battle's colours: its fields, its title, its ranking)
-notchRow($('cutRow'), 'Cut', CUT_AXES.map(([name]) => [name]), cutAxis, setCut);
+notchRow($('cutRow'), 'Cut', 'A cross-section by a fixed plane through the middle, the half on its axis\'s side gone, the inside showing: Off, or the plane facing E, N or Up (the axes drawn in the view\'s corner)', CUT_AXES.map(([name]) => [name]), cutAxis, setCut);
 $('perspective').addEventListener('change', () => {
   setPerspective();
   rotateView([0, 0, 0]);  // the projection again
@@ -18040,13 +18040,13 @@ $('heatmap').addEventListener('change', () => {
   $('colourMode').dispatchEvent(new Event('change'));
 });
 // The areas a walk closes, as tiles: Empty (none), Light (translucent, the line showing through), Plain
-const AREA_MODES = [['empty', 'Empty', 'No area filled'], ['light', 'Light', 'The areas the walk closes, translucent: its line shows through'],
-  ['plain', 'Plain', 'The areas the walk closes, in the colour of the step that closed them']];
+const AREA_MODES = [['empty', 'Empty', 'Empty: none filled'], ['light', 'Light', 'Light: translucent, its line showing through'],
+  ['plain', 'Plain', 'Plain: in the colour of the step that closed them']];
 function renderAreaModes() {
   const off = !fillAreasApply(), light = shows('translucent');
   const shown = (v) => (v === 'light' && !light ? 'plain' : v);  // (Light only over a line: else Plain)
   const now = AREA_MODES.findIndex(([look]) => look === shown($('area').value)), first = shown(defaultOf('area'));
-  notchRow($('areaModes'), 'Area', AREA_MODES.map(([look, name, words]) => [name, `${words}${look === first ? ' · by default' : ''}${look === 'light' && !light ? ' · greyed: over a line only (Plain here)' : ''}${look !== 'empty' && fractionAreaCap() < Infinity ? ` · a fraction: its digits repeat, its walk goes round its figure again and again, closing off big parts of the surface; only its small areas are filled, ${FRACTION_AREA} tiles at most` : ''}`]), now,
+  notchRow($('areaModes'), 'Area', 'The areas the walk closes, filled', AREA_MODES.map(([look, name, words]) => [name, `${words}${look === first ? ' · by default' : ''}${look === 'light' && !light ? ' · greyed: over a line only (Plain here)' : ''}${look !== 'empty' && fractionAreaCap() < Infinity ? ` · a fraction: its digits repeat, its walk goes round its figure again and again, closing off big parts of the surface; only its small areas are filled, ${FRACTION_AREA} tiles at most` : ''}`]), now,
     (k) => { if ($('area').value !== AREA_MODES[k][0]) { $('area').value = AREA_MODES[k][0]; $('area').dispatchEvent(new Event('change')); } }, !off, false);  // (let go: the row drawn again)
 }
 // The looks of a 2D walk on cells, as square buttons: Path, the rainbow line over its cells faded (an ant's over its

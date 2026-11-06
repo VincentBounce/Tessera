@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.321';
+const VERSION = '0.4.322';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -1611,6 +1611,9 @@ function updateRuleText() {}  // the rule is shown by describe (the Play card)
 function digitsNeeded() {
   const mode = MODES[$('mode').value], size = randomPrimeSize();
   if (mode.life) return plane.start !== 'digits' ? 256 : mode.elementary ? 2 * targetAsked() + 16 : mode.plane ? gridSize(planeKind(mode.plane), plane.side)[2] : SPHERES[surfaceOf(mode)].tiles(sphereSize());  // all the digits for a start by the digits (a cell each); else a hunt's patch
+  // a worm: by its rule none read; by the digits one at a new situation only (its free lines at a corner, met for the
+  // first time: a few dozen at most, see wormMind), the number's next that fits; WORM_DIGITS enough, its steps the length asked
+  if (mode.worm) return Math.min(targetAsked(), WORM_DIGITS);
   // a random prime is walked whole: its size (decimal digits) written in the walk's base
   return size ? Math.ceil((size * Math.log(10)) / Math.log(mode.base)) + 1 : targetAsked();
 }
@@ -3927,7 +3930,7 @@ function buildWalkOf() {
     syncLoopRow();
     return;
   }
-  const len = seq.length;
+  const len = MODES[current.mode].worm ? targetAsked() : seq.length;  // (a worm: its steps asked, its digits read at its new corners only)
   const is3d = MODES[current.mode].lattice === 'cube';
   const wx = new Float64Array(len + 1);
   const wy = new Float64Array(len + 1);
@@ -3998,7 +4001,7 @@ function buildWalkOf() {
     for (let j = 0; j < steps; j++) antStates[j] = j + 1 < walked ? left[j + 1] : step.next();
     keys = antStates;
   }
-  Object.assign(walk, { vert: null, stepTiles: null, loop, n: steps, digits: seq, wx, wy, wz, is3d, cells, maxDist, base, counts,
+  Object.assign(walk, { vert: null, stepTiles: null, loop, n: steps, digits: isWorm ? took : seq, wx, wy, wz, is3d, cells, maxDist, base, counts,
                         lattice: MODES[current.mode].lattice, lines: !!MODES[current.mode].lines,
                         skipZeros: !!MODES[current.mode].skipZeros, ant: ant ? step.colours : 0, turns, antStates,
                         highway: ant ? highwayOf(wx, wy, steps) : null, bridges, wormEnd: isWorm && step.end, wormMade: isWorm ? step.made ?? 0 : 0,
@@ -4577,6 +4580,7 @@ const HEX_DIRS = [[1, 0], [0, 1], [-1, 1], [-1, 0], [0, -1], [1, -1]];
 // step straight on. step.took: its turn (0 sharp left … 4 sharp right); null once it stops, step.end: why (dead: no line
 // left; eaten: its rule onto an eaten line; rule, digits: none left for a new situation, step.free: its free lines there)
 const WORM_TURNS = { L2: 0, L1: 1, N: 2, R1: 3, R2: 4 };
+const WORM_DIGITS = 1000;  // (the digits a worm by the digits is given: it reads 13 at most for π, e, φ, √2, γ, Catalan's, Erdős–Borwein's)
 const worm = { byDigits: false, rule: rulesOf('worm')[0].rule };  // (its rule at first: the list's first)
 const wormRuleOf = (rule) => { const words = turnWords(rule); return words.length && words.join('') === rule.toUpperCase().replace(/\s+/g, '') && words.every((t) => t in WORM_TURNS) ? words : null; };
 // its mind, the same on the plane and on a surface: at a corner the turns of its free lines (0 sharp left … 4 sharp right,
@@ -7250,10 +7254,10 @@ const walkStart = (g, mode, j = startNo()) => (mode.grid ? gridState(g, STARTS_O
 // its tiles, its places seen (corners or tiles, nodes of them) and the step it has seen them all, its farthest from its
 // start, its digits' counts; begin(key), step(i, digit, key): stopped where it goes round (key, its state: see loopWatch;
 // null, none watched); finish: the walk laid out (more: its own), its shape and its view
-function walkRecorder(seq, ahead, base, R, nodes) {
-  const n = seq.length + 1, wx = new Float64Array(n), wy = new Float64Array(n), wz = new Float64Array(n), tile = new Int32Array(n), cells = new Int32Array(n);
+function walkRecorder(seq, ahead, base, R, nodes, len = seq.length) {  // (len: its steps, a worm's asked)
+  const n = len + 1, wx = new Float64Array(n), wy = new Float64Array(n), wz = new Float64Array(n), tile = new Int32Array(n), cells = new Int32Array(n);
   const maxDist = new Float64Array(n), counts = new Int32Array(base * n), seen = new Uint8Array(nodes), looped = loopWatch(seq, ahead);
-  let distinct = 0, coverStep = -1, far = 0, start = null, steps = seq.length, loop = null;
+  let distinct = 0, coverStep = -1, far = 0, start = null, steps = len, loop = null;
   return {
     put(i, place, t, p) {  // step i: its place (a corner, a tile), its tile, its point
       if (!seen[place]) { seen[place] = 1; if (++distinct === nodes && i) coverStep = i; }
@@ -7287,8 +7291,8 @@ function buildGridWalk(seq, mode, ahead = new Uint8Array(0)) {
   const { base, initial } = mode, kind = surfaceOf(mode);
   fillSphereSizes(kind, initial);
   const { mesh, radius } = SPHERES[kind];
-  const size = sphereSize(), g = mesh(size), R = radius(size), G = gridGraph(g), V = g.verts, len = seq.length, at = (v) => [V[3 * v], V[3 * v + 1], V[3 * v + 2]];
-  const rec = walkRecorder(seq, ahead, base, R, G.nv), vert = new Int32Array(len + 1), stepTiles = new Int32Array(2 * len), S = surfaceSteps(g, mode);
+  const size = sphereSize(), g = mesh(size), R = radius(size), G = gridGraph(g), V = g.verts, len = mode.worm ? targetAsked() : seq.length, at = (v) => [V[3 * v], V[3 * v + 1], V[3 * v + 2]];  // (a worm: its steps asked)
+  const rec = walkRecorder(seq, ahead, base, R, G.nv, len), vert = new Int32Array(len + 1), stepTiles = new Int32Array(2 * len), S = surfaceSteps(g, mode);
   let state = walkStart(g, mode);
   // a battle (see 7.6b): all its walks (battlePlayer), A's recorded (still once dead), from its own start (grouped: its
   // group's first, see groupedStarts); the others' digits null while they are computed: A alone meanwhile
@@ -7325,7 +7329,7 @@ function buildGridWalk(seq, mode, ahead = new Uint8Array(0)) {
       put(i + 1);
       rec.step(i + 1, step.took, null);
     }
-    rec.finish(kind, g, { vert, stepTiles, n: i, keys: took, wormEnd: step.end, wormMade: step.made ?? 0, came: cameFrom(g, true, walkStart(g, mode)) });
+    rec.finish(kind, g, { vert, stepTiles, n: i, keys: took, digits: took, wormEnd: step.end, wormMade: step.made ?? 0, came: cameFrom(g, true, walkStart(g, mode)) });
     return;
   }
   for (let i = 0; i < len; i++) {

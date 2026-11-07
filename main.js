@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.442';
+const VERSION = '0.4.443';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -3438,22 +3438,23 @@ function shapeGroups(kind, space) {
   return groups.map(([g, has, order]) => [g, (order ?? shapes).filter((sh) => shapes.includes(sh) && has(sh))]).filter(([, these]) => these.length);  // (in its own order, if it has one)
 }
 // The mode for a choice at a level (values: from that level on, one or more: a space and its shape): the levels above as
-// they are, the ones below kept where they can be (a level it has none of: not kept), else the first as shown (its shape
-// the first of its space's, Grid before Cells); in a family, its tiling in use or last chosen
+// they are, then the nearest from the mode clicked from (see nearestMode)
 function navPick(from, level, ...values) {  // (from: the mode clicked from, the tab's in the menu, any in a path, see choicesAt)
   const want = [...NAV[from]], to = level + values.length;
   want.splice(level, values.length, ...values);
-  // its key: the levels below kept (Grid before Cells), then its shape's place as shown, then in a family its tiling in use or
-  // last chosen (else the first of its tabs: a solid's Kites, Life only, then the next); the first as good, as the menu lists
-  const shown = to <= 2 ? shapeGroups(want[0], want[1]).flatMap(([, these]) => these) : [];
+  return nearestMode(from, Object.keys(NAV).filter((w) => NAV[w].slice(0, to).every((v, i) => v === want[i])), want);
+}
+// Of the modes a click may land on, the nearest from the mode it is clicked from: the fewest settings changed (its menu's
+// levels, its tiling by name, see modeChanges: from a sphere of hexagons, Klein bottle opens on its hexagons); on a tie
+// its family's tiling last chosen, then the menu's order (its shapes as shown, Grid before Cells). One rule for every click
+// (a tab's, a space's, a shape's, a tiling's, a side's), the menu's graph's too (see choicesAt)
+function nearestMode(from, candidates, want = NAV[from]) {
+  const shown = shapeGroups(want[0], want[1]).flatMap(([, these]) => these);
+  const key = (w) => { const fam = familyOf(w); return [modeChanges(from, w), fam && fam.F.tabs[fam.F.tab][0] === fam.m ? 0 : 1, shown.indexOf(NAV[w][2]), NAV[w][4] === 'cells' ? 1 : 0]; };
   let best = null, top = null;
-  for (const [w, n] of Object.entries(NAV)) {
-    if (n.slice(0, to).some((v, i) => v !== want[i])) continue;
-    let kept = 0;
-    for (let i = to; i < 5; i++) kept = kept * 4 + (n[i] && n[i] === want[i] ? 2 : 0) + (i === 4 && n[i] && n[i] !== 'cells' ? 1 : 0);  // (none: no match)
-    const fam = familyOf(w), key = [kept, -shown.indexOf(n[2]), !fam ? 0 : fam.F.modes[fam.F.tabs[fam.F.tab][0]].includes(w) ? 1 : 0.5 * (1 - fam.F.tabs.findIndex(([t]) => t === fam.m) / fam.F.tabs.length)];
-    const first = top && key.findIndex((v, i) => v !== top[i]);  // (where it differs from the best so far)
-    if (!top || (first >= 0 && key[first] > top[first])) { best = w; top = key; }
+  for (const w of candidates) {
+    const k = key(w), d = top && k.findIndex((v, i) => v !== top[i]);
+    if (!top || (d >= 0 && k[d] < top[d])) { best = w; top = k; }
   }
   return best;
 }
@@ -3597,11 +3598,8 @@ const modesUnder = (...place) => Object.keys(NAV).filter((u) => place.every((x, 
 // null for the one it opens at, its colours, a walk's teams, its battle rule), the one in use first
 const setupNow = () => ({ w: $('mode').value, size: null, colours: lifeColours, teams: walkTeams, penetration });
 const setupKey = (s) => `${s.w}|${s.size}|${s.colours}|${s.teams}|${s.penetration}`;
-// the mode a tiling's tile goes to from w: the same kind, rule and side there, else the same kind and rule, else the kind's
-const onTiling = (w, F, f) => F.modes[f].find((v) => [0, 3, 4].every((i) => NAV[v][i] === NAV[w][i]))
-  ?? F.modes[f].find((v) => [0, 3].every((i) => NAV[v][i] === NAV[w][i])) ?? F.modes[f].find((v) => NAV[v][0] === NAV[w][0]);
 // The menu's choices at a setup, each a click: its key (its button's data-choice) and the setup it leads to, by the menu's
-// own navigation (navPick, kindLeft, onTiling, walksThere): the tabs, spaces, shapes, tilings, sides, walks' kinds, then a
+// own navigation (navPick, kindLeft, nearestMode, walksThere): the tabs, spaces, shapes, tilings, sides, walks' kinds, then a
 // Life's colours, a battle's teams and rule; a surface's sizes at the start only (one stepper, see pathsTo)
 function choicesAt(s) {
   const w = s.w, [kind, space, shape, rule] = NAV[w], out = [], go = (key, v) => { if (v && v !== w) out.push([key, { ...s, w: v, size: null }]); };
@@ -3609,7 +3607,7 @@ function choicesAt(s) {
   for (const sp of navValues(1, [kind])) go(`space:${sp}`, navPick(w, 1, sp));
   for (const sh of navValues(2, [kind, space])) go(`shape:${sh}`, navPick(w, 2, sh));
   const fam = familyOf(w);
-  if (fam) for (const [f, turned] of fam.F.tabs) if (!turned && f !== fam.m) go(`tiling:${f}`, onTiling(w, fam.F, f));
+  if (fam) for (const [f, turned] of fam.F.tabs) if (!turned && f !== fam.m) go(`tiling:${f}`, nearestMode(w, fam.F.modes[f].filter((v) => NAV[v][0] === kind)));
   for (const u of walksThere(w)) go(`side:${NAV[u][4]}`, u);
   if (shape) for (const r of navValues(3, [kind, space, shape])) if (r !== rule) go(`rule:${r}`, navPick(w, 3, r));
   const set = (key, field, v, why) => { if (s[field] !== v && !why) out.push([key, { ...s, [field]: v }]); };  // (a choice greyed there: no click)
@@ -3621,9 +3619,11 @@ function choicesAt(s) {
   return out;
 }
 // how many settings two setups differ by: the menu's levels, the tiling, the fields
-// a mode's tiling by its name (Hexagons, whatever its place in its family's list), none off a family
-const tilingNameOf = (w) => { const fam = familyOf(w); return fam ? fam.F.tabs.find(([t]) => t === fam.m)[3] : null; };
-const changes = (a, b) => [0, 1, 2, 3, 4].filter((i) => NAV[a.w][i] !== NAV[b.w][i]).length + (tilingNameOf(a.w) !== tilingNameOf(b.w)) + ['size', 'colours', 'teams', 'penetration'].filter((f) => a[f] !== b[f]).length;
+// a mode's tiling by its name (Hexagons, whatever its place in its family's list; in 2D its shape, the plane's tiling),
+// none on a solid or a lattice
+const tilingNameOf = (w) => { const fam = familyOf(w); return fam ? fam.F.tabs.find(([t]) => t === fam.m)[3] : !['sphere', 'cube'].includes(MODES[w].lattice) ? NAV[w][2] : null; };
+const modeChanges = (v, w) => [0, 1, 2, 3, 4].filter((i) => NAV[v][i] !== NAV[w][i]).length + (tilingNameOf(v) !== tilingNameOf(w));
+const changes = (a, b) => modeChanges(a.w, b.w) + ['size', 'colours', 'teams', 'penetration'].filter((f) => a[f] !== b[f]).length;
 // The shortest paths from the setup in use to one fits takes, at n clicks: breadth first, each setup once, layer by layer
 // till one holds some; of these the fewest settings changed; their first clicks' keys (budget: setups tried at most)
 function pathsTo(fits, budget = 5000) {
@@ -3769,7 +3769,7 @@ function renderModePicker() {
     // the same kind (walk, ant, Life) on another tiling, along the grid or on cells as now; only the
     // tilings it has
     // (else the same rule on the other side, else its first walk: Cairo pentagons have no grid walk)
-    const same = (f) => onTiling(w, F, f);
+    const same = (f) => nearestMode(w, F.modes[f].filter((v) => NAV[v][0] === kind));  // (its tile's: the nearest there, see nearestMode)
     // its tilings as the 2D grids are, a picture and a name each, 4 a row; one that turns by 30° (another grid: its rows
     // round the tube), a switch once picked: a click turns it (its picture turned) or back; then Turned (a torus's, a
     // strip's, a bottle's), the same: on, the tiling turned; off, not; greyed, a tiling that has none

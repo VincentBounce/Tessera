@@ -1,6 +1,7 @@
 // Tessera's self-check, run in the page (it uses the app's own functions) before a commit:
 //   await import(`/tools/check.js?${Date.now()}`); await tesseraCheck();   // the meshes, the sheets' rules (see checkSheets), a few links cold (see checkColdLinks), 35 to 50 s
 //   await tesseraCheck({ crawl: true });                                   // and every tab, shape and tiling, a few minutes
+//   await tesseraCheck({ clickAll: true, clickFrom: 0 });                  // and on each, every control clicked (a night's, ~25 minutes; from a look's number, localStorage.tesseraCrawlAt, after a crash)
 //   await tesseraCheck({ fuzz: 400, seed: 7 });                            // 400 actions at random, menu to menu (transitions, smallest sizes)
 //   await tesseraCheck({ fuzz: 100, cold: true });                          // and after each, its link loaded cold beside: the same menus offered
 //   await tesseraCheck({ colours: true });                                 // every Life surface offers colours (more than Solo) at one of its sizes at least
@@ -196,8 +197,11 @@ function checker(fail) {
   };
   return c;
 }
-async function crawl(fail, each = null) {  // (each: on each mode reached, after its look: clickAll's)
-  const C = checker(fail), look = (what) => C.look(what).then(async (r) => { if (each) await each(what); return r; });
+// (each: on each mode reached, after its look: clickAll's; from: the look it starts at, each look's number kept in
+// localStorage.tesseraCrawlAt: a pass that took the tab down, run again from there)
+async function crawl(fail, each = null, from = 0) {
+  let at = 0;
+  const C = checker(fail), look = (what) => C.look(what).then(async (r) => { localStorage.tesseraCrawlAt = at; if (each && at++ >= from) await each(what); return r; });
   const tabs = () => [...document.querySelectorAll('#modeTabs [role=tab]')].filter((b) => !/Gallery/.test(b.textContent));  // (Life, Rewind, Ant, Walk)
   for (let ti = 0; ti < tabs().length; ti++) {
     tabs()[ti].click();
@@ -819,12 +823,12 @@ function checkRosetteSpheres(fail) {
   return checked;
 }
 
-window.tesseraCheck = async ({ parts = false, known = false, crawl: andCrawl = false, clickAll = false, deep: andDeep = false, fuzz: actions = 0, cold = false, colours = false, battles = false, seed = Date.now() % 1e6, from, only } = {}) => {
+window.tesseraCheck = async ({ parts = false, known = false, crawl: andCrawl = false, clickAll = false, clickFrom = 0, deep: andDeep = false, fuzz: actions = 0, cold = false, colours = false, battles = false, seed = Date.now() % 1e6, from, only } = {}) => {
   const failures = [], fail = (s) => { failures.push(s); localStorage.tesseraDeepFailures = JSON.stringify(failures); };
   let checked = checkMeshes(fail) + checkBlockWraps(fail) + checkDiscs(fail) + checkTips(fail) + checkMarks(fail) + checkRosetteSpheres(fail) + checkTwistedSphere(fail) + checkDiscCuts(fail) + await checkSheets(fail) + await checkNames(fail) + await checkColdLinks(fail);
   if (known) checked += await checkKnown(fail);
   if (andCrawl) checked += await crawl(fail);
-  if (clickAll) checked += await crawl(fail, clickEverything(fail));
+  if (clickAll) checked += await crawl(fail, clickEverything(fail), clickFrom);
   if (actions) checked += await fuzz(fail, actions, seed, cold);
   if (colours) checked += await coloursOffered(fail);
   if (battles) checked += await battlesFair(fail);

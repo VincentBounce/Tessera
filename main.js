@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.394';
+const VERSION = '0.4.395';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -706,6 +706,9 @@ function iroot(v, k) {
 /* ---- 2.1 Helpers, directions and colours -------------------------------------------------- */
 const $ = (id) => document.getElementById(id);
 const fmt = (v) => v.toLocaleString('en');
+// v written as wide as widest: the digits and commas it lacks in front, hidden zeros (every digit as wide, see body's
+// tabular-nums): a count that changes keeps its place
+const fmtAsWide = (v, widest) => { const s = fmt(v), w = fmt(Math.max(v, widest)); return `<span class="digits-pad">${w.slice(0, w.length - s.length).replace(/\d/g, '0')}</span>${s}`; };
 const DIRS = [[0, -1], [1, 0], [0, 1], [-1, 0]]; // N, E, S, W (screen y points down)
 const H = Math.sqrt(3) / 2;                        // height of a triangle with side 1
 const TRI_Y0 = -2 * H / 3;                         // offset that puts the centre of the starting triangle at (0, 0)
@@ -1592,6 +1595,7 @@ const freshWalk = () => ({
   life: null, plane: null,  // Life's; on the plane, its grid
   shape: null,     // only tiled surfaces that can change shape get one (see initShape)
   persp: null,     // the perspective camera (see setPerspective)
+  widestShown: 0,  // the furthest step or generation shown yet: the step line as wide, never narrower (see fmtAsWide)
 });
 const walk = { mode: null, ...freshWalk() };  // (mode: the one it is built for, see buildWalkOf)
 
@@ -17282,8 +17286,10 @@ function updateStats() {
   // the step or generation shown, its own line, every mode: Step 15,964, Gen 132; its last after it where the run has one
   // (a walk's, Elementary's, Space-time's: see runEnd; Life's, a reversible one's, once its loop is known: see runLoop), its slider's end (see seekFar)
   const far = seekFar(), gens = !!walk.life || spaceTimeOn() || !!walk.rows;
-  $('stepNow').textContent = `${gens ? 'Gen' : 'Step'} ${fmt(cur)}`;
-  setLinks($('stepLast'), Number.isFinite(lifeTime() ? runLoop()?.last : runEnd()) ? ` / ${fmt(far)}` : '');  // (a run's, Life's or a reversible one's: once its loop is known)
+  const known = Number.isFinite(lifeTime() ? runLoop()?.last : runEnd());
+  walk.widestShown = Math.max(walk.widestShown, cur, known ? far : 0);  // (its last once known, else the furthest shown: a ratchet)
+  $('stepNow').innerHTML = `${gens ? 'Gen' : 'Step'} ${fmtAsWide(cur, walk.widestShown)}`;
+  setLinks($('stepLast'), known ? ` / ${fmt(far)}` : '');  // (a run's, Life's or a reversible one's: once its loop is known)
   setLinks($('stepEnd'), endMark());
   if (!walk.life && !walk.battle) $('ranking').hidden = $('rankTitles').hidden = true;  // (a battle's shown by renderWalkGauges: never hidden in between, its rows' slides kept)
   const time = spaceTimeOn() && !!stack, rows = walk.rows;

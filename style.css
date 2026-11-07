@@ -516,6 +516,7 @@ button.wide.active, .head-btn.active { border-color: var(--accent); color: var(-
 .speed-icon { flex: none; width: 23px; height: 23px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
 
 .step-line { font-size: 20px; font-weight: 700; color: var(--text); white-space: nowrap; margin-bottom: 4px; }  /* the step or generation shown, as large as the title, folded or open, every mode */
+.digits-pad { visibility: hidden; }  /* a count's hidden zeros in front: as wide as its widest (see fmtAsWide) */
 .step-line #stepLast { color: var(--muted); }  /* its last, after it, always: the line keeps its width */
 .step-line .end-words { display: none; }  /* its end's words, open only (folded: its mark) */
 .stage-bar:hover .step-line .end-words { display: inline; }

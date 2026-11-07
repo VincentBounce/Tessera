@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.412';
+const VERSION = '0.4.413';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -17537,12 +17537,12 @@ $('digitsUp').addEventListener('click', () => stepDigits(1));
 // in use. For ↵, mousedown keeps the focus from going to the button first.
 const valueInUse = { formula: () => formulaInUse, digitsLabel: () => String(randomPrimeSize() ?? targetAsked()), startLabel: () => String(startNo()), speedLabel: () => String(speed),
                      antRule: () => creatureRules($('mode').value).now,  // (a walk's, an ant's, a turmite's, a worm's)
-                     lifeRule: () => (walk.life?.ruleText ? ruleBody(walk.life.ruleText) : $('lifeRule').value) };  // (the rule the game plays, its colours apart)
+                     lifeRule: () => (walk.life?.ruleText ? ruleBody(walk.life.ruleText) : walk.rows ? `W${walk.rows.N}` : null) };  // (the rule the game plays, its colours apart; Elementary's, its rows'; none yet: the field's as it was, see putBack)
 for (const input of document.querySelectorAll('.field input')) {
   let before = '';
-  valueInUse[input.id] ??= () => before;  // Life's rule: as it was when entered
+  valueInUse[input.id] ??= () => before;  // (a field with no value of its own in use: as it was when entered)
   // its value in use put back, as typed: its listeners told (a battle's formula bold in its colour again, see tintBattleFormulas)
-  const putBack = () => { input.value = valueInUse[input.id](); input.dispatchEvent(new Event('input')); };
+  const putBack = () => { input.value = valueInUse[input.id]() ?? before; input.dispatchEvent(new Event('input')); };
   input.addEventListener('focus', () => {
     before = input.value;
     putBack();

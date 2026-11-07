@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.457';
+const VERSION = '0.4.458';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -1948,7 +1948,7 @@ const tile = ({ pic = '', text = '', html = null, title = '', id = null, on = fa
 };
 // (byDefault: as the tooltip tells it, see tip: 'yes', the choice picked at first; 'on' or 'off', a switch's at first)
 // (greyed: when it is, as the tooltip tells it: 'in Solo', 'outside Life'…)
-// (whyNot(setup): what greys it in a setup, { w, size, colours, teams, penetration } (a mode, at a size or the one it opens
+// (whyNot(setup): what greys it in a setup, { w, size, colours, teams, battleRule } (a mode, at a size or the one it opens
 // at; its colours, a walk's teams, its battle rule: the ones picked if none), '' when allowed: its one
 // source; greyed here (at: its mode, the tab's by default) or not, its words why, and the menu's nearest buttons that would
 // allow it, highlighted by a click on it (see enablersFor))
@@ -3596,8 +3596,8 @@ function ruleCards(w, here = true) {
 const modesUnder = (...place) => Object.keys(NAV).filter((u) => place.every((x, i) => NAV[u][i] === x));
 // The menu as a graph (the setup a node, a click an edge): a setup, what the app holds as a link does ({ w: the mode, size:
 // null for the one it opens at, its colours, a walk's teams, its battle rule), the one in use first
-const setupNow = () => ({ w: $('mode').value, size: null, colours: lifeColours, teams: walkTeams, penetration });
-const setupKey = (s) => `${s.w}|${s.size}|${s.colours}|${s.teams}|${s.penetration}`;
+const setupNow = () => ({ w: $('mode').value, size: null, colours: lifeColours, teams: walkTeams, battleRule });
+const setupKey = (s) => `${s.w}|${s.size}|${s.colours}|${s.teams}|${s.battleRule}`;
 // The menu's choices at a setup, each a click: its key (its button's data-choice) and the setup it leads to, by the menu's
 // own navigation (navPick, kindLeft, nearestMode, walksThere): the tabs, spaces, shapes, tilings, sides, walks' kinds, then a
 // Life's colours, a battle's teams and rule; a surface's sizes at the start only (one stepper, see pathsTo)
@@ -3614,7 +3614,7 @@ function choicesAt(s) {  // (each [key, the setup it leads to, its button's word
   if (MODES[w].life) for (const k of COLOUR_STEPS) set(`colours:${k}`, 'colours', k, coloursWhyNot(k, w, s.size), COLOUR_STEP_NAMES[k]);
   if (battleMode(w)) {
     for (const k of COLOUR_STEPS) set(`teams:${k}`, 'teams', k, teamsWhyNot(k, w, s.size), COLOUR_STEP_NAMES[k]);
-    if (s.teams > 1) PENETRATIONS.forEach(([kind, name], p) => set(`penetration:${p}`, 'penetration', p, penetrationWhyNot(kind, w), name));
+    if (s.teams > 1) BATTLE_RULES.forEach(([kind, name], p) => set(`battleRule:${p}`, 'battleRule', p, battleRuleWhyNot(kind, w), name));
   }
   return out;
 }
@@ -3623,7 +3623,7 @@ function choicesAt(s) {  // (each [key, the setup it leads to, its button's word
 // none on a solid or a lattice
 const tilingNameOf = (w) => { const fam = familyOf(w); return fam ? fam.F.tabs.find(([t]) => t === fam.m)[3] : !['sphere', 'cube'].includes(MODES[w].lattice) ? NAV[w][2] : null; };
 const modeChanges = (v, w) => [0, 1, 2, 3, 4].filter((i) => NAV[v][i] !== NAV[w][i]).length + (tilingNameOf(v) !== tilingNameOf(w));
-const changes = (a, b) => modeChanges(a.w, b.w) + ['size', 'colours', 'teams', 'penetration'].filter((f) => a[f] !== b[f]).length;
+const changes = (a, b) => modeChanges(a.w, b.w) + ['size', 'colours', 'teams', 'battleRule'].filter((f) => a[f] !== b[f]).length;
 // The shortest paths from the setup in use to one fits takes, at n clicks: breadth first, each setup once, layer by layer
 // till one holds some; of these the fewest settings changed, each its clicks [key, words] (budget: setups tried at most)
 function pathsTo(fits, budget = 5000) {
@@ -7653,10 +7653,10 @@ function buildSphereWalk(seq, mode, ahead = new Uint8Array(0)) {
  * a body is drawn as a line along its edges, as a walk's path. The walks are made as the battle is first played
  * (battlePlayer), then replayed to the step shown. */
 let walkTeams = 1;  // a walk's teams: 1 Solo, 2 Duel, 3 Trio… 12 Dozen (as Life's, see renderColours; which, see battleCounts)
-let penetration = 0;  // a battle's way with an enemy's body as picked: its place in PENETRATIONS, 0 the first, by default; the one played, see penetrationInUse
-// its choice (one tab group under the teams), in the tab's order (its place its number: a link's pe=): its word, its name, its picture (a red head and a blue body
+let battleRule = 0;  // a battle's way with an enemy's body as picked: its place in BATTLE_RULES, 0 the first, by default; the one played, see battleRuleInUse
+// its choice (one tab group under the teams), in the tab's order (its place its number: a link's br=, pe= before v0.4.458): its word, its name, its picture (a red head and a blue body
 // or land), its words; along the grid Cut and the Land grids, on cells Cut and Land cells (each greyed in the other's place)
-const PENETRATIONS = [
+const BATTLE_RULES = [
   ['landGrid', 'Land grid 1', 'M1.5 0H2.5V4H1.5ZM0 1.5H4V2.5H0ZM0 0H1V1H0Z', "Along the grid: a walker's line, the edges it went along, stays (crossing it: a fork); its land the regions it closes. A head pierces an enemy's line going through it (on it, then off it by the other side) or along it: the line let go each way up to a fork or its end, its land there let go too; each walker keeps its land, no line of another in it. A loop closed has its empty tiles painted its colour; an enemy's land surrounded there stays its own, taken only by piercing its line. Heads meeting (two or more at once) all die: they stop conquering, their land stays, the others' to take; with one walker left or none, it ends: the most land wins, the dead's too"],
   ['landStop', 'Land no collision', 'M0 1.5H1.5V2.5H0ZM2.5 0H3.5V4H2.5Z', "As Land grid 1, and nothing is ever pierced: a walker stops for good just before its first step along or across another's line (on cells, just before its first step onto another's tile); heads meeting (two or more at once) all stop there. The others go on, until all have stopped or the digits end: the most land wins"],
   ['landMerge', 'Land grid merge', 'M0 1H4V3H0Z', "As Land grid 1, and nothing is ever pierced or stopped: lines cross and run along each other; the first heads meeting (two or more at once) end the battle, every walker stopping there: the most land wins"],
@@ -7693,10 +7693,10 @@ function renderWalkTeams() {
   // its ways as cards, as Life's rules: a picture (a red head, a blue body or land), its name over its words
   const way = ([kind, name, head, words], p) => {
     return card({ pic: `<svg viewBox="0 0 4 4" aria-hidden="true"><path d="M0 0H4V4H0Z" fill="${LIFE_COLOURS[1]}"/><path d="${head}" fill="${LIFE_COLOURS[0]}"/></svg>`, name, detail: words,
-      title: words, on: p === penetrationInUse(), whyNot: ({ w: v }) => penetrationWhyNot(kind, v), choice: `penetration:${p}`, byDefault: p === 0 ? 'yes' : '',
-      click: () => { if (p !== penetrationInUse()) { penetration = p; compute(); } } });
+      title: words, on: p === battleRuleInUse(), whyNot: ({ w: v }) => battleRuleWhyNot(kind, v), choice: `battleRule:${p}`, byDefault: p === 0 ? 'yes' : '',
+      click: () => { if (p !== battleRuleInUse()) { battleRule = p; compute(); } } });
   };
-  $('walkPenetration').replaceChildren(...PENETRATIONS.map((P, p) => way(P, p)));
+  $('battleRuleCards').replaceChildren(...BATTLE_RULES.map((P, p) => way(P, p)));
   // its starts' tabs, over the start selector (see STARTS_WAYS; the selector greyed but in Symmetric, see syncSizeStepper)
   if ($('startRow').previousElementSibling !== $('startWays')) $('startRow').before($('startWays'));
   const ways = STARTS_WAYS;  // (one list: its tabs and a link's gr=)
@@ -7755,16 +7755,16 @@ const STARTS_WAYS = [['symmetric', 'Symmetric', "A's start, picked below, moved 
 let battleStartsWay = 'symmetric', battleSeed = 1;
 // The battle rule a mode plays: the one picked where it goes, else its twin there (on cells a Land grid's Land cells; along
 // the grid Land cells' Land grid 1, Snake cells' Cut): what its card lights, its link writes and its battle plays, one source
-const penetrationInUse = (w = $('mode').value, p = penetration) => {
-  const kind = PENETRATIONS[p][0];
-  if (!battleMode(w) || !penetrationWhyNot(kind, w)) return p;
+const battleRuleInUse = (w = $('mode').value, p = battleRule) => {
+  const kind = BATTLE_RULES[p][0];
+  if (!battleMode(w) || !battleRuleWhyNot(kind, w)) return p;
   const twin = !MODES[w].grid ? 'landCells' : kind === 'snakeCells' ? 'cut' : 'landGrid';
-  return PENETRATIONS.findIndex(([k]) => k === twin);
+  return BATTLE_RULES.findIndex(([k]) => k === twin);
 };
 // Centred's greyed words; a battle rule's at a mode: a way on cells only (Land cells, Snake cells) along a grid, or one along
 // the grid only on cells; a mode with no battle, none (Cut and Land no collision: anywhere)
 const CENTRED_WHERE = 'along a closed solid\'s grid only, where a point has as many edges out as walkers, or a multiple';
-const penetrationWhyNot = (kind, v) => {
+const battleRuleWhyNot = (kind, v) => {
   const cells = kind === 'landCells' || kind === 'snakeCells';
   return !battleMode(v) ? 'where there is no battle' : kind === 'cut' || kind === 'landStop' || cells !== !!MODES[v].grid ? '' : cells ? 'along the grid, cells only' : 'on cells, along the grid only';
 };
@@ -8043,15 +8043,15 @@ function smallerSide(L, cut, j) {
 // died); owner and at, each place's walker (1, 2, 3; 0 none) and the step it took it; from[s], size[s]: a walker's body,
 // its steps from from[s] on and its places (only a cut takes a place from it, with all its steps up to that place's
 // last); dead[s]: the step it died (−1: alive); n: its last step (one walker left or none, else the digits' end), peak:
-// its longest body (the gauges' full bar). Its surface g, along its grid or not. pen, its penetration (see PENETRATIONS), its way:
+// its longest body (the gauges' full bar). Its surface g, along its grid or not. pen, its battleRule (see BATTLE_RULES), its way:
 // cut, as above. Along the grid, landGrid2 (bite): each walker holds land, land[t] its tiles' walker + 1: a wall of
 // its body closing a loop (its walls' pieces a union-find, step by step, joined again from its body after a cut) gives it
 // the loop's smaller side (smallerSide), an enemy's land too; its head bites into an enemy's land, taking the edge's two
 // tiles; a head on an enemy's body cuts it. landGrid: lines and their land as lined says. On cells,
 // landCells: painted. With land, heads meeting all die (see collisions), their land staying: it ends with one or none
 // left, the most land winning (the dead's too): its worth, its land, who wins
-function battlePlayer(g, grid, S, starts, digits, pen = penetrationInUse()) {
-  let way = PENETRATIONS[pen][0];  // (its rule in use: on cells Cut, Land no collision, Land cells and Snake cells; along the grid Cut and the Land grids, see penetrationInUse)
+function battlePlayer(g, grid, S, starts, digits, pen = battleRuleInUse()) {
+  let way = BATTLE_RULES[pen][0];  // (its rule in use: on cells Cut, Land no collision, Land cells and Snake cells; along the grid Cut and the Land grids, see battleRuleInUse)
   // Snake cells: Cut, each body a snake's, its tail sliding unless it grows: on an even step till a tenth of the surface
   // (cap), on an odd step a cell of those it has eaten (food: the cells its bites cut off), see slide
   const snake = way === 'snakeCells' && !grid, cap = Math.floor(g.n / 10), food = Array(starts.length).fill(0);
@@ -8512,11 +8512,11 @@ const HUNT_RANKS = {
   stop: ['goalDies', 'Latest first stop', 'The hunt keeps the battles whose first walker to stop (or die) does so the latest, none stopping the best: the walkers kept apart', 'Hunt the latest first stop',
     'The latest first stops', (r) => r.stop, firstStop] };
 let huntRank = 'longest';
-const huntGoal = () => (huntRank === 'even' && PENETRATIONS[penetrationInUse()][0] === 'cut' ? 'longest' : huntRank);  // (Even lands: with land only, else Longest)
+const huntGoal = () => (huntRank === 'even' && BATTLE_RULES[battleRuleInUse()][0] === 'cut' ? 'longest' : huntRank);  // (Even lands: with land only, else Longest)
 const huntStarts = () => huntVary.starts && startsWayNow() !== 'centred';  // (Starts varied: in Symmetric and Random)
 const BATTLE_FRESH = () => ({ ended: [], open: [], endedCount: 0, tried: new Set(), key: battleHuntKey(), status: '' });  // (a hunt's results, none yet)
 const battleHunt = { run: null, ended: [], open: [], endedCount: 0, tried: new Set(), key: '', status: '' };
-const battleHuntKey = () => [huntGoal(), $('mode').value, walkTeams, startsWayNow(), penetrationInUse(), sphereSize(), digitsNeeded(), huntVary.formulas || BATTLE_FORMULAS.map((id) => $(id).value).join(),
+const battleHuntKey = () => [huntGoal(), $('mode').value, walkTeams, startsWayNow(), battleRuleInUse(), sphereSize(), digitsNeeded(), huntVary.formulas || BATTLE_FORMULAS.map((id) => $(id).value).join(),
   huntStarts() || `${startNo()}|${battleSeed}`].join('|');  // (what its battles are fought at: what it does not vary)
 // √r's first n digits in base b, its integer part first (on the page: one integer root, as numberSeed's)
 const rootDigits = (r, base, n) => Uint8Array.from(iroot(BigInt(r) * BigInt(base) ** BigInt(2 * n), 2).toString(base).slice(0, n), (c) => c.charCodeAt(0) - 48);
@@ -8526,7 +8526,7 @@ const rootDigits = (r, base, n) => Uint8Array.from(iroot(BigInt(r) * BigInt(base
 // battles, two at a time, each sending back its score (see huntScore)
 const BATTLE_WORKERS = Math.max(1, (navigator.hardwareConcurrency || 4) - 1);
 const battleWorker = () => workerOf({ mod, cross, iroot, rootDigits, TORUS_TUBE, tubeOf, SURFACE_NOTCHES, gridGraph, cornerUv, sheetWrap, sheetDelta, nextCorner, nextCornerCarried, acrossEdge,
-  surfaceStep, PENETRATIONS, battleLinks, battleWall, unionFind, smallerSide, battlePlayer, battleWinner, huntScore }, battleWorkerMain);
+  surfaceStep, BATTLE_RULES, battleLinks, battleWall, unionFind, smallerSide, battlePlayer, battleWinner, huntScore }, battleWorkerMain);
 function battleWorkerMain() {  // (run in a worker: its setup, then its battles)
   let game = null;
   onmessage = ({ data: m }) => {
@@ -8580,7 +8580,7 @@ async function startBattleHunt() {
     if (by) { list.sort(by); list.length = Math.min(8, list.length); }
   };
   const say = () => { drawn = performance.now(); battleHunt.status = `${formatNumber(battleHunt.tried.size)} battles${sets < Infinity ? ` of ${formatNumber(sets)}` : ''} fought · ${formatNumber(battleHunt.endedCount)} ended`; renderBattleHunt(); };
-  const sent = new Map(), setup = { g: meshData(g), grid, net: mode.net, acts: surfaceActs(mode), pen: penetrationInUse(), base, n, cards: [...cards], fixed: huntVary.formulas ? null : shownFs.map(shownDigits) };
+  const sent = new Map(), setup = { g: meshData(g), grid, net: mode.net, acts: surfaceActs(mode), pen: battleRuleInUse(), base, n, cards: [...cards], fixed: huntVary.formulas ? null : shownFs.map(shownDigits) };
   const feed = (w) => { const b = next(); if (b) { sent.set(b.id, b); w.postMessage({ id: b.id, fs: b.fs, placed: b.placed }); } };
   for (let j = 0; j < BATTLE_WORKERS; j++) {
     const w = battleWorker();
@@ -8624,7 +8624,7 @@ function renderBattleHunt() {
   const vary = (what, text, title, can = true, greyed = '') => tile({ pic: icon(what === 'formulas' ? 'search' : 'play'), text, title, toggle: true, on: huntVary[what] && can, can, greyed,
     byDefault: what === 'formulas' ? 'on' : 'off', click: () => { huntVary[what] = !huntVary[what]; stopBattleHunt(); renderBattleHunt(); } });
   const goal = huntGoal(), [, , , words, label, score, figure] = HUNT_RANKS[goal];
-  const rank = ([what, [pic, text, title]]) => tile({ pic: icon(pic), text, title, on: what === goal, whyNot: ({ w, penetration: p = penetration }) => (what !== 'even' || PENETRATIONS[penetrationInUse(w, p)][0] !== 'cut' ? '' : 'in Cut: no land, bodies only'),
+  const rank = ([what, [pic, text, title]]) => tile({ pic: icon(pic), text, title, on: what === goal, whyNot: ({ w, battleRule: p = battleRule }) => (what !== 'even' || BATTLE_RULES[battleRuleInUse(w, p)][0] !== 'cut' ? '' : 'in Cut: no land, bodies only'),
     greyed: 'in Cut: no land, bodies only', byDefault: what === 'longest' ? 'yes' : '', click: () => { if (huntRank !== what) { huntRank = what; stopBattleHunt(); renderBattleHunt(); } } });
   $('battleHuntVary').replaceChildren(vary('formulas', 'Formulas', 'The hunt draws the walkers\' numbers (else those in the fields)'),
     vary('starts', 'Starts', 'The hunt draws the start too: Symmetric\'s number, Random\'s draw (else the start shown)', startsWayNow() !== 'centred', 'in Centred: its centres all alike, nothing to vary'));
@@ -11913,7 +11913,7 @@ function battleCaseFigure(grid, way, scripts) {
   if (!len) return null;
   walks.forEach((q) => { while (q.length < len) q.push(q.at(-1)); });  // (its moves done: on the spot)
   const S = { step: ([, i, s]) => [walks[s][i + 1], i + 1, s] };  // (each walker's places as written)
-  const P = battlePlayer(g, true, S, walks.map((q, s) => [q[0], 0, s]), walks.map(() => new Uint8Array(len - 1)), PENETRATIONS.findIndex(([w]) => w === way));
+  const P = battlePlayer(g, true, S, walks.map((q, s) => [q[0], 0, s]), walks.map(() => new Uint8Array(len - 1)), BATTLE_RULES.findIndex(([w]) => w === way));
   P.to(Infinity);
   const n = P.n, L = battleLinks(g), ends = new Map();
   for (const v of near) for (const w of G.nbrs[v]) ends.set(L.index.get(G.key(v, w)), [v, w]);
@@ -11936,14 +11936,14 @@ function battleCaseFigure(grid, way, scripts) {
 }
 // a battle's cases along the grid, under its walk's (see walkTutorial): Land grid 1's or Land grid 3's, on the walk's tiles
 function battleTutorial(w) {
-  const way = PENETRATIONS[penetrationInUse()][0], g = walk.geo, grid = { 4: 'square', 3: 'tri', 6: 'hex' }[g?.sides];
+  const way = BATTLE_RULES[battleRuleInUse()][0], g = walk.geo, grid = { 4: 'square', 3: 'tri', 6: 'hex' }[g?.sides];
   if (!battleOn() || !MODES[w].grid || !grid || !['landGrid', 'landGrid3'].includes(way)) return '';
   const loop = { pre: BATTLE_LOOP_AT[grid], moves: BATTLE_LOOP[grid] };
   const figs = Object.values(BATTLE_CASES).filter((c) => c[grid] && (!c.way || c.way === way)).map((c) => {
     const svg = battleCaseFigure(grid, way, c[grid].map((x) => (x === 'loop' ? loop : x)));
     return svg && `<figure><div>${svg}</div><figcaption>${typeof c.words === 'string' ? c.words : c.words[way]}</figcaption></figure>`;
   });
-  return `<div class="form-section"><h3>Battle: ${PENETRATIONS[penetrationInUse()][1]}</h3><p>Each walker's line: the edges it has gone along, never let go by itself. All walkers step at once, each step judged on the lines as it found them. Here red's last step makes the case; a line let go dashed, a walker dead crossed.</p>`
+  return `<div class="form-section"><h3>Battle: ${BATTLE_RULES[battleRuleInUse()][1]}</h3><p>Each walker's line: the edges it has gone along, never let go by itself. All walkers step at once, each step judged on the lines as it found them. Here red's last step makes the case; a line let go dashed, a walker dead crossed.</p>`
     + `<div class="tut-row tut-walk tut-battle">${figs.filter(Boolean).join('')}</div></div>`;
 }
 function walkTutorial(w) {
@@ -14611,7 +14611,7 @@ function getSetup() {
   if (battleOn()) {  // (a walk's Duel or Trio, as Life's: its teams; B's number, C's)
     s.k = walkTeams;
     RIVALS.slice(0, walkTeams - 1).forEach((id) => { s[`x${id.slice(-1).toLowerCase()}`] = formulaOf($(id).value).text ?? $(id).value; });  // (xb, xc…)
-    if (penetrationInUse()) s.pe = penetrationInUse();  // (the one played; none: the first, Land grid 1)
+    if (battleRuleInUse()) s.br = battleRuleInUse();  // (the one played; none: the first, Land grid 1)
     if (startsWayNow() !== 'symmetric') s.gr = STARTS_WAYS.findIndex(([way]) => way === startsWayNow());  // (its starts: Centred, Random, see STARTS_WAYS)
     if (startsWayNow() === 'random') s.rs = battleSeed;
   }
@@ -14649,8 +14649,8 @@ function applySetup(s) {
   }
   if (s.d !== undefined) target = Number(s.d);
   walkTeams = !MODES[s.w].life && COLOUR_STEPS.includes(Number(s.k)) ? Number(s.k) : 1;  // (a walk's battle, if its surface allows it at its size: see battleOn)
-  const pe = s.pe === undefined ? 0 : !s.v || versionAtMost(s.v, '0.4.378') ? PE_BEFORE[Number(s.pe)] : Number(s.pe);  // (an older link's, in its own order)
-  penetration = walkTeams > 1 && PENETRATIONS[pe] ? pe : 0;  // (none: the first, Land grid 1)
+  const pe = s.br !== undefined ? Number(s.br) : s.pe === undefined ? 0 : !s.v || versionAtMost(s.v, '0.4.378') ? PE_BEFORE[Number(s.pe)] : Number(s.pe);  // (br=; a link of v0.4.457 or before, pe=)  // (an older link's, in its own order)
+  battleRule = walkTeams > 1 && BATTLE_RULES[pe] ? pe : 0;  // (none: the first, Land grid 1)
   battleStartsWay = STARTS_WAYS[Number(s.gr)]?.[0] ?? 'symmetric';
   battleSeed = Number(s.rs) || 1;
   RIVALS.forEach((id, j) => { $(id).value = s[`x${id.slice(-1).toLowerCase()}`] ?? RIVAL_FIRSTS[j]; });  // (one the link gives not: its number at first)
@@ -17015,11 +17015,11 @@ const fillAreasApply = (w = $('mode').value) => !areaWhyNot(w);
 // Area greyed at a mode: on cells (its cells its own colours, a battle's its lands: along the lines only), a walk closing none
 // (a spiral, a mode without it), a look over the cells (Heatmap, Directions), or Snake cells (its tails slide: no area
 // lasts); else ''
-// (p: the battle rule picked, the one it plays at w judged, see penetrationInUse)
-const areaWhyNot = (w, teams = walkTeams, p = penetration) => (MODES[w].cells ? 'on cells: the walk colours its cells itself (a battle, its lands)' : teams > 1 && battleCounts(w).includes(teams) && PENETRATIONS[penetrationInUse(w, p)][0] !== 'cut' ? 'in a battle that colours its lands (Cut, its bodies only, keeps it)' : !useful('fill', w) || MODES[w].fill === false ? 'where the walk closes no area to fill (a spiral, an ant…)'
+// (p: the battle rule picked, the one it plays at w judged, see battleRuleInUse)
+const areaWhyNot = (w, teams = walkTeams, p = battleRule) => (MODES[w].cells ? 'on cells: the walk colours its cells itself (a battle, its lands)' : teams > 1 && battleCounts(w).includes(teams) && BATTLE_RULES[battleRuleInUse(w, p)][0] !== 'cut' ? 'in a battle that colours its lands (Cut, its bodies only, keeps it)' : !useful('fill', w) || MODES[w].fill === false ? 'where the walk closes no area to fill (a spiral, an ant…)'
   : ['visits', 'digit'].includes($('colourMode').value) ? 'with Heatmap or Directions (the cells their own colours)' : w === $('mode').value && snakeBattle() ? 'in Snake cells: its tails slide, no area they close lasts' : '');
 // a battle in Snake cells: its bodies' tails slide, no area they close lasts: none filled (Area greyed)
-const snakeBattle = () => battleOn() && PENETRATIONS[penetrationInUse()][0] === 'snakeCells';
+const snakeBattle = () => battleOn() && BATTLE_RULES[battleRuleInUse()][0] === 'snakeCells';
 // (the walk drawn may still be the last mode's while the new one is computed: a tiling with a fill)
 // Area (one choice: Empty, Light, Plain, see AREA_MODES): filled where it applies; Light, translucent, only over a line
 const areaOn = () => $('area').value !== 'empty' && fillAreasApply();
@@ -17379,7 +17379,7 @@ const meanText = (v) => `≈ ${v.toLocaleString('en', { minimumFractionDigits: 1
 const colourGone = (L, k) => (loopMeans(L) ? L.loopMax[k] === 0 : L.extinctAt?.[k] !== null && L.extinctAt?.[k] !== undefined);
 // the ranking's column titles (a tip: what it counts), Life's and a battle's
 const LIFE_TITLES = [['Alive'], ['Mean', 'Its live cells summed over the generations, by how many, till it settles or loops (its size while it lives)'], ['Born'], ['Died'], ['Ever alive']];
-// a battle's columns, by its penetration (P: its player): its worth (Cut: its body; else its land), its worth's peak so
+// a battle's columns, by its battleRule (P: its player): its worth (Cut: its body; else its land), its worth's peak so
 // far, the step it died at, its body if it has one besides (along the grid a line, its edges; on cells its tiles), its head
 // from its start
 const battleColumns = (P) => {
@@ -18328,7 +18328,7 @@ function renderAreaModes() {
   const shown = (v) => (v === 'light' && !light ? 'plain' : v);  // (Light only over a line: else Plain)
   const now = AREA_MODES.findIndex(([look]) => look === shown($('area').value)), first = shown(defaultOf('area'));
   notchRow($('areaModes'), 'Area', 'The areas the walk closes, filled', AREA_MODES.map(([look, name, words]) => [name, `${words}${look === 'light' && !light ? ' · greyed: over a line only (Plain here)' : ''}${look !== 'empty' && fractionAreaCap() < Infinity ? ` · a fraction: its digits repeat, its walk goes round its figure again and again, closing off big parts of the surface; only its small areas are filled, ${FRACTION_AREA} tiles at most` : ''}`]), now, AREA_MODES.findIndex(([look]) => look === first),
-    (k) => { if ($('area').value !== AREA_MODES[k][0]) { $('area').value = AREA_MODES[k][0]; $('area').dispatchEvent(new Event('change')); } }, ({ w, teams, penetration: p }) => areaWhyNot(w, teams, p), false);  // (let go: the row drawn again)
+    (k) => { if ($('area').value !== AREA_MODES[k][0]) { $('area').value = AREA_MODES[k][0]; $('area').dispatchEvent(new Event('change')); } }, ({ w, teams, battleRule: p }) => areaWhyNot(w, teams, p), false);  // (let go: the row drawn again)
 }
 // The looks of a 2D walk on cells, as square buttons: Path, the rainbow line over its cells faded (an ant's over its
 // states); Rainbow along the walk; Directions, a colour per digit (an ant's: States, its cells by their state, see

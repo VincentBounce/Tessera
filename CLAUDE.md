@@ -108,7 +108,7 @@ touched shows (+0 if its code lines are as many).
   serves that version on port 8322 beside this one.
 
 ## A choice's number in a link
-- A choice among several (a tab group: Penetration's `pe=`, …) is written in a link by its place in the group, in the order
+- A choice among several (a tab group: the Battle rules' `br=`, …) is written in a link by its place in the group, in the order
   shown: 0 the first, and the first the default (written in no link). Never a number kept from an older order, never a
   default set apart from the order: to change the default, change the order.
 - Every night, check this for every choice the links write as a number: its tabs' order, its numbers, its default.

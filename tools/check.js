@@ -264,7 +264,7 @@ const panel = (d) => Object.fromEntries([...d.querySelectorAll('#paramsPane > *'
   [...s.querySelectorAll('button')].filter((b) => !b.closest('[hidden]') && getComputedStyle(b).display !== 'none').map((b) => `${b.textContent.trim().slice(0, 16)}${b.disabled ? '⊘' : ''}${b.classList.contains('active') ? '•' : ''}`).join(' ')]));
 // Links opened cold, each in a page of its own (an iframe): their walk built, its mode the link's, its battle or its symmetry
 // as the link asks (v0.4.426: a strip's battle looped on its own size, opened cold; v0.4.423: a symmetry before any walk)
-const COLD_LINKS = [['x=pi&w=kleinHexGrid&d=3000&s=72&k=2&xb=e', { teams: 2 }], ['x=pi&w=mobiusHexWalk&d=3000&s=5&k=3&xb=sqrt(2)&xc=sqrt(3)&pe=3', { teams: 3 }],
+const COLD_LINKS = [['x=pi&w=kleinHexGrid&d=3000&s=72&k=2&xb=e', { teams: 2 }], ['x=pi&w=mobiusHexWalk&d=3000&s=5&k=3&xb=sqrt(2)&xc=sqrt(3)&br=3', { teams: 3 }],
   ['x=pi&w=hexSphereGrid&d=3000&s=24&k=2&xb=e', { teams: 2 }], ['w=life2dHex&r=B3/S23&y=mirror', { symmetry: 'mirror' }]];
 async function checkColdLinks(fail) {
   for (const [link, want] of COLD_LINKS) {
@@ -428,7 +428,7 @@ async function battlesFair(fail) {
     }
     // Land no collision, its fewest walkers: no walker's step along another's (a line's edge along the grid, a tile
     // on cells), and none moving once stopped
-    const stop = PENETRATIONS.findIndex((p) => p[0] === 'landStop'), K = counts[0], link = `#x=pi&w=${w}&d=3000&k=${K}&pe=${stop}&${'bcdefghijkl'.slice(0, K - 1).split('').map((c, j) => `x${c}=sqrt(${j + 2})`).join('&')}&v=${VERSION}`;  // (its version: a link without one is read as an old one, pe= in its order then, see PE_BEFORE)
+    const stop = BATTLE_RULES.findIndex((p) => p[0] === 'landStop'), K = counts[0], link = `#x=pi&w=${w}&d=3000&k=${K}&br=${stop}&${'bcdefghijkl'.slice(0, K - 1).split('').map((c, j) => `x${c}=sqrt(${j + 2})`).join('&')}&v=${VERSION}`;  // (its version: a link without one is read as an old one, pe= in its order then, see PE_BEFORE)
     if (!K) continue;
     location.hash = link;
     for (let t = 0; t < 30 && !built(K, true); t++) await wait(300);
@@ -451,11 +451,11 @@ async function battlesFair(fail) {
     if (shared || moved) fail(`${w} Land no collision: ${shared} ${grid ? 'edges' : 'tiles'} shared, ${moved} steps once stopped (${link})`);
     // Snake cells (on cells), its fewest walkers: a snake grows a cell a step at most (an even step till a tenth of the
     // surface, an odd one by what it has eaten), and none past a tenth before the first bite (no cells eaten yet)
-    const snake = PENETRATIONS.findIndex((p) => p[0] === 'snakeCells');
+    const snake = BATTLE_RULES.findIndex((p) => p[0] === 'snakeCells');
     if (grid || snake < 0) continue;
-    const slink = link.replace(`&pe=${stop}&`, `&pe=${snake}&`);
+    const slink = link.replace(`&br=${stop}&`, `&br=${snake}&`);
     location.hash = slink;
-    for (let t = 0; t < 30 && !(walk.battle?.player?.K === K && $('mode').value === w && location.hash.includes(`pe=${snake}`)); t++) await wait(300);
+    for (let t = 0; t < 30 && !(walk.battle?.player?.K === K && $('mode').value === w && location.hash.includes(`br=${snake}`)); t++) await wait(300);
     const S = walk.battle?.player;
     checked++;
     if (S?.K !== K) { fail(`${w} Snake cells: no battle (${slink})`); continue; }

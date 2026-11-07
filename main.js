@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.461';
+const VERSION = '0.4.462';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -7497,7 +7497,7 @@ function surfaceSteps(g, mode, acts = surfaceActs(mode)) {
     return [u / k, v / k];
   };
   return {
-    start: (i) => [...cellStart(g, starts()[i]), 0, 0], step,
+    start: (i) => walkStart(g, mode, i + 1), step,
     key: ([t, entry, p, q, hand = 1]) => (((t * k + entry) * k + ((p + k) % k)) * 2 + q) * 2 + (hand < 0 ? 1 : 0),  // (its hand: a Klein bottle's, see surfaceStep)
     sheet: ([a], [b]) => {
       if (g.mobius) return mobiusDelta(g, mobiusAt(g, a, centre(a)), mobiusAt(g, b, centre(b)));
@@ -7511,7 +7511,7 @@ function surfaceSteps(g, mode, acts = surfaceActs(mode)) {
 // where the surface has a start picker (start k of N, see STARTS_ON), else its first; on cells [tile, the edge it comes in
 // by]; then its turns on the spot and its digits' parity, p and q, at 0 (j: another start of the list, a hunt's)
 const walkStart = (g, mode, j = startNo()) => (mode.grid ? gridState(g, STARTS_ON.includes(surfaceOf(mode)) ? startList(g)[j - 1] : firstStart(g, gridGraph(g)))
-  : surfaceSteps(g, mode).start(j - 1));
+  : [...cellStart(g, startList(g)[j - 1]), 0, 0]);  // (on cells: its start alone, no steps built)
 // A walk on a surface recorded step by step (see buildGridWalk, buildSphereWalk): its points (on the unit surface, R times),
 // its tiles, its places seen (corners or tiles, nodes of them) and the step it has seen them all, its farthest from its
 // start, its digits' counts; begin(key), step(i, digit, key): stopped where it goes round (key, its state: see loopWatch;
@@ -7730,13 +7730,17 @@ function battleStarts(g, start, grid, K) {
 // cells a tile's middle): their nearest pair's distance (0: on an axis of one of its turns, some start together)
 const startSpread = (g, grid, start) => {
   const P = grid ? g.verts : g.cen;
-  return (G) => {
-    const q = G.map((M) => [0, 1, 2].map((d) => P[3 * M(start[0], grid) + d]));
-    let least = Infinity;
-    for (let a = 0; a < q.length; a++) for (let b = a + 1; b < q.length; b++) least = Math.min(least, Math.hypot(...q[a].map((x, d) => x - q[b][d])));
-    return least;
-  };
+  return (G) => pointsApart(G.map((M) => [0, 1, 2].map((d) => P[3 * M(start[0], grid) + d])));
 };
+// points' nearest pair's distance (0: two of them one)
+const pointsApart = (q) => {
+  let least = Infinity;
+  for (let a = 0; a < q.length; a++) for (let b = a + 1; b < q.length; b++) least = Math.min(least, Math.hypot(...q[a].map((x, d) => x - q[b][d])));
+  return least;
+};
+// a turn in space applied to a point; the line it turns round (its axis: M − I's rows, their largest cross product)
+const matTimesPoint = (M, p) => M.map((row) => row[0] * p[0] + row[1] * p[1] + row[2] * p[2]);
+const rotationAxis = (M) => { const R = M.map((row, i) => row.map((x, j) => x - (i === j))); return unit([cross(R[0], R[1]), cross(R[1], R[2]), cross(R[2], R[0])].reduce((a, b) => (Math.hypot(...b) > Math.hypot(...a) ? b : a))); };
 // Centred starts (see STARTS_WAYS): K walkers leaving side by side the point of a closed solid's
 // symmetry nearest A's start (a face's centre, a corner) whose edges out of the grid's corners nearest it (one, or a ring)
 // are K or a multiple of K: each walker at an edge's outer end, come from the ring, every so many edges round it (sphere of
@@ -7948,17 +7952,31 @@ const battleCounts = (w, size = battleMode(w) && (w === $('mode').value ? menuSi
   const ring = SPHERES[surfaceOf(MODES[w])].columns && familyOf(w)?.F.name;
   if (ring === FOLDS.torus.name) return COLOUR_STEPS.filter((K) => K > 1);
   if (ring === FOLDS.klein.name) return [2];
-  const mode = MODES[w], sphere = SPHERES[surfaceOf(mode)], grid = !!mode.grid, memo = (battleCountsMemo[`${w}|${size}|${$('startNo').value}`] ??= {});  // (the start asked: its count made by each K's mesh, see walkStart)
+  const mode = MODES[w], kind = surfaceOf(mode), sphere = SPHERES[kind], memo = (battleCountsMemo[`${w}|${size}|${$('startNo').value}`] ??= {});  // (the start asked: its count made by each K's mesh, see walkStart)
+  // K's: a closed solid's for any start, or none where it has no group of K (no mesh, see solidTeamCounts), else a group of K setting A's start's walkers apart,
+  // on its mesh at the size picked (a Möbius strip's made for K, see ringColours)
   const fits = (K) => {
+    const solid = !sphere.columns && solidTeamCounts(kind, mode);
+    if (solid && (solid.any.includes(K) || !solid.some.includes(K))) return solid.any.includes(K);  // (no group of K: none)
     teamsBuilding = sphere.columns ? K : null;
     try {
-      const g = sphere.mesh(size), start = walkStart(g, mode), apart = startSpread(g, grid, start);  // (its mesh at the size picked, as the walk's)
+      const g = sphere.mesh(size), start = walkStart(g, mode), apart = startSpread(g, !!mode.grid, start);
       return battleGroups(g, K, 1, (G) => apart(G) > 1e-9).length > 0;  // (one group is enough to know)
     } finally { teamsBuilding = null; }
   };
   return COLOUR_STEPS.filter((K) => K > 1 && (memo[K] ??= fits(K)));
 };
 const battleCountsMemo = {};
+// A closed solid's team counts, once a solid, its turns the same at every size (see surfaceRotations): some, K it has a
+// group of; any, K whatever its start: every axis of its groups of K has one of them none of whose turns is round it (a
+// start's point lies on one axis at most, so that group leaves it apart; the icosahedron's: all its orders; the cube's: not
+// 8 nor 12, its D4s and its T each round its faces' axes)
+const solidTeamCountsMemo = {};
+const solidTeamCounts = (kind, mode) => (solidTeamCountsMemo[kind] ??= (() => {
+  const g = SPHERES[kind].mesh(Math.min(...sizesOf(kind, mode))), groups = (K) => (K > 1 ? rotationGroups(g, K) : []);  // (its least size: its turns its every size's)
+  const some = COLOUR_STEPS.filter((K) => groups(K).length);
+  return { some, any: some.filter((K) => groups(K).flatMap((G) => G.slice(1).map(rotationAxis)).every((a) => groups(K).some((G) => G.slice(1).every((M) => pointsApart([a, matTimesPoint(M, a)]) > 1e-9)))) };  // (each group's identity first)
+})());
 // a team count's, a count of colours' greyed words at a mode (at a size, or the one it opens at): one source, their tiles'
 // and the menu's graph's (see choicesAt)
 const teamsWhyNot = (k, v, size = null) => (k === 1 || battleCounts(v, size ?? (battleMode(v) && figureSize(v))).includes(k) ? '' : TEAMS_WHERE);

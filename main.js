@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.519';
+const VERSION = '0.4.520';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -5021,7 +5021,7 @@ const cellSides = (kind) => (cellSidesMemo[kind] ??= (() => {
 })());
 // why a command cannot go on a walk, or '': not its network's; a diagonal along the grid; on a surface, no fixed way (no north)
 const walkCommandWhy = (m, t) => (m.lattice === 'sphere' && !m.grid ? cellCommandWhy(m, t)
-  : m.lattice === 'sphere' ? ((surfaceCommands(m.net).includes(t) && m.turns[surfaceCommands(m.net).indexOf(t)] != null) || t === 'U' || (SURFACE_NOTCHES[m.net] && spotCommands(m.net).includes(t)) ? ''
+  : m.lattice === 'sphere' ? ((surfaceCommands(m.net).includes(t) && m.turns[surfaceCommands(m.net).indexOf(t)] != null) || t === 'U' || (t === 'B' && SURFACE_NOTCHES[m.net] % 2 === 0) || (SURFACE_NOTCHES[m.net] && spotCommands(m.net).includes(t)) ? ''
     : surfaceCommands(m.net).includes(t) ? `${t} is not on this surface (its corners).` : `${t} is not on a surface: there is no north there.`)
   : !commandAct(m.net, t) ? `${t} is not a command here.` : m.lines && WALK_NETS[m.net].diagonals?.includes(t) ? `${t} is a diagonal step: along the grid, it follows no line.` : '');
 // a command on a surface's cells: its edge on every cell (see cellTurn, cellSides): straight on, cells of an even count of sides;
@@ -7526,6 +7526,7 @@ function surfaceStep(g, grid, net, acts) {
     return ([v, from, p, q, frame], d) => {
       const [kind, by] = acts[d], read = parity ? 1 - q : 0, more = carried ? [frame] : [];
       if (kind === 'pivot') return [v, from, (p + by + N) % N, read, ...more];  // (a turn on the spot: no step)
+      if (kind === 'back') return [from, v, (p + N / 2) % N, read, ...(carried ? [acrossEdge(g, G, frame, v, from)] : [])];  // (a step back: come from v, then half a turn, its heading kept; its left the other side)
       const angle = (kind === 'turn' ? (by * Math.PI) / 180 : 0) - (2 * Math.PI * p) / N;
       const [next, framed] = carried ? nextCornerCarried(g, G, v, from, frame, angle) : [nextCorner(g, G, v, from, angle)];
       return [next, v, kind === 'parity' ? (q ? -1 : 1) : 0, read, ...(carried ? [framed] : [])];  // (−1, not N − 1: nextCorner takes the angle as it is)

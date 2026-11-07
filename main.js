@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.489';
+const VERSION = '0.4.490';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -3609,10 +3609,10 @@ const modesUnder = (...place) => Object.keys(NAV).filter((u) => place.every((x, 
 // The menu as a graph (the setup a node, a click an edge): a setup, what the app holds as a link does ({ w: the mode, size:
 // null for the one it opens at, its colours, a walk's teams, its battle rule, its starts' way, a Life's start, its hunt's
 // zone and its rule, as typed: the one a mode plays from it, lifeRuleAt; its look, colourMode's; Stacks on; a walk's rule, see
-// walkRuleAt; A's start's number, a mode's list's at most), the one in use first
+// walkRuleAt; A's start's number, a mode's list's at most; Newcomer picked, see newcomerCan), the one in use first
 const setupNow = () => ({ w: $('mode').value, size: null, colours: lifeColours, teams: walkTeams, battleRule, startsWay: battleStartsWay, start: plane.start, zone: hunt.zone, rule: $('lifeRule').value, look: $('colourMode').value, stacked: spaceTime,
-  walkRule: MODES[$('mode').value].net ? walkRuleOf(MODES[$('mode').value]) : null, startNo: startNo() });
-const SETUP_FIELDS = ['size', 'colours', 'teams', 'battleRule', 'startsWay', 'start', 'zone', 'rule', 'look', 'stacked', 'walkRule', 'startNo'];
+  walkRule: MODES[$('mode').value].net ? walkRuleOf(MODES[$('mode').value]) : null, startNo: startNo(), newcomer });
+const SETUP_FIELDS = ['size', 'colours', 'teams', 'battleRule', 'startsWay', 'start', 'zone', 'rule', 'look', 'stacked', 'walkRule', 'startNo', 'newcomer'];
 // a walk's rule at mode u from setup s: the setup's walk's (walkRule) where u keeps its rules under the same key (its network's,
 // see walkKey: a plane's grid and cells share theirs), else u's kept one
 const walkRuleAt = (s, u) => (s.walkRule && MODES[s.w].net && walkKey(MODES[u]) === walkKey(MODES[s.w]) ? s.walkRule : walkRuleKept(MODES[u]));  // (its fields but the mode: a key's, a path's changes)
@@ -3645,6 +3645,7 @@ function choicesAt(s) {  // (each [key, the setup it leads to, its button's word
   if (m.life) for (const [look, name] of LIFE_LOOKS) set(`look:${look}`, 'look', look, lookWhyNot(look, w), name);
   else if (shows('cells', w) || shows('heatmap', w) || m.antOf) for (const [look, name] of CELL_MODES) set(`look:${look}`, 'look', lookAfter(look, w), cellModeWhyNot(look, w, s.teams), name);
   if (spaceTimeApplies(w)) set('stacked', 'stacked', !s.stacked, '', 'Stacks');  // (Stacks, a switch: on or off)
+  if (m.life) set('newcomer', 'newcomer', !s.newcomer, newcomerCan(s.colours, pickedFigure(w, s.size), s.start) ? '' : 'none', 'Newcomer');  // (a switch where it can be)
   const starts = w === $('mode').value && modeStarts();  // (a start's −, +: at the mode shown, its starts' list known there)
   if (starts) { set('startNo:-1', 'startNo', s.startNo - 1, s.startNo <= 1 ? 'none' : '', 'Previous start'); set('startNo:+1', 'startNo', s.startNo + 1, s.startNo >= starts.length ? 'none' : '', 'Next start'); }
   if (w === walk.mode && s.colours === lifeColours && s.start === 'random' && huntOn()) for (const [zone, fits] of Object.entries(huntFits())) if (fits && zone !== 'custom') set(`zone:${zone}`, 'zone', zone, '', HUNT_ZONES[zone][1]);
@@ -10637,8 +10638,9 @@ let surfaceDraw = false;  // a surface's Draw tab open: its patterns shown, grey
 // the rule, the start and its zone (see renderPlaneRow, renderHunt)
 // a symmetry at a mode: the walk shown's, by its grid (and its block rule, see symmetriesHere); another's, on the plane, by its
 // grid at the side picked (a block rule's known once its grid is built: none there)
-const symmetryAllowed = (y, v, { start, zone, colours } = {}) => {
-  const m = MODES[v], by = { start, zone, K: colours === undefined || colours === lifeColours ? undefined : colours };  // (a setup's; its colours its parts, the game's where they are its)
+const symmetryAllowed = (y, v, { start, zone, colours = lifeColours, newcomer: n = newcomer, size = null } = {}) => {
+  const parts = colours - (n && newcomerCan(colours, pickedFigure(v, size), start ?? plane.start) ? 1 : 0);  // (a setup's colours' parts: Newcomer's, one fewer)
+  const m = MODES[v], by = { start, zone, K: parts === lifeColours - (newcomerOn() ? 1 : 0) ? undefined : parts };  // (the game's where they are its)
   if (v === walk.mode && walk.plane) return symmetriesHere(walk.plane.kind, walk.plane.W, undefined, by).includes(y);
   if (!m.plane || m.elementary || m.margolus || !m.life) return y === 'none';
   const k = planeKind(m.plane);
@@ -10649,7 +10651,7 @@ function renderSymmetry() {
   $('symmetryRow').hidden = !kind || !!MODES[$('mode').value].elementary;  // (Elementary: a row, no copies)
   $('symmetryTiles').replaceChildren(tileGroup(Object.keys(SYMMETRIES).map((y) => {  // (one choice: a tab group; the one picked, clicked again: nothing; those the grid has not, greyed)
     return tile({ pic: icon(SYMMETRIES[y][0]), text: SYMMETRIES[y][1], title: SYMMETRIES[y][3], on: y === now, byDefault: y === 'none' ? 'yes' : '', at: walk.mode,
-      whyNot: ({ w: v, start, zone, colours }) => (symmetryAllowed(y, v, { start, zone, colours }) ? '' : SYMMETRY_WHERE), click: () => { if (y !== symmetryOf(walk.plane.kind)) { plane.sym = y; hunt.top = []; lifeReseed(); renderHunt(); } } });  // (the same start, as its link says it, its symmetry another: the hunt's finds, of another, gone)
+      whyNot: (setup) => (symmetryAllowed(y, setup.w, setup) ? '' : SYMMETRY_WHERE), click: () => { if (y !== symmetryOf(walk.plane.kind)) { plane.sym = y; hunt.top = []; lifeReseed(); renderHunt(); } } });  // (the same start, as its link says it, its symmetry another: the hunt's finds, of another, gone)
   }), true));
 }
 // Draw's and Text's greyed words
@@ -11463,7 +11465,7 @@ function renderColours() {
     tile({ pic: `<svg viewBox="0 0 4 4" aria-hidden="true">${[[0, 0], [2, 0], [1, 1], [3, 1], [0, 2], [2, 2], [1, 3], [3, 3]].map(([x, y], i) => `<rect x="${x}" y="${y}" width="1" height="1" fill="${LIFE_COLOURS[[0, 4, 2, 6, 5, 1, 7, 3][i]]}"/>`).join('')}</svg>`, text: 'Mixed',
       title: 'The colours placed as one colour is (one patch, a soup), each cell a colour at random', toggle: true, byDefault: 'off', on: colourMixed(), whyNot: ({ w, colours = lifeColours, start = plane.start, zone = hunt.zone }) => (colours > 1 && mixable(zone, MODES[w], start) ? '' : MIXED_WHERE), click: () => { colourMix = !colourMix; compute(); } }),
     // Newcomer, a switch (see newcomerCan)
-    tile({ pic: colourBlock(Math.max(3, lifeColours), true), text: 'Newcomer', toggle: true, byDefault: 'off', on: newcomerOn(), click: () => { newcomer = !newcomer; compute(); },
+    tile({ pic: colourBlock(Math.max(3, lifeColours), true), text: 'Newcomer', toggle: true, byDefault: 'off', choice: 'newcomer', on: newcomerOn(), click: () => { newcomer = !newcomer; compute(); },
       whyNot: ({ w, size, colours = lifeColours, start = plane.start }) => (newcomerCan(colours, pickedFigure(w, size), start) ? '' : newcomerWhere(colours)),
       title: lifeColours > 2 ? `${COLOUR_STEP_NAMES[lifeColours - 1] ?? `${lifeColours - 1} teams`} as it starts, and ${teamName(lifeColours - 1)} a newcomer: none at first, born of a tie between the others (the colour missing)` : 'The teams below\'s start, and the last colour a newcomer: none at first, born of a tie between the others (the colour missing)' }));
 

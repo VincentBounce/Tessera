@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.416';
+const VERSION = '0.4.417';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -3504,6 +3504,12 @@ for (const Fo of Object.values(FOLDS)) for (const kind of TILING_KINDS.filter(Fo
 }
 for (const [w, life] of REVERSIBLE_SHEETS) FAMILIES.flatMap((F) => F.modes).find((ms) => ms.includes(life)).push(w);  // (each reversible sheet in its tiling's tab, beside Life's)
 // the family of a walk mode, its tiling there and its tab (null: not in a family)
+// a mode's sides there (Grid, Cells): its kind's and its rule's, on its tiling only (Cairo pentagons: no grid; on a surface's
+// hexagons, no worm: the grid its triangles' only)
+const walkSidesOf = (v) => {
+  const [kind, space, shape, rule] = NAV[v], fam = familyOf(v), tiling = fam?.F.modes[fam.m];
+  return navValues(4, [kind, space, shape, rule]).filter((s) => !tiling || tiling.some((u) => NAV[u][0] === kind && NAV[u][3] === rule && NAV[u][4] === s));
+};
 function familyOf(w) {
   for (const F of FAMILIES) {
     const m = F.modes.findIndex((pair) => pair.includes(w));
@@ -3730,7 +3736,7 @@ function renderModePicker() {
     return [b];
   }));
   // Grid | Cells (Cube in 3D): each with its base and its digits, or what it is not on (that side off)
-  const sides = navValues(4, [kind, space, shape, rule]).filter((s) => has(kind, rule, s));  // (Cairo pentagons: no grid)
+  const sides = walkSidesOf(w);
   // (kept, the same height, where there are neither: a spiral's steps from cell to cell, its Cells picked)
   const alone = sides.includes('');
   $('walkRuleSection').hidden = kind !== 'Walk' && !creatures;  // (one Walking rule, a walk's or a creature's)
@@ -3742,6 +3748,7 @@ function renderModePicker() {
     const why = there && MODES[there].net && !walkWordsOf(there, walkRules[walkKey(MODES[there])]) ? ruleWords(walkRules[walkKey(MODES[there])]).map((t) => walkWordWhy(MODES[there], t)).find(Boolean) : '';
     b.querySelector('span').textContent = word;
     setTile(b, { on: here, can: !!there && !why, greyed: why || none });
+    b.enablers = () => enablersFor((v) => walkSidesOf(v).includes(s));  // (greyed: the tilings, the shapes it is on)
   };
   const cellsWord = space === '3D' ? 'Cube' : 'Cells';
   side($('walkOnGrid'), 'grid', 'Grid', creatures ? 'the worm, on triangles only' : 'not on the grid');

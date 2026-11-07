@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.374';
+const VERSION = '0.4.375';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -3492,8 +3492,9 @@ function renderAntRow() {
   $('walkStartSection').hidden = m.life || ant;
   $('numberPicker').hidden = home === $('walkStartSection') && (!readsDigits(w) || battleOn());  // (a battle: A's formula with the others')
   if ($('numberPicker').parentElement !== home) home.append($('numberPicker'));
-  const startHead = $(ant ? 'antStartSection' : 'walkStartSection').querySelector('h2');
-  if (startHead.nextElementSibling !== $('startRow')) startHead.after($('startRow'));
+  // (the start row under its heading; under the starts' tabs when a battle shows them there, see renderWalkTeams)
+  const startHead = $(ant ? 'antStartSection' : 'walkStartSection').querySelector('h2'), lead = startHead.nextElementSibling === $('startWays') ? $('startWays') : startHead;
+  if (lead.nextElementSibling !== $('startRow')) lead.after($('startRow'));
   drawing = !!m.plane && plane.start === 'draw' && !spaceTimeOn();  // Life on the plane draws in its Draw start (not in Space-time)
   stage.classList.toggle('drawing', drawsHere());  // (the crosshair: a click draws, as renderDrawTools keeps it)
   $('antStartSection').hidden = !ant;

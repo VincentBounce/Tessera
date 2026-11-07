@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.543';
+const VERSION = '0.4.544';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -3631,8 +3631,10 @@ const walkRuleAt = (s, u) => (s.walkRule && MODES[s.w].net && walkKey(MODES[u]) 
 const setupKey = (s) => [s.w, ...SETUP_FIELDS.map((f) => s[f])].join('|');
 // The menu's choices at a setup, each a click: its key (its button's data-choice) and the setup it leads to, by the menu's
 // own navigation (navPick, kindLeft, nearestMode, walksThere): the tabs, spaces, shapes, tilings, sides, walks' kinds, then a
-// Life's colours, a battle's teams and rule; a surface's sizes at the start only (one stepper, see pathsTo)
-function choicesAt(s) {  // (each [key, the setup it leads to, its button's words])
+// Life's colours, a battle's teams and rule; a surface's sizes at the start only (one stepper, see pathsTo). reads: the fields
+// a search asks (see pathsTo), the others' edges not made (their greyed words the costliest: colours', teams'); none, all
+function choicesAt(s, reads = null) {  // (each [key, the setup it leads to, its button's words])
+  const wants = (field) => !reads || reads.has(field);
   const w = s.w, [kind, space, shape, rule] = NAV[w], out = [], go = (key, v, words) => { if (v && v !== w) out.push([key, { ...s, w: v, size: null, walkRule: MODES[v].net ? walkRuleAt(s, v) : null }, words]); };
   for (const [k] of NAV_KINDS) if (k !== kind) go(`kind:${k}`, kindLeft[k] ?? navPick(w, 0, k), k);
   for (const sp of navValues(1, [kind])) go(`space:${sp}`, navPick(w, 1, sp), SPACES[sp][0]);
@@ -3642,26 +3644,28 @@ function choicesAt(s) {  // (each [key, the setup it leads to, its button's word
   for (const u of walksThere(w)) go(`side:${NAV[u][4]}`, u, NAV[u][4] === 'grid' ? 'Grid' : 'Cells');
   if (shape) for (const r of navValues(3, [kind, space, shape])) if (r !== rule) go(`rule:${r}`, navPick(w, 3, r), r);
   const set = (key, field, v, why, words) => { if (s[field] !== v && !why) out.push([key, { ...s, [field]: v }, words]); };  // (a choice greyed there: no click)
-  if (MODES[w].life) for (const k of COLOUR_STEPS) set(`colours:${k}`, 'colours', k, coloursWhyNot(k, w, s.size), COLOUR_STEP_NAMES[k]);
+  if (MODES[w].life && wants('colours')) for (const k of COLOUR_STEPS) set(`colours:${k}`, 'colours', k, coloursWhyNot(k, w, s.size), COLOUR_STEP_NAMES[k]);
   if (battleMode(w)) {
-    for (const k of COLOUR_STEPS) set(`teams:${k}`, 'teams', k, teamsWhyNot(k, w, s.size, s.startNo), COLOUR_STEP_NAMES[k]);
-    if (s.teams > 1) BATTLE_RULES.forEach(([kind, name], p) => set(`battleRule:${p}`, 'battleRule', p, battleRuleWhyNot(kind, w), name));
-    if (s.teams > 1) STARTS_WAYS.forEach(([way, name]) => set(`startsWay:${way}`, 'startsWay', way, startsWayCan(way, w, s.size ?? undefined, s.teams) ? '' : CENTRED_WHERE, name));
+    if (wants('teams')) for (const k of COLOUR_STEPS) set(`teams:${k}`, 'teams', k, teamsWhyNot(k, w, s.size, s.startNo), COLOUR_STEP_NAMES[k]);
+    if (s.teams > 1 && wants('battleRule')) BATTLE_RULES.forEach(([kind, name], p) => set(`battleRule:${p}`, 'battleRule', p, battleRuleWhyNot(kind, w), name));
+    if (s.teams > 1 && wants('startsWay')) STARTS_WAYS.forEach(([way, name]) => set(`startsWay:${way}`, 'startsWay', way, startsWayCan(way, w, s.size ?? undefined, s.teams) ? '' : CENTRED_WHERE, name));
   }
   // a Life's starts (its tabs: Hunt, Text, Digits, Draw), and its hunt's zones on the grid shown (their room known there only, see huntFits; Custom a link's, no tile)
   const m = MODES[w];
-  if (m.life && !m.loops && !m.elementary) for (const [start, name] of LIFE_STARTS) set(`start:${start}`, 'start', start, startWhyNot(start, w), name);
-  if (m.life) for (const r of lifeRulesListed(w)) set(`lifeRule:${r.rule}`, 'rule', r.rule, '', r.name);  // (its rules' cards)
-  if (m.net) for (const r of (rulesForMemo[w] ??= rulesFor(w))) set(`walkRule:${r.rule}`, 'walkRule', r.rule, r.why, `${r.name} ${r.rule}`);  // (a walk's rules' cards, those it takes)
+  if (m.life && !m.loops && !m.elementary && wants('start')) for (const [start, name] of LIFE_STARTS) set(`start:${start}`, 'start', start, startWhyNot(start, w), name);
+  if (m.life && wants('rule')) for (const r of lifeRulesListed(w)) set(`lifeRule:${r.rule}`, 'rule', r.rule, '', r.name);  // (its rules' cards)
+  if (m.net && wants('walkRule')) for (const r of (rulesForMemo[w] ??= rulesFor(w))) set(`walkRule:${r.rule}`, 'walkRule', r.rule, r.why, `${r.name} ${r.rule}`);  // (a walk's rules' cards, those it takes)
   // its looks (Life's: States, Age, Activity; a walk's cells': Path, Rainbow, Commands, Heatmap), each the look it sets
-  if (m.life) for (const [look, name] of LIFE_LOOKS) set(`look:${look}`, 'look', look, lookWhyNot(look, w), name);
-  else if (shows('cells', w) || shows('heatmap', w) || m.antOf) for (const [look, name] of CELL_MODES) set(`look:${look}`, 'look', lookAfter(look, w), cellModeWhyNot(look, w, s.teams), name);
-  if (spaceTimeApplies(w)) set('stacked', 'stacked', !s.stacked, '', 'Stacks');  // (Stacks, a switch: on or off)
-  if (m.plane && m.life && !APERIODIC[m.plane]) for (const [shape, torus, text] of OUTLINES) if (outlineOf(m.plane, shape, torus) === shape) set(`outline:${shape}-${torus ? 'torus' : 'walled'}`, 'outline', `${shape}|${torus ? 1 : 0}`, '', text);  // (its outline tiles)
-  if (m.life) set('newcomer', 'newcomer', !s.newcomer, newcomerCan(s.colours, w, s.size, s.start) ? '' : 'none', 'Newcomer');  // (a switch where it can be)
-  const starts = w === $('mode').value && modeStarts();  // (a start's −, +: at the mode shown, its starts' list known there)
+  if (wants('look')) {
+    if (m.life) for (const [look, name] of LIFE_LOOKS) set(`look:${look}`, 'look', look, lookWhyNot(look, w), name);
+    else if (shows('cells', w) || shows('heatmap', w) || m.antOf) for (const [look, name] of CELL_MODES) set(`look:${look}`, 'look', lookAfter(look, w), cellModeWhyNot(look, w, s.teams), name);
+  }
+  if (wants('stacked') && spaceTimeApplies(w)) set('stacked', 'stacked', !s.stacked, '', 'Stacks');  // (Stacks, a switch: on or off)
+  if (m.plane && m.life && !APERIODIC[m.plane] && wants('outline')) for (const [shape, torus, text] of OUTLINES) if (outlineOf(m.plane, shape, torus) === shape) set(`outline:${shape}-${torus ? 'torus' : 'walled'}`, 'outline', `${shape}|${torus ? 1 : 0}`, '', text);  // (its outline tiles)
+  if (m.life && wants('newcomer')) set('newcomer', 'newcomer', !s.newcomer, newcomerCan(s.colours, w, s.size, s.start) ? '' : 'none', 'Newcomer');  // (a switch where it can be)
+  const starts = wants('startNo') && w === $('mode').value && modeStarts();  // (a start's −, +: at the mode shown, its starts' list known there)
   if (starts) { set('startNo:-1', 'startNo', s.startNo - 1, s.startNo <= 1 ? 'none' : '', 'Previous start'); set('startNo:+1', 'startNo', s.startNo + 1, s.startNo >= starts.length ? 'none' : '', 'Next start'); }
-  if (w === walk.mode && s.colours === lifeColours && s.start === 'random' && huntOn()) for (const [zone, fits] of Object.entries(huntFits())) if (fits && zone !== 'custom') set(`zone:${zone}`, 'zone', zone, '', HUNT_ZONES[zone][1]);
+  if (wants('zone') && w === walk.mode && s.colours === lifeColours && s.start === 'random' && huntOn()) for (const [zone, fits] of Object.entries(huntFits())) if (fits && zone !== 'custom') set(`zone:${zone}`, 'zone', zone, '', HUNT_ZONES[zone][1]);
   return out;
 }
 // how many settings two setups differ by: the menu's levels, the tiling, the fields
@@ -3686,7 +3690,7 @@ function pathsTo(fits, budget = 5000, judgedAt = null) {  // (judgedAt: a contro
   while (layer.length && tried < budget) {
     const hits = [], next = [];
     for (const [s, path] of layer) {
-      for (const [key, t, words] of [...choicesAt(s), ...(path.length ? [] : sizes)]) {
+      for (const [key, t, words] of [...choicesAt(s, reads), ...(path.length ? [] : sizes)]) {
         const k = setupKey(t);
         if (seen.has(k) || !reads.has(field(key)) || (judgedAt && t.w !== judgedAt) || ++tried > budget) continue;
         seen.add(k);

@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.527';
+const VERSION = '0.4.528';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -12030,12 +12030,12 @@ const BATTLE_CASES = {
     tri: [{ pre: [60, 60, 60, 60], moves: [null, null, null, null, null, null, 240, 300, 240] }, 'loop'],
     hex: [{ pre: [90, 30, 90, 30, 330], moves: [null, null, null, null, null, null, null, null, null, null, 270, 210] }, 'loop'] },
   across: { words: { landGrid: 'Across an enemy\'s line, at a corner (in on one side, out on the other): pierced there, as along',
-    cut: 'A head on another\'s body: cut there, from that corner back to its tail (dashed)',
     landStop: 'A step across an enemy\'s line, at a corner (in on one side, out on the other): stopped for good just before it',
     landMerge: 'Across an enemy\'s line, at a corner: nothing pierced, the lines crossing' },
     square: [{ pre: [90, 90], moves: [null, null, 270, 270, 270] }, { pre: [180, 180], moves: [0, 0, 0, 0] }],
     tri: [{ pre: [60, 60], moves: [null, null, 240, 240, 240] }, { pre: [180, 180], moves: [0, 0, 0, 0] }] },
-  touch: { words: 'A head on an enemy\'s line, touching it (stopping there, or out on the side it came in by): nothing',
+  touch: { words: { ...Object.fromEntries(BATTLE_LINED.map((way) => [way, 'A head on an enemy\'s line, touching it (stopping there, or out on the side it came in by): nothing'])),
+    cut: 'A head on another\'s body: cut there, from that corner back to its tail (dashed)' },
     square: [{ pre: [90, 90], moves: [null, null, 270, 270] }, { pre: [180, 180], moves: [0, 0, 0, 0] }],
     tri: [{ pre: [60, 60], moves: [null, null, 240, 240] }, { pre: [180, 180], moves: [0, 0, 0, 0] }],
     hex: [{ pre: [90, 30, 90, 30, 330], moves: [null, null, null, null, null, null, null, null, null, null, 270] }, 'loop'] },

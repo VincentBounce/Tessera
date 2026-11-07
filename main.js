@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.462';
+const VERSION = '0.4.463';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -7875,18 +7875,17 @@ const fitsMesh = (g, M) => {
 // by its angles: a map that turns them over, a mirror, would have a walker walk as A's mirror); null where one has none. A
 // tile known by its corners in their order (a Möbius strip's two faces share theirs, the other way round)
 function placeMap(g, corner) {
-  const k = g.sides, G = gridGraph(g), P = g.poly, cycle = (cs) => cs.filter((u, q) => u !== cs[(q + 1) % cs.length]);  // (a corner listed twice in a row once: the pentagons)
   const corners = Int32Array.from({ length: g.verts.length / 3 }, (_, u) => corner(u) ?? -1), tiles = new Int32Array(g.n);
-  for (let t = 0; t < g.n; t++) {
-    const to = cycle(Array.from(P.subarray(k * t, k * t + k), (u) => corners[u]));  // (its corners' images, in its order)
-    // its image: a tile of the edge its first two corners' images make (two, each the other way round), the one that lists
-    // all of them in the same order (round from any of them)
-    const same = (b) => { const c = cycle(Array.from(P.subarray(k * b, k * b + k))), o = c.indexOf(to[0]); return c.length === to.length && o >= 0 && to.every((u, q) => c[(o + q) % c.length] === u); };
-    const b = to.every((u) => u >= 0) && G.edgeTiles.get(G.key(to[0], to[1]))?.find(same);
-    if (b === undefined || b === false) return null;
-    tiles[t] = b;
-  }
+  for (let t = 0; t < g.n; t++) if ((tiles[t] = tileImage(g, (u) => corners[u], t)) < 0) return null;
   return (u, grid) => (grid ? corners[u] : tiles[u]);
+}
+// tile t's image by its corners' (corner(u): -1 where none): a tile of the edge its first two corners' images make (two,
+// each the other way round), the one that lists all of them in the same order (round from any of them); -1 where none
+function tileImage(g, corner, t) {
+  const k = g.sides, G = gridGraph(g), P = g.poly, cycle = (cs) => cs.filter((u, q) => u !== cs[(q + 1) % cs.length]);  // (a corner listed twice in a row once: the pentagons)
+  const to = cycle(Array.from(P.subarray(k * t, k * t + k), corner));  // (its corners' images, in its order)
+  const same = (b) => { const c = cycle(Array.from(P.subarray(k * b, k * b + k))), o = c.indexOf(to[0]); return c.length === to.length && o >= 0 && to.every((u, q) => c[(o + q) % c.length] === u); };
+  return to.every((u) => u >= 0) ? G.edgeTiles.get(G.key(to[0], to[1]))?.find(same) ?? -1 : -1;
 }
 // a turn in space as its places' map, once a turn and a mesh: a place found again by its point turned (a corner's, a tile's
 // middle), each when first asked; on a Möbius strip or a Klein bottle, one side only, every tile checked (see placeMap: a
@@ -7908,7 +7907,14 @@ const turnMap = (g, M) => {
 // kleinSheetKey: a shift along it turns its tiles over past its seam, none found)
 function sheetShift(g, dx, dy) {
   const memo = (g.sheetShifts ??= {}), id = `${dx},${dy}`;
-  if (id in memo) return memo[id];
+  return id in memo ? memo[id] : (memo[id] = placeMap(g, sheetCorner(g, dx, dy)));
+}
+// a corner's image by the sheet shifted by (dx, dy) (see sheetShift), undefined where none: the sheet's places once a mesh
+function sheetCorner(g, dx, dy) {
+  const { key, cornerAt, placed } = (g.sheetPlaces ??= sheetPlacesOf(g));
+  return (u) => placed[u] && cornerAt.get(key(placed[u][0] + dx, placed[u][1] + dy));
+}
+function sheetPlacesOf(g) {
   const k = g.sides, near = (v, P) => v - Math.floor(v / P + 1e-7) * P, round = (v) => Math.round(v * 1e4) || 0;
   const [P, S, Q] = g.mobius ? [g.L, g.W, 2 * g.W] : [g.nu, 0, g.nv];  // (its sheet's periods: (P, S) along, (0, Q) across)
   const key = g.klein ? (x, y) => kleinSheetKey(x, y, g.nu, g.nv, g.cairo ? 0.5 : 0)
@@ -7919,7 +7925,7 @@ function sheetShift(g, dx, dy) {
     cornerAt.set(key(x, y), g.poly[k * t + q]);
     placed[g.poly[k * t + q]] ??= [x, y];
   }
-  return (memo[id] = placeMap(g, (u) => placed[u] && cornerAt.get(key(placed[u][0] + dx, placed[u][1] + dy))));
+  return { key, cornerAt, placed };
 }
 // a ring's group of K shifts for a battle's starts (see battleStarts), its places' maps (see sheetShift), the identity first:
 // its colours' parts as Life's, its length made for K (see ringColours): a torus's blocks, a round its ring by b round its
@@ -7932,6 +7938,15 @@ function ringGroup(g, K) {
   const shifts = g.klein ? [[0, g.nv / 2]] : Array.from({ length: K - 1 }, (_, i) => [(((i + 1) % a) * along) / a, (Math.floor((i + 1) / a) * g.nv) / b]);
   const G = [[0, 0], ...shifts].map(([dx, dy]) => sheetShift(g, dx, dy));
   return G.every(Boolean) ? G : null;
+}
+// a Möbius strip's K shifts along it (see ringGroup) setting a battle's walkers apart from A's start (place u, a corner or a
+// tile), each judged on one tile and the start only: its sheet a periodic tiling, a shift laying one tile on a tile, its
+// corners in the same order, is one of its translations, every tile's (see sheetShift, its whole map)
+function mobiusShiftsApart(g, K, u, grid) {
+  const images = Array.from({ length: K }, (_, i) => { const corner = sheetCorner(g, (i * 2 * g.L) / K, 0), at = (v) => corner(v) ?? -1;
+    return tileImage(g, at, 0) < 0 ? -1 : grid ? at(u) : tileImage(g, at, u); });
+  const P = grid ? g.verts : g.cen;
+  return images.every((v) => v >= 0) && pointsApart(images.map((v) => [0, 1, 2].map((d) => P[3 * v + d]))) > 1e-9;
 }
 // the groups of K for a battle's starts (see battleStarts), each its places' maps (see placeMap), the identity first: a
 // ring's shifts (see ringGroup); the surface's turns in space (see rotationGroups: a solid's, a ring's round its axis, a
@@ -7961,7 +7976,8 @@ const battleCounts = (w, size = battleMode(w) && (w === $('mode').value ? menuSi
     teamsBuilding = sphere.columns ? K : null;
     try {
       const g = sphere.mesh(size), start = walkStart(g, mode), apart = startSpread(g, !!mode.grid, start);
-      return battleGroups(g, K, 1, (G) => apart(G) > 1e-9).length > 0;  // (one group is enough to know)
+      return (g.mobius ? mobiusShiftsApart(g, K, start[0], !!mode.grid) : battleGroups(g, K, 1, (G) => apart(G) > 1e-9).length > 0)  // (one group is enough to know)
+        || (g.mobius && rotationGroups(g, K, 1, (G) => { const F = G.map((M) => turnMap(g, M)); return F.every(Boolean) && apart(F) > 1e-9; }).length > 0);  // (its turns, see battleGroups)
     } finally { teamsBuilding = null; }
   };
   return COLOUR_STEPS.filter((K) => K > 1 && (memo[K] ??= fits(K)));

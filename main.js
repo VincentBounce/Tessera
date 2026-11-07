@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.396';
+const VERSION = '0.4.397';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -1599,7 +1599,7 @@ const freshWalk = () => ({
 });
 const walk = { mode: null, ...freshWalk() };  // (mode: the one it is built for, see buildWalkOf)
 
-let cur = 0;        // steps taken so far
+let stepShown = 0;        // steps taken so far
 let drawn = 0;      // steps already drawn on the path layer
 let playing = false, reversing = false;  // reversing: a reversible one played backwards (see lifeBack)
 let stepsDue = 0;  // the steps owed since the last frame, by the speed (its fraction carried to the next)
@@ -1617,7 +1617,7 @@ function camFrom(yaw, pitch) {
 }
 const CAM0 = camFrom(-0.6, 0.5);
 const cam = { ...CAM0 };
-let bounds3 = null;                        // 3D bounding box of points 0..cur
+let bounds3 = null;                        // 3D bounding box of points 0..stepShown
 
 const stage = $('stage');
 const layers = {
@@ -2173,14 +2173,14 @@ const STEPS_GLYPH = '𓊍';  // the length asked's mark: its stepper's unit, a r
 function endMark() {
   if (spaceTimeOn() || walk.rows) return '';
   if (lengthUsed() && seekFar() === targetAsked() && !runLoop()) return `<a class="gen-link gen-loop" href="#" data-stepper title="The length asked: a click, the steps stepper at the top right">${STEPS_GLYPH}<span class="end-words"> max defined upper-right</span></a>`;  // (its end the length asked: a click highlights its stepper)
-  if (walk.battle) { const why = walk.battle.winner.until; return why ? genLink(cur !== walk.n ? walk.n : 0, `■<span class="end-words"> ${why} at step ${formatNumber(walk.n)}</span>`, 'loop') : ''; }  // (its winner: the ranking's)
+  if (walk.battle) { const why = walk.battle.winner.until; return why ? genLink(stepShown !== walk.n ? walk.n : 0, `■<span class="end-words"> ${why} at step ${formatNumber(walk.n)}</span>`, 'loop') : ''; }  // (its winner: the ranking's)
   const k = walk.life?.stable, o = !walk.life && runLoop();
   const [mark, words] = walk.life ? (!k ? [] : k.extinct ? ['✝', `at gen ${formatNumber(k.T)}`] : k.P === 1 ? ['■', `from gen ${formatNumber(k.T)}`] : ['↻', `every ${formatNumber(k.P)} from gen ${formatNumber(k.T)}`])
     : !o ? [] : walk.wormEnd ? ['✝', `at step ${formatNumber(walk.n)}`] : [walk.loop.drift ? '→' : '↻', `every ${formatNumber(walk.loop.period ?? walk.n - o.T)} from step ${formatNumber(o.T)}`];
   return mark ? loopLink(`${mark}<span class="end-words"> ${words}</span>`) : '';  // (its words: open only, see .end-words)
 }
 // its link, in green (see genLink): to its first step; from there, to its last; an end alone, back to 0
-const loopLink = (text) => { const o = runLoop(); return genLink(cur !== o.T ? o.T : o.last !== o.T ? o.last : 0, text, 'loop'); };
+const loopLink = (text) => { const o = runLoop(); return genLink(stepShown !== o.T ? o.T : o.last !== o.T ? o.last : 0, text, 'loop'); };
 // The first: 0, or a reversible one's none (its rule run backwards from its start as far as played: its past); its return
 // found, going back or forth, 0 again (its past folded into it, the timeline shifted onto 0: see foldPast)
 const runStart = () => (reversibleRun() && !walk.life.stable ? -Infinity : 0);
@@ -2193,7 +2193,7 @@ function setGens(n) {
   target = Math.min(targetMost(), Math.max(DIGIT_STEPS[0], Math.round(n) || 2000));
   if (spaceTimeOn()) { restart(); showAll(); }
   else if (MODES[$('mode').value].elementary) compute();  // (its rows built again, see elementaryRows)
-  else { walk.n = target; if (cur > walk.n) seekTo(walk.n); }
+  else { walk.n = target; if (stepShown > walk.n) seekTo(walk.n); }
   statsDirty = true;
   syncDigitsStepper();
   syncLink();
@@ -2258,7 +2258,7 @@ function stepDigits(delta) {
   const size = randomPrimeSize(), steps = size ? PRIME_STEPS : DIGIT_STEPS, n = size ?? targetAsked();  // (the length asked, not where it ended)
   const next = delta > 0 ? steps.find((v) => v > n && (size || v <= targetMost())) ?? (!size && n < targetMost() ? targetMost() : undefined) : steps.findLast((v) => v < n);  // (+ past the ladder's last below the most: the most)
   if (next === undefined) return;
-  if (playing && !gensShown()) resumeAt = cur;  // (playing: it plays on from there once built again, see showAll)
+  if (playing && !gensShown()) resumeAt = stepShown;  // (playing: it plays on from there once built again, see showAll)
   if (size) setPrimeSize(next);
   else if (gensShown()) setGens(next);
   else { target = next; if (lengthUsed()) compute(); else syncDigitsStepper(); }  // (unused here: kept for the next tab)
@@ -10266,7 +10266,7 @@ async function stackUp() {
   if (stack?.L === L && stack.gens === targetAsked() && stack.seed.every((v, t) => v === L.seed[t])) return true;
   stack = null;  // (none drawn while it is made)
   walk.n = Infinity;
-  cur = 0;
+  stepShown = 0;
   const at = [], keys = [], layers = [];
   let end = 'gens';
   for (let g = 0; g < targetAsked(); g++) {
@@ -10917,7 +10917,7 @@ function drawBlocks(ctx) {
   ctx.transform(s, 0, 0, s, ox, oy);  // (in the grid's units)
   ctx.strokeStyle = cssColour('--sector');
   ctx.lineWidth = Math.max(1, Math.min(s / 8, 3)) / s;
-  ctx.stroke(M.paths.get(key)[mod(cur, M.turns.length)]);
+  ctx.stroke(M.paths.get(key)[mod(stepShown, M.turns.length)]);
   turnLayer(ctx, 0);
 }
 // The grid's motif, outlined in violet while its size is hovered: what repeats, the sides of its cells not shared by two of
@@ -11071,7 +11071,7 @@ const newcomerCan = () => lifeColours > 2 && colourMissing(lifeColours) && colou
 const newcomerOn = () => newcomer && newcomerCan();
 // a rule that turns an empty block full (Critters, Tron): every other generation shown negative, its dead cells alive (as
 // Margolus showed Critters: its picture then the same way round, its cells as particles that keep their count)
-const negative = (L) => !!L.margolus?.flips && mod(cur, 2) === 1;  // (its past's too: a phase by its generation, below 0 as above)
+const negative = (L) => !!L.margolus?.flips && mod(stepShown, 2) === 1;  // (its past's too: a phase by its generation, below 0 as above)
 // the cells in a block (of any phase): the only ones shown negative (a wall's, out of every block, as they are), and turned
 // over by a phase leaving them out (by a wall), as their block would (see GPU_LIFE's blockRule)
 function blockCells(M, n) {
@@ -12280,8 +12280,8 @@ const BLOCK_ORDER = { square: ['Tron', 'Ising', 'Critters', 'Swirl', 'Billiard b
 for (const [kind, names] of Object.entries(BLOCK_ORDER)) {
   for (const name of names) { const at = RULES.findIndex((r) => r.kind === 'life' && r.tiling === BLOCK_MARKS[kind] && r.name === name); if (at >= 0) RULES.push(...RULES.splice(at, 1)); }
 }
-function lifeStep(G = lifeStepGPU(walk.life, cur + 1)?.[0]) {  // (G: its sums, played on the graphics card, see lifeStepGPU)
-  const L = walk.life, gen = cur + 1, K = L.colours, two = K > 1;
+function lifeStep(G = lifeStepGPU(walk.life, stepShown + 1)?.[0]) {  // (G: its sums, played on the graphics card, see lifeStepGPU)
+  const L = walk.life, gen = stepShown + 1, K = L.colours, two = K > 1;
   const born0 = L.born, dead0 = L.dead;  // before this generation
   if (!G) return;  // (no WebGPU)
   const { alive, dying } = G, byColour = two ? G.byColour : new Int32Array(K + 1);
@@ -12317,15 +12317,15 @@ const blockInverse = (M) => (M.inverse ??= M.to.reduce((r, n, st) => { r[n] = st
 function lifeBack(G) {  // (G: its sums there, its births and deaths forth, back: see advanceTo)
   const L = walk.life, K = L.colours;
   if (G) { L.born -= G.dead; L.dead -= G.born; L.bornNow = G.dead; L.deadNow = G.born; L.key = G.key; }
-  for (let k = 1; k <= K; k++) L.sumBy[k] -= traced(L, cur)?.by[k] ?? 0;
+  for (let k = 1; k <= K; k++) L.sumBy[k] -= traced(L, stepShown)?.by[k] ?? 0;
   L.gen--;
-  cur--;
-  if (!traced(L, cur) && G) record(L, cur, G.alive, K > 1 ? G.byColour : new Int32Array(K + 1), orderOf(L, G.alive, G.edges));  // (its past, first played)
-  L.aliveCount = traced(L, cur).alive;
-  L.order = traced(L, cur).order;
-  L.byColour = traced(L, cur).by ?? L.byColour;
-  if (L.margolus && !L.stable && blockBack(L, -cur)) { lifeFound(L, { T: 0, P: -cur, extinct: false }); foldPast(L); }  // (its return found going back: its start again at −P)
-  if (L.stable && cur < 0) cur += L.stable.P;  // (round its loop, as forth: the same state, never below 0)
+  stepShown--;
+  if (!traced(L, stepShown) && G) record(L, stepShown, G.alive, K > 1 ? G.byColour : new Int32Array(K + 1), orderOf(L, G.alive, G.edges));  // (its past, first played)
+  L.aliveCount = traced(L, stepShown).alive;
+  L.order = traced(L, stepShown).order;
+  L.byColour = traced(L, stepShown).by ?? L.byColour;
+  if (L.margolus && !L.stable && blockBack(L, -stepShown)) { lifeFound(L, { T: 0, P: -stepShown, extinct: false }); foldPast(L); }  // (its return found going back: its start again at −P)
+  if (L.stable && stepShown < 0) stepShown += L.stable.P;  // (round its loop, as forth: the same state, never below 0)
 }
 // a reversible one's past, its loop found: each generation −h its loop's P − h, its births and deaths counted from the start
 // round the loop (a whole loop back, −P, its counts taken off); found going forth, its loop played whole already: its past
@@ -14522,8 +14522,8 @@ function applyPendingView() {
     if (walk.is3d) project();
     if (walk.plane) bounds = planeBounds();  // (Life's grid: its own frame, as restart gives it)
     else if (!walk.sphere) {  // the 2D bounds of the walk again (a surface's are the fixed solid, as in rotateView)
-      const done = cur;
-      cur = 0;
+      const done = stepShown;
+      stepShown = 0;
       bounds = { minX: 0, maxX: 0, minY: 0, maxY: 0 };
       advanceTo(done);
     }
@@ -14694,7 +14694,7 @@ async function importGallery(file) {
  * PART 11 — ANIMATION, VIEW AND RENDERING
  * ==============================================================================================
  *
- * The walk is already built: animating only moves cur forward and draws the new segments on the
+ * The walk is already built: animating only moves stepShown forward and draws the new segments on the
  * path layer. Three stacked canvases (grid, path, overlay) mean each frame costs only what
  * changed; everything is redrawn when the view moves (needsFull). Surfaces are redrawn whole,
  * far tiles first (painter's algorithm), and not more often than their drawing time allows.
@@ -14724,7 +14724,7 @@ function setSpeed(s) {
 // card played past it, played back to it
 function cutAtReturn(L, batch, dir) {
   if (!L.margolus || L.stable) return;
-  const j = batch.findIndex((G, x) => mod(cur + dir * (1 + x), L.margolus.turns.length) === 0 && G.key === L.seedKey);
+  const j = batch.findIndex((G, x) => mod(stepShown + dir * (1 + x), L.margolus.turns.length) === 0 && G.key === L.seedKey);
   if (j < 0 || j === batch.length - 1) return;
   batch.length = j + 1;
   L.alive = L.seed.slice();  // (its cells there its start's: sent again, see gpuOld)
@@ -14740,33 +14740,33 @@ function lifeTo(target, until = Infinity) {  // (one step, one generation, playe
   // (back: its rule's inverse, see lifeBack, so many steps; its return found going back, round its loop: its generations never
   // below 0; found on the way, the steps left round it only, to its start none: at 0 then)
   const looped = loopBack(), toStart = target <= runStart();
-  for (let back = cur - Math.max(target, looped ? -Infinity : runStart()); back > 0; ) {
-    const batch = lifeStepGPU(L, cur - 1, true, Math.min(back, LIFE_BATCH));
-    if (!batch) { if (GPU?.game?.pending) waiting = cur - back; break; }
+  for (let back = stepShown - Math.max(target, looped ? -Infinity : runStart()); back > 0; ) {
+    const batch = lifeStepGPU(L, stepShown - 1, true, Math.min(back, LIFE_BATCH));
+    if (!batch) { if (GPU?.game?.pending) waiting = stepShown - back; break; }
     cutAtReturn(L, batch, -1);
     for (const G of batch) lifeBack(G);
     back -= batch.length;
     if (!looped && loopBack()) back = toStart ? 0 : back % L.stable.P;
-    target = cur;  // (where it is: round its loop, its number the loop's)
+    target = stepShown;  // (where it is: round its loop, its number the loop's)
     if (performance.now() >= until) break;  // (a batch at least)
   }
   statsDirty = true;
-  let k = target - cur, ended = false;
+  let k = target - stepShown, ended = false;
   while (k > 0 && !ended && !lifeEnded()) {
-    const round = loopRound(), batch = lifeStepGPU(L, cur + 1, false, Math.min(k, LIFE_BATCH, round ? Math.max(1, round - cur) : Infinity));  // (playing round a loop: to its last generation at most)
-    if (!batch) { if (GPU?.game?.pending) waiting = cur + k; break; }  // (its batch on the card; none: no WebGPU)
+    const round = loopRound(), batch = lifeStepGPU(L, stepShown + 1, false, Math.min(k, LIFE_BATCH, round ? Math.max(1, round - stepShown) : Infinity));  // (playing round a loop: to its last generation at most)
+    if (!batch) { if (GPU?.game?.pending) waiting = stepShown + k; break; }  // (its batch on the card; none: no WebGPU)
     cutAtReturn(L, batch, 1);
     for (const G of batch) {
       if (!ended) ended = lifeEnded();
       lifeStep(G);
       if (ended) continue;  // (played on the card past its end: counted, not shown)
       k--;
-      cur++;
-      if (cur > (L.reached ?? 0)) L.reached = cur;  // (the furthest, for a reversible one's slider)
+      stepShown++;
+      if (stepShown > (L.reached ?? 0)) L.reached = stepShown;  // (the furthest, for a reversible one's slider)
       const s = L.stable;
       if (!s) continue;
       if (!L.footBy) { L.footBy = new Float64Array(L.colours + 1); for (let g = 0; g < s.T; g++) for (let k = 1; k <= L.colours; k++) L.footBy[k] += traced(L, g).by[k]; }  // (its cell-generations till it settles or loops)
-      if ((s.extinct || s.P === 1) && cur >= s.T) { cur = s.T; if (lifeEnded()) { play(false); ended = true; } continue; }  // nothing moves any more: it ends there (its trail fading first)
+      if ((s.extinct || s.P === 1) && stepShown >= s.T) { stepShown = s.T; if (lifeEnded()) { play(false); ended = true; } continue; }  // nothing moves any more: it ends there (its trail fading first)
       if (!L.loopAvg) {  // found: each colour's live cells over the loop (its generations' counts, see lifeStep), their mean
         for (let g = s.T; g < s.T + s.P; g++) for (let k = 1; k <= L.colours; k++) {
           const v = L.colours === 1 ? traced(L, g).alive : traced(L, g).by[k];
@@ -14776,16 +14776,16 @@ function lifeTo(target, until = Infinity) {  // (one step, one generation, playe
         }
         L.loopAvg = Array.from(L.loopSum, (v) => v / s.P);
       }
-      if (cur >= s.T + s.P) {  // a loop: round it again from T (its state there the same), the counter too, its births and deaths those of that generation
-        cur = s.T + ((cur - s.T) % s.P);  // (found late, a blocks' return: rounds already played; a trail goes on fading: its time is L.gen's)
-        const b = traced(L, cur).born;
-        L.order = traced(L, cur).order;
+      if (stepShown >= s.T + s.P) {  // a loop: round it again from T (its state there the same), the counter too, its births and deaths those of that generation
+        stepShown = s.T + ((stepShown - s.T) % s.P);  // (found late, a blocks' return: rounds already played; a trail goes on fading: its time is L.gen's)
+        const b = traced(L, stepShown).born;
+        L.order = traced(L, stepShown).order;
         L.born = b.born; L.dead = b.dead; L.bornBy.set(b.bornBy); L.deadBy.set(b.deadBy);
       }
-      if (loopRound() && cur === loopRound()) { play(false); ended = true; }  // (a round of its loop played: Play again, another; none: 0, not gen 0)
+      if (loopRound() && stepShown === loopRound()) { play(false); ended = true; }  // (a round of its loop played: Play again, another; none: 0, not gen 0)
     }
     const end = L.margolus ? runEnd() : runLoop()?.last;
-    if (!known && end !== undefined) k = Math.min(k, end - cur);  // (its end found on the way: to it, not round it on)
+    if (!known && end !== undefined) k = Math.min(k, end - stepShown);  // (its end found on the way: to it, not round it on)
     if (performance.now() >= until) break;  // (a batch at least)
   }
   lifeGoal = waiting;
@@ -14793,16 +14793,16 @@ function lifeTo(target, until = Infinity) {  // (one step, one generation, playe
 }
 function advanceTo(target, until = Infinity) {  // forth or back (a walk; a reversible one, by its rule); until: a Game of Life's batches stop past it (a frame's time, see tick)
   target = loopBack() ? target : Math.max(runStart(), looping() ? target : Math.min(runEnd(), target));  // (a loop known: on round it, or back round it)
-  if (target !== cur) faced = false;  // the walker moves: the camera follows it again (see faceWalk)
-  if (spaceTimeOn()) { cur = Math.max(0, target); statsDirty = true; if (cur >= walk.n) play(false); return; }  // (Space-time: its layers, made, see stackUp)
-  if (target < cur && !walk.life) { walkBack(target); return; }
-  if (target < cur && lifeTime() && !walk.life.margolus) {  // a Game of Life back: no rule backwards; round its loop forth (the same
+  if (target !== stepShown) faced = false;  // the walker moves: the camera follows it again (see faceWalk)
+  if (spaceTimeOn()) { stepShown = Math.max(0, target); statsDirty = true; if (stepShown >= walk.n) play(false); return; }  // (Space-time: its layers, made, see stackUp)
+  if (target < stepShown && !walk.life) { walkBack(target); return; }
+  if (target < stepShown && lifeTime() && !walk.life.margolus) {  // a Game of Life back: no rule backwards; round its loop forth (the same
     const o = looping() && runLoop(), P = o && o.last - o.T + 1;  // state, nothing played again), else from its start again
-    if (o && (target >= o.T || loopBack())) target += P * Math.ceil((cur - target) / P); else restart();
+    if (o && (target >= o.T || loopBack())) target += P * Math.ceil((stepShown - target) / P); else restart();
   }
-  if (walk.life) { lifeTo(target, until); if (cur >= runEnd()) play(false); return; }
+  if (walk.life) { lifeTo(target, until); if (stepShown >= runEnd()) play(false); return; }
   const { xs, ys, wx, wy, wz, is3d } = walk;
-  for (let i = cur + 1; i <= target; i++) {
+  for (let i = stepShown + 1; i <= target; i++) {
     if (walk.stepTiles) {  // along the grid: the tiles on both sides of the edge just walked
       for (const t of [walk.stepTiles[2 * i - 2], walk.stepTiles[2 * i - 1]]) walk.maxVisits = Math.max(walk.maxVisits, ++walk.visits[t]);
     } else if (walk.sphere) walk.maxVisits = Math.max(walk.maxVisits, ++walk.visits[walk.tile[i]]);
@@ -14818,10 +14818,10 @@ function advanceTo(target, until = Infinity) {  // forth or back (a walk; a reve
     if (ys[i] > bounds.maxY) bounds.maxY = ys[i];
     if (walk.rows) { const r = Math.min(walk.rows.c, walk.rows.wide + i); bounds.minX = Math.min(bounds.minX, -r); bounds.maxX = Math.max(bounds.maxX, r); }  // (Elementary's: its row's reach, see elementaryRows)
   }
-  const reachedEnd = target >= walk.n && cur < walk.n;
-  if (target !== cur) statsDirty = true;
-  cur = Math.max(cur, target);
-  if (cur >= walk.n) play(false);
+  const reachedEnd = target >= walk.n && stepShown < walk.n;
+  if (target !== stepShown) statsDirty = true;
+  stepShown = Math.max(stepShown, target);
+  if (stepShown >= walk.n) play(false);
   // the walk has just ended: auto-fit framed it with room to grow, so ease to the final frame,
   // the one Fit view gives (surfaces follow the walker instead)
   if (reachedEnd && !walk.sphere && $('autoFit').checked) {
@@ -14833,9 +14833,9 @@ function advanceTo(target, until = Infinity) {  // forth or back (a walk; a reve
 // a Game of Life that died out or froze: shown at the generation it ended
 // a run ended: nothing moves any more (all dead or still), its trail faded (Trail: the generations of its fading played
 // on, the generation shown its end's)
-const lifeEnded = () => { const s = walk.life?.stable; return !!s && (s.extinct || s.P === 1) && cur === s.T && !(trailOn() && walk.life.gen <= s.T + LIFE_TRAIL.length); };
+const lifeEnded = () => { const s = walk.life?.stable; return !!s && (s.extinct || s.P === 1) && stepShown === s.T && !(trailOn() && walk.life.gen <= s.T + LIFE_TRAIL.length); };
 // at its end: its last step (a loop known: none, round it on, see looping), or a run that froze or died there
-const atEnd = () => (cur >= runEnd() && !looping()) || lifeEnded();
+const atEnd = () => (stepShown >= runEnd() && !looping()) || lifeEnded();
 function play(on) {
   playing = on && walk.n > 0 && !atEnd();
   // (playing: View, Draw's look only, the brush picked before given back once it stops: a link loaded cold the same)
@@ -14856,7 +14856,7 @@ const playsBack = () => !lifeTime() || !!walk.life.margolus;  // (◀: a walk, S
 // chosen: its run built or not yet (a big grid's, a moment); a reversible one's ◀ too (see playsBack)
 const lifePlayer = () => { const m = MODES[$('mode').value]; return !!m.life && !m.elementary && !spaceTimeOn(); };  // (Elementary's rows: a walk's, its end known)
 function reverse(on) {
-  reversing = on && playsBack() && (cur > runStart() || loopBack());  // (a loop known: from 0 too, a round back)
+  reversing = on && playsBack() && (stepShown > runStart() || loopBack());  // (a loop known: from 0 too, a round back)
   if (reversing) play(false);
   const shown = reversing ? 'pause' : 'reverse';
   if ($('reverse').dataset.shown !== shown) $('reverse').innerHTML = icon($('reverse').dataset.shown = shown);  // (only when it changes: a click on it kept)
@@ -14908,7 +14908,7 @@ const autoplay = () => { if (spaceTimeOn()) showAll(); else if (walk.life && !dr
 function restart() {
   if (reversing) reverse(false);
   faced = false;
-  cur = 0;
+  stepShown = 0;
   drawn = 0;
   stepsDue = 0;
   bounds = { minX: 0, maxX: 0, minY: 0, maxY: 0 };
@@ -14928,7 +14928,7 @@ function restart() {
       bounds3 = [-1, 1, -1, 1, -1, 1];  // (till its cubes are made)
       stackUp().then((made) => {
         if (!made) return;
-        cur = 0; bounds3 = stack.box.slice(); setPerspective(); includeBox();
+        stepShown = 0; bounds3 = stack.box.slice(); setPerspective(); includeBox();
         advanceTo(walk.n);  // (its layers all, see buildWalk's end)
         faceWalk();
         if ($('autoFit').checked) fitWhole();
@@ -15220,7 +15220,7 @@ const sphereDraw = { at: 0, cost: 0 };
 // up (its tile's outward normal, square to the heading), and its size (see headSize, by its tile's area); P(i), tileAt(i):
 // the walker's point and tile at step i (see walkersOf). Between two steps (i not whole: gliding, see glideAt), its place on
 // the way from one to the next, heading along it, on the nearer one's tile
-function headFrame({ P, tileAt, before }, i = cur) {
+function headFrame({ P, tileAt, before }, i = stepShown) {
   const j = Math.floor(i), f = i - j, q = P(j), next = f > 0 ? P(j + 1) : q, p = q.map((v, d) => v + (next[d] - v) * f);
   const t = tileAt(f < 0.5 ? j : j + 1), nr = walk.shape.nrm, nrm = [nr[3 * t], nr[3 * t + 1], nr[3 * t + 2]];
   const dir = (a, b) => unit([0, 1, 2].map((d) => b[d] - a[d])), last = dir(j > 0 ? P(j - 1) : before, q);  // (its axis its last step itself, as its line)
@@ -15236,9 +15236,9 @@ function walkersOf() {
   if (!walk.n || walk.life || walk.rows) return [];
   if (!walk.battle) return [{ P: (i) => [walk.wx[i], walk.wy[i], walk.wz[i]], tileAt: (i) => walk.tile[i], before: placePoint(walk.came), colour: LIFE_ALIVE, living: true }];
   const B = walk.battle.player;
-  B.to(cur);
+  B.to(stepShown);
   return B.places.map((Q, s) => ({ P: (i) => placePoint(Q[i]), tileAt: (i) => (walk.vert ? walk.geo.grid.tileOf[Q[i]] : Q[i]), before: placePoint(cameFrom(walk.geo, !!walk.vert, B.starts[s])),
-    colour: teamColour(s), living: B.dead[s] < 0 || B.dead[s] > cur }));
+    colour: teamColour(s), living: B.dead[s] < 0 || B.dead[s] > stepShown }));
 }
 // the heads: each living walker's ogive at its step (see ogiveOf); the starts: each walker's flag in its frame at step 0
 // (see flagOf: its start's own heading, the way it came by); each [its corners, its colour]
@@ -15254,7 +15254,7 @@ const turnToward = (from, to, n, w) => {
 // by the step's time gone (stepsDue: the fraction of a step owed), drawn each frame (see tick), on a surface (an ogive) or
 // the plane (an arrow, see drawOverlay); else on its place
 const gliding = () => (playing || reversing) && stepsPerSecond() * frameMin < 1 && !!walk.n && !walk.life && !walk.rows;
-const glideAt = () => (!gliding() ? cur : reversing ? Math.max(0, cur - stepsDue) : Math.min(cur + stepsDue, (walk.battle?.player.n ?? walk.n)));
+const glideAt = () => (!gliding() ? stepShown : reversing ? Math.max(0, stepShown - stepsDue) : Math.min(stepShown + stepsDue, (walk.battle?.player.n ?? walk.n)));
 // a start's flag: its pole planted in its place along the surface's normal, over a head (2.2 of its sizes high), its sail
 // at its top an arrow pointing the way it goes (both its faces); its triangles' corners and normals, as an ogive's
 function flagOf({ p, h, side, nrm, size }) {
@@ -15329,7 +15329,7 @@ function followWalker() {
   // (gliding: toward its place on the way to its next one, see glideAt, so the view moves as smoothly as it)
   const at = glideAt(), j = Math.floor(at), f = at - j, k = f > 0 ? j + 1 : j, t = walk.tile[f < 0.5 ? j : k], nr = walk.shape.nrm;
   const d = unit(walk.geo.torus && !walk.geo.mobius ? [nr[3 * t], nr[3 * t + 1], nr[3 * t + 2]]
-    : cur >= walk.n && !walk.life ? walkMiddle() : [walk.wx[j] + (walk.wx[k] - walk.wx[j]) * f, walk.wy[j] + (walk.wy[k] - walk.wy[j]) * f, walk.wz[j] + (walk.wz[k] - walk.wz[j]) * f]);
+    : stepShown >= walk.n && !walk.life ? walkMiddle() : [walk.wx[j] + (walk.wx[k] - walk.wx[j]) * f, walk.wy[j] + (walk.wy[k] - walk.wy[j]) * f, walk.wz[j] + (walk.wz[k] - walk.wz[j]) * f]);
   const axis = cross(d, cam.v), sin = Math.hypot(...axis), angle = Math.atan2(sin, towardViewer(...d));
   if (sin > 1e-9 && angle > 1e-4) rotateView(axis.map((x) => (x / sin) * angle * 0.12));
 }
@@ -15380,8 +15380,8 @@ function drawSphere() {
     const band = (step) => Math.min(LEVELS - 1, Math.floor((step * LEVELS) / (walk.n + 1)));
     const tiles = path && MODES[walk.mode].cells ? grad.map((c) => faded(c, FADING)) : grad;  // Path: the tiles faded under the line
     palette = [null, ...tiles, ...(areaLight() ? grad.map((c) => faded(c, FADING)) : grad)];
-    levelOf = (t) => (cells && cells[t] >= 0 && cells[t] <= cur ? 1 + band(cells[t])
-      : areas && areas[t] >= 0 && areas[t] <= cur ? 1 + LEVELS + band(areas[t]) : 0);
+    levelOf = (t) => (cells && cells[t] >= 0 && cells[t] <= stepShown ? 1 + band(cells[t])
+      : areas && areas[t] >= 0 && areas[t] <= stepShown ? 1 + LEVELS + band(areas[t]) : 0);
   }
   // an ant's cells, as in 2D (see CELL_MODES): States, by their colour (the times it was on each, the one under it as it
   // will be), Path's faded under its line; Rainbow and Heatmap as a walk's
@@ -15393,7 +15393,7 @@ function drawSphere() {
   }
   if (walk.battle) {  // a battle: its walkers' bodies in Life's colours (A red, B blue, C gold, see colourBlock), paler than their heads
     const P = walk.battle.player, K = P.K, colours = Array.from({ length: K }, (_, s) => teamColour(s));
-    P.to(cur);
+    P.to(stepShown);
     // each tile's level once: with land (the Land ones) its land, always, plain as its bodies are (Area, the
     // classic walks' look, not used); in Cut the areas each body closes, by Area (Light translucent, Plain as its body);
     // then the bodies over them and their heads (along the grid its bodies are lines, see pathSegments: the land only)
@@ -15894,7 +15894,7 @@ const LIFE_PASSES = 2 ** 15, LIFE_REPLAY_MOST = 2 ** 29;
 // a Game of Life's way to generation g within it: forth from where it is, back round its loop, else again from its start
 const lifeWithin = (g) => {
   if (!lifeTime() || walk.life.margolus) return true;
-  const gens = g >= cur ? g - cur : looping() && (g >= runLoop().T || loopBack()) ? 0 : g;
+  const gens = g >= stepShown ? g - stepShown : looping() && (g >= runLoop().T || loopBack()) ? 0 : g;
   return gens * (walk.life.seed.length + LIFE_PASSES) <= LIFE_REPLAY_MOST;
 };
 const LIFE_H = 16, LIFE_BATCH = 256;  // (generations a read back: a hunt's; the game's, at most, as many as a frame asks)
@@ -16192,7 +16192,7 @@ async function gpuLifeSteps(E, { gen = 0, back = false, k = 1, r0 = 0, r1 = E.ru
   E.read.unmap();
   return { read: (j, r, x = 0) => got[(x * E.runs + r) * E.J + j], states: Uint8Array.from(got.subarray(k * E.runs * E.J)) };
 }
-// the cells shown (see gpuShow) as the game's at cur (L.alive): how many apart (0: the picture the generation's)
+// the cells shown (see gpuShow) as the game's at stepShown (L.alive): how many apart (0: the picture the generation's)
 async function gpuShownCheck() {
   await lifeSettle();
   const E = lifeGPU(walk.life), { device } = GPU, rb = device.createBuffer({ size: 4 * E.n, usage: GPUBufferUsage.MAP_READ | GPUBufferUsage.COPY_DST }), enc = device.createCommandEncoder();
@@ -16576,11 +16576,11 @@ function gpuSurface(paint, path) {
   // the path's segments, made once a walk (a battle along the grid: all its walkers' steps, see pathSegments); drawn, the
   // path up to the step shown, or each living walker's body: its steps from its tail to its head, a range of them
   const lines = !!walk.battle && !!walk.vert, P = lines ? walk.battle.player : null;
-  if (lines) { P.to(cur); battlePalette(D); }
-  if (P?.ownLines && cur > 0) battleLinesOnGpu(D, P);  // (Land grid 1: its links' owners, see battleLinesOnGpu)
-  const segs = (path || lines) && !P?.ownLines && cur > 0 && (D.keys.segs !== walk.wx || D.keys.segsM !== sh.m || D.ribbonOf) ? pathSegments(P) : null;
+  if (lines) { P.to(stepShown); battlePalette(D); }
+  if (P?.ownLines && stepShown > 0) battleLinesOnGpu(D, P);  // (Land grid 1: its links' owners, see battleLinesOnGpu)
+  const segs = (path || lines) && !P?.ownLines && stepShown > 0 && (D.keys.segs !== walk.wx || D.keys.segsM !== sh.m || D.ribbonOf) ? pathSegments(P) : null;
   if (segs) { gpuBuffer('ribbon', segs.data); D.ribbonOf = null; D.segsAt = segs.at; D.keys.segs = walk.wx; D.keys.segsM = sh.m; }
-  const ranges = !(path || lines) || cur <= 0 || !(P?.ownLines ? D.segsRanges : D.segsAt) ? [] : !lines ? [[0, D.segsAt[cur]]] : P.ownLines ? D.segsRanges
+  const ranges = !(path || lines) || stepShown <= 0 || !(P?.ownLines ? D.segsRanges : D.segsAt) ? [] : !lines ? [[0, D.segsAt[stepShown]]] : P.ownLines ? D.segsRanges
     : P.standing().map((s) => [D.segsAt[s][Math.max(1, P.from[s])], D.segsAt[s][P.step + 1]]);
   const heads = headsOf(), headFrom = heads.reduce((at, [m]) => [...at, at.at(-1) + m.length / 6], [0]);  // (their corners: each its first, in the one buffer)
   if (heads.length) {
@@ -17066,7 +17066,7 @@ function drawActivity() {
     }
     series = [[curveOf.c, rainbow()]];  // (a walk's: in its rainbow, from its first step to its last, as its path)
   }
-  const at = xOf(Math.min(cur - first, n - 1), n);  // (the step shown, filled up to it)
+  const at = xOf(Math.min(stepShown - first, n - 1), n);  // (the step shown, filled up to it)
   const top = series.reduce((m, [c]) => c.reduce((k, v) => Math.max(k, v), m), 0) || 1;
   for (const [c, colour] of series) {
     const y = (x) => H - 1 - (c[x] / top) * (H - 3);
@@ -17169,10 +17169,10 @@ function walkPeak() {
 function renderWalkGauges() {
   $('gauges').hidden = !walk.n || !walk.maxDist;
   if ($('gauges').hidden) return;
-  const x = walk.wx[cur], y = walk.is3d ? walk.wy[cur] : -walk.wy[cur], z = walk.is3d ? walk.wz[cur] : 0, d = Math.hypot(x, y, z);
+  const x = walk.wx[stepShown], y = walk.is3d ? walk.wy[stepShown] : -walk.wy[stepShown], z = walk.is3d ? walk.wz[stepShown] : 0, d = Math.hypot(x, y, z);
   if (walk.battle) {  // a battle: its walkers ranked as Life's colours are (paintRanking): each its body's length, the Land ones their land; ✝ dead
     const { player: D, names, deaths } = walk.battle;  // (deaths: as played to its end, Dead at known at every step, see battleOf)
-    D.to(cur);
+    D.to(stepShown);
     const w = D.worth(), Q = D.places, from = (s) => { const a = placePoint(Q[s][0]), b = placePoint(Q[s][D.step]); return Math.hypot(b[0] - a[0], b[1] - a[1], b[2] - a[2]); };
     const C = battleColumns(D);
     $('gauges').hidden = true;
@@ -17182,13 +17182,13 @@ function renderWalkGauges() {
                                              cells: [`<b>${formatNumber(w[s])}</b>${gone(s) ? ' ✝' : ''}`, formatNumber(D.bestAt(s)), deaths[s] >= 0 ? genLink(deaths[s]) : '', ...(C.body ? [formatNumber(D.size[s])] : []), from(s).toFixed(1)] })), C.titles);
     return;
   }
-  const p = (v) => formatNumber(Math.round(v * 100) / 100 || 0), P = walkPeak(), gold = 'var(--accent)', c = walk.cells[cur];
+  const p = (v) => formatNumber(Math.round(v * 100) / 100 || 0), P = walkPeak(), gold = 'var(--accent)', c = walk.cells[stepShown];
   paintGauges([
     ['Position', null, null, walk.is3d ? `(${p(x)}, ${p(y)}, ${p(z)})` : `(${p(x)}, ${p(y)})`],
     ['Distance', gold, d / P.far, `<b>${d.toFixed(1)}</b>`],
-    ['Peak distance', gold, walk.maxDist[cur] / P.far, `${P.far.toFixed(1)} · ${genLink(P.step)}`],
+    ['Peak distance', gold, walk.maxDist[stepShown] / P.far, `${P.far.toFixed(1)} · ${genLink(P.step)}`],
     [walk.vert ? 'Corners visited' : 'Cells visited', null, c / (walk.sphere ? walk.nodes : walk.cells[walk.n]), !walk.sphere ? formatNumber(c)
-      : walk.coverStep >= 0 && cur >= walk.coverStep ? `all ${formatNumber(walk.nodes)} · by step ${formatNumber(walk.coverStep)}` : `${formatNumber(c)} / ${formatNumber(walk.nodes)} (${(100 * c / walk.nodes).toFixed(1)} %)`],
+      : walk.coverStep >= 0 && stepShown >= walk.coverStep ? `all ${formatNumber(walk.nodes)} · by step ${formatNumber(walk.coverStep)}` : `${formatNumber(c)} / ${formatNumber(walk.nodes)} (${(100 * c / walk.nodes).toFixed(1)} %)`],
   ]);
 }
 // A battle's ranking, always in sight under the generation: the colours by their live cells (a bar, their share of all
@@ -17200,7 +17200,7 @@ function renderWalkGauges() {
 // its mean, not ✝ one generation, ≈ the next)
 // the run's end as of the generation shown: its record kept from a run before (see lifeReset), not reached yet back at its
 // start; its loop's means with it
-const endShown = (L) => (L.stable && (cur >= L.stable.T || cur < 0) ? L.stable : null);  // (a reversible one's past: in its loop too)
+const endShown = (L) => (L.stable && (stepShown >= L.stable.T || stepShown < 0) ? L.stable : null);  // (a reversible one's past: in its loop too)
 const loopMeans = (L) => endShown(L) && L.loopAvg;
 // a loop's mean, as written: ≈, to a tenth, its tenth always (≈ 3,120.0 beside ≈ 2,881.5)
 const meanText = (v) => `≈ ${v.toLocaleString('en', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}`;
@@ -17269,26 +17269,26 @@ function updateStats() {
   $('ruleChips').hidden = !!walk.battle;  // (a battle: its walkers' turns not shown, see the walk's part below)
   // Jump to start and Step back greyed at the start (a reversible one's, as far back as it goes), Step at the end (a loop's:
   // round it on)
-  $('restart').disabled = reversibleRun() ? cur === 0 : cur <= runStart();  // (a reversible one's start: gen 0, its past before it)
+  $('restart').disabled = reversibleRun() ? stepShown === 0 : stepShown <= runStart();  // (a reversible one's start: gen 0, its past before it)
   // (a Game of Life's step back: round its loop forth, at once; else played again from its start, greyed when too long)
-  const tooFar = !lifeWithin(cur - 1);
-  $('back').disabled = (cur <= runStart() && !loopBack()) || tooFar;
+  const tooFar = !lifeWithin(stepShown - 1);
+  $('back').disabled = (stepShown <= runStart() && !loopBack()) || tooFar;
   $('back').dataset.greyed = tooFar ? 'so far from its start: played again from it, more than a second' : '';
   $('jump10k').hidden = !lifePlayer();  // (Life, a reversible one: 10,000 generations ahead, while its end is not known)
   $('jump10k').disabled = busy || !!runLoop();
   $('play').disabled = busy;  // (its run not built yet)
   $('reverse').hidden = lifePlayer() && !MODES[$('mode').value].margolus;  // (played backwards: a walk, a reversible one)
-  $('reverse').disabled = cur <= runStart() && !loopBack();
+  $('reverse').disabled = stepShown <= runStart() && !loopBack();
   $('step').disabled = atEnd();
   $('end').hidden = lifePlayer();  // (Life, a reversible one: its green link and +10k)
   if (drawing && MODES[$('mode').value].plane && drawAway() !== drawToolsAway) renderDrawTools();  // (Draw: its tools at gen 0 only; drawn again as play leaves it or comes back, not each frame: 785 cards)
-  $('end').disabled = !runStops().some((g) => g > cur);
+  $('end').disabled = !runStops().some((g) => g > stepShown);
   // the step or generation shown, its own line, every mode: Step 15,964, Gen 132; its last after it where the run has one
   // (a walk's, Elementary's, Space-time's: see runEnd; Life's, a reversible one's, once its loop is known: see runLoop), its slider's end (see seekFar)
   const far = seekFar(), gens = !!walk.life || spaceTimeOn() || !!walk.rows;
   const known = Number.isFinite(lifeTime() ? runLoop()?.last : runEnd());
-  walk.widestShown = Math.max(walk.widestShown, cur, known ? far : 0);  // (its last once known, else the furthest shown: a ratchet)
-  $('stepNow').innerHTML = `${gens ? 'Gen' : 'Step'} ${formatNumberAsWide(cur, walk.widestShown)}`;
+  walk.widestShown = Math.max(walk.widestShown, stepShown, known ? far : 0);  // (its last once known, else the furthest shown: a ratchet)
+  $('stepNow').innerHTML = `${gens ? 'Gen' : 'Step'} ${formatNumberAsWide(stepShown, walk.widestShown)}`;
   setLinks($('stepLast'), known ? ` / ${formatNumber(far)}` : '');  // (a run's, Life's or a reversible one's: once its loop is known)
   setLinks($('stepEnd'), endMark());
   if (!walk.life && !walk.battle) $('ranking').hidden = $('rankTitles').hidden = true;  // (a battle's shown by renderWalkGauges: never hidden in between, its rows' slides kept)
@@ -17297,7 +17297,7 @@ function updateStats() {
     $('ranking').hidden = $('rankTitles').hidden = true;
     $('gauges').hidden = false;
     setLinks($('barNum'), '');  // (its generation: its own line, see stepNow; its rule in its chip)
-    paintGauges([[rows ? 'Live cells' : 'Cubes', null, null, formatNumber(rows ? rows.upTo[cur + 1] : stack.layers[cur] + 1)]]);
+    paintGauges([[rows ? 'Live cells' : 'Cubes', null, null, formatNumber(rows ? rows.upTo[stepShown + 1] : stack.layers[stepShown] + 1)]]);
     $('digitStrip').textContent = '';
     drawActivity();
     return;
@@ -17328,17 +17328,17 @@ function updateStats() {
     return;
   }
   if (walk.n && walk.counts) {  // each digit's count, on its chip
-    const c = walk.counts.subarray(walk.base * cur, walk.base * (cur + 1));
+    const c = walk.counts.subarray(walk.base * stepShown, walk.base * (stepShown + 1));
     c.forEach((v, d) => { const e = document.getElementById(`count${d}`); if (e) e.textContent = formatNumber(v); });
   }
   // step by step (paused, or at the slowest speed, either way): the chip of the next step lit in its colour, the one
   // it counts in (an ant's: the turn it takes, or by its rule the colour of its cell); an ant by the digits
   // turned the other way by a dark cell, the chip of the digit it reads dashed too; by its rule, on a cell
   // walked before, the chip of a fresh one (colour 0) dashed, as the turn it would take there
-  const slow = walk.n && cur < walk.n && walk.counts && (!(playing || reversing) || speed <= 12);  // (backwards as forwards)
+  const slow = walk.n && stepShown < walk.n && walk.counts && (!(playing || reversing) || speed <= 12);  // (backwards as forwards)
   let next = -1;
-  if (slow) for (let c = 0; c < walk.base; c++) if (walk.counts[walk.base * (cur + 1) + c] !== walk.counts[walk.base * cur + c]) next = c;
-  const read = !slow || !walk.ant ? -1 : walkReadsDigits() ? walk.digits[cur] : 0;
+  if (slow) for (let c = 0; c < walk.base; c++) if (walk.counts[walk.base * (stepShown + 1) + c] !== walk.counts[walk.base * stepShown + c]) next = c;
+  const read = !slow || !walk.ant ? -1 : walkReadsDigits() ? walk.digits[stepShown] : 0;
   for (const chip of $('ruleChips').children) {
     const d = Number(chip.querySelector('small')?.id.slice(5));
     chip.classList.toggle('next', d === next);
@@ -17360,11 +17360,11 @@ function updateStats() {
   strip.classList.toggle('turns', arrows.length > 0);
   const cols = stripColumns(strip), n = walk.n, d = walk.digits;
   const intLen = Math.min(current.head.length, n);
-  let b = Math.min(n, Math.max(0, cur - Math.floor(cols * 0.6)) + cols), a = Math.max(0, b - cols);
+  let b = Math.min(n, Math.max(0, stepShown - Math.floor(cols * 0.6)) + cols), a = Math.max(0, b - cols);
   const marks = () => (a > 0 ? 1 : intLen ? 0 : 2) + (intLen - 1 >= a && intLen - 1 < b && intLen < n ? 1 : 0)
-    + (b < n ? 1 : cur >= n ? 1 : 0);  // "…" after, or the head on a blank past the last digit
+    + (b < n ? 1 : stepShown >= n ? 1 : 0);  // "…" after, or the head on a blank past the last digit
   while (b - a + marks() > cols && b - a > 1) {
-    if (b - 1 > cur && (a === 0 || b - cur > (cur - a) * 0.67)) b--;
+    if (b - 1 > stepShown && (a === 0 || b - stepShown > (stepShown - a) * 0.67)) b--;
     else a++;
   }
   // a number below 1 does not walk its integer part (every such number would start the same
@@ -17373,22 +17373,22 @@ function updateStats() {
   const blank = '<span></span>';
   let top = blank.repeat(a > 0 ? 1 : intLen ? 0 : 2);
   for (let i = a; i < b; i++) {
-    // a reading head: the highlighted digit is the next one to play (step cur + 1); the stats
+    // a reading head: the highlighted digit is the next one to play (step stepShown + 1); the stats
     // describe the digits to its left. At the end it sits on a blank after the last digit.
     const colour = walk.base <= 8 ? ` style="color:${(walk.ant ? antChipColour : digitColour)(d[i])}"` : '';  // coloured as their chips
     // an ant's arrow coloured as its turn (left blue, right pink: see antTurnColour), not as the digit it read. The head:
     // the digit and its arrow inverted, white on their colours, as the chip lit; gold where the digits have no colours
-    const head = (c) => (colour ? ` class="cur" style="background:${c};color:#fff"` : ' class="cur"');
+    const head = (c) => (colour ? ` class="stepShown" style="background:${c};color:#fff"` : ' class="stepShown"');
     const chipColour = (k) => (walk.ant ? antChipColour : digitColour)(k);
-    html += i === cur ? `<span${head(colour && chipColour(d[i]))}>${d[i]}</span>` : colour ? `<span${colour}>${d[i]}</span>` : d[i];
+    html += i === stepShown ? `<span${head(colour && chipColour(d[i]))}>${d[i]}</span>` : colour ? `<span${colour}>${d[i]}</span>` : d[i];
     const arrow = arrows[walk.ant ? walk.turns[i] : d[i]];
     const arrowColour = walk.ant ? ` style="color:${antTurnColour(arrow)}"` : colour;
-    top += arrow ? `<span${i === cur ? head(colour && (walk.ant ? antTurnColour(arrow) : chipColour(d[i]))) : arrowColour}>${arrow}\ufe0e</span>` : blank;  // as text, not an emoji
+    top += arrow ? `<span${i === stepShown ? head(colour && (walk.ant ? antTurnColour(arrow) : chipColour(d[i]))) : arrowColour}>${arrow}\ufe0e</span>` : blank;  // as text, not an emoji
     if (i === intLen - 1 && intLen < walk.n) { html += '.'; top += blank; }
   }
-  const end = b < n ? '…' : cur >= n ? '<span class="cur">\u00a0</span>' : '';
+  const end = b < n ? '…' : stepShown >= n ? '<span class="stepShown">\u00a0</span>' : '';
   html += end;
-  if (cur >= n) top += end;  // the head past the last digit, on both lines
+  if (stepShown >= n) top += end;  // the head past the last digit, on both lines
   const walker = icon(mode.skipZeros ? 'spiral' : ['Turtle', 'Ant', 'Polymer'].includes(NAV[current.mode][3]) ? 'turtle' : 'compass');
   strip.innerHTML = arrows.length ? `${walker}<div class="arrows">${top}</div><div>${html}</div>` : html;
 }
@@ -17448,11 +17448,11 @@ function tick(now = performance.now()) {
   if (!playing && !reversing && lifeGoal !== null && walk.life && !spaceTimeOn()) lifeTo(lifeGoal, now + 750 * frameMin);  // (a generation asked, its batch back: on to it; Space-time's: its own, see stackUp)
   if (playing || reversing) {
     stepsDue += stepsPerSecond() * dt;  // time-based, so the speed holds whatever the frame rate
-    const k = Math.floor(stepsDue), from = walk.life && lifeGoal !== null ? lifeGoal : cur;  // (on from where it was going: a batch on the card, its steps not lost)
+    const k = Math.floor(stepsDue), from = walk.life && lifeGoal !== null ? lifeGoal : stepShown;  // (on from where it was going: a batch on the card, its steps not lost)
     stepsDue -= k;
     if (k > 0 || (walk.life && lifeGoal !== null)) {  // (no step this frame: its batch back taken all the same, the next one sent)
       advanceTo(reversing ? (from === runStart() && loopBack() ? from - k : Math.max(runStart(), from - k)) : from + k, now + 750 * frameMin);  // (from 0 round its loop, back to 0; its steps three quarters of the screen's frame at most: faster than it can, as fast as it can, its frames kept)
-      if (reversing && cur <= runStart()) reverse(false);  // (back at its start, after a step)
+      if (reversing && stepShown <= runStart()) reverse(false);  // (back at its start, after a step)
     }
   }
   includeBox();
@@ -17469,7 +17469,7 @@ function tick(now = performance.now()) {
   if (walk.plane && held) { requestAnimationFrame(tick); return; }
   if (walk.plane) {  // Life on the plane: the grid as one picture, each generation (Space-time: its cubes, up to the layer shown)
     if (needsFull) gpuClear();
-    if (spaceTimeOn()) { if (stack && (needsFull || statsDirty)) { drawGrid(); gpuCubes(stack.layers[cur] + 1, stack, stackCubes, stack.reach); updateStats(); } }
+    if (spaceTimeOn()) { if (stack && (needsFull || statsDirty)) { drawGrid(); gpuCubes(stack.layers[stepShown] + 1, stack, stackCubes, stack.reach); updateStats(); } }
     else {
       if (needsFull) drawPlaneGrid();
       if (needsFull || statsDirty) { drawLifePlane(); updateStats(); }
@@ -17507,9 +17507,9 @@ function tick(now = performance.now()) {
   }
   // a walk on the card, redrawn whole when anything changes (see gpuFlat)
   if (needsFull && !walk.n) gpuClear();
-  if (walk.n && (needsFull || drawn !== cur)) {
-    gpuFlat(cur);
-    if (drawn !== cur) { drawn = cur; statsDirty = true; }
+  if (walk.n && (needsFull || drawn !== stepShown)) {
+    gpuFlat(stepShown);
+    if (drawn !== stepShown) { drawn = stepShown; statsDirty = true; }
   }
   if (needsFull || statsDirty) {
     drawOverlay();
@@ -17582,15 +17582,15 @@ $('play').addEventListener('click', () => {
   if (atEnd()) restart();  // at the end: from the start again
   play(!playing);
 });
-$('step').addEventListener('click', () => { play(false); reverse(false); advanceTo(cur + 1); });
+$('step').addEventListener('click', () => { play(false); reverse(false); advanceTo(stepShown + 1); });
 $('reverse').addEventListener('click', () => reverse(!reversing));
-$('jump10k').addEventListener('click', () => advanceTo(cur + 10000));
+$('jump10k').addEventListener('click', () => advanceTo(stepShown + 10000));
 // Begin (⏮): back to its start (0), then to its first (a reversible one's past's furthest); its loop and its ordered moments
 // by their links instead (see loopLink, genLink). Its start, written at once (restart), not played to
 const runStops = () => [...new Set([runStart(), 0, runEnd()])].filter(Number.isFinite).sort((x, y) => x - y);
 // End (⏭), the same forth (a run with its end known at once: a walk; Life's and a reversible one's, their green link and +10k)
 function goStop(dir) {  // (playing on if it was)
-  const wasPlaying = playing, g = dir < 0 ? runStops().findLast((x) => x < cur) : runStops().find((x) => x > cur);
+  const wasPlaying = playing, g = dir < 0 ? runStops().findLast((x) => x < stepShown) : runStops().find((x) => x > stepShown);
   if (g === 0) restart(); else if (g !== undefined) advanceTo(g);
   play(wasPlaying);
 }
@@ -17607,19 +17607,19 @@ $('speedLabel').addEventListener('change', () => { if ($('speedLabel').value) se
 const seekFar = () => (!lifeTime() ? runEnd() : runLoop()?.last ?? walk.life.trace.alive.length - 1);
 // A walk back to step v: its steps after taken off (the tiles' visits), drawn again up to there, the view kept as it is
 function walkBack(v) {
-  for (let i = cur; i > v; i--) {
+  for (let i = stepShown; i > v; i--) {
     if (walk.stepTiles) for (const t of [walk.stepTiles[2 * i - 2], walk.stepTiles[2 * i - 1]]) walk.visits[t]--;
     else if (walk.sphere) walk.visits[walk.tile[i]]--;
   }
-  cur = v;
+  stepShown = v;
   needsFull = statsDirty = true;
 }
 // go to step v: back from the start, forward from where it is
 function seekTo(v) {
   play(false);
   reverse(false);
-  if (v < cur && !lifeTime()) { advanceTo(v); return; }  // (a walk, Space-time: back without starting again, the view kept)
-  if (v < cur && walk.life.margolus && cur - v > Math.abs(v)) restart();  // (a reversible one: back by its rule, when nearer than its start; Life's, see advanceTo)
+  if (v < stepShown && !lifeTime()) { advanceTo(v); return; }  // (a walk, Space-time: back without starting again, the view kept)
+  if (v < stepShown && walk.life.margolus && stepShown - v > Math.abs(v)) restart();  // (a reversible one: back by its rule, when nearer than its start; Life's, see advanceTo)
   advanceTo(v);
   needsFull = true;
   if ($('autoFit').checked) fitWhole();  // framed at once, not eased out from the start's frame
@@ -17640,7 +17640,7 @@ $('activity').addEventListener('pointermove', (e) => {
   const g = curveStep(e);
   $('activity').classList.toggle('out', g !== null && !lifeWithin(g));
 });
-$('back').addEventListener('click', () => seekTo(cur - 1));
+$('back').addEventListener('click', () => seekTo(stepShown - 1));
 $('startCells').addEventListener('click', () => {  // (see renderDrawTools: to gen 0, Clear, Undo clear)
   if (drawAway()) { seekTo(0); return; }
   [population, cleared] = cleared ? [cleared, null] : [new Map(), population];
@@ -17718,7 +17718,7 @@ function recentre() {
     Object.assign(cam, CAM0);
     rotateView([0, 0, 0]);  // the projection and the frame again
     faced = false;
-    if (!walk.life && cur >= walk.n) faceWalk();
+    if (!walk.life && stepShown >= walk.n) faceWalk();
   }
   fitNow();
 }
@@ -17726,7 +17726,7 @@ stage.addEventListener('dblclick', () => { if (!drawsHere()) recentre(); });  //
 // Life's Draw start: a click on a cell draws (see the pointerup below); a drag still pans
 let drawing = false, drawFrom = null;
 const drawsHere = () => drawing && !drawAway() && brush.id !== 'view';  // (a click draws: in Draw, at gen 0, a brush picked, not View)
-const drawAway = () => drawing && cur !== 0;  // (Draw away from gen 0: its tools greyed, see renderDrawTools)
+const drawAway = () => drawing && stepShown !== 0;  // (Draw away from gen 0: its tools greyed, see renderDrawTools)
 // Life on the plane: the grid's size and edges (built again), its start (the cells only, but by the digits)
 for (const [id, k] of [['planeDown', -1], ['planeUp', 1]]) {
   $(id).addEventListener('click', () => {
@@ -17753,8 +17753,8 @@ for (const b of $('lifeStartTabs').querySelectorAll('button')) {
       // (a block rule's: the one at its first phase nearest it towards its start, where its cells are as shown and go on as a
       // start's: one of another phase, or shown negative, would play on as another run, its past not this one's; in its past,
       // forth, its far end no further)
-      const L = walk.life, off = L.margolus ? (cur < 0 ? -mod(-cur, L.margolus.turns.length) : mod(cur, L.margolus.turns.length)) : 0;
-      if (off) seekTo(cur - off);
+      const L = walk.life, off = L.margolus ? (stepShown < 0 ? -mod(-stepShown, L.margolus.turns.length) : mod(stepShown, L.margolus.turns.length)) : 0;
+      if (off) seekTo(stepShown - off);
       population = new Map([...L.alive].flatMap((c, t) => (c ? [[key(...walk.plane.xy(t)), L.margolus ? 1 : c]] : [])));
     }
     plane.start = b.dataset.start; cleared = null;
@@ -17802,7 +17802,7 @@ $('exportPng').addEventListener('click', () => {
     im.data.set([v, v, v, 255], 4 * t);
   }
   g.putImageData(im, 0, 0);
-  c.toBlob((blob) => { const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `${APP_TITLE} gen ${cur}.png`; a.click(); URL.revokeObjectURL(a.href); });
+  c.toBlob((blob) => { const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `${APP_TITLE} gen ${stepShown}.png`; a.click(); URL.revokeObjectURL(a.href); });
 });
 stage.addEventListener('pointerleave', () => { if (ghost) { ghost = null; drawGhost(); } });
 $('brushCards').replaceChildren(...[BRUSH_VIEW, BRUSH_CELL, ...DRAW_PATTERNS].map(([id, kind, , name, rle, what, art]) => {
@@ -17998,7 +17998,7 @@ function lifeRle() {
   if (L.C === 2) body = body.replace(/\./g, 'b').replace(/A/g, 'o');
   const lines = [], rule = ruleBody($('lifeRule').value);
   for (let i = 0; i < body.length; i += 70) lines.push(body.slice(i, i + 70));
-  return [`#N ${formulaInUse}, generation ${cur}`, `#C Tessera: ${location.href}`, ...(kind === 'square' ? [] : [`#C On the app's ${PLANE_CELLS[base]} (not Golly's squares): cells as its slanted grid numbers them`]),
+  return [`#N ${formulaInUse}, generation ${stepShown}`, `#C Tessera: ${location.href}`, ...(kind === 'square' ? [] : [`#C On the app's ${PLANE_CELLS[base]} (not Golly's squares): cells as its slanted grid numbers them`]),
     `x = ${Math.max(...xs) - Math.min(...xs) + 1}, y = ${Math.max(...ys) - Math.min(...ys) + 1}, rule = ${rule}`, ...lines].join('\n');
 }
 // A copy to the clipboard, its button told a moment: its picture a check (none: a check before its word), its word Copied;

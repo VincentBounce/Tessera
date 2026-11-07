@@ -273,7 +273,7 @@ async function coldLike(fail, what) {
   const a = linked(), b = offered(f.contentWindow);
   f.remove();
   // (what a link cannot hold, left out: a reversible one's return found by playing it; Draw's tools after a generation played)
-  const unheld = new Set([...(walk.life?.margolus && walk.life.stable ? ['#returnSection'] : []), ...(drawing && cur > 0 ? ['#startSection'] : [])]);
+  const unheld = new Set([...(walk.life?.margolus && walk.life.stable ? ['#returnSection'] : []), ...(drawing && stepShown > 0 ? ['#startSection'] : [])]);
   const diff = [...new Set([...Object.keys(a), ...Object.keys(b)])].filter((k) => a[k] !== b[k] && !unheld.has(k)).map((k) => `${k}: «${a[k]}» here, «${b[k]}» cold`);
   if (diff.length) fail(`${what} ${location.hash}: ${diff.join('; ')}`);
 }
@@ -322,7 +322,7 @@ async function deep(fail, from, only) {
     checked++;
     if (errors.length) fail(`${what}: ${errors.splice(0).join(' / ')}`);
   };
-  const play = async (what) => { try { await goTo(cur + 30); } catch (e) { fail(`${what}: playing: ${e.message}`); } };
+  const play = async (what) => { try { await goTo(stepShown + 30); } catch (e) { fail(`${what}: playing: ${e.message}`); } };
   const how = async (what) => {  // its How it works, then its Letters, closed again
     $('watchRule').click();
     await look(`${what} How it works`);
@@ -509,8 +509,8 @@ async function checkKnown(fail) {
     await until(shown(w, () => walk.life && walk.life !== before));
     const L = walk.life;
     lifeReset();
-    cur = 0;
-    for (let far = (T ?? 600) + (P ?? 600), was = -1; !L.stable && cur < far && cur !== was; ) { was = cur; await goTo(Math.min(far, cur + LIFE_BATCH)); }  // (none going on: stopped, not spun)
+    stepShown = 0;
+    for (let far = (T ?? 600) + (P ?? 600), was = -1; !L.stable && stepShown < far && stepShown !== was; ) { was = stepShown; await goTo(Math.min(far, stepShown + LIFE_BATCH)); }  // (none going on: stopped, not spun)
     checked++;
     if ((T !== null && L.stable?.T !== T) || (P !== null && L.stable?.P !== P)) fail(`${link}: repeats from ${L.stable?.T} with period ${L.stable?.P}, known ${T} and ${P}`);
   }
@@ -518,7 +518,7 @@ async function checkKnown(fail) {
   location.hash = '#w=blocks2dHex&r=M0,2,4,5,1,6,3,7&s=6&pop=random.10.6';
   for (let i = 0; i < 100 && !($('mode').value === 'blocks2dHex' && walk.life?.margolus && walk.life.seedAlive === 6 && !busy); i++) await wait(100);  // (built, not a wait's guess)
   lifeReset();
-  cur = 0;
+  stepShown = 0;
   searchBack(true);
   for (let i = 0; i < 300 && backSearch.life; i++) await wait(50);
   checked++;
@@ -538,14 +538,14 @@ async function checkKnown(fail) {
     await goTo(from);
     await goTo(to);
     checked++;
-    if (cur !== to || !cells().every((v, t) => v === at[to][t])) fail(`a Game of Life back from ${from} to ${to}: at ${cur}, ${cur === to ? 'not the state played to' : ''}`);
+    if (stepShown !== to || !cells().every((v, t) => v === at[to][t])) fail(`a Game of Life back from ${from} to ${to}: at ${stepShown}, ${stepShown === to ? 'not the state played to' : ''}`);
   }
   location.hash = '#x=1/28&w=blocks2d&d=200&r=M15,1,2,3,4,5,6,7,8,9,10,11,12,13,14,0&s=16&e=1&pop=digits';
   await wait(1500);
   restart();
   await goTo(30);
   checked++;
-  if (cur !== 6) fail(`1/28's blocks, a jump to 30 across its return (12): at ${cur}, not round its loop (6, as a Game of Life)`);
+  if (stepShown !== 6) fail(`1/28's blocks, a jump to 30 across its return (12): at ${stepShown}, not round its loop (6, as a Game of Life)`);
   // a start's symmetry (see symmetricStart): its shape the same on every copy; in colours, a start by parts each colour as many
   // (v0.2.79, v0.2.82); a text in colours laid at all (v0.2.78)
   for (const link of ['#w=life2d&r=B3/S23&k=4&s=48&e=1&y=rotate&pop=random.30.5', '#w=life2d&r=B3/S23&k=4&s=144&e=1&y=rotate&pop=text.Walking%0Api&tf=hand',
@@ -579,7 +579,7 @@ async function checkKnown(fail) {
       let bad = 0;
       for (let t = 0; t < a.length; t++) for (const c of cellCopies(kind, W, t)) if ((a[c] > 0) !== (a[t] > 0)) bad++;
       checked++;
-      if (bad) fail(`${w} ${y}: at gen ${cur}, ${bad} cells unlike their copies`);
+      if (bad) fail(`${w} ${y}: at gen ${stepShown}, ${bad} cells unlike their copies`);
     }
     plane.sym = 'none';
   }

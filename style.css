@@ -540,6 +540,11 @@ button.wide.active, .head-btn.active { border-color: var(--accent); color: var(-
 #hint:not([hidden]) { width: max-content; }
 .tip-name { display: block; }  /* (a control's name, a line of its own) */
 .tip-default { color: var(--muted); }  /* a control's default, under its tooltip: fainter */
+/* a tooltip's state here, under a rule: Greyed and Allowed, a label and its words each (a column of labels), then its default */
+.tip-state { display: grid; grid-template-columns: auto 1fr; column-gap: 8px; margin-top: 4px; padding-top: 4px; border-top: 1px solid var(--border); color: var(--muted); }
+.tip-state > b { color: var(--text); font-weight: 600; }
+.tip-state > span { white-space: pre-line; }
+.tip-state > .tip-default { grid-column: 1 / -1; }
 .tip-y { color: var(--motif); } .tip-r { color: var(--face); } .tip-s { color: var(--sector); } .tip-k { color: var(--cell); } .tip-o { color: #c4934e; }  /* a size's words in the colours drawn (see sizeTips; the walls': LIFE_WALL) */
 
 @media (max-width: 720px) {

@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.455';
+const VERSION = '0.4.456';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -3648,8 +3648,8 @@ function pathsTo(fits, budget = 5000) {
 }
 // the greyed control a tooltip is on: itself, or the slider in its row (a notched row's, Morph's)
 const greyedOf = (el) => (el?.disabled ? el : el?.querySelector?.('input:disabled') ?? null);
-// a greyed control's shortest paths in words, for its tooltip: Torus › Hexagons · Möbius strip › Hexagons (three at most)
-const pathsWords = (paths) => paths.slice(0, 3).map((path) => path.map(([, words]) => words).join(' › ')).join(' · ') + (paths.length > 3 ? ' …' : '');
+// a greyed control's shortest paths in words, for its tooltip: Torus · Möbius strip, or a line each, Torus › Hexagons (three at most)
+const pathsWords = (paths) => paths.slice(0, 3).map((path) => path.map(([, words]) => words).join(' › ')).join(paths.some((path) => path.length > 1) ? '\n' : ' · ') + (paths.length > 3 ? ' …' : '');  // (paths of several clicks, a line each)
 // A greyed button's enablers: the buttons starting the shortest paths that would allow it (see pathsTo), highlighted by a
 // click on it (see highlight); the size stepper for a size
 const enablersFor = (fits) => [...new Set(pathsTo(fits).map(([[key]]) => key))].map((key) => (key === 'size' ? $('sizeBox') : document.querySelector(`[data-choice="${key}"]`))).filter(Boolean);
@@ -4353,10 +4353,13 @@ document.addEventListener('mouseover', (e) => {
   const bold = (text) => Object.assign(document.createElement('b'), { className: 'tip-name', textContent: text }), ok = tip && /\p{L}/u.test(name);  // (a symbol, + or −: no name)
   // its default: a tile's (see setTile), a box's (its checkbox as the page starts)
   const box = el?.matches('label') ? el.querySelector('input[type=checkbox]') : null, d = el?.dataset.default ?? (box ? (box.defaultChecked ? 'on' : 'off') : '');
-  const line = (text) => Object.assign(document.createElement('div'), { className: 'tip-default', textContent: text });  // (on a line of its own, fainter)
-  const told = [...(d ? [line(d === 'yes' ? 'By default' : d === 'on' ? 'On by default' : d === 'off' ? 'Off by default' : d)] : []),  // (a default that depends, told in full)
-    ...(el?.dataset.greyed ? [line(`Greyed ${el.dataset.greyed}`)] : []),  // (when it cannot be clicked)
-    ...((greyedOf(el)?.paths && pathsWords(greyedOf(el).paths())) ? [line(`Allowed by ${pathsWords(greyedOf(el).paths())}`)] : [])];  // (greyed: the shortest paths that allow it, see pathsTo)
+  // its state here, under a rule (see .tip-state): Greyed and Allowed, a label and its words each, then its default, fainter
+  const row = (label, text) => [Object.assign(document.createElement('b'), { textContent: label }), Object.assign(document.createElement('span'), { textContent: text })];
+  const allowed = greyedOf(el)?.paths && pathsWords(greyedOf(el).paths());  // (greyed: the shortest paths that allow it, see pathsTo)
+  const state = [...(el?.dataset.greyed ? row('Greyed', el.dataset.greyed) : []), ...(allowed ? row('Allowed', allowed) : []),
+    ...(d ? [Object.assign(document.createElement('div'), { className: 'tip-default', textContent: d === 'yes' ? 'By default' : d === 'on' ? 'On by default' : d === 'off' ? 'Off by default' : d })] : [])];  // (a default that depends, told in full)
+  const told = state.length ? [Object.assign(document.createElement('div'), { className: 'tip-state' })] : [];
+  told[0]?.append(...state);
   if (el?.dataset.tipHtml) $('tip').innerHTML = el.dataset.tipHtml;  // (a size's: its words in colour, see sizeTips)
   else $('tip').replaceChildren(...(!tip ? (told.length ? [bold(name), ...told] : []) : !ok ? [tip, ...told] : tip.startsWith(`${name}:`) ? [bold(name), tip.slice(name.length + 1).trim().replace(/^./, (c) => c.toUpperCase()), ...told] : [bold(name), tip, ...told]));  // (no words of its own: its name and its default; else its name, then its words under it)
   $('hint').hidden = !!el || !(e.target.tagName === 'CANVAS' && e.target.parentElement.id === 'stage');  // (the view's own layers, not a box's canvas over it)

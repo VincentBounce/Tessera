@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.405';
+const VERSION = '0.4.406';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -9280,13 +9280,13 @@ function planeTurns(kind, W) {
   return turnMemo.set(key, { N: 6, r, m }).get(key);
 }
 // a symmetry's maps, each a cell → its copy (the first, the cell itself): the turns, then the mirrored ones
-const symMemo = new Map();
+const symmetriesMemo = new Map();
 function symmetryMaps(kind, W, sym) {
   const key = `${kind}|${W}|${sym}`;
-  if (symMemo.has(key)) return symMemo.get(key);
+  if (symmetriesMemo.has(key)) return symmetriesMemo.get(key);
   const { N, r, m } = sym === 'none' ? { N: 1 } : planeTurns(kind, W), turn = (k) => (t) => { for (let i = 0; i < k; i++) t = r[t]; return t; };
   const turns = Array.from({ length: N }, (_, k) => turn(k)), half = turn(N / 2), across = (f) => (t) => f(m[t]);
-  return symMemo.set(key, { none: turns, half: [turns[0], half], rotate: turns, mirror: [turns[0], across(turns[0]), across(half), half], kaleido: [...turns, ...turns.map(across)] }[sym]).get(key);
+  return symmetriesMemo.set(key, { none: turns, half: [turns[0], half], rotate: turns, mirror: [turns[0], across(turns[0]), across(half), half], kaleido: [...turns, ...turns.map(across)] }[sym]).get(key);
 }
 // the symmetries a start may have here: the grid's; Famous's and Anywhere's none (a pattern laid whole where it is, but the
 // copies taken from their first's: Famous's middle onto itself, Anywhere's gone out of the first part); in colours, a start

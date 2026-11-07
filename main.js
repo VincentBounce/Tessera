@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.521';
+const VERSION = '0.4.522';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -1824,7 +1824,7 @@ function updateDisplayMenu() {
   $('centeredRow').hidden = !spin;
   $('centeredName').textContent = centersPattern() ? 'Centered pattern' : 'Default view';  // (as the hint says it)
   $('fillAreasRow').hidden = !shows('fill') || !!mode.antOf;  // an ant fills no areas
-  $('fillTooBig').hidden = !(fill?.tooBig && areaOn());
+  $('fillTooBig').hidden = !(areaFill?.tooBig && areaOn());
   renderAreaModes();
   $('fillLayer').style.opacity = areaLight() ? 0.35 : 1;
   renderTrailButton();
@@ -4122,7 +4122,7 @@ function buildWalkOf() {
   previousShape = walk.shape && { target: walk.shape.target, mode: walk.shape.mode };
   visitData = firstVisitData = areaData = null;  // and its cells' visits and areas too
   gpuClear();  // a surface drawn before (see 11.4d)
-  fill = null;  // a new walk: its enclosed areas are computed again, and its layer starts empty
+  areaFill = null;  // a new walk: its enclosed areas are computed again, and its layer starts empty
   Object.assign(walk, freshWalk(), { mode: current.mode });  // (all its fields fresh; the mode it is built for: its colours by it, current.mode ahead of it while another is made, see compute)
   $('fillTooBig').hidden = true;
   layers.fill.clearRect(0, 0, canvasWidth, canvasHeight);
@@ -17012,15 +17012,15 @@ function gpuFlat(to) {
   let fillCount = 0;
   if (fillOn()) {
     fillNow();
-    if (fill.count && fill.templates.length <= 4) {
-      if (D.keys.flatFill !== fill) {
-        const inst = new Float32Array(4 * fill.count);
-        for (let k = 0; k < fill.count; k++) inst.set([fill.cx[k], fill.cy[k], rainbowBand(fill.at[k] - 1), fill.tpl[k]], 4 * k);
+    if (areaFill.count && areaFill.templates.length <= 4) {
+      if (D.keys.flatFill !== areaFill) {
+        const inst = new Float32Array(4 * areaFill.count);
+        for (let k = 0; k < areaFill.count; k++) inst.set([areaFill.cx[k], areaFill.cy[k], rainbowBand(areaFill.at[k] - 1), areaFill.tpl[k]], 4 * k);
         gpuBuffer('flatFill', inst);
-        D.fillTpl = templateArray(fill.templates);
-        D.keys.flatFill = fill;
+        D.fillTpl = templateArray(areaFill.templates);
+        D.keys.flatFill = areaFill;
       }
-      fillCount = countUpTo(fill.at, fill.count, to);
+      fillCount = countUpTo(areaFill.at, areaFill.count, to);
     }
   }
   const cells = !walk.is3d && flatCellsOn();
@@ -17182,7 +17182,7 @@ function visitCells() {
 // which it is enclosed; the animation then paints each region when it forms, on a layer of its own
 // under the path. A vertex is painted as the polygon of the tile centres around it: those polygons
 // tile the plane, so the fill follows the path exactly.
-let fill = null;                   // { at, cx, cy, tpl, templates, count, tooBig } for the current walk (see computeFill)
+let areaFill = null;               // Area's: { at, cx, cy, tpl, templates, count, tooBig } for the current walk (see computeFill)
 // Area goes with the colours where the path has one colour per step (not Visits, not By digit)
 const fillAreasApply = (w = $('mode').value) => !areaWhyNot(w);
 // Area greyed at a mode: on cells (its cells its own colours, a battle's its lands: along the lines only), a walk closing none
@@ -17198,8 +17198,8 @@ const areaLight = () => areaOn() && $('area').value === 'light' && shows('transl
 const fillOn = () => areaOn() && walk.n && !walk.is3d && !!FILL_GRIDS[walk.lattice];
 // the fill, computed once per walk; beside the toggle, a word when the walk is too big to fill
 function fillNow() {
-  if (!fill) { fill = computeFill(); updateDisplayMenu(); }
-  return fill;
+  if (!areaFill) { areaFill = computeFill(); updateDisplayMenu(); }
+  return areaFill;
 }
 
 /* The fill, in typed arrays only, for walks of millions of steps. The vertices of the tiling sit on

@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.471';
+const VERSION = '0.4.472';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -1951,8 +1951,8 @@ const tile = ({ pic = '', text = '', html = null, title = '', id = null, on = fa
 // at; its colours, a walk's teams, its battle rule: the ones picked if none), '' when allowed: its one
 // source; greyed here (at: its mode, the tab's by default) or not, its words why, and the menu's nearest buttons that would
 // allow it, highlighted by a click on it (see enablersFor))
-const setTile = (b, { on = false, greyed = '', can = !greyed, mark = false, again = false, turn = 0, byDefault, whyNot = null, at = $('mode').value }) => {
-  if (whyNot) { const why = whyNot({ w: at ?? $('mode').value }); if (why) { can = false; greyed = why; } b.enablers = why ? () => enablersFor((setup) => !whyNot(setup)) : null; b.pathsMemo = null; b.paths = why ? () => (b.pathsMemo ??= pathsTo((setup) => !whyNot(setup))) : null; }  // (its paths found once a drawing: at its first tooltip)  // (at: none, no walk shown yet: the tab's)
+const setTile = (b, { on = false, greyed = '', can = !greyed, mark = false, again = false, turn = 0, byDefault, whyNot = null, at = $('mode').value, judgedAt = null }) => {
+  if (whyNot) { const why = whyNot({ w: at ?? $('mode').value }); if (why) { can = false; greyed = why; } b.enablers = why ? () => enablersFor((setup) => !whyNot(setup), judgedAt) : null; b.pathsMemo = null; b.paths = why ? () => (b.pathsMemo ??= pathsTo((setup) => !whyNot(setup), 5000, judgedAt)) : null; }  // (its paths found once a drawing: at its first tooltip)  // (at: none, no walk shown yet: the tab's)
   if (byDefault !== undefined) b.dataset.default = byDefault;
   b.dataset.greyed = can ? '' : greyed;  // (its words why only while greyed: whyNot's, or its own)
   const pic = b.querySelector('svg');
@@ -2001,7 +2001,7 @@ const rowAction = (html, title, click) => {
   return x;
 };
 // Trail: a dead cell fades through greys for a few generations (States and Age, in colours too; two states)
-const trailApplies = (w = walk.life && walk.mode) => !!w && !!MODES[w].life && !MODES[w].margolus && !MODES[w].elementary && (lifeRuleNow()?.C ?? 2) === 2 && $('colourMode').value !== 'digit';  // (w: the walk shown's, or a mode's: its rule the one in use)  // (a reversible rule's blocks: none, their cells move, none dies, and backwards a trail would show where they are born)
+const trailApplies = (w = walk.life && walk.mode, rule = $('lifeRule').value) => !!w && !!MODES[w].life && !MODES[w].margolus && !MODES[w].elementary && (parseRule(ruleBody(lifeRuleAt(rule, w)))?.C ?? 2) === 2 && $('colourMode').value !== 'digit';  // (w: the walk shown's, or a mode's: its rule the one in use)  // (a reversible rule's blocks: none, their cells move, none dies, and backwards a trail would show where they are born)
 const trailOn = () => $('lifeTrail').checked && trailApplies();
 const TRAIL_WHERE = 'Not with dying stages (Generations), on Rewind, or with Activity.';  // (Trail's greyed words)
 // Trail, a tile turned on and off (see tile): its picture a live cell with its comet fading in amber behind (LIFE_FADE); greyed for Activity
@@ -2011,7 +2011,7 @@ function renderTrailButton() {
   const sq = (k, c) => `<rect x="${(17 * k) / 3}" y="${17 - (17 * k) / 3}" width="7" height="7" rx="1" fill="${c}"/>`;
   trailButton ??= tile({ pic: `<svg viewBox="0 0 24 24" aria-hidden="true">${sq(0, LIFE_FADE[5]) + sq(1, LIFE_FADE[3]) + sq(2, LIFE_FADE[1])}${sq(3, LIFE_ALIVE)}</svg>`, text: 'Trail', id: 'lifeTrailButton', toggle: true,  // up the diagonal
     title: 'A dead cell fades in amber for a few generations (States and Age)', click: () => { $('lifeTrail').checked = !$('lifeTrail').checked; $('lifeTrail').dispatchEvent(new Event('change')); } });
-  setTile(trailButton, { on: $('lifeTrail').checked && trailApplies(), byDefault: 'On by default in Solo\nOff by default in colours', whyNot: ({ w }) => (trailApplies(w) ? '' : TRAIL_WHERE), at: walk.mode });  // (not for these looks: off)
+  setTile(trailButton, { on: $('lifeTrail').checked && trailApplies(), byDefault: 'On by default in Solo\nOff by default in colours', whyNot: ({ w, rule }) => (trailApplies(w, rule) ? '' : TRAIL_WHERE), at: walk.mode });  // (not for these looks: off)
 }
 // Blocks (Rewind, in Trail's place: no trail there), a tile turned on and off: the blocks of the set the next generation
 // is worked out by, outlined over the cells (see drawBlocks); Ising's squares in turn are no blocks: greyed
@@ -3594,10 +3594,10 @@ function ruleCards(w, here = true) {
 // The modes under a button of the menu: its place in the tree (NAV: kind, space, shape, rule, side), all those below it
 const modesUnder = (...place) => Object.keys(NAV).filter((u) => place.every((x, i) => NAV[u][i] === x));
 // The menu as a graph (the setup a node, a click an edge): a setup, what the app holds as a link does ({ w: the mode, size:
-// null for the one it opens at, its colours, a walk's teams, its battle rule, its starts' way, a Life's start and its hunt's
-// zone), the one in use first
-const setupNow = () => ({ w: $('mode').value, size: null, colours: lifeColours, teams: walkTeams, battleRule, startsWay: battleStartsWay, start: plane.start, zone: hunt.zone });
-const SETUP_FIELDS = ['size', 'colours', 'teams', 'battleRule', 'startsWay', 'start', 'zone'];  // (its fields but the mode: a key's, a path's changes)
+// null for the one it opens at, its colours, a walk's teams, its battle rule, its starts' way, a Life's start, its hunt's
+// zone and its rule, as typed: the one a mode plays from it, lifeRuleAt), the one in use first
+const setupNow = () => ({ w: $('mode').value, size: null, colours: lifeColours, teams: walkTeams, battleRule, startsWay: battleStartsWay, start: plane.start, zone: hunt.zone, rule: $('lifeRule').value });
+const SETUP_FIELDS = ['size', 'colours', 'teams', 'battleRule', 'startsWay', 'start', 'zone', 'rule'];  // (its fields but the mode: a key's, a path's changes)
 const setupKey = (s) => [s.w, ...SETUP_FIELDS.map((f) => s[f])].join('|');
 // The menu's choices at a setup, each a click: its key (its button's data-choice) and the setup it leads to, by the menu's
 // own navigation (navPick, kindLeft, nearestMode, walksThere): the tabs, spaces, shapes, tilings, sides, walks' kinds, then a
@@ -3621,6 +3621,7 @@ function choicesAt(s) {  // (each [key, the setup it leads to, its button's word
   // a Life's starts (its tabs: Hunt, Text, Digits, Draw), and its hunt's zones on the grid shown (their room known there only, see huntFits; Custom a link's, no tile)
   const m = MODES[w];
   if (m.life && !m.loops && !m.elementary) for (const [start, name] of LIFE_STARTS) set(`start:${start}`, 'start', start, startWhyNot(start, w), name);
+  if (m.life) for (const r of lifeRulesListed(w)) set(`lifeRule:${r.rule}`, 'rule', r.rule, '', r.name);  // (its rules' cards)
   if (w === walk.mode && s.colours === lifeColours && s.start === 'random' && huntOn()) for (const [zone, fits] of Object.entries(huntFits())) if (fits && zone !== 'custom') set(`zone:${zone}`, 'zone', zone, '', HUNT_ZONES[zone][1]);
   return out;
 }
@@ -3631,9 +3632,15 @@ const tilingNameOf = (w) => { const fam = familyOf(w); return fam ? fam.F.tabs.f
 const modeChanges = (v, w) => [0, 1, 2, 3, 4].filter((i) => NAV[v][i] !== NAV[w][i]).length + (tilingNameOf(v) !== tilingNameOf(w));
 const changes = (a, b) => modeChanges(a.w, b.w) + SETUP_FIELDS.filter((f) => a[f] !== b[f]).length;
 // The shortest paths from the setup in use to one fits takes, at n clicks: breadth first, each setup once, layer by layer
-// till one holds some; of these the fewest settings changed, each its clicks [key, words] (budget: setups tried at most)
-function pathsTo(fits, budget = 5000) {
+// till one holds some; of these the fewest settings changed, each its clicks [key, words] (budget: setups tried at most).
+// Only the clicks that change what fits reads: its fields, as it reads them (the mode always), so a control judged by few
+// fields searches those only (a hunt's zone, judged on the grid built: none but its mode's)
+const EDGE_FIELD = { kind: 'w', space: 'w', shape: 'w', tiling: 'w', side: 'w', rule: 'w', lifeRule: 'rule' };  // (a click's key: the field it changes)
+function pathsTo(fits, budget = 5000, judgedAt = null) {  // (judgedAt: a control judged on the grid built only, its mode's setups only)
   const start = setupNow(), seen = new Set([setupKey(start)]), w = start.w, kind = !MODES[w].plane && surfaceOf(MODES[w]), now = SPHERES[kind] && figureSize(w);
+  const reads = new Set(['w']), judged = (t) => fits(new Proxy(t, { get: (o, f) => { reads.add(f); return o[f]; } }));  // (the fields it reads, as it reads them)
+  const field = (key) => { const f = key.split(':')[0]; return EDGE_FIELD[f] ?? f; };
+  judged(start);
   // (a surface's sizes, the 8 nearest by construction: its mode's, see sizesOf; the size stepper, a click away)
   const sizes = now ? sizesOf(kind, MODES[w]).filter((f) => f !== now).sort((a, b) => Math.abs(a - now) - Math.abs(b - now)).slice(0, 8).map((size) => ['size', { ...start, size }, 'another size']) : [];
   let layer = [[start, []]], tried = 0;
@@ -3642,9 +3649,9 @@ function pathsTo(fits, budget = 5000) {
     for (const [s, path] of layer) {
       for (const [key, t, words] of [...choicesAt(s), ...(path.length ? [] : sizes)]) {
         const k = setupKey(t);
-        if (seen.has(k) || ++tried > budget) continue;
+        if (seen.has(k) || !reads.has(field(key)) || (judgedAt && t.w !== judgedAt) || ++tried > budget) continue;
         seen.add(k);
-        (fits(t) ? hits : next).push([t, [...path, [key, words]]]);
+        (judged(t) ? hits : next).push([t, [...path, [key, words]]]);
       }
     }
     if (hits.length) { const least = Math.min(...hits.map(([t]) => changes(start, t))); return hits.filter(([t]) => changes(start, t) === least).map(([, path]) => path); }
@@ -3658,7 +3665,7 @@ const greyedOf = (el) => (el?.disabled ? el : el?.querySelector?.('input:disable
 const pathsWords = (paths) => paths.slice(0, 3).map((path) => path.map(([, words]) => words).join(' › ')).join(paths.some((path) => path.length > 1) ? '\n' : ' · ') + (paths.length > 3 ? ' …' : '');  // (paths of several clicks, a line each)
 // A greyed button's enablers: the buttons starting the shortest paths that would allow it (see pathsTo), highlighted by a
 // click on it (see highlight); the size stepper for a size
-const enablersFor = (fits) => [...new Set(pathsTo(fits).map(([[key]]) => key))].map((key) => (key === 'size' ? $('sizeBox') : document.querySelector(`[data-choice="${key}"]`))).filter(Boolean);
+const enablersFor = (fits, judgedAt = null) => [...new Set(pathsTo(fits, 5000, judgedAt).map(([[key]]) => key))].map((key) => (key === 'size' ? $('sizeBox') : document.querySelector(`[data-choice="${key}"]`))).filter(Boolean);
 // a rule card's greyed words in a mode (see rulesFor): its why there, or none there at all
 const ruleWhyNot = (v, source) => { const c = rulesFor(v).find((r) => r.source === source); return c ? c.why : 'Not a rule here.'; };
 // whether a rules list has a card for the rule in use (else it is your own: Custom rule)
@@ -10632,7 +10639,7 @@ function renderPlaneRow() {
     b.hidden = !!MODES[$('mode').value].elementary !== ELEMENTARY_STARTS.includes(s) && s !== 'digits';  // (Elementary's starts, see elementaryRows)
     if (s === 'random') b.innerHTML = `${icon(blocks ? 'dice' : 'search')}<span>${blocks ? 'Random' : 'Hunt'}</span>`;  // (blocks: no hunt, its zones' starts)
     b.dataset.choice = `start:${s}`;  // (its choice's key, see choicesAt)
-    if (s === 'draw' || s === 'text') setTile(b, { on, whyNot: ({ w: v }) => startWhyNot(s, v) });  // (a picture's room known on the grid built only: another mode's not judged, not claimed)  // (its grid's, once built)
+    if (s === 'draw' || s === 'text') setTile(b, { on, whyNot: ({ w: v }) => startWhyNot(s, v), judgedAt: s === 'text' ? $('mode').value : null });  // (Text's room: on the grid built only)  // (a picture's room known on the grid built only: another mode's not judged, not claimed)  // (its grid's, once built)
     else setTile(b, { on });
   }
   $('startTextInput').value = plane.text;  // (its words, on any grid)
@@ -12024,12 +12031,15 @@ const walkTutorialToggle = () => ($('ruleTuto').hidden || creditsShown() ? walkT
 // a rule's words without its name when they open with it ("Maze, grows corridors": grows corridors), else as they are (Byl's
 // loop, Fredkin's Replicator, the Ising model)
 const unnamed = (words, name) => (words.startsWith(name) && /^(?:[,:]|\s\(|$)/.test(words.slice(name.length)) ? words.slice(name.length).replace(/^[,:]?\s*/, '') : words);
+// a Life mode's rules' cards: its shape's, those its grid takes (a block rule's blocks, a loop's), once a mode
+const lifeRulesMemo = {};
+const lifeRulesListed = (w) => (lifeRulesMemo[w] ??= rulesOf('life').filter((r) => { const mode = MODES[w]; return r.tiling.includes(lifeMark(mode)) && (!mode.margolus || blocksFit(parseRule(r.rule), mode)) && (!mode.loops || loopFits(parseRule(r.rule), mode)); }));
 let ruleTab = null;  // Elementary's tab clicked and the rule then in use ({ tab, now }: kept while it is, see renderRuleSection)
 function renderRuleSection() {
   const mode = MODES[$('mode').value];
   if (!mode.life) { if (!creditsShown()) { if (!$('ruleTuto').hidden && walkTutorialFits($('mode').value)) walkTutorial($('mode').value); else ruleTutorial(null); } return; }  // (a walk's: it follows the walk; Credits stay)
   const mark = lifeMark(mode), now = ruleBody($('lifeRule').value);
-  const listed = rulesOf('life').filter((r) => r.tiling.includes(mark) && (!mode.margolus || blocksFit(parseRule(r.rule), mode)) && (!mode.loops || loopFits(parseRule(r.rule), mode))), mine = listed.find((r) => r.rule === now);
+  const listed = lifeRulesListed($('mode').value), mine = listed.find((r) => r.rule === now);
   // Elementary's, in two tabs over How it works: Main, the known ones; Others, the rest (the rule in use's; one clicked, while that rule stays)
   const main = (r) => ELEMENTARY_MAIN.has(parseRule(r.rule).wolfram), tab = ruleTab?.now === now ? ruleTab.tab : mine && !main(mine) ? 'others' : 'main';
   $('ruleTabs').replaceChildren(...(mode.elementary ? [tileGroup([['main', pixelIcon(RULE_ICONS.W90), 'Main', `The ${ELEMENTARY_MAIN.size} known ones`], ['others', pixelIcon(RULE_ICONS.W184), 'Others', `The ${listed.length - ELEMENTARY_MAIN.size} others, by number`]]
@@ -12044,7 +12054,7 @@ function renderRuleSection() {
     const pick = () => { customOpen = false; if (o.rule === now) { renderRuleSection(); return; } $('lifeRule').value = o.rule; compute(); };
     return card({ pic: RULE_ICONS[o.rule] ? pixelIcon(RULE_ICONS[o.rule]) : '', name: `${o.name}${bw ? ' · B&W' : ''}`, on: picked, byDefault: i ? '' : 'yes',
       how: () => { if (picked) ruleTutorial(howShown(o) ? null : o); else { pick(); ruleTutorial(o); } },  // (its ⓘ: how it works, picked first, as the walks')  // (the first: the shape's, see fitRuleToShape)
-      detail: `${mode.loops ? loopCode(o.rule) : o.rule} · ${unnamed(o.about, o.name)}`, click: pick });  // its code (a loop's: its states), its words without its name
+      detail: `${mode.loops ? loopCode(o.rule) : o.rule} · ${unnamed(o.about, o.name)}`, click: pick, choice: `lifeRule:${o.rule}` });  // its code (a loop's: its states), its words without its name
   }));
   // after them, your own: picked when the rule in use is none of them, or clicked (its states, births and survivals below); none for a loop
   $('watchRule').onclick = () => ruleTutorial(!$('ruleTuto').hidden && !creditsShown() ? null : shown);  // (the rule in use: a card's, or your own)
@@ -12127,14 +12137,19 @@ function fitRuleToShape() {
   const w = $('mode').value, mode = MODES[w];
   if (!mode.life) return;
   // a rule known, even without its dying states (none with colours: B34/S123 is B34/S123/C3)
-  const rule = $('lifeRule').value, now = rulesOf('life').find((r) => r.rule === rule || r.rule.replace(/\/C\d+$/, '') === rule);
-  const fits = ruleFits(rule, mode), mark = lifeMark(mode);
-  if (ruleFittedTo === w && fits) { shapeRules[mark] = rule; return; }  // (fitted already, a link's as it is: if it fits the grid at all)
+  const rule = $('lifeRule').value, mark = lifeMark(mode);
+  if (ruleFittedTo === w && ruleFits(rule, mode)) { shapeRules[mark] = rule; return; }  // (fitted already, a link's as it is: if it fits the grid at all)
   ruleFittedTo = w;
-  if (fits && (!now || now.tiling.includes(mark))) { shapeRules[mark] = rule; return; }  // a rule typed (its letters, if any, this shape's: Callahan's hexagons, Hensel's squares on the plane), or one for this shape: kept
-  const fit = [shapeRules[mark], ...rulesOf('life').filter((r) => r.tiling.includes(mark)).map((r) => r.rule)].find((r) => r && ruleFits(r, mode));
-  if (fit) { customOpen = false; $('lifeRule').value = fit; }  // (this shape's last, else its first, if this grid takes it: the loops' grids share a mark, not their rules)
+  const fit = lifeRuleAt(rule, w);
+  if (fit === rule && ruleKeptAt(rule, w)) shapeRules[mark] = rule;
+  else if (fit !== rule) { customOpen = false; $('lifeRule').value = fit; }
 }
+// the Life rule mode w plays from rule (see fitRuleToShape): kept where it fits, a rule typed (its letters, if any, this
+// shape's: Callahan's hexagons, Hensel's squares on the plane) or one for this shape; else this shape's last, else its first,
+// if this grid takes it (the loops' grids share a mark, not their rules); else as it is
+const ruleKeptAt = (rule, w) => { const now = rulesOf('life').find((r) => r.rule === rule || r.rule.replace(/\/C\d+$/, '') === rule); return ruleFits(rule, MODES[w]) && (!now || now.tiling.includes(lifeMark(MODES[w]))); };
+const lifeRuleAt = (rule, w) => (ruleKeptAt(rule, w) ? rule
+  : [shapeRules[lifeMark(MODES[w])], ...rulesOf('life').filter((r) => r.tiling.includes(lifeMark(MODES[w]))).map((r) => r.rule)].find((r) => r && ruleFits(r, MODES[w])) ?? rule);
 
 function lifeReset() {
   const L = walk.life;
@@ -13316,8 +13331,8 @@ function renderHunt() {
   const fits = huntFits();
   for (const b of $('huntZones').children) {
     b.dataset.choice = `zone:${b.dataset.zone}`;  // (its choice's key, see choicesAt)
-    setTile(b, { on: b.dataset.zone === hunt.zone, again: true, at: walk.mode,
-      whyNot: ({ w: v }) => (v === walk.mode && !busy && fits[b.dataset.zone] ? '' : `${zoneGreyed(b.dataset.zone)} Not while a hunt runs.`) });  // (its room known on the grid built only: another mode's, not judged)  // (picked: a click draws another start)
+    setTile(b, { on: b.dataset.zone === hunt.zone, again: true, at: walk.mode, judgedAt: walk.mode, greyed: busy ? 'Not while a hunt runs.' : '',
+      whyNot: ({ w: v }) => (v === walk.mode && fits[b.dataset.zone] ? '' : zoneGreyed(b.dataset.zone)) });  // (its room known on the grid built only: another mode's, not judged)  // (picked: a click draws another start)
     if (b.dataset.zone === 'custom') b.hidden = hunt.zone !== 'custom';
   }
   // one line under the button: what the zone has put on the grid, and (Life) what a hunt will try; how far it got while it

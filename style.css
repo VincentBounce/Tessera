@@ -1,4 +1,5 @@
 :root {
+  --mono: ui-monospace, "SF Mono", Menlo, monospace;  /* digits and the rules' words: l, I, | and 1 told apart */
   --view-gap: 12px;  /* the view's boxes from its edges (player, display, hint), a fit's margin too (see viewFor) */
   --player-width: calc(6 * 48px + 5 * 6px);  /* the player's six buttons and their gaps (a .row's): the folded bar's inner width */
   --bg: #0e1116;
@@ -118,6 +119,7 @@ input[type=number], input[type=text], select, textarea {
    is hovered or used; in yellow bold when it is the number chosen (no card matches it) */
 /* a value of one's own, in yellow bold: a formula no card matches, a rule no preset matches */
 .field :is(input, textarea).custom { color: var(--accent); font-weight: 600; }
+.field input.custom, .rule-cards .mode-detail, .tut-words b { font-family: var(--mono); }  /* a rule typed, a rule card's words, the reminder's: in --mono */
 .field input.battle-formula { color: var(--walker); font-weight: 700; }  /* a battle's formula, its battle built with it: bold in its walker's colour (over .custom's yellow) */
 textarea { resize: none; line-height: 1.35; }  /* (Text's lines, a new line by Enter) */
 .field textarea { height: 200px; }  /* (fixed, as a line's 34 px: edited or not, whatever its font; more lines scroll) */
@@ -334,7 +336,7 @@ button.active .bubble { color: var(--accent); border-color: var(--accent); }  /*
 .activity.seek.out { cursor: not-allowed; }  /* (a Game of Life's, more than a second's play away: see lifeWithin) */
 .strip {
   margin-top: 12px;
-  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-family: var(--mono);
   font-size: 13px;
   word-break: break-all;
   color: var(--muted);

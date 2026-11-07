@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.401';
+const VERSION = '0.4.402';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -4173,8 +4173,8 @@ const polyArea = (P) => Math.abs(signedArea(P));
 // a polygon's triangles, its corners' indices three by three: a convex one fanned; else ear by ear (a corner turning its way
 // with no other corner in its triangle cut off; one in line with its neighbours dropped), a hat's, a spectre's too: once a
 // shape (its sides and its turns, in their order: the same, turned or mirrored, the same triangles)
-const earsMemo = new Map();
-const ears = (shown) => {
+const polygonTrianglesMemo = new Map();
+const polygonTriangles = (shown) => {
   // (its shape at size 1, its longest side: its tolerances and its memo the same at any size; before v0.4.3 a surface's tiles,
   // on the unit sphere, shared the memo's keys: one's triangles taken for another's, holes)
   const size = Math.max(...shown.map((p, i) => Math.hypot(shown[(i + 1) % shown.length][0] - p[0], shown[(i + 1) % shown.length][1] - p[1]))) || 1;
@@ -4182,8 +4182,8 @@ const ears = (shown) => {
   const way = Math.sign(signedArea(P)), turn = (a, b, c) => ((P[b][0] - P[a][0]) * (P[c][1] - P[a][1]) - (P[b][1] - P[a][1]) * (P[c][0] - P[a][0])) * way, L = P.length, out = [];
   if (P.every((_, i) => turn((i + L - 1) % L, i, (i + 1) % L) >= 0)) { for (let i = 1; i < L - 1; i++) out.push(0, i, i + 1); return out; }
   const shape = P.map((p, i) => `${roundOff(Math.hypot(P[(i + 1) % L][0] - p[0], P[(i + 1) % L][1] - p[1]), 1e9)},${roundOff(turn(i, (i + 1) % L, (i + 2) % L), 1e9)}`).join(';');  // (the same shape to a billionth: a corner nearly in line, in or out, not another's; before v0.4.3 to 1/10,000, holes on the rosette sphere)
-  if (earsMemo.has(shape)) return earsMemo.get(shape);
-  earsMemo.set(shape, out);
+  if (polygonTrianglesMemo.has(shape)) return polygonTrianglesMemo.get(shape);
+  polygonTrianglesMemo.set(shape, out);
   const left = [...P.keys()];
   while (left.length > 3) {
     const m = left.length, at = (i) => [left[(i + m - 1) % m], left[i], left[(i + 1) % m]];
@@ -15668,7 +15668,7 @@ const surfaceTriangles = (g) => (g.triangles ??= (() => {
     const N = newellNormal(P.flat(), 0, P.length, [0, 0, 0]);
     const u = cross(N, Math.abs(N[0]) < 0.9 * Math.hypot(...N) ? [1, 0, 0] : [0, 1, 0]), w = cross(N, u);
     const Q = P.map((p) => [dot3(p, u), dot3(p, w)]);
-    for (const i of outwardFolds([...ears(Q)], P, Q, N)) out.push(slots[i]);
+    for (const i of outwardFolds([...polygonTriangles(Q)], P, Q, N)) out.push(slots[i]);
     Object.assign(own[t], { to: out.length, d: slots.length });
   }
   return Uint32Array.from(out);
@@ -16763,7 +16763,7 @@ function gpuPlane(paint) {
     for (let k = 0; k < F.m; k++) {
       const P = F.poly(k).filter((_, i, P2) => !straight(P2, i)), v0 = v;
       for (const [x, y] of P) { pos[2 * v] = x; pos[2 * v + 1] = y; ids[v++] = k; }
-      for (const i of ears(P)) tris[c++] = v0 + i;
+      for (const i of polygonTriangles(P)) tris[c++] = v0 + i;
     }
     gpuBuffer('planePos', pos.subarray(0, 2 * v)); gpuBuffer('planeIds', ids.subarray(0, v)); gpuBuffer('planeTris', tris.subarray(0, c), GPUBufferUsage.INDEX);
     for (const b of ['planeBase', 'planeCol']) { D[b]?.destroy(); D[b] = device.createBuffer({ size: 4 * Math.max(4, F.m), usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST }); }

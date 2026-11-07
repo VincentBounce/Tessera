@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.473';
+const VERSION = '0.4.474';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -2001,7 +2001,7 @@ const rowAction = (html, title, click) => {
   return x;
 };
 // Trail: a dead cell fades through greys for a few generations (States and Age, in colours too; two states)
-const trailApplies = (w = walk.life && walk.mode, rule = $('lifeRule').value) => !!w && !!MODES[w].life && !MODES[w].margolus && !MODES[w].elementary && (parseRule(ruleBody(lifeRuleAt(rule, w)))?.C ?? 2) === 2 && $('colourMode').value !== 'digit';  // (w: the walk shown's, or a mode's: its rule the one in use)  // (a reversible rule's blocks: none, their cells move, none dies, and backwards a trail would show where they are born)
+const trailApplies = (w = walk.life && walk.mode, rule = $('lifeRule').value, look = $('colourMode').value) => !!w && !!MODES[w].life && !MODES[w].margolus && !MODES[w].elementary && (parseRule(ruleBody(lifeRuleAt(rule, w)))?.C ?? 2) === 2 && look !== 'digit';  // (w: the walk shown's, or a mode's: its rule the one in use)  // (a reversible rule's blocks: none, their cells move, none dies, and backwards a trail would show where they are born)
 const trailOn = () => $('lifeTrail').checked && trailApplies();
 const TRAIL_WHERE = 'Not with dying stages (Generations), on Rewind, or with Activity.';  // (Trail's greyed words)
 // Trail, a tile turned on and off (see tile): its picture a live cell with its comet fading in amber behind (LIFE_FADE); greyed for Activity
@@ -2011,7 +2011,7 @@ function renderTrailButton() {
   const sq = (k, c) => `<rect x="${(17 * k) / 3}" y="${17 - (17 * k) / 3}" width="7" height="7" rx="1" fill="${c}"/>`;
   trailButton ??= tile({ pic: `<svg viewBox="0 0 24 24" aria-hidden="true">${sq(0, LIFE_FADE[5]) + sq(1, LIFE_FADE[3]) + sq(2, LIFE_FADE[1])}${sq(3, LIFE_ALIVE)}</svg>`, text: 'Trail', id: 'lifeTrailButton', toggle: true,  // up the diagonal
     title: 'A dead cell fades in amber for a few generations (States and Age)', click: () => { $('lifeTrail').checked = !$('lifeTrail').checked; $('lifeTrail').dispatchEvent(new Event('change')); } });
-  setTile(trailButton, { on: $('lifeTrail').checked && trailApplies(), byDefault: 'On by default in Solo\nOff by default in colours', whyNot: ({ w, rule }) => (trailApplies(w, rule) ? '' : TRAIL_WHERE), at: walk.mode });  // (not for these looks: off)
+  setTile(trailButton, { on: $('lifeTrail').checked && trailApplies(), byDefault: 'On by default in Solo\nOff by default in colours', whyNot: ({ w, rule, look }) => (trailApplies(w, rule, look) ? '' : TRAIL_WHERE), at: walk.mode });  // (not for these looks: off)
 }
 // Blocks (Rewind, in Trail's place: no trail there), a tile turned on and off: the blocks of the set the next generation
 // is worked out by, outlined over the cells (see drawBlocks); Ising's squares in turn are no blocks: greyed
@@ -2037,7 +2037,7 @@ function renderColourButtons() {
   const picture = (v) => (L ? lifeLookPicture(v) : cellModePicture(v === 'gradient' ? 'cells' : v));
   const looks = Array.from(sel.options).filter((o) => !o.hidden && names[o.value]);
   const buttons = looks.map((o) => tile({ pic: picture(o.value), text: names[o.value], title: o.text, on: o.value === sel.value, byDefault: o.value === defaultOf('look') ? 'yes' : '',
-    whyNot: ({ w }) => lookWhyNot(o.value, w),
+    whyNot: ({ w }) => lookWhyNot(o.value, w), choice: `look:${o.value}`,
     click: () => { sel.value = o.value; sel.dispatchEvent(new Event('change')); } }));
   if (MODES[$('mode').value].margolus) renderBlocksButton();
   box.replaceChildren(...(buttons.length > 1 ? [tileGroup(buttons)] : buttons), ...(L ? [MODES[$('mode').value].margolus ? blocksButton : trailButton] : []));  // then Life's Trail, a switch (Rewind's Blocks)
@@ -3595,9 +3595,9 @@ function ruleCards(w, here = true) {
 const modesUnder = (...place) => Object.keys(NAV).filter((u) => place.every((x, i) => NAV[u][i] === x));
 // The menu as a graph (the setup a node, a click an edge): a setup, what the app holds as a link does ({ w: the mode, size:
 // null for the one it opens at, its colours, a walk's teams, its battle rule, its starts' way, a Life's start, its hunt's
-// zone and its rule, as typed: the one a mode plays from it, lifeRuleAt), the one in use first
-const setupNow = () => ({ w: $('mode').value, size: null, colours: lifeColours, teams: walkTeams, battleRule, startsWay: battleStartsWay, start: plane.start, zone: hunt.zone, rule: $('lifeRule').value });
-const SETUP_FIELDS = ['size', 'colours', 'teams', 'battleRule', 'startsWay', 'start', 'zone', 'rule'];  // (its fields but the mode: a key's, a path's changes)
+// zone and its rule, as typed: the one a mode plays from it, lifeRuleAt; its look, colourMode's), the one in use first
+const setupNow = () => ({ w: $('mode').value, size: null, colours: lifeColours, teams: walkTeams, battleRule, startsWay: battleStartsWay, start: plane.start, zone: hunt.zone, rule: $('lifeRule').value, look: $('colourMode').value });
+const SETUP_FIELDS = ['size', 'colours', 'teams', 'battleRule', 'startsWay', 'start', 'zone', 'rule', 'look'];  // (its fields but the mode: a key's, a path's changes)
 const setupKey = (s) => [s.w, ...SETUP_FIELDS.map((f) => s[f])].join('|');
 // The menu's choices at a setup, each a click: its key (its button's data-choice) and the setup it leads to, by the menu's
 // own navigation (navPick, kindLeft, nearestMode, walksThere): the tabs, spaces, shapes, tilings, sides, walks' kinds, then a
@@ -3622,6 +3622,9 @@ function choicesAt(s) {  // (each [key, the setup it leads to, its button's word
   const m = MODES[w];
   if (m.life && !m.loops && !m.elementary) for (const [start, name] of LIFE_STARTS) set(`start:${start}`, 'start', start, startWhyNot(start, w), name);
   if (m.life) for (const r of lifeRulesListed(w)) set(`lifeRule:${r.rule}`, 'rule', r.rule, '', r.name);  // (its rules' cards)
+  // its looks (Life's: States, Age, Activity; a walk's cells': Path, Rainbow, Directions, Heatmap), each the look it sets
+  if (m.life) for (const [look, name] of LIFE_LOOKS) set(`look:${look}`, 'look', look, lookWhyNot(look, w), name);
+  else if (shows('cells', w) || shows('heatmap', w) || m.antOf) for (const [look, name] of CELL_MODES) set(`look:${look}`, 'look', lookAfter(look, w), cellModeWhyNot(look, w), name);
   if (w === walk.mode && s.colours === lifeColours && s.start === 'random' && huntOn()) for (const [zone, fits] of Object.entries(huntFits())) if (fits && zone !== 'custom') set(`zone:${zone}`, 'zone', zone, '', HUNT_ZONES[zone][1]);
   return out;
 }
@@ -17075,13 +17078,11 @@ let fill = null;                   // { at, cx, cy, tpl, templates, count, tooBi
 // Area goes with the colours where the path has one colour per step (not Visits, not By digit)
 const fillAreasApply = (w = $('mode').value) => !areaWhyNot(w);
 // Area greyed at a mode: on cells (its cells its own colours, a battle's its lands: along the lines only), a walk closing none
-// (a spiral, a mode without it), a look over the cells (Heatmap, Directions), or Snake cells (its tails slide: no area
-// lasts); else ''
+// (a spiral, a mode without it), a look over the cells (Heatmap, Directions); else '' (Snake cells, its tails sliding: on
+// cells, the first)
 // (p: the battle rule picked, the one it plays at w judged, see battleRuleInUse)
-const areaWhyNot = (w, teams = walkTeams, p = battleRule) => (MODES[w].cells ? 'On cells, the walk colours its cells itself (in a battle, its lands).' : teams > 1 && battleCounts(w).includes(teams) && BATTLE_RULES[battleRuleInUse(w, p)][0] !== 'cut' ? 'This battle colours its lands (only Cut, its bodies alone, keeps Area).' : !useful('fill', w) || MODES[w].fill === false ? 'The walk closes no area to fill (a spiral, an ant…).'
-  : ['visits', 'digit'].includes($('colourMode').value) ? 'Heatmap and Directions give the cells their own colours.' : w === $('mode').value && snakeBattle() ? 'In Snake cells the tails slide: no area they close lasts.' : '');
-// a battle in Snake cells: its bodies' tails slide, no area they close lasts: none filled (Area greyed)
-const snakeBattle = () => battleOn() && BATTLE_RULES[battleRuleInUse()][0] === 'snakeCells';
+const areaWhyNot = (w, teams = walkTeams, p = battleRule, look = $('colourMode').value) => (MODES[w].cells ? 'On cells, the walk colours its cells itself (in a battle, its lands).' : teams > 1 && battleCounts(w).includes(teams) && BATTLE_RULES[battleRuleInUse(w, p)][0] !== 'cut' ? 'This battle colours its lands (only Cut, its bodies alone, keeps Area).' : !useful('fill', w) || MODES[w].fill === false ? 'The walk closes no area to fill (a spiral, an ant…).'
+  : ['visits', 'digit'].includes(look) ? 'Heatmap and Directions give the cells their own colours.' : '');
 // (the walk drawn may still be the last mode's while the new one is computed: a tiling with a fill)
 // Area (one choice: Empty, Light, Plain, see AREA_MODES): filled where it applies; Light, translucent, only over a line
 const areaOn = () => $('area').value !== 'empty' && fillAreasApply();
@@ -18390,12 +18391,16 @@ function renderAreaModes() {
   const shown = (v) => (v === 'light' && !light ? 'plain' : v);  // (Light only over a line: else Plain)
   const now = AREA_MODES.findIndex(([look]) => look === shown($('area').value)), first = shown(defaultOf('area'));
   notchRow($('areaModes'), 'Area', 'The areas the walk closes, filled', AREA_MODES.map(([look, name, words]) => [name, `${words}${look === 'light' && !light ? ' · greyed: over a line only (Plain here)' : ''}${look !== 'empty' && fractionAreaCap() < Infinity ? ` · a fraction: its digits repeat, its walk goes round its figure again and again, closing off big parts of the surface; only its small areas are filled, ${FRACTION_AREA} tiles at most` : ''}`]), now, AREA_MODES.findIndex(([look]) => look === first),
-    (k) => { if ($('area').value !== AREA_MODES[k][0]) { $('area').value = AREA_MODES[k][0]; $('area').dispatchEvent(new Event('change')); } }, ({ w, teams, battleRule: p }) => areaWhyNot(w, teams, p), false);  // (let go: the row drawn again)
+    (k) => { if ($('area').value !== AREA_MODES[k][0]) { $('area').value = AREA_MODES[k][0]; $('area').dispatchEvent(new Event('change')); } }, ({ w, teams, battleRule: p, look }) => areaWhyNot(w, teams, p, look), false);  // (let go: the row drawn again)
 }
 // The looks of a 2D walk on cells, as square buttons: Path, the rainbow line over its cells faded (an ant's over its
 // states); Rainbow along the walk; Directions, a colour per digit (an ant's: States, its cells by their state, see
 // ANT_STATES); Heatmap of visits. [look, name, title]
 const ANT_STATES = ['States', 'An ant’s cells by their state, pale to deep'];
+// the look a cell mode sets at mode w (colourMode's: see pickCellMode): Path, Rainbow under the line (an ant's, its States); Rainbow,
+// the line's rainbow where a walk has no cells
+const lookAfter = (look, w) => (look === 'path' && MODES[w].antOf ? 'digit' : look === 'path' ? 'cells' : look === 'cells' && !MODES[w].cells ? 'gradient' : look);
+const LIFE_LOOKS = [['mono', 'States'], ['gradient', 'Age'], ['digit', 'Activity']];  // (Life's looks, see renderColourButtons)
 const CELL_MODES = [['path', 'Path', 'The walk’s rainbow line over its cells, faded'], ['cells', 'Rainbow', 'The cells in the rainbow along the walk'],
   ['digit', 'Directions', 'A colour per digit: the direction of each step (an ant’s, the turn it took: left blue, right pink, straight on gold)'], ['visits', 'Heatmap', 'The cells by how often the walk comes back to them']];
 const cellModeOf = (mode) => ($('showPath').checked ? 'path' : $('colourMode').value === 'gradient' ? 'cells' : $('colourMode').value);  // (a surface's Rainbow: gradient)
@@ -18429,13 +18434,12 @@ function renderCellModes(mode) {
   const looks = CELL_MODES, now = cellModeOf(mode), ant = !!mode.antOf;  // (all four everywhere, the same row: Directions greyed where there are none, see cellModeWhyNot)
   const button = ([look, name, title]) => tile({ pic: cellModePicture(look, ant), ...(look === 'digit' && ant ? { text: ANT_STATES[0], title: ANT_STATES[1] } : { text: name, title }), on: look === now,
     byDefault: look === (ant ? defaultOf('antLook') : 'cells') ? 'yes' : '',  // (an ant's States, a walk's Rainbow: see DISPLAY_DEFAULTS)
-    whyNot: ({ w }) => cellModeWhyNot(look, w), click: () => pickCellMode(look) });  // (along the lines: Rainbow, Directions, its line's colours)
+    whyNot: ({ w }) => cellModeWhyNot(look, w), choice: `look:${look}`, click: () => pickCellMode(look) });  // (along the lines: Rainbow, Directions, its line's colours)
   $('cellModes').replaceChildren(tileGroup(looks.map(button)));  // (joined in one frame, see tileGroup)
 }
 function pickCellMode(look) {
-  const ant = !!MODES[$('mode').value].antOf;
   $('showPath').checked = look === 'path';
-  $('colourMode').value = look === 'path' && ant ? 'digit' : look === 'path' ? 'cells' : look === 'cells' && !MODES[$('mode').value].cells ? 'gradient' : look;
+  $('colourMode').value = lookAfter(look, $('mode').value);
   $('colourMode').dispatchEvent(new Event('change'));
   needsFull = true;
   updateDisplayMenu();

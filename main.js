@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.378';
+const VERSION = '0.4.379';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -7471,14 +7471,16 @@ let penetration = 0;  // a battle's way with an enemy's body: its place in PENET
 // or land), its words; along the grid Cut and the Land grids, on cells Cut and Land cells (each greyed in the other's place)
 const PENETRATIONS = [
   ['landGrid', 'Land grid 1', 'M1.5 0H2.5V4H1.5ZM0 1.5H4V2.5H0ZM0 0H1V1H0Z', "Along the grid: a walker's line, the edges it went along, stays (crossing it: a fork); its land the regions it closes. A head pierces an enemy's line going through it (on it, then off it by the other side) or along it: the line let go each way up to a fork or its end, its land there let go too; each walker keeps its land, no line of another in it. A loop closed has its empty tiles painted its colour; an enemy's land surrounded there stays its own, taken only by piercing its line. Heads meeting (two or more at once) all die: they stop conquering, their land stays, the others' to take; with one walker left or none, it ends: the most land wins, the dead's too"],
-  ['landCells', 'Land cells', 'M0 0H4V4H0ZM1 1H3V3H1Z', "On cells: no body; each walker paints the tile it goes into its colour, whatever it was, and a zone its colour closes (the tiles not of its colour cut off, the largest outside) is painted inside. Heads meeting (two or more at once) all die: they stop painting, their tiles stay, the others' to take; with one walker left or none, it ends: the most tiles win, the dead's too"],
-  ['cut', 'Cut', 'M0 1.5H4V2.5H0Z', "A head on another's body cuts it there, to its tail; heads meeting (two or more at once), all but the longest die (as long: all); the last one left wins (as the digits end: the longest)"],
-  ['landGrid2', 'Land grid 2', 'M0 1.5H2.5V2.5H0Z', "Along the grid: each walker's land, the tiles its body closes stay its own (an enemy's too); a head on another's body cuts it; a head going into an enemy's land takes the tiles it goes through. Heads meeting (two or more at once) all die: they stop conquering, their land stays, the others' to take; with one walker left or none, it ends: the most land wins, the dead's too"],
-  ['landGrid3', 'Land grid 3', 'M1.5 0H2.5V4H1.5ZM0 1.5H4V2.5H0Z', "As Land grid 1, and a walker dies by its head, its last thread, from its head to its fork, let go: its head on another's (both die), or another's head along or across its last thread (it dies; touched, nothing); elsewhere a thread pierced, as in Land grid 1"],
   ['landStop', 'Land no collision', 'M0 1.5H1.5V2.5H0ZM2.5 0H3.5V4H2.5Z', "As Land grid 1, and nothing is ever pierced: a walker stops for good just before its first step along or across another's line (on cells, just before its first step onto another's tile); heads meeting (two or more at once) all stop there. The others go on, until all have stopped or the digits end: the most land wins"],
   ['landMerge', 'Land grid merge', 'M0 1H4V3H0Z', "As Land grid 1, and nothing is ever pierced or stopped: lines cross and run along each other; the first heads meeting (two or more at once) end the battle, every walker stopping there: the most land wins"],
-  ['snakeCells', 'Snake cells', 'M0 2.5H3V3.5H0ZM2 0.5H3V2.5H2Z', "On cells, as Cut, each walker a snake: on an even step it grows a cell, till a tenth of the surface; on an odd step a cell for each cell it has eaten; else its tail slides. A head on another's body bites it there: the bitten loses its body to its tail, the cells the biter eats. Heads meeting, all but the longest die (as long: all); the last one left wins (as the digits end: the longest)"]];
-const PENETRATIONS_SHOWN = [0, 5, 6, 1, 2, 7, 3, 4];  // (their cards' order: Land no collision second, Snake cells after Cut; their places above, a link's pe=, as they came)
+  ['landCells', 'Land cells', 'M0 0H4V4H0ZM1 1H3V3H1Z', "On cells: no body; each walker paints the tile it goes into its colour, whatever it was, and a zone its colour closes (the tiles not of its colour cut off, the largest outside) is painted inside. Heads meeting (two or more at once) all die: they stop painting, their tiles stay, the others' to take; with one walker left or none, it ends: the most tiles win, the dead's too"],
+  ['cut', 'Cut', 'M0 1.5H4V2.5H0Z', "A head on another's body cuts it there, to its tail; heads meeting (two or more at once), all but the longest die (as long: all); the last one left wins (as the digits end: the longest)"],
+  ['snakeCells', 'Snake cells', 'M0 2.5H3V3.5H0ZM2 0.5H3V2.5H2Z', "On cells, as Cut, each walker a snake: on an even step it grows a cell, till a tenth of the surface; on an odd step a cell for each cell it has eaten; else its tail slides. A head on another's body bites it there: the bitten loses its body to its tail, the cells the biter eats. Heads meeting, all but the longest die (as long: all); the last one left wins (as the digits end: the longest)"],
+  ['landGrid2', 'Land grid 2', 'M0 1.5H2.5V2.5H0Z', "Along the grid: each walker's land, the tiles its body closes stay its own (an enemy's too); a head on another's body cuts it; a head going into an enemy's land takes the tiles it goes through. Heads meeting (two or more at once) all die: they stop conquering, their land stays, the others' to take; with one walker left or none, it ends: the most land wins, the dead's too"],
+  ['landGrid3', 'Land grid 3', 'M1.5 0H2.5V4H1.5ZM0 1.5H4V2.5H0Z', "As Land grid 1, and a walker dies by its head, its last thread, from its head to its fork, let go: its head on another's (both die), or another's head along or across its last thread (it dies; touched, nothing); elsewhere a thread pierced, as in Land grid 1"]];
+// a link of v0.4.378 or before: its pe= in the order they were added (then: Land grid 1, Land cells, Cut, Land grid 2, Land
+// grid 3, Land no collision, Land grid merge, Snake cells), its place now (see applySetup)
+const PE_BEFORE = [0, 3, 4, 6, 7, 1, 2, 5];
 // a walk that can be a battle: one on a surface (on cells or along the grid, its steps surfaceSteps'), with as many
 // walkers as its turns allow at its size (see battleCounts: its walkers start alike, see battleStarts)
 const battleMode = (w) => NAV[w]?.[0] === 'Walk' && MODES[w].lattice === 'sphere' && !!SPHERES[surfaceOf(MODES[w])];
@@ -7508,7 +7510,7 @@ function renderWalkTeams() {
       title: can ? words : `${words}\nGreyed: ${cells ? 'along the grid, cells only' : 'on cells, along the grid only'}`, on: p === penetration, can, byDefault: p === 0 ? 'yes' : '',
       click: () => { if (p !== penetration) { penetration = p; compute(); } } });
   };
-  $('walkPenetration').replaceChildren(...PENETRATIONS_SHOWN.map((p) => way(PENETRATIONS[p], p)));
+  $('walkPenetration').replaceChildren(...PENETRATIONS.map((P, p) => way(P, p)));
   // its starts' tabs, over the start selector (see STARTS_WAYS; the selector greyed but in Symmetric, see syncSizeStepper)
   if ($('startRow').previousElementSibling !== $('startWays')) $('startRow').before($('startWays'));
   const ways = [['symmetric', 'Symmetric', "A's start, picked below, moved by the surface's symmetries: each walker starts as A, the battle fair"],
@@ -14417,6 +14419,8 @@ function getSetup() {
   return s;
 }
 
+// version v (0.4.N) the same as w or before it
+const versionAtMost = (v, w) => { const a = String(v).split('.').map(Number), b = w.split('.').map(Number); for (let i = 0; i < b.length; i++) if ((a[i] ?? 0) !== b[i]) return (a[i] ?? 0) < b[i]; return true; };
 function applySetup(s) {
   setupFrom = s.v ? { setup: s, v: s.v } : null;
   const set = (id, v) => { if (v !== undefined && v !== null) $(id).value = v; };
@@ -14428,7 +14432,8 @@ function applySetup(s) {
   }
   if (s.d !== undefined) target = Number(s.d);
   walkTeams = !MODES[s.w].life && COLOUR_STEPS.includes(Number(s.k)) ? Number(s.k) : 1;  // (a walk's battle, if its surface allows it at its size: see battleOn)
-  penetration = walkTeams > 1 && PENETRATIONS[Number(s.pe)] ? Number(s.pe) : 0;  // (none: the first, Land grid 1)
+  const pe = s.pe === undefined ? 0 : !s.v || versionAtMost(s.v, '0.4.378') ? PE_BEFORE[Number(s.pe)] : Number(s.pe);  // (an older link's, in its own order)
+  penetration = walkTeams > 1 && PENETRATIONS[pe] ? pe : 0;  // (none: the first, Land grid 1)
   battleStartsWay = STARTS_WAYS[Number(s.gr)] ?? 'symmetric';
   battleSeed = Number(s.rs) || 1;
   RIVALS.forEach((id, j) => { $(id).value = s[`x${id.slice(-1).toLowerCase()}`] ?? RIVAL_FIRSTS[j]; });  // (one the link gives not: its number at first)

@@ -405,9 +405,9 @@ async function battlesFair(fail) {
       for (let s = 1; s < K; s++) for (let i = 0; i < end; i++) if (P.places[s][i] !== G[s](P.places[0][i], grid)) off++;
       if (off) fail(`${w} ${K} walkers: ${off} steps off A's path moved (#x=pi&w=${w}&k=${K})`);
     }
-    // Land no collision (pe=5), its fewest walkers: no walker's step along another's (a line's edge along the grid, a tile
+    // Land no collision, its fewest walkers: no walker's step along another's (a line's edge along the grid, a tile
     // on cells), and none moving once stopped
-    const K = counts[0], link = `#x=pi&w=${w}&d=3000&k=${K}&pe=5&${'bcdefghijkl'.slice(0, K - 1).split('').map((c, j) => `x${c}=sqrt(${j + 2})`).join('&')}`;
+    const stop = PENETRATIONS.findIndex((p) => p[0] === 'landStop'), K = counts[0], link = `#x=pi&w=${w}&d=3000&k=${K}&pe=${stop}&${'bcdefghijkl'.slice(0, K - 1).split('').map((c, j) => `x${c}=sqrt(${j + 2})`).join('&')}`;
     if (!K) continue;
     location.hash = link;
     for (let t = 0; t < 30 && !built(K, true); t++) await wait(300);
@@ -432,7 +432,7 @@ async function battlesFair(fail) {
     // surface, an odd one by what it has eaten), and none past a tenth before the first bite (no cells eaten yet)
     const snake = PENETRATIONS.findIndex((p) => p[0] === 'snakeCells');
     if (grid || snake < 0) continue;
-    const slink = link.replace('&pe=5&', `&pe=${snake}&`);
+    const slink = link.replace(`&pe=${stop}&`, `&pe=${snake}&`);
     location.hash = slink;
     for (let t = 0; t < 30 && !(walk.battle?.player?.K === K && $('mode').value === w && location.hash.includes(`pe=${snake}`)); t++) await wait(300);
     const S = walk.battle?.player;

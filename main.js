@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.483';
+const VERSION = '0.4.484';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -2045,7 +2045,7 @@ function renderColourButtons() {
   box.className = 'nav-shapes cell-modes';
   renderTrailButton();
   // a walk's (Space): Rainbow, Commands, as the looks of its cells
-  const names = L ? { mono: 'States', gradient: 'Age', digit: 'Activity' } : { gradient: 'Rainbow', cells: 'Rainbow', visits: 'Heatmap', digit: 'Commands' };
+  const names = L ? { mono: 'States', gradient: 'Age', digit: 'Activity' } : { gradient: 'Path', cells: 'Cell path', visits: 'Heatmap', digit: 'Commands' };
   const picture = (v) => (L ? lifeLookPicture(v) : cellModePicture(v === 'gradient' ? 'cells' : v));
   const looks = Array.from(sel.options).filter((o) => !o.hidden && names[o.value]);
   const buttons = looks.map((o) => tile({ pic: picture(o.value), text: names[o.value], title: o.text, on: o.value === sel.value, byDefault: o.value === defaultOf('look') ? 'yes' : '',
@@ -18421,28 +18421,29 @@ function renderAreaModes() {
 // states); Rainbow along the walk; Commands, a colour per command read (an ant's: States, its cells by their state, see
 // ANT_STATES); Heatmap of visits. [look, name, title]
 const ANT_STATES = ['States', 'An ant’s cells by their state, pale to deep'];
-// the look a cell mode sets at mode w (colourMode's: see pickCellMode): Path, Rainbow under the line (an ant's, its States); Rainbow,
-// the line's rainbow where a walk has no cells
-const lookAfter = (look, w) => (look === 'path' && MODES[w].antOf ? 'digit' : look === 'path' ? 'cells' : look === 'cells' && !MODES[w].cells ? 'gradient' : look);
+// the look a cell mode sets at mode w (colourMode's: see pickCellMode): Path, Cell path under the line (an ant's, its States), along
+// the grid the line alone; Cell path, the cells in the rainbow (along the grid, the line's: greyed there, see cellModeWhyNot)
+const lookAfter = (look, w) => (look === 'path' ? (MODES[w].antOf ? 'digit' : MODES[w].cells ? 'cells' : 'gradient') : look === 'cells' && !MODES[w].cells ? 'gradient' : look);
 const LIFE_LOOKS = [['mono', 'States'], ['gradient', 'Age'], ['digit', 'Activity']];  // (Life's looks, see renderColourButtons)
-const CELL_MODES = [['path', 'Path', 'The walk’s rainbow line over its cells, faded'], ['cells', 'Rainbow', 'The cells in the rainbow along the walk'],
+const CELL_MODES = [['path', 'Path', 'The walk’s line in the rainbow along it, over its cells faded (along the grid, its line alone)'], ['cells', 'Cell path', 'The cells in the rainbow along the walk'],
   ['digit', 'Commands', 'A colour per command read: the turn each step took (left blue, right pink, straight on gold), or its way'], ['visits', 'Heatmap', 'The cells by how often the walk comes back to them']];
-const cellModeOf = (mode) => ($('showPath').checked ? 'path' : $('colourMode').value === 'gradient' ? 'cells' : $('colourMode').value);  // (a surface's Rainbow: gradient)
-let pictureIds = 0;  // the gradients of the pictures, each its own id
+const cellModeOf = (mode) => ($('showPath').checked || (!mode.cells && $('colourMode').value === 'gradient') ? 'path' : $('colourMode').value === 'gradient' ? 'cells' : $('colourMode').value);  // (along the grid, the line: Path)  // (a surface's Rainbow: gradient)
 function cellModePicture(look, ant) {  // a 2 × 2 swatch, or the rainbow line over faded cells
   const theme = themeName(), g = gradientAt;
-  if (look === 'path') return `<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2" y="2" width="20" height="20" rx="2" fill="${ANT_INK[theme][1]}" opacity="0.2"/>`
-    + [[4, 18, 9, 18], [9, 18, 9, 11], [9, 11, 15, 11], [15, 11, 15, 6], [15, 6, 20, 6]].map(([a, b, c, d], i) => `<path d="M${a} ${b}L${c} ${d}" stroke="${g(i / 4)}" stroke-width="2.4" stroke-linecap="round"/>`).join('') + '</svg>';
+  // Path and Cell path: the Cells and Grid tiles' icons (onCells, onGrid) in a faded grey, a rainbow staircase over them: Path its
+  // line through the cells' middles, Cell path its cells
+  const faded = (name) => `<g fill="none" stroke="currentColor" stroke-width="1.5" opacity="0.3">${ICONS[name].replace(/class="f"/g, 'fill="currentColor"')}</g>`;
+  const stairs = [[0, 2], [1, 2], [1, 1], [2, 1], [2, 0]], third = 16 / 3, at = (k) => 4 + third * k;  // (a 3 × 3 cut, from 4 to 20)
+  if (look === 'path') return `<svg viewBox="0 0 24 24" aria-hidden="true">${faded('onCells')}`
+    + stairs.slice(1).map(([x, y], i) => `<path d="M${at(stairs[i][0]) + third / 2} ${at(stairs[i][1]) + third / 2}L${at(x) + third / 2} ${at(y) + third / 2}" stroke="${g(i / 3)}" stroke-width="2.4" stroke-linecap="round"/>`).join('') + '</svg>';
+  if (look === 'cells') return `<svg viewBox="0 0 24 24" aria-hidden="true">${faded('onGrid')}`
+    + stairs.map(([x, y], i) => `<rect x="${at(x) + 0.4}" y="${at(y) + 0.4}" width="${third - 0.8}" height="${third - 0.8}" rx="0.8" fill="${g(i / 4)}"/>`).join('') + '</svg>';
   if (look === 'digit' && ant) return swatch(ANT_INK[theme]);  // (States)
   if (look === 'digit') {  // Commands: L R, each in its turn's colour (left blue, right pink, see antTurnColour)
     const letter = (x, text, colour) => `<text x="${x}" y="17.5" font-family="ui-monospace, Menlo, monospace" font-weight="700" font-size="15" text-anchor="middle" fill="${colour}">${text}</text>`;
     return `<svg viewBox="0 0 24 24" aria-hidden="true">${letter(6.5, 'L', DIRECTION_COLOURS['←'])}${letter(17.5, 'R', DIRECTION_COLOURS['→'])}</svg>`;
   }
-  // Rainbow: the app's rainbow from left to right; Heatmap: a hot core, cooling outwards
-  const stops = (fs) => fs.map((f) => `<stop offset="${f}" stop-color="${g(f)}"/>`).join('');
-  const id = `rainbow${++pictureIds}`;  // its own: another picture's, replaced, would take it away
-  if (look === 'cells') return `<svg viewBox="0 0 24 24" aria-hidden="true"><defs><linearGradient id="${id}">${stops([0, 0.25, 0.5, 0.75, 1])}</linearGradient></defs>`
-    + `<rect x="2" y="2" width="20" height="20" rx="2" fill="url(#${id})"/></svg>`;
+  // Heatmap: a hot core, cooling outwards
   return heatRings(g);
 }
 const CELLS_ONLY = 'Only on cells, not along the lines.';  // (a walk's cells' look along its lines: none)
@@ -18450,14 +18451,14 @@ const COMMANDS_WHERE = 'Not in a battle: each walker has its own colour.';
 // a cells' look greyed at a mode: Path and Heatmap along the lines (no cells), Commands in a battle (an
 // ant's States everywhere), Heatmap on a spiral; else ''
 const cellModeWhyNot = (look, w, teams = walkTeams) => (look === 'digit' ? (!MODES[w].antOf && battleAt(w, teams) ? COMMANDS_WHERE : '')
-  : !MODES[w].cells && look !== 'cells' ? CELLS_ONLY : look === 'visits' ? lookWhyNot('visits', w) : '');
+  : !MODES[w].cells && look !== 'path' ? CELLS_ONLY : look === 'visits' ? lookWhyNot('visits', w) : '');
 function renderCellModes(mode) {
   $('cellModes').hidden = !shows('cells') && !shows('heatmap') && !mode.antOf;  // a walk in 2D or on a surface, an ant anywhere
   if ($('cellModes').hidden) return;
   // an ant: Path, Rainbow, States, Heatmap; a walk: Path, Rainbow, Commands, Heatmap
   const looks = CELL_MODES, now = cellModeOf(mode), ant = !!mode.antOf;  // (all four everywhere, the same row: Commands greyed where there are none, see cellModeWhyNot)
   const button = ([look, name, title]) => tile({ pic: cellModePicture(look, ant), ...(look === 'digit' && ant ? { text: ANT_STATES[0], title: ANT_STATES[1] } : { text: name, title }), on: look === now,
-    byDefault: look === (ant ? defaultOf('antLook') : 'cells') ? 'yes' : '',  // (an ant's States, a walk's Rainbow: see DISPLAY_DEFAULTS)
+    byDefault: look === (ant ? defaultOf('antLook') : mode.cells ? 'cells' : 'path') ? 'yes' : '',  // (an ant's States, a walk's Cell path, along the grid its Path: see DISPLAY_DEFAULTS)
     whyNot: ({ w, teams }) => cellModeWhyNot(look, w, teams), choice: `look:${look}`, click: () => pickCellMode(look) });  // (along the lines: Rainbow, Commands, its line's colours)
   $('cellModes').replaceChildren(tileGroup(looks.map(button)));  // (joined in one frame, see tileGroup)
 }

@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.533';
+const VERSION = '0.4.534';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -12085,17 +12085,17 @@ const BATTLE_CELL_CASES = {
     hex: [{ pre: [150, 210], moves: [null, null, 330, 30] }, { pre: [270, 270], moves: [90, 90, 90, 90] }] },
   heads: { words: { landCells: 'Heads meeting on a tile: both die, their tiles staying', cut: 'Heads meeting on a tile, as long: both die, their bodies gone (the shorter alone dies)',
     snakeCells: 'Heads meeting on a tile, as long: both die, their bodies gone (the shorter alone dies)' },
-    square: [{ pre: [180, 180], moves: [0, 0] }, { pre: [0, 0], moves: [180, 180] }],
-    hex: [{ pre: [270, 270], moves: [90, 90] }, { pre: [90, 90], moves: [270, 270] }] },
+    square: [{ pre: [180, 180, 180, 180], moves: [0, 0, 0, 0] }, { pre: [0, 0, 0, 0], moves: [180, 180, 180, 180] }],
+    hex: [{ pre: [270, 270, 270, 270], moves: [90, 90, 90, 90] }, { pre: [90, 90, 90, 90], moves: [270, 270, 270, 270] }] },
   crossing: { words: { landCells: 'Heads crossing, each into the tile the other leaves: both die, their tiles staying', cut: 'Heads crossing, each into the tile the other leaves, as long: both die, their bodies gone',
     snakeCells: 'Heads crossing, each into the tile the other leaves, as long: both die, their bodies gone' },
-    square: [{ moves: [0] }, { pre: [0], moves: [180] }],
-    hex: [{ moves: [90] }, { pre: [90], moves: [270] }] },
+    square: [{ pre: [180, 180, 180], moves: [0, 0, 0, 0] }, { pre: [0, 0, 0, 0], moves: [180, 180, 180, 180] }],
+    hex: [{ pre: [270, 270, 270], moves: [90, 90, 90, 90] }, { pre: [90, 90, 90, 90], moves: [270, 270, 270, 270] }] },
 };
 // the case's figure, its battle played (see BATTLE_CASES, BATTLE_CELL_CASES): along the grid, from corner to corner; on cells,
 // from tile to tile (its places their middles). An SVG, null where its moves do not fit the grid
 function battleCaseFigure(grid, way, scripts, cells = false) {
-  const g = SPHERES[{ square: 'torus', tri: 'torusTri', hex: 'torusHexTurned' }[grid]].mesh(12), G = gridGraph(g), k = g.sides;
+  const g = SPHERES[{ square: 'torus', tri: 'torusTri', hex: cells ? 'torusHex' : 'torusHexTurned' }[grid]].mesh(12), G = gridGraph(g), k = g.sides;  // (hexagons: along the grid an edge north, on cells a neighbour)
   const middle = (t) => { let u = 0, v = 0; for (let q = 0; q < k; q++) { u += g.uv[2 * (k * t + q)]; v += g.uv[2 * (k * t + q) + 1]; } return [u / k, v / k]; };
   const uvOf = (v) => (cells ? middle(v) : cornerUv(g, G, v)), count = cells ? g.n : G.nv;  // (its places: the tiles, or the grid's corners)
   const nbrsOf = (v) => (cells ? Array.from({ length: k }, (_, e) => g.nbr[k * v + e]).filter((u) => u >= 0) : G.nbrs[v]);

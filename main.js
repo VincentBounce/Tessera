@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.383';
+const VERSION = '0.4.384';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -3940,6 +3940,7 @@ function buildWalkOf() {
   fill = null;  // a new walk: its enclosed areas are computed again, and its layer starts empty
   walk.mode = current.mode;  // (the mode it is built for: its colours by it, current.mode ahead of it while another is made, see compute)
   walk.ant = 0; walk.highway = null; walk.bridges = null;  // set by an ant's walk only
+  walk.wormEnd = false; walk.wormMade = 0;  // set by a worm's walk only (its ✝: else an ant after a worm on a surface died with it)
   walk.battle = null;  // set by a battle only (see 7.6b)
   walk.plane = walk.rows = null;  // set by Life on the plane only; Elementary's rows (see elementaryRows)
   $('fillTooBig').hidden = true;

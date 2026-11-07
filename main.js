@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.526';
+const VERSION = '0.4.527';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -12008,7 +12008,8 @@ function creatureFigures(w) {
 // How a battle along the grid fights (Land grid 1, 3, no collision, merge: see battlePlayer): its cases on the walk's tiles (squares,
 // triangles, hexagons), each played by the battle itself on a torus of them, its two walkers' moves written as directions on
 // its flat grid (degrees, east 0, north 90; null: a step on the spot), red's and blue's, blue's start reached by pre (not
-// drawn); its words, the same for every way along the grid, or each way's (a way without: not shown there). Drawn flat: the
+// drawn); its words, the same for every way along the grid's lines, or each way's (a way without: not shown there; Cut's, its
+// bodies for lines). Drawn flat: the
 // tiles, the lines, the land, a line let go dashed, a walker dead or stopped crossed
 const BATTLE_LOOP = { square: [90, 90, 180, 180, 270, 270, 0, 0, 0, 0], tri: [120, 120, 240, 240, 0, 0, 0, 0], hex: [90, 150, 210, 270, 330, 30, 330, 30, 330, 30] };  // (blue's loop, then its tail: a fork)
 const BATTLE_LOOP_AT = { square: [0, 0, 0], tri: [0, 0, 0], hex: [330, 30, 330, 30] };  // (its start)
@@ -12029,6 +12030,7 @@ const BATTLE_CASES = {
     tri: [{ pre: [60, 60, 60, 60], moves: [null, null, null, null, null, null, 240, 300, 240] }, 'loop'],
     hex: [{ pre: [90, 30, 90, 30, 330], moves: [null, null, null, null, null, null, null, null, null, null, 270, 210] }, 'loop'] },
   across: { words: { landGrid: 'Across an enemy\'s line, at a corner (in on one side, out on the other): pierced there, as along',
+    cut: 'A head on another\'s body: cut there, from that corner back to its tail (dashed)',
     landStop: 'A step across an enemy\'s line, at a corner (in on one side, out on the other): stopped for good just before it',
     landMerge: 'Across an enemy\'s line, at a corner: nothing pierced, the lines crossing' },
     square: [{ pre: [90, 90], moves: [null, null, 270, 270, 270] }, { pre: [180, 180], moves: [0, 0, 0, 0] }],
@@ -12045,6 +12047,7 @@ const BATTLE_CASES = {
     square: [{ pre: [90, 90, 90], moves: [270, 270, 270, 270, 270] }, { pre: [180, 270], moves: [0, 0, 90, 180, 180] }],
     tri: [{ pre: [60, 60, 60], moves: [240, 240, 240, 240, 240] }, { pre: [240, 180], moves: [0, 0, 60, 180, 180] }] },
   heads: { words: { landGrid: 'Heads meeting on a corner: both die, their lines and land staying',
+    cut: 'Heads meeting on a corner, as long: both die, their bodies gone (the shorter alone dies)',
     landGrid3: 'Heads meeting on a corner: both die, each one\'s last thread let go',
     landStop: 'Heads meeting on a corner: both stopped there for good, their lines and land staying',
     landMerge: 'Heads meeting on a corner: the battle over, every walker stopped there' },
@@ -12052,6 +12055,7 @@ const BATTLE_CASES = {
     tri: [{ pre: [180, 180], moves: [0, 0] }, { pre: [0, 0], moves: [180, 180] }],
     hex: [{ pre: [210, 150], moves: [330, 30] }, { pre: [330, 30], moves: [210, 150] }] },
   crossing: { words: { landGrid: 'Heads crossing, each along the edge the other comes by: both die, their lines and land staying',
+    cut: 'Heads crossing, each along the edge the other comes by, as long: both die, their bodies gone',
     landGrid3: 'Heads crossing, each along the edge the other comes by: both die, each one\'s last thread let go',
     landStop: 'Heads crossing, each along the edge the other comes by: both stopped for good before',
     landMerge: 'Heads crossing, each along the edge the other comes by: the battle over, every walker stopped' },
@@ -12084,7 +12088,8 @@ function battleCaseFigure(grid, way, scripts) {
   P.to(Infinity);
   const n = P.n, L = battleLinks(g), ends = new Map();
   for (const v of near) for (const w of G.nbrs[v]) ends.set(L.index.get(G.key(v, w)), [v, w]);
-  const linesAt = (i) => { P.to(i); return walks.map((_, s) => new Set(P.lineLinks(s))); }, before = linesAt(n - 1), after = linesAt(n);
+  const bodyLinks = (s) => Array.from({ length: Math.max(0, P.step - P.from[s]) }, (_, q) => L.index.get(G.key(P.places[s][P.from[s] + q], P.places[s][P.from[s] + q + 1]))).filter((j) => j !== undefined);  // (Cut's: its body, tail to head)
+  const linesAt = (i) => { P.to(i); return walks.map((_, s) => new Set(P.lined ? P.lineLinks(s) : bodyLinks(s))); }, before = linesAt(n - 1), after = linesAt(n);
   const pts = walks.flat().map(at), span = (a) => [Math.min(...pts.map((p) => p[a])) - 1, Math.max(...pts.map((p) => p[a])) + 1];
   const [x0, x1] = span(0), [y0, y1] = span(1), r = Math.max(x1 - x0, y1 - y0) / 2, cx = (x0 + x1) / 2, cy = (y0 + y1) / 2;
   const shown = (v) => { const [x, y] = at(v); return [+x.toFixed(3), +(-y).toFixed(3)]; };  // (on screen: north up)
@@ -12106,13 +12111,15 @@ function battleTutorial(w) {
   const way = BATTLE_RULES[battleRuleInUse()][0], g = walk.geo, grid = { 4: 'square', 3: 'tri', 6: 'hex' }[g?.sides];
   if (!battleOn()) return '';
   const title = `<h3>Battle: ${BATTLE_RULES[battleRuleInUse()][1]}</h3>`;  // (every battle's, its cases drawn along the grid's lines' ways only)
-  if (!MODES[w].grid || !grid || !BATTLE_LINED.includes(way)) return `<div class="form-section">${title}<p>Its cases, drawn: to come later.</p></div>`;
+  if (!MODES[w].grid || !grid || !(BATTLE_LINED.includes(way) || way === 'cut')) return `<div class="form-section">${title}<p>Its cases, drawn: to come later.</p></div>`;
   const loop = { pre: BATTLE_LOOP_AT[grid], moves: BATTLE_LOOP[grid] };
-  const figs = Object.values(BATTLE_CASES).filter((c) => c[grid] && (typeof c.words === 'string' || c.words[way])).map((c) => {
+  const figs = Object.values(BATTLE_CASES).filter((c) => c[grid] && (typeof c.words === 'string' ? BATTLE_LINED.includes(way) : c.words[way])).map((c) => {
     const svg = battleCaseFigure(grid, way, c[grid].map((x) => (x === 'loop' ? loop : x)));
     return svg && `<figure><div>${svg}</div><figcaption>${typeof c.words === 'string' ? c.words : c.words[way]}</figcaption></figure>`;
   });
-  return `<div class="form-section">${title}<p>Each walker's line: the edges it has gone along, never let go by itself. All walkers step at once, each step judged on the lines as it found them. Here red's last step makes the case; a line let go dashed, a walker ${way === 'landStop' || way === 'landMerge' ? 'stopped' : 'dead'} crossed.</p>`
+  const how = way === 'cut' ? 'Each walker\'s body: the edges it has walked, from its tail to its head. All walkers step at once. Here red\'s last step makes the case; a body cut off dashed'
+    : 'Each walker\'s line: the edges it has gone along, never let go by itself. All walkers step at once, each step judged on the lines as it found them. Here red\'s last step makes the case; a line let go dashed';
+  return `<div class="form-section">${title}<p>${how}, a walker ${way === 'landStop' || way === 'landMerge' ? 'stopped' : 'dead'} crossed.</p>`
     + `<div class="tut-row tut-walk tut-battle">${figs.filter(Boolean).join('')}</div></div>`;
 }
 function walkTutorial(w) {

@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.447';
+const VERSION = '0.4.448';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -1061,11 +1061,11 @@ const MODES = {
   antHex: { base: 2, lattice: 'hex', cells: true, fill: false, antOf: 'hexTurtle', get rule() { return antRuleText('antHex'); } },
   antCairo: { base: 2, lattice: 'cairo', cells: true, fill: false, antOf: 'cairo', get rule() { return antRuleText('antCairo'); } },
   // on a surface: the ant on the cells of its walk there, which keep their colours (turns: as the walk's)
-  antCube: { base: 2, lattice: 'sphere', cells: true, sphere: 'cube', initial: 48, turns: [3, 2, 1], perspective: true,
+  antCube: { base: 2, lattice: 'sphere', cells: true, sphere: 'cube', initial: 48, perspective: true,
              fill: false, antOf: 'cubeFlat', get rule() { return antRuleText('antCube'); } },
-  antHexSphere: { base: 2, lattice: 'sphere', cells: true, sphere: 'hexsphere', turns: [null, -2, null, 2, null], round: true,  // (its walk's, see hexSphereWalk)
+  antHexSphere: { base: 2, lattice: 'sphere', cells: true, sphere: 'hexsphere', round: true,
                   fill: false, antOf: 'hexSphereWalk', get rule() { return antRuleText('antHexSphere'); } },
-  antIcosa: { base: 2, lattice: 'sphere', cells: true, sphere: 'icosa', turns: [2, 1], round: true,
+  antIcosa: { base: 2, lattice: 'sphere', cells: true, sphere: 'icosa', round: true,
               fill: false, antOf: 'icosaLR', get rule() { return antRuleText('antIcosa'); } },
   spiral:   { base: 2, arrows: '□■', lattice: 'square', skipZeros: true,
               rule: 'along a square spiral (Ulam): <b>1</b> draw the step, <b>0</b> move without drawing' },
@@ -1075,47 +1075,47 @@ const MODES = {
                  rule: 'along a spiral of Cairo pentagons: <b>1</b> draw the step, <b>0</b> move without drawing' },
   hexSpiral: { base: 2, arrows: '□■', lattice: 'hex', skipZeros: true,
               rule: 'along a spiral of hexagons: <b>1</b> draw the step, <b>0</b> move without drawing' },
-  tetraLR:  { base: 2, arrows: '↖↗', lattice: 'sphere', cells: true, twin: 'tetraGrid', sphere: 'tetra', initial: 48, turns: [2, 1],
+  tetraLR:  { base: 2, arrows: '↖↗', lattice: 'sphere', cells: true, twin: 'tetraGrid', sphere: 'tetra', initial: 48, net: 'tri',
               rule: 'on a tetrahedron of triangles: exit through the <b>0</b> left or <b>1</b> right edge' },
-  torusWalk: { base: 3, arrows: '←↑→', lattice: 'sphere', cells: true, twin: 'torusGrid', sphere: 'torus', initial: 48, turns: [3, 2, 1], perspective: true, round: true,
+  torusWalk: { base: 3, arrows: '←↑→', lattice: 'sphere', cells: true, twin: 'torusGrid', sphere: 'torus', initial: 48, net: 'square', perspective: true, round: true,
               rule: 'on a torus of squares: <b>0</b> turn left, <b>1</b> straight on, <b>2</b> turn right' },
-  torusTriWalk: { base: 2, arrows: '↖↗', lattice: 'sphere', cells: true, twin: 'torusTriGrid', sphere: 'torusTri', initial: 48, turns: [2, 1], perspective: true, round: true,
+  torusTriWalk: { base: 2, arrows: '↖↗', lattice: 'sphere', cells: true, twin: 'torusTriGrid', sphere: 'torusTri', initial: 48, net: 'tri', perspective: true, round: true,
                   rule: 'on a torus of triangles: exit through the <b>0</b> left or <b>1</b> right edge' },
   // Cairo pentagons: out through one of the 4 other edges, edge k + 1 the sharpest right (as the 2D walk)
-  torusCairoWalk: { base: 4, arrows: '↙↖↗↘', lattice: 'sphere', cells: true, sphere: 'torusCairo', initial: 32, turns: [4, 3, 2, 1], perspective: true, round: true,
+  torusCairoWalk: { base: 4, arrows: '↙↖↗↘', lattice: 'sphere', cells: true, sphere: 'torusCairo', initial: 32, net: 'cairo', perspective: true, round: true,
                     rule: 'on a torus of Cairo pentagons: out through one of its 4 other edges, <b>0</b> sharp left, <b>1</b> left, <b>2</b> right, <b>3</b> sharp right' },
   // hexagons: entering through edge k, edge k + 1 is a sharp right, k + 2 right, k + 3 straight on
-  torusHexWalk: { base: 5, arrows: '↙↖↑↗↘', lattice: 'sphere', cells: true, twin: 'torusHexGrid', sphere: 'torusHex', initial: 48, turns: [5, 4, 3, 2, 1], perspective: true, round: true,
+  torusHexWalk: { base: 5, arrows: '↙↖↑↗↘', lattice: 'sphere', cells: true, twin: 'torusHexGrid', sphere: 'torusHex', initial: 48, net: 'hex', perspective: true, round: true,
                   rule: 'on a torus of hexagons: <b>0</b> sharp left, <b>1</b> left, <b>2</b> straight, <b>3</b> right, <b>4</b> sharp right' },
-  mobiusWalk: { base: 3, arrows: '←↑→', lattice: 'sphere', cells: true, twin: 'mobiusGrid', sphere: 'mobius', turns: [3, 2, 1], perspective: true, round: true,
+  mobiusWalk: { base: 3, arrows: '←↑→', lattice: 'sphere', cells: true, twin: 'mobiusGrid', sphere: 'mobius', net: 'square', perspective: true, round: true,
                 rule: 'on a Möbius strip of squares: <b>0</b> turn left, <b>1</b> straight on, <b>2</b> turn right (over its edge, onto the face behind)' },
-  mobiusHexWalk: { base: 5, arrows: '↙↖↑↗↘', lattice: 'sphere', cells: true, twin: 'mobiusHexGrid', sphere: 'mobiusHex', turns: [5, 4, 3, 2, 1], perspective: true, round: true,
+  mobiusHexWalk: { base: 5, arrows: '↙↖↑↗↘', lattice: 'sphere', cells: true, twin: 'mobiusHexGrid', sphere: 'mobiusHex', net: 'hex', perspective: true, round: true,
                    rule: 'on a Möbius strip of hexagons: <b>0</b> sharp left, <b>1</b> left, <b>2</b> straight, <b>3</b> right, <b>4</b> sharp right (over its edge, onto the face behind)' },
   // a Klein bottle (its neck through its side, opening into its bottom): as the torus's walks
-  kleinWalk: { base: 3, arrows: '←↑→', lattice: 'sphere', cells: true, twin: 'kleinGrid', sphere: 'klein', turns: [3, 2, 1], round: true,
+  kleinWalk: { base: 3, arrows: '←↑→', lattice: 'sphere', cells: true, twin: 'kleinGrid', sphere: 'klein', net: 'square', round: true,
                rule: 'on a Klein bottle of squares: <b>0</b> turn left, <b>1</b> straight on, <b>2</b> turn right' },
-  kleinHexWalk: { base: 5, arrows: '↙↖↑↗↘', lattice: 'sphere', cells: true, twin: 'kleinHexGrid', sphere: 'kleinHex', turns: [5, 4, 3, 2, 1], round: true,
+  kleinHexWalk: { base: 5, arrows: '↙↖↑↗↘', lattice: 'sphere', cells: true, twin: 'kleinHexGrid', sphere: 'kleinHex', net: 'hex', round: true,
                   rule: 'on a Klein bottle of hexagons: <b>0</b> sharp left, <b>1</b> left, <b>2</b> straight, <b>3</b> right, <b>4</b> sharp right' },
-  kleinTriWalk: { base: 2, arrows: '↖↗', lattice: 'sphere', cells: true, twin: 'kleinTriGrid', sphere: 'kleinTri', turns: [2, 1], round: true,
+  kleinTriWalk: { base: 2, arrows: '↖↗', lattice: 'sphere', cells: true, twin: 'kleinTriGrid', sphere: 'kleinTri', net: 'tri', round: true,
                   rule: 'on a Klein bottle of triangles: exit through the <b>0</b> left or <b>1</b> right edge' },
-  kleinCairoWalk: { base: 4, arrows: '↙↖↗↘', lattice: 'sphere', cells: true, sphere: 'kleinCairo', turns: [4, 3, 2, 1], round: true,
+  kleinCairoWalk: { base: 4, arrows: '↙↖↗↘', lattice: 'sphere', cells: true, sphere: 'kleinCairo', net: 'cairo', round: true,
                     rule: 'on a Klein bottle of Cairo pentagons: out through one of its 4 other edges, <b>0</b> sharp left, <b>1</b> left, <b>2</b> right, <b>3</b> sharp right' },
-  mobiusCairoWalk: { base: 4, arrows: '↙↖↗↘', lattice: 'sphere', cells: true, sphere: 'mobiusCairo', turns: [4, 3, 2, 1], perspective: true, round: true,
+  mobiusCairoWalk: { base: 4, arrows: '↙↖↗↘', lattice: 'sphere', cells: true, sphere: 'mobiusCairo', net: 'cairo', perspective: true, round: true,
                      rule: 'on a Möbius strip of Cairo pentagons: out through one of its 4 other edges, <b>0</b> sharp left, <b>1</b> left, <b>2</b> right, <b>3</b> sharp right (over its edge, onto the face behind)' },
-  mobiusTriWalk: { base: 2, arrows: '↖↗', lattice: 'sphere', cells: true, twin: 'mobiusTriGrid', sphere: 'mobiusTri', turns: [2, 1], perspective: true, round: true,
+  mobiusTriWalk: { base: 2, arrows: '↖↗', lattice: 'sphere', cells: true, twin: 'mobiusTriGrid', sphere: 'mobiusTri', net: 'tri', perspective: true, round: true,
                    rule: 'on a Möbius strip of triangles: exit through the <b>0</b> left or <b>1</b> right edge (over its edge, onto the face behind)' },
-  cubeFlat: { base: 3, arrows: '←↑→', lattice: 'sphere', cells: true, twin: 'cubeGrid', ant: 'antCube', sphere: 'cube', initial: 48, turns: [3, 2, 1], perspective: true,
+  cubeFlat: { base: 3, arrows: '←↑→', lattice: 'sphere', cells: true, twin: 'cubeGrid', ant: 'antCube', sphere: 'cube', initial: 48, net: 'square', perspective: true,
               rule: 'on the surface of a cube: <b>0</b> turn left, <b>1</b> straight on, <b>2</b> turn right' },
-  octaLR:   { base: 2, arrows: '↖↗', lattice: 'sphere', cells: true, twin: 'octaGrid', sphere: 'octa', initial: 48, turns: [2, 1],
+  octaLR:   { base: 2, arrows: '↖↗', lattice: 'sphere', cells: true, twin: 'octaGrid', sphere: 'octa', initial: 48, net: 'tri',
               rule: 'on an octahedron of triangles: exit through the <b>0</b> left or <b>1</b> right edge' },
   // hexagons and pentagons alike: the edges two away from the one you came in through, on either side
-  hexSphereWalk: { base: 2, arrows: '↖↗', lattice: 'sphere', cells: true, twin: 'hexSphereGrid', ant: 'antHexSphere', sphere: 'hexsphere', turns: [null, -2, null, 2, null], round: true,  // (the hexagons' L1, R1 only: no straight on, nor sharp, across a pentagon)
+  hexSphereWalk: { base: 2, arrows: '↖↗', lattice: 'sphere', cells: true, twin: 'hexSphereGrid', ant: 'antHexSphere', sphere: 'hexsphere', net: 'hex', round: true,  // (the hexagons' L1, R1 only: no straight on, nor sharp, across a pentagon)
                    rule: 'on a sphere of hexagons (and 12 pentagons): exit through the <b>0</b> front left or <b>1</b> front right edge' },
-  stellaLR: { base: 2, arrows: '↖↗', lattice: 'sphere', cells: true, twin: 'stellaGrid', sphere: 'stella', turns: [2, 1],
+  stellaLR: { base: 2, arrows: '↖↗', lattice: 'sphere', cells: true, twin: 'stellaGrid', sphere: 'stella', net: 'tri',
               rule: 'on a stella octangula (two tetrahedra) of triangles: exit through the <b>0</b> left or <b>1</b> right edge' },
-  dodecaLR: { base: 2, arrows: '↖↗', lattice: 'sphere', cells: true, twin: 'dodecaGrid', sphere: 'dodeca', turns: [2, 1],
+  dodecaLR: { base: 2, arrows: '↖↗', lattice: 'sphere', cells: true, twin: 'dodecaGrid', sphere: 'dodeca', net: 'tri',
               rule: 'on a dodecahedron, its pentagons cut into triangles: exit through the <b>0</b> left or <b>1</b> right edge' },
-  icosaLR:  { base: 2, arrows: '↖↗', lattice: 'sphere', cells: true, twin: 'icosaGrid', ant: 'antIcosa', sphere: 'icosa', turns: [2, 1], round: true,
+  icosaLR:  { base: 2, arrows: '↖↗', lattice: 'sphere', cells: true, twin: 'icosaGrid', ant: 'antIcosa', sphere: 'icosa', net: 'tri', round: true,
               rule: 'on an icosahedron of triangles: exit through the <b>0</b> left or <b>1</b> right edge' },
   // along the grid: from corner to corner, turning by these angles (degrees, left positive), or as close
   // to them as the edges at a corner allow
@@ -3529,7 +3529,7 @@ const walkSidesOf = (v) => [...new Set(walksThere(v).map((u) => NAV[u][4]))];
 const sideWhyNot = (v, s, none) => {
   const ways = walkSidesOf(v), there = ways.includes('') ? (s === 'cells' ? v : null) : walksThere(v).find((u) => NAV[u][4] === s);
   if (!there) return none;
-  const rule = walkRules[walkKey(MODES[there])];
+  const rule = walkRuleKept(MODES[there]);
   return MODES[there].net && !walkWordsOf(there, rule) ? ruleWords(rule).map((t) => walkWordWhy(MODES[there], t)).find(Boolean) ?? '' : '';
 };
 // Turned at a mode: its tiling with a turned way round, its blocks coming round so (a block rule's, see blocksTurn); its
@@ -4920,36 +4920,59 @@ function wordStepper(net, words) {
   return headingStepper(WALK_NETS[net], acts);
 }
 // a walk's rule's key: its network's, the plane's and the surfaces' apart (see walkRules)
-const walkKey = (m) => (m.lattice === 'sphere' ? `${m.net} surface${m.turns?.includes(null) ? ` ${m.sphere}` : ''}` : m.net);  // (a surface with fewer of its network's words: its own)
+const walkKey = (m) => (m.lattice === 'sphere' ? `${m.net} surface${m.net && surfaceWords(m.net).some((t) => walkWordWhy(m, t)) ? ` ${m.sphere}` : ''}` : m.net);  // (no network, no words: a creature's)  // (a surface with fewer of its network's words: its own)
 const surfaceWords = (net) => Object.keys(WALK_NETS[net].turns).filter((t) => t !== 'U');  // (a surface's turns, left to right)
 // a surface walk's acts, one per digit (see surfaceSteps): by its rule's words (a turn: its edges on, or degrees along the grid,
 // as its turns list them left to right; l r a: a notch on the spot, a parity's), else by its turns (an ant's)
 const SURFACE_NOTCHES = { square: 4, hex: 6 };  // (a step straight on: squares' and hexagons' cells, squares' and triangles' grid)
 function surfaceActs(mode, words = mode.net && ruleWords(walkRuleOf(mode))) {
-  if (!words) return mode.turns.map((t) => ['turn', t]);
-  return words.map((t) => (t === 'l' || t === 'r' ? ['pivot', t === 'r' ? 1 : -1] : t === 'a' ? ['parity'] : ['turn', mode.turns[surfaceWords(mode.net).indexOf(t)]]));
+  if (!words) return (mode.turns ?? []).map((t) => ['turn', t]);
+  return words.map((t) => (t === 'l' || t === 'r' ? ['pivot', t === 'r' ? 1 : -1] : t === 'a' ? ['parity'] : mode.grid ? ['turn', mode.turns[surfaceWords(mode.net).indexOf(t)]]
+    : cellTurn(mode.net, t) === 'straight' ? ['straight'] : ['turn', cellTurn(mode.net, t)]));  // (on cells: its word's edge, see cellTurn; straight, half way round)
 }
+// A word's turn on cells, edges on from the one come in by (see surfaceStep), by construction from its network's words left
+// to right: the sharpest right the next edge (1), the sharpest left the one before (−1), each word nearer the middle one
+// more; N half way round ('straight', a cell of an even count of sides only), U the edge come in by (0); none, null
+const cellTurn = (net, word) => { if (word === 'U') return 0; if (word === 'N') return 'straight'; const W = surfaceWords(net), i = W.indexOf(word); return i < 0 ? null : word[0] === 'R' ? W.length - i : -(i + 1); };
+// a surface's cells' counts of sides (their corners apart: the hexagon sphere's pentagons, a hexagon with one edge of
+// length 0, count 5), from its mesh: a word goes where every cell has its edge (see walkWordWhy)
+const cellSidesMemo = {};
+const cellSides = (kind) => (cellSidesMemo[kind] ??= (() => {
+  const S = SPHERES[kind], g = S.mesh(S.sizes[0]), k = g.sides, out = new Set();
+  for (let t = 0; t < g.n; t++) out.add(new Set(Array.from({ length: k }, (_, q) => g.poly[k * t + q])).size);
+  return [...out];
+})());
 // why a word cannot go on a walk, or '': not its network's; a diagonal along the grid; on a surface, no fixed way (no north)
-const walkWordWhy = (m, t) => (m.lattice === 'sphere' ? ((surfaceWords(m.net).includes(t) && m.turns[surfaceWords(m.net).indexOf(t)] != null) || (SURFACE_NOTCHES[m.net] && ['l', 'r', 'a'].includes(t)) ? ''
+const walkWordWhy = (m, t) => (m.lattice === 'sphere' && !m.grid ? cellWordWhy(m, t)
+  : m.lattice === 'sphere' ? ((surfaceWords(m.net).includes(t) && m.turns[surfaceWords(m.net).indexOf(t)] != null) || (SURFACE_NOTCHES[m.net] && ['l', 'r', 'a'].includes(t)) ? ''
     : surfaceWords(m.net).includes(t) ? `${t}: not on this surface (its corners)` : `${t}: not on a surface (no north there)`)
   : !wordAct(m.net, t) ? `${t}: not a word here` : m.lines && WALK_NETS[m.net].diagonals?.includes(t) ? `${t}: along the grid, a diagonal step follows no line` : '');
+// a word on a surface's cells: its edge on every cell (see cellTurn, cellSides): straight on, cells of an even count of sides;
+// the j-th from the entry either way, cells of 2j + 1 sides at least; on the spot and parity, its network's notches
+function cellWordWhy(m, t) {
+  if (['l', 'r', 'a'].includes(t)) return SURFACE_NOTCHES[m.net] ? '' : `${t}: not on this surface`;
+  const turn = cellTurn(m.net, t), sides = cellSides(surfaceOf(m));
+  if (turn === null) return `${t}: not on a surface (no north there)`;
+  if (turn === 'straight') return sides.every((n) => n % 2 === 0) ? '' : `${t}: not on this surface (a cell of ${sides.find((n) => n % 2)} sides: no straight on)`;
+  return sides.every((n) => n >= 2 * Math.abs(turn) + 1) ? '' : `${t}: not on this surface (its cells' sides too few)`;
+}
 // a walk's words for a rule (the one it plays by default, see walkRuleOf), or null: 2 to 12, each fitting it
 const walkTakes = (m, rule) => { const words = ruleWords(rule); return words.length >= 2 && words.length <= 12 && words.every((t) => !walkWordWhy(m, t)) ? words : null; };
 const walkWordsOf = (w, rule = walkRuleOf(MODES[w])) => walkTakes(MODES[w], rule);
 // the rule a walk plays: its network's in use (walkRules), if it takes it, else its network's first it takes (a rule its twin
 // on cells took, King's diagonals, the grid's lines cannot: kept for the cells, the grid's tab greyed, see side)
-const walkRuleOf = (m) => (walkTakes(m, walkRules[walkKey(m)]) ? walkRules[walkKey(m)] : firstWalkRule(m));
+const walkRuleOf = (m) => { const r = walkRuleKept(m); return walkTakes(m, r) ? r : firstWalkRule(m); };
 const walkStepper = (w) => wordStepper(MODES[w].net, walkWordsOf(w));
 // a walk's arrows, one per word (a word with none: ''), by its rule
 const walkArrows = (w) => { const m = MODES[w], r = walkRuleOf(m); return (m.arrowsMemo?.[0] === r ? m.arrowsMemo : (m.arrowsMemo = [r, walkWordsOf(w).map((t) => WALK_NETS[m.net].arrows[t] ?? SPOT_ARROWS[t] ?? '')]))[1]; };
 const walkRuleText = (w) => `${MODES[w].where}: ${walkWordsOf(w).map((t, d) => `<b>${d}</b> ${WORD_TEXT[t]}`).join(', ')}${MODES[w].tail ?? ''}`;
-// The surfaces' turtles by a rule too: turns, one per word of their tiles' network (its turns left to right, as the plane's
-// on the same tiles: edges on, or degrees along the grid; null, a word it has not), a word its turn (see surfaceActs); their
-// network so by how many
+// The surfaces' turtles by a rule too: on cells, their tiles' network (net: its words, a word's edge by construction, see
+// cellTurn); along the grid turns, one per word of their tiles' network in degrees (its turns left to right; null, a word
+// it has not), their network by how many
 const NET_BY_TURNS = { 2: 'tri', 3: 'square', 4: 'cairo', 5: 'hex' };
 for (const [w, m] of Object.entries(MODES)) {
-  if (NAV[w]?.[0] !== 'Walk' || NAV[w][3] !== 'Turtle' || m.lattice !== 'sphere' || !m.turns) continue;
-  Object.assign(m, { net: NET_BY_TURNS[m.turns.length], where: m.rule.split(':')[0], tail: m.rule.match(/ \([^)]*\)$/)?.[0] ?? '' });  // (its words before its digits', its note after)
+  if (NAV[w]?.[0] !== 'Walk' || NAV[w][3] !== 'Turtle' || m.lattice !== 'sphere' || !(m.turns || m.net)) continue;
+  Object.assign(m, { net: m.net ?? NET_BY_TURNS[m.turns.length], where: m.rule.split(':')[0], tail: m.rule.match(/ \([^)]*\)$/)?.[0] ?? '' });  // (its words before its digits', its note after)
 }
 // every walk by a rule: its base, arrows and rule's text by it; on squares, no Area with a diagonal (steps across no edge)
 for (const [w, m] of Object.entries(MODES)) if (m.net) {
@@ -4960,7 +4983,7 @@ for (const [w, m] of Object.entries(MODES)) if (m.net) {
 // own); at first its network's first that it takes (see RULES, walkWordWhy)
 const firstWalkRule = (m) => rulesOf('walk', m.net).map((r) => r.rule).find((r) => walkTakes(m, r));
 const walkRules = {};
-for (const m of Object.values(MODES)) if (rulesOf('walk', m.net).length) walkRules[walkKey(m)] ??= firstWalkRule(m);
+const walkRuleKept = (m) => (walkRules[walkKey(m)] ??= firstWalkRule(m));  // (its network's rule in use, set at first asked: a surface's words known from its cells, see cellSides)
 // a rule typed or picked for a walk: kept if its words fit it (else the field back to the rule in use)
 function setWalkRule(w, rule) {
   const words = walkWordsOf(w, rule), k = walkKey(MODES[w]);

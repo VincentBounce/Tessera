@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.476';
+const VERSION = '0.4.477';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -9506,9 +9506,10 @@ function symmetryMaps(kind, W, sym) {
 // laid by parts, those whose maps take each colour's part onto one part whole (see partSymmetries); with a block rule, those
 // whose maps take each block onto one of its generation's, the rule turning their cells
 // alike (its states' bits in the copy's order; Ising's sides and the stellated cells' moves not seen to: none of them)
-function symmetriesHere(kind, W, M = walk.life?.margolus) {  // (M: a block rule's, the walk shown's: its cells' turns, a built grid's)
-  const K = walk.life ? lifeParts() : 1, byParts = K > 1 && (plane.start === 'random' || plane.start === 'text');  // (as symmetricStart colours them)
-  const all = (plane.start === 'random' && famousZone(hunt.zone) ? ['none'] : planeSymmetries(kind, W)).filter((y) => !byParts || partSymmetries(kind, W, K).includes(y));
+// (start, zone, K: a setup's start, its hunt's zone and its colours' parts; the game's by default)
+function symmetriesHere(kind, W, M = walk.life?.margolus, { start = plane.start, zone = hunt.zone, K = walk.life ? lifeParts() : 1 } = {}) {  // (M: a block rule's, the walk shown's: its cells' turns, a built grid's)
+  const byParts = K > 1 && (start === 'random' || start === 'text');  // (as symmetricStart colours them)
+  const all = (start === 'random' && famousZone(zone) ? ['none'] : planeSymmetries(kind, W)).filter((y) => !byParts || partSymmetries(kind, W, K).includes(y));
   if (!M) return all;
   const memo = (M.symmetric ??= new Map()), key = `${kind}|${W}`;
   const keeps = (maps) => !M.ising && !M.move && maps.every((f) => M.turns.every((turn) => {
@@ -10613,19 +10614,19 @@ let surfaceDraw = false;  // a surface's Draw tab open: its patterns shown, grey
 // the rule, the start and its zone (see renderPlaneRow, renderHunt)
 // a symmetry at a mode: the walk shown's, by its grid (and its block rule, see symmetriesHere); another's, on the plane, by its
 // grid at the side picked (a block rule's known once its grid is built: none there)
-const symmetryAllowed = (y, v) => {
-  const m = MODES[v];
-  if (v === walk.mode && walk.plane) return symmetriesHere(walk.plane.kind, walk.plane.W).includes(y);
+const symmetryAllowed = (y, v, { start, zone, colours } = {}) => {
+  const m = MODES[v], by = { start, zone, K: colours === undefined || colours === lifeColours ? undefined : colours };  // (a setup's; its colours its parts, the game's where they are its)
+  if (v === walk.mode && walk.plane) return symmetriesHere(walk.plane.kind, walk.plane.W, undefined, by).includes(y);
   if (!m.plane || m.elementary || m.margolus || !m.life) return y === 'none';
   const k = planeKind(m.plane);
-  return symmetriesHere(k, planeW(k, planeSideOf(k), m), null).includes(y);
+  return symmetriesHere(k, planeW(k, planeSideOf(k), m), null, by).includes(y);
 };
 function renderSymmetry() {
   const kind = MODES[$('mode').value].plane, has = walk.plane ? symmetriesHere(walk.plane.kind, walk.plane.W) : ['none'], now = walk.plane ? symmetryOf(walk.plane.kind) : 'none';
   $('symmetryRow').hidden = !kind || !!MODES[$('mode').value].elementary;  // (Elementary: a row, no copies)
   $('symmetryTiles').replaceChildren(tileGroup(Object.keys(SYMMETRIES).map((y) => {  // (one choice: a tab group; the one picked, clicked again: nothing; those the grid has not, greyed)
     return tile({ pic: icon(SYMMETRIES[y][0]), text: SYMMETRIES[y][1], title: SYMMETRIES[y][3], on: y === now, byDefault: y === 'none' ? 'yes' : '', at: walk.mode,
-      whyNot: ({ w: v }) => (symmetryAllowed(y, v) ? '' : SYMMETRY_WHERE), click: () => { if (y !== symmetryOf(walk.plane.kind)) { plane.sym = y; hunt.top = []; lifeReseed(); renderHunt(); } } });  // (the same start, as its link says it, its symmetry another: the hunt's finds, of another, gone)
+      whyNot: ({ w: v, start, zone, colours }) => (symmetryAllowed(y, v, { start, zone, colours }) ? '' : SYMMETRY_WHERE), click: () => { if (y !== symmetryOf(walk.plane.kind)) { plane.sym = y; hunt.top = []; lifeReseed(); renderHunt(); } } });  // (the same start, as its link says it, its symmetry another: the hunt's finds, of another, gone)
   }), true));
 }
 // Draw's and Text's greyed words

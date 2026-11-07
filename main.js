@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.422';
+const VERSION = '0.4.423';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -1998,8 +1998,9 @@ const rowAction = (html, title, click) => {
   return x;
 };
 // Trail: a dead cell fades through greys for a few generations (States and Age, in colours too; two states)
-const trailApplies = () => !!walk.life && walk.life.C === 2 && !walk.life.margolus && $('colourMode').value !== 'digit';  // (a reversible rule's blocks: none, their cells move, none dies, and backwards a trail would show where they are born)
+const trailApplies = (w = walk.life && walk.mode) => !!w && !!MODES[w].life && !MODES[w].margolus && !MODES[w].elementary && (lifeRuleNow()?.C ?? 2) === 2 && $('colourMode').value !== 'digit';  // (w: the walk shown's, or a mode's: its rule the one in use)  // (a reversible rule's blocks: none, their cells move, none dies, and backwards a trail would show where they are born)
 const trailOn = () => $('lifeTrail').checked && trailApplies();
+const TRAIL_WHERE = 'with dying stages (Generations), on Rewind and with Activity';  // (Trail's greyed words)
 // Trail, a tile turned on and off (see tile): its picture a live cell with its comet fading in amber behind (LIFE_FADE); greyed for Activity
 // and dying stages
 let trailButton = null;  // kept: it goes after Life's looks, in their row (see renderColourButtons)
@@ -2007,7 +2008,7 @@ function renderTrailButton() {
   const sq = (k, c) => `<rect x="${(17 * k) / 3}" y="${17 - (17 * k) / 3}" width="7" height="7" rx="1" fill="${c}"/>`;
   trailButton ??= tile({ pic: `<svg viewBox="0 0 24 24" aria-hidden="true">${sq(0, LIFE_FADE[5]) + sq(1, LIFE_FADE[3]) + sq(2, LIFE_FADE[1])}${sq(3, LIFE_ALIVE)}</svg>`, text: 'Trail', id: 'lifeTrailButton', toggle: true,  // up the diagonal
     title: 'A dead cell fades in amber for a few generations (States and Age)', click: () => { $('lifeTrail').checked = !$('lifeTrail').checked; $('lifeTrail').dispatchEvent(new Event('change')); } });
-  setTile(trailButton, { on: $('lifeTrail').checked && trailApplies(), can: trailApplies(), byDefault: 'On by default in Solo\nOff by default in colours', greyed: 'with dying stages (Generations), on Rewind and with Activity' });  // (not for these looks: off)
+  setTile(trailButton, { on: $('lifeTrail').checked && trailApplies(), byDefault: 'On by default in Solo\nOff by default in colours', greyed: TRAIL_WHERE, whyNot: ({ w }) => (trailApplies(w) ? '' : TRAIL_WHERE), at: walk.mode });  // (not for these looks: off)
 }
 // Blocks (Rewind, in Trail's place: no trail there), a tile turned on and off: the blocks of the set the next generation
 // is worked out by, outlined over the cells (see drawBlocks); Ising's squares in turn are no blocks: greyed
@@ -2021,7 +2022,7 @@ function renderBlocksButton() {
 // Space-time (Life on squares, the Stacks tile beside Walls): its generations stacked up, time going up, a cube a live cell (see
 // stackUp; STACK_MOST cubes at most); with walls only (through a torus's edges no tree grows: Stacks, Walls on with it)
 let spaceTime = false;
-const spaceTimeApplies = () => { const m = MODES[$('mode').value]; return !!m.plane && !m.margolus && planeKind(m.plane) === 'square'; };
+const spaceTimeApplies = (w = $('mode').value) => { const m = MODES[w]; return !!m.plane && !!m.life && !m.margolus && !m.elementary && planeKind(m.plane) === 'square'; };
 const spaceTimeOn = () => spaceTime && spaceTimeApplies();
 // Life's looks as square buttons with pictures (States or Colours, Age, Activity); a walk's, a list
 function renderColourButtons() {
@@ -3585,7 +3586,7 @@ const modesUnder = (...place) => Object.keys(NAV).filter((u) => place.every((x, 
 // The nearest that would allow what is greyed here (fits(setup): whether a setup takes it, { w, size, colours }): the panel's
 // own choices first (a button setting a field, sets: Duo, Trio… for colours), else this surface's other sizes (its size
 // stepper: the 8 nearest tried), else the other side (Grid | Cells), else its tilings, else its space's shapes, else the
-// other spaces: a button where some mode under it (under, its subtree) takes it, the one picked left out (its own others
+// other spaces, else the other tabs (Life, Rewind…): a button where some mode under it (under, its subtree) takes it, the one picked left out (its own others
 // nearer); none, none. A greyed button's enablers, highlighted by a click on it (see highlight)
 const enablersFor = (fits) => {
   const w = $('mode').value, mode = MODES[w], kind = !mode.plane && surfaceOf(mode), now = SPHERES[kind] && figureSize(w);
@@ -3593,7 +3594,7 @@ const enablersFor = (fits) => {
   const choices = [...document.querySelectorAll('button')].filter((b) => b.sets && b.offsetParent && !b.disabled && !b.classList.contains('active') && fits({ w, ...b.sets }));
   if (choices.length) return choices;
   if (now && sizesOf(kind, mode).filter((f) => f !== now).sort((a, b) => Math.abs(a - now) - Math.abs(b - now)).slice(0, 8).some((size) => fits({ w, size }))) return [$('sizeBox')];
-  for (const box of ['walkOn', 'torusTiles', 'navShapes', 'navSpace']) {
+  for (const box of ['walkOn', 'torusTiles', 'navShapes', 'navSpace', 'modeTabs']) {
     const takers = [...$(box).querySelectorAll('button')].filter((b) => b.under && b.offsetParent && !b.under.includes(w) && b.under.some((u) => fits({ w: u })));
     if (takers.length) return takers;
   }
@@ -3679,6 +3680,7 @@ function renderModePicker() {
   $('modeTabs').replaceChildren(galleryTab(), ...NAV_KINDS.map(([k, pic, title]) => {
     const b = button(`${icon(pic)} ${k}`, k === shownKind, () => { showPane(false); if (k !== kind) navGo(0, k); }, title);
     b.setAttribute('role', 'tab');
+    b.under = modesUnder(k);  // (its modes: what a greyed button waits for, see enablersFor)
     return b;
   }));
   $('walkHeading').innerHTML = icon(kind === 'Walk' ? 'compass' : 'grid') + WALK_HEADINGS[kind];
@@ -10514,7 +10516,7 @@ function renderPlaneRow() {
   $('planeOutline').hidden = !!APERIODIC[kind];  // (a grid that never repeats: always walls, nothing to choose)
   for (const [shape, torus] of OUTLINES) setTile($(`outline-${shape}-${torus ? 'torus' : 'walled'}`), { on: outlineOf(kind) === shape && planeTorus(kind) === torus, can: outlineOf(kind, shape, torus) === shape,
     greyed: shape === 'hex' ? 'but on a six-fold grid (triangles, hexagons, kites…)' : 'but on a slanted grid (its cells stored as a rhombus: triangles, hexagons, parallelograms…)' });
-  setTile(spaceTimeTile, { on: spaceTimeOn(), can: spaceTimeApplies(), greyed: 'but on squares (not Rewind)' });
+  setTile(spaceTimeTile, { on: spaceTimeOn(), whyNot: ({ w }) => (spaceTimeApplies(w) ? '' : 'but on squares (not Rewind)'), greyed: 'but on squares (not Rewind)' });
   renderSymmetry();
   $('startDraw').hidden = plane.start !== 'draw';
   $('startText').hidden = plane.start !== 'text';

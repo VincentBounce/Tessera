@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.387';
+const VERSION = '0.4.388';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -1560,9 +1560,17 @@ const cache = {};        // key → { intPart: "10", digits: Uint8Array (fractio
 let current = null;      // { head: integer-part digits, digits, mode }
 let worker = null;
 
-// A walk's every field, as it starts: each build begins from these (see buildWalkOf), then sets its own,
-// so nothing of the walk before stays (a worm's ✝ on the ant after it, v0.4.384). A field a builder sets
-// is declared here, once.
+// A walk's every field, as it starts: each build begins from these (see buildWalkOf), then sets its own.
+// This is the foundation of clean transitions: no field of the walk before can survive into the next one
+// (a worm's ✝ on the ant after it, v0.4.384, came from a reset list kept by hand, one field forgotten).
+// So a transition bug (something of the walk before still shown) is never fixed by resetting one more
+// field here or there: either a field a builder sets is missing from this list (declare it here, once),
+// or the debris is not in `walk` at all. Then it is one of two other kinds, each fixed at its own root:
+// - state kept outside `walk` (fill, visitData, hunt, the layers…): reset with it in buildWalkOf, or moved into `walk`;
+// - the tab picked mixed with the walk shown: while a walk is made the tab ($('mode').value) is already the next
+//   one. What describes the walk shown reads walk.mode; what sets up the next one reads the tab, and only
+//   the tab's own figure (see pickedFigure), never walk.geo with the tab's mode.
+// Checked every night (CLAUDE.md, Night audits: clean transitions).
 const freshWalk = () => ({
   n: 0,            // number of steps
   digits: null,    // digit of each step

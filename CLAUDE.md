@@ -57,6 +57,14 @@ Never delete the bundles in `Tessera resources` (old versions included, the `Wal
 - Before adding or moving a tooltip, read that renderer and route through it; check what shows (the `#tip` box after a
   mouseover), not the attribute.
 
+## Greyed controls
+- A control that can be greyed declares one thing: `whyNot(setup)` (`tile`, `card`, `setTile`), '' where allowed, else
+  its words why; `setup` is `{ w, size }` (a mode, at a size or the one it opens at: `pickedFigure`, `figureSize`), pure,
+  never the DOM nor the walk shown. `setTile` draws from it its greyed state, its greyed words and its `enablers` (a click
+  on it highlights the menu's nearest buttons allowing it, `enablersFor`: sizes, sides, tilings, shapes, spaces, each
+  button's subtree `under`). Never a `can:` and a `greyed:` text by hand beside it: two sources that drift.
+- A new menu button carries `under` (its modes, `modesUnder`), or the search cannot reach it.
+
 ## Sessions and branches
 - One branch, `main`, the only one on GitHub; no branch for a prototype or an experiment (it falls behind as others
   push, and only a force push fixes it). A prototype is a folder of its own (`lenia/`, `particles/`, `chemistry/`,

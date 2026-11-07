@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.523';
+const VERSION = '0.4.524';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -1561,9 +1561,9 @@ const PRIMORIAL_DIGITS = {
 /* ---- 2.5 Global state --------------------------------------------------------------------- */
 // Digits already computed stay in the cache (key: canonical formula + base), so going back to a
 // number or a mode is instant.
-const cache = {};        // key → { intPart: "10", digits: Uint8Array (fractional part) }
+const digitsCache = {};  // key → { intPart: "10", digits: Uint8Array (fractional part) }
 let current = null;      // { head: integer-part digits, digits, mode }
-let worker = null;
+let numberWorker = null;  // (the page's number's digits being computed, see compute)
 
 // A walk's every field, as it starts: each build begins from these (see buildWalkOf), then sets its own.
 // This is the foundation of clean transitions: no field of the walk before can survive into the next one
@@ -3128,7 +3128,7 @@ function headDigits(intPart, base) {
 // page, the others' from the cache (A's, see compute); null when they are not there yet (see digitsWorker)
 function knownDigits(F, base, n) {
   if (F.kind === 'seq') return seqDigits(F.ast, n, base).digits;
-  const hit = cache[`${F.text}/${base}`];
+  const hit = digitsCache[`${F.text}/${base}`];
   if (!hit || (hit.intPart.length + hit.digits.length < n && hit.total === undefined)) return null;
   const head = headDigits(hit.intPart, base), all = new Uint8Array(head.length + hit.digits.length);
   all.set(head);
@@ -3141,7 +3141,7 @@ function digitsWorker(F, base, n, then) {
   w.onmessage = ({ data: d }) => {
     if (d.type === 'progress') return;
     w.terminate();
-    if (d.type !== 'error') cache[`${F.text}/${base}`] = { intPart: d.intPart, digits: d.digits, total: d.total, tests: d.tests, uncertain: d.uncertain };
+    if (d.type !== 'error') digitsCache[`${F.text}/${base}`] = { intPart: d.intPart, digits: d.digits, total: d.total, tests: d.tests, uncertain: d.uncertain };
     then(d.type === 'error' ? d.message : null);
   };
   w.postMessage({ ast: F.ast, n, base, mag: F.mag, nodes: F.nodes });
@@ -3215,7 +3215,7 @@ function numberRows() {
   const P = walk.battle?.player, b = current.base, { head, frac } = digitsInUse(), n = head.length + frac.length;
   return [formulaInUse, ...RIVALS.slice(0, P ? P.K - 1 : 0).map((id) => $(id).value)].map((f, s) => {
     const F = formulaOf(f), ds = s ? knownDigits(F, b, n) : Uint8Array.from([...head, ...frac]), used = !P ? n : P.dead[s] >= 0 ? P.dead[s] : P.n;
-    const lead = !s ? head.length : F.kind === 'seq' ? ds.length : headDigits(cache[`${F.text}/${b}`].intPart, b).length, h = Math.min(lead, used);  // (its integer part's digits)
+    const lead = !s ? head.length : F.kind === 'seq' ? ds.length : headDigits(digitsCache[`${F.text}/${b}`].intPart, b).length, h = Math.min(lead, used);  // (its integer part's digits)
     return { s, name: s ? F.text ?? f : f, used, n, head: ds.subarray(0, h), frac: ds.subarray(h, used), total: s ? lead : current.total, ratio: s ? F.kind === 'rat' && smallExact(F.ast) : current.ratio };
   });
 }
@@ -3916,7 +3916,7 @@ function compute() {
   $('sphereRow').hidden = $('sizeRow').hidden = mode.lattice !== 'sphere';  // the size under the tiles; a walk's starts and loops further down
   syncSizeStepper();
   updateRuleText();
-  if (worker) { worker.terminate(); worker = null; setBusy(false); }
+  if (numberWorker) { numberWorker.terminate(); numberWorker = null; setBusy(false); }
   stopRivals();  // (B's and C's digits, see rivalsDigits)
   if (elementaryWorker) { elementaryWorker.terminate(); elementaryWorker = null; setBusy(false); }  // (Elementary's rows, see elementaryReady)
   const job = ++computeJob;  // a walk built later is this one's only if no other compute came since
@@ -3982,14 +3982,14 @@ function compute() {
     showAll();
     applyPendingView();
   };
-  const hit = cache[key], integer = kind === 'int';
+  const hit = digitsCache[key], integer = kind === 'int';
   const enough = integer ? hit && (hit.intPart.length >= n || hit.intPart.length === hit.total)
                          : hit && hit.digits.length >= want;
   if (enough) {
     done(hit, 'Digits cached');
     return;
   }
-  worker = newFormulaWorker();
+  numberWorker = newFormulaWorker();
   setBusy(true);
   // π, e, ln 2, roots, exact numbers and sequences stay fast at millions of digits; the other series
   // grow as the square of the digits
@@ -4001,7 +4001,7 @@ function compute() {
     (F.root === 'randprime' ? `Searching for a random ${formatNumber(Number(F.ast.args[0].v))}-digit prime…`
       : `Computing ${sym} in base ${base}…`) +  // the count is beside it
     (slow ? ' (this can take a minute or more)' : '');
-  worker.onmessage = (e) => {
+  numberWorker.onmessage = (e) => {
     const d = e.data;
     if (d.type === 'progress') {
       $('progress').classList.remove('indeterminate');
@@ -4009,15 +4009,15 @@ function compute() {
       $('progressText').textContent = `${Math.floor(Math.min(100, d.p * 100))} %`;
       return;
     }
-    worker.terminate();
-    worker = null;
+    numberWorker.terminate();
+    numberWorker = null;
     if (d.type === 'error') {
       setBusy(false);
       $('status').textContent = `Formula: ${d.message}`;
       return;
     }
     const entry = { intPart: d.intPart, digits: d.digits, total: d.total, tests: d.tests, uncertain: d.uncertain };
-    cache[key] = entry;
+    digitsCache[key] = entry;
     // a long walk (millions of an ant's steps take seconds): the gauge shows first, a frame to paint it,
     // and slides on while the walk is built (the page stops meanwhile)
     const finish = () => {
@@ -4033,7 +4033,7 @@ function compute() {
     $('progressText').textContent = 'Building the walk…';
     requestAnimationFrame(() => setTimeout(finish, 0));
   };
-  worker.postMessage({ ast: F.ast, n: want, base, mag: F.mag, nodes: F.nodes });
+  numberWorker.postMessage({ ast: F.ast, n: want, base, mag: F.mag, nodes: F.nodes });
 }
 
 // While the worker computes, the link waits for the result; past half a second, a gauge takes the

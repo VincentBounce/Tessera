@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.454';
+const VERSION = '0.4.455';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -1953,7 +1953,7 @@ const tile = ({ pic = '', text = '', html = null, title = '', id = null, on = fa
 // source; greyed here (at: its mode, the tab's by default) or not, its words why, and the menu's nearest buttons that would
 // allow it, highlighted by a click on it (see enablersFor))
 const setTile = (b, { on = false, can = true, mark = false, again = false, turn = 0, byDefault, greyed, whyNot = null, at = $('mode').value }) => {
-  if (whyNot) { const why = whyNot({ w: at ?? $('mode').value }); can = !why; if (why) greyed = why; b.enablers = () => enablersFor((setup) => !whyNot(setup)); }  // (at: none, no walk shown yet: the tab's)
+  if (whyNot) { const why = whyNot({ w: at ?? $('mode').value }); can = !why; if (why) greyed = why; b.enablers = () => enablersFor((setup) => !whyNot(setup)); b.pathsMemo = null; b.paths = () => (b.pathsMemo ??= pathsTo((setup) => !whyNot(setup))); }  // (its paths found once a drawing: at its first tooltip)  // (at: none, no walk shown yet: the tab's)
   if (byDefault !== undefined) b.dataset.default = byDefault;
   if (greyed !== undefined) b.dataset.greyed = greyed;
   const pic = b.querySelector('svg');
@@ -3586,7 +3586,7 @@ function renderAntRow() {
 function ruleCards(w, here = true) {
   const R = creatureRules(w), mine = here && (customOpen || !ruleKnown(R));
   const go = (then) => () => { if (!here) { $('mode').value = w; $('mode').dispatchEvent(new Event('change')); } then(); };
-  const make = (cardPic, name, code, on, then, why = '', title = '', source = null) => card({ pic: cardPic, name, detail: code, base: code && R.base?.(code), on, title: why || title, click: go(then),
+  const make = (cardPic, name, code, on, then, why = '', title = '', source = null) => card({ pic: cardPic, name, detail: code, base: code && R.base?.(code), on, title, click: go(then),
     how: () => { if (on) walkTutorialToggle(); else { go(then)(); walkTutorial(w); } }, whyNot: source && (({ w: v }) => ruleWhyNot(v, source)), at: w });  // (its ⓘ: how it works, picked first; greyed, why: rulesFor's, any mode's)
   return [...R.cards.map(({ rule: r, source, name, pic, why, title }) => make(pic, name, r, here && r === R.now && !customOpen, () => { customOpen = false; if (r === R.now) renderModePicker(); else R.set(r); }, why, title, source)),
     ...(R.typed ? [make(pixelIcon('..o..,..o..,ooooo,..o..,..o..'), 'Custom rule', mine ? R.now : '', mine, () => { customOpen = true; renderModePicker(); }, '', 'your own, typed')] : []),  // (never greyed: no source, no why)
@@ -3601,20 +3601,20 @@ const setupKey = (s) => `${s.w}|${s.size}|${s.colours}|${s.teams}|${s.penetratio
 // The menu's choices at a setup, each a click: its key (its button's data-choice) and the setup it leads to, by the menu's
 // own navigation (navPick, kindLeft, nearestMode, walksThere): the tabs, spaces, shapes, tilings, sides, walks' kinds, then a
 // Life's colours, a battle's teams and rule; a surface's sizes at the start only (one stepper, see pathsTo)
-function choicesAt(s) {
-  const w = s.w, [kind, space, shape, rule] = NAV[w], out = [], go = (key, v) => { if (v && v !== w) out.push([key, { ...s, w: v, size: null }]); };
-  for (const [k] of NAV_KINDS) if (k !== kind) go(`kind:${k}`, kindLeft[k] ?? navPick(w, 0, k));
-  for (const sp of navValues(1, [kind])) go(`space:${sp}`, navPick(w, 1, sp));
-  for (const sh of navValues(2, [kind, space])) go(`shape:${sh}`, navPick(w, 2, sh));
+function choicesAt(s) {  // (each [key, the setup it leads to, its button's words])
+  const w = s.w, [kind, space, shape, rule] = NAV[w], out = [], go = (key, v, words) => { if (v && v !== w) out.push([key, { ...s, w: v, size: null }, words]); };
+  for (const [k] of NAV_KINDS) if (k !== kind) go(`kind:${k}`, kindLeft[k] ?? navPick(w, 0, k), k);
+  for (const sp of navValues(1, [kind])) go(`space:${sp}`, navPick(w, 1, sp), SPACES[sp][0]);
+  for (const sh of navValues(2, [kind, space])) go(`shape:${sh}`, navPick(w, 2, sh), shapeLabel(sh));
   const fam = familyOf(w);
-  if (fam) for (const [f, turned] of fam.F.tabs) if (!turned && f !== fam.m) go(`tiling:${f}`, nearestMode(w, fam.F.modes[f].filter((v) => NAV[v][0] === kind)));
-  for (const u of walksThere(w)) go(`side:${NAV[u][4]}`, u);
-  if (shape) for (const r of navValues(3, [kind, space, shape])) if (r !== rule) go(`rule:${r}`, navPick(w, 3, r));
-  const set = (key, field, v, why) => { if (s[field] !== v && !why) out.push([key, { ...s, [field]: v }]); };  // (a choice greyed there: no click)
-  if (MODES[w].life) for (const k of COLOUR_STEPS) set(`colours:${k}`, 'colours', k, coloursWhyNot(k, w, s.size));
+  if (fam) for (const [f, turned, , name] of fam.F.tabs) if (!turned && f !== fam.m) go(`tiling:${f}`, nearestMode(w, fam.F.modes[f].filter((v) => NAV[v][0] === kind)), name);
+  for (const u of walksThere(w)) go(`side:${NAV[u][4]}`, u, NAV[u][4] === 'grid' ? 'Grid' : 'Cells');
+  if (shape) for (const r of navValues(3, [kind, space, shape])) if (r !== rule) go(`rule:${r}`, navPick(w, 3, r), r);
+  const set = (key, field, v, why, words) => { if (s[field] !== v && !why) out.push([key, { ...s, [field]: v }, words]); };  // (a choice greyed there: no click)
+  if (MODES[w].life) for (const k of COLOUR_STEPS) set(`colours:${k}`, 'colours', k, coloursWhyNot(k, w, s.size), COLOUR_STEP_NAMES[k]);
   if (battleMode(w)) {
-    for (const k of COLOUR_STEPS) set(`teams:${k}`, 'teams', k, teamsWhyNot(k, w, s.size));
-    if (s.teams > 1) PENETRATIONS.forEach(([kind], p) => set(`penetration:${p}`, 'penetration', p, penetrationWhyNot(kind, w)));
+    for (const k of COLOUR_STEPS) set(`teams:${k}`, 'teams', k, teamsWhyNot(k, w, s.size), COLOUR_STEP_NAMES[k]);
+    if (s.teams > 1) PENETRATIONS.forEach(([kind, name], p) => set(`penetration:${p}`, 'penetration', p, penetrationWhyNot(kind, w), name));
   }
   return out;
 }
@@ -3625,30 +3625,34 @@ const tilingNameOf = (w) => { const fam = familyOf(w); return fam ? fam.F.tabs.f
 const modeChanges = (v, w) => [0, 1, 2, 3, 4].filter((i) => NAV[v][i] !== NAV[w][i]).length + (tilingNameOf(v) !== tilingNameOf(w));
 const changes = (a, b) => modeChanges(a.w, b.w) + ['size', 'colours', 'teams', 'penetration'].filter((f) => a[f] !== b[f]).length;
 // The shortest paths from the setup in use to one fits takes, at n clicks: breadth first, each setup once, layer by layer
-// till one holds some; of these the fewest settings changed; their first clicks' keys (budget: setups tried at most)
+// till one holds some; of these the fewest settings changed, each its clicks [key, words] (budget: setups tried at most)
 function pathsTo(fits, budget = 5000) {
   const start = setupNow(), seen = new Set([setupKey(start)]), w = start.w, kind = !MODES[w].plane && surfaceOf(MODES[w]), now = SPHERES[kind] && figureSize(w);
   // (a surface's sizes, the 8 nearest by construction: its mode's, see sizesOf; the size stepper, a click away)
-  const sizes = now ? sizesOf(kind, MODES[w]).filter((f) => f !== now).sort((a, b) => Math.abs(a - now) - Math.abs(b - now)).slice(0, 8).map((size) => ['size', { ...start, size }]) : [];
-  let layer = [[start, null]], tried = 0;
+  const sizes = now ? sizesOf(kind, MODES[w]).filter((f) => f !== now).sort((a, b) => Math.abs(a - now) - Math.abs(b - now)).slice(0, 8).map((size) => ['size', { ...start, size }, 'another size']) : [];
+  let layer = [[start, []]], tried = 0;
   while (layer.length && tried < budget) {
     const hits = [], next = [];
-    for (const [s, first] of layer) {
-      for (const [key, t] of [...choicesAt(s), ...(first ? [] : sizes)]) {
+    for (const [s, path] of layer) {
+      for (const [key, t, words] of [...choicesAt(s), ...(path.length ? [] : sizes)]) {
         const k = setupKey(t);
         if (seen.has(k) || ++tried > budget) continue;
         seen.add(k);
-        (fits(t) ? hits : next).push([t, first ?? key]);
+        (fits(t) ? hits : next).push([t, [...path, [key, words]]]);
       }
     }
-    if (hits.length) { const least = Math.min(...hits.map(([t]) => changes(start, t))); return [...new Set(hits.filter(([t]) => changes(start, t) === least).map(([, key]) => key))]; }
+    if (hits.length) { const least = Math.min(...hits.map(([t]) => changes(start, t))); return hits.filter(([t]) => changes(start, t) === least).map(([, path]) => path); }
     layer = next;
   }
   return [];
 }
+// the greyed control a tooltip is on: itself, or the slider in its row (a notched row's, Morph's)
+const greyedOf = (el) => (el?.disabled ? el : el?.querySelector?.('input:disabled') ?? null);
+// a greyed control's shortest paths in words, for its tooltip: Torus › Hexagons · Möbius strip › Hexagons (three at most)
+const pathsWords = (paths) => paths.slice(0, 3).map((path) => path.map(([, words]) => words).join(' › ')).join(' · ') + (paths.length > 3 ? ' …' : '');
 // A greyed button's enablers: the buttons starting the shortest paths that would allow it (see pathsTo), highlighted by a
 // click on it (see highlight); the size stepper for a size
-const enablersFor = (fits) => pathsTo(fits).map((key) => (key === 'size' ? $('sizeBox') : document.querySelector(`[data-choice="${key}"]`))).filter(Boolean);
+const enablersFor = (fits) => [...new Set(pathsTo(fits).map(([[key]]) => key))].map((key) => (key === 'size' ? $('sizeBox') : document.querySelector(`[data-choice="${key}"]`))).filter(Boolean);
 // a rule card's greyed words in a mode (see rulesFor): its why there, or none there at all
 const ruleWhyNot = (v, source) => { const c = rulesFor(v).find((r) => r.source === source); return c ? c.why : 'not a rule here'; };
 // whether a rules list has a card for the rule in use (else it is your own: Custom rule)
@@ -4351,7 +4355,8 @@ document.addEventListener('mouseover', (e) => {
   const box = el?.matches('label') ? el.querySelector('input[type=checkbox]') : null, d = el?.dataset.default ?? (box ? (box.defaultChecked ? 'on' : 'off') : '');
   const line = (text) => Object.assign(document.createElement('div'), { className: 'tip-default', textContent: text });  // (on a line of its own, fainter)
   const told = [...(d ? [line(d === 'yes' ? 'By default' : d === 'on' ? 'On by default' : d === 'off' ? 'Off by default' : d)] : []),  // (a default that depends, told in full)
-    ...(el?.dataset.greyed ? [line(`Greyed ${el.dataset.greyed}`)] : [])];  // (when it cannot be clicked)
+    ...(el?.dataset.greyed ? [line(`Greyed ${el.dataset.greyed}`)] : []),  // (when it cannot be clicked)
+    ...((greyedOf(el)?.paths && pathsWords(greyedOf(el).paths())) ? [line(`Allowed by ${pathsWords(greyedOf(el).paths())}`)] : [])];  // (greyed: the shortest paths that allow it, see pathsTo)
   if (el?.dataset.tipHtml) $('tip').innerHTML = el.dataset.tipHtml;  // (a size's: its words in colour, see sizeTips)
   else $('tip').replaceChildren(...(!tip ? (told.length ? [bold(name), ...told] : []) : !ok ? [tip, ...told] : tip.startsWith(`${name}:`) ? [bold(name), tip.slice(name.length + 1).trim().replace(/^./, (c) => c.toUpperCase()), ...told] : [bold(name), tip, ...told]));  // (no words of its own: its name and its default; else its name, then its words under it)
   $('hint').hidden = !!el || !(e.target.tagName === 'CANVAS' && e.target.parentElement.id === 'stage');  // (the view's own layers, not a box's canvas over it)
@@ -6673,6 +6678,8 @@ function greyInput(input, row, whyNot) {
   input.disabled = !!why;
   row.dataset.greyed = why;
   input.enablers = () => enablersFor((setup) => !whyNot(setup));
+  input.pathsMemo = null;
+  input.paths = () => (input.pathsMemo ??= pathsTo((setup) => !whyNot(setup)));
 }
 function notchRow(el, title, about, choices, at, first, set, whyNot = null, live = true) {  // (whyNot(setup): as a tile's, see setTile)
   const name = Object.assign(document.createElement('span'), { className: 'notch-name' }), gauge = Object.assign(document.createElement('div'), { className: 'size-gauge' });

@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.424';
+const VERSION = '0.4.425';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -10484,6 +10484,9 @@ function renderSymmetry() {
       greyed: 'where the grid is not its own copy so (squares: all; a grid in a hexagon: as its tiles allow; a block rule: as its blocks and its rule allow too; in colours, as their parts do, each copy one part whole; the others: none), and on Famous and Anywhere (their patterns laid whole where they are)', whyNot: ({ w: v }) => (symmetryAllowed(y, v) ? '' : 'where the grid is not its own copy so (squares: all; a grid in a hexagon: as its tiles allow; a block rule: as its blocks and its rule allow too; in colours, as their parts do, each copy one part whole; the others: none), and on Famous and Anywhere (their patterns laid whole where they are)'), click: () => { if (y !== symmetryOf(walk.plane.kind)) { plane.sym = y; hunt.top = []; lifeReseed(); renderHunt(); } } });  // (the same start, as its link says it, its symmetry another: the hunt's finds, of another, gone)
   }), true));
 }
+// Draw's and Text's greyed words
+const DRAW_WHERE = 'on a reversible surface (no patterns of a block rule to show, nor drawing)';
+const TEXT_WHERE = 'where no picture can be laid, as Emoji (a grid too small for it, a solid\'s faces none)';
 function renderPlaneRow() {
   const kind = MODES[$('mode').value].plane;
   const blocks = !!MODES[$('mode').value].margolus;
@@ -10491,8 +10494,8 @@ function renderPlaneRow() {
     const s = b.dataset.start, on = surfaceDraw ? s === 'draw' : s === plane.start;
     b.hidden = !!MODES[$('mode').value].elementary !== ELEMENTARY_STARTS.includes(s) && s !== 'digits';  // (Elementary's starts, see elementaryRows)
     if (s === 'random') b.innerHTML = `${icon(blocks ? 'dice' : 'search')}<span>${blocks ? 'Random' : 'Hunt'}</span>`;  // (blocks: no hunt, its zones' starts)
-    if (s === 'draw') setTile(b, { on, can: !(!kind && blocks), greyed: 'on a reversible surface (no patterns of a block rule to show, nor drawing)' });  // (Draw on a surface: its rule's patterns, none for blocks)
-    else if (s === 'text') setTile(b, { on, can: !(!!walk.life && current?.mode === $('mode').value && !setFits(iconMax(textSet()), textSet())), greyed: 'where no picture can be laid, as Emoji (a grid too small for it, a solid\'s faces none)' });  // (its grid's, once built)
+    if (s === 'draw') setTile(b, { on, greyed: DRAW_WHERE, whyNot: ({ w: v }) => (!MODES[v].plane && MODES[v].margolus ? DRAW_WHERE : '') });  // (Draw on a surface: its rule's patterns, none for blocks)
+    else if (s === 'text') setTile(b, { on, greyed: TEXT_WHERE, whyNot: ({ w: v }) => (v !== $('mode').value ? TEXT_WHERE : !walk.life || current?.mode !== v || setFits(iconMax(textSet()), textSet()) ? '' : TEXT_WHERE) });  // (a picture's room known on the grid built only: another mode's not judged, not claimed)  // (its grid's, once built)
     else setTile(b, { on });
   }
   $('startTextInput').value = plane.text;  // (its words, on any grid)
@@ -13175,7 +13178,8 @@ function renderHunt() {
   renderSymmetry();  // (Famous: none)
   const fits = huntFits();
   for (const b of $('huntZones').children) {
-    setTile(b, { on: b.dataset.zone === hunt.zone, can: !busy && !!fits[b.dataset.zone], again: true, greyed: `${zoneGreyed(b.dataset.zone)}, and while a hunt runs` });  // (picked: a click draws another start)
+    setTile(b, { on: b.dataset.zone === hunt.zone, again: true, greyed: `${zoneGreyed(b.dataset.zone)}, and while a hunt runs`, at: walk.mode,
+      whyNot: ({ w: v }) => (v === walk.mode && !busy && fits[b.dataset.zone] ? '' : `${zoneGreyed(b.dataset.zone)}, and while a hunt runs`) });  // (its room known on the grid built only: another mode's, not judged)  // (picked: a click draws another start)
     if (b.dataset.zone === 'custom') b.hidden = hunt.zone !== 'custom';
   }
   // one line under the button: what the zone has put on the grid, and (Life) what a hunt will try; how far it got while it

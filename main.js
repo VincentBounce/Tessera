@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.379';
+const VERSION = '0.4.380';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -1638,12 +1638,12 @@ const rainbowLength = () => (closedLoop() ? walk.loop.from + walk.loop.period : 
 let lifeStart = null;  // where a Life start comes from when it is not the number's digits (see setLifeSeed)
 let barTitle = '';  // a walk's title: its number, a creature's name and what it turns by (its loop's link after it, see updateStats)
 function describe(base, available) {
-  const mode = MODES[$('mode').value], sym = `<span class="pi">${withIcons(shownSym)}</span>`;
+  const mode = MODES[walk.mode], sym = `<span class="pi">${withIcons(shownSym)}</span>`;  // (the walk shown's, described once built)
   setLinks($('barNum'), (barTitle = withIcons(shownSym)));
   $('barNum').title = formulaInUse;
   // the chips after the title, in one order everywhere: a walk's base, then the rule (a walk's, a creature's, Life's: a click,
   // how it works); a creature turns by its rule, or by the digits of a number: that number first
-  const w = $('mode').value, creature = MODES[w].worm || ANTS[w], colours = antColours(w);
+  const w = walk.mode, creature = MODES[w].worm || ANTS[w], colours = antColours(w);
   const walkRule = !creature && !mode.life && WALK_NETS[mode.net] ? walkRuleOf(mode) : '';
   $('barBase').hidden = !!creature || !!mode.life;  // (a creature's base or colours in its rule's tooltip; Life's digits: in its description)
   $('barBase').textContent = colours ? `${colours} colours` : baseWords(base);
@@ -1668,7 +1668,7 @@ function describe(base, available) {
       + walk.bridges.map((b) => `${fmt(b.from)} (${fmt(Math.floor((b.to - b.from) / b.period))} stretches)`).join(', ') : '')
       + (walk.highway && !walk.loop ? ` · a highway from step ${fmt(walk.highway.from)}, every ${walk.highway.period} steps` : '')
       + (loopText() ? ` · ${loopText()}` : '');  // why the length stops where it does
-    $('description').innerHTML = `<b>${walkName($('mode').value)}</b> · ${walk.loop ? '' : `${fmt(walk.n)} ${mode.antOf || mode.worm ? 'steps' : 'digits'} · `}${chips ? lead + around + (after ? ` · ${after}` : '') : mode.rule}${highway}`;
+    $('description').innerHTML = `<b>${walkName(walk.mode)}</b> · ${walk.loop ? '' : `${fmt(walk.n)} ${mode.antOf || mode.worm ? 'steps' : 'digits'} · `}${chips ? lead + around + (after ? ` · ${after}` : '') : mode.rule}${highway}`;
     if (chips) {
       $('ruleChips').replaceChildren(...items.map(([, d, text]) => {
         // without the closing note and the words around the digits (they are in the description)
@@ -6298,8 +6298,8 @@ function updateMorphButton() {
   if (document.activeElement !== $('shapeM')) $('shapeM').value = sh.target;
   // greyed on the pits and the sponge (their holes: no form between); its default, told in its tooltip, each shape's of
   // this tab (round: a sheet rolled up, a solid inflated)
-  $('shapeM').disabled = ['pits', 'bumps', 'menger'].includes(MODES[$('mode').value].sphere.replace(/Tetrakis$/, ''));
-  const [kind, space] = NAV[$('mode').value], sheet = ['Torus', 'Möbius strip', 'Klein bottle'], ways = { Inflated: [], Rolled: [], Flat: [] };
+  $('shapeM').disabled = ['pits', 'bumps', 'menger'].includes(MODES[walk.mode].sphere.replace(/Tetrakis$/, ''));
+  const [kind, space] = NAV[walk.mode], sheet = ['Torus', 'Möbius strip', 'Klein bottle'], ways = { Inflated: [], Rolled: [], Flat: [] };
   for (const s of navValues(2, [kind, space])) {
     const w = Object.keys(NAV).find((v) => NAV[v][0] === kind && NAV[v][1] === space && NAV[v][2] === s);
     if (!['pits', 'bumps', 'menger'].includes(MODES[w].sphere.replace(/Tetrakis$/, ''))) ways[MODES[w].round ? (sheet.includes(s) ? 'Rolled' : 'Inflated') : 'Flat'].push(SHAPE_SHORT[s] ?? s);
@@ -6320,7 +6320,7 @@ $('shapeM').addEventListener('input', () => {
 $('shapeM').addEventListener('change', () => {
   const m = Number($('shapeM').value);
   if (m !== 0 && m !== 1) return;
-  $('perspective').checked = perspectiveFor(MODES[$('mode').value], m);
+  $('perspective').checked = perspectiveFor(MODES[walk.mode], m);
   $('perspective').dispatchEvent(new Event('change'));
 });
 
@@ -7003,7 +7003,7 @@ function drawStarts(ctx) {
   const at = (v) => pointAt(sh.corners, k * G.tileOf[v] + G.cornerOf[v], R), centre = (t) => pointAt(sh.cen, t, R);
   // a start's ends and the normal where it arrives: from corner to corner, or on cells from the
   // centre of the tile it leaves to the centre of the one it enters (see cellStart)
-  const ends = MODES[$('mode').value].cells
+  const ends = MODES[walk.mode].cells
     ? (st) => { const [t, e] = cellStart(g, st); return [centre(g.nbr[k * t + e]), centre(t), [sh.nrm[3 * t], sh.nrm[3 * t + 1], sh.nrm[3 * t + 2]]]; }
     : ([v, f]) => [at(f), at(v), normal(v)];
   const edge = (st) => {  // screen ends: where it comes from, where it arrives; null when facing away
@@ -11090,10 +11090,9 @@ const solidCounts = (sphere) => {
   const base = FACE_BASE[sphere] ?? sphere;
   return [...new Set([FACE_GROUPS[base], SPOT_PAIRS[base], SOLID_SPOTS[sphere]()].flatMap((t) => Object.keys(t ?? {})))].map(Number).sort((a, b) => a - b);
 };
-function coloursFit(k, g = walk.geo) {  // g: the surface (a torus's sizes)
-  const mode = MODES[$('mode').value];
+function coloursFit(k, g = walk.geo, mode = MODES[walk.mode]) {  // g: the surface (a torus's sizes), mode its (the walk shown's, or a new figure's: see fitColours)
   if (k === 1) return true;
-  if (!colourFair(k, g)) return false;  // (its parts not alike: greyed, see colourFair)
+  if (!colourFair(k, g, mode)) return false;  // (its parts not alike: greyed, see colourFair)
   if (k * ((parseRule(ruleBody($('lifeRule').value))?.C ?? 2) - 1) > 255) return false;  // its states and dying stages past a cell's byte (Faders' 25: eight at most)
   if (mode.plane) {
     return true;  // its blocks (rounded down when they do not divide it, as on a torus); with dead edges, its halves, quarters, or slices round the middle (see planeSlices)
@@ -11106,7 +11105,7 @@ function coloursFit(k, g = walk.geo) {  // g: the surface (a torus's sizes)
 // a new figure: as many colours as last picked, else the nearest count of colours it places (colours still, never Solo;
 // fewer on a tie); Solo picked, Solo (the pick kept for the next)
 function fitColours(g) {  // (blocks: one colour, Reversible's)
-  lifeColours = coloursPicked === 1 || MODES[$('mode').value].margolus || MODES[$('mode').value].elementary ? 1 : COLOUR_STEPS.filter((k) => k > 1 && coloursFit(k, g)).reduce((a, k) => (Math.abs(k - coloursPicked) < Math.abs(a - coloursPicked) ? k : a), Infinity);
+  lifeColours = coloursPicked === 1 || MODES[$('mode').value].margolus || MODES[$('mode').value].elementary ? 1 : COLOUR_STEPS.filter((k) => k > 1 && coloursFit(k, g, MODES[$('mode').value])).reduce((a, k) => (Math.abs(k - coloursPicked) < Math.abs(a - coloursPicked) ? k : a), Infinity);
   if (lifeColours === Infinity) lifeColours = 1;  // (none but Solo: Klein Dual 16 at 4 and 24)
 }
 const colourBlock = (k, newcomer = false) => {  // (its colours squares all, as many a row as their blocks, else as near a square: 5, 3 and 2, a hole; newcomer: its last one's outline only, Newcomer's)
@@ -11124,7 +11123,7 @@ const figureTurns = (kind) => ROSETTES[kind]?.[0] ?? { ammann: 8, rhombs12: 12, 
 // solid; never on a grid that never repeats, a disc: no symmetry halves its parts, a rosette's a spiral's (Flower 6's 12 colours 63 to
 // 65 cells, Penrose's 10, 72 to 77, before v0.3.90); nor on a sheet or a globe, its blocks, slices or quarters made for K itself
 // (Klein Type 15's 10, its twist odd, before v0.3.94); nor on a solid, its parts its own colourings', see solidCounts)
-const colourFair = (K, g = walk.geo) => colourFairOwn(K, g) || (!g?.torus && !g?.globe && !APERIODIC[MODES[$('mode').value]?.plane] && !solidCounts(MODES[$('mode').value]?.sphere) && (([8, 10, 12].includes(K) && colourFairOwn(K / 2, g)) || (K === 9 && colourFairOwn(3, g) && !colourFairOwn(6, g))));
+const colourFair = (K, g = walk.geo, mode = MODES[walk.mode]) => colourFairOwn(K, g) || (!g?.torus && !g?.globe && !APERIODIC[mode?.plane] && !solidCounts(mode?.sphere) && (([8, 10, 12].includes(K) && colourFairOwn(K / 2, g)) || (K === 9 && colourFairOwn(3, g) && !colourFairOwn(6, g))));
 const colourFairOwn = (K, g) => {
   const mode = MODES[$('mode').value], kind = mode?.plane;
   if (K === 1) return true;
@@ -12623,7 +12622,7 @@ const iconSet = (zone) => ICON_SETS[zone.startsWith('punk') ? 'punk' : zone === 
 const iconIndex = (name, set = iconSet(hunt.zone)) => Math.max(0, set.names.indexOf(name));  // (a link's name; unknown, the first)
 const DENSITY = [0.1, 0.7];  // a random start's density, drawn between these
 const density = () => DENSITY[0] + Math.random() * (DENSITY[1] - DENSITY[0]);
-const realmOnFaces = () => !!SOLID_SPOTS[MODES[$('mode').value].sphere] || !!HULL_SOLIDS[MODES[$('mode').value].sphere];  // (a solid: Realm its faces, see realmParts)
+const realmOnFaces = () => !!SOLID_SPOTS[MODES[walk.mode].sphere] || !!HULL_SOLIDS[MODES[walk.mode].sphere];  // (a solid: Realm its faces, see realmParts)
 const zoneRadius = (zone) => (zone.startsWith('radius') ? Number(zone.slice(6)) : 0);
 // Realm: on a solid, each colour's whole face, the one its patch is in the middle of (see patchSpots); none (greyed) where a
 // patch is on a corner or an edge (the stella's tips and hollows): a face cut.
@@ -12638,9 +12637,9 @@ function realmParts(K) {
     const own = parts.map((p) => p.filter(apart));
     return own.every((p) => p.length) ? own : null;  // (a grid too small: greyed)
   }
-  const hull = hullColours(MODES[$('mode').value].sphere, K);
-  if (HULL_SOLIDS[MODES[$('mode').value].sphere]) return hull && hull.groups.map((gr) => hullFaceCells(gr[0]));  // (a hull solid: each colour's first face, as the cube's, see hullColourings)
-  const sphere = MODES[$('mode').value].sphere, g = walk.geo, L = walk.life, mids = FACE_MIDDLES[sphere](), col = colouring(sphere, K);
+  const hull = hullColours(MODES[walk.mode].sphere, K);
+  if (HULL_SOLIDS[MODES[walk.mode].sphere]) return hull && hull.groups.map((gr) => hullFaceCells(gr[0]));  // (a hull solid: each colour's first face, as the cube's, see hullColourings)
+  const sphere = MODES[walk.mode].sphere, g = walk.geo, L = walk.life, mids = FACE_MIDDLES[sphere](), col = colouring(sphere, K);
   // (each colour's patch face: faces dealt out whole, its patch's; spots, the face whose middle its patch's spot is, if all are)
   const faces = !col ? [] : col.faces ? col.patch : col.patch.map((i) => mids.findIndex((m) => dot3(unit(m), unit(col.items[i])) > 1 - 1e-9));
   if (!faces.length || faces.includes(-1)) return null;
@@ -12912,7 +12911,7 @@ function partPlaces(r, K, mirror, mixed) {
     if (!r) { for (let t = 0; t < n; t++) if (part[t] >= 0) parts[part[t]].push(t); return parts; }
     return parts.map((_, i) => lifePatch(r, middleCells(i, K)));  // (a patch at each colour's spot on its disc, see patternFrame)
   }
-  const hull = hullColours(MODES[$('mode').value].sphere, K);
+  const hull = hullColours(MODES[walk.mode].sphere, K);
   if (hull) {  // a hull solid (see hullColourings): Wild, a colour's faces its own (two opposite faces a colour: its first), the others' cells each to the nearest colour's face's middle; Mirror, its two faces; a zone, round each colour's first face's middle
     if (r) return hull.groups.map((_, i) => lifePatch(r, middleCells(i, K)));
     if (mirror) return hull.groups.map((gr) => gr.flatMap(hullFaceCells));  // (Mirror: its two opposite faces only)
@@ -12925,7 +12924,7 @@ function partPlaces(r, K, mirror, mixed) {
     }
     return parts;
   }
-  const sphere = MODES[$('mode').value].sphere, col = K === 1 ? null : colouring(sphere, K, mirror && !r), up = (t) => unit(Array.from(g.cen.subarray(3 * t, 3 * t + 3)));
+  const sphere = MODES[walk.mode].sphere, col = K === 1 ? null : colouring(sphere, K, mirror && !r), up = (t) => unit(Array.from(g.cen.subarray(3 * t, 3 * t + 3)));
   // a cell by its face (the one its own middle faces most, see FACE_MIDDLES): faces dealt out whole, its face's colour;
   // else its face's nearest spot's, so that a face nearer one spot goes to it whole; a face as near spots of two colours or
   // more, by the cell's own middle; a cell on an edge, a corner (as near two faces or more), as near spots of two colours
@@ -12944,7 +12943,7 @@ function partPlaces(r, K, mirror, mixed) {
   return col.patch.map((i) => lifePatch(r, centreCells(col.items[i])));  // round the open cells nearest each spot
 }
 // the triangle faces of a face of the solid: 5 for a dodecahedron's pentagon, else 1
-const facesPer = () => (['dodeca', 'dodecaKite'].includes(MODES[$('mode').value].sphere) ? 5 : 1);
+const facesPer = () => (['dodeca', 'dodecaKite'].includes(MODES[walk.mode].sphere) ? 5 : 1);
 const zoneParts = (zone, K) => (zone === 'realm' ? realmParts(K) ?? [] : huntParts(zoneRadius(zone), K, false, colourMixed(zone)));
 // The zone: each colour's part (see huntParts). On the plane, with a symmetry it defines the start: the
 // zone and all its copies, of which only the first of each cell's copies is chosen, the others copied
@@ -13020,9 +13019,9 @@ function huntFits() {
     if (walk.geo?.globe && zone !== 'full' && zone !== 'numbers') return [zone, false];  // (a globe: the zones on its whole grid only, a soup or a number's digits; no frame yet to lay a patch or pattern on, see patternPlace)
     if (famousZone(zone)) return [zone, (hunt.laid[zone] ??= patternsOn() && laidChoices(zone === 'centred', true).every((c) => c.length > 0))];  // (whether some, not them all)
     if (zone === 'realm' && !realmParts(K)) return [zone, false];  // (one colour, corners: greyed)
-    if (zone === 'mirror') return [zone, !walk.plane && !walk.geo.torus && K > 1 && (!!colouring(MODES[$('mode').value].sphere, K, true) || !!hullColours(MODES[$('mode').value].sphere, K)?.pairs)];  // (a solid, two parts a colour)
+    if (zone === 'mirror') return [zone, !walk.plane && !walk.geo.torus && K > 1 && (!!colouring(MODES[walk.mode].sphere, K, true) || !!hullColours(MODES[walk.mode].sphere, K)?.pairs)];  // (a solid, two parts a colour)
     if (isIcon(zone)) return [zone, iconFits(iconSize(zone), iconSet(zone).P)];
-    if (zone === 'full' && hullColours(MODES[$('mode').value].sphere, K)) { const p = huntParts(0, K, false, colourMixed(zone)); return [zone, !peakHunt() && p.every((x) => x.length === p[0].length)]; }  // (a hull solid's Wild: its parts alike, else greyed)
+    if (zone === 'full' && hullColours(MODES[walk.mode].sphere, K)) { const p = huntParts(0, K, false, colourMixed(zone)); return [zone, !peakHunt() && p.every((x) => x.length === p[0].length)]; }  // (a hull solid's Wild: its parts alike, else greyed)
     if (!r && zone !== 'realm') return [zone, !peakHunt()];  // (the whole grid: no peak to look for, a soup full already)
     const parts = zoneParts(zone, K);  // (each its own cells, none without: a face for each colour)
     return [zone, parts.every((p) => p.length) && new Set(parts.flat()).size === parts.reduce((sum, p) => sum + p.length, 0)];
@@ -15345,11 +15344,11 @@ function drawSphere() {
   let palette = [null, ...grad];
   let levelOf = (t) => (visits[t] ? logLevel(visits[t], maxVisits) : 0);  // walk: visits, log scale
   const L = walk.life, line = !L && ['gradient', 'cells'].includes($('colourMode').value);  // Rainbow (the tiles Rainbow picks: cells)
-  const path = !L && !walk.battle && (MODES[$('mode').value].cells ? $('showPath').checked : line);  // on cells, with Show path only (a battle: its bodies, no path)
+  const path = !L && !walk.battle && (MODES[walk.mode].cells ? $('showPath').checked : line);  // on cells, with Show path only (a battle: its bodies, no path)
   if (line) {  // Rainbow along the walk: a tile walked through (Fill cells), enclosed (Area), or dark
-    const cells = MODES[$('mode').value].cells && firstVisits(), areas = !walk.ant && areaOn() && areaSteps();
+    const cells = MODES[walk.mode].cells && firstVisits(), areas = !walk.ant && areaOn() && areaSteps();
     const band = (step) => Math.min(LEVELS - 1, Math.floor((step * LEVELS) / (walk.n + 1)));
-    const tiles = path && MODES[$('mode').value].cells ? grad.map((c) => faded(c, FADING)) : grad;  // Path: the tiles faded under the line
+    const tiles = path && MODES[walk.mode].cells ? grad.map((c) => faded(c, FADING)) : grad;  // Path: the tiles faded under the line
     palette = [null, ...tiles, ...(areaLight() ? grad.map((c) => faded(c, FADING)) : grad)];
     levelOf = (t) => (cells && cells[t] >= 0 && cells[t] <= cur ? 1 + band(cells[t])
       : areas && areas[t] >= 0 && areas[t] <= cur ? 1 + LEVELS + band(areas[t]) : 0);

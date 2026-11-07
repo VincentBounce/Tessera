@@ -64,12 +64,16 @@ Never delete the bundles in `Tessera resources` (old versions included, the `Wal
   mouseover), not the attribute.
 
 ## Greyed controls
-- A control that can be greyed declares one thing: `whyNot(setup)` (`tile`, `card`, `setTile`), '' where allowed, else
-  its words why; `setup` is `{ w, size }` (a mode, at a size or the one it opens at: `pickedFigure`, `figureSize`), pure,
-  never the DOM nor the walk shown. `setTile` draws from it its greyed state, its greyed words and its `enablers` (a click
-  on it highlights the menu's nearest buttons allowing it, `enablersFor`: sizes, sides, tilings, shapes, spaces, each
-  button's subtree `under`). Never a `can:` and a `greyed:` text by hand beside it: two sources that drift.
-- A new menu button carries `under` (its modes, `modesUnder`), or the search cannot reach it.
+- The menu is a graph: a node is a setup (what a link holds: mode, size, colours, teams, battle rule), an edge a click
+  (`choicesAt(setup)`: each button's key, `data-choice`, and the setup it leads to, by the menu's own navigation,
+  `navPick(from, …)`). A choice greyed in a setup is no edge there.
+- A control that can be greyed declares one thing: `whyNot(setup)` (`tile`, `card`, `setTile`, `greyInput`), '' where
+  allowed, else its words why; pure, never the DOM nor the walk shown. `setTile` draws from it its greyed state, its greyed
+  words and its `enablers`: the first clicks of the shortest paths, at n clicks, to a setup that allows it (`pathsTo`:
+  breadth first, then the fewest settings changed), highlighted by a click on it. Never a `can:` and a `greyed:` text by
+  hand beside it: two sources that drift.
+- A new menu button or field tile carries its choice's key (`data-choice`) and gets its edge in `choicesAt`, or the search
+  cannot reach it.
 
 ## Sessions and branches
 - One branch, `main`, the only one on GitHub; no branch for a prototype or an experiment (it falls behind as others

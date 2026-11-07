@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.464';
+const VERSION = '0.4.465';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -1945,15 +1945,16 @@ const tile = ({ pic = '', text = '', html = null, title = '', id = null, on = fa
   return setTile(b, { on, can, mark, again, turn, byDefault, greyed, whyNot, at });
 };
 // (byDefault: as the tooltip tells it, see tip: 'yes', the choice picked at first; 'on' or 'off', a switch's at first)
-// (greyed: why it is, as the tooltip tells it, a sentence: 'Not in Solo.', 'The Gallery is empty.'…)
+// (greyed: why it is, as the tooltip tells it, a sentence: 'Not in Solo.', 'The Gallery is empty.'…; greyed by it, '' allowed:
+// a control whose state no setup holds, a stepper's end, the player's; else whyNot)
 // (whyNot(setup): what greys it in a setup, { w, size, colours, teams, battleRule } (a mode, at a size or the one it opens
 // at; its colours, a walk's teams, its battle rule: the ones picked if none), '' when allowed: its one
 // source; greyed here (at: its mode, the tab's by default) or not, its words why, and the menu's nearest buttons that would
 // allow it, highlighted by a click on it (see enablersFor))
-const setTile = (b, { on = false, can = true, mark = false, again = false, turn = 0, byDefault, greyed, whyNot = null, at = $('mode').value }) => {
+const setTile = (b, { on = false, greyed = '', can = !greyed, mark = false, again = false, turn = 0, byDefault, whyNot = null, at = $('mode').value }) => {
   if (whyNot) { const why = whyNot({ w: at ?? $('mode').value }); can = !why; if (why) greyed = why; b.enablers = () => enablersFor((setup) => !whyNot(setup)); b.pathsMemo = null; b.paths = () => (b.pathsMemo ??= pathsTo((setup) => !whyNot(setup))); }  // (its paths found once a drawing: at its first tooltip)  // (at: none, no walk shown yet: the tab's)
   if (byDefault !== undefined) b.dataset.default = byDefault;
-  b.dataset.greyed = can ? '' : greyed ?? '';  // (its words why only while greyed: whyNot's, or a greyed tile's own)
+  b.dataset.greyed = can ? '' : greyed;  // (its words why only while greyed: whyNot's, or its own)
   const pic = b.querySelector('svg');
   if (pic) pic.style.transform = turn ? `rotate(${turn}deg)` : '';
   b.disabled = !can;
@@ -2248,8 +2249,8 @@ function syncDigitsStepper() {
   $('digitsLabel').title = [`${formatNumber(asked)} ${size ? 'digits of the random prime p (100 to 2,000: it is walked whole)' : `${asked === 1 ? unit.slice(0, -1) : unit} at most`}`,
     !size && !lengthUsed() && 'Not used here (Life and Rewind play on): kept for the next tab', !size && total !== null && `The number has ${formatNumber(total)} digits`, stop?.why,
     `Type a number, from ${formatNumber(steps[0])} to ${formatNumber(size ? steps.at(-1) : targetMost())}, then Enter`].filter(Boolean).join('\n');
-  $('digitsDown').disabled = asked <= steps[0];
-  $('digitsUp').disabled = asked >= (size ? steps.at(-1) : targetMost());
+  setTile($('digitsDown'), { greyed: asked <= steps[0] ? 'Already the fewest steps.' : '' });
+  setTile($('digitsUp'), { greyed: asked >= (size ? steps.at(-1) : targetMost()) ? 'Already the most steps.' : '' });
 }
 // Why a walk that repeats has a most of digits: the loop (or drift), from its first step, and how many
 // rounds are walked; '' when it does not repeat
@@ -6643,17 +6644,18 @@ function syncSizeStepper() {
   if (SPHERES[kind]?.tiles && sel.selectedOptions[0]) label(f);
   else $('sizeLabel').textContent = sel.selectedOptions[0]?.text ?? '';
   sizeTips('size', SPHERES[kind] && sel.selectedOptions[0] ? sizeCells(kind, f, true) : '', [SPHERES[kind] && sel.selectedOptions[0] ? `${sizeHow(kind, f)}\n${sizeSides(kind, f)}`.trim() : '', `\n${lastPicked()}`].filter(Boolean).join('\n'));
-  $('sizeDown').disabled = sel.selectedIndex <= 0;
-  $('sizeUp').disabled = sel.selectedIndex >= sel.options.length - 1;
+  setTile($('sizeDown'), { greyed: sel.selectedIndex <= 0 ? 'Already the smallest size.' : '' });
+  setTile($('sizeUp'), { greyed: sel.selectedIndex >= sel.options.length - 1 ? 'Already the largest size.' : '' });
   sizeGauge($('sizeGauge'), sel.options.length, sel.selectedIndex, (k) => label(sizeOf(sel.options[k].value)), (k) => stepSize(k - sel.selectedIndex));  // (a size of its own, a link's: a notch of its own too, as long as it is picked)
   const starts = modeStarts();
   $('startRow').hidden = !starts;
   if (!starts) return;
   if (document.activeElement !== $('startLabel')) $('startLabel').value = `start ${formatNumber(startNo())} of ${formatNumber(starts.length)}`;
   const fixed = startsWayNow() !== 'symmetric';  // (a battle's starts not A's moved: the selector greyed, see STARTS_WAYS)
-  $('startDown').disabled = fixed || startNo() <= 1;
-  $('startUp').disabled = fixed || startNo() >= starts.length;
-  $('startLabel').disabled = fixed;
+  const symmetricOnly = fixed ? 'Only for Symmetric starts: Centred and Random place their own.' : '';
+  setTile($('startDown'), { greyed: symmetricOnly || (startNo() <= 1 ? 'Already at the first start.' : '') });
+  setTile($('startUp'), { greyed: symmetricOnly || (startNo() >= starts.length ? 'Already at the last start.' : '') });
+  setTile($('startLabel'), { greyed: symmetricOnly });
 }
 // The sizes as a slider under the stepper, across, a notch each under it, the one in use its knob (none: hidden); dragged, the label
 // shows the size under it (preview), the size picked when let go (pick: a surface is built again), a notch clicked at once
@@ -7393,8 +7395,8 @@ function syncLoopRow() {
   $('loopLabel').classList.toggle('on', !!l);  // yellow on a loop
   if (!loops.length) return;
   $('loopLabel').innerHTML = `${icon('loop')} ${l ? `${i + 1} of ${loops.length} · ${l.laps[0]}+${l.laps[1]}` : `${loops.length} diagonal`}`;  // ↻: a loop
-  $('loopDown').disabled = i === 0;
-  $('loopUp').disabled = i === loops.length - 1;
+  setTile($('loopDown'), { greyed: i === 0 ? 'Already the first loop.' : '' });
+  setTile($('loopUp'), { greyed: i === loops.length - 1 ? 'Already the last loop.' : '' });
 }
 // − / +: the start, size and digits (one round) of the loop before or after
 function browseLoop(delta) {
@@ -8658,8 +8660,8 @@ function renderBattleHunt() {
   $('battleHuntVary').replaceChildren(vary('formulas', 'Formulas', 'The hunt draws the walkers\' numbers (else those in the fields)'),
     vary('starts', 'Starts', 'The hunt draws the start too: Symmetric\'s number, Random\'s draw (else the start shown)', startsWayNow() !== 'centred', 'in Centred: its centres all alike, nothing to vary'));
   $('battleHuntRank').replaceChildren(tileGroup(Object.entries(HUNT_RANKS).map(rank), true));
-  $('battleHuntBtn').disabled = !huntVary.formulas && !huntStarts();
-  $('battleHuntBtn').title = $('battleHuntBtn').disabled ? 'Greyed: it varies nothing (Formulas and Starts off)' : 'Battles fought one after another, each set once: what the switches above vary drawn at random; the 8 longest kept, and the first 8 still on as the digits end';
+  setTile($('battleHuntBtn'), { greyed: !huntVary.formulas && !huntStarts() ? 'It varies nothing: Formulas and Starts are off.' : '' });
+  $('battleHuntBtn').title = 'Battles fought one after another, each set once: what the switches above vary drawn at random; the 8 longest kept, and the first 8 still on as the digits end';
   $('battleHuntBtn').innerHTML = battleHunt.run ? `${icon('stop')} Stop hunt` : `${icon('search')} ${words}`;
   $('battleHuntStatus').textContent = battleHunt.status;
   const sym = (f) => formulaOf(f).sym, shown = [formulaInUse, ...RIVALS.map((id) => formulaOf($(id).value).text)];
@@ -10647,8 +10649,8 @@ function renderPlaneRow() {
   const label = (side) => { $('planeLabel').innerHTML = `${sizeShape(planeKind(kind), side)}<small>${shortCells(sizeCells(planeKind(kind), side))}</small>`; };  // the size (see gridSize; a rectangle's, if so)
   label(plane.side);
   sizeTips('plane', sizeCells(planeKind(kind), plane.side), `${gridSize(planeKind(kind), plane.side) ? `${sizeHow(planeKind(kind), plane.side)}\n${sizeSides(planeKind(kind), plane.side)}\n\n` : ''}${lastPicked()}`);
-  $('planeDown').disabled = plane.side <= sides[0];
-  $('planeUp').disabled = plane.side >= sides.at(-1);
+  setTile($('planeDown'), { greyed: plane.side <= sides[0] ? 'Already the smallest grid.' : '' });
+  setTile($('planeUp'), { greyed: plane.side >= sides.at(-1) ? 'Already the largest grid.' : '' });
   sizeGauge($('planeGauge'), sides.length, sides.indexOf(plane.side), (k) => label(sides[k]), (k) => { picked = planeCells(sides[k]); compute(); });
   $('planeOutline').hidden = !!APERIODIC[kind];  // (a grid that never repeats: always walls, nothing to choose)
   for (const [shape, torus] of OUTLINES) {
@@ -10702,13 +10704,13 @@ function renderPlaneRow() {
 // drawn there only; Go to gen 0, the way back)
 let drawToolsAway = null;  // (whether Draw's tools were last drawn away from gen 0, see updateStats)
 function renderDrawTools() {
-  const kind = MODES[$('mode').value].plane, away = drawAway(), why = "away from gen 0: its start's cells are drawn there";
+  const kind = MODES[$('mode').value].plane, away = drawAway(), why = "Away from gen 0: its start's cells are drawn there.";
   drawToolsAway = away;
   stage.classList.toggle('drawing', drawsHere());  // (the crosshair: a click draws, see drawsHere)
-  const grey = (b, own = false, ownWhy = '') => { b.disabled = away || own; b.dataset.greyed = away ? why : own ? ownWhy : ''; };
+  const grey = (b, own = false, ownWhy = '', on = b.classList.contains('active')) => setTile(b, { on, greyed: away ? why : own ? ownWhy : '' });  // (its own on, see renderBrushes)
   const tooBig = (p) => discPattern(p) && flatGrid()?.kind === p[1] && !discCells(p[1]).laid(p[4], 0);  // (a disc's pattern past the disc shown)
   for (const b of $('brushCards').children) {
-    if (b.dataset.brush === 'view') { b.disabled = false; b.dataset.greyed = ''; } else grey(b, tooBig(DRAW_BY_ID.get(b.dataset.brush)), 'too big for this disc: at a larger size');  // (View: at any generation, a surface's greying undone)
+    if (b.dataset.brush === 'view') setTile(b, { on: b.classList.contains('active') }); else grey(b, tooBig(DRAW_BY_ID.get(b.dataset.brush)), 'Too big for this disc: at a larger size.');  // (View: at any generation, a surface's greying undone)
   }
   const tool = !DRAW_BY_ID.get(brush.id)[1];  // (View or a cell: no pattern to turn)
   grey($('brushTurn'), tool || PATTERN_TURNS[kind] === 1, 'Not for View or a cell, nor on a grid a pattern cannot turn on (on a disc, it turns towards the cell clicked).');
@@ -10721,8 +10723,7 @@ function renderDrawTools() {
     : cleared ? ['undo', 'Undo clear', 'The cells cleared back'] : ['trash', 'Clear', 'Clears the cells drawn (Undo clear then brings them back)'];
   b.innerHTML = `${icon(pic)}${words}`;
   b.title = tip;
-  b.disabled = !away && !cleared && !population.size;
-  b.dataset.greyed = b.disabled ? 'No cell is drawn.' : '';
+  setTile(b, { greyed: !away && !cleared && !population.size ? 'No cell is drawn.' : '' });
 }
 // a disc pattern's card: its picture (see discIcon; made as it first shows, not 535 at the start)
 function discCard(b, p) {
@@ -12092,8 +12093,8 @@ function renderRuleSection() {
   // (a state up to K × (C − 1), see parseRule)
   const most = Math.min(25, Math.floor(255 / lifeColours) + 1), states = (C) => { customOpen = true; $('lifeRule').value = write(B, S, C); compute(); };
   $('statesLabel').innerHTML = `${rule.C} states<small>${rule.C > 2 ? `${rule.C - 2} dying` : 'none dying'}</small>`;
-  $('statesDown').disabled = rule.C <= 2;
-  $('statesUp').disabled = rule.C >= most;
+  setTile($('statesDown'), { greyed: rule.C <= 2 ? 'Already 2 states, none dying.' : '' });
+  setTile($('statesUp'), { greyed: rule.C >= most ? `Already the most states, ${most}.` : '' });
   $('statesDown').onclick = () => states(rule.C - 1);
   $('statesUp').onclick = () => states(rule.C + 1);
 
@@ -13285,7 +13286,7 @@ function renderBack() {
   const L = walk.life;
   if (!L?.margolus) return;  // (its section shown by its mode, see compute)
   $('backBtn').innerHTML = L.stable ? `${icon('search')} Back to start at gen ${formatNumber(L.stable.P)}` : backSearch.life === L ? `${icon('stop')} Stop · gen ${formatNumber(backSearch.gen)} searched` : `${icon('search')} Find its return to the start`;
-  $('backBtn').disabled = !!L.stable;
+  setTile($('backBtn'), { greyed: L.stable ? 'Found already: it comes back to its start.' : '' });
 }
 function renderHunt() {
   renderBack();
@@ -13321,7 +13322,7 @@ function renderHunt() {
     : `${all ? `All its ${formatNumber(all)} ${tried} tried, each once, then done` : `On and on until stopped: ${tried} at random one in 3, the others tweaks of the best`}; the 8 best kept, a click on one plays it`;
   const zone = shown + (sym !== 'none' ? ` · ${SYMMETRIES[sym][2]}` : '');
   $('huntBtn').innerHTML = busy ? `${icon('stop')} Stop hunt and play` : `${icon('search')} Hunt ${what}`;
-  $('huntBtn').disabled = !busy && hunt.zone === 'custom';  // a start from a link: a zone to hunt in first
+  setTile($('huntBtn'), { greyed: !busy && hunt.zone === 'custom' ? 'A start from a link: pick a zone to hunt in first.' : '' });
   $('huntBtn').title = `${hunts}\n${zone}`;
   $('huntStatus').innerHTML = withIcons(hunt.status);  // (its zone: in its button's tooltip)
   // each result's light: a battle by its balance (green 0.6 and up: even; orange from 0.3; red: one-sided;
@@ -14928,8 +14929,8 @@ let speed = defaultOf('speed');
 const stepsPerSecond = () => speed;
 function updateSpeedLabel() {
   if (document.activeElement !== $('speedLabel')) $('speedLabel').value = `${formatNumber(speed)} steps/s`;
-  $('slower').disabled = speed <= 1;
-  $('faster').disabled = speed >= SPEEDS.at(-1);
+  setTile($('slower'), { greyed: speed <= 1 ? 'Already the slowest.' : '' });
+  setTile($('faster'), { greyed: speed >= SPEEDS.at(-1) ? 'Already the fastest.' : '' });
 }
 function setSpeed(s) {
   speed = Math.min(SPEEDS.at(-1), Math.max(1, Math.round(s)));
@@ -17470,20 +17471,21 @@ function updateStats() {
   $('ruleChips').hidden = !!walk.battle;  // (a battle: its walkers' turns not shown, see the walk's part below)
   // Jump to start and Step back greyed at the start (a reversible one's, as far back as it goes), Step at the end (a loop's:
   // round it on)
-  $('restart').disabled = reversibleRun() ? stepShown === 0 : stepShown <= runStart();  // (a reversible one's start: gen 0, its past before it)
+  const atStart = (reversibleRun() ? stepShown === 0 : stepShown <= runStart()) ? 'Already at the start.' : '';
+  setTile($('restart'), { greyed: atStart });  // (a reversible one's start: gen 0, its past before it)
   // (a Game of Life's step back: round its loop forth, at once; else played again from its start, greyed when too long)
   const tooFar = !lifeWithin(stepShown - 1);
-  $('back').disabled = (stepShown <= runStart() && !loopBack()) || tooFar;
-  $('back').dataset.greyed = tooFar ? 'so far from its start: played again from it, more than a second' : '';
+  const backAtStart = stepShown <= runStart() && !loopBack() ? 'Already at the start.' : '';
+  setTile($('back'), { greyed: tooFar ? 'So far from its start: played again from it, more than a second.' : backAtStart });
   $('jump10k').hidden = !lifePlayer();  // (Life, a reversible one: 10,000 generations ahead, while its end is not known)
-  $('jump10k').disabled = busy || !!runLoop();
-  $('play').disabled = busy;  // (its run not built yet)
+  setTile($('jump10k'), { greyed: busy ? 'Its run is not built yet.' : runLoop() ? 'Its loop is known: its end is in sight.' : '' });
+  setTile($('play'), { greyed: busy ? 'Its run is not built yet.' : '' });
   $('reverse').hidden = lifePlayer() && !MODES[$('mode').value].margolus;  // (played backwards: a walk, a reversible one)
-  $('reverse').disabled = stepShown <= runStart() && !loopBack();
-  $('step').disabled = atEnd();
+  setTile($('reverse'), { greyed: backAtStart });
+  setTile($('step'), { greyed: atEnd() ? 'Already at the end.' : '' });
   $('end').hidden = lifePlayer();  // (Life, a reversible one: its green link and +10k)
   if (drawing && MODES[$('mode').value].plane && drawAway() !== drawToolsAway) renderDrawTools();  // (Draw: its tools at gen 0 only; drawn again as play leaves it or comes back, not each frame: 785 cards)
-  $('end').disabled = !runStops().some((g) => g > stepShown);
+  setTile($('end'), { greyed: runStops().some((g) => g > stepShown) ? '' : 'No stop ahead.' });
   // the step or generation shown, its own line, every mode: Step 15,964, Gen 132; its last after it where the run has one
   // (a walk's, Elementary's, Space-time's: see runEnd; Life's, a reversible one's, once its loop is known: see runLoop), its slider's end (see seekFar)
   const far = seekFar(), gens = !!walk.life || spaceTimeOn() || !!walk.rows;

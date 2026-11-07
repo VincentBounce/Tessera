@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.414';
+const VERSION = '0.4.415';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -1958,6 +1958,11 @@ const setTile = (b, { on = false, can = true, mark = false, again = false, turn 
 // picture on the left, its name over its words (base: a walk's base on its right); a tile all the same (see tile, setTile:
 // on, can); its words as text (a setup's name typed), and its tooltip (in full: the row may cut them short); how: a rule's,
 // how it works, its ⓘ at its end (see rowAction)
+// an element highlighted a moment, once (the length asked's stepper; the buttons a greyed one waits for, see enablers)
+function highlight(el) { el.classList.remove('highlit'); void el.offsetWidth; el.classList.add('highlit'); }
+// a greyed button that knows what would allow it (its enablers: the nearest buttons of the menu taking it there, see
+// ruleCards): a click on it, which a disabled button never gets (its pointer's up it does), highlights them
+document.addEventListener('pointerup', (e) => { const b = e.target.closest?.('button'); if (b?.disabled && b.enablers) b.enablers().forEach(highlight); });
 const card = ({ pic = '', name = '', detail = '', base = '', title = '', on = false, can = true, byDefault, click = null, how = null }) => {
   const b = tile({ html: '', title: title || detail, on, can, byDefault, click }), picture = Object.assign(document.createElement('span'), { className: `mode-icon${how ? ' act' : ''}`, innerHTML: pic });
   if (how) { picture.title = `How ${name} works`; picture.addEventListener('click', (e) => { e.stopPropagation(); how(); }); }  // (its picture: a click on how it works)
@@ -3548,12 +3553,21 @@ function renderAntRow() {
 function ruleCards(w, here = true) {
   const R = creatureRules(w), mine = here && (customOpen || !ruleKnown(R));
   const go = (then) => () => { if (!here) { $('mode').value = w; $('mode').dispatchEvent(new Event('change')); } then(); };
-  const make = (cardPic, name, code, on, then, why = '', title = '') => card({ pic: cardPic, name, detail: code, base: code && R.base?.(code), on, title: why || title, can: !why, click: go(then),
-    how: () => { if (on) walkTutorialToggle(); else { go(then)(); walkTutorial(w); } } });  // (its ⓘ: how it works, picked first)
+  const make = (cardPic, name, code, on, then, why = '', title = '') => Object.assign(card({ pic: cardPic, name, detail: code, base: code && R.base?.(code), on, title: why || title, can: !why, click: go(then),
+    how: () => { if (on) walkTutorialToggle(); else { go(then)(); walkTutorial(w); } } }), why ? { enablers: () => ruleEnablers(name) } : {});  // (its ⓘ: how it works, picked first; greyed, a click highlights where it plays)
   return [...R.cards.map(({ rule: r, name, pic, why, title }) => make(pic, name, r, here && r === R.now && !customOpen, () => { customOpen = false; if (r === R.now) renderModePicker(); else R.set(r); }, why, title)),
     ...(R.typed ? [make(pixelIcon('..o..,..o..,ooooo,..o..,..o..'), 'Custom rule', mine ? R.now : '', mine, () => { customOpen = true; renderModePicker(); }, '', 'your own, typed')] : []),
     customRow];  // (its field right after it, the list's next rules after the field; always in it, shown by renderAntRow)
 }
+// the menu's buttons where a rule greyed here plays (its card not greyed in the mode each goes to): the nearest first, the
+// tilings of this surface, else the shapes of this space; none, none (a click on the greyed card highlights them)
+const ruleEnablers = (name) => {
+  for (const box of ['torusTiles', 'navShapes']) {
+    const takers = [...$(box).querySelectorAll('button[data-goes]')].filter((b) => b.offsetParent && rulesFor(b.dataset.goes).some((c) => c.name === name && !c.why));
+    if (takers.length) return takers;
+  }
+  return [];
+};
 // whether a rules list has a card for the rule in use (else it is your own: Custom rule)
 const ruleKnown = (R) => R.cards.some((c) => c.rule === R.now);
 const capitalised = (t) => t.replace(/^./, (c) => c.toUpperCase());
@@ -3648,6 +3662,7 @@ function renderModePicker() {
       plane.torus = !plane.torus;
       compute();
     }, modeWhere(navPick(2, sh)));
+    b.dataset.goes = navPick(2, sh);  // (the mode it goes to: what a greyed rule waits for, see enablers)
     if (again) { setTile(b, { on: true, again }); b.title += plane.torus ? '\nA torus · Clicked again: walls' : '\nWalls · Clicked again: a torus'; }  // (its words kept, then what a click does, as a card's: see card)
     return [b];
   }), ...(g === shapeGroup('square') && MODES[w].life && MODES[w].plane ? [spaceTimeTile] : [])];  // (Stacks: Life on squares')
@@ -3683,6 +3698,7 @@ function renderModePicker() {
         $('mode').value = same(f);
         $('mode').dispatchEvent(new Event('change'));
       }, f === here && turns ? `${capitalised(F.tabs[tabOf(f, true)][4].slice(shape.length + 2))}: a click turns it${isTurned ? ' back' : ''}` : modeWhere(same(f)), { again: f === here && turns, byDefault: f === F.tabs[0][0] ? 'yes' : '', turn: tilesTurn(shownSurface(MODES[same(f)].sphere, f === here && isTurned)) });  // its picture as its tiles lie (a torus's, a strip's alike: clockwise, as the pictures laid on it)
+      b.dataset.goes = same(f);  // (the mode it goes to: what a greyed rule waits for, see enablers)
       return [b];
     }), ...(F.tabs.some(([, tu]) => tu) ? [tile({ pic: icon('pivot'), text: 'Turned', toggle: true, byDefault: 'off', greyed: 'on a tiling with no other way round (a block rule: none its blocks come round)', on: isTurned, can: turns,
       title: turns ? F.tabs[tabOf(here, true)][4] : 'The tiling turned, its rows another way round', click: turn })] : []));
@@ -17124,9 +17140,7 @@ function drawActivity() {
 // a generation of the run in view, as a link, always (the one shown too: one look, the same everywhere): clicked, it goes
 // there (see seekTo: a reversible one's by its rule, Life's played again from its start)
 const genLink = (g, text = `${walk.life ? 'gen' : 'step'} ${formatNumber(g)}`, kind = '') => `<a class="gen-link${kind && ` gen-${kind}`}" href="#" data-gen="${g}" title="Go to ${walk.life ? 'gen' : 'step'} ${formatNumber(g)}">${text}</a>`;  // (kind: its colour, see style.css)
-document.addEventListener('click', (e) => { const a = e.target.closest?.('.gen-link'); if (!a) return; e.preventDefault(); if ('stepper' in a.dataset) highlightStepper(); else seekTo(Number(a.dataset.gen)); });
-// the steps stepper at the top right highlighted a moment (a click on the length asked's mark, see endMark)
-function highlightStepper() { const s = document.querySelector('.max-steps'); s.classList.remove('highlit'); void s.offsetWidth; s.classList.add('highlit'); }
+document.addEventListener('click', (e) => { const a = e.target.closest?.('.gen-link'); if (!a) return; e.preventDefault(); if ('stepper' in a.dataset) highlight(document.querySelector('.max-steps')); else seekTo(Number(a.dataset.gen)); });  // (the length asked's mark: its stepper, see endMark)
 function renderGauges(L) {
   const box = $('gauges'), n = L.seed.length;
   box.hidden = L.colours !== 1;

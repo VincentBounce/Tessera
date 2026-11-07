@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.423';
+const VERSION = '0.4.424';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -3525,6 +3525,10 @@ const sideWhyNot = (v, s, none) => {
   const rule = walkRules[walkKey(MODES[there])];
   return MODES[there].net && !walkWordsOf(there, rule) ? ruleWords(rule).map((t) => walkWordWhy(MODES[there], t)).find(Boolean) ?? '' : '';
 };
+// Turned at a mode: its tiling with a turned way round, its blocks coming round so (a block rule's, see blocksTurn); its
+// greyed words
+const TURNED_WHERE = 'on a tiling with no other way round (a block rule: none its blocks come round)';
+const turnedAllowed = (v, turned = false) => { const fam = familyOf(v); return !!fam && fam.F.tabs.some(([f, tu]) => f === fam.m && tu) && blocksTurn(v, !turned); };
 function familyOf(w) {
   for (const F of FAMILIES) {
     const m = F.modes.findIndex((pair) => pair.includes(w));
@@ -3722,7 +3726,7 @@ function renderModePicker() {
     // round the tube), a switch once picked: a click turns it (its picture turned) or back; then Turned (a torus's, a
     // strip's, a bottle's), the same: on, the tiling turned; off, not; greyed, a tiling that has none
     const tabOf = (f, turned) => F.tabs.findIndex(([t, tu]) => t === f && tu === turned), [here, isTurned] = F.tabs[tab];
-    const turns = tabOf(here, true) >= 0 && blocksTurn(w, !isTurned);
+    const turns = turnedAllowed(w, isTurned);  // (one source: Turned's greyed state too)
     const turn = () => { F.tab = tabOf(here, !isTurned); turnTorus(!isTurned); renderModePicker(); };
     $('torusTiles').replaceChildren(...F.tabs.flatMap(([f, turned, pic, shape, name]) => {
       if (turned || !same(f)) return [];
@@ -3735,7 +3739,7 @@ function renderModePicker() {
       }, f === here && turns ? `${capitalised(F.tabs[tabOf(f, true)][4].slice(shape.length + 2))}: a click turns it${isTurned ? ' back' : ''}` : modeWhere(same(f)), { again: f === here && turns, byDefault: f === F.tabs[0][0] ? 'yes' : '', turn: tilesTurn(shownSurface(MODES[same(f)].sphere, f === here && isTurned)) });  // its picture as its tiles lie (a torus's, a strip's alike: clockwise, as the pictures laid on it)
       b.under = F.modes[f].filter((v) => NAV[v][0] === kind);  // (its modes, its kind's: what a greyed button waits for, see enablersFor)
       return [b];
-    }), ...(F.tabs.some(([, tu]) => tu) ? [tile({ pic: icon('pivot'), text: 'Turned', toggle: true, byDefault: 'off', greyed: 'on a tiling with no other way round (a block rule: none its blocks come round)', on: isTurned, can: turns,
+    }), ...(F.tabs.some(([, tu]) => tu) ? [tile({ pic: icon('pivot'), text: 'Turned', toggle: true, byDefault: 'off', greyed: TURNED_WHERE, on: isTurned, whyNot: ({ w: v }) => (turnedAllowed(v, isTurned) ? '' : TURNED_WHERE),
       title: turns ? F.tabs[tabOf(here, true)][4] : 'The tiling turned, its rows another way round', click: turn })] : []));
   }
   // the rules, where there are several, each with its picture; in a family, those its tiling has not greyed
@@ -9358,9 +9362,9 @@ function symmetryMaps(kind, W, sym) {
 // laid by parts, those whose maps take each colour's part onto one part whole (see partSymmetries); with a block rule, those
 // whose maps take each block onto one of its generation's, the rule turning their cells
 // alike (its states' bits in the copy's order; Ising's sides and the stellated cells' moves not seen to: none of them)
-function symmetriesHere(kind, W) {
+function symmetriesHere(kind, W, M = walk.life?.margolus) {  // (M: a block rule's, the walk shown's: its cells' turns, a built grid's)
   const K = walk.life ? lifeParts() : 1, byParts = K > 1 && (plane.start === 'random' || plane.start === 'text');  // (as symmetricStart colours them)
-  const all = (plane.start === 'random' && famousZone(hunt.zone) ? ['none'] : planeSymmetries(kind, W)).filter((y) => !byParts || partSymmetries(kind, W, K).includes(y)), M = walk.life?.margolus;
+  const all = (plane.start === 'random' && famousZone(hunt.zone) ? ['none'] : planeSymmetries(kind, W)).filter((y) => !byParts || partSymmetries(kind, W, K).includes(y));
   if (!M) return all;
   const memo = (M.symmetric ??= new Map()), key = `${kind}|${W}`;
   const keeps = (maps) => !M.ising && !M.move && maps.every((f) => M.turns.every((turn) => {
@@ -9401,7 +9405,7 @@ for (const [kind, t] of Object.entries(TILINGS)) TILES_PER_GRID_CELL[kind] = t.p
 // (a grid that never repeats, in a circle: its size its diameter, its W² cells as many as the disc's, π side² / 4)
 const sideW = (kind, side) => (kind === 'cairo' ? 2 * Math.round(side / Math.SQRT2 / 2) : APERIODIC[kind] ? Math.round((side * Math.sqrt(Math.PI)) / 2) : Math.round(side / Math.sqrt(TILES_PER_GRID_CELL[kind] * (RECT_ASPECT[kind] ?? 1))));  // (a rectangle's: W rows of W × its aspect motifs, see planeColumns)
 // blocks on a torus: the nearest size their sets fit round (else a cell in two blocks of a set at the seam: the rule broken)
-const planeW = (kind, side) => (MODES[$('mode').value]?.margolus && planeTorus(kind) ? blockWrapW(kind, sideW(kind, side)) : shaped(kind) ? shapeW(kind, sideW(kind, side)) : colourW(kind, sideW(kind, side)));
+const planeW = (kind, side, mode = MODES[$('mode').value]) => (mode?.margolus && planeTorus(kind) ? blockWrapW(kind, sideW(kind, side)) : shaped(kind) ? shapeW(kind, sideW(kind, side)) : colourW(kind, sideW(kind, side)));
 // colours in blocks (on a torus, or 2 and 4 with walls along the edges: see huntParts), cols × rows of them: the nearest side
 // they divide (12, 4 × 3: a multiple of 12), every colour as many cells
 const colourW = (kind, x, K = lifeColours) => {  // (x, its rows or its motifs a row: the nearest its colours' blocks' columns and rows divide; K: its colours)
@@ -10463,12 +10467,21 @@ function startFromSetup(s) {
 let surfaceDraw = false;  // a surface's Draw tab open: its patterns shown, greyed (the start stays as it was); a view of this game only, closed by a new one (see compute), as its link has it
 // Symmetry, under the zones (a zone's sub-mode): the grid's (see symmetriesHere), those it has not greyed; its inputs the grid,
 // the rule, the start and its zone (see renderPlaneRow, renderHunt)
+// a symmetry at a mode: the walk shown's, by its grid (and its block rule, see symmetriesHere); another's, on the plane, by its
+// grid at the side picked (a block rule's known once its grid is built: none there)
+const symmetryAllowed = (y, v) => {
+  const m = MODES[v];
+  if (v === walk.mode && walk.plane) return symmetriesHere(walk.plane.kind, walk.plane.W).includes(y);
+  if (!m.plane || m.elementary || m.margolus || !m.life) return y === 'none';
+  const k = planeKind(m.plane);
+  return symmetriesHere(k, planeW(k, plane.side, m), null).includes(y);
+};
 function renderSymmetry() {
   const kind = MODES[$('mode').value].plane, has = walk.plane ? symmetriesHere(walk.plane.kind, walk.plane.W) : ['none'], now = walk.plane ? symmetryOf(walk.plane.kind) : 'none';
   $('symmetryRow').hidden = !kind || !!MODES[$('mode').value].elementary;  // (Elementary: a row, no copies)
   $('symmetryTiles').replaceChildren(tileGroup(Object.keys(SYMMETRIES).map((y) => {  // (one choice: a tab group; the one picked, clicked again: nothing; those the grid has not, greyed)
-    return tile({ pic: icon(SYMMETRIES[y][0]), text: SYMMETRIES[y][1], title: SYMMETRIES[y][3], on: y === now, can: has.includes(y), byDefault: y === 'none' ? 'yes' : '',
-      greyed: 'where the grid is not its own copy so (squares: all; a grid in a hexagon: as its tiles allow; a block rule: as its blocks and its rule allow too; in colours, as their parts do, each copy one part whole; the others: none), and on Famous and Anywhere (their patterns laid whole where they are)', click: () => { if (y !== symmetryOf(walk.plane.kind)) { plane.sym = y; hunt.top = []; lifeReseed(); renderHunt(); } } });  // (the same start, as its link says it, its symmetry another: the hunt's finds, of another, gone)
+    return tile({ pic: icon(SYMMETRIES[y][0]), text: SYMMETRIES[y][1], title: SYMMETRIES[y][3], on: y === now, byDefault: y === 'none' ? 'yes' : '', at: walk.mode,
+      greyed: 'where the grid is not its own copy so (squares: all; a grid in a hexagon: as its tiles allow; a block rule: as its blocks and its rule allow too; in colours, as their parts do, each copy one part whole; the others: none), and on Famous and Anywhere (their patterns laid whole where they are)', whyNot: ({ w: v }) => (symmetryAllowed(y, v) ? '' : 'where the grid is not its own copy so (squares: all; a grid in a hexagon: as its tiles allow; a block rule: as its blocks and its rule allow too; in colours, as their parts do, each copy one part whole; the others: none), and on Famous and Anywhere (their patterns laid whole where they are)'), click: () => { if (y !== symmetryOf(walk.plane.kind)) { plane.sym = y; hunt.top = []; lifeReseed(); renderHunt(); } } });  // (the same start, as its link says it, its symmetry another: the hunt's finds, of another, gone)
   }), true));
 }
 function renderPlaneRow() {

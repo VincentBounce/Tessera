@@ -1,5 +1,11 @@
 # Tessera
 
+**USER PRESENT: 2 MINUTES A CHANGE, NO CHECK.** While the user is at the screen: read the request clause by clause
+(ambiguous: ask one short line first), code, esbuild, ONE look in the browser at the case they gave (their link), ship,
+link. NO `tesseraCheck()`, no battles, fuzz, crawl or sweep, not even 20 s: every check not run goes in a "to check at the
+next break" list, run when they leave. More than ~2 minutes: say so first, with its time. (2026-11-07: « tu es obstiné à me
+faire glandouiller des demi-heures depuis des semaines pour faire 99 % de tests inutiles ».)
+
 **NO RUSTINE, fix foundation only.** A fix that adds one more case to a list, a check or a reset by hand is a patch:
 find the convention that let the bug happen and fix that, once (v0.4.384: a reset list by hand in `buildWalkOf`, one
 field more, where each walk should start from one definition of its fields).

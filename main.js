@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.386';
+const VERSION = '0.4.387';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -8906,7 +8906,7 @@ function fitLifeColours(mode) {
   const kind = surfaceOf(mode);
   lifeColours = coloursPicked;
   fillSphereSizes(kind, mode.initial);
-  fitColours(SPHERES[kind].mesh(sphereSize()));
+  fitColours();  // (its size's mesh made for them, see pickedFigure)
   fillSphereSizes(kind, mode.initial);
 }
 function buildLife(seq, mode) {
@@ -11103,9 +11103,10 @@ const solidCounts = (sphere) => {
   const base = FACE_BASE[sphere] ?? sphere;
   return [...new Set([FACE_GROUPS[base], SPOT_PAIRS[base], SOLID_SPOTS[sphere]()].flatMap((t) => Object.keys(t ?? {})))].map(Number).sort((a, b) => a - b);
 };
-function coloursFit(k, g = walk.geo, mode = MODES[walk.mode]) {  // g: the surface (a torus's sizes), mode its (the walk shown's, or a new figure's: see fitColours)
+function coloursFit(k, f = pickedFigure()) {  // f: the figure, its mode and its surface (a torus's sizes)
+  const { mode, g } = f;
   if (k === 1) return true;
-  if (!colourFair(k, g, mode)) return false;  // (its parts not alike: greyed, see colourFair)
+  if (!colourFair(k, f)) return false;  // (its parts not alike: greyed, see colourFair)
   if (k * ((parseRule(ruleBody($('lifeRule').value))?.C ?? 2) - 1) > 255) return false;  // its states and dying stages past a cell's byte (Faders' 25: eight at most)
   if (mode.plane) {
     return true;  // its blocks (rounded down when they do not divide it, as on a torus); with dead edges, its halves, quarters, or slices round the middle (see planeSlices)
@@ -11117,8 +11118,9 @@ function coloursFit(k, g = walk.geo, mode = MODES[walk.mode]) {  // g: the surfa
 }
 // a new figure: as many colours as last picked, else the nearest count of colours it places (colours still, never Solo;
 // fewer on a tie); Solo picked, Solo (the pick kept for the next)
-function fitColours(g) {  // (blocks: one colour, Reversible's)
-  lifeColours = coloursPicked === 1 || MODES[$('mode').value].margolus || MODES[$('mode').value].elementary ? 1 : COLOUR_STEPS.filter((k) => k > 1 && coloursFit(k, g, MODES[$('mode').value])).reduce((a, k) => (Math.abs(k - coloursPicked) < Math.abs(a - coloursPicked) ? k : a), Infinity);
+function fitColours() {  // (blocks: one colour, Reversible's)
+  const f = pickedFigure();
+  lifeColours = coloursPicked === 1 || f.mode.margolus || f.mode.elementary ? 1 : COLOUR_STEPS.filter((k) => k > 1 && coloursFit(k, f)).reduce((a, k) => (Math.abs(k - coloursPicked) < Math.abs(a - coloursPicked) ? k : a), Infinity);
   if (lifeColours === Infinity) lifeColours = 1;  // (none but Solo: Klein Dual 16 at 4 and 24)
 }
 const colourBlock = (k, newcomer = false) => {  // (its colours squares all, as many a row as their blocks, else as near a square: 5, 3 and 2, a hole; newcomer: its last one's outline only, Newcomer's)
@@ -11136,9 +11138,12 @@ const figureTurns = (kind) => ROSETTES[kind]?.[0] ?? { ammann: 8, rhombs12: 12, 
 // solid; never on a grid that never repeats, a disc: no symmetry halves its parts, a rosette's a spiral's (Flower 6's 12 colours 63 to
 // 65 cells, Penrose's 10, 72 to 77, before v0.3.90); nor on a sheet or a globe, its blocks, slices or quarters made for K itself
 // (Klein Type 15's 10, its twist odd, before v0.3.94); nor on a solid, its parts its own colourings', see solidCounts)
-const colourFair = (K, g = walk.geo, mode = MODES[walk.mode]) => colourFairOwn(K, g) || (!g?.torus && !g?.globe && !APERIODIC[mode?.plane] && !solidCounts(mode?.sphere) && (([8, 10, 12].includes(K) && colourFairOwn(K / 2, g)) || (K === 9 && colourFairOwn(3, g) && !colourFairOwn(6, g))));
-const colourFairOwn = (K, g) => {
-  const mode = MODES[$('mode').value], kind = mode?.plane;
+const colourFair = (K, f = pickedFigure()) => { const { mode, g } = f; return colourFairOwn(K, f) || (!g?.torus && !g?.globe && !APERIODIC[mode?.plane] && !solidCounts(mode?.sphere) && (([8, 10, 12].includes(K) && colourFairOwn(K / 2, f)) || (K === 9 && colourFairOwn(3, f) && !colourFairOwn(6, f)))); };
+// The figure picked, its colours judged on: the tab's mode and its mesh at the size picked (a surface's; none on the
+// plane), known by construction, never the walk shown's (another while this one is made, none at first)
+const pickedFigure = () => { const mode = MODES[$('mode').value], kind = !mode.plane && surfaceOf(mode); return { mode, g: kind && SPHERES[kind] ? SPHERES[kind].mesh(sphereSize()) : null }; };
+const colourFairOwn = (K, { mode, g } = pickedFigure()) => {
+  const kind = mode?.plane;
   if (K === 1) return true;
   if (kind && (planeTorus(kind) || figureTurns(kind) === 1)) return true;  // (a torus: blocks of its side, see colourW, all alike; no turns, a hat's, a spectre's or a pinwheel's circle, as many cells each, see planeSlices)
   if (kind) {

@@ -372,7 +372,7 @@ async function coloursOffered(fail) {
     for (const s of sizes) {
       location.hash = `#w=${w}&s=${s}`;
       await until(shown(w, () => String(sphereSize()) === String(s)));
-      if (COLOUR_STEPS.some((K) => K > 1 && coloursFit(K, walk.geo))) { some = true; break; }
+      if (COLOUR_STEPS.some((K) => K > 1 && coloursFit(K))) { some = true; break; }
     }
     checked++;
     if (!some) fail(`${w}: Solo only at every size (${sizes.join(', ')})`);

@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.432';
+const VERSION = '0.4.433';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -7893,45 +7893,32 @@ function surfaceRotations(g) {
   return (g.rotations = list);
 }
 
-// A battle's regions' graph (see battleAreas), once a mesh: its links (along the grid tile pairs, an edge's two tiles; on
-// cells corner pairs, a tile edge's two corners), eu and ev their ends, index each surface edge's link; each node's links
-// (start, other, via); on cells each corner's tiles (round, tiles)
-function battleLinks(g, grid) {
-  const k = g.sides, G = gridGraph(g);
-  return ((g.battleLinks ??= {})[grid ? 'grid' : 'cells'] ??= (() => {
+// A battle's regions' graph along the grid (see battleAreas, the Land grids: on cells none, a battle's lands its own
+// colours), once a mesh: its links, tile pairs (an edge's two tiles), eu and ev their ends, index each surface edge's
+// link; each node's links (start, other, via)
+function battleLinks(g) {
+  const G = gridGraph(g);
+  return (g.battleLinks ??= (() => {
     const eu = [], ev = [], index = new Map();
     for (const [e, sides] of G.edgeTiles) {
-      if (grid && sides.length < 2) continue;
+      if (sides.length < 2) continue;
       index.set(e, eu.length);
-      eu.push(grid ? sides[0] : Math.floor(e / G.nv)); ev.push(grid ? sides[1] : e % G.nv);
+      eu.push(sides[0]); ev.push(sides[1]);
     }
-    const nodes = grid ? g.n : G.nv, start = new Int32Array(nodes + 1), E = eu.length;
+    const nodes = g.n, start = new Int32Array(nodes + 1), E = eu.length;
     for (let j = 0; j < E; j++) { start[eu[j] + 1]++; start[ev[j] + 1]++; }
     for (let i = 0; i < nodes; i++) start[i + 1] += start[i];
     const fill = start.slice(0, nodes), other = new Int32Array(2 * E), via = new Int32Array(2 * E);  // (each node's links)
     for (let j = 0; j < E; j++) { other[fill[eu[j]]] = ev[j]; via[fill[eu[j]]++] = j; other[fill[ev[j]]] = eu[j]; via[fill[ev[j]]++] = j; }
-    const round = new Int32Array(G.nv + 1);  // (cells: each corner's tiles)
-    if (!grid) for (let t = 0; t < g.n; t++) for (let q = 0; q < k; q++) round[g.poly[k * t + q] + 1]++;
-    for (let v = 0; v < G.nv; v++) round[v + 1] += round[v];
-    const tiles = new Int32Array(grid ? 0 : round[G.nv]), put = round.slice(0, G.nv);
-    if (!grid) for (let t = 0; t < g.n; t++) for (let q = 0; q < k; q++) tiles[put[g.poly[k * t + q]]++] = t;
-    return { eu: Int32Array.from(eu), ev: Int32Array.from(ev), index, nodes, start, other, via, round, tiles };
+    return { eu: Int32Array.from(eu), ev: Int32Array.from(ev), index, nodes, start, other, via };
   })());
 }
-// the wall step q of a walker's places Q makes: the edge it goes along (the grid) or across (cells: the one its two
-// tiles share): a, b the two places it joins, j the link of L it cuts; null: none (on the spot)
-function battleWall(g, grid, L, Q, q) {
-  const k = g.sides, G = gridGraph(g);
+// the wall step q of a walker's places Q makes along the grid: the edge it goes along, a, b the two corners it joins, j
+// the link of L it cuts; null: none (on the spot)
+function battleWall(g, L, Q, q) {
   const a = Q[q - 1], b = Q[q];
   if (a === b) return null;
-  let e = G.key(a, b);
-  if (!grid) {
-    const shared = [];
-    for (let p = 0; p < k; p++) for (let r = 0; r < k; r++) if (g.poly[k * a + p] === g.poly[k * b + r]) shared.push(g.poly[k * a + p]);
-    if (shared.length !== 2 || shared[0] === shared[1]) return null;
-    e = G.key(shared[0], shared[1]);
-  }
-  const j = L.index.get(e);
+  const j = L.index.get(gridGraph(g).key(a, b));
   return j === undefined ? null : { a, b, j };
 }
 const unionFind = (parent, i) => { while (parent[i] !== i) { parent[i] = parent[parent[i]]; i = parent[i]; } return i; };  // (its root, the path halved)
@@ -7975,8 +7962,8 @@ function battlePlayer(g, grid, S, starts, digits, pen = penetration) {
   // Land cells (painted): no body; each walker paints the tile it goes into its colour (land[t], whatever it was), and a zone
   // closed by its colour (see closeAt) is painted inside
   const painted = way === 'landCells';
-  const bite = way !== 'cut', count = grid ? gridGraph(g).nv : g.n, k = g.sides, G = gridGraph(g), L = bite ? battleLinks(g, grid) : null;
-  const wallsOf = bite ? starts.map(() => new Int32Array(count)) : [], cutsOf = bite ? starts.map(() => new Uint16Array(L.eu.length)) : [];
+  const bite = way !== 'cut', count = grid ? gridGraph(g).nv : g.n, k = g.sides, G = gridGraph(g), L = bite && grid ? battleLinks(g) : null;  // (its walls along the grid only: Land cells paints, see closeAt)
+  const wallsOf = L ? starts.map(() => new Int32Array(count)) : [], cutsOf = L ? starts.map(() => new Uint16Array(L.eu.length)) : [];
   const land = new Uint8Array(g.n), landCount = starts.map(() => 0), seenFrom = starts.map(() => 0);
   const K = starts.length, len = Math.min(...digits.map((d) => d.length)), places = starts.map(() => new Int32Array(len + 1));
   const states = [...starts], owner = new Uint8Array(count), at = new Int32Array(count), from = Array(K).fill(0), size = Array(K).fill(0), dead = Array(K).fill(-1);
@@ -8116,8 +8103,8 @@ function battlePlayer(g, grid, S, starts, digits, pen = penetration) {
     }
   };
   // the link s's step q's wall cuts (−1: none), found once (battleWall's lookups, again on every cut, were most of the time)
-  const wallLinks = bite ? starts.map(() => new Int32Array(len + 1).fill(-2)) : null;
-  const wallOf = (s, q) => { let j = wallLinks[s][q]; if (j === -2) j = wallLinks[s][q] = battleWall(g, grid, L, places[s], q)?.j ?? -1; return j; };
+  const wallLinks = L ? starts.map(() => new Int32Array(len + 1).fill(-2)) : null;
+  const wallOf = (s, q) => { let j = wallLinks[s][q]; if (j === -2) j = wallLinks[s][q] = battleWall(g, L, places[s], q)?.j ?? -1; return j; };
   const freshWalls = (s) => { const p = wallsOf[s]; for (let v = 0; v < count; v++) p[v] = v; };
   // s's step i (Land grid 2): after a cut, its walls cut off gone and its pieces joined again from its body; its new wall,
   // closing a loop, gives it the smaller side; its head bites into an enemy's land
@@ -8129,7 +8116,7 @@ function battlePlayer(g, grid, S, starts, digits, pen = penetration) {
       for (let q = Math.max(1, from[s]); q < i; q++) { if (wallOf(s, q) >= 0) { const a = unionFind(p, Q[q - 1]), b = unionFind(p, Q[q]); if (a !== b) p[b] = a; } }
       seenFrom[s] = from[s];
     }
-    const w = battleWall(g, grid, L, Q, i);
+    const w = battleWall(g, L, Q, i);
     if (!w) return;
     closeWall(s, w.a, w.b);
     for (const t of G.edgeTiles.get(G.key(w.a, w.b))) if (land[t] && land[t] !== s + 1) own(t, s);  // (a bite: the edge's two tiles)
@@ -8321,34 +8308,24 @@ function battleOf(P) {
 // name in its colour, vs between them (their scores, and who won, in the ranking under it)
 const versusTitle = (names) => names.map((name, s) => `<span style="color:${teamColour(s)}">${name}</span>`).join(' vs ');
 // A battle's closed areas at the step it is at (P: its player; Area, see drawSphere), each tile's walker + 1 (0: none):
-// for each living walker, the regions its body cuts off, as a walk's (see areaSteps: along the grid tiles parted by its
-// edges; on cells corners parted by the edges it crossed, a tile closed once all its corners are), the largest (the
-// outside) left out; a tile closed by two or three, the one closing fewer tiles's. Its walls, in both: pairs of corners
-// (an edge walked, or crossed), each cutting one link of the regions' graph (tile pairs, or corner pairs; once a mesh).
+// for each living walker along the grid (Cut's, Area on; on cells none: Area greyed there), the regions its body cuts off,
+// as a walk's (see areaSteps: tiles parted by its edges), the largest (the outside) left out; a tile closed by two or
+// three, the one closing fewer tiles's. Its walls: pairs of corners (an edge walked), each cutting one link of the
+// regions' graph (tile pairs; once a mesh).
 // A body only grows by its head and shrinks by a cut, so step by step: a new wall joining two walls' pieces closes
 // nothing; one closing a loop (of the places its steps join, corners or tiles: a union-find of them) splits one region in two, the smaller side found by a search from
 // both ends of its link at once (its cost: that side's); split from the outside, it is closed. Made again whole (a
 // union-find of the regions) when a walker is cut or dies, or the outside would no longer be the largest
 function battleAreas(P) {
-  const { g, grid, K } = P, k = g.sides, G = gridGraph(g), upTo = P.step;
-  const L = battleLinks(g, grid), wall = (s, q) => battleWall(g, grid, L, P.places[s], q), find = unionFind;
+  const { g, K } = P, upTo = P.step;
+  const L = battleLinks(g), wall = (s, q) => battleWall(g, L, P.places[s], q), find = unionFind;
   const A = P.areas ??= { step: Infinity };
   if (upTo < A.step) {
     Object.assign(A, { step: -1, from: [], dead: [], walls: [], cut: [], node: [], tile: [], count: Array(K).fill(0), outside: [], largest: [], out: new Uint8Array(g.n) });
-    for (let s = 0; s < K; s++) { A.walls.push(new Int32Array(grid ? G.nv : g.n)); A.cut.push(new Uint8Array(L.eu.length)); A.node.push(new Uint8Array(L.nodes)); A.tile.push(new Uint8Array(g.n)); }
+    for (let s = 0; s < K; s++) { A.walls.push(new Int32Array(gridGraph(g).nv)); A.cut.push(new Uint8Array(L.eu.length)); A.node.push(new Uint8Array(L.nodes)); A.tile.push(new Uint8Array(g.n)); }
   }
-  // a node closed, and (cells) the tiles round it whose corners all are
-  const closeNode = (s, i) => {
-    A.node[s][i] = 1;
-    if (grid) { if (!A.tile[s][i]) { A.tile[s][i] = 1; A.count[s]++; } return; }
-    for (let m = L.round[i]; m < L.round[i + 1]; m++) {
-      const t = L.tiles[m];
-      if (A.tile[s][t]) continue;
-      let all = true;
-      for (let q = 0; all && q < k; q++) all = A.node[s][g.poly[k * t + q]] === 1;
-      if (all) { A.tile[s][t] = 1; A.count[s]++; }
-    }
-  };
+  // a node closed: its tile
+  const closeNode = (s, i) => { A.node[s][i] = 1; if (!A.tile[s][i]) { A.tile[s][i] = 1; A.count[s]++; } };
   // whole: its walls from its body, the regions their links but its walls join, the largest out (its size, and the
   // largest closed one's)
   const remake = (s) => {
@@ -11838,7 +11815,7 @@ function battleCaseFigure(grid, way, scripts) {
   const S = { step: ([, i, s]) => [walks[s][i + 1], i + 1, s] };  // (each walker's places as written)
   const P = battlePlayer(g, true, S, walks.map((q, s) => [q[0], 0, s]), walks.map(() => new Uint8Array(len - 1)), PENETRATIONS.findIndex(([w]) => w === way));
   P.to(Infinity);
-  const n = P.n, L = battleLinks(g, true), ends = new Map();
+  const n = P.n, L = battleLinks(g), ends = new Map();
   for (const v of near) for (const w of G.nbrs[v]) ends.set(L.index.get(G.key(v, w)), [v, w]);
   const linesAt = (i) => { P.to(i); return walks.map((_, s) => new Set(P.lineLinks(s))); }, before = linesAt(n - 1), after = linesAt(n);
   const pts = walks.flat().map(at), span = (a) => [Math.min(...pts.map((p) => p[a])) - 1, Math.max(...pts.map((p) => p[a])) + 1];
@@ -15547,41 +15524,20 @@ function firstVisits() {
 // figure rings are filled, FRACTION_AREA tiles at most (Area's tooltip says so)
 const FRACTION_AREA = 2;
 const fractionAreaCap = () => (walk.stepTiles && current?.fraction ? FRACTION_AREA : Infinity);
-// - A walk along the grid: the regions are made of tiles, two neighbouring tiles being separated once the walk has
-//   gone along the edge between them, so the areas follow the path exactly; their faces, the corners all round.
-// - A walk from tile to tile: the regions are read at the tiles' corners, two neighbouring corners being separated
-//   once the walk has crossed the tile edge between them; their faces, the tiles; a tile is filled once all its
-//   corners are enclosed (the tiles the walk passes through are the Fill cells).
+// A walk along the grid (on cells none: Area greyed, see areaWhyNot): the regions are made of tiles, two neighbouring
+// tiles being separated once the walk has gone along the edge between them, so the areas follow the path exactly; their
+// faces, the corners all round
 let areaData = null;
 function areaSteps() {
   if (areaData) return areaData;
-  const g = walk.geo, k = g.sides, G = gridGraph(g), eu = [], ev = [], crossed = [], faces = [];
+  const g = walk.geo, G = gridGraph(g), eu = [], ev = [], crossed = [], faces = [], index = new Map();
   const sphere = G.nv - G.edgeTiles.size + g.n === 2;
-  if (walk.stepTiles) {  // nodes: tiles; links: the edges between two; faces: the corners
-    const index = new Map();
-    for (const [e, sides] of G.edgeTiles) { index.set(e, eu.length); eu.push(sides[0]); ev.push(sides[1]); crossed.push(-1); faces.push([Math.floor(e / G.nv), e % G.nv]); }
-    for (let i = 0; i < walk.n; i++) {
-      const j = index.get(G.key(walk.vert[i], walk.vert[i + 1]));
-      if (j !== undefined && crossed[j] < 0) crossed[j] = i;
-    }
-    return (areaData = enclosedFrom(g.n, G.nv, eu, ev, faces, crossed, sphere, fractionAreaCap()));
-  }
-  const index = new Map(), tile = walk.tile;  // nodes: corners; links: the tile edges; faces: the tiles
-  for (const [e, sides] of G.edgeTiles) { index.set(e, eu.length); eu.push(Math.floor(e / G.nv)); ev.push(e % G.nv); crossed.push(-1); faces.push(sides); }
+  for (const [e, sides] of G.edgeTiles) { index.set(e, eu.length); eu.push(sides[0]); ev.push(sides[1]); crossed.push(-1); faces.push([Math.floor(e / G.nv), e % G.nv]); }  // (nodes: tiles; links: the edges between two; faces: the corners)
   for (let i = 0; i < walk.n; i++) {
-    const A = tile[i], B = tile[i + 1], shared = [];
-    for (let p = 0; p < k; p++) for (let q = 0; q < k; q++) if (g.poly[k * A + p] === g.poly[k * B + q]) shared.push(g.poly[k * A + p]);
-    if (shared.length !== 2) continue;
-    const j = index.get(G.key(shared[0], shared[1]));
-    if (crossed[j] < 0) crossed[j] = i;
+    const j = index.get(G.key(walk.vert[i], walk.vert[i + 1]));
+    if (j !== undefined && crossed[j] < 0) crossed[j] = i;
   }
-  const at = enclosedFrom(G.nv, g.n, eu, ev, faces, crossed, sphere), steps = new Int32Array(g.n);
-  for (let t = 0; t < g.n; t++) {  // a tile: once all its corners are enclosed (−1: never)
-    let s = 0;
-    for (let j = 0; j < k && s >= 0; j++) s = at[g.poly[k * t + j]] < 0 ? -1 : Math.max(s, at[g.poly[k * t + j]]);
-    steps[t] = s;
-  }
-  return (areaData = steps);
+  return (areaData = enclosedFrom(g.n, G.nv, eu, ev, faces, crossed, sphere, fractionAreaCap()));
 }
 
 // The step from which each node is enclosed (−1: never), for links eu[e]–ev[e] cut at step crossed[e] (−1: never),
@@ -15696,7 +15652,7 @@ function pathSegments(P = null) {
     }
   };
   if (P?.ownLines) {  // (Land grid 1: each link's segments, two slots a link, made once a shape; their owners see battleLinesOnGpu)
-    const G = gridGraph(g), L = battleLinks(g, true);
+    const G = gridGraph(g), L = battleLinks(g);
     if (g.linkSegments?.m !== sh.m || g.linkSegments.R !== R) {
       const table = new Float32Array(11 * 2 * L.eu.length), count = new Uint8Array(L.eu.length);
       dst = table;
@@ -16956,9 +16912,10 @@ function visitCells() {
 let fill = null;                   // { at, cx, cy, tpl, templates, count, tooBig } for the current walk (see computeFill)
 // Area goes with the colours where the path has one colour per step (not Visits, not By digit)
 const fillAreasApply = (w = $('mode').value) => !areaWhyNot(w);
-// Area greyed at a mode: a walk closing none (a spiral, a mode without it), a look over the cells (Heatmap, Directions), or
-// Snake cells (its tails slide: no area lasts); else ''
-const areaWhyNot = (w) => (!useful('fill', w) || MODES[w].fill === false ? 'where the walk closes no area to fill (a spiral, an ant…)'
+// Area greyed at a mode: on cells (its cells its own colours, a battle's its lands: along the lines only), a walk closing none
+// (a spiral, a mode without it), a look over the cells (Heatmap, Directions), or Snake cells (its tails slide: no area
+// lasts); else ''
+const areaWhyNot = (w) => (MODES[w].cells ? 'on cells: the walk colours its cells itself (a battle, its lands)' : !useful('fill', w) || MODES[w].fill === false ? 'where the walk closes no area to fill (a spiral, an ant…)'
   : ['visits', 'digit'].includes($('colourMode').value) ? 'with Heatmap or Directions (the cells their own colours)' : w === $('mode').value && snakeBattle() ? 'in Snake cells: its tails slide, no area they close lasts' : '');
 // a battle in Snake cells: its bodies' tails slide, no area they close lasts: none filled (Area greyed)
 const snakeBattle = () => battleOn() && PENETRATIONS[penetration][0] === 'snakeCells';

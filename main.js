@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.413';
+const VERSION = '0.4.414';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -1057,7 +1057,7 @@ const MODES = {
   antTri: { base: 2, lattice: 'tri', cells: true, fill: false, antOf: 'triTurtle', get rule() { return antRuleText('antTri'); } },
   // Paterson's worm: along the lines of the triangles, as their turtle (see wormStepper); its turns counted, its digits
   // read by the digits only
-  worm: { base: 5, arrows: '↙↖↑↗↘', lattice: 'hex', lines: true, worm: true, get rule() { return wormRuleText(); } },
+  worm: { base: 5, arrows: '↙↖↑↗↘', lattice: 'hex', lines: true, worm: true, where: 'along the lines of a triangle grid, each line eaten as it goes', get rule() { return wormRuleText(); } },
   antHex: { base: 2, lattice: 'hex', cells: true, fill: false, antOf: 'hexTurtle', get rule() { return antRuleText('antHex'); } },
   antCairo: { base: 2, lattice: 'cairo', cells: true, fill: false, antOf: 'cairo', get rule() { return antRuleText('antCairo'); } },
   // on a surface: the ant on the cells of its walk there, which keep their colours (turns: as the walk's)
@@ -3399,8 +3399,11 @@ const SHAPE_ICONS = { 'Klein bottle': 'klein', Squares: 'grid', Triangles: 'tria
 for (const [kind, t] of Object.entries(TILINGS)) SHAPE_ICONS[t.name] = `tiling-${kind}`;
 const SHAPE_SHORT = { 'Klein bottle': 'Klein', 'Möbius strip': 'Möbius', 'Stella octangula': 'Stella', Tetrahedron: 'Tetra', Octahedron: 'Octa', Dodecahedron: 'Dodeca', Cuboctahedron: 'Cubocta', Rhombicuboctahedron: 'Rhombi' };
 const shapeLabel = (shape) => SHAPE_SHORT[shape] ?? shape;
-// a mode in words, a shape's tooltip (the mode its click goes to): an automaton's grid (where), else a walk's or an ant's label
-const modeWhere = (w) => (MODES[w].where ?? modeOptionOf(w).text).replace(/^./, (c) => c.toUpperCase());  // a shape's name on its button, wherever (the 2D grids, a surface's tilings)
+// a mode in words, a shape's or a tiling's tooltip (the mode its click goes to): where it plays (an automaton's grid, a walk's
+// way); an ant's, its walk's on cells (antOf's, else its twin on cells: a 2D walk's on its lines), a worm's, its surface's grid
+// walk; never its name: the button's (Squares) again
+const rideOf = (w) => { const a = MODES[w].antOf; return a ? (MODES[a].cells ? a : MODES[a].twin) : SURFACE_WORMS[w]; };
+const modeWhere = (w) => capitalised(MODES[w].where ?? MODES[rideOf(w)]?.where ?? modeOptionOf(w).text);
 // the section's title
 const WALK_HEADINGS = { Walk: 'Walk', Ant: 'Grid', Life: 'Grid', Replicators: 'Grid', Elementary: 'Grid', Rewind: 'Grid' };
 // the values at a level under the choices above it (pre), in the menu's order
@@ -3453,7 +3456,8 @@ function navGo(level, ...values) {
 // Surfaces that come in several tilings are one entry each in the list (Torus, Sphere), their
 // tiling picked by tabs under the list: modes, its modes per tiling (walks along the grid and on
 // cells, ants, Life);
-// tabs, [tiling, turned by 30° (see TURNED), icon, its shape (as the 2D grids name it, see shapeLabel), title]; tab, the one in use or last chosen
+// tabs, [tiling, turned by 30° (see TURNED), icon, its shape (as the 2D grids name it, see shapeLabel), title: a turned one's its
+// shape, then ', turned by …' (its tile's tooltip those words, see renderModePicker)]; tab, the one in use or last chosen
 const FAMILIES = [
   { name: 'Torus', modes: [['torusGrid', 'torusWalk', 'lifeTorus'], ['torusHexGrid', 'torusHexWalk', 'lifeTorusHex'],
                           ['torusTriGrid', 'torusTriWalk', 'lifeTorusTri'], ['torusCairoWalk', 'lifeTorusCairo'], ['lifeTorusKite']], tab: 0,
@@ -3678,7 +3682,7 @@ function renderModePicker() {
         torusTurned = false;
         $('mode').value = same(f);
         $('mode').dispatchEvent(new Event('change'));
-      }, f === here && turns ? `${F.tabs[tabOf(f, true)][4]}: a click turns it${isTurned ? ' back' : ''}` : modeWhere(same(f)), { again: f === here && turns, byDefault: f === F.tabs[0][0] ? 'yes' : '', turn: tilesTurn(shownSurface(MODES[same(f)].sphere, f === here && isTurned)) });  // its picture as its tiles lie (a torus's, a strip's alike: clockwise, as the pictures laid on it)
+      }, f === here && turns ? `${capitalised(F.tabs[tabOf(f, true)][4].slice(shape.length + 2))}: a click turns it${isTurned ? ' back' : ''}` : modeWhere(same(f)), { again: f === here && turns, byDefault: f === F.tabs[0][0] ? 'yes' : '', turn: tilesTurn(shownSurface(MODES[same(f)].sphere, f === here && isTurned)) });  // its picture as its tiles lie (a torus's, a strip's alike: clockwise, as the pictures laid on it)
       return [b];
     }), ...(F.tabs.some(([, tu]) => tu) ? [tile({ pic: icon('pivot'), text: 'Turned', toggle: true, byDefault: 'off', greyed: 'on a tiling with no other way round (a block rule: none its blocks come round)', on: isTurned, can: turns,
       title: turns ? F.tabs[tabOf(here, true)][4] : 'The tiling turned, its rows another way round', click: turn })] : []));

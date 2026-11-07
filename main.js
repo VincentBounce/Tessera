@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.540';
+const VERSION = '0.4.541';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -3646,7 +3646,7 @@ function choicesAt(s) {  // (each [key, the setup it leads to, its button's word
   if (battleMode(w)) {
     for (const k of COLOUR_STEPS) set(`teams:${k}`, 'teams', k, teamsWhyNot(k, w, s.size, s.startNo), COLOUR_STEP_NAMES[k]);
     if (s.teams > 1) BATTLE_RULES.forEach(([kind, name], p) => set(`battleRule:${p}`, 'battleRule', p, battleRuleWhyNot(kind, w), name));
-    if (s.teams > 1) STARTS_WAYS.forEach(([way, name]) => set(`startsWay:${way}`, 'startsWay', way, startsWayCan(way, w, s.size ?? undefined) ? '' : CENTRED_WHERE, name));
+    if (s.teams > 1) STARTS_WAYS.forEach(([way, name]) => set(`startsWay:${way}`, 'startsWay', way, startsWayCan(way, w, s.size ?? undefined, s.teams) ? '' : CENTRED_WHERE, name));
   }
   // a Life's starts (its tabs: Hunt, Text, Digits, Draw), and its hunt's zones on the grid shown (their room known there only, see huntFits; Custom a link's, no tile)
   const m = MODES[w];
@@ -7784,7 +7784,7 @@ function renderWalkTeams() {
   if ($('startRow').previousElementSibling !== $('startWays')) $('startRow').before($('startWays'));
   const ways = STARTS_WAYS;  // (one list: its tabs and a link's gr=)
   $('startWays').replaceChildren(tileGroup(ways.map(([way, text, title]) => tile({ pic: colourBlock(walkTeams), text, title, on: way === startsWayNow(), again: way === 'random', byDefault: way === 'symmetric' ? 'yes' : '',
-    whyNot: ({ w, size }) => (startsWayCan(way, w, size) ? '' : CENTRED_WHERE), choice: `startsWay:${way}`,
+    whyNot: ({ w, size, teams = walkTeams }) => (startsWayCan(way, w, size, teams) ? '' : CENTRED_WHERE), choice: `startsWay:${way}`,
     click: () => { if (way === startsWayNow() && way !== 'random') return; battleStartsWay = way; if (way === 'random') battleSeed = freshDraw(); compute(); } }))));  // (Random again: another draw)
 }
 // a battle's formula fields, each bold in its walker's colour once sent to be fought (computed, from Enter, Random or a
@@ -7855,10 +7855,10 @@ const battleRuleWhyNot = (kind, v) => {
   const cells = kind === 'landCells' || kind === 'snakeCells';
   return !battleMode(v) ? 'There is no battle here.' : kind === 'cut' || kind === 'landStop' || cells !== !!MODES[v].grid ? '' : cells ? 'This rule plays on cells; this walk goes along the grid.' : 'This rule plays along the grid; this walk is on cells.';
 };
-const startsWayCan = (way, w, size) => way !== 'centred' || groupedCan(w, size);
+const startsWayCan = (way, w, size, teams = walkTeams) => way !== 'centred' || groupedCan(w, size, teams);
 const startsWayNow = () => (battleOn() && startsWayCan(battleStartsWay) ? battleStartsWay : 'symmetric');
 // the starts' way played in a setup (see setupNow): its own where a battle can have it, else Symmetric (as startsWayNow)
-const startsWayIn = ({ w, size = null, teams = walkTeams, startsWay = battleStartsWay }) => (battleAt(w, teams, size ?? undefined) && startsWayCan(startsWay, w, size ?? undefined) ? startsWay : 'symmetric');  // (the one played: Symmetric where the one picked cannot be)
+const startsWayIn = ({ w, size = null, teams = walkTeams, startsWay = battleStartsWay }) => (battleAt(w, teams, size ?? undefined) && startsWayCan(startsWay, w, size ?? undefined, teams) ? startsWay : 'symmetric');  // (the one played: Symmetric where the one picked cannot be)
 // K walkers' starts anywhere, each its own place, drawn from seed: along the grid a corner and the corner it comes from,
 // on cells a tile and the edge it comes in by (A's start's other parts kept: a pivot's, a parity's)
 function randomStarts(g, start, grid, K, seed) {
@@ -7888,9 +7888,9 @@ function groupedStarts(g, start, K) {
   const e1 = unit(across(out[0])), angle = (e) => { const x = across(e); return Math.atan2(dot3(cross(e1, x), p), dot3(x, e1)); };
   return [...out].sort((x, y) => angle(x) - angle(y)).filter((_, i) => i % (out.length / K) === 0).map((e) => gridState(g, e));
 }
-const groupedCan = (w = $('mode').value, size = null) => {  // (a mode's, at a size or the one it opens at: its K walkers can be grouped)
+const groupedCan = (w = $('mode').value, size = null, teams = walkTeams) => {  // (a mode's, at a size or the one it opens at: its walkers, a setup's teams, can be grouped)
   const mode = MODES[w], g = battleMode(w) && mode.grid && pickedFigure(w, size).g;
-  return !!g && !!groupedStarts(g, walkStart(g, mode), walkTeams);
+  return !!g && !!groupedStarts(g, walkStart(g, mode), teams);
 };
 // a battle's starts (see battleStarts; grouped, groupedStarts', where it can), or none, said in the status: A's place on an axis of the solid
 function battleStartsOrSay(g, start, grid, K, seed = battleSeed) {  // (seed: Random's draw, another a hunt's)

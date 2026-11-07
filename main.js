@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.481';
+const VERSION = '0.4.482';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -1665,11 +1665,17 @@ const closedLoop = () => walk.loop?.period && !walk.loop.drift;  // a drift's ro
 const roundStep = (i) => { const L = walk.loop; return closedLoop() && i >= L.from + L.period ? L.from + ((i - L.from) % L.period) : i; };
 const rainbowLength = () => (closedLoop() ? walk.loop.from + walk.loop.period : walk.n);
 // The colour of a walk's step i by its look, one source for every drawing (2D's cells and line, 3D's cubes, a surface's tiles
-// and path): Commands ('digit'), the command it read (an ant's, its state's), key(i) its place in palette (see digitColour);
-// Rainbow ('gradient', 'cells'), along the walk, key null (rainbowBand: its band of BANDS); any other look, a cell's (Heatmap), none
+// and path): Commands ('digit'), the command it read (an ant's, its state's), key(i) its place in palette (see digitColour),
+// and a point's, at(p), the command that brought it there: the start none, its own place past the commands', neutral grey (an
+// ant's: its first state's, as its cells'); Rainbow ('gradient', 'cells'), along the walk, key null (rainbowBand: its band of
+// BANDS); any other look, a cell's (Heatmap), none
 const rainbowBand = (i) => Math.floor((roundStep(i) * BANDS) / rainbowLength());
-const stepLook = (look) => (look === 'digit' ? { key: (i) => walk.keys[i], palette: Array.from({ length: walk.ant || walk.base }, (_, k) => digitColour(k)) }
-  : look === 'gradient' || look === 'cells' ? { key: null } : null);
+const stepLook = (look) => {
+  if (look === 'gradient' || look === 'cells') return { key: null };
+  if (look !== 'digit') return null;
+  const commands = Array.from({ length: walk.ant || walk.base }, (_, k) => digitColour(k)), key = (i) => walk.keys[i];
+  return { key, at: (p) => (p ? key(p - 1) : walk.ant ? key(0) : commands.length), palette: walk.ant ? commands : [...commands, GREY] };
+};
 let lifeStart = null;  // where a Life start comes from when it is not the number's digits (see setLifeSeed)
 let barTitle = '';  // a walk's title: its number, a creature's name and what it turns by (its loop's link after it, see updateStats)
 function describe(base, available) {
@@ -15644,7 +15650,7 @@ function drawSphere() {
     const cells = MODES[walk.mode].cells && firstVisits(), areas = !walk.ant && areaOn() && areaSteps();
     const band = (step) => Math.min(LEVELS - 1, Math.floor((step * LEVELS) / (walk.n + 1)));
     const colours = stepped.key ? stepped.palette.map(liftTile) : grad, faint = (cs) => (path && MODES[walk.mode].cells ? cs.map((c) => faded(c, FADING)) : cs);  // Path: the tiles faded under the line
-    const level = stepped.key ? (p) => 1 + stepped.key(Math.max(0, p - 1)) : (p) => 1 + band(p);  // (point p's step: p − 1, the start its first)
+    const level = stepped.key ? (p) => 1 + stepped.at(p) : (p) => 1 + band(p);  // (see stepLook: the start, no command)
     palette = [null, ...faint(colours), ...(stepped.key ? [] : areaLight() ? grad.map((c) => faded(c, FADING)) : grad)];
     levelOf = (t) => (cells && cells[t] >= 0 && cells[t] <= stepShown ? level(cells[t])
       : areas && areas[t] >= 0 && areas[t] <= stepShown ? 1 + LEVELS + band(areas[t]) : 0);
@@ -16044,7 +16050,7 @@ function flatCellInstances(mode) {
   if (mode === 'visits') { V = visitCells(); V.seen.fill(0); scale = (BANDS - 1) / Math.log(Math.max(2, V.max)); }
   for (let p = 0; p <= walk.n; p++) {
     if (walk.skipZeros && p > 0 && walk.digits[p - 1] === 0) continue;
-    const band = look?.key ? look.key(Math.max(0, p - 1)) : V ? Math.round(Math.log(++V.seen[V.cell[p]]) * scale) : rainbowBand(Math.max(0, p - 1));  // (see stepLook)
+    const band = look?.key ? look.at(p) : V ? Math.round(Math.log(++V.seen[V.cell[p]]) * scale) : rainbowBand(Math.max(0, p - 1));  // (see stepLook)
     inst.set([walk.xs[p], walk.ys[p], band, cellTemplate(lat, walk.xs[p], walk.ys[p])], 4 * m);
     at[m++] = p;
   }
@@ -16085,7 +16091,7 @@ function walkCubes(mode) {
   for (let p = 0; p <= n; p++) {
     const q = Math.max(1, p);  // the start, as its first step
     at.set([walk.wx[p], walk.wy[p], walk.wz[p]], 3 * p);
-    col.set(rgb[look?.key ? look.key(q - 1) : rainbowBand(q - 1)], 3 * p);
+    col.set(rgb[look?.key ? look.at(p) : rainbowBand(q - 1)], 3 * p);
   }
   return { at, col };
 }
@@ -16748,9 +16754,9 @@ function gpuDrawPipe(name, { vertex, fragment, buffers, topology = 'triangle-lis
 // a battle's colours in the palette (pal), for its lines along the grid: A's body, B's (their heads: their arrows, see drawOverlay)
 // the commands' palette on the GPU (see stepLook), its places 0 to 255 (past its end, its last; an ant's ramp, all of them)
 function stepPalette(D) {
-  const key = `${walk.base}|${walk.ant}|${walk.skipZeros}|${current.mode}|${MONO}`;
+  const key = `${walk.base}|${walk.ant}|${walk.skipZeros}|${current.mode}|${MONO}|${GREY}`;
   if (D.keys.pal === key) return;
-  const colours = stepLook('digit').palette, pal = new Uint8Array(4 * 256);
+  const colours = stepLook('digit').palette, pal = new Uint8Array(4 * 256);  // (a walk's: its start's grey last)
   for (let k = 0; k < 256; k++) pal.set([...rgbCached(walk.ant ? digitColour(k) : colours[Math.min(k, colours.length - 1)]), 255], 4 * k);
   D.device.queue.writeTexture({ texture: D.pal }, pal, { bytesPerRow: 1024 }, [256, 1]);
   D.keys.pal = key;

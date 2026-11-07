@@ -175,7 +175,7 @@ button {
   font: inherit;
   cursor: pointer;
 }
-button:hover:not(:disabled) { border-color: var(--muted); }
+button:hover:not(:disabled), .rule-chip:hover { border-color: var(--muted); }  /* (a digit's chip too: a click opens How it works) */
 button:disabled { opacity: 0.45; cursor: default; }
 button.primary {
   width: 100%;

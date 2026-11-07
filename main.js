@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.441';
+const VERSION = '0.4.442';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -3621,7 +3621,9 @@ function choicesAt(s) {
   return out;
 }
 // how many settings two setups differ by: the menu's levels, the tiling, the fields
-const changes = (a, b) => [0, 1, 2, 3, 4].filter((i) => NAV[a.w][i] !== NAV[b.w][i]).length + (familyOf(a.w)?.m !== familyOf(b.w)?.m) + ['size', 'colours', 'teams', 'penetration'].filter((f) => a[f] !== b[f]).length;
+// a mode's tiling by its name (Hexagons, whatever its place in its family's list), none off a family
+const tilingNameOf = (w) => { const fam = familyOf(w); return fam ? fam.F.tabs.find(([t]) => t === fam.m)[3] : null; };
+const changes = (a, b) => [0, 1, 2, 3, 4].filter((i) => NAV[a.w][i] !== NAV[b.w][i]).length + (tilingNameOf(a.w) !== tilingNameOf(b.w)) + ['size', 'colours', 'teams', 'penetration'].filter((f) => a[f] !== b[f]).length;
 // The shortest paths from the setup in use to one fits takes, at n clicks: breadth first, each setup once, layer by layer
 // till one holds some; of these the fewest settings changed; their first clicks' keys (budget: setups tried at most)
 function pathsTo(fits, budget = 5000) {

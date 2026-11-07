@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.425';
+const VERSION = '0.4.426';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -1944,8 +1944,8 @@ const tile = ({ pic = '', text = '', html = null, title = '', id = null, on = fa
 };
 // (byDefault: as the tooltip tells it, see tip: 'yes', the choice picked at first; 'on' or 'off', a switch's at first)
 // (greyed: when it is, as the tooltip tells it: 'in Solo', 'outside Life'…)
-// (whyNot(setup): what greys it in a setup, { w, size, colours } (a mode, at a size or the one it opens at; its colours, the
-// ones picked if none), '' when allowed: its one
+// (whyNot(setup): what greys it in a setup, { w, size, colours, penetration } (a mode, at a size or the one it opens at; its
+// colours, its battle rule: the ones picked if none), '' when allowed: its one
 // source; greyed here (at: its mode, the tab's by default) or not, its words why, and the menu's nearest buttons that would
 // allow it, highlighted by a click on it (see enablersFor))
 const setTile = (b, { on = false, can = true, mark = false, again = false, turn = 0, byDefault, greyed, whyNot = null, at = $('mode').value }) => {
@@ -1969,8 +1969,8 @@ function highlight(el) { el.classList.remove('highlit'); void el.offsetWidth; el
 // a greyed button that knows what would allow it (its enablers: the nearest buttons of the menu taking it there, see
 // setTile's whyNot): a click on it, which a disabled button never gets (its pointer's up it does), highlights them
 document.addEventListener('pointerup', (e) => { const b = e.target.closest?.('button'); if (!b?.disabled || !b.enablers) return; const them = b.enablers(); them[0]?.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); them.forEach(highlight); });  // (the first scrolled into sight, as little as it takes)
-const card = ({ pic = '', name = '', detail = '', base = '', title = '', on = false, can = true, byDefault, click = null, how = null, whyNot = null, at }) => {
-  const b = tile({ html: '', title: title || detail, on, can, byDefault, click, whyNot, at }), picture = Object.assign(document.createElement('span'), { className: `mode-icon${how ? ' act' : ''}`, innerHTML: pic });
+const card = ({ pic = '', name = '', detail = '', base = '', title = '', on = false, can = true, byDefault, click = null, how = null, whyNot = null, at, sets = null }) => {
+  const b = tile({ html: '', title: title || detail, on, can, byDefault, click, whyNot, at, sets }), picture = Object.assign(document.createElement('span'), { className: `mode-icon${how ? ' act' : ''}`, innerHTML: pic });
   if (how) { picture.title = `How ${name} works`; picture.addEventListener('click', (e) => { e.stopPropagation(); how(); }); }  // (its picture: a click on how it works)
   b.append(picture, cardWords(name, detail), ...(base ? [cardBubble(base, click && (() => (on ? toggleNumber() : (click(), showNumber()))))] : []));
   return b;
@@ -7594,7 +7594,7 @@ function renderWalkTeams() {
   // its ways as cards, as Life's rules: a picture (a red head, a blue body or land), its name over its words
   const way = ([kind, name, head, words], p) => {
     return card({ pic: `<svg viewBox="0 0 4 4" aria-hidden="true"><path d="M0 0H4V4H0Z" fill="${LIFE_COLOURS[1]}"/><path d="${head}" fill="${LIFE_COLOURS[0]}"/></svg>`, name, detail: words,
-      title: words, on: p === penetration, whyNot: ({ w: v }) => penetrationWhyNot(kind, v), byDefault: p === 0 ? 'yes' : '',
+      title: words, on: p === penetration, whyNot: ({ w: v }) => penetrationWhyNot(kind, v), sets: { penetration: p }, byDefault: p === 0 ? 'yes' : '',
       click: () => { if (p !== penetration) { penetration = p; compute(); } } });
   };
   $('walkPenetration').replaceChildren(...PENETRATIONS.map((P, p) => way(P, p)));
@@ -7837,9 +7837,8 @@ const battleGroups = (g, K, enough = Infinity, good = null) => {
 // the teams a battle can have on mode w's surface (see battleMode), from its start: each K its surface has a group of K
 // for that sets them apart from A's start (see battleGroups, startSpread), a ring's judged on its mesh made for K (its
 // length its walkers', as Life's colours', see ringColours); none elsewhere
-const battleCounts = (w) => {
-  const size = battleMode(w) && sphereSize();
-  if (!size) return [];  // (none, or its size not set yet: a page opening)
+const battleCounts = (w, size = battleMode(w) && figureSize(w)) => {  // (at a size, or its mode's, see figureSize)
+  if (!size || !battleMode(w)) return [];  // (none)
   // a ring's by its kind, known by construction (its length made for its walkers, see ringColours): a torus takes every
   // count (its shift of 1/K round it), a Klein bottle a Duel only (its gluing: its half turn, see ringGroup); a Möbius strip's tried
   const ring = SPHERES[surfaceOf(MODES[w])].columns && familyOf(w)?.F.name;
@@ -7856,6 +7855,7 @@ const battleCounts = (w) => {
   return COLOUR_STEPS.filter((K) => K > 1 && (memo[K] ??= fits(K)));
 };
 const battleCountsMemo = {};
+const TEAMS_WHERE = 'no group of so many of the surface\'s symmetries at this size that sets them apart from this start, each walking as A (another size or start)';  // (a team count's greyed words)
 // A surface's turns in space that lay its mesh onto itself (each a matrix, the identity among them), once a mesh: a closed
 // solid's rotations (see solidRotations); a ring's (a torus, a Möbius strip, a Klein bottle), its turns round its axis by
 // 2π/m (m from a corner's fellows round the axis at its height and distance, the least angle between them) and its
@@ -8534,7 +8534,7 @@ function renderBattleHunt() {
   const vary = (what, text, title, can = true, greyed = '') => tile({ pic: icon(what === 'formulas' ? 'search' : 'play'), text, title, toggle: true, on: huntVary[what] && can, can, greyed,
     byDefault: what === 'formulas' ? 'on' : 'off', click: () => { huntVary[what] = !huntVary[what]; stopBattleHunt(); renderBattleHunt(); } });
   const goal = huntGoal(), [, , , words, label, score, figure] = HUNT_RANKS[goal];
-  const rank = ([what, [pic, text, title]]) => tile({ pic: icon(pic), text, title, on: what === goal, can: what !== 'even' || PENETRATIONS[penetration][0] !== 'cut',
+  const rank = ([what, [pic, text, title]]) => tile({ pic: icon(pic), text, title, on: what === goal, whyNot: ({ penetration: p = penetration }) => (what !== 'even' || PENETRATIONS[p][0] !== 'cut' ? '' : 'in Cut: no land, bodies only'),
     greyed: 'in Cut: no land, bodies only', byDefault: what === 'longest' ? 'yes' : '', click: () => { if (huntRank !== what) { huntRank = what; stopBattleHunt(); renderBattleHunt(); } } });
   $('battleHuntVary').replaceChildren(vary('formulas', 'Formulas', 'The hunt draws the walkers\' numbers (else those in the fields)'),
     vary('starts', 'Starts', 'The hunt draws the start too: Symmetric\'s number, Random\'s draw (else the start shown)', startsWayNow() !== 'centred', 'in Centred: its centres all alike, nothing to vary'));
@@ -10487,6 +10487,7 @@ function renderSymmetry() {
 // Draw's and Text's greyed words
 const DRAW_WHERE = 'on a reversible surface (no patterns of a block rule to show, nor drawing)';
 const TEXT_WHERE = 'where no picture can be laid, as Emoji (a grid too small for it, a solid\'s faces none)';
+const PNG_WHERE = 'on a grid of squares only (a pixel a square)';  // (Export PNG's greyed words)
 function renderPlaneRow() {
   const kind = MODES[$('mode').value].plane;
   const blocks = !!MODES[$('mode').value].margolus;
@@ -10521,7 +10522,7 @@ function renderPlaneRow() {
     return;
   }
   $('drawNote').hidden = true;
-  setTile($('exportPng'), { can: kind === 'square', greyed: 'on a grid of squares only (a pixel a square)' });
+  setTile($('exportPng'), { greyed: PNG_WHERE, whyNot: ({ w: v }) => (MODES[v].plane === 'square' && MODES[v].life ? '' : PNG_WHERE) });
   const sides = planeSides(kind);
   const label = (side) => { $('planeLabel').innerHTML = `${sizeShape(planeKind(kind), side)}<small>${shortCells(sizeCells(planeKind(kind), side))}</small>`; };  // the size (see gridSize; a rectangle's, if so)
   label(plane.side);
@@ -10530,8 +10531,11 @@ function renderPlaneRow() {
   $('planeUp').disabled = plane.side >= sides.at(-1);
   sizeGauge($('planeGauge'), sides.length, sides.indexOf(plane.side), (k) => label(sides[k]), (k) => { picked = planeCells(sides[k]); compute(); });
   $('planeOutline').hidden = !!APERIODIC[kind];  // (a grid that never repeats: always walls, nothing to choose)
-  for (const [shape, torus] of OUTLINES) setTile($(`outline-${shape}-${torus ? 'torus' : 'walled'}`), { on: outlineOf(kind) === shape && planeTorus(kind) === torus, can: outlineOf(kind, shape, torus) === shape,
-    greyed: shape === 'hex' ? 'but on a six-fold grid (triangles, hexagons, kites…)' : 'but on a slanted grid (its cells stored as a rhombus: triangles, hexagons, parallelograms…)' });
+  for (const [shape, torus] of OUTLINES) {
+    const where = shape === 'hex' ? 'but on a six-fold grid (triangles, hexagons, kites…)' : 'but on a slanted grid (its cells stored as a rhombus: triangles, hexagons, parallelograms…)';
+    setTile($(`outline-${shape}-${torus ? 'torus' : 'walled'}`), { on: outlineOf(kind) === shape && planeTorus(kind) === torus, greyed: where,
+      whyNot: ({ w: v }) => { const k = MODES[v].plane; return k && MODES[v].life && !APERIODIC[k] && outlineOf(k, shape, torus) === shape ? '' : where; } });
+  }
   setTile(spaceTimeTile, { on: spaceTimeOn(), whyNot: ({ w }) => (spaceTimeApplies(w) ? '' : 'but on squares (not Rewind)'), greyed: 'but on squares (not Rewind)' });
   renderSymmetry();
   $('startDraw').hidden = plane.start !== 'draw';
@@ -11298,8 +11302,8 @@ function walkTeamTiles(w) {
   const words = (k) => (k === 1 ? 'One number walks' : k === 2 ? "Two numbers walk, A's and B's, from opposite places (how they fight: below)"
     : `${k} numbers walk, A's to ${'ABCDEFGHIJKL'[k - 1]}'s, from A's place moved by ${k} of the surface's symmetries: each walks as A would from there (how they fight: below)`);
   return COLOUR_STEPS.map((k) => tile({ pic: colourBlock(k), text: COLOUR_STEP_NAMES[k], title: words(k),
-    on: k === (battleOn() ? walkTeams : 1), can: k === 1 || battleCounts(w).includes(k), byDefault: k === 1 ? 'yes' : '',
-    greyed: k === 1 ? '' : 'no group of so many of the surface\'s symmetries at this size that sets them apart from this start, each walking as A (another size or start)',
+    on: k === (battleOn() ? walkTeams : 1), byDefault: k === 1 ? 'yes' : '', greyed: k === 1 ? '' : TEAMS_WHERE,
+    whyNot: ({ w: v, size }) => (k === 1 || battleCounts(v, size ?? (battleMode(v) && figureSize(v))).includes(k) ? '' : TEAMS_WHERE),
     click: () => { if (k !== walkTeams) { walkTeams = k; compute(); } } }));
 }
 // The Rule section: the rules known for the grid's shape, as cards, each with a picture (5 × 5 pixels of
@@ -13174,7 +13178,7 @@ function renderHunt() {
   const K = lifeParts(), { perColour, all } = huntPlan(), busy = !!hunt.run, sym = walk.plane ? symmetryOf(walk.plane.kind) : 'none';
   const what = K > 1 ? 'the longest battle' : { longest: 'the longest life', dies: 'the longest life dying out', full: 'the longest life ending full', peak: 'the highest peak', cover: 'the fastest to reach all cells' }[hunt.goal];
   $('huntGoals').hidden = $('huntModeLabel').hidden = !!walk.life.margolus;
-  for (const b of $('huntGoals').querySelectorAll('button')) { const battle = b.dataset.goal === 'battle'; setTile(b, { on: battle ? K > 1 : K === 1 && b.dataset.goal === hunt.goal, can: battle === K > 1 }); }
+  for (const b of $('huntGoals').querySelectorAll('button')) { const battle = b.dataset.goal === 'battle'; setTile(b, { on: battle ? K > 1 : K === 1 && b.dataset.goal === hunt.goal, whyNot: ({ colours = lifeColours }) => (battle === colours > 1 ? '' : battle ? 'in Solo' : 'in colours') }); }  // (its colours: a battle's in colours)
   renderSymmetry();  // (Famous: none)
   const fits = huntFits();
   for (const b of $('huntZones').children) {

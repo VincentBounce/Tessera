@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.486';
+const VERSION = '0.4.487';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -15648,12 +15648,12 @@ function drawSphere() {
   const path = !L && !walk.battle && (MODES[walk.mode].cells ? $('showPath').checked : line);  // on cells, with Show path only (a battle: its bodies, no path)
   if (line) {  // a tile walked through (Fill cells) in its first visit's colour, by the look; enclosed (Area, Rainbow only), or dark
     const cells = MODES[walk.mode].cells && firstVisits(), areas = !walk.ant && areaOn() && areaSteps();
-    const band = (step) => Math.min(LEVELS - 1, Math.floor((step * LEVELS) / (walk.n + 1)));
-    const colours = stepped.key ? stepped.palette.map(liftTile) : grad, faint = (cs) => (path && MODES[walk.mode].cells ? cs.map((c) => faded(c, FADING)) : cs);  // Path: the tiles faded under the line
+    const rainbow = GRADIENT.map(liftTile), band = (p) => rainbowBand(Math.max(0, p - 1));  // (point p's step, as in 2D: see stepLook)
+    const colours = stepped.key ? stepped.palette.map(liftTile) : rainbow, faint = (cs) => (path && MODES[walk.mode].cells ? cs.map((c) => faded(c, FADING)) : cs);  // Path: the tiles faded under the line
     const level = stepped.key ? (p) => 1 + stepped.at(p) : (p) => 1 + band(p);  // (see stepLook: the start, no command)
-    palette = [null, ...faint(colours), ...(stepped.key ? [] : areaLight() ? grad.map((c) => faded(c, FADING)) : grad)];
+    palette = [null, ...faint(colours), ...(stepped.key ? [] : areaLight() ? rainbow.map((c) => faded(c, FADING)) : rainbow)];
     levelOf = (t) => (cells && cells[t] >= 0 && cells[t] <= stepShown ? level(cells[t])
-      : areas && areas[t] >= 0 && areas[t] <= stepShown ? 1 + LEVELS + band(areas[t]) : 0);
+      : areas && areas[t] >= 0 && areas[t] <= stepShown ? 1 + BANDS + band(areas[t]) : 0);
   }
   // an ant's cells, as in 2D (see CELL_MODES): States, by their colour (the times it was on each, the one under it as it
   // will be), Path's faded under its line; Rainbow and Heatmap as a walk's
@@ -16509,6 +16509,8 @@ fn clipOf(s: vec3f, bias: f32) -> vec4f {  // (depth 0 to 1)
 fn flatAt(q: vec2f) -> vec4f { return vec4f(q.x / u.screen.x * 2.0 - 1.0, 1.0 - q.y / u.screen.y * 2.0, 0.0, 1.0); }
 fn lightSpace(p: vec3f) -> vec3f { return vec3f(dot(p, u.Lx), dot(p, u.Ly), -dot(p, u.L)) / u.lr; }
 fn band(t: texture_2d<f32>, x: f32) -> vec3f { let w = i32(textureDimensions(t).x); return textureLoad(t, vec2i(clamp(i32(floor(x * f32(w))), 0, w - 1), 0), 0).rgb; }
+// step i's rainbow (see rainbowBand): a closed loop's steps round its period, along the walk's length u.N (rainbowLength)
+fn rainbow(i0: f32) -> vec3f { var i = i0; if (u.period > 0.0 && i >= u.loopFrom + u.period) { i = u.loopFrom + (i - u.loopFrom) - u.period * floor((i - u.loopFrom) / u.period); } return band(grad, (i + 0.5) / u.N); }
 fn glass(c: vec3f, a: f32, z: f32) -> vec4f {
   if (u.glass == 0) { return vec4f(c, a); }
   let w = clamp(a * 1e3 * pow(1.0 - z, 8.0), 1e-2, 3e3);
@@ -16568,7 +16570,7 @@ struct Rib { @builtin(position) pos: vec4f, @location(0) col: vec3f, @location(1
 @vertex fn ribbonV(@location(0) quad: vec2f, @location(1) a: vec3f, @location(2) b: vec3f, @location(3) n: vec3f, @location(4) e: f32, @location(5) i: f32) -> Rib {
   var o: Rib;
   if (u.colour == 3 && i > 254.5) { o.pos = vec4f(0.0, 0.0, -2.0, 1.0); o.col = vec3f(0.0); o.cutv = 0.0; return o; }  // (a link of none, see battleLinesOnGpu: off the clip space)
-  if (u.colour == 3) { o.col = band(pal, (i + 0.5) / 256.0); } else { o.col = band(grad, (i + 0.5) / u.N); }  // (a battle's bodies: their colours, see battlePalette)
+  if (u.colour == 3) { o.col = band(pal, (i + 0.5) / 256.0); } else { o.col = rainbow(i); }  // (a battle's bodies: their colours, see battlePalette)
   var d = b - a; if (length(d) > 1e-9) { d = normalize(d); } else { d = vec3f(1.0, 0.0, 0.0); }
   let side = normalize(cross(d, n)) * u.halfW;
   var on = floor(e / 2.0); if (quad.x < 0.5) { on = e - 2.0 * floor(e / 2.0); }
@@ -16590,9 +16592,7 @@ struct Col { @builtin(position) pos: vec4f, @location(0) col: vec4f }
 @vertex fn flatPathV(@location(0) quad: vec2f, @location(1) a0: vec2f, @location(2) b0: vec2f, @location(3) key: u32, @builtin(instance_index) k: u32) -> Col {
   var o: Col;
   if (key == 255u) { o.pos = vec4f(2.0, 2.0, 2.0, 1.0); return o; }  // (a step that draws nothing: a spiral's 0)
-  var i = f32(k);
-  if (u.period > 0.0 && i >= u.loopFrom + u.period) { i = u.loopFrom + (i - u.loopFrom) - u.period * floor((i - u.loopFrom) / u.period); }
-  if (u.colour == 2) { o.col = vec4f(band(pal, (f32(key) + 0.5) / 256.0), 1.0); } else { o.col = vec4f(band(grad, (i + 0.5) / u.N), 1.0); }
+  if (u.colour == 2) { o.col = vec4f(band(pal, (f32(key) + 0.5) / 256.0), 1.0); } else { o.col = vec4f(rainbow(f32(k)), 1.0); }
   let a = u.view.yz + a0 * u.view.x; let b = u.view.yz + b0 * u.view.x;
   var d = b - a; if (length(d) > 1e-4) { d = normalize(d); } else { d = vec2f(1.0, 0.0); }
   o.pos = flatAt(mix(a, b, quad.x) + (vec2f(-d.y, d.x) * quad.y + d * (quad.x * 2.0 - 1.0)) * u.width * 0.5);
@@ -16870,7 +16870,7 @@ function gpuSurface(paint, path) {
     if (ranges.some(([a, b]) => b > a)) {
       rp.setPipeline(gpuDrawPipe('ribbon', { vertex: 'ribbonV', fragment: 'ribbonF', topology: 'triangle-strip', pass, cull: both ? 'none' : 'back', writes: false,  // (a decal on the tiles: pulled over them, no depth of its own, a head over it, see ogiveOf)
         buffers: [vertexLayout(8, [vertexAttribute(0, 'float32x2')]), vertexLayout(44, [vertexAttribute(1, 'float32x3', 0), vertexAttribute(2, 'float32x3', 12), vertexAttribute(3, 'float32x3', 24), vertexAttribute(4, 'float32', 36), vertexAttribute(5, 'float32', 40)], 'instance')] }));
-      rp.setBindGroup(0, gpuGroup(), [slotOf({ glass: pass, cut, N: Math.max(1, walk.n), halfW: surfaceLineWidth() / 2 / view.scale, bias: pathBias, colour: lines || keyed ? 3 : 0 })]);
+      rp.setBindGroup(0, gpuGroup(), [slotOf({ glass: pass, cut, N: Math.max(1, rainbowLength()), loopFrom: walk.loop?.from ?? 0, period: closedLoop() ? walk.loop.period : 0, halfW: surfaceLineWidth() / 2 / view.scale, bias: pathBias, colour: lines || keyed ? 3 : 0 })]);
       rp.setVertexBuffer(0, D.quad); rp.setVertexBuffer(1, D.ribbon);
       for (const [a, b] of ranges) if (b > a) rp.draw(4, b - a, 0, a);
     }

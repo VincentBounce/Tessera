@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.497';
+const VERSION = '0.4.498';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -4404,6 +4404,7 @@ document.addEventListener('mouseover', (e) => {
   const part = () => Object.assign(document.createElement('div'), { className: 'tip-state' }), section = (title, text) => { const div = part(); div.append(Object.assign(document.createElement('b'), { textContent: title }), Object.assign(document.createElement('span'), { textContent: text })); return div; };
   const allowed = greyedOf(greyed ?? el)?.paths && pathsWords(greyedOf(greyed ?? el).paths());  // (greyed: the shortest paths that allow it, see pathsTo)
   const told = [...(greyed ? [section('Why greyed out?', greyed.dataset.greyed)] : []), ...(allowed ? [section('Allowed on', allowed)] : []),
+    ...(el?.dataset.limits ? [section('Limits', el.dataset.limits)] : []),  // (a hunt's: how far it searches, see data-limits)
     ...(d ? [Object.assign(part(), { className: 'tip-state tip-default', textContent: d === 'yes' ? 'By default' : d === 'on' ? 'On by default' : d === 'off' ? 'Off by default' : d })] : [])];  // (a default that depends, told in full)
   if (el?.dataset.tipHtml) { $('tip').innerHTML = el.dataset.tipHtml; $('tip').append(...told); }  // (a size's: its words in colour, see sizeTips; its state under them)
   else $('tip').replaceChildren(...(!tip ? (told.length ? [bold(name), ...told] : []) : !ok ? [tip, ...told] : tip.startsWith(`${name}:`) ? [bold(name), tip.slice(name.length + 1).trim().replace(/^./, (c) => c.toUpperCase()), ...told] : [bold(name), tip, ...told]));  // (no words of its own: its name and its default; else its name, then its words under it)
@@ -8727,7 +8728,11 @@ function renderBattleHunt() {
     vary('starts', 'Starts', 'The hunt draws the start too: Symmetric\'s number, Random\'s draw (else the start shown)', startsWayNow() !== 'centred', 'in Centred: its centres all alike, nothing to vary'));
   $('battleHuntRank').replaceChildren(tileGroup(Object.entries(HUNT_RANKS).map(rank), true));
   setTile($('battleHuntBtn'), { greyed: !huntVary.formulas && !huntStarts() ? 'It varies nothing: Formulas and Starts are off.' : '' });
-  $('battleHuntBtn').title = 'Battles fought one after another, each set once: what the switches above vary drawn at random; the 8 longest kept, and the first 8 still on as the digits end';
+  $('battleHuntBtn').title = 'Battles fought one after another, each set once: what the switches above vary drawn at random';
+  $('battleHuntBtn').dataset.limits = [`Each battle up to ${formatNumber(digitsNeeded())} steps (the length asked, at the top)`,
+    huntVary.formulas && `Numbers: the ${BATTLE_CARDS.length} cards and the roots √n, n up to 9,999 (${formatNumber(BATTLE_CARDS.length + DRAWN_ROOTS.length)})`,
+    huntStarts() && (startsWayNow() === 'symmetric' ? `Starts: Symmetric's ${formatNumber(modeStarts()?.length ?? 1)}` : 'Starts: Random\'s draws, no end'),
+    'The 8 longest kept, and the first 8 still on as the digits end'].filter(Boolean).join('\n');
   $('battleHuntBtn').innerHTML = battleHunt.run ? `${icon('stop')} Stop hunt` : `${icon('search')} ${words}`;
   $('battleHuntStatus').textContent = battleHunt.status;
   const sym = (f) => formulaOf(f).sym, shown = [formulaInUse, ...RIVALS.map((id) => formulaOf($(id).value).text)];
@@ -12953,6 +12958,7 @@ const iconSize = (zone) => (!isIcon(zone) ? 0 : zone === 'emoji' || zone.endsWit
 const punkArt = (i) => Array.from({ length: 24 }, (_, y) => Array.from({ length: 24 }, (_, x) => (ICON_SETS.punk.pixel(i)(x, y) ? 'o' : '.')).join('')).join(',');
 const iconSet = (zone) => ICON_SETS[zone.startsWith('punk') ? 'punk' : zone === 'emoji' ? 'emoji' : 'icon'];
 const iconIndex = (name, set = iconSet(hunt.zone)) => Math.max(0, set.names.indexOf(name));  // (a link's name; unknown, the first)
+const HUNT_GENERATIONS = [50000, 4000];  // a hunt's start played up to so many generations: in Solo, in colours (a battle)
 const DENSITY = [0.1, 0.7];  // a random start's density, drawn between these
 const density = () => DENSITY[0] + Math.random() * (DENSITY[1] - DENSITY[0]);
 const realmOnFaces = () => !!SOLID_SPOTS[MODES[walk.mode].sphere] || !!HULL_SOLIDS[MODES[walk.mode].sphere];  // (a solid: Realm its faces, see realmParts)
@@ -13406,11 +13412,13 @@ function renderHunt() {
     : K === 1 ? `A random soup, ${d} % alive` : `Each colour a soup of its part, ${d} % alive`;
   const tried = N || z === 'emoji' ? 'pictures' : famousZone(z) ? 'patterns' : z === 'numbers' ? 'numbers' : z === 'full' || z === 'mirror' ? 'soups' : 'starts';
   const hunts = z === 'custom' ? 'A start found by a hunt, from a link: pick a zone to hunt in'
-    : `${all ? `All its ${formatNumber(all)} ${tried} tried, each once, then done` : `On and on until stopped: ${tried} at random one in 3, the others tweaks of the best`}; the 8 best kept, a click on one plays it`;
+    : `${all ? `All its ${formatNumber(all)} ${tried} tried, each once, then done` : `On and on until stopped: ${tried} at random one in 3, the others tweaks of the best`}; a click on one found plays it`;
   const zone = shown + (sym !== 'none' ? ` · ${SYMMETRIES[sym][2]}` : '');
   $('huntBtn').innerHTML = busy ? `${icon('stop')} Stop hunt and play` : `${icon('search')} Hunt ${what}`;
   setTile($('huntBtn'), { greyed: !busy && hunt.zone === 'custom' ? 'A start from a link: pick a zone to hunt in first.' : '' });
   $('huntBtn').title = `${hunts}\n${zone}`;
+  $('huntBtn').dataset.limits = `Each start played up to ${formatNumber(HUNT_GENERATIONS[K === 1 ? 0 : 1])} generations${K === 1 ? '' : ' (a battle)'}`
+    + `${z === 'numbers' ? `\nNumbers: the fractions p/q, q up to 999, and the roots √n, n up to 9,999 (${formatNumber(DRAWN)})` : ''}\nThe 8 best kept`;
   $('huntStatus').innerHTML = withIcons(hunt.status);  // (its zone: in its button's tooltip)
   // each result's light: a battle by its balance (green 0.6 and up: even; orange from 0.3; red: one-sided;
   // grey: the colours never touched, no battle); a life (one colour), whatever its goal, by how far it spreads:
@@ -13509,7 +13517,7 @@ function huntClick() {
   // on and on until stopped (or, few enough starts, each of them), on the graphics card
   const L = walk.life, K = L.colours, plan = huntPlan(), all = plan.all;
   hunt.top = [];
-  hunt.run = huntRuns(L, plan, K === 1 ? 50000 : 4000, K === 1 ? hunt.goal : null, (top, n, done, [on, g] = []) => {
+  hunt.run = huntRuns(L, plan, HUNT_GENERATIONS[K === 1 ? 0 : 1], K === 1 ? hunt.goal : null, (top, n, done, [on, g] = []) => {
     if (top) hunt.top = top;
     if (done) {
       hunt.status = `All ${formatNumber(all)} tried · ${hunt.top.length ? `${formatNumber(hunt.top.length)} kept` : K > 1 ? 'no battle' : hunt.goal === 'dies' ? 'none dies out' : hunt.goal === 'full' ? 'none ends full' : 'nothing lasts'}`;

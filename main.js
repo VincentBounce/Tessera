@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.509';
+const VERSION = '0.4.510';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -15519,8 +15519,8 @@ function drawHexGrid(ctx, pointy) {
 
 
 // An ant's cells by their state (States): its state k of n on the States ramp (see stateColour), its last the ink, its first
-// low, half a step past the background (the cells it never walked): pale to deep in the order of its colours
-const rampColour = (k, n) => stateColour((Math.min(k, n - 1) + 0.5) / (n - 0.5));
+// pale, a quarter step past the background (the cells it never walked): pale to deep in the order of its colours
+const rampColour = (k, n) => stateColour((Math.min(k, n - 1) + 0.25) / (n - 0.75));
 // a turn by its family, the same on every tiling (an ant's, a walk's relative to its heading): left blue,
 // right pink (a sharp one deeper), straight on gold (↖ ↗ on hexagons and triangles are a plain left or right)
 const deeper = (c) => `rgb(${rgbOf(c).map((v) => Math.round(v * 0.62)).join(', ')})`;

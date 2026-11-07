@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.393';
+const VERSION = '0.4.394';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -8495,7 +8495,6 @@ function renderBattleHunt() {
  * found with a fingerprint of the whole state.
  */
 
-const LIFE_JUMP = 2000;
 // fading trail after a cell dies: from a light slate grey down to the background
 const LIFE_WALL = '#c4934e';  // the walls of a Life run (the hexagon sphere's pentagons)
 
@@ -14839,7 +14838,7 @@ function play(on) {
   if (playing && drawing && brush.id !== 'view') { brush.before = brush.id; brush.id = 'view'; ghost = null; drawGhost(); renderPlaneRow(); }
   else if (!playing && brush.before) { brush.id = brush.before; brush.before = null; renderPlaneRow(); }
   if (playing) reverse(false);
-  $('play').innerHTML = playing ? `${icon('pause')} Pause` : `${icon('play')} Play`;
+  $('play').innerHTML = `${icon(playing ? 'pause' : 'play')}<span class="play-words">${playing ? 'Pause' : 'Play'}</span>`;  // (its words hidden beside ◀, see .play-words)
   $('play').classList.toggle('on', playing);
   statsDirty = true;  // (paused: the chips lit again, see updateStats)
 }
@@ -14849,7 +14848,7 @@ function play(on) {
 // rule's, by its rule); Space-time's, its layers made (see stackUp)
 const lifeTime = () => !!walk.life && !spaceTimeOn();
 const playsBack = () => !lifeTime() || !!walk.life.margolus;  // (◀: a walk, Space-time, a reversible one)
-// a run's player, Life's and a reversible one's (+2k, +10k; no End: its end found by playing, its green link), by the mode
+// a run's player, Life's and a reversible one's (+10k; no End: its end found by playing, its green link), by the mode
 // chosen: its run built or not yet (a big grid's, a moment); a reversible one's ◀ too (see playsBack)
 const lifePlayer = () => { const m = MODES[$('mode').value]; return !!m.life && !m.elementary && !spaceTimeOn(); };  // (Elementary's rows: a walk's, its end known)
 function reverse(on) {
@@ -17271,15 +17270,13 @@ function updateStats() {
   const tooFar = !lifeWithin(cur - 1);
   $('back').disabled = (cur <= runStart() && !loopBack()) || tooFar;
   $('back').dataset.greyed = tooFar ? 'so far from its start: played again from it, more than a second' : '';
-  for (const b of [$('jump2k'), $('jump10k')]) {  // (Life, a reversible one: 2,000 and 10,000 generations ahead, while its end is not known)
-    b.hidden = !lifePlayer();
-    b.disabled = busy || !!runLoop();
-  }
+  $('jump10k').hidden = !lifePlayer();  // (Life, a reversible one: 10,000 generations ahead, while its end is not known)
+  $('jump10k').disabled = busy || !!runLoop();
   $('play').disabled = busy;  // (its run not built yet)
   $('reverse').hidden = lifePlayer() && !MODES[$('mode').value].margolus;  // (played backwards: a walk, a reversible one)
   $('reverse').disabled = cur <= runStart() && !loopBack();
   $('step').disabled = atEnd();
-  $('end').hidden = lifePlayer();  // (Life, a reversible one: its green link, +2k and +10k)
+  $('end').hidden = lifePlayer();  // (Life, a reversible one: its green link and +10k)
   if (drawing && MODES[$('mode').value].plane && drawAway() !== drawToolsAway) renderDrawTools();  // (Draw: its tools at gen 0 only; drawn again as play leaves it or comes back, not each frame: 785 cards)
   $('end').disabled = !runStops().some((g) => g > cur);
   // the step or generation shown, its own line, every mode: Step 15,964, Gen 132; its last after it where the run has one
@@ -17581,12 +17578,11 @@ $('play').addEventListener('click', () => {
 });
 $('step').addEventListener('click', () => { play(false); reverse(false); advanceTo(cur + 1); });
 $('reverse').addEventListener('click', () => reverse(!reversing));
-$('jump2k').addEventListener('click', () => advanceTo(cur + LIFE_JUMP));
 $('jump10k').addEventListener('click', () => advanceTo(cur + 10000));
 // Begin (⏮): back to its start (0), then to its first (a reversible one's past's furthest); its loop and its ordered moments
 // by their links instead (see loopLink, genLink). Its start, written at once (restart), not played to
 const runStops = () => [...new Set([runStart(), 0, runEnd()])].filter(Number.isFinite).sort((x, y) => x - y);
-// End (⏭), the same forth (a run with its end known at once: a walk; Life's and a reversible one's, their green link and +2k)
+// End (⏭), the same forth (a run with its end known at once: a walk; Life's and a reversible one's, their green link and +10k)
 function goStop(dir) {  // (playing on if it was)
   const wasPlaying = playing, g = dir < 0 ? runStops().findLast((x) => x < cur) : runStops().find((x) => x > cur);
   if (g === 0) restart(); else if (g !== undefined) advanceTo(g);
@@ -17879,7 +17875,7 @@ document.addEventListener('keydown', (e) => {
     case 'ArrowRight': $('step').click(); break;
     case 'ArrowLeft': $('back').click(); break;
     case 'r': case 'R': $('restart').click(); break;
-    case 'e': case 'E': [$('end'), $('barNum').querySelector('.gen-link'), $('jump2k')].find((b) => b && !b.hidden && !b.disabled)?.click(); break;  // (End; Life: its green link (its loop's first, from there its last; frozen, dead: 0), its end not known yet: 2,000 ahead)
+    case 'e': case 'E': [$('end'), $('barNum').querySelector('.gen-link'), $('jump10k')].find((b) => b && !b.hidden && !b.disabled)?.click(); break;  // (End; Life: its green link (its loop's first, from there its last; frozen, dead: 0), its end not known yet: 10,000 ahead)
     case 'f': case 'F': recentre(); break;
   }
 });

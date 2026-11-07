@@ -1,5 +1,6 @@
 :root {
   --view-gap: 12px;  /* the view's boxes from its edges (player, display, hint), a fit's margin too (see viewFor) */
+  --player-width: calc(6 * 48px + 5 * 6px);  /* the player's six buttons and their gaps (a .row's): the folded bar's inner width */
   --bg: #0e1116;
   --panel: #161b22;
   --border: #2a313c;
@@ -437,7 +438,7 @@ button.wide.active, .head-btn.active { border-color: var(--accent); color: var(-
 /* Grid | Cells under the list: each side of the walk in use, its base and its digits */
 /* the ant's rules to start from, written as they are typed */
 .choice-list button.active { border-color: var(--accent); color: var(--accent); background: var(--pick); }
-.stage-bar { left: var(--view-gap); bottom: var(--view-gap); width: 386px; max-width: calc(100% - 2 * var(--view-gap)); padding: 10px 12px; border-radius: 12px; outline: none; }  /* grows upwards: the Play row stays at the bottom (no focus ring: a tap opens it, see index.html) */
+.stage-bar { left: var(--view-gap); bottom: var(--view-gap); width: calc(var(--player-width) + 2 * 12px + 2px); max-width: calc(100% - 2 * var(--view-gap)); padding: 12px; border-radius: 12px; outline: none; }  /* grows upwards: the Play row stays at the bottom (no focus ring: a tap opens it, see index.html) */
 .stage-bar:hover { width: 680px; }
 @media (hover: none) { .stage-bar:focus-within { width: 680px; } }
 /* what is walked: the number, its loop and base; on hover the walk, its rule and the stats */
@@ -492,10 +493,11 @@ button.wide.active, .head-btn.active { border-color: var(--accent); color: var(-
 /* six buttons in every mode, the folded bar's width; open, on their right the speed, typed as the length (above the
    title, as wide as the buttons), the turtle and the rabbit */
 .player-controls { display: flex; gap: 8px; align-items: flex-end; }  /* the buttons where they were, open or not */
-.player-main { flex: none; width: 360px; max-width: 100%; }  /* its six buttons, the folded bar's inner width */
+.player-main { flex: none; width: var(--player-width); max-width: 100%; }  /* its six buttons, the folded bar's inner width: Play the rest (beside ◀ a button's, its icon only; Life's, two and their gap) */
+.play-row:has(#reverse:not([hidden])) .play-words { display: none; }
 .player-side { flex: none; width: 250px; margin-left: auto; display: flex; flex-direction: column; justify-content: space-between; align-self: stretch; }
 .length-row { display: flex; align-items: flex-start; gap: 8px; }  /* open, under the curve: the digits being computed (their gauge) */
-.length-row #digitsRow { flex: none; width: 360px; max-width: 100%; }  /* (as wide as the folded bar's buttons) */
+.length-row #digitsRow { flex: none; width: var(--player-width); max-width: 100%; }  /* (as wide as the folded bar's buttons) */
 .stage-bar:not(:hover) .player-side { display: none; }
 @media (hover: none) { .stage-bar:focus-within .player-side { display: flex; } }
 .stage-bar .stepper { margin: 0 0 8px; }
@@ -546,7 +548,7 @@ button.wide.active, .head-btn.active { border-color: var(--accent); color: var(-
   .hint { display: none; }
   /* folded, the player alone: ⏮, a step back and Play (a tap opens it all), the grid in sight */
   .stage-bar:not(:focus-within) > :not(.player-controls),
-  .stage-bar:not(:focus-within) #step, .stage-bar:not(:focus-within) #end, .stage-bar:not(:focus-within) #jump2k, .stage-bar:not(:focus-within) #jump10k { display: none; }
+  .stage-bar:not(:focus-within) #step, .stage-bar:not(:focus-within) #end, .stage-bar:not(:focus-within) #jump10k { display: none; }
   .stage-bar:not(:focus-within) { width: auto; }
 }
 

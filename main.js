@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.541';
+const VERSION = '0.4.542';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -7889,7 +7889,7 @@ function groupedStarts(g, start, K) {
   return [...out].sort((x, y) => angle(x) - angle(y)).filter((_, i) => i % (out.length / K) === 0).map((e) => gridState(g, e));
 }
 const groupedCan = (w = $('mode').value, size = null, teams = walkTeams) => {  // (a mode's, at a size or the one it opens at: its walkers, a setup's teams, can be grouped)
-  const mode = MODES[w], g = battleMode(w) && mode.grid && pickedFigure(w, size).g;
+  const mode = MODES[w], g = battleMode(w) && mode.grid && teams > 1 && pickedFigure(w, size).g;  // (a battle's: two walkers or more)
   return !!g && !!groupedStarts(g, walkStart(g, mode), teams);
 };
 // a battle's starts (see battleStarts; grouped, groupedStarts', where it can), or none, said in the status: A's place on an axis of the solid

@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.390';
+const VERSION = '0.4.391';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -3358,9 +3358,9 @@ MODE_ICONS.lifeFrame = 'frame';
   for (const [w, n] of sorted) NAV[w] = n;
 }
 const NAV_KINDS = [['Life', 'glider', 'Cells born and dying by their neighbours, generation after generation'],
+  ['Reversible', 'reversible', 'Rules on blocks of cells that play backwards as well: nothing is ever lost'],
   ['Replicators', 'replicator', "Langton's loops: a pattern that makes copies of itself, by a table of transitions"],
   ['Elementary', 'elementary', "Wolfram's 256 rules: a row of cells, each generation the next row down, each cell by the three above it"],
-  ['Reversible', 'reversible', 'Rules on blocks of cells that play backwards as well: nothing is ever lost'],
   ['Ant', 'ant', "A creature on the cells, turned by each cell's colour, by its rule or by the digits"],
   ['Walk', 'compass', "A path, each step the number's next digit"]];  // (name, picture, tooltip)
 // the spaces, in turn, each its name and picture: a walk's or an ant's plane without an edge; Life's grids on the plane, those
@@ -17281,11 +17281,11 @@ function updateStats() {
   $('end').hidden = lifePlayer();  // (Life: its green link, +2k and +10k)
   if (drawing && MODES[$('mode').value].plane && drawAway() !== drawToolsAway) renderDrawTools();  // (Draw: its tools at gen 0 only; drawn again as play leaves it or comes back, not each frame: 785 cards)
   $('end').disabled = !runStops().some((g) => g > cur);
-  // the step or generation shown, its own line, every mode: Step 15,964, Gen 132; open, its last after it where the run has
-  // one (a walk's, Elementary's, Space-time's: see runEnd), its slider's end (see seekFar)
+  // the step or generation shown, its own line, every mode: Step 15,964, Gen 132; its last after it where the run has one
+  // (a walk's, Elementary's, Space-time's: see runEnd; Life's, a reversible one's, once its loop is known: see runLoop), its slider's end (see seekFar)
   const far = seekFar(), gens = !!walk.life || spaceTimeOn() || !!walk.rows;
   $('stepNow').textContent = `${gens ? 'Gen' : 'Step'} ${fmt(cur)}`;
-  setLinks($('stepLast'), Number.isFinite(runEnd()) && Number.isFinite(far) ? ` / ${fmt(far)}` : '');
+  setLinks($('stepLast'), Number.isFinite(lifeTime() ? runLoop()?.last : runEnd()) ? ` / ${fmt(far)}` : '');  // (a run's, Life's or a reversible one's: once its loop is known)
   setLinks($('stepEnd'), endMark());
   if (!walk.life && !walk.battle) $('ranking').hidden = $('rankTitles').hidden = true;  // (a battle's shown by renderWalkGauges: never hidden in between, its rows' slides kept)
   const time = spaceTimeOn() && !!stack, rows = walk.rows;

@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.402';
+const VERSION = '0.4.403';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -2331,7 +2331,7 @@ const dragonOf = (turns) => fitIn(turtlePath(Array.from({ length: turns }, (_, k
   while (j % 2 === 0) j /= 2;
   return j % 4 === 1 ? 90 : -90;
 })), 20);
-const dots = (list, r) => list.map(([x, y]) => `<circle class="f" cx="${x}" cy="${y}" r="${r}"/>`).join('');
+const svgDots = (list, r) => list.map(([x, y]) => `<circle class="f" cx="${x}" cy="${y}" r="${r}"/>`).join('');
 const pathEl = (d, cls) => `<path${cls ? ` class="${cls}"` : ''} d="${d}"/>`;
 // an elementary rule's cell (see parseElementary): the bit 4l + 2c + r of its number, l, c, r the three cells above it
 const wolframBit = (N, l, c, r) => (N >> (4 * l + 2 * c + r)) & 1;
@@ -2548,13 +2548,13 @@ const ICONS = (() => {
     symRotate: flags([0, 1, 2, 3].map((k) => [(k * Math.PI) / 2, false])),
     symKaleido: flags([0, 1, 2, 3].flatMap((k) => [[(k * Math.PI) / 2, false], [(k * Math.PI) / 2, true]])),
     symHalf: flags([[0, false], [Math.PI, false]]),
-    ...Object.fromEntries([2.2, 3.5, 4.8, 6, 7.2, 8.4, 9.6, 11].map((r, i) => [`zone${i + 1}`, dots([[12, 12]], r)])),
+    ...Object.fromEntries([2.2, 3.5, 4.8, 6, 7.2, 8.4, 9.6, 11].map((r, i) => [`zone${i + 1}`, svgDots([[12, 12]], r)])),
     zoneFace: '<rect x="3" y="3" width="18" height="18" rx="2"/>' + [[6, 6], [13.5, 6], [6, 13.5], [13.5, 13.5]].map(([x, y]) => `<rect class="f" x="${x}" y="${y}" width="4.5" height="4.5" rx="0.8"/>`).join(''),  // Realm: each colour its part, apart
     info: '<circle cx="12" cy="12" r="9"/><path d="M12 10.5V17"/><circle class="f" cx="12" cy="7.3" r="1.3"/>',  // How it works: on its buttons and on each rule's card
     twoCells: '<circle class="f" cx="7" cy="12" r="2.2"/><circle class="f" cx="17" cy="12" r="2.2"/>',  // Elementary's Two cells
     halfRow: '<rect x="3" y="9" width="18" height="6" rx="1"/><path class="f" d="M3 9H12V15H3Z"/>',  // its Half: a row, its left half alive
     zoneMirror: '<path d="M8 7L16 4M8 20L16 17" stroke-dasharray="1.6 2"/><path class="f" d="M3 7H8V20H3Z"/><path class="f" d="M16 4H21V17H16Z"/>',  // two opposite faces: a box's two ends
-    duel: dots([[6.5, 12], [17.5, 12]], 3.5),
+    duel: svgDots([[6.5, 12], [17.5, 12]], 3.5),
     // Life's grid edges: walls, a square in a frame
     bricks: '<rect x="3" y="5" width="18" height="14" rx="1"/><path d="M3 9.7h18M3 14.3h18M9 5v4.7M15 5v4.7M6 9.7v4.6M12 9.7v4.6M18 9.7v4.6M9 14.3V19M15 14.3V19"/>',  // Walls: a brick wall
     pits,
@@ -2566,7 +2566,7 @@ const ICONS = (() => {
     pencil: pathEl('M4 20L5.2 15.2L15.8 4.6A1.4 1.4 0 0 1 17.8 4.6L19.4 6.2A1.4 1.4 0 0 1 19.4 8.2L8.8 18.8Z') + pathEl('M14.4 6L18 9.6'),  // Draw
     letter: pathEl('M5 5H19M12 5V19M9 19H15'),  // Text: a T
     // numbers
-    dice: '<rect x="3.5" y="3.5" width="17" height="17" rx="3.5"/>' + dots([[8.5, 8.5], [15.5, 8.5], [12, 12], [8.5, 15.5], [15.5, 15.5]], 1.4),
+    dice: '<rect x="3.5" y="3.5" width="17" height="17" rx="3.5"/>' + svgDots([[8.5, 8.5], [15.5, 8.5], [12, 12], [8.5, 15.5], [15.5, 15.5]], 1.4),
     dragon: `<path class="thin" d="${pathOf(dragonOf(63), false)}"/>`,
     // a barcode: thick and thin bars, well apart so that it still reads at 15 px
     barcode: [[3, 2.6], [7, 1.4], [10, 1.4], [13, 3], [18, 1.4], [20.6, 1.4]]

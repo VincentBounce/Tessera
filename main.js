@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.463';
+const VERSION = '0.4.464';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -1833,7 +1833,7 @@ function renderViewTiles() {
   }
   const perspective = !ways.on.length ? 'off' : !ways.off.length ? 'on' : `On by default on ${ways.on.join(', ')}\nOff by default on ${ways.off.join(', ')}`;
   const first = { perspective, light: defaultMark('light'), glass: defaultMark('glass'), ocean: defaultMark('ocean') }, why = { ocean: 'Only up to a Quintet: a map has five lands (green, yellow, ochre, lime, ice white).' };
-  VIEW_TILES.forEach(([id], k) => setTile(viewTiles[k], { on: $(id).checked, byDefault: first[id], greyed: why[id] ?? '',
+  VIEW_TILES.forEach(([id], k) => setTile(viewTiles[k], { on: $(id).checked, byDefault: first[id], 
     whyNot: ({ w }) => viewWhyNot(id, w) || (id === 'ocean' && w === $('mode').value && !oceanFits() ? why.ocean : '') }));  // (its row's: see updateDisplayMenu, by shows)
   $('viewTiles').hidden = VIEW_TILES.every(([, row]) => $(row).hidden);
 }
@@ -1953,7 +1953,7 @@ const tile = ({ pic = '', text = '', html = null, title = '', id = null, on = fa
 const setTile = (b, { on = false, can = true, mark = false, again = false, turn = 0, byDefault, greyed, whyNot = null, at = $('mode').value }) => {
   if (whyNot) { const why = whyNot({ w: at ?? $('mode').value }); can = !why; if (why) greyed = why; b.enablers = () => enablersFor((setup) => !whyNot(setup)); b.pathsMemo = null; b.paths = () => (b.pathsMemo ??= pathsTo((setup) => !whyNot(setup))); }  // (its paths found once a drawing: at its first tooltip)  // (at: none, no walk shown yet: the tab's)
   if (byDefault !== undefined) b.dataset.default = byDefault;
-  if (greyed !== undefined) b.dataset.greyed = greyed;
+  b.dataset.greyed = can ? '' : greyed ?? '';  // (its words why only while greyed: whyNot's, or a greyed tile's own)
   const pic = b.querySelector('svg');
   if (pic) pic.style.transform = turn ? `rotate(${turn}deg)` : '';
   b.disabled = !can;
@@ -2010,7 +2010,7 @@ function renderTrailButton() {
   const sq = (k, c) => `<rect x="${(17 * k) / 3}" y="${17 - (17 * k) / 3}" width="7" height="7" rx="1" fill="${c}"/>`;
   trailButton ??= tile({ pic: `<svg viewBox="0 0 24 24" aria-hidden="true">${sq(0, LIFE_FADE[5]) + sq(1, LIFE_FADE[3]) + sq(2, LIFE_FADE[1])}${sq(3, LIFE_ALIVE)}</svg>`, text: 'Trail', id: 'lifeTrailButton', toggle: true,  // up the diagonal
     title: 'A dead cell fades in amber for a few generations (States and Age)', click: () => { $('lifeTrail').checked = !$('lifeTrail').checked; $('lifeTrail').dispatchEvent(new Event('change')); } });
-  setTile(trailButton, { on: $('lifeTrail').checked && trailApplies(), byDefault: 'On by default in Solo\nOff by default in colours', greyed: TRAIL_WHERE, whyNot: ({ w }) => (trailApplies(w) ? '' : TRAIL_WHERE), at: walk.mode });  // (not for these looks: off)
+  setTile(trailButton, { on: $('lifeTrail').checked && trailApplies(), byDefault: 'On by default in Solo\nOff by default in colours', whyNot: ({ w }) => (trailApplies(w) ? '' : TRAIL_WHERE), at: walk.mode });  // (not for these looks: off)
 }
 // Blocks (Rewind, in Trail's place: no trail there), a tile turned on and off: the blocks of the set the next generation
 // is worked out by, outlined over the cells (see drawBlocks); Ising's squares in turn are no blocks: greyed
@@ -2036,7 +2036,7 @@ function renderColourButtons() {
   const picture = (v) => (L ? lifeLookPicture(v) : cellModePicture(v === 'gradient' ? 'cells' : v));
   const looks = Array.from(sel.options).filter((o) => !o.hidden && names[o.value]);
   const buttons = looks.map((o) => tile({ pic: picture(o.value), text: names[o.value], title: o.text, on: o.value === sel.value, byDefault: o.value === defaultOf('look') ? 'yes' : '',
-    greyed: (o.value === 'gradient' && L ? '' : LOOK_WHERE[o.value]) ?? '', whyNot: ({ w }) => lookWhyNot(o.value, w),
+    whyNot: ({ w }) => lookWhyNot(o.value, w),
     click: () => { sel.value = o.value; sel.dispatchEvent(new Event('change')); } }));
   if (MODES[$('mode').value].margolus) renderBlocksButton();
   box.replaceChildren(...(buttons.length > 1 ? [tileGroup(buttons)] : buttons), ...(L ? [MODES[$('mode').value].margolus ? blocksButton : trailButton] : []));  // then Life's Trail, a switch (Rewind's Blocks)
@@ -3789,7 +3789,7 @@ function renderModePicker() {
       }, f === here && turns ? `${capitalised(F.tabs[tabOf(f, true)][4].slice(shape.length + 2))}: a click turns it${isTurned ? ' back' : ''}` : modeWhere(same(f)), { again: f === here && turns, byDefault: f === F.tabs[0][0] ? 'yes' : '', turn: tilesTurn(shownSurface(MODES[same(f)].sphere, f === here && isTurned)) });  // its picture as its tiles lie (a torus's, a strip's alike: clockwise, as the pictures laid on it)
       b.dataset.choice = `tiling:${f}`;  // (its choice's key, see choicesAt)
       return [b];
-    }), ...(F.tabs.some(([, tu]) => tu) ? [tile({ pic: icon('pivot'), text: 'Turned', toggle: true, byDefault: 'off', greyed: TURNED_WHERE, on: isTurned, whyNot: ({ w: v }) => (turnedAllowed(v, isTurned) ? '' : TURNED_WHERE),
+    }), ...(F.tabs.some(([, tu]) => tu) ? [tile({ pic: icon('pivot'), text: 'Turned', toggle: true, byDefault: 'off', on: isTurned, whyNot: ({ w: v }) => (turnedAllowed(v, isTurned) ? '' : TURNED_WHERE),
       title: turns ? F.tabs[tabOf(here, true)][4] : 'The tiling turned, its rows another way round', click: turn })] : []));
   }
   // the rules, where there are several, each with its picture; those its tiling has not greyed (see walkKindHere)
@@ -3818,7 +3818,7 @@ function renderModePicker() {
   // its tabs (see walkOn): each picked where it is, greyed where there is none (why, in its tooltip)
   const side = (b, s, word, none) => {
     b.querySelector('span').textContent = word;
-    setTile(b, { on: alone ? s === 'cells' : NAV[w][4] === s, greyed: none, whyNot: ({ w: v }) => sideWhyNot(v, s, none) });
+    setTile(b, { on: alone ? s === 'cells' : NAV[w][4] === s, whyNot: ({ w: v }) => sideWhyNot(v, s, none) });
     b.dataset.choice = `side:${s}`;  // (its choice's key, see choicesAt)
   };
   const cellsWord = space === '3D' ? 'Cube' : 'Cells';
@@ -7696,7 +7696,7 @@ function renderWalkTeams() {
   if ($('startRow').previousElementSibling !== $('startWays')) $('startRow').before($('startWays'));
   const ways = STARTS_WAYS;  // (one list: its tabs and a link's gr=)
   $('startWays').replaceChildren(tileGroup(ways.map(([way, text, title]) => tile({ pic: colourBlock(walkTeams), text, title, on: way === startsWayNow(), again: way === 'random', byDefault: way === 'symmetric' ? 'yes' : '',
-    greyed: CENTRED_WHERE, whyNot: ({ w, size }) => (startsWayCan(way, w, size) ? '' : CENTRED_WHERE),
+    whyNot: ({ w, size }) => (startsWayCan(way, w, size) ? '' : CENTRED_WHERE),
     click: () => { if (way === startsWayNow() && way !== 'random') return; battleStartsWay = way; if (way === 'random') battleSeed = freshDraw(); compute(); } }))));  // (Random again: another draw)
 }
 // a battle's formula fields, each bold in its walker's colour once sent to be fought (computed, from Enter, Random or a
@@ -8654,7 +8654,7 @@ function renderBattleHunt() {
     byDefault: what === 'formulas' ? 'on' : 'off', click: () => { huntVary[what] = !huntVary[what]; stopBattleHunt(); renderBattleHunt(); } });
   const goal = huntGoal(), [, , , words, label, score, figure] = HUNT_RANKS[goal];
   const rank = ([what, [pic, text, title]]) => tile({ pic: icon(pic), text, title, on: what === goal, whyNot: ({ w, battleRule: p = battleRule }) => (what !== 'even' || BATTLE_RULES[battleRuleInUse(w, p)][0] !== 'cut' ? '' : 'Cut keeps bodies only: there is no land.'),
-    greyed: 'Cut keeps bodies only: there is no land.', byDefault: what === 'longest' ? 'yes' : '', click: () => { if (huntRank !== what) { huntRank = what; stopBattleHunt(); renderBattleHunt(); } } });
+    byDefault: what === 'longest' ? 'yes' : '', click: () => { if (huntRank !== what) { huntRank = what; stopBattleHunt(); renderBattleHunt(); } } });
   $('battleHuntVary').replaceChildren(vary('formulas', 'Formulas', 'The hunt draws the walkers\' numbers (else those in the fields)'),
     vary('starts', 'Starts', 'The hunt draws the start too: Symmetric\'s number, Random\'s draw (else the start shown)', startsWayNow() !== 'centred', 'in Centred: its centres all alike, nothing to vary'));
   $('battleHuntRank').replaceChildren(tileGroup(Object.entries(HUNT_RANKS).map(rank), true));
@@ -10600,7 +10600,7 @@ function renderSymmetry() {
   $('symmetryRow').hidden = !kind || !!MODES[$('mode').value].elementary;  // (Elementary: a row, no copies)
   $('symmetryTiles').replaceChildren(tileGroup(Object.keys(SYMMETRIES).map((y) => {  // (one choice: a tab group; the one picked, clicked again: nothing; those the grid has not, greyed)
     return tile({ pic: icon(SYMMETRIES[y][0]), text: SYMMETRIES[y][1], title: SYMMETRIES[y][3], on: y === now, byDefault: y === 'none' ? 'yes' : '', at: walk.mode,
-      greyed: SYMMETRY_WHERE, whyNot: ({ w: v }) => (symmetryAllowed(y, v) ? '' : SYMMETRY_WHERE), click: () => { if (y !== symmetryOf(walk.plane.kind)) { plane.sym = y; hunt.top = []; lifeReseed(); renderHunt(); } } });  // (the same start, as its link says it, its symmetry another: the hunt's finds, of another, gone)
+      whyNot: ({ w: v }) => (symmetryAllowed(y, v) ? '' : SYMMETRY_WHERE), click: () => { if (y !== symmetryOf(walk.plane.kind)) { plane.sym = y; hunt.top = []; lifeReseed(); renderHunt(); } } });  // (the same start, as its link says it, its symmetry another: the hunt's finds, of another, gone)
   }), true));
 }
 // Draw's and Text's greyed words
@@ -10615,8 +10615,8 @@ function renderPlaneRow() {
     const s = b.dataset.start, on = surfaceDraw ? s === 'draw' : s === plane.start;
     b.hidden = !!MODES[$('mode').value].elementary !== ELEMENTARY_STARTS.includes(s) && s !== 'digits';  // (Elementary's starts, see elementaryRows)
     if (s === 'random') b.innerHTML = `${icon(blocks ? 'dice' : 'search')}<span>${blocks ? 'Random' : 'Hunt'}</span>`;  // (blocks: no hunt, its zones' starts)
-    if (s === 'draw') setTile(b, { on, greyed: DRAW_WHERE, whyNot: ({ w: v }) => (!MODES[v].plane && MODES[v].margolus ? DRAW_WHERE : '') });  // (Draw on a surface: its rule's patterns, none for blocks)
-    else if (s === 'text') setTile(b, { on, greyed: TEXT_WHERE, whyNot: ({ w: v }) => (v !== $('mode').value ? TEXT_WHERE : !walk.life || current?.mode !== v || setFits(iconMax(textSet()), textSet()) ? '' : TEXT_WHERE) });  // (a picture's room known on the grid built only: another mode's not judged, not claimed)  // (its grid's, once built)
+    if (s === 'draw') setTile(b, { on, whyNot: ({ w: v }) => (!MODES[v].plane && MODES[v].margolus ? DRAW_WHERE : '') });  // (Draw on a surface: its rule's patterns, none for blocks)
+    else if (s === 'text') setTile(b, { on, whyNot: ({ w: v }) => (v !== $('mode').value ? TEXT_WHERE : !walk.life || current?.mode !== v || setFits(iconMax(textSet()), textSet()) ? '' : TEXT_WHERE) });  // (a picture's room known on the grid built only: another mode's not judged, not claimed)  // (its grid's, once built)
     else setTile(b, { on });
   }
   $('startTextInput').value = plane.text;  // (its words, on any grid)
@@ -10642,7 +10642,7 @@ function renderPlaneRow() {
     return;
   }
   $('drawNote').hidden = true;
-  setTile($('exportPng'), { greyed: PNG_WHERE, whyNot: ({ w: v }) => (MODES[v].plane === 'square' && MODES[v].life ? '' : PNG_WHERE) });
+  setTile($('exportPng'), { whyNot: ({ w: v }) => (MODES[v].plane === 'square' && MODES[v].life ? '' : PNG_WHERE) });
   const sides = planeSides(kind);
   const label = (side) => { $('planeLabel').innerHTML = `${sizeShape(planeKind(kind), side)}<small>${shortCells(sizeCells(planeKind(kind), side))}</small>`; };  // the size (see gridSize; a rectangle's, if so)
   label(plane.side);
@@ -10653,10 +10653,10 @@ function renderPlaneRow() {
   $('planeOutline').hidden = !!APERIODIC[kind];  // (a grid that never repeats: always walls, nothing to choose)
   for (const [shape, torus] of OUTLINES) {
     const where = shape === 'hex' ? 'Only on a six-fold grid (triangles, hexagons, kites…).' : 'Only on a slanted grid, its cells stored as a rhombus (triangles, hexagons, parallelograms…).';
-    setTile($(`outline-${shape}-${torus ? 'torus' : 'walled'}`), { on: outlineOf(kind) === shape && planeTorus(kind) === torus, greyed: where,
+    setTile($(`outline-${shape}-${torus ? 'torus' : 'walled'}`), { on: outlineOf(kind) === shape && planeTorus(kind) === torus,
       whyNot: ({ w: v }) => { const k = MODES[v].plane; return k && MODES[v].life && !APERIODIC[k] && outlineOf(k, shape, torus) === shape ? '' : where; } });
   }
-  setTile(spaceTimeTile, { on: spaceTimeOn(), whyNot: ({ w }) => (spaceTimeApplies(w) ? '' : 'Only on squares, and not on Rewind.'), greyed: 'Only on squares, and not on Rewind.' });
+  setTile(spaceTimeTile, { on: spaceTimeOn(), whyNot: ({ w }) => (spaceTimeApplies(w) ? '' : 'Only on squares, and not on Rewind.') });
   renderSymmetry();
   $('startDraw').hidden = plane.start !== 'draw';
   $('startText').hidden = plane.start !== 'text';
@@ -11404,15 +11404,14 @@ function renderColours() {
   if (walkTeamsHere(w)) { $('colourBlocks').replaceChildren(...walkTeamTiles(w)); return; }
   $('colourBlocks').replaceChildren(...COLOUR_STEPS.map((k) => tile({ pic: colourBlock(k), text: COLOUR_STEP_NAMES[k],
     title: `${k === 1 ? 'One colour: alive or dead' : `${k} colours: ${LIFE_COLOUR_NAMES.slice(0, k).join(', ')}`}${colourMissing(k) ? ' · a colour gone can come back: a tie, the missing one born' : ''}`,
-    on: k === lifeColours, choice: `colours:${k}`, whyNot: ({ w, size }) => coloursWhyNot(k, w, size), mark: colourMissing(k), byDefault: k === 1 ? 'yes' : '', greyed: k > 1 ? 'The shape has no parts alike for so many colours.' : '', click: () => { if (k !== lifeColours) { coloursPicked = lifeColours = k; applyDefaults('colours'); compute(); } } })),  // (Trail: on in Solo, off in colours, at first)
+    on: k === lifeColours, choice: `colours:${k}`, whyNot: ({ w, size }) => coloursWhyNot(k, w, size), mark: colourMissing(k), byDefault: k === 1 ? 'yes' : '', click: () => { if (k !== lifeColours) { coloursPicked = lifeColours = k; applyDefaults('colours'); compute(); } } })),  // (Trail: on in Solo, off in colours, at first)
     // Mixed, a switch: the colours' cells mixed at random in one place, as one colour's (greyed in one colour and where no zone mixes, see mixable)
     tile({ pic: `<svg viewBox="0 0 4 4" aria-hidden="true">${[[0, 0], [2, 0], [1, 1], [3, 1], [0, 2], [2, 2], [1, 3], [3, 3]].map(([x, y], i) => `<rect x="${x}" y="${y}" width="1" height="1" fill="${LIFE_COLOURS[[0, 4, 2, 6, 5, 1, 7, 3][i]]}"/>`).join('')}</svg>`, text: 'Mixed',
-      title: 'The colours placed as one colour is (one patch, a soup), each cell a colour at random', toggle: true, byDefault: 'off', greyed: MIXED_WHERE, on: colourMixed(), whyNot: ({ w, colours = lifeColours }) => (colours > 1 && mixable(hunt.zone, MODES[w]) ? '' : MIXED_WHERE), click: () => { colourMix = !colourMix; compute(); } }),
+      title: 'The colours placed as one colour is (one patch, a soup), each cell a colour at random', toggle: true, byDefault: 'off', on: colourMixed(), whyNot: ({ w, colours = lifeColours }) => (colours > 1 && mixable(hunt.zone, MODES[w]) ? '' : MIXED_WHERE), click: () => { colourMix = !colourMix; compute(); } }),
     // Newcomer, a switch (see newcomerCan)
     tile({ pic: colourBlock(Math.max(3, lifeColours), true), text: 'Newcomer', toggle: true, byDefault: 'off', on: newcomerOn(), click: () => { newcomer = !newcomer; compute(); },
       whyNot: ({ w, size, colours = lifeColours }) => (newcomerCan(colours, pickedFigure(w, size)) ? '' : newcomerWhere(colours)),
-      title: lifeColours > 2 ? `${COLOUR_STEP_NAMES[lifeColours - 1] ?? `${lifeColours - 1} teams`} as it starts, and ${teamName(lifeColours - 1)} a newcomer: none at first, born of a tie between the others (the colour missing)` : 'The teams below\'s start, and the last colour a newcomer: none at first, born of a tie between the others (the colour missing)',
-      greyed: newcomerWhere(lifeColours) }));
+      title: lifeColours > 2 ? `${COLOUR_STEP_NAMES[lifeColours - 1] ?? `${lifeColours - 1} teams`} as it starts, and ${teamName(lifeColours - 1)} a newcomer: none at first, born of a tie between the others (the colour missing)` : 'The teams below\'s start, and the last colour a newcomer: none at first, born of a tie between the others (the colour missing)' }));
 
 }
 // a walk's teams: Solo, Duel, Trio… as Life's (a battle: how many numbers walk; greyed, a count its surface's symmetries
@@ -11421,7 +11420,7 @@ function walkTeamTiles(w) {
   const words = (k) => (k === 1 ? 'One number walks' : k === 2 ? "Two numbers walk, A's and B's, from opposite places (how they fight: below)"
     : `${k} numbers walk, A's to ${'ABCDEFGHIJKL'[k - 1]}'s, from A's place moved by ${k} of the surface's symmetries: each walks as A would from there (how they fight: below)`);
   return COLOUR_STEPS.map((k) => tile({ pic: colourBlock(k), text: COLOUR_STEP_NAMES[k], title: words(k),
-    on: k === (battleOn() ? walkTeams : 1), byDefault: k === 1 ? 'yes' : '', greyed: k === 1 ? '' : TEAMS_WHERE,
+    on: k === (battleOn() ? walkTeams : 1), byDefault: k === 1 ? 'yes' : '', 
     whyNot: ({ w: v, size }) => teamsWhyNot(k, v, size),
     choice: `teams:${k}`, click: () => { if (k !== walkTeams) { walkTeams = k; compute(); } } }));  // (its choice's key, see choicesAt)
 }
@@ -13301,7 +13300,7 @@ function renderHunt() {
   renderSymmetry();  // (Famous: none)
   const fits = huntFits();
   for (const b of $('huntZones').children) {
-    setTile(b, { on: b.dataset.zone === hunt.zone, again: true, greyed: `${zoneGreyed(b.dataset.zone)} Not while a hunt runs.`, at: walk.mode,
+    setTile(b, { on: b.dataset.zone === hunt.zone, again: true, at: walk.mode,
       whyNot: ({ w: v }) => (v === walk.mode && !busy && fits[b.dataset.zone] ? '' : `${zoneGreyed(b.dataset.zone)} Not while a hunt runs.`) });  // (its room known on the grid built only: another mode's, not judged)  // (picked: a click draws another start)
     if (b.dataset.zone === 'custom') b.hidden = hunt.zone !== 'custom';
   }
@@ -14848,7 +14847,7 @@ function fillGalleryList() {
     section.append(cards);
     return [section];
   }));
-  for (const b of [...$('galleryTools').children].slice(1, 3)) setTile(b, { greyed: 'The Gallery is empty.', whyNot: () => (list.length ? '' : 'The Gallery is empty.') });  // (Export, Erase all: none to take)
+  for (const b of [...$('galleryTools').children].slice(1, 3)) setTile(b, { whyNot: () => (list.length ? '' : 'The Gallery is empty.') });  // (Export, Erase all: none to take)
   $('eraseConfirm').hidden ||= !list.length;
   syncSaveButton();
 }
@@ -18018,7 +18017,7 @@ $('huntBtn').addEventListener('click', huntClick);
 $('backBtn').addEventListener('click', () => searchBack(backSearch.life !== walk.life));
 // one choice, a tab group: in one colour the four, in colours Battle (picked by itself, see renderHunt)
 $('huntGoals').replaceChildren(tileGroup(Object.entries(HUNT_GOALS).map(([goal, [pic, name, words]]) => {
-  const b = tile({ pic: icon(pic), text: name, title: words, byDefault: goal === 'longest' ? 'yes' : '', greyed: goal === 'battle' ? 'In one colour there is no one to fight.' : 'In colours, the hunt is a battle.',
+  const b = tile({ pic: icon(pic), text: name, title: words, byDefault: goal === 'longest' ? 'yes' : '',
     click: goal === 'battle' ? null : () => { if (goal !== hunt.goal) pickGoal(goal); } });  // (see hunt)
   b.dataset.goal = goal;
   return b;
@@ -18396,7 +18395,7 @@ function renderCellModes(mode) {
   const looks = CELL_MODES, now = cellModeOf(mode), ant = !!mode.antOf;  // (all four everywhere, the same row: Directions greyed where there are none, see cellModeWhyNot)
   const button = ([look, name, title]) => tile({ pic: cellModePicture(look, ant), ...(look === 'digit' && ant ? { text: ANT_STATES[0], title: ANT_STATES[1] } : { text: name, title }), on: look === now,
     byDefault: look === (ant ? defaultOf('antLook') : 'cells') ? 'yes' : '',  // (an ant's States, a walk's Rainbow: see DISPLAY_DEFAULTS)
-    greyed: look === 'visits' ? LOOK_WHERE.visits : look === 'digit' ? DIRECTIONS_WHERE : CELLS_ONLY, whyNot: ({ w }) => cellModeWhyNot(look, w), click: () => pickCellMode(look) });  // (along the lines: Rainbow, Directions, its line's colours)
+    whyNot: ({ w }) => cellModeWhyNot(look, w), click: () => pickCellMode(look) });  // (along the lines: Rainbow, Directions, its line's colours)
   $('cellModes').replaceChildren(tileGroup(looks.map(button)));  // (joined in one frame, see tileGroup)
 }
 function pickCellMode(look) {

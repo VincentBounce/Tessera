@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.433';
+const VERSION = '0.4.434';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -18254,14 +18254,19 @@ function cellModePicture(look, ant) {  // a 2 × 2 swatch, or the rainbow line o
   return heatRings(g);
 }
 const CELLS_ONLY = 'along the lines: on cells only';  // (a walk's cells' look along its lines: none)
+const DIRECTIONS_WHERE = 'on a surface (a 2D walk\'s only) and in a battle (each walker its own colour)';
+// a cells' look greyed at a mode: Path and Heatmap along the lines (no cells), Directions on a surface or in a battle (an
+// ant's States everywhere), Heatmap on a spiral; else ''
+const cellModeWhyNot = (look, w) => (look === 'digit' ? (!MODES[w].antOf && (!shows('cells', w) || (w === $('mode').value && battleOn())) ? DIRECTIONS_WHERE : '')
+  : !MODES[w].cells && look !== 'cells' ? CELLS_ONLY : look === 'visits' ? lookWhyNot('visits', w) : '');
 function renderCellModes(mode) {
   $('cellModes').hidden = !shows('cells') && !shows('heatmap') && !mode.antOf;  // a walk in 2D or on a surface, an ant anywhere
   if ($('cellModes').hidden) return;
   // an ant: Path, Rainbow, States, Heatmap; a walk in 2D: Path, Rainbow, Directions, Heatmap; on a surface: Path, Rainbow, Heatmap
-  const looks = CELL_MODES.filter(([look]) => mode.antOf || shows('cells') || look !== 'digit'), now = cellModeOf(mode), ant = !!mode.antOf;
+  const looks = CELL_MODES, now = cellModeOf(mode), ant = !!mode.antOf;  // (all four everywhere, the same row: Directions greyed where there are none, see cellModeWhyNot)
   const button = ([look, name, title]) => tile({ pic: cellModePicture(look, ant), ...(look === 'digit' && ant ? { text: ANT_STATES[0], title: ANT_STATES[1] } : { text: name, title }), on: look === now,
     byDefault: look === (ant ? defaultOf('antLook') : 'cells') ? 'yes' : '',  // (an ant's States, a walk's Rainbow: see DISPLAY_DEFAULTS)
-    greyed: look === 'visits' ? LOOK_WHERE.visits : CELLS_ONLY, whyNot: ({ w }) => (!MODES[w].cells && !['cells', 'digit'].includes(look) ? CELLS_ONLY : look === 'visits' ? lookWhyNot('visits', w) : ''), click: () => pickCellMode(look) });  // (along the lines: Rainbow, Directions, its line's colours)
+    greyed: look === 'visits' ? LOOK_WHERE.visits : look === 'digit' ? DIRECTIONS_WHERE : CELLS_ONLY, whyNot: ({ w }) => cellModeWhyNot(look, w), click: () => pickCellMode(look) });  // (along the lines: Rainbow, Directions, its line's colours)
   $('cellModes').replaceChildren(tileGroup(looks.map(button)));  // (joined in one frame, see tileGroup)
 }
 function pickCellMode(look) {

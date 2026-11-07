@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.495';
+const VERSION = '0.4.496';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -12043,13 +12043,15 @@ function battleCaseFigure(grid, way, scripts) {
 // a battle's cases along the grid, under its walk's (see walkTutorial): Land grid 1's or Land grid 3's, on the walk's tiles
 function battleTutorial(w) {
   const way = BATTLE_RULES[battleRuleInUse()][0], g = walk.geo, grid = { 4: 'square', 3: 'tri', 6: 'hex' }[g?.sides];
-  if (!battleOn() || !MODES[w].grid || !grid || !['landGrid', 'landGrid3'].includes(way)) return '';
+  if (!battleOn()) return '';
+  const title = `<h3>Battle: ${BATTLE_RULES[battleRuleInUse()][1]}</h3>`;  // (every battle's, its cases drawn along the grid's Land grid 1 and 3 only)
+  if (!MODES[w].grid || !grid || !['landGrid', 'landGrid3'].includes(way)) return `<div class="form-section">${title}<p>Its cases, drawn: to come later.</p></div>`;
   const loop = { pre: BATTLE_LOOP_AT[grid], moves: BATTLE_LOOP[grid] };
   const figs = Object.values(BATTLE_CASES).filter((c) => c[grid] && (!c.way || c.way === way)).map((c) => {
     const svg = battleCaseFigure(grid, way, c[grid].map((x) => (x === 'loop' ? loop : x)));
     return svg && `<figure><div>${svg}</div><figcaption>${typeof c.words === 'string' ? c.words : c.words[way]}</figcaption></figure>`;
   });
-  return `<div class="form-section"><h3>Battle: ${BATTLE_RULES[battleRuleInUse()][1]}</h3><p>Each walker's line: the edges it has gone along, never let go by itself. All walkers step at once, each step judged on the lines as it found them. Here red's last step makes the case; a line let go dashed, a walker dead crossed.</p>`
+  return `<div class="form-section">${title}<p>Each walker's line: the edges it has gone along, never let go by itself. All walkers step at once, each step judged on the lines as it found them. Here red's last step makes the case; a line let go dashed, a walker dead crossed.</p>`
     + `<div class="tut-row tut-walk tut-battle">${figs.filter(Boolean).join('')}</div></div>`;
 }
 function walkTutorial(w) {

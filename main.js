@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.406';
+const VERSION = '0.4.407';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -9334,7 +9334,7 @@ const planeTorus = (kind) => plane.torus && !APERIODIC[kind];  // hats and Penro
 const TILES_PER_GRID_CELL = { square: 1, hex: 1, tri: 2, cairo: 2, kite: 6, hat: 1, penrose: 1, pinwheel: 1, spectre: 1, ammann: 1, rhombs12: 1, rhombs14: 1, flower: 1, flower5: 1, flower7: 1, ...conedOf((k) => [k, 1]), flower3: 1, flower4: 1, flower8: 1, flower9: 1, flower10: 1, flower11: 1, flower12: 1, ring7: 1, ring8: 1, ring9: 1, ring10: 1, ring11: 1, ring12: 1 };
 for (const [kind, t] of Object.entries(TILINGS)) TILES_PER_GRID_CELL[kind] = t.polys.length;  // (a row's cells per step along it: patterns move by whole ones)
 // (a grid that never repeats, in a circle: its size its diameter, its W² cells as many as the disc's, π side² / 4)
-const sideW = (kind, side) => (kind === 'cairo' ? 2 * Math.round(side / Math.SQRT2 / 2) : APERIODIC[kind] ? Math.round((side * Math.sqrt(Math.PI)) / 2) : Math.round(side / Math.sqrt(TILES_PER_GRID_CELL[kind] * (RECT_ASPECT[kind] ?? 1))));  // (a rectangle's: W rows of W × its aspect motifs, see planeCols)
+const sideW = (kind, side) => (kind === 'cairo' ? 2 * Math.round(side / Math.SQRT2 / 2) : APERIODIC[kind] ? Math.round((side * Math.sqrt(Math.PI)) / 2) : Math.round(side / Math.sqrt(TILES_PER_GRID_CELL[kind] * (RECT_ASPECT[kind] ?? 1))));  // (a rectangle's: W rows of W × its aspect motifs, see planeColumns)
 // blocks on a torus: the nearest size their sets fit round (else a cell in two blocks of a set at the seam: the rule broken)
 const planeW = (kind, side) => (MODES[$('mode').value]?.margolus && planeTorus(kind) ? blockWrapW(kind, sideW(kind, side)) : shaped(kind) ? shapeW(kind, sideW(kind, side)) : colourW(kind, sideW(kind, side)));
 // colours in blocks (on a torus, or 2 and 4 with walls along the edges: see huntParts), cols × rows of them: the nearest side
@@ -9347,14 +9347,14 @@ const colourW = (kind, x, K = lifeColours) => {  // (x, its rows or its motifs a
 const blockWraps = new Map();
 // whether a torus of side W takes its blocks' sets round: their sets by the lattice mod 2 or 3 (Cairo's, by twos), so as one of
 // the same remainders mod 6 does, its rows and motifs a row; past 24, one of 18 to 23 (not 128's blocks: see tools/check.js)
-const blocksWrap = (kind, W) => { const less = (x) => (x > 24 ? 18 + (x % 6) : x); return planeBlocks(kind, less(W), true, undefined, false, less(planeCols(kind, W, 1))).wraps; };
+const blocksWrap = (kind, W) => { const less = (x) => (x > 24 ? 18 + (x % 6) : x); return planeBlocks(kind, less(W), true, undefined, false, less(planeColumns(kind, W, 1))).wraps; };
 function blockWrapW(kind, W) {
   const key = `${kind} ${W}`, d = baseOf(kind) === 'cairo' ? 2 : 1;  // (Cairo's: even, as colourW's)
   if (!blockWraps.has(key)) blockWraps.set(key, [0, d, -d, 2 * d, -2 * d, 3 * d, -3 * d].map((e) => W + e).find((w) => w > 2 && blocksWrap(kind, w)) ?? W);
   return blockWraps.get(key);
 }
-const planeCols = (kind, W, K = lifeColours) => colourW(kind, W * (RECT_ASPECT[kind] ?? 1), K);  // its motifs a row: as many as make it square (its motif's height over its width)
-const planeRow = (kind, W) => (tilingOf(kind) ? tilingOf(kind).polys.length * planeCols(kind, W) : kind === 'kite' ? 6 * W : kind === 'tri' || kind === 'cairo' ? 2 * W : W);  // cells a row (two a rhombus, two a square of Cairo pentagons, six kites a rhombus)
+const planeColumns = (kind, W, K = lifeColours) => colourW(kind, W * (RECT_ASPECT[kind] ?? 1), K);  // its motifs a row: as many as make it square (its motif's height over its width)
+const planeRow = (kind, W) => (tilingOf(kind) ? tilingOf(kind).polys.length * planeColumns(kind, W) : kind === 'kite' ? 6 * W : kind === 'tri' || kind === 'cairo' ? 2 * W : W);  // cells a row (two a rhombus, two a square of Cairo pentagons, six kites a rhombus)
 // kite x of row y: kite x % 3 of triangle ⌊x / 3⌋ (as the triangles' x), its corners on the triangles' lattice
 const kiteCorners = (x, y) => { const t = Math.floor(x / 3), i = t >> 1; return kitesOf(t & 1 ? [[i + 1, y], [i + 1, y + 1], [i, y + 1]] : [[i, y], [i + 1, y], [i, y + 1]])[mod(x, 3)]; };
 const latticeAt = (a, b) => [a + b / 2, b * H];  // a corner of the triangles, a centre of the hexagons
@@ -9901,7 +9901,7 @@ function insidePolygon(pts, u, v) {
 // numbers round it: x round its row, y round its W rows); 'free', on the plane, its numbers as they are
 const cellAtMemo = {}, tilesNear = new WeakMap();  // (a tiling's lattice cell's polygons, at lattice cell 0; a grid that never repeats, its tiles by squares of 2: see planeCellAt)
 function planeCellAt(kind, W, wx, wy, how = 'in') {
-  let x, y, row = planeRow(kind, W);  // (W rows, row cells each: see planeCols)
+  let x, y, row = planeRow(kind, W);  // (W rows, row cells each: see planeColumns)
   const on = (x, y) => (how === 'free' ? [x, y] : how === 'round' ? [mod(x, row), mod(y, W)] : planeGrid(kind, W).at(x, y) >= 0 ? [x, y] : null);  // ('in': a cell of the grid's, see planeGrid)
   if (tilingOf(kind)) {  // its lattice cell's polygons, and those of the cells round it (the point moved back by the lattice step: its polygons' corners once)
     const [a, b] = tilingOf(kind).basis, [u, v] = inBasis([wx, wy], a, b), m = tilingOf(kind).polys.length;
@@ -10764,7 +10764,7 @@ for (const base of ['hex', 'tri', 'kite', ...Object.keys(TILINGS)]) {
     const t = TILINGS[base], R = { base, name: t?.name, mark: t?.mark, cells: t?.cells ?? PLANE_CELLS[base], basis: [U, V], polys: tiles.map((c) => c.polys), nat: tiles.map((c) => [c.x, c.y]), step };
     return R;
   };
-  [TILES_PER_GRID_CELL[kind], RECT_ASPECT[kind]] = [Math.abs(best.det) * per, Math.hypot(...best.V) / Math.hypot(...best.U)];  // (its tables at once: its size said before it is built; its height over its width, see planeCols)
+  [TILES_PER_GRID_CELL[kind], RECT_ASPECT[kind]] = [Math.abs(best.det) * per, Math.hypot(...best.V) / Math.hypot(...best.U)];  // (its tables at once: its size said before it is built; its height over its width, see planeColumns)
   PATTERN_TURNS[kind] = PATTERN_TURNS[base];
   PLANE_CELLS[kind] = PLANE_CELLS[base];
   Object.defineProperty(RECTS, kind, { configurable: true, enumerable: true, get: () => { const R = build(); Object.defineProperty(RECTS, kind, { value: R, writable: true, enumerable: true }); return R; } });
@@ -12112,7 +12112,7 @@ function cellBlocks(B, n, cell, stars, first = cell(0)) {  // (first: the cell i
 }
 // the plane's: its cells by their places (a torus: its two turns round, W rectangles of a rectangle's; a point brought
 // onto its sheet, once); a torus its sets do not fit round: its blocks as on walls
-function planeBlocks(kind, W, torus, stars = !BLOCKS[baseOf(kind)], four = false, cols = planeCols(kind, W, 1)) {  // (cols: its motifs a row, see planeCols: blocks in one colour)
+function planeBlocks(kind, W, torus, stars = !BLOCKS[baseOf(kind)], four = false, cols = planeColumns(kind, W, 1)) {  // (cols: its motifs a row, see planeColumns: blocks in one colour)
   const row = (tilingOf(kind)?.polys.length ?? TILES_PER_GRID_CELL[kind]) * cols;  // (a row: its motifs' cells; a rectangle's: its grid's blocks, its own cells)
   const o = cellMiddle(kind, 0, 0), P = !torus ? null : RECTS[kind] ? RECTS[kind].basis.map(([x, y], i) => { const k = i ? W : cols; return [k * x, k * y]; }) : [cellMiddle(kind, row, 0), cellMiddle(kind, 0, W)].map((m) => [m[0] - o[0], m[1] - o[1]]);
   const D = P && P[0][0] * P[1][1] - P[0][1] * P[1][0];
@@ -12164,7 +12164,7 @@ let blocksMemo = null;  // (the last grid's: its blocks the same whatever its st
 const blocksTurn = (w, turned) => !MODES[w].margolus || rulesOf('life').some((r) => r.tiling.includes(lifeMark(MODES[w])) && blocksFit(parseRule(r.rule), MODES[w], shownSurface(MODES[w].sphere, turned)));
 // (a surface's, g: by its mesh, kept on it, see meshBlocks, meshIsing; null: they do not come round it)
 const surfaceBlocks = (g, kind, rule) => ((g.blocks ??= {})[`${kind}|${!!rule.ising}|${!!rule.stars}|${!!rule.four}`] ??= rule.ising ? meshIsing(g) : meshBlocks(g, kind, rule.stars, rule.four));
-const ruleBlocks = (rule, kind, W, torus = planeTorus(kind), cols = planeCols(kind, W, 1), g = null) => {
+const ruleBlocks = (rule, kind, W, torus = planeTorus(kind), cols = planeColumns(kind, W, 1), g = null) => {
   const key = `${kind}|${W}|${torus}|${cols}|${!!rule.ising}|${!!rule.stars}|${!!rule.four}`;
   if (!g && blocksMemo?.key !== key) blocksMemo = { key, blocks: rule.ising ? isingOf(kind, W, torus, cols) : planeBlocks(kind, W, torus, rule.stars, rule.four, cols) };
   const blocks = g ? surfaceBlocks(g, kind, rule) : blocksMemo.blocks;
@@ -12857,7 +12857,7 @@ function planeFrame() {
       return best;
     },
     // (a rectangle's: its grid's lattice cells along each, as its patches are counted; its ends' middles W − 1 lattice cells apart)
-    across: RECTS[kind] ? (lc * planeCols(kind, W)) / (planeCols(kind, W) - 1) / Math.hypot(...latticeStep(RECTS[kind].base)) : xAcross ? row / per : W, down: RECTS[kind] ? (lr * W) / (W - 1) / Math.hypot(...latticeStep(RECTS[kind].base)) : xAcross ? W : row / per,  // (the cells, or lattice cells, along each: a share's step)
+    across: RECTS[kind] ? (lc * planeColumns(kind, W)) / (planeColumns(kind, W) - 1) / Math.hypot(...latticeStep(RECTS[kind].base)) : xAcross ? row / per : W, down: RECTS[kind] ? (lr * W) / (W - 1) / Math.hypot(...latticeStep(RECTS[kind].base)) : xAcross ? W : row / per,  // (the cells, or lattice cells, along each: a share's step)
   });
 }
 // a sheet's tiles where their colour units are: each its unit's middle on the sheet (a Möbius strip's on its loop, 2L, a side
@@ -14179,7 +14179,7 @@ function laidChoices(centred, any = false) {  // any: the first one of each colo
   // (centred: a rectangle's room and its patterns' spans in its grid's lattice cells, as on that grid)
   const R = RECTS[kind], cellsAcross = R ? Math.min(...R.basis.map((v) => Math.hypot(...v))) / Math.hypot(...latticeStep(R.base)) : 1, pk = R ? R.base : kind, pper = TILES_PER_GRID_CELL[pk] ?? 1;
   const span = (rle, t, f) => { const cs = orientPattern(pk, rle, t, f); return Math.max(...cs.map((c) => Math.floor(c[0] / pper)), ...cs.map((c) => c[1])) + 1; };
-  const room = walk.plane ? (Math.min(planeCols(kind, walk.plane.W) / cols, walk.plane.W / rows) * cellsAcross) : g.mobius ? Math.min((2 * g.L) / K, g.nv)  // (a Möbius strip: a stretch of its loop)
+  const room = walk.plane ? (Math.min(planeColumns(kind, walk.plane.W) / cols, walk.plane.W / rows) * cellsAcross) : g.mobius ? Math.min((2 * g.L) / K, g.nv)  // (a Möbius strip: a stretch of its loop)
     : g.torus ? Math.min(g.nu / torusBlocks(K)[0], g.nv / torusBlocks(K)[1])
     : g.squares ? (g.squares.floorSize ?? g.size) : g.floors ? g.floorSize : g.sides === 3 || g.kite ? g.size / 2 : g.size;
   const shapes = [], seen = new Set();

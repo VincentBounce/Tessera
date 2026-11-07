@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.532';
+const VERSION = '0.4.533';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -12070,40 +12070,69 @@ const BATTLE_CASES = {
     tri: [{ pre: [180, 180], moves: [0, 0] }, { pre: [0], moves: [180, 180] }],
     hex: [{ pre: [210, 150], moves: [330, 30] }, { pre: [330], moves: [150, 210] }] },
 };
-// the case's figure, its battle played (see BATTLE_CASES): an SVG, null where its moves do not fit the grid
-function battleCaseFigure(grid, way, scripts) {
+// The cases of a battle on cells (see battlePlayer: Land cells, Cut, Snake cells), as along the grid's (see BATTLE_CASES), their
+// moves from tile to tile (degrees, between the tiles' middles), on squares and hexagons (a triangle's ways alternate: none);
+// its words, each way's
+const BATTLE_CELL_CASES = {
+  paint: { words: { landCells: 'A head on a tile paints it its colour, an enemy\'s too' },
+    square: [{ pre: [90, 90], moves: [null, null, null, null, 270, 270, 270] }, { pre: [180, 180], moves: [0, 0, 0, 0] }],
+    hex: [{ pre: [150, 210], moves: [null, null, null, null, 330, 30, 330] }, { pre: [270, 270], moves: [90, 90, 90, 90] }] },
+  close: { words: { landCells: 'A zone its colour closes (the tiles not its colour cut off) painted inside' },
+    square: [{ moves: [90, 0, 0, 270, 270, 180, 180, 90] }, { pre: [0, 0, 0, 0, 0], moves: [90] }],
+    hex: [{ moves: [30, 90, 150, 210, 270, 330] }, { pre: [210, 210, 210], moves: [270] }] },
+  bite: { words: { cut: 'A head on another\'s body: cut there, back to its tail (dashed)', snakeCells: 'A head on another\'s body: bitten there, back to its tail (dashed), the cells it bites eaten' },
+    square: [{ pre: [90, 90], moves: [null, null, 270, 270] }, { pre: [180, 180], moves: [0, 0, 0, 0] }],
+    hex: [{ pre: [150, 210], moves: [null, null, 330, 30] }, { pre: [270, 270], moves: [90, 90, 90, 90] }] },
+  heads: { words: { landCells: 'Heads meeting on a tile: both die, their tiles staying', cut: 'Heads meeting on a tile, as long: both die, their bodies gone (the shorter alone dies)',
+    snakeCells: 'Heads meeting on a tile, as long: both die, their bodies gone (the shorter alone dies)' },
+    square: [{ pre: [180, 180], moves: [0, 0] }, { pre: [0, 0], moves: [180, 180] }],
+    hex: [{ pre: [270, 270], moves: [90, 90] }, { pre: [90, 90], moves: [270, 270] }] },
+  crossing: { words: { landCells: 'Heads crossing, each into the tile the other leaves: both die, their tiles staying', cut: 'Heads crossing, each into the tile the other leaves, as long: both die, their bodies gone',
+    snakeCells: 'Heads crossing, each into the tile the other leaves, as long: both die, their bodies gone' },
+    square: [{ moves: [0] }, { pre: [0], moves: [180] }],
+    hex: [{ moves: [90] }, { pre: [90], moves: [270] }] },
+};
+// the case's figure, its battle played (see BATTLE_CASES, BATTLE_CELL_CASES): along the grid, from corner to corner; on cells,
+// from tile to tile (its places their middles). An SVG, null where its moves do not fit the grid
+function battleCaseFigure(grid, way, scripts, cells = false) {
   const g = SPHERES[{ square: 'torus', tri: 'torusTri', hex: 'torusHexTurned' }[grid]].mesh(12), G = gridGraph(g), k = g.sides;
+  const middle = (t) => { let u = 0, v = 0; for (let q = 0; q < k; q++) { u += g.uv[2 * (k * t + q)]; v += g.uv[2 * (k * t + q) + 1]; } return [u / k, v / k]; };
+  const uvOf = (v) => (cells ? middle(v) : cornerUv(g, G, v)), count = cells ? g.n : G.nv;  // (its places: the tiles, or the grid's corners)
+  const nbrsOf = (v) => (cells ? Array.from({ length: k }, (_, e) => g.nbr[k * v + e]).filter((u) => u >= 0) : G.nbrs[v]);
   const flat = (d) => [(d[0] / g.nu) * 2 * Math.PI, (d[1] / g.nv) * 2 * Math.PI * tubeOf(g)];  // (on the flat sheet, see nextCorner)
-  const mid = [g.nu / 2, g.nv / 2], dist = (v) => Math.hypot(...flat(sheetWrap(g, ...cornerUv(g, G, v).map((x, a) => x - mid[a]))));
+  const mid = [g.nu / 2, g.nv / 2], dist = (v) => Math.hypot(...flat(sheetWrap(g, ...uvOf(v).map((x, a) => x - mid[a]))));
   let o = -1;
-  for (let v = 0; v < G.nv; v++) if ((o < 0 || dist(v) < dist(o)) && (grid !== 'hex' || G.nbrs[v].some((w) => sheetDelta(g, G, v, w)[1] > 0 && Math.abs(sheetDelta(g, G, v, w)[0]) < 1e-9))) o = v;
-  const edge = Math.hypot(...flat(sheetDelta(g, G, o, G.nbrs[o][0]))), at = (v) => flat(sheetDelta(g, G, o, v)).map((x) => x / edge);  // (its place from the middle corner, in edges)
-  const near = [...Array(G.nv).keys()].filter((v) => Math.hypot(...at(v)) < 9), cornerAt = (p) => near.reduce((a, v) => (Math.hypot(at(v)[0] - p[0], at(v)[1] - p[1]) < Math.hypot(at(a)[0] - p[0], at(a)[1] - p[1]) ? v : a));
+  for (let v = 0; v < count; v++) if ((o < 0 || dist(v) < dist(o)) && (cells || grid !== 'hex' || G.nbrs[v].some((w) => sheetDelta(g, G, v, w)[1] > 0 && Math.abs(sheetDelta(g, G, v, w)[0]) < 1e-9))) o = v;
+  const off = (uv) => flat(sheetWrap(g, uv[0] - uvOf(o)[0], uv[1] - uvOf(o)[1]));  // (from the middle place, on the sheet)
+  const edge = Math.hypot(...off(uvOf(nbrsOf(o)[0]))), pt = (uv) => off(uv).map((x) => x / edge), at = (v) => pt(uvOf(v));  // (its place from the middle one, in steps)
+  const near = [...Array(count).keys()].filter((v) => Math.hypot(...at(v)) < 9), placeAt = (p) => near.reduce((a, v) => (Math.hypot(at(v)[0] - p[0], at(v)[1] - p[1]) < Math.hypot(at(a)[0] - p[0], at(a)[1] - p[1]) ? v : a));
   const walkOf = ({ pre = [], moves }) => {
     let p = [0, 0];
-    const go = (d) => { p = [p[0] + Math.cos((d * Math.PI) / 180), p[1] + Math.sin((d * Math.PI) / 180)]; return cornerAt(p); };
+    const go = (d) => { p = [p[0] + Math.cos((d * Math.PI) / 180), p[1] + Math.sin((d * Math.PI) / 180)]; return placeAt(p); };
     pre.forEach(go);
-    const places = [cornerAt(p)];
+    const places = [placeAt(p)];
     for (const d of moves) places.push(d === null ? places.at(-1) : go(d));
-    return places.every((v, i) => !i || v === places[i - 1] || G.nbrs[places[i - 1]].includes(v)) ? places : null;
+    return places.every((v, i) => !i || v === places[i - 1] || nbrsOf(places[i - 1]).includes(v)) ? places : null;
   };
   const walks = scripts.map(walkOf), len = walks.every(Boolean) && Math.max(...walks.map((q) => q.length));
   if (!len) return null;
   walks.forEach((q) => { while (q.length < len) q.push(q.at(-1)); });  // (its moves done: on the spot)
   const S = { step: ([, i, s]) => [walks[s][i + 1], i + 1, s] };  // (each walker's places as written)
-  const P = battlePlayer(g, true, S, walks.map((q, s) => [q[0], 0, s]), walks.map(() => new Uint8Array(len - 1)), BATTLE_RULES.findIndex(([w]) => w === way));
+  const P = battlePlayer(g, !cells, S, walks.map((q, s) => [q[0], 0, s]), walks.map(() => new Uint8Array(len - 1)), BATTLE_RULES.findIndex(([w]) => w === way));
   P.to(Infinity);
-  const n = P.n, L = battleLinks(g), ends = new Map();
-  for (const v of near) for (const w of G.nbrs[v]) ends.set(L.index.get(G.key(v, w)), [v, w]);
-  const bodyLinks = (s) => Array.from({ length: Math.max(0, P.step - P.from[s]) }, (_, q) => L.index.get(G.key(P.places[s][P.from[s] + q], P.places[s][P.from[s] + q + 1]))).filter((j) => j !== undefined);  // (Cut's: its body, tail to head)
-  const linesAt = (i) => { P.to(i); return walks.map((_, s) => new Set(P.lined ? P.lineLinks(s) : bodyLinks(s))); }, before = linesAt(n - 1), after = linesAt(n);
+  // its lines, each by a key and its two places: a line way's links (along the grid), else a body's steps, tail to head (none
+  // painting: Land cells)
+  const n = P.n, L = !cells && battleLinks(g), ends = new Map(), pair = (a, b) => { const key = a < b ? `${a}-${b}` : `${b}-${a}`; ends.set(key, [a, b]); return key; };
+  if (P.lined) for (const v of near) for (const w of G.nbrs[v]) ends.set(`L${L.index.get(G.key(v, w))}`, [v, w]);
+  const bodyKeys = (s) => (P.way === 'landCells' ? [] : Array.from({ length: Math.max(0, P.step - P.from[s]) }, (_, q) => [P.places[s][P.from[s] + q], P.places[s][P.from[s] + q + 1]]).filter(([a, b]) => a !== b).map(([a, b]) => pair(a, b)));
+  const linesAt = (i) => { P.to(i); return walks.map((_, s) => new Set(P.lined ? P.lineLinks(s).map((j) => `L${j}`) : bodyKeys(s))); }, before = linesAt(n - 1), after = linesAt(n);
   const pts = walks.flat().map(at), span = (a) => [Math.min(...pts.map((p) => p[a])) - 1, Math.max(...pts.map((p) => p[a])) + 1];
   const [x0, x1] = span(0), [y0, y1] = span(1), r = Math.max(x1 - x0, y1 - y0) / 2, cx = (x0 + x1) / 2, cy = (y0 + y1) / 2;
-  const shown = (v) => { const [x, y] = at(v); return [+x.toFixed(3), +(-y).toFixed(3)]; };  // (on screen: north up)
-  const tiles = [...Array(g.n).keys()].filter((t) => near.includes(g.poly[k * t]) && Math.abs(at(g.poly[k * t])[0] - cx) < r + 1 && Math.abs(at(g.poly[k * t])[1] - cy) < r + 1);
-  const tile = (t, cls, fill = '') => `<polygon points="${Array.from(g.poly.subarray(k * t, k * t + k), (v) => shown(v).join()).join(' ')}" class="${cls}"${fill && ` style="fill: ${fill}; fill-opacity: 0.35"`}/>`;
-  const line = (j, s, dashed) => {
-    const [a, b] = (ends.get(j) ?? []).map(shown);
+  const screen = ([x, y]) => [+x.toFixed(3), +(-y).toFixed(3)], shown = (v) => screen(at(v));  // (on screen: north up)
+  const tiles = [...Array(g.n).keys()].filter((t) => { const [x, y] = pt(middle(t)); return Math.abs(x - cx) < r + 1 && Math.abs(y - cy) < r + 1; });  // (those whose middle is in view)
+  const tile = (t, cls, fill = '') => `<polygon points="${Array.from({ length: k }, (_, q) => screen(pt([g.uv[2 * (k * t + q)], g.uv[2 * (k * t + q) + 1]])).join()).join(' ')}" class="${cls}"${fill && ` style="fill: ${fill}; fill-opacity: 0.35"`}/>`;
+  const line = (key, s, dashed) => {
+    const [a, b] = (ends.get(key) ?? []).map(shown);
     return !a ? '' : `<line x1="${a[0]}" y1="${a[1]}" x2="${b[0]}" y2="${b[1]}" stroke="${LIFE_COLOURS[s]}" stroke-width="0.16"${dashed ? ' stroke-dasharray="0.18 0.16" stroke-opacity="0.55"' : ''}/>`;
   };
   const head = (s) => { const [x, y] = shown(P.places[s][n]), c = LIFE_COLOURS[s];  // (where the battle has it: a walker stopped, before its step)
@@ -12113,21 +12142,22 @@ function battleCaseFigure(grid, way, scripts) {
     + `${walks.map((_, s) => [...before[s]].filter((j) => !after[s].has(j)).map((j) => line(j, s, true)).join('') + [...after[s]].map((j) => line(j, s, false)).join('')).join('')}`
     + `${walks.map((_, s) => head(s)).join('')}</svg>`;
 }
-// a battle's cases along the grid, under its walk's (see walkTutorial): its way's (every way along the grid), on the walk's tiles
+// a battle's cases, under its walk's (see walkTutorial): its way's, along the grid or on cells, on the walk's tiles
 function battleTutorial(w) {
   const way = BATTLE_RULES[battleRuleInUse()][0], g = walk.geo, grid = { 4: 'square', 3: 'tri', 6: 'hex' }[g?.sides];
   if (!battleOn()) return '';
-  const title = `<h3>Battle: ${BATTLE_RULES[battleRuleInUse()][1]}</h3>`;  // (every battle's, its cases drawn along the grid only: on cells, to come)
-  if (!MODES[w].grid || !grid) return `<div class="form-section">${title}<p>Its cases, drawn: to come later.</p></div>`;
-  const loop = { pre: BATTLE_LOOP_AT[grid], moves: BATTLE_LOOP[grid] };
-  const figs = Object.values(BATTLE_CASES).filter((c) => c[grid] && c.words[way]).map((c) => {
-    const svg = battleCaseFigure(grid, way, c[grid].map((x) => (x === 'loop' ? loop : x)));
+  const title = `<h3>Battle: ${BATTLE_RULES[battleRuleInUse()][1]}</h3>`, cells = !MODES[w].grid;  // (every battle's; its cases drawn on squares, triangles and hexagons along the grid, squares and hexagons on cells)
+  const loop = grid && { pre: BATTLE_LOOP_AT[grid], moves: BATTLE_LOOP[grid] };
+  const figs = !grid ? [] : Object.values(cells ? BATTLE_CELL_CASES : BATTLE_CASES).filter((c) => c[grid] && c.words[way]).map((c) => {
+    const svg = battleCaseFigure(grid, way, c[grid].map((x) => (x === 'loop' ? loop : x)), cells);
     return svg && `<figure><div>${svg}</div><figcaption>${c.words[way]}</figcaption></figure>`;
-  });
-  const how = !BATTLE_LINED.includes(way) ? `Each walker's body: the edges it has walked, from its tail to its head${way === 'landGrid2' ? '; its land, the tiles its body closed' : ''}. All walkers step at once. Here red's last step makes the case; a body cut off dashed`
+  }).filter(Boolean);
+  if (!figs.length) return `<div class="form-section">${title}<p>Its cases, drawn: to come later.</p></div>`;
+  const how = way === 'landCells' ? 'Each walker paints the tiles it goes into its colour. All walkers step at once. Here red\'s last step makes the case'
+    : !BATTLE_LINED.includes(way) ? `Each walker's body: the ${cells ? 'tiles' : 'edges'} it has walked, from its tail to its head${way === 'landGrid2' ? '; its land, the tiles its body closed' : ''}. All walkers step at once. Here red's last step makes the case; a body cut off dashed`
     : 'Each walker\'s line: the edges it has gone along, never let go by itself. All walkers step at once, each step judged on the lines as it found them. Here red\'s last step makes the case; a line let go dashed';
   return `<div class="form-section">${title}<p>${how}, a walker ${way === 'landStop' || way === 'landMerge' ? 'stopped' : 'dead'} crossed.</p>`
-    + `<div class="tut-row tut-walk tut-battle">${figs.filter(Boolean).join('')}</div></div>`;
+    + `<div class="tut-row tut-walk tut-battle">${figs.join('')}</div></div>`;
 }
 function walkTutorial(w) {
   $('ruleTuto').hidden = false;

@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.545';
+const VERSION = '0.4.546';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -1873,9 +1873,10 @@ function renderViewModes() {
   viewModes[0].title = $('centeredRow').title;
   viewModes[0].querySelector('span').textContent = centersPattern() ? 'Centered' : 'Default';
   const c = $('centered').checked, u = $('upright').checked && !$('uprightRow').hidden;
-  setTile(viewModes[0], { on: c, byDefault: 'yes' });
-  setTile(viewModes[1], { on: !c && !u });
-  setTile(viewModes[2], { on: u, whyNot: ({ w, stacked }) => viewWhyNot('upright', w, stacked) });
+  const first = (centered, upright) => (defaultOf('centered') === centered && defaultOf('upright') === upright ? 'yes' : '');  // (its default: the pair DISPLAY_DEFAULTS sets)
+  setTile(viewModes[0], { on: c, byDefault: first(true, false) });
+  setTile(viewModes[1], { on: !c && !u, byDefault: first(false, false) });
+  setTile(viewModes[2], { on: u, byDefault: first(false, true), whyNot: ({ w, stacked }) => viewWhyNot('upright', w, stacked) });
   setTile(rotateTile, { on: $('autoRotate').checked, byDefault: defaultMark('autoRotate'), whyNot: ({ w, stacked }) => viewWhyNot('autoRotate', w, stacked) });
   $('viewModes').hidden = $('centeredRow').hidden;
 }

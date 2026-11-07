@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.449';
+const VERSION = '0.4.450';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -3690,7 +3690,7 @@ function creatureRules(w) {
 }
 // The ants' and turmites' rules (see RULES) in neutral turns (L R, N straight on, U back, L2 R2 sharp), each grid's in its own
 // words (L1 R1 on hexagons and pentagons); one a grid cannot take greyed in its place, the word it lacks in its tooltip
-const NEUTRAL_WORDS = { square: { L: 'L', R: 'R', N: 'N', U: 'U' }, tri: { L: 'L', R: 'R' }, hex: { L: 'L1', R: 'R1', N: 'N', U: 'U', L2: 'L2', R2: 'R2' }, cairo: { L: 'L1', R: 'R1', L2: 'L2', R2: 'R2' } };
+const NEUTRAL_WORDS = { square: { L: 'L', R: 'R', N: 'N', U: 'U', B: 'B' }, tri: { L: 'L', R: 'R' }, hex: { L: 'L1', R: 'R1', N: 'N', U: 'U', L2: 'L2', R2: 'R2', B: 'B' }, cairo: { L: 'L1', R: 'R1', L2: 'L2', R2: 'R2' } };
 // a rule of the list in ant w's words: { rule, why } (why: the first word it lacks, its rule then the list's as written)
 function ruleIn(w, neutral, turmite) {
   const words = NEUTRAL_WORDS[MODES[ANTS[w].walk].net], lack = (t) => `its ${t} (${WORD_TEXT[t] ?? t}) is not on this grid`;
@@ -4555,7 +4555,7 @@ const arrowsOf = (w) => { const a = MODES[w].antOf ? ANTS[w].arrows ?? antArrows
 // An ant's words: those the walk it goes through the cells with can take (see walkWordsOf), its turns first, as they come
 // (a step's turn: its index here); their arrows
 const antWords = (w) => (ANTS[w].words ??= (() => { const m = MODES[ANTS[w].walk], N = WALK_NETS[m.net];
-  return [...Object.keys(N.turns), ...Object.keys(N.ways ?? {}), ...(N.notch || SURFACE_NOTCHES[m.net] ? ['l', 'r', 'a'] : []), ...Object.keys(N.spots ?? {})].filter((t) => !walkWordWhy(m, t)); })());
+  return [...Object.keys(N.turns), 'B', ...Object.keys(N.ways ?? {}), ...(N.notch || SURFACE_NOTCHES[m.net] ? ['l', 'r', 'a'] : []), ...Object.keys(N.spots ?? {})].filter((t) => !walkWordWhy(m, t)); })());  // (B, a step back: where its walk takes it)
 const antArrows = (w) => (ANTS[w].wordArrows ??= antWords(w).map((t) => WALK_NETS[MODES[ANTS[w].walk].net].arrows[t] ?? SPOT_ARROWS[t] ?? ''));
 // a turn in words, for the Play card's chips (L, R on squares and triangles; L1, R1 on hexagons and pentagons)
 const TURN_WORDS = { L: 'left', R: 'right', N: 'straight', L1: 'left', R1: 'right', L2: 'sharp left', R2: 'sharp right' };

@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.487';
+const VERSION = '0.4.488';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -3537,10 +3537,10 @@ const walkKindHere = (v, r) => { const [kind, space, shape] = NAV[v], fam = fami
 const walkSidesOf = (v) => [...new Set(walksThere(v).map((u) => NAV[u][4]))];
 // a side's greyed words at a mode (Grid, Cells; see walkOn): none there (none: its words), or a walk by a rule whose rule
 // cannot go there (a diagonal along the grid: the word why); '' where it can
-const sideWhyNot = (v, s, none) => {
+const sideWhyNot = (v, s, none, walkRule = null) => {  // (walkRule: a setup's, see walkRuleAt)
   const ways = walkSidesOf(v), there = ways.includes('') ? (s === 'cells' ? v : null) : walksThere(v).find((u) => NAV[u][4] === s);
   if (!there) return none;
-  const rule = walkRuleKept(MODES[there]);
+  const rule = walkRuleAt({ w: v, walkRule }, there);
   return MODES[there].net && !walkCommandsOf(there, rule) ? ruleCommands(rule).map((t) => walkCommandWhy(MODES[there], t)).find(Boolean) ?? '' : '';
 };
 // Turned at a mode: its tiling with a turned way round, its blocks coming round so (a block rule's, see blocksTurn); its
@@ -3598,7 +3598,8 @@ function ruleCards(w, here = true) {
   const R = creatureRules(w), mine = here && (customOpen || !ruleKnown(R));
   const go = (then) => () => { if (!here) { $('mode').value = w; $('mode').dispatchEvent(new Event('change')); } then(); };
   const make = (cardPic, name, code, on, then, why = '', title = '', source = null) => card({ pic: cardPic, name, detail: code, base: code && R.base?.(code), on, title, click: go(then),
-    how: () => { if (on) walkTutorialToggle(); else { go(then)(); walkTutorial(w); } }, whyNot: source && (({ w: v }) => ruleWhyNot(v, source)), at: w });  // (its ⓘ: how it works, picked first; greyed, why: rulesFor's, any mode's)
+    how: () => { if (on) walkTutorialToggle(); else { go(then)(); walkTutorial(w); } }, whyNot: source && (({ w: v }) => ruleWhyNot(v, source)), at: w,
+    choice: source?.startsWith('walk ') ? `walkRule:${code}` : null });  // (a walk's rule: its choice's key, see choicesAt)  // (its ⓘ: how it works, picked first; greyed, why: rulesFor's, any mode's)
   return [...R.cards.map(({ rule: r, source, name, pic, why, title }) => make(pic, name, r, here && r === R.now && !customOpen, () => { customOpen = false; if (r === R.now) renderModePicker(); else R.set(r); }, why, title, source)),
     ...(R.typed ? [make(pixelIcon('..o..,..o..,ooooo,..o..,..o..'), 'Custom rule', mine ? R.now : '', mine, () => { customOpen = true; renderModePicker(); }, '', 'your own, typed')] : []),  // (never greyed: no source, no why)
     customRow];  // (its field right after it, the list's next rules after the field; always in it, shown by renderAntRow)
@@ -3607,15 +3608,20 @@ function ruleCards(w, here = true) {
 const modesUnder = (...place) => Object.keys(NAV).filter((u) => place.every((x, i) => NAV[u][i] === x));
 // The menu as a graph (the setup a node, a click an edge): a setup, what the app holds as a link does ({ w: the mode, size:
 // null for the one it opens at, its colours, a walk's teams, its battle rule, its starts' way, a Life's start, its hunt's
-// zone and its rule, as typed: the one a mode plays from it, lifeRuleAt; its look, colourMode's; Stacks on), the one in use first
-const setupNow = () => ({ w: $('mode').value, size: null, colours: lifeColours, teams: walkTeams, battleRule, startsWay: battleStartsWay, start: plane.start, zone: hunt.zone, rule: $('lifeRule').value, look: $('colourMode').value, stacked: spaceTime });
-const SETUP_FIELDS = ['size', 'colours', 'teams', 'battleRule', 'startsWay', 'start', 'zone', 'rule', 'look', 'stacked'];  // (its fields but the mode: a key's, a path's changes)
+// zone and its rule, as typed: the one a mode plays from it, lifeRuleAt; its look, colourMode's; Stacks on; a walk's rule, see
+// walkRuleAt), the one in use first
+const setupNow = () => ({ w: $('mode').value, size: null, colours: lifeColours, teams: walkTeams, battleRule, startsWay: battleStartsWay, start: plane.start, zone: hunt.zone, rule: $('lifeRule').value, look: $('colourMode').value, stacked: spaceTime,
+  walkRule: MODES[$('mode').value].net ? walkRuleOf(MODES[$('mode').value]) : null });
+const SETUP_FIELDS = ['size', 'colours', 'teams', 'battleRule', 'startsWay', 'start', 'zone', 'rule', 'look', 'stacked', 'walkRule'];
+// a walk's rule at mode u from setup s: the setup's walk's (walkRule) where u keeps its rules under the same key (its network's,
+// see walkKey: a plane's grid and cells share theirs), else u's kept one
+const walkRuleAt = (s, u) => (s.walkRule && MODES[s.w].net && walkKey(MODES[u]) === walkKey(MODES[s.w]) ? s.walkRule : walkRuleKept(MODES[u]));  // (its fields but the mode: a key's, a path's changes)
 const setupKey = (s) => [s.w, ...SETUP_FIELDS.map((f) => s[f])].join('|');
 // The menu's choices at a setup, each a click: its key (its button's data-choice) and the setup it leads to, by the menu's
 // own navigation (navPick, kindLeft, nearestMode, walksThere): the tabs, spaces, shapes, tilings, sides, walks' kinds, then a
 // Life's colours, a battle's teams and rule; a surface's sizes at the start only (one stepper, see pathsTo)
 function choicesAt(s) {  // (each [key, the setup it leads to, its button's words])
-  const w = s.w, [kind, space, shape, rule] = NAV[w], out = [], go = (key, v, words) => { if (v && v !== w) out.push([key, { ...s, w: v, size: null }, words]); };
+  const w = s.w, [kind, space, shape, rule] = NAV[w], out = [], go = (key, v, words) => { if (v && v !== w) out.push([key, { ...s, w: v, size: null, walkRule: MODES[v].net ? walkRuleAt(s, v) : null }, words]); };
   for (const [k] of NAV_KINDS) if (k !== kind) go(`kind:${k}`, kindLeft[k] ?? navPick(w, 0, k), k);
   for (const sp of navValues(1, [kind])) go(`space:${sp}`, navPick(w, 1, sp), SPACES[sp][0]);
   for (const sh of navValues(2, [kind, space])) go(`shape:${sh}`, navPick(w, 2, sh), shapeLabel(sh));
@@ -3634,6 +3640,7 @@ function choicesAt(s) {  // (each [key, the setup it leads to, its button's word
   const m = MODES[w];
   if (m.life && !m.loops && !m.elementary) for (const [start, name] of LIFE_STARTS) set(`start:${start}`, 'start', start, startWhyNot(start, w), name);
   if (m.life) for (const r of lifeRulesListed(w)) set(`lifeRule:${r.rule}`, 'rule', r.rule, '', r.name);  // (its rules' cards)
+  if (m.net) for (const r of (rulesForMemo[w] ??= rulesFor(w))) set(`walkRule:${r.rule}`, 'walkRule', r.rule, r.why, `${r.name} ${r.rule}`);  // (a walk's rules' cards, those it takes)
   // its looks (Life's: States, Age, Activity; a walk's cells': Path, Rainbow, Commands, Heatmap), each the look it sets
   if (m.life) for (const [look, name] of LIFE_LOOKS) set(`look:${look}`, 'look', look, lookWhyNot(look, w), name);
   else if (shows('cells', w) || shows('heatmap', w) || m.antOf) for (const [look, name] of CELL_MODES) set(`look:${look}`, 'look', lookAfter(look, w), cellModeWhyNot(look, w, s.teams), name);
@@ -3849,7 +3856,7 @@ function renderModePicker() {
   // its tabs (see walkOn): each picked where it is, greyed where there is none (why, in its tooltip)
   const side = (b, s, word, none) => {
     b.querySelector('span').textContent = word;
-    setTile(b, { on: alone ? s === 'cells' : NAV[w][4] === s, whyNot: ({ w: v }) => sideWhyNot(v, s, none) });
+    setTile(b, { on: alone ? s === 'cells' : NAV[w][4] === s, whyNot: ({ w: v, walkRule }) => sideWhyNot(v, s, none, walkRule) });
     b.dataset.choice = `side:${s}`;  // (its choice's key, see choicesAt)
   };
   const cellsWord = space === '3D' ? 'Cube' : 'Cells';
@@ -12054,7 +12061,7 @@ const walkTutorialToggle = () => ($('ruleTuto').hidden || creditsShown() ? walkT
 // loop, Fredkin's Replicator, the Ising model)
 const unnamed = (words, name) => (words.startsWith(name) && /^(?:[,:]|\s\(|$)/.test(words.slice(name.length)) ? words.slice(name.length).replace(/^[,:]?\s*/, '') : words);
 // a Life mode's rules' cards: its shape's, those its grid takes (a block rule's blocks, a loop's), once a mode
-const lifeRulesMemo = {};
+const lifeRulesMemo = {}, rulesForMemo = {};  // (a mode's rules' cards, once a mode: see choicesAt)
 const lifeRulesListed = (w) => (lifeRulesMemo[w] ??= rulesOf('life').filter((r) => { const mode = MODES[w]; return r.tiling.includes(lifeMark(mode)) && (!mode.margolus || blocksFit(parseRule(r.rule), mode)) && (!mode.loops || loopFits(parseRule(r.rule), mode)); }));
 let ruleTab = null;  // Elementary's tab clicked and the rule then in use ({ tab, now }: kept while it is, see renderRuleSection)
 function renderRuleSection() {

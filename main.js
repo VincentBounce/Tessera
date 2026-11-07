@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.535';
+const VERSION = '0.4.536';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -12084,7 +12084,7 @@ const BATTLE_CELL_CASES = {
   bite: { words: { cut: 'A head on another\'s body: cut there, back to its tail (dashed)', snakeCells: 'A head on another\'s body: bitten there, back to its tail (dashed), the cells it bites eaten' },
     square: [{ pre: [90, 90], moves: [null, null, 270, 270] }, { pre: [180, 180], moves: [0, 0, 0, 0] }],
     hex: [{ pre: [150, 210], moves: [null, null, 330, 30] }, { pre: [270, 270], moves: [90, 90, 90, 90] }],
-    tri: [{ pre: [90], moves: [null, null, 270] }, { pre: [210, 150], moves: [330, 30, 330, 30] }] },
+    tri: [{ pre: [90], moves: [null, null, 270] }, { pre: [210, 150], moves: [330, 30, 330] }] },
   heads: { words: { landCells: 'Heads meeting on a tile: both die, their tiles staying', cut: 'Heads meeting on a tile, as long: both die, their bodies gone (the shorter alone dies)',
     snakeCells: 'Heads meeting on a tile, as long: both die, their bodies gone (the shorter alone dies)' },
     square: [{ pre: [180, 180, 180, 180], moves: [0, 0, 0, 0] }, { pre: [0, 0, 0, 0], moves: [180, 180, 180, 180] }],

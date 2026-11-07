@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.524';
+const VERSION = '0.4.525';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -1285,13 +1285,13 @@ const RULES = [
   // 4 U, 8 L; the snowflake's entry it never reaches, 0N0; the hexagonal one's 5 a left, 6 a sharp left, Commons' the other way
   // round making a hexagon filled, never caught), then ours, of the 65,536 with 2 states and 2 colours, walked on
   // squares 5,000 steps: the widest mess (3,765 cells); squares growing filled (97 %, and all); a highway from step 3,090
-  ...[['1N1 1L0 | 1R1 0N0', 'Spiral growth', 'on squares: a spiral, shown at step 12,536 (Wikipedia)'],
-      ['1R1 0R1 | 1N0 1N1', 'Highway after chaos', 'on squares: a highway after chaotic growth, shown at step 27,731 (Wikipedia)'],
-      ['1R1 1L1 | 1R1 0R0', 'Chaotic texture', 'on squares: chaotic growth with a texture of its own, shown at step 65,932 (Wikipedia)'],
-      ['1L0 1R1 | 0R0 0L1', 'Expanding frame', 'on squares: a texture of its own inside a frame growing, shown at step 223,577 (Wikipedia)'],
-      ['1L1 1L1 | 1R1 0N0', 'Fibonacci spiral', 'on squares: a Fibonacci spiral, shown at step 10,211 (Wikipedia)'],
-      ['0N1 0R1 | 1L0 0N1', 'Growing diamond', 'on squares: a diamond growing, shown at step 31,380 (Wikipedia)'],
-      ['1L1 1R0 | 1U1 1U2 | 0N0 0U0', 'Snowflake', 'on squares: a fractal like a snowflake, 3 states, shown at step 306,000 (Wikipedia)'],
+  ...[['1N1 1L0 | 1R1 0N0', 'Spiral growth', 'on squares, shown at step 12,536 (Wikipedia)'],
+      ['1R1 0R1 | 1N0 1N1', 'Highway after chaos', 'on squares, shown at step 27,731 (Wikipedia)'],
+      ['1R1 1L1 | 1R1 0R0', 'Chaotic texture', 'on squares, shown at step 65,932 (Wikipedia)'],
+      ['1L0 1R1 | 0R0 0L1', 'Expanding frame', 'on squares: a texture of its own inside it, shown at step 223,577 (Wikipedia)'],
+      ['1L1 1L1 | 1R1 0N0', 'Fibonacci spiral', 'on squares, shown at step 10,211 (Wikipedia)'],
+      ['0N1 0R1 | 1L0 0N1', 'Growing diamond', 'on squares, shown at step 31,380 (Wikipedia)'],
+      ['1L1 1R0 | 1U1 1U2 | 0N0 0U0', 'Snowflake', 'on squares: a fractal, 3 states, shown at step 306,000 (Wikipedia)'],
       ['2.R2.1 2.U.0 2.N.2 | 0.L2.1 2.R2.1 2.L.0 | 2.U.1 2.L2.1 1.U.2', 'Hexagonal turmite', 'on hexagons: chaotic, with a texture of its own, then caught in a loop: no new cell after step 194,163 (Wikipedia)'],
       ['1N1 1N0 | 1R0 0L0', 'The widest mess'], ['1L0 0R1 | 0R0 1L1', 'A square growing filled'],
       ['1L0 1U1 | 0L0 1L0', 'A shape growing filled'], ['1N1 0R1 | 1L0 1N0', 'A highway from step 3,090, every 54 steps']].map(([rule, name, about]) => ({ kind: 'turmite', tiling: 'any', rule, name, about })),
@@ -1335,7 +1335,7 @@ const RULES = [
     ['⬡', 'B2/S24/C3', 'Few spread', 'Life-like from a small start: most die, a few spread for a while (3 states)'],
     ['⬡', 'B1/S0123456', 'Snowflakes', 'snowflakes, grown from a few cells'],
     ['■', 'B36/S23', 'HighLife', 'HighLife, with a replicator'],
-    ['■', 'B1357/S1357', 'Replicator', 'Fredkin\'s Replicator: any start comes back as 8 copies of itself, again and again'],
+    ['■', 'B1357/S1357', 'Replicator', 'Edward Fredkin\'s rule: any start comes back as 8 copies of itself, again and again'],
     ['■', 'B3/S12345', 'Maze', 'Maze, grows corridors'],
     ['■', 'B3/S1234', 'Mazectric', 'Mazectric, longer corridors'],
     ['■', 'B3678/S34678', 'Day & Night', 'Day & Night, alive and dead are symmetric'],
@@ -18179,7 +18179,7 @@ $('huntZones').replaceChildren(...Object.entries(HUNT_ZONES).map(([zone, [pic, n
     : zone === 'emoji' ? "An emoji at random, of Unicode's 1,923 (Emoji 18.0), as wide as fits, its outline and dark marks alive, in the middle of each colour's part"
     : isIcon(zone) && zone.startsWith('punk') ? `A CryptoPunk at random, ${zone.endsWith('Max') ? 'as wide as fits, its width and height whole, cut off in its corners only (on squares 96, 72, 48 or 24 cells, elsewhere to the cell)' : '24 cells wide'}, one of the 10,000 of Larva Labs (2017), its line drawing alive (its outline, dark marks and contrasts), in the middle of each colour's part`
     : isIcon(zone) ? `An icon at random, ${zone.endsWith('Max') ? 'as wide as fits, its width and height whole, cut off in its corners only (on squares 96, 72, 48 or 24 cells, elsewhere to the cell)' : '24 cells wide'}, one of the 1,036 of Pixelarticons (MIT), its pixels alive, in the middle of each colour's part`
-    : zone === 'realm' ? "On a solid, each colour's whole face (greyed when its spots are corners or edges); elsewhere, its whole part but its cells next to another's: random starts in it (two colours or more)"
+    : zone === 'realm' ? "On a solid, each colour's whole face; elsewhere, its whole part but its cells next to another's: random starts in it (two colours or more)"
     : zoneRadius(zone) ? `Random starts within ${zoneRadius(zone)} step${zoneRadius(zone) > 1 ? 's' : ''} of each spot (radius ${zoneRadius(zone)})`
     : 'The whole grid, random soups (a colour with two parts: side by side)'} · Clicked again: another start`;  // (picked: a click draws another, see renderHunt)
   if (zone === 'custom') { b.hidden = true; return b; }  // shown, lit, for a start from a link

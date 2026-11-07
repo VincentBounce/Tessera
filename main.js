@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.525';
+const VERSION = '0.4.526';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -9606,7 +9606,7 @@ function symmetryMaps(kind, W, sym) {
 // (start, zone, K, outline: a setup's start, its hunt's zone, its colours' parts and its outline; the game's by default)
 function symmetriesHere(kind, W, M = walk.life?.margolus, { start = plane.start, zone = hunt.zone, K = walk.life ? lifeParts() : 1, outline = outlineOf(kind) } = {}) {  // (M: a block rule's, the walk shown's: its cells' turns, a built grid's)
   const byParts = K > 1 && (start === 'random' || start === 'text');  // (as symmetricStart colours them)
-  const all = (start === 'random' && famousZone(zone) ? ['none'] : planeSymmetries(kind, W, outline)).filter((y) => !byParts || partSymmetries(kind, W, K).includes(y));
+  const all = (start === 'random' && famousZone(zone) ? ['none'] : planeSymmetries(kind, W, outline)).filter((y) => !byParts || partSymmetries(kind, W, K, outline).includes(y));
   if (!M) return all;
   const memo = (M.symmetric ??= new Map()), key = `${kind}|${W}`;
   const keeps = (maps) => !M.ising && !M.move && maps.every((f) => M.turns.every((turn) => {
@@ -9624,9 +9624,11 @@ function symmetriesHere(kind, W, M = walk.life?.margolus, { start = plane.start,
   return memo.get(key).filter((y) => all.includes(y));
 }
 // the symmetries whose every copy of a colour's part is one part whole (a copy recoloured as the part it falls in, see
-// symmetricStart: Trio's thirds, a half turn cuts each across, none), whatever the grid or the parts: their maps and cells
+// symmetricStart: Trio's thirds, a half turn cuts each across, none), whatever the grid or the parts: their maps and cells;
+// on the grid built only (its parts, see huntParts), elsewhere none claimed
 const partMemo = new Map();
-function partSymmetries(kind, W, K) {
+function partSymmetries(kind, W, K, outline = outlineOf(kind)) {
+  if (walk.plane?.kind !== kind || walk.plane.W !== W || outline !== outlineOf(kind)) return ['none'];  // (its parts known on the grid built only: another grid's not judged, not claimed)
   const key = `${gridKey()}|${K}|${hunt.zone === 'mirror'}|${colourMixed() && mixSeed()}`;  // (Mixed: its parts drawn from its seed)
   if (partMemo.has(key)) return partMemo.get(key);
   const parts = huntParts(0, K), own = new Int32Array(walk.life.seed.length);

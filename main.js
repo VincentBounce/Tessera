@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.385';
+const VERSION = '0.4.386';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -1560,15 +1560,32 @@ const cache = {};        // key → { intPart: "10", digits: Uint8Array (fractio
 let current = null;      // { head: integer-part digits, digits, mode }
 let worker = null;
 
-const walk = {
+// A walk's every field, as it starts: each build begins from these (see buildWalkOf), then sets its own,
+// so nothing of the walk before stays (a worm's ✝ on the ant after it, v0.4.384). A field a builder sets
+// is declared here, once.
+const freshWalk = () => ({
   n: 0,            // number of steps
   digits: null,    // digit of each step
+  keys: null,      // what each step is coloured by (its digits, an ant's states, a worm's turns)
   xs: null, ys: null,  // screen-plane positions (cell centres) of the n+1 points
+  wx: null, wy: null, wz: null, is3d: false,  // their places in the world (z: 3D only)
   cells: null,     // distinct cells visited up to point i
   maxDist: null,   // max distance up to point i
   base: 3,
   counts: null,    // running count of each digit up to step i (base values per point)
-};
+  loop: null, coverStep: -1,  // where it goes round (see loopWatch); the step it has visited every cell
+  lattice: 'square', lines: false, skipZeros: false, points: false,
+  sphere: false, geo: null, R: 1, tile: null, nodes: 0, vert: null, stepTiles: null, came: null,  // a surface's: its mesh, radius, the tile of each point, a grid walk's corners and edges
+  visits: null, maxVisits: 0,
+  ant: 0, turns: null, antStates: null, highway: null, bridges: null,  // an ant's walk only
+  rows: null,      // Elementary's rows (see elementaryRows)
+  wormEnd: false, wormMade: 0,  // a worm's walk only: why and after how many turns of its own it stops
+  battle: null,    // a battle only (see 7.6b)
+  life: null, plane: null,  // Life's; on the plane, its grid
+  shape: null,     // only tiled surfaces that can change shape get one (see initShape)
+  persp: null,     // the perspective camera (see setPerspective)
+});
+const walk = { mode: null, ...freshWalk() };  // (mode: the one it is built for, see buildWalkOf)
 
 let cur = 0;        // steps taken so far
 let drawn = 0;      // steps already drawn on the path layer
@@ -3934,24 +3951,19 @@ function walkRepeat() {
 }
 
 function buildWalkOf() {
+  const rows = MODES[current.mode].elementary ? elementaryRows() : null;  // (Elementary: a step a generation, see elementaryRows)
+  if (MODES[current.mode].elementary && !rows) return;  // (its rows on their way: the walk shown kept meanwhile)
   previousShape = walk.shape && { target: walk.shape.target, mode: walk.shape.mode };
   visitData = firstVisitData = areaData = null;  // and its cells' visits and areas too
   gpuClear();  // a surface drawn before (see 11.4d)
   fill = null;  // a new walk: its enclosed areas are computed again, and its layer starts empty
-  walk.mode = current.mode;  // (the mode it is built for: its colours by it, current.mode ahead of it while another is made, see compute)
-  walk.ant = 0; walk.highway = null; walk.bridges = null;  // set by an ant's walk only
-  walk.wormEnd = false; walk.wormMade = 0;  // set by a worm's walk only (its ✝: else an ant after a worm on a surface died with it)
-  walk.battle = null;  // set by a battle only (see 7.6b)
-  walk.plane = walk.rows = null;  // set by Life on the plane only; Elementary's rows (see elementaryRows)
+  Object.assign(walk, freshWalk(), { mode: current.mode });  // (all its fields fresh; the mode it is built for: its colours by it, current.mode ahead of it while another is made, see compute)
   $('fillTooBig').hidden = true;
   layers.fill.clearRect(0, 0, cw, ch);
-  walk.shape = null;  // only tiled surfaces that can change shape get one (see initShape)
   const { head, frac } = digitsInUse();
   let seq = new Uint8Array(head.length + frac.length);
   seq.set(head);
   seq.set(frac, head.length);
-  const rows = MODES[current.mode].elementary ? elementaryRows() : null;  // (Elementary: a step a generation, see elementaryRows)
-  if (MODES[current.mode].elementary && !rows) return;  // (its rows on their way)
   if (rows) seq = new Uint8Array(rows.G);
   else if (MODES[current.mode].life) {
     buildLife(seq, MODES[current.mode]);

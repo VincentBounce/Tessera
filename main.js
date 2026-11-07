@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.429';
+const VERSION = '0.4.430';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -3520,6 +3520,8 @@ const walksThere = (v) => {
   const [kind, space, shape, rule] = NAV[v], fam = familyOf(v), tiling = fam?.F.modes[fam.m];
   return Object.keys(NAV).filter((u) => [kind, space, shape, rule].every((x, i) => NAV[u][i] === x) && (!tiling || tiling.includes(u)));
 };
+// a walk of kind r (Turtle, Spiral…) at a mode's place: on its shape, on its tiling (see walksThere)
+const walkKindHere = (v, r) => { const [kind, space, shape] = NAV[v], fam = familyOf(v), tiling = fam?.F.modes[fam.m]; return modesUnder(kind, space, shape, r).some((u) => !tiling || tiling.includes(u)); };
 const walkSidesOf = (v) => [...new Set(walksThere(v).map((u) => NAV[u][4]))];
 // a side's greyed words at a mode (Grid, Cells; see walkOn): none there (none: its words), or a walk by a rule whose rule
 // cannot go there (a diagonal along the grid: the word why); '' where it can
@@ -3746,8 +3748,7 @@ function renderModePicker() {
     }), ...(F.tabs.some(([, tu]) => tu) ? [tile({ pic: icon('pivot'), text: 'Turned', toggle: true, byDefault: 'off', greyed: TURNED_WHERE, on: isTurned, whyNot: ({ w: v }) => (turnedAllowed(v, isTurned) ? '' : TURNED_WHERE),
       title: turns ? F.tabs[tabOf(here, true)][4] : 'The tiling turned, its rows another way round', click: turn })] : []));
   }
-  // the rules, where there are several, each with its picture; in a family, those its tiling has not greyed
-  const tiling = inFamily?.F.modes[inFamily.m], has = (...n) => !tiling || tiling.some((v) => n.every((x, i) => NAV[v][[0, 3, 4][i]] === x));
+  // the rules, where there are several, each with its picture; those its tiling has not greyed (see walkKindHere)
   // the rules, one list of cards: a walk's, its rules (a word per digit) then the others (Spiral, Diagonals); a creature's, its
   // rules (see ruleCards: the ants' and turmites' on cells, the worm's along the triangles' grid, its Grid tab)
   const creatures = kind === 'Ant';
@@ -3762,9 +3763,7 @@ function renderModePicker() {
     const pic = icon(r === 'Turtle' ? 'turtle' : r === 'Pivot' ? 'pivot' : r === 'Parity' ? 'walk2d' : r === 'Ant' ? 'ant' : MODE_ICONS[v]);  // a turtle for the walks turning relative to their heading
     const go = () => { if (here) { navGo(3, r); return; } $('mode').value = v; $('mode').dispatchEvent(new Event('change')); };
     const how = walkTutorialFits(here ?? v) && (() => { if (r === rule) walkTutorialToggle(); else { go(); walkTutorial($('mode').value); } });  // (its ⓘ: how it works, picked first)
-    const b = card({ pic, name: r, base, detail, on: r === rule, how, byDefault: i ? '' : 'yes', click: go });  // (the first: where a shape starts)
-    b.disabled = !has(kind, r);
-    return [b];
+    return [card({ pic, name: r, base, detail, on: r === rule, how, byDefault: i ? '' : 'yes', click: go, whyNot: ({ w: u }) => (walkKindHere(u, r) ? '' : 'not on this tiling') })];  // (the first: where a shape starts)
   }));
   // Grid | Cells (Cube in 3D): each with its base and its digits, or what it is not on (that side off)
   const sides = walkSidesOf(w);
@@ -6255,6 +6254,7 @@ const turnedTorusHexMesh = (nv, nu = torusTriColumns(nv)) => turnedTorus('torusH
  * (rolled up from a flat rectangle) and a mesh with a flat form of its own (flatVerts: a rosette sphere's lentil,
  * each vertex straight from there to the sphere). The cells and their neighbours never change, so a walk or a
  * Game of Life run goes on unchanged: only the drawing and the 3D positions move. */
+const MORPH_WHERE = 'on the pits, the bumps and the sponge (their holes: no form between), and where a surface has no other form';  // (Morph's greyed words)
 const MORPHABLE = [...Object.keys(TETRAKIS_SOLIDS).map((k) => `${k}Tetrakis`), 'klein', 'kleinHex', 'kleinTri', 'kleinCairo', 'kleinKite', 'kleinHexTurned', 'kleinTriTurned', 'kleinKiteTurned', ...foldedIn('klein'), 'torusKite', 'torusKiteTurned', 'cube', 'pits', 'bumps', 'frame', 'menger', 'tetra', 'octa', 'stella', 'dodeca', 'icosa', 'tetraKite', 'octaKite', 'icosaKite', 'stellaKite', 'dodecaKite', ...hexSolids.map((k) => `${k}Hex`), 'cubocta', 'pyramid', 'rhombi', 'bicupola', 'globe', ...Object.keys(ROSETTE_SPHERES).map((k) => `${k}Sphere`), 'torus', 'torusHex', 'torusTri', 'torusCairo', 'torusHexTurned', 'torusTriTurned', 'hexsphere', 'twistedsphere', ...MOBIUS_KINDS,
   ...foldedIn('torus')];
 
@@ -6384,7 +6384,7 @@ function updateMorphButton() {
   if (document.activeElement !== $('shapeM')) $('shapeM').value = sh.target;
   // greyed on the pits and the sponge (their holes: no form between); its default, told in its tooltip, each shape's of
   // this tab (round: a sheet rolled up, a solid inflated)
-  $('shapeM').disabled = ['pits', 'bumps', 'menger'].includes(MODES[walk.mode].sphere.replace(/Tetrakis$/, ''));
+  greyInput($('shapeM'), $('shapeRow'), ({ w: v }) => { const k = surfaceOf(MODES[v]); return MORPHABLE.includes(k) && !['pits', 'bumps', 'menger'].includes(k.replace(/Tetrakis$/, '')) ? '' : MORPH_WHERE; });
   const [kind, space] = NAV[walk.mode], sheet = ['Torus', 'Möbius strip', 'Klein bottle'], ways = { Inflated: [], Rolled: [], Flat: [] };
   for (const s of navValues(2, [kind, space])) {
     const w = Object.keys(NAV).find((v) => NAV[v][0] === kind && NAV[v][1] === space && NAV[v][2] === s);
@@ -6593,13 +6593,18 @@ function sizeGauge(el, n, i, preview, pick) {
 // A notched slider, one choice among a few on a row (Cut, Area): its title a sub-section's (field-label), a notch each (see sizeGauge), the
 // choice's name on its right; its tooltip on the whole row, as a button's (see tipOf): its title in bold, what it does (about)
 // and its choice's words, its default (choice first) on a grey line; whyNot, greyed and why (see setTile); live: set as it is dragged (else let go)
+// a slider greyed as a tile is (see setTile): whyNot(setup) its one source, its row's greyed words, its enablers
+function greyInput(input, row, whyNot) {
+  const why = whyNot({ w: $('mode').value });
+  input.disabled = !!why;
+  row.dataset.greyed = why;
+  input.enablers = () => enablersFor((setup) => !whyNot(setup));
+}
 function notchRow(el, title, about, choices, at, first, set, whyNot = null, live = true) {  // (whyNot(setup): as a tile's, see setTile)
   const name = Object.assign(document.createElement('span'), { className: 'notch-name' }), gauge = Object.assign(document.createElement('div'), { className: 'size-gauge' });
   const show = (k) => { name.textContent = choices[k][0]; el.title = [about, choices[k][1]].filter(Boolean).join('\n'); }, pick = (k) => { show(k); set(k); };
   sizeGauge(gauge, choices.length, at, live ? pick : show, pick);
-  const input = gauge.querySelector('input'), why = whyNot?.({ w: $('mode').value }) ?? '';
-  input.disabled = !!why;
-  if (whyNot) { el.dataset.greyed = why; input.enablers = () => enablersFor((setup) => !whyNot(setup)); }
+  if (whyNot) greyInput(gauge.querySelector('input'), el, whyNot);
   show(at);
   el.dataset.default = `${choices[first][0]} by default`;
   el.classList.add('notch-row');

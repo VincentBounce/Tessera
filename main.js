@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.373';
+const VERSION = '0.4.374';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -13249,7 +13249,7 @@ const patternsOn = () => {  // (by the teams laid, lifeParts: with Newcomer, one
 };
 // the grid the patterns are of: the plane's, else the cells' (the cube's squares, the sheets', the solids' triangles)
 const cellKind = (g) => g.tiling ?? (g.squares ? 'tetrakis' : g.kite ? 'kite' : (g.hexagons ? 'hex' : { 3: 'tri', 5: 'cairo', 6: 'hex' }[g.sides]) ?? 'square');  // (a mesh's cells, as the plane's grids)
-const patternKind = () => { const h = hullColours(MODES[$('mode').value].sphere, walk.life && lifeParts()); return flatGrid()?.kind ?? (h && h.groups[0][0] >= h.squares && !walk.geo.tiling ? 'tri' : cellKind(walk.geo)); };  // (a hull solid's: its first colour's face's, a square or a triangle)
+const patternKind = () => { const h = hullColours(MODES[walk.mode].sphere, walk.life && lifeParts()); return flatGrid()?.kind ?? (h && h.groups[0][0] >= h.squares && !walk.geo.tiling ? 'tri' : cellKind(walk.geo)); };  // (a hull solid's: its first colour's face's, a square or a triangle)
 // a face's level way (its normal n: across it, square to the world's up; a face looking straight up or down, east) and the
 // way down it, as a marble rolls (a face looking straight up or down: south)
 const levelOf = (n) => { const l = cross([0, 0, 1], n); return Math.hypot(...l) < 1e-9 ? [1, 0, 0] : unit(l); };
@@ -13283,7 +13283,7 @@ function cellIndex(g) {
 // plane; a hull solid's: its colours' triangles), the face, its corners turned so that AB is its side most level (kites' not
 // turned: q its level side, AB, BC or CA); on a hull solid's square, a solid of hexagons' or the cube's face, its face
 function patternPlace(i, K) {
-  const g = walk.geo, sphere = MODES[$('mode').value].sphere;
+  const g = walk.geo, sphere = MODES[walk.mode].sphere;  // (the walk shown's, as g)
   if (flatGrid()) return { on: 'plane' };
   if (g.torus) return { on: 'sheet' };
   const hull = hullColours(sphere, K), squares = g.squareFaces?.length ?? 0;  // (a hull solid's colour: its first face, see hullColourings)
@@ -13442,7 +13442,7 @@ function sheetUnits(g, kind) {  // a point of the plane (its world units) in the
   const uv = Array.from({ length: g.sides }, (_, q) => [g.uv[2 * q], g.uv[2 * q + 1]]), flat = uv.map(([u, v]) => { const P = sheetPoint(g, u, v, 0); return [P[0], -P[1]]; });
   const j = [...uv.keys()].slice(2).reduce((best, q) => (polyArea([flat[0], flat[1], flat[q]]) > polyArea([flat[0], flat[1], flat[best]]) ? q : best), 2);  // (a third corner off the line of the first two)
   const d = (P, q) => [P[q][0] - P[0][0], P[q][1] - P[0][1]], [e1, e2] = [d(flat, 1), d(flat, j)], [f1, f2] = [d(uv, 1), d(uv, j)], D = e1[0] * e2[1] - e1[1] * e2[0];
-  const k = Math.sqrt(polyArea(flat) / polyArea(planeCorners(kind, 0, 0))), turn = (tilesTurn(surfaceOf(MODES[$('mode').value])) * Math.PI) / 180;
+  const k = Math.sqrt(polyArea(flat) / polyArea(planeCorners(kind, 0, 0))), turn = (tilesTurn(surfaceOf(MODES[walk.mode])) * Math.PI) / 180;  // (the walk shown's surface: g its, see patternFrame)
   return (p) => {  // (a length laid flat: its parts along the first tile's two sides there, the same parts of them in sheet units)
     const [x, y] = turnPoint(p, turn).map((c) => c * k), a = (x * e2[1] - y * e2[0]) / D, b = (e1[0] * y - e1[1] * x) / D;
     return [a * f1[0] + b * f2[0], a * f1[1] + b * f2[1]];

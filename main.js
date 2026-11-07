@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.381';
+const VERSION = '0.4.382';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -10159,7 +10159,7 @@ function mooreOf(sides) {
 }
 const loopRing = (rule, sides) => (rule.loopRing === 8 ? mooreOf(sides) : sides);  // (a loop table's neighbours: its 4 sides, or its 8)
 // a loop table's code, as a rule's B/S is (its name its value): Golly's name for it, its states, its neighbours if 8
-const loopCode = (name) => { const R = parseLoops(name); return `${LOOP_RULES[name].golly} · ${R.loopStates} states${R.loopRing === 8 ? ', 8 neighbours' : ''}`; };
+const loopCode = (name) => { const R = parseLoops(name); return `${R.loopStates} states${R.loopRing === 8 ? ', 8 neighbours' : ''}`; };  // (its Golly table's name not shown: the card's name again)
 // a loop table fits a grid of squares: turned, any; with no turns (Tempesti's), only where every cell has the same north
 const loopFits = (rule, mode) => !!rule?.loops && (rule.loopTurns || !!mode.north);
 // The loops' start (see loops.js) on empty cells: its RLE's states (. 0, A 1, B 2…), its rows ($), laid tile by tile from the
@@ -11783,7 +11783,7 @@ function renderRuleSection() {
     const pick = () => { customOpen = false; if (o.rule === now) { renderRuleSection(); return; } $('lifeRule').value = o.rule; compute(); };
     return card({ pic: RULE_ICONS[o.rule] ? pixelIcon(RULE_ICONS[o.rule]) : '', name: `${o.name}${bw ? ' · B&W' : ''}`, on: picked, byDefault: i ? '' : 'yes',
       how: () => { if (picked) ruleTutorial(howShown(o) ? null : o); else { pick(); ruleTutorial(o); } },  // (its ⓘ: how it works, picked first, as the walks')  // (the first: the shape's, see fitRuleToShape)
-      detail: `${mode.loops ? loopCode(o.rule) : o.rule} · ${unnamed(o.about, o.name)}`, click: pick });  // its code (a loop's: its table's), its words without its name
+      detail: `${mode.loops ? loopCode(o.rule) : o.rule} · ${unnamed(o.about, o.name)}`, click: pick });  // its code (a loop's: its states), its words without its name
   }));
   // after them, your own: picked when the rule in use is none of them, or clicked (its states, births and survivals below); none for a loop
   $('watchRule').onclick = () => ruleTutorial(!$('ruleTuto').hidden && !creditsShown() ? null : shown);  // (the rule in use: a card's, or your own)

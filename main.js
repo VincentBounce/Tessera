@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.426';
+const VERSION = '0.4.427';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -1774,10 +1774,12 @@ const defaultMark = (key) => (defaultOf(key) ? 'on' : 'off');
 // cells never change once made: no Activity
 // a mode's option in the menu; the menu's group of the mode on (its space: 2D, Surfaces…)
 const modeOptionOf = (w) => $('mode').querySelector(`option[value="${w}"]`);
-const modeGroup = () => $('mode').selectedOptions[0].parentElement.label;
+const modeGroup = (w = $('mode').value) => modeOptionOf(w).parentElement.label;  // (a mode's: the tab's by default)
 const DISPLAY_GREYED = { '2D spirals': ['fill', 'visits', 'line'], Elementary: ['digit'] };
 const greyed = (item) => [modeGroup(), NAV[$('mode').value]?.[0]].some((k) => DISPLAY_GREYED[k]?.includes(item));
-const shows = (item) => DISPLAY_BY_TAB[modeGroup()].includes(item) || (spaceTimeOn() && VIEW_3D.includes(item));
+const shows = (item, w = $('mode').value) => DISPLAY_BY_TAB[modeGroup(w)].includes(item) || (w === $('mode').value && spaceTimeOn() && VIEW_3D.includes(item));
+// a display setting greyed at a mode: none in its view, the views that have it said (Grid, Upright, Perspective…); else ''
+const viewWhyNot = (item, w) => (shows(item, w) ? '' : `only in ${Object.keys(DISPLAY_BY_TAB).filter((g) => DISPLAY_BY_TAB[g].includes(item)).join(', ')}`);
 const useful = (item) => shows(item) && !greyed(item);
 function updateDisplayMenu() {
   const rows = { colours: 'coloursRow', grid: 'gridRow',
@@ -1828,7 +1830,8 @@ function renderViewTiles() {
   }
   const perspective = !ways.on.length ? 'off' : !ways.off.length ? 'on' : `On by default on ${ways.on.join(', ')}\nOff by default on ${ways.off.join(', ')}`;
   const first = { perspective, light: defaultMark('light'), glass: defaultMark('glass'), ocean: defaultMark('ocean') }, why = { ocean: 'beyond a Quintet: a map has five lands (green, yellow, ochre, lime, ice white)' };
-  VIEW_TILES.forEach(([id, row], k) => setTile(viewTiles[k], { on: $(id).checked, can: !$(row).hidden && !$(id).disabled && (id !== 'ocean' || oceanFits()), byDefault: first[id], greyed: why[id] ?? '' }));
+  VIEW_TILES.forEach(([id], k) => setTile(viewTiles[k], { on: $(id).checked, byDefault: first[id], greyed: why[id] ?? '',
+    whyNot: ({ w }) => viewWhyNot(id, w) || (id === 'ocean' && w === $('mode').value && !oceanFits() ? why.ocean : '') }));  // (its row's: see updateDisplayMenu, by shows)
   $('viewTiles').hidden = VIEW_TILES.every(([, row]) => $(row).hidden);
 }
 $('viewTools').addEventListener('mouseenter', renderViewTiles);
@@ -1852,8 +1855,8 @@ function renderViewModes() {
   const c = $('centered').checked, u = $('upright').checked && !$('uprightRow').hidden;
   setTile(viewModes[0], { on: c, byDefault: 'yes' });
   setTile(viewModes[1], { on: !c && !u });
-  setTile(viewModes[2], { on: u, can: !$('uprightRow').hidden });
-  setTile(rotateTile, { on: $('autoRotate').checked, can: !$('autoRotateRow').hidden && !$('autoRotate').disabled, byDefault: defaultMark('autoRotate') });
+  setTile(viewModes[2], { on: u, whyNot: ({ w }) => viewWhyNot('upright', w) });
+  setTile(rotateTile, { on: $('autoRotate').checked, byDefault: defaultMark('autoRotate'), whyNot: ({ w }) => viewWhyNot('autoRotate', w) });
   $('viewModes').hidden = $('centeredRow').hidden;
 }
 $('viewTools').addEventListener('mouseenter', renderViewModes);
@@ -1869,9 +1872,9 @@ function renderHeadTiles() {
     $('headTiles').replaceChildren(soundButton, ...headTiles);
   }
   renderSoundButton();
-  setTile(headTiles[0], { on: $('autoPlay').checked, can: !$('autoPlayRow').hidden, byDefault: defaultMark('autoPlay'), greyed: 'outside Life' });
+  setTile(headTiles[0], { on: $('autoPlay').checked, byDefault: defaultMark('autoPlay'), greyed: 'outside Life', whyNot: ({ w }) => (MODES[w].life ? '' : 'outside Life') });  // (its row's: see renderModePicker)
   setTile(headTiles[1], { on: $('autoFit').checked, byDefault: defaultMark('autoFit') });
-  setTile(headTiles[2], { on: $('showGrid').checked, can: !$('gridRow').hidden, byDefault: defaultMark('grid') });
+  setTile(headTiles[2], { on: $('showGrid').checked, byDefault: defaultMark('grid'), whyNot: ({ w }) => viewWhyNot('grid', w) });
 }
 $('viewTools').addEventListener('mouseenter', renderHeadTiles);
 

@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.388';
+const VERSION = '0.4.389';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -7495,8 +7495,8 @@ const PENETRATIONS = [
   ['landStop', 'Land no collision', 'M0 1.5H1.5V2.5H0ZM2.5 0H3.5V4H2.5Z', "As Land grid 1, and nothing is ever pierced: a walker stops for good just before its first step along or across another's line (on cells, just before its first step onto another's tile); heads meeting (two or more at once) all stop there. The others go on, until all have stopped or the digits end: the most land wins"],
   ['landMerge', 'Land grid merge', 'M0 1H4V3H0Z', "As Land grid 1, and nothing is ever pierced or stopped: lines cross and run along each other; the first heads meeting (two or more at once) end the battle, every walker stopping there: the most land wins"],
   ['landCells', 'Land cells', 'M0 0H4V4H0ZM1 1H3V3H1Z', "On cells: no body; each walker paints the tile it goes into its colour, whatever it was, and a zone its colour closes (the tiles not of its colour cut off, the largest outside) is painted inside. Heads meeting (two or more at once) all die: they stop painting, their tiles stay, the others' to take; with one walker left or none, it ends: the most tiles win, the dead's too"],
-  ['cut', 'Cut', 'M0 1.5H4V2.5H0Z', "A head on another's body cuts it there, to its tail; heads meeting (two or more at once), all but the longest die (as long: all); the last one left wins (as the digits end: the longest)"],
-  ['snakeCells', 'Snake cells', 'M0 2.5H3V3.5H0ZM2 0.5H3V2.5H2Z', "On cells, as Cut, each walker a snake: on an even step it grows a cell, till a tenth of the surface; on an odd step a cell for each cell it has eaten; else its tail slides. A head on another's body bites it there: the bitten loses its body to its tail, the cells the biter eats. Heads meeting, all but the longest die (as long: all); the last one left wins (as the digits end: the longest)"],
+  ['cut', 'Cut', 'M0 1.5H4V2.5H0Z', "A head on another's body cuts it there, to its tail; heads meeting (two or more at once), all but the longest die (as long: all); the last survivor wins (as the digits end: the longest)"],
+  ['snakeCells', 'Snake cells', 'M0 2.5H3V3.5H0ZM2 0.5H3V2.5H2Z', "On cells, as Cut, each walker a snake: on an even step it grows a cell, till a tenth of the surface; on an odd step a cell for each cell it has eaten; else its tail slides. A head on another's body bites it there: the bitten loses its body to its tail, the cells the biter eats. Heads meeting, all but the longest die (as long: all); the last survivor wins (as the digits end: the longest)"],
   ['landGrid2', 'Land grid 2', 'M0 1.5H2.5V2.5H0Z', "Along the grid: each walker's land, the tiles its body closes stay its own (an enemy's too); a head on another's body cuts it; a head going into an enemy's land takes the tiles it goes through. Heads meeting (two or more at once) all die: they stop conquering, their land stays, the others' to take; with one walker left or none, it ends: the most land wins, the dead's too"],
   ['landGrid3', 'Land grid 3', 'M1.5 0H2.5V4H1.5ZM0 1.5H4V2.5H0Z', "As Land grid 1, and a walker dies by its head, its last thread, from its head to its fork, let go: its head on another's (both die), or another's head along or across its last thread (it dies; touched, nothing); elsewhere a thread pierced, as in Land grid 1"]];
 // a link of v0.4.378 or before: its pe= in the order they were added (then: Land grid 1, Land cells, Cut, Land grid 2, Land
@@ -8218,9 +8218,9 @@ function battlePlayer(g, grid, S, starts, digits, pen = penetration) {
 // ended it before its digits (its stepper's words, see syncDigitsStepper)
 function battleWinner(P) {
   P.to(Infinity);
-  const left = P.living(), w = P.worth(), ended = P.merges ? (left.length ? '' : 'the first heads met') : P.stops ? (left.length ? '' : 'all stopped') : left.length === 1 ? 'one left' : left.length ? '' : 'the last heads met';
+  const left = P.living(), w = P.worth(), ended = P.merges ? (left.length ? '' : 'the first heads met') : P.stops ? (left.length ? '' : 'all stopped') : left.length === 1 ? 'one survivor' : left.length ? '' : 'the last heads met';
   const how = P.bite ? `the most land, ${ended || 'as the digits end'}`
-    : left.length === 1 ? 'the last one left' : left.length ? 'the longest as the digits end' : 'the last ones met, as long';
+    : left.length === 1 ? 'the last survivor' : left.length ? 'the longest as the digits end' : 'the last ones met, as long';
   const among = P.bite ? P.standing() : left, top = Math.max(0, ...among.map((s) => w[s])), best = among.filter((s) => w[s] === top);  // (with land, the dead too)
   const until = ended;
   return { s: best.length === 1 ? best[0] : -1, how, until, size: top };

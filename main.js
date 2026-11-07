@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.469';
+const VERSION = '0.4.470';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -3594,9 +3594,11 @@ function ruleCards(w, here = true) {
 // The modes under a button of the menu: its place in the tree (NAV: kind, space, shape, rule, side), all those below it
 const modesUnder = (...place) => Object.keys(NAV).filter((u) => place.every((x, i) => NAV[u][i] === x));
 // The menu as a graph (the setup a node, a click an edge): a setup, what the app holds as a link does ({ w: the mode, size:
-// null for the one it opens at, its colours, a walk's teams, its battle rule, its starts' way), the one in use first
-const setupNow = () => ({ w: $('mode').value, size: null, colours: lifeColours, teams: walkTeams, battleRule, startsWay: battleStartsWay });
-const setupKey = (s) => `${s.w}|${s.size}|${s.colours}|${s.teams}|${s.battleRule}|${s.startsWay}`;
+// null for the one it opens at, its colours, a walk's teams, its battle rule, its starts' way, a Life's start and its hunt's
+// zone), the one in use first
+const setupNow = () => ({ w: $('mode').value, size: null, colours: lifeColours, teams: walkTeams, battleRule, startsWay: battleStartsWay, start: plane.start, zone: hunt.zone });
+const SETUP_FIELDS = ['size', 'colours', 'teams', 'battleRule', 'startsWay', 'start', 'zone'];  // (its fields but the mode: a key's, a path's changes)
+const setupKey = (s) => [s.w, ...SETUP_FIELDS.map((f) => s[f])].join('|');
 // The menu's choices at a setup, each a click: its key (its button's data-choice) and the setup it leads to, by the menu's
 // own navigation (navPick, kindLeft, nearestMode, walksThere): the tabs, spaces, shapes, tilings, sides, walks' kinds, then a
 // Life's colours, a battle's teams and rule; a surface's sizes at the start only (one stepper, see pathsTo)
@@ -3616,6 +3618,10 @@ function choicesAt(s) {  // (each [key, the setup it leads to, its button's word
     if (s.teams > 1) BATTLE_RULES.forEach(([kind, name], p) => set(`battleRule:${p}`, 'battleRule', p, battleRuleWhyNot(kind, w), name));
     if (s.teams > 1) STARTS_WAYS.forEach(([way, name]) => set(`startsWay:${way}`, 'startsWay', way, startsWayCan(way, w, s.size ?? undefined) ? '' : CENTRED_WHERE, name));
   }
+  // a Life's starts (its tabs: Hunt, Text, Digits, Draw), and its hunt's zones on the grid shown (their room known there only, see huntFits; Custom a link's, no tile)
+  const m = MODES[w];
+  if (m.life && !m.loops && !m.elementary) for (const [start, name] of LIFE_STARTS) set(`start:${start}`, 'start', start, startWhyNot(start, w), name);
+  if (w === walk.mode && s.colours === lifeColours && s.start === 'random' && huntOn()) for (const [zone, fits] of Object.entries(huntFits())) if (fits && zone !== 'custom') set(`zone:${zone}`, 'zone', zone, '', HUNT_ZONES[zone][1]);
   return out;
 }
 // how many settings two setups differ by: the menu's levels, the tiling, the fields
@@ -3623,7 +3629,7 @@ function choicesAt(s) {  // (each [key, the setup it leads to, its button's word
 // none on a solid or a lattice
 const tilingNameOf = (w) => { const fam = familyOf(w); return fam ? fam.F.tabs.find(([t]) => t === fam.m)[3] : !['sphere', 'cube'].includes(MODES[w].lattice) ? NAV[w][2] : null; };
 const modeChanges = (v, w) => [0, 1, 2, 3, 4].filter((i) => NAV[v][i] !== NAV[w][i]).length + (tilingNameOf(v) !== tilingNameOf(w));
-const changes = (a, b) => modeChanges(a.w, b.w) + ['size', 'colours', 'teams', 'battleRule', 'startsWay'].filter((f) => a[f] !== b[f]).length;
+const changes = (a, b) => modeChanges(a.w, b.w) + SETUP_FIELDS.filter((f) => a[f] !== b[f]).length;
 // The shortest paths from the setup in use to one fits takes, at n clicks: breadth first, each setup once, layer by layer
 // till one holds some; of these the fewest settings changed, each its clicks [key, words] (budget: setups tried at most)
 function pathsTo(fits, budget = 5000) {
@@ -10610,6 +10616,11 @@ function renderSymmetry() {
 // Draw's and Text's greyed words
 const SYMMETRY_WHERE = 'The grid is not its own copy this way (squares: all ways; a grid in a hexagon: as its tiles allow; a block rule: as its blocks and its rule allow too; in colours, as their parts do, each copy one whole part; the others: none). Not on Famous and Anywhere either: their patterns are laid whole where they are.';  // (a symmetry's greyed words)
 const DRAW_WHERE = 'On a reversible surface, a block rule has no patterns to show or draw.';
+// a Life's starts, its tabs (see renderPlaneRow), and why one cannot be at mode v: Draw on a surface (its rule's patterns:
+// none for blocks); Text where no picture fits (its room known on the grid built only: another mode's not judged, not claimed)
+const LIFE_STARTS = [['random', 'Hunt'], ['text', 'Text'], ['digits', 'Digits'], ['draw', 'Draw']];
+const startWhyNot = (start, v) => (start === 'draw' ? (!MODES[v].plane && MODES[v].margolus ? DRAW_WHERE : '')
+  : start === 'text' ? (v !== $('mode').value ? TEXT_WHERE : !walk.life || current?.mode !== v || setFits(iconMax(textSet()), textSet()) ? '' : TEXT_WHERE) : '');
 const TEXT_WHERE = 'No picture can be laid here, as with Emoji (the grid too small, or a solid with no face for it).';
 const PNG_WHERE = 'Only on a grid of squares: one pixel per square.';  // (Export PNG's greyed words)
 function renderPlaneRow() {
@@ -10619,8 +10630,8 @@ function renderPlaneRow() {
     const s = b.dataset.start, on = surfaceDraw ? s === 'draw' : s === plane.start;
     b.hidden = !!MODES[$('mode').value].elementary !== ELEMENTARY_STARTS.includes(s) && s !== 'digits';  // (Elementary's starts, see elementaryRows)
     if (s === 'random') b.innerHTML = `${icon(blocks ? 'dice' : 'search')}<span>${blocks ? 'Random' : 'Hunt'}</span>`;  // (blocks: no hunt, its zones' starts)
-    if (s === 'draw') setTile(b, { on, whyNot: ({ w: v }) => (!MODES[v].plane && MODES[v].margolus ? DRAW_WHERE : '') });  // (Draw on a surface: its rule's patterns, none for blocks)
-    else if (s === 'text') setTile(b, { on, whyNot: ({ w: v }) => (v !== $('mode').value ? TEXT_WHERE : !walk.life || current?.mode !== v || setFits(iconMax(textSet()), textSet()) ? '' : TEXT_WHERE) });  // (a picture's room known on the grid built only: another mode's not judged, not claimed)  // (its grid's, once built)
+    b.dataset.choice = `start:${s}`;  // (its choice's key, see choicesAt)
+    if (s === 'draw' || s === 'text') setTile(b, { on, whyNot: ({ w: v }) => startWhyNot(s, v) });  // (a picture's room known on the grid built only: another mode's not judged, not claimed)  // (its grid's, once built)
     else setTile(b, { on });
   }
   $('startTextInput').value = plane.text;  // (its words, on any grid)
@@ -11270,12 +11281,12 @@ const lifeMark = (mode) => (mode.elementary ? ELEMENTARY_MARK : mode.loops ? LOO
 let lifeColours = 1, coloursPicked = 1, colourMix = false, newcomer = false;  // the colours: the figure's nearest to the last picked (see fitColours); colourMix: Mixed, the colours mixed in one place (see huntParts)
 // Mixed as it counts in a zone: on, colours to mix, and a zone of cells at random (Spark … Jungle, Wild, Formula): the others lay
 // each colour's own picture or part (Icon, Punk, Emoji, Famous, Anywhere, Realm, Mirror), Mixed greyed there, kept for later
-const mixable = (zone, mode = MODES[$('mode').value]) => !!mode.life && !mode.loops && (plane.start === 'digits' ||  // (by the mode, not its game: a link opened cold, before its game, mixes as the page did)
-  (huntOn() && (zoneRadius(zone) > 0 || zone === 'full' || zone === 'numbers')));
+const mixable = (zone, mode = MODES[$('mode').value], start = plane.start) => !!mode.life && !mode.loops && (start === 'digits' ||  // (by the mode, not its game: a link opened cold, before its game, mixes as the page did)
+  (start === 'random' && (zoneRadius(zone) > 0 || zone === 'full' || zone === 'numbers')));  // (a hunt's zones: a soup's start)
 const colourMixed = (zone = hunt.zone) => colourMix && lifeColours > 1 && mixable(zone);
 // Newcomer, a switch: the teams below's start (Trio's: Duel's, laid as Duel lays them), the last colour none at first, born only
 // of a tie between the others (the colour missing, see colourMissing); where a start lays teams (a soup's zones, Text)
-const newcomerCan = (colours = lifeColours, figure = pickedFigure()) => colours > 2 && colourMissing(colours) && coloursFit(colours - 1, figure) && (plane.start === 'random' || plane.start === 'text');
+const newcomerCan = (colours = lifeColours, figure = pickedFigure(), start = plane.start) => colours > 2 && colourMissing(colours) && coloursFit(colours - 1, figure) && (start === 'random' || start === 'text');
 const newcomerWhere = (colours) => `Not in Solo, Duel, Digits or Draw, nor where the teams picked have no birth of the missing colour (no mark in their corner)${colours > 2 && !coloursFit(colours - 1) ? `; ${COLOUR_STEP_NAMES[colours - 1] ?? `${colours - 1} teams`} does not fit here` : ''}.`;
 // Mixed's greyed words (see mixable)
 const MIXED_WHERE = 'Not in Solo, Replicators, Text or Draw, nor in the hunt zones that lay each colour\'s own picture or part (Icon, Punk, Emoji, Famous, Anywhere, Realm, Mirror).';
@@ -11410,10 +11421,10 @@ function renderColours() {
     on: k === lifeColours, choice: `colours:${k}`, whyNot: ({ w, size }) => coloursWhyNot(k, w, size), mark: colourMissing(k), byDefault: k === 1 ? 'yes' : '', click: () => { if (k !== lifeColours) { coloursPicked = lifeColours = k; applyDefaults('colours'); compute(); } } })),  // (Trail: on in Solo, off in colours, at first)
     // Mixed, a switch: the colours' cells mixed at random in one place, as one colour's (greyed in one colour and where no zone mixes, see mixable)
     tile({ pic: `<svg viewBox="0 0 4 4" aria-hidden="true">${[[0, 0], [2, 0], [1, 1], [3, 1], [0, 2], [2, 2], [1, 3], [3, 3]].map(([x, y], i) => `<rect x="${x}" y="${y}" width="1" height="1" fill="${LIFE_COLOURS[[0, 4, 2, 6, 5, 1, 7, 3][i]]}"/>`).join('')}</svg>`, text: 'Mixed',
-      title: 'The colours placed as one colour is (one patch, a soup), each cell a colour at random', toggle: true, byDefault: 'off', on: colourMixed(), whyNot: ({ w, colours = lifeColours }) => (colours > 1 && mixable(hunt.zone, MODES[w]) ? '' : MIXED_WHERE), click: () => { colourMix = !colourMix; compute(); } }),
+      title: 'The colours placed as one colour is (one patch, a soup), each cell a colour at random', toggle: true, byDefault: 'off', on: colourMixed(), whyNot: ({ w, colours = lifeColours, start = plane.start, zone = hunt.zone }) => (colours > 1 && mixable(zone, MODES[w], start) ? '' : MIXED_WHERE), click: () => { colourMix = !colourMix; compute(); } }),
     // Newcomer, a switch (see newcomerCan)
     tile({ pic: colourBlock(Math.max(3, lifeColours), true), text: 'Newcomer', toggle: true, byDefault: 'off', on: newcomerOn(), click: () => { newcomer = !newcomer; compute(); },
-      whyNot: ({ w, size, colours = lifeColours }) => (newcomerCan(colours, pickedFigure(w, size)) ? '' : newcomerWhere(colours)),
+      whyNot: ({ w, size, colours = lifeColours, start = plane.start }) => (newcomerCan(colours, pickedFigure(w, size), start) ? '' : newcomerWhere(colours)),
       title: lifeColours > 2 ? `${COLOUR_STEP_NAMES[lifeColours - 1] ?? `${lifeColours - 1} teams`} as it starts, and ${teamName(lifeColours - 1)} a newcomer: none at first, born of a tie between the others (the colour missing)` : 'The teams below\'s start, and the last colour a newcomer: none at first, born of a tie between the others (the colour missing)' }));
 
 }
@@ -13303,6 +13314,7 @@ function renderHunt() {
   renderSymmetry();  // (Famous: none)
   const fits = huntFits();
   for (const b of $('huntZones').children) {
+    b.dataset.choice = `zone:${b.dataset.zone}`;  // (its choice's key, see choicesAt)
     setTile(b, { on: b.dataset.zone === hunt.zone, again: true, at: walk.mode,
       whyNot: ({ w: v }) => (v === walk.mode && !busy && fits[b.dataset.zone] ? '' : `${zoneGreyed(b.dataset.zone)} Not while a hunt runs.`) });  // (its room known on the grid built only: another mode's, not judged)  // (picked: a click draws another start)
     if (b.dataset.zone === 'custom') b.hidden = hunt.zone !== 'custom';

@@ -51,6 +51,9 @@ Never delete the bundles in `Tessera resources` (old versions included, the `Wal
 - A name found unclear, misleading or inconsistent is renamed at its source, everywhere it is used (its comments, the
   tools' copies and the checks too), in its own commit, verified by `tesseraCheck()`; a name that would change a link's
   words (`w=`, `r=`…) is asked first.
+- A rename touches the code's names only, never a string the page or the style reads (a CSS class, an id, a link's
+  word): `cur` renamed `stepShown` in v0.4.397 renamed `class="cur"` in the page, not `.strip .cur` in style.css, and the
+  strip's head past the last digit was lost till v0.4.483. Grep style.css and index.html for each old name first.
 - A new function or variable: its name grepped first (`grep -n "\bname\b" *.js tools/*.js`), never one already in use:
   a second `function` of the same name replaces the first with no word (`battleScore`, v0.4.247: a battle frozen at its
   first step); `checkNames` in `tesseraCheck()` catches a function declared twice.

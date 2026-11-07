@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.516';
+const VERSION = '0.4.517';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -8203,7 +8203,10 @@ function battlePlayer(g, grid, S, starts, digits, pen = battleRuleInUse()) {
     if (from[s] < i) cut(s, from[s]);
   };
   const everyone = [...Array(K).keys()], living = () => everyone.filter((s) => dead[s] < 0);
-  const stop = (s) => { dead[s] = i; places[s][i] = places[s][i - 1]; };  // (s stopped for good before its step, on its corner or tile)
+  // s stopped for good before its step, on its corner or tile: its places from there that corner, and the step it stopped at
+  // part of its walk as made (stoppedAt), as its places: played again (a seek back), it meets nothing there, its places kept
+  const stoppedAt = Array(K).fill(-1);
+  const stop = (s) => { dead[s] = stoppedAt[s] = i; places[s][i] = places[s][i - 1]; };
   // heads meeting (see collisions), each way's what becomes of a group of them, in one place: Cut, the worthiest lives (its
   // worth before the step; as worthy: none), the others die, their bodies gone; Land no collision, they stop there; Land
   // grid merge, every walker stops there, the battle over; Land grid 3, they die, each one's last thread let go, their
@@ -8234,6 +8237,7 @@ function battlePlayer(g, grid, S, starts, digits, pen = battleRuleInUse()) {
       for (let s = 0; s < K; s++) { if (dead[s] < 0) states[s] = S.step(states[s], digits[s][i - 1]); places[s][i] = dead[s] < 0 ? states[s][0] : places[s][i - 1]; }
       made = i;
     }
+    for (let s = 0; s < K; s++) if (stoppedAt[s] === i) dead[s] = i;  // (played again: stopped where it was made)
     if (i > 0) {  // heads meeting: each way's (see meet)
       const groups = collisions(), w = groups.length && !bite ? worth() : null;
       for (const group of groups) meet(group, w);

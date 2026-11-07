@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.377';
+const VERSION = '0.4.378';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -5513,8 +5513,9 @@ function torusPoint(i, j, nu, nv, m, tube = TORUS_TUBE) {
 /* A torus whose sheet is glued with its ends turned over: (x + nu, y) ≡ (x, nv − y), as the Möbius strip's,
  * and (x, y + nv) ≡ (x, y). One-sided and closed; in space it must cross itself: the bottle, its tube along the sheet's x,
  * a neck that goes in through its side and opens into its bottom (see kleinBottlePoint), its tiles narrow in the neck, wide
- * in the body (Paul Bourke's four pieces before v0.4.367, their seams a tile 3 times as long as its neighbour; a smooth one
- * fitted to a model before v0.4.370; the figure 8 before v0.4.14, see REMOVED.md). Flat (m = 0) as the torus's sheet. */
+ * in the body (Paul Bourke's four pieces before v0.4.367, their seams a tile 3 times as long as its neighbour; one drawn
+ * from a glass bottle's lines, its tiles a stretched tapestry, v0.4.370 to v0.4.377; the figure 8 before v0.4.14, see
+ * REMOVED.md). Flat (m = 0) as the torus's sheet. */
 function kleinPoint(x, y, nu, nv, m, tube = TORUS_TUBE, up = 0) {
   const f = ((y - up) / nv) * 2 * Math.PI;  // (round the tube from the sheet's mirror line, up: Cairo's half square, so that the bottle glues as its sheet does)
   // the bottle: the sheet's ends on the circle it stands on (the bowl's lowest), past its own ends turned over (u to π − u)
@@ -5524,90 +5525,52 @@ function kleinPoint(x, y, nu, nv, m, tube = TORUS_TUBE, up = 0) {
   const F = torusPoint(x, y, nu, nv, 0, tube);
   return F.map((v, d) => v + (K[d] - v) * m);
 }
-// The bottle, drawn from a glass one's lines (its tube's radius the unit, its loop toward −x, turned east at the end):
-// three red lines KLEIN_GAP apart: the top of the loop's hole, the entry (where the neck goes into the body) and the cul's
-// edge; the flanks the same arc on both sides (KLEIN_FLANK, centred KLEIN_CUL from the axis on the other side, half-way
-// between the two lower lines: the widest at 0), down to the cul's edge on the lower line; the plumb KLEIN_CUL from the
-// axis the entry's middle and the loop's centre. A body turned round the vertical, its profile (r, z) from the mouth
-// (radius 1) down round the bowl (a circle) to the cul's edge, up the flank's arc to the entry's height, then a shoulder (a
-// quintic: value, slope and bend matched) to the neck's foot (radius 1, upright, an eighth of a gap under the loop's
-// base); then the neck, a tube round a line: up to the loop's base, the loop a half circle (radius KLEIN_CUL), down
-// its east branch KLEIN_DROP, then an S down through the body's side at the entry into the mouth (upright). Its round
-// angle u as Bourke's: (r cos u, r sin u) round the body, along the neck's normal and y; B(1, u) = B(0, π − u)
-const KLEIN_CUL = 2.83, KLEIN_GAP = 7.76, KLEIN_FLANK = 7.63, KLEIN_DROP = 1, KLEIN_SMOOTH = 1.5;
-let kleinShape = null;  // its pieces' sizes, made once (see kleinLine)
-function kleinLine() {
-  if (kleinShape) return kleinShape;
-  // (the loop's hole up to the top line: its centre the tube's width under it; the neck straight a little under the loop)
-  const b = KLEIN_CUL, R = KLEIN_FLANK, entry = KLEIN_GAP / 2, base = entry + KLEIN_GAP - (b - 1), foot = base - KLEIN_GAP / 8;
-  const arc = (z) => -b + Math.sqrt(R * R - z * z), slope = (z) => -z / Math.sqrt(R * R - z * z), cul = -entry, rim = arc(cul);  // (the cul's edge on the lower line)
-  const bend = (z) => -(R * R) / (R * R - z * z) ** 1.5, edge = Math.atan2(1, slope(cul)), bowl = (rim - 1) / (1 + Math.sin(edge)), mouth = cul + bowl * Math.cos(edge);
-  // (the shoulder, z from the entry's height to the neck's foot: a quintic Hermite of the arc's value, slope and bend there, to 1, upright, straight)
-  const h = foot - entry, [r0, s0, c0] = [arc(entry), slope(entry), bend(entry)];
-  const shoulder = (z) => { const t = (z - entry) / h; return r0 * (1 - 10 * t ** 3 + 15 * t ** 4 - 6 * t ** 5) + s0 * h * (t - 6 * t ** 3 + 8 * t ** 4 - 3 * t ** 5)
-    + (c0 * h * h * (t * t - 3 * t ** 3 + 3 * t ** 4 - t ** 5)) / 2 + (10 * t ** 3 - 15 * t ** 4 + 6 * t ** 5); };
-  const top = base - KLEIN_DROP, power = Math.log(0.5) / Math.log(1 - (top - entry) / (top - mouth)), smoother = (t) => t ** 3 * (10 - 15 * t + 6 * t * t);
-  const s = (f) => [-2 * b * (1 - smoother(1 - (1 - f) ** power)), top - f * (top - mouth)];  // (its S: x −b at the entry's height)
-  let sLength = 0; for (let i = 1, a = s(0); i <= 2000; i++) { const c = s(i / 2000); sLength += Math.hypot(c[0] - a[0], c[1] - a[1]); a = c; }
-  const lengths = [base - foot, Math.PI * b, KLEIN_DROP, sLength], ends = lengths.map((_, i) => lengths.slice(0, i + 1).reduce((x, y) => x + y) / lengths.reduce((x, y) => x + y));
-  const profile = (q) => {  // (the bowl [0, 1), its angle from down to the flank's; the body [1, 2), by its height)
-    if (q < 1) { const th = -Math.PI / 2 + q * (edge + Math.PI / 2); return [1 + bowl + bowl * Math.sin(th), mouth - bowl * Math.cos(th)]; }
-    const z = cul + (q - 1) * (foot - cul); return [z < entry ? arc(z) : shoulder(z), z];
-  };
-  const neck = (t) => {  // (its line, t from the neck's foot to the mouth)
-    const k = ends.findIndex((e) => t <= e + 1e-12), t0 = k ? ends[k - 1] : 0, f = (t - t0) / (ends[k] - t0);
-    if (k === 0) return [0, foot + f * (base - foot)];
-    if (k === 1) return [-b + b * Math.cos(f * Math.PI), base + b * Math.sin(f * Math.PI)];
-    return k === 2 ? [-2 * b, base - f * KLEIN_DROP] : s(f);
-  };
-  return (kleinShape = { profile, neck, lowest: (Math.PI / 2 / (edge + Math.PI / 2)) / 3 });  // (lowest: the bowl's lowest point's q / 3)
-}
-// a point at q along it (the bowl [0, 1), the body [1, 2), the neck [2, 3]), u round it
+// The bottle, smooth (its curvature with no jump: its tiles as long as their neighbours, no tapestry needed), its
+// proportions a model's (Klein Bottle.STL, its neck's first radius the unit; its flat bottom left for a round bowl), its
+// tube thicker (KLEIN_TUBE) and its body rounder (KLEIN_WIDEST): a body turned round the vertical, its profile (r, z) from
+// the bowl's mouth (the tube's radius, at 0) down round the bowl (KLEIN_BOWL deep) out to its widest and up, narrowing as a
+// pear (KLEIN_PEAR), to its top (the tube's radius, KLEIN_BODY high); then the neck, a tube round a line in the x–z plane
+// from that top up, over to the west and down through the body's side into the mouth: x = t³(1 − t)³(a + bt + ct²),
+// z = KLEIN_BODY (1 − t) + t(1 − t)(d + et + ft² + gt³), its ends upright with no curvature; the loop's line (KLEIN_NECK,
+// fitted to the model's, widened as the tube) down to t 0.6, a descent rounded into the mouth (KLEIN_SOFT) from t 0.8,
+// fitted by tools/klein-neck.js. Its round angle u as Bourke's: (r cos u, r sin u) round the body, along the neck's normal
+// and y; its end the mouth again, turned over: B(1, u) = B(0, π − u)
+const KLEIN_BOWL = 3.5, KLEIN_WIDEST = 5.8, KLEIN_BODY = 10.1, KLEIN_PEAR = 1.07, KLEIN_TUBE = 1.3;
+const KLEIN_NECK = [-345.032, -23.9529, -93.2961, 32.691, 66.2862, -236.1278, 144.5958];  // (the model's line, its loop 1.111 times as wide: its hole kept round a thicker tube)
+const KLEIN_SOFT = [-425.0085, 34.8409, 65.7791, 50.0606, -44.6043, -53.8887, 59.2433];  // (that line, its descent into the mouth rounded from 8.5 high)
+const kleinLineOf = (P, t) => { const [a, b, c, d, e, f, g] = P, w = t ** 3 * (1 - t) ** 3; return [w * (a + b * t + c * t * t), KLEIN_BODY * (1 - t) + t * (1 - t) * (d + e * t + f * t * t + g * t ** 3)]; };
+// the neck's line: the loop's (KLEIN_NECK) to t 0.6, the rounded descent's (KLEIN_SOFT) from 0.8, a smootherstep between
+const kleinNeck = (t) => { const s = Math.min(1, Math.max(0, (t - 0.6) / 0.2)), w = s ** 3 * (10 - 15 * s + 6 * s * s), p = kleinLineOf(KLEIN_NECK, t), q = kleinLineOf(KLEIN_SOFT, t); return [p[0] + (q[0] - p[0]) * w, p[1] + (q[1] - p[1]) * w]; };
+// q along it: the bowl [0, 1), the body [1, 2) (its profile, r and z), the neck [2, 3] (its line, x and z)
+const kleinProfile = (q) => {
+  const r = (c) => KLEIN_TUBE + (KLEIN_WIDEST - KLEIN_TUBE) * c;
+  if (q < 1) return [r((1 - Math.cos(Math.PI * q)) / 2), -KLEIN_BOWL * Math.sin(Math.PI * q)];
+  return [r((1 + Math.cos(Math.PI * (q - 1) ** KLEIN_PEAR)) / 2), KLEIN_BODY * (q - 1)];  // (narrowing a little later than a cosine: a pear)
+};
 function kleinAt(q, u) {
-  const { profile, neck } = kleinLine();
-  if (q < 2) { const [r, z] = profile(q); return [r * Math.cos(u), r * Math.sin(u), z]; }
-  const t = Math.min(1, q - 2), h = 1e-6, A = neck(Math.max(0, t - h)), B = neck(Math.min(1, t + h)), l = Math.hypot(B[0] - A[0], B[1] - A[1]), [x, z] = neck(t);
-  const nx = (B[1] - A[1]) / l, nz = -(B[0] - A[0]) / l;  // (its normal in the plane: east at the neck's foot, west at the mouth)
-  return [x + Math.cos(u) * nx, Math.sin(u), z + Math.cos(u) * nz];
+  if (q < 2) { const [r, z] = kleinProfile(q); return [r * Math.cos(u), r * Math.sin(u), z]; }
+  const t = Math.min(1, q - 2), h = 1e-5, A = kleinNeck(Math.max(0, t - h)), B = kleinNeck(Math.min(1, t + h)), l = Math.hypot(B[0] - A[0], B[1] - A[1]), [x, z] = kleinNeck(t);
+  const nx = (B[1] - A[1]) / l, nz = -(B[0] - A[0]) / l;  // (its normal in the plane: east at the body's top, west at the mouth)
+  return [x + KLEIN_TUBE * Math.cos(u) * nx, KLEIN_TUBE * Math.sin(u), z + KLEIN_TUBE * Math.cos(u) * nz];
 }
-// Its tapestry, as a cloth stretched on it: each line round the tube (64 of them, an angle u each) its own
-// length ℓ_u, the middle m their mean; where a line is stretched or squeezed (dℓ_u/dm: a bend's outside, its inside) that
-// stretch smoothed over KLEIN_SMOOTH (three box blurs, a gaussian's), the tiles placed by the smoothed length: a bend's
-// inside shortens its tiles little by little, never at once (its rings no longer flat there). Each angle a table, the
-// share s along it (by m) to its q; the bowl's lowest's share (the sheet's ends there), and its frame (centred, 3 high)
+// its length along it, once: the body's profile, then the neck's line, its share s ∈ [0, 1) to its q (the tiles as long
+// everywhere along it); the bowl's lowest's share (the sheet's ends there), and its frame (centred, 3 high)
 let kleinTable = null;
 function kleinBottle() {
   if (kleinTable) return kleinTable;
-  const N = 6000, J = 4000, K = 64, q = (i) => (3 * i) / N, ell = [], m = new Float64Array(N + 1);
-  for (let k = 0; k < K; k++) {
-    const u = (2 * Math.PI * k) / K, l = new Float64Array(N + 1);
-    for (let i = 1, a = kleinAt(0, u); i <= N; i++) { const c = kleinAt(q(i), u); l[i] = l[i - 1] + Math.hypot(c[0] - a[0], c[1] - a[1], c[2] - a[2]); a = c; }
-    ell.push(l);
-  }
-  for (let i = 0; i <= N; i++) { let sum = 0; for (let k = 0; k < K; k++) sum += ell[k][i]; m[i] = sum / K; }
-  const M = m[N], width = Math.max(1, Math.round((KLEIN_SMOOTH * 2 * J) / M));  // (a box of 2σ, three times: σ's gaussian)
-  const along = (l, at) => { let i = 0; return Float64Array.from({ length: J + 1 }, (_, j) => { const mt = (M * j) / J; while (i < N - 1 && at[i + 1] < mt) i++; return l[i] + (l[i + 1] - l[i]) * ((mt - at[i]) / (at[i + 1] - at[i] || 1)); }); };
-  const blur = (v) => { const out = new Float64Array(v.length), half = width >> 1; let sum = 0; const get = (j) => (j < 0 || j >= v.length ? 1 : v[j]);  // (past the ends: the bowl's, a stretch of 1)
-    for (let j = -half; j <= half; j++) sum += get(j);
-    for (let j = 0; j < v.length; j++) { out[j] = sum / (2 * half + 1); sum += get(j + half + 1) - get(j - half); } return out; };
-  const tables = ell.map((l) => {
-    const byM = along(l, m), stretch = Float64Array.from({ length: J }, (_, j) => ((byM[j + 1] - byM[j]) * J) / M);
-    const smooth = blur(blur(blur(stretch))), goal = new Float64Array(J + 1);
-    for (let j = 0; j < J; j++) goal[j + 1] = goal[j] + (smooth[j] * M) / J;
-    const fix = l[N] / goal[J];
-    let i = 0;
-    return Float64Array.from(goal, (g) => { const t = g * fix; while (i < N - 1 && l[i + 1] < t) i++; return q(i) + (q(i + 1) - q(i)) * ((t - l[i]) / (l[i + 1] - l[i] || 1)); });
-  });
-  const lowest = m[Math.round(N * kleinLine().lowest)] / M, lo = [Infinity, Infinity, Infinity], hi = [-Infinity, -Infinity, -Infinity];
+  const N = 6000, q = (i) => (3 * i) / N, mid = (i) => (q(i) < 2 ? kleinProfile(q(i)) : kleinNeck(q(i) - 2)), along = new Float64Array(N + 1);
+  for (let i = 1; i <= N; i++) { const a = q(i) >= 2 && q(i - 1) < 2 ? kleinNeck(0) : mid(i - 1), b = mid(i); along[i] = along[i - 1] + Math.hypot(a[0] - b[0], a[1] - b[1]); }
+  const lo = [Infinity, Infinity, Infinity], hi = [-Infinity, -Infinity, -Infinity];
   for (let i = 0; i <= 600; i++) for (let j = 0; j < 48; j++) kleinAt((3 * i) / 600, (j * Math.PI) / 24).forEach((v, d) => { lo[d] = Math.min(lo[d], v); hi[d] = Math.max(hi[d], v); });
-  return (kleinTable = { J, K, tables, bottom: lowest, centre: lo.map((v, d) => (v + hi[d]) / 2), scale: 3 / (hi[2] - lo[2]) });
+  return (kleinTable = { N, along, bottom: along[N / 6] / along[N], centre: lo.map((v, d) => (v + hi[d]) / 2), scale: 3 / (hi[2] - lo[2]) });
 }
-// The bottle at s along it (0 to 1, from the mouth), u round it, by its tapestry: standing, centred, 3 high, turned half
-// a turn round the vertical: its loop east
+// The bottle at s along it (0 to 1, from the bowl's mouth), u round it: standing, centred, 3 high, turned half a turn round
+// the vertical: its neck's arch east
 function kleinBottlePoint(s, u) {
-  const { J, K, tables, centre, scale } = kleinBottle(), a = (((u % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI)) / (2 * Math.PI) * K;
-  const k0 = Math.floor(a) % K, k1 = (k0 + 1) % K, w = a - Math.floor(a), jf = Math.min(1, Math.max(0, s)) * J, j = Math.min(J - 1, Math.floor(jf)), f = jf - j;
-  const qk = (T) => T[j] + (T[j + 1] - T[j]) * f, [x, y, z] = kleinAt(qk(tables[k0]) + (qk(tables[k1]) - qk(tables[k0])) * w, u);
+  const { N, along, centre, scale } = kleinBottle(), at = s * along[N];
+  let lo = 0, hi = N;
+  while (hi - lo > 1) { const m = (lo + hi) >> 1; if (along[m] < at) lo = m; else hi = m; }
+  const [x, y, z] = kleinAt((3 * (lo + (at - along[lo]) / (along[hi] - along[lo] || 1))) / N, u);
   return [-(x - centre[0]) * scale, -(y - centre[1]) * scale, (z - centre[2]) * scale];
 }
 // Its tiles as the torus's (squares, hexagons, triangles, Cairo pentagons; tiles in the same order), their

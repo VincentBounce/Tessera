@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.504';
+const VERSION = '0.4.505';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -14925,18 +14925,19 @@ function writeGallery(list) {
 // What tells a saved setup apart: its walk, then its surface's size, start, turn and rule
 // a setup's row: a walk's 2D, 3D or Lattice, its walk, size, start, turn and rule; a Game of Life's rule (its name on its grid,
 // see ruleCard), colours (Newcomer's), size and start
-const setupDetail = (s) => {
+const setupDetail = (s, chips = '') => {  // (chips: its bar's, saved with it: what they say not said again)
   const life = MODES[s.w]?.life, r = String(s.r ?? ''), named = life && ruleCard(r, s.w)?.name;
-  return [life ? (named ? `${named} ${r}` : r || 'Life') : SPACES[NAV[s.w]?.[1]]?.[0], life ? Number(s.k) > 1 && `${s.k} colours${Number(s.nc) === 1 ? ', the last a newcomer' : ''}` : walkName(s.w),
-    s.s && `size ${String(s.s).replace('x', ' × ')}`, s.st > 1 && `start ${s.st}`, Number(s.o) === 1 && 'turned 30°', Number(s.q) === 1 && 'square sheet', s.r && !life && `rule ${s.r}`].filter(Boolean).join(' · ');
+  return [chips && life && shapeAndTiles(s.w), life ? (named ? `${named} ${r}` : r || 'Life') : SPACES[NAV[s.w]?.[1]]?.[0], life ? Number(s.k) > 1 && `${s.k} colours${Number(s.nc) === 1 ? ', the last a newcomer' : ''}` : walkName(s.w),
+    s.s && `size ${String(s.s).replace('x', ' × ')}`, s.st > 1 && `start ${s.st}`, Number(s.o) === 1 && 'turned 30°', Number(s.q) === 1 && 'square sheet', s.r && !life && `rule ${s.r}`].filter((part) => part && !(chips && r && String(part).includes(r))).join(' · ');
 };
-// its title: a walk's number; a Game of Life's shape and tiles (see shapeAndTiles), its number being only its start
-const setupTitle = (x) => (MODES[x.setup.w]?.life ? shapeAndTiles(x.setup.w) : x.name);
+// its title: its bar's as it was saved (a battle's walkers, Life's start); one saved before: a walk's number, a Game of Life's
+// shape and tiles (see shapeAndTiles)
+const setupTitle = (x) => (x.chips === undefined && MODES[x.setup.w]?.life ? shapeAndTiles(x.setup.w) : x.name);
 // The Gallery's setups, as rows like the built-in ones (see setupRow), each with × to delete it
 function fillGalleryList() {
   const list = readGallery();
   // the tab in use's only (Life, Ant, Walk…), under its name; by their titles, two rows alike numbered (2), (3)…
-  const rows = list.filter((x) => NAV[x.setup.w]).map((x) => [setupTitle(x), [x.note, setupDetail(x.setup)].filter(Boolean).join(' · '), x]), seen = new Map();
+  const rows = list.filter((x) => NAV[x.setup.w]).map((x) => [setupTitle(x), [x.note, x.chips, setupDetail(x.setup, x.chips)].filter(Boolean).join(' · '), x]), seen = new Map();
   const kindOf = (x) => NAV[x.setup.w][0];
   $('yourList').replaceChildren(...NAV_KINDS.filter(([kind]) => kind === NAV[$('mode').value]?.[0]).flatMap(([kind]) => {
     const mine = rows.filter(([, , x]) => kindOf(x) === kind).sort((a, b) => a[0].localeCompare(b[0]));
@@ -14970,9 +14971,11 @@ function saveSetup() {
   const setup = getSetup(), list = readGallery();
   const same = savedInView();
   if (same) { deleteSetup(same.name); return; }  // already one of them (its ★ yellow): out of them
-  let name = shownSymbol;
-  for (let k = 2; list.some((x) => x.name === name); k++) name = `${shownSymbol} (${k})`;
-  list.push({ name, setup, saved: new Date().toISOString() });
+  // its name and its chips as its bar shows them (π vs e vs φ · base 2 · LR · Land no collision; Wild #204157587 · B45/S345/C4)
+  const title = $('barNum').textContent.trim() || shownSymbol, chips = ['barBase', 'barRule', 'barBattle'].filter((id) => !$(id).hidden).map((id) => $(id).textContent.trim()).filter(Boolean).join(' · ');
+  let name = title;
+  for (let k = 2; list.some((x) => x.name === name); k++) name = `${title} (${k})`;
+  list.push({ name, chips, setup, saved: new Date().toISOString() });
   list.sort((a, b) => a.name.localeCompare(b.name));
   if (!writeGallery(list)) alert('This browser does not allow saving (private window?).');
   fillGalleryList();

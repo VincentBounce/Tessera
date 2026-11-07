@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.407';
+const VERSION = '0.4.408';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -2332,7 +2332,7 @@ const dragonOf = (turns) => fitIn(turtlePath(Array.from({ length: turns }, (_, k
   return j % 4 === 1 ? 90 : -90;
 })), 20);
 const svgDots = (list, r) => list.map(([x, y]) => `<circle class="f" cx="${x}" cy="${y}" r="${r}"/>`).join('');
-const pathEl = (d, cls) => `<path${cls ? ` class="${cls}"` : ''} d="${d}"/>`;
+const svgPath = (d, cls) => `<path${cls ? ` class="${cls}"` : ''} d="${d}"/>`;
 // an elementary rule's cell (see parseElementary): the bit 4l + 2c + r of its number, l, c, r the three cells above it
 const wolframBit = (N, l, c, r) => (N >> (4 * l + 2 * c + r)) & 1;
 // Its rows in words of 16 cells (bit 15 the leftmost), each word's next by one look-up (its rule's table, see wolframTable): its
@@ -2381,11 +2381,11 @@ const walledEl = (P, d = 2.6) => {
     return Array.from({ length: m }, (_, j) => { const t = (j + 0.5) / m, x = a[0] + t * (b[0] - a[0]), y = a[1] + t * (b[1] - a[1]);
       return `M${hundredths(x)} ${hundredths(y)}L${hundredths(x - d * s.in[0])} ${hundredths(y - d * s.in[1])}`; });
   }).join('');
-  return pathEl(pathOf(P), 'thin') + pathEl(pathOf(inner), 'thin') + pathEl(mortar, 'thin');
+  return svgPath(pathOf(P), 'thin') + svgPath(pathOf(inner), 'thin') + svgPath(mortar, 'thin');
 };
 // The symmetries' pictures: a flag, and its copies (turned by a, mirrored across the upright when m)
 const FLAG = [[12.8, 11.6], [12.8, 1.6], [21.5, 5.4], [12.8, 9.2]];
-const flags = (copies) => copies.map(([a, m]) => pathEl(pathOf(FLAG.map(([x, y]) => {
+const flags = (copies) => copies.map(([a, m]) => svgPath(pathOf(FLAG.map(([x, y]) => {
   const u = m ? 24 - x : x, c = Math.cos(a), s = Math.sin(a);
   return [12 + (u - 12) * c - (y - 12) * s, 12 + (u - 12) * s + (y - 12) * c];
 })), 'f')).join('');
@@ -2393,17 +2393,17 @@ const flags = (copies) => copies.map(([a, m]) => pathEl(pathOf(FLAG.map(([x, y])
 // A triangle cut into 4 (its corners' midpoints joined), pointing at angle rot
 const tiledTriangle = (rot) => {
   const [a, b, c] = ngon(3, 10.5, rot, 12, rot === -90 ? 14 : 12), m = (p, q) => [(p[0] + q[0]) / 2, (p[1] + q[1]) / 2];
-  return pathEl(pathOf([a, b, c])) + pathEl(pathOf([m(a, b), m(b, c), m(c, a)]));
+  return svgPath(pathOf([a, b, c])) + svgPath(pathOf([m(a, b), m(b, c), m(c, a)]));
 };
 // 3 hexagons around a point: flat-topped (rot 0) or pointy-topped (rot 30)
 const hexCluster = (rot) => [0, 120, 240].map((d) => {
   const t = ((d + rot) * Math.PI) / 180, R = 5.2;
-  return pathEl(pathOf(ngon(6, R, rot, 12 + R * Math.cos(t), 12 + R * Math.sin(t))));
+  return svgPath(pathOf(ngon(6, R, rot, 12 + R * Math.cos(t), 12 + R * Math.sin(t))));
 }).join('');
 const ICONS = (() => {
   const hex = ngon(6, 9.5), tri = ngon(3, 10, -90, 12, 14), sq = [[4, 4], [20, 4], [20, 20], [4, 20]], rhombus = [[2, 17.2], [14, 17.2], [20, 6.8], [8, 6.8]];
-  const cube = (fillTop) => pathEl(pathOf(hex)) + [0, 2, 4].map((k) => pathEl(segmentPath([12, 12], hex[k]))).join('')
-    + (fillTop ? pathEl(pathOf([[12, 12], hex[4], hex[5], hex[0]]), 'f') : '');
+  const cube = (fillTop) => svgPath(pathOf(hex)) + [0, 2, 4].map((k) => svgPath(segmentPath([12, 12], hex[k]))).join('')
+    + (fillTop ? svgPath(pathOf([[12, 12], hex[4], hex[5], hex[0]]), 'f') : '');
   // the carved cubes, as the cube: on each face seen, its middle third (P) a hole (filled), a pit (its rim), a bump (its top out of
   // it), or a grid of thirds round a hole (the sponge)
   const carved = (each) => cube(false) + [0, 2, 4].map((k) => {
@@ -2411,16 +2411,16 @@ const ICONS = (() => {
     const P = F.map((p) => p.map((v, d) => m[d] + (v - m[d]) / 3)), v = hex[(k + 4) % 6].map((x) => (x - 12) / 6);  // (v: half a block into the cube)
     return each(F, P, (s) => P.map((p) => [p[0] + s * v[0], p[1] + s * v[1]]));
   }).join('');
-  const frame = carved((F, P) => pathEl(pathOf(P), 'f'));
-  const pits = carved((F, P) => pathEl(pathOf(P)));
-  const bumps = carved((F, P, at) => pathEl(pathOf(at(-1))));
-  const menger = carved((F, P) => pathEl(pathOf(P), 'f') + [1, 2].map((t) => pathEl(segmentPath(...[F[0], F[3]].map((p, j) => p.map((x, d) => x + (t / 3) * (F[1][d] - F[0][d])))) + segmentPath(...[F[0], F[1]].map((p) => p.map((x, d) => x + (t / 3) * (F[3][d] - F[0][d])))))).join(''));
-  const torus = '<ellipse cx="12" cy="12" rx="10" ry="7"/>' + pathEl('M5.5 11Q12 17 18.5 11M7.8 12.6Q12 8 16.2 12.6');
+  const frame = carved((F, P) => svgPath(pathOf(P), 'f'));
+  const pits = carved((F, P) => svgPath(pathOf(P)));
+  const bumps = carved((F, P, at) => svgPath(pathOf(at(-1))));
+  const menger = carved((F, P) => svgPath(pathOf(P), 'f') + [1, 2].map((t) => svgPath(segmentPath(...[F[0], F[3]].map((p, j) => p.map((x, d) => x + (t / 3) * (F[1][d] - F[0][d])))) + segmentPath(...[F[0], F[1]].map((p) => p.map((x, d) => x + (t / 3) * (F[3][d] - F[0][d])))))).join(''));
+  const torus = '<ellipse cx="12" cy="12" rx="10" ry="7"/>' + svgPath('M5.5 11Q12 17 18.5 11M7.8 12.6Q12 8 16.2 12.6');
   // the Möbius strip, traced from a drawing of one (a band of three sides round a triangular hole): its outline, the hole,
   // and the three folds where one side of the band passes behind the next
-  const mobius = pathEl('M6.7 3.1C9 1.8 15 2 18.7 4.9C21.5 7.5 22.6 13 21.2 16.7C19.8 20 16 22.3 13 21.9C10 21.5 7 20 5.7 18.7C3.3 16.5 1.8 12 2.4 9.5C2.9 7.2 4.7 4.8 6.7 3.1Z')
-    + pathEl('M6.8 6.6C11 6.8 16 8 19.5 10.2C16.5 13.5 13 16.5 9.8 18.1Z')
-    + pathEl('M6.7 3.1Q6.1 5 6.8 6.6M20.1 6.8L19.5 10.2M9.8 18.1Q7.5 18.2 5.7 18.7');
+  const mobius = svgPath('M6.7 3.1C9 1.8 15 2 18.7 4.9C21.5 7.5 22.6 13 21.2 16.7C19.8 20 16 22.3 13 21.9C10 21.5 7 20 5.7 18.7C3.3 16.5 1.8 12 2.4 9.5C2.9 7.2 4.7 4.8 6.7 3.1Z')
+    + svgPath('M6.8 6.6C11 6.8 16 8 19.5 10.2C16.5 13.5 13 16.5 9.8 18.1Z')
+    + svgPath('M6.7 3.1Q6.1 5 6.8 6.6M20.1 6.8L19.5 10.2M9.8 18.1Q7.5 18.2 5.7 18.7');
   // the Klein bottle: its body a round flask, its neck a tube (along a curve through P: [x, y, half its width], Catmull-Rom)
   // up out of it, over and down into its side, on inside it
   const tube = (P, n = 160) => {
@@ -2430,119 +2430,119 @@ const ICONS = (() => {
       const s = j / n, [x, y, w] = at(s), [qx, qy] = at(Math.min(1, s + 1e-3)), [ox, oy] = at(Math.max(0, s - 1e-3)), t = Math.hypot(qx - ox, qy - oy);
       return [x - (e * w * (qy - oy)) / t, y + (e * w * (qx - ox)) / t];
     }));
-    return sides.map((ps) => pathEl(pathOf(ps, false))).join('');
+    return sides.map((ps) => svgPath(pathOf(ps, false))).join('');
   };
   const klein = '<circle cx="8.8" cy="15.6" r="6.4"/>' + tube([[8.8, 9.2, 1.25], [9.4, 5.6, 1.25], [12.2, 3, 1.25], [16.4, 3.2, 1.25], [19, 6.6, 1.25], [18.6, 11, 1.25], [15.8, 14.2, 1.25], [12, 15.6, 1.25]]);
   const [a, b, c, d] = [[12, 3], [3, 19], [21, 19], [13, 14.5]];
   const icoOut = ngon(6, 10), icoIn = ngon(3, 5, 90);
   // the dodecahedron seen face on: a pentagon in the middle, its 5 neighbours' edges out to the rim
-  const dodecaIn = ngon(5, 5, 90), dodeca = pathEl(pathOf(ngon(5, 10))) + pathEl(pathOf(dodecaIn))
-    + dodecaIn.map(([x, y]) => pathEl(segmentPath([x, y], [12 + (x - 12) * 1.618, 12 + (y - 12) * 1.618]))).join('');
-  const ico = pathEl(pathOf(icoOut)) + pathEl(pathOf(icoIn))
-    + [[0, 1], [0, 2], [2, 0], [2, 2], [4, 0], [4, 1], [1, 2], [3, 0], [5, 1]].map(([o, i]) => pathEl(segmentPath(icoOut[o], icoIn[i]))).join('');
+  const dodecaIn = ngon(5, 5, 90), dodeca = svgPath(pathOf(ngon(5, 10))) + svgPath(pathOf(dodecaIn))
+    + dodecaIn.map(([x, y]) => svgPath(segmentPath([x, y], [12 + (x - 12) * 1.618, 12 + (y - 12) * 1.618]))).join('');
+  const ico = svgPath(pathOf(icoOut)) + svgPath(pathOf(icoIn))
+    + [[0, 1], [0, 2], [2, 0], [2, 2], [4, 0], [4, 1], [1, 2], [3, 0], [5, 1]].map(([o, i]) => svgPath(segmentPath(icoOut[o], icoIn[i]))).join('');
   return {
     // walk modes
-    grid: pathEl(pathOf(sq)) + pathEl('M12 4V20M4 12H20'),
-    compass: pathEl('M12 3V21M3 12H21') + pathEl('M9 6L12 3L15 6M9 18L12 21L15 18M6 9L3 12L6 15M18 9L21 12L18 15'),
-    triangle: pathEl(pathOf(tri)),
-    triangleFilled: pathEl(pathOf(tri), 'f'),
-    hexagon: pathEl(pathOf(hex)),
-    hexagonFilled: pathEl(pathOf(hex), 'f'),
-    square: pathEl(pathOf(sq)),
+    grid: svgPath(pathOf(sq)) + svgPath('M12 4V20M4 12H20'),
+    compass: svgPath('M12 3V21M3 12H21') + svgPath('M9 6L12 3L15 6M9 18L12 21L15 18M6 9L3 12L6 15M18 9L21 12L18 15'),
+    triangle: svgPath(pathOf(tri)),
+    triangleFilled: svgPath(pathOf(tri), 'f'),
+    hexagon: svgPath(pathOf(hex)),
+    hexagonFilled: svgPath(pathOf(hex), 'f'),
+    square: svgPath(pathOf(sq)),
     squareWalled: walledEl(sq),
     hexagonWalled: walledEl(hex),
-    rhombus: pathEl(pathOf(rhombus)),  // a rhombus of 60°: a six-fold or slanted grid's array, uncut
+    rhombus: svgPath(pathOf(rhombus)),  // a rhombus of 60°: a six-fold or slanted grid's array, uncut
     rhombusWalled: walledEl(rhombus, 2),
-    goalLongest: pathEl('M12 12C10 8.5 4 8.5 4 12C4 15.5 10 15.5 12 12C14 8.5 20 8.5 20 12C20 15.5 14 15.5 12 12Z'),  // the hunt's goals (see HUNT_GOALS): ∞
-    goalDies: pathEl('M12 3V21M6 8.5H18'),  // (a cross)
-    goalFull: pathEl(pathOf(sq)) + pathEl('M4 8H20V20H4Z', 'f'),  // (a square three quarters filled)
-    goalPeak: pathEl('M12 4L21 19H3Z', 'f'),
-    goalCover: pathEl(pathOf(sq)) + pathEl('M9.33 4V20M14.67 4V20M4 9.33H20M4 14.67H20'),  // (all cells: a grid)
-    goalBattle: pathEl('M4 4L17 17M20 4L7 17M14 20L20 14M4 14L10 20M17.5 17.5L20.5 20.5M6.5 17.5L3.5 20.5'),  // (crossed swords)
-    king: pathEl('M12 3V21M3 12H21M5.6 5.6L18.4 18.4M18.4 5.6L5.6 18.4'),  // the 8 ways out
-    pentagons: pathEl('M7 7L9.3 12H14.7L17 7L12 4.7ZM7 17L12 19.3L17 17L14.7 12H9.3ZM7 7L9.3 12L7 17L2 14.7V9.3ZM17 7L22 9.3V14.7L17 17L14.7 12Z'),  // four of the Cairo tiling's: two across a bar, two at its ends
+    goalLongest: svgPath('M12 12C10 8.5 4 8.5 4 12C4 15.5 10 15.5 12 12C14 8.5 20 8.5 20 12C20 15.5 14 15.5 12 12Z'),  // the hunt's goals (see HUNT_GOALS): ∞
+    goalDies: svgPath('M12 3V21M6 8.5H18'),  // (a cross)
+    goalFull: svgPath(pathOf(sq)) + svgPath('M4 8H20V20H4Z', 'f'),  // (a square three quarters filled)
+    goalPeak: svgPath('M12 4L21 19H3Z', 'f'),
+    goalCover: svgPath(pathOf(sq)) + svgPath('M9.33 4V20M14.67 4V20M4 9.33H20M4 14.67H20'),  // (all cells: a grid)
+    goalBattle: svgPath('M4 4L17 17M20 4L7 17M14 20L20 14M4 14L10 20M17.5 17.5L20.5 20.5M6.5 17.5L3.5 20.5'),  // (crossed swords)
+    king: svgPath('M12 3V21M3 12H21M5.6 5.6L18.4 18.4M18.4 5.6L5.6 18.4'),  // the 8 ways out
+    pentagons: svgPath('M7 7L9.3 12H14.7L17 7L12 4.7ZM7 17L12 19.3L17 17L14.7 12H9.3ZM7 7L9.3 12L7 17L2 14.7V9.3ZM17 7L22 9.3V14.7L17 17L14.7 12Z'),  // four of the Cairo tiling's: two across a bar, two at its ends
     ammann: [0, 1, 2, 3, 4, 5, 6, 7].map((k) => { const e = (j) => [Math.cos((j * Math.PI) / 4), Math.sin((j * Math.PI) / 4)], a = e(k), b = e(k + 1), s = 10 / (2 * Math.cos(Math.PI / 8)), pt = ([x, y]) => `${(12 + x * s).toFixed(1)} ${(12 - y * s).toFixed(1)}`;
-      return pathEl(`M12 12L${pt(a)}L${pt([a[0] + b[0], a[1] + b[1]])}L${pt(b)}Z`); }).join(''),  // Ammann–Beenker's star: 8 rhombi round a point
-    ...conedOf((k, n, F) => [k, pathEl(F.icon(n))]),  // each coned rosette's middle: its n tiles round it, n more (see CONED)
-    spectre: pathEl('M6 15L10 15L12 18.5L15.5 16.5L15.5 12.5L19.5 12.5L21.5 9L18 7L14.5 9L12.5 5.5L8.5 5.5L4.5 5.5L2.5 9L6 11Z'),  // the Spectre
-    rhombs14: pathEl('M7.7 3.0L10.9 7.0L12.0 12.0L8.8 8.0ZM12.0 2.0L13.1 7.0L12.0 12.0L10.9 7.0ZM16.3 3.0L15.2 8.0L12.0 12.0L13.1 7.0ZM2.3 9.8L7.4 9.8L12.0 12.0L6.9 12.0ZM4.2 5.8L8.8 8.0L12.0 12.0L7.4 9.8ZM19.8 5.8L16.6 9.8L12.0 12.0L15.2 8.0ZM16.6 9.8L21.7 9.8L17.1 12.0L12.0 12.0ZM6.9 12.0L12.0 12.0L7.4 14.2L2.3 14.2ZM12.0 12.0L8.8 16.0L4.2 18.2L7.4 14.2ZM12.0 12.0L16.6 14.2L19.8 18.2L15.2 16.0ZM12.0 12.0L17.1 12.0L21.7 14.2L16.6 14.2ZM12.0 12.0L10.9 17.0L7.7 21.0L8.8 16.0ZM12.0 12.0L13.1 17.0L12.0 22.0L10.9 17.0ZM12.0 12.0L15.2 16.0L16.3 21.0L13.1 17.0Z'),  // Rhombs 14's star: its 14 thin rhombi at its middle
-    rhombs12: pathEl('M9.4 2.3L12.0 6.8L12.0 12.0L9.4 7.5ZM14.6 2.3L14.6 7.5L12.0 12.0L12.0 6.8ZM2.3 9.4L7.5 9.4L12.0 12.0L6.8 12.0ZM4.9 4.9L9.4 7.5L12.0 12.0L7.5 9.4ZM19.1 4.9L16.5 9.4L12.0 12.0L14.6 7.5ZM16.5 9.4L21.7 9.4L17.2 12.0L12.0 12.0ZM6.8 12.0L12.0 12.0L7.5 14.6L2.3 14.6ZM12.0 12.0L9.4 16.5L4.9 19.1L7.5 14.6ZM12.0 12.0L16.5 14.6L19.1 19.1L14.6 16.5ZM12.0 12.0L17.2 12.0L21.7 14.6L16.5 14.6ZM12.0 12.0L12.0 17.2L9.4 21.7L9.4 16.5ZM12.0 12.0L14.6 16.5L14.6 21.7L12.0 17.2Z'),  // Rhombs 12's star: the 12 thin rhombi at its middle
-    pinwheel: pathEl('M6.0 9.0L2.0 17.0L2.0 7.0ZM6.0 9.0L14.0 13.0L4.0 13.0ZM4.0 13.0L12.0 17.0L2.0 17.0ZM14.0 13.0L22.0 17.0L12.0 17.0ZM12.0 17.0L4.0 13.0L14.0 13.0Z'),  // the pinwheel's triangle cut in 5 of itself
-    penrose: pathEl('M8.3 7.9L2.3 9.8L6.0 14.9L12.0 13.0ZM15.7 7.9L12.0 2.8L8.3 7.9L12.0 13.0ZM15.7 7.9L21.7 9.8L18.0 14.9L12.0 13.0ZM6.0 14.9L6.0 21.2L12.0 19.3L12.0 13.0ZM12.0 19.3L18.0 21.2L18.0 14.9L12.0 13.0Z'),  // Penrose's star: the 5 big rhombi at its middle
-    hat: pathEl('M7.2 13.4L2.5 16.1L4.1 18.9L10.4 18.9L12 16.1L16.8 18.9L21.5 16.1L19.9 13.4L16.8 13.4L16.8 7.9L12 5.1L10.4 7.9L7.2 7.9Z'),  // the hat monotile
-    kites: pathEl(pathOf(hex)) + hex.map((p, i) => pathEl(segmentPath([12, 12], [(p[0] + hex[(i + 1) % 6][0]) / 2, (p[1] + hex[(i + 1) % 6][1]) / 2]))).join(''),  // a hexagon cut in 6 kites
+      return svgPath(`M12 12L${pt(a)}L${pt([a[0] + b[0], a[1] + b[1]])}L${pt(b)}Z`); }).join(''),  // Ammann–Beenker's star: 8 rhombi round a point
+    ...conedOf((k, n, F) => [k, svgPath(F.icon(n))]),  // each coned rosette's middle: its n tiles round it, n more (see CONED)
+    spectre: svgPath('M6 15L10 15L12 18.5L15.5 16.5L15.5 12.5L19.5 12.5L21.5 9L18 7L14.5 9L12.5 5.5L8.5 5.5L4.5 5.5L2.5 9L6 11Z'),  // the Spectre
+    rhombs14: svgPath('M7.7 3.0L10.9 7.0L12.0 12.0L8.8 8.0ZM12.0 2.0L13.1 7.0L12.0 12.0L10.9 7.0ZM16.3 3.0L15.2 8.0L12.0 12.0L13.1 7.0ZM2.3 9.8L7.4 9.8L12.0 12.0L6.9 12.0ZM4.2 5.8L8.8 8.0L12.0 12.0L7.4 9.8ZM19.8 5.8L16.6 9.8L12.0 12.0L15.2 8.0ZM16.6 9.8L21.7 9.8L17.1 12.0L12.0 12.0ZM6.9 12.0L12.0 12.0L7.4 14.2L2.3 14.2ZM12.0 12.0L8.8 16.0L4.2 18.2L7.4 14.2ZM12.0 12.0L16.6 14.2L19.8 18.2L15.2 16.0ZM12.0 12.0L17.1 12.0L21.7 14.2L16.6 14.2ZM12.0 12.0L10.9 17.0L7.7 21.0L8.8 16.0ZM12.0 12.0L13.1 17.0L12.0 22.0L10.9 17.0ZM12.0 12.0L15.2 16.0L16.3 21.0L13.1 17.0Z'),  // Rhombs 14's star: its 14 thin rhombi at its middle
+    rhombs12: svgPath('M9.4 2.3L12.0 6.8L12.0 12.0L9.4 7.5ZM14.6 2.3L14.6 7.5L12.0 12.0L12.0 6.8ZM2.3 9.4L7.5 9.4L12.0 12.0L6.8 12.0ZM4.9 4.9L9.4 7.5L12.0 12.0L7.5 9.4ZM19.1 4.9L16.5 9.4L12.0 12.0L14.6 7.5ZM16.5 9.4L21.7 9.4L17.2 12.0L12.0 12.0ZM6.8 12.0L12.0 12.0L7.5 14.6L2.3 14.6ZM12.0 12.0L9.4 16.5L4.9 19.1L7.5 14.6ZM12.0 12.0L16.5 14.6L19.1 19.1L14.6 16.5ZM12.0 12.0L17.2 12.0L21.7 14.6L16.5 14.6ZM12.0 12.0L12.0 17.2L9.4 21.7L9.4 16.5ZM12.0 12.0L14.6 16.5L14.6 21.7L12.0 17.2Z'),  // Rhombs 12's star: the 12 thin rhombi at its middle
+    pinwheel: svgPath('M6.0 9.0L2.0 17.0L2.0 7.0ZM6.0 9.0L14.0 13.0L4.0 13.0ZM4.0 13.0L12.0 17.0L2.0 17.0ZM14.0 13.0L22.0 17.0L12.0 17.0ZM12.0 17.0L4.0 13.0L14.0 13.0Z'),  // the pinwheel's triangle cut in 5 of itself
+    penrose: svgPath('M8.3 7.9L2.3 9.8L6.0 14.9L12.0 13.0ZM15.7 7.9L12.0 2.8L8.3 7.9L12.0 13.0ZM15.7 7.9L21.7 9.8L18.0 14.9L12.0 13.0ZM6.0 14.9L6.0 21.2L12.0 19.3L12.0 13.0ZM12.0 19.3L18.0 21.2L18.0 14.9L12.0 13.0Z'),  // Penrose's star: the 5 big rhombi at its middle
+    hat: svgPath('M7.2 13.4L2.5 16.1L4.1 18.9L10.4 18.9L12 16.1L16.8 18.9L21.5 16.1L19.9 13.4L16.8 13.4L16.8 7.9L12 5.1L10.4 7.9L7.2 7.9Z'),  // the hat monotile
+    kites: svgPath(pathOf(hex)) + hex.map((p, i) => svgPath(segmentPath([12, 12], [(p[0] + hex[(i + 1) % 6][0]) / 2, (p[1] + hex[(i + 1) % 6][1]) / 2]))).join(''),  // a hexagon cut in 6 kites
     cube: cube(false),
     stacks: (() => {  // Stacks: the cube seen from above (cube's, upside down), a brick wall on its left face (Walls with it), layers on its
       // right (its generations), on its top 5 live cells here and there (its last one)
       const at = (o, a, b) => (u, v) => o.map((x, d) => x + u * (a[d] - x) + v * (b[d] - x)), L = at(hex[4], [12, 12], hex[5]), R = at([12, 12], hex[2], hex[0]), T = at(hex[3], hex[2], hex[4]);  // (its faces as cube draws them)
-      const line = (f, u0, v0, u1, v1) => pathEl(segmentPath(f(u0, v0), f(u1, v1))), cell = (u, v, s = 1 / 6) => pathEl(pathOf([T(u, v), T(u + s, v), T(u + s, v + s), T(u, v + s)]), 'f');
+      const line = (f, u0, v0, u1, v1) => svgPath(segmentPath(f(u0, v0), f(u1, v1))), cell = (u, v, s = 1 / 6) => svgPath(pathOf([T(u, v), T(u + s, v), T(u + s, v + s), T(u, v + s)]), 'f');
       return `<g transform="matrix(1 0 0 -1 0 24)">${cube(false) + [1 / 3, 2 / 3].map((v) => line(L, 0, v, 1, v)).join('') + [[0.5, 0, 1 / 3], [0.25, 1 / 3, 2 / 3], [0.75, 1 / 3, 2 / 3], [0.5, 2 / 3, 1]].map(([u, a, b]) => line(L, u, a, u, b)).join('')
         + [0.25, 0.5, 0.75].map((v) => line(R, 0, v, 1, v)).join('') + [[0.12, 0.22], [0.52, 0.1], [0.38, 0.48], [0.7, 0.5], [0.18, 0.72]].map(([u, v]) => cell(u, v)).join('')}</g>`;
     })(),
     cubeFilled: cube(true),
     torus,
-    loop: pathEl('M19.5 12A7.5 7.5 0 1 1 16.6 6.1') + pathEl('M17.4 2.6L16.9 6.4L13.1 5.9'),  // a circle closing on itself, its arrow at the end
-    elementary: wolframFromCell(90, 4).flatMap((r, y) => r.flatMap((c, x) => (c ? [pathEl(`M${1.5 + 3 * x} ${6.5 + 3 * y}h2.6v2.6h-2.6Z`, 'f')] : []))).join(''),  // Elementary: rule 90's triangle from one cell
-    replicator: pathEl('M5 4H14A1 1 0 0 1 15 5V14A1 1 0 0 1 14 15H5A1 1 0 0 1 4 14V5A1 1 0 0 1 5 4Z') + pathEl('M7.5 7H11.5A.5.5 0 0 1 12 7.5V11.5A.5.5 0 0 1 11.5 12H7.5A.5.5 0 0 1 7 11.5V7.5A.5.5 0 0 1 7.5 7Z') + pathEl('M15 12.5H20V20'),  // Langton's loop: its sheathed ring, its arm out
+    loop: svgPath('M19.5 12A7.5 7.5 0 1 1 16.6 6.1') + svgPath('M17.4 2.6L16.9 6.4L13.1 5.9'),  // a circle closing on itself, its arrow at the end
+    elementary: wolframFromCell(90, 4).flatMap((r, y) => r.flatMap((c, x) => (c ? [svgPath(`M${1.5 + 3 * x} ${6.5 + 3 * y}h2.6v2.6h-2.6Z`, 'f')] : []))).join(''),  // Elementary: rule 90's triangle from one cell
+    replicator: svgPath('M5 4H14A1 1 0 0 1 15 5V14A1 1 0 0 1 14 15H5A1 1 0 0 1 4 14V5A1 1 0 0 1 5 4Z') + svgPath('M7.5 7H11.5A.5.5 0 0 1 12 7.5V11.5A.5.5 0 0 1 11.5 12H7.5A.5.5 0 0 1 7 11.5V7.5A.5.5 0 0 1 7.5 7Z') + svgPath('M15 12.5H20V20'),  // Langton's loop: its sheathed ring, its arm out
     // the tilings of a surface (see FAMILIES): a 2 × 2 grid, a triangle cut in 4, 3 hexagons, and turned by 30°
-    tilesSq: pathEl(pathOf(sq)) + pathEl('M12 4V20M4 12H20'),
-    onGrid: pathEl('M9.33 4V20M14.67 4V20M4 9.33H20M4 14.67H20'),  // (along the grid: 3 × 3 cut, its lines, no outline)
-    onCells: pathEl(pathOf(sq)) + pathEl('M9.33 4V20M14.67 4V20M4 9.33H20M4 14.67H20') + pathEl('M9.33 9.33H14.67V14.67H9.33Z', 'f'),  // (on cells: its middle cell painted)
+    tilesSq: svgPath(pathOf(sq)) + svgPath('M12 4V20M4 12H20'),
+    onGrid: svgPath('M9.33 4V20M14.67 4V20M4 9.33H20M4 14.67H20'),  // (along the grid: 3 × 3 cut, its lines, no outline)
+    onCells: svgPath(pathOf(sq)) + svgPath('M9.33 4V20M14.67 4V20M4 9.33H20M4 14.67H20') + svgPath('M9.33 9.33H14.67V14.67H9.33Z', 'f'),  // (on cells: its middle cell painted)
     tilesTri: tiledTriangle(-90), tilesTriTurned: tiledTriangle(0),
     tilesHex: hexCluster(30), tilesHexTurned: hexCluster(0),  // (pointy as the plane's; turned, flat)
     klein, mobius,  // (see above: a flask its neck going into itself; a band with a half twist)
-    tetrahedron: pathEl(pathOf([a, b, c])) + [a, b, c].map((p) => pathEl(segmentPath(p, d))).join(''),
-    stella: pathEl(pathOf(ngon(3, 10))) + pathEl(pathOf(ngon(3, 10, 90))),  // two tetrahedra: two triangles, a star
-    octahedron: pathEl('M12 2L21 12L12 22L3 12Z') + [[12, 2], [21, 12], [12, 22], [3, 12]].map((p) => pathEl(segmentPath(p, [10, 14]))).join(''),
+    tetrahedron: svgPath(pathOf([a, b, c])) + [a, b, c].map((p) => svgPath(segmentPath(p, d))).join(''),
+    stella: svgPath(pathOf(ngon(3, 10))) + svgPath(pathOf(ngon(3, 10, 90))),  // two tetrahedra: two triangles, a star
+    octahedron: svgPath('M12 2L21 12L12 22L3 12Z') + [[12, 2], [21, 12], [12, 22], [3, 12]].map((p) => svgPath(segmentPath(p, [10, 14]))).join(''),
     icosahedron: ico,
     dodecahedron: dodeca,
-    cubocta: pathEl('M4 4H20V20H4Z') + pathEl('M12 4L20 12L12 20L4 12Z'),  // a cuboctahedron face on: a square, its 4 corners triangles
-    pyramid: pathEl('M12 3L3 17L10 21L21 16Z') + pathEl('M12 3L10 21'),  // a square pyramid, a corner of its square in front
-    rhombi: pathEl('M8 3H16L21 8V16L16 21H8L3 16V8Z') + pathEl('M8 8H16V16H8Z') + pathEl('M8 3V8H3M16 3V8H21M8 21V16H3M16 21V16H21'),  // a rhombicuboctahedron face on: its square, 4 squares round, 4 triangles in the corners
-    bicupola: pathEl('M8 3H16L21 9V15L16 21H8L3 15V9Z') + pathEl('M3 12H21M8 3L6 12L8 21M16 3L18 12L16 21'),  // a square orthobicupola from the side: its two cupolas on its middle
-    globe: pathEl('M12 3A9 9 0 1 0 12.01 3Z') + pathEl('M3.5 9H20.5M3.5 15H20.5M12 3C8 6 8 18 12 21M12 3C16 6 16 18 12 21'),  // a globe: its parallels and meridians
-    rosettes: pathEl('M12 3A9 9 0 1 0 12.01 3Z') + pathEl('M3 10.6L5.25 13.4L7.5 10.6L9.75 13.4L12 10.6L14.25 13.4L16.5 10.6L18.75 13.4L21 10.6'),  // a rosette sphere: the globe, its seam crenellated (one disc's teeth in the other's notches)
-    spiral: pathEl(pathOf(spiralOf(4, 11), false)),
-    triSpiral: pathEl(pathOf(spiralOf(3, 7), false)),
-    hexSpiral: pathEl(pathOf(spiralOf(6, 15), false)),
-    search: '<circle cx="10.5" cy="10.5" r="6.5"/>' + pathEl('M15.5 15.5L21 21'),
+    cubocta: svgPath('M4 4H20V20H4Z') + svgPath('M12 4L20 12L12 20L4 12Z'),  // a cuboctahedron face on: a square, its 4 corners triangles
+    pyramid: svgPath('M12 3L3 17L10 21L21 16Z') + svgPath('M12 3L10 21'),  // a square pyramid, a corner of its square in front
+    rhombi: svgPath('M8 3H16L21 8V16L16 21H8L3 16V8Z') + svgPath('M8 8H16V16H8Z') + svgPath('M8 3V8H3M16 3V8H21M8 21V16H3M16 21V16H21'),  // a rhombicuboctahedron face on: its square, 4 squares round, 4 triangles in the corners
+    bicupola: svgPath('M8 3H16L21 9V15L16 21H8L3 15V9Z') + svgPath('M3 12H21M8 3L6 12L8 21M16 3L18 12L16 21'),  // a square orthobicupola from the side: its two cupolas on its middle
+    globe: svgPath('M12 3A9 9 0 1 0 12.01 3Z') + svgPath('M3.5 9H20.5M3.5 15H20.5M12 3C8 6 8 18 12 21M12 3C16 6 16 18 12 21'),  // a globe: its parallels and meridians
+    rosettes: svgPath('M12 3A9 9 0 1 0 12.01 3Z') + svgPath('M3 10.6L5.25 13.4L7.5 10.6L9.75 13.4L12 10.6L14.25 13.4L16.5 10.6L18.75 13.4L21 10.6'),  // a rosette sphere: the globe, its seam crenellated (one disc's teeth in the other's notches)
+    spiral: svgPath(pathOf(spiralOf(4, 11), false)),
+    triSpiral: svgPath(pathOf(spiralOf(3, 7), false)),
+    hexSpiral: svgPath(pathOf(spiralOf(6, 15), false)),
+    search: '<circle cx="10.5" cy="10.5" r="6.5"/>' + svgPath('M15.5 15.5L21 21'),
     // a turtle (the walks turning relative to their heading) and an ant (Langton's, a tab), seen from
     // above, heading up: their head, body and flippers filled, the ant's legs bent and bold, under its body
-    turtle: pathEl('M12 1.2C10.6 1.2 10 2.6 10 3.8S10.8 6.2 12 6.2 14 5 14 3.8 13.4 1.2 12 1.2Z', 'f')
-      + pathEl('M7.8 8.2Q3.6 5.6 1.4 8.4Q4.4 10.8 7.6 10.6Z', 'f') + pathEl('M16.2 8.2Q20.4 5.6 22.6 8.4Q19.6 10.8 16.4 10.6Z', 'f')
-      + pathEl('M8.6 17.4Q5 18 4.4 21.6Q7.6 21.4 9.6 19Z', 'f') + pathEl('M15.4 17.4Q19 18 19.6 21.6Q16.4 21.4 14.4 19Z', 'f')
-      + '<ellipse cx="12" cy="13.2" rx="5.2" ry="6.4" stroke-width="1.9"/>' + pathEl('M12 10.2L14 11.4V14.2L12 15.4L10 14.2V11.4Z', 'thin'),
-    reversible: pathEl('M5 12A7 7 0 0 1 18.06 8.5M18.94 5.22L18.06 8.5L14.78 7.62') + pathEl('M19 12A7 7 0 0 1 5.94 15.5M5.06 18.78L5.94 15.5L9.22 16.38'),  // two arrows round, clockwise (🔄 the other way)
-    turmite: pathEl('M12 12H15V9H9V15H18V6H6V18H21'),  // a square spiral
-    worm: pathEl('M3 19L7.5 11.2L12 19L16.5 11.2L14.3 7.3L18.8 7.3L21 3.5') + pathEl(pathOf([[20, 2], [22, 2], [22, 4], [20, 4]]), 'f'),  // its path along the triangles' lines, its head
+    turtle: svgPath('M12 1.2C10.6 1.2 10 2.6 10 3.8S10.8 6.2 12 6.2 14 5 14 3.8 13.4 1.2 12 1.2Z', 'f')
+      + svgPath('M7.8 8.2Q3.6 5.6 1.4 8.4Q4.4 10.8 7.6 10.6Z', 'f') + svgPath('M16.2 8.2Q20.4 5.6 22.6 8.4Q19.6 10.8 16.4 10.6Z', 'f')
+      + svgPath('M8.6 17.4Q5 18 4.4 21.6Q7.6 21.4 9.6 19Z', 'f') + svgPath('M15.4 17.4Q19 18 19.6 21.6Q16.4 21.4 14.4 19Z', 'f')
+      + '<ellipse cx="12" cy="13.2" rx="5.2" ry="6.4" stroke-width="1.9"/>' + svgPath('M12 10.2L14 11.4V14.2L12 15.4L10 14.2V11.4Z', 'thin'),
+    reversible: svgPath('M5 12A7 7 0 0 1 18.06 8.5M18.94 5.22L18.06 8.5L14.78 7.62') + svgPath('M19 12A7 7 0 0 1 5.94 15.5M5.06 18.78L5.94 15.5L9.22 16.38'),  // two arrows round, clockwise (🔄 the other way)
+    turmite: svgPath('M12 12H15V9H9V15H18V6H6V18H21'),  // a square spiral
+    worm: svgPath('M3 19L7.5 11.2L12 19L16.5 11.2L14.3 7.3L18.8 7.3L21 3.5') + svgPath(pathOf([[20, 2], [22, 2], [22, 4], [20, 4]]), 'f'),  // its path along the triangles' lines, its head
     ant: '<path d="M10.5 10L7 8.4 5.6 5.4M13.5 10L17 8.4 18.4 5.4M10.2 11.4L5.2 11.8 3.4 13.6M13.8 11.4L18.8 11.8 20.6 13.6M10.4 12.8L7.2 15.6 6.4 19.6M13.6 12.8L16.8 15.6 17.6 19.6M10.8 4.8L9.2 2.6 7.4 2.8M13.2 4.8L14.8 2.6 16.6 2.8" stroke-width="1.8"/>'
       + '<ellipse class="f" cx="12" cy="6.2" rx="2.5" ry="2.2"/><ellipse class="f" cx="12" cy="11.1" rx="2" ry="2.5"/><ellipse class="f" cx="12" cy="17.8" rx="3.3" ry="4.4"/>',
-    walk2d: pathEl('M3 20V15H8V10H12V16H17V6H21V3'),  // a walk on the square grid
+    walk2d: svgPath('M3 20V15H8V10H12V16H17V6H21V3'),  // a walk on the square grid
     gallery: [[3.5, 3.5], [13.5, 3.5], [3.5, 13.5], [13.5, 13.5]].map(([x, y]) => `<rect x="${x}" y="${y}" width="7" height="7" rx="1.6"/>`).join(''),
-    glider: pathEl(pathOf(sq)) + pathEl('M9.33 4V20M14.67 4V20M4 9.33H20M4 14.67H20')
+    glider: svgPath(pathOf(sq)) + svgPath('M9.33 4V20M14.67 4V20M4 9.33H20M4 14.67H20')
       + [[1, 0], [2, 1], [0, 2], [1, 2], [2, 2]].map(([x, y]) => `<rect class="f" x="${hundredths(4 + x * 5.33)}" y="${hundredths(4 + y * 5.33)}" width="5.33" height="5.33"/>`).join(''),
     // hunt zones: the whole surface, then a patch of radius 1, 2 or 3
-    zoneAll: pathEl(pathOf(sq)) + pathEl('M9.33 4V20M14.67 4V20M4 9.33H20M4 14.67H20'),
+    zoneAll: svgPath(pathOf(sq)) + svgPath('M9.33 4V20M14.67 4V20M4 9.33H20M4 14.67H20'),
     // the symmetries of a Life start on the plane
     // the themes: Light, Dark, System (half and half)
-    sun: '<circle class="f" cx="12" cy="12" r="4.2"/>' + pathEl('M12 2.5V5M12 19V21.5M2.5 12H5M19 12H21.5M5.3 5.3L7.1 7.1M16.9 16.9L18.7 18.7M5.3 18.7L7.1 16.9M16.9 7.1L18.7 5.3'),
+    sun: '<circle class="f" cx="12" cy="12" r="4.2"/>' + svgPath('M12 2.5V5M12 19V21.5M2.5 12H5M19 12H21.5M5.3 5.3L7.1 7.1M16.9 16.9L18.7 18.7M5.3 18.7L7.1 16.9M16.9 7.1L18.7 5.3'),
     moon: '<path class="f" d="M19.5 14.6A8 8 0 1 1 9.4 4.5A6.3 6.3 0 0 0 19.5 14.6Z"/>',
     halfDisc: '<circle cx="12" cy="12" r="8.5"/>' + '<path class="f" d="M12 3.5A8.5 8.5 0 0 0 12 20.5Z"/>',
-    pivot: pathEl('M18.4 13A6.5 6.5 0 1 1 16.6 7.4') + pathEl('M17.5 3.5V7.8H13.2'),  // a turn on the spot, clockwise
+    pivot: svgPath('M18.4 13A6.5 6.5 0 1 1 16.6 7.4') + svgPath('M17.5 3.5V7.8H13.2'),  // a turn on the spot, clockwise
     // the view's switches: Perspective (a rectangle seen at a slant, its near side taller), Side light (a torch lighting from the left),
     // Auto-rotate (a turn round a slanted orbit)
-    perspective: pathEl('M6.14 4.16L18.14 5.88A1 1 0 0 1 19 6.87V17.13A1 1 0 0 1 18.14 18.12L6.14 19.84A1 1 0 0 1 5 18.85V5.15A1 1 0 0 1 6.14 4.16Z'),
-    sideLight: pathEl('M2.5 10.2H7.5V13.8H2.5Z') + pathEl('M7.5 9.6L10 8.2V15.8L7.5 14.4Z') + pathEl('M12.5 8.6L21 4.8M13 12H21.5M12.5 15.4L21 19.2'),
-    cut: pathEl('M3 12A9 9 0 0 1 21 12Z') + pathEl('M2 15.5H22'),  // a ball's back half, the cut's line
-    glass: pathEl('M3 12A9 9 0 1 0 21 12A9 9 0 1 0 3 12Z') + pathEl('M3 12A9 3.5 0 0 0 21 12A9 3.5 0 0 0 3 12Z'),  // a ball, its equator seen through
-    ocean: pathEl('M3 9C5 7 7 7 9 9S13 11 15 9S19 7 21 9M3 15C5 13 7 13 9 15S13 17 15 15S19 13 21 15'),  // two waves
-    viewDefault: pathEl('M12 3L20 7.5V16.5L12 21L4 16.5V7.5Z') + pathEl('M4 7.5L12 12L20 7.5M12 12V21'),  // (a cube from its usual corner)
-    upright: pathEl('M12 3V17M8 7L12 3L16 7M4 20.5H20'),  // (up, over a level line)
-    free: pathEl('M12 7L16.3 9.5V14.5L12 17L7.7 14.5V9.5Z') + pathEl('M12 7V12M7.7 14.5L12 12L16.3 14.5')  // (a cube turned any way by hand: two arrows round it)
-      + pathEl('M2.5 12.8A9.5 9.5 0 0 1 15.2 3.1') + pathEl('M13.9 1.1L15.2 3.1L12.9 3.7') + pathEl('M21.5 11.2A9.5 9.5 0 0 1 8.8 20.9') + pathEl('M10.1 22.9L8.8 20.9L11.1 20.3'),
-    fit: pathEl('M4 9V4H9M15 4H20V9M20 15V20H15M9 20H4V15') + '<rect x="8.5" y="8.5" width="7" height="7" rx="1"/>',  // (the view framed round the walk)
-    sound: pathEl('M3.5 9.5H7.5L12.5 5V19L7.5 14.5H3.5Z') + pathEl('M15.5 9.2A4 4 0 0 1 15.5 14.8M18.2 6.5A8 8 0 0 1 18.2 17.5'),  // (a speaker, its waves)
-    autoRotate: pathEl('M19.46 11.04C20.32 8.68 20.18 6.46 18.86 5.14C16.59 2.87 11.68 4.1 7.89 7.89C4.1 11.68 2.87 16.59 5.14 18.86C7.37 21.09 12.13 19.96 15.88 16.35') + pathEl('M12 16H16V20'),  // (a turn round a slanted orbit)
+    perspective: svgPath('M6.14 4.16L18.14 5.88A1 1 0 0 1 19 6.87V17.13A1 1 0 0 1 18.14 18.12L6.14 19.84A1 1 0 0 1 5 18.85V5.15A1 1 0 0 1 6.14 4.16Z'),
+    sideLight: svgPath('M2.5 10.2H7.5V13.8H2.5Z') + svgPath('M7.5 9.6L10 8.2V15.8L7.5 14.4Z') + svgPath('M12.5 8.6L21 4.8M13 12H21.5M12.5 15.4L21 19.2'),
+    cut: svgPath('M3 12A9 9 0 0 1 21 12Z') + svgPath('M2 15.5H22'),  // a ball's back half, the cut's line
+    glass: svgPath('M3 12A9 9 0 1 0 21 12A9 9 0 1 0 3 12Z') + svgPath('M3 12A9 3.5 0 0 0 21 12A9 3.5 0 0 0 3 12Z'),  // a ball, its equator seen through
+    ocean: svgPath('M3 9C5 7 7 7 9 9S13 11 15 9S19 7 21 9M3 15C5 13 7 13 9 15S13 17 15 15S19 13 21 15'),  // two waves
+    viewDefault: svgPath('M12 3L20 7.5V16.5L12 21L4 16.5V7.5Z') + svgPath('M4 7.5L12 12L20 7.5M12 12V21'),  // (a cube from its usual corner)
+    upright: svgPath('M12 3V17M8 7L12 3L16 7M4 20.5H20'),  // (up, over a level line)
+    free: svgPath('M12 7L16.3 9.5V14.5L12 17L7.7 14.5V9.5Z') + svgPath('M12 7V12M7.7 14.5L12 12L16.3 14.5')  // (a cube turned any way by hand: two arrows round it)
+      + svgPath('M2.5 12.8A9.5 9.5 0 0 1 15.2 3.1') + svgPath('M13.9 1.1L15.2 3.1L12.9 3.7') + svgPath('M21.5 11.2A9.5 9.5 0 0 1 8.8 20.9') + svgPath('M10.1 22.9L8.8 20.9L11.1 20.3'),
+    fit: svgPath('M4 9V4H9M15 4H20V9M20 15V20H15M9 20H4V15') + '<rect x="8.5" y="8.5" width="7" height="7" rx="1"/>',  // (the view framed round the walk)
+    sound: svgPath('M3.5 9.5H7.5L12.5 5V19L7.5 14.5H3.5Z') + svgPath('M15.5 9.2A4 4 0 0 1 15.5 14.8M18.2 6.5A8 8 0 0 1 18.2 17.5'),  // (a speaker, its waves)
+    autoRotate: svgPath('M19.46 11.04C20.32 8.68 20.18 6.46 18.86 5.14C16.59 2.87 11.68 4.1 7.89 7.89C4.1 11.68 2.87 16.59 5.14 18.86C7.37 21.09 12.13 19.96 15.88 16.35') + svgPath('M12 16H16V20'),  // (a turn round a slanted orbit)
     symNone: flags([[0, false]]),
     symMirror: flags([[0, false], [0, true], [Math.PI, false], [Math.PI, true]]),
     symRotate: flags([0, 1, 2, 3].map((k) => [(k * Math.PI) / 2, false])),
@@ -2562,9 +2562,9 @@ const ICONS = (() => {
     frame,
     menger,
     // Draw's eraser: a block tilted on its line
-    eraser: pathEl('M9 19L4.5 14.5A1.5 1.5 0 0 1 4.5 12.4L13.4 3.5A1.5 1.5 0 0 1 15.5 3.5L20.5 8.5A1.5 1.5 0 0 1 20.5 10.6L12 19Z') + pathEl('M8.5 9.5L14.5 15.5') + pathEl('M9 19H20'),
-    pencil: pathEl('M4 20L5.2 15.2L15.8 4.6A1.4 1.4 0 0 1 17.8 4.6L19.4 6.2A1.4 1.4 0 0 1 19.4 8.2L8.8 18.8Z') + pathEl('M14.4 6L18 9.6'),  // Draw
-    letter: pathEl('M5 5H19M12 5V19M9 19H15'),  // Text: a T
+    eraser: svgPath('M9 19L4.5 14.5A1.5 1.5 0 0 1 4.5 12.4L13.4 3.5A1.5 1.5 0 0 1 15.5 3.5L20.5 8.5A1.5 1.5 0 0 1 20.5 10.6L12 19Z') + svgPath('M8.5 9.5L14.5 15.5') + svgPath('M9 19H20'),
+    pencil: svgPath('M4 20L5.2 15.2L15.8 4.6A1.4 1.4 0 0 1 17.8 4.6L19.4 6.2A1.4 1.4 0 0 1 19.4 8.2L8.8 18.8Z') + svgPath('M14.4 6L18 9.6'),  // Draw
+    letter: svgPath('M5 5H19M12 5V19M9 19H15'),  // Text: a T
     // numbers
     dice: '<rect x="3.5" y="3.5" width="17" height="17" rx="3.5"/>' + svgDots([[8.5, 8.5], [15.5, 8.5], [12, 12], [8.5, 15.5], [15.5, 15.5]], 1.4),
     dragon: `<path class="thin" d="${pathOf(dragonOf(63), false)}"/>`,
@@ -2572,24 +2572,24 @@ const ICONS = (() => {
     barcode: [[3, 2.6], [7, 1.4], [10, 1.4], [13, 3], [18, 1.4], [20.6, 1.4]]
       .map(([x, w]) => `<rect class="f" x="${x}" y="4" width="${w}" height="16" rx="0.3"/>`).join(''),
     // buttons
-    play: pathEl('M7 4.5L19.5 12L7 19.5Z', 'f'),
+    play: svgPath('M7 4.5L19.5 12L7 19.5Z', 'f'),
     pause: '<rect class="f" x="6" y="5" width="4" height="14" rx="1"/><rect class="f" x="14" y="5" width="4" height="14" rx="1"/>',
     stop: '<rect class="f" x="6" y="6" width="12" height="12" rx="1.5"/>',
-    start: pathEl('M5.5 5V19') + pathEl('M19 5L9 12L19 19Z', 'f'),
-    end: pathEl('M18.5 5V19') + pathEl('M5 5L15 12L5 19Z', 'f'),
-    back: '<rect class="f" x="15.5" y="5" width="3.5" height="14" rx="1"/>' + pathEl('M13 5L4 12L13 19Z', 'f'),
-    step: '<rect class="f" x="5" y="5" width="3.5" height="14" rx="1"/>' + pathEl('M11 5L20 12L11 19Z', 'f'),
-    reverse: pathEl('M17 4.5L4.5 12L17 19.5Z', 'f'),  // Play backwards: Play turned round
-    smiley: '<circle cx="12" cy="12" r="9"/>' + pathEl('M8 14.5Q12 18 16 14.5') + '<circle class="f" cx="9" cy="10" r="1.2"/><circle class="f" cx="15" cy="10" r="1.2"/>',  // Emoji: a smiling face
-    star: pathEl(pathOf(ngon(10, 1).map((_, k) => ngon(10, k % 2 ? 4.2 : 9.5)[k]))),
-    check: pathEl('M5 12.5L10 17.5L19 7'),
-    copy: '<rect x="8.5" y="8.5" width="12" height="12" rx="2"/>' + pathEl('M15.5 8.5V5.5A2 2 0 0 0 13.5 3.5H5.5A2 2 0 0 0 3.5 5.5V13.5A2 2 0 0 0 5.5 15.5H8.5'),
-    import: pathEl('M12 3v12M7 10l5 5 5-5M4 14v5a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-5'), export: pathEl('M12 15V3M7 8l5-5 5 5M4 14v5a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-5'),
-    undo: pathEl('M9 14L4 9L9 4') + pathEl('M4 9H15A5 5 0 0 1 15 19H11'),
-    eye: pathEl('M2.5 12Q12 3.5 21.5 12Q12 20.5 2.5 12Z') + '<circle cx="12" cy="12" r="3"/>',
-    trash: pathEl('M4 7h16M9 7V4.5h6V7M6 7l1 13h10l1-13M10 11v6M14 11v6'),
-    floppy: pathEl('M6 3h10l4 4v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2ZM8 3v5h7V3M12.5 4.5v2M7 21v-6h10v6'),  // a floppy disk: its shutter and its window, its label (Management's)
-    link: pathEl('M9.5 14.5L14.5 9.5') + pathEl('M8.5 11.5L6.5 13.5A3.5 3.5 0 0 0 10.5 17.5L12.5 15.5M15.5 12.5L17.5 10.5A3.5 3.5 0 0 0 13.5 6.5L11.5 8.5'),
+    start: svgPath('M5.5 5V19') + svgPath('M19 5L9 12L19 19Z', 'f'),
+    end: svgPath('M18.5 5V19') + svgPath('M5 5L15 12L5 19Z', 'f'),
+    back: '<rect class="f" x="15.5" y="5" width="3.5" height="14" rx="1"/>' + svgPath('M13 5L4 12L13 19Z', 'f'),
+    step: '<rect class="f" x="5" y="5" width="3.5" height="14" rx="1"/>' + svgPath('M11 5L20 12L11 19Z', 'f'),
+    reverse: svgPath('M17 4.5L4.5 12L17 19.5Z', 'f'),  // Play backwards: Play turned round
+    smiley: '<circle cx="12" cy="12" r="9"/>' + svgPath('M8 14.5Q12 18 16 14.5') + '<circle class="f" cx="9" cy="10" r="1.2"/><circle class="f" cx="15" cy="10" r="1.2"/>',  // Emoji: a smiling face
+    star: svgPath(pathOf(ngon(10, 1).map((_, k) => ngon(10, k % 2 ? 4.2 : 9.5)[k]))),
+    check: svgPath('M5 12.5L10 17.5L19 7'),
+    copy: '<rect x="8.5" y="8.5" width="12" height="12" rx="2"/>' + svgPath('M15.5 8.5V5.5A2 2 0 0 0 13.5 3.5H5.5A2 2 0 0 0 3.5 5.5V13.5A2 2 0 0 0 5.5 15.5H8.5'),
+    import: svgPath('M12 3v12M7 10l5 5 5-5M4 14v5a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-5'), export: svgPath('M12 15V3M7 8l5-5 5 5M4 14v5a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-5'),
+    undo: svgPath('M9 14L4 9L9 4') + svgPath('M4 9H15A5 5 0 0 1 15 19H11'),
+    eye: svgPath('M2.5 12Q12 3.5 21.5 12Q12 20.5 2.5 12Z') + '<circle cx="12" cy="12" r="3"/>',
+    trash: svgPath('M4 7h16M9 7V4.5h6V7M6 7l1 13h10l1-13M10 11v6M14 11v6'),
+    floppy: svgPath('M6 3h10l4 4v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2ZM8 3v5h7V3M12.5 4.5v2M7 21v-6h10v6'),  // a floppy disk: its shutter and its window, its label (Management's)
+    link: svgPath('M9.5 14.5L14.5 9.5') + svgPath('M8.5 11.5L6.5 13.5A3.5 3.5 0 0 0 10.5 17.5L12.5 15.5M15.5 12.5L17.5 10.5A3.5 3.5 0 0 0 13.5 6.5L11.5 8.5'),
   };
 })();
 const icon = (name) => `<svg class="icon" viewBox="0 0 24 24" aria-hidden="true">${ICONS[name]}</svg>`;
@@ -3383,7 +3383,7 @@ function tilingIcon(kind) {
   const few = { capitalI: [4, c], truncsquare: [5, tilingWorld(kind, [0, 0])], elongated: [8, tilingWorld(kind, [0.8660254, 0.2679492])] }[kind];  // (Capital I's: 4 tiles; Octagons': an octagon and its 4 squares; Elongated's: 2 squares round their side's middle, the triangles over and under them)
   const near = few ? [...polys].sort((P, Q) => far(P, few[1]) - far(Q, few[1])).slice(0, few[0]) : polys.filter((P) => far(P) < r);
   const o = few?.[1] ?? c, s = 10 / Math.max(...near.flat().map(([x, y]) => Math.max(Math.abs(x - o[0]), Math.abs(y - o[1]))));  // (round its middle)
-  return near.map((P) => pathEl(`M${P.map(([x, y]) => `${(12 + (x - o[0]) * s).toFixed(1)} ${(12 + (y - o[1]) * s).toFixed(1)}`).join('L')}Z`)).join('');  // (y down, as the grids are drawn)
+  return near.map((P) => svgPath(`M${P.map(([x, y]) => `${(12 + (x - o[0]) * s).toFixed(1)} ${(12 + (y - o[1]) * s).toFixed(1)}`).join('L')}Z`)).join('');  // (y down, as the grids are drawn)
 }
 for (const kind of Object.keys(TILINGS)) ICONS[`tiling-${kind}`] = tilingIcon(kind);
 // The 2D grids in groups, each its title, in this order: the circles (none repeating, round walls) by how they are built, the
@@ -9867,7 +9867,7 @@ function rosetteIcon(kind) {
   return roundIcon(all.filter((P) => (ring ? P !== hole && hole.some(at(P)) : at(P)([0, 0]))), false);  // (its grid's y down already)
 }
 for (const k of Object.keys(ROSETTES)) if (!conedFamily(k)) {  // (made when first drawn: its disc needs what comes later, see flatPolys)
-  Object.defineProperty(ICONS, k, { configurable: true, enumerable: true, get: () => { const v = pathEl(rosetteIcon(k)); Object.defineProperty(ICONS, k, { value: v, enumerable: true }); return v; } });
+  Object.defineProperty(ICONS, k, { configurable: true, enumerable: true, get: () => { const v = svgPath(rosetteIcon(k)); Object.defineProperty(ICONS, k, { value: v, enumerable: true }); return v; } });
 }
 const APERIODIC = { hat: HAT, penrose: PENROSE, spectre: SPECTRE, ammann: AMMANN, rhombs12: RHOMBS12, rhombs14: RHOMBS14, pinwheel: PINWHEEL, ...Object.fromEntries(Object.entries(ROSETTES).map(([k, [, r]]) => [k, r])) };  // the grids that never repeat: a disc of them, walls round it, never a torus
 // the grids in their spaces (see SPACES): everyone's surfaces, sheets or solids; the automata's plane, round (these) or not

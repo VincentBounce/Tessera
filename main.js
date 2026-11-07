@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.434';
+const VERSION = '0.4.435';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -16915,7 +16915,7 @@ const fillAreasApply = (w = $('mode').value) => !areaWhyNot(w);
 // Area greyed at a mode: on cells (its cells its own colours, a battle's its lands: along the lines only), a walk closing none
 // (a spiral, a mode without it), a look over the cells (Heatmap, Directions), or Snake cells (its tails slide: no area
 // lasts); else ''
-const areaWhyNot = (w) => (MODES[w].cells ? 'on cells: the walk colours its cells itself (a battle, its lands)' : !useful('fill', w) || MODES[w].fill === false ? 'where the walk closes no area to fill (a spiral, an ant…)'
+const areaWhyNot = (w) => (MODES[w].cells ? 'on cells: the walk colours its cells itself (a battle, its lands)' : w === $('mode').value && battleOn() && PENETRATIONS[penetration][0] !== 'cut' ? 'in a battle that colours its lands (Cut, its bodies only, keeps it)' : !useful('fill', w) || MODES[w].fill === false ? 'where the walk closes no area to fill (a spiral, an ant…)'
   : ['visits', 'digit'].includes($('colourMode').value) ? 'with Heatmap or Directions (the cells their own colours)' : w === $('mode').value && snakeBattle() ? 'in Snake cells: its tails slide, no area they close lasts' : '');
 // a battle in Snake cells: its bodies' tails slide, no area they close lasts: none filled (Area greyed)
 const snakeBattle = () => battleOn() && PENETRATIONS[penetration][0] === 'snakeCells';

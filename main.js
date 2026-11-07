@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.372';
+const VERSION = '0.4.373';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -5514,8 +5514,8 @@ function torusPoint(i, j, nu, nv, m, tube = TORUS_TUBE) {
  * a neck that goes in through its side and opens into its bottom (see kleinBottlePoint), its tiles narrow in the neck, wide
  * in the body (Paul Bourke's four pieces before v0.4.367, their seams a tile 3 times as long as its neighbour; a smooth one
  * fitted to a model before v0.4.370; the figure 8 before v0.4.14, see REMOVED.md). Flat (m = 0) as the torus's sheet. */
-function kleinPoint(x, y, nu, nv, m, tube = TORUS_TUBE) {
-  const f = (y / nv) * 2 * Math.PI;
+function kleinPoint(x, y, nu, nv, m, tube = TORUS_TUBE, up = 0) {
+  const f = ((y - up) / nv) * 2 * Math.PI;  // (round the tube from the sheet's mirror line, up: Cairo's half square, so that the bottle glues as its sheet does)
   // the bottle: the sheet's ends on the circle it stands on (the bowl's lowest), past its own ends turned over (u to π − u)
   const w = x / nu + kleinBottle().bottom, past = w >= 1;
   const K = kleinBottlePoint(past ? w - 1 : w, past ? -Math.PI / 2 - f : f + 1.5 * Math.PI);  // (its sheet half a turn round the tube: its middle, its pictures, in front)
@@ -5617,16 +5617,17 @@ const kleinColumns = { klein: (nv) => ringColumns(nv / TORUS_TUBE, nv, 1, true),
 kleinColumns.kleinKite = kleinColumns.kleinTri;  // kites: the triangles', each cut in 3
 kleinColumns.kleinTriTurned = kleinColumns.kleinKiteTurned = (nv) => torusHexColumns(nv);  // turned by 30° (as the tori, see turnedTorus)
 kleinColumns.kleinHexTurned = (nv) => torusTriColumns(nv, true);
-// a point of a Klein bottle's sheet, its place brought within the sheet, as a key (up: Cairo's mirror line, see kleinMesh)
-function kleinSheetKey(x0, y0, nu, nv, up) {
+// a point of a Klein bottle's sheet, its place brought within the sheet (up: Cairo's mirror line, see kleinMesh), and that
+// place as a key
+function kleinSheetPlace(x0, y0, nu, nv, up) {
   const r6 = (v) => Math.round(v * 1e6) / 1e6;
   let x = r6(x0), y = r6(y0);
   const k = Math.floor(x / nu);
   x = r6(x - k * nu);
   if (k % 2) y = r6(nv + 2 * up - y);  // (across the seam, turned over its tiles' mirror line)
-  y = r6(mod(y, nv));
-  return `${x},${y}`;
+  return [x, r6(mod(y, nv))];
 }
+const kleinSheetKey = (x0, y0, nu, nv, up) => `${kleinSheetPlace(x0, y0, nu, nv, up)}`;
 function kleinMesh(kind, nv, nu = kleinColumns[kind](nv)) {
   const key = `${kind}${nv}x${nu}`;
   if (meshCache[key]) return meshCache[key];
@@ -5645,9 +5646,9 @@ function kleinMesh(kind, nv, nu = kleinColumns[kind](nv)) {
     tiles.push(cairoCorners(i, j, o).map(([x, y]) => [x + 0.5, y + up]));  // (its first pair at the sheet's corner, as the torus's)
   }
   const ids = new Map(), verts = [], tube = tubeFor(kind, nv, nu);
-  const id = (x0, y0) => {
-    const key = kleinSheetKey(x0, y0, nu, nv, up);
-    if (!ids.has(key)) { ids.set(key, verts.length / 3); verts.push(...kleinPoint(x0, y0, nu, nv, 1, tube)); }
+  const id = (x0, y0) => {  // (a corner placed from its place within the sheet: past its seam, Cairo's half square up turned over with it)
+    const [x, y] = kleinSheetPlace(x0, y0, nu, nv, up), key = `${x},${y}`;
+    if (!ids.has(key)) { ids.set(key, verts.length / 3); verts.push(...kleinPoint(x, y, nu, nv, 1, tube, up)); }
     return ids.get(key);
   };
   const sheet = tiles.map(turnOver), mesh = finishMesh(verts, sheet.map((t) => t.map(([x, y]) => id(x, y))), tiles[0].length, nv, null);  // one-sided: as listed, turned over (as the torus's sheet: facing the view, flat)
@@ -5988,7 +5989,7 @@ function mobiusMesh(kind, size) {
 // The sheet point of a surface: a torus, or a Möbius strip
 const sheetPoint = (g, i, j, m) => {
   if (g.mobius) return mobiusPoint(i, j, g.L, g.W, m);
-  if (g.klein) return kleinPoint(i, j, g.nu, g.nv, m, tubeOf(g));
+  if (g.klein) return kleinPoint(i, j, g.nu, g.nv, m, tubeOf(g), g.cairo ? 0.5 : 0);
   return torusPoint(i, j, g.nu, g.nv, m, tubeOf(g));
 };
 

@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.537';
+const VERSION = '0.4.538';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -6728,8 +6728,9 @@ function syncSizeStepper() {
   if (document.activeElement !== $('startLabel')) $('startLabel').value = `start ${formatNumber(startNo())} of ${formatNumber(starts.length)}`;
   const symmetricOnly = (setup) => (startsWayIn(setup) === 'symmetric' ? '' : 'Only for Symmetric starts: Centred and Random place their own.');  // (a setup's: the graph's path to Symmetric)
   $('startDown').dataset.choice = 'startNo:-1'; $('startUp').dataset.choice = 'startNo:+1';  // (their choices' keys, see choicesAt)
-  setTile($('startDown'), { whyNot: (setup) => symmetricOnly(setup) || ((setup.startNo ?? startNo()) <= 1 ? 'Already at the first start.' : '') });
-  setTile($('startUp'), { whyNot: (setup) => symmetricOnly(setup) || ((setup.startNo ?? startNo()) >= starts.length ? 'Already at the last start.' : '') });
+  // (the list's ends: greyed there, as Size's, no setup elsewhere to search; Symmetric's: a whyNot, its path the graph's)
+  setTile($('startDown'), { greyed: startNo() <= 1 ? 'Already at the first start.' : '', whyNot: symmetricOnly });
+  setTile($('startUp'), { greyed: startNo() >= starts.length ? 'Already at the last start.' : '', whyNot: symmetricOnly });
   setTile($('startLabel'), { whyNot: symmetricOnly });
 }
 // The sizes as a slider under the stepper, across, a notch each under it, the one in use its knob (none: hidden); dragged, the label

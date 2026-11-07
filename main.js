@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.506';
+const VERSION = '0.4.507';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -4403,10 +4403,10 @@ document.addEventListener('mouseover', (e) => {
   // its default: a tile's (see setTile), a box's (its checkbox as the page starts)
   const box = el?.matches('label') ? el.querySelector('input[type=checkbox]') : null, d = el?.dataset.default ?? (box ? (box.defaultChecked ? 'on' : 'off') : '');
   // its state here, each part under a rule of its own (see .tip-state): why greyed, what allows it (a title over its words), then its default, fainter
-  const part = () => Object.assign(document.createElement('div'), { className: 'tip-state' }), section = (title, text) => { const div = part(); div.append(Object.assign(document.createElement('b'), { textContent: title }), Object.assign(document.createElement('span'), { textContent: text })); return div; };
+  const part = () => Object.assign(document.createElement('div'), { className: 'tip-state' }), section = (title, text, cls = '') => { const div = part(); if (cls) div.classList.add(cls); div.append(Object.assign(document.createElement('b'), { textContent: title }), Object.assign(document.createElement('span'), { textContent: text })); return div; };
   const allowed = greyedOf(greyed ?? el)?.paths && pathsWords(greyedOf(greyed ?? el).paths());  // (greyed: the shortest paths that allow it, see pathsTo)
   const told = [...(greyed ? [section('Why greyed out?', greyed.dataset.greyed)] : []), ...(allowed ? [section('Allowed on', allowed)] : []),
-    ...(el?.dataset.limits ? [section('Limits', el.dataset.limits)] : []),  // (a hunt's: how far it searches, see data-limits)
+    ...(el?.dataset.limits ? [section('Limits', el.dataset.limits, 'tip-said')] : []),  // (a hunt's: how far it searches, see data-limits)
     ...(d ? [Object.assign(part(), { className: 'tip-state tip-default', textContent: d === 'yes' ? 'By default' : d === 'on' ? 'On by default' : d === 'off' ? 'Off by default' : d })] : [])];  // (a default that depends, told in full)
   if (el?.dataset.tipHtml) { $('tip').innerHTML = el.dataset.tipHtml; $('tip').append(...told); }  // (a size's: its words in colour, see sizeTips; its state under them)
   else $('tip').replaceChildren(...(!tip ? (told.length ? [bold(name), ...told] : []) : !ok ? [tip, ...told] : tip.startsWith(`${name}:`) ? [bold(name), tip.slice(name.length + 1).trim().replace(/^./, (c) => c.toUpperCase()), ...told] : [bold(name), tip, ...told]));  // (no words of its own: its name and its default; else its name, then its words under it)

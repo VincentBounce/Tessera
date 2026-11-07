@@ -546,6 +546,7 @@ button.wide.active, .head-btn.active { border-color: var(--accent); color: var(-
 .tip-state { margin-top: 4px; padding-top: 4px; border-top: 1px solid var(--border); color: var(--muted); }
 .tip-state > b { display: block; color: var(--text); font-weight: 600; }
 .tip-state > span { white-space: pre-line; }
+.tip-state.tip-said > span { color: var(--text); }  /* (a control's own words, as its tooltip's: a hunt's Limits; a state's, muted) */
 .tip-y { color: var(--motif); } .tip-r { color: var(--face); } .tip-s { color: var(--sector); } .tip-k { color: var(--cell); } .tip-o { color: #c4934e; }  /* a size's words in the colours drawn (see sizeTips; the walls': LIFE_WALL) */
 
 @media (max-width: 720px) {

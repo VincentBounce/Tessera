@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.403';
+const VERSION = '0.4.404';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -1628,7 +1628,7 @@ const layers = {
   overlay: $('overlayLayer').getContext('2d'),
   hover: $('hoverLayer').getContext('2d'),  // a size's motif, the starts: over the others, faded while it shows (see drawHover)
 };
-let cw = 0, ch = 0;
+let canvasWidth = 0, canvasHeight = 0;
 
 /* ==============================================================================================
  * PART 3 — LABELS, DIGIT COUNTS AND RANDOM DRAWS
@@ -3971,7 +3971,7 @@ function buildWalkOf() {
   fill = null;  // a new walk: its enclosed areas are computed again, and its layer starts empty
   Object.assign(walk, freshWalk(), { mode: current.mode });  // (all its fields fresh; the mode it is built for: its colours by it, current.mode ahead of it while another is made, see compute)
   $('fillTooBig').hidden = true;
-  layers.fill.clearRect(0, 0, cw, ch);
+  layers.fill.clearRect(0, 0, canvasWidth, canvasHeight);
   const { head, frac } = digitsInUse();
   let seq = new Uint8Array(head.length + frac.length);
   seq.set(head);
@@ -4386,14 +4386,14 @@ function populationOf(text) {
   let x = +m[1], y = +m[2], n = '';
   const s = m[3];
   for (let i = 0; i < s.length; i++) {
-    const ch = s[i];
-    if (/\d/.test(ch)) { n += ch; continue; }
+    const letter = s[i];
+    if (/\d/.test(letter)) { n += letter; continue; }
     const count = n ? +n : 1;
     n = '';
-    if (ch === '!') break;
-    if (ch === '$') { y += count; x = +m[1]; continue; }
-    let c = ch === '.' || ch === 'b' ? 0 : ch === 'o' ? 1 : ch >= 'A' && ch <= 'X' ? ch.charCodeAt(0) - 64 : -1;
-    if (ch >= 'p' && ch <= 'y') c = 25 + 24 * (ch.charCodeAt(0) - 112) + (s.charCodeAt(++i) - 65);
+    if (letter === '!') break;
+    if (letter === '$') { y += count; x = +m[1]; continue; }
+    let c = letter === '.' || letter === 'b' ? 0 : letter === 'o' ? 1 : letter >= 'A' && letter <= 'X' ? letter.charCodeAt(0) - 64 : -1;
+    if (letter >= 'p' && letter <= 'y') c = 25 + 24 * (letter.charCodeAt(0) - 112) + (s.charCodeAt(++i) - 65);
     if (c < 0) continue;
     for (let j = 0; j < count; j++, x++) if (c) pop.set(key(x, y), c);
   }
@@ -9452,7 +9452,7 @@ const HAT = (() => {
     recentre() {
       const c = this.shape.reduce((s, p) => padd(s, p), pt(0, 0)), cx = c.x / this.shape.length, cy = c.y / this.shape.length;
       this.shape = this.shape.map((p) => pt(p.x - cx, p.y - cy));
-      for (const ch of this.children) ch.T = mul(ttrans(-cx, -cy), ch.T);
+      for (const canvasHeight of this.children) canvasHeight.T = mul(ttrans(-cx, -cy), canvasHeight.T);
     }
   }
   const H0 = new Meta([pt(0, 0), pt(4, 0), pt(4.5, H), pt(2.5, 5 * H), pt(1.5, 5 * H), pt(-0.5, H)]);
@@ -9478,7 +9478,7 @@ const HAT = (() => {
     for (const r of RULES) {
       if (r.length === 1) { out.add(ident, shapes[r[0]]); continue; }
       const [P, Q, s, e] = r.length === 4
-        ? (() => { const ch = out.children[r[0]], poly = ch.geom.shape; return [transPt(ch.T, poly[(r[1] + 1) % poly.length]), transPt(ch.T, poly[r[1]]), r[2], r[3]]; })()
+        ? (() => { const child = out.children[r[0]], poly = child.geom.shape; return [transPt(child.T, poly[(r[1] + 1) % poly.length]), transPt(child.T, poly[r[1]]), r[2], r[3]]; })()
         : (() => { const cp = out.children[r[0]], cq = out.children[r[2]]; return [transPt(cq.T, cq.geom.shape[r[3]]), transPt(cp.T, cp.geom.shape[r[1]]), r[4], r[5]]; })();
       const poly = shapes[s].shape;
       out.add(matchTwo(poly[e], poly[(e + 1) % poly.length], P, Q), shapes[s]);
@@ -9512,7 +9512,7 @@ const HAT = (() => {
     if (geom.hat) return one;
     if (sizes.has(geom)) return sizes.get(geom);
     let n = 0, x = 0, y = 0, r = 0;
-    for (const ch of geom.children) { const z = sizeOf(ch.geom), m = transPt(ch.T, z.c), o = transPt(ch.T, pt(0, 0)); n += z.n; x += z.n * m.x; y += z.n * m.y; r = Math.max(r, Math.hypot(o.x, o.y) + stretch(ch.T) * z.r); }
+    for (const canvasHeight of geom.children) { const z = sizeOf(canvasHeight.geom), m = transPt(canvasHeight.T, z.c), o = transPt(canvasHeight.T, pt(0, 0)); n += z.n; x += z.n * m.x; y += z.n * m.y; r = Math.max(r, Math.hypot(o.x, o.y) + stretch(canvasHeight.T) * z.r); }
     const z = { n, c: pt(x / n, y / n), r };
     sizes.set(geom, z);
     return z;
@@ -9520,7 +9520,7 @@ const HAT = (() => {
   // its hats within R of a place (its metatiles reaching there only): their transforms
   const hatsNear = (geom, T, mid, R, out) => {
     if (geom.hat) { out.push(T); return out; }
-    for (const ch of geom.children) { const M = mul(T, ch.T), o = transPt(M, pt(0, 0)); if (Math.hypot(o.x - mid.x, o.y - mid.y) - stretch(M) * sizeOf(ch.geom).r <= R) hatsNear(ch.geom, M, mid, R, out); }
+    for (const canvasHeight of geom.children) { const M = mul(T, canvasHeight.T), o = transPt(M, pt(0, 0)); if (Math.hypot(o.x - mid.x, o.y - mid.y) - stretch(M) * sizeOf(canvasHeight.geom).r <= R) hatsNear(canvasHeight.geom, M, mid, R, out); }
     return out;
   };
   const S = 0.54;  // world units a hatviz unit: a hat about as big as a square
@@ -10044,15 +10044,15 @@ function iconWay(i, K) {
 // against its side (its arm across it h = H tan(a/2) / (1 + tan(a/2)), H its height; no more than H / 2). Their least
 function iconRoom(K) {
   const kind = patternKind(), g = walk.geo, { part } = iconCellsOf(K);
-  const cw = cellWidth(kind);
+  const cellSide = cellWidth(kind);
   const at = flatGrid() ? (t) => cellMiddle(kind, ...flatGrid().xy(t)) : g.torus ? (t) => sheetPoint(g, ...sheetPlace(g, t), 0) : (t) => Array.from(g.cen.subarray(3 * t, 3 * t + 3));  // (where it is: on the plane, on the sheet unrolled, in space)
   return Math.min(...Array.from({ length: K }, (_, i) => {
     const { ex, ey, tilt, on = () => true } = iconWay(i, K), place = patternPlace(i, K), go = ([u, v]) => ex.map((c, d) => u * c + v * ey[d]);  // (on: its face's cells)
     const R = go([Math.cos(tilt), Math.sin(tilt)]), Dn = go([-Math.sin(tilt), Math.cos(tilt)]), scale = Math.hypot(...R), Ru = R.map((v) => v / scale), Du = Dn.map((v) => v / Math.hypot(...Dn));
     let r0 = Infinity, r1 = -Infinity, d0 = Infinity, d1 = -Infinity;
     for (let t = 0; t < part.length; t++) if (part[t] === i && on(t)) { const p = at(t), r = dot(p, Ru), d = dot(p, Du); r0 = Math.min(r0, r); r1 = Math.max(r1, r); d0 = Math.min(d0, d); d1 = Math.max(d1, d); }
-    const w = (r1 - r0) / scale + cw, h = (d1 - d0) / scale + cw, half = place.on === 'tri' || place.on === 'hex' ? Math.PI / 6 : roundWalls(K) ? Math.PI / K : 0, tan = Math.tan(half);
-    return (half ? 2 * Math.min((h * tan) / (1 + tan), h / 2) : Math.min(w, h)) / cw;
+    const w = (r1 - r0) / scale + cellSide, h = (d1 - d0) / scale + cellSide, half = place.on === 'tri' || place.on === 'hex' ? Math.PI / 6 : roundWalls(K) ? Math.PI / K : 0, tan = Math.tan(half);
+    return (half ? 2 * Math.min((h * tan) / (1 + tan), h / 2) : Math.min(w, h)) / cellSide;
   }));
 }
 // Each colour's picture, its way (see iconWay) and its place: its part's very middle (see patternFrame); in round walls
@@ -10627,7 +10627,7 @@ function planeWalls(kind, W) {
 // the plane's grid lines, faint: white over a dark sky, dark over a light one, else the page's grid colour
 const gridColour = () => (darkSky() ? 'rgba(255,255,255,0.06)' : skyStops() ? 'rgba(0, 0, 0, 0.08)' : getComputedStyle(document.documentElement).getPropertyValue('--grid'));
 function drawPlaneGrid() {
-  layers.grid.clearRect(0, 0, cw, ch);
+  layers.grid.clearRect(0, 0, canvasWidth, canvasHeight);
   drawSky(layers.grid);
 }
 // A grid's turns: a pattern turns by a quarter on squares and Cairo pentagons, a sixth on hexagons and triangles
@@ -10819,7 +10819,7 @@ function brushAt([cx, cy]) {
 // the brush under the pointer, half seen
 function drawGhost() {
   const ctx = layers.overlay, { scale: s, ox, oy } = view;
-  ctx.clearRect(0, 0, cw, ch);
+  ctx.clearRect(0, 0, canvasWidth, canvasHeight);
   if (!drawing || !ghost || !walk.plane) return;
   ctx.globalAlpha = brush.colour ? 0.55 : 0.85;  // the eraser: the dead cells' colour
   ctx.fillStyle = !brush.colour ? UNLIT : walk.life.colours > 1 ? teamColour(brush.colour - 1) : LIFE_ALIVE;
@@ -10882,7 +10882,7 @@ function lifeLook(L, lifted = false) {
 }
 function drawLifePlane() {
   const L = walk.life, ctx = layers.path;
-  for (const c of [layers.path, layers.line, layers.fill, layers.overlay]) c.clearRect(0, 0, cw, ch);  // no walker
+  for (const c of [layers.path, layers.line, layers.fill, layers.overlay]) c.clearRect(0, 0, canvasWidth, canvasHeight);  // no walker
   const look = { ...lifeLook(L), wall: [0, 0, 0, 0], dead: [0, 0, 0, 0] };  // (the plane's walls and dead cells: its own, under)
   gpuPlane((out) => gpuLook(L, out, look));
   drawBlocks(ctx);
@@ -10948,7 +10948,7 @@ const FADING = 0.3;  // (the cells this pale: under a walk's line, or Area's Lig
 // fills and outlines (the stage's class: see style.css)
 function drawHover() {
   const ctx = layers.hover;
-  ctx.clearRect(0, 0, cw, ch);
+  ctx.clearRect(0, 0, canvasWidth, canvasHeight);
   stage.classList.toggle('faded', motifShown || startsShown);
   if (motifShown) drawMotif(ctx);
   if (startsShown && walk.geo) drawStarts(ctx);
@@ -11021,7 +11021,7 @@ function motifTiles() {
   for (let t = 0; t < g.n; t++) {
     const n = [0, 1, 2].map((d) => sh.nrm[3 * t + d]), k = +(t < g.triFirst);
     if (!planeVisible(n, at(t)) || (cutOn() && dot3(at(t), cutNormal()) > 0)) continue;  // (Cut: its half on the axis's side gone, as gpuSurface's)
-    const [x, y] = proj(...at(t)), sc = towardViewer(...n) + towardViewer(...at(t)) / (walk.R * (g.extent || 1)) - 0.2 * (Math.hypot(ox + x * s - cw / 2, oy + y * s - ch / 2) / Math.min(cw, ch));  // (facing the viewer, near it: in front, not a far side seen through a hole)
+    const [x, y] = proj(...at(t)), sc = towardViewer(...n) + towardViewer(...at(t)) / (walk.R * (g.extent || 1)) - 0.2 * (Math.hypot(ox + x * s - canvasWidth / 2, oy + y * s - canvasHeight / 2) / Math.min(canvasWidth, canvasHeight));  // (facing the viewer, near it: in front, not a far side seen through a hole)
     score[t] = sc;
     if (sc > best[k]) { best[k] = sc; nears[k] = t; }
   }
@@ -14337,7 +14337,7 @@ function setLifeSeed(seed, how) {
  * this browser (localStorage) and the JSON export:
  *   x   the formula          w   the walk mode        d    the number of digits (walks)
  *   s   the surface size (a torus: rows, or rows x tiles per row)
- *   r   the Life rule        ch   a Life start (champion or patch)
+ *   r   the Life rule        canvasHeight   a Life start (champion or patch)
  *   st  the start of a walk along a solid's grid (when not 1)
  * It only holds what determines the result. Display choices (colours, areas, grid, sky, camera,
  * zoom…), the speed and the current step are never saved: a link opens with the mode's default
@@ -14508,7 +14508,7 @@ function applySetup(s) {
 let huntBack = null;  // the hunt to bring back with a setup left in the Gallery (see viewNow)
 function applyPendingView() {
   if (!$('numberPreview').hidden) { if ($('copyNumber').hidden) closeNumber(); else showNumber(); }  // the digits shown: the new number's
-  const ch = pendingChampion;
+  const championCells = pendingChampion;
   pendingChampion = null;
   if (pendingSpin && walk.is3d && !pendingRestore) spinFrom = performance.now() + SPIN_DELAY;  // faced first (showAll), then turning
   pendingSpin = false;
@@ -14532,12 +14532,12 @@ function applyPendingView() {
     faced = true;
     needsFull = true;
   }
-  const cells = ch && walk.life ? decodeCells(ch, walk.life.seed.length) : null;
+  const cells = championCells && walk.life ? decodeCells(championCells, walk.life.seed.length) : null;
   if (cells) {  // a start from a link: Custom in the hunt's zones
     setLifeSeed(cells, 'saved');
     hunt.zone = 'custom';
     renderHunt();
-  } else if (ch && walk.life) $('status').textContent = "This link's start (ch=) cannot be read: an old one; the start shown is the hunt's";
+  } else if (championCells && walk.life) $('status').textContent = "This link's start (ch=) cannot be read: an old one; the start shown is the hunt's";
   if (huntBack && walk.life) {  // back from the Gallery: the hunt as it was (its zone, goal, results), last
     Object.assign(hunt, huntBack);
     hunt.listKey = null;
@@ -14954,7 +14954,7 @@ const VIEW_GAP = parseFloat(getComputedStyle(document.documentElement).getProper
 const ZOOM_IN = 20, ZOOM_OUT = 10, ZOOM_CELLS = 10;
 const zoomRange = () => {
   const fit = viewFor(padBounds(bounds)).scale, flat = !walk.is3d && !walk.sphere;
-  return [Math.max(MIN_SCALE, fit / ZOOM_OUT), flat ? Math.max(fit, Math.min(cw, ch) / ZOOM_CELLS) : fit * ZOOM_IN];
+  return [Math.max(MIN_SCALE, fit / ZOOM_OUT), flat ? Math.max(fit, Math.min(canvasWidth, canvasHeight) / ZOOM_CELLS) : fit * ZOOM_IN];
 };
 function viewFor(b) {
   const half = walk.is3d || walk.plane || walk.sphere ? 0 : 1;  // a walk's bounds its cells' middles: half a cell more each side (a grid's, a surface's: its corners, its sphere)
@@ -14962,13 +14962,13 @@ function viewFor(b) {
   const h = b.maxY - b.minY + half;
   // down to 10⁻⁶ pixel per cell: a walk of 10 million steps can drift millions of cells away
   const fixed = walk.sphere || walk.plane;  // a surface or a grid fills the view at any size; a walk starts no closer than 40 px a cell
-  const scale = Math.min(fixed ? Infinity : 40, Math.max(MIN_SCALE, Math.min((cw - 2 * VIEW_GAP) / w, (ch - 2 * VIEW_GAP) / h)));  // (the view's gap each side, as the player's)
+  const scale = Math.min(fixed ? Infinity : 40, Math.max(MIN_SCALE, Math.min((canvasWidth - 2 * VIEW_GAP) / w, (canvasHeight - 2 * VIEW_GAP) / h)));  // (the view's gap each side, as the player's)
   return { scale, cx: (b.minX + b.maxX) / 2, cy: (b.minY + b.maxY) / 2 };
 }
 function setView(v) {
   view.scale = v.scale;
-  view.ox = cw / 2 - v.cx * v.scale;
-  view.oy = ch / 2 - v.cy * v.scale;
+  view.ox = canvasWidth / 2 - v.cx * v.scale;
+  view.oy = canvasHeight / 2 - v.cy * v.scale;
   needsFull = true;
   showZoom();
 }
@@ -14983,11 +14983,11 @@ function fitToBounds(b) {
 // the view's gap of them in 2D, where a fit leaves it (half a pixel: a fit's own rounding, see viewFor); a 3D
 // walk's frame (a sphere, see includeBox) turns: past them
 function boundsOffscreen(v = view) {
-  const m = walk.is3d ? -1 : VIEW_GAP - 0.5, ox = v.ox ?? cw / 2 - v.cx * v.scale, oy = v.oy ?? ch / 2 - v.cy * v.scale;
+  const m = walk.is3d ? -1 : VIEW_GAP - 0.5, ox = v.ox ?? canvasWidth / 2 - v.cx * v.scale, oy = v.oy ?? canvasHeight / 2 - v.cy * v.scale;
   return ox + bounds.minX * v.scale < m ||
-         ox + bounds.maxX * v.scale > cw - m ||
+         ox + bounds.maxX * v.scale > canvasWidth - m ||
          oy + bounds.minY * v.scale < m ||
-         oy + bounds.maxY * v.scale > ch - m;
+         oy + bounds.maxY * v.scale > canvasHeight - m;
 }
 
 // Smooth auto-fit: when the walk leaves the screen, the view eases towards a new frame (about
@@ -14996,7 +14996,7 @@ let viewGoal = null;
 function easeView(dt) {
   if (!viewGoal) return;
   const k = 1 - Math.exp(-dt / 0.15);
-  const cx = (cw / 2 - view.ox) / view.scale, cy = (ch / 2 - view.oy) / view.scale;
+  const cx = (canvasWidth / 2 - view.ox) / view.scale, cy = (canvasHeight / 2 - view.oy) / view.scale;
   const scale = view.scale * (viewGoal.scale / view.scale) ** k;
   const next = { scale, cx: cx + (viewGoal.cx - cx) * k, cy: cy + (viewGoal.cy - cy) * k };
   const arrived = Math.abs(Math.log(scale / viewGoal.scale)) < 1e-3
@@ -15008,15 +15008,15 @@ function easeView(dt) {
 function resize() {
   const r = stage.getBoundingClientRect();
   const dpr = window.devicePixelRatio || 1;
-  const first = cw === 0;
-  cw = r.width; ch = r.height;
+  const first = canvasWidth === 0;
+  canvasWidth = r.width; canvasHeight = r.height;
   for (const ctx of Object.values(layers)) {
-    ctx.canvas.width = Math.round(cw * dpr);
-    ctx.canvas.height = Math.round(ch * dpr);
+    ctx.canvas.width = Math.round(canvasWidth * dpr);
+    ctx.canvas.height = Math.round(canvasHeight * dpr);
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   }
-  gpuCanvas.width = Math.round(cw * dpr);
-  gpuCanvas.height = Math.round(ch * dpr);
+  gpuCanvas.width = Math.round(canvasWidth * dpr);
+  gpuCanvas.height = Math.round(canvasHeight * dpr);
   if (walk.plane) bounds = planeBounds();  // (a rhombus turns as the view changes shape)
   if (first || $('autoFit').checked) fitToBounds(padBounds(bounds));
   needsFull = true;
@@ -15038,7 +15038,7 @@ function userMovedView() {
 /* ---- 11.3 Grids, sky and 3D frame --------------------------------------------------------- */
 function drawGrid() {
   const ctx = layers.grid;
-  ctx.clearRect(0, 0, cw, ch);
+  ctx.clearRect(0, 0, canvasWidth, canvasHeight);
   if (walk.is3d) drawSky(ctx);
   if (!$('showGrid').checked || !walk.lattice) return;  // (no grid built yet, at load: no lines)
   const s = view.scale;
@@ -15073,14 +15073,14 @@ function drawGrid() {
 
 // The lines a·x + b·y = c0 + k·step across the view (world coordinates), level ones on whole pixels
 function drawLines(ctx, a, b, c0, step) {
-  const { scale: s, ox, oy } = view, xL = -ox / s, xR = (cw - ox) / s, yT = -oy / s, yB = (ch - oy) / s;
+  const { scale: s, ox, oy } = view, xL = -ox / s, xR = (canvasWidth - ox) / s, yT = -oy / s, yB = (canvasHeight - oy) / s;
   const ends = [a * xL + b * yT, a * xL + b * yB, a * xR + b * yT, a * xR + b * yB];
   const crisp = (v) => (a && b ? v : Math.round(v) + 0.5);
   for (let k = Math.ceil((Math.min(...ends) - c0) / step); c0 + k * step <= Math.max(...ends); k++) {
     const c = c0 + k * step;
     const [p, q] = Math.abs(b) > Math.abs(a)
-      ? [[0, oy + ((c - a * xL) / b) * s], [cw, oy + ((c - a * xR) / b) * s]]
-      : [[ox + ((c - b * yT) / a) * s, 0], [ox + ((c - b * yB) / a) * s, ch]];
+      ? [[0, oy + ((c - a * xL) / b) * s], [canvasWidth, oy + ((c - a * xR) / b) * s]]
+      : [[ox + ((c - b * yT) / a) * s, 0], [ox + ((c - b * yB) / a) * s, canvasHeight]];
     ctx.moveTo(crisp(p[0]), crisp(p[1]));
     ctx.lineTo(crisp(q[0]), crisp(q[1]));
   }
@@ -15099,7 +15099,7 @@ const darkSky = () => skyStops() === SKIES.dark;
 const undersideColour = () => (document.documentElement.dataset.theme === 'light' ? SKIES.dark : SKIES.light).at(-1)[1];
 // the plane's ground at the screen's height y, a solid colour: its sky's there, else the page's background
 function groundAt(y) {
-  const stops = skyStops(), f = Math.min(1, Math.max(0, y / ch));
+  const stops = skyStops(), f = Math.min(1, Math.max(0, y / canvasHeight));
   if (!stops) return getComputedStyle(document.documentElement).getPropertyValue('--bg').trim();
   const k = Math.max(1, stops.findIndex(([at]) => at >= f)), [a, A] = stops[k - 1], [b, B] = stops[k], t = (f - a) / (b - a || 1);
   return `rgb(${hexRgb(A).map((v, d) => Math.round(v + (hexRgb(B)[d] - v) * t)).join(', ')})`;
@@ -15107,10 +15107,10 @@ function groundAt(y) {
 function drawSky(ctx) {
   const stops = skyStops();
   if (!stops) return;  // plain: the page background shows through
-  const sky = ctx.createLinearGradient(0, 0, 0, ch);
+  const sky = ctx.createLinearGradient(0, 0, 0, canvasHeight);
   for (const [at, colour] of stops) sky.addColorStop(at, colour);
   ctx.fillStyle = sky;
-  ctx.fillRect(0, 0, cw, ch);
+  ctx.fillRect(0, 0, canvasWidth, canvasHeight);
 }
 
 // 3D: wireframe bounding box of the walk + axis gizmo in the top-left corner
@@ -15152,8 +15152,8 @@ function drawCairoGrid(ctx) {
   if (s * CAIRO < 8) return;
   const X = (u) => ox + (u - CAIRO_0[0]) * CAIRO * s, Y = (v) => oy + (v - CAIRO_0[1]) * CAIRO * s;
   const [u0, v0] = [-ox / s / CAIRO + CAIRO_0[0], -oy / s / CAIRO + CAIRO_0[1]];
-  for (let i = Math.floor(u0) - 1; i <= Math.ceil(u0 + cw / s / CAIRO) + 1; i++) {
-    for (let j = Math.floor(v0) - 1; j <= Math.ceil(v0 + ch / s / CAIRO) + 1; j++) {
+  for (let i = Math.floor(u0) - 1; i <= Math.ceil(u0 + canvasWidth / s / CAIRO) + 1; i++) {
+    for (let j = Math.floor(v0) - 1; j <= Math.ceil(v0 + canvasHeight / s / CAIRO) + 1; j++) {
       for (const o of [0, 1]) {
         const c = cairoCorners(i, j, o);
         ctx.moveTo(X(c[4][0]), Y(c[4][1]));
@@ -15167,7 +15167,7 @@ function drawHexGrid(ctx, pointy) {
   const { scale: s, ox, oy } = view;
   const R = s / Math.sqrt(3);
   if (R < 5) return;
-  const xL = -ox / s, xR = (cw - ox) / s, yTop = -oy / s, yBot = (ch - oy) / s;
+  const xL = -ox / s, xR = (canvasWidth - ox) / s, yTop = -oy / s, yBot = (canvasHeight - oy) / s;
   const v = [0, 1, 2, 3].map((k) => { const t = ((k + (pointy ? 0.5 : 0)) * Math.PI) / 3; return [R * Math.cos(t), -R * Math.sin(t)]; });
   const hexagon = (x, y) => {
     ctx.moveTo(ox + x * s + v[0][0], oy + y * s + v[0][1]);
@@ -15363,8 +15363,8 @@ function planeVisible(n, p) {
 // Sphere: visible tiles coloured by visit count (log scale) and shading
 function drawSphere() {
   const ctx = layers.path;
-  ctx.clearRect(0, 0, cw, ch);
-  layers.line.clearRect(0, 0, cw, ch);  // the 2D path over cells, if any was left
+  ctx.clearRect(0, 0, canvasWidth, canvasHeight);
+  layers.line.clearRect(0, 0, canvasWidth, canvasHeight);  // the 2D path over cells, if any was left
   const { geo: g, visits, maxVisits } = walk;
   const LEVELS = 32;
   // the rainbow of the tiles (lighter on a light page, see liftTile)
@@ -15767,12 +15767,12 @@ function drawElementary(to) {
     cv.getContext('2d').putImageData(img, 0, 0);
     return cv;
   };
-  ctx.clearRect(0, 0, cw, ch);
+  ctx.clearRect(0, 0, canvasWidth, canvasHeight);
   ctx.imageSmoothingEnabled = false;
   const d = window.devicePixelRatio || 1, pin = (v) => Math.round(v * d) / d;  // (its corner on a screen pixel: unsmoothed, its rows' pixels then still as it pans, a moiré moving with it)
-  const fine = Math.max(1, 2 ** Math.floor(Math.log2(1 / s))), inView = ((cw / s) * ch) / s;  // (about a cell a screen pixel; the cells in view)
+  const fine = Math.max(1, 2 ** Math.floor(Math.log2(1 / s))), inView = ((canvasWidth / s) * canvasHeight) / s;  // (about a cell a screen pixel; the cells in view)
   const b = fine < 16 && inView > PART_CELLS ? 16 : fine, snap = (v) => Math.floor(v / b) * b;  // (its blocks on the grid of b: still while it pans)
-  const x0 = Math.max(0, snap(-ox / s + R.c)), x1 = Math.min(R.W - 1, Math.ceil((cw - ox) / s + R.c)), t0 = Math.max(0, snap(-oy / s)), t1 = Math.min(R.G, Math.ceil((ch - oy) / s));
+  const x0 = Math.max(0, snap(-ox / s + R.c)), x1 = Math.min(R.W - 1, Math.ceil((canvasWidth - ox) / s + R.c)), t0 = Math.max(0, snap(-oy / s)), t1 = Math.min(R.G, Math.ceil((canvasHeight - oy) / s));
   if (x1 < x0 || t1 < t0) return;
   if (b !== R.B && partWork(R, x0, x1, t0, t1) <= PART_MOST) {
     const key = `${x0}|${x1}|${t0}|${t1}|${b}|${mono}|${LIFE_ALIVE}`;
@@ -16374,7 +16374,7 @@ function gpuView(words, k, depth, more = {}) {
   const L = lightDirection(), x = camera.r.map((r, d) => r - L[d] * (camera.r[0] * L[0] + camera.r[1] * L[1] + camera.r[2] * L[2])), m = Math.hypot(...x);
   const lx = x.map((v) => v / m), ly = [L[1] * lx[2] - L[2] * lx[1], L[2] * lx[0] - L[0] * lx[2], L[0] * lx[1] - L[1] * lx[0]];
   f.set(camera.r, 0); f[3] = depth; f.set(camera.u, 4); f[7] = SHADE; f.set(camera.v, 8); f[11] = glint(); f.set(L, 12); f[15] = depth / 4; f.set(halfway(L), 16);
-  f.set(lx, 20); f.set(ly, 24); f.set([...(P ? P.c : [0, 0, 0]), P ? P.D : 0], 32); f.set([view.scale, view.ox, view.oy], 40); f.set(cc, 44); f.set([cw, ch], 46);
+  f.set(lx, 20); f.set(ly, 24); f.set([...(P ? P.c : [0, 0, 0]), P ? P.D : 0], 32); f.set([view.scale, view.ox, view.oy], 40); f.set(cc, 44); f.set([canvasWidth, canvasHeight], 46);
   i[48] = cutOn() ? 1 : 0;
   f.set(cutNormal(), 60);  // (Cut's plane, facing its axis: see CUT_AXES)
   const at = { alpha: [19, 'f'], edge: [23, 'f'], bias: [27, 'f'], halfW: [31, 'f'], N: [43, 'f'], cut: [48, 'i'], glass: [49, 'i'], both: [50, 'i'], colour: [51, 'i'],
@@ -16622,7 +16622,7 @@ function gpuSurface(paint, path) {
   gpuFrame(enc, drawAll);
   device.queue.writeBuffer(D.uni, 0, D.words, 0, 512 * slot);
   device.queue.submit([enc.finish()]);
-  layers.path.clearRect(0, 0, cw, ch);
+  layers.path.clearRect(0, 0, canvasWidth, canvasHeight);
   return true;
 }
 // the frame's passes: as it is, or Glass's two pictures then mixed on the canvas
@@ -16717,7 +16717,7 @@ function gpuFlat(to) {
   rp.end();
   device.queue.writeBuffer(D.uni, 0, D.words, 0, 512 * Math.max(1, slot));
   device.queue.submit([enc.finish()]);
-  layers.path.clearRect(0, 0, cw, ch);
+  layers.path.clearRect(0, 0, canvasWidth, canvasHeight);
   return true;
 }
 // count cubes: of, theirs, made by make(the look) once; reach, how far from the middle they go
@@ -16991,7 +16991,7 @@ function computeFill() {
 
 function drawOverlay() {
   const ctx = layers.overlay;
-  ctx.clearRect(0, 0, cw, ch);
+  ctx.clearRect(0, 0, canvasWidth, canvasHeight);
   const { scale: s, ox, oy } = view;
   if (walk.rows?.digits && s >= 12) {  // Elementary's Digits, near enough: each digit on its cell of the first row, in monospace, 1 in
     // white on its live cell, 0 in the theme's text colour on the page (see elementaryRows)
@@ -16999,7 +16999,7 @@ function drawOverlay() {
     ctx.font = `${Math.round(s * 0.7)}px ui-monospace, Menlo, monospace`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    for (let x = Math.max(-c, Math.floor(-ox / s)); x <= Math.min(c, Math.ceil((cw - ox) / s)); x++) {
+    for (let x = Math.max(-c, Math.floor(-ox / s)); x <= Math.min(c, Math.ceil((canvasWidth - ox) / s)); x++) {
       const d = digits[x + c];
       ctx.fillStyle = d ? '#fff' : text;
       ctx.fillText(d, ox + x * s, oy);
@@ -17500,9 +17500,9 @@ function tick(now = performance.now()) {
   }
   if (needsFull || (walk.is3d && statsDirty)) drawGrid(); // the 3D box grows with the walk
   if (needsFull) {
-    layers.path.clearRect(0, 0, cw, ch);
-    layers.line.clearRect(0, 0, cw, ch);
-    layers.fill.clearRect(0, 0, cw, ch);
+    layers.path.clearRect(0, 0, canvasWidth, canvasHeight);
+    layers.line.clearRect(0, 0, canvasWidth, canvasHeight);
+    layers.fill.clearRect(0, 0, canvasWidth, canvasHeight);
     drawn = 0;
   }
   // a walk on the card, redrawn whole when anything changes (see gpuFlat)

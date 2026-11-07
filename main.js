@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.460';
+const VERSION = '0.4.461';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -1779,10 +1779,10 @@ const DISPLAY_GREYED = { '2D spirals': ['fill', 'visits', 'line'], Elementary: [
 const greyed = (item, w = $('mode').value) => [modeGroup(w), NAV[w]?.[0]].some((k) => DISPLAY_GREYED[k]?.includes(item));
 const shows = (item, w = $('mode').value) => DISPLAY_BY_TAB[modeGroup(w)].includes(item) || (w === $('mode').value && spaceTimeOn() && VIEW_3D.includes(item));
 // a display setting greyed at a mode: none in its view, the views that have it said (Grid, Upright, Perspective…); else ''
-const viewWhyNot = (item, w) => (shows(item, w) ? '' : `only in ${Object.keys(DISPLAY_BY_TAB).filter((g) => DISPLAY_BY_TAB[g].includes(item)).join(', ')}`);
+const viewWhyNot = (item, w) => (shows(item, w) ? '' : `Shown only in ${Object.keys(DISPLAY_BY_TAB).filter((g) => DISPLAY_BY_TAB[g].includes(item)).join(', ')}.`);
 const useful = (item, w) => shows(item, w) && !greyed(item, w);
 // a look greyed at a mode (Rainbow along a spiral, its Heatmap, Elementary's Activity), its words; else ''
-const LOOK_WHERE = { gradient: 'on a spiral (its line no use)', visits: 'on a spiral (each cell visited once)', digit: 'on Elementary (a cell never changes once made: no activity)' };
+const LOOK_WHERE = { gradient: 'On a spiral, the line tells nothing.', visits: 'On a spiral, each cell is visited once only.', digit: 'On Elementary, a cell never changes once made: there is no activity.' };
 const lookWhyNot = (look, w) => ((look === 'gradient' && greyed('line', w)) || (look === 'visits' && !useful('visits', w)) || (look === 'digit' && greyed('digit', w)) ? LOOK_WHERE[look] : '');
 function updateDisplayMenu() {
   const rows = { colours: 'coloursRow', grid: 'gridRow',
@@ -1832,7 +1832,7 @@ function renderViewTiles() {
     ways[defaultOf('perspective', w) ? 'on' : 'off'].push(SHAPE_SHORT[sh] ?? sh);
   }
   const perspective = !ways.on.length ? 'off' : !ways.off.length ? 'on' : `On by default on ${ways.on.join(', ')}\nOff by default on ${ways.off.join(', ')}`;
-  const first = { perspective, light: defaultMark('light'), glass: defaultMark('glass'), ocean: defaultMark('ocean') }, why = { ocean: 'beyond a Quintet: a map has five lands (green, yellow, ochre, lime, ice white)' };
+  const first = { perspective, light: defaultMark('light'), glass: defaultMark('glass'), ocean: defaultMark('ocean') }, why = { ocean: 'Only up to a Quintet: a map has five lands (green, yellow, ochre, lime, ice white).' };
   VIEW_TILES.forEach(([id], k) => setTile(viewTiles[k], { on: $(id).checked, byDefault: first[id], greyed: why[id] ?? '',
     whyNot: ({ w }) => viewWhyNot(id, w) || (id === 'ocean' && w === $('mode').value && !oceanFits() ? why.ocean : '') }));  // (its row's: see updateDisplayMenu, by shows)
   $('viewTiles').hidden = VIEW_TILES.every(([, row]) => $(row).hidden);
@@ -1945,7 +1945,7 @@ const tile = ({ pic = '', text = '', html = null, title = '', id = null, on = fa
   return setTile(b, { on, can, mark, again, turn, byDefault, greyed, whyNot, at });
 };
 // (byDefault: as the tooltip tells it, see tip: 'yes', the choice picked at first; 'on' or 'off', a switch's at first)
-// (greyed: when it is, as the tooltip tells it: 'in Solo', 'outside Life'…)
+// (greyed: why it is, as the tooltip tells it, a sentence: 'Not in Solo.', 'The Gallery is empty.'…)
 // (whyNot(setup): what greys it in a setup, { w, size, colours, teams, battleRule } (a mode, at a size or the one it opens
 // at; its colours, a walk's teams, its battle rule: the ones picked if none), '' when allowed: its one
 // source; greyed here (at: its mode, the tab's by default) or not, its words why, and the menu's nearest buttons that would
@@ -2002,7 +2002,7 @@ const rowAction = (html, title, click) => {
 // Trail: a dead cell fades through greys for a few generations (States and Age, in colours too; two states)
 const trailApplies = (w = walk.life && walk.mode) => !!w && !!MODES[w].life && !MODES[w].margolus && !MODES[w].elementary && (lifeRuleNow()?.C ?? 2) === 2 && $('colourMode').value !== 'digit';  // (w: the walk shown's, or a mode's: its rule the one in use)  // (a reversible rule's blocks: none, their cells move, none dies, and backwards a trail would show where they are born)
 const trailOn = () => $('lifeTrail').checked && trailApplies();
-const TRAIL_WHERE = 'with dying stages (Generations), on Rewind and with Activity';  // (Trail's greyed words)
+const TRAIL_WHERE = 'Not with dying stages (Generations), on Rewind, or with Activity.';  // (Trail's greyed words)
 // Trail, a tile turned on and off (see tile): its picture a live cell with its comet fading in amber behind (LIFE_FADE); greyed for Activity
 // and dying stages
 let trailButton = null;  // kept: it goes after Life's looks, in their row (see renderColourButtons)
@@ -2019,7 +2019,7 @@ function renderBlocksButton() {
   blocksButton ??= tile({ pic: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="8" height="8" rx="1" fill="currentColor" opacity="0.35"/><rect x="13" y="13" width="8" height="8" rx="1" fill="currentColor" opacity="0.35"/><rect x="3" y="3" width="18" height="18" rx="1.5" fill="none" style="stroke: var(--sector)" stroke-width="1.8"/></svg>',  // (its outline the blocks' blue)
     text: 'Blocks', toggle: true, title: 'The blocks the next generation is worked out by, outlined (a set at a time, in turn)', click: () => { showBlocks = !showBlocks; needsFull = true; renderBlocksButton(); } });
   const flat = !!MODES[$('mode').value].plane, can = flat && !lifeRuleNow()?.ising;  // (the mode and rule picked: the grid not built yet)
-  setTile(blocksButton, { on: showBlocks && can, can, byDefault: defaultMark('blocks'), greyed: flat ? 'in Ising (its squares in turn, no blocks)' : 'on a surface' });
+  setTile(blocksButton, { on: showBlocks && can, can, byDefault: defaultMark('blocks'), greyed: flat ? 'Ising flips its squares in turn: there are no blocks.' : 'Not on a surface.' });
 }
 // Space-time (Life on squares, the Stacks tile beside Walls): its generations stacked up, time going up, a cube a live cell (see
 // stackUp; STACK_MOST cubes at most); with walls only (through a torus's edges no tree grows: Stacks, Walls on with it)
@@ -3532,7 +3532,7 @@ const sideWhyNot = (v, s, none) => {
 };
 // Turned at a mode: its tiling with a turned way round, its blocks coming round so (a block rule's, see blocksTurn); its
 // greyed words
-const TURNED_WHERE = 'on a tiling with no other way round (a block rule: none its blocks come round)';
+const TURNED_WHERE = 'This tiling has no other way round (for a block rule, none that brings its blocks round).';
 const turnedAllowed = (v, turned = false) => { const fam = familyOf(v); return !!fam && fam.F.tabs.some(([f, tu]) => f === fam.m && tu) && blocksTurn(v, !turned); };
 function familyOf(w) {
   for (const F of FAMILIES) {
@@ -3652,7 +3652,7 @@ const pathsWords = (paths) => paths.slice(0, 3).map((path) => path.map(([, words
 // click on it (see highlight); the size stepper for a size
 const enablersFor = (fits) => [...new Set(pathsTo(fits).map(([[key]]) => key))].map((key) => (key === 'size' ? $('sizeBox') : document.querySelector(`[data-choice="${key}"]`))).filter(Boolean);
 // a rule card's greyed words in a mode (see rulesFor): its why there, or none there at all
-const ruleWhyNot = (v, source) => { const c = rulesFor(v).find((r) => r.source === source); return c ? c.why : 'not a rule here'; };
+const ruleWhyNot = (v, source) => { const c = rulesFor(v).find((r) => r.source === source); return c ? c.why : 'Not a rule here.'; };
 // whether a rules list has a card for the rule in use (else it is your own: Custom rule)
 const ruleKnown = (R) => R.cards.some((c) => c.rule === R.now);
 const capitalised = (t) => t.replace(/^./, (c) => c.toUpperCase());
@@ -3695,7 +3695,7 @@ function creatureRules(w) {
 const NEUTRAL_WORDS = { square: { L: 'L', R: 'R', N: 'N', U: 'U', B: 'B' }, tri: { L: 'L', R: 'R' }, hex: { L: 'L1', R: 'R1', N: 'N', U: 'U', L2: 'L2', R2: 'R2', B: 'B' }, cairo: { L: 'L1', R: 'R1', L2: 'L2', R2: 'R2' } };
 // a rule of the list in ant w's words: { rule, why } (why: the first word it lacks, its rule then the list's as written)
 function ruleIn(w, neutral, turmite) {
-  const words = NEUTRAL_WORDS[MODES[ANTS[w].walk].net], lack = (t) => `its ${t} (${WORD_TEXT[t] ?? t}) is not on this grid`;
+  const words = NEUTRAL_WORDS[MODES[ANTS[w].walk].net], lack = (t) => `Its ${t} (${WORD_TEXT[t] ?? t}) is not on this grid.`;
   if (!turmite) { const t = ruleWords(neutral), missing = t.find((x) => !words[x] || !antWords(w).includes(words[x]));
     return missing ? { rule: neutral, why: lack(missing) } : { rule: antOfTurns(w, t.map((x) => words[x]).join(' ')), why: '' }; }
   const table = neutral.split(/\s*\|\s*/).map((e) => e.split(/\s+/).map((x) => { const [, write, t, next] = x.match(/^(\d+)\.([A-Z]\d?)\.(\d+)$/) ?? x.match(/^(\d+)([A-Z])(\d+)$/); return { write: +write, word: words[t] ?? t, next: +next, t }; }));  // (an entry compact, 1L0, or dotted, 1.L2.0)
@@ -3807,7 +3807,7 @@ function renderModePicker() {
     const pic = icon(r === 'Turtle' ? 'turtle' : r === 'Pivot' ? 'pivot' : r === 'Parity' ? 'walk2d' : r === 'Ant' ? 'ant' : MODE_ICONS[v]);  // a turtle for the walks turning relative to their heading
     const go = () => { if (here) { navGo(3, r); return; } $('mode').value = v; $('mode').dispatchEvent(new Event('change')); };
     const how = walkTutorialFits(here ?? v) && (() => { if (r === rule) walkTutorialToggle(); else { go(); walkTutorial($('mode').value); } });  // (its ⓘ: how it works, picked first)
-    return [card({ pic, name: r, base, detail, on: r === rule, how, byDefault: i ? '' : 'yes', click: go, choice: `rule:${r}`, whyNot: ({ w: u }) => (walkKindHere(u, r) ? '' : 'not on this tiling') })];  // (the first: where a shape starts)
+    return [card({ pic, name: r, base, detail, on: r === rule, how, byDefault: i ? '' : 'yes', click: go, choice: `rule:${r}`, whyNot: ({ w: u }) => (walkKindHere(u, r) ? '' : 'Not on this tiling.') })];  // (the first: where a shape starts)
   }));
   // Grid | Cells (Cube in 3D): each with its base and its digits, or what it is not on (that side off)
   const sides = walkSidesOf(w);
@@ -3822,8 +3822,8 @@ function renderModePicker() {
     b.dataset.choice = `side:${s}`;  // (its choice's key, see choicesAt)
   };
   const cellsWord = space === '3D' ? 'Cube' : 'Cells';
-  side($('walkOnGrid'), 'grid', 'Grid', creatures ? 'the worm, on triangles only' : 'not on the grid');
-  side($('walkOnCells'), 'cells', cellsWord, space === '3D' ? 'not on cubes' : 'not on cells');
+  side($('walkOnGrid'), 'grid', 'Grid', creatures ? 'Along the grid, only the worm, on triangles.' : 'Not on the grid.');
+  side($('walkOnCells'), 'cells', cellsWord, space === '3D' ? 'Not on cubes.' : 'Not on cells.');
   $('walkOnCells').querySelector('svg').outerHTML = icon(space === '3D' ? 'cubeFilled' : 'onCells');
   renderAntRow();
 }
@@ -4950,17 +4950,17 @@ const cellSides = (kind) => (cellSidesMemo[kind] ??= (() => {
 // why a word cannot go on a walk, or '': not its network's; a diagonal along the grid; on a surface, no fixed way (no north)
 const walkWordWhy = (m, t) => (m.lattice === 'sphere' && !m.grid ? cellWordWhy(m, t)
   : m.lattice === 'sphere' ? ((surfaceWords(m.net).includes(t) && m.turns[surfaceWords(m.net).indexOf(t)] != null) || (SURFACE_NOTCHES[m.net] && ['l', 'r', 'a'].includes(t)) ? ''
-    : surfaceWords(m.net).includes(t) ? `${t}: not on this surface (its corners)` : `${t}: not on a surface (no north there)`)
-  : !wordAct(m.net, t) ? `${t}: not a word here` : m.lines && WALK_NETS[m.net].diagonals?.includes(t) ? `${t}: along the grid, a diagonal step follows no line` : '');
+    : surfaceWords(m.net).includes(t) ? `${t} is not on this surface (its corners).` : `${t} is not on a surface: there is no north there.`)
+  : !wordAct(m.net, t) ? `${t} is not a word here.` : m.lines && WALK_NETS[m.net].diagonals?.includes(t) ? `${t} is a diagonal step: along the grid, it follows no line.` : '');
 // a word on a surface's cells: its edge on every cell (see cellTurn, cellSides): straight on, cells of an even count of sides;
 // the j-th from the entry either way, cells of 2j + 1 sides at least; on the spot and parity, its network's notches
 function cellWordWhy(m, t) {
-  if (['l', 'r', 'a'].includes(t)) return SURFACE_NOTCHES[m.net] ? '' : `${t}: not on this surface`;
-  if (t === 'B') return cellSides(surfaceOf(m)).every((n) => n % 2 === 0) ? '' : `${t}: not on this surface (a cell of ${cellSides(surfaceOf(m)).find((n) => n % 2)} sides: no edge across to face)`;
+  if (['l', 'r', 'a'].includes(t)) return SURFACE_NOTCHES[m.net] ? '' : `${t} is not on this surface.`;
+  if (t === 'B') return cellSides(surfaceOf(m)).every((n) => n % 2 === 0) ? '' : `${t} is not on this surface: a cell of ${cellSides(surfaceOf(m)).find((n) => n % 2)} sides has no edge across to face.`;
   const turn = cellTurn(m.net, t), sides = cellSides(surfaceOf(m));
-  if (turn === null) return `${t}: not on a surface (no north there)`;
-  if (turn === 'straight') return sides.every((n) => n % 2 === 0) ? '' : `${t}: not on this surface (a cell of ${sides.find((n) => n % 2)} sides: no straight on)`;
-  return sides.every((n) => n >= 2 * Math.abs(turn) + 1) ? '' : `${t}: not on this surface (its cells' sides too few)`;
+  if (turn === null) return `${t} is not on a surface: there is no north there.`;
+  if (turn === 'straight') return sides.every((n) => n % 2 === 0) ? '' : `${t} is not on this surface: a cell of ${sides.find((n) => n % 2)} sides has no straight on.`;
+  return sides.every((n) => n >= 2 * Math.abs(turn) + 1) ? '' : `${t} is not on this surface: its cells have too few sides.`;
 }
 // a walk's words for a rule (the one it plays by default, see walkRuleOf), or null: 2 to 12, each fitting it
 const walkTakes = (m, rule) => { const words = ruleWords(rule); return words.length >= 2 && words.length <= 12 && words.every((t) => !walkWordWhy(m, t)) ? words : null; };
@@ -6331,7 +6331,7 @@ const turnedTorusHexMesh = (nv, nu = torusTriColumns(nv)) => turnedTorus('torusH
  * (rolled up from a flat rectangle) and a mesh with a flat form of its own (flatVerts: a rosette sphere's lentil,
  * each vertex straight from there to the sphere). The cells and their neighbours never change, so a walk or a
  * Game of Life run goes on unchanged: only the drawing and the 3D positions move. */
-const MORPH_WHERE = 'on the pits, the bumps and the sponge (their holes: no form between), and where a surface has no other form';  // (Morph's greyed words)
+const MORPH_WHERE = 'This surface has no other form (the pits, the bumps and the sponge: their holes leave none between).';  // (Morph's greyed words)
 const MORPHABLE = [...Object.keys(TETRAKIS_SOLIDS).map((k) => `${k}Tetrakis`), 'klein', 'kleinHex', 'kleinTri', 'kleinCairo', 'kleinKite', 'kleinHexTurned', 'kleinTriTurned', 'kleinKiteTurned', ...foldedIn('klein'), 'torusKite', 'torusKiteTurned', 'cube', 'pits', 'bumps', 'frame', 'menger', 'tetra', 'octa', 'stella', 'dodeca', 'icosa', 'tetraKite', 'octaKite', 'icosaKite', 'stellaKite', 'dodecaKite', ...hexSolids.map((k) => `${k}Hex`), 'cubocta', 'pyramid', 'rhombi', 'bicupola', 'globe', ...Object.keys(ROSETTE_SPHERES).map((k) => `${k}Sphere`), 'torus', 'torusHex', 'torusTri', 'torusCairo', 'torusHexTurned', 'torusTriTurned', 'hexsphere', 'twistedsphere', ...MOBIUS_KINDS,
   ...foldedIn('torus')];
 
@@ -7758,10 +7758,10 @@ const battleRuleInUse = (w = $('mode').value, p = battleRule) => {
 };
 // Centred's greyed words; a battle rule's at a mode: a way on cells only (Land cells, Snake cells) along a grid, or one along
 // the grid only on cells; a mode with no battle, none (Cut and Land no collision: anywhere)
-const CENTRED_WHERE = 'along a closed solid\'s grid only, where a point has as many edges out as walkers, or a multiple';
+const CENTRED_WHERE = 'Only along a closed solid\'s grid, where each point has as many edges out as walkers, or a multiple.';
 const battleRuleWhyNot = (kind, v) => {
   const cells = kind === 'landCells' || kind === 'snakeCells';
-  return !battleMode(v) ? 'where there is no battle' : kind === 'cut' || kind === 'landStop' || cells !== !!MODES[v].grid ? '' : cells ? 'along the grid, cells only' : 'on cells, along the grid only';
+  return !battleMode(v) ? 'There is no battle here.' : kind === 'cut' || kind === 'landStop' || cells !== !!MODES[v].grid ? '' : cells ? 'This rule plays on cells; this walk goes along the grid.' : 'This rule plays along the grid; this walk is on cells.';
 };
 const startsWayCan = (way, w, size) => way !== 'centred' || groupedCan(w, size);
 const startsWayNow = () => (battleOn() && startsWayCan(battleStartsWay) ? battleStartsWay : 'symmetric');  // (the one played: Symmetric where the one picked cannot be)
@@ -7962,8 +7962,8 @@ const battleCountsMemo = {};
 // a team count's, a count of colours' greyed words at a mode (at a size, or the one it opens at): one source, their tiles'
 // and the menu's graph's (see choicesAt)
 const teamsWhyNot = (k, v, size = null) => (k === 1 || battleCounts(v, size ?? (battleMode(v) && figureSize(v))).includes(k) ? '' : TEAMS_WHERE);
-const coloursWhyNot = (k, w, size = null) => (coloursFit(k, pickedFigure(w, size)) ? '' : 'where the shape has no parts alike for so many colours');
-const TEAMS_WHERE = 'no group of so many of the surface\'s symmetries at this size that sets them apart from this start, each walking as A (another size or start)';  // (a team count's greyed words)
+const coloursWhyNot = (k, w, size = null) => (coloursFit(k, pickedFigure(w, size)) ? '' : 'The shape has no parts alike for so many colours.');
+const TEAMS_WHERE = 'At this size and start, no group of the surface\'s symmetries sets so many walkers apart, each walking as A. Try another size or start.';  // (a team count's greyed words)
 // A surface's turns in space that lay its mesh onto itself (each a matrix, the identity among them), once a mesh: a closed
 // solid's rotations (see solidRotations); a ring's (a torus, a Möbius strip, a Klein bottle), its turns round its axis by
 // 2π/m (m from a corner's fellows round the axis at its height and distance, the least angle between them) and its
@@ -8619,8 +8619,8 @@ function renderBattleHunt() {
   const vary = (what, text, title, can = true, greyed = '') => tile({ pic: icon(what === 'formulas' ? 'search' : 'play'), text, title, toggle: true, on: huntVary[what] && can, can, greyed,
     byDefault: what === 'formulas' ? 'on' : 'off', click: () => { huntVary[what] = !huntVary[what]; stopBattleHunt(); renderBattleHunt(); } });
   const goal = huntGoal(), [, , , words, label, score, figure] = HUNT_RANKS[goal];
-  const rank = ([what, [pic, text, title]]) => tile({ pic: icon(pic), text, title, on: what === goal, whyNot: ({ w, battleRule: p = battleRule }) => (what !== 'even' || BATTLE_RULES[battleRuleInUse(w, p)][0] !== 'cut' ? '' : 'in Cut: no land, bodies only'),
-    greyed: 'in Cut: no land, bodies only', byDefault: what === 'longest' ? 'yes' : '', click: () => { if (huntRank !== what) { huntRank = what; stopBattleHunt(); renderBattleHunt(); } } });
+  const rank = ([what, [pic, text, title]]) => tile({ pic: icon(pic), text, title, on: what === goal, whyNot: ({ w, battleRule: p = battleRule }) => (what !== 'even' || BATTLE_RULES[battleRuleInUse(w, p)][0] !== 'cut' ? '' : 'Cut keeps bodies only: there is no land.'),
+    greyed: 'Cut keeps bodies only: there is no land.', byDefault: what === 'longest' ? 'yes' : '', click: () => { if (huntRank !== what) { huntRank = what; stopBattleHunt(); renderBattleHunt(); } } });
   $('battleHuntVary').replaceChildren(vary('formulas', 'Formulas', 'The hunt draws the walkers\' numbers (else those in the fields)'),
     vary('starts', 'Starts', 'The hunt draws the start too: Symmetric\'s number, Random\'s draw (else the start shown)', startsWayNow() !== 'centred', 'in Centred: its centres all alike, nothing to vary'));
   $('battleHuntRank').replaceChildren(tileGroup(Object.entries(HUNT_RANKS).map(rank), true));
@@ -10566,13 +10566,14 @@ function renderSymmetry() {
   $('symmetryRow').hidden = !kind || !!MODES[$('mode').value].elementary;  // (Elementary: a row, no copies)
   $('symmetryTiles').replaceChildren(tileGroup(Object.keys(SYMMETRIES).map((y) => {  // (one choice: a tab group; the one picked, clicked again: nothing; those the grid has not, greyed)
     return tile({ pic: icon(SYMMETRIES[y][0]), text: SYMMETRIES[y][1], title: SYMMETRIES[y][3], on: y === now, byDefault: y === 'none' ? 'yes' : '', at: walk.mode,
-      greyed: 'where the grid is not its own copy so (squares: all; a grid in a hexagon: as its tiles allow; a block rule: as its blocks and its rule allow too; in colours, as their parts do, each copy one part whole; the others: none), and on Famous and Anywhere (their patterns laid whole where they are)', whyNot: ({ w: v }) => (symmetryAllowed(y, v) ? '' : 'where the grid is not its own copy so (squares: all; a grid in a hexagon: as its tiles allow; a block rule: as its blocks and its rule allow too; in colours, as their parts do, each copy one part whole; the others: none), and on Famous and Anywhere (their patterns laid whole where they are)'), click: () => { if (y !== symmetryOf(walk.plane.kind)) { plane.sym = y; hunt.top = []; lifeReseed(); renderHunt(); } } });  // (the same start, as its link says it, its symmetry another: the hunt's finds, of another, gone)
+      greyed: SYMMETRY_WHERE, whyNot: ({ w: v }) => (symmetryAllowed(y, v) ? '' : SYMMETRY_WHERE), click: () => { if (y !== symmetryOf(walk.plane.kind)) { plane.sym = y; hunt.top = []; lifeReseed(); renderHunt(); } } });  // (the same start, as its link says it, its symmetry another: the hunt's finds, of another, gone)
   }), true));
 }
 // Draw's and Text's greyed words
-const DRAW_WHERE = 'on a reversible surface (no patterns of a block rule to show, nor drawing)';
-const TEXT_WHERE = 'where no picture can be laid, as Emoji (a grid too small for it, a solid\'s faces none)';
-const PNG_WHERE = 'on a grid of squares only (a pixel a square)';  // (Export PNG's greyed words)
+const SYMMETRY_WHERE = 'The grid is not its own copy this way (squares: all ways; a grid in a hexagon: as its tiles allow; a block rule: as its blocks and its rule allow too; in colours, as their parts do, each copy one whole part; the others: none). Not on Famous and Anywhere either: their patterns are laid whole where they are.';  // (a symmetry's greyed words)
+const DRAW_WHERE = 'On a reversible surface, a block rule has no patterns to show or draw.';
+const TEXT_WHERE = 'No picture can be laid here, as with Emoji (the grid too small, or a solid with no face for it).';
+const PNG_WHERE = 'Only on a grid of squares: one pixel per square.';  // (Export PNG's greyed words)
 function renderPlaneRow() {
   const kind = MODES[$('mode').value].plane;
   const blocks = !!MODES[$('mode').value].margolus;
@@ -10617,11 +10618,11 @@ function renderPlaneRow() {
   sizeGauge($('planeGauge'), sides.length, sides.indexOf(plane.side), (k) => label(sides[k]), (k) => { picked = planeCells(sides[k]); compute(); });
   $('planeOutline').hidden = !!APERIODIC[kind];  // (a grid that never repeats: always walls, nothing to choose)
   for (const [shape, torus] of OUTLINES) {
-    const where = shape === 'hex' ? 'but on a six-fold grid (triangles, hexagons, kites…)' : 'but on a slanted grid (its cells stored as a rhombus: triangles, hexagons, parallelograms…)';
+    const where = shape === 'hex' ? 'Only on a six-fold grid (triangles, hexagons, kites…).' : 'Only on a slanted grid, its cells stored as a rhombus (triangles, hexagons, parallelograms…).';
     setTile($(`outline-${shape}-${torus ? 'torus' : 'walled'}`), { on: outlineOf(kind) === shape && planeTorus(kind) === torus, greyed: where,
       whyNot: ({ w: v }) => { const k = MODES[v].plane; return k && MODES[v].life && !APERIODIC[k] && outlineOf(k, shape, torus) === shape ? '' : where; } });
   }
-  setTile(spaceTimeTile, { on: spaceTimeOn(), whyNot: ({ w }) => (spaceTimeApplies(w) ? '' : 'but on squares (not Rewind)'), greyed: 'but on squares (not Rewind)' });
+  setTile(spaceTimeTile, { on: spaceTimeOn(), whyNot: ({ w }) => (spaceTimeApplies(w) ? '' : 'Only on squares, and not on Rewind.'), greyed: 'Only on squares, and not on Rewind.' });
   renderSymmetry();
   $('startDraw').hidden = plane.start !== 'draw';
   $('startText').hidden = plane.start !== 'text';
@@ -10676,10 +10677,10 @@ function renderDrawTools() {
     if (b.dataset.brush === 'view') { b.disabled = false; b.dataset.greyed = ''; } else grey(b, tooBig(DRAW_BY_ID.get(b.dataset.brush)), 'too big for this disc: at a larger size');  // (View: at any generation, a surface's greying undone)
   }
   const tool = !DRAW_BY_ID.get(brush.id)[1];  // (View or a cell: no pattern to turn)
-  grey($('brushTurn'), tool || PATTERN_TURNS[kind] === 1, 'for View or a cell, or on a grid a pattern cannot turn on (a disc\'s: turned towards the cell clicked)');
-  grey($('brushFlip'), tool || !canMirror(kind), 'for View or a cell, or on a grid a pattern cannot mirror on');
+  grey($('brushTurn'), tool || PATTERN_TURNS[kind] === 1, 'Not for View or a cell, nor on a grid a pattern cannot turn on (on a disc, it turns towards the cell clicked).');
+  grey($('brushFlip'), tool || !canMirror(kind), 'Not for View or a cell, nor on a grid a pattern cannot mirror on.');
 
-  grey($('openPng'), kind !== 'square', 'on a grid of squares only (a pixel a square)');
+  grey($('openPng'), kind !== 'square', 'Only on a grid of squares: one pixel per square.');
   $('brushColours').classList.toggle('off', away);
   // the start's cells: away, back to them (gen 0); there, Clear, then Undo clear (Clear again once undone)
   const b = $('startCells'), [pic, words, tip] = away ? ['start', 'Go to gen 0 to draw', "The cells drawn are its start's (gen 0): there, to see them as they are"]
@@ -10687,7 +10688,7 @@ function renderDrawTools() {
   b.innerHTML = `${icon(pic)}${words}`;
   b.title = tip;
   b.disabled = !away && !cleared && !population.size;
-  b.dataset.greyed = b.disabled ? 'no cell drawn' : '';
+  b.dataset.greyed = b.disabled ? 'No cell is drawn.' : '';
 }
 // a disc pattern's card: its picture (see discIcon; made as it first shows, not 535 at the start)
 function discCard(b, p) {
@@ -11238,9 +11239,9 @@ const colourMixed = (zone = hunt.zone) => colourMix && lifeColours > 1 && mixabl
 // Newcomer, a switch: the teams below's start (Trio's: Duel's, laid as Duel lays them), the last colour none at first, born only
 // of a tie between the others (the colour missing, see colourMissing); where a start lays teams (a soup's zones, Text)
 const newcomerCan = (colours = lifeColours, figure = pickedFigure()) => colours > 2 && colourMissing(colours) && coloursFit(colours - 1, figure) && (plane.start === 'random' || plane.start === 'text');
-const newcomerWhere = (colours) => `where the teams picked have no birth of the missing colour (no mark in their corner), in Solo and Duel, in Digits and Draw${colours > 2 && !coloursFit(colours - 1) ? `, and where ${COLOUR_STEP_NAMES[colours - 1] ?? `${colours - 1} teams`} does not fit` : ''}`;
+const newcomerWhere = (colours) => `Not in Solo, Duel, Digits or Draw, nor where the teams picked have no birth of the missing colour (no mark in their corner)${colours > 2 && !coloursFit(colours - 1) ? `; ${COLOUR_STEP_NAMES[colours - 1] ?? `${colours - 1} teams`} does not fit here` : ''}.`;
 // Mixed's greyed words (see mixable)
-const MIXED_WHERE = 'in Solo, in Replicators, Text and Draw, and in the hunt zones that lay each colour\'s own picture or part (Icon, Punk, Emoji, Famous, Anywhere, Realm, Mirror)';
+const MIXED_WHERE = 'Not in Solo, Replicators, Text or Draw, nor in the hunt zones that lay each colour\'s own picture or part (Icon, Punk, Emoji, Famous, Anywhere, Realm, Mirror).';
 const newcomerOn = () => newcomer && newcomerCan();
 // a rule that turns an empty block full (Critters, Tron): every other generation shown negative, its dead cells alive (as
 // Margolus showed Critters: its picture then the same way round, its cells as particles that keep their count)
@@ -11369,7 +11370,7 @@ function renderColours() {
   if (walkTeamsHere(w)) { $('colourBlocks').replaceChildren(...walkTeamTiles(w)); return; }
   $('colourBlocks').replaceChildren(...COLOUR_STEPS.map((k) => tile({ pic: colourBlock(k), text: COLOUR_STEP_NAMES[k],
     title: `${k === 1 ? 'One colour: alive or dead' : `${k} colours: ${LIFE_COLOUR_NAMES.slice(0, k).join(', ')}`}${colourMissing(k) ? ' · a colour gone can come back: a tie, the missing one born' : ''}`,
-    on: k === lifeColours, choice: `colours:${k}`, whyNot: ({ w, size }) => coloursWhyNot(k, w, size), mark: colourMissing(k), byDefault: k === 1 ? 'yes' : '', greyed: k > 1 ? 'where the shape has no parts alike for so many colours' : '', click: () => { if (k !== lifeColours) { coloursPicked = lifeColours = k; applyDefaults('colours'); compute(); } } })),  // (Trail: on in Solo, off in colours, at first)
+    on: k === lifeColours, choice: `colours:${k}`, whyNot: ({ w, size }) => coloursWhyNot(k, w, size), mark: colourMissing(k), byDefault: k === 1 ? 'yes' : '', greyed: k > 1 ? 'The shape has no parts alike for so many colours.' : '', click: () => { if (k !== lifeColours) { coloursPicked = lifeColours = k; applyDefaults('colours'); compute(); } } })),  // (Trail: on in Solo, off in colours, at first)
     // Mixed, a switch: the colours' cells mixed at random in one place, as one colour's (greyed in one colour and where no zone mixes, see mixable)
     tile({ pic: `<svg viewBox="0 0 4 4" aria-hidden="true">${[[0, 0], [2, 0], [1, 1], [3, 1], [0, 2], [2, 2], [1, 3], [3, 3]].map(([x, y], i) => `<rect x="${x}" y="${y}" width="1" height="1" fill="${LIFE_COLOURS[[0, 4, 2, 6, 5, 1, 7, 3][i]]}"/>`).join('')}</svg>`, text: 'Mixed',
       title: 'The colours placed as one colour is (one patch, a soup), each cell a colour at random', toggle: true, byDefault: 'off', greyed: MIXED_WHERE, on: colourMixed(), whyNot: ({ w, colours = lifeColours }) => (colours > 1 && mixable(hunt.zone, MODES[w]) ? '' : MIXED_WHERE), click: () => { colourMix = !colourMix; compute(); } }),
@@ -13242,10 +13243,10 @@ function huntFits() {
   return hunt.fits;
 }
 // when a zone is greyed (as huntFits finds it), its tooltip's words
-const zoneGreyed = (zone) => (isIcon(zone) ? 'where it cannot fit' : zone === 'realm' ? 'in Solo, where a colour has no whole face, and on a grid too small to keep the colours apart' : zone === 'mirror' ? 'on a grid or a torus, in Solo, and where no colouring has its parts opposite'
-  : famousZone(zone) ? 'where the rule has no famous patterns, or they cannot fit' : zone === 'full' ? 'hunting the highest peak (a soup full already), and on a solid of squares and triangles where its colours\' parts differ'
-  : zone === 'numbers' ? 'hunting the highest peak or all reached (the grid full already: its digits on each cell)'
-  : 'where its patch cannot fit each colour\'s part, and on a globe (its soup only, for now)');
+const zoneGreyed = (zone) => (isIcon(zone) ? 'It cannot fit here.' : zone === 'realm' ? 'Not in Solo, where a colour has no whole face, or on a grid too small to keep the colours apart.' : zone === 'mirror' ? 'Not on a grid or a torus, in Solo, or where no colouring has its parts opposite.'
+  : famousZone(zone) ? 'The rule has no famous patterns, or they cannot fit.' : zone === 'full' ? 'Not when hunting the highest peak (the soup is full already), nor on a solid of squares and triangles whose colours\' parts differ.'
+  : zone === 'numbers' ? 'Not when hunting the highest peak or all reached (the grid is full already: a digit on each cell).'
+  : 'Not where its patch cannot fit each colour\'s part, nor on a globe (its soup only, for now).');
 // blocks: the search for its return, whatever the start (see searchBack)
 function renderBack() {
   const L = walk.life;
@@ -13262,12 +13263,12 @@ function renderHunt() {
   const K = lifeParts(), { perColour, all } = huntPlan(), busy = !!hunt.run, sym = walk.plane ? symmetryOf(walk.plane.kind) : 'none';
   const what = K > 1 ? 'the longest battle' : { longest: 'the longest life', dies: 'the longest life dying out', full: 'the longest life ending full', peak: 'the highest peak', cover: 'the fastest to reach all cells' }[hunt.goal];
   $('huntGoals').hidden = $('huntModeLabel').hidden = !!walk.life.margolus;
-  for (const b of $('huntGoals').querySelectorAll('button')) { const battle = b.dataset.goal === 'battle'; setTile(b, { on: battle ? K > 1 : K === 1 && b.dataset.goal === hunt.goal, whyNot: ({ colours = lifeColours }) => (battle === colours > 1 ? '' : battle ? 'in Solo' : 'in colours') }); }  // (its colours: a battle's in colours)
+  for (const b of $('huntGoals').querySelectorAll('button')) { const battle = b.dataset.goal === 'battle'; setTile(b, { on: battle ? K > 1 : K === 1 && b.dataset.goal === hunt.goal, whyNot: ({ colours = lifeColours }) => (battle === colours > 1 ? '' : battle ? 'Not in Solo.' : 'Not in colours.') }); }  // (its colours: a battle's in colours)
   renderSymmetry();  // (Famous: none)
   const fits = huntFits();
   for (const b of $('huntZones').children) {
-    setTile(b, { on: b.dataset.zone === hunt.zone, again: true, greyed: `${zoneGreyed(b.dataset.zone)}, and while a hunt runs`, at: walk.mode,
-      whyNot: ({ w: v }) => (v === walk.mode && !busy && fits[b.dataset.zone] ? '' : `${zoneGreyed(b.dataset.zone)}, and while a hunt runs`) });  // (its room known on the grid built only: another mode's, not judged)  // (picked: a click draws another start)
+    setTile(b, { on: b.dataset.zone === hunt.zone, again: true, greyed: `${zoneGreyed(b.dataset.zone)} Not while a hunt runs.`, at: walk.mode,
+      whyNot: ({ w: v }) => (v === walk.mode && !busy && fits[b.dataset.zone] ? '' : `${zoneGreyed(b.dataset.zone)} Not while a hunt runs.`) });  // (its room known on the grid built only: another mode's, not judged)  // (picked: a click draws another start)
     if (b.dataset.zone === 'custom') b.hidden = hunt.zone !== 'custom';
   }
   // one line under the button: what the zone has put on the grid, and (Life) what a hunt will try; how far it got while it
@@ -14813,7 +14814,7 @@ function fillGalleryList() {
     section.append(cards);
     return [section];
   }));
-  for (const b of [...$('galleryTools').children].slice(1, 3)) setTile(b, { greyed: 'with the Gallery empty', whyNot: () => (list.length ? '' : 'with the Gallery empty') });  // (Export, Erase all: none to take)
+  for (const b of [...$('galleryTools').children].slice(1, 3)) setTile(b, { greyed: 'The Gallery is empty.', whyNot: () => (list.length ? '' : 'The Gallery is empty.') });  // (Export, Erase all: none to take)
   $('eraseConfirm').hidden ||= !list.length;
   syncSaveButton();
 }
@@ -17011,8 +17012,8 @@ const fillAreasApply = (w = $('mode').value) => !areaWhyNot(w);
 // (a spiral, a mode without it), a look over the cells (Heatmap, Directions), or Snake cells (its tails slide: no area
 // lasts); else ''
 // (p: the battle rule picked, the one it plays at w judged, see battleRuleInUse)
-const areaWhyNot = (w, teams = walkTeams, p = battleRule) => (MODES[w].cells ? 'on cells: the walk colours its cells itself (a battle, its lands)' : teams > 1 && battleCounts(w).includes(teams) && BATTLE_RULES[battleRuleInUse(w, p)][0] !== 'cut' ? 'in a battle that colours its lands (Cut, its bodies only, keeps it)' : !useful('fill', w) || MODES[w].fill === false ? 'where the walk closes no area to fill (a spiral, an ant…)'
-  : ['visits', 'digit'].includes($('colourMode').value) ? 'with Heatmap or Directions (the cells their own colours)' : w === $('mode').value && snakeBattle() ? 'in Snake cells: its tails slide, no area they close lasts' : '');
+const areaWhyNot = (w, teams = walkTeams, p = battleRule) => (MODES[w].cells ? 'On cells, the walk colours its cells itself (in a battle, its lands).' : teams > 1 && battleCounts(w).includes(teams) && BATTLE_RULES[battleRuleInUse(w, p)][0] !== 'cut' ? 'This battle colours its lands (only Cut, its bodies alone, keeps Area).' : !useful('fill', w) || MODES[w].fill === false ? 'The walk closes no area to fill (a spiral, an ant…).'
+  : ['visits', 'digit'].includes($('colourMode').value) ? 'Heatmap and Directions give the cells their own colours.' : w === $('mode').value && snakeBattle() ? 'In Snake cells the tails slide: no area they close lasts.' : '');
 // a battle in Snake cells: its bodies' tails slide, no area they close lasts: none filled (Area greyed)
 const snakeBattle = () => battleOn() && BATTLE_RULES[battleRuleInUse()][0] === 'snakeCells';
 // (the walk drawn may still be the last mode's while the new one is computed: a tiling with a fill)
@@ -17983,7 +17984,7 @@ $('huntBtn').addEventListener('click', huntClick);
 $('backBtn').addEventListener('click', () => searchBack(backSearch.life !== walk.life));
 // one choice, a tab group: in one colour the four, in colours Battle (picked by itself, see renderHunt)
 $('huntGoals').replaceChildren(tileGroup(Object.entries(HUNT_GOALS).map(([goal, [pic, name, words]]) => {
-  const b = tile({ pic: icon(pic), text: name, title: words, byDefault: goal === 'longest' ? 'yes' : '', greyed: goal === 'battle' ? 'in one colour (none to fight)' : 'in colours (a battle)',
+  const b = tile({ pic: icon(pic), text: name, title: words, byDefault: goal === 'longest' ? 'yes' : '', greyed: goal === 'battle' ? 'In one colour there is no one to fight.' : 'In colours, the hunt is a battle.',
     click: goal === 'battle' ? null : () => { if (goal !== hunt.goal) pickGoal(goal); } });  // (see hunt)
   b.dataset.goal = goal;
   return b;
@@ -18348,8 +18349,8 @@ function cellModePicture(look, ant) {  // a 2 × 2 swatch, or the rainbow line o
     + `<rect x="2" y="2" width="20" height="20" rx="2" fill="url(#${id})"/></svg>`;
   return heatRings(g);
 }
-const CELLS_ONLY = 'along the lines: on cells only';  // (a walk's cells' look along its lines: none)
-const DIRECTIONS_WHERE = 'on a surface (a 2D walk\'s only) and in a battle (each walker its own colour)';
+const CELLS_ONLY = 'Only on cells, not along the lines.';  // (a walk's cells' look along its lines: none)
+const DIRECTIONS_WHERE = 'Not on a surface (2D walks only), nor in a battle (each walker has its own colour).';
 // a cells' look greyed at a mode: Path and Heatmap along the lines (no cells), Directions on a surface or in a battle (an
 // ant's States everywhere), Heatmap on a spiral; else ''
 const cellModeWhyNot = (look, w) => (look === 'digit' ? (!MODES[w].antOf && (!shows('cells', w) || (w === $('mode').value && battleOn())) ? DIRECTIONS_WHERE : '')

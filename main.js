@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.531';
+const VERSION = '0.4.532';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -18514,7 +18514,7 @@ function renderAreaModes() {
   const light = shows('translucent');
   const shown = (v) => (v === 'light' && !light ? 'plain' : v);  // (Light only over a line: else Plain)
   const now = AREA_MODES.findIndex(([look]) => look === shown($('area').value)), first = shown(defaultOf('area'));
-  notchRow($('areaModes'), 'Area', 'The areas the walk closes, filled', AREA_MODES.map(([look, name, words]) => [name, `${words}${look === 'light' && !light ? ' · greyed: over a line only (Plain here)' : ''}${look !== 'empty' && fractionAreaCap() < Infinity ? ` · a fraction: its digits repeat, its walk goes round its figure again and again, closing off big parts of the surface; only its small areas are filled, ${FRACTION_AREA} tiles at most` : ''}`]), now, AREA_MODES.findIndex(([look]) => look === first),
+  notchRow($('areaModes'), 'Area', 'The areas the walk closes, filled', AREA_MODES.map(([look, name, words]) => [name, `${words}${look === 'light' && !light ? ' · over a line only: Plain here' : ''}${look !== 'empty' && fractionAreaCap() < Infinity ? ` · a fraction: its digits repeat, its walk goes round its figure again and again, closing off big parts of the surface; only its small areas are filled, ${FRACTION_AREA} tiles at most` : ''}`]), now, AREA_MODES.findIndex(([look]) => look === first),
     (k) => { if ($('area').value !== AREA_MODES[k][0]) { $('area').value = AREA_MODES[k][0]; $('area').dispatchEvent(new Event('change')); } }, ({ w, teams, battleRule: p, look }) => areaWhyNot(w, teams, p, look), false);  // (let go: the row drawn again)
 }
 // The looks of a 2D walk on cells, as square buttons: Path, the rainbow line over its cells faded (an ant's over its

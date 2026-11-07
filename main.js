@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.490';
+const VERSION = '0.4.491';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -1021,7 +1021,7 @@ const RECTS = {};  // the slanted grids as rectangles (see RECTS's making, after
 const latticeStep = (kind) => { const o = cellMiddle(kind, 0, 0), m = cellMiddle(kind, TILES_PER_GRID_CELL[kind] ?? 1, 0); return [m[0] - o[0], m[1] - o[1]]; };  // a step along a row's grid cells (a slanted grid's: its rectangles)
 const tilingOf = (kind) => TILINGS[kind] ?? RECTS[kind];
 const baseOf = (kind) => RECTS[kind]?.base ?? kind;
-const planeKind = (kind) => (STRAIGHT_RECTS.has(kind) && outlineOf(kind) === 'square' ? `${kind}Rect` : kind);  // the grid as it is built: a slanted one's, its straight sheet, a rectangle (its torus's laid flat), else as stored (a rhombus, a hexagon cut in it)
+const planeKind = (kind, outline = outlineOf(kind)) => (STRAIGHT_RECTS.has(kind) && outline === 'square' ? `${kind}Rect` : kind);  // (outline: a setup's, see outlineIn)  // the grid as it is built: a slanted one's, its straight sheet, a rectangle (its torus's laid flat), else as stored (a rhombus, a hexagon cut in it)
 // a grid's outline (shape: the one picked, else another's), as it can have it: a hexagon, a six-fold one's walled; a rhombus, a slanted
 // one's (its cells as stored); else a rectangle (a grid that never repeats: its disc)
 const outlineOf = (kind, shape = plane.shape, torus = planeTorus(kind)) => (APERIODIC[kind] ? 'disc' : RECTS[kind] ? 'square' : shape === 'hex' && hexagonFits(kind) && !torus ? 'hex' : shape === 'rhombus' && STRAIGHT_RECTS.has(kind) ? 'rhombus' : 'square');
@@ -3609,10 +3609,14 @@ const modesUnder = (...place) => Object.keys(NAV).filter((u) => place.every((x, 
 // The menu as a graph (the setup a node, a click an edge): a setup, what the app holds as a link does ({ w: the mode, size:
 // null for the one it opens at, its colours, a walk's teams, its battle rule, its starts' way, a Life's start, its hunt's
 // zone and its rule, as typed: the one a mode plays from it, lifeRuleAt; its look, colourMode's; Stacks on; a walk's rule, see
-// walkRuleAt; A's start's number, a mode's list's at most; Newcomer picked, see newcomerCan), the one in use first
+// walkRuleAt; A's start's number, a mode's list's at most; Newcomer picked, see newcomerCan; a plane's outline, see outlineIn), the
+// one in use first
 const setupNow = () => ({ w: $('mode').value, size: null, colours: lifeColours, teams: walkTeams, battleRule, startsWay: battleStartsWay, start: plane.start, zone: hunt.zone, rule: $('lifeRule').value, look: $('colourMode').value, stacked: spaceTime,
-  walkRule: MODES[$('mode').value].net ? walkRuleOf(MODES[$('mode').value]) : null, startNo: startNo(), newcomer });
-const SETUP_FIELDS = ['size', 'colours', 'teams', 'battleRule', 'startsWay', 'start', 'zone', 'rule', 'look', 'stacked', 'walkRule', 'startNo', 'newcomer'];
+  walkRule: MODES[$('mode').value].net ? walkRuleOf(MODES[$('mode').value]) : null, startNo: startNo(), newcomer, outline: `${plane.shape}|${plane.torus ? 1 : 0}` });
+const SETUP_FIELDS = ['size', 'colours', 'teams', 'battleRule', 'startsWay', 'start', 'zone', 'rule', 'look', 'stacked', 'walkRule', 'startNo', 'newcomer', 'outline'];
+// a plane grid's outline at kind k (as stored: its mode's plane) from a setup's (its outline tiles' shape and torus, 'hex|0'),
+// as outlineOf makes it there
+const outlineIn = (outline, k) => { if (!outline) return outlineOf(k); const [shape, torus] = outline.split('|'); return outlineOf(k, shape, torus === '1' && !APERIODIC[k]); };
 // a walk's rule at mode u from setup s: the setup's walk's (walkRule) where u keeps its rules under the same key (its network's,
 // see walkKey: a plane's grid and cells share theirs), else u's kept one
 const walkRuleAt = (s, u) => (s.walkRule && MODES[s.w].net && walkKey(MODES[u]) === walkKey(MODES[s.w]) ? s.walkRule : walkRuleKept(MODES[u]));  // (its fields but the mode: a key's, a path's changes)
@@ -3645,6 +3649,7 @@ function choicesAt(s) {  // (each [key, the setup it leads to, its button's word
   if (m.life) for (const [look, name] of LIFE_LOOKS) set(`look:${look}`, 'look', look, lookWhyNot(look, w), name);
   else if (shows('cells', w) || shows('heatmap', w) || m.antOf) for (const [look, name] of CELL_MODES) set(`look:${look}`, 'look', lookAfter(look, w), cellModeWhyNot(look, w, s.teams), name);
   if (spaceTimeApplies(w)) set('stacked', 'stacked', !s.stacked, '', 'Stacks');  // (Stacks, a switch: on or off)
+  if (m.plane && m.life && !APERIODIC[m.plane]) for (const [shape, torus, text] of OUTLINES) if (outlineOf(m.plane, shape, torus) === shape) set(`outline:${shape}-${torus ? 'torus' : 'walled'}`, 'outline', `${shape}|${torus ? 1 : 0}`, '', text);  // (its outline tiles)
   if (m.life) set('newcomer', 'newcomer', !s.newcomer, newcomerCan(s.colours, pickedFigure(w, s.size), s.start) ? '' : 'none', 'Newcomer');  // (a switch where it can be)
   const starts = w === $('mode').value && modeStarts();  // (a start's −, +: at the mode shown, its starts' list known there)
   if (starts) { set('startNo:-1', 'startNo', s.startNo - 1, s.startNo <= 1 ? 'none' : '', 'Previous start'); set('startNo:+1', 'startNo', s.startNo + 1, s.startNo >= starts.length ? 'none' : '', 'Next start'); }
@@ -9499,8 +9504,8 @@ const SYMMETRIES = { none: ['symNone', 'None', '', 'The start as it is laid, no 
 // A grid's symmetries, known by construction: about its centre, a turn of order N and a mirror. Squares: the grid's middle,
 // quarter turns; a grid in a hexagon (see planeShape): its middle o, a centre of the tiling's sixths, sixth turns, a mirror if
 // its tiles have one (Florets, Snub: none); the others none
-const planeSymmetries = (kind, W) => (kind === 'square' || (planeShape(kind, W) && TILINGS[baseOf(kind)]?.mirror !== false) ? ['none', 'half', 'rotate', 'mirror', 'kaleido']
-  : planeShape(kind, W) ? ['none', 'half', 'rotate'] : ['none']);
+const planeSymmetries = (kind, W, outline = outlineOf(kind)) => (kind === 'square' || (planeShape(kind, W, outline) && TILINGS[baseOf(kind)]?.mirror !== false) ? ['none', 'half', 'rotate', 'mirror', 'kaleido']
+  : planeShape(kind, W, outline) ? ['none', 'half', 'rotate'] : ['none']);
 // its turn r and its mirror m, a cell → the cell it goes to, made when first asked: squares by their index; a grid in a
 // hexagon, each cell's middle turned (or mirrored across the line through o at its corner's way) found again within 10⁻³
 // (the tilings' corners to 6 places), among the middles in its tenth of a unit and those round it
@@ -9530,10 +9535,10 @@ function symmetryMaps(kind, W, sym) {
 // laid by parts, those whose maps take each colour's part onto one part whole (see partSymmetries); with a block rule, those
 // whose maps take each block onto one of its generation's, the rule turning their cells
 // alike (its states' bits in the copy's order; Ising's sides and the stellated cells' moves not seen to: none of them)
-// (start, zone, K: a setup's start, its hunt's zone and its colours' parts; the game's by default)
-function symmetriesHere(kind, W, M = walk.life?.margolus, { start = plane.start, zone = hunt.zone, K = walk.life ? lifeParts() : 1 } = {}) {  // (M: a block rule's, the walk shown's: its cells' turns, a built grid's)
+// (start, zone, K, outline: a setup's start, its hunt's zone, its colours' parts and its outline; the game's by default)
+function symmetriesHere(kind, W, M = walk.life?.margolus, { start = plane.start, zone = hunt.zone, K = walk.life ? lifeParts() : 1, outline = outlineOf(kind) } = {}) {  // (M: a block rule's, the walk shown's: its cells' turns, a built grid's)
   const byParts = K > 1 && (start === 'random' || start === 'text');  // (as symmetricStart colours them)
-  const all = (start === 'random' && famousZone(zone) ? ['none'] : planeSymmetries(kind, W)).filter((y) => !byParts || partSymmetries(kind, W, K).includes(y));
+  const all = (start === 'random' && famousZone(zone) ? ['none'] : planeSymmetries(kind, W, outline)).filter((y) => !byParts || partSymmetries(kind, W, K).includes(y));
   if (!M) return all;
   const memo = (M.symmetric ??= new Map()), key = `${kind}|${W}`;
   const keeps = (maps) => !M.ising && !M.move && maps.every((f) => M.turns.every((turn) => {
@@ -9574,7 +9579,7 @@ for (const [kind, t] of Object.entries(TILINGS)) TILES_PER_GRID_CELL[kind] = t.p
 // (a grid that never repeats, in a circle: its size its diameter, its W² cells as many as the disc's, π side² / 4)
 const sideW = (kind, side) => (kind === 'cairo' ? 2 * Math.round(side / Math.SQRT2 / 2) : APERIODIC[kind] ? Math.round((side * Math.sqrt(Math.PI)) / 2) : Math.round(side / Math.sqrt(TILES_PER_GRID_CELL[kind] * (RECT_ASPECT[kind] ?? 1))));  // (a rectangle's: W rows of W × its aspect motifs, see planeColumns)
 // blocks on a torus: the nearest size their sets fit round (else a cell in two blocks of a set at the seam: the rule broken)
-const planeW = (kind, side, mode = MODES[$('mode').value]) => (mode?.margolus && planeTorus(kind) ? blockWrapW(kind, sideW(kind, side)) : shaped(kind) ? shapeW(kind, sideW(kind, side)) : colourW(kind, sideW(kind, side)));
+const planeW = (kind, side, mode = MODES[$('mode').value], outline = outlineOf(kind)) => (mode?.margolus && planeTorus(kind) ? blockWrapW(kind, sideW(kind, side)) : shaped(kind, outline) ? shapeW(kind, sideW(kind, side), outline) : colourW(kind, sideW(kind, side)));
 // colours in blocks (on a torus, or 2 and 4 with walls along the edges: see huntParts), cols × rows of them: the nearest side
 // they divide (12, 4 × 3: a multiple of 12), every colour as many cells
 const colourW = (kind, x, K = lifeColours) => {  // (x, its rows or its motifs a row: the nearest its colours' blocks' columns and rows divide; K: its colours)
@@ -10638,13 +10643,12 @@ let surfaceDraw = false;  // a surface's Draw tab open: its patterns shown, grey
 // the rule, the start and its zone (see renderPlaneRow, renderHunt)
 // a symmetry at a mode: the walk shown's, by its grid (and its block rule, see symmetriesHere); another's, on the plane, by its
 // grid at the side picked (a block rule's known once its grid is built: none there)
-const symmetryAllowed = (y, v, { start, zone, colours = lifeColours, newcomer: n = newcomer, size = null } = {}) => {
+const symmetryAllowed = (y, v, { start, zone, colours = lifeColours, newcomer: n = newcomer, size = null, outline: outlineSet } = {}) => {
   const parts = colours - (n && newcomerCan(colours, pickedFigure(v, size), start ?? plane.start) ? 1 : 0);  // (a setup's colours' parts: Newcomer's, one fewer)
-  const m = MODES[v], by = { start, zone, K: parts === lifeColours - (newcomerOn() ? 1 : 0) ? undefined : parts };  // (the game's where they are its)
-  if (v === walk.mode && walk.plane) return symmetriesHere(walk.plane.kind, walk.plane.W, undefined, by).includes(y);
+  const m = MODES[v], outline = m.plane && outlineIn(outlineSet, m.plane), k = m.plane && planeKind(m.plane, outline), by = { start, zone, K: parts === lifeColours - (newcomerOn() ? 1 : 0) ? undefined : parts, outline };  // (the game's where they are its)
+  if (v === walk.mode && walk.plane && outline === outlineOf(m.plane)) return symmetriesHere(walk.plane.kind, walk.plane.W, undefined, by).includes(y);
   if (!m.plane || m.elementary || m.margolus || !m.life) return y === 'none';
-  const k = planeKind(m.plane);
-  return symmetriesHere(k, planeW(k, planeSideOf(k), m), null, by).includes(y);
+  return symmetriesHere(k, planeW(k, planeSideOf(k), m, outline), null, by).includes(y);
 };
 function renderSymmetry() {
   const kind = MODES[$('mode').value].plane, has = walk.plane ? symmetriesHere(walk.plane.kind, walk.plane.W) : ['none'], now = walk.plane ? symmetryOf(walk.plane.kind) : 'none';
@@ -10709,6 +10713,7 @@ function renderPlaneRow() {
   $('planeOutline').hidden = !!APERIODIC[kind];  // (a grid that never repeats: always walls, nothing to choose)
   for (const [shape, torus] of OUTLINES) {
     const where = shape === 'hex' ? 'Only on a six-fold grid (triangles, hexagons, kites…).' : 'Only on a slanted grid, its cells stored as a rhombus (triangles, hexagons, parallelograms…).';
+    $(`outline-${shape}-${torus ? 'torus' : 'walled'}`).dataset.choice = `outline:${shape}-${torus ? 'torus' : 'walled'}`;  // (its choice's key, see choicesAt)
     setTile($(`outline-${shape}-${torus ? 'torus' : 'walled'}`), { on: outlineOf(kind) === shape && planeTorus(kind) === torus,
       whyNot: ({ w: v }) => { const k = MODES[v].plane; return k && MODES[v].life && !APERIODIC[k] && outlineOf(k, shape, torus) === shape ? '' : where; } });
   }
@@ -10809,9 +10814,9 @@ function sideOf(kind, W, nbr) {
 // the biggest that keeps the lattice's edge out of it by a cell's width: { cells, rings, walls: [[x, y], …], core, o,
 // corner }, else null. Its cells as the whole grid's (patterns, symmetry and hunts the same); a cut by a distance: cells as
 // far, all in or all out
-const shapeMemo = new Map(), shaped = (kind) => outlineOf(kind) === 'hex';
-function planeShape(kind, W) {
-  if (!shaped(kind)) return null;
+const shapeMemo = new Map(), shaped = (kind, outline = outlineOf(kind)) => outline === 'hex';  // (outline: a setup's, see outlineIn)
+function planeShape(kind, W, outline = outlineOf(kind)) {
+  if (!shaped(kind, outline)) return null;
   const row = planeRow(kind, W), key = `${kind}|${W}|${row}`;  // (its row as its colours make it: a hexagon's cells by their numbers)
   if (shapeMemo.has(key)) return shapeMemo.get(key);
   const n = row * W, mids = [], cs = [];
@@ -10842,8 +10847,8 @@ function planeShape(kind, W) {
 }
 // its grid's side: as many cells in it as a disc of diameter side's (π side² / 4 squares' worth, as a grid that never
 // repeats in a circle), the grid grown round it
-function shapeW(kind, W0) {
-  const want = (Math.PI / 4) * planeRow(kind, W0) * W0, live = (W) => planeShape(kind, W).cells.length;
+function shapeW(kind, W0, outline = outlineOf(kind)) {
+  const want = (Math.PI / 4) * planeRow(kind, W0) * W0, live = (W) => planeShape(kind, W, outline).cells.length;
   let W = W0;
   for (let i = 0; i < 6; i++) { const next = Math.min(4 * W0, Math.round(W * Math.sqrt(want / Math.max(1, live(W))))); if (next === W) break; W = next; }
   return W;

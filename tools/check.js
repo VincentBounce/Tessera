@@ -198,7 +198,7 @@ function checker(fail) {
 }
 async function crawl(fail) {
   const C = checker(fail), look = C.look;
-  const tabs = () => [...document.querySelectorAll('#modeTabs [role=tab]')].filter((b) => !/Gallery/.test(b.textContent));  // (Life, Reversible, Ant, Walk)
+  const tabs = () => [...document.querySelectorAll('#modeTabs [role=tab]')].filter((b) => !/Gallery/.test(b.textContent));  // (Life, Rewind, Ant, Walk)
   for (let ti = 0; ti < tabs().length; ti++) {
     tabs()[ti].click();
     await look(`tab ${tabs()[ti].textContent.trim()}`);
@@ -308,7 +308,7 @@ async function fuzz(fail, count, seedv, cold = false) {
   return C.checked;
 }
 
-// The deep crawl (a night's): every grid of Life and Reversible from its link, then on each: every rule of its menu and one of
+// The deep crawl (a night's): every grid of Life and Rewind from its link, then on each: every rule of its menu and one of
 // your own (B36/S23; blocks: their menu's), each with How it works (and its Letters page); every colour (and Mixed); every zone of
 // Hunt; its smallest size; 30 generations played. No error anywhere (a click's included), the link's mode the one shown.
 // only: those grids alone; from: the grid it starts at (after a crash: localStorage.tesseraDeep holds the one it was on, and its failures so far)

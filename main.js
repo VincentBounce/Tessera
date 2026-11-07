@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.392';
+const VERSION = '0.4.393';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -1297,7 +1297,7 @@ const RULES = [
       ['L1 N R2 L2 N L1 N', 'Worm dying at step 918,339 on the plane'], ['L2 L1 R1', 'Worm going on past 5,000,000 on the plane'], ['L2 N L1 R2 L1 R2 L2', 'Worm going on past 5,000,000 on the plane']]
     .map(([rule, name]) => ({ kind: 'worm', tiling: 'tri', rule, name, about: 'its life on the plane, an endless grid of triangles; on a solid or a surface, a closed grid, it meets its own trail sooner or later: its life there varies with the grid and its size' })),
   // Life's (its tiling: the marks of the grids it is known on, see lifeMark; its picture in RULE_ICONS); its families' (Elementary,
-  // Replicators, Reversible, each its grid's mark) made after (see addLifeRule)
+  // Replicators, Rewind, each its grid's mark) made after (see addLifeRule)
   ...[
     ['■▲◈', 'B3/S23', 'Life', 'Life (2 states)'],
     ['▲', 'B45/S345/C4', 'Sparse', 'lasting sparse activity (4 states)'],
@@ -1741,7 +1741,7 @@ const DISPLAY_BY_TAB = {
 // a tab's own, else all's), or by the mode or a battle (a function); displayDefaults and the mode's change set them, and
 // the tiles' marks read them (see defaultOf, defaultMark)
 const DISPLAY_DEFAULTS = {
-  look: ['colourMode', 'tab', { Walk: 'gradient', Ant: 'gradient', Life: 'mono', Replicators: 'mono', Reversible: 'mono', Elementary: 'gradient' }],  // (Cells: a walk's Rainbow, Life's States, Elementary's Age: the simplest)
+  look: ['colourMode', 'tab', { Walk: 'gradient', Ant: 'gradient', Life: 'mono', Replicators: 'mono', Rewind: 'mono', Elementary: 'gradient' }],  // (Cells: a walk's Rainbow, Life's States, Elementary's Age: the simplest)
   area: ['area', 'tab', (mode, w) => (NAV[w][0] !== 'Walk' ? 'empty' : NAV[w][1] === '2D' ? 'light' : 'plain')], path: ['showPath', 'tab', false],  // (Area: Empty, a walk's Light in 2D, Plain in 3D; on cells the cells alone)
   centered: ['centered', 'tab', true], autoRotate: ['autoRotate', 'tab', false], sky: ['sky', 'tab', 'sky'],  // (on a solid the walker in front; Dawn or Twilight after the theme)
   autoFit: ['autoFit', 'mode', true], upright: ['upright', 'mode', false], shape: ['shapeM', 'mode', (mode) => (mode.round ? 1 : 0)],  // (Flat 0 ── Inflated 1: a round surface inflated, a solid flat)
@@ -1992,9 +1992,9 @@ function renderTrailButton() {
   const sq = (k, c) => `<rect x="${(17 * k) / 3}" y="${17 - (17 * k) / 3}" width="7" height="7" rx="1" fill="${c}"/>`;
   trailButton ??= tile({ pic: `<svg viewBox="0 0 24 24" aria-hidden="true">${sq(0, LIFE_FADE[5]) + sq(1, LIFE_FADE[3]) + sq(2, LIFE_FADE[1])}${sq(3, LIFE_ALIVE)}</svg>`, text: 'Trail', id: 'lifeTrailButton', toggle: true,  // up the diagonal
     title: 'A dead cell fades in amber for a few generations (States and Age)', click: () => { $('lifeTrail').checked = !$('lifeTrail').checked; $('lifeTrail').dispatchEvent(new Event('change')); } });
-  setTile(trailButton, { on: $('lifeTrail').checked && trailApplies(), can: trailApplies(), byDefault: 'On by default in Solo\nOff by default in colours', greyed: 'with dying stages (Generations), on Reversible and with Activity' });  // (not for these looks: off)
+  setTile(trailButton, { on: $('lifeTrail').checked && trailApplies(), can: trailApplies(), byDefault: 'On by default in Solo\nOff by default in colours', greyed: 'with dying stages (Generations), on Rewind and with Activity' });  // (not for these looks: off)
 }
-// Blocks (Reversible, in Trail's place: no trail there), a tile turned on and off: the blocks of the set the next generation
+// Blocks (Rewind, in Trail's place: no trail there), a tile turned on and off: the blocks of the set the next generation
 // is worked out by, outlined over the cells (see drawBlocks); Ising's squares in turn are no blocks: greyed
 let showBlocks = defaultOf('blocks'), blocksButton = null;
 function renderBlocksButton() {
@@ -2021,7 +2021,7 @@ function renderColourButtons() {
     greyed: { gradient: L ? '' : 'on a spiral (its line no use)', visits: 'on a spiral (each cell visited once)', digit: 'on Elementary (a cell never changes once made: no activity)' }[o.value] ?? '',
     click: () => { sel.value = o.value; sel.dispatchEvent(new Event('change')); } }));
   if (MODES[$('mode').value].margolus) renderBlocksButton();
-  box.replaceChildren(...(buttons.length > 1 ? [tileGroup(buttons)] : buttons), ...(L ? [MODES[$('mode').value].margolus ? blocksButton : trailButton] : []));  // then Life's Trail, a switch (Reversible's Blocks)
+  box.replaceChildren(...(buttons.length > 1 ? [tileGroup(buttons)] : buttons), ...(L ? [MODES[$('mode').value].margolus ? blocksButton : trailButton] : []));  // then Life's Trail, a switch (Rewind's Blocks)
 }
 // Sound: Korobeiniki (the Russian song of Tetris, public domain) as 8-bit, while it plays (forth or back, every mode), on a clock of its own (Web
 // Audio, made here: a browser plays nothing before a click, off at first): its melody a square wave, its bass a triangle
@@ -2219,7 +2219,7 @@ function runStop() {
 // a count in four characters at most: 1239, 11k, 150k, 1.5M, 20M (the exact one in its tooltip)
 const compactCount = (n) => (n < 10000 ? String(n) : n < 999500 ? `${Math.round(n / 1000)}k` : `${+(n / 1e6).toFixed(n < 9.95e6 ? 1 : 0)}M`);
 // whether the length asked is used here (a walk's steps, a creature's, Elementary's and Space-time's generations); Life's
-// and Reversible's play on, the length kept for the next tab
+// and Rewind's play on, the length kept for the next tab
 const lengthUsed = () => !MODES[$('mode').value].life || gensShown();
 const stepperUnit = () => (NAV[$('mode').value]?.[0] === 'Walk' || !readsDigits() ? 'steps' : 'digits');
 function syncDigitsStepper() {
@@ -2228,7 +2228,7 @@ function syncDigitsStepper() {
   // the length asked, steps at most, the same words in every tab (its end, a loop, a death, a battle's: the step line, see endMark)
   if (document.activeElement !== $('digitsLabel')) $('digitsLabel').value = `≤${compactCount(asked)}`;  // (its unit, steps: the footprints beside it)
   $('digitsLabel').title = [`${fmt(asked)} ${size ? 'digits of the random prime p (100 to 2,000: it is walked whole)' : `${asked === 1 ? unit.slice(0, -1) : unit} at most`}`,
-    !size && !lengthUsed() && 'Not used here (Life and Reversible play on): kept for the next tab', !size && total !== null && `The number has ${fmt(total)} digits`, stop?.why,
+    !size && !lengthUsed() && 'Not used here (Life and Rewind play on): kept for the next tab', !size && total !== null && `The number has ${fmt(total)} digits`, stop?.why,
     `Type a number, from ${fmt(steps[0])} to ${fmt(size ? steps.at(-1) : targetMost())}, then Enter`].filter(Boolean).join('\n');
   $('digitsDown').disabled = asked <= steps[0];
   $('digitsUp').disabled = asked >= (size ? steps.at(-1) : targetMost());
@@ -3253,7 +3253,7 @@ const NAV = {
   antCube: ['Ant', 'Surfaces', 'Cube', 'Ant', 'cells'], antHexSphere: ['Ant', 'Surfaces', 'Sphere', 'Ant', 'cells'],
   antIcosa: ['Ant', 'Surfaces', 'Sphere', 'Ant', 'cells'],
   life2dKite: ['Life', '2D', 'Kites', 'Life', ''], life2dHat: ['Life', '2D', 'Hats', 'Life', ''], life2dPenrose: ['Life', '2D', 'Penrose', 'Life', ''], life2dPinwheel: ['Life', '2D', 'Pinwheel', 'Life', ''], life2dSpectre: ['Life', '2D', 'Spectre', 'Life', ''], life2dAmmann: ['Life', '2D', 'Ammann', 'Life', ''], life2dRhombs12: ['Life', '2D', 'Rhombs 12', 'Life', ''], life2dRhombs14: ['Life', '2D', 'Rhombs 14', 'Life', ''], life2dFlower: ['Life', '2D', 'Flower 6', 'Life', ''], life2dFlower5: ['Life', '2D', 'Flower 5', 'Life', ''], life2dFlower7: ['Life', '2D', 'Flower 7', 'Life', ''], life2dFlower3: ['Life', '2D', 'Flower 3', 'Life', ''], life2dFlower4: ['Life', '2D', 'Flower 4', 'Life', ''], life2dFlower8: ['Life', '2D', 'Flower 8', 'Life', ''], life2dFlower9: ['Life', '2D', 'Flower 9', 'Life', ''], life2dFlower10: ['Life', '2D', 'Flower 10', 'Life', ''], life2dFlower11: ['Life', '2D', 'Flower 11', 'Life', ''], life2dFlower12: ['Life', '2D', 'Flower 12', 'Life', ''], life2dRing7: ['Life', '2D', 'Ring 7', 'Life', ''], life2dRing8: ['Life', '2D', 'Ring 8', 'Life', ''], life2dRing9: ['Life', '2D', 'Ring 9', 'Life', ''], life2dRing10: ['Life', '2D', 'Ring 10', 'Life', ''], life2dRing11: ['Life', '2D', 'Ring 11', 'Life', ''], life2dRing12: ['Life', '2D', 'Ring 12', 'Life', ''],
-  life2d: ['Life', '2D', 'Squares', 'Life', ''], blocks2d: ['Reversible', '2D', 'Squares', 'Blocks', ''], blocks2dTri: ['Reversible', '2D', 'Triangles', 'Blocks', ''], blocks2dHex: ['Reversible', '2D', 'Hexagons', 'Blocks', ''], blocks2dCairo: ['Reversible', '2D', 'Cairo', 'Blocks', ''], blocks2dTetrakis: ['Reversible', '2D', 'Tetrakis', 'Blocks', ''], life2dTri: ['Life', '2D', 'Triangles', 'Life', ''], life2dHex: ['Life', '2D', 'Hexagons', 'Life', ''], life2dCairo: ['Life', '2D', 'Cairo', 'Life', ''],
+  life2d: ['Life', '2D', 'Squares', 'Life', ''], blocks2d: ['Rewind', '2D', 'Squares', 'Blocks', ''], blocks2dTri: ['Rewind', '2D', 'Triangles', 'Blocks', ''], blocks2dHex: ['Rewind', '2D', 'Hexagons', 'Blocks', ''], blocks2dCairo: ['Rewind', '2D', 'Cairo', 'Blocks', ''], blocks2dTetrakis: ['Rewind', '2D', 'Tetrakis', 'Blocks', ''], life2dTri: ['Life', '2D', 'Triangles', 'Life', ''], life2dHex: ['Life', '2D', 'Hexagons', 'Life', ''], life2dCairo: ['Life', '2D', 'Cairo', 'Life', ''],
   lifeCube: ['Life', 'Surfaces', 'Cube', 'Life', ''], lifePits: ['Life', 'Surfaces', 'Pits', 'Life', ''], lifeBumps: ['Life', 'Surfaces', 'Bumps', 'Life', ''], lifeFrame: ['Life', 'Surfaces', 'Frame', 'Life', ''], lifeMenger: ['Life', 'Surfaces', 'Sponge', 'Life', ''], lifeTorus: ['Life', 'Surfaces', 'Torus', 'Life', ''],
   lifeTorusHex: ['Life', 'Surfaces', 'Torus', 'Life', ''], lifeTorusCairo: ['Life', 'Surfaces', 'Torus', 'Life', ''], lifeTorusTri: ['Life', 'Surfaces', 'Torus', 'Life', ''],
   torusCairoWalk: ['Walk', 'Surfaces', 'Torus', 'Turtle', 'cells'],
@@ -3313,7 +3313,7 @@ for (const [k, [n, F]] of Object.entries(conedOf((k, n, F) => [k, [n, F]]))) {  
 for (const F of Object.values(CONED)) if (F.rules) for (const r of rulesOf('life')) {
   if (r.tiling.startsWith(F.rules) && !/[a-z]/.test(r.rule)) r.tiling = Object.values(F.marks).join('') + r.tiling;
 }
-// Reversible on the tori: Life's, in blocks as the plane's (its blocks' grid, so many cells a block, see meshBlocks), 3 squares
+// Rewind on the tori: Life's, in blocks as the plane's (its blocks' grid, so many cells a block, see meshBlocks), 3 squares
 // round it (see ringColours), its start on the middle one (see startColours)
 const REVERSIBLE_SHEETS = [['blocksTorus', 'lifeTorus', 'square', 4], ['blocksTorusHex', 'lifeTorusHex', 'hex', 3], ['blocksTorusTri', 'lifeTorusTri', 'tri', 6], ['blocksTorusCairo', 'lifeTorusCairo', 'cairo', 4], ['blocksTorusTetrakis', 'lifeTorusTetrakis', 'tetrakis', 4],
   ['blocksMobius', 'lifeMobius', 'square', 4], ['blocksMobiusTri', 'lifeMobiusTri', 'tri', 6], ['blocksMobiusTetrakis', 'lifeMobiusTetrakis', 'tetrakis', 4],
@@ -3323,7 +3323,7 @@ const BLOCK_ALONG = { mobius: 2 };  // (a Möbius strip of squares: its length i
 for (const [w, life, blocks, k] of REVERSIBLE_SHEETS) {
   MODES[w] = { ...MODES[life], margolus: true, blocks, where: `${MODES[life].where.split(' (')[0]} in blocks of ${k} round a corner, as the plane's, 3 squares round it, its start on the middle one` };
   MODE_ICONS[w] = MODE_ICONS[life];
-  NAV[w] = ['Reversible', 'Surfaces', NAV[life][2], 'Blocks', ''];
+  NAV[w] = ['Rewind', 'Surfaces', NAV[life][2], 'Blocks', ''];
 }
 // Replicators: Langton's self-reproducing loops on Life's grid of squares, by a table of transitions (see parseLoops)
 for (const [w, life] of [['loops2d', 'life2d'], ['loopsTorus', 'lifeTorus'], ['loopsCube', 'lifeCube'], ['loopsPits', 'lifePits'], ['loopsBumps', 'lifeBumps'], ['loopsFrame', 'lifeFrame']]) {  // (squares: 4 sides each, the same way round on each: no Möbius strip nor Klein bottle; nor Menger's sponge, its flat pieces narrower than a loop)
@@ -3358,7 +3358,7 @@ MODE_ICONS.lifeFrame = 'frame';
   for (const [w, n] of sorted) NAV[w] = n;
 }
 const NAV_KINDS = [['Life', 'glider', 'Cells born and dying by their neighbours, generation after generation'],
-  ['Reversible', 'reversible', 'Rules on blocks of cells that play backwards as well: nothing is ever lost'],
+  ['Rewind', 'reversible', 'Rules on blocks of cells that play backwards as well: nothing is ever lost'],
   ['Replicators', 'replicator', "Langton's loops: a pattern that makes copies of itself, by a table of transitions"],
   ['Elementary', 'elementary', "Wolfram's 256 rules: a row of cells, each generation the next row down, each cell by the three above it"],
   ['Ant', 'ant', "A creature on the cells, turned by each cell's colour, by its rule or by the digits"],
@@ -3398,7 +3398,7 @@ const shapeLabel = (shape) => SHAPE_SHORT[shape] ?? shape;
 // a mode in words, a shape's tooltip (the mode its click goes to): an automaton's grid (where), else a walk's or an ant's label
 const modeWhere = (w) => (MODES[w].where ?? modeOptionOf(w).text).replace(/^./, (c) => c.toUpperCase());  // a shape's name on its button, wherever (the 2D grids, a surface's tilings)
 // the section's title
-const WALK_HEADINGS = { Walk: 'Walk', Ant: 'Grid', Life: 'Grid', Replicators: 'Grid', Elementary: 'Grid', Reversible: 'Grid' };
+const WALK_HEADINGS = { Walk: 'Walk', Ant: 'Grid', Life: 'Grid', Replicators: 'Grid', Elementary: 'Grid', Rewind: 'Grid' };
 // the values at a level under the choices above it (pre), in the menu's order
 const navValues = (level, pre) => [...new Set(Object.values(NAV).filter((n) => pre.every((v, i) => n[i] === v)).map((n) => n[level]))];
 // A space's shapes in the order shown, in their groups ([title, shapes] each, those it has): in 2D, many of them, grouped by
@@ -10448,7 +10448,7 @@ function renderPlaneRow() {
   $('planeOutline').hidden = !!APERIODIC[kind];  // (a grid that never repeats: always walls, nothing to choose)
   for (const [shape, torus] of OUTLINES) setTile($(`outline-${shape}-${torus ? 'torus' : 'walled'}`), { on: outlineOf(kind) === shape && planeTorus(kind) === torus, can: outlineOf(kind, shape, torus) === shape,
     greyed: shape === 'hex' ? 'but on a six-fold grid (triangles, hexagons, kites…)' : 'but on a slanted grid (its cells stored as a rhombus: triangles, hexagons, parallelograms…)' });
-  setTile(spaceTimeTile, { on: spaceTimeOn(), can: spaceTimeApplies(), greyed: 'but on squares (not Reversible)' });
+  setTile(spaceTimeTile, { on: spaceTimeOn(), can: spaceTimeApplies(), greyed: 'but on squares (not Rewind)' });
   renderSymmetry();
   $('startDraw').hidden = plane.start !== 'draw';
   $('startText').hidden = plane.start !== 'text';
@@ -10846,7 +10846,7 @@ function polysIcon(polys) {  // (cells' corners and states; none: no picture, ne
 }
 // a surface's tile colour mixed with white by the theme's TILE_LIFT (lighter on a light page; the path keeps the plain rainbow)
 const liftTile = (c) => { if (!TILE_LIFT) return c; const v = rgbOf(c).map((x) => Math.round(x + (255 - x) * TILE_LIFT)); return `rgb(${v})`; };
-// Life's look on any grid (Life, Reversible; the plane, a surface), its colours by the graphics card in tables (see
+// Life's look on any grid (Life, Rewind; the plane, a surface), its colours by the graphics card in tables (see
 // gpuLook): States (each colour, its dying stages, its trail after death), Age or Activity; lifted: a surface's rainbow,
 // lighter (liftTile). Made again only when what it is made of changes (the look, the theme's colours, the rule's colours and
 // states, Trail, the motif shown; Activity's, its most changes), kept on L: not each frame a view turns (272 KB, before v0.4.1)
@@ -10886,7 +10886,7 @@ function drawLifePlane() {
   drawHover();
   drawGhost();
 }
-// Reversible's blocks (Blocks on): those of the set the generation shown goes on by, its next (see GPU_LIFE's blockRule), each outlined, the
+// Rewind's blocks (Blocks on): those of the set the generation shown goes on by, its next (see GPU_LIFE's blockRule), each outlined, the
 // sides of its cells not shared by two of them; masked by the grid's outline: its sides on it never drawn (a block cut by the
 // torus's edges: its parts' sides between them only)
 let outlineMemo = null;
@@ -11126,7 +11126,7 @@ function coloursFit(k, f = pickedFigure()) {  // f: the figure, its mode and its
 }
 // a new figure: as many colours as last picked, else the nearest count of colours it places (colours still, never Solo;
 // fewer on a tie); Solo picked, Solo (the pick kept for the next)
-function fitColours() {  // (blocks: one colour, Reversible's)
+function fitColours() {  // (blocks: one colour, Rewind's)
   const f = pickedFigure();
   lifeColours = coloursPicked === 1 || f.mode.margolus || f.mode.elementary ? 1 : COLOUR_STEPS.filter((k) => k > 1 && coloursFit(k, f)).reduce((a, k) => (Math.abs(k - coloursPicked) < Math.abs(a - coloursPicked) ? k : a), Infinity);
   if (lifeColours === Infinity) lifeColours = 1;  // (none but Solo: Klein Dual 16 at 4 and 24)

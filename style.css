@@ -474,7 +474,7 @@ button.wide.active, .head-btn.active { border-color: var(--accent); color: var(-
 .stage-bar:hover .bar-title .rank-titles { grid-template-columns: var(--rank-columns); }
 .stage-bar:hover .bar-title .rank-titles span { display: block; }
 @media (hover: none) { .stage-bar:focus-within .bar-title .rank-titles { grid-template-columns: var(--rank-columns); } .stage-bar:focus-within .bar-title .rank-titles span { display: block; } }
-.rule-chip { display: flex; align-items: center; gap: 6px; padding: 4px 7px 4px 4px; border: 1px solid var(--border); border-radius: 9px; background: var(--bg); font-size: 12px; min-width: 0; }
+.rule-chip { cursor: pointer; display: flex; align-items: center; gap: 6px; padding: 4px 7px 4px 4px; border: 1px solid var(--border); border-radius: 9px; background: var(--bg); font-size: 12px; min-width: 0; }
 .rule-chip b { flex: none; display: grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; font-size: 11px; color: #0d1117; }
 .rule-chip span { display: flex; flex-direction: column; line-height: 1.15; min-width: 0; white-space: nowrap; }
 .rule-chip.next, .rule-chip.read { border: 2px solid color-mix(in srgb, var(--c) 75%, var(--text)); padding: 3px 6px 3px 3px; }  /* the next step's chip, step by step: its colour, a little toward the text so that a pale one shows */

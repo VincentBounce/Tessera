@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.492';
+const VERSION = '0.4.493';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -1717,7 +1717,7 @@ function describe(base, available) {
         const c = document.createElement('span');
         c.className = 'rule-chip';
         c.innerHTML = `<b style="background:${(mode.antOf ? antChipColour : digitColour)(Number(d))}">${d}</b><span>${what.trim()}<small id="count${d}">0</small></span>`;
-        c.title = `${d}: ${what.trim()}`;
+        c.title = `${d}: ${what.trim()}. A click: how it works`;
         return c;
       }));
     }
@@ -18247,15 +18247,15 @@ $('perspective').addEventListener('change', () => {
   if (walk.sphere) bounds = surfaceBounds();  // its frame, larger in perspective
   if ($('autoFit').checked) fitWhole();
 });
-// How it works on a walk's rules or a creature's: as Life's (one on each list of rules, on its first card)
+// How it works on a walk's rules or a creature's: as Life's (one on each list of rules, on its first card); the digits' chips too
 document.addEventListener('click', (e) => {
-  if (!e.target.closest?.('.how-it-works') || e.target.closest('.how-it-works') === $('watchRule')) return;
+  if (!e.target.closest?.('.how-it-works, .rule-chip') || e.target.closest('.how-it-works') === $('watchRule')) return;
   if (MODES[$('mode').value].life) $('watchRule').click();
   else walkTutorialToggle();  // (a walk's)
 });
 // how a rule works closes on a click anywhere but on it, the rules (your own's too), the populations and the grids (it follows them: renderRuleSection)
 document.addEventListener('click', (e) => {
-  if (!$('ruleTuto').hidden && !e.composedPath().some((n) => n.classList?.contains('how-it-works') || ['ruleTuto', 'ruleCards', 'watchRule', 'colourBlocks', 'statesRow', 'ruleBirth', 'ruleSurvive', 'lifeCustomRow', 'navSpace', 'navShapes', 'torusTiles', 'planeRow', 'sizeRow', 'navRules', 'walkOn', 'antCustomRow', 'antStartSection', 'backBtn', 'appTab'].includes(n.id))) ruleTutorial(null);
+  if (!$('ruleTuto').hidden && !e.composedPath().some((n) => n.classList?.contains('how-it-works') || ['ruleTuto', 'ruleCards', 'ruleChips', 'watchRule', 'colourBlocks', 'statesRow', 'ruleBirth', 'ruleSurvive', 'lifeCustomRow', 'navSpace', 'navShapes', 'torusTiles', 'planeRow', 'sizeRow', 'navRules', 'walkOn', 'antCustomRow', 'antStartSection', 'backBtn', 'appTab'].includes(n.id))) ruleTutorial(null);
 });
 $('lifeRule').addEventListener('change', () => {
   const mode = MODES[$('mode').value];

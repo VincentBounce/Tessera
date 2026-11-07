@@ -104,6 +104,9 @@ While the checks run unattended (a night, a meal), also audit what they cannot s
   none is mixed with the walk shown (`walk.geo`, `walk.life`, `walk.plane`…): what describes the walk shown reads
   `walk.mode`, what sets up the next one reads the tab, a figure's colours read the mode of their own mesh; then the fuzz and
   the cold fuzz, switching tabs fast (before the walk is built), no error, nothing of the old walk left on screen.
+- **Every night, the tooltips' redundancies**: each tooltip and card read as it shows (the `#tip` box after a mouseover):
+  nothing said twice, its bold name never again in its words, not even spelt otherwise (a loop's Golly table
+  `Langtons-Loops` under its name Langton's loops, v0.4.382), nor its default or greyed state in the text.
 - **Every night, the names**: functions and variables read through for names unclear, misleading, too short or
   inconsistent (one concept, one name, see Names), each renamed explicitly at its source, everywhere, in its own commit.
 

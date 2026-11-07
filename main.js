@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.399';
+const VERSION = '0.4.400';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -15343,9 +15343,9 @@ function towardViewer(x, y, z) {
 // with its shadows; a tile is darkened by SHADE as it turns away from it, with a white glint where it faces half-way
 // between the light and the viewer (glint(), as the shaders' light). Light unchecked: lit from the viewer, no glint, no shadows
 const LIGHT_GLINT = 0.22, LIGHT_SHINE = 24, SHADOW_SIZE = 2048;  // SHADOW_SIZE: the shadows' texture (see gpuShadows)
-const lamp = () => $('light').checked, glint = () => (lamp() ? LIGHT_GLINT : 0);
-function lightDir() {
-  if (!lamp()) return [...camera.v];
+const lightOn = () => $('light').checked, glint = () => (lightOn() ? LIGHT_GLINT : 0);
+function lightDirection() {
+  if (!lightOn()) return [...camera.v];
   const l = [0, 1, 2].map((d) => -0.45 * camera.r[d] + 0.55 * camera.u[d] + 0.7 * camera.v[d]), m = Math.hypot(...l);
   return l.map((x) => x / m);
 }
@@ -16371,7 +16371,7 @@ fn planeAt(p: vec2f) -> vec4f { return flatAt(u.view.yz + vec2f(u.turnC * p.x - 
 // a draw's numbers into slot k of the frame's: the camera, the light and its view for the shadows (across it, over the ball that holds what is drawn)
 function gpuView(words, k, depth, more = {}) {
   const f = new Float32Array(words, 512 * k, 128), i = new Int32Array(words, 512 * k, 128), P = walk.persp, cc = P ? orthoPoint(...P.c) : [0, 0];
-  const L = lightDir(), x = camera.r.map((r, d) => r - L[d] * (camera.r[0] * L[0] + camera.r[1] * L[1] + camera.r[2] * L[2])), m = Math.hypot(...x);
+  const L = lightDirection(), x = camera.r.map((r, d) => r - L[d] * (camera.r[0] * L[0] + camera.r[1] * L[1] + camera.r[2] * L[2])), m = Math.hypot(...x);
   const lx = x.map((v) => v / m), ly = [L[1] * lx[2] - L[2] * lx[1], L[2] * lx[0] - L[0] * lx[2], L[0] * lx[1] - L[1] * lx[0]];
   f.set(camera.r, 0); f[3] = depth; f.set(camera.u, 4); f[7] = SHADE; f.set(camera.v, 8); f[11] = glint(); f.set(L, 12); f[15] = depth / 4; f.set(halfway(L), 16);
   f.set(lx, 20); f.set(ly, 24); f.set([...(P ? P.c : [0, 0, 0]), P ? P.D : 0], 32); f.set([view.scale, view.ox, view.oy], 40); f.set(cc, 44); f.set([cw, ch], 46);
@@ -16480,7 +16480,7 @@ function gpuShadows(enc, slot, draw, key) {
   const p = enc.beginRenderPass({ colorAttachments: [],
     depthStencilAttachment: { view: D.shadow.depth.createView(), depthLoadOp: 'clear', depthClearValue: 1, depthStoreOp: 'store' } });
   p.setBindGroup(0, gpuGroup(), [slot]);
-  if (lamp()) draw(p);
+  if (lightOn()) draw(p);
   p.end();
 }
 // a shadows' pipeline: its vertex entry, its buffers (a lit face does not shadow itself: depth bias, as polygonOffset(2, 4))
@@ -16572,7 +16572,7 @@ function gpuSurface(paint, path) {
   gpuShadows(enc, shadowSlot, (p) => {
     p.setPipeline(gpuDepthPipe('depthTileV', [vertexLayout(12, [vertexAttribute(0, 'float32x3')])]));
     p.setVertexBuffer(0, D.pos); p.setIndexBuffer(D.fan, 'uint32'); p.drawIndexed(D.fanCount);
-  }, `${D.geoGen}|${lightDir()}|${camera.r}|${depth}|${lamp()}|${cutOn() && cutAxis}`);
+  }, `${D.geoGen}|${lightDirection()}|${camera.r}|${depth}|${lightOn()}|${cutOn() && cutAxis}`);
   // the path's segments, made once a walk (a battle along the grid: all its walkers' steps, see pathSegments); drawn, the
   // path up to the step shown, or each living walker's body: its steps from its tail to its head, a range of them
   const lines = !!walk.battle && !!walk.vert, P = lines ? walk.battle.player : null;

@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.411';
+const VERSION = '0.4.412';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -2602,7 +2602,7 @@ const appLogo = (gold = 'currentColor') => `<svg xmlns="http://www.w3.org/2000/s
 // Its picture doubled with bricks: walled (the cells past its edges always dead); else a torus (its edges glued: what leaves on one side comes back
 // on the other)
 const OUTLINES = [['square', true, 'Square', 'Square: a rectangle, a torus'], ['square', false, 'Walls', 'Square walled: a rectangle, its cells past its edges always dead'],
-                  ['hex', false, 'Hex', 'Hex walled: a hexagon round its middle, its cells past its edges always dead'],
+                  ['hex', false, 'Hex', 'A hexagon round its middle, walled: its cells past its edges always dead'],
                   ['rhombus', true, 'Rhombus', 'Rhombus: the grid as it is stored, a rhombus of cells, a torus'], ['rhombus', false, 'R. walls', 'Rhombus walled: the grid as it is stored, a rhombus of cells, its cells past its edges always dead']];
 $('planeEdges').append(tileGroup(OUTLINES.map(([shape, torus, text, title]) => tile({ pic: icon({ square: 'square', hex: 'hexagon', rhombus: 'rhombus' }[shape] + (torus ? '' : 'Walled')), text, id: `outline-${shape}-${torus ? 'torus' : 'walled'}`, byDefault: text === 'Square' ? 'yes' : '', title,
   click: () => { plane.shape = shape; plane.torus = torus; if (torus) spaceTime = false; compute(); } }))));  // (Stacks off on a torus)
@@ -2955,7 +2955,7 @@ function syncNumberMenu() {
 // what size) sit right under the Primes group (every group made, those of other tabs hidden: the menus kept in the page)
 const NUMBER_TABS = [['Formulas', ['Fractions', '𝑓'], 'Fractions, their digits coming back round a loop (the rosettes found on the turtles), and numbers made by a formula (√2, π², ln 2, ζ(3)…), to edit in Formula'],
   ['Constants', ['Constants', 'Sequences'], 'Famous constants (π, e, φ…) and sequences laid as digits (Champernowne, random, prime gaps)'],
-  ['Primes', ['Primes'], 'Primes as whole numbers (Mersenne, primorial, random) and the prime constant']];  // (name, its groups, its tooltip)
+  ['Primes', ['Primes'], 'Whole numbers (Mersenne, primorial, drawn at random) and the prime constant']];  // (name, its groups, its tooltip)
 let numberTab = null, numberShown = null;  // (the tab picked; the number shown when it was)
 // the Number's tab at first, by its value: its card's (see presetOf: a formula found among the cards), else Formulas (a
 // formula of its own); a tab picked, or a number picked in one, kept while that number is shown
@@ -17738,7 +17738,7 @@ for (const [id, k] of [['planeDown', -1], ['planeUp', 1]]) {
 
 // Life's starts, one choice: a tab group of tiles, its pictures over its names (Hunt's and Random's, see renderPlaneRow)
 const START_TABS = [['cell', 'zone1', 'One cell', 'One live cell in the middle of the first row'], ['two', 'twoCells', 'Two cells', 'Two live cells on the first row, half its width apart: their triangles meet'],
-  ['half', 'halfRow', 'Half', 'The left half of the first row alive, the right half dead: one frontier'], ['random', 'search', 'Hunt', 'Random cells to start, or a hunt among them (its goal below); random zones in a reversible rule'],
+  ['half', 'halfRow', 'Half', 'The left half of the first row alive, the right half dead: one frontier'], ['random', 'search', 'Hunt', 'A soup to start, its cells drawn by chance, or a hunt among soups (its goal below); in a reversible rule, zones drawn by chance'],
   ['text', 'letter', 'Text', 'Words typed, laid as cells in the font picked'], ['digits', 'barcode', 'Digits', "The number's digits laid as cells, one digit a cell, as many as the grid has cells: the same number, the same start.\nIn base K + 1, live cells only: one colour, base 2, 0 dead, 1 alive; in K colours, digit k alive in colour k (Mixed: base 2, each live cell a colour at random, as the Formula hunt's).\nIn turn: a rectangle row by row, a grid in a hexagon or a circle from its middle out, wound round it.\nThe number: Number's (a constant, a fraction, a formula)"],
   ['draw', 'pencil', 'Draw', 'Cells drawn by hand, or patterns laid with the brushes, at gen 0']];  // (start, picture, name, tooltip; One cell, Two cells, Half then Digits: Elementary's, as Ant's rule then Digits, see elementaryRows)
 $('lifeStartTabs').append(tileGroup(START_TABS.map(([start, pic, text, title]) => { const b = tile({ pic: icon(pic), text, title }); b.dataset.start = start; return b; }), true));

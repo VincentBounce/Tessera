@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.513';
+const VERSION = '0.4.514';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -1272,7 +1272,7 @@ const RULES = [
   // the walks by a rule (a command per digit), per network, the first it takes its rule at first
   ...[['LNR', 'Turtle', 'turtle'], ['LR', 'Turtle', 'turtle'], ['N r', 'Pivot', 'pivot'], ['N a', 'Parity', 'walk2d'], ['nesw', 'Cardinal', 'compass'], ['n ne e se s sw w nw', 'King', 'king']].map(([rule, name, pic]) => ({ kind: 'walk', tiling: 'square', rule, name, pic })),
   ...[['L2 L1 N R1 R2', 'Turtle', 'turtle'], ['L2 L1 R1 R2', 'Turtle', 'turtle'], ['L2 L1 U R1 R2', 'Turtle', 'turtle'], ['L1 N R1', 'Turtle', 'turtle'], ['L1 R1', 'Turtle', 'turtle'], ['N r', 'Pivot', 'pivot'], ['N a', 'Parity', 'walk2d'], ['n ne se s sw nw', 'Fixed', 'compass']].map(([rule, name, pic]) => ({ kind: 'walk', tiling: 'hex', rule, name, pic })),
-  ...[['LR', 'Turtle', 'turtle'], ['| \\ /', 'Fixed', 'compass']].map(([rule, name, pic]) => ({ kind: 'walk', tiling: 'tri', rule, name, pic })),
+  ...[['LR', 'Turtle', 'turtle'], ['LUR', 'Turtle', 'turtle'], ['| \\ /', 'Fixed', 'compass']].map(([rule, name, pic]) => ({ kind: 'walk', tiling: 'tri', rule, name, pic })),
   ...[['L2 L1 R1 R2', 'Turtle', 'turtle'], ['L1 R1', 'Turtle', 'turtle'], ['L2 R2', 'Turtle', 'turtle']].map(([rule, name, pic]) => ({ kind: 'walk', tiling: 'cairo', rule, name, pic })),
   ...[['L ^ N v R', 'Turtle', 'turtle'], ['L ^ v R', 'Turtle', 'turtle'], ['N r p', 'Pivot', 'pivot'], ['N a', 'Parity', 'walk2d'], ['neuswd', 'Fixed', 'compass']].map(([rule, name, pic]) => ({ kind: 'walk', tiling: 'cube', rule, name, pic })),
   ...[['LNR', 'Polymer', 'turtle'], ['LR', 'Polymer', 'turtle']].map(([rule, name, pic]) => ({ kind: 'walk', tiling: 'diamond', rule, name, pic })),
@@ -3743,7 +3743,7 @@ function creatureRules(w) {
 }
 // The ants' and turmites' rules (see RULES) in neutral turns (L R, N straight on, U back, L2 R2 sharp), each grid's in its own
 // commands (L1 R1 on hexagons and pentagons); one a grid cannot take greyed in its place, the command it lacks in its tooltip
-const NEUTRAL_COMMANDS = { square: { L: 'L', R: 'R', N: 'N', U: 'U', B: 'B' }, tri: { L: 'L', R: 'R' }, hex: { L: 'L1', R: 'R1', N: 'N', U: 'U', L2: 'L2', R2: 'R2', B: 'B' }, cairo: { L: 'L1', R: 'R1', L2: 'L2', R2: 'R2' } };
+const NEUTRAL_COMMANDS = { square: { L: 'L', R: 'R', N: 'N', U: 'U', B: 'B' }, tri: { L: 'L', R: 'R', U: 'U' }, hex: { L: 'L1', R: 'R1', N: 'N', U: 'U', L2: 'L2', R2: 'R2', B: 'B' }, cairo: { L: 'L1', R: 'R1', L2: 'L2', R2: 'R2' } };
 // a rule of the list in ant w's commands: { rule, why } (why: the first command it lacks, its rule then the list's as written)
 function ruleIn(w, neutral, turmite) {
   const commands = NEUTRAL_COMMANDS[MODES[ANTS[w].walk].net], lack = (t) => `Its ${t} (${COMMANDS[t]?.short ?? t}) is not on this grid.`;
@@ -4888,7 +4888,7 @@ const hexAt = (a, b) => [key(a, b), b * H, -a - b / 2, 0];  // a hexagon (a, b):
  * through edge e, the next edge in that order is on the right, the other on the left. */
 const TRI_CCW = { up: [2, 1, 0], down: [0, 2, 1] };
 
-// kind: a rule's acts (see commandStepper: a turn, 0 exit left, 1 right; a way, the edge to cross) or 'spiral' (exit left
+// kind: a rule's acts (see commandStepper: a turn, 0 exit left, 1 right, 2 back by the entry; a way, the edge to cross) or 'spiral' (exit left
 // whenever that triangle is unvisited, else right; the digit is ignored)
 function triStepper(kind) {
   let c = 0, r = 0, entry = 0; // start: ▲ triangle at (0, 0), entered from below
@@ -4897,7 +4897,7 @@ function triStepper(kind) {
   return (g) => {
     const up = ((c + r) & 1) === 0;
     const ccw = up ? TRI_CCW.up : TRI_CCW.down, i = ccw.indexOf(entry), left = ccw[(i + 2) % 3], right = ccw[(i + 1) % 3];
-    const edge = kind === 'spiral' ? (visited.has(key(...across(left, up))) ? right : left) : kind[g][0] === 'way' ? kind[g][1] : kind[g][1] ? right : left;
+    const edge = kind === 'spiral' ? (visited.has(key(...across(left, up))) ? right : left) : kind[g][0] === 'way' ? kind[g][1] : [left, right, entry][kind[g][1]];
     [c, r] = across(edge, up);
     entry = edge;
     visited.add(key(c, r));
@@ -4919,7 +4919,7 @@ const WALK_NETS = {
             arrows: { L: '←', N: '↑', R: '→', U: '↓', n: '↑', ne: '↗', e: '→', se: '↘', s: '↓', sw: '↙', w: '←', nw: '↖' } },
   hex: { dirs: HEX_DIRS, notch: 1, at: hexAt, straight: 'N', turns: { L2: -2, L1: -1, N: 0, R1: 1, R2: 2, U: 3 }, ways: { n: 0, ne: 1, se: 2, s: 3, sw: 4, nw: 5 },
          arrows: { L2: '↙', L1: '↖', N: '↑', R1: '↗', R2: '↘', U: '↓', n: '↑', ne: '↗', se: '↘', s: '↓', sw: '↙', nw: '↖' } },
-  tri: { straight: 'L', turns: { L: 0, R: 1 }, ways: { '|': 0, '\\': 1, '/': 2 }, arrows: { L: '↖', R: '↗' } },  // (three ways out: no straight on, no turn on the spot)
+  tri: { straight: 'L', turns: { L: 0, R: 1, U: 2 }, ways: { '|': 0, '\\': 1, '/': 2 }, arrows: { L: '↖', R: '↗', U: '↓' } },  // (three ways out: no straight on, no turn on the spot)
   cairo: { straight: 'L1', turns: { L2: 0, L1: 1, R1: 2, R2: 3 }, arrows: { L2: '↙', L1: '↖', R1: '↗', R2: '↘' } },
   cube: { notch: 1, straight: 'N', turns: { L: 0, '^': 1, N: 2, v: 3, R: 4, U: 5 }, ways: { n: 0, e: 1, u: 2, s: 3, w: 4, d: 5 }, spots: { p: ['pitch'] },  // (see cubeStepper)
           arrows: { L: '←', '^': '⊙', N: '↑', v: '⊗', R: '→', U: '↓', n: '↑', e: '→', u: '⊙', s: '↓', w: '←', d: '⊗', p: '⊙' } },
@@ -4998,7 +4998,7 @@ const surfaceCommands = (net) => Object.keys(WALK_NETS[net].turns).filter((t) =>
 const SURFACE_NOTCHES = { square: 4, hex: 6 };  // (a step straight on: squares' and hexagons' cells, squares' and triangles' grid)
 function surfaceActs(mode, commands = mode.net && ruleCommands(walkRuleOf(mode))) {
   if (!commands) return (mode.turns ?? []).map((t) => ['turn', t]);
-  return commands.map((t) => (t === 'l' || t === 'r' ? ['pivot', t === 'r' ? 1 : -1] : t === 'a' ? ['parity'] : t === 'B' ? ['back'] : mode.grid ? ['turn', mode.turns[surfaceCommands(mode.net).indexOf(t)]]
+  return commands.map((t) => (t === 'l' || t === 'r' ? ['pivot', t === 'r' ? 1 : -1] : t === 'a' ? ['parity'] : t === 'B' ? ['back'] : mode.grid ? ['turn', t === 'U' ? 180 : mode.turns[surfaceCommands(mode.net).indexOf(t)]]
     : cellTurn(mode.net, t) === 'straight' ? ['straight'] : ['turn', cellTurn(mode.net, t)]));  // (on cells: its command's edge, see cellTurn; straight, half way round)
 }
 // A command's turn on cells, edges on from the one come in by (see surfaceStep), by construction from its network's commands left
@@ -5015,7 +5015,7 @@ const cellSides = (kind) => (cellSidesMemo[kind] ??= (() => {
 })());
 // why a command cannot go on a walk, or '': not its network's; a diagonal along the grid; on a surface, no fixed way (no north)
 const walkCommandWhy = (m, t) => (m.lattice === 'sphere' && !m.grid ? cellCommandWhy(m, t)
-  : m.lattice === 'sphere' ? ((surfaceCommands(m.net).includes(t) && m.turns[surfaceCommands(m.net).indexOf(t)] != null) || (SURFACE_NOTCHES[m.net] && ['l', 'r', 'a'].includes(t)) ? ''
+  : m.lattice === 'sphere' ? ((surfaceCommands(m.net).includes(t) && m.turns[surfaceCommands(m.net).indexOf(t)] != null) || t === 'U' || (SURFACE_NOTCHES[m.net] && ['l', 'r', 'a'].includes(t)) ? ''
     : surfaceCommands(m.net).includes(t) ? `${t} is not on this surface (its corners).` : `${t} is not on a surface: there is no north there.`)
   : !commandAct(m.net, t) ? `${t} is not a command here.` : m.lines && WALK_NETS[m.net].diagonals?.includes(t) ? `${t} is a diagonal step: along the grid, it follows no line.` : '');
 // a command on a surface's cells: its edge on every cell (see cellTurn, cellSides): straight on, cells of an even count of sides;
@@ -7343,6 +7343,7 @@ function nextCornerCarried(g, G, v, from, frame, angle) {
     const u = [a[0] - o[0], a[1] - o[1]], w = [b[0] - o[0], b[1] - o[1]];
     return [g.poly[k * t + ((q + 1) % k)], g.poly[k * t + ((q + k - 1) % k)], Math.acos(Math.max(-1, Math.min(1, (u[0] * w[0] + u[1] * w[1]) / Math.hypot(...u) / Math.hypot(...w))))];
   };
+  if (Math.abs(Math.abs(angle) - Math.PI) < 1e-9) return [from, acrossEdge(g, G, frame, v, from)];  // (a half turn: back, its left the other side)
   const at = [];
   let e = from, t = frame, phi = 0;
   for (let guard = 0; guard < 16; guard++) {  // (from the edge it came by, through its left, back to it)

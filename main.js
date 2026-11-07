@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.522';
+const VERSION = '0.4.523';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -1612,13 +1612,13 @@ const view = { scale: 20, ox: 0, oy: 0 };
 // The 3D view: the screen's right (r), up (u) and towards-the-viewer (v) directions in world
 // coordinates, the rows of a rotation matrix, so the view turns freely (see rotateView). The
 // default looks from a heading of −0.6 rad, 0.5 rad above the horizon. A turn replaces the arrays,
-// never changes them, so Object.assign(camera, CAM0) is a reset.
-function camFrom(yaw, pitch) {
+// never changes them, so Object.assign(camera, CAMERA_START) is a reset.
+function cameraFrom(yaw, pitch) {
   const cy = Math.cos(yaw), sy = Math.sin(yaw), cp = Math.cos(pitch), sp = Math.sin(pitch);
   return { r: [cy, -sy, 0], u: [sy * sp, cy * sp, cp], v: [-sy * cp, -cy * cp, sp] };
 }
-const CAM0 = camFrom(-0.6, 0.5);
-const camera = { ...CAM0 };
+const CAMERA_START = cameraFrom(-0.6, 0.5);
+const camera = { ...CAMERA_START };
 let bounds3 = null;                        // 3D bounding box of points 0..stepShown
 
 const stage = $('stage');
@@ -14580,8 +14580,8 @@ function laidChoices(centred, any = false) {  // any: the first one of each colo
 
 /* ---- 9.2 Patches -------------------------------------------------------------------------- */
 // a solid's cell that faces the default camera most (its face in front: one colour's, see patternPlace)
-function frontCell() {  // (once a grid: the starting view's, CAM0, never changes)
-  const g = walk.geo, dir = CAM0.v;
+function frontCell() {  // (once a grid: the starting view's, CAMERA_START, never changes)
+  const g = walk.geo, dir = CAMERA_START.v;
   return (g.frontCell ??= (() => {
     const wall = new Set(g.walls);
     let best = 0, bestDot = -Infinity;
@@ -14616,7 +14616,7 @@ function mobiusMiddle(g) {
     for (let q = 0; q < g.front; q++) { const [a, b] = sheetMiddle(g, q), d = Math.hypot(a - g.L / 2, b - g.W / 2); if (d < best) { best = d; t = q; } }
     return t;
   })());
-  return dot3(Array.from(g.nrm.subarray(3 * t, 3 * t + 3)), CAM0.v) * shapeSign(g) >= 0 ? g.L / 2 : (3 * g.L) / 2;
+  return dot3(Array.from(g.nrm.subarray(3 * t, 3 * t + 3)), CAMERA_START.v) * shapeSign(g) >= 0 ? g.L / 2 : (3 * g.L) / 2;
 }
 // Colour i's cells at its part's very middle (see patternFrame: its centre), all as near (one, or those round a corner: an
 // even side's 4 squares), open ones (no wall's), on its face; one colour's, the grid's (on a solid, its face in front; a
@@ -14856,7 +14856,7 @@ function applySetup(s) {
   // changes (as picking a walk does); within a tab, what was chosen stays
   if (modeTabOf() !== displayTab) displayDefaults();
   $('perspective').checked = defaultOf('perspective', s.w);
-  Object.assign(camera, CAM0);
+  Object.assign(camera, CAMERA_START);
   $('upright').checked = false;  // (the default view: free, on each surface)
   pendingChampion = s.ch || null;
   compute();  // a champion follows once the walk is built
@@ -18059,7 +18059,7 @@ function recentre() {
     spinFrom = spinRamp = 0;
     $('centered').checked = true;
     $('upright').checked = false;  // (the default view: free again)
-    Object.assign(camera, CAM0);
+    Object.assign(camera, CAMERA_START);
     rotateView([0, 0, 0]);  // the projection and the frame again
     faced = false;
     if (!walk.life && stepShown >= walk.n) faceWalk();
@@ -18455,14 +18455,14 @@ startField.addEventListener('mouseleave', () => { startsShown = false; needsFull
 // Upright: the view from the front exactly, level (its heading kept), a drag turning it round the vertical only
 $('upright').addEventListener('change', () => {
   if (!$('upright').checked) return;
-  const yaw = Math.atan2(-camera.v[0], -camera.v[1]);  // (where it looks from, round the vertical: see camFrom)
+  const yaw = Math.atan2(-camera.v[0], -camera.v[1]);  // (where it looks from, round the vertical: see cameraFrom)
   $('centered').checked = false;
-  Object.assign(camera, camFrom(yaw, 0));
+  Object.assign(camera, cameraFrom(yaw, 0));
   rotateView([0, 0, 0]);
 });
 $('centered').addEventListener('change', () => {  // on: the camera turns to the pattern again, or back to the default view
   faced = false;
-  if ($('centered').checked && !centersPattern()) { Object.assign(camera, CAM0); rotateView([0, 0, 0]); }
+  if ($('centered').checked && !centersPattern()) { Object.assign(camera, CAMERA_START); rotateView([0, 0, 0]); }
   if ($('centered').checked) $('upright').checked = false;  // (the default view: free again)
 });
 $('sizeDown').addEventListener('click', () => stepSize(-1));
@@ -18613,7 +18613,7 @@ $('mode').addEventListener('change', () => {
   // (auto-fit may have turned it to follow a walker) and its flat or round form (see initShape)
   // come back with every new mode
   applyDefaults('mode');  // (its perspective, the view free and framed)
-  Object.assign(camera, CAM0);
+  Object.assign(camera, CAMERA_START);
   $('startNo').value = 1;
   compute();
 });

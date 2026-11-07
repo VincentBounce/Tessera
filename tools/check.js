@@ -426,6 +426,29 @@ async function battlesFair(fail) {
       for (let i = end + 1; i <= P.n; i++) if (Q[i] !== Q[end]) moved++;
     }
     if (shared || moved) fail(`${w} Land no collision: ${shared} ${grid ? 'edges' : 'tiles'} shared, ${moved} steps once stopped (${link})`);
+    // Snake cells (on cells), its fewest walkers: a snake grows a cell a step at most (an even step till a tenth of the
+    // surface, an odd one by what it has eaten), and none past a tenth before the first bite (no cells eaten yet)
+    const snake = PENETRATIONS.findIndex((p) => p[0] === 'snakeCells');
+    if (grid || snake < 0) continue;
+    const slink = link.replace('&pe=5&', `&pe=${snake}&`);
+    location.hash = slink;
+    for (let t = 0; t < 30 && !(walk.battle?.player?.K === K && $('mode').value === w && location.hash.includes(`pe=${snake}`)); t++) await wait(300);
+    const S = walk.battle?.player;
+    checked++;
+    if (S?.K !== K) { fail(`${w} Snake cells: no battle (${slink})`); continue; }
+    const cap = Math.floor(walk.geo.n / 10), before = Array(K).fill(0);
+    let fast = 0, over = 0, bitten = false;
+    S.to(0);
+    for (let i = 1; i <= S.n; i++) {
+      S.to(i);
+      for (let s = 0; s < K; s++) {
+        if (S.size[s] > before[s] + 1) fast++;
+        if (S.size[s] < before[s] - 1) bitten = true;  // (a bite: cells eaten from then on)
+        if (!bitten && S.size[s] > cap) over++;
+        before[s] = S.size[s];
+      }
+    }
+    if (fast || over) fail(`${w} Snake cells: ${fast} steps a snake grew more than a cell, ${over} past a tenth before any bite (${slink})`);
   }
   return checked;
 }

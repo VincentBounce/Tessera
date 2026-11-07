@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.520';
+const VERSION = '0.4.521';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -5022,7 +5022,7 @@ const cellSides = (kind) => (cellSidesMemo[kind] ??= (() => {
 // why a command cannot go on a walk, or '': not its network's; a diagonal along the grid; on a surface, no fixed way (no north)
 const walkCommandWhy = (m, t) => (m.lattice === 'sphere' && !m.grid ? cellCommandWhy(m, t)
   : m.lattice === 'sphere' ? ((surfaceCommands(m.net).includes(t) && m.turns[surfaceCommands(m.net).indexOf(t)] != null) || t === 'U' || (t === 'B' && SURFACE_NOTCHES[m.net] % 2 === 0) || (SURFACE_NOTCHES[m.net] && spotCommands(m.net).includes(t)) ? ''
-    : surfaceCommands(m.net).includes(t) ? `${t} is not on this surface (its corners).` : `${t} is not on a surface: there is no north there.`)
+    : Object.hasOwn(WALK_NETS[m.net].ways ?? {}, t) ? `${t} is not on a surface: there is no north there.` : `${t} is not on this surface (its corners).`)  // (a compass's way: no north; else its corners lack it)
   : !commandAct(m.net, t) ? `${t} is not a command here.` : m.lines && WALK_NETS[m.net].diagonals?.includes(t) ? `${t} is a diagonal step: along the grid, it follows no line.` : '');
 // a command on a surface's cells: its edge on every cell (see cellTurn, cellSides): straight on, cells of an even count of sides;
 // the j-th from the entry either way, cells of 2j + 1 sides at least; on the spot and parity, its network's notches

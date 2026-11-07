@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.482';
+const VERSION = '0.4.483';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -17638,7 +17638,7 @@ function updateStats() {
     const colour = walk.base <= 8 ? ` style="color:${(walk.ant ? antChipColour : digitColour)(d[i])}"` : '';  // coloured as their chips
     // an ant's arrow coloured as its turn (left blue, right pink: see antTurnColour), not as the digit it read. The head:
     // the digit and its arrow inverted, white on their colours, as the chip lit; gold where the digits have no colours
-    const head = (c) => (colour ? ` class="stepShown" style="background:${c};color:#fff"` : ' class="stepShown"');
+    const head = (c) => (colour ? ` class="head" style="background:${c};color:#fff"` : ' class="head"');
     const chipColour = (k) => (walk.ant ? antChipColour : digitColour)(k);
     html += i === stepShown ? `<span${head(colour && chipColour(d[i]))}>${d[i]}</span>` : colour ? `<span${colour}>${d[i]}</span>` : d[i];
     const arrow = arrows[walk.ant ? walk.turns[i] : d[i]];
@@ -17646,7 +17646,7 @@ function updateStats() {
     top += arrow ? `<span${i === stepShown ? head(colour && (walk.ant ? antTurnColour(arrow) : chipColour(d[i]))) : arrowColour}>${arrow}\ufe0e</span>` : blank;  // as text, not an emoji
     if (i === intLen - 1 && intLen < walk.n) { html += '.'; top += blank; }
   }
-  const end = b < n ? '…' : stepShown >= n ? '<span class="stepShown">\u00a0</span>' : '';
+  const end = b < n ? '…' : stepShown >= n ? '<span class="head">\u00a0</span>' : '';
   html += end;
   if (stepShown >= n) top += end;  // the head past the last digit, on both lines
   const walker = icon(mode.skipZeros ? 'spiral' : ['Turtle', 'Ant', 'Polymer'].includes(NAV[current.mode][3]) ? 'turtle' : 'compass');

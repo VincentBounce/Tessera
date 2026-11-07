@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.498';
+const VERSION = '0.4.499';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -1981,7 +1981,7 @@ const setTile = (b, { on = false, greyed = '', can = !greyed, mark = false, agai
 // A card, every one alike (the rules, an ant's, the walks', the brushes, the Gallery's setups, the hunt's finds): a row, its
 // picture on the left, its name over its words (base: a walk's base on its right); a tile all the same (see tile, setTile:
 // on, can); its words as text (a setup's name typed), and its tooltip (in full: the row may cut them short); how: a rule's,
-// how it works, its ⓘ at its end (see rowAction)
+// how it works, a click on its picture
 // an element highlighted a moment, once (the length asked's stepper; the buttons a greyed one waits for, see enablers)
 function highlight(el) { el.classList.remove('highlit'); void el.offsetWidth; el.classList.add('highlit'); }
 // a greyed button that knows what would allow it (its enablers: the nearest buttons of the menu taking it there, see
@@ -3602,7 +3602,7 @@ function ruleCards(w, here = true) {
   const go = (then) => () => { if (!here) { $('mode').value = w; $('mode').dispatchEvent(new Event('change')); } then(); };
   const make = (cardPic, name, code, on, then, why = '', title = '', source = null) => card({ pic: cardPic, name, detail: code, base: code && R.base?.(code), on, title, click: go(then),
     how: () => { if (on) walkTutorialToggle(); else { go(then)(); walkTutorial(w); } }, whyNot: source && (({ w: v }) => ruleWhyNot(v, source)), at: w,
-    choice: source?.startsWith('walk ') ? `walkRule:${code}` : null });  // (a walk's rule: its choice's key, see choicesAt)  // (its ⓘ: how it works, picked first; greyed, why: rulesFor's, any mode's)
+    choice: source?.startsWith('walk ') ? `walkRule:${code}` : null });  // (a walk's rule: its choice's key, see choicesAt)  // (its picture: how it works, picked first; greyed, why: rulesFor's, any mode's)
   return [...R.cards.map(({ rule: r, source, name, pic, why, title }) => make(pic, name, r, here && r === R.now && !customOpen, () => { customOpen = false; if (r === R.now) renderModePicker(); else R.set(r); }, why, title, source)),
     ...(R.typed ? [make(pixelIcon('..o..,..o..,ooooo,..o..,..o..'), 'Custom rule', mine ? R.now : '', mine, () => { customOpen = true; renderModePicker(); }, '', 'your own, typed')] : []),  // (never greyed: no source, no why)
     customRow];  // (its field right after it, the list's next rules after the field; always in it, shown by renderAntRow)
@@ -3855,7 +3855,7 @@ function renderModePicker() {
     const { base, detail } = splitModeLabel(modeOptionOf(v).text);  // (a spiral's, the diagonals': their base, their words)
     const pic = icon(r === 'Turtle' ? 'turtle' : r === 'Pivot' ? 'pivot' : r === 'Parity' ? 'walk2d' : r === 'Ant' ? 'ant' : MODE_ICONS[v]);  // a turtle for the walks turning relative to their heading
     const go = () => { if (here) { navGo(3, r); return; } $('mode').value = v; $('mode').dispatchEvent(new Event('change')); };
-    const how = walkTutorialFits(here ?? v) && (() => { if (r === rule) walkTutorialToggle(); else { go(); walkTutorial($('mode').value); } });  // (its ⓘ: how it works, picked first)
+    const how = walkTutorialFits(here ?? v) && (() => { if (r === rule) walkTutorialToggle(); else { go(); walkTutorial($('mode').value); } });  // (its picture: how it works, picked first)
     return [card({ pic, name: r, base, detail, on: r === rule, how, byDefault: i ? '' : 'yes', click: go, choice: `rule:${r}`, whyNot: ({ w: u }) => (walkKindHere(u, r) ? '' : 'Not on this tiling.') })];  // (the first: where a shape starts)
   }));
   // Grid | Cells (Cube in 3D): each with its base and its digits, or what it is not on (that side off)
@@ -8729,7 +8729,7 @@ function renderBattleHunt() {
   $('battleHuntRank').replaceChildren(tileGroup(Object.entries(HUNT_RANKS).map(rank), true));
   setTile($('battleHuntBtn'), { greyed: !huntVary.formulas && !huntStarts() ? 'It varies nothing: Formulas and Starts are off.' : '' });
   $('battleHuntBtn').title = 'Battles fought one after another, each set once: what the switches above vary drawn at random';
-  $('battleHuntBtn').dataset.limits = [`Each battle up to ${formatNumber(digitsNeeded())} steps (the length asked, at the top)`,
+  $('battleHuntBtn').dataset.limits = [`Each battle up to ${formatNumber(digitsNeeded())} steps (${STEPS_GLYPH}, the length asked)`,
     huntVary.formulas && `Numbers: the ${BATTLE_CARDS.length} cards and the roots √n, n up to 9,999 (${formatNumber(BATTLE_CARDS.length + DRAWN_ROOTS.length)})`,
     huntStarts() && (startsWayNow() === 'symmetric' ? `Starts: Symmetric's ${formatNumber(modeStarts()?.length ?? 1)}` : 'Starts: Random\'s draws, no end'),
     'The 8 longest kept, and the first 8 still on as the digits end'].filter(Boolean).join('\n');
@@ -12115,12 +12115,12 @@ function renderRuleSection() {
     const bw = MODES[$('mode').value].margolus && !carriesColours(parseRule(o.rule));  // (a block rule its cells carry no colour on: black and white)
     const pick = () => { customOpen = false; if (o.rule === now) { renderRuleSection(); return; } $('lifeRule').value = o.rule; compute(); };
     return card({ pic: RULE_ICONS[o.rule] ? pixelIcon(RULE_ICONS[o.rule]) : '', name: `${o.name}${bw ? ' · B&W' : ''}`, on: picked, byDefault: i ? '' : 'yes',
-      how: () => { if (picked) ruleTutorial(howShown(o) ? null : o); else { pick(); ruleTutorial(o); } },  // (its ⓘ: how it works, picked first, as the walks')  // (the first: the shape's, see fitRuleToShape)
+      how: () => { if (picked) ruleTutorial(howShown(o) ? null : o); else { pick(); ruleTutorial(o); } },  // (its picture: how it works, picked first, as the walks')  // (the first: the shape's, see fitRuleToShape)
       detail: `${mode.loops ? loopCode(o.rule) : o.rule} · ${unnamed(o.about, o.name)}`, click: pick, choice: `lifeRule:${o.rule}` });  // its code (a loop's: its states), its words without its name
   }));
   // after them, your own: picked when the rule in use is none of them, or clicked (its states, births and survivals below); none for a loop
   $('watchRule').onclick = () => ruleTutorial(!$('ruleTuto').hidden && !creditsShown() ? null : shown);  // (the rule in use: a card's, or your own)
-  const howShown = (o) => !$('ruleTuto').hidden && $('ruleTuto').dataset.shown === tutorialKey(o);  // (a card's ⓘ again: closed)
+  const howShown = (o) => !$('ruleTuto').hidden && $('ruleTuto').dataset.shown === tutorialKey(o);  // (a card's picture again: closed)
   if (!mode.loops) $('ruleCards').append(card({ pic: pixelIcon('..o..,..o..,ooooo,..o..,..o..'), name: 'Custom rule', on: mineNot, how: mineNot && (() => ruleTutorial(howShown(yours) ? null : yours)),
     detail: mineNot ? `${now} · your own` : mode.elementary ? 'your own: W and its number, 0 to 255' : 'your own: its states, births and survivals', click: () => {
       customOpen = true;

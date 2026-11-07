@@ -11,7 +11,7 @@
   <meta property="og:type" content="website">
   <link id="favicon" rel="icon">  <!-- the app's logo, set at start-up (see appLogo) -->
   <meta name="description" content="A walk on a grid in 2D or 3D driven by the base-2 to base-6 digits of π, other constants and large primes.">
-  <link rel="stylesheet" href="style.css?v=0.4.498">
+  <link rel="stylesheet" href="style.css?v=0.4.499">
   <script>  // the theme before the first paint (see applyTheme)
     try { const t = localStorage.getItem('tesseraTheme') || 'system'; document.documentElement.dataset.theme = t === 'system' ? (matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark') : t; } catch { document.documentElement.dataset.theme = 'dark'; }
   </script>
@@ -160,7 +160,7 @@
       <section id="walkRuleSection">  <!-- a walk's rule or a creature's (Ant, Turmite, Worm): its rules' cards (a command per digit), Spiral; a walk's along the grid or on cells -->
         <h2 data-icon="turtle">Walking rule</h2>
         <div id="walkOn" class="nav-shapes"></div>  <!-- along the grid, or on cells: one choice, a tab group of tiles (as the Start's), first, above How it works -->
-        <button id="walkRuleHow" class="wide how-it-works" data-icon="info" type="button" title="The rule in use, step by step: what each cell (each step) sees, and what it does (each rule's ⓘ, too)">How it works</button>  <!-- how the rule works (see walkTutorialToggle), on its first card -->
+        <button id="walkRuleHow" class="wide how-it-works" data-icon="info" type="button" title="The rule in use, step by step: what each cell (each step) sees, and what it does (a click on a rule card's picture, too)">How it works</button>  <!-- how the rule works (see walkTutorialToggle), on its first card -->
         <div id="navRules" class="mode-list rule-cards" role="listbox"></div>  <!-- the rules of that shape, where there are several; a walk by a rule: its rules' cards; a creature's, the creatures, the one in use with its rules (see ruleCards) -->
         <div id="antCustomRow" hidden><div id="antRuleName" class="field-label"></div>  <!-- not a label: a click on ↵ would focus the field again; moved right after its card (see ruleCards) -->
           <span class="field"><input id="antRule" class="custom" type="text" autocomplete="off" spellcheck="false" title="Type a rule, then Enter"><button class="enter" type="button" tabindex="-1" title="Apply (Enter)">↵</button></span>
@@ -368,7 +368,7 @@
       <section id="automataSection" hidden>  <!-- Life: its rule -->
         <h2 data-icon="glider">Rule</h2>
         <div id="ruleTabs" class="nav-shapes"></div>  <!-- Elementary's: Main | Others -->
-        <button id="watchRule" class="wide how-it-works" data-icon="info" type="button" title="The rule in use, step by step: what each cell (each step) sees, and what it does (each rule's ⓘ, too)">How it works</button>  <!-- how the rule in use works (see ruleTutorial), on its first card -->
+        <button id="watchRule" class="wide how-it-works" data-icon="info" type="button" title="The rule in use, step by step: what each cell (each step) sees, and what it does (a click on a rule card's picture, too)">How it works</button>  <!-- how the rule in use works (see ruleTutorial), on its first card -->
         <div id="ruleCards" class="mode-list rule-cards" role="listbox"></div>  <!-- the rules for the grid's shape, as cards -->
         <div class="rule-build">  <!-- your own: the states (a cell's: alive, its dying stages, dead), how many live neighbours give birth, let survive -->
           <div class="build-cols">  <!-- two frames side by side: Birth, Survive -->
@@ -513,10 +513,10 @@
     </div>
   </main>
 
-  <script src="pixelarticons.js?v=0.4.498"></script>
-  <script src="punks.js?v=0.4.498"></script>
-  <script src="loops.js?v=0.4.498"></script>
-  <script src="emoji.js?v=0.4.498"></script>
-  <script src="main.js?v=0.4.498"></script>
+  <script src="pixelarticons.js?v=0.4.499"></script>
+  <script src="punks.js?v=0.4.499"></script>
+  <script src="loops.js?v=0.4.499"></script>
+  <script src="emoji.js?v=0.4.499"></script>
+  <script src="main.js?v=0.4.499"></script>
 </body>
 </html>

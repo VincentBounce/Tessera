@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.408';
+const VERSION = '0.4.409';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -2074,7 +2074,7 @@ function tuneTick() {  // (its next eighths, a little ahead)
 }
 function renderSoundButton() {
   soundButton ??= tile({ pic: icon('sound'),
-    text: 'Sound', id: 'lifeSoundButton', toggle: true, title: "Sound: Korobeiniki (Tetris's tune) as 8-bit while it plays, forth or back; in Life, the life's moments over it: an explosion a boom, a colour dying out a blip, all dying out a fall, stillness softer",
+    text: 'Sound', id: 'lifeSoundButton', toggle: true, title: "Korobeiniki (Tetris's tune) as 8-bit while it plays, forth or back; in Life, the life's moments over it: an explosion a boom, a colour dying out a blip, all dying out a fall, stillness softer",
     click: () => {
       if (music) { clearInterval(music.timer); music.ctx.close(); music = null; }
       else {

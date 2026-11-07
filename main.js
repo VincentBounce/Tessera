@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.472';
+const VERSION = '0.4.473';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -9188,7 +9188,9 @@ const planeSides = (kind, k = planeKind(kind), W = (f) => (shaped(kind) ? sideW 
   [...(MODES[$('mode').value]?.margolus ? [6, 8] : []), ...SIDES.filter((f) => cells(f) >= CELLS.least && cells(f) <= CELLS.most)].filter((f, i, a) => W(f) >= 2 && (!i || grid(f) !== grid(a[i - 1])));
 // side: the grid's, the nearest it offers to the last picked (by hand or a link: kept, whatever grid comes); icons: an Icon
 // zone's, one a colour (or one for all)
-const plane = { get side() { const k = planeKind(MODES[$('mode').value].plane); return nearCells(planeSides(k), (f) => planeCells(f, k), picked ?? planeCells(48, k)); },
+// a plane grid's side, for its tiling kind k: the one with about as many cells as the size picked (none: 48's)
+const planeSideOf = (k) => nearCells(planeSides(k), (f) => planeCells(f, k), picked ?? planeCells(48, k));
+const plane = { get side() { return planeSideOf(planeKind(MODES[$('mode').value].plane)); },  // (the mode in use's)
                 torus: true, shape: 'hex', text: APP_TITLE, font: 'sans', icons: [0],
                 start: 'random', density: 30, seed: 1 + Math.floor(Math.random() * 999999999), sym: 'none', number: '1/7' };  // (number: Formula's, see numberSeed)  // a soup of its own each visit (a link keeps its seed)
 // Draw's brush: a cell or a pattern (squares only), turned by quarter turns and mirrored, in a colour
@@ -10611,7 +10613,7 @@ const symmetryAllowed = (y, v) => {
   if (v === walk.mode && walk.plane) return symmetriesHere(walk.plane.kind, walk.plane.W).includes(y);
   if (!m.plane || m.elementary || m.margolus || !m.life) return y === 'none';
   const k = planeKind(m.plane);
-  return symmetriesHere(k, planeW(k, plane.side, m), null).includes(y);
+  return symmetriesHere(k, planeW(k, planeSideOf(k), m), null).includes(y);
 };
 function renderSymmetry() {
   const kind = MODES[$('mode').value].plane, has = walk.plane ? symmetriesHere(walk.plane.kind, walk.plane.W) : ['none'], now = walk.plane ? symmetryOf(walk.plane.kind) : 'none';

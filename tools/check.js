@@ -407,7 +407,7 @@ async function battlesFair(fail) {
     }
     // Land no collision, its fewest walkers: no walker's step along another's (a line's edge along the grid, a tile
     // on cells), and none moving once stopped
-    const stop = PENETRATIONS.findIndex((p) => p[0] === 'landStop'), K = counts[0], link = `#x=pi&w=${w}&d=3000&k=${K}&pe=${stop}&${'bcdefghijkl'.slice(0, K - 1).split('').map((c, j) => `x${c}=sqrt(${j + 2})`).join('&')}`;
+    const stop = PENETRATIONS.findIndex((p) => p[0] === 'landStop'), K = counts[0], link = `#x=pi&w=${w}&d=3000&k=${K}&pe=${stop}&${'bcdefghijkl'.slice(0, K - 1).split('').map((c, j) => `x${c}=sqrt(${j + 2})`).join('&')}&v=${VERSION}`;  // (its version: a link without one is read as an old one, pe= in its order then, see PE_BEFORE)
     if (!K) continue;
     location.hash = link;
     for (let t = 0; t < 30 && !built(K, true); t++) await wait(300);

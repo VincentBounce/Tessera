@@ -48,7 +48,7 @@ html, body {
   font: 14px/1.4 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
 }
 
-body { display: flex; flex-direction: column; }
+body { display: flex; flex-direction: column; font-variant-numeric: tabular-nums; }  /* every digit as wide as the others, everywhere: numbers that change (a step, a count) never jump */
 
 header { padding: 0; border-bottom: 1px solid var(--border); }  /* one hairline, edge to edge, under the tabs: the first and the last at its edges */
 /* the tabs at the very top on the left, on a hairline; the app's tab on the right */
@@ -192,7 +192,7 @@ button.primary {
 .size-gauge .notches { display: flex; justify-content: space-between; padding: 0 7px; margin-top: -2px; }
 .size-gauge .notches span { width: 2px; height: 5px; background: var(--muted); border-radius: 1px; }
 .stepper span small { display: block; font-size: 11px; font-weight: 400; color: var(--muted); line-height: 1.2; }  /* a size: what to picture, then its tiles */
-.stepper span, .stepper input { flex: 1; text-align: center; font-variant-numeric: tabular-nums; color: var(--accent); font-weight: 600; white-space: nowrap; }  /* the setup at a glance */
+.stepper span, .stepper input { flex: 1; text-align: center; color: var(--accent); font-weight: 600; white-space: nowrap; }  /* the setup at a glance */
 /* the number of digits can be typed: a field that looks like the label until it is hovered or used */
 #loopLabel { color: var(--text); }
 #loopLabel.on { color: var(--accent); }
@@ -441,7 +441,7 @@ button.wide.active, .head-btn.active { border-color: var(--accent); color: var(-
 .stage-bar:hover { width: 680px; }
 @media (hover: none) { .stage-bar:focus-within { width: 680px; } }
 /* what is walked: the number, its loop and base; on hover the walk, its rule and the stats */
-.ranking { position: relative; margin: 0 0 8px; font-size: 12px; font-variant-numeric: tabular-nums; }  /* a battle: a row a colour, re-sorted as it goes */
+.ranking { position: relative; margin: 0 0 8px; font-size: 12px; }  /* a battle: a row a colour, re-sorted as it goes */
 .ranking .rank-row { position: absolute; left: 0; right: 0; top: 0; height: 18px; display: grid; grid-template-columns: 16px 12px minmax(0, 1fr) 76px; align-items: center; gap: 6px; transition: transform 0.4s; }
 .gauges:not([hidden]) { display: grid; grid-template-columns: minmax(64px, max-content) minmax(0, 112px) minmax(110px, max-content); grid-auto-rows: 18px; align-items: center; column-gap: 6px; }  /* one colour: fixed rows, one set of columns (a figure as wide as it needs, on one line) */
 .gauges .gauge-row { display: contents; }
@@ -465,7 +465,7 @@ button.wide.active, .head-btn.active { border-color: var(--accent); color: var(-
 .bar-sub b { color: var(--text); }
 .rule-chips { display: grid; grid-template-columns: repeat(auto-fit, minmax(80px, 1fr)); gap: 5px; margin-bottom: 9px; }
 .rule-chips:empty { display: none; }
-.bar-title.life .bar-num { font-size: 18px; font-variant-numeric: tabular-nums; white-space: pre; }  /* Life's title, a creature's, a battle's */
+.bar-title.life .bar-num { font-size: 18px; white-space: pre; }  /* Life's title, a creature's, a battle's */
 .bar-title .rank-titles { margin-left: auto; align-self: flex-end; display: grid; grid-template-columns: 76px; gap: 6px; font-size: 11px; color: var(--muted); text-align: right; }  /* over the ranking's columns, as wide */
 .bar-title .rank-titles span:not(:first-child) { display: none; }  /* folded: its first */
 .stage-bar:hover .bar-title .rank-titles { grid-template-columns: var(--rank-columns); }
@@ -477,7 +477,7 @@ button.wide.active, .head-btn.active { border-color: var(--accent); color: var(-
 .rule-chip.next, .rule-chip.read { border: 2px solid color-mix(in srgb, var(--c) 75%, var(--text)); padding: 3px 6px 3px 3px; }  /* the next step's chip, step by step: its colour, a little toward the text so that a pale one shows */
 .rule-chip.next { background: color-mix(in srgb, var(--c) 12%, var(--bg)); }
 .rule-chip.read { border-style: dashed; }  /* an ant's digit read, turned the other way by a dark cell */
-.rule-chip small { color: var(--muted); font-size: 11px; font-variant-numeric: tabular-nums; }
+.rule-chip small { color: var(--muted); font-size: 11px; }
 .stage-bar .stage-more { margin-bottom: 9px; }
 .stage-bar .strip { margin: 8px 0 0; min-height: 0; font-size: 14px; }
 .stage-bar .strip:empty { display: none; }
@@ -504,7 +504,7 @@ button.wide.active, .head-btn.active { border-color: var(--accent); color: var(-
 #digitsRow.busy .progress { position: relative; height: 34px; border: 1px solid var(--border); border-radius: 6px; }
 #progress.indeterminate #progressBar { width: 30% !important; animation: gauge-slide 1.2s ease-in-out infinite alternate; }  /* drawn apart: it slides on while the walk is built */
 @keyframes gauge-slide { from { transform: translateX(0); } to { transform: translateX(233%); } }
-#progressText { position: absolute; inset: 0; display: grid; place-items: center; font-size: 12px; color: var(--text); font-variant-numeric: tabular-nums; }
+#progressText { position: absolute; inset: 0; display: grid; place-items: center; font-size: 12px; color: var(--text); }
 #status:not(:empty)::before { content: ' · '; }  /* after the description */
 .stage-bar .speed-stepper { margin: 0; }
 .speed-stepper button { width: 48px; }
@@ -513,7 +513,7 @@ button.wide.active, .head-btn.active { border-color: var(--accent); color: var(-
 /* the steps, on their own line above the buttons; the speed after ⏭, between a turtle and a rabbit */
 .speed-icon { flex: none; width: 23px; height: 23px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
 
-.step-line { font-size: 20px; font-weight: 700; color: var(--text); font-variant-numeric: tabular-nums; white-space: nowrap; margin-bottom: 4px; }  /* the step or generation shown, as large as the title, folded or open, every mode */
+.step-line { font-size: 20px; font-weight: 700; color: var(--text); white-space: nowrap; margin-bottom: 4px; }  /* the step or generation shown, as large as the title, folded or open, every mode */
 .step-line #stepLast { color: var(--muted); }  /* its last, after it, always: the line keeps its width */
 .step-line .end-words { display: none; }  /* its end's words, open only (folded: its mark) */
 .stage-bar:hover .step-line .end-words { display: inline; }

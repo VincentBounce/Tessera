@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.465';
+const VERSION = '0.4.466';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -4877,12 +4877,12 @@ const WALK_NETS = {
 const SPOT_ARROWS = { l: '↺', r: '↻', a: '↝', B: '⇣' };  // (the words with no turn of a network's: on the spot, parity, back)
 const WORD_TEXT = { ...TURN_WORDS, U: 'U-turn, out the way it came in', B: 'a step back, still facing the same way', '^': 'up', v: 'down', p: 'turn up on the spot', u: 'up', d: 'down', l: 'turn left on the spot', r: 'turn right on the spot', a: 'step, then turn right at an odd digit, left at an even one',
                     n: 'north', ne: 'north-east', e: 'east', se: 'south-east', s: 'south', sw: 'south-west', w: 'west', nw: 'north-west', '|': 'across the flat side: up from ▽, down from △', '\\': 'across the side along \\', '/': 'across the side along /' };
-// As a reminder, under every walk's and creature's How it works: all the rules' words (WORD_TEXT, the one list the rules
+// As a reminder, in every walk's and creature's How it works, under its figures (its own section, before a battle's): all the rules' words (WORD_TEXT, the one list the rules
 // are read by), each a step (its way: left, north, up…) but those turning on the spot (l, r, p), then an ant's and a
 // turmite's entries
-const wordsReminder = () => `<h4>As a reminder: the rules' words</h4><table class="tut-words">${Object.entries(WORD_TEXT).map(([word, text]) => `<tr><td><code>${word}</code></td><td>${/turn|step/.test(text) ? text : `a step: ${text}`}</td></tr>`).join('')}`  // (a word a step, but those that turn on the spot or say their own step)
-  + '<tr><td><code>1R0</code></td><td>an ant\'s entry, one per colour: the colour it leaves (1), its turn (R), its state next (0)</td></tr>'
-  + '<tr><td><code>2.R2.1</code></td><td>the same, a turn of two letters parted by dots</td></tr><tr><td><code>|</code></td><td>between two states\' entries (a turmite)</td></tr></table>';
+const wordsReminder = () => `<p class="tut-words-lead">As a reminder, the rules' words:</p><table class="tut-words">${Object.entries(WORD_TEXT).map(([word, text]) => `<tr><td><b>${word}</b></td><td>${/turn|step/.test(text) ? text : `a step: ${text}`}</td></tr>`).join('')}`  // (a word a step, but those that turn on the spot or say their own step)
+  + '<tr><td><b>1R0</b></td><td>an ant\'s entry, one per colour: the colour it leaves (1), its turn (R), its state next (0)</td></tr>'
+  + '<tr><td><b>2.R2.1</b></td><td>the same, a turn of two letters parted by dots</td></tr><tr><td><b>|</b></td><td>between two states\' entries (a turmite)</td></tr></table>';
 // a rule's words: spaced, else a letter each (L1, R2 one word)
 const ruleWords = (rule) => { const t = String(rule ?? '').trim(); return !t ? [] : /\s/.test(t) ? t.split(/\s+/) : t.match(/[LR][12]|./g); };
 // a rule's text: tight when its words are single letters of one case (LNR, nesw), else spaced (L1 R1, N r)
@@ -12003,7 +12003,7 @@ function walkTutorial(w) {
   $('ruleTuto').innerHTML = `<div class="tut-body">`
     + `<h3>${ruleTitleOf(w)}</h3><p>${creature ? `${mode.rule[0].toUpperCase()}${mode.rule.slice(1)}` : `The number read digit by digit in base ${mode.base}, each digit a step ${mode.rule.replace(/:.*/, '')}${how}`}`
     + `${figs.some((f) => f.here) ? '; the way it came in grey' : ''}${figs.some((f) => f.next?.length > 1) ? ', the step after dashed' : ''}.</p>`
-    + `<div class="tut-row tut-walk">${figs.map((f) => `<figure><div>${fig(f)}</div><figcaption>${f.label ?? `<b>${f.d}</b>`} ${f.caption ?? ''}</figcaption></figure>`).join('')}</div>${battleTutorial(w)}${wordsReminder()}</div>`;
+    + `<div class="tut-row tut-walk">${figs.map((f) => `<figure><div>${fig(f)}</div><figcaption>${f.label ?? `<b>${f.d}</b>`} ${f.caption ?? ''}</figcaption></figure>`).join('')}</div>${wordsReminder()}${battleTutorial(w)}</div>`;
   $('ruleTuto').prepend(tutTools({ replay: () => walkTutorial(w), close: () => ruleTutorial(null) }));  // (its steps appearing again)
 }
 const walkTutorialToggle = () => ($('ruleTuto').hidden || creditsShown() ? walkTutorial($('mode').value) : ruleTutorial(null));

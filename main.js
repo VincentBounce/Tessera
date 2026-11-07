@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.410';
+const VERSION = '0.4.411';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -7538,9 +7538,7 @@ function renderWalkTeams() {
   $('walkPenetration').replaceChildren(...PENETRATIONS.map((P, p) => way(P, p)));
   // its starts' tabs, over the start selector (see STARTS_WAYS; the selector greyed but in Symmetric, see syncSizeStepper)
   if ($('startRow').previousElementSibling !== $('startWays')) $('startRow').before($('startWays'));
-  const ways = [['symmetric', 'Symmetric', "A's start, picked below, moved by the surface's symmetries: each walker starts as A, the battle fair"],
-    ['centred', 'Centred', "The walkers' starts side by side round one point of the surface's symmetry, each on an edge out of it, every so many edges: a face's centre (sphere of hexagons: Trio, or Duo, Trio and Sextet by its size), a corner (its pentagon: Quintet)"],
-    ['random', 'Random', 'Each walker anywhere, drawn at random (kept in the link): not fair, each walker in a place of its own · Clicked again: another draw']];
+  const ways = STARTS_WAYS;  // (one list: its tabs and a link's gr=)
   $('startWays').replaceChildren(tileGroup(ways.map(([way, text, title]) => tile({ pic: colourBlock(walkTeams), text, title, on: way === startsWayNow(), again: way === 'random', can: startsWayCan(way), byDefault: way === 'symmetric' ? 'yes' : '',
     greyed: 'along a closed solid\'s grid only, where a point has as many edges out as walkers, or a multiple',
     click: () => { if (way === startsWayNow() && way !== 'random') return; battleStartsWay = way; if (way === 'random') battleSeed = freshDraw(); compute(); } }))));  // (Random again: another draw)
@@ -7590,7 +7588,9 @@ const startSpread = (g, grid, start) => {
 // A battle's starts, its tabs over the start selector: Symmetric, A's start moved by the surface's symmetries (battleStarts,
 // the start picked); Centred, round one point (groupedStarts); Random, each walker's anywhere (randomStarts, its draw
 // battleSeed). Kept in the link: gr (1 Centred, 2 Random), rs (its draw)
-const STARTS_WAYS = ['symmetric', 'centred', 'random'];
+const STARTS_WAYS = [['symmetric', 'Symmetric', "A's start, picked below, moved by the surface's symmetries: each walker starts as A, the battle fair"],
+  ['centred', 'Centred', "The walkers' starts side by side round one point of the surface's symmetry, each on an edge out of it, every so many edges: a face's centre (sphere of hexagons: Trio, or Duo, Trio and Sextet by its size), a corner (its pentagon: Quintet)"],
+  ['random', 'Random', 'Each walker anywhere, drawn at random (kept in the link): not fair, each walker in a place of its own · Clicked again: another draw']];  // (its tabs in this order, a link's gr= its place: 0 the first, the default)
 let battleStartsWay = 'symmetric', battleSeed = 1;
 const startsWayCan = (way) => way !== 'centred' || groupedCan();
 const startsWayNow = () => (battleOn() && startsWayCan(battleStartsWay) ? battleStartsWay : 'symmetric');  // (the one played: Symmetric where the one picked cannot be)
@@ -14423,7 +14423,7 @@ function getSetup() {
     s.k = walkTeams;
     RIVALS.slice(0, walkTeams - 1).forEach((id) => { s[`x${id.slice(-1).toLowerCase()}`] = formulaOf($(id).value).text ?? $(id).value; });  // (xb, xc…)
     if (penetration) s.pe = penetration;  // (none: the first, Land grid 1)
-    if (startsWayNow() !== 'symmetric') s.gr = STARTS_WAYS.indexOf(startsWayNow());  // (its starts: Centred, Random, see STARTS_WAYS)
+    if (startsWayNow() !== 'symmetric') s.gr = STARTS_WAYS.findIndex(([way]) => way === startsWayNow());  // (its starts: Centred, Random, see STARTS_WAYS)
     if (startsWayNow() === 'random') s.rs = battleSeed;
   }
   if (mode.life && colourMix && lifeColours > 1) s.mx = 1;
@@ -14462,7 +14462,7 @@ function applySetup(s) {
   walkTeams = !MODES[s.w].life && COLOUR_STEPS.includes(Number(s.k)) ? Number(s.k) : 1;  // (a walk's battle, if its surface allows it at its size: see battleOn)
   const pe = s.pe === undefined ? 0 : !s.v || versionAtMost(s.v, '0.4.378') ? PE_BEFORE[Number(s.pe)] : Number(s.pe);  // (an older link's, in its own order)
   penetration = walkTeams > 1 && PENETRATIONS[pe] ? pe : 0;  // (none: the first, Land grid 1)
-  battleStartsWay = STARTS_WAYS[Number(s.gr)] ?? 'symmetric';
+  battleStartsWay = STARTS_WAYS[Number(s.gr)]?.[0] ?? 'symmetric';
   battleSeed = Number(s.rs) || 1;
   RIVALS.forEach((id, j) => { $(id).value = s[`x${id.slice(-1).toLowerCase()}`] ?? RIVAL_FIRSTS[j]; });  // (one the link gives not: its number at first)
   set('mode', s.w);

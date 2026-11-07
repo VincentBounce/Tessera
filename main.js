@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.427';
+const VERSION = '0.4.428';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -1776,11 +1776,14 @@ const defaultMark = (key) => (defaultOf(key) ? 'on' : 'off');
 const modeOptionOf = (w) => $('mode').querySelector(`option[value="${w}"]`);
 const modeGroup = (w = $('mode').value) => modeOptionOf(w).parentElement.label;  // (a mode's: the tab's by default)
 const DISPLAY_GREYED = { '2D spirals': ['fill', 'visits', 'line'], Elementary: ['digit'] };
-const greyed = (item) => [modeGroup(), NAV[$('mode').value]?.[0]].some((k) => DISPLAY_GREYED[k]?.includes(item));
+const greyed = (item, w = $('mode').value) => [modeGroup(w), NAV[w]?.[0]].some((k) => DISPLAY_GREYED[k]?.includes(item));
 const shows = (item, w = $('mode').value) => DISPLAY_BY_TAB[modeGroup(w)].includes(item) || (w === $('mode').value && spaceTimeOn() && VIEW_3D.includes(item));
 // a display setting greyed at a mode: none in its view, the views that have it said (Grid, Upright, Perspective…); else ''
 const viewWhyNot = (item, w) => (shows(item, w) ? '' : `only in ${Object.keys(DISPLAY_BY_TAB).filter((g) => DISPLAY_BY_TAB[g].includes(item)).join(', ')}`);
-const useful = (item) => shows(item) && !greyed(item);
+const useful = (item, w) => shows(item, w) && !greyed(item, w);
+// a look greyed at a mode (Rainbow along a spiral, its Heatmap, Elementary's Activity), its words; else ''
+const LOOK_WHERE = { gradient: 'on a spiral (its line no use)', visits: 'on a spiral (each cell visited once)', digit: 'on Elementary (a cell never changes once made: no activity)' };
+const lookWhyNot = (look, w) => ((look === 'gradient' && greyed('line', w)) || (look === 'visits' && !useful('visits', w)) || (look === 'digit' && greyed('digit', w)) ? LOOK_WHERE[look] : '');
 function updateDisplayMenu() {
   const rows = { colours: 'coloursRow', grid: 'gridRow',
                  autoRotate: 'autoRotateRow', upright: 'uprightRow', perspective: 'perspectiveRow', light: 'lightRow', glass: 'glassRow', ocean: 'oceanRow', cut: 'cutRow' };
@@ -1903,9 +1906,7 @@ function relabelColours(mode) {
   const byValue = Object.fromEntries(Array.from(sel.options, (o) => [o.value, o]));
   order.forEach((v) => { byValue[v].text = names[v]; sel.append(byValue[v]); });
   for (const v of ['cells', 'visits', 'digit', 'mono']) byValue[v].hidden = !shows(v);
-  byValue.gradient.disabled = greyed('line');  // Rainbow along the walk: no use on a spiral
-  byValue.visits.disabled = !useful('visits');
-  byValue.digit.disabled = greyed('digit');  // (Elementary's Activity)
+  for (const v of ['gradient', 'visits', 'digit']) byValue[v].disabled = !!lookWhyNot(v, $('mode').value);  // (Rainbow along a spiral, its Heatmap, Elementary's Activity)
   if (sel.selectedOptions[0]?.hidden || sel.selectedOptions[0]?.disabled) {
     sel.value = Array.from(sel.options).find((o) => !o.hidden && !o.disabled).value;  // the first one left
   }
@@ -2036,8 +2037,8 @@ function renderColourButtons() {
   const names = L ? { mono: 'States', gradient: 'Age', digit: 'Activity' } : { gradient: 'Rainbow', cells: 'Rainbow', visits: 'Heatmap', digit: 'Directions' };
   const picture = (v) => (L ? lifeLookPicture(v) : cellModePicture(v === 'gradient' ? 'cells' : v));
   const looks = Array.from(sel.options).filter((o) => !o.hidden && names[o.value]);
-  const buttons = looks.map((o) => tile({ pic: picture(o.value), text: names[o.value], title: o.text, on: o.value === sel.value, can: !o.disabled, byDefault: o.value === defaultOf('look') ? 'yes' : '',
-    greyed: { gradient: L ? '' : 'on a spiral (its line no use)', visits: 'on a spiral (each cell visited once)', digit: 'on Elementary (a cell never changes once made: no activity)' }[o.value] ?? '',
+  const buttons = looks.map((o) => tile({ pic: picture(o.value), text: names[o.value], title: o.text, on: o.value === sel.value, byDefault: o.value === defaultOf('look') ? 'yes' : '',
+    greyed: (o.value === 'gradient' && L ? '' : LOOK_WHERE[o.value]) ?? '', whyNot: ({ w }) => lookWhyNot(o.value, w),
     click: () => { sel.value = o.value; sel.dispatchEvent(new Event('change')); } }));
   if (MODES[$('mode').value].margolus) renderBlocksButton();
   box.replaceChildren(...(buttons.length > 1 ? [tileGroup(buttons)] : buttons), ...(L ? [MODES[$('mode').value].margolus ? blocksButton : trailButton] : []));  // then Life's Trail, a switch (Rewind's Blocks)
@@ -18284,6 +18285,7 @@ function cellModePicture(look, ant) {  // a 2 × 2 swatch, or the rainbow line o
     + `<rect x="2" y="2" width="20" height="20" rx="2" fill="url(#${id})"/></svg>`;
   return heatRings(g);
 }
+const CELLS_ONLY = 'along the lines: on cells only';  // (a walk's cells' look along its lines: none)
 function renderCellModes(mode) {
   $('cellModes').hidden = !shows('cells') && !shows('heatmap') && !mode.antOf;  // a walk in 2D or on a surface, an ant anywhere
   if ($('cellModes').hidden) return;
@@ -18291,7 +18293,7 @@ function renderCellModes(mode) {
   const looks = CELL_MODES.filter(([look]) => mode.antOf || shows('cells') || look !== 'digit'), now = cellModeOf(mode), ant = !!mode.antOf;
   const button = ([look, name, title]) => tile({ pic: cellModePicture(look, ant), ...(look === 'digit' && ant ? { text: ANT_STATES[0], title: ANT_STATES[1] } : { text: name, title }), on: look === now,
     byDefault: look === (ant ? defaultOf('antLook') : 'cells') ? 'yes' : '',  // (an ant's States, a walk's Rainbow: see DISPLAY_DEFAULTS)
-    can: !((!mode.cells && !['cells', 'digit'].includes(look)) || (look === 'visits' && !useful('visits'))), click: () => pickCellMode(look) });  // (along the lines: Rainbow, Directions, its line's colours)
+    greyed: look === 'visits' ? LOOK_WHERE.visits : CELLS_ONLY, whyNot: ({ w }) => (!MODES[w].cells && !['cells', 'digit'].includes(look) ? CELLS_ONLY : look === 'visits' ? lookWhyNot('visits', w) : ''), click: () => pickCellMode(look) });  // (along the lines: Rainbow, Directions, its line's colours)
   $('cellModes').replaceChildren(tileGroup(looks.map(button)));  // (joined in one frame, see tileGroup)
 }
 function pickCellMode(look) {

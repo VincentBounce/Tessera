@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.395';
+const VERSION = '0.4.396';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -705,10 +705,10 @@ function iroot(v, k) {
 
 /* ---- 2.1 Helpers, directions and colours -------------------------------------------------- */
 const $ = (id) => document.getElementById(id);
-const fmt = (v) => v.toLocaleString('en');
+const formatNumber = (v) => v.toLocaleString('en');  // (its thousands by commas: 39,193)
 // v written as wide as widest: the digits and commas it lacks in front, hidden zeros (every digit as wide, see body's
 // tabular-nums): a count that changes keeps its place
-const fmtAsWide = (v, widest) => { const s = fmt(v), w = fmt(Math.max(v, widest)); return `<span class="digits-pad">${w.slice(0, w.length - s.length).replace(/\d/g, '0')}</span>${s}`; };
+const formatNumberAsWide = (v, widest) => { const s = formatNumber(v), w = formatNumber(Math.max(v, widest)); return `<span class="digits-pad">${w.slice(0, w.length - s.length).replace(/\d/g, '0')}</span>${s}`; };
 const DIRS = [[0, -1], [1, 0], [0, 1], [-1, 0]]; // N, E, S, W (screen y points down)
 const H = Math.sqrt(3) / 2;                        // height of a triangle with side 1
 const TRI_Y0 = -2 * H / 3;                         // offset that puts the centre of the starting triangle at (0, 0)
@@ -1595,7 +1595,7 @@ const freshWalk = () => ({
   life: null, plane: null,  // Life's; on the plane, its grid
   shape: null,     // only tiled surfaces that can change shape get one (see initShape)
   persp: null,     // the perspective camera (see setPerspective)
-  widestShown: 0,  // the furthest step or generation shown yet: the step line as wide, never narrower (see fmtAsWide)
+  widestShown: 0,  // the furthest step or generation shown yet: the step line as wide, never narrower (see formatNumberAsWide)
 });
 const walk = { mode: null, ...freshWalk() };  // (mode: the one it is built for, see buildWalkOf)
 
@@ -1694,10 +1694,10 @@ function describe(base, available) {
     const tail = mode.rule.slice(at + 2), pre = tail.slice(0, tail.indexOf('<b>')).trim(), edge = / edge\b/.test(tail) ? ' edge' : '';
     const around = pre ? ` · ${pre} …${edge}` : '';
     const highway = (walk.bridges?.length ? ` · ${walk.bridges.length === 1 ? 'a bridge' : `${walk.bridges.length} bridges`} back into its cloud, from step `
-      + walk.bridges.map((b) => `${fmt(b.from)} (${fmt(Math.floor((b.to - b.from) / b.period))} stretches)`).join(', ') : '')
-      + (walk.highway && !walk.loop ? ` · a highway from step ${fmt(walk.highway.from)}, every ${walk.highway.period} steps` : '')
+      + walk.bridges.map((b) => `${formatNumber(b.from)} (${formatNumber(Math.floor((b.to - b.from) / b.period))} stretches)`).join(', ') : '')
+      + (walk.highway && !walk.loop ? ` · a highway from step ${formatNumber(walk.highway.from)}, every ${walk.highway.period} steps` : '')
       + (loopText() ? ` · ${loopText()}` : '');  // why the length stops where it does
-    $('description').innerHTML = `<b>${walkName(walk.mode)}</b> · ${walk.loop ? '' : `${fmt(walk.n)} ${mode.antOf || mode.worm ? 'steps' : 'digits'} · `}${chips ? lead + around + (after ? ` · ${after}` : '') : mode.rule}${highway}`;
+    $('description').innerHTML = `<b>${walkName(walk.mode)}</b> · ${walk.loop ? '' : `${formatNumber(walk.n)} ${mode.antOf || mode.worm ? 'steps' : 'digits'} · `}${chips ? lead + around + (after ? ` · ${after}` : '') : mode.rule}${highway}`;
     if (chips) {
       $('ruleChips').replaceChildren(...items.map(([, d, text]) => {
         // without the closing note and the words around the digits (they are in the description)
@@ -1717,9 +1717,9 @@ function describe(base, available) {
   setLinks($('barRule'), ruleText);
   $('barRule').title = [known && known.name !== ruleText ? known.name : '', 'A click: how it works'].filter(Boolean).join(' · ');  // (its name, when not its words: a loop's)
   $('barBase').parentElement.classList.add('life');
-  if (walk.rows) { $('description').innerHTML = `${{ digits: `<span class="walking">${sym}</span> in base 2`, cell: 'One live cell', two: 'Two live cells', half: 'Its left half alive' }[plane.start]} its first row, ${fmt(walk.n)} rows down · ${fmt(walk.rows.upTo.at(-1))} live cells`; return; }  // (Elementary, see elementaryRows)
+  if (walk.rows) { $('description').innerHTML = `${{ digits: `<span class="walking">${sym}</span> in base 2`, cell: 'One live cell', two: 'Two live cells', half: 'Its left half alive' }[plane.start]} its first row, ${formatNumber(walk.n)} rows down · ${formatNumber(walk.rows.upTo.at(-1))} live cells`; return; }  // (Elementary, see elementaryRows)
   const cells = walk.life.seed.length;
-  const seeded = available < cells ? `the first ${fmt(available)} of the ${fmt(cells)} cells (the others start dead)` : `the ${fmt(cells)} cells`;
+  const seeded = available < cells ? `the first ${formatNumber(available)} of the ${formatNumber(cells)} cells (the others start dead)` : `the ${formatNumber(cells)} cells`;
   $('description').innerHTML = `Neighbours share an edge or a corner · ${startLead(`<span class="walking">${sym}</span> in base ${base} seeds`, seeded)}`;  // (the rule, a newborn's colour too: How it works)
 }
 
@@ -2173,10 +2173,10 @@ const STEPS_GLYPH = '𓊍';  // the length asked's mark: its stepper's unit, a r
 function endMark() {
   if (spaceTimeOn() || walk.rows) return '';
   if (lengthUsed() && seekFar() === targetAsked() && !runLoop()) return `<a class="gen-link gen-loop" href="#" data-stepper title="The length asked: a click, the steps stepper at the top right">${STEPS_GLYPH}<span class="end-words"> max defined upper-right</span></a>`;  // (its end the length asked: a click highlights its stepper)
-  if (walk.battle) { const why = walk.battle.winner.until; return why ? genLink(cur !== walk.n ? walk.n : 0, `■<span class="end-words"> ${why} at step ${fmt(walk.n)}</span>`, 'loop') : ''; }  // (its winner: the ranking's)
+  if (walk.battle) { const why = walk.battle.winner.until; return why ? genLink(cur !== walk.n ? walk.n : 0, `■<span class="end-words"> ${why} at step ${formatNumber(walk.n)}</span>`, 'loop') : ''; }  // (its winner: the ranking's)
   const k = walk.life?.stable, o = !walk.life && runLoop();
-  const [mark, words] = walk.life ? (!k ? [] : k.extinct ? ['✝', `at gen ${fmt(k.T)}`] : k.P === 1 ? ['■', `from gen ${fmt(k.T)}`] : ['↻', `every ${fmt(k.P)} from gen ${fmt(k.T)}`])
-    : !o ? [] : walk.wormEnd ? ['✝', `at step ${fmt(walk.n)}`] : [walk.loop.drift ? '→' : '↻', `every ${fmt(walk.loop.period ?? walk.n - o.T)} from step ${fmt(o.T)}`];
+  const [mark, words] = walk.life ? (!k ? [] : k.extinct ? ['✝', `at gen ${formatNumber(k.T)}`] : k.P === 1 ? ['■', `from gen ${formatNumber(k.T)}`] : ['↻', `every ${formatNumber(k.P)} from gen ${formatNumber(k.T)}`])
+    : !o ? [] : walk.wormEnd ? ['✝', `at step ${formatNumber(walk.n)}`] : [walk.loop.drift ? '→' : '↻', `every ${formatNumber(walk.loop.period ?? walk.n - o.T)} from step ${formatNumber(o.T)}`];
   return mark ? loopLink(`${mark}<span class="end-words"> ${words}</span>`) : '';  // (its words: open only, see .end-words)
 }
 // its link, in green (see genLink): to its first step; from there, to its last; an end alone, back to 0
@@ -2206,16 +2206,16 @@ function runStop() {
   if (gensShown()) {
     const s = !spaceTimeOn() && walk.life?.stable, n = runEnd() + 1;
     const end = spaceTimeOn() && stack?.end !== 'gens' ? STACK_ENDS[stack?.end]
-      : s && runEnd() < walk.n ? (s.extinct ? STACK_ENDS.dead : s.P === 1 ? ['■', 'Frozen: more would draw the same'] : ['↻', `Back to gen ${fmt(s.T)} every ${fmt(s.P)}: more would draw the same`]) : null;
-    return end && { n, label: `${fmt(n)} generations max ${end[0]}`, why: end[1] };
+      : s && runEnd() < walk.n ? (s.extinct ? STACK_ENDS.dead : s.P === 1 ? ['■', 'Frozen: more would draw the same'] : ['↻', `Back to gen ${formatNumber(s.T)} every ${formatNumber(s.P)}: more would draw the same`]) : null;
+    return end && { n, label: `${formatNumber(n)} generations max ${end[0]}`, why: end[1] };
   }
   if (randomPrimeSize()) return null;
   const asked = targetAsked(), unit = stepperUnit(), L = walk.loop, total = wholeTotal();
   // (a battle's own end, known as it was fought: not the digits asked meanwhile)
-  if (walk.battle?.winner.until) return { n: walk.n, label: `${fmt(walk.n)} steps until ${walk.battle.winner.until} ■`, why: `■ The battle ends at step ${fmt(walk.n)}, ${walk.battle.winner.how}: more digits would change nothing` };
-  if (walk.wormEnd && walk.n < asked) return { n: walk.n, label: `${fmt(walk.n)} steps max ✝`, why: loopText() };
-  if (L && asked >= (L.cap ?? walk.n)) return { n: L.cap ?? walk.n, label: `${fmt(L.cap ?? walk.n)} ${unit} max ${L.drift ? '→' : '↻'}`, why: loopText() };
-  if (total !== null && total <= asked) return { n: total, label: `all ${fmt(total)} ${unit}`, why: `The number has ${fmt(total)} digits: all walked` };
+  if (walk.battle?.winner.until) return { n: walk.n, label: `${formatNumber(walk.n)} steps until ${walk.battle.winner.until} ■`, why: `■ The battle ends at step ${formatNumber(walk.n)}, ${walk.battle.winner.how}: more digits would change nothing` };
+  if (walk.wormEnd && walk.n < asked) return { n: walk.n, label: `${formatNumber(walk.n)} steps max ✝`, why: loopText() };
+  if (L && asked >= (L.cap ?? walk.n)) return { n: L.cap ?? walk.n, label: `${formatNumber(L.cap ?? walk.n)} ${unit} max ${L.drift ? '→' : '↻'}`, why: loopText() };
+  if (total !== null && total <= asked) return { n: total, label: `all ${formatNumber(total)} ${unit}`, why: `The number has ${formatNumber(total)} digits: all walked` };
   return null;
 }
 // what the digits' stepper counts: a walk's steps (a digit read a step); a start by the digits, its digits; a creature by
@@ -2231,28 +2231,28 @@ function syncDigitsStepper() {
   const unit = gens ? 'generations' : stepperUnit(), total = gens || size || walk.loop ? null : wholeTotal();  // (a loop's, its rounds: see runStop)
   // the length asked, steps at most, the same words in every tab (its end, a loop, a death, a battle's: the step line, see endMark)
   if (document.activeElement !== $('digitsLabel')) $('digitsLabel').value = `≤${compactCount(asked)}`;  // (its unit, steps: the footprints beside it)
-  $('digitsLabel').title = [`${fmt(asked)} ${size ? 'digits of the random prime p (100 to 2,000: it is walked whole)' : `${asked === 1 ? unit.slice(0, -1) : unit} at most`}`,
-    !size && !lengthUsed() && 'Not used here (Life and Rewind play on): kept for the next tab', !size && total !== null && `The number has ${fmt(total)} digits`, stop?.why,
-    `Type a number, from ${fmt(steps[0])} to ${fmt(size ? steps.at(-1) : targetMost())}, then Enter`].filter(Boolean).join('\n');
+  $('digitsLabel').title = [`${formatNumber(asked)} ${size ? 'digits of the random prime p (100 to 2,000: it is walked whole)' : `${asked === 1 ? unit.slice(0, -1) : unit} at most`}`,
+    !size && !lengthUsed() && 'Not used here (Life and Rewind play on): kept for the next tab', !size && total !== null && `The number has ${formatNumber(total)} digits`, stop?.why,
+    `Type a number, from ${formatNumber(steps[0])} to ${formatNumber(size ? steps.at(-1) : targetMost())}, then Enter`].filter(Boolean).join('\n');
   $('digitsDown').disabled = asked <= steps[0];
   $('digitsUp').disabled = asked >= (size ? steps.at(-1) : targetMost());
 }
 // Why a walk that repeats has a most of digits: the loop (or drift), from its first step, and how many
 // rounds are walked; '' when it does not repeat
 function loopText() {
-  if (walk.wormEnd) return `✝ The worm stops at step ${fmt(walk.n)}, after ${fmt(walk.wormMade)} turns of its own: ${{ dead: 'no line left to eat at its corner', eaten: 'its rule turns onto a line already eaten',
+  if (walk.wormEnd) return `✝ The worm stops at step ${formatNumber(walk.n)}, after ${formatNumber(walk.wormMade)} turns of its own: ${{ dead: 'no line left to eat at its corner', eaten: 'its rule turns onto a line already eaten',
     rule: 'its rule has no turn left for a new corner', digits: 'no digit left for a new corner' }[walk.wormEnd]}.`;
   const L = !randomPrimeSize() && walk.loop;
   if (!L) return '';
   const period = L.period ?? walk.n - L.from, rounds = L.rounds ?? (L.period ? LOOP_ROUNDS : 1), total = L.cap ?? walk.n;
   const far = rounds > LOOP_ROUNDS ? ', as far as what it drew before is wide' : '';
-  if (walk.ant) return `→ From step ${fmt(L.from)}, the ant builds a highway: the same ${fmt(period)} steps forever, each time further on.`
-    + ` It stops after ${fmt(rounds)} of them${far}, ${fmt(total)} steps.`;
+  if (walk.ant) return `→ From step ${formatNumber(L.from)}, the ant builds a highway: the same ${formatNumber(period)} steps forever, each time further on.`
+    + ` It stops after ${formatNumber(rounds)} of them${far}, ${formatNumber(total)} steps.`;
   return L.drift
-    ? `→ From step ${fmt(L.from)}, this walk repeats the same ${fmt(period)} steps forever, each time further on: it goes off`
-      + ` for ever, and stops after ${fmt(rounds)} rounds${far}, ${fmt(total)} digits.`
-    : `↻ From step ${fmt(L.from)}, this walk goes round the same ${fmt(period)} steps forever:`
-      + ` it stops after ${rounds === 1 ? 'one round' : `${rounds} rounds`}, ${fmt(total)} digits, and more would draw nothing new.`;
+    ? `→ From step ${formatNumber(L.from)}, this walk repeats the same ${formatNumber(period)} steps forever, each time further on: it goes off`
+      + ` for ever, and stops after ${formatNumber(rounds)} rounds${far}, ${formatNumber(total)} digits.`
+    : `↻ From step ${formatNumber(L.from)}, this walk goes round the same ${formatNumber(period)} steps forever:`
+      + ` it stops after ${rounds === 1 ? 'one round' : `${rounds} rounds`}, ${formatNumber(total)} digits, and more would draw nothing new.`;
 }
 function stepDigits(delta) {
   const size = randomPrimeSize(), steps = size ? PRIME_STEPS : DIGIT_STEPS, n = size ?? targetAsked();  // (the length asked, not where it ended)
@@ -2767,7 +2767,7 @@ function pretty(x) {
       return { sqrt: () => `√${arg(a)}`, cbrt: () => `∛${arg(a)}`, root: () => `${superscript(b.v)}√${arg(a)}`,
                ln: () => (a.k === 'num' || a.k === 'name' ? `ln ${pretty(a)}` : `ln(${pretty(a)})`),
                exp: () => `exp(${pretty(a)})`, zeta: () => `ζ(${pretty(a)})`,
-               log: () => (b.k === 'num' && !b.v.includes('.') ? `log${subscript(b.v)} ${arg(a)}` : `log(${pretty(a)}, ${pretty(b)})`), primorial: () => `${fmt(Number(a.v))}#`,
+               log: () => (b.k === 'num' && !b.v.includes('.') ? `log${subscript(b.v)} ${arg(a)}` : `log(${pretty(a)}, ${pretty(b)})`), primorial: () => `${formatNumber(Number(a.v))}#`,
                random: () => '🎲', randprime: () => `🎲 p${subscript(a.v)}` }[x.f]();
     }
     default: {
@@ -2817,7 +2817,7 @@ function checkFormula(root) {
   };
   const whole = (x, lo, hi, what) => {
     if (x.k !== 'num' || x.v.includes('.') || Number(x.v) < lo || Number(x.v) > hi) {
-      throw new Error(`${what} must be a whole number from ${fmt(lo)} to ${fmt(hi)}`);
+      throw new Error(`${what} must be a whole number from ${formatNumber(lo)} to ${formatNumber(hi)}`);
     }
     return Number(x.v);
   };
@@ -3817,7 +3817,7 @@ function compute() {
     buildWalk();
     $('status').textContent = [
       `${how} · Walk built in ${((performance.now() - t0) / 1000).toFixed(2)} s`,
-      F.root === 'randprime' && `a random ${fmt(Number(F.ast.args[0].v))}-digit probable prime, found after ${fmt(entry.tests)} Miller–Rabin tests`,
+      F.root === 'randprime' && `a random ${formatNumber(Number(F.ast.args[0].v))}-digit probable prime, found after ${formatNumber(entry.tests)} Miller–Rabin tests`,
       note,
       walkSaid,
       entry.uncertain && '⚠ the value is extremely close to a round number: the last digits could be off by one',
@@ -3844,7 +3844,7 @@ function compute() {
     || (x.k === '^' && x.exp === undefined && !x.rootExp));
   const slow = F.log10 > 6e6 || (F.root === 'randprime' && Number(F.ast.args[0].v) > 1000) || (F.kind === 'real' && quadratic && n > 1e6);
   $('status').textContent =
-    (F.root === 'randprime' ? `Searching for a random ${fmt(Number(F.ast.args[0].v))}-digit prime…`
+    (F.root === 'randprime' ? `Searching for a random ${formatNumber(Number(F.ast.args[0].v))}-digit prime…`
       : `Computing ${sym} in base ${base}…`) +  // the count is beside it
     (slow ? ' (this can take a minute or more)' : '');
   worker.onmessage = (e) => {
@@ -6374,13 +6374,13 @@ const SPHERES = {
   cube: { mesh: cubeFlat, radius: (n) => n / 2,                 // half the cube side: square edge = 1 unit
           tiles: (n) => 6 * n * n, unit: 'squares' },
   pits: { mesh: cubePits, radius: (n) => n / 2, steps: [6], tiles: (n) => (66 * n * n) / 9, unit: 'squares',
-          how: (n) => `(Edge=${fmt(n)}) / 3 = ${fmt(n / 3)}: each face 3 × 3 blocks of ${fmt(n / 3)}², its middle a pit (its floor, 4 walls half a block deep): 11 blocks a face, 6 × 11 × {y:${fmt(n / 3)}² squares}` },
+          how: (n) => `(Edge=${formatNumber(n)}) / 3 = ${formatNumber(n / 3)}: each face 3 × 3 blocks of ${formatNumber(n / 3)}², its middle a pit (its floor, 4 walls half a block deep): 11 blocks a face, 6 × 11 × {y:${formatNumber(n / 3)}² squares}` },
   bumps: { mesh: (n) => cubePits(n, true), radius: (n) => (2 * n) / 3, steps: [6], tiles: (n) => (66 * n * n) / 9, unit: 'squares',  // (its bumps a sixth out: 4/3 of its half side)
-           how: (n) => `(Edge=${fmt(n)}) / 3 = ${fmt(n / 3)}: each face 3 × 3 blocks of ${fmt(n / 3)}², its middle a bump (its top, 4 walls half a block high): 11 blocks a face, 6 × 11 × {y:${fmt(n / 3)}² squares}` },
+           how: (n) => `(Edge=${formatNumber(n)}) / 3 = ${formatNumber(n / 3)}: each face 3 × 3 blocks of ${formatNumber(n / 3)}², its middle a bump (its top, 4 walls half a block high): 11 blocks a face, 6 × 11 × {y:${formatNumber(n / 3)}² squares}` },
   frame: { mesh: (m) => mengerMesh(1, m), radius: (m) => (3 * m) / 2, tiles: (m) => 72 * m * m, unit: 'squares', edge: (m) => 3 * m,  // a cube's frame: its branches m squares wide, its edge 3m
-           how: (m) => `a cube's frame, (Edge=${fmt(3 * m)}) / 3 = ${fmt(m)} its branches' width: 72 × {y:${fmt(m)}² squares}` },
+           how: (m) => `a cube's frame, (Edge=${formatNumber(3 * m)}) / 3 = ${formatNumber(m)} its branches' width: 72 × {y:${formatNumber(m)}² squares}` },
   menger: { mesh: (L) => mengerMesh(L), radius: (L) => 3 ** L / 2, least: 2, most: 3, tiles: (L) => 2 * 20 ** L + 4 * 8 ** L, unit: 'squares', edge: (L) => 3 ** L,
-            how: (L) => `Menger's sponge, (Edge=${fmt(3 ** L)}) = 3^${L}, divided by 3 ${L} times (level ${L}): {y:2 × 20^${L} + 4 × 8^${L} squares}` },  // Menger's sponge: its size, its steps L (side 3^L)  // the cube with pits (a sixth deep: n a multiple of 6)
+            how: (L) => `Menger's sponge, (Edge=${formatNumber(3 ** L)}) = 3^${L}, divided by 3 ${L} times (level ${L}): {y:2 × 20^${L} + 4 × 8^${L} squares}` },  // Menger's sponge: its size, its steps L (side 3^L)  // the cube with pits (a sixth deep: n a multiple of 6)
   // flat polyhedra: radius = f / (edge of the solid) so that a small triangle's edge is 1 unit
   // a torus's size: its rows (see torusDims); perRow: tiles per column across a row; steps: what rows
   // and tiles per row go by in a size of its own, keeping the sheet's columns even or rows even
@@ -6459,23 +6459,23 @@ const SPHERES = {
   stella: { mesh: (f) => flatPolyhedron('stella', f), radius: (f) => f / Math.SQRT2,       // edge √2
             tiles: (f) => 24 * f * f, unit: 'triangles' },
   dodeca: { mesh: (f) => flatPolyhedron('dodeca', f), radius: (f) => (f * PHI) / 2,        // edge 2/φ
-            tiles: (f) => 60 * f * f, unit: 'triangles', how: (f) => `{r:12 pentagonal faces} × {s:5 sectors} × {y:(Edge=${fmt(f)})² triangles}` },  // (each pentagon 5 triangles round its middle)
+            tiles: (f) => 60 * f * f, unit: 'triangles', how: (f) => `{r:12 pentagonal faces} × {s:5 sectors} × {y:(Edge=${formatNumber(f)})² triangles}` },  // (each pentagon 5 triangles round its middle)
   stellaKite: { mesh: (f) => flatPolyhedron('stella', f, true), radius: (f) => f / Math.SQRT2, tiles: (f) => 72 * f * f, unit: 'kites' },
   cubocta: { mesh: (f) => hullMesh('cubocta', f), radius: (f) => f / Math.SQRT2, tiles: (f) => 14 * f * f, unit: 'cells', edges: [12, 24, 48] },  // edge √2
   pyramid: { mesh: (f) => hullMesh('pyramid', f), radius: (f) => f / 2, tiles: (f) => 5 * f * f, unit: 'cells', edges: [12, 24, 48] },  // edge 2
   rhombi: { mesh: (f) => hullMesh('rhombi', f), radius: (f) => f / 2, tiles: (f) => 26 * f * f, unit: 'cells', edges: [12, 24, 48] },  // edge 2: 18 squares, 8 triangles
   bicupola: { mesh: (f) => hullMesh('bicupola', f), radius: (f) => f / 2, tiles: (f) => 18 * f * f, unit: 'cells', edges: [12, 24, 48] },
   globe: { mesh: globeMesh, radius: (E) => E / (2 * Math.PI), tiles: (E, K = ringColours()) => globeBands(E, K).N.slice(1, -1).reduce((sum, n) => sum + n, 2), unit: 'cells',
-           how: (E) => { const { N } = globeBands(E); return `{y:${fmt(N.length - 2)} bands}, a unit high, of {k:${fmt(E)} cells} at the equator, halved towards the poles down to {k:${fmt(N[1])}} + {r:2 caps}`; },
+           how: (E) => { const { N } = globeBands(E); return `{y:${formatNumber(N.length - 2)} bands}, a unit high, of {k:${formatNumber(E)} cells} at the equator, halved towards the poles down to {k:${formatNumber(N[1])}} + {r:2 caps}`; },
            // (its sizes its colours': its equator's columns F, 2F, 4F…, each halving down to F, see globeBands; as many cells as the others')
            ownSizes: (K = ringColours()) => { const out = []; for (let E = globeFewest(K); SPHERES.globe.tiles(E, K) <= CELLS.most; E *= 2) if (SPHERES.globe.tiles(E, K) >= CELLS.least) out.push(E); return out; } },  // (E: its equator's columns, see globeMesh)
-  dodecaKite: { mesh: (f) => flatPolyhedron('dodeca', f, true), radius: (f) => (f * PHI) / 2, tiles: (f) => 180 * f * f, unit: 'kites', how: (f) => `{r:12 pentagonal faces} × {s:5 sectors} × {y:(Edge=${fmt(f)})² triangles} × {k:3 kites each}` },
+  dodecaKite: { mesh: (f) => flatPolyhedron('dodeca', f, true), radius: (f) => (f * PHI) / 2, tiles: (f) => 180 * f * f, unit: 'kites', how: (f) => `{r:12 pentagonal faces} × {s:5 sectors} × {y:(Edge=${formatNumber(f)})² triangles} × {k:3 kites each}` },
 };
 // the rosette spheres (see rosetteSphereMesh): their sizes their discs' W, their discs' houses twice, a unit each
 for (const [k, Ws] of Object.entries(ROSETTE_SPHERES)) {
   SPHERES[`${k}Sphere`] = { mesh: (W) => rosetteSphereMesh(k, W), radius: (W) => Math.sqrt(SPHERES[`${k}Sphere`].tiles(W) / (4 * Math.PI)), unit: 'cells', ownSizes: () => Ws, disc: true,
     tiles: (W) => 2 * APERIODIC[k](W).m,  // (its disc's houses, walls too, counted flat)
-    how: (W) => { const F = APERIODIC[k](W), c = F.coreIds.length; return `2 discs ⌀ ${fmt(discOf(W))}, each round its {y:middle (${c} cell${c > 1 ? 's' : ''})} × (${fmt(F.n)} cells + ${fmt(F.m - F.n)} of their walls)`; } };
+    how: (W) => { const F = APERIODIC[k](W), c = F.coreIds.length; return `2 discs ⌀ ${formatNumber(discOf(W))}, each round its {y:middle (${c} cell${c > 1 ? 's' : ''})} × (${formatNumber(F.n)} cells + ${formatNumber(F.m - F.n)} of their walls)`; } };
 }
 // the solids of squares as tetrakis triangles (see tetrakisOf): sized as their squares, 4 cells a square
 for (const k of Object.keys(TETRAKIS_SOLIDS)) {
@@ -6511,7 +6511,7 @@ function syncSizeStepper() {
   const starts = modeStarts();
   $('startRow').hidden = !starts;
   if (!starts) return;
-  if (document.activeElement !== $('startLabel')) $('startLabel').value = `start ${fmt(startNo())} of ${fmt(starts.length)}`;
+  if (document.activeElement !== $('startLabel')) $('startLabel').value = `start ${formatNumber(startNo())} of ${formatNumber(starts.length)}`;
   const fixed = startsWayNow() !== 'symmetric';  // (a battle's starts not A's moved: the selector greyed, see STARTS_WAYS)
   $('startDown').disabled = fixed || startNo() <= 1;
   $('startUp').disabled = fixed || startNo() >= starts.length;
@@ -6586,7 +6586,7 @@ const hexagonOf = (kind, f) => {
   const N = gridSize(kind, f)[2], r = Math.round((Math.sqrt(12 * N - 3) - 3) / 6), m = Math.round(Math.sqrt(N / (3 * (TILES_PER_GRID_CELL[kind] ?? 1))));
   return kind === 'hex' && 3 * r * (r + 1) + 1 === N ? `Hexagon · ${r} rings` : 3 * m * m * (TILES_PER_GRID_CELL[kind] ?? 1) === N ? `Hexagon · ${m} a side` : 'Hexagon';
 };
-const sizeShape = (kind, f) => { const d = gridSize(kind, f); return APERIODIC[kind] ? `⌀ ${fmt(discOf(d[0]))}` : SPHERES[kind]?.disc ? `⌀ ${fmt(discOf(f))} × 2` : shaped(kind) ? hexagonOf(kind, f) : d ? `${fmt(d[0])} × ${fmt(d[1])}` : `Edge ${fmt(SPHERES[kind]?.edge?.(f) ?? f)}`; };  // (a circle: its diameter; a solid: its edge, a frame's and a sponge's their cube's)
+const sizeShape = (kind, f) => { const d = gridSize(kind, f); return APERIODIC[kind] ? `⌀ ${formatNumber(discOf(d[0]))}` : SPHERES[kind]?.disc ? `⌀ ${formatNumber(discOf(f))} × 2` : shaped(kind) ? hexagonOf(kind, f) : d ? `${formatNumber(d[0])} × ${formatNumber(d[1])}` : `Edge ${formatNumber(SPHERES[kind]?.edge?.(f) ?? f)}`; };  // (a circle: its diameter; a solid: its edge, a frame's and a sponge's their cube's)
 // how its cells are counted (the size's tooltip): its own words (Pits, Frame, Menger, theirs as tetrakis triangles), else its
 // count's form, c × f² (+ k: a sphere of hexagons' 12 pentagons, see goldberg), else the grid's rows × cells a row
 // a size's tooltip on its block, − + its label and its slider, as its motif shows on it (see drawMotif); its words
@@ -6597,7 +6597,7 @@ const cssColour = (name) => getComputedStyle(document.documentElement).getProper
 // many, from that same number each time: never drifting a step at a time; none yet: each grid its first size)
 let picked = null;
 const nearCells = (sizes, cells, n) => sizes.reduce((a, b) => (Math.abs(Math.log(cells(b) / n)) < Math.abs(Math.log(cells(a) / n)) ? b : a));  // the size with about n cells
-const lastPicked = () => `{b:Last picked}${picked ? `\nSize: {b:${fmt(picked)} cells} (picked with − + or the slider)` : ''}${MODES[$('mode').value]?.life ? `\nPopulation: {b:${COLOUR_STEP_NAMES[coloursPicked]}${colourMixed() ? ' mixed' : ''}} (picked in the section)` : ''}`;
+const lastPicked = () => `{b:Last picked}${picked ? `\nSize: {b:${formatNumber(picked)} cells} (picked with − + or the slider)` : ''}${MODES[$('mode').value]?.life ? `\nPopulation: {b:${COLOUR_STEP_NAMES[coloursPicked]}${colourMixed() ? ' mixed' : ''}} (picked in the section)` : ''}`;
 const sizeTips = (row, total, text) => {
   const marks = (t) => t.replace(/[&<>]/g, (c) => `&#${c.charCodeAt(0)};`).replace(/\{([yroskbg]):([^}]*)\}/g, (_, c, w) => (c === 'g' ? `<span class="tip-default">${w}</span>` : `<b${c === 'b' ? '' : ` class="tip-${c}"`}>${w}</b>`));  // ({g:…}: grey, as a default)
   total = marks(total);
@@ -6613,9 +6613,9 @@ const facesMemo = {};  // (a solid's least mesh: its faces, see howCounted)
 // and rows as many); a solid's, a face's as a square (its cells shared out among its faces: a carved cube's, its walls' too)
 const sizeSides = (kind, f) => {
   const d = gridSize(kind, f), S = SPHERES[kind];
-  if (S?.disc) return `{g:${fmt(f)} × ${fmt(f)} cells a disc, as the plane's}`;  // (a rosette sphere: no face, its two discs)
+  if (S?.disc) return `{g:${formatNumber(f)} × ${formatNumber(f)} cells a disc, as the plane's}`;  // (a rosette sphere: no face, its two discs)
   if (!d) {
-    const g = (facesMemo[kind] ??= S.mesh(S.sizes[0])), F = { tetra: 4, octa: 8, icosa: 20, stella: 24, dodeca: 12 }[FACE_BASE[kind] ?? kind.replace(/Kite$/, '')] ?? (g.triFaces ? g.triFaces.length + g.squareFaces.length : 6), a = fmt(Math.round(Math.sqrt(S.tiles(f) / F)));
+    const g = (facesMemo[kind] ??= S.mesh(S.sizes[0])), F = { tetra: 4, octa: 8, icosa: 20, stella: 24, dodeca: 12 }[FACE_BASE[kind] ?? kind.replace(/Kite$/, '')] ?? (g.triFaces ? g.triFaces.length + g.squareFaces.length : 6), a = formatNumber(Math.round(Math.sqrt(S.tiles(f) / F)));
     return `{g:≈ ${a} × ${a} ${S.unit} a face}`;
   }
   let r = 1;
@@ -6626,7 +6626,7 @@ const sizeSides = (kind, f) => {
   // plane's cols × rows; in a circle or a hexagon, its slice as a square)
   const K = ringColours(), [x, y] = [Math.sqrt(d[2] * r), Math.sqrt(d[2] / r)], [a, b] = !S ? (wallSlices(K, kind) ? [Math.sqrt(K), Math.sqrt(K)] : COLOUR_GRID[K])
     : /^(mobius|klein)/.test(kind) ? [K, 1] : torusBlocks(K, { nv: torusDims(kind, f)[0] });
-  return `{g:≈ ${fmt(Math.round(x))} × ${fmt(Math.round(y))} ${d[3]}}${K > 1 ? `\n\n{b:${K} colours: ${fmt(Math.round(d[2] / K))} ${d[3]} per colour}\n{g:≈ ${fmt(Math.round(x / a))} × ${fmt(Math.round(y / b))} ${d[3]} per colour}` : ''}`;
+  return `{g:≈ ${formatNumber(Math.round(x))} × ${formatNumber(Math.round(y))} ${d[3]}}${K > 1 ? `\n\n{b:${K} colours: ${formatNumber(Math.round(d[2] / K))} ${d[3]} per colour}\n{g:≈ ${formatNumber(Math.round(x / a))} × ${formatNumber(Math.round(y / b))} ${d[3]} per colour}` : ''}`;
 };
 // (its total out of it, in the tooltip's title, see sizeTips: = its count, a formula's; else its words, capitalised)
 const sizeHow = (kind, f) => { const how = howCounted(kind, f).replace(/ = [\d,]+ [a-z ]+$/, ''); return /^[\d{(]/.test(how) ? `= ${how.replace(/ ([×+]) /g, '\n$1 ')}` : how.replace(/^./, (c) => c.toUpperCase()); };  // (a formula: each factor, each term on its line)
@@ -6641,27 +6641,27 @@ const latticeCellOf = (g, t) => 2 * (g.latticeCells?.[t] ?? Math.floor(tilePlace
 const turnedCellNote = (kind) => (kind === 'cairo' ? ' (the next ones the same turned by a quarter)' : '');
 const howCounted = (kind, f) => {
   const S = SPHERES[kind], d = gridSize(kind, f), n = S?.tiles?.(f) ?? d?.[2], unit = S?.unit ?? d?.[3];
-  if (S?.how) return `${S.how(f)} = ${fmt(n)} ${unit}`;
+  if (S?.how) return `${S.how(f)} = ${formatNumber(n)} ${unit}`;
   const per = PLANE_CELLS[kind] ? TILES_PER_GRID_CELL[kind] ?? 1 : 1, all = d && d[0] * d[1] * per;  // (the plane's: its grid cells a row, each per cells; less its wall's)
   // (a hexagon's or a disc's middle, violet as its core is drawn, see drawMotif: its cells nearest its middle, so many)
   const middle = () => { const W = planeW(kind, f), c = (APERIODIC[kind]?.(W) ?? planeShape(kind, W)).core.length; return `{y:middle (${c} ${c === 1 ? d[3].replace(/s$/, '') : d[3]})}`; };
   if (d && PLANE_CELLS[kind] && shaped(kind)) {  // a hexagon round its middle (see planeShape): rings of hexagons, else 3n² rhombi of its lattice where it falls on it
     const N = d[2], r = Math.round((Math.sqrt(12 * N - 3) - 3) / 6), m = Math.round(Math.sqrt(N / (3 * per)));
-    if (kind === 'hex' && 3 * r * (r + 1) + 1 === N) return `its ${middle()} and ${r} rings round it, 6 more each: 1 + 6 + … + ${6 * r} = 3 × ${r} × ${r + 1} + 1 = ${fmt(N)} ${d[3]}`;
-    if (3 * m * m * per === N) return `a hexagon of its lattice, ${m} a side round its ${middle()}: 3 × ${m}² rhombi${per > 1 ? ` × ${per} ${d[3]} each` : ''} = ${fmt(N)} ${d[3]}`;
-    return `the cells in a hexagon round its ${middle()} (a point it turns onto by a sixth), as far as each other all in or all out: ${fmt(N)} ${d[3]}`;
+    if (kind === 'hex' && 3 * r * (r + 1) + 1 === N) return `its ${middle()} and ${r} rings round it, 6 more each: 1 + 6 + … + ${6 * r} = 3 × ${r} × ${r + 1} + 1 = ${formatNumber(N)} ${d[3]}`;
+    if (3 * m * m * per === N) return `a hexagon of its lattice, ${m} a side round its ${middle()}: 3 × ${m}² rhombi${per > 1 ? ` × ${per} ${d[3]} each` : ''} = ${formatNumber(N)} ${d[3]}`;
+    return `the cells in a hexagon round its ${middle()} (a point it turns onto by a sixth), as far as each other all in or all out: ${formatNumber(N)} ${d[3]}`;
   }
   // (a disc ⌀ side: as big as a square of side × √π / 2, in whole rows of its items, see sideW: W² of them nearest its middle)
-  if (d && APERIODIC[kind]) return `a disc ⌀ ${fmt(discOf(d[0]))} round its ${middle()} (it never repeats: no rows)\n= the ${fmt(d[0])}² ${d[3]} nearest it (whole rows: a square as big as the disc, ${fmt(discOf(d[0]))} × √π / 2 = ${fmt(d[0])})${d[0] ** 2 > d[2] ? ` − ${fmt(d[0] ** 2 - d[2])} in the wall` : ''} = ${fmt(d[2])} ${d[3]}`;
+  if (d && APERIODIC[kind]) return `a disc ⌀ ${formatNumber(discOf(d[0]))} round its ${middle()} (it never repeats: no rows)\n= the ${formatNumber(d[0])}² ${d[3]} nearest it (whole rows: a square as big as the disc, ${formatNumber(discOf(d[0]))} × √π / 2 = ${formatNumber(d[0])})${d[0] ** 2 > d[2] ? ` − ${formatNumber(d[0] ** 2 - d[2])} in the wall` : ''} = ${formatNumber(d[2])} ${d[3]}`;
   if (d && TORI.includes(kind)) {  // a sheet's (a torus, a Möbius strip, a Klein bottle): its rows × its lattice cells (its motif, violet) × their cells (green)
     // (a tiling's torus: its sheet a rectangle, det lattice cells when its cell is slanted, each a motif, see tilingTorusMesh)
     const g = (facesMemo[kind] ??= S.mesh(S.sizes[0])), m = latticeCellSize(g), L = d[2] / d[0] / m, whole = Number.isInteger(L), [[p, q], [r, s]] = g.sheet ?? [[1, 0], [0, 1]], det = Math.abs(p * s - q * r);
-    return `(Edge=${fmt(d[0])}) rows × {y:${whole ? '' : '≈ '}${fmt(Math.round(L * 10) / 10)} ${m > 1 ? 'lattice cells' : d[3]}} a row${whole ? '' : ' (its edges cut them)'}${det > 1 ? ` (${det} a rectangle of the sheet: its cell slanted, the sheet straight)` : ''}${m > 1 ? ` × {k:${m} ${d[3]} each}${turnedCellNote(cellKind(g))}` : ''} = ${fmt(d[2])} ${d[3]}`;
+    return `(Edge=${formatNumber(d[0])}) rows × {y:${whole ? '' : '≈ '}${formatNumber(Math.round(L * 10) / 10)} ${m > 1 ? 'lattice cells' : d[3]}} a row${whole ? '' : ' (its edges cut them)'}${det > 1 ? ` (${det} a rectangle of the sheet: its cell slanted, the sheet straight)` : ''}${m > 1 ? ` × {k:${m} ${d[3]} each}${turnedCellNote(cellKind(g))}` : ''} = ${formatNumber(d[2])} ${d[3]}`;
   }
   // the plane's: its rows × its lattice cells (its motif, violet) × their cells (green), less its wall's
   // (a slanted grid's rectangle, det lattice cells of its tiling: each one its motif, see planeMotifCells)
   const m = PLANE_CELLS[kind] ? TILES_PER_GRID_CELL[baseOf(kind)] ?? 1 : 1, det = per / m;
-  if (d) return `(Edge=${fmt(d[0])}) rows × {y:${fmt(d[1] * det)} ${m > 1 ? 'lattice cells' : d[3]}} a row${det > 1 ? ` (${det} a rectangle of the grid: its cell slanted, the grid straight)` : ''}${m > 1 ? ` × {k:${m} ${d[3]} each}${turnedCellNote(kind)}` : ''}${all > d[2] ? ` − ${fmt(all - d[2])} in the wall` : ''} = ${fmt(d[2])} ${d[3]}`;
+  if (d) return `(Edge=${formatNumber(d[0])}) rows × {y:${formatNumber(d[1] * det)} ${m > 1 ? 'lattice cells' : d[3]}} a row${det > 1 ? ` (${det} a rectangle of the grid: its cell slanted, the grid straight)` : ''}${m > 1 ? ` × {k:${m} ${d[3]} each}${turnedCellNote(kind)}` : ''}${all > d[2] ? ` − ${formatNumber(all - d[2])} in the wall` : ''} = ${formatNumber(d[2])} ${d[3]}`;
   // a solid of flat faces: each face's cells, f to an edge (its faces as its least size's mesh has them, the same at every size)
   const base = kind.endsWith('Tetrakis') && SPHERES[kind.slice(0, -8)] ? kind.slice(0, -8) : kind, B = SPHERES[base];  // (a solid of tetrakis triangles: its squares', 4 each)
   const g = B && !TORI.includes(base) && (facesMemo[base] ??= B.mesh(B.sizes[0])), cut = base !== kind ? 4 : g?.kite ? 3 : 1;
@@ -6672,7 +6672,7 @@ const howCounted = (kind, f) => {
     if (Object.entries(by).reduce((sum, [c, k]) => sum + k * (round[c] ?? 1) * f * f * cut, 0) === n)
     {
       const red = redFaces(base === kind ? g : (facesMemo[kind] ??= S.mesh(S.sizes[0]))), mark = (c, w) => (red ? `{${c}:${w}}` : w);  // (in the colours drawn: its faces red, its motif's cells violet)
-      return `${Object.entries(by).map(([c, k]) => `${mark('r', `${k} ${adj[c]} face${k > 1 ? 's' : ''}`)} × ${round[c] ? `${round[c]} × ` : ''}${mark(g.triFaces && c === '4' ? 's' : 'y', `(Edge=${fmt(f)})² ${cells[c]}`)}`).join(' + ')}${cut > 1 ? ` × ${mark('k', `${cut} ${unit} each`)}` : ''} = ${fmt(n)} ${unit}`;
+      return `${Object.entries(by).map(([c, k]) => `${mark('r', `${k} ${adj[c]} face${k > 1 ? 's' : ''}`)} × ${round[c] ? `${round[c]} × ` : ''}${mark(g.triFaces && c === '4' ? 's' : 'y', `(Edge=${formatNumber(f)})² ${cells[c]}`)}`).join(' + ')}${cut > 1 ? ` × ${mark('k', `${cut} ${unit} each`)}` : ''} = ${formatNumber(n)} ${unit}`;
     }
   }
   if (S?.unit === 'hexagons' && !TORI.includes(kind)) {  // a solid of triangles blown up: f² / 2 hexagons a face, a cell of its own at each corner (see goldberg)
@@ -6680,10 +6680,10 @@ const howCounted = (kind, f) => {
     const faces = kind === 'dodecaHex' ? `12 pentagonal faces × 5 sectors` : `${F} triangular faces`;  // (the dodecahedron's pentagons: 5 triangles each; not red: not drawn, see drawMotifFace)
     // (a sum on lines: its faces, a triangle f steps a side as big as f² / 2 hexagons; + 2: its corners, 5 faces round a
     // pentagon, not 6, each counted 5/6 by them, 12 × 1/6 (Euler's 2 on any of them); its cells, its corners' and its hexagons)
-    return `${faces} × (Edge=${fmt(f)})² / 2 = ${fmt(n - 2)}\n+ 2 (its corners: fewer than 6 faces round each)\n= ${fmt(n)} cells`;  // (its hexagons and its corners' cells: in the title, see sizeCells)
+    return `${faces} × (Edge=${formatNumber(f)})² / 2 = ${formatNumber(n - 2)}\n+ 2 (its corners: fewer than 6 faces round each)\n= ${formatNumber(n)} cells`;  // (its hexagons and its corners' cells: in the title, see sizeCells)
   }
   const k = S.tiles(0), c = (n - k) / (f * f);
-  return Number.isInteger(c) && S.tiles(2 * f) === 4 * c * f * f + k ? `${c} × (Edge=${fmt(f)})²${k ? ` + ${k}` : ''} = ${fmt(n)} ${unit}` : `${fmt(n)} ${unit}`;
+  return Number.isInteger(c) && S.tiles(2 * f) === 4 * c * f * f + k ? `${c} × (Edge=${formatNumber(f)})²${k ? ` + ${k}` : ''} = ${formatNumber(n)} ${unit}` : `${formatNumber(n)} ${unit}`;
 };
 // a solid of hexagons' corners: its cells there, by their sides (12 pentagons; 8 triangles + 6 octagons), as its least mesh has them
 const hexCorners = (kind) => {
@@ -6694,9 +6694,9 @@ const hexCorners = (kind) => {
 };
 const sizeCells = (kind, f, marked = false) => {  // (a solid of hexagons: its hexagons, then its corners' cells, not all said hexagons; marked: in their colours, see sizeTips)
   const d = gridSize(kind, f), S = SPHERES[kind];
-  if (d) return `${fmt(d[2])} ${d[3]}`;
-  if (S.unit === 'hexagons') { const { at, walls } = hexCorners(kind), hex = `${fmt(S.tiles(f) - walls)} hexagons`; return marked ? `{y:${hex}} + {o:${at}}` : `${hex} + ${at}`; }
-  return `${fmt(S.tiles(f))} ${S.unit}`;
+  if (d) return `${formatNumber(d[2])} ${d[3]}`;
+  if (S.unit === 'hexagons') { const { at, walls } = hexCorners(kind), hex = `${formatNumber(S.tiles(f) - walls)} hexagons`; return marked ? `{y:${hex}} + {o:${at}}` : `${hex} + ${at}`; }
+  return `${formatNumber(S.tiles(f))} ${S.unit}`;
 };
 // a size's cells as its stepper shows them, short (hexas, pentas: its − and + as wide; its tooltip says them whole)
 const shortCells = (text) => text.replace(/hexagons/g, 'hexas').replace(/pentagons/g, 'pentas');
@@ -8344,12 +8344,12 @@ const BATTLE_CARDS = Object.values(PRESETS).filter((p) => ['Constants', '𝑓', 
 const huntVary = { formulas: true, starts: false };
 // its rankings: [picture, name, tooltip, the button's words, its list's title, a battle's score (none: Longest's two lists),
 // a card's figure]
-const firstStop = (r) => (r.stop === Infinity ? 'no stop' : `first stop ${fmt(r.stop)}`);
+const firstStop = (r) => (r.stop === Infinity ? 'no stop' : `first stop ${formatNumber(r.stop)}`);
 const HUNT_RANKS = {
   longest: ['goalLongest', 'Longest', 'The hunt keeps the longest battles: the ended ones, and the first still on as the digits end', 'Hunt the longest battles', '', null,
-    (r) => `${r.ended ? '' : '≥ '}${fmt(r.steps)} steps`],
+    (r) => `${r.ended ? '' : '≥ '}${formatNumber(r.steps)} steps`],
   even: ['goalBattle', 'Even lands', "The hunt keeps the battles whose smallest land at the end is the largest: every walker's land big, all alike", 'Hunt the most even lands', 'The most even lands',
-    (r) => r.even, (r) => `lands ${r.lands.map(fmt).join(' / ')}`],
+    (r) => r.even, (r) => `lands ${r.lands.map(formatNumber).join(' / ')}`],
   stop: ['goalDies', 'Latest first stop', 'The hunt keeps the battles whose first walker to stop (or die) does so the latest, none stopping the best: the walkers kept apart', 'Hunt the latest first stop',
     'The latest first stops', (r) => r.stop, firstStop] };
 let huntRank = 'longest';
@@ -8420,7 +8420,7 @@ async function startBattleHunt() {
     list.push(r);
     if (by) { list.sort(by); list.length = Math.min(8, list.length); }
   };
-  const say = () => { drawn = performance.now(); battleHunt.status = `${fmt(battleHunt.tried.size)} battles${sets < Infinity ? ` of ${fmt(sets)}` : ''} fought · ${fmt(battleHunt.endedCount)} ended`; renderBattleHunt(); };
+  const say = () => { drawn = performance.now(); battleHunt.status = `${formatNumber(battleHunt.tried.size)} battles${sets < Infinity ? ` of ${formatNumber(sets)}` : ''} fought · ${formatNumber(battleHunt.endedCount)} ended`; renderBattleHunt(); };
   const sent = new Map(), setup = { g: meshData(g), grid, net: mode.net, acts: surfaceActs(mode), pen: penetration, base, n, cards: [...cards], fixed: huntVary.formulas ? null : shownFs.map(shownDigits) };
   const feed = (w) => { const b = next(); if (b) { sent.set(b.id, b); w.postMessage({ id: b.id, fs: b.fs, placed: b.placed }); } };
   for (let j = 0; j < BATTLE_WORKERS; j++) {
@@ -8476,7 +8476,7 @@ function renderBattleHunt() {
   $('battleHuntStatus').textContent = battleHunt.status;
   const sym = (f) => formulaOf(f).sym, shown = [formulaInUse, ...RIVALS.map((id) => formulaOf($(id).value).text)];
   const cardOf = (r) => {
-    const end = r.win.s < 0 ? 'a draw' : `${sym(r.fs[r.win.s])} wins, ${fmt(r.win.size)}`, at = r.n ? ` · start ${fmt(r.n)}` : r.seed ? ` · draw ${r.seed}` : '';
+    const end = r.win.s < 0 ? 'a draw' : `${sym(r.fs[r.win.s])} wins, ${formatNumber(r.win.size)}`, at = r.n ? ` · start ${formatNumber(r.n)}` : r.seed ? ` · draw ${r.seed}` : '';
     return card({ pic: colourBlock(r.fs.length), name: `${r.fs.map(sym).join(' vs ')}${at} · ${figure(r)}`, detail: `${r.win.how} · ${end}`,
                   on: r.fs.every((f, j) => f === shown[j]) && (!r.n || r.n === startNo()) && (!r.seed || r.seed === battleSeed),
                   click: () => playBattle(r.fs, r) });
@@ -8738,7 +8738,7 @@ function elementaryReady(then) {
   const job = computeJob;
   elementaryWorker = workerOf({ KEEP, wolframTable, wordsOf, popCounts, wolframStep, elementaryRowsOf }, elementaryWorkerMain);
   setBusy(true);
-  $('status').textContent = `Computing ${fmt(a.args[0])} rows…`;
+  $('status').textContent = `Computing ${formatNumber(a.args[0])} rows…`;
   elementaryWorker.onmessage = (e) => {
     elementaryWorker.terminate();
     elementaryWorker = null;
@@ -8746,7 +8746,7 @@ function elementaryReady(then) {
     if (job !== computeJob) return;  // (asked since: another)
     elementaryMade = { key: a.key, ...e.data };
     then();
-    $('status').textContent += ` · ${fmt(a.args[0])} rows in ${(e.data.ms / 1000).toFixed(2)} s`;  // (apart, the page going on)
+    $('status').textContent += ` · ${formatNumber(a.args[0])} rows in ${(e.data.ms / 1000).toFixed(2)} s`;  // (apart, the page going on)
   };
   elementaryWorker.postMessage(a.args);
   return false;
@@ -10259,7 +10259,7 @@ function buildLifePlane(seq) {
 // set back at its start
 let stack = null;
 const STACK_MOST = 2 ** 21;  // its cubes at most: drawn turning in 19 ms, shadows and all, 40 MB (measured at 128 a side)
-const STACK_ENDS = { dead: ['✝', 'All died out'], loop: ['↻', 'Its loop gone round 5 times: more would draw the same'], full: ['᪣', `Its memory full: ${fmt(STACK_MOST)} cubes at most (drawn turning in 19 ms, 40 MB)`] };  // (᪣: a chip, its memory; not ▣, read as Stop)
+const STACK_ENDS = { dead: ['✝', 'All died out'], loop: ['↻', 'Its loop gone round 5 times: more would draw the same'], full: ['᪣', `Its memory full: ${formatNumber(STACK_MOST)} cubes at most (drawn turning in 19 ms, 40 MB)`] };  // (᪣: a chip, its memory; not ▣, read as Stop)
 // its layers made generation by generation, each awaited (see lifeSettle): true once made, false if another took its place
 async function stackUp() {
   const L = walk.life, { W, row, n, xy } = walk.plane, K = L.colours;
@@ -10361,13 +10361,13 @@ function startTitle() {
   return `${HUNT_ZONES[zone]?.[1] ?? 'Soup'} #${plane.seed}`;
 }
 function startLead(number, seeded) {  // its start in words, on any grid (the plane's: its side, its symmetry)
-  const kind = walk.plane?.kind, side = kind && fmt(walk.plane.W), soup = `${plane.density} % alive (seed ${plane.seed})`;
+  const kind = walk.plane?.kind, side = kind && formatNumber(walk.plane.W), soup = `${plane.density} % alive (seed ${plane.seed})`;
   const sym = kind ? SYMMETRIES[symmetryOf(kind)][2] : '', where = kind ? `a ${side} × ${side} grid of ${PLANE_CELLS[kind]}${{ tri: ' (two a rhombus)', cairo: ' (two a square)', kite: ' (six a rhombus)', hat: ' (an aperiodic tiling: one tile that never repeats)', penrose: ' (an aperiodic tiling)', pinwheel: ' (an aperiodic tiling: one right triangle, turned every way)', ammann: ' (an aperiodic tiling, eightfold)', rhombs12: ' (an aperiodic tiling, twelvefold)', rhombs14: ' (an aperiodic tiling, fourteenfold)', flower: " (Hirschhorn's flower: one pentagon, six-fold, never repeating)", flower5: ' (a rosette: one pentagon, five-fold, never repeating)', flower7: ' (a rosette: one pentagon, seven-fold, never repeating)', ...conedOf((k, n, F) => [k, ` (a ${F.how} rosette: ${F.one}, ${n}-fold, never repeating)`]), flower3: ' (a rosette: one pentagon, three-fold, never repeating)', flower4: ' (a rosette: one pentagon, four-fold, never repeating)', flower8: ' (a rosette: one pentagon, eight-fold, never repeating)', flower9: ' (a rosette: one pentagon, nine-fold, never repeating)', flower10: ' (a rosette: one pentagon, ten-fold, never repeating)', ring7: ' (a ring: one pentagon round a heptagonal hole, seven-fold, never repeating)', ring8: ' (a ring: one pentagon round an octagonal hole, eight-fold, never repeating)', ring9: ' (a ring: one pentagon round a nonagonal hole, nine-fold, never repeating)', ring10: ' (a ring: one pentagon round a decagonal hole, ten-fold, never repeating)', ring12: ' (a ring: one pentagon round a dodecagonal hole, twelve-fold, never repeating)', spectre: ' (an aperiodic tiling: one tile that never repeats, never turned over)' }[kind] ?? ''} ${planeTorus(kind) ? 'wrapping around (a torus)' : planeShape(kind, walk.plane.W) ? 'walled in a hexagon' : 'with dead edges'}` : MODES[$('mode').value].where;
   const found = { hunt: 'A start found by the hunt', saved: 'A saved start', battle: 'A battle found by the hunt' }[lifeStart];
   if (lifeStart?.zone) return `${zoneWords(lifeStart.zone)}${sym ? `, ${sym},` : ''} on ${where}, the others dead`;
-  if (lifeStart?.radius) return `${number} the ${fmt(lifeStart.cells)} cells within radius ${lifeStart.radius} of the middle of ${where}, the others dead`;
+  if (lifeStart?.radius) return `${number} the ${formatNumber(lifeStart.cells)} cells within radius ${lifeStart.radius} of the middle of ${where}, the others dead`;
   if (found) return `${found} on ${where}`;
-  const how = { random: `A random soup, ${soup}${lifeParts() > 1 ? `, each colour in its part (${COLOUR_PARTS[lifeParts()]})${newcomerOn() ? `, ${teamName(lifeParts())} none: born only (Newcomer)` : ''}` : ''},`, draw: `${fmt(walk.life.seedAlive)} cells drawn`, digits: `${number} ${seeded}`, text: `“${plane.text}” drawn` }[plane.start].replace(/,?$/, sym ? `, ${sym},` : '$&');
+  const how = { random: `A random soup, ${soup}${lifeParts() > 1 ? `, each colour in its part (${COLOUR_PARTS[lifeParts()]})${newcomerOn() ? `, ${teamName(lifeParts())} none: born only (Newcomer)` : ''}` : ''},`, draw: `${formatNumber(walk.life.seedAlive)} cells drawn`, digits: `${number} ${seeded}`, text: `“${plane.text}” drawn` }[plane.start].replace(/,?$/, sym ? `, ${sym},` : '$&');
   return `${how} on ${where}`;
 }
 function planeFromSetup(s) {
@@ -11416,8 +11416,8 @@ function blockTutorial(entry, to) {
   const maxPeriod = `<h4>Max period</h4><p>It runs back, so on a finite grid any start comes back to itself, with no lead-in: its period is the generation it does, a multiple of its ${p} phases. `
     + (keeps ? `This rule keeps the live cells (each block as many alive after), so a start of m alive cells on n comes back within C(n, m) × ${p} generations: the ways m cells can lie, times the phases.`
       : `This rule changes how many are alive, so a start on n cells comes back within 2<sup>n</sup> × ${p} generations: all the grid's states, times the phases.`)
-    + (L ? ` Here, ${fmt(L.seed.length)} cells${keeps ? `, ${fmt(L.seedAlive)} alive` : ''}: at most ${bigWords(B.log).replace(/\^(.*)/, '<sup>$1</sup>')}. `
-      + (L.stable ? `This start comes back at gen ${fmt(L.stable.P)}.` : `This start: not back by gen ${fmt(Math.max(L.reached ?? 0, backSearch.life === L ? backSearch.gen : 0))} (Find its return to the start searches on).`) : '') + '</p>';
+    + (L ? ` Here, ${formatNumber(L.seed.length)} cells${keeps ? `, ${formatNumber(L.seedAlive)} alive` : ''}: at most ${bigWords(B.log).replace(/\^(.*)/, '<sup>$1</sup>')}. `
+      + (L.stable ? `This start comes back at gen ${formatNumber(L.stable.P)}.` : `This start: not back by gen ${formatNumber(Math.max(L.reached ?? 0, backSearch.life === L ? backSearch.gen : 0))} (Find its return to the start searches on).`) : '') + '</p>';
   const flips = !ising && blockKind(to).flips, full = (1 << k) - 1;
   const edges = torus ? ` On a torus its blocks go on round its edges (its size one they fit round).` : flips ? ` On walls, a cell in no whole block (along them) is turned over that generation, as a block would be: shown as it is.` : ` On walls, a cell in no whole block (along them) stays as it is that generation.`;
   // a rule that turns an empty block full (Critters, Tron): as it is shown, every other generation negative
@@ -11468,7 +11468,7 @@ function loopTutorial(entry) {
   const cross = ([c, N, E, S, W]) => `<svg viewBox="-0.1 -0.1 3.2 3.2">${cell(1, 0, N)}${cell(2, 1, E)}${cell(1, 2, S)}${cell(0, 1, W)}${cell(1, 1, c)}</svg>`;
   const lines = table.split('\n').filter((l) => /^[0-9,]+$/.test(l)).map((l) => (l.includes(',') ? l.split(',') : [...l]).map(Number)), shown = lines.filter((t) => t[0] !== t[5]).slice(0, 12);
   const start = loopCells(pattern.rle).map(([x, y, v]) => cell(x, y, v));
-  $('ruleTuto').innerHTML = `<div class="tut-body"><h3>${entry.name}${entry.name === name ? '' : ` <code>${name}</code>`}</h3><p>${words[0].toUpperCase()}${words.slice(1)} (${year}). Each cell looks at itself and its 4 neighbours by a side, in turn round it (von Neumann): ${fmt(table.split('\n').filter((l) => !l.includes(':') && !l.startsWith('var')).length)} lines of Golly's table, each also turned a quarter, a half and three quarters round; a cell none fits stays as it is. In colours (Teams), a loop's daughters take its colour: lineages fighting for room.</p>`
+  $('ruleTuto').innerHTML = `<div class="tut-body"><h3>${entry.name}${entry.name === name ? '' : ` <code>${name}</code>`}</h3><p>${words[0].toUpperCase()}${words.slice(1)} (${year}). Each cell looks at itself and its 4 neighbours by a side, in turn round it (von Neumann): ${formatNumber(table.split('\n').filter((l) => !l.includes(':') && !l.startsWith('var')).length)} lines of Golly's table, each also turned a quarter, a half and three quarters round; a cell none fits stays as it is. In colours (Teams), a loop's daughters take its colour: lineages fighting for room.</p>`
     + `<h4>States</h4><div class="tut-row">${Array.from({ length: n }, (_, v) => `<figure><div><svg viewBox="-0.1 -0.1 1.2 1.2">${cell(0, 0, v)}</svg></div><figcaption>${v}</figcaption></figure>`).join('')}</div>`
     + `<h4>Changing</h4><div class="tut-row">${shown.map((t) => `<figure><div>${cross(t)}<span>→</span><svg viewBox="-1.1 -1.1 3.2 3.2">${cell(0, 0, t[5])}</svg></div><figcaption>${t[0]} → ${t[5]}</figcaption></figure>`).join('')}</div>`
     + `<h4>Start</h4><div class="tut-row"><figure><div><svg class="tut-start" viewBox="-0.2 -0.2 ${pattern.w + 0.4} ${pattern.h + 0.4}">${start.join('')}</svg></div><figcaption>${pattern.w} × ${pattern.h}</figcaption></figure></div></div>`;
@@ -11989,7 +11989,7 @@ function blockBound(L, to = L.margolus.to, phases = L.margolus.turns.length) {  
   if (keeps) for (let i = 0; i < Math.min(m, n - m); i++) c += Math.log10((n - i) / (i + 1));
   return { keeps, log: (keeps ? c : n * Math.LOG10E * Math.LN2) + Math.log10(phases) };
 }
-const bigWords = (log) => (log < 15 ? fmt(Math.round(10 ** log)) : `10^${fmt(Math.floor(log))}`);
+const bigWords = (log) => (log < 15 ? formatNumber(Math.round(10 ** log)) : `10^${formatNumber(Math.floor(log))}`);
 // the search for its return, past the generations played: the start stepped on its own, in slices (Find its return), on the
 // processor (one generation after another: a small grid's 20 times as fast as on the graphics card, a pass each; a large
 // grid's start hardly ever back, see backBtn's tip)
@@ -13067,7 +13067,7 @@ const zoneGreyed = (zone) => (isIcon(zone) ? 'where it cannot fit' : zone === 'r
 function renderBack() {
   const L = walk.life;
   if (!L?.margolus) return;  // (its section shown by its mode, see compute)
-  $('backBtn').innerHTML = L.stable ? `${icon('search')} Back to start at gen ${fmt(L.stable.P)}` : backSearch.life === L ? `${icon('stop')} Stop · gen ${fmt(backSearch.gen)} searched` : `${icon('search')} Find its return to the start`;
+  $('backBtn').innerHTML = L.stable ? `${icon('search')} Back to start at gen ${formatNumber(L.stable.P)}` : backSearch.life === L ? `${icon('stop')} Stop · gen ${formatNumber(backSearch.gen)} searched` : `${icon('search')} Find its return to the start`;
   $('backBtn').disabled = !!L.stable;
 }
 function renderHunt() {
@@ -13089,18 +13089,18 @@ function renderHunt() {
   // one line under the button: what the zone has put on the grid, and (Life) what a hunt will try; how far it got while it
   // runs, what it found after
   const L = walk.life, life = !L.margolus, d = plane.density, z = hunt.zone, N = iconSize(z), r = zoneRadius(z), names = plane.icons.slice(0, K).map(iconSet(z).label).join(', ');
-  const shown = z === 'custom' ? `A start ${life ? 'found by a hunt, ' : ''}from a link (${fmt(L.seedAlive)} cells)`
+  const shown = z === 'custom' ? `A start ${life ? 'found by a hunt, ' : ''}from a link (${formatNumber(L.seedAlive)} cells)`
     : N ? (K === 1 ? `${iconSet(z).word[0].toUpperCase()}${iconSet(z).word.slice(1)} ${names}, ${N} cells wide` : `${iconSet(z).word[0].toUpperCase()}${iconSet(z).word.slice(1)}s ${names}, ${N} cells wide, one a colour`)
-    : z === 'patterns' ? `${K === 1 ? 'A pattern' : 'Patterns'} of the rule, anywhere${K > 1 ? ', one a colour' : ''} (${fmt(perColour)} ways and places)`
-    : z === 'centred' ? `${K === 1 ? 'A pattern of the rule, in the middle' : "Patterns of the rule, each at its colour's spot"} (${fmt(perColour)} of them)`
-    : r ? `Random cells within ${r} step${r > 1 ? 's' : ''} of ${K === 1 ? 'the middle' : "each colour's spot"}, ${d} % of ${fmt(perColour)}${K > 1 ? ' each' : ''}`
-    : z === 'realm' ? `Random cells on each colour's face, ${d} % of ${fmt(perColour)} each`
+    : z === 'patterns' ? `${K === 1 ? 'A pattern' : 'Patterns'} of the rule, anywhere${K > 1 ? ', one a colour' : ''} (${formatNumber(perColour)} ways and places)`
+    : z === 'centred' ? `${K === 1 ? 'A pattern of the rule, in the middle' : "Patterns of the rule, each at its colour's spot"} (${formatNumber(perColour)} of them)`
+    : r ? `Random cells within ${r} step${r > 1 ? 's' : ''} of ${K === 1 ? 'the middle' : "each colour's spot"}, ${d} % of ${formatNumber(perColour)}${K > 1 ? ' each' : ''}`
+    : z === 'realm' ? `Random cells on each colour's face, ${d} % of ${formatNumber(perColour)} each`
     : z === 'mirror' ? `Each colour a soup of its two opposite parts, ${d} % alive`
     : z === 'numbers' ? `The binary digits of ${plane.number}, a digit a cell${K > 1 ? (colourMixed() ? ', each live cell a colour at random' : ', each colour in its part') : ''}`
     : K === 1 ? `A random soup, ${d} % alive` : `Each colour a soup of its part, ${d} % alive`;
   const tried = N || z === 'emoji' ? 'pictures' : famousZone(z) ? 'patterns' : z === 'numbers' ? 'numbers' : z === 'full' || z === 'mirror' ? 'soups' : 'starts';
   const hunts = z === 'custom' ? 'A start found by a hunt, from a link: pick a zone to hunt in'
-    : `${all ? `All its ${fmt(all)} ${tried} tried, each once, then done` : `On and on until stopped: ${tried} at random one in 3, the others tweaks of the best`}; the 8 best kept, a click on one plays it`;
+    : `${all ? `All its ${formatNumber(all)} ${tried} tried, each once, then done` : `On and on until stopped: ${tried} at random one in 3, the others tweaks of the best`}; the 8 best kept, a click on one plays it`;
   const zone = shown + (sym !== 'none' ? ` · ${SYMMETRIES[sym][2]}` : '');
   $('huntBtn').innerHTML = busy ? `${icon('stop')} Stop hunt and play` : `${icon('search')} Hunt ${what}`;
   $('huntBtn').disabled = !busy && hunt.zone === 'custom';  // a start from a link: a zone to hunt in first
@@ -13123,14 +13123,14 @@ function renderHunt() {
   hunt.listKey = listKey;
   $('huntTop').replaceChildren(...hunt.top.map((r) => {
     const [name, detail] = K === 1
-      ? hunt.goal === 'peak' ? [`${fmt(r.peak)} cells alive at gen ${fmt(r.peakAt)}`, `from ${fmt(r.live)} cells · ${fmt(r.T)} generations${r.P ? '' : ' or more'}`]
-        : hunt.goal === 'cover' ? (r.allAt ? [`All by gen ${fmt(r.allAt)}`, `its ${fmt(n)} cells reached · from ${fmt(r.live)}`]
-          : [`${Math.floor((100 * r.reached) / n)} % of the cells reached`, `${r.P ? `till it ${r.P === 1 ? 'settles' : 'loops'} at gen ${fmt(r.T)}` : `in ${fmt(r.T)} generations`} · from ${fmt(r.live)} cells`])
-        : [`${fmt(r.T)} generations${r.P ? '' : ' or more'}`, `${r.extinct ? 'dies out' : r.P === 1 ? 'settles' : r.P ? `period-${fmt(r.P)} loop` : 'still changing'}${hunt.goal === 'full' ? `, ${Math.floor((100 * r.endAlive) / n)} % alive` : ''} · ${fmt(r.live)} cells`]
-      : [`${fmt(r.contacts)} generation${r.contacts === 1 ? '' : 's'} in contact`, r.winner ? `${teamName(r.winner - 1)} wins at gen ${fmt(r.alone)}`
-        : r.P ? `of ${fmt(r.T)} before it settles` : `still fighting at gen ${fmt(r.T)}, where the hunt stops`];  // its balance: on its light
+      ? hunt.goal === 'peak' ? [`${formatNumber(r.peak)} cells alive at gen ${formatNumber(r.peakAt)}`, `from ${formatNumber(r.live)} cells · ${formatNumber(r.T)} generations${r.P ? '' : ' or more'}`]
+        : hunt.goal === 'cover' ? (r.allAt ? [`All by gen ${formatNumber(r.allAt)}`, `its ${formatNumber(n)} cells reached · from ${formatNumber(r.live)}`]
+          : [`${Math.floor((100 * r.reached) / n)} % of the cells reached`, `${r.P ? `till it ${r.P === 1 ? 'settles' : 'loops'} at gen ${formatNumber(r.T)}` : `in ${formatNumber(r.T)} generations`} · from ${formatNumber(r.live)} cells`])
+        : [`${formatNumber(r.T)} generations${r.P ? '' : ' or more'}`, `${r.extinct ? 'dies out' : r.P === 1 ? 'settles' : r.P ? `period-${formatNumber(r.P)} loop` : 'still changing'}${hunt.goal === 'full' ? `, ${Math.floor((100 * r.endAlive) / n)} % alive` : ''} · ${formatNumber(r.live)} cells`]
+      : [`${formatNumber(r.contacts)} generation${r.contacts === 1 ? '' : 's'} in contact`, r.winner ? `${teamName(r.winner - 1)} wins at gen ${formatNumber(r.alone)}`
+        : r.P ? `of ${formatNumber(r.T)} before it settles` : `still fighting at gen ${formatNumber(r.T)}, where the hunt stops`];  // its balance: on its light
     const [colour, word] = light(r) ?? [], why = K > 1 ? (r.contacts ? `balance ${r.balance.toFixed(2)}: how evenly its colours keep being born (1 all alike, 0 one alone; green from 0.6, orange from 0.3, else red)` : 'its colours never touched: no battle')
-      : `at most ${fmt(r.peak)} alive of ${fmt(n)} cells, from ${fmt(r.live)}: grown ${(r.peak / r.live).toFixed(1)} times (green from 4, orange from 2, else red)`;
+      : `at most ${formatNumber(r.peak)} alive of ${formatNumber(n)} cells, from ${formatNumber(r.live)}: grown ${(r.peak / r.live).toFixed(1)} times (green from 4, orange from 2, else red)`;
     const b = card({ pic: colour ? `<i class="light" style="background:${colour}"></i>` : '', name, detail: r.number ? `${detail} · ${r.number.replace(/^sqrt\((\d+)\)$/, '√$1')}` : detail, on: r.id === hunt.picked });  // (Formula: its number)  // (the one played, wherever it is now)
     b.dataset.tipHtml = `<b class="tip-name">${name}</b>${detail}${colour ? `<br><span style="color:${colour}">●</span> ${word}, ${why}` : ''}`;  // (its light in its tooltip, in its colour)
     const pick = () => (r.id === hunt.picked && !hunt.run ? $('play').click() : playHuntResult(r));  // (the one played, again: play or pause)
@@ -13206,12 +13206,12 @@ function huntClick() {
   hunt.run = huntRuns(L, plan, K === 1 ? 50000 : 4000, K === 1 ? hunt.goal : null, (top, n, done, [on, g] = []) => {
     if (top) hunt.top = top;
     if (done) {
-      hunt.status = `All ${fmt(all)} tried · ${hunt.top.length ? `${fmt(hunt.top.length)} kept` : K > 1 ? 'no battle' : hunt.goal === 'dies' ? 'none dies out' : hunt.goal === 'full' ? 'none ends full' : 'nothing lasts'}`;
+      hunt.status = `All ${formatNumber(all)} tried · ${hunt.top.length ? `${formatNumber(hunt.top.length)} kept` : K > 1 ? 'no battle' : hunt.goal === 'dies' ? 'none dies out' : hunt.goal === 'full' ? 'none ends full' : 'nothing lasts'}`;
       stopHunt();
       return;
     }
-    const [b, e] = plan.space ?? [], of = all ? fmt(all) : b && e > 1 ? `${fmt(b)}^${fmt(e)}` : b ? fmt(b) : '';  // (the starts it has: all, or so many a cell's or colour's choices)
-    hunt.status = `${all ? '' : '🎲 '}${of ? `${fmt(n)} / ${of}` : fmt(n)} tried · ${fmt(hunt.top.length)} kept · ${fmt(on)} running, up to generation ${fmt(g)}`;  // (🎲: drawn at random, not each in turn)
+    const [b, e] = plan.space ?? [], of = all ? formatNumber(all) : b && e > 1 ? `${formatNumber(b)}^${formatNumber(e)}` : b ? formatNumber(b) : '';  // (the starts it has: all, or so many a cell's or colour's choices)
+    hunt.status = `${all ? '' : '🎲 '}${of ? `${formatNumber(n)} / ${of}` : formatNumber(n)} tried · ${formatNumber(hunt.top.length)} kept · ${formatNumber(on)} running, up to generation ${formatNumber(g)}`;  // (🎲: drawn at random, not each in turn)
     renderHunt();
   });
   hunt.status = hunt.run ? 'Starting…' : 'Too big to hunt';
@@ -14709,7 +14709,7 @@ const SPEEDS = [6, 12, 60, 120, 600, 1200, 6000, 12000, 60000, 120000, 600000, 1
 let speed = defaultOf('speed');
 const stepsPerSecond = () => speed;
 function updateSpeedLabel() {
-  if (document.activeElement !== $('speedLabel')) $('speedLabel').value = `${fmt(speed)} steps/s`;
+  if (document.activeElement !== $('speedLabel')) $('speedLabel').value = `${formatNumber(speed)} steps/s`;
   $('slower').disabled = speed <= 1;
   $('faster').disabled = speed >= SPEEDS.at(-1);
 }
@@ -17119,7 +17119,7 @@ function drawActivity() {
 // deaths, in figures (a bar for it swung too much)
 // a generation of the run in view, as a link, always (the one shown too: one look, the same everywhere): clicked, it goes
 // there (see seekTo: a reversible one's by its rule, Life's played again from its start)
-const genLink = (g, text = `${walk.life ? 'gen' : 'step'} ${fmt(g)}`, kind = '') => `<a class="gen-link${kind && ` gen-${kind}`}" href="#" data-gen="${g}" title="Go to ${walk.life ? 'gen' : 'step'} ${fmt(g)}">${text}</a>`;  // (kind: its colour, see style.css)
+const genLink = (g, text = `${walk.life ? 'gen' : 'step'} ${formatNumber(g)}`, kind = '') => `<a class="gen-link${kind && ` gen-${kind}`}" href="#" data-gen="${g}" title="Go to ${walk.life ? 'gen' : 'step'} ${formatNumber(g)}">${text}</a>`;  // (kind: its colour, see style.css)
 document.addEventListener('click', (e) => { const a = e.target.closest?.('.gen-link'); if (!a) return; e.preventDefault(); if ('stepper' in a.dataset) highlightStepper(); else seekTo(Number(a.dataset.gen)); });
 // the steps stepper at the top right highlighted a moment (a click on the length asked's mark, see endMark)
 function highlightStepper() { const s = document.querySelector('.max-steps'); s.classList.remove('highlit'); void s.offsetWidth; s.classList.add('highlit'); }
@@ -17130,13 +17130,13 @@ function renderGauges(L) {
   const avg = loopMeans(L), varies = avg && L.loopMax[1] > L.loopMin[1], b = L.bornNow, d = L.deadNow, before = L.aliveCount - b + d, both = L.aliveCount + before;
   const turnover = both ? (b + d) / both : 0, gold = 'var(--accent)', blue = 'var(--sector)', P = peaks(L);
   const rows = [  // name, colour (none: the theme's live cells'), its bar's share (none: figures only), its figures
-    ['Alive', gold, (varies ? avg[1] : L.aliveCount) / P.alive, `<b>${varies ? meanText(avg[1]) : fmt(L.aliveCount)}</b>`],
-    ['Peak alive', gold, P.alive / n, `${fmt(P.alive)} · ${genLink(P.aliveGen)}`],
+    ['Alive', gold, (varies ? avg[1] : L.aliveCount) / P.alive, `<b>${varies ? meanText(avg[1]) : formatNumber(L.aliveCount)}</b>`],
+    ['Peak alive', gold, P.alive / n, `${formatNumber(P.alive)} · ${genLink(P.aliveGen)}`],
     ['Order', blue, L.order, `${Math.round(100 * L.order)} %`],
     ['Peak order', blue, P.order, `${Math.round(100 * P.order)} % · ${genLink(P.orderGen)}`],
     ['Turnover', null, turnover, `${Math.round(100 * turnover)} %`],
-    ['Ever alive', null, L.everAlive / n, fmt(L.everAlive)],
-    ['Growth', null, null, `${b - d > 0 ? '+' : b < d ? '−' : ''}${fmt(Math.abs(b - d))} a gen`],
+    ['Ever alive', null, L.everAlive / n, formatNumber(L.everAlive)],
+    ['Growth', null, null, `${b - d > 0 ? '+' : b < d ? '−' : ''}${formatNumber(Math.abs(b - d))} a gen`],
   ];
   paintGauges(rows);
 }
@@ -17179,16 +17179,16 @@ function renderWalkGauges() {
     // (with land a dead one keeps its land and its place by it; in Cut it goes under the living; ✝ by its worth, when: Dead at)
     const gone = (s) => D.dead[s] >= 0;
     paintRanking(names.map((name, s) => ({ colour: teamColour(s), name, value: w[s], dead: gone(s) && !D.bite, diedAt: D.dead[s],
-                                             cells: [`<b>${fmt(w[s])}</b>${gone(s) ? ' ✝' : ''}`, fmt(D.bestAt(s)), deaths[s] >= 0 ? genLink(deaths[s]) : '', ...(C.body ? [fmt(D.size[s])] : []), from(s).toFixed(1)] })), C.titles);
+                                             cells: [`<b>${formatNumber(w[s])}</b>${gone(s) ? ' ✝' : ''}`, formatNumber(D.bestAt(s)), deaths[s] >= 0 ? genLink(deaths[s]) : '', ...(C.body ? [formatNumber(D.size[s])] : []), from(s).toFixed(1)] })), C.titles);
     return;
   }
-  const p = (v) => fmt(Math.round(v * 100) / 100 || 0), P = walkPeak(), gold = 'var(--accent)', c = walk.cells[cur];
+  const p = (v) => formatNumber(Math.round(v * 100) / 100 || 0), P = walkPeak(), gold = 'var(--accent)', c = walk.cells[cur];
   paintGauges([
     ['Position', null, null, walk.is3d ? `(${p(x)}, ${p(y)}, ${p(z)})` : `(${p(x)}, ${p(y)})`],
     ['Distance', gold, d / P.far, `<b>${d.toFixed(1)}</b>`],
     ['Peak distance', gold, walk.maxDist[cur] / P.far, `${P.far.toFixed(1)} · ${genLink(P.step)}`],
-    [walk.vert ? 'Corners visited' : 'Cells visited', null, c / (walk.sphere ? walk.nodes : walk.cells[walk.n]), !walk.sphere ? fmt(c)
-      : walk.coverStep >= 0 && cur >= walk.coverStep ? `all ${fmt(walk.nodes)} · by step ${fmt(walk.coverStep)}` : `${fmt(c)} / ${fmt(walk.nodes)} (${(100 * c / walk.nodes).toFixed(1)} %)`],
+    [walk.vert ? 'Corners visited' : 'Cells visited', null, c / (walk.sphere ? walk.nodes : walk.cells[walk.n]), !walk.sphere ? formatNumber(c)
+      : walk.coverStep >= 0 && cur >= walk.coverStep ? `all ${formatNumber(walk.nodes)} · by step ${formatNumber(walk.coverStep)}` : `${formatNumber(c)} / ${formatNumber(walk.nodes)} (${(100 * c / walk.nodes).toFixed(1)} %)`],
   ]);
 }
 // A battle's ranking, always in sight under the generation: the colours by their live cells (a bar, their share of all
@@ -17222,9 +17222,9 @@ function renderRanking(L) {
   const dead = (k) => colourGone(L, k), foot = endShown(L) && L.footBy;
   const avg = loopMeans(L), live = (k) => avg?.[k] ?? L.byColour[k], mean = !!avg;  // (a loop: each colour's mean over it, ≈)
   paintRanking(Array.from({ length: K }, (_, c) => {
-    const k = c + 1, num = (v) => (mean && L.loopMax[k] > L.loopMin[k] ? meanText(v) : fmt(v));
+    const k = c + 1, num = (v) => (mean && L.loopMax[k] > L.loopMin[k] ? meanText(v) : formatNumber(v));
     return { colour: teamColour(c), name: teamName(c), value: live(k), dead: dead(k), diedAt: L.extinctAt[k],
-             cells: [dead(k) ? `✝ ${genLink(L.extinctAt[k])}` : `<b>${num(live(k))}</b>`, fmt(Math.round((foot ?? L.sumBy)[k] / (foot ? Math.max(1, L.stable.T) : L.gen + 1))), fmt(L.bornBy[k]), fmt(L.deadBy[k]), fmt(L.everBy[k])] };
+             cells: [dead(k) ? `✝ ${genLink(L.extinctAt[k])}` : `<b>${num(live(k))}</b>`, formatNumber(Math.round((foot ?? L.sumBy)[k] / (foot ? Math.max(1, L.stable.T) : L.gen + 1))), formatNumber(L.bornBy[k]), formatNumber(L.deadBy[k]), formatNumber(L.everBy[k])] };
   }), LIFE_TITLES);
 }
 // A ranking, the same for Life's battles and a walk's (titles: [name, tip, width in px]): a row each (its colour, name, value, dead or not and when, its
@@ -17288,8 +17288,8 @@ function updateStats() {
   const far = seekFar(), gens = !!walk.life || spaceTimeOn() || !!walk.rows;
   const known = Number.isFinite(lifeTime() ? runLoop()?.last : runEnd());
   walk.widestShown = Math.max(walk.widestShown, cur, known ? far : 0);  // (its last once known, else the furthest shown: a ratchet)
-  $('stepNow').innerHTML = `${gens ? 'Gen' : 'Step'} ${fmtAsWide(cur, walk.widestShown)}`;
-  setLinks($('stepLast'), known ? ` / ${fmt(far)}` : '');  // (a run's, Life's or a reversible one's: once its loop is known)
+  $('stepNow').innerHTML = `${gens ? 'Gen' : 'Step'} ${formatNumberAsWide(cur, walk.widestShown)}`;
+  setLinks($('stepLast'), known ? ` / ${formatNumber(far)}` : '');  // (a run's, Life's or a reversible one's: once its loop is known)
   setLinks($('stepEnd'), endMark());
   if (!walk.life && !walk.battle) $('ranking').hidden = $('rankTitles').hidden = true;  // (a battle's shown by renderWalkGauges: never hidden in between, its rows' slides kept)
   const time = spaceTimeOn() && !!stack, rows = walk.rows;
@@ -17297,7 +17297,7 @@ function updateStats() {
     $('ranking').hidden = $('rankTitles').hidden = true;
     $('gauges').hidden = false;
     setLinks($('barNum'), '');  // (its generation: its own line, see stepNow; its rule in its chip)
-    paintGauges([[rows ? 'Live cells' : 'Cubes', null, null, fmt(rows ? rows.upTo[cur + 1] : stack.layers[cur] + 1)]]);
+    paintGauges([[rows ? 'Live cells' : 'Cubes', null, null, formatNumber(rows ? rows.upTo[cur + 1] : stack.layers[cur] + 1)]]);
     $('digitStrip').textContent = '';
     drawActivity();
     return;
@@ -17309,7 +17309,7 @@ function updateStats() {
     renderBack();
     if (L.margolus && !L.stable) {
       const B = blockBound(L), far = Math.max(L.reached ?? 0, backSearch.life === L ? backSearch.gen : 0);
-      $('barLoop').textContent = `not back by gen ${fmt(far)} · ≤ ${bigWords(B.log)}`;
+      $('barLoop').textContent = `not back by gen ${formatNumber(far)} · ≤ ${bigWords(B.log)}`;
       $('barLoop').title = `A reversible rule: it comes back to its start, at the latest after ${bigWords(B.log)} generations (${B.keeps ? 'the ways its live cells can lie' : 'all its states'}, × its phases)`;
     }
     renderRanking(L);  // (one colour: its gauges; a battle: the ranking's table)
@@ -17329,7 +17329,7 @@ function updateStats() {
   }
   if (walk.n && walk.counts) {  // each digit's count, on its chip
     const c = walk.counts.subarray(walk.base * cur, walk.base * (cur + 1));
-    c.forEach((v, d) => { const e = document.getElementById(`count${d}`); if (e) e.textContent = fmt(v); });
+    c.forEach((v, d) => { const e = document.getElementById(`count${d}`); if (e) e.textContent = formatNumber(v); });
   }
   // step by step (paused, or at the slowest speed, either way): the chip of the next step lit in its colour, the one
   // it counts in (an ant's: the turn it takes, or by its rule the colour of its cell); an ant by the digits
@@ -17887,7 +17887,7 @@ document.addEventListener('keydown', (e) => {
 });
 
 // The prime menus, each prime with its number of digits (in base 10, as prime sizes are given)
-for (const p of MERSENNE) $('mersenneP').add(new Option(`M${subscript(p)} · ${fmt(Math.floor(p * Math.log10(2)) + 1)} digits`, p));
+for (const p of MERSENNE) $('mersenneP').add(new Option(`M${subscript(p)} · ${formatNumber(Math.floor(p * Math.log10(2)) + 1)} digits`, p));
 $('mersenneP').value = 44497;
 // primorial primes by size, + 1 and − 1 together
 const primorials = [...PRIMORIAL_PLUS.map((p) => [p, 1]), ...PRIMORIAL_MINUS.map((p) => [p, -1])]
@@ -17897,7 +17897,7 @@ for (const [low, top, label] of [[0, 1e3, 'up to 1,000 digits'], [1e3, 1e4, '1,0
   const group = document.createElement('optgroup');
   group.label = label;
   for (const [p, sign] of primorials.filter(([q]) => PRIMORIAL_DIGITS[q] > low && PRIMORIAL_DIGITS[q] <= top)) {
-    group.append(new Option(`${fmt(p)}# ${sign > 0 ? '+' : '−'} 1 · ${fmt(PRIMORIAL_DIGITS[p])} digits`, `${p},${sign}`));
+    group.append(new Option(`${formatNumber(p)}# ${sign > 0 ? '+' : '−'} 1 · ${formatNumber(PRIMORIAL_DIGITS[p])} digits`, `${p},${sign}`));
   }
   $('primorialP').append(group);
 }
@@ -18050,16 +18050,16 @@ function base10Digits({ head, frac, total }) {
   const B = BigInt(current.base), lb = Math.log10(current.base);
   if (head.length < total && !frac.length) {  // (its first digits and its power of 10, from its first digits)
     const s = digitsValue(head.subarray(0, 40), B).toString(), l = s.length - 1 + Math.log10(Number(`${s[0]}.${s.slice(1, 16)}`)) + (total - Math.min(40, head.length)) * lb;
-    return [`≈ ${(10 ** (l % 1)).toFixed(14)}… × 10^${fmt(Math.floor(l))}`, `first 15 of ${fmt(Math.floor(l) + 1)} digits`];
+    return [`≈ ${(10 ** (l % 1)).toFixed(14)}… × 10^${formatNumber(Math.floor(l))}`, `first 15 of ${formatNumber(Math.floor(l) + 1)} digits`];
   }
   const ds = new Uint8Array(head.length + frac.length);
   ds.set(head);
   ds.set(frac, head.length);
   const N = digitsValue(ds, B), D = B ** BigInt(frac.length), int = (N / D).toString();
-  if (!frac.length) return [`= ${int}`, `all ${fmt(int.length)} digits`];
+  if (!frac.length) return [`= ${int}`, `all ${formatNumber(int.length)} digits`];
   const m = Math.max(1, Math.floor(frac.length * lb) - 1);  // (as many as its digits in use tell)
   const lead = int === '0' ? '' : int;  // (a 0 before the point implicit: .14)
-  return [`≈ ${lead}.${(((N % D) * 10n ** BigInt(m)) / D).toString().padStart(m, '0')}…`, `first ${fmt(lead.length + m)} digits, as many as the first ${fmt(ds.length)} in base ${current.base} tell`];
+  return [`≈ ${lead}.${(((N % D) * 10n ** BigInt(m)) / D).toString().padStart(m, '0')}…`, `first ${formatNumber(lead.length + m)} digits, as many as the first ${formatNumber(ds.length)} in base ${current.base} tell`];
 }
 const base10 = { on: false };  // (Base 10 switched on: the number in base 10 instead, see showNumber)
 function showNumber() {
@@ -18068,7 +18068,7 @@ function showNumber() {
   // period (= .(101)); then its digits (cut: …), a battle's on one line; in base 10 when switched on (see base10Digits)
   const inBase = (r) => {
     const sign = !r.frac.length && r.head.length === r.total ? '=' : '≈';
-    return [`${sign} ${writeDigits(Uint8Array.from([...r.head, ...r.frac]), B, r.head.length)}${sign === '≈' ? '…' : ''}`, r.used < r.n ? `truncated to ${fmt(r.used)}/${fmt(r.n)} digits` : `all first ${fmt(r.n)} digits`];
+    return [`${sign} ${writeDigits(Uint8Array.from([...r.head, ...r.frac]), B, r.head.length)}${sign === '≈' ? '…' : ''}`, r.used < r.n ? `truncated to ${formatNumber(r.used)}/${formatNumber(r.n)} digits` : `all first ${formatNumber(r.n)} digits`];
   };
   const shown = rows.map((r) => (ten ? base10Digits(r) : inBase(r))), text = rows.map((r, j) => `${r.name} ${baseWords(b)} ${shown[j][0]}`).join('\n');
   v.innerHTML = `<div class="tut-body">${rows.map((r, j) => { const period = r.ratio && ratioDigits(b, r.ratio);

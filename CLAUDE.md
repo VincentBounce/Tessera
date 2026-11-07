@@ -1,5 +1,9 @@
 # Tessera
 
+**NO RUSTINE, fix foundation only.** A fix that adds one more case to a list, a check or a reset by hand is a patch:
+find the convention that let the bug happen and fix that, once (v0.4.384: a reset list by hand in `buildWalkOf`, one
+field more, where each walk should start from one definition of its fields).
+
 ## Bundles
 The user always makes the app's single-file versions with the script `_Make Tessera.html.command` in the folder
 `Tessera resources` beside the repo (double-click). It runs `tools/bundle.py` twice and makes two HTML files there:

@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.468';
+const VERSION = '0.4.469';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -1952,7 +1952,7 @@ const tile = ({ pic = '', text = '', html = null, title = '', id = null, on = fa
 // source; greyed here (at: its mode, the tab's by default) or not, its words why, and the menu's nearest buttons that would
 // allow it, highlighted by a click on it (see enablersFor))
 const setTile = (b, { on = false, greyed = '', can = !greyed, mark = false, again = false, turn = 0, byDefault, whyNot = null, at = $('mode').value }) => {
-  if (whyNot) { const why = whyNot({ w: at ?? $('mode').value }); can = !why; if (why) greyed = why; b.enablers = () => enablersFor((setup) => !whyNot(setup)); b.pathsMemo = null; b.paths = () => (b.pathsMemo ??= pathsTo((setup) => !whyNot(setup))); }  // (its paths found once a drawing: at its first tooltip)  // (at: none, no walk shown yet: the tab's)
+  if (whyNot) { const why = whyNot({ w: at ?? $('mode').value }); if (why) { can = false; greyed = why; } b.enablers = why ? () => enablersFor((setup) => !whyNot(setup)) : null; b.pathsMemo = null; b.paths = why ? () => (b.pathsMemo ??= pathsTo((setup) => !whyNot(setup))) : null; }  // (its paths found once a drawing: at its first tooltip)  // (at: none, no walk shown yet: the tab's)
   if (byDefault !== undefined) b.dataset.default = byDefault;
   b.dataset.greyed = can ? '' : greyed;  // (its words why only while greyed: whyNot's, or its own)
   const pic = b.querySelector('svg');
@@ -3594,9 +3594,9 @@ function ruleCards(w, here = true) {
 // The modes under a button of the menu: its place in the tree (NAV: kind, space, shape, rule, side), all those below it
 const modesUnder = (...place) => Object.keys(NAV).filter((u) => place.every((x, i) => NAV[u][i] === x));
 // The menu as a graph (the setup a node, a click an edge): a setup, what the app holds as a link does ({ w: the mode, size:
-// null for the one it opens at, its colours, a walk's teams, its battle rule), the one in use first
-const setupNow = () => ({ w: $('mode').value, size: null, colours: lifeColours, teams: walkTeams, battleRule });
-const setupKey = (s) => `${s.w}|${s.size}|${s.colours}|${s.teams}|${s.battleRule}`;
+// null for the one it opens at, its colours, a walk's teams, its battle rule, its starts' way), the one in use first
+const setupNow = () => ({ w: $('mode').value, size: null, colours: lifeColours, teams: walkTeams, battleRule, startsWay: battleStartsWay });
+const setupKey = (s) => `${s.w}|${s.size}|${s.colours}|${s.teams}|${s.battleRule}|${s.startsWay}`;
 // The menu's choices at a setup, each a click: its key (its button's data-choice) and the setup it leads to, by the menu's
 // own navigation (navPick, kindLeft, nearestMode, walksThere): the tabs, spaces, shapes, tilings, sides, walks' kinds, then a
 // Life's colours, a battle's teams and rule; a surface's sizes at the start only (one stepper, see pathsTo)
@@ -3614,6 +3614,7 @@ function choicesAt(s) {  // (each [key, the setup it leads to, its button's word
   if (battleMode(w)) {
     for (const k of COLOUR_STEPS) set(`teams:${k}`, 'teams', k, teamsWhyNot(k, w, s.size), COLOUR_STEP_NAMES[k]);
     if (s.teams > 1) BATTLE_RULES.forEach(([kind, name], p) => set(`battleRule:${p}`, 'battleRule', p, battleRuleWhyNot(kind, w), name));
+    if (s.teams > 1) STARTS_WAYS.forEach(([way, name]) => set(`startsWay:${way}`, 'startsWay', way, startsWayCan(way, w, s.size ?? undefined) ? '' : CENTRED_WHERE, name));
   }
   return out;
 }
@@ -3622,7 +3623,7 @@ function choicesAt(s) {  // (each [key, the setup it leads to, its button's word
 // none on a solid or a lattice
 const tilingNameOf = (w) => { const fam = familyOf(w); return fam ? fam.F.tabs.find(([t]) => t === fam.m)[3] : !['sphere', 'cube'].includes(MODES[w].lattice) ? NAV[w][2] : null; };
 const modeChanges = (v, w) => [0, 1, 2, 3, 4].filter((i) => NAV[v][i] !== NAV[w][i]).length + (tilingNameOf(v) !== tilingNameOf(w));
-const changes = (a, b) => modeChanges(a.w, b.w) + ['size', 'colours', 'teams', 'battleRule'].filter((f) => a[f] !== b[f]).length;
+const changes = (a, b) => modeChanges(a.w, b.w) + ['size', 'colours', 'teams', 'battleRule', 'startsWay'].filter((f) => a[f] !== b[f]).length;
 // The shortest paths from the setup in use to one fits takes, at n clicks: breadth first, each setup once, layer by layer
 // till one holds some; of these the fewest settings changed, each its clicks [key, words] (budget: setups tried at most)
 function pathsTo(fits, budget = 5000) {
@@ -6651,11 +6652,10 @@ function syncSizeStepper() {
   $('startRow').hidden = !starts;
   if (!starts) return;
   if (document.activeElement !== $('startLabel')) $('startLabel').value = `start ${formatNumber(startNo())} of ${formatNumber(starts.length)}`;
-  const fixed = startsWayNow() !== 'symmetric';  // (a battle's starts not A's moved: the selector greyed, see STARTS_WAYS)
-  const symmetricOnly = fixed ? 'Only for Symmetric starts: Centred and Random place their own.' : '';
-  setTile($('startDown'), { greyed: symmetricOnly || (startNo() <= 1 ? 'Already at the first start.' : '') });
-  setTile($('startUp'), { greyed: symmetricOnly || (startNo() >= starts.length ? 'Already at the last start.' : '') });
-  setTile($('startLabel'), { greyed: symmetricOnly });
+  const symmetricOnly = (setup) => (startsWayIn(setup) === 'symmetric' ? '' : 'Only for Symmetric starts: Centred and Random place their own.');  // (a setup's: the graph's path to Symmetric)
+  setTile($('startDown'), { greyed: startNo() <= 1 ? 'Already at the first start.' : '', whyNot: symmetricOnly });
+  setTile($('startUp'), { greyed: startNo() >= starts.length ? 'Already at the last start.' : '', whyNot: symmetricOnly });
+  setTile($('startLabel'), { whyNot: symmetricOnly });
 }
 // The sizes as a slider under the stepper, across, a notch each under it, the one in use its knob (none: hidden); dragged, the label
 // shows the size under it (preview), the size picked when let go (pick: a surface is built again), a notch clicked at once
@@ -7698,7 +7698,7 @@ function renderWalkTeams() {
   if ($('startRow').previousElementSibling !== $('startWays')) $('startRow').before($('startWays'));
   const ways = STARTS_WAYS;  // (one list: its tabs and a link's gr=)
   $('startWays').replaceChildren(tileGroup(ways.map(([way, text, title]) => tile({ pic: colourBlock(walkTeams), text, title, on: way === startsWayNow(), again: way === 'random', byDefault: way === 'symmetric' ? 'yes' : '',
-    whyNot: ({ w, size }) => (startsWayCan(way, w, size) ? '' : CENTRED_WHERE),
+    whyNot: ({ w, size }) => (startsWayCan(way, w, size) ? '' : CENTRED_WHERE), choice: `startsWay:${way}`,
     click: () => { if (way === startsWayNow() && way !== 'random') return; battleStartsWay = way; if (way === 'random') battleSeed = freshDraw(); compute(); } }))));  // (Random again: another draw)
 }
 // a battle's formula fields, each bold in its walker's colour once sent to be fought (computed, from Enter, Random or a
@@ -7770,7 +7770,9 @@ const battleRuleWhyNot = (kind, v) => {
   return !battleMode(v) ? 'There is no battle here.' : kind === 'cut' || kind === 'landStop' || cells !== !!MODES[v].grid ? '' : cells ? 'This rule plays on cells; this walk goes along the grid.' : 'This rule plays along the grid; this walk is on cells.';
 };
 const startsWayCan = (way, w, size) => way !== 'centred' || groupedCan(w, size);
-const startsWayNow = () => (battleOn() && startsWayCan(battleStartsWay) ? battleStartsWay : 'symmetric');  // (the one played: Symmetric where the one picked cannot be)
+const startsWayNow = () => (battleOn() && startsWayCan(battleStartsWay) ? battleStartsWay : 'symmetric');
+// the starts' way played in a setup (see setupNow): its own where a battle can have it, else Symmetric (as startsWayNow)
+const startsWayIn = ({ w, size = null, teams = walkTeams, startsWay = battleStartsWay }) => (teams > 1 && battleMode(w) && battleCounts(w, size ?? undefined).includes(teams) && startsWayCan(startsWay, w, size ?? undefined) ? startsWay : 'symmetric');  // (the one played: Symmetric where the one picked cannot be)
 // K walkers' starts anywhere, each its own place, drawn from seed: along the grid a corner and the corner it comes from,
 // on cells a tile and the edge it comes in by (A's start's other parts kept: a pivot's, a parity's)
 function randomStarts(g, start, grid, K, seed) {

@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.528';
+const VERSION = '0.4.529';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -10752,7 +10752,7 @@ function renderPlaneRow() {
   $('startTextInput').value = plane.text;  // (its words, on any grid)
   $('startTextInput').style.setProperty('--face', TEXT_FONTS[plane.font][1]);  // (at rest, in its font, see style.css)
   for (const b of $('textFonts').querySelectorAll('button')) setTile(b, { on: b.dataset.font === plane.font });
-  for (const r of $('startDraw').querySelectorAll('.draw-row')) r.hidden = !kind;  // the turns, the colours: to draw, on the plane
+  for (const r of $('startDraw').querySelectorAll('#startCells, .draw-row')) r.hidden = !kind;  // the start's cells (Clear), the turns, the colours: to draw, on the plane (a surface's Draw: its patterns to see only)
   if (!kind) {
     $('symmetryRow').hidden = true;
     $('startDraw').hidden = !surfaceDraw;

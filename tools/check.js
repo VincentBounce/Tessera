@@ -196,8 +196,8 @@ function checker(fail) {
   };
   return c;
 }
-async function crawl(fail) {
-  const C = checker(fail), look = C.look;
+async function crawl(fail, each = null) {  // (each: on each mode reached, after its look: clickAll's)
+  const C = checker(fail), look = (what) => C.look(what).then(async (r) => { if (each) await each(what); return r; });
   const tabs = () => [...document.querySelectorAll('#modeTabs [role=tab]')].filter((b) => !/Gallery/.test(b.textContent));  // (Life, Rewind, Ant, Walk)
   for (let ti = 0; ti < tabs().length; ti++) {
     tabs()[ti].click();
@@ -282,6 +282,33 @@ async function checkColdLinks(fail) {
     else if (want.symmetry && symmetry !== want.symmetry) fail(`#${link} opened cold: symmetry ${symmetry}, not ${want.symmetry}`);
   }
   return COLD_LINKS.length;
+}
+// Click everything, as a brute (a night's, clickAll): on each mode the crawl reaches, every control seen and not greyed (the
+// panel's, Display's, the player's), clicked then clicked again (back as it was), then a step on, a step back and the start:
+// no error thrown, its control named. Not the crawl's own (tabs, spaces, shapes, tilings, rules, sides), nor what downloads,
+// copies, erases or plays a sound (Display › Blocks threw from v0.4.21 to v0.4.503: the fuzz picks menus only)
+const CLICK_SKIP = '#modeTabs, #navSpace, #navShapes, #torusTiles, #navRules, #walkOn, #galleryPane, #exportPng, #copyRle, #copyNumber, #eraseConfirm, [hidden]';
+function clickEverything(fail) {
+  let errors = [], at = '';
+  window.addEventListener('error', (e) => errors.push(`${e.message} (${at})`));
+  return async (where) => {
+    const roots = [document.querySelector('aside.panel'), $('viewTools'), $('animBar')];
+    const list = () => roots.flatMap((r) => [...r.querySelectorAll('button, label.check')]).filter((b) => b.offsetParent && !b.disabled && !b.closest(CLICK_SKIP) && b !== soundButton);
+    const name = (b) => (b.querySelector('.mode-name') ?? b).textContent.trim().slice(0, 30) || b.id || b.className;
+    const done = new Set();
+    for (let i = 0; i < 400; i++) {  // (re-read each time: a click may draw the panel again)
+      const b = list().find((x) => !done.has(name(x)));
+      if (!b) break;
+      done.add(name(b)); at = `${where} › ${name(b)}`;
+      b.click(); await wait(120);
+      const again = list().find((x) => name(x) === name(b));
+      if (again && !again.disabled) { again.click(); await wait(120); }
+      for (let t = 0; busy && t < 300; t++) await wait(100);  // (a walk built again: its digits)
+    }
+    at = `${where} › step, back, start`;
+    for (const id of ['step', 'back', 'restart']) if ($(id) && !$(id).disabled) { $(id).click(); await wait(150); }
+    if (errors.length) { fail(`clickAll: ${errors.splice(0).slice(0, 3).join(' / ')}`); }
+  };
 }
 async function coldLike(fail, what) {
   const f = document.createElement('iframe');
@@ -792,11 +819,12 @@ function checkRosetteSpheres(fail) {
   return checked;
 }
 
-window.tesseraCheck = async ({ parts = false, known = false, crawl: andCrawl = false, deep: andDeep = false, fuzz: actions = 0, cold = false, colours = false, battles = false, seed = Date.now() % 1e6, from, only } = {}) => {
+window.tesseraCheck = async ({ parts = false, known = false, crawl: andCrawl = false, clickAll = false, deep: andDeep = false, fuzz: actions = 0, cold = false, colours = false, battles = false, seed = Date.now() % 1e6, from, only } = {}) => {
   const failures = [], fail = (s) => { failures.push(s); localStorage.tesseraDeepFailures = JSON.stringify(failures); };
   let checked = checkMeshes(fail) + checkBlockWraps(fail) + checkDiscs(fail) + checkTips(fail) + checkMarks(fail) + checkRosetteSpheres(fail) + checkTwistedSphere(fail) + checkDiscCuts(fail) + await checkSheets(fail) + await checkNames(fail) + await checkColdLinks(fail);
   if (known) checked += await checkKnown(fail);
   if (andCrawl) checked += await crawl(fail);
+  if (clickAll) checked += await crawl(fail, clickEverything(fail));
   if (actions) checked += await fuzz(fail, actions, seed, cold);
   if (colours) checked += await coloursOffered(fail);
   if (battles) checked += await battlesFair(fail);

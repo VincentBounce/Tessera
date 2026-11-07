@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.510';
+const VERSION = '0.4.511';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -7235,7 +7235,10 @@ function cellStart(g, [v, f]) {
     for (let e = 0; e < k; e++) if (g.poly[k * t + e] === v && g.poly[k * t + (e + 1) % k] === f) return [t, e];
   }
 }
-const startNo = () => Math.max(1, Math.min(Number($('startNo').value) || 1, modeStarts()?.length ?? 1));
+// the start's number asked (its field's), and the one played: the mode's list's at most (the team counts read the one asked, its
+// list's at most on the mesh they make: a ring's list hangs on its size, its size on its battle's teams, see battleCounts)
+const startAsked = () => Math.max(1, Number($('startNo').value) || 1);
+const startNo = () => Math.min(startAsked(), modeStarts()?.length ?? 1);
 let startsShown = false;  // while the start number is hovered: the starts shown over the walk, faded (see drawHover)
 let choosingStart = false;  // while the start row is hovered: the view stays as it was
 
@@ -8032,7 +8035,7 @@ const battleGroups = (g, K, enough = Infinity, good = null) => {
 // length its walkers', as Life's colours', see ringColours); none elsewhere
 // (at a size, or its mode's: the tab's the menu's only, none before it holds its surface: a strip's sizes depend on its walkers
 // (ringColours, by battleOn), so sizeAt for the tab would come back here)
-const battleCounts = (w, size = battleMode(w) && (w === $('mode').value ? menuSizeOf(w) : figureSize(w)), j = startNo()) => {  // (j: A's start's number, its list's at most)
+const battleCounts = (w, size = battleMode(w) && (w === $('mode').value ? menuSizeOf(w) : figureSize(w)), j = startAsked()) => {  // (j: A's start's number asked, its list's at most)
   if (!size || !battleMode(w)) return [];  // (none, or the tab's size not set yet: a page opening)
   // a ring's by its kind, known by construction (its length made for its walkers, see ringColours): a torus takes every
   // count (its shift of 1/K round it), a Klein bottle a Duel only (its gluing: its half turn, see ringGroup); a Möbius strip's tried
@@ -8067,7 +8070,7 @@ const solidTeamCounts = (kind, mode) => (solidTeamCountsMemo[kind] ??= (() => {
 })());
 // a team count's, a count of colours' greyed words at a mode (at a size, or the one it opens at): one source, their tiles'
 // and the menu's graph's (see choicesAt)
-const teamsWhyNot = (k, v, size = null, j = startNo()) => (k === 1 || battleCounts(v, size ?? (battleMode(v) && figureSize(v)), j).includes(k) ? '' : TEAMS_WHERE);
+const teamsWhyNot = (k, v, size = null, j = startAsked()) => (k === 1 || battleCounts(v, size ?? (battleMode(v) && figureSize(v)), j).includes(k) ? '' : TEAMS_WHERE);
 const coloursWhyNot = (k, w, size = null) => (coloursFit(k, pickedFigure(w, size)) ? '' : 'The shape has no parts alike for so many colours.');
 const TEAMS_WHERE = 'At this size and start, no group of the surface\'s symmetries sets so many walkers apart, each walking as A. Try another size or start.';  // (a team count's greyed words)
 // A surface's turns in space that lay its mesh onto itself (each a matrix, the identity among them), once a mesh: a closed

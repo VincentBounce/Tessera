@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.530';
+const VERSION = '0.4.531';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -3443,8 +3443,11 @@ const navValues = (level, pre) => [...new Set(Object.values(NAV).filter((n) => p
 // A space's shapes in the order shown, in their groups ([title, shapes] each, those it has): in 2D, many of them, grouped by
 // their grid's natural shape (see SHAPE_GROUPS); in 3D, the solids of squares first (the cube, the cubes carved), the other
 // solids, those of squares and triangles, then the surfaces (the balls: Globe, Sphere, Rosettes; a sheet rolled up: Torus,
-// Möbius, Klein; see SHEETS); else as the menu lists them
-function shapeGroups(kind, space) {
+// Möbius, Klein; see SHEETS); else as the menu lists them. Made once a kind and space (the menu's tables fixed once the
+// page has loaded: the graph's search asks it at each edge, 1.5 ms each, see nearestMode)
+const shapeGroupsMemo = {};
+const shapeGroups = (kind, space) => (shapeGroupsMemo[`${kind}|${space}`] ??= shapeGroupsOf(kind, space));
+function shapeGroupsOf(kind, space) {
   const shapes = navValues(2, [kind, space]), flat = space.startsWith('2D'), solid = space.startsWith('3D ');
   const planeOf = (sh) => MODES[Object.keys(NAV).find((m) => NAV[m][0] === kind && NAV[m][1] === space && NAV[m][2] === sh)]?.plane;
   const SQUARED = ['Cube', 'Pits', 'Bumps', 'Frame', 'Sponge'], MIXED = ['Cuboctahedron', 'Rhombicuboctahedron', 'Bicupola', 'Pyramid'], sheet = (sh) => SHEETS.includes(sh);

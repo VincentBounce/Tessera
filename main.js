@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.470';
+const VERSION = '0.4.471';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -4347,23 +4347,24 @@ new MutationObserver((ms) => { for (const { target: el } of ms) if (el.title && 
   .observe(document.body, { attributes: true, attributeFilter: ['title'], subtree: true });
 // What it tells of the element under the mouse: the control (its words, its default, why it is greyed) and its words, each
 // button its own (a box that is one control, as Size's − label +: the box's); a title kept as data-tip (see tesseraCheck)
+// (greyed: the greyed control under it, its own state; its words maybe its box's, as Size's − at the smallest)
 const tipOf = (target) => {
-  const el = target.closest?.('[title], [data-tip], [data-default]:not([data-default=""]), [data-greyed]:not([data-greyed=""])');
+  const greyed = target.closest?.('[data-greyed]:not([data-greyed=""])') ?? null, el = target.closest?.('[title], [data-tip], [data-default]:not([data-default=""])') ?? greyed;
   if (el?.title) { el.dataset.tip = el.title; el.removeAttribute('title'); }
-  return { el, tip: el?.dataset.tip ?? '' };
+  return { el, tip: el?.dataset.tip ?? '', greyed };
 };
 document.addEventListener('mouseover', (e) => {
-  const { el, tip } = tipOf(e.target), named = el?.matches('button, label, .notch-row');  // (a notch row: its title, its first span)
+  const { el, tip, greyed } = tipOf(e.target), named = el?.matches('button, label, .notch-row');  // (a notch row: its title, its first span)
   const name = named ? (el.querySelector('.mode-name') ?? el.querySelector('span') ?? el).textContent.trim() : '';
   const bold = (text) => Object.assign(document.createElement('b'), { className: 'tip-name', textContent: text }), ok = tip && /\p{L}/u.test(name);  // (a symbol, + or −: no name)
   // its default: a tile's (see setTile), a box's (its checkbox as the page starts)
   const box = el?.matches('label') ? el.querySelector('input[type=checkbox]') : null, d = el?.dataset.default ?? (box ? (box.defaultChecked ? 'on' : 'off') : '');
   // its state here, each part under a rule of its own (see .tip-state): why greyed, what allows it (a title over its words), then its default, fainter
   const part = () => Object.assign(document.createElement('div'), { className: 'tip-state' }), section = (title, text) => { const div = part(); div.append(Object.assign(document.createElement('b'), { textContent: title }), Object.assign(document.createElement('span'), { textContent: text })); return div; };
-  const allowed = greyedOf(el)?.paths && pathsWords(greyedOf(el).paths());  // (greyed: the shortest paths that allow it, see pathsTo)
-  const told = [...(el?.dataset.greyed ? [section('Why greyed out?', el.dataset.greyed)] : []), ...(allowed ? [section('Allowed on', allowed)] : []),
+  const allowed = greyedOf(greyed ?? el)?.paths && pathsWords(greyedOf(greyed ?? el).paths());  // (greyed: the shortest paths that allow it, see pathsTo)
+  const told = [...(greyed ? [section('Why greyed out?', greyed.dataset.greyed)] : []), ...(allowed ? [section('Allowed on', allowed)] : []),
     ...(d ? [Object.assign(part(), { className: 'tip-state tip-default', textContent: d === 'yes' ? 'By default' : d === 'on' ? 'On by default' : d === 'off' ? 'Off by default' : d })] : [])];  // (a default that depends, told in full)
-  if (el?.dataset.tipHtml) $('tip').innerHTML = el.dataset.tipHtml;  // (a size's: its words in colour, see sizeTips)
+  if (el?.dataset.tipHtml) { $('tip').innerHTML = el.dataset.tipHtml; $('tip').append(...told); }  // (a size's: its words in colour, see sizeTips; its state under them)
   else $('tip').replaceChildren(...(!tip ? (told.length ? [bold(name), ...told] : []) : !ok ? [tip, ...told] : tip.startsWith(`${name}:`) ? [bold(name), tip.slice(name.length + 1).trim().replace(/^./, (c) => c.toUpperCase()), ...told] : [bold(name), tip, ...told]));  // (no words of its own: its name and its default; else its name, then its words under it)
   $('hint').hidden = !!el || !(e.target.tagName === 'CANVAS' && e.target.parentElement.id === 'stage');  // (the view's own layers, not a box's canvas over it)
 });

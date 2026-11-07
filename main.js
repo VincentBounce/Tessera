@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.404';
+const VERSION = '0.4.405';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -1654,7 +1654,7 @@ function digitsNeeded() {
 // its rule, a chip per digit (its count in the stats) when the rule names each digit: "Squares
 // turtle · along the lines of a square grid", 0 turn left + step, … An automaton: "4/3 in base 2
 // seeds the 2,560 cells of a torus of squares: 0 dead, 1 alive · rule B3/S23 · …".
-let shownSym = 'π';  // the number's symbol, for the description and a saved setup's name
+let shownSymbol = 'π';  // the number's symbol, for the description and a saved setup's name
 const LOOP_ROUNDS = 8;  // the rounds a repeat is walked at least, and the stretches a highway or a bridge takes
 // A walk going off for ever (a drift, an ant's highway) walked as far as what it drew before is wide:
 // rounds of `shift` each, over twice the farthest it went from the start before (radius), 8 at least
@@ -1667,8 +1667,8 @@ const rainbowLength = () => (closedLoop() ? walk.loop.from + walk.loop.period : 
 let lifeStart = null;  // where a Life start comes from when it is not the number's digits (see setLifeSeed)
 let barTitle = '';  // a walk's title: its number, a creature's name and what it turns by (its loop's link after it, see updateStats)
 function describe(base, available) {
-  const mode = MODES[walk.mode], sym = `<span class="pi">${withIcons(shownSym)}</span>`;  // (the walk shown's, described once built)
-  setLinks($('barNum'), (barTitle = withIcons(shownSym)));
+  const mode = MODES[walk.mode], sym = `<span class="pi">${withIcons(shownSymbol)}</span>`;  // (the walk shown's, described once built)
+  setLinks($('barNum'), (barTitle = withIcons(shownSymbol)));
   $('barNum').title = formulaInUse;
   // the chips after the title, in one order everywhere: a walk's base, then the rule (a walk's, a creature's, Life's: a click,
   // how it works); a creature turns by its rule, or by the digits of a number: that number first
@@ -1679,7 +1679,7 @@ function describe(base, available) {
   $('barRule').hidden = !creature && !walkRule;  // (Life's: below)
   setLinks($('barRule'), walkRule);
   $('barRule').title = 'Its rule · A click: how it works';
-  if (creature) { const R = creatureRules(w); setLinks($('barNum'), (barTitle = walkName(w))); setLinks($('barRule'), R.byDigits ? `${withIcons(shownSym)} · ${R.now}` : R.now); $('barRule').title = [R.byDigits ? `It turns by the digits of ${shownSym}, base 2` : 'It turns by its rule', colours && `${colours} colours`].filter(Boolean).join(' · '); }
+  if (creature) { const R = creatureRules(w); setLinks($('barNum'), (barTitle = walkName(w))); setLinks($('barRule'), R.byDigits ? `${withIcons(shownSymbol)} · ${R.now}` : R.now); $('barRule').title = [R.byDigits ? `It turns by the digits of ${shownSymbol}, base 2` : 'It turns by its rule', colours && `${colours} colours`].filter(Boolean).join(' · '); }
   $('barBase').parentElement.classList.toggle('life', !!creature || battleOn());  // (a creature, a battle titled as Life is: see .bar-title.life)
   if (colours) base = colours;  // its chips, one per colour
   $('barLoop').hidden = true;  // (a reversible one's: not back yet; a walk's loop, its title's link, see updateStats)
@@ -3775,7 +3775,7 @@ function compute() {
     return;
   }
   const { sym, kind } = F;
-  shownSym = sym;
+  shownSymbol = sym;
   const base = mode.life ? lifeBase() : mode.base;  // Life: K + 1 (Digits mixed: 2, see lifeBase)
   const key = `${F.text}/${base}`;
   $('copyNumber').textContent = baseWords(base);  // (Full number's chip: the base the digits are written in)
@@ -8232,7 +8232,7 @@ function battleWinner(P) {
 // a battle built: its player (played to its end), its walkers' names (A's, B's, C's), winner and deaths (each walker's
 // step, −1: alive at the end; kept as played to its end, its player then moved to the step shown)
 function battleOf(P) {
-  const names = [shownSym, ...RIVALS.slice(0, P.K - 1).map((id) => formulaOf($(id).value).sym)], winner = battleWinner(P);
+  const names = [shownSymbol, ...RIVALS.slice(0, P.K - 1).map((id) => formulaOf($(id).value).sym)], winner = battleWinner(P);
   return { player: P, names, winner, deaths: [...P.dead] };
 }
 // a fight's title, a battle's (its walkers' numbers) and Life's in colours (its pictures, its patterns): each its team's
@@ -10349,7 +10349,7 @@ function zoneWords(zone) {
 // number, its text, drawn, found
 function startTitle() {
   const K = lifeParts(), zone = lifeStart?.zone ?? (plane.start === 'random' ? hunt.zone : null);
-  if (plane.start === 'digits') return withIcons(shownSym);
+  if (plane.start === 'digits') return withIcons(shownSymbol);
   if (plane.start === 'text') return `«${plane.text}»`;
   if (plane.start === 'draw') return 'Drawn';
   const names = walk.life.startNames?.filter(Boolean);  // (a Famous start's patterns: Glider vs R-pentomino)
@@ -14648,8 +14648,8 @@ function saveSetup() {
   const setup = getSetup(), list = readGallery();
   const same = savedInView();
   if (same) { deleteSetup(same.name); return; }  // already one of them (its ★ yellow): out of them
-  let name = shownSym;
-  for (let k = 2; list.some((x) => x.name === name); k++) name = `${shownSym} (${k})`;
+  let name = shownSymbol;
+  for (let k = 2; list.some((x) => x.name === name); k++) name = `${shownSymbol} (${k})`;
   list.push({ name, setup, saved: new Date().toISOString() });
   list.sort((a, b) => a.name.localeCompare(b.name));
   if (!writeGallery(list)) alert('This browser does not allow saving (private window?).');

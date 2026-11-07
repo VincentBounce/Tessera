@@ -118,6 +118,9 @@ touched shows (+0 if its code lines are as many).
 
 ## Night audits
 While the checks run unattended (a night, a meal), also audit what they cannot see, and fix each gap at its root:
+- **Every night, click everything, as a brute**: every visible control not greyed, on every mode, Display's switches and
+  looks included (Blocks, Glass, Cut, Ocean, Perspective…), in both themes, then step, seek and click again: no console
+  error, nothing drawn empty. The fuzz picks menus only: Display › Blocks threw from v0.4.21 to v0.4.503 unseen.
 - **The controls and their code alike**: each control's state held as it shows (one choice among several, one value, never
   boxes that combine into it, as Area's Fill and Light did); its default from `DISPLAY_DEFAULTS` (its value and its tile's
   mark both), a control's greyed state and tooltip true; the same component, name and title for the same thing in every

@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.466';
+const VERSION = '0.4.467';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -4880,7 +4880,7 @@ const WORD_TEXT = { ...TURN_WORDS, U: 'U-turn, out the way it came in', B: 'a st
 // As a reminder, in every walk's and creature's How it works, under its figures (its own section, before a battle's): all the rules' words (WORD_TEXT, the one list the rules
 // are read by), each a step (its way: left, north, up…) but those turning on the spot (l, r, p), then an ant's and a
 // turmite's entries
-const wordsReminder = () => `<p class="tut-words-lead">As a reminder, the rules' words:</p><table class="tut-words">${Object.entries(WORD_TEXT).map(([word, text]) => `<tr><td><b>${word}</b></td><td>${/turn|step/.test(text) ? text : `a step: ${text}`}</td></tr>`).join('')}`  // (a word a step, but those that turn on the spot or say their own step)
+const wordsReminder = () => `<h4>As a reminder: the rules' words</h4><table class="tut-words">${Object.entries(WORD_TEXT).map(([word, text]) => `<tr><td><b>${word}</b></td><td>${/turn|step/.test(text) ? text : `a step: ${text}`}</td></tr>`).join('')}`  // (a word a step, but those that turn on the spot or say their own step)
   + '<tr><td><b>1R0</b></td><td>an ant\'s entry, one per colour: the colour it leaves (1), its turn (R), its state next (0)</td></tr>'
   + '<tr><td><b>2.R2.1</b></td><td>the same, a turn of two letters parted by dots</td></tr><tr><td><b>|</b></td><td>between two states\' entries (a turmite)</td></tr></table>';
 // a rule's words: spaced, else a letter each (L1, R2 one word)

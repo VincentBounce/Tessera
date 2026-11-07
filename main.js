@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.448';
+const VERSION = '0.4.449';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -4870,8 +4870,8 @@ const WALK_NETS = {
           arrows: { L: '←', '^': '⊙', N: '↑', v: '⊗', R: '→', U: '↓', n: '↑', e: '→', u: '⊙', s: '↓', w: '←', d: '⊗', p: '⊙' } },
   diamond: { straight: 'N', turns: { L: 0, N: 1, R: 2 }, arrows: { L: '↖', N: '↑', R: '↗' } },  // (gauche left, trans, gauche right: see diamondStepper)
 };
-const SPOT_ARROWS = { l: '↺', r: '↻', a: '↝' };
-const WORD_TEXT = { ...TURN_WORDS, U: 'U-turn, out the way it came in', '^': 'up', v: 'down', p: 'turn up on the spot', u: 'up', d: 'down', l: 'turn left on the spot', r: 'turn right on the spot', a: 'step, then turn right at an odd digit, left at an even one',
+const SPOT_ARROWS = { l: '↺', r: '↻', a: '↝', B: '⇣' };  // (the words with no turn of a network's: on the spot, parity, back)
+const WORD_TEXT = { ...TURN_WORDS, U: 'U-turn, out the way it came in', B: 'a step back, still facing the same way', '^': 'up', v: 'down', p: 'turn up on the spot', u: 'up', d: 'down', l: 'turn left on the spot', r: 'turn right on the spot', a: 'step, then turn right at an odd digit, left at an even one',
                     n: 'north', ne: 'north-east', e: 'east', se: 'south-east', s: 'south', sw: 'south-west', w: 'west', nw: 'north-west', '|': 'across the flat side: up from ▽, down from △', '\\': 'across the side along \\', '/': 'across the side along /' };
 // As a reminder, under every walk's and creature's How it works: all the rules' words (WORD_TEXT, the one list the rules
 // are read by), each a step (its way: left, north, up…) but those turning on the spot (l, r, p), then an ant's and a
@@ -4883,24 +4883,26 @@ const wordsReminder = () => `<h4>As a reminder: the rules' words</h4><table clas
 const ruleWords = (rule) => { const t = String(rule ?? '').trim(); return !t ? [] : /\s/.test(t) ? t.split(/\s+/) : t.match(/[LR][12]|./g); };
 // a rule's text: tight when its words are single letters of one case (LNR, nesw), else spaced (L1 R1, N r)
 const ruleOfWords = (words) => words.join(words.every((t) => /^[A-Z]$/.test(t)) || words.every((t) => /^[a-z]$/.test(t)) ? '' : ' ');
-// a word's act on a network: ['turn', by], ['way', heading], ['pivot', by], ['parity', by], or null
+// a word's act on a network: ['turn', by], ['way', heading], ['pivot', by], ['parity', by], ['back'], or null
 function wordAct(net, word) {
   const N = WALK_NETS[net];
   if (Object.hasOwn(N.turns, word)) return ['turn', N.turns[word]];
   if (N.ways && Object.hasOwn(N.ways, word)) return ['way', N.ways[word]];
   if (N.notch && (word === 'l' || word === 'r')) return ['pivot', word === 'l' ? -N.notch : N.notch];
+  if (word === 'B' && N.dirs && Object.hasOwn(N.turns, 'U')) return ['back'];  // (a step back, the heading kept: where a U-turn is, squares and hexagons)
   if (N.spots && Object.hasOwn(N.spots, word)) return N.spots[word];
   return N.notch && word === 'a' ? ['parity', N.notch] : null;
 }
 // The stepper of a network with headings (squares, hexagons), by a rule's acts; its hidden state last (as a cube's roll, for
 // walkRepeat): its heading after a turn on the spot, and the parity of the digits read
 function headingStepper(N, acts) {
-  const n = N.dirs.length, spot = acts.some(([k]) => k === 'pivot' || k === 'parity'), parity = acts.some(([k]) => k === 'parity');
+  const n = N.dirs.length, spot = acts.some(([k]) => k === 'pivot' || k === 'parity' || k === 'back'), parity = acts.some(([k]) => k === 'parity');  // (spot: its heading not its last step's)
   let x = 0, y = 0, h = 0, read = 0, at = N.at(0, 0);
   return (g) => {
     const [kind, by] = acts[g];
     read++;
     if (kind === 'pivot') h = (h + by + n) % n;
+    else if (kind === 'back') { x -= N.dirs[h][0]; y -= N.dirs[h][1]; at = N.at(x, y); }  // (a step back, its heading kept)
     else {
       if (kind === 'turn') h = (h + by + n) % n; else if (kind === 'way') h = by;
       x += N.dirs[h][0]; y += N.dirs[h][1];
@@ -4927,7 +4929,7 @@ const surfaceWords = (net) => Object.keys(WALK_NETS[net].turns).filter((t) => t 
 const SURFACE_NOTCHES = { square: 4, hex: 6 };  // (a step straight on: squares' and hexagons' cells, squares' and triangles' grid)
 function surfaceActs(mode, words = mode.net && ruleWords(walkRuleOf(mode))) {
   if (!words) return (mode.turns ?? []).map((t) => ['turn', t]);
-  return words.map((t) => (t === 'l' || t === 'r' ? ['pivot', t === 'r' ? 1 : -1] : t === 'a' ? ['parity'] : mode.grid ? ['turn', mode.turns[surfaceWords(mode.net).indexOf(t)]]
+  return words.map((t) => (t === 'l' || t === 'r' ? ['pivot', t === 'r' ? 1 : -1] : t === 'a' ? ['parity'] : t === 'B' ? ['back'] : mode.grid ? ['turn', mode.turns[surfaceWords(mode.net).indexOf(t)]]
     : cellTurn(mode.net, t) === 'straight' ? ['straight'] : ['turn', cellTurn(mode.net, t)]));  // (on cells: its word's edge, see cellTurn; straight, half way round)
 }
 // A word's turn on cells, edges on from the one come in by (see surfaceStep), by construction from its network's words left
@@ -4951,6 +4953,7 @@ const walkWordWhy = (m, t) => (m.lattice === 'sphere' && !m.grid ? cellWordWhy(m
 // the j-th from the entry either way, cells of 2j + 1 sides at least; on the spot and parity, its network's notches
 function cellWordWhy(m, t) {
   if (['l', 'r', 'a'].includes(t)) return SURFACE_NOTCHES[m.net] ? '' : `${t}: not on this surface`;
+  if (t === 'B') return cellSides(surfaceOf(m)).every((n) => n % 2 === 0) ? '' : `${t}: not on this surface (a cell of ${cellSides(surfaceOf(m)).find((n) => n % 2)} sides: no edge across to face)`;
   const turn = cellTurn(m.net, t), sides = cellSides(surfaceOf(m));
   if (turn === null) return `${t}: not on a surface (no north there)`;
   if (turn === 'straight') return sides.every((n) => n % 2 === 0) ? '' : `${t}: not on this surface (a cell of ${sides.find((n) => n % 2)} sides: no straight on)`;
@@ -7461,8 +7464,12 @@ function surfaceStep(g, grid, net, acts) {
     const [kind, by] = acts[d], read = parity ? 1 - q : 0, more = klein ? [hand] : [];
     if (kind === 'pivot') return [t, entry, (p + by + k) % k, read, ...more];
     const ks = live[t], n = ks ? ks.length : k, at = ks ? ks.indexOf(entry) : entry;
-    const j = mod(at + hand * ((kind === 'turn' ? by : k / 2) - p), n), edge = ks ? ks[j] : j, next = [g.nbr[k * t + edge], g.nbrEdge[k * t + edge]];
+    const j = mod(at + hand * ((kind === 'turn' ? by : kind === 'back' ? 0 : k / 2) - p), n), edge = ks ? ks[j] : j, next = [g.nbr[k * t + edge], g.nbrEdge[k * t + edge]];
     const turned = klein && P[k * next[0] + next[1]] === P[k * t + edge];  // (the edge the same way round in both: the seam)
+    if (kind === 'back') {  // (a step back: out behind it, then facing the cell it left, as before: come in by the edge across)
+      const ks2 = live[next[0]], n2 = ks2 ? ks2.length : k, i2 = ks2 ? ks2.indexOf(next[1]) : next[1], across = mod(i2 + n2 / 2, n2);
+      next[1] = ks2 ? ks2[across] : across;
+    }
     return [...next, kind === 'parity' ? (q ? -1 : 1) : 0, read, ...(klein ? [turned ? -hand : hand] : [])];
   };
 }
@@ -11772,7 +11779,7 @@ function ruleTutorial(entry) {
 // ends as dots; on cells, the cells. On the plane by the walk's own stepper; on a surface, a cell of it or a corner
 // of its grid by its turns (as on its flat tiling). A pivot's and a parity's: the step after dashed (where it heads);
 // a spiral's: its steps so far muted, a 0's step dashed (not drawn)
-const walkTutorialFits = (w) => NAV[w]?.[0] === 'Ant' || (NAV[w]?.[0] === 'Walk' && (MODES[w].lattice === 'sphere' ? !!MODES[w].turns : ['square', 'hex', 'tri', 'cairo'].includes(MODES[w].lattice)));
+const walkTutorialFits = (w) => NAV[w]?.[0] === 'Ant' || (NAV[w]?.[0] === 'Walk' && (MODES[w].lattice === 'sphere' ? !!(MODES[w].turns || MODES[w].net) : ['square', 'hex', 'tri', 'cairo'].includes(MODES[w].lattice)));
 // a 2D walk's cell round its middle
 function walkCell(lattice, [x, y]) {
   if (lattice === 'square') return [[-1, -1], [1, -1], [1, 1], [-1, 1]].map(([u, v]) => [x + u / 2, y + v / 2]);

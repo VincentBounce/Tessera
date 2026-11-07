@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.534';
+const VERSION = '0.4.535';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -12071,26 +12071,30 @@ const BATTLE_CASES = {
     hex: [{ pre: [210, 150], moves: [330, 30] }, { pre: [330], moves: [150, 210] }] },
 };
 // The cases of a battle on cells (see battlePlayer: Land cells, Cut, Snake cells), as along the grid's (see BATTLE_CASES), their
-// moves from tile to tile (degrees, between the tiles' middles), on squares and hexagons (a triangle's ways alternate: none);
+// moves from tile to tile (degrees, between the tiles' middles; a triangle's alternate: the middle one ▽, its neighbours △);
 // its words, each way's
 const BATTLE_CELL_CASES = {
   paint: { words: { landCells: 'A head on a tile paints it its colour, an enemy\'s too' },
     square: [{ pre: [90, 90], moves: [null, null, null, null, 270, 270, 270] }, { pre: [180, 180], moves: [0, 0, 0, 0] }],
-    hex: [{ pre: [150, 210], moves: [null, null, null, null, 330, 30, 330] }, { pre: [270, 270], moves: [90, 90, 90, 90] }] },
+    hex: [{ pre: [150, 210], moves: [null, null, null, null, 330, 30, 330] }, { pre: [270, 270], moves: [90, 90, 90, 90] }],
+    tri: [{ pre: [90], moves: [null, null, null, null, 270, 330] }, { pre: [210, 150], moves: [330, 30, 330, 30] }] },
   close: { words: { landCells: 'A zone its colour closes (the tiles not its colour cut off) painted inside' },
     square: [{ moves: [90, 0, 0, 270, 270, 180, 180, 90] }, { pre: [0, 0, 0, 0, 0], moves: [90] }],
     hex: [{ moves: [30, 90, 150, 210, 270, 330] }, { pre: [210, 210, 210], moves: [270] }] },
   bite: { words: { cut: 'A head on another\'s body: cut there, back to its tail (dashed)', snakeCells: 'A head on another\'s body: bitten there, back to its tail (dashed), the cells it bites eaten' },
     square: [{ pre: [90, 90], moves: [null, null, 270, 270] }, { pre: [180, 180], moves: [0, 0, 0, 0] }],
-    hex: [{ pre: [150, 210], moves: [null, null, 330, 30] }, { pre: [270, 270], moves: [90, 90, 90, 90] }] },
+    hex: [{ pre: [150, 210], moves: [null, null, 330, 30] }, { pre: [270, 270], moves: [90, 90, 90, 90] }],
+    tri: [{ pre: [90], moves: [null, null, 270] }, { pre: [210, 150], moves: [330, 30, 330, 30] }] },
   heads: { words: { landCells: 'Heads meeting on a tile: both die, their tiles staying', cut: 'Heads meeting on a tile, as long: both die, their bodies gone (the shorter alone dies)',
     snakeCells: 'Heads meeting on a tile, as long: both die, their bodies gone (the shorter alone dies)' },
     square: [{ pre: [180, 180, 180, 180], moves: [0, 0, 0, 0] }, { pre: [0, 0, 0, 0], moves: [180, 180, 180, 180] }],
-    hex: [{ pre: [270, 270, 270, 270], moves: [90, 90, 90, 90] }, { pre: [90, 90, 90, 90], moves: [270, 270, 270, 270] }] },
+    hex: [{ pre: [270, 270, 270, 270], moves: [90, 90, 90, 90] }, { pre: [90, 90, 90, 90], moves: [270, 270, 270, 270] }],
+    tri: [{ pre: [210, 150, 210, 150], moves: [330, 30, 330, 30] }, { pre: [330, 30, 330, 30], moves: [210, 150, 210, 150] }] },
   crossing: { words: { landCells: 'Heads crossing, each into the tile the other leaves: both die, their tiles staying', cut: 'Heads crossing, each into the tile the other leaves, as long: both die, their bodies gone',
     snakeCells: 'Heads crossing, each into the tile the other leaves, as long: both die, their bodies gone' },
     square: [{ pre: [180, 180, 180], moves: [0, 0, 0, 0] }, { pre: [0, 0, 0, 0], moves: [180, 180, 180, 180] }],
-    hex: [{ pre: [270, 270, 270], moves: [90, 90, 90, 90] }, { pre: [90, 90, 90, 90], moves: [270, 270, 270, 270] }] },
+    hex: [{ pre: [270, 270, 270], moves: [90, 90, 90, 90] }, { pre: [90, 90, 90, 90], moves: [270, 270, 270, 270] }],
+    tri: [{ pre: [210, 150, 210], moves: [30, 330, 30, 330] }, { pre: [330, 30, 330, 30], moves: [210, 150, 210, 150] }] },
 };
 // the case's figure, its battle played (see BATTLE_CASES, BATTLE_CELL_CASES): along the grid, from corner to corner; on cells,
 // from tile to tile (its places their middles). An SVG, null where its moves do not fit the grid
@@ -12146,7 +12150,7 @@ function battleCaseFigure(grid, way, scripts, cells = false) {
 function battleTutorial(w) {
   const way = BATTLE_RULES[battleRuleInUse()][0], g = walk.geo, grid = { 4: 'square', 3: 'tri', 6: 'hex' }[g?.sides];
   if (!battleOn()) return '';
-  const title = `<h3>Battle: ${BATTLE_RULES[battleRuleInUse()][1]}</h3>`, cells = !MODES[w].grid;  // (every battle's; its cases drawn on squares, triangles and hexagons along the grid, squares and hexagons on cells)
+  const title = `<h3>Battle: ${BATTLE_RULES[battleRuleInUse()][1]}</h3>`, cells = !MODES[w].grid;  // (every battle's; its cases drawn on squares, triangles and hexagons)
   const loop = grid && { pre: BATTLE_LOOP_AT[grid], moves: BATTLE_LOOP[grid] };
   const figs = !grid ? [] : Object.values(cells ? BATTLE_CELL_CASES : BATTLE_CASES).filter((c) => c[grid] && c.words[way]).map((c) => {
     const svg = battleCaseFigure(grid, way, c[grid].map((x) => (x === 'loop' ? loop : x)), cells);

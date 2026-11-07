@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.421';
+const VERSION = '0.4.422';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -1931,9 +1931,10 @@ function renderChoiceButtons(sel, box, pictures, first = null) {  // pictures: a
 // draws another start, a shape's switches walls and a torus): its hover gold; toggle: a switch on or off (Trail, Walls,
 // Turned, System…), said once when made and kept: its hover gold on, a pale gold off (as a choice picked); turn: its picture turned by so many degrees (a
 // second state a click again gives: a torus's tiles turned)
-const tile = ({ pic = '', text = '', html = null, title = '', id = null, on = false, can = true, mark = false, again = false, toggle = false, turn = 0, byDefault, greyed, click = null, whyNot = null, at }) => {
+const tile = ({ pic = '', text = '', html = null, title = '', id = null, on = false, can = true, mark = false, again = false, toggle = false, turn = 0, byDefault, greyed, click = null, whyNot = null, at, sets = null }) => {
   const b = document.createElement('button');
   b.type = 'button';
+  if (sets) b.sets = sets;  // (what it sets in a setup, { colours: 3 }: tried by a greyed one's search, see enablersFor)
   if (id) b.id = id;
   if (toggle) b.dataset.toggle = '';
   if (title) b.title = title;
@@ -1943,11 +1944,12 @@ const tile = ({ pic = '', text = '', html = null, title = '', id = null, on = fa
 };
 // (byDefault: as the tooltip tells it, see tip: 'yes', the choice picked at first; 'on' or 'off', a switch's at first)
 // (greyed: when it is, as the tooltip tells it: 'in Solo', 'outside Life'…)
-// (whyNot(setup): what greys it in a setup, { w, size } (a mode, at a size or the one it opens at), '' when allowed: its one
+// (whyNot(setup): what greys it in a setup, { w, size, colours } (a mode, at a size or the one it opens at; its colours, the
+// ones picked if none), '' when allowed: its one
 // source; greyed here (at: its mode, the tab's by default) or not, its words why, and the menu's nearest buttons that would
 // allow it, highlighted by a click on it (see enablersFor))
 const setTile = (b, { on = false, can = true, mark = false, again = false, turn = 0, byDefault, greyed, whyNot = null, at = $('mode').value }) => {
-  if (whyNot) { const why = whyNot({ w: at }); can = !why; if (why) greyed = why; b.enablers = () => enablersFor((w, size) => !whyNot({ w, size })); }
+  if (whyNot) { const why = whyNot({ w: at }); can = !why; if (why) greyed = why; b.enablers = () => enablersFor((setup) => !whyNot(setup)); }
   if (byDefault !== undefined) b.dataset.default = byDefault;
   if (greyed !== undefined) b.dataset.greyed = greyed;
   const pic = b.querySelector('svg');
@@ -3580,16 +3582,19 @@ function ruleCards(w, here = true) {
 }
 // The modes under a button of the menu: its place in the tree (NAV: kind, space, shape, rule, side), all those below it
 const modesUnder = (...place) => Object.keys(NAV).filter((u) => place.every((x, i) => NAV[u][i] === x));
-// The nearest of the menu that would allow what is greyed here (fits(w, size): whether mode w, at a size or the one its
-// button opens it at, takes it): this surface's other sizes (its size stepper: the 8 nearest tried), else the other side
-// (Grid | Cells), else its tilings, else its space's shapes, else the other spaces: a button where some mode under it
-// (under, its subtree) takes it, the one picked left out (its own others nearer); none, none. A greyed button's enablers, highlighted by a click on it (see highlight)
+// The nearest that would allow what is greyed here (fits(setup): whether a setup takes it, { w, size, colours }): the panel's
+// own choices first (a button setting a field, sets: Duo, Trio… for colours), else this surface's other sizes (its size
+// stepper: the 8 nearest tried), else the other side (Grid | Cells), else its tilings, else its space's shapes, else the
+// other spaces: a button where some mode under it (under, its subtree) takes it, the one picked left out (its own others
+// nearer); none, none. A greyed button's enablers, highlighted by a click on it (see highlight)
 const enablersFor = (fits) => {
   const w = $('mode').value, mode = MODES[w], kind = !mode.plane && surfaceOf(mode), now = SPHERES[kind] && figureSize(w);
   // (its sizes by construction, its mode's (see sizesOf), never the menu's: another surface's a moment after a tab changes)
-  if (now && sizesOf(kind, mode).filter((f) => f !== now).sort((a, b) => Math.abs(a - now) - Math.abs(b - now)).slice(0, 8).some((f) => fits(w, f))) return [$('sizeBox')];
+  const choices = [...document.querySelectorAll('button')].filter((b) => b.sets && b.offsetParent && !b.disabled && !b.classList.contains('active') && fits({ w, ...b.sets }));
+  if (choices.length) return choices;
+  if (now && sizesOf(kind, mode).filter((f) => f !== now).sort((a, b) => Math.abs(a - now) - Math.abs(b - now)).slice(0, 8).some((size) => fits({ w, size }))) return [$('sizeBox')];
   for (const box of ['walkOn', 'torusTiles', 'navShapes', 'navSpace']) {
-    const takers = [...$(box).querySelectorAll('button')].filter((b) => b.under && b.offsetParent && !b.under.includes(w) && b.under.some((u) => fits(u)));
+    const takers = [...$(box).querySelectorAll('button')].filter((b) => b.under && b.offsetParent && !b.under.includes(w) && b.under.some((u) => fits({ w: u })));
     if (takers.length) return takers;
   }
   return [];
@@ -11125,7 +11130,10 @@ const mixable = (zone, mode = MODES[$('mode').value]) => !!mode.life && !mode.lo
 const colourMixed = (zone = hunt.zone) => colourMix && lifeColours > 1 && mixable(zone);
 // Newcomer, a switch: the teams below's start (Trio's: Duel's, laid as Duel lays them), the last colour none at first, born only
 // of a tie between the others (the colour missing, see colourMissing); where a start lays teams (a soup's zones, Text)
-const newcomerCan = () => lifeColours > 2 && colourMissing(lifeColours) && coloursFit(lifeColours - 1) && (plane.start === 'random' || plane.start === 'text');
+const newcomerCan = (colours = lifeColours, figure = pickedFigure()) => colours > 2 && colourMissing(colours) && coloursFit(colours - 1, figure) && (plane.start === 'random' || plane.start === 'text');
+const newcomerWhere = (colours) => `where the teams picked have no birth of the missing colour (no mark in their corner), in Solo and Duel, in Digits and Draw${colours > 2 && !coloursFit(colours - 1) ? `, and where ${COLOUR_STEP_NAMES[colours - 1] ?? `${colours - 1} teams`} does not fit` : ''}`;
+// Mixed's greyed words (see mixable)
+const MIXED_WHERE = 'in Solo, in Replicators, Text and Draw, and in the hunt zones that lay each colour\'s own picture or part (Icon, Punk, Emoji, Famous, Anywhere, Realm, Mirror)';
 const newcomerOn = () => newcomer && newcomerCan();
 // a rule that turns an empty block full (Critters, Tron): every other generation shown negative, its dead cells alive (as
 // Margolus showed Critters: its picture then the same way round, its cells as particles that keep their count)
@@ -11255,14 +11263,15 @@ function renderColours() {
   if (walkTeamsHere(w)) { $('colourBlocks').replaceChildren(...walkTeamTiles(w)); return; }
   $('colourBlocks').replaceChildren(...COLOUR_STEPS.map((k) => tile({ pic: colourBlock(k), text: COLOUR_STEP_NAMES[k],
     title: `${k === 1 ? 'One colour: alive or dead' : `${k} colours: ${LIFE_COLOUR_NAMES.slice(0, k).join(', ')}`}${colourMissing(k) ? ' · a colour gone can come back: a tie, the missing one born' : ''}`,
-    on: k === lifeColours, whyNot: ({ w, size }) => (coloursFit(k, pickedFigure(w, size)) ? '' : 'where the shape has no parts alike for so many colours'), mark: colourMissing(k), byDefault: k === 1 ? 'yes' : '', greyed: k > 1 ? 'where the shape has no parts alike for so many colours' : '', click: () => { if (k !== lifeColours) { coloursPicked = lifeColours = k; applyDefaults('colours'); compute(); } } })),  // (Trail: on in Solo, off in colours, at first)
+    on: k === lifeColours, sets: { colours: k }, whyNot: ({ w, size }) => (coloursFit(k, pickedFigure(w, size)) ? '' : 'where the shape has no parts alike for so many colours'), mark: colourMissing(k), byDefault: k === 1 ? 'yes' : '', greyed: k > 1 ? 'where the shape has no parts alike for so many colours' : '', click: () => { if (k !== lifeColours) { coloursPicked = lifeColours = k; applyDefaults('colours'); compute(); } } })),  // (Trail: on in Solo, off in colours, at first)
     // Mixed, a switch: the colours' cells mixed at random in one place, as one colour's (greyed in one colour and where no zone mixes, see mixable)
     tile({ pic: `<svg viewBox="0 0 4 4" aria-hidden="true">${[[0, 0], [2, 0], [1, 1], [3, 1], [0, 2], [2, 2], [1, 3], [3, 3]].map(([x, y], i) => `<rect x="${x}" y="${y}" width="1" height="1" fill="${LIFE_COLOURS[[0, 4, 2, 6, 5, 1, 7, 3][i]]}"/>`).join('')}</svg>`, text: 'Mixed',
-      title: 'The colours placed as one colour is (one patch, a soup), each cell a colour at random', toggle: true, byDefault: 'off', greyed: 'in Solo, in Replicators, Text and Draw, and in the hunt zones that lay each colour\'s own picture or part (Icon, Punk, Emoji, Famous, Anywhere, Realm, Mirror)', on: colourMixed(), can: lifeColours > 1 && mixable(hunt.zone), click: () => { colourMix = !colourMix; compute(); } }),
+      title: 'The colours placed as one colour is (one patch, a soup), each cell a colour at random', toggle: true, byDefault: 'off', greyed: MIXED_WHERE, on: colourMixed(), whyNot: ({ w, colours = lifeColours }) => (colours > 1 && mixable(hunt.zone, MODES[w]) ? '' : MIXED_WHERE), click: () => { colourMix = !colourMix; compute(); } }),
     // Newcomer, a switch (see newcomerCan)
-    tile({ pic: colourBlock(Math.max(3, lifeColours), true), text: 'Newcomer', toggle: true, byDefault: 'off', on: newcomerOn(), can: newcomerCan(), click: () => { newcomer = !newcomer; compute(); },
+    tile({ pic: colourBlock(Math.max(3, lifeColours), true), text: 'Newcomer', toggle: true, byDefault: 'off', on: newcomerOn(), click: () => { newcomer = !newcomer; compute(); },
+      whyNot: ({ w, size, colours = lifeColours }) => (newcomerCan(colours, pickedFigure(w, size)) ? '' : newcomerWhere(colours)),
       title: lifeColours > 2 ? `${COLOUR_STEP_NAMES[lifeColours - 1] ?? `${lifeColours - 1} teams`} as it starts, and ${teamName(lifeColours - 1)} a newcomer: none at first, born of a tie between the others (the colour missing)` : 'The teams below\'s start, and the last colour a newcomer: none at first, born of a tie between the others (the colour missing)',
-      greyed: `where the teams picked have no birth of the missing colour (no mark in their corner), in Solo and Duel, in Digits and Draw${lifeColours > 2 && !coloursFit(lifeColours - 1) ? `, and where ${COLOUR_STEP_NAMES[lifeColours - 1] ?? `${lifeColours - 1} teams`} does not fit` : ''}` }));
+      greyed: newcomerWhere(lifeColours) }));
 
 }
 // a walk's teams: Solo, Duel, Trio… as Life's (a battle: how many numbers walk; greyed, a count its surface's symmetries

@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.418';
+const VERSION = '0.4.419';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -3578,15 +3578,18 @@ function ruleCards(w, here = true) {
     ...(R.typed ? [make(pixelIcon('..o..,..o..,ooooo,..o..,..o..'), 'Custom rule', mine ? R.now : '', mine, () => { customOpen = true; renderModePicker(); }, '', 'your own, typed')] : []),  // (never greyed: no source, no why)
     customRow];  // (its field right after it, the list's next rules after the field; always in it, shown by renderAntRow)
 }
+// The modes under a button of the menu: its place in the tree (NAV: kind, space, shape, rule, side), all those below it
+const modesUnder = (...place) => Object.keys(NAV).filter((u) => place.every((x, i) => NAV[u][i] === x));
 // The nearest of the menu that would allow what is greyed here (fits(w, size): whether mode w, at a size or the one its
 // button opens it at, takes it): this surface's other sizes (its size stepper: the 8 nearest tried), else the other side
-// (Grid | Cells), else its tilings, else its space's shapes; none, none. A greyed button's enablers, highlighted by a click on it (see highlight)
+// (Grid | Cells), else its tilings, else its space's shapes, else the other spaces: a button where some mode under it
+// (under, its subtree) takes it, the one picked left out (its own others nearer); none, none. A greyed button's enablers, highlighted by a click on it (see highlight)
 const enablersFor = (fits) => {
   const w = $('mode').value, mode = MODES[w], kind = !mode.plane && surfaceOf(mode), now = SPHERES[kind] && figureSize(w);
   // (its sizes by construction, its mode's (see sizesOf), never the menu's: another surface's a moment after a tab changes)
   if (now && sizesOf(kind, mode).filter((f) => f !== now).sort((a, b) => Math.abs(a - now) - Math.abs(b - now)).slice(0, 8).some((f) => fits(w, f))) return [$('sizeBox')];
-  for (const box of ['walkOn', 'torusTiles', 'navShapes']) {
-    const takers = [...$(box).querySelectorAll('button[data-goes]')].filter((b) => b.offsetParent && b.dataset.goes !== w && fits(b.dataset.goes));
+  for (const box of ['walkOn', 'torusTiles', 'navShapes', 'navSpace']) {
+    const takers = [...$(box).querySelectorAll('button')].filter((b) => b.under && b.offsetParent && !b.under.includes(w) && b.under.some((u) => fits(u)));
     if (takers.length) return takers;
   }
   return [];
@@ -3675,7 +3678,7 @@ function renderModePicker() {
   }));
   $('walkHeading').innerHTML = icon(kind === 'Walk' ? 'compass' : 'grid') + WALK_HEADINGS[kind];
   // its spaces (see SPACES), one choice among them: only those it has (no ant nor automaton in Lattice)
-  $('navSpace').replaceChildren(tileGroup(Object.keys(SPACES).filter((sp) => navValues(1, [kind]).includes(sp)).map((sp) => button(`${icon(SPACES[sp][1])}<span>${SPACES[sp][0]}</span>`, sp === space, () => navGo(1, sp), SPACES[sp][2])), true));  // (name, picture, tooltip)
+  $('navSpace').replaceChildren(tileGroup(Object.keys(SPACES).filter((sp) => navValues(1, [kind]).includes(sp)).map((sp) => Object.assign(button(`${icon(SPACES[sp][1])}<span>${SPACES[sp][0]}</span>`, sp === space, () => navGo(1, sp), SPACES[sp][2]), { under: modesUnder(kind, sp) })), true));  // (name, picture, tooltip; under: its modes, see enablersFor)
   // the shapes, as pictures with their (short) names, in their groups (see shapeGroups)
   // (a grid of Life picked that can wrap round: a switch, a click again its edges a torus or walls)
   const groups = shapeGroups(kind, space);
@@ -3687,7 +3690,7 @@ function renderModePicker() {
       plane.torus = !plane.torus;
       compute();
     }, modeWhere(navPick(2, sh)));
-    b.dataset.goes = navPick(2, sh);  // (the mode it goes to: what a greyed button waits for, see enablersFor)
+    b.under = modesUnder(kind, space, sh);  // (its modes: what a greyed button waits for, see enablersFor)
     if (again) { setTile(b, { on: true, again }); b.title += plane.torus ? '\nA torus · Clicked again: walls' : '\nWalls · Clicked again: a torus'; }  // (its words kept, then what a click does, as a card's: see card)
     return [b];
   }), ...(g === shapeGroup('square') && MODES[w].life && MODES[w].plane ? [spaceTimeTile] : [])];  // (Stacks: Life on squares')
@@ -3723,7 +3726,7 @@ function renderModePicker() {
         $('mode').value = same(f);
         $('mode').dispatchEvent(new Event('change'));
       }, f === here && turns ? `${capitalised(F.tabs[tabOf(f, true)][4].slice(shape.length + 2))}: a click turns it${isTurned ? ' back' : ''}` : modeWhere(same(f)), { again: f === here && turns, byDefault: f === F.tabs[0][0] ? 'yes' : '', turn: tilesTurn(shownSurface(MODES[same(f)].sphere, f === here && isTurned)) });  // its picture as its tiles lie (a torus's, a strip's alike: clockwise, as the pictures laid on it)
-      b.dataset.goes = same(f);  // (the mode it goes to: what a greyed button waits for, see enablersFor)
+      b.under = F.modes[f].filter((v) => NAV[v][0] === kind);  // (its modes, its kind's: what a greyed button waits for, see enablersFor)
       return [b];
     }), ...(F.tabs.some(([, tu]) => tu) ? [tile({ pic: icon('pivot'), text: 'Turned', toggle: true, byDefault: 'off', greyed: 'on a tiling with no other way round (a block rule: none its blocks come round)', on: isTurned, can: turns,
       title: turns ? F.tabs[tabOf(here, true)][4] : 'The tiling turned, its rows another way round', click: turn })] : []));
@@ -3758,8 +3761,7 @@ function renderModePicker() {
   const side = (b, s, word, none) => {
     b.querySelector('span').textContent = word;
     setTile(b, { on: alone ? s === 'cells' : NAV[w][4] === s, greyed: none, whyNot: ({ w: v }) => sideWhyNot(v, s, none) });
-    const there = walksThere(w).find((u) => NAV[u][4] === s);
-    if (there) b.dataset.goes = there; else delete b.dataset.goes;  // (the mode it goes to: what a greyed button waits for, see enablersFor)
+    b.under = walksThere(w).filter((u) => NAV[u][4] === s);  // (its modes: what a greyed button waits for, see enablersFor)
   };
   const cellsWord = space === '3D' ? 'Cube' : 'Cells';
   side($('walkOnGrid'), 'grid', 'Grid', creatures ? 'the worm, on triangles only' : 'not on the grid');

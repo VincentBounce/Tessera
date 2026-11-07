@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.501';
+const VERSION = '0.4.502';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -723,13 +723,13 @@ const PALETTES = {
   // digits: for the walks whose digits are no direction, in the same colours; grey: a spiral's 0
   dark: { light: 60, digits: ['#4f7bff', '#f0609f', '#f2b630', '#2fbdb7', '#9270f5', '#7fc244', '#f28042', '#d466f0'], grey: '#e6edf3', mono: '#f0b429',
           directions: { '←': '#4f7bff', '↑': '#f2b630', '→': '#f0609f', '↓': '#2fbdb7', '↖': '#7fc244', '↗': '#d466f0', '↘': '#f28042', '↙': '#9270f5', '⊙': '#f06b6b', '⊗': '#45c8f0' },
-          unlit: '#1f2630', ocean: '#1f63b8', lands: ['#2ea833', '#e0b812', '#e87a18', '#a3d01a', '#e8edf0'], dying: '#6b7f99', trail: '#c98f1f', alive: '#e6edf3', edgeRgb: [255, 255, 255], edgeAlpha: 0.25, shade: 0.6, fadeEdges: true },
+          unlit: '#1f2630', ocean: '#1f63b8', lands: ['#2ea833', '#e0b812', '#e87a18', '#a3d01a', '#e8edf0'], dying: '#6b7f99', alive: '#e6edf3', edgeRgb: [255, 255, 255], edgeAlpha: 0.25, shade: 0.6, fadeEdges: true },
   light: { light: 48, digits: ['#2f5bea', '#e8438a', '#e0a100', '#13a8a2', '#7c4dff', '#5fa82a', '#f0702a', '#c03fe0'], grey: '#6e7781', mono: '#bf8700',
            directions: { '←': '#2f5bea', '↑': '#e0a100', '→': '#e8438a', '↓': '#13a8a2', '↖': '#5fa82a', '↗': '#c03fe0', '↘': '#f0702a', '↙': '#7c4dff', '⊙': '#e5484d', '⊗': '#1aa3d6' },
-           unlit: '#eef1f5', ocean: '#2a7de1', lands: ['#34c23a', '#f7cf1a', '#ff8a1f', '#b5e61d', '#ffffff'], dying: '#7d8896', trail: '#c98a10', alive: '#1f2328', edgeRgb: [0, 0, 0], edgeAlpha: 0.11, shade: 0.35, fadeEdges: true, tileLift: 0.22 },
+           unlit: '#eef1f5', ocean: '#2a7de1', lands: ['#34c23a', '#f7cf1a', '#ff8a1f', '#b5e61d', '#ffffff'], dying: '#7d8896', alive: '#1f2328', edgeRgb: [0, 0, 0], edgeAlpha: 0.11, shade: 0.35, fadeEdges: true, tileLift: 0.22 },
 };
 const hexRgb = (c) => [1, 3, 5].map((i) => parseInt(c.slice(i, i + 2), 16));  // [r, g, b] of a #rrggbb colour (any CSS colour: see rgbOf)
-const GRADIENT = [], DIGIT_COLORS = [], LIFE_DYING = [], LIFE_TRAIL = [], DIRECTION_COLOURS = {};
+const GRADIENT = [], DIGIT_COLORS = [], LIFE_TRAIL = [], DIRECTION_COLOURS = {};
 // Life's colours (civilisations), as bright as the walks' rainbow in each theme (its saturation and
 // lightness), in an order that keeps them apart: up to 8 (red, blue, gold, green, violet, cyan, magenta, orange: the
 // lime too near the green below 12); the 12 bring close ones (lime, pink, indigo, teal), in the
@@ -737,12 +737,15 @@ const GRADIENT = [], DIGIT_COLORS = [], LIFE_DYING = [], LIFE_TRAIL = [], DIRECT
 // strip, 6 × 2 round a torus (the last pair next to the first), 3 × 4 on a square torus, 4 × 3 on the plane
 const LIFE_HUES = [2, 222, 48, 135, 275, 185, 318, 25, 90, 340, 245, 160], LIFE_COLOURS = [];
 let GREY;
-// the 8 shades of a dying Life cell (a Generations rule's stages), from the dying colour to the tile under it (unlit,
-// Ocean's sea); and of its trail once dead (Trail), in amber (PALETTE.trail, each theme its own), not a state
-function lifeShades(under) {
-  const b = hexRgb(under), shade = (c, f) => { const a = hexRgb(c); return `rgb(${[0, 1, 2].map((k) => Math.round(b[k] + (a[k] - b[k]) * f)).join(', ')})`; };
-  return { dying: Array.from({ length: 8 }, (_, i) => shade(PALETTE.dying, 1 - i / 8)), trail: Array.from({ length: 8 }, (_, i) => shade(PALETTE.trail, 1 - i / 8)) };
-}
+// a ramp of #rrggbb stops read at f, 0 its first, 1 its last
+const rampAt = (stops, f) => { const t = Math.max(0, Math.min(1, f)) * (stops.length - 1), a = Math.min(stops.length - 2, Math.floor(t)), A = hexRgb(stops[a]), B = hexRgb(stops[a + 1]); return `rgb(${A.map((v, i) => Math.round(v + (B[i] - v) * (t - a))).join(', ')})`; };
+// States, one ramp a theme: a cell's state from the background (dead, never walked; under: Ocean's sea) through the dying
+// grey-blue to the ink (alive), f from 0 to 1: a Life cell's dying stages, an ant's states alike
+const stateColour = (f, under = UNLIT) => rampAt([under, PALETTE.dying, LIFE_ALIVE], f);
+const statesPicture = () => swatch([0.25, 0.5, 0.75, 1].map((f) => stateColour(f)));  // (States' tile, Life's and an ant's)
+// Trail: a Life cell just dead, fading over 8 generations, deep to pale (a dark page's: bright to dark), Ink (Langton's black on
+// white, softened), not a state
+const TRAIL_INK = { light: ['#2b2f3a', '#6f6a60', '#b9ae98', '#e7e0d0'], dark: ['#c8c2b5', '#959ba6', '#636b7c', '#3a4150'] };  // (dark: its cream a shade lower, not glaring on the black)
 let PALETTE, MONO, UNLIT, OCEAN, LANDS, LIFE_ALIVE, EDGE_RGB, EDGE_ALPHA, SHADE, FADE_EDGES, TILE_LIFT;  // TILE_LIFT: the tiles' rainbow mixed with white  // EDGE_RGB, EDGE_ALPHA: the tile edges; SHADE: how dark a tile turned away gets
 function setPalette(theme) {
   const P = PALETTES[theme];
@@ -750,8 +753,7 @@ function setPalette(theme) {
   UNLIT = P.unlit; OCEAN = P.ocean; LANDS = P.lands; LIFE_ALIVE = P.alive; EDGE_RGB = P.edgeRgb; EDGE_ALPHA = P.edgeAlpha;
   SHADE = P.shade; FADE_EDGES = !!P.fadeEdges; TILE_LIFT = P.tileLift ?? 0;
   PALETTE = P;
-  const shades = lifeShades(P.unlit);
-  LIFE_DYING.splice(0, 8, ...shades.dying); LIFE_TRAIL.splice(0, 8, ...shades.trail);
+  LIFE_TRAIL.splice(0, 8, ...Array.from({ length: 8 }, (_, i) => rampAt(TRAIL_INK[theme], i / 8)));
   for (let i = 0; i < BANDS; i++) GRADIENT[i] = rainbowHue(190 + (200 * i) / (BANDS - 1));  // (from its blue, 190, round by red, 360, to orange)
   LIFE_HUES.forEach((h, k) => { LIFE_COLOURS[k] = `hsl(${h}, 85%, ${PALETTES.light.light}%)`; });  // the light page's, on a dark one too (to compare)
   DIGIT_COLORS.splice(0, DIGIT_COLORS.length, ...P.digits);
@@ -2131,7 +2133,7 @@ function lifeMusic(L) {  // (a generation's moments, see Sound)
 // trail of the dead; Activity: the cells that change most, hot in the middle
 function lifeLookPicture(look) {
   const g = gradientAt;
-  if (look === 'mono') return swatch(lifeColours > 1 ? [LIFE_COLOURS[0], UNLIT, UNLIT, LIFE_COLOURS[1]] : [LIFE_ALIVE, UNLIT, UNLIT, LIFE_ALIVE]);  // in colours: a red, a blue
+  if (look === 'mono') return lifeColours > 1 ? swatch([LIFE_COLOURS[0], UNLIT, UNLIT, LIFE_COLOURS[1]]) : statesPicture();  // in colours: a red, a blue
   if (look === 'gradient') return swatch([g(1), g(0.5), g(0), LIFE_TRAIL[Math.floor(LIFE_TRAIL.length / 3)]]);  // warm newborns to cold old cells
   return heatRings(g);
 }
@@ -11143,18 +11145,17 @@ const liftTile = (c) => { if (!TILE_LIFT) return c; const v = rgbOf(c).map((x) =
 // states, Trail, the motif shown; Activity's, its most changes), kept on L: not each frame a view turns (272 KB, before v0.4.1)
 function lifeLook(L, lifted = false) {
   const colour = $('colourMode').value, maxAct = colour === 'digit' ? L.maxActivity : 0;
-  const key = [colour, lifted, TILE_LIFT, L.C, L.colours, trailOn(), maxAct, LIFE_ALIVE, LIFE_DYING[0], LIFE_TRAIL[0], GRADIENT[0], LIFE_COLOURS[0], oceanOn()].join('|');
+  const key = [colour, lifted, TILE_LIFT, L.C, L.colours, trailOn(), maxAct, LIFE_ALIVE, PALETTE.dying, LIFE_TRAIL[0], GRADIENT[0], LIFE_COLOURS[0], oceanOn()].join('|');
   if (L.look?.key === key) return L.look.value;
   const lift = lifted ? liftTile : (c) => c;
   const pack = (c) => { const [r, g, b] = rgbOf(c); return ((255 << 24) | (b << 16) | (g << 8) | r) >>> 0; };
-  const shades = oceanOn() ? lifeShades(OCEAN) : { dying: LIFE_DYING, trail: LIFE_TRAIL };  // (Ocean: into its sea)
-  const dying = shades.dying.map(pack), trail = shades.trail.map(pack), alive = pack(oceanOn() ? LANDS[0] : LIFE_ALIVE), civ = [0, ...civColours(L.colours, L.C).map(pack)];
+  const trail = LIFE_TRAIL.map(pack), alive = pack(oceanOn() ? LANDS[0] : LIFE_ALIVE), civ = [0, ...civColours(L.colours, L.C).map(pack)];
   const grad = Array.from({ length: 32 }, (_, i) => pack(lift(gradientAt(i / 31))));
   // the colours on a log scale, in tables (millions of cells): of an age (up to 64), of an activity
   const level = (v, max) => Math.min(31, Math.round((Math.log(v) / Math.log(Math.max(2, max))) * 31));
   const byAge = Uint32Array.from({ length: 65 }, (_, a) => grad[31 - level(a + 1, 65)]);  // the rainbow backwards: warm newborns, cold old cells
   const byActivity = colour === 'digit' ? Uint32Array.from({ length: Math.min(maxAct, 65535) + 1 }, (_, v) => (v ? grad[level(v + 1, maxAct + 1)] : 0)) : null;
-  const byDying = Uint32Array.from({ length: L.C }, (_, st) => (st < 2 ? 0 : dying[Math.min(dying.length - 1, Math.round(((st - 1) / (L.C - 1)) * dying.length))]));
+  const byDying = Uint32Array.from({ length: L.C }, (_, st) => (st < 2 ? 0 : pack(stateColour(1 - (st - 1) / (L.C - 1), oceanOn() ? OCEAN : UNLIT))));  // (a dying stage down the States ramp, see stateColour)
   const trailLength = L.C === 2 && trailOn() ? trail.length : 0, K = L.colours;  // the trail after death (Trail)
   // its colours by the graphics card, by these tables (see gpuLook)
   const table = new Uint32Array(4096 * 17);
@@ -11824,7 +11825,7 @@ function ruleTutorial(entry) {
     .sort((u, v) => Math.atan2(mid(u)[1] - o[1], mid(u)[0] - o[0]) - Math.atan2(mid(v)[1] - o[1], mid(v)[0] - o[0]));
   const pts = [c, ...around].flatMap(corners), x0 = Math.min(...pts.map((p) => p[0])), y0 = Math.min(...pts.map((p) => p[1]));
   const w = Math.max(...pts.map((p) => p[0])) - x0, h = Math.max(...pts.map((p) => p[1])) - y0, side = Math.max(w, h), pad = side * 0.04;
-  const dying = (s) => faded(LIFE_ALIVE, 1 - s / (rule.C - 1));  // stage s (1 … C − 2)
+  const dying = (s) => stateColour(1 - s / (rule.C - 1));  // stage s (1 … C − 2), down the States ramp
   const points = (t) => corners(t).map((p) => p.join(',')).join(' ');
   // the cell after: its state before shown a moment, fading quickly into the new one, kept (once; ↻ plays it again)
   const L = x0 - pad - (side - w) / 2, T = y0 - pad - (side - h) / 2, S = side + 2 * pad;
@@ -15500,17 +15501,9 @@ function drawHexGrid(ctx, pointy) {
 }
 
 
-// An ant's cells by their state (States): a ramp from pale to deep in the order of its colours (the cells it never
-// walked are the background), per theme, Ink (Langton's black on white, softened); on a dark page the other way, from
-// dark to bright
-const ANT_INK = { light: ['#e7e0d0', '#b9ae98', '#6f6a60', '#2b2f3a'], dark: ['#3a4150', '#636b7c', '#959ba6', '#c8c2b5'] };  // (dark: its cream a shade lower, not glaring on the black)
-// state k of n along the ramp
-function rampColour(k, n) {
-  const stops = ANT_INK[themeName()];
-  const t = n < 2 ? 0 : (Math.min(k, n - 1) * (stops.length - 1)) / (n - 1), a = Math.floor(t), f = t - a;
-  const A = hexRgb(stops[a]), B = hexRgb(stops[Math.min(a + 1, stops.length - 1)]);
-  return `rgb(${A.map((v, i) => Math.round(v + (B[i] - v) * f)).join(', ')})`;
-}
+// An ant's cells by their state (States): its state k of n on the States ramp (see stateColour), past the background (the
+// cells it never walked), pale to deep in the order of its colours
+const rampColour = (k, n) => stateColour((Math.min(k, n - 1) + 1) / n);
 // a turn by its family, the same on every tiling (an ant's, a walk's relative to its heading): left blue,
 // right pink (a sharp one deeper), straight on gold (↖ ↗ on hexagons and triangles are a plain left or right)
 const deeper = (c) => `rgb(${rgbOf(c).map((v) => Math.round(v * 0.62)).join(', ')})`;
@@ -18483,7 +18476,7 @@ function cellModePicture(look, ant) {  // a 2 × 2 swatch, or the rainbow line o
     + stairs.slice(1).map(([x, y], i) => `<path d="M${at(stairs[i][0])} ${at(stairs[i][1])}L${at(x)} ${at(y)}" stroke="${g(i / 3)}" stroke-width="2.4" stroke-linecap="round"/>`).join('') + '</svg>';
   if (look === 'cells') return `<svg viewBox="0 0 24 24" aria-hidden="true">${faded('onCells')}`
     + stairs.map(([x, y], i) => `<rect x="${at(x) + 0.4}" y="${at(y) + 0.4}" width="${third - 0.8}" height="${third - 0.8}" rx="0.8" fill="${g(i / 4)}"/>`).join('') + '</svg>';
-  if (look === 'digit' && ant) return swatch(ANT_INK[theme]);  // (States)
+  if (look === 'digit' && ant) return statesPicture();
   if (look === 'digit') {  // Commands: L R, each in its turn's colour (left blue, right pink, see antTurnColour)
     const letter = (x, text, colour) => `<text x="${x}" y="17.5" font-family="ui-monospace, Menlo, monospace" font-weight="700" font-size="15" text-anchor="middle" fill="${colour}">${text}</text>`;
     return `<svg viewBox="0 0 24 24" aria-hidden="true">${letter(6.5, 'L', DIRECTION_COLOURS['←'])}${letter(17.5, 'R', DIRECTION_COLOURS['→'])}</svg>`;

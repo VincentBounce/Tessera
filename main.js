@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.544';
+const VERSION = '0.4.545';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -1562,7 +1562,7 @@ const PRIMORIAL_DIGITS = {
 // Digits already computed stay in the cache (key: canonical formula + base), so going back to a
 // number or a mode is instant.
 const digitsCache = {};  // key → { intPart: "10", digits: Uint8Array (fractional part) }
-let current = null;      // { head: integer-part digits, digits, mode }
+let digitsComputed = null;  // the number's digits computed: { head: integer-part digits, digits, base, mode they are for, … }
 let numberWorker = null;  // (the page's number's digits being computed, see compute)
 
 // A walk's every field, as it starts: each build begins from these (see buildWalkOf), then sets its own.
@@ -2178,7 +2178,7 @@ const randomPrimeSize = () => {  // the size of the random prime in the Formula 
 // "all 344 digits" when it is shorter than the count asked, "20,000 of 352,987" when it is longer.
 // The whole number in use, if any: its count of digits (in the field, not formulaInUse: while a new
 // number is read, that one is still the old)
-const wholeTotal = () => (current?.whole && current.formula === $('formula').value ? current.total : null);
+const wholeTotal = () => (digitsComputed?.whole && digitsComputed.formula === $('formula').value ? digitsComputed.total : null);
 // In generations (Elementary's rows, computed ahead; Space-time's height, its layers kept): [ − ] 2,000 generations [ + ];
 // Space-time made again. A reversible one has none: played on either way, as a Game of Life forth (see runStart)
 const gensShown = () => !!MODES[$('mode').value].elementary || spaceTimeOn();
@@ -3113,7 +3113,7 @@ function sieve(limit) {
 function setCurrent(entry, base, kind, ratio = null) {
   const head = headDigits(entry.intPart, base);
   // total: how many digits the whole number has (a whole number's are only sent up to the count used)
-  current = { head, digits: entry.digits, base, total: entry.total ?? head.length + entry.digits.length, mode: $('mode').value,
+  digitsComputed = { head, digits: entry.digits, base, total: entry.total ?? head.length + entry.digits.length, mode: $('mode').value,
               whole: entry.total !== undefined, formula: formulaInUse,  // whole: a whole number, its digits all known
               fraction: kind === 'rat', ratio };  // its digits end up repeating (see torusLoops)
 }
@@ -3186,14 +3186,14 @@ const stopRivals = () => { for (const id of Object.keys(rivalWorkers)) { rivalWo
 // The digits in use: n in total, the integer part (always included) then the digits after the point
 function digitsInUse() {
   const n = digitsNeeded();
-  const head = current.head.subarray(0, n);
-  return { head, frac: current.digits.subarray(0, n - head.length) };
+  const head = digitsComputed.head.subarray(0, n);
+  return { head, frac: digitsComputed.digits.subarray(0, n - head.length) };
 }
 // The digits just after those walked (as many as are known, up to LOOP_AHEAD): a walk compares
 // them to tell a loop (see buildGridWalk)
 const LOOP_AHEAD = 64;
 function digitsAhead() {
-  const n = digitsNeeded(), H = current.head, D = current.digits, out = [];
+  const n = digitsNeeded(), H = digitsComputed.head, D = digitsComputed.digits, out = [];
   for (let i = n; i < n + LOOP_AHEAD; i++) {
     const d = i < H.length ? H[i] : D[i - H.length];
     if (d === undefined) break;
@@ -3212,11 +3212,11 @@ const writeDigits = (ds, b, head) => {
 // the battle's end) of those in use (n), its integer part's (head) and the rest (frac), its digits in all (total), a fraction's
 // exact value (ratio, its period shown)
 function numberRows() {
-  const P = walk.battle?.player, b = current.base, { head, frac } = digitsInUse(), n = head.length + frac.length;
+  const P = walk.battle?.player, b = digitsComputed.base, { head, frac } = digitsInUse(), n = head.length + frac.length;
   return [formulaInUse, ...RIVALS.slice(0, P ? P.K - 1 : 0).map((id) => $(id).value)].map((f, s) => {
     const F = formulaOf(f), ds = s ? knownDigits(F, b, n) : Uint8Array.from([...head, ...frac]), used = !P ? n : P.dead[s] >= 0 ? P.dead[s] : P.n;
     const lead = !s ? head.length : F.kind === 'seq' ? ds.length : headDigits(digitsCache[`${F.text}/${b}`].intPart, b).length, h = Math.min(lead, used);  // (its integer part's digits)
-    return { s, name: s ? F.text ?? f : f, used, n, head: ds.subarray(0, h), frac: ds.subarray(h, used), total: s ? lead : current.total, ratio: s ? F.kind === 'rat' && smallExact(F.ast) : current.ratio };
+    return { s, name: s ? F.text ?? f : f, used, n, head: ds.subarray(0, h), frac: ds.subarray(h, used), total: s ? lead : digitsComputed.total, ratio: s ? F.kind === 'rat' && smallExact(F.ast) : digitsComputed.ratio };
   });
 }
 
@@ -3973,7 +3973,7 @@ function compute() {
     setCurrent(entry, base, kind, kind === 'rat' ? smallExact(F.ast) : null);
     if (!elementaryReady(() => done(entry, how))) return;  // (Elementary's rows on their way, see elementaryReady)
     if (!rivalsReady(() => done(entry, how))) return;  // (a battle's other numbers on their way, see rivalsReady)
-    const total = entry.total ?? current.head.length + current.digits.length;
+    const total = entry.total ?? digitsComputed.head.length + digitsComputed.digits.length;
     // the digits' time, then the walk's (millions of an ant's steps take far longer than its digits)
     const t0 = performance.now();
     buildWalk();
@@ -4077,15 +4077,15 @@ function buildWalk() {
  * denominator prime to it, after as many digits as the base's factors take out of it (and the head);
  * digit(i): any digit of the number, from the first s0 + L. Null when they are not all at hand. */
 function fractionPeriod(most = 2_000_000n, periods = 1) {  // (most: the largest denominator tried; periods: the digits needed, after s0)
-  if (!current.ratio) return null;
-  const b = BigInt(current.base), gcd = (x, y) => (y ? gcd(y, x % y) : x);
-  let d = current.ratio[1], pre = 0;
+  if (!digitsComputed.ratio) return null;
+  const b = BigInt(digitsComputed.base), gcd = (x, y) => (y ? gcd(y, x % y) : x);
+  let d = digitsComputed.ratio[1], pre = 0;
   for (let c = gcd(d, b); c > 1n; c = gcd(d, b)) { d /= c; pre++; }
   if (d > most) return null;
   const q = Number(d);
   let L = 1;
-  for (let r = current.base % q; q > 1 && r !== 1; r = (r * current.base) % q) L++;
-  const H = current.head, D = current.digits, s0 = H.length + pre + 1;
+  for (let r = digitsComputed.base % q; q > 1 && r !== 1; r = (r * digitsComputed.base) % q) L++;
+  const H = digitsComputed.head, D = digitsComputed.digits, s0 = H.length + pre + 1;
   if (H.length + D.length < s0 + periods * L) return null;
   return { s0, L, digit: (i) => { const j = i < s0 + L ? i : s0 + ((i - s0) % L); return j < H.length ? H[j] : D[j - H.length]; } };
 }
@@ -4100,7 +4100,7 @@ function walkRepeat() {
   const P = fractionPeriod(), most = 2_000_000;
   if (!P || P.s0 + P.L > most) return null;
   const { s0, L, digit } = P, tries = Math.min(24, Math.floor((most - s0) / L)), n = s0 + tries * L;
-  const step = STEPPERS[current.mode](), { lattice: lat, cells } = MODES[current.mode], round = (v) => roundOff(v, 1e6);
+  const step = STEPPERS[digitsComputed.mode](), { lattice: lat, cells } = MODES[digitsComputed.mode], round = (v) => roundOff(v, 1e6);
   const pos = new Float64Array(3 * (n + 1)), code = new Int32Array(n + 1), codes = new Map();
   code[0] = -1;  // the start has no last step
   for (let i = 0; i < n; i++) {
@@ -4125,13 +4125,13 @@ function walkRepeat() {
 }
 
 function buildWalkOf() {
-  const rows = MODES[current.mode].elementary ? elementaryRows() : null;  // (Elementary: a step a generation, see elementaryRows)
-  if (MODES[current.mode].elementary && !rows) return;  // (its rows on their way: the walk shown kept meanwhile)
+  const rows = MODES[digitsComputed.mode].elementary ? elementaryRows() : null;  // (Elementary: a step a generation, see elementaryRows)
+  if (MODES[digitsComputed.mode].elementary && !rows) return;  // (its rows on their way: the walk shown kept meanwhile)
   previousShape = walk.shape && { target: walk.shape.target, mode: walk.shape.mode };
   visitData = firstVisitData = areaData = null;  // and its cells' visits and areas too
   gpuClear();  // a surface drawn before (see 11.4d)
   areaFill = null;  // a new walk: its enclosed areas are computed again, and its layer starts empty
-  Object.assign(walk, freshWalk(), { mode: current.mode });  // (all its fields fresh; the mode it is built for: its colours by it, current.mode ahead of it while another is made, see compute)
+  Object.assign(walk, freshWalk(), { mode: digitsComputed.mode });  // (all its fields fresh; the mode it is built for: its colours by it, current.mode ahead of it while another is made, see compute)
   $('fillTooBig').hidden = true;
   layers.fill.clearRect(0, 0, canvasWidth, canvasHeight);
   const { head, frac } = digitsInUse();
@@ -4139,8 +4139,8 @@ function buildWalkOf() {
   seq.set(head);
   seq.set(frac, head.length);
   if (rows) seq = new Uint8Array(rows.G);
-  else if (MODES[current.mode].life) {
-    buildLife(seq, MODES[current.mode]);
+  else if (MODES[digitsComputed.mode].life) {
+    buildLife(seq, MODES[digitsComputed.mode]);
     return;
   }
   // a walk that loops takes only the digits of its first round: the count says so (and the link),
@@ -4148,28 +4148,28 @@ function buildWalkOf() {
   const loopCount = () => {
     syncDigitsStepper();
   };
-  if (MODES[current.mode].lattice === 'sphere') {
-    (MODES[current.mode].grid ? buildGridWalk : buildSphereWalk)(seq, MODES[current.mode], digitsAhead());
+  if (MODES[digitsComputed.mode].lattice === 'sphere') {
+    (MODES[digitsComputed.mode].grid ? buildGridWalk : buildSphereWalk)(seq, MODES[digitsComputed.mode], digitsAhead());
     loopCount();
     syncLoopRow();
     return;
   }
-  const len = MODES[current.mode].worm || !readsDigits() ? targetAsked() : seq.length;  // (its steps asked: a worm's, its digits read at its new corners only; a creature by its rule's, none read)
-  const is3d = MODES[current.mode].lattice === 'cube';
+  const len = MODES[digitsComputed.mode].worm || !readsDigits() ? targetAsked() : seq.length;  // (its steps asked: a worm's, its digits read at its new corners only; a creature by its rule's, none read)
+  const is3d = MODES[digitsComputed.mode].lattice === 'cube';
   const wx = new Float64Array(len + 1);
   const wy = new Float64Array(len + 1);
   const wz = is3d ? new Float64Array(len + 1) : null;
   const cells = new Int32Array(len + 1);
   const maxDist = new Float64Array(len + 1);
-  const ant = !!MODES[current.mode].antOf, isWorm = !!MODES[current.mode].worm, step = rows ? ((y = 0) => () => [key(0, ++y), 0, y, 0])() : STEPPERS[current.mode](seq);  // (Elementary's walker: down its middle, a row a step)
+  const ant = !!MODES[digitsComputed.mode].antOf, isWorm = !!MODES[digitsComputed.mode].worm, step = rows ? ((y = 0) => () => [key(0, ++y), 0, y, 0])() : STEPPERS[digitsComputed.mode](seq);  // (Elementary's walker: down its middle, a row a step)
   // an ant by its rule: counted by the colour it turned on (each colour its turn), not by digit; by the
   // digits: by the turn it took (left or right), the other way from its digit on a dark cell
-  const byColour = ant && !antByDigits, base = byColour ? step.colours : MODES[current.mode].base;
+  const byColour = ant && !antByDigits, base = byColour ? step.colours : MODES[digitsComputed.mode].base;
   const counts = new Int32Array(base * (len + 1)), left = ant ? new Uint8Array(len) : null, turns = ant ? new Uint8Array(len) : null;
   const origin = is3d ? key3(0, 0, 0) : key(0, 0), seen = new Set([origin]);
   // a fraction's walk repeats (see walkRepeat), walked 8 rounds; not an ant's, whose state is all its
   // cells, nor a spiral's, whose path the digits do not steer (its sides grow: it never repeats)
-  let loop = current.ratio && !ant && !isWorm && !rows && !MODES[current.mode].skipZeros ? walkRepeat() : null;  // (a worm: its digits only at its new corners)
+  let loop = digitsComputed.ratio && !ant && !isWorm && !rows && !MODES[digitsComputed.mode].skipZeros ? walkRepeat() : null;  // (a worm: its digits only at its new corners)
   let steps = loop ? Math.min(len, loop.cap) : len, m = 0, walked = 0, nextLook = 2000;
   // an ant on a highway goes on along it for ever: stopped as far as its cloud is wide (driftRounds;
   // looked for every 2,000 steps, then every 5 % of them so far, and at the end). Its last stretch on
@@ -4226,8 +4226,8 @@ function buildWalkOf() {
     keys = antStates;
   }
   Object.assign(walk, { vert: null, stepTiles: null, loop, n: steps, digits: isWorm ? took : seq, wx, wy, wz, is3d, cells, maxDist, base, counts,
-                        lattice: MODES[current.mode].lattice, lines: !!MODES[current.mode].lines,
-                        skipZeros: !!MODES[current.mode].skipZeros, ant: ant ? step.colours : 0, turns, antStates,
+                        lattice: MODES[digitsComputed.mode].lattice, lines: !!MODES[digitsComputed.mode].lines,
+                        skipZeros: !!MODES[digitsComputed.mode].skipZeros, ant: ant ? step.colours : 0, turns, antStates,
                         highway: ant ? highwayOf(wx, wy, steps) : null, bridges, wormEnd: isWorm && step.end, wormMade: isWorm ? step.made ?? 0 : 0,
                         keys, sphere: false, life: null, rows,
                         xs: is3d ? new Float64Array(len + 1) : wx,
@@ -6489,7 +6489,7 @@ function initShape(kind) {
   if (!MORPHABLE.includes(kind)) { walk.shape = null; updateMorphButton(); return; }
   // the same surface (its other tilings, along the grid or on cells) keeps the form it had
   const surface = (w) => familyOf(w)?.F.name ?? MODES[w].sphere;
-  const mode = current.mode, keep = previousShape && surface(previousShape.mode) === surface(mode);
+  const mode = digitsComputed.mode, keep = previousShape && surface(previousShape.mode) === surface(mode);
   const g = walk.geo, m = keep ? previousShape.target : defaultOf('shape', mode), shape = shapeAt(g, m);
   // its flat and round forms' extents, once a mesh (the form shown one of them, mostly)
   const extents = (g.formExtents ??= {});
@@ -7409,7 +7409,7 @@ let torusLoopList = null;  // { key, loops: [{ start, size, laps: [ring, tube], 
 function torusLoops() {
   const mode = MODES[$('mode').value], key = `${formulaInUse} ${$('mode').value} ${surfaceOf(mode)}`;
   if (!mode.net || !TORI.includes(surfaceOf(mode))) return [];  // a walk by a rule's commands (its network's: not an ant's), along the grid or on cells, on a torus or a Möbius strip
-  if (!current || current.formula !== formulaInUse || current.mode !== $('mode').value) return [];  // its digits are on their way
+  if (!digitsComputed || digitsComputed.formula !== formulaInUse || digitsComputed.mode !== $('mode').value) return [];  // its digits are on their way
   if (torusLoopList?.key === key) return torusLoopList.loops;
   const loops = [];
   torusLoopList = { key, loops };
@@ -7696,7 +7696,7 @@ function buildSphereWalk(seq, mode, ahead = new Uint8Array(0)) {
   const { initial } = mode, kind = surfaceOf(mode);
   fillSphereSizes(kind, initial);
   const { mesh, radius } = SPHERES[kind];
-  const len = readsDigits() ? seq.length : targetAsked(), w = current.mode, ant = !!mode.antOf;  // (an ant by its rule: its steps asked, no digit read)
+  const len = readsDigits() ? seq.length : targetAsked(), w = digitsComputed.mode, ant = !!mode.antOf;  // (an ant by its rule: its steps asked, no digit read)
   const size = sphereSize(), g = mesh(size), R = radius(size), S = surfaceSteps(g, mode, ant ? surfaceActs(MODES[ANTS[w].walk], antCommands(w)) : undefined);  // (an ant: by its words)
   // an ant: it walks the surface's cells by its turns, the cells keeping their colours (see antStepper)
   const antStep = ant ? antStepper(w, (d) => { state = S.step(state, d); return state; }, walkStart(g, mode)[0]) : null;
@@ -9042,14 +9042,14 @@ const ELEMENTARY_NOW = 3000;
 let elementaryMade = null, elementaryWorker = null;
 const elementaryAsk = () => {
   const G = targetAsked(), start = plane.start, N = lifeRuleNow()?.wolfram ?? 30, { head, frac } = digitsInUse();
-  return { key: `${N}|${G}|${start}|${start === 'digits' ? `${formulaInUse}/${current.base}` : ''}`, args: [G, start, N, start === 'digits' ? Uint8Array.from([...head, ...frac].slice(0, 2 * G + 16)) : null] };
+  return { key: `${N}|${G}|${start}|${start === 'digits' ? `${formulaInUse}/${digitsComputed.base}` : ''}`, args: [G, start, N, start === 'digits' ? Uint8Array.from([...head, ...frac].slice(0, 2 * G + 16)) : null] };
 };
 function elementaryWorkerMain() {  // (run in a worker: its rows, sent back)
   Object.assign(self, { wolframTables: new Map(), POP16: popCounts() });  // (its tables' cache and its words' counts, made there)
   onmessage = (e) => { const t = performance.now(), R = elementaryRowsOf(...e.data); R.ms = performance.now() - t; postMessage(R, [R.counts.buffer, R.upTo.buffer, ...R.kept.map((k) => k.buffer)]); };
 }
 function elementaryReady(then) {
-  if (!MODES[current.mode].elementary) { elementaryMade = null; return true; }  // (another grid: its rows let go, tens of MB)
+  if (!MODES[digitsComputed.mode].elementary) { elementaryMade = null; return true; }  // (another grid: its rows let go, tens of MB)
   const a = elementaryAsk();
   if (elementaryMade?.key === a.key) return true;
   elementaryWorker?.terminate();
@@ -10545,7 +10545,7 @@ function layLoops(seed) {
   }
 }
 function buildLifePlane(seq) {
-  const kind = planeKind(MODES[current.mode].plane);  // (a rectangle's, if so)
+  const kind = planeKind(MODES[digitsComputed.mode].plane);  // (a rectangle's, if so)
   const W = planeW(kind, plane.side), row = planeRow(kind, W), { n, xy, at } = planeGrid(kind, W);
   let rule = lifeRuleNow() || parseRule('B3/S23');
   if (rule.iso && rule.iso !== 'vertex' && baseOf(kind) !== { hex: 'hex', hensel: 'square' }[rule.iso]) {  // Callahan's letters need hexagons, Hensel's squares (v: any plane)
@@ -10554,7 +10554,7 @@ function buildLifePlane(seq) {
   $('lifeRule').value = ruleBody(rule.text);  // the colours apart (see lifeColours)
   const nbr = planeNeighbours(kind, W, planeTorus(kind), rule.iso === 'hensel');
   walk.life = { nbr, ring: rule.loops ? loopRing(rule, sidesOf(row, W, planeTorus(kind))) : rule.iso && rule.iso !== 'vertex' ? nbr.ring : null, side: rule.iso === 'vertex' ? sideOf(kind, W, nbr) : null, B: rule.B, S: rule.S, C: rule.C, two: rule.two, colours: rule.colours, ruleText: ruleBody(rule.text),
-                margolus: MODES[current.mode].margolus && rule.margolus ? ruleBlocks(rule, kind, W) : null, loops: rule.loops ?? null, loopStates: rule.loopStates, loopRing: rule.loopRing, loopTurns: rule.loopTurns, lineages: !!rule.lineages,
+                margolus: MODES[digitsComputed.mode].margolus && rule.margolus ? ruleBlocks(rule, kind, W) : null, loops: rule.loops ?? null, loopStates: rule.loopStates, loopRing: rule.loopRing, loopTurns: rule.loopTurns, lineages: !!rule.lineages,
                 seed: planeSeed(kind, seq, rule.C, rule.colours), alive: new Uint8Array(n) };
   if (walk.life.margolus?.flips) blockCells(walk.life.margolus, n);  // (Critters, Tron: their cells in blocks, see GPU_LIFE's blockRule)
   lifeCells(walk.life);  // (its cells' arrays: the graphics card's copies too)
@@ -10747,7 +10747,7 @@ const DRAW_WHERE = 'On a reversible surface, a block rule has no patterns to sho
 // none for blocks); Text where no picture fits (its room known on the grid built only: another mode's not judged, not claimed)
 const LIFE_STARTS = [['random', 'Hunt'], ['text', 'Text'], ['digits', 'Digits'], ['draw', 'Draw']];
 const startWhyNot = (start, v) => (start === 'draw' ? (!MODES[v].plane && MODES[v].margolus ? DRAW_WHERE : '')
-  : start === 'text' ? (v !== $('mode').value ? TEXT_WHERE : !walk.life || current?.mode !== v || setFits(iconMax(textSet()), textSet()) ? '' : TEXT_WHERE) : '');
+  : start === 'text' ? (v !== $('mode').value ? TEXT_WHERE : !walk.life || digitsComputed?.mode !== v || setFits(iconMax(textSet()), textSet()) ? '' : TEXT_WHERE) : '');
 const TEXT_WHERE = 'No picture can be laid here, as with Emoji (the grid too small, or a solid with no face for it).';
 const PNG_WHERE = 'Only on a grid of squares: one pixel per square.';  // (Export PNG's greyed words)
 function renderPlaneRow() {
@@ -15625,7 +15625,7 @@ const antChipColour = (k) => rampColour(k, walkReadsDigits() ? 2 : antColours(wa
 // a digit's colour: its direction's (an ant's: the turn it took, or its state), else in the digits' order
 const digitColour = (k) => walk.ant ? rampColour(k, walk.ant)
   : walk.skipZeros ? (k ? DIGIT_COLORS[0] : GREY)  // a spiral: 1 blue, drawn; 0 grey, moved without drawing
-  : arrowsOf(current.mode)[k] ? (wayCommand(current.mode, k) || !['Turtle', 'Pivot', 'Parity'].includes(NAV[current.mode]?.[3]) ? (a) => DIRECTION_COLOURS[a] : antTurnColour)(arrowsOf(current.mode)[k])  // fixed directions: by the compass
+  : arrowsOf(digitsComputed.mode)[k] ? (wayCommand(digitsComputed.mode, k) || !['Turtle', 'Pivot', 'Parity'].includes(NAV[digitsComputed.mode]?.[3]) ? (a) => DIRECTION_COLOURS[a] : antTurnColour)(arrowsOf(digitsComputed.mode)[k])  // fixed directions: by the compass
   : walk.base <= DIGIT_COLORS.length ? DIGIT_COLORS[k] : `hsl(${(k * 360) / walk.base}, 80%, 62%)`;
 
 /* ---- 11.4 Surfaces ------------------------------------------------------------------------ */
@@ -15850,7 +15850,7 @@ function firstVisits() {
 // big parts of the surface (half a sphere, the whole of a Klein bottle) whatever the figure: only the small areas its
 // figure rings are filled, FRACTION_AREA tiles at most (Area's tooltip says so)
 const FRACTION_AREA = 2;
-const fractionAreaCap = () => (walk.stepTiles && current?.fraction ? FRACTION_AREA : Infinity);
+const fractionAreaCap = () => (walk.stepTiles && digitsComputed?.fraction ? FRACTION_AREA : Infinity);
 // A walk along the grid (on cells none: Area greyed, see areaWhyNot): the regions are made of tiles, two neighbouring
 // tiles being separated once the walk has gone along the edge between them, so the areas follow the path exactly; their
 // faces, the corners all round
@@ -16127,7 +16127,7 @@ const setCut = (k) => { needsFull ||= k !== cutAxis; cutAxis = k; };  // (a notc
  *    one colour or a colour per digit. */
 // cells: always on a spiral (its line is greyed out), else, a walk on cells, for Rainbow, Heatmap and Commands
 // (a colour per digit; an ant's turns or states); along the lines, none: its line (a look left from cells, its colours)
-const flatCellsOn = () => greyed('line') || (!!MODES[current.mode]?.cells && (($('colourMode').value === 'cells' && shows('cells'))
+const flatCellsOn = () => greyed('line') || (!!MODES[digitsComputed.mode]?.cells && (($('colourMode').value === 'cells' && shows('cells'))
   || ($('colourMode').value === 'visits' && useful('visits')) || ($('colourMode').value === 'digit' && shows('cells'))));
 // the templates of the polygons around a cell's centre, per tiling, and which one a cell takes
 const CELL_TEMPLATES = {
@@ -16226,8 +16226,8 @@ const CELL_SHAPES = {
 // A 3D walk on cells: the cell of each point up to to (a cube, see CELL_SHAPES), drawn in the walk's
 // order with the depth buffer, so that a cell shows the colour of its last visit (the rainbow by the
 // step, its digit's, or one colour) and hides the ones behind it
-const cellShape = () => CELL_SHAPES[MODES[current.mode].shape ?? 'cube'];
-const cubesWalk = () => walk.is3d && (!!MODES[current.mode].cells || spaceTimeOn());  // (a 3D walk on cells, Life's Space-time: cubes)
+const cellShape = () => CELL_SHAPES[MODES[digitsComputed.mode].shape ?? 'cube'];
+const cubesWalk = () => walk.is3d && (!!MODES[digitsComputed.mode].cells || spaceTimeOn());  // (a 3D walk on cells, Life's Space-time: cubes)
 // a 3D walk on cells' cubes, points 0 … n: where, their colours by the look (the rainbow by the step, its digit's)
 function walkCubes(mode) {
   const n = walk.n, at = new Float32Array(3 * (n + 1)), col = new Uint8Array(3 * (n + 1));
@@ -16898,7 +16898,7 @@ function gpuDrawPipe(name, { vertex, fragment, buffers, topology = 'triangle-lis
 // a battle's colours in the palette (pal), for its lines along the grid: A's body, B's (their heads: their arrows, see drawOverlay)
 // the commands' palette on the GPU (see stepLook), its places 0 to 255 (past its end, its last; an ant's ramp, all of them)
 function stepPalette(D) {
-  const key = `${walk.base}|${walk.ant}|${walk.skipZeros}|${current.mode}|${MONO}|${GREY}`;
+  const key = `${walk.base}|${walk.ant}|${walk.skipZeros}|${digitsComputed.mode}|${MONO}|${GREY}`;
   if (D.keys.pal === key) return;
   const colours = stepLook('digit').palette, pal = new Uint8Array(4 * 256);  // (a walk's: its start's grey last)
   for (let k = 0; k < 256; k++) pal.set([...rgbCached(walk.ant ? digitColour(k) : colours[Math.min(k, colours.length - 1)]), 255], 4 * k);
@@ -17759,11 +17759,11 @@ function updateStats() {
   // end it finishes with the last one. The window then shrinks until "…", "0." and "." fit too.
   // above each digit, its step as an arrow (an ant's: the turn it took); before both lines, the walker:
   // a turtle turning relative to its heading, a compass going by fixed directions, a spiral winding round
-  const mode = MODES[current.mode], arrows = arrowsOf(current.mode);
+  const mode = MODES[digitsComputed.mode], arrows = arrowsOf(digitsComputed.mode);
   strip.classList.add('line');
   strip.classList.toggle('turns', arrows.length > 0);
   const cols = stripColumns(strip), n = walk.n, d = walk.digits;
-  const intLen = Math.min(current.head.length, n);
+  const intLen = Math.min(digitsComputed.head.length, n);
   let b = Math.min(n, Math.max(0, stepShown - Math.floor(cols * 0.6)) + cols), a = Math.max(0, b - cols);
   const marks = () => (a > 0 ? 1 : intLen ? 0 : 2) + (intLen - 1 >= a && intLen - 1 < b && intLen < n ? 1 : 0)
     + (b < n ? 1 : stepShown >= n ? 1 : 0);  // "…" after, or the head on a blank past the last digit
@@ -17793,7 +17793,7 @@ function updateStats() {
   const end = b < n ? '…' : stepShown >= n ? '<span class="head">\u00a0</span>' : '';
   html += end;
   if (stepShown >= n) top += end;  // the head past the last digit, on both lines
-  const walker = icon(mode.skipZeros ? 'spiral' : ['Turtle', 'Ant', 'Polymer'].includes(NAV[current.mode][3]) ? 'turtle' : 'compass');
+  const walker = icon(mode.skipZeros ? 'spiral' : ['Turtle', 'Ant', 'Polymer'].includes(NAV[digitsComputed.mode][3]) ? 'turtle' : 'compass');
   strip.innerHTML = arrows.length ? `${walker}<div class="arrows">${top}</div><div>${html}</div>` : html;
 }
 
@@ -18426,14 +18426,14 @@ $('copyRle').addEventListener('click', () => { const text = lifeRle(); if (text)
 // the chips that show the number: Full number's, and a walk's base (its rule's chip: how it works instead)
 const numberChips = () => [$('copyNumber'), $('barBase')];
 // the bases' bubbles: lit, every one of the base shown (drawn again: lit as they are)
-const baseShown = (base) => !$('numberPreview').hidden && base === baseWords(current.base);
+const baseShown = (base) => !$('numberPreview').hidden && base === baseWords(digitsComputed.base);
 const lightBases = () => { for (const b of document.querySelectorAll('.bubble.act')) b.classList.toggle('active', baseShown(b.textContent)); };
 function closeNumber() { $('numberPreview').hidden = true; for (const b of numberChips()) b.classList.remove('active', 'switch'); lightBases(); }
 const toggleNumber = () => { if (!$('numberPreview').hidden) closeNumber(); else showNumber(); };  // (a base's bubble too: see cardBubble)
 for (const b of numberChips()) b.addEventListener('click', toggleNumber);
 // A fraction's digits in base b, exact, its period in brackets: = 0.(005291); null when it does not end or repeat within
 // the digits in use (the walk's digits, or the cells a start lays: see digitsNeeded, showNumber)
-function ratioDigits(b, ratio = current.ratio, max = digitsNeeded()) {
+function ratioDigits(b, ratio = digitsComputed.ratio, max = digitsNeeded()) {
   const [p0, q] = ratio, p = p0 < 0n ? -p0 : p0, B = BigInt(b), seen = new Map(), ds = [];
   let rem = p % q;
   while (rem && !seen.has(rem) && ds.length < max) { seen.set(rem, ds.length); rem *= B; ds.push(Number(rem / q)); rem %= q; }
@@ -18450,7 +18450,7 @@ const digitsValue = (ds, B) => {
 // The number in base 10 over the base it is in (see showNumber), as many digits as those in use tell, a whole number's whole;
 // a whole number cut (more digits than in use), its size and first digits; and how many digits it shows (a note)
 function base10Digits({ head, frac, total }) {
-  const B = BigInt(current.base), lb = Math.log10(current.base);
+  const B = BigInt(digitsComputed.base), lb = Math.log10(digitsComputed.base);
   if (head.length < total && !frac.length) {  // (its first digits and its power of 10, from its first digits)
     const s = digitsValue(head.subarray(0, 40), B).toString(), l = s.length - 1 + Math.log10(Number(`${s[0]}.${s.slice(1, 16)}`)) + (total - Math.min(40, head.length)) * lb;
     return [`≈ ${(10 ** (l % 1)).toFixed(14)}… × 10^${formatNumber(Math.floor(l))}`, `first 15 of ${formatNumber(Math.floor(l) + 1)} digits`];
@@ -18462,11 +18462,11 @@ function base10Digits({ head, frac, total }) {
   if (!frac.length) return [`= ${int}`, `all ${formatNumber(int.length)} digits`];
   const m = Math.max(1, Math.floor(frac.length * lb) - 1);  // (as many as its digits in use tell)
   const lead = int === '0' ? '' : int;  // (a 0 before the point implicit: .14)
-  return [`≈ ${lead}.${(((N % D) * 10n ** BigInt(m)) / D).toString().padStart(m, '0')}…`, `first ${formatNumber(lead.length + m)} digits, as many as the first ${formatNumber(ds.length)} in base ${current.base} tell`];
+  return [`≈ ${lead}.${(((N % D) * 10n ** BigInt(m)) / D).toString().padStart(m, '0')}…`, `first ${formatNumber(lead.length + m)} digits, as many as the first ${formatNumber(ds.length)} in base ${digitsComputed.base} tell`];
 }
 const base10 = { on: false };  // (Base 10 switched on: the number in base 10 instead, see showNumber)
 function showNumber() {
-  const B = current.base, v = $('numberPreview'), ten = base10.on && B !== 10, b = ten ? 10 : B, rows = numberRows(), one = rows.length > 1 ? ' one-line' : '';
+  const B = digitsComputed.base, v = $('numberPreview'), ten = base10.on && B !== 10, b = ten ? 10 : B, rows = numberRows(), one = rows.length > 1 ? ' one-line' : '';
   // each number (see numberRows): its title, in its walker's colour in a battle, and how many of its digits; a fraction's
   // period (= .(101)); then its digits (cut: …), a battle's on one line; in base 10 when switched on (see base10Digits)
   const inBase = (r) => {

@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.496';
+const VERSION = '0.4.497';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -1693,7 +1693,7 @@ function describe(base, available) {
   $('barRule').title = 'Its rule · A click: how it works';
   $('barBattle').hidden = !walk.battle;  // (a battle: its rule, after the walk's)
   $('barBattle').textContent = walk.battle ? BATTLE_RULES[battleRuleInUse(w)][1] : '';
-  $('barBattle').title = 'Its battle rule';
+  $('barBattle').title = 'Its battle rule · A click: how it works';
   if (creature) { const R = creatureRules(w); setLinks($('barNum'), (barTitle = walkName(w))); setLinks($('barRule'), R.byDigits ? `${withIcons(shownSymbol)} · ${R.now}` : R.now); $('barRule').title = [R.byDigits ? `It turns by the digits of ${shownSymbol}, base 2` : 'It turns by its rule', colours && `${colours} colours`].filter(Boolean).join(' · '); }
   $('barBase').parentElement.classList.toggle('life', !!creature || battleOn());  // (a creature, a battle titled as Life is: see .bar-title.life)
   if (colours) base = colours;  // its chips, one per colour

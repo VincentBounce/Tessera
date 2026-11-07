@@ -296,7 +296,7 @@ button.switch.active:hover:not(:disabled) { background: var(--pick-strong); }
 .mode-name, .mode-detail { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }  /* one line each, … when too long (in full on hover) */
 /* a bubble, every one: a base's (the rules' cards, Grid | Cells, the bar), a rule's, a loop's, Full number's */
 .bubble { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 11px; font-weight: 400; padding: 1px 8px; border: 1px solid var(--border); border-radius: 999px; color: var(--muted); }
-.bubble.gold { border-color: rgba(240, 180, 41, 0.5); color: var(--accent); }  /* a gold chip: a run's bound (not back by…), a battle's rule */
+.bubble.gold { border-color: rgba(240, 180, 41, 0.5); color: var(--accent); }  /* a gold chip: a run's bound (not back by…) */
 button.bubble { background: none; }  /* a bubble to click: a rule's (how it works), a base's (the number) */
 button.bubble, .bubble.act { cursor: pointer; }
 button.bubble:hover, .bubble.act:hover { color: var(--text); border-color: var(--muted); }

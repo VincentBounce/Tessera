@@ -11,7 +11,7 @@
   <meta property="og:type" content="website">
   <link id="favicon" rel="icon">  <!-- the app's logo, set at start-up (see appLogo) -->
   <meta name="description" content="A walk on a grid in 2D or 3D driven by the base-2 to base-6 digits of π, other constants and large primes.">
-  <link rel="stylesheet" href="style.css?v=0.4.496">
+  <link rel="stylesheet" href="style.css?v=0.4.497">
   <script>  // the theme before the first paint (see applyTheme)
     try { const t = localStorage.getItem('tesseraTheme') || 'system'; document.documentElement.dataset.theme = t === 'system' ? (matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark') : t; } catch { document.documentElement.dataset.theme = 'dark'; }
   </script>
@@ -422,7 +422,7 @@
           </div>
         </div>
         <div class="step-line"><span id="stepNow"></span><span id="stepLast"></span><span id="stepEnd"></span><span id="barLoop" class="bubble gold" hidden></span></div>  <!-- the step or generation shown (open: its last after it, see updateStats) -->
-        <div class="bar-title"><span id="barNum" class="bar-num"></span><button id="barBase" class="bubble" type="button"></button><button id="barRule" class="bubble how-it-works" type="button" hidden></button><span id="barBattle" class="bubble gold" hidden></span><span id="rankTitles" class="rank-titles" hidden></span></div>  <!-- the ranking's column titles (see paintRanking), on the rule's line (folded: its first) -->
+        <div class="bar-title"><span id="barNum" class="bar-num"></span><button id="barBase" class="bubble" type="button"></button><button id="barRule" class="bubble how-it-works" type="button" hidden></button><button id="barBattle" class="bubble how-it-works" type="button" hidden></button><span id="rankTitles" class="rank-titles" hidden></span></div>  <!-- the ranking's column titles (see paintRanking), on the rule's line (folded: its first) -->
         <div id="ranking" class="ranking" hidden></div>  <!-- a battle: the colours ranked by live cells, those died out last -->
         <div class="player-controls">  <!-- the buttons, as wide folded or not; on hover, the speed on their right -->
           <div class="player-main">
@@ -513,10 +513,10 @@
     </div>
   </main>
 
-  <script src="pixelarticons.js?v=0.4.496"></script>
-  <script src="punks.js?v=0.4.496"></script>
-  <script src="loops.js?v=0.4.496"></script>
-  <script src="emoji.js?v=0.4.496"></script>
-  <script src="main.js?v=0.4.496"></script>
+  <script src="pixelarticons.js?v=0.4.497"></script>
+  <script src="punks.js?v=0.4.497"></script>
+  <script src="loops.js?v=0.4.497"></script>
+  <script src="emoji.js?v=0.4.497"></script>
+  <script src="main.js?v=0.4.497"></script>
 </body>
 </html>

@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.488';
+const VERSION = '0.4.489';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -3609,10 +3609,10 @@ const modesUnder = (...place) => Object.keys(NAV).filter((u) => place.every((x, 
 // The menu as a graph (the setup a node, a click an edge): a setup, what the app holds as a link does ({ w: the mode, size:
 // null for the one it opens at, its colours, a walk's teams, its battle rule, its starts' way, a Life's start, its hunt's
 // zone and its rule, as typed: the one a mode plays from it, lifeRuleAt; its look, colourMode's; Stacks on; a walk's rule, see
-// walkRuleAt), the one in use first
+// walkRuleAt; A's start's number, a mode's list's at most), the one in use first
 const setupNow = () => ({ w: $('mode').value, size: null, colours: lifeColours, teams: walkTeams, battleRule, startsWay: battleStartsWay, start: plane.start, zone: hunt.zone, rule: $('lifeRule').value, look: $('colourMode').value, stacked: spaceTime,
-  walkRule: MODES[$('mode').value].net ? walkRuleOf(MODES[$('mode').value]) : null });
-const SETUP_FIELDS = ['size', 'colours', 'teams', 'battleRule', 'startsWay', 'start', 'zone', 'rule', 'look', 'stacked', 'walkRule'];
+  walkRule: MODES[$('mode').value].net ? walkRuleOf(MODES[$('mode').value]) : null, startNo: startNo() });
+const SETUP_FIELDS = ['size', 'colours', 'teams', 'battleRule', 'startsWay', 'start', 'zone', 'rule', 'look', 'stacked', 'walkRule', 'startNo'];
 // a walk's rule at mode u from setup s: the setup's walk's (walkRule) where u keeps its rules under the same key (its network's,
 // see walkKey: a plane's grid and cells share theirs), else u's kept one
 const walkRuleAt = (s, u) => (s.walkRule && MODES[s.w].net && walkKey(MODES[u]) === walkKey(MODES[s.w]) ? s.walkRule : walkRuleKept(MODES[u]));  // (its fields but the mode: a key's, a path's changes)
@@ -3632,7 +3632,7 @@ function choicesAt(s) {  // (each [key, the setup it leads to, its button's word
   const set = (key, field, v, why, words) => { if (s[field] !== v && !why) out.push([key, { ...s, [field]: v }, words]); };  // (a choice greyed there: no click)
   if (MODES[w].life) for (const k of COLOUR_STEPS) set(`colours:${k}`, 'colours', k, coloursWhyNot(k, w, s.size), COLOUR_STEP_NAMES[k]);
   if (battleMode(w)) {
-    for (const k of COLOUR_STEPS) set(`teams:${k}`, 'teams', k, teamsWhyNot(k, w, s.size), COLOUR_STEP_NAMES[k]);
+    for (const k of COLOUR_STEPS) set(`teams:${k}`, 'teams', k, teamsWhyNot(k, w, s.size, s.startNo), COLOUR_STEP_NAMES[k]);
     if (s.teams > 1) BATTLE_RULES.forEach(([kind, name], p) => set(`battleRule:${p}`, 'battleRule', p, battleRuleWhyNot(kind, w), name));
     if (s.teams > 1) STARTS_WAYS.forEach(([way, name]) => set(`startsWay:${way}`, 'startsWay', way, startsWayCan(way, w, s.size ?? undefined) ? '' : CENTRED_WHERE, name));
   }
@@ -3645,6 +3645,8 @@ function choicesAt(s) {  // (each [key, the setup it leads to, its button's word
   if (m.life) for (const [look, name] of LIFE_LOOKS) set(`look:${look}`, 'look', look, lookWhyNot(look, w), name);
   else if (shows('cells', w) || shows('heatmap', w) || m.antOf) for (const [look, name] of CELL_MODES) set(`look:${look}`, 'look', lookAfter(look, w), cellModeWhyNot(look, w, s.teams), name);
   if (spaceTimeApplies(w)) set('stacked', 'stacked', !s.stacked, '', 'Stacks');  // (Stacks, a switch: on or off)
+  const starts = w === $('mode').value && modeStarts();  // (a start's −, +: at the mode shown, its starts' list known there)
+  if (starts) { set('startNo:-1', 'startNo', s.startNo - 1, s.startNo <= 1 ? 'none' : '', 'Previous start'); set('startNo:+1', 'startNo', s.startNo + 1, s.startNo >= starts.length ? 'none' : '', 'Next start'); }
   if (w === walk.mode && s.colours === lifeColours && s.start === 'random' && huntOn()) for (const [zone, fits] of Object.entries(huntFits())) if (fits && zone !== 'custom') set(`zone:${zone}`, 'zone', zone, '', HUNT_ZONES[zone][1]);
   return out;
 }
@@ -6690,8 +6692,9 @@ function syncSizeStepper() {
   if (!starts) return;
   if (document.activeElement !== $('startLabel')) $('startLabel').value = `start ${formatNumber(startNo())} of ${formatNumber(starts.length)}`;
   const symmetricOnly = (setup) => (startsWayIn(setup) === 'symmetric' ? '' : 'Only for Symmetric starts: Centred and Random place their own.');  // (a setup's: the graph's path to Symmetric)
-  setTile($('startDown'), { greyed: startNo() <= 1 ? 'Already at the first start.' : '', whyNot: symmetricOnly });
-  setTile($('startUp'), { greyed: startNo() >= starts.length ? 'Already at the last start.' : '', whyNot: symmetricOnly });
+  $('startDown').dataset.choice = 'startNo:-1'; $('startUp').dataset.choice = 'startNo:+1';  // (their choices' keys, see choicesAt)
+  setTile($('startDown'), { whyNot: (setup) => symmetricOnly(setup) || ((setup.startNo ?? startNo()) <= 1 ? 'Already at the first start.' : '') });
+  setTile($('startUp'), { whyNot: (setup) => symmetricOnly(setup) || ((setup.startNo ?? startNo()) >= starts.length ? 'Already at the last start.' : '') });
   setTile($('startLabel'), { whyNot: symmetricOnly });
 }
 // The sizes as a slider under the stepper, across, a notch each under it, the one in use its knob (none: hidden); dragged, the label
@@ -8003,14 +8006,14 @@ const battleGroups = (g, K, enough = Infinity, good = null) => {
 // length its walkers', as Life's colours', see ringColours); none elsewhere
 // (at a size, or its mode's: the tab's the menu's only, none before it holds its surface: a strip's sizes depend on its walkers
 // (ringColours, by battleOn), so sizeAt for the tab would come back here)
-const battleCounts = (w, size = battleMode(w) && (w === $('mode').value ? menuSizeOf(w) : figureSize(w))) => {
+const battleCounts = (w, size = battleMode(w) && (w === $('mode').value ? menuSizeOf(w) : figureSize(w)), j = startNo()) => {  // (j: A's start's number, its list's at most)
   if (!size || !battleMode(w)) return [];  // (none, or the tab's size not set yet: a page opening)
   // a ring's by its kind, known by construction (its length made for its walkers, see ringColours): a torus takes every
   // count (its shift of 1/K round it), a Klein bottle a Duel only (its gluing: its half turn, see ringGroup); a Möbius strip's tried
   const ring = SPHERES[surfaceOf(MODES[w])].columns && familyOf(w)?.F.name;
   if (ring === FOLDS.torus.name) return COLOUR_STEPS.filter((K) => K > 1);
   if (ring === FOLDS.klein.name) return [2];
-  const mode = MODES[w], kind = surfaceOf(mode), sphere = SPHERES[kind], memo = (battleCountsMemo[`${w}|${size}|${$('startNo').value}`] ??= {});  // (the start asked: its count made by each K's mesh, see walkStart)
+  const mode = MODES[w], kind = surfaceOf(mode), sphere = SPHERES[kind], memo = (battleCountsMemo[`${w}|${size}|${j}`] ??= {});  // (the start asked: its count made by each K's mesh, see walkStart)
   // K's: a closed solid's for any start, or none where it has no group of K (no mesh, see solidTeamCounts), else a group of K setting A's start's walkers apart,
   // on its mesh at the size picked (a Möbius strip's made for K, see ringColours)
   const fits = (K) => {
@@ -8018,7 +8021,7 @@ const battleCounts = (w, size = battleMode(w) && (w === $('mode').value ? menuSi
     if (solid && (solid.any.includes(K) || !solid.some.includes(K))) return solid.any.includes(K);  // (no group of K: none)
     teamsBuilding = sphere.columns ? K : null;
     try {
-      const g = sphere.mesh(size), start = walkStart(g, mode), apart = startSpread(g, !!mode.grid, start);
+      const g = sphere.mesh(size), start = walkStart(g, mode, j > 1 ? Math.min(j, startList(g).length) : 1), apart = startSpread(g, !!mode.grid, start);
       return (g.mobius ? mobiusShiftsApart(g, K, start[0], !!mode.grid) : battleGroups(g, K, 1, (G) => apart(G) > 1e-9).length > 0)  // (one group is enough to know)
         || (g.mobius && rotationGroups(g, K, 1, (G) => { const F = G.map((M) => turnMap(g, M)); return F.every(Boolean) && apart(F) > 1e-9; }).length > 0);  // (its turns, see battleGroups)
     } finally { teamsBuilding = null; }
@@ -8038,7 +8041,7 @@ const solidTeamCounts = (kind, mode) => (solidTeamCountsMemo[kind] ??= (() => {
 })());
 // a team count's, a count of colours' greyed words at a mode (at a size, or the one it opens at): one source, their tiles'
 // and the menu's graph's (see choicesAt)
-const teamsWhyNot = (k, v, size = null) => (k === 1 || battleCounts(v, size ?? (battleMode(v) && figureSize(v))).includes(k) ? '' : TEAMS_WHERE);
+const teamsWhyNot = (k, v, size = null, j = startNo()) => (k === 1 || battleCounts(v, size ?? (battleMode(v) && figureSize(v)), j).includes(k) ? '' : TEAMS_WHERE);
 const coloursWhyNot = (k, w, size = null) => (coloursFit(k, pickedFigure(w, size)) ? '' : 'The shape has no parts alike for so many colours.');
 const TEAMS_WHERE = 'At this size and start, no group of the surface\'s symmetries sets so many walkers apart, each walking as A. Try another size or start.';  // (a team count's greyed words)
 // A surface's turns in space that lay its mesh onto itself (each a matrix, the identity among them), once a mesh: a closed
@@ -11472,7 +11475,7 @@ function walkTeamTiles(w) {
     : `${k} numbers walk, A's to ${'ABCDEFGHIJKL'[k - 1]}'s, from A's place moved by ${k} of the surface's symmetries: each walks as A would from there (how they fight: below)`);
   return COLOUR_STEPS.map((k) => tile({ pic: colourBlock(k), text: COLOUR_STEP_NAMES[k], title: words(k),
     on: k === (battleOn() ? walkTeams : 1), byDefault: k === 1 ? 'yes' : '', 
-    whyNot: ({ w: v, size }) => teamsWhyNot(k, v, size),
+    whyNot: ({ w: v, size, startNo: j }) => teamsWhyNot(k, v, size, j),
     choice: `teams:${k}`, click: () => { if (k !== walkTeams) { walkTeams = k; compute(); } } }));  // (its choice's key, see choicesAt)
 }
 // The Rule section: the rules known for the grid's shape, as cards, each with a picture (5 × 5 pixels of

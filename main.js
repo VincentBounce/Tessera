@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.397';
+const VERSION = '0.4.398';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -1610,13 +1610,13 @@ const view = { scale: 20, ox: 0, oy: 0 };
 // The 3D view: the screen's right (r), up (u) and towards-the-viewer (v) directions in world
 // coordinates, the rows of a rotation matrix, so the view turns freely (see rotateView). The
 // default looks from a heading of −0.6 rad, 0.5 rad above the horizon. A turn replaces the arrays,
-// never changes them, so Object.assign(cam, CAM0) is a reset.
+// never changes them, so Object.assign(camera, CAM0) is a reset.
 function camFrom(yaw, pitch) {
   const cy = Math.cos(yaw), sy = Math.sin(yaw), cp = Math.cos(pitch), sp = Math.sin(pitch);
   return { r: [cy, -sy, 0], u: [sy * sp, cy * sp, cp], v: [-sy * cp, -cy * cp, sp] };
 }
 const CAM0 = camFrom(-0.6, 0.5);
-const cam = { ...CAM0 };
+const camera = { ...CAM0 };
 let bounds3 = null;                        // 3D bounding box of points 0..stepShown
 
 const stage = $('stage');
@@ -4080,7 +4080,7 @@ function buildWalkOf() {
 /* ---- 5.4 3D projection and camera --------------------------------------------------------- */
 // Orthographic projection of a 3D point onto the screen plane (world units)
 function orthoPoint(x, y, z) {
-  const { r, u } = cam;
+  const { r, u } = camera;
   return [x * r[0] + y * r[1] + z * r[2], -(x * u[0] + y * u[1] + z * u[2])];
 }
 
@@ -4098,7 +4098,7 @@ function projectPoint(x, y, z) {
 
 // Same projection as projectPoint, with the trigonometry computed once: for drawing many points
 function projector() {
-  const [r0, r1, r2] = cam.r, [u0, u1, u2] = cam.u, [v0, v1, v2] = cam.v;
+  const [r0, r1, r2] = camera.r, [u0, u1, u2] = camera.u, [v0, v1, v2] = camera.v;
   const P = walk.persp;
   const [ccx, ccy] = P ? orthoPoint(...P.c) : [0, 0];
   return (x, y, z) => {
@@ -4157,9 +4157,9 @@ function turnCam(w) {
     const kx = cross(k, x), d = (1 - c) * (k[0] * x[0] + k[1] * x[1] + k[2] * x[2]);
     return [0, 1, 2].map((i) => x[i] * c + kx[i] * s + k[i] * d);
   };
-  const v = unit(turn(cam.v)), r0 = turn(cam.r), rv = r0[0] * v[0] + r0[1] * v[1] + r0[2] * v[2];
+  const v = unit(turn(camera.v)), r0 = turn(camera.r), rv = r0[0] * v[0] + r0[1] * v[1] + r0[2] * v[2];
   const r = unit(r0.map((x, i) => x - rv * v[i]));
-  Object.assign(cam, { r, u: cross(v, r), v });
+  Object.assign(camera, { r, u: cross(v, r), v });
 }
 // vectors (2D or 3D, but cross and dot3: 3D) and polygons: one length, a difference, products; a polygon's signed area
 // (its corners in turn, positive as x turns to y) and its area
@@ -4197,7 +4197,7 @@ const ears = (shown) => {
   return out;
 };
 // A rotation vector given on the screen's axes (right, up, towards the viewer) → in world coordinates
-const screenTurn = (a, b, c) => [0, 1, 2].map((i) => a * cam.r[i] + b * cam.u[i] + c * cam.v[i]);
+const screenTurn = (a, b, c) => [0, 1, 2].map((i) => a * camera.r[i] + b * camera.u[i] + c * camera.v[i]);
 
 // Rotate (rotation vector w, see turnCam) around a centre that keeps its position on screen: the
 // solid's own centre (the origin) for a surface, else the centre of the walk's bounding box. (On a
@@ -14496,7 +14496,7 @@ function applySetup(s) {
   // changes (as picking a walk does); within a tab, what was chosen stays
   if (modeTabOf() !== displayTab) displayDefaults();
   $('perspective').checked = defaultOf('perspective', s.w);
-  Object.assign(cam, CAM0);
+  Object.assign(camera, CAM0);
   $('upright').checked = false;  // (the default view: free, on each surface)
   pendingChampion = s.ch || null;
   compute();  // a champion follows once the walk is built
@@ -14518,7 +14518,7 @@ function applyPendingView() {
     huntBack = g.hunt;
     $('autoFit').checked = g.autoFit;
     $('autoRotate').checked = g.autoRotate;
-    Object.assign(cam, g.cam);
+    Object.assign(camera, g.camera);
     if (walk.is3d) project();
     if (walk.plane) bounds = planeBounds();  // (Life's grid: its own frame, as restart gives it)
     else if (!walk.sphere) {  // the 2D bounds of the walk again (a surface's are the fixed solid, as in rotateView)
@@ -15320,7 +15320,7 @@ function faceWalk() {
   faced = true;
   if (choosingStart || !walk.sphere || walk.geo.torus || !$('centered').checked || $('autoRotate').checked || !walk.n) return;
   const d = walkMiddle();
-  const axis = cross(d, cam.v), sin = Math.hypot(...axis), angle = Math.atan2(sin, towardViewer(...d));
+  const axis = cross(d, camera.v), sin = Math.hypot(...axis), angle = Math.atan2(sin, towardViewer(...d));
   if (sin > 1e-9 && angle > 1e-4) rotateView(axis.map((x) => (x / sin) * angle));
 }
 // once the walker has reached the end, towards the walk's middle, as when the walk is shown whole
@@ -15330,13 +15330,13 @@ function followWalker() {
   const at = glideAt(), j = Math.floor(at), f = at - j, k = f > 0 ? j + 1 : j, t = walk.tile[f < 0.5 ? j : k], nr = walk.shape.nrm;
   const d = unit(walk.geo.torus && !walk.geo.mobius ? [nr[3 * t], nr[3 * t + 1], nr[3 * t + 2]]
     : stepShown >= walk.n && !walk.life ? walkMiddle() : [walk.wx[j] + (walk.wx[k] - walk.wx[j]) * f, walk.wy[j] + (walk.wy[k] - walk.wy[j]) * f, walk.wz[j] + (walk.wz[k] - walk.wz[j]) * f]);
-  const axis = cross(d, cam.v), sin = Math.hypot(...axis), angle = Math.atan2(sin, towardViewer(...d));
+  const axis = cross(d, camera.v), sin = Math.hypot(...axis), angle = Math.atan2(sin, towardViewer(...d));
   if (sin > 1e-9 && angle > 1e-4) rotateView(axis.map((x) => (x / sin) * angle * 0.12));
 }
 
 // Component of a unit vector towards the viewer (> 0 on the visible half of the sphere)
 function towardViewer(x, y, z) {
-  const v = cam.v;
+  const v = camera.v;
   return x * v[0] + y * v[1] + z * v[2];
 }
 // The light (Light checked): from the top left, in front, turning with the view (a lamp on the camera's shoulder),
@@ -15345,17 +15345,17 @@ function towardViewer(x, y, z) {
 const LIGHT_GLINT = 0.22, LIGHT_SHINE = 24, SHADOW_SIZE = 2048;  // SHADOW_SIZE: the shadows' texture (see gpuShadows)
 const lamp = () => $('light').checked, glint = () => (lamp() ? LIGHT_GLINT : 0);
 function lightDir() {
-  if (!lamp()) return [...cam.v];
-  const l = [0, 1, 2].map((d) => -0.45 * cam.r[d] + 0.55 * cam.u[d] + 0.7 * cam.v[d]), m = Math.hypot(...l);
+  if (!lamp()) return [...camera.v];
+  const l = [0, 1, 2].map((d) => -0.45 * camera.r[d] + 0.55 * camera.u[d] + 0.7 * camera.v[d]), m = Math.hypot(...l);
   return l.map((x) => x / m);
 }
-const halfway = (L) => { const h = L.map((x, d) => x + cam.v[d]), m = Math.hypot(...h); return h.map((x) => x / m); };
+const halfway = (L) => { const h = L.map((x, d) => x + camera.v[d]), m = Math.hypot(...h); return h.map((x) => x / m); };
 // Is a plane (outward normal n through point p) facing us? Orthographic: n points towards the
 // viewer. Perspective: n points towards the camera position, seen from p.
 function planeVisible(n, p) {
   const P = walk.persp;
   if (!P) return towardViewer(...n) > 0;
-  const eye = cam.v.map((v, d) => P.c[d] + v * P.D);
+  const eye = camera.v.map((v, d) => P.c[d] + v * P.D);
   return n[0] * (eye[0] - p[0]) + n[1] * (eye[1] - p[1]) + n[2] * (eye[2] - p[2]) > 0;
 }
 
@@ -16371,9 +16371,9 @@ fn planeAt(p: vec2f) -> vec4f { return flatAt(u.view.yz + vec2f(u.turnC * p.x - 
 // a draw's numbers into slot k of the frame's: the camera, the light and its view for the shadows (across it, over the ball that holds what is drawn)
 function gpuView(words, k, depth, more = {}) {
   const f = new Float32Array(words, 512 * k, 128), i = new Int32Array(words, 512 * k, 128), P = walk.persp, cc = P ? orthoPoint(...P.c) : [0, 0];
-  const L = lightDir(), x = cam.r.map((r, d) => r - L[d] * (cam.r[0] * L[0] + cam.r[1] * L[1] + cam.r[2] * L[2])), m = Math.hypot(...x);
+  const L = lightDir(), x = camera.r.map((r, d) => r - L[d] * (camera.r[0] * L[0] + camera.r[1] * L[1] + camera.r[2] * L[2])), m = Math.hypot(...x);
   const lx = x.map((v) => v / m), ly = [L[1] * lx[2] - L[2] * lx[1], L[2] * lx[0] - L[0] * lx[2], L[0] * lx[1] - L[1] * lx[0]];
-  f.set(cam.r, 0); f[3] = depth; f.set(cam.u, 4); f[7] = SHADE; f.set(cam.v, 8); f[11] = glint(); f.set(L, 12); f[15] = depth / 4; f.set(halfway(L), 16);
+  f.set(camera.r, 0); f[3] = depth; f.set(camera.u, 4); f[7] = SHADE; f.set(camera.v, 8); f[11] = glint(); f.set(L, 12); f[15] = depth / 4; f.set(halfway(L), 16);
   f.set(lx, 20); f.set(ly, 24); f.set([...(P ? P.c : [0, 0, 0]), P ? P.D : 0], 32); f.set([view.scale, view.ox, view.oy], 40); f.set(cc, 44); f.set([cw, ch], 46);
   i[48] = cutOn() ? 1 : 0;
   f.set(cutNormal(), 60);  // (Cut's plane, facing its axis: see CUT_AXES)
@@ -16572,7 +16572,7 @@ function gpuSurface(paint, path) {
   gpuShadows(enc, shadowSlot, (p) => {
     p.setPipeline(gpuDepthPipe('depthTileV', [vbuf(12, [vertexAttribute(0, 'float32x3')])]));
     p.setVertexBuffer(0, D.pos); p.setIndexBuffer(D.fan, 'uint32'); p.drawIndexed(D.fanCount);
-  }, `${D.geoGen}|${lightDir()}|${cam.r}|${depth}|${lamp()}|${cutOn() && cutAxis}`);
+  }, `${D.geoGen}|${lightDir()}|${camera.r}|${depth}|${lamp()}|${cutOn() && cutAxis}`);
   // the path's segments, made once a walk (a battle along the grid: all its walkers' steps, see pathSegments); drawn, the
   // path up to the step shown, or each living walker's body: its steps from its tail to its head, a range of them
   const lines = !!walk.battle && !!walk.vert, P = lines ? walk.battle.player : null;
@@ -17700,7 +17700,7 @@ stage.addEventListener('pointermove', (e) => {
     $('autoRotate').checked = false;
     spinFrom = spinRamp = 0;
     $('centered').checked = false;
-    rotateView($('upright').checked ? [0, 0, (cam.u[2] < 0 ? -1 : 1) * dx * 0.008] : screenTurn(dy * 0.008, dx * 0.008, 0));  // a trackball: drag right turns around the screen's up; Upright: round the world's up only
+    rotateView($('upright').checked ? [0, 0, (camera.u[2] < 0 ? -1 : 1) * dx * 0.008] : screenTurn(dy * 0.008, dx * 0.008, 0));  // a trackball: drag right turns around the screen's up; Upright: round the world's up only
   }
 });
 const endDrag = () => { drag = null; stage.classList.remove('dragging'); };
@@ -17715,7 +17715,7 @@ function recentre() {
     spinFrom = spinRamp = 0;
     $('centered').checked = true;
     $('upright').checked = false;  // (the default view: free again)
-    Object.assign(cam, CAM0);
+    Object.assign(camera, CAM0);
     rotateView([0, 0, 0]);  // the projection and the frame again
     faced = false;
     if (!walk.life && stepShown >= walk.n) faceWalk();
@@ -18112,14 +18112,14 @@ startField.addEventListener('mouseleave', () => { startsShown = false; needsFull
 // Upright: the view from the front exactly, level (its heading kept), a drag turning it round the vertical only
 $('upright').addEventListener('change', () => {
   if (!$('upright').checked) return;
-  const yaw = Math.atan2(-cam.v[0], -cam.v[1]);  // (where it looks from, round the vertical: see camFrom)
+  const yaw = Math.atan2(-camera.v[0], -camera.v[1]);  // (where it looks from, round the vertical: see camFrom)
   $('centered').checked = false;
-  Object.assign(cam, camFrom(yaw, 0));
+  Object.assign(camera, camFrom(yaw, 0));
   rotateView([0, 0, 0]);
 });
 $('centered').addEventListener('change', () => {  // on: the camera turns to the pattern again, or back to the default view
   faced = false;
-  if ($('centered').checked && !centersPattern()) { Object.assign(cam, CAM0); rotateView([0, 0, 0]); }
+  if ($('centered').checked && !centersPattern()) { Object.assign(camera, CAM0); rotateView([0, 0, 0]); }
   if ($('centered').checked) $('upright').checked = false;  // (the default view: free again)
 });
 $('sizeDown').addEventListener('click', () => stepSize(-1));
@@ -18260,7 +18260,7 @@ $('mode').addEventListener('change', () => {
   // (auto-fit may have turned it to follow a walker) and its flat or round form (see initShape)
   // come back with every new mode
   applyDefaults('mode');  // (its perspective, the view free and framed)
-  Object.assign(cam, CAM0);
+  Object.assign(camera, CAM0);
   $('startNo').value = 1;
   compute();
 });
@@ -18314,7 +18314,7 @@ let galleryBefore = null, galleryHover = 0;  // the setup in use while others ar
 // the setup in use as it was seen
 let galleryView = null;
 // and what is not in a link: the hunt's zone, goal and results (all of it, kept in one place)
-const viewNow = () => ({ autoFit: $('autoFit').checked, autoRotate: $('autoRotate').checked, cam: { r: [...cam.r], u: [...cam.u], v: [...cam.v] }, view: { ...view },
+const viewNow = () => ({ autoFit: $('autoFit').checked, autoRotate: $('autoRotate').checked, camera: { r: [...camera.r], u: [...camera.u], v: [...camera.v] }, view: { ...view },
   hunt: { zone: hunt.zone, goal: hunt.goal, top: hunt.top, picked: hunt.picked, status: hunt.status } });
 // A setup's row, built-in or saved: the walk's icon, a name and a detail; hovering shows it, a click
 // keeps it (see the lists' mouseleave); with onDelete, a × at its end

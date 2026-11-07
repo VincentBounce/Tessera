@@ -1,5 +1,5 @@
 :root {
-  --mono: ui-monospace, "SF Mono", Menlo, monospace;  /* digits and the rules' words: l, I, | and 1 told apart */
+  --mono: ui-monospace, "SF Mono", Menlo, monospace;  /* digits and the rules' commands: l, I, | and 1 told apart */
   --view-gap: 12px;  /* the view's boxes from its edges (player, display, hint), a fit's margin too (see viewFor) */
   --player-width: calc(6 * 48px + 5 * 6px);  /* the player's six buttons and their gaps (a .row's): the folded bar's inner width */
   --bg: #0e1116;
@@ -119,7 +119,7 @@ input[type=number], input[type=text], select, textarea {
    is hovered or used; in yellow bold when it is the number chosen (no card matches it) */
 /* a value of one's own, in yellow bold: a formula no card matches, a rule no preset matches */
 .field :is(input, textarea).custom { color: var(--accent); font-weight: 600; }
-.field input.custom, .rule-cards .mode-detail, .tut-words b { font-family: var(--mono); }  /* a rule typed, a rule card's words, the reminder's: in --mono */
+.field input.custom, .rule-cards .mode-detail, .tut-commands b { font-family: var(--mono); }  /* a rule typed, a rule card's words, the reminder's commands: in --mono */
 .field input.battle-formula { color: var(--walker); font-weight: 700; }  /* a battle's formula, its battle built with it: bold in its walker's colour (over .custom's yellow) */
 textarea { resize: none; line-height: 1.35; }  /* (Text's lines, a new line by Enter) */
 .field textarea { height: 200px; }  /* (fixed, as a line's 34 px: edited or not, whatever its font; more lines scroll) */
@@ -633,7 +633,7 @@ button.mark.active::after { background: linear-gradient(135deg, transparent 50%,
 .gen-link { color: inherit; text-decoration: none; cursor: pointer; }  /* a generation of the run in view: clicked, it goes there (see genLink) */
 .gen-link:hover { text-decoration: underline; }
 .gen-loop { color: var(--cell); }  /* a loop's first generation, as its mark on the curve */
-.tut-words { border-collapse: collapse; font-size: 13px; color: var(--muted); }  /* the rules' words, a reminder under How it works (see wordsReminder): as its words, the word bold */
-.tut-words b { color: var(--text); }
-.tut-words td { padding: 2px 10px 2px 0; vertical-align: top; }
-.tut-words td:first-child { white-space: nowrap; }
+.tut-commands { border-collapse: collapse; font-size: 13px; color: var(--muted); }  /* the rules' commands, a reminder under How it works (see wordsReminder): as its words, the word bold */
+.tut-commands b { color: var(--text); }
+.tut-commands td { padding: 2px 10px 2px 0; vertical-align: top; }
+.tut-commands td:first-child { white-space: nowrap; }

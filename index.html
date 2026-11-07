@@ -11,7 +11,7 @@
   <meta property="og:type" content="website">
   <link id="favicon" rel="icon">  <!-- the app's logo, set at start-up (see appLogo) -->
   <meta name="description" content="A walk on a grid in 2D or 3D driven by the base-2 to base-6 digits of π, other constants and large primes.">
-  <link rel="stylesheet" href="style.css?v=0.4.478">
+  <link rel="stylesheet" href="style.css?v=0.4.479">
   <script>  // the theme before the first paint (see applyTheme)
     try { const t = localStorage.getItem('tesseraTheme') || 'system'; document.documentElement.dataset.theme = t === 'system' ? (matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark') : t; } catch { document.documentElement.dataset.theme = 'dark'; }
   </script>
@@ -157,7 +157,7 @@
         </div>
       </section>
 
-      <section id="walkRuleSection">  <!-- a walk's rule or a creature's (Ant, Turmite, Worm): its rules' cards (a word per digit), Spiral; a walk's along the grid or on cells -->
+      <section id="walkRuleSection">  <!-- a walk's rule or a creature's (Ant, Turmite, Worm): its rules' cards (a command per digit), Spiral; a walk's along the grid or on cells -->
         <h2 data-icon="turtle">Walking rule</h2>
         <div id="walkOn" class="nav-shapes"></div>  <!-- along the grid, or on cells: one choice, a tab group of tiles (as the Start's), first, above How it works -->
         <button id="walkRuleHow" class="wide how-it-works" data-icon="info" type="button" title="The rule in use, step by step: what each cell (each step) sees, and what it does (each rule's ⓘ, too)">How it works</button>  <!-- how the rule works (see walkTutorialToggle), on its first card -->
@@ -503,7 +503,7 @@
               <select id="area" hidden><option value="empty"></option><option value="light"></option><option value="plain"></option></select>
             </div>
             <div id="cellsLabel" class="field-label" hidden>Cells</div>
-            <div id="cellModes" class="nav-shapes cell-modes" hidden></div>  <!-- a walk's or an ant's cells: Path, Rainbow, Directions (a walk in 2D) or States (an ant), Heatmap -->
+            <div id="cellModes" class="nav-shapes cell-modes" hidden></div>  <!-- a walk's or an ant's cells: Path, Rainbow, Commands or States (an ant), Heatmap -->
             <label class="check" id="showPathRow" hidden title="The walk's line over the cells it colours"><input id="showPath" type="checkbox"> Show path</label>
             <label class="check" id="heatmapRow" hidden title="The cells coloured by how often the walk comes back to them"><input id="heatmap" type="checkbox"> Heatmap of visits</label>
           </div>
@@ -513,10 +513,10 @@
     </div>
   </main>
 
-  <script src="pixelarticons.js?v=0.4.478"></script>
-  <script src="punks.js?v=0.4.478"></script>
-  <script src="loops.js?v=0.4.478"></script>
-  <script src="emoji.js?v=0.4.478"></script>
-  <script src="main.js?v=0.4.478"></script>
+  <script src="pixelarticons.js?v=0.4.479"></script>
+  <script src="punks.js?v=0.4.479"></script>
+  <script src="loops.js?v=0.4.479"></script>
+  <script src="emoji.js?v=0.4.479"></script>
+  <script src="main.js?v=0.4.479"></script>
 </body>
 </html>

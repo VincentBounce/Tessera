@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.485';
+const VERSION = '0.4.486';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -18433,13 +18433,12 @@ function cellModePicture(look, ant) {  // a 2 × 2 swatch, or the rainbow line o
   // Path and Cell path: the Grid and Cells tiles' icons (onGrid, onCells) in a faded grey, a rainbow staircase over them: Path its
   // line along the grid's lines, Cell path its cells
   const faded = (name) => `<g fill="none" stroke="currentColor" stroke-width="1.5" opacity="0.3">${ICONS[name].replace(/class="f"/g, 'fill="currentColor"')}</g>`;
-  const third = 16 / 3, at = (k) => 4 + third * k;  // (a 3 × 3 cut, from 4 to 20: its lines at 1 and 2)
-  if (look === 'path') { const line = [[0, 2], [1, 2], [1, 1], [2, 1], [2, 0]];  // (corners of the grid: along its lines)
-    return `<svg viewBox="0 0 24 24" aria-hidden="true">${faded('onGrid')}`
-      + line.slice(1).map(([x, y], i) => `<path d="M${at(line[i][0])} ${at(line[i][1])}L${at(x)} ${at(y)}" stroke="${g(i / 3)}" stroke-width="2.4" stroke-linecap="round"/>`).join('') + '</svg>'; }
-  if (look === 'cells') { const stairs = [[0, 2], [1, 2], [1, 1], [2, 1], [2, 0]];  // (cells: each its corner)
-    return `<svg viewBox="0 0 24 24" aria-hidden="true">${faded('onCells')}`
-      + stairs.map(([x, y], i) => `<rect x="${at(x) + 0.4}" y="${at(y) + 0.4}" width="${third - 0.8}" height="${third - 0.8}" rx="0.8" fill="${g(i / 4)}"/>`).join('') + '</svg>'; }
+  // (a 3 × 3 cut, from 4 to 20: the staircase's points, Path's corners of the grid along its lines, Cell path's cells' corners)
+  const third = 16 / 3, at = (k) => 4 + third * k, stairs = [[0, 2], [1, 2], [1, 1], [2, 1], [2, 0]];
+  if (look === 'path') return `<svg viewBox="0 0 24 24" aria-hidden="true">${faded('onGrid')}`
+    + stairs.slice(1).map(([x, y], i) => `<path d="M${at(stairs[i][0])} ${at(stairs[i][1])}L${at(x)} ${at(y)}" stroke="${g(i / 3)}" stroke-width="2.4" stroke-linecap="round"/>`).join('') + '</svg>';
+  if (look === 'cells') return `<svg viewBox="0 0 24 24" aria-hidden="true">${faded('onCells')}`
+    + stairs.map(([x, y], i) => `<rect x="${at(x) + 0.4}" y="${at(y) + 0.4}" width="${third - 0.8}" height="${third - 0.8}" rx="0.8" fill="${g(i / 4)}"/>`).join('') + '</svg>';
   if (look === 'digit' && ant) return swatch(ANT_INK[theme]);  // (States)
   if (look === 'digit') {  // Commands: L R, each in its turn's colour (left blue, right pink, see antTurnColour)
     const letter = (x, text, colour) => `<text x="${x}" y="17.5" font-family="ui-monospace, Menlo, monospace" font-weight="700" font-size="15" text-anchor="middle" fill="${colour}">${text}</text>`;

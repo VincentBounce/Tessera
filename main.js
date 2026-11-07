@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.480';
+const VERSION = '0.4.481';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -1664,6 +1664,12 @@ const driftRounds = (radius, shift) => Math.max(LOOP_ROUNDS, Math.ceil((2 * radi
 const closedLoop = () => walk.loop?.period && !walk.loop.drift;  // a drift's rounds are side by side: one rainbow over them all
 const roundStep = (i) => { const L = walk.loop; return closedLoop() && i >= L.from + L.period ? L.from + ((i - L.from) % L.period) : i; };
 const rainbowLength = () => (closedLoop() ? walk.loop.from + walk.loop.period : walk.n);
+// The colour of a walk's step i by its look, one source for every drawing (2D's cells and line, 3D's cubes, a surface's tiles
+// and path): Commands ('digit'), the command it read (an ant's, its state's), key(i) its place in palette (see digitColour);
+// Rainbow ('gradient', 'cells'), along the walk, key null (rainbowBand: its band of BANDS); any other look, a cell's (Heatmap), none
+const rainbowBand = (i) => Math.floor((roundStep(i) * BANDS) / rainbowLength());
+const stepLook = (look) => (look === 'digit' ? { key: (i) => walk.keys[i], palette: Array.from({ length: walk.ant || walk.base }, (_, k) => digitColour(k)) }
+  : look === 'gradient' || look === 'cells' ? { key: null } : null);
 let lifeStart = null;  // where a Life start comes from when it is not the number's digits (see setLifeSeed)
 let barTitle = '';  // a walk's title: its number, a creature's name and what it turns by (its loop's link after it, see updateStats)
 function describe(base, available) {
@@ -15632,14 +15638,15 @@ function drawSphere() {
   // palette[0] is the unlit background; levelOf(t) picks each tile's palette entry
   let palette = [null, ...grad];
   let levelOf = (t) => (visits[t] ? logLevel(visits[t], maxVisits) : 0);  // walk: visits, log scale
-  const L = walk.life, line = !L && ['gradient', 'cells'].includes($('colourMode').value);  // Rainbow (the tiles Rainbow picks: cells)
+  const L = walk.life, stepped = !L && stepLook($('colourMode').value), line = !!stepped;  // Rainbow or Commands: its steps' colours (see stepLook)
   const path = !L && !walk.battle && (MODES[walk.mode].cells ? $('showPath').checked : line);  // on cells, with Show path only (a battle: its bodies, no path)
-  if (line) {  // Rainbow along the walk: a tile walked through (Fill cells), enclosed (Area), or dark
+  if (line) {  // a tile walked through (Fill cells) in its first visit's colour, by the look; enclosed (Area, Rainbow only), or dark
     const cells = MODES[walk.mode].cells && firstVisits(), areas = !walk.ant && areaOn() && areaSteps();
     const band = (step) => Math.min(LEVELS - 1, Math.floor((step * LEVELS) / (walk.n + 1)));
-    const tiles = path && MODES[walk.mode].cells ? grad.map((c) => faded(c, FADING)) : grad;  // Path: the tiles faded under the line
-    palette = [null, ...tiles, ...(areaLight() ? grad.map((c) => faded(c, FADING)) : grad)];
-    levelOf = (t) => (cells && cells[t] >= 0 && cells[t] <= stepShown ? 1 + band(cells[t])
+    const colours = stepped.key ? stepped.palette.map(liftTile) : grad, faint = (cs) => (path && MODES[walk.mode].cells ? cs.map((c) => faded(c, FADING)) : cs);  // Path: the tiles faded under the line
+    const level = stepped.key ? (p) => 1 + stepped.key(Math.max(0, p - 1)) : (p) => 1 + band(p);  // (point p's step: p − 1, the start its first)
+    palette = [null, ...faint(colours), ...(stepped.key ? [] : areaLight() ? grad.map((c) => faded(c, FADING)) : grad)];
+    levelOf = (t) => (cells && cells[t] >= 0 && cells[t] <= stepShown ? level(cells[t])
       : areas && areas[t] >= 0 && areas[t] <= stepShown ? 1 + LEVELS + band(areas[t]) : 0);
   }
   // an ant's cells, as in 2D (see CELL_MODES): States, by their colour (the times it was on each, the one under it as it
@@ -16032,13 +16039,12 @@ function drawElementary(to) {
 // the walk's cells, each point's tile with its colour band (the heatmap: its visits so far), in the walk's order: (x, y, band,
 // template) each, at: its point
 function flatCellInstances(mode) {
-  const lat = walk.lattice, inst = new Float32Array(4 * (walk.n + 1)), at = new Int32Array(walk.n + 1);
+  const lat = walk.lattice, inst = new Float32Array(4 * (walk.n + 1)), at = new Int32Array(walk.n + 1), look = stepLook(mode);
   let m = 0, V = null, scale = 0;
   if (mode === 'visits') { V = visitCells(); V.seen.fill(0); scale = (BANDS - 1) / Math.log(Math.max(2, V.max)); }
   for (let p = 0; p <= walk.n; p++) {
     if (walk.skipZeros && p > 0 && walk.digits[p - 1] === 0) continue;
-    const band = mode === 'digit' ? walk.keys[Math.max(0, p - 1)]  // an ant's colour, a spiral's digit
-      : V ? Math.round(Math.log(++V.seen[V.cell[p]]) * scale) : Math.floor((roundStep(Math.max(0, p - 1)) * BANDS) / rainbowLength());
+    const band = look?.key ? look.key(Math.max(0, p - 1)) : V ? Math.round(Math.log(++V.seen[V.cell[p]]) * scale) : rainbowBand(Math.max(0, p - 1));  // (see stepLook)
     inst.set([walk.xs[p], walk.ys[p], band, cellTemplate(lat, walk.xs[p], walk.ys[p])], 4 * m);
     at[m++] = p;
   }
@@ -16075,11 +16081,11 @@ const cubesWalk = () => walk.is3d && (!!MODES[current.mode].cells || spaceTimeOn
 // a 3D walk on cells' cubes, points 0 … n: where, their colours by the look (the rainbow by the step, its digit's)
 function walkCubes(mode) {
   const n = walk.n, at = new Float32Array(3 * (n + 1)), col = new Uint8Array(3 * (n + 1));
-  const rgb = mode === 'digit' ? Array.from({ length: walk.base }, (_, d) => rgbOf(digitColour(d))) : GRADIENT.map(rgbOf);
+  const look = stepLook(mode), rgb = (look?.key ? look.palette : GRADIENT).map(rgbOf);  // (see stepLook)
   for (let p = 0; p <= n; p++) {
     const q = Math.max(1, p);  // the start, as its first step
     at.set([walk.wx[p], walk.wy[p], walk.wz[p]], 3 * p);
-    col.set(mode === 'digit' ? rgb[walk.digits[q - 1]] : rgb[Math.floor((roundStep(q - 1) * BANDS) / rainbowLength())], 3 * p);
+    col.set(rgb[look?.key ? look.key(q - 1) : rainbowBand(q - 1)], 3 * p);
   }
   return { at, col };
 }
@@ -16740,6 +16746,15 @@ function gpuDrawPipe(name, { vertex, fragment, buffers, topology = 'triangle-lis
     multisample: { count: 4 } }));
 }
 // a battle's colours in the palette (pal), for its lines along the grid: A's body, B's (their heads: their arrows, see drawOverlay)
+// the commands' palette on the GPU (see stepLook), its places 0 to 255 (past its end, its last; an ant's ramp, all of them)
+function stepPalette(D) {
+  const key = `${walk.base}|${walk.ant}|${walk.skipZeros}|${current.mode}|${MONO}`;
+  if (D.keys.pal === key) return;
+  const colours = stepLook('digit').palette, pal = new Uint8Array(4 * 256);
+  for (let k = 0; k < 256; k++) pal.set([...rgbCached(walk.ant ? digitColour(k) : colours[Math.min(k, colours.length - 1)]), 255], 4 * k);
+  D.device.queue.writeTexture({ texture: D.pal }, pal, { bytesPerRow: 1024 }, [256, 1]);
+  D.keys.pal = key;
+}
 function battlePalette(D) {
   const colours = Array.from({ length: 12 }, (_, s) => teamColour(s)), key = `battle|${colours}`;  // (as the theme makes them: a battle's 12 at most)
   if (D.keys.pal === key) return;
@@ -16816,8 +16831,11 @@ function gpuSurface(paint, path) {
   const lines = !!walk.battle && !!walk.vert, P = lines ? walk.battle.player : null;
   if (lines) { P.to(stepShown); battlePalette(D); }
   if (P?.ownLines && stepShown > 0) battleLinesOnGpu(D, P);  // (Land grid 1: its links' owners, see battleLinesOnGpu)
-  const segs = (path || lines) && !P?.ownLines && stepShown > 0 && (D.keys.segs !== walk.wx || D.keys.segsM !== sh.m || D.ribbonOf) ? pathSegments(P) : null;
-  if (segs) { gpuBuffer('ribbon', segs.data); D.ribbonOf = null; D.segsAt = segs.at; D.keys.segs = walk.wx; D.keys.segsM = sh.m; }
+  const keyed = !lines && !!stepLook($('colourMode').value)?.key;  // (Commands: each segment its step's command, a place in the palette, see stepLook)
+  if (keyed) stepPalette(D);
+  const segs = (path || lines) && !P?.ownLines && stepShown > 0 && (D.keys.segs !== walk.wx || D.keys.segsM !== sh.m || D.ribbonOf || D.keys.segsKeyed !== keyed) ? pathSegments(P) : null;
+  if (segs && keyed) { const look = stepLook('digit'); for (let o = 10; o < segs.data.length; o += 11) segs.data[o] = look.key(segs.data[o]); }  // (its step's command instead of its step)
+  if (segs) { gpuBuffer('ribbon', segs.data); D.ribbonOf = null; D.segsAt = segs.at; D.keys.segs = walk.wx; D.keys.segsM = sh.m; D.keys.segsKeyed = keyed; }
   const ranges = !(path || lines) || stepShown <= 0 || !(P?.ownLines ? D.segsRanges : D.segsAt) ? [] : !lines ? [[0, D.segsAt[stepShown]]] : P.ownLines ? D.segsRanges
     : P.standing().map((s) => [D.segsAt[s][Math.max(1, P.from[s])], D.segsAt[s][P.step + 1]]);
   const heads = headsOf(), headFrom = heads.reduce((at, [m]) => [...at, at.at(-1) + m.length / 6], [0]);  // (their corners: each its first, in the one buffer)
@@ -16846,7 +16864,7 @@ function gpuSurface(paint, path) {
     if (ranges.some(([a, b]) => b > a)) {
       rp.setPipeline(gpuDrawPipe('ribbon', { vertex: 'ribbonV', fragment: 'ribbonF', topology: 'triangle-strip', pass, cull: both ? 'none' : 'back', writes: false,  // (a decal on the tiles: pulled over them, no depth of its own, a head over it, see ogiveOf)
         buffers: [vertexLayout(8, [vertexAttribute(0, 'float32x2')]), vertexLayout(44, [vertexAttribute(1, 'float32x3', 0), vertexAttribute(2, 'float32x3', 12), vertexAttribute(3, 'float32x3', 24), vertexAttribute(4, 'float32', 36), vertexAttribute(5, 'float32', 40)], 'instance')] }));
-      rp.setBindGroup(0, gpuGroup(), [slotOf({ glass: pass, cut, N: Math.max(1, walk.n), halfW: surfaceLineWidth() / 2 / view.scale, bias: pathBias, colour: lines ? 3 : 0 })]);
+      rp.setBindGroup(0, gpuGroup(), [slotOf({ glass: pass, cut, N: Math.max(1, walk.n), halfW: surfaceLineWidth() / 2 / view.scale, bias: pathBias, colour: lines || keyed ? 3 : 0 })]);
       rp.setVertexBuffer(0, D.quad); rp.setVertexBuffer(1, D.ribbon);
       for (const [a, b] of ranges) if (b > a) rp.draw(4, b - a, 0, a);
     }
@@ -16895,24 +16913,19 @@ function gpuFlat(to) {
   const keysKey = `${mode === 'digit'}|${walk.keys === walk.antStates}`;
   if (D.keys.flatKeys !== walk.keys || D.keys.flatKeysMode !== keysKey) {
     const keys = new Uint32Array(Math.max(1, walk.n));
-    for (let i = 0; i < walk.n; i++) keys[i] = walk.skipZeros && walk.digits[i] === 0 ? 255 : mode === 'digit' ? walk.keys[i] : 0;
+    const look = stepLook(mode);
+    for (let i = 0; i < walk.n; i++) keys[i] = walk.skipZeros && walk.digits[i] === 0 ? 255 : look?.key ? look.key(i) : 0;
     gpuBuffer('flatKeys', keys);
     D.keys.flatKeys = walk.keys; D.keys.flatKeysMode = keysKey;
   }
-  const palKey = `${walk.base}|${walk.ant}|${walk.skipZeros}|${current.mode}|${MONO}`;
-  if (D.keys.pal !== palKey) {
-    const pal = new Uint8Array(4 * 256);
-    for (let k = 0; k < 256; k++) pal.set([...rgbCached(digitColour(walk.ant ? k : Math.min(k, walk.base - 1))), 255], 4 * k);
-    device.queue.writeTexture({ texture: D.pal }, pal, { bytesPerRow: 1024 }, [256, 1]);
-    D.keys.pal = palKey;
-  }
+  stepPalette(D);
   let fillCount = 0;
   if (fillOn()) {
     fillNow();
     if (fill.count && fill.templates.length <= 4) {
       if (D.keys.flatFill !== fill) {
         const inst = new Float32Array(4 * fill.count);
-        for (let k = 0; k < fill.count; k++) inst.set([fill.cx[k], fill.cy[k], Math.floor((roundStep(fill.at[k] - 1) * BANDS) / rainbowLength()), fill.tpl[k]], 4 * k);
+        for (let k = 0; k < fill.count; k++) inst.set([fill.cx[k], fill.cy[k], rainbowBand(fill.at[k] - 1), fill.tpl[k]], 4 * k);
         gpuBuffer('flatFill', inst);
         D.fillTpl = templateArray(fill.templates);
         D.keys.flatFill = fill;
@@ -18427,15 +18440,15 @@ function cellModePicture(look, ant) {  // a 2 × 2 swatch, or the rainbow line o
   return heatRings(g);
 }
 const CELLS_ONLY = 'Only on cells, not along the lines.';  // (a walk's cells' look along its lines: none)
-const COMMANDS_WHERE = 'Not on a surface (its drawing colours no step by its command: 2D walks only), nor in a battle (each walker has its own colour).';
-// a cells' look greyed at a mode: Path and Heatmap along the lines (no cells), Commands on a surface or in a battle (an
+const COMMANDS_WHERE = 'Not in a battle: each walker has its own colour.';
+// a cells' look greyed at a mode: Path and Heatmap along the lines (no cells), Commands in a battle (an
 // ant's States everywhere), Heatmap on a spiral; else ''
-const cellModeWhyNot = (look, w, teams = walkTeams) => (look === 'digit' ? (!MODES[w].antOf && (!shows('cells', w) || battleAt(w, teams)) ? COMMANDS_WHERE : '')
+const cellModeWhyNot = (look, w, teams = walkTeams) => (look === 'digit' ? (!MODES[w].antOf && battleAt(w, teams) ? COMMANDS_WHERE : '')
   : !MODES[w].cells && look !== 'cells' ? CELLS_ONLY : look === 'visits' ? lookWhyNot('visits', w) : '');
 function renderCellModes(mode) {
   $('cellModes').hidden = !shows('cells') && !shows('heatmap') && !mode.antOf;  // a walk in 2D or on a surface, an ant anywhere
   if ($('cellModes').hidden) return;
-  // an ant: Path, Rainbow, States, Heatmap; a walk in 2D: Path, Rainbow, Commands, Heatmap; on a surface: Path, Rainbow, Heatmap
+  // an ant: Path, Rainbow, States, Heatmap; a walk: Path, Rainbow, Commands, Heatmap
   const looks = CELL_MODES, now = cellModeOf(mode), ant = !!mode.antOf;  // (all four everywhere, the same row: Commands greyed where there are none, see cellModeWhyNot)
   const button = ([look, name, title]) => tile({ pic: cellModePicture(look, ant), ...(look === 'digit' && ant ? { text: ANT_STATES[0], title: ANT_STATES[1] } : { text: name, title }), on: look === now,
     byDefault: look === (ant ? defaultOf('antLook') : 'cells') ? 'yes' : '',  // (an ant's States, a walk's Rainbow: see DISPLAY_DEFAULTS)

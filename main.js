@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.371';
+const VERSION = '0.4.372';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -13242,7 +13242,7 @@ for (const k of ['dodeca', 'stella']) TRI_FACES[`${k}Kite`] = () => TRI_FACES[k]
 const triFace = (sphere, K, i) => (colouring(sphere, K)?.faces ? patchSpots(sphere, K)[i] : TRI_FACES[sphere]?.()[K]?.[i] ?? null);
 const patternsOn = () => {  // (by the teams laid, lifeParts: with Newcomer, one fewer than the colours, as patternPlace lays them)
   if (!walk.life) return false;
-  const m = MODES[$('mode').value], K = lifeParts();
+  const m = MODES[walk.mode], K = lifeParts();  // (the Life shown's own mode: another tab picked meanwhile, as Elementary, not built yet)
   return (!!flatGrid() || !!walk.geo?.torus || (['cube', 'pits', 'bumps'].includes(m.sphere.replace(/Tetrakis$/, '')) && CUBE_FACES.includes(K))
     || (!!HULL_SOLIDS[m.sphere] && (K === 1 || ['square', 'tri'].includes(hullColours(m.sphere, K)?.kind))) || (!!walk.geo?.hexagons && !m.plane) || (!!TRI_FACES[m.sphere] && (K === 1 || !!triFace(m.sphere, K, 0))));
 };

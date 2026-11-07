@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.458';
+const VERSION = '0.4.459';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -1750,7 +1750,7 @@ const DISPLAY_DEFAULTS = {
   centered: ['centered', 'tab', true], autoRotate: ['autoRotate', 'tab', false], sky: ['sky', 'tab', 'sky'],  // (on a solid the walker in front; Dawn or Twilight after the theme)
   autoFit: ['autoFit', 'mode', true], upright: ['upright', 'mode', false], shape: ['shapeM', 'mode', (mode) => (mode.round ? 1 : 0)],  // (Flat 0 ── Inflated 1: a round surface inflated, a solid flat)
   perspective: ['perspective', 'mode', (mode, w) => perspectiveFor(mode, defaultOf('shape', w))],  // (as each mode's own, hand-tuned)
-  light: ['light', 'open', true], glass: ['glass', 'open', false], grid: ['showGrid', 'open', true], autoPlay: ['autoPlay', 'open', false],
+  light: ['light', 'open', true], glass: ['glass', 'open', false], grid: ['showGrid', 'open', true],
   player: [null, 'walk', (mode) => (mode.grid ? 0.2 : 1)],  // (where a walk on a surface is shown: the step its places visited reach this share, along the grid a fifth of its corners, on cells all its cells; else its end)
   trail: ['lifeTrail', 'colours', () => lifeColours === 1],  // (Life's Trail: on in Solo, two states, off in colours; when the colours change)
   ocean: ['ocean', 'battle', () => battleOn() && NAV[$('mode').value][0] === 'Walk'],  // (on in a walk's battle on a surface, as long as none picks it)
@@ -1802,7 +1802,7 @@ function updateDisplayMenu() {
   $('heatmap').disabled = !mode.cells;
   $('heatmap').checked = $('colourMode').value === 'visits';
   // Grid stays in sight, Auto-fit beside it while the box is open; then Centered pattern (Default view), the view's
-  // switches as tiles (Perspective, Side light, Autoplay, Auto-rotate: see renderViewTiles) and the shape
+  // switches as tiles (Perspective, Side light, Auto-rotate: see renderViewTiles) and the shape
   const spin = shows('autoRotate');
   $('centeredRow').hidden = !spin;
   $('centeredName').textContent = centersPattern() ? 'Centered pattern' : 'Default view';  // (as the hint says it)
@@ -1817,7 +1817,7 @@ function updateDisplayMenu() {
   updateMorphButton();  // Shape: only for a surface that can change shape
 }
 // The view's switches, standard tiles (toggle): each its checkbox's (the source, kept out of sight), on as it is checked,
-// greyed where its row is hidden (it does not apply: Autoplay but in Life, the others but in 3D); drawn again with the
+// greyed where its row is hidden (it applies in 3D only); drawn again with the
 // display box and when the box opens (a hand rotation, a new mode: their boxes changed)
 const VIEW_TILES = [['perspective', 'perspectiveRow', 'perspective', 'Perspective', 'Perspective: what is nearer looks bigger'], ['light', 'lightRow', 'sideLight', 'Side light'], ['glass', 'glassRow', 'glass', 'Glass'], ['ocean', 'oceanRow', 'ocean', 'Ocean']];
 let viewTiles = null;
@@ -1863,21 +1863,19 @@ function renderViewModes() {
   $('viewModes').hidden = $('centeredRow').hidden;
 }
 $('viewTools').addEventListener('mouseenter', renderViewModes);
-// The view's head, standard tiles on the right (toggle): Sound (every mode), Autoplay (Life's), Auto-fit (while the box is open), Grid (always), each
+// The view's head, standard tiles on the right (toggle): Sound (every mode), Auto-fit (while the box is open), Grid (always), each
 // its checkbox's (the source, kept out of sight); drawn again with the display box, when the box opens and as either changes
 let headTiles = null;
 function renderHeadTiles() {
   const flip = (id) => () => { $(id).checked = !$(id).checked; $(id).dispatchEvent(new Event('change')); renderHeadTiles(); };
   if (!headTiles) {
     renderSoundButton();
-    headTiles = [tile({ pic: icon('play'), text: 'Autoplay', title: $('autoPlayRow').title, toggle: true, click: flip('autoPlay') }),
-      tile({ pic: icon('fit'), text: 'Auto-fit', title: $('autoFitRow').title, toggle: true, click: flip('autoFit') }), tile({ pic: icon('grid'), text: 'Grid', title: $('gridRow').title, toggle: true, click: flip('showGrid') })];
+    headTiles = [tile({ pic: icon('fit'), text: 'Auto-fit', title: $('autoFitRow').title, toggle: true, click: flip('autoFit') }), tile({ pic: icon('grid'), text: 'Grid', title: $('gridRow').title, toggle: true, click: flip('showGrid') })];
     $('headTiles').replaceChildren(soundButton, ...headTiles);
   }
   renderSoundButton();
-  setTile(headTiles[0], { on: $('autoPlay').checked, byDefault: defaultMark('autoPlay'), greyed: 'outside Life', whyNot: ({ w }) => (MODES[w].life ? '' : 'outside Life') });  // (its row's: see renderModePicker)
-  setTile(headTiles[1], { on: $('autoFit').checked, byDefault: defaultMark('autoFit') });
-  setTile(headTiles[2], { on: $('showGrid').checked, byDefault: defaultMark('grid'), whyNot: ({ w }) => viewWhyNot('grid', w) });
+  setTile(headTiles[0], { on: $('autoFit').checked, byDefault: defaultMark('autoFit') });
+  setTile(headTiles[1], { on: $('showGrid').checked, byDefault: defaultMark('grid'), whyNot: ({ w }) => viewWhyNot('grid', w) });
 }
 $('viewTools').addEventListener('mouseenter', renderHeadTiles);
 
@@ -3856,7 +3854,6 @@ function compute() {
   $('returnSection').hidden = !mode.margolus;  // (a reversible one's return to its start, wherever it is)
   fitRuleToShape();
   $('colourSection').hidden = !walkTeamsHere($('mode').value) && (!mode.life || !!mode.margolus || !!mode.elementary);  // (blocks, Elementary: one colour; a walk's on a surface)
-  $('autoPlayRow').hidden = !mode.life;
   renderViewTiles();
   renderColours();
   renderWalkTeams();
@@ -9121,7 +9118,7 @@ function buildLife(seq, mode) {
   renderColours();  // the blocks a figure fits, now that it is built
   renderPlaneRow();  // (its starts: Text where a picture can be laid)
   if (!$('ruleTuto').hidden) renderRuleSection();  // (its page, now that it is built: blocks, their max period here)
-  autoplay();
+  showStacks();
 }
 
 /* Life on the plane: a grid of squares, of hexagons or of triangles (a rhombus of them, as on paper),
@@ -10409,7 +10406,7 @@ function buildLifePlane(seq) {
   renderColours();  // the blocks a figure fits, and its size's words (its colours fitted), now that it is built
   renderPlaneRow();
   if (!$('ruleTuto').hidden) renderRuleSection();  // (its page, now that it is built: blocks, their max period here)
-  autoplay();
+  showStacks();
 }
 // Space-time's cubes (see the Stacks tile beside Walls), a view of the game: Life on squares from its start, played on the card for its
 // generations asked (target; till all die, its loop gone round 5 times, or STACK_MOST cubes: STACK_ENDS), each generation's
@@ -10487,7 +10484,7 @@ function planeReseed() {
   describe(walk.base, Infinity);
   renderPlaneRow();
   restart();
-  autoplay();
+  showStacks();
   syncLink();
 }
 const PLANE_CELLS = { square: 'squares', hex: 'hexagons', tri: 'triangles', cairo: 'Cairo pentagons', kite: 'kites', hat: 'hats', penrose: 'rhombi', pinwheel: 'triangles', spectre: 'spectres', ammann: 'squares and rhombi', rhombs12: 'squares and rhombi', rhombs14: 'rhombi', flower: 'pentagons', flower5: 'pentagons', flower7: 'pentagons', ...conedOf((k, n, F) => [k, F.cells]), flower3: 'pentagons', flower4: 'pentagons', flower8: 'pentagons', flower9: 'pentagons', flower10: 'pentagons', flower11: 'pentagons', flower12: 'pentagons', ring7: 'pentagons', ring8: 'pentagons', ring9: 'pentagons', ring10: 'pentagons', ring11: 'pentagons', ring12: 'pentagons' };
@@ -14514,7 +14511,7 @@ function setLifeSeed(seed, how) {
   describe(walk.base, Infinity);
   restart();
   if (!$('ruleTuto').hidden) renderRuleSection();  // (blocks: the start's max period)
-  autoplay();
+  showStacks();
   syncLink();
 }
 
@@ -15092,8 +15089,8 @@ function fitWhole() {
   fitToBounds(padBounds(bounds));
 }
 
-// Life: a run plays as soon as it is set up (Autoplay, off at first), unless cells are being drawn
-const autoplay = () => { if (spaceTimeOn()) showAll(); else if (walk.life && !drawing && $('autoPlay').checked) play(true); };  // (Space-time: its layers shown all)
+// Space-time: its layers all shown once its run is set up
+const showStacks = () => { if (spaceTimeOn()) showAll(); };
 function restart() {
   if (reversing) reverse(false);
   faced = false;
@@ -17993,7 +17990,6 @@ $('huntGoals').replaceChildren(tileGroup(Object.entries(HUNT_GOALS).map(([goal, 
   b.dataset.goal = goal;
   return b;
 }), true));
-$('autoPlay').addEventListener('change', autoplay);
 $('animBar').addEventListener('mouseenter', () => requestAnimationFrame(drawActivity));  // the card opened: its curve  // turned on: it plays at once
 $('huntZones').replaceChildren(...Object.entries(HUNT_ZONES).map(([zone, [pic, name]]) => {
   const b = tile({ pic: pic ? icon(pic) : zone === 'emoji' ? icon('smiley') : isIcon(zone) ? (zone.startsWith('punk') ? pixelIcon(punkArt(27), zone.endsWith('Max') ? 0 : 10) : pixelIcon('.....,.o.o.,.....,o...o,.ooo.', zone.endsWith('Max') ? 0 : 2))

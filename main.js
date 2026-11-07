@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.515';
+const VERSION = '0.4.516';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -7740,6 +7740,8 @@ const BATTLE_RULES = [
 // a link of v0.4.378 or before: its pe= in the order they were added (then: Land grid 1, Land cells, Cut, Land grid 2, Land
 // grid 3, Land no collision, Land grid merge, Snake cells), its place now (see applySetup)
 const PE_BEFORE = [0, 3, 4, 6, 7, 1, 2, 5];
+// the ways along the grid's lines (a walker's line, its land the regions it closes, see battlePlayer)
+const BATTLE_LINED = ['landGrid', 'landGrid3', 'landStop', 'landMerge'];
 // a walk that can be a battle: one on a surface (on cells or along the grid, its steps surfaceSteps'), with as many
 // walkers as its turns allow at its size (see battleCounts: its walkers start alike, see battleStarts)
 const battleMode = (w) => NAV[w]?.[0] === 'Walk' && MODES[w].lattice === 'sphere' && !!SPHERES[surfaceOf(MODES[w])];
@@ -8184,7 +8186,7 @@ function battlePlayer(g, grid, S, starts, digits, pen = battleRuleInUse()) {
   // a fork); its land the regions its line closes; a head on an enemy's line pierces it (see pierce). Each line's links
   // (lineOf: their count, linksOf: the set), its corners' edges (degree), its pieces (a union-find of its corners), the
   // tiles it closes (closedOf, as battleAreas: outside its largest region, its size, the largest closed one's)
-  const lined = ['landGrid', 'landGrid3', 'landStop', 'landMerge'].includes(way), E = lined ? L.eu.length : 0;
+  const lined = BATTLE_LINED.includes(way), E = lined ? L.eu.length : 0;
   const unwinds = way === 'landGrid3';  // (Land grid 3: a walker dies by its head, its last thread let go: see tailOf)
   const lineOf = lined ? starts.map(() => new Uint16Array(E)) : null, linksOf = lined ? starts.map(() => new Set()) : null;
   const degree = lined ? starts.map(() => new Uint8Array(count)) : null, piecesOf = lined ? starts.map(() => new Int32Array(count)) : null;
@@ -8658,7 +8660,7 @@ const rootDigits = (r, base, n) => Uint8Array.from(iroot(BigInt(r) * BigInt(base
 // battles, two at a time, each sending back its score (see huntScore)
 const BATTLE_WORKERS = Math.max(1, (navigator.hardwareConcurrency || 4) - 1);
 const battleWorker = () => workerOf({ mod, cross, iroot, rootDigits, TORUS_TUBE, tubeOf, SURFACE_NOTCHES, gridGraph, cornerUv, sheetWrap, sheetDelta, nextCorner, nextCornerCarried, acrossEdge,
-  surfaceStep, BATTLE_RULES, battleLinks, battleWall, unionFind, smallerSide, battlePlayer, battleWinner, huntScore }, battleWorkerMain);
+  surfaceStep, BATTLE_RULES, BATTLE_LINED, battleLinks, battleWall, unionFind, smallerSide, battlePlayer, battleWinner, huntScore }, battleWorkerMain);
 function battleWorkerMain() {  // (run in a worker: its setup, then its battles)
   let game = null;
   onmessage = ({ data: m }) => {
@@ -11996,11 +11998,11 @@ function creatureFigures(w) {
   return table.flatMap((row, st) => row.map((e, c) => ({ ...at(e.command), paint: [rampColour(c, C), rampColour(e.write, C)], label: `<b>${S > 1 ? `state ${st}, ` : ''}colour ${c}</b>`,
     caption: `${COMMANDS[e.command].short}${antByDigits ? ` (a digit 1: ${COMMANDS[MIRROR[e.command] ?? e.command].short})` : ''}, the cell then ${e.write}${S > 1 ? `, then state ${e.next}` : ''}` })));
 }
-// How a battle along the grid fights (Land grid 1, Land grid 3: see battlePlayer): its cases on the walk's tiles (squares,
+// How a battle along the grid fights (Land grid 1, 3, no collision, merge: see battlePlayer): its cases on the walk's tiles (squares,
 // triangles, hexagons), each played by the battle itself on a torus of them, its two walkers' moves written as directions on
 // its flat grid (degrees, east 0, north 90; null: a step on the spot), red's and blue's, blue's start reached by pre (not
-// drawn); way: the ways it shows (both, or one), its words each's. Drawn flat: the tiles, the lines, the land, a line let go
-// dashed, a walker dead crossed
+// drawn); its words, the same for every way along the grid, or each way's (a way without: not shown there). Drawn flat: the
+// tiles, the lines, the land, a line let go dashed, a walker dead or stopped crossed
 const BATTLE_LOOP = { square: [90, 90, 180, 180, 270, 270, 0, 0, 0, 0], tri: [120, 120, 240, 240, 0, 0, 0, 0], hex: [90, 150, 210, 270, 330, 30, 330, 30, 330, 30] };  // (blue's loop, then its tail: a fork)
 const BATTLE_LOOP_AT = { square: [0, 0, 0], tri: [0, 0, 0], hex: [330, 30, 330, 30] };  // (its start)
 const BATTLE_CASES = {
@@ -12013,31 +12015,39 @@ const BATTLE_CASES = {
     tri: [{ moves: [0, 120, 240] }, { pre: [240, 180], moves: [0, 0, 0, 0, 120, 120, 120, 120, 240, 240, 240, 240] }],
     hex: [{ moves: [90, 30, 330, 270, 210, 150] }, { pre: [330, 30, 330], moves: [30, 90, 150, 90, 150, 210, 150, 210, 270, 210, 270, 330, 270, 330, 30, 330, 30, 90] }] },
   along: { words: { landGrid: 'Along an enemy\'s line: pierced there, cut from that corner to its forks or ends (dashed), the land it closed freed',
-    landGrid3: 'Along an enemy\'s line, not its last thread: pierced there, cut from that corner to its forks or ends (dashed), the land it closed freed' },
+    landGrid3: 'Along an enemy\'s line, not its last thread: pierced there, cut from that corner to its forks or ends (dashed), the land it closed freed',
+    landStop: 'A step along an enemy\'s line: stopped for good just before it, nothing pierced',
+    landMerge: 'Along an enemy\'s line: nothing pierced, the two lines running side by side' },
     square: [{ pre: [0, 0, 90, 90, 90, 90], moves: [null, null, null, null, null, null, null, null, 270, 270, 180] }, 'loop'],
     tri: [{ pre: [60, 60, 60, 60], moves: [null, null, null, null, null, null, 240, 300, 240] }, 'loop'],
     hex: [{ pre: [90, 30, 90, 30, 330], moves: [null, null, null, null, null, null, null, null, null, null, 270, 210] }, 'loop'] },
-  across: { way: 'landGrid', words: 'Across an enemy\'s line, at a corner (in on one side, out on the other): pierced there, as along',
+  across: { words: { landGrid: 'Across an enemy\'s line, at a corner (in on one side, out on the other): pierced there, as along',
+    landStop: 'A step across an enemy\'s line, at a corner (in on one side, out on the other): stopped for good just before it',
+    landMerge: 'Across an enemy\'s line, at a corner: nothing pierced, the lines crossing' },
     square: [{ pre: [90, 90], moves: [null, null, 270, 270, 270] }, { pre: [180, 180], moves: [0, 0, 0, 0] }],
     tri: [{ pre: [60, 60], moves: [null, null, 240, 240, 240] }, { pre: [180, 180], moves: [0, 0, 0, 0] }] },
   touch: { words: 'A head on an enemy\'s line, touching it (stopping there, or out on the side it came in by): nothing',
     square: [{ pre: [90, 90], moves: [null, null, 270, 270] }, { pre: [180, 180], moves: [0, 0, 0, 0] }],
     tri: [{ pre: [60, 60], moves: [null, null, 240, 240] }, { pre: [180, 180], moves: [0, 0, 0, 0] }],
     hex: [{ pre: [90, 30, 90, 30, 330], moves: [null, null, null, null, null, null, null, null, null, null, 270] }, 'loop'] },
-  neck: { way: 'landGrid3', words: 'Along or across an enemy\'s last thread (from its head back to its fork): it dies, that thread let go; its loops and land stay',
+  neck: { words: { landGrid3: 'Along or across an enemy\'s last thread (from its head back to its fork): it dies, that thread let go; its loops and land stay' },
     square: [{ pre: [0, 0, 0, 0, 90, 90], moves: [null, null, null, null, null, null, null, null, null, null, 270, 270, 270] }, 'loop'],
     tri: [{ pre: [0, 0, 0, 0, 60, 60], moves: [null, null, null, null, null, null, null, null, 240, 240, 240] }, 'loop'],
     hex: [{ pre: [330, 270, 330, 30, 330, 30], moves: [null, null, null, null, null, null, null, null, null, null, 90, 30] }, 'loop'] },
-  necks: { way: 'landGrid3', words: 'Two last threads broken at once, each by the other\'s head: both die',
+  necks: { words: { landGrid3: 'Two last threads broken at once, each by the other\'s head: both die' },
     square: [{ pre: [90, 90, 90], moves: [270, 270, 270, 270, 270] }, { pre: [180, 270], moves: [0, 0, 90, 180, 180] }],
     tri: [{ pre: [60, 60, 60], moves: [240, 240, 240, 240, 240] }, { pre: [240, 180], moves: [0, 0, 60, 180, 180] }] },
   heads: { words: { landGrid: 'Heads meeting on a corner: both die, their lines and land staying',
-    landGrid3: 'Heads meeting on a corner: both die, each one\'s last thread let go' },
+    landGrid3: 'Heads meeting on a corner: both die, each one\'s last thread let go',
+    landStop: 'Heads meeting on a corner: both stopped there for good, their lines and land staying',
+    landMerge: 'Heads meeting on a corner: the battle over, every walker stopped there' },
     square: [{ pre: [180, 180], moves: [0, 0] }, { pre: [0, 0], moves: [180, 180] }],
     tri: [{ pre: [180, 180], moves: [0, 0] }, { pre: [0, 0], moves: [180, 180] }],
     hex: [{ pre: [210, 150], moves: [330, 30] }, { pre: [330, 30], moves: [210, 150] }] },
   crossing: { words: { landGrid: 'Heads crossing, each along the edge the other comes by: both die, their lines and land staying',
-    landGrid3: 'Heads crossing, each along the edge the other comes by: both die, each one\'s last thread let go' },
+    landGrid3: 'Heads crossing, each along the edge the other comes by: both die, each one\'s last thread let go',
+    landStop: 'Heads crossing, each along the edge the other comes by: both stopped for good before',
+    landMerge: 'Heads crossing, each along the edge the other comes by: the battle over, every walker stopped' },
     square: [{ pre: [180, 180], moves: [0, 0] }, { pre: [0], moves: [180, 180] }],
     tri: [{ pre: [180, 180], moves: [0, 0] }, { pre: [0], moves: [180, 180] }],
     hex: [{ pre: [210, 150], moves: [330, 30] }, { pre: [330], moves: [150, 210] }] },
@@ -12084,18 +12094,18 @@ function battleCaseFigure(grid, way, scripts) {
     + `${walks.map((_, s) => [...before[s]].filter((j) => !after[s].has(j)).map((j) => line(j, s, true)).join('') + [...after[s]].map((j) => line(j, s, false)).join('')).join('')}`
     + `${walks.map((_, s) => head(s)).join('')}</svg>`;
 }
-// a battle's cases along the grid, under its walk's (see walkTutorial): Land grid 1's or Land grid 3's, on the walk's tiles
+// a battle's cases along the grid, under its walk's (see walkTutorial): its way's (Land grid 1, 3, no collision, merge), on the walk's tiles
 function battleTutorial(w) {
   const way = BATTLE_RULES[battleRuleInUse()][0], g = walk.geo, grid = { 4: 'square', 3: 'tri', 6: 'hex' }[g?.sides];
   if (!battleOn()) return '';
-  const title = `<h3>Battle: ${BATTLE_RULES[battleRuleInUse()][1]}</h3>`;  // (every battle's, its cases drawn along the grid's Land grid 1 and 3 only)
-  if (!MODES[w].grid || !grid || !['landGrid', 'landGrid3'].includes(way)) return `<div class="form-section">${title}<p>Its cases, drawn: to come later.</p></div>`;
+  const title = `<h3>Battle: ${BATTLE_RULES[battleRuleInUse()][1]}</h3>`;  // (every battle's, its cases drawn along the grid's lines' ways only)
+  if (!MODES[w].grid || !grid || !BATTLE_LINED.includes(way)) return `<div class="form-section">${title}<p>Its cases, drawn: to come later.</p></div>`;
   const loop = { pre: BATTLE_LOOP_AT[grid], moves: BATTLE_LOOP[grid] };
-  const figs = Object.values(BATTLE_CASES).filter((c) => c[grid] && (!c.way || c.way === way)).map((c) => {
+  const figs = Object.values(BATTLE_CASES).filter((c) => c[grid] && (typeof c.words === 'string' || c.words[way])).map((c) => {
     const svg = battleCaseFigure(grid, way, c[grid].map((x) => (x === 'loop' ? loop : x)));
     return svg && `<figure><div>${svg}</div><figcaption>${typeof c.words === 'string' ? c.words : c.words[way]}</figcaption></figure>`;
   });
-  return `<div class="form-section">${title}<p>Each walker's line: the edges it has gone along, never let go by itself. All walkers step at once, each step judged on the lines as it found them. Here red's last step makes the case; a line let go dashed, a walker dead crossed.</p>`
+  return `<div class="form-section">${title}<p>Each walker's line: the edges it has gone along, never let go by itself. All walkers step at once, each step judged on the lines as it found them. Here red's last step makes the case; a line let go dashed, a walker ${way === 'landStop' || way === 'landMerge' ? 'stopped' : 'dead'} crossed.</p>`
     + `<div class="tut-row tut-walk tut-battle">${figs.filter(Boolean).join('')}</div></div>`;
 }
 function walkTutorial(w) {

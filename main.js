@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.428';
+const VERSION = '0.4.429';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -1923,7 +1923,7 @@ function tileGroup(buttons, wide = false) {  // (wide: across its row, whatever 
 }
 function renderChoiceButtons(sel, box, pictures, first = null) {  // pictures: an icon per value, above its name; first: the default's value; each tile its value (data-value)
   box.replaceChildren(...Array.from(sel.options).filter((o) => !o.hidden).map((o) => {
-    const b = tile({ pic: icon(pictures[o.value]), text: o.text, title: o.title, on: o.value === sel.value, can: !o.disabled, byDefault: o.value === first ? 'yes' : '', click: () => { sel.value = o.value; sel.dispatchEvent(new Event('change')); } });
+    const b = tile({ pic: icon(pictures[o.value]), text: o.text, title: o.title, on: o.value === sel.value, byDefault: o.value === first ? 'yes' : '', click: () => { sel.value = o.value; sel.dispatchEvent(new Event('change')); } });
     b.dataset.value = o.value;
     return b;
   }));
@@ -1972,7 +1972,7 @@ const setTile = (b, { on = false, can = true, mark = false, again = false, turn 
 function highlight(el) { el.classList.remove('highlit'); void el.offsetWidth; el.classList.add('highlit'); }
 // a greyed button that knows what would allow it (its enablers: the nearest buttons of the menu taking it there, see
 // setTile's whyNot): a click on it, which a disabled button never gets (its pointer's up it does), highlights them
-document.addEventListener('pointerup', (e) => { const b = e.target.closest?.('button'); if (!b?.disabled || !b.enablers) return; const them = b.enablers(); them[0]?.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); them.forEach(highlight); });  // (the first scrolled into sight, as little as it takes)
+document.addEventListener('pointerup', (e) => { const b = e.target.closest?.('button, input'); if (!b?.disabled || !b.enablers) return; const them = b.enablers(); them[0]?.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); them.forEach(highlight); });  // (the first scrolled into sight, as little as it takes)
 const card = ({ pic = '', name = '', detail = '', base = '', title = '', on = false, can = true, byDefault, click = null, how = null, whyNot = null, at, sets = null }) => {
   const b = tile({ html: '', title: title || detail, on, can, byDefault, click, whyNot, at, sets }), picture = Object.assign(document.createElement('span'), { className: `mode-icon${how ? ' act' : ''}`, innerHTML: pic });
   if (how) { picture.title = `How ${name} works`; picture.addEventListener('click', (e) => { e.stopPropagation(); how(); }); }  // (its picture: a click on how it works)
@@ -6592,12 +6592,14 @@ function sizeGauge(el, n, i, preview, pick) {
 }
 // A notched slider, one choice among a few on a row (Cut, Area): its title a sub-section's (field-label), a notch each (see sizeGauge), the
 // choice's name on its right; its tooltip on the whole row, as a button's (see tipOf): its title in bold, what it does (about)
-// and its choice's words, its default (choice first) on a grey line; can: false, greyed; live: set as it is dragged (else let go)
-function notchRow(el, title, about, choices, at, first, set, can = true, live = true) {
+// and its choice's words, its default (choice first) on a grey line; whyNot, greyed and why (see setTile); live: set as it is dragged (else let go)
+function notchRow(el, title, about, choices, at, first, set, whyNot = null, live = true) {  // (whyNot(setup): as a tile's, see setTile)
   const name = Object.assign(document.createElement('span'), { className: 'notch-name' }), gauge = Object.assign(document.createElement('div'), { className: 'size-gauge' });
   const show = (k) => { name.textContent = choices[k][0]; el.title = [about, choices[k][1]].filter(Boolean).join('\n'); }, pick = (k) => { show(k); set(k); };
   sizeGauge(gauge, choices.length, at, live ? pick : show, pick);
-  gauge.querySelector('input').disabled = !can;
+  const input = gauge.querySelector('input'), why = whyNot?.({ w: $('mode').value }) ?? '';
+  input.disabled = !!why;
+  if (whyNot) { el.dataset.greyed = why; input.enablers = () => enablersFor((setup) => !whyNot(setup)); }
   show(at);
   el.dataset.default = `${choices[first][0]} by default`;
   el.classList.add('notch-row');
@@ -14733,7 +14735,7 @@ function fillGalleryList() {
     section.append(cards);
     return [section];
   }));
-  for (const b of [...$('galleryTools').children].slice(1, 3)) setTile(b, { can: list.length > 0, greyed: 'with the Gallery empty' });  // (Export, Erase all: none to take)
+  for (const b of [...$('galleryTools').children].slice(1, 3)) setTile(b, { greyed: 'with the Gallery empty', whyNot: () => (list.length ? '' : 'with the Gallery empty') });  // (Export, Erase all: none to take)
   $('eraseConfirm').hidden ||= !list.length;
   syncSaveButton();
 }
@@ -16947,7 +16949,11 @@ function visitCells() {
 // tile the plane, so the fill follows the path exactly.
 let fill = null;                   // { at, cx, cy, tpl, templates, count, tooBig } for the current walk (see computeFill)
 // Area goes with the colours where the path has one colour per step (not Visits, not By digit)
-const fillAreasApply = () => useful('fill') && MODES[$('mode').value].fill !== false && !['visits', 'digit'].includes($('colourMode').value) && !snakeBattle();
+const fillAreasApply = (w = $('mode').value) => !areaWhyNot(w);
+// Area greyed at a mode: a walk closing none (a spiral, a mode without it), a look over the cells (Heatmap, Directions), or
+// Snake cells (its tails slide: no area lasts); else ''
+const areaWhyNot = (w) => (!useful('fill', w) || MODES[w].fill === false ? 'where the walk closes no area to fill (a spiral, an ant…)'
+  : ['visits', 'digit'].includes($('colourMode').value) ? 'with Heatmap or Directions (the cells their own colours)' : w === $('mode').value && snakeBattle() ? 'in Snake cells: its tails slide, no area they close lasts' : '');
 // a battle in Snake cells: its bodies' tails slide, no area they close lasts: none filled (Area greyed)
 const snakeBattle = () => battleOn() && PENETRATIONS[penetration][0] === 'snakeCells';
 // (the walk drawn may still be the last mode's while the new one is computed: a tiling with a fill)
@@ -18254,12 +18260,11 @@ $('heatmap').addEventListener('change', () => {
 const AREA_MODES = [['empty', 'Empty', 'Empty: none filled'], ['light', 'Light', 'Light: translucent, its line showing through'],
   ['plain', 'Plain', 'Plain: in the colour of the step that closed them']];
 function renderAreaModes() {
-  const off = !fillAreasApply(), light = shows('translucent');
+  const light = shows('translucent');
   const shown = (v) => (v === 'light' && !light ? 'plain' : v);  // (Light only over a line: else Plain)
   const now = AREA_MODES.findIndex(([look]) => look === shown($('area').value)), first = shown(defaultOf('area'));
-  $('areaModes').dataset.greyed = snakeBattle() ? 'in Snake cells: its tails slide, no area they close lasts' : '';
   notchRow($('areaModes'), 'Area', 'The areas the walk closes, filled', AREA_MODES.map(([look, name, words]) => [name, `${words}${look === 'light' && !light ? ' · greyed: over a line only (Plain here)' : ''}${look !== 'empty' && fractionAreaCap() < Infinity ? ` · a fraction: its digits repeat, its walk goes round its figure again and again, closing off big parts of the surface; only its small areas are filled, ${FRACTION_AREA} tiles at most` : ''}`]), now, AREA_MODES.findIndex(([look]) => look === first),
-    (k) => { if ($('area').value !== AREA_MODES[k][0]) { $('area').value = AREA_MODES[k][0]; $('area').dispatchEvent(new Event('change')); } }, !off, false);  // (let go: the row drawn again)
+    (k) => { if ($('area').value !== AREA_MODES[k][0]) { $('area').value = AREA_MODES[k][0]; $('area').dispatchEvent(new Event('change')); } }, ({ w }) => areaWhyNot(w), false);  // (let go: the row drawn again)
 }
 // The looks of a 2D walk on cells, as square buttons: Path, the rainbow line over its cells faded (an ant's over its
 // states); Rainbow along the walk; Directions, a colour per digit (an ant's: States, its cells by their state, see

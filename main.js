@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.445';
+const VERSION = '0.4.446';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -4872,7 +4872,7 @@ const WALK_NETS = {
 };
 const SPOT_ARROWS = { l: '↺', r: '↻', a: '↝' };
 const WORD_TEXT = { ...TURN_WORDS, U: 'back', '^': 'up', v: 'down', p: 'turn up on the spot', u: 'up', d: 'down', l: 'turn left on the spot', r: 'turn right on the spot', a: 'step, then turn right at an odd digit, left at an even one',
-                    n: 'north', ne: 'north-east', e: 'east', se: 'south-east', s: 'south', sw: 'south-west', w: 'west', nw: 'north-west', '|': 'up or down', '\\': 'along \\', '/': 'along /' };
+                    n: 'north', ne: 'north-east', e: 'east', se: 'south-east', s: 'south', sw: 'south-west', w: 'west', nw: 'north-west', '|': 'across the flat side: up from ▽, down from △', '\\': 'across the side along \\', '/': 'across the side along /' };
 // As a reminder, under every walk's and creature's How it works: all the rules' words (WORD_TEXT, the one list the rules
 // are read by), each a step (its way: left, north, up…) but those turning on the spot (l, r, p), then an ant's and a
 // turmite's entries

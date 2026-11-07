@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.514';
+const VERSION = '0.4.515';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -3732,9 +3732,9 @@ function rulesFor(w) {
 // a creature's or a walk's rules: its cards (see rulesFor), the rule in use, how to set one, whether one is typed, a rule's base
 // (where it reads digits: its card's bubble), the field's title
 function creatureRules(w) {
-  const m = MODES[w], N = WALK_NETS[m.net], surface = m.lattice === 'sphere';
+  const m = MODES[w], N = WALK_NETS[m.net];
   if (N) return { now: walkRuleOf(m), typed: true, set: (r) => setWalkRule(w, r), base: (r) => baseWords(ruleCommands(r).length), cards: rulesFor(w),
-                  name: `Rule, a command per digit: ${surface ? surfaceCommands(m.net).join(' ') : [...Object.keys(N.turns), ...Object.keys(N.ways ?? {}), ...(N.notch ? ['l', 'r', 'a'] : []), ...Object.keys(N.spots ?? {})].join(' ')}` };
+                  name: `Rule, a command per digit: ${commandsTaken(m).join(' ')}` };
   if (MODES[w].worm) return { byDigits: worm.byDigits, now: worm.rule, typed: !worm.byDigits, cards: worm.byDigits ? [] : rulesFor(w), set: setWormRule,  // (by its rule: no digits read)
                               name: 'Rule, a turn at each new corner: L2, L1, N, R1, R2' };
   const turns = antCommands(w).join(' ');
@@ -4610,8 +4610,10 @@ const ARROW_LISTS = {};
 const arrowsOf = (w) => { const a = MODES[w].antOf ? ANTS[w].arrows ?? antArrows(w) : MODES[w].arrows ?? ''; return typeof a === 'string' ? (ARROW_LISTS[a] ??= [...a]) : a; };  // (a walk by a rule, an ant: theirs, see walkArrows)
 // An ant's words: those the walk it goes through the cells with can take (see walkCommandsOf), its turns first, as they come
 // (a step's turn: its index here); their arrows
-const antCommands = (w) => (ANTS[w].words ??= (() => { const m = MODES[ANTS[w].walk], N = WALK_NETS[m.net];
-  return [...Object.keys(N.turns), 'B', ...Object.keys(N.ways ?? {}), ...(N.notch || SURFACE_NOTCHES[m.net] ? ['l', 'r', 'a'] : []), ...Object.keys(N.spots ?? {})].filter((t) => !walkCommandWhy(m, t)); })());  // (B, a step back: where its walk takes it)
+const antCommands = (w) => (ANTS[w].words ??= commandsTaken(MODES[ANTS[w].walk]));
+// the commands walk m takes, its network's that fit it (see walkCommandWhy): its turns, B, its ways, on the spot, a cube's
+const commandsTaken = (m) => { const N = WALK_NETS[m.net];
+  return [...Object.keys(N.turns), 'B', ...Object.keys(N.ways ?? {}), ...(N.notch || SURFACE_NOTCHES[m.net] ? spotCommands(m.net) : []), ...Object.keys(N.spots ?? {})].filter((t) => !walkCommandWhy(m, t)); };
 const antArrows = (w) => (ANTS[w].commandArrows ??= antCommands(w).map((t) => WALK_NETS[MODES[ANTS[w].walk].net].arrows[t] ?? SPOT_ARROWS[t] ?? ''));
 // a turn in words, for the Play card's chips (L, R on squares and triangles; L1, R1 on hexagons and pentagons)
 const antText = (table) => { const dot = table.flat().some((e) => e.command.length > 1) ? '.' : ''; return table.map((row) => row.map((e) => `${e.write}${dot}${e.command}${dot}${e.next}`).join(' ')).join(' | '); };  // (dotted when a word of it is longer than a letter)
@@ -4894,15 +4896,17 @@ function triStepper(kind) {
   let c = 0, r = 0, entry = 0; // start: ▲ triangle at (0, 0), entered from below
   const visited = new Set([key(0, 0)]);
   const across = (edge, up) => (edge === 0 ? [c, r + (up ? 1 : -1)] : [c + ((edge === 1) === up ? -1 : 1), r]);
+  const spot = kind !== 'spiral' && kind.some(([k]) => k === 'pivot');  // (its entry not its last step's)
   return (g) => {
     const up = ((c + r) & 1) === 0;
     const ccw = up ? TRI_CCW.up : TRI_CCW.down, i = ccw.indexOf(entry), left = ccw[(i + 2) % 3], right = ccw[(i + 1) % 3];
+    if (kind !== 'spiral' && kind[g][0] === 'pivot') { entry = ccw[mod(i - kind[g][1], 3)]; return [key(c, r), c / 2, r * H + (up ? 2 * H / 3 : H / 3) + TRI_Y0, 0, entry]; }  // (l: its edges one round to the left)
     const edge = kind === 'spiral' ? (visited.has(key(...across(left, up))) ? right : left) : kind[g][0] === 'way' ? kind[g][1] : [left, right, entry][kind[g][1]];
     [c, r] = across(edge, up);
     entry = edge;
     visited.add(key(c, r));
-    const upNow = ((c + r) & 1) === 0;
-    return [key(c, r), c / 2, r * H + (upNow ? 2 * H / 3 : H / 3) + TRI_Y0, 0];
+    const upNow = ((c + r) & 1) === 0, at = [key(c, r), c / 2, r * H + (upNow ? 2 * H / 3 : H / 3) + TRI_Y0, 0];
+    return spot ? [...at, entry] : at;
   };
 }
 
@@ -4919,13 +4923,15 @@ const WALK_NETS = {
             arrows: { L: '←', N: '↑', R: '→', U: '↓', n: '↑', ne: '↗', e: '→', se: '↘', s: '↓', sw: '↙', w: '←', nw: '↖' } },
   hex: { dirs: HEX_DIRS, notch: 1, at: hexAt, straight: 'N', turns: { L2: -2, L1: -1, N: 0, R1: 1, R2: 2, U: 3 }, ways: { n: 0, ne: 1, se: 2, s: 3, sw: 4, nw: 5 },
          arrows: { L2: '↙', L1: '↖', N: '↑', R1: '↗', R2: '↘', U: '↓', n: '↑', ne: '↗', se: '↘', s: '↓', sw: '↙', nw: '↖' } },
-  tri: { straight: 'L', turns: { L: 0, R: 1, U: 2 }, ways: { '|': 0, '\\': 1, '/': 2 }, arrows: { L: '↖', R: '↗', U: '↓' } },  // (three ways out: no straight on, no turn on the spot)
+  tri: { notch: 1, straight: 'L', turns: { L: 0, R: 1, U: 2 }, ways: { '|': 0, '\\': 1, '/': 2 }, arrows: { L: '↖', R: '↗', U: '↓' } },  // (three ways out: no straight on; a notch on the spot, an edge)
   cairo: { straight: 'L1', turns: { L2: 0, L1: 1, R1: 2, R2: 3 }, arrows: { L2: '↙', L1: '↖', R1: '↗', R2: '↘' } },
   cube: { notch: 1, straight: 'N', turns: { L: 0, '^': 1, N: 2, v: 3, R: 4, U: 5 }, ways: { n: 0, e: 1, u: 2, s: 3, w: 4, d: 5 }, spots: { p: ['pitch'] },  // (see cubeStepper)
           arrows: { L: '←', '^': '⊙', N: '↑', v: '⊗', R: '→', U: '↓', n: '↑', e: '→', u: '⊙', s: '↓', w: '←', d: '⊗', p: '⊙' } },
   diamond: { straight: 'N', turns: { L: 0, N: 1, R: 2 }, arrows: { L: '↖', N: '↑', R: '↗' } },  // (gauche left, trans, gauche right: see diamondStepper)
 };
 const SPOT_ARROWS = { l: '↺', r: '↻', a: '↝', B: '⇣' };  // (the commands with no turn of a network's: on the spot, parity, back)
+// a network's commands on the spot, where it has a notch: l r a turn, a (a step, then a notch) where a step goes straight on (N)
+const spotCommands = (net) => ['l', 'r', ...(Object.hasOwn(WALK_NETS[net].turns, 'N') ? ['a'] : [])];
 // Every rule's command, one table (the one list the rules are read by): short, its name (the digits' chips, the cards, the
 // tutorials, a greyed word's why); text, what it does (the reminder under How it works)
 const COMMANDS = {
@@ -4957,10 +4963,10 @@ function commandAct(net, command) {
   const N = WALK_NETS[net];
   if (Object.hasOwn(N.turns, command)) return ['turn', N.turns[command]];
   if (N.ways && Object.hasOwn(N.ways, command)) return ['way', N.ways[command]];
-  if (N.notch && (command === 'l' || command === 'r')) return ['pivot', command === 'l' ? -N.notch : N.notch];
+  if (N.notch && (command === 'l' || command === 'r')) return ['pivot', command === 'l' ? -N.notch : N.notch];  // (on the triangles' a notch an edge: each command one edge round)
   if (command === 'B' && N.dirs && Object.hasOwn(N.turns, 'U')) return ['back'];  // (a step back, the heading kept: where a U-turn is, squares and hexagons)
   if (N.spots && Object.hasOwn(N.spots, command)) return N.spots[command];
-  return N.notch && command === 'a' ? ['parity', N.notch] : null;
+  return N.notch && command === 'a' && spotCommands(net).includes('a') ? ['parity', N.notch] : null;
 }
 // The stepper of a network with headings (squares, hexagons), by a rule's acts; its hidden state last (as a cube's roll, for
 // walkRepeat): its heading after a turn on the spot, and the parity of the digits read
@@ -4995,7 +5001,7 @@ const walkKey = (m) => (m.lattice === 'sphere' ? `${m.net} surface${m.net && sur
 const surfaceCommands = (net) => Object.keys(WALK_NETS[net].turns).filter((t) => t !== 'U');  // (a surface's turns, left to right)
 // a surface walk's acts, one per digit (see surfaceSteps): by its rule's commands (a turn: its edges on, or degrees along the grid,
 // as its turns list them left to right; l r a: a notch on the spot, a parity's), else by its turns (an ant's)
-const SURFACE_NOTCHES = { square: 4, hex: 6 };  // (a step straight on: squares' and hexagons' cells, squares' and triangles' grid)
+const SURFACE_NOTCHES = { square: 4, hex: 6, tri: 3 };  // (a turn on the spot: a notch an edge of its cells, of its grid's corners)
 function surfaceActs(mode, commands = mode.net && ruleCommands(walkRuleOf(mode))) {
   if (!commands) return (mode.turns ?? []).map((t) => ['turn', t]);
   return commands.map((t) => (t === 'l' || t === 'r' ? ['pivot', t === 'r' ? 1 : -1] : t === 'a' ? ['parity'] : t === 'B' ? ['back'] : mode.grid ? ['turn', t === 'U' ? 180 : mode.turns[surfaceCommands(mode.net).indexOf(t)]]
@@ -5015,13 +5021,13 @@ const cellSides = (kind) => (cellSidesMemo[kind] ??= (() => {
 })());
 // why a command cannot go on a walk, or '': not its network's; a diagonal along the grid; on a surface, no fixed way (no north)
 const walkCommandWhy = (m, t) => (m.lattice === 'sphere' && !m.grid ? cellCommandWhy(m, t)
-  : m.lattice === 'sphere' ? ((surfaceCommands(m.net).includes(t) && m.turns[surfaceCommands(m.net).indexOf(t)] != null) || t === 'U' || (SURFACE_NOTCHES[m.net] && ['l', 'r', 'a'].includes(t)) ? ''
+  : m.lattice === 'sphere' ? ((surfaceCommands(m.net).includes(t) && m.turns[surfaceCommands(m.net).indexOf(t)] != null) || t === 'U' || (SURFACE_NOTCHES[m.net] && spotCommands(m.net).includes(t)) ? ''
     : surfaceCommands(m.net).includes(t) ? `${t} is not on this surface (its corners).` : `${t} is not on a surface: there is no north there.`)
   : !commandAct(m.net, t) ? `${t} is not a command here.` : m.lines && WALK_NETS[m.net].diagonals?.includes(t) ? `${t} is a diagonal step: along the grid, it follows no line.` : '');
 // a command on a surface's cells: its edge on every cell (see cellTurn, cellSides): straight on, cells of an even count of sides;
 // the j-th from the entry either way, cells of 2j + 1 sides at least; on the spot and parity, its network's notches
 function cellCommandWhy(m, t) {
-  if (['l', 'r', 'a'].includes(t)) return SURFACE_NOTCHES[m.net] ? '' : `${t} is not on this surface.`;
+  if (['l', 'r', 'a'].includes(t)) return SURFACE_NOTCHES[m.net] && spotCommands(m.net).includes(t) ? '' : `${t} is not on this surface.`;
   if (t === 'B') return cellSides(surfaceOf(m)).every((n) => n % 2 === 0) ? '' : `${t} is not on this surface: a cell of ${cellSides(surfaceOf(m)).find((n) => n % 2)} sides has no edge across to face.`;
   const turn = cellTurn(m.net, t), sides = cellSides(surfaceOf(m));
   if (turn === null) return `${t} is not on a surface: there is no north there.`;

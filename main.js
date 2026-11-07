@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.536';
+const VERSION = '0.4.537';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -3742,7 +3742,7 @@ function creatureRules(w) {
                               name: 'Rule, a turn at each new corner: L2, L1, N, R1, R2' };
   const turns = antCommands(w).join(' ');
   return { byDigits: antByDigits, now: antRuleOf(w), typed: true, set: (r) => setAntRule(w, r), base: antByDigits ? () => baseWords(2) : null,  // (by colour: no digits read)
-           cards: rulesFor(w), name: `Rule, per state an entry per colour: its colour left, its turn (${turns}), its state next; the states parted by |` };
+           cards: rulesFor(w), name: `Rule, per state an entry per colour: its colour left, its turn (${turns}), its state next; the states parted by |; or an ant's turns alone, one a colour (RL)` };
 }
 // The ants' and turmites' rules (see RULES) in neutral turns (L R, N straight on, U back, L2 R2 sharp), each grid's in its own
 // commands (L1 R1 on hexagons and pentagons); one a grid cannot take greyed in its place, the command it lacks in its tooltip
@@ -3767,9 +3767,10 @@ function setWormRule(rule) {
   renderModePicker();
   compute();
 }
-// an ant's rule typed or picked (see antTableOf), written back as it reads
+// an ant's rule typed or picked (see antTableOf), or as the literature writes an ant, its turns alone (RL, see antOfTurns),
+// written back as it reads
 function setAntRule(w, rule) {
-  const T = antTableOf(w, rule);
+  const T = antTableOf(w, rule) ?? antTableOf(w, antOfTurns(w, rule));
   if (!T) { refuseRule(rule, antRuleOf(w)); return; }
   antRules[w] = T.text;
   renderModePicker();

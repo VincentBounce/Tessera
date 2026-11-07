@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.437';
+const VERSION = '0.4.438';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -8280,7 +8280,7 @@ function battlePlayer(g, grid, S, starts, digits, pen = penetration) {
         owner.fill(0); from.fill(0); size.fill(0); dead.fill(-1); food.fill(0); i = -1;
         land.fill(0); landCount.fill(0); seenFrom.fill(0); cutsOf.forEach((c) => c.fill(0));
       }
-      if (i < 0) for (let s = 0; s < K && bite; s++) { freshWalls(s); if (lined) freshLine(s); }
+      if (i < 0) for (let s = 0; s < K && L; s++) { freshWalls(s); if (lined) freshLine(s); }  // (walls along the grid only, see L)
       while (i < Math.min(j, n)) { step(); keepBest(); }
     },
     bestAt: (s) => bestOf[s][Math.max(0, i)],  // (s's peak worth up to the step it is at)

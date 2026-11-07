@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.400';
+const VERSION = '0.4.401';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -2037,7 +2037,7 @@ const TUNE = { bpm: 152, bass: 'E2 A2 E2 A2 D2 C2 E2 A2',
   melody: 'E5:2 B4 C5 D5:2 C5 B4 A4:2 A4 C5 E5:2 D5 C5 B4:3 C5 D5:2 E5:2 C5:2 A4:2 A4:4 R D5:2 F5 A5:2 G5 F5 E5:3 C5 E5:2 D5 C5 B4:2 B4 C5 D5:2 E5:2 C5:2 A4:2 A4:4' };
 const midiOf = (n) => 12 * (Number(n.at(-1)) + 1) + { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 }[n[0]] + (n.includes('#') ? 1 : 0);
 let music = null, soundButton = null;  // music: its audio, its clock, its eighths (the melody's notes, the bass), where it is, of late how many born, softer, stopped
-function tone(midi, at, len, wave, vol, to = null) {  // (to: sliding there)
+function playTone(midi, at, len, wave, vol, to = null) {  // (to: sliding there)
   const c = music.ctx, o = c.createOscillator(), g = c.createGain();
   o.type = wave;
   o.frequency.setValueAtTime(440 * 2 ** ((midi - 69) / 12), at);
@@ -2066,8 +2066,8 @@ function tuneTick() {  // (its next eighths, a little ahead)
   if (!(playing || reversing) || (lifeTime() && music.stopped)) { music.next = c.currentTime + 0.05; return; }  // (forth or back, every mode; Life's all dead: still)
   while (music.next < c.currentTime + 0.12) {
     const k = music.step++ % notes.length, at = music.next;
-    if (notes[k]) tone(notes[k][0], at, notes[k][1] * eighth * 0.95, 'square', 0.035 * soft);
-    tone(bass[k], at, eighth * 0.9, 'triangle', 0.07 * soft);
+    if (notes[k]) playTone(notes[k][0], at, notes[k][1] * eighth * 0.95, 'square', 0.035 * soft);
+    playTone(bass[k], at, eighth * 0.9, 'triangle', 0.07 * soft);
     noise(at, k % 2 ? 0.03 : 0.08, k % 2 ? 8000 : 300, 0.03 * soft);
     music.next += eighth;
   }
@@ -2090,12 +2090,12 @@ function renderSoundButton() {
 }
 function lifeMusic(L) {  // (a generation's moments, see Sound)
   const now = music.ctx.currentTime, born = L.bornNow;
-  if (!L.aliveCount) { if (!music.stopped) for (let s = 0; s < 8; s++) tone(76 - 2 * s, now + 0.07 * s, 0.1, 'square', 0.05); music.stopped = true; return; }
+  if (!L.aliveCount) { if (!music.stopped) for (let s = 0; s < 8; s++) playTone(76 - 2 * s, now + 0.07 * s, 0.1, 'square', 0.05); music.stopped = true; return; }
   music.stopped = false;
   if (music.avg !== null && born > 2.5 * music.avg && born > 0.01 * L.seed.length) noise(now, 0.6, 3000, Math.min(0.25, (0.05 * born) / Math.max(1, music.avg)), 60);
   music.avg = music.avg === null ? born : 0.9 * music.avg + 0.1 * born;
   music.soft = born === 0;
-  if (L.colours > 1) for (let k = 1; k <= L.colours; k++) if (L.extinctAt[k] === L.gen) tone(81, now, 0.3, 'square', 0.05, 45);
+  if (L.colours > 1) for (let k = 1; k <= L.colours; k++) if (L.extinctAt[k] === L.gen) playTone(81, now, 0.3, 'square', 0.05, 45);
 }
 // States: alive and dead cells (Colours: the civilisations' and dead); Age: young (warm) to old (cold), then the fading
 // trail of the dead; Activity: the cells that change most, hot in the middle
@@ -15086,7 +15086,7 @@ function drawLines(ctx, a, b, c0, step) {
   }
 }
 
-// 3D background: a vertical sky gradient behind the scene, in the page's tone (Dawn on a light page,
+// 3D background: a vertical sky gradient behind the scene, in the page's playTone (Dawn on a light page,
 // Twilight on a dark one), or Plain (the page background)
 const SKIES = {
   dark:  [[0, '#0a1530'], [0.45, '#1c2852'], [0.75, '#433262'], [0.92, '#7a4a5e'], [1, '#9c5f52']],  // twilight

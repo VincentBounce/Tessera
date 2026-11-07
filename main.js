@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.417';
+const VERSION = '0.4.418';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -1931,20 +1931,23 @@ function renderChoiceButtons(sel, box, pictures, first = null) {  // pictures: a
 // draws another start, a shape's switches walls and a torus): its hover gold; toggle: a switch on or off (Trail, Walls,
 // Turned, System…), said once when made and kept: its hover gold on, a pale gold off (as a choice picked); turn: its picture turned by so many degrees (a
 // second state a click again gives: a torus's tiles turned)
-const tile = ({ pic = '', text = '', html = null, title = '', id = null, on = false, can = true, mark = false, again = false, toggle = false, turn = 0, byDefault, greyed, click = null, enablers = null }) => {
+const tile = ({ pic = '', text = '', html = null, title = '', id = null, on = false, can = true, mark = false, again = false, toggle = false, turn = 0, byDefault, greyed, click = null, whyNot = null, at }) => {
   const b = document.createElement('button');
   b.type = 'button';
-  if (enablers) b.enablers = enablers;  // (greyed: what would allow it, highlighted by a click on it, see enablersFor)
   if (id) b.id = id;
   if (toggle) b.dataset.toggle = '';
   if (title) b.title = title;
   b.innerHTML = html ?? `${pic}<span>${text}</span>`;
   if (click) b.addEventListener('click', click);
-  return setTile(b, { on, can, mark, again, turn, byDefault, greyed });
+  return setTile(b, { on, can, mark, again, turn, byDefault, greyed, whyNot, at });
 };
 // (byDefault: as the tooltip tells it, see tip: 'yes', the choice picked at first; 'on' or 'off', a switch's at first)
 // (greyed: when it is, as the tooltip tells it: 'in Solo', 'outside Life'…)
-const setTile = (b, { on = false, can = true, mark = false, again = false, turn = 0, byDefault, greyed }) => {
+// (whyNot(setup): what greys it in a setup, { w, size } (a mode, at a size or the one it opens at), '' when allowed: its one
+// source; greyed here (at: its mode, the tab's by default) or not, its words why, and the menu's nearest buttons that would
+// allow it, highlighted by a click on it (see enablersFor))
+const setTile = (b, { on = false, can = true, mark = false, again = false, turn = 0, byDefault, greyed, whyNot = null, at = $('mode').value }) => {
+  if (whyNot) { const why = whyNot({ w: at }); can = !why; if (why) greyed = why; b.enablers = () => enablersFor((w, size) => !whyNot({ w, size })); }
   if (byDefault !== undefined) b.dataset.default = byDefault;
   if (greyed !== undefined) b.dataset.greyed = greyed;
   const pic = b.querySelector('svg');
@@ -1962,10 +1965,10 @@ const setTile = (b, { on = false, can = true, mark = false, again = false, turn 
 // an element highlighted a moment, once (the length asked's stepper; the buttons a greyed one waits for, see enablers)
 function highlight(el) { el.classList.remove('highlit'); void el.offsetWidth; el.classList.add('highlit'); }
 // a greyed button that knows what would allow it (its enablers: the nearest buttons of the menu taking it there, see
-// ruleCards): a click on it, which a disabled button never gets (its pointer's up it does), highlights them
+// setTile's whyNot): a click on it, which a disabled button never gets (its pointer's up it does), highlights them
 document.addEventListener('pointerup', (e) => { const b = e.target.closest?.('button'); if (!b?.disabled || !b.enablers) return; const them = b.enablers(); them[0]?.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); them.forEach(highlight); });  // (the first scrolled into sight, as little as it takes)
-const card = ({ pic = '', name = '', detail = '', base = '', title = '', on = false, can = true, byDefault, click = null, how = null, enablers = null }) => {
-  const b = tile({ html: '', title: title || detail, on, can, byDefault, click, enablers }), picture = Object.assign(document.createElement('span'), { className: `mode-icon${how ? ' act' : ''}`, innerHTML: pic });
+const card = ({ pic = '', name = '', detail = '', base = '', title = '', on = false, can = true, byDefault, click = null, how = null, whyNot = null, at }) => {
+  const b = tile({ html: '', title: title || detail, on, can, byDefault, click, whyNot, at }), picture = Object.assign(document.createElement('span'), { className: `mode-icon${how ? ' act' : ''}`, innerHTML: pic });
   if (how) { picture.title = `How ${name} works`; picture.addEventListener('click', (e) => { e.stopPropagation(); how(); }); }  // (its picture: a click on how it works)
   b.append(picture, cardWords(name, detail), ...(base ? [cardBubble(base, click && (() => (on ? toggleNumber() : (click(), showNumber()))))] : []));
   return b;
@@ -3506,9 +3509,18 @@ for (const [w, life] of REVERSIBLE_SHEETS) FAMILIES.flatMap((F) => F.modes).find
 // the family of a walk mode, its tiling there and its tab (null: not in a family)
 // a mode's sides there (Grid, Cells): its kind's and its rule's, on its tiling only (Cairo pentagons: no grid; on a surface's
 // hexagons, no worm: the grid its triangles' only)
-const walkSidesOf = (v) => {
+const walksThere = (v) => {
   const [kind, space, shape, rule] = NAV[v], fam = familyOf(v), tiling = fam?.F.modes[fam.m];
-  return navValues(4, [kind, space, shape, rule]).filter((s) => !tiling || tiling.some((u) => NAV[u][0] === kind && NAV[u][3] === rule && NAV[u][4] === s));
+  return Object.keys(NAV).filter((u) => [kind, space, shape, rule].every((x, i) => NAV[u][i] === x) && (!tiling || tiling.includes(u)));
+};
+const walkSidesOf = (v) => [...new Set(walksThere(v).map((u) => NAV[u][4]))];
+// a side's greyed words at a mode (Grid, Cells; see walkOn): none there (none: its words), or a walk by a rule whose rule
+// cannot go there (a diagonal along the grid: the word why); '' where it can
+const sideWhyNot = (v, s, none) => {
+  const ways = walkSidesOf(v), there = ways.includes('') ? (s === 'cells' ? v : null) : walksThere(v).find((u) => NAV[u][4] === s);
+  if (!there) return none;
+  const rule = walkRules[walkKey(MODES[there])];
+  return MODES[there].net && !walkWordsOf(there, rule) ? ruleWords(rule).map((t) => walkWordWhy(MODES[there], t)).find(Boolean) ?? '' : '';
 };
 function familyOf(w) {
   for (const F of FAMILIES) {
@@ -3560,26 +3572,27 @@ function renderAntRow() {
 function ruleCards(w, here = true) {
   const R = creatureRules(w), mine = here && (customOpen || !ruleKnown(R));
   const go = (then) => () => { if (!here) { $('mode').value = w; $('mode').dispatchEvent(new Event('change')); } then(); };
-  const make = (cardPic, name, code, on, then, why = '', title = '') => card({ pic: cardPic, name, detail: code, base: code && R.base?.(code), on, title: why || title, can: !why, click: go(then),
-    how: () => { if (on) walkTutorialToggle(); else { go(then)(); walkTutorial(w); } }, enablers: why ? () => ruleEnablers(name) : null });  // (its ⓘ: how it works, picked first; greyed, a click highlights where it plays)
-  return [...R.cards.map(({ rule: r, name, pic, why, title }) => make(pic, name, r, here && r === R.now && !customOpen, () => { customOpen = false; if (r === R.now) renderModePicker(); else R.set(r); }, why, title)),
-    ...(R.typed ? [make(pixelIcon('..o..,..o..,ooooo,..o..,..o..'), 'Custom rule', mine ? R.now : '', mine, () => { customOpen = true; renderModePicker(); }, '', 'your own, typed')] : []),
+  const make = (cardPic, name, code, on, then, why = '', title = '', source = null) => card({ pic: cardPic, name, detail: code, base: code && R.base?.(code), on, title: why || title, click: go(then),
+    how: () => { if (on) walkTutorialToggle(); else { go(then)(); walkTutorial(w); } }, whyNot: source && (({ w: v }) => ruleWhyNot(v, source)), at: w });  // (its ⓘ: how it works, picked first; greyed, why: rulesFor's, any mode's)
+  return [...R.cards.map(({ rule: r, source, name, pic, why, title }) => make(pic, name, r, here && r === R.now && !customOpen, () => { customOpen = false; if (r === R.now) renderModePicker(); else R.set(r); }, why, title, source)),
+    ...(R.typed ? [make(pixelIcon('..o..,..o..,ooooo,..o..,..o..'), 'Custom rule', mine ? R.now : '', mine, () => { customOpen = true; renderModePicker(); }, '', 'your own, typed')] : []),  // (never greyed: no source, no why)
     customRow];  // (its field right after it, the list's next rules after the field; always in it, shown by renderAntRow)
 }
 // The nearest of the menu that would allow what is greyed here (fits(w, size): whether mode w, at a size or the one its
-// button opens it at, takes it): this surface's other sizes (its size stepper: the 8 nearest tried), else its tilings, else
-// its space's shapes; none, none. A greyed button's enablers, highlighted by a click on it (see highlight)
+// button opens it at, takes it): this surface's other sizes (its size stepper: the 8 nearest tried), else the other side
+// (Grid | Cells), else its tilings, else its space's shapes; none, none. A greyed button's enablers, highlighted by a click on it (see highlight)
 const enablersFor = (fits) => {
-  const w = $('mode').value, sel = $('sphereF'), sizes = [...sel.options].map((o) => o.value), at = sel.selectedIndex;
-  if (!$('sizeRow').hidden && sizes.map((v, j) => [v, Math.abs(j - at)]).filter(([, d]) => d > 0).sort((a, b) => a[1] - b[1]).slice(0, 8).some(([v]) => fits(w, sizeOf(v)))) return [$('sizeBox')];
-  for (const box of ['torusTiles', 'navShapes']) {
+  const w = $('mode').value, mode = MODES[w], kind = !mode.plane && surfaceOf(mode), now = SPHERES[kind] && figureSize(w);
+  // (its sizes by construction, its mode's (see sizesOf), never the menu's: another surface's a moment after a tab changes)
+  if (now && sizesOf(kind, mode).filter((f) => f !== now).sort((a, b) => Math.abs(a - now) - Math.abs(b - now)).slice(0, 8).some((f) => fits(w, f))) return [$('sizeBox')];
+  for (const box of ['walkOn', 'torusTiles', 'navShapes']) {
     const takers = [...$(box).querySelectorAll('button[data-goes]')].filter((b) => b.offsetParent && b.dataset.goes !== w && fits(b.dataset.goes));
     if (takers.length) return takers;
   }
   return [];
 };
-// a rule greyed here: where its card is not (see rulesFor)
-const ruleEnablers = (name) => enablersFor((v) => rulesFor(v).some((c) => c.name === name && !c.why));
+// a rule card's greyed words in a mode (see rulesFor): its why there, or none there at all
+const ruleWhyNot = (v, source) => { const c = rulesFor(v).find((r) => r.source === source); return c ? c.why : 'not a rule here'; };
 // whether a rules list has a card for the rule in use (else it is your own: Custom rule)
 const ruleKnown = (R) => R.cards.some((c) => c.rule === R.now);
 const capitalised = (t) => t.replace(/^./, (c) => c.toUpperCase());
@@ -3597,7 +3610,7 @@ const kindsOf = (w) => (MODES[w].net ? ['walk'] : Object.keys(RULE_KINDS).filter
 function rulesFor(w) {
   const m = MODES[w];
   return kindsOf(w).flatMap((kind) => rulesOf(kind, m.net).flatMap((r) => {
-    const card = (rule, why = '', name = r.name, about = r.about) => [{ rule, name, pic: icon(r.pic ?? RULE_KINDS[kind].pic), why, title: [rule, about].filter(Boolean).join('\n') }];
+    const card = (rule, why = '', name = r.name, about = r.about) => [{ rule, source: `${kind} ${r.rule}`, name, pic: icon(r.pic ?? RULE_KINDS[kind].pic), why, title: [rule, about].filter(Boolean).join('\n') }];  // (source: the card's own, whatever its grid's words: its kind and its rule in RULES)
     if (kind === 'walk') { const words = ruleWords(r.rule), why = words.map((t) => walkWordWhy(m, t)).find(Boolean) ?? '';
       return m.lattice === 'sphere' && why ? [] : card(r.rule, why, r.name, words.map((t, d) => `${d} ${WORD_TEXT[t]}`).join(', ')); }  // (what it does: each digit's word)
     if (kind === 'worm') return card(r.rule);
@@ -3674,7 +3687,7 @@ function renderModePicker() {
       plane.torus = !plane.torus;
       compute();
     }, modeWhere(navPick(2, sh)));
-    b.dataset.goes = navPick(2, sh);  // (the mode it goes to: what a greyed rule waits for, see enablers)
+    b.dataset.goes = navPick(2, sh);  // (the mode it goes to: what a greyed button waits for, see enablersFor)
     if (again) { setTile(b, { on: true, again }); b.title += plane.torus ? '\nA torus · Clicked again: walls' : '\nWalls · Clicked again: a torus'; }  // (its words kept, then what a click does, as a card's: see card)
     return [b];
   }), ...(g === shapeGroup('square') && MODES[w].life && MODES[w].plane ? [spaceTimeTile] : [])];  // (Stacks: Life on squares')
@@ -3710,7 +3723,7 @@ function renderModePicker() {
         $('mode').value = same(f);
         $('mode').dispatchEvent(new Event('change'));
       }, f === here && turns ? `${capitalised(F.tabs[tabOf(f, true)][4].slice(shape.length + 2))}: a click turns it${isTurned ? ' back' : ''}` : modeWhere(same(f)), { again: f === here && turns, byDefault: f === F.tabs[0][0] ? 'yes' : '', turn: tilesTurn(shownSurface(MODES[same(f)].sphere, f === here && isTurned)) });  // its picture as its tiles lie (a torus's, a strip's alike: clockwise, as the pictures laid on it)
-      b.dataset.goes = same(f);  // (the mode it goes to: what a greyed rule waits for, see enablers)
+      b.dataset.goes = same(f);  // (the mode it goes to: what a greyed button waits for, see enablersFor)
       return [b];
     }), ...(F.tabs.some(([, tu]) => tu) ? [tile({ pic: icon('pivot'), text: 'Turned', toggle: true, byDefault: 'off', greyed: 'on a tiling with no other way round (a block rule: none its blocks come round)', on: isTurned, can: turns,
       title: turns ? F.tabs[tabOf(here, true)][4] : 'The tiling turned, its rows another way round', click: turn })] : []));
@@ -3743,12 +3756,10 @@ function renderModePicker() {
   $('walkRuleHow').hidden = !walkTutorialFits(w);
   // its tabs (see walkOn): each picked where it is, greyed where there is none (why, in its tooltip)
   const side = (b, s, word, none) => {
-    const there = alone ? (s === 'cells' ? w : null) : sides.includes(s) ? navPick(4, s) : null, here = alone ? s === 'cells' : NAV[w][4] === s;
-    // a walk by a rule: its other side greyed where the rule cannot go (a diagonal along the grid), the word why
-    const why = there && MODES[there].net && !walkWordsOf(there, walkRules[walkKey(MODES[there])]) ? ruleWords(walkRules[walkKey(MODES[there])]).map((t) => walkWordWhy(MODES[there], t)).find(Boolean) : '';
     b.querySelector('span').textContent = word;
-    setTile(b, { on: here, can: !!there && !why, greyed: why || none });
-    b.enablers = () => enablersFor((v) => walkSidesOf(v).includes(s));  // (greyed: the tilings, the shapes it is on)
+    setTile(b, { on: alone ? s === 'cells' : NAV[w][4] === s, greyed: none, whyNot: ({ w: v }) => sideWhyNot(v, s, none) });
+    const there = walksThere(w).find((u) => NAV[u][4] === s);
+    if (there) b.dataset.goes = there; else delete b.dataset.goes;  // (the mode it goes to: what a greyed button waits for, see enablersFor)
   };
   const cellsWord = space === '3D' ? 'Cube' : 'Cells';
   side($('walkOnGrid'), 'grid', 'Grid', creatures ? 'the worm, on triangles only' : 'not on the grid');
@@ -11191,10 +11202,16 @@ const figureTurns = (kind) => ROSETTES[kind]?.[0] ?? { ammann: 8, rhombs12: 12, 
 const colourFair = (K, f = pickedFigure()) => { const { mode, g } = f; return colourFairOwn(K, f) || (!g?.torus && !g?.globe && !APERIODIC[mode?.plane] && !solidCounts(mode?.sphere) && (([8, 10, 12].includes(K) && colourFairOwn(K / 2, f)) || (K === 9 && colourFairOwn(3, f) && !colourFairOwn(6, f)))); };
 // The figure picked, its colours judged on: the tab's mode and its mesh at the size picked (a surface's; none on the
 // plane), known by construction, never the walk shown's (another while this one is made, none at first)
-// (another mode's, w: as its button would open it, at size or the one it opens at, see sizeAt)
+// (another mode's, w: as its button would open it, at size or the one it opens at, see figureSize)
 const pickedFigure = (w = $('mode').value, size = null) => {
   const mode = MODES[w], kind = !mode.plane && surfaceOf(mode);
-  return { mode, g: kind && SPHERES[kind] ? SPHERES[kind].mesh(size ?? (w === $('mode').value ? sphereSize() : sizeAt(kind, mode.initial, mode))) : null };
+  return { mode, g: kind && SPHERES[kind] ? SPHERES[kind].mesh(size ?? figureSize(w)) : null };
+};
+// a surface mode's size: the one in the menu where the menu holds its surface's sizes (the tab's, once filled), else the one
+// it opens at (see sizeAt: another mode's, or the tab's a moment after it changed, its menu still the surface before's)
+const figureSize = (w) => {
+  const mode = MODES[w], kind = surfaceOf(mode);
+  return w === $('mode').value && $('sphereF').dataset.kind?.split(' ')[0] === kind ? sphereSize() : sizeAt(kind, mode.initial, mode);
 };
 const colourFairOwn = (K, { mode, g } = pickedFigure()) => {
   const kind = mode?.plane;
@@ -11230,7 +11247,7 @@ function renderColours() {
   if (walkTeamsHere(w)) { $('colourBlocks').replaceChildren(...walkTeamTiles(w)); return; }
   $('colourBlocks').replaceChildren(...COLOUR_STEPS.map((k) => tile({ pic: colourBlock(k), text: COLOUR_STEP_NAMES[k],
     title: `${k === 1 ? 'One colour: alive or dead' : `${k} colours: ${LIFE_COLOUR_NAMES.slice(0, k).join(', ')}`}${colourMissing(k) ? ' · a colour gone can come back: a tie, the missing one born' : ''}`,
-    on: k === lifeColours, can: coloursFit(k), enablers: () => enablersFor((v, size) => coloursFit(k, pickedFigure(v, size))), mark: colourMissing(k), byDefault: k === 1 ? 'yes' : '', greyed: k > 1 ? 'where the shape has no parts alike for so many colours' : '', click: () => { if (k !== lifeColours) { coloursPicked = lifeColours = k; applyDefaults('colours'); compute(); } } })),  // (Trail: on in Solo, off in colours, at first)
+    on: k === lifeColours, whyNot: ({ w, size }) => (coloursFit(k, pickedFigure(w, size)) ? '' : 'where the shape has no parts alike for so many colours'), mark: colourMissing(k), byDefault: k === 1 ? 'yes' : '', greyed: k > 1 ? 'where the shape has no parts alike for so many colours' : '', click: () => { if (k !== lifeColours) { coloursPicked = lifeColours = k; applyDefaults('colours'); compute(); } } })),  // (Trail: on in Solo, off in colours, at first)
     // Mixed, a switch: the colours' cells mixed at random in one place, as one colour's (greyed in one colour and where no zone mixes, see mixable)
     tile({ pic: `<svg viewBox="0 0 4 4" aria-hidden="true">${[[0, 0], [2, 0], [1, 1], [3, 1], [0, 2], [2, 2], [1, 3], [3, 3]].map(([x, y], i) => `<rect x="${x}" y="${y}" width="1" height="1" fill="${LIFE_COLOURS[[0, 4, 2, 6, 5, 1, 7, 3][i]]}"/>`).join('')}</svg>`, text: 'Mixed',
       title: 'The colours placed as one colour is (one patch, a soup), each cell a colour at random', toggle: true, byDefault: 'off', greyed: 'in Solo, in Replicators, Text and Draw, and in the hunt zones that lay each colour\'s own picture or part (Icon, Punk, Emoji, Famous, Anywhere, Realm, Mirror)', on: colourMixed(), can: lifeColours > 1 && mixable(hunt.zone), click: () => { colourMix = !colourMix; compute(); } }),

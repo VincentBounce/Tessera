@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.505';
+const VERSION = '0.4.506';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -8616,6 +8616,10 @@ function huntCard({ light, title, detail, on, pick }) {
 }
 // a hunt's light by a ratio q against its thresholds [green from, orange from]: its colour and its word
 const huntLight = (q, [hi, lo], [good, some, poor]) => (q >= hi ? ['#30a46c', good] : q >= lo ? ['#f0a020', some] : ['#e5484d', poor]);
+// the orders of k walkers' numbers, each its walkers' places in turn (k!); a battle hunt's count of them, its walkers' a group's
+// images (Symmetric, Centred): (k − 1)!, A on the smallest, the others turned round it the same battle (see startBattleHunt)
+const permutationsOf = (k) => (k === 0 ? [[]] : permutationsOf(k - 1).flatMap((o) => Array.from({ length: k }, (_, i) => [...o.slice(0, i), k - 1, ...o.slice(i)])));
+const huntOrderCount = (K = walkTeams) => permutationsOf(K).length / (startsWayNow() === 'random' ? 1 : K);
 const firstStop = (r) => (r.stop === Infinity ? 'no stop' : `first stop ${formatNumber(r.stop)}`);
 const HUNT_RANKS = {
   longest: ['goalLongest', 'Longest', 'The hunt keeps the longest battles: the ended ones, and the first still on as the digits end', 'Hunt the longest battles', '', null,
@@ -8644,7 +8648,7 @@ function battleWorkerMain() {  // (run in a worker: its setup, then its battles)
   let game = null;
   onmessage = ({ data: m }) => {
     if (m.setup) { const s = m.setup; game = { ...s, cards: new Map(s.cards), S: { step: surfaceStep(s.g, s.grid, s.net, s.acts) } }; return; }
-    const { g, grid, pen, base, n, cards, fixed, S } = game, digits = fixed ?? m.fs.map((f) => cards.get(f) ?? rootDigits(Number(f.slice(5, -1)), base, n));
+    const { g, grid, pen, base, n, cards, fixed, S } = game, digits = fixed ? m.order.map((i) => fixed[i]) : m.fs.map((f) => cards.get(f) ?? rootDigits(Number(f.slice(5, -1)), base, n));  // (the shown numbers: in the order drawn)
     postMessage({ id: m.id, ...huntScore(battlePlayer(g, grid, S, m.placed, digits, pen)) });
   };
 }
@@ -8670,17 +8674,20 @@ async function startBattleHunt() {
   const numbers = [...BATTLE_CARDS, ...DRAWN_ROOTS], N = numbers.length, cards = new Map(BATTLE_CARDS.map((f) => [f, knownDigits(formulaOf(f), base, n)]));
   const shownDigits = (f, s) => (s ? knownDigits(formulaOf(f), base, n) : Uint8Array.from([...head, ...frac]));
   const starts = huntStarts() ? (way === 'symmetric' ? modeStarts().length : Infinity) : 1;  // (Random's draws: no end)
-  const sets = (huntVary.formulas ? Array.from({ length: K }, (_, j) => N - j).reduce((a, b) => a * b) : 1) * starts;
+  // the numbers' orders, A's place first: where the walkers start as one group's images (Symmetric, Centred), K orders turned round
+  // them are one battle seen turned, A the smallest of them its one (see huntOrderCount); Random's, every order its own
+  const round = way !== 'random', orders = permutationsOf(K).filter((o) => !round || o[0] === 0);
+  const sets = (huntVary.formulas ? Array.from({ length: K }, (_, j) => N - j).reduce((a, b) => a * b) / (round ? K : 1) : orders.length) * starts;
   // the next battle not fought yet: its numbers and its start (none left: null)
   let id = 0, drawn = 0;
   const next = () => {
     while (battleHunt.tried.size < sets) {
-      const picks = huntVary.formulas ? Array.from({ length: K }, () => Math.floor(Math.random() * N)) : [], at = !huntStarts() ? {} : way === 'symmetric' ? { n: 1 + Math.floor(Math.random() * starts) } : { seed: freshDraw() };
+      const picks = huntVary.formulas ? Array.from({ length: K }, () => Math.floor(Math.random() * N)) : orders[Math.floor(Math.random() * orders.length)], at = !huntStarts() ? {} : way === 'symmetric' ? { n: 1 + Math.floor(Math.random() * starts) } : { seed: freshDraw() };
       const key = `${picks.join()}|${at.n ?? at.seed ?? ''}`;
-      if (new Set(picks).size < picks.length || battleHunt.tried.has(key)) continue;
+      if (new Set(picks).size < picks.length || (huntVary.formulas && round && picks.some((j) => j < picks[0])) || battleHunt.tried.has(key)) continue;  // (an order turned: fought already)
       battleHunt.tried.add(key);
       const placed = battleStartsOrSay(g, walkStart(g, mode, at.n), grid, K, at.seed);
-      if (placed) return { id: id++, fs: huntVary.formulas ? picks.map((j) => numbers[j]) : shownFs, at, placed };  // (a start on an axis: no battle there)
+      if (placed) return { id: id++, fs: picks.map((j) => (huntVary.formulas ? numbers : shownFs)[j]), order: picks, at, placed };  // (a start on an axis: no battle there)
     }
     return null;
   };
@@ -8694,7 +8701,7 @@ async function startBattleHunt() {
   };
   const say = () => { drawn = performance.now(); battleHunt.status = `${formatNumber(battleHunt.tried.size)} battles${sets < Infinity ? ` of ${formatNumber(sets)}` : ''} fought · ${formatNumber(battleHunt.endedCount)} ended`; renderBattleHunt(); };
   const sent = new Map(), setup = { g: meshData(g), grid, net: mode.net, acts: surfaceActs(mode), pen: battleRuleInUse(), base, n, cards: [...cards], fixed: huntVary.formulas ? null : shownFs.map(shownDigits) };
-  const feed = (w) => { const b = next(); if (b) { sent.set(b.id, b); w.postMessage({ id: b.id, fs: b.fs, placed: b.placed }); } };
+  const feed = (w) => { const b = next(); if (b) { sent.set(b.id, b); w.postMessage({ id: b.id, fs: b.fs, order: b.order, placed: b.placed }); } };
   for (let j = 0; j < BATTLE_WORKERS; j++) {
     const w = battleWorker();
     run.workers.push(w);
@@ -8742,11 +8749,12 @@ function renderBattleHunt() {
   $('battleHuntVary').replaceChildren(vary('formulas', 'Formulas', 'The hunt draws the walkers\' numbers (else those in the fields)'),
     vary('starts', 'Starts', 'The hunt draws the start too: Symmetric\'s number, Random\'s draw (else the start shown)', startsWayNow() !== 'centred', 'in Centred: its centres all alike, nothing to vary'));
   $('battleHuntRank').replaceChildren(tileGroup(Object.entries(HUNT_RANKS).map(rank), true));
-  setTile($('battleHuntBtn'), { greyed: !huntVary.formulas && !huntStarts() ? 'It varies nothing: Formulas and Starts are off.' : '' });
+  setTile($('battleHuntBtn'), { greyed: !huntVary.formulas && !huntStarts() && huntOrderCount() < 2 ? 'It varies nothing: Formulas and Starts are off, and a duel has one order.' : '' });
   $('battleHuntBtn').title = 'Battles fought one after another, each set once: what the switches above vary drawn at random';
   $('battleHuntBtn').dataset.limits = [`Each battle up to ${formatNumber(digitsNeeded())} steps (${STEPS_GLYPH}, the length asked)`,
     huntVary.formulas && `Numbers: the ${BATTLE_CARDS.length} cards and the roots √n, n up to 9,999 (${formatNumber(BATTLE_CARDS.length + DRAWN_ROOTS.length)})`,
     huntStarts() && (startsWayNow() === 'symmetric' ? `Starts: Symmetric's ${formatNumber(modeStarts()?.length ?? 1)}` : 'Starts: Random\'s draws, no end'),
+    walkTeams > 2 && `Orders: each set of numbers in its ${formatNumber(huntOrderCount())} orders${startsWayNow() === 'random' ? '' : ', A on the smallest (all of them turned one place round: the same battle, seen turned)'}`,
     'The 8 longest kept, and the first 8 still on as the digits end'].filter(Boolean).join('\n');
   $('battleHuntBtn').innerHTML = battleHunt.run ? `${icon('stop')} Stop hunt` : `${icon('search')} ${words}`;
   $('battleHuntStatus').textContent = battleHunt.status;

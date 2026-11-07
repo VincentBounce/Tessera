@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.398';
+const VERSION = '0.4.399';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -16424,7 +16424,7 @@ function gpuPipe(key, make) {
   return D.pipes.get(key);
 }
 const vertexAttribute = (shaderLocation, format, offset = 0) => ({ shaderLocation, format, offset });
-const vbuf = (arrayStride, attributes, stepMode = 'vertex') => ({ arrayStride, attributes, stepMode });
+const vertexLayout = (arrayStride, attributes, stepMode = 'vertex') => ({ arrayStride, attributes, stepMode });
 // the frame's own pictures, made again when the canvas's size changes: its 4 samples a pixel and its depths; Glass's two
 const gpuTargets = () => {
   const D = GPU.draw, { device } = D, w = gpuCanvas.width, h = gpuCanvas.height;
@@ -16568,9 +16568,9 @@ function gpuSurface(paint, path) {
   let slot = 0;
   const slotOf = (more) => gpuView(D.words, slot++, depth, more);
   const enc = device.createCommandEncoder(), shadowSlot = slotOf({});
-  const tileBufs = [vbuf(12, [vertexAttribute(0, 'float32x3')]), vbuf(12, [vertexAttribute(1, 'float32x3')]), vbuf(4, [vertexAttribute(2, 'uint32')])];
+  const tileBufs = [vertexLayout(12, [vertexAttribute(0, 'float32x3')]), vertexLayout(12, [vertexAttribute(1, 'float32x3')]), vertexLayout(4, [vertexAttribute(2, 'uint32')])];
   gpuShadows(enc, shadowSlot, (p) => {
-    p.setPipeline(gpuDepthPipe('depthTileV', [vbuf(12, [vertexAttribute(0, 'float32x3')])]));
+    p.setPipeline(gpuDepthPipe('depthTileV', [vertexLayout(12, [vertexAttribute(0, 'float32x3')])]));
     p.setVertexBuffer(0, D.pos); p.setIndexBuffer(D.fan, 'uint32'); p.drawIndexed(D.fanCount);
   }, `${D.geoGen}|${lightDir()}|${camera.r}|${depth}|${lamp()}|${cutOn() && cutAxis}`);
   // the path's segments, made once a walk (a battle along the grid: all its walkers' steps, see pathSegments); drawn, the
@@ -16601,20 +16601,20 @@ function gpuSurface(paint, path) {
     if (open) tiles([...rgbCached(undersideColour()).map((c) => c / 255), 1], front === 'back' ? 'front' : 'back');
     if ($('showGrid').checked && view.scale > 6) {
       rp.setPipeline(gpuDrawPipe('edge', { vertex: 'edgeV', fragment: 'edgeF', topology: 'line-list', pass, blend: BLEND_OVER, writes: false,  // (a decal, as the path)
-        buffers: [vbuf(12, [vertexAttribute(0, 'float32x3')]), vbuf(12, [vertexAttribute(1, 'float32x3')]), vbuf(12, [vertexAttribute(2, 'float32x3')])] }));
+        buffers: [vertexLayout(12, [vertexAttribute(0, 'float32x3')]), vertexLayout(12, [vertexAttribute(1, 'float32x3')]), vertexLayout(12, [vertexAttribute(2, 'float32x3')])] }));
       rp.setBindGroup(0, gpuGroup(), [slotOf({ glass: pass, cut, edge: edgeAlpha(sh), edgeRgb: EDGE_RGB.map((c) => c / 255), bias: edgeBias, both: both ? 1 : 0 })]);
       rp.setVertexBuffer(0, D.ePos); rp.setVertexBuffer(1, D.eN1); rp.setVertexBuffer(2, D.eN2); rp.draw(D.eCount);
     }
     if (ranges.some(([a, b]) => b > a)) {
       rp.setPipeline(gpuDrawPipe('ribbon', { vertex: 'ribbonV', fragment: 'ribbonF', topology: 'triangle-strip', pass, cull: both ? 'none' : 'back', writes: false,  // (a decal on the tiles: pulled over them, no depth of its own, a head over it, see ogiveOf)
-        buffers: [vbuf(8, [vertexAttribute(0, 'float32x2')]), vbuf(44, [vertexAttribute(1, 'float32x3', 0), vertexAttribute(2, 'float32x3', 12), vertexAttribute(3, 'float32x3', 24), vertexAttribute(4, 'float32', 36), vertexAttribute(5, 'float32', 40)], 'instance')] }));
+        buffers: [vertexLayout(8, [vertexAttribute(0, 'float32x2')]), vertexLayout(44, [vertexAttribute(1, 'float32x3', 0), vertexAttribute(2, 'float32x3', 12), vertexAttribute(3, 'float32x3', 24), vertexAttribute(4, 'float32', 36), vertexAttribute(5, 'float32', 40)], 'instance')] }));
       rp.setBindGroup(0, gpuGroup(), [slotOf({ glass: pass, cut, N: Math.max(1, walk.n), halfW: surfaceLineWidth() / 2 / view.scale, bias: pathBias, colour: lines ? 3 : 0 })]);
       rp.setVertexBuffer(0, D.quad); rp.setVertexBuffer(1, D.ribbon);
       for (const [a, b] of ranges) if (b > a) rp.draw(4, b - a, 0, a);
     }
     if (!heads.length) return;  // the heads: ogives lit as the cubes, each its colour (an instance), half under the tiles
     rp.setPipeline(gpuDrawPipe('cube', { vertex: 'cubeV', fragment: 'shadowedF', shadowed: true, pass,
-      buffers: [vbuf(24, [vertexAttribute(0, 'float32x3', 0), vertexAttribute(1, 'float32x3', 12)]), vbuf(12, [vertexAttribute(2, 'float32x3')], 'instance'), vbuf(4, [vertexAttribute(3, 'unorm8x4')], 'instance')] }));
+      buffers: [vertexLayout(24, [vertexAttribute(0, 'float32x3', 0), vertexAttribute(1, 'float32x3', 12)]), vertexLayout(12, [vertexAttribute(2, 'float32x3')], 'instance'), vertexLayout(4, [vertexAttribute(3, 'unorm8x4')], 'instance')] }));
     rp.setBindGroup(0, gpuGroup(), [slotOf({ glass: pass, cut, alpha: GLASS_ALPHA })]); rp.setBindGroup(1, D.shadow.group);
     rp.setVertexBuffer(0, D.headMesh); rp.setVertexBuffer(1, D.headAt); rp.setVertexBuffer(2, D.headCol);
     heads.forEach((_, j) => rp.draw(headFrom[j + 1] - headFrom[j], 1, headFrom[j], j));
@@ -16700,7 +16700,7 @@ function gpuFlat(to) {
   let slot = 0;
   const enc = device.createCommandEncoder(), rp = gpuPass(enc, null, [0, 0, 0, 0], false), colour = mode === 'digit' ? 2 : 0;
   const tiles = (buffer, tpl, count, alpha) => {
-    rp.setPipeline(gpuDrawPipe('flatTiles', { vertex: 'flatTilesV', fragment: 'colF', blend: BLEND_PRE, depth: false, buffers: [vbuf(16, [vertexAttribute(0, 'float32x4')], 'instance')] }));
+    rp.setPipeline(gpuDrawPipe('flatTiles', { vertex: 'flatTilesV', fragment: 'colF', blend: BLEND_PRE, depth: false, buffers: [vertexLayout(16, [vertexAttribute(0, 'float32x4')], 'instance')] }));
     rp.setBindGroup(0, gpuGroup(), [gpuView(D.words, slot++, 1, { colour, tpl, alphaF: alpha, bright: 1 })]);
     rp.setVertexBuffer(0, buffer); rp.draw(12, count);
   };
@@ -16708,7 +16708,7 @@ function gpuFlat(to) {
   if (cellCount) tiles(D.flatCells, D.cellTpl, cellCount, shows('cells') && line ? 0.15 : 1);
   if (line && to > 0) {
     rp.setPipeline(gpuDrawPipe('flatPath', { vertex: 'flatPathV', fragment: 'colF', topology: 'triangle-strip', blend: BLEND_PRE, depth: false,
-      buffers: [vbuf(8, [vertexAttribute(0, 'float32x2')]), vbuf(8, [vertexAttribute(1, 'float32x2')], 'instance'), vbuf(8, [vertexAttribute(2, 'float32x2')], 'instance'), vbuf(4, [vertexAttribute(3, 'uint32')], 'instance')] }));
+      buffers: [vertexLayout(8, [vertexAttribute(0, 'float32x2')]), vertexLayout(8, [vertexAttribute(1, 'float32x2')], 'instance'), vertexLayout(8, [vertexAttribute(2, 'float32x2')], 'instance'), vertexLayout(4, [vertexAttribute(3, 'uint32')], 'instance')] }));
     rp.setBindGroup(0, gpuGroup(), [gpuView(D.words, slot++, 1, { colour: cells ? 0 : colour, N: Math.max(1, rainbowLength()), loopFrom: walk.loop?.from ?? 0,
       period: closedLoop() ? walk.loop.period : 0, width: cells ? Math.max(0.6, Math.min(s * 0.12, 3)) : Math.max(0.6, Math.min(s * 0.3, 6)) })]);
     rp.setVertexBuffer(0, D.quad); rp.setVertexBuffer(1, D.flatPts, 0); rp.setVertexBuffer(2, D.flatPts, 8); rp.setVertexBuffer(3, D.flatKeys);
@@ -16736,12 +16736,12 @@ function gpuCubes(count, of, make, reach) {
   new Uint8Array(D.words).fill(0);
   const enc = device.createCommandEncoder(), slot = gpuView(D.words, 0, depth);
   gpuShadows(enc, slot, (p) => {
-    p.setPipeline(gpuDepthPipe('depthCubeV', [vbuf(24, [vertexAttribute(0, 'float32x3')]), vbuf(12, [vertexAttribute(1, 'float32x3')], 'instance')]));
+    p.setPipeline(gpuDepthPipe('depthCubeV', [vertexLayout(24, [vertexAttribute(0, 'float32x3')]), vertexLayout(12, [vertexAttribute(1, 'float32x3')], 'instance')]));
     p.setVertexBuffer(0, D.cube); p.setVertexBuffer(1, D.cubeAt); p.draw(verts, count);
   }, null);
   const rp = gpuPass(enc);
   rp.setPipeline(gpuDrawPipe('cube', { vertex: 'cubeV', fragment: 'shadowedF', shadowed: true,
-    buffers: [vbuf(24, [vertexAttribute(0, 'float32x3', 0), vertexAttribute(1, 'float32x3', 12)]), vbuf(12, [vertexAttribute(2, 'float32x3')], 'instance'), vbuf(4, [vertexAttribute(3, 'unorm8x4')], 'instance')] }));
+    buffers: [vertexLayout(24, [vertexAttribute(0, 'float32x3', 0), vertexAttribute(1, 'float32x3', 12)]), vertexLayout(12, [vertexAttribute(2, 'float32x3')], 'instance'), vertexLayout(4, [vertexAttribute(3, 'unorm8x4')], 'instance')] }));
   rp.setBindGroup(0, gpuGroup(), [slot]); rp.setBindGroup(1, D.shadow.group);
   rp.setVertexBuffer(0, D.cube); rp.setVertexBuffer(1, D.cubeAt); rp.setVertexBuffer(2, D.cubeCol); rp.draw(verts, count);
   rp.end();
@@ -16792,13 +16792,13 @@ function gpuPlane(paint) {
   new Uint8Array(D.words).fill(0);
   const turn = { turnC: Math.cos(planeTurn()), turnS: Math.sin(planeTurn()) }, enc = device.createCommandEncoder(), rp = gpuPass(enc, null, [0, 0, 0, 0], false);
   const cells = (col, slot) => {
-    rp.setPipeline(gpuDrawPipe('planeCells', { vertex: 'planeCellsV', fragment: 'colF', depth: false, buffers: [vbuf(8, [vertexAttribute(0, 'float32x2')]), vbuf(4, [vertexAttribute(1, 'uint32')])] }));
+    rp.setPipeline(gpuDrawPipe('planeCells', { vertex: 'planeCellsV', fragment: 'colF', depth: false, buffers: [vertexLayout(8, [vertexAttribute(0, 'float32x2')]), vertexLayout(4, [vertexAttribute(1, 'uint32')])] }));
     rp.setBindGroup(0, gpuGroup(col), [gpuView(D.words, slot, 1, turn)]);
     rp.setVertexBuffer(0, D.planePos); rp.setVertexBuffer(1, D.planeIds); rp.setIndexBuffer(D.planeTris, 'uint32'); rp.drawIndexed(D.planeCount);
   };
   cells(D.planeBase, 0);
   if (outline) {
-    rp.setPipeline(gpuDrawPipe('planeLines', { vertex: 'planeLinesV', fragment: 'colF', topology: 'line-list', blend: BLEND_PRE, depth: false, buffers: [vbuf(8, [vertexAttribute(0, 'float32x2')])] }));
+    rp.setPipeline(gpuDrawPipe('planeLines', { vertex: 'planeLinesV', fragment: 'colF', topology: 'line-list', blend: BLEND_PRE, depth: false, buffers: [vertexLayout(8, [vertexAttribute(0, 'float32x2')])] }));
     rp.setBindGroup(0, gpuGroup(), [gpuView(D.words, 1, 1, { ...turn, plain: [...EDGE_RGB.map((c) => (c / 255) * EDGE_ALPHA), EDGE_ALPHA] })]);
     rp.setVertexBuffer(0, D.planeEdges); rp.draw(D.planeLines);
   }

@@ -272,7 +272,9 @@ async function coldLike(fail, what) {
   for (let t = 0; f.contentWindow.eval('busy') && t < 600; t++) await wait(100);  // (its digits still computed: as the page's own look waits, see checker)
   const a = linked(), b = offered(f.contentWindow);
   f.remove();
-  const diff = [...new Set([...Object.keys(a), ...Object.keys(b)])].filter((k) => a[k] !== b[k]).map((k) => `${k}: «${a[k]}» here, «${b[k]}» cold`);
+  // (what a link cannot hold, left out: a reversible one's return found by playing it; Draw's tools after a generation played)
+  const unheld = new Set([...(walk.life?.margolus && walk.life.stable ? ['#returnSection'] : []), ...(drawing && cur > 0 ? ['#startSection'] : [])]);
+  const diff = [...new Set([...Object.keys(a), ...Object.keys(b)])].filter((k) => a[k] !== b[k] && !unheld.has(k)).map((k) => `${k}: «${a[k]}» here, «${b[k]}» cold`);
   if (diff.length) fail(`${what} ${location.hash}: ${diff.join('; ')}`);
 }
 async function fuzz(fail, count, seedv, cold = false) {

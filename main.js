@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.539';
+const VERSION = '0.4.540';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -7752,7 +7752,7 @@ const BATTLE_LINED = ['landGrid', 'landGrid3', 'landStop', 'landMerge'];
 // walkers as its turns allow at its size (see battleCounts: its walkers start alike, see battleStarts)
 const battleMode = (w) => NAV[w]?.[0] === 'Walk' && MODES[w].lattice === 'sphere' && !!SPHERES[surfaceOf(MODES[w])];
 // a battle at mode w with so many teams (at a size, or its own), the one in use's (battleOn): its teams a count its surface takes
-const battleAt = (w, teams = walkTeams, size = undefined) => teams > 1 && battleCounts(w, size).includes(teams);
+const battleAt = (w, teams = walkTeams, size = undefined) => battleFits(w, teams, size);
 const battleOn = () => battleAt($('mode').value);
 // Solo, Duel, Trio… (those the solid has no group of turns for greyed, see battleCounts), under the size and start
 // of a walk on a surface (Life's tiles, see renderColours); then a battle's numbers in its Start section
@@ -8045,22 +8045,23 @@ const battleGroups = (g, K, enough = Infinity, good = null) => {
   const maps = (G) => { const F = G.map((M) => turnMap(g, M)); return F.every(Boolean) ? F : null; };
   return [...(g.torus ? [ringGroup(g, K)] : []), ...rotationGroups(g, K, enough, (G) => !!maps(G) && (!good || good(maps(G)))).map(maps)].filter((G) => G && (!good || good(G)));
 };
-// the teams a battle can have on mode w's surface (see battleMode), from its start: each K its surface has a group of K
-// for that sets them apart from A's start (see battleGroups, startSpread), a ring's judged on its mesh made for K (its
-// length its walkers', as Life's colours', see ringColours); none elsewhere
+// whether a battle on mode w's surface (see battleMode) can have K teams, from its start: its surface has a group of K that
+// sets them apart from A's start (see battleGroups, startSpread), a ring's judged on its mesh made for K (its length its
+// walkers', as Life's colours', see ringColours); none elsewhere. One count asked, one count made (a Möbius strip's: a mesh
+// each), the menu's search asking one team tile's at every mode round
 // (at a size, or its mode's: the tab's the menu's only, none before it holds its surface: a strip's sizes depend on its walkers
 // (ringColours, by battleOn), so sizeAt for the tab would come back here)
-const battleCounts = (w, size = battleMode(w) && (w === $('mode').value ? menuSizeOf(w) : figureSize(w)), j = startAsked()) => {  // (j: A's start's number asked, its list's at most)
-  if (!size || !battleMode(w)) return [];  // (none, or the tab's size not set yet: a page opening)
+const battleFits = (w, K, size = battleMode(w) && (w === $('mode').value ? menuSizeOf(w) : figureSize(w)), j = startAsked()) => {  // (j: A's start's number asked, its list's at most)
+  if (K < 2 || !size || !battleMode(w)) return false;  // (none, or the tab's size not set yet: a page opening)
   // a ring's by its kind, known by construction (its length made for its walkers, see ringColours): a torus takes every
   // count (its shift of 1/K round it), a Klein bottle a Duel only (its gluing: its half turn, see ringGroup); a Möbius strip's tried
   const ring = SPHERES[surfaceOf(MODES[w])].columns && familyOf(w)?.F.name;
-  if (ring === FOLDS.torus.name) return COLOUR_STEPS.filter((K) => K > 1);
-  if (ring === FOLDS.klein.name) return [2];
+  if (ring === FOLDS.torus.name) return true;
+  if (ring === FOLDS.klein.name) return K === 2;
   const mode = MODES[w], kind = surfaceOf(mode), sphere = SPHERES[kind], memo = (battleCountsMemo[`${w}|${size}|${j}`] ??= {});  // (the start asked: its count made by each K's mesh, see walkStart)
   // K's: a closed solid's for any start, or none where it has no group of K (no mesh, see solidTeamCounts), else a group of K setting A's start's walkers apart,
   // on its mesh at the size picked (a Möbius strip's made for K, see ringColours)
-  const fits = (K) => {
+  const fits = () => {
     const solid = !sphere.columns && solidTeamCounts(kind, mode);
     if (solid && (solid.any.includes(K) || !solid.some.includes(K))) return solid.any.includes(K);  // (no group of K: none)
     teamsBuilding = sphere.columns ? K : null;
@@ -8070,9 +8071,11 @@ const battleCounts = (w, size = battleMode(w) && (w === $('mode').value ? menuSi
         || (g.mobius && rotationGroups(g, K, 1, (G) => { const F = G.map((M) => turnMap(g, M)); return F.every(Boolean) && apart(F) > 1e-9; }).length > 0);  // (its turns, see battleGroups)
     } finally { teamsBuilding = null; }
   };
-  return COLOUR_STEPS.filter((K) => K > 1 && (memo[K] ??= fits(K)));
+  return (memo[K] ??= fits());
 };
 const battleCountsMemo = {};
+// the teams a battle can have on mode w's surface: every count that fits (see battleFits)
+const battleCounts = (w, size, j) => COLOUR_STEPS.filter((K) => battleFits(w, K, size, j));
 // A closed solid's team counts, once a solid, its turns the same at every size (see surfaceRotations): some, K it has a
 // group of; any, K whatever its start: every axis of its groups of K has one of them none of whose turns is round it (a
 // start's point lies on one axis at most, so that group leaves it apart; the icosahedron's: all its orders; the cube's: not
@@ -8085,7 +8088,7 @@ const solidTeamCounts = (kind, mode) => (solidTeamCountsMemo[kind] ??= (() => {
 })());
 // a team count's, a count of colours' greyed words at a mode (at a size, or the one it opens at): one source, their tiles'
 // and the menu's graph's (see choicesAt)
-const teamsWhyNot = (k, v, size = null, j = startAsked()) => (k === 1 || battleCounts(v, size ?? (battleMode(v) && figureSize(v)), j).includes(k) ? '' : TEAMS_WHERE);
+const teamsWhyNot = (k, v, size = null, j = startAsked()) => (k === 1 || battleFits(v, k, size ?? (battleMode(v) && figureSize(v)), j) ? '' : TEAMS_WHERE);
 const coloursWhyNot = (k, w, size = null) => (coloursFit(k, pickedFigure(w, size)) ? '' : 'The shape has no parts alike for so many colours.');
 const TEAMS_WHERE = 'At this size and start, no group of the surface\'s symmetries sets so many walkers apart, each walking as A. Try another size or start.';  // (a team count's greyed words)
 // A surface's turns in space that lay its mesh onto itself (each a matrix, the identity among them), once a mesh: a closed

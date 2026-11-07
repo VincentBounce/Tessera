@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.500';
+const VERSION = '0.4.501';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -716,20 +716,20 @@ const BANDS = 256;
 // The walk's colours, per theme (see applyTheme): the rainbow darker on a light page, the digits'
 // grey instead of white, the one colour a deeper amber
 const PALETTES = {
-  // unlit: the surfaces' tiles not walked (ocean: Ocean's, a sea blue; lands: its walkers', a map's green, yellow, ochre, lime, ice white); trail: a Life cell just dead, fading to unlit; alive: Life in one colour
+  // unlit: the surfaces' tiles not walked (ocean: Ocean's, a sea blue; lands: its walkers', a map's green, yellow, ochre, lime, ice white); dying: a Life cell's dying stages (a Generations rule's), to unlit; trail: Trail, a Life cell just dead, fading to unlit in amber; alive: Life in one colour
   // directions: each step's colour by where it goes (its arrow), the same in every walk: left blue, straight
   // on (north) gold, right pink, back (south) turquoise, then the diagonals (↖ green, ↗ magenta, ↘ orange,
   // ↙ violet: the opposite turns far apart) and up, down;
   // digits: for the walks whose digits are no direction, in the same colours; grey: a spiral's 0
   dark: { light: 60, digits: ['#4f7bff', '#f0609f', '#f2b630', '#2fbdb7', '#9270f5', '#7fc244', '#f28042', '#d466f0'], grey: '#e6edf3', mono: '#f0b429',
           directions: { '←': '#4f7bff', '↑': '#f2b630', '→': '#f0609f', '↓': '#2fbdb7', '↖': '#7fc244', '↗': '#d466f0', '↘': '#f28042', '↙': '#9270f5', '⊙': '#f06b6b', '⊗': '#45c8f0' },
-          unlit: '#1f2630', ocean: '#1f63b8', lands: ['#2ea833', '#e0b812', '#e87a18', '#a3d01a', '#e8edf0'], trail: '#6b7f99', fade: '#c98f1f', alive: '#e6edf3', edgeRgb: [255, 255, 255], edgeAlpha: 0.25, shade: 0.6, fadeEdges: true },
+          unlit: '#1f2630', ocean: '#1f63b8', lands: ['#2ea833', '#e0b812', '#e87a18', '#a3d01a', '#e8edf0'], dying: '#6b7f99', trail: '#c98f1f', alive: '#e6edf3', edgeRgb: [255, 255, 255], edgeAlpha: 0.25, shade: 0.6, fadeEdges: true },
   light: { light: 48, digits: ['#2f5bea', '#e8438a', '#e0a100', '#13a8a2', '#7c4dff', '#5fa82a', '#f0702a', '#c03fe0'], grey: '#6e7781', mono: '#bf8700',
            directions: { '←': '#2f5bea', '↑': '#e0a100', '→': '#e8438a', '↓': '#13a8a2', '↖': '#5fa82a', '↗': '#c03fe0', '↘': '#f0702a', '↙': '#7c4dff', '⊙': '#e5484d', '⊗': '#1aa3d6' },
-           unlit: '#eef1f5', ocean: '#2a7de1', lands: ['#34c23a', '#f7cf1a', '#ff8a1f', '#b5e61d', '#ffffff'], trail: '#7d8896', fade: '#c98a10', alive: '#1f2328', edgeRgb: [0, 0, 0], edgeAlpha: 0.11, shade: 0.35, fadeEdges: true, tileLift: 0.22 },
+           unlit: '#eef1f5', ocean: '#2a7de1', lands: ['#34c23a', '#f7cf1a', '#ff8a1f', '#b5e61d', '#ffffff'], dying: '#7d8896', trail: '#c98a10', alive: '#1f2328', edgeRgb: [0, 0, 0], edgeAlpha: 0.11, shade: 0.35, fadeEdges: true, tileLift: 0.22 },
 };
 const hexRgb = (c) => [1, 3, 5].map((i) => parseInt(c.slice(i, i + 2), 16));  // [r, g, b] of a #rrggbb colour (any CSS colour: see rgbOf)
-const GRADIENT = [], DIGIT_COLORS = [], LIFE_TRAIL = [], LIFE_FADE = [], DIRECTION_COLOURS = {};
+const GRADIENT = [], DIGIT_COLORS = [], LIFE_DYING = [], LIFE_TRAIL = [], DIRECTION_COLOURS = {};
 // Life's colours (civilisations), as bright as the walks' rainbow in each theme (its saturation and
 // lightness), in an order that keeps them apart: up to 8 (red, blue, gold, green, violet, cyan, magenta, orange: the
 // lime too near the green below 12); the 12 bring close ones (lime, pink, indigo, teal), in the
@@ -737,11 +737,11 @@ const GRADIENT = [], DIGIT_COLORS = [], LIFE_TRAIL = [], LIFE_FADE = [], DIRECTI
 // strip, 6 × 2 round a torus (the last pair next to the first), 3 × 4 on a square torus, 4 × 3 on the plane
 const LIFE_HUES = [2, 222, 48, 135, 275, 185, 318, 25, 90, 340, 245, 160], LIFE_COLOURS = [];
 let GREY;
-// the 8 shades of a dying Life cell (a Generations rule's stages), from the trail colour to the tile under it (unlit,
-// Ocean's sea); and of its trail once dead (Trail), in amber (PALETTE.fade, each theme its own), not a state
+// the 8 shades of a dying Life cell (a Generations rule's stages), from the dying colour to the tile under it (unlit,
+// Ocean's sea); and of its trail once dead (Trail), in amber (PALETTE.trail, each theme its own), not a state
 function lifeShades(under) {
   const b = hexRgb(under), shade = (c, f) => { const a = hexRgb(c); return `rgb(${[0, 1, 2].map((k) => Math.round(b[k] + (a[k] - b[k]) * f)).join(', ')})`; };
-  return { trail: Array.from({ length: 8 }, (_, i) => shade(PALETTE.trail, 1 - i / 8)), fade: Array.from({ length: 8 }, (_, i) => shade(PALETTE.fade, 1 - i / 8)) };
+  return { dying: Array.from({ length: 8 }, (_, i) => shade(PALETTE.dying, 1 - i / 8)), trail: Array.from({ length: 8 }, (_, i) => shade(PALETTE.trail, 1 - i / 8)) };
 }
 let PALETTE, MONO, UNLIT, OCEAN, LANDS, LIFE_ALIVE, EDGE_RGB, EDGE_ALPHA, SHADE, FADE_EDGES, TILE_LIFT;  // TILE_LIFT: the tiles' rainbow mixed with white  // EDGE_RGB, EDGE_ALPHA: the tile edges; SHADE: how dark a tile turned away gets
 function setPalette(theme) {
@@ -751,7 +751,7 @@ function setPalette(theme) {
   SHADE = P.shade; FADE_EDGES = !!P.fadeEdges; TILE_LIFT = P.tileLift ?? 0;
   PALETTE = P;
   const shades = lifeShades(P.unlit);
-  LIFE_TRAIL.splice(0, 8, ...shades.trail); LIFE_FADE.splice(0, 8, ...shades.fade);
+  LIFE_DYING.splice(0, 8, ...shades.dying); LIFE_TRAIL.splice(0, 8, ...shades.trail);
   for (let i = 0; i < BANDS; i++) GRADIENT[i] = rainbowHue(190 + (200 * i) / (BANDS - 1));  // (from its blue, 190, round by red, 360, to orange)
   LIFE_HUES.forEach((h, k) => { LIFE_COLOURS[k] = `hsl(${h}, 85%, ${PALETTES.light.light}%)`; });  // the light page's, on a dark one too (to compare)
   DIGIT_COLORS.splice(0, DIGIT_COLORS.length, ...P.digits);
@@ -2019,12 +2019,12 @@ const rowAction = (html, title, click) => {
 const trailApplies = (w = walk.life && walk.mode, rule = $('lifeRule').value, look = $('colourMode').value) => !!w && !!MODES[w].life && !MODES[w].margolus && !MODES[w].elementary && (parseRule(ruleBody(lifeRuleAt(rule, w)))?.C ?? 2) === 2 && look !== 'digit';  // (w: the walk shown's, or a mode's: its rule the one in use)  // (a reversible rule's blocks: none, their cells move, none dies, and backwards a trail would show where they are born)
 const trailOn = () => $('lifeTrail').checked && trailApplies();
 const TRAIL_WHERE = 'Not with dying stages (Generations), on Rewind, or with Activity.';  // (Trail's greyed words)
-// Trail, a tile turned on and off (see tile): its picture a live cell with its comet fading in amber behind (LIFE_FADE); greyed for Activity
+// Trail, a tile turned on and off (see tile): its picture a live cell with its comet fading in amber behind (LIFE_TRAIL); greyed for Activity
 // and dying stages
 let trailButton = null;  // kept: it goes after Life's looks, in their row (see renderColourButtons)
 function renderTrailButton() {
   const sq = (k, c) => `<rect x="${(17 * k) / 3}" y="${17 - (17 * k) / 3}" width="7" height="7" rx="1" fill="${c}"/>`;
-  trailButton ??= tile({ pic: `<svg viewBox="0 0 24 24" aria-hidden="true">${sq(0, LIFE_FADE[5]) + sq(1, LIFE_FADE[3]) + sq(2, LIFE_FADE[1])}${sq(3, LIFE_ALIVE)}</svg>`, text: 'Trail', id: 'lifeTrailButton', toggle: true,  // up the diagonal
+  trailButton ??= tile({ pic: `<svg viewBox="0 0 24 24" aria-hidden="true">${sq(0, LIFE_TRAIL[5]) + sq(1, LIFE_TRAIL[3]) + sq(2, LIFE_TRAIL[1])}${sq(3, LIFE_ALIVE)}</svg>`, text: 'Trail', id: 'lifeTrailButton', toggle: true,  // up the diagonal
     title: 'A dead cell fades in amber for a few generations (States and Age)', click: () => { $('lifeTrail').checked = !$('lifeTrail').checked; $('lifeTrail').dispatchEvent(new Event('change')); } });
   setTile(trailButton, { on: $('lifeTrail').checked && trailApplies(), byDefault: 'On by default in Solo\nOff by default in colours', whyNot: ({ w, rule, look }) => (trailApplies(w, rule, look) ? '' : TRAIL_WHERE), at: walk.mode });  // (not for these looks: off)
 }
@@ -2132,7 +2132,7 @@ function lifeMusic(L) {  // (a generation's moments, see Sound)
 function lifeLookPicture(look) {
   const g = gradientAt;
   if (look === 'mono') return swatch(lifeColours > 1 ? [LIFE_COLOURS[0], UNLIT, UNLIT, LIFE_COLOURS[1]] : [LIFE_ALIVE, UNLIT, UNLIT, LIFE_ALIVE]);  // in colours: a red, a blue
-  if (look === 'gradient') return swatch([g(1), g(0.5), g(0), LIFE_FADE[Math.floor(LIFE_FADE.length / 3)]]);  // warm newborns to cold old cells
+  if (look === 'gradient') return swatch([g(1), g(0.5), g(0), LIFE_TRAIL[Math.floor(LIFE_TRAIL.length / 3)]]);  // warm newborns to cold old cells
   return heatRings(g);
 }
 // a 2 × 2 swatch of four colours (a look's picture, Life's and a walk's)
@@ -11143,19 +11143,19 @@ const liftTile = (c) => { if (!TILE_LIFT) return c; const v = rgbOf(c).map((x) =
 // states, Trail, the motif shown; Activity's, its most changes), kept on L: not each frame a view turns (272 KB, before v0.4.1)
 function lifeLook(L, lifted = false) {
   const colour = $('colourMode').value, maxAct = colour === 'digit' ? L.maxActivity : 0;
-  const key = [colour, lifted, TILE_LIFT, L.C, L.colours, trailOn(), maxAct, LIFE_ALIVE, LIFE_TRAIL[0], LIFE_FADE[0], GRADIENT[0], LIFE_COLOURS[0], oceanOn()].join('|');
+  const key = [colour, lifted, TILE_LIFT, L.C, L.colours, trailOn(), maxAct, LIFE_ALIVE, LIFE_DYING[0], LIFE_TRAIL[0], GRADIENT[0], LIFE_COLOURS[0], oceanOn()].join('|');
   if (L.look?.key === key) return L.look.value;
   const lift = lifted ? liftTile : (c) => c;
   const pack = (c) => { const [r, g, b] = rgbOf(c); return ((255 << 24) | (b << 16) | (g << 8) | r) >>> 0; };
-  const shades = oceanOn() ? lifeShades(OCEAN) : { trail: LIFE_TRAIL, fade: LIFE_FADE };  // (Ocean: into its sea)
-  const trail = shades.trail.map(pack), inked = shades.fade.map(pack), alive = pack(oceanOn() ? LANDS[0] : LIFE_ALIVE), civ = [0, ...civColours(L.colours, L.C).map(pack)];
+  const shades = oceanOn() ? lifeShades(OCEAN) : { dying: LIFE_DYING, trail: LIFE_TRAIL };  // (Ocean: into its sea)
+  const dying = shades.dying.map(pack), trail = shades.trail.map(pack), alive = pack(oceanOn() ? LANDS[0] : LIFE_ALIVE), civ = [0, ...civColours(L.colours, L.C).map(pack)];
   const grad = Array.from({ length: 32 }, (_, i) => pack(lift(gradientAt(i / 31))));
   // the colours on a log scale, in tables (millions of cells): of an age (up to 64), of an activity
   const level = (v, max) => Math.min(31, Math.round((Math.log(v) / Math.log(Math.max(2, max))) * 31));
   const byAge = Uint32Array.from({ length: 65 }, (_, a) => grad[31 - level(a + 1, 65)]);  // the rainbow backwards: warm newborns, cold old cells
   const byActivity = colour === 'digit' ? Uint32Array.from({ length: Math.min(maxAct, 65535) + 1 }, (_, v) => (v ? grad[level(v + 1, maxAct + 1)] : 0)) : null;
-  const byDying = Uint32Array.from({ length: L.C }, (_, st) => (st < 2 ? 0 : trail[Math.min(trail.length - 1, Math.round(((st - 1) / (L.C - 1)) * trail.length))]));
-  const fade = L.C === 2 && trailOn() ? trail.length : 0, K = L.colours;  // the trail after death (Trail)
+  const byDying = Uint32Array.from({ length: L.C }, (_, st) => (st < 2 ? 0 : dying[Math.min(dying.length - 1, Math.round(((st - 1) / (L.C - 1)) * dying.length))]));
+  const trailLength = L.C === 2 && trailOn() ? trail.length : 0, K = L.colours;  // the trail after death (Trail)
   // its colours by the graphics card, by these tables (see gpuLook)
   const table = new Uint32Array(4096 * 17);
   for (let st = 1; st < 256; st++) {
@@ -11163,9 +11163,9 @@ function lifeLook(L, lifted = false) {
     table[256 + st] = colour === 'mono' && K > 1 ? civ[st] ?? 0 : colour === 'mono' ? byDying[st] ?? 0 : byDying[1 + Math.floor((st - 1) / K)] ?? 0;
   }
   table.set(byAge, 512);
-  table.set(inked.slice(0, fade), 1024);
+  table.set(trail.slice(0, trailLength), 1024);
   if (byActivity) table.set(byActivity, 4096);
-  L.look = { key, value: { table, by: colour === 'digit' ? 2 : colour === 'mono' ? 0 : 1, trail: fade } };
+  L.look = { key, value: { table, by: colour === 'digit' ? 2 : colour === 'mono' ? 0 : 1, trail: trailLength } };
   return L.look.value;
 }
 function drawLifePlane() {

@@ -1,5 +1,5 @@
 // Tessera's self-check, run in the page (it uses the app's own functions) before a commit:
-//   await import(`/tools/check.js?${Date.now()}`); await tesseraCheck();   // the meshes and the sheets' rules (see checkSheets), 25 to 40 s
+//   await import(`/tools/check.js?${Date.now()}`); await tesseraCheck();   // the meshes, the sheets' rules (see checkSheets), a few links cold (see checkColdLinks), 35 to 50 s
 //   await tesseraCheck({ crawl: true });                                   // and every tab, shape and tiling, a few minutes
 //   await tesseraCheck({ fuzz: 400, seed: 7 });                            // 400 actions at random, menu to menu (transitions, smallest sizes)
 //   await tesseraCheck({ fuzz: 100, cold: true });                          // and after each, its link loaded cold beside: the same menus offered
@@ -262,6 +262,27 @@ const linked = () => {
 // (what a path through the menus left there, a link loaded cold must show the same)
 const panel = (d) => Object.fromEntries([...d.querySelectorAll('#paramsPane > *')].map((s, i) => [s, `#${s.id || i}`]).filter(([s]) => !s.hidden).map(([s, k]) => [k,
   [...s.querySelectorAll('button')].filter((b) => !b.closest('[hidden]') && getComputedStyle(b).display !== 'none').map((b) => `${b.textContent.trim().slice(0, 16)}${b.disabled ? '⊘' : ''}${b.classList.contains('active') ? '•' : ''}`).join(' ')]));
+// Links opened cold, each in a page of its own (an iframe): their walk built, its mode the link's, its battle or its symmetry
+// as the link asks (v0.4.426: a strip's battle looped on its own size, opened cold; v0.4.423: a symmetry before any walk)
+const COLD_LINKS = [['x=pi&w=kleinHexGrid&d=3000&s=72&k=2&xb=e', { teams: 2 }], ['x=pi&w=mobiusHexWalk&d=3000&s=5&k=3&xb=sqrt(2)&xc=sqrt(3)&pe=3', { teams: 3 }],
+  ['x=pi&w=hexSphereGrid&d=3000&s=24&k=2&xb=e', { teams: 2 }], ['w=life2dHex&r=B3/S23&y=mirror', { symmetry: 'mirror' }]];
+async function checkColdLinks(fail) {
+  for (const [link, want] of COLD_LINKS) {
+    const f = document.createElement('iframe'), w = new URLSearchParams(link).get('w');
+    f.style.cssText = 'position:fixed;left:0;top:0;width:1200px;height:900px;opacity:0;pointer-events:none';
+    f.src = `${location.pathname}?cold=${Date.now()}#${link}&v=${VERSION}`;
+    document.body.append(f);
+    await new Promise((go) => f.addEventListener('load', go, { once: true }));
+    for (let t = 0; t < 60 && f.contentWindow.eval('walk.mode') !== w; t++) await wait(100);  // (built: its walk the link's mode, 6 s at most)
+    let mode, teams, symmetry;
+    try { [mode, teams, symmetry] = f.contentWindow.eval("[walk.mode, battleOn() ? walkTeams : 1, plane.sym]"); } catch (e) { mode = `${e.name}: ${e.message}`; }  // (its page broken: said, not thrown)
+    f.remove();
+    if (mode !== w) fail(`#${link} opened cold: no walk built (${mode})`);
+    else if (want.teams && teams !== want.teams) fail(`#${link} opened cold: ${teams} teams, not ${want.teams}`);
+    else if (want.symmetry && symmetry !== want.symmetry) fail(`#${link} opened cold: symmetry ${symmetry}, not ${want.symmetry}`);
+  }
+  return COLD_LINKS.length;
+}
 async function coldLike(fail, what) {
   const f = document.createElement('iframe');
   f.style.cssText = 'position:fixed;left:0;top:0;width:1200px;height:900px;opacity:0;pointer-events:none';
@@ -773,7 +794,7 @@ function checkRosetteSpheres(fail) {
 
 window.tesseraCheck = async ({ parts = false, known = false, crawl: andCrawl = false, deep: andDeep = false, fuzz: actions = 0, cold = false, colours = false, battles = false, seed = Date.now() % 1e6, from, only } = {}) => {
   const failures = [], fail = (s) => { failures.push(s); localStorage.tesseraDeepFailures = JSON.stringify(failures); };
-  let checked = checkMeshes(fail) + checkBlockWraps(fail) + checkDiscs(fail) + checkTips(fail) + checkMarks(fail) + checkRosetteSpheres(fail) + checkTwistedSphere(fail) + checkDiscCuts(fail) + await checkSheets(fail) + await checkNames(fail);
+  let checked = checkMeshes(fail) + checkBlockWraps(fail) + checkDiscs(fail) + checkTips(fail) + checkMarks(fail) + checkRosetteSpheres(fail) + checkTwistedSphere(fail) + checkDiscCuts(fail) + await checkSheets(fail) + await checkNames(fail) + await checkColdLinks(fail);
   if (known) checked += await checkKnown(fail);
   if (andCrawl) checked += await crawl(fail);
   if (actions) checked += await fuzz(fail, actions, seed, cold);

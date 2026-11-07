@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.499';
+const VERSION = '0.4.500';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -7756,7 +7756,8 @@ function renderWalkTeams() {
   const way = ([kind, name, head, words], p) => {
     return card({ pic: `<svg viewBox="0 0 4 4" aria-hidden="true"><path d="M0 0H4V4H0Z" fill="${LIFE_COLOURS[1]}"/><path d="${head}" fill="${LIFE_COLOURS[0]}"/></svg>`, name, detail: words,
       title: words, on: p === battleRuleInUse(), whyNot: ({ w: v }) => battleRuleWhyNot(kind, v), choice: `battleRule:${p}`, byDefault: p === 0 ? 'yes' : '',
-      click: () => { if (p !== battleRuleInUse()) { battleRule = p; compute(); } } });
+      click: () => { if (p !== battleRuleInUse()) { battleRule = p; compute(); } },
+      how: () => { if (p === battleRuleInUse()) walkTutorialToggle(); else { battleRule = p; compute(); walkTutorial($('mode').value); } } });  // (its picture: how it works, picked first, as a walk's rule's)
   };
   $('battleRuleCards').replaceChildren(...BATTLE_RULES.map((P, p) => way(P, p)));
   // its starts' tabs, over the start selector (see STARTS_WAYS; the selector greyed but in Symmetric, see syncSizeStepper)

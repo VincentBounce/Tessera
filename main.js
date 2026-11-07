@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.517';
+const VERSION = '0.4.518';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -12091,7 +12091,7 @@ function battleCaseFigure(grid, way, scripts) {
     const [a, b] = (ends.get(j) ?? []).map(shown);
     return !a ? '' : `<line x1="${a[0]}" y1="${a[1]}" x2="${b[0]}" y2="${b[1]}" stroke="${LIFE_COLOURS[s]}" stroke-width="0.16"${dashed ? ' stroke-dasharray="0.18 0.16" stroke-opacity="0.55"' : ''}/>`;
   };
-  const head = (s) => { const [x, y] = shown(walks[s][n]), c = LIFE_COLOURS[s];
+  const head = (s) => { const [x, y] = shown(P.places[s][n]), c = LIFE_COLOURS[s];  // (where the battle has it: a walker stopped, before its step)
     return P.dead[s] >= 0 ? `<path d="M${x - 0.22} ${y - 0.22}L${x + 0.22} ${y + 0.22}M${x - 0.22} ${y + 0.22}L${x + 0.22} ${y - 0.22}" stroke="${c}" stroke-width="0.12"/>` : `<circle cx="${x}" cy="${y}" r="0.16" fill="${c}"/>`; };
   return `<svg viewBox="${cx - r} ${-cy - r} ${2 * r} ${2 * r}">${tiles.map((t) => tile(t, 'tut-cell')).join('')}`
     + `${tiles.filter((t) => P.land[t]).map((t) => tile(t, 'tut-cell', LIFE_COLOURS[P.land[t] - 1])).join('')}`

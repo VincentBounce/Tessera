@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.477';
+const VERSION = '0.4.478';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -1777,9 +1777,9 @@ const modeOptionOf = (w) => $('mode').querySelector(`option[value="${w}"]`);
 const modeGroup = (w = $('mode').value) => modeOptionOf(w).parentElement.label;  // (a mode's: the tab's by default)
 const DISPLAY_GREYED = { '2D spirals': ['fill', 'visits', 'line'], Elementary: ['digit'] };
 const greyed = (item, w = $('mode').value) => [modeGroup(w), NAV[w]?.[0]].some((k) => DISPLAY_GREYED[k]?.includes(item));
-const shows = (item, w = $('mode').value) => DISPLAY_BY_TAB[modeGroup(w)].includes(item) || (w === $('mode').value && spaceTimeOn() && VIEW_3D.includes(item));
+const shows = (item, w = $('mode').value, stacked = spaceTime) => DISPLAY_BY_TAB[modeGroup(w)].includes(item) || (stacked && spaceTimeApplies(w) && VIEW_3D.includes(item));  // (stacked: Stacks on, a setup's, see spaceTime)
 // a display setting greyed at a mode: none in its view, the views that have it said (Grid, Upright, Perspective…); else ''
-const viewWhyNot = (item, w) => (shows(item, w) ? '' : `Shown only in ${Object.keys(DISPLAY_BY_TAB).filter((g) => DISPLAY_BY_TAB[g].includes(item)).join(', ')}.`);
+const viewWhyNot = (item, w, stacked = spaceTime) => (shows(item, w, stacked) ? '' : `Shown only in ${Object.keys(DISPLAY_BY_TAB).filter((g) => DISPLAY_BY_TAB[g].includes(item)).join(', ')}.`);
 const useful = (item, w) => shows(item, w) && !greyed(item, w);
 // a look greyed at a mode (Rainbow along a spiral, its Heatmap, Elementary's Activity), its words; else ''
 const LOOK_WHERE = { gradient: 'On a spiral, the line tells nothing.', visits: 'On a spiral, each cell is visited once only.', digit: 'On Elementary, a cell never changes once made: there is no activity.' };
@@ -1834,7 +1834,7 @@ function renderViewTiles() {
   const perspective = !ways.on.length ? 'off' : !ways.off.length ? 'on' : `On by default on ${ways.on.join(', ')}\nOff by default on ${ways.off.join(', ')}`;
   const first = { perspective, light: defaultMark('light'), glass: defaultMark('glass'), ocean: defaultMark('ocean') }, why = { ocean: 'Only up to a Quintet: a map has five lands (green, yellow, ochre, lime, ice white).' };
   VIEW_TILES.forEach(([id], k) => setTile(viewTiles[k], { on: $(id).checked, byDefault: first[id], 
-    whyNot: ({ w }) => viewWhyNot(id, w) || (id === 'ocean' && w === $('mode').value && !oceanFits() ? why.ocean : '') }));  // (its row's: see updateDisplayMenu, by shows)
+    whyNot: ({ w, stacked }) => viewWhyNot(id, w, stacked) || (id === 'ocean' && w === $('mode').value && !oceanFits() ? why.ocean : '') }));  // (its row's: see updateDisplayMenu, by shows)
   $('viewTiles').hidden = VIEW_TILES.every(([, row]) => $(row).hidden);
 }
 $('viewTools').addEventListener('mouseenter', renderViewTiles);
@@ -1858,8 +1858,8 @@ function renderViewModes() {
   const c = $('centered').checked, u = $('upright').checked && !$('uprightRow').hidden;
   setTile(viewModes[0], { on: c, byDefault: 'yes' });
   setTile(viewModes[1], { on: !c && !u });
-  setTile(viewModes[2], { on: u, whyNot: ({ w }) => viewWhyNot('upright', w) });
-  setTile(rotateTile, { on: $('autoRotate').checked, byDefault: defaultMark('autoRotate'), whyNot: ({ w }) => viewWhyNot('autoRotate', w) });
+  setTile(viewModes[2], { on: u, whyNot: ({ w, stacked }) => viewWhyNot('upright', w, stacked) });
+  setTile(rotateTile, { on: $('autoRotate').checked, byDefault: defaultMark('autoRotate'), whyNot: ({ w, stacked }) => viewWhyNot('autoRotate', w, stacked) });
   $('viewModes').hidden = $('centeredRow').hidden;
 }
 $('viewTools').addEventListener('mouseenter', renderViewModes);
@@ -1875,7 +1875,7 @@ function renderHeadTiles() {
   }
   renderSoundButton();
   setTile(headTiles[0], { on: $('autoFit').checked, byDefault: defaultMark('autoFit') });
-  setTile(headTiles[1], { on: $('showGrid').checked, byDefault: defaultMark('grid'), whyNot: ({ w }) => viewWhyNot('grid', w) });
+  setTile(headTiles[1], { on: $('showGrid').checked, byDefault: defaultMark('grid'), whyNot: ({ w, stacked }) => viewWhyNot('grid', w, stacked) });
 }
 $('viewTools').addEventListener('mouseenter', renderHeadTiles);
 
@@ -3595,9 +3595,9 @@ function ruleCards(w, here = true) {
 const modesUnder = (...place) => Object.keys(NAV).filter((u) => place.every((x, i) => NAV[u][i] === x));
 // The menu as a graph (the setup a node, a click an edge): a setup, what the app holds as a link does ({ w: the mode, size:
 // null for the one it opens at, its colours, a walk's teams, its battle rule, its starts' way, a Life's start, its hunt's
-// zone and its rule, as typed: the one a mode plays from it, lifeRuleAt; its look, colourMode's), the one in use first
-const setupNow = () => ({ w: $('mode').value, size: null, colours: lifeColours, teams: walkTeams, battleRule, startsWay: battleStartsWay, start: plane.start, zone: hunt.zone, rule: $('lifeRule').value, look: $('colourMode').value });
-const SETUP_FIELDS = ['size', 'colours', 'teams', 'battleRule', 'startsWay', 'start', 'zone', 'rule', 'look'];  // (its fields but the mode: a key's, a path's changes)
+// zone and its rule, as typed: the one a mode plays from it, lifeRuleAt; its look, colourMode's; Stacks on), the one in use first
+const setupNow = () => ({ w: $('mode').value, size: null, colours: lifeColours, teams: walkTeams, battleRule, startsWay: battleStartsWay, start: plane.start, zone: hunt.zone, rule: $('lifeRule').value, look: $('colourMode').value, stacked: spaceTime });
+const SETUP_FIELDS = ['size', 'colours', 'teams', 'battleRule', 'startsWay', 'start', 'zone', 'rule', 'look', 'stacked'];  // (its fields but the mode: a key's, a path's changes)
 const setupKey = (s) => [s.w, ...SETUP_FIELDS.map((f) => s[f])].join('|');
 // The menu's choices at a setup, each a click: its key (its button's data-choice) and the setup it leads to, by the menu's
 // own navigation (navPick, kindLeft, nearestMode, walksThere): the tabs, spaces, shapes, tilings, sides, walks' kinds, then a
@@ -3625,6 +3625,7 @@ function choicesAt(s) {  // (each [key, the setup it leads to, its button's word
   // its looks (Life's: States, Age, Activity; a walk's cells': Path, Rainbow, Directions, Heatmap), each the look it sets
   if (m.life) for (const [look, name] of LIFE_LOOKS) set(`look:${look}`, 'look', look, lookWhyNot(look, w), name);
   else if (shows('cells', w) || shows('heatmap', w) || m.antOf) for (const [look, name] of CELL_MODES) set(`look:${look}`, 'look', lookAfter(look, w), cellModeWhyNot(look, w, s.teams), name);
+  if (spaceTimeApplies(w)) set('stacked', 'stacked', !s.stacked, '', 'Stacks');  // (Stacks, a switch: on or off)
   if (w === walk.mode && s.colours === lifeColours && s.start === 'random' && huntOn()) for (const [zone, fits] of Object.entries(huntFits())) if (fits && zone !== 'custom') set(`zone:${zone}`, 'zone', zone, '', HUNT_ZONES[zone][1]);
   return out;
 }
@@ -10687,6 +10688,7 @@ function renderPlaneRow() {
     setTile($(`outline-${shape}-${torus ? 'torus' : 'walled'}`), { on: outlineOf(kind) === shape && planeTorus(kind) === torus,
       whyNot: ({ w: v }) => { const k = MODES[v].plane; return k && MODES[v].life && !APERIODIC[k] && outlineOf(k, shape, torus) === shape ? '' : where; } });
   }
+  spaceTimeTile.dataset.choice = 'stacked';  // (its choice's key, see choicesAt)
   setTile(spaceTimeTile, { on: spaceTimeOn(), whyNot: ({ w }) => (spaceTimeApplies(w) ? '' : 'Only on squares, and not on Rewind.') });
   renderSymmetry();
   $('startDraw').hidden = plane.start !== 'draw';

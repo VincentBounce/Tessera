@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.430';
+const VERSION = '0.4.431';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -1953,7 +1953,7 @@ const tile = ({ pic = '', text = '', html = null, title = '', id = null, on = fa
 // source; greyed here (at: its mode, the tab's by default) or not, its words why, and the menu's nearest buttons that would
 // allow it, highlighted by a click on it (see enablersFor))
 const setTile = (b, { on = false, can = true, mark = false, again = false, turn = 0, byDefault, greyed, whyNot = null, at = $('mode').value }) => {
-  if (whyNot) { const why = whyNot({ w: at }); can = !why; if (why) greyed = why; b.enablers = () => enablersFor((setup) => !whyNot(setup)); }
+  if (whyNot) { const why = whyNot({ w: at ?? $('mode').value }); can = !why; if (why) greyed = why; b.enablers = () => enablersFor((setup) => !whyNot(setup)); }  // (at: none, no walk shown yet: the tab's)
   if (byDefault !== undefined) b.dataset.default = byDefault;
   if (greyed !== undefined) b.dataset.greyed = greyed;
   const pic = b.querySelector('svg');
@@ -7848,8 +7848,10 @@ const battleGroups = (g, K, enough = Infinity, good = null) => {
 // the teams a battle can have on mode w's surface (see battleMode), from its start: each K its surface has a group of K
 // for that sets them apart from A's start (see battleGroups, startSpread), a ring's judged on its mesh made for K (its
 // length its walkers', as Life's colours', see ringColours); none elsewhere
-const battleCounts = (w, size = battleMode(w) && figureSize(w)) => {  // (at a size, or its mode's, see figureSize)
-  if (!size || !battleMode(w)) return [];  // (none)
+// (at a size, or its mode's: the tab's the menu's only, none before it holds its surface: a strip's sizes depend on its walkers
+// (ringColours, by battleOn), so sizeAt for the tab would come back here)
+const battleCounts = (w, size = battleMode(w) && (w === $('mode').value ? menuSizeOf(w) : figureSize(w))) => {
+  if (!size || !battleMode(w)) return [];  // (none, or the tab's size not set yet: a page opening)
   // a ring's by its kind, known by construction (its length made for its walkers, see ringColours): a torus takes every
   // count (its shift of 1/K round it), a Klein bottle a Duel only (its gluing: its half turn, see ringGroup); a Möbius strip's tried
   const ring = SPHERES[surfaceOf(MODES[w])].columns && familyOf(w)?.F.name;
@@ -11258,10 +11260,9 @@ const pickedFigure = (w = $('mode').value, size = null) => {
 };
 // a surface mode's size: the one in the menu where the menu holds its surface's sizes (the tab's, once filled), else the one
 // it opens at (see sizeAt: another mode's, or the tab's a moment after it changed, its menu still the surface before's)
-const figureSize = (w) => {
-  const mode = MODES[w], kind = surfaceOf(mode);
-  return w === $('mode').value && $('sphereF').dataset.kind?.split(' ')[0] === kind ? sphereSize() : sizeAt(kind, mode.initial, mode);
-};
+const figureSize = (w) => menuSizeOf(w) ?? sizeAt(surfaceOf(MODES[w]), MODES[w].initial, MODES[w]);
+// the tab's size where the menu holds its surface's sizes (filled for it), else none (see figureSize)
+const menuSizeOf = (w) => (w === $('mode').value && $('sphereF').dataset.kind?.split(' ')[0] === surfaceOf(MODES[w]) ? sphereSize() : null);
 const colourFairOwn = (K, { mode, g } = pickedFigure()) => {
   const kind = mode?.plane;
   if (K === 1) return true;

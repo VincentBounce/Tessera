@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.502';
+const VERSION = '0.4.503';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -11197,7 +11197,7 @@ function drawBlocks(ctx) {
   if (!(M.paths ??= new Map()).has(key)) M.paths.set(key, M.turns.map((blocks) => {
     const path = new Path2D(), outline = gridOutline();
     for (let i = 0; i < blocks.length; i += M.k) {
-      const sides = blocks.slice(i, i + M.k).flatMap((t) => polySides(planeCorners(kind, ...xy(t))));
+      const sides = [...blocks.subarray(i, i + M.k)].flatMap((t) => polySides(planeCorners(kind, ...xy(t))));  // (a block's cells: a typed array's, see cellBlocks)
       for (const side of rimSides(sides, sideKey)) if (!outline.has(sideKey(side))) { path.moveTo(...side[0]); path.lineTo(...side[1]); }
     }
     return path;

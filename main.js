@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.474';
+const VERSION = '0.4.475';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -3624,7 +3624,7 @@ function choicesAt(s) {  // (each [key, the setup it leads to, its button's word
   if (m.life) for (const r of lifeRulesListed(w)) set(`lifeRule:${r.rule}`, 'rule', r.rule, '', r.name);  // (its rules' cards)
   // its looks (Life's: States, Age, Activity; a walk's cells': Path, Rainbow, Directions, Heatmap), each the look it sets
   if (m.life) for (const [look, name] of LIFE_LOOKS) set(`look:${look}`, 'look', look, lookWhyNot(look, w), name);
-  else if (shows('cells', w) || shows('heatmap', w) || m.antOf) for (const [look, name] of CELL_MODES) set(`look:${look}`, 'look', lookAfter(look, w), cellModeWhyNot(look, w), name);
+  else if (shows('cells', w) || shows('heatmap', w) || m.antOf) for (const [look, name] of CELL_MODES) set(`look:${look}`, 'look', lookAfter(look, w), cellModeWhyNot(look, w, s.teams), name);
   if (w === walk.mode && s.colours === lifeColours && s.start === 'random' && huntOn()) for (const [zone, fits] of Object.entries(huntFits())) if (fits && zone !== 'custom') set(`zone:${zone}`, 'zone', zone, '', HUNT_ZONES[zone][1]);
   return out;
 }
@@ -7685,7 +7685,9 @@ const PE_BEFORE = [0, 3, 4, 6, 7, 1, 2, 5];
 // a walk that can be a battle: one on a surface (on cells or along the grid, its steps surfaceSteps'), with as many
 // walkers as its turns allow at its size (see battleCounts: its walkers start alike, see battleStarts)
 const battleMode = (w) => NAV[w]?.[0] === 'Walk' && MODES[w].lattice === 'sphere' && !!SPHERES[surfaceOf(MODES[w])];
-const battleOn = () => walkTeams > 1 && battleCounts($('mode').value).includes(walkTeams);
+// a battle at mode w with so many teams (at a size, or its own), the one in use's (battleOn): its teams a count its surface takes
+const battleAt = (w, teams = walkTeams, size = undefined) => teams > 1 && battleCounts(w, size).includes(teams);
+const battleOn = () => battleAt($('mode').value);
 // Solo, Duel, Trio… (those the solid has no group of turns for greyed, see battleCounts), under the size and start
 // of a walk on a surface (Life's tiles, see renderColours); then a battle's numbers in its Start section
 const walkTeamsHere = (w) => NAV[w]?.[0] === 'Walk' && MODES[w].lattice === 'sphere';  // (a walk's teams: on a surface)
@@ -7789,7 +7791,7 @@ const battleRuleWhyNot = (kind, v) => {
 const startsWayCan = (way, w, size) => way !== 'centred' || groupedCan(w, size);
 const startsWayNow = () => (battleOn() && startsWayCan(battleStartsWay) ? battleStartsWay : 'symmetric');
 // the starts' way played in a setup (see setupNow): its own where a battle can have it, else Symmetric (as startsWayNow)
-const startsWayIn = ({ w, size = null, teams = walkTeams, startsWay = battleStartsWay }) => (teams > 1 && battleMode(w) && battleCounts(w, size ?? undefined).includes(teams) && startsWayCan(startsWay, w, size ?? undefined) ? startsWay : 'symmetric');  // (the one played: Symmetric where the one picked cannot be)
+const startsWayIn = ({ w, size = null, teams = walkTeams, startsWay = battleStartsWay }) => (battleAt(w, teams, size ?? undefined) && startsWayCan(startsWay, w, size ?? undefined) ? startsWay : 'symmetric');  // (the one played: Symmetric where the one picked cannot be)
 // K walkers' starts anywhere, each its own place, drawn from seed: along the grid a corner and the corner it comes from,
 // on cells a tile and the edge it comes in by (A's start's other parts kept: a pivot's, a parity's)
 function randomStarts(g, start, grid, K, seed) {
@@ -17081,7 +17083,7 @@ const fillAreasApply = (w = $('mode').value) => !areaWhyNot(w);
 // (a spiral, a mode without it), a look over the cells (Heatmap, Directions); else '' (Snake cells, its tails sliding: on
 // cells, the first)
 // (p: the battle rule picked, the one it plays at w judged, see battleRuleInUse)
-const areaWhyNot = (w, teams = walkTeams, p = battleRule, look = $('colourMode').value) => (MODES[w].cells ? 'On cells, the walk colours its cells itself (in a battle, its lands).' : teams > 1 && battleCounts(w).includes(teams) && BATTLE_RULES[battleRuleInUse(w, p)][0] !== 'cut' ? 'This battle colours its lands (only Cut, its bodies alone, keeps Area).' : !useful('fill', w) || MODES[w].fill === false ? 'The walk closes no area to fill (a spiral, an ant…).'
+const areaWhyNot = (w, teams = walkTeams, p = battleRule, look = $('colourMode').value) => (MODES[w].cells ? 'On cells, the walk colours its cells itself (in a battle, its lands).' : battleAt(w, teams) && BATTLE_RULES[battleRuleInUse(w, p)][0] !== 'cut' ? 'This battle colours its lands (only Cut, its bodies alone, keeps Area).' : !useful('fill', w) || MODES[w].fill === false ? 'The walk closes no area to fill (a spiral, an ant…).'
   : ['visits', 'digit'].includes(look) ? 'Heatmap and Directions give the cells their own colours.' : '');
 // (the walk drawn may still be the last mode's while the new one is computed: a tiling with a fill)
 // Area (one choice: Empty, Light, Plain, see AREA_MODES): filled where it applies; Light, translucent, only over a line
@@ -18425,7 +18427,7 @@ const CELLS_ONLY = 'Only on cells, not along the lines.';  // (a walk's cells' l
 const DIRECTIONS_WHERE = 'Not on a surface (2D walks only), nor in a battle (each walker has its own colour).';
 // a cells' look greyed at a mode: Path and Heatmap along the lines (no cells), Directions on a surface or in a battle (an
 // ant's States everywhere), Heatmap on a spiral; else ''
-const cellModeWhyNot = (look, w) => (look === 'digit' ? (!MODES[w].antOf && (!shows('cells', w) || (w === $('mode').value && battleOn())) ? DIRECTIONS_WHERE : '')
+const cellModeWhyNot = (look, w, teams = walkTeams) => (look === 'digit' ? (!MODES[w].antOf && (!shows('cells', w) || battleAt(w, teams)) ? DIRECTIONS_WHERE : '')
   : !MODES[w].cells && look !== 'cells' ? CELLS_ONLY : look === 'visits' ? lookWhyNot('visits', w) : '');
 function renderCellModes(mode) {
   $('cellModes').hidden = !shows('cells') && !shows('heatmap') && !mode.antOf;  // a walk in 2D or on a surface, an ant anywhere
@@ -18434,7 +18436,7 @@ function renderCellModes(mode) {
   const looks = CELL_MODES, now = cellModeOf(mode), ant = !!mode.antOf;  // (all four everywhere, the same row: Directions greyed where there are none, see cellModeWhyNot)
   const button = ([look, name, title]) => tile({ pic: cellModePicture(look, ant), ...(look === 'digit' && ant ? { text: ANT_STATES[0], title: ANT_STATES[1] } : { text: name, title }), on: look === now,
     byDefault: look === (ant ? defaultOf('antLook') : 'cells') ? 'yes' : '',  // (an ant's States, a walk's Rainbow: see DISPLAY_DEFAULTS)
-    whyNot: ({ w }) => cellModeWhyNot(look, w), choice: `look:${look}`, click: () => pickCellMode(look) });  // (along the lines: Rainbow, Directions, its line's colours)
+    whyNot: ({ w, teams }) => cellModeWhyNot(look, w, teams), choice: `look:${look}`, click: () => pickCellMode(look) });  // (along the lines: Rainbow, Directions, its line's colours)
   $('cellModes').replaceChildren(tileGroup(looks.map(button)));  // (joined in one frame, see tileGroup)
 }
 function pickCellMode(look) {

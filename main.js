@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.453';
+const VERSION = '0.4.454';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -1269,7 +1269,7 @@ const RULE_KINDS = { walk: {}, ant: { side: 'cells', pic: 'ant' }, turmite: { si
 const RULES = [
   // the walks by a rule (a word per digit), per network, the first it takes its rule at first
   ...[['LNR', 'Turtle', 'turtle'], ['LR', 'Turtle', 'turtle'], ['N r', 'Pivot', 'pivot'], ['N a', 'Parity', 'walk2d'], ['nesw', 'Cardinal', 'compass'], ['n ne e se s sw w nw', 'King', 'king']].map(([rule, name, pic]) => ({ kind: 'walk', tiling: 'square', rule, name, pic })),
-  ...[['L2 L1 N R1 R2', 'Turtle', 'turtle'], ['L2 L1 U R1 R2', 'Turtle', 'turtle'], ['L2 L1 R1 R2', 'Turtle', 'turtle'], ['L1 N R1', 'Turtle', 'turtle'], ['L1 R1', 'Turtle', 'turtle'], ['N r', 'Pivot', 'pivot'], ['N a', 'Parity', 'walk2d'], ['n ne se s sw nw', 'Fixed', 'compass']].map(([rule, name, pic]) => ({ kind: 'walk', tiling: 'hex', rule, name, pic })),
+  ...[['L2 L1 N R1 R2', 'Turtle', 'turtle'], ['L2 L1 R1 R2', 'Turtle', 'turtle'], ['L2 L1 U R1 R2', 'Turtle', 'turtle'], ['L1 N R1', 'Turtle', 'turtle'], ['L1 R1', 'Turtle', 'turtle'], ['N r', 'Pivot', 'pivot'], ['N a', 'Parity', 'walk2d'], ['n ne se s sw nw', 'Fixed', 'compass']].map(([rule, name, pic]) => ({ kind: 'walk', tiling: 'hex', rule, name, pic })),
   ...[['LR', 'Turtle', 'turtle'], ['| \\ /', 'Fixed', 'compass']].map(([rule, name, pic]) => ({ kind: 'walk', tiling: 'tri', rule, name, pic })),
   ...[['L2 L1 R1 R2', 'Turtle', 'turtle'], ['L1 R1', 'Turtle', 'turtle'], ['L2 R2', 'Turtle', 'turtle']].map(([rule, name, pic]) => ({ kind: 'walk', tiling: 'cairo', rule, name, pic })),
   ...[['L ^ N v R', 'Turtle', 'turtle'], ['L ^ v R', 'Turtle', 'turtle'], ['N r p', 'Pivot', 'pivot'], ['N a', 'Parity', 'walk2d'], ['neuswd', 'Fixed', 'compass']].map(([rule, name, pic]) => ({ kind: 'walk', tiling: 'cube', rule, name, pic })),

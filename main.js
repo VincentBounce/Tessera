@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.438';
+const VERSION = '0.4.439';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -3625,13 +3625,13 @@ const ruleTitleOf = (w) => {
 // a mode's kinds of rules (see RULES): a walk's, else the creatures' of its side (Cells: the ants and turmites; Grid: the worm)
 const kindsOf = (w) => (MODES[w].net ? ['walk'] : Object.keys(RULE_KINDS).filter((k) => RULE_KINDS[k].side === NAV[w][4]));
 // a mode's rules to pick, from RULES, each in its own words: { rule, name, pic, why (greyed: the word it lacks), title (its
-// rule, then what it does) }; a walk on a surface shows only those it takes
+// rule, then what it does) }; those a mode cannot take greyed, never left out (a click: where they play, see enablersFor)
 function rulesFor(w) {
   const m = MODES[w];
   return kindsOf(w).flatMap((kind) => rulesOf(kind, m.net).flatMap((r) => {
     const card = (rule, why = '', name = r.name, about = r.about) => [{ rule, source: `${kind} ${r.rule}`, name, pic: icon(r.pic ?? RULE_KINDS[kind].pic), why, title: [rule, about].filter(Boolean).join('\n') }];  // (source: the card's own, whatever its grid's words: its kind and its rule in RULES)
     if (kind === 'walk') { const words = ruleWords(r.rule), why = words.map((t) => walkWordWhy(m, t)).find(Boolean) ?? '';
-      return m.lattice === 'sphere' && why ? [] : card(r.rule, why, r.name, words.map((t, d) => `${d} ${WORD_TEXT[t]}`).join(', ')); }  // (what it does: each digit's word)
+      return card(r.rule, why, r.name, words.map((t, d) => `${d} ${WORD_TEXT[t]}`).join(', ')); }  // (what it does: each digit's word)
     if (kind === 'worm') return card(r.rule);
     const { rule, why } = ruleIn(w, r.rule, kind === 'turmite');
     return card(rule, why, kind === 'ant' ? `${r.name}, ${ruleWords(r.rule).length} colours` : r.name);

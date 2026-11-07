@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.370';
+const VERSION = '0.4.371';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -5524,22 +5524,23 @@ function kleinPoint(x, y, nu, nv, m, tube = TORUS_TUBE) {
   return F.map((v, d) => v + (K[d] - v) * m);
 }
 // The bottle, drawn from a glass one's lines (its tube's radius the unit, its loop toward −x, turned east at the end):
-// three red lines KLEIN_GAP apart, the loop's base, the entry (where the neck goes into the body) and the flanks' foot;
-// the flanks the same arc on both sides (KLEIN_FLANK, centred on the other side's plumb of the cul's edge, half-way
-// between the two lower lines: the widest at 0); the cul's edge where that arc meets its plumb, KLEIN_CUL from the axis,
-// that plumb also the entry's middle and the loop's centre. A body turned round the vertical, its profile (r, z) from the
-// mouth (radius 1) down round the bowl (a circle) to the cul's edge, up the flank's arc to the entry's height, then a
-// shoulder (a quintic: value, slope and bend matched) to the neck's foot (radius 1, upright, 0.3 of a gap under the
-// loop's base); then the neck, a tube round a line: up to the loop's base, the loop a half circle (radius KLEIN_CUL), down
+// three red lines KLEIN_GAP apart: the top of the loop's hole, the entry (where the neck goes into the body) and the cul's
+// edge; the flanks the same arc on both sides (KLEIN_FLANK, centred KLEIN_CUL from the axis on the other side, half-way
+// between the two lower lines: the widest at 0), down to the cul's edge on the lower line; the plumb KLEIN_CUL from the
+// axis the entry's middle and the loop's centre. A body turned round the vertical, its profile (r, z) from the mouth
+// (radius 1) down round the bowl (a circle) to the cul's edge, up the flank's arc to the entry's height, then a shoulder (a
+// quintic: value, slope and bend matched) to the neck's foot (radius 1, upright, an eighth of a gap under the loop's
+// base); then the neck, a tube round a line: up to the loop's base, the loop a half circle (radius KLEIN_CUL), down
 // its east branch KLEIN_DROP, then an S down through the body's side at the entry into the mouth (upright). Its round
 // angle u as Bourke's: (r cos u, r sin u) round the body, along the neck's normal and y; B(1, u) = B(0, π − u)
 const KLEIN_CUL = 2.83, KLEIN_GAP = 7.76, KLEIN_FLANK = 7.63, KLEIN_DROP = 1, KLEIN_SMOOTH = 1.5;
 let kleinShape = null;  // its pieces' sizes, made once (see kleinLine)
 function kleinLine() {
   if (kleinShape) return kleinShape;
-  const b = KLEIN_CUL, R = KLEIN_FLANK, entry = KLEIN_GAP / 2, base = entry + KLEIN_GAP, foot = base - 0.3 * KLEIN_GAP;
-  const cul = -Math.sqrt(R * R - 4 * b * b), arc = (z) => -b + Math.sqrt(R * R - z * z), slope = (z) => -z / Math.sqrt(R * R - z * z);
-  const bend = (z) => -(R * R) / (R * R - z * z) ** 1.5, edge = Math.atan2(1, slope(cul)), bowl = (b - 1) / (1 + Math.sin(edge)), mouth = cul + bowl * Math.cos(edge);
+  // (the loop's hole up to the top line: its centre the tube's width under it; the neck straight a little under the loop)
+  const b = KLEIN_CUL, R = KLEIN_FLANK, entry = KLEIN_GAP / 2, base = entry + KLEIN_GAP - (b - 1), foot = base - KLEIN_GAP / 8;
+  const arc = (z) => -b + Math.sqrt(R * R - z * z), slope = (z) => -z / Math.sqrt(R * R - z * z), cul = -entry, rim = arc(cul);  // (the cul's edge on the lower line)
+  const bend = (z) => -(R * R) / (R * R - z * z) ** 1.5, edge = Math.atan2(1, slope(cul)), bowl = (rim - 1) / (1 + Math.sin(edge)), mouth = cul + bowl * Math.cos(edge);
   // (the shoulder, z from the entry's height to the neck's foot: a quintic Hermite of the arc's value, slope and bend there, to 1, upright, straight)
   const h = foot - entry, [r0, s0, c0] = [arc(entry), slope(entry), bend(entry)];
   const shoulder = (z) => { const t = (z - entry) / h; return r0 * (1 - 10 * t ** 3 + 15 * t ** 4 - 6 * t ** 5) + s0 * h * (t - 6 * t ** 3 + 8 * t ** 4 - 3 * t ** 5)
@@ -15203,7 +15204,10 @@ const wayWord = (w, k) => !!(MODES[w].net && WALK_NETS[MODES[w].net].ways?.[walk
 const antTurnColour = (a) => ({ '↖': DIRECTION_COLOURS['←'], '↗': DIRECTION_COLOURS['→'], '↙': deeper(DIRECTION_COLOURS['←']), '↘': deeper(DIRECTION_COLOURS['→']), '↺': DIRECTION_COLOURS['←'], '↻': DIRECTION_COLOURS['→'], '↝': DIRECTION_COLOURS['→'] }[a]
   ?? DIRECTION_COLOURS[a] ?? GREY);
 // an ant's chips: its states; by the digits, its two digits (a 0 as its rule, a 1 the other way)
-const antChipColour = (k) => rampColour(k, antByDigits ? 2 : antColours(walk.mode));  // (the walk's own mode: see buildWalkOf)
+// the walk shown read its number's digits (an ant by its rule none: its digits empty), as it was built, whatever is asked
+// meanwhile (Rule × Digits clicked: the walk by its rule still shown till the digits come)
+const walkReadsDigits = () => walk.digits?.length > 0;
+const antChipColour = (k) => rampColour(k, walkReadsDigits() ? 2 : antColours(walk.mode));  // (the walk's own mode: see buildWalkOf)
 // a digit's colour: its direction's (an ant's: the turn it took, or its state), else in the digits' order
 const digitColour = (k) => walk.ant ? rampColour(k, walk.ant)
   : walk.skipZeros ? (k ? DIGIT_COLORS[0] : GREY)  // a spiral: 1 blue, drawn; 0 grey, moved without drawing
@@ -17335,7 +17339,7 @@ function updateStats() {
   const slow = walk.n && cur < walk.n && walk.counts && (!(playing || reversing) || speed <= 12);  // (backwards as forwards)
   let next = -1;
   if (slow) for (let c = 0; c < walk.base; c++) if (walk.counts[walk.base * (cur + 1) + c] !== walk.counts[walk.base * cur + c]) next = c;
-  const read = !slow || !walk.ant ? -1 : antByDigits ? walk.digits[cur] : 0;
+  const read = !slow || !walk.ant ? -1 : walkReadsDigits() ? walk.digits[cur] : 0;
   for (const chip of $('ruleChips').children) {
     const d = Number(chip.querySelector('small')?.id.slice(5));
     chip.classList.toggle('next', d === next);
@@ -17346,7 +17350,7 @@ function updateStats() {
   const strip = $('digitStrip');
   strip.classList.remove('line', 'turns');  // one line of digits; the other texts may wrap
   if (!walk.n) { strip.textContent = ''; return; }
-  if (walk.ant && !antByDigits) { strip.textContent = `Rule ${antRuleOf(walk.mode)} · the number's digits are not used`; return; }  // an ant by its rule
+  if (walk.ant && !walkReadsDigits()) { strip.textContent = `Rule ${antRuleOf(walk.mode)} · the number's digits are not used`; return; }  // an ant by its rule
   // One line of digits, exactly as many as fit (the strip is monospace, so it is a column count).
   // The head sits at 60 % of the line; at the start the line begins with the first digit, at the
   // end it finishes with the last one. The window then shrinks until "…", "0." and "." fit too.

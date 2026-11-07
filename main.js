@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.419';
+const VERSION = '0.4.420';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -7582,17 +7582,16 @@ function renderWalkTeams() {
   if (!here || !battleOn()) return;
   // its ways as cards, as Life's rules: a picture (a red head, a blue body or land), its name over its words
   const way = ([kind, name, head, words], p) => {
-    const cells = kind === 'landCells' || kind === 'snakeCells', can = kind === 'cut' || kind === 'landStop' || cells !== !!MODES[w].grid;
     return card({ pic: `<svg viewBox="0 0 4 4" aria-hidden="true"><path d="M0 0H4V4H0Z" fill="${LIFE_COLOURS[1]}"/><path d="${head}" fill="${LIFE_COLOURS[0]}"/></svg>`, name, detail: words,
-      title: can ? words : `${words}\nGreyed: ${cells ? 'along the grid, cells only' : 'on cells, along the grid only'}`, on: p === penetration, can, byDefault: p === 0 ? 'yes' : '',
+      title: words, on: p === penetration, whyNot: ({ w: v }) => penetrationWhyNot(kind, v), byDefault: p === 0 ? 'yes' : '',
       click: () => { if (p !== penetration) { penetration = p; compute(); } } });
   };
   $('walkPenetration').replaceChildren(...PENETRATIONS.map((P, p) => way(P, p)));
   // its starts' tabs, over the start selector (see STARTS_WAYS; the selector greyed but in Symmetric, see syncSizeStepper)
   if ($('startRow').previousElementSibling !== $('startWays')) $('startRow').before($('startWays'));
   const ways = STARTS_WAYS;  // (one list: its tabs and a link's gr=)
-  $('startWays').replaceChildren(tileGroup(ways.map(([way, text, title]) => tile({ pic: colourBlock(walkTeams), text, title, on: way === startsWayNow(), again: way === 'random', can: startsWayCan(way), byDefault: way === 'symmetric' ? 'yes' : '',
-    greyed: 'along a closed solid\'s grid only, where a point has as many edges out as walkers, or a multiple',
+  $('startWays').replaceChildren(tileGroup(ways.map(([way, text, title]) => tile({ pic: colourBlock(walkTeams), text, title, on: way === startsWayNow(), again: way === 'random', byDefault: way === 'symmetric' ? 'yes' : '',
+    greyed: CENTRED_WHERE, whyNot: ({ w, size }) => (startsWayCan(way, w, size) ? '' : CENTRED_WHERE),
     click: () => { if (way === startsWayNow() && way !== 'random') return; battleStartsWay = way; if (way === 'random') battleSeed = freshDraw(); compute(); } }))));  // (Random again: another draw)
 }
 // a battle's formula fields, each bold in its walker's colour once sent to be fought (computed, from Enter, Random or a
@@ -7644,7 +7643,14 @@ const STARTS_WAYS = [['symmetric', 'Symmetric', "A's start, picked below, moved 
   ['centred', 'Centred', "The walkers' starts side by side round one point of the surface's symmetry, each on an edge out of it, every so many edges: a face's centre (sphere of hexagons: Trio, or Duo, Trio and Sextet by its size), a corner (its pentagon: Quintet)"],
   ['random', 'Random', 'Each walker anywhere, drawn at random (kept in the link): not fair, each walker in a place of its own · Clicked again: another draw']];  // (its tabs in this order, a link's gr= its place: 0 the first, the default)
 let battleStartsWay = 'symmetric', battleSeed = 1;
-const startsWayCan = (way) => way !== 'centred' || groupedCan();
+// Centred's greyed words; a battle rule's at a mode: a way on cells only (Land cells, Snake cells) along a grid, or one along
+// the grid only on cells; a mode with no battle, none (Cut and Land no collision: anywhere)
+const CENTRED_WHERE = 'along a closed solid\'s grid only, where a point has as many edges out as walkers, or a multiple';
+const penetrationWhyNot = (kind, v) => {
+  const cells = kind === 'landCells' || kind === 'snakeCells';
+  return !battleMode(v) ? 'where there is no battle' : kind === 'cut' || kind === 'landStop' || cells !== !!MODES[v].grid ? '' : cells ? 'along the grid, cells only' : 'on cells, along the grid only';
+};
+const startsWayCan = (way, w, size) => way !== 'centred' || groupedCan(w, size);
 const startsWayNow = () => (battleOn() && startsWayCan(battleStartsWay) ? battleStartsWay : 'symmetric');  // (the one played: Symmetric where the one picked cannot be)
 // K walkers' starts anywhere, each its own place, drawn from seed: along the grid a corner and the corner it comes from,
 // on cells a tile and the edge it comes in by (A's start's other parts kept: a pivot's, a parity's)
@@ -7675,8 +7681,8 @@ function groupedStarts(g, start, K) {
   const e1 = unit(across(out[0])), angle = (e) => { const x = across(e); return Math.atan2(dot3(cross(e1, x), p), dot3(x, e1)); };
   return [...out].sort((x, y) => angle(x) - angle(y)).filter((_, i) => i % (out.length / K) === 0).map((e) => gridState(g, e));
 }
-const groupedCan = () => {  // (the walk shown: its K walkers can be grouped)
-  const mode = MODES[$('mode').value], size = battleMode($('mode').value) && mode.grid && sphereSize(), g = size && SPHERES[surfaceOf(mode)].mesh(size);
+const groupedCan = (w = $('mode').value, size = null) => {  // (a mode's, at a size or the one it opens at: its K walkers can be grouped)
+  const mode = MODES[w], g = battleMode(w) && mode.grid && pickedFigure(w, size).g;
   return !!g && !!groupedStarts(g, walkStart(g, mode), walkTeams);
 };
 // a battle's starts (see battleStarts; grouped, groupedStarts', where it can), or none, said in the status: A's place on an axis of the solid

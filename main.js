@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.549';
+const VERSION = '0.4.550';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -9298,13 +9298,14 @@ function buildLife(seq, mode) {
 // the surfaces' too); blocks, small ones too (6 and 8: a start's return to see, its period short). Two sides the same grid,
 // as built (its rectangle's: its rows and its row): once; a grid of 2 lattice cells across at least; a hexagon's by its side
 // alone, each its own (its hexagon fitted only when shown, see shapeW)
-const planeCells = (side, kind = MODES[$('mode').value].plane, k = planeKind(kind)) => { const W = (shaped(kind) ? sideW : planeW)(k, side); return W * planeRow(k, W); };  // a side's grid's cells, counted, not built (see picked)
-const planeSides = (kind, k = planeKind(kind), W = (f) => (shaped(kind) ? sideW : planeW)(k, f), cells = (f) => planeCells(f, kind, k), grid = (f) => `${W(f)}|${planeRow(k, W(f))}`) =>
+// (outline: the one its grid is built in, a setup's: its sides as many as that outline's grid allows, a hexagon's 2 across at least)
+const planeCells = (side, kind = MODES[$('mode').value].plane, k = planeKind(kind), outline = outlineOf(kind)) => { const W = shaped(kind, outline) ? sideW(k, side) : planeW(k, side, undefined, outline); return W * planeRow(k, W); };  // a side's grid's cells, counted, not built (see picked)
+const planeSides = (kind, k = planeKind(kind), outline = outlineOf(kind), W = (f) => (shaped(kind, outline) ? sideW(k, f) : planeW(k, f, undefined, outline)), cells = (f) => planeCells(f, kind, k, outline), grid = (f) => `${W(f)}|${planeRow(k, W(f))}`) =>
   [...(MODES[$('mode').value]?.margolus ? [6, 8] : []), ...SIDES.filter((f) => cells(f) >= CELLS.least && cells(f) <= CELLS.most)].filter((f, i, a) => W(f) >= 2 && (!i || grid(f) !== grid(a[i - 1])));
 // side: the grid's, the nearest it offers to the last picked (by hand or a link: kept, whatever grid comes); icons: an Icon
 // zone's, one a colour (or one for all)
 // a plane grid's side, for its tiling kind k: the one with about as many cells as the size picked (none: 48's)
-const planeSideOf = (k) => nearCells(planeSides(k), (f) => planeCells(f, k), picked ?? planeCells(48, k));
+const planeSideOf = (k, outline = outlineOf(k)) => nearCells(planeSides(k, k, outline), (f) => planeCells(f, k, k, outline), picked ?? planeCells(48, k, k, outline));
 const plane = { get side() { return planeSideOf(planeKind(MODES[$('mode').value].plane)); },  // (the mode in use's)
                 torus: true, shape: 'hex', text: APP_TITLE, font: 'sans', icons: [0],
                 start: 'random', density: 30, seed: 1 + Math.floor(Math.random() * 999999999), sym: 'none', number: '1/7' };  // (number: Formula's, see numberSeed)  // a soup of its own each visit (a link keeps its seed)
@@ -10731,7 +10732,7 @@ const symmetryAllowed = (y, v, { start, zone, colours = lifeColours, newcomer: n
   const m = MODES[v], outline = m.plane && outlineIn(outlineSet, m.plane), k = m.plane && planeKind(m.plane, outline), by = { start, zone, K: parts === lifeColours - (newcomerOn() ? 1 : 0) ? undefined : parts, outline };  // (the game's where they are its)
   if (v === walk.mode && walk.plane && outline === outlineOf(m.plane)) return symmetriesHere(walk.plane.kind, walk.plane.W, undefined, by).includes(y);
   if (!m.plane || m.elementary || m.margolus || !m.life) return y === 'none';
-  return symmetriesHere(k, planeW(k, planeSideOf(k), m, outline), null, by).includes(y);
+  return symmetriesHere(k, planeW(k, planeSideOf(k, outline), m, outline), null, by).includes(y);  // (its side in that outline, see planeSides)
 };
 function renderSymmetry() {
   const kind = MODES[$('mode').value].plane, has = walk.plane ? symmetriesHere(walk.plane.kind, walk.plane.W) : ['none'], now = walk.plane ? symmetryOf(walk.plane.kind) : 'none';

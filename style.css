@@ -54,7 +54,7 @@
 
 /* the staircase (𓊍, the length asked's unit) 1.4 times its line wherever it is written, an input's text too: by a font
    face for that one character only, first in the page's fonts (none of these fonts: 𓊍 as the system draws it) */
-@font-face { font-family: 'Stairs'; src: local('Noto Sans Egyptian Hieroglyphs'), local('NotoSansEgyptianHieroglyphs-Regular'), local('Segoe UI Historic'); unicode-range: U+1328D; size-adjust: 140%; }
+@font-face { font-family: 'Stairs'; src: local('Noto Sans Egyptian Hieroglyphs'), local('NotoSansEgyptianHieroglyphs-Regular'), local('Segoe UI Historic'); unicode-range: U+1328D; size-adjust: 140%; ascent-override: 0%; descent-override: 0%; }
 
 html, body {
   margin: 0;

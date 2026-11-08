@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.594';
+const VERSION = '0.4.595';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -1592,6 +1592,7 @@ const freshWalk = () => ({
   visits: null, maxVisits: 0,
   ant: 0, turns: null, antStates: null, highway: null, bridges: null,  // an ant's walk only
   rows: null,      // Elementary's rows (see elementaryRows)
+  sweetSpot: undefined,  // its sweet spot, worked out once asked (see sweetSpot)
   wormEnd: false, wormMade: 0,  // a worm's walk only: why and after how many turns of its own it stops
   battle: null,    // a battle only (see 7.6b)
   life: null, plane: null,  // Life's; on the plane, its grid
@@ -15886,6 +15887,18 @@ function firstVisits() {
 // big parts of the surface (half a sphere, the whole of a Klein bottle, all of a torus: the dragon's) whatever the figure:
 // only the small areas its figure rings are filled, PATTERN_AREA tiles at most (Area's tooltip says so)
 const PATTERN_AREA = 2;
+// A walk along a surface's grid: its sweet spot, the step before its first ocean (the first time it closes off more than
+// SWEET_OCEAN of the surface at once: its continents made, the surface not flooded yet); null without an ocean
+const SWEET_OCEAN = 0.1;
+const sweetSpot = () => {
+  if (walk.sweetSpot !== undefined) return walk.sweetSpot;
+  if (!walk.sphere || !walk.vert || !walk.n) return (walk.sweetSpot = null);
+  const at = areaSteps(), closed = new Map();
+  for (const s of at) if (s >= 0) closed.set(s, (closed.get(s) ?? 0) + 1);  // (the tiles each step closes off)
+  let ocean = Infinity;
+  for (const [s, k] of closed) if (k > SWEET_OCEAN * walk.geo.n && s < ocean) ocean = s;
+  return (walk.sweetSpot = ocean < Infinity ? ocean - 1 : null);
+};
 const patternAreaCap = () => (walk.stepTiles && digitsComputed?.patterned ? PATTERN_AREA : Infinity);
 // A walk along the grid (on cells none: Area greyed, see areaWhyNot): the regions are made of tiles, two neighbouring
 // tiles being separated once the walk has gone along the edge between them, so the areas follow the path exactly; their
@@ -17549,6 +17562,8 @@ function drawActivity() {
   if (first < 0) mark(0, css.getPropertyValue('--muted'));
   const o = runLoop();
   if (o) mark(o.T, css.getPropertyValue('--run-end-color'), 2);  // (its loop's first step, or where it stops (frozen, dead, a walk's end): in its link's colour)
+  else if (!walk.life && walk.n) mark(walk.n, css.getPropertyValue('--run-end-color'), 2);  // (a walk's end, the length asked)
+  if (sweetSpot() !== null) mark(sweetSpot(), css.getPropertyValue('--sweet-spot-color'), 1);  // (its sweet spot, as its link)
   if (walk.life?.colours === 1 && lifeTime()) {  // (as their gauges: its ordered moments, a reversible one's (see orderMarks), else the most ordered; the most alive, in gold as the curve)
     for (const g of reversibleRun() ? orderMarks(walk.life) : [peaks(walk.life).orderGen]) mark(g, css.getPropertyValue('--sector'), 1);
     mark(peaks(walk.life).aliveGen, accent, 0);
@@ -17750,7 +17765,7 @@ function updateStats() {
   walk.widestShown = Math.max(walk.widestShown, stepShown, known ? far : 0);  // (its last once known, else the furthest shown: a ratchet)
   $('stepNow').innerHTML = `${gens ? 'Gen' : 'Step'} ${formatNumberAsWide(stepShown, walk.widestShown)}`;
   setLinks($('stepLast'), known ? ` / ${formatNumber(far)}` : '');  // (a run's, Life's or a reversible one's: once its loop is known)
-  setLinks($('stepEnd'), endMark());
+  setLinks($('stepEnd'), endMark() + (sweetSpot() !== null ? ` ${genLink(sweetSpot(), `✦<span class="end-words"> sweet spot</span>`, 'sweet')}` : ''));  // (its link to its sweet spot, after its end's)
   if (!walk.life && !walk.battle) $('ranking').hidden = $('rankTitles').hidden = true;  // (a battle's shown by renderWalkGauges: never hidden in between, its rows' slides kept)
   const time = walk.stacked && !!stack, rows = walk.rows;
   if (time || rows) {  // Space-time: its cubes up to the generation shown; Elementary: its live cells up to it (see elementaryRows): a gauge, as a walk's and Life's

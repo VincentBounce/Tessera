@@ -52,12 +52,16 @@
 * { box-sizing: border-box; }
 [hidden] { display: none !important; }
 
+/* the staircase (𓊍, the length asked's unit) 1.4 times its line wherever it is written, an input's text too: by a font
+   face for that one character only, first in the page's fonts (none of these fonts: 𓊍 as the system draws it) */
+@font-face { font-family: 'Stairs'; src: local('Noto Sans Egyptian Hieroglyphs'), local('NotoSansEgyptianHieroglyphs-Regular'), local('Segoe UI Historic'); unicode-range: U+1328D; size-adjust: 140%; }
+
 html, body {
   margin: 0;
   height: 100%;
   background: var(--page-background);
   color: var(--text-color);
-  font: var(--text-size)/1.4 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font: var(--text-size)/1.4 'Stairs', system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
 }
 
 body { display: flex; flex-direction: column; font-variant-numeric: tabular-nums; }  /* every digit as wide as the others, everywhere: numbers that change (a step, a count) never jump */
@@ -69,7 +73,7 @@ header { padding: 0; border-bottom: 1px solid var(--border-color); }  /* one hai
 .header-end .max-steps { margin: 0; width: 176px; flex: none; }  /* the length asked: one width whatever it says (see compactCount) */
 .header-end .max-steps .field input { padding-right: 32px; }  /* (room for its unit, inside its box) */
 .header-end .max-steps .field input:not(:focus) { text-align: right; }  /* (its number against its unit; typed, as any field) */
-.max-steps .steps-glyph { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); display: flex; font-size: 20px; line-height: 1; color: var(--accent-color); pointer-events: none; }  /* its unit, steps, in its words' gold */
+.max-steps .steps-glyph { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); display: flex; line-height: 1; color: var(--accent-color); pointer-events: none; }  /* its unit, steps, in its words' gold */
 .max-steps .field:focus-within .steps-glyph { display: none; }  /* (typing: the number alone, Enter's ↵ there) */
 
 main { flex: 1; display: flex; min-height: 0; }

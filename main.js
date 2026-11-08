@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.573';
+const VERSION = '0.4.574';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -17579,10 +17579,11 @@ function renderGauges(L) {
 const timings = {};
 const setTiming = (stage, ms) => { if (ms === undefined) delete timings[stage]; else timings[stage] = ms; paintTimings(); };
 const timed = (stage, make) => { const t0 = performance.now(), out = make(); setTiming(stage, performance.now() - t0); return out; };
-const paintTimings = () => $('timings') && paintGauges(Object.entries(timings).map(([stage, ms]) => [stage, null, null, typeof ms === 'number' ? (ms < 1000 ? `${ms.toFixed(1)} ms` : `${(ms / 1000).toFixed(2)} s`) : ms]), $('timings'));
-// a box of gauges (the stats', the app's page's Stats/debug): a row each, its name, its bar (share: none, null), its number
-function paintGauges(rows, box = $('gauges')) {
-  const key = rows.map(([name, , share]) => `${name}${share === null ? '' : '|'}`).join();
+// (as the commands' reminder: a compact table, its times at the right; shown only while the app's page is)
+const paintTimings = () => { if ($('timings')) $('timings').innerHTML = Object.entries(timings).map(([stage, ms]) => `<tr><td>${stage}</td><td class="number">${typeof ms === 'number' ? (ms < 1000 ? `${ms.toFixed(1)} ms` : `${(ms / 1000).toFixed(2)} s`) : ms}</td></tr>`).join(''); };
+// the stats' gauges: a row each, its name, its bar (share: none, null), its number
+function paintGauges(rows) {
+  const box = $('gauges'), key = rows.map(([name, , share]) => `${name}${share === null ? '' : '|'}`).join();
   if (box.dataset.key !== key) {
     box.dataset.key = key;
     box.innerHTML = rows.map(([name, , share]) => `<div class="gauge-row"><span>${name}</span>${share === null ? '<span></span>' : '<span class="rank-bar"><i></i></span>'}<span class="rank-num"></span></div>`).join('');
@@ -18884,7 +18885,7 @@ function credits(open) {
   $('ruleTuto').innerHTML = `<div class="tut-body"><h3>${APP_TITLE} <code>v${VERSION}</code></h3><p>Made by ${AUTHOR}</p><p>Cellular automata on tilings, surfaces and solids, and walks on the digits of numbers: the work of many, here.</p>`
     + CREDITS.map(([title, who]) => `<h4>${title}</h4><p>${who}.</p>`).join('')
     + `<p><a href="https://github.com/VincentBounce/Tessera#readme" target="_blank" rel="noopener">Its README</a> · <a href="https://github.com/VincentBounce/Tessera" target="_blank" rel="noopener">its code</a></p>`
-    + '<div class="form-section"><h4>Stats/debug</h4><div id="timings" class="ranking gauges"></div></div></div>';  // (the walk shown's times, see timings)
+    + '<div class="form-section"><h3>Stats/debug</h3><h4>Times</h4><table id="timings" class="tut-commands"></table></div></div>';  // (the walk shown's times, see timings)
   paintTimings();
   $('ruleTuto').prepend(tutTools({ words: [['Share link', 'Copy the link to what is shown', (e) => shareView(e.currentTarget)], ['Home', 'Back to the start', () => { location.href = location.pathname; }]], close: () => credits(false) }));
 }

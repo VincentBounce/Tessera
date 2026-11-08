@@ -453,7 +453,6 @@ button.wide.active, .head-btn.active { border-color: var(--accent); color: var(-
 .ranking .rank-row { position: absolute; left: 0; right: 0; top: 0; height: 18px; display: grid; grid-template-columns: 16px 12px minmax(0, 1fr) 76px; align-items: center; gap: 6px; transition: transform 0.4s; }
 .gauges:not([hidden]) { display: grid; grid-template-columns: minmax(64px, max-content) minmax(0, 112px) minmax(110px, max-content); grid-auto-rows: 18px; align-items: center; column-gap: 6px; }  /* one colour: fixed rows, one set of columns (a figure as wide as it needs, on one line) */
 .gauges .gauge-row { display: contents; }
-.gauges:not(:has(.rank-bar)) { grid-template-columns: minmax(0, 1fr) 0 max-content; }  /* (no row with a bar, Display's Times: its name, its bar's place none, its number at the right) */
 .gauges .rank-num { white-space: nowrap; }
 .gauges .gauge-row > span:first-child { color: var(--muted); }
 .ranking .rank-cell { display: none; white-space: nowrap; text-align: right; }
@@ -643,4 +642,5 @@ button.mark.active::after { background: linear-gradient(135deg, transparent 50%,
 .tut-commands td:nth-child(2) { color: var(--text-color); }  /* its command and its name; what it does, muted */
 .rule-tuto p.tut-commands-note { margin-top: 8px; }  /* how an ant's rule is written, under the table */
 .tut-commands td { padding: 2px 10px 2px 0; vertical-align: top; }
+.tut-commands td.number { text-align: right; }  /* (a time, Stats/debug's) */
 .tut-commands td:first-child, .tut-commands td:nth-child(2) { white-space: nowrap; }  /* (a command and its name on one line) */

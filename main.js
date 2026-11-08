@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.626';
+const VERSION = '0.4.627';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -17908,10 +17908,12 @@ let linkedAt = null;  // the step shown as the link was last written, still (see
 function tick(now = performance.now()) {
   const raw = (now - (lastTick || now)) / 1000;
   if (raw > 1 / 250 && raw < 1 / 40) {  // the screen's frame: the time of its last 120 by the frames they showed (a frame's own time trembles
-    // round the refresh; one missed lasts two, and counts as two); none slower than 40 Hz (a hidden page's, throttled); its
-    // speed as played told again (see evenSpeed)
+    // round the refresh; one missed lasts two, and counts as two, against their median: never against the last measure, which
+    // once halved stayed halved, 288 Hz on a 144 Hz screen); none slower than 40 Hz (a hidden page's, throttled); its speed
+    // as played told again (see evenSpeed)
     frameSample.push(raw); if (frameSample.length > 120) frameSample.shift();
-    const hz = screenHz(), shown = frameSample.reduce((n, r) => n + Math.max(1, Math.round(r / frameTime)), 0);
+    const median = [...frameSample].sort((a, b) => a - b)[frameSample.length >> 1];
+    const hz = screenHz(), shown = frameSample.reduce((n, r) => n + Math.max(1, Math.round(r / median)), 0);
     frameTime = frameSample.reduce((a, b) => a + b, 0) / shown; if (screenHz() !== hz) updateSpeedLabel();
   }
   const dt = Math.min(0.1, raw);  // seconds since the last frame (capped)

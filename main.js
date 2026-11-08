@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.601';
+const VERSION = '0.4.602';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -15170,14 +15170,19 @@ async function importGallery(file) {
 
 /* ---- 11.1 Animation ----------------------------------------------------------------------- */
 // The speed, in steps per second: typed (1 to 5,000,000), or the turtle and the rabbit step through
-// SPEEDS (60 by default; at 12 or less the next step's chip lights, as step by step): divisors and
-// multiples of 60, so that a screen at 60 or 120 frames a second shows as many steps at every frame
-// (50 a second at 60 Hz: one frame in 6 without a step, a stutter)
-const SPEEDS = [6, 12, 60, 120, 600, 1200, 6000, 12000, 60000, 120000, 600000, 1200000, 6000000];
+// SPEEDS (60 by default; at 12 or less the next step's chip lights, as step by step); played at the screen's own rhythm
+// (evenSpeed): a step every k frames below its refresh, k steps a frame above, so that each step shows as long as the
+// others (60 a second at 144 Hz: 2 frames then 3, a stutter; at 72, 2 frames each)
+const SPEEDS = [1, 6, 12, 60, 120, 600, 1200, 6000, 12000, 60000, 120000, 600000, 1200000, 6000000];
 let speed = defaultOf('speed', tabMode());
-const stepsPerSecond = () => speed;
+// the screen's refresh, as measured: its frame (frameTime, the median of its last ones, see tick)
+const screenHz = () => Math.round(1 / frameTime);
+const evenSpeed = (v) => { const R = screenHz(); return v < R ? R / Math.max(1, Math.round(R / v)) : R * Math.round(v / R); };
+const stepsPerSecond = () => evenSpeed(speed);
+// a speed in words: whole from 10 a second, else to a tenth (5.9 at 165 Hz)
+const speedWords = (v) => formatNumber(v < 10 ? Math.round(v * 10) / 10 : Math.round(v));
 function updateSpeedLabel() {
-  if (document.activeElement !== $('speedLabel')) $('speedLabel').value = `${formatNumber(speed)} steps/s`;
+  if (document.activeElement !== $('speedLabel')) $('speedLabel').value = `${speedWords(stepsPerSecond())} steps/s`;  // (as played: at the screen's rhythm)
   setTile($('slower'), { greyed: speed <= 1 ? 'Already the slowest.' : '' });
   setTile($('faster'), { greyed: speed >= SPEEDS.at(-1) ? 'Already the fastest.' : '' });
 }
@@ -15702,10 +15707,10 @@ const turnToward = (from, to, n, w) => {
   const across = cross(n, from), a = Math.atan2(dot3(across, to), dot3(from, to)) * w;
   return unit([0, 1, 2].map((d) => from[d] * Math.cos(a) + across[d] * Math.sin(a)));
 };
-// Played slower than a step a frame (the screen's: frameMin, its shortest), a head glides from its place to its next one,
+// Played slower than a step a frame (the screen's: frameTime), a head glides from its place to its next one,
 // by the step's time gone (stepsDue: the fraction of a step owed), drawn each frame (see tick), on a surface (an ogive) or
 // the plane (an arrow, see drawOverlay); else on its place
-const gliding = () => (playing || reversing) && stepsPerSecond() * frameMin < 1 && !!walk.n && !walk.life && !walk.rows;
+const gliding = () => (playing || reversing) && stepsPerSecond() * frameTime < 1 && !!walk.n && !walk.life && !walk.rows;
 const glideAt = () => (!gliding() ? stepShown : reversing ? Math.max(0, stepShown - stepsDue) : Math.min(stepShown + stepsDue, (walk.battle?.player.n ?? walk.n)));
 // a start's flag: its pole planted in its place along the surface's normal, over a head (2.2 of its sizes high), its sail
 // at its top an arrow pointing the way it goes (both its faces); its triangles' corners and normals, as an ogive's
@@ -17893,16 +17898,20 @@ function stripColumns(el) {
  * Per frame of the screen, as there: the rates are 0.003 rad times the screen's refresh rate (the
  * shortest time seen between two frames), counted in time, so a slow frame here does not slow it. */
 const SPIN_PER_FRAME = [0.003, -0.003, 0.001];
-let lastTick = 0, spinTime = 0, frameMin = 1 / 60;
+let lastTick = 0, spinTime = 0, frameTime = 1 / 60;  // the screen's frame, measured (see tick)
+const frameSample = [];  // (its last frames, seconds)
 const rotX = (a) => [[1, 0, 0], [0, Math.cos(a), -Math.sin(a)], [0, Math.sin(a), Math.cos(a)]];
 const rotY = (a) => [[Math.cos(a), 0, Math.sin(a)], [0, 1, 0], [-Math.sin(a), 0, Math.cos(a)]];
 const rotZ = (a) => [[Math.cos(a), -Math.sin(a), 0], [Math.sin(a), Math.cos(a), 0], [0, 0, 1]];
 const matMul = (A, B) => A.map((row) => [0, 1, 2].map((j) => row[0] * B[0][j] + row[1] * B[1][j] + row[2] * B[2][j]));
-const spinAt = (t) => { const hz = 1 / frameMin; return matMul(matMul(rotX(SPIN_PER_FRAME[0] * hz * t), rotY(SPIN_PER_FRAME[1] * hz * t)), rotZ(SPIN_PER_FRAME[2] * hz * t)); };
+const spinAt = (t) => { const hz = 1 / frameTime; return matMul(matMul(rotX(SPIN_PER_FRAME[0] * hz * t), rotY(SPIN_PER_FRAME[1] * hz * t)), rotZ(SPIN_PER_FRAME[2] * hz * t)); };
 let linkedAt = null;  // the step shown as the link was last written, still (see tick)
 function tick(now = performance.now()) {
   const raw = (now - (lastTick || now)) / 1000;
-  if (raw > 1 / 250) frameMin = Math.min(frameMin, raw);  // the screen's refresh: its shortest frame
+  if (raw > 1 / 250 && raw < 1 / 40) {  // the screen's frame: the median of its last ones, an early or a late one ignored; none slower than 40 Hz (a hidden page's, throttled); its speed as played told again (see evenSpeed)
+    frameSample.push(raw); if (frameSample.length > 31) frameSample.shift();
+    const hz = screenHz(); frameTime = frameSample.toSorted((a, b) => a - b)[frameSample.length >> 1]; if (screenHz() !== hz) updateSpeedLabel();
+  }
   const dt = Math.min(0.1, raw);  // seconds since the last frame (capped)
   lastTick = now;
   if (spinFrom && now >= spinFrom) {  // a Gallery setup starts turning (see showSetup)
@@ -17913,7 +17922,7 @@ function tick(now = performance.now()) {
     // the turn from one frame to the next, Q = M(t + dt)·M(t)ᵀ, as a rotation vector on the screen's axes
     let k = 1;  // easing in after a Gallery setup's start
     if (spinRamp) { const t = Math.min(1, (now - spinRamp) / SPIN_EASE); k = t * t * (3 - 2 * t); if (t >= 1) spinRamp = 0; }
-    if ($('upright').checked) rotateView([0, 0, SPIN_PER_FRAME[1] * (dt * k) / frameMin]);  // Upright: round the vertical only, level
+    if ($('upright').checked) rotateView([0, 0, SPIN_PER_FRAME[1] * (dt * k) / frameTime]);  // Upright: round the vertical only, level
     const A = spinAt(spinTime), B = spinAt(spinTime += $('upright').checked ? 0 : dt * k);
     const Q = B.map((row) => [0, 1, 2].map((j) => row[0] * A[j][0] + row[1] * A[j][1] + row[2] * A[j][2]));
     const angle = Math.acos(Math.min(1, Math.max(-1, (Q[0][0] + Q[1][1] + Q[2][2] - 1) / 2))), sin = Math.sin(angle);
@@ -17922,13 +17931,13 @@ function tick(now = performance.now()) {
       rotateView(screenTurn(...axis));
     }
   }
-  if (!playing && !reversing && walk.lifeGoal !== null && !walk.stacked) lifeTo(walk.lifeGoal, now + 750 * frameMin);  // (a generation asked, its batch back: on to it; Space-time's: its own, see stackUp)
+  if (!playing && !reversing && walk.lifeGoal !== null && !walk.stacked) lifeTo(walk.lifeGoal, now + 750 * frameTime);  // (a generation asked, its batch back: on to it; Space-time's: its own, see stackUp)
   if (playing || reversing) {
     stepsDue += stepsPerSecond() * dt;  // time-based, so the speed holds whatever the frame rate
     const k = Math.floor(stepsDue), from = walk.lifeGoal ?? stepShown;  // (on from where it was going: a batch on the card, its steps not lost)
     stepsDue -= k;
     if (k > 0 || walk.lifeGoal !== null) {  // (no step this frame: its batch back taken all the same, the next one sent)
-      advanceTo(reversing ? (from === runStart() && loopBack() ? from - k : Math.max(runStart(), from - k)) : from + k, now + 750 * frameMin);  // (from 0 round its loop, back to 0; its steps three quarters of the screen's frame at most: faster than it can, as fast as it can, its frames kept)
+      advanceTo(reversing ? (from === runStart() && loopBack() ? from - k : Math.max(runStart(), from - k)) : from + k, now + 750 * frameTime);  // (from 0 round its loop, back to 0; its steps three quarters of the screen's frame at most: faster than it can, as fast as it can, its frames kept)
       if (reversing && stepShown <= runStart()) reverse(false);  // (back at its start, after a step)
     }
   }
@@ -18927,7 +18936,8 @@ function credits(open) {
   $('ruleTuto').innerHTML = `<div class="tut-body"><h3>${APP_TITLE} <code>v${VERSION}</code></h3><p>Made by ${AUTHOR}</p><p>Cellular automata on tilings, surfaces and solids, and walks on the digits of numbers: the work of many, here.</p>`
     + CREDITS.map(([title, who]) => `<h4>${title}</h4><p>${who}.</p>`).join('')
     + `<p><a href="https://github.com/VincentBounce/Tessera#readme" target="_blank" rel="noopener">Its README</a> · <a href="https://github.com/VincentBounce/Tessera" target="_blank" rel="noopener">its code</a></p>`
-    + '<div class="form-section"><h3>Stats/debug</h3><h4>Times for this view</h4><table id="timings" class="tut-commands"></table></div></div>';  // (the walk shown's times, see timings)
+    + '<div class="form-section"><h3>Stats/debug</h3><h4>Times for this view</h4><table id="timings" class="tut-commands"></table>'  // (the walk shown's times, see timings)
+    + `<h4>Screen: ${screenHz()} Hz</h4><table class="tut-commands"><tr><td>Speed asked</td><td class="number">played</td></tr>${SPEEDS.map((v) => `<tr><td>${formatNumber(v)}/s</td><td class="number">${speedWords(evenSpeed(v))}/s</td></tr>`).join('')}</table></div></div>`;  // (its refresh, and each speed as it plays there: see evenSpeed)
   paintTimings();
   $('ruleTuto').prepend(tutTools({ words: [['Share link', 'Copy the link to what is shown', (e) => shareView(e.currentTarget)], ['Home', 'Back to the start', () => { location.href = location.pathname; }]], close: () => credits(false) }));
 }

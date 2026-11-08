@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.637';
+const VERSION = '0.4.638';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -15829,7 +15829,7 @@ function drawSphere() {
   const logLevel = (v, max) => 1 + Math.round((Math.log(v) / Math.log(Math.max(2, max))) * (LEVELS - 1));
   // palette[0] is the unlit background; levelOf(t) picks each tile's palette entry
   let palette = [null, ...grad];
-  let levelOf = (t) => (visits[t] ? logLevel(visits[t], maxVisits) : 0);  // walk: visits, log scale
+  let levelOf = (t) => (visits[t] ? logLevel(visits[t], maxVisits) : 0), shownOf = null;  // walk: visits, log scale; shownOf: a tile's share faded in (see cellShown)
   const L = walk.life, stepped = !L && stepLook($('colourMode').value), line = !!stepped;  // Rainbow or Commands: its steps' colours (see stepLook)
   const path = !L && !walk.battle && (MODES[walk.mode].cells ? $('showPath').checked : line);  // on cells, with Show path only (a battle: its bodies, no path)
   if (line) {  // a tile walked through (Fill cells) in its first visit's colour, by the look; enclosed (Area, Rainbow only), or dark
@@ -15840,6 +15840,7 @@ function drawSphere() {
     palette = [null, ...faint(colours), ...(stepped.key ? [] : areaLight() ? rainbow.map((c) => faded(c, FADING)) : rainbow)];
     levelOf = (t) => (cells && cells[t] >= 0 && cells[t] <= stepShown ? level(cells[t])
       : areas && areas[t] >= 0 && areas[t] <= stepShown ? 1 + BANDS + band(areas[t]) : 0);
+    if (cells) shownOf = (t) => (cells[t] >= 0 && cells[t] <= stepShown ? cellShown(cells[t]) : 1);  // (a cell fades in as in 2D)
   }
   // an ant's cells, as in 2D (see CELL_MODES): States, by their colour (the times it was on each, the one under it as it
   // will be), Path's faded under its line; Rainbow and Heatmap as a walk's
@@ -15871,7 +15872,7 @@ function drawSphere() {
   if (L) {  // Life's look, the plane's (see lifeLook): the walls, the pentagons of the hexagon sphere, in stone grey
     const rgba = (c) => [...rgbCached(c).map((x) => x / 255), 1], look = { ...lifeLook(L, true), wall: rgba(LIFE_WALL), dead: rgba(blankTile()) };
     gpuSurface((out) => gpuLook(L, out, look), path);
-  } else gpuSurface(paintLevels(palette, levelOf), path);  // (see 11.4d)
+  } else gpuSurface(paintLevels(palette, levelOf, shownOf), path);  // (see 11.4d)
   drawHover();
 }
 
@@ -16148,9 +16149,9 @@ function outwardFolds(tri, P, Q, N) {
 }
 // a surface's tiles' colours from a palette (null: unlit) and each tile's place in it (out of it: unlit), into their buffer
 // (out.put, see gpuSurface)
-const paintLevels = (palette, levelOf) => (out, n) => {
+const paintLevels = (palette, levelOf, shownOf = null) => (out, n) => {  // (shownOf: a tile's share faded in over the background, 1 whole)
   const rgb = palette.map((c) => packed(c ?? blankTile())), col = new Uint32Array(n);
-  for (let t = 0; t < n; t++) col[t] = rgb[levelOf(t)] ?? rgb[0];
+  for (let t = 0; t < n; t++) { const k = levelOf(t), a = k && shownOf ? shownOf(t) : 1; col[t] = a < 1 ? packed(faded(palette[k], a, blankTile())) : rgb[k] ?? rgb[0]; }
   out.put(col);
 };
 // Glass: the surface see-through, every layer showing, its grid and path too (weighted blended, see gpuFrame); Cut: a half
@@ -17110,6 +17111,9 @@ function gpuFrame(enc, drawAll) {
 // see flatPathV); walkFadeSteps: the steps it takes at the speed played
 const WALK_FADE_SECONDS = 0.25;
 const walkFadeSteps = () => (playing || reversing ? stepsPerSecond() * WALK_FADE_SECONDS : 0);  // (a quarter of a step at 1/s: 0.25 s too)
+// a cell come at step at: its share shown, from nothing as it comes to whole a fade later (flatTilesV's own, for a surface's
+// tiles, see paintLevels); the start's, there before any step, and all paused: whole
+const cellShown = (at) => { const f = walkFadeSteps(); return f > 0 && at > 0 ? Math.min(1, Math.max(0, (glideAt() - at) / f)) : 1; };
 function gpuFlat(to) {
   if (cubesWalk()) return gpuCubes(to + 1, walk.wx, walkCubes, walk.maxDist[walk.n]);
   if (walk.rows) { gpuClear(); drawElementary(to); return true; }  // (Elementary: a picture, see drawElementary)

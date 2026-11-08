@@ -1,10 +1,9 @@
 :root {
-  /* the text's sizes, five, each element one of them: */
+  /* the text's sizes, four, each element one of them: */
   --caption-text-size: 11px;  /* a card's words, a bubble, a figure's caption */
   --label-text-size: 12px;  /* a field's label, a note, a hint, the ranking */
   --text-size: 14px;  /* the page's text: a card's name, a list, the tabs, How it works' words and its h4 */
-  --title-text-size: 18px;  /* a title: How it works' */
-  --figure-text-size: 20px;  /* a big number: the bar's, the step's */
+  --title-text-size: 18px;  /* a title: How it works', the bar's name or number, the step line */
   --mono: ui-monospace, "SF Mono", Menlo, monospace;  /* digits and the rules' commands: l, I, | and 1 told apart */
   --view-gap: 12px;  /* the view's boxes from its edges (player, display, hint), a fit's margin too (see viewFor) */
   --player-width: calc(6 * 48px + 5 * 6px);  /* the player's six buttons and their gaps (a .row's): the folded bar's inner width */
@@ -469,7 +468,7 @@ button.wide.active, .head-btn.active { border-color: var(--accent); color: var(-
 .ranking .rank-row.dead > i { opacity: 0.35; }
 .ranking .all-dead { position: absolute; left: 0; top: 0; line-height: 18px; font-weight: 600; }
 .bar-title { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 8px; margin-bottom: 8px; white-space: nowrap; overflow: hidden; }  /* the title, its chips on its right, on the next line when there is no room */
-.bar-num { flex: 0 1 auto; min-width: 0; max-width: 100%; font-size: var(--figure-text-size); font-weight: 700; color: var(--accent); overflow: hidden; text-overflow: ellipsis; }  /* the number first */
+.bar-num { flex: 0 1 auto; min-width: 0; max-width: 100%; font-size: var(--title-text-size); font-weight: 700; color: var(--accent); overflow: hidden; text-overflow: ellipsis; }  /* the number first */
 .bar-sub { margin: -4px 0 8px; font-size: var(--label-text-size); color: var(--muted); }
 .bar-sub b { color: var(--text-color); }
 .rule-chips { display: grid; grid-template-columns: repeat(auto-fit, minmax(80px, 1fr)); gap: 5px; margin-bottom: 9px; }
@@ -523,7 +522,7 @@ button.wide.active, .head-btn.active { border-color: var(--accent); color: var(-
 /* the steps, on their own line above the buttons; the speed after ⏭, between a turtle and a rabbit */
 .speed-icon { flex: none; width: 23px; height: 23px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
 
-.step-line { font-size: var(--figure-text-size); font-weight: 700; color: var(--text-color); white-space: nowrap; margin-bottom: 4px; }  /* the step or generation shown, as large as the title, folded or open, every mode */
+.step-line { font-size: var(--title-text-size); font-weight: 700; color: var(--text-color); white-space: nowrap; margin-bottom: 4px; }  /* the step or generation shown, as large as the title, folded or open, every mode */
 .digits-pad { visibility: hidden; }  /* a count's hidden zeros in front: as wide as its widest (see fmtAsWide) */
 .step-line #stepLast { color: var(--muted); }  /* its last, after it, always: the line keeps its width */
 .step-line .end-words { display: none; }  /* its end's words, open only (folded: its mark) */

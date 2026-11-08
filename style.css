@@ -526,7 +526,6 @@ button.wide.active, .head-btn.active { border-color: var(--accent-color); color:
 .stage-bar .speed-stepper { margin: 0; }
 .speed-stepper button { width: 48px; }
 .speed-stepper input, .speed-stepper button { height: 32px; }  /* as high as the buttons beside */
-.speed-stepper input { color: var(--text-color); font-weight: 400; }
 /* the steps, on their own line above the buttons; the speed after ⏭, between a turtle and a rabbit */
 .speed-icon { flex: none; width: 23px; height: 23px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
 

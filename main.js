@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.648';
+const VERSION = '0.4.649';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -3707,7 +3707,7 @@ function choicesAt(s, reads = null, coloursMemo = new Map()) {  // (each [key, t
   if (m.plane && m.life && !APERIODIC[m.plane] && wants('outline')) for (const [shape, torus, text] of OUTLINES) if (outlineOf(m.plane, shape, torus) === shape) set(`outline:${shape}-${torus ? 'torus' : 'walled'}`, 'outline', `${shape}|${torus ? 1 : 0}`, '', text);  // (its outline tiles)
   if (m.life && wants('newcomer')) set('newcomer', 'newcomer', !s.newcomer, newcomerCan(s.colours, w, s.size, s.start, s.rule) ? '' : 'none', 'Newcomer');  // (a switch where it can be)
   const starts = wants('startNo') && w === tabMode() && modeStarts();  // (a start's −, +: at the mode shown, its starts' list known there)
-  if (starts) { set('startNo:-1', 'startNo', s.startNo - 1, s.startNo <= 1 ? 'none' : '', 'Previous start'); set('startNo:+1', 'startNo', s.startNo + 1, s.startNo >= starts.length ? 'none' : '', 'Next start'); }
+  if (starts) { set('startNo:-1', 'startNo', startStep(s.startNo, -1, starts.length), '', 'Previous start'); set('startNo:+1', 'startNo', startStep(s.startNo, 1, starts.length), '', 'Next start'); }
   if (wants('zone') && w === walk.mode && s.colours === lifeColours && s.start === 'random' && huntOn()) for (const [zone, fits] of Object.entries(huntFits())) if (fits && zone !== 'custom') set(`zone:${zone}`, 'zone', zone, '', HUNT_ZONES[zone][1]);
   return out;
 }
@@ -6776,9 +6776,9 @@ function syncSizeStepper() {
   if (document.activeElement !== $('startLabel')) $('startLabel').value = `start ${formatNumber(startNo())} of ${formatNumber(starts.length)}`;
   const symmetricOnly = (setup) => (startsWayIn(setup) === 'symmetric' ? '' : 'Only for Symmetric starts: Centred and Random place their own.');  // (a setup's: the graph's path to Symmetric)
   $('startDown').dataset.choice = 'startNo:-1'; $('startUp').dataset.choice = 'startNo:+1';  // (their choices' keys, see choicesAt)
-  // (the list's ends: greyed there, as Size's, no setup elsewhere to search; Symmetric's: a whyNot, its path the graph's)
-  setTile($('startDown'), { greyed: startNo() <= 1 ? 'Already at the first start.' : '', whyNot: symmetricOnly });
-  setTile($('startUp'), { greyed: startNo() >= starts.length ? 'Already at the last start.' : '', whyNot: symmetricOnly });
+  // (round the list, its last then its first: never greyed at its ends; Symmetric's: a whyNot, its path the graph's)
+  setTile($('startDown'), { whyNot: symmetricOnly });
+  setTile($('startUp'), { whyNot: symmetricOnly });
   setTile($('startLabel'), { whyNot: symmetricOnly });
 }
 // The sizes as a slider under the stepper, across, a notch each under it, the one in use its knob (none: hidden); dragged, the label
@@ -18596,8 +18596,10 @@ function setStart(n) {  // (all again, as any setting: its teams and battle hang
   $('startNo').value = Math.max(1, Math.min(n, modeStarts().length));
   compute();
 }
-$('startDown').addEventListener('click', () => setStart(startNo() - 1));
-$('startUp').addEventListener('click', () => setStart(startNo() + 1));
+// the start d places on from n, round the list of L (− at the first: the last; + at the last: the first)
+const startStep = (n, d, L = modeStarts().length) => ((((n - 1 + d) % L) + L) % L) + 1;
+$('startDown').addEventListener('click', () => setStart(startStep(startNo(), -1)));
+$('startUp').addEventListener('click', () => setStart(startStep(startNo(), 1)));
 $('startLabel').addEventListener('input', () => { $('startLabel').value = $('startLabel').value.replace(/\D/g, ''); });
 $('startLabel').addEventListener('blur', syncSizeStepper);  // "start 1 of 2,304" again
 // a start typed: below the first, the first; past the last, the last; the one in use changes nothing

@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.587';
+const VERSION = '0.4.588';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -16664,7 +16664,7 @@ const GPU_VIEW = `
 struct U {
   R: vec3f, depth: f32, Uu: vec3f, shade: f32, V: vec3f, glint: f32, L: vec3f, lr: f32, H: vec3f, alpha: f32, Lx: vec3f, edge: f32,
   Ly: vec3f, bias: f32, edgeRgb: vec3f, halfW: f32, persp: vec4f, plain: vec4f, view: vec3f, N: f32, cc: vec2f, screen: vec2f,
-  cut: i32, glass: i32, both: i32, colour: i32, alphaF: f32, bright: f32, width: f32, loopFrom: f32, period: f32, turnC: f32, turnS: f32, cutN: vec3f, stepNow: f32, fadeSteps: f32, morph: f32, prevAt: u32,
+  cut: i32, glass: i32, both: i32, colour: i32, alphaF: f32, bright: f32, width: f32, loopFrom: f32, period: f32, turnC: f32, turnS: f32, cutN: vec3f, stepNow: f32, fadeSteps: f32,
   tpl: array<vec4f, 12>,  // (the polygons' corners, two a vec4)
 }
 @group(0) @binding(0) var<uniform> u: U;
@@ -16787,15 +16787,9 @@ struct Col { @builtin(position) pos: vec4f, @location(0) col: vec4f }
 // Life on the plane: world (x, y) turned (turnC, turnS), then to pixels; a cell's colour
 // its texel's word (clear: off the screen); the outlines in plain (premultiplied)
 fn planeAt(p: vec2f) -> vec4f { return flatAt(u.view.yz + vec2f(u.turnC * p.x - u.turnS * p.y, u.turnS * p.x + u.turnC * p.y) * u.view.x); }
-@vertex fn planeCellsV(@location(0) pos: vec2f, @location(1) id: u32, @location(2) centre: vec2f) -> Col {
+@vertex fn planeCellsV(@location(0) pos: vec2f, @location(1) id: u32) -> Col {
   var o: Col; o.col = unpack4x8unorm(tileCol[id]);
-  var size = 1.0;
-  if (u.prevAt > 0u) {  // (between two generations: its colour before at prevAt, see lifeMorph)
-    let before = unpack4x8unorm(tileCol[id + u.prevAt]);
-    if (o.col.a < 0.5 && before.a >= 0.5) { o.col = before; size = 1.0 - u.morph; }  // (dying: shrinking to its centre)
-    else if (o.col.a >= 0.5 && before.a < 0.5) { size = u.morph; }  // (born: growing from it)
-  }
-  o.pos = select(planeAt(centre + (pos - centre) * size), vec4f(2.0, 2.0, 2.0, 1.0), o.col.a < 0.5 || size <= 0.0);
+  o.pos = select(planeAt(pos), vec4f(2.0, 2.0, 2.0, 1.0), o.col.a < 0.5);
   return o;
 }
 @vertex fn planeLinesV(@location(0) pos: vec2f) -> Col { var o: Col; o.col = u.plain; o.pos = planeAt(pos); return o; }`;
@@ -16810,7 +16804,7 @@ function gpuView(words, k, depth, more = {}) {
   f.set(cutNormal(), 60);  // (Cut's plane, facing its axis: see CUT_AXES)
   const at = { alpha: [19, 'f'], edge: [23, 'f'], bias: [27, 'f'], halfW: [31, 'f'], N: [43, 'f'], cut: [48, 'i'], glass: [49, 'i'], both: [50, 'i'], colour: [51, 'i'],
     alphaF: [52, 'f'], bright: [53, 'f'], width: [54, 'f'], loopFrom: [55, 'f'], period: [56, 'f'], turnC: [57, 'f'], turnS: [58, 'f'],
-    stepNow: [63, 'f'], fadeSteps: [64, 'f'], morph: [65, 'f'], prevAt: [66, 'i'] };
+    stepNow: [63, 'f'], fadeSteps: [64, 'f'] };
   for (const [k2, v] of Object.entries(more)) {
     if (k2 === 'edgeRgb') f.set(v, 28); else if (k2 === 'plain') f.set(v, 36); else if (k2 === 'tpl') f.set(v, 68);
     else (at[k2][1] === 'f' ? f : i)[at[k2][0]] = v;
@@ -17196,32 +17190,24 @@ function gpuCubes(count, of, make, reach) {
 
 // Life on the plane: its cells' triangles and walls', once a grid; the page's colour on the cells and the walls'
 // on the walls under all, zoomed in enough the outlines, over all the generation's colours (paint: into their buffer)
-// Life on the plane between two generations shown: a cell born grows from its centre, one dying shrinks to it, over
-// LIFE_MORPH_SECONDS or the generation's own time if shorter, from when the generation is shown (lifeShownAt, see gpuPlane:
-// not when it is asked, its batch back a frame or more later); 0 to 1, the share done; still or stepped: 1, whole
-const LIFE_MORPH_SECONDS = 0.25;
-let lifeShownAt = 0;
-const lifeMorph = () => (playing || reversing ? Math.min(1, (performance.now() - lifeShownAt) / 1000 / Math.min(1 / stepsPerSecond(), LIFE_MORPH_SECONDS)) : 1);
 function gpuPlane(paint) {
   const D = gpuDrawSetup();
   if (!D) return;
   const { device } = D, { n } = walk.plane, { scale: s } = view, key = gridKey(), F = walk.plane.flat;
   if (D.keys.plane !== key) {
-    const N = F.start[F.m], pos = new Float32Array(2 * N), ids = new Uint32Array(N), tris = new Uint32Array(3 * N), centres = new Float32Array(2 * N);
+    const N = F.start[F.m], pos = new Float32Array(2 * N), ids = new Uint32Array(N), tris = new Uint32Array(3 * N);
     const straight = (P, i) => { const [a, b, c] = [P.at(i - 1), P[i], P[(i + 1) % P.length]]; return Math.abs((b[0] - a[0]) * (c[1] - a[1]) - (b[1] - a[1]) * (c[0] - a[0])) <= 1e-12; };
     let v = 0, c = 0;
     for (let k = 0; k < F.m; k++) {
       const P = F.poly(k).filter((_, i, P2) => !straight(P2, i)), v0 = v;
-      const [cx, cy] = meanPoint(P);
-      for (const [x, y] of P) { pos[2 * v] = x; pos[2 * v + 1] = y; centres[2 * v] = cx; centres[2 * v + 1] = cy; ids[v++] = k; }
+      for (const [x, y] of P) { pos[2 * v] = x; pos[2 * v + 1] = y; ids[v++] = k; }
       for (const i of polygonTriangles(P)) tris[c++] = v0 + i;
     }
-    gpuBuffer('planePos', pos.subarray(0, 2 * v)); gpuBuffer('planeIds', ids.subarray(0, v)); gpuBuffer('planeCentres', centres.subarray(0, 2 * v)); gpuBuffer('planeTris', tris.subarray(0, c), GPUBufferUsage.INDEX);
-    const size = 4 * Math.max(4, F.m), usage = GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST | GPUBufferUsage.COPY_SRC;
-    for (const [b, bytes] of [['planeBase', size], ['planeCol', 2 * size], ['planeBetween', size]]) { D[b]?.destroy(); D[b] = device.createBuffer({ size: bytes, usage }); }  // (planeCol: its colours now, then before)
+    gpuBuffer('planePos', pos.subarray(0, 2 * v)); gpuBuffer('planeIds', ids.subarray(0, v)); gpuBuffer('planeTris', tris.subarray(0, c), GPUBufferUsage.INDEX);
+    for (const b of ['planeBase', 'planeCol']) { D[b]?.destroy(); D[b] = device.createBuffer({ size: 4 * Math.max(4, F.m), usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST }); }
     D.groups = null;
     Object.assign(D, { planeCount: c, planeLines: null });
-    D.keys.plane = key; D.keys.planeBase = null; D.planeGen = null;
+    D.keys.plane = key; D.keys.planeBase = null;
   }
   const bg = getComputedStyle(document.documentElement).getPropertyValue('--bg') || '#fff';
   if (D.keys.planeBase !== bg) {
@@ -17229,12 +17215,7 @@ function gpuPlane(paint) {
     device.queue.writeBuffer(D.planeBase, 0, Uint32Array.from({ length: F.m }, (_, t) => (t >= n ? walled : page)));
     D.keys.planeBase = bg;
   }
-  const keepBefore = () => { const e = device.createCommandEncoder(), bytes = 4 * F.m; e.copyBufferToBuffer(D.planeCol, 0, D.planeBetween, 0, bytes); e.copyBufferToBuffer(D.planeBetween, 0, D.planeCol, 4 * Math.max(4, F.m), bytes); device.queue.submit([e.finish()]); };
-  const first = D.planeGen === null, moved = D.planeGen !== stepShown;
-  if (moved && !first) { keepBefore(); lifeShownAt = performance.now(); }  // (the generation before's colours, before the new ones; its morph from now)
   paint({ put: (col) => device.queue.writeBuffer(D.planeCol, 0, col), buffer: D.planeCol, n: F.m }, F.m);
-  if (first) keepBefore();  // (a new grid: nothing before it)
-  D.planeGen = stepShown;
   const outline = $('showGrid').checked && s >= 6;
   if (outline && !D.planeLines) {
     const { start, xy } = F, seen = new Set(), ends = new Float32Array(4 * start[n]);
@@ -17248,10 +17229,10 @@ function gpuPlane(paint) {
   }
   new Uint8Array(D.words).fill(0);
   const turn = { turnC: Math.cos(planeTurn()), turnS: Math.sin(planeTurn()) }, enc = device.createCommandEncoder(), rp = gpuPass(enc, null, [0, 0, 0, 0], false);
-  const cells = (col, slot, more = {}) => {
-    rp.setPipeline(gpuDrawPipe('planeCells', { vertex: 'planeCellsV', fragment: 'colF', depth: false, buffers: [vertexLayout(8, [vertexAttribute(0, 'float32x2')]), vertexLayout(4, [vertexAttribute(1, 'uint32')]), vertexLayout(8, [vertexAttribute(2, 'float32x2')])] }));
-    rp.setBindGroup(0, gpuGroup(col), [gpuView(D.words, slot, 1, { ...turn, ...more })]);
-    rp.setVertexBuffer(0, D.planePos); rp.setVertexBuffer(1, D.planeIds); rp.setVertexBuffer(2, D.planeCentres); rp.setIndexBuffer(D.planeTris, 'uint32'); rp.drawIndexed(D.planeCount);
+  const cells = (col, slot) => {
+    rp.setPipeline(gpuDrawPipe('planeCells', { vertex: 'planeCellsV', fragment: 'colF', depth: false, buffers: [vertexLayout(8, [vertexAttribute(0, 'float32x2')]), vertexLayout(4, [vertexAttribute(1, 'uint32')])] }));
+    rp.setBindGroup(0, gpuGroup(col), [gpuView(D.words, slot, 1, turn)]);
+    rp.setVertexBuffer(0, D.planePos); rp.setVertexBuffer(1, D.planeIds); rp.setIndexBuffer(D.planeTris, 'uint32'); rp.drawIndexed(D.planeCount);
   };
   cells(D.planeBase, 0);
   if (outline) {
@@ -17259,7 +17240,7 @@ function gpuPlane(paint) {
     rp.setBindGroup(0, gpuGroup(), [gpuView(D.words, 1, 1, { ...turn, plain: [...EDGE_RGB.map((c) => (c / 255) * EDGE_ALPHA), EDGE_ALPHA] })]);
     rp.setVertexBuffer(0, D.planeEdges); rp.draw(D.planeLines);
   }
-  cells(D.planeCol, 2, { morph: lifeMorph(), prevAt: Math.max(4, F.m) });  // (its cells born growing, dying shrinking: see lifeMorph)
+  cells(D.planeCol, 2);
   rp.end();
   device.queue.writeBuffer(D.uni, 0, D.words, 0, 512 * 3);
   device.queue.submit([enc.finish()]);
@@ -17940,7 +17921,7 @@ function tick(now = performance.now()) {
     if (walk.stacked) { if (stack && (needsFull || statsDirty)) { drawGrid(); gpuCubes(stack.layers[stepShown] + 1, stack, stackCubes, stack.reach); updateStats(); } }
     else {
       if (needsFull) drawPlaneGrid();
-      if (needsFull || statsDirty) { drawLifePlane(); updateStats(); } else if (lifeMorph() < 1) drawLifePlane();  // (its cells growing, shrinking)
+      if (needsFull || statsDirty) { drawLifePlane(); updateStats(); }
     }
     needsFull = statsDirty = false;
     requestAnimationFrame(tick);

@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.632';
+const VERSION = '0.4.633';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -1914,7 +1914,7 @@ function relabelColours(mode) {
                       digit: 'One colour per digit', mono: 'One colour' }
     : { mono: two ? `Civilisations: ${Array.from({ length: K }, (_, k) => teamName(k)).join(' · ')} · dead` : `States: alive${dying} · dead`,
         gradient: C > 2 ? 'Age of live cells, warm newborns to cold old ones + dying stages' : 'Age of live cells, warm newborns to cold old ones + fading trail',
-        digit: 'Activity (state changes)', cells: '', visits: '' };
+        digit: 'State changes', cells: '', visits: '' };
   const sel = $('colourMode');
   sel.querySelector('option[value="digit"]').text = mode.antOf ? "The ant's colours" : names.digit;
   if (shows('cells', tabMode())) {  // 2D: along lines the rainbow line; on cells the rainbow cells or the heatmap (Digits writes over either); an ant its colours

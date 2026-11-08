@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.570';
+const VERSION = '0.4.571';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -3911,6 +3911,7 @@ function renderModePicker() {
 const workerOf = (parts, main) => new Worker(URL.createObjectURL(new Blob([`${Object.entries(parts).map(([k, v]) => `const ${k} = ${typeof v === 'function' ? v : JSON.stringify(v)};`).join('\n')}\n(${main})()`], { type: 'text/javascript' })));
 const newFormulaWorker = () => workerOf({ digitString, seededRandom, exactValue, iroot }, formulaWorker);
 function compute() {
+  for (const stage in timings) setTiming(stage);  // (each walk its own times: none of the one before)
   const mode = MODES[tabMode()];
   if (!numberPicked) $('formula').value = defaultNumber(tabMode());
   surfaceDraw = false;
@@ -3967,7 +3968,8 @@ function compute() {
     setCurrent({ intPart: '', digits: new Uint8Array(0) }, base, kind, null);
     if (!elementaryReady(compute)) return;  // (Elementary's rows on their way, see elementaryReady)
     $('status').textContent = '';
-    buildWalk();
+    setTiming('Digits');
+    timed('Build', buildWalk);
     describe(base, 0);  // (the bar: a creature's name and rule, a start's)
     $('copyNumber').hidden = true;
     showAll();
@@ -3979,7 +3981,8 @@ function compute() {
     if (!elementaryReady(compute)) return;  // (Elementary's rows on their way: then all again, its digits cached)
     if (!rivalsReady(compute)) return;  // (a battle's other numbers on their way, see rivalsReady)
     $('status').textContent = note;
-    buildWalk();
+    setTiming('Digits');  // (a sequence's: made at once)
+    timed('Build', buildWalk);
     describe(base, n);
     $('copyNumber').hidden = false;
     showAll();
@@ -3987,16 +3990,13 @@ function compute() {
     return;
   }
 
-  const done = (entry, how) => {
+  const done = (entry) => {
     setCurrent(entry, base, kind, kind === 'rat' ? smallExact(F.ast) : null);
-    if (!elementaryReady(() => done(entry, how))) return;  // (Elementary's rows on their way, see elementaryReady)
-    if (!rivalsReady(() => done(entry, how))) return;  // (a battle's other numbers on their way, see rivalsReady)
+    if (!elementaryReady(() => done(entry))) return;  // (Elementary's rows on their way, see elementaryReady)
+    if (!rivalsReady(() => done(entry))) return;  // (a battle's other numbers on their way, see rivalsReady)
     const total = entry.total ?? digitsComputed.head.length + digitsComputed.digits.length;
-    // the digits' time, then the walk's (millions of an ant's steps take far longer than its digits)
-    const t0 = performance.now();
-    buildWalk();
+    timed('Build', buildWalk);  // (its times in Display's Times, see timings)
     $('status').textContent = [
-      `${how} · Walk built in ${((performance.now() - t0) / 1000).toFixed(2)} s`,
       F.root === 'randprime' && `a random ${formatNumber(Number(F.ast.args[0].v))}-digit probable prime, found after ${formatNumber(entry.tests)} Miller–Rabin tests`,
       note,
       walkSaid,
@@ -4012,7 +4012,8 @@ function compute() {
   const enough = integer ? hit && (hit.intPart.length >= n || hit.intPart.length === hit.total)
                          : hit && hit.digits.length >= want;
   if (enough) {
-    done(hit, 'Digits cached');
+    setTiming('Digits', 'cached');
+    done(hit);
     return;
   }
   numberWorker = newFormulaWorker();
@@ -4049,7 +4050,8 @@ function compute() {
     const finish = () => {
       if (job !== computeJob) return;
       busy = false;  // the link follows the walk built (the gauge stays on until it is)
-      done(entry, `Digits in ${(d.ms / 1000).toFixed(2)} s`);
+      setTiming('Digits', d.ms);
+      done(entry);
       if (!elementaryWorker) setBusy(false);  // (Elementary's rows on their way: busy till they are, see elementaryReady)
     };
     if (n < 1e6) { finish(); return; }
@@ -9083,8 +9085,8 @@ function elementaryReady(then) {
     setBusy(false);
     if (job !== computeJob) return;  // (asked since: another)
     elementaryMade = { key: a.key, ...e.data };
+    setTiming('Rows', e.data.ms);  // (apart, the page going on)
     then();
-    $('status').textContent += ` · ${formatNumber(a.args[0])} rows in ${(e.data.ms / 1000).toFixed(2)} s`;  // (apart, the page going on)
   };
   elementaryWorker.postMessage(a.args);
   return false;
@@ -17572,8 +17574,15 @@ function renderGauges(L) {
 }
 // The gauges' rows (name, colour: none, the theme's live cells'; its bar's share: none, figures only; its figures), built
 // again when their names change (Life's, a walk's)
-function paintGauges(rows) {
-  const box = $('gauges'), key = rows.map(([name, , share]) => `${name}${share === null ? '' : '|'}`).join();
+// Each stage's last time, in ms, or its words ('cached'): Digits (the worker's), Build (the walk or the start, its mesh with it),
+// Rows (Elementary's worker), 3D image (the card's work done); shown in Display's Times as it is set (setTiming; none: gone)
+const timings = {};
+const setTiming = (stage, ms) => { if (ms === undefined) delete timings[stage]; else timings[stage] = ms; paintTimings(); };
+const timed = (stage, make) => { const t0 = performance.now(), out = make(); setTiming(stage, performance.now() - t0); return out; };
+const paintTimings = () => paintGauges(Object.entries(timings).map(([stage, ms]) => [stage, null, null, typeof ms === 'number' ? (ms < 1000 ? `${ms.toFixed(1)} ms` : `${(ms / 1000).toFixed(2)} s`) : ms]), $('timings'));
+// a box of gauges (the stats', Display's Times): a row each, its name, its bar (share: none, null), its number
+function paintGauges(rows, box = $('gauges')) {
+  const key = rows.map(([name, , share]) => `${name}${share === null ? '' : '|'}`).join();
   if (box.dataset.key !== key) {
     box.dataset.key = key;
     box.innerHTML = rows.map(([name, , share]) => `<div class="gauge-row"><span>${name}</span>${share === null ? '<span></span>' : '<span class="rank-bar"><i></i></span>'}<span class="rank-num"></span></div>`).join('');
@@ -17924,6 +17933,7 @@ function tick(now = performance.now()) {
       updateStats();
       sphereDraw.cost = performance.now() - now;
       sphereDraw.at = now;
+      GPU.draw?.device.queue.onSubmittedWorkDone().then(() => setTiming('3D image', performance.now() - now));  // (its whole cost: the card's work done)
       needsFull = statsDirty = false;
     }
     requestAnimationFrame(tick);

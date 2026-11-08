@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.644';
+const VERSION = '0.4.645';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -1857,10 +1857,11 @@ function updateDisplayMenu() {
 // The view's switches, standard tiles (toggle): each its checkbox's (the source, kept out of sight), on as it is checked,
 // greyed where its row is hidden (it applies in 3D only); drawn again with the
 // display box and when the box opens (a hand rotation, a new mode: their boxes changed)
-const VIEW_TILES = [['perspective', 'perspectiveRow', 'perspective', 'Perspective', 'Perspective: what is nearer looks bigger'], ['light', 'lightRow', 'sideLight', 'Side light'], ['glass', 'glassRow', 'glass', 'Glass'], ['ocean', 'oceanRow', 'earth', 'Earth']];
+const VIEW_TILES = [['perspective', 'perspectiveRow', () => icon('perspective'), 'Perspective', 'Perspective: what is nearer looks bigger'], ['light', 'lightRow', () => icon('sideLight'), 'Side light'], ['glass', 'glassRow', () => icon('glass'), 'Glass'],
+  ['ocean', 'oceanRow', () => colourBlock(6, false, earthColours(PALETTES.light)), 'Earth']];  // (Earth's: its six colours as a Sextet's, the light page's)
 let viewTiles = null;
 function renderViewTiles() {
-  viewTiles ??= VIEW_TILES.map(([id, row, pic, text, title]) => tile({ pic: icon(pic), text, title: title ?? $(row).title, toggle: true,
+  viewTiles ??= VIEW_TILES.map(([id, row, pic, text, title]) => tile({ pic: pic(), text, title: title ?? $(row).title, toggle: true,
     click: () => { $(id).checked = !$(id).checked; $(id).dispatchEvent(new Event('change')); renderViewTiles(); } }));
   if (!$('viewTiles').children.length) $('viewTiles').replaceChildren(...viewTiles);
   // (their defaults, see DISPLAY_DEFAULTS; Perspective's, the shapes' of this kind and space: on for some, off for the others)
@@ -2601,7 +2602,6 @@ const ICONS = (() => {
     sideLight: svgPath('M2.5 10.2H7.5V13.8H2.5Z') + svgPath('M7.5 9.6L10 8.2V15.8L7.5 14.4Z') + svgPath('M12.5 8.6L21 4.8M13 12H21.5M12.5 15.4L21 19.2'),
     cut: svgPath('M3 12A9 9 0 0 1 21 12Z') + svgPath('M2 15.5H22'),  // a ball's back half, the cut's line
     glass: svgPath('M3 12A9 9 0 1 0 21 12A9 9 0 1 0 3 12Z') + svgPath('M3 12A9 3.5 0 0 0 21 12A9 3.5 0 0 0 3 12Z'),  // a ball, its equator seen through
-    earth: earthColours(PALETTES.light).map((c, i) => `<rect x="${3 + 3 * i}" y="4" width="3" height="16" fill="${c}"/>`).join(''),  // Earth's six colours, the light page's (on a dark one too)
     viewDefault: svgPath('M12 3L20 7.5V16.5L12 21L4 16.5V7.5Z') + svgPath('M4 7.5L12 12L20 7.5M12 12V21'),  // (a cube from its usual corner)
     upright: svgPath('M12 3V17M8 7L12 3L16 7M4 20.5H20'),  // (up, over a level line)
     free: svgPath('M12 7L16.3 9.5V14.5L12 17L7.7 14.5V9.5Z') + svgPath('M12 7V12M7.7 14.5L12 12L16.3 14.5')  // (a cube turned any way by hand: two arrows round it)
@@ -11536,8 +11536,8 @@ const coloursOn = (w, from, size = null, rule = $('lifeRule').value) => {
   return k === Infinity ? 1 : k;
 };
 const fitColours = () => { lifeColours = coloursOn(tabMode(), lifeColours); };
-const colourBlock = (k, newcomer = false) => {  // (its colours squares all, as many a row as their blocks, else as near a square: 5, 3 and 2, a hole; newcomer: its last one's outline only, Newcomer's)
-  const cols = { 5: 3, 7: 4, 10: 4 }[k] ?? COLOUR_GRID[k][0], rows = Math.ceil(k / cols), cs = k === 1 ? [LIFE_ALIVE] : LIFE_COLOURS.slice(0, k);
+const colourBlock = (k, newcomer = false, cs = k === 1 ? [LIFE_ALIVE] : LIFE_COLOURS.slice(0, k)) => {  // (its colours squares all, as many a row as their blocks, else as near a square: 5, 3 and 2, a hole; newcomer: its last one's outline only, Newcomer's; cs: other colours, Earth's)
+  const cols = { 5: 3, 7: 4, 10: 4 }[k] ?? COLOUR_GRID[k][0], rows = Math.ceil(k / cols);
   return `<svg viewBox="0 0 ${cols} ${rows}" aria-hidden="true">${cs.map((c, i) => (newcomer && i === k - 1 ? `<rect x="${(i % cols) + 0.1}" y="${Math.floor(i / cols) + 0.1}" width="0.8" height="0.8" fill="none" stroke="${c}" stroke-width="0.2"/>` : `<rect x="${i % cols}" y="${Math.floor(i / cols)}" width="1" height="1" fill="${c}"/>`)).join('')}</svg>`;
 };
 const COLOUR_STEP_NAMES = { 1: 'Solo', 2: 'Duel', 3: 'Trio', 4: 'Quartet', 5: 'Quintet', 6: 'Sextet', 7: 'Septet', 8: 'Octet', 9: 'Nonet', 10: 'Decet', 12: 'Dozen' };  // one colour, then battles

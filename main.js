@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.609';
+const VERSION = '0.4.610';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -18058,7 +18058,7 @@ for (const b of document.querySelectorAll('.field .enter')) {
 }
 $('digitsLabel').addEventListener('input', () => { $('digitsLabel').value = $('digitsLabel').value.replace(/\D/g, ''); });
 $('stepsGlyph').textContent = STEPS_GLYPH;  // (the length asked's unit, beside it)
-$('speedGlyph').textContent = `${STEPS_GLYPH}/s`;  // (the speed's, as its)
+$('speedGlyph').innerHTML = `${STEPS_GLYPH}<span>/s</span>`;  // (the speed's, as its: /s at the text's size)
 $('digitsLabel').addEventListener('focus', () => { $('digitsLabel').value = String(randomPrimeSize() ?? lengthAsked()); $('digitsLabel').select(); });  // (to type: the exact number, picked)
 $('digitsLabel').addEventListener('blur', syncDigitsStepper);  // "20,000 digits" again
 $('digitsLabel').addEventListener('change', () => {

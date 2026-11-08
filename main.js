@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.631';
+const VERSION = '0.4.632';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -17039,10 +17039,10 @@ function gpuSurface(paint, path) {
   // path up to the step shown, or each living walker's body: its steps from its tail to its head, a range of them
   const lines = !!walk.battle && !!walk.vert, P = lines ? walk.battle.player : null;
   if (lines) { P.to(stepShown); battlePalette(D); }
-  if (P?.ownLines && stepShown > 0) battleLinesOnGpu(D, P);  // (Land grid 1: its links' owners, see battleLinesOnGpu)
+  if (P?.ownLines && glideAt() > 0) battleLinesOnGpu(D, P);  // (Land grid 1: its links' owners, see battleLinesOnGpu)
   const keyed = !lines && !!stepLook($('colourMode').value)?.key;  // (Commands: each segment its step's command, a place in the palette, see stepLook)
   if (keyed) stepPalette(D);
-  const segs = (path || lines) && !P?.ownLines && stepShown > 0 && (D.keys.segs !== walk.wx || D.keys.segsM !== sh.m || D.ribbonOf || D.keys.segsKeyed !== keyed) ? pathSegments(P) : null;
+  const segs = (path || lines) && !P?.ownLines && glideAt() > 0 && (D.keys.segs !== walk.wx || D.keys.segsM !== sh.m || D.ribbonOf || D.keys.segsKeyed !== keyed) ? pathSegments(P) : null;
   if (segs && keyed) { const look = stepLook('digit'); for (let o = 10; o < segs.data.length; o += 11) segs.data[o] = look.key(segs.data[o]); }  // (its step's command instead of its step)
   if (segs) { gpuBuffer('ribbon', segs.data); D.ribbonOf = null; D.segsAt = segs.at; D.keys.segs = walk.wx; D.keys.segsM = sh.m; D.keys.segsKeyed = keyed; }
   const ranges = !(path || lines) || glideAt() <= 0 || !(P?.ownLines ? D.segsRanges : D.segsAt) ? [] : !lines ? [[0, D.segsAt[glideAt() > stepShown ? Math.min(stepShown + 1, walk.n) : stepShown]]] : P.ownLines ? D.segsRanges

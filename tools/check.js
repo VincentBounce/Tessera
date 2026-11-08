@@ -699,7 +699,7 @@ async function checkSheets(fail) {
   for (const w of ['lifeKleinPrismatic', 'lifeKleinPent15', 'lifeTorusRhombitri', 'lifeMobiusPent10', 'lifeGlobe']) {
     const offered = [];
     for (const K of [1, 3]) {
-      coloursPicked = lifeColours = K;
+      lifeColours = K;
       location.hash = `#w=${w}&k=${K}`;
       await until(shown(w, () => lifeColours === K));
       offered.push(COLOUR_STEPS.filter((k) => coloursFit(k)).join(','));

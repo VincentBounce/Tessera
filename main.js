@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.559';
+const VERSION = '0.4.560';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -3639,9 +3639,10 @@ const setupKey = (s) => [s.w, ...SETUP_FIELDS.map((f) => s[f])].join('|');
 // own navigation (navPick, kindLeft, nearestMode, walksThere): the tabs, spaces, shapes, tilings, sides, walks' kinds, then a
 // Life's colours, a battle's teams and rule; a surface's sizes at the start only (one stepper, see pathsTo). reads: the fields
 // a search asks (see pathsTo), the others' edges not made (their greyed words the costliest: colours', teams'); none, all
-function choicesAt(s, reads = null) {  // (each [key, the setup it leads to, its button's words])
+function choicesAt(s, reads = null, coloursMemo = new Map()) {  // (each [key, the setup it leads to, its button's words]; coloursMemo: a search's, its colours by mode, one state all along)
   const wants = (field) => !reads || reads.has(field);
-  const w = s.w, [kind, space, shape, rule] = NAV[w], out = [], go = (key, v, words) => { if (v && v !== w) out.push([key, { ...s, w: v, size: null, walkRule: MODES[v].net ? walkRuleAt(s, v) : null }, words]); };
+  const coloursAt = (v) => { const k = `${v}|${s.colours}|${s.rule}`; if (!coloursMemo.has(k)) coloursMemo.set(k, coloursOn(v, s.colours, null, s.rule)); return coloursMemo.get(k); };
+  const w = s.w, [kind, space, shape, rule] = NAV[w], out = [], go = (key, v, words) => { if (v && v !== w) out.push([key, { ...s, w: v, size: null, colours: wants('colours') ? coloursAt(v) : s.colours, walkRule: MODES[v].net ? walkRuleAt(s, v) : null }, words]); };
   for (const [k] of NAV_KINDS) if (k !== kind) go(`kind:${k}`, kindLeft[k] ?? navPick(w, 0, k), k);
   for (const sp of navValues(1, [kind])) go(`space:${sp}`, navPick(w, 1, sp), SPACES[sp][0]);
   for (const sh of navValues(2, [kind, space])) go(`shape:${sh}`, navPick(w, 2, sh), shapeLabel(sh));
@@ -3687,7 +3688,7 @@ const changes = (a, b) => modeChanges(a.w, b.w) + SETUP_FIELDS.filter((f) => a[f
 const EDGE_FIELD = { kind: 'w', space: 'w', shape: 'w', tiling: 'w', side: 'w', rule: 'w', lifeRule: 'rule' };  // (a click's key: the field it changes)
 function pathsTo(fits, budget = 5000, judgedAt = null) {  // (judgedAt: a control judged on the grid built only, its mode's setups only)
   const start = setupNow(), seen = new Set([setupKey(start)]), w = start.w, kind = !MODES[w].plane && surfaceOf(MODES[w]), now = SPHERES[kind] && figureSize(w);
-  const reads = new Set(['w']), judged = (t) => fits(new Proxy(t, { get: (o, f) => { reads.add(f); return o[f]; } }));  // (the fields it reads, as it reads them)
+  const reads = new Set(['w']), coloursMemo = new Map(), judged = (t) => fits(new Proxy(t, { get: (o, f) => { reads.add(f); return o[f]; } }));  // (the fields it reads, as it reads them)
   const field = (key) => { const f = key.split(':')[0]; return EDGE_FIELD[f] ?? f; };
   judged(start);
   // (a surface's sizes, the 8 nearest by construction: its mode's, see sizesOf; the size stepper, a click away)
@@ -3696,7 +3697,7 @@ function pathsTo(fits, budget = 5000, judgedAt = null) {  // (judgedAt: a contro
   while (layer.length && tried < budget) {
     const hits = [], next = [];
     for (const [s, path] of layer) {
-      for (const [key, t, words] of [...choicesAt(s, reads), ...(path.length ? [] : sizes)]) {
+      for (const [key, t, words] of [...choicesAt(s, reads, coloursMemo), ...(path.length ? [] : sizes)]) {
         const k = setupKey(t);
         if (seen.has(k) || !reads.has(field(key)) || (judgedAt && t.w !== judgedAt) || ++tried > budget) continue;
         seen.add(k);
@@ -6832,7 +6833,7 @@ const cssColour = (name) => getComputedStyle(document.documentElement).getProper
 // many, from that same number each time: never drifting a step at a time; none yet: each grid its first size)
 let picked = null;
 const nearCells = (sizes, cells, n) => sizes.reduce((a, b) => (Math.abs(Math.log(cells(b) / n)) < Math.abs(Math.log(cells(a) / n)) ? b : a));  // the size with about n cells
-const lastPicked = () => `{b:Last picked}${picked ? `\nSize: {b:${formatNumber(picked)} cells} (picked with − + or the slider)` : ''}${MODES[tabMode()]?.life ? `\nPopulation: {b:${COLOUR_STEP_NAMES[coloursPicked]}${colourMixed() ? ' mixed' : ''}} (picked in the section)` : ''}`;
+const lastPicked = () => (picked ? `{b:Last picked}\nSize: {b:${formatNumber(picked)} cells} (picked with − + or the slider)` : '');
 const sizeTips = (row, total, text) => {
   const marks = (t) => t.replace(/[&<>]/g, (c) => `&#${c.charCodeAt(0)};`).replace(/\{([yroskbg]):([^}]*)\}/g, (_, c, w) => (c === 'g' ? `<span class="tip-default">${w}</span>` : `<b${c === 'b' ? '' : ` class="tip-${c}"`}>${w}</b>`));  // ({g:…}: grey, as a default)
   total = marks(total);
@@ -9236,12 +9237,11 @@ function meshSide(g, nbr) {
   return side;
 }
 // Life's colours for its grid, before anything is made of them (the digits' base, K + 1; the sizes; the tiles): from those
-// picked, those it has fair blocks or spots for (see fitColours); on a surface, its size's mesh made for them (a torus's
+// before, those it has fair blocks or spots for (see coloursOn); on a surface, its size's mesh made for them (a torus's
 // columns their blocks', see ringColumns), its sizes again for them; a link's the same
 function fitLifeColours(mode) {
   if (mode.plane) { fitColours(); return; }
   const kind = surfaceOf(mode);
-  lifeColours = coloursPicked;
   fillSphereSizes(kind, mode.initial);
   fitColours();  // (its size's mesh made for them, see pickedFigure)
   fillSphereSizes(kind, mode.initial);
@@ -11413,7 +11413,7 @@ const lifeMark = (mode) => (mode.elementary ? ELEMENTARY_MARK : mode.loops ? LOO
 // Life's colours, apart from its rule (which they do not change): 1, alive or dead (and a Generations
 // rule's dying stages), or 2 to 6 civilisations (k= in a link). The engine reads them as the rule's tail
 // ("/Immigration", "/Colours4", see lifeRuleNow)
-let lifeColours = 1, coloursPicked = 1, colourMix = false, newcomer = false;  // the colours: the figure's nearest to the last picked (see fitColours); colourMix: Mixed, the colours mixed in one place (see huntParts)
+let lifeColours = 1, colourMix = false, newcomer = false;  // the colours: a new figure's the nearest to those before (see coloursOn); colourMix: Mixed, the colours mixed in one place (see huntParts)
 // Mixed as it counts in a zone: on, colours to mix, and a zone of cells at random (Spark … Jungle, Wild, Formula): the others lay
 // each colour's own picture or part (Icon, Punk, Emoji, Famous, Anywhere, Realm, Mirror), Mixed greyed there, kept for later
 const mixable = (zone, mode = MODES[tabMode()], start = plane.start) => !!mode.life && !mode.loops && (start === 'digits' ||  // (by the mode, not its game: a link opened cold, before its game, mixes as the page did)
@@ -11489,13 +11489,17 @@ function coloursFit(k, f = pickedFigure(tabMode()), rule = $('lifeRule').value) 
   if (g?.nu) return true;  // a torus: its blocks (see torusBlocks), its columns made for its colours (see ringColumns), its rows judged by colourFairOwn; not the torus in view's columns (before v0.3.94: Rhombitri at 5, 8 to 12 colours offered or not by the count picked)
   return false;
 }
-// a new figure: as many colours as last picked, else the nearest count of colours it places (colours still, never Solo;
-// fewer on a tie); Solo picked, Solo (the pick kept for the next)
-function fitColours() {  // (blocks: one colour, Rewind's)
-  const f = pickedFigure(tabMode());
-  lifeColours = coloursPicked === 1 || f.mode.margolus || f.mode.elementary ? 1 : COLOUR_STEPS.filter((k) => k > 1 && coloursFit(k, f)).reduce((a, k) => (Math.abs(k - coloursPicked) < Math.abs(a - coloursPicked) ? k : a), Infinity);
-  if (lifeColours === Infinity) lifeColours = 1;  // (none but Solo: Klein Dual 16 at 4 and 24)
-}
+// the colours mode w takes (at size, or the one it opens at) coming from a setup with `from`: as many, else the nearest count
+// it places (colours still, never Solo; fewer on a tie; none: Solo, Klein Dual 16 at 4 and 24); Solo, Solo; blocks and
+// Elementary one. A click's, one rule: the app's (fitColours) and the menu graph's edges (choicesAt)
+const coloursOn = (w, from, size = null, rule = $('lifeRule').value) => {
+  const m = MODES[w];
+  if (!m.life) return from;  // (a walk: Life's colours kept for the next)
+  if (from === 1 || m.margolus || m.elementary) return 1;
+  const f = pickedFigure(w, size), k = COLOUR_STEPS.filter((c) => c > 1 && coloursFit(c, f, rule)).reduce((a, c) => (Math.abs(c - from) < Math.abs(a - from) ? c : a), Infinity);
+  return k === Infinity ? 1 : k;
+};
+const fitColours = () => { lifeColours = coloursOn(tabMode(), lifeColours); };
 const colourBlock = (k, newcomer = false) => {  // (its colours squares all, as many a row as their blocks, else as near a square: 5, 3 and 2, a hole; newcomer: its last one's outline only, Newcomer's)
   const cols = { 5: 3, 7: 4, 10: 4 }[k] ?? COLOUR_GRID[k][0], rows = Math.ceil(k / cols), cs = k === 1 ? [LIFE_ALIVE] : LIFE_COLOURS.slice(0, k);
   return `<svg viewBox="0 0 ${cols} ${rows}" aria-hidden="true">${cs.map((c, i) => (newcomer && i === k - 1 ? `<rect x="${(i % cols) + 0.1}" y="${Math.floor(i / cols) + 0.1}" width="0.8" height="0.8" fill="none" stroke="${c}" stroke-width="0.2"/>` : `<rect x="${i % cols}" y="${Math.floor(i / cols)}" width="1" height="1" fill="${c}"/>`)).join('')}</svg>`;
@@ -11558,7 +11562,7 @@ function renderColours() {
   if (walkTeamsHere(w)) { $('colourBlocks').replaceChildren(...walkTeamTiles(w)); return; }
   $('colourBlocks').replaceChildren(...COLOUR_STEPS.map((k) => tile({ pic: colourBlock(k), text: COLOUR_STEP_NAMES[k],
     title: `${k === 1 ? 'One colour: alive or dead' : `${k} colours: ${LIFE_COLOUR_NAMES.slice(0, k).join(', ')}`}${colourMissing(k) ? ' · a colour gone can come back: a tie, the missing one born' : ''}`,
-    on: k === lifeColours, choice: `colours:${k}`, whyNot: ({ w, size, rule }) => coloursWhyNot(k, w, size, rule), mark: colourMissing(k), byDefault: k === 1 ? 'yes' : '', click: () => { if (k !== lifeColours) { coloursPicked = lifeColours = k; applyDefaults('colours'); compute(); } } })),  // (Trail: on in Solo, off in colours, at first)
+    on: k === lifeColours, choice: `colours:${k}`, whyNot: ({ w, size, rule }) => coloursWhyNot(k, w, size, rule), mark: colourMissing(k), byDefault: k === 1 ? 'yes' : '', click: () => { if (k !== lifeColours) { lifeColours = k; applyDefaults('colours'); compute(); } } })),  // (Trail: on in Solo, off in colours, at first)
     // Mixed, a switch: the colours' cells mixed at random in one place, as one colour's (greyed in one colour and where no zone mixes, see mixable)
     tile({ pic: `<svg viewBox="0 0 4 4" aria-hidden="true">${[[0, 0], [2, 0], [1, 1], [3, 1], [0, 2], [2, 2], [1, 3], [3, 3]].map(([x, y], i) => `<rect x="${x}" y="${y}" width="1" height="1" fill="${LIFE_COLOURS[[0, 4, 2, 6, 5, 1, 7, 3][i]]}"/>`).join('')}</svg>`, text: 'Mixed',
       title: 'The colours placed as one colour is (one patch, a soup), each cell a colour at random', toggle: true, byDefault: 'off', on: colourMixed(), whyNot: ({ w, colours = lifeColours, start = plane.start, zone = hunt.zone }) => (colours > 1 && mixable(zone, MODES[w], start) ? '' : MIXED_WHERE), click: () => { colourMix = !colourMix; compute(); } }),
@@ -12311,7 +12315,7 @@ function renderRuleSection() {
 
 }
 let ruleFittedTo = null;
-const shapeRules = {};  // each shape's last rule, by its mark: back on a shape, its rule again (as its size and colours: the last picked)
+const shapeRules = {};  // each shape's last rule, by its mark: back on a shape, its rule again (as its size: the last picked)
 // a rule's text fits a grid's automaton: its kind (blocks: a block rule fitting them only; loops, a table; Elementary, Wolfram's;
 // else none of them) and its letters, if any (Callahan's hexagons, Hensel's squares on the plane; v: any). Not its counts: a
 // count past the grid's neighbours never happens there (B9 on squares plays as B), the rule as deterministic, kept as typed
@@ -14919,7 +14923,7 @@ function applySetup(s) {
   } else if (s.r || MODES[s.w].life) {  // (Life: its size and start without a rule too, the grid's first then)
     if (MODES[s.w].plane) planeFromSetup(s);
     else startFromSetup(s);  // (a surface's)
-    coloursPicked = lifeColours = Number(s.k) || 1;
+    lifeColours = Number(s.k) || 1;
     applyDefaults('colours');  // (Trail: see DISPLAY_DEFAULTS)
     colourMix = Number(s.mx) === 1;
     newcomer = Number(s.nc) === 1;

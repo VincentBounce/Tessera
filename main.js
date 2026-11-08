@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.603';
+const VERSION = '0.4.604';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -15182,7 +15182,7 @@ const stepsPerSecond = () => evenSpeed(speed);
 // a speed in words: whole from 10 a second, else to a tenth (5.9 at 165 Hz)
 const speedWords = (v) => formatNumber(v < 10 ? Math.round(v * 10) / 10 : Math.round(v));
 function updateSpeedLabel() {
-  if (document.activeElement !== $('speedLabel')) $('speedLabel').value = `${speedWords(stepsPerSecond())} steps/s`;  // (as played: at the screen's rhythm)
+  if (document.activeElement !== $('speedLabel')) $('speedLabel').value = `${stepsPerSecond() !== speed ? '≈' : ''}${speedWords(stepsPerSecond())}${STEPS_GLYPH}/s`;  // (as played, at the screen's rhythm: ≈ when not as typed, see valueInUse)
   setTile($('slower'), { greyed: speed <= 1 ? 'Already the slowest.' : '' });
   setTile($('faster'), { greyed: speed >= SPEEDS.at(-1) ? 'Already the fastest.' : '' });
 }
@@ -17908,10 +17908,12 @@ const spinAt = (t) => { const hz = 1 / frameTime; return matMul(matMul(rotX(SPIN
 let linkedAt = null;  // the step shown as the link was last written, still (see tick)
 function tick(now = performance.now()) {
   const raw = (now - (lastTick || now)) / 1000;
-  if (raw > 1 / 250 && raw < 1 / 40) {  // the screen's frame: the mean of its last 120, their jitter cancelled (a frame's own time trembles round
-    // the refresh); none slower than 40 Hz (a hidden page's, throttled); its speed as played told again (see evenSpeed)
+  if (raw > 1 / 250 && raw < 1 / 40) {  // the screen's frame: the time of its last 120 by the frames they showed (a frame's own time trembles
+    // round the refresh; one missed lasts two, and counts as two); none slower than 40 Hz (a hidden page's, throttled); its
+    // speed as played told again (see evenSpeed)
     frameSample.push(raw); if (frameSample.length > 120) frameSample.shift();
-    const hz = screenHz(); frameTime = frameSample.reduce((a, b) => a + b, 0) / frameSample.length; if (screenHz() !== hz) updateSpeedLabel();
+    const hz = screenHz(), shown = frameSample.reduce((n, r) => n + Math.max(1, Math.round(r / frameTime)), 0);
+    frameTime = frameSample.reduce((a, b) => a + b, 0) / shown; if (screenHz() !== hz) updateSpeedLabel();
   }
   const dt = Math.min(0.1, raw);  // seconds since the last frame (capped)
   lastTick = now;
@@ -18089,7 +18091,7 @@ $('end').addEventListener('click', () => goStop(1));
 $('slower').addEventListener('click', () => setSpeed(SPEEDS.findLast((v) => v < speed) ?? 1));
 $('faster').addEventListener('click', () => setSpeed(SPEEDS.find((v) => v > speed) ?? SPEEDS.at(-1)));
 $('speedLabel').addEventListener('input', () => { $('speedLabel').value = $('speedLabel').value.replace(/\D/g, ''); });
-$('speedLabel').addEventListener('blur', updateSpeedLabel);  // "50 steps/s" again
+$('speedLabel').addEventListener('blur', updateSpeedLabel);  // ("≈72𓊍/s" again: as played)
 $('speedLabel').addEventListener('change', () => { if ($('speedLabel').value) setSpeed(Number($('speedLabel').value)); });
 // the slider's end: a walk's last step; a run's (a Game of Life's, a reversible one's), its loop's last once known, else the
 // furthest played (its record's: Begin keeps it, see lifeReset)

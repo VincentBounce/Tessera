@@ -536,7 +536,7 @@ button.wide.active, .head-btn.active { border-color: var(--accent); color: var(-
   position: absolute;
   right: var(--view-gap);
   bottom: var(--view-gap);
-  font-size: var(--label-text-size);
+  font-size: var(--text-size);  /* (a tooltip as the page's text) */
   line-height: 1.5;
   white-space: pre-line;  /* its lines stacked in the bottom right corner, each a box (below) */
   pointer-events: none;

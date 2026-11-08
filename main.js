@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.554';
+const VERSION = '0.4.555';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -1111,7 +1111,7 @@ const MODES = {
   octaLR:   { base: 2, arrows: '↖↗', lattice: 'sphere', cells: true, twin: 'octaGrid', sphere: 'octa', initial: 48, net: 'tri',
               rule: 'on an octahedron of triangles: exit through the <b>0</b> left or <b>1</b> right edge' },
   // hexagons and pentagons alike: the edges two away from the one you came in through, on either side
-  hexSphereWalk: { base: 2, arrows: '↖↗', lattice: 'sphere', cells: true, twin: 'hexSphereGrid', ant: 'antHexSphere', sphere: 'hexsphere', net: 'hex', round: true,  // (the hexagons' L1, R1 only: no straight on, nor sharp, across a pentagon)
+  hexSphereWalk: { base: 2, arrows: '↖↗', lattice: 'sphere', cells: true, twin: 'hexSphereGrid', ant: 'antHexSphere', sphere: 'hexsphere', net: 'hex', round: true,  // (the hexagons' L, R only: no straight on, nor sharp, across a pentagon)
                    rule: 'on a sphere of hexagons (and 12 pentagons): exit through the <b>0</b> front left or <b>1</b> front right edge' },
   stellaLR: { base: 2, arrows: '↖↗', lattice: 'sphere', cells: true, twin: 'stellaGrid', sphere: 'stella', net: 'tri',
               rule: 'on a stella octangula (two tetrahedra) of triangles: exit through the <b>0</b> left or <b>1</b> right edge' },
@@ -1264,16 +1264,16 @@ const MODES = {
 
 /* ---- 2.3b Rules --------------------------------------------------------------------------- */
 // Every rule to pick, one table: its kind, its name (the card's), its rule (as typed in the field), what it does (about,
-// its tooltip's), its tiling (the network whose commands it is written in; any: an ant's or a turmite's neutral turns, L R
-// N U L2 R2, said in each grid's own, see NEUTRAL_COMMANDS) and its picture where not its kind's. A creature's side (Grid: along
+// its tooltip's), its tiling (the network whose commands it is written in; any: an ant's or a turmite's, in the commands
+// every grid shares, L R a notch, L2 R2 two, N, U, B: see COMMANDS) and its picture where not its kind's. A creature's side (Grid: along
 // the edges; Cells: from cell to cell; a walk's: its mode's, either) and picture in RULE_KINDS.
 const RULE_KINDS = { walk: {}, ant: { side: 'cells', pic: 'ant' }, turmite: { side: 'cells', pic: 'turmite' }, worm: { side: 'grid', pic: 'worm' } };
 const RULES = [
   // the walks by a rule (a command per digit), per network, the first it takes its rule at first
   ...[['LNR', 'Turtle', 'turtle'], ['LR', 'Turtle', 'turtle'], ['N r', 'Pivot', 'pivot'], ['N a', 'Parity', 'walk2d'], ['nesw', 'Cardinal', 'compass'], ['n ne e se s sw w nw', 'King', 'king']].map(([rule, name, pic]) => ({ kind: 'walk', tiling: 'square', rule, name, pic })),
-  ...[['L2 L1 N R1 R2', 'Turtle', 'turtle'], ['L2 L1 R1 R2', 'Turtle', 'turtle'], ['L2 L1 U R1 R2', 'Turtle', 'turtle'], ['L1 N R1', 'Turtle', 'turtle'], ['L1 R1', 'Turtle', 'turtle'], ['N r', 'Pivot', 'pivot'], ['N a', 'Parity', 'walk2d'], ['n ne se s sw nw', 'Fixed', 'compass']].map(([rule, name, pic]) => ({ kind: 'walk', tiling: 'hex', rule, name, pic })),
+  ...[['L2 L N R R2', 'Turtle', 'turtle'], ['L2 L R R2', 'Turtle', 'turtle'], ['L2 L U R R2', 'Turtle', 'turtle'], ['L N R', 'Turtle', 'turtle'], ['L R', 'Turtle', 'turtle'], ['N r', 'Pivot', 'pivot'], ['N a', 'Parity', 'walk2d'], ['n ne se s sw nw', 'Fixed', 'compass']].map(([rule, name, pic]) => ({ kind: 'walk', tiling: 'hex', rule, name, pic })),
   ...[['LR', 'Turtle', 'turtle'], ['LUR', 'Turtle', 'turtle'], ['| \\ /', 'Fixed', 'compass']].map(([rule, name, pic]) => ({ kind: 'walk', tiling: 'tri', rule, name, pic })),
-  ...[['L2 L1 R1 R2', 'Turtle', 'turtle'], ['L1 R1', 'Turtle', 'turtle'], ['L2 R2', 'Turtle', 'turtle']].map(([rule, name, pic]) => ({ kind: 'walk', tiling: 'cairo', rule, name, pic })),
+  ...[['L2 L R R2', 'Turtle', 'turtle'], ['L R', 'Turtle', 'turtle'], ['L2 R2', 'Turtle', 'turtle']].map(([rule, name, pic]) => ({ kind: 'walk', tiling: 'cairo', rule, name, pic })),
   ...[['L ^ N v R', 'Turtle', 'turtle'], ['L ^ v R', 'Turtle', 'turtle'], ['N r p', 'Pivot', 'pivot'], ['N a', 'Parity', 'walk2d'], ['neuswd', 'Fixed', 'compass']].map(([rule, name, pic]) => ({ kind: 'walk', tiling: 'cube', rule, name, pic })),
   ...[['LNR', 'Polymer', 'turtle'], ['LR', 'Polymer', 'turtle']].map(([rule, name, pic]) => ({ kind: 'walk', tiling: 'diamond', rule, name, pic })),
   // the ants (a turn per colour), the same list on every grid (no mirror twice: LR is RL turned over); one with no name
@@ -1298,8 +1298,8 @@ const RULES = [
   // the worm's, of its 411 (a mirror the same), walked: the longest lives that end (all but 85 die before step 200,000, all
   // but 81 before 5,000,000), and two still going at 5,000,000 (worm in each name: its tab only says Grid)
   // (walked on the plane: on a solid or a surface, a closed grid, it meets its own trail sooner or later, so its life varies)
-  ...[['L1 R1 R2 R2 R1 R1 L1', 'Worm dying at step 4,802 on the plane'], ['L1 R1 L2 R1 R1 L1 L1', 'Worm dying at step 83,618 on the plane'], ['L1 N R2 N R1 L1 L2', 'Worm dying at step 569,804 on the plane'],
-      ['L1 N R2 L2 N L1 N', 'Worm dying at step 918,339 on the plane'], ['L2 L1 R1', 'Worm going on past 5,000,000 on the plane'], ['L2 N L1 R2 L1 R2 L2', 'Worm going on past 5,000,000 on the plane']]
+  ...[['L R R2 R2 R R L', 'Worm dying at step 4,802 on the plane'], ['L R L2 R R L L', 'Worm dying at step 83,618 on the plane'], ['L N R2 N R L L2', 'Worm dying at step 569,804 on the plane'],
+      ['L N R2 L2 N L N', 'Worm dying at step 918,339 on the plane'], ['L2 L R', 'Worm going on past 5,000,000 on the plane'], ['L2 N L R2 L R2 L2', 'Worm going on past 5,000,000 on the plane']]
     .map(([rule, name]) => ({ kind: 'worm', tiling: 'tri', rule, name, about: 'its life on the plane, an endless grid of triangles; on a solid or a surface, a closed grid, it meets its own trail sooner or later: its life there varies with the grid and its size' })),
   // Life's (its tiling: the marks of the grids it is known on, see lifeMark; its picture in RULE_ICONS); its families' (Elementary,
   // Replicators, Rewind, each its grid's mark) made after (see addLifeRule)
@@ -3746,22 +3746,19 @@ function creatureRules(w) {
   if (N) return { now: walkRuleOf(m), typed: true, set: (r) => setWalkRule(w, r), base: (r) => baseWords(ruleCommands(r).length), cards: rulesFor(w),
                   name: `Rule, a command per digit: ${commandsTaken(m).join(' ')}` };
   if (MODES[w].worm) return { byDigits: worm.byDigits, now: worm.rule, typed: !worm.byDigits, cards: worm.byDigits ? [] : rulesFor(w), set: setWormRule,  // (by its rule: no digits read)
-                              name: 'Rule, a turn at each new corner: L2, L1, N, R1, R2' };
+                              name: 'Rule, a turn at each new corner: L2, L, N, R, R2' };
   const turns = antCommands(w).join(' ');
   return { byDigits: antByDigits, now: antRuleOf(w), typed: true, set: (r) => setAntRule(w, r), base: antByDigits ? () => baseWords(2) : null,  // (by colour: no digits read)
            cards: rulesFor(w), name: `Rule, per state an entry per colour: its colour left, its turn (${turns}), its state next; the states parted by |; or an ant's turns alone, one a colour (RL)` };
 }
-// The ants' and turmites' rules (see RULES) in neutral turns (L R, N straight on, U back, L2 R2 sharp), each grid's in its own
-// commands (L1 R1 on hexagons and pentagons); one a grid cannot take greyed in its place, the command it lacks in its tooltip
-const NEUTRAL_COMMANDS = { square: { L: 'L', R: 'R', N: 'N', U: 'U', B: 'B' }, tri: { L: 'L', R: 'R', U: 'U' }, hex: { L: 'L1', R: 'R1', N: 'N', U: 'U', L2: 'L2', R2: 'R2', B: 'B' }, cairo: { L: 'L1', R: 'R1', L2: 'L2', R2: 'R2' } };
-// a rule of the list in ant w's commands: { rule, why } (why: the first command it lacks, its rule then the list's as written)
-function ruleIn(w, neutral, turmite) {
-  const commands = NEUTRAL_COMMANDS[MODES[ANTS[w].walk].net], lack = (t) => `Its ${t} (${COMMANDS[t]?.short ?? t}) is not on this grid.`;
-  if (!turmite) { const t = ruleCommands(neutral), missing = t.find((x) => !commands[x] || !antCommands(w).includes(commands[x]));
-    return missing ? { rule: neutral, why: lack(missing) } : { rule: antOfTurns(w, t.map((x) => commands[x]).join(' ')), why: '' }; }
-  const table = neutral.split(/\s*\|\s*/).map((e) => e.split(/\s+/).map((x) => { const [, write, t, next] = x.match(/^(\d+)\.([A-Z]\d?)\.(\d+)$/) ?? x.match(/^(\d+)([A-Z])(\d+)$/); return { write: +write, command: commands[t] ?? t, next: +next, t }; }));  // (an entry compact, 1L0, or dotted, 1.L2.0)
-  const missing = table.flat().find((e) => !commands[e.t] || !antCommands(w).includes(e.command));
-  return missing ? { rule: neutral, why: lack(missing.t) } : { rule: antText(table), why: '' };
+// a rule of the list in ant w's commands, written as every grid's (L R a notch, L2 R2 two, N, U, B: see COMMANDS): { rule,
+// why } (why: the first command its grid lacks, the rule then as written; greyed in its place, see rulesFor)
+function ruleIn(w, rule, turmite) {
+  const takes = (t) => antCommands(w).includes(t), lack = (t) => `Its ${t} (${COMMANDS[t]?.short ?? t}) is not on this grid.`;
+  if (!turmite) { const t = ruleCommands(rule), missing = t.find((x) => !takes(x)); return missing ? { rule, why: lack(missing) } : { rule: antOfTurns(w, t.join(' ')), why: '' }; }
+  const table = rule.split(/\s*\|\s*/).map((e) => e.split(/\s+/).map((x) => { const [, write, command, next] = x.match(/^(\d+)\.([A-Z]\d?)\.(\d+)$/) ?? x.match(/^(\d+)([A-Z])(\d+)$/); return { write: +write, command, next: +next }; }));  // (an entry compact, 1L0, or dotted, 1.L2.0)
+  const missing = table.flat().find((e) => !takes(e.command));
+  return missing ? { rule, why: lack(missing.command) } : { rule: antText(table), why: '' };
 }
 // a rule typed that this walk or creature cannot take: the one in use put back, and why said (its words, see creatureRules)
 function refuseRule(typed, kept) {
@@ -4610,13 +4607,13 @@ for (const [w, [walkMode, place]] of Object.entries(SURFACE_ANTS)) {
 // An ant's rule, a turmite's (Greg Turk, Jim Propp): per state an entry per colour of its cell, each the colour it leaves
 // there, a word of the walk it goes through the cells with (its turn, see antCommands) and its state next, the states parted by
 // |: 1R0 0L0, Langton's ant. One state, its cell then the next colour: an ant of the literature (RL, see antOfTurns). An
-// entry compact (1R0) where its words are letters, else dotted (1.R1.0); read either way. By the digits
+// entry compact (1R0) where its words are letters, else dotted (1.R2.0); read either way. By the digits
 // (antByDigits): a digit 1 turns the other way (left and right swap, see MIRROR), its base 2
 const antRules = {};
 const antRuleOf = (w) => (antRules[w] ??= rulesFor(w).find((c) => !c.why).rule);  // (at first the list's first it takes)
 let antByDigits = false;
-const MIRROR = { L: 'R', R: 'L', N: 'N', U: 'U', L1: 'R1', R1: 'L1', L2: 'R2', R2: 'L2', l: 'r', r: 'l' };
-const turnCommands = (rule) => rule.toUpperCase().match(/[LR][12]?|N/g) ?? [];
+const MIRROR = { L: 'R', R: 'L', N: 'N', U: 'U', L2: 'R2', R2: 'L2', l: 'r', r: 'l' };
+const turnCommands = (rule) => rule.toUpperCase().match(/[LR]2?|N/g) ?? [];
 // a walk's arrows, one per digit (an ant's: per turn of the walk it goes through the cells with), none: []
 const ARROW_LISTS = {};
 const arrowsOf = (w) => { const a = MODES[w].antOf ? ANTS[w].arrows ?? antArrows(w) : MODES[w].arrows ?? ''; return typeof a === 'string' ? (ARROW_LISTS[a] ??= [...a]) : a; };  // (a walk by a rule, an ant: theirs, see walkArrows)
@@ -4627,7 +4624,7 @@ const antCommands = (w) => (ANTS[w].words ??= commandsTaken(MODES[ANTS[w].walk])
 const commandsTaken = (m) => { const N = WALK_NETS[m.net];
   return [...Object.keys(N.turns), 'B', ...Object.keys(N.ways ?? {}), ...(N.notch || SURFACE_NOTCHES[m.net] ? spotCommands(m.net) : []), ...Object.keys(N.spots ?? {})].filter((t) => !walkCommandWhy(m, t)); };
 const antArrows = (w) => (ANTS[w].commandArrows ??= antCommands(w).map((t) => WALK_NETS[MODES[ANTS[w].walk].net].arrows[t] ?? SPOT_ARROWS[t] ?? ''));
-// a turn in words, for the Play card's chips (L, R on squares and triangles; L1, R1 on hexagons and pentagons)
+// a turn in words, for the Play card's chips (L, R a notch on every grid; L2, R2 two)
 const antText = (table) => { const dot = table.flat().some((e) => e.command.length > 1) ? '.' : ''; return table.map((row) => row.map((e) => `${e.write}${dot}${e.command}${dot}${e.next}`).join(' ')).join(' | '); };  // (dotted when a word of it is longer than a letter)
 // a rule's table [state][colour] { write, command, next }, its colours C and states S, its text as written back; null when it
 // is not one: 2 to 12 colours, up to 8 states, its commands the ant's
@@ -4639,7 +4636,7 @@ function antTableOf(w, rule) {
   if (!table.flat().every((e) => e && e.write < C && e.next < S)) return null;
   return { table, C, S, text: antText(table) };
 }
-// an ant of the literature by its turns, one per colour (RL, L1 R1): its rule, one state, colour c then c + 1
+// an ant of the literature by its turns, one per colour (RL, L2 R2): its rule, one state, colour c then c + 1
 const antOfTurns = (w, turns) => { const t = ruleCommands(turns); return antText([t.map((command, c) => ({ write: (c + 1) % t.length, command, next: 0 }))]); };
 const antRuleText = (w) => { const { S } = antTableOf(w, antRuleOf(w));
   return `${S > 1 ? `a turmite of ${S} states` : 'an ant'}: ${S > 1 ? 'in a state, ' : ''}on a cell of a colour it leaves a colour there, turns${S > 1 ? ' and takes a state' : ''}, by its rule ${antRuleOf(w)}${antByDigits ? '; a digit 1 turns the other way' : ''}`; };
@@ -4812,7 +4809,7 @@ const HEX_DIRS = [[1, 0], [0, 1], [-1, 1], [-1, 0], [0, -1], [1, -1]];
 // base 5, one onto an eaten line passed over), met again, the same way; one line left, along it; none, it dies. Its first
 // step straight on. step.took: its turn (0 sharp left … 4 sharp right); null once it stops, step.end: why (dead: no line
 // left; eaten: its rule onto an eaten line; rule, digits: none left for a new situation, step.free: its free lines there)
-const WORM_TURNS = { L2: 0, L1: 1, N: 2, R1: 3, R2: 4 };
+const WORM_TURNS = { L2: 0, L: 1, N: 2, R: 3, R2: 4 };
 const WORM_DIGITS = 1000;  // (the digits a worm is given: it reads 13 at most for π, e, φ, √2, γ, Catalan's, Erdős–Borwein's)
 const worm = { byDigits: false, rule: rulesOf('worm')[0].rule };  // (its rule at first: the list's first)
 const wormRuleOf = (rule) => { const commands = turnCommands(rule); return commands.length && commands.join('') === rule.toUpperCase().replace(/\s+/g, '') && commands.every((t) => t in WORM_TURNS) ? commands : null; };
@@ -4924,7 +4921,7 @@ function triStepper(kind) {
 
 /* ---- 6.4b Rules: a command per digit ------------------------------------------------------ */
 /* A walk's rule: a command per digit, what the walker does on reading it, one language for every network, its base the count
- * of its commands: L N R (L1 L2 R1 R2 on hexagons and pentagons, U back) turn then a step; l r a turn on the spot, no step
+ * of its commands: L N R (a notch: 90° on squares, 60° on hexagons; L2 R2 two notches; U back) turn then a step; l r a turn on the spot, no step
  * (Pivot); a a step, then a turn right at an odd digit (the 1st, 3rd… read), left at an even one (Parity); n ne e se s sw w
  * nw a step that way (Cardinal; King, the diagonals, from cell to cell only; Fixed on hexagons), on the triangles' cells and
  * the hexagons' grid | \ / (the way its step goes). A network: the cells a walk goes through (a grid's walk: its dual's
@@ -4933,10 +4930,10 @@ const WALK_NETS = {
   square: { dirs: KING_STEPS, notch: 2, at: (x, y) => [key(x, y), x, y, 0], straight: 'N', diagonals: ['ne', 'se', 'sw', 'nw'],
             turns: { L: -2, N: 0, R: 2, U: 4 }, ways: { n: 0, ne: 1, e: 2, se: 3, s: 4, sw: 5, w: 6, nw: 7 },
             arrows: { L: '←', N: '↑', R: '→', U: '↓', n: '↑', ne: '↗', e: '→', se: '↘', s: '↓', sw: '↙', w: '←', nw: '↖' } },
-  hex: { dirs: HEX_DIRS, notch: 1, at: hexAt, straight: 'N', turns: { L2: -2, L1: -1, N: 0, R1: 1, R2: 2, U: 3 }, ways: { n: 0, ne: 1, se: 2, s: 3, sw: 4, nw: 5 },
-         arrows: { L2: '↙', L1: '↖', N: '↑', R1: '↗', R2: '↘', U: '↓', n: '↑', ne: '↗', se: '↘', s: '↓', sw: '↙', nw: '↖' } },
+  hex: { dirs: HEX_DIRS, notch: 1, at: hexAt, straight: 'N', turns: { L2: -2, L: -1, N: 0, R: 1, R2: 2, U: 3 }, ways: { n: 0, ne: 1, se: 2, s: 3, sw: 4, nw: 5 },
+         arrows: { L2: '↙', L: '↖', N: '↑', R: '↗', R2: '↘', U: '↓', n: '↑', ne: '↗', se: '↘', s: '↓', sw: '↙', nw: '↖' } },
   tri: { notch: 1, straight: 'L', turns: { L: 0, R: 1, U: 2 }, ways: { '|': 0, '\\': 1, '/': 2 }, arrows: { L: '↖', R: '↗', U: '↓' } },  // (three ways out: no straight on; a notch on the spot, an edge)
-  cairo: { straight: 'L1', turns: { L2: 0, L1: 1, R1: 2, R2: 3 }, arrows: { L2: '↙', L1: '↖', R1: '↗', R2: '↘' } },
+  cairo: { straight: 'L', turns: { L2: 0, L: 1, R: 2, R2: 3 }, arrows: { L2: '↙', L: '↖', R: '↗', R2: '↘' } },
   cube: { notch: 1, straight: 'N', turns: { L: 0, '^': 1, N: 2, v: 3, R: 4, U: 5 }, ways: { n: 0, e: 1, u: 2, s: 3, w: 4, d: 5 }, spots: { p: ['pitch'] },  // (see cubeStepper)
           arrows: { L: '←', '^': '⊙', N: '↑', v: '⊗', R: '→', U: '↓', n: '↑', e: '→', u: '⊙', s: '↓', w: '←', d: '⊗', p: '⊙' } },
   diamond: { straight: 'N', turns: { L: 0, N: 1, R: 2 }, arrows: { L: '↖', N: '↑', R: '↗' } },  // (gauche left, trans, gauche right: see diamondStepper)
@@ -4947,10 +4944,10 @@ const spotCommands = (net) => ['l', 'r', ...(Object.hasOwn(WALK_NETS[net].turns,
 // Every rule's command, one table (the one list the rules are read by): short, its name (the digits' chips, the cards, the
 // tutorials, a greyed word's why); text, what it does (the reminder under How it works)
 const COMMANDS = {
-  L: { short: 'left', text: 'turns left, then a step' }, R: { short: 'right', text: 'turns right, then a step' },
+  L: { short: 'left', text: 'turns left by a notch (90° on squares, 60° on hexagons), then a step; also called L1' },
+  R: { short: 'right', text: 'turns right by a notch (90° on squares, 60° on hexagons), then a step; also called R1' },
   N: { short: 'straight', text: 'a step straight on' },
-  L1: { short: 'left', text: 'turns left, then a step (hexagons, pentagons)' }, R1: { short: 'right', text: 'turns right, then a step (hexagons, pentagons)' },
-  L2: { short: 'sharp left', text: 'turns sharp left, then a step' }, R2: { short: 'sharp right', text: 'turns sharp right, then a step' },
+  L2: { short: 'sharp left', text: 'turns left by two notches (120° on hexagons), then a step' }, R2: { short: 'sharp right', text: 'turns right by two notches (120° on hexagons), then a step' },
   U: { short: 'U-turn', text: 'leaves by the edge it came in by' }, B: { short: 'back', text: 'a step back, still facing the same way' },
   '^': { short: 'up', text: 'turns up, then a step (cubes)' }, v: { short: 'down', text: 'turns down, then a step (cubes)' },
   p: { short: 'turn up', text: 'turns up on the spot, no step (cubes)' }, u: { short: 'up', text: 'a step up, whatever its heading (cubes)' },
@@ -4966,9 +4963,9 @@ const COMMANDS = {
 // command, its name and what it does (see COMMANDS); then how an ant's rule is written
 const commandsReminder = () => `<h4>As a reminder: the rules' commands</h4><table class="tut-commands">${Object.entries(COMMANDS).map(([command, { short, text }]) => `<tr><td><b>${command}</b></td><td>${short}</td><td>${text}</td></tr>`).join('')}</table>`
   + '<p class="tut-commands-note">An ant\'s rule: an entry per colour, <b>1R0</b> the colour it leaves (1), its command (R), its state next (0); <b>2.R2.1</b> the same, a command of two letters parted by dots; <b>|</b> between two states\' entries (a turmite).</p>';
-// a rule's commands: spaced, else a letter each (L1, R2 one command)
-const ruleCommands = (rule) => { const t = String(rule ?? '').trim(); return !t ? [] : /\s/.test(t) ? t.split(/\s+/) : t.match(/[LR][12]|./g); };
-// a rule's text: tight when its commands are single letters of one case (LNR, nesw), else spaced (L1 R1, N r)
+// a rule's commands: spaced, else a letter each (L2, R2 one command)
+const ruleCommands = (rule) => { const t = String(rule ?? '').trim(); return !t ? [] : /\s/.test(t) ? t.split(/\s+/) : t.match(/[LR]2|./g); };
+// a rule's text: tight when its commands are single letters of one case (LNR, nesw), else spaced (L2 R2, N r)
 const ruleOfCommands = (commands) => commands.join(commands.every((t) => /^[A-Z]$/.test(t)) || commands.every((t) => /^[a-z]$/.test(t)) ? '' : ' ');
 // a command's act on a network: ['turn', by], ['way', heading], ['pivot', by], ['parity', by], ['back'], or null
 function commandAct(net, command) {

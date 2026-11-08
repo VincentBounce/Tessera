@@ -1,4 +1,5 @@
 :root {
+  --text-size: 14px;  /* the page's text, How it works' words too */
   --mono: ui-monospace, "SF Mono", Menlo, monospace;  /* digits and the rules' commands: l, I, | and 1 told apart */
   --view-gap: 12px;  /* the view's boxes from its edges (player, display, hint), a fit's margin too (see viewFor) */
   --player-width: calc(6 * 48px + 5 * 6px);  /* the player's six buttons and their gaps (a .row's): the folded bar's inner width */
@@ -47,7 +48,7 @@ html, body {
   height: 100%;
   background: var(--bg);
   color: var(--text);
-  font: 14px/1.4 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font: var(--text-size)/1.4 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
 }
 
 body { display: flex; flex-direction: column; font-variant-numeric: tabular-nums; }  /* every digit as wide as the others, everywhere: numbers that change (a step, a count) never jump */
@@ -583,7 +584,7 @@ button.wide.active, .head-btn.active { border-color: var(--accent); color: var(-
 .tut-body > h3 code { overflow-wrap: anywhere; }  /* (a long rule: on as many lines; a block rule's numbers, after its commas, see blockTutorial) */
 .rule-tuto h3 { margin: 0 96px 6px 0; font-size: 18px; }  /* (beside the buttons) */ .rule-tuto h3 code { margin-left: 6px; }  /* (as big as its name) */
 .rule-tuto h4 { margin: 18px 0 6px; font-size: 13px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); } .rule-tuto h4 code { margin-left: 8px; font-size: 13px; }
-.rule-tuto p { margin: 0; font-size: 13px; color: var(--muted); max-width: 640px; }
+.rule-tuto p { margin: 0; font-size: var(--text-size); color: var(--muted); }  /* (as wide as the page: its right margin the panel's, see .tut-body) */
 .tut-row { display: flex; flex-wrap: wrap; gap: 10px; }
 .tut-row figure { margin: 0; padding: 6px 8px; border: 1px solid var(--border); border-radius: 10px; background: var(--panel); }  /* as wide as its cells: they never wrap, its words never widen it */
 .tut-row figure > div { display: flex; flex-wrap: nowrap; align-items: center; gap: 4px; }

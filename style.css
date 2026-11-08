@@ -54,7 +54,7 @@
 
 /* the staircase (𓊍, the length asked's unit) 1.4 times its line wherever it is written, an input's text too: by a font
    face for that one character only, first in the page's fonts (none of these fonts: 𓊍 as the system draws it) */
-@font-face { font-family: 'Stairs'; src: local('Noto Sans Egyptian Hieroglyphs'), local('NotoSansEgyptianHieroglyphs-Regular'), local('Segoe UI Historic'); unicode-range: U+1328D; size-adjust: 140%; ascent-override: 0%; descent-override: 0%; }
+@font-face { font-family: 'Stairs'; src: local('Noto Sans Egyptian Hieroglyphs'), local('NotoSansEgyptianHieroglyphs-Regular'), local('Segoe UI Historic'); unicode-range: U+1328D; size-adjust: 140%; }
 
 html, body {
   margin: 0;
@@ -211,7 +211,7 @@ button.primary {
 /* the number of digits can be typed: a field that looks like the label until it is hovered or used */
 #loopLabel { color: var(--text-color); }
 #loopLabel.on { color: var(--accent-color); }
-.stepper input { min-width: 0; margin: 0; padding: 6px 8px; line-height: 1.8; cursor: text; }
+.stepper input { min-width: 0; margin: 0; padding: 6px 8px; cursor: text; }
 /* the two fields and the − / + buttons: one height, whatever the font (monospace while editing) */
 #formula, .field input, .stepper button { height: 34px; }
 /* ↵ at the end of a field being edited: clicking it leaves the field, which computes */

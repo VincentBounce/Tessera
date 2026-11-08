@@ -67,8 +67,6 @@ header { padding: 0; border-bottom: 1px solid var(--border); }  /* one hairline,
 .header-end .max-steps .field input:not(:focus) { text-align: right; }  /* (its number against its unit; typed, as any field) */
 .max-steps .steps-glyph { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); display: flex; font-size: 20px; line-height: 1; color: var(--accent); pointer-events: none; }  /* its unit, steps, in its words' gold */
 .max-steps .field:focus-within .steps-glyph { display: none; }  /* (typing: the number alone, Enter's ↵ there) */
-.bar-sub .pi { color: var(--accent); }
-.bar-sub .walking { color: var(--text-color); font-weight: 600; }  /* an automaton: what seeds it */
 
 main { flex: 1; display: flex; min-height: 0; }
 

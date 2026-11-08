@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.579';
+const VERSION = '0.4.580';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -1683,7 +1683,7 @@ const stepLook = (look) => {
 let lifeStart = null;  // where a Life start comes from when it is not the number's digits (see setLifeSeed)
 let barTitle = '';  // a walk's title: its number, a creature's name and what it turns by (its loop's link after it, see updateStats)
 function describe(base, available) {
-  const mode = MODES[walk.mode], sym = `<span class="pi">${withIcons(shownSymbol)}</span>`;  // (the walk shown's, described once built)
+  const mode = MODES[walk.mode], sym = withIcons(shownSymbol);  // (the walk shown's, described once built)
   setLinks($('barNum'), (barTitle = withIcons(shownSymbol)));
   $('barNum').title = formulaInUse;
   // the chips after the title, in one order everywhere: a walk's base, then the rule (a walk's, a creature's, Life's: a click,
@@ -1736,10 +1736,10 @@ function describe(base, available) {
   setLinks($('barRule'), ruleText && ruleSpan(ruleText));
   $('barRule').title = [known && known.name !== ruleText ? known.name : '', 'A click: how it works'].filter(Boolean).join(' · ');  // (its name, when not its words: a loop's)
   $('barBase').parentElement.classList.add('life');
-  if (walk.rows) { $('description').innerHTML = `${{ digits: `<span class="walking">${sym}</span> in base 2`, cell: 'One live cell', two: 'Two live cells', half: 'Its left half alive' }[plane.start]} its first row, ${formatNumber(walk.n)} rows down · ${formatNumber(walk.rows.upTo.at(-1))} live cells`; return; }  // (Elementary, see elementaryRows)
+  if (walk.rows) { $('description').innerHTML = `${{ digits: `${sym} in base 2`, cell: 'One live cell', two: 'Two live cells', half: 'Its left half alive' }[plane.start]} its first row, ${formatNumber(walk.n)} rows down · ${formatNumber(walk.rows.upTo.at(-1))} live cells`; return; }  // (Elementary, see elementaryRows)
   const cells = walk.life.seed.length;
   const seeded = available < cells ? `the first ${formatNumber(available)} of the ${formatNumber(cells)} cells (the others start dead)` : `the ${formatNumber(cells)} cells`;
-  $('description').innerHTML = `Neighbours share an edge or a corner · ${startLead(`<span class="walking">${sym}</span> in base ${base} seeds`, seeded)}`;  // (the rule, a newborn's colour too: How it works)
+  $('description').innerHTML = `Neighbours share an edge or a corner · ${startLead(`${sym} in base ${base} seeds`, seeded)}`;  // (the rule, a newborn's colour too: How it works)
 }
 
 // What the Display menu offers depends only on the walk tab (the group of the mode in the menu).

@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.575';
+const VERSION = '0.4.576';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -18885,7 +18885,7 @@ function credits(open) {
   $('ruleTuto').innerHTML = `<div class="tut-body"><h3>${APP_TITLE} <code>v${VERSION}</code></h3><p>Made by ${AUTHOR}</p><p>Cellular automata on tilings, surfaces and solids, and walks on the digits of numbers: the work of many, here.</p>`
     + CREDITS.map(([title, who]) => `<h4>${title}</h4><p>${who}.</p>`).join('')
     + `<p><a href="https://github.com/VincentBounce/Tessera#readme" target="_blank" rel="noopener">Its README</a> · <a href="https://github.com/VincentBounce/Tessera" target="_blank" rel="noopener">its code</a></p>`
-    + '<div class="form-section"><h3>Stats/debug</h3><h4>Times</h4><table id="timings" class="tut-commands"></table></div></div>';  // (the walk shown's times, see timings)
+    + '<div class="form-section"><h3>Stats/debug</h3><h4>Times for this view</h4><table id="timings" class="tut-commands"></table></div></div>';  // (the walk shown's times, see timings)
   paintTimings();
   $('ruleTuto').prepend(tutTools({ words: [['Share link', 'Copy the link to what is shown', (e) => shareView(e.currentTarget)], ['Home', 'Back to the start', () => { location.href = location.pathname; }]], close: () => credits(false) }));
 }

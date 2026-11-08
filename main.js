@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.548';
+const VERSION = '0.4.549';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -3645,7 +3645,7 @@ function choicesAt(s, reads = null) {  // (each [key, the setup it leads to, its
   for (const u of walksThere(w)) go(`side:${NAV[u][4]}`, u, NAV[u][4] === 'grid' ? 'Grid' : 'Cells');
   if (shape) for (const r of navValues(3, [kind, space, shape])) if (r !== rule) go(`rule:${r}`, navPick(w, 3, r), r);
   const set = (key, field, v, why, words) => { if (s[field] !== v && !why) out.push([key, { ...s, [field]: v }, words]); };  // (a choice greyed there: no click)
-  if (MODES[w].life && wants('colours')) for (const k of COLOUR_STEPS) set(`colours:${k}`, 'colours', k, coloursWhyNot(k, w, s.size), COLOUR_STEP_NAMES[k]);
+  if (MODES[w].life && wants('colours')) for (const k of COLOUR_STEPS) set(`colours:${k}`, 'colours', k, coloursWhyNot(k, w, s.size, s.rule), COLOUR_STEP_NAMES[k]);
   if (battleMode(w)) {
     if (wants('teams')) for (const k of COLOUR_STEPS) set(`teams:${k}`, 'teams', k, teamsWhyNot(k, w, s.size, s.startNo), COLOUR_STEP_NAMES[k]);
     if (s.teams > 1 && wants('battleRule')) BATTLE_RULES.forEach(([kind, name], p) => set(`battleRule:${p}`, 'battleRule', p, battleRuleWhyNot(kind, w), name));
@@ -8094,7 +8094,7 @@ const solidTeamCounts = (kind, mode) => (solidTeamCountsMemo[kind] ??= (() => {
 // a team count's, a count of colours' greyed words at a mode (at a size, or the one it opens at): one source, their tiles'
 // and the menu's graph's (see choicesAt)
 const teamsWhyNot = (k, v, size = null, j = startAsked()) => (k === 1 || battleFits(v, k, size ?? (battleMode(v) && figureSize(v)), j) ? '' : TEAMS_WHERE);
-const coloursWhyNot = (k, w, size = null) => (coloursFit(k, pickedFigure(w, size)) ? '' : 'The shape has no parts alike for so many colours.');
+const coloursWhyNot = (k, w, size = null, rule = $('lifeRule').value) => (!coloursStatesFit(k, rule) ? COLOURS_STATES_WHERE : coloursFit(k, pickedFigure(w, size), rule) ? '' : 'The shape has no parts alike for so many colours.');
 const TEAMS_WHERE = 'At this size and start, no group of the surface\'s symmetries sets so many walkers apart, each walking as A. Try another size or start.';  // (a team count's greyed words)
 // A surface's turns in space that lay its mesh onto itself (each a matrix, the identity among them), once a mesh: a closed
 // solid's rotations (see solidRotations); a ring's (a torus, a Möbius strip, a Klein bottle), its turns round its axis by
@@ -11416,7 +11416,7 @@ const colourMixed = (zone = hunt.zone) => colourMix && lifeColours > 1 && mixabl
 // Newcomer, a switch: the teams below's start (Trio's: Duel's, laid as Duel lays them), the last colour none at first, born only
 // of a tie between the others (the colour missing, see colourMissing); where a start lays teams (a soup's zones, Text); at
 // mode w and size, its figure made only when its teams' fit is asked (a mesh: the graph's search asks every mode round)
-const newcomerCan = (colours = lifeColours, w = $('mode').value, size = null, start = plane.start, rule = $('lifeRule').value) => colours > 2 && colourMissing(colours, rule) && (start === 'random' || start === 'text') && coloursFit(colours - 1, pickedFigure(w, size));
+const newcomerCan = (colours = lifeColours, w = $('mode').value, size = null, start = plane.start, rule = $('lifeRule').value) => colours > 2 && colourMissing(colours, rule) && (start === 'random' || start === 'text') && coloursFit(colours - 1, pickedFigure(w, size), rule);
 const newcomerWhere = (colours) => `Not in Solo, Duel, Digits or Draw, nor where the teams picked have no birth of the missing colour (no mark in their corner)${colours > 2 && !coloursFit(colours - 1) ? `; ${COLOUR_STEP_NAMES[colours - 1] ?? `${colours - 1} teams`} does not fit here` : ''}.`;
 // Mixed's greyed words (see mixable)
 const MIXED_WHERE = 'Not in Solo, Replicators, Text or Draw, nor in the hunt zones that lay each colour\'s own picture or part (Icon, Punk, Emoji, Famous, Anywhere, Realm, Mirror).';
@@ -11466,11 +11466,15 @@ const solidCounts = (sphere) => {
   const base = FACE_BASE[sphere] ?? sphere;
   return [...new Set([FACE_GROUPS[base], SPOT_PAIRS[base], SOLID_SPOTS[sphere]()].flatMap((t) => Object.keys(t ?? {})))].map(Number).sort((a, b) => a - b);
 };
-function coloursFit(k, f = pickedFigure()) {  // f: the figure, its mode and its surface (a torus's sizes)
+// k colours' states with a rule (a setup's, the field's by default): each colour its live and dying states, a cell's byte
+// at most (Faders' 25: ten colours)
+const coloursStatesFit = (k, rule = $('lifeRule').value) => k * ((parseRule(ruleBody(rule))?.C ?? 2) - 1) <= 255;
+const COLOURS_STATES_WHERE = 'So many colours, each with this rule\'s dying states, pass a cell\'s 255 states.';
+function coloursFit(k, f = pickedFigure(), rule = $('lifeRule').value) {  // f: the figure, its mode and its surface (a torus's sizes)
   const { mode, g } = f;
   if (k === 1) return true;
   if (!colourFair(k, f)) return false;  // (its parts not alike: greyed, see colourFair)
-  if (k * ((parseRule(ruleBody($('lifeRule').value))?.C ?? 2) - 1) > 255) return false;  // its states and dying stages past a cell's byte (Faders' 25: eight at most)
+  if (!coloursStatesFit(k, rule)) return false;
   if (mode.plane) {
     return true;  // its blocks (rounded down when they do not divide it, as on a torus); with dead edges, its halves, quarters, or slices round the middle (see planeSlices)
   }
@@ -11548,7 +11552,7 @@ function renderColours() {
   if (walkTeamsHere(w)) { $('colourBlocks').replaceChildren(...walkTeamTiles(w)); return; }
   $('colourBlocks').replaceChildren(...COLOUR_STEPS.map((k) => tile({ pic: colourBlock(k), text: COLOUR_STEP_NAMES[k],
     title: `${k === 1 ? 'One colour: alive or dead' : `${k} colours: ${LIFE_COLOUR_NAMES.slice(0, k).join(', ')}`}${colourMissing(k) ? ' · a colour gone can come back: a tie, the missing one born' : ''}`,
-    on: k === lifeColours, choice: `colours:${k}`, whyNot: ({ w, size }) => coloursWhyNot(k, w, size), mark: colourMissing(k), byDefault: k === 1 ? 'yes' : '', click: () => { if (k !== lifeColours) { coloursPicked = lifeColours = k; applyDefaults('colours'); compute(); } } })),  // (Trail: on in Solo, off in colours, at first)
+    on: k === lifeColours, choice: `colours:${k}`, whyNot: ({ w, size, rule }) => coloursWhyNot(k, w, size, rule), mark: colourMissing(k), byDefault: k === 1 ? 'yes' : '', click: () => { if (k !== lifeColours) { coloursPicked = lifeColours = k; applyDefaults('colours'); compute(); } } })),  // (Trail: on in Solo, off in colours, at first)
     // Mixed, a switch: the colours' cells mixed at random in one place, as one colour's (greyed in one colour and where no zone mixes, see mixable)
     tile({ pic: `<svg viewBox="0 0 4 4" aria-hidden="true">${[[0, 0], [2, 0], [1, 1], [3, 1], [0, 2], [2, 2], [1, 3], [3, 3]].map(([x, y], i) => `<rect x="${x}" y="${y}" width="1" height="1" fill="${LIFE_COLOURS[[0, 4, 2, 6, 5, 1, 7, 3][i]]}"/>`).join('')}</svg>`, text: 'Mixed',
       title: 'The colours placed as one colour is (one patch, a soup), each cell a colour at random', toggle: true, byDefault: 'off', on: colourMixed(), whyNot: ({ w, colours = lifeColours, start = plane.start, zone = hunt.zone }) => (colours > 1 && mixable(zone, MODES[w], start) ? '' : MIXED_WHERE), click: () => { colourMix = !colourMix; compute(); } }),

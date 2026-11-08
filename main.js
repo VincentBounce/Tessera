@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.602';
+const VERSION = '0.4.603';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -15175,7 +15175,7 @@ async function importGallery(file) {
 // others (60 a second at 144 Hz: 2 frames then 3, a stutter; at 72, 2 frames each)
 const SPEEDS = [1, 6, 12, 60, 120, 600, 1200, 6000, 12000, 60000, 120000, 600000, 1200000, 6000000];
 let speed = defaultOf('speed', tabMode());
-// the screen's refresh, as measured: its frame (frameTime, the median of its last ones, see tick)
+// the screen's refresh, as measured: its frame (frameTime, the mean of its last ones, see tick)
 const screenHz = () => Math.round(1 / frameTime);
 const evenSpeed = (v) => { const R = screenHz(); return v < R ? R / Math.max(1, Math.round(R / v)) : R * Math.round(v / R); };
 const stepsPerSecond = () => evenSpeed(speed);
@@ -17908,9 +17908,10 @@ const spinAt = (t) => { const hz = 1 / frameTime; return matMul(matMul(rotX(SPIN
 let linkedAt = null;  // the step shown as the link was last written, still (see tick)
 function tick(now = performance.now()) {
   const raw = (now - (lastTick || now)) / 1000;
-  if (raw > 1 / 250 && raw < 1 / 40) {  // the screen's frame: the median of its last ones, an early or a late one ignored; none slower than 40 Hz (a hidden page's, throttled); its speed as played told again (see evenSpeed)
-    frameSample.push(raw); if (frameSample.length > 31) frameSample.shift();
-    const hz = screenHz(); frameTime = frameSample.toSorted((a, b) => a - b)[frameSample.length >> 1]; if (screenHz() !== hz) updateSpeedLabel();
+  if (raw > 1 / 250 && raw < 1 / 40) {  // the screen's frame: the mean of its last 120, their jitter cancelled (a frame's own time trembles round
+    // the refresh); none slower than 40 Hz (a hidden page's, throttled); its speed as played told again (see evenSpeed)
+    frameSample.push(raw); if (frameSample.length > 120) frameSample.shift();
+    const hz = screenHz(); frameTime = frameSample.reduce((a, b) => a + b, 0) / frameSample.length; if (screenHz() !== hz) updateSpeedLabel();
   }
   const dt = Math.min(0.1, raw);  // seconds since the last frame (capped)
   lastTick = now;
@@ -17933,7 +17934,7 @@ function tick(now = performance.now()) {
   }
   if (!playing && !reversing && walk.lifeGoal !== null && !walk.stacked) lifeTo(walk.lifeGoal, now + 750 * frameTime);  // (a generation asked, its batch back: on to it; Space-time's: its own, see stackUp)
   if (playing || reversing) {
-    stepsDue += stepsPerSecond() * dt;  // time-based, so the speed holds whatever the frame rate
+    stepsDue += (stepsPerSecond() / screenHz()) * Math.max(1, Math.round(dt * screenHz()));  // by the frames the screen showed (a frame lost: two), not their trembling times: each step as many frames (see evenSpeed)
     const k = Math.floor(stepsDue), from = walk.lifeGoal ?? stepShown;  // (on from where it was going: a batch on the card, its steps not lost)
     stepsDue -= k;
     if (k > 0 || walk.lifeGoal !== null) {  // (no step this frame: its batch back taken all the same, the next one sent)

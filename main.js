@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.555';
+const VERSION = '0.4.556';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -3771,10 +3771,12 @@ function setWormRule(rule) {
   renderModePicker();
   compute();
 }
-// an ant's rule typed or picked (see antTableOf), or as the literature writes an ant, its turns alone (RL, see antOfTurns),
-// written back as it reads
+// an ant's rule as read, typed, picked or in a link: its table (see antTableOf), or as the literature writes an ant, its
+// turns alone (RL, see antOfTurns); none, null
+const antRuleRead = (w, rule) => antTableOf(w, rule) ?? antTableOf(w, antOfTurns(w, rule));
+// an ant's rule typed or picked, written back as it reads
 function setAntRule(w, rule) {
-  const T = antTableOf(w, rule) ?? antTableOf(w, antOfTurns(w, rule));
+  const T = antRuleRead(w, rule);
   if (!T) { refuseRule(rule, antRuleOf(w)); return; }
   antRules[w] = T.text;
   renderModePicker();
@@ -14906,7 +14908,7 @@ function applySetup(s) {
     if (!worm.byDigits && wormRuleOf(s.r)) worm.rule = wormRuleOf(s.r).join(' ');
   } else if (s.r && MODES[s.w].antOf) {
     antByDigits = s.r.startsWith('digits');
-    const T = antTableOf(s.w, antByDigits ? s.r.slice(6).trim() : s.r);
+    const T = antRuleRead(s.w, antByDigits ? s.r.slice(6).trim() : s.r);
     if (T) antRules[s.w] = T.text;
   } else if (MODES[s.w].net) {
     const m = MODES[s.w], commands = s.r && walkCommandsOf(s.w, s.r);

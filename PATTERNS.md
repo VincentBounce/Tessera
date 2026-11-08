@@ -84,7 +84,7 @@ The rabbit constant (the Fibonacci word) on Squares parity, where a 1 turns righ
 
 ## 🐜 Langton's ant by the digits: late highways
 
-**Ant**, beside Grid and Cells, walks a turtle's cells as [Langton's ant](https://en.wikipedia.org/wiki/Langton%27s_ant); with **Digits** each digit turns it (0 left, 1 right; L1 / R1 on the Cairo pentagons), the other way on a dark cell, which then flips. A fraction's digits repeat, yet the ant first wanders in the mess it makes, for hundreds or millions of steps, until it may slip out into fresh cells on a **highway**: the same stretch of steps for ever, each one further on (its stretch is a whole number of the digits' period). When it starts cannot be foreseen: even for Langton's own ant, no one has proved that it always builds one. A highway may also be a **bridge**: it runs across a bay of the cloud and lands back in it, and the chaos goes on.
+**Ant**, beside Grid and Cells, walks a turtle's cells as [Langton's ant](https://en.wikipedia.org/wiki/Langton%27s_ant); with **Digits** each digit turns it (0 left, 1 right: L and R, a notch, on every grid), the other way on a dark cell, which then flips. A fraction's digits repeat, yet the ant first wanders in the mess it makes, for hundreds or millions of steps, until it may slip out into fresh cells on a **highway**: the same stretch of steps for ever, each one further on (its stretch is a whole number of the digits' period). When it starts cannot be foreseen: even for Langton's own ant, no one has proved that it always builds one. A highway may also be a **bridge**: it runs across a bay of the cloud and lands back in it, and the chaos goes on.
 
 Tessera finds a highway (its stretch up to 100,000 steps, repeated over 1,000 steps and 8 stretches at least, its last stretch on cells first walked on it), follows it, and stops the ant as far along it as the cloud before it is wide (8 stretches at least); one that breaks before was a bridge. The search below ran apart, with the same rules and stops: every fraction 1/q with q ≤ 1,000 and every a/q with a ≤ 99 and q ≤ 9, in base 2, up to 50 million steps, each highway then followed until it was **endless for sure** (farther from the start than anything the ant walked before it, and going away). Fractions that walk the same digits from some point on (the sevenths, or 1/q and 1/2q) often meet the same highway: they share a row. The app walks up to 50 million digits: each link shows the whole walk, up to its stop.
 
@@ -248,7 +248,7 @@ Tessera finds a highway (its stretch up to 100,000 steps, repeated over 1,000 st
 
 </details>
 
-### Hexagons ant, Digits L1 N R1 (base 3, with straight on)
+### Hexagons ant, Digits L N R (base 3, with straight on)
 
 Each base-3 digit turns the ant: 0 left, 1 straight on, 2 right, mirrored on a dark cell (left and right swap, straight on stays). 6,265 fractions (every 1/q with q ≤ 2,000, every a/q with q ≤ 120), up to 50 million steps: 3,777 build a highway (no bridge before any), 2,369 none within 50 million steps, 119 unknown (the cloud grew wider than the search's grid, 16,384 cells across, first).
 
@@ -256,41 +256,41 @@ Each base-3 digit turns the ant: 0 left, 1 straight on, 2 right, mirrored on a d
 
 | # | Numbers | Highway from step | Stretch | Stops at | Surprise |
 |--:|---|--:|--:|--:|--:|
-| 1 | [1/437](https://vincentbounce.github.io/Tessera/#x=1/437&w=antHex&d=14776499&r=digits%20L1%20N%20R1) | 14,721,059 | 198 | 14,776,499 | 18,587 |
-| 2 | [2/77](https://vincentbounce.github.io/Tessera/#x=2/77&w=antHex&d=3258490&r=digits%20L1%20N%20R1) | 3,247,810 | 60 | 3,258,490 | 18,043 |
-| 3 | [75/77](https://vincentbounce.github.io/Tessera/#x=75/77&w=antHex&d=3258490&r=digits%20L1%20N%20R1) | 3,247,810 | 60 | 3,258,490 | 13,533 |
-| 4 | [1/468](https://vincentbounce.github.io/Tessera/#x=1/468&w=antHex&d=6792440&r=digits%20L1%20N%20R1) | 6,774,548 | 126 | 6,792,440 | 13,442 |
-| 5 | [1/658](https://vincentbounce.github.io/Tessera/#x=1/658&w=antHex&d=6178283&r=digits%20L1%20N%20R1) | 6,135,089 | 138 | 6,178,283 | 11,114 |
-| 6 | [9/52](https://vincentbounce.github.io/Tessera/#x=9/52&w=antHex&d=3566290&r=digits%20L1%20N%20R1) | 3,550,792 | 126 | 3,566,290 | 9,394 |
-| 7 | [1/905](https://vincentbounce.github.io/Tessera/#x=1/905&w=antHex&d=18928266&r=digits%20L1%20N%20R1) | 18,841,866 | 540 | 18,928,266 | 8,723 |
-| 8 | [34/77](https://vincentbounce.github.io/Tessera/#x=34/77&w=antHex&d=1893405&r=digits%20L1%20N%20R1) | 1,883,205 | 60 | 1,893,405 | 7,847 |
-| 9 | [43/77](https://vincentbounce.github.io/Tessera/#x=43/77&w=antHex&d=1893405&r=digits%20L1%20N%20R1) | 1,883,205 | 60 | 1,893,405 | 7,847 |
-| 10 | [36/77](https://vincentbounce.github.io/Tessera/#x=36/77&w=antHex&d=1796785&r=digits%20L1%20N%20R1) | 1,783,105 | 60 | 1,796,785 | 7,430 |
-| 11 | [41/77](https://vincentbounce.github.io/Tessera/#x=41/77&w=antHex&d=1796785&r=digits%20L1%20N%20R1) | 1,783,105 | 60 | 1,796,785 | 7,430 |
-| 12 | [43/52](https://vincentbounce.github.io/Tessera/#x=43/52&w=antHex&d=3566290&r=digits%20L1%20N%20R1) | 3,550,792 | 126 | 3,566,290 | 7,045 |
-| 13 | [1/1763](https://vincentbounce.github.io/Tessera/#x=1/1763&w=antHex&d=11128820&r=digits%20L1%20N%20R1) | 11,039,444 | 336 | 11,128,820 | 6,571 |
-| 14 | [1/606](https://vincentbounce.github.io/Tessera/#x=1/606&w=antHex&d=2177199&r=digits%20L1%20N%20R1) | 2,148,899 | 100 | 2,177,199 | 5,372 |
-| 15 | [1/1468](https://vincentbounce.github.io/Tessera/#x=1/1468&w=antHex&d=3012839&r=digits%20L1%20N%20R1) | 2,997,101 | 122 | 3,012,839 | 4,913 |
+| 1 | [1/437](https://vincentbounce.github.io/Tessera/#x=1/437&w=antHex&d=14776499&r=digits%20L%20N%20R) | 14,721,059 | 198 | 14,776,499 | 18,587 |
+| 2 | [2/77](https://vincentbounce.github.io/Tessera/#x=2/77&w=antHex&d=3258490&r=digits%20L%20N%20R) | 3,247,810 | 60 | 3,258,490 | 18,043 |
+| 3 | [75/77](https://vincentbounce.github.io/Tessera/#x=75/77&w=antHex&d=3258490&r=digits%20L%20N%20R) | 3,247,810 | 60 | 3,258,490 | 13,533 |
+| 4 | [1/468](https://vincentbounce.github.io/Tessera/#x=1/468&w=antHex&d=6792440&r=digits%20L%20N%20R) | 6,774,548 | 126 | 6,792,440 | 13,442 |
+| 5 | [1/658](https://vincentbounce.github.io/Tessera/#x=1/658&w=antHex&d=6178283&r=digits%20L%20N%20R) | 6,135,089 | 138 | 6,178,283 | 11,114 |
+| 6 | [9/52](https://vincentbounce.github.io/Tessera/#x=9/52&w=antHex&d=3566290&r=digits%20L%20N%20R) | 3,550,792 | 126 | 3,566,290 | 9,394 |
+| 7 | [1/905](https://vincentbounce.github.io/Tessera/#x=1/905&w=antHex&d=18928266&r=digits%20L%20N%20R) | 18,841,866 | 540 | 18,928,266 | 8,723 |
+| 8 | [34/77](https://vincentbounce.github.io/Tessera/#x=34/77&w=antHex&d=1893405&r=digits%20L%20N%20R) | 1,883,205 | 60 | 1,893,405 | 7,847 |
+| 9 | [43/77](https://vincentbounce.github.io/Tessera/#x=43/77&w=antHex&d=1893405&r=digits%20L%20N%20R) | 1,883,205 | 60 | 1,893,405 | 7,847 |
+| 10 | [36/77](https://vincentbounce.github.io/Tessera/#x=36/77&w=antHex&d=1796785&r=digits%20L%20N%20R) | 1,783,105 | 60 | 1,796,785 | 7,430 |
+| 11 | [41/77](https://vincentbounce.github.io/Tessera/#x=41/77&w=antHex&d=1796785&r=digits%20L%20N%20R) | 1,783,105 | 60 | 1,796,785 | 7,430 |
+| 12 | [43/52](https://vincentbounce.github.io/Tessera/#x=43/52&w=antHex&d=3566290&r=digits%20L%20N%20R) | 3,550,792 | 126 | 3,566,290 | 7,045 |
+| 13 | [1/1763](https://vincentbounce.github.io/Tessera/#x=1/1763&w=antHex&d=11128820&r=digits%20L%20N%20R) | 11,039,444 | 336 | 11,128,820 | 6,571 |
+| 14 | [1/606](https://vincentbounce.github.io/Tessera/#x=1/606&w=antHex&d=2177199&r=digits%20L%20N%20R) | 2,148,899 | 100 | 2,177,199 | 5,372 |
+| 15 | [1/1468](https://vincentbounce.github.io/Tessera/#x=1/1468&w=antHex&d=3012839&r=digits%20L%20N%20R) | 2,997,101 | 122 | 3,012,839 | 4,913 |
 
 **The latest**:
 
 | # | Numbers | Highway from step | Stretch | Stops at | Surprise |
 |--:|---|--:|--:|--:|--:|
-| 1 | [1/1435](https://vincentbounce.github.io/Tessera/#x=1/1435&w=antHex&d=29125870&r=digits%20L1%20N%20R1) | 28,816,990 | 9,360 | 29,125,870 | 616 |
-| 2 | [1/822](https://vincentbounce.github.io/Tessera/#x=1/822&w=antHex&d=23052910&r=digits%20L1%20N%20R1) | 22,726,510 | 3,400 | 23,052,910 | 1,671 |
-| 3 | [1/263](https://vincentbounce.github.io/Tessera/#x=1/263&w=antHex&d=23236101&r=digits%20L1%20N%20R1) | 22,568,001 | 19,650 | 23,236,101 | 287 |
-| 4 | [1/905](https://vincentbounce.github.io/Tessera/#x=1/905&w=antHex&d=18928266&r=digits%20L1%20N%20R1) | 18,841,866 | 540 | 18,928,266 | 8,723 |
-| 5 | [1/437](https://vincentbounce.github.io/Tessera/#x=1/437&w=antHex&d=14776499&r=digits%20L1%20N%20R1) | 14,721,059 | 198 | 14,776,499 | 18,587 |
-| 6 | [1/1839](https://vincentbounce.github.io/Tessera/#x=1/1839&w=antHex&d=14108381&r=digits%20L1%20N%20R1) | 13,780,043 | 8,874 | 14,108,381 | 311 |
-| 7 | [1/1763](https://vincentbounce.github.io/Tessera/#x=1/1763&w=antHex&d=11128820&r=digits%20L1%20N%20R1) | 11,039,444 | 336 | 11,128,820 | 6,571 |
-| 8 | [1/896](https://vincentbounce.github.io/Tessera/#x=1/896&w=antHex&d=11240295&r=digits%20L1%20N%20R1) | 10,972,647 | 6,528 | 11,240,295 | 420 |
-| 9 | [1/1725](https://vincentbounce.github.io/Tessera/#x=1/1725&w=antHex&d=11218600&r=digits%20L1%20N%20R1) | 10,855,600 | 12,100 | 11,218,600 | 179 |
-| 10 | [1/680](https://vincentbounce.github.io/Tessera/#x=1/680&w=antHex&d=10367246&r=digits%20L1%20N%20R1) | 10,285,934 | 2,464 | 10,367,246 | 1,044 |
-| 11 | [1/692](https://vincentbounce.github.io/Tessera/#x=1/692&w=antHex&d=11076450&r=digits%20L1%20N%20R1) | 10,243,110 | 55,556 | 11,076,450 | 46 |
-| 12 | [1/1734](https://vincentbounce.github.io/Tessera/#x=1/1734&w=antHex&d=9466927&r=digits%20L1%20N%20R1) | 8,690,095 | 55,488 | 9,466,927 | 31 |
-| 13 | [1/379](https://vincentbounce.github.io/Tessera/#x=1/379&w=antHex&d=8715113&r=digits%20L1%20N%20R1) | 8,374,157 | 4,158 | 8,715,113 | 503 |
-| 14 | [1/1675](https://vincentbounce.github.io/Tessera/#x=1/1675&w=antHex&d=8359402&r=digits%20L1%20N%20R1) | 8,218,162 | 1,320 | 8,359,402 | 1,245 |
-| 15 | [1/1811](https://vincentbounce.github.io/Tessera/#x=1/1811&w=antHex&d=8618261&r=digits%20L1%20N%20R1) | 8,066,211 | 9,050 | 8,618,261 | 178 |
+| 1 | [1/1435](https://vincentbounce.github.io/Tessera/#x=1/1435&w=antHex&d=29125870&r=digits%20L%20N%20R) | 28,816,990 | 9,360 | 29,125,870 | 616 |
+| 2 | [1/822](https://vincentbounce.github.io/Tessera/#x=1/822&w=antHex&d=23052910&r=digits%20L%20N%20R) | 22,726,510 | 3,400 | 23,052,910 | 1,671 |
+| 3 | [1/263](https://vincentbounce.github.io/Tessera/#x=1/263&w=antHex&d=23236101&r=digits%20L%20N%20R) | 22,568,001 | 19,650 | 23,236,101 | 287 |
+| 4 | [1/905](https://vincentbounce.github.io/Tessera/#x=1/905&w=antHex&d=18928266&r=digits%20L%20N%20R) | 18,841,866 | 540 | 18,928,266 | 8,723 |
+| 5 | [1/437](https://vincentbounce.github.io/Tessera/#x=1/437&w=antHex&d=14776499&r=digits%20L%20N%20R) | 14,721,059 | 198 | 14,776,499 | 18,587 |
+| 6 | [1/1839](https://vincentbounce.github.io/Tessera/#x=1/1839&w=antHex&d=14108381&r=digits%20L%20N%20R) | 13,780,043 | 8,874 | 14,108,381 | 311 |
+| 7 | [1/1763](https://vincentbounce.github.io/Tessera/#x=1/1763&w=antHex&d=11128820&r=digits%20L%20N%20R) | 11,039,444 | 336 | 11,128,820 | 6,571 |
+| 8 | [1/896](https://vincentbounce.github.io/Tessera/#x=1/896&w=antHex&d=11240295&r=digits%20L%20N%20R) | 10,972,647 | 6,528 | 11,240,295 | 420 |
+| 9 | [1/1725](https://vincentbounce.github.io/Tessera/#x=1/1725&w=antHex&d=11218600&r=digits%20L%20N%20R) | 10,855,600 | 12,100 | 11,218,600 | 179 |
+| 10 | [1/680](https://vincentbounce.github.io/Tessera/#x=1/680&w=antHex&d=10367246&r=digits%20L%20N%20R) | 10,285,934 | 2,464 | 10,367,246 | 1,044 |
+| 11 | [1/692](https://vincentbounce.github.io/Tessera/#x=1/692&w=antHex&d=11076450&r=digits%20L%20N%20R) | 10,243,110 | 55,556 | 11,076,450 | 46 |
+| 12 | [1/1734](https://vincentbounce.github.io/Tessera/#x=1/1734&w=antHex&d=9466927&r=digits%20L%20N%20R) | 8,690,095 | 55,488 | 9,466,927 | 31 |
+| 13 | [1/379](https://vincentbounce.github.io/Tessera/#x=1/379&w=antHex&d=8715113&r=digits%20L%20N%20R) | 8,374,157 | 4,158 | 8,715,113 | 503 |
+| 14 | [1/1675](https://vincentbounce.github.io/Tessera/#x=1/1675&w=antHex&d=8359402&r=digits%20L%20N%20R) | 8,218,162 | 1,320 | 8,359,402 | 1,245 |
+| 15 | [1/1811](https://vincentbounce.github.io/Tessera/#x=1/1811&w=antHex&d=8618261&r=digits%20L%20N%20R) | 8,066,211 | 9,050 | 8,618,261 | 178 |
 
 ### Tokarz's ant: straight on every N-th step
 

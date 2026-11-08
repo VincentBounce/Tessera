@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.628';
+const VERSION = '0.4.629';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -15173,7 +15173,7 @@ async function importGallery(file) {
 // SPEEDS (60 by default; at 12 or less the next step's chip lights, as step by step); played at the screen's own rhythm
 // (evenSpeed): a step every k frames below its refresh, k steps a frame above, so that each step shows as long as the
 // others (60 a second at 144 Hz: 2 frames then 3, a stutter; at 72, 2 frames each)
-const SPEEDS = [1, 6, 12, 60, 120, 600, 1200, 6000, 12000, 60000, 120000, 600000, 1200000, 6000000];
+const SPEEDS = [0.1, 0.2, 0.5, 1, 6, 12, 60, 120, 600, 1200, 6000, 12000, 60000, 120000, 600000, 1200000, 6000000];
 let speed = defaultOf('speed', tabMode());
 // the screen's refresh, as measured: its frame (frameTime, the mean of its last ones, see tick)
 const screenHz = () => Math.round(1 / frameTime);
@@ -15183,11 +15183,11 @@ const stepsPerSecond = () => evenSpeed(speed);
 const speedWords = (v) => formatNumber(v < 10 ? Math.round(v * 10) / 10 : Math.round(v));
 function updateSpeedLabel() {
   if (document.activeElement !== $('speedLabel')) $('speedLabel').value = `${stepsPerSecond() !== speed ? '≈ ' : ''}${speedWords(stepsPerSecond())} ${STEPS_GLYPH}/s`;  // (as played, at the screen's rhythm: ≈ when not as typed, see valueInUse)
-  setTile($('slower'), { greyed: speed <= 1 ? 'Already the slowest.' : '' });
+  setTile($('slower'), { greyed: speed <= SPEEDS[0] ? 'Already the slowest.' : '' });
   setTile($('faster'), { greyed: speed >= SPEEDS.at(-1) ? 'Already the fastest.' : '' });
 }
 function setSpeed(s) {
-  speed = Math.min(SPEEDS.at(-1), Math.max(1, Math.round(s)));
+  speed = Math.min(SPEEDS.at(-1), Math.max(SPEEDS[0], s < 1 ? Math.round(s * 10) / 10 : Math.round(s)));  // (below 1, to a tenth)
   updateSpeedLabel();
   statsDirty = true;
 }
@@ -18087,10 +18087,10 @@ function goStop(dir) {  // (playing on if it was)
 }
 $('restart').addEventListener('click', () => goStop(-1));
 $('end').addEventListener('click', () => goStop(1));
-// the turtle and the rabbit: the next speed of SPEEDS down or up; a typed one, digits only
-$('slower').addEventListener('click', () => setSpeed(SPEEDS.findLast((v) => v < speed) ?? 1));
+// the turtle and the rabbit: the next speed of SPEEDS down or up; a typed one, digits and a point only
+$('slower').addEventListener('click', () => setSpeed(SPEEDS.findLast((v) => v < speed) ?? SPEEDS[0]));
 $('faster').addEventListener('click', () => setSpeed(SPEEDS.find((v) => v > speed) ?? SPEEDS.at(-1)));
-$('speedLabel').addEventListener('input', () => { $('speedLabel').value = $('speedLabel').value.replace(/\D/g, ''); });
+$('speedLabel').addEventListener('input', () => { $('speedLabel').value = $('speedLabel').value.replace(/[^\d.]/g, ''); });
 $('speedLabel').addEventListener('blur', updateSpeedLabel);  // ("≈72𓊍/s" again: as played)
 $('speedLabel').addEventListener('change', () => { if ($('speedLabel').value) setSpeed(Number($('speedLabel').value)); });
 // the slider's end: a walk's last step; a run's (a Game of Life's, a reversible one's), its loop's last once known, else the

@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.552';
+const VERSION = '0.4.553';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -1999,9 +1999,11 @@ const card = ({ pic = '', name = '', detail = '', base = '', title = '', on = fa
 // a card's bubble at its top right: its base (where digits are read); a click shows the number in it (its card picked first),
 // or hides it. A base's words, every bubble's
 const baseWords = (base) => `base ${base}`;
+// a base bubble's title, the Formula field's and the cards' alike: a click shows the number in that base (see showNumber)
+const baseBubbleTitle = (words) => `The number in ${words}, all its digits over the view: to scroll or copy`;
 const cardBubble = (base, show) => {
   const b = Object.assign(document.createElement('span'), { className: `bubble${show ? ' act' : ''}${baseShown(base) ? ' active' : ''}`, textContent: base });  // (lit: the number shown in its base)
-  if (show) { b.title = `The number in ${base}`; b.addEventListener('click', (e) => { e.stopPropagation(); show(); }); }
+  if (show) { b.title = baseBubbleTitle(base); b.addEventListener('click', (e) => { e.stopPropagation(); show(); }); }
   return b;
 };
 // a card's words, every card's and Grid | Cells' alike: its name (Grid | Cells': its base in its bubble at its right), then its
@@ -3942,6 +3944,7 @@ function compute() {
   const base = mode.life ? lifeBase() : mode.base;  // Life: K + 1 (Digits mixed: 2, see lifeBase)
   const key = `${F.text}/${base}`;
   $('copyNumber').textContent = baseWords(base);  // (Full number's chip: the base the digits are written in)
+  $('copyNumber').title = baseBubbleTitle(baseWords(base));
   // The status line under the Number: how the digits came (time, cache), what the number is, and
   // warnings; what is shown is in the description (describe)
   const note = FORMULA_NOTES[F.root] ? FORMULA_NOTES[F.root](base) : '';

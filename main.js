@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.586';
+const VERSION = '0.4.587';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -17197,9 +17197,11 @@ function gpuCubes(count, of, make, reach) {
 // Life on the plane: its cells' triangles and walls', once a grid; the page's colour on the cells and the walls'
 // on the walls under all, zoomed in enough the outlines, over all the generation's colours (paint: into their buffer)
 // Life on the plane between two generations shown: a cell born grows from its centre, one dying shrinks to it, over
-// LIFE_MORPH_SECONDS or the generation's own time if shorter (0 to 1: the share done; still or stepped: 1, whole)
+// LIFE_MORPH_SECONDS or the generation's own time if shorter, from when the generation is shown (lifeShownAt, see gpuPlane:
+// not when it is asked, its batch back a frame or more later); 0 to 1, the share done; still or stepped: 1, whole
 const LIFE_MORPH_SECONDS = 0.25;
-const lifeMorph = () => (playing || reversing ? Math.min(1, stepsDue / Math.min(1, stepsPerSecond() * LIFE_MORPH_SECONDS)) : 1);
+let lifeShownAt = 0;
+const lifeMorph = () => (playing || reversing ? Math.min(1, (performance.now() - lifeShownAt) / 1000 / Math.min(1 / stepsPerSecond(), LIFE_MORPH_SECONDS)) : 1);
 function gpuPlane(paint) {
   const D = gpuDrawSetup();
   if (!D) return;
@@ -17229,7 +17231,7 @@ function gpuPlane(paint) {
   }
   const keepBefore = () => { const e = device.createCommandEncoder(), bytes = 4 * F.m; e.copyBufferToBuffer(D.planeCol, 0, D.planeBetween, 0, bytes); e.copyBufferToBuffer(D.planeBetween, 0, D.planeCol, 4 * Math.max(4, F.m), bytes); device.queue.submit([e.finish()]); };
   const first = D.planeGen === null, moved = D.planeGen !== stepShown;
-  if (moved && !first) keepBefore();  // (the generation before's colours, before the new ones)
+  if (moved && !first) { keepBefore(); lifeShownAt = performance.now(); }  // (the generation before's colours, before the new ones; its morph from now)
   paint({ put: (col) => device.queue.writeBuffer(D.planeCol, 0, col), buffer: D.planeCol, n: F.m }, F.m);
   if (first) keepBefore();  // (a new grid: nothing before it)
   D.planeGen = stepShown;

@@ -528,7 +528,7 @@ button.wide.active, .head-btn.active { border-color: var(--accent); color: var(-
 .step-line .end-words { display: none; }  /* its end's words, open only (folded: its mark) */
 .stage-bar:hover .step-line .end-words { display: inline; }
 @media (hover: none) { .stage-bar:focus-within .step-line .end-words { display: inline; } }
-.step-line #stepEnd:not(:empty), .step-line .bubble { margin-left: 10px; }  /* its end (a loop, a death), shown folded too; a reversible one's bound */
+.step-line #stepEnd:not(:empty), .step-line .bubble { margin-left: .3em; }  /* its end (a loop, a death), shown folded too; a reversible one's bound */
 .step-line .bubble { vertical-align: 3px; }
 .stage-bar #play.on, .stage-bar #reverse.on { background: var(--accent); color: var(--accent-text); }
 .hint {

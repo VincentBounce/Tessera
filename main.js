@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.635';
+const VERSION = '0.4.636';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -16803,7 +16803,7 @@ struct Col { @builtin(position) pos: vec4f, @location(0) col: vec4f }
   let q = array<u32, 12>(0u, 1u, 2u, 0u, 2u, 3u, 0u, 3u, 4u, 0u, 4u, 5u)[v];
   var col = band(grad, (c.z + 0.5) / 256.0);
   if (u.colour == 2) { col = band(pal, (c.z + 0.5) / 256.0); }
-  let shown = select(clamp((u.stepNow - at) / u.fadeSteps, 0.0, 1.0), 1.0, u.fadeSteps <= 0.0);  // (faded in from nothing over fadeSteps from the step it came at)
+  let shown = select(clamp((u.stepNow - at) / u.fadeSteps, 0.0, 1.0), 1.0, u.fadeSteps <= 0.0 || at <= 0.0);  // (faded in from nothing over fadeSteps from the step it came at; the start's, there before any step, never)
   let a = u.alphaF * shown;
   o.col = vec4f(col * u.bright * a, a);
   let k = u32(c.w) * 6u + q; let t4 = u.tpl[k / 2u];

@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.620';
+const VERSION = '0.4.621';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -2279,7 +2279,7 @@ function syncDigitsStepper() {
   const stop = runStop(), size = randomPrimeSize(), gens = gensShown(), asked = size ?? lengthAsked(), steps = size ? PRIME_STEPS : DIGIT_STEPS;
   const unit = gens ? 'generations' : stepperUnit(), total = gens || size || walk.loop ? null : wholeTotal();  // (a loop's, its rounds: see runStop)
   // the length asked, steps at most, the same words in every tab (its end, a loop, a death, a battle's: the step line, see endMark)
-  if (document.activeElement !== $('digitsLabel')) $('digitsLabel').value = `≤${compactCount(asked)}`;  // (its unit, steps: the footprints beside it)
+  if (document.activeElement !== $('digitsLabel')) $('digitsLabel').value = `≤${compactCount(asked)} ${STEPS_GLYPH}`;  // (in its unit, steps, as the speed field)
   $('digitsLabel').title = [`${formatNumber(asked)} ${size ? 'digits of the random prime p (100 to 2,000: it is walked whole)' : `${asked === 1 ? unit.slice(0, -1) : unit} at most`}`,
     !size && !lengthUsed() && 'Not used here (Life and Rewind play on): kept for the next tab', !size && total !== null && `The number has ${formatNumber(total)} digits`, stop?.why,
     `Type a number, from ${formatNumber(steps[0])} to ${formatNumber(size ? steps.at(-1) : lengthMost())}, then Enter`].filter(Boolean).join('\n');
@@ -18057,7 +18057,6 @@ for (const b of document.querySelectorAll('.field .enter')) {
   b.addEventListener('mousedown', (e) => { e.preventDefault(); b.previousElementSibling.blur(); });
 }
 $('digitsLabel').addEventListener('input', () => { $('digitsLabel').value = $('digitsLabel').value.replace(/\D/g, ''); });
-$('stepsGlyph').textContent = STEPS_GLYPH;  // (the length asked's unit, beside it)
 $('digitsLabel').addEventListener('focus', () => { $('digitsLabel').value = String(randomPrimeSize() ?? lengthAsked()); $('digitsLabel').select(); });  // (to type: the exact number, picked)
 $('digitsLabel').addEventListener('blur', syncDigitsStepper);  // "20,000 digits" again
 $('digitsLabel').addEventListener('change', () => {

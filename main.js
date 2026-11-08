@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.558';
+const VERSION = '0.4.559';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -1595,6 +1595,7 @@ const freshWalk = () => ({
   wormEnd: false, wormMade: 0,  // a worm's walk only: why and after how many turns of its own it stops
   battle: null,    // a battle only (see 7.6b)
   life: null, plane: null,  // Life's; on the plane, its grid
+  stacked: false,  // Life's Space-time: its generations stacked up in 3D (the setup's when built; the tab's next one: spaceTimeOn)
   shape: null,     // only tiled surfaces that can change shape get one (see initShape)
   persp: null,     // the perspective camera (see setPerspective)
   widestShown: 0,  // the furthest step or generation shown yet: the step line as wide, never narrower (see formatNumberAsWide)
@@ -1766,7 +1767,7 @@ const DISPLAY_DEFAULTS = {
   area: ['area', 'tab', (mode, w) => (NAV[w][0] !== 'Walk' ? 'empty' : NAV[w][1] === '2D' ? 'light' : 'plain')], path: ['showPath', 'tab', false],  // (Area: Empty, a walk's Light in 2D, Plain in 3D; on cells the cells alone)
   centered: ['centered', 'tab', true], autoRotate: ['autoRotate', 'tab', false], sky: ['sky', 'tab', 'sky'],  // (on a solid the walker in front; Dawn or Twilight after the theme)
   autoFit: ['autoFit', 'mode', true], upright: ['upright', 'mode', false], shape: ['shapeM', 'mode', (mode) => (mode.round ? 1 : 0)],  // (Flat 0 ── Inflated 1: a round surface inflated, a solid flat)
-  perspective: ['perspective', 'mode', (mode, w) => perspectiveFor(mode, defaultOf('shape', w))],  // (as each mode's own, hand-tuned)
+  perspective: ['perspective', 'mode', (mode, w) => perspectiveFor(mode, defaultOf('shape', w), spaceTime && spaceTimeApplies(w))],  // (as each mode's own, hand-tuned)
   light: ['light', 'open', true], glass: ['glass', 'open', false], grid: ['showGrid', 'open', true],
   player: [null, 'walk', (mode) => (mode.grid ? 0.2 : 1)],  // (where a walk on a surface is shown: the step its places visited reach this share, along the grid a fifth of its corners, on cells all its cells; else its end)
   trail: ['lifeTrail', 'colours', () => lifeColours === 1],  // (Life's Trail: on in Solo, two states, off in colours; when the colours change)
@@ -2192,7 +2193,7 @@ const gensShown = () => !!MODES[tabMode()].elementary || spaceTimeOn();
 const reversibleRun = () => !!walk.life?.margolus && lifeTime();
 const runEnd = () => {
   const s = walk.life?.stable, n = walk.n;
-  return s && Number.isFinite(n) && !spaceTimeOn() ? Math.min(n, s.T + s.P - 1) : n;
+  return s && Number.isFinite(n) && !walk.stacked ? Math.min(n, s.T + s.P - 1) : n;
 };
 // a run whose loop is known (Life's, a reversible one's): Play and Step go on round it, past its end (see loopRound)
 const looping = () => { const s = walk.life?.stable; return lifeTime() && !!s && !s.extinct && s.P > 1; };
@@ -2208,7 +2209,7 @@ const runLoop = () => {
 // and Elementary: none)
 const STEPS_GLYPH = '𓊍';  // the length asked's mark: its stepper's unit, a run ended by it (Egyptian hieroglyph O40, a stair)
 function endMark() {
-  if (spaceTimeOn() || walk.rows) return '';
+  if (walk.stacked || walk.rows) return '';
   if (lengthUsed() && seekFar() === lengthAsked() && !runLoop()) return `<a class="gen-link gen-loop" href="#" data-stepper title="The length asked: a click, the steps stepper at the top right">${STEPS_GLYPH}<span class="end-words"> max defined upper-right</span></a>`;  // (its end the length asked: a click highlights its stepper)
   if (walk.battle) { const why = walk.battle.winner.until; return why ? genLink(stepShown !== walk.n ? walk.n : 0, `■<span class="end-words"> ${why} at step ${formatNumber(walk.n)}</span>`, 'loop') : ''; }  // (its winner: the ranking's)
   const k = walk.life?.stable, o = !walk.life && runLoop();
@@ -2228,7 +2229,7 @@ const seekFirst = () => (Number.isFinite(runStart()) ? runStart() : -Math.max(0,
 const loopBack = () => looping() && walk.life.stable.T === 0;
 function setGens(n) {
   lengthPicked = Math.min(lengthMost(), Math.max(DIGIT_STEPS[0], Math.round(n) || 2000));
-  if (spaceTimeOn()) { restart(); showAll(); }
+  if (walk.stacked) { restart(); showAll(); }
   else if (MODES[tabMode()].elementary) compute();  // (its rows built again, see elementaryRows)
   else { walk.n = lengthPicked; if (stepShown > walk.n) seekTo(walk.n); }
   statsDirty = true;
@@ -2241,8 +2242,8 @@ function setGens(n) {
 // would draw nothing new), a whole number shorter (all its digits). The stepper's − goes below it, its + greyed
 function runStop() {
   if (gensShown()) {
-    const s = !spaceTimeOn() && walk.life?.stable, n = runEnd() + 1;
-    const end = spaceTimeOn() && stack?.end !== 'gens' ? STACK_ENDS[stack?.end]
+    const s = !walk.stacked && walk.life?.stable, n = runEnd() + 1;
+    const end = walk.stacked && stack?.end !== 'gens' ? STACK_ENDS[stack?.end]
       : s && runEnd() < walk.n ? (s.extinct ? STACK_ENDS.dead : s.P === 1 ? ['■', 'Frozen: more would draw the same'] : ['↻', `Back to gen ${formatNumber(s.T)} every ${formatNumber(s.P)}: more would draw the same`]) : null;
     return end && { n, label: `${formatNumber(n)} generations max ${end[0]}`, why: end[1] };
   }
@@ -2645,7 +2646,7 @@ $('planeEdges').append(tileGroup(OUTLINES.map(([shape, torus, text, title]) => t
   click: () => { plane.shape = shape; plane.torus = torus; if (torus) spaceTime = false; compute(); } }))));  // (Stacks off on a torus)
 // Stacks (Space-time, in 3D: walls with it, left on when it goes off; a torus, Stacks off too), on squares: under Natural squares
 const spaceTimeTile = tile({ pic: icon('stacks'), text: 'Stacks', toggle: true, byDefault: 'off', title: 'The generations stacked up, in 3D, time going up, a cube a live cell, as many generations as asked under the play buttons (a glider: a slanting line; an oscillator: a column); turned as a 3D walk. With walls: through a torus\'s edges no tree grows',
-  click: () => { spaceTime = !spaceTime; if (spaceTime) plane.torus = false; $('perspective').checked = perspectiveFor(MODES[tabMode()], 0); compute(); } });
+  click: () => { spaceTime = !spaceTime; if (spaceTime) plane.torus = false; $('perspective').checked = perspectiveFor(MODES[tabMode()], 0, spaceTimeOn()); compute(); } });
 // an element's HTML with links in it, written again only when it changes: against what was written, not its HTML now (a link
 // hovered has its title turned into data-tip, see the tooltips: rewritten each frame, the link under the mouse replaced, its click
 // lost), and not while one of its links is pressed (Play: its text changes each frame, the click between two)
@@ -6568,13 +6569,13 @@ $('shapeM').addEventListener('input', () => {
 $('shapeM').addEventListener('change', () => {
   const m = Number($('shapeM').value);
   if (m !== 0 && m !== 1) return;
-  $('perspective').checked = perspectiveFor(MODES[walk.mode], m);
+  $('perspective').checked = perspectiveFor(MODES[walk.mode], m, walk.stacked);
   $('perspective').dispatchEvent(new Event('change'));
 });
 
 // The perspective a surface starts with, in its form m: the walk mode's, but none on a solid
 // inflated (a ball is seen whole without it)
-const perspectiveFor = (mode, m) => (!!mode.perspective || (!!mode.plane && spaceTimeOn())) && !(m === 1 && SOLIDS.includes(mode.sphere));  // (Space-time: on)
+const perspectiveFor = (mode, m, stacked) => (!!mode.perspective || (!!mode.plane && stacked)) && !(m === 1 && SOLIDS.includes(mode.sphere));  // (Space-time: on)
 // One animation frame of the change of shape (about 0.7 s from flat to round)
 function morphStep(dt) {
   const sh = walk.shape;
@@ -9268,7 +9269,7 @@ function buildLife(seq, mode) {
   countSeed(walk.life);
   lifeStart = null;  // the number's digits
   const one = new Float64Array(1);
-  Object.assign(walk, { vert: null, stepTiles: null, loop: null, n: gensShown() && !spaceTimeOn() ? lengthAsked() : Infinity, digits: seq, wx: one, wy: one, wz: one, is3d: true, cells: null,
+  Object.assign(walk, { vert: null, stepTiles: null, loop: null, n: mode.elementary ? lengthAsked() : Infinity, digits: seq, wx: one, wy: one, wz: one, is3d: true, cells: null,
                         maxDist: null, base: rule.base, counts: null, lattice: 'sphere', skipZeros: false, points: false,
                         keys: seq, sphere: true, geo: g, R: radius(size), tile: new Int32Array(1),
                         coverStep: -1, visits: new Int32Array(n), maxVisits: 0,
@@ -10567,7 +10568,7 @@ function buildLifePlane(seq) {
   countSeed(walk.life);
   lifeStart = null;
   const one = new Float64Array(1);
-  Object.assign(walk, { vert: null, stepTiles: null, loop: null, n: gensShown() && !spaceTimeOn() ? lengthAsked() : Infinity, digits: seq, wx: one, wy: one, wz: one, is3d: false, cells: null,
+  Object.assign(walk, { vert: null, stepTiles: null, loop: null, n: MODES[walk.mode].elementary ? lengthAsked() : Infinity, stacked: spaceTime && spaceTimeApplies(walk.mode), digits: seq, wx: one, wy: one, wz: one, is3d: false, cells: null,
                         maxDist: null, base: rule.base, counts: null, lattice: 'square', skipZeros: false, points: false,
                         keys: seq, sphere: false, geo: { n }, plane: { kind, W, row, n, xy, at, torus: planeTorus(kind), flat: planeFlat(kind, W, planeTorus(kind)) }, tile: null,
                         coverStep: -1, visits: null, maxVisits: 0, xs: one, ys: one, shape: null });
@@ -15229,7 +15230,7 @@ function lifeTo(target, until = Infinity) {  // (one step, one generation, playe
 function advanceTo(target, until = Infinity) {  // forth or back (a walk; a reversible one, by its rule); until: a Game of Life's batches stop past it (a frame's time, see tick)
   target = loopBack() ? target : Math.max(runStart(), looping() ? target : Math.min(runEnd(), target));  // (a loop known: on round it, or back round it)
   if (target !== stepShown) faced = false;  // the walker moves: the camera follows it again (see faceWalk)
-  if (spaceTimeOn()) { stepShown = Math.max(0, target); statsDirty = true; if (stepShown >= walk.n) play(false); return; }  // (Space-time: its layers, made, see stackUp)
+  if (walk.stacked) { stepShown = Math.max(0, target); statsDirty = true; if (stepShown >= walk.n) play(false); return; }  // (Space-time: its layers, made, see stackUp)
   if (target < stepShown && !walk.life) { walkBack(target); return; }
   if (target < stepShown && lifeTime() && !walk.life.margolus) {  // a Game of Life back: no rule backwards; round its loop forth (the same
     const o = looping() && runLoop(), P = o && o.last - o.T + 1;  // state, nothing played again), else from its start again
@@ -15285,11 +15286,11 @@ function play(on) {
 // drawn again up to the step before (Life: none, no rule backwards; a step back only, see advanceTo)
 // Life's own time: generations played on the card, ever on (back: round its loop, or played again, see advanceTo; a block
 // rule's, by its rule); Space-time's, its layers made (see stackUp)
-const lifeTime = () => !!walk.life && !spaceTimeOn();
+const lifeTime = () => !!walk.life && !walk.stacked;
 const playsBack = () => !lifeTime() || !!walk.life.margolus;  // (◀: a walk, Space-time, a reversible one)
 // a run's player, Life's and a reversible one's (+10k; no End: its end found by playing, its green link), by the mode
 // chosen: its run built or not yet (a big grid's, a moment); a reversible one's ◀ too (see playsBack)
-const lifePlayer = () => { const m = MODES[tabMode()]; return !!m.life && !m.elementary && !spaceTimeOn(); };  // (Elementary's rows: a walk's, its end known)
+const lifePlayer = () => { const m = MODES[walk.mode]; return !!m?.life && !m.elementary && !walk.stacked; };  // (Elementary's rows: a walk's, its end known)
 function reverse(on) {
   reversing = on && playsBack() && (stepShown > runStart() || loopBack());  // (a loop known: from 0 too, a round back)
   if (reversing) play(false);
@@ -15315,7 +15316,7 @@ let resumeAt = null;
 function showAll() {
   if (resumeAt !== null) { const at = Math.min(resumeAt, walk.n); resumeAt = null; seekTo(at); play(true); return; }
   if (lifeTime()) return;  // the Game of Life starts at generation 0 instead (Space-time: its layers all)
-  if (spaceTimeOn() && !stack) return;  // (Space-time: once its cubes are made, see stackUp)
+  if (walk.stacked && !stack) return;  // (Space-time: once its cubes are made, see stackUp)
   advanceTo(firstShown());
   faceWalk();
   if ($('autoFit').checked && !choosingStart) fitWhole();  // framed like F or a double-click, without the margin kept for growing
@@ -15339,7 +15340,7 @@ function fitWhole() {
 }
 
 // Space-time: its layers all shown once its run is set up
-const showStacks = () => { if (spaceTimeOn()) showAll(); };
+const showStacks = () => { if (walk.stacked) showAll(); };
 function restart() {
   if (reversing) reverse(false);
   faced = false;
@@ -15358,7 +15359,7 @@ function restart() {
     if (walk.life) lifeReset();
   } else if (walk.plane) {  // the frame is the grid (Space-time: its cubes', made from its start, see stackUp)
     lifeReset();
-    walk.is3d = spaceTimeOn();
+    walk.is3d = walk.stacked;
     if (walk.is3d) {
       bounds3 = [-1, 1, -1, 1, -1, 1];  // (till its cubes are made)
       stackUp().then((made) => {
@@ -16239,7 +16240,7 @@ const CELL_SHAPES = {
 // order with the depth buffer, so that a cell shows the colour of its last visit (the rainbow by the
 // step, its digit's, or one colour) and hides the ones behind it
 const cellShape = () => CELL_SHAPES[MODES[digitsComputed.mode].shape ?? 'cube'];
-const cubesWalk = () => walk.is3d && (!!MODES[digitsComputed.mode].cells || spaceTimeOn());  // (a 3D walk on cells, Life's Space-time: cubes)
+const cubesWalk = () => walk.is3d && (!!MODES[walk.mode].cells || walk.stacked);  // (a 3D walk on cells, Life's Space-time: cubes)
 // a 3D walk on cells' cubes, points 0 … n: where, their colours by the look (the rainbow by the step, its digit's)
 function walkCubes(mode) {
   const n = walk.n, at = new Float32Array(3 * (n + 1)), col = new Uint8Array(3 * (n + 1));
@@ -17469,7 +17470,7 @@ function drawActivity() {
   const first = seekFirst(), n = seekFar() - first + 1;
   let series;
   const rainbow = () => { const g = ctx.createLinearGradient(0, 0, W, 0); for (let f = 0; f <= 1; f += 0.125) g.addColorStop(f, gradientAt(f)); return g; };
-  if (spaceTimeOn() && stack) {  // Space-time: each generation's cubes, in its rainbow (as its cubes, up)
+  if (walk.stacked && stack) {  // Space-time: each generation's cubes, in its rainbow (as its cubes, up)
     const E = stack.layers;
     series = [[columns(n, (i) => E[i] - (i ? E[i - 1] : -1)), rainbow()]];
   } else if (walk.life) {
@@ -17693,7 +17694,7 @@ function updateStats() {
   $('jump10k').hidden = !lifePlayer();  // (Life, a reversible one: 10,000 generations ahead, while its end is not known)
   setTile($('jump10k'), { greyed: busy ? 'Its run is not built yet.' : runLoop() ? 'Its loop is known: its end is in sight.' : '' });
   setTile($('play'), { greyed: busy ? 'Its run is not built yet.' : '' });
-  $('reverse').hidden = lifePlayer() && !MODES[tabMode()].margolus;  // (played backwards: a walk, a reversible one)
+  $('reverse').hidden = lifePlayer() && !MODES[walk.mode].margolus;  // (played backwards: a walk, a reversible one)
   setTile($('reverse'), { greyed: backAtStart });
   setTile($('step'), { greyed: atEnd() ? 'Already at the end.' : '' });
   $('end').hidden = lifePlayer();  // (Life, a reversible one: its green link and +10k)
@@ -17701,14 +17702,14 @@ function updateStats() {
   setTile($('end'), { greyed: runStops().some((g) => g > stepShown) ? '' : 'No stop ahead.' });
   // the step or generation shown, its own line, every mode: Step 15,964, Gen 132; its last after it where the run has one
   // (a walk's, Elementary's, Space-time's: see runEnd; Life's, a reversible one's, once its loop is known: see runLoop), its slider's end (see seekFar)
-  const far = seekFar(), gens = !!walk.life || spaceTimeOn() || !!walk.rows;
+  const far = seekFar(), gens = !!walk.life || walk.stacked || !!walk.rows;
   const known = Number.isFinite(lifeTime() ? runLoop()?.last : runEnd());
   walk.widestShown = Math.max(walk.widestShown, stepShown, known ? far : 0);  // (its last once known, else the furthest shown: a ratchet)
   $('stepNow').innerHTML = `${gens ? 'Gen' : 'Step'} ${formatNumberAsWide(stepShown, walk.widestShown)}`;
   setLinks($('stepLast'), known ? ` / ${formatNumber(far)}` : '');  // (a run's, Life's or a reversible one's: once its loop is known)
   setLinks($('stepEnd'), endMark());
   if (!walk.life && !walk.battle) $('ranking').hidden = $('rankTitles').hidden = true;  // (a battle's shown by renderWalkGauges: never hidden in between, its rows' slides kept)
-  const time = spaceTimeOn() && !!stack, rows = walk.rows;
+  const time = walk.stacked && !!stack, rows = walk.rows;
   if (time || rows) {  // Space-time: its cubes up to the generation shown; Elementary: its live cells up to it (see elementaryRows): a gauge, as a walk's and Life's
     $('ranking').hidden = $('rankTitles').hidden = true;
     $('gauges').hidden = false;
@@ -17861,7 +17862,7 @@ function tick(now = performance.now()) {
       rotateView(screenTurn(...axis));
     }
   }
-  if (!playing && !reversing && lifeGoal !== null && walk.life && !spaceTimeOn()) lifeTo(lifeGoal, now + 750 * frameMin);  // (a generation asked, its batch back: on to it; Space-time's: its own, see stackUp)
+  if (!playing && !reversing && lifeGoal !== null && walk.life && !walk.stacked) lifeTo(lifeGoal, now + 750 * frameMin);  // (a generation asked, its batch back: on to it; Space-time's: its own, see stackUp)
   if (playing || reversing) {
     stepsDue += stepsPerSecond() * dt;  // time-based, so the speed holds whatever the frame rate
     const k = Math.floor(stepsDue), from = walk.life && lifeGoal !== null ? lifeGoal : stepShown;  // (on from where it was going: a batch on the card, its steps not lost)
@@ -17881,11 +17882,11 @@ function tick(now = performance.now()) {
   if (walk.n && !walk.sphere && !walk.plane) showZoom();  // (a walk: its fit grows with it)
   // a Game of Life on its way to a generation asked (a seek: back, from its start again, see advanceTo), not playing: its
   // picture as it was till there, never its start or a generation on the way
-  const held = !!walk.life && lifeGoal !== null && !playing && !reversing && !spaceTimeOn();
+  const held = !!walk.life && lifeGoal !== null && !playing && !reversing && !walk.stacked;
   if (walk.plane && held) { requestAnimationFrame(tick); return; }
   if (walk.plane) {  // Life on the plane: the grid as one picture, each generation (Space-time: its cubes, up to the layer shown)
     if (needsFull) gpuClear();
-    if (spaceTimeOn()) { if (stack && (needsFull || statsDirty)) { drawGrid(); gpuCubes(stack.layers[stepShown] + 1, stack, stackCubes, stack.reach); updateStats(); } }
+    if (walk.stacked) { if (stack && (needsFull || statsDirty)) { drawGrid(); gpuCubes(stack.layers[stepShown] + 1, stack, stackCubes, stack.reach); updateStats(); } }
     else {
       if (needsFull) drawPlaneGrid();
       if (needsFull || statsDirty) { drawLifePlane(); updateStats(); }

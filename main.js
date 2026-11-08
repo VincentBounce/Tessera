@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.600';
+const VERSION = '0.4.601';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -15888,17 +15888,17 @@ function firstVisits() {
 // big parts of the surface (half a sphere, the whole of a Klein bottle, all of a torus: the dragon's) whatever the figure:
 // only the small areas its figure rings are filled, PATTERN_AREA tiles at most (Area's tooltip says so)
 const PATTERN_AREA = 2;
-// A walk along a surface's grid: its sweet spot, the step before its first ocean (the first time it closes off more than
-// SWEET_OCEAN of the surface at once: its continents made, the surface not flooded yet); null without an ocean
+// A walk along a surface's grid: its sweet spot, the step before its ocean (the largest part of the surface it closes off at
+// once, if more than SWEET_OCEAN of it: its continents made, the surface not flooded yet); null without an ocean
 const SWEET_OCEAN = 0.1;
 const sweetSpot = () => {
   if (walk.sweetSpot !== undefined) return walk.sweetSpot;
   if (!walk.sphere || !walk.vert || !walk.n) return (walk.sweetSpot = null);
   const at = areaSteps(), closed = new Map();
   for (const s of at) if (s >= 0) closed.set(s, (closed.get(s) ?? 0) + 1);  // (the tiles each step closes off)
-  let ocean = Infinity;
-  for (const [s, k] of closed) if (k > SWEET_OCEAN * walk.geo.n && s < ocean) ocean = s;
-  return (walk.sweetSpot = ocean < Infinity ? ocean - 1 : null);
+  let ocean = null, most = SWEET_OCEAN * walk.geo.n;
+  for (const [s, k] of closed) if (k > most) { most = k; ocean = s; }  // (the largest, past the floor)
+  return (walk.sweetSpot = ocean !== null ? ocean - 1 : null);
 };
 const patternAreaCap = () => (walk.stepTiles && digitsComputed?.patterned ? PATTERN_AREA : Infinity);
 // A walk along the grid (on cells none: Area greyed, see areaWhyNot): the regions are made of tiles, two neighbouring

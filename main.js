@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.597';
+const VERSION = '0.4.598';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -792,7 +792,7 @@ const PRESETS = {
   ln2:     { group: '𝑓', sym: 'ln 2', name: 'Natural log of 2', f: 'ln(2)' },
   zeta3:   { group: '𝑓', sym: 'ζ(3)', name: "Apéry's constant", f: 'zeta(3)' },
   ramanujan: { group: '𝑓', sym: 'e<sup>π√163</sup>', name: "Ramanujan's constant", detail: 'e^(pi*sqrt(163)) = 262537412640768743.99999999999925…: all but whole', f: 'e^(pi*sqrt(163))' },
-  basel:   { group: '𝑓', sym: '6/π²', name: 'Probability that two whole numbers are coprime', detail: '6/pi^2 = 1/ζ(2)', f: '6/pi^2' },
+  coprime: { group: '𝑓', sym: '6/π²', name: 'Probability that two whole numbers are coprime', detail: '6/pi^2 = 1/ζ(2)', f: '6/pi^2' },
   // Fractions: the screens' 4/3 and 16/9, π's 22/7 and 355/113 (Zu Chongzhi's, 6 decimals right). Their digits repeat,
   // and on a walk that turns relative to its heading, a round of them that turns by a whole fraction of a turn closes into a
   // rosette (k rounds for a k-fold one).

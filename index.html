@@ -11,7 +11,7 @@
   <meta property="og:type" content="website">
   <link id="favicon" rel="icon">  <!-- the app's logo, set at start-up (see appLogo) -->
   <meta name="description" content="A walk on a grid in 2D or 3D driven by the base-2 to base-6 digits of π, other constants and large primes.">
-  <link rel="stylesheet" href="style.css?v=0.4.562">
+  <link rel="stylesheet" href="style.css?v=0.4.563">
   <script>  // the theme before the first paint (see applyTheme)
     try { const t = localStorage.getItem('tesseraTheme') || 'system'; document.documentElement.dataset.theme = t === 'system' ? (matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark') : t; } catch { document.documentElement.dataset.theme = 'dark'; }
   </script>
@@ -163,7 +163,7 @@
         <button id="walkRuleHow" class="wide how-it-works" data-icon="info" type="button" title="The rule in use, step by step: what each cell (each step) sees, and what it does (a click on a rule card's picture, too)">How it works</button>  <!-- how the rule works (see walkTutorialToggle), on its first card -->
         <div id="navRules" class="mode-list rule-cards" role="listbox"></div>  <!-- the rules of that shape, where there are several; a walk by a rule: its rules' cards; a creature's, the creatures, the one in use with its rules (see ruleCards) -->
         <div id="antCustomRow" hidden><div id="antRuleName" class="field-label"></div>  <!-- not a label: a click on ↵ would focus the field again; moved right after its card (see ruleCards) -->
-          <span class="field"><input id="antRule" class="custom" type="text" autocomplete="off" spellcheck="false" title="Type a rule, then Enter"><button class="enter" type="button" tabindex="-1" title="Apply (Enter)">↵</button></span>
+          <span class="field"><input id="antRule" class="custom rule" type="text" autocomplete="off" spellcheck="false" title="Type a rule, then Enter"><button class="enter" type="button" tabindex="-1" title="Apply (Enter)">↵</button></span>
         </div>
         <label hidden>Walk mode (menu kept as the source of truth for the tabs in the header)
           <select id="mode">
@@ -382,7 +382,7 @@
           </div>
         </div>
         <div id="lifeCustomRow">
-          <span class="field"><input id="lifeRule" class="custom" type="text" value="B3/S23" autocomplete="off" spellcheck="false" title="Type a rule, then Enter"><button class="enter" type="button" tabindex="-1" title="Apply (Enter)">↵</button></span>
+          <span class="field"><input id="lifeRule" class="custom rule" type="text" value="B3/S23" autocomplete="off" spellcheck="false" title="Type a rule, then Enter"><button class="enter" type="button" tabindex="-1" title="Apply (Enter)">↵</button></span>
         </div>
       </section>
 
@@ -513,10 +513,10 @@
     </div>
   </main>
 
-  <script src="pixelarticons.js?v=0.4.562"></script>
-  <script src="punks.js?v=0.4.562"></script>
-  <script src="loops.js?v=0.4.562"></script>
-  <script src="emoji.js?v=0.4.562"></script>
-  <script src="main.js?v=0.4.562"></script>
+  <script src="pixelarticons.js?v=0.4.563"></script>
+  <script src="punks.js?v=0.4.563"></script>
+  <script src="loops.js?v=0.4.563"></script>
+  <script src="emoji.js?v=0.4.563"></script>
+  <script src="main.js?v=0.4.563"></script>
 </body>
 </html>

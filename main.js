@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.562';
+const VERSION = '0.4.563';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -1698,7 +1698,7 @@ function describe(base, available) {
   $('barBattle').hidden = !walk.battle;  // (a battle: its rule, after the walk's)
   $('barBattle').textContent = walk.battle ? BATTLE_RULES[battleRuleInUse(w)][1] : '';
   $('barBattle').title = 'Its battle rule · A click: how it works';
-  if (creature) { const R = creatureRules(w); setLinks($('barNum'), (barTitle = walkName(w))); setLinks($('barRule'), R.byDigits ? `${withIcons(shownSymbol)} · ${R.now}` : R.now); $('barRule').title = [R.byDigits ? `It turns by the digits of ${shownSymbol}, base 2` : 'It turns by its rule', colours && `${colours} colours`].filter(Boolean).join(' · '); }
+  if (creature) { const R = creatureRules(w); setLinks($('barNum'), (barTitle = walkName(w))); setLinks($('barRule'), R.byDigits ? `${withIcons(shownSymbol)} · ${ruleSpan(R.now)}` : ruleSpan(R.now)); $('barRule').title = [R.byDigits ? `It turns by the digits of ${shownSymbol}, base 2` : 'It turns by its rule', colours && `${colours} colours`].filter(Boolean).join(' · '); }
   $('barBase').parentElement.classList.toggle('life', !!creature || battleOn());  // (a creature, a battle titled as Life is: see .bar-title.life)
   if (colours) base = colours;  // its chips, one per colour
   $('barLoop').hidden = true;  // (a reversible one's: not back yet; a walk's loop, its title's link, see updateStats)
@@ -1733,7 +1733,7 @@ function describe(base, available) {
   // the title: the rule (its name, or the rule itself), not the number that may have seeded it (Elementary's: built as a walk)
   const ruleText = walk.life?.ruleText ?? lifeRuleNow()?.text ?? '', known = ruleCard(ruleText, walk.mode);
   $('barRule').hidden = !ruleText;
-  setLinks($('barRule'), ruleText);
+  setLinks($('barRule'), ruleText && ruleSpan(ruleText));
   $('barRule').title = [known && known.name !== ruleText ? known.name : '', 'A click: how it works'].filter(Boolean).join(' · ');  // (its name, when not its words: a loop's)
   $('barBase').parentElement.classList.add('life');
   if (walk.rows) { $('description').innerHTML = `${{ digits: `<span class="walking">${sym}</span> in base 2`, cell: 'One live cell', two: 'Two live cells', half: 'Its left half alive' }[plane.start]} its first row, ${formatNumber(walk.n)} rows down · ${formatNumber(walk.rows.upTo.at(-1))} live cells`; return; }  // (Elementary, see elementaryRows)
@@ -1994,10 +1994,10 @@ function highlight(el) { el.classList.remove('highlit'); void el.offsetWidth; el
 // a greyed button that knows what would allow it (its enablers: the nearest buttons of the menu taking it there, see
 // setTile's whyNot): a click on it, which a disabled button never gets (its pointer's up it does), highlights them
 document.addEventListener('pointerup', (e) => { const b = e.target.closest?.('button, input'); if (!b?.disabled || !b.enablers) return; const them = b.enablers(); them[0]?.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); them.forEach(highlight); });  // (the first scrolled into sight, as little as it takes)
-const card = ({ pic = '', name = '', detail = '', base = '', title = '', on = false, can = true, byDefault, click = null, how = null, whyNot = null, at, choice = null }) => {
-  const b = tile({ html: '', title: title || detail, on, can, byDefault, click, whyNot, at, choice }), picture = Object.assign(document.createElement('span'), { className: `mode-icon${how ? ' act' : ''}`, innerHTML: pic });
+const card = ({ pic = '', name = '', rule = '', detail = '', base = '', title = '', on = false, can = true, byDefault, click = null, how = null, whyNot = null, at, choice = null }) => {
+  const b = tile({ html: '', title: title || [rule, detail].filter(Boolean).join(' · '), on, can, byDefault, click, whyNot, at, choice }), picture = Object.assign(document.createElement('span'), { className: `mode-icon${how ? ' act' : ''}`, innerHTML: pic });
   if (how) { picture.title = `How ${name} works`; picture.addEventListener('click', (e) => { e.stopPropagation(); how(); }); }  // (its picture: a click on how it works)
-  b.append(picture, cardWords(name, detail), ...(base ? [cardBubble(base, click && (() => (on ? toggleNumber() : (click(), showNumber()))))] : []));
+  b.append(picture, cardWords(name, detail, '', null, rule), ...(base ? [cardBubble(base, click && (() => (on ? toggleNumber() : (click(), showNumber()))))] : []));
   return b;
 };
 // a card's bubble at its top right: its base (where digits are read); a click shows the number in it (its card picked first),
@@ -2010,12 +2010,18 @@ const cardBubble = (base, show) => {
   if (show) { b.title = baseBubbleTitle(base); b.addEventListener('click', (e) => { e.stopPropagation(); show(); }); }
   return b;
 };
+// a text written as HTML (its <, >, & as entities)
+const htmlText = (text) => String(text).replace(/[&<>]/g, (c) => `&#${c.charCodeAt(0)};`);
+// A rule's code wherever it is written (B3/S23, LRU, L2 R2, 1R0 0L0, W110: a card's, a tutorial's, the commands'): in --mono
+// (.rule), l, I, | and 1 told apart; the words round it in the page's font
+const ruleSpan = (code) => `<code class="rule">${htmlText(code)}</code>`;
 // a card's words, every card's and Grid | Cells' alike: its name (Grid | Cells': its base in its bubble at its right), then its
-// code or its words
-function cardWords(name, detail = '', base = '', show = null) {
+// rule's code (see ruleSpan) and its words
+function cardWords(name, detail = '', base = '', show = null, rule = '') {
   const part = (cls, text) => Object.assign(document.createElement('span'), { className: cls, textContent: text }), head = part('mode-head', ''), words = document.createElement('span');
   head.append(part('mode-name', name), ...(base ? [cardBubble(base, show)] : []));
-  words.append(head, ...(detail ? [part('mode-detail', detail)] : []));
+  if (rule || detail) words.append(head, Object.assign(document.createElement('span'), { className: 'mode-detail', innerHTML: [rule && ruleSpan(rule), detail && htmlText(detail)].filter(Boolean).join(' · ') }));
+  else words.append(head);
   return words;
 }
 // a row's action at its end (a setup's ×): seen while its row is hovered (see .row-act), a click its own
@@ -3612,7 +3618,7 @@ function renderAntRow() {
 function ruleCards(w, here = true) {
   const R = creatureRules(w), mine = here && (customOpen || !ruleKnown(R));
   const go = (then) => () => { if (!here) { $('mode').value = w; $('mode').dispatchEvent(new Event('change')); } then(); };
-  const make = (cardPic, name, code, on, then, why = '', title = '', source = null) => card({ pic: cardPic, name, detail: code, base: code && R.base?.(code), on, title, click: go(then),
+  const make = (cardPic, name, code, on, then, why = '', title = '', source = null) => card({ pic: cardPic, name, rule: code, base: code && R.base?.(code), on, title, click: go(then),
     how: () => { if (on) walkTutorialToggle(); else { go(then)(); walkTutorial(w); } }, whyNot: source && (({ w: v }) => ruleWhyNot(v, source)), at: w,
     choice: source?.startsWith('walk ') ? `walkRule:${code}` : null });  // (a walk's rule: its choice's key, see choicesAt)  // (its picture: how it works, picked first; greyed, why: rulesFor's, any mode's)
   return [...R.cards.map(({ rule: r, source, name, pic, why, title }) => make(pic, name, r, here && r === R.now && !customOpen, () => { customOpen = false; if (r === R.now) renderModePicker(); else R.set(r); }, why, title, source)),
@@ -3727,7 +3733,7 @@ const capitalised = (t) => t.replace(/^./, (c) => c.toUpperCase());
 const ruleTitleOf = (w) => {
   if (!WALK_NETS[MODES[w].net] && NAV[w][0] !== 'Ant') return walkName(w);
   const R = creatureRules(w);
-  return `${R.cards.find((c) => c.rule === R.now)?.name ?? 'Custom rule'} <code>${R.now}</code>`;
+  return `${R.cards.find((c) => c.rule === R.now)?.name ?? 'Custom rule'} ${ruleSpan(R.now)}`;
 };
 // a mode's kinds of rules (see RULES): a walk's, else the creatures' of its side (Cells: the ants and turmites; Grid: the worm)
 const kindsOf = (w) => (MODES[w].net ? ['walk'] : NAV[w]?.[0] === 'Ant' ? Object.keys(RULE_KINDS).filter((k) => RULE_KINDS[k].side === NAV[w][4]) : []);  // (none but a walk's and the Ant tab's)
@@ -4646,7 +4652,7 @@ function antTableOf(w, rule) {
 // an ant of the literature by its turns, one per colour (RL, L2 R2): its rule, one state, colour c then c + 1
 const antOfTurns = (w, turns) => { const t = ruleCommands(turns); return antText([t.map((command, c) => ({ write: (c + 1) % t.length, command, next: 0 }))]); };
 const antRuleText = (w) => { const { S } = antTableOf(w, antRuleOf(w));
-  return `${S > 1 ? `a turmite of ${S} states` : 'an ant'}: ${S > 1 ? 'in a state, ' : ''}on a cell of a colour it leaves a colour there, turns${S > 1 ? ' and takes a state' : ''}, by its rule ${antRuleOf(w)}${antByDigits ? '; a digit 1 turns the other way' : ''}`; };
+  return `${S > 1 ? `a turmite of ${S} states` : 'an ant'}: ${S > 1 ? 'in a state, ' : ''}on a cell of a colour it leaves a colour there, turns${S > 1 ? ' and takes a state' : ''}, by its rule ${ruleSpan(antRuleOf(w))}${antByDigits ? '; a digit 1 turns the other way' : ''}`; };
 // its colours (one chip each), its rule's
 const antColours = (w) => (MODES[w].antOf ? antTableOf(w, antRuleOf(w)).C : 0);
 // the step: turned, the colour of the cell it turned on; took, its chip (its cell's colour; by the digits, the digit); left,
@@ -4881,7 +4887,7 @@ function surfaceWormStepper(g, start, digits) {
 }
 const wormRuleText = () => `along the lines of a triangle grid, never twice along one: at a corner met for the first time, `
   + (worm.byDigits ? 'it turns by the next digit, <b>0</b> sharp left, <b>1</b> left, <b>2</b> straight, <b>3</b> right, <b>4</b> sharp right (one onto an eaten line passed over)'
-    : `it turns by its rule's next turn, ${worm.rule}`) + ', and the same way at that corner met again; it dies where no line is left';
+    : `it turns by its rule's next turn, ${ruleSpan(worm.rule)}`) + ', and the same way at that corner met again; it dies where no line is left';
 
 // the hexagons' spiral: turn left whenever that hexagon is unvisited, else go straight (the digit is ignored), from south
 function hexSpiralStepper() {
@@ -4968,8 +4974,8 @@ const COMMANDS = {
 };
 // As a reminder, in every walk's and creature's How it works, under its figures (its own section, before a battle's): every
 // command, its name and what it does (see COMMANDS); then how an ant's rule is written
-const commandsReminder = () => `<h4>As a reminder: the rules' commands</h4><table class="tut-commands">${Object.entries(COMMANDS).map(([command, { short, text }]) => `<tr><td><b>${command}</b></td><td>${short}</td><td>${text}</td></tr>`).join('')}</table>`
-  + '<p class="tut-commands-note">An ant\'s rule: an entry per colour, <b>1R0</b> the colour it leaves (1), its command (R), its state next (0); <b>2.R2.1</b> the same, a command of two letters parted by dots; <b>|</b> between two states\' entries (a turmite).</p>';
+const commandsReminder = () => `<h4>As a reminder: the rules' commands</h4><table class="tut-commands">${Object.entries(COMMANDS).map(([command, { short, text }]) => `<tr><td>${ruleSpan(command)}</td><td>${short}</td><td>${text}</td></tr>`).join('')}</table>`
+  + '<p class="tut-commands-note">An ant\'s rule: an entry per colour, ' + ruleSpan('1R0') + ' the colour it leaves (1), its command (R), its state next (0); ' + ruleSpan('2.R2.1') + ' the same, a command of two letters parted by dots; ' + ruleSpan('|') + ' between two states\' entries (a turmite).</p>';
 // a rule's commands: spaced, else a letter each (L2, R2 one command)
 const ruleCommands = (rule) => { const t = String(rule ?? '').trim(); return !t ? [] : /\s/.test(t) ? t.split(/\s+/) : t.match(/[LR]2|./g); };
 // a rule's text: tight when its commands are single letters of one case (LNR, nesw), else spaced (L2 R2, N r)
@@ -10824,7 +10830,7 @@ function renderPlaneRow() {
     const p = DRAW_BY_ID.get(b.dataset.brush);
     b.classList.toggle('active', p[0] === brush.id);
     b.hidden = !fits(p);
-    b.querySelector('.mode-detail').textContent = p[5] + (mine && p[2].length ? ` · ${p[2][0]}` : '');  // your own rule: which rule it is for
+    b.querySelector('.mode-detail').innerHTML = htmlText(p[5]) + (mine && p[2].length ? ` · ${ruleSpan(p[2][0])}` : '');  // your own rule: which rule it is for
     if (!b.hidden) discCard(b, p);
     if (p[0] === 'cell' && b.dataset.kind !== kind) {  // the cell: one of this grid's (a hat: its drawing), at the patterns' scale
       b.querySelector('.mode-icon').innerHTML = APERIODIC[kind] ? icon(kind) : cellsIcon(kind, 'A!');
@@ -11800,7 +11806,7 @@ function blockTutorial(entry, to) {
   const shownPair = (st) => `<figure><div>${block(st)}<span>→</span>${block(full ^ to[st], st)}</div><figcaption>${alive(st)} alive${alive(full ^ to[st]) !== alive(st) ? ` → ${alive(full ^ to[st])}` : ''}</figcaption></figure>`;
   const asShown = !flips ? '' : `<h4>As shown</h4><p>It turns an empty block full, so every other generation is shown negative (its dead cells drawn alive), as Margolus showed Critters: the picture stays the same way round${blockKind(to).keeps ? ', and each block keeps as many cells alive, each its colour' : ''}. A block, then as the next generation shows it:</p><div class="tut-row">${states.map(shownPair).join('')}</div>`;
   $('ruleTuto').innerHTML = `<div class="tut-body">`
-    + `<h3>${entry.name} <code>${entry.rule.replace(/,/g, ',<wbr>')}</code></h3>${BLOCK_WORDS[`${kind}|${entry.name}`] ? `<p>${BLOCK_WORDS[`${kind}|${entry.name}`].slice(2)}.</p>` : ''}${ising ? `<p>The Ising model of a magnet (Vichniac's Q2R, 1984; Tim Tyler's cell-auto.com): the squares a checkerboard, its two colours in turn, a generation each; a square of the colour's turn turned over when just 2 of its 4 side neighbours are alive, else kept. Turned over or not, as many sides between alive and dead (its energy kept), and the colour not turning stays as it is: so it runs back.${edges}</p>`
+    + `<h3>${entry.name} ${ruleSpan(entry.rule).replace(/,/g, ',<wbr>')}</h3>${BLOCK_WORDS[`${kind}|${entry.name}`] ? `<p>${BLOCK_WORDS[`${kind}|${entry.name}`].slice(2)}.</p>` : ''}${ising ? `<p>The Ising model of a magnet (Vichniac's Q2R, 1984; Tim Tyler's cell-auto.com): the squares a checkerboard, its two colours in turn, a generation each; a square of the colour's turn turned over when just 2 of its 4 side neighbours are alive, else kept. Turned over or not, as many sides between alive and dead (its energy kept), and the colour not turning stays as it is: so it runs back.${edges}</p>`
       + `<div class="tut-row tut-phases">${edged.map((blocks, j) => `<figure><div>${phase(blocks)}</div><figcaption>${['even', 'odd'][j]} generations</figcaption></figure>`).join('')}</div>${cases}${maxPeriod}</div>` : ''}${ising ? '' : `<p>The grid in blocks of ${k} cells round a corner, ${stars ? `the same each generation, each cell first swapped with the one across its side away from the corner, come in from the next block (stellated: Tim Tyler's ${k === 6 ? 'Star of David' : 'isometric von Neumann'} neighbourhood, a lattice gas's)` : `${turns.length} sets of them in turn, a generation each (${R?.four ? "Tim Tyler's Square-4: Margolus's, its corners 4 sets in turn round a square" : "Margolus's neighbourhood"})`}: `
     + `each block turns into the one below, a different one for each of its ${1 << k} states, so the rule runs back too, the arrows the other way round. One of each state turned the same: the rule turns with its block.${edges}</p>`
     + `<div class="tut-row tut-phases">${edged.map((blocks, j) => `<figure><div>${phase(blocks)}</div><figcaption>${turns.length === 1 ? 'every generation' : turns.length === 2 ? ['even', 'odd'][j] : `${['1st', '2nd', '3rd', '4th'][j]} of ${turns.length}`}${turns.length === 1 ? '' : ' generations'}</figcaption></figure>`).join('')}</div>${across}`
@@ -11856,7 +11862,7 @@ function elementaryTutorial(entry) {
   const cell = (x, y, v) => `<rect x="${x}" y="${y}" width="1" height="1" fill="${v ? LIFE_ALIVE : UNLIT}" stroke="var(--border)" stroke-width="0.04"/>`;
   const cases = [7, 6, 5, 4, 3, 2, 1, 0].map((b) => `<figure><div><svg viewBox="-0.1 -0.1 3.2 3.2">${cell(0, 0, b >> 2)}${cell(1, 0, (b >> 1) & 1)}${cell(2, 0, b & 1)}<text x="1.5" y="1.72" text-anchor="middle" font-size="0.8" fill="var(--muted)">↓</text>${cell(1, 2, wolframBit(N, b >> 2, (b >> 1) & 1, b & 1))}</svg></div><figcaption>${wolframBit(N, b >> 2, (b >> 1) & 1, b & 1)}</figcaption></figure>`).join('');
   const picture = wolframFromCell(N, 16).flatMap((r, y) => r.map((c, x) => (c ? cell(x, y, 1) : ''))).join('');
-  $('ruleTuto').innerHTML = `<div class="tut-body"><h3>${entry.name} <code>W${N}</code></h3><p>${words ? `${words[0].toUpperCase()}${words.slice(1)}. ` : ''}A row of cells, each generation the next row down: each cell looks at the three above it (on its left, above it, on its right), 8 cases, and the rule's number in base 2, ${N} = ${N.toString(2).padStart(8, '0')}, gives each one its cell, from 111 to 000 (Wolfram, 1983).</p>`
+  $('ruleTuto').innerHTML = `<div class="tut-body"><h3>${entry.name} ${ruleSpan(`W${N}`)}</h3><p>${words ? `${words[0].toUpperCase()}${words.slice(1)}. ` : ''}A row of cells, each generation the next row down: each cell looks at the three above it (on its left, above it, on its right), 8 cases, and the rule's number in base 2, ${N} = ${N.toString(2).padStart(8, '0')}, gives each one its cell, from 111 to 000 (Wolfram, 1983).</p>`
     + `<h4>Its 8 cases</h4><div class="tut-row">${cases}</div>`
     + `<h4>From one cell</h4><div class="tut-row"><figure><div><svg class="tut-start" viewBox="-0.2 -0.2 31.4 16.4">${picture}</svg></div><figcaption>16 generations</figcaption></figure></div></div>`;
   $('ruleTuto').prepend(tutTools({ close: () => ruleTutorial(null) }));
@@ -11948,7 +11954,7 @@ function ruleTutorial(entry) {
     return `<h4>Its colour <code>${COLOUR_STEP_NAMES[K]}</code></h4><div class="tut-row">${card([...most, ...Array(K - most.length).fill(0)], 'the most')}`
       + `${[...ties.filter((p) => gone(p) === 1), ...ties.filter((p) => gone(p) !== 1)].map((p) => card(p, gone(p) === 1 ? 'the colour missing' : 'no birth')).join('')}</div>`;
   }
-  const part = (L) => `<code>${entry.rule.split('/').find((x) => x[0] === L) ?? ''}</code>`;  // a section's part of the rule (B…, S…, C…)
+  const part = (L) => ruleSpan(entry.rule.split('/').find((x) => x[0] === L) ?? '');  // a section's part of the rule (B…, S…, C…)
   // the grid's letters, for a rule of one's own, on a page of their own (Letters): Hensel's on squares (where 1 to 4 live
   // neighbours sit; 5 to 7 the same, live and dead swapped), Callahan's on hexagons (2 to 4), the flowers' v (those by a
   // corner only); each drawn round the cell
@@ -11973,7 +11979,7 @@ function ruleTutorial(entry) {
     return s ? `<text x="${o[0]}" y="${o[1]}" font-size="${side / 4}" text-anchor="middle" dominant-baseline="central" fill="${(1 - s / (rule.C - 1) > 0.45) === light ? '#fff' : '#1f2328'}">✝</text>` : '';
   }
   $('ruleTuto').innerHTML = `<div class="tut-body">${tutLetters.on && lettersOf2 ? lettersPage() + '</div>' : ''}`
-    + (tutLetters.on && lettersOf2 ? '' : `<h3>${entry.name} <code>${entry.rule}</code></h3>${entry.about ? `<p>${capitalised(entry.about)}.</p>` : ''}${kinds.length > 1 ? shapeBubbles(kinds, c, corners, count, shapeOf, { hat: 'hat', spectre: 'spectre' }[kind]) : ''}<p>A cell with ${around.length} neighbours here (sharing an edge or a corner): ${born.length ? `born with ${list(born)} live ones` : 'never born'}, ${stays.length ? `survives with ${list(stays)}` : 'never survives'}, dies otherwise${iso === 'vertex' ? ' (after v, how many of the live ones touch it by a corner only, not a side)' : iso ? ' (the letters: where the live ones sit)' : ''}${rule.C > 2 ? `, then fades through ${rule.C - 2} dying stage${rule.C > 3 ? 's' : ''} (neither alive nor counted) before it is empty again` : ''}.</p>`
+    + (tutLetters.on && lettersOf2 ? '' : `<h3>${entry.name} ${ruleSpan(entry.rule)}</h3>${entry.about ? `<p>${capitalised(entry.about)}.</p>` : ''}${kinds.length > 1 ? shapeBubbles(kinds, c, corners, count, shapeOf, { hat: 'hat', spectre: 'spectre' }[kind]) : ''}<p>A cell with ${around.length} neighbours here (sharing an edge or a corner): ${born.length ? `born with ${list(born)} live ones` : 'never born'}, ${stays.length ? `survives with ${list(stays)}` : 'never survives'}, dies otherwise${iso === 'vertex' ? ' (after v, how many of the live ones touch it by a corner only, not a side)' : iso ? ' (the letters: where the live ones sit)' : ''}${rule.C > 2 ? `, then fades through ${rule.C - 2} dying stage${rule.C > 3 ? 's' : ''} (neither alive nor counted) before it is empty again` : ''}.</p>`
     + `<h4>Birth${part('B')}</h4><div class="tut-row">${born.map((cs) => pair(cs, UNLIT, LIFE_ALIVE, 'born')).join('') || '<p>none</p>'}</div>${colours()}`
     + `<h4>Survival${part('S')}</h4><div class="tut-row">${stays.map((cs) => pair(cs, LIFE_ALIVE, LIFE_ALIVE, 'stays')).join('') || '<p>none</p>'}</div>`
     + `<h4>Death</h4><div class="tut-row">${dies.map((cs) => pair(cs, LIFE_ALIVE, after, 'dies')).join('')}</div>`
@@ -12246,13 +12252,13 @@ function renderRuleSection() {
     const pick = () => { customOpen = false; if (o.rule === now) { renderRuleSection(); return; } $('lifeRule').value = o.rule; compute(); };
     return card({ pic: RULE_ICONS[o.rule] ? pixelIcon(RULE_ICONS[o.rule]) : '', name: `${o.name}${bw ? ' · B&W' : ''}`, on: picked, byDefault: i ? '' : 'yes',
       how: () => { if (picked) ruleTutorial(howShown(o) ? null : o); else { pick(); ruleTutorial(o); } },  // (its picture: how it works, picked first, as the walks')  // (the first: the shape's, see fitRuleToShape)
-      detail: `${mode.loops ? loopCode(o.rule) : o.rule} · ${unnamed(o.about, o.name)}`, click: pick, choice: `lifeRule:${o.rule}` });  // its code (a loop's: its states), its words without its name
+      rule: mode.loops ? loopCode(o.rule) : o.rule, detail: unnamed(o.about, o.name), click: pick, choice: `lifeRule:${o.rule}` });  // its code (a loop's: its states), its words without its name
   }));
   // after them, your own: picked when the rule in use is none of them, or clicked (its states, births and survivals below); none for a loop
   $('watchRule').onclick = () => ruleTutorial(!$('ruleTuto').hidden && !creditsShown() ? null : shown);  // (the rule in use: a card's, or your own)
   const howShown = (o) => !$('ruleTuto').hidden && $('ruleTuto').dataset.shown === tutorialKey(o);  // (a card's picture again: closed)
   if (!mode.loops) $('ruleCards').append(card({ pic: pixelIcon('..o..,..o..,ooooo,..o..,..o..'), name: 'Custom rule', on: mineNot, how: mineNot && (() => ruleTutorial(howShown(yours) ? null : yours)),
-    detail: mineNot ? `${now} · your own` : mode.elementary ? 'your own: W and its number, 0 to 255' : 'your own: its states, births and survivals', click: () => {
+    rule: mineNot ? now : '', detail: mineNot ? 'your own' : mode.elementary ? 'your own: W and its number, 0 to 255' : 'your own: its states, births and survivals', click: () => {
       customOpen = true;
       renderRuleSection();
     } }));
@@ -17770,7 +17776,7 @@ function updateStats() {
   const strip = $('digitStrip');
   strip.classList.remove('line', 'turns');  // one line of digits; the other texts may wrap
   if (!walk.n) { strip.textContent = ''; return; }
-  if (walk.ant && !walkReadsDigits()) { strip.textContent = `Rule ${antRuleOf(walk.mode)} · the number's digits are not used`; return; }  // an ant by its rule
+  if (walk.ant && !walkReadsDigits()) { strip.innerHTML = `Rule ${ruleSpan(antRuleOf(walk.mode))} · the number's digits are not used`; return; }  // an ant by its rule
   // One line of digits, exactly as many as fit (the strip is monospace, so it is a column count).
   // The head sits at 60 % of the line; at the start the line begins with the first digit, at the
   // end it finishes with the last one. The window then shrinks until "…", "0." and "." fit too.

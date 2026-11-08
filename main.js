@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.598';
+const VERSION = '0.4.599';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -785,14 +785,18 @@ const PRESETS = {
   erdos:   { group: 'Constants', sym: 'E',    name: 'Erdős–Borwein constant', f: 'erdos' },
   thuemorse: { group: 'Constants', sym: 'τ',  name: 'Prouhet–Thue–Morse constant', detail: 'thuemorse · 0.0110100110010110…₂, digit k the parity of the 1s of k in base 2', f: 'thuemorse' },
   rabbit:  { group: 'Constants', sym: 'F',    name: 'Rabbit constant', detail: 'rabbit · 0.1011010110110…₂, the Fibonacci word (1 → 10, 0 → 1)', f: 'rabbit' },
-  sqrt2:   { group: '𝑓', sym: '√2', name: 'Square root of 2', f: 'sqrt(2)' },
-  cbrt2:   { group: '𝑓', sym: '∛2', name: 'Cube root of 2', f: 'cbrt(2)' },
-  pi2:     { group: '𝑓', sym: 'π²', name: 'Pi squared', f: 'pi^2' },
+  sqrt2:   { group: '𝑓', sym: '√2', name: "Pythagoras's constant", detail: 'sqrt(2) · the diagonal of a unit square, the first number proved irrational', f: 'sqrt(2)' },
+  cbrt2:   { group: '𝑓', sym: '∛2', name: 'The Delian constant', detail: 'cbrt(2) · doubling the cube: no ruler and compass can draw it (Wantzel, 1837)', f: 'cbrt(2)' },
+  plastic: { group: '𝑓', sym: 'P', name: 'The plastic number', detail: 'x³ = x + 1 · the golden ratio\'s little brother', f: 'cbrt((9+sqrt(69))/18)+cbrt((9-sqrt(69))/18)' },
+  ln2:     { group: '𝑓', sym: 'ln 2', name: 'Natural log of 2', detail: 'ln(2) · 1 − 1/2 + 1/3 − 1/4 + …, the alternating harmonic series', f: 'ln(2)' },
+  fifth:   { group: '𝑓', sym: 'log₂ 3', name: 'The perfect fifth', detail: 'log(3,2) · rising by fifths never lands on an octave: why pianos are tuned equal', f: 'log(3,2)' },
   epi:     { group: '𝑓', sym: 'e^π',  name: "Gelfond's constant", detail: 'e^pi = exp(pi)', f: 'e^pi' },
-  ln2:     { group: '𝑓', sym: 'ln 2', name: 'Natural log of 2', f: 'ln(2)' },
-  zeta3:   { group: '𝑓', sym: 'ζ(3)', name: "Apéry's constant", f: 'zeta(3)' },
+  gelfondSchneider: { group: '𝑓', sym: '2^√2', name: 'Gelfond–Schneider constant', detail: '2^sqrt(2) · transcendental: Hilbert\'s 7th problem, solved in 1934', f: '2^sqrt(2)' },
+  mertens: { group: '𝑓', sym: 'e^γ', name: "Mertens' constant", detail: 'exp(gamma) · ∏ₚ (1 − 1/p) up to x ≈ 1/(e^γ · ln x): γ and the primes', f: 'exp(gamma)' },
+  basel:   { group: '𝑓', sym: 'π²/6', name: 'The Basel problem', detail: 'pi^2/6 · 1 + 1/4 + 1/9 + 1/16 + … (Euler, 1734)', f: 'pi^2/6' },
+  zeta3:   { group: '𝑓', sym: 'ζ(3)', name: "Apéry's constant", detail: 'zeta(3) · 1 + 1/8 + 1/27 + …: proved irrational by Apéry in 1979, no closed form known', f: 'zeta(3)' },
+  coprime: { group: '𝑓', sym: '6/π²', name: 'Probability that two whole numbers are coprime', detail: '6/pi^2 = 1/ζ(2) = ∏ₚ (1 − 1/p²), over the primes', f: '6/pi^2' },
   ramanujan: { group: '𝑓', sym: 'e<sup>π√163</sup>', name: "Ramanujan's constant", detail: 'e^(pi*sqrt(163)) = 262537412640768743.99999999999925…: all but whole', f: 'e^(pi*sqrt(163))' },
-  coprime: { group: '𝑓', sym: '6/π²', name: 'Probability that two whole numbers are coprime', detail: '6/pi^2 = 1/ζ(2)', f: '6/pi^2' },
   // Fractions: the screens' 4/3 and 16/9, π's 22/7 and 355/113 (Zu Chongzhi's, 6 decimals right). Their digits repeat,
   // and on a walk that turns relative to its heading, a round of them that turns by a whole fraction of a turn closes into a
   // rosette (k rounds for a k-fold one).

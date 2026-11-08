@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.596';
+const VERSION = '0.4.597';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -2217,7 +2217,7 @@ const runLoop = () => {
 const STEPS_GLYPH = '𓊍';  // the length asked's mark: its stepper's unit, a run ended by it (Egyptian hieroglyph O40, a stair)
 function endMark() {
   if (walk.stacked || walk.rows) return '';
-  if (lengthUsed() && seekFar() === lengthAsked() && !runLoop()) return `<a class="gen-link gen-loop" href="#" data-stepper title="The length asked: a click, the steps stepper at the top right">${STEPS_GLYPH}<span class="end-words"> max defined upper-right</span></a>`;  // (its end the length asked: a click highlights its stepper)
+  if (lengthUsed() && seekFar() === lengthAsked() && !runLoop()) return `<a class="gen-link gen-loop" href="#" data-stepper data-gen="${walk.n}" title="The length asked: a click goes there and shows its stepper, at the top right">${STEPS_GLYPH}<span class="end-words"> max defined upper-right</span></a>`;  // (its end the length asked: a click goes there and highlights its stepper)
   if (walk.battle) { const why = walk.battle.winner.until; return why ? genLink(stepShown !== walk.n ? walk.n : 0, `■<span class="end-words"> ${why} at step ${formatNumber(walk.n)}</span>`, 'loop') : ''; }  // (its winner: the ranking's)
   const k = walk.life?.stable, o = !walk.life && runLoop();
   const [mark, words] = walk.life ? (!k ? [] : k.extinct ? ['✝', `at gen ${formatNumber(k.T)}`] : k.P === 1 ? ['■', `from gen ${formatNumber(k.T)}`] : ['↻', `every ${formatNumber(k.P)} from gen ${formatNumber(k.T)}`])
@@ -17580,7 +17580,7 @@ function drawActivity() {
 // a generation of the run in view, as a link, always (the one shown too: one look, the same everywhere): clicked, it goes
 // there (see seekTo: a reversible one's by its rule, Life's played again from its start)
 const genLink = (g, text = `${walk.life ? 'gen' : 'step'} ${formatNumber(g)}`, kind = '') => `<a class="gen-link${kind && ` gen-${kind}`}" href="#" data-gen="${g}" title="Go to ${walk.life ? 'gen' : 'step'} ${formatNumber(g)}">${text}</a>`;  // (kind: its colour, see style.css)
-document.addEventListener('click', (e) => { const a = e.target.closest?.('.gen-link'); if (!a) return; e.preventDefault(); if ('stepper' in a.dataset) highlight(document.querySelector('.max-steps')); else seekTo(Number(a.dataset.gen)); });  // (the length asked's mark: its stepper, see endMark)
+document.addEventListener('click', (e) => { const a = e.target.closest?.('.gen-link'); if (!a) return; e.preventDefault(); if ('gen' in a.dataset) seekTo(Number(a.dataset.gen)); if ('stepper' in a.dataset) highlight(document.querySelector('.max-steps')); });  // (the length asked's mark: there, and its stepper, see endMark)
 function renderGauges(L) {
   const box = $('gauges'), n = L.seed.length;
   box.hidden = L.colours !== 1;
@@ -17757,7 +17757,7 @@ function updateStats() {
   walk.widestShown = Math.max(walk.widestShown, stepShown, known ? far : 0);  // (its last once known, else the furthest shown: a ratchet)
   $('stepNow').innerHTML = `${gens ? 'Gen' : 'Step'} ${formatNumberAsWide(stepShown, walk.widestShown)}`;
   setLinks($('stepLast'), known ? ` / ${formatNumber(far)}` : '');  // (a run's, Life's or a reversible one's: once its loop is known)
-  setLinks($('stepEnd'), endMark() + (sweetSpot() !== null ? ` ${genLink(sweetSpot(), `✦<span class="end-words"> sweet spot</span>`, 'sweet')}` : ''));  // (its link to its sweet spot, after its end's)
+  setLinks($('stepEnd'), endMark() + (sweetSpot() !== null ? `${genLink(sweetSpot(), `✦<span class="end-words"> sweet spot</span>`, 'sweet')}` : ''));  // (its link to its sweet spot, after its end's)
   if (!walk.life && !walk.battle) $('ranking').hidden = $('rankTitles').hidden = true;  // (a battle's shown by renderWalkGauges: never hidden in between, its rows' slides kept)
   const time = walk.stacked && !!stack, rows = walk.rows;
   if (time || rows) {  // Space-time: its cubes up to the generation shown; Elementary: its live cells up to it (see elementaryRows): a gauge, as a walk's and Life's

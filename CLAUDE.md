@@ -137,6 +137,10 @@ While the checks run unattended (a night, a meal), also audit what they cannot s
   `Langtons-Loops` under its name Langton's loops, v0.4.382), nor its default or greyed state in the text.
 - **Every night, the names**: functions and variables read through for names unclear, misleading, too short or
   inconsistent (one concept, one name, see Names), each renamed explicitly at its source, everywhere, in its own commit.
+- **Every night, the CSS variables' names** (style.css's `:root`, each prototype page's own): each says what it holds and
+  its kind, in words (`--text-color`, `--text-size`, `--page-background`, `--border-color`), never a bare `--text`, `--bg`,
+  `--muted` or `--c` (v0.4.564: `--text-size` came beside a colour named `--text`): renamed at its definition and every
+  `var(…)` and `getPropertyValue`/`setProperty` in style.css, main.js and index.html, in its own commit.
 
 ## Removed features
 A feature taken out gets a row in `REMOVED.md` (in English) at once: its last version, date, commit, a raw.githack link

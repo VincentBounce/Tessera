@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.564';
+const VERSION = '0.4.565';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -11835,7 +11835,7 @@ function shapeBubbles(kinds, c, corners, count, shapeOf, own) {  // own: the til
   const pic = (t) => {
     const pts = corners(t), m = meanPoint(pts);
     return `<svg viewBox="${m[0] - S / 2 - pad} ${m[1] - S / 2 - pad} ${S + 2 * pad} ${S + 2 * pad}"><polygon points="${pts.map((p) => p.join(',')).join(' ')}" fill="${t === c ? LIFE_ALIVE : UNLIT}" stroke="var(--border)" stroke-width="${S / 30}"/>`
-      + `<text x="${m[0]}" y="${m[1]}" font-size="${S * 0.3}" font-weight="600" fill="${t === c ? '#fff' : 'var(--text)'}" text-anchor="middle" dominant-baseline="central">${count(t)}</text></svg>`;  // (the one shown filled)
+      + `<text x="${m[0]}" y="${m[1]}" font-size="${S * 0.3}" font-weight="600" fill="${t === c ? '#fff' : 'var(--text-color)'}" text-anchor="middle" dominant-baseline="central">${count(t)}</text></svg>`;  // (the one shown filled)
   };
   // (one shape in several bubbles: said, with its counts of neighbours)
   const same = [...new Set(kinds.map((t) => shapeOf.get(t)))].map((sk) => kinds.filter((t) => shapeOf.get(t) === sk)).filter((ts) => ts.length > 1);
@@ -17423,7 +17423,7 @@ function drawOverlay() {
   const { scale: s, ox, oy } = view;
   if (walk.rows?.digits && s >= 12) {  // Elementary's Digits, near enough: each digit on its cell of the first row, in monospace, 1 in
     // white on its live cell, 0 in the theme's text colour on the page (see elementaryRows)
-    const { c, digits } = walk.rows, text = getComputedStyle(document.documentElement).getPropertyValue('--text');
+    const { c, digits } = walk.rows, text = getComputedStyle(document.documentElement).getPropertyValue('--text-color');
     ctx.font = `${Math.round(s * 0.7)}px ui-monospace, Menlo, monospace`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';

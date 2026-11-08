@@ -6,7 +6,7 @@
   --bg: #0e1116;
   --panel: #161b22;
   --border: #2a313c;
-  --text: #e6edf3;
+  --text-color: #e6edf3;
   --muted: #8b949e;
   --accent: #f0b429;
   --accent-text: #1a1300;
@@ -25,7 +25,7 @@
   --bg: #f6f8fa;
   --panel: #ffffff;
   --border: #d0d7de;
-  --text: #1f2328;
+  --text-color: #1f2328;
   --muted: #656d76;
   --accent: #bf8700;
   --accent-text: #ffffff;
@@ -47,7 +47,7 @@ html, body {
   margin: 0;
   height: 100%;
   background: var(--bg);
-  color: var(--text);
+  color: var(--text-color);
   font: var(--text-size)/1.4 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
 }
 
@@ -63,7 +63,7 @@ header { padding: 0; border-bottom: 1px solid var(--border); }  /* one hairline,
 .max-steps .steps-glyph { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); display: flex; font-size: 20px; line-height: 1; color: var(--accent); pointer-events: none; }  /* its unit, steps, in its words' gold */
 .max-steps .field:focus-within .steps-glyph { display: none; }  /* (typing: the number alone, Enter's ↵ there) */
 .bar-sub .pi { color: var(--accent); }
-.bar-sub .walking { color: var(--text); font-weight: 600; }  /* an automaton: what seeds it */
+.bar-sub .walking { color: var(--text-color); font-weight: 600; }  /* an automaton: what seeds it */
 
 main { flex: 1; display: flex; min-height: 0; }
 
@@ -87,10 +87,10 @@ main { flex: 1; display: flex; min-height: 0; }
 :is(#paramsPane, #galleryPane, #yourList) > section:first-child h2 { margin-top: 0; }  /* its title as high in every pane */
 .row-act { margin-left: auto; padding: 0 6px; font-size: 16px; color: var(--muted); border-radius: 4px; }  /* a row's action at its end: × on a saved setup */
 :not(:hover) > .row-act { visibility: hidden; }  /* (shown while its row is hovered, its place kept) */
-.row-act:hover { color: var(--text); background: var(--border); }
+.row-act:hover { color: var(--text-color); background: var(--border); }
 .panel .muted:empty { display: none; }  /* an empty status line takes no room */
 /* a section's title: its gold picture, then its name; a sub-section's (field-label): semibold */
-h2 { display: flex; align-items: center; gap: 7px; margin: 2px 0 10px; font-size: 14px; font-weight: 600; color: var(--text); }
+h2 { display: flex; align-items: center; gap: 7px; margin: 2px 0 10px; font-size: 14px; font-weight: 600; color: var(--text-color); }
 h2 .icon { width: 24px; height: 24px; flex: none; color: var(--accent); vertical-align: 0; }
 /* a section's own action, on its title's right (How it works, Copy RLE, Full number) */
 .head-btn { margin-left: auto; display: inline-flex; align-items: center; gap: 4px; padding: 3px 8px; font-size: 12px; font-weight: 500; border-radius: 6px; }
@@ -111,7 +111,7 @@ input[type=number], input[type=text], select, textarea {
   margin-top: 4px;
   padding: 6px 8px;
   background: var(--bg);
-  color: var(--text);
+  color: var(--text-color);
   border: 1px solid var(--border);
   border-radius: 6px;
 }
@@ -130,7 +130,7 @@ input[type=range] { width: 100%; accent-color: var(--accent); }
 .shape-slider { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--muted); }  /* Flat ── Inflated: a surface's form */
 .shape-slider input { flex: 1; min-width: 0; }
 .notch-row { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--muted); margin-bottom: 10px; }  /* a notched slider: Cut, Area (see notchRow) */
-.notch-row .field-label { margin: 0; color: var(--text); }  /* (its title a sub-section's, as Cells', on its row) */
+.notch-row .field-label { margin: 0; color: var(--text-color); }  /* (its title a sub-section's, as Cells', on its row) */
 .notch-row .size-gauge { flex: 1; min-width: 0; margin: 0; }
 .notch-row .notch-name { min-width: 3.5em; }
 /* checkboxes as switches (iOS style): a pill whose knob slides to the right, yellow when on */
@@ -170,7 +170,7 @@ button:has(.icon) { display: inline-flex; align-items: center; justify-content: 
 button {
   padding: 6px 12px;
   background: var(--bg);
-  color: var(--text);
+  color: var(--text-color);
   border: 1px solid var(--border);
   border-radius: 6px;
   font: inherit;
@@ -198,7 +198,7 @@ button.primary {
 .stepper span small { display: block; font-size: 11px; font-weight: 400; color: var(--muted); line-height: 1.2; }  /* a size: what to picture, then its tiles */
 .stepper span, .stepper input { flex: 1; text-align: center; color: var(--accent); font-weight: 600; white-space: nowrap; }  /* the setup at a glance */
 /* the number of digits can be typed: a field that looks like the label until it is hovered or used */
-#loopLabel { color: var(--text); }
+#loopLabel { color: var(--text-color); }
 #loopLabel.on { color: var(--accent); }
 .stepper input { min-width: 0; margin: 0; padding: 6px 8px; cursor: text; }
 /* the two fields and the − / + buttons: one height, whatever the font (monospace while editing) */
@@ -223,7 +223,7 @@ button.primary {
   text-align: left;
   border-color: var(--accent);
   background: var(--bg);
-  color: var(--text);
+  color: var(--text-color);
   font: 400 13px ui-monospace, "SF Mono", Menlo, monospace;
 }
 .field textarea, .field textarea:focus { text-align: center; }  /* (Text's lines centred, as drawn: after the fields' left) */
@@ -248,7 +248,7 @@ button.wide.how-it-works { margin-bottom: 4px; }  /* on its rules' first card, t
   font-weight: 600;
   white-space: nowrap;
 }
-.tabs button:hover:not(.active) { color: var(--text); border-bottom-color: var(--border); }
+.tabs button:hover:not(.active) { color: var(--text-color); border-bottom-color: var(--border); }
 .tabs button.active { color: var(--accent); border-bottom-color: var(--accent); }
 .tabs button .icon { width: 24px; height: 24px; vertical-align: -0.35em; }  /* the tabs' pictures, as the sections' */
 .block-label { margin: 2px 0 4px; font-size: 11px; color: var(--muted); }  /* a block of shapes' title: Surface, Tiles of the torus */
@@ -300,14 +300,14 @@ button.switch.active:hover:not(:disabled) { background: var(--pick-strong); }
 .bubble.gold { border-color: rgba(240, 180, 41, 0.5); color: var(--accent); }  /* a gold chip: a run's bound (not back by…) */
 button.bubble { background: none; }  /* a bubble to click: a rule's (how it works), a base's (the number) */
 button.bubble, .bubble.act { cursor: pointer; }
-button.bubble:hover, .bubble.act:hover { color: var(--text); border-color: var(--muted); }
+button.bubble:hover, .bubble.act:hover { color: var(--text-color); border-color: var(--muted); }
 button.active .bubble { color: var(--accent); border-color: var(--accent); }  /* (in a card picked) */
 .bubble.active, button.active .bubble.active { background: var(--accent); border-color: var(--accent); color: var(--panel); }  /* (lit, filled gold: the number shown, its base's; how a rule works, shown) */
 .mode-head .bubble, .mode-list .bubble { flex-shrink: 0; }  /* (a card's: whole) */
 .mode-list .bubble { align-self: start; }  /* (at the card's top right) */
 .with-btn > .bubble { margin-left: auto; }  /* (Full number's, at the Formula's right) */
 .mode-icon.act { align-self: stretch; display: grid; place-items: center; border-radius: 4px; cursor: help; }  /* a card's picture, a click on how it works: */
-.mode-icon.act:hover { background: var(--border); color: var(--text); }  /* a grey square, as a row's × (see .row-act) */
+.mode-icon.act:hover { background: var(--border); color: var(--text-color); }  /* a grey square, as a row's × (see .row-act) */
 /* Number tiles: the symbol only, several per row (name and formula in the tooltip) */
 .number-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(48px, 1fr)); gap: 4px; margin-bottom: 10px; }
 .number-grid button { padding: 6px 2px; font-size: 14px; white-space: nowrap; background: var(--panel); }
@@ -413,7 +413,7 @@ button.active .bubble { color: var(--accent); border-color: var(--accent); }  /*
 @media (hover: none) { .stage-box:focus-within .stage-more { display: block; } }
 .display-menu { top: var(--view-gap); right: var(--view-gap); }
 /* the number (Full number), in place of the whole view as how a rule works (.rule-tuto): its digits */
-.number-view .number-digits { max-width: none; color: var(--text); font: 13px/1.5 ui-monospace, "SF Mono", Menlo, monospace; word-break: break-all; }
+.number-view .number-digits { max-width: none; color: var(--text-color); font: 13px/1.5 ui-monospace, "SF Mono", Menlo, monospace; word-break: break-all; }
 .number-view .number-digits + h3 { margin-top: 16px; }  /* (a battle's numbers: one, then the next's title) */
 .number-view .number-digits.one-line { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; word-break: normal; }  /* (a battle's numbers: one line each) */
 .tut-tools .icon { width: 16px; height: 16px; vertical-align: middle; }
@@ -466,7 +466,7 @@ button.wide.active, .head-btn.active { border-color: var(--accent); color: var(-
 .bar-title { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 8px; margin-bottom: 8px; white-space: nowrap; overflow: hidden; }  /* the title, its chips on its right, on the next line when there is no room */
 .bar-num { flex: 0 1 auto; min-width: 0; max-width: 100%; font-size: 20px; font-weight: 700; color: var(--accent); overflow: hidden; text-overflow: ellipsis; }  /* the number first */
 .bar-sub { margin: -4px 0 8px; font-size: 12px; color: var(--muted); }
-.bar-sub b { color: var(--text); }
+.bar-sub b { color: var(--text-color); }
 .rule-chips { display: grid; grid-template-columns: repeat(auto-fit, minmax(80px, 1fr)); gap: 5px; margin-bottom: 9px; }
 .rule-chips:empty { display: none; }
 .bar-title.life .bar-num { font-size: 18px; white-space: pre; }  /* Life's title, a creature's, a battle's */
@@ -478,7 +478,7 @@ button.wide.active, .head-btn.active { border-color: var(--accent); color: var(-
 .rule-chip { cursor: pointer; display: flex; align-items: center; gap: 6px; padding: 4px 7px 4px 4px; border: 1px solid var(--border); border-radius: 9px; background: var(--bg); font-size: 12px; min-width: 0; }
 .rule-chip b { flex: none; display: grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; font-size: 11px; color: #0d1117; }
 .rule-chip span { display: flex; flex-direction: column; line-height: 1.15; min-width: 0; white-space: nowrap; }
-.rule-chip.next, .rule-chip.read { border: 2px solid color-mix(in srgb, var(--c) 75%, var(--text)); padding: 3px 6px 3px 3px; }  /* the next step's chip, step by step: its colour, a little toward the text so that a pale one shows */
+.rule-chip.next, .rule-chip.read { border: 2px solid color-mix(in srgb, var(--c) 75%, var(--text-color)); padding: 3px 6px 3px 3px; }  /* the next step's chip, step by step: its colour, a little toward the text so that a pale one shows */
 .rule-chip.next { background: color-mix(in srgb, var(--c) 12%, var(--bg)); }
 .rule-chip.read { border-style: dashed; }  /* an ant's digit read, turned the other way by a dark cell */
 .rule-chip small { color: var(--muted); font-size: 11px; }
@@ -509,16 +509,16 @@ button.wide.active, .head-btn.active { border-color: var(--accent); color: var(-
 #digitsRow.busy .progress { position: relative; height: 34px; border: 1px solid var(--border); border-radius: 6px; }
 #progress.indeterminate #progressBar { width: 30% !important; animation: gauge-slide 1.2s ease-in-out infinite alternate; }  /* drawn apart: it slides on while the walk is built */
 @keyframes gauge-slide { from { transform: translateX(0); } to { transform: translateX(233%); } }
-#progressText { position: absolute; inset: 0; display: grid; place-items: center; font-size: 12px; color: var(--text); }
+#progressText { position: absolute; inset: 0; display: grid; place-items: center; font-size: 12px; color: var(--text-color); }
 #status:not(:empty)::before { content: ' · '; }  /* after the description */
 .stage-bar .speed-stepper { margin: 0; }
 .speed-stepper button { width: 48px; }
 .speed-stepper input, .speed-stepper button { height: 32px; }  /* as high as the buttons beside */
-.speed-stepper input { color: var(--text); font-weight: 400; }
+.speed-stepper input { color: var(--text-color); font-weight: 400; }
 /* the steps, on their own line above the buttons; the speed after ⏭, between a turtle and a rabbit */
 .speed-icon { flex: none; width: 23px; height: 23px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
 
-.step-line { font-size: 20px; font-weight: 700; color: var(--text); white-space: nowrap; margin-bottom: 4px; }  /* the step or generation shown, as large as the title, folded or open, every mode */
+.step-line { font-size: 20px; font-weight: 700; color: var(--text-color); white-space: nowrap; margin-bottom: 4px; }  /* the step or generation shown, as large as the title, folded or open, every mode */
 .digits-pad { visibility: hidden; }  /* a count's hidden zeros in front: as wide as its widest (see fmtAsWide) */
 .step-line #stepLast { color: var(--muted); }  /* its last, after it, always: the line keeps its width */
 .step-line .end-words { display: none; }  /* its end's words, open only (folded: its mark) */
@@ -538,14 +538,14 @@ button.wide.active, .head-btn.active { border-color: var(--accent); color: var(-
   z-index: 3;  /* (over the view's boxes: the player's, the display's) */
 }
 /* a tooltip, the view's hint: each in a box as the view's others (see .stage-box), its lines left aligned, the name on its own */
-#tip:not(:empty), #hint:not([hidden]) { max-width: 420px; margin-left: auto; padding: 6px 10px; background: var(--box); backdrop-filter: blur(4px); border: 1px solid var(--border); border-radius: 8px; color: var(--text); text-align: left; }
+#tip:not(:empty), #hint:not([hidden]) { max-width: 420px; margin-left: auto; padding: 6px 10px; background: var(--box); backdrop-filter: blur(4px); border: 1px solid var(--border); border-radius: 8px; color: var(--text-color); text-align: left; }
 #tip:empty { display: none; }
 #hint:not([hidden]) { width: max-content; }
 .tip-name { display: block; }  /* (a control's name, a line of its own) */
 .tip-default { color: var(--muted); }  /* a control's default, under its tooltip: fainter */
 /* a tooltip's state here, under a rule: Greyed and Allowed, a label and its words each (a column of labels), then its default */
 .tip-state { margin-top: 4px; padding-top: 4px; border-top: 1px solid var(--border); }  /* (its words as the tooltip's, black; its default muted, see .tip-default) */
-.tip-state > b { display: block; color: var(--text); font-weight: 600; }
+.tip-state > b { display: block; color: var(--text-color); font-weight: 600; }
 .tip-state > span { white-space: pre-line; }
 .tip-y { color: var(--motif); } .tip-r { color: var(--face); } .tip-s { color: var(--sector); } .tip-k { color: var(--cell); } .tip-o { color: #c4934e; }  /* a size's words in the colours drawn (see sizeTips; the walls': LIFE_WALL) */
 
@@ -577,10 +577,10 @@ button.wide.active, .head-btn.active { border-color: var(--accent); color: var(-
 #barBase { flex: none; }  /* the base whole: only the loop chip shortens */
 
 /* how a rule works (ruleTutorial): over the grid, its cells as the grid's, a pair each count (before → after) */
-.rule-tuto { position: absolute; inset: 0; z-index: 5; overflow: hidden; cursor: auto; background: var(--bg); color: var(--text); }
+.rule-tuto { position: absolute; inset: 0; z-index: 5; overflow: hidden; cursor: auto; background: var(--bg); color: var(--text-color); }
 .tut-body { position: absolute; inset: 0; overflow: auto; padding: 20px 24px 24px; }  /* what scrolls, under its buttons (pinned to the top right) */
 .tut-body > h3, .tut-body > h3 + p:not(.number-digits) { margin-right: 96px; }  /* (beside the buttons) */
-.tut-body code { color: var(--text); font-weight: 700; text-transform: none; letter-spacing: 0; }  /* the rule itself, wherever: black and bold (the labels grey) */
+.tut-body code { color: var(--text-color); font-weight: 700; text-transform: none; letter-spacing: 0; }  /* the rule itself, wherever: black and bold (the labels grey) */
 .tut-body > h3 code { overflow-wrap: anywhere; }  /* (a long rule: on as many lines; a block rule's numbers, after its commas, see blockTutorial) */
 .rule-tuto h3 { margin: 0 96px 6px 0; font-size: 18px; }  /* (beside the buttons) */ .rule-tuto h3 code { margin-left: 6px; }  /* (as big as its name) */
 .rule-tuto h4 { margin: 18px 0 6px; font-size: 13px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); } .rule-tuto h4 code { margin-left: 8px; font-size: 13px; }
@@ -635,7 +635,7 @@ button.mark.active::after { background: linear-gradient(135deg, transparent 50%,
 .gen-link:hover { text-decoration: underline; }
 .gen-loop { color: var(--cell); }  /* a loop's first generation, as its mark on the curve */
 .tut-commands { border-collapse: collapse; font-size: 13px; color: var(--muted); }  /* the rules' commands, a reminder under How it works (see wordsReminder): as its words, the word bold */
-.tut-commands td:nth-child(2) { color: var(--text); }  /* its command and its name; what it does, muted */
+.tut-commands td:nth-child(2) { color: var(--text-color); }  /* its command and its name; what it does, muted */
 .rule-tuto p.tut-commands-note { margin-top: 8px; }  /* how an ant's rule is written, under the table */
 .tut-commands td { padding: 2px 10px 2px 0; vertical-align: top; }
 .tut-commands td:first-child, .tut-commands td:nth-child(2) { white-space: nowrap; }  /* (a command and its name on one line) */

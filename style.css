@@ -6,6 +6,7 @@
   --title-text-size: 18px;  /* a title: How it works', the bar's name or number, the step line */
   --mono: ui-monospace, "SF Mono", Menlo, monospace;  /* digits and the rules' commands: l, I, | and 1 told apart */
   --view-gap: 12px;  /* the view's boxes from its edges (player, display, hint), a fit's margin too (see viewFor) */
+  --player-open-width: 680px;  /* the player bar open (hovered, or touched): its stats and strip in full */
   --player-width: calc(6 * 48px + 5 * 6px);  /* the player's six buttons and their gaps (a .row's): the folded bar's inner width */
   --bg: #0e1116;
   --panel: #161b22;
@@ -447,8 +448,10 @@ button.wide.active, .head-btn.active { border-color: var(--accent); color: var(-
 /* the ant's rules to start from, written as they are typed */
 .choice-list button.active { border-color: var(--accent); color: var(--accent); background: var(--pick); }
 .stage-bar { left: var(--view-gap); bottom: var(--view-gap); width: calc(var(--player-width) + 2 * 12px + 2px); max-width: calc(100% - 2 * var(--view-gap)); padding: 12px; border-radius: 12px; outline: none; }  /* grows upwards: the Play row stays at the bottom (no focus ring: a tap opens it, see index.html) */
-.stage-bar:hover { width: 680px; }
-@media (hover: none) { .stage-bar:focus-within { width: 680px; } }
+.stage-bar:hover { width: var(--player-open-width); }
+@media (hover: none) { .stage-bar:focus-within { width: var(--player-open-width); } }
+.stage:has(> .stage-bar:hover) > .hint { left: calc(2 * var(--view-gap) + var(--player-open-width)); }  /* the player open: a tooltip beside it, as narrow as the room left (its lines as many as it takes) */
+@media (hover: none) { .stage:has(> .stage-bar:focus-within) > .hint { left: calc(2 * var(--view-gap) + var(--player-open-width)); } }
 /* what is walked: the number, its loop and base; on hover the walk, its rule and the stats */
 .ranking { position: relative; margin: 0 0 8px; font-size: var(--label-text-size); }  /* a battle: a row a colour, re-sorted as it goes */
 .ranking .rank-row { position: absolute; left: 0; right: 0; top: 0; height: 18px; display: grid; grid-template-columns: 16px 12px minmax(0, 1fr) 76px; align-items: center; gap: 6px; transition: transform 0.4s; }

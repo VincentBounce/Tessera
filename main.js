@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.606';
+const VERSION = '0.4.607';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -15182,7 +15182,7 @@ const stepsPerSecond = () => evenSpeed(speed);
 // a speed in words: whole from 10 a second, else to a tenth (5.9 at 165 Hz)
 const speedWords = (v) => formatNumber(v < 10 ? Math.round(v * 10) / 10 : Math.round(v));
 function updateSpeedLabel() {
-  if (document.activeElement !== $('speedLabel')) $('speedLabel').value = `${stepsPerSecond() !== speed ? '≈' : ''}${speedWords(stepsPerSecond())}${STEPS_GLYPH}/s`;  // (as played, at the screen's rhythm: ≈ when not as typed, see valueInUse)
+  if (document.activeElement !== $('speedLabel')) $('speedLabel').value = `${stepsPerSecond() !== speed ? '≈ ' : ''}${speedWords(stepsPerSecond())} ${STEPS_GLYPH}/s`;  // (as played, at the screen's rhythm: ≈ when not as typed, see valueInUse)
   setTile($('slower'), { greyed: speed <= 1 ? 'Already the slowest.' : '' });
   setTile($('faster'), { greyed: speed >= SPEEDS.at(-1) ? 'Already the fastest.' : '' });
 }

@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.550';
+const VERSION = '0.4.551';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -1644,12 +1644,12 @@ function updateRuleText() {}  // the rule is shown by describe (the Play card)
 function digitsNeeded() {
   const mode = MODES[$('mode').value], size = randomPrimeSize();
   if (!readsDigits()) return 0;  // (none read, none computed: a creature by its rule, Life from no digits, the loops)
-  if (mode.life) return mode.elementary ? 2 * targetAsked() + 16 : mode.plane ? gridSize(planeKind(mode.plane), plane.side)[2] : SPHERES[surfaceOf(mode)].tiles(sphereSize());  // all the digits for a start by the digits (a cell each); else a hunt's patch
+  if (mode.life) return mode.elementary ? 2 * lengthAsked() + 16 : mode.plane ? gridSize(planeKind(mode.plane), plane.side)[2] : SPHERES[surfaceOf(mode)].tiles(sphereSize());  // all the digits for a start by the digits (a cell each); else a hunt's patch
   // a worm by the digits: one read at a new situation only (its free lines at a corner, met for the first time: a few
   // dozen at most, see wormMind), the number's next that fits: WORM_DIGITS enough, its steps the length asked
-  if (mode.worm) return Math.min(targetAsked(), WORM_DIGITS);
+  if (mode.worm) return Math.min(lengthAsked(), WORM_DIGITS);
   // a random prime is walked whole: its size (decimal digits) written in the walk's base
-  return size ? Math.ceil((size * Math.log(10)) / Math.log(mode.base)) + 1 : targetAsked();
+  return size ? Math.ceil((size * Math.log(10)) / Math.log(mode.base)) + 1 : lengthAsked();
 }
 
 // The Play card says what is shown: its title the number, the loop and the base; open, the walk and
@@ -2158,11 +2158,11 @@ const renderSkyButtons = () => {
 };
 
 // The length last picked, one for every mode (the stepper's − + or a number typed, its link's d=), never cut: each mode the
-// nearest it allows (targetAsked: a walk's digits or steps, a reversible rule's or Space-time's generations up to 100,000;
+// nearest it allows (lengthAsked: a walk's digits or steps, a reversible rule's or Space-time's generations up to 100,000;
 // a walk that loops stops sooner, as its stepper says); its ladder DIGIT_STEPS
-let target = 20000;
-const targetMost = () => (MODES[$('mode').value].elementary ? 50_000 : gensShown() ? 100000 : 50_000_000);  // (Elementary's: its cells the square of it, drawn as a picture, see elementaryRows)
-const targetAsked = () => Math.min(targetMost(), Math.max(DIGIT_STEPS[0], Math.round(target) || 10));
+let lengthPicked = 20000;
+const lengthMost = () => (MODES[$('mode').value].elementary ? 50_000 : gensShown() ? 100000 : 50_000_000);  // (Elementary's: its cells the square of it, drawn as a picture, see elementaryRows)
+const lengthAsked = () => Math.min(lengthMost(), Math.max(DIGIT_STEPS[0], Math.round(lengthPicked) || 10));
 
 // The number of digits as a stepper, like the surface size: [ − ] 20,000 digits [ + ] goes through
 // DIGIT_STEPS and recomputes at once. The count can also be typed in the middle; any other count
@@ -2205,7 +2205,7 @@ const runLoop = () => {
 const STEPS_GLYPH = '𓊍';  // the length asked's mark: its stepper's unit, a run ended by it (Egyptian hieroglyph O40, a stair)
 function endMark() {
   if (spaceTimeOn() || walk.rows) return '';
-  if (lengthUsed() && seekFar() === targetAsked() && !runLoop()) return `<a class="gen-link gen-loop" href="#" data-stepper title="The length asked: a click, the steps stepper at the top right">${STEPS_GLYPH}<span class="end-words"> max defined upper-right</span></a>`;  // (its end the length asked: a click highlights its stepper)
+  if (lengthUsed() && seekFar() === lengthAsked() && !runLoop()) return `<a class="gen-link gen-loop" href="#" data-stepper title="The length asked: a click, the steps stepper at the top right">${STEPS_GLYPH}<span class="end-words"> max defined upper-right</span></a>`;  // (its end the length asked: a click highlights its stepper)
   if (walk.battle) { const why = walk.battle.winner.until; return why ? genLink(stepShown !== walk.n ? walk.n : 0, `■<span class="end-words"> ${why} at step ${formatNumber(walk.n)}</span>`, 'loop') : ''; }  // (its winner: the ranking's)
   const k = walk.life?.stable, o = !walk.life && runLoop();
   const [mark, words] = walk.life ? (!k ? [] : k.extinct ? ['✝', `at gen ${formatNumber(k.T)}`] : k.P === 1 ? ['■', `from gen ${formatNumber(k.T)}`] : ['↻', `every ${formatNumber(k.P)} from gen ${formatNumber(k.T)}`])
@@ -2223,10 +2223,10 @@ const seekFirst = () => (Number.isFinite(runStart()) ? runStart() : -Math.max(0,
 // to its last (a reversible one's by its rule backwards, see lifeTo; a Game of Life's round it forth, see advanceTo)
 const loopBack = () => looping() && walk.life.stable.T === 0;
 function setGens(n) {
-  target = Math.min(targetMost(), Math.max(DIGIT_STEPS[0], Math.round(n) || 2000));
+  lengthPicked = Math.min(lengthMost(), Math.max(DIGIT_STEPS[0], Math.round(n) || 2000));
   if (spaceTimeOn()) { restart(); showAll(); }
   else if (MODES[$('mode').value].elementary) compute();  // (its rows built again, see elementaryRows)
-  else { walk.n = target; if (stepShown > walk.n) seekTo(walk.n); }
+  else { walk.n = lengthPicked; if (stepShown > walk.n) seekTo(walk.n); }
   statsDirty = true;
   syncDigitsStepper();
   syncLink();
@@ -2243,7 +2243,7 @@ function runStop() {
     return end && { n, label: `${formatNumber(n)} generations max ${end[0]}`, why: end[1] };
   }
   if (randomPrimeSize()) return null;
-  const asked = targetAsked(), unit = stepperUnit(), L = walk.loop, total = wholeTotal();
+  const asked = lengthAsked(), unit = stepperUnit(), L = walk.loop, total = wholeTotal();
   // (a battle's own end, known as it was fought: not the digits asked meanwhile)
   if (walk.battle?.winner.until) return { n: walk.n, label: `${formatNumber(walk.n)} steps until ${walk.battle.winner.until} ■`, why: `■ The battle ends at step ${formatNumber(walk.n)}, ${walk.battle.winner.how}: more digits would change nothing` };
   if (walk.wormEnd && walk.n < asked) return { n: walk.n, label: `${formatNumber(walk.n)} steps max ✝`, why: loopText() };
@@ -2260,15 +2260,15 @@ const compactCount = (n) => (n < 10000 ? String(n) : n < 999500 ? `${Math.round(
 const lengthUsed = () => !MODES[$('mode').value].life || gensShown();
 const stepperUnit = () => (NAV[$('mode').value]?.[0] === 'Walk' || !readsDigits() ? 'steps' : 'digits');
 function syncDigitsStepper() {
-  const stop = runStop(), size = randomPrimeSize(), gens = gensShown(), asked = size ?? targetAsked(), steps = size ? PRIME_STEPS : DIGIT_STEPS;
+  const stop = runStop(), size = randomPrimeSize(), gens = gensShown(), asked = size ?? lengthAsked(), steps = size ? PRIME_STEPS : DIGIT_STEPS;
   const unit = gens ? 'generations' : stepperUnit(), total = gens || size || walk.loop ? null : wholeTotal();  // (a loop's, its rounds: see runStop)
   // the length asked, steps at most, the same words in every tab (its end, a loop, a death, a battle's: the step line, see endMark)
   if (document.activeElement !== $('digitsLabel')) $('digitsLabel').value = `≤${compactCount(asked)}`;  // (its unit, steps: the footprints beside it)
   $('digitsLabel').title = [`${formatNumber(asked)} ${size ? 'digits of the random prime p (100 to 2,000: it is walked whole)' : `${asked === 1 ? unit.slice(0, -1) : unit} at most`}`,
     !size && !lengthUsed() && 'Not used here (Life and Rewind play on): kept for the next tab', !size && total !== null && `The number has ${formatNumber(total)} digits`, stop?.why,
-    `Type a number, from ${formatNumber(steps[0])} to ${formatNumber(size ? steps.at(-1) : targetMost())}, then Enter`].filter(Boolean).join('\n');
+    `Type a number, from ${formatNumber(steps[0])} to ${formatNumber(size ? steps.at(-1) : lengthMost())}, then Enter`].filter(Boolean).join('\n');
   setTile($('digitsDown'), { greyed: asked <= steps[0] ? 'Already the fewest steps.' : '' });
-  setTile($('digitsUp'), { greyed: asked >= (size ? steps.at(-1) : targetMost()) ? 'Already the most steps.' : '' });
+  setTile($('digitsUp'), { greyed: asked >= (size ? steps.at(-1) : lengthMost()) ? 'Already the most steps.' : '' });
 }
 // Why a walk that repeats has a most of digits: the loop (or drift), from its first step, and how many
 // rounds are walked; '' when it does not repeat
@@ -2288,13 +2288,13 @@ function loopText() {
       + ` it stops after ${rounds === 1 ? 'one round' : `${rounds} rounds`}, ${formatNumber(total)} digits, and more would draw nothing new.`;
 }
 function stepDigits(delta) {
-  const size = randomPrimeSize(), steps = size ? PRIME_STEPS : DIGIT_STEPS, n = size ?? targetAsked();  // (the length asked, not where it ended)
-  const next = delta > 0 ? steps.find((v) => v > n && (size || v <= targetMost())) ?? (!size && n < targetMost() ? targetMost() : undefined) : steps.findLast((v) => v < n);  // (+ past the ladder's last below the most: the most)
+  const size = randomPrimeSize(), steps = size ? PRIME_STEPS : DIGIT_STEPS, n = size ?? lengthAsked();  // (the length asked, not where it ended)
+  const next = delta > 0 ? steps.find((v) => v > n && (size || v <= lengthMost())) ?? (!size && n < lengthMost() ? lengthMost() : undefined) : steps.findLast((v) => v < n);  // (+ past the ladder's last below the most: the most)
   if (next === undefined) return;
   if (playing && !gensShown()) resumeAt = stepShown;  // (playing: it plays on from there once built again, see showAll)
   if (size) setPrimeSize(next);
   else if (gensShown()) setGens(next);
-  else { target = next; if (lengthUsed()) compute(); else syncDigitsStepper(); }  // (unused here: kept for the next tab)
+  else { lengthPicked = next; if (lengthUsed()) compute(); else syncDigitsStepper(); }  // (unused here: kept for the next tab)
 }
 // Another size for the random prime: a new prime of that size, from the same seed
 function setPrimeSize(size) {
@@ -4155,7 +4155,7 @@ function buildWalkOf() {
     syncLoopRow();
     return;
   }
-  const len = MODES[digitsComputed.mode].worm || !readsDigits() ? targetAsked() : seq.length;  // (its steps asked: a worm's, its digits read at its new corners only; a creature by its rule's, none read)
+  const len = MODES[digitsComputed.mode].worm || !readsDigits() ? lengthAsked() : seq.length;  // (its steps asked: a worm's, its digits read at its new corners only; a creature by its rule's, none read)
   const is3d = MODES[digitsComputed.mode].lattice === 'cube';
   const wx = new Float64Array(len + 1);
   const wy = new Float64Array(len + 1);
@@ -7489,7 +7489,7 @@ function browseLoop(delta) {
   if (!next) return;
   $('startNo').value = next.start;
   selectSize(surfaceOf(MODES[$('mode').value]), next.size);
-  target = next.steps;
+  lengthPicked = next.steps;
   compute();
 }
 
@@ -7641,7 +7641,7 @@ function buildGridWalk(seq, mode, ahead = new Uint8Array(0)) {
   const { base, initial } = mode, kind = surfaceOf(mode);
   fillSphereSizes(kind, initial);
   const { mesh, radius } = SPHERES[kind];
-  const size = sphereSize(), g = mesh(size), R = radius(size), G = gridGraph(g), V = g.verts, len = mode.worm || !readsDigits() ? targetAsked() : seq.length, at = (v) => [V[3 * v], V[3 * v + 1], V[3 * v + 2]];  // (a worm: its steps asked)
+  const size = sphereSize(), g = mesh(size), R = radius(size), G = gridGraph(g), V = g.verts, len = mode.worm || !readsDigits() ? lengthAsked() : seq.length, at = (v) => [V[3 * v], V[3 * v + 1], V[3 * v + 2]];  // (a worm: its steps asked)
   const rec = walkRecorder(seq, ahead, base, R, G.nv, len), vert = new Int32Array(len + 1), stepTiles = new Int32Array(2 * len), S = surfaceSteps(g, mode);
   let state = walkStart(g, mode);
   // a battle (see 7.6b): all its walks (battlePlayer), A's recorded (still once dead), from its own start (grouped: its
@@ -7697,7 +7697,7 @@ function buildSphereWalk(seq, mode, ahead = new Uint8Array(0)) {
   const { initial } = mode, kind = surfaceOf(mode);
   fillSphereSizes(kind, initial);
   const { mesh, radius } = SPHERES[kind];
-  const len = readsDigits() ? seq.length : targetAsked(), w = digitsComputed.mode, ant = !!mode.antOf;  // (an ant by its rule: its steps asked, no digit read)
+  const len = readsDigits() ? seq.length : lengthAsked(), w = digitsComputed.mode, ant = !!mode.antOf;  // (an ant by its rule: its steps asked, no digit read)
   const size = sphereSize(), g = mesh(size), R = radius(size), S = surfaceSteps(g, mode, ant ? surfaceActs(MODES[ANTS[w].walk], antCommands(w)) : undefined);  // (an ant: by its words)
   // an ant: it walks the surface's cells by its turns, the cells keeping their colours (see antStepper)
   const antStep = ant ? antStepper(w, (d) => { state = S.step(state, d); return state; }, walkStart(g, mode)[0]) : null;
@@ -9042,7 +9042,7 @@ function elementaryRowsOf(G, start, N, digits) {  // (alone: in the page or in a
 const ELEMENTARY_NOW = 3000;
 let elementaryMade = null, elementaryWorker = null;
 const elementaryAsk = () => {
-  const G = targetAsked(), start = plane.start, N = lifeRuleNow()?.wolfram ?? 30, { head, frac } = digitsInUse();
+  const G = lengthAsked(), start = plane.start, N = lifeRuleNow()?.wolfram ?? 30, { head, frac } = digitsInUse();
   return { key: `${N}|${G}|${start}|${start === 'digits' ? `${formulaInUse}/${digitsComputed.base}` : ''}`, args: [G, start, N, start === 'digits' ? Uint8Array.from([...head, ...frac].slice(0, 2 * G + 16)) : null] };
 };
 function elementaryWorkerMain() {  // (run in a worker: its rows, sent back)
@@ -9264,7 +9264,7 @@ function buildLife(seq, mode) {
   countSeed(walk.life);
   lifeStart = null;  // the number's digits
   const one = new Float64Array(1);
-  Object.assign(walk, { vert: null, stepTiles: null, loop: null, n: gensShown() && !spaceTimeOn() ? targetAsked() : Infinity, digits: seq, wx: one, wy: one, wz: one, is3d: true, cells: null,
+  Object.assign(walk, { vert: null, stepTiles: null, loop: null, n: gensShown() && !spaceTimeOn() ? lengthAsked() : Infinity, digits: seq, wx: one, wy: one, wz: one, is3d: true, cells: null,
                         maxDist: null, base: rule.base, counts: null, lattice: 'sphere', skipZeros: false, points: false,
                         keys: seq, sphere: true, geo: g, R: radius(size), tile: new Int32Array(1),
                         coverStep: -1, visits: new Int32Array(n), maxVisits: 0,
@@ -10563,7 +10563,7 @@ function buildLifePlane(seq) {
   countSeed(walk.life);
   lifeStart = null;
   const one = new Float64Array(1);
-  Object.assign(walk, { vert: null, stepTiles: null, loop: null, n: gensShown() && !spaceTimeOn() ? targetAsked() : Infinity, digits: seq, wx: one, wy: one, wz: one, is3d: false, cells: null,
+  Object.assign(walk, { vert: null, stepTiles: null, loop: null, n: gensShown() && !spaceTimeOn() ? lengthAsked() : Infinity, digits: seq, wx: one, wy: one, wz: one, is3d: false, cells: null,
                         maxDist: null, base: rule.base, counts: null, lattice: 'square', skipZeros: false, points: false,
                         keys: seq, sphere: false, geo: { n }, plane: { kind, W, row, n, xy, at, torus: planeTorus(kind), flat: planeFlat(kind, W, planeTorus(kind)) }, tile: null,
                         coverStep: -1, visits: null, maxVisits: 0, xs: one, ys: one, shape: null });
@@ -10590,13 +10590,13 @@ const STACK_ENDS = { dead: ['✝', 'All died out'], loop: ['↻', 'Its loop gone
 // its layers made generation by generation, each awaited (see lifeSettle): true once made, false if another took its place
 async function stackUp() {
   const L = walk.life, { W, row, n, xy } = walk.plane, K = L.colours;
-  if (stack?.L === L && stack.gens === targetAsked() && stack.seed.every((v, t) => v === L.seed[t])) return true;
+  if (stack?.L === L && stack.gens === lengthAsked() && stack.seed.every((v, t) => v === L.seed[t])) return true;
   stack = null;  // (none drawn while it is made)
   walk.n = Infinity;
   stepShown = 0;
   const at = [], keys = [], layers = [];
   let end = 'gens';
-  for (let g = 0; g < targetAsked(); g++) {
+  for (let g = 0; g < lengthAsked(); g++) {
     lifeTo(g);
     await lifeSettle();
     if (walk.life !== L) return false;
@@ -10607,11 +10607,11 @@ async function stackUp() {
     if (keys.length + alive > STACK_MOST) { end = 'full'; break; }  // (a layer whole, or none)
     for (let t = 0; t < n; t++) if (a[t] >= 1 && a[t] <= K) { const [x, y] = xy(t); at.push(x - (row - 1) / 2, (W - 1) / 2 - y, g); keys.push(a[t] - 1); }
     layers.push(keys.length - 1);
-    if (L.stable && g + 1 >= L.stable.T + 5 * L.stable.P && g + 1 < targetAsked()) { end = 'loop'; break; }  // (its loop 5 times: a still life 5 layers)
+    if (L.stable && g + 1 >= L.stable.T + 5 * L.stable.P && g + 1 < lengthAsked()) { end = 'loop'; break; }  // (its loop 5 times: a still life 5 layers)
   }
   const h = layers.length, mid = (h - 1) / 2;
   for (let i = 2; i < at.length; i += 3) at[i] -= mid;  // (its height round the middle)
-  stack = { L, gens: targetAsked(), end, seed: L.seed.slice(), at: Float32Array.from(at), keys: Uint8Array.from(keys), layers: Int32Array.from(h ? layers : [-1]),
+  stack = { L, gens: lengthAsked(), end, seed: L.seed.slice(), at: Float32Array.from(at), keys: Uint8Array.from(keys), layers: Int32Array.from(h ? layers : [-1]),
             box: [-(row - 1) / 2, (row - 1) / 2, -(W - 1) / 2, (W - 1) / 2, -mid, mid], reach: Math.hypot(row, W, h) / 2 };
   walk.n = Math.max(0, h - 1);
   lifeReset();
@@ -14839,7 +14839,7 @@ let setupFrom = null;  // { setup, v }
 const sameSetup = (a, b, apart = ['v']) => [...new Set([...Object.keys(a), ...Object.keys(b)])].every((k) => apart.includes(k) || String(a[k] ?? '') === String(b[k] ?? ''));  // (apart: the keys not compared)
 function getSetup() {
   const w = $('mode').value, mode = MODES[w], s = readsDigits(w) ? { x: formulaInUse, w } : { w };
-  if (!mode.life || gensShown()) s.d = targetAsked();  // (the length asked: digits, or generations)
+  if (!mode.life || gensShown()) s.d = lengthAsked();  // (the length asked: digits, or generations)
   if (mode.lattice === 'sphere') s.s = $('sphereF').value;
   if (modeStarts() && startNo() > 1) s.st = startNo();
   if (torusTurned && TURNED[mode.sphere]) s.o = 1;
@@ -14884,7 +14884,7 @@ function applySetup(s) {
     if (readFormula().error) return false;
     pickNumber(formulaInUse, s.w);
   }
-  if (s.d !== undefined) target = Number(s.d);
+  if (s.d !== undefined) lengthPicked = Number(s.d);
   walkTeams = !MODES[s.w].life && COLOUR_STEPS.includes(Number(s.k)) ? Number(s.k) : 1;  // (a walk's battle, if its surface allows it at its size: see battleOn)
   const pe = s.br !== undefined ? Number(s.br) : s.pe === undefined ? 0 : !s.v || versionAtMost(s.v, '0.4.378') ? PE_BEFORE[Number(s.pe)] : Number(s.pe);  // (br=; a link of v0.4.457 or before, pe=)  // (an older link's, in its own order)
   battleRule = walkTeams > 1 && BATTLE_RULES[pe] ? pe : 0;  // (none: the first, Land grid 1)
@@ -17945,7 +17945,7 @@ $('digitsUp').addEventListener('click', () => stepDigits(1));
 // the last valid formula; a rule as it was). Enter or ↵ leaves the field, and leaving it applies it;
 // but a wrong formula keeps you in the field, with its error. Esc undoes the edit: back to the value
 // in use. For ↵, mousedown keeps the focus from going to the button first.
-const valueInUse = { formula: () => formulaInUse, digitsLabel: () => String(randomPrimeSize() ?? targetAsked()), startLabel: () => String(startNo()), speedLabel: () => String(speed),
+const valueInUse = { formula: () => formulaInUse, digitsLabel: () => String(randomPrimeSize() ?? lengthAsked()), startLabel: () => String(startNo()), speedLabel: () => String(speed),
                      antRule: () => creatureRules($('mode').value).now,  // (a walk's, an ant's, a turmite's, a worm's)
                      lifeRule: () => (walk.life?.ruleText ? ruleBody(walk.life.ruleText) : walk.rows ? `W${walk.rows.N}` : null) };  // (the rule the game plays, its colours apart; Elementary's, its rows'; none yet: the field's as it was, see putBack)
 for (const input of document.querySelectorAll('.field input')) {
@@ -17977,14 +17977,14 @@ for (const b of document.querySelectorAll('.field .enter')) {
 }
 $('digitsLabel').addEventListener('input', () => { $('digitsLabel').value = $('digitsLabel').value.replace(/\D/g, ''); });
 $('stepsGlyph').textContent = STEPS_GLYPH;  // (the length asked's unit, beside it)
-$('digitsLabel').addEventListener('focus', () => { $('digitsLabel').value = String(randomPrimeSize() ?? targetAsked()); $('digitsLabel').select(); });  // (to type: the exact number, picked)
+$('digitsLabel').addEventListener('focus', () => { $('digitsLabel').value = String(randomPrimeSize() ?? lengthAsked()); $('digitsLabel').select(); });  // (to type: the exact number, picked)
 $('digitsLabel').addEventListener('blur', syncDigitsStepper);  // "20,000 digits" again
 $('digitsLabel').addEventListener('change', () => {
   if (!$('digitsLabel').value) return;  // emptied: the blur shows the current count again
   if (randomPrimeSize()) { setPrimeSize(Number($('digitsLabel').value)); return; }
   if (gensShown()) { setGens(Number($('digitsLabel').value)); $('digitsLabel').blur(); return; }
-  target = Number($('digitsLabel').value);
-  target = targetAsked();  // (the number as this mode takes it, kept)
+  lengthPicked = Number($('digitsLabel').value);
+  lengthPicked = lengthAsked();  // (the number as this mode takes it, kept)
   $('digitsLabel').blur();
   if (lengthUsed()) compute(); else syncDigitsStepper();  // (unused here: kept for the next tab)
 });

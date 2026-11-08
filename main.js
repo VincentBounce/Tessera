@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.556';
+const VERSION = '0.4.557';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -17263,7 +17263,7 @@ const areaWhyNot = (w, teams = walkTeams, p = battleRule, look = $('colourMode')
   : ['visits', 'digit'].includes(look) ? 'Heatmap and Commands give the cells their own colours.' : '');
 // (the walk drawn may still be the last mode's while the new one is computed: a tiling with a fill)
 // Area (one choice: Empty, Light, Plain, see AREA_MODES): filled where it applies; Light, translucent, only over a line
-const areaOn = () => $('area').value !== 'empty' && fillAreasApply();
+const areaOn = () => $('area').value !== 'empty' && !!walk.mode && fillAreasApply(walk.mode);  // (the walk shown's: while the next is made, the tab's mode is already the next one's)
 const areaLight = () => areaOn() && $('area').value === 'light' && shows('translucent');
 const fillOn = () => areaOn() && walk.n && !walk.is3d && !!FILL_GRIDS[walk.lattice];
 // the fill, computed once per walk; beside the toggle, a word when the walk is too big to fill

@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.567';
+const VERSION = '0.4.568';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -1712,11 +1712,11 @@ function describe(base, available) {
     // the words around the digits, kept in the description: "exit through the … edge"
     const tail = mode.rule.slice(at + 2), pre = tail.slice(0, tail.indexOf('<b>')).trim(), edge = / edge\b/.test(tail) ? ' edge' : '';
     const around = pre ? ` · ${pre} …${edge}` : '';
-    const highway = (walk.bridges?.length ? ` · ${walk.bridges.length === 1 ? 'a bridge' : `${walk.bridges.length} bridges`} back into its cloud, from step `
-      + walk.bridges.map((b) => `${formatNumber(b.from)} (${formatNumber(Math.floor((b.to - b.from) / b.period))} stretches)`).join(', ') : '')
-      + (walk.highway && !walk.loop ? ` · a highway from step ${formatNumber(walk.highway.from)}, every ${walk.highway.period} steps` : '')
-      + (loopText() ? ` · ${loopText()}` : '');  // why the length stops where it does
-    $('description').innerHTML = `<b>${walkName(walk.mode)}</b> · ${walk.loop ? '' : `${formatNumber(walk.n)} ${mode.antOf || mode.worm ? 'steps' : 'digits'} · `}${chips ? lead + around + (after ? ` · ${after}` : '') : mode.rule}${highway}`;
+    // (its name, its steps, its rule's code and its loop: the bar's, said once there)
+    const bridges = walk.bridges?.length ? `${walk.bridges.length === 1 ? 'a bridge' : `${walk.bridges.length} bridges`} back into its cloud, from step `
+      + walk.bridges.map((b) => `${formatNumber(b.from)} (${formatNumber(Math.floor((b.to - b.from) / b.period))} stretches)`).join(', ') : '';
+    const highway = walk.highway && !walk.loop ? `a highway from step ${formatNumber(walk.highway.from)}, every ${walk.highway.period} steps` : '';
+    $('description').innerHTML = capitalised([chips ? lead + around + (after ? ` · ${after}` : '') : mode.rule, bridges, highway, walk.wormEnd ? loopText() : loopStop()].filter(Boolean).join(' · '));  // (why its length stops where it does)
     if (chips) {
       $('ruleChips').replaceChildren(...items.map(([, d, text]) => {
         // without the closing note and the words around the digits (they are in the description)
@@ -2287,17 +2287,21 @@ function syncDigitsStepper() {
 function loopText() {
   if (walk.wormEnd) return `✝ The worm stops at step ${formatNumber(walk.n)}, after ${formatNumber(walk.wormMade)} turns of its own: ${{ dead: 'no line left to eat at its corner', eaten: 'its rule turns onto a line already eaten',
     rule: 'its rule has no turn left for a new corner', digits: 'no digit left for a new corner' }[walk.wormEnd]}.`;
-  const L = !randomPrimeSize() && walk.loop;
+  const L = loopShownNow();
   if (!L) return '';
-  const period = L.period ?? walk.n - L.from, rounds = L.rounds ?? (L.period ? LOOP_ROUNDS : 1), total = L.cap ?? walk.n;
-  const far = rounds > LOOP_ROUNDS ? ', as far as what it drew before is wide' : '';
-  if (walk.ant) return `→ From step ${formatNumber(L.from)}, the ant builds a highway: the same ${formatNumber(period)} steps forever, each time further on.`
-    + ` It stops after ${formatNumber(rounds)} of them${far}, ${formatNumber(total)} steps.`;
-  return L.drift
-    ? `→ From step ${formatNumber(L.from)}, this walk repeats the same ${formatNumber(period)} steps forever, each time further on: it goes off`
-      + ` for ever, and stops after ${formatNumber(rounds)} rounds${far}, ${formatNumber(total)} digits.`
-    : `↻ From step ${formatNumber(L.from)}, this walk goes round the same ${formatNumber(period)} steps forever:`
-      + ` it stops after ${rounds === 1 ? 'one round' : `${rounds} rounds`}, ${formatNumber(total)} digits, and more would draw nothing new.`;
+  const period = L.period ?? walk.n - L.from;
+  if (walk.ant) return `→ From step ${formatNumber(L.from)}, the ant builds a highway: the same ${formatNumber(period)} steps forever, each time further on. ${loopStop()}`;
+  return L.drift ? `→ From step ${formatNumber(L.from)}, this walk repeats the same ${formatNumber(period)} steps forever, each time further on. ${loopStop()}`
+    : `↻ From step ${formatNumber(L.from)}, this walk goes round the same ${formatNumber(period)} steps forever. ${loopStop()}`;
+}
+// the walk's loop, when its length stops at it (none for a random prime: its size asked)
+const loopShownNow = () => !randomPrimeSize() && walk.loop;
+// why a walk's length stops at its loop (the loop itself in the bar's title, see updateStats): '' without one
+function loopStop() {
+  const L = loopShownNow();
+  if (!L) return '';
+  const rounds = L.rounds ?? (L.period ? LOOP_ROUNDS : 1), far = rounds > LOOP_ROUNDS ? ', as far as what it drew before is wide' : '';
+  return walk.ant || L.drift ? `It stops after ${formatNumber(rounds)} rounds${walk.ant ? ' of its highway' : ''}${far}.` : `It stops after ${rounds === 1 ? 'one round' : `${rounds} rounds`}: more would draw nothing new.`;
 }
 function stepDigits(delta) {
   const size = randomPrimeSize(), steps = size ? PRIME_STEPS : DIGIT_STEPS, n = size ?? lengthAsked();  // (the length asked, not where it ended)
@@ -4652,7 +4656,7 @@ function antTableOf(w, rule) {
 // an ant of the literature by its turns, one per colour (RL, L2 R2): its rule, one state, colour c then c + 1
 const antOfTurns = (w, turns) => { const t = ruleCommands(turns); return antText([t.map((command, c) => ({ write: (c + 1) % t.length, command, next: 0 }))]); };
 const antRuleText = (w) => { const { S } = antTableOf(w, antRuleOf(w));
-  return `${S > 1 ? `a turmite of ${S} states` : 'an ant'}: ${S > 1 ? 'in a state, ' : ''}on a cell of a colour it leaves a colour there, turns${S > 1 ? ' and takes a state' : ''}, by its rule ${ruleSpan(antRuleOf(w))}${antByDigits ? '; a digit 1 turns the other way' : ''}`; };
+  return `${S > 1 ? `a turmite of ${S} states` : 'an ant'}: ${S > 1 ? 'in a state, ' : ''}on a cell of a colour it leaves a colour there, turns${S > 1 ? ' and takes a state' : ''}, by its rule${antByDigits ? '; a digit 1 turns the other way' : ''}`; };
 // its colours (one chip each), its rule's
 const antColours = (w) => (MODES[w].antOf ? antTableOf(w, antRuleOf(w)).C : 0);
 // the step: turned, the colour of the cell it turned on; took, its chip (its cell's colour; by the digits, the digit); left,
@@ -4887,7 +4891,7 @@ function surfaceWormStepper(g, start, digits) {
 }
 const wormRuleText = () => `along the lines of a triangle grid, never twice along one: at a corner met for the first time, `
   + (worm.byDigits ? 'it turns by the next digit, <b>0</b> sharp left, <b>1</b> left, <b>2</b> straight, <b>3</b> right, <b>4</b> sharp right (one onto an eaten line passed over)'
-    : `it turns by its rule's next turn, ${ruleSpan(worm.rule)}`) + ', and the same way at that corner met again; it dies where no line is left';
+    : 'it turns by its rule\'s next turn') + ', and the same way at that corner met again; it dies where no line is left';
 
 // the hexagons' spiral: turn left whenever that hexagon is unvisited, else go straight (the digit is ignored), from south
 function hexSpiralStepper() {
@@ -17776,7 +17780,7 @@ function updateStats() {
   const strip = $('digitStrip');
   strip.classList.remove('line', 'turns');  // one line of digits; the other texts may wrap
   if (!walk.n) { strip.textContent = ''; return; }
-  if (walk.ant && !walkReadsDigits()) { strip.innerHTML = `Rule ${ruleSpan(antRuleOf(walk.mode))} · the number's digits are not used`; return; }  // an ant by its rule
+  if (walk.ant && !walkReadsDigits()) { strip.textContent = "The number's digits are not used"; return; }  // an ant by its rule
   // One line of digits, exactly as many as fit (the strip is monospace, so it is a column count).
   // The head sits at 60 % of the line; at the start the line begins with the first digit, at the
   // end it finishes with the last one. The window then shrinks until "…", "0." and "." fit too.

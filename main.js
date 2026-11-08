@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.546';
+const VERSION = '0.4.547';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -12081,27 +12081,27 @@ const BATTLE_CASES = {
     tri: [{ pre: [180, 180], moves: [0, 0] }, { pre: [0], moves: [180, 180] }],
     hex: [{ pre: [210, 150], moves: [330, 30] }, { pre: [330], moves: [150, 210] }] },
 };
-// The cases of a battle on cells (see battlePlayer: Land cells, Cut, Snake cells), as along the grid's (see BATTLE_CASES), their
+// The cases of a battle on cells (see battlePlayer: Land cells, Land no collision, Cut, Snake cells), as along the grid's (see BATTLE_CASES), their
 // moves from tile to tile (degrees, between the tiles' middles; a triangle's alternate: the middle one ▽, its neighbours △);
 // its words, each way's
 const BATTLE_CELL_CASES = {
-  paint: { words: { landCells: 'A head on a tile paints it its colour, an enemy\'s too' },
+  paint: { words: { landCells: 'A head on a tile paints it its colour, an enemy\'s too', landStop: 'A step onto an enemy\'s tile: stopped for good just before it' },
     square: [{ pre: [90, 90], moves: [null, null, null, null, 270, 270, 270] }, { pre: [180, 180], moves: [0, 0, 0, 0] }],
     hex: [{ pre: [150, 210], moves: [null, null, null, null, 330, 30, 330] }, { pre: [270, 270], moves: [90, 90, 90, 90] }],
     tri: [{ pre: [90], moves: [null, null, null, null, 270, 330] }, { pre: [210, 150], moves: [330, 30, 330, 30] }] },
-  close: { words: { landCells: 'A zone its colour closes (the tiles not its colour cut off) painted inside' },
+  close: { words: { landCells: 'A zone its colour closes (the tiles not its colour cut off) painted inside', landStop: 'A zone its colour closes (the tiles not its colour cut off) painted inside' },
     square: [{ moves: [90, 0, 0, 270, 270, 180, 180, 90] }, { pre: [0, 0, 0, 0, 0], moves: [90] }],
     hex: [{ moves: [30, 90, 150, 210, 270, 330] }, { pre: [210, 210, 210], moves: [270] }] },
   bite: { words: { cut: 'A head on another\'s body: cut there, back to its tail (dashed)', snakeCells: 'A head on another\'s body: bitten there, back to its tail (dashed), the cells it bites eaten' },
     square: [{ pre: [90, 90], moves: [null, null, 270, 270] }, { pre: [180, 180], moves: [0, 0, 0, 0] }],
     hex: [{ pre: [150, 210], moves: [null, null, 330, 30] }, { pre: [270, 270], moves: [90, 90, 90, 90] }],
     tri: [{ pre: [90], moves: [null, null, 270] }, { pre: [210, 150], moves: [330, 30, 330] }] },
-  heads: { words: { landCells: 'Heads meeting on a tile: both die, their tiles staying', cut: 'Heads meeting on a tile, as long: both die, their bodies gone (the shorter alone dies)',
+  heads: { words: { landCells: 'Heads meeting on a tile: both die, their tiles staying', landStop: 'Heads meeting on a tile: both stopped there for good, their tiles staying', cut: 'Heads meeting on a tile, as long: both die, their bodies gone (the shorter alone dies)',
     snakeCells: 'Heads meeting on a tile, as long: both die, their bodies gone (the shorter alone dies)' },
     square: [{ pre: [180, 180, 180, 180], moves: [0, 0, 0, 0] }, { pre: [0, 0, 0, 0], moves: [180, 180, 180, 180] }],
     hex: [{ pre: [270, 270, 270, 270], moves: [90, 90, 90, 90] }, { pre: [90, 90, 90, 90], moves: [270, 270, 270, 270] }],
     tri: [{ pre: [210, 150, 210, 150], moves: [330, 30, 330, 30] }, { pre: [330, 30, 330, 30], moves: [210, 150, 210, 150] }] },
-  crossing: { words: { landCells: 'Heads crossing, each into the tile the other leaves: both die, their tiles staying', cut: 'Heads crossing, each into the tile the other leaves, as long: both die, their bodies gone',
+  crossing: { words: { landCells: 'Heads crossing, each into the tile the other leaves: both die, their tiles staying', landStop: 'Heads crossing, each into the tile the other leaves: both stopped for good before', cut: 'Heads crossing, each into the tile the other leaves, as long: both die, their bodies gone',
     snakeCells: 'Heads crossing, each into the tile the other leaves, as long: both die, their bodies gone' },
     square: [{ pre: [180, 180, 180], moves: [0, 0, 0, 0] }, { pre: [0, 0, 0, 0], moves: [180, 180, 180, 180] }],
     hex: [{ pre: [270, 270, 270], moves: [90, 90, 90, 90] }, { pre: [90, 90, 90, 90], moves: [270, 270, 270, 270] }],
@@ -12168,7 +12168,7 @@ function battleTutorial(w) {
     return svg && `<figure><div>${svg}</div><figcaption>${c.words[way]}</figcaption></figure>`;
   }).filter(Boolean);
   if (!figs.length) return `<div class="form-section">${title}<p>Its cases, drawn: to come later.</p></div>`;
-  const how = way === 'landCells' ? 'Each walker paints the tiles it goes into its colour. All walkers step at once. Here red\'s last step makes the case'
+  const how = cells && (way === 'landCells' || way === 'landStop') ? 'Each walker paints the tiles it goes into its colour. All walkers step at once. Here red\'s last step makes the case'  // (on cells, Land no collision paints too)
     : !BATTLE_LINED.includes(way) ? `Each walker's body: the ${cells ? 'tiles' : 'edges'} it has walked, from its tail to its head${way === 'landGrid2' ? '; its land, the tiles its body closed' : ''}. All walkers step at once. Here red's last step makes the case; a body cut off dashed`
     : 'Each walker\'s line: the edges it has gone along, never let go by itself. All walkers step at once, each step judged on the lines as it found them. Here red\'s last step makes the case; a line let go dashed';
   return `<div class="form-section">${title}<p>${how}, a walker ${way === 'landStop' || way === 'landMerge' ? 'stopped' : 'dead'} crossed.</p>`

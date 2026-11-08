@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.634';
+const VERSION = '0.4.635';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -15008,7 +15008,7 @@ function applyPendingView() {
     renderHunt();
   }
   huntBack = null;
-  if (pendingAt !== null) { seekTo(pendingAt); pendingAt = null; }  // (a link's step shown: there)
+  if (pendingAt !== null) { if (!lifeTime()) restart(); seekTo(pendingAt); pendingAt = null; }  // (a link's step shown: a walk's reached from its start, framed as it is there, as Begin does; not back from its end, its whole frame kept)
   syncLink();  // with the start a setup's champion or hunt zone gave
 }
 

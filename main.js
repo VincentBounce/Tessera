@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.627';
+const VERSION = '0.4.628';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -17045,7 +17045,7 @@ function gpuSurface(paint, path) {
   const segs = (path || lines) && !P?.ownLines && stepShown > 0 && (D.keys.segs !== walk.wx || D.keys.segsM !== sh.m || D.ribbonOf || D.keys.segsKeyed !== keyed) ? pathSegments(P) : null;
   if (segs && keyed) { const look = stepLook('digit'); for (let o = 10; o < segs.data.length; o += 11) segs.data[o] = look.key(segs.data[o]); }  // (its step's command instead of its step)
   if (segs) { gpuBuffer('ribbon', segs.data); D.ribbonOf = null; D.segsAt = segs.at; D.keys.segs = walk.wx; D.keys.segsM = sh.m; D.keys.segsKeyed = keyed; }
-  const ranges = !(path || lines) || stepShown <= 0 || !(P?.ownLines ? D.segsRanges : D.segsAt) ? [] : !lines ? [[0, D.segsAt[glideAt() > stepShown ? Math.min(stepShown + 1, walk.n) : stepShown]]] : P.ownLines ? D.segsRanges
+  const ranges = !(path || lines) || glideAt() <= 0 || !(P?.ownLines ? D.segsRanges : D.segsAt) ? [] : !lines ? [[0, D.segsAt[glideAt() > stepShown ? Math.min(stepShown + 1, walk.n) : stepShown]]] : P.ownLines ? D.segsRanges
     : P.standing().map((s) => [D.segsAt[s][Math.max(1, P.from[s])], D.segsAt[s][P.step + 1]]);
   const heads = headsOf(), headFrom = heads.reduce((at, [m]) => [...at, at.at(-1) + m.length / 6], [0]);  // (their corners: each its first, in the one buffer)
   if (heads.length) {
@@ -17173,7 +17173,7 @@ function gpuFlat(to) {
   };
   if (fillCount) tiles(D.flatFill, D.flatFillAt, D.fillTpl, fillCount, areaLight() ? 0.35 : 1, 0);
   if (cellCount) tiles(D.flatCells, D.flatCellsAt, D.cellTpl, cellCount, shows('cells', walk.mode) && line ? 0.15 : 1, walkFadeSteps());
-  if (line && to > 0) {
+  if (line && glideAt() > 0) {  // (from step 0 on: its first line grows too)
     rp.setPipeline(gpuDrawPipe('flatPath', { vertex: 'flatPathV', fragment: 'colF', topology: 'triangle-strip', blend: BLEND_PRE, depth: false,
       buffers: [vertexLayout(8, [vertexAttribute(0, 'float32x2')]), vertexLayout(8, [vertexAttribute(1, 'float32x2')], 'instance'), vertexLayout(8, [vertexAttribute(2, 'float32x2')], 'instance'), vertexLayout(4, [vertexAttribute(3, 'uint32')], 'instance')] }));
     rp.setBindGroup(0, gpuGroup(), [gpuView(D.words, slot++, 1, { colour: cells ? 0 : colour, N: Math.max(1, rainbowLength()), loopFrom: walk.loop?.from ?? 0,

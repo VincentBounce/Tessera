@@ -452,6 +452,8 @@ button.wide.active, .head-btn.active { border-color: var(--accent); color: var(-
 @media (hover: none) { .stage-bar:focus-within { width: var(--player-open-width); } }
 .stage:has(> .stage-bar:hover) > .hint { left: calc(2 * var(--view-gap) + var(--player-open-width)); }  /* the player open: a tooltip beside it, as narrow as the room left (its lines as many as it takes) */
 @media (hover: none) { .stage:has(> .stage-bar:focus-within) > .hint { left: calc(2 * var(--view-gap) + var(--player-open-width)); } }
+.stage.tip-under:has(> .stage-bar:hover) > .hint { left: auto; z-index: auto; }  /* (no room beside it: in its place, under the player, cut: see placeTips) */
+@media (hover: none) { .stage.tip-under:has(> .stage-bar:focus-within) > .hint { left: auto; z-index: auto; } }
 /* what is walked: the number, its loop and base; on hover the walk, its rule and the stats */
 .ranking { position: relative; margin: 0 0 8px; font-size: var(--label-text-size); }  /* a battle: a row a colour, re-sorted as it goes */
 .ranking .rank-row { position: absolute; left: 0; right: 0; top: 0; height: 18px; display: grid; grid-template-columns: 16px 12px minmax(0, 1fr) 76px; align-items: center; gap: 6px; transition: transform 0.4s; }

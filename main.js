@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.577';
+const VERSION = '0.4.578';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -18859,7 +18859,12 @@ window.addEventListener('hashchange', () => { const s = parseHash(); if (s) appl
 /* ---- 12.3 Start-up ------------------------------------------------------------------------ */
 // A link with a setup opens that setup; otherwise Life on the cube. The link then follows the setup on its events (see
 // syncLink).
-new ResizeObserver(resize).observe(stage);
+// the open player's tooltips beside it if a tooltip has TIP_LEAST there, else in their place under it, cut: the view too
+// narrow (tip-under, see .hint)
+const TIP_LEAST = 200;
+const placeTips = () => { const css = getComputedStyle(stage), room = stage.clientWidth - parseFloat(css.getPropertyValue('--player-open-width')) - 3 * parseFloat(css.getPropertyValue('--view-gap'));
+  stage.classList.toggle('tip-under', room < TIP_LEAST); };
+new ResizeObserver(() => { resize(); placeTips(); }).observe(stage);
 new ResizeObserver(() => { statsDirty = true; }).observe($('animBar'));  // the bar opened or closed: its digits fill its new width
 updateSpeedLabel();
 resize();

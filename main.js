@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.560';
+const VERSION = '0.4.561';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -1595,6 +1595,7 @@ const freshWalk = () => ({
   wormEnd: false, wormMade: 0,  // a worm's walk only: why and after how many turns of its own it stops
   battle: null,    // a battle only (see 7.6b)
   life: null, plane: null,  // Life's; on the plane, its grid
+  lifeGoal: null,  // Life's generation asked, its batch on the card not back yet (see lifeTo): a new walk, none
   stacked: false,  // Life's Space-time: its generations stacked up in 3D (the setup's when built; the tab's next one: spaceTimeOn)
   shape: null,     // only tiled surfaces that can change shape get one (see initShape)
   persp: null,     // the perspective camera (see setPerspective)
@@ -12364,7 +12365,7 @@ function lifeReset() {
   // its run's record, its start's (the same start, the same run: kept while its fingerprint is, played again or not)
   L.seedKey = lifeFingerprint(L.seed);
   L.gpuOld = true;  // (written here: the graphics card's copy old)
-  lifeGoal = null;  // (nothing asked of it yet, see lifeTo)
+  walk.lifeGoal = null;  // (nothing asked of it yet, see lifeTo)
   if (L.recordKey === L.seedKey) return;
   L.recordKey = L.seedKey;
   L.footBy = null;  // (the same up to where it settles or loops: its own, held)
@@ -15173,7 +15174,6 @@ function cutAtReturn(L, batch, dir) {
 // another round, see looping); none still, frozen or dead
 const loopRound = () => (playing && looping() ? runLoop().last : 0);
 // the generation asked while its batch is on the card (see lifeStepGPU): tick asks it again, frame after frame; null, none
-let lifeGoal = null;
 function lifeTo(target, until = Infinity) {  // (one step, one generation, played on the card as many at once, see lifeStepGPU)
   const L = walk.life, known = !!runLoop();  // (its end known before: round its loop as asked)
   let waiting = null;  // (where it was going when its batch was not back yet)
@@ -15228,7 +15228,7 @@ function lifeTo(target, until = Infinity) {  // (one step, one generation, playe
     if (!known && end !== undefined) k = Math.min(k, end - stepShown);  // (its end found on the way: to it, not round it on)
     if (performance.now() >= until) break;  // (a batch at least)
   }
-  lifeGoal = waiting;
+  walk.lifeGoal = waiting;
   statsDirty = true;
 }
 function advanceTo(target, until = Infinity) {  // forth or back (a walk; a reversible one, by its rule); until: a Game of Life's batches stop past it (a frame's time, see tick)
@@ -16310,7 +16310,7 @@ const lifeWithin = (g) => {
 };
 const LIFE_H = 16, LIFE_BATCH = 256;  // (generations a read back: a hunt's; the game's, at most, as many as a frame asks)
 // k generations there (gen: the first one shown; back, its rule's inverse, see lifeBack): a batch read back once played, never at once. Asked, its batch
-// starts and null comes back (lifeTo stops there, lifeGoal kept: see tick); asked again once back, its sums, and its cells
+// starts and null comes back (lifeTo stops there, walk.lifeGoal kept: see tick); asked again once back, its sums, and its cells
 // adopted (L.alive, the cells shown: see gpuShow). One batch at a time; the cells written here sent again first (L.gpuOld)
 function lifeStepGPU(L, gen, back = false, k = 1) {
   const E = lifeGPU(L);
@@ -16334,12 +16334,12 @@ function gpuShow(E) {
   enc.copyBufferToBuffer(E.cell, 4 * E.side * 5 * E.total, E.shown, 0, 4 * 5 * E.total);
   GPU.device.queue.submit([enc.finish()]);
 }
-// the Life asked (lifeGoal, see lifeTo) played to its end: each batch awaited (a check's, Space-time's)
+// the Life asked (walk.lifeGoal, see lifeTo) played to its end: each batch awaited (a check's, Space-time's)
 async function lifeSettle() {
-  while (lifeGoal !== null) {
+  while (walk.lifeGoal !== null) {
     const E = GPU?.game;
     if (E?.pending) await E.pending; else await new Promise((r) => setTimeout(r, 0));
-    if (lifeGoal !== null) lifeTo(lifeGoal);
+    if (walk.lifeGoal !== null) lifeTo(walk.lifeGoal);
   }
 }
 /* ---- 11.4c Life on WebGPU ----------------------------------------------------------------- */
@@ -17866,12 +17866,12 @@ function tick(now = performance.now()) {
       rotateView(screenTurn(...axis));
     }
   }
-  if (!playing && !reversing && lifeGoal !== null && walk.life && !walk.stacked) lifeTo(lifeGoal, now + 750 * frameMin);  // (a generation asked, its batch back: on to it; Space-time's: its own, see stackUp)
+  if (!playing && !reversing && walk.lifeGoal !== null && !walk.stacked) lifeTo(walk.lifeGoal, now + 750 * frameMin);  // (a generation asked, its batch back: on to it; Space-time's: its own, see stackUp)
   if (playing || reversing) {
     stepsDue += stepsPerSecond() * dt;  // time-based, so the speed holds whatever the frame rate
-    const k = Math.floor(stepsDue), from = walk.life && lifeGoal !== null ? lifeGoal : stepShown;  // (on from where it was going: a batch on the card, its steps not lost)
+    const k = Math.floor(stepsDue), from = walk.lifeGoal ?? stepShown;  // (on from where it was going: a batch on the card, its steps not lost)
     stepsDue -= k;
-    if (k > 0 || (walk.life && lifeGoal !== null)) {  // (no step this frame: its batch back taken all the same, the next one sent)
+    if (k > 0 || walk.lifeGoal !== null) {  // (no step this frame: its batch back taken all the same, the next one sent)
       advanceTo(reversing ? (from === runStart() && loopBack() ? from - k : Math.max(runStart(), from - k)) : from + k, now + 750 * frameMin);  // (from 0 round its loop, back to 0; its steps three quarters of the screen's frame at most: faster than it can, as fast as it can, its frames kept)
       if (reversing && stepShown <= runStart()) reverse(false);  // (back at its start, after a step)
     }
@@ -17886,7 +17886,7 @@ function tick(now = performance.now()) {
   if (walk.n && !walk.sphere && !walk.plane) showZoom();  // (a walk: its fit grows with it)
   // a Game of Life on its way to a generation asked (a seek: back, from its start again, see advanceTo), not playing: its
   // picture as it was till there, never its start or a generation on the way
-  const held = !!walk.life && lifeGoal !== null && !playing && !reversing && !walk.stacked;
+  const held = walk.lifeGoal !== null && !playing && !reversing && !walk.stacked;
   if (walk.plane && held) { requestAnimationFrame(tick); return; }
   if (walk.plane) {  // Life on the plane: the grid as one picture, each generation (Space-time: its cubes, up to the layer shown)
     if (needsFull) gpuClear();

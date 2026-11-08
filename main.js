@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.588';
+const VERSION = '0.4.589';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -3624,7 +3624,7 @@ function ruleCards(w, here = true) {
   const go = (then) => () => { if (!here) { $('mode').value = w; $('mode').dispatchEvent(new Event('change')); } then(); };
   const make = (cardPic, name, code, on, then, why = '', title = '', source = null) => card({ pic: cardPic, name, rule: code, base: code && R.base?.(code), on, title, click: go(then),
     how: () => { if (on) walkTutorialToggle(); else { go(then)(); walkTutorial(w); } }, whyNot: source && (({ w: v }) => ruleWhyNot(v, source)), at: w,
-    choice: source?.startsWith('walk ') ? `walkRule:${code}` : null });  // (a walk's rule: its choice's key, see choicesAt)  // (its picture: how it works, picked first; greyed, why: rulesFor's, any mode's)
+    choice: source?.startsWith('walk ') ? `walkRule:${w}|${code}` : null });  // (a walk's rule: its choice's key, its walk's and its rule's, see choicesAt)  // (its picture: how it works, picked first; greyed, why: rulesFor's, any mode's)
   return [...R.cards.map(({ rule: r, source, name, pic, why, title }) => make(pic, name, r, here && r === R.now && !customOpen, () => { customOpen = false; if (r === R.now) renderModePicker(); else R.set(r); }, why, title, source)),
     ...(R.typed ? [make(pixelIcon('..o..,..o..,ooooo,..o..,..o..'), 'Custom rule', mine ? R.now : '', mine, () => { customOpen = true; renderModePicker(); }, '', 'your own, typed')] : []),  // (never greyed: no source, no why)
     customRow];  // (its field right after it, the list's next rules after the field; always in it, shown by renderAntRow)
@@ -3653,14 +3653,20 @@ const setupKey = (s) => [s.w, ...SETUP_FIELDS.map((f) => s[f])].join('|');
 function choicesAt(s, reads = null, coloursMemo = new Map()) {  // (each [key, the setup it leads to, its button's words]; coloursMemo: a search's, its colours by mode, one state all along)
   const wants = (field) => !reads || reads.has(field);
   const coloursAt = (v) => { const k = `${v}|${s.colours}|${s.rule}`; if (!coloursMemo.has(k)) coloursMemo.set(k, coloursOn(v, s.colours, null, s.rule)); return coloursMemo.get(k); };
-  const w = s.w, [kind, space, shape, rule] = NAV[w], out = [], go = (key, v, words) => { if (v && v !== w) out.push([key, { ...s, w: v, size: null, colours: wants('colours') ? coloursAt(v) : s.colours, walkRule: MODES[v].net ? walkRuleAt(s, v) : null }, words]); };
+  const w = s.w, [kind, space, shape, rule] = NAV[w], out = [], go = (key, v, words, more = {}) => { if (v && v !== w) out.push([key, { ...s, w: v, size: null, colours: wants('colours') ? coloursAt(v) : s.colours, walkRule: MODES[v].net ? walkRuleAt(s, v) : null, ...more }, words]); };
   for (const [k] of NAV_KINDS) if (k !== kind) go(`kind:${k}`, kindLeft[k] ?? navPick(w, 0, k), k);
   for (const sp of navValues(1, [kind])) go(`space:${sp}`, navPick(w, 1, sp), SPACES[sp][0]);
   for (const sh of navValues(2, [kind, space])) go(`shape:${sh}`, navPick(w, 2, sh), shapeLabel(sh));
   const fam = familyOf(w);
   if (fam) for (const [f, turned, , name] of fam.F.tabs) if (!turned && f !== fam.m) go(`tiling:${f}`, nearestMode(w, fam.F.modes[f].filter((v) => NAV[v][0] === kind)), name);
   for (const u of walksThere(w)) go(`side:${NAV[u][4]}`, u, NAV[u][4] === 'grid' ? 'Grid' : 'Cells');
-  if (shape) for (const r of navValues(3, [kind, space, shape])) if (r !== rule) go(`rule:${r}`, navPick(w, 3, r), r);
+  // the shape's other rules as the page shows them (see navRules): a walk by a rule there, its rules' cards (each to it with
+  // that rule); else its card
+  if (shape) for (const r of navValues(3, [kind, space, shape])) if (r !== rule) {
+    const here = kind !== 'Ant' && Object.keys(NAV).find((m) => NAV[m].slice(0, 4).join() === [kind, space, shape, r].join());
+    if (here && MODES[here].net) { for (const c of (rulesForMemo[here] ??= rulesFor(here))) if (!c.why) go(`walkRule:${here}|${c.rule}`, here, `${r} ${c.rule}`, { walkRule: c.rule }); }
+    else go(`rule:${r}`, navPick(w, 3, r), r);
+  }
   const set = (key, field, v, why, words) => { if (s[field] !== v && !why) out.push([key, { ...s, [field]: v }, words]); };  // (a choice greyed there: no click)
   if (MODES[w].life && wants('colours')) for (const k of COLOUR_STEPS) set(`colours:${k}`, 'colours', k, coloursWhyNot(k, w, s.size, s.rule), COLOUR_STEP_NAMES[k]);
   if (battleMode(w)) {
@@ -3672,7 +3678,7 @@ function choicesAt(s, reads = null, coloursMemo = new Map()) {  // (each [key, t
   const m = MODES[w];
   if (m.life && !m.loops && !m.elementary && wants('start')) for (const [start, name] of LIFE_STARTS) set(`start:${start}`, 'start', start, startWhyNot(start, w), name);
   if (m.life && wants('rule')) for (const r of lifeRulesListed(w)) set(`lifeRule:${r.rule}`, 'rule', r.rule, '', r.name);  // (its rules' cards)
-  if (m.net && wants('walkRule')) for (const r of (rulesForMemo[w] ??= rulesFor(w))) set(`walkRule:${r.rule}`, 'walkRule', r.rule, r.why, `${r.name} ${r.rule}`);  // (a walk's rules' cards, those it takes)
+  if (m.net && wants('walkRule')) for (const r of (rulesForMemo[w] ??= rulesFor(w))) set(`walkRule:${w}|${r.rule}`, 'walkRule', r.rule, r.why, `${r.name} ${r.rule}`);  // (a walk's rules' cards, those it takes)
   // its looks (Life's: States, Age, Activity; a walk's cells': Path, Rainbow, Commands, Heatmap), each the look it sets
   if (wants('look')) {
     if (m.life) for (const [look, name] of LIFE_LOOKS) set(`look:${look}`, 'look', look, lookWhyNot(look, w), name);
@@ -3696,11 +3702,10 @@ const changes = (a, b) => modeChanges(a.w, b.w) + SETUP_FIELDS.filter((f) => a[f
 // till one holds some; of these the fewest settings changed, each its clicks [key, words] (budget: setups tried at most).
 // Only the clicks that change what fits reads: its fields, as it reads them (the mode always), so a control judged by few
 // fields searches those only (a hunt's zone, judged on the grid built: none but its mode's)
-const EDGE_FIELD = { kind: 'w', space: 'w', shape: 'w', tiling: 'w', side: 'w', rule: 'w', lifeRule: 'rule' };  // (a click's key: the field it changes)
 function pathsTo(fits, budget = 5000, judgedAt = null) {  // (judgedAt: a control judged on the grid built only, its mode's setups only)
   const start = setupNow(), seen = new Set([setupKey(start)]), w = start.w, kind = !MODES[w].plane && surfaceOf(MODES[w]), now = SPHERES[kind] && figureSize(w);
   const reads = new Set(['w']), coloursMemo = new Map(), judged = (t) => fits(new Proxy(t, { get: (o, f) => { reads.add(f); return o[f]; } }));  // (the fields it reads, as it reads them)
-  const field = (key) => { const f = key.split(':')[0]; return EDGE_FIELD[f] ?? f; };
+  const readChanged = (a, b) => Object.keys(b).some((f) => b[f] !== a[f] && reads.has(f));  // (a click's fields changed, as its setup says them: one fits reads)
   judged(start);
   // (a surface's sizes, the 8 nearest by construction: its mode's, see sizesOf; the size stepper, a click away)
   const sizes = now ? sizesOf(kind, MODES[w]).filter((f) => f !== now).sort((a, b) => Math.abs(a - now) - Math.abs(b - now)).slice(0, 8).map((size) => ['size', { ...start, size }, 'another size']) : [];
@@ -3710,7 +3715,7 @@ function pathsTo(fits, budget = 5000, judgedAt = null) {  // (judgedAt: a contro
     for (const [s, path] of layer) {
       for (const [key, t, words] of [...choicesAt(s, reads, coloursMemo), ...(path.length ? [] : sizes)]) {
         const k = setupKey(t);
-        if (seen.has(k) || !reads.has(field(key)) || (judgedAt && t.w !== judgedAt) || ++tried > budget) continue;
+        if (seen.has(k) || !readChanged(s, t) || (judgedAt && t.w !== judgedAt) || ++tried > budget) continue;
         seen.add(k);
         (judged(t) ? hits : next).push([t, [...path, [key, words]]]);
       }

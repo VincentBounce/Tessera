@@ -211,7 +211,7 @@ button.primary {
 /* the number of digits can be typed: a field that looks like the label until it is hovered or used */
 #loopLabel { color: var(--text-color); }
 #loopLabel.on { color: var(--accent-color); }
-.stepper input { min-width: 0; margin: 0; padding: 6px 8px; cursor: text; }
+.stepper input { min-width: 0; margin: 0; padding: 6px 8px; line-height: 1.8; cursor: text; }
 /* the two fields and the − / + buttons: one height, whatever the font (monospace while editing) */
 #formula, .field input, .stepper button { height: 34px; }
 /* ↵ at the end of a field being edited: clicking it leaves the field, which computes */

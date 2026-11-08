@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.572';
+const VERSION = '0.4.573';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -17575,12 +17575,12 @@ function renderGauges(L) {
 // The gauges' rows (name, colour: none, the theme's live cells'; its bar's share: none, figures only; its figures), built
 // again when their names change (Life's, a walk's)
 // Each stage's last time, in ms, or its words ('cached'): Digits (the worker's), Build (the walk or the start, its mesh with it),
-// Rows (Elementary's worker), 3D image (the card's work done); shown in Display's Times as it is set (setTiming; none: gone)
+// Rows (Elementary's worker), 3D image (the card's work done); shown in the app's page, Stats/debug, as it is set (setTiming; none: gone)
 const timings = {};
 const setTiming = (stage, ms) => { if (ms === undefined) delete timings[stage]; else timings[stage] = ms; paintTimings(); };
 const timed = (stage, make) => { const t0 = performance.now(), out = make(); setTiming(stage, performance.now() - t0); return out; };
-const paintTimings = () => paintGauges(Object.entries(timings).map(([stage, ms]) => [stage, null, null, typeof ms === 'number' ? (ms < 1000 ? `${ms.toFixed(1)} ms` : `${(ms / 1000).toFixed(2)} s`) : ms]), $('timings'));
-// a box of gauges (the stats', Display's Times): a row each, its name, its bar (share: none, null), its number
+const paintTimings = () => $('timings') && paintGauges(Object.entries(timings).map(([stage, ms]) => [stage, null, null, typeof ms === 'number' ? (ms < 1000 ? `${ms.toFixed(1)} ms` : `${(ms / 1000).toFixed(2)} s`) : ms]), $('timings'));
+// a box of gauges (the stats', the app's page's Stats/debug): a row each, its name, its bar (share: none, null), its number
 function paintGauges(rows, box = $('gauges')) {
   const key = rows.map(([name, , share]) => `${name}${share === null ? '' : '|'}`).join();
   if (box.dataset.key !== key) {
@@ -18883,7 +18883,9 @@ function credits(open) {
   $('ruleTuto').dataset.shown = 'credits';
   $('ruleTuto').innerHTML = `<div class="tut-body"><h3>${APP_TITLE} <code>v${VERSION}</code></h3><p>Made by ${AUTHOR}</p><p>Cellular automata on tilings, surfaces and solids, and walks on the digits of numbers: the work of many, here.</p>`
     + CREDITS.map(([title, who]) => `<h4>${title}</h4><p>${who}.</p>`).join('')
-    + `<p><a href="https://github.com/VincentBounce/Tessera#readme" target="_blank" rel="noopener">Its README</a> · <a href="https://github.com/VincentBounce/Tessera" target="_blank" rel="noopener">its code</a></p></div>`;
+    + `<p><a href="https://github.com/VincentBounce/Tessera#readme" target="_blank" rel="noopener">Its README</a> · <a href="https://github.com/VincentBounce/Tessera" target="_blank" rel="noopener">its code</a></p>`
+    + '<div class="form-section"><h4>Stats/debug</h4><div id="timings" class="ranking gauges"></div></div></div>';  // (the walk shown's times, see timings)
+  paintTimings();
   $('ruleTuto').prepend(tutTools({ words: [['Share link', 'Copy the link to what is shown', (e) => shareView(e.currentTarget)], ['Home', 'Back to the start', () => { location.href = location.pathname; }]], close: () => credits(false) }));
 }
 $('appTab').addEventListener('click', () => credits(!creditsShown()));

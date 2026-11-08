@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.641';
+const VERSION = '0.4.642';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -764,14 +764,16 @@ function setPalette(theme) {
 const themeName = () => (document.documentElement.dataset.theme === 'light' ? 'light' : 'dark');
 const gradientAt = (f) => rainbowNow()[Math.round(f * (BANDS - 1))];
 function rainbowHue(h) { return `hsl(${h}, 85%, ${PALETTE.light}%)`; }
+// the app's own rainbow at f, 0 to 1, Ocean or not: from its blue, 190, round by red, 360, to orange (the icons' always)
+const appRainbowAt = (f) => rainbowHue(190 + 200 * f);
 // the rainbow now, GRADIENT filled again in place whenever the theme or Ocean changed (gradientKey: what it was made for):
-// from its blue, 190, round by red, 360, to orange; on Ocean, its lands' colours, green, lime, yellow, ochre to ice white
+// the app's (appRainbowAt); on Ocean, its lands' colours, green, lime, yellow, ochre to ice white
 let gradientKey = null;
 function rainbowNow() {
   const ocean = oceanOn(), key = `${themeName()}|${ocean}`;
   if (key === gradientKey) return GRADIENT;
   gradientKey = key;
-  for (let i = 0; i < BANDS; i++) GRADIENT[i] = ocean ? rampAt([LANDS[0], LANDS[3], LANDS[1], LANDS[2], LANDS[4]], i / (BANDS - 1)) : rainbowHue(190 + (200 * i) / (BANDS - 1));
+  for (let i = 0; i < BANDS; i++) GRADIENT[i] = ocean ? rampAt([LANDS[0], LANDS[3], LANDS[1], LANDS[2], LANDS[4]], i / (BANDS - 1)) : appRainbowAt(i / (BANDS - 1));
   return GRADIENT;
 }
 setPalette(themeName());
@@ -2158,7 +2160,7 @@ function lifeMusic(L) {  // (a generation's moments, see Sound)
 // States: alive and dead cells (Colours: the civilisations' and dead); Age: young (warm) to old (cold), then the fading
 // trail of the dead; Activity: the cells that change most, hot in the middle
 function lifeLookPicture(look) {
-  const g = gradientAt;
+  const g = appRainbowAt;  // (a control's picture: the app's rainbow, never Ocean's)
   if (look === 'mono') return lifeColours > 1 ? swatch([LIFE_COLOURS[0], UNLIT, UNLIT, LIFE_COLOURS[1]]) : statesPicture();  // in colours: a red, a blue
   if (look === 'gradient') return swatch([g(1), g(0.5), g(0), LIFE_TRAIL[Math.floor(LIFE_TRAIL.length / 3)]]);  // warm newborns to cold old cells
   return heatRings(g);
@@ -18675,7 +18677,7 @@ const CELL_MODES = [['path', 'Path', 'The walk’s line in the rainbow along it,
   ['digit', 'Commands', 'A colour per command read: the turn each step took (left blue, right pink, straight on gold), or its way'], ['visits', 'Heatmap', 'The cells by how often the walk comes back to them']];
 const cellModeOf = (mode) => ($('showPath').checked || (!mode.cells && $('colourMode').value === 'gradient') ? 'path' : $('colourMode').value === 'gradient' ? 'cells' : $('colourMode').value);  // (along the grid, the line: Path)  // (a surface's Rainbow: gradient)
 function cellModePicture(look, ant) {  // a 2 × 2 swatch, or the rainbow line over faded cells
-  const theme = themeName(), g = gradientAt;
+  const theme = themeName(), g = appRainbowAt;  // (a control's picture: the app's rainbow, never Ocean's)
   // Path and Cell path: the Grid and Cells tiles' icons (onGrid, onCells) in a faded grey, a rainbow staircase over them: Path its
   // line along the grid's lines, Cell path its cells
   const faded = (name) => `<g fill="none" stroke="currentColor" stroke-width="1.5" opacity="0.3">${ICONS[name].replace(/class="f"/g, 'fill="currentColor"')}</g>`;

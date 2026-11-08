@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.624';
+const VERSION = '0.4.625';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -16766,11 +16766,12 @@ struct Edge { @builtin(position) pos: vec4f, @location(0) facing: f32, @location
 @fragment fn edgeF(i: Edge) -> @location(0) vec4f { if ((u.cut == 1 && i.cutv > 0.0) || i.facing < 0.0) { discard; } return glass(u.edgeRgb, u.edge, i.pos.z); }
 // the path printed on the tiles (see pathSegments): a flat ribbon a segment, in its tile's plane, as wide as the path on screen
 struct Rib { @builtin(position) pos: vec4f, @location(0) col: vec3f, @location(1) cutv: f32 }
-@vertex fn ribbonV(@location(0) quad: vec2f, @location(1) a: vec3f, @location(2) b: vec3f, @location(3) n: vec3f, @location(4) e: f32, @location(5) i: f32) -> Rib {
+@vertex fn ribbonV(@location(0) quad: vec2f, @location(1) a: vec3f, @location(2) b0: vec3f, @location(3) n: vec3f, @location(4) e: f32, @location(5) i: f32) -> Rib {
   var o: Rib;
   if (u.colour == 3 && i > 254.5) { o.pos = vec4f(0.0, 0.0, -2.0, 1.0); o.col = vec3f(0.0); o.cutv = 0.0; return o; }  // (a link of none, see battleLinesOnGpu: off the clip space)
   if (u.colour == 3) { o.col = band(pal, (i + 0.5) / 256.0); } else { o.col = rainbow(i); }  // (a battle's bodies: their colours, see battlePalette)
-  var d = b - a; if (length(d) > 1e-9) { d = normalize(d); } else { d = vec3f(1.0, 0.0, 0.0); }
+  let b = mix(a, b0, select(clamp(u.stepNow - i, 0.0, 1.0), 1.0, u.colour == 3));  // (the step on its way: drawn as far as it glided, as flatPathV)
+  var d = b0 - a; if (length(d) > 1e-9) { d = normalize(d); } else { d = vec3f(1.0, 0.0, 0.0); }
   let side = normalize(cross(d, n)) * u.halfW;
   var on = floor(e / 2.0); if (quad.x < 0.5) { on = e - 2.0 * floor(e / 2.0); }
   let p = mix(a, b, quad.x) + side * quad.y + d * (quad.x * 2.0 - 1.0) * u.halfW * on;
@@ -16794,7 +16795,7 @@ struct Col { @builtin(position) pos: vec4f, @location(0) col: vec4f }
   if (u.colour == 2) { o.col = vec4f(band(pal, (f32(key) + 0.5) / 256.0), 1.0); } else { o.col = vec4f(rainbow(f32(k)), 1.0); }
   let shown = select(clamp((u.stepNow - f32(k)) / u.fadeSteps, 0.0, 1.0), 1.0, u.fadeSteps <= 0.0);  // (step k + 1's line, faded in as its cell: see flatTilesV)
   o.col = vec4f(o.col.rgb * shown, shown);
-  let a = u.view.yz + a0 * u.view.x; let b = u.view.yz + b0 * u.view.x;
+  let a = u.view.yz + a0 * u.view.x; let b = u.view.yz + mix(a0, b0, clamp(u.stepNow - f32(k), 0.0, 1.0)) * u.view.x;  // (the step on its way: drawn as far as it glided)
   var d = b - a; if (length(d) > 1e-4) { d = normalize(d); } else { d = vec2f(1.0, 0.0); }
   o.pos = flatAt(mix(a, b, quad.x) + (vec2f(-d.y, d.x) * quad.y + d * (quad.x * 2.0 - 1.0)) * u.width * 0.5);
   return o;
@@ -17046,7 +17047,7 @@ function gpuSurface(paint, path) {
   const segs = (path || lines) && !P?.ownLines && stepShown > 0 && (D.keys.segs !== walk.wx || D.keys.segsM !== sh.m || D.ribbonOf || D.keys.segsKeyed !== keyed) ? pathSegments(P) : null;
   if (segs && keyed) { const look = stepLook('digit'); for (let o = 10; o < segs.data.length; o += 11) segs.data[o] = look.key(segs.data[o]); }  // (its step's command instead of its step)
   if (segs) { gpuBuffer('ribbon', segs.data); D.ribbonOf = null; D.segsAt = segs.at; D.keys.segs = walk.wx; D.keys.segsM = sh.m; D.keys.segsKeyed = keyed; }
-  const ranges = !(path || lines) || stepShown <= 0 || !(P?.ownLines ? D.segsRanges : D.segsAt) ? [] : !lines ? [[0, D.segsAt[stepShown]]] : P.ownLines ? D.segsRanges
+  const ranges = !(path || lines) || stepShown <= 0 || !(P?.ownLines ? D.segsRanges : D.segsAt) ? [] : !lines ? [[0, D.segsAt[glideAt() > stepShown ? Math.min(stepShown + 1, walk.n) : stepShown]]] : P.ownLines ? D.segsRanges
     : P.standing().map((s) => [D.segsAt[s][Math.max(1, P.from[s])], D.segsAt[s][P.step + 1]]);
   const heads = headsOf(), headFrom = heads.reduce((at, [m]) => [...at, at.at(-1) + m.length / 6], [0]);  // (their corners: each its first, in the one buffer)
   if (heads.length) {
@@ -17074,7 +17075,7 @@ function gpuSurface(paint, path) {
     if (ranges.some(([a, b]) => b > a)) {
       rp.setPipeline(gpuDrawPipe('ribbon', { vertex: 'ribbonV', fragment: 'ribbonF', topology: 'triangle-strip', pass, cull: both ? 'none' : 'back', writes: false,  // (a decal on the tiles: pulled over them, no depth of its own, a head over it, see ogiveOf)
         buffers: [vertexLayout(8, [vertexAttribute(0, 'float32x2')]), vertexLayout(44, [vertexAttribute(1, 'float32x3', 0), vertexAttribute(2, 'float32x3', 12), vertexAttribute(3, 'float32x3', 24), vertexAttribute(4, 'float32', 36), vertexAttribute(5, 'float32', 40)], 'instance')] }));
-      rp.setBindGroup(0, gpuGroup(), [slotOf({ glass: pass, cut, N: Math.max(1, rainbowLength()), loopFrom: walk.loop?.from ?? 0, period: closedLoop() ? walk.loop.period : 0, halfW: surfaceLineWidth() / 2 / view.scale, bias: pathBias, colour: lines || keyed ? 3 : 0 })]);
+      rp.setBindGroup(0, gpuGroup(), [slotOf({ glass: pass, cut, N: Math.max(1, rainbowLength()), loopFrom: walk.loop?.from ?? 0, period: closedLoop() ? walk.loop.period : 0, halfW: surfaceLineWidth() / 2 / view.scale, bias: pathBias, colour: lines || keyed ? 3 : 0, stepNow: glideAt() })]);
       rp.setVertexBuffer(0, D.quad); rp.setVertexBuffer(1, D.ribbon);
       for (const [a, b] of ranges) if (b > a) rp.draw(4, b - a, 0, a);
     }
@@ -17180,7 +17181,7 @@ function gpuFlat(to) {
     rp.setBindGroup(0, gpuGroup(), [gpuView(D.words, slot++, 1, { colour: cells ? 0 : colour, N: Math.max(1, rainbowLength()), loopFrom: walk.loop?.from ?? 0,
       period: closedLoop() ? walk.loop.period : 0, width: cells ? Math.max(0.6, Math.min(s * 0.12, 3)) : Math.max(0.6, Math.min(s * 0.3, 6)), stepNow: glideAt(), fadeSteps: walkFadeSteps() })]);
     rp.setVertexBuffer(0, D.quad); rp.setVertexBuffer(1, D.flatPts, 0); rp.setVertexBuffer(2, D.flatPts, 8); rp.setVertexBuffer(3, D.flatKeys);
-    rp.draw(4, to);
+    rp.draw(4, glideAt() > to ? Math.min(to + 1, walk.n) : to);  // (and the step on its way)
   }
   rp.end();
   device.queue.writeBuffer(D.uni, 0, D.words, 0, 512 * Math.max(1, slot));

@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.642';
+const VERSION = '0.4.643';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -1870,7 +1870,7 @@ function renderViewTiles() {
   const perspective = !ways.on.length ? 'off' : !ways.off.length ? 'on' : `On by default on ${ways.on.join(', ')}\nOff by default on ${ways.off.join(', ')}`;
   const first = { perspective, light: defaultMark('light'), glass: defaultMark('glass'), ocean: defaultMark('ocean') }, why = { ocean: 'Only up to a Quintet: a map has five lands (green, yellow, ochre, lime, ice white).' };
   VIEW_TILES.forEach(([id], k) => setTile(viewTiles[k], { on: $(id).checked, byDefault: first[id], 
-    whyNot: ({ w, stacked }) => viewWhyNot(id, w, stacked) || (id === 'ocean' && w === tabMode() && !oceanFits() ? why.ocean : '') }));  // (its row's: see updateDisplayMenu, by shows)
+    whyNot: ({ w, stacked, colours, teams }) => viewWhyNot(id, w, stacked) || (id === 'ocean' && !oceanFits(w, colours, teams) ? why.ocean : '') }));  // (its row's: see updateDisplayMenu, by shows)
   $('viewTiles').hidden = VIEW_TILES.every(([, row]) => $(row).hidden);
 }
 $('viewTools').addEventListener('mouseenter', renderViewTiles);
@@ -16171,7 +16171,7 @@ const paintLevels = (palette, levelOf, shownOf = null) => (out, n) => {  // (sho
 // gone, by a fixed plane through the middle (see CUT_AXES); the two apart: with both, what is left see-through
 const GLASS_ALPHA = 0.4;  // (a tile's share: a layer behind seen at 60%, two at 36%…)
 const glassOn = () => $('glass').checked && !$('glassRow').hidden;
-const oceanFits = () => (MODES[tabMode()].life ? lifeColours : battleOn() ? walkTeams : 1) <= LANDS.length;  // (its lands a Quintet's at most, Life's colours or a battle's walkers: beyond, greyed)
+const oceanFits = (w = tabMode(), colours = lifeColours, teams = walkTeams) => (MODES[w].life ? colours : battleAt(w, teams) ? teams : 1) <= LANDS.length;  // (its lands a Quintet's at most, Life's colours or a battle's walkers: beyond, greyed; at a setup, see whyNot)
 let oceanPicked = false;  // (Ocean clicked since its default was set: kept, else it follows its default, see DISPLAY_DEFAULTS)
 const oceanOn = () => $('ocean').checked && !$('oceanRow').hidden && oceanFits();
 const blankTile = () => (oceanOn() ? OCEAN : UNLIT);  // (a surface's tile none has painted: Ocean's sea blue, or the theme's)

@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.561';
+const VERSION = '0.4.562';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -17702,7 +17702,7 @@ function updateStats() {
   setTile($('reverse'), { greyed: backAtStart });
   setTile($('step'), { greyed: atEnd() ? 'Already at the end.' : '' });
   $('end').hidden = lifePlayer();  // (Life, a reversible one: its green link and +10k)
-  if (drawing && MODES[tabMode()].plane && drawAway() !== drawToolsAway) renderDrawTools();  // (Draw: its tools at gen 0 only; drawn again as play leaves it or comes back, not each frame: 785 cards)
+  if (drawing && walk.plane && drawAway() !== drawToolsAway) renderDrawTools();  // (Draw: its tools at gen 0 only; drawn again as play leaves it or comes back, not each frame: 785 cards)
   setTile($('end'), { greyed: runStops().some((g) => g > stepShown) ? '' : 'No stop ahead.' });
   // the step or generation shown, its own line, every mode: Step 15,964, Gen 132; its last after it where the run has one
   // (a walk's, Elementary's, Space-time's: see runEnd; Life's, a reversible one's, once its loop is known: see runLoop), its slider's end (see seekFar)

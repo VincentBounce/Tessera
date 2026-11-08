@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.622';
+const VERSION = '0.4.623';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -16770,7 +16770,7 @@ struct Rib { @builtin(position) pos: vec4f, @location(0) col: vec3f, @location(1
   var o: Rib;
   if (u.colour == 3 && i > 254.5) { o.pos = vec4f(0.0, 0.0, -2.0, 1.0); o.col = vec3f(0.0); o.cutv = 0.0; o.shown = 0.0; return o; }  // (a link of none, see battleLinesOnGpu: off the clip space)
   if (u.colour == 3) { o.col = band(pal, (i + 0.5) / 256.0); } else { o.col = rainbow(i); }  // (a battle's bodies: their colours, see battlePalette)
-  o.shown = select(clamp((u.stepNow - i) / u.fadeSteps, 0.0, 1.0), 1.0, u.fadeSteps <= 0.0 || u.colour == 3);  // (step i + 1's segment faded in, as in 2D: see flatPathV)
+  o.shown = select(clamp((u.stepNow - i - 1.0) / u.fadeSteps, 0.0, 1.0), 1.0, u.fadeSteps <= 0.0 || u.colour == 3);  // (step i + 1's segment faded in from it, as in 2D: see flatPathV)
   var d = b - a; if (length(d) > 1e-9) { d = normalize(d); } else { d = vec3f(1.0, 0.0, 0.0); }
   let side = normalize(cross(d, n)) * u.halfW;
   var on = floor(e / 2.0); if (quad.x < 0.5) { on = e - 2.0 * floor(e / 2.0); }
@@ -16793,7 +16793,7 @@ struct Col { @builtin(position) pos: vec4f, @location(0) col: vec4f }
   var o: Col;
   if (key == 255u) { o.pos = vec4f(2.0, 2.0, 2.0, 1.0); return o; }  // (a step that draws nothing: a spiral's 0)
   if (u.colour == 2) { o.col = vec4f(band(pal, (f32(key) + 0.5) / 256.0), 1.0); } else { o.col = vec4f(rainbow(f32(k)), 1.0); }
-  let shown = select(clamp((u.stepNow - f32(k)) / u.fadeSteps, 0.0, 1.0), 1.0, u.fadeSteps <= 0.0);  // (step k + 1's line, faded in as its cell: see flatTilesV)
+  let shown = select(clamp((u.stepNow - f32(k) - 1.0) / u.fadeSteps, 0.0, 1.0), 1.0, u.fadeSteps <= 0.0);  // (step k + 1's line, faded in from it: see flatTilesV)
   o.col = vec4f(o.col.rgb * shown, shown);
   let a = u.view.yz + a0 * u.view.x; let b = u.view.yz + b0 * u.view.x;
   var d = b - a; if (length(d) > 1e-4) { d = normalize(d); } else { d = vec2f(1.0, 0.0); }
@@ -16805,7 +16805,7 @@ struct Col { @builtin(position) pos: vec4f, @location(0) col: vec4f }
   let q = array<u32, 12>(0u, 1u, 2u, 0u, 2u, 3u, 0u, 3u, 4u, 0u, 4u, 5u)[v];
   var col = band(grad, (c.z + 0.5) / 256.0);
   if (u.colour == 2) { col = band(pal, (c.z + 0.5) / 256.0); }
-  let shown = select(clamp((u.stepNow - at + 1.0) / u.fadeSteps, 0.0, 1.0), 1.0, u.fadeSteps <= 0.0);  // (faded in over fadeSteps after the step it came at)
+  let shown = select(clamp((u.stepNow - at) / u.fadeSteps, 0.0, 1.0), 1.0, u.fadeSteps <= 0.0);  // (faded in over fadeSteps from the step it came at)
   let a = u.alphaF * shown;
   o.col = vec4f(col * u.bright * a, a);
   let k = u32(c.w) * 6u + q; let t4 = u.tpl[k / 2u];
@@ -17111,7 +17111,7 @@ function gpuFrame(enc, drawAll) {
 // a step's fade in as the walk plays, its cell's at each visit and its line's (none paused: whole), as Life's dying stages
 // fade; walkFadeSteps: the steps it takes at the speed played
 const WALK_FADE_SECONDS = 0.25;
-const walkFadeSteps = () => (playing || reversing ? Math.max(1, stepsPerSecond() * WALK_FADE_SECONDS) : 0);
+const walkFadeSteps = () => (playing || reversing ? stepsPerSecond() * WALK_FADE_SECONDS : 0);
 function gpuFlat(to) {
   if (cubesWalk()) return gpuCubes(to + 1, walk.wx, walkCubes, walk.maxDist[walk.n]);
   if (walk.rows) { gpuClear(); drawElementary(to); return true; }  // (Elementary: a picture, see drawElementary)

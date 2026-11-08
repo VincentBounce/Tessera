@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.580';
+const VERSION = '0.4.581';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -2210,7 +2210,7 @@ const runLoop = () => {
   if (walk.life) { const s = lifeTime() && walk.life.stable; return s ? { T: s.T, last: s.extinct || s.P === 1 ? s.T : s.T + s.P - 1 } : null; }
   return walk.loop ? { T: walk.loop.from, last: walk.n } : walk.wormEnd ? { T: walk.n, last: walk.n } : null;
 };
-// The run's end, on the step line after its last: its mark always, its words open, the same everywhere, a link in green (see loopLink): its loop
+// The run's end, on the step line after its last: its mark always, its words open, the same everywhere, a link in turquoise (--run-end-color, see loopLink): its loop
 // (↻ every P from step T; → a walk's drift, an ant's highway), its death (✝ at step T: a worm, Life dying out) or frozen
 // (■ from gen T), the length asked (STEPS_GLYPH, its stepper's), a battle's end before its digits (■ the first heads met at step T); '' while none is known (Space-time
 // and Elementary: none)
@@ -2224,7 +2224,7 @@ function endMark() {
     : !o ? [] : walk.wormEnd ? ['✝', `at step ${formatNumber(walk.n)}`] : [walk.loop.drift ? '→' : '↻', `every ${formatNumber(walk.loop.period ?? walk.n - o.T)} from step ${formatNumber(o.T)}`];
   return mark ? loopLink(`${mark}<span class="end-words"> ${words}</span>`) : '';  // (its words: open only, see .end-words)
 }
-// its link, in green (see genLink): to its first step; from there, to its last; an end alone, back to 0
+// its link, in turquoise (see genLink): to its first step; from there, to its last; an end alone, back to 0
 const loopLink = (text) => { const o = runLoop(); return genLink(stepShown !== o.T ? o.T : o.last !== o.T ? o.last : 0, text, 'loop'); };
 // The first: 0, or a reversible one's none (its rule run backwards from its start as far as played: its past); its return
 // found, going back or forth, 0 again (its past folded into it, the timeline shifted onto 0: see foldPast)
@@ -17529,7 +17529,7 @@ function drawActivity() {
   const marks = [], mark = (g, colour, row = null) => marks.push([xOf(g - first, n) + 0.5, colour, row]);
   if (first < 0) mark(0, css.getPropertyValue('--muted'));
   const o = runLoop();
-  if (o) mark(o.T, css.getPropertyValue('--cell'), 2);  // (its loop's first step, or where it stops (frozen, dead, a walk's end): in green as its link in the title)
+  if (o) mark(o.T, css.getPropertyValue('--run-end-color'), 2);  // (its loop's first step, or where it stops (frozen, dead, a walk's end): in its link's colour)
   if (walk.life?.colours === 1 && lifeTime()) {  // (as their gauges: its ordered moments, a reversible one's (see orderMarks), else the most ordered; the most alive, in gold as the curve)
     for (const g of reversibleRun() ? orderMarks(walk.life) : [peaks(walk.life).orderGen]) mark(g, css.getPropertyValue('--sector'), 1);
     mark(peaks(walk.life).aliveGen, accent, 0);

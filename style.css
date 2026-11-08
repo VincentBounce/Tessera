@@ -52,16 +52,12 @@
 * { box-sizing: border-box; }
 [hidden] { display: none !important; }
 
-/* the staircase (𓊍, the length asked's unit) 1.4 times its line wherever it is written, an input's text too: by a font
-   face for that one character only, first in the page's fonts (none of these fonts: 𓊍 as the system draws it) */
-@font-face { font-family: 'Stairs'; src: local('Noto Sans Egyptian Hieroglyphs'), local('NotoSansEgyptianHieroglyphs-Regular'), local('Segoe UI Historic'); unicode-range: U+1328D; size-adjust: 140%; }
-
 html, body {
   margin: 0;
   height: 100%;
   background: var(--page-background);
   color: var(--text-color);
-  font: var(--text-size)/1.4 'Stairs', system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font: var(--text-size)/1.4 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
 }
 
 body { display: flex; flex-direction: column; font-variant-numeric: tabular-nums; }  /* every digit as wide as the others, everywhere: numbers that change (a step, a count) never jump */

@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.553';
+const VERSION = '0.4.554';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -12311,7 +12311,9 @@ function renderRuleSection() {
 let ruleFittedTo = null;
 const shapeRules = {};  // each shape's last rule, by its mark: back on a shape, its rule again (as its size and colours: the last picked)
 // a rule's text fits a grid's automaton: its kind (blocks: a block rule fitting them only; loops, a table; Elementary, Wolfram's;
-// else none of them) and its letters, if any (Callahan's hexagons, Hensel's squares on the plane; v: any)
+// else none of them) and its letters, if any (Callahan's hexagons, Hensel's squares on the plane; v: any). Not its counts: a
+// count past the grid's neighbours never happens there (B9 on squares plays as B), the rule as deterministic, kept as typed
+// from grid to grid
 function ruleFits(text, mode) {
   const r = parseRule(text);
   if (!r) return false;

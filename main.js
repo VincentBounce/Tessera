@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.591';
+const VERSION = '0.4.592';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -2697,11 +2697,11 @@ const withIcons = (text) => text.replace(/🎲/g, icon('dice')).replace(/🐉/g,
  */
 
 /* ---- 4.1 Vocabulary ----------------------------------------------------------------------- */
-const FORMULA_NAMES = {  // name: [kind, symbol shown]
+const FORMULA_NAMES = {  // name: [kind, symbol shown, patterned: its digits a pattern by their definition (automatic, morphic), see patternAreaCap]
   pi: ['real', 'π'], e: ['real', 'e'], phi: ['real', 'φ'], gamma: ['real', 'γ'], catalan: ['real', 'G'],
   erdos: ['real', 'E'], rho: ['real', 'ρ'],
-  champernowne: ['seq', 'C'], primes: ['seq', '▮ p'], primegaps: ['seq', 'gₙ'], dragon: ['seq', '🐉'],
-  thuemorse: ['seq', 'τ'], rabbit: ['seq', 'F'], rudinshapiro: ['seq', 'RS'], kolakoski: ['seq', 'K'],
+  champernowne: ['seq', 'C'], primes: ['seq', '▮ p'], primegaps: ['seq', 'gₙ'], dragon: ['seq', '🐉', true],
+  thuemorse: ['seq', 'τ', true], rabbit: ['seq', 'F', true], rudinshapiro: ['seq', 'RS', true], kolakoski: ['seq', 'K'],  // (Kolakoski: no pattern proved)
 };
 const FORMULA_FUNCTIONS = { sqrt: 1, cbrt: 1, root: 2, ln: 1, exp: 1, log: 2, zeta: 1, primorial: 1, random: 1, randprime: 2 };
 const APPROX = { pi: Math.PI, e: Math.E, phi: (1 + Math.sqrt(5)) / 2, gamma: 0.5772156649, catalan: 0.9159655942,
@@ -3132,7 +3132,8 @@ function setCurrent(entry, base, kind, ratio = null) {
   // total: how many digits the whole number has (a whole number's are only sent up to the count used)
   digitsComputed = { head, digits: entry.digits, base, total: entry.total ?? head.length + entry.digits.length, mode: tabMode(),
               whole: entry.total !== undefined, formula: formulaInUse,  // whole: a whole number, its digits all known
-              fraction: kind === 'rat', ratio };  // its digits end up repeating (see torusLoops)
+              fraction: kind === 'rat', ratio,  // its digits end up repeating (see torusLoops)
+              patterned: kind === 'rat' || !!FORMULA_NAMES[formulaInUse]?.[2] };  // its digits a pattern: a fraction's period, a dragon's folds (see patternAreaCap)
 }
 // an integer part's digits (its text, without its leading zeros), one a byte
 function headDigits(intPart, base) {
@@ -15879,12 +15880,13 @@ function firstVisits() {
 // Area on a surface, as for a 2D walk (see Area in 11.5): a region is an area while it is a disc (its Euler
 // characteristic 1, see enclosedFrom): a region that goes round the surface (a torus' band, its χ 0) or holds the walk
 // (the rest of a torus, χ −1) is none. A sphere's regions are all discs: the largest at the end plays the outside.
-// A fraction along the grid: only its areas of FRACTION_AREA tiles at most (see fractionAreaCap).
-// A fraction's digits repeat: along the grid, its walk draws the same figure round and round, its strands closing off
-// big parts of the surface (half a sphere, the whole of a Klein bottle) whatever the figure: only the small areas its
-// figure rings are filled, FRACTION_AREA tiles at most (Area's tooltip says so)
-const FRACTION_AREA = 2;
-const fractionAreaCap = () => (walk.stepTiles && digitsComputed?.fraction ? FRACTION_AREA : Infinity);
+// A number with a pattern along the grid: only its areas of PATTERN_AREA tiles at most (see patternAreaCap).
+// A number with a pattern (a fraction's digits repeat; a dragon's, a Thue–Morse's, a rabbit's, a Rudin–Shapiro's are made
+// by a rule, see FORMULA_NAMES): along the grid, its walk draws the same figure round and round, its strands closing off
+// big parts of the surface (half a sphere, the whole of a Klein bottle, all of a torus: the dragon's) whatever the figure:
+// only the small areas its figure rings are filled, PATTERN_AREA tiles at most (Area's tooltip says so)
+const PATTERN_AREA = 2;
+const patternAreaCap = () => (walk.stepTiles && digitsComputed?.patterned ? PATTERN_AREA : Infinity);
 // A walk along the grid (on cells none: Area greyed, see areaWhyNot): the regions are made of tiles, two neighbouring
 // tiles being separated once the walk has gone along the edge between them, so the areas follow the path exactly; their
 // faces, the corners all round
@@ -15898,7 +15900,7 @@ function areaSteps() {
     const j = index.get(G.key(walk.vert[i], walk.vert[i + 1]));
     if (j !== undefined && crossed[j] < 0) crossed[j] = i;
   }
-  return (areaData = enclosedFrom(g.n, G.nv, eu, ev, faces, crossed, sphere, fractionAreaCap()));
+  return (areaData = enclosedFrom(g.n, G.nv, eu, ev, faces, crossed, sphere, patternAreaCap()));
 }
 
 // The step from which each node is enclosed (−1: never), for links eu[e]–ev[e] cut at step crossed[e] (−1: never),
@@ -18613,7 +18615,7 @@ function renderAreaModes() {
   const light = shows('translucent', tabMode());
   const shown = (v) => (v === 'light' && !light ? 'plain' : v);  // (Light only over a line: else Plain)
   const now = AREA_MODES.findIndex(([look]) => look === shown($('area').value)), first = shown(defaultOf('area', tabMode()));
-  notchRow($('areaModes'), 'Area', 'The areas the walk closes, filled', AREA_MODES.map(([look, name, words]) => [name, `${words}${look === 'light' && !light ? ' · over a line only: Plain here' : ''}${look !== 'empty' && fractionAreaCap() < Infinity ? ` · a fraction: its digits repeat, its walk goes round its figure again and again, closing off big parts of the surface; only its small areas are filled, ${FRACTION_AREA} tiles at most` : ''}`]), now, AREA_MODES.findIndex(([look]) => look === first),
+  notchRow($('areaModes'), 'Area', 'The areas the walk closes, filled', AREA_MODES.map(([look, name, words]) => [name, `${words}${look === 'light' && !light ? ' · over a line only: Plain here' : ''}${look !== 'empty' && patternAreaCap() < Infinity ? ` · a number with a pattern (a fraction, a dragon…): its walk goes round its figure again and again, closing off big parts of the surface; only its small areas are filled, ${PATTERN_AREA} tiles at most` : ''}`]), now, AREA_MODES.findIndex(([look]) => look === first),
     (k) => { if ($('area').value !== AREA_MODES[k][0]) { $('area').value = AREA_MODES[k][0]; $('area').dispatchEvent(new Event('change')); } }, ({ w, teams, battleRule: p, look }) => areaWhyNot(w, teams, p, look), false);  // (let go: the row drawn again)
 }
 // The looks of a 2D walk on cells, as square buttons: Path, the rainbow line over its cells faded (an ant's over its

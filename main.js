@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.643';
+const VERSION = '0.4.644';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -723,10 +723,10 @@ const PALETTES = {
   // digits: for the walks whose digits are no direction, in the same colours; grey: a spiral's 0
   dark: { light: 60, digits: ['#4f7bff', '#f0609f', '#f2b630', '#2fbdb7', '#9270f5', '#7fc244', '#f28042', '#d466f0'], grey: '#e6edf3', mono: '#f0b429',
           directions: { '←': '#4f7bff', '↑': '#f2b630', '→': '#f0609f', '↓': '#2fbdb7', '↖': '#7fc244', '↗': '#d466f0', '↘': '#f28042', '↙': '#9270f5', '⊙': '#f06b6b', '⊗': '#45c8f0' },
-          unlit: '#1f2630', ocean: '#1f63b8', lands: ['#2ea833', '#e0b812', '#e87a18', '#a3d01a', '#e8edf0'], dying: '#6b7f99', alive: '#e6edf3', edgeRgb: [255, 255, 255], edgeAlpha: 0.25, shade: 0.6, fadeEdges: true },
+          unlit: '#1f2630', ocean: '#1f63b8', lands: ['#2ea833', '#e0b812', '#e87a18', '#a3d01a', '#e8edf0'], glacier: '#4cc9d6', dying: '#6b7f99', alive: '#e6edf3', edgeRgb: [255, 255, 255], edgeAlpha: 0.25, shade: 0.6, fadeEdges: true },
   light: { light: 48, digits: ['#2f5bea', '#e8438a', '#e0a100', '#13a8a2', '#7c4dff', '#5fa82a', '#f0702a', '#c03fe0'], grey: '#6e7781', mono: '#bf8700',
            directions: { '←': '#2f5bea', '↑': '#e0a100', '→': '#e8438a', '↓': '#13a8a2', '↖': '#5fa82a', '↗': '#c03fe0', '↘': '#f0702a', '↙': '#7c4dff', '⊙': '#e5484d', '⊗': '#1aa3d6' },
-           unlit: '#eef1f5', ocean: '#2a7de1', lands: ['#34c23a', '#f7cf1a', '#ff8a1f', '#b5e61d', '#ffffff'], dying: '#7d8896', alive: '#1f2328', edgeRgb: [0, 0, 0], edgeAlpha: 0.11, shade: 0.35, fadeEdges: true, tileLift: 0.22 },
+           unlit: '#eef1f5', ocean: '#2a7de1', lands: ['#34c23a', '#f7cf1a', '#ff8a1f', '#b5e61d', '#ffffff'], glacier: '#5fd6e3', dying: '#7d8896', alive: '#1f2328', edgeRgb: [0, 0, 0], edgeAlpha: 0.11, shade: 0.35, fadeEdges: true, tileLift: 0.22 },
 };
 const hexRgb = (c) => [1, 3, 5].map((i) => parseInt(c.slice(i, i + 2), 16));  // [r, g, b] of a #rrggbb colour (any CSS colour: see rgbOf)
 const GRADIENT = [], DIGIT_COLORS = [], LIFE_TRAIL = [], DIRECTION_COLOURS = {};
@@ -766,14 +766,16 @@ const gradientAt = (f) => rainbowNow()[Math.round(f * (BANDS - 1))];
 function rainbowHue(h) { return `hsl(${h}, 85%, ${PALETTE.light}%)`; }
 // the app's own rainbow at f, 0 to 1, Ocean or not: from its blue, 190, round by red, 360, to orange (the icons' always)
 const appRainbowAt = (f) => rainbowHue(190 + 200 * f);
+// Earth's (Ocean's switch): its lands green, lime, yellow, ochre, then a glacier's cyan, to ice white, a theme's (see PALETTES)
+const earthColours = (P = PALETTE) => [P.lands[0], P.lands[3], P.lands[1], P.lands[2], P.glacier, P.lands[4]];
 // the rainbow now, GRADIENT filled again in place whenever the theme or Ocean changed (gradientKey: what it was made for):
-// the app's (appRainbowAt); on Ocean, its lands' colours, green, lime, yellow, ochre to ice white
+// the app's (appRainbowAt); on Ocean, Earth's colours (earthColours)
 let gradientKey = null;
 function rainbowNow() {
   const ocean = oceanOn(), key = `${themeName()}|${ocean}`;
   if (key === gradientKey) return GRADIENT;
   gradientKey = key;
-  for (let i = 0; i < BANDS; i++) GRADIENT[i] = ocean ? rampAt([LANDS[0], LANDS[3], LANDS[1], LANDS[2], LANDS[4]], i / (BANDS - 1)) : appRainbowAt(i / (BANDS - 1));
+  for (let i = 0; i < BANDS; i++) GRADIENT[i] = ocean ? rampAt(earthColours(), i / (BANDS - 1)) : appRainbowAt(i / (BANDS - 1));
   return GRADIENT;
 }
 setPalette(themeName());
@@ -1855,7 +1857,7 @@ function updateDisplayMenu() {
 // The view's switches, standard tiles (toggle): each its checkbox's (the source, kept out of sight), on as it is checked,
 // greyed where its row is hidden (it applies in 3D only); drawn again with the
 // display box and when the box opens (a hand rotation, a new mode: their boxes changed)
-const VIEW_TILES = [['perspective', 'perspectiveRow', 'perspective', 'Perspective', 'Perspective: what is nearer looks bigger'], ['light', 'lightRow', 'sideLight', 'Side light'], ['glass', 'glassRow', 'glass', 'Glass'], ['ocean', 'oceanRow', 'ocean', 'Ocean']];
+const VIEW_TILES = [['perspective', 'perspectiveRow', 'perspective', 'Perspective', 'Perspective: what is nearer looks bigger'], ['light', 'lightRow', 'sideLight', 'Side light'], ['glass', 'glassRow', 'glass', 'Glass'], ['ocean', 'oceanRow', 'earth', 'Earth']];
 let viewTiles = null;
 function renderViewTiles() {
   viewTiles ??= VIEW_TILES.map(([id, row, pic, text, title]) => tile({ pic: icon(pic), text, title: title ?? $(row).title, toggle: true,
@@ -2599,7 +2601,7 @@ const ICONS = (() => {
     sideLight: svgPath('M2.5 10.2H7.5V13.8H2.5Z') + svgPath('M7.5 9.6L10 8.2V15.8L7.5 14.4Z') + svgPath('M12.5 8.6L21 4.8M13 12H21.5M12.5 15.4L21 19.2'),
     cut: svgPath('M3 12A9 9 0 0 1 21 12Z') + svgPath('M2 15.5H22'),  // a ball's back half, the cut's line
     glass: svgPath('M3 12A9 9 0 1 0 21 12A9 9 0 1 0 3 12Z') + svgPath('M3 12A9 3.5 0 0 0 21 12A9 3.5 0 0 0 3 12Z'),  // a ball, its equator seen through
-    ocean: svgPath('M3 9C5 7 7 7 9 9S13 11 15 9S19 7 21 9M3 15C5 13 7 13 9 15S13 17 15 15S19 13 21 15'),  // two waves
+    earth: earthColours(PALETTES.light).map((c, i) => `<rect x="${3 + 3 * i}" y="4" width="3" height="16" fill="${c}"/>`).join(''),  // Earth's six colours, the light page's (on a dark one too)
     viewDefault: svgPath('M12 3L20 7.5V16.5L12 21L4 16.5V7.5Z') + svgPath('M4 7.5L12 12L20 7.5M12 12V21'),  // (a cube from its usual corner)
     upright: svgPath('M12 3V17M8 7L12 3L16 7M4 20.5H20'),  // (up, over a level line)
     free: svgPath('M12 7L16.3 9.5V14.5L12 17L7.7 14.5V9.5Z') + svgPath('M12 7V12M7.7 14.5L12 12L16.3 14.5')  // (a cube turned any way by hand: two arrows round it)

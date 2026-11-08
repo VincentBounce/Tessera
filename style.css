@@ -69,8 +69,8 @@ header { padding: 0; border-bottom: 1px solid var(--border); }  /* one hairline,
 .header-end .max-steps { margin: 0; width: 176px; flex: none; }  /* the length asked: one width whatever it says (see compactCount) */
 .header-end .max-steps .field input { padding-right: 32px; }  /* (room for its unit, inside its box) */
 .header-end .max-steps .field input:not(:focus) { text-align: right; }  /* (its number against its unit; typed, as any field) */
-.max-steps .steps-glyph { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); display: flex; font-size: 20px; line-height: 1; color: var(--accent); pointer-events: none; }  /* its unit, steps, in its words' gold */
-.max-steps .field:focus-within .steps-glyph { display: none; }  /* (typing: the number alone, Enter's ↵ there) */
+.steps-glyph { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); display: flex; font-size: 20px; line-height: 1; color: var(--accent); pointer-events: none; }  /* its unit, steps, in its words' gold */
+.field:focus-within .steps-glyph { display: none; }  /* (typing: the number alone, Enter's ↵ there) */
 
 main { flex: 1; display: flex; min-height: 0; }
 
@@ -527,6 +527,9 @@ button.wide.active, .head-btn.active { border-color: var(--accent); color: var(-
 .speed-stepper button { width: 48px; }
 .speed-stepper input, .speed-stepper button { height: 32px; }  /* as high as the buttons beside */
 .speed-stepper input { color: var(--text-color); font-weight: 400; }
+.speed-stepper .field input { padding-right: 46px; }  /* (room for its unit, 𓊍/s, inside its box, as the length asked's) */
+.speed-stepper .field input:not(:focus) { text-align: right; }
+.steps-glyph .per { font-size: var(--text-size); }  /* (a unit's /s, beside its staircase: the field's size) */
 /* the steps, on their own line above the buttons; the speed after ⏭, between a turtle and a rabbit */
 .speed-icon { flex: none; width: 23px; height: 23px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
 

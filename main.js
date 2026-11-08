@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.604';
+const VERSION = '0.4.605';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -15182,7 +15182,7 @@ const stepsPerSecond = () => evenSpeed(speed);
 // a speed in words: whole from 10 a second, else to a tenth (5.9 at 165 Hz)
 const speedWords = (v) => formatNumber(v < 10 ? Math.round(v * 10) / 10 : Math.round(v));
 function updateSpeedLabel() {
-  if (document.activeElement !== $('speedLabel')) $('speedLabel').value = `${stepsPerSecond() !== speed ? '≈' : ''}${speedWords(stepsPerSecond())}${STEPS_GLYPH}/s`;  // (as played, at the screen's rhythm: ≈ when not as typed, see valueInUse)
+  if (document.activeElement !== $('speedLabel')) $('speedLabel').value = `${stepsPerSecond() !== speed ? '≈' : ''}${speedWords(stepsPerSecond())}`;  // (as played, at the screen's rhythm: ≈ when not as typed, see valueInUse; its unit 𓊍/s beside, see speedGlyph)
   setTile($('slower'), { greyed: speed <= 1 ? 'Already the slowest.' : '' });
   setTile($('faster'), { greyed: speed >= SPEEDS.at(-1) ? 'Already the fastest.' : '' });
 }
@@ -18058,6 +18058,7 @@ for (const b of document.querySelectorAll('.field .enter')) {
 }
 $('digitsLabel').addEventListener('input', () => { $('digitsLabel').value = $('digitsLabel').value.replace(/\D/g, ''); });
 $('stepsGlyph').textContent = STEPS_GLYPH;  // (the length asked's unit, beside it)
+$('speedGlyph').innerHTML = `${STEPS_GLYPH}<span class="per">/s</span>`;  // (the speed's: steps a second, as the length asked's staircase)
 $('digitsLabel').addEventListener('focus', () => { $('digitsLabel').value = String(randomPrimeSize() ?? lengthAsked()); $('digitsLabel').select(); });  // (to type: the exact number, picked)
 $('digitsLabel').addEventListener('blur', syncDigitsStepper);  // "20,000 digits" again
 $('digitsLabel').addEventListener('change', () => {
@@ -18091,7 +18092,7 @@ $('end').addEventListener('click', () => goStop(1));
 $('slower').addEventListener('click', () => setSpeed(SPEEDS.findLast((v) => v < speed) ?? 1));
 $('faster').addEventListener('click', () => setSpeed(SPEEDS.find((v) => v > speed) ?? SPEEDS.at(-1)));
 $('speedLabel').addEventListener('input', () => { $('speedLabel').value = $('speedLabel').value.replace(/\D/g, ''); });
-$('speedLabel').addEventListener('blur', updateSpeedLabel);  // ("≈72𓊍/s" again: as played)
+$('speedLabel').addEventListener('blur', updateSpeedLabel);  // ("≈72" again: as played)
 $('speedLabel').addEventListener('change', () => { if ($('speedLabel').value) setSpeed(Number($('speedLabel').value)); });
 // the slider's end: a walk's last step; a run's (a Game of Life's, a reversible one's), its loop's last once known, else the
 // furthest played (its record's: Begin keeps it, see lifeReset)

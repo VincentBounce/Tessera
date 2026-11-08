@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.649';
+const VERSION = '0.4.650';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -7904,7 +7904,7 @@ const battleRuleWhyNot = (kind, v) => {
   return !battleMode(v) ? 'There is no battle here.' : kind === 'cut' || kind === 'landStop' || cells !== !!MODES[v].grid ? '' : cells ? 'This rule plays on cells; this walk goes along the grid.' : 'This rule plays along the grid; this walk is on cells.';
 };
 const startsWayCan = (way, w, size, teams = walkTeams) => way !== 'centred' || groupedCan(w, size, teams);
-const startsWayNow = () => (battleOn() && startsWayCan(battleStartsWay) ? battleStartsWay : 'symmetric');
+const startsWayNow = () => (battleOn() && startsWayCan(battleStartsWay, tabMode()) ? battleStartsWay : 'symmetric');
 // the starts' way played in a setup (see setupNow): its own where a battle can have it, else Symmetric (as startsWayNow)
 const startsWayIn = ({ w, size = null, teams = walkTeams, startsWay = battleStartsWay }) => (battleAt(w, teams, size ?? undefined) && startsWayCan(startsWay, w, size ?? undefined, teams) ? startsWay : 'symmetric');  // (the one played: Symmetric where the one picked cannot be)
 // K walkers' starts anywhere, each its own place, drawn from seed: along the grid a corner and the corner it comes from,

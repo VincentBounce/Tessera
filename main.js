@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.547';
+const VERSION = '0.4.548';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -3663,7 +3663,7 @@ function choicesAt(s, reads = null) {  // (each [key, the setup it leads to, its
   }
   if (wants('stacked') && spaceTimeApplies(w)) set('stacked', 'stacked', !s.stacked, '', 'Stacks');  // (Stacks, a switch: on or off)
   if (m.plane && m.life && !APERIODIC[m.plane] && wants('outline')) for (const [shape, torus, text] of OUTLINES) if (outlineOf(m.plane, shape, torus) === shape) set(`outline:${shape}-${torus ? 'torus' : 'walled'}`, 'outline', `${shape}|${torus ? 1 : 0}`, '', text);  // (its outline tiles)
-  if (m.life && wants('newcomer')) set('newcomer', 'newcomer', !s.newcomer, newcomerCan(s.colours, w, s.size, s.start) ? '' : 'none', 'Newcomer');  // (a switch where it can be)
+  if (m.life && wants('newcomer')) set('newcomer', 'newcomer', !s.newcomer, newcomerCan(s.colours, w, s.size, s.start, s.rule) ? '' : 'none', 'Newcomer');  // (a switch where it can be)
   const starts = wants('startNo') && w === $('mode').value && modeStarts();  // (a start's −, +: at the mode shown, its starts' list known there)
   if (starts) { set('startNo:-1', 'startNo', s.startNo - 1, s.startNo <= 1 ? 'none' : '', 'Previous start'); set('startNo:+1', 'startNo', s.startNo + 1, s.startNo >= starts.length ? 'none' : '', 'Next start'); }
   if (wants('zone') && w === walk.mode && s.colours === lifeColours && s.start === 'random' && huntOn()) for (const [zone, fits] of Object.entries(huntFits())) if (fits && zone !== 'custom') set(`zone:${zone}`, 'zone', zone, '', HUNT_ZONES[zone][1]);
@@ -10726,8 +10726,8 @@ let surfaceDraw = false;  // a surface's Draw tab open: its patterns shown, grey
 // the rule, the start and its zone (see renderPlaneRow, renderHunt)
 // a symmetry at a mode: the walk shown's, by its grid (and its block rule, see symmetriesHere); another's, on the plane, by its
 // grid at the side picked (a block rule's known once its grid is built: none there)
-const symmetryAllowed = (y, v, { start, zone, colours = lifeColours, newcomer: n = newcomer, size = null, outline: outlineSet } = {}) => {
-  const parts = colours - (n && newcomerCan(colours, v, size, start ?? plane.start) ? 1 : 0);  // (a setup's colours' parts: Newcomer's, one fewer)
+const symmetryAllowed = (y, v, { start, zone, colours = lifeColours, newcomer: n = newcomer, size = null, outline: outlineSet, rule } = {}) => {
+  const parts = colours - (n && newcomerCan(colours, v, size, start ?? plane.start, rule) ? 1 : 0);  // (a setup's colours' parts: Newcomer's, one fewer)
   const m = MODES[v], outline = m.plane && outlineIn(outlineSet, m.plane), k = m.plane && planeKind(m.plane, outline), by = { start, zone, K: parts === lifeColours - (newcomerOn() ? 1 : 0) ? undefined : parts, outline };  // (the game's where they are its)
   if (v === walk.mode && walk.plane && outline === outlineOf(m.plane)) return symmetriesHere(walk.plane.kind, walk.plane.W, undefined, by).includes(y);
   if (!m.plane || m.elementary || m.margolus || !m.life) return y === 'none';
@@ -11416,7 +11416,7 @@ const colourMixed = (zone = hunt.zone) => colourMix && lifeColours > 1 && mixabl
 // Newcomer, a switch: the teams below's start (Trio's: Duel's, laid as Duel lays them), the last colour none at first, born only
 // of a tie between the others (the colour missing, see colourMissing); where a start lays teams (a soup's zones, Text); at
 // mode w and size, its figure made only when its teams' fit is asked (a mesh: the graph's search asks every mode round)
-const newcomerCan = (colours = lifeColours, w = $('mode').value, size = null, start = plane.start) => colours > 2 && colourMissing(colours) && (start === 'random' || start === 'text') && coloursFit(colours - 1, pickedFigure(w, size));
+const newcomerCan = (colours = lifeColours, w = $('mode').value, size = null, start = plane.start, rule = $('lifeRule').value) => colours > 2 && colourMissing(colours, rule) && (start === 'random' || start === 'text') && coloursFit(colours - 1, pickedFigure(w, size));
 const newcomerWhere = (colours) => `Not in Solo, Duel, Digits or Draw, nor where the teams picked have no birth of the missing colour (no mark in their corner)${colours > 2 && !coloursFit(colours - 1) ? `; ${COLOUR_STEP_NAMES[colours - 1] ?? `${colours - 1} teams`} does not fit here` : ''}.`;
 // Mixed's greyed words (see mixable)
 const MIXED_WHERE = 'Not in Solo, Replicators, Text or Draw, nor in the hunt zones that lay each colour\'s own picture or part (Icon, Punk, Emoji, Famous, Anywhere, Realm, Mirror).';
@@ -11534,9 +11534,9 @@ const colourFairOwn = (K, { mode, g } = pickedFigure()) => {
 };
 // a count of colours whose battles can bring a colour back: the rule's birth with c live neighbours that K − 1 colours can share
 // with a tie for the most (the one missing born, see lifeStep): each at least one, the e = c − (K − 1) left over not 1 (2 of 3
-// colours: e even); with letters, any of theirs with c
-const colourMissing = (K) => {
-  const r = parseRule(ruleBody($('lifeRule').value));
+// colours: e even); with letters, any of theirs with c (rule: a setup's, the field's by default)
+const colourMissing = (K, rule = $('lifeRule').value) => {
+  const r = parseRule(ruleBody(rule));
   if (K < 3 || !r) return false;
   const counts = r.iso === 'vertex' ? [...Array(16).keys()].filter((c) => [0, 1, 2, 3].some((k) => r.B[16 + 4 * c + k]))  // (any of its ways)
     : r.iso ? [...Array(1 << (r.iso === 'hensel' ? 8 : 6)).keys()].filter((m) => r.B[16 + m]).map(bitCount) : [...Array(16).keys()].filter((c) => r.B[c]);
@@ -11554,7 +11554,7 @@ function renderColours() {
       title: 'The colours placed as one colour is (one patch, a soup), each cell a colour at random', toggle: true, byDefault: 'off', on: colourMixed(), whyNot: ({ w, colours = lifeColours, start = plane.start, zone = hunt.zone }) => (colours > 1 && mixable(zone, MODES[w], start) ? '' : MIXED_WHERE), click: () => { colourMix = !colourMix; compute(); } }),
     // Newcomer, a switch (see newcomerCan)
     tile({ pic: colourBlock(Math.max(3, lifeColours), true), text: 'Newcomer', toggle: true, byDefault: 'off', choice: 'newcomer', on: newcomerOn(), click: () => { newcomer = !newcomer; compute(); },
-      whyNot: ({ w, size, colours = lifeColours, start = plane.start }) => (newcomerCan(colours, w, size, start) ? '' : newcomerWhere(colours)),
+      whyNot: ({ w, size, colours = lifeColours, start = plane.start, rule = $('lifeRule').value }) => (newcomerCan(colours, w, size, start, rule) ? '' : newcomerWhere(colours)),
       title: lifeColours > 2 ? `${COLOUR_STEP_NAMES[lifeColours - 1] ?? `${lifeColours - 1} teams`} as it starts, and ${teamName(lifeColours - 1)} a newcomer: none at first, born of a tie between the others (the colour missing)` : 'The teams below\'s start, and the last colour a newcomer: none at first, born of a tie between the others (the colour missing)' }));
 
 }

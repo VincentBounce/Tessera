@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.551';
+const VERSION = '0.4.552';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -8781,10 +8781,10 @@ function renderBattleHunt() {
   const goal = huntGoal(), [, , , words, label, score, figure] = HUNT_RANKS[goal];
   const rank = ([what, [pic, text, title]]) => tile({ pic: icon(pic), text, title, on: what === goal, whyNot: ({ w, battleRule: p = battleRule }) => (what !== 'even' || BATTLE_RULES[battleRuleInUse(w, p)][0] !== 'cut' ? '' : 'Cut keeps bodies only: there is no land.'),
     byDefault: what === 'longest' ? 'yes' : '', click: () => { if (huntRank !== what) { huntRank = what; stopBattleHunt(); renderBattleHunt(); } } });
-  $('battleHuntVary').replaceChildren(vary('formulas', 'Formulas', 'The hunt draws the walkers\' numbers (else those in the fields)'),
+  $('battleHuntVary').replaceChildren(vary('formulas', 'Numbers', 'The hunt draws the walkers\' numbers (else those in the fields)'),
     vary('starts', 'Starts', 'The hunt draws the start too: Symmetric\'s number, Random\'s draw (else the start shown)', startsWayNow() !== 'centred', 'in Centred: its centres all alike, nothing to vary'));
   $('battleHuntRank').replaceChildren(tileGroup(Object.entries(HUNT_RANKS).map(rank), true));
-  setTile($('battleHuntBtn'), { greyed: !huntVary.formulas && !huntStarts() && huntOrderCount() < 2 ? 'It varies nothing: Formulas and Starts are off, and a duel has one order.' : '' });
+  setTile($('battleHuntBtn'), { greyed: !huntVary.formulas && !huntStarts() && huntOrderCount() < 2 ? 'It varies nothing: Numbers and Starts are off, and a duel has one order.' : '' });
   $('battleHuntBtn').title = 'Battles fought one after another, each set once: what the switches above vary drawn at random';
   $('battleHuntBtn').dataset.limits = [`Each battle up to ${formatNumber(digitsNeeded())} steps (${STEPS_GLYPH}, the length asked)`,
     huntVary.formulas && `Numbers: the ${BATTLE_CARDS.length} cards and the roots √n, n up to 9,999 (${formatNumber(BATTLE_CARDS.length + DRAWN_ROOTS.length)})`,
@@ -11420,7 +11420,7 @@ const colourMixed = (zone = hunt.zone) => colourMix && lifeColours > 1 && mixabl
 const newcomerCan = (colours = lifeColours, w = $('mode').value, size = null, start = plane.start, rule = $('lifeRule').value) => colours > 2 && colourMissing(colours, rule) && (start === 'random' || start === 'text') && coloursFit(colours - 1, pickedFigure(w, size), rule);
 const newcomerWhere = (colours) => `Not in Solo, Duel, Digits or Draw, nor where the teams picked have no birth of the missing colour (no mark in their corner)${colours > 2 && !coloursFit(colours - 1) ? `; ${COLOUR_STEP_NAMES[colours - 1] ?? `${colours - 1} teams`} does not fit here` : ''}.`;
 // Mixed's greyed words (see mixable)
-const MIXED_WHERE = 'Not in Solo, Replicators, Text or Draw, nor in the hunt zones that lay each colour\'s own picture or part (Icon, Punk, Emoji, Famous, Anywhere, Realm, Mirror).';
+const MIXED_WHERE = 'Not in Solo, Replicators, Text or Draw, nor in the hunt zones that lay each colour\'s own picture or part (Icon, Punk, Emoji, Famous, Anywhere, Realm, Opposite).';
 const newcomerOn = () => newcomer && newcomerCan();
 // a rule that turns an empty block full (Critters, Tron): every other generation shown negative, its dead cells alive (as
 // Margolus showed Critters: its picture then the same way round, its cells as particles that keep their count)
@@ -13035,7 +13035,7 @@ const HUNT_ZONES = { icon24: [null, 'Icon 24'], iconMax: [null, 'Icon max'], pun
                      radius1: ['zone1', 'Spark'], radius2: ['zone2', 'Seed'], radius3: ['zone3', 'Sprout'], radius4: ['zone4', 'Bloom'],
                      radius5: ['zone5', 'Grove'], radius6: ['zone6', 'Meadow'], radius7: ['zone7', 'Forest'], radius8: ['zone8', 'Jungle'],
                      realm: ['zoneFace', 'Realm'],  // on a solid, each colour's whole face; elsewhere its part, the colours apart (see realmParts)
-                     mirror: ['zoneMirror', 'Mirror'],  // each colour's two opposite faces (or parts: see colouring, hullColourings)
+                     mirror: ['zoneMirror', 'Opposite', 'mirror'],  // each colour's two opposite faces (or parts: see colouring, hullColourings); its link's word mirror, as before (Mirror the symmetry's name)
                      full: ['zoneAll', 'Wild'],
                      numbers: ['barcode', 'Formula', 'formula'],  // a number's digits, a fraction's or a root's, laid as the Digits start lays a number's (see numberSeed); its link's word its own (pop=digits: that start)
                      centred: [null, 'Famous'],  // the rule's patterns, each at its colour's spot (see patternChoices)

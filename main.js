@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.595';
+const VERSION = '0.4.596';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -1771,7 +1771,6 @@ const DISPLAY_DEFAULTS = {
   autoFit: ['autoFit', 'mode', true], upright: ['upright', 'mode', false], shape: ['shapeM', 'mode', (mode) => (mode.round ? 1 : 0)],  // (Flat 0 ── Inflated 1: a round surface inflated, a solid flat)
   perspective: ['perspective', 'mode', (mode, w) => perspectiveFor(mode, defaultOf('shape', w), spaceTime && spaceTimeApplies(w))],  // (as each mode's own, hand-tuned)
   light: ['light', 'open', true], glass: ['glass', 'open', false], grid: ['showGrid', 'open', true],
-  player: [null, 'walk', (mode) => (mode.grid ? 0.2 : 1)],  // (where a walk on a surface is shown: the step its places visited reach this share, along the grid a fifth of its corners, on cells all its cells; else its end)
   trail: ['lifeTrail', 'colours', () => lifeColours === 1],  // (Life's Trail: on in Solo, two states, off in colours; when the colours change)
   ocean: ['ocean', 'battle', () => battleOn() && NAV[tabMode()][0] === 'Walk'],  // (on in a walk's battle on a surface, as long as none picks it)
   cut: [null, 'open', 0], blocks: [null, 'open', false], sound: [null, 'open', false], speed: [null, 'open', 60],  // (Cut Off; Life's Blocks hidden; no sound; 60 steps a second: their own state, read where it is kept)
@@ -15323,17 +15322,10 @@ function reverse(on) {
   statsDirty = true;
 }
 
-// the step a new walk is shown at: on a surface, the first where its places visited reach the player's share (see
-// DISPLAY_DEFAULTS), its end if they never do; elsewhere its end
-function firstShown() {
-  if (!walk.sphere || !walk.nodes) return walk.n;
-  const need = Math.ceil(defaultOf('player', walk.mode) * walk.nodes);
-  if (walk.cells[walk.n] < need) return walk.n;
-  let lo = 0, hi = walk.n;  // (its count never goes down: the first step it reaches need)
-  while (lo < hi) { const mid = (lo + hi) >> 1; if (walk.cells[mid] >= need) hi = mid; else lo = mid + 1; }
-  return lo;
-}
-// A new walk is shown at once (complete, or at its player's share on a surface); Play replays it from the start
+// the step a new walk is shown at: its end; on a surface's cells, the step it has visited them all if it does (coverStep:
+// more would only colour them again); along a grid, its end, its sweet spot a link away (see sweetSpot)
+const firstShown = () => (walk.sphere && !walk.vert && walk.coverStep >= 0 ? walk.coverStep : walk.n);
+// A new walk is shown at once (complete, or on a surface's cells as they are all visited); Play replays it from the start
 // A walk built again while it played (− or + of its digits, see stepDigits): the step it plays on from, not its end
 let resumeAt = null;
 function showAll() {

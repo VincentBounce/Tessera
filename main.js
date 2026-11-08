@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.599';
+const VERSION = '0.4.600';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -14903,14 +14903,18 @@ function getSetup() {
   if (mode.antOf) s.r = `${antByDigits ? 'digits ' : ''}${antRuleOf(w)}`;  // ("digits 1R0 0L0": by the digits)
   if (mode.worm) s.r = worm.byDigits ? 'digits' : worm.rule;
   if (championCode) s.ch = championCode;
-  s.v = setupFrom && sameSetup(setupFrom.setup, s) ? setupFrom.v : VERSION;  // (last: the version it was made with, see setupFrom)
+  if (walk.mode === w && stepShown !== (lifeTime() ? 0 : firstShown())) s.at = stepShown;  // (the step or generation shown, when not the one it opens at)
+  s.v = setupFrom && sameSetup(setupFrom.setup, s, ['v', 'at']) ? setupFrom.v : VERSION;  // (last: the version it was made with, see setupFrom)
   return s;
 }
 
 // version v (0.4.N) the same as w or before it
 const versionAtMost = (v, w) => { const a = String(v).split('.').map(Number), b = w.split('.').map(Number); for (let i = 0; i < b.length; i++) if ((a[i] ?? 0) !== b[i]) return (a[i] ?? 0) < b[i]; return true; };
+// a link's step or generation shown (at=), gone to once its walk is built (see applyPendingView)
+let pendingAt = null;
 function applySetup(s) {
   setupFrom = s.v ? { setup: s, v: s.v } : null;
+  pendingAt = s.at !== undefined && Number.isFinite(Number(s.at)) ? Number(s.at) : null;
   const set = (id, v) => { if (v !== undefined && v !== null) $(id).value = v; };
   if (!MODES[s.w]) return false;
   if (typeof s.x === 'string') {  // (none: the number kept, not read)
@@ -15004,6 +15008,7 @@ function applyPendingView() {
     renderHunt();
   }
   huntBack = null;
+  if (pendingAt !== null) { seekTo(pendingAt); pendingAt = null; }  // (a link's step shown: there)
   syncLink();  // with the start a setup's champion or hunt zone gave
 }
 
@@ -17894,6 +17899,7 @@ const rotY = (a) => [[Math.cos(a), 0, Math.sin(a)], [0, 1, 0], [-Math.sin(a), 0,
 const rotZ = (a) => [[Math.cos(a), -Math.sin(a), 0], [Math.sin(a), Math.cos(a), 0], [0, 0, 1]];
 const matMul = (A, B) => A.map((row) => [0, 1, 2].map((j) => row[0] * B[0][j] + row[1] * B[1][j] + row[2] * B[2][j]));
 const spinAt = (t) => { const hz = 1 / frameMin; return matMul(matMul(rotX(SPIN_PER_FRAME[0] * hz * t), rotY(SPIN_PER_FRAME[1] * hz * t)), rotZ(SPIN_PER_FRAME[2] * hz * t)); };
+let linkedAt = null;  // the step shown as the link was last written, still (see tick)
 function tick(now = performance.now()) {
   const raw = (now - (lastTick || now)) / 1000;
   if (raw > 1 / 250) frameMin = Math.min(frameMin, raw);  // the screen's refresh: its shortest frame
@@ -17926,6 +17932,7 @@ function tick(now = performance.now()) {
       if (reversing && stepShown <= runStart()) reverse(false);  // (back at its start, after a step)
     }
   }
+  if (!playing && !reversing && stepShown !== linkedAt) { linkedAt = stepShown; syncLink(); }  // (still: the link at the step shown, see getSetup's at)
   includeBox();
   if (walk.n && !walk.sphere && $('autoFit').checked && boundsOffscreen(viewGoal || view)) {  // 15% room to grow (a surface's frame is fixed)
     const b = padBounds(bounds);
@@ -18787,7 +18794,7 @@ const shapeAndTiles = (w) => { const f = familyOf(w), t = f?.F.tabs.find(([m]) =
 // the setup in use (its Gallery row lit, the ☆ lit): all of it the same (its number, walk, size, start, rule, colours,
 // symmetry, edges, cells drawn or found…) but its version, its length (a hover cuts it, see preview) and how it is looked at
 // (Space-time)
-const SETUP_LOOKS = ['v', 'd', 'sp'];
+const SETUP_LOOKS = ['v', 'd', 'sp', 'at'];
 const isInUse = (setup) => sameSetup(setup, getSetup(), SETUP_LOOKS);
 let galleryBefore = null, galleryHover = 0;  // the setup in use while others are shown on hover
 // and its view (Auto-fit, Auto-rotate, camera, framing): a setup shown on hover is framed (Auto-fit on)

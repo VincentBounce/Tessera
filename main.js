@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.625';
+const VERSION = '0.4.626';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -16793,8 +16793,6 @@ struct Col { @builtin(position) pos: vec4f, @location(0) col: vec4f }
   var o: Col;
   if (key == 255u) { o.pos = vec4f(2.0, 2.0, 2.0, 1.0); return o; }  // (a step that draws nothing: a spiral's 0)
   if (u.colour == 2) { o.col = vec4f(band(pal, (f32(key) + 0.5) / 256.0), 1.0); } else { o.col = vec4f(rainbow(f32(k)), 1.0); }
-  let shown = select(clamp((u.stepNow - f32(k)) / u.fadeSteps, 0.0, 1.0), 1.0, u.fadeSteps <= 0.0);  // (step k + 1's line, faded in as its cell: see flatTilesV)
-  o.col = vec4f(o.col.rgb * shown, shown);
   let a = u.view.yz + a0 * u.view.x; let b = u.view.yz + mix(a0, b0, clamp(u.stepNow - f32(k), 0.0, 1.0)) * u.view.x;  // (the step on its way: drawn as far as it glided)
   var d = b - a; if (length(d) > 1e-4) { d = normalize(d); } else { d = vec2f(1.0, 0.0); }
   o.pos = flatAt(mix(a, b, quad.x) + (vec2f(-d.y, d.x) * quad.y + d * (quad.x * 2.0 - 1.0)) * u.width * 0.5);
@@ -17108,8 +17106,8 @@ function gpuFrame(enc, drawAll) {
   p.end();
 }
 // A flat drawing: the fill, the cells, the path
-// a step's fade in as the walk plays, its cell's at each visit and its line's (none paused: whole), as Life's dying stages
-// fade; walkFadeSteps: the steps it takes at the speed played
+// a cell's fade in as the walk plays, at each visit (none paused: whole), as Life's dying stages (its line grows instead:
+// see flatPathV); walkFadeSteps: the steps it takes at the speed played
 const WALK_FADE_SECONDS = 0.25;
 const walkFadeSteps = () => (playing || reversing ? Math.max(1, stepsPerSecond() * WALK_FADE_SECONDS) : 0);
 function gpuFlat(to) {
@@ -17179,7 +17177,7 @@ function gpuFlat(to) {
     rp.setPipeline(gpuDrawPipe('flatPath', { vertex: 'flatPathV', fragment: 'colF', topology: 'triangle-strip', blend: BLEND_PRE, depth: false,
       buffers: [vertexLayout(8, [vertexAttribute(0, 'float32x2')]), vertexLayout(8, [vertexAttribute(1, 'float32x2')], 'instance'), vertexLayout(8, [vertexAttribute(2, 'float32x2')], 'instance'), vertexLayout(4, [vertexAttribute(3, 'uint32')], 'instance')] }));
     rp.setBindGroup(0, gpuGroup(), [gpuView(D.words, slot++, 1, { colour: cells ? 0 : colour, N: Math.max(1, rainbowLength()), loopFrom: walk.loop?.from ?? 0,
-      period: closedLoop() ? walk.loop.period : 0, width: cells ? Math.max(0.6, Math.min(s * 0.12, 3)) : Math.max(0.6, Math.min(s * 0.3, 6)), stepNow: glideAt(), fadeSteps: walkFadeSteps() })]);
+      period: closedLoop() ? walk.loop.period : 0, width: cells ? Math.max(0.6, Math.min(s * 0.12, 3)) : Math.max(0.6, Math.min(s * 0.3, 6)), stepNow: glideAt() })]);
     rp.setVertexBuffer(0, D.quad); rp.setVertexBuffer(1, D.flatPts, 0); rp.setVertexBuffer(2, D.flatPts, 8); rp.setVertexBuffer(3, D.flatKeys);
     rp.draw(4, glideAt() > to ? Math.min(to + 1, walk.n) : to);  // (and the step on its way)
   }

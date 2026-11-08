@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.593';
+const VERSION = '0.4.594';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -1770,7 +1770,7 @@ const DISPLAY_DEFAULTS = {
   autoFit: ['autoFit', 'mode', true], upright: ['upright', 'mode', false], shape: ['shapeM', 'mode', (mode) => (mode.round ? 1 : 0)],  // (Flat 0 ── Inflated 1: a round surface inflated, a solid flat)
   perspective: ['perspective', 'mode', (mode, w) => perspectiveFor(mode, defaultOf('shape', w), spaceTime && spaceTimeApplies(w))],  // (as each mode's own, hand-tuned)
   light: ['light', 'open', true], glass: ['glass', 'open', false], grid: ['showGrid', 'open', true],
-  player: [null, 'walk', 1],  // (where a walk on a surface is shown: the step its places visited reach this share, along the grid a fifth of its corners, on cells all its cells; else its end)
+  player: [null, 'walk', (mode) => (mode.grid ? 0.2 : 1)],  // (where a walk on a surface is shown: the step its places visited reach this share, along the grid a fifth of its corners, on cells all its cells; else its end)
   trail: ['lifeTrail', 'colours', () => lifeColours === 1],  // (Life's Trail: on in Solo, two states, off in colours; when the colours change)
   ocean: ['ocean', 'battle', () => battleOn() && NAV[tabMode()][0] === 'Walk'],  // (on in a walk's battle on a surface, as long as none picks it)
   cut: [null, 'open', 0], blocks: [null, 'open', false], sound: [null, 'open', false], speed: [null, 'open', 60],  // (Cut Off; Life's Blocks hidden; no sound; 60 steps a second: their own state, read where it is kept)
@@ -15322,21 +15322,16 @@ function reverse(on) {
   statsDirty = true;
 }
 
-// the first step a walk on a surface has visited this share of its places (their count never goes down); null if never
-function stepReaching(share) {
-  const need = Math.ceil(share * walk.nodes);
-  if (walk.cells[walk.n] < need) return null;
-  let lo = 0, hi = walk.n;
+// the step a new walk is shown at: on a surface, the first where its places visited reach the player's share (see
+// DISPLAY_DEFAULTS), its end if they never do; elsewhere its end
+function firstShown() {
+  if (!walk.sphere || !walk.nodes) return walk.n;
+  const need = Math.ceil(defaultOf('player', walk.mode) * walk.nodes);
+  if (walk.cells[walk.n] < need) return walk.n;
+  let lo = 0, hi = walk.n;  // (its count never goes down: the first step it reaches need)
   while (lo < hi) { const mid = (lo + hi) >> 1; if (walk.cells[mid] >= need) hi = mid; else lo = mid + 1; }
   return lo;
 }
-// the step a new walk is shown at: on a surface, the first where its places visited reach the player's share (see
-// DISPLAY_DEFAULTS: all of them; along the grid, never: its end), its end if they never do; elsewhere its end
-const firstShown = () => (walk.sphere && walk.nodes ? stepReaching(defaultOf('player', walk.mode)) ?? walk.n : walk.n);
-// A walk along a surface's grid: its milestone, the step a fifth of its corners are visited (where it showed at first before
-// v0.4.593: its strands still apart), marked on its curve and linked from its gauge, in --milestone-color; null if never
-const MILESTONE_SHARE = 0.2;
-const milestone = () => (walk.sphere && walk.vert && walk.nodes ? stepReaching(MILESTONE_SHARE) : null);
 // A new walk is shown at once (complete, or at its player's share on a surface); Play replays it from the start
 // A walk built again while it played (− or + of its digits, see stepDigits): the step it plays on from, not its end
 let resumeAt = null;
@@ -17554,7 +17549,6 @@ function drawActivity() {
   if (first < 0) mark(0, css.getPropertyValue('--muted'));
   const o = runLoop();
   if (o) mark(o.T, css.getPropertyValue('--run-end-color'), 2);  // (its loop's first step, or where it stops (frozen, dead, a walk's end): in its link's colour)
-  if (milestone() !== null) mark(milestone(), css.getPropertyValue('--milestone-color'), 1);  // (a walk along a surface's grid: a fifth of its corners, as its gauge's link)
   if (walk.life?.colours === 1 && lifeTime()) {  // (as their gauges: its ordered moments, a reversible one's (see orderMarks), else the most ordered; the most alive, in gold as the curve)
     for (const g of reversibleRun() ? orderMarks(walk.life) : [peaks(walk.life).orderGen]) mark(g, css.getPropertyValue('--sector'), 1);
     mark(peaks(walk.life).aliveGen, accent, 0);
@@ -17653,7 +17647,7 @@ function renderWalkGauges() {
     ['Distance', gold, d / P.far, `<b>${d.toFixed(1)}</b>`],
     ['Peak distance', gold, walk.maxDist[stepShown] / P.far, `${P.far.toFixed(1)} · ${genLink(P.step)}`],
     [walk.vert ? 'Corners visited' : 'Cells visited', null, c / (walk.sphere ? walk.nodes : walk.cells[walk.n]), !walk.sphere ? formatNumber(c)
-      : walk.coverStep >= 0 && stepShown >= walk.coverStep ? `all ${formatNumber(walk.nodes)} · by step ${formatNumber(walk.coverStep)}` : `${formatNumber(c)} / ${formatNumber(walk.nodes)} (${(100 * c / walk.nodes).toFixed(1)} %)${milestone() !== null ? ` · ${genLink(milestone(), `${100 * MILESTONE_SHARE} % at step ${formatNumber(milestone())}`, 'milestone')}` : ''}`],
+      : walk.coverStep >= 0 && stepShown >= walk.coverStep ? `all ${formatNumber(walk.nodes)} · by step ${formatNumber(walk.coverStep)}` : `${formatNumber(c)} / ${formatNumber(walk.nodes)} (${(100 * c / walk.nodes).toFixed(1)} %)`],
   ]);
 }
 // A battle's ranking, always in sight under the generation: the colours by their live cells (a bar, their share of all

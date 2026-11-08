@@ -531,10 +531,11 @@ button.wide.active, .head-btn.active { border-color: var(--accent); color: var(-
 .step-line { font-size: var(--title-text-size); font-weight: 700; color: var(--text-color); white-space: nowrap; margin-bottom: 4px; }  /* the step or generation shown, as large as the title, folded or open, every mode */
 .digits-pad { visibility: hidden; }  /* a count's hidden zeros in front: as wide as its widest (see fmtAsWide) */
 .step-line #stepLast { color: var(--muted); }  /* its last, after it, always: the line keeps its width */
+.step-line:has(#stepEnd:not(:empty)) #stepLast { color: var(--run-end-color); }  /* (its end known: its last as its end's mark) */
 .step-line .end-words { display: none; }  /* its end's words, open only (folded: its mark) */
 .stage-bar:hover .step-line .end-words { display: inline; }
 @media (hover: none) { .stage-bar:focus-within .step-line .end-words { display: inline; } }
-.step-line #stepEnd:not(:empty), .step-line .bubble { margin-left: .3em; }  /* its end (a loop, a death), shown folded too; a reversible one's bound */
+.step-line #stepEnd:not(:empty), .step-line .bubble { margin-left: 10px; }  /* its end (a loop, a death), shown folded too; a reversible one's bound */
 .step-line .bubble { vertical-align: 3px; }
 .stage-bar #play.on, .stage-bar #reverse.on { background: var(--accent); color: var(--accent-text); }
 .hint {

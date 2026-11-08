@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.583';
+const VERSION = '0.4.584';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -16664,7 +16664,7 @@ const GPU_VIEW = `
 struct U {
   R: vec3f, depth: f32, Uu: vec3f, shade: f32, V: vec3f, glint: f32, L: vec3f, lr: f32, H: vec3f, alpha: f32, Lx: vec3f, edge: f32,
   Ly: vec3f, bias: f32, edgeRgb: vec3f, halfW: f32, persp: vec4f, plain: vec4f, view: vec3f, N: f32, cc: vec2f, screen: vec2f,
-  cut: i32, glass: i32, both: i32, colour: i32, alphaF: f32, bright: f32, width: f32, loopFrom: f32, period: f32, turnC: f32, turnS: f32, cutN: vec3f,
+  cut: i32, glass: i32, both: i32, colour: i32, alphaF: f32, bright: f32, width: f32, loopFrom: f32, period: f32, turnC: f32, turnS: f32, cutN: vec3f, stepNow: f32, growSteps: f32,
   tpl: array<vec4f, 12>,  // (the polygons' corners, two a vec4)
 }
 @group(0) @binding(0) var<uniform> u: U;
@@ -16771,14 +16771,15 @@ struct Col { @builtin(position) pos: vec4f, @location(0) col: vec4f }
   o.pos = flatAt(mix(a, b, quad.x) + (vec2f(-d.y, d.x) * quad.y + d * (quad.x * 2.0 - 1.0)) * u.width * 0.5);
   return o;
 }
-@vertex fn flatTilesV(@location(0) c: vec4f, @builtin(vertex_index) v: u32) -> Col {  // (a fan of 6 corners as 4 triangles: 0, q, q + 1)
+@vertex fn flatTilesV(@location(0) c: vec4f, @location(1) at: f32, @builtin(vertex_index) v: u32) -> Col {  // (a fan of 6 corners as 4 triangles: 0, q, q + 1)
   var o: Col;
   let q = array<u32, 12>(0u, 1u, 2u, 0u, 2u, 3u, 0u, 3u, 4u, 0u, 4u, 5u)[v];
   var col = band(grad, (c.z + 0.5) / 256.0);
   if (u.colour == 2) { col = band(pal, (c.z + 0.5) / 256.0); }
   o.col = vec4f(col * u.bright * u.alphaF, u.alphaF);
   let k = u32(c.w) * 6u + q; let t4 = u.tpl[k / 2u];
-  o.pos = flatAt(u.view.yz + (c.xy + select(t4.xy, t4.zw, (k & 1u) == 1u)) * u.view.x);
+  let grown = select(clamp((u.stepNow - at + 1.0) / u.growSteps, 0.0, 1.0), 1.0, u.growSteps <= 0.0);  // (from its centre, over growSteps after the step it came at)
+  o.pos = flatAt(u.view.yz + (c.xy + select(t4.xy, t4.zw, (k & 1u) == 1u) * grown) * u.view.x);
   return o;
 }
 @fragment fn colF(i: Col) -> @location(0) vec4f { return i.col; }
@@ -16801,9 +16802,10 @@ function gpuView(words, k, depth, more = {}) {
   i[48] = cutOn() ? 1 : 0;
   f.set(cutNormal(), 60);  // (Cut's plane, facing its axis: see CUT_AXES)
   const at = { alpha: [19, 'f'], edge: [23, 'f'], bias: [27, 'f'], halfW: [31, 'f'], N: [43, 'f'], cut: [48, 'i'], glass: [49, 'i'], both: [50, 'i'], colour: [51, 'i'],
-    alphaF: [52, 'f'], bright: [53, 'f'], width: [54, 'f'], loopFrom: [55, 'f'], period: [56, 'f'], turnC: [57, 'f'], turnS: [58, 'f'] };
+    alphaF: [52, 'f'], bright: [53, 'f'], width: [54, 'f'], loopFrom: [55, 'f'], period: [56, 'f'], turnC: [57, 'f'], turnS: [58, 'f'],
+    stepNow: [63, 'f'], growSteps: [64, 'f'] };
   for (const [k2, v] of Object.entries(more)) {
-    if (k2 === 'edgeRgb') f.set(v, 28); else if (k2 === 'plain') f.set(v, 36); else if (k2 === 'tpl') f.set(v, 64);
+    if (k2 === 'edgeRgb') f.set(v, 28); else if (k2 === 'plain') f.set(v, 36); else if (k2 === 'tpl') f.set(v, 68);
     else (at[k2][1] === 'f' ? f : i)[at[k2][0]] = v;
   }
   return 512 * k;
@@ -17076,6 +17078,8 @@ function gpuFrame(enc, drawAll) {
   p.end();
 }
 // A flat drawing: the fill, the cells, the path
+// a cell's growth from its centre as the walk plays, its first visit's (none paused: whole)
+const CELL_GROW_SECONDS = 0.25;
 function gpuFlat(to) {
   if (cubesWalk()) return gpuCubes(to + 1, walk.wx, walkCubes, walk.maxDist[walk.n]);
   if (walk.rows) { gpuClear(); drawElementary(to); return true; }  // (Elementary: a picture, see drawElementary)
@@ -17106,6 +17110,7 @@ function gpuFlat(to) {
         const inst = new Float32Array(4 * areaFill.count);
         for (let k = 0; k < areaFill.count; k++) inst.set([areaFill.cx[k], areaFill.cy[k], rainbowBand(areaFill.at[k] - 1), areaFill.tpl[k]], 4 * k);
         gpuBuffer('flatFill', inst);
+        gpuBuffer('flatFillAt', Float32Array.from(areaFill.at.subarray(0, areaFill.count)));
         D.fillTpl = templateArray(areaFill.templates);
         D.keys.flatFill = areaFill;
       }
@@ -17119,6 +17124,7 @@ function gpuFlat(to) {
     if (D.keys.flatCells !== walk.xs || D.keys.flatCellsMode !== cellsKey) {
       const { inst, at, m } = flatCellInstances(mode);
       gpuBuffer('flatCells', inst.subarray(0, 4 * m));
+      gpuBuffer('flatCellsAt', Float32Array.from(at.subarray(0, m)));
       D.cellAt = at; D.cellN = m;
       D.cellTpl = templateArray(CELL_TEMPLATES[walk.lattice]);
       D.keys.flatCells = walk.xs; D.keys.flatCellsMode = cellsKey;
@@ -17129,13 +17135,14 @@ function gpuFlat(to) {
   new Uint8Array(D.words).fill(0);
   let slot = 0;
   const enc = device.createCommandEncoder(), rp = gpuPass(enc, null, [0, 0, 0, 0], false), colour = mode === 'digit' ? 2 : 0;
-  const tiles = (buffer, tpl, count, alpha) => {
-    rp.setPipeline(gpuDrawPipe('flatTiles', { vertex: 'flatTilesV', fragment: 'colF', blend: BLEND_PRE, depth: false, buffers: [vertexLayout(16, [vertexAttribute(0, 'float32x4')], 'instance')] }));
-    rp.setBindGroup(0, gpuGroup(), [gpuView(D.words, slot++, 1, { colour, tpl, alphaF: alpha, bright: 1 })]);
-    rp.setVertexBuffer(0, buffer); rp.draw(12, count);
+  // tiles, each from its instance and the step it came at; grow: the steps a tile takes to grow from its centre (0: whole)
+  const tiles = (buffer, atBuffer, tpl, count, alpha, grow) => {
+    rp.setPipeline(gpuDrawPipe('flatTiles', { vertex: 'flatTilesV', fragment: 'colF', blend: BLEND_PRE, depth: false, buffers: [vertexLayout(16, [vertexAttribute(0, 'float32x4')], 'instance'), vertexLayout(4, [vertexAttribute(1, 'float32')], 'instance')] }));
+    rp.setBindGroup(0, gpuGroup(), [gpuView(D.words, slot++, 1, { colour, tpl, alphaF: alpha, bright: 1, stepNow: glideAt(), growSteps: grow })]);  // (the step and its fraction: growing smoothly)
+    rp.setVertexBuffer(0, buffer); rp.setVertexBuffer(1, atBuffer); rp.draw(12, count);
   };
-  if (fillCount) tiles(D.flatFill, D.fillTpl, fillCount, areaLight() ? 0.35 : 1);
-  if (cellCount) tiles(D.flatCells, D.cellTpl, cellCount, shows('cells', walk.mode) && line ? 0.15 : 1);
+  if (fillCount) tiles(D.flatFill, D.flatFillAt, D.fillTpl, fillCount, areaLight() ? 0.35 : 1, 0);
+  if (cellCount) tiles(D.flatCells, D.flatCellsAt, D.cellTpl, cellCount, shows('cells', walk.mode) && line ? 0.15 : 1, playing || reversing ? Math.max(1, stepsPerSecond() * CELL_GROW_SECONDS) : 0);
   if (line && to > 0) {
     rp.setPipeline(gpuDrawPipe('flatPath', { vertex: 'flatPathV', fragment: 'colF', topology: 'triangle-strip', blend: BLEND_PRE, depth: false,
       buffers: [vertexLayout(8, [vertexAttribute(0, 'float32x2')]), vertexLayout(8, [vertexAttribute(1, 'float32x2')], 'instance'), vertexLayout(8, [vertexAttribute(2, 'float32x2')], 'instance'), vertexLayout(4, [vertexAttribute(3, 'uint32')], 'instance')] }));
@@ -17949,7 +17956,7 @@ function tick(now = performance.now()) {
   }
   // a walk on the card, redrawn whole when anything changes (see gpuFlat)
   if (needsFull && !walk.n) gpuClear();
-  if (walk.n && (needsFull || drawn !== stepShown)) {
+  if (walk.n && (needsFull || drawn !== stepShown || gliding())) {  // (gliding: its cells growing between two steps)
     gpuFlat(stepShown);
     if (drawn !== stepShown) { drawn = stepShown; statsDirty = true; }
   }

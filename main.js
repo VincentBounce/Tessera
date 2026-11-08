@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.640';
+const VERSION = '0.4.641';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -754,7 +754,6 @@ function setPalette(theme) {
   SHADE = P.shade; FADE_EDGES = !!P.fadeEdges; TILE_LIFT = P.tileLift ?? 0;
   PALETTE = P;
   LIFE_TRAIL.splice(0, 8, ...Array.from({ length: 8 }, (_, i) => rampAt(TRAIL_INK[theme], i / 8)));
-  for (let i = 0; i < BANDS; i++) GRADIENT[i] = rainbowHue(190 + (200 * i) / (BANDS - 1));  // (from its blue, 190, round by red, 360, to orange)
   LIFE_HUES.forEach((h, k) => { LIFE_COLOURS[k] = `hsl(${h}, 85%, ${PALETTES.light.light}%)`; });  // the light page's, on a dark one too (to compare)
   DIGIT_COLORS.splice(0, DIGIT_COLORS.length, ...P.digits);
   Object.assign(DIRECTION_COLOURS, P.directions);
@@ -763,8 +762,18 @@ function setPalette(theme) {
 }
 // the page's theme (light or dark) and the app's rainbow at f, from 0 to 1 (its GRADIENT, BANDS colours); its colour of hue h
 const themeName = () => (document.documentElement.dataset.theme === 'light' ? 'light' : 'dark');
-const gradientAt = (f) => GRADIENT[Math.round(f * (BANDS - 1))];
-function rainbowHue(h) { return `hsl(${h}, 85%, ${PALETTE.light}%)`; }  // (a declaration: setPalette, above, calls it first)
+const gradientAt = (f) => rainbowNow()[Math.round(f * (BANDS - 1))];
+function rainbowHue(h) { return `hsl(${h}, 85%, ${PALETTE.light}%)`; }
+// the rainbow now, GRADIENT filled again in place whenever the theme or Ocean changed (gradientKey: what it was made for):
+// from its blue, 190, round by red, 360, to orange; on Ocean, its lands' colours, green, lime, yellow, ochre to ice white
+let gradientKey = null;
+function rainbowNow() {
+  const ocean = oceanOn(), key = `${themeName()}|${ocean}`;
+  if (key === gradientKey) return GRADIENT;
+  gradientKey = key;
+  for (let i = 0; i < BANDS; i++) GRADIENT[i] = ocean ? rampAt([LANDS[0], LANDS[3], LANDS[1], LANDS[2], LANDS[4]], i / (BANDS - 1)) : rainbowHue(190 + (200 * i) / (BANDS - 1));
+  return GRADIENT;
+}
 setPalette(themeName());
 
 
@@ -10648,7 +10657,7 @@ async function stackUp() {
 }
 // its cubes' colours by the look: States in colours, each its colour; else the rainbow up, by its generation (time)
 function stackCubes(mode) {
-  const { L, keys, layers } = stack, col = new Uint8Array(keys.length * 3), civ = civColours(L.colours, L.C).map(rgbOf), rainbow = GRADIENT.map(rgbOf);
+  const { L, keys, layers } = stack, col = new Uint8Array(keys.length * 3), civ = civColours(L.colours, L.C).map(rgbOf), rainbow = rainbowNow().map(rgbOf);
   for (let g = 0, i = 0; g < layers.length; g++) for (; i <= layers[g]; i++) col.set(mode === 'mono' && L.colours > 1 ? civ[keys[i]] : rainbow[Math.floor((g * BANDS) / layers.length)], 3 * i);
   return { at: stack.at, col };
 }
@@ -11233,7 +11242,7 @@ const liftTile = (c) => { if (!TILE_LIFT) return c; const v = rgbOf(c).map((x) =
 // states, Trail, the motif shown; Activity's, its most changes), kept on L: not each frame a view turns (272 KB, before v0.4.1)
 function lifeLook(L, lifted = false) {
   const colour = $('colourMode').value, maxAct = colour === 'digit' ? L.maxActivity : 0;
-  const key = [colour, lifted, TILE_LIFT, L.C, L.colours, trailOn(), maxAct, LIFE_ALIVE, PALETTE.dying, LIFE_TRAIL[0], GRADIENT[0], LIFE_COLOURS[0], oceanOn()].join('|');
+  const key = [colour, lifted, TILE_LIFT, L.C, L.colours, trailOn(), maxAct, LIFE_ALIVE, PALETTE.dying, LIFE_TRAIL[0], rainbowNow()[0], LIFE_COLOURS[0], oceanOn()].join('|');
   if (L.look?.key === key) return L.look.value;
   const lift = lifted ? liftTile : (c) => c;
   const pack = (c) => { const [r, g, b] = rgbOf(c); return ((255 << 24) | (b << 16) | (g << 8) | r) >>> 0; };
@@ -15834,7 +15843,7 @@ function drawSphere() {
   const path = !L && !walk.battle && (MODES[walk.mode].cells ? $('showPath').checked : line);  // on cells, with Show path only (a battle: its bodies, no path)
   if (line) {  // a tile walked through (Fill cells) in its first visit's colour, by the look; enclosed (Area, Rainbow only), or dark
     const cells = MODES[walk.mode].cells && firstVisits(), areas = !walk.ant && areaOn() && areaSteps();
-    const rainbow = GRADIENT.map(liftTile), band = (p) => rainbowBand(Math.max(0, p - 1));  // (point p's step, as in 2D: see stepLook)
+    const rainbow = rainbowNow().map(liftTile), band = (p) => rainbowBand(Math.max(0, p - 1));  // (point p's step, as in 2D: see stepLook)
     const colours = stepped.key ? stepped.palette.map(liftTile) : rainbow, faint = (cs) => (path && MODES[walk.mode].cells ? cs.map((c) => faded(c, FADING)) : cs);  // Path: the tiles faded under the line
     const level = stepped.key ? (p) => 1 + stepped.at(p) : (p) => 1 + band(p);  // (see stepLook: the start, no command)
     palette = [null, ...faint(colours), ...(stepped.key ? [] : areaLight() ? rainbow.map((c) => faded(c, FADING)) : rainbow)];
@@ -16212,7 +16221,7 @@ const countUpTo = (sorted, n, v) => { let lo = 0, hi = n; while (lo < hi) { cons
 const PART_MOST = 80e6, PART_CELLS = 32e6;
 function drawElementary(to) {
   const R = walk.rows, ctx = layers.path, { scale: s, ox, oy } = view, last = Math.min(to, R.G), mono = $('colourMode').value === 'mono';
-  const rgb = (t) => rgbCached(mono ? LIFE_ALIVE : GRADIENT[Math.floor((t * BANDS) / (R.G + 1))]);
+  const rgb = (t) => rgbCached(mono ? LIFE_ALIVE : rainbowNow()[Math.floor((t * BANDS) / (R.G + 1))]);
   const paint = (w, h, alpha, rowOf) => {  // (w × h pixels, each its opacity and its row)
     const img = new ImageData(w, h), px = new Uint32Array(img.data.buffer);  // (a pixel a word: its alpha, blue, green, red)
     for (let y = 0; y < h; y++) { const [cr, cg, cb] = rgb(rowOf(y)), c = (cb << 16) | (cg << 8) | cr; for (let x = 0; x < w; x++) { const a = alpha(x, y); if (a) px[y * w + x] = ((a << 24) | c) >>> 0; } }
@@ -16289,7 +16298,7 @@ const cubesWalk = () => walk.is3d && (!!MODES[walk.mode].cells || walk.stacked);
 // a 3D walk on cells' cubes, points 0 … n: where, their colours by the look (the rainbow by the step, its digit's)
 function walkCubes(mode) {
   const n = walk.n, at = new Float32Array(3 * (n + 1)), col = new Uint8Array(3 * (n + 1));
-  const look = stepLook(mode), rgb = (look?.key ? look.palette : GRADIENT).map(rgbOf);  // (see stepLook)
+  const look = stepLook(mode), rgb = (look?.key ? look.palette : rainbowNow()).map(rgbOf);  // (see stepLook)
   for (let p = 0; p <= n; p++) {
     const q = Math.max(1, p);  // the start, as its first step
     at.set([walk.wx[p], walk.wy[p], walk.wz[p]], 3 * p);
@@ -16845,7 +16854,7 @@ const GPU_SLOTS = 32;
 // set up once (after gpuSetup): the canvas, the programs, the textures that last (the rainbow, the digits' colours)
 function gpuDrawSetup() {
   if (!GPU) return null;
-  if (GPU.draw) return GPU.draw;
+  if (GPU.draw) { if (GPU.draw.gradKey !== (rainbowNow(), gradientKey)) gpuPalette(); return GPU.draw; }  // (the rainbow made again: its texture too)
   const { device } = GPU, format = navigator.gpu.getPreferredCanvasFormat(), ctx = gpuCanvas.getContext('webgpu');
   ctx.configure({ device, format, alphaMode: 'premultiplied' });
   const module = device.createShaderModule({ code: GPU_VIEW });
@@ -16864,12 +16873,12 @@ function gpuDrawSetup() {
   device.queue.writeBuffer(D.quad, 0, new Float32Array([0, -1, 0, 1, 1, -1, 1, 1]));
   return D;
 }
-// the rainbow again (the theme changed): the digits' colours made again too
+// the rainbow again (the theme or Ocean changed, see rainbowNow): the digits' colours made again too
 function gpuPalette() {
   const D = GPU?.draw;
   if (!D) return;
   D.grad?.destroy();
-  D.grad = D.texture(BANDS, Uint8Array.from(GRADIENT.flatMap((c) => [...rgbOf(c), 255])));
+  D.grad = D.texture(BANDS, Uint8Array.from(rainbowNow().flatMap((c) => [...rgbOf(c), 255]))); D.gradKey = gradientKey;
   D.keys.pal = null; D.keys.cubes = null;
   D.groups = null;
 }
@@ -17496,7 +17505,7 @@ function drawOverlay() {
   };
   // its start a flag, flat, under it: from the ground's colour at its base to the rainbow's blue at its tip; it gold to the
   // rainbow's red
-  drawArrow(ctx, [groundAt(oy + walk.ys[0] * s), GRADIENT[0]], frame(0), -0.6);
+  drawArrow(ctx, [groundAt(oy + walk.ys[0] * s), rainbowNow()[0]], frame(0), -0.6);
   drawArrow(ctx, ['#ffd000', rainbowHue(360)], frame(glideAt()));
 }
 

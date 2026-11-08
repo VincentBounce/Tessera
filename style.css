@@ -438,6 +438,7 @@ button.wide.active, .head-btn.active { border-color: var(--accent); color: var(-
 @media (hover: none) { .stage-box:focus-within .open-only { display: flex; } }
 .display-menu .stage-more { margin: 10px 0 -10px; }  /* below the themes; each row's 10px under the last one taken back, so the bottom matches the top */
 .form-section { margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border); }  /* shape and perspective */
+.rule-tuto .form-section { margin-top: 18px; padding-top: 18px; }  /* in a page (How it works, the app's): its sections' spacing, as an h4's */
 .form-section:not(:has(> :not([hidden]))) { display: none; }
 .choice-list { display: flex; flex-direction: column; gap: 4px; margin-bottom: 10px; }
 .choice-list button { text-align: left; padding: 5px 8px; font-size: var(--text-size); background: var(--panel); }

@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.647';
+const VERSION = '0.4.648';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -15914,7 +15914,7 @@ const PATTERN_AREA = 2;
 const SWEET_OCEAN = 0.1, SWEET_CELLS = 0.5;
 const sweetSpot = () => {
   if (walk.sweetSpot !== undefined) return walk.sweetSpot;
-  if (!walk.sphere || !walk.n) return (walk.sweetSpot = null);
+  if (!walk.sphere || walk.life || !walk.n) return (walk.sweetSpot = null);  // (a walk's only: Life's runs none)
   if (!walk.vert) { const i = walk.cells.findIndex((c) => c >= SWEET_CELLS * walk.nodes); return (walk.sweetSpot = i >= 0 ? i : null); }  // (cells: by its visited count, Cells visited's)
   const at = areaSteps(), closed = new Map();
   for (const s of at) if (s >= 0) closed.set(s, (closed.get(s) ?? 0) + 1);  // (the tiles each step closes off)

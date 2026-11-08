@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.611';
+const VERSION = '0.4.612';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -2016,7 +2016,7 @@ const cardBubble = (base, show) => {
 };
 // a text written as HTML (its <, >, & as entities)
 const htmlText = (text) => String(text).replace(/[&<>]/g, (c) => `&#${c.charCodeAt(0)};`);
-// A rule's code wherever it is written (B3/S23, LRU, L2 R2, 1R0 0L0, W110: a card's, a tutorial's, the commands'): in --mono
+// A rule's code wherever it is written (B3/S23, LRU, L2 R2, 1R0 0L0, W110: a card's, a tutorial's, the commands'): in --mono-font
 // (.rule), l, I, | and 1 told apart; the words round it in the page's font
 const ruleSpan = (code) => `<code class="rule">${htmlText(code)}</code>`;
 // a card's words, every card's and Grid | Cells' alike: its name (Grid | Cells': its base in its bubble at its right), then its
@@ -2051,7 +2051,7 @@ function renderTrailButton() {
 // is worked out by, outlined over the cells (see drawBlocks); Ising's squares in turn are no blocks: greyed
 let showBlocks = defaultOf('blocks', tabMode()), blocksButton = null;
 function renderBlocksButton() {
-  blocksButton ??= tile({ pic: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="8" height="8" rx="1" fill="currentColor" opacity="0.35"/><rect x="13" y="13" width="8" height="8" rx="1" fill="currentColor" opacity="0.35"/><rect x="3" y="3" width="18" height="18" rx="1.5" fill="none" style="stroke: var(--sector)" stroke-width="1.8"/></svg>',  // (its outline the blocks' blue)
+  blocksButton ??= tile({ pic: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="8" height="8" rx="1" fill="currentColor" opacity="0.35"/><rect x="13" y="13" width="8" height="8" rx="1" fill="currentColor" opacity="0.35"/><rect x="3" y="3" width="18" height="18" rx="1.5" fill="none" style="stroke: var(--sector-color)" stroke-width="1.8"/></svg>',  // (its outline the blocks' blue)
     text: 'Blocks', toggle: true, title: 'The blocks the next generation is worked out by, outlined (a set at a time, in turn)', click: () => { showBlocks = !showBlocks; needsFull = true; renderBlocksButton(); } });
   const flat = !!MODES[tabMode()].plane, can = flat && !lifeRuleNow()?.ising;  // (the mode and rule picked: the grid not built yet)
   setTile(blocksButton, { on: showBlocks && can, can, byDefault: defaultMark('blocks'), greyed: flat ? 'Ising flips its squares in turn: there are no blocks.' : 'Not on a surface.' });
@@ -2168,7 +2168,7 @@ const renderSkyButtons = () => {
   // the sky's picture, its colours deeper than the sky's own (pale behind a view, they would not read so small)
   const deep = { light: [[0, '#7fa7de'], [0.5, '#c6b8e6'], [0.8, '#eea3b6'], [1, '#f39a68']], dark: [[0, '#0a1a4a'], [0.45, '#2c3f8f'], [0.75, '#6b3f8e'], [1, '#c8644f']] }[theme];
   skyButton.innerHTML = `<svg viewBox="0 0 24 24" aria-hidden="true"><defs><linearGradient id="skyPicture" x1="0" y1="0" x2="0" y2="1">${deep.map(([f, c]) => `<stop offset="${f}" stop-color="${c}"/>`).join('')}</linearGradient></defs>`
-    + `<rect x="2" y="2" width="20" height="20" rx="2" fill="url(#skyPicture)" stroke="var(--border)"/></svg><span>${name}</span>`;
+    + `<rect x="2" y="2" width="20" height="20" rx="2" fill="url(#skyPicture)" stroke="var(--border-color)"/></svg><span>${name}</span>`;
   setTile(skyButton, { on });
   $('themeButtons').prepend(skyButton);  // first, before the themes
 };
@@ -6850,7 +6850,7 @@ const sizeShape = (kind, f) => { const d = gridSize(kind, f); return APERIODIC[k
 // count's form, c × f² (+ k: a sphere of hexagons' 12 pentagons, see goldberg), else the grid's rows × cells a row
 // a size's tooltip on its block, − + its label and its slider, as its motif shows on it (see drawMotif); its words
 // marked {y:…} {r:…} {o:…} in the colours they are drawn in: the motif's violet, a face's red, the walls' ochre
-const cssColour = (name) => getComputedStyle(document.documentElement).getPropertyValue(name).trim(), motifColour = () => cssColour('--motif'), faceRed = () => cssColour('--face');  // (the page's, as its theme has them: see style.css)
+const cssColour = (name) => getComputedStyle(document.documentElement).getPropertyValue(name).trim(), motifColour = () => cssColour('--motif-color'), faceRed = () => cssColour('--face-color');  // (the page's, as its theme has them: see style.css)
 // a size's tooltip's end: what was last picked, kept from grid to grid (each takes the nearest it offers)
 // (the size: its cells, by hand or by a link, kept on every grid, plane, surface or solid, each the size it offers with about as
 // many, from that same number each time: never drifting a step at a time; none yet: each grid its first size)
@@ -7829,7 +7829,7 @@ function tintBattleFormulas() {
   BATTLE_FORMULAS.forEach((id, s) => {
     const on = battleOn() && s < walkTeams && battleAsked[s] === $(id).value;
     $(id).classList.toggle('battle-formula', on);  // (see .battle-formula)
-    $(id).style.setProperty('--walker', teamColour(s));
+    $(id).style.setProperty('--walker-color', teamColour(s));
   });
 }
 // A battle's starts: A's, then each moved by the surface's own symmetry, as the walk's state ([tile, the edge it comes in
@@ -10792,7 +10792,7 @@ function renderPlaneRow() {
     else setTile(b, { on });
   }
   $('startTextInput').value = plane.text;  // (its words, on any grid)
-  $('startTextInput').style.setProperty('--face', TEXT_FONTS[plane.font][1]);  // (at rest, in its font, see style.css)
+  $('startTextInput').style.setProperty('--text-start-font', TEXT_FONTS[plane.font][1]);  // (at rest, in its font, see style.css)
   for (const b of $('textFonts').querySelectorAll('button')) setTile(b, { on: b.dataset.font === plane.font });
   for (const r of $('startDraw').querySelectorAll('#startCells, .draw-row')) r.hidden = !kind;  // the start's cells (Clear), the turns, the colours: to draw, on the plane (a surface's Draw: its patterns to see only)
   if (!kind) {
@@ -11003,7 +11003,7 @@ function planeWalls(kind, W) {
 // Behind the grid (grid layer, at each view): the sky or the page outside it (the grid itself, its page, its walls and its
 // outlines, see gpuPlane)
 // the plane's grid lines, faint: white over a dark sky, dark over a light one, else the page's grid colour
-const gridColour = () => (darkSky() ? 'rgba(255,255,255,0.06)' : skyStops() ? 'rgba(0, 0, 0, 0.08)' : getComputedStyle(document.documentElement).getPropertyValue('--grid'));
+const gridColour = () => (darkSky() ? 'rgba(255,255,255,0.06)' : skyStops() ? 'rgba(0, 0, 0, 0.08)' : getComputedStyle(document.documentElement).getPropertyValue('--grid-line-color'));
 function drawPlaneGrid() {
   layers.grid.clearRect(0, 0, canvasWidth, canvasHeight);
   drawSky(layers.grid);
@@ -11292,7 +11292,7 @@ function drawBlocks(ctx) {
   }));
   turnLayer(ctx);
   ctx.transform(s, 0, 0, s, ox, oy);  // (in the grid's units)
-  ctx.strokeStyle = cssColour('--sector');
+  ctx.strokeStyle = cssColour('--sector-color');
   ctx.lineWidth = Math.max(1, Math.min(s / 8, 3)) / s;
   ctx.stroke(M.paths.get(key)[mod(stepShown, M.turns.length)]);
   turnLayer(ctx, 0);
@@ -11337,8 +11337,8 @@ function drawMotif(ctx) {
   if (!walk.plane) {  // (a surface: its motif violet, one of its cells green when it has several, its face red round it, see drawMotifFace)
     const tiles = motifTiles();
     outlineTiles(ctx, motifColour(), tiles);
-    if (tiles.square >= 0) { outlineTiles(ctx, cssColour('--sector'), [tiles.square]); drawMotifFace(ctx, tiles.square); }  // (a solid of squares and triangles: a square, blue, as its tooltip's)
-    if (tiles.length > 1) outlineTiles(ctx, cssColour('--cell'), [tiles[0]]);  // (as its tooltip's cells)
+    if (tiles.square >= 0) { outlineTiles(ctx, cssColour('--sector-color'), [tiles.square]); drawMotifFace(ctx, tiles.square); }  // (a solid of squares and triangles: a square, blue, as its tooltip's)
+    if (tiles.length > 1) outlineTiles(ctx, cssColour('--cell-color'), [tiles[0]]);  // (as its tooltip's cells)
     if (tiles.length) drawMotifFace(ctx, tiles[0]);
     return;
   }
@@ -11349,7 +11349,7 @@ function drawMotif(ctx) {
   for (const side of rimSides(motif.flatMap(polySides), sideKey)) { ctx.moveTo(ox + side[0][0] * s, oy + side[0][1] * s); ctx.lineTo(ox + side[1][0] * s, oy + side[1][1] * s); }
   ctx.stroke();
   if (cell && cell.length > 1) {  // (a lattice cell of several: its first in green, as its tooltip's cells)
-    ctx.strokeStyle = cssColour('--cell');
+    ctx.strokeStyle = cssColour('--cell-color');
     ctx.beginPath();
     planeCorners(kind, ...xy(cell[0])).forEach(([u, v], j) => ctx[j ? 'lineTo' : 'moveTo'](ox + u * s, oy + v * s));
     ctx.closePath();
@@ -11386,7 +11386,7 @@ const tilesOf = ([from, to]) => Array.from({ length: to - from }, (_, j) => from
 function drawMotifFace(ctx, t0) {
   const f = faceOf(walk.geo, t0);
   if (!f) return;
-  if (f.sector) outlineTiles(ctx, cssColour('--sector'), tilesOf(f.sector));
+  if (f.sector) outlineTiles(ctx, cssColour('--sector-color'), tilesOf(f.sector));
   outlineTiles(ctx, faceRed(), tilesOf(f.face));
 }
 // a surface's motif round its tile most towards the viewer and nearest it (of those, the nearest the view's middle): a sheet's
@@ -11761,7 +11761,7 @@ function blockTutorial(entry, to) {
   const side = Math.max(Math.max(...xs) - Math.min(...xs), Math.max(...ys) - Math.min(...ys)), pad = side * 0.05;
   const box = (x0, y0, w) => `viewBox="${x0 - pad} ${y0 - pad} ${w + 2 * pad} ${w + 2 * pad}"`;
   const points = (t) => poly(t).map((p) => p.join(',')).join(' '), colour = (st, j) => ((st >> j) & 1 ? LIFE_ALIVE : UNLIT);
-  const shape = (t, fill) => `<polygon points="${points(t)}" fill="${fill}" stroke="var(--border)" stroke-width="${side / 50}"/>`;
+  const shape = (t, fill) => `<polygon points="${points(t)}" fill="${fill}" stroke="var(--border-color)" stroke-width="${side / 50}"/>`;
   const fading = (t, fill) => `<polygon points="${points(t)}" fill="${fill}"><animate attributeName="opacity" values="1;1;0" keyTimes="0;0.625;1" dur="0.8s" fill="freeze"/></polygon>`;
   const block = (st, before) => `<svg ${box(Math.min(...xs), Math.min(...ys), side)}>${ring.map((t, j) => shape(t, colour(st, j))).join('')}`
     + (before === undefined ? '' : ring.map((t, j) => (colour(before, j) !== colour(st, j) ? fading(t, colour(before, j)) : '')).join('')) + '</svg>';
@@ -11794,7 +11794,7 @@ function blockTutorial(entry, to) {
     }
     return `<svg viewBox="${corner[0] - m} ${corner[1] - m} ${span} ${span}"><defs><linearGradient id="tutSky" x2="0" y2="1"><stop offset="0" stop-color="#c3d7f2"/><stop offset="1" stop-color="#f0d9e2"/></linearGradient></defs>`
       + `<rect x="${corner[0] - m}" y="${corner[1] - m}" width="${span}" height="${span}" fill="url(#tutSky)"/>${wall.length ? `<path d="${wall.map((c) => `M${c.map((p) => p.join(',')).join('L')}Z`).join('')}" fill="${LIFE_WALL}"/>` : ''}`  // (the wall one shape: no seams between its cells)
-      + `${shown.map((t) => shape(t, UNLIT)).join('')}${ising ? `<path d="${near.flat().map((P) => `M${P.map((p) => p.join(',')).join('L')}Z`).join('')}" fill="var(--accent)" fill-opacity="0.35"/>` : `<path d="${near.map(outlineOf).join('')}" fill="none" stroke-width="${side / 30}" class="tut-centre"/>`}</svg>`;  // (its blocks framed; Ising's squares turning, tinted: their rims would draw them all)
+      + `${shown.map((t) => shape(t, UNLIT)).join('')}${ising ? `<path d="${near.flat().map((P) => `M${P.map((p) => p.join(',')).join('L')}Z`).join('')}" fill="var(--accent-color)" fill-opacity="0.35"/>` : `<path d="${near.map(outlineOf).join('')}" fill="none" stroke-width="${side / 30}" class="tut-centre"/>`}</svg>`;  // (its blocks framed; Ising's squares turning, tinted: their rims would draw them all)
   };
   // its max period: it runs back, so a start comes back to itself (no lead-in), at most after its states × its phases;
   // here, on the grid built, and this start's, if known (see blockBack)
@@ -11806,7 +11806,7 @@ function blockTutorial(entry, to) {
     return `<h4>Across</h4><div class="tut-row"><figure><div>${pic(from)}<span>→</span>${pic(ring)}</div><figcaption>each generation, the cells facing a block come into it, then its rule</figcaption></figure></div>`;
   })();
   // Ising: a square and its 4 sides, 2 of them alive (turned over), else (kept)
-  const plus = (around, was, now) => { const at = [[1, 0], [0, 1], [2, 1], [1, 2]], sq = (x, y, f) => `<rect x="${x}" y="${y}" width="1" height="1" fill="${f}" stroke="var(--border)" stroke-width="0.04"/>`;
+  const plus = (around, was, now) => { const at = [[1, 0], [0, 1], [2, 1], [1, 2]], sq = (x, y, f) => `<rect x="${x}" y="${y}" width="1" height="1" fill="${f}" stroke="var(--border-color)" stroke-width="0.04"/>`;
     const one = (c) => `<svg viewBox="-0.1 -0.1 3.2 3.2">${at.map(([x, y], i) => sq(x, y, i < around ? LIFE_ALIVE : UNLIT)).join('')}${sq(1, 1, c ? LIFE_ALIVE : UNLIT)}</svg>`;
     return `<figure><div>${one(was)}<span>→</span>${one(now)}</div><figcaption>${around} alive round it: ${was === now ? 'kept' : 'turned over'}</figcaption></figure>`; };
   const cases = ising ? `<h4>Changing</h4><div class="tut-row">${plus(2, 1, 0)}${plus(2, 0, 1)}</div><h4>Kept</h4><div class="tut-row">${[0, 1, 3, 4].map((c) => plus(c, 1, 1)).join('')}</div>` : '';
@@ -11850,7 +11850,7 @@ function shapeBubbles(kinds, c, corners, count, shapeOf, own) {  // own: the til
   const span = (P, d) => Math.max(...P.map((p) => p[d])) - Math.min(...P.map((p) => p[d])), S = Math.max(...kinds.flatMap((t) => [span(corners(t), 0), span(corners(t), 1)])), pad = S * 0.08;
   const pic = (t) => {
     const pts = corners(t), m = meanPoint(pts);
-    return `<svg viewBox="${m[0] - S / 2 - pad} ${m[1] - S / 2 - pad} ${S + 2 * pad} ${S + 2 * pad}"><polygon points="${pts.map((p) => p.join(',')).join(' ')}" fill="${t === c ? LIFE_ALIVE : UNLIT}" stroke="var(--border)" stroke-width="${S / 30}"/>`
+    return `<svg viewBox="${m[0] - S / 2 - pad} ${m[1] - S / 2 - pad} ${S + 2 * pad} ${S + 2 * pad}"><polygon points="${pts.map((p) => p.join(',')).join(' ')}" fill="${t === c ? LIFE_ALIVE : UNLIT}" stroke="var(--border-color)" stroke-width="${S / 30}"/>`
       + `<text x="${m[0]}" y="${m[1]}" font-size="${S * 0.3}" font-weight="600" fill="${t === c ? '#fff' : 'var(--text-color)'}" text-anchor="middle" dominant-baseline="central">${count(t)}</text></svg>`;  // (the one shown filled)
   };
   // (one shape in several bubbles: said, with its counts of neighbours)
@@ -11862,7 +11862,7 @@ function shapeBubbles(kinds, c, corners, count, shapeOf, own) {  // own: the til
 // cell after (those that change it, of plain states only), its start
 function loopTutorial(entry) {
   const name = loopName(entry.rule), { year, words, table, pattern } = LOOP_RULES[name], n = parseLoops(name).loopStates;
-  const fill = (v) => (v ? LIFE_COLOURS[v - 1] : UNLIT), cell = (x, y, v) => `<rect x="${x}" y="${y}" width="1" height="1" fill="${fill(v)}" stroke="var(--border)" stroke-width="0.04"/>`;
+  const fill = (v) => (v ? LIFE_COLOURS[v - 1] : UNLIT), cell = (x, y, v) => `<rect x="${x}" y="${y}" width="1" height="1" fill="${fill(v)}" stroke="var(--border-color)" stroke-width="0.04"/>`;
   const cross = ([c, N, E, S, W]) => `<svg viewBox="-0.1 -0.1 3.2 3.2">${cell(1, 0, N)}${cell(2, 1, E)}${cell(1, 2, S)}${cell(0, 1, W)}${cell(1, 1, c)}</svg>`;
   const lines = table.split('\n').filter((l) => /^[0-9,]+$/.test(l)).map((l) => (l.includes(',') ? l.split(',') : [...l]).map(Number)), shown = lines.filter((t) => t[0] !== t[5]).slice(0, 12);
   const start = loopCells(pattern.rle).map(([x, y, v]) => cell(x, y, v));
@@ -11875,8 +11875,8 @@ function loopTutorial(entry) {
 // an elementary rule's page (see parseElementary): its words, its 8 cases (the three cells above → the cell), from one cell
 function elementaryTutorial(entry) {
   const N = parseRule(entry.rule).wolfram, words = ELEMENTARY_RULES.find(([n]) => n === N)?.[1];
-  const cell = (x, y, v) => `<rect x="${x}" y="${y}" width="1" height="1" fill="${v ? LIFE_ALIVE : UNLIT}" stroke="var(--border)" stroke-width="0.04"/>`;
-  const cases = [7, 6, 5, 4, 3, 2, 1, 0].map((b) => `<figure><div><svg viewBox="-0.1 -0.1 3.2 3.2">${cell(0, 0, b >> 2)}${cell(1, 0, (b >> 1) & 1)}${cell(2, 0, b & 1)}<text x="1.5" y="1.72" text-anchor="middle" font-size="0.8" fill="var(--muted)">↓</text>${cell(1, 2, wolframBit(N, b >> 2, (b >> 1) & 1, b & 1))}</svg></div><figcaption>${wolframBit(N, b >> 2, (b >> 1) & 1, b & 1)}</figcaption></figure>`).join('');
+  const cell = (x, y, v) => `<rect x="${x}" y="${y}" width="1" height="1" fill="${v ? LIFE_ALIVE : UNLIT}" stroke="var(--border-color)" stroke-width="0.04"/>`;
+  const cases = [7, 6, 5, 4, 3, 2, 1, 0].map((b) => `<figure><div><svg viewBox="-0.1 -0.1 3.2 3.2">${cell(0, 0, b >> 2)}${cell(1, 0, (b >> 1) & 1)}${cell(2, 0, b & 1)}<text x="1.5" y="1.72" text-anchor="middle" font-size="0.8" fill="var(--muted-text-color)">↓</text>${cell(1, 2, wolframBit(N, b >> 2, (b >> 1) & 1, b & 1))}</svg></div><figcaption>${wolframBit(N, b >> 2, (b >> 1) & 1, b & 1)}</figcaption></figure>`).join('');
   const picture = wolframFromCell(N, 16).flatMap((r, y) => r.map((c, x) => (c ? cell(x, y, 1) : ''))).join('');
   $('ruleTuto').innerHTML = `<div class="tut-body"><h3>${entry.name} ${ruleSpan(`W${N}`)}</h3><p>${words ? `${words[0].toUpperCase()}${words.slice(1)}. ` : ''}A row of cells, each generation the next row down: each cell looks at the three above it (on its left, above it, on its right), 8 cases, and the rule's number in base 2, ${N} = ${N.toString(2).padStart(8, '0')}, gives each one its cell, from 111 to 000 (Wolfram, 1983).</p>`
     + `<h4>Its 8 cases</h4><div class="tut-row">${cases}</div>`
@@ -11928,7 +11928,7 @@ function ruleTutorial(entry) {
   const L = x0 - pad - (side - w) / 2, T = y0 - pad - (side - h) / 2, S = side + 2 * pad;
   const cell = (centre, live, before) => `<svg viewBox="${L} ${T} ${S} ${S}">${[c, ...around].map((t, i) => {
     const fill = i === 0 ? centre : live.has(t) ? (live.get?.(t) ?? LIFE_ALIVE) : UNLIT;  // (live: a set, or each cell's colour)
-    return `<polygon points="${points(t)}" fill="${fill}" stroke="var(--border)" stroke-width="${side / 60}"/>`; }).join('')}${tomb(centre)}`
+    return `<polygon points="${points(t)}" fill="${fill}" stroke="var(--border-color)" stroke-width="${side / 60}"/>`; }).join('')}${tomb(centre)}`
     + `${before && before !== centre ? `<polygon points="${points(c)}" fill="${before}"><animate attributeName="opacity" values="1;1;0" keyTimes="0;0.625;1" dur="0.8s" fill="freeze"/></polygon>` : ''}`
     + `<polygon points="${points(c)}" fill="none" stroke-width="${side / 22}" class="tut-centre"/></svg>`;  // (its frame on top: the neighbours' sides hid it in part)
   // the cases: each count of live neighbours; a rule with letters (Hensel's on squares, Callahan's on hexagons), each
@@ -15565,7 +15565,7 @@ const undersideColour = () => (document.documentElement.dataset.theme === 'light
 // the plane's ground at the screen's height y, a solid colour: its sky's there, else the page's background
 function groundAt(y) {
   const stops = skyStops(), f = Math.min(1, Math.max(0, y / canvasHeight));
-  if (!stops) return getComputedStyle(document.documentElement).getPropertyValue('--bg').trim();
+  if (!stops) return getComputedStyle(document.documentElement).getPropertyValue('--page-background').trim();
   const k = Math.max(1, stops.findIndex(([at]) => at >= f)), [a, A] = stops[k - 1], [b, B] = stops[k], t = (f - a) / (b - a || 1);
   return `rgb(${hexRgb(A).map((v, d) => Math.round(v + (hexRgb(B)[d] - v) * t)).join(', ')})`;
 }
@@ -17239,7 +17239,7 @@ function gpuPlane(paint) {
     Object.assign(D, { planeCount: c, planeLines: null });
     D.keys.plane = key; D.keys.planeBase = null;
   }
-  const bg = getComputedStyle(document.documentElement).getPropertyValue('--bg') || '#fff';
+  const bg = getComputedStyle(document.documentElement).getPropertyValue('--page-background') || '#fff';
   if (D.keys.planeBase !== bg) {
     const page = packed(bg.trim()), walled = packed(LIFE_WALL);
     device.queue.writeBuffer(D.planeBase, 0, Uint32Array.from({ length: F.m }, (_, t) => (t >= n ? walled : page)));
@@ -17509,7 +17509,7 @@ function drawActivity() {
   const ctx = cv.getContext('2d'), css = getComputedStyle(document.documentElement);
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   ctx.clearRect(0, 0, W, H);
-  const accent = css.getPropertyValue('--accent');
+  const accent = css.getPropertyValue('--accent-color');
   // step i of n at column xOf(i), from the left edge to the right one, as a click takes it (see seekCurve); a column's highest
   // value; fewer steps than columns: each column the step nearest it (no gaps, a comb)
   const xOf = (i, n) => Math.round((i * (W - 1)) / Math.max(1, n - 1));
@@ -17565,13 +17565,13 @@ function drawActivity() {
   // on top, blue in the middle, green below: several on one step all seen), cropped at the edges as the curve; its start's
   // (a reversible one's, its past on its left) a line alone
   const marks = [], mark = (g, colour, row = null) => marks.push([xOf(g - first, n) + 0.5, colour, row]);
-  if (first < 0) mark(0, css.getPropertyValue('--muted'));
+  if (first < 0) mark(0, css.getPropertyValue('--muted-text-color'));
   const o = runLoop();
   if (o) mark(o.T, css.getPropertyValue('--run-end-color'), 2);  // (its loop's first step, or where it stops (frozen, dead, a walk's end): in its link's colour)
   else if (!walk.life && walk.n) mark(walk.n, css.getPropertyValue('--run-end-color'), 2);  // (a walk's end, the length asked)
   if (sweetSpot() !== null) mark(sweetSpot(), css.getPropertyValue('--sweet-spot-color'), 1);  // (its sweet spot, as its link)
   if (walk.life?.colours === 1 && lifeTime()) {  // (as their gauges: its ordered moments, a reversible one's (see orderMarks), else the most ordered; the most alive, in gold as the curve)
-    for (const g of reversibleRun() ? orderMarks(walk.life) : [peaks(walk.life).orderGen]) mark(g, css.getPropertyValue('--sector'), 1);
+    for (const g of reversibleRun() ? orderMarks(walk.life) : [peaks(walk.life).orderGen]) mark(g, css.getPropertyValue('--sector-color'), 1);
     mark(peaks(walk.life).aliveGen, accent, 0);
   } else if (walk.battle) {  // (a battle's deaths, each in its walker's colour; those of one step each a row down, as the others' marks)
     const dead = walk.battle.deaths;
@@ -17600,7 +17600,7 @@ function renderGauges(L) {
   box.hidden = L.colours !== 1;
   if (box.hidden) return;
   const avg = loopMeans(L), varies = avg && L.loopMax[1] > L.loopMin[1], b = L.bornNow, d = L.deadNow, before = L.aliveCount - b + d, both = L.aliveCount + before;
-  const turnover = both ? (b + d) / both : 0, gold = 'var(--accent)', blue = 'var(--sector)', P = peaks(L);
+  const turnover = both ? (b + d) / both : 0, gold = 'var(--accent-color)', blue = 'var(--sector-color)', P = peaks(L);
   const rows = [  // name, colour (none: the theme's live cells'), its bar's share (none: figures only), its figures
     ['Alive', gold, (varies ? avg[1] : L.aliveCount) / P.alive, `<b>${varies ? meanText(avg[1]) : formatNumber(L.aliveCount)}</b>`],
     ['Peak alive', gold, P.alive / n, `${formatNumber(P.alive)} · ${genLink(P.aliveGen)}`],
@@ -17662,7 +17662,7 @@ function renderWalkGauges() {
                                              cells: [`<b>${formatNumber(w[s])}</b>${gone(s) ? ' ✝' : ''}`, formatNumber(D.bestAt(s)), deaths[s] >= 0 ? genLink(deaths[s]) : '', ...(C.body ? [formatNumber(D.size[s])] : []), from(s).toFixed(1)] })), C.titles);
     return;
   }
-  const p = (v) => formatNumber(Math.round(v * 100) / 100 || 0), P = walkPeak(), gold = 'var(--accent)', c = walk.cells[stepShown];
+  const p = (v) => formatNumber(Math.round(v * 100) / 100 || 0), P = walkPeak(), gold = 'var(--accent-color)', c = walk.cells[stepShown];
   paintGauges([
     ['Position', null, null, walk.is3d ? `(${p(x)}, ${p(y)}, ${p(z)})` : `(${p(x)}, ${p(y)})`],
     ['Distance', gold, d / P.far, `<b>${d.toFixed(1)}</b>`],
@@ -17713,9 +17713,9 @@ function renderRanking(L) {
 // dead, said
 function paintRanking(rows, titles) {
   const T = $('rankTitles'), names = titles.map((t) => t[0]).join();
-  // its columns as wide as their words, open (--rank-columns: the titles' and the rows' grids alike): a title's own width,
+  // its columns as wide as their words, open (--rank-column-widths: the titles' and the rows' grids alike): a title's own width,
   // else its first and last 70 px, the others 56
-  T.closest('.stage-bar').style.setProperty('--rank-columns', titles.map(([, , w], i) => `${w ?? (i && i < titles.length - 1 ? 56 : 70)}px`).join(' '));
+  T.closest('.stage-bar').style.setProperty('--rank-column-widths', titles.map(([, , w], i) => `${w ?? (i && i < titles.length - 1 ? 56 : 70)}px`).join(' '));
   if (T.dataset.key !== names) { T.replaceChildren(...titles.map(([name, tip]) => Object.assign(document.createElement('span'), { textContent: name, title: tip ?? '' }))); T.dataset.key = names; }
   $('ranking').hidden = T.hidden = false;
   const box = $('ranking'), H = 18, key = rows.map((r) => `${r.colour}|${r.name}|${r.cells.length}`).join();
@@ -17824,7 +17824,7 @@ function updateStats() {
     const d = Number(chip.querySelector('small')?.id.slice(5));
     chip.classList.toggle('next', d === next);
     chip.classList.toggle('read', d === read && read !== next);
-    chip.style.setProperty('--c', chip.querySelector('b')?.style.background ?? '');
+    chip.style.setProperty('--chip-color', chip.querySelector('b')?.style.background ?? '');
   }
   // digit strip around the current step
   const strip = $('digitStrip');
@@ -18919,7 +18919,7 @@ updateSpeedLabel();
 resize();
 requestAnimationFrame(tick);
 $('appTab').innerHTML = `${appLogo()} ${APP_TITLE} v${VERSION}`;
-$('favicon').href = `data:image/svg+xml,${encodeURIComponent(appLogo(cssColour('--accent')))}`;
+$('favicon').href = `data:image/svg+xml,${encodeURIComponent(appLogo(cssColour('--accent-color')))}`;
 // Credits: the people whose work it shows, a page in the middle pane as How it works, opened and closed by the app's tab (π,
 // its name and version; lit while it shows, as Gallery's); closed as How it works is, by a click elsewhere; Share link and Home there
 const creditsShown = () => !$('ruleTuto').hidden && $('ruleTuto').dataset.shown === 'credits';

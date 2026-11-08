@@ -5,20 +5,20 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Lenia Worlds</title>
 <style>
-  :root { --bg: #0b0d12; --panel: #141821; --line: #262c39; --text: #d8dde8; --dim: #8a93a6; --accent: #7aa2ff; }
+  :root { --page-background: #0b0d12; --panel-background: #141821; --border-color: #262c39; --text-color: #d8dde8; --muted-text-color: #8a93a6; --accent-color: #7aa2ff; }
   * { box-sizing: border-box; }
-  html, body { margin: 0; height: 100%; background: var(--bg); color: var(--text); font: 13px/1.35 system-ui, -apple-system, Segoe UI, sans-serif; }
+  html, body { margin: 0; height: 100%; background: var(--page-background); color: var(--text-color); font: 13px/1.35 system-ui, -apple-system, Segoe UI, sans-serif; }
   body { display: flex; }
-  #panel { width: 270px; flex: none; height: 100%; overflow-y: auto; background: var(--panel); border-right: 1px solid var(--line); padding: 12px; }
+  #panel { width: 270px; flex: none; height: 100%; overflow-y: auto; background: var(--panel-background); border-right: 1px solid var(--border-color); padding: 12px; }
   #stage { flex: 1; position: relative; min-width: 0; }
   #view { position: absolute; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; cursor: crosshair; }
   h1 { font-size: 15px; margin: 0 0 2px; letter-spacing: .02em; }
-  .sub { color: var(--dim); font-size: 11.5px; margin-bottom: 10px; }
-  .sec { margin: 12px 0 5px; color: var(--dim); font-size: 11px; text-transform: uppercase; letter-spacing: .06em; }
+  .sub { color: var(--muted-text-color); font-size: 11.5px; margin-bottom: 10px; }
+  .sec { margin: 12px 0 5px; color: var(--muted-text-color); font-size: 11px; text-transform: uppercase; letter-spacing: .06em; }
   /* The one button; .on is its active state, [disabled] its greyed one */
-  .btn { appearance: none; border: 1px solid var(--line); background: #1b202b; color: var(--text); font: inherit; padding: 5px 9px; border-radius: 6px; cursor: pointer; }
+  .btn { appearance: none; border: 1px solid var(--border-color); background: #1b202b; color: var(--text-color); font: inherit; padding: 5px 9px; border-radius: 6px; cursor: pointer; }
   .btn:hover { background: #222838; }
-  .btn.on { background: #2b3a5e; border-color: var(--accent); color: #fff; }
+  .btn.on { background: #2b3a5e; border-color: var(--accent-color); color: #fff; }
   .btn[disabled] { opacity: .4; cursor: default; }
   /* One choice among several: buttons joined in one frame */
   .tabs { display: flex; flex-wrap: wrap; }
@@ -36,24 +36,24 @@
   .verdict { margin-bottom: 4px; }
   .tally { display: flex; align-items: center; gap: 8px; padding: 2px 0; }
   .tally .name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .tally .nums { color: var(--dim); font-variant-numeric: tabular-nums; }
-  #score canvas { display: block; margin-top: 6px; background: #0f1219; border: 1px solid var(--line); border-radius: 4px; }
+  .tally .nums { color: var(--muted-text-color); font-variant-numeric: tabular-nums; }
+  #score canvas { display: block; margin-top: 6px; background: #0f1219; border: 1px solid var(--border-color); border-radius: 4px; }
   #tournament .tabs { margin-bottom: 6px; }
   #tournament .row { margin-bottom: 6px; }
-  .match { display: block; color: var(--dim); font-size: 11.5px; text-decoration: none; padding: 1px 0; }
-  .match:hover { color: var(--accent); }
+  .match { display: block; color: var(--muted-text-color); font-size: 11.5px; text-decoration: none; padding: 1px 0; }
+  .match:hover { color: var(--accent-color); }
   #panel.busy * { pointer-events: none; }
   #panel.busy #tournament .btn { pointer-events: auto; }
-  .seed { align-self: center; color: var(--dim); font-variant-numeric: tabular-nums; margin-right: 4px; }
+  .seed { align-self: center; color: var(--muted-text-color); font-variant-numeric: tabular-nums; margin-right: 4px; }
   .slot .name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .slot select { flex: 1; min-width: 0; background: #0f1219; color: var(--text); border: 1px solid var(--line); border-radius: 4px; font: inherit; padding: 3px; }
+  .slot select { flex: 1; min-width: 0; background: #0f1219; color: var(--text-color); border: 1px solid var(--border-color); border-radius: 4px; font: inherit; padding: 3px; }
   .slot .dot { width: 8px; height: 8px; border-radius: 50%; flex: none; }
-  #stats { margin-top: 12px; color: var(--dim); font-size: 11.5px; font-variant-numeric: tabular-nums; }
-  #help { margin-top: 10px; color: var(--dim); font-size: 11.5px; }
+  #stats { margin-top: 12px; color: var(--muted-text-color); font-size: 11.5px; font-variant-numeric: tabular-nums; }
+  #help { margin-top: 10px; color: var(--muted-text-color); font-size: 11.5px; }
   #fail { position: absolute; inset: 0; display: none; align-items: center; justify-content: center; text-align: center; padding: 20px; }
   @media (max-width: 700px) {
     body { flex-direction: column-reverse; }
-    #panel { width: 100%; height: 45%; border-right: 0; border-top: 1px solid var(--line); }
+    #panel { width: 100%; height: 45%; border-right: 0; border-top: 1px solid var(--border-color); }
   }
 </style>
 </head>
@@ -81,7 +81,7 @@
   <div class="sec">Run</div>
   <div class="row" id="runRow"></div>
   <div id="stats"></div>
-  <div id="help">Click places the selected species, turned at random; drag moves the view, the wheel zooms. Wall and Eraser draw by dragging. Species by Bert Chan (<a href="https://github.com/Chakazul/Lenia" style="color:var(--accent)">Lenia</a>).</div>
+  <div id="help">Click places the selected species, turned at random; drag moves the view, the wheel zooms. Wall and Eraser draw by dragging. Species by Bert Chan (<a href="https://github.com/Chakazul/Lenia" style="color:var(--accent-color)">Lenia</a>).</div>
 </div>
 <div id="stage">
   <canvas id="view"></canvas>

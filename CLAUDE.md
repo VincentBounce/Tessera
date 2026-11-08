@@ -127,8 +127,8 @@ While the checks run unattended (a night, a meal), also audit what they cannot s
   tab (Walk, Ant, Life, 2D and 3D).
 - **Every Custom rule**: Life's, each walk's, the ants', the turmite's, the worm's: valid and wrong rules, Enter, Escape,
   the link made, opened cold, the card it lands on.
-- **Every night, clean transitions, no debris**: while a walk is computed the tab (`$('mode').value`) already shows the
-  next mode and the walk shown (`walk`, `walk.mode`) is still the old one: grep every read of `$('mode').value` and check
+- **Every night, clean transitions, no debris**: while a walk is computed the tab (`tabMode()`) already shows the
+  next mode and the walk shown (`walk`, `walk.mode`) is still the old one: grep every read of `tabMode()` (the judges take their mode in each call, no default) and check
   none is mixed with the walk shown (`walk.geo`, `walk.life`, `walk.plane`…): what describes the walk shown reads
   `walk.mode`, what sets up the next one reads the tab, a figure's colours read the mode of their own mesh; then the fuzz and
   the cold fuzz, switching tabs fast (before the walk is built), no error, nothing of the old walk left on screen.

@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.681';
+const VERSION = '0.4.682';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -1641,6 +1641,7 @@ function cameraFrom(yaw, pitch) {
 const CAMERA_START = cameraFrom(-0.6, 0.5);
 const camera = { ...CAMERA_START };
 let bounds3 = null;                        // 3D bounding box of points 0..stepShown
+let frameBox3 = null;                      // the box the 3D view was framed on last (see includeBox): its turns' and camera's centre, kept till the walk leaves its frame
 
 const stage = $('stage');
 const layers = {
@@ -4329,7 +4330,8 @@ const perspectiveAllowed = () => walk.is3d;
 
 // Set walk.persp from the checkbox: centre and size from the box drawn (or the solid), camera
 // at 2.5 × that radius, i.e. a field of view of roughly 45°; a box's (boxPersp) follows it as it grows (see includeBox)
-const boxPersp = (b) => ({ c: [(b[0] + b[1]) / 2, (b[2] + b[3]) / 2, (b[4] + b[5]) / 2], D: 2.5 * Math.max(3, Math.hypot(b[1] - b[0], b[3] - b[2], b[5] - b[4]) / 2) });
+const boxMiddle = (b) => [(b[0] + b[1]) / 2, (b[2] + b[3]) / 2, (b[4] + b[5]) / 2];
+const boxPersp = (b) => ({ c: boxMiddle(b), D: 2.5 * Math.max(3, Math.hypot(b[1] - b[0], b[3] - b[2], b[5] - b[4]) / 2) });
 function setPerspective() {
   if (!perspectiveAllowed() || !$('perspective').checked) { walk.persp = null; return; }
   if (walk.plane) { walk.persp = boxPersp(stack?.box ?? bounds3); return; }  // Space-time: its cubes' box (being made: the box till then)
@@ -4399,8 +4401,7 @@ const screenTurn = (a, b, c) => [0, 1, 2].map((i) => a * camera.r[i] + b * camer
 // surface that box grows unevenly with the walk: turning around it made the solid slide while
 // auto-fit followed the walker.) Then recompute the projection; the frame does not change.
 function rotateView(w) {
-  const [x0, x1, y0, y1, z0, z1] = bounds3 || [0, 0, 0, 0, 0, 0];
-  const c = walk.sphere ? [0, 0, 0] : [(x0 + x1) / 2, (y0 + y1) / 2, (z0 + z1) / 2];
+  const c = walk.sphere ? [0, 0, 0] : boxMiddle(frameBox3 ?? bounds3 ?? [0, 0, 0, 0, 0, 0]);  // (round its frame's centre)
   const before = projectPoint(...c);
   turnCam(w);
   if (!walk.is3d) return;
@@ -15368,18 +15369,17 @@ function showAll() {
 // 3D walks: framed by the sphere round the walk's box (its centre, half its diagonal; in perspective,
 // its outline from the camera, D/√(D² − r²) times wider), as a surface is by its solid: the same
 // whichever way the walk turns, so turning it never zooms
-function includeBox() {
+function includeBox(refit = false) {  // (refit: framed again, its centre the box's now: a fit, or the walk out of its frame)
   if (!walk.is3d || walk.sphere) return;
-  if (walk.persp) walk.persp = boxPersp(bounds3);  // (its camera aimed at the same box: one centre, its turns', its frame's)
-  const [x0, x1, y0, y1, z0, z1] = bounds3, [cx, cy] = projectPoint((x0 + x1) / 2, (y0 + y1) / 2, (z0 + z1) / 2);
-  const c = cubesWalk() ? 2 * cellShape().half : 0;  // the cells of a walk on cells, past their centres
-  const r = Math.hypot(x1 - x0 + c, y1 - y0 + c, z1 - z0 + c) / 2, P = walk.persp, R = P && P.D > r ? (r * P.D) / Math.sqrt(P.D * P.D - r * r) : r;
+  if (refit || !frameBox3) { frameBox3 = bounds3.slice(); if (walk.persp) walk.persp = boxPersp(frameBox3); }  // (its camera aimed at it: one centre, its turns', its frame's)
+  const m = boxMiddle(frameBox3), [cx, cy] = projectPoint(...m), c = cubesWalk() ? cellShape().half : 0;  // (the cells of a walk on cells, past their centres)
+  const r = Math.hypot(...[0, 1, 2].map((d) => Math.max(m[d] - bounds3[2 * d], bounds3[2 * d + 1] - m[d]) + c)), P = walk.persp, R = P && P.D > r ? (r * P.D) / Math.sqrt(P.D * P.D - r * r) : r;  // (out to the walk's farthest corner from it)
   bounds = { minX: cx - R, maxX: cx + R, minY: cy - R, maxY: cy + R };
 }
 
 // Frame everything drawn so far
 function fitWhole() {
-  includeBox();
+  includeBox(true);
   fitToBounds(padBounds(bounds));
 }
 
@@ -15392,7 +15392,7 @@ function restart() {
   drawn = 0;
   stepsDue = 0;
   bounds = { minX: 0, maxX: 0, minY: 0, maxY: 0 };
-  bounds3 = [0, 0, 0, 0, 0, 0];
+  bounds3 = [0, 0, 0, 0, 0, 0]; frameBox3 = null;
   if (walk.sphere) {  // the frame is the whole sphere, centred on the origin
     const R = walk.R;
     bounds = surfaceBounds();  // the current form, flat or round
@@ -18008,6 +18008,7 @@ function tick(now = performance.now()) {
   if (!playing && !reversing && stepShown !== linkedAt) { linkedAt = stepShown; syncLink(); }  // (still: the link at the step shown, see getSetup's at)
   includeBox();
   if (walk.n && !walk.sphere && $('autoFit').checked && boundsOffscreen(viewGoal || view)) {  // 15% room to grow (a surface's frame is fixed)
+    includeBox(true);  // (a 3D walk: framed again round its box now)
     const b = padBounds(bounds);
     const mx = (b.maxX - b.minX) * 0.15, my = (b.maxY - b.minY) * 0.15;
     viewGoal = viewFor({ minX: b.minX - mx, maxX: b.maxX + mx, minY: b.minY - my, maxY: b.maxY + my });

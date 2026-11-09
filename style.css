@@ -200,7 +200,7 @@ button.primary {
 .size-gauge .notches span { width: 2px; height: 5px; background: var(--border-color); border-radius: 1px; }
 .stepper span small { display: block; font-size: var(--caption-text-size); font-weight: 400; color: var(--muted-text-color); line-height: 1.2; }  /* a size: what to picture, then its tiles */
 .stepper span, .stepper input, .notch-field #speedLabel { flex: 1; text-align: center; color: var(--accent-color); font-weight: 600; white-space: nowrap; }  /* the setup at a glance */
-.notch-field #speedLabel { flex: none; }  /* (as wide as its words, against the slider at the steppers' gap) */
+.notch-field #speedLabel { flex: none; min-width: 7.5ch; text-align: right; font-variant-numeric: tabular-nums; }  /* (its digits all one width, its place its longest words', ≈1152𓊍/s: the slider still as it changes) */
 /* the number of digits can be typed: a field that looks like the label until it is hovered or used */
 #loopLabel { color: var(--text-color); }
 #loopLabel.on { color: var(--accent-color); }

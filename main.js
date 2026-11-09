@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.660';
+const VERSION = '0.4.661';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -15322,8 +15322,13 @@ function advanceTo(target, until = Infinity) {  // forth or back (a walk; a reve
 const lifeEnded = () => { const s = walk.life?.stable; return !!s && (s.extinct || s.P === 1) && stepShown === s.T && !(trailOn() && walk.life.gen <= s.T + LIFE_TRAIL.length); };
 // at its end: its last step (a loop known: none, round it on, see looping), or a run that froze or died there
 const atEnd = () => (stepShown >= runEnd() && !looping()) || lifeEnded();
+// the motion started, stopped or turned (play, reverse): a step's fraction gone, the position on its notch (forth the step
+// reached, back the one it left: see glideAt), drawn again; every glide starts from a whole step
+const motionChanged = () => { stepsDue = 0; needsFull = true; };
 function play(on) {
+  const was = playing;
   playing = on && walk.n > 0 && !atEnd();
+  if (playing !== was) motionChanged();
   // (playing: View, Draw's look only, the brush picked before given back once it stops: a link loaded cold the same)
   if (playing && drawing && brush.id !== 'view') { brush.before = brush.id; brush.id = 'view'; ghost = null; drawGhost(); renderPlaneRow(); }
   else if (!playing && brush.before) { brush.id = brush.before; brush.before = null; renderPlaneRow(); }
@@ -15342,7 +15347,9 @@ const playsBack = () => !lifeTime() || !!walk.life.margolus;  // (◀: a walk, S
 // chosen: its run built or not yet (a big grid's, a moment); a reversible one's ◀ too (see playsBack)
 const lifePlayer = () => { const m = MODES[walk.mode]; return !!m?.life && !m.elementary && !walk.stacked; };  // (Elementary's rows: a walk's, its end known)
 function reverse(on) {
+  const was = reversing;
   reversing = on && playsBack() && (stepShown > runStart() || loopBack());  // (a loop known: from 0 too, a round back)
+  if (reversing !== was) motionChanged();
   if (reversing) play(false);
   const shown = reversing ? 'pause' : 'reverse';
   if ($('reverse').dataset.shown !== shown) $('reverse').innerHTML = icon($('reverse').dataset.shown = shown);  // (only when it changes: a click on it kept)

@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.684';
+const VERSION = '0.4.685';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -4275,7 +4275,7 @@ function buildWalkOf() {
                         keys, sphere: false, life: null, rows,
                         xs: is3d ? new Float64Array(len + 1) : wx,
                         ys: is3d ? new Float64Array(len + 1) : wy });
-  if (is3d) { setPerspective(); project(); } else walk.persp = null;
+  if (is3d) setPerspective(); else walk.persp = null;
   loopCount();
   updateHint();
   restart();
@@ -4317,12 +4317,6 @@ function projector() {
   };
 }
 
-// Projection of the whole 3D walk (xs, ys) on the screen, same formula as projectPoint (its bounds, a hover; drawn in its
-// 3D scene, see gpuCubes)
-function project() {
-  const { wx, wy, wz, xs, ys } = walk, proj = projector();
-  for (let i = 0; i < xs.length; i++) [xs[i], ys[i]] = proj(wx[i], wy[i], wz[i]);
-}
 
 // Perspective can apply to every 3D view (checkbox; on by default for the cube walks and the cube surface)
 const perspectiveAllowed = () => walk.is3d;
@@ -4411,7 +4405,6 @@ function rotateView(w) {
     viewGoal.cx -= before[0] - after[0];
     viewGoal.cy -= before[1] - after[1];
   }
-  project();
   includeBox();  // the frame is a sphere round the walk or the solid, whichever way it turns
   needsFull = true;
 }
@@ -6555,7 +6548,6 @@ function applyShape() {
     const { wx, wy, wz } = walk;
     for (let i = 0; i <= walk.n; i++) [wx[i], wy[i], wz[i]] = placePoint(walk.vert ? walk.vert[i] : walk.tile[i]);
   }
-  project();
   const F = R * sh.extent;
   bounds = surfaceBounds();
   bounds3 = [-F, F, -F, F, -F, F];
@@ -7662,7 +7654,6 @@ function walkRecorder(seq, ahead, base, R, nodes, len = seq.length) {  // (len: 
                             xs: new Float64Array(n), ys: new Float64Array(n), ...more });
       initShape(kind);
       setPerspective();
-      project();
       updateHint();
       restart();
       if (walk.shape) applyShape();
@@ -9305,7 +9296,6 @@ function buildLife(seq, mode) {
                         xs: new Float64Array(1), ys: new Float64Array(1) });
   initShape(kind);
   setPerspective();
-  project();
   updateHint();
   startColours(walk.life.seed);  // in colours, each in its part
   countSeed(walk.life);
@@ -14989,7 +14979,6 @@ function applyPendingView() {
     $('autoFit').checked = g.autoFit;
     $('autoRotate').checked = g.autoRotate;
     Object.assign(camera, g.camera);
-    if (walk.is3d) project();
     if (walk.plane) bounds = planeBounds();  // (Life's grid: its own frame, as restart gives it)
     else if (!walk.sphere) {  // the 2D bounds of the walk again (a surface's are the fixed solid, as in rotateView)
       const done = stepShown;

@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.727';
+const VERSION = '0.4.728';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -8564,7 +8564,7 @@ function battleOf(P) {
 }
 // a fight's title, a battle's (its walkers' numbers) and Life's in colours (its pictures, its patterns): each its team's
 // name in its colour, vs between them (their scores, and who won, in the ranking under it)
-const versusTitle = (names) => names.map((name, s) => `<span style="color:${teamColour(s)}">${name}</span>`).join(' vs ');
+const versusTitle = (names) => (names.length < 2 ? names.join('') : names.map((name, s) => `<span style="color:${teamColour(s)}">${name}</span>`).join(' vs '));  // (one alone: no team to tell apart, the text's colour)
 // A battle's closed areas at the step it is at (P: its player; Area, see drawSphere), each tile's walker + 1 (0: none):
 // for each living walker along the grid (Cut's, Area on; on cells none: Area greyed there), the regions its body cuts off,
 // as a walk's (see areaSteps: tiles parted by its edges), the largest (the outside) left out; a tile closed by two or

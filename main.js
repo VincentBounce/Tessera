@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.661';
+const VERSION = '0.4.662';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -15733,6 +15733,8 @@ const turnToward = (from, to, n, w) => {
 // the plane (an arrow, see drawOverlay); else on its place
 const gliding = () => (playing || reversing) && stepsPerSecond() * frameTime < 1 && !!walk.n && !walk.life && !walk.rows;
 const glideAt = () => (!gliding() ? stepShown : reversing ? Math.max(0, stepShown - stepsDue) : Math.min(stepShown + stepsDue, (walk.battle?.player.n ?? walk.n)));
+// the glide split, every line's animation (2D, 3D, Solo, each walker's): [the steps drawn whole, the share of the next one drawn]
+const glideSplit = () => { const at = glideAt(), whole = Math.floor(at); return [whole, at - whole]; };
 // a start's flag: its pole planted in its place along the surface's normal, over a head (2.2 of its sizes high), its sail
 // at its top an arrow pointing the way it goes (both its faces); its triangles' corners and normals, as an ogive's
 function flagOf({ p, h, side, nrm, size }) {
@@ -16714,7 +16716,7 @@ const GPU_VIEW = `
 struct U {
   R: vec3f, depth: f32, Uu: vec3f, shade: f32, V: vec3f, glint: f32, L: vec3f, lr: f32, H: vec3f, alpha: f32, Lx: vec3f, edge: f32,
   Ly: vec3f, bias: f32, edgeRgb: vec3f, halfW: f32, persp: vec4f, plain: vec4f, view: vec3f, N: f32, cc: vec2f, screen: vec2f,
-  cut: i32, glass: i32, both: i32, colour: i32, alphaF: f32, bright: f32, width: f32, loopFrom: f32, period: f32, turnC: f32, turnS: f32, cutN: vec3f, stepNow: f32, fadeSteps: f32,
+  cut: i32, glass: i32, both: i32, colour: i32, alphaF: f32, bright: f32, width: f32, loopFrom: f32, period: f32, turnC: f32, turnS: f32, cutN: vec3f, stepNow: f32, fadeSteps: f32, grow: f32,
   tpl: array<vec4f, 12>,  // (the polygons' corners, two a vec4)
 }
 @group(0) @binding(0) var<uniform> u: U;
@@ -16794,7 +16796,7 @@ struct Rib { @builtin(position) pos: vec4f, @location(0) col: vec3f, @location(1
   var o: Rib;
   if (u.colour == 3 && i > 254.5) { o.pos = vec4f(0.0, 0.0, -2.0, 1.0); o.col = vec3f(0.0); o.cutv = 0.0; return o; }  // (a link of none, see battleLinesOnGpu: off the clip space)
   if (u.colour == 3) { o.col = band(pal, (i + 0.5) / 256.0); } else { o.col = rainbow(i); }  // (a battle's bodies: their colours, see battlePalette)
-  let b = mix(a, b0, select(clamp(u.stepNow - i, 0.0, 1.0), 1.0, u.colour == 3));  // (the step on its way: drawn as far as it glided, as flatPathV)
+  let b = mix(a, b0, u.grow);  // (its share drawn: 1 whole, the step on its way as far as it glided, see the ribbons' ranges)
   var d = b0 - a; if (length(d) > 1e-9) { d = normalize(d); } else { d = vec3f(1.0, 0.0, 0.0); }
   let side = normalize(cross(d, n)) * u.halfW;
   var on = floor(e / 2.0); if (quad.x < 0.5) { on = e - 2.0 * floor(e / 2.0); }
@@ -16817,7 +16819,7 @@ struct Col { @builtin(position) pos: vec4f, @location(0) col: vec4f }
   var o: Col;
   if (key == 255u) { o.pos = vec4f(2.0, 2.0, 2.0, 1.0); return o; }  // (a step that draws nothing: a spiral's 0)
   if (u.colour == 2) { o.col = vec4f(band(pal, (f32(key) + 0.5) / 256.0), 1.0); } else { o.col = vec4f(rainbow(f32(k)), 1.0); }
-  let a = u.view.yz + a0 * u.view.x; let b = u.view.yz + mix(a0, b0, clamp(u.stepNow - f32(k), 0.0, 1.0)) * u.view.x;  // (the step on its way: drawn as far as it glided)
+  let a = u.view.yz + a0 * u.view.x; let b = u.view.yz + mix(a0, b0, u.grow) * u.view.x;  // (its share drawn: 1 whole, the step on its way as far as it glided, see glideSplit)
   var d = b - a; if (length(d) > 1e-4) { d = normalize(d); } else { d = vec2f(1.0, 0.0); }
   o.pos = flatAt(mix(a, b, quad.x) + (vec2f(-d.y, d.x) * quad.y + d * (quad.x * 2.0 - 1.0)) * u.width * 0.5);
   return o;
@@ -16855,7 +16857,7 @@ function gpuView(words, k, depth, more = {}) {
   f.set(cutNormal(), 60);  // (Cut's plane, facing its axis: see CUT_AXES)
   const at = { alpha: [19, 'f'], edge: [23, 'f'], bias: [27, 'f'], halfW: [31, 'f'], N: [43, 'f'], cut: [48, 'i'], glass: [49, 'i'], both: [50, 'i'], colour: [51, 'i'],
     alphaF: [52, 'f'], bright: [53, 'f'], width: [54, 'f'], loopFrom: [55, 'f'], period: [56, 'f'], turnC: [57, 'f'], turnS: [58, 'f'],
-    stepNow: [63, 'f'], fadeSteps: [64, 'f'] };
+    stepNow: [63, 'f'], fadeSteps: [64, 'f'], grow: [65, 'f'] };
   for (const [k2, v] of Object.entries(more)) {
     if (k2 === 'edgeRgb') f.set(v, 28); else if (k2 === 'plain') f.set(v, 36); else if (k2 === 'tpl') f.set(v, 68);
     else (at[k2][1] === 'f' ? f : i)[at[k2][0]] = v;
@@ -17069,8 +17071,12 @@ function gpuSurface(paint, path) {
   const segs = (path || lines) && !P?.ownLines && glideAt() > 0 && (D.keys.segs !== walk.wx || D.keys.segsM !== sh.m || D.ribbonOf || D.keys.segsKeyed !== keyed) ? pathSegments(P) : null;
   if (segs && keyed) { const look = stepLook('digit'); for (let o = 10; o < segs.data.length; o += 11) segs.data[o] = look.key(segs.data[o]); }  // (its step's command instead of its step)
   if (segs) { gpuBuffer('ribbon', segs.data); D.ribbonOf = null; D.segsAt = segs.at; D.keys.segs = walk.wx; D.keys.segsM = sh.m; D.keys.segsKeyed = keyed; }
-  const ranges = !(path || lines) || glideAt() <= 0 || !(P?.ownLines ? D.segsRanges : D.segsAt) ? [] : !lines ? [[0, D.segsAt[glideAt() > stepShown ? Math.min(stepShown + 1, walk.n) : stepShown]]] : P.ownLines ? D.segsRanges
-    : P.standing().map((s) => [D.segsAt[s][Math.max(1, P.from[s])], D.segsAt[s][P.step + 1]]);
+  // the segments drawn, [first, end, share]: the steps glideSplit draws whole, the one on its way at its share
+  // (forth or back, Solo or each walker's: a segment's own number its walker's, or its command's, never its step's)
+  const [j, part] = glideSplit(), until = (A, k) => A[Math.min(k, A.length - 1)];
+  const ranges = !(path || lines) || j + part <= 0 || !(P?.ownLines ? D.segsRanges : D.segsAt) ? [] : P?.ownLines ? D.segsRanges.map(([a, b]) => [a, b, 1])
+    : !lines ? [[0, until(D.segsAt, j), 1], [until(D.segsAt, j), until(D.segsAt, j + 1), part]]
+    : P.standing().flatMap((s) => [[D.segsAt[s][Math.max(1, P.from[s])], until(D.segsAt[s], j + 1), 1], [until(D.segsAt[s], j + 1), until(D.segsAt[s], j + 2), part]]);
   const heads = headsOf(), headFrom = heads.reduce((at, [m]) => [...at, at.at(-1) + m.length / 6], [0]);  // (their corners: each its first, in the one buffer)
   if (heads.length) {
     gpuBuffer('headMesh', Float32Array.from(heads.flatMap(([m]) => m))); gpuBuffer('headAt', new Float32Array(3 * heads.length));
@@ -17094,12 +17100,13 @@ function gpuSurface(paint, path) {
       rp.setBindGroup(0, gpuGroup(), [slotOf({ glass: pass, cut, edge: edgeAlpha(sh), edgeRgb: EDGE_RGB.map((c) => c / 255), bias: edgeBias, both: both ? 1 : 0 })]);
       rp.setVertexBuffer(0, D.ePos); rp.setVertexBuffer(1, D.eN1); rp.setVertexBuffer(2, D.eN2); rp.draw(D.eCount);
     }
-    if (ranges.some(([a, b]) => b > a)) {
+    if (ranges.some(([a, b, share]) => b > a && share > 0)) {
       rp.setPipeline(gpuDrawPipe('ribbon', { vertex: 'ribbonV', fragment: 'ribbonF', topology: 'triangle-strip', pass, cull: both ? 'none' : 'back', writes: false,  // (a decal on the tiles: pulled over them, no depth of its own, a head over it, see ogiveOf)
         buffers: [vertexLayout(8, [vertexAttribute(0, 'float32x2')]), vertexLayout(44, [vertexAttribute(1, 'float32x3', 0), vertexAttribute(2, 'float32x3', 12), vertexAttribute(3, 'float32x3', 24), vertexAttribute(4, 'float32', 36), vertexAttribute(5, 'float32', 40)], 'instance')] }));
-      rp.setBindGroup(0, gpuGroup(), [slotOf({ glass: pass, cut, N: Math.max(1, rainbowLength()), loopFrom: walk.loop?.from ?? 0, period: closedLoop() ? walk.loop.period : 0, halfW: surfaceLineWidth() / 2 / view.scale, bias: pathBias, colour: lines || keyed ? 3 : 0, stepNow: glideAt() })]);
+      const look = { glass: pass, cut, N: Math.max(1, rainbowLength()), loopFrom: walk.loop?.from ?? 0, period: closedLoop() ? walk.loop.period : 0, halfW: surfaceLineWidth() / 2 / view.scale, bias: pathBias, colour: lines || keyed ? 3 : 0 };
+      const whole = slotOf({ ...look, grow: 1 }), going = slotOf({ ...look, grow: part });  // (two slots: the whole steps', the one on its way's)
       rp.setVertexBuffer(0, D.quad); rp.setVertexBuffer(1, D.ribbon);
-      for (const [a, b] of ranges) if (b > a) rp.draw(4, b - a, 0, a);
+      for (const [a, b, share] of ranges) if (b > a && share > 0) { rp.setBindGroup(0, gpuGroup(), [share === 1 ? whole : going]); rp.draw(4, b - a, 0, a); }
     }
     if (!heads.length) return;  // the heads: ogives lit as the cubes, each its colour (an instance), half under the tiles
     rp.setPipeline(gpuDrawPipe('cube', { vertex: 'cubeV', fragment: 'shadowedF', shadowed: true, pass,
@@ -17200,13 +17207,16 @@ function gpuFlat(to) {
   };
   if (fillCount) tiles(D.flatFill, D.flatFillAt, D.fillTpl, fillCount, areaLight() ? 0.35 : 1, 0);
   if (cellCount) tiles(D.flatCells, D.flatCellsAt, D.cellTpl, cellCount, shows('cells', walk.mode) && line ? 0.15 : 1, walkFadeSteps());
-  if (line && glideAt() > 0) {  // (from step 0 on: its first line grows too)
+  const [whole, part] = glideSplit();  // (the steps drawn whole, the next one's share: from step 0 on, its first line grows too)
+  if (line && whole + part > 0) {
     rp.setPipeline(gpuDrawPipe('flatPath', { vertex: 'flatPathV', fragment: 'colF', topology: 'triangle-strip', blend: BLEND_PRE, depth: false,
       buffers: [vertexLayout(8, [vertexAttribute(0, 'float32x2')]), vertexLayout(8, [vertexAttribute(1, 'float32x2')], 'instance'), vertexLayout(8, [vertexAttribute(2, 'float32x2')], 'instance'), vertexLayout(4, [vertexAttribute(3, 'uint32')], 'instance')] }));
-    rp.setBindGroup(0, gpuGroup(), [gpuView(D.words, slot++, 1, { colour: cells ? 0 : colour, N: Math.max(1, rainbowLength()), loopFrom: walk.loop?.from ?? 0,
-      period: closedLoop() ? walk.loop.period : 0, width: cells ? Math.max(0.6, Math.min(s * 0.12, 3)) : Math.max(0.6, Math.min(s * 0.3, 6)), stepNow: glideAt() })]);
+    const look = { colour: cells ? 0 : colour, N: Math.max(1, rainbowLength()), loopFrom: walk.loop?.from ?? 0,
+      period: closedLoop() ? walk.loop.period : 0, width: cells ? Math.max(0.6, Math.min(s * 0.12, 3)) : Math.max(0.6, Math.min(s * 0.3, 6)) };
     rp.setVertexBuffer(0, D.quad); rp.setVertexBuffer(1, D.flatPts, 0); rp.setVertexBuffer(2, D.flatPts, 8); rp.setVertexBuffer(3, D.flatKeys);
-    rp.draw(4, glideAt() > to ? Math.min(to + 1, walk.n) : to);  // (and the step on its way)
+    const steps = Math.min(whole, walk.n);
+    if (steps > 0) { rp.setBindGroup(0, gpuGroup(), [gpuView(D.words, slot++, 1, { ...look, grow: 1 })]); rp.draw(4, steps); }
+    if (part > 0 && steps < walk.n) { rp.setBindGroup(0, gpuGroup(), [gpuView(D.words, slot++, 1, { ...look, grow: part })]); rp.draw(4, 1, 0, steps); }
   }
   rp.end();
   device.queue.writeBuffer(D.uni, 0, D.words, 0, 512 * Math.max(1, slot));

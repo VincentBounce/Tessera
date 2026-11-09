@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.716';
+const VERSION = '0.4.717';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -15160,7 +15160,8 @@ const thumbnailStore = (mode, ask) => (thumbnailDb ??= new Promise((ok, fail) =>
   const r = indexedDB.open('tessera', 2);
   r.onupgradeneeded = () => { for (const name of [...r.result.objectStoreNames]) r.result.deleteObjectStore(name); r.result.createObjectStore('thumbnails'); };  // (its one store, made anew)
   r.onsuccess = () => { r.result.onversionchange = () => r.result.close(); ok(r.result); };  // (a newer page asking for its own: this one let go, not blocking it)
-  r.onerror = r.onblocked = () => fail(r.error);
+  r.onerror = () => fail(r.error);
+  r.onblocked = () => fail(new Error('Another tab holds an older version of the thumbnails: close or reload it.'));  // (none shown till then; its error not read before its end)
 })).then((db) => new Promise((ok, fail) => { const q = ask(db.transaction('thumbnails', mode).objectStore('thumbnails')); q.onsuccess = () => ok(q.result); q.onerror = () => fail(q.error); }));
 // The view as one thumbnail, cut to THUMBNAIL_SIZE from its middle: every layer under the hover's, in their order, without the
 // grid's lines. WebGPU's picture is only there in the frame that drew it: asked of the next frame, drawn whole without the
@@ -15180,6 +15181,7 @@ let rebuilding = false;
 async function rebuildThumbnails() {
   rebuilding = !rebuilding;
   syncRebuildTile(true);
+  if (rebuilding) try { await thumbnailStore('readonly', (store) => store.count()); } catch (e) { rebuilding = false; syncRebuildTile(true); alert(e.message); return; }  // (none kept: none taken)
   for (const { x, row } of galleryCards.slice()) {  // (as they are now: the list drawn again meanwhile, these go on)
     const { setup } = x;
     if (!rebuilding) return;

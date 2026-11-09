@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.720';
+const VERSION = '0.4.721';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -15063,6 +15063,12 @@ const setupDetail = (s, chips = '') => {  // (chips: its bar's, saved with it: w
 // its title: its bar's as it was saved (a battle's walkers, Life's start); one saved before: a walk's number, a Game of Life's
 // shape and tiles (see shapeAndTiles)
 const setupTitle = (x) => (x.chips === undefined && MODES[x.setup.w]?.life ? shapeAndTiles(x.setup.w) : x.name);
+// two setups in the menu's order: their mode as the menu lists it (NAV: its space, shape, tiles), then its size, its rule, its
+// number (its title only after them, see fillGalleryList)
+const setupOrder = (a, b) => {
+  const modes = Object.keys(NAV), words = (x, y) => String(x ?? '').localeCompare(String(y ?? ''), undefined, { numeric: true });
+  return modes.indexOf(a.w) - modes.indexOf(b.w) || (parseFloat(a.s) || 0) - (parseFloat(b.s) || 0) || words(a.r, b.r) || words(a.x, b.x);
+};
 // its words under the title: its note (a curated one's), its chips, its detail
 const setupWords = (x) => [x.note, x.chips, setupDetail(x.setup, x.chips)].filter(Boolean).join(' · ');
 // a row's thumbnail in place of its icon (its URL let go with the row: see fillGalleryList)
@@ -15084,7 +15090,7 @@ function fillGalleryList() {
   const rows = list.filter((x) => NAV[x.setup.w]).map((x) => [setupTitle(x), setupWords(x), x]), seen = new Map();
   const kindOf = (x) => NAV[x.setup.w][0];
   $('yourList').replaceChildren(...NAV_KINDS.flatMap(([kind]) => {
-    const mine = rows.filter(([, , x]) => kindOf(x) === kind).sort((a, b) => a[0].localeCompare(b[0]));
+    const mine = rows.filter(([, , x]) => kindOf(x) === kind).sort((a, b) => setupOrder(a[2].setup, b[2].setup) || a[0].localeCompare(b[0], undefined, { numeric: true }));
     if (!mine.length && kind !== NAV[tabMode()]?.[0]) return [];
     const section = document.createElement('section'), cards = Object.assign(document.createElement('div'), { className: 'gallery-grid' });  // a section each, as Life's, its picture as the tab's
     section.dataset.kind = kind;  // (opened from a tab: scrolled to its section, see showPane)

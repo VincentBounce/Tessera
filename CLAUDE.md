@@ -35,6 +35,12 @@ repo, deleted after), no console error, and `tesseraCheck()` passes in it.
 
 Never delete the bundles in `Tessera resources` (old versions included, the `Walking Pi v….html` ones before the name): the user keeps them to compare versions.
 
+## Format
+The code is Prettier's standard (`.prettierrc.json`: 120 columns, single quotes, semicolons, trailing commas), applied by
+`tools/ship.sh` to every `.js` and `.css` staged (`brew install prettier`); the generated data (`emoji.js`, `punks.js`,
+`pixelarticons.js`, `loops.js`) and the prototypes left out (`.prettierignore`). Write to it: one statement a line, never
+code squeezed to look shorter (see SIMPLER above).
+
 ## Comment hierarchy (main.js)
 - The file opens with a banner (`TESSERA — main.js`) and a "How it fits together" overview of its parts.
 - A part: a banner of `=`, 96 columns wide, its title in capitals, then a few lines on what it does:

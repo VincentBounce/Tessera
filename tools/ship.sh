@@ -12,6 +12,13 @@ subject=$1; body=$2
 git diff --cached --quiet && { echo "nothing staged: git add first"; exit 1; }
 git diff --cached main.js | grep -q "^[-+]const VERSION" && { echo "VERSION changed by hand: leave it to tools/ship.sh"; exit 1; }
 git diff --cached index.html | grep -q '^[-+].*?v=' && { echo "the cache key changed by hand: leave it to tools/ship.sh"; exit 1; }
+# the code staged to Prettier's standard (.prettierrc.json, .prettierignore: the generated data and the prototypes left out),
+# again staged: every version at one standard, none to think of (brew install prettier)
+code=(${(f)"$(git diff --cached --name-only --diff-filter=ACM -- '*.js' '*.css')"})
+if (( ${#code} )); then
+  command -v prettier >/dev/null || { echo "prettier not found: brew install prettier"; exit 1; }
+  prettier --write --log-level warn -- $code && git add -- $code || exit 1
+fi
 version() { grep -o "VERSION = '[^']*'" main.js | cut -d"'" -f2; }
 cacheKey() { grep -o 'main\.js?v=[^"]*' index.html | cut -d= -f2; }
 # the version and the cache key both from one to the other (the key: every asset's ?v= the same)

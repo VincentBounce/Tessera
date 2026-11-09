@@ -129,7 +129,8 @@ While the checks run unattended (a night, a meal), also audit what they cannot s
   the link made, opened cold, the card it lands on.
 - **Every night, slow play and links' framing**: every walk mode (2D grid and cells, 3D solids and surfaces, Lattice) at
   0.1, 0.5, 1 and 6 steps a second, forth and back, from a fresh load: the line grows smoothly to its next point from step
-  0, no fade on it; each cell fades in from nothing over 0.25 s, the start cell never; paused, all whole. A link opened at
+  0, no fade on it, in Solo and in a battle (each walker's line), every look (Rainbow, Commands); each cell fades in from
+  nothing over 0.25 s, the start cell never; paused, all whole. A link opened at
   a step (`at=0`, a few steps, the end) framed as Begin or the step buttons frame that step (the start centred at 0).
 - **Every night, clean transitions, no debris**: while a walk is computed the tab (`tabMode()`) already shows the
   next mode and the walk shown (`walk`, `walk.mode`) is still the old one: grep every read of `tabMode()` (the judges take their mode in each call, no default) and check

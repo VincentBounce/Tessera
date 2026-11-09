@@ -104,6 +104,10 @@ touched shows (+0 if its code lines are as many).
   another session pushed first (any other refusal stops it, its error shown). Never edit VERSION, the cache key or
   write `(v…)` yourself: several sessions work side by side, and a number picked from one's own copy collides. Push
   only main (no branch left on GitHub: it falls behind, and only a force push fixes it).
+- Every version has its tag on GitHub, `v0.4.N` on its commit, put and pushed by `tools/ship.sh` with it: a version
+  found by its name, never by a hash (`git diff v0.4.664 v0.4.668`, `tools/at.sh`, GitHub's
+  `compare/v0.4.664...v0.4.668`). On a sensitive change (a rollback, a redo, code to judge), send that compare link,
+  its words naming both versions.
 - The last number goes up by 1 with every commit. The middle one only when the user decides, for a step they name
   (0.2: links that carry their version; 0.3: the name Tessera, Walking Pi before; 0.4: WebGPU, WebGL before); the last one then starts again at 0. 1.0 would mean links that keep working.
 - Every link ends with `v=` and the version it was made with, kept in the Gallery and its JSON files (see `setupFrom`).

@@ -3,8 +3,8 @@
 # take the same number (each picked it from its own copy, the second push refused, renumbered by hand). The changes
 # staged (git add) are committed, put on origin/main, VERSION in main.js set to main's + 1, the assets' cache key in
 # index.html (their ?v=, a browser's copy kept till it changes) set to it too, and the subject ended with it, then
-# pushed; a push refused because another session went first starts again from main, any other refusal stops. Never
-# edit VERSION or the cache key yourself.
+# pushed, tagged v<version> (its tag pushed too); a push refused because another session went first starts again from
+# main, any other refusal stops. Never edit VERSION or the cache key yourself.
 # tools/ship.sh "subject without its version" ["body: the Co-Authored-By line…"]
 repo="${0:A:h:h}"; cd "$repo" || exit 1
 subject=$1; body=$2
@@ -27,7 +27,8 @@ for try in 1 2 3 4 5; do
   base=$(git rev-parse origin/main) old=$(version) key=$(cacheKey); new="${old%.*}.$(( ${old##*.} + 1 ))"
   stamp "$old" "$new" "$key" "$new"
   git add main.js index.html && git commit -q --amend -m "$(message $new)" || exit 1
-  out=$(git push -q origin HEAD:main 2>&1) && { echo "shipped v$new: $(git log --format='%h %s' -1 | cut -c1-90)"; exit 0; }
+  # (its tag v0.4.N on it, pushed with it: a version found by its name, git diff v0.4.664 v0.4.668, GitHub's compare)
+  out=$(git push -q origin HEAD:main 2>&1) && { git tag -f "v$new" HEAD && git push -q origin "v$new" 2>/dev/null; echo "shipped v$new: $(git log --format='%h %s' -1 | cut -c1-90)"; exit 0; }
   # (refused: the number and the key given back, so the next rebase meets no change on their lines)
   stamp "$new" "$old" "$new" "$key"
   git add main.js index.html && git commit -q --amend -m "$(message pending)" || exit 1

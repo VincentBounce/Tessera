@@ -200,7 +200,7 @@ button.primary {
 .size-gauge .notches span { width: 2px; height: 5px; background: var(--muted-text-color); border-radius: 1px; }
 .stepper span small { display: block; font-size: var(--caption-text-size); font-weight: 400; color: var(--muted-text-color); line-height: 1.2; }  /* a size: what to picture, then its tiles */
 .stepper span, .stepper input, .notch-field #speedLabel { flex: 1; text-align: center; color: var(--accent-color); font-weight: 600; white-space: nowrap; }  /* the setup at a glance */
-.notch-field #speedLabel { flex: none; min-width: 5.5em; text-align: right; }  /* (its 4 digits at most, its place kept as it changes)
+.notch-field #speedLabel { flex: none; }  /* (as wide as its words, against the slider at the steppers' gap) */
 /* the number of digits can be typed: a field that looks like the label until it is hovered or used */
 #loopLabel { color: var(--text-color); }
 #loopLabel.on { color: var(--accent-color); }
@@ -520,7 +520,7 @@ button.wide.active, .head-btn.active { border-color: var(--accent-color); color:
 @keyframes gauge-slide { from { transform: translateX(0); } to { transform: translateX(233%); } }
 #progressText { position: absolute; inset: 0; display: grid; place-items: center; font-size: var(--label-text-size); color: var(--text-color); }
 #status:not(:empty)::before { content: ' · '; }  /* after the description */
-.notch-field { display: flex; align-items: center; gap: 10px; height: 32px; padding: 0 10px; border: 1px solid var(--border-color); border-radius: 6px; }  /* a notched slider in a field's frame, its value at its right (the speed) */
+.notch-field { display: flex; align-items: center; gap: 6px; height: 32px; padding: 0 10px; border: 1px solid var(--border-color); border-radius: 6px; }  /* a notched slider in a field's frame, its value at its right (the speed) */
 .notch-field .size-gauge { flex: 1; min-width: 0; margin: 0; }
 /* the steps, on their own line above the buttons; the speed after ⏭, between a turtle and a rabbit */
 

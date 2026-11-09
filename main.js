@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.666';
+const VERSION = '0.4.667';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -15696,8 +15696,9 @@ const digitColour = (k) => walk.ant ? rampColour(k, walk.ant)
 /* ---- 11.4 Surfaces ------------------------------------------------------------------------ */
 const sphereDraw = { at: 0, cost: 0 };
 
-// A walker's frame on a surface at step i: its place, heading (its last step; at the start, the one it came by), side and
-// up (its tile's outward normal, square to the heading), and its size (see headSize, by its tile's area); P(i), tileAt(i):
+// A walker's frame on a surface at step i: its place, heading (its last step; at the start, the one it came by), two axes
+// square to it (from its tile's outward normal: the ogive's round, any will do; the start's flag's pole along it), and its
+// size (see headSize, by its tile's area); P(i), tileAt(i):
 // the walker's point and tile at step i (see walkersOf). Between two steps (i not whole: gliding, see glideAt), its place on
 // the way from one to the next, its heading turned in space from its last step's to its next one's (an ogive is round its
 // axis: no up to keep; its tile's normal, its start's flag's pole)

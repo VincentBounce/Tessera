@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.674';
+const VERSION = '0.4.675';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -18135,10 +18135,10 @@ $('jump10k').addEventListener('click', () => advanceTo(stepShown + 10000));
 // by their links instead (see loopLink, genLink). Its start, written at once (restart), not played to
 const runStops = () => [...new Set([runStart(), 0, runEnd()])].filter(Number.isFinite).sort((x, y) => x - y);
 // End (⏭), the same forth (a run with its end known at once: a walk; Life's and a reversible one's, their green link and +10k)
-function goStop(dir) {  // (playing on if it was)
-  const wasPlaying = playing, g = dir < 0 ? runStops().findLast((x) => x < stepShown) : runStops().find((x) => x > stepShown);
+function goStop(dir) {  // (stopped there, as a step's buttons stop it)
+  const g = dir < 0 ? runStops().findLast((x) => x < stepShown) : runStops().find((x) => x > stepShown);
+  play(false); reverse(false);
   if (g === 0) restart(); else if (g !== undefined) advanceTo(g);
-  play(wasPlaying);
 }
 $('restart').addEventListener('click', () => goStop(-1));
 $('end').addEventListener('click', () => goStop(1));

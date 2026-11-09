@@ -335,9 +335,9 @@ button.active .bubble { color: var(--accent-color); border-color: var(--accent-c
 .number-grid button:hover { background: var(--page-background); }
 .number-grid sup { line-height: 0; }  /* an exponent (e^π√163) not raising its button */
 .number-grid button.active { border-color: var(--accent-color); color: var(--accent-color); background: var(--picked-background); }
-.mode-list button.active { border-color: var(--accent-color); background: var(--picked-background); }
-.mode-list button.active .mode-name,
-.mode-list button.active .mode-icon { color: var(--accent-color); }
+:is(.mode-list, .gallery-grid) button.active { border-color: var(--accent-color); background: var(--picked-background); }  /* (a Gallery card too: the setup in view) */
+:is(.mode-list, .gallery-grid) button.active .mode-name,
+:is(.mode-list, .gallery-grid) button.active .mode-icon { color: var(--accent-color); }
 .row button { white-space: nowrap; }
 .row button:first-child { flex: 1; }
 

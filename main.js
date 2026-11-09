@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.682';
+const VERSION = '0.4.683';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -15432,6 +15432,7 @@ const VIEW_GAP = parseFloat(getComputedStyle(document.documentElement).getProper
 // farther, whatever its size; nearer, in 3D ZOOM_IN times, in 2D down to ZOOM_CELLS cells across the screen (a cell's size,
 // whatever the size of the whole: a big Sierpiński's cells seen)
 const ZOOM_IN = 60, ZOOM_OUT = 10, ZOOM_CELLS = 3 / 2;
+const FIT_ROOM = 0.2;  // (a walk out of its frame: framed again with this share of its size more each side, room to grow: see tick)
 const zoomRange = () => {
   const fit = viewFor(padBounds(bounds)).scale, flat = !walk.is3d && !walk.sphere;
   return [Math.max(MIN_SCALE, fit / ZOOM_OUT), flat ? Math.max(fit, Math.min(canvasWidth, canvasHeight) / ZOOM_CELLS) : fit * ZOOM_IN];
@@ -18007,10 +18008,10 @@ function tick(now = performance.now()) {
   }
   if (!playing && !reversing && stepShown !== linkedAt) { linkedAt = stepShown; syncLink(); }  // (still: the link at the step shown, see getSetup's at)
   includeBox();
-  if (walk.n && !walk.sphere && $('autoFit').checked && boundsOffscreen(viewGoal || view)) {  // 15% room to grow (a surface's frame is fixed)
+  if (walk.n && !walk.sphere && $('autoFit').checked && boundsOffscreen(viewGoal || view)) {  // FIT_ROOM to grow (a surface's frame is fixed)
     includeBox(true);  // (a 3D walk: framed again round its box now)
     const b = padBounds(bounds);
-    const mx = (b.maxX - b.minX) * 0.15, my = (b.maxY - b.minY) * 0.15;
+    const mx = (b.maxX - b.minX) * FIT_ROOM, my = (b.maxY - b.minY) * FIT_ROOM;
     viewGoal = viewFor({ minX: b.minX - mx, maxX: b.maxX + mx, minY: b.minY - my, maxY: b.maxY + my });
   }
   easeView(dt);

@@ -501,14 +501,15 @@ button.wide.active, .head-btn.active { border-color: var(--accent-color); color:
   flex: none; width: 48px; height: 32px; padding: 0; font-weight: 600;
   display: inline-flex; align-items: center; justify-content: center;
 }
-/* Play keeps one width, so Play and Pause are alike: outlined in yellow, filled while playing */
+/* ◀ and ▶ outlined in yellow, filled while playing their way (then the turtle and the rabbit, see playerButton) */
 .stage-bar #play { flex: 1; color: var(--accent-color); border-color: var(--accent-color); }
 .stage-bar #reverse { color: var(--accent-color); border-color: var(--accent-color); }  /* as Play */
 /* six buttons in every mode, the folded bar's width; open, on their right the speed, typed as the length (above the
    title, as wide as the buttons), the turtle and the rabbit */
 .player-controls { display: flex; gap: 8px; align-items: flex-end; }  /* the buttons where they were, open or not */
 .player-main { flex: none; width: var(--player-width); max-width: 100%; }  /* its six buttons, the folded bar's inner width: Play the rest (beside ◀ a button's, its icon only; Life's, two and their gap) */
-.play-row:has(#reverse:not([hidden])) .play-words { display: none; }
+/* folded (not hovered), its rightmost button gone, the others as wide: a walk's End, a run's +10k */
+.stage-bar:not(:hover):not(:focus-within) .play-row:has(#jump10k:not([hidden])) #jump10k, .stage-bar:not(:hover):not(:focus-within) .play-row:has(#jump10k[hidden]) #end { display: none; }
 .player-side { flex: none; width: 250px; margin-left: auto; display: flex; flex-direction: column; justify-content: space-between; align-self: stretch; }
 .length-row { display: flex; align-items: flex-start; gap: 8px; }  /* open, under the curve: the digits being computed (their gauge) */
 .length-row #digitsRow { flex: none; width: var(--player-width); max-width: 100%; }  /* (as wide as the folded bar's buttons) */

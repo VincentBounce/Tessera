@@ -11,7 +11,7 @@
   <meta property="og:type" content="website">
   <link id="favicon" rel="icon">  <!-- the app's logo, set at start-up (see appLogo) -->
   <meta name="description" content="A walk on a grid in 2D or 3D driven by the base-2 to base-6 digits of π, other constants and large primes.">
-  <link rel="stylesheet" href="style.css?v=0.4.690">
+  <link rel="stylesheet" href="style.css?v=0.4.691">
   <script>  // the theme before the first paint (see applyTheme)
     try { const t = localStorage.getItem('tesseraTheme') || 'system'; document.documentElement.dataset.theme = t === 'system' ? (matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark') : t; } catch { document.documentElement.dataset.theme = 'dark'; }
   </script>
@@ -430,7 +430,8 @@
               <button id="restart" data-icon="start" title="Jump to the start, through its stops (R)" aria-label="Jump to the start"></button>
               <button id="back" data-icon="back" title="One step back (←); a Game of Life's computed again from gen 0 (no rule backwards), at once round its loop" aria-label="One step back"></button>
               <button id="reverse" data-icon="reverse" title="Play backwards, back to the start (its rule run backwards)" aria-label="Play backwards"></button>
-              <button id="play" title="Starts or pauses (Space)">Play</button>
+              <button id="stop" data-icon="stop" title="Stop (Space)" aria-label="Stop"></button>
+              <button id="play" title="Play (Space)" aria-label="Play"></button>
               <button id="step" data-icon="step" title="One step (→)" aria-label="One step"></button>
               <button id="end" data-icon="end" title="Jump to the end, through its stops (E)" aria-label="Jump to the end"></button>  <!-- (a run with an end known at once: a walk; Life, a reversible one: its green link and +10k) -->
               <button id="jump10k" title="10,000 generations ahead (E, while its end is not known)">+10k</button>
@@ -511,10 +512,10 @@
     </div>
   </main>
 
-  <script src="pixelarticons.js?v=0.4.690"></script>
-  <script src="punks.js?v=0.4.690"></script>
-  <script src="loops.js?v=0.4.690"></script>
-  <script src="emoji.js?v=0.4.690"></script>
-  <script src="main.js?v=0.4.690"></script>
+  <script src="pixelarticons.js?v=0.4.691"></script>
+  <script src="punks.js?v=0.4.691"></script>
+  <script src="loops.js?v=0.4.691"></script>
+  <script src="emoji.js?v=0.4.691"></script>
+  <script src="main.js?v=0.4.691"></script>
 </body>
 </html>

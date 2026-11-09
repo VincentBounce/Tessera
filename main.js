@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.690';
+const VERSION = '0.4.691';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -2641,6 +2641,8 @@ const ICONS = (() => {
     play: svgPath('M7 4.5L19.5 12L7 19.5Z', 'f'),
     pause: '<rect class="f" x="6" y="5" width="4" height="14" rx="1"/><rect class="f" x="14" y="5" width="4" height="14" rx="1"/>',
     stop: '<rect class="f" x="6" y="6" width="12" height="12" rx="1.5"/>',
+    turtle: '<path d="M3.5 16.5a8.5 7 0 0 1 17 0z"/><path d="M8 16.5 12 10.5l4 6M3.5 16.5H21"/><circle cx="21.5" cy="13.5" r="1.8"/><path d="M6.5 16.5 5.5 19.5M17.5 16.5l1 3"/>',  // slower, playing
+    rabbit: '<ellipse cx="13" cy="16" rx="6.5" ry="4.5"/><circle cx="6.5" cy="12.5" r="3"/><path d="M5.5 9.8C4.4 5.5 5 2.5 6.4 2.5S8.3 5.6 7.6 9.6M7.9 10C8 6 9.4 3.6 10.6 4s1 3.6-.9 6.6"/><circle cx="20.3" cy="14.6" r="1.3"/><path d="M9 20.3h3M15 20.3h3"/>',  // faster, playing
     start: svgPath('M5.5 5V19') + svgPath('M19 5L9 12L19 19Z', 'f'),
     end: svgPath('M18.5 5V19') + svgPath('M5 5L15 12L5 19Z', 'f'),
     back: '<rect class="f" x="15.5" y="5" width="3.5" height="14" rx="1"/>' + svgPath('M13 5L4 12L13 19Z', 'f'),
@@ -13592,7 +13594,7 @@ function renderHunt() {
       : [`${formatNumber(r.contacts)} generation${r.contacts === 1 ? '' : 's'} in contact`, r.winner ? `${teamName(r.winner - 1)} wins at gen ${formatNumber(r.alone)}`
         : r.P ? `of ${formatNumber(r.T)} before it settles` : `still fighting at gen ${formatNumber(r.T)}, where the hunt stops`];  // its balance: on its light
     return huntCard({ light: light(r), title: name, detail: r.number ? `${detail} · ${r.number.replace(/^sqrt\((\d+)\)$/, '√$1')}` : detail, on: r.id === hunt.picked,  // (Formula: its number)
-      pick: () => (r.id === hunt.picked && !hunt.run ? $('play').click() : playHuntResult(r)) });  // (the one played, again: play or pause)
+      pick: () => (r.id === hunt.picked && !hunt.run ? playOrStop() : playHuntResult(r)) });  // (the one played, again: play or stop)
   }));
 }
 // a result played: its start, kept picked (lit) until another one is
@@ -15183,7 +15185,7 @@ function updateSpeedLabel() {
   sizeGauge($('speedGauge'), SPEEDS.length, Math.max(0, SPEEDS.findIndex((v) => v >= speed)), (k) => { $('speedLabel').textContent = speedWords(SPEEDS[k]); }, (k) => setSpeed(SPEEDS[k]), SPEEDS.indexOf(defaultOf('speed', tabMode())));
 }
 function setSpeed(s) {
-  speed = Math.min(SPEEDS.at(-1), Math.max(SPEEDS[0], s < 1 ? Math.round(s * 10) / 10 : Math.round(s)));  // (below 1, to a tenth)
+  speed = Math.min(SPEEDS.at(-1), Math.max(SPEEDS[0], s < 10 ? Math.round(s * 10) / 10 : Math.round(s)));  // (below 10, to a tenth: 1.2)
   updateSpeedLabel();
   statsDirty = true;
 }
@@ -15315,10 +15317,26 @@ function play(on) {
   if (playing && drawing && brush.id !== 'view') { brush.before = brush.id; brush.id = 'view'; ghost = null; drawGhost(); renderPlaneRow(); }
   else if (!playing && brush.before) { brush.id = brush.before; brush.before = null; renderPlaneRow(); }
   if (playing) reverse(false);
-  $('play').innerHTML = `${icon(playing ? 'pause' : 'play')}<span class="play-words">${playing ? 'Pause' : 'Play'}</span>`;  // (its words hidden beside ◀, see .play-words)
-  $('play').classList.toggle('on', playing);
-  statsDirty = true;  // (paused: the chips lit again, see updateStats)
+  renderPlayer();
+  statsDirty = true;  // (stopped: the chips lit again, see updateStats)
 }
+// The player's ◀ ■ ▶: stopped, ◀ plays backwards and ▶ forth; playing, its way's button (▶ forth, ◀ back) the rabbit, a
+// notch faster, the other the turtle, a notch slower: the other way only from ■ (Stop, Space). One source, playerButton:
+// what a button is now, its icon, its words and its click
+const playerButton = (id) => {
+  const way = playing ? 1 : reversing ? -1 : 0, ahead = id === 'play' ? 1 : -1;
+  if (!way) return { pic: ahead > 0 ? 'play' : 'reverse', title: ahead > 0 ? 'Play (Space)' : 'Play backwards, back to the start (its rule run backwards)', go: () => (ahead > 0 ? (atEnd() && restart(), play(true)) : reverse(true)) };
+  const notch = way === ahead ? 1 : -1, next = notch > 0 ? SPEEDS.find((v) => v > speed) : SPEEDS.findLast((v) => v < speed);
+  return { pic: notch > 0 ? 'rabbit' : 'turtle', title: notch > 0 ? 'Faster: the next speed' : 'Slower: the speed before', next, go: () => next !== undefined && setSpeed(next) };
+};
+function renderPlayer() {
+  for (const id of ['reverse', 'play']) {
+    const b = $(id), { pic, title } = playerButton(id);
+    if (b.dataset.shown !== pic) { b.innerHTML = icon((b.dataset.shown = pic)); b.title = title; b.setAttribute('aria-label', title); }  // (only when it changes: a click on it kept)
+  }
+  $('play').classList.toggle('on', playing); $('reverse').classList.toggle('on', reversing);
+}
+const playOrStop = () => $(playing || reversing ? 'stop' : 'play').click();  // (Space, a hunt's result played again)
 // Play backwards (◀ by Play): back to its start, a step at a time; a reversible one by its rule run backwards, a walk
 // drawn again up to the step before (Life: none, no rule backwards; a step back only, see advanceTo)
 // Life's own time: generations played on the card, ever on (back: round its loop, or played again, see advanceTo; a block
@@ -15333,9 +15351,7 @@ function reverse(on) {
   reversing = on && playsBack() && (stepShown > runStart() || loopBack());  // (a loop known: from 0 too, a round back)
   if (reversing !== was) motionChanged();
   if (reversing) play(false);
-  const shown = reversing ? 'pause' : 'reverse';
-  if ($('reverse').dataset.shown !== shown) $('reverse').innerHTML = icon($('reverse').dataset.shown = shown);  // (only when it changes: a click on it kept)
-  $('reverse').classList.toggle('on', reversing);
+  renderPlayer();
   statsDirty = true;
 }
 
@@ -17826,9 +17842,9 @@ function updateStats() {
   setTile($('back'), { greyed: tooFar ? 'So far from its start: played again from it, more than a second.' : backAtStart });
   $('jump10k').hidden = !lifePlayer();  // (Life, a reversible one: 10,000 generations ahead, while its end is not known)
   setTile($('jump10k'), { greyed: busy ? 'Its run is not built yet.' : runLoop() ? 'Its loop is known: its end is in sight.' : '' });
-  setTile($('play'), { greyed: busy ? 'Its run is not built yet.' : '' });
-  $('reverse').hidden = lifePlayer() && !MODES[walk.mode].margolus;  // (played backwards: a walk, a reversible one)
-  setTile($('reverse'), { greyed: backAtStart });
+  const notchEnd = (id) => (playerButton(id).pic === 'rabbit' ? 'Already the fastest.' : 'Already the slowest.');  // (playing: a speed at its end)
+  setTile($('play'), { greyed: busy ? 'Its run is not built yet.' : playing || reversing ? (playerButton('play').next === undefined ? notchEnd('play') : '') : '' });
+  setTile($('reverse'), { greyed: playing || reversing ? (playerButton('reverse').next === undefined ? notchEnd('reverse') : '') : !playsBack() ? 'A Game of Life has no rule backwards: it plays forth only.' : backAtStart });
   setTile($('step'), { greyed: atEnd() ? 'Already at the end.' : '' });
   $('end').hidden = lifePlayer();  // (Life, a reversible one: its green link and +10k)
   if (drawing && walk.plane && drawAway() !== drawToolsAway) renderDrawTools();  // (Draw: its tools at gen 0 only; drawn again as play leaves it or comes back, not each frame: 785 cards)
@@ -18141,12 +18157,10 @@ $('digitsLabel').addEventListener('change', () => {
   $('digitsLabel').blur();
   if (lengthUsed()) compute(); else syncDigitsStepper();  // (unused here: kept for the next tab)
 });
-$('play').addEventListener('click', () => {
-  if (atEnd()) restart();  // at the end: from the start again
-  play(!playing);
-});
+$('play').addEventListener('click', () => playerButton('play').go());  // (at the end: from the start again)
+$('stop').addEventListener('click', () => { play(false); reverse(false); });
 $('step').addEventListener('click', () => { play(false); reverse(false); advanceTo(stepShown + 1); });
-$('reverse').addEventListener('click', () => reverse(!reversing));
+$('reverse').addEventListener('click', () => playerButton('reverse').go());
 $('jump10k').addEventListener('click', () => advanceTo(stepShown + 10000));
 // Begin (⏮): back to its start (0), then to its first (a reversible one's past's furthest); its loop and its ordered moments
 // by their links instead (see loopLink, genLink). Its start, written at once (restart), not played to
@@ -18433,7 +18447,7 @@ stage.addEventListener('pointerup', (e) => {
 document.addEventListener('keydown', (e) => {
   if (e.target.matches('input[type=number], input[type=text], select, textarea')) return;
   switch (e.key) {
-    case ' ': e.preventDefault(); $('play').click(); break;
+    case ' ': e.preventDefault(); playOrStop(); break;
     case 'ArrowRight': $('step').click(); break;
     case 'ArrowLeft': $('back').click(); break;
     case 'r': case 'R': $('restart').click(); break;

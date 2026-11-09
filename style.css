@@ -197,7 +197,7 @@ button.primary {
 .size-gauge { margin: -6px 0 12px; }
 .size-gauge input { display: block; margin: 0; cursor: pointer; }
 .size-gauge .notches { display: flex; justify-content: space-between; padding: 0 7px; margin-top: -2px; }
-.size-gauge .notches span { width: 2px; height: 5px; background: var(--muted-text-color); border-radius: 1px; }
+.size-gauge .notches span { width: 2px; height: 5px; background: var(--border-color); border-radius: 1px; }
 .stepper span small { display: block; font-size: var(--caption-text-size); font-weight: 400; color: var(--muted-text-color); line-height: 1.2; }  /* a size: what to picture, then its tiles */
 .stepper span, .stepper input, .notch-field #speedLabel { flex: 1; text-align: center; color: var(--accent-color); font-weight: 600; white-space: nowrap; }  /* the setup at a glance */
 .notch-field #speedLabel { flex: none; }  /* (as wide as its words, against the slider at the steppers' gap) */

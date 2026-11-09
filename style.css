@@ -1363,6 +1363,10 @@ button.wide.active,
   border-radius: 12px;
   outline: none;
 } /* grows upwards: the Play row stays at the bottom (no focus ring: a tap opens it, see index.html) */
+.stage-bar > :not(.player-controls) {
+  width: 0;
+  min-width: 100%;
+} /* (its width its buttons' only: its title, ranking and step line take it, never give it; a long title cut short) */
 .stage-bar:hover {
   width: var(--player-open-width);
 }

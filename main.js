@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.730';
+const VERSION = '0.4.731';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -19040,7 +19040,7 @@ function galleryTab() {
 
 // The Gallery's tools, tiles: Import (added to them, a name already used numbered), Export, Erase all (then Confirm erase, under them: the app as at a first visit),
 // then Share link (the link to what is shown)
-$('galleryTools').replaceChildren(tile({ pic: icon('import'), text: 'Import', title: 'Add the setups of a JSON file to the Gallery (those of a name already used numbered: none replaced)', click: () => $('galleryFile').click() }),
+$('galleryTools').replaceChildren(tile({ pic: icon('import'), text: 'Import', title: 'Add the setups of a JSON file to the Gallery as they are (those of a name already used numbered: none replaced); no thumbnails taken: Rebuild takes them', click: () => $('galleryFile').click() }),
   tile({ pic: icon('export'), text: 'Export', title: 'The Gallery as a JSON file', click: exportGallery }), tile({ pic: icon('trash'), text: 'Erase all', title: 'Back to the app as at a first visit: all it keeps in this browser erased (the Gallery, its thumbnails, the theme), the curated setups back (asked again under it)', click: () => { $('eraseConfirm').hidden = !$('eraseConfirm').hidden; } }),
   tile({ pic: icon('eraser'), text: 'Remove', title: 'Remove the thumbnails shown here (to try Rebuild: for now)', click: removeThumbnails }),
   tile({ id: 'rebuildThumbnails', pic: icon('autoRotate'), text: 'Rebuild', toggle: true, title: 'Erase the thumbnails no card shows any more, then take the missing ones, one setup after the other: each shown, then taken once built; on while it runs, off by a click or once done', click: rebuildThumbnails }),

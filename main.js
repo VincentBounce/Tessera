@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.680';
+const VERSION = '0.4.681';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -4327,27 +4327,18 @@ function project() {
 // Perspective can apply to every 3D view (checkbox; on by default for the cube walks and the cube surface)
 const perspectiveAllowed = () => walk.is3d;
 
-// Set walk.persp from the checkbox: centre and size from the whole walk (or the solid), camera
-// at 2.5 × that radius, i.e. a field of view of roughly 45°
+// Set walk.persp from the checkbox: centre and size from the box drawn (or the solid), camera
+// at 2.5 × that radius, i.e. a field of view of roughly 45°; a box's (boxPersp) follows it as it grows (see includeBox)
+const boxPersp = (b) => ({ c: [(b[0] + b[1]) / 2, (b[2] + b[3]) / 2, (b[4] + b[5]) / 2], D: 2.5 * Math.max(3, Math.hypot(b[1] - b[0], b[3] - b[2], b[5] - b[4]) / 2) });
 function setPerspective() {
   if (!perspectiveAllowed() || !$('perspective').checked) { walk.persp = null; return; }
-  if (walk.plane) {  // Space-time: its cubes' box
-    const b = stack?.box ?? bounds3;  // (its cubes being made: the box till then)
-    walk.persp = { c: [(b[0] + b[1]) / 2, (b[2] + b[3]) / 2, (b[4] + b[5]) / 2], D: 2.5 * Math.max(3, Math.hypot(b[1] - b[0], b[3] - b[2], b[5] - b[4]) / 2) };
-    return;
-  }
+  if (walk.plane) { walk.persp = boxPersp(stack?.box ?? bounds3); return; }  // Space-time: its cubes' box (being made: the box till then)
   if (walk.sphere) {
     // one camera distance for both forms of the shape (the flat torus is wider)
     walk.persp = { c: [0, 0, 0], D: 2.5 * walk.R * walk.shape.maxExtent };
     return;
   }
-  const lo = [Infinity, Infinity, Infinity], hi = [-Infinity, -Infinity, -Infinity];
-  const W = [walk.wx, walk.wy, walk.wz];
-  for (let i = 0; i <= walk.n; i++) {
-    for (let d = 0; d < 3; d++) { lo[d] = Math.min(lo[d], W[d][i]); hi[d] = Math.max(hi[d], W[d][i]); }
-  }
-  const radius = Math.max(3, Math.hypot(hi[0] - lo[0], hi[1] - lo[1], hi[2] - lo[2]) / 2);
-  walk.persp = { c: [0, 1, 2].map((d) => (lo[d] + hi[d]) / 2), D: 2.5 * radius };
+  walk.persp = boxPersp(bounds3 ?? [0, 0, 0, 0, 0, 0]);  // (the box drawn so far, as its frame: see includeBox; being built, none yet)
 }
 
 // Turn the object by the rotation vector w (world coordinates: the axis, scaled by the angle in
@@ -15379,6 +15370,7 @@ function showAll() {
 // whichever way the walk turns, so turning it never zooms
 function includeBox() {
   if (!walk.is3d || walk.sphere) return;
+  if (walk.persp) walk.persp = boxPersp(bounds3);  // (its camera aimed at the same box: one centre, its turns', its frame's)
   const [x0, x1, y0, y1, z0, z1] = bounds3, [cx, cy] = projectPoint((x0 + x1) / 2, (y0 + y1) / 2, (z0 + z1) / 2);
   const c = cubesWalk() ? 2 * cellShape().half : 0;  // the cells of a walk on cells, past their centres
   const r = Math.hypot(x1 - x0 + c, y1 - y0 + c, z1 - z0 + c) / 2, P = walk.persp, R = P && P.D > r ? (r * P.D) / Math.sqrt(P.D * P.D - r * r) : r;

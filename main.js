@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.695';
+const VERSION = '0.4.696';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -3827,10 +3827,9 @@ function renderModePicker() {
   if (rulesMode !== w) customOpen = false;  // (Custom rule closed on another mode, before its cards are drawn)
   rulesMode = w;
   const button = (html, active, go, title = '', more = {}) => tile({ html, title, on: active, click: go, ...more });
-  // at the top: Walk, Ant, Life (while a gallery setup is only shown on hover, the one in use)
-  const shownKind = NAV[galleryBefore?.w]?.[0] ?? kind;
+  // at the top: Walk, Ant, Life
   $('modeTabs').replaceChildren(galleryTab(), ...NAV_KINDS.map(([k, pic, title]) => {
-    const b = button(`${icon(pic)} ${k}`, k === shownKind, () => { showPane(false); if (k !== kind) navGo(0, k); }, title);
+    const b = button(`${icon(pic)} ${k}`, k === kind, () => { showPane(false); if (k !== kind) navGo(0, k); }, title);
     b.setAttribute('role', 'tab');
     b.dataset.choice = `kind:${k}`;  // (its choice's key, see choicesAt)
     return b;
@@ -14806,12 +14805,6 @@ function setLifeSeed(seed, how) {
 /* ---- 10.1 Life starts as short codes ------------------------------------------------------ */
 let championCode = null;  // the loaded champion's cells, encoded (see encodeCells)
 let pendingChampion = null;  // a champion to restore once a loaded setup is built
-let pendingRestore = null;   // the view to restore once the setup in use is built again (see galleryView)
-let pendingSpin = false;     // a Gallery setup shown: Auto-rotate once built and faced (see showSetup)
-// A Gallery setup is shown still and faced for SPIN_DELAY ms, then starts turning, its speed easing
-// in over SPIN_EASE ms (see tick)
-const SPIN_DELAY = 900, SPIN_EASE = 1200;
-let spinFrom = 0, spinRamp = 0;
 
 // Cells as a short code, whichever is shorter, in base64url:
 // - dense "C.…", packing 1, 2 or 4 bits per cell depending on the number of states C;
@@ -14967,44 +14960,16 @@ function applySetup(s) {
 
 // Called when a walk has just been built: restore a loaded setup's champion, or place the chosen
 // hunt zone's start, then write the link
-let huntBack = null;  // the hunt to bring back with a setup left in the Gallery (see viewNow)
 function applyPendingView() {
   if (!$('numberPreview').hidden) { if ($('copyNumber').hidden) closeNumber(); else showNumber(); }  // the digits shown: the new number's
   const championCells = pendingChampion;
   pendingChampion = null;
-  if (pendingSpin && walk.is3d && !pendingRestore) spinFrom = performance.now() + SPIN_DELAY;  // faced first (showAll), then turning
-  pendingSpin = false;
-  if (pendingRestore) {  // back from the Gallery without a click: the view as it was (see galleryView)
-    const g = pendingRestore;
-    pendingRestore = null;
-    huntBack = g.hunt;
-    $('autoFit').checked = g.autoFit;
-    $('autoRotate').checked = g.autoRotate;
-    Object.assign(camera, g.camera);
-    if (walk.plane) bounds = planeBounds();  // (Life's grid: its own frame, as restart gives it)
-    else if (!walk.sphere) {  // the 2D bounds of the walk again (a surface's are the fixed solid, as in rotateView)
-      const done = stepShown;
-      stepShown = 0;
-      bounds = { minX: 0, maxX: 0, minY: 0, maxY: 0 };
-      advanceTo(done);
-    }
-    Object.assign(view, g.view);
-    viewGoal = null;
-    faced = true;
-    needsFull = true;
-  }
   const cells = championCells && walk.life ? decodeCells(championCells, walk.life.seed.length) : null;
   if (cells) {  // a start from a link: Custom in the hunt's zones
     setLifeSeed(cells, 'saved');
     hunt.zone = 'custom';
     renderHunt();
   } else if (championCells && walk.life) $('status').textContent = "This link's start (ch=) cannot be read: an old one; the start shown is the hunt's";
-  if (huntBack && walk.life) {  // back from the Gallery: the hunt as it was (its zone, goal, results), last
-    Object.assign(hunt, huntBack);
-    hunt.listKey = null;
-    renderHunt();
-  }
-  huntBack = null;
   if (pendingAt !== null) { if (!lifeTime()) restart(); seekTo(pendingAt); pendingAt = null; }  // (a link's step shown: a walk's reached from its start, framed as it is there, as Begin does; not back from its end, its whole frame kept)
   syncLink();  // with the start a setup's champion or hunt zone gave
 }
@@ -15026,9 +14991,9 @@ function parseHash() {
   } catch { return null; }
 }
 // The link is written when what it holds changes: a walk built (see buildWalk), a Life
-// start (setLifeSeed), a Gallery setup kept by a click; not for one only shown on hover
+// start (setLifeSeed), a Gallery setup clicked
 function syncLink() {
-  if (busy || pendingChampion || galleryBefore) return;  // not while a setup is still being built, nor shown on hover
+  if (busy || pendingChampion) return;  // not while a setup is still being built
   const h = `#${toHash(getSetup())}`;
   if (h !== location.hash) history.replaceState(null, '', h);
   syncSaveButton();
@@ -18005,16 +17970,10 @@ function tick(now = performance.now()) {
   }
   const dt = Math.min(0.1, raw);  // seconds since the last frame (capped)
   lastTick = now;
-  if (spinFrom && now >= spinFrom) {  // a Gallery setup starts turning (see showSetup)
-    spinFrom = 0;
-    if (walk.is3d) { $('autoRotate').checked = true; spinRamp = now; }
-  }
   if (walk.is3d && $('autoRotate').checked) {
     // the turn from one frame to the next, Q = M(t + dt)·M(t)ᵀ, as a rotation vector on the screen's axes
-    let k = 1;  // easing in after a Gallery setup's start
-    if (spinRamp) { const t = Math.min(1, (now - spinRamp) / SPIN_EASE); k = t * t * (3 - 2 * t); if (t >= 1) spinRamp = 0; }
-    if ($('upright').checked) rotateView([0, 0, SPIN_PER_FRAME[1] * (dt * k) / frameTime]);  // Upright: round the vertical only, level
-    const A = spinAt(spinTime), B = spinAt(spinTime += $('upright').checked ? 0 : dt * k);
+    if ($('upright').checked) rotateView([0, 0, SPIN_PER_FRAME[1] * dt / frameTime]);  // Upright: round the vertical only, level
+    const A = spinAt(spinTime), B = spinAt(spinTime += $('upright').checked ? 0 : dt);
     const Q = B.map((row) => [0, 1, 2].map((j) => row[0] * A[j][0] + row[1] * A[j][1] + row[2] * A[j][2]));
     const angle = Math.acos(Math.min(1, Math.max(-1, (Q[0][0] + Q[1][1] + Q[2][2] - 1) / 2))), sin = Math.sin(angle);
     if (angle > 1e-9) {
@@ -18270,7 +18229,6 @@ stage.addEventListener('pointermove', (e) => {
     // a hand rotation keeps auto-fit (the view stays centred, as while auto-rotating), but stops
     // auto-rotate and Centered (the camera following the walker); a pan or a zoom ends auto-fit
     $('autoRotate').checked = false;
-    spinFrom = spinRamp = 0;
     $('centered').checked = false;
     rotateView($('upright').checked ? [0, 0, (camera.u[2] < 0 ? -1 : 1) * dx * 0.008] : screenTurn(dy * 0.008, dx * 0.008, 0));  // a trackball: drag right turns around the screen's up; Upright: round the world's up only
   }
@@ -18284,7 +18242,6 @@ stage.addEventListener('pointercancel', endDrag);
 function recentre() {
   if ($('autoFit').checked && walk.is3d) {
     $('autoRotate').checked = false;
-    spinFrom = spinRamp = 0;
     $('centered').checked = true;
     $('upright').checked = false;  // (the default view: free again)
     Object.assign(camera, CAMERA_START);
@@ -18886,49 +18843,24 @@ const walkName = (w) => splitModeLabel(modeOptionOf(w)?.text ?? w).name;
 // rosettes' spheres) and its tiles there (Torus · Kites, Rosettes · Flower 9); else its space and its shape, its tiles in its
 // name (2D circles · Flower 9, 3D solids · Cube)
 const shapeAndTiles = (w) => { const f = familyOf(w), t = f?.F.tabs.find(([m]) => m === f.m); return t ? `${NAV[w][2]} · ${shapeLabel(t[3])}` : `${SPACES[NAV[w][1]]?.[0]} · ${NAV[w][2]}`; };
-// the setup in use (its Gallery row lit, the ☆ lit): all of it the same (its number, walk, size, start, rule, colours,
-// symmetry, edges, cells drawn or found…) but its version, its length (a hover cuts it, see preview) and how it is looked at
-// (Space-time)
-const SETUP_LOOKS = ['v', 'd', 'sp', 'at'];
+// the setup in use (its Gallery row lit, the ☆ lit): all of it the same (its number, walk, size, start, rule, teams,
+// symmetry, edges, cells drawn or found…) but its version and how it is looked at (Space-time, its step)
+const SETUP_LOOKS = ['v', 'sp', 'at'];
 const isInUse = (setup) => sameSetup(setup, getSetup(), SETUP_LOOKS);
-let galleryBefore = null, galleryHover = 0;  // the setup in use while others are shown on hover
-// and its view (Auto-fit, Auto-rotate, camera, framing): a setup shown on hover is framed (Auto-fit on)
-// and, in 3D, turning (Auto-rotate on); a click keeps that, turning on; leaving the list brings back
-// the setup in use as it was seen
-let galleryView = null;
-// and what is not in a link: the hunt's zone, goal and results (all of it, kept in one place)
-const viewNow = () => ({ autoFit: $('autoFit').checked, autoRotate: $('autoRotate').checked, camera: { r: [...camera.r], u: [...camera.u], v: [...camera.v] }, view: { ...view },
-  hunt: { zone: hunt.zone, goal: hunt.goal, top: hunt.top, picked: hunt.picked, status: hunt.status } });
-// A setup's row, built-in or saved: the walk's icon, a name and a detail; hovering shows it, a click
-// keeps it (see the lists' mouseleave); with onDelete, a × at its end
-// A setup of the Gallery is shown framed and facing its walk: Auto-fit on (a hand rotation or zoom
-// may have turned it off, and the walk could be on the far side), kept only by a click
-function showSetup(setup) {  // framed and faced once built (see showAll), not before: the walk is built apart
-  $('autoFit').checked = true;
-  $('autoRotate').checked = false;  // still while it is faced (faceWalk does not turn a turning view)
-  spinFrom = 0;
-  pendingSpin = true;  // then turning, in 3D, a moment later (see applyPendingView)
-  applySetup(setup);
-}
-const preview = (setup) => (setup.d > 5000 ? { ...setup, d: 5000 } : setup);  // (a setup hovered: its first 5,000 digits or steps, at once; clicked, all of them)
+// A setup's row, built-in or saved: the walk's icon, a name and a detail; a click shows it, framed and still (Auto-fit
+// on: a hand rotation or zoom may have turned it off, and the walk could be on the far side); with onDelete, a × at its end
 function setupRow(name, detail, setup, onDelete) {
-  const b = card({ pic: icon(SHAPE_ICONS[NAV[setup.w]?.[2]] ?? MODE_ICONS[setup.w]), name, detail, on: !galleryBefore && isInUse(setup) });  // (its shape's picture, as the Grid's; its tooltip its name and its detail in full, as the row may cut them short)
+  const b = card({ pic: icon(SHAPE_ICONS[NAV[setup.w]?.[2]] ?? MODE_ICONS[setup.w]), name, detail, on: isInUse(setup) });  // (its shape's picture, as the Grid's; its tooltip its name and its detail in full, as the row may cut them short)
   if (onDelete) {
     b.append(rowAction('×', `Delete “${name}”`, onDelete));
   }
   b.setAttribute('role', 'option');
-  b.addEventListener('mouseenter', () => {
+  b.addEventListener('click', () => {
     ruleTutorial(null);  // what lies over the view (how a rule works, the digits) closes: the setup shown instead
     closeNumber();
-    clearTimeout(galleryHover);
-    galleryHover = setTimeout(() => { if (!galleryBefore) { galleryBefore = getSetup(); galleryView = viewNow(); } showSetup(preview(setup)); }, 120);
-  });
-  b.addEventListener('click', () => {
-    clearTimeout(galleryHover);
-    if (!galleryBefore || !isInUse(setup) || preview(setup) !== setup) showSetup(setup);  // (shown cut short: all of it now; isInUse leaves its digits out)
-    pendingSpin = false;  // clicked while still: it stays still (already turning: it goes on)
-    spinFrom = 0;
-    galleryBefore = galleryView = null;  // kept, Auto-fit on: leaving the list no longer brings back the one before
+    $('autoFit').checked = true;
+    $('autoRotate').checked = false;
+    applySetup(setup);
     syncLink();  // its link (if already built; else once built)
     renderModePicker();  // its tab, at the top
     showPane(false);  // and its parameters
@@ -18937,19 +18869,6 @@ function setupRow(name, detail, setup, onDelete) {
 }
 function renderGallery() {
   fillGalleryList();
-}
-for (const list of ['yourList']) {
-  $(list).addEventListener('mouseleave', () => {
-    clearTimeout(galleryHover);
-    if (!galleryBefore) return;
-    const before = galleryBefore;
-    galleryBefore = null;
-    pendingRestore = galleryView;
-    galleryView = null;
-    pendingSpin = false;
-    spinFrom = 0;
-    applySetup(before);
-  });
 }
 // The left pane shows the parameters, or the gallery: opened by a click on the Gallery tab (lit as the tab in use), closed by
 // it again or by a Close (by each of its titles, as How it works), a setup clicked or another tab: the parameters of the tab before
@@ -18967,7 +18886,7 @@ function galleryTab() {
   b.dataset.ready = '1';
   b.className = 'pane-tab';
   b.innerHTML = `<span class="fav" role="button">${icon('star')}</span> Gallery`;  // (its picture the ☆ Save, see syncSaveButton)
-  b.title = 'The Gallery, the curated setups and yours: hover one to see it, click it to keep it';
+  b.title = 'The Gallery, the curated setups and yours: click one to see it';
   b.addEventListener('click', (e) => { if (e.target.closest('.fav')) saveSetup(); else showPane($('galleryPane').hidden); });
   return b;
 }

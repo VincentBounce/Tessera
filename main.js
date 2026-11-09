@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.721';
+const VERSION = '0.4.722';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -15064,10 +15064,10 @@ const setupDetail = (s, chips = '') => {  // (chips: its bar's, saved with it: w
 // shape and tiles (see shapeAndTiles)
 const setupTitle = (x) => (x.chips === undefined && MODES[x.setup.w]?.life ? shapeAndTiles(x.setup.w) : x.name);
 // two setups in the menu's order: their mode as the menu lists it (NAV: its space, shape, tiles), then its size, its rule, its
-// number (its title only after them, see fillGalleryList)
+// number, all of it (its title only after them, see fillGalleryList)
 const setupOrder = (a, b) => {
   const modes = Object.keys(NAV), words = (x, y) => String(x ?? '').localeCompare(String(y ?? ''), undefined, { numeric: true });
-  return modes.indexOf(a.w) - modes.indexOf(b.w) || (parseFloat(a.s) || 0) - (parseFloat(b.s) || 0) || words(a.r, b.r) || words(a.x, b.x);
+  return modes.indexOf(a.w) - modes.indexOf(b.w) || (parseFloat(a.s) || 0) - (parseFloat(b.s) || 0) || words(a.r, b.r) || words(a.x, b.x) || words(thumbnailKey(a), thumbnailKey(b));  // (all of it last: one setup saved twice, its cards side by side)
 };
 // its words under the title: its note (a curated one's), its chips, its detail
 const setupWords = (x) => [x.note, x.chips, setupDetail(x.setup, x.chips)].filter(Boolean).join(' · ');
@@ -15202,7 +15202,8 @@ function stageThumbnail() {
 }
 const thumbnailOf = (setup) => thumbnailStore('readonly', (store) => store.get(thumbnailKey(setup))).catch(() => null);
 // Rebuild: the cards shown with no thumbnail, in their order, one after the other: each shown (as a click on it) and taken once
-// built, its thumbnail fading in on its card; a click again, the Gallery shut or a card clicked stops it (the last built shown)
+// built, its thumbnail fading in on its card, the same setup's other cards gone (saved twice); a click again, the Gallery shut
+// or a card clicked stops it (the last built shown)
 let rebuilding = false;
 async function rebuildThumbnails() {
   rebuilding = !rebuilding;
@@ -15215,8 +15216,13 @@ async function rebuildThumbnails() {
     const built = whenBuilt();
     if (!isInUse(setup) && applySetup(setup)) { renderModePicker(); await built; }  // (its tab, its parameters under the Gallery)
     if (!rebuilding) return;  // (stopped meanwhile: another setup shown, not its thumbnail)
-    const thumbnail = await wantThumbnail();
-    await thumbnailStore('readwrite', (store) => store.put(thumbnail, thumbnailKey(setup))).catch(() => {});
+    const thumbnail = await wantThumbnail(), key = thumbnailKey(setup);
+    await thumbnailStore('readwrite', (store) => store.put(thumbnail, key)).catch(() => {});
+    for (let next; (next = galleryCards[galleryCards.findIndex((card) => card.x === x) + 1]) && thumbnailKey(next.x.setup) === key; ) {  // (the same setup saved again: the next card, as they are sorted: gone, this one kept)
+      writeGallery(readGallery().filter((y) => y.name !== next.x.name));
+      next.row.remove();
+      galleryCards = galleryCards.filter((card) => card !== next);
+    }
     showThumbnail(row, thumbnail, true);
     renameAsShown(x, row);
   }

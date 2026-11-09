@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.672';
+const VERSION = '0.4.673';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -15711,8 +15711,7 @@ function headFrame({ P, upAt, areaAt, before }, i = stepShown) {
 // a unit axis square to v: n's part square to it (none: another's)
 const squareTo = (v, n) => { const u = n.map((x, d) => x - v[d] * dot3(n, v)); return Math.hypot(...u) > 1e-6 ? unit(u) : unit(cross(v, Math.abs(v[0]) < 0.9 ? [1, 0, 0] : [0, 1, 0])); };
 // a surface's tile t: its outward normal, its area (its corners in space)
-const tileUp = (t) => { const nr = walk.shape.nrm; return [nr[3 * t], nr[3 * t + 1], nr[3 * t + 2]]; };
-const tileArea = (t) => {
+const tileUp = (t) => [0, 1, 2].map((d) => walk.shape.nrm[3 * t + d]), tileArea = (t) => {
   const k = walk.geo.sides, sc = walk.shape.corners, c = (q) => [0, 1, 2].map((d) => sc[3 * (k * t + q) + d] * walk.R);
   let area = 0;
   for (let q = 1; q + 1 < k; q++) area += Math.hypot(...cross(c(q).map((v, d) => v - c(0)[d]), c(q + 1).map((v, d) => v - c(0)[d]))) / 2;
@@ -17090,7 +17089,6 @@ function gpuSurface(paint, path) {
   const ranges = !(path || lines) || j + part <= 0 || !(P?.ownLines ? D.segsRanges : D.segsAt) ? [] : P?.ownLines ? D.segsRanges.map(([a, b]) => [a, b, 1])
     : !lines ? [[0, until(D.segsAt, j), 1], [until(D.segsAt, j), until(D.segsAt, j + 1), part]]
     : P.standing().flatMap((s) => [[D.segsAt[s][Math.max(1, P.from[s])], until(D.segsAt[s], j + 1), 1], [until(D.segsAt[s], j + 1), until(D.segsAt[s], j + 2), part]]);
-  const drawHeads = gpuHeads(D);
   // the tiles, their grid and the path, into pass p (0 the frame; 1, 2 Glass's)
   const drawAll = (rp, pass) => {
     // seen from both sides: Glass, a cut, a Klein bottle (one-sided: its tiles' face inwards in its neck and handle)
@@ -17117,7 +17115,7 @@ function gpuSurface(paint, path) {
       rp.setVertexBuffer(0, D.quad); rp.setVertexBuffer(1, D.ribbon);
       for (const [a, b, share] of ranges) if (b > a && share > 0) { rp.setBindGroup(0, gpuGroup(), [share === 1 ? whole : going]); rp.draw(4, b - a, 0, a); }
     }
-    drawHeads?.(rp, pass, slotOf({ glass: pass, cut, alpha: GLASS_ALPHA }));  // (the heads and flags, see gpuHeads)
+    gpuHeads(D, rp, pass, slotOf({ glass: pass, cut, alpha: GLASS_ALPHA }));
   };
   gpuFrame(enc, drawAll);
   device.queue.writeBuffer(D.uni, 0, D.words, 0, 512 * slot);
@@ -17229,21 +17227,18 @@ function gpuFlat(to) {
   return true;
 }
 // count cubes: of, theirs, made by make(the look) once; reach, how far from the middle they go
-// the walkers' heads and their starts' flags (see headsOf) in buffers once a frame: draw(rp, pass, slot) draws them in a
-// pass, lit as the cubes (an ogive, a flag: each its colour, an instance; on a surface half under its tiles); none: null
-function gpuHeads(D) {
-  const heads = headsOf();
-  if (!heads.length) return null;
-  const from = heads.reduce((at, [mesh]) => [...at, at.at(-1) + mesh.length / 6], [0]);  // (their corners: each its first, in the one buffer)
+// the walkers' heads and their starts' flags (see headsOf) drawn in pass rp, lit as the cubes (an ogive, a flag: each its
+// colour, an instance; on a surface half under its tiles)
+function gpuHeads(D, rp, pass, slot) {
+  const heads = headsOf(), from = heads.reduce((at, [mesh]) => [...at, at.at(-1) + mesh.length / 6], [0]);  // (their corners: each its first, in the one buffer)
+  if (!heads.length) return;
   gpuBuffer('headMesh', Float32Array.from(heads.flatMap(([mesh]) => mesh))); gpuBuffer('headAt', new Float32Array(3 * heads.length));
   gpuBuffer('headCol', Uint8Array.from(heads.flatMap(([, c]) => [...rgbCached(c), 255])));
-  return (rp, pass, slot) => {
-    rp.setPipeline(gpuDrawPipe('cube', { vertex: 'cubeV', fragment: 'shadowedF', shadowed: true, pass,
-      buffers: [vertexLayout(24, [vertexAttribute(0, 'float32x3', 0), vertexAttribute(1, 'float32x3', 12)]), vertexLayout(12, [vertexAttribute(2, 'float32x3')], 'instance'), vertexLayout(4, [vertexAttribute(3, 'unorm8x4')], 'instance')] }));
-    rp.setBindGroup(0, gpuGroup(), [slot]); rp.setBindGroup(1, D.shadow.group);
-    rp.setVertexBuffer(0, D.headMesh); rp.setVertexBuffer(1, D.headAt); rp.setVertexBuffer(2, D.headCol);
-    heads.forEach((_, j) => rp.draw(from[j + 1] - from[j], 1, from[j], j));
-  };
+  rp.setPipeline(gpuDrawPipe('cube', { vertex: 'cubeV', fragment: 'shadowedF', shadowed: true, pass,
+    buffers: [vertexLayout(24, [vertexAttribute(0, 'float32x3', 0), vertexAttribute(1, 'float32x3', 12)]), vertexLayout(12, [vertexAttribute(2, 'float32x3')], 'instance'), vertexLayout(4, [vertexAttribute(3, 'unorm8x4')], 'instance')] }));
+  rp.setBindGroup(0, gpuGroup(), [slot]); rp.setBindGroup(1, D.shadow.group);
+  rp.setVertexBuffer(0, D.headMesh); rp.setVertexBuffer(1, D.headAt); rp.setVertexBuffer(2, D.headCol);
+  heads.forEach((_, j) => rp.draw(from[j + 1] - from[j], 1, from[j], j));
 }
 function gpuCubes(count, of, make, reach) {
   const D = gpuDrawSetup();
@@ -17263,12 +17258,12 @@ function gpuCubes(count, of, make, reach) {
     p.setPipeline(gpuDepthPipe('depthCubeV', [vertexLayout(24, [vertexAttribute(0, 'float32x3')]), vertexLayout(12, [vertexAttribute(1, 'float32x3')], 'instance')]));
     p.setVertexBuffer(0, D.cube); p.setVertexBuffer(1, D.cubeAt); p.draw(verts, count);
   }, null);
-  const drawHeads = gpuHeads(D), rp = gpuPass(enc);
+  const rp = gpuPass(enc);
   rp.setPipeline(gpuDrawPipe('cube', { vertex: 'cubeV', fragment: 'shadowedF', shadowed: true,
     buffers: [vertexLayout(24, [vertexAttribute(0, 'float32x3', 0), vertexAttribute(1, 'float32x3', 12)]), vertexLayout(12, [vertexAttribute(2, 'float32x3')], 'instance'), vertexLayout(4, [vertexAttribute(3, 'unorm8x4')], 'instance')] }));
   rp.setBindGroup(0, gpuGroup(), [slot]); rp.setBindGroup(1, D.shadow.group);
   rp.setVertexBuffer(0, D.cube); rp.setVertexBuffer(1, D.cubeAt); rp.setVertexBuffer(2, D.cubeCol); rp.draw(verts, count);
-  drawHeads?.(rp, 0, slot);  // (a 3D walk's head and start's flag, as a surface's)
+  gpuHeads(D, rp, 0, slot);  // (a 3D walk's head and start's flag, as a surface's)
   rp.end();
   device.queue.writeBuffer(D.uni, 0, D.words, 0, 512);
   device.queue.submit([enc.finish()]);

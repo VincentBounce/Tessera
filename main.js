@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.662';
+const VERSION = '0.4.663';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -18973,7 +18973,7 @@ function credits(open) {
     + CREDITS.map(([title, who]) => `<h4>${title}</h4><p>${who}.</p>`).join('')
     + `<p><a href="https://github.com/VincentBounce/Tessera#readme" target="_blank" rel="noopener">Its README</a> · <a href="https://github.com/VincentBounce/Tessera" target="_blank" rel="noopener">its code</a></p>`
     + '<div class="form-section"><h3>Stats/debug</h3><h4>Times for this view</h4><table id="timings" class="tut-commands"></table>'  // (the walk shown's times, see timings)
-    + `<h4>Screen: ${screenHz()} Hz</h4><table class="tut-commands"><tr><td>Speed asked</td><td class="number">played</td></tr>${SPEEDS.map((v) => `<tr><td>${formatNumber(v)}/s</td><td class="number">${speedWords(v)}</td></tr>`).join('')}</table></div></div>`;  // (its refresh, and each speed as it plays there: see evenSpeed)
+    + `<h4>Screen: ${screenHz()} Hz</h4><table class="tut-commands"><tr><td class="number">Speed asked</td><td class="number">played</td></tr>${SPEEDS.map((v) => `<tr><td class="number">${formatNumber(v)}/s</td><td class="number">${speedWords(v)}</td></tr>`).join('')}</table></div></div>`;  // (its refresh, and each speed as it plays there: see evenSpeed)
   paintTimings();
   $('ruleTuto').prepend(tutTools({ words: [['Share link', 'Copy the link to what is shown', (e) => shareView(e.currentTarget)], ['Home', 'Back to the start', () => { location.href = location.pathname; }]], close: () => credits(false) }));
 }

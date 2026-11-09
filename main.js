@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.713';
+const VERSION = '0.4.714';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -15162,10 +15162,11 @@ const pictureStore = (mode, ask) => (pictureDb ??= new Promise((ok, fail) => {
   r.onsuccess = () => ok(r.result);
   r.onerror = () => fail(r.error);
 })).then((db) => new Promise((ok, fail) => { const q = ask(db.transaction('pictures', mode).objectStore('pictures')); q.onsuccess = () => ok(q.result); q.onerror = () => fail(q.error); }));
-// The view as one picture, cut to PICTURE_SIZE from its middle: every layer under the hover's, in their order. WebGPU's
-// picture is only there in the frame that drew it: asked of the next frame, drawn whole, and taken as it ends (see tick)
-let pictureWanted = null;
-const wantPicture = () => new Promise((ok) => { pictureWanted = ok; needsFull = true; });
+// The view as one picture, cut to PICTURE_SIZE from its middle: every layer under the hover's, in their order, without the
+// grid's lines. WebGPU's picture is only there in the frame that drew it: asked of the next frame, drawn whole without the
+// grid, and taken as it ends, the grid then as it was (see tick)
+let pictureWanted = null, pictureGrid = true;
+const wantPicture = () => new Promise((ok) => { pictureWanted = ok; pictureGrid = $('showGrid').checked; $('showGrid').checked = false; needsFull = true; });
 function stagePicture() {
   const [w, h] = PICTURE_SIZE, c = Object.assign(document.createElement('canvas'), { width: w, height: h }), g = c.getContext('2d');
   const W = stage.clientWidth, H = stage.clientHeight, k = Math.max(w / W, h / H);
@@ -18048,7 +18049,7 @@ const matMul = (A, B) => A.map((row) => [0, 1, 2].map((j) => row[0] * B[0][j] + 
 const spinAt = (t) => { const hz = 1 / frameTime; return matMul(matMul(rotX(SPIN_PER_FRAME[0] * hz * t), rotY(SPIN_PER_FRAME[1] * hz * t)), rotZ(SPIN_PER_FRAME[2] * hz * t)); };
 let linkedAt = null;  // the step shown as the link was last written, still (see tick)
 function tick(now = performance.now()) {
-  if (pictureWanted) { const ok = pictureWanted; pictureWanted = null; queueMicrotask(() => ok(stagePicture())); }  // (as this frame ends, all drawn: see wantPicture)
+  if (pictureWanted) { const ok = pictureWanted; pictureWanted = null; queueMicrotask(() => { ok(stagePicture()); $('showGrid').checked = pictureGrid; needsFull = true; }); }  // (as this frame ends, all drawn: see wantPicture)
   const raw = (now - (lastTick || now)) / 1000;
   if (raw > 1 / 250 && raw < 1 / 40) {  // the screen's frame: the time of its last 120 by the frames they showed (a frame's own time trembles
     // round the refresh; one missed lasts two, and counts as two, against their median: never against the last measure, which

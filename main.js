@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.729';
+const VERSION = '0.4.730';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -15107,7 +15107,7 @@ function fillGalleryList() {
     cards.append(...mine.map(([title, detail, x]) => {
       const k = (seen.get(title + detail) ?? 0) + 1;
       seen.set(title + detail, k);
-      const row = setupRow(k > 1 ? `${title} (${k})` : title, detail, x.setup, () => deleteSetup(x.name));
+      const row = setupRow(k > 1 ? `${title} (${k})` : title, detail, x, () => deleteSetup(x.name));
       looks.push(thumbnailOf(x.setup).then((thumbnail) => { if (thumbnail) showThumbnail(row, thumbnail); return !!thumbnail; }));  // (none yet: its icon)
       galleryCards.push({ x, row });
       return row;
@@ -15131,7 +15131,11 @@ function syncSaveButton() {
   b.title = saved ? `Saved in the Gallery as “${setupTitle(saved)}”: a click takes it out` : 'Save the setup in view in the Gallery, in this browser';
 }
 // a setup's title and chips as its bar shows them (π vs e vs φ · base 2 · LR · Land no collision; Wild #204157587 · B45/S345/C4)
-const barWords = () => ({ title: $('barNum').textContent.trim() || shownSymbol, chips: ['barBase', 'barRule', 'barBattle'].filter((id) => !$(id).hidden).map((id) => $(id).textContent.trim()).filter(Boolean).join(' · ') });
+// the bar's title, the walk shown's: Space-time's and Elementary's none (their generation their own line, their rule in their
+// chip), Life's what it plays (its generation and its end: the step line, see endMark), a battle's walkers each in its
+// colour, else the number's (see describe)
+const barTitleNow = () => ((walk.stacked && !!stack) || walk.rows ? '' : walk.life ? startTitle() : walk.battle ? versusTitle(walk.battle.names.map(withIcons)) : barTitle);
+const barWords = () => ({ title: Object.assign(document.createElement('span'), { innerHTML: barTitleNow() }).textContent.trim() || shownSymbol, chips: ['barBase', 'barRule', 'barBattle'].filter((id) => !$(id).hidden).map((id) => $(id).textContent.trim()).filter(Boolean).join(' · ') });
 // a name of its own in the list (a row is deleted by its name): the title, else "(2)", "(3)"…
 const uniqueName = (title, list) => { let name = title; for (let k = 2; list.some((x) => x.name === name); k++) name = `${title} (${k})`; return name; };
 function saveSetup() {
@@ -15225,25 +15229,30 @@ async function rebuildThumbnails() {
     const built = whenBuilt();
     if (!isInUse(setup) && applySetup(setup)) { renderModePicker(); await built; }  // (its tab, its parameters under the Gallery)
     if (!rebuilding) return;  // (stopped meanwhile: another setup shown, not its thumbnail)
+    await adoptShown(x, row);
     const thumbnail = await wantThumbnail();
-    await thumbnailStore('readwrite', (store) => store.put(thumbnail, thumbnailKey(setup))).catch(() => {});
+    await thumbnailStore('readwrite', (store) => store.put(thumbnail, thumbnailKey(x.setup))).catch(() => {});
     showThumbnail(row, thumbnail, true);
-    renameAsShown(x, row);
   }
   rebuilding = false;
   syncRebuildTile(false);
 }
-// a card rebuilt: its title and chips as its bar shows them now (as the ☆ saves them), its card's words with them
-function renameAsShown(x, row) {
-  const list = readGallery(), saved = list.find((y) => y.name === x.name), { title, chips } = barWords();
+// a card shown, once built (clicked, or rebuilt): its setup as the app writes it now (one saved by an older version: its fields
+// as they are now, its ★ then lit), its title and chips as its bar shows them (as the ☆ saves them), its card's words with
+// them, its thumbnail kept under its setup's key
+async function adoptShown(x, row) {
+  const list = readGallery(), saved = list.find((y) => y.name === x.name), { title, chips } = barWords(), was = thumbnailKey(x.setup);
   if (!saved) return;  // (deleted meanwhile)
-  Object.assign(saved, { name: uniqueName(title, list.filter((y) => y !== saved)), chips });
+  Object.assign(saved, { name: uniqueName(title, list.filter((y) => y !== saved)), chips, setup: getSetup() });
   writeGallery(list);
   Object.assign(x, saved);  // (its card's: deleted by its new name)
   row.querySelector('.mode-name').textContent = setupTitle(x);
   const words = row.querySelector('.mode-detail');
   if (words) words.innerHTML = htmlText(setupWords(x));
   row.title = setupWords(x);  // (as a card's: its words, see card)
+  const key = thumbnailKey(x.setup), thumbnail = key !== was && (await thumbnailStore('readonly', (store) => store.get(was)).catch(() => null));
+  if (thumbnail) await thumbnailStore('readwrite', (store) => { store.delete(was); return store.put(thumbnail, key); }).catch(() => {});
+  syncSaveButton();
 }
 // Remove (to try Rebuild, for now): the thumbnails of the cards shown
 const removeThumbnails = () => Promise.all(galleryCards.map(({ x: { setup } }) => thumbnailStore('readwrite', (store) => store.delete(thumbnailKey(setup))).catch(() => {}))).then(fillGalleryList);
@@ -17958,7 +17967,7 @@ function updateStats() {
   if (time || rows) {  // Space-time: its cubes up to the generation shown; Elementary: its live cells up to it (see elementaryRows): a gauge, as a walk's and Life's
     $('ranking').hidden = $('rankTitles').hidden = true;
     $('gauges').hidden = false;
-    setLinks($('barNum'), '');  // (its generation: its own line, see stepNow; its rule in its chip)
+    setLinks($('barNum'), barTitleNow());
     paintGauges([[rows ? 'Live cells' : 'Cubes', null, null, formatNumber(rows ? rows.upTo[stepShown + 1] : stack.layers[stepShown] + 1)]]);
     $('digitStrip').textContent = '';
     drawActivity();
@@ -17966,7 +17975,7 @@ function updateStats() {
   }
   if (walk.life) {
     const L = walk.life;
-    setLinks($('barNum'), startTitle());  // (what it plays; its generation and its end: the step line, see endMark)
+    setLinks($('barNum'), barTitleNow());
     $('barLoop').hidden = !L.margolus || !!L.stable;  // (blocks: not back to its start yet, and at most when; back: its title's)
     renderBack();
     if (L.margolus && !L.stable) {
@@ -17981,7 +17990,7 @@ function updateStats() {
     drawActivity();
     return;
   }
-  setLinks($('barNum'), walk.battle ? versusTitle(walk.battle.names.map(withIcons)) : barTitle);  // (a battle: its walkers, each in its colour; a walk's loop or a worm's end: the step line, see endMark)
+  setLinks($('barNum'), barTitleNow());  // (a walk's loop or a worm's end: the step line, see endMark)
   drawActivity();
   renderWalkGauges();
   if (walk.battle) {  // a battle: its gauges only, no turns nor digits (A's alone, not the battle's)
@@ -18981,8 +18990,9 @@ const SETUP_LOOKS = ['v', 'd', 'sp', 'at'];
 const isInUse = (setup) => sameSetup(setup, getSetup(), SETUP_LOOKS);
 // A setup's row, built-in or saved: the walk's icon, a name and a detail; a click shows it, framed and still (Auto-fit
 // on: a hand rotation or zoom may have turned it off, and the walk could be on the far side); with onDelete, a × at its end
-function setupRow(name, detail, setup, onDelete) {
-  const b = card({ pic: icon(SHAPE_ICONS[NAV[setup.w]?.[2]] ?? MODE_ICONS[setup.w]), name, detail, on: isInUse(setup) });  // (its shape's picture, as the Grid's; its tooltip its name and its detail in full, as the row may cut them short)
+let cardShown = null;  // (the card clicked last: its setup adopted once built)
+function setupRow(name, detail, x, onDelete) {
+  const { setup } = x, b = card({ pic: icon(SHAPE_ICONS[NAV[setup.w]?.[2]] ?? MODE_ICONS[setup.w]), name, detail, on: isInUse(setup) });  // (its shape's picture, as the Grid's; its tooltip its name and its detail in full, as the row may cut them short)
   if (onDelete) {
     b.append(rowAction('×', `Delete “${name}”`, onDelete));
   }
@@ -18993,7 +19003,10 @@ function setupRow(name, detail, setup, onDelete) {
     closeNumber();
     $('autoFit').checked = true;
     $('autoRotate').checked = false;
+    const built = whenBuilt();
+    cardShown = x;
     applySetup(setup);
+    built.then(() => { if (cardShown === x) adoptShown(x, b); });  // (its setup as the app writes it now, its name its bar's, see adoptShown; another clicked meanwhile: that one's)
     syncLink();  // its link (if already built; else once built)
     renderModePicker();  // its tab, at the top
     showPane(false);  // and its parameters

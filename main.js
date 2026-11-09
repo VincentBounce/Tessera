@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.697';
+const VERSION = '0.4.698';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -14972,7 +14972,11 @@ function applyPendingView() {
   } else if (championCells && walk.life) $('status').textContent = "This link's start (ch=) cannot be read: an old one; the start shown is the hunt's";
   if (pendingAt !== null) { if (!lifeTime()) restart(); seekTo(pendingAt); pendingAt = null; }  // (a link's step shown: a walk's reached from its start, framed as it is there, as Begin does; not back from its end, its whole frame kept)
   syncLink();  // with the start a setup's champion or hunt zone gave
+  builtWaiters.splice(0).forEach((ok) => ok());  // (whoever waits on it: see whenBuilt)
 }
+// a walk or a grid built, all of it shown (applyPendingView): what waits on it (the Gallery's pictures rebuilt)
+let builtWaiters = [];
+const whenBuilt = () => new Promise((ok) => builtWaiters.push(ok));
 
 /* ---- 10.3 The page link ------------------------------------------------------------------- */
 // The page link always holds the current setup (#x=pi&w=turtle&…), for bookmarks and sharing.
@@ -15045,6 +15049,7 @@ const showPicture = (row, picture) => { const url = URL.createObjectURL(picture)
 function fillGalleryList() {
   pictureUrls.forEach((url) => URL.revokeObjectURL(url));
   pictureUrls = [];
+  const looks = [];  // (each card's picture, found or not)
   const list = readGallery();
   // the tab in use's only (Life, Ant, Walk…), under its name; by their titles, two rows alike numbered (2), (3)…
   const rows = list.filter((x) => NAV[x.setup.w]).map((x) => [setupTitle(x), [x.note, x.chips, setupDetail(x.setup, x.chips)].filter(Boolean).join(' · '), x]), seen = new Map();
@@ -15058,13 +15063,14 @@ function fillGalleryList() {
       const k = (seen.get(title + detail) ?? 0) + 1;
       seen.set(title + detail, k);
       const row = setupRow(k > 1 ? `${title} (${k})` : title, detail, x.setup, () => deleteSetup(x.name));
-      pictureStore('readonly', (store) => store.get(pictureKey(x.setup))).then((picture) => { if (picture) showPicture(row, picture); }, () => {});  // (none yet: its icon)
+      looks.push(pictureOf(x.setup).then((picture) => { if (picture) showPicture(row, picture); return !!picture; }));  // (none yet: its icon)
       return row;
     }));
     section.append(cards);
     return [section];
   }));
   for (const b of [...$('galleryTools').children].slice(1, 3)) setTile(b, { whyNot: () => (list.length ? '' : 'The Gallery is empty.') });  // (Export, Erase all: none to take)
+  Promise.all(looks).then((found) => setTile($('rebuildPictures'), { on: rebuilding, whyNot: () => (rebuilding || found.includes(false) ? '' : 'Every setup here has its picture.') }));
   $('eraseConfirm').hidden ||= !list.length;
   syncSaveButton();
 }
@@ -15153,6 +15159,27 @@ function stagePicture() {
   const W = stage.clientWidth, H = stage.clientHeight, k = Math.max(w / W, h / H);
   for (const id of ['gridLayer', 'fillLayer', 'gpuLayer', 'pathLayer', 'lineLayer', 'overlayLayer']) g.drawImage($(id), (w - W * k) / 2, (h - H * k) / 2, W * k, H * k);
   return new Promise((ok) => c.toBlob(ok, 'image/webp', 0.85));
+}
+const pictureOf = (setup) => pictureStore('readonly', (store) => store.get(pictureKey(setup))).catch(() => null);
+// Rebuild: the tab's setups with no picture, one after the other, each shown (as a click on it) and taken once built, its
+// card drawn at once; a click again, the Gallery shut or a card clicked stops it (the last built stays shown)
+let rebuilding = false;
+async function rebuildPictures() {
+  rebuilding = !rebuilding;
+  fillGalleryList();
+  const kind = NAV[tabMode()]?.[0];
+  for (const x of readGallery().filter((y) => NAV[y.setup.w]?.[0] === kind)) {  // (the tab's, as its list: see fillGalleryList)
+    if (!rebuilding) return;
+    if (await pictureOf(x.setup)) continue;
+    const built = whenBuilt();
+    if (!isInUse(x.setup) && applySetup(x.setup)) { renderModePicker(); await built; }  // (its tab, its parameters under the Gallery)
+    if (!rebuilding) return;  // (stopped meanwhile: another setup shown, not its picture)
+    const picture = await wantPicture();
+    await pictureStore('readwrite', (store) => store.put(picture, pictureKey(x.setup))).catch(() => {});
+    fillGalleryList();
+  }
+  rebuilding = false;
+  fillGalleryList();
 }
 
 /* ==============================================================================================
@@ -18892,6 +18919,7 @@ function setupRow(name, detail, setup, onDelete) {
   }
   b.setAttribute('role', 'option');
   b.addEventListener('click', () => {
+    rebuilding = false;  // (the pictures being rebuilt: stopped)
     ruleTutorial(null);  // what lies over the view (how a rule works, the digits) closes: the setup shown instead
     closeNumber();
     $('autoFit').checked = true;
@@ -18909,6 +18937,7 @@ function renderGallery() {
 // The left pane shows the parameters, or the gallery: opened by a click on the Gallery tab (lit as the tab in use), closed by
 // it again or by a Close (by each of its titles, as How it works), a setup clicked or another tab: the parameters of the tab before
 function showPane(gallery) {
+  if (!gallery) rebuilding = false;  // (the pictures being rebuilt: stopped, the last built shown)
   $('paramsPane').hidden = gallery;
   $('galleryPane').hidden = !gallery;
   galleryTab().classList.toggle('open', gallery);
@@ -18931,6 +18960,7 @@ function galleryTab() {
 // then Share link (the link to what is shown)
 $('galleryTools').replaceChildren(tile({ pic: icon('import'), text: 'Import', title: 'Add the setups of a JSON file to the Gallery (those of a name already used numbered: none replaced)', click: () => $('galleryFile').click() }),
   tile({ pic: icon('export'), text: 'Export', title: 'The Gallery as a JSON file', click: exportGallery }), tile({ pic: icon('trash'), text: 'Erase all', title: 'Erase the Gallery from this browser (asked again under it)', click: () => { $('eraseConfirm').hidden = !$('eraseConfirm').hidden; } }),
+  Object.assign(tile({ pic: icon('autoRotate'), text: 'Rebuild', title: 'Take the pictures missing here, one setup after the other: each shown, then taken once built (a click again stops)', click: rebuildPictures }), { id: 'rebuildPictures' }),
   tile({ pic: icon('link'), text: 'Share link', title: 'Copy the link to what is shown', click: () => shareView($('galleryTools').lastElementChild) }));
 $('eraseConfirm').innerHTML = `${icon('trash')} Confirm erase`;
 $('galleryToolsHead').insertAdjacentHTML('afterbegin', icon('floppy'));  // (the Gallery's files: Import, Export, Erase)

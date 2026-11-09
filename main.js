@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.722';
+const VERSION = '0.4.723';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -17241,7 +17241,8 @@ function gpuFrame(enc, drawAll) {
 const WALK_FADE_SECONDS = 0.5;
 document.documentElement.style.setProperty('--fade-seconds', `${WALK_FADE_SECONDS}s`);  // (the style's fades as long: a Gallery picture's)
 const walkFadeSteps = () => (playing || reversing ? stepsPerSecond() * WALK_FADE_SECONDS : 0);  // (its seconds at any speed: half a step at 1/s)
-// Every cell's colour change fades in over WALK_FADE_SECONDS, whatever changed it (a walk, a battle, a land, a look, a seek):
+// Every cell's colour change in a walk fades in over WALK_FADE_SECONDS, whatever changed it (its steps, a battle, a land, a look, a seek;
+// a new walk drawn at once):
 // eased(key, want) gives the colours to draw (packed, a cell each: a surface's tiles, a 3D walk's cubes), each eased from
 // the colour drawn as it changed to the one wanted; fadingUntil: drawn again till the last one is there
 const fades = {};
@@ -17249,7 +17250,7 @@ let fadingUntil = 0;
 const mixPacked = (a, b, w) => { let out = 0; for (let s = 0; s < 32; s += 8) { const x = (a >>> s) & 255, y = (b >>> s) & 255; out |= Math.round(x + (y - x) * w) << s; } return out >>> 0; };
 function eased(key, want) {
   const now = performance.now() / 1000, S = fades[key], T = WALK_FADE_SECONDS;
-  if (!S || S.to.length !== want.length) { fades[key] = { from: want.slice(), to: want.slice(), at: new Float64Array(want.length).fill(-T) }; return want; }  // (a new grid: at once)
+  if (!S || S.walk !== walk.keys || S.to.length !== want.length) { fades[key] = { walk: walk.keys, from: want.slice(), to: want.slice(), at: new Float64Array(want.length).fill(-T) }; return want; }  // (a new grid or a new walk, its keys new: at once, nothing of the walk before fading out)
   const out = new Uint32Array(want.length);
   for (let i = 0; i < want.length; i++) {
     let w = (now - S.at[i]) / T;

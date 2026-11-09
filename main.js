@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.652';
+const VERSION = '0.4.653';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -15191,12 +15191,13 @@ let speed = defaultOf('speed', tabMode());
 const screenHz = () => Math.round(1 / frameTime);
 const evenSpeed = (v) => { const R = screenHz(); return v < R ? R / Math.max(1, Math.round(R / v)) : R * Math.round(v / R); };
 const stepsPerSecond = () => evenSpeed(speed);
-// a speed in words: whole from 10 a second, else to a tenth (5.9 at 165 Hz)
-const speedWords = (v) => formatNumber(v < 10 ? Math.round(v * 10) / 10 : Math.round(v));
+// a speed asked, v, in words as played at the screen's rhythm: ≈ when not as asked, 4 digits at most (as the length asked's,
+// compactCount), to a tenth under 10
+const speedWords = (v) => { const p = evenSpeed(v); return `${p !== v ? '≈' : ''}${compactCount(p < 10 ? Math.round(p * 10) / 10 : Math.round(p))}${STEPS_GLYPH}/s`; };
+// the speed's field: a notch each of SPEEDS, the one asked its knob; dragged, its words the notch's under it, let go, set
 function updateSpeedLabel() {
-  if (document.activeElement !== $('speedLabel')) $('speedLabel').value = `${stepsPerSecond() !== speed ? '≈ ' : ''}${speedWords(stepsPerSecond())} ${STEPS_GLYPH}/s`;  // (as played, at the screen's rhythm: ≈ when not as typed, see valueInUse)
-  setTile($('slower'), { greyed: speed <= SPEEDS[0] ? 'Already the slowest.' : '' });
-  setTile($('faster'), { greyed: speed >= SPEEDS.at(-1) ? 'Already the fastest.' : '' });
+  $('speedLabel').textContent = speedWords(speed);
+  sizeGauge($('speedGauge'), SPEEDS.length, Math.max(0, SPEEDS.findIndex((v) => v >= speed)), (k) => { $('speedLabel').textContent = speedWords(SPEEDS[k]); }, (k) => setSpeed(SPEEDS[k]));
 }
 function setSpeed(s) {
   speed = Math.min(SPEEDS.at(-1), Math.max(SPEEDS[0], s < 1 ? Math.round(s * 10) / 10 : Math.round(s)));  // (below 1, to a tenth)
@@ -18045,7 +18046,7 @@ $('digitsUp').addEventListener('click', () => stepDigits(1));
 // the last valid formula; a rule as it was). Enter or ↵ leaves the field, and leaving it applies it;
 // but a wrong formula keeps you in the field, with its error. Esc undoes the edit: back to the value
 // in use. For ↵, mousedown keeps the focus from going to the button first.
-const valueInUse = { formula: () => formulaInUse, digitsLabel: () => String(randomPrimeSize() ?? lengthAsked()), startLabel: () => String(startNo()), speedLabel: () => String(speed),
+const valueInUse = { formula: () => formulaInUse, digitsLabel: () => String(randomPrimeSize() ?? lengthAsked()), startLabel: () => String(startNo()),
                      antRule: () => creatureRules(tabMode()).now,  // (a walk's, an ant's, a turmite's, a worm's)
                      lifeRule: () => (walk.life?.ruleText ? ruleBody(walk.life.ruleText) : walk.rows ? `W${walk.rows.N}` : null) };  // (the rule the game plays, its colours apart; Elementary's, its rows'; none yet: the field's as it was, see putBack)
 for (const input of document.querySelectorAll('.field input')) {
@@ -18105,12 +18106,6 @@ function goStop(dir) {  // (playing on if it was)
 }
 $('restart').addEventListener('click', () => goStop(-1));
 $('end').addEventListener('click', () => goStop(1));
-// the turtle and the rabbit: the next speed of SPEEDS down or up; a typed one, digits and a point only
-$('slower').addEventListener('click', () => setSpeed(SPEEDS.findLast((v) => v < speed) ?? SPEEDS[0]));
-$('faster').addEventListener('click', () => setSpeed(SPEEDS.find((v) => v > speed) ?? SPEEDS.at(-1)));
-$('speedLabel').addEventListener('input', () => { $('speedLabel').value = $('speedLabel').value.replace(/[^\d.]/g, ''); });
-$('speedLabel').addEventListener('blur', updateSpeedLabel);  // ("≈72𓊍/s" again: as played)
-$('speedLabel').addEventListener('change', () => { if ($('speedLabel').value) setSpeed(Number($('speedLabel').value)); });
 // the slider's end: a walk's last step; a run's (a Game of Life's, a reversible one's), its loop's last once known, else the
 // furthest played (its record's: Begin keeps it, see lifeReset)
 const seekFar = () => (!lifeTime() ? runEnd() : runLoop()?.last ?? walk.life.trace.alive.length - 1);
@@ -18960,7 +18955,7 @@ function credits(open) {
     + CREDITS.map(([title, who]) => `<h4>${title}</h4><p>${who}.</p>`).join('')
     + `<p><a href="https://github.com/VincentBounce/Tessera#readme" target="_blank" rel="noopener">Its README</a> · <a href="https://github.com/VincentBounce/Tessera" target="_blank" rel="noopener">its code</a></p>`
     + '<div class="form-section"><h3>Stats/debug</h3><h4>Times for this view</h4><table id="timings" class="tut-commands"></table>'  // (the walk shown's times, see timings)
-    + `<h4>Screen: ${screenHz()} Hz</h4><table class="tut-commands"><tr><td>Speed asked</td><td class="number">played</td></tr>${SPEEDS.map((v) => `<tr><td>${formatNumber(v)}/s</td><td class="number">${speedWords(evenSpeed(v))}/s</td></tr>`).join('')}</table></div></div>`;  // (its refresh, and each speed as it plays there: see evenSpeed)
+    + `<h4>Screen: ${screenHz()} Hz</h4><table class="tut-commands"><tr><td>Speed asked</td><td class="number">played</td></tr>${SPEEDS.map((v) => `<tr><td>${formatNumber(v)}/s</td><td class="number">${speedWords(v)}</td></tr>`).join('')}</table></div></div>`;  // (its refresh, and each speed as it plays there: see evenSpeed)
   paintTimings();
   $('ruleTuto').prepend(tutTools({ words: [['Share link', 'Copy the link to what is shown', (e) => shareView(e.currentTarget)], ['Home', 'Back to the start', () => { location.href = location.pathname; }]], close: () => credits(false) }));
 }

@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.707';
+const VERSION = '0.4.708';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -15058,12 +15058,15 @@ function fillGalleryList() {
   const looks = [];  // (each card's picture, found or not)
   galleryCards = [];
   const list = readGallery();
-  // the tab in use's only (Life, Ant, Walk…), under its name; by their titles, two rows alike numbered (2), (3)…
+  // every tab's (Life, Ant, Walk…), each under its name, the tab in use's even with none (the ☆ said there); by their titles,
+  // two rows alike numbered (2), (3)…
   const rows = list.filter((x) => NAV[x.setup.w]).map((x) => [setupTitle(x), setupWords(x), x]), seen = new Map();
   const kindOf = (x) => NAV[x.setup.w][0];
-  $('yourList').replaceChildren(...NAV_KINDS.filter(([kind]) => kind === NAV[tabMode()]?.[0]).flatMap(([kind]) => {
+  $('yourList').replaceChildren(...NAV_KINDS.flatMap(([kind]) => {
     const mine = rows.filter(([, , x]) => kindOf(x) === kind).sort((a, b) => a[0].localeCompare(b[0]));
+    if (!mine.length && kind !== NAV[tabMode()]?.[0]) return [];
     const section = document.createElement('section'), cards = Object.assign(document.createElement('div'), { className: 'gallery-grid' });  // a section each, as Life's, its picture as the tab's
+    section.dataset.kind = kind;  // (opened from a tab: scrolled to its section, see showPane)
     section.innerHTML = `<h2>${icon(NAV_KINDS.find(([k]) => k === kind)[1])}${kind}</h2>`;  // (Close: Management's, above)
     if (!mine.length) cards.innerHTML = `<p class="caption">None in ${kind} yet: the ☆ of Gallery's tab keeps the setup in view</p>`;
     cards.append(...mine.map(([title, detail, x]) => {
@@ -18966,7 +18969,7 @@ function showPane(gallery) {
   $('paramsPane').hidden = gallery;
   $('galleryPane').hidden = !gallery;
   galleryTab().classList.toggle('open', gallery);
-  if (gallery) renderGallery();
+  if (gallery) { renderGallery(); $('yourList').querySelector(`[data-kind="${NAV[tabMode()]?.[0]}"]`)?.scrollIntoView({ block: 'start' }); }  // (the tab in use's section)
 }
 const galleryButton = document.createElement('button');
 $('galleryPane').addEventListener('click', (e) => { if (e.target.closest('.gallery-close')) showPane(false); });  // (each section's Close)

@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.719';
+const VERSION = '0.4.720';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -12533,21 +12533,28 @@ const blockSet = (kind, stars, four) => (four ? { ...BLOCKS.square, turn: ['0,0'
 // go (on any surface: a Klein bottle's turned over across its seam); those of a set in turn; stellated, each cell's partner
 // across its side away from its corner. null: a cell in two blocks of a set (a torus its sets do not fit round)
 function cellBlocks(B, n, cell, stars, first = cell(0)) {  // (first: the cell its lattice is from)
-  const corners = new Map(), of = [], sides = new Map(), side = (a, b) => (a < b ? `${a} ${b}` : `${b} ${a}`);  // (sides: a side's cells, by its corners)
+  // (a corner's name a number, given once: its sides' keys numbers too, a million cells' in a second, not strings)
+  const names = new Map(), number = (name) => names.get(name) ?? names.set(name, names.size).get(name);
+  // (a corner's cells, the one most west of it, and its sides, each to the corner at its other end and its cell, as they come)
+  const corners = new Map(), of = [], cornerOf = (key, q) => corners.get(key) ?? corners.set(key, { key, at: q, cells: [], from: -1, west: Infinity, sides: [] }).get(key);
+  const across = (v, w, t) => { for (const [to, u] of corners.get(v).sides) if (to === w && u !== t) return u; };  // (the cell across side v–w from cell t)
   for (let t = 0; t < n; t++) {
     const c = (of[t] = cell(t));
     if (!c) continue;
+    c.ids = c.ids.map(number);
     c.pts.forEach((q, i) => {
-      const key = c.ids[i], s = side(key, c.ids[(i + 1) % c.ids.length]);
-      (sides.get(s) ?? sides.set(s, []).get(s)).push(t);
-      if (!corners.has(key)) corners.set(key, { key, at: q, cells: [] });
-      corners.get(key).cells.push([t, Math.atan2(c.mid[1] - q[1], c.mid[0] - q[0])]);  // (where it lies round the corner, as the cell sees it)
+      const key = c.ids[i], next = c.ids[(i + 1) % c.ids.length], corner = cornerOf(key, q);
+      corner.sides.push([next, t]);
+      cornerOf(next, c.pts[(i + 1) % c.pts.length]).sides.push([key, t]);
+      corner.cells.push(t);
+      const angle = Math.atan2(c.mid[1] - q[1], c.mid[0] - q[0]);  // (where it lies round the corner, as the cell sees it)
+      if (angle < corner.west) { corner.west = angle; corner.from = t; }
     });
   }
   const round = (c) => {  // (its cells crossed round it, from the one most west of it, by its side after the corner; none: cut by a wall)
-    const v = c.key, from = c.cells.reduce((a, b) => (b[1] < a[1] ? b : a))[0], ids = of[from].ids, ring = [from];
+    const v = c.key, from = c.from, ids = of[from].ids, ring = [from];
     for (let t = from, w = ids[(ids.indexOf(v) + 1) % ids.length]; ; ) {
-      const u = sides.get(side(v, w)).find((x) => x !== t), its = u === undefined ? null : of[u].ids, i = its?.indexOf(v);
+      const u = across(v, w, t), its = u === undefined ? null : of[u].ids, i = its?.indexOf(v);
       if (u === from) return ring.length === B.k ? ring : null;
       if (u === undefined || ring.push(u) > B.k) return null;
       w = its[(i + 1) % its.length] === w ? its.at(i - 1) : its[(i + 1) % its.length];  // (its other side at the corner)
@@ -12561,13 +12568,13 @@ function cellBlocks(B, n, cell, stars, first = cell(0)) {  // (first: the cell i
     setOf = (c) => { const dx = c.at[0] - lo[0], dy = c.at[1] - lo[1]; return B.set([Math.round((dx * e2[1] - dy * e2[0]) / d), Math.round((e1[0] * dy - e1[1] * dx) / d)]); };
   } else {  // two sets, no two of a set on one cell: by turns from a first corner, across the cells two of them share
     const of = new Map(), byCell = new Map();
-    for (const c of full) for (const [t] of c.cells) { if (!byCell.has(t)) byCell.set(t, []); byCell.get(t).push(c); }
+    for (const c of full) for (const t of c.cells) { if (!byCell.has(t)) byCell.set(t, []); byCell.get(t).push(c); }
     for (const c0 of full) {
       if (of.has(c0)) continue;
       of.set(c0, '0');
       for (const queue = [c0]; queue.length; ) {
         const c = queue.pop();
-        for (const [t] of c.cells) for (const m of byCell.get(t)) if (!of.has(m)) { of.set(m, of.get(c) === '0' ? '1' : '0'); queue.push(m); }
+        for (const t of c.cells) for (const m of byCell.get(t)) if (!of.has(m)) { of.set(m, of.get(c) === '0' ? '1' : '0'); queue.push(m); }
       }
     }
     setOf = (c) => of.get(c);

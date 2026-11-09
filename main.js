@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.671';
+const VERSION = '0.4.672';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -15701,24 +15701,33 @@ const sphereDraw = { at: 0, cost: 0 };
 // the walker's point and tile at step i (see walkersOf). Between two steps (i not whole: gliding, see glideAt), its place on
 // the way from one to the next, its heading turned from its last step's to its next one's the shortest way in space (round
 // the axis square to both; a U-turn's, none: round its tile's normal)
-function headFrame({ P, tileAt, before }, i = stepShown) {
-  const j = Math.floor(i), f = i - j, q = P(j), next = f > 0 ? P(j + 1) : q, p = q.map((v, d) => v + (next[d] - v) * f);
-  const t = tileAt(f < 0.5 ? j : j + 1), nr = walk.shape.nrm, nrm = [nr[3 * t], nr[3 * t + 1], nr[3 * t + 2]];
+function headFrame({ P, upAt, areaAt, before }, i = stepShown) {
+  const j = Math.floor(i), f = i - j, q = P(j), next = f > 0 ? P(j + 1) : q, p = q.map((v, d) => v + (next[d] - v) * f), k = f < 0.5 ? j : j + 1;
   const dir = (a, b) => unit([0, 1, 2].map((d) => b[d] - a[d])), last = dir(j > 0 ? P(j - 1) : before, q);  // (its axis its last step itself, as its line)
-  const ahead = dir(q, next), axis = cross(last, ahead), h = f > 0 ? turnToward(last, ahead, Math.hypot(...axis) > 1e-6 ? unit(axis) : nrm, Math.min(1, f / TURN_SHARE)) : last;
-  const k = walk.geo.sides, sc = walk.shape.corners, c = (q) => [0, 1, 2].map((d) => sc[3 * (k * t + q) + d] * walk.R);  // (its tile's corners in space)
+  const ahead = dir(q, next), axis = cross(last, ahead), up = upAt(k);
+  const h = f > 0 ? turnToward(last, ahead, Math.hypot(...axis) > 1e-6 ? unit(axis) : squareTo(last, up), Math.min(1, f / TURN_SHARE)) : last;
+  return { p, h, up, size: headSize(areaAt(k)) };
+}
+// a unit axis square to v: n's part square to it (none: another's)
+const squareTo = (v, n) => { const u = n.map((x, d) => x - v[d] * dot3(n, v)); return Math.hypot(...u) > 1e-6 ? unit(u) : unit(cross(v, Math.abs(v[0]) < 0.9 ? [1, 0, 0] : [0, 1, 0])); };
+// a surface's tile t: its outward normal, its area (its corners in space)
+const tileUp = (t) => { const nr = walk.shape.nrm; return [nr[3 * t], nr[3 * t + 1], nr[3 * t + 2]]; };
+const tileArea = (t) => {
+  const k = walk.geo.sides, sc = walk.shape.corners, c = (q) => [0, 1, 2].map((d) => sc[3 * (k * t + q) + d] * walk.R);
   let area = 0;
   for (let q = 1; q + 1 < k; q++) area += Math.hypot(...cross(c(q).map((v, d) => v - c(0)[d]), c(q + 1).map((v, d) => v - c(0)[d]))) / 2;
-  return { p, h, up: nrm, size: headSize(area) };
-}
+  return area;
+};
 // the walkers on a surface, each { P, tileAt, before (its way in), colour, living }: a battle's, each its team's colour, else
 // the walk's, in Life's live colour (white on a dark page, black on a light one); none in Life
 function walkersOf() {
   if (!walk.n || walk.life || walk.rows) return [];
-  if (!walk.battle) return [{ P: (i) => [walk.wx[i], walk.wy[i], walk.wz[i]], tileAt: (i) => walk.tile[i], before: placePoint(walk.came), colour: LIFE_ALIVE, living: true }];
+  const at = (i) => [walk.wx[i], walk.wy[i], walk.wz[i]], onTiles = (tileAt) => ({ upAt: (i) => tileUp(tileAt(i)), areaAt: (i) => tileArea(tileAt(i)) });
+  if (!walk.sphere) return [{ P: at, upAt: () => [0, 0, 1], areaAt: () => (4 * cellShape().half) ** 2, before: at(0).map((v, d) => 2 * v - at(Math.min(1, walk.n))[d]), colour: LIFE_ALIVE, living: true }];  // (a 3D walk's: its head out of its cell, which fills its place, as a surface's half out of its tile; its start the way it goes)
+  if (!walk.battle) return [{ P: at, ...onTiles((i) => walk.tile[i]), before: placePoint(walk.came), colour: LIFE_ALIVE, living: true }];
   const B = walk.battle.player;
   B.to(stepShown);
-  return B.places.map((Q, s) => ({ P: (i) => placePoint(Q[i]), tileAt: (i) => (walk.vert ? walk.geo.grid.tileOf[Q[i]] : Q[i]), before: placePoint(cameFrom(walk.geo, !!walk.vert, B.starts[s])),
+  return B.places.map((Q, s) => ({ P: (i) => placePoint(Q[i]), ...onTiles((i) => (walk.vert ? walk.geo.grid.tileOf[Q[i]] : Q[i])), before: placePoint(cameFrom(walk.geo, !!walk.vert, B.starts[s])),
     colour: teamColour(s), living: B.dead[s] < 0 || B.dead[s] > stepShown }));
 }
 // the heads: each living walker's ogive at its step (see ogiveOf); the starts: each walker's flag in its frame at step 0
@@ -15741,7 +15750,7 @@ const glideSplit = () => { const at = glideAt(), whole = Math.floor(at); return 
 // a start's flag: its pole planted in its place along the surface's normal, over a head (2.2 of its sizes high), its sail
 // at its top an arrow pointing the way it goes (both its faces); its triangles' corners and normals, as an ogive's
 function flagOf({ p, h, up, size }) {
-  const side = unit(cross(up, h)), at = (u, f, s = 0) => [0, 1, 2].map((d) => p[d] + (up[d] * u + h[d] * f + side[d] * s) * size), out = [], w = 0.05, H = 2.2;
+  const ahead = squareTo(up, h), side = cross(up, ahead), at = (u, f, s = 0) => [0, 1, 2].map((d) => p[d] + (up[d] * u + ahead[d] * f + side[d] * s) * size), out = [], w = 0.05, H = 2.2;  // (its sail the way it goes along the ground: its heading's part square to its pole)
   const tri = (A, B, C) => { const n = unit(cross(B.map((v, d) => v - A[d]), C.map((v, d) => v - A[d]))); for (const q of [A, B, C]) out.push(...q, ...n); };
   const ring = [[w, w], [-w, w], [-w, -w], [w, -w]];
   ring.forEach(([f, s], q) => { const [g, t] = ring[(q + 1) % 4]; tri(at(0, f, s), at(0, g, t), at(H, g, t)); tri(at(0, f, s), at(H, g, t), at(H, f, s)); });  // (its pole)
@@ -15753,7 +15762,7 @@ function flagOf({ p, h, up, size }) {
 // notch; −0.8 … 0.8 along: its length's middle on its place, not the centre of gravity of the triangle it makes), its axis
 // on the surface: half under it, hidden by the tiles; its triangles' corners and normals, [x, y, z, nx, ny, nz]
 function ogiveOf({ p, h, size }) {
-  const side = unit(cross(h, Math.abs(h[0]) < 0.9 ? [1, 0, 0] : [0, 1, 0])), across = cross(h, side);  // (round its heading: any two axes square to it)
+  const side = squareTo(h, [1, 0, 0]), across = cross(h, side);  // (round its heading: any two axes square to it)
   const at = (f, r, a) => [0, 1, 2].map((d) => p[d] + (h[d] * f + (side[d] * Math.cos(a) + across[d] * Math.sin(a)) * r) * size), out = [];
   const tri = (A, B, C) => { const n = unit(cross(B.map((v, d) => v - A[d]), C.map((v, d) => v - A[d]))); for (const q of [A, B, C]) out.push(...q, ...n); };
   for (let j = 0; j < 16; j++) {
@@ -17081,11 +17090,7 @@ function gpuSurface(paint, path) {
   const ranges = !(path || lines) || j + part <= 0 || !(P?.ownLines ? D.segsRanges : D.segsAt) ? [] : P?.ownLines ? D.segsRanges.map(([a, b]) => [a, b, 1])
     : !lines ? [[0, until(D.segsAt, j), 1], [until(D.segsAt, j), until(D.segsAt, j + 1), part]]
     : P.standing().flatMap((s) => [[D.segsAt[s][Math.max(1, P.from[s])], until(D.segsAt[s], j + 1), 1], [until(D.segsAt[s], j + 1), until(D.segsAt[s], j + 2), part]]);
-  const heads = headsOf(), headFrom = heads.reduce((at, [m]) => [...at, at.at(-1) + m.length / 6], [0]);  // (their corners: each its first, in the one buffer)
-  if (heads.length) {
-    gpuBuffer('headMesh', Float32Array.from(heads.flatMap(([m]) => m))); gpuBuffer('headAt', new Float32Array(3 * heads.length));
-    gpuBuffer('headCol', Uint8Array.from(heads.flatMap(([, c]) => [...rgbCached(c), 255])));
-  }
+  const drawHeads = gpuHeads(D);
   // the tiles, their grid and the path, into pass p (0 the frame; 1, 2 Glass's)
   const drawAll = (rp, pass) => {
     // seen from both sides: Glass, a cut, a Klein bottle (one-sided: its tiles' face inwards in its neck and handle)
@@ -17112,12 +17117,7 @@ function gpuSurface(paint, path) {
       rp.setVertexBuffer(0, D.quad); rp.setVertexBuffer(1, D.ribbon);
       for (const [a, b, share] of ranges) if (b > a && share > 0) { rp.setBindGroup(0, gpuGroup(), [share === 1 ? whole : going]); rp.draw(4, b - a, 0, a); }
     }
-    if (!heads.length) return;  // the heads: ogives lit as the cubes, each its colour (an instance), half under the tiles
-    rp.setPipeline(gpuDrawPipe('cube', { vertex: 'cubeV', fragment: 'shadowedF', shadowed: true, pass,
-      buffers: [vertexLayout(24, [vertexAttribute(0, 'float32x3', 0), vertexAttribute(1, 'float32x3', 12)]), vertexLayout(12, [vertexAttribute(2, 'float32x3')], 'instance'), vertexLayout(4, [vertexAttribute(3, 'unorm8x4')], 'instance')] }));
-    rp.setBindGroup(0, gpuGroup(), [slotOf({ glass: pass, cut, alpha: GLASS_ALPHA })]); rp.setBindGroup(1, D.shadow.group);
-    rp.setVertexBuffer(0, D.headMesh); rp.setVertexBuffer(1, D.headAt); rp.setVertexBuffer(2, D.headCol);
-    heads.forEach((_, j) => rp.draw(headFrom[j + 1] - headFrom[j], 1, headFrom[j], j));
+    drawHeads?.(rp, pass, slotOf({ glass: pass, cut, alpha: GLASS_ALPHA }));  // (the heads and flags, see gpuHeads)
   };
   gpuFrame(enc, drawAll);
   device.queue.writeBuffer(D.uni, 0, D.words, 0, 512 * slot);
@@ -17229,6 +17229,22 @@ function gpuFlat(to) {
   return true;
 }
 // count cubes: of, theirs, made by make(the look) once; reach, how far from the middle they go
+// the walkers' heads and their starts' flags (see headsOf) in buffers once a frame: draw(rp, pass, slot) draws them in a
+// pass, lit as the cubes (an ogive, a flag: each its colour, an instance; on a surface half under its tiles); none: null
+function gpuHeads(D) {
+  const heads = headsOf();
+  if (!heads.length) return null;
+  const from = heads.reduce((at, [mesh]) => [...at, at.at(-1) + mesh.length / 6], [0]);  // (their corners: each its first, in the one buffer)
+  gpuBuffer('headMesh', Float32Array.from(heads.flatMap(([mesh]) => mesh))); gpuBuffer('headAt', new Float32Array(3 * heads.length));
+  gpuBuffer('headCol', Uint8Array.from(heads.flatMap(([, c]) => [...rgbCached(c), 255])));
+  return (rp, pass, slot) => {
+    rp.setPipeline(gpuDrawPipe('cube', { vertex: 'cubeV', fragment: 'shadowedF', shadowed: true, pass,
+      buffers: [vertexLayout(24, [vertexAttribute(0, 'float32x3', 0), vertexAttribute(1, 'float32x3', 12)]), vertexLayout(12, [vertexAttribute(2, 'float32x3')], 'instance'), vertexLayout(4, [vertexAttribute(3, 'unorm8x4')], 'instance')] }));
+    rp.setBindGroup(0, gpuGroup(), [slot]); rp.setBindGroup(1, D.shadow.group);
+    rp.setVertexBuffer(0, D.headMesh); rp.setVertexBuffer(1, D.headAt); rp.setVertexBuffer(2, D.headCol);
+    heads.forEach((_, j) => rp.draw(from[j + 1] - from[j], 1, from[j], j));
+  };
+}
 function gpuCubes(count, of, make, reach) {
   const D = gpuDrawSetup();
   if (!D) return false;
@@ -17247,11 +17263,12 @@ function gpuCubes(count, of, make, reach) {
     p.setPipeline(gpuDepthPipe('depthCubeV', [vertexLayout(24, [vertexAttribute(0, 'float32x3')]), vertexLayout(12, [vertexAttribute(1, 'float32x3')], 'instance')]));
     p.setVertexBuffer(0, D.cube); p.setVertexBuffer(1, D.cubeAt); p.draw(verts, count);
   }, null);
-  const rp = gpuPass(enc);
+  const drawHeads = gpuHeads(D), rp = gpuPass(enc);
   rp.setPipeline(gpuDrawPipe('cube', { vertex: 'cubeV', fragment: 'shadowedF', shadowed: true,
     buffers: [vertexLayout(24, [vertexAttribute(0, 'float32x3', 0), vertexAttribute(1, 'float32x3', 12)]), vertexLayout(12, [vertexAttribute(2, 'float32x3')], 'instance'), vertexLayout(4, [vertexAttribute(3, 'unorm8x4')], 'instance')] }));
   rp.setBindGroup(0, gpuGroup(), [slot]); rp.setBindGroup(1, D.shadow.group);
   rp.setVertexBuffer(0, D.cube); rp.setVertexBuffer(1, D.cubeAt); rp.setVertexBuffer(2, D.cubeCol); rp.draw(verts, count);
+  drawHeads?.(rp, 0, slot);  // (a 3D walk's head and start's flag, as a surface's)
   rp.end();
   device.queue.writeBuffer(D.uni, 0, D.words, 0, 512);
   device.queue.submit([enc.finish()]);
@@ -17519,7 +17536,7 @@ function drawOverlay() {
   }
   if (!walk.n || walk.life || walk.rows) return;  // no walker in the Game of Life, nor Elementary
   if (walk.battle) return;  // a battle: its heads and flags drawn with its tiles (see headsOf)
-  if (walk.sphere) return;  // (its head and its start's flag drawn with its tiles, see headsOf)
+  if (walk.sphere || cubesWalk()) return;  // (its head and its start's flag drawn in 3D, with its tiles or cubes: see gpuHeads)
   // the walker at step i: its place and heading, its last step's (up at the start), in a frame at(forward, across)
   const a = headSize(polyArea(FILL_GRIDS[walk.lattice]?.templates[0] ?? [[0, 0], [1, 0], [1, 1], [0, 1]]) * s * s);  // (its cell's area on the screen: a lattice's tile, else a unit square)
   const frame = (at) => {  // (between two steps, gliding: on its way from one to the next, heading along it, see glideAt)

@@ -1,5 +1,5 @@
 :root {
-  --panel-width: 280px;  /* the settings' column (.panel); the Gallery's tools as wide, over the whole page */
+  --panel-width: 280px;  /* the settings' column (.panel; the Gallery's Confirm erase as wide) */
   /* the text's sizes, four, each element one of them: */
   --caption-text-size: 11px;  /* a card's words, a bubble, a figure's caption */
   --label-text-size: 12px;  /* a field's label, a note, a hint, the ranking */
@@ -285,9 +285,9 @@ button.switch.active:hover:not(:disabled) { background: var(--picked-strong-back
 .nav-shapes button.active, .tile-group > button.active { border-color: var(--accent-color); color: var(--accent-color); background: var(--picked-background); }
 .mode-list { display: flex; flex-direction: column; gap: 4px; margin-bottom: 10px; }
 /* The Gallery: over the whole of main, under the header, the settings and the view kept under it (still drawn: a picture taken) */
-/* its tools a row, as many tiles as it has, as wide as the settings' column (not across the page) */
-#galleryTools { grid-template-columns: none; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); }
-#galleryTools, #eraseConfirm { max-width: var(--panel-width); }
+/* its tools a row, as many tiles as it has, all as wide as the widest one's words (fr tracks in a max-content grid): never cut */
+#galleryTools { grid-template-columns: none; grid-auto-flow: column; grid-auto-columns: 1fr; width: max-content; }
+#eraseConfirm { max-width: var(--panel-width); }
 #galleryPane:not([hidden]) { position: absolute; inset: 0; z-index: 5; overflow-y: auto; background: var(--panel-background); padding: 0 16px 16px; }
 /* its setups, a grid of cards: the picture above (else the shape's icon), the words under, the × on the picture */
 .gallery-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 10px; margin-bottom: 10px; }

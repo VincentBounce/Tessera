@@ -38,8 +38,9 @@ Never delete the bundles in `Tessera resources` (old versions included, the `Wal
 ## Format
 The code is Prettier's standard (`.prettierrc.json`: 120 columns, single quotes, semicolons, trailing commas), applied by
 `tools/ship.sh` to every `.js` and `.css` staged (`brew install prettier`); the generated data (`emoji.js`, `punks.js`,
-`pixelarticons.js`, `loops.js`) and the prototypes left out (`.prettierignore`). Write to it: one statement a line, never
-code squeezed to look shorter (see SIMPLER above).
+`pixelarticons.js`, `loops.js`) and the prototypes left out (`.prettierignore`). **Write the code to this standard from the
+start**, as Prettier would leave it: one statement a line, never code squeezed to look shorter (see SIMPLER above and
+Line balance).
 
 ## Comment hierarchy (main.js)
 - The file opens with a banner (`TESSERA — main.js`) and a "How it fits together" overview of its parts.
@@ -105,6 +106,9 @@ code squeezed to look shorter (see SIMPLER above).
 `python3 tools/lines.py [from] [to]` (from: HEAD; to: the files now, or a commit) gives each changed code file's lines
 of code only (no comment, no blank line, see `tools/uncomment.py`): before, and +y or −y, nothing else: the « solde » of each
 delivery, e.g. `python3 tools/lines.py HEAD~1 HEAD` after a commit.
+The solde is how the user sees whether a change is a patch or a foundation fix (a fix that grows the code where it
+should shrink it): it counts lines at Prettier's standard (see Format), so code is never squeezed, inlined or chained to
+lower it. Cheating on it is lying about the change.
 Written with the version it brings first: « Solde v0.2.180 : main.js 12,143 +7 » (the app's files only, not tools/*).
 No code line gained or lost: the count and +0 all the same (« main.js 12,531 +0 »), never a sentence instead; a file
 touched shows (+0 if its code lines are as many).

@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.725';
+const VERSION = '0.4.726';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -15214,6 +15214,8 @@ async function rebuildThumbnails() {
   rebuilding = !rebuilding;
   syncRebuildTile(true);
   if (rebuilding) try { await thumbnailStore('readonly', (store) => store.count()); } catch (e) { rebuilding = false; syncRebuildTile(true); alert(e.message); return; }  // (none kept: none taken)
+  const used = new Set(readGallery().map((x) => thumbnailKey(x.setup)));  // (the thumbnails no card shows any more, a setup gone or its key changed: erased)
+  if (rebuilding) for (const key of await thumbnailStore('readonly', (store) => store.getAllKeys())) if (!used.has(key)) await thumbnailStore('readwrite', (store) => store.delete(key));
   for (const { x, row } of galleryCards.slice()) {  // (as they are now: the list drawn again meanwhile, these go on)
     const { setup } = x;
     if (!rebuilding) return;

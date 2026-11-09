@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.656';
+const VERSION = '0.4.657';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -15185,7 +15185,7 @@ async function importGallery(file) {
 // SPEEDS (60 by default; at 12 or less the next step's chip lights, as step by step); played at the screen's own rhythm
 // (evenSpeed): a step every k frames below its refresh, k steps a frame above, so that each step shows as long as the
 // others (60 a second at 144 Hz: 2 frames then 3, a stutter; at 72, 2 frames each)
-const SPEEDS = [0.2, 0.5, 1, 6, 12, 60, 120, 600, 1200, 6000, 12000, 60000, 120000, 600000, 1200000, 6000000];
+const SPEEDS = [0.6, 1.2, 6, 12, 60, 120, 600, 1200, 6000, 12000, 60000, 120000, 600000, 1200000, 6000000];
 let speed = defaultOf('speed', tabMode());
 // the screen's refresh, as measured: its frame (frameTime, the mean of its last ones, see tick)
 const screenHz = () => Math.round(1 / frameTime);

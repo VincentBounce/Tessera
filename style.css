@@ -559,7 +559,7 @@ button.wide.active, .head-btn.active { border-color: var(--accent-color); color:
   line-height: 1.5;
   white-space: pre-line;  /* its lines stacked in the bottom right corner, each a box (below) */
   pointer-events: none;
-  z-index: 3;  /* (over the view's boxes: the player's, the display's) */
+  z-index: 6;  /* (over everything: the view's boxes, the player's, the display's (3), the Gallery and How it works over the view (5)) */
 }
 /* a tooltip, the view's hint: each in a box as the view's others (see .stage-box), its lines left aligned, the name on its own */
 #tip:not(:empty), #hint:not([hidden]) { max-width: 420px; margin-left: auto; padding: 6px 10px; background: var(--box-background); backdrop-filter: blur(4px); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-color); text-align: left; }

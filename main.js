@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.699';
+const VERSION = '0.4.700';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -15044,12 +15044,17 @@ const setupDetail = (s, chips = '') => {  // (chips: its bar's, saved with it: w
 const setupTitle = (x) => (x.chips === undefined && MODES[x.setup.w]?.life ? shapeAndTiles(x.setup.w) : x.name);
 // a row's picture in place of its icon (its URL let go with the row: see fillGalleryList)
 let pictureUrls = [];
-const showPicture = (row, picture) => { const url = URL.createObjectURL(picture); pictureUrls.push(url); row.querySelector('.mode-icon').innerHTML = `<img src="${url}" alt="">`; };
+const showPicture = (row, picture) => { const url = URL.createObjectURL(picture); pictureUrls.push(url); row.querySelector('.mode-icon').innerHTML = `<img src="${url}" alt="">`; };  // (fading in as a walk's cells, see .gallery-grid img)
+// the cards shown, in their order: { setup, row } (Rebuild takes them so, see rebuildPictures)
+let galleryCards = [];
+// Rebuild's tile: lit while it runs; greyed when no card here lacks its picture (missing: whether one does)
+const syncRebuildTile = (missing) => setTile($('rebuildPictures'), { on: rebuilding, whyNot: () => (rebuilding || missing ? '' : 'Every setup here has its picture.') });
 // The Gallery's setups, as rows like the built-in ones (see setupRow), each with × to delete it, its picture over it
 function fillGalleryList() {
   pictureUrls.forEach((url) => URL.revokeObjectURL(url));
   pictureUrls = [];
   const looks = [];  // (each card's picture, found or not)
+  galleryCards = [];
   const list = readGallery();
   // the tab in use's only (Life, Ant, Walk…), under its name; by their titles, two rows alike numbered (2), (3)…
   const rows = list.filter((x) => NAV[x.setup.w]).map((x) => [setupTitle(x), [x.note, x.chips, setupDetail(x.setup, x.chips)].filter(Boolean).join(' · '), x]), seen = new Map();
@@ -15064,13 +15069,14 @@ function fillGalleryList() {
       seen.set(title + detail, k);
       const row = setupRow(k > 1 ? `${title} (${k})` : title, detail, x.setup, () => deleteSetup(x.name));
       looks.push(pictureOf(x.setup).then((picture) => { if (picture) showPicture(row, picture); return !!picture; }));  // (none yet: its icon)
+      galleryCards.push({ setup: x.setup, row });
       return row;
     }));
     section.append(cards);
     return [section];
   }));
   for (const b of [...$('galleryTools').children].slice(1, 3)) setTile(b, { whyNot: () => (list.length ? '' : 'The Gallery is empty.') });  // (Export, Erase all: none to take)
-  Promise.all(looks).then((found) => setTile($('rebuildPictures'), { on: rebuilding, whyNot: () => (rebuilding || found.includes(false) ? '' : 'Every setup here has its picture.') }));
+  Promise.all(looks).then((found) => syncRebuildTile(found.includes(false)));
   $('eraseConfirm').hidden ||= !list.length;
   syncSaveButton();
 }
@@ -15161,26 +15167,27 @@ function stagePicture() {
   return new Promise((ok) => c.toBlob(ok, 'image/webp', 0.85));
 }
 const pictureOf = (setup) => pictureStore('readonly', (store) => store.get(pictureKey(setup))).catch(() => null);
-// Rebuild: the tab's setups with no picture, one after the other, each shown (as a click on it) and taken once built, its
-// card drawn at once; a click again, the Gallery shut or a card clicked stops it (the last built stays shown)
+// Rebuild: the cards shown with no picture, in their order, one after the other: each shown (as a click on it) and taken once
+// built, its picture fading in on its card; a click again, the Gallery shut or a card clicked stops it (the last built shown)
 let rebuilding = false;
 async function rebuildPictures() {
   rebuilding = !rebuilding;
-  fillGalleryList();
-  const kind = NAV[tabMode()]?.[0];
-  for (const x of readGallery().filter((y) => NAV[y.setup.w]?.[0] === kind)) {  // (the tab's, as its list: see fillGalleryList)
+  syncRebuildTile(true);
+  for (const { setup, row } of galleryCards.slice()) {  // (as they are now: the list drawn again meanwhile, these go on)
     if (!rebuilding) return;
-    if (await pictureOf(x.setup)) continue;
+    if (await pictureOf(setup)) continue;
     const built = whenBuilt();
-    if (!isInUse(x.setup) && applySetup(x.setup)) { renderModePicker(); await built; }  // (its tab, its parameters under the Gallery)
+    if (!isInUse(setup) && applySetup(setup)) { renderModePicker(); await built; }  // (its tab, its parameters under the Gallery)
     if (!rebuilding) return;  // (stopped meanwhile: another setup shown, not its picture)
     const picture = await wantPicture();
-    await pictureStore('readwrite', (store) => store.put(picture, pictureKey(x.setup))).catch(() => {});
-    fillGalleryList();
+    await pictureStore('readwrite', (store) => store.put(picture, pictureKey(setup))).catch(() => {});
+    showPicture(row, picture);
   }
   rebuilding = false;
-  fillGalleryList();
+  syncRebuildTile(false);
 }
+// Remove (to try Rebuild, for now): the pictures of the cards shown
+const removePictures = () => Promise.all(galleryCards.map(({ setup }) => pictureStore('readwrite', (store) => store.delete(pictureKey(setup))).catch(() => {}))).then(fillGalleryList);
 
 /* ==============================================================================================
  * PART 11 — ANIMATION, VIEW AND RENDERING
@@ -17177,6 +17184,7 @@ function gpuFrame(enc, drawAll) {
 // a 2D cell's fade in as the walk plays, at each visit (none paused: whole), as Life's dying stages (its line grows instead:
 // see flatPathV; a surface's tiles and cubes fade by eased); walkFadeSteps: the steps it takes at the speed played
 const WALK_FADE_SECONDS = 0.5;
+document.documentElement.style.setProperty('--fade-seconds', `${WALK_FADE_SECONDS}s`);  // (the style's fades as long: a Gallery picture's)
 const walkFadeSteps = () => (playing || reversing ? stepsPerSecond() * WALK_FADE_SECONDS : 0);  // (its seconds at any speed: half a step at 1/s)
 // Every cell's colour change fades in over WALK_FADE_SECONDS, whatever changed it (a walk, a battle, a land, a look, a seek):
 // eased(key, want) gives the colours to draw (packed, a cell each: a surface's tiles, a 3D walk's cubes), each eased from
@@ -18960,6 +18968,7 @@ function galleryTab() {
 // then Share link (the link to what is shown)
 $('galleryTools').replaceChildren(tile({ pic: icon('import'), text: 'Import', title: 'Add the setups of a JSON file to the Gallery (those of a name already used numbered: none replaced)', click: () => $('galleryFile').click() }),
   tile({ pic: icon('export'), text: 'Export', title: 'The Gallery as a JSON file', click: exportGallery }), tile({ pic: icon('trash'), text: 'Erase all', title: 'Erase the Gallery from this browser (asked again under it)', click: () => { $('eraseConfirm').hidden = !$('eraseConfirm').hidden; } }),
+  tile({ pic: icon('eraser'), text: 'Remove', title: 'Remove the pictures shown here (to try Rebuild: for now)', click: removePictures }),
   Object.assign(tile({ pic: icon('autoRotate'), text: 'Rebuild', title: 'Take the pictures missing here, one setup after the other: each shown, then taken once built (a click again stops)', click: rebuildPictures }), { id: 'rebuildPictures' }),
   tile({ pic: icon('link'), text: 'Share link', title: 'Copy the link to what is shown', click: () => shareView($('galleryTools').lastElementChild) }));
 $('eraseConfirm').innerHTML = `${icon('trash')} Confirm erase`;

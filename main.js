@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.665';
+const VERSION = '0.4.666';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -15698,27 +15698,15 @@ const sphereDraw = { at: 0, cost: 0 };
 
 // A walker's frame on a surface at step i: its place, heading (its last step; at the start, the one it came by), side and
 // up (its tile's outward normal, square to the heading), and its size (see headSize, by its tile's area); P(i), tileAt(i):
-// the walker's point and tile at step i, vertAt(i) its corner along the grid (none on cells; see walkersOf). Between two
-// steps (i not whole: gliding, see glideAt), its place on the way from one to the next. Its frame a step's own (stepUp: along
-// the grid the normal of the edge it goes along, its two tiles'; on cells its next tile's), turned from the last step's to
-// this one's in the first TURN_SHARE of the step, heading and up together (on cells the up all along): no frame flipped
-// half way, as when a step leaves a face of a solid for the next by a corner
-function headFrame({ P, tileAt, vertAt, before }, i = stepShown) {
+// the walker's point and tile at step i (see walkersOf). Between two steps (i not whole: gliding, see glideAt), its place on
+// the way from one to the next, its heading turned in space from its last step's to its next one's (an ogive is round its
+// axis: no up to keep; its tile's normal, its start's flag's pole)
+function headFrame({ P, tileAt, before }, i = stepShown) {
   const j = Math.floor(i), f = i - j, q = P(j), next = f > 0 ? P(j + 1) : q, p = q.map((v, d) => v + (next[d] - v) * f);
-  const t = tileAt(f < 0.5 ? j : j + 1), nr = walk.shape.nrm, tileUp = (s) => [nr[3 * s], nr[3 * s + 1], nr[3 * s + 2]];
-  const agree = (a, b) => (dot3(a, b) < 0 ? b.map((x) => -x) : b);  // (a Möbius strip's or Klein bottle's glued tiles: one side's up)
-  const G = vertAt && gridGraph(walk.geo), stepUp = (k) => {  // (step k's, from point k to k + 1)
-    const sides = G && k >= 0 && vertAt(k) !== vertAt(k + 1) ? G.edgeTiles.get(G.key(vertAt(k), vertAt(k + 1))) : null;
-    if (!sides) return tileUp(tileAt(Math.max(0, k + 1)));
-    const a = tileUp(sides[0]), b = agree(a, tileUp(sides[1] ?? sides[0]));
-    return unit(a.map((x, d) => x + b[d]));
-  };
-  const w = f > 0 ? Math.min(1, f / TURN_SHARE) : 0, was = stepUp(j - 1), now = agree(was, stepUp(j)), share = vertAt ? w : f;
-  const nrm = unit(was.map((x, d) => x + (now[d] - x) * share));
-  const flat = (v) => { const u = v.map((x, d) => x - nrm[d] * dot3(v, nrm)), n = Math.hypot(...u); return n > 1e-6 ? u.map((x) => x / n) : null; };  // (in the plane square to its up; none along it)
-  const dir = (a, b) => unit([0, 1, 2].map((d) => b[d] - a[d])), ahead = f > 0 ? flat(dir(q, next)) : null;
-  const last = flat(dir(j > 0 ? P(j - 1) : before, q)) ?? ahead ?? flat([0, 0, 1]) ?? flat([1, 0, 0]);  // (its axis its last step itself, as its line; down a face onto the next, square to it: the way on)
-  const h = ahead ? turnToward(last, ahead, nrm, w) : last, side = unit(cross(nrm, h));
+  const t = tileAt(f < 0.5 ? j : j + 1), nr = walk.shape.nrm, nrm = [nr[3 * t], nr[3 * t + 1], nr[3 * t + 2]];
+  const dir = (a, b) => unit([0, 1, 2].map((d) => b[d] - a[d])), last = dir(j > 0 ? P(j - 1) : before, q);  // (its axis its last step itself, as its line)
+  const h = f > 0 ? turnInSpace(last, dir(q, next), nrm, Math.min(1, f / TURN_SHARE)) : last;
+  const across = cross(nrm, h), side = unit(Math.hypot(...across) > 1e-6 ? across : cross(h, Math.abs(h[0]) < 0.9 ? [1, 0, 0] : [0, 1, 0]));  // (round its axis, any square to it: along its tile's normal, another)
   const k = walk.geo.sides, sc = walk.shape.corners, c = (q) => [0, 1, 2].map((d) => sc[3 * (k * t + q) + d] * walk.R);  // (its tile's corners in space)
   let area = 0;
   for (let q = 1; q + 1 < k; q++) area += Math.hypot(...cross(c(q).map((v, d) => v - c(0)[d]), c(q + 1).map((v, d) => v - c(0)[d]))) / 2;
@@ -15728,10 +15716,10 @@ function headFrame({ P, tileAt, vertAt, before }, i = stepShown) {
 // the walk's, in Life's live colour (white on a dark page, black on a light one); none in Life
 function walkersOf() {
   if (!walk.n || walk.life || walk.rows) return [];
-  if (!walk.battle) return [{ P: (i) => [walk.wx[i], walk.wy[i], walk.wz[i]], tileAt: (i) => walk.tile[i], vertAt: walk.vert ? (i) => walk.vert[i] : null, before: placePoint(walk.came), colour: LIFE_ALIVE, living: true }];
+  if (!walk.battle) return [{ P: (i) => [walk.wx[i], walk.wy[i], walk.wz[i]], tileAt: (i) => walk.tile[i], before: placePoint(walk.came), colour: LIFE_ALIVE, living: true }];
   const B = walk.battle.player;
   B.to(stepShown);
-  return B.places.map((Q, s) => ({ P: (i) => placePoint(Q[i]), tileAt: (i) => (walk.vert ? walk.geo.grid.tileOf[Q[i]] : Q[i]), vertAt: walk.vert ? (i) => Q[i] : null, before: placePoint(cameFrom(walk.geo, !!walk.vert, B.starts[s])),
+  return B.places.map((Q, s) => ({ P: (i) => placePoint(Q[i]), tileAt: (i) => (walk.vert ? walk.geo.grid.tileOf[Q[i]] : Q[i]), before: placePoint(cameFrom(walk.geo, !!walk.vert, B.starts[s])),
     colour: teamColour(s), living: B.dead[s] < 0 || B.dead[s] > stepShown }));
 }
 // the heads: each living walker's ogive at its step (see ogiveOf); the starts: each walker's flag in its frame at step 0
@@ -15740,6 +15728,14 @@ const headsOf = () => walkersOf().flatMap((W) => [...(W.living ? [[ogiveOf(headF
 // gliding, a head turns from its last step's heading to its next one's in the first TURN_SHARE of the step (a quarter), as it goes on:
 // turned round the tile's normal n by that share w of the angle between them (a U-turn: half a turn)
 const TURN_SHARE = 0.25;
+// from one heading to another the shortest way in space, by the share w of the angle between them (a U-turn, none shorter:
+// round n, as turnToward)
+const turnInSpace = (from, to, n, w) => {
+  const a = Math.acos(Math.max(-1, Math.min(1, dot3(from, to))));
+  if (a > Math.PI - 1e-3) return turnToward(from, to, n, w);
+  const s = Math.sin(a);
+  return s < 1e-9 ? to : unit([0, 1, 2].map((d) => (from[d] * Math.sin((1 - w) * a) + to[d] * Math.sin(w * a)) / s));
+};
 const turnToward = (from, to, n, w) => {
   const across = cross(n, from), a = Math.atan2(dot3(across, to), dot3(from, to)) * w;
   return unit([0, 1, 2].map((d) => from[d] * Math.cos(a) + across[d] * Math.sin(a)));

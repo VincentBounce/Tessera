@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.712';
+const VERSION = '0.4.713';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -15046,7 +15046,7 @@ const setupTitle = (x) => (x.chips === undefined && MODES[x.setup.w]?.life ? sha
 const setupWords = (x) => [x.note, x.chips, setupDetail(x.setup, x.chips)].filter(Boolean).join(' · ');
 // a row's picture in place of its icon (its URL let go with the row: see fillGalleryList)
 let pictureUrls = [];
-const showPicture = (row, picture) => { const url = URL.createObjectURL(picture); pictureUrls.push(url); row.querySelector('.mode-icon').innerHTML = `<img src="${url}" alt="">`; };  // (fading in as a walk's cells, see .gallery-grid img)
+const showPicture = (row, picture, fade = false) => { const url = URL.createObjectURL(picture); pictureUrls.push(url); row.querySelector('.mode-icon').innerHTML = `<img src="${url}" alt=""${fade ? ' class="fade-in"' : ''}>`; };  // (fade: a picture just taken, fading in as a walk's cells, see .gallery-grid img)
 // the cards shown, in their order: { setup, row } (Rebuild takes them so, see rebuildPictures)
 let galleryCards = [];
 // Rebuild's tile: lit while it runs; greyed when no card here lacks its picture (missing: whether one does)
@@ -15188,7 +15188,7 @@ async function rebuildPictures() {
     if (!rebuilding) return;  // (stopped meanwhile: another setup shown, not its picture)
     const picture = await wantPicture();
     await pictureStore('readwrite', (store) => store.put(picture, pictureKey(setup))).catch(() => {});
-    showPicture(row, picture);
+    showPicture(row, picture, true);
     renameAsShown(x, row);
   }
   rebuilding = false;

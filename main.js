@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.702';
+const VERSION = '0.4.703';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -2657,7 +2657,7 @@ const ICONS = (() => {
     eye: svgPath('M2.5 12Q12 3.5 21.5 12Q12 20.5 2.5 12Z') + '<circle cx="12" cy="12" r="3"/>',
     trash: svgPath('M4 7h16M9 7V4.5h6V7M6 7l1 13h10l1-13M10 11v6M14 11v6'),
     floppy: svgPath('M6 3h10l4 4v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2ZM8 3v5h7V3M12.5 4.5v2M7 21v-6h10v6'),  // a floppy disk: its shutter and its window, its label (Management's)
-    link: svgPath('M9.5 14.5L14.5 9.5') + svgPath('M8.5 11.5L6.5 13.5A3.5 3.5 0 0 0 10.5 17.5L12.5 15.5M15.5 12.5L17.5 10.5A3.5 3.5 0 0 0 13.5 6.5L11.5 8.5'),
+    link: svgPath('M8 16L16 8') + svgPath('M6.4 11.2L3.2 14.4A5.6 5.6 0 0 0 9.6 20.8L12.8 17.6M17.6 12.8L20.8 9.6A5.6 5.6 0 0 0 14.4 3.2L11.2 6.4'),  // (as tall as the others: 3 to 21)
   };
 })();
 const icon = (name) => `<svg class="icon" viewBox="0 0 24 24" aria-hidden="true">${ICONS[name]}</svg>`;

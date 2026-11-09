@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.728';
+const VERSION = '0.4.729';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -1718,7 +1718,7 @@ function describe(base, available) {
   $('barBattle').hidden = !walk.battle;  // (a battle: its rule, after the walk's)
   $('barBattle').textContent = walk.battle ? BATTLE_RULES[battleRuleInUse(w)][1] : '';
   $('barBattle').title = 'Its battle rule · A click: how it works';
-  if (creature) { const R = creatureRules(w); setLinks($('barNum'), (barTitle = walkName(w))); setLinks($('barRule'), R.byDigits ? `${withIcons(shownSymbol)} · ${ruleSpan(R.now)}` : ruleSpan(R.now)); $('barRule').title = [R.byDigits ? `It turns by the digits of ${shownSymbol}, base 2` : 'It turns by its rule', colours && `${colours} colours`].filter(Boolean).join(' · '); }
+  if (creature) { const R = creatureRules(w); setLinks($('barNum'), (barTitle = walkName(w))); setLinks($('barRule'), [R.byDigits && withIcons(shownSymbol), R.now && ruleSpan(R.now)].filter(Boolean).join(' · ')); $('barRule').title = [R.byDigits ? `It turns by the digits of ${shownSymbol}, base ${MODES[w].base}` : 'It turns by its rule', colours && `${colours} colours`].filter(Boolean).join(' · '); }
   $('barBase').parentElement.classList.toggle('life', !!creature || battleOn());  // (a creature, a battle titled as Life is: see .bar-title.life)
   if (colours) base = colours;  // its chips, one per colour
   $('barLoop').hidden = true;  // (a reversible one's: not back yet; a walk's loop, its title's link, see updateStats)
@@ -3634,7 +3634,7 @@ function renderAntRow() {
   setTile($('antByDigits'), { on: !!R.byDigits });
   customRow.hidden = !R.typed || !(customOpen || !ruleKnown(R));
   $('antRuleName').textContent = R.name;
-  if (document.activeElement !== $('antRule')) $('antRule').value = R.now;
+  if (document.activeElement !== $('antRule')) $('antRule').value = R.now ?? '';
 }
 // A rules list's cards, one manager for a creature's and a walk's (see creatureRules): its rules, each with its picture, one
 // that cannot go there greyed (why, in its tooltip), then Custom rule (your own, typed in the field under the list);
@@ -3762,6 +3762,7 @@ const capitalised = (t) => t.replace(/^./, (c) => c.toUpperCase());
 const ruleTitleOf = (w) => {
   if (!WALK_NETS[MODES[w].net] && NAV[w][0] !== 'Ant') return walkName(w);
   const R = creatureRules(w);
+  if (!R.now) return walkName(w);  // (no rule in use: the worm by the digits)
   return `${R.cards.find((c) => c.rule === R.now)?.name ?? 'Custom rule'} ${ruleSpan(R.now)}`;
 };
 // a mode's kinds of rules (see RULES): a walk's, else the creatures' of its side (Cells: the ants and turmites; Grid: the worm)
@@ -3785,7 +3786,8 @@ function creatureRules(w) {
   const m = MODES[w], N = WALK_NETS[m.net];
   if (N) return { now: walkRuleOf(m), typed: true, set: (r) => setWalkRule(w, r), base: (r) => baseWords(ruleCommands(r).length), cards: rulesFor(w),
                   name: `Rule, a command per digit: ${commandsTaken(m).join(' ')}` };
-  if (MODES[w].worm) return { byDigits: worm.byDigits, now: worm.rule, typed: !worm.byDigits, cards: worm.byDigits ? [] : rulesFor(w), set: setWormRule,  // (by its rule: no digits read)
+  if (MODES[w].worm) return { byDigits: worm.byDigits, now: worm.byDigits ? null : worm.rule, typed: !worm.byDigits,  // (by the digits: no rule in use, its turns the digits')
+                              cards: worm.byDigits ? [] : rulesFor(w), set: setWormRule,  // (by its rule: no digits read)
                               name: 'Rule, a turn at each new corner: L2, L, N, R, R2' };
   const turns = antCommands(w).join(' ');
   return { byDigits: antByDigits, now: antRuleOf(w), typed: true, set: (r) => setAntRule(w, r), base: antByDigits ? () => baseWords(2) : null,  // (by colour: no digits read)

@@ -199,6 +199,7 @@ button.primary {
 .size-gauge .notches { display: flex; justify-content: space-between; padding: 0 7px; margin-top: -2px; }
 .size-gauge .notches span { width: 2px; height: 5px; background: var(--border-color); border-radius: 1px; }
 .size-gauge .notches .default { background: var(--text-color); }  /* (the default's notch, see sizeGauge's byDefault) */
+.size-gauge:has(input:disabled) .notches .default { background: var(--border-color); }  /* (greyed, no default to tell: its notch as the others) */
 .stepper span small { display: block; font-size: var(--caption-text-size); font-weight: 400; color: var(--muted-text-color); line-height: 1.2; }  /* a size: what to picture, then its tiles */
 .stepper span, .stepper input, .notch-field #speedLabel { flex: 1; text-align: center; color: var(--accent-color); font-weight: 600; white-space: nowrap; }  /* the setup at a glance */
 .notch-field #speedLabel { flex: none; min-width: 7.5ch; text-align: right; font-variant-numeric: tabular-nums; }  /* (its digits all one width, its place its longest words', ≈1152𓊍/s: the slider still as it changes) */

@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.686';
+const VERSION = '0.4.687';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -15704,18 +15704,16 @@ const tileUp = (t) => [0, 1, 2].map((d) => walk.shape.nrm[3 * t + d]), tileArea 
 function walkersOf() {
   if (!walk.n || walk.life || walk.rows) return [];
   const at = (i) => [walk.wx[i], walk.wy[i], walk.wz[i]], onTiles = (tileAt) => ({ upAt: (i) => tileUp(tileAt(i)), areaAt: (i) => tileArea(tileAt(i)) });
-  if (!walk.sphere) return [{ P: at, upAt: () => [0, 0, 1], areaAt: () => (2 * cellShape().half) ** 2, lift: Math.PI / 4, before: at(0).map((v, d) => v - [0, 1, 0][d]), colour: LIFE_ALIVE, living: true }];  // (a 3D walk's: its head a face's, lifted out of its line (lift), its start heading north as its steppers do, see cubeStepper)
+  if (!walk.sphere) return [{ P: at, upAt: () => [0, 0, 1], areaAt: () => (2 * cellShape().half) ** 2, before: at(0).map((v, d) => 2 * v - at(Math.min(1, walk.n))[d]), colour: LIFE_ALIVE, living: true }];  // (a 3D walk's: its head a face's, in its cube as it fades in, see gpuCubes; its start the way it goes)
   if (!walk.battle) return [{ P: at, ...onTiles((i) => walk.tile[i]), before: placePoint(walk.came), colour: LIFE_ALIVE, living: true }];
   const B = walk.battle.player;
   B.to(stepShown);
   return B.places.map((Q, s) => ({ P: (i) => placePoint(Q[i]), ...onTiles((i) => (walk.vert ? walk.geo.grid.tileOf[Q[i]] : Q[i])), before: placePoint(cameFrom(walk.geo, !!walk.vert, B.starts[s])),
     colour: teamColour(s), living: B.dead[s] < 0 || B.dead[s] > stepShown }));
 }
-// a head turned up by W.lift from its heading towards its up (a 3D walk's: seen over the line it draws; none on a surface)
-const lifted = (W, f) => (W.lift ? { ...f, h: unit(f.h.map((x, d) => x * Math.cos(W.lift) + squareTo(f.h, f.up)[d] * Math.sin(W.lift))) } : f);
 // the heads: each living walker's ogive at its step (see ogiveOf); the starts: each walker's flag in its frame at step 0
 // (see flagOf: its start's own heading, the way it came by); each [its corners, its colour]
-const headsOf = () => walkersOf().flatMap((W) => [...(W.living ? [[ogiveOf(lifted(W, headFrame(W, glideAt()))), W.colour]] : []), [flagOf(headFrame(W, 0)), W.colour]]);
+const headsOf = () => walkersOf().flatMap((W) => [...(W.living ? [[ogiveOf(headFrame(W, glideAt())), W.colour]] : []), [flagOf(headFrame(W, 0)), W.colour]]);
 // gliding, a head turns from its last step's heading to its next one's in the first TURN_SHARE of the step (a quarter), as it goes on:
 // turned round the tile's normal n by that share w of the angle between them (a U-turn: half a turn)
 const TURN_SHARE = 0.25;

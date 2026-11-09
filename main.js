@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.718';
+const VERSION = '0.4.719';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -9643,24 +9643,40 @@ function symmetryMaps(kind, W, sym) {
 // whose maps take each block onto one of its generation's, the rule turning their cells
 // alike (its states' bits in the copy's order; Ising's sides and the stellated cells' moves not seen to: none of them)
 // (start, zone, K, outline: a setup's start, its hunt's zone, its colours' parts and its outline; the game's by default)
+const blockSymmetriesMemo = new Map();  // (a block rule's symmetries on a grid: see symmetriesHere)
 function symmetriesHere(kind, W, M = walk.life?.margolus, { start = plane.start, zone = hunt.zone, K = walk.life ? lifeParts() : 1, outline = outlineOf(kind) } = {}) {  // (M: a block rule's, the walk shown's: its cells' turns, a built grid's)
   const byParts = K > 1 && (start === 'random' || start === 'text');  // (as symmetricStart colours them)
   const all = (start === 'random' && famousZone(zone) ? ['none'] : planeSymmetries(kind, W, outline)).filter((y) => !byParts || partSymmetries(kind, W, K, outline).includes(y));
   if (!M) return all;
-  const memo = (M.symmetric ??= new Map()), key = `${kind}|${W}`;
+  // (each block's cells onto one block; the rule turning them alike, judged once for each order its cells land in)
   const keeps = (maps) => !M.ising && !M.move && maps.every((f) => M.turns.every((turn) => {
-    const at = new Map();
-    for (let i = 0; i < turn.length; i++) at.set(turn[i], i);
-    for (let i = 0; i < turn.length; i += M.k) {
-      const to = Array.from({ length: M.k }, (_, j) => at.get(f(turn[i + j]))), first = to[0] - (to[0] % M.k);
-      if (to.some((q) => q === undefined || q - (q % M.k) !== first)) return false;
-      const copy = (st) => to.reduce((r, q, j) => r | (((st >> j) & 1) << (q - first)), 0);
-      for (let st = 0; st < 1 << M.k; st++) if (M.to[copy(st)] !== copy(M.to[st])) return false;
+    const K = M.k, alike = new Map();  // (an order's verdict: the cells' places in their block, as a number in base K)
+    let most = 0;
+    for (let i = 0; i < turn.length; i++) most = Math.max(most, turn[i]);
+    const at = new Int32Array(most + 1).fill(-1);  // (a cell's place in the turn)
+    for (let i = 0; i < turn.length; i++) at[turn[i]] = i;
+    for (let i = 0; i < turn.length; i += K) {
+      const q0 = at[f(turn[i])], first = q0 - (q0 % K);
+      let order = 0;
+      for (let j = 0; j < K; j++) {
+        const q = at[f(turn[i + j])];
+        if (!(q >= 0) || q - (q % K) !== first) return false;
+        order = order * K + (q - first);
+      }
+      let same = alike.get(order);
+      if (same === undefined) {
+        const to = Array.from({ length: K }, (_, j) => at[f(turn[i + j])] - first), copy = (st) => to.reduce((r, q, j) => r | (((st >> j) & 1) << q), 0);
+        same = true;
+        for (let st = 0; st < 1 << K && same; st++) same = M.to[copy(st)] === copy(M.to[st]);
+        alike.set(order, same);
+      }
+      if (!same) return false;
     }
     return true;
   }));
-  if (!memo.has(key)) memo.set(key, planeSymmetries(kind, W).filter((y) => y === 'none' || keeps(symmetryMaps(kind, W, y))));
-  return memo.get(key).filter((y) => all.includes(y));
+  const key = `${kind}|${W}|${planeTorus(kind)}|${M.k}|${M.to}`;  // (the grid's blocks and the rule: the same each time they are built again)
+  if (!blockSymmetriesMemo.has(key)) blockSymmetriesMemo.set(key, planeSymmetries(kind, W).filter((y) => y === 'none' || keeps(symmetryMaps(kind, W, y))));
+  return blockSymmetriesMemo.get(key).filter((y) => all.includes(y));
 }
 // the symmetries whose every copy of a colour's part is one part whole (a copy recoloured as the part it falls in, see
 // symmetricStart: Trio's thirds, a half turn cuts each across, none), whatever the grid or the parts: their maps and cells;
@@ -9674,7 +9690,7 @@ function partSymmetries(kind, W, K, outline = outlineOf(kind)) {
   parts.forEach((part, i) => { for (const t of part) own[t] = i + 1; });
   return partMemo.set(key, planeSymmetries(kind, W).filter((y) => symmetryMaps(kind, W, y).every((f) => parts.every((part) => part.every((t) => own[f(t)] === own[f(part[0])]))))).get(key);
 }
-const symmetryOf = (kind, W = walk.plane?.W) => (W && symmetriesHere(kind, W).includes(plane.sym) ? plane.sym : 'none');
+const symmetryOf = (kind, W = walk.plane?.W) => (plane.sym !== 'none' && W && symmetriesHere(kind, W).includes(plane.sym) ? plane.sym : 'none');  // (none picked: none, the grid's own not looked for)
 // a cell and its copies under the grid's symmetry (index y × row + x)
 const cellCopies = (kind, W, t) => symmetryMaps(kind, W, symmetryOf(kind, W)).map((f) => f(t));
 // The rows of a grid of side `side` (the squares' side): about as many cells as side × side squares (as the surfaces'

@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.723';
+const VERSION = '0.4.724';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -15029,8 +15029,14 @@ function syncLink() {
 /* ---- 10.4 The Gallery and its JSON files -------------------------------------------------- */
 // The Gallery: the setups saved in this browser (localStorage), as { name, setup, saved } (its key, and its files' setups:, as they were)
 const GALLERY_KEY = 'tessera.setups', CURATED_KEY = 'tessera.curated';
+// one card a setup (as its thumbnail's key: neither its version nor how it is looked at): a setup saved twice (imported, or by an
+// old version), its last saved only
 function readGallery() {
-  try { return JSON.parse(localStorage.getItem(GALLERY_KEY)) || []; } catch { return []; }
+  let list;
+  try { list = JSON.parse(localStorage.getItem(GALLERY_KEY)) || []; } catch { return []; }
+  const last = new Map();
+  for (const x of list) { const key = thumbnailKey(x.setup), y = last.get(key); if (!y || (x.saved ?? '') >= (y.saved ?? '')) last.set(key, x); }
+  return list.filter((x) => last.get(thumbnailKey(x.setup)) === x);
 }
 // The curated setups (BUILT_IN) come into the Gallery once, on the first visit in this browser, and the ones
 // added later (a batch number past the last one taken) once too: deleted afterwards, they stay deleted
@@ -15067,7 +15073,7 @@ const setupTitle = (x) => (x.chips === undefined && MODES[x.setup.w]?.life ? sha
 // number, all of it (its title only after them, see fillGalleryList)
 const setupOrder = (a, b) => {
   const modes = Object.keys(NAV), words = (x, y) => String(x ?? '').localeCompare(String(y ?? ''), undefined, { numeric: true });
-  return modes.indexOf(a.w) - modes.indexOf(b.w) || (parseFloat(a.s) || 0) - (parseFloat(b.s) || 0) || words(a.r, b.r) || words(a.x, b.x) || words(thumbnailKey(a), thumbnailKey(b));  // (all of it last: one setup saved twice, its cards side by side)
+  return modes.indexOf(a.w) - modes.indexOf(b.w) || (parseFloat(a.s) || 0) - (parseFloat(b.s) || 0) || words(a.r, b.r) || words(a.x, b.x) || words(thumbnailKey(a), thumbnailKey(b));  // (all of it last: two setups alike in all these, always in one order)
 };
 // its words under the title: its note (a curated one's), its chips, its detail
 const setupWords = (x) => [x.note, x.chips, setupDetail(x.setup, x.chips)].filter(Boolean).join(' · ');
@@ -15202,8 +15208,7 @@ function stageThumbnail() {
 }
 const thumbnailOf = (setup) => thumbnailStore('readonly', (store) => store.get(thumbnailKey(setup))).catch(() => null);
 // Rebuild: the cards shown with no thumbnail, in their order, one after the other: each shown (as a click on it) and taken once
-// built, its thumbnail fading in on its card, the same setup's other cards gone (saved twice); a click again, the Gallery shut
-// or a card clicked stops it (the last built shown)
+// built, its thumbnail fading in on its card; a click again, the Gallery shut or a card clicked stops it (the last built shown)
 let rebuilding = false;
 async function rebuildThumbnails() {
   rebuilding = !rebuilding;
@@ -15216,13 +15221,8 @@ async function rebuildThumbnails() {
     const built = whenBuilt();
     if (!isInUse(setup) && applySetup(setup)) { renderModePicker(); await built; }  // (its tab, its parameters under the Gallery)
     if (!rebuilding) return;  // (stopped meanwhile: another setup shown, not its thumbnail)
-    const thumbnail = await wantThumbnail(), key = thumbnailKey(setup);
-    await thumbnailStore('readwrite', (store) => store.put(thumbnail, key)).catch(() => {});
-    for (let next; (next = galleryCards[galleryCards.findIndex((card) => card.x === x) + 1]) && thumbnailKey(next.x.setup) === key; ) {  // (the same setup saved again: the next card, as they are sorted: gone, this one kept)
-      writeGallery(readGallery().filter((y) => y.name !== next.x.name));
-      next.row.remove();
-      galleryCards = galleryCards.filter((card) => card !== next);
-    }
+    const thumbnail = await wantThumbnail();
+    await thumbnailStore('readwrite', (store) => store.put(thumbnail, thumbnailKey(setup))).catch(() => {});
     showThumbnail(row, thumbnail, true);
     renameAsShown(x, row);
   }

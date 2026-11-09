@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.667';
+const VERSION = '0.4.668';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -15696,22 +15696,20 @@ const digitColour = (k) => walk.ant ? rampColour(k, walk.ant)
 /* ---- 11.4 Surfaces ------------------------------------------------------------------------ */
 const sphereDraw = { at: 0, cost: 0 };
 
-// A walker's frame on a surface at step i: its place, heading (its last step; at the start, the one it came by), two axes
-// square to it (from its tile's outward normal: the ogive's round, any will do; the start's flag's pole along it), and its
-// size (see headSize, by its tile's area); P(i), tileAt(i):
+// A walker's frame on a surface at step i: its place, heading (its last step; at the start, the one it came by), its tile's
+// outward normal (up: a start's flag's pole; an ogive is round its heading) and its size (see headSize, by its tile's area); P(i), tileAt(i):
 // the walker's point and tile at step i (see walkersOf). Between two steps (i not whole: gliding, see glideAt), its place on
-// the way from one to the next, its heading turned in space from its last step's to its next one's (an ogive is round its
-// axis: no up to keep; its tile's normal, its start's flag's pole)
+// the way from one to the next, its heading turned from its last step's to its next one's the shortest way in space (round
+// the axis square to both; a U-turn's, none: round its tile's normal)
 function headFrame({ P, tileAt, before }, i = stepShown) {
   const j = Math.floor(i), f = i - j, q = P(j), next = f > 0 ? P(j + 1) : q, p = q.map((v, d) => v + (next[d] - v) * f);
   const t = tileAt(f < 0.5 ? j : j + 1), nr = walk.shape.nrm, nrm = [nr[3 * t], nr[3 * t + 1], nr[3 * t + 2]];
   const dir = (a, b) => unit([0, 1, 2].map((d) => b[d] - a[d])), last = dir(j > 0 ? P(j - 1) : before, q);  // (its axis its last step itself, as its line)
-  const h = f > 0 ? turnInSpace(last, dir(q, next), nrm, Math.min(1, f / TURN_SHARE)) : last;
-  const across = cross(nrm, h), side = unit(Math.hypot(...across) > 1e-6 ? across : cross(h, Math.abs(h[0]) < 0.9 ? [1, 0, 0] : [0, 1, 0]));  // (round its axis, any square to it: along its tile's normal, another)
+  const ahead = dir(q, next), axis = cross(last, ahead), h = f > 0 ? turnToward(last, ahead, Math.hypot(...axis) > 1e-6 ? unit(axis) : nrm, Math.min(1, f / TURN_SHARE)) : last;
   const k = walk.geo.sides, sc = walk.shape.corners, c = (q) => [0, 1, 2].map((d) => sc[3 * (k * t + q) + d] * walk.R);  // (its tile's corners in space)
   let area = 0;
   for (let q = 1; q + 1 < k; q++) area += Math.hypot(...cross(c(q).map((v, d) => v - c(0)[d]), c(q + 1).map((v, d) => v - c(0)[d]))) / 2;
-  return { p, h, side, nrm: cross(h, side), size: headSize(area) };
+  return { p, h, up: nrm, size: headSize(area) };
 }
 // the walkers on a surface, each { P, tileAt, before (its way in), colour, living }: a battle's, each its team's colour, else
 // the walk's, in Life's live colour (white on a dark page, black on a light one); none in Life
@@ -15729,14 +15727,6 @@ const headsOf = () => walkersOf().flatMap((W) => [...(W.living ? [[ogiveOf(headF
 // gliding, a head turns from its last step's heading to its next one's in the first TURN_SHARE of the step (a quarter), as it goes on:
 // turned round the tile's normal n by that share w of the angle between them (a U-turn: half a turn)
 const TURN_SHARE = 0.25;
-// from one heading to another the shortest way in space, by the share w of the angle between them (a U-turn, none shorter:
-// round n, as turnToward)
-const turnInSpace = (from, to, n, w) => {
-  const a = Math.acos(Math.max(-1, Math.min(1, dot3(from, to))));
-  if (a > Math.PI - 1e-3) return turnToward(from, to, n, w);
-  const s = Math.sin(a);
-  return s < 1e-9 ? to : unit([0, 1, 2].map((d) => (from[d] * Math.sin((1 - w) * a) + to[d] * Math.sin(w * a)) / s));
-};
 const turnToward = (from, to, n, w) => {
   const across = cross(n, from), a = Math.atan2(dot3(across, to), dot3(from, to)) * w;
   return unit([0, 1, 2].map((d) => from[d] * Math.cos(a) + across[d] * Math.sin(a)));
@@ -15750,8 +15740,8 @@ const glideAt = () => (!gliding() ? stepShown : reversing ? Math.max(0, stepShow
 const glideSplit = () => { const at = glideAt(), whole = Math.floor(at); return [whole, at - whole]; };
 // a start's flag: its pole planted in its place along the surface's normal, over a head (2.2 of its sizes high), its sail
 // at its top an arrow pointing the way it goes (both its faces); its triangles' corners and normals, as an ogive's
-function flagOf({ p, h, side, nrm, size }) {
-  const at = (u, f, s = 0) => [0, 1, 2].map((d) => p[d] + (nrm[d] * u + h[d] * f + side[d] * s) * size), out = [], w = 0.05, H = 2.2;
+function flagOf({ p, h, up, size }) {
+  const side = unit(cross(up, h)), at = (u, f, s = 0) => [0, 1, 2].map((d) => p[d] + (up[d] * u + h[d] * f + side[d] * s) * size), out = [], w = 0.05, H = 2.2;
   const tri = (A, B, C) => { const n = unit(cross(B.map((v, d) => v - A[d]), C.map((v, d) => v - A[d]))); for (const q of [A, B, C]) out.push(...q, ...n); };
   const ring = [[w, w], [-w, w], [-w, -w], [w, -w]];
   ring.forEach(([f, s], q) => { const [g, t] = ring[(q + 1) % 4]; tri(at(0, f, s), at(0, g, t), at(H, g, t)); tri(at(0, f, s), at(H, g, t), at(H, f, s)); });  // (its pole)
@@ -15762,8 +15752,9 @@ function flagOf({ p, h, side, nrm, size }) {
 // a head as a solid, the arrow turned round its axis (an ogive: a cone from its tip to its rim, then a hollow one to its
 // notch; −0.8 … 0.8 along: its length's middle on its place, not the centre of gravity of the triangle it makes), its axis
 // on the surface: half under it, hidden by the tiles; its triangles' corners and normals, [x, y, z, nx, ny, nz]
-function ogiveOf({ p, h, side, nrm, size }) {
-  const at = (f, r, a) => [0, 1, 2].map((d) => p[d] + (h[d] * f + (side[d] * Math.cos(a) + nrm[d] * Math.sin(a)) * r) * size), out = [];
+function ogiveOf({ p, h, size }) {
+  const side = unit(cross(h, Math.abs(h[0]) < 0.9 ? [1, 0, 0] : [0, 1, 0])), across = cross(h, side);  // (round its heading: any two axes square to it)
+  const at = (f, r, a) => [0, 1, 2].map((d) => p[d] + (h[d] * f + (side[d] * Math.cos(a) + across[d] * Math.sin(a)) * r) * size), out = [];
   const tri = (A, B, C) => { const n = unit(cross(B.map((v, d) => v - A[d]), C.map((v, d) => v - A[d]))); for (const q of [A, B, C]) out.push(...q, ...n); };
   for (let j = 0; j < 16; j++) {
     const a0 = (j * Math.PI) / 8, a1 = ((j + 1) * Math.PI) / 8, r0 = at(-0.8, 0.7, a0), r1 = at(-0.8, 0.7, a1);

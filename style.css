@@ -1,4 +1,5 @@
 :root {
+  --tile-width: 57px;  /* a tile's width, every tile alike: .nav-shapes, as many a row as fit (4 in the settings' column) */
   --panel-width: 280px;  /* the settings' column (.panel; the Gallery's Confirm erase as wide) */
   /* the text's sizes, four, each element one of them: */
   --caption-text-size: 11px;  /* a card's words, a bubble, a figure's caption */
@@ -260,7 +261,7 @@ button.wide.how-it-works { margin-bottom: 4px; }  /* on its rules' first card, t
 .block-label { margin: 2px 0 4px; font-size: var(--caption-text-size); color: var(--muted-text-color); }  /* a block of shapes' title: Surface, Tiles of the torus */
 .nav-shapes > .block-label { grid-column: 1 / -1; margin: 0; }  /* a group's title among the shapes, across its row: where Surface's is (its margin over it one with the tabs'), the grid's gap under it */
 .nav-shapes > .block-label:not(:first-child) { margin-top: 8px; }  /* (the next groups: a little apart) */
-.nav-shapes { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px; margin-bottom: 10px; }  /* the shapes, 4 a row */
+.nav-shapes { display: grid; grid-template-columns: repeat(auto-fill, var(--tile-width)); gap: 4px; margin-bottom: 10px; }  /* the shapes, 4 a row */
 .nav-shapes button { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 6px 1px; font-size: var(--caption-text-size); background: var(--panel-background); color: var(--muted-text-color); min-width: 0; }
 .nav-shapes button span { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .nav-shapes button svg { width: 24px; height: 24px; }
@@ -285,8 +286,6 @@ button.switch.active:hover:not(:disabled) { background: var(--picked-strong-back
 .nav-shapes button.active, .tile-group > button.active { border-color: var(--accent-color); color: var(--accent-color); background: var(--picked-background); }
 .mode-list { display: flex; flex-direction: column; gap: 4px; margin-bottom: 10px; }
 /* The Gallery: over the whole of main, under the header, the settings and the view kept under it (still drawn: a picture taken) */
-/* its tools a row, as many tiles as it has, all as wide as the widest one's words (fr tracks in a max-content grid): never cut */
-#galleryTools { grid-template-columns: none; grid-auto-flow: column; grid-auto-columns: 1fr; width: max-content; }
 #eraseConfirm { max-width: var(--panel-width); }
 #galleryPane:not([hidden]) { position: absolute; inset: 0; z-index: 5; overflow-y: auto; background: var(--panel-background); padding: 0 16px 16px; }
 /* its setups, a grid of cards: the picture above (else the shape's icon), the words under, the × on the picture */

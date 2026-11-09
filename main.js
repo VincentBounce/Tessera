@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.701';
+const VERSION = '0.4.702';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -18969,7 +18969,7 @@ function galleryTab() {
 $('galleryTools').replaceChildren(tile({ pic: icon('import'), text: 'Import', title: 'Add the setups of a JSON file to the Gallery (those of a name already used numbered: none replaced)', click: () => $('galleryFile').click() }),
   tile({ pic: icon('export'), text: 'Export', title: 'The Gallery as a JSON file', click: exportGallery }), tile({ pic: icon('trash'), text: 'Erase all', title: 'Erase the Gallery from this browser (asked again under it)', click: () => { $('eraseConfirm').hidden = !$('eraseConfirm').hidden; } }),
   tile({ pic: icon('eraser'), text: 'Remove', title: 'Remove the pictures shown here (to try Rebuild: for now)', click: removePictures }),
-  Object.assign(tile({ pic: icon('autoRotate'), text: 'Rebuild', title: 'Take the pictures missing here, one setup after the other: each shown, then taken once built (a click again stops)', click: rebuildPictures }), { id: 'rebuildPictures' }),
+  tile({ id: 'rebuildPictures', pic: icon('autoRotate'), text: 'Rebuild', title: 'Take the pictures missing here, one setup after the other: each shown, then taken once built (a click again stops)', click: rebuildPictures }),
   tile({ pic: icon('link'), text: 'Share link', title: 'Copy the link to what is shown', click: () => shareView($('galleryTools').lastElementChild) }));
 $('eraseConfirm').innerHTML = `${icon('trash')} Confirm erase`;
 $('galleryToolsHead').insertAdjacentHTML('afterbegin', icon('floppy'));  // (the Gallery's files: Import, Export, Erase)

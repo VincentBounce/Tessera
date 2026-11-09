@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.715';
+const VERSION = '0.4.716';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -15159,8 +15159,8 @@ let thumbnailDb = null;
 const thumbnailStore = (mode, ask) => (thumbnailDb ??= new Promise((ok, fail) => {
   const r = indexedDB.open('tessera', 2);
   r.onupgradeneeded = () => { for (const name of [...r.result.objectStoreNames]) r.result.deleteObjectStore(name); r.result.createObjectStore('thumbnails'); };  // (its one store, made anew)
-  r.onsuccess = () => ok(r.result);
-  r.onerror = () => fail(r.error);
+  r.onsuccess = () => { r.result.onversionchange = () => r.result.close(); ok(r.result); };  // (a newer page asking for its own: this one let go, not blocking it)
+  r.onerror = r.onblocked = () => fail(r.error);
 })).then((db) => new Promise((ok, fail) => { const q = ask(db.transaction('thumbnails', mode).objectStore('thumbnails')); q.onsuccess = () => ok(q.result); q.onerror = () => fail(q.error); }));
 // The view as one thumbnail, cut to THUMBNAIL_SIZE from its middle: every layer under the hover's, in their order, without the
 // grid's lines. WebGPU's picture is only there in the frame that drew it: asked of the next frame, drawn whole without the

@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.714';
+const VERSION = '0.4.715';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -14974,7 +14974,7 @@ function applyPendingView() {
   syncLink();  // with the start a setup's champion or hunt zone gave
   builtWaiters.splice(0).forEach((ok) => ok());  // (whoever waits on it: see whenBuilt)
 }
-// a walk or a grid built, all of it shown (applyPendingView): what waits on it (the Gallery's pictures rebuilt)
+// a walk or a grid built, all of it shown (applyPendingView): what waits on it (the Gallery's thumbnails rebuilt)
 let builtWaiters = [];
 const whenBuilt = () => new Promise((ok) => builtWaiters.push(ok));
 
@@ -15044,18 +15044,18 @@ const setupDetail = (s, chips = '') => {  // (chips: its bar's, saved with it: w
 const setupTitle = (x) => (x.chips === undefined && MODES[x.setup.w]?.life ? shapeAndTiles(x.setup.w) : x.name);
 // its words under the title: its note (a curated one's), its chips, its detail
 const setupWords = (x) => [x.note, x.chips, setupDetail(x.setup, x.chips)].filter(Boolean).join(' · ');
-// a row's picture in place of its icon (its URL let go with the row: see fillGalleryList)
-let pictureUrls = [];
-const showPicture = (row, picture, fade = false) => { const url = URL.createObjectURL(picture); pictureUrls.push(url); row.querySelector('.mode-icon').innerHTML = `<img src="${url}" alt=""${fade ? ' class="fade-in"' : ''}>`; };  // (fade: a picture just taken, fading in as a walk's cells, see .gallery-grid img)
-// the cards shown, in their order: { setup, row } (Rebuild takes them so, see rebuildPictures)
+// a row's thumbnail in place of its icon (its URL let go with the row: see fillGalleryList)
+let thumbnailUrls = [];
+const showThumbnail = (row, thumbnail, fade = false) => { const url = URL.createObjectURL(thumbnail); thumbnailUrls.push(url); row.querySelector('.mode-icon').innerHTML = `<img src="${url}" alt=""${fade ? ' class="fade-in"' : ''}>`; };  // (fade: a thumbnail just taken, fading in as a walk's cells, see .gallery-grid img)
+// the cards shown, in their order: { setup, row } (Rebuild takes them so, see rebuildThumbnails)
 let galleryCards = [];
-// Rebuild's tile: lit while it runs; greyed when no card here lacks its picture (missing: whether one does)
-const syncRebuildTile = (missing) => setTile($('rebuildPictures'), { on: rebuilding, whyNot: () => (rebuilding || missing ? '' : 'Every setup here has its picture.') });
-// The Gallery's setups, as rows like the built-in ones (see setupRow), each with × to delete it, its picture over it
+// Rebuild's tile: lit while it runs; greyed when no card here lacks its thumbnail (missing: whether one does)
+const syncRebuildTile = (missing) => setTile($('rebuildThumbnails'), { on: rebuilding, whyNot: () => (rebuilding || missing ? '' : 'Every setup here has its thumbnail.') });
+// The Gallery's setups, as rows like the built-in ones (see setupRow), each with × to delete it, its thumbnail over it
 function fillGalleryList() {
-  pictureUrls.forEach((url) => URL.revokeObjectURL(url));
-  pictureUrls = [];
-  const looks = [];  // (each card's picture, found or not)
+  thumbnailUrls.forEach((url) => URL.revokeObjectURL(url));
+  thumbnailUrls = [];
+  const looks = [];  // (each card's thumbnail, found or not)
   galleryCards = [];
   const list = readGallery();
   // every tab's (Life, Ant, Walk…), each under its name, the tab in use's even with none (the ☆ said there); by their titles,
@@ -15073,7 +15073,7 @@ function fillGalleryList() {
       const k = (seen.get(title + detail) ?? 0) + 1;
       seen.set(title + detail, k);
       const row = setupRow(k > 1 ? `${title} (${k})` : title, detail, x.setup, () => deleteSetup(x.name));
-      looks.push(pictureOf(x.setup).then((picture) => { if (picture) showPicture(row, picture); return !!picture; }));  // (none yet: its icon)
+      looks.push(thumbnailOf(x.setup).then((thumbnail) => { if (thumbnail) showThumbnail(row, thumbnail); return !!thumbnail; }));  // (none yet: its icon)
       galleryCards.push({ x, row });
       return row;
     }));
@@ -15109,13 +15109,13 @@ function saveSetup() {
   list.sort((a, b) => a.name.localeCompare(b.name));
   if (!writeGallery(list)) alert('This browser does not allow saving (private window?).');
   fillGalleryList();
-  wantPicture().then((picture) => pictureStore('readwrite', (store) => store.put(picture, pictureKey(setup)))).then(fillGalleryList, () => {});  // (none kept: its row keeps its icon)
+  wantThumbnail().then((thumbnail) => thumbnailStore('readwrite', (store) => store.put(thumbnail, thumbnailKey(setup)))).then(fillGalleryList, () => {});  // (none kept: its row keeps its icon)
 }
 
 function deleteSetup(name) {
   const list = readGallery(), gone = list.find((x) => x.name === name), left = list.filter((x) => x !== gone);
   writeGallery(left);
-  if (gone && !left.some((x) => pictureKey(x.setup) === pictureKey(gone.setup))) pictureStore('readwrite', (store) => store.delete(pictureKey(gone.setup))).catch(() => {});  // (its picture, if no other row shows it)
+  if (gone && !left.some((x) => thumbnailKey(x.setup) === thumbnailKey(gone.setup))) thumbnailStore('readwrite', (store) => store.delete(thumbnailKey(gone.setup))).catch(() => {});  // (its thumbnail, if no other row shows it)
   fillGalleryList();
 }
 
@@ -15148,48 +15148,48 @@ async function importGallery(file) {
   }
 }
 
-/* ---- 10.4b The Gallery's pictures ------------------------------------------------------------ */
-// A saved setup's picture: the view as it was saved, PICTURE_SIZE, in this browser (IndexedDB: a picture is too big for
-// localStorage), under its setup with neither its version nor how it is looked at (SETUP_LOOKS, as isInUse): one picture a
+/* ---- 10.4b The Gallery's thumbnails ------------------------------------------------------- */
+// A saved setup's thumbnail: the view as it was saved, THUMBNAIL_SIZE, in this browser (IndexedDB: a thumbnail is too big for
+// localStorage), under its setup with neither its version nor how it is looked at (SETUP_LOOKS, as isInUse): one thumbnail a
 // setup, a new one replacing the old
-const PICTURE_SIZE = [240, 192];
-const pictureKey = (setup) => toHash(Object.fromEntries(Object.entries(setup).filter(([k]) => !SETUP_LOOKS.includes(k))));
-let pictureDb = null;
-// one request on the pictures' store (mode: 'readonly' or 'readwrite'; ask: the store → its request), its result
-const pictureStore = (mode, ask) => (pictureDb ??= new Promise((ok, fail) => {
-  const r = indexedDB.open('tessera', 1);
-  r.onupgradeneeded = () => r.result.createObjectStore('pictures');
+const THUMBNAIL_SIZE = [240, 192];
+const thumbnailKey = (setup) => toHash(Object.fromEntries(Object.entries(setup).filter(([k]) => !SETUP_LOOKS.includes(k))));
+let thumbnailDb = null;
+// one request on the thumbnails' store (mode: 'readonly' or 'readwrite'; ask: the store → its request), its result
+const thumbnailStore = (mode, ask) => (thumbnailDb ??= new Promise((ok, fail) => {
+  const r = indexedDB.open('tessera', 2);
+  r.onupgradeneeded = () => { for (const name of [...r.result.objectStoreNames]) r.result.deleteObjectStore(name); r.result.createObjectStore('thumbnails'); };  // (its one store, made anew)
   r.onsuccess = () => ok(r.result);
   r.onerror = () => fail(r.error);
-})).then((db) => new Promise((ok, fail) => { const q = ask(db.transaction('pictures', mode).objectStore('pictures')); q.onsuccess = () => ok(q.result); q.onerror = () => fail(q.error); }));
-// The view as one picture, cut to PICTURE_SIZE from its middle: every layer under the hover's, in their order, without the
+})).then((db) => new Promise((ok, fail) => { const q = ask(db.transaction('thumbnails', mode).objectStore('thumbnails')); q.onsuccess = () => ok(q.result); q.onerror = () => fail(q.error); }));
+// The view as one thumbnail, cut to THUMBNAIL_SIZE from its middle: every layer under the hover's, in their order, without the
 // grid's lines. WebGPU's picture is only there in the frame that drew it: asked of the next frame, drawn whole without the
 // grid, and taken as it ends, the grid then as it was (see tick)
-let pictureWanted = null, pictureGrid = true;
-const wantPicture = () => new Promise((ok) => { pictureWanted = ok; pictureGrid = $('showGrid').checked; $('showGrid').checked = false; needsFull = true; });
-function stagePicture() {
-  const [w, h] = PICTURE_SIZE, c = Object.assign(document.createElement('canvas'), { width: w, height: h }), g = c.getContext('2d');
+let thumbnailWanted = null, thumbnailGrid = true;
+const wantThumbnail = () => new Promise((ok) => { thumbnailWanted = ok; thumbnailGrid = $('showGrid').checked; $('showGrid').checked = false; needsFull = true; });
+function stageThumbnail() {
+  const [w, h] = THUMBNAIL_SIZE, c = Object.assign(document.createElement('canvas'), { width: w, height: h }), g = c.getContext('2d');
   const W = stage.clientWidth, H = stage.clientHeight, k = Math.max(w / W, h / H);
   for (const id of ['gridLayer', 'fillLayer', 'gpuLayer', 'pathLayer', 'lineLayer', 'overlayLayer']) g.drawImage($(id), (w - W * k) / 2, (h - H * k) / 2, W * k, H * k);
   return new Promise((ok) => c.toBlob(ok, 'image/webp', 0.85));
 }
-const pictureOf = (setup) => pictureStore('readonly', (store) => store.get(pictureKey(setup))).catch(() => null);
-// Rebuild: the cards shown with no picture, in their order, one after the other: each shown (as a click on it) and taken once
-// built, its picture fading in on its card; a click again, the Gallery shut or a card clicked stops it (the last built shown)
+const thumbnailOf = (setup) => thumbnailStore('readonly', (store) => store.get(thumbnailKey(setup))).catch(() => null);
+// Rebuild: the cards shown with no thumbnail, in their order, one after the other: each shown (as a click on it) and taken once
+// built, its thumbnail fading in on its card; a click again, the Gallery shut or a card clicked stops it (the last built shown)
 let rebuilding = false;
-async function rebuildPictures() {
+async function rebuildThumbnails() {
   rebuilding = !rebuilding;
   syncRebuildTile(true);
   for (const { x, row } of galleryCards.slice()) {  // (as they are now: the list drawn again meanwhile, these go on)
     const { setup } = x;
     if (!rebuilding) return;
-    if (await pictureOf(setup)) continue;
+    if (await thumbnailOf(setup)) continue;
     const built = whenBuilt();
     if (!isInUse(setup) && applySetup(setup)) { renderModePicker(); await built; }  // (its tab, its parameters under the Gallery)
-    if (!rebuilding) return;  // (stopped meanwhile: another setup shown, not its picture)
-    const picture = await wantPicture();
-    await pictureStore('readwrite', (store) => store.put(picture, pictureKey(setup))).catch(() => {});
-    showPicture(row, picture, true);
+    if (!rebuilding) return;  // (stopped meanwhile: another setup shown, not its thumbnail)
+    const thumbnail = await wantThumbnail();
+    await thumbnailStore('readwrite', (store) => store.put(thumbnail, thumbnailKey(setup))).catch(() => {});
+    showThumbnail(row, thumbnail, true);
     renameAsShown(x, row);
   }
   rebuilding = false;
@@ -15207,8 +15207,8 @@ function renameAsShown(x, row) {
   if (words) words.innerHTML = htmlText(setupWords(x));
   row.title = setupWords(x);  // (as a card's: its words, see card)
 }
-// Remove (to try Rebuild, for now): the pictures of the cards shown
-const removePictures = () => Promise.all(galleryCards.map(({ x: { setup } }) => pictureStore('readwrite', (store) => store.delete(pictureKey(setup))).catch(() => {}))).then(fillGalleryList);
+// Remove (to try Rebuild, for now): the thumbnails of the cards shown
+const removeThumbnails = () => Promise.all(galleryCards.map(({ x: { setup } }) => thumbnailStore('readwrite', (store) => store.delete(thumbnailKey(setup))).catch(() => {}))).then(fillGalleryList);
 
 /* ==============================================================================================
  * PART 11 — ANIMATION, VIEW AND RENDERING
@@ -18049,7 +18049,7 @@ const matMul = (A, B) => A.map((row) => [0, 1, 2].map((j) => row[0] * B[0][j] + 
 const spinAt = (t) => { const hz = 1 / frameTime; return matMul(matMul(rotX(SPIN_PER_FRAME[0] * hz * t), rotY(SPIN_PER_FRAME[1] * hz * t)), rotZ(SPIN_PER_FRAME[2] * hz * t)); };
 let linkedAt = null;  // the step shown as the link was last written, still (see tick)
 function tick(now = performance.now()) {
-  if (pictureWanted) { const ok = pictureWanted; pictureWanted = null; queueMicrotask(() => { ok(stagePicture()); $('showGrid').checked = pictureGrid; needsFull = true; }); }  // (as this frame ends, all drawn: see wantPicture)
+  if (thumbnailWanted) { const ok = thumbnailWanted; thumbnailWanted = null; queueMicrotask(() => { ok(stageThumbnail()); $('showGrid').checked = thumbnailGrid; needsFull = true; }); }  // (as this frame ends, all drawn: see wantThumbnail)
   const raw = (now - (lastTick || now)) / 1000;
   if (raw > 1 / 250 && raw < 1 / 40) {  // the screen's frame: the time of its last 120 by the frames they showed (a frame's own time trembles
     // round the refresh; one missed lasts two, and counts as two, against their median: never against the last measure, which
@@ -18989,12 +18989,12 @@ function galleryTab() {
 // then Share link (the link to what is shown)
 $('galleryTools').replaceChildren(tile({ pic: icon('import'), text: 'Import', title: 'Add the setups of a JSON file to the Gallery (those of a name already used numbered: none replaced)', click: () => $('galleryFile').click() }),
   tile({ pic: icon('export'), text: 'Export', title: 'The Gallery as a JSON file', click: exportGallery }), tile({ pic: icon('trash'), text: 'Erase all', title: 'Erase the Gallery from this browser (asked again under it)', click: () => { $('eraseConfirm').hidden = !$('eraseConfirm').hidden; } }),
-  tile({ pic: icon('eraser'), text: 'Remove', title: 'Remove the pictures shown here (to try Rebuild: for now)', click: removePictures }),
-  tile({ id: 'rebuildPictures', pic: icon('autoRotate'), text: 'Rebuild', toggle: true, title: 'Take the pictures missing here, one setup after the other: each shown, then taken once built; on while it runs, off by a click or once done', click: rebuildPictures }),
+  tile({ pic: icon('eraser'), text: 'Remove', title: 'Remove the thumbnails shown here (to try Rebuild: for now)', click: removeThumbnails }),
+  tile({ id: 'rebuildThumbnails', pic: icon('autoRotate'), text: 'Rebuild', toggle: true, title: 'Take the thumbnails missing here, one setup after the other: each shown, then taken once built; on while it runs, off by a click or once done', click: rebuildThumbnails }),
   tile({ pic: icon('link'), text: 'Share link', title: 'Copy the link to what is shown', click: () => shareView($('galleryTools').lastElementChild) }));
 $('eraseConfirm').innerHTML = `${icon('trash')} Confirm erase`;
 $('galleryToolsHead').insertAdjacentHTML('afterbegin', icon('floppy'));  // (the Gallery's files: Import, Export, Erase)
-$('eraseConfirm').addEventListener('click', () => { writeGallery([]); pictureStore('readwrite', (store) => store.clear()).catch(() => {}); $('eraseConfirm').hidden = true; fillGalleryList(); });
+$('eraseConfirm').addEventListener('click', () => { writeGallery([]); thumbnailStore('readwrite', (store) => store.clear()).catch(() => {}); $('eraseConfirm').hidden = true; fillGalleryList(); });
 $('galleryFile').addEventListener('change', () => {
   if ($('galleryFile').files[0]) importGallery($('galleryFile').files[0]);
   $('galleryFile').value = '';

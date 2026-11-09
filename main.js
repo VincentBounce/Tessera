@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.689';
+const VERSION = '0.4.690';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -15293,7 +15293,7 @@ function advanceTo(target, until = Infinity) {  // forth or back (a walk; a reve
   // the walk has just ended: auto-fit framed it with room to grow, so ease to the final frame,
   // the one Fit view gives (surfaces follow the walker instead)
   if (reachedEnd && !walk.sphere && $('autoFit').checked) {
-    includeBox();
+    includeBox(true);  // (framed again round all of it, as fitWhole: a 3D walk's camera too)
     viewGoal = viewFor(padBounds(bounds));
   }
 }

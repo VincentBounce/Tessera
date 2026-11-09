@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.731';
+const VERSION = '0.4.732';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -15081,7 +15081,7 @@ const setupOrder = (a, b) => {
 const setupWords = (x) => [x.note, x.chips, setupDetail(x.setup, x.chips)].filter(Boolean).join(' · ');
 // a row's thumbnail in place of its icon (its URL let go with the row: see fillGalleryList)
 let thumbnailUrls = [];
-const showThumbnail = (row, thumbnail, fade = false) => { const url = URL.createObjectURL(thumbnail); thumbnailUrls.push(url); row.querySelector('.mode-icon').innerHTML = `<img src="${url}" alt=""${fade ? ' class="fade-in"' : ''}>`; };  // (fade: a thumbnail just taken, fading in as a walk's cells, see .gallery-grid img)
+const showThumbnail = (row, thumbnail) => { const url = URL.createObjectURL(thumbnail); thumbnailUrls.push(url); row.querySelector('.mode-icon').innerHTML = `<img src="${url}" alt="">`; };  // (fading in as a walk's cells, see .gallery-grid img)
 // the cards shown, in their order: { setup, row } (Rebuild takes them so, see rebuildThumbnails)
 let galleryCards = [];
 // Rebuild's tile: lit while it runs; greyed when no card here lacks its thumbnail (missing: whether one does)
@@ -15232,7 +15232,7 @@ async function rebuildThumbnails() {
     await adoptShown(x, row);
     const thumbnail = await wantThumbnail();
     await thumbnailStore('readwrite', (store) => store.put(thumbnail, thumbnailKey(x.setup))).catch(() => {});
-    showThumbnail(row, thumbnail, true);
+    showThumbnail(row, thumbnail);
   }
   rebuilding = false;
   syncRebuildTile(false);

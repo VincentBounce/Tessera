@@ -10,6 +10,14 @@ faire glandouiller des demi-heures depuis des semaines pour faire 99 % de tests 
 find the convention that let the bug happen and fix that, once (v0.4.384: a reset list by hand in `buildWalkOf`, one
 field more, where each walk should start from one definition of its fields).
 
+**SIMPLER = LESS REDUNDANT, NOT SHORTER.** "Simplify" never means compacting code as the minifier does (several statements
+squeezed on one line, a comma expression for a `return`): it means thinking whether code is redundant or useless, and
+removing it. Taking a notion out (a "haut", a mode, a case) must take its code out: if the balance grows, something was
+stacked instead of replaced. When the user asks for a rollback, roll back, then re-add nothing of what was rolled back.
+(2026-11-09: the cone's head given a useless "up" in v0.4.665; rolled back in v0.4.666 as asked, then `turnInSpace`
+doubling `turnToward` and a base still built on the tile's normal: +7 for removing a notion, till v0.4.668; and v0.4.735's
+mesh memory squeezed onto one line to show −6.)
+
 ## Bundles
 The user always makes the app's single-file versions with the script `_Make Tessera.html.command` in the folder
 `Tessera resources` beside the repo (double-click). It runs `tools/bundle.py` twice and makes two HTML files there:

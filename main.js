@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.678';
+const VERSION = '0.4.679';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -4328,7 +4328,7 @@ function project() {
 const perspectiveAllowed = () => walk.is3d;
 
 // Set walk.persp from the checkbox: centre and size from the whole walk (or the solid), camera
-// at 2.5 × that radius, i.e. a field of view of roughly 45°
+// at 2.5 × that radius, i.e. a field of view of roughly 45°; a walk's centre its start, where it turns round
 function setPerspective() {
   if (!perspectiveAllowed() || !$('perspective').checked) { walk.persp = null; return; }
   if (walk.plane) {  // Space-time: its cubes' box
@@ -4341,13 +4341,9 @@ function setPerspective() {
     walk.persp = { c: [0, 0, 0], D: 2.5 * walk.R * walk.shape.maxExtent };
     return;
   }
-  const lo = [Infinity, Infinity, Infinity], hi = [-Infinity, -Infinity, -Infinity];
-  const W = [walk.wx, walk.wy, walk.wz];
-  for (let i = 0; i <= walk.n; i++) {
-    for (let d = 0; d < 3; d++) { lo[d] = Math.min(lo[d], W[d][i]); hi[d] = Math.max(hi[d], W[d][i]); }
-  }
-  const radius = Math.max(3, Math.hypot(hi[0] - lo[0], hi[1] - lo[1], hi[2] - lo[2]) / 2);
-  walk.persp = { c: [0, 1, 2].map((d) => (lo[d] + hi[d]) / 2), D: 2.5 * radius };
+  let radius = 3;
+  for (let i = 0; i <= walk.n; i++) radius = Math.max(radius, Math.hypot(walk.wx[i], walk.wy[i], walk.wz[i]));
+  walk.persp = { c: [0, 0, 0], D: 2.5 * radius };
 }
 
 // Turn the object by the rotation vector w (world coordinates: the axis, scaled by the angle in
@@ -4407,10 +4403,8 @@ const screenTurn = (a, b, c) => [0, 1, 2].map((i) => a * camera.r[i] + b * camer
 // solid's own centre (the origin) for a surface, else the centre of the walk's bounding box. (On a
 // surface that box grows unevenly with the walk: turning around it made the solid slide while
 // auto-fit followed the walker.) Then recompute the projection; the frame does not change.
-function rotateView(w) {
-  const [x0, x1, y0, y1, z0, z1] = bounds3 || [0, 0, 0, 0, 0, 0];
-  const c = walk.sphere ? [0, 0, 0] : [(x0 + x1) / 2, (y0 + y1) / 2, (z0 + z1) / 2];
-  const before = projectPoint(...c);
+function rotateView(w) {  // (round the origin, a walk's start, a solid's centre: kept where it is on the screen)
+  const c = [0, 0, 0], before = projectPoint(...c);
   turnCam(w);
   if (!walk.is3d) return;
   const after = projectPoint(...c);
@@ -15374,14 +15368,14 @@ function showAll() {
   if ($('autoFit').checked && !choosingStart) fitWhole();  // framed like F or a double-click, without the margin kept for growing
 }
 
-// 3D walks: framed by the sphere round the walk's box (its centre, half its diagonal; in perspective,
-// its outline from the camera, D/√(D² − r²) times wider), as a surface is by its solid: the same
-// whichever way the walk turns, so turning it never zooms
+// 3D walks: framed by the sphere round their start, where they turn round (see orthoPoint), out to their box's farthest
+// corner (in perspective, its outline from the camera, D/√(D² − r²) times wider), as a surface is by its solid: the walk in
+// it whichever way it turns, its start in the middle, turning never zooms
 function includeBox() {
   if (!walk.is3d || walk.sphere) return;
-  const [x0, x1, y0, y1, z0, z1] = bounds3, [cx, cy] = projectPoint((x0 + x1) / 2, (y0 + y1) / 2, (z0 + z1) / 2);
-  const c = cubesWalk() ? 2 * cellShape().half : 0;  // the cells of a walk on cells, past their centres
-  const r = Math.hypot(x1 - x0 + c, y1 - y0 + c, z1 - z0 + c) / 2, P = walk.persp, R = P && P.D > r ? (r * P.D) / Math.sqrt(P.D * P.D - r * r) : r;
+  const [x0, x1, y0, y1, z0, z1] = bounds3, [cx, cy] = projectPoint(0, 0, 0);
+  const c = cubesWalk() ? cellShape().half : 0;  // the cells of a walk on cells, past their centres
+  const r = Math.hypot(Math.max(-x0, x1) + c, Math.max(-y0, y1) + c, Math.max(-z0, z1) + c), P = walk.persp, R = P && P.D > r ? (r * P.D) / Math.sqrt(P.D * P.D - r * r) : r;
   bounds = { minX: cx - R, maxX: cx + R, minY: cy - R, maxY: cy + R };
 }
 

@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.683';
+const VERSION = '0.4.684';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -4317,12 +4317,11 @@ function projector() {
   };
 }
 
-// Projection of the whole 3D walk (xs, ys), same formula as projectPoint; projected counts them (see gpuFlat)
-let projected = 0;
+// Projection of the whole 3D walk (xs, ys) on the screen, same formula as projectPoint (its bounds, a hover; drawn in its
+// 3D scene, see gpuCubes)
 function project() {
   const { wx, wy, wz, xs, ys } = walk, proj = projector();
   for (let i = 0; i < xs.length; i++) [xs[i], ys[i]] = proj(wx[i], wy[i], wz[i]);
-  projected++;
 }
 
 // Perspective can apply to every 3D view (checkbox; on by default for the cube walks and the cube surface)
@@ -15432,7 +15431,8 @@ const VIEW_GAP = parseFloat(getComputedStyle(document.documentElement).getProper
 // farther, whatever its size; nearer, in 3D ZOOM_IN times, in 2D down to ZOOM_CELLS cells across the screen (a cell's size,
 // whatever the size of the whole: a big Sierpiński's cells seen)
 const ZOOM_IN = 60, ZOOM_OUT = 10, ZOOM_CELLS = 3 / 2;
-const FIT_ROOM = 0.2;  // (a walk out of its frame: framed again with this share of its size more each side, room to grow: see tick)
+const FIT_ROOM = 0.2;
+const BAR_HALF_WIDTH = 0.1;  // (a 3D walk's line, its bars' half thickness: a cube's side 1, see gpuCubes)  // (a walk out of its frame: framed again with this share of its size more each side, room to grow: see tick)
 const zoomRange = () => {
   const fit = viewFor(padBounds(bounds)).scale, flat = !walk.is3d && !walk.sphere;
   return [Math.max(MIN_SCALE, fit / ZOOM_OUT), flat ? Math.max(fit, Math.min(canvasWidth, canvasHeight) / ZOOM_CELLS) : fit * ZOOM_IN];
@@ -16201,9 +16201,8 @@ let cutAxis = defaultOf('cut', tabMode());
 const cutOn = () => cutAxis > 0 && !$('cutRow').hidden;
 const cutNormal = () => CUT_AXES[cutAxis][1] ?? [0, 0, 0];
 const setCut = (k) => { needsFull ||= k !== cutAxis; cutAxis = k; };  // (a notch picked, or dragged over)
-/* Flat drawings by the card as well (see gpuFlat): the 2D walks, and the 3D walks once projected (their projection
- * is redone on the CPU when the view turns). The whole walk so far is redrawn at each frame, fast
- * enough to pan, zoom and turn walks of millions of steps smoothly:
+/* Flat drawings by the card as well (see gpuFlat): the 2D walks (a 3D one in its 3D scene, see gpuCubes). The whole
+ * walk so far is redrawn at each frame, fast enough to pan and zoom walks of millions of steps smoothly:
  *  - fill: one instance per enclosed vertex of the fill (see computeFill), in the colour of the step
  *    that closed it;
  *  - cells: one instance per point (Fill cells, the heatmap of visits, the spirals' marks), painted in
@@ -16775,6 +16774,18 @@ fn light(col: vec3f, n0: vec3f, p: vec3f, bias: f32) -> Lit {  // (as tileLight;
   if (u.plain.a <= 0.0) { col = unpack4x8unorm(tileCol[id]).rgb; }
   return light(col, nrm, pos, 0.0);
 }
+// a 3D walk's step as a bar, from a towards b0 as far as u.grow (its glide, see glideSplit), u.halfW thick, its ends closed
+// past its points by half its thickness: a unit cube's corner c (and its normal) laid along it
+struct Bar { p: vec3f, n: vec3f }
+fn bar(c: vec3f, nrm: vec3f, a: vec3f, b0: vec3f) -> Bar {
+  var o: Bar; let v = (b0 - a) * u.grow; let len = length(v);
+  var d = vec3f(1.0, 0.0, 0.0); if (len > 1e-6) { d = v / len; }
+  let e1 = normalize(cross(d, select(vec3f(1.0, 0.0, 0.0), vec3f(0.0, 1.0, 0.0), abs(d.x) > 0.9))); let e2 = cross(d, e1); let w = 2.0 * u.halfW;
+  o.p = a + d * ((c.x + 0.5) * (len + w) - 0.5 * w) + (e1 * c.y + e2 * c.z) * w; o.n = d * nrm.x + e1 * nrm.y + e2 * nrm.z;
+  return o;
+}
+@vertex fn barV(@location(0) c: vec3f, @location(1) nrm: vec3f, @location(2) a: vec3f, @location(3) b0: vec3f, @location(4) col: vec4f) -> Lit { let o = bar(c, nrm, a, b0); return light(col.rgb, o.n, o.p, 0.0); }
+@vertex fn depthBarV(@location(0) c: vec3f, @location(1) a: vec3f, @location(2) b0: vec3f) -> Deep { return deep(bar(c, vec3f(0.0), a, b0).p); }
 @vertex fn cubeV(@location(0) corner: vec3f, @location(1) nrm: vec3f, @location(2) at: vec3f, @location(3) col: vec4f) -> Lit {
   return light(col.rgb, nrm, at + corner, 0.0);
 }
@@ -16817,7 +16828,7 @@ struct Rib { @builtin(position) pos: vec4f, @location(0) col: vec3f, @location(1
   let p = vec2i(q.xy); let a = textureLoad(acc, p, 0); let r = textureLoad(rev, p, 0).r;
   return vec4f(a.rgb / max(a.a, 1e-5) * (1.0 - r), 1.0 - r);
 }
-// flat drawings (2D walks, projected 3D walks): world (x, y) to pixels by view (scale, ox, oy)
+// flat drawings (2D walks): world (x, y) to pixels by view (scale, ox, oy)
 struct Col { @builtin(position) pos: vec4f, @location(0) col: vec4f }
 @vertex fn flatPathV(@location(0) quad: vec2f, @location(1) a0: vec2f, @location(2) b0: vec2f, @location(3) key: u32, @builtin(instance_index) k: u32) -> Col {
   var o: Col;
@@ -17153,17 +17164,16 @@ function eased(key, want) {
   return out;
 }
 function gpuFlat(to) {
-  if (cubesWalk()) return gpuCubes(to + 1, walk.wx, walkCubes, walk.maxDist[walk.n]);
+  if (walk.is3d) return gpuCubes(to + 1, walk.wx, walkCubes, walk.maxDist[walk.n]);  // (a 3D walk in its 3D scene: cubes, or bars along its lines)
   if (walk.rows) { gpuClear(); drawElementary(to); return true; }  // (Elementary: a picture, see drawElementary)
   const D = gpuDrawSetup();
   if (!D) return false;
   const { device } = D, mode = $('colourMode').value, s = view.scale;
-  const ptsKey = `${walk.is3d ? projected : 0}`;
-  if (D.keys.flatPts !== walk.xs || D.keys.flatProj !== ptsKey) {
+  if (D.keys.flatPts !== walk.xs) {
     const pts = new Float32Array(2 * (walk.n + 1));
     for (let i = 0; i <= walk.n; i++) { pts[2 * i] = walk.xs[i]; pts[2 * i + 1] = walk.ys[i]; }
     gpuBuffer('flatPts', pts);
-    D.keys.flatPts = walk.xs; D.keys.flatProj = ptsKey;
+    D.keys.flatPts = walk.xs;
   }
   const keysKey = `${mode === 'digit'}|${walk.keys === walk.antStates}`;
   if (D.keys.flatKeys !== walk.keys || D.keys.flatKeysMode !== keysKey) {
@@ -17257,23 +17267,33 @@ function gpuCubes(count, of, make, reach) {
     gpuBuffer('cubeAt', at); gpuBuffer('cubeCol', rgba);
     D.keys.cubes = of; D.keys.cubesMode = mode; D.cubeColours = new Uint32Array(rgba.buffer);
   }
-  const blank = packed(blankTile()), want = D.cubeColours.map((c, k) => (k < count ? c : blank));  // (those not come yet: blank, so they fade in as they come)
+  const bars = !cubesWalk() && !walk.stacked;  // (a 3D walk along its lines: a bar a step, growing as it glides, no fade, as a 2D line)
+  const blank = packed(blankTile()), want = D.cubeColours.map((c, k) => (bars || k < count ? c : blank));  // (cubes not come yet: blank, so they fade in as they come)
   device.queue.writeBuffer(D.cubeCol, 0, eased('cubes', want));
-  const depth = 4 * (reach + 2), verts = shape.triangles.length / 6;
+  if (bars && !D.barMesh) gpuBuffer('barMesh', CELL_SHAPES.cube.triangles);
+  const depth = 4 * (reach + 2), verts = (bars ? CELL_SHAPES.cube : shape).triangles.length / 6;
+  const [whole, part] = glideSplit(), steps = Math.min(whole, walk.n), look = { halfW: BAR_HALF_WIDTH };
   new Uint8Array(D.words).fill(0);
-  const enc = device.createCommandEncoder(), slot = gpuView(D.words, 0, depth);
+  const enc = device.createCommandEncoder(), slot = gpuView(D.words, 0, depth, { ...look, grow: 1 }), going = gpuView(D.words, 1, depth, { ...look, grow: part });
+  const drawBars = (p, slots) => { for (const [k, n, s] of [[0, steps, slots[0]], [steps, part > 0 && steps < walk.n ? 1 : 0, slots[1]]]) if (n) { p.setBindGroup(0, gpuGroup(), [s]); p.draw(verts, n, 0, k); } };  // (the whole steps, the one on its way)
+  const pointPairs = (p) => { p.setVertexBuffer(1, D.cubeAt, 0); p.setVertexBuffer(2, D.cubeAt, 12); };  // (step k from point k to k + 1)
   gpuShadows(enc, slot, (p) => {
+    if (bars) { p.setPipeline(gpuDepthPipe('depthBarV', [vertexLayout(24, [vertexAttribute(0, 'float32x3')]), vertexLayout(12, [vertexAttribute(1, 'float32x3')], 'instance'), vertexLayout(12, [vertexAttribute(2, 'float32x3')], 'instance')])); p.setVertexBuffer(0, D.barMesh); pointPairs(p); drawBars(p, [slot, going]); return; }
     p.setPipeline(gpuDepthPipe('depthCubeV', [vertexLayout(24, [vertexAttribute(0, 'float32x3')]), vertexLayout(12, [vertexAttribute(1, 'float32x3')], 'instance')]));
     p.setVertexBuffer(0, D.cube); p.setVertexBuffer(1, D.cubeAt); p.draw(verts, count);
   }, null);
-  const rp = gpuPass(enc);
-  rp.setPipeline(gpuDrawPipe('cube', { vertex: 'cubeV', fragment: 'shadowedF', shadowed: true,
-    buffers: [vertexLayout(24, [vertexAttribute(0, 'float32x3', 0), vertexAttribute(1, 'float32x3', 12)]), vertexLayout(12, [vertexAttribute(2, 'float32x3')], 'instance'), vertexLayout(4, [vertexAttribute(3, 'unorm8x4')], 'instance')] }));
-  rp.setBindGroup(0, gpuGroup(), [slot]); rp.setBindGroup(1, D.shadow.group);
-  rp.setVertexBuffer(0, D.cube); rp.setVertexBuffer(1, D.cubeAt); rp.setVertexBuffer(2, D.cubeCol); rp.draw(verts, count);
+  const rp = gpuPass(enc), mesh = vertexLayout(24, [vertexAttribute(0, 'float32x3', 0), vertexAttribute(1, 'float32x3', 12)]);
+  if (bars) {
+    rp.setPipeline(gpuDrawPipe('bar', { vertex: 'barV', fragment: 'shadowedF', shadowed: true, buffers: [mesh, vertexLayout(12, [vertexAttribute(2, 'float32x3')], 'instance'), vertexLayout(12, [vertexAttribute(3, 'float32x3')], 'instance'), vertexLayout(4, [vertexAttribute(4, 'unorm8x4')], 'instance')] }));
+    rp.setBindGroup(1, D.shadow.group); rp.setVertexBuffer(0, D.barMesh); pointPairs(rp); rp.setVertexBuffer(3, D.cubeCol, 4); drawBars(rp, [slot, going]);  // (step k in its point k + 1's colour, as its cube's)
+  } else {
+    rp.setPipeline(gpuDrawPipe('cube', { vertex: 'cubeV', fragment: 'shadowedF', shadowed: true, buffers: [mesh, vertexLayout(12, [vertexAttribute(2, 'float32x3')], 'instance'), vertexLayout(4, [vertexAttribute(3, 'unorm8x4')], 'instance')] }));
+    rp.setBindGroup(0, gpuGroup(), [slot]); rp.setBindGroup(1, D.shadow.group);
+    rp.setVertexBuffer(0, D.cube); rp.setVertexBuffer(1, D.cubeAt); rp.setVertexBuffer(2, D.cubeCol); rp.draw(verts, count);
+  }
   gpuHeads(D, rp, 0, slot);  // (a 3D walk's head and start's flag, as a surface's)
   rp.end();
-  device.queue.writeBuffer(D.uni, 0, D.words, 0, 512);
+  device.queue.writeBuffer(D.uni, 0, D.words, 0, 1024);
   device.queue.submit([enc.finish()]);
   return true;
 }
@@ -17539,7 +17559,7 @@ function drawOverlay() {
   }
   if (!walk.n || walk.life || walk.rows) return;  // no walker in the Game of Life, nor Elementary
   if (walk.battle) return;  // a battle: its heads and flags drawn with its tiles (see headsOf)
-  if (walk.sphere || cubesWalk()) return;  // (its head and its start's flag drawn in 3D, with its tiles or cubes: see gpuHeads)
+  if (walk.sphere || walk.is3d) return;  // (its head and its start's flag drawn in 3D, with its tiles, cubes or bars: see gpuHeads)
   // the walker at step i: its place and heading, its last step's (up at the start), in a frame at(forward, across)
   const a = headSize(polyArea(FILL_GRIDS[walk.lattice]?.templates[0] ?? [[0, 0], [1, 0], [1, 1], [0, 1]]) * s * s);  // (its cell's area on the screen: a lattice's tile, else a unit square)
   const frame = (at) => {  // (between two steps, gliding: on its way from one to the next, heading along it, see glideAt)

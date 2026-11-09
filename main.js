@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.706';
+const VERSION = '0.4.707';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -15042,6 +15042,8 @@ const setupDetail = (s, chips = '') => {  // (chips: its bar's, saved with it: w
 // its title: its bar's as it was saved (a battle's walkers, Life's start); one saved before: a walk's number, a Game of Life's
 // shape and tiles (see shapeAndTiles)
 const setupTitle = (x) => (x.chips === undefined && MODES[x.setup.w]?.life ? shapeAndTiles(x.setup.w) : x.name);
+// its words under the title: its note (a curated one's), its chips, its detail
+const setupWords = (x) => [x.note, x.chips, setupDetail(x.setup, x.chips)].filter(Boolean).join(' · ');
 // a row's picture in place of its icon (its URL let go with the row: see fillGalleryList)
 let pictureUrls = [];
 const showPicture = (row, picture) => { const url = URL.createObjectURL(picture); pictureUrls.push(url); row.querySelector('.mode-icon').innerHTML = `<img src="${url}" alt="">`; };  // (fading in as a walk's cells, see .gallery-grid img)
@@ -15057,7 +15059,7 @@ function fillGalleryList() {
   galleryCards = [];
   const list = readGallery();
   // the tab in use's only (Life, Ant, Walk…), under its name; by their titles, two rows alike numbered (2), (3)…
-  const rows = list.filter((x) => NAV[x.setup.w]).map((x) => [setupTitle(x), [x.note, x.chips, setupDetail(x.setup, x.chips)].filter(Boolean).join(' · '), x]), seen = new Map();
+  const rows = list.filter((x) => NAV[x.setup.w]).map((x) => [setupTitle(x), setupWords(x), x]), seen = new Map();
   const kindOf = (x) => NAV[x.setup.w][0];
   $('yourList').replaceChildren(...NAV_KINDS.filter(([kind]) => kind === NAV[tabMode()]?.[0]).flatMap(([kind]) => {
     const mine = rows.filter(([, , x]) => kindOf(x) === kind).sort((a, b) => a[0].localeCompare(b[0]));
@@ -15069,7 +15071,7 @@ function fillGalleryList() {
       seen.set(title + detail, k);
       const row = setupRow(k > 1 ? `${title} (${k})` : title, detail, x.setup, () => deleteSetup(x.name));
       looks.push(pictureOf(x.setup).then((picture) => { if (picture) showPicture(row, picture); return !!picture; }));  // (none yet: its icon)
-      galleryCards.push({ setup: x.setup, row });
+      galleryCards.push({ x, row });
       return row;
     }));
     section.append(cards);
@@ -15091,15 +15093,16 @@ function syncSaveButton() {
   b.classList.toggle('saved', !!saved);
   b.title = saved ? `Saved in the Gallery as “${setupTitle(saved)}”: a click takes it out` : 'Save the setup in view in the Gallery, in this browser';
 }
+// a setup's title and chips as its bar shows them (π vs e vs φ · base 2 · LR · Land no collision; Wild #204157587 · B45/S345/C4)
+const barWords = () => ({ title: $('barNum').textContent.trim() || shownSymbol, chips: ['barBase', 'barRule', 'barBattle'].filter((id) => !$(id).hidden).map((id) => $(id).textContent.trim()).filter(Boolean).join(' · ') });
+// a name of its own in the list (a row is deleted by its name): the title, else "(2)", "(3)"…
+const uniqueName = (title, list) => { let name = title; for (let k = 2; list.some((x) => x.name === name); k++) name = `${title} (${k})`; return name; };
 function saveSetup() {
   const setup = getSetup(), list = readGallery();
   const same = savedInView();
   if (same) { deleteSetup(same.name); return; }  // already one of them (its ★ yellow): out of them
-  // its name and its chips as its bar shows them (π vs e vs φ · base 2 · LR · Land no collision; Wild #204157587 · B45/S345/C4)
-  const title = $('barNum').textContent.trim() || shownSymbol, chips = ['barBase', 'barRule', 'barBattle'].filter((id) => !$(id).hidden).map((id) => $(id).textContent.trim()).filter(Boolean).join(' · ');
-  let name = title;
-  for (let k = 2; list.some((x) => x.name === name); k++) name = `${title} (${k})`;
-  list.push({ name, chips, setup, saved: new Date().toISOString() });
+  const { title, chips } = barWords();
+  list.push({ name: uniqueName(title, list), chips, setup, saved: new Date().toISOString() });
   list.sort((a, b) => a.name.localeCompare(b.name));
   if (!writeGallery(list)) alert('This browser does not allow saving (private window?).');
   fillGalleryList();
@@ -15173,7 +15176,8 @@ let rebuilding = false;
 async function rebuildPictures() {
   rebuilding = !rebuilding;
   syncRebuildTile(true);
-  for (const { setup, row } of galleryCards.slice()) {  // (as they are now: the list drawn again meanwhile, these go on)
+  for (const { x, row } of galleryCards.slice()) {  // (as they are now: the list drawn again meanwhile, these go on)
+    const { setup } = x;
     if (!rebuilding) return;
     if (await pictureOf(setup)) continue;
     const built = whenBuilt();
@@ -15182,12 +15186,25 @@ async function rebuildPictures() {
     const picture = await wantPicture();
     await pictureStore('readwrite', (store) => store.put(picture, pictureKey(setup))).catch(() => {});
     showPicture(row, picture);
+    renameAsShown(x, row);
   }
   rebuilding = false;
   syncRebuildTile(false);
 }
+// a card rebuilt: its title and chips as its bar shows them now (as the ☆ saves them), its card's words with them
+function renameAsShown(x, row) {
+  const list = readGallery(), saved = list.find((y) => y.name === x.name), { title, chips } = barWords();
+  if (!saved) return;  // (deleted meanwhile)
+  Object.assign(saved, { name: uniqueName(title, list.filter((y) => y !== saved)), chips });
+  writeGallery(list);
+  Object.assign(x, saved);  // (its card's: deleted by its new name)
+  row.querySelector('.mode-name').textContent = setupTitle(x);
+  const words = row.querySelector('.mode-detail');
+  if (words) words.innerHTML = htmlText(setupWords(x));
+  row.title = setupWords(x);  // (as a card's: its words, see card)
+}
 // Remove (to try Rebuild, for now): the pictures of the cards shown
-const removePictures = () => Promise.all(galleryCards.map(({ setup }) => pictureStore('readwrite', (store) => store.delete(pictureKey(setup))).catch(() => {}))).then(fillGalleryList);
+const removePictures = () => Promise.all(galleryCards.map(({ x: { setup } }) => pictureStore('readwrite', (store) => store.delete(pictureKey(setup))).catch(() => {}))).then(fillGalleryList);
 
 /* ==============================================================================================
  * PART 11 — ANIMATION, VIEW AND RENDERING

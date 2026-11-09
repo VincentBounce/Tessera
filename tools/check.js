@@ -424,7 +424,7 @@ async function coloursOffered(fail) {
     for (const s of sizes) {
       location.hash = `#w=${w}&s=${s}`;
       await until(shown(w, () => String(sphereSize()) === String(s)));
-      if (COLOUR_STEPS.some((K) => K > 1 && coloursFit(K))) { some = true; break; }
+      if (TEAM_COUNTS.some((K) => K > 1 && teamsFit(K))) { some = true; break; }
     }
     checked++;
     if (!some) fail(`${w}: Solo only at every size (${sizes.join(', ')})`);
@@ -689,7 +689,7 @@ async function checkSheets(fail) {
   }
   // the globe, made for its colours (see globeBands): its parallels a unit apart, every band's cells 0.70 to 1.42 as wide as high, at
   // every size of every count
-  for (const K of COLOUR_STEPS) {
+  for (const K of TEAM_COUNTS) {
     for (const E of SPHERES.globe.ownSizes(K)) {  // (K's own sizes, not those offered for the mode and colours in use)
       const { N, lines } = globeBands(E, K), off = N.slice(1, -1).map((n, j) => (2 * Math.PI * Math.cos((lines[j] + lines[j + 1]) / 2)) / n / (lines[j + 1] - lines[j])).filter((r) => r < 0.70 || r > 1.42), uneven = lines.slice(1).some((l, j) => Math.abs(l - lines[j] - (2 * Math.PI) / E) > 1e-9);
       if (off.length || uneven || N.slice(1, -1).some((n) => n % K)) fail(`the globe at ${E} in ${K} colours: ${off.length} bands past 0.70 to 1.42${uneven ? ', its parallels not a unit apart' : ''}${N.some((n) => n % K) ? ', a band not a multiple of its colours' : ''}`);
@@ -699,18 +699,18 @@ async function checkSheets(fail) {
   for (const w of ['lifeKleinPrismatic', 'lifeKleinPent15', 'lifeTorusRhombitri', 'lifeMobiusPent10', 'lifeGlobe']) {
     const offered = [];
     for (const K of [1, 3]) {
-      lifeColours = K;
+      lifeTeams = K;
       location.hash = `#w=${w}&k=${K}`;
-      await until(shown(w, () => lifeColours === K));
-      offered.push(COLOUR_STEPS.filter((k) => coloursFit(k)).join(','));
+      await until(shown(w, () => lifeTeams === K));
+      offered.push(TEAM_COUNTS.filter((k) => teamsFit(k)).join(','));
     }
     if (offered[0] !== offered[1]) fail(`${w}: colours offered ${offered[0]} in Solo, ${offered[1]} in Trio`);
     if (w === 'lifeKleinPent15' && offered[0].split(',').some((k) => k % 2 === 0)) fail(`${w}: an even count of colours offered (${offered[0]}), its twist asking an odd length`);  // (v0.3.88 to 0.3.93: g.period left by the rename, every count offered)
     for (const K of [2, 3, 5].filter((k) => offered[0].split(',').includes(`${k}`))) {
       location.hash = `#w=${w}&k=${K}`;
-      await until(shown(w, () => lifeColours === K && walk.life?.colours === K));
+      await until(shown(w, () => lifeTeams === K && walk.life?.colours === K));
       const sizes = huntParts(null, K).map((p) => p.length);
-      if (lifeColours !== K) fail(`${w}: ${K} colours offered, ${lifeColours} taken`);
+      if (lifeTeams !== K) fail(`${w}: ${K} colours offered, ${lifeTeams} taken`);
       else if (new Set(sizes).size > 1) fail(`${w} in ${K} colours: its parts ${sizes.join(' / ')}`);
     }
     checked += 2;
@@ -730,12 +730,12 @@ async function partsEqual(fail) {
   const runs = [...lifeModes.filter((w) => MODES[w].plane).flatMap((w) => [[w, '', 1], [w, '&e=1', 1]]), ...lifeModes.filter((w) => MODES[w].sphere && !TORI.includes(surfaceOf(MODES[w]))).map((w) => [w, '', SPHERES[MODES[w].sphere]?.disc ? 1 : 0])];  // (a rosette sphere: its discs' lunes, cells whole, one apart as the plane's)
   for (const [w, walls, slack] of runs) {
     location.hash = `#w=${w}${walls}&k=1`;
-    await until(shown(w, () => lifeColours === 1));
-    for (const K of COLOUR_STEPS.filter((k) => k > 1 && coloursFit(k))) {
+    await until(shown(w, () => lifeTeams === 1));
+    for (const K of TEAM_COUNTS.filter((k) => k > 1 && teamsFit(k))) {
       location.hash = `#w=${w}${walls}&k=${K}`;
-      await until(shown(w, () => lifeColours === K && walk.life?.colours === K));
+      await until(shown(w, () => lifeTeams === K && walk.life?.colours === K));
       const sizes = huntParts(null, K).map((p) => p.length);
-      if (lifeColours !== K) fail(`${w}${walls}: ${K} colours offered, ${lifeColours} taken`);
+      if (lifeTeams !== K) fail(`${w}${walls}: ${K} colours offered, ${lifeTeams} taken`);
       else if (Math.max(...sizes) - Math.min(...sizes) > slack) fail(`${w}${walls} in ${K} colours: ${Math.min(...sizes)} to ${Math.max(...sizes)} cells a colour`);
       checked++;
     }

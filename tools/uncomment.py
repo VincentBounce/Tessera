@@ -70,3 +70,8 @@ uncommented_py = lambda src: tidy('\n'.join(l for l in src.split('\n') if not l.
 def code_of(name, src):
     ext = name.rsplit('.', 1)[-1]
     return {'js': uncommented, 'css': uncommented_css, 'html': uncommented_html, 'py': uncommented_py}.get(ext, tidy)(src)
+
+# python3 tools/uncomment.py name.js < its text: its code, by its name's end (see codediff.sh)
+if __name__ == '__main__':
+    import sys
+    sys.stdout.write(code_of(sys.argv[1], sys.stdin.read()) + '\n')

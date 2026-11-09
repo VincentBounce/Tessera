@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.677';
+const VERSION = '0.4.678';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -15864,7 +15864,7 @@ function drawSphere() {
   const logLevel = (v, max) => 1 + Math.round((Math.log(v) / Math.log(Math.max(2, max))) * (LEVELS - 1));
   // palette[0] is the unlit background; levelOf(t) picks each tile's palette entry
   let palette = [null, ...grad];
-  let levelOf = (t) => (visits[t] ? logLevel(visits[t], maxVisits) : 0), shownOf = null;  // walk: visits, log scale; shownOf: a tile's share faded in (see cellShown)
+  let levelOf = (t) => (visits[t] ? logLevel(visits[t], maxVisits) : 0);  // walk: visits, log scale
   const L = walk.life, stepped = !L && stepLook($('colourMode').value), line = !!stepped;  // Rainbow or Commands: its steps' colours (see stepLook)
   const path = !L && !walk.battle && (MODES[walk.mode].cells ? $('showPath').checked : line);  // on cells, with Show path only (a battle: its bodies, no path)
   if (line) {  // a tile walked through (Fill cells) in its first visit's colour, by the look; enclosed (Area, Rainbow only), or dark
@@ -15875,7 +15875,6 @@ function drawSphere() {
     palette = [null, ...faint(colours), ...(stepped.key ? [] : areaLight() ? rainbow.map((c) => faded(c, FADING)) : rainbow)];
     levelOf = (t) => (cells && cells[t] >= 0 && cells[t] <= stepShown ? level(cells[t])
       : areas && areas[t] >= 0 && areas[t] <= stepShown ? 1 + BANDS + band(areas[t]) : 0);
-    if (cells) shownOf = (t) => (cells[t] >= 0 && cells[t] <= stepShown ? cellShown(cells[t]) : 1);  // (a cell fades in as in 2D)
   }
   // an ant's cells, as in 2D (see CELL_MODES): States, by their colour (the times it was on each, the one under it as it
   // will be), Path's faded under its line; Rainbow and Heatmap as a walk's
@@ -15907,7 +15906,7 @@ function drawSphere() {
   if (L) {  // Life's look, the plane's (see lifeLook): the walls, the pentagons of the hexagon sphere, in stone grey
     const rgba = (c) => [...rgbCached(c).map((x) => x / 255), 1], look = { ...lifeLook(L, true), wall: rgba(LIFE_WALL), dead: rgba(blankTile()) };
     gpuSurface((out) => gpuLook(L, out, look), path);
-  } else gpuSurface(paintLevels(palette, levelOf, shownOf), path);  // (see 11.4d)
+  } else gpuSurface(paintLevels(palette, levelOf), path);  // (see 11.4d)
   drawHover();
 }
 
@@ -16186,10 +16185,10 @@ function outwardFolds(tri, P, Q, N) {
 }
 // a surface's tiles' colours from a palette (null: unlit) and each tile's place in it (out of it: unlit), into their buffer
 // (out.put, see gpuSurface)
-const paintLevels = (palette, levelOf, shownOf = null) => (out, n) => {  // (shownOf: a tile's share faded in over the background, 1 whole)
+const paintLevels = (palette, levelOf) => (out, n) => {
   const rgb = palette.map((c) => packed(c ?? blankTile())), col = new Uint32Array(n);
-  for (let t = 0; t < n; t++) { const k = levelOf(t), a = k && shownOf ? shownOf(t) : 1; col[t] = a < 1 ? packed(faded(palette[k], a, blankTile())) : rgb[k] ?? rgb[0]; }
-  out.put(col);
+  for (let t = 0; t < n; t++) col[t] = rgb[levelOf(t)] ?? rgb[0];
+  out.put(eased('tiles', col));  // (every tile's change faded in)
 };
 // Glass: the surface see-through, every layer showing, its grid and path too (weighted blended, see gpuFrame); Cut: a half
 // gone, by a fixed plane through the middle (see CUT_AXES); the two apart: with both, what is left see-through
@@ -17139,13 +17138,27 @@ function gpuFrame(enc, drawAll) {
   p.end();
 }
 // A flat drawing: the fill, the cells, the path
-// a cell's fade in as the walk plays, at each visit (none paused: whole), as Life's dying stages (its line grows instead:
-// see flatPathV); walkFadeSteps: the steps it takes at the speed played
+// a 2D cell's fade in as the walk plays, at each visit (none paused: whole), as Life's dying stages (its line grows instead:
+// see flatPathV; a surface's tiles and cubes fade by eased); walkFadeSteps: the steps it takes at the speed played
 const WALK_FADE_SECONDS = 0.5;
 const walkFadeSteps = () => (playing || reversing ? stepsPerSecond() * WALK_FADE_SECONDS : 0);  // (its seconds at any speed: half a step at 1/s)
-// a cell come at step at: its share shown, from nothing as it comes to whole a fade later (flatTilesV's own, for a surface's
-// tiles, see paintLevels); the start's, there before any step, and all paused: whole
-const cellShown = (at) => { const f = walkFadeSteps(); return f > 0 && at > 0 ? Math.min(1, Math.max(0, (glideAt() - at) / f)) : 1; };
+// Every cell's colour change fades in over WALK_FADE_SECONDS, whatever changed it (a walk, a battle, a land, a look, a seek):
+// eased(key, want) gives the colours to draw (packed, a cell each: a surface's tiles, a 3D walk's cubes), each eased from
+// the colour drawn as it changed to the one wanted; fadingUntil: drawn again till the last one is there
+const fades = {};
+let fadingUntil = 0;
+const mixPacked = (a, b, w) => { let out = 0; for (let s = 0; s < 32; s += 8) { const x = (a >>> s) & 255, y = (b >>> s) & 255; out |= Math.round(x + (y - x) * w) << s; } return out >>> 0; };
+function eased(key, want) {
+  const now = performance.now() / 1000, S = fades[key], T = WALK_FADE_SECONDS;
+  if (!S || S.to.length !== want.length) { fades[key] = { from: want.slice(), to: want.slice(), at: new Float64Array(want.length).fill(-T) }; return want; }  // (a new grid: at once)
+  const out = new Uint32Array(want.length);
+  for (let i = 0; i < want.length; i++) {
+    let w = (now - S.at[i]) / T;
+    if (want[i] !== S.to[i]) { S.from[i] = w < 1 ? mixPacked(S.from[i], S.to[i], w) : S.to[i]; S.to[i] = want[i]; S.at[i] = now; w = 0; fadingUntil = now + T; }
+    out[i] = w < 1 ? mixPacked(S.from[i], S.to[i], w) : S.to[i];
+  }
+  return out;
+}
 function gpuFlat(to) {
   if (cubesWalk()) return gpuCubes(to + 1, walk.wx, walkCubes, walk.maxDist[walk.n]);
   if (walk.rows) { gpuClear(); drawElementary(to); return true; }  // (Elementary: a picture, see drawElementary)
@@ -17249,14 +17262,10 @@ function gpuCubes(count, of, make, reach) {
     const { at, col } = make(mode), rgba = new Uint8Array((4 * col.length) / 3);
     for (let p = 0; p < col.length / 3; p++) rgba.set(col.subarray(3 * p, 3 * p + 3), 4 * p);
     gpuBuffer('cubeAt', at); gpuBuffer('cubeCol', rgba);
-    D.keys.cubes = of; D.keys.cubesMode = mode; D.cubeRgba = rgba; D.cubesFaded = count;
+    D.keys.cubes = of; D.keys.cubesMode = mode; D.cubeColours = new Uint32Array(rgba.buffer);
   }
-  if (!walk.stacked) {  // a walk's cubes fade in as a surface's cells (cellShown), from the tiles' blank: the last ones again, and those faded last frame
-    const from = Math.max(0, count - 2 - Math.ceil(walkFadeSteps())), blank = rgbCached(blankTile()), k0 = Math.min(from, D.cubesFaded ?? from);
-    const col = D.cubeRgba.slice(4 * k0, 4 * count);
-    for (let k = k0; k < count; k++) { const a = cellShown(k); for (let c = 0; c < 3; c++) col[4 * (k - k0) + c] = Math.round(blank[c] + (D.cubeRgba[4 * k + c] - blank[c]) * a); }
-    device.queue.writeBuffer(D.cubeCol, 4 * k0, col); D.cubesFaded = from;
-  }
+  const blank = packed(blankTile()), want = D.cubeColours.map((c, k) => (k < count ? c : blank));  // (those not come yet: blank, so they fade in as they come)
+  device.queue.writeBuffer(D.cubeCol, 0, eased('cubes', want));
   const depth = 4 * (reach + 2), verts = shape.triangles.length / 6;
   new Uint8Array(D.words).fill(0);
   const enc = device.createCommandEncoder(), slot = gpuView(D.words, 0, depth);
@@ -18015,6 +18024,7 @@ function tick(now = performance.now()) {
   if (walk.n && !walk.sphere && !walk.plane) showZoom();  // (a walk: its fit grows with it)
   // a Game of Life on its way to a generation asked (a seek: back, from its start again, see advanceTo), not playing: its
   // picture as it was till there, never its start or a generation on the way
+  if (now / 1000 < fadingUntil) needsFull = true;  // (cells still fading in: drawn again, still or not)
   const held = walk.lifeGoal !== null && !playing && !reversing && !walk.stacked;
   if (walk.plane && held) { requestAnimationFrame(tick); return; }
   if (walk.plane) {  // Life on the plane: the grid as one picture, each generation (Space-time: its cubes, up to the layer shown)

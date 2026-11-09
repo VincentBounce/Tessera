@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.657';
+const VERSION = '0.4.658';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -6780,15 +6780,16 @@ function syncSizeStepper() {
   setTile($('startLabel'), { whyNot: symmetricOnly });
 }
 // The sizes as a slider under the stepper, across, a notch each under it, the one in use its knob (none: hidden); dragged, the label
-// shows the size under it (preview), the size picked when let go (pick: a surface is built again), a notch clicked at once
-function sizeGauge(el, n, i, preview, pick) {
+// shows the size under it (preview), the size picked when let go (pick: a surface is built again), a notch clicked at once;
+// byDefault: the default's notch, in the text's colour (none: −1)
+function sizeGauge(el, n, i, preview, pick, byDefault = -1) {
   el.hidden = n < 2;
   if (el.hidden) return;
   const range = Object.assign(document.createElement('input'), { type: 'range', min: 0, max: n - 1, step: 1, value: i });  // (its tooltip the size's, on the gauge: see sizeTips)
   range.addEventListener('input', () => preview(Number(range.value)));
   range.addEventListener('change', () => pick(Number(range.value)));
   const notches = Object.assign(document.createElement('div'), { className: 'notches' });
-  notches.append(...Array.from({ length: n }, () => document.createElement('span')));
+  notches.append(...Array.from({ length: n }, (_, k) => Object.assign(document.createElement('span'), { className: k === byDefault ? 'default' : '' })));
   el.replaceChildren(range, notches);
 }
 // A notched slider, one choice among a few on a row (Cut, Area): its title a sub-section's (field-label), a notch each (see sizeGauge), the
@@ -6806,7 +6807,7 @@ function greyInput(input, row, whyNot) {
 function notchRow(el, title, about, choices, at, first, set, whyNot = null, live = true) {  // (whyNot(setup): as a tile's, see setTile)
   const name = Object.assign(document.createElement('span'), { className: 'notch-name' }), gauge = Object.assign(document.createElement('div'), { className: 'size-gauge' });
   const show = (k) => { name.textContent = choices[k][0]; el.title = [about, choices[k][1]].filter(Boolean).join('\n'); }, pick = (k) => { show(k); set(k); };
-  sizeGauge(gauge, choices.length, at, live ? pick : show, pick);
+  sizeGauge(gauge, choices.length, at, live ? pick : show, pick, first);
   if (whyNot) greyInput(gauge.querySelector('input'), el, whyNot);
   show(at);
   el.dataset.default = `${choices[first][0]} by default`;
@@ -15197,7 +15198,7 @@ const speedWords = (v) => { const p = evenSpeed(v); return `${p !== v ? '≈' : 
 // the speed's field: a notch each of SPEEDS, the one asked its knob; dragged, its words the notch's under it, let go, set
 function updateSpeedLabel() {
   $('speedLabel').textContent = speedWords(speed);
-  sizeGauge($('speedGauge'), SPEEDS.length, Math.max(0, SPEEDS.findIndex((v) => v >= speed)), (k) => { $('speedLabel').textContent = speedWords(SPEEDS[k]); }, (k) => setSpeed(SPEEDS[k]));
+  sizeGauge($('speedGauge'), SPEEDS.length, Math.max(0, SPEEDS.findIndex((v) => v >= speed)), (k) => { $('speedLabel').textContent = speedWords(SPEEDS[k]); }, (k) => setSpeed(SPEEDS[k]), SPEEDS.indexOf(defaultOf('speed', tabMode())));
 }
 function setSpeed(s) {
   speed = Math.min(SPEEDS.at(-1), Math.max(SPEEDS[0], s < 1 ? Math.round(s * 10) / 10 : Math.round(s)));  // (below 1, to a tenth)

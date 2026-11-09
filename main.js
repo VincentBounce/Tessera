@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.732';
+const VERSION = '0.4.733';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -18997,19 +18997,31 @@ function setupRow(name, detail, x, onDelete) {
     b.append(rowAction('×', `Delete “${name}”`, onDelete));
   }
   b.setAttribute('role', 'option');
+  // a click: the Gallery shut and the card's thumbnail over the view at once, painted; its setup built from the next frame, the
+  // thumbnail gone once it is drawn (not the Gallery nor the walk before frozen while it is built)
   b.addEventListener('click', () => {
     rebuilding = false;  // (the pictures being rebuilt: stopped)
     ruleTutorial(null);  // what lies over the view (how a rule works, the digits) closes: the setup shown instead
     closeNumber();
-    $('autoFit').checked = true;
-    $('autoRotate').checked = false;
-    const built = whenBuilt();
+    showPane(false);
+    const preview = $('stagePreview'), thumbnail = b.querySelector('.mode-icon img');
+    preview.hidden = !thumbnail;
+    if (thumbnail) preview.src = thumbnail.src;
     cardShown = x;
-    applySetup(setup);
-    built.then(() => { if (cardShown === x) adoptShown(x, b); });  // (its setup as the app writes it now, its name its bar's, see adoptShown; another clicked meanwhile: that one's)
-    syncLink();  // its link (if already built; else once built)
-    renderModePicker();  // its tab, at the top
-    showPane(false);  // and its parameters
+    requestAnimationFrame(() => setTimeout(() => {  // (after the frame painted)
+      if (cardShown !== x) return;  // (another clicked meanwhile)
+      $('autoFit').checked = true;
+      $('autoRotate').checked = false;
+      const built = whenBuilt();
+      if (!applySetup(setup)) preview.hidden = true;
+      built.then(() => {
+        if (cardShown !== x) return;
+        adoptShown(x, b);  // (its setup as the app writes it now, its name its bar's, see adoptShown)
+        requestAnimationFrame(() => { preview.hidden = true; });  // (once drawn)
+      });
+      syncLink();  // its link (if already built; else once built)
+      renderModePicker();  // its tab, at the top, and its parameters
+    }));
   });
   return b;
 }

@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.663';
+const VERSION = '0.4.664';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -8544,8 +8544,10 @@ function battlePlayer(g, grid, S, starts, digits, pen = battleRuleInUse(tabMode(
   // each walker's best worth up to each step (its peak), kept as it is played
   const bestOf = starts.map(() => new Int32Array(len + 1));
   const keepBest = () => { const w = worth(); for (let s = 0; s < K; s++) bestOf[s][i] = Math.max(i > 0 ? bestOf[s][i - 1] : 0, w[s]); };
+  // (ownLines: its lines drawn by their edges' owners, where an edge changes hands: Land grid 1's pierced, 3's let go; No collision's
+  // and Merge's never do, their lines paths, drawn walker by walker in their steps' order as Cut's, see pathSegments)
   const P = {
-    K, g, grid, way, bite, lined, stops, merges, ownLines: lined, lineLinks, starts, places, from, size, dead, alive, living, worth, heads: () => places.map((p) => p[i]),
+    K, g, grid, way, bite, lined, stops, merges, ownLines: lined && !stops && !merges, lineLinks, starts, places, from, size, dead, alive, living, worth, heads: () => places.map((p) => p[i]),
     get land() { return land; }, remakeLine,  // (remakeLine: a line's land made again whole, to check it)
     standing, get step() { return i; }, get n() { return n; }, get peak() { return peak; },
     to(j) {

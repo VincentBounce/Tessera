@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.676';
+const VERSION = '0.4.677';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -17141,8 +17141,8 @@ function gpuFrame(enc, drawAll) {
 // A flat drawing: the fill, the cells, the path
 // a cell's fade in as the walk plays, at each visit (none paused: whole), as Life's dying stages (its line grows instead:
 // see flatPathV); walkFadeSteps: the steps it takes at the speed played
-const WALK_FADE_SECONDS = 0.25;
-const walkFadeSteps = () => (playing || reversing ? stepsPerSecond() * WALK_FADE_SECONDS : 0);  // (a quarter of a step at 1/s: 0.25 s too)
+const WALK_FADE_SECONDS = 0.5;
+const walkFadeSteps = () => (playing || reversing ? stepsPerSecond() * WALK_FADE_SECONDS : 0);  // (its seconds at any speed: half a step at 1/s)
 // a cell come at step at: its share shown, from nothing as it comes to whole a fade later (flatTilesV's own, for a surface's
 // tiles, see paintLevels); the start's, there before any step, and all paused: whole
 const cellShown = (at) => { const f = walkFadeSteps(); return f > 0 && at > 0 ? Math.min(1, Math.max(0, (glideAt() - at) / f)) : 1; };

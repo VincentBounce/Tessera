@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.724';
+const VERSION = '0.4.725';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -18971,8 +18971,9 @@ const walkName = (w) => splitModeLabel(modeOptionOf(w)?.text ?? w).name;
 // name (2D circles · Flower 9, 3D solids · Cube)
 const shapeAndTiles = (w) => { const f = familyOf(w), t = f?.F.tabs.find(([m]) => m === f.m); return t ? `${NAV[w][2]} · ${shapeLabel(t[3])}` : `${SPACES[NAV[w][1]]?.[0]} · ${NAV[w][2]}`; };
 // the setup in use (its Gallery row lit, the ☆ lit): all of it the same (its number, walk, size, start, rule, teams,
-// symmetry, edges, cells drawn or found…) but its version and how it is looked at (Space-time, its step)
-const SETUP_LOOKS = ['v', 'sp', 'at'];
+// symmetry, edges, cells drawn or found…) but its version, its length (its digits or generations: d) and how it is looked at
+// (Space-time, its step): one Gallery card a setup, a thumbnail, whatever its length
+const SETUP_LOOKS = ['v', 'd', 'sp', 'at'];
 const isInUse = (setup) => sameSetup(setup, getSetup(), SETUP_LOOKS);
 // A setup's row, built-in or saved: the walk's icon, a name and a detail; a click shows it, framed and still (Auto-fit
 // on: a hand rotation or zoom may have turned it off, and the walk could be on the far side); with onDelete, a × at its end

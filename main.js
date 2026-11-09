@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.696';
+const VERSION = '0.4.697';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -15038,21 +15038,28 @@ const setupDetail = (s, chips = '') => {  // (chips: its bar's, saved with it: w
 // its title: its bar's as it was saved (a battle's walkers, Life's start); one saved before: a walk's number, a Game of Life's
 // shape and tiles (see shapeAndTiles)
 const setupTitle = (x) => (x.chips === undefined && MODES[x.setup.w]?.life ? shapeAndTiles(x.setup.w) : x.name);
-// The Gallery's setups, as rows like the built-in ones (see setupRow), each with × to delete it
+// a row's picture in place of its icon (its URL let go with the row: see fillGalleryList)
+let pictureUrls = [];
+const showPicture = (row, picture) => { const url = URL.createObjectURL(picture); pictureUrls.push(url); row.querySelector('.mode-icon').innerHTML = `<img src="${url}" alt="">`; };
+// The Gallery's setups, as rows like the built-in ones (see setupRow), each with × to delete it, its picture over it
 function fillGalleryList() {
+  pictureUrls.forEach((url) => URL.revokeObjectURL(url));
+  pictureUrls = [];
   const list = readGallery();
   // the tab in use's only (Life, Ant, Walk…), under its name; by their titles, two rows alike numbered (2), (3)…
   const rows = list.filter((x) => NAV[x.setup.w]).map((x) => [setupTitle(x), [x.note, x.chips, setupDetail(x.setup, x.chips)].filter(Boolean).join(' · '), x]), seen = new Map();
   const kindOf = (x) => NAV[x.setup.w][0];
   $('yourList').replaceChildren(...NAV_KINDS.filter(([kind]) => kind === NAV[tabMode()]?.[0]).flatMap(([kind]) => {
     const mine = rows.filter(([, , x]) => kindOf(x) === kind).sort((a, b) => a[0].localeCompare(b[0]));
-    const section = document.createElement('section'), cards = Object.assign(document.createElement('div'), { className: 'mode-list' });  // a section each, as Life's, its picture as the tab's
+    const section = document.createElement('section'), cards = Object.assign(document.createElement('div'), { className: 'gallery-grid' });  // a section each, as Life's, its picture as the tab's
     section.innerHTML = `<h2>${icon(NAV_KINDS.find(([k]) => k === kind)[1])}${kind}</h2>`;  // (Close: Management's, above)
     if (!mine.length) cards.innerHTML = `<p class="caption">None in ${kind} yet: the ☆ of Gallery's tab keeps the setup in view</p>`;
     cards.append(...mine.map(([title, detail, x]) => {
       const k = (seen.get(title + detail) ?? 0) + 1;
       seen.set(title + detail, k);
-      return setupRow(k > 1 ? `${title} (${k})` : title, detail, x.setup, () => deleteSetup(x.name));
+      const row = setupRow(k > 1 ? `${title} (${k})` : title, detail, x.setup, () => deleteSetup(x.name));
+      pictureStore('readonly', (store) => store.get(pictureKey(x.setup))).then((picture) => { if (picture) showPicture(row, picture); }, () => {});  // (none yet: its icon)
+      return row;
     }));
     section.append(cards);
     return [section];
@@ -15084,10 +15091,13 @@ function saveSetup() {
   list.sort((a, b) => a.name.localeCompare(b.name));
   if (!writeGallery(list)) alert('This browser does not allow saving (private window?).');
   fillGalleryList();
+  wantPicture().then((picture) => pictureStore('readwrite', (store) => store.put(picture, pictureKey(setup)))).then(fillGalleryList, () => {});  // (none kept: its row keeps its icon)
 }
 
 function deleteSetup(name) {
-  writeGallery(readGallery().filter((x) => x.name !== name));
+  const list = readGallery(), gone = list.find((x) => x.name === name), left = list.filter((x) => x !== gone);
+  writeGallery(left);
+  if (gone && !left.some((x) => pictureKey(x.setup) === pictureKey(gone.setup))) pictureStore('readwrite', (store) => store.delete(pictureKey(gone.setup))).catch(() => {});  // (its picture, if no other row shows it)
   fillGalleryList();
 }
 
@@ -15118,6 +15128,31 @@ async function importGallery(file) {
   } catch {
     alert('This file is not a Tessera Gallery file.');
   }
+}
+
+/* ---- 10.4b The Gallery's pictures ------------------------------------------------------------ */
+// A saved setup's picture: the view as it was saved, PICTURE_SIZE, in this browser (IndexedDB: a picture is too big for
+// localStorage), under its setup with neither its version nor how it is looked at (SETUP_LOOKS, as isInUse): one picture a
+// setup, a new one replacing the old
+const PICTURE_SIZE = [240, 192];
+const pictureKey = (setup) => toHash(Object.fromEntries(Object.entries(setup).filter(([k]) => !SETUP_LOOKS.includes(k))));
+let pictureDb = null;
+// one request on the pictures' store (mode: 'readonly' or 'readwrite'; ask: the store → its request), its result
+const pictureStore = (mode, ask) => (pictureDb ??= new Promise((ok, fail) => {
+  const r = indexedDB.open('tessera', 1);
+  r.onupgradeneeded = () => r.result.createObjectStore('pictures');
+  r.onsuccess = () => ok(r.result);
+  r.onerror = () => fail(r.error);
+})).then((db) => new Promise((ok, fail) => { const q = ask(db.transaction('pictures', mode).objectStore('pictures')); q.onsuccess = () => ok(q.result); q.onerror = () => fail(q.error); }));
+// The view as one picture, cut to PICTURE_SIZE from its middle: every layer under the hover's, in their order. WebGPU's
+// picture is only there in the frame that drew it: asked of the next frame, drawn whole, and taken as it ends (see tick)
+let pictureWanted = null;
+const wantPicture = () => new Promise((ok) => { pictureWanted = ok; needsFull = true; });
+function stagePicture() {
+  const [w, h] = PICTURE_SIZE, c = Object.assign(document.createElement('canvas'), { width: w, height: h }), g = c.getContext('2d');
+  const W = stage.clientWidth, H = stage.clientHeight, k = Math.max(w / W, h / H);
+  for (const id of ['gridLayer', 'fillLayer', 'gpuLayer', 'pathLayer', 'lineLayer', 'overlayLayer']) g.drawImage($(id), (w - W * k) / 2, (h - H * k) / 2, W * k, H * k);
+  return new Promise((ok) => c.toBlob(ok, 'image/webp', 0.85));
 }
 
 /* ==============================================================================================
@@ -17958,6 +17993,7 @@ const matMul = (A, B) => A.map((row) => [0, 1, 2].map((j) => row[0] * B[0][j] + 
 const spinAt = (t) => { const hz = 1 / frameTime; return matMul(matMul(rotX(SPIN_PER_FRAME[0] * hz * t), rotY(SPIN_PER_FRAME[1] * hz * t)), rotZ(SPIN_PER_FRAME[2] * hz * t)); };
 let linkedAt = null;  // the step shown as the link was last written, still (see tick)
 function tick(now = performance.now()) {
+  if (pictureWanted) { const ok = pictureWanted; pictureWanted = null; queueMicrotask(() => ok(stagePicture())); }  // (as this frame ends, all drawn: see wantPicture)
   const raw = (now - (lastTick || now)) / 1000;
   if (raw > 1 / 250 && raw < 1 / 40) {  // the screen's frame: the time of its last 120 by the frames they showed (a frame's own time trembles
     // round the refresh; one missed lasts two, and counts as two, against their median: never against the last measure, which
@@ -18898,7 +18934,7 @@ $('galleryTools').replaceChildren(tile({ pic: icon('import'), text: 'Import', ti
   tile({ pic: icon('link'), text: 'Share link', title: 'Copy the link to what is shown', click: () => shareView($('galleryTools').lastElementChild) }));
 $('eraseConfirm').innerHTML = `${icon('trash')} Confirm erase`;
 $('galleryToolsHead').insertAdjacentHTML('afterbegin', icon('floppy'));  // (the Gallery's files: Import, Export, Erase)
-$('eraseConfirm').addEventListener('click', () => { writeGallery([]); $('eraseConfirm').hidden = true; fillGalleryList(); });
+$('eraseConfirm').addEventListener('click', () => { writeGallery([]); pictureStore('readwrite', (store) => store.clear()).catch(() => {}); $('eraseConfirm').hidden = true; fillGalleryList(); });
 $('galleryFile').addEventListener('change', () => {
   if ($('galleryFile').files[0]) importGallery($('galleryFile').files[0]);
   $('galleryFile').value = '';

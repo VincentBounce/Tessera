@@ -67,7 +67,7 @@ header { padding: 0; border-bottom: 1px solid var(--border-color); }  /* one hai
 .header-end { display: flex; align-self: stretch; align-items: center; gap: 12px; }
 .header-end .max-steps { margin: 0; width: 176px; flex: none; }  /* the length asked: one width whatever it says (see compactCount) */
 
-main { flex: 1; display: flex; min-height: 0; }
+main { flex: 1; display: flex; min-height: 0; position: relative; }  /* (the Gallery over all of it: see #galleryPane) */
 
 .panel {
   width: 280px;
@@ -283,6 +283,17 @@ button.switch.active:hover:not(:disabled) { background: var(--picked-strong-back
 .cell-modes button svg { width: 24px; height: 24px; border-radius: 3px; }  /* the looks of a walk on cells: swatches */
 .nav-shapes button.active, .tile-group > button.active { border-color: var(--accent-color); color: var(--accent-color); background: var(--picked-background); }
 .mode-list { display: flex; flex-direction: column; gap: 4px; margin-bottom: 10px; }
+/* The Gallery: over the whole of main, under the header, the settings and the view kept under it (still drawn: a picture taken) */
+#galleryPane:not([hidden]) { position: absolute; inset: 0; z-index: 5; overflow-y: auto; background: var(--panel-background); padding: 0 16px 16px; }
+/* its setups, a grid of cards: the picture above (else the shape's icon), the words under, the × on the picture */
+.gallery-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 10px; margin-bottom: 10px; }
+.gallery-grid button { display: flex; flex-direction: column; align-items: stretch; gap: 0; padding: 0; overflow: hidden; position: relative; text-align: left; line-height: 1.25; background: var(--panel-background); }
+.gallery-grid button:hover { background: var(--page-background); }
+.gallery-grid .mode-icon { display: flex; align-items: center; justify-content: center; aspect-ratio: 5 / 4; background: var(--page-background); border-bottom: 1px solid var(--border-color); }
+.gallery-grid .mode-icon svg { width: 32px; height: 32px; }
+.gallery-grid .mode-icon img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.gallery-grid button > span:not(.mode-icon):not(.row-act) { padding: 6px 8px; min-width: 0; }
+.gallery-grid .row-act { position: absolute; top: 4px; right: 4px; margin: 0; background: var(--panel-background); }
 .mode-list button {
   display: grid;
   grid-template-columns: 34px minmax(0, 1fr) auto;  /* one icon column for every list, wide enough for ζ(3) or 16/9; the words shrink; the base's bubble or the × */

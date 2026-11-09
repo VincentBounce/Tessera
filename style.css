@@ -503,7 +503,7 @@ button.wide.active, .head-btn.active { border-color: var(--accent-color); color:
 /* its buttons a grid of fixed columns, as many as there are: the folded bar as wide as they are (min-content), none set by hand */
 .stage-bar .play-row { display: grid; grid-auto-flow: column; grid-auto-columns: 48px; gap: 6px; }
 /* ◀ and ▶ outlined in yellow, filled while playing their way (then the turtle and the rabbit, see playerButton) */
-.stage-bar :is(#play, #reverse) { color: var(--accent-color); border-color: var(--accent-color); }
+.stage-bar :is([id=play], [id=reverse]) { color: var(--accent-color); border-color: var(--accent-color); }  /* (by attribute: over a button's own, under its hover, which darkens it as any, see button:hover) */
 /* open, on the buttons' right the speed */
 .player-controls { display: flex; gap: 8px; align-items: flex-end; }  /* the buttons where they were, open or not */
 .player-main { flex: none; }

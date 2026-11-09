@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.692';
+const VERSION = '0.4.693';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -17843,6 +17843,7 @@ function updateStats() {
   $('jump10k').hidden = !lifePlayer();  // (Life, a reversible one: 10,000 generations ahead, while its end is not known)
   setTile($('jump10k'), { greyed: busy ? 'Its run is not built yet.' : runLoop() ? 'Its loop is known: its end is in sight.' : '' });
   const notchEnd = (id) => (playerButton(id).pic === 'rabbit' ? 'Already the fastest.' : 'Already the slowest.');  // (playing: a speed at its end)
+  setTile($('stop'), { greyed: playing || reversing ? '' : 'Already stopped.' });
   setTile($('play'), { greyed: busy ? 'Its run is not built yet.' : playing || reversing ? (playerButton('play').next === undefined ? notchEnd('play') : '') : '' });
   setTile($('reverse'), { greyed: playing || reversing ? (playerButton('reverse').next === undefined ? notchEnd('reverse') : '') : !playsBack() ? 'A Game of Life has no rule backwards: it plays forth only.' : backAtStart });
   setTile($('step'), { greyed: atEnd() ? 'Already at the end.' : '' });

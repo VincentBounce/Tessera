@@ -7,7 +7,6 @@
   --mono-font: ui-monospace, "SF Mono", Menlo, monospace;  /* digits and the rules' commands: l, I, | and 1 told apart */
   --view-gap: 12px;  /* the view's boxes from its edges (player, display, hint), a fit's margin too (see viewFor) */
   --player-open-width: 680px;  /* the player bar open (hovered, or touched): its stats and strip in full */
-  --player-width: calc(6 * 48px + 5 * 6px);  /* the player's six buttons and their gaps (a .row's): the folded bar's inner width */
   --page-background: #0e1116;
   --panel-background: #161b22;
   --border-color: #2a313c;
@@ -448,7 +447,7 @@ button.wide.active, .head-btn.active { border-color: var(--accent-color); color:
 /* Grid | Cells under the list: each side of the walk in use, its base and its digits */
 /* the ant's rules to start from, written as they are typed */
 .choice-list button.active { border-color: var(--accent-color); color: var(--accent-color); background: var(--picked-background); }
-.stage-bar { left: var(--view-gap); bottom: var(--view-gap); width: calc(var(--player-width) + 2 * 12px + 2px); max-width: calc(100% - 2 * var(--view-gap)); padding: 12px; border-radius: 12px; outline: none; }  /* grows upwards: the Play row stays at the bottom (no focus ring: a tap opens it, see index.html) */
+.stage-bar { left: var(--view-gap); bottom: var(--view-gap); width: min-content; max-width: calc(100% - 2 * var(--view-gap)); padding: 12px; border-radius: 12px; outline: none; }  /* grows upwards: the Play row stays at the bottom (no focus ring: a tap opens it, see index.html) */
 .stage-bar:hover { width: var(--player-open-width); }
 @media (hover: none) { .stage-bar:focus-within { width: var(--player-open-width); } }
 .stage:has(> .stage-bar:hover) > .hint { left: calc(2 * var(--view-gap) + var(--player-open-width)); }  /* the player open: a tooltip beside it, as narrow as the room left (its lines as many as it takes) */
@@ -497,22 +496,22 @@ button.wide.active, .head-btn.active { border-color: var(--accent-color); color:
 .stage-bar .strip { margin: 8px 0 0; min-height: 0; font-size: var(--text-size); }
 .stage-bar .strip:empty { display: none; }
 .stage-bar .row { margin: 0; align-items: center; }
-.stage-bar .row button {  /* ⏮ ◀▮ ▮▶ ⏭: of one width and height, their icon centred; Play the rest (six buttons in every mode: as wide in all) */
-  flex: none; width: 48px; height: 32px; padding: 0; font-weight: 600;
+.stage-bar .row button {  /* the player's buttons: of one width and height, their icon centred */
+  width: 48px; height: 32px; padding: 0; font-weight: 600;
   display: inline-flex; align-items: center; justify-content: center;
 }
+/* its buttons a grid of fixed columns, as many as there are: the folded bar as wide as they are (min-content), none set by hand */
+.stage-bar .play-row { display: grid; grid-auto-flow: column; grid-auto-columns: 48px; gap: 6px; }
 /* ◀ and ▶ outlined in yellow, filled while playing their way (then the turtle and the rabbit, see playerButton) */
-.stage-bar #play { flex: 1; color: var(--accent-color); border-color: var(--accent-color); }
-.stage-bar #reverse { color: var(--accent-color); border-color: var(--accent-color); }  /* as Play */
-/* six buttons in every mode, the folded bar's width; open, on their right the speed, typed as the length (above the
-   title, as wide as the buttons), the turtle and the rabbit */
+.stage-bar :is(#play, #reverse) { color: var(--accent-color); border-color: var(--accent-color); }
+/* open, on the buttons' right the speed */
 .player-controls { display: flex; gap: 8px; align-items: flex-end; }  /* the buttons where they were, open or not */
-.player-main { flex: none; width: var(--player-width); max-width: 100%; }  /* its six buttons, the folded bar's inner width: Play the rest (beside ◀ a button's, its icon only; Life's, two and their gap) */
-/* folded (not hovered), its rightmost button gone, the others as wide: a walk's End, a run's +10k */
-.stage-bar:not(:hover):not(:focus-within) .play-row:has(#jump10k:not([hidden])) #jump10k, .stage-bar:not(:hover):not(:focus-within) .play-row:has(#jump10k[hidden]) #end { display: none; }
+.player-main { flex: none; }
+/* folded, as its speed is (see .player-side), its last button shown gone, whichever it is (a walk's End, a run's +10k) */
+.stage-bar:not(:hover) .play-row > :nth-last-child(1 of :not([hidden])) { display: none; }
+@media (hover: none) { .stage-bar:focus-within .play-row > :nth-last-child(1 of :not([hidden])) { display: inline-flex; } }
 .player-side { flex: none; width: 250px; margin-left: auto; display: flex; flex-direction: column; justify-content: space-between; align-self: stretch; }
 .length-row { display: flex; align-items: flex-start; gap: 8px; }  /* open, under the curve: the digits being computed (their gauge) */
-.length-row #digitsRow { flex: none; width: var(--player-width); max-width: 100%; }  /* (as wide as the folded bar's buttons) */
 .stage-bar:not(:hover) .player-side { display: none; }
 @media (hover: none) { .stage-bar:focus-within .player-side { display: flex; } }
 .stage-bar .stepper { margin: 0 0 8px; }
@@ -565,10 +564,8 @@ button.wide.active, .head-btn.active { border-color: var(--accent-color); color:
   .panel { width: auto; max-height: 45vh; border-right: 0; border-bottom: 1px solid var(--border-color); }
   .stage { min-height: 55vh; }
   .hint { display: none; }
-  /* folded, the player alone: ⏮, a step back and Play (a tap opens it all), the grid in sight */
-  .stage-bar:not(:focus-within) > :not(.player-controls),
-  .stage-bar:not(:focus-within) #step, .stage-bar:not(:focus-within) #end, .stage-bar:not(:focus-within) #jump10k { display: none; }
-  .stage-bar:not(:focus-within) { width: auto; }
+  /* folded, the player's buttons alone (a tap opens it all), the grid in sight */
+  .stage-bar:not(:focus-within) > :not(.player-controls) { display: none; }
 }
 
 /* Save, the first of the Gallery's icons: yellow, its star filled, while the setup in view is one of them */

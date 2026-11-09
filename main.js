@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.717';
+const VERSION = '0.4.718';
 const APP_TITLE = 'Tessera';  // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -15013,8 +15013,6 @@ function readGallery() {
 // added later (a batch number past the last one taken) once too: deleted afterwards, they stay deleted
 function seedCurated() {
   try {
-    const old = JSON.parse(localStorage.getItem('walkingPi.setups'));  // (Walking Pi's, its name before v0.3.0: moved once, before the curated ones)
-    if (old) { const list = readGallery(); writeGallery([...old, ...list.filter((x) => !old.some((y) => JSON.stringify(y.setup) === JSON.stringify(x.setup)))]); localStorage.removeItem('walkingPi.setups'); }
     const taken = Number(localStorage.getItem(CURATED_KEY)) || 0, last = Math.max(...BUILT_IN.map((b) => b[3] ?? 1));
     if (taken >= last) return;
     const list = readGallery(), same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
@@ -15080,9 +15078,8 @@ function fillGalleryList() {
     section.append(cards);
     return [section];
   }));
-  for (const b of [...$('galleryTools').children].slice(1, 3)) setTile(b, { whyNot: () => (list.length ? '' : 'The Gallery is empty.') });  // (Export, Erase all: none to take)
+  setTile($('galleryTools').children[1], { whyNot: () => (list.length ? '' : 'The Gallery is empty.') });  // (Export: none to take)
   Promise.all(looks).then((found) => syncRebuildTile(found.includes(false)));
-  $('eraseConfirm').hidden ||= !list.length;
   syncSaveButton();
 }
 
@@ -18987,16 +18984,24 @@ function galleryTab() {
   return b;
 }
 
-// The Gallery's tools, tiles: Import (added to them, a name already used numbered), Export, Erase all (then Confirm erase, under them),
+// The Gallery's tools, tiles: Import (added to them, a name already used numbered), Export, Erase all (then Confirm erase, under them: the app as at a first visit),
 // then Share link (the link to what is shown)
 $('galleryTools').replaceChildren(tile({ pic: icon('import'), text: 'Import', title: 'Add the setups of a JSON file to the Gallery (those of a name already used numbered: none replaced)', click: () => $('galleryFile').click() }),
-  tile({ pic: icon('export'), text: 'Export', title: 'The Gallery as a JSON file', click: exportGallery }), tile({ pic: icon('trash'), text: 'Erase all', title: 'Erase the Gallery from this browser (asked again under it)', click: () => { $('eraseConfirm').hidden = !$('eraseConfirm').hidden; } }),
+  tile({ pic: icon('export'), text: 'Export', title: 'The Gallery as a JSON file', click: exportGallery }), tile({ pic: icon('trash'), text: 'Erase all', title: 'Back to the app as at a first visit: all it keeps in this browser erased (the Gallery, its thumbnails, the theme), the curated setups back (asked again under it)', click: () => { $('eraseConfirm').hidden = !$('eraseConfirm').hidden; } }),
   tile({ pic: icon('eraser'), text: 'Remove', title: 'Remove the thumbnails shown here (to try Rebuild: for now)', click: removeThumbnails }),
   tile({ id: 'rebuildThumbnails', pic: icon('autoRotate'), text: 'Rebuild', toggle: true, title: 'Take the thumbnails missing here, one setup after the other: each shown, then taken once built; on while it runs, off by a click or once done', click: rebuildThumbnails }),
   tile({ pic: icon('link'), text: 'Share link', title: 'Copy the link to what is shown', click: () => shareView($('galleryTools').lastElementChild) }));
 $('eraseConfirm').innerHTML = `${icon('trash')} Confirm erase`;
 $('galleryToolsHead').insertAdjacentHTML('afterbegin', icon('floppy'));  // (the Gallery's files: Import, Export, Erase)
-$('eraseConfirm').addEventListener('click', () => { writeGallery([]); thumbnailStore('readwrite', (store) => store.clear()).catch(() => {}); $('eraseConfirm').hidden = true; fillGalleryList(); });
+// Confirm erase: the app as at a first visit, all it keeps in this browser gone (its localStorage keys, its thumbnails' store), then
+// loaded again (the curated setups seeded, see seedCurated)
+async function resetApp() {
+  for (const key of Object.keys(localStorage)) if (key.startsWith('tessera')) localStorage.removeItem(key);
+  (await thumbnailDb?.catch(() => null))?.close();
+  await new Promise((done) => { const r = indexedDB.deleteDatabase('tessera'); r.onsuccess = r.onerror = r.onblocked = done; });
+  location.reload();
+}
+$('eraseConfirm').addEventListener('click', resetApp);
 $('galleryFile').addEventListener('change', () => {
   if ($('galleryFile').files[0]) importGallery($('galleryFile').files[0]);
   $('galleryFile').value = '';

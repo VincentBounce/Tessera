@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.784';
+const VERSION = '0.4.785';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -870,6 +870,15 @@ function iroot(v, k) {
 
 /* ---- 2.1 Helpers, directions and colours -------------------------------------------------- */
 const $ = (id) => document.getElementById(id);
+// Every memory of things computed this session (meshes, numbers' digits, grids' symmetries…), each by its variable's name:
+// the Stats' list of them (see memoriesTable); a memory a Map, an object or a weakCache
+const MEMORIES = [];
+const remember = (name, store) => {
+  MEMORIES.push([name, store]);
+  return store;
+};
+const memoryKeys = (store) =>
+  store instanceof Map ? [...store.keys()] : Object.keys(store).filter((k) => store[k] !== undefined); // (a weakCache's: those still kept)
 const formatNumber = (v) => v.toLocaleString('en'); // (its thousands by commas: 39,193)
 // v written as wide as widest: the digits and commas it lacks in front, hidden zeros (every digit as wide, see body's
 // tabular-nums): a count that changes keeps its place
@@ -6204,7 +6213,7 @@ const PRIMORIAL_DIGITS = {
 /* ---- 2.5 Global state --------------------------------------------------------------------- */
 // Digits already computed stay in the cache (key: canonical formula + base), so going back to a
 // number or a mode is instant.
-const digitsCache = {}; // key → { intPart: "10", digits: Uint8Array (fractional part) }
+const digitsCache = remember('digitsCache', {}); // key → { intPart: "10", digits: Uint8Array (fractional part) }
 let digitsComputed = null; // the number's digits computed: { head: integer-part digits, digits, base, mode they are for, … }
 let numberWorker = null; // (the page's number's digits being computed, see compute)
 
@@ -9834,7 +9843,7 @@ const navValues = (level, pre) => [
 // solids, those of squares and triangles, then the surfaces (the balls: Globe, Sphere, Rosettes; a sheet rolled up: Torus,
 // Möbius, Klein; see SHEETS); else as the menu lists them. Made once a kind and space (the menu's tables fixed once the
 // page has loaded: the graph's search asks it at each edge, 1.5 ms each, see nearestMode)
-const shapeGroupsMemo = {};
+const shapeGroupsMemo = remember('shapeGroupsMemo', {});
 const shapeGroups = (kind, space) => (shapeGroupsMemo[`${kind}|${space}`] ??= shapeGroupsOf(kind, space));
 function shapeGroupsOf(kind, space) {
   const shapes = navValues(2, [kind, space]),
@@ -11436,7 +11445,7 @@ const polyArea = (P) => Math.abs(signedArea(P));
 // a polygon's triangles, its corners' indices three by three: a convex one fanned; else ear by ear (a corner turning its way
 // with no other corner in its triangle cut off; one in line with its neighbours dropped), a hat's, a spectre's too: once a
 // shape (its sides and its turns, in their order: the same, turned or mirrored, the same triangles)
-const polygonTrianglesMemo = new Map();
+const polygonTrianglesMemo = remember('polygonTrianglesMemo', new Map());
 const polygonTriangles = (shown) => {
   // (its shape at size 1, its longest side: its tolerances and its memo the same at any size; before v0.4.3 a surface's tiles,
   // on the unit sphere, shared the memo's keys: one's triangles taken for another's, holes)
@@ -12644,7 +12653,7 @@ const cellTurn = (net, command) => {
 };
 // a surface's cells' counts of sides (their corners apart: the hexagon sphere's pentagons, a hexagon with one edge of
 // length 0, count 5), from its mesh: a command goes where every cell has its edge (see walkCommandWhy)
-const cellSidesMemo = {};
+const cellSidesMemo = remember('cellSidesMemo', {});
 const cellSides = (kind) =>
   (cellSidesMemo[kind] ??= (() => {
     const S = SPHERES[kind],
@@ -12799,7 +12808,7 @@ const weakCache = () =>
       },
     },
   ); // (each kept while in use)
-const meshCache = weakCache();
+const meshCache = remember('meshCache', weakCache());
 
 // Shared vertex store: points are merged when equal to 10⁻⁹ (their coordinates as whole numbers of 10⁻⁹, by a sum of them:
 // those of the same sum looked through, the last one first)
@@ -13222,7 +13231,7 @@ const HULL_PLANES = [
   [0, 1, 1],
   [0, 1, -1],
 ];
-const hullColourMemo = {};
+const hullColourMemo = remember('hullColourMemo', {});
 function hullColourings(sphere) {
   if (hullColourMemo[sphere]) return hullColourMemo[sphere];
   const all = hullFaces(HULL_SOLIDS[sphere]()),
@@ -14396,8 +14405,8 @@ const stripSteps = (kind0, nv, W, own, q = 1) => {
   );
 };
 const stripKey = () => `${ringColours(tabMode())}${MODES[tabMode()]?.margolus ? ' blocks' : ''}`; // (a strip's length its colours', a reversible one's its blocks', see stripSteps)
-const stripMemo = weakCache(),
-  countMemo = {};
+const stripMemo = remember('stripMemo', weakCache()),
+  countMemo = remember('countMemo', {});
 // a strip's length, width and tiles' count, without its tiles (the sizes' ladder asks for many: see mobiusSheetOf's count)
 const mobiusCount = (kind0, size) => (countMemo[`${kind0}|${size}|${stripKey()}`] ??= mobiusSheetOf(kind0, size, true)); // (its length its colours': see stripSteps)
 function mobiusSheet(kind0, size) {
@@ -14658,7 +14667,7 @@ const kleinRows = (kindK) => {
     bx = (a[0] * b[0] + a[1] * b[1]) / la; // (b along a)
   return [1, 2, 3, 4, 6, 12].find((r) => Math.abs((r * bx) / la - Math.round((r * bx) / la)) < 1e-6);
 };
-const kleinMemo = weakCache();
+const kleinMemo = remember('kleinMemo', weakCache());
 function kleinTilingSheet(kindK, size) {
   return (kleinMemo[`${kindK}|${size}|${ringColours(tabMode())}`] ??= (() => {
     const { kind, strip, turn, nv, n, W, step, by, a } = kleinLength(kindK, size);
@@ -14872,7 +14881,7 @@ function torusCairoMesh(nv, nu = torusCairoColumns(nv)) {
 
 // A tiling's polygons, their corners the same from every polygon round them (stored to 6 decimals: those a whole lattice
 // cell apart, or less than 10⁻⁴, made one): a surface glues them by their places, which must agree exactly
-const tilingPolysMemo = {};
+const tilingPolysMemo = remember('tilingPolysMemo', {});
 function tilingPolys(kind) {
   if (tilingPolysMemo[kind]) return tilingPolysMemo[kind];
   const canon = [];
@@ -16136,7 +16145,7 @@ const sizeTips = (row, total, text) => {
   box.dataset.tipHtml = `<b class="tip-name">Size: ${total}</b>${html}`;
   if (box.matches(':hover')) $('tip').innerHTML = box.dataset.tipHtml;
 };
-const facesMemo = {}; // (a solid's least mesh: its faces, see howCounted)
+const facesMemo = remember('facesMemo', {}); // (a solid's least mesh: its faces, see howCounted)
 // its cells as a rectangle as wide as the grid lies, for an idea of its resolution (grey, as the walk's description): the plane's a
 // square, a ring's or a strip's its sheet laid flat (a Möbius strip's loop, 2L × W; a ring's, its least mesh's proportions, its columns
 // and rows as many); a solid's, a face's as a square (its cells shared out among its faces: a carved cube's, its walls' too)
@@ -18218,14 +18227,14 @@ const battleFits = (
   };
   return (memo[K] ??= fits());
 };
-const battleCountsMemo = {};
+const battleCountsMemo = remember('battleCountsMemo', {});
 // the teams a battle can have on mode w's surface: every count that fits (see battleFits)
 const battleCounts = (w, size, j) => TEAM_COUNTS.filter((K) => battleFits(w, K, size, j));
 // A closed solid's team counts, once a solid, its turns the same at every size (see surfaceRotations): some, K it has a
 // group of; any, K whatever its start: every axis of its groups of K has one of them none of whose turns is round it (a
 // start's point lies on one axis at most, so that group leaves it apart; the icosahedron's: all its orders; the cube's: not
 // 8 nor 12, its D4s and its T each round its faces' axes)
-const solidTeamCountsMemo = {};
+const solidTeamCountsMemo = remember('solidTeamCountsMemo', {});
 const solidTeamCounts = (kind, mode) =>
   (solidTeamCountsMemo[kind] ??= (() => {
     const g = SPHERES[kind].mesh(Math.min(...sizesOf(kind, mode))),
@@ -21596,7 +21605,7 @@ const planeSymmetries = (kind, W, outline = outlineOf(kind)) =>
 // its turn r and its mirror m, a cell → the cell it goes to, made when first asked: squares by their index; a grid in a
 // hexagon, each cell's middle turned (or mirrored across the line through o at its corner's way) found again within 10⁻³
 // (the tilings' corners to 6 places), among the middles in its tenth of a unit and those round it
-const turnMemo = new Map();
+const turnMemo = remember('turnMemo', new Map());
 function planeTurns(kind, W) {
   const row = planeRow(kind, W),
     key = `${kind}|${W}|${row}`,
@@ -21625,7 +21634,7 @@ function planeTurns(kind, W) {
   return turnMemo.set(key, { N: 6, r, m }).get(key);
 }
 // a symmetry's maps, each a cell → its copy (the first, the cell itself): the turns, then the mirrored ones
-const symmetriesMemo = new Map();
+const symmetriesMemo = remember('symmetriesMemo', new Map());
 function symmetryMaps(kind, W, sym) {
   const key = `${kind}|${W}|${sym}`;
   if (symmetriesMemo.has(key)) return symmetriesMemo.get(key);
@@ -21656,7 +21665,7 @@ function symmetryMaps(kind, W, sym) {
 // whose maps take each block onto one of its generation's, the rule turning their cells
 // alike (its states' bits in the copy's order; Ising's sides and the stellated cells' moves not seen to: none of them)
 // (start, zone, K, outline: a setup's start, its hunt's zone, its colours' parts and its outline; the game's by default)
-const blockSymmetriesMemo = new Map(); // (a block rule's symmetries on a grid: see symmetriesHere)
+const blockSymmetriesMemo = remember('blockSymmetriesMemo', new Map()); // (a block rule's symmetries on a grid: see symmetriesHere)
 function symmetriesHere(
   kind,
   W,
@@ -21714,7 +21723,7 @@ function symmetriesHere(
 // the symmetries whose every copy of a colour's part is one part whole (a copy recoloured as the part it falls in, see
 // symmetricStart: Trio's thirds, a half turn cuts each across, none), whatever the grid or the parts: their maps and cells;
 // on the grid built only (its parts, see huntParts), elsewhere none claimed
-const partMemo = new Map();
+const partMemo = remember('partMemo', new Map());
 function partSymmetries(kind, W, K, outline = outlineOf(kind)) {
   if (walk.plane?.kind !== kind || walk.plane.W !== W || outline !== outlineOf(kind)) return ['none']; // (its parts known on the grid built only: another grid's not judged, not claimed)
   const key = `${gridKey()}|${K}|${hunt.zone === 'mirror'}|${teamsMixed() && mixSeed()}`; // (Mixed: its parts drawn from its seed)
@@ -21938,7 +21947,7 @@ function discPatch(items, W, mid, norm = Math.hypot, each = flatEach) {
 // a grid that never repeats, built once a size: kept while in use (its polygons some hundred MB at a million cells: the plane's, see walk.plane.flat)
 const DISC_TOP = 1024; // (the largest disc's side: 2²⁰ cells, see CELLS; the hats', spectres' and pinwheel's tiling built for it)
 const discMemo = (build) => {
-  const cache = weakCache();
+  const cache = remember('discMemo', weakCache());
   return (W) => (cache[W] ??= build(W));
 };
 // A 2D affine transform as [a, b, c, d, e, f] (x' = ax + by + c, y' = dx + ey + f): the identity, the product AB (B first),
@@ -22955,7 +22964,7 @@ function insidePolygon(pts, u, v) {
 }
 // the cell at a world point: how 'in', in the grid (else null); 'round', on its torus (the cell there on the plane, its
 // numbers round it: x round its row, y round its W rows); 'free', on the plane, its numbers as they are
-const cellAtMemo = {},
+const cellAtMemo = remember('cellAtMemo', {}),
   tilesNear = new WeakMap(); // (a tiling's lattice cell's polygons, at lattice cell 0; a grid that never repeats, its tiles by squares of 2: see planeCellAt)
 function planeCellAt(kind, W, wx, wy, how = 'in') {
   let x,
@@ -23060,7 +23069,7 @@ function cellRandom(seed, i) {
 }
 // A word or an emoji as a picture, P × P pixels (as an icon's, laid as one: see iconLay): its ink as big as fits in
 // its middle, a pixel on where the drawing is dark (its marks) or on its edge (its outline, as a punk's line drawing)
-const pictureMemo = new Map();
+const pictureMemo = remember('pictureMemo', new Map());
 // Text's fonts, everywhere without loading any (bold: thick strokes that the cells keep); Hand the one that differs most from a
 // computer to another
 const TEXT_FONTS = {
@@ -24238,7 +24247,7 @@ function sideOf(kind, W, nbr) {
 // the biggest that keeps the lattice's edge out of it by a cell's width: { cells, rings, walls: [[x, y], …], core, o,
 // corner }, else null. Its cells as the whole grid's (patterns, symmetry and hunts the same); a cut by a distance: cells as
 // far, all in or all out
-const shapeMemo = new Map(),
+const shapeMemo = remember('shapeMemo', new Map()),
   shaped = (kind, outline = outlineOf(kind)) => outline === 'hex'; // (outline: a setup's, see outlineIn)
 function planeShape(kind, W, outline = outlineOf(kind)) {
   if (!shaped(kind, outline)) return null;
@@ -24335,7 +24344,7 @@ const hexagonFits = (kind) => !APERIODIC[kind] && PATTERN_TURNS[baseOf(kind)] ==
 // there): a rhombus's row by row, t = y × row + x; a slanted grid's rectangle (see RECTS) row by row as well, its rows of
 // motifs (each two lattice rows or more) a lattice row at a time (its cells' nat), not a motif's cells down then the next;
 // a hexagon's wound round its middle (see planeShape), its own cells only, none dead
-const gridMemo = new Map();
+const gridMemo = remember('gridMemo', new Map());
 const rectCells = (R, W, row) => {
   // (a rectangle's places, row by row: in each row of motifs, each lattice row along it)
   const m = R.polys.length,
@@ -27092,8 +27101,8 @@ const unnamed = (words, name) =>
     ? words.slice(name.length).replace(/^[,:]?\s*/, '')
     : words;
 // a Life mode's rules' cards: its shape's, those its grid takes (a block rule's blocks, a loop's), once a mode
-const lifeRulesMemo = {},
-  rulesForMemo = {}; // (a mode's rules' cards, once a mode: see choicesAt)
+const lifeRulesMemo = remember('lifeRulesMemo', {}),
+  rulesForMemo = remember('rulesForMemo', {}); // (a mode's rules' cards, once a mode: see choicesAt)
 const lifeRulesListed = (w) =>
   (lifeRulesMemo[w] ??= rulesOf('life').filter((r) => {
     const mode = MODES[w];
@@ -38465,7 +38474,7 @@ const discPattern = (p) => Array.isArray(p[4]); // (a disc's: its cells by their
 // disc pattern's cells turned by a round the middle, [cell, state] (null if one falls off: each the cell whose middle is within
 // 0.05 of its place, by squares of 0.1, the 9 round it looked in; those within its patterns' reach only); way(cells), the way a
 // pattern lies from the middle (its cells' sum); corners(t), a cell's
-const discCellsMemo = new Map();
+const discCellsMemo = remember('discCellsMemo', new Map());
 function discCells(kind, W = flatGrid().W) {
   const id = `${kind}|${W}`;
   if (discCellsMemo.has(id)) return discCellsMemo.get(id);
@@ -38573,7 +38582,7 @@ function centredChoices(kind, K, rule, mine, any, centred = true) {
 // each colour's choices: the rule's patterns (a rule of your own: all its grid's), every way they turn and mirror
 // (the same shape once), anywhere in its part on the plane, else at its spot where they fit its block, as [cell, state…]
 // in its colour
-const choicesMemo = {},
+const choicesMemo = remember('choicesMemo', {}),
   FAMOUS_ALL = 20000; // (Famous's, Centered's; see laidChoices)
 function patternChoices(centred = false) {
   // (once a grid, its colours and rule)
@@ -38754,7 +38763,7 @@ function mobiusMiddle(g) {
 // Colour i's cells at its part's very middle (see patternFrame: its centre), all as near (one, or those round a corner: an
 // even side's 4 squares), open ones (no wall's), on its face; one colour's, the grid's (on a solid, its face in front; a
 // dodecahedron's, its pentagon's: see centreCells). Kept per grid
-const middleMemo = new Map();
+const middleMemo = remember('middleMemo', new Map());
 function middleCells(i = 0, K = 1) {
   const key = `${gridKey()}|${patternKind()}|${i}|${K}`;
   if (middleMemo.has(key)) return middleMemo.get(key);
@@ -46457,6 +46466,20 @@ const CREDITS = [
   ],
   ['Prototypes', "Bert Chan's Lenia, Tom Mohr's Particle Life, Jeff Jones's Physarum, Tim Hutton's Squirm3"],
 ];
+// The memories' rows (Stats/debug): each its name, how many it keeps and its first keys as the code writes them, the empty
+// ones left out; a name several memories share (discMemo: a grid's each) summed
+function memoriesRows() {
+  const keysOf = new Map();
+  for (const [name, store] of MEMORIES) keysOf.set(name, [...(keysOf.get(name) ?? []), ...memoryKeys(store)]);
+  const shown = (key) => (key.length > 20 ? `${key.slice(0, 20)}…` : key).replace(/&/g, '&amp;').replace(/</g, '&lt;');
+  return [...keysOf]
+    .filter(([, keys]) => keys.length)
+    .map(
+      ([name, keys]) =>
+        `<tr><td>${name}</td><td class="number">${formatNumber(keys.length)}</td><td>${keys.slice(0, 3).map(shown).join(', ')}${keys.length > 3 ? ', …' : ''}</td></tr>`,
+    )
+    .join('');
+}
 function credits(open) {
   ruleTutorial(null);
   if (!open) return;
@@ -46470,6 +46493,7 @@ function credits(open) {
     `<p><a href="https://github.com/VincentBounce/Tessera#readme" target="_blank" rel="noopener">Its README</a> · <a href="https://github.com/VincentBounce/Tessera" target="_blank" rel="noopener">its code</a></p>` +
     '<div class="form-section"><h3>Stats/debug</h3><h4>Times for this view</h4><table id="timings" class="tut-commands"></table>' + // (the walk shown's times, see timings)
     `<h4>Screen: ${screenHz()} Hz</h4><table class="tut-commands"><tr><td class="number">Speed asked</td><td class="number">played</td></tr>${SPEEDS.map((v) => `<tr><td class="number">${formatNumber(v)}/s</td><td class="number">${speedWords(v)}</td></tr>`).join('')}</table>` + // (its refresh, and each speed as it plays there: see evenSpeed)
+    `<h4>Computed this session</h4><table class="tut-commands">${memoriesRows()}</table>` + // (what the memories keep, see remember)
     `<section class="clean-storage"><h4>Clean Tessera's storage in this browser</h4><button id="eraseAll" type="button" class="wide" title="All Tessera keeps in this browser erased (the Gallery, its thumbnails, the theme): the app as at a first visit, the curated setups back; the Gallery saved first as a JSON file (a click, then Confirm erase in its place)">${icon('trash')} Erase all</button></section></div></div>`;
   $('eraseAll').addEventListener('click', (e) => {
     const b = e.currentTarget;

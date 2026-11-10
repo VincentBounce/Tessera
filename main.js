@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.792';
+const VERSION = '0.4.793';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -16879,8 +16879,7 @@ function cellStart(g, [v, f]) {
 // list's at most on the mesh they make: a ring's list hangs on its size, its size on its battle's teams, see battleCounts)
 const startAsked = () => Math.max(1, Number($('startNo').value) || 1);
 const startNo = () => Math.min(startAsked(), modeStarts()?.length ?? 1);
-let startsShown = false; // while the start number is hovered: the starts shown over the walk, faded (see startMarks)
-let choosingStart = false; // while the start row is hovered: the view stays as it was
+let startsShown = false; // while the start row ([− start +]) is hovered: the starts shown over the walk, faded (see startMarks), the view as it was
 
 // The starts' marks while the start number is hovered: every start's edge (two starts each, one per direction) grey, the
 // chosen one yellow and twice as wide, its head a walker's (an ogive, see ogiveOf) in its middle the way it goes; drawn by
@@ -39897,7 +39896,7 @@ function showAll() {
   if (walk.stacked && !stack) return; // (Space-time: once its cubes are made, see stackUp)
   advanceTo(firstShown());
   faceWalk();
-  if ($('autoFit').checked && !choosingStart) fitWhole(); // framed like F or a double-click, without the margin kept for growing
+  if ($('autoFit').checked && !startsShown) fitWhole(); // framed like F or a double-click, without the margin kept for growing
 }
 
 // 3D walks: framed by the sphere round the walk's box (its centre, half its diagonal; in perspective,
@@ -40571,7 +40570,7 @@ const walkMiddle = () => {
 };
 function faceWalk() {
   faced = true;
-  if (choosingStart || !walk.sphere || walk.geo.torus || !$('centered').checked || $('autoRotate').checked || !walk.n)
+  if (startsShown || !walk.sphere || walk.geo.torus || !$('centered').checked || $('autoRotate').checked || !walk.n)
     return;
   const d = walkMiddle();
   const axis = cross(d, camera.v),
@@ -44859,7 +44858,7 @@ function tick(now = performance.now()) {
       walk.n &&
       !walk.life &&
       !walk.geo.torus &&
-      !choosingStart &&
+      !startsShown &&
       !faced &&
       $('centered').checked &&
       !$('autoRotate').checked
@@ -45960,30 +45959,23 @@ $('startLabel').addEventListener('change', () => {
   const n = Math.max(1, Math.min(Number($('startLabel').value), modeStarts().length));
   if (n !== startNo()) setStart(n);
 });
-// Hovering the start row ([− start +]) leaves the view as it was, whatever − and + do; the number
-// shows every start on an empty globe. Leaving the row, Auto-fit and Centered take over again
+// Hovering the start row ([− start +]) shows every start, the chosen one yellow (see startMarks), and leaves the view as it
+// was, whatever − and + do. Leaving the row, Auto-fit and Centered take over again
 $('startRow').addEventListener('mouseenter', () => {
-  choosingStart = true;
+  startsShown = true;
+  needsFull = true;
 });
 $('startRow').addEventListener('mouseleave', () => {
-  choosingStart = false;
+  startsShown = false;
+  needsFull = true;
   faced = false; // Centered: the camera turns to the walk (see followWalker)
   if ($('autoFit').checked) fitWhole();
 });
-const startField = $('startLabel').parentElement;
 for (const el of [$('sizeBox'), $('planeBox')])
   el.onmouseenter = el.onmouseleave = (e) => {
     motifShown = e.type === 'mouseenter';
     statsDirty = true;
   }; // a size hovered: its motif shown (see drawMotif): the cells redrawn, not the view (its grid behind as it was)
-startField.addEventListener('mouseenter', () => {
-  startsShown = true;
-  needsFull = true;
-});
-startField.addEventListener('mouseleave', () => {
-  startsShown = false;
-  needsFull = true;
-});
 // Upright: the view from the front exactly, level (its heading kept), a drag turning it round the vertical only
 $('upright').addEventListener('change', () => {
   if (!$('upright').checked) return;

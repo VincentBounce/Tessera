@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.744';
+const VERSION = '0.4.745';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -39263,7 +39263,7 @@ const toggleSelecting = () => {
   selecting = !selecting;
   if (!selecting) selectedNames.clear();
   syncSelection();
-  syncRebuildTile(true);
+  syncRebuildTile();
 };
 // Delete: the cards selected gone, their thumbnails with them (but one another card still shows)
 function deleteSelected() {
@@ -39278,17 +39278,21 @@ function deleteSelected() {
   $('eraseConfirm').hidden = true;
   fillGalleryList();
 }
-// Rebuild's tile: lit while it runs; greyed when no card here lacks its thumbnail (missing: whether one does)
-const syncRebuildTile = (missing) =>
+// Rebuild's tile: lit while it runs; greyed when no card selected and none lacks its thumbnail, as the cards show it (a card
+// with no picture has none: once their thumbnails are looked for, see fillGalleryList)
+const syncRebuildTile = () =>
   setTile($('rebuildThumbnails'), {
     on: rebuilding,
-    greyed: rebuilding || missing || selectedNames.size ? '' : 'Every setup here has its thumbnail.',
+    greyed:
+      rebuilding || selectedNames.size || galleryCards.some(({ row }) => !row.querySelector('.mode-icon img'))
+        ? ''
+        : 'Every setup here has its thumbnail.',
   });
 // The Gallery's setups, as rows like the built-in ones (see setupRow), its thumbnail over each
 function fillGalleryList() {
   thumbnailUrls.forEach((url) => URL.revokeObjectURL(url));
   thumbnailUrls = [];
-  const looks = []; // (each card's thumbnail, found or not)
+  const looks = []; // (each card's thumbnail looked for)
   galleryCards = [];
   const list = readGallery();
   // every tab's (Life, Ant, Walk…), each under its name, the tab in use's even with none (the ☆ said there); by their titles,
@@ -39316,7 +39320,6 @@ function fillGalleryList() {
           looks.push(
             thumbnailOf(x.setup).then((thumbnail) => {
               if (thumbnail) showThumbnail(row, thumbnail);
-              return !!thumbnail;
             }),
           ); // (none yet: its icon)
           galleryCards.push({ x, row });
@@ -39328,7 +39331,7 @@ function fillGalleryList() {
     }),
   );
   setTile($('galleryExport'), { greyed: list.length ? '' : 'The Gallery is empty.' }); // (none to take; the Gallery's state, no setup's: greyed, not whyNot, see setTile)
-  Promise.all(looks).then((found) => syncRebuildTile(found.includes(false)));
+  Promise.all(looks).then(syncRebuildTile); // (once each card's thumbnail is looked for)
   syncSelection();
   syncSaveButton();
 }
@@ -39492,13 +39495,13 @@ const thumbnailOf = (setup) => thumbnailStore('readonly', (store) => store.get(t
 let rebuilding = false;
 async function rebuildThumbnails() {
   rebuilding = !rebuilding;
-  syncRebuildTile(true);
+  syncRebuildTile();
   if (rebuilding)
     try {
       await thumbnailStore('readonly', (store) => store.count());
     } catch (e) {
       rebuilding = false;
-      syncRebuildTile(true);
+      syncRebuildTile();
       alert(e.message);
       return;
     } // (none kept: none taken)
@@ -39523,7 +39526,7 @@ async function rebuildThumbnails() {
     showThumbnail(row, thumbnail);
   }
   rebuilding = false;
-  syncRebuildTile(false);
+  syncRebuildTile();
 }
 // a card shown, once built (clicked, or rebuilt): its setup as the app writes it now (one saved by an older version: its fields
 // as they are now, its ★ then lit), its title and chips as its bar shows them (as the ☆ saves them), its card's words with
@@ -46187,7 +46190,7 @@ function setupRow(name, detail, x) {
     if (selecting) {
       if (!selectedNames.delete(x.name)) selectedNames.add(x.name);
       syncSelection();
-      syncRebuildTile(true);
+      syncRebuildTile();
       return;
     }
     rebuilding = false; // (the pictures being rebuilt: stopped)

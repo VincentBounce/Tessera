@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.769';
+const VERSION = '0.4.770';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -39113,7 +39113,7 @@ function applyPendingView() {
   syncLink(); // with the start a setup's champion or hunt zone gave
   builtWaiters.splice(0).forEach((ok) => ok()); // (whoever waits on it: see whenBuilt)
 }
-// a walk or a grid built, all of it shown (applyPendingView): what waits on it (the Gallery's thumbnails rebuilt)
+// a walk or a grid built, all of it shown (applyPendingView): what waits on it (the Gallery's thumbnails refreshed)
 let builtWaiters = [];
 const whenBuilt = () => new Promise((ok) => builtWaiters.push(ok));
 
@@ -39249,18 +39249,18 @@ const showThumbnail = (row, thumbnail) => {
   thumbnailUrls.push(url);
   row.querySelector('.mode-icon').innerHTML = `<img src="${url}" alt="">`;
 }; // (fading in as a walk's cells, see .gallery-grid img)
-// the cards shown, in their order: { setup, row } (Rebuild takes them so, see rebuildThumbnails)
+// the cards shown, in their order: { setup, row } (Refresh takes them so, see refreshThumbnails)
 let galleryCards = [];
 // The cards selected, by their names: a card's check (seen on its hover) selects it; while one is, every check shows and a
-// click on a card selects it or lets it go, its setup not shown; Export, Delete and Rebuild then act on them; the last let go,
+// click on a card selects it or lets it go, its setup not shown; Export, Delete and Refresh then act on them; the last let go,
 // back to cards that open
 const selectedNames = new Set();
 const selecting = () => selectedNames.size > 0;
-const NOT_WHILE_SELECTING = 'Not while selecting: Export, Delete and Rebuild act on the cards selected.';
+const NOT_WHILE_SELECTING = 'Not while selecting: Export, Delete and Refresh act on the cards selected.';
 const allSelected = () => galleryCards.length > 0 && galleryCards.every(({ x }) => selectedNames.has(x.name));
 function syncSelection() {
   for (const name of selectedNames) if (!galleryCards.some(({ x }) => x.name === name)) selectedNames.delete(name); // (cards shown only: one gone by its ★, Delete, Import… no more selected)
-  $('galleryPane').classList.toggle('selecting', selecting());
+  $('yourList').classList.toggle('selecting', selecting());
   for (const { x, row } of galleryCards) row.classList.toggle('selected', selectedNames.has(x.name));
   for (const id of ['galleryImport', 'galleryShare'])
     setTile($(id), { greyed: selecting() ? NOT_WHILE_SELECTING : '' }); // (the tools acting on them the only ones lit)
@@ -39271,7 +39271,7 @@ function syncSelection() {
   setTile($('selectAll'), { on: allSelected(), greyed: galleryCards.length ? '' : 'The Gallery is empty.' }); // (a switch: on, every card selected)
   setTile($('selectNone'), { greyed: selecting() ? '' : 'None selected.' });
   $('selectedWords').hidden = !selecting();
-  $('selectedWords').textContent = `${selectedNames.size} selected: Export, Delete and Rebuild act on them`;
+  $('selectedWords').textContent = `${selectedNames.size} selected: Export, Delete and Refresh act on them`;
 }
 // Delete: the cards selected gone, their thumbnails with them (but one another card still shows)
 function deleteSelected() {
@@ -39286,13 +39286,13 @@ function deleteSelected() {
   $('eraseConfirm').hidden = true;
   fillGalleryList();
 }
-// Rebuild's tile: lit while it runs; greyed when no card selected and none lacks its thumbnail, as the cards show it (a card
+// Refresh's tile: lit while it runs; greyed when no card selected and none lacks its thumbnail, as the cards show it (a card
 // with no picture has none: once their thumbnails are looked for, see fillGalleryList)
-const syncRebuildTile = () =>
-  setTile($('rebuildThumbnails'), {
-    on: rebuilding,
+const syncRefreshTile = () =>
+  setTile($('refreshThumbnails'), {
+    on: refreshing,
     greyed:
-      rebuilding || selectedNames.size || galleryCards.some(({ row }) => !row.querySelector('.mode-icon img'))
+      refreshing || selectedNames.size || galleryCards.some(({ row }) => !row.querySelector('.mode-icon img'))
         ? ''
         : 'Every setup here has its thumbnail.',
   });
@@ -39339,7 +39339,7 @@ function fillGalleryList() {
     }),
   );
   setTile($('galleryExport'), { greyed: list.length ? '' : 'The Gallery is empty.' }); // (none to take; the Gallery's state, no setup's: greyed, not whyNot, see setTile)
-  Promise.all(looks).then(syncRebuildTile); // (once each card's thumbnail is looked for)
+  Promise.all(looks).then(syncRefreshTile); // (once each card's thumbnail is looked for)
   syncSelection();
   syncSaveButton();
 }
@@ -39356,7 +39356,6 @@ function syncSaveButton() {
   b.title = saved
     ? `Saved in the Gallery as “${setupTitle(saved)}”: a click takes it out`
     : 'Save the setup in view in the Gallery, in this browser';
-  $('inViewTitle').textContent = barWords().title; // (the setup in view's, as its bar says it)
   const star = $('galleryStar'); // (the Gallery's Star tile, the same: on while saved, greyed while selecting)
   if (star) setTile(star, { on: !!saved, greyed: selecting() ? NOT_WHILE_SELECTING : '' });
 }
@@ -39500,46 +39499,46 @@ function stageThumbnail() {
   return new Promise((ok) => c.toBlob(ok, 'image/webp', 0.85));
 }
 const thumbnailOf = (setup) => thumbnailStore('readonly', (store) => store.get(thumbnailKey(setup))).catch(() => null);
-// Rebuild: the cards selected (taken again, a thumbnail or not), else those with no thumbnail, in their order, one after the
+// Refresh: the cards selected (taken again, a thumbnail or not), else those with no thumbnail, in their order, one after the
 // other: each shown (as a click on it) and taken once built, its thumbnail fading in on its card; a click again, the Gallery
 // shut or a card clicked stops it (the last built shown)
-let rebuilding = false;
-async function rebuildThumbnails() {
-  rebuilding = !rebuilding;
-  syncRebuildTile();
-  if (rebuilding)
+let refreshing = false;
+async function refreshThumbnails() {
+  refreshing = !refreshing;
+  syncRefreshTile();
+  if (refreshing)
     try {
       await thumbnailStore('readonly', (store) => store.count());
     } catch (e) {
-      rebuilding = false;
-      syncRebuildTile();
+      refreshing = false;
+      syncRefreshTile();
       alert(e.message);
       return;
     } // (none kept: none taken)
   const used = new Set(readGallery().map((x) => thumbnailKey(x.setup))); // (the thumbnails no card shows any more, a setup gone or its key changed: erased)
-  if (rebuilding)
+  if (refreshing)
     for (const key of await thumbnailStore('readonly', (store) => store.getAllKeys()))
       if (!used.has(key)) await thumbnailStore('readwrite', (store) => store.delete(key));
   for (const { x, row } of galleryCards.slice()) {
     // (as they are now: the list drawn again meanwhile, these go on)
     const { setup } = x;
-    if (!rebuilding) return;
+    if (!refreshing) return;
     if (selectedNames.size ? !selectedNames.has(x.name) : await thumbnailOf(setup)) continue;
     const built = whenBuilt();
     if (!isInUse(setup) && applySetup(setup)) {
       renderModePicker();
       await built;
     } // (its tab, its parameters under the Gallery)
-    if (!rebuilding) return; // (stopped meanwhile: another setup shown, not its thumbnail)
+    if (!refreshing) return; // (stopped meanwhile: another setup shown, not its thumbnail)
     await adoptShown(x, row);
     const thumbnail = await wantThumbnail();
     await thumbnailStore('readwrite', (store) => store.put(thumbnail, thumbnailKey(x.setup))).catch(() => {});
     showThumbnail(row, thumbnail);
   }
-  rebuilding = false;
-  syncRebuildTile();
+  refreshing = false;
+  syncRefreshTile();
 }
-// a card shown, once built (clicked, or rebuilt): its setup as the app writes it now (one saved by an older version: its fields
+// a card shown, once built (clicked, or refreshed): its setup as the app writes it now (one saved by an older version: its fields
 // as they are now, its ★ then lit), its title and chips as its bar shows them (as the ☆ saves them), its card's words with
 // them, its thumbnail kept under its setup's key
 async function adoptShown(x, row) {
@@ -46205,10 +46204,10 @@ function setupRow(name, detail, x) {
     if (selecting() || e.target.closest('.card-check')) {
       if (!selectedNames.delete(x.name)) selectedNames.add(x.name);
       syncSelection();
-      syncRebuildTile();
+      syncRefreshTile();
       return;
     }
-    rebuilding = false; // (the pictures being rebuilt: stopped)
+    refreshing = false; // (the pictures being refreshed: stopped)
     ruleTutorial(null); // what lies over the view (how a rule works, the digits) closes: the setup shown instead
     closeNumber();
     showPane(false);
@@ -46245,14 +46244,28 @@ function renderGallery() {
 // The left pane shows the parameters, or the gallery: opened by a click on the Gallery tab (lit as the tab in use), closed by
 // it again, a setup clicked or another tab: the parameters of the tab before
 function showPane(gallery) {
-  if (!gallery) rebuilding = false; // (the pictures being rebuilt: stopped, the last built shown)
+  if (!gallery) refreshing = false; // (the pictures being refreshed: stopped, the last built shown)
   $('paramsPane').hidden = gallery;
   $('galleryPane').hidden = !gallery;
   galleryTab().classList.toggle('open', gallery);
   if (gallery) {
     renderGallery();
+    showInViewCard();
     $('yourList').querySelector(`[data-kind="${NAV[tabMode()]?.[0]}"]`)?.scrollIntoView({ block: 'start' });
   } // (the tab in use's section)
+}
+// The setup in view's card, at the band's right: its picture taken as the Gallery opens (a frame drawn without the grid, see
+// wantThumbnail), its title and words its bar's; a click on it shuts the Gallery, back to it
+let inViewUrl = '';
+async function showInViewCard() {
+  const thumbnail = await wantThumbnail();
+  URL.revokeObjectURL(inViewUrl);
+  inViewUrl = thumbnail ? URL.createObjectURL(thumbnail) : '';
+  const { title, chips } = barWords(),
+    pic = inViewUrl
+      ? `<img src="${inViewUrl}" alt="">`
+      : icon(SHAPE_ICONS[NAV[getSetup().w]?.[2]] ?? MODE_ICONS[getSetup().w]);
+  $('inViewCard').replaceChildren(card({ pic, name: title, detail: chips, click: () => showPane(false) }));
 }
 const galleryButton = document.createElement('button');
 function galleryTab() {
@@ -46270,8 +46283,8 @@ function galleryTab() {
 }
 
 // The Gallery's tools, tiles (the cards selected, see selectedNames): Import (added to them, a name already used numbered),
-// Export, Delete (the cards selected, confirmed under them), Rebuild (Erase all: Tessera's page, Clean Tessera's storage in this browser),
-// then the setup in view's: Star (as the ☆ of Gallery's tab) and Share link (the link to what is shown)
+// Export, Delete (the cards selected, confirmed under them), Refresh (Erase all: Tessera's page, Clean Tessera's storage in this browser),
+// then Share link (the link to what is shown)
 // (Confirm, under them: what the tile clicked asks, its words and its act; clicked again, gone)
 let confirmAct = null;
 const askConfirm = (words, act) => {
@@ -46285,7 +46298,7 @@ const selectCards = (all) => {
   selectedNames.clear();
   if (all) for (const { x } of galleryCards) selectedNames.add(x.name);
   syncSelection();
-  syncRebuildTile();
+  syncRefreshTile();
 };
 $('gallerySelectTiles').replaceChildren(
   tile({
@@ -46310,7 +46323,7 @@ $('galleryTools').replaceChildren(
     pic: icon('import'),
     text: 'Import',
     title:
-      'Add the setups of a JSON file to the Gallery as they are (those of a name already used numbered: none replaced); no thumbnails taken: Rebuild takes them',
+      'Add the setups of a JSON file to the Gallery as they are (those of a name already used numbered: none replaced); no thumbnails taken: Refresh takes them',
     click: () => $('galleryFile').click(),
   }),
   tile({
@@ -46328,13 +46341,13 @@ $('galleryTools').replaceChildren(
     click: () => askConfirm(`Confirm delete (${selectedNames.size})`, deleteSelected),
   }),
   tile({
-    id: 'rebuildThumbnails',
+    id: 'refreshThumbnails',
     pic: icon('autoRotate'),
-    text: 'Rebuild',
+    text: 'Refresh',
     toggle: true,
     title:
       'Erase the thumbnails no card shows any more, then take again those of the cards selected, else the missing ones, one setup after the other: each shown, then taken once built; on while it runs, off by a click or once done',
-    click: rebuildThumbnails,
+    click: refreshThumbnails,
   }),
 );
 $('galleryViewTiles').replaceChildren(

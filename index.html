@@ -11,7 +11,7 @@
   <meta property="og:type" content="website">
   <link id="favicon" rel="icon">  <!-- the app's logo, set at start-up (see appLogo) -->
   <meta name="description" content="A walk on a grid in 2D or 3D driven by the base-2 to base-6 digits of π, other constants and large primes.">
-  <link rel="stylesheet" href="style.css?v=0.4.769">
+  <link rel="stylesheet" href="style.css?v=0.4.770">
   <script>  // the theme before the first paint (see applyTheme)
     try { const t = localStorage.getItem('tesseraTheme') || 'system'; document.documentElement.dataset.theme = t === 'system' ? (matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark') : t; } catch { document.documentElement.dataset.theme = 'dark'; }
   </script>
@@ -389,14 +389,16 @@
       </div>
       <div id="galleryPane" hidden>  <!-- its tools in a band at its top, fixed; its setups scrolling under it (#galleryScroll) -->
         <div class="gallery-band">  <!-- the Gallery (kept in this browser only): its tools; its files Import and Export; Save: the ☆ of Gallery's tab -->
-          <div class="gallery-tools-row">  <!-- three groups: the Gallery's tools; in the middle the setup in view's; at the right the selection's -->
-            <div id="galleryTools" class="nav-shapes"></div>  <!-- Import, Export, Delete, Rebuild -->
-            <div class="gallery-in-view">  <!-- the setup in view: its title (its bar's), Star and Share link -->
-              <div class="in-view-words"><span class="caption">In view</span><span id="inViewTitle"></span></div>
-              <div id="galleryViewTiles" class="nav-shapes"></div>
+          <div class="gallery-tools-row">  <!-- three groups: the Gallery's tools; in the middle the selection's; at the right the setup in view's -->
+            <div id="galleryTools" class="nav-shapes"></div>  <!-- Import, Export, Delete, Refresh -->
+            <div class="gallery-select">
+              <p id="selectedWords" class="caption" hidden></p>  <!-- while cards are selected: how many (see syncSelection) -->
+              <div id="gallerySelectTiles" class="nav-shapes"></div>  <!-- All, None -->
             </div>
-            <p id="selectedWords" class="caption" hidden></p>  <!-- while cards are selected: how many (see syncSelection) -->
-            <div id="gallerySelectTiles" class="nav-shapes"></div>  <!-- All, None -->
+            <div class="gallery-in-view">
+              <div id="galleryViewTiles" class="nav-shapes"></div>  <!-- Star, Share link -->
+              <div id="inViewCard" class="gallery-grid"></div>  <!-- the setup in view's card: its picture, its whole card on its hover -->
+            </div>
           </div>
           <button id="eraseConfirm" type="button" class="wide" hidden></button>  <!-- Delete or Erase all, then this to confirm -->
           <input id="galleryFile" type="file" accept="application/json,.json" hidden>
@@ -520,10 +522,10 @@
     </div>
   </main>
 
-  <script src="pixelarticons.js?v=0.4.769"></script>
-  <script src="punks.js?v=0.4.769"></script>
-  <script src="loops.js?v=0.4.769"></script>
-  <script src="emoji.js?v=0.4.769"></script>
-  <script src="main.js?v=0.4.769"></script>
+  <script src="pixelarticons.js?v=0.4.770"></script>
+  <script src="punks.js?v=0.4.770"></script>
+  <script src="loops.js?v=0.4.770"></script>
+  <script src="emoji.js?v=0.4.770"></script>
+  <script src="main.js?v=0.4.770"></script>
 </body>
 </html>

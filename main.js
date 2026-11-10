@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.779';
+const VERSION = '0.4.780';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -8579,7 +8579,7 @@ function pretty(x) {
       }[x.f]();
     }
     default: {
-      const op = { '+': ' + ', '-': ' − ', '*': '·', '/': '/' }[x.k];
+      const op = { '+': ' + ', '-': ' − ', '*': '×', '/': '/' }[x.k]; // (×, not ·: · parts a bubble's words)
       return `${wrap(x.a, precOf(x.a) < PREC[x.k])}${op}${wrap(x.b, precOf(x.b) <= PREC[x.k])}`;
     }
   }

@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.788';
+const VERSION = '0.4.789';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -25029,34 +25029,8 @@ const planeMotifCells = () => {
 };
 const FADING = 0.3; // (the cells this pale: under a walk's line, or Area's Light)
 // A size hovered (its motif) or the start (the starts): drawn on their own layer, the others faded under it, every one alike,
-// fills and outlines (the stage's class: see style.css); drawn again only when what it is drawn from changes (the grid, its
-// form, the view, what is hovered), never for a generation alone (a globe's motif sought among its 198,650 tiles, 30 ms a
-// generation till v0.4.788)
-let hoverDrawnFrom = [];
+// fills and outlines (the stage's class: see style.css)
 function drawHover() {
-  const from = [
-    motifShown,
-    startsShown && startNo(),
-    walk.geo,
-    walk.plane,
-    walk.shape,
-    walk.shape?.m,
-    walk.persp,
-    walk.R,
-    camera.r,
-    camera.u,
-    camera.v,
-    view.scale,
-    view.ox,
-    view.oy,
-    canvasWidth,
-    canvasHeight,
-    cutOn() && cutAxis,
-    walk.plane && planeTurn(),
-    motifColour(),
-  ]; // (a camera's turn replaces its arrays, see cameraFrom)
-  if (from.every((x, i) => x === hoverDrawnFrom[i])) return;
-  hoverDrawnFrom = from;
   const ctx = layers.hover;
   ctx.clearRect(0, 0, canvasWidth, canvasHeight);
   stage.classList.toggle('faded', motifShown || startsShown);

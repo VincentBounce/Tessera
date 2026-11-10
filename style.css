@@ -781,15 +781,15 @@ button.switch.active:hover:not(:disabled) {
     opacity: 0;
   }
 }
-.gallery-grid button > span:not(.mode-icon):not(.card-check):not(.card-star) {
+.gallery-grid button > span:not(.mode-icon):not(.card-check) {
   padding: 6px 8px;
   min-width: 0;
 }
-/* while selecting (Select on), on a card's picture: its check at the top left, filled gold once selected, the card's border gold
-   too; the card in view, its star at the top right, mirroring it (its gold border then a selected card's only) */
-.gallery-grid :is(.card-check, .card-star) {
+/* a card's check, on its picture: seen while selecting (Select on), filled gold once selected, the card's border gold too */
+.gallery-grid .card-check {
   position: absolute;
   top: 6px;
+  left: 6px;
   display: none;
   align-items: center;
   justify-content: center;
@@ -800,26 +800,15 @@ button.switch.active:hover:not(:disabled) {
   background: var(--panel-background);
   color: transparent;
 }
-.gallery-grid .card-check {
-  left: 6px;
-}
-.gallery-grid .card-star {
-  right: 6px;
-  color: var(--accent-color);
-}
-.gallery-grid .card-star path {
-  fill: currentColor;
-}
-.gallery-grid :is(.card-check, .card-star) svg {
+.gallery-grid .card-check svg {
   width: 14px;
   height: 14px;
 }
-.selecting .gallery-grid .card-check,
-.selecting .gallery-grid button.active .card-star {
+.selecting .gallery-grid .card-check {
   display: flex;
 }
 .gallery-grid button.selected,
-#yourList:not(.selecting) .gallery-grid button.active {
+.gallery-grid button.active {
   border-color: var(--accent-color);
   box-shadow: 0 0 0 1px var(--accent-color);
 } /* (a card selected or in view: its gold 2 px, a ring round its border, the card's size the same) */
@@ -959,12 +948,12 @@ button.active .bubble.active {
   color: var(--accent-color);
   background: var(--picked-background);
 }
-:is(.mode-list, #yourList:not(.selecting) .gallery-grid) button.active {
+:is(.mode-list, .gallery-grid) button.active {
   border-color: var(--accent-color);
   background: var(--picked-background);
-} /* (a Gallery card too: the setup in view, but while selecting: its star then, see .card-star) */
-:is(.mode-list, #yourList:not(.selecting) .gallery-grid) button.active .mode-name,
-:is(.mode-list, #yourList:not(.selecting) .gallery-grid) button.active .mode-icon {
+} /* (a Gallery card too: the setup in view) */
+:is(.mode-list, .gallery-grid) button.active .mode-name,
+:is(.mode-list, .gallery-grid) button.active .mode-icon {
   color: var(--accent-color);
 }
 .row button {

@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.747';
+const VERSION = '0.4.748';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -46182,10 +46182,7 @@ let cardShown = null; // (the card clicked last: its setup adopted once built)
 function setupRow(name, detail, x) {
   const { setup } = x,
     b = card({ pic: icon(SHAPE_ICONS[NAV[setup.w]?.[2]] ?? MODE_ICONS[setup.w]), name, detail, on: isInUse(setup) }); // (its shape's picture, as the Grid's; its tooltip its name and its detail in full, as the row may cut them short)
-  b.append(
-    Object.assign(document.createElement('span'), { className: 'card-check', innerHTML: icon('check') }),
-    Object.assign(document.createElement('span'), { className: 'card-star', innerHTML: icon('star') }),
-  ); // (its check and, in view, its star: seen while selecting, see .card-check)
+  b.append(Object.assign(document.createElement('span'), { className: 'card-check', innerHTML: icon('check') }));
   b.setAttribute('role', 'option');
   // a click: the Gallery shut and the card's thumbnail over the view at once, painted; its setup built from the next frame, the
   // thumbnail gone once it is drawn (not the Gallery nor the walk before frozen while it is built)

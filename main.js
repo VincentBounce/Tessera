@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.780';
+const VERSION = '0.4.781';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -39492,10 +39492,12 @@ const thumbnailStore = (mode, ask) =>
       }),
   );
 // The view as one thumbnail, cut to THUMBNAIL_SIZE from its middle: every layer under the hover's, in their order, without the
-// grid's lines. WebGPU's picture is only there in the frame that drew it: asked of the next frame, drawn whole without the
-// grid, and taken as it ends, the grid then as it was (see tick)
+// grid's lines nor the sky (the Gallery's theme behind it, its card's background). WebGPU's picture is only there in the
+// frame that drew it: asked of the next frame, drawn whole without the grid and the sky, and taken as it ends, the grid then
+// as it was (see tick)
 let thumbnailWanted = null,
-  thumbnailGrid = true;
+  thumbnailGrid = true,
+  thumbnailFrame = false; // (the frame taken: no sky, see drawSky)
 const wantThumbnail = () =>
   new Promise((ok) => {
     thumbnailWanted = ok;
@@ -40223,7 +40225,7 @@ function groundAt(y) {
 }
 function drawSky(ctx) {
   const stops = skyStops();
-  if (!stops) return; // plain: the page background shows through
+  if (!stops || thumbnailFrame) return; // plain, or a thumbnail's frame: the page background shows through (the Gallery's)
   const sky = ctx.createLinearGradient(0, 0, 0, canvasHeight);
   for (const [at, colour] of stops) sky.addColorStop(at, colour);
   ctx.fillStyle = sky;
@@ -44594,8 +44596,10 @@ function tick(now = performance.now()) {
   if (thumbnailWanted) {
     const ok = thumbnailWanted;
     thumbnailWanted = null;
+    thumbnailFrame = true;
     queueMicrotask(() => {
       ok(stageThumbnail());
+      thumbnailFrame = false;
       $('showGrid').checked = thumbnailGrid;
       needsFull = true;
     });

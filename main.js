@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.797';
+const VERSION = '0.4.798';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -6391,6 +6391,7 @@ function describe(base, available) {
   const walkRule = !creature && !mode.life && WALK_NETS[mode.net] ? walkRuleOf(mode) : '';
   $('barBase').hidden = !!creature || !!mode.life; // (a creature's base or colours in its rule's tooltip; Life's digits: in its description)
   $('barBase').textContent = colours ? `${colours} colours` : baseWords(base);
+  $('barBase').title = baseBubbleTitle($('barBase').textContent); // (a click shows the number, as the Formula field's chip)
   $('barRule').hidden = !creature && !walkRule; // (Life's: below)
   setLinks($('barRule'), ruleWords(getSetup()).html); // (a walk's, a creature's: as the Gallery writes it, see ruleWords)
   $('barRule').title = 'Its rule · A click: how it works';

@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.754';
+const VERSION = '0.4.755';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -39247,6 +39247,7 @@ let galleryCards = [];
 let selecting = false;
 const selectedNames = new Set();
 function syncSelection() {
+  for (const name of selectedNames) if (!galleryCards.some(({ x }) => x.name === name)) selectedNames.delete(name); // (cards shown only: one gone by its ★, Delete, Import… no more selected)
   $('yourList').classList.toggle('selecting', selecting);
   for (const { x, row } of galleryCards) row.classList.toggle('selected', selectedNames.has(x.name));
   setTile($('gallerySelect'), { on: selecting });

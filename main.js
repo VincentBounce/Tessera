@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.765';
+const VERSION = '0.4.766';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -39256,6 +39256,7 @@ let galleryCards = [];
 // back to cards that open
 const selectedNames = new Set();
 const selecting = () => selectedNames.size > 0;
+const allSelected = () => galleryCards.length > 0 && galleryCards.every(({ x }) => selectedNames.has(x.name));
 function syncSelection() {
   for (const name of selectedNames) if (!galleryCards.some(({ x }) => x.name === name)) selectedNames.delete(name); // (cards shown only: one gone by its ★, Delete, Import… no more selected)
   $('yourList').classList.toggle('selecting', selecting());
@@ -39266,9 +39267,7 @@ function syncSelection() {
   setTile($('galleryDelete'), {
     greyed: selecting() ? '' : 'None selected: tick a card (its box, on its hover).',
   });
-  setTile($('selectAll'), {
-    greyed: galleryCards.every(({ x }) => selectedNames.has(x.name)) ? 'All selected.' : '',
-  });
+  setTile($('selectAll'), { on: allSelected(), greyed: galleryCards.length ? '' : 'The Gallery is empty.' }); // (a switch: on, every card selected)
   setTile($('selectNone'), { greyed: selecting() ? '' : 'None selected.' });
   $('selectedWords').hidden = !selecting();
   $('selectedWords').textContent = `${selectedNames.size} selected: Export, Delete and Rebuild act on them`;
@@ -46289,8 +46288,9 @@ $('gallerySelectTiles').replaceChildren(
     id: 'selectAll',
     pic: icon('boxTicked'),
     text: 'All',
-    title: 'Select all: every card selected',
-    click: () => selectCards(true),
+    toggle: true,
+    title: 'Select all: every card selected; on, a click lets them all go',
+    click: () => selectCards(!allSelected()),
   }),
   tile({
     id: 'selectNone',

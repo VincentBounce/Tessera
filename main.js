@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.759';
+const VERSION = '0.4.760';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -46268,7 +46268,7 @@ const askConfirm = (words, act) => {
   b.innerHTML = `${icon('trash')} ${words}`;
   confirmAct = act;
 };
-// Select all, Select none: every card shown, or none (their pictures to come)
+// All, None: every card shown selected, or none (their pictures to come)
 const selectCards = (all) => {
   selectedNames.clear();
   if (all) for (const { x } of galleryCards) selectedNames.add(x.name);
@@ -46279,15 +46279,15 @@ $('gallerySelectTiles').replaceChildren(
   tile({
     id: 'selectAll',
     pic: icon('check'),
-    text: 'Select all',
-    title: 'Select every card',
+    text: 'All',
+    title: 'Select all: every card selected',
     click: () => selectCards(true),
   }),
   tile({
     id: 'selectNone',
     pic: icon('eraser'),
-    text: 'Select none',
-    title: 'Let every card go',
+    text: 'None',
+    title: 'Select none: every card let go',
     click: () => selectCards(false),
   }),
 );

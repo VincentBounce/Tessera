@@ -2,6 +2,7 @@
 //   await import(`/tools/check.js?${Date.now()}`); await tesseraCheck();   // the meshes, the sheets' rules (see checkSheets), a few links cold (see checkColdLinks), 35 to 50 s
 //   await tesseraCheck({ crawl: true });                                   // and every tab, shape and tiling, a few minutes
 //   await tesseraCheck({ clickAll: true, clickFrom: 0 });                  // and on each, every control clicked (a night's, ~25 minutes; from a look's number, localStorage.tesseraCrawlAt, after a crash)
+//   await tesseraCheck({ hovers: true });                                  // and on each, every greyed control's first hover under 100 ms, there and at its surface's largest size (a night's)
 //   await tesseraCheck({ fuzz: 400, seed: 7 });                            // 400 actions at random, menu to menu (transitions, smallest sizes)
 //   await tesseraCheck({ fuzz: 100, cold: true });                          // and after each, its link loaded cold beside: the same menus offered
 //   await tesseraCheck({ colours: true });                                 // every Life surface offers colours (more than Solo) at one of its sizes at least
@@ -561,6 +562,38 @@ function clickEverything(fail) {
     if (errors.length) {
       fail(`clickAll: ${errors.splice(0).slice(0, 3).join(' / ')}`);
     }
+  };
+}
+// Each greyed control hovered, as a visitor would (its tooltip's why and its Allowed on, see setTile's pathsTo), at the size
+// shown and, on a surface, at its largest: none slower than HOVER_BUDGET at its first hover (Hunt › Longest on a globe of
+// 795,026 cells, 9.7 s till v0.4.787: each surface next to it built whole to judge its teams, see surfaceFrame)
+const HOVER_BUDGET = 100;
+function hoverGreyed(fail) {
+  const name = (b) => (b.querySelector('.mode-name') ?? b).textContent.trim().slice(0, 30) || b.id;
+  const hoverAll = (where) => {
+    for (const b of document.querySelectorAll('aside.panel button, #viewTools button, #animBar button'))
+      if (b.disabled && b.offsetParent) {
+        const t = performance.now();
+        b.dispatchEvent(new MouseEvent('mouseover', { bubbles: true }));
+        const ms = performance.now() - t;
+        if (ms > HOVER_BUDGET) fail(`${where} › ${name(b)}: its first hover ${Math.round(ms)} ms`);
+      }
+  };
+  const resize = async (value) => {
+    $('sphereF').value = value;
+    $('sphereF').dispatchEvent(new Event('change'));
+    await wait(200);
+    await until(() => true);
+  };
+  return async (where) => {
+    hoverAll(where);
+    const F = $('sphereF'),
+      largest = F.options[F.options.length - 1]?.value;
+    if (MODES[tabMode()].plane || !largest || F.value === largest) return;
+    const was = F.value;
+    await resize(largest);
+    hoverAll(`${where} at ${largest}`);
+    await resize(was);
   };
 }
 async function coldLike(fail, what) {
@@ -1414,6 +1447,7 @@ window.tesseraCheck = async ({
   crawl: andCrawl = false,
   clickAll = false,
   clickFrom = 0,
+  hovers = false,
   deep: andDeep = false,
   fuzz: actions = 0,
   cold = false,
@@ -1444,6 +1478,7 @@ window.tesseraCheck = async ({
   if (known) checked += await checkKnown(fail);
   if (andCrawl) checked += await crawl(fail);
   if (clickAll) checked += await crawl(fail, clickEverything(fail), clickFrom);
+  if (hovers) checked += await crawl(fail, hoverGreyed(fail));
   if (actions) checked += await fuzz(fail, actions, seed, cold);
   if (colours) checked += await coloursOffered(fail);
   if (battles) checked += await battlesFair(fail);

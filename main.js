@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.786';
+const VERSION = '0.4.787';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -15517,6 +15517,17 @@ const SIDES = [
 const CELLS = { least: 2 ** 8, most: 2 ** 20 },
   START = { surface: 2688, solid: 6144 };
 const mobiusRadius = (kind, s) => mobiusCount(kind, s).L / (2 * Math.PI); // (its length: no tile built)  // a Möbius strip's circle, L tile edges round
+// the Klein bottles of tiles round their tube (kleinMesh): each its cells, how many a lattice cell, how wide across
+const KLEIN_BOTTLES = [
+  ['klein', 'squares', 1],
+  ['kleinHex', 'hexagons', 1],
+  ['kleinTri', 'triangles', 2],
+  ['kleinCairo', 'pentagons', 2],
+  ['kleinKite', 'kites', 6],
+  ['kleinHexTurned', 'hexagons', 1, 1.5],
+  ['kleinTriTurned', 'triangles', 2],
+  ['kleinKiteTurned', 'kites', 6],
+];
 const SPHERES = {
   cube: {
     mesh: cubeFlat,
@@ -15741,16 +15752,7 @@ const SPHERES = {
   ),
   // Klein bottles: their size is their rows round the tube, as a torus's
   ...Object.fromEntries(
-    [
-      ['klein', 'squares', 1],
-      ['kleinHex', 'hexagons', 1],
-      ['kleinTri', 'triangles', 2],
-      ['kleinCairo', 'pentagons', 2],
-      ['kleinKite', 'kites', 6],
-      ['kleinHexTurned', 'hexagons', 1, 1.5],
-      ['kleinTriTurned', 'triangles', 2],
-      ['kleinKiteTurned', 'kites', 6],
-    ].map(([kind, unit, per, across = 1]) => [
+    KLEIN_BOTTLES.map(([kind, unit, per, across = 1]) => [
       kind,
       {
         mesh: (s) => kleinMesh(kind, ...torusDims(kind, s)),
@@ -17935,7 +17937,7 @@ function groupedStarts(g, start, K) {
 const groupedCan = (w, size = null, teams = walkTeams) => {
   // (a mode's, at a size or the one it opens at: its walkers, a setup's teams, can be grouped)
   const mode = MODES[w],
-    g = battleMode(w) && mode.grid && teams > 1 && pickedFigure(w, size).g; // (a battle's: two walkers or more)
+    g = battleMode(w) && mode.grid && teams > 1 && pickedMesh(w, size); // (a battle's: two walkers or more)
   return !!g && !!groupedStarts(g, walkStart(g, mode), teams);
 };
 // a battle's starts (see battleStarts; grouped, groupedStarts', where it can), or none, said in the status: A's place on an axis of the solid
@@ -25458,13 +25460,41 @@ const teamsFair = (K, f = pickedFigure(tabMode())) => {
       (([8, 10, 12].includes(K) && teamsFairOwn(K / 2, f)) || (K === 9 && teamsFairOwn(3, f) && !teamsFairOwn(6, f))))
   );
 };
-// The figure picked, its colours judged on: the tab's mode and its mesh at the size picked (a surface's; none on the
-// plane), known by construction, never the walk shown's (another while this one is made, none at first)
+// The figure picked, its colours judged on: the tab's mode and its surface's frame at the size picked (see surfaceFrame;
+// none on the plane), known by construction, never the walk shown's (another while this one is made, none at first)
 // (another mode's, w: as its button would open it, at size or the one it opens at, see figureSize)
 const pickedFigure = (w, size = null) => {
   const mode = MODES[w],
     kind = !mode.plane && surfaceOf(mode);
-  return { mode, g: kind && SPHERES[kind] ? SPHERES[kind].mesh(size ?? figureSize(w)) : null };
+  return { mode, g: kind && SPHERES[kind] ? surfaceFrame(kind, size ?? figureSize(w)) : null };
+};
+// A surface's frame at a size, all its teams are judged on (teamsFit, teamsFairOwn, torusBlocks): what it is and a torus's
+// rows, without its tiles (a mesh of a million cells built in 1.5 s for each mode next to it, by a greyed tile's search, see
+// choicesAt); the flags its mesh carries the same (see finishTorus, kleinMesh, mobiusMesh, globeMesh, rosetteSphereMesh)
+function surfaceFrame(kind, size) {
+  if (kind === 'globe') return { globe: true };
+  if (SPHERES[kind].disc) return { rosette: true };
+  if (MOBIUS_KINDS.includes(kind)) return { torus: true, mobius: true };
+  if (FOLDED[kind]?.fold === 'klein') {
+    const { n, step, W } = kleinLength(kind, size);
+    return {
+      torus: true,
+      klein: true,
+      nu: n * step,
+      nv: W,
+      copyLength: MOBIUS_ALONG[FOLDED[kind].strip].copyLength,
+      kindK: kind,
+      size,
+    }; // (as kleinTilingMesh's)
+  }
+  if (!TORI.includes(kind)) return {}; // (a solid: its counts by its kind, see solidCounts)
+  const [nv, nu] = torusDims(kind, size);
+  return { torus: true, klein: KLEIN_BOTTLES.some(([k]) => k === kind), nu, nv };
+}
+// the mesh of mode w at a size (or the one it opens at): a battle's starts are laid on it (see groupedCan)
+const pickedMesh = (w, size = null) => {
+  const kind = !MODES[w].plane && surfaceOf(MODES[w]);
+  return kind && SPHERES[kind] ? SPHERES[kind].mesh(size ?? figureSize(w)) : null;
 };
 // a surface mode's size: the one in the menu where the menu holds its surface's sizes (the tab's, once filled), else the one
 // it opens at (see sizeAt: another mode's, or the tab's a moment after it changed, its menu still the surface before's)

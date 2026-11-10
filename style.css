@@ -711,6 +711,20 @@ button.switch.active:hover:not(:disabled) {
 #eraseConfirm {
   max-width: var(--panel-width);
 }
+.gallery-tools-row {
+  display: flex;
+  align-items: center;
+  gap: var(--tile-gap);
+} /* the tools, then Select at the page's right, how many selected on its left */
+.gallery-tools-row #galleryTools {
+  flex: 1;
+}
+.gallery-tools-row #selectedWords {
+  margin: 0 8px 4px 0;
+}
+#gallerySelectTile {
+  margin-bottom: 4px;
+}
 #galleryPane:not([hidden]) {
   position: absolute;
   inset: 0;

@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.742';
+const VERSION = '0.4.743';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -39250,6 +39250,9 @@ function syncSelection() {
   $('yourList').classList.toggle('selecting', selecting);
   for (const { x, row } of galleryCards) row.classList.toggle('selected', selectedNames.has(x.name));
   setTile($('gallerySelect'), { on: selecting });
+  setTile($('galleryShare'), {
+    whyNot: () => (selecting ? 'Not while selecting: the setup shown is not the cards selected.' : ''),
+  });
   setTile($('galleryDelete'), {
     whyNot: () => (selectedNames.size ? '' : 'None selected: Select, then click the cards to delete.'),
   });
@@ -46251,7 +46254,7 @@ function galleryTab() {
   return b;
 }
 
-// The Gallery's tools, tiles: Select (a switch: the cards to act on), Import (added to them, a name already used numbered),
+// The Gallery's tools, tiles: Select (a switch: the cards to act on, at the page's right), Import (added to them, a name already used numbered),
 // Export, Delete (the cards selected), Erase all (the app as at a first visit), each of these two confirmed under them, Rebuild,
 // then Share link (the link to what is shown)
 // (Confirm, under them: what the tile clicked asks, its words and its act; clicked again, gone)
@@ -46262,7 +46265,7 @@ const askConfirm = (words, act) => {
   b.innerHTML = `${icon('trash')} ${words}`;
   confirmAct = act;
 };
-$('galleryTools').replaceChildren(
+$('gallerySelectTile').replaceChildren(
   tile({
     id: 'gallerySelect',
     pic: icon('check'),
@@ -46271,6 +46274,8 @@ $('galleryTools').replaceChildren(
     title: 'Pick cards with a click (none shown) for Export, Delete and Rebuild; off, none picked',
     click: toggleSelecting,
   }),
+);
+$('galleryTools').replaceChildren(
   tile({
     pic: icon('import'),
     text: 'Import',
@@ -46309,10 +46314,11 @@ $('galleryTools').replaceChildren(
     click: rebuildThumbnails,
   }),
   tile({
+    id: 'galleryShare',
     pic: icon('link'),
     text: 'Share link',
     title: 'Copy the link to what is shown',
-    click: () => shareView($('galleryTools').lastElementChild),
+    click: () => shareView($('galleryShare')),
   }),
 );
 $('galleryToolsHead').insertAdjacentHTML('afterbegin', icon('floppy')); // (the Gallery's files: Import, Export, Delete, Erase)

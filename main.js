@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.796';
+const VERSION = '0.4.797';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -41113,7 +41113,7 @@ const blankTile = () => (oceanOn() ? OCEAN : UNLIT); // (a surface's tile none h
 const teamColour = (s) => (oceanOn() && LANDS[s] ? LANDS[s] : LIFE_COLOURS[s]); // (team s, a battle's walker or Life's colour: Earth's lands up to a Sextet, else Life's colours)
 const LAND_NAMES = ['green', 'yellow', 'ochre', 'lime', 'white', 'cyan']; // (Earth's lands, see PALETTES)
 const teamName = (s) => (oceanOn() && LANDS[s] ? LAND_NAMES[s] : LIFE_COLOUR_NAMES[s]);
-// Cut: Off, or a fixed plane through the middle facing one of the view's axes (E, N, Up, as drawn in its corner), the half on
+// Cut: Off, or a fixed plane through the middle facing S, E or Up (the view's corner draws E, N and Up, see gpuAxes), the half on
 // that axis's side gone: its notches on a row as Flat ── Inflated (see sizeGauge)
 const CUT_AXES = [['Off'], ['S', [0, -1, 0]], ['E', [1, 0, 0]], ['Up', [0, 0, 1]]];
 let cutAxis = defaultOf('cut', tabMode());
@@ -45686,7 +45686,7 @@ $('ocean').addEventListener('change', () => {
 notchRow(
   $('cutRow'),
   'Cut',
-  "A cross-section by a fixed plane through the middle, the half on its axis's side gone, the inside showing: Off, or the plane facing S, E or Up (the axes drawn in the view's corner)",
+  "A cross-section by a fixed plane through the middle, the half on its axis's side gone, the inside showing: Off, or the plane facing S, E or Up (the view's corner draws E, N and Up: S the way opposite N)",
   CUT_AXES.map(([name]) => [name]),
   cutAxis,
   defaultOf('cut', tabMode()),

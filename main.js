@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.771';
+const VERSION = '0.4.772';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -6382,7 +6382,7 @@ function describe(base, available) {
   $('barBase').hidden = !!creature || !!mode.life; // (a creature's base or colours in its rule's tooltip; Life's digits: in its description)
   $('barBase').textContent = colours ? `${colours} colours` : baseWords(base);
   $('barRule').hidden = !creature && !walkRule; // (Life's: below)
-  setLinks($('barRule'), walkRule);
+  setLinks($('barRule'), walkRule && ruleSpan(walkRule));
   $('barRule').title = 'Its rule · A click: how it works';
   $('barBattle').hidden = !walk.battle; // (a battle: its rule, after the walk's)
   $('barBattle').textContent = walk.battle ? BATTLE_RULES[battleRuleInUse(w)][1] : '';
@@ -6982,7 +6982,7 @@ const card = ({
 }) => {
   const b = tile({
       html: '',
-      title: title || [rule, detail].filter(Boolean).join(' · '),
+      title: title || detail,
       on,
       can,
       byDefault,
@@ -7002,6 +7002,7 @@ const card = ({
       how();
     });
   } // (its picture: a click on how it works)
+  if (rule && !title) b.dataset.rule = rule; // (its tooltip's words after its rule's code, in its font: see tipOf)
   b.append(
     picture,
     cardWords(name, detail, '', null, rule),
@@ -11547,13 +11548,19 @@ const tipOf = (target) => {
 document.addEventListener('mouseover', (e) => {
   const { el, tip, greyed } = tipOf(e.target),
     named = el?.matches('button, label, .notch-row'); // (a notch row: its title, its first span)
+  const rule = el?.dataset.rule ?? '',
+    said = rule
+      ? Object.assign(document.createElement('span'), {
+          innerHTML: [ruleSpan(rule), tip && htmlText(tip)].filter(Boolean).join(' · '),
+        })
+      : tip; // (a rule's code first, in its font, as its card writes it: see ruleSpan)
   const name = named
     ? (
         el.getAttribute('aria-label') ?? (el.querySelector('.mode-name') ?? el.querySelector('span') ?? el).textContent
       ).trim()
     : ''; // (a button with no words, a picture: its aria-label)
   const bold = (text) => Object.assign(document.createElement('b'), { className: 'tip-name', textContent: text }),
-    ok = tip && /\p{L}/u.test(name); // (a symbol, + or −: no name)
+    ok = (tip || rule) && /\p{L}/u.test(name); // (a symbol, + or −: no name)
   // its default: a tile's (see setTile), a box's (its checkbox as the page starts)
   const box = el?.matches('label') ? el.querySelector('input[type=checkbox]') : null,
     d = el?.dataset.default ?? (box ? (box.defaultChecked ? 'on' : 'off') : '');
@@ -11587,12 +11594,12 @@ document.addEventListener('mouseover', (e) => {
   } // (a size's: its words in colour, see sizeTips; its state under them)
   else
     $('tip').replaceChildren(
-      ...(!tip
+      ...(!tip && !rule
         ? told.length
           ? [bold(name), ...told]
           : []
         : !ok
-          ? [tip, ...told]
+          ? [said, ...told]
           : tip.startsWith(`${name}:`)
             ? [
                 bold(name),
@@ -11602,7 +11609,7 @@ document.addEventListener('mouseover', (e) => {
                   .replace(/^./, (c) => c.toUpperCase()),
                 ...told,
               ]
-            : [bold(name), tip, ...told]),
+            : [bold(name), said, ...told]),
     ); // (no words of its own: its name and its default; else its name, then its words under it)
   $('hint').hidden = !!el || !(e.target.tagName === 'CANVAS' && e.target.parentElement.id === 'stage'); // (the view's own layers, not a box's canvas over it)
 });
@@ -39211,22 +39218,29 @@ function writeGallery(list) {
 // a setup's row: a walk's 2D, 3D or Lattice, its walk, size, start, turn and rule; a Game of Life's rule (its name on its grid,
 // see ruleCard), colours (Newcomer's), size and start
 const setupDetail = (s, chips = '') => {
-  // (chips: its bar's, saved with it: what they say not said again)
+  // (chips: its bar's, saved with it)
   const life = MODES[s.w]?.life,
-    r = String(s.r ?? ''),
-    named = life && ruleCard(r, s.w)?.name;
+    { code, name } = ruleWords(s);
   return [
     chips && life && shapeAndTiles(s.w),
-    life ? (named ? `${named} ${r}` : r || 'Life') : SPACES[NAV[s.w]?.[1]]?.[0],
+    life ? name || (!code && 'Life') : SPACES[NAV[s.w]?.[1]]?.[0],
     life ? Number(s.k) > 1 && `${s.k} teams${Number(s.nc) === 1 ? ', the last a newcomer' : ''}` : walkName(s.w),
     s.s && `size ${String(s.s).replace('x', ' × ')}`,
     s.st > 1 && `start ${s.st}`,
     Number(s.o) === 1 && 'turned 30°',
     Number(s.q) === 1 && 'square sheet',
-    s.r && !life && `rule ${s.r}`,
   ]
-    .filter((part) => part && !(chips && r && String(part).includes(r)))
+    .filter(Boolean)
     .join(' · ');
+};
+// A setup's rule, as the Gallery writes it (its cards, their tooltips, the setup in view's): its code (in its font, see
+// ruleSpan: B3/S23, LNR, 1R0 0L0) and its name when it has one (a Life rule's, see ruleCard); a walk's first rule, written in
+// no link, its network's first; by the digits ("digits", "digits 1R0 0L0"): its code without the word
+const ruleWords = (s) => {
+  const m = MODES[s.w],
+    code = String(s.r ?? (m?.net ? firstWalkRule(m) : '')).replace(/^digits ?/, ''),
+    name = m?.life && ruleCard(code, s.w)?.name;
+  return { code, name: name && name !== code ? name : '' };
 };
 // its title: its bar's as it was saved (a battle's walkers, Life's start); one saved before: a walk's number, a Game of Life's
 // shape and tiles (see shapeAndTiles)
@@ -39377,7 +39391,7 @@ const barTitleNow = () =>
         : barTitle;
 const barWords = () => ({
   title: Object.assign(document.createElement('span'), { innerHTML: barTitleNow() }).textContent.trim() || shownSymbol,
-  chips: ['barBase', 'barRule', 'barBattle']
+  chips: ['barBase', 'barBattle'] // (its rule not: the setup's, see ruleWords)
     .filter((id) => !$(id).hidden)
     .map((id) => $(id).textContent.trim())
     .filter(Boolean)
@@ -46195,7 +46209,13 @@ const isInUse = (setup) => sameSetup(setup, getSetup(), SETUP_LOOKS);
 let cardShown = null; // (the card clicked last: its setup adopted once built)
 function setupRow(name, detail, x) {
   const { setup } = x,
-    b = card({ pic: icon(SHAPE_ICONS[NAV[setup.w]?.[2]] ?? MODE_ICONS[setup.w]), name, detail, on: isInUse(setup) }); // (its shape's picture, as the Grid's; its tooltip its name and its detail in full, as the row may cut them short)
+    b = card({
+      pic: icon(SHAPE_ICONS[NAV[setup.w]?.[2]] ?? MODE_ICONS[setup.w]),
+      name,
+      rule: ruleWords(setup).code,
+      detail,
+      on: isInUse(setup),
+    }); // (its shape's picture, as the Grid's; its tooltip its name and its detail in full, as the row may cut them short)
   b.append(
     Object.assign(document.createElement('span'), { className: 'card-check', innerHTML: icon('check') }),
     Object.assign(document.createElement('span'), { className: 'card-star', innerHTML: icon('star') }),
@@ -46268,6 +46288,7 @@ async function showInViewPicture() {
   const { title, chips } = barWords(),
     b = $('inViewPicture');
   b.setAttribute('aria-label', title);
+  b.dataset.rule = ruleWords(getSetup()).code;
   b.title = chips;
   b.innerHTML = inViewUrl ? `<img src="${inViewUrl}" alt="">` : '';
 }

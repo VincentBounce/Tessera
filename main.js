@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.757';
+const VERSION = '0.4.758';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -39257,6 +39257,10 @@ function syncSelection() {
   setTile($('galleryDelete'), {
     greyed: selecting() ? '' : 'None selected: tick a card (its box, on its hover).',
   });
+  setTile($('selectAll'), {
+    greyed: galleryCards.every(({ x }) => selectedNames.has(x.name)) ? 'All selected.' : '',
+  });
+  setTile($('selectNone'), { greyed: selecting() ? '' : 'None selected.' });
   $('selectedWords').hidden = !selecting();
   $('selectedWords').textContent = `${selectedNames.size} selected: Export, Delete and Rebuild act on them`;
 }
@@ -46264,6 +46268,29 @@ const askConfirm = (words, act) => {
   b.innerHTML = `${icon('trash')} ${words}`;
   confirmAct = act;
 };
+// Select all, Select none: every card shown, or none (their pictures to come)
+const selectCards = (all) => {
+  selectedNames.clear();
+  if (all) for (const { x } of galleryCards) selectedNames.add(x.name);
+  syncSelection();
+  syncRebuildTile();
+};
+$('gallerySelectTiles').replaceChildren(
+  tile({
+    id: 'selectAll',
+    pic: icon('check'),
+    text: 'Select all',
+    title: 'Select every card',
+    click: () => selectCards(true),
+  }),
+  tile({
+    id: 'selectNone',
+    pic: icon('eraser'),
+    text: 'Select none',
+    title: 'Let every card go',
+    click: () => selectCards(false),
+  }),
+);
 $('galleryTools').replaceChildren(
   tile({
     pic: icon('import'),

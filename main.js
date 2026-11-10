@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.760';
+const VERSION = '0.4.761';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -8264,6 +8264,10 @@ const ICONS = (() => {
       '<circle class="f" cx="9" cy="10" r="1.2"/><circle class="f" cx="15" cy="10" r="1.2"/>', // Emoji: a smiling face
     star: svgPath(pathOf(ngon(10, 1).map((_, k) => ngon(10, k % 2 ? 4.2 : 9.5)[k]))),
     check: svgPath('M5 12.5L10 17.5L19 7'),
+    boxEmpty: svgPath('M6 4H18A2 2 0 0 1 20 6V18A2 2 0 0 1 18 20H6A2 2 0 0 1 4 18V6A2 2 0 0 1 6 4Z'), // (a card's check box, none selected: see .card-check)
+    boxTicked:
+      svgPath('M6 4H18A2 2 0 0 1 20 6V18A2 2 0 0 1 18 20H6A2 2 0 0 1 4 18V6A2 2 0 0 1 6 4Z') +
+      svgPath('M8 12.5L11 15.5L16.5 9'), // (it ticked: all selected)
     copy:
       '<rect x="8.5" y="8.5" width="12" height="12" rx="2"/>' +
       svgPath('M15.5 8.5V5.5A2 2 0 0 0 13.5 3.5H5.5A2 2 0 0 0 3.5 5.5V13.5A2 2 0 0 0 5.5 15.5H8.5'),
@@ -46268,7 +46272,7 @@ const askConfirm = (words, act) => {
   b.innerHTML = `${icon('trash')} ${words}`;
   confirmAct = act;
 };
-// All, None: every card shown selected, or none (their pictures to come)
+// All, None: every card shown selected, or none (their pictures a card's check box, ticked or empty)
 const selectCards = (all) => {
   selectedNames.clear();
   if (all) for (const { x } of galleryCards) selectedNames.add(x.name);
@@ -46278,14 +46282,14 @@ const selectCards = (all) => {
 $('gallerySelectTiles').replaceChildren(
   tile({
     id: 'selectAll',
-    pic: icon('check'),
+    pic: icon('boxTicked'),
     text: 'All',
     title: 'Select all: every card selected',
     click: () => selectCards(true),
   }),
   tile({
     id: 'selectNone',
-    pic: icon('eraser'),
+    pic: icon('boxEmpty'),
     text: 'None',
     title: 'Select none: every card let go',
     click: () => selectCards(false),

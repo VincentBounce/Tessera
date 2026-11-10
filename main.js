@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.761';
+const VERSION = '0.4.762';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -18190,7 +18190,10 @@ const battleFits = (
     if (solid && (solid.any.includes(K) || !solid.some.includes(K))) return solid.any.includes(K); // (no group of K: none)
     teamsBuilding = sphere.columns ? K : null;
     try {
-      const g = sphere.mesh(size),
+      // (a solid's start 1 the same kind of point at every size, by construction: the edge farthest from A in its kite, see
+      // startList; and K's fit A's start's kind of point only, the turns leaving it in place: start 1 judged on the solid's
+      // least mesh, never a mesh of the size asked built for it, checked by tesseraCheck's checkFirstStarts)
+      const g = sphere.mesh(solid && j <= 1 ? Math.min(...sizesOf(kind, mode)) : size),
         start = walkStart(g, mode, j > 1 ? Math.min(j, startList(g).length) : 1),
         apart = startSpread(g, !!mode.grid, start);
       return (

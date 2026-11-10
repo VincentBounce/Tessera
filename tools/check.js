@@ -783,6 +783,38 @@ async function coloursOffered(fail) {
   return checked;
 }
 
+// A solid's start 1 the same kind of point at every size (the turns of the solid leaving it in place as many): what lets
+// battleFits judge it on the solid's least mesh (see battleFits), every walk on a closed solid whose team counts depend on
+// the start, its sizes to 30,000 cells
+function checkFirstStarts(fail) {
+  let checked = 0;
+  for (const w of Object.keys(MODES).filter(battleMode)) {
+    const mode = MODES[w],
+      kind = surfaceOf(mode),
+      S = SPHERES[kind];
+    if (S.columns) continue;
+    const counts = solidTeamCounts(kind, mode);
+    if (counts.some.every((K) => counts.any.includes(K))) continue; // (any start: none depends on it)
+    const kindOfStart = (size) => {
+      const g = S.mesh(size),
+        P = mode.grid ? g.verts : g.cen,
+        v = walkStart(g, mode, 1)[0],
+        p = [P[3 * v], P[3 * v + 1], P[3 * v + 2]];
+      return solidRotations(solidCorners(g)).filter((M) => pointsApart([p, matTimesPoint(M, p)]) < 1e-7).length;
+    };
+    const sizes = sizesOf(kind, mode).filter((size) => S.tiles(size) <= 30000),
+      first = kindOfStart(sizes[0]);
+    for (const size of sizes.slice(1)) {
+      checked++;
+      if (kindOfStart(size) !== first)
+        fail(
+          `${w} at ${size}: start 1 another kind of point than at ${sizes[0]} (battleFits judges it on the least mesh)`,
+        );
+    }
+  }
+  return checked;
+}
+
 // Battles fair: every walk on a surface (see battleMode), at its size, offers a count of walkers past Solo, and in each
 // count offered every walker, its digits A's, walks A's path moved by its map (see battleStarts, placeMap), step for step,
 // till one dies: none its mirror. A night's (4 minutes)
@@ -1405,6 +1437,7 @@ window.tesseraCheck = async ({
     checkRosetteSpheres(fail) +
     checkTwistedSphere(fail) +
     checkDiscCuts(fail) +
+    checkFirstStarts(fail) +
     (await checkSheets(fail)) +
     (await checkNames(fail)) +
     (await checkColdLinks(fail));

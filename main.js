@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.790';
+const VERSION = '0.4.791';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -24425,7 +24425,7 @@ const gridColour = () =>
       : getComputedStyle(document.documentElement).getPropertyValue('--grid-line-color');
 function drawPlaneGrid() {
   layers.grid.clearRect(0, 0, canvasWidth, canvasHeight);
-  drawSky(layers.grid);
+  paintSky();
 }
 // A grid's turns: a pattern turns by a quarter on squares and Cairo pentagons, a sixth on hexagons and triangles
 const PATTERN_TURNS = {
@@ -39480,11 +39480,10 @@ const thumbnailStore = (mode, ask) =>
   );
 // The view as one thumbnail, cut to THUMBNAIL_SIZE from its middle: every layer under the hover's, in their order, without the
 // grid's lines nor the sky (the Gallery's theme behind it, its card's background). WebGPU's picture is only there in the
-// frame that drew it: asked of the next frame, drawn whole without the grid and the sky, and taken as it ends, the grid then
-// as it was (see tick)
+// frame that drew it: asked of the next frame, drawn whole without the grid, and taken as it ends, the grid then as it was
+// (see tick); the sky the view's background, never in it (see paintSky)
 let thumbnailWanted = null,
-  thumbnailGrid = true,
-  thumbnailFrame = false; // (the frame taken: no sky, see drawSky)
+  thumbnailGrid = true;
 const wantThumbnail = () =>
   new Promise((ok) => {
     thumbnailWanted = ok;
@@ -40110,7 +40109,7 @@ function userMovedView() {
 function drawGrid() {
   const ctx = layers.grid;
   ctx.clearRect(0, 0, canvasWidth, canvasHeight);
-  if (walk.is3d) drawSky(ctx);
+  paintSky();
   if (!$('showGrid').checked || !walk.lattice) return; // (no grid built yet, at load: no lines)
   const s = view.scale;
   let stepCells = 1;
@@ -40210,13 +40209,14 @@ function groundAt(y) {
     .map((v, d) => Math.round(v + (hexRgb(B)[d] - v) * t))
     .join(', ')})`;
 }
-function drawSky(ctx) {
-  const stops = skyStops();
-  if (!stops || thumbnailFrame) return; // plain, or a thumbnail's frame: the page background shows through (the Gallery's)
-  const sky = ctx.createLinearGradient(0, 0, 0, canvasHeight);
-  for (const [at, colour] of stops) sky.addColorStop(at, colour);
-  ctx.fillStyle = sky;
-  ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+// The sky (Dawn, Twilight): the view's background, behind all its layers, none of them (faded while a size or the start is
+// hovered, taken in a thumbnail: the Gallery's background behind it); plain, the page's
+function paintSky() {
+  const stops = skyStops(),
+    sky = stops ? `linear-gradient(${stops.map(([at, colour]) => `${colour} ${at * 100}%`).join(', ')})` : '';
+  if (stage.dataset.sky === sky) return;
+  stage.dataset.sky = sky;
+  stage.style.background = sky;
 }
 
 // 3D: wireframe bounding box of the walk + axis gizmo in the top-left corner
@@ -44766,10 +44766,8 @@ function tick(now = performance.now()) {
   if (thumbnailWanted) {
     const ok = thumbnailWanted;
     thumbnailWanted = null;
-    thumbnailFrame = true;
     queueMicrotask(() => {
       ok(stageThumbnail());
-      thumbnailFrame = false;
       $('showGrid').checked = thumbnailGrid;
       needsFull = true;
     });

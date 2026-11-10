@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.801';
+const VERSION = '0.4.802';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -44338,7 +44338,7 @@ function renderWalkGauges() {
     // (with land a dead one keeps its land and its place by it; in Cut it goes under the living; ✝ by its worth, when: Dead at)
     const gone = (s) => D.dead[s] >= 0,
       left = D.living(),
-      survivor = left.length === 1 ? left[0] : -1; // (the last one alive, the others dead: ♥, see battleWinner)
+      survivor = left.length === 1 ? left[0] : -1; // (the last one alive, the others dead: ♥, as text, not the emoji: U+FE0E; see battleWinner)
     paintRanking(
       names.map((name, s) => ({
         colour: teamColour(s),
@@ -44347,7 +44347,7 @@ function renderWalkGauges() {
         dead: gone(s) && !D.bite,
         diedAt: D.dead[s],
         cells: [
-          `<b>${formatNumber(w[s])}</b>${gone(s) ? ' ✝' : s === survivor ? ' ♥' : ''}`,
+          `<b>${formatNumber(w[s])}</b>${gone(s) ? ' ✝' : s === survivor ? ' ♥\uFE0E' : ''}`,
           formatNumber(D.bestAt(s)),
           deaths[s] >= 0 ? genLink(deaths[s]) : '',
           ...(C.body ? [formatNumber(D.size[s])] : []),

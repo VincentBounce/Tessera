@@ -714,20 +714,40 @@ button.switch.active:hover:not(:disabled) {
   display: flex;
   align-items: center;
   gap: var(--tile-gap);
-} /* the tools, then at the page's right how many cards selected, Select all and Select none */
-.gallery-tools-row #galleryTools {
-  flex: 1;
-}
-.gallery-tools-row #selectedWords {
-  margin: 0 8px 4px 0;
-}
-#gallerySelectTiles {
+} /* three groups: the Gallery's tools; in the middle the setup in view's; at the right the selection's */
+.gallery-tools-row .nav-shapes {
   display: flex;
   gap: var(--tile-gap);
   margin-bottom: 4px;
-} /* (its two tiles side by side, each a tile's width, as System's in the display box) */
-#gallerySelectTiles button {
+} /* (each group's tiles side by side, each a tile's width, as System's in the display box) */
+.gallery-tools-row .nav-shapes button {
   width: var(--tile-width);
+}
+.gallery-in-view {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 auto;
+  padding: 0 12px;
+  border-inline: 1px solid var(--border-color);
+} /* (in the middle, a hairline on each side) */
+.in-view-words {
+  display: flex;
+  flex-direction: column;
+  max-width: 220px;
+  margin-bottom: 4px;
+  white-space: nowrap;
+}
+#inViewTitle {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-weight: 600;
+}
+#galleryPane.selecting .in-view-words {
+  opacity: 0.4;
+} /* (greyed while selecting, with its tiles) */
+.gallery-tools-row #selectedWords {
+  margin: 0 8px 4px 0;
 }
 #galleryPane:not([hidden]) {
   position: absolute;
@@ -820,7 +840,7 @@ button.switch.active:hover:not(:disabled) {
   width: 14px;
   height: 14px;
 }
-.selecting .gallery-grid .card-check,
+#galleryPane.selecting .gallery-grid .card-check,
 .gallery-grid button:hover .card-check {
   display: flex;
 } /* (while selecting, every card's; else a card hovered's: a click on it selects the card) */
@@ -844,7 +864,7 @@ button.switch.active:hover:not(:disabled) {
   fill: currentColor;
 }
 .gallery-grid button.selected,
-#yourList:not(.selecting) .gallery-grid button.active {
+#galleryPane:not(.selecting) .gallery-grid button.active {
   border-color: var(--accent-color);
   box-shadow: 0 0 0 1px var(--accent-color);
 } /* (a card selected or in view: its gold 2 px, a ring round its border, the card's size the same) */
@@ -984,12 +1004,12 @@ button.active .bubble.active {
   color: var(--accent-color);
   background: var(--picked-background);
 }
-:is(.mode-list, #yourList:not(.selecting) .gallery-grid) button.active {
+:is(.mode-list, #galleryPane:not(.selecting) .gallery-grid) button.active {
   border-color: var(--accent-color);
   background: var(--picked-background);
 } /* (a Gallery card too: the setup in view, but while selecting: its star only) */
-:is(.mode-list, #yourList:not(.selecting) .gallery-grid) button.active .mode-name,
-:is(.mode-list, #yourList:not(.selecting) .gallery-grid) button.active .mode-icon {
+:is(.mode-list, #galleryPane:not(.selecting) .gallery-grid) button.active .mode-name,
+:is(.mode-list, #galleryPane:not(.selecting) .gallery-grid) button.active .mode-icon {
   color: var(--accent-color);
 }
 .row button {

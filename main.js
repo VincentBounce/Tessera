@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.768';
+const VERSION = '0.4.769';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -39260,7 +39260,7 @@ const NOT_WHILE_SELECTING = 'Not while selecting: Export, Delete and Rebuild act
 const allSelected = () => galleryCards.length > 0 && galleryCards.every(({ x }) => selectedNames.has(x.name));
 function syncSelection() {
   for (const name of selectedNames) if (!galleryCards.some(({ x }) => x.name === name)) selectedNames.delete(name); // (cards shown only: one gone by its ★, Delete, Import… no more selected)
-  $('yourList').classList.toggle('selecting', selecting());
+  $('galleryPane').classList.toggle('selecting', selecting());
   for (const { x, row } of galleryCards) row.classList.toggle('selected', selectedNames.has(x.name));
   for (const id of ['galleryImport', 'galleryShare'])
     setTile($(id), { greyed: selecting() ? NOT_WHILE_SELECTING : '' }); // (the tools acting on them the only ones lit)
@@ -39356,6 +39356,7 @@ function syncSaveButton() {
   b.title = saved
     ? `Saved in the Gallery as “${setupTitle(saved)}”: a click takes it out`
     : 'Save the setup in view in the Gallery, in this browser';
+  $('inViewTitle').textContent = barWords().title; // (the setup in view's, as its bar says it)
   const star = $('galleryStar'); // (the Gallery's Star tile, the same: on while saved, greyed while selecting)
   if (star) setTile(star, { on: !!saved, greyed: selecting() ? NOT_WHILE_SELECTING : '' });
 }
@@ -46270,7 +46271,7 @@ function galleryTab() {
 
 // The Gallery's tools, tiles (the cards selected, see selectedNames): Import (added to them, a name already used numbered),
 // Export, Delete (the cards selected, confirmed under them), Rebuild (Erase all: Tessera's page, Clean Tessera's storage in this browser),
-// then Share link (the link to what is shown)
+// then the setup in view's: Star (as the ☆ of Gallery's tab) and Share link (the link to what is shown)
 // (Confirm, under them: what the tile clicked asks, its words and its act; clicked again, gone)
 let confirmAct = null;
 const askConfirm = (words, act) => {
@@ -46335,6 +46336,8 @@ $('galleryTools').replaceChildren(
       'Erase the thumbnails no card shows any more, then take again those of the cards selected, else the missing ones, one setup after the other: each shown, then taken once built; on while it runs, off by a click or once done',
     click: rebuildThumbnails,
   }),
+);
+$('galleryViewTiles').replaceChildren(
   tile({
     id: 'galleryStar',
     pic: icon('star'),

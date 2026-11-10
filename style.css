@@ -744,7 +744,7 @@ button.switch.active:hover:not(:disabled) {
 #inViewPicture {
   height: calc(var(--tile-height) + 4px + 18px);
   aspect-ratio: 5 / 4;
-  margin: -12px 0 -6px;
+  margin: -12px -16px -6px 0;
   padding: 0;
   border: 0;
   border-radius: 0;
@@ -752,7 +752,7 @@ button.switch.active:hover:not(:disabled) {
   overflow: hidden;
   background: var(--page-background);
 } /* the setup in view's picture, whole: the band's height, a tile's, its tiles' margin under them (4px) and the band's paddings
-   (12px, 6px: see .gallery-band); its width by a thumbnail's 5 : 4 (see THUMBNAIL_SIZE, .gallery-grid .mode-icon) */
+   (12px, 6px: see .gallery-band), against its right edge (its 16px); its width by a thumbnail's 5 : 4 (see THUMBNAIL_SIZE, .gallery-grid .mode-icon) */
 #inViewPicture img {
   position: absolute;
   inset: 0;

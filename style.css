@@ -1959,44 +1959,18 @@ button.wide.active,
   border-radius: 7px;
   padding: 3px;
   margin: -4px;
-} /* (its frame round it as an icon button's, its tab's size the same) */
+} /* (its frame round it, its tab's size the same) */
 .pane-tab .fav.saved {
   color: var(--accent-color);
 } /* Gallery's ☆: as its tab's colour, ★ gold while the setup in view is in the Gallery */
 .fav.saved .icon path {
   fill: currentColor;
 }
-.icon-btn .icon {
-  width: 16px;
-  height: 16px;
-}
-/* The Gallery: Export and Import as two small icons at the right of its heading */
-.icon-btn {
-  display: grid;
-  place-items: center;
-  width: 28px;
-  height: 28px;
-  padding: 0;
-  border-radius: 7px;
-  background: transparent;
-  border-color: transparent;
-  color: var(--muted-text-color);
-}
-.icon-btn:hover:not(:disabled),
 .pane-tab .fav:hover {
   color: var(--accent-color);
   border-color: var(--border-color);
   background: var(--page-background);
-} /* (Gallery's ☆ too: a button in its tab) */
-.icon-btn svg {
-  width: 16px;
-  height: 16px;
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 1.8;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-}
+} /* (Gallery's ☆: a button in its tab) */
 /* Gallery, the first tab at the top: a click opens the gallery in the left pane, lit as the tab in use (the walk's tab not, till
    it is closed) */
 .tabs button.pane-tab.open {

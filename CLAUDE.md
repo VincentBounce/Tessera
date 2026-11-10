@@ -143,6 +143,10 @@ While the checks run unattended (a night, a meal), also audit what they cannot s
 - **Every night, click everything, as a brute**: every visible control not greyed, on every mode, Display's switches and
   looks included (Blocks, Glass, Cut, Ocean, Perspective…), in both themes, then step, seek and click again: no console
   error, nothing drawn empty. The fuzz picks menus only: Display › Blocks threw from v0.4.21 to v0.4.503 unseen.
+- **Every night, dead code**: `python3 tools/deadcode.py` lists what the app declares and nothing alive reads (main.js's
+  names, style.css's classes, ids and variables), each at its file:line, a helper's helper too in one run; each removed at
+  once, its commit saying since when it was dead (`git log -S`). It found v0.4.793's 45 lines (projector, planeVisible,
+  rowAction, .row-act) and .icon-btn, dead since v0.4.7.
 - **Every night, the greyed controls' first hover**: `tesseraCheck({ hovers: true })`, each greyed control on every
   mode hovered at the size shown and at its surface's largest, none over 100 ms (a whyNot never builds a whole figure:
   Hunt › Longest on a globe of 795,026 cells took 9.7 s till v0.4.787, see surfaceFrame).

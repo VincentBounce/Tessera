@@ -1314,9 +1314,9 @@ button.active .bubble.active {
   height: 100%;
   object-fit: cover;
   background: var(--page-background);
-  animation: fade-in 0.2s linear 0.1s both;
-} /* (the thumbnail as taken: the view's middle, see stageThumbnail, on its card's background, the theme's: the figure before not
-   seen through it; seen only past 0.1 s, a setup shown sooner never covered by it: the browser plays it while the page is busy) */
+} /* (the thumbnail as taken: the view's middle, see stageThumbnail, on its card's background, the theme's: whole in the frame
+   painted before the setup is built, the figure before never seen through it; no fade: a fade does not play while the page
+   builds) */
 .stage.faded > canvas:not(#hoverLayer) {
   opacity: 0.3;
 } /* a size or the start hovered: all but its motif or its starts faded, fills and outlines alike */

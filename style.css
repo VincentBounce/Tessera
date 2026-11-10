@@ -2,7 +2,7 @@
   --tile-width: 57px; /* a tile's width, every tile alike: .nav-shapes, as many a row as fit (4 in the settings' column) */
   --tile-height: 55px; /* a tile's height, every tile alike */
   --tile-gap: 4px; /* between two tiles */
-  --panel-width: 280px; /* the settings' column (.panel; the Gallery's Confirm erase as wide) */
+  --panel-width: 280px; /* the settings' column (.panel) */
   /* the text's sizes, four, each element one of them: */
   --caption-text-size: 11px; /* a card's words, a bubble, a figure's caption */
   --label-text-size: 12px; /* a field's label, a note, a hint, the ranking */
@@ -560,10 +560,9 @@ button.wide.how-it-works {
   margin-bottom: 4px;
 } /* on its rules' first card, the list's gap */
 #huntRow .nav-shapes,
-#galleryTools,
 #ruleTabs {
   margin-bottom: 4px;
-} /* a wide button right under its tiles (Hunt, Confirm erase, How it works), as close as a row of them */
+} /* a wide button right under its tiles (Hunt, How it works), as close as a row of them */
 
 /* Walk mode: one tab per category, then every choice of that category */
 /* Tabs: text only, the active one in yellow and underlined on the header's hairline; always bold,

@@ -279,6 +279,14 @@ const shown =
   (w, more = () => true) =>
   () =>
     $('mode').value === w && more(); // (mode w on the page, and more)
+// a Life link opened and its own game built: a new one, of its mode and its setup (not the one before, still shown while the
+// next is built: a wait's guess, 1.5 s, read the grid before's symmetries on a page busy after the other checks)
+const openLife = async (link) => {
+  const before = walk.life,
+    w = link.match(/w=([^&]+)/)[1];
+  location.hash = link;
+  await until(shown(w, () => walk.life && walk.life !== before && walk.mode === w && isInUse(parseHash())));
+};
 // to generation g, its batches awaited (Life's on the card come back later, see lifeSettle)
 const goTo = async (g) => {
   advanceTo(g);
@@ -1031,10 +1039,7 @@ const KNOWN = [
 async function checkKnown(fail) {
   let checked = 0;
   for (const [link, T, P] of KNOWN) {
-    const w = link.match(/w=([^&]+)/)[1],
-      before = walk.life;
-    location.hash = link;
-    await until(shown(w, () => walk.life && walk.life !== before));
+    await openLife(link);
     const L = walk.life;
     lifeReset();
     stepShown = 0;
@@ -1091,8 +1096,7 @@ async function checkKnown(fail) {
         `a Game of Life back from ${from} to ${to}: at ${stepShown}, ${stepShown === to ? 'not the state played to' : ''}`,
       );
   }
-  location.hash = '#x=1/28&w=blocks2d&d=200&r=M15,1,2,3,4,5,6,7,8,9,10,11,12,13,14,0&s=16&e=1&pop=digits';
-  await wait(1500);
+  await openLife('#x=1/28&w=blocks2d&d=200&r=M15,1,2,3,4,5,6,7,8,9,10,11,12,13,14,0&s=16&e=1&pop=digits');
   restart();
   await goTo(30);
   checked++;
@@ -1108,8 +1112,7 @@ async function checkKnown(fail) {
     '#w=life2d&r=B3/S23&k=4&s=144&e=1&pop=text.Walking%0Api&tf=mono',
     '#x=pi&w=life2d&r=B3/S23&s=48&e=1&y=kaleido&pop=digits',
   ]) {
-    location.hash = link;
-    await wait(2000);
+    await openLife(link);
     const { kind, W } = walk.plane,
       seed = walk.life.seed,
       by = [...walk.life.seedByColour].slice(1);
@@ -1132,8 +1135,7 @@ async function checkKnown(fail) {
     ['life2dFloret', 'half rotate'],
     ['blocks2dHex', ''],
   ]) {
-    location.hash = `#w=${w}&s=32&e=1&pop=random.30.1`;
-    await wait(1500);
+    await openLife(`#w=${w}&s=32&e=1&pop=random.30.1`);
     const { kind, W } = walk.plane,
       has = symmetriesHere(kind, W)
         .filter((y) => y !== 'none')

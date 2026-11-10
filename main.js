@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.795';
+const VERSION = '0.4.796';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -24376,6 +24376,7 @@ const gridColour = () =>
 function drawPlaneGrid() {
   layers.grid.clearRect(0, 0, canvasWidth, canvasHeight);
   paintSky();
+  placeAxesLabels();
 }
 // A grid's turns: a pattern turns by a quarter on squares and Cairo pentagons, a sixth on hexagons and triangles
 const PATTERN_TURNS = {
@@ -40065,6 +40066,7 @@ function drawGrid() {
   const ctx = layers.grid;
   ctx.clearRect(0, 0, canvasWidth, canvasHeight);
   paintSky();
+  placeAxesLabels();
   if (!$('showGrid').checked || !walk.lattice) return; // (no grid built yet, at load: no lines)
   const s = view.scale;
   let stepCells = 1;
@@ -40174,9 +40176,9 @@ function paintSky() {
   stage.style.background = sky;
 }
 
-// 3D: wireframe bounding box of the walk + axis gizmo in the top-left corner
+// 3D: wireframe bounding box of the walk (the view's axes: see gpuAxes)
 function draw3DFrame(ctx) {
-  const proj = projectPoint; // the box is drawn in perspective, the axis gizmo stays orthographic
+  const proj = projectPoint; // (in perspective)
   const [x0, x1, y0, y1, z0, z1] = bounds3;
   const X = [x0, x1],
     Y = [y0, y1],
@@ -40197,23 +40199,6 @@ function draw3DFrame(ctx) {
       }
     }
   ctx.stroke();
-  // gizmo: x = east (red), y = north (green), z = up (blue)
-  const o = [44, 44];
-  ctx.lineWidth = 2;
-  ctx.font = '11px system-ui, sans-serif';
-  [
-    ['E', [1, 0, 0], '#ff7b72'],
-    ['N', [0, 1, 0], '#3fb950'],
-    ['Up', [0, 0, 1], '#4ea1ff'],
-  ].forEach(([label, v, colour]) => {
-    const [px, py] = orthoPoint(...v);
-    ctx.strokeStyle = ctx.fillStyle = colour;
-    ctx.beginPath();
-    ctx.moveTo(o[0], o[1]);
-    ctx.lineTo(o[0] + px * 26, o[1] + py * 26);
-    ctx.stroke();
-    ctx.fillText(label, o[0] + px * 34 - 5, o[1] + py * 34 + 4);
-  });
 }
 
 // Hexagons of radius 1/√3, each drawing its 3 top edges (the others belong to the neighbours below):
@@ -42122,7 +42107,7 @@ const GPU_VIEW = `
 struct U {
   R: vec3f, depth: f32, Uu: vec3f, shade: f32, V: vec3f, glint: f32, L: vec3f, lr: f32, H: vec3f, alpha: f32, Lx: vec3f, edge: f32,
   Ly: vec3f, bias: f32, edgeRgb: vec3f, halfW: f32, persp: vec4f, plain: vec4f, view: vec3f, N: f32, cc: vec2f, screen: vec2f,
-  cut: i32, glass: i32, both: i32, colour: i32, alphaF: f32, bright: f32, width: f32, loopFrom: f32, period: f32, turnC: f32, turnS: f32, cutN: vec3f, stepNow: f32, fadeSteps: f32, grow: f32, fade: f32,
+  cut: i32, glass: i32, both: i32, colour: i32, alphaF: f32, bright: f32, width: f32, loopFrom: f32, period: f32, turnC: f32, turnS: f32, cutN: vec3f, stepNow: f32, fadeSteps: f32, grow: f32, fade: f32, front: f32,
   tpl: array<vec4f, 12>,  // (the polygons' corners, two a vec4)
   fadeTo: vec3f,  // (a size or the start hovered: what is drawn this pale, fade, towards the page's background, see drawHover)
   extent: f32,  // (the figure's radius: a tile's place towards the viewer, its share of it, see pickF)
@@ -42136,8 +42121,9 @@ fn toScreen(p: vec3f) -> vec3f {  // pixels on the stage, and the depth towards 
   if (u.persp.w > 0.0) { let k = u.persp.w / (u.persp.w - t); X = u.cc.x + (X - u.cc.x) * k; Y = u.cc.y + (Y - u.cc.y) * k; }
   return vec3f(u.view.y + X * u.view.x, u.view.z + Y * u.view.x, t);
 }
-fn clipOf(s: vec3f, bias: f32) -> vec4f {  // (depth 0 to 1)
-  return vec4f(s.x / u.screen.x * 2.0 - 1.0, 1.0 - s.y / u.screen.y * 2.0, clamp(-s.z / u.depth - bias, -1.0, 1.0) * 0.5 + 0.5, 1.0);
+fn clipOf(s: vec3f, bias: f32) -> vec4f {  // (depth 0 to 1; front: before all else, in its own order, the view's axes)
+  let z = clamp(-s.z / u.depth - bias, -1.0, 1.0) * 0.5 + 0.5;
+  return vec4f(s.x / u.screen.x * 2.0 - 1.0, 1.0 - s.y / u.screen.y * 2.0, mix(z, z * 0.01, u.front), 1.0);
 }
 fn flatAt(q: vec2f) -> vec4f { return vec4f(q.x / u.screen.x * 2.0 - 1.0, 1.0 - q.y / u.screen.y * 2.0, 0.0, 1.0); }
 fn lightSpace(p: vec3f) -> vec3f { return vec3f(dot(p, u.Lx), dot(p, u.Ly), -dot(p, u.L)) / u.lr; }
@@ -42166,6 +42152,7 @@ fn light(col: vec3f, n0: vec3f, p: vec3f, bias: f32) -> Lit {  // (as tileLight;
 @group(1) @binding(1) var shadowCmp: sampler_comparison;
 @fragment fn shadowedF(i: Lit) -> @location(0) vec4f {  // (the share of the light: 9 looks round it, each softened by the hardware's compare)
   if (u.cut == 1 && i.cutv > 0.0) { discard; }
+  if (u.front > 0.5) { return glass(i.dark + i.lit, 1.0, i.pos.z); }  // (the view's axes: lit, no shadow, not in the world)
   let t = 1.0 / ${SHADOW_SIZE}.0; var s = 0.0;
   for (var a = -1; a <= 1; a++) { for (var b = -1; b <= 1; b++) {
     let at = i.sh.xy + vec2f(f32(a), f32(b)) * t;
@@ -42334,10 +42321,13 @@ function gpuView(words, k, depth, more = {}) {
     fadeSteps: [64, 'f'],
     grow: [65, 'f'],
     fade: [66, 'f'],
+    front: [67, 'f'],
     extent: [119, 'f'],
   };
   for (const [k2, v] of Object.entries(more)) {
     if (k2 === 'edgeRgb') f.set(v, 28);
+    else if (k2 === 'persp') f.set(v, 32);
+    else if (k2 === 'view') f.set(v, 40);
     else if (k2 === 'plain') f.set(v, 36);
     else if (k2 === 'tpl') f.set(v, 68);
     else (at[k2][1] === 'f' ? f : i)[at[k2][0]] = v;
@@ -42960,6 +42950,7 @@ function gpuSurface(paint, path) {
         rp.draw(4, count, 0, from);
       }
     }
+    if (axesShown()) gpuAxes(D, rp, pass, slotOf(axesLook(pass)));
     if (startsShown)
       gpuHeads(
         D,
@@ -43372,6 +43363,67 @@ function gpuHeads(D, rp, pass, slot, heads = headsOf(), name = 'head') {
   rp.setVertexBuffer(2, D[`${name}Col`]);
   heads.forEach((_, j) => rp.draw(from[j + 1] - from[j], 1, from[j], j));
 }
+// The view's axes in its top left corner, with the grid in 3D (none in a thumbnail: its frame drawn without the grid, see
+// wantThumbnail): E, N and Up as a 3D walk's bars (see barV), turned as the world, without perspective, lit, before the
+// rest (u.front); their names at their ends, HTML (see #axesLabels: never faded, never in a picture taken)
+const VIEW_AXES = [
+  ['E', [1, 0, 0], '--axis-east-color'],
+  ['N', [0, 1, 0], '--axis-north-color'],
+  ['Up', [0, 0, 1], '--axis-up-color'],
+];
+const VIEW_AXES_AT = 44, // (their origin, pixels from the view's top left)
+  VIEW_AXES_LENGTH = 26; // (a bar's, pixels)
+const axesShown = () => $('showGrid').checked && !!walk.lattice && !!walk.is3d;
+function gpuAxes(D, rp, pass, slot) {
+  if (!D.barMesh) gpuBuffer('barMesh', CELL_SHAPES.cube.triangles);
+  gpuBuffer('axesFrom', new Float32Array(9));
+  gpuBuffer('axesTo', Float32Array.from(VIEW_AXES.flatMap(([, v]) => v)));
+  gpuBuffer('axesCol', Uint8Array.from(VIEW_AXES.flatMap(([, , name]) => [...rgbCached(cssColour(name)), 255])));
+  rp.setPipeline(
+    gpuDrawPipe('bar', {
+      vertex: 'barV',
+      fragment: 'shadowedF',
+      shadowed: true,
+      pass,
+      buffers: [
+        vertexLayout(24, [vertexAttribute(0, 'float32x3', 0), vertexAttribute(1, 'float32x3', 12)]),
+        vertexLayout(12, [vertexAttribute(2, 'float32x3')], 'instance'),
+        vertexLayout(12, [vertexAttribute(3, 'float32x3')], 'instance'),
+        vertexLayout(4, [vertexAttribute(4, 'unorm8x4')], 'instance'),
+      ],
+    }),
+  );
+  rp.setBindGroup(0, gpuGroup(), [slot]);
+  rp.setBindGroup(1, D.shadow.group);
+  rp.setVertexBuffer(0, D.barMesh);
+  rp.setVertexBuffer(1, D.axesFrom);
+  rp.setVertexBuffer(2, D.axesTo);
+  rp.setVertexBuffer(3, D.axesCol);
+  rp.draw(CELL_SHAPES.cube.triangles.length / 6, VIEW_AXES.length);
+}
+// the axes' draw numbers: the world turned as the view, a unit VIEW_AXES_LENGTH pixels, no perspective, before the rest
+const axesLook = (pass) => ({
+  glass: pass,
+  view: [VIEW_AXES_LENGTH, VIEW_AXES_AT, VIEW_AXES_AT],
+  persp: [0, 0, 0, 0],
+  halfW: 1.5 / VIEW_AXES_LENGTH,
+  grow: 1,
+  front: 1,
+  fade: 0,
+});
+// their names at their ends, where the view turns them (shown with them)
+function placeAxesLabels() {
+  const labels = $('axesLabels');
+  labels.hidden = !axesShown();
+  if (labels.hidden) return;
+  VIEW_AXES.forEach(([, v], k) => {
+    const [x, y] = orthoPoint(...v);
+    Object.assign(labels.children[k].style, {
+      left: `${VIEW_AXES_AT + x * (VIEW_AXES_LENGTH + 9)}px`,
+      top: `${VIEW_AXES_AT + y * (VIEW_AXES_LENGTH + 9)}px`,
+    });
+  });
+}
 function gpuCubes(count, of, make, reach) {
   const D = gpuDrawSetup();
   if (!D) return false;
@@ -43491,8 +43543,9 @@ function gpuCubes(count, of, make, reach) {
     rp.draw(verts, count);
   }
   gpuHeads(D, rp, 0, slot); // (a 3D walk's head and start's flag, as a surface's)
+  if (axesShown()) gpuAxes(D, rp, 0, gpuView(D.words, 2, depth, axesLook(0)));
   rp.end();
-  device.queue.writeBuffer(D.uni, 0, D.words, 0, 1024);
+  device.queue.writeBuffer(D.uni, 0, D.words, 0, 1536);
   device.queue.submit([enc.finish()]);
   return true;
 }

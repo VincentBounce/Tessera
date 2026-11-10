@@ -34,6 +34,9 @@
   --face-color: #e5484d; /* a solid's face round it */
   --sector-color: #58a6ff; /* a face's sector round it (a dodecahedron's pentagon, 5 triangles) */
   --cell-color: #3fb950; /* a cell of the motif, when it has several (a triangle's 3 kites) */
+  --axis-east-color: #ff7b72; /* the view's axes in its corner (see gpuAxes): E, */
+  --axis-north-color: #3fb950; /* N, */
+  --axis-up-color: #4ea1ff; /* Up */
   --run-end-color: #2dd4bf;
   --sweet-spot-color: #bc8cff; /* a walk's sweet spot: its link on the step line, its mark on the curve (see sweetSpot) */ /* where a run ends or loops: its link on the step line, its mark on the curve (turquoise: no curve's colour) */
   color-scheme: dark;
@@ -1305,6 +1308,21 @@ button.active .bubble.active {
 } /* (the thumbnail as taken: the view's middle, see stageThumbnail, on its card's background, the theme's: whole in the frame
    painted before the setup is built, the figure before never seen through it; no fade: a fade does not play while the page
    builds) */
+#axesLabels > span {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  font-size: var(--text-size);
+  pointer-events: none;
+} /* the view's axes' names at their bars' ends, facing the viewer (see placeAxesLabels) */
+#axesLabels > :nth-child(1) {
+  color: var(--axis-east-color);
+}
+#axesLabels > :nth-child(2) {
+  color: var(--axis-north-color);
+}
+#axesLabels > :nth-child(3) {
+  color: var(--axis-up-color);
+}
 .stage.faded > canvas:not(#hoverLayer):not(#gpuLayer) {
   opacity: 0.3;
 } /* a size or the start hovered: all but its motif or its starts faded, fills and outlines alike (the graphics card's

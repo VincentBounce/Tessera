@@ -722,7 +722,12 @@ button.switch.active:hover:not(:disabled) {
   margin: 0 8px 4px 0;
 }
 #gallerySelectTiles {
+  display: flex;
+  gap: var(--tile-gap);
   margin-bottom: 4px;
+} /* (its two tiles side by side, each a tile's width, as System's in the display box) */
+#gallerySelectTiles button {
+  width: var(--tile-width);
 }
 #galleryPane:not([hidden]) {
   position: absolute;

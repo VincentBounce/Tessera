@@ -1312,6 +1312,8 @@ button.active .bubble.active {
   inset: 0;
   width: 100%;
   height: 100%;
+}
+#stagePreview {
   object-fit: cover;
   background: var(--page-background);
 } /* (the thumbnail as taken: the view's middle, see stageThumbnail, on its card's background, the theme's: whole in the frame

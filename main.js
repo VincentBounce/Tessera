@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.767';
+const VERSION = '0.4.768';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -39256,15 +39256,15 @@ let galleryCards = [];
 // back to cards that open
 const selectedNames = new Set();
 const selecting = () => selectedNames.size > 0;
+const NOT_WHILE_SELECTING = 'Not while selecting: Export, Delete and Rebuild act on the cards selected.';
 const allSelected = () => galleryCards.length > 0 && galleryCards.every(({ x }) => selectedNames.has(x.name));
 function syncSelection() {
   for (const name of selectedNames) if (!galleryCards.some(({ x }) => x.name === name)) selectedNames.delete(name); // (cards shown only: one gone by its ★, Delete, Import… no more selected)
   $('yourList').classList.toggle('selecting', selecting());
   for (const { x, row } of galleryCards) row.classList.toggle('selected', selectedNames.has(x.name));
   for (const id of ['galleryImport', 'galleryShare'])
-    setTile($(id), {
-      greyed: selecting() ? 'Not while selecting: Export, Delete and Rebuild act on the cards selected.' : '',
-    }); // (the tools acting on them the only ones lit)
+    setTile($(id), { greyed: selecting() ? NOT_WHILE_SELECTING : '' }); // (the tools acting on them the only ones lit)
+  syncSaveButton(); // (its Star tile too)
   setTile($('galleryDelete'), {
     greyed: selecting() ? '' : 'None selected: tick a card (its box, on its hover).',
   });
@@ -39356,6 +39356,8 @@ function syncSaveButton() {
   b.title = saved
     ? `Saved in the Gallery as “${setupTitle(saved)}”: a click takes it out`
     : 'Save the setup in view in the Gallery, in this browser';
+  const star = $('galleryStar'); // (the Gallery's Star tile, the same: on while saved, greyed while selecting)
+  if (star) setTile(star, { on: !!saved, greyed: selecting() ? NOT_WHILE_SELECTING : '' });
 }
 // a setup's title and chips as its bar shows them (π vs e vs φ · base 2 · LR · Land no collision; Wild #204157587 · B45/S345/C4)
 // the bar's title, the walk shown's: Space-time's and Elementary's none (their generation their own line, their rule in their
@@ -46332,6 +46334,15 @@ $('galleryTools').replaceChildren(
     title:
       'Erase the thumbnails no card shows any more, then take again those of the cards selected, else the missing ones, one setup after the other: each shown, then taken once built; on while it runs, off by a click or once done',
     click: rebuildThumbnails,
+  }),
+  tile({
+    id: 'galleryStar',
+    pic: icon('star'),
+    text: 'Star',
+    toggle: true,
+    title:
+      "Save the setup in view in the Gallery, as the ☆ of Gallery's tab; on while it is saved: a click takes it out",
+    click: saveSetup,
   }),
   tile({
     id: 'galleryShare',

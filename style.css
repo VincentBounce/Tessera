@@ -1319,9 +1319,10 @@ button.active .bubble.active {
 } /* (the thumbnail as taken: the view's middle, see stageThumbnail, on its card's background, the theme's: whole in the frame
    painted before the setup is built, the figure before never seen through it; no fade: a fade does not play while the page
    builds) */
-.stage.faded > canvas:not(#hoverLayer) {
+.stage.faded > canvas:not(#hoverLayer):not(#gpuLayer) {
   opacity: 0.3;
-} /* a size or the start hovered: all but its motif or its starts faded, fills and outlines alike */
+} /* a size or the start hovered: all but its motif or its starts faded, fills and outlines alike (the graphics card's
+   drawing faded by its own shader, its figure only: the page behind as it was, see GPU_VIEW's fade) */
 /* The two boxes over the view (Play bottom left, Display top right): the same frame and
    translucency; hovering one opens the rest of it in the same frame (on touch screens, a tap) */
 .stage-box {

@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.789';
+const VERSION = '0.4.790';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -16283,7 +16283,7 @@ const howCounted = (kind, f) => {
   if (S?.unit === 'hexagons' && !TORI.includes(kind)) {
     // a solid of triangles blown up: f² / 2 hexagons a face, a cell of its own at each corner (see goldberg)
     const F = (2 * (n - 2)) / (f * f);
-    const faces = kind === 'dodecaHex' ? `12 pentagonal faces × 5 sectors` : `${F} triangular faces`; // (the dodecahedron's pentagons: 5 triangles each; not red: not drawn, see drawMotifFace)
+    const faces = kind === 'dodecaHex' ? `12 pentagonal faces × 5 sectors` : `${F} triangular faces`; // (the dodecahedron's pentagons: 5 triangles each; not red: not drawn, see motifOf)
     // (a sum on lines: its faces, a triangle f steps a side as big as f² / 2 hexagons; + 2: its corners, 5 faces round a
     // pentagon, not 6, each counted 5/6 by them, 12 × 1/6 (Euler's 2 on any of them); its cells, its corners' and its hexagons)
     return `${faces} × (Edge=${formatNumber(f)})² / 2 = ${formatNumber(n - 2)}\n+ 2 (its corners: fewer than 6 faces round each)\n= ${formatNumber(n)} cells`; // (its hexagons and its corners' cells: in the title, see sizeCells)
@@ -21937,7 +21937,7 @@ function discPatch(items, W, mid, norm = Math.hypot, each = flatEach) {
   const F = flatPolys(k, start.subarray(0, k + 1), xy.subarray(0, at));
   let area = 0;
   for (let t = 0; t < rows.length; t++) area += polyArea(F.poly(t));
-  const coreIds = rows.flatMap((h, t) => (h.core ? [t] : [])); // (its middle's cells: a rosette sphere's motif, see motifTiles)
+  const coreIds = rows.flatMap((h, t) => (h.core ? [t] : [])); // (its middle's cells: a rosette sphere's motif, see motifOf)
   return {
     ...F,
     n: rows.length,
@@ -24999,8 +24999,8 @@ function drawBlocks(ctx) {
 }
 // The grid's motif, outlined in violet while its size is hovered: what repeats, the sides of its cells not shared by two of
 // them. On the plane, a grid in a circle or a hexagon its core, in its middle (see discPatch, planeShape); the others a lattice
-// cell, at the top left (the top row's first cells, as many as a lattice cell has). On a surface (see motifTiles), on its
-// tiles as drawn flat (see drawSphere), the sides facing the viewer
+// cell, at the top left (the top row's first cells, as many as a lattice cell has). On a surface (see motifOf), round
+// its tile most facing the viewer near the view's middle (see middleTile), drawn by the graphics card over its tiles, its hidden parts hidden (see motifRibbons)
 let motifShown = false;
 // a plane cell's cell of its tiling (x = k + per·n, row y): a slanted grid's rectangle's (see RECTS) as its tiling numbers it,
 // by its rectangle's cells' (nat) and its rectangle's place
@@ -25041,18 +25041,7 @@ function drawMotif(ctx) {
   const { scale: s, ox, oy } = view;
   ctx.lineWidth = Math.max(2, Math.min(s / 6, 4));
   ctx.lineCap = 'round';
-  if (!walk.plane) {
-    // (a surface: its motif violet, one of its cells green when it has several, its face red round it, see drawMotifFace)
-    const tiles = motifTiles();
-    outlineTiles(ctx, motifColour(), tiles);
-    if (tiles.square >= 0) {
-      outlineTiles(ctx, cssColour('--sector-color'), [tiles.square]);
-      drawMotifFace(ctx, tiles.square);
-    } // (a solid of squares and triangles: a square, blue, as its tooltip's)
-    if (tiles.length > 1) outlineTiles(ctx, cssColour('--cell-color'), [tiles[0]]); // (as its tooltip's cells)
-    if (tiles.length) drawMotifFace(ctx, tiles[0]);
-    return;
-  }
+  if (!walk.plane) return; // (a surface's: drawn by the graphics card, see motifRibbons)
   const { kind, W, xy } = walk.plane,
     cell = !APERIODIC[kind] && !planeShape(kind, W) && planeMotifCells(),
     motif = APERIODIC[kind]?.(W).core ?? planeShape(kind, W)?.core ?? cell.map((t) => planeCorners(kind, ...xy(t)));
@@ -25074,35 +25063,56 @@ function drawMotif(ctx) {
   }
   turnLayer(ctx, 0);
 }
-// a surface's tiles outlined in a colour: their sides not shared by two of them, as the shape has them now, facing the viewer
-function outlineTiles(ctx, colour, tiles) {
-  const g = walk.geo,
-    sh = walk.shape,
-    k = g.sides,
-    proj = projector(),
-    { scale: s, ox, oy } = view;
-  const at = (t, j) => {
-    const c = 3 * (k * t + j);
-    return [sh.corners[c], sh.corners[c + 1], sh.corners[c + 2]].map((v) => v * walk.R);
-  };
-  const rim = rimSides(
-    [...tiles].flatMap((t) => Array.from({ length: k }, (_, j) => [t, j])),
-    ([t, j]) => [g.poly[k * t + j], g.poly[k * t + ((j + 1) % k)]].sort().join('|'),
-  );
-  ctx.strokeStyle = colour;
-  ctx.beginPath();
-  for (const side of rim.map(([t, j]) => [at(t, j), at(t, (j + 1) % k), t]))
-    if (
-      planeVisible(
-        [0, 1, 2].map((d) => sh.nrm[3 * side[2] + d]),
-        side[0],
-      )
-    )
-      for (const [i, p] of [side[0], side[1]].entries()) {
-        const [u, v] = proj(...p);
-        ctx[i ? 'lineTo' : 'moveTo'](ox + u * s, oy + v * s);
-      }
-  ctx.stroke();
+// The motif's tile, the one most facing the viewer, in front and near the view's middle as the graphics card drew it (see
+// gpuPickMiddle), on its mesh: none (−1) where no tile shows
+let middleTile = { g: null, t: -1 };
+// a sheet's tiles by their lattice cell (see latticeCellOf), once a mesh
+const latticeCellTiles = (g) =>
+  (g.latticeCellTiles ??= Map.groupBy([...Array(g.n).keys()], (t) => latticeCellOf(g, t)));
+// A surface's motif round tile t (see middleTile), as its size's tooltip tells it, each part its colour and its
+// tiles: a sheet's lattice cell, a rosette sphere's disc's middle (the half t is on), a solid's cell (a kite's triangle, a
+// tetrakis square, a square of a solid of squares and triangles: blue), violet; its first cell green when it has several; a
+// solid's face red round it (its sector blue)
+function motifOf(g, t) {
+  const m = g.kite ? 3 : g.squares ? 4 : 1, // (a kite's triangle, 3 kites; a tetrakis square, 4 triangles)
+    motif = g.rosette
+      ? g.middles[t >= g.south ? 1 : 0]
+      : g.torus
+        ? latticeCellTiles(g).get(latticeCellOf(g, t))
+        : Array.from({ length: m }, (_, j) => Math.floor(t / m) * m + j);
+  const square = g.triFaces && t < g.triFirst,
+    face = faceOf(g, motif[0]);
+  return [
+    [square ? cssColour('--sector-color') : motifColour(), motif],
+    ...(motif.length > 1 ? [[cssColour('--cell-color'), [motif[0]]]] : []),
+    ...(face?.sector ? [[cssColour('--sector-color'), tilesOf(face.sector)]] : []),
+    ...(face ? [[faceRed(), tilesOf(face.face)]] : []),
+  ];
+}
+// The motif's outlines as ribbons (see ribbonV): each part's sides not shared by two of its tiles, laid on the form shown, its
+// colours' runs of segments; made again only when its tile, its mesh or its form change
+function motifRibbons(D, g, sh, R) {
+  const key = `${middleTile.t}|${sh.m}|${R}|${motifColour()}`;
+  if (D.motifOf === g && D.motifKey === key) return D.motifParts;
+  const k = g.sides,
+    data = [],
+    parts = [];
+  for (const [colour, tiles] of motifOf(g, middleTile.t)) {
+    const from = data.length / 11,
+      rim = rimSides(
+        tiles.flatMap((t) => Array.from({ length: k }, (_, j) => [t, j])),
+        ([t, j]) => [g.poly[k * t + j], g.poly[k * t + ((j + 1) % k)]].sort().join('|'),
+      );
+    for (const [t, j] of rim) {
+      const at = (q) => [0, 1, 2].map((d) => sh.corners[3 * (k * t + (q % k)) + d] * R);
+      data.push(...at(j), ...at(j + 1), ...[0, 1, 2].map((d) => sh.nrm[3 * t + d]), 3, 0); // (both ends capped, see ribbonV)
+    }
+    parts.push({ rgb: rgbCached(colour).map((c) => c / 255), from, count: data.length / 11 - from });
+  }
+  gpuBuffer('motif', new Float32Array(data.length ? data : new Array(11).fill(0)));
+  D.motifOf = g;
+  D.motifKey = key;
+  return (D.motifParts = { parts });
 }
 // a solid's face of its tile t, as listed: its tiles from … to, and its sector's (a face of several of the mesh's in one plane:
 // a dodecahedron's pentagon, 5 triangles); a solid of squares and triangles: its squares' faces, then its triangles', f² cells
@@ -25126,69 +25136,6 @@ function faceOf(g, t) {
 }
 const redFaces = (g) => !!(g?.perFace || g?.triFaces); // (the solids whose faces are drawn red, as their tooltip says them)
 const tilesOf = ([from, to]) => Array.from({ length: to - from }, (_, j) => from + j);
-// a solid's face round the motif in red (its sector in blue), along its cells' sides
-function drawMotifFace(ctx, t0) {
-  const f = faceOf(walk.geo, t0);
-  if (!f) return;
-  if (f.sector) outlineTiles(ctx, cssColour('--sector-color'), tilesOf(f.sector));
-  outlineTiles(ctx, faceRed(), tilesOf(f.face));
-}
-// a surface's motif round its tile most towards the viewer and nearest it (of those, the nearest the view's middle): a sheet's
-// lattice cell, as laid (see latticeCellSize); a solid's its faces' grid's: a square, a
-// hexagon, a tetrakis square's 4 triangles, a triangle (of 3 kites)
-function motifTiles() {
-  const g = walk.geo,
-    sh = walk.shape,
-    proj = projector(),
-    { scale: s, ox, oy } = view,
-    at = (t) => [0, 1, 2].map((d) => sh.cen[3 * t + d] * walk.R);
-  const nears = [-1, -1],
-    best = [-Infinity, -Infinity],
-    score = new Float64Array(g.n).fill(-Infinity); // (a solid of squares and triangles: a triangle, and a square apart, see drawMotif)
-  for (let t = 0; t < g.n; t++) {
-    const n = [0, 1, 2].map((d) => sh.nrm[3 * t + d]),
-      k = +(t < g.triFirst);
-    if (!planeVisible(n, at(t)) || (cutOn() && dot3(at(t), cutNormal()) > 0)) continue; // (Cut: its half on the axis's side gone, as gpuSurface's)
-    const [x, y] = proj(...at(t)),
-      sc =
-        towardViewer(...n) +
-        towardViewer(...at(t)) / (walk.R * (g.extent || 1)) -
-        0.2 *
-          (Math.hypot(ox + x * s - canvasWidth / 2, oy + y * s - canvasHeight / 2) /
-            Math.min(canvasWidth, canvasHeight)); // (facing the viewer, near it: in front, not a far side seen through a hole)
-    score[t] = sc;
-    if (sc > best[k]) {
-      best[k] = sc;
-      nears[k] = t;
-    }
-  }
-  const near = nears[0] >= 0 ? nears[0] : nears[1];
-  if (near < 0) return [];
-  if (g.triFaces) return Object.assign([near], { square: near === nears[1] ? -1 : nears[1] });
-  if (g.rosette)
-    return g.middles.reduce((a, b) =>
-      Math.max(...b.map((t) => score[t])) > Math.max(...a.map((t) => score[t])) ? b : a,
-    ); // (a rosette sphere: its disc's middle, as the plane's, the half's most in front)
-  if (g.torus) {
-    // a sheet: its lattice cells (see latticeCellOf); the whole one seen most in front (its tiles' best, as a solid's tile), else the one in front
-    const id = (t) => latticeCellOf(g, t),
-      byLatticeCell = Map.groupBy([...Array(g.n).keys()], id),
-      front = (ts) => Math.max(...ts.map((t) => score[t]));
-    // (side by side as laid on its sheet: not across a seam, drawn at both ends once unrolled; a strip's loop 2L along)
-    const P = g.mobius ? [2 * g.L, g.W] : [g.nu, g.nv],
-      laid = (ts) =>
-        [0, 1].every((d) => {
-          const x = ts.map((t) => sheetPlace(g, t)[d]);
-          return Math.max(...x) - Math.min(...x) < P[d] / 2;
-        });
-    const whole = [...byLatticeCell.values()].filter(
-      (ts) => ts.length === latticeCellSize(g) && ts.every((t) => score[t] > -Infinity) && laid(ts),
-    ); // (all its tiles: none cut by a strip's edge or a bottle's end, a face's own; seen: scored)
-    return whole.length ? whole.reduce((a, b) => (front(b) > front(a) ? b : a)) : byLatticeCell.get(id(near));
-  }
-  const m = g.kite ? 3 : g.squares ? 4 : 1; // (a kite's triangle, 3 kites; a tetrakis square, 4 triangles)
-  return Array.from({ length: m }, (_, j) => Math.floor(near / m) * m + j); // (a cell, a triangle: what a face counts, f² of them; not the plane's rhombus, a face not whole ones)
-}
 // the shape a Life mode's cells have, as the rule menu marks the rules that suit it (■ ▲ ⬡); on
 // coming to another mode, a rule marked for another shape gives way to the first one for this shape
 // the cells of each surface (else triangles): one table for every surface, whatever its shape
@@ -42229,8 +42176,10 @@ const GPU_VIEW = `
 struct U {
   R: vec3f, depth: f32, Uu: vec3f, shade: f32, V: vec3f, glint: f32, L: vec3f, lr: f32, H: vec3f, alpha: f32, Lx: vec3f, edge: f32,
   Ly: vec3f, bias: f32, edgeRgb: vec3f, halfW: f32, persp: vec4f, plain: vec4f, view: vec3f, N: f32, cc: vec2f, screen: vec2f,
-  cut: i32, glass: i32, both: i32, colour: i32, alphaF: f32, bright: f32, width: f32, loopFrom: f32, period: f32, turnC: f32, turnS: f32, cutN: vec3f, stepNow: f32, fadeSteps: f32, grow: f32,
+  cut: i32, glass: i32, both: i32, colour: i32, alphaF: f32, bright: f32, width: f32, loopFrom: f32, period: f32, turnC: f32, turnS: f32, cutN: vec3f, stepNow: f32, fadeSteps: f32, grow: f32, fade: f32,
   tpl: array<vec4f, 12>,  // (the polygons' corners, two a vec4)
+  fadeTo: vec3f,  // (a size or the start hovered: what is drawn this pale, fade, towards the page's background, see drawHover)
+  extent: f32,  // (the figure's radius: a tile's place towards the viewer, its share of it, see pickF)
 }
 @group(0) @binding(0) var<uniform> u: U;
 @group(0) @binding(1) var<storage, read> tileCol: array<u32>;
@@ -42249,7 +42198,8 @@ fn lightSpace(p: vec3f) -> vec3f { return vec3f(dot(p, u.Lx), dot(p, u.Ly), -dot
 fn band(t: texture_2d<f32>, x: f32) -> vec3f { let w = i32(textureDimensions(t).x); return textureLoad(t, vec2i(clamp(i32(floor(x * f32(w))), 0, w - 1), 0), 0).rgb; }
 // step i's rainbow (see rainbowBand): a closed loop's steps round its period, along the walk's length u.N (rainbowLength)
 fn rainbow(i0: f32) -> vec3f { var i = i0; if (u.period > 0.0 && i >= u.loopFrom + u.period) { i = u.loopFrom + (i - u.loopFrom) - u.period * floor((i - u.loopFrom) / u.period); } return band(grad, (i + 0.5) / u.N); }
-fn glass(c: vec3f, a: f32, z: f32) -> vec4f {
+fn glass(c0: vec3f, a: f32, z: f32) -> vec4f {
+  let c = mix(c0, u.fadeTo, u.fade);
   if (u.glass == 0) { return vec4f(c, a); }
   let w = clamp(a * 1e3 * pow(1.0 - z, 8.0), 1e-2, 3e3);
   if (u.glass == 1) { return vec4f(c * a * w, a * w); }
@@ -42305,6 +42255,19 @@ fn deep(p: vec3f) -> Deep { var o: Deep; let l = lightSpace(p); o.pos = vec4f(l.
 @vertex fn depthTileV(@location(0) pos: vec3f) -> Deep { return deep(pos); }
 @vertex fn depthCubeV(@location(0) corner: vec3f, @location(1) at: vec3f) -> Deep { return deep(at + corner); }
 @fragment fn depthF(i: Deep) { if (u.cut == 1 && i.cutv > 0.0) { discard; } }
+// each tile's number (+ 1: 0 none) where it is drawn, and how much it is the motif's there: facing the viewer, in front, near
+// the view's middle (the most's read back, see gpuPickMiddle)
+struct Pick { @builtin(position) pos: vec4f, @location(0) @interpolate(flat) id: u32, @location(1) cutv: f32, @location(2) p: vec3f, @location(3) n: vec3f, @location(4) s: vec2f }
+@vertex fn pickV(@location(0) pos: vec3f, @location(1) nrm: vec3f, @location(2) id: u32) -> Pick {
+  var o: Pick; o.id = id; o.cutv = dot(pos, u.cutN); o.p = pos; o.n = nrm; let s = toScreen(pos); o.s = s.xy; o.pos = clipOf(s, 0.0); return o;
+}
+struct Picked { @location(0) id: u32, @location(1) score: f32 }
+@fragment fn pickF(i: Pick) -> Picked {
+  if (u.cut == 1 && i.cutv > 0.0) { discard; }
+  var o: Picked; o.id = i.id + 1u;
+  o.score = dot(i.n, u.V) + dot(i.p, u.V) / u.extent - 0.2 * length(i.s - u.screen * 0.5) / min(u.screen.x, u.screen.y);
+  return o;
+}
 // the grid: the tile edges, pulled a little towards the viewer; an edge whose two tiles both face away not drawn, pixel by pixel
 struct Edge { @builtin(position) pos: vec4f, @location(0) facing: f32, @location(1) cutv: f32 }
 @vertex fn edgeV(@location(0) pos: vec3f, @location(1) n1: vec3f, @location(2) n2: vec3f) -> Edge {
@@ -42320,7 +42283,7 @@ struct Rib { @builtin(position) pos: vec4f, @location(0) col: vec3f, @location(1
 @vertex fn ribbonV(@location(0) quad: vec2f, @location(1) a: vec3f, @location(2) b0: vec3f, @location(3) n: vec3f, @location(4) e: f32, @location(5) i: f32) -> Rib {
   var o: Rib;
   if (u.colour == 3 && i > 254.5) { o.pos = vec4f(0.0, 0.0, -2.0, 1.0); o.col = vec3f(0.0); o.cutv = 0.0; return o; }  // (a link of none, see battleLinesOnGpu: off the clip space)
-  if (u.colour == 3) { o.col = band(pal, (i + 0.5) / 256.0); } else { o.col = rainbow(i); }  // (a battle's bodies: their colours, see battlePalette)
+  if (u.colour == 3) { o.col = band(pal, (i + 0.5) / 256.0); } else if (u.colour == 4) { o.col = u.edgeRgb; } else { o.col = rainbow(i); }  // (a battle's bodies: their colours, see battlePalette; 4: one colour, a motif's, see motifRibbons)
   let b = mix(a, b0, u.grow);  // (its share drawn: 1 whole, the step on its way as far as it glided, see the ribbons' ranges)
   var d = b0 - a; if (length(d) > 1e-9) { d = normalize(d); } else { d = vec3f(1.0, 0.0, 0.0); }
   let side = normalize(cross(d, n)) * u.halfW;
@@ -42361,7 +42324,7 @@ struct Col { @builtin(position) pos: vec4f, @location(0) col: vec4f }
   o.pos = flatAt(u.view.yz + (c.xy + select(t4.xy, t4.zw, (k & 1u) == 1u)) * u.view.x);
   return o;
 }
-@fragment fn colF(i: Col) -> @location(0) vec4f { return i.col; }
+@fragment fn colF(i: Col) -> @location(0) vec4f { return vec4f(mix(i.col.rgb, u.fadeTo * i.col.a, u.fade), i.col.a); }  // (premultiplied)
 // Life on the plane: world (x, y) turned (turnC, turnS), then to pixels; a cell's colour
 // its texel's word (clear: off the screen); the outlines in plain (premultiplied)
 fn planeAt(p: vec2f) -> vec4f { return flatAt(u.view.yz + vec2f(u.turnC * p.x - u.turnS * p.y, u.turnS * p.x + u.turnC * p.y) * u.view.x); }
@@ -42399,6 +42362,11 @@ function gpuView(words, k, depth, more = {}) {
   f.set([canvasWidth, canvasHeight], 46);
   i[48] = cutOn() ? 1 : 0;
   f.set(cutNormal(), 60); // (Cut's plane, facing its axis: see CUT_AXES)
+  f[66] = motifShown || startsShown ? 1 - FADING : 0; // (a size or the start hovered: all but the motif this pale, see drawHover)
+  f.set(
+    rgbCached(cssColour('--page-background')).map((c) => c / 255),
+    116,
+  ); // (fadeTo)
   const at = {
     alpha: [19, 'f'],
     edge: [23, 'f'],
@@ -42419,6 +42387,8 @@ function gpuView(words, k, depth, more = {}) {
     stepNow: [63, 'f'],
     fadeSteps: [64, 'f'],
     grow: [65, 'f'],
+    fade: [66, 'f'],
+    extent: [119, 'f'],
   };
   for (const [k2, v] of Object.entries(more)) {
     if (k2 === 'edgeRgb') f.set(v, 28);
@@ -42696,10 +42666,11 @@ function gpuDrawPipe(
     shadowed = false,
     depth = true,
     writes = true,
+    pick = false,
   },
 ) {
-  // (writes: its depth; a decal's not, see ribbon)
-  return gpuPipe(`${name}|${cull}|${pass}|${!!blend}|${depth}|${writes}`, (D) => ({
+  // (writes: its depth; a decal's not, see ribbon; pick: each pixel a tile's number, one sample, see gpuPickMiddle)
+  return gpuPipe(`${name}|${cull}|${pass}|${!!blend}|${depth}|${writes}|${pick}`, (D) => ({
     layout: D.device.createPipelineLayout({ bindGroupLayouts: shadowed ? [D.g0, D.shadowed] : [D.g0] }),
     vertex: { module: D.module, entryPoint: vertex, buffers },
     fragment: {
@@ -42707,15 +42678,16 @@ function gpuDrawPipe(
       entryPoint: fragment,
       targets: [
         {
-          format: [D.format, 'rgba16float', 'rgba8unorm'][pass],
+          format: pick ? 'r32uint' : [D.format, 'rgba16float', 'rgba8unorm'][pass],
           blend: pass ? GLASS_BLEND[pass] : (blend ?? undefined),
         },
+        ...(pick ? [{ format: 'r32float' }] : []),
       ],
     },
     primitive: { topology, cullMode: cull, frontFace: 'ccw' },
     depthStencil:
       pass || !depth ? undefined : { format: 'depth24plus', depthWriteEnabled: writes, depthCompare: 'less-equal' },
-    multisample: { count: 4 },
+    multisample: { count: pick ? 1 : 4 },
   }));
 }
 // a battle's colours in the palette (pal), for its lines along the grid: A's body, B's (their heads: their arrows, see drawOverlay)
@@ -42846,6 +42818,20 @@ function gpuSurface(paint, path) {
     vertexLayout(12, [vertexAttribute(1, 'float32x3')]),
     vertexLayout(4, [vertexAttribute(2, 'uint32')]),
   ];
+  const ribbonBufs = [
+    vertexLayout(8, [vertexAttribute(0, 'float32x2')]),
+    vertexLayout(
+      44,
+      [
+        vertexAttribute(1, 'float32x3', 0),
+        vertexAttribute(2, 'float32x3', 12),
+        vertexAttribute(3, 'float32x3', 24),
+        vertexAttribute(4, 'float32', 36),
+        vertexAttribute(5, 'float32', 40),
+      ],
+      'instance',
+    ),
+  ]; // (a ribbon's quad, then each segment's: its ends, its tile's normal, its ends' caps, its colour's place, see pathSegments)
   gpuShadows(
     enc,
     shadowSlot,
@@ -42974,20 +42960,7 @@ function gpuSurface(paint, path) {
           pass,
           cull: both ? 'none' : 'back',
           writes: false, // (a decal on the tiles: pulled over them, no depth of its own, a head over it, see ogiveOf)
-          buffers: [
-            vertexLayout(8, [vertexAttribute(0, 'float32x2')]),
-            vertexLayout(
-              44,
-              [
-                vertexAttribute(1, 'float32x3', 0),
-                vertexAttribute(2, 'float32x3', 12),
-                vertexAttribute(3, 'float32x3', 24),
-                vertexAttribute(4, 'float32', 36),
-                vertexAttribute(5, 'float32', 40),
-              ],
-              'instance',
-            ),
-          ],
+          buffers: ribbonBufs,
         }),
       );
       const look = {
@@ -43011,12 +42984,169 @@ function gpuSurface(paint, path) {
         }
     }
     gpuHeads(D, rp, pass, slotOf({ glass: pass, cut, alpha: GLASS_ALPHA }));
+    if (motifShown && middleTile.g === g && middleTile.t >= 0) {
+      // the motif round its tile (see middleTile, motifOf), each part its colour, unfaded, over the tiles
+      rp.setPipeline(
+        gpuDrawPipe('ribbon', {
+          vertex: 'ribbonV',
+          fragment: 'ribbonF',
+          topology: 'triangle-strip',
+          pass,
+          cull: both ? 'none' : 'back',
+          writes: false,
+          buffers: ribbonBufs,
+        }),
+      );
+      const { parts } = motifRibbons(D, g, sh, R);
+      rp.setVertexBuffer(0, D.quad);
+      rp.setVertexBuffer(1, D.motif);
+      for (const { rgb, from, count } of parts) {
+        rp.setBindGroup(0, gpuGroup(), [
+          slotOf({
+            glass: pass,
+            cut,
+            colour: 4,
+            edgeRgb: rgb,
+            halfW: Math.max(2, Math.min(view.scale / 6, 4)) / 2 / view.scale,
+            bias: pathBias,
+            grow: 1,
+            fade: 0,
+          }),
+        ]);
+        rp.draw(4, count, 0, from);
+      }
+    }
   };
   gpuFrame(enc, drawAll);
+  const picking =
+    motifShown &&
+    gpuPickMiddle(
+      D,
+      enc,
+      slotOf({ cut: cutOn() ? 1 : 0, extent: R * (g.extent || 1) }),
+      tileBufs,
+      cutOn() || !!g.klein ? 'none' : shapeSign(g) < 0 ? 'front' : 'back',
+    );
   device.queue.writeBuffer(D.uni, 0, D.words, 0, 512 * slot);
   device.queue.submit([enc.finish()]);
+  if (picking) picking();
   layers.path.clearRect(0, 0, canvasWidth, canvasHeight);
   return true;
+}
+// the motif's tile: its pixels' numbers and scores (see pickF) looked through by the graphics card, the most's score first (as
+// ordered bits: every score above −16), then the least tile number with it ([0], [1]: none, 0xffffffff)
+const GPU_PICK = `
+@group(0) @binding(0) var ids: texture_2d<u32>;
+@group(0) @binding(1) var scores: texture_2d<f32>;
+@group(0) @binding(2) var<storage, read_write> best: array<atomic<u32>, 2>;
+fn drawn(p: vec3u) -> vec2u {  // (its tile + 1 and its score's bits; 0: none, off the picture)
+  let s = textureDimensions(ids);
+  if (p.x >= s.x || p.y >= s.y) { return vec2u(0u); }
+  return vec2u(textureLoad(ids, vec2i(p.xy), 0).r, bitcast<u32>(textureLoad(scores, vec2i(p.xy), 0).r + 16.0));
+}
+@compute @workgroup_size(8, 8) fn most(@builtin(global_invocation_id) p: vec3u) {
+  let t = drawn(p); if (t.x > 0u) { atomicMax(&best[0], t.y); }
+}
+@compute @workgroup_size(8, 8) fn mostTile(@builtin(global_invocation_id) p: vec3u) {
+  let t = drawn(p); if (t.x > 0u && t.y == atomicLoad(&best[0])) { atomicMin(&best[1], t.x - 1u); }
+}`;
+// The motif's tile (see motifOf), as the graphics card drew it: each tile's number and score written where it shows (a pass of
+// its own, its depths as the frame's: facing the viewer, in front, near the view's middle, see pickF), the most's looked for
+// (see GPU_PICK), read back once the frame is done; none (−1) where no tile shows. One read at a time: the next frame's waits for it. Gives the reading to start after
+// the frame's submit
+function gpuPickMiddle(D, enc, slot, tileBufs, cull) {
+  if (D.picking) return null;
+  const { device } = D,
+    w = gpuCanvas.width,
+    h = gpuCanvas.height;
+  if (!D.pick) {
+    const module = device.createShaderModule({ code: GPU_PICK }),
+      layout = device.createBindGroupLayout({
+        entries: [
+          { binding: 0, visibility: GPUShaderStage.COMPUTE, texture: { sampleType: 'uint' } },
+          { binding: 1, visibility: GPUShaderStage.COMPUTE, texture: { sampleType: 'unfilterable-float' } },
+          { binding: 2, visibility: GPUShaderStage.COMPUTE, buffer: { type: 'storage' } },
+        ],
+      }),
+      pipe = (entryPoint) =>
+        device.createComputePipeline({
+          layout: device.createPipelineLayout({ bindGroupLayouts: [layout] }),
+          compute: { module, entryPoint },
+        });
+    D.pick = {
+      layout,
+      most: pipe('most'),
+      mostTile: pipe('mostTile'),
+      best: device.createBuffer({
+        size: 8,
+        usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC | GPUBufferUsage.COPY_DST,
+      }),
+      read: device.createBuffer({ size: 8, usage: GPUBufferUsage.MAP_READ | GPUBufferUsage.COPY_DST }),
+    };
+  }
+  const P = D.pick;
+  if (P.w !== w || P.h !== h) {
+    P.ids?.destroy();
+    P.scores?.destroy();
+    P.depth?.destroy();
+    const make = (format, more = 0) =>
+      device.createTexture({ size: [w, h], format, usage: GPUTextureUsage.RENDER_ATTACHMENT | more });
+    P.ids = make('r32uint', GPUTextureUsage.TEXTURE_BINDING);
+    P.scores = make('r32float', GPUTextureUsage.TEXTURE_BINDING);
+    P.depth = make('depth24plus');
+    P.group = device.createBindGroup({
+      layout: P.layout,
+      entries: [
+        { binding: 0, resource: P.ids.createView() },
+        { binding: 1, resource: P.scores.createView() },
+        { binding: 2, resource: { buffer: P.best } },
+      ],
+    });
+    Object.assign(P, { w, h });
+  }
+  device.queue.writeBuffer(P.best, 0, new Uint32Array([0, 0xffffffff]));
+  const p = enc.beginRenderPass({
+    colorAttachments: [P.ids, P.scores].map((t) => ({
+      view: t.createView(),
+      loadOp: 'clear',
+      storeOp: 'store',
+      clearValue: [0, 0, 0, 0],
+    })),
+    depthStencilAttachment: {
+      view: P.depth.createView(),
+      depthLoadOp: 'clear',
+      depthClearValue: 1,
+      depthStoreOp: 'discard',
+    },
+  });
+  p.setPipeline(gpuDrawPipe('pick', { vertex: 'pickV', fragment: 'pickF', buffers: tileBufs, cull, pick: true }));
+  p.setBindGroup(0, gpuGroup(), [slot]);
+  p.setVertexBuffer(0, D.pos);
+  p.setVertexBuffer(1, D.nrm);
+  p.setVertexBuffer(2, D.tileIds);
+  p.setIndexBuffer(D.fan, 'uint32');
+  p.drawIndexed(D.fanCount);
+  p.end();
+  for (const pipe of [P.most, P.mostTile]) {
+    const c = enc.beginComputePass();
+    c.setPipeline(pipe);
+    c.setBindGroup(0, P.group);
+    c.dispatchWorkgroups(Math.ceil(w / 8), Math.ceil(h / 8));
+    c.end();
+  }
+  enc.copyBufferToBuffer(P.best, 0, P.read, 0, 8);
+  D.picking = true;
+  const g = walk.geo;
+  return () =>
+    P.read.mapAsync(GPUMapMode.READ).then(() => {
+      const found = new Uint32Array(P.read.getMappedRange())[1],
+        t = found === 0xffffffff ? -1 : found;
+      P.read.unmap();
+      D.picking = false;
+      if (middleTile.g === g && middleTile.t === t) return;
+      middleTile = { g, t };
+      statsDirty = true; // (its motif drawn, see drawAll)
+    });
 }
 // the frame's passes: as it is, or Glass's two pictures then mixed on the canvas
 function gpuFrame(enc, drawAll) {

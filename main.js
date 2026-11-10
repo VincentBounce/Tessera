@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.791';
+const VERSION = '0.4.792';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -16879,77 +16879,56 @@ function cellStart(g, [v, f]) {
 // list's at most on the mesh they make: a ring's list hangs on its size, its size on its battle's teams, see battleCounts)
 const startAsked = () => Math.max(1, Number($('startNo').value) || 1);
 const startNo = () => Math.min(startAsked(), modeStarts()?.length ?? 1);
-let startsShown = false; // while the start number is hovered: the starts shown over the walk, faded (see drawHover)
+let startsShown = false; // while the start number is hovered: the starts shown over the walk, faded (see startMarks)
 let choosingStart = false; // while the start row is hovered: the view stays as it was
 
-// Every start's edge (two starts each, one per direction); the chosen one in yellow, an arrow in
-// its middle
-function drawStarts(ctx) {
-  const g = walk.geo,
-    G = gridGraph(g),
-    sh = walk.shape,
-    R = walk.R,
+// The starts' marks while the start number is hovered: every start's edge (two starts each, one per direction) grey, the
+// chosen one yellow and twice as wide, its head a walker's (an ogive, see ogiveOf) in its middle the way it goes; drawn by
+// the graphics card over the tiles (see gpuSurface), made again only when the start, the mesh or its form change
+function startMarks(D, g, sh, R) {
+  const key = `${startNo()}|${sh.m}|${R}|${MODES[walk.mode].cells}`;
+  if (D.startsOf === g && D.startsKey === key) return D.startMarks;
+  const G = gridGraph(g),
     k = g.sides,
-    proj = projector(),
-    list = startList(g);
-  const normal = (v) => unit([G.normal[3 * v], G.normal[3 * v + 1], G.normal[3 * v + 2]]);
-  const { scale: s, ox, oy } = view;
-  const at = (v) => pointAt(sh.corners, k * G.tileOf[v] + G.cornerOf[v], R),
-    centre = (t) => pointAt(sh.cen, t, R);
-  // a start's ends and the normal where it arrives: from corner to corner, or on cells from the
-  // centre of the tile it leaves to the centre of the one it enters (see cellStart)
+    list = startList(g),
+    at = (v) => pointAt(sh.corners, k * G.tileOf[v] + G.cornerOf[v], R),
+    centre = (t) => pointAt(sh.cen, t, R),
+    normalAt = (list, i) => unit([list[3 * i], list[3 * i + 1], list[3 * i + 2]]);
+  // a start's ends, the normal where it arrives and its tile: from corner to corner, or on cells from the centre of the tile
+  // it leaves to the centre of the one it enters (see cellStart)
   const ends = MODES[walk.mode].cells
     ? (st) => {
         const [t, e] = cellStart(g, st);
-        return [centre(g.nbr[k * t + e]), centre(t), [sh.nrm[3 * t], sh.nrm[3 * t + 1], sh.nrm[3 * t + 2]]];
+        return [centre(g.nbr[k * t + e]), centre(t), normalAt(sh.nrm, t), t];
       }
-    : ([v, f]) => [at(f), at(v), normal(v)];
-  const edge = (st) => {
-    // screen ends: where it comes from, where it arrives; null when facing away
+    : ([v, f]) => [at(f), at(v), normalAt(G.normal, v), G.tileOf[v]];
+  const chosen = list[startNo() - 1],
+    width = (s) => Math.max(1, Math.min(s * 0.06, 2.5)),
+    data = [];
+  for (const st of [...list, chosen]) {
     const [q, p, n] = ends(st);
-    if (!planeVisible(n, p)) return null;
-    const [x0, y0] = proj(...q),
-      [x1, y1] = proj(...p);
-    return [ox + x0 * s, oy + y0 * s, ox + x1 * s, oy + y1 * s];
-  };
-  const width = Math.max(1, Math.min(s * 0.06, 2.5));
-  ctx.save();
-  ctx.lineCap = 'round';
-  ctx.lineWidth = width;
-  ctx.strokeStyle = '#8b949e';
-  ctx.beginPath();
-  for (const st of list) {
-    // the two starts of an edge share it: drawn twice
-    const h = edge(st);
-    if (h) {
-      ctx.moveTo(h[0], h[1]);
-      ctx.lineTo(h[2], h[3]);
-    }
+    data.push(...q, ...p, ...n, 3, 0); // (both ends capped, see ribbonV)
   }
-  ctx.stroke();
-  const h = edge(list[startNo() - 1]);
-  if (h) {
-    const [x0, y0, x1, y1] = h,
-      len = Math.hypot(x1 - x0, y1 - y0) || 1,
-      ux = (x1 - x0) / len,
-      uy = (y1 - y0) / len;
-    const a = Math.max(8, 0.4 * len),
-      mx = (x0 + x1) / 2 + (ux * a) / 2,
-      my = (y0 + y1) / 2 + (uy * a) / 2; // the head, centred on the middle
-    ctx.strokeStyle = ctx.fillStyle = '#f0b429';
-    ctx.lineWidth = 2 * width;
-    ctx.beginPath();
-    ctx.moveTo(x0, y0);
-    ctx.lineTo(x1, y1);
-    ctx.stroke();
-    ctx.beginPath();
-    ctx.moveTo(mx, my);
-    ctx.lineTo(mx - ux * a - uy * a * 0.6, my - uy * a + ux * a * 0.6);
-    ctx.lineTo(mx - ux * a + uy * a * 0.6, my - uy * a - ux * a * 0.6);
-    ctx.closePath();
-    ctx.fill();
-  }
-  ctx.restore();
+  gpuBuffer('starts', new Float32Array(data));
+  const [q, p, , t] = ends(chosen);
+  D.startsOf = g;
+  D.startsKey = key;
+  return (D.startMarks = {
+    parts: [
+      { rgb: rgbCached('#8b949e').map((c) => c / 255), from: 0, count: list.length, width },
+      { rgb: rgbCached('#f0b429').map((c) => c / 255), from: list.length, count: 1, width: (s) => 2 * width(s) },
+    ],
+    heads: [
+      [
+        ogiveOf({
+          p: q.map((v, d) => (v + p[d]) / 2),
+          h: unit(p.map((v, d) => v - q[d])),
+          size: headSize(tileArea(t)),
+        }),
+        '#f0b429',
+      ],
+    ],
+  });
 }
 
 // A surface's corner v (of its grid G) on its flat sheet; a step (du, dv) on a torus's sheet, the shortest across its seams;
@@ -25028,14 +25007,14 @@ const planeMotifCells = () => {
   return [...cells.values()].find((ts) => ts.length === per) ?? [0];
 };
 const FADING = 0.3; // (the cells this pale: under a walk's line, or Area's Light)
-// A size hovered (its motif) or the start (the starts): drawn on their own layer, the others faded under it, every one alike,
-// fills and outlines (the stage's class: see style.css)
+// A size hovered (its motif) or the start (the starts): the others faded under them, every one alike, fills and outlines
+// (the stage's class: see style.css; the graphics card's by its shaders); the plane's motif drawn on its own layer, a
+// surface's motif and starts by the graphics card (see gpuSurface)
 function drawHover() {
   const ctx = layers.hover;
   ctx.clearRect(0, 0, canvasWidth, canvasHeight);
   stage.classList.toggle('faded', motifShown || startsShown);
-  if (motifShown) drawMotif(ctx);
-  if (startsShown && walk.geo) drawStarts(ctx);
+  if (motifShown) drawMotif(ctx); // (a surface's motif and its starts: drawn by the graphics card, see gpuSurface)
 }
 function drawMotif(ctx) {
   const { scale: s, ox, oy } = view;
@@ -25107,7 +25086,12 @@ function motifRibbons(D, g, sh, R) {
       const at = (q) => [0, 1, 2].map((d) => sh.corners[3 * (k * t + (q % k)) + d] * R);
       data.push(...at(j), ...at(j + 1), ...[0, 1, 2].map((d) => sh.nrm[3 * t + d]), 3, 0); // (both ends capped, see ribbonV)
     }
-    parts.push({ rgb: rgbCached(colour).map((c) => c / 255), from, count: data.length / 11 - from });
+    parts.push({
+      rgb: rgbCached(colour).map((c) => c / 255),
+      from,
+      count: data.length / 11 - from,
+      width: (s) => Math.max(2, Math.min(s / 6, 4)),
+    }); // (its width on the screen at a scale, as the plane's motif, see drawMotif)
   }
   gpuBuffer('motif', new Float32Array(data.length ? data : new Array(11).fill(0)));
   D.motifOf = g;
@@ -42951,7 +42935,7 @@ function gpuSurface(paint, path) {
       rp.setVertexBuffer(2, D.eN2);
       rp.draw(D.eCount);
     }
-    if (ranges.some(([a, b, share]) => b > a && share > 0)) {
+    const ribbons = () =>
       rp.setPipeline(
         gpuDrawPipe('ribbon', {
           vertex: 'ribbonV',
@@ -42962,7 +42946,9 @@ function gpuSurface(paint, path) {
           writes: false, // (a decal on the tiles: pulled over them, no depth of its own, a head over it, see ogiveOf)
           buffers: ribbonBufs,
         }),
-      );
+      ); // (the path's, the motif's, the starts')
+    if (ranges.some(([a, b, share]) => b > a && share > 0)) {
+      ribbons();
       const look = {
         glass: pass,
         cut,
@@ -42984,30 +42970,26 @@ function gpuSurface(paint, path) {
         }
     }
     gpuHeads(D, rp, pass, slotOf({ glass: pass, cut, alpha: GLASS_ALPHA }));
-    if (motifShown && middleTile.g === g && middleTile.t >= 0) {
-      // the motif round its tile (see middleTile, motifOf), each part its colour, unfaded, over the tiles
-      rp.setPipeline(
-        gpuDrawPipe('ribbon', {
-          vertex: 'ribbonV',
-          fragment: 'ribbonF',
-          topology: 'triangle-strip',
-          pass,
-          cull: both ? 'none' : 'back',
-          writes: false,
-          buffers: ribbonBufs,
-        }),
-      );
-      const { parts } = motifRibbons(D, g, sh, R);
+    // a size or the start hovered: the motif round its tile (see middleTile, motifOf), the starts (see startMarks), each part
+    // its colour and its width on the screen, unfaded, over the tiles; the start chosen's head
+    const marks = [
+      ...(motifShown && middleTile.g === g && middleTile.t >= 0 ? [['motif', motifRibbons(D, g, sh, R)]] : []),
+      ...(startsShown ? [['starts', startMarks(D, g, sh, R)]] : []),
+    ];
+    if (marks.length) {
+      ribbons();
       rp.setVertexBuffer(0, D.quad);
-      rp.setVertexBuffer(1, D.motif);
-      for (const { rgb, from, count } of parts) {
+    }
+    for (const [buffer, { parts }] of marks) {
+      rp.setVertexBuffer(1, D[buffer]);
+      for (const { rgb, from, count, width } of parts) {
         rp.setBindGroup(0, gpuGroup(), [
           slotOf({
             glass: pass,
             cut,
             colour: 4,
             edgeRgb: rgb,
-            halfW: Math.max(2, Math.min(view.scale / 6, 4)) / 2 / view.scale,
+            halfW: width(view.scale) / 2 / view.scale,
             bias: pathBias,
             grow: 1,
             fade: 0,
@@ -43016,6 +42998,15 @@ function gpuSurface(paint, path) {
         rp.draw(4, count, 0, from);
       }
     }
+    if (startsShown)
+      gpuHeads(
+        D,
+        rp,
+        pass,
+        slotOf({ glass: pass, cut, alpha: GLASS_ALPHA, fade: 0 }),
+        startMarks(D, g, sh, R).heads,
+        'startHead',
+      );
   };
   gpuFrame(enc, drawAll);
   const picking =
@@ -43392,13 +43383,13 @@ function gpuFlat(to) {
 // count cubes: of, theirs, made by make(the look) once; reach, how far from the middle they go
 // the walkers' heads and their starts' flags (see headsOf) drawn in pass rp, lit as the cubes (an ogive, a flag: each its
 // colour, an instance; on a surface half under its tiles)
-function gpuHeads(D, rp, pass, slot) {
-  const heads = headsOf(),
-    from = heads.reduce((at, [mesh]) => [...at, at.at(-1) + mesh.length / 6], [0]); // (their corners: each its first, in the one buffer)
+function gpuHeads(D, rp, pass, slot, heads = headsOf(), name = 'head') {
+  // (heads: [its corners, its colour] each, the walkers' by default; name: their buffers', one each set drawn in a frame)
+  const from = heads.reduce((at, [mesh]) => [...at, at.at(-1) + mesh.length / 6], [0]); // (their corners: each its first, in the one buffer)
   if (!heads.length) return;
-  gpuBuffer('headMesh', Float32Array.from(heads.flatMap(([mesh]) => mesh)));
-  gpuBuffer('headAt', new Float32Array(3 * heads.length));
-  gpuBuffer('headCol', Uint8Array.from(heads.flatMap(([, c]) => [...rgbCached(c), 255])));
+  gpuBuffer(`${name}Mesh`, Float32Array.from(heads.flatMap(([mesh]) => mesh)));
+  gpuBuffer(`${name}At`, new Float32Array(3 * heads.length));
+  gpuBuffer(`${name}Col`, Uint8Array.from(heads.flatMap(([, c]) => [...rgbCached(c), 255])));
   rp.setPipeline(
     gpuDrawPipe('cube', {
       vertex: 'cubeV',
@@ -43414,9 +43405,9 @@ function gpuHeads(D, rp, pass, slot) {
   );
   rp.setBindGroup(0, gpuGroup(), [slot]);
   rp.setBindGroup(1, D.shadow.group);
-  rp.setVertexBuffer(0, D.headMesh);
-  rp.setVertexBuffer(1, D.headAt);
-  rp.setVertexBuffer(2, D.headCol);
+  rp.setVertexBuffer(0, D[`${name}Mesh`]);
+  rp.setVertexBuffer(1, D[`${name}At`]);
+  rp.setVertexBuffer(2, D[`${name}Col`]);
   heads.forEach((_, j) => rp.draw(from[j + 1] - from[j], 1, from[j], j));
 }
 function gpuCubes(count, of, make, reach) {

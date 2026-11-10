@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.741';
+const VERSION = '0.4.742';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -39242,13 +39242,46 @@ const showThumbnail = (row, thumbnail) => {
 }; // (fading in as a walk's cells, see .gallery-grid img)
 // the cards shown, in their order: { setup, row } (Rebuild takes them so, see rebuildThumbnails)
 let galleryCards = [];
+// Select (a switch): on, a click on a card selects it or lets it go, its setup not shown; Export, Delete and Rebuild then act
+// on the cards selected (by their names); off, none selected
+let selecting = false;
+const selectedNames = new Set();
+function syncSelection() {
+  $('yourList').classList.toggle('selecting', selecting);
+  for (const { x, row } of galleryCards) row.classList.toggle('selected', selectedNames.has(x.name));
+  setTile($('gallerySelect'), { on: selecting });
+  setTile($('galleryDelete'), {
+    whyNot: () => (selectedNames.size ? '' : 'None selected: Select, then click the cards to delete.'),
+  });
+  $('selectedWords').hidden = !selecting;
+  $('selectedWords').textContent = `${selectedNames.size} selected: Export, Delete and Rebuild act on them`;
+}
+const toggleSelecting = () => {
+  selecting = !selecting;
+  if (!selecting) selectedNames.clear();
+  syncSelection();
+  syncRebuildTile(true);
+};
+// Delete: the cards selected gone, their thumbnails with them (but one another card still shows)
+function deleteSelected() {
+  const list = readGallery(),
+    left = list.filter((x) => !selectedNames.has(x.name)),
+    kept = new Set(left.map((x) => thumbnailKey(x.setup)));
+  writeGallery(left);
+  for (const x of list)
+    if (selectedNames.has(x.name) && !kept.has(thumbnailKey(x.setup)))
+      thumbnailStore('readwrite', (store) => store.delete(thumbnailKey(x.setup))).catch(() => {});
+  selectedNames.clear();
+  $('eraseConfirm').hidden = true;
+  fillGalleryList();
+}
 // Rebuild's tile: lit while it runs; greyed when no card here lacks its thumbnail (missing: whether one does)
 const syncRebuildTile = (missing) =>
   setTile($('rebuildThumbnails'), {
     on: rebuilding,
-    whyNot: () => (rebuilding || missing ? '' : 'Every setup here has its thumbnail.'),
+    whyNot: () => (rebuilding || missing || selectedNames.size ? '' : 'Every setup here has its thumbnail.'),
   });
-// The Gallery's setups, as rows like the built-in ones (see setupRow), each with × to delete it, its thumbnail over it
+// The Gallery's setups, as rows like the built-in ones (see setupRow), its thumbnail over each
 function fillGalleryList() {
   thumbnailUrls.forEach((url) => URL.revokeObjectURL(url));
   thumbnailUrls = [];
@@ -39276,7 +39309,7 @@ function fillGalleryList() {
         ...mine.map(([title, detail, x]) => {
           const k = (seen.get(title + detail) ?? 0) + 1;
           seen.set(title + detail, k);
-          const row = setupRow(k > 1 ? `${title} (${k})` : title, detail, x, () => deleteSetup(x.name));
+          const row = setupRow(k > 1 ? `${title} (${k})` : title, detail, x);
           looks.push(
             thumbnailOf(x.setup).then((thumbnail) => {
               if (thumbnail) showThumbnail(row, thumbnail);
@@ -39291,8 +39324,9 @@ function fillGalleryList() {
       return [section];
     }),
   );
-  setTile($('galleryTools').children[1], { whyNot: () => (list.length ? '' : 'The Gallery is empty.') }); // (Export: none to take)
+  setTile($('galleryExport'), { whyNot: () => (list.length ? '' : 'The Gallery is empty.') }); // (none to take)
   Promise.all(looks).then((found) => syncRebuildTile(found.includes(false)));
+  syncSelection();
   syncSaveButton();
 }
 
@@ -39364,7 +39398,7 @@ function deleteSetup(name) {
 }
 
 function exportGallery() {
-  const list = readGallery();
+  const list = readGallery().filter((x) => !selectedNames.size || selectedNames.has(x.name)); // (the cards selected, else all)
   if (!list.length) return; // nothing to export yet
   const blob = new Blob([JSON.stringify({ app: 'Tessera', version: 1, setups: list }, null, 2)], {
     type: 'application/json',
@@ -39449,8 +39483,9 @@ function stageThumbnail() {
   return new Promise((ok) => c.toBlob(ok, 'image/webp', 0.85));
 }
 const thumbnailOf = (setup) => thumbnailStore('readonly', (store) => store.get(thumbnailKey(setup))).catch(() => null);
-// Rebuild: the cards shown with no thumbnail, in their order, one after the other: each shown (as a click on it) and taken once
-// built, its thumbnail fading in on its card; a click again, the Gallery shut or a card clicked stops it (the last built shown)
+// Rebuild: the cards selected (taken again, a thumbnail or not), else those with no thumbnail, in their order, one after the
+// other: each shown (as a click on it) and taken once built, its thumbnail fading in on its card; a click again, the Gallery
+// shut or a card clicked stops it (the last built shown)
 let rebuilding = false;
 async function rebuildThumbnails() {
   rebuilding = !rebuilding;
@@ -39472,7 +39507,7 @@ async function rebuildThumbnails() {
     // (as they are now: the list drawn again meanwhile, these go on)
     const { setup } = x;
     if (!rebuilding) return;
-    if (await thumbnailOf(setup)) continue;
+    if (selectedNames.size ? !selectedNames.has(x.name) : await thumbnailOf(setup)) continue;
     const built = whenBuilt();
     if (!isInUse(setup) && applySetup(setup)) {
       renderModePicker();
@@ -39496,6 +39531,7 @@ async function adoptShown(x, row) {
     { title, chips } = barWords(),
     was = thumbnailKey(x.setup);
   if (!saved) return; // (deleted meanwhile)
+  const selected = selectedNames.delete(x.name);
   Object.assign(saved, {
     name: uniqueName(
       title,
@@ -39506,6 +39542,7 @@ async function adoptShown(x, row) {
   });
   writeGallery(list);
   Object.assign(x, saved); // (its card's: deleted by its new name)
+  if (selected) selectedNames.add(x.name);
   row.querySelector('.mode-name').textContent = setupTitle(x);
   const words = row.querySelector('.mode-detail');
   if (words) words.innerHTML = htmlText(setupWords(x));
@@ -39519,13 +39556,6 @@ async function adoptShown(x, row) {
     }).catch(() => {});
   syncSaveButton();
 }
-// Remove (to try Rebuild, for now): the thumbnails of the cards shown
-const removeThumbnails = () =>
-  Promise.all(
-    galleryCards.map(({ x: { setup } }) =>
-      thumbnailStore('readwrite', (store) => store.delete(thumbnailKey(setup))).catch(() => {}),
-    ),
-  ).then(fillGalleryList);
 
 /* ==============================================================================================
  * PART 11 — ANIMATION, VIEW AND RENDERING
@@ -46139,19 +46169,24 @@ const shapeAndTiles = (w) => {
 // (Space-time, its step): one Gallery card a setup, a thumbnail, whatever its length
 const SETUP_LOOKS = ['v', 'd', 'sp', 'at'];
 const isInUse = (setup) => sameSetup(setup, getSetup(), SETUP_LOOKS);
-// A setup's row, built-in or saved: the walk's icon, a name and a detail; a click shows it, framed and still (Auto-fit
-// on: a hand rotation or zoom may have turned it off, and the walk could be on the far side); with onDelete, a × at its end
+// A setup's row, built-in or saved: the walk's icon, a name and a detail, its check (seen while selecting); a click shows it,
+// framed and still (Auto-fit on: a hand rotation or zoom may have turned it off, and the walk could be on the far side), or
+// selects it (see syncSelection)
 let cardShown = null; // (the card clicked last: its setup adopted once built)
-function setupRow(name, detail, x, onDelete) {
+function setupRow(name, detail, x) {
   const { setup } = x,
     b = card({ pic: icon(SHAPE_ICONS[NAV[setup.w]?.[2]] ?? MODE_ICONS[setup.w]), name, detail, on: isInUse(setup) }); // (its shape's picture, as the Grid's; its tooltip its name and its detail in full, as the row may cut them short)
-  if (onDelete) {
-    b.append(rowAction('×', `Delete “${name}”`, onDelete));
-  }
+  b.append(Object.assign(document.createElement('span'), { className: 'card-check', innerHTML: icon('check') }));
   b.setAttribute('role', 'option');
   // a click: the Gallery shut and the card's thumbnail over the view at once, painted; its setup built from the next frame, the
   // thumbnail gone once it is drawn (not the Gallery nor the walk before frozen while it is built)
   b.addEventListener('click', () => {
+    if (selecting) {
+      if (!selectedNames.delete(x.name)) selectedNames.add(x.name);
+      syncSelection();
+      syncRebuildTile(true);
+      return;
+    }
     rebuilding = false; // (the pictures being rebuilt: stopped)
     ruleTutorial(null); // what lies over the view (how a rule works, the digits) closes: the setup shown instead
     closeNumber();
@@ -46216,9 +46251,26 @@ function galleryTab() {
   return b;
 }
 
-// The Gallery's tools, tiles: Import (added to them, a name already used numbered), Export, Erase all (then Confirm erase, under them: the app as at a first visit),
+// The Gallery's tools, tiles: Select (a switch: the cards to act on), Import (added to them, a name already used numbered),
+// Export, Delete (the cards selected), Erase all (the app as at a first visit), each of these two confirmed under them, Rebuild,
 // then Share link (the link to what is shown)
+// (Confirm, under them: what the tile clicked asks, its words and its act; clicked again, gone)
+let confirmAct = null;
+const askConfirm = (words, act) => {
+  const b = $('eraseConfirm');
+  b.hidden = !b.hidden && confirmAct === act;
+  b.innerHTML = `${icon('trash')} ${words}`;
+  confirmAct = act;
+};
 $('galleryTools').replaceChildren(
+  tile({
+    id: 'gallerySelect',
+    pic: icon('check'),
+    text: 'Select',
+    toggle: true,
+    title: 'Pick cards with a click (none shown) for Export, Delete and Rebuild; off, none picked',
+    click: toggleSelecting,
+  }),
   tile({
     pic: icon('import'),
     text: 'Import',
@@ -46226,21 +46278,26 @@ $('galleryTools').replaceChildren(
       'Add the setups of a JSON file to the Gallery as they are (those of a name already used numbered: none replaced); no thumbnails taken: Rebuild takes them',
     click: () => $('galleryFile').click(),
   }),
-  tile({ pic: icon('export'), text: 'Export', title: 'The Gallery as a JSON file', click: exportGallery }),
   tile({
+    id: 'galleryExport',
+    pic: icon('export'),
+    text: 'Export',
+    title: 'The cards selected as a JSON file, else the whole Gallery',
+    click: exportGallery,
+  }),
+  tile({
+    id: 'galleryDelete',
     pic: icon('trash'),
+    text: 'Delete',
+    title: 'Delete the cards selected, with their thumbnails (asked again under it)',
+    click: () => askConfirm(`Confirm delete (${selectedNames.size})`, deleteSelected),
+  }),
+  tile({
+    pic: icon('undo'),
     text: 'Erase all',
     title:
       'Back to the app as at a first visit: all it keeps in this browser erased (the Gallery, its thumbnails, the theme), the curated setups back (asked again under it)',
-    click: () => {
-      $('eraseConfirm').hidden = !$('eraseConfirm').hidden;
-    },
-  }),
-  tile({
-    pic: icon('eraser'),
-    text: 'Remove',
-    title: 'Remove the thumbnails shown here (to try Rebuild: for now)',
-    click: removeThumbnails,
+    click: () => askConfirm('Confirm erase', resetApp),
   }),
   tile({
     id: 'rebuildThumbnails',
@@ -46248,7 +46305,7 @@ $('galleryTools').replaceChildren(
     text: 'Rebuild',
     toggle: true,
     title:
-      'Erase the thumbnails no card shows any more, then take the missing ones, one setup after the other: each shown, then taken once built; on while it runs, off by a click or once done',
+      'Erase the thumbnails no card shows any more, then take again those of the cards selected, else the missing ones, one setup after the other: each shown, then taken once built; on while it runs, off by a click or once done',
     click: rebuildThumbnails,
   }),
   tile({
@@ -46258,8 +46315,7 @@ $('galleryTools').replaceChildren(
     click: () => shareView($('galleryTools').lastElementChild),
   }),
 );
-$('eraseConfirm').innerHTML = `${icon('trash')} Confirm erase`;
-$('galleryToolsHead').insertAdjacentHTML('afterbegin', icon('floppy')); // (the Gallery's files: Import, Export, Erase)
+$('galleryToolsHead').insertAdjacentHTML('afterbegin', icon('floppy')); // (the Gallery's files: Import, Export, Delete, Erase)
 // Confirm erase: the app as at a first visit, all it keeps in this browser gone (its localStorage keys, its thumbnails' store), then
 // loaded again (the curated setups seeded, see seedCurated)
 async function resetApp() {
@@ -46271,7 +46327,7 @@ async function resetApp() {
   });
   location.reload();
 }
-$('eraseConfirm').addEventListener('click', resetApp);
+$('eraseConfirm').addEventListener('click', () => confirmAct?.());
 $('galleryFile').addEventListener('change', () => {
   if ($('galleryFile').files[0]) importGallery($('galleryFile').files[0]);
   $('galleryFile').value = '';

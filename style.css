@@ -767,17 +767,40 @@ button.switch.active:hover:not(:disabled) {
     opacity: 0;
   }
 }
-.gallery-grid button > span:not(.mode-icon):not(.row-act) {
+.gallery-grid button > span:not(.mode-icon):not(.card-check) {
   padding: 6px 8px;
   min-width: 0;
 }
-:where(.gallery-grid) .row-act {
+/* a card's check, on its picture: seen while selecting (Select on), filled gold once selected, the card's border gold too */
+.gallery-grid .card-check {
   position: absolute;
-  top: 4px;
-  right: 4px;
-  margin: 0;
+  top: 6px;
+  left: 6px;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border: 1px solid var(--border-color);
+  border-radius: 5px;
   background: var(--panel-background);
-} /* (on the picture: readable; under .row-act:hover, its grey square) */
+  color: transparent;
+}
+.gallery-grid .card-check svg {
+  width: 14px;
+  height: 14px;
+}
+.selecting .gallery-grid .card-check {
+  display: flex;
+}
+.gallery-grid button.selected {
+  border-color: var(--accent-color);
+}
+.gallery-grid button.selected .card-check {
+  border-color: var(--accent-color);
+  background: var(--accent-color);
+  color: var(--on-accent-color);
+}
 .mode-list button {
   display: grid;
   grid-template-columns: 34px minmax(0, 1fr) auto; /* one icon column for every list, wide enough for ζ(3) or 16/9; the words shrink; the base's bubble or the × */

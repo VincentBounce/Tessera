@@ -1352,7 +1352,7 @@ button.active .bubble.active {
 .display-menu {
   top: var(--view-gap);
   right: var(--view-gap);
-  --open-width: calc(4 * var(--tile-width) + 3 * var(--tile-gap) + 2 * 9px);
+  --display-open-width: calc(4 * var(--tile-width) + 3 * var(--tile-gap) + 2 * 9px);
 } /* open: 4 tiles a row, and its frame (.stage-box: 8px padding, 1px border, each side) */
 /* the number (Full number), in place of the whole view as how a rule works (.rule-tuto): its digits */
 .number-view .number-digits {
@@ -1382,11 +1382,11 @@ button.wide.active,
   background: var(--picked-background);
 }
 .display-menu:hover {
-  width: var(--open-width);
+  width: var(--display-open-width);
 }
 @media (hover: none) {
   .display-menu:focus-within {
-    width: var(--open-width);
+    width: var(--display-open-width);
   }
 }
 /* System stays at the top right; hovering opens the settings: the sky, Light and Dark on its left, tiles a quarter of the box, the rest below */

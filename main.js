@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.774';
+const VERSION = '0.4.775';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -6382,7 +6382,7 @@ function describe(base, available) {
   $('barBase').hidden = !!creature || !!mode.life; // (a creature's base or colours in its rule's tooltip; Life's digits: in its description)
   $('barBase').textContent = colours ? `${colours} colours` : baseWords(base);
   $('barRule').hidden = !creature && !walkRule; // (Life's: below)
-  setLinks($('barRule'), walkRule && ruleSpan(walkRule));
+  setLinks($('barRule'), ruleWords(getSetup()).html); // (a walk's, a creature's: as the Gallery writes it, see ruleWords)
   $('barRule').title = 'Its rule · A click: how it works';
   $('barBattle').hidden = !walk.battle; // (a battle: its rule, after the walk's)
   $('barBattle').textContent = walk.battle ? BATTLE_RULES[battleRuleInUse(w)][1] : '';
@@ -6390,10 +6390,6 @@ function describe(base, available) {
   if (creature) {
     const R = creatureRules(w);
     setLinks($('barNum'), (barTitle = walkName(w)));
-    setLinks(
-      $('barRule'),
-      [R.byDigits && withIcons(shownSymbol), R.now && ruleSpan(R.now)].filter(Boolean).join(' · '),
-    );
     $('barRule').title = [
       R.byDigits ? `It turns by the digits of ${shownSymbol}, base ${MODES[w].base}` : 'It turns by its rule',
       colours && `${colours} colours`,
@@ -7002,7 +6998,7 @@ const card = ({
       how();
     });
   } // (its picture: a click on how it works)
-  if (rule && !title) b.dataset.rule = rule; // (its tooltip's words after its rule's code, in its font: see tipOf)
+  if (rule && !title) b.dataset.ruleHtml = rule; // (its tooltip's words after its rule, as its card writes it: see tipOf)
   b.append(
     picture,
     cardWords(name, detail, '', null, rule),
@@ -7046,7 +7042,7 @@ function cardWords(name, detail = '', base = '', show = null, rule = '') {
       head,
       Object.assign(document.createElement('span'), {
         className: 'mode-detail',
-        innerHTML: [rule && ruleSpan(rule), detail && htmlText(detail)].filter(Boolean).join(' · '),
+        innerHTML: [rule, detail && htmlText(detail)].filter(Boolean).join(' · '),
       }),
     );
   else words.append(head);
@@ -10175,7 +10171,7 @@ function ruleCards(w, here = true) {
     card({
       pic: cardPic,
       name,
-      rule: code,
+      rule: ruleSpan(code),
       base: code && R.base?.(code),
       on,
       title,
@@ -11548,12 +11544,12 @@ const tipOf = (target) => {
 document.addEventListener('mouseover', (e) => {
   const { el, tip, greyed } = tipOf(e.target),
     named = el?.matches('button, label, .notch-row'); // (a notch row: its title, its first span)
-  const rule = el?.dataset.rule ?? '',
+  const rule = el?.dataset.ruleHtml ?? '',
     said = rule
       ? Object.assign(document.createElement('span'), {
-          innerHTML: [ruleSpan(rule), tip && htmlText(tip)].filter(Boolean).join(' · '),
+          innerHTML: [rule, tip && htmlText(tip)].filter(Boolean).join(' · '),
         })
-      : tip; // (a rule's code first, in its font, as its card writes it: see ruleSpan)
+      : tip; // (its rule first, as its card writes it: see ruleWords, ruleSpan)
   const name = named
     ? (
         el.getAttribute('aria-label') ?? (el.querySelector('.mode-name') ?? el.querySelector('span') ?? el).textContent
@@ -27187,7 +27183,7 @@ function renderRuleSection() {
             ruleTutorial(o);
           }
         }, // (its picture: how it works, picked first, as the walks')  // (the first: the shape's, see fitRuleToShape)
-        rule: mode.loops ? loopCode(o.rule) : o.rule,
+        rule: ruleSpan(mode.loops ? loopCode(o.rule) : o.rule),
         detail: unnamed(o.about, o.name),
         click: pick,
         choice: `lifeRule:${o.rule}`,
@@ -27204,7 +27200,7 @@ function renderRuleSection() {
         name: 'Custom rule',
         on: mineNot,
         how: mineNot && (() => ruleTutorial(howShown(yours) ? null : yours)),
-        rule: mineNot ? now : '',
+        rule: mineNot ? ruleSpan(now) : '',
         detail: mineNot
           ? 'your own'
           : mode.elementary
@@ -39234,13 +39230,19 @@ const setupDetail = (s, chips = '') => {
     .join(' · ');
 };
 // A setup's rule, as the Gallery writes it (its cards, their tooltips, the setup in view's): its code (in its font, see
-// ruleSpan: B3/S23, LNR, 1R0 0L0) and its name when it has one (a Life rule's, see ruleCard); a walk's first rule, written in
+// ruleSpan: B3/S23, LNR, 1R0 0L0), its HTML as every place writes it (the bar, a card, a tooltip) and its name when it has one (a Life rule's, see ruleCard); a walk's first rule, written in
 // no link, its network's first; by the digits ("digits", "digits 1R0 0L0"): its code without the word
 const ruleWords = (s) => {
   const m = MODES[s.w],
-    code = String(s.r ?? (m?.net ? firstWalkRule(m) : '')).replace(/^digits ?/, ''),
+    r = String(s.r ?? (m?.net ? firstWalkRule(m) : '')),
+    byDigits = /^digits\b/.test(r),
+    code = r.replace(/^digits ?/, ''),
     name = m?.life && ruleCard(code, s.w)?.name;
-  return { code, name: name && name !== code ? name : '' };
+  return {
+    code,
+    name: name && name !== code ? name : '',
+    html: [byDigits && withIcons(formulaOf(s.x).sym), code && ruleSpan(code)].filter(Boolean).join(' · '), // (by the digits: the number read first, as the bar says it)
+  };
 };
 // its title: its bar's as it was saved (a battle's walkers, Life's start); one saved before: a walk's number, a Game of Life's
 // shape and tiles (see shapeAndTiles)
@@ -46212,7 +46214,7 @@ function setupRow(name, detail, x) {
     b = card({
       pic: icon(SHAPE_ICONS[NAV[setup.w]?.[2]] ?? MODE_ICONS[setup.w]),
       name,
-      rule: ruleWords(setup).code,
+      rule: ruleWords(setup).html,
       detail,
       on: isInUse(setup),
     }); // (its shape's picture, as the Grid's; its tooltip its name and its detail in full, as the row may cut them short)
@@ -46288,7 +46290,7 @@ async function showInViewPicture() {
   const { title, chips } = barWords(),
     b = $('inViewPicture');
   b.setAttribute('aria-label', title);
-  b.dataset.rule = ruleWords(getSetup()).code;
+  b.dataset.ruleHtml = ruleWords(getSetup()).html;
   b.title = chips;
   b.innerHTML = inViewUrl ? `<img src="${inViewUrl}" alt="">` : '';
 }

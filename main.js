@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.770';
+const VERSION = '0.4.771';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -11547,7 +11547,11 @@ const tipOf = (target) => {
 document.addEventListener('mouseover', (e) => {
   const { el, tip, greyed } = tipOf(e.target),
     named = el?.matches('button, label, .notch-row'); // (a notch row: its title, its first span)
-  const name = named ? (el.querySelector('.mode-name') ?? el.querySelector('span') ?? el).textContent.trim() : '';
+  const name = named
+    ? (
+        el.getAttribute('aria-label') ?? (el.querySelector('.mode-name') ?? el.querySelector('span') ?? el).textContent
+      ).trim()
+    : ''; // (a button with no words, a picture: its aria-label)
   const bold = (text) => Object.assign(document.createElement('b'), { className: 'tip-name', textContent: text }),
     ok = tip && /\p{L}/u.test(name); // (a symbol, + or −: no name)
   // its default: a tile's (see setTile), a box's (its checkbox as the page starts)
@@ -46250,23 +46254,24 @@ function showPane(gallery) {
   galleryTab().classList.toggle('open', gallery);
   if (gallery) {
     renderGallery();
-    showInViewCard();
+    showInViewPicture();
     $('yourList').querySelector(`[data-kind="${NAV[tabMode()]?.[0]}"]`)?.scrollIntoView({ block: 'start' });
   } // (the tab in use's section)
 }
-// The setup in view's card, at the band's right: its picture taken as the Gallery opens (a frame drawn without the grid, see
-// wantThumbnail), its title and words its bar's; a click on it shuts the Gallery, back to it
+// The setup in view's picture, at the band's right: taken as the Gallery opens (a frame drawn without the grid, see
+// wantThumbnail), its title and words its bar's in its tooltip; a click on it shuts the Gallery, back to it
 let inViewUrl = '';
-async function showInViewCard() {
+async function showInViewPicture() {
   const thumbnail = await wantThumbnail();
   URL.revokeObjectURL(inViewUrl);
   inViewUrl = thumbnail ? URL.createObjectURL(thumbnail) : '';
   const { title, chips } = barWords(),
-    pic = inViewUrl
-      ? `<img src="${inViewUrl}" alt="">`
-      : icon(SHAPE_ICONS[NAV[getSetup().w]?.[2]] ?? MODE_ICONS[getSetup().w]);
-  $('inViewCard').replaceChildren(card({ pic, name: title, detail: chips, click: () => showPane(false) }));
+    b = $('inViewPicture');
+  b.setAttribute('aria-label', title);
+  b.title = chips;
+  b.innerHTML = inViewUrl ? `<img src="${inViewUrl}" alt="">` : '';
 }
+$('inViewPicture').addEventListener('click', () => showPane(false));
 const galleryButton = document.createElement('button');
 function galleryTab() {
   if (galleryButton.dataset.ready) return galleryButton;

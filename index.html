@@ -11,7 +11,7 @@
   <meta property="og:type" content="website">
   <link id="favicon" rel="icon">  <!-- the app's logo, set at start-up (see appLogo) -->
   <meta name="description" content="A walk on a grid in 2D or 3D driven by the base-2 to base-6 digits of π, other constants and large primes.">
-  <link rel="stylesheet" href="style.css?v=0.4.770">
+  <link rel="stylesheet" href="style.css?v=0.4.771">
   <script>  // the theme before the first paint (see applyTheme)
     try { const t = localStorage.getItem('tesseraTheme') || 'system'; document.documentElement.dataset.theme = t === 'system' ? (matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark') : t; } catch { document.documentElement.dataset.theme = 'dark'; }
   </script>
@@ -397,7 +397,7 @@
             </div>
             <div class="gallery-in-view">
               <div id="galleryViewTiles" class="nav-shapes"></div>  <!-- Star, Share link -->
-              <div id="inViewCard" class="gallery-grid"></div>  <!-- the setup in view's card: its picture, its whole card on its hover -->
+              <button id="inViewPicture" type="button"></button>  <!-- the setup in view's picture, the band's height: its words in its tooltip -->
             </div>
           </div>
           <button id="eraseConfirm" type="button" class="wide" hidden></button>  <!-- Delete or Erase all, then this to confirm -->
@@ -522,10 +522,10 @@
     </div>
   </main>
 
-  <script src="pixelarticons.js?v=0.4.770"></script>
-  <script src="punks.js?v=0.4.770"></script>
-  <script src="loops.js?v=0.4.770"></script>
-  <script src="emoji.js?v=0.4.770"></script>
-  <script src="main.js?v=0.4.770"></script>
+  <script src="pixelarticons.js?v=0.4.771"></script>
+  <script src="punks.js?v=0.4.771"></script>
+  <script src="loops.js?v=0.4.771"></script>
+  <script src="emoji.js?v=0.4.771"></script>
+  <script src="main.js?v=0.4.771"></script>
 </body>
 </html>

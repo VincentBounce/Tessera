@@ -807,9 +807,11 @@ button.switch.active:hover:not(:disabled) {
 .selecting .gallery-grid .card-check {
   display: flex;
 }
-.gallery-grid button.selected {
+.gallery-grid button.selected,
+.gallery-grid button.active {
   border-color: var(--accent-color);
-}
+  box-shadow: 0 0 0 1px var(--accent-color);
+} /* (a card selected or in view: its gold 2 px, a ring round its border, the card's size the same) */
 .gallery-grid button.selected .card-check {
   border-color: var(--accent-color);
   background: var(--accent-color);

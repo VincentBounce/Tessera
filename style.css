@@ -1,5 +1,6 @@
 :root {
   --tile-width: 57px; /* a tile's width, every tile alike: .nav-shapes, as many a row as fit (4 in the settings' column) */
+  --tile-height: 55px; /* a tile's height, every tile alike */
   --tile-gap: 4px; /* between two tiles */
   --panel-width: 280px; /* the settings' column (.panel; the Gallery's Confirm erase as wide) */
   /* the text's sizes, four, each element one of them: */
@@ -621,6 +622,7 @@ button.wide.how-it-works {
   flex-direction: column;
   align-items: center;
   gap: 2px;
+  height: var(--tile-height);
   padding: 6px 1px;
   font-size: var(--caption-text-size);
   background: var(--panel-background);
@@ -740,8 +742,8 @@ button.switch.active:hover:not(:disabled) {
   margin: 0 8px 4px 0;
 }
 #inViewPicture {
-  align-self: stretch;
-  width: 180px;
+  height: calc(var(--tile-height) + 4px + 18px);
+  aspect-ratio: 5 / 4;
   margin: -12px 0 -6px;
   padding: 0;
   border: 0;
@@ -749,14 +751,15 @@ button.switch.active:hover:not(:disabled) {
   position: relative;
   overflow: hidden;
   background: var(--page-background);
-} /* the setup in view's picture: the band's whole height, its paddings included (see .gallery-band) */
+} /* the setup in view's picture, whole: the band's height, a tile's, its tiles' margin under them (4px) and the band's paddings
+   (12px, 6px: see .gallery-band); its width by a thumbnail's 5 : 4 (see THUMBNAIL_SIZE, .gallery-grid .mode-icon) */
 #inViewPicture img {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
   object-fit: cover;
-} /* (its middle, cut above and under; out of the band's height: the band's tiles make it) */
+} /* (out of the band's height: the band's tiles make it) */
 #galleryPane:not([hidden]) {
   position: absolute;
   inset: 0;

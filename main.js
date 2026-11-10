@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.785';
+const VERSION = '0.4.786';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -6214,6 +6214,7 @@ const PRIMORIAL_DIGITS = {
 // Digits already computed stay in the cache (key: canonical formula + base), so going back to a
 // number or a mode is instant.
 const digitsCache = remember('digitsCache', {}); // key → { intPart: "10", digits: Uint8Array (fractional part) }
+const digitsKey = (F, base) => `${F.text}|${base}`; // (a number's digits in a base: pi|2, π's binary digits)
 let digitsComputed = null; // the number's digits computed: { head: integer-part digits, digits, base, mode they are for, … }
 let numberWorker = null; // (the page's number's digits being computed, see compute)
 
@@ -9052,7 +9053,7 @@ function headDigits(intPart, base) {
 // page, the others' from the cache (A's, see compute); null when they are not there yet (see digitsWorker)
 function knownDigits(F, base, n) {
   if (F.kind === 'seq') return seqDigits(F.ast, n, base).digits;
-  const hit = digitsCache[`${F.text}/${base}`];
+  const hit = digitsCache[digitsKey(F, base)];
   if (!hit || (hit.intPart.length + hit.digits.length < n && hit.total === undefined)) return null;
   const head = headDigits(hit.intPart, base),
     all = new Uint8Array(head.length + hit.digits.length);
@@ -9067,7 +9068,7 @@ function digitsWorker(F, base, n, then) {
     if (d.type === 'progress') return;
     w.terminate();
     if (d.type !== 'error')
-      digitsCache[`${F.text}/${base}`] = {
+      digitsCache[digitsKey(F, base)] = {
         intPart: d.intPart,
         digits: d.digits,
         total: d.total,
@@ -9183,7 +9184,7 @@ function numberRows() {
         ? head.length
         : F.kind === 'seq'
           ? ds.length
-          : headDigits(digitsCache[`${F.text}/${b}`].intPart, b).length,
+          : headDigits(digitsCache[digitsKey(F, b)].intPart, b).length,
       h = Math.min(lead, used); // (its integer part's digits)
     return {
       s,
@@ -10939,7 +10940,7 @@ function compute() {
   const { sym, kind } = F;
   shownSymbol = sym;
   const base = mode.life ? lifeBase() : mode.base; // Life: K + 1 (Digits mixed: 2, see lifeBase)
-  const key = `${F.text}/${base}`;
+  const key = digitsKey(F, base);
   $('copyNumber').textContent = baseWords(base); // (Full number's chip: the base the digits are written in)
   $('copyNumber').title = baseBubbleTitle(baseWords(base));
   // The status line under the Number: how the digits came (time, cache), what the number is, and

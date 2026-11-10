@@ -781,7 +781,7 @@ button.switch.active:hover:not(:disabled) {
     opacity: 0;
   }
 }
-.gallery-grid button > span:not(.mode-icon):not(.card-check) {
+.gallery-grid button > span:not(.mode-icon):not(.card-check):not(.card-star) {
   padding: 6px 8px;
   min-width: 0;
 }
@@ -807,8 +807,27 @@ button.switch.active:hover:not(:disabled) {
 .selecting .gallery-grid .card-check {
   display: flex;
 }
+/* the card in view: its gold star at the top right, always, facing the check; its gold border not while selecting (gold then
+   the cards selected only) */
+.gallery-grid .card-star {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  display: none;
+  color: var(--accent-color);
+}
+.gallery-grid button.active .card-star {
+  display: flex;
+}
+.gallery-grid .card-star svg {
+  width: 20px;
+  height: 20px;
+}
+.gallery-grid .card-star path {
+  fill: currentColor;
+}
 .gallery-grid button.selected,
-.gallery-grid button.active {
+#yourList:not(.selecting) .gallery-grid button.active {
   border-color: var(--accent-color);
   box-shadow: 0 0 0 1px var(--accent-color);
 } /* (a card selected or in view: its gold 2 px, a ring round its border, the card's size the same) */
@@ -948,12 +967,12 @@ button.active .bubble.active {
   color: var(--accent-color);
   background: var(--picked-background);
 }
-:is(.mode-list, .gallery-grid) button.active {
+:is(.mode-list, #yourList:not(.selecting) .gallery-grid) button.active {
   border-color: var(--accent-color);
   background: var(--picked-background);
-} /* (a Gallery card too: the setup in view) */
-:is(.mode-list, .gallery-grid) button.active .mode-name,
-:is(.mode-list, .gallery-grid) button.active .mode-icon {
+} /* (a Gallery card too: the setup in view, but while selecting: its star only) */
+:is(.mode-list, #yourList:not(.selecting) .gallery-grid) button.active .mode-name,
+:is(.mode-list, #yourList:not(.selecting) .gallery-grid) button.active .mode-icon {
   color: var(--accent-color);
 }
 .row button {

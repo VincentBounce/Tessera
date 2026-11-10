@@ -714,15 +714,12 @@ button.switch.active:hover:not(:disabled) {
   display: flex;
   align-items: center;
   gap: var(--tile-gap);
-} /* the tools, then Select at the page's right, how many selected on its left */
+} /* the tools, then how many cards selected at the page's right */
 .gallery-tools-row #galleryTools {
   flex: 1;
 }
 .gallery-tools-row #selectedWords {
   margin: 0 8px 4px 0;
-}
-#gallerySelectTile {
-  margin-bottom: 4px;
 }
 #galleryPane:not([hidden]) {
   position: absolute;
@@ -796,7 +793,7 @@ button.switch.active:hover:not(:disabled) {
   padding: 6px 8px;
   min-width: 0;
 }
-/* a card's check, on its picture: seen while selecting (Select on), filled gold once selected, the card's border gold too */
+/* a card's check, on its picture: seen while selecting (a card selected), filled gold once selected, the card's border gold too */
 .gallery-grid .card-check {
   position: absolute;
   top: 6px;
@@ -818,7 +815,7 @@ button.switch.active:hover:not(:disabled) {
 .selecting .gallery-grid .card-check,
 .gallery-grid button:hover .card-check {
   display: flex;
-} /* (while selecting, every card's; else a card hovered's: a click on it selects the card, Select on) */
+} /* (while selecting, every card's; else a card hovered's: a click on it selects the card) */
 /* the card in view: its gold star at the top right, always, facing the check; its gold border not while selecting (gold then
    the cards selected only) */
 .gallery-grid .card-star {

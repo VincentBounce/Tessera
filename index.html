@@ -11,7 +11,7 @@
   <meta property="og:type" content="website">
   <link id="favicon" rel="icon">  <!-- the app's logo, set at start-up (see appLogo) -->
   <meta name="description" content="A walk on a grid in 2D or 3D driven by the base-2 to base-6 digits of π, other constants and large primes.">
-  <link rel="stylesheet" href="style.css?v=0.4.756">
+  <link rel="stylesheet" href="style.css?v=0.4.757">
   <script>  // the theme before the first paint (see applyTheme)
     try { const t = localStorage.getItem('tesseraTheme') || 'system'; document.documentElement.dataset.theme = t === 'system' ? (matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark') : t; } catch { document.documentElement.dataset.theme = 'dark'; }
   </script>
@@ -389,10 +389,9 @@
       </div>
       <div id="galleryPane" hidden>  <!-- its tools in a band at its top, fixed; its setups scrolling under it (#galleryScroll) -->
         <div class="gallery-band">  <!-- the Gallery (kept in this browser only): its tools; its files Import and Export; Save: the ☆ of Gallery's tab -->
-          <div class="gallery-tools-row">  <!-- the tools on the left; Select at the page's right, how many selected on its left -->
+          <div class="gallery-tools-row">  <!-- the tools on the left; how many cards selected at the page's right -->
             <div id="galleryTools" class="nav-shapes"></div>  <!-- Import, Export, Delete, Erase all, Rebuild, Share link -->
-            <p id="selectedWords" class="caption" hidden></p>  <!-- Select on: how many cards selected (see syncSelection) -->
-            <div id="gallerySelectTile" class="nav-shapes"></div>
+            <p id="selectedWords" class="caption" hidden></p>  <!-- while cards are selected: how many (see syncSelection) -->
           </div>
           <button id="eraseConfirm" type="button" class="wide" hidden></button>  <!-- Delete or Erase all, then this to confirm -->
           <input id="galleryFile" type="file" accept="application/json,.json" hidden>
@@ -516,10 +515,10 @@
     </div>
   </main>
 
-  <script src="pixelarticons.js?v=0.4.756"></script>
-  <script src="punks.js?v=0.4.756"></script>
-  <script src="loops.js?v=0.4.756"></script>
-  <script src="emoji.js?v=0.4.756"></script>
-  <script src="main.js?v=0.4.756"></script>
+  <script src="pixelarticons.js?v=0.4.757"></script>
+  <script src="punks.js?v=0.4.757"></script>
+  <script src="loops.js?v=0.4.757"></script>
+  <script src="emoji.js?v=0.4.757"></script>
+  <script src="main.js?v=0.4.757"></script>
 </body>
 </html>

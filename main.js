@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.756';
+const VERSION = '0.4.757';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -39242,30 +39242,24 @@ const showThumbnail = (row, thumbnail) => {
 }; // (fading in as a walk's cells, see .gallery-grid img)
 // the cards shown, in their order: { setup, row } (Rebuild takes them so, see rebuildThumbnails)
 let galleryCards = [];
-// Select (a switch): on, a click on a card selects it or lets it go, its setup not shown; Export, Delete and Rebuild then act
-// on the cards selected (by their names); off, none selected
-let selecting = false;
+// The cards selected, by their names: a card's check (seen on its hover) selects it; while one is, every check shows and a
+// click on a card selects it or lets it go, its setup not shown; Export, Delete and Rebuild then act on them; the last let go,
+// back to cards that open
 const selectedNames = new Set();
+const selecting = () => selectedNames.size > 0;
 function syncSelection() {
   for (const name of selectedNames) if (!galleryCards.some(({ x }) => x.name === name)) selectedNames.delete(name); // (cards shown only: one gone by its ★, Delete, Import… no more selected)
-  $('yourList').classList.toggle('selecting', selecting);
+  $('yourList').classList.toggle('selecting', selecting());
   for (const { x, row } of galleryCards) row.classList.toggle('selected', selectedNames.has(x.name));
-  setTile($('gallerySelect'), { on: selecting });
   setTile($('galleryShare'), {
-    greyed: selecting ? 'Not while selecting: the setup shown is not the cards selected.' : '',
+    greyed: selecting() ? 'Not while selecting: the setup shown is not the cards selected.' : '',
   });
   setTile($('galleryDelete'), {
-    greyed: selectedNames.size ? '' : 'None selected: Select, then click the cards to delete.',
+    greyed: selecting() ? '' : 'None selected: tick a card (its box, on its hover).',
   });
-  $('selectedWords').hidden = !selecting;
+  $('selectedWords').hidden = !selecting();
   $('selectedWords').textContent = `${selectedNames.size} selected: Export, Delete and Rebuild act on them`;
 }
-const toggleSelecting = () => {
-  selecting = !selecting;
-  if (!selecting) selectedNames.clear();
-  syncSelection();
-  syncRebuildTile();
-};
 // Delete: the cards selected gone, their thumbnails with them (but one another card still shows)
 function deleteSelected() {
   const list = readGallery(),
@@ -46188,12 +46182,11 @@ function setupRow(name, detail, x) {
     Object.assign(document.createElement('span'), { className: 'card-star', innerHTML: icon('star') }),
   ); // (its check, seen while selecting; its star, the card in view's, see .card-star)
   b.setAttribute('role', 'option');
-  // a click: while selecting, or on its check (seen on its hover), the card selected or let go (Select on); else the Gallery
+  // a click: while selecting, or on its check (seen on its hover), the card selected or let go; else the Gallery
   // shut and the card's thumbnail over the view at once, painted; its setup built from the next frame, the thumbnail gone once
   // it is drawn (not the Gallery nor the walk before frozen while it is built)
   b.addEventListener('click', (e) => {
-    if (selecting || e.target.closest('.card-check')) {
-      selecting = true; // (its check, seen on its hover, clicked: Select on)
+    if (selecting() || e.target.closest('.card-check')) {
       if (!selectedNames.delete(x.name)) selectedNames.add(x.name);
       syncSelection();
       syncRebuildTile();
@@ -46260,7 +46253,7 @@ function galleryTab() {
   return b;
 }
 
-// The Gallery's tools, tiles: Select (a switch: the cards to act on, at the page's right), Import (added to them, a name already used numbered),
+// The Gallery's tools, tiles (the cards selected, see selectedNames): Import (added to them, a name already used numbered),
 // Export, Delete (the cards selected), Erase all (the app as at a first visit), each of these two confirmed under them, Rebuild,
 // then Share link (the link to what is shown)
 // (Confirm, under them: what the tile clicked asks, its words and its act; clicked again, gone)
@@ -46271,16 +46264,6 @@ const askConfirm = (words, act) => {
   b.innerHTML = `${icon('trash')} ${words}`;
   confirmAct = act;
 };
-$('gallerySelectTile').replaceChildren(
-  tile({
-    id: 'gallerySelect',
-    pic: icon('check'),
-    text: 'Select',
-    toggle: true,
-    title: 'Pick cards with a click (none shown) for Export, Delete and Rebuild; off, none picked',
-    click: toggleSelecting,
-  }),
-);
 $('galleryTools').replaceChildren(
   tile({
     pic: icon('import'),

@@ -146,12 +146,12 @@ main {
   border-top: 1px solid var(--border-color);
 } /* a grey hairline between sections */
 #paramsPane > section:first-child,
-#galleryPane > section:first-child,
+#galleryScroll > section:first-child,
 #yourList > section:first-child {
   padding-top: 6px;
   border-top: 0;
 } /* the first, always there: no line, no gap under the header */
-:is(#paramsPane, #galleryPane, #yourList) > section:first-child h2 {
+:is(#paramsPane, #galleryScroll, #yourList) > section:first-child h2 {
   margin-top: 0;
 } /* its title as high in every pane */
 .row-act {
@@ -729,8 +729,12 @@ button.switch.active:hover:not(:disabled) {
   position: absolute;
   inset: 0;
   z-index: 5;
-  overflow-y: auto;
   background: var(--panel-background);
+} /* (its cross fixed at its top right, see tutTools; its content scrolling under it) */
+#galleryScroll {
+  position: absolute;
+  inset: 0;
+  overflow-y: auto;
   padding: 0 16px 16px;
 }
 /* its setups, a grid of cards: the picture above (else the shape's icon), the words under, the × on the picture */

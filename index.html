@@ -11,7 +11,7 @@
   <meta property="og:type" content="website">
   <link id="favicon" rel="icon">  <!-- the app's logo, set at start-up (see appLogo) -->
   <meta name="description" content="A walk on a grid in 2D or 3D driven by the base-2 to base-6 digits of π, other constants and large primes.">
-  <link rel="stylesheet" href="style.css?v=0.4.751">
+  <link rel="stylesheet" href="style.css?v=0.4.752">
   <script>  // the theme before the first paint (see applyTheme)
     try { const t = localStorage.getItem('tesseraTheme') || 'system'; document.documentElement.dataset.theme = t === 'system' ? (matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark') : t; } catch { document.documentElement.dataset.theme = 'dark'; }
   </script>
@@ -387,7 +387,8 @@
       </section>
 
       </div>
-      <div id="galleryPane" hidden>
+      <div id="galleryPane" hidden>  <!-- its cross at its top right, fixed; its content scrolling under it (#galleryScroll), as a page over the view -->
+      <div id="galleryScroll">
       <section>  <!-- the Gallery (kept in this browser only) as a JSON file: to keep, or to bring to another browser; or erased (Save: the ☆ of Gallery's tab) -->
         <h2 id="galleryToolsHead">Management</h2>  <!-- (its picture: see the tools below) -->
         <div class="gallery-tools-row">  <!-- the tools on the left; Select at the page's right, how many selected on its left -->
@@ -398,7 +399,8 @@
         <button id="eraseConfirm" type="button" class="wide" hidden></button>  <!-- Delete or Erase all, then this to confirm -->
         <input id="galleryFile" type="file" accept="application/json,.json" hidden>
       </section>
-      <div id="yourList" role="listbox"></div>  <!-- the Gallery: the tab in use's (see fillGalleryList) -->
+      <div id="yourList" role="listbox"></div>  <!-- the Gallery: every tab's (see fillGalleryList) -->
+      </div>
       </div>
     </aside>
 
@@ -517,10 +519,10 @@
     </div>
   </main>
 
-  <script src="pixelarticons.js?v=0.4.751"></script>
-  <script src="punks.js?v=0.4.751"></script>
-  <script src="loops.js?v=0.4.751"></script>
-  <script src="emoji.js?v=0.4.751"></script>
-  <script src="main.js?v=0.4.751"></script>
+  <script src="pixelarticons.js?v=0.4.752"></script>
+  <script src="punks.js?v=0.4.752"></script>
+  <script src="loops.js?v=0.4.752"></script>
+  <script src="emoji.js?v=0.4.752"></script>
+  <script src="main.js?v=0.4.752"></script>
 </body>
 </html>

@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.793';
+const VERSION = '0.4.794';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -7055,15 +7055,6 @@ function cardWords(name, detail = '', base = '', show = null, rule = '') {
   else words.append(head);
   return words;
 }
-// a row's action at its end (a setup's ×): seen while its row is hovered (see .row-act), a click its own
-const rowAction = (html, title, click) => {
-  const x = Object.assign(document.createElement('span'), { className: 'row-act', innerHTML: html, title });
-  x.addEventListener('click', (e) => {
-    e.stopPropagation();
-    click();
-  });
-  return x;
-};
 // Trail: a dead cell fades through greys for a few generations (States and Age, in colours too; two states)
 const trailApplies = (w = walk.life && walk.mode, rule = $('lifeRule').value, look = $('colourMode').value) =>
   !!w &&
@@ -11362,25 +11353,6 @@ function projectPoint(x, y, z) {
   const [cx, cy] = orthoPoint(...P.c);
   const k = P.D / (P.D - towardViewer(x - P.c[0], y - P.c[1], z - P.c[2]));
   return [cx + (px - cx) * k, cy + (py - cy) * k];
-}
-
-// Same projection as projectPoint, with the trigonometry computed once: for drawing many points
-function projector() {
-  const [r0, r1, r2] = camera.r,
-    [u0, u1, u2] = camera.u,
-    [v0, v1, v2] = camera.v;
-  const P = walk.persp;
-  const [ccx, ccy] = P ? orthoPoint(...P.c) : [0, 0];
-  return (x, y, z) => {
-    let X = x * r0 + y * r1 + z * r2,
-      Y = -(x * u0 + y * u1 + z * u2);
-    if (P) {
-      const k = P.D / (P.D - ((x - P.c[0]) * v0 + (y - P.c[1]) * v1 + (z - P.c[2]) * v2));
-      X = ccx + (X - ccx) * k;
-      Y = ccy + (Y - ccy) * k;
-    }
-    return [X, Y];
-  };
 }
 
 // Perspective can apply to every 3D view (checkbox; on by default for the cube walks and the cube surface)
@@ -40629,15 +40601,6 @@ const halfway = (L) => {
     m = Math.hypot(...h);
   return h.map((x) => x / m);
 };
-// Is a plane (outward normal n through point p) facing us? Orthographic: n points towards the
-// viewer. Perspective: n points towards the camera position, seen from p.
-function planeVisible(n, p) {
-  const P = walk.persp;
-  if (!P) return towardViewer(...n) > 0;
-  const eye = camera.v.map((v, d) => P.c[d] + v * P.D);
-  return n[0] * (eye[0] - p[0]) + n[1] * (eye[1] - p[1]) + n[2] * (eye[2] - p[2]) > 0;
-}
-
 // Sphere: visible tiles coloured by visit count (log scale) and shading
 function drawSphere() {
   const ctx = layers.path;
@@ -42145,8 +42108,8 @@ function gpuLook(L, out, look) {
 /* ---- 11.4d Drawing on WebGPU -------------------------------------------------------------- */
 /* The surfaces, the flat walks, the 3D walks' cubes and Life on the plane, by the graphics card, in one go, its depth buffer
  * hiding what lies behind (no sorting of the tiles, no path cut in halves): fast enough to turn a big surface smoothly. The
- * same projection as projectPoint (orthographic, or perspective around walk.persp); the walker's arrow, the starts and the
- * sky stay on their 2D layers. Shadows: the light's depths and what is nearest it, compared 9 times a pixel; Glass:
+ * same projection as projectPoint (orthographic, or perspective around walk.persp); the plane's walker's arrow and motif stay
+ * on their 2D layers, the sky the view's background (see paintSky). Shadows: the light's depths and what is nearest it, compared 9 times a pixel; Glass:
  * weighted blended, two pictures then mixed; Cut; 4 samples a pixel. A draw's numbers a slot of 512 bytes (see GPU_VIEW), by
  * a dynamic offset: a frame's draws written at once. Without WebGPU, nothing (every browser of the last years has it).
  * Judder in Chrome on an external screen on a Mac (an Asus, at 60, 120 and 144 Hz alike, v0.4.0): WebGL's smoother there in

@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.743';
+const VERSION = '0.4.744';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -39251,10 +39251,10 @@ function syncSelection() {
   for (const { x, row } of galleryCards) row.classList.toggle('selected', selectedNames.has(x.name));
   setTile($('gallerySelect'), { on: selecting });
   setTile($('galleryShare'), {
-    whyNot: () => (selecting ? 'Not while selecting: the setup shown is not the cards selected.' : ''),
+    greyed: selecting ? 'Not while selecting: the setup shown is not the cards selected.' : '',
   });
   setTile($('galleryDelete'), {
-    whyNot: () => (selectedNames.size ? '' : 'None selected: Select, then click the cards to delete.'),
+    greyed: selectedNames.size ? '' : 'None selected: Select, then click the cards to delete.',
   });
   $('selectedWords').hidden = !selecting;
   $('selectedWords').textContent = `${selectedNames.size} selected: Export, Delete and Rebuild act on them`;
@@ -39282,7 +39282,7 @@ function deleteSelected() {
 const syncRebuildTile = (missing) =>
   setTile($('rebuildThumbnails'), {
     on: rebuilding,
-    whyNot: () => (rebuilding || missing || selectedNames.size ? '' : 'Every setup here has its thumbnail.'),
+    greyed: rebuilding || missing || selectedNames.size ? '' : 'Every setup here has its thumbnail.',
   });
 // The Gallery's setups, as rows like the built-in ones (see setupRow), its thumbnail over each
 function fillGalleryList() {
@@ -39327,7 +39327,7 @@ function fillGalleryList() {
       return [section];
     }),
   );
-  setTile($('galleryExport'), { whyNot: () => (list.length ? '' : 'The Gallery is empty.') }); // (none to take)
+  setTile($('galleryExport'), { greyed: list.length ? '' : 'The Gallery is empty.' }); // (none to take; the Gallery's state, no setup's: greyed, not whyNot, see setTile)
   Promise.all(looks).then((found) => syncRebuildTile(found.includes(false)));
   syncSelection();
   syncSaveButton();

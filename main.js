@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.752';
+const VERSION = '0.4.753';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -39309,7 +39309,7 @@ function fillGalleryList() {
       const section = document.createElement('section'),
         cards = Object.assign(document.createElement('div'), { className: 'gallery-grid' }); // a section each, as Life's, its picture as the tab's
       section.dataset.kind = kind; // (opened from a tab: scrolled to its section, see showPane)
-      section.innerHTML = `<h2>${icon(NAV_KINDS.find(([k]) => k === kind)[1])}${kind}</h2>`; // (its cross: the Gallery's, at its top right)
+      section.innerHTML = `<h2>${icon(NAV_KINDS.find(([k]) => k === kind)[1])}${kind}</h2>`; // (the Gallery shut by its tab, see showPane)
       if (!mine.length)
         cards.innerHTML = `<p class="caption">None in ${kind} yet: the ☆ of Gallery's tab keeps the setup in view</p>`;
       cards.append(
@@ -46231,7 +46231,7 @@ function renderGallery() {
   fillGalleryList();
 }
 // The left pane shows the parameters, or the gallery: opened by a click on the Gallery tab (lit as the tab in use), closed by
-// it again or by its cross (as How it works), a setup clicked or another tab: the parameters of the tab before
+// it again, a setup clicked or another tab: the parameters of the tab before
 function showPane(gallery) {
   if (!gallery) rebuilding = false; // (the pictures being rebuilt: stopped, the last built shown)
   $('paramsPane').hidden = gallery;
@@ -46243,7 +46243,6 @@ function showPane(gallery) {
   } // (the tab in use's section)
 }
 const galleryButton = document.createElement('button');
-$('galleryPane').prepend(tutTools({ close: () => showPane(false), back: 'the settings' })); // (its cross, as a page's over the view: at its top right)
 function galleryTab() {
   if (galleryButton.dataset.ready) return galleryButton;
   const b = galleryButton;
@@ -46325,7 +46324,6 @@ $('galleryTools').replaceChildren(
     click: () => shareView($('galleryShare')),
   }),
 );
-$('galleryToolsHead').insertAdjacentHTML('afterbegin', icon('floppy')); // (the Gallery's files: Import, Export, Delete, Erase)
 // Confirm erase: the app as at a first visit, all it keeps in this browser gone (its localStorage keys, its thumbnails' store), then
 // loaded again (the curated setups seeded, see seedCurated)
 async function resetApp() {

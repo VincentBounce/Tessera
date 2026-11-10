@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.755';
+const VERSION = '0.4.756';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -46188,10 +46188,12 @@ function setupRow(name, detail, x) {
     Object.assign(document.createElement('span'), { className: 'card-star', innerHTML: icon('star') }),
   ); // (its check, seen while selecting; its star, the card in view's, see .card-star)
   b.setAttribute('role', 'option');
-  // a click: the Gallery shut and the card's thumbnail over the view at once, painted; its setup built from the next frame, the
-  // thumbnail gone once it is drawn (not the Gallery nor the walk before frozen while it is built)
-  b.addEventListener('click', () => {
-    if (selecting) {
+  // a click: while selecting, or on its check (seen on its hover), the card selected or let go (Select on); else the Gallery
+  // shut and the card's thumbnail over the view at once, painted; its setup built from the next frame, the thumbnail gone once
+  // it is drawn (not the Gallery nor the walk before frozen while it is built)
+  b.addEventListener('click', (e) => {
+    if (selecting || e.target.closest('.card-check')) {
+      selecting = true; // (its check, seen on its hover, clicked: Select on)
       if (!selectedNames.delete(x.name)) selectedNames.add(x.name);
       syncSelection();
       syncRebuildTile();

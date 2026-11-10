@@ -815,9 +815,10 @@ button.switch.active:hover:not(:disabled) {
   width: 14px;
   height: 14px;
 }
-.selecting .gallery-grid .card-check {
+.selecting .gallery-grid .card-check,
+.gallery-grid button:hover .card-check {
   display: flex;
-}
+} /* (while selecting, every card's; else a card hovered's: a click on it selects the card, Select on) */
 /* the card in view: its gold star at the top right, always, facing the check; its gold border not while selecting (gold then
    the cards selected only) */
 .gallery-grid .card-star {

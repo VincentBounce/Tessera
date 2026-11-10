@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.762';
+const VERSION = '0.4.763';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -16466,18 +16466,20 @@ const TORI = [
   ...foldedIn('klein'),
   ...foldedIn('torus'),
 ]; // sized by rows × tiles per row
-// A surface's mesh at a size made once: the same mesh each time it is asked for (its starts, grid, rotations… kept on it,
-// see startList, gridGraph), the last MESHES_KEPT sizes of each surface kept, not every size's (a million cells' each)
+// A surface's mesh made once for its size and what it is made for (a ring's length, a globe's bands: its colours or walkers,
+// a reversible one's blocks: see stripKey): the same mesh each time it is asked for (its starts, grid, rotations… kept on
+// it, see startList, gridGraph), the last MESHES_KEPT kept of each surface, not every size's (a million cells' each)
 const MESHES_KEPT = 2; // (two: a sphere asks for its size 6, its corners, between two asks for its own)
 for (const S of Object.values(SPHERES)) {
   const make = S.mesh,
     made = new Map();
   S.mesh = (s) => {
-    if (!made.has(s)) {
-      if (made.size === MESHES_KEPT) made.delete(made.keys().next().value); // (the oldest size let go)
-      made.set(s, make(s));
+    const key = `${s}|${stripKey()}`;
+    if (!made.has(key)) {
+      if (made.size === MESHES_KEPT) made.delete(made.keys().next().value); // (the oldest let go)
+      made.set(key, make(s));
     }
-    return made.get(s);
+    return made.get(key);
   };
 }
 // their sizes on screen by their own tubes (see TUBE_SHAPE; their radii said for TORUS_TUBE's)

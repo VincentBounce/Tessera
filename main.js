@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.764';
+const VERSION = '0.4.765';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -46267,7 +46267,7 @@ function galleryTab() {
 }
 
 // The Gallery's tools, tiles (the cards selected, see selectedNames): Import (added to them, a name already used numbered),
-// Export, Delete (the cards selected, confirmed under them), Rebuild (Erase all: Tessera's page, Clean this web browser),
+// Export, Delete (the cards selected, confirmed under them), Rebuild (Erase all: Tessera's page, Clean Tessera's storage in this browser),
 // then Share link (the link to what is shown)
 // (Confirm, under them: what the tile clicked asks, its words and its act; clicked again, gone)
 let confirmAct = null;
@@ -46422,7 +46422,7 @@ function credits(open) {
     `<p><a href="https://github.com/VincentBounce/Tessera#readme" target="_blank" rel="noopener">Its README</a> · <a href="https://github.com/VincentBounce/Tessera" target="_blank" rel="noopener">its code</a></p>` +
     '<div class="form-section"><h3>Stats/debug</h3><h4>Times for this view</h4><table id="timings" class="tut-commands"></table>' + // (the walk shown's times, see timings)
     `<h4>Screen: ${screenHz()} Hz</h4><table class="tut-commands"><tr><td class="number">Speed asked</td><td class="number">played</td></tr>${SPEEDS.map((v) => `<tr><td class="number">${formatNumber(v)}/s</td><td class="number">${speedWords(v)}</td></tr>`).join('')}</table>` + // (its refresh, and each speed as it plays there: see evenSpeed)
-    `<h4>Clean this web browser</h4><button id="eraseAll" type="button" class="wide" title="All Tessera keeps in this browser erased (the Gallery, its thumbnails, the theme): the app as at a first visit, the curated setups back; the Gallery saved first as a JSON file (a click, then Confirm erase in its place)">${icon('trash')} Erase all</button></div></div>`;
+    `<h4>Clean Tessera's storage in this browser</h4><button id="eraseAll" type="button" class="wide" title="All Tessera keeps in this browser erased (the Gallery, its thumbnails, the theme): the app as at a first visit, the curated setups back; the Gallery saved first as a JSON file (a click, then Confirm erase in its place)">${icon('trash')} Erase all</button></div></div>`;
   $('eraseAll').addEventListener('click', (e) => {
     const b = e.currentTarget;
     if (b.dataset.armed) resetApp();

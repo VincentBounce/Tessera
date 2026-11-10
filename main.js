@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.766';
+const VERSION = '0.4.767';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -39261,9 +39261,10 @@ function syncSelection() {
   for (const name of selectedNames) if (!galleryCards.some(({ x }) => x.name === name)) selectedNames.delete(name); // (cards shown only: one gone by its ★, Delete, Import… no more selected)
   $('yourList').classList.toggle('selecting', selecting());
   for (const { x, row } of galleryCards) row.classList.toggle('selected', selectedNames.has(x.name));
-  setTile($('galleryShare'), {
-    greyed: selecting() ? 'Not while selecting: the setup shown is not the cards selected.' : '',
-  });
+  for (const id of ['galleryImport', 'galleryShare'])
+    setTile($(id), {
+      greyed: selecting() ? 'Not while selecting: Export, Delete and Rebuild act on the cards selected.' : '',
+    }); // (the tools acting on them the only ones lit)
   setTile($('galleryDelete'), {
     greyed: selecting() ? '' : 'None selected: tick a card (its box, on its hover).',
   });
@@ -46302,6 +46303,7 @@ $('gallerySelectTiles').replaceChildren(
 );
 $('galleryTools').replaceChildren(
   tile({
+    id: 'galleryImport',
     pic: icon('import'),
     text: 'Import',
     title:

@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.776';
+const VERSION = '0.4.777';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -39300,7 +39300,6 @@ function deleteSelected() {
     if (selectedNames.has(x.name) && !kept.has(thumbnailKey(x.setup)))
       thumbnailStore('readwrite', (store) => store.delete(thumbnailKey(x.setup))).catch(() => {});
   selectedNames.clear();
-  $('eraseConfirm').hidden = true;
   fillGalleryList();
 }
 // Refresh's tile: lit while it runs; greyed when no card selected and none lacks its thumbnail, as the cards show it (a card
@@ -46308,16 +46307,8 @@ function galleryTab() {
 }
 
 // The Gallery's tools, tiles (the cards selected, see selectedNames): Import (added to them, a name already used numbered),
-// Export, Delete (the cards selected, confirmed under them), Refresh (Erase all: Tessera's page, Clean Tessera's storage in this browser),
+// Export, Delete (the cards selected), Refresh (Erase all: Tessera's page, Clean Tessera's storage in this browser),
 // then Share link (the link to what is shown)
-// (Confirm, under them: what the tile clicked asks, its words and its act; clicked again, gone)
-let confirmAct = null;
-const askConfirm = (words, act) => {
-  const b = $('eraseConfirm');
-  b.hidden = !b.hidden && confirmAct === act;
-  b.innerHTML = `${icon('trash')} ${words}`;
-  confirmAct = act;
-};
 // All, None: every card shown selected, or none (their pictures a card's check box, ticked or empty)
 const selectCards = (all) => {
   selectedNames.clear();
@@ -46362,8 +46353,8 @@ $('galleryTools').replaceChildren(
     id: 'galleryDelete',
     pic: icon('trash'),
     text: 'Delete',
-    title: 'Delete the cards selected, with their thumbnails (asked again under it)',
-    click: () => askConfirm(`Confirm delete (${selectedNames.size})`, deleteSelected),
+    title: 'Delete the cards selected, with their thumbnails',
+    click: deleteSelected,
   }),
   tile({
     id: 'refreshThumbnails',
@@ -46406,7 +46397,6 @@ async function resetApp() {
   });
   location.reload();
 }
-$('eraseConfirm').addEventListener('click', () => confirmAct?.());
 $('galleryFile').addEventListener('change', () => {
   if ($('galleryFile').files[0]) importGallery($('galleryFile').files[0]);
   $('galleryFile').value = '';

@@ -524,7 +524,7 @@ async function checkColdLinks(fail) {
 // no error thrown, its control named. Not the crawl's own (tabs, spaces, shapes, tilings, rules, sides), nor what downloads,
 // copies, erases or plays a sound (Display › Blocks threw from v0.4.21 to v0.4.503: the fuzz picks menus only)
 const CLICK_SKIP =
-  '#modeTabs, #navSpace, #navShapes, #torusTiles, #navRules, #walkOn, #galleryPane, #exportPng, #copyRle, #copyNumber, #eraseConfirm, [hidden]';
+  '#modeTabs, #navSpace, #navShapes, #torusTiles, #navRules, #walkOn, #galleryPane, #exportPng, #copyRle, #copyNumber, [hidden]';
 function clickEverything(fail) {
   let errors = [],
     at = '';

@@ -709,9 +709,6 @@ button.switch.active:hover:not(:disabled) {
   margin-bottom: 10px;
 }
 /* The Gallery: over the whole of main, under the header, the settings and the view kept under it (still drawn: a picture taken) */
-#eraseConfirm {
-  max-width: var(--panel-width);
-}
 .gallery-tools-row {
   display: flex;
   align-items: center;

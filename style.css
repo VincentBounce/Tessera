@@ -736,7 +736,8 @@ button.switch.active:hover:not(:disabled) {
   flex: none;
   padding: 12px 16px 6px;
   border-bottom: 1px solid var(--border-color);
-}
+  background: var(--page-background);
+} /* (the menu bar's, the page's: one band under it) */
 #galleryScroll {
   flex: 1;
   min-height: 0;

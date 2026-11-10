@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.800';
+const VERSION = '0.4.801';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -44336,7 +44336,9 @@ function renderWalkGauges() {
     const C = battleColumns(D);
     $('gauges').hidden = true;
     // (with land a dead one keeps its land and its place by it; in Cut it goes under the living; ✝ by its worth, when: Dead at)
-    const gone = (s) => D.dead[s] >= 0;
+    const gone = (s) => D.dead[s] >= 0,
+      left = D.living(),
+      survivor = left.length === 1 ? left[0] : -1; // (the last one alive, the others dead: ♥, see battleWinner)
     paintRanking(
       names.map((name, s) => ({
         colour: teamColour(s),
@@ -44345,7 +44347,7 @@ function renderWalkGauges() {
         dead: gone(s) && !D.bite,
         diedAt: D.dead[s],
         cells: [
-          `<b>${formatNumber(w[s])}</b>${gone(s) ? ' ✝' : ''}`,
+          `<b>${formatNumber(w[s])}</b>${gone(s) ? ' ✝' : s === survivor ? ' ♥' : ''}`,
           formatNumber(D.bestAt(s)),
           deaths[s] >= 0 ? genLink(deaths[s]) : '',
           ...(C.body ? [formatNumber(D.size[s])] : []),
@@ -45568,6 +45570,9 @@ document.addEventListener('keydown', (e) => {
     case 'F':
       recentre();
       break;
+    case 'Escape':
+      if (!$('galleryPane').hidden) showPane(false); // (the Gallery shut, as a click on its tab again)
+      break;
   }
 });
 
@@ -46391,9 +46396,10 @@ function setupRow(name, detail, x) {
     Object.assign(document.createElement('span'), { className: 'card-star', innerHTML: icon('star') }),
   ); // (its check, seen while selecting; its star, the card in view's, see .card-star)
   b.setAttribute('role', 'option');
-  // a click: while selecting, or on its check (seen on its hover), the card selected or let go; else the Gallery
-  // shut and the card's thumbnail over the view at once, painted; its setup built from the next frame, the thumbnail gone once
-  // it is drawn (not the Gallery nor the walk before frozen while it is built)
+  // a click: while selecting, or on its check (seen on its hover), the card selected or let go; on the card in view, the
+  // Gallery shut, nothing built again; else the Gallery shut and the card's thumbnail over the view at once, painted; its
+  // setup built from the next frame, the thumbnail gone once it is drawn (not the Gallery nor the walk before frozen while
+  // it is built)
   b.addEventListener('click', (e) => {
     if (selecting() || e.target.closest('.card-check')) {
       if (!selectedNames.delete(x.name)) selectedNames.add(x.name);
@@ -46401,6 +46407,7 @@ function setupRow(name, detail, x) {
       syncRefreshTile();
       return;
     }
+    if (isInUse(setup)) return showPane(false);
     refreshing = false; // (the pictures being refreshed: stopped)
     ruleTutorial(null); // what lies over the view (how a rule works, the digits) closes: the setup shown instead
     closeNumber();

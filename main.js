@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.775';
+const VERSION = '0.4.776';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -6453,13 +6453,10 @@ function describe(base, available) {
     return;
   }
   // the title: the rule (its name, or the rule itself), not the number that may have seeded it (Elementary's: built as a walk)
-  const ruleText = walk.life?.ruleText ?? lifeRuleNow()?.text ?? '',
-    known = ruleCard(ruleText, walk.mode);
-  $('barRule').hidden = !ruleText;
-  setLinks($('barRule'), ruleText && ruleSpan(ruleText));
-  $('barRule').title = [known && known.name !== ruleText ? known.name : '', 'A click: how it works']
-    .filter(Boolean)
-    .join(' · '); // (its name, when not its words: a loop's)
+  const { html, name } = ruleWords(getSetup()); // (as the Gallery writes it)
+  $('barRule').hidden = !html;
+  setLinks($('barRule'), html);
+  $('barRule').title = [name, 'A click: how it works'].filter(Boolean).join(' · '); // (its name, when not its words: a loop's)
   $('barBase').parentElement.classList.add('life');
   if (walk.rows) {
     $('description').innerHTML =

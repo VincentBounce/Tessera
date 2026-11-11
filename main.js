@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.867';
+const VERSION = '0.4.868';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -1391,6 +1391,7 @@ const PRESETS = {
     group: 'Primes',
     sym: 'Mₚ',
     name: 'Mersenne prime',
+    detail: 'one less than a power of 2, its exponent picked in the menu under the cards: in base 2, all 1s',
     f: () => `2^${$('mersenneP').value}-1`,
     wiki: 'Mersenne_prime',
   },
@@ -1398,6 +1399,7 @@ const PRESETS = {
     group: 'Primes',
     sym: 'p#±1',
     name: 'Primorial prime',
+    detail: 'one more or one less than the product of all primes up to p, picked in the menu under the cards',
     f: () => {
       const [p, sign] = $('primorialP').value.split(',');
       return `primorial(${p})${sign > 0 ? '+' : '-'}1`;
@@ -1408,6 +1410,7 @@ const PRESETS = {
     group: 'Primes',
     sym: '🎲 p',
     name: 'Random prime',
+    detail: 'a probable prime of 100 to 2,000 digits (Miller–Rabin), drawn from a seed: its link gives it back',
     f: () => `randprime(${randomPrimeSize() ?? 300},${freshDraw()})`,
     draw: true,
   }, // a new draw, same size
@@ -1415,6 +1418,7 @@ const PRESETS = {
     group: 'Random',
     sym: '🎲',
     name: 'Random digits',
+    detail: 'digits drawn at random from a seed: its link gives them back',
     f: () => `random(${freshDraw()})`,
     draw: true,
   },

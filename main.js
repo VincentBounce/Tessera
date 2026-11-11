@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.840';
+const VERSION = '0.4.841';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -858,7 +858,7 @@ function iroot(v, k) {
 /* ---- 2.1 Helpers, directions and colours -------------------------------------------------- */
 const $ = (id) => document.getElementById(id);
 // Every memory of things computed this session (meshes, numbers' digits, grids' symmetries…), each by its variable's name:
-// the Stats' list of them (see memoriesTable); a memory a Map, an object or a weakCache
+// the Stats' list of them (see memoriesRows); a memory a Map, an object or a weakCache
 const MEMORIES = [];
 const remember = (name, store) => {
   MEMORIES.push([name, store]);
@@ -24100,7 +24100,7 @@ function renderDrawTools() {
   drawToolsAway = away;
   stage.classList.toggle('drawing', drawsHere()); // (the crosshair: a click draws, see drawsHere)
   const grey = (b, own = false, ownWhy = '', on = b.classList.contains('active')) =>
-    setTile(b, { on, greyed: away ? why : own ? ownWhy : '' }); // (its own on, see renderBrushes)
+    setTile(b, { on, greyed: away ? why : own ? ownWhy : '' }); // (its own on)
   const tooBig = (p) => discPattern(p) && flatGrid()?.kind === p[1] && !discCells(p[1]).laid(p[4], 0); // (a disc's pattern past the disc shown)
   for (const b of $('brushCards').children) {
     if (b.dataset.brush === 'view') setTile(b, { on: b.classList.contains('active') });
@@ -27324,7 +27324,7 @@ const lifeRuleAt = (rule, w) =>
 
 function lifeReset() {
   const L = walk.life;
-  L.alive.set(L.seed); // cell states: 0 dead, 1 alive, 2 … C−1 dying (two civilisations: 1 red, 2 blue); their ages… there, from them (see gpuLifePuU)
+  L.alive.set(L.seed); // cell states: 0 dead, 1 alive, 2 … C−1 dying (two civilisations: 1 red, 2 blue); their ages… there, from them (see gpuLifePut)
   L.gen = 0; // generations computed, never wound back by a loop (the trail fades on, see died)
   L.extinctAt = Array.from({ length: L.colours + 1 }, (_, k) =>
     k && (L.colours === 1 ? L.seedAlive : L.seedByColour[k]) === 0 ? 0 : null,
@@ -28249,7 +28249,7 @@ function bordersOf(L, a) {
  * One colour: the start that lasts longest (a methuselah), dies out the latest, peaks highest or reaches
  * all cells soonest (see HUNT_GOALS); colours: the longest, most even battle.
  * The zone: the whole grid, as dense as said, or patches of a radius; in colours, a patch (or a part
- * of the grid) for each colour, at fair spots of the figure (see huntPatches).
+ * of the grid) for each colour, at fair spots of the figure (see huntParts).
  */
 
 /* ---- 9.1 The hunt's runs, its zones, its results ------------------------------------------ */
@@ -38378,7 +38378,7 @@ function laidChoices(centred, any = false) {
       }
       return moves > FAMOUS_ALL && !any && out.length ? lazyList(moves, move) : out; // (a big grid's: one fits, so a draw ends)
     });
-  // centred: a shape kept where it lays whole for every colour, at its spot (a sheet's: see sheetPatternAt)
+  // centred: a shape kept where it lays whole for every colour, at its spot (a sheet's: see patternAt)
   const laid = shapes
     .map((cells) =>
       Object.assign(

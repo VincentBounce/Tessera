@@ -272,8 +272,9 @@ function checkMeshes(fail) {
 // after an action: no error, the link's mode the one shown, a surface's cells as many as said, more than one start (the crawl's, the fuzz's)
 const wait = (ms) => new Promise((go) => setTimeout(go, ms));
 // till ok() holds and nothing is being built (10 s at most): a link's own page, not the one before it, nor a wait's guess
+// ok() true and nothing waited for (the app's waits, see waitBegin: digits, a build on its way, a battle's others), 10 s at most
 const until = async (ok) => {
-  for (let t = 0; t < 100 && !(ok() && !busy); t++) await wait(100);
+  for (let t = 0; t < 100 && !(ok() && !waits.size); t++) await wait(100);
 };
 const shown =
   (w, more = () => true) =>
@@ -344,7 +345,7 @@ function checker(fail) {
   const c = { checked: 0, stop: () => window.removeEventListener('error', onError) };
   c.look = async (what, ms = 450) => {
     await wait(ms);
-    for (let t = 0; busy && t < 600; t++) await wait(100); // (its digits still computed: the link follows the walk once built, see buildWalk)
+    for (let t = 0; waits.size && t < 600; t++) await wait(100); // (its digits or its build still on their way: the link follows the walk once built, see buildWalk)
     c.checked++;
     const w = $('mode').value,
       hashW = (location.hash.match(/w=([^&]*)/) ?? [])[1],
@@ -559,7 +560,7 @@ function clickEverything(fail) {
         again.click();
         await wait(120);
       }
-      for (let t = 0; busy && t < 300; t++) await wait(100); // (a walk built again: its digits)
+      for (let t = 0; waits.size && t < 300; t++) await wait(100); // (a walk built again: its digits, its build)
     }
     at = `${where} › step, back, start`;
     for (const id of ['step', 'back', 'restart'])
@@ -611,7 +612,7 @@ async function coldLike(fail, what) {
   document.body.append(f);
   await new Promise((go) => f.addEventListener('load', go, { once: true }));
   await wait(1500);
-  for (let t = 0; f.contentWindow.eval('busy') && t < 600; t++) await wait(100); // (its digits still computed: as the page's own look waits, see checker)
+  for (let t = 0; f.contentWindow.eval('waits.size') && t < 600; t++) await wait(100); // (its digits or its build still on their way: as the page's own look waits, see checker)
   const a = linked(),
     b = offered(f.contentWindow);
   f.remove();
@@ -1055,7 +1056,7 @@ async function checkKnown(fail) {
   location.hash = '#w=blocks2dHex&r=M0,2,4,5,1,6,3,7&s=6&pop=random.10.6';
   for (
     let i = 0;
-    i < 100 && !($('mode').value === 'blocks2dHex' && walk.life?.margolus && walk.life.seedAlive === 6 && !busy);
+    i < 100 && !($('mode').value === 'blocks2dHex' && walk.life?.margolus && walk.life.seedAlive === 6 && !waits.size);
     i++
   )
     await wait(100); // (built, not a wait's guess)

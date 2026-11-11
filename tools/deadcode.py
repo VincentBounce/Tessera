@@ -8,7 +8,8 @@
 # dead one reads is dead too: one run finds them all (a helper and the helper of its helper), no removal in between.
 # Then the style's classes, ids and variables that nothing alive reads (a class made in a template, `tip-${…}`, by its
 # prefix); and a key written twice in one object literal (the first dead: the second replaces it with no word, as ICONS'
-# turtle till v0.4.840), as esbuild warns of it.
+# turtle till v0.4.840), as esbuild warns of it; and a comment's "see name" whose name is nowhere in the code, the page, the
+# style or the checks any more (renamed or gone: see memoriesTable, till v0.4.841).
 import os, re, subprocess, sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from uncomment import uncommented, uncommented_css, uncommented_html
@@ -85,6 +86,12 @@ found = [f'main.js:{at(main_src, r"^(?:async )?(?:function\*? |const |let |var |
 found += [f'style.css:{at(css_src, r"\." + re.escape(c) + r"(?![\w-])")} .{c}' for c in dead_classes]
 found += [f'style.css:{at(css_src, "#" + re.escape(i) + r"(?![\w-])")} #{i}' for i in dead_ids]
 found += [f'style.css:{at(css_src, re.escape(v) + r"\s*:")} {v}' for v in dead_vars]
+# a comment's "see name" (a name of the code's own form, camelCase) that nothing but comments holds any more
+code_words = set(re.findall(r'[A-Za-z_$][\w$-]*', uncommented(main_src) + css + uncommented_html(html_src) + others))
+for k, line in enumerate(main_src.split('\n'), 1):
+    for name in re.findall(r'\bsee ([a-z][a-z0-9]*[A-Z][\w$]*)', line):
+        if name not in code_words:
+            found.append(f'main.js:{k} see {name}: nowhere but comments')
 # a key twice in one object literal, as esbuild finds it (its warnings: the key, then where the second is)
 try:
     warned = subprocess.run(['esbuild', os.path.join(root, 'main.js'), '--log-level=warning'], capture_output=True, text=True).stderr

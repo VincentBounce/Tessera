@@ -10,7 +10,7 @@
   <meta property="og:url" content="https://vincentbounce.github.io/Tessera/">
   <meta property="og:type" content="website">
   <link id="favicon" rel="icon">  <!-- the app's logo, set at start-up (see appLogo) -->
-  <link rel="stylesheet" href="style.css?v=0.4.815">
+  <link rel="stylesheet" href="style.css?v=0.4.816">
   <script>  // the theme before the first paint (see applyTheme)
     try { const t = localStorage.getItem('tesseraTheme') || 'system'; document.documentElement.dataset.theme = t === 'system' ? (matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark') : t; } catch { document.documentElement.dataset.theme = 'dark'; }
   </script>
@@ -478,7 +478,7 @@
           <div id="viewSection" class="form-section">  <!-- the view (Default, Upright or Free, its switches as tiles), then its form -->
             <div id="viewModes" class="nav-shapes" hidden></div>  <!-- Default view | Upright | Free, tabs (see renderViewModes) -->
             <div hidden>  <!-- their checkboxes, the source (a row hidden: it does not apply) -->
-              <label id="centeredRow" hidden title="On a solid, the camera keeps the walker in front as it walks, and faces the middle of a walk shown whole; elsewhere, the camera as it starts (turning the view frees it)"><input id="centered" type="checkbox" checked> <span id="centeredName">Centered pattern</span></label>
+              <label id="centeredRow" hidden title="On a solid, the camera faces the middle of a walk shown whole (a walker's name in the title clicked: the camera follows it); elsewhere, the camera as it starts (turning the view frees it)"><input id="centered" type="checkbox" checked> <span id="centeredName">Centered pattern</span></label>
               <label id="uprightRow" hidden title="The view from the front, level, a drag turning it round the vertical only"><input id="upright" type="checkbox"></label>
             </div>
             <div id="viewTiles" class="nav-shapes view-tiles" hidden></div>  <!-- the view's switches as tiles (see renderViewTiles) -->
@@ -522,10 +522,10 @@
     </div>
   </main>
 
-  <script src="pixelarticons.js?v=0.4.815"></script>
-  <script src="punks.js?v=0.4.815"></script>
-  <script src="loops.js?v=0.4.815"></script>
-  <script src="emoji.js?v=0.4.815"></script>
-  <script src="main.js?v=0.4.815"></script>
+  <script src="pixelarticons.js?v=0.4.816"></script>
+  <script src="punks.js?v=0.4.816"></script>
+  <script src="loops.js?v=0.4.816"></script>
+  <script src="emoji.js?v=0.4.816"></script>
+  <script src="main.js?v=0.4.816"></script>
 </body>
 </html>

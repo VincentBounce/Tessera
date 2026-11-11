@@ -2290,12 +2290,15 @@ button.mark.active::after {
   background: linear-gradient(135deg, transparent 50%, var(--accent-color) 50%);
 }
 
-.gen-link {
+.gen-link,
+.walker-link {
   color: inherit;
   text-decoration: none;
   cursor: pointer;
-} /* a generation of the run in view: clicked, it goes there (see genLink) */
-.gen-link:hover {
+} /* a generation of the run in view: clicked, it goes there (see genLink); a walker's name, the camera follows it (see walkerLinks) */
+.gen-link:hover,
+.walker-link:hover,
+.walker-link.followed {
   text-decoration: underline;
 }
 .gen-loop {

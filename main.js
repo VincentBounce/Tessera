@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.815';
+const VERSION = '0.4.816';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -39322,8 +39322,8 @@ const barTitleNow = () =>
     : walk.life
       ? startTitle()
       : walk.battle
-        ? versusTitle(walk.battle.names.map(withIcons))
-        : barTitle;
+        ? versusTitle(walkerLinks(walk.battle.names.map(withIcons)))
+        : walkerLinks([barTitle])[0];
 const barWords = () => ({
   title: Object.assign(document.createElement('span'), { innerHTML: barTitleNow() }).textContent.trim() || shownSymbol,
   chips: ['barBase', 'barBattle'] // (its rule not: the setup's, see ruleWords)
@@ -40544,30 +40544,44 @@ function faceWalk() {
 }
 // once the walker has reached the end, towards the walk's middle, as when the walk is shown whole
 function followWalker() {
-  // on a torus the position does not say which way the surface faces: use the tile's normal
+  const W = walkersOf()[followed];
+  if (!W) return; // (none followed, or a walk without it: fewer walkers)
+  // on a torus the position does not say which way the surface faces: its tile's normal
   // (gliding: toward its place on the way to its next one, see glideAt, so the view moves as smoothly as it)
   const at = glideAt(),
     j = Math.floor(at),
     f = at - j,
     k = f > 0 ? j + 1 : j,
-    t = walk.tile[f < 0.5 ? j : k],
-    nr = walk.shape.nrm;
-  const d = unit(
-    walk.geo.torus && !walk.geo.mobius
-      ? [nr[3 * t], nr[3 * t + 1], nr[3 * t + 2]]
-      : stepShown >= walk.n && !walk.life
-        ? walkMiddle()
-        : [
-            walk.wx[j] + (walk.wx[k] - walk.wx[j]) * f,
-            walk.wy[j] + (walk.wy[k] - walk.wy[j]) * f,
-            walk.wz[j] + (walk.wz[k] - walk.wz[j]) * f,
-          ],
-  );
+    [p, q] = [W.P(j), W.P(k)];
+  const d = unit(walk.geo.torus && !walk.geo.mobius ? W.upAt(f < 0.5 ? j : k) : p.map((v, c) => v + (q[c] - v) * f));
   const axis = cross(d, camera.v),
     sin = Math.hypot(...axis),
     angle = Math.atan2(sin, towardViewer(...d));
   if (sin > 1e-9 && angle > 1e-4) rotateView(axis.map((x) => (x / sin) * angle * 0.12));
 }
+// The walker the camera follows on a surface (see followWalker), −1 none: a click on its name in the title (see
+// walkerLinks), again or a drag of the view: none; kept for the next walk while it has that walker
+let followed = -1;
+const follow = (s) => {
+  followed = followed === s ? -1 : s;
+  faced = false; // (the walk shown whole: turned to it at once, not to its middle)
+  $('autoRotate').checked = false;
+  statsDirty = true;
+};
+// the walkers' names in the title, on a surface each a link (a link's look, see .gen-link): a click, the camera follows it
+const walkerLinks = (names) =>
+  walk.sphere
+    ? names.map(
+        (name, s) =>
+          `<a class="walker-link${followed === s ? ' followed' : ''}" href="#" data-walker="${s}" title="${followed === s ? 'Followed by the camera: a click lets it go' : 'A click: the camera follows it'}">${name}</a>`,
+      )
+    : names;
+$('barNum').addEventListener('click', (e) => {
+  const a = e.target.closest('.walker-link');
+  if (!a) return;
+  e.preventDefault();
+  follow(Number(a.dataset.walker));
+});
 
 // Component of a unit vector towards the viewer (> 0 on the visible half of the sphere)
 function towardViewer(x, y, z) {
@@ -44866,18 +44880,8 @@ function tick(now = performance.now()) {
   if (walk.sphere) {
     // the sphere is redrawn as a whole (heat map + recent trail)
     morphStep(dt); // flat ↔ round, while it is changing
-    // auto-fit turns the camera to keep the walker in front, except on a torus: the view stays put
-    // and the walk is seen covering it (a walk shown whole is faced at once: faceWalk)
-    if (
-      walk.n &&
-      !walk.life &&
-      !walk.geo.torus &&
-      !startsShown &&
-      !faced &&
-      $('centered').checked &&
-      !$('autoRotate').checked
-    )
-      followWalker();
+    // the camera turned to keep the walker followed in front (see followed; on a torus, its tile facing it)
+    if (walk.n && !walk.life && followed >= 0 && !startsShown && !faced && !$('autoRotate').checked) followWalker();
     if (gliding()) statsDirty = true; // (its heads gliding: drawn again each frame, as far as its cost allows)
     // a big sphere can take tens of ms to draw: while animating, redraw at most every 3× that time
     const now = performance.now();
@@ -45178,9 +45182,10 @@ stage.addEventListener('pointermove', (e) => {
     userMovedView();
   } else {
     // a hand rotation keeps auto-fit (the view stays centred, as while auto-rotating), but stops
-    // auto-rotate and Centered (the camera following the walker); a pan or a zoom ends auto-fit
+    // auto-rotate, Centered and the walker followed (see followed); a pan or a zoom ends auto-fit
     $('autoRotate').checked = false;
     $('centered').checked = false;
+    followed = -1;
     rotateView(
       $('upright').checked ? [0, 0, (camera.u[2] < 0 ? -1 : 1) * dx * 0.008] : screenTurn(dy * 0.008, dx * 0.008, 0),
     ); // a trackball: drag right turns around the screen's up; Upright: round the world's up only

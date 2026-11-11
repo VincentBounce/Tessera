@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.828';
+const VERSION = '0.4.829';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -40386,6 +40386,8 @@ const glideAt = () =>
       : Math.min(stepShown + stepsDue, walk.battle?.player.n ?? walk.n);
 // a start's flag: its pole planted in its place along the surface's normal, over a head (2.2 of its sizes high), its sail
 // at its top an arrow pointing the way it goes (both its faces); its triangles' corners and normals, as an ogive's
+const FLAG_SAIL = { base: 0.9, length: 1.3 }; // (along its pole, the way it points)
+const START_HALF = (1.6 * FLAG_SAIL.base) / FLAG_SAIL.length / 2; // (the plane's start, its arrow 1.6 long: as slim as the flag's sail, see drawArrow)
 function flagOf({ p, h, up, size }) {
   const ahead = squareTo(up, h),
     side = cross(up, ahead),
@@ -40414,8 +40416,8 @@ function flagOf({ p, h, up, size }) {
     tri(at(0, f, s), at(H, g, t), at(H, f, s));
   }); // (its pole)
   const top = at(H, 0),
-    low = at(H - 0.9, 0),
-    tip = at(H - 0.45, 1.3);
+    low = at(H - FLAG_SAIL.base, 0),
+    tip = at(H - FLAG_SAIL.base / 2, FLAG_SAIL.length);
   tri(top, low, tip);
   tri(top, tip, low); // (its sail)
   return out;
@@ -40452,9 +40454,9 @@ function ogiveOf({ p, h, size }) {
 // them long, 0.8 of the side of the square of the tile's area
 const headSize = (area) => (0.8 * Math.sqrt(area)) / 1.6;
 // A walker's arrow on the plane (on a surface an ogive, see ogiveOf): its tip ahead, its notch behind (notch: how far
-// along; −0.6, none: a start's flag, its base straight), centred on its place; at(forward, across): a point of it on the
-// screen, in its size; fill a colour, or a ramp from its base to its tip
-function drawArrow(ctx, fill, at, notch = -0.3) {
+// along; −0.6, none: a start's flag, its base straight), half its base's width (half), centred on its place; at(forward,
+// across): a point of it on the screen, in its size; fill a colour, or a ramp from its base to its tip
+function drawArrow(ctx, fill, at, notch = -0.3, half = 0.7) {
   if (Array.isArray(fill)) {
     // (a ramp: along its axis, rim to tip)
     const g = ctx.createLinearGradient(...at(-0.8, 0), ...at(0.8, 0));
@@ -40465,9 +40467,9 @@ function drawArrow(ctx, fill, at, notch = -0.3) {
   ctx.beginPath();
   [
     [1, 0],
-    [-0.6, 0.7],
+    [-0.6, half],
     [notch, 0],
-    [-0.6, -0.7],
+    [-0.6, -half],
   ].forEach(([f, l], i) => {
     const [x, y] = at(f - 0.2, l);
     if (i) ctx.lineTo(x, y);
@@ -44060,7 +44062,7 @@ function drawOverlay() {
   };
   // its start a flag, flat, under it: from the ground's colour at its base to the rainbow's blue at its tip; it gold to the
   // rainbow's red
-  drawArrow(ctx, [groundAt(oy + walk.ys[0] * s), rainbowNow()[0]], frame(0), -0.6);
+  drawArrow(ctx, [groundAt(oy + walk.ys[0] * s), rainbowNow()[0]], frame(0), -0.6, START_HALF);
   drawArrow(ctx, ['#ffd000', rainbowHue(360)], frame(glideAt()));
 }
 

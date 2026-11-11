@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.811';
+const VERSION = '0.4.812';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -16836,24 +16836,24 @@ function startMarks(g, sh, R) {
     list = startList(g).map(stateOf),
     maps = walk.battle ? walk.battle.maps : [(u) => u],
     width = (s) => Math.max(1, Math.min(s * 0.06, 2.5)),
-    data = [],
+    data = ribbonSegments(),
     parts = [];
-  const edge = (from, to, n) => data.push(...placePoint(from), ...placePoint(to), ...n, 3, 0); // (both ends capped, see ribbonV)
+  const edge = (from, to, n) => data.put(placePoint(from), placePoint(to), n, 3, 0); // (both ends capped, see ribbonV)
   walkersOf().forEach((W, s) => {
-    const from = data.length / 11;
+    const from = data.count;
     for (const state of maps ? list.map((st) => movedStart(g, st, grid, maps[s])) : [])
       edge(cameFrom(g, grid, state), state[0], normal(state[0]));
-    parts.push({ rgb: rgbCached('#8b949e').map((c) => c / 255), from, count: data.length / 11 - from, width });
+    parts.push({ rgb: rgbCached('#8b949e').map((c) => c / 255), from, count: data.count - from, width });
     const [place, came] = W.start;
     edge(came, place, normal(place));
     parts.push({
       rgb: rgbCached(W.colour).map((c) => c / 255),
-      from: data.length / 11 - 1,
+      from: data.count - 1,
       count: 1,
       width: (q) => 2 * width(q),
     });
   });
-  gpuBuffer('starts', new Float32Array(data));
+  gpuBuffer('starts', data.words());
   return (walk.startMarks = { key, parts });
 }
 
@@ -18897,6 +18897,23 @@ function battlePlayer(g, grid, S, starts, digits, pen = battleRuleInUse(tabMode(
   const worth = () => (bite ? [...landCount] : [...size]);
   // each walker's best worth up to each step (its peak), kept as it is played
   const bestOf = starts.map(() => new Int32Array(len + 1));
+  // each walker's steps leaving its body (see lifeOf): goneOf[s][q], the step its step q leaves over (the one before it is
+  // gone: its tail slid or cut there; Cut's dead, all theirs), SEGMENT_NEVER while it stays; cutOf[s][q], whether it left
+  // with others (a cut, a death: they fade out together; alone, a tail sliding, it retracts); kept as it is played the first
+  // time (played again, the same)
+  const goneOf = starts.map(() => new Int32Array(len + 2).fill(SEGMENT_NEVER)),
+    cutOf = starts.map(() => new Uint8Array(len + 2)),
+    keptTo = Array(K).fill(1);
+  const keepGone = () => {
+    for (let s = 0; s < K; s++) {
+      const end = !bite && dead[s] >= 0 ? i + 1 : from[s],
+        together = end - keptTo[s] > 1;
+      for (; keptTo[s] < end; keptTo[s]++) {
+        goneOf[s][keptTo[s]] = i - 1;
+        cutOf[s][keptTo[s]] = together;
+      }
+    }
+  };
   const keepBest = () => {
     const w = worth();
     for (let s = 0; s < K; s++) bestOf[s][i] = Math.max(i > 0 ? bestOf[s][i - 1] : 0, w[s]);
@@ -18917,6 +18934,8 @@ function battlePlayer(g, grid, S, starts, digits, pen = battleRuleInUse(tabMode(
     starts,
     places,
     from,
+    goneOf,
+    cutOf,
     size,
     dead,
     alive,
@@ -18958,6 +18977,7 @@ function battlePlayer(g, grid, S, starts, digits, pen = battleRuleInUse(tabMode(
       while (i < Math.min(j, n)) {
         step();
         keepBest();
+        keepGone();
       }
     },
     bestAt: (s) => bestOf[s][Math.max(0, i)], // (s's peak worth up to the step it is at)
@@ -25005,26 +25025,32 @@ function motifRibbons(D, g, sh, R) {
   const key = `${middleTile.t}|${sh.m}|${R}|${motifColour()}`;
   if (D.motifOf === g && D.motifKey === key) return D.motifParts;
   const k = g.sides,
-    data = [],
+    data = ribbonSegments(),
     parts = [];
   for (const [colour, tiles] of motifOf(g, middleTile.t)) {
-    const from = data.length / 11,
+    const from = data.count,
       rim = rimSides(
         tiles.flatMap((t) => Array.from({ length: k }, (_, j) => [t, j])),
         ([t, j]) => [g.poly[k * t + j], g.poly[k * t + ((j + 1) % k)]].sort().join('|'),
       );
     for (const [t, j] of rim) {
       const at = (q) => [0, 1, 2].map((d) => sh.corners[3 * (k * t + (q % k)) + d] * R);
-      data.push(...at(j), ...at(j + 1), ...[0, 1, 2].map((d) => sh.nrm[3 * t + d]), 3, 0); // (both ends capped, see ribbonV)
+      data.put(
+        at(j),
+        at(j + 1),
+        [0, 1, 2].map((d) => sh.nrm[3 * t + d]),
+        3,
+        0,
+      ); // (both ends capped, see ribbonV)
     }
     parts.push({
       rgb: rgbCached(colour).map((c) => c / 255),
       from,
-      count: data.length / 11 - from,
+      count: data.count - from,
       width: (s) => Math.max(2, Math.min(s / 6, 4)),
     }); // (its width on the screen at a scale, as the plane's motif, see drawMotif)
   }
-  gpuBuffer('motif', new Float32Array(data.length ? data : new Array(11).fill(0)));
+  gpuBuffer('motif', data.words());
   D.motifOf = g;
   D.motifKey = key;
   return (D.motifParts = { parts });
@@ -40374,12 +40400,6 @@ const glideAt = () =>
     : reversing
       ? Math.max(0, stepShown - stepsDue)
       : Math.min(stepShown + stepsDue, walk.battle?.player.n ?? walk.n);
-// the glide split, every line's animation (2D, 3D, Solo, each walker's): [the steps drawn whole, the share of the next one drawn]
-const glideSplit = () => {
-  const at = glideAt(),
-    whole = Math.floor(at);
-  return [whole, at - whole];
-};
 // a start's flag: its pole planted in its place along the surface's normal, over a head (2.2 of its sizes high), its sail
 // at its top an arrow pointing the way it goes (both its faces); its triangles' corners and normals, as an ogive's
 function flagOf({ p, h, up, size }) {
@@ -40849,17 +40869,62 @@ const packed = (c) => {
   const [r, g, b] = rgbCached(c);
   return ((255 << 24) | (b << 16) | (g << 8) | r) >>> 0;
 }; // (RGBA in a number, a texel's)
+// A line's segments for the ribbons (see ribbonV), RIBBON_WORDS words each: its ends a and b, its tile's normal n, its caps (1
+// its start's, 2 its end's; 4 more: it fades out rather than retracts), its key (its step, its command, a battle's walker),
+// then its life as whole numbers (see lifeOf): born, the step it is walked over; gone, the step it leaves over (NEVER: it
+// stays); at(j): the next put's place (Land grid 1's two slots a link); room for count, more as it grows
+const RIBBON_WORDS = 13,
+  SEGMENT_ALWAYS = -(2 ** 30),
+  SEGMENT_NEVER = 2 ** 31 - 1;
+function ribbonSegments(count = 64) {
+  let f = new Float32Array(RIBBON_WORDS * Math.max(1, count)),
+    w = new Int32Array(f.buffer),
+    j = 0,
+    most = 0;
+  return {
+    put(a, b, n, ends, key, born = SEGMENT_ALWAYS, gone = SEGMENT_NEVER) {
+      // (in place: millions of them)
+      if (RIBBON_WORDS * (j + 1) > f.length) {
+        const more = new Float32Array(2 * f.length);
+        more.set(f);
+        f = more;
+        w = new Int32Array(f.buffer);
+      }
+      const o = RIBBON_WORDS * j++;
+      f[o] = a[0];
+      f[o + 1] = a[1];
+      f[o + 2] = a[2];
+      f[o + 3] = b[0];
+      f[o + 4] = b[1];
+      f[o + 5] = b[2];
+      f[o + 6] = n[0];
+      f[o + 7] = n[1];
+      f[o + 8] = n[2];
+      f[o + 9] = ends;
+      f[o + 10] = key;
+      w[o + 11] = born;
+      w[o + 12] = gone;
+      most = Math.max(most, j);
+    },
+    at(k) {
+      j = k;
+    },
+    get count() {
+      return j;
+    },
+    words: () => f.subarray(0, RIBBON_WORDS * Math.max(1, most)), // (one at least: a buffer is never empty)
+  };
+}
 // The path on a surface, in its current form, printed flat on its tiles: from tile to tile, each
 // step as two halves, from a tile's centre to the middle of the edge it crosses, then on to the next
 // tile's centre, each in its own tile's plane (over a solid's edge, it folds round it); along the
 // grid, each step on each tile beside its edge. Seen from the tile's face only (gpuSurface), a step on
 // a face turned away is not drawn at all, and nothing jumps across an unrolled sheet's seams.
-// Per segment [Ax, Ay, Az, Bx, By, Bz, Nx, Ny, Nz, ends, step]: ends, which ends go on half the
-// width past their point (1 the start, 2 the end: where two segments of the same plane meet, not at
-// a fold); and the first segment of each step (at). P: a battle's player along the grid (see 7.6b), played to its end: all
-// its walkers' steps instead, walker after walker, step's place its colour's in the palette (battlePalette), at[s][q] the
-// first segment of walker s's step q (q to n + 1): a body, its steps' range (see gpuSurface); Land grid 1 (lined): each
-// living walker's line as it is at the step shown instead, ranges its segments', walker after walker
+// Its segments (see ribbonSegments): caps where two segments of the same plane meet, not at a fold (1 the start, 2 the
+// end); and the first segment of each step (at). P: a battle's player along the grid (see 7.6b), played to its end: all
+// its walkers' steps instead, walker after walker, step's place its colour's in the palette (battlePalette), each its
+// steps' lives (born the step before, gone when it leaves its body: see goneOf), at[s][q] the first segment of walker s's
+// step q (q to n + 1); Land grid 1 (lined): each link's segments, their owners laid by battleLinesOnGpu
 function pathSegments(P = null) {
   const g = walk.geo,
     sh = walk.shape,
@@ -40871,33 +40936,17 @@ function pathSegments(P = null) {
     centre = (t) => pointAt(sh.cen, t, R);
   const normal = (t) => [sh.nrm[3 * t], sh.nrm[3 * t + 1], sh.nrm[3 * t + 2]];
   const mid = (p, q) => p.map((x, d) => (x + q[d]) / 2);
-  const out = new Float32Array(P?.ownLines ? 0 : 11 * 2 * Math.max(1, (P ? P.K : 1) * n)),
+  const out = ribbonSegments(P?.ownLines ? 1 : 2 * (P ? P.K : 1) * n),
     at = new Int32Array(n + 1);
-  let j = 0,
-    dst = out;
-  const put = (a, b, nr, ends, i) => {
-    // (in place: millions of them)
-    const o = 11 * j++;
-    dst[o] = a[0];
-    dst[o + 1] = a[1];
-    dst[o + 2] = a[2];
-    dst[o + 3] = b[0];
-    dst[o + 4] = b[1];
-    dst[o + 5] = b[2];
-    dst[o + 6] = nr[0];
-    dst[o + 7] = nr[1];
-    dst[o + 8] = nr[2];
-    dst[o + 9] = ends;
-    dst[o + 10] = i;
-  };
-  const edge = (v0, v1, t0, t1, i) => {
-    // along the grid: the edge from v0 to v1, on each tile beside it (t0, t1)
+  const edge = (into, v0, v1, t0, t1, key, born, gone, caps = 3) => {
+    // along the grid: the edge from v0 to v1, on each tile beside it (t0, t1), into a list of segments (caps: both ends,
+    // and how it leaves, see ribbonSegments)
     for (const t of t0 === t1 ? [t0] : [t0, t1]) {
       const ends = [v0, v1].map((v) => {
         for (let q = 0; q < k; q++) if (g.poly[k * t + q] === v) return corner(t, q);
         return null;
       });
-      if (ends[0] && ends[1]) put(ends[0], ends[1], normal(t), 3, i);
+      if (ends[0] && ends[1]) into.put(ends[0], ends[1], normal(t), caps, key, born, gone);
     }
   };
   if (P?.ownLines) {
@@ -40905,17 +40954,16 @@ function pathSegments(P = null) {
     const G = gridGraph(g),
       L = battleLinks(g);
     if (g.linkSegments?.m !== sh.m || g.linkSegments.R !== R) {
-      const table = new Float32Array(11 * 2 * L.eu.length),
+      const table = ribbonSegments(2 * L.eu.length),
         count = new Uint8Array(L.eu.length);
-      dst = table;
       for (const [e, sides] of G.edgeTiles) {
         const l = L.index.get(e);
         if (l === undefined) continue;
-        j = 2 * l;
-        edge(Math.floor(e / G.nv), e % G.nv, sides[0], sides[1] ?? sides[0], 0);
-        count[l] = j - 2 * l;
+        table.at(2 * l);
+        edge(table, Math.floor(e / G.nv), e % G.nv, sides[0], sides[1] ?? sides[0], 0);
+        count[l] = table.count - 2 * l;
       }
-      g.linkSegments = { m: sh.m, R, table, count };
+      g.linkSegments = { m: sh.m, R, table: table.words(), count };
     }
     return { links: g.linkSegments };
   }
@@ -40926,20 +40974,20 @@ function pathSegments(P = null) {
       const a = new Int32Array(n + 2),
         Q = P.places[s];
       for (let q = 1; q <= n; q++) {
-        a[q] = j;
+        a[q] = out.count;
         if (Q[q] === Q[q - 1]) continue; // (dead: on the spot)
         const sides = G.edgeTiles.get(G.key(Q[q - 1], Q[q]));
-        edge(Q[q - 1], Q[q], sides[0], sides[1] ?? sides[0], s);
+        edge(out, Q[q - 1], Q[q], sides[0], sides[1] ?? sides[0], s, q - 1, P.goneOf[s][q], P.cutOf[s][q] ? 7 : 3); // (cut off with others: faded out)
       }
-      a[n + 1] = j;
+      a[n + 1] = out.count;
       ats.push(a);
     }
-    return { data: out.subarray(0, 11 * j), at: ats };
+    return { data: out.words(), at: ats };
   }
   for (let i = 0; i < n; i++) {
-    at[i] = j;
+    at[i] = out.count;
     if (walk.vert) {
-      edge(walk.vert[i], walk.vert[i + 1], walk.stepTiles[2 * i], walk.stepTiles[2 * i + 1], i);
+      edge(out, walk.vert[i], walk.vert[i + 1], walk.stepTiles[2 * i], walk.stepTiles[2 * i + 1], i, i);
       continue;
     }
     const a = walk.tile[i],
@@ -40954,11 +41002,11 @@ function pathSegments(P = null) {
         }
     const ma = qa.length === 2 ? mid(corner(a, qa[0]), corner(a, qa[1])) : mid(centre(a), centre(b));
     const mb = qb.length === 2 ? mid(corner(b, qb[0]), corner(b, qb[1])) : mid(centre(a), centre(b));
-    put(centre(a), ma, normal(a), 1, i);
-    put(mb, centre(b), normal(b), 2, i);
+    out.put(centre(a), ma, normal(a), 1, i, i);
+    out.put(mb, centre(b), normal(b), 2, i, i);
   }
-  at[n] = j;
-  return { data: out.subarray(0, 11 * j), at };
+  at[n] = out.count;
+  return { data: out.words(), at };
 }
 
 // a surface's edges, each once (two tiles' strokes over each other were twice as strong as the outline's): by the corners of the
@@ -42077,10 +42125,11 @@ const GPU_VIEW = `
 struct U {
   R: vec3f, depth: f32, Uu: vec3f, shade: f32, V: vec3f, glint: f32, L: vec3f, lr: f32, H: vec3f, alpha: f32, Lx: vec3f, edge: f32,
   Ly: vec3f, bias: f32, edgeRgb: vec3f, halfW: f32, persp: vec4f, plain: vec4f, view: vec3f, N: f32, cc: vec2f, screen: vec2f,
-  cut: i32, glass: i32, both: i32, colour: i32, alphaF: f32, bright: f32, width: f32, loopFrom: f32, period: f32, turnC: f32, turnS: f32, cutN: vec3f, stepNow: f32, fadeSteps: f32, grow: f32, fade: f32, front: f32,
+  cut: i32, glass: i32, both: i32, colour: i32, alphaF: f32, bright: f32, width: f32, loopFrom: f32, period: f32, turnC: f32, turnS: f32, cutN: vec3f, stepWhole: i32, fadeSteps: f32, stepPart: f32, fade: f32, front: f32,
   tpl: array<vec4f, 12>,  // (the polygons' corners, two a vec4)
   fadeTo: vec3f,  // (a size or the start hovered: what is drawn this pale, fade, towards the page's background, see drawHover)
   extent: f32,  // (the figure's radius: a tile's place towards the viewer, its share of it, see pickF)
+  firstBorn: i32,  // (the step a line's first instance is walked over, its next one's the next: see lifeOf)
 }
 @group(0) @binding(0) var<uniform> u: U;
 @group(0) @binding(1) var<storage, read> tileCol: array<u32>;
@@ -42097,6 +42146,16 @@ fn clipOf(s: vec3f, bias: f32) -> vec4f {  // (depth 0 to 1; front: before all e
 }
 fn flatAt(q: vec2f) -> vec4f { return vec4f(q.x / u.screen.x * 2.0 - 1.0, 1.0 - q.y / u.screen.y * 2.0, 0.0, 1.0); }
 fn lightSpace(p: vec3f) -> vec3f { return vec3f(dot(p, u.Lx), dot(p, u.Ly), -dot(p, u.L)) / u.lr; }
+// the steps since step at: the step shown (stepWhole) and its share of the next (gliding, see glideAt), their difference in
+// whole numbers (exact at millions of steps, where a float's would not be)
+fn stepsSince(at: i32) -> f32 { return f32(u.stepWhole - at) + u.stepPart; }
+// a line's segment at the step shown, every line's (a surface's ribbon, the plane's, a 3D walk's bar): [where it starts,
+// where it ends] along it, 0 to 1, and its opacity; walked over the step from born; from gone, over a step, retracting from
+// its start (a body's tail leaving it) or faded out (fades: a link let go); not born yet, nothing (its ends together)
+fn lifeOf(born: i32, gone: i32, fades: bool) -> vec3f {
+  let drawn = clamp(stepsSince(born), 0.0, 1.0); let after = clamp(stepsSince(gone), 0.0, 1.0);
+  return select(vec3f(after, drawn, 1.0), vec3f(0.0, drawn, 1.0 - after), fades);
+}
 fn band(t: texture_2d<f32>, x: f32) -> vec3f { let w = i32(textureDimensions(t).x); return textureLoad(t, vec2i(clamp(i32(floor(x * f32(w))), 0, w - 1), 0), 0).rgb; }
 // step i's rainbow (see rainbowBand): a closed loop's steps round its period, along the walk's length u.N (rainbowLength)
 fn rainbow(i0: f32) -> vec3f { var i = i0; if (u.period > 0.0 && i >= u.loopFrom + u.period) { i = u.loopFrom + (i - u.loopFrom) - u.period * floor((i - u.loopFrom) / u.period); } return band(grad, (i + 0.5) / u.N); }
@@ -42137,18 +42196,23 @@ fn light(col: vec3f, n0: vec3f, p: vec3f, bias: f32) -> Lit {  // (as tileLight;
   if (u.plain.a <= 0.0) { col = unpack4x8unorm(tileCol[id]).rgb; }
   return light(col, nrm, pos, 0.0);
 }
-// a 3D walk's step as a bar, from a towards b0 as far as u.grow (its glide, see glideSplit), u.halfW thick, its ends closed
-// past its points by half its thickness: a unit cube's corner c (and its normal) laid along it
-struct Bar { p: vec3f, n: vec3f }
-fn bar(c: vec3f, nrm: vec3f, a: vec3f, b0: vec3f) -> Bar {
-  var o: Bar; let v = (b0 - a) * u.grow; let len = length(v);
+// a 3D walk's step as a bar, from a to b0 as its life draws it (see lifeOf: its step its instance's, k), u.halfW thick, its
+// ends closed past its points by half its thickness: a unit cube's corner c (and its normal) laid along it; none yet: off
+struct Bar { p: vec3f, n: vec3f, on: bool }
+fn bar(c: vec3f, nrm: vec3f, a0: vec3f, b0: vec3f, k: u32) -> Bar {
+  let l = lifeOf(u.firstBorn + i32(k), 2147483647, false);
+  var o: Bar; o.on = l.y > l.x; let a = mix(a0, b0, l.x); let v = (b0 - a0) * (l.y - l.x); let len = length(v);
   var d = vec3f(1.0, 0.0, 0.0); if (len > 1e-6) { d = v / len; }
   let e1 = normalize(cross(d, select(vec3f(1.0, 0.0, 0.0), vec3f(0.0, 1.0, 0.0), abs(d.x) > 0.9))); let e2 = cross(d, e1); let w = 2.0 * u.halfW;
   o.p = a + d * ((c.x + 0.5) * (len + w) - 0.5 * w) + (e1 * c.y + e2 * c.z) * w; o.n = d * nrm.x + e1 * nrm.y + e2 * nrm.z;
   return o;
 }
-@vertex fn barV(@location(0) c: vec3f, @location(1) nrm: vec3f, @location(2) a: vec3f, @location(3) b0: vec3f, @location(4) col: vec4f) -> Lit { let o = bar(c, nrm, a, b0); return light(col.rgb, o.n, o.p, 0.0); }
-@vertex fn depthBarV(@location(0) c: vec3f, @location(1) a: vec3f, @location(2) b0: vec3f) -> Deep { return deep(bar(c, vec3f(0.0), a, b0).p); }
+@vertex fn barV(@location(0) c: vec3f, @location(1) nrm: vec3f, @location(2) a: vec3f, @location(3) b0: vec3f, @location(4) col: vec4f, @builtin(instance_index) k: u32) -> Lit {
+  let o = bar(c, nrm, a, b0, k); var l = light(col.rgb, o.n, o.p, 0.0); if (!o.on) { l.pos = vec4f(2.0, 2.0, 2.0, 1.0); } return l;
+}
+@vertex fn depthBarV(@location(0) c: vec3f, @location(1) a: vec3f, @location(2) b0: vec3f, @builtin(instance_index) k: u32) -> Deep {
+  let o = bar(c, vec3f(0.0), a, b0, k); var d = deep(o.p); if (!o.on) { d.pos = vec4f(2.0, 2.0, 2.0, 1.0); } return d;
+}
 @vertex fn cubeV(@location(0) corner: vec3f, @location(1) nrm: vec3f, @location(2) at: vec3f, @location(3) col: vec4f) -> Lit {
   return light(col.rgb, nrm, at + corner, 0.0);
 }
@@ -42182,20 +42246,22 @@ struct Edge { @builtin(position) pos: vec4f, @location(0) facing: f32, @location
 }
 @fragment fn edgeF(i: Edge) -> @location(0) vec4f { if ((u.cut == 1 && i.cutv > 0.0) || i.facing < 0.0) { discard; } return glass(u.edgeRgb, u.edge, i.pos.z); }
 // the path printed on the tiles (see pathSegments): a flat ribbon a segment, in its tile's plane, as wide as the path on screen
-struct Rib { @builtin(position) pos: vec4f, @location(0) col: vec3f, @location(1) cutv: f32 }
-@vertex fn ribbonV(@location(0) quad: vec2f, @location(1) a: vec3f, @location(2) b0: vec3f, @location(3) n: vec3f, @location(4) e: f32, @location(5) i: f32) -> Rib {
+// (e: its caps, 1 its start's, 2 its end's, and 4 when it fades out rather than retracts; its life, born and gone: see lifeOf)
+struct Rib { @builtin(position) pos: vec4f, @location(0) col: vec3f, @location(1) cutv: f32, @location(2) alpha: f32 }
+@vertex fn ribbonV(@location(0) quad: vec2f, @location(1) a0: vec3f, @location(2) b0: vec3f, @location(3) n: vec3f, @location(4) e: f32, @location(5) i: f32, @location(6) born: i32, @location(7) gone: i32) -> Rib {
   var o: Rib;
-  if (u.colour == 3 && i > 254.5) { o.pos = vec4f(0.0, 0.0, -2.0, 1.0); o.col = vec3f(0.0); o.cutv = 0.0; return o; }  // (a link of none, see battleLinesOnGpu: off the clip space)
+  let f = u32(e); let l = lifeOf(born, gone, (f & 4u) != 0u);
+  if ((u.colour == 3 && i > 254.5) || l.y <= l.x || l.z <= 0.0) { o.pos = vec4f(0.0, 0.0, -2.0, 1.0); return o; }  // (none: a link of none, see battleLinesOnGpu; not walked yet, or left: off the clip space)
   if (u.colour == 3) { o.col = band(pal, (i + 0.5) / 256.0); } else if (u.colour == 4) { o.col = u.edgeRgb; } else { o.col = rainbow(i); }  // (a battle's bodies: their colours, see battlePalette; 4: one colour, a motif's, see motifRibbons)
-  let b = mix(a, b0, u.grow);  // (its share drawn: 1 whole, the step on its way as far as it glided, see the ribbons' ranges)
-  var d = b0 - a; if (length(d) > 1e-9) { d = normalize(d); } else { d = vec3f(1.0, 0.0, 0.0); }
+  let a = mix(a0, b0, l.x); let b = mix(a0, b0, l.y);
+  var d = b0 - a0; if (length(d) > 1e-9) { d = normalize(d); } else { d = vec3f(1.0, 0.0, 0.0); }
   let side = normalize(cross(d, n)) * u.halfW;
-  var on = floor(e / 2.0); if (quad.x < 0.5) { on = e - 2.0 * floor(e / 2.0); }
+  var on = f32((f >> 1u) & 1u); if (quad.x < 0.5) { on = f32(f & 1u); }
   let p = mix(a, b, quad.x) + side * quad.y + d * (quad.x * 2.0 - 1.0) * u.halfW * on;
-  o.cutv = dot(p, u.cutN); o.pos = clipOf(toScreen(p), u.bias);
+  o.cutv = dot(p, u.cutN); o.pos = clipOf(toScreen(p), u.bias); o.alpha = l.z;
   return o;
 }
-@fragment fn ribbonF(i: Rib) -> @location(0) vec4f { if (u.cut == 1 && i.cutv > 0.0) { discard; } return glass(i.col, 1.0, i.pos.z); }
+@fragment fn ribbonF(i: Rib) -> @location(0) vec4f { if (u.cut == 1 && i.cutv > 0.0) { discard; } return glass(i.col, i.alpha, i.pos.z); }
 // Glass's last step: the layers' mean colour over what shows through them all
 @group(1) @binding(0) var acc: texture_2d<f32>;
 @group(1) @binding(1) var rev: texture_2d<f32>;
@@ -42208,9 +42274,10 @@ struct Rib { @builtin(position) pos: vec4f, @location(0) col: vec3f, @location(1
 struct Col { @builtin(position) pos: vec4f, @location(0) col: vec4f }
 @vertex fn flatPathV(@location(0) quad: vec2f, @location(1) a0: vec2f, @location(2) b0: vec2f, @location(3) key: u32, @builtin(instance_index) k: u32) -> Col {
   var o: Col;
-  if (key == 255u) { o.pos = vec4f(2.0, 2.0, 2.0, 1.0); return o; }  // (a step that draws nothing: a spiral's 0)
+  let l = lifeOf(u.firstBorn + i32(k), 2147483647, false);  // (its step its instance's)
+  if (key == 255u || l.y <= l.x) { o.pos = vec4f(2.0, 2.0, 2.0, 1.0); return o; }  // (a step that draws nothing: a spiral's 0; not walked yet)
   if (u.colour == 2) { o.col = vec4f(band(pal, (f32(key) + 0.5) / 256.0), 1.0); } else { o.col = vec4f(rainbow(f32(k)), 1.0); }
-  let a = u.view.yz + a0 * u.view.x; let b = u.view.yz + mix(a0, b0, u.grow) * u.view.x;  // (its share drawn: 1 whole, the step on its way as far as it glided, see glideSplit)
+  let a = u.view.yz + mix(a0, b0, l.x) * u.view.x; let b = u.view.yz + mix(a0, b0, l.y) * u.view.x;  // (as its life draws it, see lifeOf)
   var d = b - a; if (length(d) > 1e-4) { d = normalize(d); } else { d = vec2f(1.0, 0.0); }
   o.pos = flatAt(mix(a, b, quad.x) + (vec2f(-d.y, d.x) * quad.y + d * (quad.x * 2.0 - 1.0)) * u.width * 0.5);
   return o;
@@ -42220,7 +42287,7 @@ struct Col { @builtin(position) pos: vec4f, @location(0) col: vec4f }
   let q = array<u32, 12>(0u, 1u, 2u, 0u, 2u, 3u, 0u, 3u, 4u, 0u, 4u, 5u)[v];
   var col = band(grad, (c.z + 0.5) / 256.0);
   if (u.colour == 2) { col = band(pal, (c.z + 0.5) / 256.0); }
-  let shown = select(clamp((u.stepNow - at) / u.fadeSteps, 0.0, 1.0), 1.0, u.fadeSteps <= 0.0 || at <= 0.0);  // (faded in from nothing over fadeSteps from the step it came at; the start's, there before any step, never)
+  let shown = select(clamp((f32(u.stepWhole) + u.stepPart - at) / u.fadeSteps, 0.0, 1.0), 1.0, u.fadeSteps <= 0.0 || at <= 0.0);  // (faded in from nothing over fadeSteps from the step it came at; the start's, there before any step, never)
   let a = u.alphaF * shown;
   o.col = vec4f(col * u.bright * a, a);
   let k = u32(c.w) * 6u + q; let t4 = u.tpl[k / 2u];
@@ -42266,6 +42333,9 @@ function gpuView(words, k, depth, more = {}) {
   i[48] = cutOn() ? 1 : 0;
   f.set(cutNormal(), 60); // (Cut's plane, facing its axis: see CUT_AXES)
   f[66] = motifShown || startsShown ? 1 - FADING : 0; // (a size or the start hovered: all but the motif this pale, see drawHover)
+  const now = glideAt();
+  i[63] = Math.floor(now);
+  f[65] = now - Math.floor(now); // (the step shown and its share of the next: the lines' lives, see lifeOf)
   f.set(
     rgbCached(cssColour('--page-background')).map((c) => c / 255),
     116,
@@ -42287,12 +42357,11 @@ function gpuView(words, k, depth, more = {}) {
     period: [56, 'f'],
     turnC: [57, 'f'],
     turnS: [58, 'f'],
-    stepNow: [63, 'f'],
     fadeSteps: [64, 'f'],
-    grow: [65, 'f'],
     fade: [66, 'f'],
     front: [67, 'f'],
     extent: [119, 'f'],
+    firstBorn: [120, 'i'],
   };
   for (const [k2, v] of Object.entries(more)) {
     if (k2 === 'edgeRgb') f.set(v, 28);
@@ -42631,12 +42700,13 @@ function battleLinesOnGpu(D, P) {
   if (was) for (let l = 0; l < E; l++) if (was[l] !== owner[l]) changed.push(l);
   if (!was || changed.length > E / 16) {
     const data = table.slice();
-    for (let l = 0; l < E; l++) for (let q = 0; q < 2; q++) data[11 * (2 * l + q) + 10] = q < count[l] ? owner[l] : 255;
+    for (let l = 0; l < E; l++)
+      for (let q = 0; q < 2; q++) data[RIBBON_WORDS * (2 * l + q) + 10] = q < count[l] ? owner[l] : 255;
     gpuBuffer('ribbon', data);
   } else
     for (const l of changed)
       for (let q = 0; q < count[l]; q++)
-        D.device.queue.writeBuffer(D.ribbon, 4 * (11 * (2 * l + q) + 10), new Float32Array([owner[l]]));
+        D.device.queue.writeBuffer(D.ribbon, 4 * (RIBBON_WORDS * (2 * l + q) + 10), new Float32Array([owner[l]]));
   D.ribbonOf = T;
   D.lineOwner = owner;
   D.segsRanges = [[0, 2 * E]];
@@ -42727,13 +42797,15 @@ function gpuSurface(paint, path) {
   const ribbonBufs = [
     vertexLayout(8, [vertexAttribute(0, 'float32x2')]),
     vertexLayout(
-      44,
+      4 * RIBBON_WORDS,
       [
         vertexAttribute(1, 'float32x3', 0),
         vertexAttribute(2, 'float32x3', 12),
         vertexAttribute(3, 'float32x3', 24),
         vertexAttribute(4, 'float32', 36),
         vertexAttribute(5, 'float32', 40),
+        vertexAttribute(6, 'sint32', 44),
+        vertexAttribute(7, 'sint32', 48),
       ],
       'instance',
     ),
@@ -42769,7 +42841,7 @@ function gpuSurface(paint, path) {
       : null;
   if (segs && keyed) {
     const look = stepLook('digit');
-    for (let o = 10; o < segs.data.length; o += 11) segs.data[o] = look.key(segs.data[o]);
+    for (let o = 10; o < segs.data.length; o += RIBBON_WORDS) segs.data[o] = look.key(segs.data[o]);
   } // (its step's command instead of its step)
   if (segs) {
     gpuBuffer('ribbon', segs.data);
@@ -42779,24 +42851,29 @@ function gpuSurface(paint, path) {
     D.keys.segsM = sh.m;
     D.keys.segsKeyed = keyed;
   }
-  // the segments drawn, [first, end, share]: the steps glideSplit draws whole, the one on its way at its share
-  // (forth or back, Solo or each walker's: a segment's own number its walker's, or its command's, never its step's)
-  const [j, part] = glideSplit(),
+  // the segments drawn, [first, end]: those walked by the step shown, its next on its way (their lives draw, retract and
+  // fade them, see lifeOf); a battle's, each walker's from its first step not left yet (they leave in order, see goneOf)
+  const now = glideAt(),
+    j = Math.floor(now),
     until = (A, k) => A[Math.min(k, A.length - 1)];
+  const firstStaying = (gone) => {
+    let lo = 1,
+      hi = gone.length - 1;
+    while (lo < hi) {
+      const m = (lo + hi) >> 1;
+      if (gone[m] > now - 1) hi = m;
+      else lo = m + 1;
+    }
+    return lo;
+  }; // (the first step whose segment is not wholly gone by now)
   const ranges =
-    !(path || lines) || j + part <= 0 || !(P?.ownLines ? D.segsRanges : D.segsAt)
+    !(path || lines) || now <= 0 || !(P?.ownLines ? D.segsRanges : D.segsAt)
       ? []
       : P?.ownLines
-        ? D.segsRanges.map(([a, b]) => [a, b, 1])
+        ? D.segsRanges
         : !lines
-          ? [
-              [0, until(D.segsAt, j), 1],
-              [until(D.segsAt, j), until(D.segsAt, j + 1), part],
-            ]
-          : P.standing().flatMap((s) => [
-              [D.segsAt[s][Math.max(1, P.from[s])], until(D.segsAt[s], j + 1), 1],
-              [until(D.segsAt[s], j + 1), until(D.segsAt[s], j + 2), part],
-            ]);
+          ? [[0, until(D.segsAt, j + 1)]]
+          : D.segsAt.map((A, s) => [until(A, firstStaying(P.goneOf[s])), until(A, j + 2)]);
   // the tiles, their grid and the path, into pass p (0 the frame; 1, 2 Glass's)
   const drawAll = (rp, pass) => {
     // seen from both sides: Glass, a cut, a Klein bottle (one-sided: its tiles' face inwards in its neck and handle)
@@ -42865,11 +42942,12 @@ function gpuSurface(paint, path) {
           topology: 'triangle-strip',
           pass,
           cull: both ? 'none' : 'back',
+          blend: BLEND_OVER, // (a segment fading out, see lifeOf)
           writes: false, // (a decal on the tiles: pulled over them, no depth of its own, a head over it, see ogiveOf)
           buffers: ribbonBufs,
         }),
       ); // (the path's, the motif's, the starts')
-    if (ranges.some(([a, b, share]) => b > a && share > 0)) {
+    if (ranges.some(([a, b]) => b > a)) {
       ribbons();
       const look = {
         glass: pass,
@@ -42881,15 +42959,10 @@ function gpuSurface(paint, path) {
         bias: pathBias,
         colour: lines || keyed ? 3 : 0,
       };
-      const whole = slotOf({ ...look, grow: 1 }),
-        going = slotOf({ ...look, grow: part }); // (two slots: the whole steps', the one on its way's)
+      rp.setBindGroup(0, gpuGroup(), [slotOf(look)]);
       rp.setVertexBuffer(0, D.quad);
       rp.setVertexBuffer(1, D.ribbon);
-      for (const [a, b, share] of ranges)
-        if (b > a && share > 0) {
-          rp.setBindGroup(0, gpuGroup(), [share === 1 ? whole : going]);
-          rp.draw(4, b - a, 0, a);
-        }
+      for (const [a, b] of ranges) if (b > a) rp.draw(4, b - a, 0, a);
     }
     gpuHeads(D, rp, pass, slotOf({ glass: pass, cut, alpha: GLASS_ALPHA }));
     // a size or the start hovered: the motif round its tile (see middleTile, motifOf), the starts (see startMarks), each part
@@ -42913,7 +42986,6 @@ function gpuSurface(paint, path) {
             edgeRgb: rgb,
             halfW: width(view.scale) / 2 / view.scale,
             bias: pathBias,
-            grow: 1,
             fade: 0,
           }),
         ]);
@@ -43242,7 +43314,7 @@ function gpuFlat(to) {
       }),
     );
     rp.setBindGroup(0, gpuGroup(), [
-      gpuView(D.words, slot++, 1, { colour, tpl, alphaF: alpha, bright: 1, stepNow: glideAt(), fadeSteps: fade }),
+      gpuView(D.words, slot++, 1, { colour, tpl, alphaF: alpha, bright: 1, fadeSteps: fade }),
     ]); // (the step and its fraction: fading in smoothly)
     rp.setVertexBuffer(0, buffer);
     rp.setVertexBuffer(1, atBuffer);
@@ -43258,8 +43330,8 @@ function gpuFlat(to) {
       shows('cells', walk.mode) && line ? 0.15 : 1,
       walkFadeSteps(),
     );
-  const [whole, part] = glideSplit(); // (the steps drawn whole, the next one's share: from step 0 on, its first line grows too)
-  if (line && whole + part > 0) {
+  const walked = Math.min(Math.ceil(glideAt()), walk.n); // (the steps walked, its next on its way: from step 0 on, its first line grows too)
+  if (line && walked > 0) {
     rp.setPipeline(
       gpuDrawPipe('flatPath', {
         vertex: 'flatPathV',
@@ -43286,15 +43358,8 @@ function gpuFlat(to) {
     rp.setVertexBuffer(1, D.flatPts, 0);
     rp.setVertexBuffer(2, D.flatPts, 8);
     rp.setVertexBuffer(3, D.flatKeys);
-    const steps = Math.min(whole, walk.n);
-    if (steps > 0) {
-      rp.setBindGroup(0, gpuGroup(), [gpuView(D.words, slot++, 1, { ...look, grow: 1 })]);
-      rp.draw(4, steps);
-    }
-    if (part > 0 && steps < walk.n) {
-      rp.setBindGroup(0, gpuGroup(), [gpuView(D.words, slot++, 1, { ...look, grow: part })]);
-      rp.draw(4, 1, 0, steps);
-    }
+    rp.setBindGroup(0, gpuGroup(), [gpuView(D.words, slot++, 1, look)]);
+    rp.draw(4, walked); // (each as its life draws it, see flatPathV)
   }
   rp.end();
   device.queue.writeBuffer(D.uni, 0, D.words, 0, 512 * Math.max(1, slot));
@@ -43376,7 +43441,7 @@ const axesLook = (pass) => ({
   view: [VIEW_AXES_LENGTH, VIEW_AXES_AT, VIEW_AXES_AT],
   persp: [0, 0, 0, 0],
   halfW: 1.5 / VIEW_AXES_LENGTH,
-  grow: 1,
+  firstBorn: SEGMENT_ALWAYS, // (its bars whole, see bar)
   front: 1,
   fade: 0,
 });
@@ -43420,23 +43485,15 @@ function gpuCubes(count, of, make, reach) {
   if (bars && !D.barMesh) gpuBuffer('barMesh', CELL_SHAPES.cube.triangles);
   const depth = 4 * (reach + 2),
     verts = (bars ? CELL_SHAPES.cube : shape).triangles.length / 6;
-  const [whole, part] = glideSplit(),
-    steps = Math.min(whole, walk.n),
-    look = { halfW: BAR_HALF_WIDTH };
   new Uint8Array(D.words).fill(0);
   const enc = device.createCommandEncoder(),
-    slot = gpuView(D.words, 0, depth, { ...look, grow: 1 }),
-    going = gpuView(D.words, 1, depth, { ...look, grow: part });
-  const drawBars = (p, slots) => {
-    for (const [k, n, s] of [
-      [0, steps, slots[0]],
-      [steps, part > 0 && steps < walk.n ? 1 : 0, slots[1]],
-    ])
-      if (n) {
-        p.setBindGroup(0, gpuGroup(), [s]);
-        p.draw(verts, n, 0, k);
-      }
-  }; // (the whole steps, the one on its way)
+    slot = gpuView(D.words, 0, depth, { halfW: BAR_HALF_WIDTH });
+  const drawBars = (p) => {
+    const walked = Math.min(Math.ceil(glideAt()), walk.n);
+    if (!walked) return;
+    p.setBindGroup(0, gpuGroup(), [slot]);
+    p.draw(verts, walked);
+  }; // (the steps walked, its next on its way: each as its life draws it, see bar)
   const pointPairs = (p) => {
     p.setVertexBuffer(1, D.cubeAt, 0);
     p.setVertexBuffer(2, D.cubeAt, 12);
@@ -43455,7 +43512,7 @@ function gpuCubes(count, of, make, reach) {
         );
         p.setVertexBuffer(0, D.barMesh);
         pointPairs(p);
-        drawBars(p, [slot, going]);
+        drawBars(p);
         return;
       }
       p.setPipeline(
@@ -43490,7 +43547,7 @@ function gpuCubes(count, of, make, reach) {
     rp.setVertexBuffer(0, D.barMesh);
     pointPairs(rp);
     rp.setVertexBuffer(3, D.cubeCol, 4);
-    drawBars(rp, [slot, going]); // (step k in its point k + 1's colour, as its cube's)
+    drawBars(rp); // (step k in its point k + 1's colour, as its cube's)
   } else {
     rp.setPipeline(
       gpuDrawPipe('cube', {
@@ -43513,9 +43570,9 @@ function gpuCubes(count, of, make, reach) {
   }
   gpuHeads(D, rp, 0, slot); // (a 3D walk's head and start's flag, as a surface's)
   gpuHeads(D, rp, 0, slot, startHeads(), 'start');
-  if (axesShown()) gpuAxes(D, rp, 0, gpuView(D.words, 2, depth, axesLook(0)));
+  if (axesShown()) gpuAxes(D, rp, 0, gpuView(D.words, 1, depth, axesLook(0)));
   rp.end();
-  device.queue.writeBuffer(D.uni, 0, D.words, 0, 1536);
+  device.queue.writeBuffer(D.uni, 0, D.words, 0, 1024);
   device.queue.submit([enc.finish()]);
   return true;
 }

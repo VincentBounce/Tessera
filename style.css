@@ -6,7 +6,7 @@
   /* the text's sizes, four, each element one of them: */
   --caption-text-size: 11px; /* a card's words, a bubble, a figure's caption */
   --label-text-size: 12px; /* a field's label, a note, a hint, the ranking */
-  --text-size: 14px; /* the page's text: a card's name, a list, the tabs, How it works' words and its h4 */
+  --text-size: 14px; /* the page's text: a card's name, a list, the tabs, How it works' words and its h3 */
   --title-text-size: 18px; /* a title: How it works', the bar's name or number, the step line */
   --mono-font: ui-monospace, 'SF Mono', Menlo, monospace; /* digits and the rules' commands: l, I, | and 1 told apart */
   --view-gap: 12px; /* the view's boxes from its edges (player, display, hint), a fit's margin too (see viewFor) */
@@ -160,8 +160,19 @@ main {
 .panel .muted:empty {
   display: none;
 } /* an empty status line takes no room */
-/* a section's title: its gold picture, then its name; a sub-section's (field-label): semibold */
-h2 {
+/* The headings, one scale: h1 the page's (Tessera, hidden: its tab shows its name); h2 a section's (Walk, Teams) or a page's
+   over the view (see .rule-tuto h2); h3 a sub-section's (3D solids, Size; a page's Tilings); h4 a group's (Squares,
+   Constants) */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+} /* (read by screen readers and search engines, not drawn) */
+/* a section's title: its gold picture, then its name */
+.panel h2 {
   display: flex;
   align-items: center;
   gap: 7px;
@@ -170,7 +181,7 @@ h2 {
   font-weight: 600;
   color: var(--text-color);
 }
-h2 .icon {
+.panel h2 .icon {
   width: 24px;
   height: 24px;
   flex: none;
@@ -290,7 +301,7 @@ input[type='range'] {
   color: var(--muted-text-color);
   margin-bottom: 10px;
 } /* a notched slider: Cut, Area (see notchRow) */
-.notch-row .field-label {
+.notch-row h3 {
   margin: 0;
   color: var(--text-color);
 } /* (its title a sub-section's, as Cells', on its row) */
@@ -390,12 +401,12 @@ button.primary {
   gap: 6px;
   margin-bottom: 10px;
 }
-.field-label {
-  margin-bottom: 4px;
+h3 {
+  margin: 0 0 4px;
   font-size: var(--label-text-size);
   font-weight: 600;
 } /* a sub-section's title; under it, grey labels (Birth, Survive…) */
-.field-label.with-btn {
+h3.with-btn {
   display: flex;
   align-items: center;
 } /* its button on its right (Full number: a head-btn) */
@@ -590,16 +601,17 @@ button.wide.how-it-works {
   height: 24px;
   vertical-align: -0.35em;
 } /* the tabs' pictures, as the sections' */
-.block-label {
+h4 {
   margin: 2px 0 4px;
   font-size: var(--caption-text-size);
+  font-weight: 400;
   color: var(--muted-text-color);
-} /* a block of shapes' title: Surface, Tiles of the torus */
-.nav-shapes > .block-label {
+} /* a group's title: Surface, Tiles of the torus, Constants */
+.nav-shapes > h4 {
   grid-column: 1 / -1;
   margin: 0;
 } /* a group's title among the shapes, across its row: where Surface's is (its margin over it one with the tabs'), the grid's gap under it */
-.nav-shapes > .block-label:not(:first-child) {
+.nav-shapes > h4:not(:first-child) {
   margin-top: 8px;
 } /* (the next groups: a little apart) */
 .nav-shapes {
@@ -1361,7 +1373,7 @@ button.active .bubble.active {
   font: var(--text-size)/1.5 var(--mono-font);
   word-break: break-all;
 }
-.number-view .number-digits + h3 {
+.number-view .number-digits + h2 {
   margin-top: 16px;
 } /* (a battle's numbers: one, then the next's title) */
 .number-view .number-digits.one-line {
@@ -1439,7 +1451,7 @@ button.wide.active,
 .rule-tuto .form-section {
   margin-top: 18px;
   padding-top: 18px;
-} /* in a page (How it works, the app's): its sections' spacing, as an h4's */
+} /* in a page (How it works, the app's): its sections' spacing, as an h3's */
 .form-section:not(:has(> :not([hidden]))) {
   display: none;
 }
@@ -2024,8 +2036,8 @@ button.wide.active,
   overflow: auto;
   padding: 20px 24px 24px;
 } /* what scrolls, under its buttons (pinned to the top right) */
-.tut-body > h3,
-.tut-body > h3 + p:not(.number-digits) {
+.tut-body > h2,
+.tut-body > h2 + p:not(.number-digits) {
   margin-right: 96px;
 } /* (beside the buttons) */
 .tut-body code {
@@ -2034,24 +2046,25 @@ button.wide.active,
   text-transform: none;
   letter-spacing: 0;
 } /* the rule itself, wherever: black and bold (the labels grey) */
-.tut-body > h3 code {
+.tut-body > h2 code {
   overflow-wrap: anywhere;
 } /* (a long rule: on as many lines; a block rule's numbers, after its commas, see blockTutorial) */
-.rule-tuto h3 {
+.rule-tuto h2 {
   margin: 0 96px 6px 0;
   font-size: var(--title-text-size);
 } /* (beside the buttons) */
-.rule-tuto h3 code {
+.rule-tuto h2 code {
   margin-left: 6px;
 } /* (as big as its name) */
-.rule-tuto h4 {
+.rule-tuto h3 {
   margin: 18px 0 6px;
   font-size: var(--text-size);
+  font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.05em;
   color: var(--muted-text-color);
 }
-.rule-tuto h4 code {
+.rule-tuto h3 code {
   margin-left: 8px;
   font-size: var(--text-size);
 }

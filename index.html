@@ -10,8 +10,7 @@
   <meta property="og:url" content="https://vincentbounce.github.io/Tessera/">
   <meta property="og:type" content="website">
   <link id="favicon" rel="icon">  <!-- the app's logo, set at start-up (see appLogo) -->
-  <meta name="description" content="A walk on a grid in 2D or 3D driven by the base-2 to base-6 digits of π, other constants and large primes.">
-  <link rel="stylesheet" href="style.css?v=0.4.810">
+  <link rel="stylesheet" href="style.css?v=0.4.811">
   <script>  // the theme before the first paint (see applyTheme)
     try { const t = localStorage.getItem('tesseraTheme') || 'system'; document.documentElement.dataset.theme = t === 'system' ? (matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark') : t; } catch { document.documentElement.dataset.theme = 'dark'; }
   </script>
@@ -32,6 +31,7 @@
   </header>
 
   <main>
+    <h1 class="visually-hidden">Tessera</h1>  <!-- the page's title, its name shown by its tab (see appTab) -->
     <aside class="panel">
       <div id="paramsPane">
       <section>
@@ -39,12 +39,12 @@
           <h2 id="walkHeading">Walk</h2>
         </div>
         <div id="navSpace" class="nav-shapes"></div>
-        <div id="shapesLabel" class="field-label"></div>
+        <h3 id="shapesLabel"></h3>
         <div id="navShapes" class="nav-shapes"></div>
-        <div id="tilesLabel" class="field-label" hidden></div>
+        <h3 id="tilesLabel" hidden></h3>
         <div id="torusTiles" class="nav-shapes" hidden role="tablist"></div>
         <div id="sizeRow" hidden>  <!-- a surface's size, under its tiles -->
-          <div class="field-label">Size</div>
+          <h3>Size</h3>
           <div id="sizeBox">  <!-- − + its label and its slider, one block: hovered, its motif and its tooltip (see sizeTips) -->
             <div class="stepper">
               <button id="sizeDown">−</button>
@@ -56,9 +56,9 @@
           <select id="sphereF" hidden></select>
         </div>
         <div id="planeRow" hidden>  <!-- Life on the plane: its outline and walls or a torus, its size -->
-          <div id="planeOutline"><div class="field-label">Outline</div>
+          <div id="planeOutline"><h3>Outline</h3>
           <div id="planeEdges" class="nav-shapes"></div></div>  <!-- (none on a grid that never repeats: always walls) -->
-          <div class="field-label">Size</div>
+          <h3>Size</h3>
           <div id="planeBox">  <!-- as the surfaces' (sizeBox) -->
             <div class="stepper">
               <button id="planeDown">−</button>
@@ -109,11 +109,11 @@
         </div>
         <div id="huntZones" class="nav-shapes" hidden></div>  <!-- the hunt's zones (a reversible rule's: its random starts'), with the hunt -->
         <div id="symmetryRow" hidden>  <!-- Life on the plane: the start copied by a symmetry of the grid, under the zones (a zone's sub-mode) -->
-          <div class="block-label">Symmetry</div>
+          <h4>Symmetry</h4>
           <div id="symmetryTiles" class="nav-shapes"></div>
         </div>
         <div id="huntRow" hidden>  <!-- Life, in 1 to 12 colours: a hunt for the longest life, or long, even battles -->
-          <div id="huntModeLabel" class="field-label">Hunt mode</div>
+          <h3 id="huntModeLabel">Hunt mode</h3>
           <div id="huntGoals" class="nav-shapes"></div>  <!-- what the hunt looks for, over its button -->
           <button id="huntBtn" type="button" class="wide"></button>  <!-- its words in its tooltip: the hunt and the zone (see renderHunt) -->
           <p id="huntStatus" class="muted"></p>
@@ -129,7 +129,7 @@
           <button id="startUp" title="Next start">+</button>
         </div>
         <div id="numberPicker">  <!-- the number, its formula, its tabs, its primes' menus: one block, placed by the mode -->
-          <div class="field-label with-btn">Formula<button id="copyNumber" class="bubble" type="button" hidden></button></div>  <!-- not a label: a click on ↵ would focus the field again -->
+          <h3 class="with-btn">Formula<button id="copyNumber" class="bubble" type="button" hidden></button></h3>  <!-- not a label: a click on ↵ would focus the field again -->
           <div class="field formula-field"><input id="formula" type="text" value="1/112" spellcheck="false" autocomplete="off" aria-label="Formula"
                    title="Typed in base 10, then written in the base its use needs (the walk's, or Life's: K + 1, its colours and dead), as the chip beside it says. Any number as a formula: pi, e, phi, gamma, catalan, erdos, rho, sqrt(3), cbrt(2), root(x, k), ln(x), exp(x), log(x, b), zeta(k), 22/7, 2^pi, 8^(1/3), 2^127-1, primorial(p)+1, randprime(size, seed), and + − × ÷ ^ ( ). Digit sequences, used alone: random(seed), champernowne, primes, primegaps, dragon. Press Enter to compute"><button class="enter" type="button" tabindex="-1" title="Compute (Enter)">↵</button></div>
           <div id="numberList"></div>
@@ -142,7 +142,7 @@
         </div>
         <div id="battleStart" hidden>  <!-- a battle's: how they fight, each walker's formula (A's the number's own, moved here: see renderWalkTeams), Random, the longest battles (see 7.6c) -->
           <div id="startWays" class="nav-shapes" hidden></div>  <!-- a battle's starts: Symmetric, Centred, Random, over the start row (see renderWalkTeams) -->
-          <div class="field-label">Battle rule</div>
+          <h3>Battle rule</h3>
           <div id="battleRuleCards" class="mode-list rule-cards" role="listbox"></div>  <!-- a battle's way with an enemy's body: the Land grids, Land cells, Cut, Land no collision, as cards (see BATTLE_RULES) -->
           <div class="stack">  <!-- the walkers' formulas and Random, as close as cards -->
             <div id="formulaAHome"></div>  <!-- (the number's formula field, A's in a battle) -->
@@ -162,7 +162,7 @@
         <div id="walkOn" class="nav-shapes"></div>  <!-- along the grid, or on cells: one choice, a tab group of tiles (as the Start's), first, above How it works -->
         <button id="walkRuleHow" class="wide how-it-works" data-icon="info" type="button" title="The rule in use, step by step: what each cell (each step) sees, and what it does (a click on a rule card's picture, too)">How it works</button>  <!-- how the rule works (see walkTutorialToggle), on its first card -->
         <div id="navRules" class="mode-list rule-cards" role="listbox"></div>  <!-- the rules of that shape, where there are several; a walk by a rule: its rules' cards; a creature's, the creatures, the one in use with its rules (see ruleCards) -->
-        <div id="antCustomRow" hidden><div id="antRuleName" class="field-label"></div>  <!-- not a label: a click on ↵ would focus the field again; moved right after its card (see ruleCards) -->
+        <div id="antCustomRow" hidden><h3 id="antRuleName"></h3>  <!-- not a label: a click on ↵ would focus the field again; moved right after its card (see ruleCards) -->
           <span class="field"><input id="antRule" class="custom rule" type="text" autocomplete="off" spellcheck="false" title="Type a rule, then Enter"><button class="enter" type="button" tabindex="-1" title="Apply (Enter)">↵</button></span>
         </div>
         <label hidden>Walk mode (menu kept as the source of truth for the tabs in the header)
@@ -511,7 +511,7 @@
               <span id="fillTooBig" class="fill-note" hidden title="Beyond 12 million tile corners in the walk's box, the areas are not filled">walk too big</span>
               <select id="area" hidden><option value="empty"></option><option value="light"></option><option value="plain"></option></select>
             </div>
-            <div id="cellsLabel" class="field-label" hidden>Cells</div>
+            <h3 id="cellsLabel" hidden>Cells</h3>
             <div id="cellModes" class="nav-shapes cell-modes" hidden></div>  <!-- a walk's or an ant's cells: Path, Cell path, Commands or States (an ant), Heatmap -->
             <label class="check" id="showPathRow" hidden title="The walk's line over the cells it colours"><input id="showPath" type="checkbox"> Show path</label>
             <label class="check" id="heatmapRow" hidden title="The cells coloured by how often the walk comes back to them"><input id="heatmap" type="checkbox"> Heatmap of visits</label>
@@ -522,10 +522,10 @@
     </div>
   </main>
 
-  <script src="pixelarticons.js?v=0.4.810"></script>
-  <script src="punks.js?v=0.4.810"></script>
-  <script src="loops.js?v=0.4.810"></script>
-  <script src="emoji.js?v=0.4.810"></script>
-  <script src="main.js?v=0.4.810"></script>
+  <script src="pixelarticons.js?v=0.4.811"></script>
+  <script src="punks.js?v=0.4.811"></script>
+  <script src="loops.js?v=0.4.811"></script>
+  <script src="emoji.js?v=0.4.811"></script>
+  <script src="main.js?v=0.4.811"></script>
 </body>
 </html>

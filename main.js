@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.810';
+const VERSION = '0.4.811';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -8856,10 +8856,9 @@ function renderNumberPicker(active) {
     tabs,
     ...NUMBER_GROUPS.map((group) => {
       const box = document.createElement('div'),
-        label = document.createElement('div'),
+        label = document.createElement('h4'), // (a group's title: under the section's, h2, and Number's, h3)
         grid = document.createElement('div');
       box.hidden = !shown.includes(group);
-      label.className = 'block-label'; // (a title of the third level: under the section's, h2, and Number's, field-label)
       label.textContent = group === '𝑓' ? 'Functions' : group;
       label.hidden = shown.length < 2; // (a tab of one group: its name the tab's)
       grid.className = 'number-grid';
@@ -10625,10 +10624,7 @@ function renderModePicker() {
   const groups = shapeGroups(kind, space);
   $('navShapes').replaceChildren(
     ...groups.flatMap(([g, these]) => {
-      const title =
-        g && groups.length > 1
-          ? [Object.assign(document.createElement('div'), { className: 'block-label', textContent: g })]
-          : []; // (one group: its title none, its tab's name says it)
+      const title = g && groups.length > 1 ? [Object.assign(document.createElement('h4'), { textContent: g })] : []; // (one group: its title none, its tab's name says it)
       return [
         ...title,
         ...these.flatMap((sh) => {
@@ -11489,10 +11485,11 @@ const tipOf = (target) => {
 };
 document.addEventListener('mouseover', (e) => {
   const { el, tip: title, greyed } = tipOf(e.target),
-    named = el?.matches('button, label, .notch-row'); // (a notch row: its title, its first span)
+    named = el?.matches('button, label, .notch-row'); // (a notch row: its title, its h3)
   const name = named
     ? (
-        el.getAttribute('aria-label') ?? (el.querySelector('.mode-name') ?? el.querySelector('span') ?? el).textContent
+        el.getAttribute('aria-label') ??
+        (el.querySelector('.mode-name, h3') ?? el.querySelector('span') ?? el).textContent
       ).trim()
     : ''; // (a button with no words, a picture: its aria-label)
   // its words, none when they are its name again (Play: its name alone); its name in bold, its key after it (see KEYS)
@@ -12489,7 +12486,7 @@ const COMMANDS = {
 // As a reminder, in every walk's and creature's How it works, under its figures (its own section, before a battle's): every
 // command, its name and what it does (see COMMANDS); then how an ant's rule is written
 const commandsReminder = () =>
-  `<h4>As a reminder: the rules' commands</h4><table class="tut-commands">${Object.entries(COMMANDS)
+  `<h3>As a reminder: the rules' commands</h3><table class="tut-commands">${Object.entries(COMMANDS)
     .map(([command, { short, text }]) => `<tr><td>${ruleSpan(command)}</td><td>${short}</td><td>${text}</td></tr>`)
     .join('')}</table>` +
   '<p class="tut-commands-note">An ant\'s rule: an entry per colour, ' +
@@ -15955,7 +15952,7 @@ function sizeGauge(el, n, i, preview, pick, byDefault = -1) {
   );
   el.replaceChildren(range, notches);
 }
-// A notched slider, one choice among a few on a row (Cut, Area): its title a sub-section's (field-label), a notch each (see sizeGauge), the
+// A notched slider, one choice among a few on a row (Cut, Area): its title a sub-section's (h3), a notch each (see sizeGauge), the
 // choice's name on its right; its tooltip on the whole row, as a button's (see tipOf): its title in bold, what it does (about)
 // and its choice's words, its default (choice first) on a grey line; whyNot, greyed and why (see setTile); live: set as it is dragged (else let go)
 // a slider greyed as a tile is (see setTile): whyNot(setup) its one source, its row's greyed words, its enablers
@@ -15984,11 +15981,7 @@ function notchRow(el, title, about, choices, at, first, set, whyNot = null, live
   show(at);
   el.dataset.default = `${choices[first][0]} by default`;
   el.classList.add('notch-row');
-  el.replaceChildren(
-    Object.assign(document.createElement('span'), { className: 'field-label', textContent: title }),
-    gauge,
-    name,
-  );
+  el.replaceChildren(Object.assign(document.createElement('h3'), { textContent: title }), gauge, name);
 }
 // − / +: the usual sizes (from a torus size of its own, the usual ones just below or above it)
 function stepSize(delta) {
@@ -19587,12 +19580,7 @@ function renderBattleHunt() {
     });
   };
   const list = (label, rs) =>
-    rs.length
-      ? [
-          Object.assign(document.createElement('div'), { className: 'field-label', textContent: label }),
-          ...rs.map(cardOf),
-        ]
-      : [];
+    rs.length ? [Object.assign(document.createElement('h3'), { textContent: label }), ...rs.map(cardOf)] : [];
   $('battleHuntTop').replaceChildren(
     ...(score
       ? list(label, battleHunt.ended)
@@ -25935,7 +25923,7 @@ function blockTutorial(entry, to) {
           );
         const pic = (lit) =>
           `<svg viewBox="${mx - pad} ${my - pad} ${w + 2 * pad} ${w + 2 * pad}">${near.map((t) => shape(t, lit.includes(t) ? LIFE_ALIVE : UNLIT)).join('')}</svg>`;
-        return `<h4>Across</h4><div class="tut-row"><figure><div>${pic(from)}<span>→</span>${pic(ring)}</div><figcaption>each generation, the cells facing a block come into it, then its rule</figcaption></figure></div>`;
+        return `<h3>Across</h3><div class="tut-row"><figure><div>${pic(from)}<span>→</span>${pic(ring)}</div><figcaption>each generation, the cells facing a block come into it, then its rule</figcaption></figure></div>`;
       })();
   // Ising: a square and its 4 sides, 2 of them alive (turned over), else (kept)
   const plus = (around, was, now) => {
@@ -25952,14 +25940,14 @@ function blockTutorial(entry, to) {
     return `<figure><div>${one(was)}<span>→</span>${one(now)}</div><figcaption>${around} alive round it: ${was === now ? 'kept' : 'turned over'}</figcaption></figure>`;
   };
   const cases = ising
-    ? `<h4>Changing</h4><div class="tut-row">${plus(2, 1, 0)}${plus(2, 0, 1)}</div><h4>Kept</h4><div class="tut-row">${[0, 1, 3, 4].map((c) => plus(c, 1, 1)).join('')}</div>`
+    ? `<h3>Changing</h3><div class="tut-row">${plus(2, 1, 0)}${plus(2, 0, 1)}</div><h3>Kept</h3><div class="tut-row">${[0, 1, 3, 4].map((c) => plus(c, 1, 1)).join('')}</div>`
     : '';
   const L = walk.life?.margolus ? walk.life : null,
     p = turns.length,
     keeps = blockKeeps(to),
     B = L && blockBound(L, to, p);
   const maxPeriod =
-    `<h4>Max period</h4><p>It runs back, so on a finite grid any start comes back to itself, with no lead-in: its period is the generation it does, a multiple of its ${p} phases. ` +
+    `<h3>Max period</h3><p>It runs back, so on a finite grid any start comes back to itself, with no lead-in: its period is the generation it does, a multiple of its ${p} phases. ` +
     (keeps
       ? `This rule keeps the live cells (each block as many alive after), so a start of m alive cells on n comes back within C(n, m) × ${p} generations: the ways m cells can lie, times the phases.`
       : `This rule changes how many are alive, so a start on n cells comes back within 2<sup>n</sup> × ${p} generations: all the grid's states, times the phases.`) +
@@ -25982,10 +25970,10 @@ function blockTutorial(entry, to) {
     `<figure><div>${block(st)}<span>→</span>${block(full ^ to[st], st)}</div><figcaption>${alive(st)} alive${alive(full ^ to[st]) !== alive(st) ? ` → ${alive(full ^ to[st])}` : ''}</figcaption></figure>`;
   const asShown = !flips
     ? ''
-    : `<h4>As shown</h4><p>It turns an empty block full, so every other generation is shown negative (its dead cells drawn alive), as Margolus showed Critters: the picture stays the same way round${blockKind(to).keeps ? ', and each block keeps as many cells alive, each its colour' : ''}. A block, then as the next generation shows it:</p><div class="tut-row">${states.map(shownPair).join('')}</div>`;
+    : `<h3>As shown</h3><p>It turns an empty block full, so every other generation is shown negative (its dead cells drawn alive), as Margolus showed Critters: the picture stays the same way round${blockKind(to).keeps ? ', and each block keeps as many cells alive, each its colour' : ''}. A block, then as the next generation shows it:</p><div class="tut-row">${states.map(shownPair).join('')}</div>`;
   $('ruleTuto').innerHTML =
     `<div class="tut-body">` +
-    `<h3>${entry.name} ${ruleSpan(entry.rule).replace(/,/g, ',<wbr>')}</h3>${BLOCK_WORDS[`${kind}|${entry.name}`] ? `<p>${BLOCK_WORDS[`${kind}|${entry.name}`].slice(2)}.</p>` : ''}${
+    `<h2>${entry.name} ${ruleSpan(entry.rule).replace(/,/g, ',<wbr>')}</h2>${BLOCK_WORDS[`${kind}|${entry.name}`] ? `<p>${BLOCK_WORDS[`${kind}|${entry.name}`].slice(2)}.</p>` : ''}${
       ising
         ? `<p>The Ising model of a magnet (Vichniac's Q2R, 1984; Tim Tyler's cell-auto.com): the squares a checkerboard, its two colours in turn, a generation each; a square of the colour's turn turned over when just 2 of its 4 side neighbours are alive, else kept. Turned over or not, as many sides between alive and dead (its energy kept), and the colour not turning stays as it is: so it runs back.${edges}</p>` +
           `<div class="tut-row tut-phases">${edged.map((blocks, j) => `<figure><div>${phase(blocks)}</div><figcaption>${['even', 'odd'][j]} generations</figcaption></figure>`).join('')}</div>${cases}${maxPeriod}</div>`
@@ -25996,7 +25984,7 @@ function blockTutorial(entry, to) {
         : `<p>The grid in blocks of ${k} cells round a corner, ${stars ? `the same each generation, each cell first swapped with the one across its side away from the corner, come in from the next block (stellated: Tim Tyler's ${k === 6 ? 'Star of David' : 'isometric von Neumann'} neighbourhood, a lattice gas's)` : `${turns.length} sets of them in turn, a generation each (${R?.four ? "Tim Tyler's Square-4: Margolus's, its corners 4 sets in turn round a square" : "Margolus's neighbourhood"})`}: ` +
           `each block turns into the one below, a different one for each of its ${1 << k} states, so the rule runs back too, the arrows the other way round. One of each state turned the same: the rule turns with its block.${edges}</p>` +
           `<div class="tut-row tut-phases">${edged.map((blocks, j) => `<figure><div>${phase(blocks)}</div><figcaption>${turns.length === 1 ? 'every generation' : turns.length === 2 ? ['even', 'odd'][j] : `${['1st', '2nd', '3rd', '4th'][j]} of ${turns.length}`}${turns.length === 1 ? '' : ' generations'}</figcaption></figure>`).join('')}</div>${across}` +
-          `<h4>Changing</h4><div class="tut-row">${moved.map(pair).join('') || '<p>none</p>'}</div><h4>Kept</h4><div class="tut-row">${kept.map(pair).join('') || '<p>none</p>'}</div>${asShown}${maxPeriod}</div>`
+          `<h3>Changing</h3><div class="tut-row">${moved.map(pair).join('') || '<p>none</p>'}</div><h3>Kept</h3><div class="tut-row">${kept.map(pair).join('') || '<p>none</p>'}</div>${asShown}${maxPeriod}</div>`
     }`;
   $('ruleTuto').prepend(tutTools({ replay: replayPictures, close: () => ruleTutorial(null) }));
 }
@@ -26095,10 +26083,10 @@ function loopTutorial(entry) {
     shown = lines.filter((t) => t[0] !== t[5]).slice(0, 12);
   const start = loopCells(pattern.rle).map(([x, y, v]) => cell(x, y, v));
   $('ruleTuto').innerHTML =
-    `<div class="tut-body"><h3>${entry.name}${entry.name === name ? '' : ` <code>${name}</code>`}</h3><p>${words[0].toUpperCase()}${words.slice(1)} (${year}). Each cell looks at itself and its 4 neighbours by a side, in turn round it (von Neumann): ${formatNumber(table.split('\n').filter((l) => !l.includes(':') && !l.startsWith('var')).length)} lines of Golly's table, each also turned a quarter, a half and three quarters round; a cell none fits stays as it is. In colours (Teams), a loop's daughters take its colour: lineages fighting for room.</p>` +
-    `<h4>States</h4><div class="tut-row">${Array.from({ length: n }, (_, v) => `<figure><div><svg viewBox="-0.1 -0.1 1.2 1.2">${cell(0, 0, v)}</svg></div><figcaption>${v}</figcaption></figure>`).join('')}</div>` +
-    `<h4>Changing</h4><div class="tut-row">${shown.map((t) => `<figure><div>${cross(t)}<span>→</span><svg viewBox="-1.1 -1.1 3.2 3.2">${cell(0, 0, t[5])}</svg></div><figcaption>${t[0]} → ${t[5]}</figcaption></figure>`).join('')}</div>` +
-    `<h4>Start</h4><div class="tut-row"><figure><div><svg class="tut-start" viewBox="-0.2 -0.2 ${pattern.w + 0.4} ${pattern.h + 0.4}">${start.join('')}</svg></div><figcaption>${pattern.w} × ${pattern.h}</figcaption></figure></div></div>`;
+    `<div class="tut-body"><h2>${entry.name}${entry.name === name ? '' : ` <code>${name}</code>`}</h2><p>${words[0].toUpperCase()}${words.slice(1)} (${year}). Each cell looks at itself and its 4 neighbours by a side, in turn round it (von Neumann): ${formatNumber(table.split('\n').filter((l) => !l.includes(':') && !l.startsWith('var')).length)} lines of Golly's table, each also turned a quarter, a half and three quarters round; a cell none fits stays as it is. In colours (Teams), a loop's daughters take its colour: lineages fighting for room.</p>` +
+    `<h3>States</h3><div class="tut-row">${Array.from({ length: n }, (_, v) => `<figure><div><svg viewBox="-0.1 -0.1 1.2 1.2">${cell(0, 0, v)}</svg></div><figcaption>${v}</figcaption></figure>`).join('')}</div>` +
+    `<h3>Changing</h3><div class="tut-row">${shown.map((t) => `<figure><div>${cross(t)}<span>→</span><svg viewBox="-1.1 -1.1 3.2 3.2">${cell(0, 0, t[5])}</svg></div><figcaption>${t[0]} → ${t[5]}</figcaption></figure>`).join('')}</div>` +
+    `<h3>Start</h3><div class="tut-row"><figure><div><svg class="tut-start" viewBox="-0.2 -0.2 ${pattern.w + 0.4} ${pattern.h + 0.4}">${start.join('')}</svg></div><figcaption>${pattern.w} × ${pattern.h}</figcaption></figure></div></div>`;
   $('ruleTuto').prepend(tutTools({ close: () => ruleTutorial(null) }));
 }
 // an elementary rule's page (see parseElementary): its words, its 8 cases (the three cells above → the cell), from one cell
@@ -26117,9 +26105,9 @@ function elementaryTutorial(entry) {
     .flatMap((r, y) => r.map((c, x) => (c ? cell(x, y, 1) : '')))
     .join('');
   $('ruleTuto').innerHTML =
-    `<div class="tut-body"><h3>${entry.name} ${ruleSpan(`W${N}`)}</h3><p>${words ? `${words[0].toUpperCase()}${words.slice(1)}. ` : ''}A row of cells, each generation the next row down: each cell looks at the three above it (on its left, above it, on its right), 8 cases, and the rule's number in base 2, ${N} = ${N.toString(2).padStart(8, '0')}, gives each one its cell, from 111 to 000 (Wolfram, 1983).</p>` +
-    `<h4>Its 8 cases</h4><div class="tut-row">${cases}</div>` +
-    `<h4>From one cell</h4><div class="tut-row"><figure><div><svg class="tut-start" viewBox="-0.2 -0.2 31.4 16.4">${picture}</svg></div><figcaption>16 generations</figcaption></figure></div></div>`;
+    `<div class="tut-body"><h2>${entry.name} ${ruleSpan(`W${N}`)}</h2><p>${words ? `${words[0].toUpperCase()}${words.slice(1)}. ` : ''}A row of cells, each generation the next row down: each cell looks at the three above it (on its left, above it, on its right), 8 cases, and the rule's number in base 2, ${N} = ${N.toString(2).padStart(8, '0')}, gives each one its cell, from 111 to 000 (Wolfram, 1983).</p>` +
+    `<h3>Its 8 cases</h3><div class="tut-row">${cases}</div>` +
+    `<h3>From one cell</h3><div class="tut-row"><figure><div><svg class="tut-start" viewBox="-0.2 -0.2 31.4 16.4">${picture}</svg></div><figcaption>16 generations</figcaption></figure></div></div>`;
   $('ruleTuto').prepend(tutTools({ close: () => ruleTutorial(null) }));
 }
 function ruleTutorial(entry) {
@@ -26301,7 +26289,7 @@ function ruleTutorial(entry) {
     const c = counts[0],
       most = c < 3 ? [c] : [c - 1, 1]; // (the most: all one colour, or all but one)
     return (
-      `<h4>Its colour <code>${TEAM_NAMES[K]}</code></h4><div class="tut-row">${card([...most, ...Array(K - most.length).fill(0)], 'the most')}` +
+      `<h3>Its colour <code>${TEAM_NAMES[K]}</code></h3><div class="tut-row">${card([...most, ...Array(K - most.length).fill(0)], 'the most')}` +
       `${[...ties.filter((p) => gone(p) === 1), ...ties.filter((p) => gone(p) !== 1)].map((p) => card(p, gone(p) === 1 ? 'the colour missing' : 'no birth')).join('')}</div>`
     );
   }
@@ -26319,7 +26307,7 @@ function ruleTutorial(entry) {
           ? ways(k).map((j) => card([...tips.slice(0, j), ...sides.slice(0, k - j)], `${k}v${j}`))
           : [],
       );
-      return `<h3>Letters</h3><p>On the flowers and the rings, a rule of your own can tell its live neighbours apart: after a count, v and how many of them touch the cell by a corner only, not a side (B25v08: born with 2, with 5 when none of them touch it by a corner only, or with 8).</p><div class="tut-row">${figs.join('')}</div>`;
+      return `<h2>Letters</h2><p>On the flowers and the rings, a rule of your own can tell its live neighbours apart: after a count, v and how many of them touch the cell by a corner only, not a side (B25v08: born with 2, with 5 when none of them touch it by a corner only, or with 8).</p><div class="tut-row">${figs.join('')}</div>`;
     }
     const R = lettersOf2 === 'hensel' ? 8 : 6,
       at = [...planeNeighbours(kind, W, false, true).ring.subarray(R * c, R * c + R)];
@@ -26337,8 +26325,8 @@ function ruleTutorial(entry) {
       }),
     );
     return lettersOf2 === 'hensel'
-      ? `<h3>Letters</h3><p>Hensel's, for a rule of your own on squares (B2a/S23, B3-k…): where the live neighbours sit round the square, each count its letters (c corners, e edges, then their ways together); 5 to 7 as 3 to 1 with the live and the dead swapped (5c: all but 3c).</p><div class="tut-row">${figs.join('')}</div>`
-      : `<h3>Letters</h3><p>Callahan's, for a rule of your own on hexagons (B2o/S2m34…): where 2, 3 or 4 live neighbours sit round the hexagon: o side by side, m one apart, p across (3p every other one; 4: as 2, the dead ones).</p><div class="tut-row">${figs.join('')}</div>`;
+      ? `<h2>Letters</h2><p>Hensel's, for a rule of your own on squares (B2a/S23, B3-k…): where the live neighbours sit round the square, each count its letters (c corners, e edges, then their ways together); 5 to 7 as 3 to 1 with the live and the dead swapped (5c: all but 3c).</p><div class="tut-row">${figs.join('')}</div>`
+      : `<h2>Letters</h2><p>Callahan's, for a rule of your own on hexagons (B2o/S2m34…): where 2, 3 or 4 live neighbours sit round the hexagon: o side by side, m one apart, p across (3p every other one; 4: as 2, the dead ones).</p><div class="tut-row">${figs.join('')}</div>`;
   }
   const after = rule.C > 2 ? dying(1) : UNLIT,
     stages = Array.from({ length: rule.C - 2 }, (_, s) => dying(s + 1));
@@ -26354,12 +26342,12 @@ function ruleTutorial(entry) {
     `<div class="tut-body">${tutLetters.on && lettersOf2 ? lettersPage() + '</div>' : ''}` +
     (tutLetters.on && lettersOf2
       ? ''
-      : `<h3>${entry.name} ${ruleSpan(entry.rule)}</h3>${entry.about ? `<p>${capitalised(entry.about)}.</p>` : ''}${kinds.length > 1 ? shapeBubbles(kinds, c, corners, count, shapeOf, { hat: 'hat', spectre: 'spectre' }[kind]) : ''}<p>A cell with ${around.length} neighbours here (sharing an edge or a corner): ${born.length ? `born with ${list(born)} live ones` : 'never born'}, ${stays.length ? `survives with ${list(stays)}` : 'never survives'}, dies otherwise${iso === 'vertex' ? ' (after v, how many of the live ones touch it by a corner only, not a side)' : iso ? ' (the letters: where the live ones sit)' : ''}${rule.C > 2 ? `, then fades through ${rule.C - 2} dying stage${rule.C > 3 ? 's' : ''} (neither alive nor counted) before it is empty again` : ''}.</p>` +
-        `<h4>Birth${part('B')}</h4><div class="tut-row">${born.map((cs) => pair(cs, UNLIT, LIFE_ALIVE, 'born')).join('') || '<p>none</p>'}</div>${colours()}` +
-        `<h4>Survival${part('S')}</h4><div class="tut-row">${stays.map((cs) => pair(cs, LIFE_ALIVE, LIFE_ALIVE, 'stays')).join('') || '<p>none</p>'}</div>` +
-        `<h4>Death</h4><div class="tut-row">${dies.map((cs) => pair(cs, LIFE_ALIVE, after, 'dies')).join('')}</div>` +
+      : `<h2>${entry.name} ${ruleSpan(entry.rule)}</h2>${entry.about ? `<p>${capitalised(entry.about)}.</p>` : ''}${kinds.length > 1 ? shapeBubbles(kinds, c, corners, count, shapeOf, { hat: 'hat', spectre: 'spectre' }[kind]) : ''}<p>A cell with ${around.length} neighbours here (sharing an edge or a corner): ${born.length ? `born with ${list(born)} live ones` : 'never born'}, ${stays.length ? `survives with ${list(stays)}` : 'never survives'}, dies otherwise${iso === 'vertex' ? ' (after v, how many of the live ones touch it by a corner only, not a side)' : iso ? ' (the letters: where the live ones sit)' : ''}${rule.C > 2 ? `, then fades through ${rule.C - 2} dying stage${rule.C > 3 ? 's' : ''} (neither alive nor counted) before it is empty again` : ''}.</p>` +
+        `<h3>Birth${part('B')}</h3><div class="tut-row">${born.map((cs) => pair(cs, UNLIT, LIFE_ALIVE, 'born')).join('') || '<p>none</p>'}</div>${colours()}` +
+        `<h3>Survival${part('S')}</h3><div class="tut-row">${stays.map((cs) => pair(cs, LIFE_ALIVE, LIFE_ALIVE, 'stays')).join('') || '<p>none</p>'}</div>` +
+        `<h3>Death</h3><div class="tut-row">${dies.map((cs) => pair(cs, LIFE_ALIVE, after, 'dies')).join('')}</div>` +
         (stages.length
-          ? `<h4>Dying stages${part('C')}</h4><div class="tut-row"><figure><div>${[LIFE_ALIVE, ...stages, UNLIT].map((f) => cell(f, new Set())).join('<span>→</span>')}</div><figcaption>${rule.C - 1} stages alive including ${stages.length} dying ✝ (whatever its neighbours) and 1 dead (able to be born again)</figcaption></figure></div>`
+          ? `<h3>Dying stages${part('C')}</h3><div class="tut-row"><figure><div>${[LIFE_ALIVE, ...stages, UNLIT].map((f) => cell(f, new Set())).join('<span>→</span>')}</div><figcaption>${rule.C - 1} stages alive including ${stages.length} dying ✝ (whatever its neighbours) and 1 dead (able to be born again)</figcaption></figure></div>`
           : '') +
         '</div>');
   for (const f of $('ruleTuto').querySelectorAll('.tut-shapes figure'))
@@ -26914,7 +26902,7 @@ function battleTutorial(w) {
     g = walk.geo,
     grid = { 4: 'square', 3: 'tri', 6: 'hex' }[g?.sides];
   if (!battleOn()) return '';
-  const title = `<h3>Battle: ${BATTLE_RULES[battleRuleInUse(tabMode())][1]}</h3>`,
+  const title = `<h2>Battle: ${BATTLE_RULES[battleRuleInUse(tabMode())][1]}</h2>`,
     cells = !MODES[w].grid; // (every battle's; its cases drawn on squares, triangles and hexagons)
   const loop = grid && { pre: BATTLE_LOOP_AT[grid], moves: BATTLE_LOOP[grid] };
   const figs = !grid
@@ -26993,7 +26981,7 @@ function walkTutorial(w) {
   const how = mode.lattice === 'sphere' ? `, turning as on its flat ${mode.grid ? 'grid' : 'tiling'}` : '';
   $('ruleTuto').innerHTML =
     `<div class="tut-body">` +
-    `<h3>${ruleTitleOf(w)}</h3><p>${creature ? `${mode.rule[0].toUpperCase()}${mode.rule.slice(1)}` : `The number read digit by digit in base ${mode.base}, each digit a step ${mode.rule.replace(/:.*/, '')}${how}`}` +
+    `<h2>${ruleTitleOf(w)}</h2><p>${creature ? `${mode.rule[0].toUpperCase()}${mode.rule.slice(1)}` : `The number read digit by digit in base ${mode.base}, each digit a step ${mode.rule.replace(/:.*/, '')}${how}`}` +
     `${figs.some((f) => f.here) ? '; the way it came in grey' : ''}${figs.some((f) => f.next?.length > 1) ? ', the step after dashed' : ''}.</p>` +
     `<div class="tut-row tut-walk">${figs.map((f) => `<figure><div>${fig(f)}</div><figcaption>${f.label ?? `<b>${f.d}</b>`} ${f.caption ?? ''}</figcaption></figure>`).join('')}</div>${commandsReminder()}${battleTutorial(w)}</div>`;
   $('ruleTuto').prepend(tutTools({ replay: () => walkTutorial(w), close: () => ruleTutorial(null) })); // (its steps appearing again)
@@ -45907,7 +45895,7 @@ function showNumber() {
   v.innerHTML = `<div class="tut-body">${rows
     .map((r, j) => {
       const period = r.ratio && ratioDigits(b, r.ratio);
-      return `<h3><span style="color:${one ? teamColour(r.s) : ''}">${withIcons(r.name)}</span> <code>${baseWords(b)}</code> <span class="muted">${shown[j][1]}</span></h3>${period ? `<p class="number-digits${one}">${period}</p>` : ''}<p class="number-digits${one}"></p>`;
+      return `<h2><span style="color:${one ? teamColour(r.s) : ''}">${withIcons(r.name)}</span> <code>${baseWords(b)}</code> <span class="muted">${shown[j][1]}</span></h2>${period ? `<p class="number-digits${one}">${period}</p>` : ''}<p class="number-digits${one}"></p>`;
     })
     .join('')}</div>`;
   [...v.querySelectorAll('.number-digits:empty')].forEach((p, j) => {
@@ -46627,14 +46615,14 @@ function credits(open) {
   $('ruleTuto').hidden = false;
   $('ruleTuto').dataset.shown = 'credits';
   $('ruleTuto').innerHTML =
-    `<div class="tut-body"><h3>${APP_TITLE} <code>v${VERSION}</code></h3><p>Cellular automata on tilings, surfaces and solids, and walks on the digits of numbers: the work of many, here.</p>` +
-    CREDITS.map(([title, who]) => `<h4>${title}</h4><p>${who}.</p>`).join('') +
+    `<div class="tut-body"><h2>${APP_TITLE} <code>v${VERSION}</code></h2><p>Cellular automata on tilings, surfaces and solids, and walks on the digits of numbers: the work of many, here.</p>` +
+    CREDITS.map(([title, who]) => `<h3>${title}</h3><p>${who}.</p>`).join('') +
     `<p><a href="https://github.com/VincentBounce/Tessera#readme" target="_blank" rel="noopener">Its README</a> · <a href="https://github.com/VincentBounce/Tessera" target="_blank" rel="noopener">its code</a></p>` +
-    `<h4>Made with ❤️</h4><p>${AUTHOR}</p>` + // (its signature, at the end of what it tells)
-    '<div class="form-section"><h3>Stats/debug</h3><h4>Times for this view</h4><table id="timings" class="tut-commands"></table>' + // (the walk shown's times, see timings)
-    `<h4>Screen: ${screenHz()} Hz</h4><table class="tut-commands"><tr><td class="number">Speed asked</td><td class="number">played</td></tr>${SPEEDS.map((v) => `<tr><td class="number">${formatNumber(v)}/s</td><td class="number">${speedWords(v)}</td></tr>`).join('')}</table>` + // (its refresh, and each speed as it plays there: see evenSpeed)
-    `<h4>Computed this session</h4><table class="tut-commands">${memoriesRows()}</table>` + // (what the memories keep, see remember)
-    `<section class="clean-storage"><h4>Clean Tessera's storage in this browser</h4><button id="eraseAll" type="button" class="wide" title="All Tessera keeps in this browser erased (the Gallery, its thumbnails, the theme): the app as at a first visit, the curated setups back; the Gallery saved first as a JSON file (a click, then Confirm erase in its place)">${icon('trash')} Erase all</button></section></div></div>`;
+    `<h3>Made with 🩷</h3><p>${AUTHOR}</p>` + // (its signature, at the end of what it tells)
+    '<div class="form-section"><h2>Stats/debug</h2><h3>Times for this view</h3><table id="timings" class="tut-commands"></table>' + // (the walk shown's times, see timings)
+    `<h3>Screen: ${screenHz()} Hz</h3><table class="tut-commands"><tr><td class="number">Speed asked</td><td class="number">played</td></tr>${SPEEDS.map((v) => `<tr><td class="number">${formatNumber(v)}/s</td><td class="number">${speedWords(v)}</td></tr>`).join('')}</table>` + // (its refresh, and each speed as it plays there: see evenSpeed)
+    `<h3>Computed this session</h3><table class="tut-commands">${memoriesRows()}</table>` + // (what the memories keep, see remember)
+    `<section class="clean-storage"><h3>Clean Tessera's storage in this browser</h3><button id="eraseAll" type="button" class="wide" title="All Tessera keeps in this browser erased (the Gallery, its thumbnails, the theme): the app as at a first visit, the curated setups back; the Gallery saved first as a JSON file (a click, then Confirm erase in its place)">${icon('trash')} Erase all</button></section></div></div>`;
   $('eraseAll').addEventListener('click', (e) => {
     const b = e.currentTarget;
     if (b.dataset.armed) resetApp();

@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.816';
+const VERSION = '0.4.817';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -43434,11 +43434,24 @@ const axesLook = (pass) => ({
   front: 1,
   fade: 0,
 });
+// The views a click on the axes goes through, in turn (see #axesLabels): from the south, the east, above (north up); the
+// view freed, as a drag does (Centered, Upright, Auto-rotate off, no walker followed)
+const VIEWS_FROM = [cameraFrom(0, 0), cameraFrom(-Math.PI / 2, 0), cameraFrom(0, Math.PI / 2)];
+let viewFrom = -1; // (the last one gone to)
+$('axesLabels').addEventListener('click', () => {
+  viewFrom = (viewFrom + 1) % VIEWS_FROM.length;
+  for (const id of ['centered', 'upright', 'autoRotate']) $(id).checked = false;
+  followed = -1;
+  Object.assign(camera, VIEWS_FROM[viewFrom]);
+  rotateView([0, 0, 0]);
+  renderViewModes();
+});
 // their names at their ends, where the view turns them (shown with them)
 function placeAxesLabels() {
   const labels = $('axesLabels');
   labels.hidden = !axesShown();
   if (labels.hidden) return;
+  labels.style.width = labels.style.height = `${2 * VIEW_AXES_AT}px`; // (round their origin: their bars and names)
   VIEW_AXES.forEach(([, v], k) => {
     const [x, y] = orthoPoint(...v);
     Object.assign(labels.children[k].style, {
@@ -45149,7 +45162,7 @@ stage.addEventListener(
 let drag = null;
 stage.addEventListener('contextmenu', (e) => e.preventDefault()); // the right button drags the view
 stage.addEventListener('pointerdown', (e) => {
-  if (e.target.closest('#ruleTuto, #numberPreview')) return; // (their buttons, their text selected: captured by the stage, their clicks went to it)
+  if (e.target.closest('#ruleTuto, #numberPreview, #axesLabels')) return; // (their buttons, their text selected: captured by the stage, their clicks went to it)
   drag = { x: e.clientX, y: e.clientY, pan: !walk.is3d || e.shiftKey || e.button === 2 }; // in 3D, Shift or the right button pans
   stage.setPointerCapture(e.pointerId);
   stage.classList.add('dragging');

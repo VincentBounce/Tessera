@@ -10,7 +10,7 @@
   <meta property="og:url" content="https://vincentbounce.github.io/Tessera/">
   <meta property="og:type" content="website">
   <link id="favicon" rel="icon">  <!-- the app's logo, set at start-up (see appLogo) -->
-  <link rel="stylesheet" href="style.css?v=0.4.816">
+  <link rel="stylesheet" href="style.css?v=0.4.817">
   <script>  // the theme before the first paint (see applyTheme)
     try { const t = localStorage.getItem('tesseraTheme') || 'system'; document.documentElement.dataset.theme = t === 'system' ? (matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark') : t; } catch { document.documentElement.dataset.theme = 'dark'; }
   </script>
@@ -414,7 +414,7 @@
       <canvas id="lineLayer"></canvas>
       <canvas id="hoverLayer"></canvas>  <!-- a size's motif, the starts: the others faded under it (see drawHover) -->
       <canvas id="overlayLayer"></canvas>
-      <div id="axesLabels" hidden><span>E</span><span>N</span><span>Up</span></div>  <!-- the view's axes' names, at their bars' ends (see gpuAxes) -->
+      <button id="axesLabels" type="button" hidden aria-label="Views" title="From the south, the east, above: a click each, the next (the view freed, as a drag)"><span>E</span><span>N</span><span>Up</span></button>  <!-- the view's axes' names, at their bars' ends (see gpuAxes), and a click on them the next view (see VIEWS_FROM) -->
       <img id="stagePreview" alt="" hidden>  <!-- a Gallery card clicked: its thumbnail over the view while its setup is built (see setupRow) -->
       <div class="hint"><div id="tip"></div><div id="hint" hidden></div></div>  <!-- what the mouse is on: a tooltip, or on the view how to move it -->
       <div id="ruleTuto" class="rule-tuto" hidden></div>  <!-- how the rule picked works, in place of the grid (see ruleTutorial) -->
@@ -522,10 +522,10 @@
     </div>
   </main>
 
-  <script src="pixelarticons.js?v=0.4.816"></script>
-  <script src="punks.js?v=0.4.816"></script>
-  <script src="loops.js?v=0.4.816"></script>
-  <script src="emoji.js?v=0.4.816"></script>
-  <script src="main.js?v=0.4.816"></script>
+  <script src="pixelarticons.js?v=0.4.817"></script>
+  <script src="punks.js?v=0.4.817"></script>
+  <script src="loops.js?v=0.4.817"></script>
+  <script src="emoji.js?v=0.4.817"></script>
+  <script src="main.js?v=0.4.817"></script>
 </body>
 </html>

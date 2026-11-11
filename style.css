@@ -1320,6 +1320,15 @@ button.active .bubble.active {
 } /* (the thumbnail as taken: the view's middle, see stageThumbnail, on its card's background, the theme's: whole in the frame
    painted before the setup is built, the figure before never seen through it; no fade: a fade does not play while the page
    builds) */
+#axesLabels {
+  position: absolute;
+  left: 0;
+  top: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+} /* the view's axes: a click, the next view (see VIEWS_FROM), over their bars (drawn by the graphics card, see gpuAxes) */
 #axesLabels > span {
   position: absolute;
   transform: translate(-50%, -50%);

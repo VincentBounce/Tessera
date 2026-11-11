@@ -10,7 +10,7 @@
   <meta property="og:url" content="https://vincentbounce.github.io/Tessera/">
   <meta property="og:type" content="website">
   <link id="favicon" rel="icon">  <!-- the app's logo, set at start-up (see appLogo) -->
-  <link rel="stylesheet" href="style.css?v=0.4.821">
+  <link rel="stylesheet" href="style.css?v=0.4.822">
   <script>  // the theme before the first paint (see applyTheme)
     try { const t = localStorage.getItem('tesseraTheme') || 'system'; document.documentElement.dataset.theme = t === 'system' ? (matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark') : t; } catch { document.documentElement.dataset.theme = 'dark'; }
   </script>
@@ -461,10 +461,6 @@
             <option value="dark" title="The page dark">Dark</option>
             <option value="system" title="The page light or dark, as the system is set">System</option>
           </select>
-          <select id="sky" hidden>
-            <option value="sky">Twilight</option>  <!-- Dawn on a light page (see renderSkyButtons) -->
-            <option value="plain">Plain sky</option>
-          </select>
         </div>
         <div class="stage-more">  <!-- shown on hover, below -->
           <div>  <!-- Sound, Auto-fit, Grid (see renderHeadTiles) -->
@@ -521,10 +517,10 @@
     </div>
   </main>
 
-  <script src="pixelarticons.js?v=0.4.821"></script>
-  <script src="punks.js?v=0.4.821"></script>
-  <script src="loops.js?v=0.4.821"></script>
-  <script src="emoji.js?v=0.4.821"></script>
-  <script src="main.js?v=0.4.821"></script>
+  <script src="pixelarticons.js?v=0.4.822"></script>
+  <script src="punks.js?v=0.4.822"></script>
+  <script src="loops.js?v=0.4.822"></script>
+  <script src="emoji.js?v=0.4.822"></script>
+  <script src="main.js?v=0.4.822"></script>
 </body>
 </html>

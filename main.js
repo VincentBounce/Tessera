@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.821';
+const VERSION = '0.4.822';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -6476,7 +6476,7 @@ function describe(base) {
 const VIEW_3D = ['autoRotate', 'upright', 'perspective', 'light']; // a 3D view's: Default, Free, Upright, Auto-rotate, Perspective, Side light (Space-time's too)
 const DISPLAY_BY_TAB = {
   '2D walks': ['heatmap', 'fill', 'translucent', 'cells', 'visits', 'digit', 'grid'],
-  '3D walks': ['colours', 'digit', 'grid', 'sky', ...VIEW_3D],
+  '3D walks': ['colours', 'digit', 'grid', ...VIEW_3D],
   'Walks on surfaces': [
     'shape',
     'heatmap',
@@ -6484,14 +6484,13 @@ const DISPLAY_BY_TAB = {
     'fill',
     'translucent',
     'grid',
-    'sky',
     ...VIEW_3D,
     'glass',
     'ocean',
     'cut',
   ],
-  'Automata on the plane': ['colours', 'digit', 'mono', 'grid', 'sky'],
-  'Automata on surfaces': ['shape', 'colours', 'digit', 'mono', 'grid', 'sky', ...VIEW_3D, 'glass', 'ocean', 'cut'], // (Glass, Cut: the surfaces' tiles only, see gpuFrame, cutOn)
+  'Automata on the plane': ['colours', 'digit', 'mono', 'grid'],
+  'Automata on surfaces': ['shape', 'colours', 'digit', 'mono', 'grid', ...VIEW_3D, 'glass', 'ocean', 'cut'], // (Glass, Cut: the surfaces' tiles only, see gpuFrame, cutOn)
   '2D spirals': ['heatmap', 'fill', 'translucent', 'cells', 'visits', 'digit', 'grid'], // the 2D walks' menu, some of it greyed out
 };
 // The Display settings' defaults, one table: each its control (a box's id), when it comes back (open: the page's opening
@@ -6509,7 +6508,6 @@ const DISPLAY_DEFAULTS = {
   path: ['showPath', 'tab', false], // (Area: Empty, a walk's Light in 2D, Plain in 3D; on cells the cells alone)
   centered: ['centered', 'tab', true],
   autoRotate: ['autoRotate', 'tab', false],
-  sky: ['sky', 'tab', 'sky'], // (on a solid the walker in front; Dawn or Twilight after the theme)
   autoFit: ['autoFit', 'mode', true],
   upright: ['upright', 'mode', false],
   shape: ['shapeM', 'mode', (mode) => (mode.round ? 1 : 0)], // (Flat 0 ── Inflated 1: a round surface inflated, a solid flat)
@@ -6590,7 +6588,6 @@ function updateDisplayMenu() {
     cut: 'cutRow',
   };
   for (const [item, id] of Object.entries(rows)) $(id).hidden = !shows(item, tabMode());
-  skyButton.style.visibility = shows('sky', tabMode()) ? '' : 'hidden'; // the sky's switch, among the themes (no sky: its place kept, the row as everywhere)
   // Heatmap of visits and Digits instead of a list of colours, on cells only (Digits in 2D only;
   // a spiral marks its cells, each once: both greyed out)
   const mode = MODES[tabMode()];
@@ -7294,44 +7291,6 @@ const swatch = (cs) =>
 // square rings, hot inside (a heatmap, Life's activity)
 const heatRings = (g) =>
   `<svg viewBox="0 0 24 24" aria-hidden="true">${[0, 0.25, 0.5, 0.75, 1].map((f, i) => `<rect x="${2 + 2 * i}" y="${2 + 2 * i}" width="${20 - 4 * i}" height="${20 - 4 * i}" rx="${2 - 0.4 * i}" fill="${g(f)}"/>`).join('')}</svg>`;
-// the sky, a tile before the themes, on or off (see tile): named after the theme (Dawn on a light page, Twilight on a dark one),
-// its picture the sky; shown where there is a sky (see updateDisplayMenu)
-const skyButton = tile({
-  toggle: true,
-  byDefault: defaultOf('sky', tabMode()) === 'sky' ? 'on' : 'off',
-  title: "The background: a sky in the page's tone, or plain",
-  click: () => {
-    $('sky').value = $('sky').value === 'sky' ? 'plain' : 'sky';
-    $('sky').dispatchEvent(new Event('change'));
-  },
-});
-const renderSkyButtons = () => {
-  const theme = themeName(),
-    on = $('sky').value === 'sky';
-  const name = theme === 'light' ? 'Dawn' : 'Twilight';
-  $('sky').options[0].text = name;
-  // the sky's picture, its colours deeper than the sky's own (pale behind a view, they would not read so small)
-  const deep = {
-    light: [
-      [0, '#7fa7de'],
-      [0.5, '#c6b8e6'],
-      [0.8, '#eea3b6'],
-      [1, '#f39a68'],
-    ],
-    dark: [
-      [0, '#0a1a4a'],
-      [0.45, '#2c3f8f'],
-      [0.75, '#6b3f8e'],
-      [1, '#c8644f'],
-    ],
-  }[theme];
-  skyButton.innerHTML =
-    `<svg viewBox="0 0 24 24" aria-hidden="true"><defs><linearGradient id="skyPicture" x1="0" y1="0" x2="0" y2="1">${deep.map(([f, c]) => `<stop offset="${f}" stop-color="${c}"/>`).join('')}</linearGradient></defs>` +
-    `<rect x="2" y="2" width="20" height="20" rx="2" fill="url(#skyPicture)" stroke="var(--border-color)"/></svg><span>${name}</span>`;
-  setTile(skyButton, { on });
-  $('themeButtons').prepend(skyButton); // first, before the themes
-};
-
 // The length last picked, one for every mode (the stepper's − + or a number typed, its link's d=), never cut: each mode the
 // nearest it allows (lengthAsked: a walk's digits or steps, a reversible rule's or Space-time's generations up to 100,000;
 // a walk that loops stops sooner, as its stepper says); its ladder DIGIT_STEPS
@@ -40149,8 +40108,8 @@ function drawLines(ctx, a, b, c0, step) {
   }
 }
 
-// 3D background: a vertical sky gradient behind the scene, in the page's playTone (Dawn on a light page,
-// Twilight on a dark one), or Plain (the page background)
+// 3D background, and the plane's: a vertical sky gradient behind the scene, in the page's tone (Dawn on a light page,
+// Twilight on a dark one)
 const SKIES = {
   dark: [
     [0, '#0a1530'],
@@ -40166,7 +40125,7 @@ const SKIES = {
     [1, '#f8d2bd'],
   ], // dawn
 };
-const skyStops = () => ((walk.is3d || walk.plane) && $('sky').value === 'sky' ? SKIES[themeName()] : null);
+const skyStops = () => (walk.is3d || walk.plane ? SKIES[themeName()] : null);
 const darkSky = () => skyStops() === SKIES.dark;
 // the underside of an open sheet (a torus unrolled, its inside): the foot of the other theme's sky (on a light page,
 // Twilight's; on a dark one, Dawn's)
@@ -40188,7 +40147,7 @@ function groundAt(y) {
     .join(', ')})`;
 }
 // The sky (Dawn, Twilight): the view's background, behind all its layers, none of them (faded while a size or the start is
-// hovered, taken in a thumbnail: the Gallery's background behind it); plain, the page's
+// hovered, taken in a thumbnail: the Gallery's background behind it); none (a 2D walk), the page's
 function paintSky() {
   const stops = skyStops(),
     sky = stops ? `linear-gradient(${stops.map(([at, colour]) => `${colour} ${at * 100}%`).join(', ')})` : '';
@@ -45636,11 +45595,6 @@ const pickPreset = (id) => {
 };
 $('mersenneP').addEventListener('change', () => pickPreset('mersenne'));
 $('primorialP').addEventListener('change', () => pickPreset('primorial'));
-$('sky').addEventListener('change', () => {
-  needsFull = true;
-  renderSkyButtons();
-});
-renderSkyButtons();
 // Theme: Light, Dark or System (the default, following the system as it changes), kept in this browser
 // (System, clicked again: back to the last of Light and Dark chosen, else to the one the system shows)
 const systemLight = matchMedia('(prefers-color-scheme: light)');
@@ -45666,18 +45620,16 @@ function applyTheme() {
   const [light, dark, system] = ['light', 'dark', 'system'].map((v) =>
     $('themeButtons').querySelector(`[data-value="${v}"]`),
   );
-  $('themeButtons').prepend(tileGroup([light, dark]), skyButton); // Light | Dark, then System: open, the sky first
+  $('themeButtons').prepend(tileGroup([light, dark])); // Light | Dark, then System: open
   for (const b of $('themeButtons').children) if (b !== system) b.classList.add('open-only');
   system.dataset.toggle = ''; // (a switch: clicked again, back to Light or Dark)
   setTile(system, { on: t === 'system' });
-  renderSkyButtons(); // the sky's switch back before them (the buttons were all made again)
   if (document.documentElement.dataset.theme === theme && MONO === PALETTES[theme].mono) return;
   document.documentElement.dataset.theme = theme;
   setPalette(theme);
   glColour.clear();
   gpuPalette();
   renderColourButtons();
-  renderSkyButtons();
   renderTeams(); // Life's colour blocks, in the theme's colours
   needsFull = statsDirty = true; // (Life's gauges and curve in the theme's colours too)
 }
@@ -46328,7 +46280,6 @@ const modeTabOf = () => `${NAV[tabMode()]?.[0]}|${modeGroup(tabMode())}`; // (th
 function displayDefaults() {
   applyDefaults('tab');
   oceanPicked = false;
-  renderSkyButtons();
   displayTab = modeTabOf();
 }
 $('mode').addEventListener('change', () => {

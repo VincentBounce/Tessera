@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.803';
+const VERSION = '0.4.804';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -16810,53 +16810,43 @@ const startAsked = () => Math.max(1, Number($('startNo').value) || 1);
 const startNo = () => Math.min(startAsked(), modeStarts()?.length ?? 1);
 let startsShown = false; // while the start row ([− start +]) is hovered: the starts shown over the walk, faded (see startMarks), the view as it was
 
-// The starts' marks while the start number is hovered: every start's edge (two starts each, one per direction) grey, the
-// chosen one yellow and twice as wide, its head a walker's (an ogive, see ogiveOf) in its middle the way it goes; drawn by
-// the graphics card over the tiles (see gpuSurface), made again only when the start, the mesh or its form change
+// The starts' marks while the start number is hovered, each walker's (see walkersOf: Solo's, a battle's each): its
+// starts' edges grey (A's list, see startList, moved by the map that moved A's start to its own, see battleMaps; none for
+// Centred and Random starts, each its own), its own start's edge in its colour and twice as wide, from the place it comes
+// from to its first (its cone and flag on it, see startHeads); drawn by the graphics card over the tiles, unfaded (see
+// gpuSurface), made again only when the walk or its form change
 function startMarks(D, g, sh, R) {
-  const key = `${startNo()}|${sh.m}|${R}|${MODES[walk.mode].cells}`;
-  if (D.startsOf === g && D.startsKey === key) return D.startMarks;
-  const G = gridGraph(g),
+  const key = `${sh.m}|${R}`;
+  if (D.startsOf === walk && D.startsKey === key) return D.startMarks;
+  const grid = !!walk.vert,
+    G = gridGraph(g),
     k = g.sides,
-    list = startList(g),
-    at = (v) => pointAt(sh.corners, k * G.tileOf[v] + G.cornerOf[v], R),
-    centre = (t) => pointAt(sh.cen, t, R),
-    normalAt = (list, i) => unit([list[3 * i], list[3 * i + 1], list[3 * i + 2]]);
-  // a start's ends, the normal where it arrives and its tile: from corner to corner, or on cells from the centre of the tile
-  // it leaves to the centre of the one it enters (see cellStart)
-  const ends = MODES[walk.mode].cells
-    ? (st) => {
-        const [t, e] = cellStart(g, st);
-        return [centre(g.nbr[k * t + e]), centre(t), normalAt(sh.nrm, t), t];
-      }
-    : ([v, f]) => [at(f), at(v), normalAt(G.normal, v), G.tileOf[v]];
-  const chosen = list[startNo() - 1],
+    normal = (p) => (grid ? unit([0, 1, 2].map((d) => G.normal[3 * p + d])) : tileUp(p)),
+    stateOf = (st) => (grid ? gridState(g, st) : [...cellStart(g, st), 0, 0]),
+    list = startList(g).map(stateOf),
+    maps = walk.battle ? walk.battle.maps : [(u) => u],
     width = (s) => Math.max(1, Math.min(s * 0.06, 2.5)),
-    data = [];
-  for (const st of [...list, chosen]) {
-    const [q, p, n] = ends(st);
-    data.push(...q, ...p, ...n, 3, 0); // (both ends capped, see ribbonV)
-  }
-  gpuBuffer('starts', new Float32Array(data));
-  const [q, p, , t] = ends(chosen);
-  D.startsOf = g;
-  D.startsKey = key;
-  return (D.startMarks = {
-    parts: [
-      { rgb: rgbCached('#8b949e').map((c) => c / 255), from: 0, count: list.length, width },
-      { rgb: rgbCached('#f0b429').map((c) => c / 255), from: list.length, count: 1, width: (s) => 2 * width(s) },
-    ],
-    heads: [
-      [
-        ogiveOf({
-          p: q.map((v, d) => (v + p[d]) / 2),
-          h: unit(p.map((v, d) => v - q[d])),
-          size: headSize(tileArea(t)),
-        }),
-        '#f0b429',
-      ],
-    ],
+    data = [],
+    parts = [];
+  const edge = (from, to, n) => data.push(...placePoint(from), ...placePoint(to), ...n, 3, 0); // (both ends capped, see ribbonV)
+  walkersOf().forEach((W, s) => {
+    const from = data.length / 11;
+    for (const state of maps ? list.map((st) => movedStart(g, st, grid, maps[s])) : [])
+      edge(cameFrom(g, grid, state), state[0], normal(state[0]));
+    parts.push({ rgb: rgbCached('#8b949e').map((c) => c / 255), from, count: data.length / 11 - from, width });
+    const [place, came] = W.start;
+    edge(came, place, normal(place));
+    parts.push({
+      rgb: rgbCached(W.colour).map((c) => c / 255),
+      from: data.length / 11 - 1,
+      count: 1,
+      width: (q) => 2 * width(q),
+    });
   });
+  gpuBuffer('starts', new Float32Array(data));
+  D.startsOf = walk;
+  D.startsKey = key;
+  return (D.startMarks = { parts });
 }
 
 // A surface's corner v (of its grid G) on its flat sheet; a step (du, dv) on a torus's sheet, the shortest across its seams;
@@ -17384,9 +17374,9 @@ function buildGridWalk(seq, mode, ahead = new Uint8Array(0)) {
   // a battle (see 7.6b): all its walks (battlePlayer), A's recorded (still once dead), from its own start (grouped: its
   // group's first, see groupedStarts); the others' digits null while they are computed: A alone meanwhile
   const rivals = battleOn() ? rivalsDigits(base, len, buildWalk) : null,
-    starts = Array.isArray(rivals) && battleStartsOrSay(g, state, true, rivals.length + 1);
+    placed = Array.isArray(rivals) && battleStartsOrSay(g, state, true, rivals.length + 1);
   if (rivals?.error) walkSaid = rivals.error;
-  if (starts) state = starts[0];
+  if (placed) state = placed.starts[0];
   let v = state[0];
   const put = (i) => {
     rec.put(i, v, G.tileOf[v], at(v));
@@ -17394,8 +17384,8 @@ function buildGridWalk(seq, mode, ahead = new Uint8Array(0)) {
   };
   put(0);
   rec.begin(S.key(state));
-  if (starts) {
-    const P = battlePlayer(g, true, S, starts, [seq, ...rivals]);
+  if (placed) {
+    const P = battlePlayer(g, true, S, placed.starts, [seq, ...rivals]);
     P.to(Infinity); // (the whole battle: its end known)
     for (let i = 1; i <= P.n; i++) {
       v = P.places[0][i];
@@ -17406,7 +17396,7 @@ function buildGridWalk(seq, mode, ahead = new Uint8Array(0)) {
       put(i);
       rec.step(i, seq[i - 1], null); // (its state: all the walks', not watched)
     }
-    rec.finish(kind, g, { vert, stepTiles, n: P.n, battle: battleOf(P) }); // (the battle set as the walk is: shown at once)
+    rec.finish(kind, g, { vert, stepTiles, n: P.n, battle: battleOf(P, placed.maps) }); // (the battle set as the walk is: shown at once)
     return;
   }
   if (mode.worm) {
@@ -17486,16 +17476,16 @@ function buildSphereWalk(seq, mode, ahead = new Uint8Array(0)) {
   // a battle (see 7.6b): all its walks (battlePlayer), A's recorded (still once dead); the others' digits null while they
   // are computed: A alone meanwhile
   const rivals = battleOn() && !ant ? rivalsDigits(mode.base, len, buildWalk) : null,
-    starts = Array.isArray(rivals) && battleStartsOrSay(g, state, false, rivals.length + 1);
+    placed = Array.isArray(rivals) && battleStartsOrSay(g, state, false, rivals.length + 1);
   if (rivals?.error) walkSaid = rivals.error;
-  if (starts) {
-    const P = battlePlayer(g, false, S, starts, [seq, ...rivals]);
+  if (placed) {
+    const P = battlePlayer(g, false, S, placed.starts, [seq, ...rivals]);
     P.to(Infinity); // (the whole battle: its end known)
     for (let i = 1; i <= P.n; i++) {
       put(i, P.places[0][i]);
       rec.step(i, seq[i - 1], null);
     } // (its state: all the walks', not watched)
-    rec.finish(kind, g, { ant: 0, turns, vert: null, stepTiles: null, n: P.n, battle: battleOf(P) }); // (the battle set as the walk is: shown at once)
+    rec.finish(kind, g, { ant: 0, turns, vert: null, stepTiles: null, n: P.n, battle: battleOf(P, placed.maps) }); // (the battle set as the walk is: shown at once)
     return;
   }
   for (let i = 0; i < len; i++) {
@@ -17517,7 +17507,7 @@ function buildSphereWalk(seq, mode, ahead = new Uint8Array(0)) {
 
 /* ---- 7.6b Battles: two or three numbers' walks on one surface ----------------------------- */
 /* Walk › Duel or Trio: A's number (Digits), B's (Digits B) and in a Trio C's (Digits C) walk the sphere or the cube at
- * once, on its cells or along its grid, a digit each a step, from places spread by the solid's own symmetry (battleStarts):
+ * once, on its cells or along its grid, a digit each a step, from places spread by the solid's own symmetry (battleMaps):
  * B opposite A in a Duel, B and C a third of a turn round from A in a Trio, each turning as A does.
  * Each holds the places it walked, its body: its steps from its tail (its oldest) to its head. A head stepping on another's
  * body cuts it there: the other loses that place and all its steps behind it, to its tail (its own body: nothing). Two
@@ -17585,7 +17575,7 @@ const PE_BEFORE = [0, 3, 4, 6, 7, 1, 2, 5];
 // the ways along the grid's lines (a walker's line, its land the regions it closes, see battlePlayer)
 const BATTLE_LINED = ['landGrid', 'landGrid3', 'landStop', 'landMerge'];
 // a walk that can be a battle: one on a surface (on cells or along the grid, its steps surfaceSteps'), with as many
-// walkers as its turns allow at its size (see battleCounts: its walkers start alike, see battleStarts)
+// walkers as its turns allow at its size (see battleCounts: its walkers start alike, see battleMaps)
 const battleMode = (w) => NAV[w]?.[0] === 'Walk' && MODES[w].lattice === 'sphere' && !!SPHERES[surfaceOf(MODES[w])];
 // a battle at mode w with so many teams (at a size, or its own), the one in use's (battleOn): its teams a count its surface takes
 const battleAt = (w, teams = walkTeams, size = undefined) => battleFits(w, teams, size);
@@ -17677,27 +17667,26 @@ function tintBattleFormulas() {
     $(id).style.setProperty('--walker-color', teamColour(s));
   });
 }
-// A battle's starts: A's, then each moved by the surface's own symmetry, as the walk's state ([tile, the edge it comes in
-// by], along the grid [corner, the corner it comes from]): A's place moved by a group of K of its maps (see battleGroups:
-// a solid's turns, a ring's shifts; each a map of its places that keeps every tile's corners' order, see placeMap)
-function battleStarts(g, start, grid, K) {
-  const turned = (M) => {
-    const across = (u) => M(u, grid);
-    if (grid)
-      return [across(start[0]), across(start[1]), start[2], start[3], ...start.slice(4).map((t) => M(t, false))]; // (its corners turned; a pivot or parity walk's p, q kept; a Klein bottle's frame moved)
-    const [t, entry] = start,
-      k = g.sides,
-      b = across(t),
-      from = across(g.nbr[k * t + entry]);
-    for (let e = 0; e < k; e++) if (g.nbr[k * b + e] === from) return [b, e, ...start.slice(2)]; // (a pivot or parity walk's p, q kept)
-    throw new Error('no tile turned from the start');
-  };
-  // the group of K of the solid's turns whose turns of A's place lie the furthest apart (their nearest pair)
+// A battle's symmetric starts: A's, then each moved by the surface's own symmetry: a group of K of its maps (see
+// battleGroups: a solid's turns, a ring's shifts; each a map of its places that keeps every tile's corners' order, see
+// placeMap), the one whose maps of A's place lie the furthest apart (their nearest pair), the identity first; null: none
+// of K, or A's place on an axis (K walkers cannot start apart from it)
+function battleMaps(g, start, grid, K) {
   const spread = startSpread(g, grid, start),
     groups = battleGroups(g, K),
     G = groups.length ? groups.reduce((a, b) => (spread(b) > spread(a) + 1e-9 ? b : a)) : null;
-  if (!G || spread(G) < 1e-9) return null; // (none of K; or A's place on an axis: K walkers cannot start apart from it)
-  return [start, ...G.slice(1).map(turned)];
+  return G && spread(G) >= 1e-9 ? G : null;
+}
+// a walk's state ([tile, the edge it comes in by], along the grid [corner, the corner it comes from]) moved by map M
+function movedStart(g, start, grid, M) {
+  const across = (u) => M(u, grid);
+  if (grid) return [across(start[0]), across(start[1]), start[2], start[3], ...start.slice(4).map((t) => M(t, false))]; // (its corners turned; a pivot or parity walk's p, q kept; a Klein bottle's frame moved)
+  const [t, entry] = start,
+    k = g.sides,
+    b = across(t),
+    from = across(g.nbr[k * t + entry]);
+  for (let e = 0; e < k; e++) if (g.nbr[k * b + e] === from) return [b, e, ...start.slice(2)]; // (a pivot or parity walk's p, q kept)
+  throw new Error('no tile turned from the start');
 }
 // how far apart group G's maps set a battle's walkers from A's start (their places' points, along the grid a corner's, on
 // cells a tile's middle): their nearest pair's distance (0: on an axis of one of its turns, some start together)
@@ -17726,7 +17715,7 @@ const rotationAxis = (M) => {
 // symmetry nearest A's start (a face's centre, a corner) whose edges out of the grid's corners nearest it (one, or a ring)
 // are K or a multiple of K: each walker at an edge's outer end, come from the ring, every so many edges round it (sphere of
 // hexagons: a face's centre 3, or 6 by its size, then 2, 3 or 6 of them; a pentagon 5). None: no such point
-// A battle's starts, its tabs over the start selector: Symmetric, A's start moved by the surface's symmetries (battleStarts,
+// A battle's starts, its tabs over the start selector: Symmetric, A's start moved by the surface's symmetries (battleMaps,
 // the start picked); Centred, round one point (groupedStarts); Random, each walker's anywhere (randomStarts, its draw
 // battleSeed). Kept in the link: gr (1 Centred, 2 Random), rs (its draw)
 const STARTS_WAYS = [
@@ -17847,19 +17836,22 @@ const groupedCan = (w, size = null, teams = walkTeams) => {
     g = battleMode(w) && mode.grid && teams > 1 && pickedMesh(w, size); // (a battle's: two walkers or more)
   return !!g && !!groupedStarts(g, walkStart(g, mode), teams);
 };
-// a battle's starts (see battleStarts; grouped, groupedStarts', where it can), or none, said in the status: A's place on an axis of the solid
+// a battle's starts and the maps that moved A's to them (symmetric, see battleMaps; else null: grouped, groupedStarts',
+// where it can, or Random's), or none, said in the status: A's place on an axis of the solid
 function battleStartsOrSay(g, start, grid, K, seed = battleSeed) {
   // (seed: Random's draw, another a hunt's)
   const way = startsWayNow(),
-    starts =
+    own =
       way === 'random'
         ? randomStarts(g, start, grid, K, seed)
-        : (way === 'centred' && grid && groupedStarts(g, start, K)) || battleStarts(g, start, grid, K);
+        : way === 'centred' && grid && groupedStarts(g, start, K),
+    maps = way === 'random' || own ? null : battleMaps(g, start, grid, K),
+    starts = own || maps?.map((M, s) => (s ? movedStart(g, start, grid, M) : start));
   if (!starts)
     walkSaid = battleGroups(g, K, 1).length
       ? `This start lies on an axis of the surface: ${K} walkers cannot start apart from it (another start, or fewer walkers)`
       : `This surface has no ${K} symmetries alike at this size: ${K} walkers cannot start alike (another size, or another count)`;
-  return starts;
+  return starts && { starts, maps };
 }
 // The surface's turns' groups of K (each its matrices, the identity first), once a mesh: made from one or two of its
 // turns (see surfaceRotations), closed under their products (the icosahedron's: 2, 3, 4, 5, 6, 10, 12; the cube's: 2,
@@ -18045,7 +18037,7 @@ function sheetPlacesOf(g) {
     }
   return { key, cornerAt, placed };
 }
-// a ring's group of K shifts for a battle's starts (see battleStarts), its places' maps (see sheetShift), the identity first:
+// a ring's group of K shifts for a battle's starts (see battleMaps), its places' maps (see sheetShift), the identity first:
 // its colours' parts as Life's, its length made for K (see ringColours): a torus's blocks, a round its ring by b round its
 // tube (see torusBlocks); a Möbius strip's K stretches along its loop, its two faces (2L); a Klein bottle's half turn round
 // its tube, a Duel only (a shift along it turns its tiles over past its seam: a walker there would walk as A's mirror);
@@ -18072,7 +18064,7 @@ function mobiusShiftsApart(g, K, u, grid) {
   const P = grid ? g.verts : g.cen;
   return images.every((v) => v >= 0) && pointsApart(images.map((v) => [0, 1, 2].map((d) => P[3 * v + d]))) > 1e-9;
 }
-// the groups of K for a battle's starts (see battleStarts), each its places' maps (see placeMap), the identity first: a
+// the groups of K for a battle's starts (see battleMaps), each its places' maps (see placeMap), the identity first: a
 // ring's shifts (see ringGroup); the surface's turns in space (see rotationGroups: a solid's, a ring's round its axis, a
 // Möbius strip's half turn) that keep its tiles' corners' order (see turnMap; the mirror through its centre never does)
 const battleGroups = (g, K, enough = Infinity, good = null) => {
@@ -18998,10 +18990,11 @@ function battleWinner(P) {
 }
 // a battle built: its player (played to its end), its walkers' names (A's, B's, C's), winner and deaths (each walker's
 // step, −1: alive at the end; kept as played to its end, its player then moved to the step shown)
-function battleOf(P) {
+function battleOf(P, maps) {
+  // (maps: those that moved A's start to each walker's, symmetric starts', else null: see battleStartsOrSay)
   const names = [shownSymbol, ...RIVALS.slice(0, P.K - 1).map((id) => formulaOf($(id).value).sym)],
     winner = battleWinner(P);
-  return { player: P, names, winner, deaths: [...P.dead] };
+  return { player: P, names, winner, deaths: [...P.dead], maps };
 }
 // a fight's title, a battle's (its walkers' numbers) and Life's in colours (its pictures, its patterns): each its team's
 // name in its colour, vs between them (their scores, and who won, in the ranking under it)
@@ -19386,7 +19379,13 @@ async function startBattleHunt() {
       battleHunt.tried.add(key);
       const placed = battleStartsOrSay(g, walkStart(g, mode, at.n), grid, K, at.seed);
       if (placed)
-        return { id: id++, fs: picks.map((j) => (huntVary.formulas ? numbers : shownFs)[j]), order: picks, at, placed }; // (a start on an axis: no battle there)
+        return {
+          id: id++,
+          fs: picks.map((j) => (huntVary.formulas ? numbers : shownFs)[j]),
+          order: picks,
+          at,
+          placed: placed.starts,
+        }; // (a start on an axis: no battle there)
     }
     return null;
   };
@@ -40304,12 +40303,14 @@ const tileUp = (t) => [0, 1, 2].map((d) => walk.shape.nrm[3 * t + d]),
         ) / 2;
     return area;
   };
-// the walkers on a surface, each { P, tileAt, before (its way in), colour, living }: a battle's, each its team's colour, else
+// the walkers on a surface, each { P, tileAt, before (its way in), start (on a surface: its first place, the one it comes
+// from), colour, living }: a battle's, each its team's colour, else
 // the walk's, in Life's live colour (white on a dark page, black on a light one); none in Life
 function walkersOf() {
   if (!walk.n || walk.life || walk.rows) return [];
   const at = (i) => [walk.wx[i], walk.wy[i], walk.wz[i]],
-    onTiles = (tileAt) => ({ upAt: (i) => tileUp(tileAt(i)), areaAt: (i) => tileArea(tileAt(i)) });
+    onTiles = (tileAt) => ({ upAt: (i) => tileUp(tileAt(i)), areaAt: (i) => tileArea(tileAt(i)) }),
+    onPlaces = (P, start) => ({ P, start, before: placePoint(start[1]) }); // (start: its first place, the one it comes from)
   if (!walk.sphere)
     return [
       {
@@ -40323,24 +40324,30 @@ function walkersOf() {
     ]; // (a 3D walk's: its head a face's, in its cube as it fades in, see gpuCubes; its start the way it goes)
   if (!walk.battle)
     return [
-      { P: at, ...onTiles((i) => walk.tile[i]), before: placePoint(walk.came), colour: LIFE_ALIVE, living: true },
+      {
+        ...onPlaces(at, [walk.vert ? walk.vert[0] : walk.tile[0], walk.came]),
+        ...onTiles((i) => walk.tile[i]),
+        colour: LIFE_ALIVE,
+        living: true,
+      },
     ];
   const B = walk.battle.player;
   B.to(stepShown);
   return B.places.map((Q, s) => ({
-    P: (i) => placePoint(Q[i]),
+    ...onPlaces((i) => placePoint(Q[i]), [Q[0], cameFrom(walk.geo, !!walk.vert, B.starts[s])]),
     ...onTiles((i) => (walk.vert ? walk.geo.grid.tileOf[Q[i]] : Q[i])),
-    before: placePoint(cameFrom(walk.geo, !!walk.vert, B.starts[s])),
     colour: teamColour(s),
     living: B.dead[s] < 0 || B.dead[s] > stepShown,
   }));
 }
-// the heads: each living walker's ogive at its step (see ogiveOf); the starts: each walker's flag in its frame at step 0
-// (see flagOf: its start's own heading, the way it came by); each [its corners, its colour]
-const headsOf = () =>
+// the heads: each living walker's ogive at its step (see ogiveOf); each [its corners, its colour]
+const headsOf = () => walkersOf().flatMap((W) => (W.living ? [[ogiveOf(headFrame(W, glideAt())), W.colour]] : []));
+// the starts' heads: each walker's flag in its frame at step 0 (see flagOf: its start's own heading, the way it came by);
+// the start number hovered (see startsShown), its cone there too (as its head at step 0); each [its corners, its colour]
+const startHeads = () =>
   walkersOf().flatMap((W) => [
-    ...(W.living ? [[ogiveOf(headFrame(W, glideAt())), W.colour]] : []),
     [flagOf(headFrame(W, 0)), W.colour],
+    ...(startsShown ? [[ogiveOf(headFrame(W, 0)), W.colour]] : []),
   ]);
 // gliding, a head turns from its last step's heading to its next one's in the first TURN_SHARE of the step (a quarter), as it goes on:
 // turned round the tile's normal n by that share w of the angle between them (a U-turn: half a turn)
@@ -42880,7 +42887,7 @@ function gpuSurface(paint, path) {
     }
     gpuHeads(D, rp, pass, slotOf({ glass: pass, cut, alpha: GLASS_ALPHA }));
     // a size or the start hovered: the motif round its tile (see middleTile, motifOf), the starts (see startMarks), each part
-    // its colour and its width on the screen, unfaded, over the tiles; the start chosen's head
+    // its colour and its width on the screen, unfaded, over the tiles; the starts' flags (and cones, hovered: see startHeads)
     const marks = [
       ...(motifShown && middleTile.g === g && middleTile.t >= 0 ? [['motif', motifRibbons(D, g, sh, R)]] : []),
       ...(startsShown ? [['starts', startMarks(D, g, sh, R)]] : []),
@@ -42908,15 +42915,14 @@ function gpuSurface(paint, path) {
       }
     }
     if (axesShown()) gpuAxes(D, rp, pass, slotOf(axesLook(pass)));
-    if (startsShown)
-      gpuHeads(
-        D,
-        rp,
-        pass,
-        slotOf({ glass: pass, cut, alpha: GLASS_ALPHA, fade: 0 }),
-        startMarks(D, g, sh, R).heads,
-        'startHead',
-      );
+    gpuHeads(
+      D,
+      rp,
+      pass,
+      slotOf({ glass: pass, cut, alpha: GLASS_ALPHA, ...(startsShown && { fade: 0 }) }),
+      startHeads(),
+      'start',
+    );
   };
   gpuFrame(enc, drawAll);
   const picking =
@@ -43500,6 +43506,7 @@ function gpuCubes(count, of, make, reach) {
     rp.draw(verts, count);
   }
   gpuHeads(D, rp, 0, slot); // (a 3D walk's head and start's flag, as a surface's)
+  gpuHeads(D, rp, 0, slot, startHeads(), 'start');
   if (axesShown()) gpuAxes(D, rp, 0, gpuView(D.words, 2, depth, axesLook(0)));
   rp.end();
   device.queue.writeBuffer(D.uni, 0, D.words, 0, 1536);
@@ -45936,7 +45943,7 @@ $('startLabel').addEventListener('change', () => {
   const n = Math.max(1, Math.min(Number($('startLabel').value), modeStarts().length));
   if (n !== startNo()) setStart(n);
 });
-// Hovering the start row ([− start +]) shows every start, the chosen one yellow (see startMarks), and leaves the view as it
+// Hovering the start row ([− start +]) shows each walker's starts, its own in its colour (see startMarks), and leaves the view as it
 // was, whatever − and + do. Leaving the row, Auto-fit and Centered take over again
 $('startRow').addEventListener('mouseenter', () => {
   startsShown = true;

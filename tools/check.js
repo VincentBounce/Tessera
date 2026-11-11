@@ -857,7 +857,7 @@ function checkFirstStarts(fail) {
 }
 
 // Battles fair: every walk on a surface (see battleMode), at its size, offers a count of walkers past Solo, and in each
-// count offered every walker, its digits A's, walks A's path moved by its map (see battleStarts, placeMap), step for step,
+// count offered every walker, its digits A's, walks A's path moved by its map (see battleMaps, placeMap), step for step,
 // till one dies: none its mirror. A night's (4 minutes)
 async function battlesFair(fail) {
   let checked = 0;

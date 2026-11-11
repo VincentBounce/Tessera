@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.860';
+const VERSION = '0.4.861';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -1076,7 +1076,7 @@ const PRESETS = {
   cbrt2: {
     group: 'Constants',
     sym: '∛2',
-    name: 'The Delian constant',
+    name: 'Delian constant',
     detail: 'cbrt(2) · doubling the cube: no ruler and compass can draw it (Wantzel, 1837)',
     f: 'cbrt(2)',
     wiki: 'Doubling the cube',
@@ -1084,7 +1084,7 @@ const PRESETS = {
   plastic: {
     group: 'Constants',
     sym: 'P',
-    name: 'The plastic number',
+    name: 'Plastic number',
     detail: "x³ = x + 1 · the golden ratio's little brother",
     f: 'cbrt((9+sqrt(69))/18)+cbrt((9-sqrt(69))/18)',
     wiki: 'Plastic ratio',
@@ -1100,7 +1100,7 @@ const PRESETS = {
   fifth: {
     group: 'Constants',
     sym: 'log₂ 3',
-    name: 'The perfect fifth',
+    name: 'Perfect fifth',
     detail: 'log(3,2) · rising by fifths never lands on an octave: why pianos are tuned equal',
     f: 'log(3,2)',
     wiki: 'Perfect fifth',
@@ -1132,7 +1132,7 @@ const PRESETS = {
   basel: {
     group: 'Constants',
     sym: 'π²/6',
-    name: 'The Basel problem',
+    name: 'Basel problem',
     detail: 'pi^2/6 · 1 + 1/4 + 1/9 + 1/16 + … (Euler, 1734)',
     f: 'pi^2/6',
     wiki: 'Basel problem',

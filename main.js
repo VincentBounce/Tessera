@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.836';
+const VERSION = '0.4.837';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -10859,31 +10859,40 @@ function compute() {
   // The status line under the Number: how the digits came (time, cache), what the number is, and
   // warnings; what is shown is in the description (describe)
   const note = FORMULA_NOTES[F.root] ? FORMULA_NOTES[F.root](base) : '';
+  // the walk built and shown, one way for all (no digit read, a sequence's, a number's): the gauge at once and a frame
+  // painted before it (building stops the page, the gauge's band sliding on: see showWaits), unless another compute came
+  // meanwhile; then its status line (status: its words once built, walkSaid's among them), its words, the Full number's chip
+  const buildShown = (status, numbered) => {
+    const waiting = `build${job}`;
+    waitBegin(waiting, 'Building (the page stops meanwhile)', 0);
+    requestAnimationFrame(() =>
+      setTimeout(() => {
+        if (job === computeJob) timed('Build', buildWalk); // (its times in Display's Times, see timings)
+        waitEnd(waiting);
+        if (job !== computeJob) return;
+        $('status').textContent = status();
+        describe(base);
+        $('copyNumber').hidden = !numbered;
+        showAll();
+        applyPendingView();
+      }),
+    );
+  };
 
   if (!n) {
     // (no digit read: no number computed, the walk or the start built at once)
     setCurrent({ intPart: '', digits: new Uint8Array(0) }, base, kind, null);
     if (!elementaryReady(compute)) return; // (Elementary's rows on their way, see elementaryReady)
-    $('status').textContent = '';
     setTiming('Digits');
-    timed('Build', buildWalk);
-    describe(base); // (the bar: a creature's name and rule, a start's)
-    $('copyNumber').hidden = true;
-    showAll();
-    applyPendingView();
+    buildShown(() => '', false); // (the bar: a creature's name and rule, a start's)
     return;
   }
   if (kind === 'seq') {
     setCurrent(seqDigits(F.ast, want, base), base, kind);
     if (!elementaryReady(compute)) return; // (Elementary's rows on their way: then all again, its digits cached)
     if (!rivalsReady(compute)) return; // (a battle's other numbers on their way, see rivalsReady)
-    $('status').textContent = note;
     setTiming('Digits'); // (a sequence's: made at once)
-    timed('Build', buildWalk);
-    describe(base);
-    $('copyNumber').hidden = false;
-    showAll();
-    applyPendingView();
+    buildShown(() => note, true);
     return;
   }
 
@@ -10891,20 +10900,19 @@ function compute() {
     setCurrent(entry, base, kind, smallExact(F.ast));
     if (!elementaryReady(() => done(entry))) return; // (Elementary's rows on their way, see elementaryReady)
     if (!rivalsReady(() => done(entry))) return; // (a battle's other numbers on their way, see rivalsReady)
-    timed('Build', buildWalk); // (its times in Display's Times, see timings)
-    $('status').textContent = [
-      F.root === 'randprime' &&
-        `a random ${formatNumber(Number(F.ast.args[0].v))}-digit probable prime, found after ${formatNumber(entry.tests)} Miller–Rabin tests`,
-      note,
-      walkSaid,
-      entry.uncertain && '⚠ the value is extremely close to a round number: the last digits could be off by one',
-    ]
-      .filter(Boolean)
-      .join(' · ');
-    describe(base);
-    $('copyNumber').hidden = false;
-    showAll();
-    applyPendingView();
+    buildShown(
+      () =>
+        [
+          F.root === 'randprime' &&
+            `a random ${formatNumber(Number(F.ast.args[0].v))}-digit probable prime, found after ${formatNumber(entry.tests)} Miller–Rabin tests`,
+          note,
+          walkSaid,
+          entry.uncertain && '⚠ the value is extremely close to a round number: the last digits could be off by one',
+        ]
+          .filter(Boolean)
+          .join(' · '),
+      true,
+    );
   };
   const hit = digitsCache[key];
   if (hit && hit.digits.length >= want) {
@@ -10943,26 +10951,16 @@ function compute() {
     }
     const entry = { intPart: d.intPart, digits: d.digits, tests: d.tests, uncertain: d.uncertain };
     digitsCache[key] = entry;
-    // a long walk (millions of an ant's steps take seconds): the gauge shows first, a frame to paint it,
-    // and slides on while the walk is built (the page stops meanwhile)
-    const finish = () => {
-      if (job !== computeJob) return;
-      busy = false; // the link follows the walk built (the gauge stays on until it is)
-      setTiming('Digits', d.ms);
-      done(entry);
-      if (!elementaryWorker) setBusy(false); // (Elementary's rows on their way: busy till they are, see elementaryReady)
-    };
-    if (n < 1e6) {
-      finish();
-      return;
-    }
-    waitBegin('busy', 'Building the walk (the page stops meanwhile)', 0);
-    requestAnimationFrame(() => setTimeout(finish, 0)); // (the gauge painted first)
+    if (job !== computeJob) return;
+    busy = false; // the link follows the walk built (the gauge stays on until it is)
+    setTiming('Digits', d.ms);
+    done(entry);
+    if (!elementaryWorker) setBusy(false); // (Elementary's rows on their way: busy till they are, see elementaryReady)
   };
   numberWorker.postMessage({ ast: F.ast, n: want, base, mag: F.mag, nodes: F.nodes });
 }
 
-// The long waits, every one (a number's digits, a battle's others', Elementary's rows, the walk built, a Gallery card's setup):
+// The long waits, every one (a number's digits, a battle's others', Elementary's rows, the walk built, wherever it comes from):
 // each by its key, its words (the gauge's tooltip) and its share done (null: not known), shown past its delay (WAIT_DELAY; 0,
 // at once: a build that stops the page), the oldest over the length's field (see showWaits)
 const WAIT_DELAY = 300,
@@ -46372,7 +46370,6 @@ function setupRow(name, detail, x) {
     preview.hidden = !thumbnail;
     if (thumbnail) preview.src = thumbnail.src;
     cardShown = x;
-    waitBegin('card', `Loading ${name}`);
     requestAnimationFrame(() =>
       setTimeout(() => {
         // (after the frame painted)
@@ -46380,12 +46377,8 @@ function setupRow(name, detail, x) {
         $('autoFit').checked = true;
         $('autoRotate').checked = false;
         const built = whenBuilt();
-        if (!applySetup(setup)) {
-          preview.hidden = true;
-          waitEnd('card');
-        } // (a setup that cannot be: nothing to wait for)
+        if (!applySetup(setup)) preview.hidden = true;
         built.then(() => {
-          waitEnd('card');
           if (cardShown !== x) return;
           adoptShown(x, b); // (its setup as the app writes it now, its name its bar's, see adoptShown)
           requestAnimationFrame(() => {

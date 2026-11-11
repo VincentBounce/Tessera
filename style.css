@@ -2,6 +2,11 @@
   --tile-width: 57px; /* a tile's width, every tile alike: .nav-shapes, as many a row as fit (4 in the settings' column) */
   --tile-height: 55px; /* a tile's height, every tile alike */
   --tile-gap: 4px; /* between two tiles */
+  --track-background: color-mix(
+    in srgb,
+    var(--text-color) 8%,
+    transparent
+  ); /* a pill group's track: a wash of the text's colour, seen on any box, in either theme */
   --badged-tile-gap: 8px; /* between two tiles that carry a badge: its 7 px past their corner clear of the next (see .badge) */
   --panel-width: 280px; /* the settings' column (.panel) */
   /* the text's sizes, four, each element one of them: */
@@ -309,7 +314,7 @@ input[type='range'] {
   gap: 2px;
   padding: 3px;
   border-radius: 999px;
-  background: var(--page-background);
+  background: var(--track-background);
 } /* its choices, pills in a pill: the one picked raised */
 .pill-group button {
   padding: 4px 12px;

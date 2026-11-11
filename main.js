@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.847';
+const VERSION = '0.4.848';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -45938,10 +45938,10 @@ function cellModePicture(look, ant) {
     );
   if (look === 'digit' && ant) return statesPicture();
   if (look === 'digit') {
-    // Commands: L R, each in its turn's colour (left blue, right pink, see antTurnColour)
-    const letter = (x, text, colour) =>
-      `<text x="${x}" y="17.5" font-family="ui-monospace, Menlo, monospace" font-weight="700" font-size="15" text-anchor="middle" fill="${colour}">${text}</text>`;
-    return `<svg viewBox="0 0 24 24" aria-hidden="true">${letter(6.5, 'L', DIRECTION_COLOURS['←'])}${letter(17.5, 'R', DIRECTION_COLOURS['→'])}</svg>`;
+    // Commands: a rule's L N R in the rules' font (.rule), each in its turn's colour (left blue, straight on gold, right pink)
+    const letter = (x, text, way) =>
+      `<text class="rule" x="${x}" y="16" font-size="12" text-anchor="middle" fill="${DIRECTION_COLOURS[way]}">${text}</text>`;
+    return `<svg viewBox="0 0 24 24" aria-hidden="true">${letter(4.5, 'L', '←')}${letter(12, 'N', '↑')}${letter(19.5, 'R', '→')}</svg>`;
   }
   // Heatmap: a hot core, cooling outwards
   return heatRings(g);

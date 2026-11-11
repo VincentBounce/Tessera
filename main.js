@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.838';
+const VERSION = '0.4.839';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -10331,8 +10331,11 @@ const tilingNameOf = (w) => {
       ? NAV[w][2]
       : null;
 };
+// the settings changed from mode v to w: the menu's levels, a kind's own (its rule, its side) compared within one kind only
+// (Life's and a walk's mean other things: Life's empty side is no Spiral's), and the tiling by name
 const modeChanges = (v, w) =>
-  [0, 1, 2, 3, 4].filter((i) => NAV[v][i] !== NAV[w][i]).length + (tilingNameOf(v) !== tilingNameOf(w));
+  [0, 1, 2, 3, 4].filter((i) => (i < 3 || NAV[v][0] === NAV[w][0]) && NAV[v][i] !== NAV[w][i]).length +
+  (tilingNameOf(v) !== tilingNameOf(w));
 const changes = (a, b) => modeChanges(a.w, b.w) + SETUP_FIELDS.filter((f) => a[f] !== b[f]).length;
 // The shortest paths from the setup in use to one fits takes, at n clicks: breadth first, each setup once, layer by layer
 // till one holds some; of these the fewest settings changed, each its clicks [key, words] (budget: setups tried at most).

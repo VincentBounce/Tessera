@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.842';
+const VERSION = '0.4.843';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -45443,8 +45443,11 @@ $('ocean').addEventListener('change', () => {
 pillRow(
   $('cutRow'),
   'Cut',
-  "A cross-section by a fixed plane through the middle, the half on its axis's side gone, the inside showing: Off, or the plane facing S, E or Up (the view's corner draws E, N and Up: S the way opposite N)",
-  CUT_AXES.map(([name]) => [name]),
+  "A cross-section by a fixed plane through the middle (the view's corner draws E, N and Up: S the way opposite N)",
+  CUT_AXES.map(([name, axis]) => [
+    name,
+    axis ? `The half on the ${name} side gone, the inside showing` : 'The figure whole',
+  ]),
   cutAxis,
   defaultOf('cut', tabMode()),
   setCut,
@@ -45833,9 +45836,9 @@ $('heatmap').addEventListener('change', () => {
 });
 // The areas a walk closes, as tiles: Empty (none), Light (translucent, the line showing through), Plain
 const AREA_MODES = [
-  ['empty', 'Empty', 'Empty: none filled'],
-  ['light', 'Light', 'Light: translucent, its line showing through'],
-  ['plain', 'Plain', 'Plain: in the colour of the step that closed them'],
+  ['empty', 'Empty', 'None filled'],
+  ['light', 'Light', 'Translucent, its line showing through'],
+  ['plain', 'Plain', 'In the colour of the step that closed them'],
 ];
 function renderAreaModes() {
   const light = shows('translucent', tabMode());
@@ -46265,7 +46268,7 @@ $('galleryTools').replaceChildren(
     id: 'galleryDelete',
     pic: icon('trash'),
     text: 'Delete',
-    title: 'Delete the cards selected, with their thumbnails',
+    title: 'The cards selected, with their thumbnails',
     click: deleteSelected,
   }),
   tile({

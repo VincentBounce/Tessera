@@ -10,7 +10,7 @@
   <meta property="og:url" content="https://vincentbounce.github.io/Tessera/">
   <meta property="og:type" content="website">
   <link id="favicon" rel="icon">  <!-- the app's logo, set at start-up (see appLogo) -->
-  <link rel="stylesheet" href="style.css?v=0.4.817">
+  <link rel="stylesheet" href="style.css?v=0.4.818">
   <script>  // the theme before the first paint (see applyTheme)
     try { const t = localStorage.getItem('tesseraTheme') || 'system'; document.documentElement.dataset.theme = t === 'system' ? (matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark') : t; } catch { document.documentElement.dataset.theme = 'dark'; }
   </script>
@@ -392,8 +392,7 @@
           <div class="gallery-tools-row">  <!-- three groups: the Gallery's tools; in the middle the selection's; at the right the setup in view's -->
             <div id="galleryTools" class="nav-shapes"></div>  <!-- Import, Export, Delete, Refresh -->
             <div class="gallery-select">
-              <p id="selectedWords" class="caption" hidden></p>  <!-- while cards are selected: how many (see syncSelection) -->
-              <div id="gallerySelectTiles" class="nav-shapes"></div>  <!-- All, None -->
+              <div id="gallerySelectTiles" class="nav-shapes"></div>  <!-- Select: none, some, all (see syncSelection) -->
             </div>
             <div class="gallery-in-view">
               <div id="galleryViewTiles" class="nav-shapes"></div>  <!-- Star, Share link -->
@@ -522,10 +521,10 @@
     </div>
   </main>
 
-  <script src="pixelarticons.js?v=0.4.817"></script>
-  <script src="punks.js?v=0.4.817"></script>
-  <script src="loops.js?v=0.4.817"></script>
-  <script src="emoji.js?v=0.4.817"></script>
-  <script src="main.js?v=0.4.817"></script>
+  <script src="pixelarticons.js?v=0.4.818"></script>
+  <script src="punks.js?v=0.4.818"></script>
+  <script src="loops.js?v=0.4.818"></script>
+  <script src="emoji.js?v=0.4.818"></script>
+  <script src="main.js?v=0.4.818"></script>
 </body>
 </html>

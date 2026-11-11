@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.817';
+const VERSION = '0.4.818';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -6897,6 +6897,13 @@ const tile = ({
   if (click) b.addEventListener('click', click);
   return setTile(b, { on, can, mark, again, turn, byDefault, greyed, whyNot, at });
 };
+// A badge: a count on a tile's top right corner (the cards selected: on Select and the tools acting on them), none at 0
+const setBadge = (el, count) => {
+  const badge = el.querySelector(':scope > .badge');
+  if (!count) return badge?.remove();
+  (badge ?? el.appendChild(Object.assign(document.createElement('span'), { className: 'badge' }))).textContent =
+    formatNumber(count);
+};
 // (byDefault: as the tooltip tells it, see tip: 'yes', the choice picked at first; 'on' or 'off', a switch's at first)
 // (greyed: why it is, as the tooltip tells it, a sentence: 'Not in Solo.', 'The Gallery is empty.'…; greyed by it, '' allowed:
 // a control whose state no setup holds, a stepper's end, the player's; else whyNot)
@@ -8239,6 +8246,8 @@ const ICONS = (() => {
     boxTicked:
       svgPath('M6 4H18A2 2 0 0 1 20 6V18A2 2 0 0 1 18 20H6A2 2 0 0 1 4 18V6A2 2 0 0 1 6 4Z') +
       svgPath('M8 12.5L11 15.5L16.5 9'), // (it ticked: all selected)
+    boxPartial:
+      svgPath('M6 4H18A2 2 0 0 1 20 6V18A2 2 0 0 1 18 20H6A2 2 0 0 1 4 18V6A2 2 0 0 1 6 4Z') + svgPath('M8 12H16'), // (a dash: some selected)
     copy:
       '<rect x="8.5" y="8.5" width="12" height="12" rx="2"/>' +
       svgPath('M15.5 8.5V5.5A2 2 0 0 0 13.5 3.5H5.5A2 2 0 0 0 3.5 5.5V13.5A2 2 0 0 0 5.5 15.5H8.5'),
@@ -39211,7 +39220,7 @@ let galleryCards = [];
 const selectedNames = new Set();
 const selecting = () => selectedNames.size > 0;
 const NOT_WHILE_SELECTING = 'Not while selecting: Export, Delete and Refresh act on the cards selected.';
-const allSelected = () => galleryCards.length > 0 && galleryCards.every(({ x }) => selectedNames.has(x.name));
+const halfOrFewer = () => 2 * selectedNames.size <= galleryCards.length; // (Select's click: all; more, none)
 function syncSelection() {
   for (const name of selectedNames) if (!galleryCards.some(({ x }) => x.name === name)) selectedNames.delete(name); // (cards shown only: one gone by its ★, Delete, Import… no more selected)
   $('yourList').classList.toggle('selecting', selecting());
@@ -39222,10 +39231,17 @@ function syncSelection() {
   setTile($('galleryDelete'), {
     greyed: selecting() ? '' : 'None selected: tick a card (its box, on its hover).',
   });
-  setTile($('selectAll'), { on: allSelected(), greyed: galleryCards.length ? '' : 'The Gallery is empty.' }); // (a switch: on, every card selected)
-  setTile($('selectNone'), { greyed: selecting() ? '' : 'None selected.' });
-  $('selectedWords').hidden = !selecting();
-  $('selectedWords').textContent = `${selectedNames.size} selected: Export, Delete and Refresh act on them`;
+  // Select: its picture how many are selected (none, some, all; the one tile whose picture tells its state, its name the
+  // same), on with any, its badge their count, as the tools acting on them (Export, Delete, Refresh)
+  const n = selectedNames.size,
+    all = galleryCards.length,
+    b = $('gallerySelect');
+  b.querySelector('svg').outerHTML = icon(!n ? 'boxEmpty' : n < all ? 'boxPartial' : 'boxTicked');
+  b.title = !n
+    ? 'None selected: a click selects them all (or tick a card, its box on its hover)'
+    : `${formatNumber(n)} of ${formatNumber(all)} selected: a click ${halfOrFewer() ? 'selects them all' : 'lets them all go'}`;
+  setTile(b, { on: n > 0, greyed: all ? '' : 'The Gallery is empty.' });
+  for (const id of ['gallerySelect', 'galleryExport', 'galleryDelete', 'refreshThumbnails']) setBadge($(id), n);
 }
 // Delete: the cards selected gone, their thumbnails with them (but one another card still shows)
 function deleteSelected() {
@@ -46494,7 +46510,7 @@ function galleryTab() {
 // The Gallery's tools, tiles (the cards selected, see selectedNames): Import (added to them, a name already used numbered),
 // Export, Delete (the cards selected), Refresh (Erase all: Tessera's page, Clean Tessera's storage in this browser),
 // then Share link (the link to what is shown)
-// All, None: every card shown selected, or none (their pictures a card's check box, ticked or empty)
+// Select: half or fewer selected, a click selects every card shown; more, it lets them all go (see syncSelection)
 const selectCards = (all) => {
   selectedNames.clear();
   if (all) for (const { x } of galleryCards) selectedNames.add(x.name);
@@ -46502,21 +46518,7 @@ const selectCards = (all) => {
   syncRefreshTile();
 };
 $('gallerySelectTiles').replaceChildren(
-  tile({
-    id: 'selectAll',
-    pic: icon('boxTicked'),
-    text: 'All',
-    toggle: true,
-    title: 'Select all: every card selected; on, a click lets them all go',
-    click: () => selectCards(!allSelected()),
-  }),
-  tile({
-    id: 'selectNone',
-    pic: icon('boxEmpty'),
-    text: 'None',
-    title: 'Select none: every card let go',
-    click: () => selectCards(false),
-  }),
+  tile({ id: 'gallerySelect', pic: icon('boxEmpty'), text: 'Select', click: () => selectCards(halfOrFewer()) }),
 );
 $('galleryTools').replaceChildren(
   tile({

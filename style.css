@@ -738,9 +738,6 @@ button.switch.active:hover:not(:disabled) {
 .gallery-tools-row .nav-shapes button {
   width: var(--tile-width);
 }
-.gallery-tools-row #selectedWords {
-  margin: 0 8px 4px 0;
-}
 #inViewPicture {
   height: calc(var(--tile-height) + 4px + 18px);
   aspect-ratio: 5 / 4;
@@ -2299,6 +2296,24 @@ button.mark.active::after {
   background: linear-gradient(135deg, transparent 50%, var(--accent-color) 50%);
 }
 
+:has(> .badge) {
+  position: relative;
+}
+.badge {
+  position: absolute;
+  top: -7px;
+  right: -7px;
+  min-width: 18px;
+  padding: 0 5px;
+  border-radius: 9px;
+  background: var(--accent-color);
+  color: var(--on-accent-color);
+  font-size: var(--caption-text-size);
+  font-weight: 600;
+  line-height: 18px;
+  text-align: center;
+  pointer-events: none;
+} /* a count on a tile's top right corner (see setBadge): the Gallery's cards selected */
 .gen-link,
 .walker-link {
   color: inherit;

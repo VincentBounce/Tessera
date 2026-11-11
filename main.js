@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.878';
+const VERSION = '0.4.879';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -45951,7 +45951,7 @@ function showNumber() {
     ];
   };
   const shown = rows.map((r) => (ten ? base10Digits(r) : inBase(r))),
-    text = rows.map((r, j) => `${r.name} ${baseWords(b)} ${shown[j][0]}`).join('\n');
+    text = rows.map((r, j) => `${r.name} ${baseWords(b)} ${shown[j][0]}`).join('\n\n'); // (a battle's: a blank line between)
   v.innerHTML = `<div class="tut-body">${rows
     .map((r, j) => {
       const period = r.ratio && ratioDigits(b, r.ratio),

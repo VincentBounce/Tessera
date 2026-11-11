@@ -19,6 +19,7 @@
   --player-open-width: 680px; /* the player bar open (hovered, or touched): its stats and strip in full */
   --page-background: #0e1116;
   --panel-background: #161b22;
+  --raised-background: #2d333b; /* what stands out of a track: a pill picked, the Shape's knob (see .pill-group) */
   --border-color: #2a313c;
   --text-color: #e6edf3;
   --muted-text-color: #8b949e;
@@ -47,10 +48,11 @@
   --sweet-spot-color: #bc8cff; /* a walk's sweet spot: its link on the step line, its mark on the curve (see sweetSpot) */ /* where a run ends or loops: its link on the step line, its mark on the curve (turquoise: no curve's colour) */
   color-scheme: dark;
 }
-/* Light theme (Display box: Light, or System on a light system; see applyTheme) */
+/* Light theme (the Display box's theme switch on, or the system's at a first visit; see applyTheme) */
 :root[data-theme='light'] {
   --page-background: #f6f8fa;
   --panel-background: #ffffff;
+  --raised-background: #ffffff;
   --border-color: #d0d7de;
   --text-color: #1f2328;
   --muted-text-color: #656d76;
@@ -317,7 +319,7 @@ input[type='range'] {
   width: 24px;
   height: 24px;
   border-radius: 50%;
-  background: var(--panel-background);
+  background: var(--raised-background);
   box-shadow: 0 0 0 1px var(--border-color);
 }
 .shape-slider input::-moz-range-thumb {
@@ -325,7 +327,7 @@ input[type='range'] {
   height: 24px;
   border: 0;
   border-radius: 50%;
-  background: var(--panel-background);
+  background: var(--raised-background);
   box-shadow: 0 0 0 1px var(--border-color);
 } /* (its knob as a pill picked: see .pill-group) */
 #shapeFlat {
@@ -373,7 +375,7 @@ input[type='range'] {
   color: var(--text-color);
 }
 .pill-group button.active {
-  background: var(--panel-background);
+  background: var(--raised-background);
   color: var(--text-color);
   box-shadow: 0 0 0 1px var(--border-color);
 }

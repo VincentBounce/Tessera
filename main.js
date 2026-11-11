@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.827';
+const VERSION = '0.4.828';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -11533,7 +11533,7 @@ document.addEventListener('mouseover', (e) => {
 // the hint, as the tooltips (each action in bold, then its gesture): the zoom first, against the view framed (×1: all of
 // it in view, see viewFor; ×2 twice as near), with the mouse's; the double-click's on the next line (see .hint)
 function showZoom() {
-  const z = view.scale / viewFor(padBounds(bounds)).scale,
+  const z = view.scale / viewFor(bounds).scale,
     x = `×${z >= 9.95 ? Math.round(z) : z.toFixed(1).replace(/\.0$/, '')}`;
   const lines = walk.is3d
     ? [
@@ -15353,7 +15353,7 @@ function applyShape() {
   const F = R * sh.extent;
   bounds = surfaceBounds();
   bounds3 = [-F, F, -F, F, -F, F];
-  if ($('autoFit').checked) fitToBounds(padBounds(bounds));
+  if ($('autoFit').checked) fitToBounds(bounds);
   needsFull = true;
   updateMorphButton();
 }
@@ -39726,7 +39726,7 @@ function advanceTo(target, until = Infinity) {
   // the one Fit view gives (surfaces follow the walker instead)
   if (reachedEnd && !walk.sphere && $('autoFit').checked) {
     includeBox(true); // (framed again round all of it, as fitWhole: a 3D walk's camera too)
-    viewGoal = viewFor(padBounds(bounds));
+    viewGoal = viewFor(bounds);
   }
 }
 
@@ -39876,7 +39876,7 @@ function includeBox(refit = false) {
 // Frame everything drawn so far
 function fitWhole() {
   includeBox(true);
-  fitToBounds(padBounds(bounds));
+  fitToBounds(bounds);
 }
 
 // Space-time: its layers all shown once its run is set up
@@ -39921,8 +39921,7 @@ function restart() {
       });
     } else bounds = planeBounds();
   }
-  if ($('autoFit').checked)
-    fitToBounds(walk.sphere || walk.plane ? padBounds(bounds) : { minX: -3, maxX: 3, minY: -3, maxY: 3 });
+  if ($('autoFit').checked) fitToBounds(bounds); // (a walk at its start, a cell: as near as viewFor lets, 40 pixels a cell)
   needsFull = true;
   statsDirty = true;
   play(false);
@@ -39943,7 +39942,7 @@ const ZOOM_IN = 60,
 const FIT_ROOM = 0.2;
 const BAR_HALF_WIDTH = 0.1; // (a 3D walk's line, its bars' half thickness: a cube's side 1, see gpuCubes)  // (a walk out of its frame: framed again with this share of its size more each side, room to grow: see tick)
 const zoomRange = () => {
-  const fit = viewFor(padBounds(bounds)).scale,
+  const fit = viewFor(bounds).scale,
     flat = !walk.is3d && !walk.sphere;
   return [
     Math.max(MIN_SCALE, fit / ZOOM_OUT),
@@ -40022,20 +40021,11 @@ function resize() {
   gpuCanvas.width = Math.round(canvasWidth * dpr);
   gpuCanvas.height = Math.round(canvasHeight * dpr);
   if (walk.plane) bounds = planeBounds(); // (a rhombus turns as the view changes shape)
-  if (first || $('autoFit').checked) fitToBounds(padBounds(bounds));
+  if (first || $('autoFit').checked) fitToBounds(bounds);
   needsFull = true;
 }
 
 // a walk's frame takes in the origin's neighbourhood; a grid or a surface is framed as it is (else a grid, from 0, sits off centre)
-function padBounds(b) {
-  if (walk.plane || walk.sphere) return b;
-  return {
-    minX: Math.min(b.minX, -3),
-    maxX: Math.max(b.maxX, 3),
-    minY: Math.min(b.minY, -3),
-    maxY: Math.max(b.maxY, 3),
-  };
-}
 
 function userMovedView() {
   viewGoal = null;
@@ -44832,10 +44822,14 @@ function tick(now = performance.now()) {
   if (walk.n && !walk.sphere && $('autoFit').checked && boundsOffscreen(viewGoal || view)) {
     // FIT_ROOM to grow (a surface's frame is fixed)
     includeBox(true); // (a 3D walk: framed again round its box now)
-    const b = padBounds(bounds);
-    const mx = (b.maxX - b.minX) * FIT_ROOM,
-      my = (b.maxY - b.minY) * FIT_ROOM;
-    viewGoal = viewFor({ minX: b.minX - mx, maxX: b.maxX + mx, minY: b.minY - my, maxY: b.maxY + my });
+    const mx = (bounds.maxX - bounds.minX) * FIT_ROOM,
+      my = (bounds.maxY - bounds.minY) * FIT_ROOM;
+    viewGoal = viewFor({
+      minX: bounds.minX - mx,
+      maxX: bounds.maxX + mx,
+      minY: bounds.minY - my,
+      maxY: bounds.maxY + my,
+    });
   }
   easeView(dt);
   if (walk.n && !walk.sphere && !walk.plane) showZoom(); // (a walk: its fit grows with it)

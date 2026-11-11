@@ -271,7 +271,6 @@ function checkMeshes(fail) {
 
 // after an action: no error, the link's mode the one shown, a surface's cells as many as said, more than one start (the crawl's, the fuzz's)
 const wait = (ms) => new Promise((go) => setTimeout(go, ms));
-// till ok() holds and nothing is being built (10 s at most): a link's own page, not the one before it, nor a wait's guess
 // ok() true and nothing waited for (the app's waits, see waitBegin: digits, a build on its way, a battle's others), 10 s at most
 const until = async (ok) => {
   for (let t = 0; t < 100 && !(ok() && !waits.size); t++) await wait(100);

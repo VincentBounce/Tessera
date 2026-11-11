@@ -265,6 +265,15 @@ textarea {
 .rule {
   font-family: var(--mono-font);
 } /* a rule's code, wherever (see ruleSpan in main.js), and a rule typed: in --mono-font */
+.external-link {
+  color: inherit;
+  font-weight: 400;
+  text-decoration: none;
+  white-space: nowrap;
+}
+.external-link:hover {
+  text-decoration: underline;
+} /* a page of another site, in a new tab: its words and ↗ (see externalLink in main.js) */
 .field input.battle-formula {
   color: var(--walker-color);
   font-weight: 700;

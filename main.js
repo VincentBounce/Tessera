@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.879';
+const VERSION = '0.4.880';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -1096,7 +1096,7 @@ const PRESETS = {
     group: 'Sequences',
     sym: 'F',
     name: 'Fibonacci word',
-    detail: '0.1011010110110…₂, the Fibonacci word (1 → 10, 0 → 1)',
+    detail: '0.1011010110110…₂: 1 becomes 10 and 0 becomes 1, again and again',
     f: 'rabbit',
     wiki: 'Fibonacci_word',
   },
@@ -6562,7 +6562,7 @@ function describe(base) {
   const walkRule = !creature && !mode.life && WALK_NETS[mode.net] ? walkRuleOf(mode) : '';
   $('barBase').hidden = !!creature || !!mode.life; // (a creature's base or colours in its rule's tooltip; Life's digits: in its description)
   $('barBase').textContent = colours ? `${colours} colours` : baseWords(base);
-  $('barBase').title = baseBubbleTitle($('barBase').textContent); // (a click shows the number, as the Formula field's chip)
+  $('barBase').title = BASE_BUBBLE_TITLE; // (a click shows the number, as the Formula field's chip)
   $('barRule').hidden = !creature && !walkRule; // (Life's: below)
   setLinks($('barRule'), ruleWords(getSetup()).html); // (a walk's, a creature's: as the Gallery writes it, see ruleWords)
   $('barRule').title = 'Its rule · A click: how it works';
@@ -7178,15 +7178,16 @@ const card = ({
 // a card's bubble at its top right: its base (where digits are read); a click shows the number in it (its card picked first),
 // or hides it. A base's words, every bubble's
 const baseWords = (base) => `base ${base}`;
-// a base bubble's title, the Formula field's and the cards' alike: a click shows the number in that base (see showNumber)
-const baseBubbleTitle = (words) => `The number in ${words}, all its digits over the view: to scroll or copy`;
+// a base bubble's words, the Formula field's and the cards' alike: a click shows the number in that base, its name (see
+// showNumber)
+const BASE_BUBBLE_TITLE = 'The number, all its digits over the view: to scroll or copy';
 const cardBubble = (base, show) => {
   const b = Object.assign(document.createElement('span'), {
     className: `bubble${show ? ' act' : ''}${baseShown(base) ? ' active' : ''}`,
     textContent: base,
   }); // (lit: the number shown in its base)
   if (show) {
-    b.title = baseBubbleTitle(base);
+    b.title = BASE_BUBBLE_TITLE;
     b.addEventListener('click', (e) => {
       e.stopPropagation();
       show();
@@ -11118,7 +11119,7 @@ function compute() {
   const base = mode.life ? lifeBase() : mode.base; // Life: K + 1 (Digits mixed: 2, see lifeBase)
   const key = digitsKey(F, base);
   $('copyNumber').textContent = baseWords(base); // (Full number's chip: the base the digits are written in)
-  $('copyNumber').title = baseBubbleTitle(baseWords(base));
+  $('copyNumber').title = BASE_BUBBLE_TITLE;
   // The status line under the Number: how the digits came (time, cache), what the number is, and
   // warnings; what is shown is in the description (describe)
   const note = FORMULA_NOTES[F.root] ? FORMULA_NOTES[F.root](base) : '';

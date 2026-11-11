@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.824';
+const VERSION = '0.4.825';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -9036,7 +9036,7 @@ function rivalsDigits(base, n, then) {
       continue;
     }
     rivalWorkers[id]?.terminate();
-    waitBegin(id, F.sym ?? rivalName(id), `Computing ${rivalName(id)}, ${F.sym ?? ''} in base ${base}`);
+    waitBegin(id, `Computing ${rivalName(id)}, ${F.sym ?? ''} in base ${base}`);
     rivalWorkers[id] = digitsWorker(F, base, n, (error) => {
       delete rivalWorkers[id];
       waitEnd(id);
@@ -10927,7 +10927,6 @@ function compute() {
     (F.kind === 'real' && quadratic && n > 1e6);
   setBusy(
     true,
-    F.root === 'randprime' ? 'Prime' : sym,
     (F.root === 'randprime'
       ? `Searching for a random ${formatNumber(Number(F.ast.args[0].v))}-digit prime`
       : `Computing ${sym} in base ${base}`) + (slow ? ' (this can take a minute or more)' : ''),
@@ -10957,19 +10956,19 @@ function compute() {
       finish();
       return;
     }
-    waitBegin('busy', 'Building', 'Building the walk (the page stops meanwhile)', 0);
+    waitBegin('busy', 'Building the walk (the page stops meanwhile)', 0);
     requestAnimationFrame(() => setTimeout(finish, 0)); // (the gauge painted first)
   };
   numberWorker.postMessage({ ast: F.ast, n: want, base, mag: F.mag, nodes: F.nodes });
 }
 
 // The long waits, every one (a number's digits, a battle's others', Elementary's rows, the walk built, a Gallery card's setup):
-// each by its key, its words (short, in the gauge; in full, its tooltip) and its share done (null: not known), shown past
-// its delay (WAIT_DELAY; 0, at once: a build that stops the page), the oldest over the length's field (see showWaits)
+// each by its key, its words (the gauge's tooltip) and its share done (null: not known), shown past its delay (WAIT_DELAY; 0,
+// at once: a build that stops the page), the oldest over the length's field (see showWaits)
 const WAIT_DELAY = 300,
   waits = new Map();
-const waitBegin = (key, words, full = words, delay = WAIT_DELAY) => {
-  waits.set(key, { words, full, share: null, from: performance.now() + delay });
+const waitBegin = (key, words, delay = WAIT_DELAY) => {
+  waits.set(key, { words, share: null, from: performance.now() + delay });
   showWaits();
   if (delay) setTimeout(showWaits, delay);
 };
@@ -10988,18 +10987,17 @@ function showWaits() {
   if (!w) return;
   g.classList.toggle('sliding', w.share === null);
   g.querySelector('.wait-fill').style.width = `${100 * (w.share ?? 0)}%`;
-  g.querySelector('.wait-words').textContent =
-    w.share === null ? `${w.words}…` : `${w.words} ${Math.floor(100 * w.share)} %`;
-  g.title = `${w.full}…`;
+  g.querySelector('.wait-words').textContent = w.share === null ? '…' : `${Math.floor(100 * w.share)} %`; // (its words in its tooltip: a formula's would not fit)
+  g.title = `${w.words}…`;
 }
 // While the worker computes, the link waits for the result, the player greyed: its wait (key busy), until the digits are
 // there and the walk built
 let busy = false,
   computeJob = 0;
-function setBusy(on, words = 'Computing', full = words) {
+function setBusy(on, words = 'Computing') {
   busy = on;
   statsDirty = true; // (the player: greyed meanwhile, see updateStats)
-  if (on) waitBegin('busy', words, full);
+  if (on) waitBegin('busy', words);
   else waitEnd('busy');
 }
 
@@ -20030,7 +20028,7 @@ function elementaryReady(then) {
     { KEEP, wolframTable, wordsOf, popCounts, wolframStep, elementaryRowsOf },
     elementaryWorkerMain,
   );
-  setBusy(true, 'Rows', `Computing ${formatNumber(a.args[0])} rows`);
+  setBusy(true, `Computing ${formatNumber(a.args[0])} rows`);
   elementaryWorker.onmessage = (e) => {
     elementaryWorker.terminate();
     elementaryWorker = null;
@@ -46372,7 +46370,7 @@ function setupRow(name, detail, x) {
     preview.hidden = !thumbnail;
     if (thumbnail) preview.src = thumbnail.src;
     cardShown = x;
-    waitBegin('card', 'Loading', `Loading ${name}`);
+    waitBegin('card', `Loading ${name}`);
     requestAnimationFrame(() =>
       setTimeout(() => {
         // (after the frame painted)

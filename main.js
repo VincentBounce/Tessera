@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.864';
+const VERSION = '0.4.865';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -8957,7 +8957,8 @@ function renderNumberPicker(active) {
           const p = PRESETS[id],
             b = document.createElement('button');
           b.innerHTML = cardSymbol(p.sym);
-          b.title = `${p.name} — ${p.detail ?? p.f}`;
+          b.setAttribute('aria-label', p.name); // (its symbol a picture: its name in bold over its words, see the tooltips)
+          b.title = p.detail ?? p.f;
           b.setAttribute('role', 'option');
           setTile(b, { on: id === active, again: true }); // (clicked again: its page, see toggleNumber)
           b.addEventListener('click', () => (id === active ? toggleNumber() : pick(id)));

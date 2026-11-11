@@ -37,6 +37,7 @@ The cards fill in the formula field; you can also type your own.
 - **Liouville's constant L:** digit k is 1 when k is a factorial (1, 2, 6, 24, 120…), else 0, in every base (in base 10, the first number proved transcendental).
 - **Copeland–Erdős constant:** 2 3 5 7 11 13 … written one after another in the walk's base.
 - **Kempner number κ:** digit k is 1 when k is a power of 2, else 0, in every base.
+- **Moser–de Bruijn sequence MB:** digit k is 1 when k has only 0s and 1s in base 4 (1, 4, 5, 16, 17…), else 0, in every base; on the sphere of hexagons, a chain of clusters that closes.
 
 ### How each number is computed
 
@@ -86,7 +87,7 @@ Operators: `+ − × ÷ ^ ( )`.
 
 Examples: `22/7`, `2^pi`, `8^(1/3)`, `2^127-1`, `primorial(11)+1`, `ln(3)`.
 
-Digit sequences, used alone: `random(seed)`, `champernowne`, `copelanderdos`, `primebarcode`, `primegaps`, `dragon`, `thuemorse`, `rabbit`, `rudinshapiro`, `kolakoski`, `liouville`, `kempner`.
+Digit sequences, used alone: `random(seed)`, `champernowne`, `copelanderdos`, `primebarcode`, `primegaps`, `dragon`, `thuemorse`, `rabbit`, `rudinshapiro`, `kolakoski`, `liouville`, `kempner`, `moserdebruijn`.
 
 Press Enter to compute.
 

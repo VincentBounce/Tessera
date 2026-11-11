@@ -10,7 +10,7 @@
   <meta property="og:url" content="https://vincentbounce.github.io/Tessera/">
   <meta property="og:type" content="website">
   <link id="favicon" rel="icon">  <!-- the app's logo, set at start-up (see LOGO_PATH) -->
-  <link rel="stylesheet" href="style.css?v=0.4.874">
+  <link rel="stylesheet" href="style.css?v=0.4.875">
   <script>  // the theme before the first paint (see applyTheme)
     try { const t = localStorage.getItem('tesseraTheme'); document.documentElement.dataset.theme = t === 'light' || t === 'dark' ? t : matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark'; } catch { document.documentElement.dataset.theme = 'dark'; }
   </script>
@@ -131,7 +131,7 @@
         <div id="numberPicker">  <!-- the number, its formula, its tabs, its primes' menus: one block, placed by the mode -->
           <h3 class="with-btn">Formula<button id="copyNumber" class="bubble" type="button" hidden></button></h3>  <!-- not a label: a click on ↵ would focus the field again -->
           <div class="field formula-field"><input id="formula" type="text" value="1/112" spellcheck="false" autocomplete="off" aria-label="Formula"
-                   title="Typed in base 10, then written in the base its use needs (the walk's, or Life's: K + 1, its colours and dead), as the chip beside it says. Any number as a formula: pi, e, phi, gamma, catalan, erdos, rho, sqrt(3), cbrt(2), root(x, k), ln(x), exp(x), log(x, b), zeta(k), 22/7, 2^pi, 8^(1/3), 2^127-1, primorial(p)+1, randprime(size, seed), and + − × ÷ ^ ( ). Digit sequences, used alone: random(seed), champernowne, copelanderdos, primebarcode, primegaps, liouville, kempner, dragon. Press Enter to compute"><button class="enter" type="button" tabindex="-1" title="Compute (Enter)">↵</button></div>
+                   title="Typed in base 10, then written in the base its use needs (the walk's, or Life's: K + 1, its colours and dead), as the chip beside it says. Any number as a formula: pi, e, phi, gamma, catalan, erdos, rho, sqrt(3), cbrt(2), root(x, k), ln(x), exp(x), log(x, b), zeta(k), 22/7, 2^pi, 8^(1/3), 2^127-1, primorial(p)+1, randprime(size, seed), and + − × ÷ ^ ( ). Digit sequences, used alone: random(seed), champernowne, copelanderdos, primebarcode, primegaps, liouville, kempner, moserdebruijn, dragon. Press Enter to compute"><button class="enter" type="button" tabindex="-1" title="Compute (Enter)">↵</button></div>
           <div id="numberList"></div>
           <label id="mersenneRow" hidden>
             <select id="mersenneP"></select>
@@ -506,10 +506,10 @@
     </div>
   </main>
 
-  <script src="pixelarticons.js?v=0.4.874"></script>
-  <script src="punks.js?v=0.4.874"></script>
-  <script src="loops.js?v=0.4.874"></script>
-  <script src="emoji.js?v=0.4.874"></script>
-  <script src="main.js?v=0.4.874"></script>
+  <script src="pixelarticons.js?v=0.4.875"></script>
+  <script src="punks.js?v=0.4.875"></script>
+  <script src="loops.js?v=0.4.875"></script>
+  <script src="emoji.js?v=0.4.875"></script>
+  <script src="main.js?v=0.4.875"></script>
 </body>
 </html>

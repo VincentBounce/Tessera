@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.874';
+const VERSION = '0.4.875';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -1531,6 +1531,15 @@ const PRESETS = {
     f: 'kempner',
     wiki: 'Kempner_number',
   },
+  moserdebruijn: {
+    group: 'Sequences',
+    sym: 'MB',
+    name: 'Moser–de Bruijn sequence',
+    detail:
+      'digit k: 1 when k is written with 0s and 1s only in base 4 (1, 4, 5, 16, 17, 20, 21…), else 0, in every base',
+    f: 'moserdebruijn',
+    wiki: 'Moser–de_Bruijn_sequence',
+  },
   // (last: the cards' order the hunts' and Roll's, ρ last of them, see BATTLE_CARDS)
   primeConstant: {
     group: 'Constants',
@@ -1557,6 +1566,7 @@ const FORMULA_NOTES = {
   liouville: () => "Liouville's (0 and 1): digit k is 1 when k is a factorial, 1, 2, 6, 24, 120…",
   copelanderdos: (b) => `the primes written one after another in base ${b}: 2, 3, 5, 7, 11, 13…`,
   kempner: () => "Kempner's number (0 and 1): digit k is 1 when k is a power of 2, 1, 2, 4, 8…",
+  moserdebruijn: () => 'the Moser–de Bruijn sequence (0 and 1): digit k is 1 when k has only 0s and 1s in base 4',
   dragon: () => 'the folds of a strip folded in two again and again (0 and 1): the dragon curve, as turns',
 };
 
@@ -8472,7 +8482,7 @@ const withIcons = (text) =>
  *   'rat'   an exact fraction            22/7, 2^-1, (16/81)^(3/4)
  *   'real'  computed with guard digits   pi, sqrt(2), 2^pi, ln(3)
  *   'seq'   a sequence of digits defined base by base (random, champernowne, copelanderdos, primebarcode, primegaps,
- *           and the 0s and 1s of dragon, thuemorse, rabbit, liouville, kempner).
+ *           and the 0s and 1s of dragon, thuemorse, rabbit, liouville, kempner, moserdebruijn).
  *           It is not a number, so it only stands alone: random(5)+1 is refused.
  * The kind decides where digits come from: sequences on the page (seqDigits), everything else in
  * the worker. An exact number, an integer or a fraction, has digits after the point as a real does: 0s once it ends.
@@ -8499,6 +8509,7 @@ const FORMULA_NAMES = {
   liouville: ['seq', 'L'],
   copelanderdos: ['seq', 'CE'],
   kempner: ['seq', 'κ', true],
+  moserdebruijn: ['seq', 'MB', true],
 };
 const FORMULA_FUNCTIONS = {
   sqrt: 1,
@@ -9124,6 +9135,13 @@ function seqDigits(ast, n, base) {
   } else if (name === 'kempner') {
     // digit k is 1 when k is a power of 2 (1, 2, 4, 8…): 0 and 1 in every base
     for (let k = 1; k <= n; k *= 2) digits[k - 1] = 1;
+  } else if (name === 'moserdebruijn') {
+    // digit k is 1 when k has only 0s and 1s in base 4 (1, 4, 5, 16…: sums of distinct powers of 4): 0 and 1 in every base
+    for (let i = 0; i < n; i++) {
+      let k = i + 1;
+      while (k && k % 4 < 2) k = Math.floor(k / 4);
+      digits[i] = k ? 0 : 1;
+    }
   } else if (name === 'copelanderdos') {
     // 2 3 5 7 11 … written in base b one after another: the primes up to x give about x / ln b digits (sieved again,
     // twice as far, in the rare case they fall short)

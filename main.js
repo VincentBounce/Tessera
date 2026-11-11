@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.846';
+const VERSION = '0.4.847';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -6829,11 +6829,10 @@ function relabelColours(mode) {
 }
 
 // Choices as buttons clicked directly (colours, sky); the (hidden) menu stays the source of truth
-// buttons joined in one frame, one choice among them (see .tile-group)
-function tileGroup(buttons, wide = false) {
-  // (wide: across its row, whatever its count, see .tile-group.wide: a section's big choice)
+// buttons joined in one frame, one choice among them, across its row (see .tile-group)
+function tileGroup(buttons) {
   const g = document.createElement('div');
-  g.className = wide ? 'tile-group wide' : 'tile-group';
+  g.className = 'tile-group';
   g.append(...buttons);
   return g;
 }
@@ -19535,7 +19534,7 @@ function renderBattleHunt() {
       'in Centred: its centres all alike, nothing to vary',
     ),
   );
-  $('battleHuntRank').replaceChildren(tileGroup(Object.entries(HUNT_RANKS).map(rank), true));
+  $('battleHuntRank').replaceChildren(tileGroup(Object.entries(HUNT_RANKS).map(rank)));
   setTile($('battleHuntBtn'), {
     greyed:
       !huntVary.formulas && !huntStarts() && huntOrderCount() < 2
@@ -45047,7 +45046,6 @@ $('lifeStartTabs').append(
       b.dataset.start = start;
       return b;
     }),
-    true,
   ),
 );
 for (const b of $('lifeStartTabs').querySelectorAll('button')) {
@@ -45098,7 +45096,6 @@ $('textFonts').append(
       b.dataset.font = f;
       return b;
     }),
-    true,
   ),
 );
 // Text's lines: Enter a new line; drawn on a change (↵, a click outside, or ⌘ Enter)
@@ -45221,7 +45218,6 @@ $('huntGoals').replaceChildren(
       b.dataset.goal = goal;
       return b;
     }),
-    true,
   ),
 );
 $('animBar').addEventListener('mouseenter', () => requestAnimationFrame(drawActivity)); // the card opened: its curve  // turned on: it plays at once
@@ -45774,41 +45770,35 @@ $('centered').addEventListener('change', () => {
 $('sizeDown').addEventListener('click', () => stepSize(-1));
 // Grid or Cells: the walk in use goes to its twin; while browsing another tab, only its list changes
 $('walkOn').append(
-  tileGroup(
-    [
-      tile({
-        id: 'walkOnGrid',
-        pic: icon('onGrid'),
-        text: 'Grid',
-        title: 'Along the lines of the grid',
-        click: () => navGo(4, 'grid'),
-      }),
-      tile({
-        id: 'walkOnCells',
-        pic: icon('onCells'),
-        text: 'Cells',
-        title:
-          'From cell to cell, colouring the cells: on triangles and hexagons the choices at each step change, and so does the base',
-        click: () => navGo(4, 'cells'),
-      }),
-    ],
-    true,
-  ),
+  tileGroup([
+    tile({
+      id: 'walkOnGrid',
+      pic: icon('onGrid'),
+      text: 'Grid',
+      title: 'Along the lines of the grid',
+      click: () => navGo(4, 'grid'),
+    }),
+    tile({
+      id: 'walkOnCells',
+      pic: icon('onCells'),
+      text: 'Cells',
+      title:
+        'From cell to cell, colouring the cells: on triangles and hexagons the choices at each step change, and so does the base',
+      click: () => navGo(4, 'cells'),
+    }),
+  ]),
 );
 // a creature's start, one choice: a tab group of tiles, by its rule or by the digits (as Life's starts)
 $('antStartTabs').append(
-  tileGroup(
-    [
-      tile({ id: 'antByRule', pic: icon('ant'), text: 'Rule', title: 'Its turns by its rule, a card below' }),
-      tile({
-        id: 'antByDigits',
-        pic: icon('barcode'),
-        text: 'Rule × Digits',
-        title: "Its turns by its rule and the number's digits: a digit 0 turns as its rule, a 1 the other way",
-      }),
-    ],
-    true,
-  ),
+  tileGroup([
+    tile({ id: 'antByRule', pic: icon('ant'), text: 'Rule', title: 'Its turns by its rule, a card below' }),
+    tile({
+      id: 'antByDigits',
+      pic: icon('barcode'),
+      text: 'Rule × Digits',
+      title: "Its turns by its rule and the number's digits: a digit 0 turns as its rule, a 1 the other way",
+    }),
+  ]),
 );
 for (const [id, digits] of [
   ['antByRule', false],

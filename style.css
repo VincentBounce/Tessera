@@ -705,20 +705,17 @@ h4 {
   height: 24px;
 }
 /* icons: 24 px in a tile, a tab or by a section's title, 20 px on a card, 16 px in a line of text */
-/* a group of tiles, one choice among them: joined in one frame, 2 or 3 columns of tiles */
+/* a group of tiles, one choice among them: joined in one frame, across its row, its buttons as wide as they share */
 .tile-group {
   display: flex;
-  grid-column: span 2;
+  grid-column: 1 / -1;
 }
-.tile-group:has(> :nth-child(3 of :not([hidden]))) {
+.tile-group:has(+ :not([hidden])) {
+  grid-column: span 2;
+} /* beside a tile (Rotate, Trail): its tiles' columns only */
+.tile-group:has(+ :not([hidden])):has(> :nth-child(3 of :not([hidden]))) {
   grid-column: span 3;
 } /* (its buttons shown only: a group's hidden ones never count) */
-.tile-group:has(> :nth-child(4 of :not([hidden]))) {
-  grid-column: span 4;
-}
-.tile-group.wide {
-  grid-column: 1 / -1;
-} /* a section's big choice: across its row, its buttons as wide as it shares (2, 3 or 4) */
 :not(.nav-shapes) > .tile-group {
   margin-bottom: 10px;
 } /* (in a section's flow, not a grid of tiles: spaced as a wide button) */

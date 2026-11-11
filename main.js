@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.880';
+const VERSION = '0.4.881';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -17244,10 +17244,15 @@ const TORUS_RATIO = [0.8, 1.25],
   LOOP_MAX = 12;
 let torusLoopList = null; // { key, loops: [{ start, size, laps: [ring, tube], steps }] } for the number in use
 function torusLoops() {
-  const mode = MODES[tabMode()],
-    key = `${formulaInUse} ${tabMode()} ${surfaceOf(mode)}`;
+  const mode = MODES[tabMode()];
   if (!mode.net || !TORI.includes(surfaceOf(mode))) return []; // a walk by a rule's commands (its network's: not an ant's), along the grid or on cells, on a torus or a Möbius strip
-  if (!digitsComputed || digitsComputed.formula !== formulaInUse || digitsComputed.mode !== tabMode()) return []; // its digits are on their way
+  const key = `${formulaInUse} ${tabMode()} ${surfaceOf(mode)} ${walkRuleOf(mode)}`; // (its loops its rule's turns)
+  if (
+    digitsComputed?.formula !== formulaInUse ||
+    digitsComputed.mode !== tabMode() ||
+    digitsComputed.base !== mode.base
+  )
+    return []; // its digits on their way: of another number, mode, or rule's base (a link's rule set, its digits not yet read)
   if (torusLoopList?.key === key) return torusLoopList.loops;
   const loops = [];
   torusLoopList = { key, loops };

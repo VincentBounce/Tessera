@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.848';
+const VERSION = '0.4.849';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -45938,9 +45938,10 @@ function cellModePicture(look, ant) {
     );
   if (look === 'digit' && ant) return statesPicture();
   if (look === 'digit') {
-    // Commands: a rule's L N R in the rules' font (.rule), each in its turn's colour (left blue, straight on gold, right pink)
+    // Commands: a rule's L N R in the rules' font (.rule), bold (as thick as the other pictures' lines), each in its turn's
+    // colour (left blue, straight on gold, right pink)
     const letter = (x, text, way) =>
-      `<text class="rule" x="${x}" y="16" font-size="12" text-anchor="middle" fill="${DIRECTION_COLOURS[way]}">${text}</text>`;
+      `<text class="rule" x="${x}" y="16" font-size="12" font-weight="700" text-anchor="middle" fill="${DIRECTION_COLOURS[way]}">${text}</text>`;
     return `<svg viewBox="0 0 24 24" aria-hidden="true">${letter(4.5, 'L', '←')}${letter(12, 'N', '↑')}${letter(19.5, 'R', '→')}</svg>`;
   }
   // Heatmap: a hot core, cooling outwards

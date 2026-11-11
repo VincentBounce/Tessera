@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.833';
+const VERSION = '0.4.834';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -10987,7 +10987,7 @@ function showWaits() {
   if (!w) return;
   g.classList.toggle('sliding', w.share === null);
   g.querySelector('.wait-fill').style.width = `${100 * (w.share ?? 0)}%`;
-  g.querySelector('.wait-words').textContent = w.share === null ? '…' : `${Math.floor(100 * w.share)} %`; // (its words in its tooltip: a formula's would not fit)
+  g.querySelector('.wait-words').textContent = w.share === null ? '' : `${Math.floor(100 * w.share)} %`; // (its words in its tooltip: a formula's would not fit; no share, its band alone)
   g.title = `${w.words}…`;
 }
 // While the worker computes, the link waits for the result, the player greyed: its wait (key busy), until the digits are
@@ -15366,6 +15366,7 @@ function updateMorphButton() {
     ? ['Unrolled', 'Rolled']
     : ['Flat', 'Inflated'];
   if (document.activeElement !== $('shapeM')) $('shapeM').value = sh.target;
+  showShapeAt();
   // greyed on the pits and the sponge (their holes: no form between); its default, told in its tooltip, each shape's of
   // this tab (round: a sheet rolled up, a solid inflated)
   greyInput($('shapeM'), $('shapeRow'), ({ w: v }) => {
@@ -15389,9 +15390,14 @@ function updateMorphButton() {
     .join('\n');
   box.dataset.greyed = 'on Pits, Bumps and Sponge';
 }
+// the slider's place, its ends' names faded by it (see .shape-slider: the one the knob nears gone, from a third of the way)
+function showShapeAt() {
+  $('shapeM').parentElement.style.setProperty('--shape-at', $('shapeM').value);
+}
 // Unrolled ── Rolled (Flat ── Inflated): the form follows the slider at once (the buttons' animation, from
 // one end to the other, when set from elsewhere); its perspective, the form's own at an end
 $('shapeM').addEventListener('input', () => {
+  showShapeAt();
   const sh = walk.shape;
   if (!sh) return;
   const m = Number($('shapeM').value);

@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.837';
+const VERSION = '0.4.838';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -9590,6 +9590,8 @@ MODE_ICONS.lifeFrame = 'frame';
 }
 const NAV_KINDS = [
   ['Life', 'glider', 'Cells born and dying by their neighbours, generation after generation'],
+  ['Walk', 'compass', "A path, each step the number's next digit"],
+  ['Ant', 'ant', "A creature on the cells, turned by each cell's colour, by its rule or by the digits"],
   ['Rewind', 'reversible', 'Rules on blocks of cells that play backwards as well: nothing is ever lost'],
   ['Replicators', 'replicator', "Langton's loops: a pattern that makes copies of itself, by a table of transitions"],
   [
@@ -9597,8 +9599,6 @@ const NAV_KINDS = [
     'elementary',
     "Wolfram's 256 rules: a row of cells, each generation the next row down, each cell by the three above it",
   ],
-  ['Walk', 'compass', "A path, each step the number's next digit"],
-  ['Ant', 'ant', "A creature on the cells, turned by each cell's colour, by its rule or by the digits"],
 ]; // (name, picture, tooltip; in this order: the tabs, the Gallery's sections)
 // the spaces, in turn, each its name and picture: a walk's or an ant's plane without an edge; Life's grids on the plane, those
 // that repeat (walls in a hexagon too) and its round ones, never repeating (see APERIODIC); everyone's solids, and surfaces

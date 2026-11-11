@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.841';
+const VERSION = '0.4.842';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -8050,7 +8050,7 @@ const ICONS = (() => {
     // hunt zones: the whole surface, then a patch of radius 1, 2 or 3
     zoneAll: svgPath(pathOf(sq)) + svgPath('M9.33 4V20M14.67 4V20M4 9.33H20M4 14.67H20'),
     // the symmetries of a Life start on the plane
-    // the themes: Light, Dark, System (half and half)
+    // the theme's switch: Light on, Dark off (see themeSwitch)
     sun:
       '<circle class="f" cx="12" cy="12" r="4.2"/>' +
       svgPath(
@@ -10389,7 +10389,7 @@ function pathsTo(fits, budget = 5000, judgedAt = null) {
   }
   return [];
 }
-// the greyed control a tooltip is on: itself, or the slider in its row (a notched row's, Morph's)
+// the greyed control a tooltip is on: itself, or the slider in its row (Shape's)
 const greyedOf = (el) => (el?.disabled ? el : (el?.querySelector?.('input:disabled') ?? null));
 // a greyed control's shortest paths in words, for its tooltip: Torus · Möbius strip, or a line each, Torus › Hexagons (three at most)
 const pathsWords = (paths) =>
@@ -15927,9 +15927,6 @@ function sizeGauge(el, n, i, preview, pick, byDefault = -1) {
   );
   el.replaceChildren(range, notches);
 }
-// A notched slider, one choice among a few on a row (Cut, Area): its title a sub-section's (h3), a notch each (see sizeGauge), the
-// choice's name on its right; its tooltip on the whole row, as a button's (see tipOf): its title in bold, what it does (about)
-// and its choice's words, its default (choice first) on a grey line; whyNot, greyed and why (see setTile); live: set as it is dragged (else let go)
 // a slider greyed as a tile is (see setTile): whyNot(setup) its one source, its row's greyed words, its enablers
 function greyInput(input, row, whyNot) {
   const why = whyNot({ w: tabMode() });

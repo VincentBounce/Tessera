@@ -796,7 +796,7 @@ button.switch.active:hover:not(:disabled) {
   display: flex;
   gap: var(--tile-gap);
   margin-bottom: 4px;
-} /* (each group's tiles side by side, each a tile's width, as System's in the display box) */
+} /* (each group's tiles side by side, each a tile's width, as the display box's head tiles) */
 .gallery-tools-row > #galleryTools {
   gap: var(--badged-tile-gap);
 } /* (Export, Delete, Refresh: the cards selected's badge) */

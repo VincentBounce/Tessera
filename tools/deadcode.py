@@ -7,8 +7,9 @@
 # the page, the checks (tools/check.js) and the functions run from the console (…Check). A name only a
 # dead one reads is dead too: one run finds them all (a helper and the helper of its helper), no removal in between.
 # Then the style's classes, ids and variables that nothing alive reads (a class made in a template, `tip-${…}`, by its
-# prefix).
-import os, re, sys
+# prefix); and a key written twice in one object literal (the first dead: the second replaces it with no word, as ICONS'
+# turtle till v0.4.840), as esbuild warns of it.
+import os, re, subprocess, sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from uncomment import uncommented, uncommented_css, uncommented_html
 
@@ -84,5 +85,12 @@ found = [f'main.js:{at(main_src, r"^(?:async )?(?:function\*? |const |let |var |
 found += [f'style.css:{at(css_src, r"\." + re.escape(c) + r"(?![\w-])")} .{c}' for c in dead_classes]
 found += [f'style.css:{at(css_src, "#" + re.escape(i) + r"(?![\w-])")} #{i}' for i in dead_ids]
 found += [f'style.css:{at(css_src, re.escape(v) + r"\s*:")} {v}' for v in dead_vars]
+# a key twice in one object literal, as esbuild finds it (its warnings: the key, then where the second is)
+try:
+    warned = subprocess.run(['esbuild', os.path.join(root, 'main.js'), '--log-level=warning'], capture_output=True, text=True).stderr
+    for key, line in re.findall(r'Duplicate key "([^"]+)".*?main\.js:(\d+):', warned, re.S):
+        found.append(f'main.js:{line} key {key} twice in its object')
+except FileNotFoundError:
+    print('(esbuild not found: keys written twice not looked for)')
 print('\n'.join(found) or 'No dead code found.')
 sys.exit(1 if found else 0)

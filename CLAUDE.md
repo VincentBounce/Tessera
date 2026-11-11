@@ -144,7 +144,8 @@ While the checks run unattended (a night, a meal), also audit what they cannot s
   looks included (Blocks, Glass, Cut, Ocean, Perspective…), in both themes, then step, seek and click again: no console
   error, nothing drawn empty. The fuzz picks menus only: Display › Blocks threw from v0.4.21 to v0.4.503 unseen.
 - **Every night, dead code**: `python3 tools/deadcode.py` lists what the app declares and nothing alive reads (main.js's
-  names, style.css's classes, ids and variables), each at its file:line, a helper's helper too in one run; each removed at
+  names, style.css's classes, ids and variables, and a key written twice in one object, as esbuild warns: ICONS' turtle,
+  v0.4.840), each at its file:line, a helper's helper too in one run; each removed at
   once, its commit saying since when it was dead (`git log -S`). It found v0.4.793's 45 lines (projector, planeVisible,
   rowAction, .row-act) and .icon-btn, dead since v0.4.7.
 - **Every night, the greyed controls' first hover**: `tesseraCheck({ hovers: true })`, each greyed control on every

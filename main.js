@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.839';
+const VERSION = '0.4.840';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -8175,9 +8175,9 @@ const ICONS = (() => {
     pause:
       '<rect class="f" x="6" y="5" width="4" height="14" rx="1"/><rect class="f" x="14" y="5" width="4" height="14" rx="1"/>',
     stop: '<rect class="f" x="6" y="6" width="12" height="12" rx="1.5"/>',
-    turtle:
-      '<path d="M3.5 16.5a8.5 7 0 0 1 17 0z"/><path d="M8 16.5 12 10.5l4 6M3.5 16.5H21"/><circle cx="21.5" cy="13.5" r="1.8"/><path d="M6.5 16.5 5.5 19.5M17.5 16.5l1 3"/>', // slower, playing
-    rabbit:
+    slower:
+      '<path d="M3 16a8 11 0 0 1 16 0z"/><path d="M7 16 11 8.5 15 16M3 16H21"/><circle cx="21" cy="12.5" r="2"/><path d="M6.5 16 5.5 20.5M15.5 16l1 4.5"/>', // a turtle, side on, as tall as faster's rabbit: slower, playing
+    faster:
       '<ellipse cx="13" cy="16" rx="6.5" ry="4.5"/><circle cx="6.5" cy="12.5" r="3"/><path d="M5.5 9.8C4.4 5.5 5 2.5 6.4 2.5S8.3 5.6 7.6 9.6M7.9 10C8 6 9.4 3.6 10.6 4s1 3.6-.9 6.6"/><circle cx="20.3" cy="14.6" r="1.3"/><path d="M9 20.3h3M15 20.3h3"/>', // faster, playing
     start: svgPath('M5.5 5V19') + svgPath('M19 5L9 12L19 19Z', 'f'),
     end: svgPath('M18.5 5V19') + svgPath('M5 5L15 12L5 19Z', 'f'),
@@ -9717,7 +9717,6 @@ const SHAPE_ICONS = {
   Bumps: 'bumps',
   Frame: 'frame',
   Sponge: 'menger',
-  'Klein bottle': 'klein',
 };
 for (const [kind, t] of Object.entries(TILINGS)) SHAPE_ICONS[t.name] = `tiling-${kind}`;
 const SHAPE_SHORT = {
@@ -34420,103 +34419,6 @@ const CENTRED_OFF = {
       'keeps spreading · 8 cells',
     ],
   ],
-  rhombs12: [
-    [
-      'B39/S0238',
-      'Oscillator',
-      [
-        [9.087, -0.762, 1],
-        [9.291, 0, 1],
-        [10.053, 0.762, 1],
-      ],
-      'period 2 · 3 cells',
-    ],
-    [
-      'B39/S0238',
-      'Methuselah',
-      [
-        [6.727, 0.837, 1],
-        [5.965, 1.598, 1],
-        [4.441, 0.483, 1],
-        [8.046, -0.483, 1],
-        [5.128, 2.081, 1],
-        [3.605, 0, 1],
-        [4.088, 1.802, 1],
-        [6.244, -2.639, 1],
-        [6.244, 2.639, 1],
-        [8.325, -1.524, 1],
-        [7.006, 2.843, 1],
-        [5.407, 3.122, 1],
-      ],
-      'settles at generation 352 · 12 cells',
-    ],
-    [
-      'B39/S0238',
-      'Seed',
-      [
-        [5.482, 0.762, 1],
-        [5.965, -1.598, 1],
-        [8.046, 0.483, 1],
-        [7.006, -1.877, 1],
-        [5.128, -2.081, 1],
-        [3.605, 0, 1],
-        [4.088, 1.802, 1],
-        [5.407, 3.122, 1],
-      ],
-      'keeps spreading · 8 cells',
-    ],
-    [
-      'B39/S3457/C4',
-      'Oscillator',
-      [
-        [4.646, 1.245, 1],
-        [5.482, 0.762, 1],
-        [6.727, 0.837, 3],
-        [5.128, 2.081, 1],
-        [5.965, 1.598, 1],
-        [5.407, 3.122, 1],
-        [6.244, 2.639, 2],
-      ],
-      'period 6 · 7 cells',
-    ],
-    [
-      'B39/S3457/C4',
-      'Methuselah',
-      [
-        [6.244, 0, 1],
-        [5.482, 0.762, 1],
-        [6.727, -0.837, 1],
-        [5.965, -1.598, 1],
-        [4.441, 0.483, 1],
-        [7.489, -1.041, 1],
-        [8.046, -0.483, 1],
-        [5.128, 2.081, 1],
-        [4.088, 1.802, 1],
-        [6.244, 2.639, 1],
-        [8.325, 1.524, 1],
-        [7.006, -2.843, 1],
-        [7.006, 2.843, 1],
-        [5.407, -3.122, 1],
-        [5.407, 3.122, 1],
-      ],
-      'settles at generation 210 · 15 cells',
-    ],
-    [
-      'B39/S3457/C4',
-      'Seed',
-      [
-        [6.244, 0, 1],
-        [5.482, 0.762, 1],
-        [6.727, -0.837, 1],
-        [4.441, 0.483, 1],
-        [7.006, -1.877, 1],
-        [5.128, 2.081, 1],
-        [4.088, -1.802, 1],
-        [7.006, 2.843, 1],
-      ],
-      'keeps spreading · 8 cells',
-    ],
-  ],
 };
 const CENTRED = {
   pinwheel: [
@@ -38254,114 +38156,6 @@ const CENTRED = {
       'keeps spreading · 8 cells',
     ],
   ],
-  rhombs12: [
-    [
-      'B39/S0238',
-      'Oscillator',
-      [
-        [-0.483, 4.441, 1],
-        [0.483, 4.441, 1],
-        [1.245, 4.646, 1],
-      ],
-      'period 2 · 3 cells',
-    ],
-    [
-      'B39/S0238',
-      'Methuselah',
-      [
-        [-0.762, -0.762, 1],
-        [0.762, -0.762, 1],
-        [0.762, 0.762, 1],
-        [-1.041, -0.279, 1],
-        [-1.041, 0.279, 1],
-        [0.279, 1.041, 1],
-        [-1.041, -1.802, 1],
-        [1.041, -1.802, 1],
-        [-1.802, -1.041, 1],
-        [1.802, -1.041, 1],
-        [-1.802, 1.041, 1],
-        [1.802, 1.041, 1],
-        [-1.041, 1.802, 1],
-        [0, -2.081, 1],
-        [2.081, 0, 1],
-        [2.843, -0.762, 1],
-        [2.843, 0.762, 1],
-      ],
-      'settles at generation 357 · 17 cells',
-    ],
-    [
-      'B39/S0238',
-      'Seed',
-      [
-        [-0.279, -1.041, 1],
-        [-0.279, 1.041, 1],
-        [0.279, 1.041, 1],
-        [-1.802, 1.041, 1],
-        [2.081, 0, 1],
-        [0, 2.081, 1],
-        [-0.762, -2.843, 1],
-        [2.843, -0.762, 1],
-        [-2.843, 0.762, 1],
-        [2.843, 0.762, 1],
-      ],
-      'keeps spreading · 10 cells',
-    ],
-    [
-      'B39/S3457/C4',
-      'Oscillator',
-      [
-        [-1.802, -3.122, 3],
-        [0, -3.605, 2],
-        [-0.762, -2.843, 1],
-        [0, -2.081, 1],
-        [0.762, -2.843, 1],
-        [-1.041, -1.802, 1],
-        [-0.279, -1.041, 1],
-      ],
-      'period 6 · 7 cells',
-    ],
-    [
-      'B39/S3457/C4',
-      'Methuselah',
-      [
-        [-0.762, -0.762, 1],
-        [0.762, -0.762, 1],
-        [-0.279, -1.041, 1],
-        [-1.041, -0.279, 1],
-        [-1.041, 0.279, 1],
-        [1.041, -0.279, 1],
-        [-0.279, 1.041, 1],
-        [0.279, 1.041, 1],
-        [1.041, -1.802, 1],
-        [1.802, -1.041, 1],
-        [-1.802, 1.041, 1],
-        [-1.041, 1.802, 1],
-        [1.041, 1.802, 1],
-        [0, -2.081, 1],
-        [0, 2.081, 1],
-        [0.762, -2.843, 1],
-        [2.843, -0.762, 1],
-        [-2.843, 0.762, 1],
-        [2.843, 0.762, 1],
-      ],
-      'settles at generation 210 · 19 cells',
-    ],
-    [
-      'B39/S3457/C4',
-      'Seed',
-      [
-        [-0.762, -0.762, 1],
-        [0.762, -0.762, 1],
-        [-0.279, -1.041, 1],
-        [1.041, -0.279, 1],
-        [0.279, 1.041, 1],
-        [-1.041, -1.802, 1],
-        [0, -2.081, 1],
-        [-0.762, -2.843, 1],
-      ],
-      'keeps spreading · 8 cells',
-    ],
-  ],
 };
 // the discs' patterns among Draw's (one list for Draw, Famous and Centered), each its rule's, in the tables' order
 for (const [table, off] of [
@@ -39798,7 +39592,7 @@ const playerButton = (id) => {
       go: () => (ahead > 0 ? play(true) : reverse(true)),
     };
   return {
-    pic: notch > 0 ? 'rabbit' : 'turtle',
+    pic: notch > 0 ? 'faster' : 'slower',
     name: notch > 0 ? 'Faster' : 'Slower',
     title: notch > 0 ? 'The next speed' : 'The speed before',
     next,
@@ -44536,7 +44330,7 @@ function updateStats() {
     greyed: busy ? 'Its run is not built yet.' : runLoop() ? 'Its loop is known: its end is in sight.' : '',
   });
   // (a button its way's arrow, stopped or turning back at the slowest: that way's own; its rabbit at the fastest: none faster)
-  const fastest = (id) => playerButton(id).pic === 'rabbit' && playerButton(id).next === undefined;
+  const fastest = (id) => playerButton(id).pic === 'faster' && playerButton(id).next === undefined;
   setTile($('stop'), { greyed: playing || reversing ? '' : 'Already stopped.' });
   setTile($('play'), {
     greyed: busy ? 'Its run is not built yet.' : fastest('play') ? 'Already the fastest.' : '',

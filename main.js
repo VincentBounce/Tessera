@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.826';
+const VERSION = '0.4.827';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -7726,6 +7726,11 @@ const hexCluster = (rot) =>
       return svgPath(pathOf(ngon(6, R, rot, 12 + R * Math.cos(t), 12 + R * Math.sin(t))));
     })
     .join('');
+// The app's logo, its one picture (its tab's, its favicon's): a rounded square, a π cut out of it (the page behind showing
+// through, in either theme), one shape: the square, then the π's strokes' outline as one (worked out once, by the points
+// within half their width of its lines: M7 11.5Q8 9 11 9H25, M12.5 9.5Q12.5 19 9.5 24, M19.5 9.5V21Q19.5 24 23 23 on 32)
+const LOGO_PATH =
+  'M5.25 0H18.75A5.25 5.25 0 0 1 24 5.25V18.75A5.25 5.25 0 0 1 18.75 24H5.25A5.25 5.25 0 0 1 0 18.75V5.25A5.25 5.25 0 0 1 5.25 0ZM7.83 5.64L7.19 5.72L6.57 5.89L6 6.13L5.47 6.48L5.01 6.91L4.62 7.4L4.3 7.98L4.13 8.49L4.19 9L4.3 9.23L4.47 9.44L4.91 9.7L5.42 9.73L5.76 9.63L6.04 9.42L6.22 9.2L6.55 8.56L6.93 8.2L7.5 7.96L8.24 7.89L8.12 10.38L7.81 12.66L7.54 13.93L7.13 15.32L6.72 16.34L6.04 17.71L6 17.97L6.02 18.24L6.25 18.71L6.58 18.99L6.99 19.12L7.41 19.09L7.8 18.9L8.04 18.65L8.33 18.15L9.07 16.56L9.65 14.75L10.08 12.75L10.36 10.57L10.5 7.88L13.5 7.88L13.51 16.04L13.66 16.89L13.82 17.28L14.04 17.62L14.36 17.96L14.73 18.23L15.15 18.42L15.67 18.53L16.26 18.56L16.95 18.48L17.62 18.31L17.96 18.13L18.25 17.76L18.38 17.29L18.29 16.82L18.02 16.42L17.73 16.23L17.4 16.13L17.1 16.13L16.46 16.28L16.09 16.31L15.85 16.27L15.78 16.11L15.75 15.73L15.75 7.88L18.78 7.88L19.23 7.77L19.63 7.46L19.84 7L19.84 6.5L19.63 6.04L19.26 5.75L18.79 5.62Z';
 const ICONS = (() => {
   const hex = ngon(6, 9.5),
     tri = ngon(3, 10, -90, 12, 14),
@@ -8186,6 +8191,7 @@ const ICONS = (() => {
       '<circle class="f" cx="9" cy="10" r="1.2"/><circle class="f" cx="15" cy="10" r="1.2"/>', // Emoji: a smiling face
     star: svgPath(pathOf(ngon(10, 1).map((_, k) => ngon(10, k % 2 ? 4.2 : 9.5)[k]))),
     check: svgPath('M5 12.5L10 17.5L19 7'),
+    logo: `<path class="f" fill-rule="evenodd" d="${LOGO_PATH}"/>`, // (the app's, see LOGO_PATH)
     boxEmpty: svgPath('M6 4H18A2 2 0 0 1 20 6V18A2 2 0 0 1 18 20H6A2 2 0 0 1 4 18V6A2 2 0 0 1 6 4Z'), // (a card's check box, none selected: see .card-check)
     boxTicked:
       svgPath('M6 4H18A2 2 0 0 1 20 6V18A2 2 0 0 1 18 20H6A2 2 0 0 1 4 18V6A2 2 0 0 1 6 4Z') +
@@ -8207,13 +8213,6 @@ const ICONS = (() => {
   };
 })();
 const icon = (name) => `<svg class="icon" viewBox="0 0 24 24" aria-hidden="true">${ICONS[name]}</svg>`;
-// the app's logo, its one picture (its tab's, and its favicon's, set at start-up): a π cut out of its square (what is behind
-// it shows through, in either theme), in its tab the tab's colour as every tab's picture (greyed, its text's hovered, gold
-// lit); the favicon's, no page's style there, the accent's
-const appLogo = (gold = 'currentColor') =>
-  `<svg xmlns="http://www.w3.org/2000/svg" class="icon" viewBox="0 0 32 32" aria-hidden="true"><mask id="appLogoCut"><rect width="32" height="32" rx="7" style="fill: white; stroke: none"/>` +
-  '<path d="M7 11.5Q8 9 11 9H25M12.5 9.5Q12.5 19 9.5 24M19.5 9.5V21Q19.5 24 23 23" style="fill: none; stroke: black; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round"/></mask>' +
-  `<rect width="32" height="32" rx="7" mask="url(#appLogoCut)" style="fill: ${gold}; stroke: none"/></svg>`;
 // the plane's outline: its shape and its edges, one choice (see outlineOf): a rectangle, a torus or walled; a six-fold grid
 // walled in a hexagon round its middle (see planeShape); a slanted one's rhombus of cells as stored, a torus or walled.
 // Its picture doubled with bricks: walled (the cells past its edges always dead); else a torus (its edges glued: what leaves on one side comes back
@@ -46556,8 +46555,9 @@ new ResizeObserver(() => {
 updateSpeedLabel();
 resize();
 requestAnimationFrame(tick);
-$('appTab').innerHTML = `${appLogo()} ${APP_TITLE} v${VERSION}`;
-$('favicon').href = `data:image/svg+xml,${encodeURIComponent(appLogo(cssColour('--accent-color')))}`;
+$('appTab').innerHTML = `${icon('logo')} ${APP_TITLE} v${VERSION}`;
+$('favicon').href =
+  `data:image/svg+xml,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="${cssColour('--accent-color')}" fill-rule="evenodd" d="${LOGO_PATH}"/></svg>`)}`; // (no page's style there: the accent's colour)
 // Credits: the people whose work it shows, a page in the middle pane as How it works, opened and closed by the app's tab (π,
 // its name and version; lit while it shows, as Gallery's); closed as How it works is, by a click elsewhere; Share link and Home there
 const creditsShown = () => !$('ruleTuto').hidden && $('ruleTuto').dataset.shown === 'credits';

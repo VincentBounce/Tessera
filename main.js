@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.813';
+const VERSION = '0.4.814';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -18306,8 +18306,7 @@ function smallerSide(L, cut, j) {
 // first time (S: surfaceSteps', from starts, by their digits), places[s] each walker's step by step (a dead one's: where it
 // died); owner and at, each place's walker (1, 2, 3; 0 none) and the step it took it; from[s], size[s]: a walker's body,
 // its steps from from[s] on and its places (only a cut takes a place from it, with all its steps up to that place's
-// last); dead[s]: the step it died (−1: alive); n: its last step (one walker left or none, else the digits' end), peak:
-// its longest body (the gauges' full bar). Its surface g, along its grid or not. pen, its battleRule (see BATTLE_RULES), its way:
+// last); dead[s]: the step it died (−1: alive); n: its last step (one walker left or none, else the digits' end). Its surface g, along its grid or not. pen, its battleRule (see BATTLE_RULES), its way:
 // cut, as above. Along the grid, landGrid2 (bite): each walker holds land, land[t] its tiles' walker + 1: a wall of
 // its body closing a loop (its walls' pieces a union-find, step by step, joined again from its body after a cut) gives it
 // the loop's smaller side (smallerSide), an enemy's land too; its head bites into an enemy's land, taking the edge's two
@@ -18349,8 +18348,8 @@ function battlePlayer(g, grid, S, starts, digits, pen = battleRuleInUse(tabMode(
     dead = Array(K).fill(-1);
   let i = -1,
     made = 0,
-    n = len,
-    peak = 1;
+    first = false,
+    n = len; // (made: the steps whose walks are made; first: the step played the first time, its records kept, see spans)
   starts.forEach((st, s) => {
     places[s][0] = st[0];
   });
@@ -18466,7 +18465,8 @@ function battlePlayer(g, grid, S, starts, digits, pen = battleRuleInUse(tabMode(
   };
   const step = () => {
     i++;
-    if (i > made) {
+    first = i > made;
+    if (first) {
       // (the walks made, the first time: the living ones move)
       for (let s = 0; s < K; s++) {
         if (dead[s] < 0) states[s] = S.step(states[s], digits[s][i - 1]);
@@ -18541,7 +18541,6 @@ function battlePlayer(g, grid, S, starts, digits, pen = battleRuleInUse(tabMode(
         } // (Land grid 3: two necks broken at once, both dead)
       rest.forEach((s) => dead[s] < 0 && take(s, i));
       if (i > 0 && living().length <= (stops || merges ? 0 : 1)) n = i; // (Land grid 3: one killed by a head on its last thread)
-      peak = Math.max(peak, ...size);
       return;
     }
     const hits = rest.map((s) => {
@@ -18558,7 +18557,6 @@ function battlePlayer(g, grid, S, starts, digits, pen = battleRuleInUse(tabMode(
     rest.forEach((s) => take(s, i));
     if (snake && i > 0) rest.forEach(slide);
     if (bite && i > 0) rest.forEach(grow);
-    peak = Math.max(peak, ...size);
   };
   const own = (t, s) => {
     if (land[t]) landCount[land[t] - 1]--;
@@ -18682,7 +18680,6 @@ function battlePlayer(g, grid, S, starts, digits, pen = battleRuleInUse(tabMode(
   // thread), SEGMENT_NEVER while it stays; openSpans[s], s's link → its span open; kept the first time it is played
   const spans = [],
     openSpans = starts.map(() => new Map());
-  let playedTo = 0;
   const freshLine = (s) => {
     // (no line yet: all outside)
     lineOf[s].fill(0);
@@ -18703,7 +18700,7 @@ function battlePlayer(g, grid, S, starts, digits, pen = battleRuleInUse(tabMode(
     degree[s][b]++;
     linksOf[s].add(j);
     size[s]++;
-    if (i > playedTo) {
+    if (first) {
       openSpans[s].set(j, spans.length);
       spans.push([s, a, b, i - 1, SEGMENT_NEVER]);
     }
@@ -18720,7 +18717,7 @@ function battlePlayer(g, grid, S, starts, digits, pen = battleRuleInUse(tabMode(
     degree[s][b]--;
     linksOf[s].delete(j);
     size[s]--;
-    if (i > playedTo && openSpans[s].has(j)) {
+    if (first && openSpans[s].has(j)) {
       spans[openSpans[s].get(j)][4] = i - 1;
       openSpans[s].delete(j);
     }
@@ -18960,16 +18957,12 @@ function battlePlayer(g, grid, S, starts, digits, pen = battleRuleInUse(tabMode(
     get land() {
       return land;
     },
-    remakeLine, // (remakeLine: a line's land made again whole, to check it)
     standing,
     get step() {
       return i;
     },
     get n() {
       return n;
-    },
-    get peak() {
-      return peak;
     },
     to(j) {
       if (j < i) {
@@ -18993,7 +18986,6 @@ function battlePlayer(g, grid, S, starts, digits, pen = battleRuleInUse(tabMode(
         step();
         keepBest();
         keepGone();
-        playedTo = Math.max(playedTo, i);
       }
     },
     bestAt: (s) => bestOf[s][Math.max(0, i)], // (s's peak worth up to the step it is at)

@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.856';
+const VERSION = '0.4.857';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -1330,6 +1330,62 @@ const PRESETS = {
     name: 'A highway from step 1,123,492 for the Cairo ant by the digits',
     detail: '1/47 in base 2',
     f: '1/47',
+  },
+  sphere62_61: {
+    group: 'Fractions',
+    sym: '62/61',
+    name: 'A 5-fold band round the sphere of hexagons (size 32)',
+    detail: '62/61 in base 2',
+    f: '62/61',
+  },
+  sphere68_65: {
+    group: 'Fractions',
+    sym: '68/65',
+    name: 'A chain round the sphere of hexagons (size 32)',
+    detail: '68/65 in base 2',
+    f: '68/65',
+  },
+  sphere18_17: {
+    group: 'Fractions',
+    sym: '18/17',
+    name: 'A chain round the sphere of hexagons (size 32)',
+    detail: '18/17 in base 2',
+    f: '18/17',
+  },
+  sphere58_57: {
+    group: 'Fractions',
+    sym: '58/57',
+    name: 'A small closed figure on the sphere of hexagons (size 32)',
+    detail: '58/57 in base 2',
+    f: '58/57',
+  },
+  torus93_92: {
+    group: 'Fractions',
+    sym: '93/92',
+    name: 'A pattern round the square torus, along its grid (size 48)',
+    detail: '93/92 in base 3',
+    f: '93/92',
+  },
+  torus89_87: {
+    group: 'Fractions',
+    sym: '89/87',
+    name: 'Never an edge twice round the triangle torus, along its grid (size 48)',
+    detail: '89/87 in base 5',
+    f: '89/87',
+  },
+  torus88_87: {
+    group: 'Fractions',
+    sym: '88/87',
+    name: 'A pattern round the hex torus, along its grid (size 48)',
+    detail: '88/87 in base 2',
+    f: '88/87',
+  },
+  tetra61_59: {
+    group: 'Fractions',
+    sym: '61/59',
+    name: 'A pattern round the tetrahedron, along its grid (size 48)',
+    detail: '61/59 in base 5',
+    f: '61/59',
   },
   mersenne: {
     group: 'Primes',

@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.806';
+const VERSION = '0.4.807';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -6742,7 +6742,14 @@ function renderHeadTiles() {
   if (!headTiles) {
     renderSoundButton();
     headTiles = [
-      tile({ pic: icon('fit'), text: 'Auto-fit', title: $('autoFitRow').title, toggle: true, click: flip('autoFit') }),
+      tile({
+        pic: icon('fit'),
+        text: 'Auto-fit',
+        title: $('autoFitRow').title,
+        id: 'autoFitTile',
+        toggle: true,
+        click: flip('autoFit'),
+      }),
       tile({ pic: icon('grid'), text: 'Grid', title: $('gridRow').title, toggle: true, click: flip('showGrid') }),
     ];
     $('headTiles').replaceChildren(soundButton, ...headTiles);
@@ -11479,20 +11486,27 @@ const tipOf = (target) => {
   return { el, tip: el?.dataset.tip ?? '', greyed };
 };
 document.addEventListener('mouseover', (e) => {
-  const { el, tip, greyed } = tipOf(e.target),
+  const { el, tip: title, greyed } = tipOf(e.target),
     named = el?.matches('button, label, .notch-row'); // (a notch row: its title, its first span)
-  const rule = el?.dataset.ruleHtml ?? '',
-    said = rule
-      ? Object.assign(document.createElement('span'), {
-          innerHTML: [rule, tip && htmlText(tip)].filter(Boolean).join(' · '),
-        })
-      : tip; // (its rule first, as its card writes it: see ruleWords, ruleSpan)
   const name = named
     ? (
         el.getAttribute('aria-label') ?? (el.querySelector('.mode-name') ?? el.querySelector('span') ?? el).textContent
       ).trim()
     : ''; // (a button with no words, a picture: its aria-label)
-  const bold = (text) => Object.assign(document.createElement('b'), { className: 'tip-name', textContent: text }),
+  // its words, none when they are its name again (Play: its name alone); its name in bold, its key after it (see KEYS)
+  const tip = title.trim() === name ? '' : title,
+    rule = el?.dataset.ruleHtml ?? '',
+    said = rule
+      ? Object.assign(document.createElement('span'), {
+          innerHTML: [rule, tip && htmlText(tip)].filter(Boolean).join(' · '),
+        })
+      : tip, // (its rule first, as its card writes it: see ruleWords, ruleSpan)
+    key = named && shortcutOf(el),
+    bold = (text) =>
+      Object.assign(document.createElement('b'), {
+        className: 'tip-name',
+        textContent: key ? `${text} (${key})` : text,
+      }),
     ok = (tip || rule) && /\p{L}/u.test(name); // (a symbol, + or −: no name)
   // its default: a tile's (see setTile), a box's (its checkbox as the page starts)
   const box = el?.matches('label') ? el.querySelector('input[type=checkbox]') : null,
@@ -11528,7 +11542,7 @@ document.addEventListener('mouseover', (e) => {
   else
     $('tip').replaceChildren(
       ...(!tip && !rule
-        ? told.length
+        ? told.length || title
           ? [bold(name), ...told]
           : []
         : !ok
@@ -25741,7 +25755,7 @@ const pixelIcon = (art, pad = 0) => {
 // changing then those kept, by their live cells; the state before shown a moment, fading
 // a page's tools over it (how a rule or a walk works, the number): a switch (Letters, Base 10: its text, title, on, click), play
 // it again, copy it, back; each its click
-function tutTools({ toggle = null, words = [], replay = null, copy = null, close, back = 'the grid' }) {
+function tutTools({ toggle = null, words = [], replay = null, copy = null, close }) {
   // (words: [text, title, click], buttons of a word)
   const d = document.createElement('div'),
     add = (cls, html, title, click) => {
@@ -25758,7 +25772,8 @@ function tutTools({ toggle = null, words = [], replay = null, copy = null, close
   for (const [text, title, click] of words) add('tut-word', text, title, click);
   if (replay) add('tut-replay', '↻', 'Play it again', replay);
   if (copy) add('tut-copy', icon('copy'), 'Copy it', copy);
-  add('tut-close', '✕', `Back to ${back}`, close);
+  add('tut-close', '✕', 'Back', close);
+  d.lastChild.setAttribute('aria-label', 'Back'); // (its name, its key after it: Back (Escape), see KEYS)
   return d;
 }
 const replayPictures = () =>
@@ -39759,7 +39774,7 @@ const playerButton = (id) => {
   if (!way)
     return {
       pic: ahead > 0 ? 'play' : 'reverse',
-      title: ahead > 0 ? 'Play (Space)' : 'Play backwards, back to the start (its rule run backwards)',
+      title: ahead > 0 ? 'Play' : 'Play backwards, back to the start (its rule run backwards)',
       go: () => (ahead > 0 ? (atEnd() && restart(), play(true)) : reverse(true)),
     };
   const notch = way === ahead ? 1 : -1,
@@ -45505,45 +45520,32 @@ stage.addEventListener('pointerup', (e) => {
   }
 });
 
-// the first control shown of a selector clicked: whether there was one
-const clickShown = (selector) => {
-  const b = [...document.querySelectorAll(selector)].find((x) => x.offsetParent);
-  b?.click();
-  return !!b;
-};
+// The keys: each a click on the first control shown and not greyed of its list (E: End, else Life's
+// green link, else +10k; Escape: a page's cross, see tutTools, else the open pane's tab, Gallery's), or its own action
+// (Space: Stop while it plays, else Play; F: the view fitted again);
+// its name written after its control's in its tooltip (see shortcutOf)
+const KEYS = [
+  [' ', 'Space', ['#play', '#stop'], () => playOrStop()],
+  ['ArrowRight', '→', ['#step']],
+  ['ArrowLeft', '←', ['#back']],
+  ['r', 'R', ['#restart']],
+  ['e', 'E', ['#end', '#barNum .gen-link', '#jump10k']],
+  ['f', 'F', ['#autoFitTile'], recentre],
+  ['Escape', 'Escape', ['.tut-close', '.pane-tab.open']],
+];
+// a control's key, its name (see KEYS), if it has one
+const shortcutOf = (el) => KEYS.find(([, , controls]) => controls.some((c) => el.matches(c)))?.[1];
 document.addEventListener('keydown', (e) => {
   if (e.target.matches('input[type=number], input[type=text], select, textarea')) return;
-  switch (e.key) {
-    case ' ':
-      e.preventDefault();
-      playOrStop();
-      break;
-    case 'ArrowRight':
-      $('step').click();
-      break;
-    case 'ArrowLeft':
-      $('back').click();
-      break;
-    case 'r':
-    case 'R':
-      $('restart').click();
-      break;
-    case 'e':
-    case 'E':
-      [$('end'), $('barNum').querySelector('.gen-link'), $('jump10k')]
-        .find((b) => b && !b.hidden && !b.disabled)
-        ?.click();
-      break; // (End; Life: its green link (its loop's first, from there its last; frozen, dead: 0), its end not known yet: 10,000 ahead)
-    case 'f':
-    case 'F':
-      recentre();
-      break;
-    case 'Escape':
-      // a page over the view (how a rule or a walk works, the number…) closed by its cross (see tutTools), else the Gallery
-      // shut, as a click on its tab again
-      if (!clickShown('.tut-close') && !$('galleryPane').hidden) showPane(false);
-      break;
-  }
+  const found = KEYS.find(([key]) => key === e.key || key === e.key.toLowerCase());
+  if (!found) return;
+  const [key, , controls, action] = found;
+  if (key === ' ') e.preventDefault(); // (not the page scrolled)
+  if (action) return action();
+  controls
+    .flatMap((c) => [...document.querySelectorAll(c)])
+    .find((b) => b.offsetParent && !b.disabled)
+    ?.click();
 });
 
 // The prime menus, each prime with its number of digits (in base 10, as prime sizes are given)
@@ -45920,7 +45922,6 @@ function showNumber() {
       },
       copy: (e) => copyFlash(e.currentTarget, text),
       close: closeNumber,
-      back: 'the walk',
     }),
   );
   v.querySelector('.tut-body').scrollTop = 0;
@@ -46599,7 +46600,6 @@ const CREDITS = [
     'Tilings',
     "Roger Penrose; Robert Ammann and F. Beenker; N. G. de Bruijn's multigrids; Smith, Myers, Kaplan and Goodman-Strauss's hat and spectre; Conway and Radin's pinwheel; Hirschhorn and Hunt's flower; Teruhisa Sugimoto's rosettes, rings and hexagon rosettes; Bernhard Klaassen's rotational tilings; Tom Ruen's mirrored rosette (Wikimedia); Adams, Edgar, Hollander and Jacoby's kaleidoscope; Rolf Stein's pentagon; Jaap Scherphuis's Tiling Viewer; Goldberg's polyhedra, Menger's sponge, Paul Bourke's Klein bottle; Tutte's embedding and Floater's mean value weights (the rosette spheres)",
   ],
-  ['Prototypes', "Bert Chan's Lenia, Tom Mohr's Particle Life, Jeff Jones's Physarum, Tim Hutton's Squirm3"],
 ];
 // The memories' rows (Stats/debug): each its name, how many it keeps and its first keys as the code writes them, the empty
 // ones left out; a name several memories share (discMemo: a grid's each) summed

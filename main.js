@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.804';
+const VERSION = '0.4.805';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -6244,6 +6244,7 @@ const freshWalk = () => ({
   vert: null,
   stepTiles: null,
   came: null, // a surface's: its mesh, radius, the tile of each point, a grid walk's corners and edges
+  startMarks: null, // (its starts' marks hovered, made once for its form: see startMarks)
   visits: null,
   maxVisits: 0,
   ant: 0,
@@ -16814,10 +16815,10 @@ let startsShown = false; // while the start row ([− start +]) is hovered: the 
 // starts' edges grey (A's list, see startList, moved by the map that moved A's start to its own, see battleMaps; none for
 // Centred and Random starts, each its own), its own start's edge in its colour and twice as wide, from the place it comes
 // from to its first (its cone and flag on it, see startHeads); drawn by the graphics card over the tiles, unfaded (see
-// gpuSurface), made again only when the walk or its form change
-function startMarks(D, g, sh, R) {
+// gpuSurface), kept in the walk (made again for each walk built, see freshWalk) while its form is the same
+function startMarks(g, sh, R) {
   const key = `${sh.m}|${R}`;
-  if (D.startsOf === walk && D.startsKey === key) return D.startMarks;
+  if (walk.startMarks?.key === key) return walk.startMarks;
   const grid = !!walk.vert,
     G = gridGraph(g),
     k = g.sides,
@@ -16844,9 +16845,7 @@ function startMarks(D, g, sh, R) {
     });
   });
   gpuBuffer('starts', new Float32Array(data));
-  D.startsOf = walk;
-  D.startsKey = key;
-  return (D.startMarks = { parts });
+  return (walk.startMarks = { key, parts });
 }
 
 // A surface's corner v (of its grid G) on its flat sheet; a step (du, dv) on a torus's sheet, the shortest across its seams;
@@ -42890,7 +42889,7 @@ function gpuSurface(paint, path) {
     // its colour and its width on the screen, unfaded, over the tiles; the starts' flags (and cones, hovered: see startHeads)
     const marks = [
       ...(motifShown && middleTile.g === g && middleTile.t >= 0 ? [['motif', motifRibbons(D, g, sh, R)]] : []),
-      ...(startsShown ? [['starts', startMarks(D, g, sh, R)]] : []),
+      ...(startsShown ? [['starts', startMarks(g, sh, R)]] : []),
     ];
     if (marks.length) {
       ribbons();

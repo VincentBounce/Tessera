@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.802';
+const VERSION = '0.4.803';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -680,23 +680,9 @@ function formulaWorker() {
 
     const negative = () => new Error('the number is negative: only numbers ≥ 0 can be walked');
     try {
-      if (ast.kind === 'int') {
-        // an integer (a prime…): its digits only, the first n sent back
-        const [N] = exactOf(ast);
-        if (N < 0n) throw negative();
-        const all = digitString(N, base);
-        self.postMessage({
-          type: 'done',
-          intPart: all.slice(0, n),
-          total: all.length,
-          digits: new Uint8Array(0),
-          tests: primeTests,
-          ms: performance.now() - t0,
-        });
-        return;
-      }
-      if (ast.kind === 'rat') {
-        // a fraction: long division
+      if (exact(ast)) {
+        // an exact number, an integer N as N/1 or a fraction: its integer part, then the long division's digits, 0s
+        // once it ends (4 = 4.000…, 1/4 = 0.25000…)
         const [p, q] = exactOf(ast);
         if (p < 0n) throw negative();
         const digits = new Uint8Array(n);
@@ -706,9 +692,10 @@ function formulaWorker() {
           digits[i] = Number(r / q);
           r %= q;
         }
-        self.postMessage({ type: 'done', intPart: digitString(p / q, base), digits, ms: performance.now() - t0 }, [
-          digits.buffer,
-        ]);
+        self.postMessage(
+          { type: 'done', intPart: digitString(p / q, base), digits, tests: primeTests, ms: performance.now() - t0 },
+          [digits.buffer],
+        );
         return;
       }
       // a real: guard digits for rounding, for each operation, and for large or small values met on the way
@@ -6378,7 +6365,7 @@ const stepLook = (look) => {
 };
 let lifeStart = null; // where a Life start comes from when it is not the number's digits (see setLifeSeed)
 let barTitle = ''; // a walk's title: its number, a creature's name and what it turns by (its loop's link after it, see updateStats)
-function describe(base, available) {
+function describe(base) {
   const mode = MODES[walk.mode],
     sym = withIcons(shownSymbol); // (the walk shown's, described once built)
   setLinks($('barNum'), (barTitle = withIcons(shownSymbol)));
@@ -6474,13 +6461,8 @@ function describe(base, available) {
       `${{ digits: `${sym} in base 2`, cell: 'One live cell', two: 'Two live cells', half: 'Its left half alive' }[plane.start]} its first row, ${formatNumber(walk.n)} rows down · ${formatNumber(walk.rows.upTo.at(-1))} live cells`;
     return;
   } // (Elementary, see elementaryRows)
-  const cells = walk.life.seed.length;
-  const seeded =
-    available < cells
-      ? `the first ${formatNumber(available)} of the ${formatNumber(cells)} cells (the others start dead)`
-      : `the ${formatNumber(cells)} cells`;
   $('description').innerHTML =
-    `Neighbours share an edge or a corner · ${startLead(`${sym} in base ${base} seeds`, seeded)}`; // (the rule, a newborn's colour too: How it works)
+    `Neighbours share an edge or a corner · ${startLead(`${sym} in base ${base} seeds`, `the ${formatNumber(walk.life.seed.length)} cells`)}`; // (the rule, a newborn's colour too: How it works)
 }
 
 // What the Display menu offers depends only on the walk tab (the group of the mode in the menu).
@@ -7357,12 +7339,6 @@ const randomPrimeSize = () => {
   const m = $('formula').value.match(/^\s*randprime\(\s*(\d+)\s*,\s*\d+\s*\)\s*$/);
   return m ? Number(m[1]) : null;
 };
-// A whole number (a prime…) has a fixed count of digits, known once computed: the label then says
-// "all 344 digits" when it is shorter than the count asked, "20,000 of 352,987" when it is longer.
-// The whole number in use, if any: its count of digits (in the field, not formulaInUse: while a new
-// number is read, that one is still the old)
-const wholeTotal = () =>
-  digitsComputed?.whole && digitsComputed.formula === $('formula').value ? digitsComputed.total : null;
 // In generations (Elementary's rows, computed ahead; Space-time's height, its layers kept): [ − ] 2,000 generations [ + ];
 // Space-time made again. A reversible one has none: played on either way, as a Game of Life forth (see runStart)
 const gensShown = () => !!MODES[tabMode()].elementary || spaceTimeOn();
@@ -7478,8 +7454,7 @@ function runStop() {
   if (randomPrimeSize()) return null;
   const asked = lengthAsked(),
     unit = stepperUnit(),
-    L = walk.loop,
-    total = wholeTotal();
+    L = walk.loop;
   // (a battle's own end, known as it was fought: not the digits asked meanwhile)
   if (walk.battle?.winner.until)
     return {
@@ -7494,12 +7469,6 @@ function runStop() {
       n: L.cap ?? walk.n,
       label: `${formatNumber(L.cap ?? walk.n)} ${unit} max ${L.drift ? '→' : '↻'}`,
       why: loopText(),
-    };
-  if (total !== null && total <= asked)
-    return {
-      n: total,
-      label: `all ${formatNumber(total)} ${unit}`,
-      why: `The number has ${formatNumber(total)} digits: all walked`,
     };
   return null;
 }
@@ -7518,14 +7487,12 @@ function syncDigitsStepper() {
     gens = gensShown(),
     asked = size ?? lengthAsked(),
     steps = size ? PRIME_STEPS : DIGIT_STEPS;
-  const unit = gens ? 'generations' : stepperUnit(),
-    total = gens || size || walk.loop ? null : wholeTotal(); // (a loop's, its rounds: see runStop)
+  const unit = gens ? 'generations' : stepperUnit();
   // the length asked, steps at most, the same words in every tab (its end, a loop, a death, a battle's: the step line, see endMark)
   if (document.activeElement !== $('digitsLabel')) $('digitsLabel').value = `≤${compactCount(asked)} ${STEPS_GLYPH}`; // (in its unit, steps, as the speed field)
   $('digitsLabel').title = [
     `${formatNumber(asked)} ${size ? 'digits of the random prime p (100 to 2,000: it is walked whole)' : `${asked === 1 ? unit.slice(0, -1) : unit} at most`}`,
     !size && !lengthUsed() && 'Not used here (Life and Rewind play on): kept for the next tab',
-    !size && total !== null && `The number has ${formatNumber(total)} digits`,
     stop?.why,
     `Type a number, from ${formatNumber(steps[0])} to ${formatNumber(size ? steps.at(-1) : lengthMost())}, then Enter`,
   ]
@@ -8375,7 +8342,7 @@ const withIcons = (text) =>
  *           and the 0s and 1s of dragon, thuemorse, rabbit).
  *           It is not a number, so it only stands alone: random(5)+1 is refused.
  * The kind decides where digits come from: sequences on the page (seqDigits), everything else in
- * the worker. An integer is walked through its own digits only (no digits after the point).
+ * the worker. An exact number, an integer or a fraction, has digits after the point as a real does: 0s once it ends.
  */
 
 /* ---- 4.1 Vocabulary ----------------------------------------------------------------------- */
@@ -9013,21 +8980,17 @@ function sieve(limit) {
   return composite;
 }
 
-// kind: the formula's ('int', 'rat' for a fraction, 'real' or 'seq'); ratio: a fraction's [p, q] (BigInt)
+// kind: the formula's ('int', 'rat' for a fraction, 'real' or 'seq'); ratio: an exact number's [p, q] (BigInt), an
+// integer's [N, 1]
 function setCurrent(entry, base, kind, ratio = null) {
-  const head = headDigits(entry.intPart, base);
-  // total: how many digits the whole number has (a whole number's are only sent up to the count used)
   digitsComputed = {
-    head,
+    head: headDigits(entry.intPart, base),
     digits: entry.digits,
     base,
-    total: entry.total ?? head.length + entry.digits.length,
     mode: tabMode(),
-    whole: entry.total !== undefined,
-    formula: formulaInUse, // whole: a whole number, its digits all known
-    fraction: kind === 'rat',
-    ratio, // its digits end up repeating (see torusLoops)
-    patterned: kind === 'rat' || !!FORMULA_NAMES[formulaInUse]?.[2],
+    formula: formulaInUse,
+    ratio, // its digits end up repeating, an integer's 0s too (see torusLoops)
+    patterned: kind === 'int' || kind === 'rat' || !!FORMULA_NAMES[formulaInUse]?.[2],
   }; // its digits a pattern: a fraction's period, a dragon's folds (see patternAreaCap)
 }
 // an integer part's digits (its text, without its leading zeros), one a byte
@@ -9046,7 +9009,7 @@ function headDigits(intPart, base) {
 function knownDigits(F, base, n) {
   if (F.kind === 'seq') return seqDigits(F.ast, n, base).digits;
   const hit = digitsCache[digitsKey(F, base)];
-  if (!hit || (hit.intPart.length + hit.digits.length < n && hit.total === undefined)) return null;
+  if (!hit || hit.intPart.length + hit.digits.length < n) return null;
   const head = headDigits(hit.intPart, base),
     all = new Uint8Array(head.length + hit.digits.length);
   all.set(head);
@@ -9063,7 +9026,6 @@ function digitsWorker(F, base, n, then) {
       digitsCache[digitsKey(F, base)] = {
         intPart: d.intPart,
         digits: d.digits,
-        total: d.total,
         tests: d.tests,
         uncertain: d.uncertain,
       };
@@ -9161,8 +9123,8 @@ const writeDigits = (ds, b, head) => {
   return ds.length > head ? `${write(ds.subarray(0, head))}.${write(ds.subarray(head))}` : head ? write(ds) : '0';
 };
 // the numbers shown (see showNumber): the Digits' one, or a battle's, each walker's: its digits read (used: to its death or
-// the battle's end) of those in use (n), its integer part's (head) and the rest (frac), its digits in all (total), a fraction's
-// exact value (ratio, its period shown)
+// the battle's end) of those in use (n), its integer part's (head) and the rest (frac), its integer part's length (intLength),
+// an exact number's value (ratio, its period shown)
 function numberRows() {
   const P = walk.battle?.player,
     b = digitsComputed.base,
@@ -9173,7 +9135,7 @@ function numberRows() {
       ds = s ? knownDigits(F, b, n) : Uint8Array.from([...head, ...frac]),
       used = !P ? n : P.dead[s] >= 0 ? P.dead[s] : P.n;
     const lead = !s
-        ? head.length
+        ? digitsComputed.head.length
         : F.kind === 'seq'
           ? ds.length
           : headDigits(digitsCache[digitsKey(F, b)].intPart, b).length,
@@ -9185,8 +9147,8 @@ function numberRows() {
       n,
       head: ds.subarray(0, h),
       frac: ds.subarray(h, used),
-      total: s ? lead : digitsComputed.total,
-      ratio: s ? F.kind === 'rat' && smallExact(F.ast) : digitsComputed.ratio,
+      intLength: lead,
+      ratio: s ? smallExact(F.ast) : digitsComputed.ratio,
     };
   });
 }
@@ -10946,20 +10908,20 @@ function compute() {
     $('status').textContent = '';
     setTiming('Digits');
     timed('Build', buildWalk);
-    describe(base, 0); // (the bar: a creature's name and rule, a start's)
+    describe(base); // (the bar: a creature's name and rule, a start's)
     $('copyNumber').hidden = true;
     showAll();
     applyPendingView();
     return;
   }
   if (kind === 'seq') {
-    setCurrent(seqDigits(F.ast, want, base), base, kind, kind === 'rat' ? smallExact(F.ast) : null);
+    setCurrent(seqDigits(F.ast, want, base), base, kind);
     if (!elementaryReady(compute)) return; // (Elementary's rows on their way: then all again, its digits cached)
     if (!rivalsReady(compute)) return; // (a battle's other numbers on their way, see rivalsReady)
     $('status').textContent = note;
     setTiming('Digits'); // (a sequence's: made at once)
     timed('Build', buildWalk);
-    describe(base, n);
+    describe(base);
     $('copyNumber').hidden = false;
     showAll();
     applyPendingView();
@@ -10967,10 +10929,9 @@ function compute() {
   }
 
   const done = (entry) => {
-    setCurrent(entry, base, kind, kind === 'rat' ? smallExact(F.ast) : null);
+    setCurrent(entry, base, kind, smallExact(F.ast));
     if (!elementaryReady(() => done(entry))) return; // (Elementary's rows on their way, see elementaryReady)
     if (!rivalsReady(() => done(entry))) return; // (a battle's other numbers on their way, see rivalsReady)
-    const total = entry.total ?? digitsComputed.head.length + digitsComputed.digits.length;
     timed('Build', buildWalk); // (its times in Display's Times, see timings)
     $('status').textContent = [
       F.root === 'randprime' &&
@@ -10981,18 +10942,13 @@ function compute() {
     ]
       .filter(Boolean)
       .join(' · ');
-    describe(base, total);
-    syncDigitsStepper(); // a whole number's digits are now known
+    describe(base);
     $('copyNumber').hidden = false;
     showAll();
     applyPendingView();
   };
-  const hit = digitsCache[key],
-    integer = kind === 'int';
-  const enough = integer
-    ? hit && (hit.intPart.length >= n || hit.intPart.length === hit.total)
-    : hit && hit.digits.length >= want;
-  if (enough) {
+  const hit = digitsCache[key];
+  if (hit && hit.digits.length >= want) {
     setTiming('Digits', 'cached');
     done(hit);
     return;
@@ -11031,7 +10987,7 @@ function compute() {
       $('status').textContent = `Formula: ${d.message}`;
       return;
     }
-    const entry = { intPart: d.intPart, digits: d.digits, total: d.total, tests: d.tests, uncertain: d.uncertain };
+    const entry = { intPart: d.intPart, digits: d.digits, tests: d.tests, uncertain: d.uncertain };
     digitsCache[key] = entry;
     // a long walk (millions of an ant's steps take seconds): the gauge shows first, a frame to paint it,
     // and slides on while the walk is built (the page stops meanwhile)
@@ -23782,7 +23738,7 @@ function planeReseed() {
   L.seed.set(planeSeed(walk.plane.kind, walk.digits, L.C, lifeParts()));
   startColours(L.seed);
   countSeed(L);
-  describe(walk.base, Infinity);
+  describe(walk.base);
   renderPlaneRow();
   restart();
   showStacks();
@@ -38782,7 +38738,7 @@ function setLifeSeed(seed, how) {
   countSeed(L);
   championCode = how && !how.zone ? encodeCells(L.seed, walk.base) : null; // a hunt's, a battle's, a saved start, in its shortest form (a zone's or the grid's own: its pop says it, see getSetup)
   lifeStart = how;
-  describe(walk.base, Infinity);
+  describe(walk.base);
   restart();
   if (!$('ruleTuto').hidden) renderRuleSection(); // (blocks: the start's max period)
   showStacks();
@@ -45882,13 +45838,13 @@ const digitsValue = (ds, B) => {
 };
 // The number in base 10 over the base it is in (see showNumber), as many digits as those in use tell, a whole number's whole;
 // a whole number cut (more digits than in use), its size and first digits; and how many digits it shows (a note)
-function base10Digits({ head, frac, total }) {
+function base10Digits({ head, frac, intLength }) {
   const B = BigInt(digitsComputed.base),
     lb = Math.log10(digitsComputed.base);
-  if (head.length < total && !frac.length) {
+  if (head.length < intLength && !frac.length) {
     // (its first digits and its power of 10, from its first digits)
     const s = digitsValue(head.subarray(0, 40), B).toString(),
-      l = s.length - 1 + Math.log10(Number(`${s[0]}.${s.slice(1, 16)}`)) + (total - Math.min(40, head.length)) * lb;
+      l = s.length - 1 + Math.log10(Number(`${s[0]}.${s.slice(1, 16)}`)) + (intLength - Math.min(40, head.length)) * lb;
     return [
       `≈ ${(10 ** (l % 1)).toFixed(14)}… × 10^${formatNumber(Math.floor(l))}`,
       `first 15 of ${formatNumber(Math.floor(l) + 1)} digits`,
@@ -45919,9 +45875,8 @@ function showNumber() {
   // each number (see numberRows): its title, in its walker's colour in a battle, and how many of its digits; a fraction's
   // period (= .(101)); then its digits (cut: …), a battle's on one line; in base 10 when switched on (see base10Digits)
   const inBase = (r) => {
-    const sign = !r.frac.length && r.head.length === r.total ? '=' : '≈';
     return [
-      `${sign} ${writeDigits(Uint8Array.from([...r.head, ...r.frac]), B, r.head.length)}${sign === '≈' ? '…' : ''}`,
+      `≈ ${writeDigits(Uint8Array.from([...r.head, ...r.frac]), B, r.head.length)}…`, // (an exact number's value: its period line)
       r.used < r.n
         ? `truncated to ${formatNumber(r.used)}/${formatNumber(r.n)} digits`
         : `all first ${formatNumber(r.n)} digits`,

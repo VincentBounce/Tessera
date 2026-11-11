@@ -14,9 +14,11 @@ Every number is a **formula**, computed in the browser with `BigInt` in a Web Wo
 
 The cards fill in the formula field; you can also type your own.
 
-**Fractions:** 4/3, 16/9, 22/7, 355/113, and the rosettes and late highways found on the walks.
+**ℚ (fractions):** 4/3, 16/9, 22/7, 355/113, and the rosettes and late highways found on the walks.
 
 **Constants:** π, e, φ (golden ratio), γ (Euler–Mascheroni), G (Catalan), E (Erdős–Borwein), and numbers made by a formula: √2, ∛2, the plastic number, ln 2, log₂ 3, e^π, 2^√2, e^γ, π²/6, ζ(3), 6/π², e^(π√163).
+
+**🎲 Random:** `random(seed)`, digits drawn at random: its tab draws a new seed, its button another; a link gives the same draw again.
 
 **Primes**
 - **Mersenne primes 2ᵖ − 1:** the known ones from M₁₂₇ to M₁₃₆₂₇₉₈₄₁. In base 2 or 4 their digits are trivial (111…1 and 1333…3).
@@ -25,7 +27,6 @@ The cards fill in the formula field; you can also type your own.
 - **Prime constant ρ₂:** ρ = Σ 2^(−p) = 0.0110101000101…₂, written in the walk's base.
 
 **Sequences** (digit streams, used alone)
-- **Random digits:** `random(seed)`, a new seed on each click.
 - **Champernowne:** 1 2 3 4 … written one after another in the walk's base.
 - **Prime barcode ρ (Ulam):** digit k is 0 if k is not prime, else k mod b. On the square spiral it draws the Ulam spiral of the primes.
 - **Prime gaps Δp:** one digit per gap between consecutive odd primes, (gap / 2) mod b.

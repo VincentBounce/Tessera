@@ -10,9 +10,9 @@
   <meta property="og:url" content="https://vincentbounce.github.io/Tessera/">
   <meta property="og:type" content="website">
   <link id="favicon" rel="icon">  <!-- the app's logo, set at start-up (see appLogo) -->
-  <link rel="stylesheet" href="style.css?v=0.4.822">
+  <link rel="stylesheet" href="style.css?v=0.4.823">
   <script>  // the theme before the first paint (see applyTheme)
-    try { const t = localStorage.getItem('tesseraTheme') || 'system'; document.documentElement.dataset.theme = t === 'system' ? (matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark') : t; } catch { document.documentElement.dataset.theme = 'dark'; }
+    try { const t = localStorage.getItem('tesseraTheme'); document.documentElement.dataset.theme = t === 'light' || t === 'dark' ? t : matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark'; } catch { document.documentElement.dataset.theme = 'dark'; }
   </script>
 </head>
 <body>
@@ -454,18 +454,12 @@
         </div>
       </div>
       <div id="viewTools" class="stage-box display-menu">
-        <div class="stage-head" id="viewHead">  <!-- the page and the sky behind a 3D view, tiles on the right: System always in sight; the sky, Light and Dark on its left while the box is open (see applyTheme) -->
-          <div id="themeButtons" class="nav-shapes head-tiles"></div>
-          <select id="theme" hidden>
-            <option value="light" title="The page light">Light</option>
-            <option value="dark" title="The page dark">Dark</option>
-            <option value="system" title="The page light or dark, as the system is set">System</option>
-          </select>
+        <div class="stage-head" id="viewHead">  <!-- its tiles on the right: the theme's switch always in sight; Sound, Auto-fit and Grid on its left while the box is open (see renderHeadTiles) -->
+          <div id="headTiles" class="nav-shapes head-tiles"></div>
         </div>
         <div class="stage-more">  <!-- shown on hover, below -->
-          <div>  <!-- Sound, Auto-fit, Grid (see renderHeadTiles) -->
-            <div id="headTiles" class="nav-shapes"></div>
-            <div hidden>  <!-- their checkboxes, the source -->
+          <div>
+            <div hidden>  <!-- Auto-fit's and Grid's checkboxes, the source (see renderHeadTiles) -->
               <label id="autoFitRow" title="Fit the view to the walk and keep it fitted; a double-click fits it again"><input id="autoFit" type="checkbox" checked></label>
               <label id="gridRow" title="The grid's lines (hover for the display settings)"><input id="showGrid" type="checkbox" checked></label>
             </div>
@@ -517,10 +511,10 @@
     </div>
   </main>
 
-  <script src="pixelarticons.js?v=0.4.822"></script>
-  <script src="punks.js?v=0.4.822"></script>
-  <script src="loops.js?v=0.4.822"></script>
-  <script src="emoji.js?v=0.4.822"></script>
-  <script src="main.js?v=0.4.822"></script>
+  <script src="pixelarticons.js?v=0.4.823"></script>
+  <script src="punks.js?v=0.4.823"></script>
+  <script src="loops.js?v=0.4.823"></script>
+  <script src="emoji.js?v=0.4.823"></script>
+  <script src="main.js?v=0.4.823"></script>
 </body>
 </html>

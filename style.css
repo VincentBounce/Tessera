@@ -1411,7 +1411,7 @@ button.wide.active,
     width: var(--display-open-width);
   }
 }
-/* System stays at the top right; hovering opens the settings: the sky, Light and Dark on its left, tiles a quarter of the box, the rest below */
+/* the theme's switch stays at the top right; hovering opens the settings: Sound, Auto-fit and Grid on its left, tiles a quarter of the box, the rest below */
 .display-menu .stage-head {
   display: flex;
   justify-content: flex-end;
@@ -1421,7 +1421,7 @@ button.wide.active,
   justify-content: flex-end;
   gap: var(--tile-gap);
   margin-bottom: 0;
-} /* closed: System alone, on the right */
+} /* closed: the theme's switch alone, on the right */
 .head-tiles button {
   width: var(--tile-width);
 } /* (closed as open: a tile's width) */
@@ -1435,7 +1435,7 @@ button.wide.active,
     flex: 1;
   }
 }
-#themeButtons {
+#headTiles {
   margin-bottom: 0;
 } /* (the sections below: their own line and margins, see .form-section) */
 /* shown only while the box is open, like its other settings */

@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.822';
+const VERSION = '0.4.823';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -6727,8 +6727,9 @@ function renderViewModes() {
   $('viewModes').hidden = $('centeredRow').hidden;
 }
 $('viewTools').addEventListener('mouseenter', renderViewModes);
-// The view's head, standard tiles on the right (toggle): Sound (every mode), Auto-fit (while the box is open), Grid (always), each
-// its checkbox's (the source, kept out of sight); drawn again with the display box, when the box opens and as either changes
+// The view's head, standard tiles on the right (toggle): Sound, Auto-fit, Grid while the box is open, each its checkbox's (the
+// source, kept out of sight), then the theme's switch, always (see themeSwitch); drawn again with the display box, when the box
+// opens and as either changes
 let headTiles = null;
 function renderHeadTiles() {
   const flip = (id) => () => {
@@ -6749,7 +6750,8 @@ function renderHeadTiles() {
       }),
       tile({ pic: icon('grid'), text: 'Grid', title: $('gridRow').title, toggle: true, click: flip('showGrid') }),
     ];
-    $('headTiles').replaceChildren(soundButton, ...headTiles);
+    for (const b of [soundButton, ...headTiles]) b.classList.add('open-only');
+    $('headTiles').replaceChildren(soundButton, ...headTiles, themeSwitch);
   }
   renderSoundButton();
   setTile(headTiles[0], { on: $('autoFit').checked, byDefault: defaultMark('autoFit') });
@@ -6836,35 +6838,15 @@ function tileGroup(buttons, wide = false) {
   g.append(...buttons);
   return g;
 }
-function renderChoiceButtons(sel, box, pictures, first = null) {
-  // pictures: an icon per value, above its name; first: the default's value; each tile its value (data-value)
-  box.replaceChildren(
-    ...Array.from(sel.options)
-      .filter((o) => !o.hidden)
-      .map((o) => {
-        const b = tile({
-          pic: icon(pictures[o.value]),
-          text: o.text,
-          title: o.title,
-          on: o.value === sel.value,
-          byDefault: o.value === first ? 'yes' : '',
-          click: () => {
-            sel.value = o.value;
-            sel.dispatchEvent(new Event('change'));
-          },
-        });
-        b.dataset.value = o.value;
-        return b;
-      }),
-  );
-}
-// A tile, every one alike (the shapes, the colours, the looks, the zones, Walls, Square, Trail, the sky, the themes): a square
-// button, its picture over its name (html: both as one), fixed whatever its state; a click, once. Its states: on (gold) or off,
+// A tile, every one alike (the shapes, the colours, the looks, the zones, Walls, Square, Trail, the theme): a square
+// button, its picture over its name (html: both as one), fixed whatever its state (but a switch's own while off, see
+// offPic); a click, once. Its states: on (gold) or off,
 // greyed when it cannot be clicked (gold still if on: Walls on a grid that never repeats); a small triangle in its corner,
 // if marked (a count of colours whose battles can bring a colour back); again: on, a click on it still does something (a zone
 // draws another start, a shape's switches walls and a torus): its hover gold; toggle: a switch on or off (Trail, Walls,
-// Turned, System…), said once when made and kept: its hover gold on, a pale gold off (as a choice picked); turn: its picture turned by so many degrees (a
-// second state a click again gives: a torus's tiles turned)
+// Turned, the theme…), said once when made and kept: its hover gold on, a pale gold off (as a choice picked); offPic, offText: a
+// switch's picture and name while off, if it has its own (the theme: Light on, Dark off); turn: its picture turned by so many
+// degrees (a second state a click again gives: a torus's tiles turned)
 const tile = ({
   pic = '',
   text = '',
@@ -6876,6 +6858,8 @@ const tile = ({
   mark = false,
   again = false,
   toggle = false,
+  offPic = null,
+  offText = text,
   turn = 0,
   byDefault,
   greyed,
@@ -6891,6 +6875,7 @@ const tile = ({
   if (toggle) b.dataset.toggle = '';
   if (title) b.title = title;
   b.innerHTML = html ?? `${pic}<span>${text}</span>`;
+  if (offPic) b.faces = { on: b.innerHTML, off: `${offPic}<span>${offText}</span>` }; // (see setTile)
   if (click) b.addEventListener('click', click);
   return setTile(b, { on, can, mark, again, turn, byDefault, greyed, whyNot, at });
 };
@@ -6938,6 +6923,7 @@ const setTile = (
   const pic = b.querySelector('svg');
   if (pic) pic.style.transform = turn ? `rotate(${turn}deg)` : '';
   b.disabled = !can;
+  if (b.faces && b.dataset.face !== (b.dataset.face = on ? 'on' : 'off')) b.innerHTML = b.faces[b.dataset.face]; // (a switch's own picture and name while off)
   b.classList.toggle('active', on);
   b.classList.toggle('mark', mark && can);
   b.classList.toggle('switch', can && ((again && on) || 'toggle' in b.dataset)); // (its hover: on, gold; off, a pale gold)
@@ -8067,7 +8053,6 @@ const ICONS = (() => {
         'M12 2.5V5M12 19V21.5M2.5 12H5M19 12H21.5M5.3 5.3L7.1 7.1M16.9 16.9L18.7 18.7M5.3 18.7L7.1 16.9M16.9 7.1L18.7 5.3',
       ),
     moon: '<path class="f" d="M19.5 14.6A8 8 0 1 1 9.4 4.5A6.3 6.3 0 0 0 19.5 14.6Z"/>',
-    halfDisc: '<circle cx="12" cy="12" r="8.5"/>' + '<path class="f" d="M12 3.5A8.5 8.5 0 0 0 12 20.5Z"/>',
     pivot: svgPath('M18.4 13A6.5 6.5 0 1 1 16.6 7.4') + svgPath('M17.5 3.5V7.8H13.2'), // a turn on the spot, clockwise
     // the view's switches: Perspective (a rectangle seen at a slant, its near side taller), Side light (a torch lighting from the left),
     // Auto-rotate (a turn round a slanted orbit)
@@ -45595,35 +45580,27 @@ const pickPreset = (id) => {
 };
 $('mersenneP').addEventListener('change', () => pickPreset('mersenne'));
 $('primorialP').addEventListener('change', () => pickPreset('primorial'));
-// Theme: Light, Dark or System (the default, following the system as it changes), kept in this browser
-// (System, clicked again: back to the last of Light and Dark chosen, else to the one the system shows)
-const systemLight = matchMedia('(prefers-color-scheme: light)');
-let themeWas = null,
-  themeLast = null;
-try {
-  themeLast = localStorage.getItem('tesseraThemeLast');
-} catch {
-  /* none */
-}
-function applyTheme() {
-  const t = $('theme').value,
-    theme = t === 'system' ? (systemLight.matches ? 'light' : 'dark') : t;
-  themeWas = t;
-  if (t !== 'system') themeLast = t;
-  try {
-    localStorage.setItem('tesseraTheme', t);
-    if (t !== 'system') localStorage.setItem('tesseraThemeLast', t);
-  } catch {
-    /* not kept */
-  }
-  renderChoiceButtons($('theme'), $('themeButtons'), { light: 'sun', dark: 'moon', system: 'halfDisc' }, 'system');
-  const [light, dark, system] = ['light', 'dark', 'system'].map((v) =>
-    $('themeButtons').querySelector(`[data-value="${v}"]`),
-  );
-  $('themeButtons').prepend(tileGroup([light, dark])); // Light | Dark, then System: open
-  for (const b of $('themeButtons').children) if (b !== system) b.classList.add('open-only');
-  system.dataset.toggle = ''; // (a switch: clicked again, back to Light or Dark)
-  setTile(system, { on: t === 'system' });
+// The theme: a switch, Light on, Dark off (its picture and name the theme shown), kept in this browser once clicked; at a
+// first visit, the system's (see the page's own script, before the first paint)
+const themeSwitch = tile({
+  pic: icon('sun'),
+  text: 'Light',
+  offPic: icon('moon'),
+  offText: 'Dark',
+  toggle: true,
+  title: 'The page light, or dark',
+  click: () => {
+    const theme = themeName() === 'light' ? 'dark' : 'light';
+    try {
+      localStorage.setItem('tesseraTheme', theme);
+    } catch {
+      /* not kept */
+    }
+    applyTheme(theme);
+  },
+});
+function applyTheme(theme) {
+  setTile(themeSwitch, { on: theme === 'light' });
   if (document.documentElement.dataset.theme === theme && MONO === PALETTES[theme].mono) return;
   document.documentElement.dataset.theme = theme;
   setPalette(theme);
@@ -45633,21 +45610,8 @@ function applyTheme() {
   renderTeams(); // Life's colour blocks, in the theme's colours
   needsFull = statsDirty = true; // (Life's gauges and curve in the theme's colours too)
 }
-try {
-  $('theme').value = localStorage.getItem('tesseraTheme') || 'system';
-} catch {
-  $('theme').value = 'system';
-}
-if (!$('theme').value) $('theme').value = 'system';
-$('theme').addEventListener('change', () => {
-  if ($('theme').value === 'system' && themeWas === 'system')
-    $('theme').value = themeLast ?? (systemLight.matches ? 'light' : 'dark');
-  applyTheme();
-});
-systemLight.addEventListener('change', () => {
-  if ($('theme').value === 'system') applyTheme();
-});
-applyTheme();
+applyTheme(themeName());
+renderHeadTiles();
 // the animation bar sits over the view: its clicks, drags (the step slider) and wheel are its own
 for (const type of ['pointerdown', 'dblclick', 'wheel']) {
   $('animBar').addEventListener(type, (e) => e.stopPropagation());

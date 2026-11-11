@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.868';
+const VERSION = '0.4.869';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -8956,10 +8956,13 @@ function renderNumberPicker(active) {
           const p = PRESETS[id],
             b = document.createElement('button');
           b.innerHTML = cardSymbol(p.sym);
-          b.setAttribute('aria-label', p.name); // (its symbol a picture: its name in bold over its words, see the tooltips)
-          b.title = p.detail ?? '';
-          // the formula it writes, under its words (see the tooltips' Formula): one built from its menu or drawn, once picked
-          b.dataset.formula = id === active ? formulaInUse : typeof p.f === 'string' ? p.f : '';
+          // its symbol a picture: its name in bold over its words (see the tooltips); a fraction's, the fraction itself, its
+          // name in its words; then the formula it writes (one built from its menu or drawn, once picked), unless its name
+          const formula = id === active ? formulaInUse : typeof p.f === 'string' ? p.f : '',
+            fraction = /^\d+\/\d+$/.test(formula);
+          b.setAttribute('aria-label', fraction ? formula : p.name);
+          b.title = (fraction ? [p.name, p.detail] : [p.detail]).filter(Boolean).join(', ');
+          b.dataset.formula = fraction ? '' : formula;
           b.setAttribute('role', 'option');
           setTile(b, { on: id === active, again: true }); // (clicked again: its page, see toggleNumber)
           b.addEventListener('click', () => (id === active ? toggleNumber() : pick(id)));
@@ -11623,7 +11626,7 @@ document.addEventListener('mouseover', (e) => {
         className: 'tip-name',
         textContent: key ? `${text} (${key})` : text,
       }),
-    ok = (tip || rule) && /\p{L}/u.test(name); // (a symbol, + or −: no name)
+    ok = (tip || rule) && (el.hasAttribute('aria-label') || /\p{L}/u.test(name)); // (a symbol, + or −: no name; a name given, one)
   // its default: a tile's (see setTile), a box's (its checkbox as the page starts)
   const box = el?.matches('label') ? el.querySelector('input[type=checkbox]') : null,
     d = el?.dataset.default ?? (box ? (box.defaultChecked ? 'on' : 'off') : '');

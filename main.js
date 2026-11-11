@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.843';
+const VERSION = '0.4.844';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -6784,8 +6784,8 @@ function relabelColours(mode) {
           : `States: alive${dying} · dead`,
         gradient:
           C > 2
-            ? 'Age of live cells, warm newborns to cold old ones + dying stages'
-            : 'Age of live cells, warm newborns to cold old ones + fading trail',
+            ? 'Live cells by how old they are, warm newborns to cold old ones + dying stages'
+            : 'Live cells by how old they are, warm newborns to cold old ones + fading trail',
         digit: 'State changes',
         cells: '',
         visits: '',

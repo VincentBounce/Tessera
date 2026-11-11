@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.862';
+const VERSION = '0.4.863';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -1033,30 +1033,29 @@ setPalette(themeName());
 // menu (Mersenne, primorial, random prime) or a random seed build it when picked. A card is a
 // small tile showing the symbol; its name and formula (detail, when the formula is built) are
 // in its tooltip, and the Formula field shows what it wrote (draw: another number at each pick, a seed drawn); its
-// Wikipedia page (wiki: its name a page's title, or one Wikipedia leads to), if it has one, a link in the Full number's
-// title (see showNumber).
+// Wikipedia page's title (wiki), if it has one, a link in the Full number's title (see showNumber).
 const NUMBER_GROUPS = ['Fractions', 'Constants', 'Sequences', 'Primes', 'Random']; // (in a tab's order, see NUMBER_TABS)
 const PRESETS = {
-  pi: { group: 'Constants', sym: 'π', name: 'Pi', f: 'pi', wiki: true },
+  pi: { group: 'Constants', sym: 'π', name: 'Pi', f: 'pi', wiki: 'Pi' },
   e: {
     group: 'Constants',
     sym: 'e',
     name: "Euler's number",
     detail: 'e = exp(1)',
     f: 'e',
-    wiki: true,
+    wiki: 'E (mathematical constant)',
   },
-  phi: { group: 'Constants', sym: 'φ', name: 'Golden ratio', f: 'phi', wiki: true },
-  gamma: { group: 'Constants', sym: 'γ', name: 'Euler–Mascheroni constant', f: 'gamma', wiki: true },
-  catalan: { group: 'Constants', sym: 'G', name: "Catalan's constant", f: 'catalan', wiki: true },
-  erdos: { group: 'Constants', sym: 'E', name: 'Erdős–Borwein constant', f: 'erdos', wiki: true },
+  phi: { group: 'Constants', sym: 'φ', name: 'Golden ratio', f: 'phi', wiki: 'Golden ratio' },
+  gamma: { group: 'Constants', sym: 'γ', name: 'Euler–Mascheroni constant', f: 'gamma', wiki: "Euler's constant" },
+  catalan: { group: 'Constants', sym: 'G', name: "Catalan's constant", f: 'catalan', wiki: "Catalan's constant" },
+  erdos: { group: 'Constants', sym: 'E', name: 'Erdős–Borwein constant', f: 'erdos', wiki: 'Erdős–Borwein constant' },
   thuemorse: {
     group: 'Sequences',
     sym: 'τ',
     name: 'Thue–Morse sequence',
     detail: 'thuemorse · 0.0110100110010110…₂, digit k the parity of the 1s of k in base 2',
     f: 'thuemorse',
-    wiki: true,
+    wiki: 'Thue–Morse sequence',
   },
   rabbit: {
     group: 'Sequences',
@@ -1064,7 +1063,7 @@ const PRESETS = {
     name: 'Fibonacci word',
     detail: 'rabbit · 0.1011010110110…₂, the Fibonacci word (1 → 10, 0 → 1)',
     f: 'rabbit',
-    wiki: true,
+    wiki: 'Fibonacci word',
   },
   sqrt2: {
     group: 'Constants',
@@ -1072,7 +1071,7 @@ const PRESETS = {
     name: "Pythagoras's constant",
     detail: 'sqrt(2) · the diagonal of a unit square, the first number proved irrational',
     f: 'sqrt(2)',
-    wiki: true,
+    wiki: 'Square root of 2',
   },
   cbrt2: {
     group: 'Constants',
@@ -1080,7 +1079,7 @@ const PRESETS = {
     name: 'Delian constant',
     detail: 'cbrt(2) · doubling the cube: no ruler and compass can draw it (Wantzel, 1837)',
     f: 'cbrt(2)',
-    wiki: true,
+    wiki: 'Doubling the cube',
   },
   plastic: {
     group: 'Constants',
@@ -1088,15 +1087,15 @@ const PRESETS = {
     name: 'Plastic ratio',
     detail: "x³ = x + 1 · the golden ratio's little brother",
     f: 'cbrt((9+sqrt(69))/18)+cbrt((9-sqrt(69))/18)',
-    wiki: true,
+    wiki: 'Plastic ratio',
   },
   ln2: {
     group: 'Constants',
     sym: 'ln 2',
-    name: 'Natural logarithm of 2',
+    name: 'Natural log of 2',
     detail: 'ln(2) · 1 − 1/2 + 1/3 − 1/4 + …, the alternating harmonic series',
     f: 'ln(2)',
-    wiki: true,
+    wiki: 'Natural logarithm of 2',
   },
   fifth: {
     group: 'Constants',
@@ -1104,7 +1103,7 @@ const PRESETS = {
     name: 'Perfect fifth',
     detail: 'log(3,2) · rising by fifths never lands on an octave: why pianos are tuned equal',
     f: 'log(3,2)',
-    wiki: true,
+    wiki: 'Perfect fifth',
   },
   epi: {
     group: 'Constants',
@@ -1112,7 +1111,7 @@ const PRESETS = {
     name: "Gelfond's constant",
     detail: 'e^pi = exp(pi)',
     f: 'e^pi',
-    wiki: true,
+    wiki: "Gelfond's constant",
   },
   gelfondSchneider: {
     group: 'Constants',
@@ -1120,7 +1119,7 @@ const PRESETS = {
     name: 'Gelfond–Schneider constant',
     detail: "2^sqrt(2) · transcendental: Hilbert's 7th problem, solved in 1934",
     f: '2^sqrt(2)',
-    wiki: true,
+    wiki: 'Gelfond–Schneider constant',
   },
   mertens: {
     group: 'Constants',
@@ -1128,7 +1127,7 @@ const PRESETS = {
     name: "Mertens' third theorem",
     detail: 'exp(gamma) · ∏ₚ (1 − 1/p) up to x ≈ 1/(e^γ · ln x): γ and the primes',
     f: 'exp(gamma)',
-    wiki: true,
+    wiki: "Mertens' theorems",
   },
   basel: {
     group: 'Constants',
@@ -1136,7 +1135,7 @@ const PRESETS = {
     name: 'Basel problem',
     detail: 'pi^2/6 · 1 + 1/4 + 1/9 + 1/16 + … (Euler, 1734)',
     f: 'pi^2/6',
-    wiki: true,
+    wiki: 'Basel problem',
   },
   zeta3: {
     group: 'Constants',
@@ -1144,7 +1143,7 @@ const PRESETS = {
     name: "Apéry's constant",
     detail: 'zeta(3) · 1 + 1/8 + 1/27 + …: proved irrational by Apéry in 1979, no closed form known',
     f: 'zeta(3)',
-    wiki: true,
+    wiki: "Apéry's constant",
   },
   coprime: {
     group: 'Constants',
@@ -1152,6 +1151,7 @@ const PRESETS = {
     name: 'Probability that two whole numbers are coprime',
     detail: '6/pi^2 = 1/ζ(2) = ∏ₚ (1 − 1/p²), over the primes',
     f: '6/pi^2',
+    wiki: 'Coprime integers',
   },
   ramanujan: {
     group: 'Constants',
@@ -1159,7 +1159,7 @@ const PRESETS = {
     name: "Ramanujan's constant",
     detail: 'e^(pi*sqrt(163)) = 262537412640768743.99999999999925…: all but whole',
     f: 'e^(pi*sqrt(163))',
-    wiki: true,
+    wiki: 'Heegner number',
   },
   // Fractions: the screens' 4/3 and 16/9, π's 22/7 and 355/113 (Zu Chongzhi's, 6 decimals right). Their digits repeat,
   // and on a walk that turns relative to its heading, a round of them that turns by a whole fraction of a turn closes into a
@@ -1178,14 +1178,15 @@ const PRESETS = {
     name: "Archimedes' π",
     detail: '22/7 = 3.142857…, π to 2 decimals',
     f: '22/7',
+    wiki: 'Proof that 22/7 exceeds π',
   },
   frac355_113: {
     group: 'Fractions',
     sym: '355/113',
-    name: 'Milü',
-    detail: "355/113 = 3.1415929…, Zu Chongzhi's π to 6 decimals",
+    name: "Zu Chongzhi's π (Milü)",
+    detail: '355/113 = 3.1415929…, π to 6 decimals',
     f: '355/113',
-    wiki: true,
+    wiki: 'Milü',
   },
   // (the rosettes: picked among the fractions up to /999 for big rosettes drawn with few overlaps, four per walk)
   rose1_983: {
@@ -1392,7 +1393,7 @@ const PRESETS = {
     name: 'Mersenne prime',
     detail: '2^p-1',
     f: () => `2^${$('mersenneP').value}-1`,
-    wiki: true,
+    wiki: 'Mersenne prime',
   },
   primorial: {
     group: 'Primes',
@@ -1403,7 +1404,7 @@ const PRESETS = {
       const [p, sign] = $('primorialP').value.split(',');
       return `primorial(${p})${sign > 0 ? '+' : '-'}1`;
     },
-    wiki: true,
+    wiki: 'Primorial prime',
   },
   randomPrime: {
     group: 'Primes',
@@ -1424,9 +1425,9 @@ const PRESETS = {
   champernowne: {
     group: 'Sequences',
     sym: 'C',
-    name: 'Champernowne constant',
+    name: 'Champernowne',
     f: 'champernowne',
-    wiki: true,
+    wiki: 'Champernowne constant',
   },
   primeBarcode: {
     group: 'Sequences',
@@ -1442,31 +1443,31 @@ const PRESETS = {
     name: 'Prime gaps',
     detail: 'primegaps · gₙ = pₙ₊₁ − pₙ',
     f: 'primegaps',
-    wiki: true,
+    wiki: 'Prime gap',
   },
   dragon: {
     group: 'Sequences',
     sym: '🐉',
-    name: 'Regular paperfolding sequence',
+    name: 'Dragon (paperfolding)',
     detail: 'dragon · a fractal on Triangles turtle, Squares turtle and Hexagons turtle',
     f: 'dragon',
-    wiki: true,
+    wiki: 'Regular paperfolding sequence',
   },
   rudinshapiro: {
     group: 'Sequences',
     sym: 'RS',
-    name: 'Rudin–Shapiro sequence',
+    name: 'Rudin–Shapiro',
     detail: 'rudinshapiro · digit k: the parity of the blocks “11” in k written in base 2',
     f: 'rudinshapiro',
-    wiki: true,
+    wiki: 'Rudin–Shapiro sequence',
   },
   kolakoski: {
     group: 'Sequences',
     sym: 'K',
-    name: 'Kolakoski sequence',
+    name: 'Kolakoski',
     detail: 'kolakoski · 1 2 2 1 1 2 1 2 2 …, its own run lengths, as 0s and 1s',
     f: 'kolakoski',
-    wiki: true,
+    wiki: 'Kolakoski sequence',
   },
   // (last: the cards' order the hunts' and Roll's, ρ last of them, see BATTLE_CARDS)
   primeConstant: {
@@ -1475,7 +1476,7 @@ const PRESETS = {
     name: 'Prime constant',
     detail: 'rho = Σ 2^(−p)',
     f: 'rho',
-    wiki: true,
+    wiki: 'Prime constant',
   },
 };
 const presetFormula = (id) => (typeof PRESETS[id].f === 'function' ? PRESETS[id].f() : PRESETS[id].f);
@@ -8848,8 +8849,7 @@ const externalLink = (url, words) =>
   `<a class="external-link" href="${url}" target="_blank" rel="noopener">${htmlText(words)} ↗</a>`;
 // a number's Wikipedia page (see PRESETS' wiki), as a link; '' when it has none
 const wikiLink = (formula) => {
-  const p = PRESETS[presetOf(formula).id],
-    title = p?.wiki && p.name; // (its name a Wikipedia page's title, or one it leads to)
+  const title = PRESETS[presetOf(formula).id]?.wiki;
   return title
     ? externalLink(`https://en.wikipedia.org/wiki/${encodeURIComponent(title.replace(/ /g, '_'))}`, title)
     : '';

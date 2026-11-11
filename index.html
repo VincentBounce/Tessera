@@ -10,7 +10,7 @@
   <meta property="og:url" content="https://vincentbounce.github.io/Tessera/">
   <meta property="og:type" content="website">
   <link id="favicon" rel="icon">  <!-- the app's logo, set at start-up (see appLogo) -->
-  <link rel="stylesheet" href="style.css?v=0.4.823">
+  <link rel="stylesheet" href="style.css?v=0.4.824">
   <script>  // the theme before the first paint (see applyTheme)
     try { const t = localStorage.getItem('tesseraTheme'); document.documentElement.dataset.theme = t === 'light' || t === 'dark' ? t : matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark'; } catch { document.documentElement.dataset.theme = 'dark'; }
   </script>
@@ -22,7 +22,7 @@
       <div class="header-end">
         <div class="stepper max-steps">  <!-- the length asked, steps at most (a walk's, a creature's, Elementary's and Space-time's generations): kept in every tab, set before going there -->
           <button id="digitsDown" type="button" title="Fewer steps">−</button>
-          <span class="field"><input id="digitsLabel" type="text" inputmode="numeric" maxlength="12" spellcheck="false" autocomplete="off"><button class="enter" type="button" tabindex="-1" title="Apply (Enter)">↵</button></span>
+          <span class="field"><input id="digitsLabel" type="text" inputmode="numeric" maxlength="12" spellcheck="false" autocomplete="off"><button class="enter" type="button" tabindex="-1" title="Apply (Enter)">↵</button><span id="waitGauge" hidden><span class="wait-fill"></span><span class="wait-words"></span></span></span>  <!-- waitGauge: a long wait's, over the length (see showWaits) -->
           <button id="digitsUp" type="button" title="More steps">+</button>
         </div>
         <div class="tabs"><button id="appTab" type="button" class="pane-tab" title="Credits: the people whose work it shows, Share link and Home"></button></div>  <!-- the app's tab: π, its name and version, a pane's tab as Gallery's -->
@@ -424,11 +424,6 @@
           <div id="gauges" class="ranking gauges" hidden></div>  <!-- one colour: alive, its peak, order…; a walk: its position, its distance, its peak, its cells (open only) -->
           <div id="digitStrip" class="strip" aria-label="Recent digits"></div>
           <canvas id="activity" class="activity" aria-label="Activity: a walk's distance from its start, Life's live cells"></canvas>
-          <div class="length-row">  <!-- the digits being computed, under the curve -->
-            <div id="digitsRow">  <!-- the digits being computed: their gauge, while they take long (the length asked: in the header, see max-steps) -->
-              <div id="progress" class="progress"><div id="progressBar"></div><span id="progressText"></span></div>  <!-- in the length's place, while the digits take long -->
-            </div>
-          </div>
         </div>
         <div class="step-line"><span id="stepNow"></span><span id="stepLast"></span><span id="stepEnd"></span><span id="barLoop" class="bubble gold" hidden></span></div>  <!-- the step or generation shown (open: its last after it, see updateStats) -->
         <div class="bar-title"><span id="barNum" class="bar-num"></span><button id="barBase" class="bubble" type="button"></button><button id="barRule" class="bubble how-it-works" type="button" hidden></button><button id="barBattle" class="bubble how-it-works" type="button" hidden></button><span id="rankTitles" class="rank-titles" hidden></span></div>  <!-- the ranking's column titles (see paintRanking), on the rule's line (folded: its first) -->
@@ -511,10 +506,10 @@
     </div>
   </main>
 
-  <script src="pixelarticons.js?v=0.4.823"></script>
-  <script src="punks.js?v=0.4.823"></script>
-  <script src="loops.js?v=0.4.823"></script>
-  <script src="emoji.js?v=0.4.823"></script>
-  <script src="main.js?v=0.4.823"></script>
+  <script src="pixelarticons.js?v=0.4.824"></script>
+  <script src="punks.js?v=0.4.824"></script>
+  <script src="loops.js?v=0.4.824"></script>
+  <script src="emoji.js?v=0.4.824"></script>
+  <script src="main.js?v=0.4.824"></script>
 </body>
 </html>

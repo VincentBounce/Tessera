@@ -1031,19 +1031,6 @@ button.active .bubble.active {
   flex: 1;
 }
 
-.progress {
-  height: 4px;
-  margin-top: 10px;
-  background: var(--page-background);
-  border-radius: 2px;
-  overflow: hidden;
-}
-#progressBar {
-  height: 100%;
-  width: 0;
-  background: var(--accent-color);
-  transition: width 0.1s;
-}
 .muted {
   color: var(--muted-text-color);
   margin: 6px 0 0;
@@ -1793,11 +1780,6 @@ button.wide.active,
   justify-content: space-between;
   align-self: stretch;
 }
-.length-row {
-  display: flex;
-  align-items: flex-start;
-  gap: 8px;
-} /* open, under the curve: the digits being computed (their gauge) */
 .stage-bar:not(:hover) .player-side {
   display: none;
 }
@@ -1809,23 +1791,36 @@ button.wide.active,
 .stage-bar .stepper {
   margin: 0 0 8px;
 }
-.stage-bar .progress {
-  margin: 0 0 8px;
-}
-#digitsRow:not(.busy) .progress,
-#digitsRow.busy .stepper {
-  display: none;
-}
-#digitsRow.busy .progress {
-  position: relative;
-  height: 34px;
-  border: 1px solid var(--border-color);
+/* a long wait over the length's field (see showWaits): its share filled in gold, its words over it; its share unknown, a band
+   sliding along */
+#waitGauge {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
   border-radius: 6px;
+  background: var(--panel-background);
+  border: 1px solid var(--accent-color);
 }
-#progress.indeterminate #progressBar {
+#waitGauge .wait-fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  background: color-mix(in srgb, var(--accent-color) 35%, transparent);
+  transition: width 0.1s;
+}
+#waitGauge.sliding .wait-fill {
   width: 30% !important;
   animation: gauge-slide 1.2s ease-in-out infinite alternate;
-} /* drawn apart: it slides on while the walk is built */
+}
+#waitGauge .wait-words {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-size: var(--label-text-size);
+  font-weight: 600;
+  color: var(--text-color);
+  white-space: nowrap;
+}
 @keyframes gauge-slide {
   from {
     transform: translateX(0);
@@ -1833,14 +1828,6 @@ button.wide.active,
   to {
     transform: translateX(233%);
   }
-}
-#progressText {
-  position: absolute;
-  inset: 0;
-  display: grid;
-  place-items: center;
-  font-size: var(--label-text-size);
-  color: var(--text-color);
 }
 #status:not(:empty)::before {
   content: ' · ';

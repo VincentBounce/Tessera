@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.823';
+const VERSION = '0.4.824';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -9036,8 +9036,10 @@ function rivalsDigits(base, n, then) {
       continue;
     }
     rivalWorkers[id]?.terminate();
+    waitBegin(id, F.sym ?? rivalName(id), `Computing ${rivalName(id)}, ${F.sym ?? ''} in base ${base}`);
     rivalWorkers[id] = digitsWorker(F, base, n, (error) => {
       delete rivalWorkers[id];
+      waitEnd(id);
       if (error) $('status').textContent = `${rivalName(id)}: ${error}`;
       else if (!Object.keys(rivalWorkers).length) then();
     });
@@ -9051,6 +9053,7 @@ const stopRivals = () => {
   for (const id of Object.keys(rivalWorkers)) {
     rivalWorkers[id].terminate();
     delete rivalWorkers[id];
+    waitEnd(id);
   }
 };
 
@@ -10824,7 +10827,6 @@ function compute() {
   } // (no hunt: a walk, or Elementary's rows, built by buildWalk)
   renderPlaneRow();
   // a new number, surface, size or rule ends any hunt: its champion would not fit any more
-  $('digitsRow').hidden = !!mode.life && !gensShown(); // Life takes one digit per cell of the surface; a reversible one, Elementary, Space-time, its generations
   $('sphereRow').hidden = $('sizeRow').hidden = mode.lattice !== 'sphere'; // the size under the tiles; a walk's starts and loops further down
   syncSizeStepper();
   updateRuleText();
@@ -10911,7 +10913,6 @@ function compute() {
     return;
   }
   numberWorker = newFormulaWorker();
-  setBusy(true);
   // π, e, ln 2, roots, exact numbers and sequences stay fast at millions of digits; the other series
   // grow as the square of the digits
   const quadratic = formulaNodes(F.ast).some(
@@ -10924,19 +10925,16 @@ function compute() {
     F.log10 > 6e6 ||
     (F.root === 'randprime' && Number(F.ast.args[0].v) > 1000) ||
     (F.kind === 'real' && quadratic && n > 1e6);
-  $('status').textContent =
+  setBusy(
+    true,
+    F.root === 'randprime' ? 'Prime' : sym,
     (F.root === 'randprime'
-      ? `Searching for a random ${formatNumber(Number(F.ast.args[0].v))}-digit prime…`
-      : `Computing ${sym} in base ${base}…`) + // the count is beside it
-    (slow ? ' (this can take a minute or more)' : '');
+      ? `Searching for a random ${formatNumber(Number(F.ast.args[0].v))}-digit prime`
+      : `Computing ${sym} in base ${base}`) + (slow ? ' (this can take a minute or more)' : ''),
+  );
   numberWorker.onmessage = (e) => {
     const d = e.data;
-    if (d.type === 'progress') {
-      $('progress').classList.remove('indeterminate');
-      $('progressBar').style.width = `${Math.min(100, d.p * 100)}%`;
-      $('progressText').textContent = `${Math.floor(Math.min(100, d.p * 100))} %`;
-      return;
-    }
+    if (d.type === 'progress') return waitShare('busy', d.p);
     numberWorker.terminate();
     numberWorker = null;
     if (d.type === 'error') {
@@ -10959,29 +10957,50 @@ function compute() {
       finish();
       return;
     }
-    clearTimeout(busyTimer);
-    $('digitsRow').classList.add('busy');
-    $('progress').classList.add('indeterminate');
-    $('progressText').textContent = 'Building the walk…';
-    requestAnimationFrame(() => setTimeout(finish, 0));
+    waitBegin('busy', 'Building', 'Building the walk (the page stops meanwhile)', 0);
+    requestAnimationFrame(() => setTimeout(finish, 0)); // (the gauge painted first)
   };
   numberWorker.postMessage({ ast: F.ast, n: want, base, mag: F.mag, nodes: F.nodes });
 }
 
-// While the worker computes, the link waits for the result; past half a second, a gauge takes the
-// length's place, until the digits are there and the walk built
+// The long waits, every one (a number's digits, a battle's others', Elementary's rows, the walk built, a Gallery card's setup):
+// each by its key, its words (short, in the gauge; in full, its tooltip) and its share done (null: not known), shown past
+// its delay (WAIT_DELAY; 0, at once: a build that stops the page), the oldest over the length's field (see showWaits)
+const WAIT_DELAY = 300,
+  waits = new Map();
+const waitBegin = (key, words, full = words, delay = WAIT_DELAY) => {
+  waits.set(key, { words, full, share: null, from: performance.now() + delay });
+  showWaits();
+  if (delay) setTimeout(showWaits, delay);
+};
+const waitShare = (key, share) => {
+  const w = waits.get(key);
+  if (!w) return;
+  w.share = Math.min(1, share);
+  showWaits();
+};
+const waitEnd = (key) => waits.delete(key) && showWaits();
+function showWaits() {
+  const now = performance.now(),
+    w = [...waits.values()].find((x) => x.from <= now),
+    g = $('waitGauge');
+  g.hidden = !w;
+  if (!w) return;
+  g.classList.toggle('sliding', w.share === null);
+  g.querySelector('.wait-fill').style.width = `${100 * (w.share ?? 0)}%`;
+  g.querySelector('.wait-words').textContent =
+    w.share === null ? `${w.words}…` : `${w.words} ${Math.floor(100 * w.share)} %`;
+  g.title = `${w.full}…`;
+}
+// While the worker computes, the link waits for the result, the player greyed: its wait (key busy), until the digits are
+// there and the walk built
 let busy = false,
-  busyTimer = 0,
   computeJob = 0;
-function setBusy(on) {
+function setBusy(on, words = 'Computing', full = words) {
   busy = on;
   statsDirty = true; // (the player: greyed meanwhile, see updateStats)
-  $('progressBar').style.width = '0';
-  $('progressText').textContent = on ? 'Computing…' : '';
-  $('progress').classList.toggle('indeterminate', on); // a bar sliding along until the worker says how far it is
-  clearTimeout(busyTimer);
-  if (on) busyTimer = setTimeout(() => $('digitsRow').classList.add('busy'), 500);
-  else $('digitsRow').classList.remove('busy');
+  if (on) waitBegin('busy', words, full);
+  else waitEnd('busy');
 }
 
 /* ---- 5.3 Building the walk ---------------------------------------------------------------- */
@@ -20011,8 +20030,7 @@ function elementaryReady(then) {
     { KEEP, wolframTable, wordsOf, popCounts, wolframStep, elementaryRowsOf },
     elementaryWorkerMain,
   );
-  setBusy(true);
-  $('status').textContent = `Computing ${formatNumber(a.args[0])} rows…`;
+  setBusy(true, 'Rows', `Computing ${formatNumber(a.args[0])} rows`);
   elementaryWorker.onmessage = (e) => {
     elementaryWorker.terminate();
     elementaryWorker = null;
@@ -46354,6 +46372,7 @@ function setupRow(name, detail, x) {
     preview.hidden = !thumbnail;
     if (thumbnail) preview.src = thumbnail.src;
     cardShown = x;
+    waitBegin('card', 'Loading', `Loading ${name}`);
     requestAnimationFrame(() =>
       setTimeout(() => {
         // (after the frame painted)
@@ -46361,8 +46380,12 @@ function setupRow(name, detail, x) {
         $('autoFit').checked = true;
         $('autoRotate').checked = false;
         const built = whenBuilt();
-        if (!applySetup(setup)) preview.hidden = true;
+        if (!applySetup(setup)) {
+          preview.hidden = true;
+          waitEnd('card');
+        } // (a setup that cannot be: nothing to wait for)
         built.then(() => {
+          waitEnd('card');
           if (cardShown !== x) return;
           adoptShown(x, b); // (its setup as the app writes it now, its name its bar's, see adoptShown)
           requestAnimationFrame(() => {

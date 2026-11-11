@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.873';
+const VERSION = '0.4.874';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -8915,8 +8915,10 @@ function formulaOf(typed) {
 // a page of another site, in a new tab: its words and ↗ (the one link of its kind, see .external-link)
 const externalLink = (url, words) =>
   `<a class="external-link" href="${url}" target="_blank" rel="noopener">${htmlText(words)} ↗</a>`;
-// the name a number goes by: a fraction, itself; else its card's (see PRESETS); '' for a formula of one's own
-const numberName = (formula) => (/^\d+\/\d+$/.test(formula) ? formula : (PRESETS[presetOf(formula).id]?.name ?? ''));
+// a fraction p/q, as written; the name a number goes by: a fraction, itself; else its card's (see PRESETS); '' for a
+// formula of one's own
+const isFraction = (formula) => /^\d+\/\d+$/.test(formula);
+const numberName = (formula) => (isFraction(formula) ? formula : (PRESETS[presetOf(formula).id]?.name ?? ''));
 // a number's Wikipedia page (see PRESETS' wiki), as a link in its name; '' when it has none
 const wikiLink = (formula) => {
   const p = PRESETS[presetOf(formula).id];
@@ -9029,7 +9031,7 @@ function renderNumberPicker(active) {
           // its symbol a picture: its name in bold over its words (see the tooltips); a fraction's, the fraction itself, its
           // name in its words; then the formula it writes (one built from its menu or drawn, once picked), unless its name
           const formula = id === active ? formulaInUse : typeof p.f === 'string' ? p.f : '',
-            fraction = numberName(formula) === formula;
+            fraction = isFraction(formula);
           b.setAttribute('aria-label', fraction ? formula : p.name);
           b.title = (fraction ? [p.name, p.detail] : [p.detail]).filter(Boolean).join(', ');
           b.dataset.formula = fraction ? '' : formula;

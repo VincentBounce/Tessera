@@ -2,6 +2,7 @@
   --tile-width: 57px; /* a tile's width, every tile alike: .nav-shapes, as many a row as fit (4 in the settings' column) */
   --tile-height: 55px; /* a tile's height, every tile alike */
   --tile-gap: 4px; /* between two tiles */
+  --badged-tile-gap: 8px; /* between two tiles that carry a badge: its 7 px past their corner clear of the next (see .badge) */
   --panel-width: 280px; /* the settings' column (.panel) */
   /* the text's sizes, four, each element one of them: */
   --caption-text-size: 11px; /* a card's words, a bubble, a figure's caption */
@@ -735,6 +736,9 @@ button.switch.active:hover:not(:disabled) {
   gap: var(--tile-gap);
   margin-bottom: 4px;
 } /* (each group's tiles side by side, each a tile's width, as System's in the display box) */
+.gallery-tools-row > #galleryTools {
+  gap: var(--badged-tile-gap);
+} /* (Export, Delete, Refresh: the cards selected's badge) */
 .gallery-tools-row .nav-shapes button {
   width: var(--tile-width);
 }

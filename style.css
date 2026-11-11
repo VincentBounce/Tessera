@@ -2301,9 +2301,8 @@ button.mark.active::after {
 }
 .badge {
   position: absolute;
-  z-index: 1;
   top: -7px;
-  right: 2px;
+  right: -7px;
   min-width: 18px;
   padding: 0 5px;
   border-radius: 9px;
@@ -2314,8 +2313,7 @@ button.mark.active::after {
   line-height: 18px;
   text-align: center;
   pointer-events: none;
-} /* a count on a tile's top right corner (see setBadge): the Gallery's cards selected; within its tile's width (the next one's
-   corner never under it), over all */
+} /* a count on a tile's top right corner (see setBadge): the Gallery's cards selected */
 .gen-link,
 .walker-link {
   color: inherit;

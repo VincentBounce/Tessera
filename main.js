@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.831';
+const VERSION = '0.4.832';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -6591,7 +6591,6 @@ function updateDisplayMenu() {
   // Heatmap of visits and Digits instead of a list of colours, on cells only (Digits in 2D only;
   // a spiral marks its cells, each once: both greyed out)
   const mode = MODES[tabMode()];
-  $('cellsLabel').hidden = !shows('heatmap', tabMode()) || !!mode.antOf; // (an ant: its cells' looks need no title)
   // the cells' looks as tiles (see renderCellModes), in 2D and on a surface: no boxes for Path and Heatmap
   $('showPathRow').hidden = $('heatmapRow').hidden = true;
   renderCellModes(mode);

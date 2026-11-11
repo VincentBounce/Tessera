@@ -308,16 +308,20 @@ input[type='range'] {
 .pill-row h3 {
   width: 3.2em;
   margin: 0;
-} /* (its title a sub-section's, as Cells', on its row) */
+  font-weight: 400;
+  color: var(--muted-text-color);
+} /* (its title as the menu's grey words, on its row) */
 .pill-group {
-  display: inline-flex;
+  flex: 1;
+  display: flex;
   gap: 2px;
   padding: 3px;
   border-radius: 999px;
   background: var(--track-background);
-} /* its choices, pills in a pill: the one picked raised */
+} /* its choices, pills in a pill, its rows' tracks as wide (to the right, after their titles): the one picked raised */
 .pill-group button {
-  padding: 4px 12px;
+  flex: 1;
+  padding: 4px 6px;
   border: 0;
   border-radius: 999px;
   background: none;

@@ -10,7 +10,7 @@
   <meta property="og:url" content="https://vincentbounce.github.io/Tessera/">
   <meta property="og:type" content="website">
   <link id="favicon" rel="icon">  <!-- the app's logo, set at start-up (see LOGO_PATH) -->
-  <link rel="stylesheet" href="style.css?v=0.4.831">
+  <link rel="stylesheet" href="style.css?v=0.4.832">
   <script>  // the theme before the first paint (see applyTheme)
     try { const t = localStorage.getItem('tesseraTheme'); document.documentElement.dataset.theme = t === 'light' || t === 'dark' ? t : matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark'; } catch { document.documentElement.dataset.theme = 'dark'; }
   </script>
@@ -495,7 +495,6 @@
               <span id="fillTooBig" class="fill-note" hidden title="Beyond 12 million tile corners in the walk's box, the areas are not filled">walk too big</span>
               <select id="area" hidden><option value="empty"></option><option value="light"></option><option value="plain"></option></select>
             </div>
-            <h3 id="cellsLabel" hidden>Cells</h3>
             <div id="cellModes" class="nav-shapes cell-modes" hidden></div>  <!-- a walk's or an ant's cells: Path, Cell path, Commands or States (an ant), Heatmap -->
             <label class="check" id="showPathRow" hidden title="The walk's line over the cells it colours"><input id="showPath" type="checkbox"> Show path</label>
             <label class="check" id="heatmapRow" hidden title="The cells coloured by how often the walk comes back to them"><input id="heatmap" type="checkbox"> Heatmap of visits</label>
@@ -506,10 +505,10 @@
     </div>
   </main>
 
-  <script src="pixelarticons.js?v=0.4.831"></script>
-  <script src="punks.js?v=0.4.831"></script>
-  <script src="loops.js?v=0.4.831"></script>
-  <script src="emoji.js?v=0.4.831"></script>
-  <script src="main.js?v=0.4.831"></script>
+  <script src="pixelarticons.js?v=0.4.832"></script>
+  <script src="punks.js?v=0.4.832"></script>
+  <script src="loops.js?v=0.4.832"></script>
+  <script src="emoji.js?v=0.4.832"></script>
+  <script src="main.js?v=0.4.832"></script>
 </body>
 </html>

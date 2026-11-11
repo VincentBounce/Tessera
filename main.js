@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.866';
+const VERSION = '0.4.867';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -1031,10 +1031,9 @@ setPalette(themeName());
 // formula matches it (presetOf, Part 4). Nothing else remembers which card was clicked.
 // The Number cards, in groups: each card writes a formula (see Number formulas). Cards with a helper
 // menu (Mersenne, primorial, random prime) or a random seed build it when picked. A card is a
-// small tile showing the symbol; its name, its words (detail) and its formula (form: the general one of a card that builds
-// its own, 2^p-1) are in its tooltip, and the Formula field shows what it wrote (draw: another number at each pick, a seed drawn); its
-// Wikipedia page (wiki: its address's end, as Wikipedia writes it), if it has one, its name a link in the Full number's
-// title (see showNumber).
+// small tile showing the symbol; its name, its words (detail) and the formula it writes are in its tooltip, and the
+// Formula field shows what it wrote (draw: another number at each pick, a seed drawn); its Wikipedia page (wiki: its
+// address's end, as Wikipedia writes it), if it has one, its name a link in the Full number's title (see showNumber).
 const NUMBER_GROUPS = ['Fractions', 'Constants', 'Sequences', 'Primes', 'Random']; // (in a tab's order, see NUMBER_TABS)
 const PRESETS = {
   pi: { group: 'Constants', sym: 'π', name: 'Pi', f: 'pi', wiki: 'Pi' },
@@ -1392,7 +1391,6 @@ const PRESETS = {
     group: 'Primes',
     sym: 'Mₚ',
     name: 'Mersenne prime',
-    form: '2^p-1',
     f: () => `2^${$('mersenneP').value}-1`,
     wiki: 'Mersenne_prime',
   },
@@ -1400,7 +1398,6 @@ const PRESETS = {
     group: 'Primes',
     sym: 'p#±1',
     name: 'Primorial prime',
-    form: 'primorial(p)±1',
     f: () => {
       const [p, sign] = $('primorialP').value.split(',');
       return `primorial(${p})${sign > 0 ? '+' : '-'}1`;
@@ -1411,7 +1408,6 @@ const PRESETS = {
     group: 'Primes',
     sym: '🎲 p',
     name: 'Random prime',
-    form: 'randprime(size, seed)',
     f: () => `randprime(${randomPrimeSize() ?? 300},${freshDraw()})`,
     draw: true,
   }, // a new draw, same size
@@ -1419,7 +1415,6 @@ const PRESETS = {
     group: 'Random',
     sym: '🎲',
     name: 'Random digits',
-    form: 'random(seed)',
     f: () => `random(${freshDraw()})`,
     draw: true,
   },
@@ -8959,7 +8954,8 @@ function renderNumberPicker(active) {
           b.innerHTML = cardSymbol(p.sym);
           b.setAttribute('aria-label', p.name); // (its symbol a picture: its name in bold over its words, see the tooltips)
           b.title = p.detail ?? '';
-          b.dataset.formula = p.form ?? p.f; // (under its words, see the tooltips' Formula)
+          // the formula it writes, under its words (see the tooltips' Formula): one built from its menu or drawn, once picked
+          b.dataset.formula = id === active ? formulaInUse : typeof p.f === 'string' ? p.f : '';
           b.setAttribute('role', 'option');
           setTile(b, { on: id === active, again: true }); // (clicked again: its page, see toggleNumber)
           b.addEventListener('click', () => (id === active ? toggleNumber() : pick(id)));

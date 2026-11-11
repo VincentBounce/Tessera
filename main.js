@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.872';
+const VERSION = '0.4.873';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -1505,6 +1505,32 @@ const PRESETS = {
     f: 'kolakoski',
     wiki: 'Kolakoski_sequence',
   },
+  liouville: {
+    group: 'Sequences',
+    sym: 'L',
+    name: "Liouville's constant",
+    detail:
+      'digit k: 1 when k is a factorial (1, 2, 6, 24, 120…), else 0, in every base (in base 10, the first number proved transcendental, 1844)',
+    f: 'liouville',
+    wiki: 'Liouville_number',
+  },
+  copelanderdos: {
+    group: 'Sequences',
+    sym: 'CE',
+    name: 'Copeland–Erdős constant',
+    detail: "0.2357111317…: the primes written one after another, in the walk's base",
+    f: 'copelanderdos',
+    wiki: 'Copeland–Erdős_constant',
+  },
+  kempner: {
+    group: 'Sequences',
+    sym: 'κ',
+    name: 'Kempner number',
+    detail:
+      'digit k: 1 when k is a power of 2 (1, 2, 4, 8…), else 0, in every base (in base 2, transcendental: Kempner, 1916)',
+    f: 'kempner',
+    wiki: 'Kempner_number',
+  },
   // (last: the cards' order the hunts' and Roll's, ρ last of them, see BATTLE_CARDS)
   primeConstant: {
     group: 'Constants',
@@ -1528,6 +1554,9 @@ const FORMULA_NOTES = {
   kolakoski: () =>
     'the Kolakoski sequence, its 1s as 0 and its 2s as 1: read as runs, 1 2 2 1 1 2 … gives its own run lengths',
   rabbit: () => 'the Fibonacci word (0 and 1): 1 becomes 10 and 0 becomes 1, again and again',
+  liouville: () => "Liouville's (0 and 1): digit k is 1 when k is a factorial, 1, 2, 6, 24, 120…",
+  copelanderdos: (b) => `the primes written one after another in base ${b}: 2, 3, 5, 7, 11, 13…`,
+  kempner: () => "Kempner's number (0 and 1): digit k is 1 when k is a power of 2, 1, 2, 4, 8…",
   dragon: () => 'the folds of a strip folded in two again and again (0 and 1): the dragon curve, as turns',
 };
 
@@ -8442,8 +8471,8 @@ const withIcons = (text) =>
  *   'int'   an exact integer             2^127-1, primorial(11)+1, sqrt(16)
  *   'rat'   an exact fraction            22/7, 2^-1, (16/81)^(3/4)
  *   'real'  computed with guard digits   pi, sqrt(2), 2^pi, ln(3)
- *   'seq'   a sequence of digits defined base by base (random, champernowne, primebarcode, primegaps,
- *           and the 0s and 1s of dragon, thuemorse, rabbit).
+ *   'seq'   a sequence of digits defined base by base (random, champernowne, copelanderdos, primebarcode, primegaps,
+ *           and the 0s and 1s of dragon, thuemorse, rabbit, liouville, kempner).
  *           It is not a number, so it only stands alone: random(5)+1 is refused.
  * The kind decides where digits come from: sequences on the page (seqDigits), everything else in
  * the worker. An exact number, an integer or a fraction, has digits after the point as a real does: 0s once it ends.
@@ -8467,6 +8496,9 @@ const FORMULA_NAMES = {
   rabbit: ['seq', 'F', true],
   rudinshapiro: ['seq', 'RS', true],
   kolakoski: ['seq', 'K'], // (Kolakoski: no pattern proved)
+  liouville: ['seq', 'L'],
+  copelanderdos: ['seq', 'CE'],
+  kempner: ['seq', 'κ', true],
 };
 const FORMULA_FUNCTIONS = {
   sqrt: 1,
@@ -9083,6 +9115,24 @@ function seqDigits(ast, n, base) {
         m &= m - 1;
       }
       digits[i] = p;
+    }
+  } else if (name === 'liouville') {
+    // digit k is 1 when k is a factorial (1, 2, 6, 24…): 0 and 1 in every base
+    for (let f = 1, m = 1; f <= n; f *= ++m) digits[f - 1] = 1;
+  } else if (name === 'kempner') {
+    // digit k is 1 when k is a power of 2 (1, 2, 4, 8…): 0 and 1 in every base
+    for (let k = 1; k <= n; k *= 2) digits[k - 1] = 1;
+  } else if (name === 'copelanderdos') {
+    // 2 3 5 7 11 … written in base b one after another: the primes up to x give about x / ln b digits (sieved again,
+    // twice as far, in the rare case they fall short)
+    for (let limit = Math.ceil(n * Math.log(base)) + 100, i = 0; i < n; limit *= 2) {
+      const composite = sieve(limit);
+      i = 0;
+      for (let k = 2; k <= limit && i < n; k++)
+        if (!composite[k]) {
+          const t = digitString(k, base);
+          for (let c = 0; c < t.length && i < n; c++) digits[i++] = t.charCodeAt(c) - 48;
+        }
     }
   } else if (name === 'kolakoski') {
     // 1 2 2 1 1 2 …: run i is as long as term i, its terms 1 and 2 by turns

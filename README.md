@@ -34,6 +34,9 @@ The cards fill in the formula field; you can also type your own.
 - **Kolakoski:** 1 2 2 1 1 2 1 2 2 …, the sequence of its own run lengths, as 0s and 1s.
 - **Thue–Morse τ:** digit k is the parity of the 1s of k in base 2, in 0s and 1s in every base (in base 2, the Prouhet–Thue–Morse constant); read by a Pivot walk on triangles, it draws Koch's curve.
 - **Fibonacci word F:** 1 → 10, 0 → 1, in 0s and 1s in every base (in base 2, the rabbit constant).
+- **Liouville's constant L:** digit k is 1 when k is a factorial (1, 2, 6, 24, 120…), else 0, in every base (in base 10, the first number proved transcendental).
+- **Copeland–Erdős constant:** 2 3 5 7 11 13 … written one after another in the walk's base.
+- **Kempner number κ:** digit k is 1 when k is a power of 2, else 0, in every base.
 
 ### How each number is computed
 
@@ -83,7 +86,7 @@ Operators: `+ − × ÷ ^ ( )`.
 
 Examples: `22/7`, `2^pi`, `8^(1/3)`, `2^127-1`, `primorial(11)+1`, `ln(3)`.
 
-Digit sequences, used alone: `random(seed)`, `champernowne`, `primebarcode`, `primegaps`, `dragon`, `thuemorse`, `rabbit`, `rudinshapiro`, `kolakoski`.
+Digit sequences, used alone: `random(seed)`, `champernowne`, `copelanderdos`, `primebarcode`, `primegaps`, `dragon`, `thuemorse`, `rabbit`, `rudinshapiro`, `kolakoski`, `liouville`, `kempner`.
 
 Press Enter to compute.
 

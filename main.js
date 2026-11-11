@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.858';
+const VERSION = '0.4.859';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -8953,7 +8953,7 @@ function renderNumberPicker(active) {
           b.classList.toggle('wide', one);
           b.title = `${p.name} — ${p.detail ?? p.f}`;
           b.setAttribute('role', 'option');
-          b.classList.toggle('active', id === active);
+          setTile(b, { on: id === active, again: typeof p.f === 'function' }); // (a card drawn at each click: again, see setTile)
           b.addEventListener('click', () => {
             [numberShown, numberTab] = [id, tab];
             pickPreset(id);

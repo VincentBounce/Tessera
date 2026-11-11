@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.812';
+const VERSION = '0.4.813';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -18677,6 +18677,12 @@ function battlePlayer(g, grid, S, starts, digits, pen = battleRuleInUse(tabMode(
   };
   // Land grid 1: a line's edge from corner a to b, its link (undefined: none)
   const linkOf = (a, b) => L.index.get(G.key(a, b));
+  // Land grid 1's lines as played (see lifeOf): each link on a walker's line a span [s, a, b, born, gone], from corner a to
+  // b as it walked it, born the step before it took it, gone the step before it was let go (pierced, Land grid 3's last
+  // thread), SEGMENT_NEVER while it stays; openSpans[s], s's link → its span open; kept the first time it is played
+  const spans = [],
+    openSpans = starts.map(() => new Map());
+  let playedTo = 0;
   const freshLine = (s) => {
     // (no line yet: all outside)
     lineOf[s].fill(0);
@@ -18697,6 +18703,10 @@ function battlePlayer(g, grid, S, starts, digits, pen = battleRuleInUse(tabMode(
     degree[s][b]++;
     linksOf[s].add(j);
     size[s]++;
+    if (i > playedTo) {
+      openSpans[s].set(j, spans.length);
+      spans.push([s, a, b, i - 1, SEGMENT_NEVER]);
+    }
     const p = piecesOf[s],
       ra = unionFind(p, a),
       rb = unionFind(p, b);
@@ -18710,6 +18720,10 @@ function battlePlayer(g, grid, S, starts, digits, pen = battleRuleInUse(tabMode(
     degree[s][b]--;
     linksOf[s].delete(j);
     size[s]--;
+    if (i > playedTo && openSpans[s].has(j)) {
+      spans[openSpans[s].get(j)][4] = i - 1;
+      openSpans[s].delete(j);
+    }
   };
   // a region of s's split by its new edge j: its smaller side closed if it was the outside's (as battleAreas); the outside
   // no longer the largest, all made again
@@ -18918,8 +18932,8 @@ function battlePlayer(g, grid, S, starts, digits, pen = battleRuleInUse(tabMode(
     const w = worth();
     for (let s = 0; s < K; s++) bestOf[s][i] = Math.max(i > 0 ? bestOf[s][i - 1] : 0, w[s]);
   };
-  // (ownLines: its lines drawn by their edges' owners, where an edge changes hands: Land grid 1's pierced, 3's let go; No collision's
-  // and Merge's never do, their lines paths, drawn walker by walker in their steps' order as Cut's, see pathSegments)
+  // (ownLines: its lines drawn by their spans, where an edge is let go: Land grid 1's pierced, 3's let go, see spans; No
+  // collision's and Merge's never are, their lines paths, drawn walker by walker in their steps' order as Cut's, see pathSegments)
   const P = {
     K,
     g,
@@ -18931,6 +18945,7 @@ function battlePlayer(g, grid, S, starts, digits, pen = battleRuleInUse(tabMode(
     merges,
     ownLines: lined && !stops && !merges,
     lineLinks,
+    spans,
     starts,
     places,
     from,
@@ -18978,6 +18993,7 @@ function battlePlayer(g, grid, S, starts, digits, pen = battleRuleInUse(tabMode(
         step();
         keepBest();
         keepGone();
+        playedTo = Math.max(playedTo, i);
       }
     },
     bestAt: (s) => bestOf[s][Math.max(0, i)], // (s's peak worth up to the step it is at)
@@ -40872,15 +40888,14 @@ const packed = (c) => {
 // A line's segments for the ribbons (see ribbonV), RIBBON_WORDS words each: its ends a and b, its tile's normal n, its caps (1
 // its start's, 2 its end's; 4 more: it fades out rather than retracts), its key (its step, its command, a battle's walker),
 // then its life as whole numbers (see lifeOf): born, the step it is walked over; gone, the step it leaves over (NEVER: it
-// stays); at(j): the next put's place (Land grid 1's two slots a link); room for count, more as it grows
+// stays); room for count, more as it grows
 const RIBBON_WORDS = 13,
   SEGMENT_ALWAYS = -(2 ** 30),
   SEGMENT_NEVER = 2 ** 31 - 1;
 function ribbonSegments(count = 64) {
   let f = new Float32Array(RIBBON_WORDS * Math.max(1, count)),
     w = new Int32Array(f.buffer),
-    j = 0,
-    most = 0;
+    j = 0;
   return {
     put(a, b, n, ends, key, born = SEGMENT_ALWAYS, gone = SEGMENT_NEVER) {
       // (in place: millions of them)
@@ -40904,15 +40919,11 @@ function ribbonSegments(count = 64) {
       f[o + 10] = key;
       w[o + 11] = born;
       w[o + 12] = gone;
-      most = Math.max(most, j);
-    },
-    at(k) {
-      j = k;
     },
     get count() {
       return j;
     },
-    words: () => f.subarray(0, RIBBON_WORDS * Math.max(1, most)), // (one at least: a buffer is never empty)
+    words: () => f.subarray(0, RIBBON_WORDS * Math.max(1, j)), // (one at least: a buffer is never empty)
   };
 }
 // The path on a surface, in its current form, printed flat on its tiles: from tile to tile, each
@@ -40924,7 +40935,7 @@ function ribbonSegments(count = 64) {
 // end); and the first segment of each step (at). P: a battle's player along the grid (see 7.6b), played to its end: all
 // its walkers' steps instead, walker after walker, step's place its colour's in the palette (battlePalette), each its
 // steps' lives (born the step before, gone when it leaves its body: see goneOf), at[s][q] the first segment of walker s's
-// step q (q to n + 1); Land grid 1 (lined): each link's segments, their owners laid by battleLinesOnGpu
+// step q (q to n + 1); Land grid 1 (lined): its lines' spans instead (see spans), at as Solo's
 function pathSegments(P = null) {
   const g = walk.geo,
     sh = walk.shape,
@@ -40936,7 +40947,7 @@ function pathSegments(P = null) {
     centre = (t) => pointAt(sh.cen, t, R);
   const normal = (t) => [sh.nrm[3 * t], sh.nrm[3 * t + 1], sh.nrm[3 * t + 2]];
   const mid = (p, q) => p.map((x, d) => (x + q[d]) / 2);
-  const out = ribbonSegments(P?.ownLines ? 1 : 2 * (P ? P.K : 1) * n),
+  const out = ribbonSegments(2 * (P?.ownLines ? P.spans.length : (P ? P.K : 1) * n)),
     at = new Int32Array(n + 1);
   const edge = (into, v0, v1, t0, t1, key, born, gone, caps = 3) => {
     // along the grid: the edge from v0 to v1, on each tile beside it (t0, t1), into a list of segments (caps: both ends,
@@ -40950,22 +40961,17 @@ function pathSegments(P = null) {
     }
   };
   if (P?.ownLines) {
-    // (Land grid 1: each link's segments, two slots a link, made once a shape; their owners see battleLinesOnGpu)
-    const G = gridGraph(g),
-      L = battleLinks(g);
-    if (g.linkSegments?.m !== sh.m || g.linkSegments.R !== R) {
-      const table = ribbonSegments(2 * L.eu.length),
-        count = new Uint8Array(L.eu.length);
-      for (const [e, sides] of G.edgeTiles) {
-        const l = L.index.get(e);
-        if (l === undefined) continue;
-        table.at(2 * l);
-        edge(table, Math.floor(e / G.nv), e % G.nv, sides[0], sides[1] ?? sides[0], 0);
-        count[l] = table.count - 2 * l;
-      }
-      g.linkSegments = { m: sh.m, R, table: table.words(), count };
+    // (Land grid 1: each span of a link on a line, from the corner it came from, faded out once let go; at[q] the first
+    // segment born at step q or later, see spans)
+    const G = gridGraph(g);
+    let q = 0;
+    for (const [s, a, b, born, gone] of P.spans) {
+      while (q <= born) at[q++] = out.count;
+      const sides = G.edgeTiles.get(G.key(a, b));
+      edge(out, a, b, sides[0], sides[1] ?? sides[0], s, born, gone, 7);
     }
-    return { links: g.linkSegments };
+    while (q <= n) at[q++] = out.count;
+    return { data: out.words(), at };
   }
   if (P) {
     const G = gridGraph(g),
@@ -42251,7 +42257,7 @@ struct Rib { @builtin(position) pos: vec4f, @location(0) col: vec3f, @location(1
 @vertex fn ribbonV(@location(0) quad: vec2f, @location(1) a0: vec3f, @location(2) b0: vec3f, @location(3) n: vec3f, @location(4) e: f32, @location(5) i: f32, @location(6) born: i32, @location(7) gone: i32) -> Rib {
   var o: Rib;
   let f = u32(e); let l = lifeOf(born, gone, (f & 4u) != 0u);
-  if ((u.colour == 3 && i > 254.5) || l.y <= l.x || l.z <= 0.0) { o.pos = vec4f(0.0, 0.0, -2.0, 1.0); return o; }  // (none: a link of none, see battleLinesOnGpu; not walked yet, or left: off the clip space)
+  if (l.y <= l.x || l.z <= 0.0) { o.pos = vec4f(0.0, 0.0, -2.0, 1.0); return o; }  // (not walked yet, or left: off the clip space)
   if (u.colour == 3) { o.col = band(pal, (i + 0.5) / 256.0); } else if (u.colour == 4) { o.col = u.edgeRgb; } else { o.col = rainbow(i); }  // (a battle's bodies: their colours, see battlePalette; 4: one colour, a motif's, see motifRibbons)
   let a = mix(a0, b0, l.x); let b = mix(a0, b0, l.y);
   var d = b0 - a0; if (length(d) > 1e-9) { d = normalize(d); } else { d = vec3f(1.0, 0.0, 0.0); }
@@ -42686,31 +42692,6 @@ function battlePalette(D) {
   D.device.queue.writeTexture({ texture: D.pal }, pal, { bytesPerRow: 1024 }, [256, 1]);
   D.keys.pal = key; // (a flat walk's palette written again after it, see its palKey)
 }
-// Land grid 1's lines on the GPU: every link's segments laid in its two slots once a shape (see pathSegments), each its
-// owner in its last float (the walker; 255: none, not drawn, see ribbonV); a frame writes again only the links whose
-// owner changed since the last (a step adds a link a head, a pierce takes a few), all of them on a new shape or a jump
-function battleLinesOnGpu(D, P) {
-  const T = pathSegments(P).links,
-    { table, count } = T,
-    E = count.length,
-    owner = new Uint8Array(E).fill(255);
-  for (const s of P.standing()) for (const l of P.lineLinks(s)) owner[l] = s;
-  const was = D.ribbonOf === T ? D.lineOwner : null,
-    changed = [];
-  if (was) for (let l = 0; l < E; l++) if (was[l] !== owner[l]) changed.push(l);
-  if (!was || changed.length > E / 16) {
-    const data = table.slice();
-    for (let l = 0; l < E; l++)
-      for (let q = 0; q < 2; q++) data[RIBBON_WORDS * (2 * l + q) + 10] = q < count[l] ? owner[l] : 255;
-    gpuBuffer('ribbon', data);
-  } else
-    for (const l of changed)
-      for (let q = 0; q < count[l]; q++)
-        D.device.queue.writeBuffer(D.ribbon, 4 * (RIBBON_WORDS * (2 * l + q) + 10), new Float32Array([owner[l]]));
-  D.ribbonOf = T;
-  D.lineOwner = owner;
-  D.segsRanges = [[0, 2 * E]];
-}
 // A surface, its tiles' colours by paint (paintLevels', or Life's by gpuLook)
 function gpuSurface(paint, path) {
   const D = gpuDrawSetup();
@@ -42829,14 +42810,10 @@ function gpuSurface(paint, path) {
     P.to(stepShown);
     battlePalette(D);
   }
-  if (P?.ownLines && glideAt() > 0) battleLinesOnGpu(D, P); // (Land grid 1: its links' owners, see battleLinesOnGpu)
   const keyed = !lines && !!stepLook($('colourMode').value)?.key; // (Commands: each segment its step's command, a place in the palette, see stepLook)
   if (keyed) stepPalette(D);
   const segs =
-    (path || lines) &&
-    !P?.ownLines &&
-    glideAt() > 0 &&
-    (D.keys.segs !== walk.wx || D.keys.segsM !== sh.m || D.ribbonOf || D.keys.segsKeyed !== keyed)
+    (path || lines) && glideAt() > 0 && (D.keys.segs !== walk.wx || D.keys.segsM !== sh.m || D.keys.segsKeyed !== keyed)
       ? pathSegments(P)
       : null;
   if (segs && keyed) {
@@ -42845,7 +42822,6 @@ function gpuSurface(paint, path) {
   } // (its step's command instead of its step)
   if (segs) {
     gpuBuffer('ribbon', segs.data);
-    D.ribbonOf = null;
     D.segsAt = segs.at;
     D.keys.segs = walk.wx;
     D.keys.segsM = sh.m;
@@ -42867,13 +42843,11 @@ function gpuSurface(paint, path) {
     return lo;
   }; // (the first step whose segment is not wholly gone by now)
   const ranges =
-    !(path || lines) || now <= 0 || !(P?.ownLines ? D.segsRanges : D.segsAt)
+    !(path || lines) || now <= 0 || !D.segsAt
       ? []
-      : P?.ownLines
-        ? D.segsRanges
-        : !lines
-          ? [[0, until(D.segsAt, j + 1)]]
-          : D.segsAt.map((A, s) => [until(A, firstStaying(P.goneOf[s])), until(A, j + 2)]);
+      : !lines || P.ownLines
+        ? [[0, until(D.segsAt, j + 1)]]
+        : D.segsAt.map((A, s) => [until(A, firstStaying(P.goneOf[s])), until(A, j + 2)]);
   // the tiles, their grid and the path, into pass p (0 the frame; 1, 2 Glass's)
   const drawAll = (rp, pass) => {
     // seen from both sides: Glass, a cut, a Klein bottle (one-sided: its tiles' face inwards in its neck and handle)

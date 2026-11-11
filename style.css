@@ -1078,6 +1078,21 @@ button.active .bubble.active {
 .number-grid sup {
   line-height: 0;
 } /* an exponent (e^π√163) not raising its button */
+.number-grid button:has(.fraction) {
+  padding-block: 1px;
+} /* (its two lines in the card's whole height, the same as the others') */
+.number-grid .fraction {
+  display: inline-block;
+  vertical-align: middle;
+  font-size: 13px;
+  line-height: 14.3px;
+}
+.number-grid .fraction > span {
+  display: block;
+}
+.number-grid .fraction > span + span {
+  border-top: 1px solid currentColor;
+} /* a fraction, its numerator over its denominator, in the line's height (see cardSymbol in main.js) */
 .number-grid button.active {
   border-color: var(--accent-color);
   color: var(--accent-color);

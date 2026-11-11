@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.857';
+const VERSION = '0.4.858';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -8903,6 +8903,11 @@ let numberTab = null,
 // formula of its own); a tab picked, or a number picked in one, kept while that number is shown
 const numberTabOf = (active) =>
   NUMBER_TABS.find(([, groups]) => groups.includes(PRESETS[active]?.group))?.[0] ?? NUMBER_TABS[0][0];
+// a card's symbol: a fraction its numerator over its denominator (see .fraction), as in maths
+const cardSymbol = (sym) => {
+  const m = sym.match(/^(\d+)\/(\d+)$/);
+  return m ? `<span class="fraction"><span>${m[1]}</span><span>${m[2]}</span></span>` : withIcons(sym);
+};
 // the cards of a tab's groups
 const cardsIn = (groups) => Object.keys(PRESETS).filter((id) => groups.includes(PRESETS[id].group));
 function renderNumberPicker(active) {
@@ -8944,7 +8949,7 @@ function renderNumberPicker(active) {
         .filter(([, p]) => p.group === group)
         .map(([id, p]) => {
           const b = document.createElement('button');
-          b.innerHTML = one ? `${withIcons(p.sym)} ${p.name}` : withIcons(p.sym);
+          b.innerHTML = one ? `${withIcons(p.sym)} ${p.name}` : cardSymbol(p.sym);
           b.classList.toggle('wide', one);
           b.title = `${p.name} — ${p.detail ?? p.f}`;
           b.setAttribute('role', 'option');

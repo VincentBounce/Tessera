@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.845';
+const VERSION = '0.4.846';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -38855,7 +38855,8 @@ function parseHash() {
 }
 // The link is written when what it holds changes: a walk built (see buildWalk), a Life
 // start (setLifeSeed), a Gallery setup clicked; never over a link come from outside (typed, pasted) not read yet: the page's
-// own, the last it wrote or read (linkHeld), else its hashchange still to come
+// own, the last it wrote or read (linkHeld), else its hashchange still to come (a window of a few ms, a Life's batch back
+// between the two: rare by hand, two check passes in three till v0.4.845)
 let linkHeld = location.hash;
 function syncLink() {
   if (busy || pendingChampion || location.hash !== linkHeld) return; // not while a setup is still being built

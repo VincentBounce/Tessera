@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.853';
+const VERSION = '0.4.854';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -1050,17 +1050,17 @@ const PRESETS = {
   catalan: { group: 'Constants', sym: 'G', name: "Catalan's constant", f: 'catalan', wiki: "Catalan's constant" },
   erdos: { group: 'Constants', sym: 'E', name: 'Erdős–Borwein constant', f: 'erdos', wiki: 'Erdős–Borwein constant' },
   thuemorse: {
-    group: 'Constants',
+    group: 'Sequences',
     sym: 'τ',
-    name: 'Prouhet–Thue–Morse constant',
+    name: 'Thue–Morse sequence',
     detail: 'thuemorse · 0.0110100110010110…₂, digit k the parity of the 1s of k in base 2',
     f: 'thuemorse',
     wiki: 'Thue–Morse sequence',
   },
   rabbit: {
-    group: 'Constants',
+    group: 'Sequences',
     sym: 'F',
-    name: 'Rabbit constant',
+    name: 'Fibonacci word',
     detail: 'rabbit · 0.1011010110110…₂, the Fibonacci word (1 → 10, 0 → 1)',
     f: 'rabbit',
     wiki: 'Fibonacci word',

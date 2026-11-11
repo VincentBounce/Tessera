@@ -14,9 +14,9 @@ Every number is a **formula**, computed in the browser with `BigInt` in a Web Wo
 
 The cards fill in the formula field; you can also type your own.
 
-**Constants:** π, e, φ (golden ratio), γ (Euler–Mascheroni), G (Catalan), E (Erdős–Borwein), τ (Prouhet–Thue–Morse) and F (the rabbit constant, the Fibonacci word). τ and F are made of 0s and 1s in every base; read by a Pivot walk on triangles, τ draws Koch's curve.
+**Fractions:** 4/3, 16/9, 22/7, 355/113, and the rosettes and late highways found on the walks.
 
-**𝑓 (formulas):** √2, ∛2, π², e^π, ln 2, ζ(3), 4/3, 16/9.
+**Constants:** π, e, φ (golden ratio), γ (Euler–Mascheroni), G (Catalan), E (Erdős–Borwein), and numbers made by a formula: √2, ∛2, the plastic number, ln 2, log₂ 3, e^π, 2^√2, e^γ, π²/6, ζ(3), 6/π², e^(π√163).
 
 **Primes**
 - **Mersenne primes 2ᵖ − 1:** the known ones from M₁₂₇ to M₁₃₆₂₇₉₈₄₁. In base 2 or 4 their digits are trivial (111…1 and 1333…3).
@@ -32,6 +32,8 @@ The cards fill in the formula field; you can also type your own.
 - **Dragon (paperfolding):** the folds of a strip folded in two again and again. As turns, it draws the dragon curve on Triangles turtle, Squares turtle and Hexagons turtle.
 - **Rudin–Shapiro:** digit k is the parity of the blocks 11 in k written in base 2; on Hexagons turtle, a branching fractal.
 - **Kolakoski:** 1 2 2 1 1 2 1 2 2 …, the sequence of its own run lengths, as 0s and 1s.
+- **Thue–Morse τ:** digit k is the parity of the 1s of k in base 2, in 0s and 1s in every base (in base 2, the Prouhet–Thue–Morse constant); read by a Pivot walk on triangles, it draws Koch's curve.
+- **Fibonacci word F:** 1 → 10, 0 → 1, in 0s and 1s in every base (in base 2, the rabbit constant).
 
 ### How each number is computed
 
@@ -102,7 +104,7 @@ The walker starts at the origin, heading north (up). Each mode sets the base of 
 | Pivot (squares, triangles, hexagons) | 2 | `0` step forward · `1` turn right on the spot by one notch (90° on squares, 60° on triangles and hexagons), with no step |
 | Parity (squares, triangles, hexagons) | 2 | `0` step forward · `1` step forward, then turn by one notch: right at an odd digit (1st, 3rd…), left at an even one |
 
-The rabbit constant on **Parity** (squares) draws the Fibonacci word fractal. **Pivot** is the turtle of the L-systems: a turn costs no step, so turns pile up (two quarter turns: back the way you came). It exists where a step straight on does: along squares and triangles, on square and hexagon cells.
+The Fibonacci word on **Parity** (squares) draws the Fibonacci word fractal. **Pivot** is the turtle of the L-systems: a turn costs no step, so turns pile up (two quarter turns: back the way you came). It exists where a step straight on does: along squares and triangles, on square and hexagon cells.
 
 ### Walks on surfaces (the 3D tab)
 

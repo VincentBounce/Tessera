@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.855';
+const VERSION = '0.4.856';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -1357,14 +1357,6 @@ const PRESETS = {
     detail: 'randprime(size, seed)',
     f: () => `randprime(${randomPrimeSize() ?? 300},${freshDraw()})`,
   }, // a new draw, same size
-  primeConstant: {
-    group: 'Primes',
-    sym: 'ρ',
-    name: 'Prime constant',
-    detail: 'rho = Σ 2^(−p)',
-    f: 'rho',
-    wiki: 'Prime constant',
-  },
   random: {
     group: 'Random',
     sym: '🎲',
@@ -1418,6 +1410,15 @@ const PRESETS = {
     detail: 'kolakoski · 1 2 2 1 1 2 1 2 2 …, its own run lengths, as 0s and 1s',
     f: 'kolakoski',
     wiki: 'Kolakoski sequence',
+  },
+  // (last: the cards' order the hunts' and Roll's, ρ last of them, see BATTLE_CARDS)
+  primeConstant: {
+    group: 'Constants',
+    sym: 'ρ',
+    name: 'Prime constant',
+    detail: 'rho = Σ 2^(−p)',
+    f: 'rho',
+    wiki: 'Prime constant',
   },
 };
 const presetFormula = (id) => (typeof PRESETS[id].f === 'function' ? PRESETS[id].f() : PRESETS[id].f);
@@ -8821,7 +8822,7 @@ function syncNumberMenu() {
   $('primorialRow').hidden = p.id !== 'primorial';
 }
 
-// The numbers by tabs (one group of tabs: ℚ the fractions, Constants and sequences, Primes, 🎲 Random), a tab's groups shown,
+// The numbers by tabs (one group of tabs: ℚ the fractions, ℝ the constants and sequences, ℙ the primes, 🎲 Random), a tab's groups shown,
 // each a grid of tiles showing the symbol, several per row, the name and the formula on hover; a tab of one card, that card as
 // a wide button, picked as the tab is (its number drawn again, Random's, unless shown already). The tab shown: the number's own,
 // till another is picked (a picked number: its own again). The helper menus of the primes (which Mersenne, which primorial,
@@ -8833,11 +8834,11 @@ const NUMBER_TABS = [
     'Fractions, their digits coming back round a loop (the rosettes found on the turtles), to edit in Formula',
   ],
   [
-    'Constants',
+    'ℝ',
     ['Constants', 'Sequences'],
-    'Famous constants (π, e, φ, √2, ln 2, ζ(3)…) and sequences laid as digits (Thue–Morse, Champernowne, prime gaps)',
+    'Famous constants (π, e, φ, √2, ln 2, ζ(3), the prime constant…) and sequences laid as digits (Thue–Morse, Champernowne, prime gaps)',
   ],
-  ['Primes', ['Primes'], 'Whole numbers (Mersenne, primorial, drawn at random) and the prime constant'],
+  ['ℙ', ['Primes'], 'Primes: Mersenne, primorial, drawn at random'],
   ['🎲', ['Random'], 'Digits drawn at random, a link giving the same draw again'],
 ]; // (name, its groups, its tooltip)
 let numberTab = null,
@@ -19228,8 +19229,7 @@ function battleAreas(P) {
  * and its start. */
 const BATTLE_CARDS = Object.values(PRESETS)
   .filter((p) => ['Constants', 'Sequences'].includes(p.group) && typeof p.f === 'string')
-  .map((p) => p.f)
-  .concat('rho');
+  .map((p) => p.f);
 const huntVary = { formulas: true, starts: false };
 // its rankings: [picture, name, tooltip, the button's words, its list's title, a battle's score (none: Longest's two lists),
 // a card's figure]
@@ -25820,6 +25820,13 @@ const pixelIcon = (art, pad = 0) => {
 // changing then those kept, by their live cells; the state before shown a moment, fading
 // a page's tools over it (how a rule or a walk works, the number): a switch (Letters, Base 10: its text, title, on, click), play
 // it again, copy it, back; each its click
+// One page over the view at a time (.rule-tuto: how a rule or a walk works, the credits, Full number): page shown, any
+// other closed by its own cross (its buttons unlit, as Escape does, see KEYS)
+function showPage(page) {
+  for (const other of document.querySelectorAll('.rule-tuto:not([hidden])'))
+    if (other !== page) other.querySelector('.tut-close')?.click();
+  page.hidden = false;
+}
 function tutTools({ toggle = null, words = [], replay = null, copy = null, close }) {
   // (words: [text, title, click], buttons of a word)
   const d = document.createElement('div'),
@@ -26187,7 +26194,8 @@ function elementaryTutorial(entry) {
 }
 function ruleTutorial(entry) {
   $('appTab').classList.remove('open'); // (the app's tab, Credits': off, another page or none)
-  $('ruleTuto').hidden = !entry;
+  if (entry) showPage($('ruleTuto'));
+  else $('ruleTuto').hidden = true;
   for (const b of document.querySelectorAll('.how-it-works')) {
     b.classList.toggle('active', !!entry);
     b.classList.toggle('switch', !!entry);
@@ -27007,7 +27015,7 @@ function battleTutorial(w) {
   );
 }
 function walkTutorial(w) {
-  $('ruleTuto').hidden = false;
+  showPage($('ruleTuto'));
   for (const b of document.querySelectorAll('.how-it-works')) {
     b.classList.add('active');
     b.classList.add('switch');
@@ -45776,7 +45784,7 @@ function showNumber() {
     }),
   );
   v.querySelector('.tut-body').scrollTop = 0;
-  v.hidden = false;
+  showPage(v);
   for (const b of numberChips()) b.classList.add('active', 'switch');
   lightBases();
 }
@@ -46452,7 +46460,7 @@ function credits(open) {
   if (!open) return;
   showPane(false); // (over the view: the Gallery shut, not half covered)
   $('appTab').classList.add('open');
-  $('ruleTuto').hidden = false;
+  showPage($('ruleTuto'));
   $('ruleTuto').dataset.shown = 'credits';
   $('ruleTuto').innerHTML =
     `<div class="tut-body"><h2>${APP_TITLE} <code>v${VERSION}</code></h2><p>Cellular automata on tilings, surfaces and solids, and walks on the digits of numbers: the work of many, here.</p>` +

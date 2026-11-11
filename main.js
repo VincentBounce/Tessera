@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.875';
+const VERSION = '0.4.876';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -8983,8 +8983,9 @@ const NUMBER_TABS = [
 ]; // (name, its groups, its tooltip)
 let numberTab = null,
   numberShown = null; // (the tab picked; the number shown when it was)
-// the Number's tab at first, by its value: its card's (see presetOf: a formula found among the cards), else Fractions (a
-// formula of its own); a tab picked, or a number picked in one, kept while that number is shown
+// the Number's tab, by its value: its card's (see presetOf: a formula found among the cards); a formula of its own keeps the
+// tab shown (no card to show elsewhere: the first at the start); a tab picked, or a number picked in one, kept while that
+// number is shown
 const numberTabOf = (active) =>
   NUMBER_TABS.find(([, groups]) => groups.includes(PRESETS[active]?.group))?.[0] ?? NUMBER_TABS[0][0];
 // a card's symbol: a fraction its numerator over its denominator (see .fraction), as in maths
@@ -8995,7 +8996,8 @@ const cardSymbol = (sym) => {
 // the cards of a tab's groups
 const cardsIn = (groups) => Object.keys(PRESETS).filter((id) => groups.includes(PRESETS[id].group));
 function renderNumberPicker(active) {
-  if (active !== numberShown) [numberShown, numberTab] = [active, null];
+  if (active !== numberShown)
+    [numberShown, numberTab] = [active, active ? null : (numberTab ?? numberTabOf(numberShown))]; // (its own: the tab kept)
   const tab = numberTab ?? numberTabOf(active);
   const shown = NUMBER_TABS.find(([name]) => name === tab)[1];
   const tabs = tileGroup(

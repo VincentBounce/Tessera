@@ -10,7 +10,7 @@
   <meta property="og:url" content="https://vincentbounce.github.io/Tessera/">
   <meta property="og:type" content="website">
   <link id="favicon" rel="icon">  <!-- the app's logo, set at start-up (see LOGO_PATH) -->
-  <link rel="stylesheet" href="style.css?v=0.4.832">
+  <link rel="stylesheet" href="style.css?v=0.4.833">
   <script>  // the theme before the first paint (see applyTheme)
     try { const t = localStorage.getItem('tesseraTheme'); document.documentElement.dataset.theme = t === 'light' || t === 'dark' ? t : matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark'; } catch { document.documentElement.dataset.theme = 'dark'; }
   </script>
@@ -473,8 +473,9 @@
               <label class="check" id="oceanRow" hidden title="Rainbow and battle colours in earth colours, on a sea blue"><input id="ocean" type="checkbox"> Earth</label>
               <label class="check" id="autoRotateRow" hidden title="Turn the view slowly, swaying up and down so that the top and the bottom show too; it starts Auto-fit, and a hand rotation stops it"><input id="autoRotate" type="checkbox"> Auto-rotate</label>
             </div>
-            <div id="shapeRow" hidden>
-              <div class="shape-slider" title="The same cells, from flat to round: drag (the walk goes on meanwhile)"><span id="shapeFlat"></span><input id="shapeM" type="range" min="0" max="1" step="0.01" aria-label="From flat to round"><span id="shapeRound"></span></div>
+            <div id="shapeRow" class="pill-row" hidden>  <!-- Shape: its slider in a pill's track, its ends' names in it (see updateMorphButton) -->
+              <h3>Shape</h3>
+              <div class="shape-slider" title="The same cells, from flat to round: drag (the walk goes on meanwhile)"><span id="shapeFlat"></span><span id="shapeRound"></span><input id="shapeM" type="range" min="0" max="1" step="0.01" aria-label="From flat to round"></div>
             </div>
             <div id="cutRow" hidden></div>  <!-- Off, S, E, Up: pills (see pillRow, CUT_AXES) -->
           </div>
@@ -505,10 +506,10 @@
     </div>
   </main>
 
-  <script src="pixelarticons.js?v=0.4.832"></script>
-  <script src="punks.js?v=0.4.832"></script>
-  <script src="loops.js?v=0.4.832"></script>
-  <script src="emoji.js?v=0.4.832"></script>
-  <script src="main.js?v=0.4.832"></script>
+  <script src="pixelarticons.js?v=0.4.833"></script>
+  <script src="punks.js?v=0.4.833"></script>
+  <script src="loops.js?v=0.4.833"></script>
+  <script src="emoji.js?v=0.4.833"></script>
+  <script src="main.js?v=0.4.833"></script>
 </body>
 </html>

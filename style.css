@@ -289,15 +289,50 @@ input[type='range'] {
   accent-color: var(--accent-color);
 }
 .shape-slider {
+  position: relative;
+  flex: 1;
   display: flex;
+  justify-content: space-between;
   align-items: center;
-  gap: 8px;
+  height: 31px;
+  padding: 0 12px;
+  border-radius: 999px;
+  background: var(--track-background);
   font-size: var(--label-text-size);
   color: var(--muted-text-color);
-} /* Flat ── Inflated: a surface's form */
+} /* Shape: a pill's track (as Cut's and Area's, see .pill-group), its ends' names in it (Flat, Inflated), a round knob sliding
+   over them */
 .shape-slider input {
-  flex: 1;
-  min-width: 0;
+  position: absolute;
+  inset: 0 3px;
+  width: calc(100% - 6px);
+  height: 100%;
+  margin: 0;
+  appearance: none;
+  background: none;
+  cursor: pointer;
+}
+.shape-slider input::-webkit-slider-thumb {
+  appearance: none;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--panel-background);
+  box-shadow: 0 0 0 1px var(--border-color);
+}
+.shape-slider input::-moz-range-thumb {
+  width: 24px;
+  height: 24px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--panel-background);
+  box-shadow: 0 0 0 1px var(--border-color);
+} /* (its knob as a pill picked: see .pill-group) */
+.shape-slider input:disabled {
+  cursor: default;
+}
+.shape-slider:has(input:disabled) {
+  opacity: 0.45;
 }
 .pill-row {
   display: flex;

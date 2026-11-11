@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.814';
+const VERSION = '0.4.815';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -39577,6 +39577,7 @@ function updateSpeedLabel() {
 function setSpeed(s) {
   speed = Math.min(SPEEDS.at(-1), Math.max(SPEEDS[0], s < 10 ? Math.round(s * 10) / 10 : Math.round(s))); // (below 10, to a tenth: 1.2)
   updateSpeedLabel();
+  renderPlayer(); // (its buttons by the speed: the slowest's turtle, the other way's arrow, see playerButton)
   statsDirty = true;
 }
 
@@ -39790,8 +39791,9 @@ function play(on) {
   statsDirty = true; // (stopped: the chips lit again, see updateStats)
 }
 // The player's ◀ ■ ▶: stopped, ◀ plays backwards and ▶ forth; playing, its way's button (▶ forth, ◀ back) the rabbit, a
-// notch faster, the other the turtle, a notch slower: the other way only from ■ (Stop, Space). One source, playerButton:
-// what a button is now, its icon, its name, its words and its click
+// notch faster, the other the turtle, a notch slower; at the slowest, that one its way's arrow again: the other way, as
+// slow (then its rabbit, faster that way). One source, playerButton: what a button is now, its icon, its name, its words
+// and its click
 const playerButton = (id) => {
   const way = playing ? 1 : reversing ? -1 : 0,
     ahead = id === 'play' ? 1 : -1;
@@ -39804,6 +39806,13 @@ const playerButton = (id) => {
     };
   const notch = way === ahead ? 1 : -1,
     next = notch > 0 ? SPEEDS.find((v) => v > speed) : SPEEDS.findLast((v) => v < speed);
+  if (notch < 0 && next === undefined)
+    return {
+      pic: ahead > 0 ? 'play' : 'reverse',
+      name: ahead > 0 ? 'Play' : 'Play backwards',
+      title: 'Already the slowest: the other way, as slow',
+      go: () => (ahead > 0 ? play(true) : reverse(true)),
+    };
   return {
     pic: notch > 0 ? 'rabbit' : 'turtle',
     name: notch > 0 ? 'Faster' : 'Slower',
@@ -44523,23 +44532,17 @@ function updateStats() {
   setTile($('jump10k'), {
     greyed: busy ? 'Its run is not built yet.' : runLoop() ? 'Its loop is known: its end is in sight.' : '',
   });
-  const notchEnd = (id) => (playerButton(id).pic === 'rabbit' ? 'Already the fastest.' : 'Already the slowest.'); // (playing: a speed at its end)
+  // (a button its way's arrow, stopped or turning back at the slowest: that way's own; its rabbit at the fastest: none faster)
+  const fastest = (id) => playerButton(id).pic === 'rabbit' && playerButton(id).next === undefined;
   setTile($('stop'), { greyed: playing || reversing ? '' : 'Already stopped.' });
   setTile($('play'), {
-    greyed: busy
-      ? 'Its run is not built yet.'
-      : playing || reversing
-        ? playerButton('play').next === undefined
-          ? notchEnd('play')
-          : ''
-        : '',
+    greyed: busy ? 'Its run is not built yet.' : fastest('play') ? 'Already the fastest.' : '',
   });
   setTile($('reverse'), {
-    greyed:
-      playing || reversing
-        ? playerButton('reverse').next === undefined
-          ? notchEnd('reverse')
-          : ''
+    greyed: fastest('reverse')
+      ? 'Already the fastest.'
+      : playerButton('reverse').pic !== 'reverse'
+        ? ''
         : !playsBack()
           ? 'A Game of Life has no rule backwards: it plays forth only.'
           : backAtStart,

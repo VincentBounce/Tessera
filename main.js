@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.808';
+const VERSION = '0.4.809';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -46627,9 +46627,10 @@ function credits(open) {
   $('ruleTuto').hidden = false;
   $('ruleTuto').dataset.shown = 'credits';
   $('ruleTuto').innerHTML =
-    `<div class="tut-body"><h3>${APP_TITLE} <code>v${VERSION}</code></h3><p>Made by ${AUTHOR}</p><p>Cellular automata on tilings, surfaces and solids, and walks on the digits of numbers: the work of many, here.</p>` +
+    `<div class="tut-body"><h3>${APP_TITLE} <code>v${VERSION}</code></h3><p>Cellular automata on tilings, surfaces and solids, and walks on the digits of numbers: the work of many, here.</p>` +
     CREDITS.map(([title, who]) => `<h4>${title}</h4><p>${who}.</p>`).join('') +
     `<p><a href="https://github.com/VincentBounce/Tessera#readme" target="_blank" rel="noopener">Its README</a> · <a href="https://github.com/VincentBounce/Tessera" target="_blank" rel="noopener">its code</a></p>` +
+    `<h3>Made with ❤️</h3><p>${AUTHOR}</p>` + // (its signature, at the end of what it tells)
     '<div class="form-section"><h3>Stats/debug</h3><h4>Times for this view</h4><table id="timings" class="tut-commands"></table>' + // (the walk shown's times, see timings)
     `<h4>Screen: ${screenHz()} Hz</h4><table class="tut-commands"><tr><td class="number">Speed asked</td><td class="number">played</td></tr>${SPEEDS.map((v) => `<tr><td class="number">${formatNumber(v)}/s</td><td class="number">${speedWords(v)}</td></tr>`).join('')}</table>` + // (its refresh, and each speed as it plays there: see evenSpeed)
     `<h4>Computed this session</h4><table class="tut-commands">${memoriesRows()}</table>` + // (what the memories keep, see remember)

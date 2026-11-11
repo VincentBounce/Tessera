@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.852';
+const VERSION = '0.4.853';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -8827,7 +8827,7 @@ function syncNumberMenu() {
 // what size) sit right under the Primes group (every group made, those of other tabs hidden: the menus kept in the page)
 const NUMBER_TABS = [
   [
-    'Formulas',
+    'Fractions',
     ['Fractions'],
     'Fractions, their digits coming back round a loop (the rosettes found on the turtles), to edit in Formula',
   ],
@@ -8840,7 +8840,7 @@ const NUMBER_TABS = [
 ]; // (name, its groups, its tooltip)
 let numberTab = null,
   numberShown = null; // (the tab picked; the number shown when it was)
-// the Number's tab at first, by its value: its card's (see presetOf: a formula found among the cards), else Formulas (a
+// the Number's tab at first, by its value: its card's (see presetOf: a formula found among the cards), else Fractions (a
 // formula of its own); a tab picked, or a number picked in one, kept while that number is shown
 const numberTabOf = (active) =>
   NUMBER_TABS.find(([, groups]) => groups.includes(PRESETS[active]?.group))?.[0] ?? NUMBER_TABS[0][0];

@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.851';
+const VERSION = '0.4.852';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -1034,7 +1034,7 @@ setPalette(themeName());
 // small tile showing the symbol; its name and formula (detail, when the formula is built) are
 // in its tooltip, and the Formula field shows what it wrote; its Wikipedia page's title (wiki), if it has one, a link in the
 // Full number's title (see showNumber).
-const NUMBER_GROUPS = ['Fractions', '𝑓', 'Constants', 'Sequences', 'Primes']; // (in a tab's order, see NUMBER_TABS)
+const NUMBER_GROUPS = ['Fractions', 'Constants', 'Sequences', 'Primes']; // (in a tab's order, see NUMBER_TABS)
 const PRESETS = {
   pi: { group: 'Constants', sym: 'π', name: 'Pi', f: 'pi', wiki: 'Pi' },
   e: {
@@ -1066,7 +1066,7 @@ const PRESETS = {
     wiki: 'Fibonacci word',
   },
   sqrt2: {
-    group: '𝑓',
+    group: 'Constants',
     sym: '√2',
     name: "Pythagoras's constant",
     detail: 'sqrt(2) · the diagonal of a unit square, the first number proved irrational',
@@ -1074,7 +1074,7 @@ const PRESETS = {
     wiki: 'Square root of 2',
   },
   cbrt2: {
-    group: '𝑓',
+    group: 'Constants',
     sym: '∛2',
     name: 'The Delian constant',
     detail: 'cbrt(2) · doubling the cube: no ruler and compass can draw it (Wantzel, 1837)',
@@ -1082,7 +1082,7 @@ const PRESETS = {
     wiki: 'Doubling the cube',
   },
   plastic: {
-    group: '𝑓',
+    group: 'Constants',
     sym: 'P',
     name: 'The plastic number',
     detail: "x³ = x + 1 · the golden ratio's little brother",
@@ -1090,7 +1090,7 @@ const PRESETS = {
     wiki: 'Plastic ratio',
   },
   ln2: {
-    group: '𝑓',
+    group: 'Constants',
     sym: 'ln 2',
     name: 'Natural log of 2',
     detail: 'ln(2) · 1 − 1/2 + 1/3 − 1/4 + …, the alternating harmonic series',
@@ -1098,7 +1098,7 @@ const PRESETS = {
     wiki: 'Natural logarithm of 2',
   },
   fifth: {
-    group: '𝑓',
+    group: 'Constants',
     sym: 'log₂ 3',
     name: 'The perfect fifth',
     detail: 'log(3,2) · rising by fifths never lands on an octave: why pianos are tuned equal',
@@ -1106,7 +1106,7 @@ const PRESETS = {
     wiki: 'Perfect fifth',
   },
   epi: {
-    group: '𝑓',
+    group: 'Constants',
     sym: 'e^π',
     name: "Gelfond's constant",
     detail: 'e^pi = exp(pi)',
@@ -1114,7 +1114,7 @@ const PRESETS = {
     wiki: "Gelfond's constant",
   },
   gelfondSchneider: {
-    group: '𝑓',
+    group: 'Constants',
     sym: '2^√2',
     name: 'Gelfond–Schneider constant',
     detail: "2^sqrt(2) · transcendental: Hilbert's 7th problem, solved in 1934",
@@ -1122,7 +1122,7 @@ const PRESETS = {
     wiki: 'Gelfond–Schneider constant',
   },
   mertens: {
-    group: '𝑓',
+    group: 'Constants',
     sym: 'e^γ',
     name: "Mertens' constant",
     detail: 'exp(gamma) · ∏ₚ (1 − 1/p) up to x ≈ 1/(e^γ · ln x): γ and the primes',
@@ -1130,7 +1130,7 @@ const PRESETS = {
     wiki: "Mertens' theorems",
   },
   basel: {
-    group: '𝑓',
+    group: 'Constants',
     sym: 'π²/6',
     name: 'The Basel problem',
     detail: 'pi^2/6 · 1 + 1/4 + 1/9 + 1/16 + … (Euler, 1734)',
@@ -1138,7 +1138,7 @@ const PRESETS = {
     wiki: 'Basel problem',
   },
   zeta3: {
-    group: '𝑓',
+    group: 'Constants',
     sym: 'ζ(3)',
     name: "Apéry's constant",
     detail: 'zeta(3) · 1 + 1/8 + 1/27 + …: proved irrational by Apéry in 1979, no closed form known',
@@ -1146,7 +1146,7 @@ const PRESETS = {
     wiki: "Apéry's constant",
   },
   coprime: {
-    group: '𝑓',
+    group: 'Constants',
     sym: '6/π²',
     name: 'Probability that two whole numbers are coprime',
     detail: '6/pi^2 = 1/ζ(2) = ∏ₚ (1 − 1/p²), over the primes',
@@ -1154,7 +1154,7 @@ const PRESETS = {
     wiki: 'Coprime integers',
   },
   ramanujan: {
-    group: '𝑓',
+    group: 'Constants',
     sym: 'e<sup>π√163</sup>',
     name: "Ramanujan's constant",
     detail: 'e^(pi*sqrt(163)) = 262537412640768743.99999999999925…: all but whole',
@@ -8828,13 +8828,13 @@ function syncNumberMenu() {
 const NUMBER_TABS = [
   [
     'Formulas',
-    ['Fractions', '𝑓'],
-    'Fractions, their digits coming back round a loop (the rosettes found on the turtles), and numbers made by a formula (√2, π², ln 2, ζ(3)…), to edit in Formula',
+    ['Fractions'],
+    'Fractions, their digits coming back round a loop (the rosettes found on the turtles), to edit in Formula',
   ],
   [
     'Constants',
     ['Constants', 'Sequences'],
-    'Famous constants (π, e, φ…) and sequences laid as digits (Champernowne, random, prime gaps)',
+    'Famous constants (π, e, φ, √2, ln 2, ζ(3)…) and sequences laid as digits (Champernowne, random, prime gaps)',
   ],
   ['Primes', ['Primes'], 'Whole numbers (Mersenne, primorial, drawn at random) and the prime constant'],
 ]; // (name, its groups, its tooltip)
@@ -8870,7 +8870,7 @@ function renderNumberPicker(active) {
         label = document.createElement('h4'), // (a group's title: under the section's, h2, and Number's, h3)
         grid = document.createElement('div');
       box.hidden = !shown.includes(group);
-      label.textContent = group === '𝑓' ? 'Functions' : group;
+      label.textContent = group;
       label.hidden = shown.length < 2; // (a tab of one group: its name the tab's)
       grid.className = 'number-grid';
       grid.setAttribute('role', 'listbox');
@@ -19218,7 +19218,7 @@ function battleAreas(P) {
  * (walkers packed apart: in Land no collision, none touching another). Each card plays its battle again, its numbers
  * and its start. */
 const BATTLE_CARDS = Object.values(PRESETS)
-  .filter((p) => ['Constants', '𝑓', 'Sequences'].includes(p.group) && typeof p.f === 'string')
+  .filter((p) => ['Constants', 'Sequences'].includes(p.group) && typeof p.f === 'string')
   .map((p) => p.f)
   .concat('rho');
 const huntVary = { formulas: true, starts: false };

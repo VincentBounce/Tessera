@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.871';
+const VERSION = '0.4.872';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -8883,10 +8883,12 @@ function formulaOf(typed) {
 // a page of another site, in a new tab: its words and ↗ (the one link of its kind, see .external-link)
 const externalLink = (url, words) =>
   `<a class="external-link" href="${url}" target="_blank" rel="noopener">${htmlText(words)} ↗</a>`;
+// the name a number goes by: a fraction, itself; else its card's (see PRESETS); '' for a formula of one's own
+const numberName = (formula) => (/^\d+\/\d+$/.test(formula) ? formula : (PRESETS[presetOf(formula).id]?.name ?? ''));
 // a number's Wikipedia page (see PRESETS' wiki), as a link in its name; '' when it has none
 const wikiLink = (formula) => {
   const p = PRESETS[presetOf(formula).id];
-  return p?.wiki ? externalLink(`https://en.wikipedia.org/wiki/${p.wiki}`, p.name) : '';
+  return p?.wiki ? externalLink(`https://en.wikipedia.org/wiki/${p.wiki}`, numberName(formula)) : '';
 };
 function presetOf(text) {
   const found = Object.keys(PRESETS).find((id) => PRESETS[id].f === text);
@@ -8995,7 +8997,7 @@ function renderNumberPicker(active) {
           // its symbol a picture: its name in bold over its words (see the tooltips); a fraction's, the fraction itself, its
           // name in its words; then the formula it writes (one built from its menu or drawn, once picked), unless its name
           const formula = id === active ? formulaInUse : typeof p.f === 'string' ? p.f : '',
-            fraction = /^\d+\/\d+$/.test(formula);
+            fraction = numberName(formula) === formula;
           b.setAttribute('aria-label', fraction ? formula : p.name);
           b.title = (fraction ? [p.name, p.detail] : [p.detail]).filter(Boolean).join(', ');
           b.dataset.formula = fraction ? '' : formula;
@@ -45880,8 +45882,11 @@ function showNumber() {
     text = rows.map((r, j) => `${r.name} ${baseWords(b)} ${shown[j][0]}`).join('\n');
   v.innerHTML = `<div class="tut-body">${rows
     .map((r, j) => {
-      const period = r.ratio && ratioDigits(b, r.ratio);
-      return `<h2><span style="color:${one ? teamColour(r.s) : ''}">${withIcons(r.name)}</span> <code>${baseWords(b)}</code> <span class="muted">${shown[j][1]}</span> ${wikiLink(r.formula)}</h2>${period ? `<p class="number-digits${one}">${period}</p>` : ''}<p class="number-digits${one}"></p>`;
+      const period = r.ratio && ratioDigits(b, r.ratio),
+        name = numberName(r.formula),
+        title = name ? wikiLink(r.formula) || htmlText(name) : withIcons(r.name), // (its name, its link; a formula of its own, itself)
+        formula = name && name !== r.formula && !one ? `<h3>Formula${ruleSpan(r.formula)}</h3>` : ''; // (as a rule's Birth, see ruleTutorial)
+      return `<h2><span style="color:${one ? teamColour(r.s) : ''}">${title}</span> <code>${baseWords(b)}</code> <span class="muted">${shown[j][1]}</span></h2>${formula}${period ? `<p class="number-digits${one}">${period}</p>` : ''}<p class="number-digits${one}"></p>`;
     })
     .join('')}</div>`;
   [...v.querySelectorAll('.number-digits:empty')].forEach((p, j) => {

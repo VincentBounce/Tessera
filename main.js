@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.807';
+const VERSION = '0.4.808';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -11473,6 +11473,8 @@ new MutationObserver((ms) => {
     }
 }) // (a title set again under the mouse: not the browser's)
   .observe(document.body, { attributes: true, attributeFilter: ['title'], subtree: true });
+// whether words open with a name, then a mark (One step back; …, Jump to the end, …): said once, in bold (see the tooltips)
+const opensWith = (words, name) => !!name && words.startsWith(name) && /^[:;,.]/.test(words.slice(name.length));
 // What it tells of the element under the mouse: the control (its words, its default, why it is greyed) and its words, each
 // button its own (a box that is one control, as Size's − label +: the box's); a title kept as data-tip (see tesseraCheck)
 // (greyed: the greyed control under it, its own state; its words maybe its box's, as Size's − at the smallest)
@@ -11547,7 +11549,7 @@ document.addEventListener('mouseover', (e) => {
           : []
         : !ok
           ? [said, ...told]
-          : tip.startsWith(`${name}:`)
+          : opensWith(tip, name)
             ? [
                 bold(name),
                 tip
@@ -39767,21 +39769,23 @@ function play(on) {
 }
 // The player's ◀ ■ ▶: stopped, ◀ plays backwards and ▶ forth; playing, its way's button (▶ forth, ◀ back) the rabbit, a
 // notch faster, the other the turtle, a notch slower: the other way only from ■ (Stop, Space). One source, playerButton:
-// what a button is now, its icon, its words and its click
+// what a button is now, its icon, its name, its words and its click
 const playerButton = (id) => {
   const way = playing ? 1 : reversing ? -1 : 0,
     ahead = id === 'play' ? 1 : -1;
   if (!way)
     return {
       pic: ahead > 0 ? 'play' : 'reverse',
-      title: ahead > 0 ? 'Play' : 'Play backwards, back to the start (its rule run backwards)',
+      name: ahead > 0 ? 'Play' : 'Play backwards',
+      title: ahead > 0 ? '' : 'Back to the start, its rule run backwards',
       go: () => (ahead > 0 ? (atEnd() && restart(), play(true)) : reverse(true)),
     };
   const notch = way === ahead ? 1 : -1,
     next = notch > 0 ? SPEEDS.find((v) => v > speed) : SPEEDS.findLast((v) => v < speed);
   return {
     pic: notch > 0 ? 'rabbit' : 'turtle',
-    title: notch > 0 ? 'Faster: the next speed' : 'Slower: the speed before',
+    name: notch > 0 ? 'Faster' : 'Slower',
+    title: notch > 0 ? 'The next speed' : 'The speed before',
     next,
     go: () => next !== undefined && setSpeed(next),
   };
@@ -39789,11 +39793,11 @@ const playerButton = (id) => {
 function renderPlayer() {
   for (const id of ['reverse', 'play']) {
     const b = $(id),
-      { pic, title } = playerButton(id);
+      { pic, name, title } = playerButton(id);
     if (b.dataset.shown !== pic) {
       b.innerHTML = icon((b.dataset.shown = pic));
-      b.title = title;
-      b.setAttribute('aria-label', title);
+      b.title = title || name; // (no words: its name alone, see the tooltips)
+      b.setAttribute('aria-label', name);
     } // (only when it changes: a click on it kept)
   }
   $('play').classList.toggle('on', playing);

@@ -83,7 +83,7 @@ Operators: `+ − × ÷ ^ ( )`.
 
 Examples: `22/7`, `2^pi`, `8^(1/3)`, `2^127-1`, `primorial(11)+1`, `ln(3)`.
 
-Digit sequences, used alone: `random(seed)`, `champernowne`, `primes`, `primegaps`, `dragon`, `thuemorse`, `rabbit`, `rudinshapiro`, `kolakoski`.
+Digit sequences, used alone: `random(seed)`, `champernowne`, `primebarcode`, `primegaps`, `dragon`, `thuemorse`, `rabbit`, `rudinshapiro`, `kolakoski`.
 
 Press Enter to compute.
 

@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.869';
+const VERSION = '0.4.870';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -1036,7 +1036,14 @@ setPalette(themeName());
 // address's end, as Wikipedia writes it), if it has one, its name a link in the Full number's title (see showNumber).
 const NUMBER_GROUPS = ['Fractions', 'Constants', 'Sequences', 'Primes', 'Random']; // (in a tab's order, see NUMBER_TABS)
 const PRESETS = {
-  pi: { group: 'Constants', sym: 'π', name: 'Pi', f: 'pi', wiki: 'Pi' },
+  pi: {
+    group: 'Constants',
+    sym: 'π',
+    name: 'Pi',
+    detail: "a circle's circumference over its diameter",
+    f: 'pi',
+    wiki: 'Pi',
+  },
   e: {
     group: 'Constants',
     sym: 'e',
@@ -1045,10 +1052,38 @@ const PRESETS = {
     f: 'e',
     wiki: 'E_(mathematical_constant)',
   },
-  phi: { group: 'Constants', sym: 'φ', name: 'Golden ratio', f: 'phi', wiki: 'Golden_ratio' },
-  gamma: { group: 'Constants', sym: 'γ', name: 'Euler–Mascheroni constant', f: 'gamma', wiki: "Euler's_constant" },
-  catalan: { group: 'Constants', sym: 'G', name: "Catalan's constant", f: 'catalan', wiki: "Catalan's_constant" },
-  erdos: { group: 'Constants', sym: 'E', name: 'Erdős–Borwein constant', f: 'erdos', wiki: 'Erdős–Borwein_constant' },
+  phi: {
+    group: 'Constants',
+    sym: 'φ',
+    name: 'Golden ratio',
+    detail: '(1 + √5)/2: the whole over its larger part, as that part over the smaller',
+    f: 'phi',
+    wiki: 'Golden_ratio',
+  },
+  gamma: {
+    group: 'Constants',
+    sym: 'γ',
+    name: 'Euler–Mascheroni constant',
+    detail: '1 + 1/2 + 1/3 + … + 1/n − ln n, as n grows: not known to be irrational',
+    f: 'gamma',
+    wiki: "Euler's_constant",
+  },
+  catalan: {
+    group: 'Constants',
+    sym: 'G',
+    name: "Catalan's constant",
+    detail: '1 − 1/9 + 1/25 − 1/49 + …: not known to be irrational',
+    f: 'catalan',
+    wiki: "Catalan's_constant",
+  },
+  erdos: {
+    group: 'Constants',
+    sym: 'E',
+    name: 'Erdős–Borwein constant',
+    detail: '1/1 + 1/3 + 1/7 + 1/15 + …, the sum of 1/(2ⁿ − 1): proved irrational by Erdős in 1948',
+    f: 'erdos',
+    wiki: 'Erdős–Borwein_constant',
+  },
   thuemorse: {
     group: 'Sequences',
     sym: 'τ',
@@ -1426,6 +1461,7 @@ const PRESETS = {
     group: 'Sequences',
     sym: 'C',
     name: 'Champernowne',
+    detail: "0.123456789101112…: the whole numbers written one after another, in the walk's base",
     f: 'champernowne',
     wiki: 'Champernowne_constant',
   },
@@ -1434,8 +1470,8 @@ const PRESETS = {
     sym: '▮ p',
     name: 'Prime barcode',
     detail:
-      "primes · χ_P, the characteristic function of the primes; on the Ulam square spiral (2D spirals, base 2) it draws Ulam's spiral of the primes",
-    f: 'primes',
+      "χ_P, the characteristic function of the primes; on the Ulam square spiral (2D spirals, base 2) it draws Ulam's spiral of the primes",
+    f: 'primebarcode',
   },
   primeGaps: {
     group: 'Sequences',
@@ -1483,7 +1519,7 @@ const presetFormula = (id) => (typeof PRESETS[id].f === 'function' ? PRESETS[id]
 
 // What the sequences and ρ₂ mean, for the status line
 const FORMULA_NOTES = {
-  primes: (b) => `digit k = 0 if k is not prime, else k mod ${b} (1 for k = ${b})`,
+  primebarcode: (b) => `digit k = 0 if k is not prime, else k mod ${b} (1 for k = ${b})`,
   rho: (b) => `ρ = Σ 2^(−p) = 0.0110101000101…₂, the binary barcode read as one number, written in base ${b}`,
   primegaps: (b) => `one digit per gap between odd primes: (gap / 2) mod ${b}`,
   thuemorse: () => 'the Thue–Morse sequence (0 and 1): digit k is the parity of the 1s of k in base 2',
@@ -8406,7 +8442,7 @@ const withIcons = (text) =>
  *   'int'   an exact integer             2^127-1, primorial(11)+1, sqrt(16)
  *   'rat'   an exact fraction            22/7, 2^-1, (16/81)^(3/4)
  *   'real'  computed with guard digits   pi, sqrt(2), 2^pi, ln(3)
- *   'seq'   a sequence of digits defined base by base (random, champernowne, primes, primegaps,
+ *   'seq'   a sequence of digits defined base by base (random, champernowne, primebarcode, primegaps,
  *           and the 0s and 1s of dragon, thuemorse, rabbit).
  *           It is not a number, so it only stands alone: random(5)+1 is refused.
  * The kind decides where digits come from: sequences on the page (seqDigits), everything else in
@@ -8424,7 +8460,7 @@ const FORMULA_NAMES = {
   erdos: ['real', 'E'],
   rho: ['real', 'ρ'],
   champernowne: ['seq', 'C'],
-  primes: ['seq', '▮ p'],
+  primebarcode: ['seq', '▮ p'],
   primegaps: ['seq', 'gₙ'],
   dragon: ['seq', '🐉', true],
   thuemorse: ['seq', 'τ', true],
@@ -9010,7 +9046,7 @@ function seqDigits(ast, n, base) {
       const t = digitString(k, base);
       for (let c = 0; c < t.length && i < n; c++) digits[i++] = t.charCodeAt(c) - 48;
     }
-  } else if (name === 'primes') {
+  } else if (name === 'primebarcode') {
     // digit k (k = 1, 2, …) is 0 if k is not prime, else k mod b; a prime equal to b counts as 1.
     // In base 2 this is exactly the binary expansion of the prime constant ρ = Σ 2^(−p)
     const composite = sieve(n);
@@ -46265,7 +46301,7 @@ const BUILT_IN = [
   ['1/438', 'A highway from step 534,473', { x: '1/438', w: 'antSquare', d: 540989, r: 'digits LR' }, 2],
   ['Rabbit', 'Fibonacci word fractal', { x: 'rabbit', w: 'turtle', r: 'N a', d: 4181 }],
   ['Rudin–Shapiro', 'On hexagons', { x: 'rudinshapiro', w: 'hexTurtle', d: 16384 }],
-  ['Primes', 'Their barcode', { x: 'primes', w: 'spiral', d: 20000 }],
+  ['Primes', 'Their barcode', { x: 'primebarcode', w: 'spiral', d: 20000 }],
   ['π', '20,000 digits', { x: 'pi', w: 'turtle', d: 20000 }],
 ];
 // the walk's name, as in the walk list ("Squares turtle"; a surface's own name)

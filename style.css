@@ -294,25 +294,38 @@ input[type='range'] {
   flex: 1;
   min-width: 0;
 }
-.notch-row {
+.pill-row {
   display: flex;
   align-items: center;
-  gap: 8px;
-  font-size: var(--label-text-size);
-  color: var(--muted-text-color);
+  gap: 10px;
   margin-bottom: 10px;
-} /* a notched slider: Cut, Area (see notchRow) */
-.notch-row h3 {
+} /* a choice among a few on a row: Cut, Area (see pillRow) */
+.pill-row h3 {
+  width: 3.2em;
   margin: 0;
-  color: var(--text-color);
 } /* (its title a sub-section's, as Cells', on its row) */
-.notch-row .size-gauge {
-  flex: 1;
-  min-width: 0;
-  margin: 0;
+.pill-group {
+  display: inline-flex;
+  gap: 2px;
+  padding: 3px;
+  border-radius: 999px;
+  background: var(--page-background);
+} /* its choices, pills in a pill: the one picked raised */
+.pill-group button {
+  padding: 4px 12px;
+  border: 0;
+  border-radius: 999px;
+  background: none;
+  color: var(--muted-text-color);
+  font-size: var(--label-text-size);
 }
-.notch-row .notch-name {
-  min-width: 3.5em;
+.pill-group button:hover:not(:disabled) {
+  color: var(--text-color);
+}
+.pill-group button.active {
+  background: var(--panel-background);
+  color: var(--text-color);
+  box-shadow: 0 0 0 1px var(--border-color);
 }
 /* checkboxes as switches (iOS style): a pill whose knob slides to the right, yellow when on */
 input[type='checkbox'] {

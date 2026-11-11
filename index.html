@@ -10,7 +10,7 @@
   <meta property="og:url" content="https://vincentbounce.github.io/Tessera/">
   <meta property="og:type" content="website">
   <link id="favicon" rel="icon">  <!-- the app's logo, set at start-up (see LOGO_PATH) -->
-  <link rel="stylesheet" href="style.css?v=0.4.829">
+  <link rel="stylesheet" href="style.css?v=0.4.830">
   <script>  // the theme before the first paint (see applyTheme)
     try { const t = localStorage.getItem('tesseraTheme'); document.documentElement.dataset.theme = t === 'light' || t === 'dark' ? t : matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark'; } catch { document.documentElement.dataset.theme = 'dark'; }
   </script>
@@ -476,7 +476,7 @@
             <div id="shapeRow" hidden>
               <div class="shape-slider" title="The same cells, from flat to round: drag (the walk goes on meanwhile)"><span id="shapeFlat"></span><input id="shapeM" type="range" min="0" max="1" step="0.01" aria-label="From flat to round"><span id="shapeRound"></span></div>
             </div>
-            <div id="cutRow" hidden></div>  <!-- Off, E, N, Up: a notched slider (see notchRow, CUT_AXES) -->
+            <div id="cutRow" hidden></div>  <!-- Off, S, E, Up: pills (see pillRow, CUT_AXES) -->
           </div>
           <div class="form-section">  <!-- what the walk shows: colours, areas, cells -->
             <div id="coloursRow"><div id="colourButtons" class="choice-list"></div></div>
@@ -491,7 +491,7 @@
               <option value="mono">One colour</option>
             </select>
             <div id="fillAreasRow" hidden>  <!-- the areas the walk closes: Empty, Light (translucent) or Plain -->
-              <div id="areaModes"></div>  <!-- Empty, Light, Plain: a notched slider (see notchRow) -->
+              <div id="areaModes"></div>  <!-- Empty, Light, Plain: pills (see pillRow) -->
               <span id="fillTooBig" class="fill-note" hidden title="Beyond 12 million tile corners in the walk's box, the areas are not filled">walk too big</span>
               <select id="area" hidden><option value="empty"></option><option value="light"></option><option value="plain"></option></select>
             </div>
@@ -506,10 +506,10 @@
     </div>
   </main>
 
-  <script src="pixelarticons.js?v=0.4.829"></script>
-  <script src="punks.js?v=0.4.829"></script>
-  <script src="loops.js?v=0.4.829"></script>
-  <script src="emoji.js?v=0.4.829"></script>
-  <script src="main.js?v=0.4.829"></script>
+  <script src="pixelarticons.js?v=0.4.830"></script>
+  <script src="punks.js?v=0.4.830"></script>
+  <script src="loops.js?v=0.4.830"></script>
+  <script src="emoji.js?v=0.4.830"></script>
+  <script src="main.js?v=0.4.830"></script>
 </body>
 </html>

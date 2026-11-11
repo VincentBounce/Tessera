@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.829';
+const VERSION = '0.4.830';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -11456,11 +11456,10 @@ const tipOf = (target) => {
 };
 document.addEventListener('mouseover', (e) => {
   const { el, tip: title, greyed } = tipOf(e.target),
-    named = el?.matches('button, label, .notch-row'); // (a notch row: its title, its h3)
+    named = el?.matches('button, label');
   const name = named
     ? (
-        el.getAttribute('aria-label') ??
-        (el.querySelector('.mode-name, h3') ?? el.querySelector('span') ?? el).textContent
+        el.getAttribute('aria-label') ?? (el.querySelector('.mode-name') ?? el.querySelector('span') ?? el).textContent
       ).trim()
     : ''; // (a button with no words, a picture: its aria-label)
   // its words, none when they are its name again (Play: its name alone); its name in bold, its key after it (see KEYS)
@@ -15935,24 +15934,26 @@ function greyInput(input, row, whyNot) {
   input.pathsMemo = null;
   input.paths = () => (input.pathsMemo ??= pathsTo((setup) => !whyNot(setup)));
 }
-function notchRow(el, title, about, choices, at, first, set, whyNot = null, live = true) {
-  // (whyNot(setup): as a tile's, see setTile)
-  const name = Object.assign(document.createElement('span'), { className: 'notch-name' }),
-    gauge = Object.assign(document.createElement('div'), { className: 'size-gauge' });
-  const show = (k) => {
-      name.textContent = choices[k][0];
-      el.title = [about, choices[k][1]].filter(Boolean).join('\n');
-    },
-    pick = (k) => {
-      show(k);
-      set(k);
-    };
-  sizeGauge(gauge, choices.length, at, live ? pick : show, pick, first);
-  if (whyNot) greyInput(gauge.querySelector('input'), el, whyNot);
-  show(at);
-  el.dataset.default = `${choices[first][0]} by default`;
-  el.classList.add('notch-row');
-  el.replaceChildren(Object.assign(document.createElement('h3'), { textContent: title }), gauge, name);
+// A choice among a few on a row (Cut, Area): its title (h3), then its choices as pills (see .pill-group), each a tile of
+// words only, its words its tooltip's, the default marked, the one picked raised; whyNot(setup): the whole row greyed, as a
+// tile's (see setTile)
+function pillRow(el, title, about, choices, at, first, set, whyNot = null) {
+  const mark = (k) => pills.forEach((b, j) => setTile(b, { on: j === k, byDefault: j === first ? 'yes' : '', whyNot })),
+    pills = choices.map(([name, words], k) =>
+      tile({
+        text: name,
+        title: [about, words].filter(Boolean).join('\n'),
+        click: () => {
+          set(k);
+          mark(k);
+        },
+      }),
+    );
+  mark(at);
+  const group = Object.assign(document.createElement('div'), { className: 'pill-group' });
+  group.append(...pills);
+  el.classList.add('pill-row');
+  el.replaceChildren(Object.assign(document.createElement('h3'), { textContent: title }), group);
 }
 // − / +: the usual sizes (from a torus size of its own, the usual ones just below or above it)
 function stepSize(delta) {
@@ -45642,7 +45643,7 @@ $('ocean').addEventListener('change', () => {
   tintBattleFormulas();
   if (walk.n) describe(walk.base);
 }); // (a battle's colours: its fields, its title, its ranking)
-notchRow(
+pillRow(
   $('cutRow'),
   'Cut',
   "A cross-section by a fixed plane through the middle, the half on its axis's side gone, the inside showing: Off, or the plane facing S, E or Up (the view's corner draws E, N and Up: S the way opposite N)",
@@ -46044,7 +46045,7 @@ function renderAreaModes() {
   const shown = (v) => (v === 'light' && !light ? 'plain' : v); // (Light only over a line: else Plain)
   const now = AREA_MODES.findIndex(([look]) => look === shown($('area').value)),
     first = shown(defaultOf('area', tabMode()));
-  notchRow(
+  pillRow(
     $('areaModes'),
     'Area',
     'The areas the walk closes, filled',
@@ -46061,8 +46062,7 @@ function renderAreaModes() {
       }
     },
     ({ w, teams, battleRule: p, look }) => areaWhyNot(w, teams, p, look),
-    false,
-  ); // (let go: the row drawn again)
+  );
 }
 // The looks of a 2D walk on cells, as square buttons: Path, the rainbow line over its cells faded (an ant's over its
 // states); Rainbow along the walk; Commands, a colour per command read (an ant's: States, its cells by their state, see

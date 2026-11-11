@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.876';
+const VERSION = '0.4.877';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -8981,13 +8981,12 @@ const NUMBER_TABS = [
   ['ℙ', ['Primes'], 'Primes: Mersenne, primorial, drawn at random'],
   ['🎲', ['Random'], 'Digits drawn at random, a link giving the same draw again'],
 ]; // (name, its groups, its tooltip)
-let numberTab = null,
-  numberShown = null; // (the tab picked; the number shown when it was)
-// the Number's tab, by its value: its card's (see presetOf: a formula found among the cards); a formula of its own keeps the
-// tab shown (no card to show elsewhere: the first at the start); a tab picked, or a number picked in one, kept while that
-// number is shown
-const numberTabOf = (active) =>
-  NUMBER_TABS.find(([, groups]) => groups.includes(PRESETS[active]?.group))?.[0] ?? NUMBER_TABS[0][0];
+// the tab shown (the first at the start), changed by a click on a tab, or by another number shown (numberShown) with a card:
+// its card's tab (a formula of its own: no card to show elsewhere, the tab kept)
+let numberTab = NUMBER_TABS[0][0],
+  numberShown = null;
+// the tab of a card (see presetOf: a formula found among the cards); none for a formula of its own
+const numberTabOf = (active) => NUMBER_TABS.find(([, groups]) => groups.includes(PRESETS[active]?.group))?.[0];
 // a card's symbol: a fraction its numerator over its denominator (see .fraction), as in maths
 const cardSymbol = (sym) => {
   const m = sym.match(/^(\d+)\/(\d+)$/);
@@ -8996,10 +8995,11 @@ const cardSymbol = (sym) => {
 // the cards of a tab's groups
 const cardsIn = (groups) => Object.keys(PRESETS).filter((id) => groups.includes(PRESETS[id].group));
 function renderNumberPicker(active) {
-  if (active !== numberShown)
-    [numberShown, numberTab] = [active, active ? null : (numberTab ?? numberTabOf(numberShown))]; // (its own: the tab kept)
-  const tab = numberTab ?? numberTabOf(active);
-  const shown = NUMBER_TABS.find(([name]) => name === tab)[1];
+  if (active !== numberShown) {
+    numberShown = active;
+    numberTab = numberTabOf(active) ?? numberTab;
+  }
+  const shown = NUMBER_TABS.find(([name]) => name === numberTab)[1];
   const tabs = tileGroup(
     NUMBER_TABS.map(([name, groups, title]) => {
       const b = document.createElement('button'),
@@ -9007,7 +9007,7 @@ function renderNumberPicker(active) {
       b.type = 'button';
       b.title = title;
       b.innerHTML = withIcons(name);
-      b.classList.toggle('active', name === tab);
+      b.classList.toggle('active', name === numberTab);
       b.addEventListener('click', () => {
         numberTab = name;
         if (cards.length === 1 && cards[0] !== active) {
@@ -9033,7 +9033,7 @@ function renderNumberPicker(active) {
       const ids = cardsIn([group]),
         one = ids.length === 1; // (a group of one card: its draw button alone, no grid; picked by its tab)
       const pick = (id) => {
-        [numberShown, numberTab] = [id, tab];
+        numberShown = id;
         pickPreset(id);
       }; // (its tab kept)
       grid.append(

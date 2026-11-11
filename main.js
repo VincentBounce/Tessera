@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.805';
+const VERSION = '0.4.806';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -45505,6 +45505,12 @@ stage.addEventListener('pointerup', (e) => {
   }
 });
 
+// the first control shown of a selector clicked: whether there was one
+const clickShown = (selector) => {
+  const b = [...document.querySelectorAll(selector)].find((x) => x.offsetParent);
+  b?.click();
+  return !!b;
+};
 document.addEventListener('keydown', (e) => {
   if (e.target.matches('input[type=number], input[type=text], select, textarea')) return;
   switch (e.key) {
@@ -45533,7 +45539,9 @@ document.addEventListener('keydown', (e) => {
       recentre();
       break;
     case 'Escape':
-      if (!$('galleryPane').hidden) showPane(false); // (the Gallery shut, as a click on its tab again)
+      // a page over the view (how a rule or a walk works, the number…) closed by its cross (see tutTools), else the Gallery
+      // shut, as a click on its tab again
+      if (!clickShown('.tut-close') && !$('galleryPane').hidden) showPane(false);
       break;
   }
 });

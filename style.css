@@ -2118,12 +2118,12 @@ button.wide.active,
 .tut-body > h2 + p:not(.number-digits) {
   margin-right: 96px;
 } /* (beside the buttons) */
-.tut-body code {
+.tut-body :is(code, .external-link) {
   color: var(--text-color);
   font-weight: 700;
   text-transform: none;
   letter-spacing: 0;
-} /* the rule itself, wherever: black and bold (the labels grey) */
+} /* the rule itself, wherever, or a number's page: black and bold (the labels grey) */
 .tut-body > h2 code {
   overflow-wrap: anywhere;
 } /* (a long rule: on as many lines; a block rule's numbers, after its commas, see blockTutorial) */
@@ -2142,7 +2142,7 @@ button.wide.active,
   letter-spacing: 0.05em;
   color: var(--muted-text-color);
 }
-.rule-tuto h3 code {
+.rule-tuto h3 :is(code, .external-link) {
   margin-left: 8px;
   font-size: var(--text-size);
 }

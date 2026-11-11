@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.877';
+const VERSION = '0.4.878';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -45955,10 +45955,9 @@ function showNumber() {
   v.innerHTML = `<div class="tut-body">${rows
     .map((r, j) => {
       const period = r.ratio && ratioDigits(b, r.ratio),
-        name = numberName(r.formula),
-        title = name ? wikiLink(r.formula) || htmlText(name) : withIcons(r.name), // (its name, its link; a formula of its own, itself)
-        formula = name && name !== r.formula && !one ? `<h3>Formula${ruleSpan(r.formula)}</h3>` : ''; // (as a rule's Birth, see ruleTutorial)
-      return `<h2><span style="color:${one ? teamColour(r.s) : ''}">${title}</span> <code>${baseWords(b)}</code> <span class="muted">${shown[j][1]}</span></h2>${formula}${period ? `<p class="number-digits${one}">${period}</p>` : ''}<p class="number-digits${one}"></p>`;
+        wiki = wikiLink(r.formula),
+        page = wiki && !one ? `<h3>Wikipedia ${wiki}</h3>` : ''; // (its page, if it has one, as a rule's Birth: see ruleTutorial)
+      return `<h2><span style="color:${one ? teamColour(r.s) : ''}">${withIcons(r.name)}</span> <code>${baseWords(b)}</code> <span class="muted">${shown[j][1]}</span></h2>${page}${period ? `<p class="number-digits${one}">${period}</p>` : ''}<p class="number-digits${one}"></p>`;
     })
     .join('')}</div>`;
   [...v.querySelectorAll('.number-digits:empty')].forEach((p, j) => {

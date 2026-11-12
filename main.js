@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.890';
+const VERSION = '0.4.891';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -26045,9 +26045,14 @@ function tutTools({ toggle = null, words = [], replay = null, copy = null, close
       b.innerHTML = html;
       b.addEventListener('click', click);
       d.append(b);
+      return b;
     };
   d.className = 'tut-tools';
-  if (toggle) add(`tut-word tut-letters${toggle.on ? ' active' : ''}`, toggle.text, toggle.title, toggle.click);
+  if (toggle) {
+    const b = add('tut-word tut-letters', toggle.text, toggle.title, toggle.click);
+    b.dataset.toggle = '';
+    setTile(b, { on: toggle.on }); // (the app's switch: its hover pale gold off, deeper on)
+  }
   for (const [text, title, click] of words) add('tut-word', text, title, click);
   if (replay) add('tut-replay', '↻', 'Play it again', replay);
   if (copy) add('tut-copy', icon('copy'), 'Copy it', copy);

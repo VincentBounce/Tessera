@@ -1461,7 +1461,8 @@ button.active .bubble.active {
   vertical-align: middle;
 }
 button.wide.active,
-.head-btn.active {
+.head-btn.active,
+.tut-tools button.active {
   border-color: var(--accent-color);
   color: var(--accent-color);
   background: var(--picked-background);
@@ -2333,10 +2334,6 @@ button.wide.active,
   padding: 0 12px;
   font-size: var(--text-size);
 } /* a word (Letters, a switch; Share, Home) */
-.tut-tools button.tut-word.active {
-  border-color: var(--accent-color);
-  color: var(--accent-color);
-}
 .tut-note {
   margin: -4px 0 10px;
   font-size: var(--label-text-size);

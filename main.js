@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.905';
+const VERSION = '0.4.906';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -23043,14 +23043,10 @@ function HEXAS(n) {
     const J = Math.ceil(discReach(W) / U / (c + 1)) + 2,
       items = []; // (rows enough round the disc and its walls' room)
     for (let k = 0; k < 2 * n; k++) {
-      const co = Math.cos(k * t),
-        si = Math.sin(k * t),
-        o = k % 2 ? [co, si] : [0, 0];
+      const turn = hexasTurn(n, k);
       for (let i = 0; i < J; i++)
         for (let j = 0; j <= i; j++) {
-          const p = hexa
-            .map(([x, y]) => [x + i * (c + 1), y + (i - 2 * j) * s])
-            .map(([x, y]) => [(o[0] + co * x - si * y) * U, (o[1] + si * x + co * y) * U]);
+          const p = hexa.map(([x, y]) => turn([x + i * (c + 1), y + (i - 2 * j) * s])).map(([x, y]) => [x * U, y * U]);
           items.push({ p: p.flat(), m: meanPoint(p) });
         }
     }
@@ -23059,16 +23055,15 @@ function HEXAS(n) {
 }
 // a Hexa's icon (see ICONS): its middle as HEXAS lays it, its n hexagons round it and the n between, in a disc of radius 10
 function hexasIcon(n) {
-  const t = Math.PI / n,
-    hexa = sugimotoHexa(n),
-    polys = [];
-  for (let k = 0; k < 2 * n; k++) {
-    const co = Math.cos(k * t),
-      si = Math.sin(k * t),
-      o = k % 2 ? [co, si] : [0, 0];
-    polys.push(hexa.map(([x, y]) => [o[0] + co * x - si * y, o[1] + si * x + co * y]));
-  }
-  return roundIcon(polys);
+  const hexa = sugimotoHexa(n);
+  return roundIcon(Array.from({ length: 2 * n }, (_, k) => hexa.map(hexasTurn(n, k))));
+}
+// a Hexa's sector k of 2n: a point of its first hexagon turned by k π/n, the odd ones moved out by one (see HEXAS)
+function hexasTurn(n, k) {
+  const co = Math.cos((k * Math.PI) / n),
+    si = Math.sin((k * Math.PI) / n),
+    o = k % 2 ? [co, si] : [0, 0];
+  return ([x, y]) => [o[0] + co * x - si * y, o[1] + si * x + co * y];
 }
 // the rosettes offered: Hirschhorn's flower (6-fold, its middle as drawn), the 3- to 12-fold flowers (from their stars),
 // the coned ones (see CONED), the 7- to 12-fold rings (round a hole)

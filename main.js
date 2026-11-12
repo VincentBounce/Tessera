@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.910';
+const VERSION = '0.4.911';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -45891,7 +45891,7 @@ const toggleNumber = () => {
 }; // (a base's bubble too: see cardBubble)
 for (const b of numberChips()) b.addEventListener('click', toggleNumber);
 // A fraction's digits in base b, exact, its period in brackets: = 0.(005291), and when it repeats, its period written 3
-// times (= 0.005291005291005291…, to read it, see showNumber); null when it does not end or repeat within the digits in use
+// times (≈ 0.005291005291005291…, to read it, see showNumber); null when it does not end or repeat within the digits in use
 // (the walk's digits, or the cells a start lays: see digitsNeeded)
 function ratioDigits(b, ratio = digitsComputed.ratio, max = digitsNeeded()) {
   const [p0, q] = ratio,
@@ -45912,7 +45912,7 @@ function ratioDigits(b, ratio = digitsComputed.ratio, max = digitsNeeded()) {
   if (rem && at === undefined) return null;
   return {
     exact: `= ${int}${ds.length ? `.${rem ? `${write(ds.slice(0, at))}(${write(ds.slice(at))})` : write(ds)}` : ''}`,
-    repeated: rem ? `= ${int}.${write([...ds.slice(0, at), ...[0, 1, 2].flatMap(() => ds.slice(at))])}…` : '',
+    repeated: rem ? `≈ ${int}.${write([...ds.slice(0, at), ...[0, 1, 2].flatMap(() => ds.slice(at))])}…` : '',
   };
 }
 function showNumber() {

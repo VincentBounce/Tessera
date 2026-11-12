@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.887';
+const VERSION = '0.4.888';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -8956,7 +8956,7 @@ function presetOf(text) {
 function syncNumberMenu() {
   const p = presetOf($('formula').value);
   renderNumberPicker(p.id);
-  $('formula').classList.toggle('custom', !p.id); // a formula of its own lights up like a chosen card
+  $('formula').classList.toggle('custom', !p.id || !!PRESETS[p.id].draw); // a formula of its own, typed or drawn, lights up like a chosen card
   for (const helper of ['mersenneP', 'primorialP']) if (p[helper]) $(helper).value = p[helper];
   $('mersenneRow').hidden = p.id !== 'mersenne';
   $('primorialRow').hidden = p.id !== 'primorial';

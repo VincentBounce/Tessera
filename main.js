@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.906';
+const VERSION = '0.4.907';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -7954,7 +7954,7 @@ const ICONS = (() => {
       [1, 2]
         .map((t) =>
           svgPath(
-            segmentPath(...[F[0], F[3]].map((p, j) => p.map((x, d) => x + (t / 3) * (F[1][d] - F[0][d])))) +
+            segmentPath(...[F[0], F[3]].map((p) => p.map((x, d) => x + (t / 3) * (F[1][d] - F[0][d])))) +
               segmentPath(...[F[0], F[1]].map((p) => p.map((x, d) => x + (t / 3) * (F[3][d] - F[0][d])))),
           ),
         )
@@ -10373,7 +10373,7 @@ function ruleCards(w, here = true) {
     }
     then();
   };
-  const make = (cardPic, name, code, on, then, why = '', title = '', source = null) =>
+  const make = (cardPic, name, code, on, then, title = '', source = null) =>
     card({
       pic: cardPic,
       name,
@@ -10394,7 +10394,7 @@ function ruleCards(w, here = true) {
       choice: source?.startsWith('walk ') ? `walkRule:${w}|${code}` : null,
     }); // (a walk's rule: its choice's key, its walk's and its rule's, see choicesAt)  // (its picture: how it works, picked first; greyed, why: rulesFor's, any mode's)
   return [
-    ...R.cards.map(({ rule: r, source, name, pic, why, title }) =>
+    ...R.cards.map(({ rule: r, source, name, pic, title }) =>
       make(
         pic,
         name,
@@ -10405,7 +10405,6 @@ function ruleCards(w, here = true) {
           if (r === R.now) renderModePicker();
           else R.set(r);
         },
-        why,
         title,
         source,
       ),
@@ -10421,7 +10420,6 @@ function ruleCards(w, here = true) {
               customOpen = true;
               renderModePicker();
             },
-            '',
             'your own, typed',
           ),
         ]
@@ -10928,7 +10926,7 @@ function renderModePicker() {
       renderModePicker();
     };
     $('torusTiles').replaceChildren(
-      ...F.tabs.flatMap(([f, turned, pic, shape, name]) => {
+      ...F.tabs.flatMap(([f, turned, pic, shape]) => {
         if (turned || !same(f)) return [];
         const b = button(
           `${icon(pic)}<span>${shapeLabel(shape)}</span>`,
@@ -16783,8 +16781,7 @@ const STARTS_ON = [...SOLIDS, ...TORI]; // the surfaces with a start selector
 // and south through the east, in that order: north (or the nearest after it) first, then east.
 function torusStarts(g) {
   const G = gridGraph(g),
-    { nu, nv } = g,
-    k = g.sides;
+    { nu, nv } = g;
   const at = (v) => cornerUv(g, G, v);
   // a step in the flat sheet, across the seams: east, north (in the sheet's units, see torusPoint)
   const step = (a, b) => {
@@ -17101,7 +17098,6 @@ function startMarks(g, sh, R) {
   if (walk.startMarks?.key === key) return walk.startMarks;
   const grid = !!walk.vert,
     G = gridGraph(g),
-    k = g.sides,
     normal = (p) => (grid ? unit([0, 1, 2].map((d) => G.normal[3 * p + d])) : tileUp(p)),
     stateOf = (st) => (grid ? gridState(g, st) : [...cellStart(g, st), 0, 0]),
     list = startList(g).map(stateOf),
@@ -23398,8 +23394,7 @@ let iconCellsMemo = null;
 const iconCellsOf = (K) => {
   const key = `${gridKey()}|${K}`;
   if (iconCellsMemo?.key === key) return iconCellsMemo;
-  const kind = patternKind(),
-    dead = new Set(walk.geo.walls ?? []),
+  const dead = new Set(walk.geo.walls ?? []),
     part = new Int32Array(walk.life.seed.length).fill(-1);
   huntParts(0, K, false, false).forEach((p, k) => {
     for (const t of p) part[t] = k;
@@ -24157,7 +24152,6 @@ const symmetryAllowed = (
 };
 function renderSymmetry() {
   const kind = MODES[tabMode()].plane,
-    has = walk.plane ? symmetriesHere(walk.plane.kind, walk.plane.W) : ['none'],
     now = walk.plane ? symmetryOf(walk.plane.kind) : 'none';
   $('symmetryRow').hidden = !kind || !!MODES[tabMode()].elementary; // (Elementary: a row, no copies)
   $('symmetryTiles').replaceChildren(
@@ -25685,7 +25679,7 @@ const colourMissing = (K, rule = $('lifeRule').value) => {
 function renderTeams() {
   const w = tabMode();
   if (walkTeamsHere(w)) {
-    $('colourBlocks').replaceChildren(...walkTeamTiles(w));
+    $('colourBlocks').replaceChildren(...walkTeamTiles());
     return;
   }
   $('colourBlocks').replaceChildren(
@@ -25760,7 +25754,7 @@ function renderTeams() {
 }
 // a walk's teams: Solo, Duel, Trio… as Life's (a battle: how many numbers walk; greyed, a count its surface's symmetries
 // cannot set apart from its start at this size, see battleCounts)
-function walkTeamTiles(w) {
+function walkTeamTiles() {
   const words = (k) =>
     k === 1
       ? 'One number walks'
@@ -27989,8 +27983,9 @@ function meshIsing(g) {
       } else by.set(key, t);
     }
   for (let t0 = 0; t0 < g.n; t0++)
-    if (colour[t0] < 0)
-      for (const queue = [t0], _ = (colour[t0] = 0); queue.length;) {
+    if (colour[t0] < 0) {
+      colour[t0] = 0;
+      for (const queue = [t0]; queue.length;) {
         const t = queue.pop();
         for (const u of sides[t]) {
           if (colour[u] < 0) {
@@ -27999,6 +27994,7 @@ function meshIsing(g) {
           } else if (colour[u] === colour[t]) return null;
         }
       }
+    }
   return {
     ising: true,
     k: 1,
@@ -42060,7 +42056,7 @@ function gpuPass1(E, enc, words, k, pipe, numbers, count, more = null) {
 }
 // k generations of runs r0 … r1: their sums a column each, read back with run 0's states once all
 // are played. Resolves to read(j, r, x), sum j of run r at column x, and the states
-async function gpuLifeSteps(E, { gen = 0, back = false, k = 1, r0 = 0, r1 = E.runs, phase = null, negOf = null } = {}) {
+async function gpuLifeSteps(E, { gen = 0, back = false, k = 1, r0 = 0, r1 = E.runs, negOf = null } = {}) {
   const { device, pipes } = GPU,
     L = E.L,
     M = L.margolus,
@@ -46153,8 +46149,7 @@ const cellModeOf = (mode) =>
       : $('colourMode').value; // (along the grid, the line: Path)  // (a surface's Rainbow: gradient)
 function cellModePicture(look, ant) {
   // a 2 × 2 swatch, or the rainbow line over faded cells
-  const theme = themeName(),
-    g = appRainbowAt; // (a control's picture: the app's rainbow, never Ocean's)
+  const g = appRainbowAt; // (a control's picture: the app's rainbow, never Ocean's)
   // Path and Cell path: the Grid and Cells tiles' icons (onGrid, onCells) in a faded grey, a rainbow staircase over them: Path its
   // line along the grid's lines, Cell path its cells
   const faded = (name) =>

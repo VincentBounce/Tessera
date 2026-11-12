@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.898';
+const VERSION = '0.4.899';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -45905,8 +45905,10 @@ const baseShown = (base) => !$('numberPreview').hidden && base === baseWords(dig
 const lightBases = () => {
   for (const b of document.querySelectorAll('.bubble.act')) b.classList.toggle('active', baseShown(b.textContent));
 };
+const base10 = { on: false }; // (Base 10 switched on: the number in base 10 instead, see showNumber)
 function closeNumber() {
   $('numberPreview').hidden = true;
+  base10.on = false; // (opened again: in its own base)
   for (const b of numberChips()) b.classList.remove('active', 'switch');
   lightBases();
 }
@@ -45970,7 +45972,6 @@ function base10Digits({ head, frac, intLength }) {
     `first ${formatNumber(lead.length + m)} digits, as many as the first ${formatNumber(ds.length)} in base ${digitsComputed.base} tell`,
   ];
 }
-const base10 = { on: false }; // (Base 10 switched on: the number in base 10 instead, see showNumber)
 function showNumber() {
   const B = digitsComputed.base,
     v = $('numberPreview'),

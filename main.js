@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.888';
+const VERSION = '0.4.889';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -8341,6 +8341,10 @@ const ICONS = (() => {
         ],
         1.4,
       ),
+    // a number's digits: 0 1 over 1 0, each 5 × 8 (a 0 a rounded box, a 1 its flag and foot)
+    digits:
+      '<rect x="4.5" y="2.5" width="5" height="8" rx="2.5"/><rect x="13.5" y="13.5" width="5" height="8" rx="2.5"/>' +
+      svgPath('M14.5 4L16.5 2.5V10.5M14.5 10.5H18.5M5.5 15L7.5 13.5V21.5M5.5 21.5H9.5'),
     dragon: `<path class="thin" d="${pathOf(dragonOf(63), false)}"/>`,
     // a barcode: thick and thin bars, well apart so that it still reads at 15 px
     barcode: [
@@ -11110,7 +11114,7 @@ function compute() {
   shownSymbol = sym;
   const base = mode.life ? lifeBase() : mode.base; // Life: K + 1 (Digits mixed: 2, see lifeBase)
   const key = digitsKey(F, base);
-  $('copyNumber').textContent = `Show digits in ${baseWords(base)}`; // (the Full number: the base the digits are written in)
+  $('copyNumber').innerHTML = `${icon('digits')} Show digits in ${baseWords(base)}`; // (the Full number: the base the digits are written in)
   $('copyNumber').title = BASE_BUBBLE_TITLE;
   // The status line under the Number: how the digits came (time, cache), what the number is, and
   // warnings; what is shown is in the description (describe)

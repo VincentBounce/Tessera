@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.884';
+const VERSION = '0.4.885';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -11408,7 +11408,8 @@ function buildWalkOf() {
     left = ant ? new Uint8Array(len) : null,
     turns = ant ? new Uint8Array(len) : null;
   const origin = is3d ? key3(0, 0, 0) : key(0, 0),
-    seen = new Set([origin]);
+    seen = cellMap();
+  seen.set(origin, true);
   // a fraction's walk repeats (see walkRepeat), walked 8 rounds; not an ant's, whose state is all its
   // cells, nor a spiral's, whose path the digits do not steer (its sides grow: it never repeats)
   let loop =
@@ -11449,11 +11450,11 @@ function buildWalkOf() {
     wy[i + 1] = y;
     if (is3d) wz[i + 1] = z;
     if (ant) {
-      // its cells by their first visit, as the ant keeps them (one map over millions of them)
+      // its cells by their first visit, as the ant keeps them (one cellMap over millions of them)
       first[i + 1] = step.first;
       cells[i + 1] = step.cells;
     } else {
-      seen.add(k);
+      seen.set(k, true);
       cells[i + 1] = seen.size;
     }
     m = Math.max(m, Math.hypot(x, y, z));
@@ -11846,6 +11847,25 @@ function showZoom() {
 function key(x, y) {
   return (x + 2 ** 21) * 2 ** 22 + (y + 2 ** 21);
 }
+// A walk's cells by their key (key, key3), past the 2^24 entries a Map holds (a Cairo ant over 50 million steps visits
+// more): kept in 16 maps, by the key's last bits and its x's
+function cellMap() {
+  const parts = Array.from({ length: 16 }, () => new Map()),
+    partOf = (k) => parts[(k + Math.floor(k / 2 ** 22)) % 16];
+  let size = 0;
+  return {
+    get: (k) => partOf(k).get(k),
+    set(k, v) {
+      const part = partOf(k),
+        before = part.size;
+      part.set(k, v);
+      size += part.size - before;
+    },
+    get size() {
+      return size;
+    },
+  };
+}
 
 /* Each stepper takes a digit and returns [key, x, y, z]: a unique key
  * for the cell and the position of its centre (z = 0 in 2D; in 2D, y
@@ -12232,7 +12252,8 @@ function antStepper(w, inner = antWalkStepper(w), here = key(0, 0)) {
     turnOf = (t) => antCommands(w).indexOf(t);
   let n = 0,
     s = 0;
-  const cells = new Map([[here, 0]]); // (every cell blank at first)
+  const cells = cellMap();
+  cells.set(here, 0); // (every cell blank at first)
   const step = (g) => {
     const v = cells.get(here),
       c = v % 16,

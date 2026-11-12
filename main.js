@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.928';
+const VERSION = '0.4.929';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -6560,8 +6560,8 @@ function describe(base) {
     creature = MODES[w].worm || ANTS[w],
     colours = antColours(w);
   const walkRule = !creature && !mode.life && WALK_NETS[mode.net] ? walkRuleOf(mode) : '';
-  $('barBase').hidden = !!creature || !!mode.life; // (a creature's base or colours in its rule's tooltip; Life's digits: in its description)
-  $('barBase').textContent = colours ? `${colours} colours` : baseWords(base);
+  $('barBase').hidden = !readsNumber(getSetup()); // (its number read: a walk, a creature by the digits, Life's Digits)
+  $('barBase').textContent = baseWords(base);
   $('barBase').title = BASE_BUBBLE_TITLE; // (a click shows the number, as the Show digits button)
   $('barRule').hidden = !creature && !walkRule; // (Life's: below)
   setLinks($('barRule'), ruleWords(getSetup()).html); // (a walk's, a creature's: as the Gallery writes it, see ruleWords)
@@ -11142,7 +11142,7 @@ function compute() {
   }
   const { sym, kind } = F;
   shownSymbol = sym;
-  const base = mode.life ? lifeBase() : mode.base; // Life: K + 1 (Digits mixed: 2, see lifeBase)
+  const base = numberBaseOf(getSetup()); // (Life: K + 1, Digits mixed: 2)
   const key = digitsKey(F, base);
   $('copyNumber').innerHTML = `${icon('barcode')} Show digits in ${baseWords(base)}`; // (the Full number: the base the digits are written in)
   $('copyNumber').title = BASE_BUBBLE_TITLE;
@@ -20469,7 +20469,6 @@ const civColours = (K, C) => [
 ];
 
 // the base the number is written in for Life: K + 1, a digit a cell, 0 dead, k alive in colour k (a start has live cells only)
-const lifeBase = () => (plane.start === 'digits' && teamsMixed() ? 2 : (lifeRuleNow() || { base: 2 }).base); // (Digits mixed: base 2, painted at random, see paintOwn)
 
 // A surface's start, as the Start says: its digits (one digit a cell in base K + 1: 0 dead, k alive in colour k), or a soup as dense as said, from its seed (in colours, each live cell's colour
 // drawn too)
@@ -28623,7 +28622,7 @@ function huntRuns(L, { cells, copies, all, choices, nth }, cap, goal, report) {
   const randomSeed = () => {
     const s = new Uint8Array(n),
       density = dense[0] + Math.random() * (dense[1] - dense[0]);
-    for (const [t, k] of cells) if (Math.random() < density) s[t] = k; // (alive in its colour: one colour's, 1; never a dying state, see lifeBase)
+    for (const [t, k] of cells) if (Math.random() < density) s[t] = k; // (alive in its colour: one colour's, 1; never a dying state, see numberBaseOf)
     for (let k = 1; k <= K; k++) {
       const mine = cells.filter((c) => c[1] === k);
       if (mine.length && !mine.some(([t]) => s[t] === k)) s[mine[Math.floor(Math.random() * mine.length)][0]] = k;
@@ -29605,9 +29604,10 @@ const nthNumber = (k) => {
 }; // (104,729, a prime not dividing DRAWN: every k under it a j of its own)
 const drawNumber = (random) => nthNumber(Math.floor(random() * DRAWN));
 const NUMBER_DRAWN = /^(\d+)\/(\d+)$|^sqrt\((\d+)\)$/; // (p/q, sqrt(n): a link's)
+const NUMBER_START_BASE = 2; // (a Formula start's number laid in base 2: alive or dead, a colour each its part's)
 function numberSeed(x, own) {
   const n = walk.life.seed.length,
-    B = 2,
+    B = NUMBER_START_BASE,
     digits = new Uint8Array(n),
     seed = new Uint8Array(n),
     [, p, q, root] = NUMBER_DRAWN.exec(x);
@@ -39239,7 +39239,7 @@ const setupOrder = (a, b) => {
 // its words under the title: its detail, then a walk's battle rule, then the base it reads its digits in, last (from its setup)
 const setupWords = (x) => {
   const s = x.setup,
-    base = setupDigitsBase(s);
+    base = readBaseOf(s);
   return [
     setupDetail(s),
     !MODES[s.w].life && Number(s.k) > 1 && BATTLE_RULES[Number(s.br) || 0][1],
@@ -39248,14 +39248,26 @@ const setupWords = (x) => {
     .filter(Boolean)
     .join(' · ');
 };
-// the base a setup reads its number's digits in: a walk's, its rule's commands; a creature by the digits, its mode's (an ant
-// or a worm by its own rule: none); a Game of Life's digits, K + 1 (Mixed: 2, see lifeBase; another start: none)
-const setupDigitsBase = (s) => {
+// The base a setup's number is read in, digit by digit, its one source (its digits computed in it, see compute; its bar's
+// chip; a card's words): a walk's, its rule's commands; a creature's, its mode's; a Game of Life's, its colours + 1 (Digits
+// mixed: 2, painted at random, see paintOwn)
+const numberBaseOf = (s) => {
   const m = MODES[s.w];
-  if (m.life) return s.pop === 'digits' ? (Number(s.mx) === 1 ? 2 : (Number(s.k) || 1) + 1) : 0;
-  if (m.worm || ANTS[s.w]) return ruleWords(s).byDigits ? m.base : 0;
+  if (m.life) return s.pop === 'digits' && Number(s.mx) === 1 ? 2 : (Number(s.k) || 1) + 1;
   return m.net ? walkTakes(m, ruleWords(s).code).length : m.base;
 };
+// whether its start reads its number's digits: a walk's always, a creature's by the digits, a Game of Life's Digits
+const readsNumber = (s) => {
+  const m = MODES[s.w];
+  return m.life ? s.pop === 'digits' : m.worm || ANTS[s.w] ? ruleWords(s).byDigits : true;
+};
+// the base its start reads digits in, any: its number's, a Formula start's own number's (numberSeed), else none (0)
+const readBaseOf = (s) =>
+  readsNumber(s)
+    ? numberBaseOf(s)
+    : MODES[s.w].life && zoneOfWord(String(s.pop).split('.')[0]) === 'numbers'
+      ? NUMBER_START_BASE
+      : 0;
 // a setup saved: its name its title's, one of its own in the list (a row is deleted by its name, see uniqueName)
 const savedOf = (setup, list) => {
   const x = { setup, saved: new Date().toISOString() };

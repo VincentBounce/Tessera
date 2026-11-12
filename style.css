@@ -1328,10 +1328,6 @@ button.active .bubble.active {
   outline: 2px solid var(--accent-color);
   outline-offset: 2px;
 } /* black or a colour, ringed alike */
-.draw-row button.active {
-  border-color: var(--accent-color);
-  color: var(--accent-color);
-}
 #brushColours i.eraser {
   display: flex;
   align-items: center;
@@ -2191,6 +2187,7 @@ button.wide.active,
 .head-btn.active,
 .tut-tools button.active,
 .choice-list button.active,
+.draw-row button.active,
 .tut-shapes figure.active {
   border-color: var(--accent-color);
   color: var(--accent-color);

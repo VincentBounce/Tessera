@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.922';
+const VERSION = '0.4.923';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -39169,9 +39169,22 @@ const ruleWords = (s) => {
     html: [byDigits && withIcons(formulaOf(s.x).sym), code && ruleSpan(code)].filter(Boolean).join(' · '), // (by the digits: the number read first, as the bar says it)
   };
 };
-// its title: its bar's as it was saved (a battle's walkers, Life's start); one saved before: a walk's number, a Game of Life's
-// shape and tiles (see shapeAndTiles)
-const setupTitle = (x) => (x.chips === undefined && MODES[x.setup.w]?.life ? shapeAndTiles(x.setup.w) : x.name);
+// its title: one saved from the bar (its chips with it), a walk's its numbers' symbols as the bar writes them, from its setup
+// (π, π vs e vs φ: never stale), a Game of Life's its bar's as it was saved (its start: the patterns played, its text); a
+// curated one's its name (Dragon, Primes); one saved before chips, a walk's its number, a Game of Life's its shape and tiles
+const setupTitle = (x) => {
+  const life = MODES[x.setup.w]?.life;
+  if (x.chips === undefined) return life ? shapeAndTiles(x.setup.w) : x.name;
+  return life ? x.name : walkTitleOf(x.setup);
+};
+// a walk's title by its setup, as its bar writes it: a creature's name (an ant, a worm: its number in its rule's words), a
+// battle's walkers' numbers (π vs e vs φ), else its number's symbol
+const walkTitleOf = (s) =>
+  MODES[s.w].worm || ANTS[s.w]
+    ? walkName(s.w)
+    : [s.x, ...RIVALS.slice(0, (Number(s.k) || 1) - 1).map((id) => s[`x${id.slice(-1).toLowerCase()}`])]
+        .map((f) => formulaOf(f).sym ?? f)
+        .join(' vs ');
 // two setups in the menu's order: their mode as the menu lists it (NAV: its space, shape, tiles), then its size, its rule, its
 // number, all of it (its title only after them, see fillGalleryList)
 const setupOrder = (a, b) => {

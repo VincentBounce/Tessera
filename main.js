@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.904';
+const VERSION = '0.4.905';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -9068,6 +9068,14 @@ function renderNumberPicker(active) {
 }
 
 /* ---- 4.7 Sequences and digit helpers ------------------------------------------------------ */
+// the whole number k's digits in base b, its first first, written into digits from i on (as many as fit): the place after
+// them (as numbers: x.toString(b) writes 10 as a, read back as 49 in base 11 and over)
+function wholeDigitsInto(digits, i, k, b) {
+  const ds = [];
+  for (; k > 0; k = Math.floor(k / b)) ds.push(k % b);
+  for (let c = ds.length - 1; c >= 0 && i < digits.length; c--) digits[i++] = ds[c];
+  return i;
+}
 // Digits of a sequence (kind 'seq'), computed on the main thread
 function seqDigits(ast, n, base) {
   const digits = new Uint8Array(n),
@@ -9084,10 +9092,7 @@ function seqDigits(ast, n, base) {
     }
   } else if (name === 'champernowne') {
     // 0.1 2 3 … written in base b one after another
-    for (let i = 0, k = 1; i < n; k++) {
-      const t = digitString(k, base);
-      for (let c = 0; c < t.length && i < n; c++) digits[i++] = t.charCodeAt(c) - 48;
-    }
+    for (let i = 0, k = 1; i < n; k++) i = wholeDigitsInto(digits, i, k, base);
   } else if (name === 'primebarcode') {
     // digit k (k = 1, 2, …) is 0 if k is not prime, else k mod b; a prime equal to b counts as 1.
     // In base 2 this is exactly the binary expansion of the prime constant ρ = Σ 2^(−p)
@@ -9143,11 +9148,7 @@ function seqDigits(ast, n, base) {
     for (let limit = Math.ceil(n * Math.log(base)) + 100, i = 0; i < n; limit *= 2) {
       const composite = sieve(limit);
       i = 0;
-      for (let k = 2; k <= limit && i < n; k++)
-        if (!composite[k]) {
-          const t = digitString(k, base);
-          for (let c = 0; c < t.length && i < n; c++) digits[i++] = t.charCodeAt(c) - 48;
-        }
+      for (let k = 2; k <= limit && i < n; k++) if (!composite[k]) i = wholeDigitsInto(digits, i, k, base);
     }
   } else if (name === 'kolakoski') {
     // 1 2 2 1 1 2 …: run i is as long as term i, its terms 1 and 2 by turns
@@ -19554,7 +19555,7 @@ const rootDigits = (r, base, n) =>
     iroot(BigInt(r) * BigInt(base) ** BigInt(2 * n), 2)
       .toString(base)
       .slice(0, n),
-    (c) => c.charCodeAt(0) - 48,
+    (c) => parseInt(c, 36), // (its letters past 9 too: a is 10)
   );
 // The hunt's battles played in workers, one a core but the page's (the page draws their numbers and starts, 1 ms; a battle,
 // 30 ms at size 32): each made of the page's own code (see workerOf: a rule changed, changed in them), set once to the
@@ -40590,11 +40591,7 @@ function faceWalk() {
   faced = true;
   if (startsShown || !walk.sphere || walk.geo.torus || !$('centered').checked || $('autoRotate').checked || !walk.n)
     return;
-  const d = walkMiddle();
-  const axis = cross(d, camera.v),
-    sin = Math.hypot(...axis),
-    angle = Math.atan2(sin, towardViewer(...d));
-  if (sin > 1e-9 && angle > 1e-4) rotateView(axis.map((x) => (x / sin) * angle));
+  faceToward(walkMiddle(), 1);
 }
 // once the walker has reached the end, towards the walk's middle, as when the walk is shown whole
 function followWalker() {
@@ -40607,11 +40604,17 @@ function followWalker() {
     f = at - j,
     k = f > 0 ? j + 1 : j,
     [p, q] = [W.P(j), W.P(k)];
-  const d = unit(walk.geo.torus && !walk.geo.mobius ? W.upAt(f < 0.5 ? j : k) : p.map((v, c) => v + (q[c] - v) * f));
+  faceToward(
+    unit(walk.geo.torus && !walk.geo.mobius ? W.upAt(f < 0.5 ? j : k) : p.map((v, c) => v + (q[c] - v) * f)),
+    0.12,
+  );
+}
+// the view turned so that the direction d faces the viewer, by a share of the way (1: all of it)
+function faceToward(d, share) {
   const axis = cross(d, camera.v),
     sin = Math.hypot(...axis),
     angle = Math.atan2(sin, towardViewer(...d));
-  if (sin > 1e-9 && angle > 1e-4) rotateView(axis.map((x) => (x / sin) * angle * 0.12));
+  if (sin > 1e-9 && angle > 1e-4) rotateView(axis.map((x) => (x / sin) * angle * share));
 }
 // The walker the camera follows on a surface (see followWalker), −1 none: a click on its name in the title (see
 // walkerLinks), again or a drag of the view: none; kept for the next walk while it has that walker

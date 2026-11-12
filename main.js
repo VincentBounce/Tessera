@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.897';
+const VERSION = '0.4.898';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -25220,6 +25220,20 @@ const FADING = 0.3; // (the cells this pale: under a walk's line, or Area's Ligh
 // A size hovered (its motif) or the start (the starts): the others faded under them, every one alike, fills and outlines
 // (the stage's class: see style.css; the graphics card's by its shaders); the plane's motif drawn on its own layer, a
 // surface's motif and starts by the graphics card (see gpuSurface)
+// how far the others are faded (0 to 1): easing to the hover's over WALK_FADE_SECONDS, as a cell fades in, back from where it
+// is when left before the end (the graphics card's by its shader, f[66]; the stage's canvases by their style, as long)
+const hoverFading = { from: 0, to: 0, at: 0 };
+function hoverFade() {
+  const now = performance.now() / 1000,
+    want = motifShown || startsShown ? 1 : 0,
+    { from, to, at } = hoverFading,
+    level = from + (to - from) * Math.min(1, (now - at) / WALK_FADE_SECONDS);
+  if (want !== to) {
+    Object.assign(hoverFading, { from: level, to: want, at: now });
+    fadingUntil = Math.max(fadingUntil, now + WALK_FADE_SECONDS); // (drawn again till it is there, as the cells)
+  }
+  return level;
+}
 function drawHover() {
   const ctx = layers.hover;
   ctx.clearRect(0, 0, canvasWidth, canvasHeight);
@@ -42415,7 +42429,7 @@ function gpuView(words, k, depth, more = {}) {
   f.set([canvasWidth, canvasHeight], 46);
   i[48] = cutOn() ? 1 : 0;
   f.set(cutNormal(), 60); // (Cut's plane, facing its axis: see CUT_AXES)
-  f[66] = motifShown || startsShown ? 1 - FADING : 0; // (a size or the start hovered: all but the motif this pale, see drawHover)
+  f[66] = (1 - FADING) * hoverFade(); // (a size or the start hovered: all but the motif this pale, see drawHover)
   const now = glideAt();
   i[63] = Math.floor(now);
   f[65] = now - Math.floor(now); // (the step shown and its share of the next: the lines' lives, see lifeOf)

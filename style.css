@@ -1408,6 +1408,9 @@ button.active .bubble.active {
 #axesLabels > :nth-child(3) {
   color: var(--axis-up-color);
 }
+.stage > canvas:not(#hoverLayer):not(#gpuLayer) {
+  transition: opacity var(--fade-seconds) linear;
+}
 .stage.faded > canvas:not(#hoverLayer):not(#gpuLayer) {
   opacity: 0.3;
 } /* a size or the start hovered: all but its motif or its starts faded, fills and outlines alike (the graphics card's

@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.915';
+const VERSION = '0.4.916';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -39394,7 +39394,7 @@ async function importGallery(file) {
 // A saved setup's thumbnail: the view as it was saved, THUMBNAIL_SIZE, in this browser (IndexedDB: a thumbnail is too big for
 // localStorage), under its setup with neither its version nor how it is looked at (SETUP_LOOKS, as isInUse): one thumbnail a
 // setup, a new one replacing the old
-const THUMBNAIL_SIZE = [240, 192];
+const THUMBNAIL_SIZE = [240, 240]; // (square, as its card)
 const thumbnailKey = (setup) =>
   toHash(Object.fromEntries(Object.entries(setup).filter(([k]) => !SETUP_LOOKS.includes(k))));
 let thumbnailDb = null;

@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.924';
+const VERSION = '0.4.925';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -7202,12 +7202,14 @@ const htmlText = (text) => String(text).replace(/[&<>]/g, (c) => `&#${c.charCode
 const ruleSpan = (code) => `<code class="rule">${htmlText(code)}</code>`;
 // a card's words, every card's and Grid | Cells' alike: its name (Grid | Cells': its base in its bubble at its right), then its
 // rule's code (see ruleSpan) and its words
+// a card's name as HTML: a number's symbol as everywhere (🐉 the dragon's icon, not the system's emoji), the rest as text
+const cardNameHtml = (name) => withIcons(htmlText(name));
 function cardWords(name, detail = '', base = '', show = null, rule = '') {
   const part = (cls, text) => Object.assign(document.createElement('span'), { className: cls, textContent: text }),
     head = part('mode-head', ''),
     words = document.createElement('span');
   const named = part('mode-name', '');
-  named.innerHTML = withIcons(htmlText(name)); // (a number's symbol as everywhere: 🐉 the dragon's icon, not the system's emoji)
+  named.innerHTML = cardNameHtml(name);
   head.append(named, ...(base ? [cardBubble(base, show)] : []));
   if (rule || detail)
     words.append(
@@ -39204,26 +39206,29 @@ const ruleWords = (s) => {
     name = m?.life && ruleCard(code, s.w)?.name;
   return {
     code,
+    byDigits,
     name: name && name !== code ? name : '',
     html: [byDigits && withIcons(formulaOf(s.x).sym), code && ruleSpan(code)].filter(Boolean).join(' · '), // (by the digits: the number read first, as the bar says it)
   };
 };
-// its title: one saved from the bar (its chips with it), from its setup as its bar writes it, never stale (a walk's numbers:
-// π vs e vs φ; a Game of Life's start: Glider vs Diehard, «Tessera»); a curated one's its name (Dragon, Primes); one saved
-// before chips, a walk's its number, a Game of Life's its shape and tiles
+// its title: one saved from the bar (its chips with it), from its setup, never stale: what it reads, then its rule (π · LNR,
+// π vs e vs φ · LR, 1/438 · 1L0 0R0, an ant by its rule its rule alone, Glider vs Diehard · B3/S23); its grid, its size and
+// the rest in its tooltip (see setupWords). A curated one's its name (Dragon, Primes); one saved before chips, a walk's its
+// number, a Game of Life's its shape and tiles
 const setupTitle = (x) => {
-  const life = MODES[x.setup.w]?.life;
-  if (x.chips === undefined) return life ? shapeAndTiles(x.setup.w) : x.name;
-  return life ? startWords(x.setup).join(' vs ') : walkTitleOf(x.setup);
+  const s = x.setup,
+    life = MODES[s.w]?.life;
+  if (x.chips === undefined) return life ? shapeAndTiles(s.w) : x.name;
+  const { code, byDigits } = ruleWords(s),
+    creature = MODES[s.w].worm || ANTS[s.w],
+    reads = life ? startWords(s).join(' vs ') : creature ? byDigits && formulaOf(s.x).sym : walkNumbersOf(s);
+  return [reads, code].filter(Boolean).join(' · ');
 };
-// a walk's title by its setup, as its bar writes it: a creature's name (an ant, a worm: its number in its rule's words), a
-// battle's walkers' numbers (π vs e vs φ), else its number's symbol
-const walkTitleOf = (s) =>
-  MODES[s.w].worm || ANTS[s.w]
-    ? walkName(s.w)
-    : [s.x, ...RIVALS.slice(0, (Number(s.k) || 1) - 1).map((id) => s[`x${id.slice(-1).toLowerCase()}`])]
-        .map((f) => formulaOf(f).sym ?? f)
-        .join(' vs ');
+// a walk's numbers, as its bar writes them: a battle's walkers' (π vs e vs φ), else its number's symbol
+const walkNumbersOf = (s) =>
+  [s.x, ...RIVALS.slice(0, (Number(s.k) || 1) - 1).map((id) => s[`x${id.slice(-1).toLowerCase()}`])]
+    .map((f) => formulaOf(f).sym ?? f)
+    .join(' vs ');
 // two setups in the menu's order: their mode as the menu lists it (NAV: its space, shape, tiles), then its size, its rule, its
 // number, all of it (its title only after them, see fillGalleryList)
 const setupOrder = (a, b) => {
@@ -39306,10 +39311,9 @@ function fillGalleryList() {
   const looks = []; // (each card's thumbnail looked for)
   galleryCards = [];
   const list = readGallery();
-  // every tab's (Life, Ant, Walk…), each under its name, the tab in use's even with none (the ☆ said there); by their titles,
-  // two rows alike numbered (2), (3)…
-  const rows = list.filter((x) => NAV[x.setup.w]).map((x) => [setupTitle(x), setupWords(x), x]),
-    seen = new Map();
+  // every tab's (Life, Ant, Walk…), each under its name, the tab in use's even with none (the ☆ said there); by their titles
+  // (two alike: their tooltips tell them apart, see setupTitle)
+  const rows = list.filter((x) => NAV[x.setup.w]).map((x) => [setupTitle(x), setupWords(x), x]);
   const kindOf = (x) => NAV[x.setup.w][0];
   $('yourList').replaceChildren(
     ...NAV_KINDS.flatMap(([kind]) => {
@@ -39325,9 +39329,7 @@ function fillGalleryList() {
         cards.innerHTML = `<p class="caption">None in ${kind} yet: the ☆ of Gallery's tab keeps the setup in view</p>`;
       cards.append(
         ...mine.map(([title, detail, x]) => {
-          const k = (seen.get(title + detail) ?? 0) + 1;
-          seen.set(title + detail, k);
-          const row = setupRow(k > 1 ? `${title} (${k})` : title, detail, x);
+          const row = setupRow(title, detail, x);
           looks.push(
             thumbnailOf(x.setup).then((thumbnail) => {
               if (thumbnail) showThumbnail(row, thumbnail);
@@ -39563,7 +39565,7 @@ async function adoptShown(x, row) {
   writeGallery(list);
   Object.assign(x, saved); // (its card's: deleted by its new name)
   if (selected) selectedNames.add(x.name);
-  row.querySelector('.mode-name').textContent = setupTitle(x);
+  row.querySelector('.mode-name').innerHTML = cardNameHtml(setupTitle(x)); // (as when drawn, see cardWords)
   const words = row.querySelector('.mode-detail');
   if (words) words.innerHTML = htmlText(setupWords(x));
   row.title = setupWords(x); // (as a card's: its words, see card)
@@ -46378,10 +46380,9 @@ function setupRow(name, detail, x) {
     b = card({
       pic: icon(SHAPE_ICONS[NAV[setup.w]?.[2]] ?? MODE_ICONS[setup.w]),
       name,
-      rule: ruleWords(setup).html,
       detail,
       on: isInUse(setup),
-    }); // (its shape's picture, as the Grid's; its tooltip its name and its detail in full, as the row may cut them short)
+    }); // (its shape's picture, as the Grid's; its tooltip its name (what it reads and its rule) in bold, the rest under it)
   b.append(
     Object.assign(document.createElement('span'), { className: 'card-check', innerHTML: icon('check') }),
     Object.assign(document.createElement('span'), { className: 'card-star', innerHTML: icon('star') }),

@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.917';
+const VERSION = '0.4.918';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -11757,7 +11757,7 @@ document.addEventListener('mouseover', (e) => {
         className: 'tip-name',
         textContent: key ? `${text} (${key})` : text,
       }),
-    ok = (tip || rule) && (el.hasAttribute('aria-label') || /\p{L}/u.test(name)); // (a symbol, + or −: no name; a name given, one)
+    ok = (tip || rule) && (el.hasAttribute('aria-label') || !!el.querySelector('.mode-name') || /\p{L}/u.test(name)); // (a symbol, + or −: no name; a name given, an aria-label or a card's, one: 11/604 too)
   // its default: a tile's (see setTile), a box's (its checkbox as the page starts)
   const box = el?.matches('label') ? el.querySelector('input[type=checkbox]') : null,
     d = el?.dataset.default ?? (box ? (box.defaultChecked ? 'on' : 'off') : '');

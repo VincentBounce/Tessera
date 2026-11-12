@@ -257,10 +257,12 @@ textarea {
 } /* (of no weight: a class's font wins over it, .rule's) */
 /* the formula, like the number of digits under it: a field that looks like a label until it
    is hovered or used; in yellow bold when it is the number chosen (no card matches it) */
-/* a value of one's own, in yellow bold: a formula no card matches, a rule no preset matches */
+/* a value of one's own, in yellow bold on a picked tile's pale gold: a formula no card matches, a rule no preset matches */
 .field :is(input, textarea).custom {
   color: var(--accent-color);
   font-weight: 600;
+  border-color: var(--accent-color);
+  background: var(--picked-background);
 }
 .rule {
   font-family: var(--mono-font);
@@ -476,10 +478,6 @@ h3 {
   font-size: var(--label-text-size);
   font-weight: 600;
 } /* a sub-section's title; under it, grey labels (Birth, Survive…) */
-h3.with-btn {
-  display: flex;
-  align-items: center;
-} /* its button on its right (Full number: a head-btn) */
 .stepper {
   display: flex;
   align-items: center;
@@ -1044,9 +1042,6 @@ button.active .bubble.active {
 .mode-list .bubble {
   align-self: start;
 } /* (at the card's top right) */
-.with-btn > .bubble {
-  margin-left: auto;
-} /* (Full number's, at the Formula's right) */
 .mode-icon.act {
   align-self: stretch;
   display: grid;

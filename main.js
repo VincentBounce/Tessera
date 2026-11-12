@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.885';
+const VERSION = '0.4.886';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -6562,7 +6562,7 @@ function describe(base) {
   const walkRule = !creature && !mode.life && WALK_NETS[mode.net] ? walkRuleOf(mode) : '';
   $('barBase').hidden = !!creature || !!mode.life; // (a creature's base or colours in its rule's tooltip; Life's digits: in its description)
   $('barBase').textContent = colours ? `${colours} colours` : baseWords(base);
-  $('barBase').title = BASE_BUBBLE_TITLE; // (a click shows the number, as the Formula field's chip)
+  $('barBase').title = BASE_BUBBLE_TITLE; // (a click shows the number, as the Show digits button)
   $('barRule').hidden = !creature && !walkRule; // (Life's: below)
   setLinks($('barRule'), ruleWords(getSetup()).html); // (a walk's, a creature's: as the Gallery writes it, see ruleWords)
   $('barRule').title = 'Its rule · A click: how it works';
@@ -9020,8 +9020,8 @@ function renderNumberPicker(active) {
     }),
   );
   tabs.classList.add('text-tabs');
+  $('numberTabs').replaceChildren(tabs);
   $('numberList').replaceChildren(
-    tabs,
     ...NUMBER_GROUPS.map((group) => {
       const box = document.createElement('div'),
         label = document.createElement('h4'), // (a group's title: under the section's, h2, and Number's, h3)
@@ -9063,8 +9063,7 @@ function renderNumberPicker(active) {
           const b = document.createElement('button');
           b.className = 'wide';
           b.innerHTML = `${icon('dice')} ${PRESETS[id].name}`;
-          b.title = 'Another draw';
-          setTile(b, { on: id === active, again: true });
+          b.title = 'Another draw'; // (an action: the card picked shows as its tab, never this button)
           b.addEventListener('click', () => pick(id));
           return b;
         });
@@ -11118,7 +11117,7 @@ function compute() {
   shownSymbol = sym;
   const base = mode.life ? lifeBase() : mode.base; // Life: K + 1 (Digits mixed: 2, see lifeBase)
   const key = digitsKey(F, base);
-  $('copyNumber').textContent = baseWords(base); // (Full number's chip: the base the digits are written in)
+  $('copyNumber').textContent = `Show digits in ${baseWords(base)}`; // (the Full number: the base the digits are written in)
   $('copyNumber').title = BASE_BUBBLE_TITLE;
   // The status line under the Number: how the digits came (time, cache), what the number is, and
   // warnings; what is shown is in the description (describe)
@@ -17856,10 +17855,12 @@ function renderWalkTeams() {
     $(id).parentElement.hidden = j >= walkTeams - 1;
   }); // (the walkers' but A's)
   const fieldA = $('formula').parentElement,
-    label = $('copyNumber').parentElement; // (its label: Formula, Formulas in a battle, its base beside)
-  if (battleOn() && fieldA.parentElement !== $('formulaAHome')) $('formulaAHome').append(label, fieldA);
-  if (!battleOn() && fieldA.parentElement !== $('numberPicker')) $('numberList').before(label, fieldA);
-  label.firstChild.textContent = battleOn() ? 'Formulas' : 'Formula';
+    digitsButton = $('copyNumber'); // (the Full number's, over it)
+  if (battleOn() && fieldA.parentElement !== $('formulaAHome')) $('formulaAHome').append(digitsButton, fieldA);
+  if (!battleOn() && fieldA.parentElement !== $('numberPicker')) {
+    $('numberTabs').before(digitsButton);
+    $('numberTabs').after(fieldA);
+  }
   battleAsked = BATTLE_FORMULAS.map((id) => $(id).value); // (a battle computed: its numbers as sent)
   tintBattleFormulas();
   if (battleHunt.run && (!battleOn() || battleHunt.key !== battleHuntKey())) stopBattleHunt(); // (its battles fought elsewhere: it stops)

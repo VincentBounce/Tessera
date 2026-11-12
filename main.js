@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.903';
+const VERSION = '0.4.904';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -20630,6 +20630,40 @@ function fitLifeTeams(mode) {
   fitTeams(); // (its size's mesh made for them, see pickedFigure)
   fillSphereSizes(kind, mode.initial);
 }
+// A Life's game (walk.life) by its rule, on its grid's cells (grid: its neighbours, rings, seed, blocks…), n of them: its
+// cells' arrays made (the graphics card's copies too), its seed counted; and the walk's fields every Life has, the others
+// freshWalk's (a grid's own given after, by its builder)
+function startLife(seq, rule, n, grid) {
+  walk.life = {
+    B: rule.B,
+    S: rule.S,
+    C: rule.C,
+    two: rule.two,
+    colours: rule.colours,
+    ruleText: ruleBody(rule.text),
+    loops: rule.loops ?? null,
+    loopStates: rule.loopStates,
+    loopRing: rule.loopRing,
+    loopTurns: rule.loopTurns,
+    lineages: !!rule.lineages,
+    ...grid,
+    alive: new Uint8Array(n),
+  };
+  if (walk.life.margolus?.flips) blockCells(walk.life.margolus, n); // (Critters, Tron: their cells in blocks, see GPU_LIFE's blockRule)
+  lifeCells(walk.life);
+  countSeed(walk.life);
+  lifeStart = null; // the number's digits
+  const one = new Float64Array(1);
+  Object.assign(walk, {
+    n: MODES[walk.mode].elementary ? lengthAsked() : Infinity,
+    digits: seq,
+    keys: seq,
+    wx: one,
+    wy: one,
+    wz: one,
+    base: rule.base,
+  });
+}
 function buildLife(seq, mode) {
   if (mode.plane) {
     buildLifePlane(seq);
@@ -20655,57 +20689,22 @@ function buildLife(seq, mode) {
   if (plane.start === 'draw') plane.start = 'random'; // no drawing on the surfaces
   const seed = surfaceSeed(seq, g.n, rule.colours, g.walls);
   for (const t of g.walls ?? []) seed[t] = 0;
-  const n = g.n;
-  walk.life = {
+  startLife(seq, rule, g.n, {
     nbr,
     ring: rule.loops ? loopRing(rule, meshSides(g)) : rule.iso && rule.iso !== 'vertex' ? ring : null,
     side: rule.iso === 'vertex' ? meshSide(g, nbr) : null,
     ringMore: rule.iso === 'hensel' && ring ? cornerNeighbours(g, 8).more : null,
-    B: rule.B,
-    S: rule.S,
-    C: rule.C,
-    two: rule.two,
-    colours: rule.colours,
-    ruleText: ruleBody(rule.text),
     seed,
     margolus: mode.margolus && rule.margolus ? ruleBlocks(rule, blocksGrid(mode), g.nu, true, g.nv, g) : null,
-    loops: rule.loops ?? null,
-    loopStates: rule.loopStates,
-    loopRing: rule.loopRing,
-    loopTurns: rule.loopTurns,
-    lineages: !!rule.lineages,
-    alive: new Uint8Array(n),
-  };
-  if (walk.life.margolus?.flips) blockCells(walk.life.margolus, n);
-  lifeCells(walk.life); // (its cells' arrays: the graphics card's copies too)
-  countSeed(walk.life);
-  lifeStart = null; // the number's digits
-  const one = new Float64Array(1);
+  });
   Object.assign(walk, {
-    vert: null,
-    stepTiles: null,
-    loop: null,
-    n: mode.elementary ? lengthAsked() : Infinity,
-    digits: seq,
-    wx: one,
-    wy: one,
-    wz: one,
     is3d: true,
-    cells: null,
-    maxDist: null,
-    base: rule.base,
-    counts: null,
     lattice: 'sphere',
-    skipZeros: false,
-    points: false,
-    keys: seq,
     sphere: true,
     geo: g,
     R: radius(size),
     tile: new Int32Array(1),
-    coverStep: -1,
-    visits: new Int32Array(n),
-    maxVisits: 0,
+    visits: new Int32Array(g.n),
     xs: new Float64Array(1),
     ys: new Float64Array(1),
   });
@@ -23839,7 +23838,7 @@ function buildLifePlane(seq) {
   }
   $('lifeRule').value = ruleBody(rule.text); // the colours apart (see lifeTeams)
   const nbr = planeNeighbours(kind, W, planeTorus(kind), rule.iso === 'hensel');
-  walk.life = {
+  startLife(seq, rule, n, {
     nbr,
     ring: rule.loops
       ? loopRing(rule, sidesOf(row, W, planeTorus(kind)))
@@ -23847,55 +23846,15 @@ function buildLifePlane(seq) {
         ? nbr.ring
         : null,
     side: rule.iso === 'vertex' ? sideOf(kind, W, nbr) : null,
-    B: rule.B,
-    S: rule.S,
-    C: rule.C,
-    two: rule.two,
-    colours: rule.colours,
-    ruleText: ruleBody(rule.text),
     margolus: MODES[digitsComputed.mode].margolus && rule.margolus ? ruleBlocks(rule, kind, W) : null,
-    loops: rule.loops ?? null,
-    loopStates: rule.loopStates,
-    loopRing: rule.loopRing,
-    loopTurns: rule.loopTurns,
-    lineages: !!rule.lineages,
     seed: planeSeed(kind, seq, rule.C, rule.colours),
-    alive: new Uint8Array(n),
-  };
-  if (walk.life.margolus?.flips) blockCells(walk.life.margolus, n); // (Critters, Tron: their cells in blocks, see GPU_LIFE's blockRule)
-  lifeCells(walk.life); // (its cells' arrays: the graphics card's copies too)
-  countSeed(walk.life);
-  lifeStart = null;
-  const one = new Float64Array(1);
+  });
   Object.assign(walk, {
-    vert: null,
-    stepTiles: null,
-    loop: null,
-    n: MODES[walk.mode].elementary ? lengthAsked() : Infinity,
     stacked: spaceTime && spaceTimeApplies(walk.mode),
-    digits: seq,
-    wx: one,
-    wy: one,
-    wz: one,
-    is3d: false,
-    cells: null,
-    maxDist: null,
-    base: rule.base,
-    counts: null,
-    lattice: 'square',
-    skipZeros: false,
-    points: false,
-    keys: seq,
-    sphere: false,
     geo: { n },
     plane: { kind, W, row, n, xy, at, torus: planeTorus(kind), flat: planeFlat(kind, W, planeTorus(kind)) },
-    tile: null,
-    coverStep: -1,
-    visits: null,
-    maxVisits: 0,
-    xs: one,
-    ys: one,
-    shape: null,
+    xs: walk.wx,
+    ys: walk.wx, // (one point, as its world's: see startLife)
   });
   startColours(walk.life.seed); // in colours, each in its part
   countSeed(walk.life);

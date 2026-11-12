@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.926';
+const VERSION = '0.4.927';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -39158,8 +39158,7 @@ function seedCurated() {
       same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
     for (const [setup, batch = 1] of BUILT_IN) {
       if (batch <= taken || list.some((x) => same(x.setup, setup))) continue;
-      const x = { chips: '', setup, saved: new Date().toISOString() }; // (as any saved: its title its setup's, see setupTitle)
-      list.push(Object.assign(x, { name: uniqueName(setupTitle(x), list) }));
+      list.push(savedOf(setup, list));
     }
     writeGallery(list);
     localStorage.setItem(CURATED_KEY, String(last));
@@ -39237,8 +39236,21 @@ const setupOrder = (a, b) => {
     words(thumbnailKey(a), thumbnailKey(b))
   ); // (all of it last: two setups alike in all these, always in one order)
 };
-// its words under the title: its chips (its bar's), its detail
-const setupWords = (x) => [x.chips, setupDetail(x.setup)].filter(Boolean).join(' · ');
+// its words under the title: its detail, then a walk's battle rule and its base, last (as its bar's chips, from its setup)
+const setupWords = (x) => [setupDetail(x.setup), ...setupChips(x.setup)].filter(Boolean).join(' · ');
+const setupChips = (s) => {
+  const m = MODES[s.w];
+  if (m.life || m.worm || ANTS[s.w]) return []; // (a creature's base in its rule, Life's colours in its words)
+  return [
+    Number(s.k) > 1 && BATTLE_RULES[Number(s.br) || 0][1],
+    baseWords(m.net ? walkTakes(m, ruleWords(s).code).length : m.base),
+  ];
+};
+// a setup saved: its name its title's, one of its own in the list (a row is deleted by its name, see uniqueName)
+const savedOf = (setup, list) => {
+  const x = { setup, saved: new Date().toISOString() };
+  return Object.assign(x, { name: uniqueName(setupTitle(x), list) });
+};
 // a row's thumbnail in place of its icon (its URL let go with the row: see fillGalleryList)
 let thumbnailUrls = [];
 const showThumbnail = (row, thumbnail) => {
@@ -39359,7 +39371,6 @@ function syncSaveButton() {
   const star = $('galleryStar'); // (the Gallery's Star tile, the same: on while saved, greyed while selecting)
   if (star) setTile(star, { on: !!saved, greyed: selecting() ? NOT_WHILE_SELECTING : '' });
 }
-// a setup's title and chips as its bar shows them (π vs e vs φ · base 2 · LR · Land no collision; Wild #204157587 · B45/S345/C4)
 // the bar's title, the walk shown's: Space-time's and Elementary's none (their generation their own line, their rule in their
 // chip), Life's what it plays (its generation and its end: the step line, see endMark), a battle's walkers each in its
 // colour, else the number's (see describe)
@@ -39371,14 +39382,6 @@ const barTitleNow = () =>
       : walk.battle
         ? versusTitle(walkerLinks(walk.battle.names.map(withIcons)))
         : walkerLinks([barTitle])[0];
-const barWords = () => ({
-  title: Object.assign(document.createElement('span'), { innerHTML: barTitleNow() }).textContent.trim() || shownSymbol,
-  chips: ['barBase', 'barBattle'] // (its rule not: the setup's, see ruleWords)
-    .filter((id) => !$(id).hidden)
-    .map((id) => $(id).textContent.trim())
-    .filter(Boolean)
-    .join(' · '),
-});
 // a name of its own in the list (a row is deleted by its name): the title, else "(2)", "(3)"…
 const uniqueName = (title, list) => {
   let name = title;
@@ -39393,8 +39396,7 @@ function saveSetup() {
     deleteSetup(same.name);
     return;
   } // already one of them (its ★ yellow): out of them
-  const { title, chips } = barWords();
-  list.push({ name: uniqueName(title, list), chips, setup, saved: new Date().toISOString() });
+  list.push(savedOf(setup, list));
   list.sort((a, b) => a.name.localeCompare(b.name));
   if (!writeGallery(list)) alert('This browser does not allow saving (private window?).');
   fillGalleryList();
@@ -39540,23 +39542,22 @@ async function refreshThumbnails() {
   syncRefreshTile();
 }
 // a card shown, once built (clicked, or refreshed): its setup as the app writes it now (one saved by an older version: its fields
-// as they are now, its ★ then lit), its title and chips as its bar shows them (as the ☆ saves them), its card's words with
-// them, its thumbnail kept under its setup's key
+// as they are now, its ★ then lit), its name its title's (as the ☆ saves it, see savedOf), its card's words with it, its
+// thumbnail kept under its setup's key
 async function adoptShown(x, row) {
   const list = readGallery(),
     saved = list.find((y) => y.name === x.name),
-    { title, chips } = barWords(),
     was = thumbnailKey(x.setup);
   if (!saved) return; // (deleted meanwhile)
   const selected = selectedNames.delete(x.name);
-  Object.assign(saved, {
-    name: uniqueName(
-      title,
+  Object.assign(
+    saved,
+    savedOf(
+      getSetup(),
       list.filter((y) => y !== saved),
     ),
-    chips,
-    setup: getSetup(),
-  });
+    { saved: saved.saved },
+  );
   writeGallery(list);
   Object.assign(x, saved); // (its card's: deleted by its new name)
   if (selected) selectedNames.add(x.name);
@@ -46447,11 +46448,10 @@ async function showInViewPicture() {
   const thumbnail = await wantThumbnail();
   URL.revokeObjectURL(inViewUrl);
   inViewUrl = thumbnail ? URL.createObjectURL(thumbnail) : '';
-  const { title, chips } = barWords(),
+  const x = { setup: getSetup() },
     b = $('inViewPicture');
-  b.setAttribute('aria-label', title);
-  b.dataset.ruleHtml = ruleWords(getSetup()).html;
-  b.title = chips;
+  b.setAttribute('aria-label', setupTitle(x)); // (as a card's: its title in bold, its words under it)
+  b.title = setupWords(x);
   b.innerHTML = inViewUrl ? `<img src="${inViewUrl}" alt="">` : '';
 }
 $('inViewPicture').addEventListener('click', () => showPane(false));

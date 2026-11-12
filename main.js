@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.883';
+const VERSION = '0.4.884';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -14305,7 +14305,7 @@ const kleinSheetKey = (x0, y0, nu, nv, up) => `${kleinSheetPlace(x0, y0, nu, nv,
 function kleinMesh(kind, nv, nu = kleinColumns[kind](nv)) {
   const key = `${kind}${nv}x${nu}`;
   if (meshCache[key]) return meshCache[key];
-  const tiles = [];
+  let tiles = [];
   if (kind === 'klein')
     for (let i = 0; i < nu; i++)
       for (let j = 0; j < nv; j++)
@@ -14315,18 +14315,14 @@ function kleinMesh(kind, nv, nu = kleinColumns[kind](nv)) {
           [i + 1, j + 1],
           [i, j + 1],
         ]);
-  if (kind === 'kleinHex') tiles.push(...hexSheet(nu, nv));
-  if (kind === 'kleinTri' || kind === 'kleinKite') tiles.push(...triSheet(nu, nv));
+  if (kind === 'kleinHex') tiles = hexSheet(nu, nv);
+  if (kind === 'kleinTri' || kind === 'kleinKite') tiles = triSheet(nu, nv);
   // turned by 30° (as turnedTorus): the tori's, nu and nv swapped back; their mirror across the ring maps them onto themselves
   // (the triangles' corners every half step round the tube, the hexagons' columns an even count)
   const swap = (c) => [c[0], ...c.slice(1).reverse()].map(([i, j]) => [j, i]);
-  if (kind === 'kleinTriTurned' || kind === 'kleinKiteTurned') tiles.push(...triSheet(nv, nu).map(swap));
-  if (kind === 'kleinHexTurned') tiles.push(...hexSheet(nv, nu).map(swap));
-  if (kind === 'kleinKite' || kind === 'kleinKiteTurned') {
-    const kites = tiles.flatMap(kitesOf);
-    tiles.length = 0;
-    for (const t of kites) tiles.push(t);
-  } // (each triangle its 3 kites)
+  if (kind === 'kleinTriTurned' || kind === 'kleinKiteTurned') tiles = triSheet(nv, nu).map(swap);
+  if (kind === 'kleinHexTurned') tiles = hexSheet(nv, nu).map(swap);
+  if (kind === 'kleinKite' || kind === 'kleinKiteTurned') tiles = tiles.flatMap(kitesOf); // (each triangle its 3 kites)
   const up = kind === 'kleinCairo' ? 0.5 : 0; // (Cairo's pentagons half a square up its sheet, as the torus's: their mirror line too, see id)
   if (kind === 'kleinCairo')
     for (let i = 0; i < nu; i++)
@@ -18851,8 +18847,9 @@ function battlePlayer(g, grid, S, starts, digits, pen = battleRuleInUse(tabMode(
             // (two searches met: one zone, the other's queue and tiles its)
             parent[b] = a;
             open.delete(b);
-            queue[a].push(...queue[b].slice(next[b]));
-            tiles[a].push(...tiles[b]);
+            // (one by one: a zone's hundreds of thousands of tiles overflow a call's arguments)
+            for (let i = next[b]; i < queue[b].length; i++) queue[a].push(queue[b][i]);
+            for (const t of tiles[b]) tiles[a].push(t);
           }
         }
       }

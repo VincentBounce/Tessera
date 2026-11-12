@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.908';
+const VERSION = '0.4.909';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -45890,8 +45890,9 @@ const toggleNumber = () => {
   else showNumber();
 }; // (a base's bubble too: see cardBubble)
 for (const b of numberChips()) b.addEventListener('click', toggleNumber);
-// A fraction's digits in base b, exact, its period in brackets: = 0.(005291); null when it does not end or repeat within
-// the digits in use (the walk's digits, or the cells a start lays: see digitsNeeded, showNumber)
+// A fraction's digits in base b, exact, its period in brackets: = 0.(005291), and when it repeats, its period written 3
+// times (= 0.005291005291005291…, to read it, see showNumber); null when it does not end or repeat within the digits in use
+// (the walk's digits, or the cells a start lays: see digitsNeeded)
 function ratioDigits(b, ratio = digitsComputed.ratio, max = digitsNeeded()) {
   const [p0, q] = ratio,
     p = p0 < 0n ? -p0 : p0,
@@ -45909,7 +45910,10 @@ function ratioDigits(b, ratio = digitsComputed.ratio, max = digitsNeeded()) {
     write = (v) => (b <= 36 ? v.map((d) => d.toString(36)).join('') : v.join(' ')),
     int = `${p0 < 0n ? '−' : ''}${p < q && ds.length ? '' : digitString(p / q, b)}`; // (a 0 before the point implicit: .001)
   if (rem && at === undefined) return null;
-  return `= ${int}${ds.length ? `.${rem ? `${write(ds.slice(0, at))}(${write(ds.slice(at))})` : write(ds)}` : ''}`;
+  return {
+    exact: `= ${int}${ds.length ? `.${rem ? `${write(ds.slice(0, at))}(${write(ds.slice(at))})` : write(ds)}` : ''}`,
+    repeated: rem ? `= ${int}.${write([...ds.slice(0, at), ...[0, 1, 2].flatMap(() => ds.slice(at))])}…` : '',
+  };
 }
 function showNumber() {
   const B = digitsComputed.base,
@@ -45919,11 +45923,10 @@ function showNumber() {
     rows = numberRows(b);
   if (!rows) return numberDigitsIn(b); // (Base 10 switched on: shown once its digits are computed)
   const one = rows.length > 1 ? ' one-line' : '';
-  // each number (see numberRows): its title, in its walker's colour in a battle, and how many of its digits; an exact
-  // number's value (= .75, = .(101)); then its digits (cut: …), a battle's on one line, in base b (10 when switched on);
-  // none for an exact number that ends (its value all of them: 0s after)
-  const exact = rows.map((r) => r.ratio && ratioDigits(b, r.ratio)),
-    ends = (j) => exact[j] && !exact[j].includes('(');
+  // each number (see numberRows): its title, in its walker's colour in a battle, and how many of its digits; then its
+  // digits (cut: …), a battle's on one line, in base b (10 when switched on); an exact number's its value instead (= .75,
+  // = .(101)), all of it, and when it repeats its period written 3 times under it, in grey: to read it, never copied
+  const exact = rows.map((r) => r.ratio && ratioDigits(b, r.ratio));
   const inBase = (r, cut = Infinity) => {
     return [
       `≈ ${writeDigits(Uint8Array.from([...r.head, ...r.frac.subarray(0, cut)]), b, r.head.length)}…`,
@@ -45932,14 +45935,16 @@ function showNumber() {
   };
   // a battle's numbers one line each: their first digits only (more than a line holds, the rest cut by its style), their
   // words the whole number's; copied whole
-  const shown = rows.map((r, j) => (ends(j) ? [exact[j], 'exact'] : inBase(r, one ? ONE_LINE_DIGITS : undefined))),
+  const shown = rows.map((r, j) =>
+      exact[j] ? [exact[j].exact, 'exact'] : inBase(r, one ? ONE_LINE_DIGITS : undefined),
+    ),
     copied = () =>
-      rows.map((r, j) => `${r.name} ${baseWords(b)} ${(one && !ends(j) ? inBase(r) : shown[j])[0]}`).join('\n\n'); // (a battle's: a blank line between)
+      rows.map((r, j) => `${r.name} ${baseWords(b)} ${(one && !exact[j] ? inBase(r) : shown[j])[0]}`).join('\n\n'); // (a battle's: a blank line between)
   v.innerHTML = `<div class="tut-body">${rows
     .map((r, j) => {
       const wiki = wikiLink(r.formula),
         page = wiki && !one ? `<h3>Wikipedia ${wiki}</h3>` : ''; // (its page, if it has one, as a rule's Birth: see ruleTutorial)
-      return `<h2><span style="color:${one ? teamColour(r.s) : ''}">${withIcons(r.name)}</span> <code>${baseWords(b)}</code> <span class="muted">${shown[j][1]}</span></h2>${page}${exact[j] ? `<p class="number-digits${one}">${exact[j]}</p>` : ''}${ends(j) ? '' : `<p class="number-digits${one}" data-row="${j}"></p>`}`;
+      return `<h2><span style="color:${one ? teamColour(r.s) : ''}">${withIcons(r.name)}</span> <code>${baseWords(b)}</code> <span class="muted">${shown[j][1]}</span></h2>${page}<p class="number-digits${one}" data-row="${j}"></p>${exact[j]?.repeated ? `<p class="number-digits muted${one}">${exact[j].repeated}</p>` : ''}`;
     })
     .join('')}</div>`;
   for (const p of v.querySelectorAll('.number-digits[data-row]')) p.textContent = shown[p.dataset.row][0]; // (its digits as text)

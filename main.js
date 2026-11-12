@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.913';
+const VERSION = '0.4.914';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -17517,24 +17517,15 @@ function surfaceSteps(g, mode, acts = surfaceActs(mode)) {
       sheet: ([a], [b]) => (g.mobius ? mobiusDelta(g, corner(a), corner(b)) : sheetDelta(g, G, a, b)),
     };
   }
-  const k = g.sides,
-    centre = (t) => {
-      let u = 0,
-        v = 0;
-      for (let q = 0; q < k; q++) {
-        u += g.uv[2 * (k * t + q)];
-        v += g.uv[2 * (k * t + q) + 1];
-      }
-      return [u / k, v / k];
-    };
+  const k = g.sides;
   return {
     start: (i) => walkStart(g, mode, i + 1),
     step,
     key: ([t, entry, p, q, hand = 1]) => (((t * k + entry) * k + ((p + k) % k)) * 2 + q) * 2 + (hand < 0 ? 1 : 0), // (its hand: a Klein bottle's, see surfaceStep)
     sheet: ([a], [b]) => {
-      if (g.mobius) return mobiusDelta(g, mobiusAt(g, a, centre(a)), mobiusAt(g, b, centre(b)));
-      const p = centre(a),
-        q = centre(b);
+      if (g.mobius) return mobiusDelta(g, mobiusAt(g, a, cornersMean(g, a)), mobiusAt(g, b, cornersMean(g, b)));
+      const p = cornersMean(g, a),
+        q = cornersMean(g, b);
       return sheetWrap(g, q[0] - p[0], q[1] - p[1]);
     },
   };
@@ -27049,16 +27040,7 @@ function battleCaseFigure(grid, way, scripts, cells = false) {
   const g = SPHERES[{ square: 'torus', tri: 'torusTri', hex: cells ? 'torusHex' : 'torusHexTurned' }[grid]].mesh(12),
     G = gridGraph(g),
     k = g.sides; // (hexagons: along the grid an edge north, on cells a neighbour)
-  const middle = (t) => {
-    let u = 0,
-      v = 0;
-    for (let q = 0; q < k; q++) {
-      u += g.uv[2 * (k * t + q)];
-      v += g.uv[2 * (k * t + q) + 1];
-    }
-    return [u / k, v / k];
-  };
-  const uvOf = (v) => (cells ? middle(v) : cornerUv(g, G, v)),
+  const uvOf = (v) => (cells ? cornersMean(g, v) : cornerUv(g, G, v)),
     count = cells ? g.n : G.nv; // (its places: the tiles, or the grid's corners)
   const nbrsOf = (v) =>
     cells ? Array.from({ length: k }, (_, e) => g.nbr[k * v + e]).filter((u) => u >= 0) : G.nbrs[v];
@@ -27146,7 +27128,7 @@ function battleCaseFigure(grid, way, scripts, cells = false) {
   const screen = ([x, y]) => [+x.toFixed(3), +(-y).toFixed(3)],
     shown = (v) => screen(at(v)); // (on screen: north up)
   const tiles = [...Array(g.n).keys()].filter((t) => {
-    const [x, y] = pt(middle(t));
+    const [x, y] = pt(cornersMean(g, t));
     return Math.abs(x - cx) < r + 1 && Math.abs(y - cy) < r + 1;
   }); // (those whose middle is in view)
   const tile = (t, cls, fill = '') =>
@@ -38692,19 +38674,21 @@ function frontCell() {
   })());
 }
 
-// A tile's middle on the sheet of a torus or a Möbius strip (on a torus, within it), and the tiles (up to
-// upto) nearest the point (u, v), all as near (on a torus, the shortest way round)
-function sheetMiddle(g, t) {
+// A tile's corners' mean on its sheet, as laid (not brought within it)
+function cornersMean(g, t) {
   const k = g.sides;
   let u = 0,
     v = 0;
-  if (g.uvMid)
-    [u, v] = g.uvMid.subarray(2 * t, 2 * t + 2); // (a tiling's: its corners not repeated)
-  else
-    for (let q = 0; q < k; q++) {
-      u += g.uv[2 * (k * t + q)] / k;
-      v += g.uv[2 * (k * t + q) + 1] / k;
-    }
+  for (let q = 0; q < k; q++) {
+    u += g.uv[2 * (k * t + q)] / k;
+    v += g.uv[2 * (k * t + q) + 1] / k;
+  }
+  return [u, v];
+}
+// A tile's middle on the sheet of a torus or a Möbius strip (on a torus, within it), and the tiles (up to
+// upto) nearest the point (u, v), all as near (on a torus, the shortest way round)
+function sheetMiddle(g, t) {
+  const [u, v] = g.uvMid ? g.uvMid.subarray(2 * t, 2 * t + 2) : cornersMean(g, t); // (a tiling's: its corners not repeated)
   const wrap = (x, m) => {
     const r = ((x % m) + m) % m;
     return r > m - 1e-9 ? 0 : r;

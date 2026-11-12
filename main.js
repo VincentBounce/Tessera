@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.895';
+const VERSION = '0.4.896';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -41209,7 +41209,7 @@ const glassOn = () => $('glass').checked && !$('glassRow').hidden;
 const oceanFits = (w = tabMode(), lifeCount = lifeTeams, walkCount = walkTeams) =>
   (MODES[w].life ? lifeCount : battleAt(w, walkCount) ? walkCount : 1) <= LANDS.length; // (its lands a Sextet's at most, Life's teams or a battle's walkers: beyond, greyed; at a setup, see whyNot)
 let oceanPicked = false; // (Ocean clicked since its default was set: kept, else it follows its default, see DISPLAY_DEFAULTS)
-const oceanOn = () => $('ocean').checked && !$('oceanRow').hidden && oceanFits();
+const oceanOn = () => $('ocean').checked && shows('ocean', tabMode()) && oceanFits(); // (its row's rule, not its row: drawn later)
 const blankTile = () => (oceanOn() ? OCEAN : UNLIT); // (a surface's tile none has painted: Ocean's sea blue, or the theme's)
 const teamColour = (s) => (oceanOn() && LANDS[s] ? LANDS[s] : LIFE_COLOURS[s]); // (team s, a battle's walker or Life's colour: Earth's lands up to a Sextet, else Life's colours)
 const LAND_NAMES = ['green', 'yellow', 'ochre', 'lime', 'white', 'cyan']; // (Earth's lands, see PALETTES)

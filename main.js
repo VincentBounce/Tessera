@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.914';
+const VERSION = '0.4.915';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -3811,7 +3811,7 @@ const foldedIn = (fold) => Object.keys(FOLDED).filter((s) => FOLDED[s].fold === 
 const RECTS = {}; // the slanted grids as rectangles (see RECTS's making, after cellMiddle)
 const latticeStep = (kind) => {
   const o = cellMiddle(kind, 0, 0),
-    m = cellMiddle(kind, TILES_PER_GRID_CELL[kind] ?? 1, 0);
+    m = cellMiddle(kind, gridCells(kind), 0);
   return [m[0] - o[0], m[1] - o[1]];
 }; // a step along a row's grid cells (a slanted grid's: its rectangles)
 const tilingOf = (kind) => TILINGS[kind] ?? RECTS[kind];
@@ -9944,8 +9944,8 @@ const SHAPE_GROUPS = [
   ['Flowers', (k) => !!ROSETTES[k] && !ROSETTES[k][2] && !conedFamily(k)],
   ...Object.entries(CONED).map(([fam, F]) => [`${F.name}s`, (k) => conedFamily(k) === fam]),
   ['Rings', (k) => !!ROSETTES[k]?.[2]],
-  ['Natural squares', (k) => PATTERN_TURNS[k] % 4 === 0 || TILINGS[k]?.turns === 4],
-  ['Parallelograms', (k) => ![3, 6].includes(TILINGS[k]?.turns ?? PATTERN_TURNS[k])],
+  ['Natural squares', (k) => gridTurns(k) % 4 === 0 || TILINGS[k]?.turns === 4],
+  ['Parallelograms', (k) => ![3, 6].includes(TILINGS[k]?.turns ?? gridTurns(k))],
   ['Rectangle torus · Walled hexagon', () => true],
 ];
 const shapeGroup = (kind) => SHAPE_GROUPS.find(([, is]) => is(kind))[0];
@@ -16291,12 +16291,7 @@ function gridSize(kind, f) {
   if (PLANE_CELLS[kind]) {
     const h = planeW(kind, f),
       w = planeRow(kind, h);
-    return [
-      h,
-      w / (TILES_PER_GRID_CELL[kind] ?? 1),
-      planeGrid(kind, h).n,
-      kind === 'cairo' ? 'pentagons' : PLANE_CELLS[kind],
-    ];
+    return [h, w / gridCells(kind), planeGrid(kind, h).n, kind === 'cairo' ? 'pentagons' : PLANE_CELLS[kind]];
   } // (its width in grid cells, a slanted grid's rectangles; its cells but the wall's)
   if (!TORI.includes(kind)) return null;
   const { tiles, unit } = SPHERES[kind],
@@ -16311,10 +16306,10 @@ const discOf = (W) => Math.round(((2 * W) / Math.sqrt(Math.PI)) * 10) / 10; // (
 const hexagonOf = (kind, f) => {
   const N = gridSize(kind, f)[2],
     r = Math.round((Math.sqrt(12 * N - 3) - 3) / 6),
-    m = Math.round(Math.sqrt(N / (3 * (TILES_PER_GRID_CELL[kind] ?? 1))));
+    m = Math.round(Math.sqrt(N / (3 * gridCells(kind))));
   return kind === 'hex' && 3 * r * (r + 1) + 1 === N
     ? `Hexagon · ${r} rings`
-    : 3 * m * m * (TILES_PER_GRID_CELL[kind] ?? 1) === N
+    : 3 * m * m * gridCells(kind) === N
       ? `Hexagon · ${m} a side`
       : 'Hexagon';
 };
@@ -16413,7 +16408,7 @@ const latticeCellSize = (g) =>
     ? TILINGS[g.tiling].polys.length
     : g.torus && !g.mobius && !g.klein
       ? g.n / (g.nu * g.nv)
-      : (TILES_PER_GRID_CELL[cellKind(g)] ?? 1);
+      : gridCells(cellKind(g));
 // a sheet's tile's lattice cell, as laid (g.latticeCells, else latticeCellSize(g) tiles at a time as listed), a Möbius strip's back's apart from its
 // front's (the same lattice cells listed twice, see mobiusMesh)
 const latticeCellOf = (g, t) =>
@@ -16427,7 +16422,7 @@ const howCounted = (kind, f) => {
     n = S?.tiles?.(f) ?? d?.[2],
     unit = S?.unit ?? d?.[3];
   if (S?.how) return `${S.how(f)} = ${formatNumber(n)} ${unit}`;
-  const per = PLANE_CELLS[kind] ? (TILES_PER_GRID_CELL[kind] ?? 1) : 1,
+  const per = PLANE_CELLS[kind] ? gridCells(kind) : 1,
     all = d && d[0] * d[1] * per; // (the plane's: its grid cells a row, each per cells; less its wall's)
   // (a hexagon's or a disc's middle, violet as its core is drawn, see drawMotif: its cells nearest its middle, so many)
   const middle = () => {
@@ -16465,7 +16460,7 @@ const howCounted = (kind, f) => {
   }
   // the plane's: its rows × its lattice cells (its motif, violet) × their cells (green), less its wall's
   // (a slanted grid's rectangle, det lattice cells of its tiling: each one its motif, see planeMotifCells)
-  const m = PLANE_CELLS[kind] ? (TILES_PER_GRID_CELL[baseOf(kind)] ?? 1) : 1,
+  const m = PLANE_CELLS[kind] ? gridCells(baseOf(kind)) : 1,
     det = per / m;
   if (d)
     return `(Edge=${formatNumber(d[0])}) rows × {y:${formatNumber(d[1] * det)} ${m > 1 ? 'lattice cells' : d[3]}} a row${det > 1 ? ` (${det} a rectangle of the grid: its cell slanted, the grid straight)` : ''}${m > 1 ? ` × {k:${m} ${d[3]} each}${turnedCellNote(kind)}` : ''}${all > d[2] ? ` − ${formatNumber(all - d[2])} in the wall` : ''} = ${formatNumber(d[2])} ${d[3]}`;
@@ -21961,39 +21956,16 @@ const TILES_PER_GRID_CELL = {
   tri: 2,
   cairo: 2,
   kite: 6,
-  hat: 1,
-  penrose: 1,
-  pinwheel: 1,
-  spectre: 1,
-  ammann: 1,
-  rhombs12: 1,
-  rhombs14: 1,
-  flower: 1,
-  flower5: 1,
-  flower7: 1,
-  ...conedOf((k) => [k, 1]),
-  flower3: 1,
-  flower4: 1,
-  flower8: 1,
-  flower9: 1,
-  flower10: 1,
-  flower11: 1,
-  flower12: 1,
-  ring7: 1,
-  ring8: 1,
-  ring9: 1,
-  ring10: 1,
-  ring11: 1,
-  ring12: 1,
-};
+}; // (the base grids; a tiling's, a rectangle's added as made; any other, a rosette or a grid that never repeats: 1, see gridCells)
 for (const [kind, t] of Object.entries(TILINGS)) TILES_PER_GRID_CELL[kind] = t.polys.length; // (a row's cells per step along it: patterns move by whole ones)
+const gridCells = (kind) => TILES_PER_GRID_CELL[kind] ?? 1; // (a grid's cells per grid cell: its table's, else 1)
 // (a grid that never repeats, in a circle: its size its diameter, its W² cells as many as the disc's, π side² / 4)
 const sideW = (kind, side) =>
   kind === 'cairo'
     ? 2 * Math.round(side / Math.SQRT2 / 2)
     : APERIODIC[kind]
       ? Math.round((side * Math.sqrt(Math.PI)) / 2)
-      : Math.round(side / Math.sqrt(TILES_PER_GRID_CELL[kind] * (RECT_ASPECT[kind] ?? 1))); // (a rectangle's: W rows of W × its aspect motifs, see planeColumns)
+      : Math.round(side / Math.sqrt(gridCells(kind) * (RECT_ASPECT[kind] ?? 1))); // (a rectangle's: W rows of W × its aspect motifs, see planeColumns)
 // blocks on a torus: the nearest size their sets fit round (else a cell in two blocks of a set at the seam: the rule broken)
 const planeW = (kind, side, mode = MODES[tabMode()], outline = outlineOf(kind)) =>
   mode?.margolus && planeTorus(kind)
@@ -23355,7 +23327,7 @@ const iconPixel = (b64) => {
 // all its cells')
 const cellWidth = (kind) => {
   if (APERIODIC[kind]) return APERIODIC[kind](flatGrid().W).width;
-  const per = TILES_PER_GRID_CELL[kind] ?? 1;
+  const per = gridCells(kind);
   return Math.sqrt(
     [0, 1]
       .flatMap((y) => Array.from({ length: per }, (_, x) => polyArea(planeCorners(kind, x, y))))
@@ -23662,7 +23634,7 @@ function planeNeighbours(kind, W, torus, hensel = false) {
   // a corner's id: squares, triangles and hexagons have theirs on a grid of 1/q units, numbered in an array; the others
   // by a map (their corners to 1/1000)
   const q = { square: 1, tri: 1, hex: 3 }[kind] ?? 1000,
-    P = [(row / (TILES_PER_GRID_CELL[kind] ?? 1)) * q, W * q],
+    P = [(row / gridCells(kind)) * q, W * q],
     S = Math.max(...P) + 4 * q;
   const r = (a, d) => {
     const k = Math.round(a * q);
@@ -23953,7 +23925,7 @@ function turnLayer(ctx, a = planeTurn()) {
 function planeBounds(turn = planeTurn()) {
   const { kind, W, row } = flatGrid(),
     b = { minX: Infinity, maxX: -Infinity, minY: Infinity, maxY: -Infinity };
-  const per = TILES_PER_GRID_CELL[kind] ?? 1,
+  const per = gridCells(kind),
     corner = [
       [0, 0],
       [row - per, 0],
@@ -24289,7 +24261,7 @@ function renderPlaneRow() {
     mine = !ruleCard(rule, tabMode());
   const fits = (p) => !p[1] || (p[1] === baseOf(kind) && (mine || p[2].includes(rule))); // the rule's patterns; your own rule: all the grid's
   if (!fits(DRAW_BY_ID.get(brush.id))) brush.id = 'cell';
-  brush.turn %= PATTERN_TURNS[kind];
+  brush.turn %= gridTurns(kind);
   const K = ruleColours();
   brush.colour = Math.min(brush.colour, K);
   for (const b of $('brushCards').children) {
@@ -24326,7 +24298,7 @@ function renderPlaneRow() {
       renderPlaneRow();
     });
   });
-  $('brushTurn').textContent = `↻ ${(brush.turn * 360) / PATTERN_TURNS[kind]}°`;
+  $('brushTurn').textContent = `↻ ${(brush.turn * 360) / gridTurns(kind)}°`;
   $('brushFlip').classList.toggle('active', brush.flip && canMirror(kind));
   renderDrawTools();
 }
@@ -24349,7 +24321,7 @@ function renderDrawTools() {
   const tool = !DRAW_BY_ID.get(brush.id)[1]; // (View or a cell: no pattern to turn)
   grey(
     $('brushTurn'),
-    tool || PATTERN_TURNS[kind] === 1,
+    tool || gridTurns(kind) === 1,
     'Not for View or a cell, nor on a grid a pattern cannot turn on (on a disc, it turns towards the cell clicked).',
   );
   grey($('brushFlip'), tool || !canMirror(kind), 'Not for View or a cell, nor on a grid a pattern cannot mirror on.');
@@ -24495,7 +24467,7 @@ function shapeW(kind, W0, outline = outlineOf(kind)) {
   }
   return W;
 }
-const hexagonFits = (kind) => !APERIODIC[kind] && PATTERN_TURNS[baseOf(kind)] === 6; // (walls in a hexagon: a six-fold grid's)
+const hexagonFits = (kind) => !APERIODIC[kind] && gridTurns(baseOf(kind)) === 6; // (walls in a hexagon: a six-fold grid's)
 // A plane grid's cells: each an index t and its place (x, y) on the lattice (planeCorners', cellMiddle's), and back (−1: none
 // there): a rhombus's row by row, t = y × row + x; a slanted grid's rectangle (see RECTS) row by row as well, its rows of
 // motifs (each two lattice rows or more) a lattice row at a time (its cells' nat), not a motif's cells down then the next;
@@ -24552,7 +24524,7 @@ let wallsMemo = null;
 function planeWalls(kind, W) {
   if (wallsMemo?.key === `${kind}|${W}|${planeRow(kind, W)}`) return wallsMemo.cells;
   const row = planeRow(kind, W),
-    per = TILES_PER_GRID_CELL[kind] ?? 1,
+    per = gridCells(kind),
     k = (p) => pointKey(...p),
     rim = new Set(),
     cells = [];
@@ -24588,32 +24560,9 @@ const PATTERN_TURNS = {
   tri: 6,
   cairo: 4,
   kite: 6,
-  hat: 1,
-  penrose: 1,
-  pinwheel: 1,
-  spectre: 1,
-  ammann: 1,
-  rhombs12: 1,
-  rhombs14: 1,
-  flower: 1,
-  flower5: 1,
-  flower7: 1,
-  ...conedOf((k) => [k, 1]),
-  flower3: 1,
-  flower4: 1,
-  flower8: 1,
-  flower9: 1,
-  flower10: 1,
-  flower11: 1,
-  flower12: 1,
-  ring7: 1,
-  ring8: 1,
-  ring9: 1,
-  ring10: 1,
-  ring11: 1,
-  ring12: 1,
-};
+}; // (the base grids; a tiling's, a rectangle's added as made; any other: 1, see gridTurns)
 for (const [kind, t] of Object.entries(TILINGS)) PATTERN_TURNS[kind] = t.turns;
+const gridTurns = (kind) => PATTERN_TURNS[kind] ?? 1; // (a grid's turns: its table's, else 1)
 // a cell's middle, its corners' mean; the grid's own cells' once a grid (walk.plane: a new one each grid; a middle its kind's
 // and its place's only, see planeCorners)
 let gridMiddles = null;
@@ -24821,7 +24770,7 @@ function placeCells(P, la, lb, U, V, outlineFirst) {
 const STRAIGHT_RECTS = new Set(),
   RECT_ASPECT = {}; // (the grids whose rectangle is their straight sheet: the plane's, see planeKind)
 for (const base of ['hex', 'tri', 'kite', ...Object.keys(TILINGS)]) {
-  const per = TILES_PER_GRID_CELL[base] ?? 1,
+  const per = gridCells(base),
     o = cellMiddle(base, 0, 0),
     d = (x, y) => {
       const m = cellMiddle(base, x, y);
@@ -24898,7 +24847,7 @@ for (const base of ['hex', 'tri', 'kite', ...Object.keys(TILINGS)]) {
     Math.abs(best.det) * per,
     Math.hypot(...best.V) / Math.hypot(...best.U),
   ]; // (its tables at once: its size said before it is built; its height over its width, see planeColumns)
-  PATTERN_TURNS[kind] = PATTERN_TURNS[base];
+  PATTERN_TURNS[kind] = gridTurns(base);
   PLANE_CELLS[kind] = PLANE_CELLS[base];
   Object.defineProperty(RECTS, kind, {
     configurable: true,
@@ -24920,7 +24869,7 @@ function orientPattern(kind, rle, turn, flip) {
   if (RECTS[kind]) {
     // a rectangle's: turned on its grid, then laid cell by cell where it is (whole lattice cells along)
     const { base } = RECTS[kind],
-      per = TILES_PER_GRID_CELL[kind],
+      per = gridCells(kind),
       out = orientPattern(base, rle, turn, flip).flatMap(([x, y, v]) => {
         const c = planeCellAt(kind, 1, ...cellMiddle(base, x, y), 'free');
         return c ? [[...c, v]] : [];
@@ -24929,11 +24878,11 @@ function orientPattern(kind, rle, turn, flip) {
       j0 = Math.min(...out.map((c) => c[1]));
     return out.map(([x, y, v]) => [x - per * i0, y - j0, v]);
   }
-  const per = TILES_PER_GRID_CELL[kind] ?? 1,
+  const per = gridCells(kind),
     grid = (i, j) => [(i - CAIRO_0[0]) * CAIRO, (j - CAIRO_0[1]) * CAIRO];
   const pivot = tilingPivot(kind);
   const axis = kind === 'cairo' ? grid(0.5, 0)[0] : pivot[0];
-  const a = (2 * Math.PI * turn) / PATTERN_TURNS[kind],
+  const a = (2 * Math.PI * turn) / gridTurns(kind),
     cos = Math.cos(a),
     sin = Math.sin(a),
     cells = [];
@@ -25162,7 +25111,7 @@ function tilingCellOf(kind, x, y) {
   const R = RECTS[kind];
   if (!R) return [x, y];
   const m = R.polys.length,
-    per = TILES_PER_GRID_CELL[baseOf(kind)] ?? 1,
+    per = gridCells(baseOf(kind)),
     [[sp, sq], [sr, st]] = R.step,
     s = x % m,
     I = Math.floor(x / m);
@@ -25172,7 +25121,7 @@ function tilingCellOf(kind, x, y) {
 // them (a slanted grid's rectangle holds several, its compact cells mixing their polygons: by tilingCellOf)
 const planeMotifCells = () => {
   const { kind, n, row, xy } = walk.plane,
-    per = TILES_PER_GRID_CELL[baseOf(kind)] ?? 1,
+    per = gridCells(baseOf(kind)),
     cells = new Map();
   for (let t = 0; t < Math.min(n, 4 * row); t++) {
     const [x, y] = tilingCellOf(kind, ...xy(t)),
@@ -25569,8 +25518,7 @@ const MIRRORED_DISCS = ['ammann', 'rhombs12', 'rhombs14', 'penrose']; // the dis
 const figureTurns = (kind) =>
   ROSETTES[kind]?.[0] ??
   { ammann: 8, rhombs12: 12, rhombs14: 14, penrose: 5, hat: 1, spectre: 1, pinwheel: 1 }[kind] ??
-  PATTERN_TURNS[baseOf(kind)] ??
-  1;
+  gridTurns(baseOf(kind));
 // (twice a fair count: each part halved, 2 4 giving 8, 5 10, 3 6 12; 3 without 6, thrice: 9, each third in 3: on the plane and a
 // solid; never on a grid that never repeats, a disc: no symmetry halves its parts, a rosette's a spiral's (Flower 6's 12 colours 63 to
 // 65 cells, Penrose's 10, 72 to 77, before v0.3.90); nor on a sheet or a globe, its blocks, slices or quarters made for K itself
@@ -27910,7 +27858,7 @@ function cellBlocks(B, n, cell, stars, first = cell(0)) {
 // onto its sheet, once); a torus its sets do not fit round: its blocks as on walls
 function planeBlocks(kind, W, torus, stars = !BLOCKS[baseOf(kind)], four = false, cols = planeColumns(kind, W, 1)) {
   // (cols: its motifs a row, see planeColumns: blocks in one colour)
-  const row = (tilingOf(kind)?.polys.length ?? TILES_PER_GRID_CELL[kind]) * cols; // (a row: its motifs' cells; a rectangle's: its grid's blocks, its own cells)
+  const row = (tilingOf(kind)?.polys.length ?? gridCells(kind)) * cols; // (a row: its motifs' cells; a rectangle's: its grid's blocks, its own cells)
   const o = cellMiddle(kind, 0, 0),
     P = !torus
       ? null
@@ -29307,7 +29255,7 @@ function planeSlices(K) {
 let frameMemo = null;
 function planeFrame() {
   const { kind, W, row, n, xy } = walk.plane,
-    per = TILES_PER_GRID_CELL[kind] ?? 1,
+    per = gridCells(kind),
     turn = planeTurn(),
     key = `${gridKey()}|${turn}`;
   if (frameMemo?.key === key) return frameMemo;
@@ -30150,7 +30098,7 @@ const translations = (kind) => {
   const k = RECTS[kind]?.base ?? kind,
     o = cellMiddle(k, 0, 0),
     step = (x, y) => cellMiddle(k, x, y).map((c, d) => c - o[d]),
-    per = TILES_PER_GRID_CELL[k] ?? 1;
+    per = gridCells(k);
   return k === 'cairo' ? [step(per, 1), step(per, -1)] : [step(per, 0), step(0, 1)];
 };
 // a solid's cell at a place in space: the one whose middle is there (within a third of its step to its nearest neighbour:
@@ -30491,7 +30439,7 @@ function patternFrame(i, K, place = patternPlace(i, K)) {
               at: (r, c) => cen(fq * g.size * g.size + r * g.size + c),
             }
           : cubeFace(fq),
-      per = TILES_PER_GRID_CELL[kind] ?? 1;
+      per = gridCells(kind);
     [A3, B3, n, o3, op] = [
       sub(sq.at(0, 1), sq.at(0, 0)),
       sub(sq.at(1, 0), sq.at(0, 0)),
@@ -38565,7 +38513,7 @@ function laidChoices(centred, any = false) {
   const R = RECTS[kind],
     cellsAcross = R ? Math.min(...R.basis.map((v) => Math.hypot(...v))) / Math.hypot(...latticeStep(R.base)) : 1,
     pk = R ? R.base : kind,
-    pper = TILES_PER_GRID_CELL[pk] ?? 1;
+    pper = gridCells(pk);
   const span = (rle, t, f) => {
     const cs = orientPattern(pk, rle, t, f);
     return Math.max(...cs.map((c) => Math.floor(c[0] / pper)), ...cs.map((c) => c[1])) + 1;
@@ -38586,7 +38534,7 @@ function laidChoices(centred, any = false) {
   const shapes = [],
     seen = new Set();
   for (const p of DRAW_PATTERNS.filter((q) => q[1] === baseOf(kind) && (mine || q[2].includes(rule)))) {
-    for (let t = 0; t < PATTERN_TURNS[kind]; t++)
+    for (let t = 0; t < gridTurns(kind); t++)
       for (const f of [false, true]) {
         const cells = orientPattern(kind, p[4], t, f),
           k = cells
@@ -45454,7 +45402,7 @@ $('brushCards').replaceChildren(
   }),
 );
 $('brushTurn').addEventListener('click', () => {
-  brush.turn = (brush.turn + 1) % PATTERN_TURNS[MODES[tabMode()].plane];
+  brush.turn = (brush.turn + 1) % gridTurns(MODES[tabMode()].plane);
   renderPlaneRow();
 });
 $('brushFlip').addEventListener('click', () => {
@@ -45791,7 +45739,7 @@ function lifeRle() {
     { kind, xy } = walk.plane,
     K = L.colours,
     base = baseOf(kind),
-    per = TILES_PER_GRID_CELL[base] ?? 1,
+    per = gridCells(base),
     cells = [];
   const at = (t) => tilingCellOf(kind, ...xy(t)); // (its grid's cell)
   L.alive.forEach((v, t) => {

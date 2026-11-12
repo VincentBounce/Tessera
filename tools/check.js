@@ -215,7 +215,7 @@ function checkMeshes(fail) {
     // its symmetry: the live cells' middles turned by a turn of the grid round their mean, onto live ones
     const mids = live.map(mid),
       c = [0, 1].map((d) => mids.reduce((t, m) => t + m[d], 0) / mids.length),
-      turn = (2 * Math.PI) / PATTERN_TURNS[baseOf(kind)];
+      turn = (2 * Math.PI) / gridTurns(baseOf(kind));
     const sig = (P) => `${P.length}|${Math.round(Math.abs(sarea(P)) * 50)}`,
       keys = new Set(mids.map(([u, v], i) => `${Math.round(u * 100)},${Math.round(v * 100)}|${sig(live[i])}`)); // (a cell by its middle and its shape)
     const off = mids.filter(([u, v], i) => {

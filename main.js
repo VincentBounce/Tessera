@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.925';
+const VERSION = '0.4.926';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -39152,15 +39152,14 @@ function readGallery() {
 function seedCurated() {
   try {
     const taken = Number(localStorage.getItem(CURATED_KEY)) || 0,
-      last = Math.max(...BUILT_IN.map((b) => b[3] ?? 1));
+      last = Math.max(...BUILT_IN.map((b) => b[1] ?? 1));
     if (taken >= last) return;
     const list = readGallery(),
       same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
-    for (const [name, note, setup, batch = 1] of BUILT_IN) {
+    for (const [setup, batch = 1] of BUILT_IN) {
       if (batch <= taken || list.some((x) => same(x.setup, setup))) continue;
-      let key = name; // a name of its own (a row is deleted by its name)
-      for (let k = 2; list.some((x) => x.name === key); k++) key = `${name} (${k})`;
-      list.push({ name: key, note, setup, saved: new Date().toISOString() });
+      const x = { chips: '', setup, saved: new Date().toISOString() }; // (as any saved: its title its setup's, see setupTitle)
+      list.push(Object.assign(x, { name: uniqueName(setupTitle(x), list) }));
     }
     writeGallery(list);
     localStorage.setItem(CURATED_KEY, String(last));
@@ -39179,12 +39178,11 @@ function writeGallery(list) {
 // What tells a saved setup apart: its walk, then its surface's size, start, turn and rule
 // a setup's row: a walk's 2D, 3D or Lattice, its walk, size, start, turn and rule; a Game of Life's rule (its name on its grid,
 // see ruleCard), colours (Newcomer's), size and start
-const setupDetail = (s, chips = '') => {
-  // (chips: its bar's, saved with it)
+const setupDetail = (s) => {
   const life = MODES[s.w]?.life,
     { code, name } = ruleWords(s);
   return [
-    chips && life && shapeAndTiles(s.w),
+    life && shapeAndTiles(s.w),
     life ? name || (!code && 'Life') : SPACES[NAV[s.w]?.[1]]?.[0],
     life ? Number(s.k) > 1 && `${s.k} teams${Number(s.nc) === 1 ? ', the last a newcomer' : ''}` : walkName(s.w),
     s.s && `size ${String(s.s).replace('x', ' × ')}`,
@@ -39211,14 +39209,11 @@ const ruleWords = (s) => {
     html: [byDigits && withIcons(formulaOf(s.x).sym), code && ruleSpan(code)].filter(Boolean).join(' · '), // (by the digits: the number read first, as the bar says it)
   };
 };
-// its title: one saved from the bar (its chips with it), from its setup, never stale: what it reads, then its rule (π · LNR,
-// π vs e vs φ · LR, 1/438 · 1L0 0R0, an ant by its rule its rule alone, Glider vs Diehard · B3/S23); its grid, its size and
-// the rest in its tooltip (see setupWords). A curated one's its name (Dragon, Primes); one saved before chips, a walk's its
-// number, a Game of Life's its shape and tiles
+// its title, from its setup, never stale: what it reads, then its rule (π · LNR, π vs e vs φ · LR, 1/438 · 1L0 0R0, an ant
+// by its rule its rule alone, Glider vs Diehard · B3/S23); its grid, its size and the rest in its tooltip (see setupWords)
 const setupTitle = (x) => {
   const s = x.setup,
     life = MODES[s.w]?.life;
-  if (x.chips === undefined) return life ? shapeAndTiles(s.w) : x.name;
   const { code, byDigits } = ruleWords(s),
     creature = MODES[s.w].worm || ANTS[s.w],
     reads = life ? startWords(s).join(' vs ') : creature ? byDigits && formulaOf(s.x).sym : walkNumbersOf(s);
@@ -39242,8 +39237,8 @@ const setupOrder = (a, b) => {
     words(thumbnailKey(a), thumbnailKey(b))
   ); // (all of it last: two setups alike in all these, always in one order)
 };
-// its words under the title: its note (a curated one's), its chips, its detail
-const setupWords = (x) => [x.note, x.chips, setupDetail(x.setup, x.chips)].filter(Boolean).join(' · ');
+// its words under the title: its chips (its bar's), its detail
+const setupWords = (x) => [x.chips, setupDetail(x.setup)].filter(Boolean).join(' · ');
 // a row's thumbnail in place of its icon (its URL let go with the row: see fillGalleryList)
 let thumbnailUrls = [];
 const showThumbnail = (row, thumbnail) => {
@@ -46317,29 +46312,27 @@ $('mode').addEventListener('change', () => {
 /* The striking setups found so far, part of the page (nothing stored): hovering one shows it in the
  * view, leaving the list brings back the setup in use, a click keeps it. */
 const BUILT_IN = [
-  ['1/923', '4-fold rosette', { x: '1/923', w: 'turtle', d: 421 }],
-  ['2/541', '4-fold rosette', { x: '2/541', w: 'turtle', d: 541 }],
-  ['1/709', '4-fold rosette', { x: '1/709', w: 'turtle', d: 709 }],
-  ['1/983', '4-fold rosette', { x: '1/983', w: 'turtle', d: 1965 }],
-  ['1/383', '6-fold rosette', { x: '1/383', w: 'hexTurtle', d: 1147 }],
-  ['3/497', '6-fold rosette', { x: '3/497', w: 'hexTurtle', d: 631 }],
-  ['1/463', '6-fold rosette', { x: '1/463', w: 'hexTurtle', d: 1387 }],
-  ['1/967', '6-fold rosette', { x: '1/967', w: 'hexTurtle', d: 2899 }],
-  ['11/604', '6-fold rosette', { x: '11/604', w: 'triTurtle', d: 451 }],
-  ['1/599', '3-fold rosette', { x: '1/599', w: 'triTurtle', d: 898 }],
-  ['1/856', '6-fold rosette', { x: '1/856', w: 'triTurtle', d: 637 }],
-  ['21/976', '6-fold rosette', { x: '21/976', w: 'triTurtle', d: 361 }],
-  ['96/95', '12 diagonal loops', { x: '96/95', w: 'torusGrid', d: 5760, s: '64x160' }],
-  ['96/95', 'On cells', { x: '96/95', w: 'torusWalk', d: 4320, s: 48 }],
-  ['226/221', 'Round a corner', { x: '226/221', w: 'cubeGrid', d: 289, s: 24 }],
-  ['1/383', 'Round the tube', { x: '1/383', w: 'torusTriGrid', d: 9168, s: '63x168', st: 2, o: 1 }],
-  ['120/109', 'A belt', { x: '120/109', w: 'hexSphereGrid', d: 5760, s: 32 }],
-  ['Dragon', 'Paperfolding', { x: 'dragon', w: 'turtle', d: 20000 }],
-  ['Thue–Morse', 'Koch curve', { x: 'thuemorse', w: 'triTurtle', r: 'N r', d: 4096 }],
+  [{ x: '1/923', w: 'turtle', d: 421 }],
+  [{ x: '2/541', w: 'turtle', d: 541 }],
+  [{ x: '1/709', w: 'turtle', d: 709 }],
+  [{ x: '1/983', w: 'turtle', d: 1965 }],
+  [{ x: '1/383', w: 'hexTurtle', d: 1147 }],
+  [{ x: '3/497', w: 'hexTurtle', d: 631 }],
+  [{ x: '1/463', w: 'hexTurtle', d: 1387 }],
+  [{ x: '1/967', w: 'hexTurtle', d: 2899 }],
+  [{ x: '11/604', w: 'triTurtle', d: 451 }],
+  [{ x: '1/599', w: 'triTurtle', d: 898 }],
+  [{ x: '1/856', w: 'triTurtle', d: 637 }],
+  [{ x: '21/976', w: 'triTurtle', d: 361 }],
+  [{ x: '96/95', w: 'torusGrid', d: 5760, s: '64x160' }],
+  [{ x: '96/95', w: 'torusWalk', d: 4320, s: 48 }],
+  [{ x: '226/221', w: 'cubeGrid', d: 289, s: 24 }],
+  [{ x: '1/383', w: 'torusTriGrid', d: 9168, s: '63x168', st: 2, o: 1 }],
+  [{ x: '120/109', w: 'hexSphereGrid', d: 5760, s: 32 }],
+  [{ x: 'dragon', w: 'turtle', d: 20000 }],
+  [{ x: 'thuemorse', w: 'triTurtle', r: 'N r', d: 4096 }],
   // added later: their batch number, so that a browser that took the first ones gets these once too (see seedCurated)
   [
-    'Möbius battle',
-    'A battle of 2 colours round the strip',
     {
       w: 'lifeMobius',
       s: 8,
@@ -46350,11 +46343,11 @@ const BUILT_IN = [
     },
     2,
   ],
-  ['1/438', 'A highway from step 534,473', { x: '1/438', w: 'antSquare', d: 540989, r: 'digits LR' }, 2],
-  ['Rabbit', 'Fibonacci word fractal', { x: 'rabbit', w: 'turtle', r: 'N a', d: 4181 }],
-  ['Rudin–Shapiro', 'On hexagons', { x: 'rudinshapiro', w: 'hexTurtle', d: 16384 }],
-  ['Primes', 'Their barcode', { x: 'primebarcode', w: 'spiral', d: 20000 }],
-  ['π', '20,000 digits', { x: 'pi', w: 'turtle', d: 20000 }],
+  [{ x: '1/438', w: 'antSquare', d: 540989, r: 'digits 1L0 0R0' }, 2],
+  [{ x: 'rabbit', w: 'turtle', r: 'N a', d: 4181 }],
+  [{ x: 'rudinshapiro', w: 'hexTurtle', d: 16384 }],
+  [{ x: 'primebarcode', w: 'spiral', d: 20000 }],
+  [{ x: 'pi', w: 'turtle', d: 20000 }],
 ];
 // the walk's name, as in the walk list ("Squares turtle"; a surface's own name)
 const walkName = (w) => splitModeLabel(modeOptionOf(w)?.text ?? w).name;

@@ -187,14 +187,14 @@ main {
   font-weight: 600;
   color: var(--text-color);
 }
-.panel h2 .icon {
+.panel h2 > .icon {
   width: 24px;
   height: 24px;
   flex: none;
   color: var(--accent-color);
   vertical-align: 0;
 }
-/* a section's own action, on its title's right (How it works, Copy RLE, Full number) */
+/* a section's own action, on its title's right (Copy RLE), its icon small (the title's own picture its child, not its button's) */
 .head-btn {
   margin-left: auto;
   display: inline-flex;

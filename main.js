@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.900';
+const VERSION = '0.4.901';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -9341,22 +9341,35 @@ const writeDigits = (ds, b, head) => {
   const write = (x) => (b <= 36 ? Array.from(x, (v) => v.toString(36)).join('') : Array.from(x).join(' '));
   return ds.length > head ? `${write(ds.subarray(0, head))}.${write(ds.subarray(head))}` : head ? write(ds) : '0';
 };
-// the numbers shown (see showNumber): the Digits' one, or a battle's, each walker's: its digits read (used: to its death or
-// the battle's end) of those in use (n), its integer part's (head) and the rest (frac), its integer part's length (intLength),
-// an exact number's value (ratio, its period shown), its formula (its Wikipedia link, see wikiLink)
-function numberRows() {
-  const P = walk.battle?.player,
-    b = digitsComputed.base,
-    { head, frac } = digitsInUse(),
+// the formulas shown (see showNumber): the Digits' one, or a battle's, each walker's
+const numberFormulas = () => [
+  formulaInUse,
+  ...RIVALS.slice(0, walk.battle?.player ? walk.battle.player.K - 1 : 0).map((id) => $(id).value),
+];
+// how many digits of them in base b: those in use, or in another base as many as they tell
+const numberLength = (b) => {
+  const { head, frac } = digitsInUse(),
     n = head.length + frac.length;
-  return [formulaInUse, ...RIVALS.slice(0, P ? P.K - 1 : 0).map((id) => $(id).value)].map((f, s) => {
+  return b === digitsComputed.base ? n : Math.floor((n * Math.log(digitsComputed.base)) / Math.log(b));
+};
+// the numbers shown in base b: each its digits (n of them), its integer part's (head) and the rest (frac), its integer
+// part's length (intLength), an exact number's value (ratio, its period shown), its formula (its Wikipedia link, see
+// wikiLink); in another base than the walk's (Base 10), computed from its formula as the walk's are: null while some are
+// not (see numberDigitsIn)
+function numberRows(b = digitsComputed.base) {
+  const own = b === digitsComputed.base,
+    { head, frac } = digitsInUse(),
+    n = numberLength(b);
+  const rows = numberFormulas().map((f, s) => {
     const F = formulaOf(f),
-      ds = s ? knownDigits(F, b, n) : Uint8Array.from([...head, ...frac]);
-    const lead = !s
-        ? digitsComputed.head.length
-        : F.kind === 'seq'
-          ? ds.length
-          : headDigits(digitsCache[digitsKey(F, b)].intPart, b).length,
+      ds = !s && own ? Uint8Array.from([...head, ...frac]) : knownDigits(F, b, n);
+    if (!ds) return null;
+    const lead =
+        !s && own
+          ? digitsComputed.head.length
+          : F.kind === 'seq'
+            ? ds.length
+            : headDigits(digitsCache[digitsKey(F, b)].intPart, b).length,
       h = Math.min(lead, n); // (its integer part's digits)
     return {
       s,
@@ -9369,6 +9382,25 @@ function numberRows() {
       ratio: s ? smallExact(F.ast) : digitsComputed.ratio,
     };
   });
+  return rows.includes(null) ? null : rows;
+}
+// the numbers shown computed in base b from their formulas, as the walk's are (a fraction's digits exact: 3/4 = .75000…);
+// the page shown again once they are all there
+function numberDigitsIn(b) {
+  if (waits.has('numberBase')) return;
+  const n = numberLength(b),
+    missing = numberFormulas()
+      .map(formulaOf)
+      .filter((F) => !knownDigits(F, b, n));
+  let left = missing.length;
+  waitBegin('numberBase', `Computing the digits in base ${b}`);
+  for (const F of missing)
+    digitsWorker(F, b, n, (error) => {
+      if (error) base10.on = false;
+      if (--left) return;
+      waitEnd('numberBase');
+      if (!$('numberPreview').hidden) showNumber();
+    });
 }
 
 /* ==============================================================================================
@@ -45904,7 +45936,7 @@ const lightBases = () => {
   for (const b of document.querySelectorAll('.bubble.act')) b.classList.toggle('active', baseShown(b.textContent));
 };
 const ONE_LINE_DIGITS = 400; // (a battle's number on one line: more digits than the widest line holds)
-const base10 = { on: false }; // (Base 10 switched on: the number in base 10 instead, see showNumber)
+const base10 = { on: false }; // (Base 10 switched on: the number in base 10 instead, see showNumber; none for a sequence, its digits defined base by base: another number in base 10)
 function closeNumber() {
   $('numberPreview').hidden = true;
   base10.on = false; // (opened again: in its own base)
@@ -45937,63 +45969,26 @@ function ratioDigits(b, ratio = digitsComputed.ratio, max = digitsNeeded()) {
   if (rem && at === undefined) return null;
   return `= ${int}${ds.length ? `.${rem ? `${write(ds.slice(0, at))}(${write(ds.slice(at))})` : write(ds)}` : ''}`;
 }
-// digits in base B (BigInt) as one number, its halves first (digit by digit, a million digits would take minutes)
-const digitsValue = (ds, B) => {
-  if (ds.length <= 64) return ds.reduce((n, d) => n * B + BigInt(d), 0n);
-  const m = ds.length >> 1;
-  return digitsValue(ds.subarray(0, m), B) * B ** BigInt(ds.length - m) + digitsValue(ds.subarray(m), B);
-};
-// The number in base 10 over the base it is in (see showNumber), as many digits as those in use tell, a whole number's whole;
-// a whole number cut (more digits than in use), its size and first digits; and how many digits it shows (a note)
-// (cut: only so many digits after the point written, its words the whole number's)
-function base10Digits({ head, frac: all, intLength }, cut = Infinity) {
-  const B = BigInt(digitsComputed.base),
-    lb = Math.log10(digitsComputed.base),
-    frac = all.subarray(0, Math.ceil((cut + 1) / lb) + 1); // (as many in its base as those written tell)
-  if (head.length < intLength && !frac.length) {
-    // (its first digits and its power of 10, from its first digits)
-    const s = digitsValue(head.subarray(0, 40), B).toString(),
-      l = s.length - 1 + Math.log10(Number(`${s[0]}.${s.slice(1, 16)}`)) + (intLength - Math.min(40, head.length)) * lb;
-    return [
-      `≈ ${(10 ** (l % 1)).toFixed(14)}… × 10^${formatNumber(Math.floor(l))}`,
-      `first 15 of ${formatNumber(Math.floor(l) + 1)} digits`,
-    ];
-  }
-  const ds = new Uint8Array(head.length + frac.length);
-  ds.set(head);
-  ds.set(frac, head.length);
-  const N = digitsValue(ds, B),
-    D = B ** BigInt(frac.length),
-    int = (N / D).toString();
-  if (!frac.length) return [`= ${int}`, `all ${formatNumber(int.length)} digits`];
-  const told = (length) => Math.max(1, Math.floor(length * lb) - 1), // (as many as its digits in use tell)
-    m = told(frac.length);
-  const lead = int === '0' ? '' : int; // (a 0 before the point implicit: .14)
-  return [
-    `≈ ${lead}.${(((N % D) * 10n ** BigInt(m)) / D).toString().padStart(m, '0')}…`,
-    `first ${formatNumber(lead.length + told(all.length))} digits, as many as the first ${formatNumber(head.length + all.length)} in base ${digitsComputed.base} tell`,
-  ];
-}
 function showNumber() {
   const B = digitsComputed.base,
     v = $('numberPreview'),
     ten = base10.on && B !== 10,
     b = ten ? 10 : B,
-    rows = numberRows(),
-    one = rows.length > 1 ? ' one-line' : '';
+    rows = numberRows(b);
+  if (!rows) return numberDigitsIn(b); // (Base 10 switched on: shown once its digits are computed)
+  const one = rows.length > 1 ? ' one-line' : '';
   // each number (see numberRows): its title, in its walker's colour in a battle, and how many of its digits; a fraction's
-  // period (= .(101)); then its digits (cut: …), a battle's on one line; in base 10 when switched on (see base10Digits)
+  // period (= .(101)); then its digits (cut: …), a battle's on one line, in base b (10 when switched on)
   const inBase = (r, cut = Infinity) => {
     return [
-      `≈ ${writeDigits(Uint8Array.from([...r.head, ...r.frac.subarray(0, cut)]), B, r.head.length)}…`, // (an exact number's value: its period line)
+      `≈ ${writeDigits(Uint8Array.from([...r.head, ...r.frac.subarray(0, cut)]), b, r.head.length)}…`, // (an exact number's value: its period line)
       `all first ${formatNumber(r.n)} digits`,
     ];
   };
-  // a battle's numbers one line each: their first digits only (more than a line holds, the rest cut by its style), in base
-  // 10 too, their words the whole number's; copied whole
-  const digitsOf = (r, cut) => (ten ? base10Digits(r, cut) : inBase(r, cut)),
-    shown = rows.map((r) => digitsOf(r, one ? ONE_LINE_DIGITS : undefined)),
-    copied = () => rows.map((r, j) => `${r.name} ${baseWords(b)} ${(one ? digitsOf(r) : shown[j])[0]}`).join('\n\n'); // (a battle's: a blank line between)
+  // a battle's numbers one line each: their first digits only (more than a line holds, the rest cut by its style), their
+  // words the whole number's; copied whole
+  const shown = rows.map((r) => inBase(r, one ? ONE_LINE_DIGITS : undefined)),
+    copied = () => rows.map((r, j) => `${r.name} ${baseWords(b)} ${(one ? inBase(r) : shown[j])[0]}`).join('\n\n'); // (a battle's: a blank line between)
   v.innerHTML = `<div class="tut-body">${rows
     .map((r, j) => {
       const period = r.ratio && ratioDigits(b, r.ratio),
@@ -46007,15 +46002,16 @@ function showNumber() {
   }); // (its digits as text)
   v.prepend(
     tutTools({
-      toggle: B !== 10 && {
-        text: 'Base 10',
-        title: `The number in base 10 instead of base ${B}`,
-        on: base10.on,
-        click: () => {
-          base10.on = !base10.on;
-          showNumber();
+      toggle: B !== 10 &&
+        !rows.some((r) => formulaOf(r.formula).kind === 'seq') && {
+          text: 'Base 10',
+          title: `The number in base 10 instead of base ${B}`,
+          on: base10.on,
+          click: () => {
+            base10.on = !base10.on;
+            showNumber();
+          },
         },
-      },
       copy: (e) => copyFlash(e.currentTarget, copied()),
       close: closeNumber,
     }),

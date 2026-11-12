@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.886';
+const VERSION = '0.4.887';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -9002,20 +9002,16 @@ function renderNumberPicker(active) {
   }
   const shown = NUMBER_TABS.find(([name]) => name === numberTab)[1];
   const tabs = tileGroup(
-    NUMBER_TABS.map(([name, groups, title]) => {
-      const b = document.createElement('button'),
-        cards = cardsIn(groups);
+    NUMBER_TABS.map(([name, , title]) => {
+      const b = document.createElement('button');
       b.type = 'button';
       b.title = title;
       b.innerHTML = withIcons(name);
       b.classList.toggle('active', name === numberTab);
       b.addEventListener('click', () => {
         numberTab = name;
-        if (cards.length === 1 && cards[0] !== active) {
-          numberShown = cards[0];
-          pickPreset(cards[0]);
-        } else renderNumberPicker(active);
-      }); // (a tab of one card: that card picked)
+        renderNumberPicker(active);
+      }); // (its cards shown, the number kept: only a card or a draw changes it)
       return b;
     }),
   );
@@ -9024,15 +9020,12 @@ function renderNumberPicker(active) {
   $('numberList').replaceChildren(
     ...NUMBER_GROUPS.map((group) => {
       const box = document.createElement('div'),
-        label = document.createElement('h4'), // (a group's title: under the section's, h2, and Number's, h3)
         grid = document.createElement('div');
       box.hidden = !shown.includes(group);
-      label.textContent = group;
-      label.hidden = shown.length < 2; // (a tab of one group: its name the tab's)
       grid.className = 'number-grid';
       grid.setAttribute('role', 'listbox');
       const ids = cardsIn([group]),
-        one = ids.length === 1; // (a group of one card: its draw button alone, no grid; picked by its tab)
+        one = ids.length === 1; // (a group of one card: its draw button alone, no grid)
       const pick = (id) => {
         numberShown = id;
         pickPreset(id);
@@ -9067,7 +9060,7 @@ function renderNumberPicker(active) {
           b.addEventListener('click', () => pick(id));
           return b;
         });
-      box.append(label, ...(one ? [] : [grid]), ...draws);
+      box.append(...(one ? [] : [grid]), ...draws);
       if (group === 'Primes') box.append($('mersenneRow'), $('primorialRow'));
       return box;
     }),

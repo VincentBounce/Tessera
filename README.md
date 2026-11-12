@@ -18,9 +18,8 @@ The cards fill in the formula field; you can also type your own.
 
 **ℝ (constants):** π, e, φ (golden ratio), γ (Euler–Mascheroni), G (Catalan), E (Erdős–Borwein), and numbers made by a formula: √2, ∛2, the plastic number, ln 2, log₂ 3, e^π, 2^√2, e^γ, π²/6, ζ(3), 6/π², e^(π√163), and the prime constant ρ = Σ 2^(−p) = 0.0110101000101…₂, written in the walk's base.
 
-**🎲 Random:** `random(seed)`, digits drawn at random: its tab draws a new seed, its button another; a link gives the same draw again.
-
-**ℙ (primes)**
+**ℙ 🎲 (draws and primes)**
+- **Random digits:** `random(seed)`, digits drawn at random: its card or its button draws a new seed; a link gives the same draw again.
 - **Mersenne primes 2ᵖ − 1:** the known ones from M₁₂₇ to M₁₃₆₂₇₉₈₄₁. In base 2 or 4 their digits are trivial (111…1 and 1333…3).
 - **Primorial primes p# ± 1:** p# is the product of all primes up to p. The values of p come from OEIS A005234 and A006794.
 - **Random prime:** a probable prime of 100 to 2,000 decimal digits (sieve, then Miller–Rabin), drawn from a seed so a link gives it back.

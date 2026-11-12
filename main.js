@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.892';
+const VERSION = '0.4.893';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -1034,7 +1034,7 @@ setPalette(themeName());
 // small tile showing the symbol; its name, its words (detail) and the formula it writes are in its tooltip, and the
 // Formula field shows what it wrote (draw: another number at each pick, a seed drawn); its Wikipedia page (wiki: its
 // address's end, as Wikipedia writes it), if it has one, its name a link in the Full number's title (see showNumber).
-const NUMBER_GROUPS = ['Fractions', 'Constants', 'Sequences', 'Primes', 'Random']; // (in a tab's order, see NUMBER_TABS)
+const NUMBER_GROUPS = ['Fractions', 'Constants', 'Sequences', 'Random and primes']; // (in a tab's order, see NUMBER_TABS)
 const PRESETS = {
   pi: {
     group: 'Constants',
@@ -1422,8 +1422,24 @@ const PRESETS = {
     detail: 'in base 5',
     f: '61/59',
   },
+  random: {
+    group: 'Random and primes',
+    sym: '🎲 ℝ',
+    name: 'Random digits',
+    detail: 'digits drawn at random from a seed: its link gives them back',
+    f: () => `random(${freshDraw()})`,
+    draw: true,
+  },
+  randomPrime: {
+    group: 'Random and primes',
+    sym: '🎲 p',
+    name: 'Random prime',
+    detail: 'a probable prime of 100 to 2,000 digits (Miller–Rabin), drawn from a seed: its link gives it back',
+    f: () => `randprime(${randomPrimeSize() ?? 300},${freshDraw()})`,
+    draw: true,
+  }, // a new draw, same size
   mersenne: {
-    group: 'Primes',
+    group: 'Random and primes',
     sym: 'Mₚ',
     name: 'Mersenne prime',
     detail: 'one less than a power of 2, its exponent picked in the menu under the cards: in base 2, all 1s',
@@ -1431,7 +1447,7 @@ const PRESETS = {
     wiki: 'Mersenne_prime',
   },
   primorial: {
-    group: 'Primes',
+    group: 'Random and primes',
     sym: 'p#±1',
     name: 'Primorial prime',
     detail: 'one more or one less than the product of all primes up to p, picked in the menu under the cards',
@@ -1440,22 +1456,6 @@ const PRESETS = {
       return `primorial(${p})${sign > 0 ? '+' : '-'}1`;
     },
     wiki: 'Primorial_prime',
-  },
-  randomPrime: {
-    group: 'Primes',
-    sym: '🎲 p',
-    name: 'Random prime',
-    detail: 'a probable prime of 100 to 2,000 digits (Miller–Rabin), drawn from a seed: its link gives it back',
-    f: () => `randprime(${randomPrimeSize() ?? 300},${freshDraw()})`,
-    draw: true,
-  }, // a new draw, same size
-  random: {
-    group: 'Random',
-    sym: '🎲',
-    name: 'Random digits',
-    detail: 'digits drawn at random from a seed: its link gives them back',
-    f: () => `random(${freshDraw()})`,
-    draw: true,
   },
   champernowne: {
     group: 'Sequences',
@@ -8962,12 +8962,11 @@ function syncNumberMenu() {
   $('primorialRow').hidden = p.id !== 'primorial';
 }
 
-// The numbers by tabs (one group of tabs: ℚ the fractions, ℝ the constants and sequences, ℙ the primes, 🎲 Random), a tab's groups shown,
-// each a grid of tiles showing the symbol, several per row, the name and the formula on hover, a card clicked again its page
-// (Full number); a tab of one card picked as the tab is (its number drawn, Random's, unless shown already), its draw button
-// alone. The tab shown: the number's own,
-// till another is picked (a picked number: its own again). The helper menus of the primes (which Mersenne, which primorial,
-// what size) sit right under the Primes group (every group made, those of other tabs hidden: the menus kept in the page)
+// The numbers by tabs (one group of tabs: ℚ the fractions, ℝ the constants and sequences, ℙ 🎲 the draws and primes), a
+// tab's groups shown, each a grid of tiles showing the symbol, several per row, the name and the formula on hover, a card
+// clicked again its page (Full number). The tab shown: the number's own, till another is picked (a picked number: its own
+// again). The helper menus of the primes (which Mersenne, which primorial, what size) sit right under their group (every
+// group made, those of other tabs hidden: the menus kept in the page)
 const NUMBER_TABS = [
   [
     'ℚ',
@@ -8979,8 +8978,11 @@ const NUMBER_TABS = [
     ['Constants', 'Sequences'],
     'Famous constants (π, e, φ, √2, ln 2, ζ(3), the prime constant…) and sequences laid as digits (Thue–Morse, Champernowne, prime gaps)',
   ],
-  ['ℙ', ['Primes'], 'Primes: Mersenne, primorial, drawn at random'],
-  ['🎲', ['Random'], 'Digits drawn at random, a link giving the same draw again'],
+  [
+    'ℙ 🎲',
+    ['Random and primes'],
+    'Digits or a prime drawn at random (a link giving the same draw again), Mersenne and primorial primes',
+  ],
 ]; // (name, its groups, its tooltip)
 // the tab shown (the first at the start), changed by a click on a tab, or by another number shown (numberShown) with a card:
 // its card's tab (a formula of its own: no card to show elsewhere, the tab kept)
@@ -9024,8 +9026,7 @@ function renderNumberPicker(active) {
       box.hidden = !shown.includes(group);
       grid.className = 'number-grid';
       grid.setAttribute('role', 'listbox');
-      const ids = cardsIn([group]),
-        one = ids.length === 1; // (a group of one card: its draw button alone, no grid)
+      const ids = cardsIn([group]);
       const pick = (id) => {
         numberShown = id;
         pickPreset(id);
@@ -9048,20 +9049,22 @@ function renderNumberPicker(active) {
           return b;
         }),
       );
-      // a drawn card's (draw: Random digits, Random prime) wide button under its group, while it is the number: another draw
-      // at each click
-      const draws = ids
-        .filter((id) => PRESETS[id].draw && (one || id === active))
+      // a drawn card's (draw: Random digits, Random prime) wide button under its group: the card picked's, none of the group
+      // picked the first's (Random digits); another draw at each click
+      const drawn = ids.includes(active) ? [active] : ids;
+      const draws = drawn
+        .filter((id) => PRESETS[id].draw)
+        .slice(0, 1)
         .map((id) => {
           const b = document.createElement('button');
           b.className = 'wide';
           b.innerHTML = `${icon('dice')} ${PRESETS[id].name}`;
-          b.title = 'Another draw'; // (an action: the card picked shows as its tab, never this button)
+          b.title = 'Another draw'; // (an action: the card picked shows lit, never this button)
           b.addEventListener('click', () => pick(id));
           return b;
         });
-      box.append(...(one ? [] : [grid]), ...draws);
-      if (group === 'Primes') box.append($('mersenneRow'), $('primorialRow'));
+      box.append(grid, ...draws);
+      if (group === 'Random and primes') box.append($('mersenneRow'), $('primorialRow'));
       return box;
     }),
   );

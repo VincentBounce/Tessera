@@ -10,7 +10,7 @@
   <meta property="og:url" content="https://vincentbounce.github.io/Tessera/">
   <meta property="og:type" content="website">
   <link id="favicon" rel="icon">  <!-- the app's logo, set at start-up (see LOGO_PATH) -->
-  <link rel="stylesheet" href="style.css?v=0.4.894">
+  <link rel="stylesheet" href="style.css?v=0.4.895">
   <script>  // the theme before the first paint (see applyTheme)
     try { const t = localStorage.getItem('tesseraTheme'); document.documentElement.dataset.theme = t === 'light' || t === 'dark' ? t : matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark'; } catch { document.documentElement.dataset.theme = 'dark'; }
   </script>
@@ -151,6 +151,7 @@
             <div id="rivalFormulas"></div>  <!-- the other walkers' formulas, B to L (see rivalField) -->
             <button id="battleRandom" type="button" class="wide" data-icon="dice" title="As many numbers as walkers drawn at random from the hunt's (the Number cards' reals and sequences, √2 to √9999), fought here">Roll</button>  <!-- (see battleRandom) -->
           </div>
+          <h3>Hunt battles</h3>
           <div id="battleHuntVary" class="nav-shapes"></div>  <!-- what the hunt varies: Formulas, Starts (see renderBattleHunt) -->
           <div id="battleHuntRank" class="nav-shapes"></div>  <!-- what it ranks: Longest, Even lands, Latest first stop (see HUNT_RANKS) -->
           <button id="battleHuntBtn" type="button" class="wide"></button>  <!-- its words and tooltip: see renderBattleHunt -->
@@ -508,10 +509,10 @@
     </div>
   </main>
 
-  <script src="pixelarticons.js?v=0.4.894"></script>
-  <script src="punks.js?v=0.4.894"></script>
-  <script src="loops.js?v=0.4.894"></script>
-  <script src="emoji.js?v=0.4.894"></script>
-  <script src="main.js?v=0.4.894"></script>
+  <script src="pixelarticons.js?v=0.4.895"></script>
+  <script src="punks.js?v=0.4.895"></script>
+  <script src="loops.js?v=0.4.895"></script>
+  <script src="emoji.js?v=0.4.895"></script>
+  <script src="main.js?v=0.4.895"></script>
 </body>
 </html>

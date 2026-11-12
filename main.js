@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.896';
+const VERSION = '0.4.897';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -11392,7 +11392,7 @@ function buildWalkOf() {
     step = rows
       ? (
           (y = 0) =>
-          () => [key(0, ++y), 0, y, 0]
+          () => [planeKey(0, ++y), 0, y, 0]
         )()
       : STEPPERS[digitsComputed.mode](seq); // (Elementary's walker: down its middle, a row a step)
   // an ant by its rule: counted by the colour it turned on (each colour its turn), not by digit; by the
@@ -11402,7 +11402,7 @@ function buildWalkOf() {
   const counts = new Int32Array(base * (len + 1)),
     left = ant ? new Uint8Array(len) : null,
     turns = ant ? new Uint8Array(len) : null;
-  const origin = is3d ? key3(0, 0, 0) : key(0, 0),
+  const origin = is3d ? key3(0, 0, 0) : planeKey(0, 0),
     seen = cellMap();
   seen.set(origin, true);
   // a fraction's walk repeats (see walkRepeat), walked 8 rounds; not an ant's, whose state is all its
@@ -11839,10 +11839,10 @@ function showZoom() {
 
 /* ---- 6.1 Square grid ---------------------------------------------------------------------- */
 // Key of the 2D cell (x, y), for |x| and |y| below 2^21
-function key(x, y) {
+function planeKey(x, y) {
   return (x + 2 ** 21) * 2 ** 22 + (y + 2 ** 21);
 }
-// A walk's cells by their key (key, key3), past the 2^24 entries a Map holds (a Cairo ant over 50 million steps visits
+// A walk's cells by their key (planeKey, key3), past the 2^24 entries a Map holds (a Cairo ant over 50 million steps visits
 // more): kept in 16 maps, by the key's last bits and its x's
 function cellMap() {
   const parts = Array.from({ length: 16 }, () => new Map()),
@@ -11976,7 +11976,7 @@ function cairoStepper(spiral = false) {
     j = 0,
     o = 0,
     k = 0; // the pentagon, the edge come in by
-  const walked = new Set([key(0, 0)]);
+  const walked = new Set([planeKey(0, 0)]);
   return (g) => {
     const T = CAIRO_TYPES[cairoType(i, j, o)];
     if (spiral)
@@ -11984,7 +11984,7 @@ function cairoStepper(spiral = false) {
         0,
         T.turns[k].findIndex((e) => {
           const [di, dj, o2] = T.across[e];
-          return !walked.has(key(2 * (i + di) + o2, j + dj));
+          return !walked.has(planeKey(2 * (i + di) + o2, j + dj));
         }),
       );
     const [di, dj, o2, e] = T.across[T.turns[k][g]];
@@ -11992,13 +11992,13 @@ function cairoStepper(spiral = false) {
     j += dj;
     o = o2;
     k = e;
-    if (spiral) walked.add(key(2 * i + o, j));
+    if (spiral) walked.add(planeKey(2 * i + o, j));
     const [x, y] = cairoCentre(i, j, o);
-    return [key(2 * i + o, j), x, y, 0];
+    return [planeKey(2 * i + o, j), x, y, 0];
   };
 }
 
-/* A population: Life's cells drawn by hand (its Draw start), key(x, y)
+/* A population: Life's cells drawn by hand (its Draw start), planeKey(x, y)
  * → its colour (1 and up; 0, the background, is not kept). In a link as Golly's multi-state RLE, the
  * format of LifeWiki: "X,Y:rle", (X, Y) the top left cell from the start, then its rows, each a run of
  * cells, "." none, "A"… "X" colours 1… 24 ("pA"… beyond), a count before a run of more than one,
@@ -12079,7 +12079,7 @@ function populationOf(text) {
             : -1;
     if (letter >= 'p' && letter <= 'y') c = 25 + 24 * (letter.charCodeAt(0) - 112) + (s.charCodeAt(++i) - 65);
     if (c < 0) continue;
-    for (let j = 0; j < count; j++, x++) if (c) pop.set(key(x, y), c);
+    for (let j = 0; j < count; j++, x++) if (c) pop.set(planeKey(x, y), c);
   }
   return pop;
 }
@@ -12242,7 +12242,7 @@ const antColours = (w) => (MODES[w].antOf ? antTableOf(w, antRuleOf(w)).C : 0);
 // the colour it gave it; first, the step the cell it is now on was first walked; cells, how many it walked; next(), the
 // colour the cell it is on would take. Its cells in one map, each its first step × 16 + its colour (12 colours at most)
 // inner: the walk it goes through the cells with (a turn → [the cell it comes to, …]); here: its first cell
-function antStepper(w, inner = antWalkStepper(w), here = key(0, 0)) {
+function antStepper(w, inner = antWalkStepper(w), here = planeKey(0, 0)) {
   const { table, C } = antTableOf(w, antRuleOf(w)),
     turnOf = (t) => antCommands(w).indexOf(t);
   let n = 0,
@@ -12328,7 +12328,7 @@ const STEPPERS = {
         if (++turns % 2 === 0) run++;
         left = run;
       }
-      return [key(x, y), x, y, 0];
+      return [planeKey(x, y), x, y, 0];
     };
   },
   turtleCells: () => walkStepper('turtleCells'), // squares: the same steps, the grid half a cell away
@@ -12519,7 +12519,7 @@ function wormStepper(digits) {
   const eaten = new Set(),
     mind = wormMind(digits);
   // a line by its corner it leaves from northwards (directions 0 to 2), a number: millions of them
-  const line = (e) => (e < 3 ? key(a, b) * 3 + e : key(a + HEX_DIRS[e][0], b + HEX_DIRS[e][1]) * 3 + e - 3),
+  const line = (e) => (e < 3 ? planeKey(a, b) * 3 + e : planeKey(a + HEX_DIRS[e][0], b + HEX_DIRS[e][1]) * 3 + e - 3),
     dirOf = (c) => (d + c + 4) % 6; // (c − 2: from straight on)
   const step = () => {
     const c = step.end ? null : mind.choose([0, 1, 2, 3, 4].filter((c) => !eaten.has(line(dirOf(c)))));
@@ -12530,7 +12530,7 @@ function wormStepper(digits) {
     a += HEX_DIRS[d][0];
     b += HEX_DIRS[d][1];
     step.took = c;
-    return [key(a, b), b * H, -a - b / 2, 0];
+    return [planeKey(a, b), b * H, -a - b / 2, 0];
   };
   return step;
 }
@@ -12578,17 +12578,17 @@ function hexSpiralStepper() {
   let a = 0,
     b = 0,
     d = 3;
-  const visited = new Set([key(0, 0)]);
+  const visited = new Set([planeKey(0, 0)]);
   return () => {
     const l = (d + 5) % 6;
-    if (!visited.has(key(a + HEX_DIRS[l][0], b + HEX_DIRS[l][1]))) d = l;
+    if (!visited.has(planeKey(a + HEX_DIRS[l][0], b + HEX_DIRS[l][1]))) d = l;
     a += HEX_DIRS[d][0];
     b += HEX_DIRS[d][1];
-    visited.add(key(a, b));
+    visited.add(planeKey(a, b));
     return hexAt(a, b);
   };
 }
-const hexAt = (a, b) => [key(a, b), b * H, -a - b / 2, 0]; // a hexagon (a, b): its key and its centre
+const hexAt = (a, b) => [planeKey(a, b), b * H, -a - b / 2, 0]; // a hexagon (a, b): its key and its centre
 
 /* ---- 6.4 Triangles ------------------------------------------------------------------------ */
 /* Triangle tiling: cell (c, r) points up when c + r is even.
@@ -12605,7 +12605,7 @@ function triStepper(kind) {
   let c = 0,
     r = 0,
     entry = 0; // start: ▲ triangle at (0, 0), entered from below
-  const visited = new Set([key(0, 0)]);
+  const visited = new Set([planeKey(0, 0)]);
   const across = (edge, up) => (edge === 0 ? [c, r + (up ? 1 : -1)] : [c + ((edge === 1) === up ? -1 : 1), r]);
   const spot = kind !== 'spiral' && kind.some(([k]) => k === 'pivot'); // (its entry not its last step's)
   return (g) => {
@@ -12616,11 +12616,11 @@ function triStepper(kind) {
       right = ccw[(i + 1) % 3];
     if (kind !== 'spiral' && kind[g][0] === 'pivot') {
       entry = ccw[mod(i - kind[g][1], 3)];
-      return [key(c, r), c / 2, r * H + (up ? (2 * H) / 3 : H / 3) + TRI_Y0, 0, entry];
+      return [planeKey(c, r), c / 2, r * H + (up ? (2 * H) / 3 : H / 3) + TRI_Y0, 0, entry];
     } // (l: its edges one round to the left)
     const edge =
       kind === 'spiral'
-        ? visited.has(key(...across(left, up)))
+        ? visited.has(planeKey(...across(left, up)))
           ? right
           : left
         : kind[g][0] === 'way'
@@ -12628,9 +12628,9 @@ function triStepper(kind) {
           : [left, right, entry][kind[g][1]];
     [c, r] = across(edge, up);
     entry = edge;
-    visited.add(key(c, r));
+    visited.add(planeKey(c, r));
     const upNow = ((c + r) & 1) === 0,
-      at = [key(c, r), c / 2, r * H + (upNow ? (2 * H) / 3 : H / 3) + TRI_Y0, 0];
+      at = [planeKey(c, r), c / 2, r * H + (upNow ? (2 * H) / 3 : H / 3) + TRI_Y0, 0];
     return spot ? [...at, entry] : at;
   };
 }
@@ -12646,7 +12646,7 @@ const WALK_NETS = {
   square: {
     dirs: KING_STEPS,
     notch: 2,
-    at: (x, y) => [key(x, y), x, y, 0],
+    at: (x, y) => [planeKey(x, y), x, y, 0],
     straight: 'N',
     diagonals: ['ne', 'se', 'sw', 'nw'],
     turns: { L: -2, N: 0, R: 2, U: 4 },
@@ -45364,7 +45364,9 @@ for (const b of $('lifeStartTabs').querySelectorAll('button')) {
             : mod(stepShown, L.margolus.turns.length)
           : 0;
       if (off) seekTo(stepShown - off);
-      population = new Map([...L.alive].flatMap((c, t) => (c ? [[key(...walk.plane.xy(t)), L.margolus ? 1 : c]] : [])));
+      population = new Map(
+        [...L.alive].flatMap((c, t) => (c ? [[planeKey(...walk.plane.xy(t)), L.margolus ? 1 : c]] : [])),
+      );
     }
     plane.start = b.dataset.start;
     cleared = null;
@@ -45430,7 +45432,7 @@ $('pngFile').addEventListener('change', async () => {
     for (let x = 0; x < img.width; x++) {
       const i = 4 * (y * img.width + x);
       if (d[i + 3] >= 128 && 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2] < 128)
-        population.set(key(x0 + x, y0 + y), 1);
+        population.set(planeKey(x0 + x, y0 + y), 1);
     }
   picked = planeCells(side);
   plane.start = 'draw';
@@ -45604,12 +45606,12 @@ stage.addEventListener('pointerup', (e) => {
     if (brush.id !== 'cell' || !brush.colour)
       for (const [x0, y0, v] of brushAt(cell)) {
         const [x, y] = firstCell([x0, y0]);
-        if (brush.colour) population.set(key(x, y), K > 1 ? brush.colour + K * (v - 1) : v);
-        else population.delete(key(x, y));
+        if (brush.colour) population.set(planeKey(x, y), K > 1 ? brush.colour + K * (v - 1) : v);
+        else population.delete(planeKey(x, y));
       } // (drawn at its first copy: anywhere, all of them)
     else {
       // a cell: in the brush's colour, or off if it has it; one colour: alive, then each dying state, back to dead
-      const k = key(...firstCell(cell)),
+      const k = planeKey(...firstCell(cell)),
         v = population.get(k) ?? 0;
       const c = walk.life.colours > 1 ? (v === brush.colour ? 0 : brush.colour) : (v + 1) % walk.life.C;
       if (c) population.set(k, c);
@@ -45830,7 +45832,7 @@ function lifeRle() {
     y0 =
       cells.reduce((e, c) => Math.min(e, c[1]), Infinity) -
       (base === 'cairo' && (x0 / 2 + cells.reduce((e, c) => Math.min(e, c[1]), Infinity)) & 1 ? 1 : 0);
-  const pop = new Map([[key(0, 0), 0], ...cells.map(([x, y, v]) => [key(x - x0, y - y0), v])]); // (a dead cell at its lattice cell's corner: the rows start there)
+  const pop = new Map([[planeKey(0, 0), 0], ...cells.map(([x, y, v]) => [planeKey(x - x0, y - y0), v])]); // (a dead cell at its lattice cell's corner: the rows start there)
   const xs = [...pop.keys()].map((k) => cellXY(k)[0]),
     ys = [...pop.keys()].map((k) => cellXY(k)[1]);
   let body = populationRle(pop).replace(/^[^:]*:/, '');

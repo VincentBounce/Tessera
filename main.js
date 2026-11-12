@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.929';
+const VERSION = '0.4.930';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -23559,7 +23559,7 @@ function iconCells(N, set) {
   const seed = new Uint8Array(walk.life.seed.length),
     random = () => Math.floor(Math.random() * set.names.length);
   plane.icons = plane.icons.map((i) => (i < set.names.length ? i : random())); // (one of the other set's, past this one's: another)
-  while (plane.icons.length < lifeParts()) plane.icons.push(random()); // (more colours than icons said: one at random each)
+  plane.icons = Array.from({ length: lifeParts() }, (_, k) => plane.icons[k] ?? random()); // (the icons laid, one a colour: more colours than said, one at random each; fewer, the first ones)
   iconChoices(N, set).forEach((c, i) => {
     const f = c[plane.icons[i]] ?? [];
     for (let q = 0; q < f.length; q += 2) seed[f[q]] = f[q + 1];
@@ -38912,10 +38912,7 @@ const zonePop = () =>
   famousZone(hunt.zone) && plane.picks
     ? `${wordOfZone(hunt.zone)}.${plane.picks.join('.')}` // (Famous, Anywhere: its patterns, a hunt's too)
     : isIcon(lifeStart?.zone ?? '')
-      ? `${zoneWord()}.${plane.icons
-          .slice(0, lifeParts())
-          .map((i) => iconSet(lifeStart.zone).names[i])
-          .join('.')}`
+      ? `${zoneWord()}.${plane.icons.map((i) => iconSet(lifeStart.zone).names[i]).join('.')}` // (the icons laid, see iconCells: never the game's colours counted, another mode's while one is built)
       : lifeStart?.zone === 'numbers'
         ? `${zoneWord()}.${plane.number}`
         : `${zoneWord()}.${plane.density}.${plane.seed}`; // (Formula: its number, formula.16/9)

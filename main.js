@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.902';
+const VERSION = '0.4.903';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -40520,6 +40520,16 @@ const glideAt = () =>
 // at its top an arrow pointing the way it goes (both its faces); its triangles' corners and normals, as an ogive's
 const FLAG_SAIL = { base: 0.9, length: 1.3 }; // (along its pole, the way it points)
 const START_HALF = (1.6 * FLAG_SAIL.base) / FLAG_SAIL.length / 2; // (the plane's start, its arrow 1.6 long: as slim as the flag's sail, see drawArrow)
+// a triangle's corners pushed to out, each with its normal (its corners counter-clockwise seen from it): [x, y, z, nx, ny, nz]
+function pushTriangle(out, A, B, C) {
+  const n = unit(
+    cross(
+      B.map((v, d) => v - A[d]),
+      C.map((v, d) => v - A[d]),
+    ),
+  );
+  for (const q of [A, B, C]) out.push(...q, ...n);
+}
 function flagOf({ p, h, up, size }) {
   const ahead = squareTo(up, h),
     side = cross(up, ahead),
@@ -40527,15 +40537,7 @@ function flagOf({ p, h, up, size }) {
     out = [],
     w = 0.05,
     H = 2.2; // (its sail the way it goes along the ground: its heading's part square to its pole)
-  const tri = (A, B, C) => {
-    const n = unit(
-      cross(
-        B.map((v, d) => v - A[d]),
-        C.map((v, d) => v - A[d]),
-      ),
-    );
-    for (const q of [A, B, C]) out.push(...q, ...n);
-  };
+  const tri = (A, B, C) => pushTriangle(out, A, B, C);
   const ring = [
     [w, w],
     [-w, w],
@@ -40563,15 +40565,7 @@ function ogiveOf({ p, h, size }) {
   const at = (f, r, a) =>
       [0, 1, 2].map((d) => p[d] + (h[d] * f + (side[d] * Math.cos(a) + across[d] * Math.sin(a)) * r) * size),
     out = [];
-  const tri = (A, B, C) => {
-    const n = unit(
-      cross(
-        B.map((v, d) => v - A[d]),
-        C.map((v, d) => v - A[d]),
-      ),
-    );
-    for (const q of [A, B, C]) out.push(...q, ...n);
-  };
+  const tri = (A, B, C) => pushTriangle(out, A, B, C);
   for (let j = 0; j < 16; j++) {
     const a0 = (j * Math.PI) / 8,
       a1 = ((j + 1) * Math.PI) / 8,

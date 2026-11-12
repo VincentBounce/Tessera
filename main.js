@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.921';
+const VERSION = '0.4.922';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -7168,7 +7168,6 @@ const card = ({
     });
   } // (its picture: a click on how it works)
   if (rule && !title) b.dataset.ruleHtml = rule; // (its tooltip's words after its rule, as its card writes it: see tipOf)
-  if (name) b.setAttribute('aria-label', name); // (its name as written, its symbols too: its words drawn with icons, see cardWords)
   b.append(
     picture,
     cardWords(name, detail, '', null, rule),
@@ -8454,9 +8453,12 @@ const setLinks = (el, html) => {
     el.dataset.html = html;
   }
 };
-// A text that may hold 🎲, 🐉 or ▮ (a random number, the dragon, the prime barcode), as HTML with their icons
+// A text that may hold 🎲, 🐉 or ▮ (a random number, the dragon, the prime barcode), as HTML with their icons, each keeping
+// its character beside it, read but not drawn (.visually-hidden): a text read from it again (a saved name, a tooltip's, a
+// copy) the same text
+const SYMBOL_ICONS = { '🎲': 'dice', '🐉': 'dragon', '▮': 'barcode' };
 const withIcons = (text) =>
-  text.replace(/🎲/g, icon('dice')).replace(/🐉/g, icon('dragon')).replace(/▮/g, icon('barcode'));
+  text.replace(/🎲|🐉|▮/gu, (c) => `${icon(SYMBOL_ICONS[c])}<span class="visually-hidden">${c}</span>`);
 
 /* ==============================================================================================
  * PART 4 — NUMBER FORMULAS
@@ -11743,7 +11745,8 @@ document.addEventListener('mouseover', (e) => {
     named = el?.matches('button, label');
   const name = named
     ? (
-        el.getAttribute('aria-label') ?? (el.querySelector('.mode-name') ?? el.querySelector('span') ?? el).textContent
+        el.getAttribute('aria-label') ??
+        (el.querySelector('.mode-name') ?? el.querySelector('span:not(.visually-hidden)') ?? el).textContent
       ).trim()
     : ''; // (a button with no words, a picture: its aria-label)
   // its words, none when they are its name again (Play: its name alone); its name in bold, its key after it (see KEYS)

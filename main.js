@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.931';
+const VERSION = '0.4.932';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -29776,7 +29776,7 @@ function renderHunt() {
   renderBack();
   $('huntZones').hidden = !huntOn() || surfaceDraw;
   $('huntRow').hidden = $('huntZones').hidden || !!walk.life.margolus; // (blocks: their zones' starts only, no hunt of their own)
-  if ($('huntRow').hidden) return;
+  if ($('huntZones').hidden) return; // (the zones drawn wherever they show, Rewind's too: its hunt hidden only)
 
   const K = lifeParts(),
     { perColour, all } = huntPlan(),

@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.920';
+const VERSION = '0.4.921';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -45129,7 +45129,6 @@ function fitNow() {
 stage.addEventListener(
   'wheel',
   (e) => {
-    if (e.target.closest('#ruleTuto, #numberPreview')) return; // (how a rule works, the number, over the view: they scroll)
     e.preventDefault();
     const r = stage.getBoundingClientRect();
     const mx = e.clientX - r.left,
@@ -45150,7 +45149,6 @@ stage.addEventListener(
 let drag = null;
 stage.addEventListener('contextmenu', (e) => e.preventDefault()); // the right button drags the view
 stage.addEventListener('pointerdown', (e) => {
-  if (e.target.closest('#ruleTuto, #numberPreview, #axesLabels')) return; // (their buttons, their text selected: captured by the stage, their clicks went to it)
   drag = { x: e.clientX, y: e.clientY, pan: !walk.is3d || e.shiftKey || e.button === 2 }; // in 3D, Shift or the right button pans
   stage.setPointerCapture(e.pointerId);
   stage.classList.add('dragging');
@@ -45510,7 +45508,7 @@ function emojiDrawn(e) {
   return false;
 }
 stage.addEventListener('pointerdown', (e) => {
-  drawFrom = drawsHere() && e.button === 0 && !e.target.closest('.stage-box') ? [e.clientX, e.clientY] : null;
+  drawFrom = drawsHere() && e.button === 0 ? [e.clientX, e.clientY] : null;
 }); // (its start's cells: at gen 0 only)
 stage.addEventListener('pointerup', (e) => {
   if (!drawFrom || !walk.plane || Math.hypot(e.clientX - drawFrom[0], e.clientY - drawFrom[1]) > 4) return;
@@ -45639,11 +45637,11 @@ function applyTheme(theme) {
 }
 applyTheme(themeName());
 renderHeadTiles();
-// the animation bar sits over the view: its clicks, drags (the step slider) and wheel are its own
-for (const type of ['pointerdown', 'dblclick', 'wheel']) {
-  $('animBar').addEventListener(type, (e) => e.stopPropagation());
-  $('viewTools').addEventListener(type, (e) => e.stopPropagation()); // Inflate and the Display menu too
-}
+// what lies over the view keeps its presses, double clicks and wheel (the view's: a drag, a recentre, a zoom): the animation
+// bar (its step slider), Display's box, how a rule works and the number (their text selected, their scroll), the axes (a click
+// a view: two quick ones were a recentre too, facing the walk's middle)
+for (const id of ['animBar', 'viewTools', 'ruleTuto', 'numberPreview', 'axesLabels'])
+  for (const type of ['pointerdown', 'dblclick', 'wheel']) $(id).addEventListener(type, (e) => e.stopPropagation());
 $('light').addEventListener('change', () => {
   needsFull = true;
 });

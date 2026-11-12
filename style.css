@@ -764,12 +764,6 @@ button.switch.active:hover:not(:disabled) {
   height: 24px;
   border-radius: 3px;
 } /* the looks of a walk on cells: swatches */
-.nav-shapes button.active,
-.tile-group > button.active {
-  border-color: var(--accent-color);
-  color: var(--accent-color);
-  background: var(--picked-background);
-}
 .mode-list {
   display: flex;
   flex-direction: column;
@@ -1087,11 +1081,6 @@ button.active .bubble.active {
 .number-grid .fraction > span + span {
   border-top: 1px solid currentColor;
 } /* a fraction, its numerator over its denominator, in the line's height (see cardSymbol in main.js) */
-.number-grid button.active {
-  border-color: var(--accent-color);
-  color: var(--accent-color);
-  background: var(--picked-background);
-}
 :is(.mode-list, #yourList:not(.selecting) .gallery-grid) button.active {
   border-color: var(--accent-color);
   background: var(--picked-background);
@@ -1465,13 +1454,6 @@ button.active .bubble.active {
   height: 16px;
   vertical-align: middle;
 }
-button.wide.active,
-.head-btn.active,
-.tut-tools button.active {
-  border-color: var(--accent-color);
-  color: var(--accent-color);
-  background: var(--picked-background);
-}
 .display-menu:hover {
   width: var(--display-open-width);
 }
@@ -1552,11 +1534,6 @@ button.wide.active,
 } /* the torus's tilings, as the 2D grids (nav-shapes) */
 /* Grid | Cells under the list: each side of the walk in use, its base and its digits */
 /* the ant's rules to start from, written as they are typed */
-.choice-list button.active {
-  border-color: var(--accent-color);
-  color: var(--accent-color);
-  background: var(--picked-background);
-}
 .stage-bar {
   left: var(--view-gap);
   bottom: var(--view-gap);
@@ -2206,6 +2183,14 @@ button.wide.active,
 .tut-shapes figure:hover {
   border-color: var(--muted-text-color);
 }
+/* a choice picked, every control's alike: its border and words gold, on a pale gold; after their hovers (it wins) */
+.nav-shapes button.active,
+.tile-group > button.active,
+.number-grid button.active,
+button.wide.active,
+.head-btn.active,
+.tut-tools button.active,
+.choice-list button.active,
 .tut-shapes figure.active {
   border-color: var(--accent-color);
   color: var(--accent-color);

@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.918';
+const VERSION = '0.4.919';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -7168,6 +7168,7 @@ const card = ({
     });
   } // (its picture: a click on how it works)
   if (rule && !title) b.dataset.ruleHtml = rule; // (its tooltip's words after its rule, as its card writes it: see tipOf)
+  if (name) b.setAttribute('aria-label', name); // (its name as written, its symbols too: its words drawn with icons, see cardWords)
   b.append(
     picture,
     cardWords(name, detail, '', null, rule),
@@ -7206,7 +7207,9 @@ function cardWords(name, detail = '', base = '', show = null, rule = '') {
   const part = (cls, text) => Object.assign(document.createElement('span'), { className: cls, textContent: text }),
     head = part('mode-head', ''),
     words = document.createElement('span');
-  head.append(part('mode-name', name), ...(base ? [cardBubble(base, show)] : []));
+  const named = part('mode-name', '');
+  named.innerHTML = withIcons(htmlText(name)); // (a number's symbol as everywhere: 🐉 the dragon's icon, not the system's emoji)
+  head.append(named, ...(base ? [cardBubble(base, show)] : []));
   if (rule || detail)
     words.append(
       head,
@@ -11755,7 +11758,7 @@ document.addEventListener('mouseover', (e) => {
     bold = (text) =>
       Object.assign(document.createElement('b'), {
         className: 'tip-name',
-        textContent: key ? `${text} (${key})` : text,
+        innerHTML: withIcons(htmlText(key ? `${text} (${key})` : text)), // (a number's symbol its icon, as on its card)
       }),
     ok = (tip || rule) && (el.hasAttribute('aria-label') || !!el.querySelector('.mode-name') || /\p{L}/u.test(name)); // (a symbol, + or −: no name; a name given, an aria-label or a card's, one: 11/604 too)
   // its default: a tile's (see setTile), a box's (its checkbox as the page starts)

@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.927';
+const VERSION = '0.4.928';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -39236,15 +39236,25 @@ const setupOrder = (a, b) => {
     words(thumbnailKey(a), thumbnailKey(b))
   ); // (all of it last: two setups alike in all these, always in one order)
 };
-// its words under the title: its detail, then a walk's battle rule and its base, last (as its bar's chips, from its setup)
-const setupWords = (x) => [setupDetail(x.setup), ...setupChips(x.setup)].filter(Boolean).join(' · ');
-const setupChips = (s) => {
-  const m = MODES[s.w];
-  if (m.life || m.worm || ANTS[s.w]) return []; // (a creature's base in its rule, Life's colours in its words)
+// its words under the title: its detail, then a walk's battle rule, then the base it reads its digits in, last (from its setup)
+const setupWords = (x) => {
+  const s = x.setup,
+    base = setupDigitsBase(s);
   return [
-    Number(s.k) > 1 && BATTLE_RULES[Number(s.br) || 0][1],
-    baseWords(m.net ? walkTakes(m, ruleWords(s).code).length : m.base),
-  ];
+    setupDetail(s),
+    !MODES[s.w].life && Number(s.k) > 1 && BATTLE_RULES[Number(s.br) || 0][1],
+    base && `digits in base ${base}`,
+  ]
+    .filter(Boolean)
+    .join(' · ');
+};
+// the base a setup reads its number's digits in: a walk's, its rule's commands; a creature by the digits, its mode's (an ant
+// or a worm by its own rule: none); a Game of Life's digits, K + 1 (Mixed: 2, see lifeBase; another start: none)
+const setupDigitsBase = (s) => {
+  const m = MODES[s.w];
+  if (m.life) return s.pop === 'digits' ? (Number(s.mx) === 1 ? 2 : (Number(s.k) || 1) + 1) : 0;
+  if (m.worm || ANTS[s.w]) return ruleWords(s).byDigits ? m.base : 0;
+  return m.net ? walkTakes(m, ruleWords(s).code).length : m.base;
 };
 // a setup saved: its name its title's, one of its own in the list (a row is deleted by its name, see uniqueName)
 const savedOf = (setup, list) => {

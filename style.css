@@ -630,6 +630,9 @@ button.wide {
 button.wide.how-it-works {
   margin-bottom: 4px;
 } /* on its rules' first card, the list's gap */
+#huntSection:not(:has(> div:not([hidden]))) {
+  display: none;
+} /* (a mode with no hunt: none of its blocks shown) */
 #huntRow .nav-shapes,
 #ruleTabs {
   margin-bottom: 4px;

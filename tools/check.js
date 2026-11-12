@@ -617,7 +617,7 @@ async function coldLike(fail, what) {
   f.remove();
   // (what a link cannot hold, left out: a reversible one's return found by playing it; Draw's tools after a generation played)
   const unheld = new Set([
-    ...(walk.life?.margolus && walk.life.stable ? ['#returnSection'] : []),
+    ...(walk.life?.margolus && walk.life.stable ? ['#returnRow'] : []),
     ...(drawing && stepShown > 0 ? ['#startSection'] : []),
   ]);
   const diff = [...new Set([...Object.keys(a), ...Object.keys(b)])]

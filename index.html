@@ -10,7 +10,7 @@
   <meta property="og:url" content="https://vincentbounce.github.io/Tessera/">
   <meta property="og:type" content="website">
   <link id="favicon" rel="icon">  <!-- the app's logo, set at start-up (see LOGO_PATH) -->
-  <link rel="stylesheet" href="style.css?v=0.4.930">
+  <link rel="stylesheet" href="style.css?v=0.4.931">
   <script>  // the theme before the first paint (see applyTheme)
     try { const t = localStorage.getItem('tesseraTheme'); document.documentElement.dataset.theme = t === 'light' || t === 'dark' ? t : matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark'; } catch { document.documentElement.dataset.theme = 'dark'; }
   </script>
@@ -112,13 +112,6 @@
           <h4>Symmetry</h4>
           <div id="symmetryTiles" class="nav-shapes"></div>
         </div>
-        <div id="huntRow" hidden>  <!-- Life, in 1 to 12 colours: a hunt for the longest life, or long, even battles -->
-          <h3 id="huntModeLabel">Hunt mode</h3>
-          <div id="huntGoals" class="nav-shapes"></div>  <!-- what the hunt looks for, over its button -->
-          <button id="huntBtn" type="button" class="wide"></button>  <!-- its words in its tooltip: the hunt and the zone (see renderHunt) -->
-          <p id="huntStatus" class="muted"></p>
-          <div id="huntTop" class="mode-list" role="listbox"></div>
-        </div>
       </section>
 
       <section id="walkStartSection">  <!-- a walk's start, as Life's: its start on a surface (startRow, placed by the mode: a creature's in its own Start, see renderAntRow), then the number walked (a start's by the digits, Life's or a creature's, under its Digits tab), or a battle's numbers -->
@@ -151,12 +144,26 @@
             <div id="rivalFormulas"></div>  <!-- the other walkers' formulas, B to L (see rivalField) -->
             <button id="battleRandom" type="button" class="wide" data-icon="dice" title="As many numbers as walkers drawn at random from the hunt's (the Number cards' reals and sequences, √2 to √9999), fought here">Roll</button>  <!-- (see battleRandom) -->
           </div>
-          <h3>Hunt battles</h3>
+        </div>
+      </section>
+
+      <section id="huntSection">  <!-- every mode's hunt, one block shown at most (its own condition), the section with none hidden (style.css) -->
+        <h2 data-icon="search">Hunt</h2>
+        <div id="huntRow" hidden>  <!-- Life, in 1 to 12 colours: a hunt for the longest life, or long, even battles -->
+          <div id="huntGoals" class="nav-shapes"></div>  <!-- what the hunt looks for, over its button -->
+          <button id="huntBtn" type="button" class="wide"></button>  <!-- its words in its tooltip: the hunt and the zone (see renderHunt) -->
+          <p id="huntStatus" class="muted"></p>
+          <div id="huntTop" class="mode-list" role="listbox"></div>
+        </div>
+        <div id="battleHunt" hidden>  <!-- a battle of walkers: the longest battles -->
           <div id="battleHuntVary" class="nav-shapes"></div>  <!-- what the hunt varies: Formulas, Starts (see renderBattleHunt) -->
           <div id="battleHuntRank" class="nav-shapes"></div>  <!-- what it ranks: Longest, Even lands, Latest first stop (see HUNT_RANKS) -->
           <button id="battleHuntBtn" type="button" class="wide"></button>  <!-- its words and tooltip: see renderBattleHunt -->
           <p id="battleHuntStatus" class="muted"></p>
           <div id="battleHuntTop" class="mode-list" role="listbox"></div>  <!-- the 8 longest battles: a click plays one -->
+        </div>
+        <div id="returnRow" hidden>  <!-- a reversible one: its return to its start, past what is played -->
+          <button id="backBtn" type="button" class="wide" title="Steps its start on, past what is played, till it comes back to it (a reversible rule always does). Recommended on a small grid: a large one's start comes back after far too many generations to be found"></button>  <!-- blocks: see searchBack -->
         </div>
       </section>
 
@@ -363,10 +370,6 @@
         </label>
       </section>
 
-      <section id="returnSection" hidden>  <!-- a reversible one: its return to its start, past what is played -->
-        <h2 data-icon="search">Return to the start</h2>
-        <button id="backBtn" type="button" class="wide" title="Steps its start on, past what is played, till it comes back to it (a reversible rule always does). Recommended on a small grid: a large one's start comes back after far too many generations to be found"></button>  <!-- blocks: see searchBack -->
-      </section>
 
       <section id="automataSection" hidden>  <!-- Life: its rule -->
         <h2 data-icon="glider">Rule</h2>
@@ -509,10 +512,10 @@
     </div>
   </main>
 
-  <script src="pixelarticons.js?v=0.4.930"></script>
-  <script src="punks.js?v=0.4.930"></script>
-  <script src="loops.js?v=0.4.930"></script>
-  <script src="emoji.js?v=0.4.930"></script>
-  <script src="main.js?v=0.4.930"></script>
+  <script src="pixelarticons.js?v=0.4.931"></script>
+  <script src="punks.js?v=0.4.931"></script>
+  <script src="loops.js?v=0.4.931"></script>
+  <script src="emoji.js?v=0.4.931"></script>
+  <script src="main.js?v=0.4.931"></script>
 </body>
 </html>

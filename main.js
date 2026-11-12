@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.930';
+const VERSION = '0.4.931';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -11104,7 +11104,7 @@ function compute() {
         ? 'random'
         : plane.start; // (Elementary's starts, see elementaryRows)
   $('startSection').hidden = !mode.life || !!mode.loops; // (loops: their start their loops, one a lineage, see layLoops)
-  $('returnSection').hidden = !mode.margolus; // (a reversible one's return to its start, wherever it is)
+  $('returnRow').hidden = !mode.margolus; // (a reversible one's return to its start, wherever it is)
   fitRuleToShape();
   $('colourSection').hidden = !walkTeamsHere(tabMode()) && (!mode.life || !!mode.margolus || !!mode.elementary); // (blocks, Elementary: one colour; a walk's on a surface)
   renderViewTiles();
@@ -17862,7 +17862,7 @@ function renderWalkTeams() {
     here = walkTeamsHere(w);
   if (!oceanPicked) applyDefaults('battle'); // (Ocean on in a walk's battle, till it is clicked: see DISPLAY_DEFAULTS)
   // a battle: its numbers in its Start section, A's formula field moved there from the number's (hidden then), then B's on
-  $('battleStart').hidden = $('startWays').hidden = !battleOn();
+  $('battleStart').hidden = $('startWays').hidden = $('battleHunt').hidden = !battleOn();
   RIVALS.forEach((id, j) => {
     $(id).parentElement.hidden = j >= walkTeams - 1;
   }); // (the walkers' but A's)
@@ -29774,9 +29774,9 @@ function renderBack() {
 }
 function renderHunt() {
   renderBack();
-  $('huntZones').hidden = $('huntRow').hidden = !huntOn() || surfaceDraw;
+  $('huntZones').hidden = !huntOn() || surfaceDraw;
+  $('huntRow').hidden = $('huntZones').hidden || !!walk.life.margolus; // (blocks: their zones' starts only, no hunt of their own)
   if ($('huntRow').hidden) return;
-  $('huntBtn').hidden = !!walk.life.margolus; // (the hunt's own step: births and survivals; blocks, their zones' starts only)
 
   const K = lifeParts(),
     { perColour, all } = huntPlan(),
@@ -29792,7 +29792,6 @@ function renderHunt() {
           peak: 'the highest peak',
           cover: 'the fastest to reach all cells',
         }[hunt.goal];
-  $('huntGoals').hidden = $('huntModeLabel').hidden = !!walk.life.margolus;
   for (const b of $('huntGoals').querySelectorAll('button')) {
     const battle = b.dataset.goal === 'battle';
     setTile(b, {

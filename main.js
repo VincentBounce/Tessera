@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.919';
+const VERSION = '0.4.920';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -43417,9 +43417,10 @@ const axesLook = (pass) => ({
   front: 1,
   fade: 0,
 });
-// The views a click on the axes goes through, in turn (see #axesLabels): from the south, the east, above (north up); the
-// view freed, as a drag does (Centered, Upright, Auto-rotate off, no walker followed)
-const VIEWS_FROM = [cameraFrom(0, 0), cameraFrom(-Math.PI / 2, 0), cameraFrom(0, Math.PI / 2)];
+// The views a click on the axes goes through, in turn (see #axesLabels): from the south, the east, above (north up), then
+// the view's at the start (CAMERA_START); the view freed, as a drag does (Centered, Upright, Auto-rotate off, no walker
+// followed)
+const VIEWS_FROM = [cameraFrom(0, 0), cameraFrom(-Math.PI / 2, 0), cameraFrom(0, Math.PI / 2), CAMERA_START];
 let viewFrom = -1; // (the last one gone to)
 $('axesLabels').addEventListener('click', () => {
   viewFrom = (viewFrom + 1) % VIEWS_FROM.length;

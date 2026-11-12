@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.923';
+const VERSION = '0.4.924';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -20574,7 +20574,6 @@ function startParts(seed) {
   const z = zoneSeed(); // the zone picked, again on this grid (a radius, patterns)
   if (z) {
     seed.set(z);
-    walk.life.startNames = z.names ?? null;
     for (const t of walk.geo.walls ?? []) seed[t] = 0;
     lifeStart = { zone: hunt.zone };
     return;
@@ -20756,12 +20755,13 @@ const plane = {
   text: APP_TITLE,
   font: 'sans',
   icons: [0],
+  picks: null,
   start: 'random',
   density: 30,
   seed: 1 + Math.floor(Math.random() * 999999999),
   sym: 'none',
   number: '1/7',
-}; // (number: Formula's, see numberSeed)  // a soup of its own each visit (a link keeps its seed)
+}; // (number: Formula's, see numberSeed; picks: Famous's and Anywhere's patterns, a colour each, as a link writes them, see choiceWord)  // a soup of its own each visit (a link keeps its seed)
 // Draw's brush: a cell or a pattern (squares only), turned by quarter turns and mirrored, in a colour
 // (0: the eraser)
 const brush = { id: 'cell', turn: 0, flip: false, colour: 1 };
@@ -24027,25 +24027,28 @@ function zoneWords(zone) {
 }
 // a Life start's title, what is played: its picture each colour (Punk #4409 vs Punk #4565), its zone and seed (Bloom #7), its
 // number, its text, drawn, found
-function startTitle() {
-  const K = lifeParts(),
-    zone = lifeStart?.zone ?? (plane.start === 'random' ? hunt.zone : null);
-  if (plane.start === 'digits') return withIcons(shownSymbol);
-  if (plane.start === 'text') return `«${plane.text}»`;
-  if (plane.start === 'draw') return 'Drawn';
-  const names = walk.life.startNames?.filter(Boolean); // (a Famous start's patterns: Glider vs R-pentomino)
-  if (names?.length && (lifeStart === 'hunt' || lifeStart === 'battle' || famousZone(zone ?? '')))
-    return K > 1 ? versusTitle(names) : names.join(' vs '); // (one colour, its patterns: no team)
-  if (lifeStart && !lifeStart.zone) return 'Found';
-  if (zone && isIcon(zone)) {
+// a Life start's title by its setup (its link), the bar's and a saved card's alike, never the game built's: a colour's word
+// each (π vs e); the number's symbol, a text, Drawn, Found (cells a hunt found: its ch), each colour's pattern (Famous,
+// Anywhere) or picture (Icon, Punk), a number laid, else its zone's name and seed (Wild #7, Bloom #7)
+function startWords(s) {
+  const [kind, a, b] = String(s.pop ?? 'random').split('.'),
+    zone = zoneOfWord(kind) ?? 'full',
+    each = String(s.pop).split('.').slice(1);
+  if (kind === 'digits') return [formulaOf(s.x).sym];
+  if (kind === 'text') return [`«${String(s.pop).slice(5) || APP_TITLE}»`];
+  if (kind === 'draw') return ['Drawn'];
+  if (s.ch) return ['Found'];
+  if (famousZone(zone)) return each.map((word) => word.split(':')[0]);
+  if (isIcon(zone)) {
     const set = iconSet(zone),
       word = HUNT_ZONES[zone][1].split(' ')[0];
-    return versusTitle(plane.icons.slice(0, K).map((i) => `${word} ${set.label(i)}`));
+    return each.map((name) => `${word} ${set.label(iconIndex(name, set))}`);
   }
-  if (zone === 'numbers') return withIcons(plane.number);
-  if (zone && famousZone(zone)) return HUNT_ZONES[zone][1];
-  return `${HUNT_ZONES[zone]?.[1] ?? 'Soup'} #${plane.seed}`;
+  if (zone === 'numbers') return [a];
+  return [`${HUNT_ZONES[zone][1]} #${Number(b) || 1}`];
 }
+// the bar's (its colours' each in its colour, see versusTitle)
+const startTitle = () => versusTitle(startWords(getSetup()).map(withIcons));
 function startLead(number, seeded) {
   // its start in words, on any grid (the plane's: its side, its symmetry)
   const kind = walk.plane?.kind,
@@ -24092,6 +24095,7 @@ function startFromSetup(s) {
         .slice(1)
         .map((name) => iconIndex(name)); // (pop=icon24.star.heart: each colour's)
     if (hunt.zone === 'numbers') plane.number = NUMBER_DRAWN.test(a) ? a : '1/7'; // (pop=formula.16/9, formula.sqrt(7))
+    plane.picks = famousZone(hunt.zone) ? String(s.pop).split('.').slice(1) : null; // (pop=famous.Glider.R-pentomino:2: each colour's)
   } else plane.start = ['draw', 'text', ...ELEMENTARY_STARTS].includes(kind) ? kind : 'random';
   if (kind === 'text') plane.text = String(s.pop).slice(5) || APP_TITLE;
   plane.font = TEXT_FONTS[s.tf] ? s.tf : 'sans'; // (Text's font, tf=)
@@ -29967,13 +29971,18 @@ function zoneSeed() {
   const { cells, copies, choices } = huntPlan(),
     seed = new Uint8Array(walk.life.seed.length),
     d = plane.density / 100;
-  if (choices)
-    seed.names = choices.map((c) => {
-      const f = c[drawChoice(c, random)] ?? [];
+  if (choices) {
+    // (Famous, Anywhere: each colour's pattern its pick, the link's, else drawn now and kept: the link's from then)
+    const picks = choices.map((list, i) => {
+      const c = plane.picks?.[i] === undefined ? -1 : choiceOfWord(list, plane.picks[i]);
+      return c >= 0 ? c : drawChoice(list, Math.random);
+    });
+    plane.picks = picks.map((c, i) => (c >= 0 ? choiceWord(choices[i], c) : ''));
+    picks.forEach((c, i) => {
+      const f = choices[i][c] ?? [];
       for (let q = 0; q < f.length; q += 2) seed[f[q]] = f[q + 1];
-      return f.name;
-    }); // (its patterns' names, its title's)
-  else {
+    });
+  } else {
     for (const [t, k] of cells) if (random() < d) seed[t] = k;
     for (const k of new Set(cells.map((c) => c[1]))) {
       // each colour at least one cell alive (as the hunt's starts)
@@ -29997,6 +30006,7 @@ function pickZone(zone) {
   hunt.status = '';
   plane.density = Math.round(100 * density()); // a new start each time, as dense as drawn (in whole percents), from a new seed
   plane.seed = 1 + Math.floor(Math.random() * 999999999);
+  plane.picks = null; // (Famous, Anywhere: drawn again as laid, see zoneSeed)
   plane.number = drawNumber(Math.random); // (Formula: a number at random)
   plane.icons = Array.from({ length: lifeParts() }, () => Math.floor(Math.random() * iconSet(hunt.zone).names.length)); // (an Icon or Punk zone: one at random a colour, as the hunt draws them)
   if (zone === 'full' || zone === 'mirror')
@@ -38497,12 +38507,32 @@ function centredChoices(kind, K, rule, mine, any, centred = true) {
 // in its colour
 const choicesMemo = remember('choicesMemo', {}),
   FAMOUS_ALL = 20000; // (Famous's, Centered's; see laidChoices)
+// a colour's choices, each pattern's first by its name (see choiceWord; a big grid's lazy list says it itself)
+const namedChoices = (list) => {
+  if (list.firstOf) return list;
+  const first = new Map();
+  list.forEach((f, c) => first.has(f.name) || first.set(f.name, c));
+  return Object.assign(list, { firstOf: (name) => first.get(name) });
+};
+// a choice as a link writes it: its pattern's name, then its place among that pattern's choices of its colour when not the
+// first (Glider:2, its third), by construction from the colour's list; and back (-1: none here)
+const choiceWord = (list, c) => {
+  const { name } = list[c],
+    k = c - list.firstOf(name);
+  return k ? `${name}:${k}` : name;
+};
+const choiceOfWord = (list, word) => {
+  const [name, k = 0] = word.split(':'),
+    c = (list.firstOf(name) ?? NaN) + Number(k);
+  return list[c]?.name === name ? c : -1;
+};
 function patternChoices(centred = false) {
   // (once a grid, its colours and rule)
   const L = walk.life,
     id = `${flatGrid() ? `${gridKey()}|${planeTurn()}` : ''}|${L.colours}|${lifeParts()}|${L.ruleText}`,
     m = choicesMemo[centred]; // (its teams laid too: Newcomer's one fewer, see lifeParts)
-  if (m?.id !== id || m.g !== walk.geo) choicesMemo[centred] = { id, g: walk.geo, choices: laidChoices(centred) };
+  if (m?.id !== id || m.g !== walk.geo)
+    choicesMemo[centred] = { id, g: walk.geo, choices: laidChoices(centred).map(namedChoices) };
   return choicesMemo[centred].choices;
 }
 function laidChoices(centred, any = false) {
@@ -38590,7 +38620,13 @@ function laidChoices(centred, any = false) {
         const f = move(k);
         if (f) out.push(f);
       }
-      return moves > FAMOUS_ALL && !any && out.length ? lazyList(moves, move) : out; // (a big grid's: one fits, so a draw ends)
+      const firstShape = new Map();
+      laid.forEach(([, , name], k) => firstShape.has(name) || firstShape.set(name, k));
+      return moves > FAMOUS_ALL && !any && out.length
+        ? Object.assign(lazyList(moves, move), {
+            firstOf: (name) => (firstShape.has(name) ? firstShape.get(name) * part.length : undefined),
+          })
+        : out; // (a big grid's: one fits, so a draw ends; each pattern's moves in a row, see choiceWord)
     });
   // centred: a shape kept where it lays whole for every colour, at its spot (a sheet's: see patternAt)
   const laid = shapes
@@ -38757,10 +38793,11 @@ function setLifeSeed(seed, how) {
   const L = walk.life;
   cleared = null; // another start: no Undo
   L.seed.set(seed);
-  L.startNames = seed.names ?? null; // (a Famous start's patterns, see startTitle)
+  const picked = seed.pick && famousZone(hunt.zone); // (a hunt's Famous or Anywhere start: its patterns, its link's)
+  if (picked) plane.picks = seed.pick.map((c, i) => choiceWord(patternChoices(hunt.zone === 'centred')[i], c));
   for (const t of walk.geo.walls ?? []) L.seed[t] = 0;
   countSeed(L);
-  championCode = how && !how.zone ? encodeCells(L.seed, walk.base) : null; // a hunt's, a battle's, a saved start, in its shortest form (a zone's or the grid's own: its pop says it, see getSetup)
+  championCode = how && !how.zone && !picked ? encodeCells(L.seed, walk.base) : null; // a hunt's, a battle's, a saved start, in its shortest form (a zone's or the grid's own, its patterns too: its pop says it, see getSetup)
   lifeStart = how;
   describe(walk.base);
   restart();
@@ -38870,14 +38907,16 @@ const zoneWord = () =>
 // a zone's start in a link: its word, its density and seed (pop=bloom.30.7); an Icon zone's, its icons' names (pop=icon24.star.heart;
 // a Punk zone's, their numbers: pop=punk24.7804)
 const zonePop = () =>
-  isIcon(lifeStart?.zone ?? '')
-    ? `${zoneWord()}.${plane.icons
-        .slice(0, lifeParts())
-        .map((i) => iconSet(lifeStart.zone).names[i])
-        .join('.')}`
-    : lifeStart?.zone === 'numbers'
-      ? `${zoneWord()}.${plane.number}`
-      : `${zoneWord()}.${plane.density}.${plane.seed}`; // (Formula: its number, formula.16/9)
+  famousZone(hunt.zone) && plane.picks
+    ? `${wordOfZone(hunt.zone)}.${plane.picks.join('.')}` // (Famous, Anywhere: its patterns, a hunt's too)
+    : isIcon(lifeStart?.zone ?? '')
+      ? `${zoneWord()}.${plane.icons
+          .slice(0, lifeParts())
+          .map((i) => iconSet(lifeStart.zone).names[i])
+          .join('.')}`
+      : lifeStart?.zone === 'numbers'
+        ? `${zoneWord()}.${plane.number}`
+        : `${zoneWord()}.${plane.density}.${plane.seed}`; // (Formula: its number, formula.16/9)
 const zoneOfWord = (w) => Object.keys(HUNT_ZONES).find((z) => z !== 'full' && z !== 'custom' && wordOfZone(z) === w);
 // The version a setup was made with (v=0.2.0, last in its link, kept in the Gallery and its files): a link's or a saved
 // one's, kept in the link while the setup in view is that one still, so that a link that fails says where it was made
@@ -39169,13 +39208,13 @@ const ruleWords = (s) => {
     html: [byDigits && withIcons(formulaOf(s.x).sym), code && ruleSpan(code)].filter(Boolean).join(' · '), // (by the digits: the number read first, as the bar says it)
   };
 };
-// its title: one saved from the bar (its chips with it), a walk's its numbers' symbols as the bar writes them, from its setup
-// (π, π vs e vs φ: never stale), a Game of Life's its bar's as it was saved (its start: the patterns played, its text); a
-// curated one's its name (Dragon, Primes); one saved before chips, a walk's its number, a Game of Life's its shape and tiles
+// its title: one saved from the bar (its chips with it), from its setup as its bar writes it, never stale (a walk's numbers:
+// π vs e vs φ; a Game of Life's start: Glider vs Diehard, «Tessera»); a curated one's its name (Dragon, Primes); one saved
+// before chips, a walk's its number, a Game of Life's its shape and tiles
 const setupTitle = (x) => {
   const life = MODES[x.setup.w]?.life;
   if (x.chips === undefined) return life ? shapeAndTiles(x.setup.w) : x.name;
-  return life ? x.name : walkTitleOf(x.setup);
+  return life ? startWords(x.setup).join(' vs ') : walkTitleOf(x.setup);
 };
 // a walk's title by its setup, as its bar writes it: a creature's name (an ant, a worm: its number in its rule's words), a
 // battle's walkers' numbers (π vs e vs φ), else its number's symbol

@@ -1445,10 +1445,12 @@ button.active .bubble.active {
 /* the number (Full number), in place of the whole view as how a rule works (.rule-tuto): its digits */
 .number-view .number-digits {
   max-width: none;
-  color: var(--text-color);
   font: var(--text-size)/1.5 var(--mono-font);
   word-break: break-all;
 }
+.number-view .number-digits:not(.muted) {
+  color: var(--text-color);
+} /* (its digits; a repeating one's period written 3 times, to read it, grey as a page's words: see showNumber) */
 .number-view .number-digits + h2 {
   margin-top: 16px;
 } /* (a battle's numbers: one, then the next's title) */

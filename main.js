@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.901';
+const VERSION = '0.4.902';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -8355,8 +8355,6 @@ const ICONS = (() => {
       .join(''),
     // buttons
     play: svgPath('M7 4.5L19.5 12L7 19.5Z', 'f'),
-    pause:
-      '<rect class="f" x="6" y="5" width="4" height="14" rx="1"/><rect class="f" x="14" y="5" width="4" height="14" rx="1"/>',
     stop: '<rect class="f" x="6" y="6" width="12" height="12" rx="1.5"/>',
     slower:
       '<path d="M3 16a8 11 0 0 1 16 0z"/><path d="M7 16 11 8.5 15 16M3 16H21"/><circle cx="21" cy="12.5" r="2"/><path d="M6.5 16 5.5 20.5M15.5 16l1 4.5"/>', // a turtle, side on, as tall as faster's rabbit: slower, playing
@@ -8388,7 +8386,6 @@ const ICONS = (() => {
     undo: svgPath('M9 14L4 9L9 4') + svgPath('M4 9H15A5 5 0 0 1 15 19H11'),
     eye: svgPath('M2.5 12Q12 3.5 21.5 12Q12 20.5 2.5 12Z') + '<circle cx="12" cy="12" r="3"/>',
     trash: svgPath('M4 7h16M9 7V4.5h6V7M6 7l1 13h10l1-13M10 11v6M14 11v6'),
-    floppy: svgPath('M6 3h10l4 4v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2ZM8 3v5h7V3M12.5 4.5v2M7 21v-6h10v6'), // a floppy disk: its shutter and its window, its label (Management's)
     link:
       svgPath('M8 16L16 8') +
       svgPath('M6.4 11.2L3.2 14.4A5.6 5.6 0 0 0 9.6 20.8L12.8 17.6M17.6 12.8L20.8 9.6A5.6 5.6 0 0 0 14.4 3.2L11.2 6.4'), // (as tall as the others: 3 to 21)
@@ -9352,9 +9349,8 @@ const numberLength = (b) => {
     n = head.length + frac.length;
   return b === digitsComputed.base ? n : Math.floor((n * Math.log(digitsComputed.base)) / Math.log(b));
 };
-// the numbers shown in base b: each its digits (n of them), its integer part's (head) and the rest (frac), its integer
-// part's length (intLength), an exact number's value (ratio, its period shown), its formula (its Wikipedia link, see
-// wikiLink); in another base than the walk's (Base 10), computed from its formula as the walk's are: null while some are
+// the numbers shown in base b: each its digits (n of them), its integer part's (head) and the rest (frac), an exact
+// number's value (ratio, its period shown), its formula (its Wikipedia link, see wikiLink); in another base than the walk's (Base 10), computed from its formula as the walk's are: null while some are
 // not (see numberDigitsIn)
 function numberRows(b = digitsComputed.base) {
   const own = b === digitsComputed.base,
@@ -9378,7 +9374,6 @@ function numberRows(b = digitsComputed.base) {
       n,
       head: ds.subarray(0, h),
       frac: ds.subarray(h, n),
-      intLength: lead,
       ratio: s ? smallExact(F.ast) : digitsComputed.ratio,
     };
   });

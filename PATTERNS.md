@@ -9,7 +9,7 @@ This file lists the most striking ones found so far, by walk, each opening the l
 - [🌐 Walks on surfaces](#-walks-on-surfaces)
 - [💠 Along the grid of the sphere of hexagons](#-along-the-grid-of-the-sphere-of-hexagons)
 
-<br><p align="center"><br>* * *</p>
+<p align="center"><br>* * *</p>
 
 ## 🌸 2D walks: rosettes
 
@@ -76,11 +76,7 @@ On a Pivot walk (the rule `N r`), 0 steps forward and 1 turns right on the spot 
 
 The rabbit constant (the Fibonacci word) on Squares parity (the rule `N a`), where a 1 turns right at an odd digit and left at an even one, draws the Fibonacci word fractal of Monnerot-Dumaine ([F, Squares, N a](https://vincentbounce.github.io/Tessera/#x=rabbit&w=turtle&d=4181&r=N%20a)), known too. The Rudin–Shapiro sequence along the lines of a hexagon grid (Hexagons turtle, left or right) draws a branching fractal, a dragon of sorts ([RS, Hexagons turtle](https://vincentbounce.github.io/Tessera/#x=rudinshapiro&w=hexTurtle&d=16384)); on the squares it only drifts along a diagonal.
 
-<br>
-
 <p align="center"><br>* * *</p>
-
-<br>
 
 ## 🐜 Langton's ant by the digits: late highways
 

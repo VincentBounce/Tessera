@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.952';
+const VERSION = '0.4.953';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -19996,7 +19996,7 @@ function cellNeighbours(cStart, cList, nv, sides = 0) {
       more = { start: st, list: Int32Array.from(li) };
     }
   }
-  return { start, list: list.slice(0, m), ring, more };
+  return { start, list: list.slice(0, m), ring, more, corners: { start: cStart, list: cList } }; // (its corners: by a side, see sideOf)
 }
 // A surface's: its tiles' corners (a repeated one, a pentagon's of the hexagon sphere, once; a wall: none). On
 // hexagons, their ring (Callahan's letters); on squares, sides 8 asked (Hensel's)
@@ -20603,22 +20603,6 @@ function startParts(seed) {
   for (let t = 0; t < seed.length; t++) if (!coloured[t]) seed[t] = 0; // (no one's: the cells on its slices' lines, see planeSlices)
   lifeStart = hunt.zone === 'mirror' ? { zone: 'mirror' } : null; // (Wild mirror: its link's word, see zoneWord; Wild: the soup's)
 }
-// a surface's cells' neighbours (as nbr lists them) by a side, 1 (two corners or more shared), or by a corner only, 0:
-// the flowers' letters (see sideOf, the plane's)
-function meshSide(g, nbr) {
-  const k = g.sides,
-    corners = (t) => new Set(g.poly.subarray(k * t, k * t + k)),
-    side = new Uint8Array(nbr.list.length);
-  for (let t = 0; t < g.n; t++) {
-    const mine = corners(t);
-    for (let q = nbr.start[t]; q < nbr.start[t + 1]; q++) {
-      let shared = 0;
-      for (const c of corners(nbr.list[q])) shared += mine.has(c);
-      side[q] = shared >= 2 ? 1 : 0;
-    }
-  }
-  return side;
-}
 // Life's colours for its grid, before anything is made of them (the digits' base, K + 1; the sizes; the tiles): from those
 // before, those it has fair blocks or spots for (see teamsOn); on a surface, its size's mesh made for them (a torus's
 // columns their blocks', see ringColumns), its sizes again for them; a link's the same
@@ -20694,7 +20678,7 @@ function buildLife(seq, mode) {
   startLife(seq, rule, g.n, {
     nbr,
     ring: rule.loops ? loopRing(rule, meshSides(g)) : rule.iso && rule.iso !== 'vertex' ? ring : null,
-    side: rule.iso === 'vertex' ? meshSide(g, nbr) : null,
+    side: rule.iso === 'vertex' ? sideOf(nbr) : null,
     ringMore: rule.iso === 'hensel' && ring ? cornerNeighbours(g, 8).more : null,
     seed,
     margolus: mode.margolus && rule.margolus ? ruleBlocks(rule, blocksGrid(mode), g.nu, true, g.nv, g) : null,
@@ -23685,16 +23669,12 @@ function planeNeighbours(kind, W, torus, hensel = false) {
     else for (const [u, v] of cornersOf(x, y)) add(u, v);
     cStart[t + 1] = at;
   }
-  const corners = { start: cStart, list: Int32Array.from(cList) }; // (each cell's corners' ids: by a side, see sideOf)
-  return {
-    ...cellNeighbours(
-      corners.start,
-      corners.list,
-      nv,
-      baseOf(kind) === 'hex' ? 6 : hensel && kind === 'square' ? 8 : 0,
-    ),
-    corners,
-  }; // (a rectangle of hexagons: theirs too)
+  return cellNeighbours(
+    cStart,
+    Int32Array.from(cList),
+    nv,
+    baseOf(kind) === 'hex' ? 6 : hensel && kind === 'square' ? 8 : 0,
+  ); // (a rectangle of hexagons: theirs too)
 }
 // a grid of squares' cells by their 4 sides, clockwise from the top (N, E, S, W), −1 past a dead edge (see parseLoops)
 function sidesOf(row, W, torus) {
@@ -24376,8 +24356,9 @@ function discCard(b, p) {
 // A grid's wall (dead edges): the cells just outside it that touch one of its cells, a cell thick whatever the tiling (its
 // rhombus's or lattice cell's row round it, kept where it touches); once a grid
 // each neighbour of each cell (as nbr lists them) by a side, 1 (two corners or more shared), or by a corner only, 0: the
-// flowers' letters (see parseRule); its corners the ones the neighbours were found by (planeNeighbours: a torus's wrapped,
-// one id each side of its seam; their places unwrapped, a side across the seam was a corner only till v0.4.952)
+// flowers' letters (see parseRule), on a plane or a surface alike; its corners the ids its neighbours were found by (see
+// cellNeighbours: a torus's one each side of its seam), never their places again (the plane's, unwrapped, took a side across
+// its seam for a corner only till v0.4.952; a surface's had its own copy, meshSide)
 function sideOf(nbr) {
   const { start, list: ids } = nbr.corners,
     side = new Uint8Array(nbr.list.length);

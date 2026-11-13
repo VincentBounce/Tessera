@@ -172,6 +172,12 @@ While the checks run unattended (a night, a meal), also audit what they cannot s
   `Langtons-Loops` under its name Langton's loops, v0.4.382), nor its default or greyed state in the text.
 - **Every night, the names**: functions and variables read through for names unclear, misleading, too short or
   inconsistent (one concept, one name, see Names), each renamed explicitly at its source, everywhere, in its own commit.
+- **Every night, the seams**: on every torus, Möbius strip and Klein bottle, flat (the plane's grids) and in 3D (the
+  surfaces), and for every kind of rule (B/S, a flower's v, Hensel's, Callahan's, the loops'), each cell's neighbours and
+  their kinds (by a side, by a corner only, in turn) the same next to a seam as in the middle, measured against the
+  geometry wrapped; then a glider or a spaceship sent across each seam goes on as in the middle. One construction for both
+  sides of a seam, never a second copy (v0.4.952: the plane's torus took a side across its seam for a corner only, its own
+  copy of the surfaces' meshSide, and a Tetrakis glider died crossing it).
 - **Every night, the CSS variables' names** (style.css's `:root`, each prototype page's own): each says what it holds and
   its kind, in words (`--text-color`, `--text-size`, `--page-background`, `--border-color`), never a bare `--text`, `--bg`,
   `--muted` or `--c` (v0.4.564: `--text-size` came beside a colour named `--text`): renamed at its definition and every

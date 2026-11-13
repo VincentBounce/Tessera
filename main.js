@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.943';
+const VERSION = '0.4.944';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -6562,7 +6562,7 @@ function describe(base) {
   const walkRule = !creature && !mode.life && WALK_NETS[mode.net] ? walkRuleOf(mode) : '';
   $('barBase').hidden = !readsNumber(getSetup()); // (its number read: a walk, a creature by the digits, Life's Digits)
   $('barBase').textContent = baseWords(base);
-  $('barBase').title = BASE_BUBBLE_TITLE; // (a click shows the number, as the Show digits button)
+  showDigitsTip($('barBase'), baseWords(base)); // (a click shows the number, as the Show digits button)
   $('barRule').hidden = !creature && !walkRule; // (Life's: below)
   setLinks($('barRule'), ruleWords(getSetup()).html); // (a walk's, a creature's: as the Gallery writes it, see ruleWords)
   $('barRule').title = 'Its rule · A click: how it works';
@@ -7180,14 +7180,19 @@ const card = ({
 const baseWords = (base) => `base ${base}`;
 // a base bubble's words, the Formula field's and the cards' alike: a click shows the number in that base, its name (see
 // showNumber)
-const BASE_BUBBLE_TITLE = 'The number, all its digits over the view: to scroll or copy';
+// every control that shows the number (Show digits, the bar's base, a card's): one name and words, its base in its name
+const showDigitsTip = (el, words) => {
+  el.setAttribute('aria-label', `Show digits in ${words}`);
+  el.title = 'The number, all its digits over the view: to scroll or copy';
+};
 const cardBubble = (base, show) => {
   const b = Object.assign(document.createElement('span'), {
     className: `bubble${show ? ' act' : ''}${baseShown(base) ? ' active' : ''}`,
     textContent: base,
   }); // (lit: the number shown in its base)
   if (show) {
-    b.title = BASE_BUBBLE_TITLE;
+    b.setAttribute('role', 'button');
+    showDigitsTip(b, base);
     b.addEventListener('click', (e) => {
       e.stopPropagation();
       show();
@@ -11146,8 +11151,7 @@ function compute() {
   const base = numberBaseOf(getSetup()); // (Life: K + 1, Digits mixed: 2)
   const key = digitsKey(F, base);
   $('copyNumber').innerHTML = icon('barcode');
-  $('copyNumber').setAttribute('aria-label', `Show digits in ${baseWords(base)}`); // (the Full number: the base the digits are written in)
-  $('copyNumber').title = BASE_BUBBLE_TITLE;
+  showDigitsTip($('copyNumber'), baseWords(base)); // (the Full number: the base the digits are written in)
   // The status line under the Number: how the digits came (time, cache), what the number is, and
   // warnings; what is shown is in the description (describe)
   const note = FORMULA_NOTES[F.root] ? FORMULA_NOTES[F.root](base) : '';
@@ -11746,7 +11750,7 @@ const tipOf = (target) => {
 };
 document.addEventListener('mouseover', (e) => {
   const { el, tip: title, greyed } = tipOf(e.target),
-    named = el?.matches('button, label');
+    named = el?.matches('button, label, [role="button"]');
   const name = named
     ? (
         el.getAttribute('aria-label') ??

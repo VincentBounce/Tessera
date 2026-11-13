@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.988';
+const VERSION = '0.4.989';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -42660,7 +42660,7 @@ function gpuClear() {
   D.device.queue.submit([enc.finish()]);
 }
 // a render pass on the frame (colour: 4 samples resolved on the canvas, or another picture), cleared, its depths too
-const gpuPass = (enc, colour = null, clear = [0, 0, 0, 0], depth = true) => {
+const gpuRenderPass = (enc, colour = null, clear = [0, 0, 0, 0], depth = true) => {
   const D = GPU.draw,
     S = gpuTargets();
   return enc.beginRenderPass({
@@ -43236,7 +43236,7 @@ function gpuFrame(enc, drawAll) {
   const D = GPU.draw,
     S = gpuTargets();
   if (!glassOn()) {
-    const p = gpuPass(enc);
+    const p = gpuRenderPass(enc);
     drawAll(p, 0);
     p.end();
     return;
@@ -43395,7 +43395,7 @@ function gpuFlat(to) {
   new Uint8Array(D.words).fill(0);
   let slot = 0;
   const enc = device.createCommandEncoder(),
-    rp = gpuPass(enc, null, [0, 0, 0, 0], false),
+    rp = gpuRenderPass(enc, null, [0, 0, 0, 0], false),
     colour = mode === 'digit' ? 2 : 0;
   // tiles, each from its instance and the step it came at; fade: the steps a tile takes to fade in (0: at once)
   const tiles = (buffer, atBuffer, tpl, count, alpha, fade) => {
@@ -43639,7 +43639,7 @@ function gpuCubes(count, of, make, reach) {
     },
     null,
   );
-  const rp = gpuPass(enc),
+  const rp = gpuRenderPass(enc),
     mesh = vertexLayout(24, [vertexAttribute(0, 'float32x3', 0), vertexAttribute(1, 'float32x3', 12)]);
   if (bars) {
     rp.setPipeline(
@@ -43768,7 +43768,7 @@ function gpuPlane(paint) {
   new Uint8Array(D.words).fill(0);
   const turn = { turnC: Math.cos(planeTurn()), turnS: Math.sin(planeTurn()) },
     enc = device.createCommandEncoder(),
-    rp = gpuPass(enc, null, [0, 0, 0, 0], false);
+    rp = gpuRenderPass(enc, null, [0, 0, 0, 0], false);
   const cells = (col, slot) => {
     rp.setPipeline(
       gpuDrawPipe('planeCells', {

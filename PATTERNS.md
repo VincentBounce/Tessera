@@ -326,11 +326,6 @@ In 2018, K. Tokarz studied a Langton's ant that goes straight on every N-th step
 
 The latest highway: N = 17, after 271,384 steps of chaos. The links of the bounded ones show 200,000 steps.
 
-<br>
-
-
-<br>
-
 <p align="center"><br>* * *</p>
 
 ## 🌐 Walks on surfaces
@@ -551,11 +546,6 @@ Along the grid: see [the sphere of hexagons](#-along-the-grid-of-the-sphere-of-h
 | 6 | [62/61](https://vincentbounce.github.io/Tessera/#x=62/61&w=hexSphereWalk&d=5761&s=32&r=L%20R) | 60 | 5,760 | 3,501 | 81 % |
 | 7 | [20/19](https://vincentbounce.github.io/Tessera/#x=20/19&w=hexSphereWalk&d=2881&s=32&r=L%20R) | 18 | 2,880 | 2,486 | 96 % |
 | 8 | [258/251](https://vincentbounce.github.io/Tessera/#x=258/251&w=hexSphereWalk&d=4001&s=32&st=1024&r=L%20R) | 50 | 4,000 | 3,071 | 86 % |
-
-<br>
-
-
-<br>
 
 <p align="center"><br>* * *</p>
 
@@ -1008,11 +998,6 @@ They send out gliders as often as Life, or more, and their small starts grow as 
 
 **A puffer in Comets.** Seen in a battle on the hexagon sphere, then found among 300 random starts: 16 cells, `A.A$A.2A$2.A.A$5A$3.2A$3.2A!`, that fly at half speed (50 cells every 100 generations) leaving a trail of debris behind, as Life's puffer trains do: 146, 320, 438, 576 cells at generations 100 to 400 on a 400 torus, before its front comes round ([play](https://vincentbounce.github.io/Tessera/#w=life2dHex&r=B2345/S134/C5&s=128&pop=draw&p=112,33:A2.2A2.A.A$5.3A.3A.A$10.A.2A.A!)).
 
-<br>
-
-
-<br>
-
 <p align="center"><br>* * *</p>
 
 ## 🪁 Life on kites: a search with dying states
@@ -1064,9 +1049,6 @@ Draw's patterns for the kites' rules, from 720 small starts each (a methuselah: 
 | Long kites B3/S1247 | Oscillator | `10.A$6.A.A2.2A$A.A.A!` | period 5 · 8 cells | [play](https://vincentbounce.github.io/Tessera/#w=life2dKite&r=B3/S1247&s=48&pop=draw&p=54,8:10.A$6.A.A2.2A$A.A.A!) |
 | | Methuselah | `7.A.2A$4.3A!` | loops from generation 157 · 6 cells | [play](https://vincentbounce.github.io/Tessera/#w=life2dKite&r=B3/S1247&s=48&pop=draw&p=54,8:7.A.2A$4.3A!) |
 
-<br>
-
-
 **A third search: the flowers' letters on kites** (tools/kitesearch/letters.js). A rule can tell a kite's live neighbours apart: after a count, v and how many of them touch it by a corner only (0 to 3, 3 for 3 or more; a kite has 4 neighbours by a side, 5 by a corner): B3v12 is born with 3 live neighbours of which 1 or 2 by a corner. 60,000 rules with letters drawn at random (B 1 to 3 digits from 2 to 7, S up to 5 from 0 to 8, 2 to 5 states; a tenth of them from the kites' known rules, whose lettered forms mostly die out: letters make births rarer), their soups on a torus of 1,536 kites, 537 Life-like; those followed (12 soups on 3,456 kites) and scored against Life as above; the best 40 tried with 36 small starts for ships. The known rules on the same score: Kite simmer 0.29, Kite marathon 0.04, Kite Life 0.03, the others under 0.01. After a count with letters, a "." before a count 0 to 3 (B2v01.3: 2 with none or one by a corner, then 3).
 
 | Rule | States | Score | Settles (median, range) | Plateau | Alive at 200 | Ash | Ends with oscillators | Ships | Links |
@@ -1104,8 +1086,6 @@ The long wakers are sparse worlds (under 1 % alive at the end, surviving with 0 
 
 B3v012/S0234v3 (2 states, born with 3 of which none to 2 by a corner) is the most Life-like found on kites, and turns battles round twice as often as Life.
 
-<br>
-
 <p align="center"><br>* * *</p>
 
 ## 🎩 Life on hats: the tile that never repeats
@@ -1123,11 +1103,6 @@ The hat (Smith, Myers, Kaplan and Goodman-Strauss, 2023), 8 kites, tiles the pla
 
 No pattern can be moved on hats (no two places alike), so Draw has only single cells there, and Famous none.
 
-<br>
-
-
-<br>
-
 <p align="center"><br>* * *</p>
 
 ## 🔭 More patterns for the first rules of each grid
@@ -1144,11 +1119,6 @@ A search in the app's own page (tools/famoussearch.js: its rules, Callahan's let
 | Cairo | Cairo Life B34/S23 | Oscillator | `3.A.A$A2.2A$3.3A!` | period 4 · 8 cells, the most frequent | [play](https://vincentbounce.github.io/Tessera/#w=life2dCairo&r=B34/S23&s=64&pop=draw&p=32,32:3.A.A$A2.2A$3.3A!) |
 
 A lesson for methuselahs: a torus too small lets their debris and ships come round and start the chaos again. A 4-cell start of Life on triangles loops from 3,656 on a torus of 48 but from 430 on tori of 96 and 128; Kite gliders' and Kite drifters' methuselahs (744 and 1,681 on a torus of 48) send out ships, and run to 1,512 and 2,929 on a torus of 96: see below, all the methuselahs measured again.
-
-<br>
-
-
-<br>
 
 <p align="center"><br>* * *</p>
 
@@ -1186,11 +1156,6 @@ A methuselah's lifetime, as Life's are given (the R-pentomino's 1,103, the Acorn
 | Kites | Kite drifters | Methuselah | loops from 1,681 | settles at 799, a ship off |
 | Kites | Kite Life, simmer, marathon, Long kites | Methuselahs | 771, 321, 454, 157 | the same |
 
-<br>
-
-
-<br>
-
 <p align="center"><br>* * *</p>
 
 ## 🧩 Nine more tilings: rules and patterns
@@ -1215,11 +1180,6 @@ On each, up to 103,448 rules (B: 2, 3 or 4 and up to 2 more digits; S: up to 4 d
 **Penrose's rhombi** (P3, aperiodic: walls only, as the hats; built by cutting Robinson triangles, 7 to 11 neighbours inside), the same search: **B39/S0239** scores 0.50 (settles 250 to 2,200, plateau 0.37, 8.7 % alive at 200, ash 2.4 %), and **B3/S023**, Life with lone cells surviving, 0.44 (settles 170 to 1,460, ash 2.2 %, oscillators in 75 % of the ends) ([soup](https://vincentbounce.github.io/Tessera/#w=life2dPenrose&r=B3/S023&s=48&pop=random.30.7)). No pattern moves on them: no Famous. **The Spectre** (aperiodic too, never turned over; built by its supertiles as Kaplan's code; 6 or 7 neighbours inside, as the hats), the same search: **B25/S357** scores 0.12 (settles 370 to 1,750, ash 1 %, oscillators in every end), **B23/S036/C4** 0.05 (a plateau of 0.79 at 5 % alive); Hat comets B245/S134/C5 runs on it from 720 to over 6,000 generations ([soup](https://vincentbounce.github.io/Tessera/#w=life2dSpectre&r=B25/S357&s=48&pop=random.30.7)).
 
 The second rule of each (Long florets B24/S456/C4 with a ship of 12 cells, period 5; Long prisms B245/S16/C5, the light-speed ship too; Long rhombitri, Snub embers, Pythagoras sparks, Rhombille sparks with a ship, Tetrakis embers, Long kisrhombille) and all their patterns are in Draw and Famous.
-
-<br>
-
-
-<br>
 
 <p align="center"><br>* * *</p>
 
@@ -1254,11 +1214,6 @@ None for the rules with a birth on 2 (Prismatic Life, Long prisms, Long florets,
 | Kites 20 | Kite drifters | Duel | 721 | 1,426 generations, 1,231 in contact, balance 0.90 | [battle](https://vincentbounce.github.io/Tessera/#w=life2dKite&r=B35/S2356/C4&k=2&s=48&pop=random.30.448215084&ch=3.BBAQABAQAQQAEAARAEBBAAoAAAAAiAgAgAIAAogCAAFVRAQEUAAAAEARAAUAgIgiIAICAACgCoAAAgCgAAUBAAUARVQFAUBQEBAAiAgogAKAAAAAAAgAAIgCEAAEAEAAAQABQAAQAAQACCAAAgAgAAgAiiAIAAoCAQAAUQUAAAAQAABQBAABAIAACAiCKAAgAIIIAAACABEABBQAAARAAUBAABABCgAAKIgIAggCAAACCCCIUBQBEAEBAUAAEQEBQAABCCiCCKIgCAAAAgAAKgqqAQBAQFAAEABEAAAAUAABiIAAoCgKAAAgCCCIIoIAAAAAAEUAVAAAUBEQAAAAAAgggIoCAAAogIACigAAQEAAQQAEEAAAVABEARBAAIACACCACCgiIAIAAqAABAAQEAQEEQQAAQAAAQAQiogAIoAgoKCCgAgIAAAgEAABQQAABBAAABQAFABBAAIoCAIgAAAAiigAoggiAFAEEAAQEAQQAFEAAAEAIAgCICgAAgIggogAAgAAAAABQAARFAQAQAAAAAEFggAAgAiIAIAACIKAgAIIAAEQQAAAEQFAAAAUAQABAggCIAiAICgAAAKAAgAKQBBAAAEBEFEAUAQAAAAUKAAIAggIKAgAoCACIAgiABBQBAUAABUBABAEAUAAAoiogAgAAAgAICAgKAAIAAFAABQBEQERQQRAAARAAoAgAgAAIiAAAAiAKAIAEABBEFAEAAEBAFQAAABQgAggAAAACAiAAKAgCAAARABRAEAQEAABABAAAEAEAAAAKgACKAiACACAAggC) |
 | Hexagons 48 | Swarm B2op3m/S12mp3p4p5 | Duel | 398 | 959 generations, red alone from 956 | [battle](https://vincentbounce.github.io/Tessera/#w=life2dHex&r=B2op3m/S12mp3p4p5&k=2&s=48&pop=random.30.448215084&ch=3.BEBRARUEqoIooiIoEAEEFFQUIIiIgiKqVEAAREQRqICKoCqgQAVRBVFAAgoooCIKFFFUFRUUiAiiCqAiVUUUVEQQgKIoCIiARQUQEBAVKAgCgKiCRBRQAUBVKoACqAoIFEEFRVAAgiIqiKKgVUVREUUBCiKIqigKVBVABBFQoiKioAKoQBBRFVQRgoooqIqCQUEFUFBBCqCCqqqiQEBVQVBBCIoCoqCAUAEBRQRUoKgoKqgKQRVQVRQVIqIIoiKAQFRVEVAFIKiqKKICVBEFEQFAoCIKKqiIUFQFBBAAoqqgqgAKBQVFFUUQqIACAggiEUABQRBUggqAqICoUFFQAUUQiiKqqKKKEFQRBBQQgKKioKCqVURAVBEBKIigoiqAFVQVRQVVKqgCqKoqQBBRQUARoiqgoKCgEERVRAFVKgqAqCCqBVVRRBBQiCqiAAgqRVRERRFFAIqgoIIAVVVAFUFAioiKqCIKVVVQBRAEIIqqoqqCFVRFFVUEgqgKqAoCFBREAUAEqAogKKIIBVEVBEBFgqoAioqCABQQRBVFIgogKKAKFQEERUQAKoigCIIAFVAVFQRVCAAgoKqCRBFAEEERIiIiAqiAEBERQUUVKKqIqIgiAQABRAFEgKgIqIAqFERUREQRCKqgiCAoUEVFQQUBoKiiIACqRVBFEBAAAiIoCACqAUUURFVUoqoigAACFFQUBBBEAgqiqiAKRUVVUBUQqqqgKoqoBVUREARECiqoqICoEFQVBFERgiiAqAqK) |
 | Cairo 34 | Cairo Wars B24/S346/C4 | Duel | 582 | 363 generations, red alone from 224 (one of 2,013, but a colour all but gone) | [battle](https://vincentbounce.github.io/Tessera/#w=life2dCairo&r=B24/S346/C4&k=2&s=48&pop=random.30.448215084&ch=3.QERREQRRFUQkqiiiIIiIAqgBBQQARVVBQQECIKgCqKoqCkQFEFRQAREVACIIIIoqqoggQQQQRAAERAWgIiAiggggqChVVEEUBBQQRSUKiqAqACqAigURFFVRURVVBCqCqqoIIiACAERRBQREUFWlKIqKoAKooIBUQAVREAVBBAWqCACAICgiolFFBRURUEVUBYqqqoqqICAiEFBBREFQVBUkIigKqoqIiKBVQUFVRFQRECEiogIqqoCoohVUBVEVRRRBAICooqIIqoqgRBAVVEUFAFWEgiqqqAqICoJRFVVEUVRBUYSKgKqKKqAKqBQFAVEQRFFBIICiAiKooCKqBQUFUFFQFVWkAoAiKKigiqpFRFUVRRAUAaSAoIIggKoqCBFAQVEAEUBFBQoCKgKiAAqCFRFVQUFUQACFooAoiKIqgKIVQRFRBVEUECWIoKIoAgIKogEBVAUUBBRRAKiiqogioKgKFUUARFVUVRSgiKogKAIqoIBFVRARBRAFRaSKqqCoqoAIgEVBVFVEAAQQAKiCggogKqiCURQUQARVVBGFIggqqKqggqIFFAVERBQRAQWCiogCooKIigERRRQVRUQVoaqAoAigoqAIFVQBBRVUUFQgIiKqqiqKoCpQEVVEVQBFAQQoAiqioiKqglBQQUVARQBQIaiiIIqKiiCgBBEQEUQARUSFqKKIIIKKIqhFREFQURRERCEioqqgqKAqKlVUFFFABVFEgCIIgKoAIqIiAQRVERRAVUChIiqKqKgqCqg) |
-
-<br>
-
-
-<br>
 
 <p align="center"><br>* * *</p>
 
@@ -1296,11 +1251,6 @@ Since 2026-11-03 (mirror7-sphere branch) a ring's hole is a cell too, its n side
 **The 16th 2-uniform tiling's dual** (its tiling [3.3.4.3.4; 3.3.3.4.4], snub square and elongated triangular corners, read off Wikimedia's 2-uniform_n16.svg: a square lattice of side 4 cos 15° − 2 sin 15°, 12 corners a cell; its dual 12 pentagons of two kinds a cell, 7 neighbours each, turning by quarter turns, never mirrored): **Dual 16 gliders B236/S046/C4** (4 states: score 0.204, soups settling after 361 to 2,560 generations, 1.56 % alive at the end): ships of 7 cells, period 10, and of 12, period 5 ([soup](https://vincentbounce.github.io/Tessera/#w=life2dDual16&r=B236/S046/C4&s=48&pop=random.30.7), [ship](https://vincentbounce.github.io/Tessera/#w=life2dDual16&r=B236/S046/C4&s=48&pop=draw&p=72,6:7.AB5.BA2.A3.AB!)); **Dual 16 ships B237/S056/C4** (4 states: score 0.147, soups settling after 407 to 4,433 generations, 1.79 % alive at the end): ships of 7 cells, period 10 ([soup](https://vincentbounce.github.io/Tessera/#w=life2dDual16&r=B237/S056/C4&s=48&pop=random.30.7), [ship](https://vincentbounce.github.io/Tessera/#w=life2dDual16&r=B237/S056/C4&s=48&pop=draw&p=72,6:.B4.ABA.A3.AB!)). No methuselah: its small starts all end by gen 40, their ships flying off.
 **Dual 314** (the dual of the 5-uniform tiling no. 314: pentagons of 5 kinds): **Dual 314 gliders B258/S0456/C4** (4 states: score 0.121, soups settling after 296 to 2,584 generations (2.92 % alive at the end), a ship of 5 cells, period 8 and a methuselah of 9 cells: 190) ([soup](https://vincentbounce.github.io/Tessera/#w=life2dDual314&r=B258/S0456/C4&s=48&pop=random.30.7)); **Dual 314 ships B25/S0456/C4** (4 states: score 0.083, soups settling after 296 to 1,721 generations (2.95 % alive at the end), a ship of 5 cells, period 8 and a methuselah of 9 cells: 190) ([soup](https://vincentbounce.github.io/Tessera/#w=life2dDual314&r=B25/S0456/C4&s=48&pop=random.30.7)).
 **Dual 56** (the dual of the 3-uniform tiling no. 56: pentagons of 3 kinds): **Dual 56 gliders B246/S0467/C5** (5 states: score 0.084, soups settling after 236 to over 6,000 generations (2.24 % alive at the end), a ship of 10 cells, period 10) ([soup](https://vincentbounce.github.io/Tessera/#w=life2dDual56&r=B246/S0467/C5&s=48&pop=random.30.7)); **Dual 56 ships B25/S046/C5** (5 states: score 0.069, soups settling after 228 to 3,603 generations (2.32 % alive at the end), a ship of 10 cells, period 10) ([soup](https://vincentbounce.github.io/Tessera/#w=life2dDual56&r=B25/S046/C5&s=48&pop=random.30.7)).
-
-<br>
-
-
-<br>
 
 <p align="center"><br>* * *</p>
 
@@ -1796,7 +1746,6 @@ turns.js (tools/kitesearch) on any grid: `deno run --allow-read --allow-write tu
 | Tetrakis | **B3/S23 (Life)** | 4 | 100 % | 43 % | 806 | 0 | [duel](https://vincentbounce.github.io/Tessera/#w=life2dTetrakis&r=B3/S23&k=2&s=64&pop=random.35.7) |
 
 B2v0256/S235 (born with 2, none or both by a corner only, or with 5 or 6; surviving with 2, 3 or 5) comes first on Flower, 5 and 7: 6 turnarounds a battle, twice Life’s, and the most Life-like found on Flower 7 (0.63). Conway’s B3/S23 dies in 50 to 70 generations on Cairo, Rhombitri and the flowers. Flowers 5 and 7 turn as a spiral (no mirror): the app deals them out in 5 or 7 colours, no duel (their halves not alike), so their links play the rule alone.
-
 
 **The rest of the grids** (same search, 34 more): the best turning as Life does, by Life-like score. Nothing worth keeping on Floret, Capital I, Type 14, Dual 16, Dual 314, the rings 7 to 10, Mirror 7 (Life-like 0.03 or less), little on Rhombille, Pythagoras, Octagons, Dodecagons, Spectre, Flowers 3 and 4 (0.2 at most). Flower 9 and Penrose have no duel in the app (no fair halves): their links play the rule alone.
 

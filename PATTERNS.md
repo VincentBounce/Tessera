@@ -9,11 +9,7 @@ This file lists the most striking ones found so far, by walk, each opening the l
 - [🌐 Walks on surfaces](#-walks-on-surfaces)
 - [💠 Along the grid of the sphere of hexagons](#-along-the-grid-of-the-sphere-of-hexagons)
 
-<br>
-
-<p align="center"><br>* * *</p>
-
-<br>
+<br><p align="center"><br>* * *</p>
 
 ## 🌸 2D walks: rosettes
 

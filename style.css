@@ -151,13 +151,16 @@ main {
 .panel::-webkit-scrollbar-thumb:hover {
   background: var(--muted-text-color);
 }
-.panel section {
+#paramsPane > section {
   margin: 8px -4px 0 -8px;
   padding: 10px 8px;
   border: 1px solid var(--border-color);
   border-radius: 10px;
   background: var(--panel-background);
-} /* each section a card on the page's background, 8 px from the column's sides (its tiles as wide: 4 a row) */
+} /* each settings section a card on the page's background, 8 px from the column's sides (its tiles as wide: 4 a row) */
+#yourList > section {
+  margin-top: 16px;
+} /* a Gallery group: its title over its tiles, no frame (its tiles are), apart from the one before */
 :is(#paramsPane, #yourList) > section:first-child h2 {
   margin-top: 0;
 } /* its title as high in every pane */

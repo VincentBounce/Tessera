@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.970';
+const VERSION = '0.4.971';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -45851,16 +45851,22 @@ $('lifeRule').addEventListener('change', () => {
 });
 // Copy RLE: the generation shown as an RLE file, Golly's and LifeWiki's (its size and rule on top, rows of runs, 70
 // characters a line): two states as b and o; more as . A B … (alive, then each dying stage; in colours, all alive as
-// A). Squares are Golly's grid; another grid's cells as this one numbers them, said in a comment; a rectangle's (see
-// RECTS) as its slanted grid numbers them; from a whole lattice cell (its cells' kinds kept, as the Famous are)
+// A). Squares are Golly's grid, hexagons its hexagonal one (see gollyRule: our grid mirrored top to bottom, its neighbours
+// then Golly's); another grid's cells as this one numbers them, said in a comment; a rectangle's (see RECTS) as its
+// slanted grid numbers them; from a whole lattice cell (its cells' kinds kept, as the Famous are); Elementary's, its first
+// row (see elementaryRle)
 function lifeRle() {
+  if (walk.rows) return elementaryRle();
   const L = walk.life,
     { kind, xy } = walk.plane,
     K = L.colours,
     base = baseOf(kind),
     per = gridCells(base),
     cells = [];
-  const at = (t) => tilingCellOf(kind, ...xy(t)); // (its grid's cell)
+  const at = (t) => {
+    const [x, y] = tilingCellOf(kind, ...xy(t));
+    return base === 'hex' ? [x, -y] : [x, y];
+  }; // (its grid's cell; on hexagons mirrored, see gollyRule)
   L.alive.forEach((v, t) => {
     if (v) cells.push([...at(t), v <= K ? 1 : 1 + Math.floor((v - 1) / K)]);
   });
@@ -45870,23 +45876,55 @@ function lifeRle() {
       cells.reduce((e, c) => Math.min(e, c[1]), Infinity) -
       (base === 'cairo' && (x0 / 2 + cells.reduce((e, c) => Math.min(e, c[1]), Infinity)) & 1 ? 1 : 0);
   const pop = new Map([[planeKey(0, 0), 0], ...cells.map(([x, y, v]) => [planeKey(x - x0, y - y0), v])]); // (a dead cell at its lattice cell's corner: the rows start there)
+  return rleFile(
+    `${formulaInUse}, generation ${stepShown}`,
+    kind === 'square' || base === 'hex'
+      ? []
+      : [`On the app's ${PLANE_CELLS[base]} (not Golly's squares): cells as its slanted grid numbers them`],
+    pop,
+    gollyRule(ruleBody($('lifeRule').value), base === 'hex'),
+    L.C === 2,
+  );
+}
+// Elementary's: its first row, Golly drawing the rows down from it itself (as the app: the rows shown can be hundreds of
+// millions of cells; a start by the digits wraps round our row, Golly's runs on), its rule Wn (Golly's: even ones only)
+function elementaryRle() {
+  const R = walk.rows,
+    xs = [];
+  for (let x = 0; x < 16 * R.n; x++) if (cellOf(R.kept[0], x)) xs.push(x);
+  if (!xs.length) return null;
+  return rleFile(
+    `${formulaInUse}, its first row`,
+    [`Its rows down from it: Golly draws them${R.N % 2 ? ' (its rules Wn for an even n only)' : ''}`],
+    new Map(xs.map((x) => [planeKey(x - xs[0], 0), 1])),
+    `W${R.N}`,
+    true,
+  );
+}
+// an RLE file: its name, its comments, its cells (see populationRle) and rule; two states: b and o (Golly's Life-like)
+function rleFile(name, notes, pop, rule, two) {
   const xs = [...pop.keys()].map((k) => cellXY(k)[0]),
     ys = [...pop.keys()].map((k) => cellXY(k)[1]);
   let body = populationRle(pop).replace(/^[^:]*:/, '');
-  if (L.C === 2) body = body.replace(/\./g, 'b').replace(/A/g, 'o');
-  const lines = [],
-    rule = ruleBody($('lifeRule').value);
+  if (two) body = body.replace(/\./g, 'b').replace(/A/g, 'o');
+  const lines = [];
   for (let i = 0; i < body.length; i += 70) lines.push(body.slice(i, i + 70));
   return [
-    `#N ${formulaInUse}, generation ${stepShown}`,
+    `#N ${name}`,
     `#C Tessera: ${location.href}`,
-    ...(kind === 'square'
-      ? []
-      : [`#C On the app's ${PLANE_CELLS[base]} (not Golly's squares): cells as its slanted grid numbers them`]),
+    ...notes.map((n) => `#C ${n}`),
     `x = ${Math.max(...xs) - Math.min(...xs) + 1}, y = ${Math.max(...ys) - Math.min(...ys) + 1}, rule = ${rule}`,
     ...lines,
   ].join('\n');
 }
+// a rule in Golly's words (its Help: QuickLife, Generations): a Life-like one as it is, B…/S…; a Generations one its way,
+// survival/birth/states; on hexagons H after (Golly's leave out a cell's NE and SW neighbours, ours its NW and SE: our
+// grid mirrored, see lifeRle); any other (a loop's, a block rule's) as the app writes it
+const gollyRule = (rule, hex) => {
+  const m = rule.match(/^B([^/]*)\/S([^/]*)(?:\/C(\d+))?$/);
+  if (!m) return rule;
+  return (m[3] ? `${m[2]}/${m[1]}/${m[3]}` : `B${m[1]}/S${m[2]}`) + (hex ? 'H' : '');
+};
 // A copy to the clipboard, its button told a moment: its picture a check (none: a check before its word), its word Copied;
 // then as it was (a tile's, a word's, a picture's alone: the same everywhere)
 function copyFlash(b, text) {

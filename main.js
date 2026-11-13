@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.947';
+const VERSION = '0.4.948';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -765,9 +765,8 @@ const pointKey = (x, y, k = 1000) => roundOff(x, k) * 67108864 + roundOff(y, k);
 const mod = (x, m) => ((x % m) + m) % m; // (x modulo m, never negative)
 
 /* ---- 1.6 Helpers shared by the page and the worker ---------------------------------------- */
-// A worker cannot see this file's functions: compute() builds its source from the text of
-// formulaWorker plus these helpers (digitString, seededRandom, exactValue, iroot). The page uses
-// them too, to check small exact values while reading a formula.
+// A worker cannot see this file's functions: its source is formulaWorker's text and the helpers it reads (see workerOf:
+// digitString, seededRandom, exactValue, iroot…). The page uses them too, to check small exact values while reading a formula.
 
 // Exact value [p, q] (BigInt, q > 0, reduced) of an exact formula node (kind 'int' or 'rat'):
 // numbers and + − × ÷ ^ here, function calls through leaf(node). Also used inside the worker.
@@ -11071,23 +11070,54 @@ function renderModePicker() {
 }
 
 /* ---- 5.2 compute(): from the formula to a built walk -------------------------------------- */
-// a worker of formulaWorker, which also needs digitString, seededRandom, exactValue and iroot (A's digits, B's and C's: see rivalsDigits)
+// a worker of formulaWorker (A's digits, B's and C's: see rivalsDigits)
 // a worker made of the page's own code (one source, nothing copied to go stale): parts, its functions and values by name
 // (a value as JSON), then main, the function it runs
-const workerOf = (parts, main) =>
+// A worker made of the page's own code: main, and every function and constant of the page it reads, and theirs, found by
+// their names in its code (comments aside), never a list kept by hand (SEGMENT_NEVER, read by battlePlayer since v0.4.812,
+// was left out of the battles' list: their hunt failed). Sent as they are: the functions as their text, the constants (in
+// capitals) as JSON; the page's state (walk, camera…) never: a worker reading it is a bug, its name undefined there
+const pageValue = (name) => {
+  try {
+    return Function(`return ${name}`)();
+  } catch {
+    return undefined;
+  }
+}; // (a name of the page's code: a top-level function, const or let; else none)
+function workerParts(main) {
+  const parts = new Map(),
+    todo = [String(main)];
+  while (todo.length) {
+    const code = todo
+      .pop()
+      .replace(/(^|\s)\/\/.*$|\/\*[\s\S]*?\*\//gm, '$1') // (its comments)
+      .replace(/`(?:\\.|\$\{[^}]*\}|[^`\\])*`/g, (t) => (t.match(/\$\{[^}]*\}/g) ?? []).join(' ')) // (a template's: its ${…} only)
+      .replace(/'(?:\\.|[^'\\\n])*'|"(?:\\.|[^"\\\n])*"/g, "''"); // (its strings' words)
+    for (const name of new Set(code.match(/(?<![\w$]|[^.]\.)[A-Za-z_][\w$]*/g))) {
+      // (a name, never a property: x.name, but ...name)
+      if (parts.has(name)) continue;
+      const v = pageValue(name);
+      if (typeof v === 'function' && !/\[native code\]\s*\}$/.test(String(v))) {
+        parts.set(name, String(v));
+        todo.push(String(v));
+      } else if (/^[A-Z][A-Z0-9_]*$/.test(name) && v !== undefined && !(name in globalThis)) {
+        try {
+          parts.set(name, JSON.stringify(v));
+        } catch {} // (none that JSON cannot write)
+      }
+    }
+  }
+  return parts;
+}
+const workerOf = (main) =>
   new Worker(
     URL.createObjectURL(
-      new Blob(
-        [
-          `${Object.entries(parts)
-            .map(([k, v]) => `const ${k} = ${typeof v === 'function' ? v : JSON.stringify(v)};`)
-            .join('\n')}\n(${main})()`,
-        ],
-        { type: 'text/javascript' },
-      ),
+      new Blob([`${[...workerParts(main)].map(([k, v]) => `const ${k} = ${v};`).join('\n')}\n(${main})()`], {
+        type: 'text/javascript',
+      }),
     ),
   );
-const newFormulaWorker = () => workerOf({ digitString, seededRandom, exactValue, iroot }, formulaWorker);
+const newFormulaWorker = () => workerOf(formulaWorker);
 function compute() {
   for (const stage in timings) setTiming(stage); // (each walk its own times: none of the one before)
   const mode = MODES[tabMode()];
@@ -19563,36 +19593,7 @@ const rootDigits = (r, base, n) =>
 // surface, its grid or cells, its walk's acts, the way, base and digits (the cards' made, the roots' made there), then sent
 // battles, two at a time, each sending back its score (see huntScore)
 const BATTLE_WORKERS = Math.max(1, (navigator.hardwareConcurrency || 4) - 1);
-const battleWorker = () =>
-  workerOf(
-    {
-      mod,
-      cross,
-      iroot,
-      rootDigits,
-      TORUS_TUBE,
-      tubeOf,
-      SURFACE_NOTCHES,
-      gridGraph,
-      cornerUv,
-      sheetWrap,
-      sheetDelta,
-      nextCorner,
-      nextCornerCarried,
-      acrossEdge,
-      surfaceStep,
-      BATTLE_RULES,
-      BATTLE_LINED,
-      battleLinks,
-      battleWall,
-      unionFind,
-      smallerSide,
-      battlePlayer,
-      battleWinner,
-      huntScore,
-    },
-    battleWorkerMain,
-  );
+const battleWorker = () => workerOf(battleWorkerMain);
 function battleWorkerMain() {
   // (run in a worker: its setup, then its battles)
   let game = null;
@@ -20333,10 +20334,7 @@ function elementaryReady(then) {
     return true;
   }
   const job = computeJob;
-  elementaryWorker = workerOf(
-    { KEEP, wolframTable, wordsOf, popCounts, wolframStep, elementaryRowsOf },
-    elementaryWorkerMain,
-  );
+  elementaryWorker = workerOf(elementaryWorkerMain);
   setBusy(true, `Computing ${formatNumber(a.args[0])} rows`);
   elementaryWorker.onmessage = (e) => {
     elementaryWorker.terminate();

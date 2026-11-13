@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.968';
+const VERSION = '0.4.969';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -10404,11 +10404,10 @@ const customRow = $('antCustomRow'); // (kept: out of the page while a list redr
 // births and survivals); closed on another mode
 let rulesMode = null,
   customOpen = false; // (the mode the rules were last drawn for)
-// the number picker's place and whether it shows, from the setup now (both renders call it, the last one with the battle
-// decided: renderAntRow runs before a surface's sizes are filled, when battleOn cannot tell yet, see battleFits): a walk's
-// Start, its start on a surface first (a creature's at the head of its own Start), then the number read (its digits; a
-// battle's numbers instead, see renderWalkTeams); a start's by the digits (Life's, a creature's) under its Digits tab;
-// read by none, back in the walk's, hidden
+// the number picker's place and whether it shows, from the setup now: a walk's Start, its start on a surface first (a
+// creature's at the head of its own Start), then the number read (its digits; a battle's numbers instead, see
+// renderWalkTeams); a start's by the digits (Life's, a creature's) under its Digits tab; read by none, back in the walk's,
+// hidden
 function placeNumberPicker() {
   const w = tabMode(),
     m = MODES[w],
@@ -17978,7 +17977,6 @@ function renderWalkTeams() {
   if (!oceanPicked) applyDefaults('battle'); // (Ocean on in a walk's battle, till it is clicked: see DISPLAY_DEFAULTS)
   // a battle: its numbers in its Start section, A's formula field moved there from the number's (hidden then), then B's on
   $('battleStart').hidden = $('startWays').hidden = $('battleHunt').hidden = !battleOn();
-  placeNumberPicker(); // (the battle decided now, its sizes filled)
   RIVALS.forEach((id, j) => {
     $(id).parentElement.hidden = j >= walkTeams - 1;
   }); // (the walkers' but A's)
@@ -18482,11 +18480,11 @@ const battleGroups = (g, K, enough = Infinity, good = null) => {
 const battleFits = (
   w,
   K,
-  size = battleMode(w) && (w === tabMode() ? menuSizeOf(w) : figureSize(w)),
+  size = battleMode(w) && figureSize(w), // (the size it has or opens at, the menu filled or not: one answer through a change)
   j = startAsked(),
 ) => {
   // (j: A's start's number asked, its list's at most)
-  if (K < 2 || !size || !battleMode(w)) return false; // (none, or the tab's size not set yet: a page opening)
+  if (K < 2 || !size || !battleMode(w)) return false; // (none)
   // a ring's by its kind, known by construction (its length made for its walkers, see ringColours): a torus takes every
   // count (its shift of 1/K round it), a Klein bottle a Duel only (its gluing: its half turn, see ringGroup); a Möbius strip's tried
   const ring = SPHERES[surfaceOf(MODES[w])].columns && familyOf(w)?.F.name;

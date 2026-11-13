@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.965';
+const VERSION = '0.4.966';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -5051,6 +5051,7 @@ const RULES = [
     ['L2 L U R R2', 'Turtle', 'turtle'],
     ['L N R', 'Turtle', 'turtle'],
     ['L R', 'Turtle', 'turtle'],
+    ['L2 R2', 'Turtle', 'turtle'], // (front left, front right: on any cell of 3 sides or more, a solid's corners' triangles and squares too)
     ['N r', 'Pivot', 'pivot'],
     ['N a', 'Parity', 'walk2d'],
     ['n ne se s sw nw', 'Fixed', 'compass'],
@@ -9708,6 +9709,33 @@ for (const [k, name] of Object.entries(TETRAKIS_SOLIDS)) {
   MODE_ICONS[m] = MODE_ICONS[base];
   NAV[m] = ['Life', 'Surfaces', name, 'Life', ''];
 }
+// the walks on the tetrahedron's and the octahedron's hexagons (see hexSolidMesh), as the sphere's: along their grid, on
+// their cells; the cells at its corners those of fewer sides (4 triangles, 6 squares), walked on (walls in Life only)
+const HEX_WALK_CORNERS = { tetra: '4 triangles', octa: '6 squares' };
+for (const [k, corners] of Object.entries(HEX_WALK_CORNERS)) {
+  const { a, name } = HEX_SOLIDS[k],
+    on = `${a} of hexagons (and ${corners} at its corners)`;
+  MODES[`${k}HexGrid`] = {
+    ...MODES.hexSphereGrid,
+    twin: `${k}HexLR`,
+    sphere: `${k}Hex`,
+    rule: `along the edges of ${on}: <b>0</b> turn left, <b>1</b> turn right`,
+  };
+  const { ant, ...cells } = MODES.hexSphereWalk; // (no ant there)
+  MODES[`${k}HexLR`] = {
+    ...cells,
+    twin: `${k}HexGrid`,
+    sphere: `${k}Hex`,
+    rule: `on ${on}: exit through the <b>0</b> front left or <b>1</b> front right edge`,
+  };
+  for (const [w, how] of [
+    [`${k}HexGrid`, 'grid'],
+    [`${k}HexLR`, 'cells'],
+  ]) {
+    MODE_ICONS[w] = MODE_ICONS.hexSphereGrid;
+    NAV[w] = ['Walk', 'Surfaces', name, 'Turtle', how];
+  }
+}
 for (const [k, { a, name }] of Object.entries(HEX_SOLIDS)) {
   // the solids of hexagons (see hexSolidMesh): Life, as their kites'
   const m = foldOf('life', `${k}Hex`),
@@ -10239,7 +10267,9 @@ const FAMILIES = [
       modes: [
         [`${k}Grid`, `${k}LR`, ...(MODES[`ant${K}`] ? [`ant${K}`] : []), `life${K}`],
         [`life${K}Kite`],
-        sphere ? ['hexSphereGrid', 'hexSphereWalk', 'antHexSphere', 'lifeHexSphere'] : [`life${K}Hex`],
+        sphere
+          ? ['hexSphereGrid', 'hexSphereWalk', 'antHexSphere', 'lifeHexSphere']
+          : [...(HEX_WALK_CORNERS[k] ? [`${k}HexGrid`, `${k}HexLR`] : []), `life${K}Hex`],
         ...(sphere ? [['lifeTwistedSphere']] : []),
       ],
       tabs: [
@@ -10249,7 +10279,9 @@ const FAMILIES = [
           false,
           'tilesHex',
           'Hexagons',
-          sphere ? 'Hexagons (and 12 pentagons)' : 'Hexagons (folded over the edges, the corners walls)',
+          sphere
+            ? 'Hexagons (and 12 pentagons)'
+            : `Hexagons (folded over the edges${HEX_WALK_CORNERS[k] ? `, ${HEX_WALK_CORNERS[k]} at the corners, walls in Life` : ', the corners walls'})`,
         ],
         [0, false, 'tilesTri', 'Triangles', sphere ? 'Triangles (an icosahedron, inflated)' : 'Triangles'],
         ...(sphere
@@ -15383,6 +15415,8 @@ function hexSolidMesh(solid, f) {
   // octagons) are walls: always dead, and no one's neighbour
   mesh.walls = cells.flatMap((c, v) => (c.length !== 6 ? [v] : []));
   mesh.hexagons = true; // (its cells hexagons, whatever its walls' sides: the stella's octagons, see patternAt)
+  if (!ico.solid)
+    mesh.faceCentres = ico.faces.map((fc) => unit([0, 1, 2].map((d) => fc.corners.reduce((sum, p) => sum + p[d], 0)))); // (its solid's faces, its triangles' own: not the dodecahedron's, whose triangles cut its pentagons; see solidFaceCentres)
   // each cell's plane: its solid's face its triangles are all on (f² triangles a face, in turn; faces in one plane, a
   // pentagon's triangles, one), else -1 (folded over an edge)
   const { P, faces } = POLYHEDRA[solid],
@@ -16963,6 +16997,7 @@ function solidFaceCentres(g, C) {
   const sum = (ps) => unit([0, 1, 2].map((d) => ps.reduce((s, p) => s + p[d], 0)));
   if (g.solid) return g.solid.centres;
   if (g.faces) return g.faces.map((f) => sum(f.corners));
+  if (g.faceCentres) return g.faceCentres; // (a solid of hexagons: its triangles' solid's, see hexSolidMesh)
   const O = [];
   for (let i = 0; i < 12; i++)
     for (let j = i + 1; j < 12; j++)

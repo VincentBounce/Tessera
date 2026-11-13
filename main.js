@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.948';
+const VERSION = '0.4.949';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -7169,26 +7169,26 @@ const card = ({
   if (rule && !title) b.dataset.ruleHtml = rule; // (its tooltip's words after its rule, as its card writes it: see tipOf)
   b.append(
     picture,
-    cardWords(name, detail, '', null, rule),
-    ...(base ? [cardBubble(base, click && (() => (on ? toggleNumber() : (click(), showNumber()))))] : []),
+    cardWords(name, detail, rule),
+    ...(base ? [cardBubble(base, click && (() => (on ? toggleNumber() : (click(), showNumber()))), on)] : []),
   );
   return b;
 };
 // a card's bubble at its top right: its base (where digits are read); a click shows the number in it (its card picked first),
 // or hides it. A base's words, every bubble's
 const baseWords = (base) => `base ${base}`;
-// a base bubble's words, the Formula field's and the cards' alike: a click shows the number in that base, its name (see
-// showNumber)
 // every control that shows the number (Show digits, the bar's base, a card's): one name and words, its base in its name
 const showDigitsTip = (el, words) => {
   el.setAttribute('aria-label', `Show digits in ${words}`);
   el.title = 'The number, all its digits over the view: to scroll or copy';
 };
-const cardBubble = (base, show) => {
+// a card's base bubble: a click shows the number in that base (a card not picked: picked first); lit, its card's (on) number
+// shown, never another card's of the same base
+const cardBubble = (base, show, on) => {
   const b = Object.assign(document.createElement('span'), {
-    className: `bubble${show ? ' act' : ''}${baseShown(base) ? ' active' : ''}`,
+    className: `bubble${show ? ' act' : ''}${on && baseShown(base) ? ' active' : ''}`,
     textContent: base,
-  }); // (lit: the number shown in its base)
+  });
   if (show) {
     b.setAttribute('role', 'button');
     showDigitsTip(b, base);
@@ -7204,17 +7204,16 @@ const htmlText = (text) => String(text).replace(/[&<>]/g, (c) => `&#${c.charCode
 // A rule's code wherever it is written (B3/S23, LRU, L2 R2, 1R0 0L0, W110: a card's, a tutorial's, the commands'): in --mono-font
 // (.rule), l, I, | and 1 told apart; the words round it in the page's font
 const ruleSpan = (code) => `<code class="rule">${htmlText(code)}</code>`;
-// a card's words, every card's and Grid | Cells' alike: its name (Grid | Cells': its base in its bubble at its right), then its
-// rule's code (see ruleSpan) and its words
+// a card's words, every card's alike: its name, then its rule's code (see ruleSpan) and its words
 // a card's name as HTML: a number's symbol as everywhere (🐉 the dragon's icon, not the system's emoji), the rest as text
 const cardNameHtml = (name) => withIcons(htmlText(name));
-function cardWords(name, detail = '', base = '', show = null, rule = '') {
+function cardWords(name, detail = '', rule = '') {
   const part = (cls, text) => Object.assign(document.createElement('span'), { className: cls, textContent: text }),
     head = part('mode-head', ''),
     words = document.createElement('span');
   const named = part('mode-name', '');
   named.innerHTML = cardNameHtml(name);
-  head.append(named, ...(base ? [cardBubble(base, show)] : []));
+  head.append(named);
   if (rule || detail)
     words.append(
       head,
@@ -45886,10 +45885,11 @@ $('copyRle').addEventListener('click', () => {
 // only a click on the button again or the cross closes it
 // the chips that show the number: Full number's, and a walk's base (its rule's chip: how it works instead)
 const numberChips = () => [$('copyNumber'), $('barBase')];
-// the bases' bubbles: lit, every one of the base shown (drawn again: lit as they are)
+// the cards' base bubbles: lit, the picked card's when the number shows in its base (drawn again: lit as they are)
 const baseShown = (base) => !$('numberPreview').hidden && base === baseWords(digitsComputed.base);
 const lightBases = () => {
-  for (const b of document.querySelectorAll('.bubble.act')) b.classList.toggle('active', baseShown(b.textContent));
+  for (const b of document.querySelectorAll('.bubble.act'))
+    b.classList.toggle('active', !!b.closest('.active') && baseShown(b.textContent)); // (its card picked: see cardBubble)
 };
 const ONE_LINE_DIGITS = 400; // (a battle's number on one line: more digits than the widest line holds)
 const base10 = { on: false }; // (Base 10 switched on: the number in base 10 instead, see showNumber; none for a sequence, its digits defined base by base: another number in base 10)

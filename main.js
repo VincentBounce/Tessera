@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.987';
+const VERSION = '0.4.988';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -42063,7 +42063,7 @@ function gpuLifePut(E, alive, r = 0) {
   field(4, (t) => (live(alive[t]) ? 1 : 0) | (L.colours > 1 && L.seed[t] ? 1 << L.seed[t] : 0));
 }
 // a compute pass of E's: its numbers into slot k of words (the grid's, then numbers), count cells, more: its look's group
-function gpuPass1(E, enc, words, k, pipe, numbers, count, more = null) {
+function lifeComputePass(E, enc, words, k, pipe, numbers, count, more = null) {
   const L = E.L,
     M = L.margolus,
     v = {
@@ -42113,7 +42113,7 @@ async function gpuLifeSteps(E, { gen = 0, back = false, k = 1, r0 = 0, r1 = E.ru
   enc.clearBuffer(E.sums);
   let slot = 0;
   const pass = (pipe, numbers, count) => {
-    gpuPass1(E, enc, words, slot++, pipes[pipe], { r0, r1, ...numbers }, count);
+    lifeComputePass(E, enc, words, slot++, pipes[pipe], { r0, r1, ...numbers }, count);
   };
   for (let x = 0; x < k; x++) {
     const g = back ? gen - x : gen + x,
@@ -42201,7 +42201,7 @@ function gpuLook(L, out, look) {
     (Math.round(c[3] * 255) << 24);
   const words = new Int32Array(64),
     enc = device.createCommandEncoder();
-  gpuPass1(
+  lifeComputePass(
     E,
     enc,
     words,

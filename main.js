@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.984';
+const VERSION = '0.4.985';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -17994,7 +17994,8 @@ function renderWalkTeams() {
   if (!battleOn() && fieldA.parentElement !== $('numberPicker')) $('numberTabs').after(fieldA);
   const firsts = battleFirsts().map((f) => formulaOf(f).sym);
   $('battleFirsts').textContent = firsts.slice(0, 3).join(' vs ') + (firsts.length > 3 ? '…' : ''); // (its first 3: one line)
-  $('battleFirsts').title = `Each walker back to its first number: ${firsts.join(' vs ')}`; // (all of them)
+  $('battleFirsts').title =
+    `Each walker back to its first number${firsts.length > 3 ? `: ${firsts.join(' vs ')}` : ''}`; // (those its label cuts: all of them; else none, its label says them)
   battleAsked = BATTLE_FORMULAS.map((id) => $(id).value); // (a battle computed: its numbers as sent)
   tintBattleFormulas();
   if (battleHunt.run && (!battleOn() || battleHunt.key !== battleHuntKey())) stopBattleHunt(); // (its battles fought elsewhere: it stops)
@@ -18135,7 +18136,7 @@ const STARTS_WAYS = [
   [
     'random',
     'Random',
-    'Each walker anywhere, drawn at random (kept in the link): not fair, each walker in a place of its own · Clicked again: another draw',
+    'Each walker anywhere, drawn by chance (kept in the link): not fair, each walker in a place of its own · Clicked again: another draw',
   ],
 ]; // (its tabs in this order, a link's gr= its place: 0 the first, the default)
 let battleStartsWay = 'symmetric',

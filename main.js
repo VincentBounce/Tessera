@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.973';
+const VERSION = '0.4.974';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -42222,7 +42222,8 @@ function gpuLook(L, out, look) {
  * Judder in Chrome on an external screen on a Mac (an Asus, at 60, 120 and 144 Hz alike, v0.4.0): WebGL's smoother there in
  * 4 blind tests of 5, Safari's WebGPU smoother than WebGL on the same screen, Chrome's WebGPU smooth on the MacBook's own;
  * nothing in the page shows it (frames, input to picture, allocations, flicker the same), nor did presenting as an image,
- * no antialiasing or the sky in the same picture change it: Chrome's way to that screen, not ours (see WEBGPU.md) */
+ * no antialiasing or the sky in the same picture change it: Chrome's way to that screen, not ours (2026-11-03: key to
+ * picture 19 ms, WebGL's 21; 327 KB allocated a frame both, 40 KB since v0.4.1) */
 const gpuCanvas = $('gpuLayer');
 // a draw's numbers, in this order (vec3s padded to 4 words; see struct U)
 const GPU_VIEW = `

@@ -11,7 +11,7 @@ This file lists the most striking ones found so far, by walk, each opening the l
 
 <br>
 
-<p align="center">⁂</p>
+<p align="center">* * *</p>
 
 <br>
 
@@ -82,7 +82,7 @@ The rabbit constant (the Fibonacci word) on Squares parity (the rule `N a`), whe
 
 <br>
 
-<p align="center">⁂</p>
+<p align="center">* * *</p>
 
 <br>
 
@@ -336,7 +336,7 @@ The latest highway: N = 17, after 271,384 steps of chaos. The links of the bound
 
 <br>
 
-<p align="center">⁂</p>
+<p align="center">* * *</p>
 
 <br>
 
@@ -561,7 +561,7 @@ Along the grid: see [the sphere of hexagons](#-along-the-grid-of-the-sphere-of-h
 
 <br>
 
-<p align="center">⁂</p>
+<p align="center">* * *</p>
 
 <br>
 
@@ -1011,7 +1011,7 @@ They send out gliders as often as Life, or more, and their small starts grow as 
 
 <br>
 
-<p align="center">⁂</p>
+<p align="center">* * *</p>
 
 <br>
 
@@ -1066,7 +1066,7 @@ Draw's patterns for the kites' rules, from 720 small starts each (a methuselah: 
 
 <br>
 
-<p align="center">⁂</p>
+<p align="center">* * *</p>
 
 **A third search: the flowers' letters on kites** (tools/kitesearch/letters.js). A rule can tell a kite's live neighbours apart: after a count, v and how many of them touch it by a corner only (0 to 3, 3 for 3 or more; a kite has 4 neighbours by a side, 5 by a corner): B3v12 is born with 3 live neighbours of which 1 or 2 by a corner. 60,000 rules with letters drawn at random (B 1 to 3 digits from 2 to 7, S up to 5 from 0 to 8, 2 to 5 states; a tenth of them from the kites' known rules, whose lettered forms mostly die out: letters make births rarer), their soups on a torus of 1,536 kites, 537 Life-like; those followed (12 soups on 3,456 kites) and scored against Life as above; the best 40 tried with 36 small starts for ships. The known rules on the same score: Kite simmer 0.29, Kite marathon 0.04, Kite Life 0.03, the others under 0.01. After a count with letters, a "." before a count 0 to 3 (B2v01.3: 2 with none or one by a corner, then 3).
 
@@ -1124,7 +1124,7 @@ No pattern can be moved on hats (no two places alike), so Draw has only single c
 
 <br>
 
-<p align="center">⁂</p>
+<p align="center">* * *</p>
 
 <br>
 
@@ -1145,7 +1145,7 @@ A lesson for methuselahs: a torus too small lets their debris and ships come rou
 
 <br>
 
-<p align="center">⁂</p>
+<p align="center">* * *</p>
 
 <br>
 
@@ -1185,7 +1185,7 @@ A methuselah's lifetime, as Life's are given (the R-pentomino's 1,103, the Acorn
 
 <br>
 
-<p align="center">⁂</p>
+<p align="center">* * *</p>
 
 <br>
 
@@ -1214,7 +1214,7 @@ The second rule of each (Long florets B24/S456/C4 with a ship of 12 cells, perio
 
 <br>
 
-<p align="center">⁂</p>
+<p align="center">* * *</p>
 
 <br>
 
@@ -1252,7 +1252,7 @@ None for the rules with a birth on 2 (Prismatic Life, Long prisms, Long florets,
 
 <br>
 
-<p align="center">⁂</p>
+<p align="center">* * *</p>
 
 <br>
 
@@ -1293,7 +1293,7 @@ Since 2026-11-03 (mirror7-sphere branch) a ring's hole is a cell too, its n side
 
 <br>
 
-<p align="center">⁂</p>
+<p align="center">* * *</p>
 
 <br>
 

@@ -52,7 +52,9 @@ Line balance).
 Before every `## ` title of a Markdown file (README.md, PATTERNS.md, CLAUDE.md, any new one), its separator on a line of
 its own, a blank line round it, the user's formula: `<p align="center"><br>* * *</p>`. Centred, and the `<br>` evens the
 space round it (GitHub's margins: 16 px under a paragraph, 24 px over a title; no style of our own passes there). Never
-⁂ (one star over two: it looks off centre), never `\n` (written as it is).
+⁂ (one star over two: it looks off centre), never `\n` (written as it is). One exception, PATTERNS.md, whose parts are very
+long: more air on both sides, `<p align="center"><br><br>* * *<br>&nbsp;</p>` (its last line held by the non-breaking
+space: a `<br>` alone at a paragraph's end makes no line).
 
 <p align="center"><br>* * *</p>
 

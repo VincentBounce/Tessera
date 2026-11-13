@@ -647,9 +647,9 @@ button.wide {
 .clean-storage .wide {
   max-width: var(--panel-width);
 } /* (its wide button the settings' column's width, as How it works) */
-button.wide.how-it-works {
+button.wide.on-list {
   margin-bottom: 4px;
-} /* on its rules' first card, the list's gap */
+} /* a wide button over a list (How it works, Draw's View): on its first card, the list's gap */
 #huntSection:not(:has(> div:not([hidden]))) {
   display: none;
 } /* (a mode with no hunt: none of its blocks shown) */
@@ -792,9 +792,6 @@ button.switch.active:hover:not(:disabled) {
   gap: 4px;
   margin-bottom: 10px;
 }
-#brushCards > [data-brush='view'] {
-  margin-bottom: 6px;
-} /* View, no brush: apart from the brushes under it, as a list's (10 px) */
 /* The Gallery: over the whole of main, under the header, the settings and the view kept under it (still drawn: a picture taken) */
 .gallery-tools-row {
   display: flex;

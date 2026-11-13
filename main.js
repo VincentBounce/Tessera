@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.957';
+const VERSION = '0.4.958';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -20771,7 +20771,8 @@ const plane = {
 }; // (number: Formula's, see numberSeed; picks: Famous's and Anywhere's patterns, a colour each, as a link writes them, see choiceWord)  // a soup of its own each visit (a link keeps its seed)
 // Draw's brush: a cell or a pattern (squares only), turned by quarter turns and mirrored, in a colour
 // (0: the eraser)
-const brush = { id: 'view', turn: 0, flip: false, colour: 1 }; // (View at first: a click draws once a brush is picked)
+// view: View on, a click draws nothing (at first: a click draws once a brush is picked; see drawsHere), its brush kept
+const brush = { id: 'cell', view: true, turn: 0, flip: false, colour: 1 };
 let ghost = null; // the cell under the pointer while drawing, where the brush would go
 let cleared = null; // the cells Clear took away, back with Undo until something else is drawn or started
 // Draw's patterns, each for the rules it was found with (a rule of your own: all its grid's): [id, grid,
@@ -20782,7 +20783,6 @@ let cleared = null; // the cells Clear took away, back with Undo until something
 // (a methuselah's end counted as Life counts it, its ships flying off taken away: they are named after it, as they
 // come round a torus and meet the rest, the end later there)
 const BRUSH_CELL = ['cell', '', [], 'Cell', 'o!', 'one cell, again to change its state', '.....,.....,..o..'];
-const BRUSH_VIEW = ['view', '', [], 'View', null, 'to look: a click draws nothing (picked by Play)', null]; // (its picture an eye, see brushCards)
 const DRAW_PATTERNS = [
   [
     'glider',
@@ -24266,7 +24266,7 @@ function renderPlaneRow() {
   brush.colour = Math.min(brush.colour, K);
   for (const b of $('brushCards').children) {
     const p = DRAW_BY_ID.get(b.dataset.brush);
-    b.classList.toggle('active', p[0] === brush.id);
+    b.classList.toggle('active', p[0] === brush.id && !brush.view); // (viewing: no brush in hand)
     b.hidden = !fits(p);
     b.querySelector('.mode-detail').innerHTML = htmlText(p[5]) + (mine && p[2].length ? ` · ${ruleSpan(p[2][0])}` : ''); // your own rule: which rule it is for
     if (!b.hidden) discCard(b, p);
@@ -24314,11 +24314,10 @@ function renderDrawTools() {
   const grey = (b, own = false, ownWhy = '', on = b.classList.contains('active')) =>
     setTile(b, { on, greyed: away ? why : own ? ownWhy : '' }); // (its own on)
   const tooBig = (p) => discPattern(p) && flatGrid()?.kind === p[1] && !discCells(p[1]).laid(p[4], 0); // (a disc's pattern past the disc shown)
-  for (const b of $('brushCards').children) {
-    if (b.dataset.brush === 'view') setTile(b, { on: b.classList.contains('active') });
-    else grey(b, tooBig(DRAW_BY_ID.get(b.dataset.brush)), 'Too big for this disc: at a larger size.'); // (View: at any generation, a surface's greying undone)
-  }
-  const tool = !DRAW_BY_ID.get(brush.id)[1]; // (View or a cell: no pattern to turn)
+  setTile($('drawView'), { on: brush.view }); // (at any generation)
+  for (const b of $('brushCards').children)
+    grey(b, tooBig(DRAW_BY_ID.get(b.dataset.brush)), 'Too big for this disc: at a larger size.');
+  const tool = brush.view || !DRAW_BY_ID.get(brush.id)[1]; // (View or a cell: no pattern to turn)
   grey(
     $('brushTurn'),
     tool || gridTurns(kind) === 1,
@@ -24911,7 +24910,7 @@ function brushCells() {
 // where the brush's cells go, round the cell pointed at (see patternAt: moved by whole steps, its middle nearest that
 // cell's; round a torus, else cut off at the grid's edges): [x, y, state]
 function brushAt([cx, cy]) {
-  if (brush.id === 'view') return []; // (View: nothing)
+  if (brush.view) return []; // (View: nothing)
   if (brush.id === 'cell') return [[cx, cy, 1]]; // one cell: the one pointed at, whichever way it lies
   const { kind, xy } = walk.plane,
     p = DRAW_BY_ID.get(brush.id);
@@ -38343,7 +38342,7 @@ for (const [table, off] of [
       DRAW_PATTERNS.push([`${kind}-${off ? 'off' : 'mid'}-${i}`, kind, [rule], name, cells, what, null, off]),
     );
   }
-const DRAW_BY_ID = new Map([BRUSH_VIEW, BRUSH_CELL, ...DRAW_PATTERNS].map((p) => [p[0], p]));
+const DRAW_BY_ID = new Map([BRUSH_CELL, ...DRAW_PATTERNS].map((p) => [p[0], p]));
 const discPattern = (p) => Array.isArray(p[4]); // (a disc's: its cells by their middles, see DRAW_PATTERNS)
 // a disc's cells by their middles, from its middle (its disc of W, the shown one's by default, see flatGrid): laid(cells, a), a
 // disc pattern's cells turned by a round the middle, [cell, state] (null if one falls off: each the cell whose middle is within
@@ -39791,16 +39790,14 @@ function play(on) {
   const was = playing;
   playing = on && walk.n > 0 && !atEnd();
   if (playing !== was) motionChanged();
-  // (playing: View, Draw's look only, the brush picked before given back once it stops: a link loaded cold the same)
-  if (playing && drawing && brush.id !== 'view') {
-    brush.before = brush.id;
-    brush.id = 'view';
+  // (playing: View, Draw's look only, drawing again once it stops: a link loaded cold the same)
+  if (playing && drawing && !brush.view) {
+    brush.view = brush.byPlay = true;
     ghost = null;
     drawGhost();
     renderPlaneRow();
-  } else if (!playing && brush.before) {
-    brush.id = brush.before;
-    brush.before = null;
+  } else if (!playing && brush.byPlay) {
+    brush.view = brush.byPlay = false;
     renderPlaneRow();
   }
   if (playing) reverse(false);
@@ -45239,7 +45236,7 @@ stage.addEventListener('dblclick', () => {
 // Life's Draw start: a click on a cell draws (see the pointerup below); a drag still pans
 let drawing = false,
   drawFrom = null;
-const drawsHere = () => drawing && !drawAway() && brush.id !== 'view'; // (a click draws: in Draw, at gen 0, a brush picked, not View)
+const drawsHere = () => drawing && !drawAway() && !brush.view; // (a click draws: in Draw, at gen 0, a brush picked, not View)
 const drawAway = () => drawing && stepShown !== 0; // (Draw away from gen 0: its tools greyed, see renderDrawTools)
 // Life on the plane: the grid's size and edges (built again), its start (the cells only, but by the digits)
 for (const [id, k] of [
@@ -45410,14 +45407,15 @@ stage.addEventListener('pointerleave', () => {
   }
 });
 $('brushCards').replaceChildren(
-  ...[BRUSH_VIEW, BRUSH_CELL, ...DRAW_PATTERNS].map(([id, kind, , name, rle, what, art]) => {
+  ...[BRUSH_CELL, ...DRAW_PATTERNS].map(([id, kind, , name, rle, what, art]) => {
     const b = card({
-      pic: id === 'view' ? icon('eye') : art ? pixelIcon(art) : typeof rle === 'string' ? cellsIcon(kind, rle) : '',
+      pic: art ? pixelIcon(art) : typeof rle === 'string' ? cellsIcon(kind, rle) : '',
       name,
       detail: what,
       byDefault: id === 'cell' ? 'yes' : '',
       click: () => {
         brush.id = id;
+        brush.view = brush.byPlay = false; // (a brush in hand: View off)
         renderPlaneRow();
       },
     }); // (see brush)
@@ -45425,6 +45423,12 @@ $('brushCards').replaceChildren(
     return b;
   }),
 );
+// View: a switch, on: a click draws nothing (its brush kept), off: it draws again with it
+$('drawView').addEventListener('click', () => {
+  brush.view = !brush.view;
+  brush.byPlay = false;
+  renderPlaneRow();
+});
 $('brushTurn').addEventListener('click', () => {
   brush.turn = (brush.turn + 1) % gridTurns(MODES[tabMode()].plane);
   renderPlaneRow();

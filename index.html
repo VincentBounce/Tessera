@@ -10,7 +10,7 @@
   <meta property="og:url" content="https://vincentbounce.github.io/Tessera/">
   <meta property="og:type" content="website">
   <link id="favicon" rel="icon">  <!-- the app's logo, set at start-up (see LOGO_PATH) -->
-  <link rel="stylesheet" href="style.css?v=0.4.957">
+  <link rel="stylesheet" href="style.css?v=0.4.958">
   <script>  // the theme before the first paint (see applyTheme)
     try { const t = localStorage.getItem('tesseraTheme'); document.documentElement.dataset.theme = t === 'light' || t === 'dark' ? t : matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark'; } catch { document.documentElement.dataset.theme = 'dark'; }
   </script>
@@ -99,6 +99,7 @@
           </div>
           <div id="startDraw" class="start-panel">  <!-- Draw: a brush (a cell, or a pattern turned as chosen), in a colour or the eraser -->
             <button id="startCells" type="button" class="wide"></button>  <!-- the start's cells: Go to gen 0, Clear, Undo clear (see renderDrawTools) -->
+            <button id="drawView" class="wide on-list" data-icon="eye" data-toggle type="button" title="To look: a click draws nothing, the brush picked kept (on while Play plays)">View</button>
             <div id="brushCards" class="mode-list rule-cards" role="listbox"></div>
             <p id="drawNote" class="caption" hidden>No known patterns for this rule on this grid</p>  <!-- a surface, a rule with none -->
             <div class="draw-row turn-row"><button id="brushTurn" type="button" title="A quarter turn more">↻ 0°</button><button id="brushFlip" type="button" title="Mirrored">⇋ Mirror</button></div>
@@ -167,7 +168,7 @@
       <section id="walkRuleSection">  <!-- a walk's rule or a creature's (Ant, Turmite, Worm): its rules' cards (a command per digit), Spiral; a walk's along the grid or on cells -->
         <h2 data-icon="turtle">Walking rule</h2>
         <div id="walkOn" class="nav-shapes"></div>  <!-- along the grid, or on cells: one choice, a tab group of tiles (as the Start's), first, above How it works -->
-        <button id="walkRuleHow" class="wide how-it-works" data-icon="info" type="button" title="The rule in use, step by step: what each cell (each step) sees, and what it does (a click on a rule card's picture, too)">How it works</button>  <!-- how the rule works (see walkTutorialToggle), on its first card -->
+        <button id="walkRuleHow" class="wide how-it-works on-list" data-icon="info" type="button" title="The rule in use, step by step: what each cell (each step) sees, and what it does (a click on a rule card's picture, too)">How it works</button>  <!-- how the rule works (see walkTutorialToggle), on its first card -->
         <div id="navRules" class="mode-list rule-cards" role="listbox"></div>  <!-- the rules of that shape, where there are several; a walk by a rule: its rules' cards; a creature's, the creatures, the one in use with its rules (see ruleCards) -->
         <div id="antCustomRow" hidden><h3 id="antRuleName"></h3>  <!-- not a label: a click on ↵ would focus the field again; moved right after its card (see ruleCards) -->
           <span class="field"><input id="antRule" class="custom rule" type="text" autocomplete="off" spellcheck="false" title="Type a rule, then Enter"><button class="enter" type="button" tabindex="-1" title="Apply (Enter)">↵</button></span>
@@ -371,7 +372,7 @@
       <section id="automataSection" hidden>  <!-- Life: its rule -->
         <h2 data-icon="glider">Rule</h2>
         <div id="ruleTabs" class="nav-shapes"></div>  <!-- Elementary's: Main | Others -->
-        <button id="watchRule" class="wide how-it-works" data-icon="info" type="button" title="The rule in use, step by step: what each cell (each step) sees, and what it does (a click on a rule card's picture, too)">How it works</button>  <!-- how the rule in use works (see ruleTutorial), on its first card -->
+        <button id="watchRule" class="wide how-it-works on-list" data-icon="info" type="button" title="The rule in use, step by step: what each cell (each step) sees, and what it does (a click on a rule card's picture, too)">How it works</button>  <!-- how the rule in use works (see ruleTutorial), on its first card -->
         <div id="ruleCards" class="mode-list rule-cards" role="listbox"></div>  <!-- the rules for the grid's shape, as cards -->
         <div class="rule-build">  <!-- your own: the states (a cell's: alive, its dying stages, dead), how many live neighbours give birth, let survive -->
           <div class="build-cols">  <!-- two frames side by side: Birth, Survive -->
@@ -509,10 +510,10 @@
     </div>
   </main>
 
-  <script src="pixelarticons.js?v=0.4.957"></script>
-  <script src="punks.js?v=0.4.957"></script>
-  <script src="loops.js?v=0.4.957"></script>
-  <script src="emoji.js?v=0.4.957"></script>
-  <script src="main.js?v=0.4.957"></script>
+  <script src="pixelarticons.js?v=0.4.958"></script>
+  <script src="punks.js?v=0.4.958"></script>
+  <script src="loops.js?v=0.4.958"></script>
+  <script src="emoji.js?v=0.4.958"></script>
+  <script src="main.js?v=0.4.958"></script>
 </body>
 </html>

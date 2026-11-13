@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.985';
+const VERSION = '0.4.986';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -13237,6 +13237,7 @@ function finishMesh(verts, tiles, sides, size, outwardRef = (m) => m) {
     for (let k = 0; k < sides; k++) {
       const u = poly[sides * t + k],
         v = poly[sides * t + ((k + 1) % sides)];
+      if (u === v) continue; // (a repeated corner's side, of length 0: no neighbour, as a pentagon's of the sphere of hexagons)
       const e = Math.min(u, v) * nv + Math.max(u, v);
       const other = edges.get(e);
       if (other === undefined) {
@@ -16743,14 +16744,16 @@ function gridGraph(g) {
   const edgeTiles = new Map(),
     normal = new Float64Array(3 * nv);
   const key = (a, b) => (a < b ? a * nv + b : b * nv + a);
+  const at = (v) => [V[3 * v], V[3 * v + 1], V[3 * v + 2]];
   for (let t = 0; t < g.n; t++) {
-    const a = g.poly[k * t],
-      b = g.poly[k * t + 1],
-      c = g.poly[k * t + 2];
-    const n = cross(
-      [V[3 * b] - V[3 * a], V[3 * b + 1] - V[3 * a + 1], V[3 * b + 2] - V[3 * a + 2]],
-      [V[3 * c] - V[3 * a], V[3 * c + 1] - V[3 * a + 1], V[3 * c + 2] - V[3 * a + 2]],
-    );
+    // the tile's normal, its whole outline's (Newell's: the sum of its sides' cross products), whichever corner it starts
+    // at: a tile bent across a solid's edge (a stella's of hexagons) has no plane, and its first three corners' turned
+    // with the corner its list starts at, so a turned walk left its turned path
+    const n = [0, 0, 0];
+    for (let j = 0; j < k; j++) {
+      const side = cross(at(g.poly[k * t + j]), at(g.poly[k * t + ((j + 1) % k)]));
+      for (let d = 0; d < 3; d++) n[d] += side[d];
+    }
     for (let j = 0; j < k; j++) {
       const p = g.poly[k * t + j],
         q = g.poly[k * t + ((j + 1) % k)];

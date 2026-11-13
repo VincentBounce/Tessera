@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.951';
+const VERSION = '0.4.952';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -23685,12 +23685,16 @@ function planeNeighbours(kind, W, torus, hensel = false) {
     else for (const [u, v] of cornersOf(x, y)) add(u, v);
     cStart[t + 1] = at;
   }
-  return cellNeighbours(
-    cStart,
-    Int32Array.from(cList),
-    nv,
-    baseOf(kind) === 'hex' ? 6 : hensel && kind === 'square' ? 8 : 0,
-  ); // (a rectangle of hexagons: theirs too)
+  const corners = { start: cStart, list: Int32Array.from(cList) }; // (each cell's corners' ids: by a side, see sideOf)
+  return {
+    ...cellNeighbours(
+      corners.start,
+      corners.list,
+      nv,
+      baseOf(kind) === 'hex' ? 6 : hensel && kind === 'square' ? 8 : 0,
+    ),
+    corners,
+  }; // (a rectangle of hexagons: theirs too)
 }
 // a grid of squares' cells by their 4 sides, clockwise from the top (N, E, S, W), −1 past a dead edge (see parseLoops)
 function sidesOf(row, W, torus) {
@@ -23819,7 +23823,7 @@ function buildLifePlane(seq) {
       : rule.iso && rule.iso !== 'vertex'
         ? nbr.ring
         : null,
-    side: rule.iso === 'vertex' ? sideOf(kind, W, nbr) : null,
+    side: rule.iso === 'vertex' ? sideOf(nbr) : null,
     margolus: MODES[digitsComputed.mode].margolus && rule.margolus ? ruleBlocks(rule, kind, W) : null,
     seed: planeSeed(kind, seq, rule.C, rule.colours),
   });
@@ -24372,18 +24376,12 @@ function discCard(b, p) {
 // A grid's wall (dead edges): the cells just outside it that touch one of its cells, a cell thick whatever the tiling (its
 // rhombus's or lattice cell's row round it, kept where it touches); once a grid
 // each neighbour of each cell (as nbr lists them) by a side, 1 (two corners or more shared), or by a corner only, 0: the
-// flowers' letters (see parseRule)
-function sideOf(kind, W, nbr) {
-  const at = cellPolys(kind, W),
-    { n } = planeGrid(kind, W); // (its own size: walk.plane not yet it)
-  const start = new Int32Array(n + 1),
-    ids = []; // (each cell's corners' ids, see pointKey)
-  for (let t = 0; t < n; t++) {
-    for (const [x, y] of at(t)) ids.push(pointKey(x, y));
-    start[t + 1] = ids.length;
-  }
-  const side = new Uint8Array(nbr.list.length);
-  for (let t = 0; t < n; t++)
+// flowers' letters (see parseRule); its corners the ones the neighbours were found by (planeNeighbours: a torus's wrapped,
+// one id each side of its seam; their places unwrapped, a side across the seam was a corner only till v0.4.952)
+function sideOf(nbr) {
+  const { start, list: ids } = nbr.corners,
+    side = new Uint8Array(nbr.list.length);
+  for (let t = 0; t < start.length - 1; t++)
     for (let q = nbr.start[t]; q < nbr.start[t + 1]; q++) {
       const u = nbr.list[q];
       let shared = 0;

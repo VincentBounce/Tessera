@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.982';
+const VERSION = '0.4.983';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -1198,7 +1198,8 @@ const PRESETS = {
   },
   // Fractions: the screens' 4/3 and 16/9, π's 22/7 and 355/113 (Zu Chongzhi's, 6 decimals right). Their digits repeat,
   // and on a walk that turns relative to its heading, a round of them that turns by a whole fraction of a turn closes into a
-  // rosette (k rounds for a k-fold one).
+  // rosette (k rounds for a k-fold one). Written here as they were found (the classics, the rosettes, the highways, the
+  // surfaces' patterns, each its words in its tooltip); shown by their digits, then by value (see fractionOrder)
   frac4_3: { group: 'Fractions', sym: '4/3', name: 'Four thirds', detail: 'the old screens, 4:3', f: '4/3' },
   frac16_9: {
     group: 'Fractions',
@@ -9027,6 +9028,13 @@ const cardSymbol = (sym) => {
 };
 // the cards of a tab's groups
 const cardsIn = (groups) => Object.keys(PRESETS).filter((id) => groups.includes(PRESETS[id].group));
+// the Fractions' cards in order: by their digits in base 10 (p's and q's: 4/3 two, 22/7 three, 355/113 six), fewer first,
+// then by value
+const fractionOrder = (a, b) => {
+  const [p, q] = PRESETS[a].f.split('/'),
+    [r, s] = PRESETS[b].f.split('/');
+  return p.length + q.length - r.length - s.length || p / q - r / s;
+};
 function renderNumberPicker(active) {
   if (active !== numberShown) {
     numberShown = active;
@@ -9056,7 +9064,7 @@ function renderNumberPicker(active) {
       box.hidden = !shown.includes(group);
       grid.className = 'number-grid';
       grid.setAttribute('role', 'listbox');
-      const ids = cardsIn([group]);
+      const ids = group === 'Fractions' ? cardsIn([group]).sort(fractionOrder) : cardsIn([group]); // (the others as written)
       const pick = (id) => {
         numberShown = id;
         pickPreset(id);

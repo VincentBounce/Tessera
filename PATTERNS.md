@@ -1814,7 +1814,7 @@ found some for 14 (17 minutes):
 None for B346/S01458 on Rhombitri, Snub tri, Tetrakis, Kisrhombille, Snub square and kites, B24/S0345/C4 on Elongated,
 and B2/S2/C25 and B1357/S1357 on squares (their small starts all die or fill the grid).
 
-## 🔤 Drawn starts
+## ✍ Drawn starts
 
 Starts drawn cell by cell (Start › Draw), kept whole in their links (p=).
 

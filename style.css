@@ -2207,11 +2207,12 @@ button.active .bubble.active {
 .tut-shapes figure:hover {
   border-color: var(--muted-text-color);
 }
-/* a choice picked, every control's alike: its border and words gold, on a pale gold; after their hovers (it wins) */
+/* a choice picked or a switch on, every control's alike: its border and words gold, on a pale gold; after their hovers (it wins) */
 .nav-shapes button.active,
 .tile-group > button.active,
 .number-grid button.active,
 button.wide.active,
+button.switch.active,
 .head-btn.active,
 .tut-tools button.active,
 .choice-list button.active,

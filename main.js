@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.945';
+const VERSION = '0.4.946';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -9266,7 +9266,7 @@ function digitsWorker(F, base, n, then) {
 // some (then: called once they are all there), { error } for a wrong formula
 const RIVALS = [...'BCDEFGHIJKL'].map((c) => `formula${c}`),
   rivalWorkers = {};
-const rivalName = (id) => `Formula ${id.slice(-1)}`; // (Formula B, Formula C…)
+const rivalName = (id) => (id === 'formula' ? 'Formula' : `Formula ${id.slice(-1)}`); // (A's Formula, then Formula B, Formula C…)
 // a rival's field, as the Digits' (its number at first, its tooltip), in the battle's Start section (see renderWalkTeams)
 const RIVAL_FIRSTS = [
   'e',
@@ -45046,10 +45046,10 @@ for (const input of document.querySelectorAll('.field input')) {
       input.blur();
     }
     if (e.key !== 'Enter') return;
-    const error = input.id === 'formula' && readFormula().error;
+    const error = input.closest('.formula-field') && formulaOf(input.value).error; // (every walker's formula alike)
     if (error) {
       e.preventDefault();
-      $('status').textContent = `Formula: ${error}`;
+      $('status').textContent = `${rivalName(input.id)}: ${error}`;
     } else input.blur();
   });
 }
@@ -46284,7 +46284,7 @@ BATTLE_FORMULAS.forEach((id, s) =>
     }
     const kept = s ? (battleAsked[s] ?? RIVAL_FIRSTS[s - 1]) : formulaInUse;
     $(id).value = kept;
-    $('status').textContent = `${s ? rivalName(id) : 'Formula'}: ${F.error} · ${kept} kept`;
+    $('status').textContent = `${rivalName(id)}: ${F.error} · ${kept} kept`;
   }),
 );
 $('battleHuntBtn').addEventListener('click', () => (battleHunt.run ? stopBattleHunt() : startBattleHunt()));

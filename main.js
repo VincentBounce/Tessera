@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.961';
+const VERSION = '0.4.962';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -17910,9 +17910,9 @@ function renderWalkTeams() {
   const fieldA = $('formula').parentElement; // (Show digits in it)
   if (battleOn() && fieldA.parentElement !== $('formulaAHome')) $('formulaAHome').append(fieldA);
   if (!battleOn() && fieldA.parentElement !== $('numberPicker')) $('numberTabs').after(fieldA);
-  $('battleFirsts').textContent = battleFirsts()
-    .map((f) => formulaOf(f).sym)
-    .join(' vs '); // (its words its numbers, as many as walkers)
+  const firsts = battleFirsts().map((f) => formulaOf(f).sym);
+  $('battleFirsts').textContent = firsts.slice(0, 3).join(' vs ') + (firsts.length > 3 ? '…' : ''); // (its first 3: one line)
+  $('battleFirsts').title = `Each walker back to its first number: ${firsts.join(' vs ')}`; // (all of them)
   battleAsked = BATTLE_FORMULAS.map((id) => $(id).value); // (a battle computed: its numbers as sent)
   tintBattleFormulas();
   if (battleHunt.run && (!battleOn() || battleHunt.key !== battleHuntKey())) stopBattleHunt(); // (its battles fought elsewhere: it stops)

@@ -585,7 +585,7 @@ h3 {
 .field:focus-within .enter {
   display: block;
 }
-/* Show digits: a barcode at the formula's end, where ↵ shows while it is edited (it hides then) */
+/* Show digits: a button, a barcode, at the formula's end, where ↵ shows while it is edited (it hides then) */
 .field #copyNumber {
   position: absolute;
   right: 4px;
@@ -594,13 +594,7 @@ h3 {
   height: 26px;
   margin: 0;
   padding: 0 6px;
-  border: 0;
-  background: none;
-  color: var(--muted-text-color);
 }
-.field #copyNumber:is(:hover, .active) {
-  color: var(--accent-color);
-} /* (open: the number over the view, see toggleNumber) */
 .field:focus-within #copyNumber {
   display: none;
 }

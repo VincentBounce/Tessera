@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.960';
+const VERSION = '0.4.961';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -885,7 +885,7 @@ const BANDS = 256;
 // The walk's colours, per theme (see applyTheme): the rainbow darker on a light page, the digits'
 // grey instead of white, the one colour a deeper amber
 const PALETTES = {
-  // unlit: the surfaces' tiles not walked (ocean: Ocean's, a sea blue; lands: its walkers', a map's green, yellow, ochre, lime, ice white); dying: a Life cell's dying stages (a Generations rule's), to unlit; trail: Trail, a Life cell just dead, fading to unlit in amber; alive: Life in one colour
+  // unlit: the surfaces' tiles not walked (ocean: Ocean's, a sea blue; lands: its walkers', a map's green, ochre, yellow, lime, ice white); dying: a Life cell's dying stages (a Generations rule's), to unlit; trail: Trail, a Life cell just dead, fading to unlit in amber; alive: Life in one colour
   // directions: each step's colour by where it goes (its arrow), the same in every walk: left blue, straight
   // on (north) gold, right pink, back (south) turquoise, then the diagonals (↖ green, ↗ magenta, ↘ orange,
   // ↙ violet: the opposite turns far apart) and up, down;
@@ -909,7 +909,7 @@ const PALETTES = {
     },
     unlit: '#1f2630',
     ocean: '#1f63b8',
-    lands: ['#2ea833', '#e0b812', '#e87a18', '#a3d01a', '#e8edf0', '#4cc9d6'],
+    lands: ['#2ea833', '#e87a18', '#e0b812', '#a3d01a', '#e8edf0', '#4cc9d6'],
     dying: '#6b7f99',
     alive: '#e6edf3',
     edgeRgb: [255, 255, 255],
@@ -936,7 +936,7 @@ const PALETTES = {
     },
     unlit: '#eef1f5',
     ocean: '#2a7de1',
-    lands: ['#34c23a', '#f7cf1a', '#ff8a1f', '#b5e61d', '#ffffff', '#5fd6e3'],
+    lands: ['#34c23a', '#ff8a1f', '#f7cf1a', '#b5e61d', '#ffffff', '#5fd6e3'],
     dying: '#7d8896',
     alive: '#1f2328',
     edgeRgb: [0, 0, 0],
@@ -1010,7 +1010,7 @@ function rainbowHue(h) {
 const appRainbowAt = (f) => rainbowHue(190 + 200 * f);
 // Earth's (Ocean's switch): its six lands in a rainbow's order, green, lime, yellow, ochre, a glacier's cyan, ice white, a
 // theme's (see PALETTES: their order there a Sextet's teams', the near ones apart)
-const earthColours = (P = PALETTE) => [P.lands[0], P.lands[3], P.lands[1], P.lands[2], P.lands[5], P.lands[4]];
+const earthColours = (P = PALETTE) => [P.lands[0], P.lands[3], P.lands[2], P.lands[1], P.lands[5], P.lands[4]];
 // the rainbow now, GRADIENT filled again in place whenever the theme or Ocean changed (gradientKey: what it was made for):
 // the app's (appRainbowAt); on Ocean, Earth's colours (earthColours)
 let gradientKey = null;
@@ -6841,7 +6841,7 @@ function renderViewTiles() {
       ? 'on'
       : `On by default on ${ways.on.join(', ')}\nOff by default on ${ways.off.join(', ')}`;
   const first = { perspective, light: defaultMark('light'), glass: defaultMark('glass'), ocean: defaultMark('ocean') },
-    why = { ocean: 'Only up to a Sextet: Earth has six lands (green, yellow, ochre, lime, ice white, cyan).' };
+    why = { ocean: 'Only up to a Sextet: Earth has six lands (green, ochre, yellow, lime, ice white, cyan).' };
   VIEW_TILES.forEach(([id], k) =>
     setTile(viewTiles[k], {
       on: $(id).checked,
@@ -9267,8 +9267,8 @@ const RIVALS = [...'BCDEFGHIJKL'].map((c) => `formula${c}`),
 const formulaName = (id) => (id === 'formula' ? 'Formula' : `Formula ${id.slice(-1)}`); // (A's Formula, then Formula B, Formula C…)
 // B's, C's… numbers at first
 const RIVAL_FIRSTS = [
-  'phi',
   'e',
+  'phi',
   'sqrt(2)',
   'sqrt(3)',
   'sqrt(5)',
@@ -41157,7 +41157,7 @@ let oceanPicked = false; // (Ocean clicked since its default was set: kept, else
 const oceanOn = () => $('ocean').checked && shows('ocean', tabMode()) && oceanFits(); // (its row's rule, not its row: drawn later)
 const blankTile = () => (oceanOn() ? OCEAN : UNLIT); // (a surface's tile none has painted: Ocean's sea blue, or the theme's)
 const teamColour = (s) => (oceanOn() && LANDS[s] ? LANDS[s] : LIFE_COLOURS[s]); // (team s, a battle's walker or Life's colour: Earth's lands up to a Sextet, else Life's colours)
-const LAND_NAMES = ['green', 'yellow', 'ochre', 'lime', 'white', 'cyan']; // (Earth's lands, see PALETTES)
+const LAND_NAMES = ['green', 'ochre', 'yellow', 'lime', 'white', 'cyan']; // (Earth's lands, see PALETTES)
 const teamName = (s) => (oceanOn() && LANDS[s] ? LAND_NAMES[s] : LIFE_COLOUR_NAMES[s]);
 // Cut: Off, or a fixed plane through the middle facing S, E or Up (the view's corner draws E, N and Up, see gpuAxes), the half on
 // that axis's side gone: its notches on a row as Flat ── Inflated (see sizeGauge)

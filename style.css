@@ -792,6 +792,9 @@ button.switch.active:hover:not(:disabled) {
   gap: 4px;
   margin-bottom: 10px;
 }
+#brushCards > [data-brush='view'] {
+  margin-bottom: 6px;
+} /* View, no brush: apart from the brushes under it, as a list's (10 px) */
 /* The Gallery: over the whole of main, under the header, the settings and the view kept under it (still drawn: a picture taken) */
 .gallery-tools-row {
   display: flex;

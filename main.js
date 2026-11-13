@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.956';
+const VERSION = '0.4.957';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -20771,7 +20771,7 @@ const plane = {
 }; // (number: Formula's, see numberSeed; picks: Famous's and Anywhere's patterns, a colour each, as a link writes them, see choiceWord)  // a soup of its own each visit (a link keeps its seed)
 // Draw's brush: a cell or a pattern (squares only), turned by quarter turns and mirrored, in a colour
 // (0: the eraser)
-const brush = { id: 'cell', turn: 0, flip: false, colour: 1 };
+const brush = { id: 'view', turn: 0, flip: false, colour: 1 }; // (View at first: a click draws once a brush is picked)
 let ghost = null; // the cell under the pointer while drawing, where the brush would go
 let cleared = null; // the cells Clear took away, back with Undo until something else is drawn or started
 // Draw's patterns, each for the rules it was found with (a rule of your own: all its grid's): [id, grid,

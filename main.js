@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.955';
+const VERSION = '0.4.956';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -20089,7 +20089,7 @@ const HENSEL_LETTERS = Array.from({ length: 9 }, (_, c) =>
 // A block rule (Margolus's, see planeBlocks): M and the new state of each of a block's 2^k (its k cells' bits in turn
 // round its corner), a permutation of them, so reversible: its inverse runs it back; a * after, stellated (see STARS); /4 after,
 // on squares, Tyler's Square-4: their 4 sets of corners in turn round a square (Margolus's 2: a corner, the one across); Q2R,
-// the Ising model (see isingOf)
+// the Ising model (see meshIsing)
 function parseBlocks(text) {
   if (/^Q2R$/i.test(text.trim()))
     return {
@@ -20494,14 +20494,15 @@ const civColours = (K, C) => [
 // A surface's start, as the Start says: its digits (one digit a cell in base K + 1: 0 dead, k alive in colour k), or a soup as dense as said, from its seed (in colours, each live cell's colour
 // drawn too)
 function surfaceSeed(seq, n, K, walls) {
-  const seed = new Uint8Array(n),
-    p = plane.density / 100;
+  const seed = new Uint8Array(n);
   if (plane.start === 'digits') digitsOn(seed, seq, walls);
-  else
-    for (let t = 0; t < n; t++)
-      if (cellRandom(plane.seed, t) < p) seed[t] = K > 1 ? 1 + Math.floor(cellRandom(plane.seed + 1, t) * K) : 1;
+  else for (let t = 0; t < n; t++) seed[t] = soupState(t, K);
   return seed;
 }
+// a soup's cell at place p (the plane's by its place, a surface's its tile): alive as dense as said, from its seed, in
+// one of K colours drawn too; else dead (0)
+const soupState = (p, K) =>
+  cellRandom(plane.seed, p) >= plane.density / 100 ? 0 : K > 1 ? 1 + Math.floor(cellRandom(plane.seed + 1, p) * K) : 1;
 // the digits as a start: one a cell, in turn (a grid in a hexagon or a circle from its middle out, wound round it; a
 // rectangle's row by row: see planeGrid); on a surface, on its open cells (a wall's, none: its digits not lost there)
 function digitsOn(seed, seq, walls = []) {
@@ -23588,12 +23589,8 @@ function planeSeed(kind, seq, C, K = 1) {
   }; // (a soup's draws by a cell's place, not its order: the same soup whichever way its cells are read)
   // (the symmetry: after, whatever the start, see symmetricStart)
   if (plane.start === 'digits') digitsOn(seed, seq);
-  else if (plane.start === 'random') {
-    const p = plane.density / 100;
-    for (let t = 0; t < n; t++)
-      if (cellRandom(plane.seed, place(t)) < p)
-        seed[t] = K > 1 ? 1 + Math.floor(cellRandom(plane.seed + 1, place(t)) * K) : 1;
-  } else {
+  else if (plane.start === 'random') for (let t = 0; t < n; t++) seed[t] = soupState(place(t), K);
+  else {
     // cells drawn: a colour of another count of colours as one of these (one colour: alive), a dying state kept
     for (const [k, c] of population) put(...cellXY(k), c <= K * (C - 1) ? c : K > 1 ? ((c - 1) % K) + 1 : 1); // a state of these colours and states, else alive
   }
@@ -27852,31 +27849,13 @@ function cellBlocks(B, n, cell, stars, first = cell(0)) {
   }
   return { k: B.k, turns, move };
 }
-// the plane's: its cells by their places (a torus: its two turns round, W rectangles of a rectangle's; a point brought
-// onto its sheet, once); a torus its sets do not fit round: its blocks as on walls
+// the plane's: its cells by their places, their corners its mesh's (see planeMesh: a torus's the same each side of its
+// seam); a torus its sets do not fit round: its blocks as on walls
 function planeBlocks(kind, W, torus, stars = !BLOCKS[baseOf(kind)], four = false, cols = planeColumns(kind, W, 1)) {
   // (cols: its motifs a row, see planeColumns: blocks in one colour)
   const row = (tilingOf(kind)?.polys.length ?? gridCells(kind)) * cols; // (a row: its motifs' cells; a rectangle's: its grid's blocks, its own cells)
   const o = cellMiddle(kind, 0, 0),
-    P = !torus
-      ? null
-      : RECTS[kind]
-        ? RECTS[kind].basis.map(([x, y], i) => {
-            const k = i ? W : cols;
-            return [k * x, k * y];
-          })
-        : [cellMiddle(kind, row, 0), cellMiddle(kind, 0, W)].map((m) => [m[0] - o[0], m[1] - o[1]]);
-  const D = P && P[0][0] * P[1][1] - P[0][1] * P[1][0];
-  const home = ([x, y]) => {
-    if (!torus) return [x, y];
-    const dx = x - o[0],
-      dy = y - o[1],
-      u = (dx * P[1][1] - dy * P[1][0]) / D,
-      v = (P[0][0] * dy - P[0][1] * dx) / D,
-      fu = u - Math.floor(u + 1e-9),
-      fv = v - Math.floor(v + 1e-9);
-    return [o[0] + fu * P[0][0] + fv * P[1][0], o[1] + fu * P[0][1] + fv * P[1][1]];
-  };
+    M = planeMesh(kind, W, torus, row);
   // (the grid's own cells, see planeGrid: a hexagon's, a rectangle's row by row; its row of cols)
   const { n, xy } = planeGrid(kind, W, row);
   const blocks = cellBlocks(
@@ -27886,31 +27865,36 @@ function planeBlocks(kind, W, torus, stars = !BLOCKS[baseOf(kind)], four = false
       const pts = planeCorners(kind, ...xy(t))
         ?.slice()
         .reverse(); // (the other way round, as a torus's tiles on its sheet: turned over, facing out)
-      return pts ? { pts, ids: pts.map((q) => pointKey(...home(q))), mid: cellMiddle(kind, ...xy(t)) } : null;
+      return pts
+        ? { pts, ids: [...M.list.subarray(M.start[t], M.start[t + 1])].reverse(), mid: cellMiddle(kind, ...xy(t)) }
+        : null;
     },
     stars,
     { pts: planeCorners(kind, 0, 0), mid: o },
   );
-  return blocks ? { ...blocks, wraps: torus } : { ...planeBlocks(kind, W, false, stars, four), wraps: false };
+  if (blocks) return { ...blocks, wraps: torus };
+  return torus ? { ...planeBlocks(kind, W, false, stars, four), wraps: false } : null; // (with walls too: none, never asked again)
 }
-// Ising on a mesh (a torus, a Möbius strip): each square's sides the squares across its edges, its two colours by turns
-// across them (null: they do not come round)
-function meshIsing(g) {
-  const k = g.sides,
+// Ising on a grid of squares, the plane's or a surface's alike (its corners, see meshCorners): each square's sides the
+// squares across its edges, its two colours by turns across them (null: they do not come round); wraps: round a torus
+function meshIsing(M, wraps = true) {
+  const n = M.start.length - 1,
     by = new Map(),
-    sides = Array.from({ length: g.n }, () => []),
-    colour = new Int8Array(g.n).fill(-1);
-  for (let t = 0; t < g.n; t++)
+    sides = Array.from({ length: n }, () => []),
+    colour = new Int8Array(n).fill(-1);
+  for (let t = 0; t < n; t++) {
+    const k = M.start[t + 1] - M.start[t];
     for (let q = 0; q < k; q++) {
-      const a = g.poly[k * t + q],
-        b = g.poly[k * t + ((q + 1) % k)],
+      const a = M.list[M.start[t] + q],
+        b = M.list[M.start[t] + ((q + 1) % k)],
         key = a < b ? `${a} ${b}` : `${b} ${a}`;
       if (by.has(key)) {
         sides[t].push(by.get(key));
         sides[by.get(key)].push(t);
       } else by.set(key, t);
     }
-  for (let t0 = 0; t0 < g.n; t0++)
+  }
+  for (let t0 = 0; t0 < n; t0++)
     if (colour[t0] < 0) {
       colour[t0] = 0;
       for (const queue = [t0]; queue.length;) {
@@ -27926,10 +27910,10 @@ function meshIsing(g) {
   return {
     ising: true,
     k: 1,
-    turns: [0, 1].map((c) => Int32Array.from({ length: g.n }, (_, t) => t).filter((t) => colour[t] === c)),
+    turns: [0, 1].map((c) => Int32Array.from({ length: n }, (_, t) => t).filter((t) => colour[t] === c)),
     sides,
     to: new Uint8Array(0),
-    wraps: true,
+    wraps,
   };
 }
 // a torus's: its cells by its mesh (its corners as merged across its seams, see finishTorus), placed on its sheet (uv);
@@ -27955,7 +27939,7 @@ function meshBlocks(g, kind, stars, four) {
 // The Ising model, Vichniac's Q2R (1984; Tyler's cell-auto.com/ising): squares on a checkerboard, its two colours in turn, a
 // square turned over when just 2 of its 4 side neighbours are alive (its energy the same either way: the walls between
 // alive and dead as long), so it runs back; its turns: each colour's squares, its sides: each square's 4
-// a block rule's blocks on a grid (Ising: its squares in turn): the plane's (see planeBlocks, isingOf)
+// a block rule's blocks on a grid (Ising: its squares in turn): the plane's (see planeBlocks, meshIsing)
 let blocksMemo = null; // (the last grid's: its blocks the same whatever its start, 1 s at 2²⁰ cells)
 // a mode's surface, turned or not: one of its grid's block rules with its blocks there (any other mode: yes); not the rule
 // now, fitted after (see fitRuleToShape), then to it
@@ -27969,14 +27953,16 @@ const blocksTurn = (w, turned) =>
 // (a surface's, g: by its mesh, kept on it, see meshBlocks, meshIsing; null: they do not come round it)
 const surfaceBlocks = (g, kind, rule) =>
   ((g.blocks ??= {})[`${kind}|${!!rule.ising}|${!!rule.stars}|${!!rule.four}`] ??= rule.ising
-    ? meshIsing(g)
+    ? meshIsing(meshCorners(g))
     : meshBlocks(g, kind, rule.stars, rule.four));
 const ruleBlocks = (rule, kind, W, torus = planeTorus(kind), cols = planeColumns(kind, W, 1), g = null) => {
   const key = `${kind}|${W}|${torus}|${cols}|${!!rule.ising}|${!!rule.stars}|${!!rule.four}`;
   if (!g && blocksMemo?.key !== key)
     blocksMemo = {
       key,
-      blocks: rule.ising ? isingOf(kind, W, torus, cols) : planeBlocks(kind, W, torus, rule.stars, rule.four, cols),
+      blocks: rule.ising
+        ? meshIsing(planeMesh(kind, W, torus, cols), torus)
+        : planeBlocks(kind, W, torus, rule.stars, rule.four, cols),
     };
   const blocks = g ? surfaceBlocks(g, kind, rule) : blocksMemo.blocks;
   return rule.ising ? { ...blocks } : { ...blocks, to: rule.margolus, ...blockKind(rule.margolus) };
@@ -27992,28 +27978,6 @@ const blocksFit = (R, mode, sp = mode.sphere && surfaceOf(mode)) =>
     SPHERES[sp].sizes
       .filter((f) => f <= 32 && f % (BLOCK_STEPS[sp] ?? 1) === 0)
       .every((f) => !!surfaceBlocks(SPHERES[sp].mesh(f), blocksGrid(mode), R)));
-function isingOf(kind, W, torus = planeTorus(kind), row = planeRow(kind, W)) {
-  // (squares only)
-  const turns = [[], []],
-    sides = [];
-  for (let t = 0; t < row * W; t++) {
-    const x = t % row,
-      y = Math.floor(t / row);
-    turns[(x + y) % 2].push(t);
-    sides.push(
-      [
-        [1, 0],
-        [-1, 0],
-        [0, 1],
-        [0, -1],
-      ]
-        .map(([dx, dy]) => (torus ? [mod(x + dx, row), mod(y + dy, W)] : [x + dx, y + dy]))
-        .filter(([u, v]) => u >= 0 && u < row && v >= 0 && v < W)
-        .map(([u, v]) => u + v * row),
-    );
-  }
-  return { ising: true, k: 1, turns: turns.map((c) => Int32Array.from(c)), sides, to: new Uint8Array(0), wraps: torus };
-}
 // flips: a rule that turns an empty block full (Critters, Tron), shown negative every other generation (see negative): a
 // cell's colour goes with the cells shown alive; keeps: each block as many cells shown alive after as before (the
 // billiard balls, the gases, Critters: their cells carry their colours, back by the inverse)
@@ -28105,7 +28069,7 @@ for (const [kind, mark] of Object.entries(BLOCK_MARKS)) {
   }
 }
 // on squares, more: Tyler's Square-4 (its blocks' 4 sets in turn round a square, /4) for the billiard balls and the critters; the
-// Ising model (Q2R, see isingOf)
+// Ising model (Q2R, see meshIsing)
 for (const [name, words, value, art] of [
   ...RING_RULES.filter(([name]) => name === 'Billiard balls' || name === 'Critters').map(
     ([name, , words, rule, art]) => [

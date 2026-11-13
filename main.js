@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.944';
+const VERSION = '0.4.945';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -46271,17 +46271,22 @@ $('sphereF').addEventListener('change', () => {
   syncSizeStepper();
   compute(); // (as any setting: a Life's digits, one per cell; a walk's teams and Centred, by its size)
 });
-// A formula left wrong (by clicking elsewhere) is undone: the one in use comes back
-$('formula').addEventListener('change', () => {
-  const { error } = readFormula();
-  if (!error) {
-    pickNumber(formulaInUse, tabMode());
-    computeFramed();
-    return;
-  }
-  $('formula').value = formulaInUse;
-  $('status').textContent = `Formula: ${error} · ${formulaInUse} kept`;
-});
+// A formula left wrong (by clicking elsewhere) is undone, every walker's alike: the one in use comes back (A's, the Digits'
+// formulaInUse; B's, C's… the one its battle was built with, see battleAsked), its error said
+BATTLE_FORMULAS.forEach((id, s) =>
+  $(id).addEventListener('change', () => {
+    const F = s ? formulaOf($(id).value) : readFormula();
+    if (!F.error) {
+      if (s) $(id).value = F.text;
+      else pickNumber(formulaInUse, tabMode());
+      computeFramed();
+      return;
+    }
+    const kept = s ? (battleAsked[s] ?? RIVAL_FIRSTS[s - 1]) : formulaInUse;
+    $(id).value = kept;
+    $('status').textContent = `${s ? rivalName(id) : 'Formula'}: ${F.error} · ${kept} kept`;
+  }),
+);
 $('battleHuntBtn').addEventListener('click', () => (battleHunt.run ? stopBattleHunt() : startBattleHunt()));
 // Random (under the battle's ways): as many numbers as walkers, each another, drawn from the hunt's (BATTLE_CARDS, DRAWN_ROOTS), fought
 $('battleRandom').addEventListener('click', () => {
@@ -46293,18 +46298,8 @@ $('battleRandom').addEventListener('click', () => {
   }
   playBattle(fs);
 });
-// B's and C's (a battle's): computed again, or its error said (see rivalsDigits)
+// every walker's formula typed: plain till its battle is built
 for (const id of BATTLE_FORMULAS) $(id).addEventListener('input', tintBattleFormulas); // (typed: plain till its battle is built)
-for (const id of RIVALS)
-  $(id).addEventListener('change', () => {
-    const F = formulaOf($(id).value);
-    if (F.error) {
-      $('status').textContent = `${rivalName(id)}: ${F.error}`;
-      return;
-    }
-    $(id).value = F.text;
-    compute();
-  });
 // A new number (or a new prime, size or fraction) starts framed
 function computeFramed() {
   $('autoFit').checked = true;

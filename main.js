@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.983';
+const VERSION = '0.4.984';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -14282,7 +14282,7 @@ const ringColours = (w) =>
       ? lifeTeams
       : !battleMode(w) || !SPHERES[surfaceOf(MODES[w])]?.columns
         ? 1
-        : (teamsBuilding ?? (battleOn() ? walkTeams : 1)); // (a reversible torus: Trio's, its start on the middle square; a walk's battle on a ring: its walkers', see battleCounts)
+        : (teamsBuilding ?? walkTeams); // (a reversible torus: Trio's, its start on the middle square; a walk's battle on a ring: its walkers asked, see battleCounts; never whether they fit, judged on this very mesh)
 let teamsBuilding = null; // (a ring's mesh made for so many walkers, to judge them: see battleCounts)
 function ringLength(x, square, unit, ok = () => true) {
   // (the whole count of u nearest t that ok allows: below and above it in turn, the nearer first; before v0.3.90 one more before one

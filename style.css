@@ -1272,9 +1272,9 @@ button.active .bubble.active {
 .stack .field {
   margin-bottom: 4px;
 } /* fields one under another, as close as cards (a battle's formulas) */
-#battleRandom {
-  margin-top: 6px;
-} /* Roll under the formulas, apart as a list's (10 px) */
+.stack > .draw-row {
+  margin-top: 10px;
+} /* its buttons under its fields, apart as a list's (the last field's 4 px merged into it): a battle's first numbers and Roll */
 .build-cols {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -1377,10 +1377,6 @@ button.active .bubble.active {
 .turn-row button {
   flex: 1;
 } /* the turns, always there (greyed for a cell); Open and Export PNG */
-.draw-row button.wide {
-  margin: 0;
-  padding: 6px 12px;
-} /* wide buttons side by side (a battle's first numbers, Roll): as tall as one alone, the row's gap under them */
 .colour-swatches span {
   font-size: var(--label-text-size);
   color: var(--muted-text-color);

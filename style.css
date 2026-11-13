@@ -631,10 +631,9 @@ button.wide.how-it-works {
 #huntSection:not(:has(> div:not([hidden]))) {
   display: none;
 } /* (a mode with no hunt: none of its blocks shown) */
-#huntRow .nav-shapes,
 #ruleTabs {
   margin-bottom: 4px;
-} /* a wide button right under its tiles (Hunt, How it works), as close as a row of them */
+} /* a wide button right under its tiles (How it works), as close as a row of them */
 
 /* Walk mode: one tab per category, then every choice of that category */
 /* Tabs: text only, the active one in yellow and underlined on the header's hairline; always bold,
@@ -1248,9 +1247,13 @@ button.active .bubble.active {
 .rule-cards:has(+ .rule-build:not([hidden])) {
   margin-bottom: 4px;
 } /* your own's block under them: all one (else a list's 10 px) */
-.stack .field {
+.stack .field,
+#copyNumber {
   margin-bottom: 4px;
-} /* fields one under another, as close as cards (a battle's formulas, then Random) */
+} /* fields one under another, as close as cards (a battle's formulas), Show digits on its formula's */
+#battleRandom {
+  margin-top: 6px;
+} /* Roll under the formulas, apart as a list's (10 px) */
 .build-cols {
   display: grid;
   grid-template-columns: 1fr 1fr;

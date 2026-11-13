@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.934';
+const VERSION = '0.4.935';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -17867,11 +17867,10 @@ function renderWalkTeams() {
     $(id).parentElement.hidden = j >= walkTeams - 1;
   }); // (the walkers' but A's)
   const fieldA = $('formula').parentElement,
-    digitsButton = $('copyNumber'); // (the Full number's, over it)
+    digitsButton = $('copyNumber'); // (the Full number's, on its field)
   if (battleOn() && fieldA.parentElement !== $('formulaAHome')) $('formulaAHome').append(digitsButton, fieldA);
   if (!battleOn() && fieldA.parentElement !== $('numberPicker')) {
-    $('numberTabs').before(digitsButton);
-    $('numberTabs').after(fieldA);
+    $('numberTabs').after(digitsButton, fieldA);
   }
   battleAsked = BATTLE_FORMULAS.map((id) => $(id).value); // (a battle computed: its numbers as sent)
   tintBattleFormulas();

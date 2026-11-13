@@ -1813,3 +1813,11 @@ found some for 14 (17 minutes):
 
 None for B346/S01458 on Rhombitri, Snub tri, Tetrakis, Kisrhombille, Snub square and kites, B24/S0345/C4 on Elongated,
 and B2/S2/C25 and B1357/S1357 on squares (their small starts all die or fill the grid).
+
+## 🔤 Drawn starts
+
+Starts drawn cell by cell (Start › Draw), kept whole in their links (p=).
+
+| Start | Grid and rule | Live cells | |
+|---|---|---|---|
+| Barely readable alphabet: A to Z, then 0 to 9, each glyph 2 × 2 squares (a square whole, empty or cut along a diagonal), a square apart, 6 a row | Tetrakis, Tetrakis wake B3v12/S1247/C4, 24 × 24 squares | 374 | [open](https://vincentbounce.github.io/Tessera/#w=life2dTetrakis&r=B3v12/S1247/C4&s=48&p=12,3:2.3A.A5.5A.A7.4A6.5A.A5.4A.A.A4.6A$2A3.A.A4.5A.A6.A.2A.A5.6A6.4A2.2A4.6A2$6A6.A.A3.2A5.A.3A10.4A4.4A2.2A4.4A$4A2.2A4.2A3.A.A6.3A.A5.A.A.4A4.4A.A.A4.4A2.2A2$A.A3.2A4.A.A.4A4.2A3.A.A4.8A4.2A3.A.A4.8A$8A4.4A.A.A4.A.A3.2A4.4A8.A.A2.A.A4.5A.A2$6A6.8A4.8A4.A.A3.2A4.8A4.A.A.2A$2.6A6.3A.A6.A.3A7.A.3A6.2A3.A.A6.2A.A.A2$A.A3.2A4.2A2.2A6.2A3.A.A6.6A4.2A2.4A4.2A2.4A$2.3A.A7.2A2.2A4.A.A3.2A8.4A6.2A2.2A4.A.A.4A2$A.A.4A4.6A8.4A6.2A2.4A4.4A.A.A4.4A.A.A$4.4A4.A.A.4A4.A.A.4A8.4A4.A.A.4A6.4A!&pop=draw&v=0.4.953) |

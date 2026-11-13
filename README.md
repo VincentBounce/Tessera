@@ -8,7 +8,7 @@ A walk driven by the digits of **π**, other famous numbers, formulas and large 
 
 π₃ = 10.0102110122220102110021111102212222201112012121212001…
 
-<p align="center">\n * * *</p>
+<p align="center"><br>* * *</p>
 
 ## Numbers
 
@@ -92,7 +92,7 @@ Digit sequences, used alone: `random(seed)`, `champernowne`, `copelanderdos`, `p
 
 Press Enter to compute.
 
-<p align="center">* * *</p>
+<p align="center"><br>* * *</p>
 
 ## Walk modes
 
@@ -230,7 +230,7 @@ Of the duals of the k-uniform tilings of pentagons (Wikipedia, *Pentagonal tilin
 | Ulam triangle spiral | 2 | Same, along a spiral of triangles |
 | Ulam hexagon spiral | 2 | Same, along a spiral of hexagons |
 
-<p align="center">* * *</p>
+<p align="center"><br>* * *</p>
 
 ## Regular patterns
 
@@ -242,14 +242,14 @@ A fraction's digits repeat, so its walk makes the same moves again and again: it
 
 **[PATTERNS.md](PATTERNS.md)** lists the most striking ones walk by walk, with how they were found; the **Gallery** starts with a curated choice.
 
-<p align="center">* * *</p>
+<p align="center"><br>* * *</p>
 
 ## Discoveries
 
 - **Thue–Morse in great circles:** τ, the Thue–Morse sequence, walked along the edges of the sphere of hexagons draws straight lines that run right round the sphere, great circles crossing as an icosahedron's edges, and closes after one round (998,405 steps): [τ on the sphere of hexagons](https://vincentbounce.github.io/Tessera/#x=thuemorse&w=hexSphereGrid&d=1000000&s=48).
 - **Rosette spheres:** a sphere tiled with two rosettes of flowers, one round each pole, their rims crenellated so that the south's teeth fit the north's notches along the equator; Life plays on them as on the plane's rosettes (Life › 3D surfaces › Rosettes): [two punks on Flower 10's](https://vincentbounce.github.io/Tessera/#w=lifeRosetteFlower10&s=84&r=B279/S0345/C5&k=2&pop=punk24.6932.9226).
 
-<p align="center">* * *</p>
+<p align="center"><br>* * *</p>
 
 ## Features
 
@@ -273,7 +273,7 @@ A fraction's digits repeat, so its walk makes the same moves again and again: it
 
 Keyboard: `Space` play/pause · `→` one step · `R` restart · `E` jump to end · `F` centre (again: starting view)
 
-<p align="center">* * *</p>
+<p align="center"><br>* * *</p>
 
 ## Run locally
 
@@ -283,7 +283,7 @@ There are no dependencies and no build step. Open `index.html` in a browser, or 
 python3 -m http.server 8000
 ```
 
-<p align="center">* * *</p>
+<p align="center"><br>* * *</p>
 
 ## Files
 

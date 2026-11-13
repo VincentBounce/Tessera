@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.954';
+const VERSION = '0.4.955';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -20685,7 +20685,7 @@ function buildLife(seq, mode) {
   for (const t of g.walls ?? []) seed[t] = 0;
   startLife(seq, rule, g.n, {
     nbr,
-    ring: rule.loops ? loopRing(rule, meshSides(g)) : rule.iso && rule.iso !== 'vertex' ? ring : null,
+    ring: rule.loops ? loopRing(rule, meshSides(meshCorners(g))) : rule.iso && rule.iso !== 'vertex' ? ring : null,
     side: rule.iso === 'vertex' ? sideOf(nbr) : null,
     ringMore: rule.iso === 'hensel' && ring ? cornerNeighbours(g, 8).more : null,
     seed,
@@ -23683,41 +23683,29 @@ function planeNeighbours(kind, W, torus, hensel = false) {
   const M = planeMesh(kind, W, torus);
   return cellNeighbours(M.start, M.list, M.nv, baseOf(kind) === 'hex' ? 6 : hensel && kind === 'square' ? 8 : 0); // (a rectangle of hexagons: theirs too)
 }
-// a grid of squares' cells by their 4 sides, clockwise from the top (N, E, S, W), −1 past a dead edge (see parseLoops)
-function sidesOf(row, W, torus) {
-  const out = new Int32Array(4 * row * W),
-    at = (x, y) => (torus ? mod(y, W) * row + mod(x, row) : x < 0 || y < 0 || x >= row || y >= W ? -1 : y * row + x);
-  for (let y = 0; y < W; y++)
-    for (let x = 0; x < row; x++)
-      [
-        [0, -1],
-        [1, 0],
-        [0, 1],
-        [-1, 0],
-      ].forEach(([dx, dy], q) => {
-        out[4 * (y * row + x) + q] = at(x + dx, y + dy);
-      });
-  return out;
-}
-// a surface of squares' tiles by their 4 sides in turn, as listed (the same way round on every tile: an orientable surface),
-// each side the tile across it (see parseLoops)
-function meshSides(g) {
-  if (g.loopSides) return g.loopSides;
-  const across = new Map(),
-    out = new Int32Array(4 * g.n).fill(-1),
-    edge = (a, b) => `${Math.min(a, b)},${Math.max(a, b)}`;
-  for (let t = 0; t < g.n; t++)
-    for (let q = 0; q < 4; q++) {
-      const e = edge(g.poly[4 * t + q], g.poly[4 * t + ((q + 1) % 4)]);
-      across.set(e, [...(across.get(e) ?? []), t]);
-    }
-  for (let t = 0; t < g.n; t++)
-    for (let q = 0; q < 4; q++)
-      out[4 * t + q] = across.get(edge(g.poly[4 * t + q], g.poly[4 * t + ((q + 1) % 4)])).find((u) => u !== t) ?? -1;
-  return (g.loopSides = out);
+// a grid of squares' cells by their 4 sides in turn, as its corners list them (see meshCorners: the plane's N, E, S, W,
+// see planeMesh; a surface's the same way round on every tile, an orientable one), each side the square across it, −1
+// none (a dead edge): the plane's and a surface's alike (see parseLoops)
+function meshSides(M) {
+  if (M.sides) return M.sides;
+  const n = M.start.length - 1,
+    across = new Map(),
+    out = new Int32Array(4 * n).fill(-1);
+  const edge = (t, q) => {
+    const a = M.list[M.start[t] + q],
+      b = M.list[M.start[t] + ((q + 1) % 4)];
+    return a < b ? `${a},${b}` : `${b},${a}`;
+  };
+  for (let t = 0; t < n; t++)
+    for (let q = 0; q < M.start[t + 1] - M.start[t]; q++)
+      across.set(edge(t, q), [...(across.get(edge(t, q)) ?? []), t]);
+  for (let t = 0; t < n; t++)
+    for (let q = 0; q < M.start[t + 1] - M.start[t]; q++)
+      out[4 * t + q] = across.get(edge(t, q)).find((u) => u !== t) ?? -1;
+  return (M.sides = out);
 }
 // a grid of squares' cells by their 8 neighbours, clockwise from the top (N, NE, E, … NW): each corner its side's cell's next
-// side round (N's E: NE), as the sides list them (see sidesOf, meshSides; a table with no turns: one north, the plane's or the torus's)
+// side round (N's E: NE), as the sides list them (see meshSides; a table with no turns: one north, the plane's or the torus's)
 function mooreOf(sides) {
   const out = new Int32Array(2 * sides.length),
     at = (t, q) => (t < 0 ? -1 : sides[4 * t + q]);
@@ -23806,7 +23794,7 @@ function buildLifePlane(seq) {
   startLife(seq, rule, n, {
     nbr,
     ring: rule.loops
-      ? loopRing(rule, sidesOf(row, W, planeTorus(kind)))
+      ? loopRing(rule, meshSides(planeMesh(kind, W, planeTorus(kind))))
       : rule.iso && rule.iso !== 'vertex'
         ? nbr.ring
         : null,

@@ -1374,12 +1374,9 @@ button.active .bubble.active {
   width: 18px;
   height: 18px;
 }
-.turn-row {
-  display: grid;
-  grid-auto-flow: column;
-  grid-auto-columns: minmax(0, 1fr);
-} /* each its share of the row, an empty one keeping its place: the turns, always there (greyed for a cell); Open and Export
-   PNG; a battle's first numbers and its Rolls */
+.turn-row button {
+  flex: 1;
+} /* the turns, always there (greyed for a cell); Open and Export PNG */
 .colour-swatches span {
   font-size: var(--label-text-size);
   color: var(--muted-text-color);

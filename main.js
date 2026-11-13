@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.963';
+const VERSION = '0.4.964';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -19502,39 +19502,6 @@ const BATTLE_CARDS = Object.values(PRESETS)
   .filter((p) => ['Constants', 'Sequences'].includes(p.group) && typeof p.f === 'string')
   .map((p) => p.f);
 const huntVary = { formulas: true, starts: false };
-// Roll ℚ's fraction: one whose walk on the surface shown neither closes on itself before its digits end (its state and
-// the fraction's remainder seen again) nor treads its own steps (WANDER_NEW of them on a place new to it at least): a
-// frieze or a big circle, judged by the walk itself on its mesh (its corners' curvature, a Möbius strip's flip in it),
-// never by a flat formula; p/q, q up to 999; none found in WANDER_TRIES draws: null
-const WANDER_NEW = 0.5,
-  WANDER_TRIES = 200;
-function wanderingFraction(random) {
-  const mode = MODES[tabMode()],
-    S = surfaceSteps(walk.geo, mode),
-    base = numberBaseOf(getSetup()),
-    len = digitsNeeded();
-  for (let t = 0; t < WANDER_TRIES; t++) {
-    const q = 2 + Math.floor(random() * 998),
-      p = 1 + Math.floor(random() * (q - 1));
-    if (gcd(p, q) !== 1) continue;
-    const seen = new Set(),
-      places = new Set();
-    let state = walkStart(walk.geo, mode),
-      r = p,
-      closed = false;
-    for (let i = 0; i < len && !closed; i++) {
-      const key = S.key(state) * q + r;
-      closed = seen.has(key);
-      seen.add(key);
-      r *= base;
-      state = S.step(state, Math.floor(r / q));
-      r %= q;
-      places.add(state[0]);
-    }
-    if (!closed && places.size >= WANDER_NEW * len) return `${p}/${q}`;
-  }
-  return null;
-}
 // its rankings: [picture, name, tooltip, the button's words, its list's title, a battle's score (none: Longest's two lists),
 // a card's figure]
 // A hunt's result, every hunt's alike: its light (green, orange, red, grey: [colour, word, why]; none), what it is ranked by
@@ -46282,19 +46249,6 @@ BATTLE_FORMULAS.forEach((id, s) =>
 $('battleHuntBtn').addEventListener('click', () => (battleHunt.run ? stopBattleHunt() : startBattleHunt()));
 // Random (under the battle's ways): as many numbers as walkers, each another, drawn from the hunt's (BATTLE_CARDS, DRAWN_ROOTS), fought
 $('battleFirsts').addEventListener('click', () => playBattle(battleFirsts()));
-// Roll ℚ: as many fractions as walkers, each another, that wander here (see wanderingFraction), fought
-$('battleRollQ').addEventListener('click', () => {
-  const fs = [];
-  while (fs.length < walkTeams) {
-    const f = wanderingFraction(Math.random);
-    if (!f) {
-      $('status').textContent = 'Roll ℚ: no fraction wanders here (each closes on itself or treads its own steps)';
-      return;
-    }
-    if (!fs.includes(f)) fs.push(f);
-  }
-  playBattle(fs);
-});
 $('battleRandom').addEventListener('click', () => {
   const numbers = [...BATTLE_CARDS, ...DRAWN_ROOTS],
     fs = [];

@@ -10,7 +10,7 @@
   <meta property="og:url" content="https://vincentbounce.github.io/Tessera/">
   <meta property="og:type" content="website">
   <link id="favicon" rel="icon">  <!-- the app's logo, set at start-up (see LOGO_PATH) -->
-  <link rel="stylesheet" href="style.css?v=0.4.963">
+  <link rel="stylesheet" href="style.css?v=0.4.964">
   <script>  // the theme before the first paint (see applyTheme)
     try { const t = localStorage.getItem('tesseraTheme'); document.documentElement.dataset.theme = t === 'light' || t === 'dark' ? t : matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark'; } catch { document.documentElement.dataset.theme = 'dark'; }
   </script>
@@ -134,15 +134,14 @@
         </div>
         <div id="battleStart" hidden>  <!-- a battle's: how they fight, each walker's formula (A's the number's own, moved here: see renderWalkTeams), Random, the longest battles (see 7.6c) -->
           <div id="startWays" class="nav-shapes" hidden></div>  <!-- a battle's starts: Symmetric, Centred, Random, over the start row (see renderWalkTeams) -->
-          <h3>Walkers</h3>
-          <div class="stack">  <!-- the walkers' formulas, then their first numbers and the Rolls -->
-            <div id="formulaAHome"></div>  <!-- (the number's formula field, A's in a battle) -->
-            <div id="rivalFormulas"></div>  <!-- the other walkers' formulas, B to L (see formulaField) -->
-            <div class="draw-row turn-row"><button id="battleFirsts" type="button" title="Each walker back to its first number">π vs φ</button><button id="battleRandom" type="button" data-icon="dice" title="As many numbers as walkers drawn at random from the hunt's (the Number cards' reals and sequences, √2 to √9999), fought here">Roll ℝ</button></div>  <!-- the walkers' first numbers (see battleFirsts), Roll ℝ (see battleRandom) -->
-            <div class="draw-row turn-row"><span></span><button id="battleRollQ" type="button" data-icon="dice" title="As many fractions as walkers (p/q, q up to 999), each one whose walk here neither closes on itself before its digits end nor treads its own steps: a frieze or a big circle, fought here">Roll ℚ</button></div>  <!-- under Roll ℝ (see wanderingFraction) -->
-          </div>
           <h3>Battle rule</h3>
           <div id="battleRuleCards" class="mode-list rule-cards" role="listbox"></div>  <!-- a battle's way with an enemy's body: the Land grids, Land cells, Cut, Land no collision, as cards (see BATTLE_RULES) -->
+          <h3>Walkers</h3>
+          <div class="stack">  <!-- the walkers' formulas and Random, as close as cards -->
+            <div id="formulaAHome"></div>  <!-- (the number's formula field, A's in a battle) -->
+            <div id="rivalFormulas"></div>  <!-- the other walkers' formulas, B to L (see rivalField) -->
+            <div class="draw-row turn-row"><button id="battleFirsts" type="button" title="Each walker back to its first number">π vs φ</button><button id="battleRandom" type="button" data-icon="dice" title="As many numbers as walkers drawn at random from the hunt's (the Number cards' reals and sequences, √2 to √9999), fought here">Roll</button></div>  <!-- the walkers' first numbers (see battleFirsts), Roll (see battleRandom) -->
+          </div>
         </div>
       </section>
 
@@ -511,10 +510,10 @@
     </div>
   </main>
 
-  <script src="pixelarticons.js?v=0.4.963"></script>
-  <script src="punks.js?v=0.4.963"></script>
-  <script src="loops.js?v=0.4.963"></script>
-  <script src="emoji.js?v=0.4.963"></script>
-  <script src="main.js?v=0.4.963"></script>
+  <script src="pixelarticons.js?v=0.4.964"></script>
+  <script src="punks.js?v=0.4.964"></script>
+  <script src="loops.js?v=0.4.964"></script>
+  <script src="emoji.js?v=0.4.964"></script>
+  <script src="main.js?v=0.4.964"></script>
 </body>
 </html>

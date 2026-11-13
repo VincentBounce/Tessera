@@ -8,7 +8,7 @@
     transparent
   ); /* a pill group's track: a wash of the text's colour, seen on any box, in either theme */
   --badged-tile-gap: 8px; /* between two tiles that carry a badge: its 7 px past their corner clear of the next (see .badge) */
-  --panel-width: 280px; /* the settings' column (.panel) */
+  --panel-width: 286px; /* the settings' column (.panel): its tiles 4 a row in a card (see .panel section) */
   /* the text's sizes, four, each element one of them: */
   --caption-text-size: 11px; /* a card's words, a bubble, a figure's caption */
   --label-text-size: 12px; /* a field's label, a note, a hint, the ranking */
@@ -134,7 +134,7 @@ main {
   scrollbar-gutter: stable; /* keep room for the scrollbar: the column never shifts */
   scrollbar-width: thin;
   scrollbar-color: var(--border-color) transparent;
-  background: var(--panel-background);
+  background: var(--page-background);
   border-right: 1px solid var(--border-color);
   padding: 0 12px 4px 16px;
 }
@@ -152,14 +152,12 @@ main {
   background: var(--muted-text-color);
 }
 .panel section {
-  padding: 12px 0;
-  border-top: 1px solid var(--border-color);
-} /* a grey hairline between sections */
-#paramsPane > section:first-child,
-#yourList > section:first-child {
-  padding-top: 6px;
-  border-top: 0;
-} /* the first, always there: no line, no gap under the header */
+  margin: 8px -4px 0 -8px;
+  padding: 10px 8px;
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  background: var(--panel-background);
+} /* each section a card on the page's background, 8 px from the column's sides (its tiles as wide: 4 a row) */
 :is(#paramsPane, #yourList) > section:first-child h2 {
   margin-top: 0;
 } /* its title as high in every pane */

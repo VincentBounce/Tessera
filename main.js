@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.953';
+const VERSION = '0.4.954';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -19998,25 +19998,33 @@ function cellNeighbours(cStart, cList, nv, sides = 0) {
   }
   return { start, list: list.slice(0, m), ring, more, corners: { start: cStart, list: cList } }; // (its corners: by a side, see sideOf)
 }
-// A surface's: its tiles' corners (a repeated one, a pentagon's of the hexagon sphere, once; a wall: none). On
-// hexagons, their ring (Callahan's letters); on squares, sides 8 asked (Hensel's)
-function cornerNeighbours(g, sides = g.sides === 6 || g.hexagons ? 6 : 0) {
-  // (a solid of hexagons: its walls of more sides too, the stella's)
-  const key = `life${sides}`;
-  if (g[key]) return g[key];
+// A grid's corners, the plane's and the surfaces' alike: each cell's corner ids in turn round it (cell t's, list[start[t]]
+// … list[start[t + 1] − 1]), each corner one id however many cells share it (nv: how many; a torus's the same each side
+// of its seam): what Life's neighbours, their sides, Ising and the blocks read (see planeMesh, meshCorners)
+// a surface's: its tiles' corners (a repeated one, a pentagon's of the hexagon sphere, once; a wall: none)
+function meshCorners(g) {
+  if (g.corners) return g.corners;
   const k = g.sides,
     wall = new Set(g.walls),
-    cStart = new Int32Array(g.n + 1),
-    cList = [];
+    start = new Int32Array(g.n + 1),
+    list = [];
   for (let t = 0; t < g.n; t++) {
     if (!wall.has(t))
       for (let j = 0; j < k; j++) {
         const v = g.poly[k * t + j];
-        if (v !== g.poly[k * t + ((j + 1) % k)]) cList.push(v);
+        if (v !== g.poly[k * t + ((j + 1) % k)]) list.push(v);
       }
-    cStart[t + 1] = cList.length;
+    start[t + 1] = list.length;
   }
-  return (g[key] = cellNeighbours(cStart, Int32Array.from(cList), g.verts.length / 3, sides));
+  return (g.corners = { start, list: Int32Array.from(list), nv: g.verts.length / 3 });
+}
+// A surface's Life neighbours, by its corners: on hexagons, their ring (Callahan's letters); on squares, sides 8 asked
+// (Hensel's)
+function cornerNeighbours(g, sides = g.sides === 6 || g.hexagons ? 6 : 0) {
+  // (a solid of hexagons: its walls of more sides too, the stella's)
+  const key = `life${sides}`,
+    M = meshCorners(g);
+  return (g[key] ??= cellNeighbours(M.start, M.list, M.nv, sides));
 }
 
 // Callahan's letters for where 2, 3 or 4 live neighbours sit around a hexagon (bit q = neighbour q):
@@ -23591,12 +23599,10 @@ function planeSeed(kind, seq, C, K = 1) {
   }
   return seed;
 }
-// the cells sharing an edge or a corner with each one (wrapping around, or not past the edges), as the
-// surfaces' lists; on hexagons, also the 6 around in turn (ring: Callahan's letters)
-function planeNeighbours(kind, W, torus, hensel = false) {
-  // hensel: squares' 8 neighbours in order too
-  const row = planeRow(kind, W),
-    { n, xy } = planeGrid(kind, W),
+// the plane's corners (see meshCorners), wrapping round on a torus (row: its cells a row, the grid's or its blocks', see
+// planeBlocks)
+function planeMesh(kind, W, torus, row = planeRow(kind, W)) {
+  const { n, xy } = planeGrid(kind, W, row),
     HEX = [
       [1, 0],
       [0, 1],
@@ -23669,12 +23675,13 @@ function planeNeighbours(kind, W, torus, hensel = false) {
     else for (const [u, v] of cornersOf(x, y)) add(u, v);
     cStart[t + 1] = at;
   }
-  return cellNeighbours(
-    cStart,
-    Int32Array.from(cList),
-    nv,
-    baseOf(kind) === 'hex' ? 6 : hensel && kind === 'square' ? 8 : 0,
-  ); // (a rectangle of hexagons: theirs too)
+  return { start: cStart, list: Int32Array.from(cList), nv };
+}
+// the plane's Life neighbours, by its corners (wrapping round, or not past the edges), as the surfaces'; on hexagons,
+// also the 6 around in turn (ring: Callahan's letters); hensel: squares' 8 neighbours in order too
+function planeNeighbours(kind, W, torus, hensel = false) {
+  const M = planeMesh(kind, W, torus);
+  return cellNeighbours(M.start, M.list, M.nv, baseOf(kind) === 'hex' ? 6 : hensel && kind === 'square' ? 8 : 0); // (a rectangle of hexagons: theirs too)
 }
 // a grid of squares' cells by their 4 sides, clockwise from the top (N, E, S, W), −1 past a dead edge (see parseLoops)
 function sidesOf(row, W, torus) {

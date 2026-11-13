@@ -161,9 +161,9 @@ main {
 :is(#paramsPane, #yourList) > section:first-child h2 {
   margin-top: 0;
 } /* its title as high in every pane */
-.panel .muted:empty {
+.panel :is(.muted, .mode-list):empty {
   display: none;
-} /* an empty status line takes no room */
+} /* an empty status line or list takes no room (no margin left under the last control: Hunt's results before a hunt) */
 /* The headings, one scale: h1 the page's (Tessera, hidden: its tab shows its name); h2 a section's (Walk, Teams) or a page's
    over the view (see .rule-tuto h2); h3 a sub-section's (3D solids, Size; a page's Tilings); h4 a group's (Squares,
    Constants) */

@@ -255,8 +255,9 @@ textarea {
 } /* (of no weight: a class's font wins over it, .rule's) */
 /* the formula, like the number of digits under it: a field that looks like a label until it
    is hovered or used; in yellow bold when it is the number chosen (no card matches it) */
-/* a value of one's own, in yellow bold on a picked tile's pale gold: a formula no card matches, a rule no preset matches */
-.field :is(input, textarea).custom {
+/* a value of one's own, in yellow bold on a picked tile's pale gold: a formula no card matches (beside its cards: in a battle's
+   Walkers, none), a rule no preset matches */
+.field :is(input, textarea).custom:not(#battleStart *) {
   color: var(--accent-color);
   font-weight: 600;
   border-color: var(--accent-color);

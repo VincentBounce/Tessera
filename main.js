@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.940';
+const VERSION = '0.4.941';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -8956,16 +8956,11 @@ function presetOf(text) {
   return { id: null }; // a formula of its own: no card
 }
 
-// a formula of its own, typed or drawn (no card gives it): its field lit up like a chosen card, every walker's alike
-const ownFormula = (text) => {
-  const p = presetOf(text);
-  return !p.id || !!PRESETS[p.id].draw;
-};
 // The cards and their helper menus follow the formula
 function syncNumberMenu() {
   const p = presetOf($('formula').value);
   renderNumberPicker(p.id);
-  $('formula').classList.toggle('custom', ownFormula($('formula').value));
+  $('formula').classList.toggle('custom', !p.id || !!PRESETS[p.id].draw); // a formula of its own, typed or drawn, lights up like a chosen card
   for (const helper of ['mersenneP', 'primorialP']) if (p[helper]) $(helper).value = p[helper];
   $('mersenneRow').hidden = p.id !== 'mersenne';
   $('primorialRow').hidden = p.id !== 'primorial';
@@ -17942,7 +17937,6 @@ function tintBattleFormulas() {
   BATTLE_FORMULAS.forEach((id, s) => {
     const on = battleOn() && s < walkTeams && battleAsked[s] === $(id).value;
     $(id).classList.toggle('battle-formula', on); // (see .battle-formula)
-    $(id).classList.toggle('custom', ownFormula($(id).value));
     $(id).style.setProperty('--walker-color', teamColour(s));
   });
 }

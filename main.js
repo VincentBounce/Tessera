@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.942';
+const VERSION = '0.4.943';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -8809,6 +8809,7 @@ function checkFormula(root) {
       case '/':
         noSeq(x.a);
         noSeq(x.b);
+        if (smallExact(x.b)?.[0] === 0n) throw new Error('division by zero'); // (by an exact 0, whatever it divides: refused as read)
         if (x.a.kind === 'real' || x.b.kind === 'real') x.kind = 'real';
         else {
           x.kind = 'rat';
@@ -9346,9 +9347,9 @@ const writeDigits = (ds, b, head) => {
   const write = (x) => (b <= 36 ? Array.from(x, (v) => v.toString(36)).join('') : Array.from(x).join(' '));
   return ds.length > head ? `${write(ds.subarray(0, head))}.${write(ds.subarray(head))}` : head ? write(ds) : '0';
 };
-// the formulas shown (see showNumber): the Digits' one, or a battle's, each walker's
+// the formulas shown (see showNumber): the Digits' one (its digits', never a formula read since), or a battle's, each walker's
 const numberFormulas = () => [
-  formulaInUse,
+  digitsComputed.formula,
   ...RIVALS.slice(0, walk.battle?.player ? walk.battle.player.K - 1 : 0).map((id) => $(id).value),
 ];
 // how many digits of them in base b: those in use, or in another base as many as they tell

@@ -18,6 +18,8 @@ stacked instead of replaced. When the user asks for a rollback, roll back, then 
 doubling `turnToward` and a base still built on the tile's normal: +7 for removing a notion, till v0.4.668; and v0.4.735's
 mesh memory squeezed onto one line to show −6.)
 
+<p align="center"><br>* * *</p>
+
 ## Bundles
 The user always makes the app's single-file versions with the script `_Make Tessera.html.command` in the folder
 `Tessera resources` beside the repo (double-click). It runs `tools/bundle.py` twice and makes two HTML files there:
@@ -35,12 +37,24 @@ repo, deleted after), no console error, and `tesseraCheck()` passes in it.
 
 Never delete the bundles in `Tessera resources` (old versions included, the `Walking Pi v….html` ones before the name): the user keeps them to compare versions.
 
+<p align="center"><br>* * *</p>
+
 ## Format
 The code is Prettier's standard (`.prettierrc.json`: 120 columns, single quotes, semicolons, trailing commas), applied by
 `tools/ship.sh` to every `.js` and `.css` staged (`brew install prettier`); the generated data (`emoji.js`, `punks.js`,
 `pixelarticons.js`, `loops.js`) and the prototypes left out (`.prettierignore`). **Write the code to this standard from the
 start**, as Prettier would leave it: one statement a line, never code squeezed to look shorter (see SIMPLER above and
 Line balance).
+
+<p align="center"><br>* * *</p>
+
+## Markdown files
+Before every `## ` title of a Markdown file (README.md, PATTERNS.md, CLAUDE.md, any new one), its separator on a line of
+its own, a blank line round it, the user's formula: `<p align="center"><br>* * *</p>`. Centred, and the `<br>` evens the
+space round it (GitHub's margins: 16 px under a paragraph, 24 px over a title; no style of our own passes there). Never
+⁂ (one star over two: it looks off centre), never `\n` (written as it is).
+
+<p align="center"><br>* * *</p>
 
 ## Comment hierarchy (main.js)
 - The file opens with a banner (`TESSERA — main.js`) and a "How it fits together" overview of its parts.
@@ -60,6 +74,8 @@ Line balance).
 - A new function goes in the part and section of its concept; a new concept with no section gets one (ask if a
   new part seems needed). PART 8 (Game of Life, ~3,000 lines) has no sections yet: to cut, when decided.
 
+<p align="center"><br>* * *</p>
+
 ## Names
 - Variables and functions named clearly, consistently and explicitly: what they hold or do, in words (`poleColours`,
   `shapeAndTiles`, not `pc`, `sat`), the same word for the same thing everywhere (one concept, one name).
@@ -73,6 +89,8 @@ Line balance).
   a second `function` of the same name replaces the first with no word (`battleScore`, v0.4.247: a battle frozen at its
   first step); `checkNames` in `tesseraCheck()` catches a function declared twice.
 
+<p align="center"><br>* * *</p>
+
 ## Tooltips
 - One renderer, `tipOf` and its `mouseover` (main.js, by `updateHint`): the tooltip in the view's bottom right corner, the
   control's name in bold (a button's, a label's, a notch row's title: never written into its words), its words under it,
@@ -80,6 +98,8 @@ Line balance).
 - A `title` holds the words only; a default or a greyed state goes in its data attribute, never "· by default" in the text.
 - Before adding or moving a tooltip, read that renderer and route through it; check what shows (the `#tip` box after a
   mouseover), not the attribute.
+
+<p align="center"><br>* * *</p>
 
 ## Greyed controls
 - The menu is a graph: a node is a setup (what a link holds: mode, size, colours, teams, battle rule), an edge a click
@@ -93,6 +113,8 @@ Line balance).
 - A new menu button or field tile carries its choice's key (`data-choice`) and gets its edge in `choicesAt`, or the search
   cannot reach it.
 
+<p align="center"><br>* * *</p>
+
 ## Sessions and branches
 - One branch, `main`, the only one on GitHub; no branch for a prototype or an experiment (it falls behind as others
   push, and only a force push fixes it). A prototype is a folder of its own (`lenia/`, `particles/`, `chemistry/`,
@@ -101,6 +123,8 @@ Line balance).
   `tools/ship.sh` sets aside a folder's uncommitted changes while it rebases, another session's work in progress among
   them. Each ships to main by `tools/ship.sh`.
 - A prototype or experiment given up keeps its row in `REMOVED.md` (its commit stays in main's history).
+
+<p align="center"><br>* * *</p>
 
 ## Line balance
 `python3 tools/lines.py [from] [to]` (from: HEAD; to: the files now, or a commit) gives each changed code file's lines
@@ -112,6 +136,8 @@ lower it. Cheating on it is lying about the change.
 Written with the version it brings first: « Solde v0.2.180 : main.js 12,143 +7 » (the app's files only, not tools/*).
 No code line gained or lost: the count and +0 all the same (« main.js 12,531 +0 »), never a sentence instead; a file
 touched shows (+0 if its code lines are as many).
+
+<p align="center"><br>* * *</p>
 
 ## Versions
 - `const VERSION = '0.4.N'` (main.js, line 40) is the only source; every commit's message ends with it, `(v0.4.N)`,
@@ -132,11 +158,15 @@ touched shows (+0 if its code lines are as many).
   A link that fails: `git log --grep "(v0.3.N)" -F`, its bundle in `Tessera resources`, or `tools/at.sh 0.3.N`, which
   serves that version on port 8322 beside this one.
 
+<p align="center"><br>* * *</p>
+
 ## A choice's number in a link
 - A choice among several (a tab group: the Battle rules' `br=`, …) is written in a link by its place in the group, in the order
   shown: 0 the first, and the first the default (written in no link). Never a number kept from an older order, never a
   default set apart from the order: to change the default, change the order.
 - Every night, check this for every choice the links write as a number: its tabs' order, its numbers, its default.
+
+<p align="center"><br>* * *</p>
 
 ## Night audits
 While the checks run unattended (a night, a meal), also audit what they cannot see, and fix each gap at its root:
@@ -183,6 +213,8 @@ While the checks run unattended (a night, a meal), also audit what they cannot s
   `--muted` or `--c` (v0.4.564: `--text-size` came beside a colour named `--text`): renamed at its definition and every
   `var(…)` and `getPropertyValue`/`setProperty` in style.css, main.js and index.html, in its own commit.
 
+<p align="center"><br>* * *</p>
+
 ## Removed features
 A feature taken out gets a row in `REMOVED.md` (in English) at once: its last version, date, commit, a raw.githack link
 that opens it as it was, and why it left.
@@ -193,11 +225,15 @@ that opens it as it was, and why it left.
 - A feature that was only tried, on a branch never merged, gets its row too (its commit kept on GitHub even once its
   branch is gone), and one taken back at once (its last version the one that had it).
 
+<p align="center"><br>* * *</p>
+
 ## Lenia prototype (lenia/)
 A separate page (`lenia/index.html`, `lenia.js`, `species.js`), not part of main.js: Bert Chan's Lenia on the GPU (FFT),
 eight life channels (two layers of four) and a wall texture; a species is a team on a block of 1 to 3 channels, its law moved there. `species.js` is made by `lenia/make_species.py` from Chan's repo
 (Chakazul/Lenia, `Python/animals.json` and `found/*.json`), each pick tested for moving and standing walls;
 `leniaCheck()` in its console: the FFT's round trip and an impulse, each species alive alone, a team the same on any channels.
+
+<p align="center"><br>* * *</p>
 
 ## Particle Life prototype (particles/)
 A separate page (`particles/index.html`, `particles.js`), not part of main.js: Particle Life (Tom Mohr's) on WebGPU,
@@ -215,12 +251,16 @@ turns the sphere or moves over the torus; the link keeps every setting. `particl
 step (bins) against the same step on the CPU (every pair), each mode and space (Physarum: its agents and map).
 Its page (and the chemistry's) loads its script as `particles.js?<time>`: never an old one from the cache.
 
+<p align="center"><br>* * *</p>
+
 ## Artificial chemistry prototype (chemistry/)
 A separate page (`chemistry/index.html`, `chemistry.js`), not part of main.js: Tim Hutton's Squirm3 (2002) on a torus
 of hexagons, on the CPU: atoms of types a to f with a state and bonds, moving at random (a partner never further than
 two cells), reacting with the six beside them by his eight rules (shown with how often each fired); the chain e8–a1–b1–
 c1–f1 copies itself, and his rule 4's flaw makes shorter mutants that win. `chemistryCheck()` in its console: types,
 bonds and cells kept right over 10,000 steps, and the chain copied.
+
+<p align="center"><br>* * *</p>
 
 ## Liquid prototype (liquid/)
 A separate page (`liquid/index.html`, `liquid.js`), not part of main.js, to join Tessera later: four liquids of different
@@ -230,6 +270,8 @@ Layers) done at once for every particle (Jacobi): a pair's push by their densiti
 the bottom's weight; drawn as metaballs. Tools Drag, Attract, Repel. A step in seven passes (moved, the particles binned
 as in particles/, densities, pushes). `liquidCheck()` in its console: one GPU step against the CPU (every pair), and four
 layers settled from a scatter, the heaviest at the bottom.
+
+<p align="center"><br>* * *</p>
 
 ## Protocells prototype (protocells/)
 A separate page (`protocells/index.html`, `protocells.js`), not part of main.js: Zwicker, Seyboldt, Weber, Hyman and
@@ -243,6 +285,8 @@ Rest other 2.5, Heat 0.01; less heat and they starve). A step in eight passes (l
 with the densities, the species changed with the push, then a clock ticked: the last slot of the bins' counts, the 8
 storage buffers WebGPU allows taken). `protocellsCheck()` in its console: one GPU step against the CPU (every pair, the
 reactions too, none differing), F + D + W = n, and a run from one droplet till it divides.
+
+<p align="center"><br>* * *</p>
 
 ## Agents prototype (agents/)
 A separate page (`agents/index.html`, `agents.js`), not part of main.js: Darwinian agents with no training (after

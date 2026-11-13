@@ -328,9 +328,10 @@ The latest highway: N = 17, after 271,384 steps of chaos. The links of the bound
 
 <br>
 
-<p align="center"><br>* * *</p>
 
 <br>
+
+<p align="center"><br>* * *</p>
 
 ## 🌐 Walks on surfaces
 
@@ -553,9 +554,10 @@ Along the grid: see [the sphere of hexagons](#-along-the-grid-of-the-sphere-of-h
 
 <br>
 
-<p align="center"><br>* * *</p>
 
 <br>
+
+<p align="center"><br>* * *</p>
 
 ## 💠 Along the grid of the sphere of hexagons
 
@@ -857,6 +859,7 @@ The tables below list every such fraction p/q between 1 and 2 with q ≤ 512 and
 | 18 | [268/265](https://vincentbounce.github.io/Tessera/#x=268/265&w=hexSphereGrid&d=10000&s=32&st=1024) | 52 | `000000101110010111…` | 0 | 260 | 90 | 0.3 % | 5 ([1,024](https://vincentbounce.github.io/Tessera/#x=268/265&w=hexSphereGrid&d=10000&s=32&st=1024)) |
 | 19 | [306/305](https://vincentbounce.github.io/Tessera/#x=306/305&w=hexSphereGrid&d=10000&s=32) | 60 | `000000001101011011…` | 0 | 60 | 37 | 0.1 % | 5 ([2](https://vincentbounce.github.io/Tessera/#x=306/305&w=hexSphereGrid&d=10000&s=32&st=2)) |
 
+<p align="center"><br>* * *</p>
 
 ## 🧬 Life on Cairo pentagons: rules with dying states
 
@@ -875,6 +878,7 @@ The best, checked in the app (soups at 30 %, seed 7):
 
 A ship's cells are written as the plane's rows (two pentagons a square, `A` alive, `B` `C` dying), drawn at an even square: the tiling repeats every 2 squares, so a pattern fits every other square only.
 
+<p align="center"><br>* * *</p>
 
 ## 🎨 Draw's patterns for the rules of each grid
 
@@ -948,6 +952,7 @@ Their links on the app's rectangle of triangles (side 64: 24 rows of 168, since 
 | B2347/S35/C3 | Oscillator | period 3 · 8 cells | [draw](https://vincentbounce.github.io/Tessera/#w=life2dCairo&r=B2347/S35/C3&s=64&pop=draw&p=64,32:B.2A$A.BA$B.A!) |
 | B2347/S35/C3 | Methuselah | loops from generation 3,997 · 13 cells | [draw](https://vincentbounce.github.io/Tessera/#w=life2dCairo&r=B2347/S35/C3&s=64&pop=draw&p=64,32:.3A3.A$.2A2.2A$A.4A!) |
 
+<p align="center"><br>* * *</p>
 
 ## ⏳ Long deaths in a box
 
@@ -960,6 +965,7 @@ Found with the hunt's *Dies out* goal: a start that stays alive very long on a g
 
 Cairo Wars never settles from a soup on a torus (sparks and gliders forever); in a closed box its activity wanders for tens of thousands of generations (86 to 338 cells alive), then wears itself out. On an infinite plane its gliders would fly away, so this is a methuselah of the box, not of the rule alone.
 
+<p align="center"><br>* * *</p>
 
 ## 🧭 A glider along the edge of the Möbius strip
 
@@ -971,6 +977,7 @@ On the Möbius strip of Cairo pentagons, Cairo Wars (B24/S346/C4) has a glider t
 
 The plane's Cairo Wars glider has 9 cells and period 2; this one exists only because a cell of the edge has its twin on the other face as a neighbour, as a mirror would: it is half of a symmetric glider, flying along the mirror. On a plane or a torus it has no edge to run along.
 
+<p align="center"><br>* * *</p>
 
 ## 🐝 Hexagonal rules that behave like Life
 
@@ -1003,9 +1010,10 @@ They send out gliders as often as Life, or more, and their small starts grow as 
 
 <br>
 
-<p align="center"><br>* * *</p>
 
 <br>
+
+<p align="center"><br>* * *</p>
 
 ## 🪁 Life on kites: a search with dying states
 
@@ -1058,7 +1066,6 @@ Draw's patterns for the kites' rules, from 720 small starts each (a methuselah: 
 
 <br>
 
-<p align="center"><br>* * *</p>
 
 **A third search: the flowers' letters on kites** (tools/kitesearch/letters.js). A rule can tell a kite's live neighbours apart: after a count, v and how many of them touch it by a corner only (0 to 3, 3 for 3 or more; a kite has 4 neighbours by a side, 5 by a corner): B3v12 is born with 3 live neighbours of which 1 or 2 by a corner. 60,000 rules with letters drawn at random (B 1 to 3 digits from 2 to 7, S up to 5 from 0 to 8, 2 to 5 states; a tenth of them from the kites' known rules, whose lettered forms mostly die out: letters make births rarer), their soups on a torus of 1,536 kites, 537 Life-like; those followed (12 soups on 3,456 kites) and scored against Life as above; the best 40 tried with 36 small starts for ships. The known rules on the same score: Kite simmer 0.29, Kite marathon 0.04, Kite Life 0.03, the others under 0.01. After a count with letters, a "." before a count 0 to 3 (B2v01.3: 2 with none or one by a corner, then 3).
 
@@ -1099,6 +1106,8 @@ B3v012/S0234v3 (2 states, born with 3 of which none to 2 by a corner) is the mos
 
 <br>
 
+<p align="center"><br>* * *</p>
+
 ## 🎩 Life on hats: the tile that never repeats
 
 The hat (Smith, Myers, Kaplan and Goodman-Strauss, 2023), 8 kites, tiles the plane only without ever repeating; built here by substitution as Craig S. Kaplan's hatviz. A grid of side W is the W² hats nearest the middle (a square), the hats round them its walls; it cannot wrap round. Nearly all corners join 3 hats, so a hat has 6 neighbours on average (Euler): 6 or 7 inside, a few 4 or 5. Life B3/S23 dies at once.
@@ -1116,9 +1125,10 @@ No pattern can be moved on hats (no two places alike), so Draw has only single c
 
 <br>
 
-<p align="center"><br>* * *</p>
 
 <br>
+
+<p align="center"><br>* * *</p>
 
 ## 🔭 More patterns for the first rules of each grid
 
@@ -1137,9 +1147,10 @@ A lesson for methuselahs: a torus too small lets their debris and ships come rou
 
 <br>
 
-<p align="center"><br>* * *</p>
 
 <br>
+
+<p align="center"><br>* * *</p>
 
 ## ⏱ Methuselahs measured again, as Life counts them
 
@@ -1177,9 +1188,10 @@ A methuselah's lifetime, as Life's are given (the R-pentomino's 1,103, the Acorn
 
 <br>
 
-<p align="center"><br>* * *</p>
 
 <br>
+
+<p align="center"><br>* * *</p>
 
 ## 🧩 Nine more tilings: rules and patterns
 
@@ -1206,9 +1218,10 @@ The second rule of each (Long florets B24/S456/C4 with a ship of 12 cells, perio
 
 <br>
 
-<p align="center"><br>* * *</p>
 
 <br>
+
+<p align="center"><br>* * *</p>
 
 ## 🌙 A night's search: methuselahs, a ship, tori, battles
 
@@ -1244,9 +1257,10 @@ None for the rules with a birth on 2 (Prismatic Life, Long prisms, Long florets,
 
 <br>
 
-<p align="center"><br>* * *</p>
 
 <br>
+
+<p align="center"><br>* * *</p>
 
 ## ⬟ The 15th pentagon
 
@@ -1285,9 +1299,10 @@ Since 2026-11-03 (mirror7-sphere branch) a ring's hole is a cell too, its n side
 
 <br>
 
-<p align="center"><br>* * *</p>
 
 <br>
+
+<p align="center"><br>* * *</p>
 
 ## 🎲 Densities: how full a start should be
 
@@ -1320,9 +1335,13 @@ For each rule offered, 300 random starts at each density in a patch of radius 3 
 | Cairo | B24/S346/C4 | 6 (70) | 208 (4,000) | 716 (4,000) | 1,276 (4,000) | 1,862 (4,000) | 2,395 (4,000) | 2,966 (4,000) |
 | Cairo | B34/S23 | 2 (12) | 5 (56) | 14 (87) | 24 (166) | 28 (148) | 33 (195) | 29 (216) |
 
+<p align="center"><br>* * *</p>
+
 ## 🕯 Faders: 25 states
 
 The rules may now have up to 25 states (23 dying stages; with colours, as many as a cell's byte holds: 22 for twelve). **Faders** (B2/S2/C25, Rudy Rucker and John Walker's, from MCell's collection; see [LifeWiki's Generations rules](https://conwaylife.com/wiki/OCA:Fireworks)) is on the squares: Life crossed with Brian's Brain, its sparks wandering in long fading trails. On a soup (128 × 128, 30 % alive) it stays lively, about 2 % of the cells alive and 30 % dying, still going after 3,000 generations. [Faders](https://vincentbounce.github.io/Tessera/#w=life2d&r=B2/S2/C25&s=128).
+
+<p align="center"><br>* * *</p>
 
 ## ☄ Trails: rules with many states on the tilings
 
@@ -1339,6 +1358,7 @@ With room for up to 25 states, a search on the tilings (tools/tilings/states.js)
 
 On a small torus their soups end in long loops (periods 68 to 340): their ships going round. None on Penrose's rhombi or the spectres (no lattice: a ship has no copy of itself to come back on), and only rare ones on the florets (B25/S25/C8, period 25), kisrhombille (B34/S13/C8, period 4) and rhombitri (B23/S06/C8, period 38); none so far on the snub and the 14th pentagon.
 
+<p align="center"><br>* * *</p>
 
 ## ⚔ Battles in a hexagon
 
@@ -1352,6 +1372,8 @@ Every rule on hexagons with B starting at 2 or 3 (up to 3 digits) and S up to 4 
 | B346/S1245 | 349, 0.66, 6.0 % | 397, 0.63, 2.1 % |
 | B346/S1346 | 309, 0.74, 2.8 % | 235, 0.67, 1.4 % |
 | Life B3/S23, for comparison | 27, 0.73 | 27, 0.70 |
+
+<p align="center"><br>* * *</p>
 
 ## 🌗 The grids that never repeat, searched again in a circle (night of 2026-10-21)
 
@@ -1380,6 +1402,8 @@ Their first searches ran on square patches; the app plays them in a circle now (
 | Flower 8 | Flower 8 Life B345/S0239 · Flower 8 sparks B36/S3457 | [B346/S0238](https://vincentbounce.github.io/Tessera/#w=life2dFlower8&r=B346/S0238&s=48&pop=random.30.7) | 0.184 | 317–1,052 | 3.59 % | 42 % |
 |  |  | [B25/S0345/C5](https://vincentbounce.github.io/Tessera/#w=life2dFlower8&r=B25/S0345/C5&s=48&pop=random.30.7) | 0.126 | 244–1,568 | 3.16 % | 33 % |
 
+<p align="center"><br>* * *</p>
+
 ## ⚔ Battles on the natural rhombi, by climbing (night of 2026-10-21)
 
 From each grid's rules (the menu's, Hex battle's and Hex war's, Life's), in a hexagon of ⌀ 32, 3 and 6 colours as the app plays them (soups of 35 %, 3 each, their median): the 6 best kept, each changed by a digit (one more or one fewer in B or in S), 4 rounds (Rhombitri 470 rules, Kisrhombille 385, Dual 314 266). A battle: the generations with two colours alive, × its balance; thinly alive only (1 to 12 %); counts of 10 and more left out (a digit a count). Not in the menu yet:
@@ -1394,6 +1418,8 @@ From each grid's rules (the menu's, Hex battle's and Hex war's, Life's), in a he
 | Rhombitri | B3459/S23 | 280, 0.69, 9.8 % | 615, 0.40, 10.5 % |
 | Kisrhombille | B3/S169 | 142, 0.52, 7.8 % | 254, 0.41, 9.6 % (none long: its 16 neighbours) |
 
+<p align="center"><br>* * *</p>
+
 ## ◺ The pinwheel (Conway and Radin, 1994)
 
 A right triangle, its legs 1 and 2, cut in 5 of itself √5 smaller (the altitude to its hypotenuse; the larger part's corners at its two ends, and the rectangle between cut along its other diagonal: two of the five the mirror of the others), again and again: it never repeats, its tiles turned ever more ways (round as a disc, in a circle). Not edge to edge: a corner on another's side kept as a corner of that side too (its neighbours by a shared corner, 9 to 17 a tile inside). Searched as the others (tools/tilings/search.js, 103,448 rules, 4 workers): the highest scores against Life of all the grids.
@@ -1404,6 +1430,8 @@ A right triangle, its legs 1 and 2, cut in 5 of itself √5 smaller (the altitud
 | [**Pinwheel sparks B389/S0168**](https://vincentbounce.github.io/Tessera/#w=life2dPinwheel&r=B389/S0168&s=48&pop=random.30.7) | 0.788 | 240–2,567 | 2.36 % | 83 % |
 | B379/S0178 | 0.772 | 321–1,387 | 2.53 % | all |
 | B389/S0169 | 0.675 | 246–1,656 | 2.5 % | 92 % |
+
+<p align="center"><br>* * *</p>
 
 ## ⚔ Long-lasting war B346/S01458, measured on every grid
 
@@ -1432,6 +1460,8 @@ Found on Dual 314, tried on the others in the app itself: walls, ⌀ 32, soups o
 
 In the menu where it is a war (the first 15), with these numbers; taken out of the others.
 
+<p align="center"><br>* * *</p>
+
 ## ❄ Rhombs 12: de Bruijn's twelvefold
 
 De Bruijn's multigrid (1981) with 6 families of lines 30° apart, all moved by ½ (never three through a point; the whole twelvefold round the middle, a star of 12 thin rhombi there): squares and 30° and 60° rhombi, never repeating (Ammann's is the same with 4 families: one function, DEBRUIJN, for both). In a dodecagon, its sides along the tiles'; 12 colours of 152 cells each at ⌀ 48. Searched as the others (103,448 rules):
@@ -1442,6 +1472,8 @@ De Bruijn's multigrid (1981) with 6 families of lines 30° apart, all moved by �
 | [**Rhombs 12 embers B39/S3457/C4**](https://vincentbounce.github.io/Tessera/#w=life2dRhombs12&r=B39/S3457/C4&s=48&pop=random.30.7) | 0.324 | 332–1,430 | 2.13 % | 33 % |
 | B38/S023 | 0.254 | 360–1,155 | 2.3 % | 50 % |
 
+<p align="center"><br>* * *</p>
+
 ## ✽ The flowers' letters: by a side or by a corner only
 
 On the flowers a pentagon's neighbours touch it either by a side or by a corner only. A rule can tell them apart: after a count, `v` and the numbers (0 to 3) of its live neighbours that touch by a corner only (`5v0`: 5 live ones, none of them by a corner only; `6v12`: 6, one or two of them by a corner only; a count without `v`, whatever they are). `v`, not Hensel's letters (a, c… already said where the live ones sit on squares and hexagons). Searched from each flower's best rules, every letter added or taken away one at a time (12 soups each, scored as the others): three flowers gain, Flowers 3, 5 and 6 don't.
@@ -1451,6 +1483,8 @@ On the flowers a pentagon's neighbours touch it either by a side or by a corner 
 | [**Flower 8 letters B36v129/S3457v2**](https://vincentbounce.github.io/Tessera/#w=life2dFlower8&r=B36v129/S3457v2&s=48&pop=random.30.7) | 0.472 | B346/S0238 0.184 | 93–1,878 | 2.04 % | 100 % |
 | [Flower 4 letters B345/S023v01](https://vincentbounce.github.io/Tessera/#w=life2dFlower4&r=B345/S023v01&s=48&pop=random.30.7) | 0.444 | B37/S0345 0.362 | 232–918 | 4.17 % | 100 % |
 | [**Flower 7 letters B25v08/S0345/C5**](https://vincentbounce.github.io/Tessera/#w=life2dFlower7&r=B25v08/S0345/C5&s=48&pop=random.30.7) | 0.311 | B258/S0345/C5 0.149 | 124–6,000+ | 4.08 % | 75 % |
+
+<p align="center"><br>* * *</p>
 
 ## ⟐ Stellated blocks: lattice gases (Tim Tyler's cell-auto.com)
 
@@ -1463,6 +1497,8 @@ On [cell-auto.com/isometric](https://cell-auto.com/isometric/), Tim Tyler's isom
 
 Both keep their particles and run back (a permutation of each block's states). Morita and Ueno's universal rules on the isometric von Neumann neighbourhood: their pages are gone (the link on cell-auto.com no longer answers), not added.
 
+<p align="center"><br>* * *</p>
+
 ## ❊ Mirror 7: the mirrored 7-fold rosette
 
 From Wikimedia's [Pentagonal tiling with 7-fold rotational symmetry](https://commons.wikimedia.org/wiki/File:Pentagonal_tiling_with_7-fold_rotational_symmetry.svg): one pentagon, a house (a 1 × 4 sin(180°/7) rectangle under a triangle of sides 2, its top 360°/7), 7 round the middle, then in 14 cones round it (along the 7 axes through a tile and the 7 between), rows across them, j tiles pointing in then j pointing out, their tops between the next row's; mirrored along each axis, unlike the flowers' spiral. Built from that rule (HOUSES, any n): its 168 tiles as drawn, all found again. Searched as the others (103,448 rules, then their letters): nothing Life-like, its best far below the other flowers'.
@@ -1471,6 +1507,8 @@ From Wikimedia's [Pentagonal tiling with 7-fold rotational symmetry](https://com
 |---|---|---|---|---|
 | [Mirror 7 embers B248/S0348/C4](https://vincentbounce.github.io/Tessera/#w=life2dMirror7&r=B248/S0348/C4&s=48&pop=random.30.7) | 0.023 | 158–668 | 3.45 % | 0 % |
 | [Mirror 7 sparks B24/S0346/C4](https://vincentbounce.github.io/Tessera/#w=life2dMirror7&r=B24/S0346/C4&s=48&pop=random.30.7) | 0.009 | 226–609 | 3.53 % | 0 % |
+
+<p align="center"><br>* * *</p>
 
 ## ✱ Mirror 8: the mirrored 8-fold rosette
 
@@ -1481,6 +1519,8 @@ Mirror 7's construction for 8 (HOUSES(8)): 8 houses round the middle, then 16 co
 | [Mirror 8 embers B26/S0345/C4](https://vincentbounce.github.io/Tessera/#w=life2dMirror8&r=B26/S0345/C4&s=48&pop=random.30.7) | 0.069 | 726–2,826 | 3.53 % | 42 % |
 | [Mirror 8 sparks B248/S0346/C4](https://vincentbounce.github.io/Tessera/#w=life2dMirror8&r=B248/S0346/C4&s=48&pop=random.30.7) | 0.041 | 223–1,489 | 3.39 % | 0 % |
 
+<p align="center"><br>* * *</p>
+
 ## ✩ Mirror 5: the mirrored 5-fold rosette
 
 Mirror 7's construction for 5 (HOUSES(5)), searched as the others.
@@ -1489,6 +1529,8 @@ Mirror 7's construction for 5 (HOUSES(5)), searched as the others.
 |---|---|---|---|---|
 | [Mirror 5 embers B245/S0346/C4](https://vincentbounce.github.io/Tessera/#w=life2dMirror5&r=B245/S0346/C4&s=48&pop=random.30.7) | 0.1 | 232–3,062 | 3.45 % | 0 % |
 | [Mirror 5 Life B347/S0237](https://vincentbounce.github.io/Tessera/#w=life2dMirror5&r=B347/S0237&s=48&pop=random.30.7) | 0.059 | 289–6,000+ | 4.48 % | 25 % |
+
+<p align="center"><br>* * *</p>
 
 ## ✫ Mirror 6: the mirrored 6-fold rosette
 
@@ -1499,6 +1541,8 @@ Mirror 7's construction for 6 (HOUSES(6)), searched as the others.
 | [Mirror 6 embers B245/S0345/C5](https://vincentbounce.github.io/Tessera/#w=life2dMirror6&r=B245/S0345/C5&s=48&pop=random.30.7) | 0.115 | 293–933 | 3.25 % | 8 % |
 | [Mirror 6 sparks B267/S0345/C4](https://vincentbounce.github.io/Tessera/#w=life2dMirror6&r=B267/S0345/C4&s=48&pop=random.30.7) | 0.108 | 623–3,363 | 3.62 % | 42 % |
 
+<p align="center"><br>* * *</p>
+
 ## ✭ Mirror 9: the mirrored 9-fold rosette
 
 Mirror 7's construction for 9 (HOUSES(9)), searched as the others.
@@ -1507,6 +1551,8 @@ Mirror 7's construction for 9 (HOUSES(9)), searched as the others.
 |---|---|---|---|---|
 | [Mirror 9 embers B269/S0345/C4](https://vincentbounce.github.io/Tessera/#w=life2dMirror9&r=B269/S0345/C4&s=48&pop=random.30.7) | 0.118 | 592–6,000+ | 3.62 % | 25 % |
 | [Mirror 9 Life B268/S678](https://vincentbounce.github.io/Tessera/#w=life2dMirror9&r=B268/S678&s=48&pop=random.30.7) | 0.038 | 713–6,000+ | 1.29 % | 83 % |
+
+<p align="center"><br>* * *</p>
 
 ## ✮ Mirror 10: the mirrored 10-fold rosette
 
@@ -1517,6 +1563,8 @@ Mirror 7's construction for 10 (HOUSES(10)), searched as the others.
 | [Mirror 10 Life B278/S](https://vincentbounce.github.io/Tessera/#w=life2dMirror10&r=B278/S&s=48&pop=random.30.7) | 0.36 | 306–6,000+ | 1.69 % | 67 % |
 | [Mirror 10 embers B24/S0345/C5](https://vincentbounce.github.io/Tessera/#w=life2dMirror10&r=B24/S0345/C5&s=48&pop=random.30.7) | 0.299 | 297–1,630 | 3.42 % | 33 % |
 
+<p align="center"><br>* * *</p>
+
 ## ✰ Mirror 11: the mirrored 11-fold rosette
 
 Mirror 7's construction for 11 (HOUSES(11)), searched as the others.
@@ -1526,6 +1574,8 @@ Mirror 7's construction for 11 (HOUSES(11)), searched as the others.
 | [Mirror 11 Life B268/S5](https://vincentbounce.github.io/Tessera/#w=life2dMirror11&r=B268/S5&s=48&pop=random.30.7) | 0.424 | 519–6,000+ | 1.49 % | 92 % |
 | [Mirror 11 embers B24/S0345/C5](https://vincentbounce.github.io/Tessera/#w=life2dMirror11&r=B24/S0345/C5&s=48&pop=random.30.7) | 0.229 | 300–1,050 | 3.5 % | 17 % |
 
+<p align="center"><br>* * *</p>
+
 ## ⊛ Mirror 12: the mirrored 12-fold rosette
 
 Mirror 7's construction for 12 (HOUSES(12)), searched as the others.
@@ -1534,6 +1584,8 @@ Mirror 7's construction for 12 (HOUSES(12)), searched as the others.
 |---|---|---|---|---|
 | [Mirror 12 Life B267/S5](https://vincentbounce.github.io/Tessera/#w=life2dMirror12&r=B267/S5&s=48&pop=random.30.7) | 0.44 | 351–6,000+ | 1.47 % | 92 % |
 | [Mirror 12 sparks B289/S568](https://vincentbounce.github.io/Tessera/#w=life2dMirror12&r=B289/S568&s=48&pop=random.30.7) | 0.378 | 497–6,000+ | 1.69 % | 58 % |
+
+<p align="center"><br>* * *</p>
 
 ## ❍ Twisted: the Trihex twisted
 
@@ -1547,6 +1599,8 @@ The hexagons' grid, each hexagon turned 15° and shrunk to touch its neighbours 
 Their patterns (tools/tilings/famous.js, 2026-11-03; in Famous, each played again in the app from an empty grid, the same):
 - **Twisted sparks** has ships: [a spaceship of 19 cells, period 34](https://vincentbounce.github.io/Tessera/#w=life2dTwisttri&r=B246/S0348/C5&s=96&p=24,14:4.C5.2D3.ADC.D.2C$2B2.A.ACB.B2.C2.A2.A!&pop=draw) (six found, 19 to 26 cells, all of period 34, along three ways, rare: 2 starts each in thousands); [an oscillator of 4 cells, period 12](https://vincentbounce.github.io/Tessera/#w=life2dTwisttri&r=B246/S0348/C5&s=48&p=8,7:B.A2.A.B!&pop=draw).
 - **Twisted embers**: [a methuselah of 6 cells, settling at generation 863](https://vincentbounce.github.io/Tessera/#w=life2dTwisttri&r=B235/S0457/C5&s=96&p=18,14:15.A$A5.2A6.A5.A!&pop=draw) (its ash period 10); [an oscillator of 10 cells, period 30](https://vincentbounce.github.io/Tessera/#w=life2dTwisttri&r=B235/S0457/C5&s=48&p=10,7:A2.AB.2B.A2.AB$3.A5.A!&pop=draw); no ship.
+
+<p align="center"><br>* * *</p>
 
 ## ⎔ Hexa 4 to 12: Sugimoto's rosettes of equilateral hexagons
 
@@ -1564,6 +1618,8 @@ His hexagon (tips 360°/n, the other corners 180° − 180°/n) in 2n cones of t
 | [Hexa 11 Life B34/S2456](https://vincentbounce.github.io/Tessera/#w=life2dHexa11&r=B34/S2456&s=48&pop=random.30.7) | 0.28 | 116–6,000+ | 3.02 % | 92 % |
 | [Hexa 12 embers B238/S0456/C5](https://vincentbounce.github.io/Tessera/#w=life2dHexa12&r=B238/S0456/C5&s=48&pop=random.30.7) | 0.041 | 59–807 | 4.34 % | 17 % |
 
+<p align="center"><br>* * *</p>
+
 ## ⁕ Five more circles: Flower 11 and 12, Mirror 3 and 4, Ring 11 (2026-11-03)
 
 The circles' families to 12 (Flowers 3 to 12, Mirrors 3 to 12, Rings 7 to 12; Hexa 3 the hexagons' grid itself, a ring's tile a pentagon from 7 only), each searched as the others (tools/tilings/search.js: 103,448 rules on the flowers and the ring, 22,168 on the Mirrors, their few neighbours), its two best kept. Flower 11 and 12 also as spheres (their rims pairing at 15 and 47 sizes); Mirror 3, Mirror 4 and Ring 11 never.
@@ -1580,6 +1636,8 @@ The circles' families to 12 (Flowers 3 to 12, Mirrors 3 to 12, Rings 7 to 12; He
 | [Mirror 4 sparks B246/S0347/C4](https://vincentbounce.github.io/Tessera/#w=life2dMirror4&r=B246/S0347/C4&s=48&pop=random.30.7) | 0.112 | 274–1,330 | 3.19 % | 0 % |
 | [Ring 11 embers B267/S0346/C4](https://vincentbounce.github.io/Tessera/#w=life2dRing11&r=B267/S0346/C4&s=48&pop=random.30.7) | 0.226 | 348–3,790 | 3.39 % | 0 % |
 | [Ring 11 sparks B278/S0347/C4](https://vincentbounce.github.io/Tessera/#w=life2dRing11&r=B278/S0347/C4&s=48&pop=random.30.7) | 0.177 | 209–1,407 | 3.25 % | 0 % |
+
+<p align="center"><br>* * *</p>
 
 ## 🔍 Famous for the tilings' rules that had none (2026-11-04)
 
@@ -1599,6 +1657,8 @@ tools/tilings/famous.js on the periodic tilings' rules with no pattern yet (18 r
 | Trihex | [B346/S01458](https://vincentbounce.github.io/Tessera/#w=life2dTrihex&r=B346/S01458&s=96&pop=famous.Spaceship:11) | spaceship, flies, period 9 · 9 cells; oscillator, period 2 · 3 cells |
 | Dual 56 | [B346/S01458](https://vincentbounce.github.io/Tessera/#w=life2dDual56&r=B346/S01458&s=96&pop=famous.Oscillator:1) | oscillator, period 2 · 3 cells |
 | Dual 314 | [B346/S01458](https://vincentbounce.github.io/Tessera/#w=life2dDual314&r=B346/S01458&s=96&pop=famous.Oscillator:7) | oscillator, period 2 · 3 cells |
+
+<p align="center"><br>* * *</p>
 
 ## 🎯 Patterns at the middle of the new rosettes (2026-11-03)
 
@@ -1634,6 +1694,8 @@ tools/tilings/centred.js on Flower 9 and 10, Mirror 5 to 12 and Hexa 4 to 12, th
 | Hexa 11 | [B34/S2456](https://vincentbounce.github.io/Tessera/#w=life2dHexa11&r=B34/S2456&s=48&pop=random.30.1) | — | oscillator p4, 7 cells |
 | Hexa 12 | [B238/S0456/C5](https://vincentbounce.github.io/Tessera/#w=life2dHexa12&r=B238/S0456/C5&s=48&pop=famous.Seed:3) | oscillator p5, 11 cells; spreads from 7 cells | spreads from 6 cells |
 
+<p align="center"><br>* * *</p>
+
 ## ▣ Ising (Q2R) and Square-4, on squares (Tim Tyler's cell-auto.com)
 
 | Rule | What it does |
@@ -1641,9 +1703,13 @@ tools/tilings/centred.js on Flower 9 and 10, Mirror 5 to 12 and Hexa 4 to 12, th
 | [**Ising** `Q2R`](https://vincentbounce.github.io/Tessera/#w=blocks2d&r=Q2R&s=48) | The Ising model of a magnet, Vichniac's Q2R (1984), on Tyler's [cell-auto.com/ising](https://cell-auto.com/ising/) (a Java applet, gone): the squares a checkerboard, its two colours in turn, a square turned over when just 2 of its 4 side neighbours are alive. The walls between alive and dead keep their length (its energy), whatever happens: domains that wander and wriggle, and it runs back |
 | [**Billiard balls, 4 phases**](https://vincentbounce.github.io/Tessera/#w=blocks2d&r=M0,4,8,3,1,10,6,7,2,9,5,11,12,13,14,15/4&s=48), **Critters, 4 phases** | Tyler's [Square-4](https://cell-auto.com/neighbourhood/square4/index.html): Margolus's blocks, their 4 sets of corners in turn round a square (Margolus's: 2, a corner and the one across); a rule of them ends with `/4` |
 
+<p align="center"><br>* * *</p>
+
 ## ▣ Menger's sponge (3D)
 
 [Life on Menger's sponge](https://vincentbounce.github.io/Tessera/#w=lifeMenger&s=3): its surface, a square per side of a cell kept facing one taken away, its holes down to one square; level 2 (side 9, 1,056 squares) or 3 (side 27, 18,048), 2 × 20^L + 4 × 8^L of them. Never 4 squares on an edge (checked up to level 3), so each square has its 4 sides' neighbours; 8 to 14 neighbours with the corners'. Its colours as the cube's (2, 3, 4, 6, 8, 12).
+
+<p align="center"><br>* * *</p>
 
 ## ✽ The flowers and the rings, built without a search
 
@@ -1652,6 +1718,8 @@ Sugimoto's own construction (arXiv 2005.08470, his Figure 4), read off the tilin
 **Sponge wanderers [B347/S2/C3](https://vincentbounce.github.io/Tessera/#w=lifeMenger&s=3&r=B347/S2/C3&pop=bloom.35.2)**: searched for on the sponge itself from a bloom (tools/tilings/seedgrow.js: 16,896 rules, B3 and up, level 3), the ones that grow at least 3 times, never past 15 %, end under 8 %, moving the longest: the only one moving on after 2,000 generations from all 3 blooms (a bloom of ~65 cells to 1,700–2,260, 6–7 % at the end). A soup falls to 5–6 % and never stops; a seed of a dozen cells dies, as most do in Life. The soup searches' best (B379/S013/C5 and the like) die from a bloom; B3/S23 and the B2 rules fill a third of it.
 
 **Sponge wanderers with letters (night of 2026-10-22)**: Hensel's letters now work on the sponge round its folds; every letter added to or taken from B347/S2/C3 (102 rules, 2 blooms each, 1,500 generations, in the app): none better. A letter more in B1 or B2 fills a third of it, one less in B3 or B4 dies. Without letters, B3478/S2/C3 spread from 2 blooms of 4 where B347/S2/C3 spread from 1: too few to swap them; kept.
+
+<p align="center"><br>* * *</p>
 
 ## ❅ Rhombs 14: de Bruijn's fourteenfold
 
@@ -1662,6 +1730,8 @@ DEBRUIJN(7): 7 families of lines, all moved by ½, three kinds of rhombi, a star
 | [**Rhombs 14 Life B378/S023**](https://vincentbounce.github.io/Tessera/#w=life2dRhombs14&r=B378/S023&s=48&pop=random.30.7) | 0.216 | 509–2,221 | 1.75 % | 75 % |
 | [**Rhombs 14 embers B389/S1345/C5**](https://vincentbounce.github.io/Tessera/#w=life2dRhombs14&r=B389/S1345/C5&s=48&pop=random.30.7) | 0.289 | 276–1,644 | 2.7 % | 25 % |
 
+<p align="center"><br>* * *</p>
+
 ## ✴ Ring 10
 
 Now that the rings are built as Sugimoto builds them (no search to get stuck), the ring round a decagonal hole. Searched as the others (22,168 rules):
@@ -1670,6 +1740,8 @@ Now that the rings are built as Sugimoto builds them (no search to get stuck), t
 |---|---|---|---|---|
 | [**Ring 10 embers B26/S034/C4**](https://vincentbounce.github.io/Tessera/#w=life2dRing10&r=B26/S034/C4&s=48&pop=random.30.7) | 0.222 | 235–2,337 | 3.16 % | 0 % |
 | [**Ring 10 sparks B27/S0345/C5**](https://vincentbounce.github.io/Tessera/#w=life2dRing10&r=B27/S0345/C5&s=48&pop=random.30.7) | 0.218 | 218–6,000+ | 3.27 % | 67 % |
+
+<p align="center"><br>* * *</p>
 
 ## ◺ ✽ ❇ Patterns at the middle of the grids that never repeat (night of 2026-10-22)
 
@@ -1688,13 +1760,19 @@ Famous and Centered on these grids are now these (one colour; with colours, none
 
 **With colours**: the same search 6 from the middle (centred.js off): a copy a colour, turned 360°/K round the middle, the same cells by the figure's turns (K dividing them: not the pinwheel). Methuselahs there: Flower 6 B345/S0238 1,258 generations, Flower 3 B345/S023 564, Flower 8 B345/S0239 380, Flower 5 B368/S3457 335, Flower 7 B36/S3457 242, Rhombs 14 B378/S023 216. **Sponge bloomers B3478/S2/C3** in the squares' rules (Sponge wanderers born with 8 too).
 
+<p align="center"><br>* * *</p>
+
 ## ▣ A cube's frame (3D)
 
 [Life on a cube's frame](https://vincentbounce.github.io/Tessera/#w=lifeFrame&s=9&r=B389/S23): Menger's sponge's first step, its 12 edges as wide as its holes, each of the 20 cubes left m × m × m squares (72 m² squares). Life-like, more than any other surface searched (tools/tilings/search.js frame, 103,448 rules): Frame Life B389/S23 0.857, Frame keepers B39/S2389 0.849, B3/S238 0.816 (oscillators in all their ash).
 
+<p align="center"><br>* * *</p>
+
 ## ✼ ✥ Flowers 9 and 10
 
 Sugimoto's direct construction (see the flowers above), 9- and 10-fold. tools/tilings/search.js: [Flower 9 embers B278/S0345/C5](https://vincentbounce.github.io/Tessera/#w=life2dFlower9&s=48&r=B278/S0345/C5) 0.502 (Flower 7 embers' rule), Flower 9 Life B369/S3457 0.346; [Flower 10 embers B279/S0345/C5](https://vincentbounce.github.io/Tessera/#w=life2dFlower10&s=48&r=B279/S0345/C5) 0.286, Flower 10 Life B368/S3457 0.204 (Flower 5 Life's rule).
+
+<p align="center"><br>* * *</p>
 
 ## ⚔ Turnarounds on the other grids (2026-10-24)
 
@@ -1745,6 +1823,7 @@ B2v0256/S235 (born with 2, none or both by a corner only, or with 5 or 6; surviv
 
 B3/S1v0.368 on the pinwheel (born with 3; surviving with 1 if it touches by a side, or with 3, 6 or 8) is the most Life-like found by any of these searches (0.76), its battles turning round 4 times (Life: 3).
 
+<p align="center"><br>* * *</p>
 
 ## ⚡ Waking a frozen zone up, on the other grids (2026-10-24)
 
@@ -1762,6 +1841,7 @@ revive.js (tools/kitesearch) on any torus grid: `deno run --allow-read --allow-w
 
 Tetrakis's B3v12/S1247/C4 (born with 3, one or two by a corner only; surviving with 1, 2, 4 or 7; 4 states) wakes its ash up for twice as long as Life, often past 300 generations, and is the most Life-like of these. Few grids have any: on Rhombitri, Snub, Pythagoras, Capital I, Type 14 and the octagons, the rules that wake up long are not Life-like at all (or have no ships: Type 14). Runs: the wake-ups measured, of 8 soups × 2 ships (fewer: some soups never froze, or a ship found nothing); under 8, a lead only.
 
+<p align="center"><br>* * *</p>
 
 ## ✜ ✬ ✪ ✯ The four 2-uniform tilings (night of 2026-11-01)
 
@@ -1781,6 +1861,8 @@ Four tilings of two kinds of corners (Wikipedia, *Euclidean tilings by convex re
 | Demi 20 | **B367/S023/C4** (Demi 20 sparks) | 0.162 | 321–2,383 | a methuselah of 4 cells, gen 1,590 |
 
 Demi 13's B357/S0345 scores best of the four (0.84). Ships on Demi 2, Demi 10 (B29/S168, B29/S169) and Demi 20 (B348/S135/C5, its 17th rule tried); none on Demi 13 in 23 rules (6 with births on 2).
+
+<p align="center"><br>* * *</p>
 
 ## ◆ ▦ The rules that had no famous pattern (2026-11-04)
 
@@ -1805,6 +1887,8 @@ found some for 14 (17 minutes):
 
 None for B346/S01458 on Rhombitri, Snub tri, Tetrakis, Kisrhombille, Snub square and kites, B24/S0345/C4 on Elongated,
 and B2/S2/C25 and B1357/S1357 on squares (their small starts all die or fill the grid).
+
+<p align="center"><br>* * *</p>
 
 ## ✍ Drawn starts
 

@@ -2280,7 +2280,7 @@ button.switch.active,
   animation: tut-appear 0.8s ease-out both;
 } /* the step lit softly, as a cell's colour fades */
 .highlit {
-  animation: highlight 0.8s ease-out;
+  animation: highlight 1.5s ease-out;
 } /* highlighted a moment (see highlight): the length asked's stepper, the buttons a greyed one waits for */
 .max-steps.highlit {
   border-radius: 8px;

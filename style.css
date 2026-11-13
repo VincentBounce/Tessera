@@ -1377,6 +1377,10 @@ button.active .bubble.active {
 .turn-row button {
   flex: 1;
 } /* the turns, always there (greyed for a cell); Open and Export PNG */
+.draw-row button.wide {
+  margin: 0;
+  padding: 6px 12px;
+} /* wide buttons side by side (a battle's first numbers, Roll): as tall as one alone, the row's gap under them */
 .colour-swatches span {
   font-size: var(--label-text-size);
   color: var(--muted-text-color);

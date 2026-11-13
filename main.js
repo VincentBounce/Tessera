@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.958';
+const VERSION = '0.4.959';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -9267,8 +9267,8 @@ const RIVALS = [...'BCDEFGHIJKL'].map((c) => `formula${c}`),
 const formulaName = (id) => (id === 'formula' ? 'Formula' : `Formula ${id.slice(-1)}`); // (A's Formula, then Formula B, Formula C…)
 // B's, C's… numbers at first
 const RIVAL_FIRSTS = [
-  'e',
   'phi',
+  'e',
   'sqrt(2)',
   'sqrt(3)',
   'sqrt(5)',
@@ -9294,6 +9294,8 @@ function formulaField(id, first) {
 }
 $('numberTabs').after(formulaField('formula', '1/112'));
 $('rivalFormulas').append(...RIVALS.map((id, j) => formulaField(id, RIVAL_FIRSTS[j])));
+// the walkers' first numbers: A's the Digits' own on a walk, then B's, C's… (RIVAL_FIRSTS), as many as walkers
+const battleFirsts = () => [defaultNumber(tabMode()), ...RIVAL_FIRSTS.slice(0, walkTeams - 1)];
 function rivalsDigits(base, n, then) {
   const out = [];
   for (const id of RIVALS.slice(0, walkTeams - 1)) {
@@ -17908,6 +17910,9 @@ function renderWalkTeams() {
   const fieldA = $('formula').parentElement; // (Show digits in it)
   if (battleOn() && fieldA.parentElement !== $('formulaAHome')) $('formulaAHome').append(fieldA);
   if (!battleOn() && fieldA.parentElement !== $('numberPicker')) $('numberTabs').after(fieldA);
+  $('battleFirsts').textContent = battleFirsts()
+    .map((f) => formulaOf(f).sym)
+    .join(' vs '); // (its words its numbers, as many as walkers)
   battleAsked = BATTLE_FORMULAS.map((id) => $(id).value); // (a battle computed: its numbers as sent)
   tintBattleFormulas();
   if (battleHunt.run && (!battleOn() || battleHunt.key !== battleHuntKey())) stopBattleHunt(); // (its battles fought elsewhere: it stops)
@@ -46243,6 +46248,7 @@ BATTLE_FORMULAS.forEach((id, s) =>
 );
 $('battleHuntBtn').addEventListener('click', () => (battleHunt.run ? stopBattleHunt() : startBattleHunt()));
 // Random (under the battle's ways): as many numbers as walkers, each another, drawn from the hunt's (BATTLE_CARDS, DRAWN_ROOTS), fought
+$('battleFirsts').addEventListener('click', () => playBattle(battleFirsts()));
 $('battleRandom').addEventListener('click', () => {
   const numbers = [...BATTLE_CARDS, ...DRAWN_ROOTS],
     fs = [];

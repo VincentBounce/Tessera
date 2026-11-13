@@ -11557,6 +11557,35 @@ function buildWalkOf() {
 }
 
 /* ---- 5.4 3D projection and camera --------------------------------------------------------- */
+// A kite (a try: ?kite in the address, on a surface): the camera a kite on a string the walker pulls, looking at it. The kite
+// kept from frame to frame (its string: what makes it trail), pulled back each frame to the string's length from the
+// walker, on the line from the walker to where it was, at a set height over the ground (KITE_RISE); the wheel its string's
+// length (kite.length, in head sizes). The points behind it cut by the card (see clipOf: u.kite, its near)
+const KITE = new URLSearchParams(location.search).has('kite');
+const kite = { at: null, of: null, length: 16 };
+const kiteOn = () => KITE && walk.sphere && !!walk.n && !walk.life;
+const KITE_FIELD = Math.PI / 3; // (its field of view, top to bottom)
+const KITE_RISE = (35 * Math.PI) / 180; // (its string's angle over the ground)
+function kiteCamera() {
+  const W = walkersOf()[0];
+  if (!W) return;
+  const { p, h, lift, size } = headFrame(W, glideAt()),
+    L = kite.length * size;
+  if (kite.of !== walk.wx) Object.assign(kite, { at: p.map((x, d) => x - h[d]), of: walk.wx }); // (a new walk: behind it)
+  const away = kite.at.map((x, d) => x - p[d]),
+    ground = squareTo(lift, away), // (the string's way along the ground)
+    at = p.map((x, d) => x + (ground[d] * Math.cos(KITE_RISE) + lift[d] * Math.sin(KITE_RISE)) * L),
+    v = unit(at.map((x, d) => x - p[d])),
+    u = squareTo(v, lift);
+  kite.at = at;
+  Object.assign(camera, { r: cross(u, v), u, v });
+  walk.persp = { c: p, D: L };
+  view.scale = canvasHeight / (2 * L * Math.tan(KITE_FIELD / 2));
+  const [x, y] = orthoPoint(...p);
+  view.ox = canvasWidth / 2 - x * view.scale;
+  view.oy = canvasHeight / 2 - y * view.scale;
+}
+
 // Orthographic projection of a 3D point onto the screen plane (world units)
 function orthoPoint(x, y, z) {
   const { r, u } = camera;
@@ -40374,7 +40403,8 @@ function headFrame({ P, upAt, areaAt, before }, i = stepShown) {
     last = dir(j > 0 ? P(j - 1) : before, q); // (its axis its last step itself, as its line)
   const ahead = dir(q, next),
     axis = cross(last, ahead),
-    up = upAt(k);
+    up = upAt(k),
+    lift = unit([0, 1, 2].map((d) => upAt(j)[d] + ((f > 0 ? upAt(j + 1) : upAt(j))[d] - upAt(j)[d]) * f)); // (its up gliding from its tile's to the next one's, as its place)
   const h =
     f > 0
       ? turnToward(
@@ -40384,7 +40414,7 @@ function headFrame({ P, upAt, areaAt, before }, i = stepShown) {
           Math.min(1, f / TURN_SHARE),
         )
       : last;
-  return { p, h, up, size: headSize(areaAt(k)) };
+  return { p, h, up, lift, size: headSize(areaAt(k)) };
 }
 // a unit axis square to v: n's part square to it (none: another's)
 const squareTo = (v, n) => {
@@ -42205,6 +42235,7 @@ struct U {
   fadeTo: vec3f,  // (a size or the start hovered: what is drawn this pale, fade, towards the page's background, see drawHover)
   extent: f32,  // (the figure's radius: a tile's place towards the viewer, its share of it, see pickF)
   firstBorn: i32,  // (the step a line's first instance is walked over, its next one's the next: see lifeOf)
+  kite: f32,  // (a kite's view: its near distance, what is nearer the eye or behind it cut; 0 none, see kiteCamera)
 }
 @group(0) @binding(0) var<uniform> u: U;
 @group(0) @binding(1) var<storage, read> tileCol: array<u32>;
@@ -42212,12 +42243,17 @@ struct U {
 @group(0) @binding(3) var pal: texture_2d<f32>;
 fn toScreen(p: vec3f) -> vec3f {  // pixels on the stage, and the depth towards the viewer, as projectPoint's
   var X = dot(p, u.R); var Y = -dot(p, u.Uu); let t = dot(p - u.persp.xyz, u.V);
-  if (u.persp.w > 0.0) { let k = u.persp.w / (u.persp.w - t); X = u.cc.x + (X - u.cc.x) * k; Y = u.cc.y + (Y - u.cc.y) * k; }
+  if (u.persp.w > 0.0) { let k = u.persp.w / select(u.persp.w - t, 1e-6, u.persp.w - t == 0.0); X = u.cc.x + (X - u.cc.x) * k; Y = u.cc.y + (Y - u.cc.y) * k; }
   return vec3f(u.view.y + X * u.view.x, u.view.z + Y * u.view.x, t);
 }
 fn clipOf(s: vec3f, bias: f32) -> vec4f {  // (depth 0 to 1; front: before all else, in its own order, the view's axes)
   let z = clamp(-s.z / u.depth - bias, -1.0, 1.0) * 0.5 + 0.5;
-  return vec4f(s.x / u.screen.x * 2.0 - 1.0, 1.0 - s.y / u.screen.y * 2.0, mix(z, z * 0.01, u.front), 1.0);
+  let c = vec4f(s.x / u.screen.x * 2.0 - 1.0, 1.0 - s.y / u.screen.y * 2.0, mix(z, z * 0.01, u.front), 1.0);
+  if (u.kite == 0.0) { return c; }
+  // a kite's view: back to before the division by the depth (w), the card cutting what is nearer than u.kite or behind;
+  // the depth by the distance from the eye, pulled towards it by the bias as above
+  let d = u.persp.w - s.z; let w = d / u.persp.w; let far = 4.0 * u.persp.w; let e = d - bias * u.depth;
+  return vec4f(c.xy * w, far * (e - u.kite) / (far - u.kite) / e * w, w);
 }
 fn flatAt(q: vec2f) -> vec4f { return vec4f(q.x / u.screen.x * 2.0 - 1.0, 1.0 - q.y / u.screen.y * 2.0, 0.0, 1.0); }
 fn lightSpace(p: vec3f) -> vec3f { return vec3f(dot(p, u.Lx), dot(p, u.Ly), -dot(p, u.L)) / u.lr; }
@@ -42438,6 +42474,7 @@ function gpuView(words, k, depth, more = {}) {
     extent: [119, 'f'],
     firstBorn: [120, 'i'],
   };
+  f[121] = kiteOn() ? 0.05 * P.D : 0;
   for (const [k2, v] of Object.entries(more)) {
     if (k2 === 'edgeRgb') f.set(v, 28);
     else if (k2 === 'persp') f.set(v, 32);
@@ -44953,7 +44990,8 @@ function tick(now = performance.now()) {
     // the sphere is redrawn as a whole (heat map + recent trail)
     morphStep(dt); // flat ↔ round, while it is changing
     // the camera turned to keep the walker followed in front (see followed; on a torus, its tile facing it)
-    if (walk.n && !walk.life && followed >= 0 && !startsShown && !faced && !$('autoRotate').checked) followWalker();
+    if (kiteOn()) kiteCamera();
+    else if (walk.n && !walk.life && followed >= 0 && !startsShown && !faced && !$('autoRotate').checked) followWalker();
     if (gliding()) statsDirty = true; // (its heads gliding: drawn again each frame, as far as its cost allows)
     // a big sphere can take tens of ms to draw: while animating, redraw at most every 3× that time
     const now = performance.now();
@@ -45201,6 +45239,11 @@ stage.addEventListener(
   'wheel',
   (e) => {
     e.preventDefault();
+    if (kiteOn()) {
+      kite.length = Math.min(400, Math.max(3, kite.length * Math.exp(e.deltaY * 0.0015))); // (a kite's view: its string)
+      statsDirty = true;
+      return;
+    }
     const r = stage.getBoundingClientRect();
     const mx = e.clientX - r.left,
       my = e.clientY - r.top;

@@ -10,7 +10,7 @@
   <meta property="og:url" content="https://vincentbounce.github.io/Tessera/">
   <meta property="og:type" content="website">
   <link id="favicon" rel="icon">  <!-- the app's logo, set at start-up (see LOGO_PATH) -->
-  <link rel="stylesheet" href="style.css?v=0.4.949">
+  <link rel="stylesheet" href="style.css?v=0.4.950">
   <script>  // the theme before the first paint (see applyTheme)
     try { const t = localStorage.getItem('tesseraTheme'); document.documentElement.dataset.theme = t === 'light' || t === 'dark' ? t : matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark'; } catch { document.documentElement.dataset.theme = 'dark'; }
   </script>
@@ -157,7 +157,7 @@
           <div id="battleHuntRank" class="nav-shapes"></div>  <!-- what it ranks: Longest, Even lands, Latest first stop (see HUNT_RANKS) -->
           <button id="battleHuntBtn" type="button" class="wide"></button>  <!-- its words and tooltip: see renderBattleHunt -->
           <p id="battleHuntStatus" class="muted"></p>
-          <div id="battleHuntTop" class="mode-list" role="listbox"></div>  <!-- the 8 longest battles: a click plays one -->
+          <div id="battleHuntTop"></div>  <!-- the 8 longest battles, each group its title over its list: a click plays one -->
         </div>
         <div id="returnRow" hidden>  <!-- a reversible one: its return to its start, past what is played -->
           <button id="backBtn" type="button" class="wide" title="Steps its start on, past what is played, till it comes back to it (a reversible rule always does). Recommended on a small grid: a large one's start comes back after far too many generations to be found"></button>  <!-- blocks: see searchBack -->
@@ -509,10 +509,10 @@
     </div>
   </main>
 
-  <script src="pixelarticons.js?v=0.4.949"></script>
-  <script src="punks.js?v=0.4.949"></script>
-  <script src="loops.js?v=0.4.949"></script>
-  <script src="emoji.js?v=0.4.949"></script>
-  <script src="main.js?v=0.4.949"></script>
+  <script src="pixelarticons.js?v=0.4.950"></script>
+  <script src="punks.js?v=0.4.950"></script>
+  <script src="loops.js?v=0.4.950"></script>
+  <script src="emoji.js?v=0.4.950"></script>
+  <script src="main.js?v=0.4.950"></script>
 </body>
 </html>

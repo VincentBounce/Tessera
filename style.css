@@ -1126,9 +1126,9 @@ button.active .bubble.active {
 
 .muted {
   color: var(--muted-text-color);
-  margin: 6px 0 0;
+  margin: 0 0 10px;
   font-size: var(--label-text-size);
-}
+} /* a status line (a hunt's): a block as any, 10 px under it */
 .fill-note {
   color: var(--muted-text-color);
   font-size: var(--label-text-size);

@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.949';
+const VERSION = '0.4.950';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -19886,8 +19886,13 @@ function renderBattleHunt() {
       pick: () => playBattle(r.fs, r),
     });
   };
-  const list = (label, rs) =>
-    rs.length ? [Object.assign(document.createElement('h3'), { textContent: label }), ...rs.map(cardOf)] : [];
+  // a group: its title over its list, as any sub-section's (never a title among the cards: their gap, not a title's)
+  const list = (label, rs) => {
+    if (!rs.length) return [];
+    const cards = Object.assign(document.createElement('div'), { className: 'mode-list', role: 'listbox' });
+    cards.append(...rs.map(cardOf));
+    return [Object.assign(document.createElement('h3'), { textContent: label }), cards];
+  };
   $('battleHuntTop').replaceChildren(
     ...(score
       ? list(label, battleHunt.ended)

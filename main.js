@@ -37,8 +37,9 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.971';
+const VERSION = '0.4.972';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
+const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
 /* ==============================================================================================
  * PART 1 — DIGITS: THE FORMULA WORKER
@@ -24106,6 +24107,8 @@ function startWords(s) {
   if (kind === 'text') return [`«${String(s.pop).slice(5) || APP_TITLE}»`];
   if (kind === 'draw') return ['Drawn'];
   if (s.ch) return ['Found'];
+  const tab = !zoneOfWord(kind) && kind !== 'random' && START_TABS.find(([k]) => k === kind);
+  if (tab) return [tab[2]]; // (a start of its own, no zone's: Elementary's One cell, Two cells, Half)
   if (famousZone(zone)) return each.map((word) => word.split(':')[0]);
   if (isIcon(zone)) {
     const set = iconSet(zone),
@@ -45877,7 +45880,7 @@ function lifeRle() {
       (base === 'cairo' && (x0 / 2 + cells.reduce((e, c) => Math.min(e, c[1]), Infinity)) & 1 ? 1 : 0);
   const pop = new Map([[planeKey(0, 0), 0], ...cells.map(([x, y, v]) => [planeKey(x - x0, y - y0), v])]); // (a dead cell at its lattice cell's corner: the rows start there)
   return rleFile(
-    `${formulaInUse}, generation ${stepShown}`,
+    `${setupTitle({ setup: getSetup() })}, generation ${stepShown}`,
     kind === 'square' || base === 'hex'
       ? []
       : [`On the app's ${PLANE_CELLS[base]} (not Golly's squares): cells as its slanted grid numbers them`],
@@ -45894,7 +45897,7 @@ function elementaryRle() {
   for (let x = 0; x < 16 * R.n; x++) if (cellOf(R.kept[0], x)) xs.push(x);
   if (!xs.length) return null;
   return rleFile(
-    `${formulaInUse}, its first row`,
+    `${setupTitle({ setup: getSetup() })}, its first row`,
     [`Its rows down from it: Golly draws them${R.N % 2 ? ' (its rules Wn for an even n only)' : ''}`],
     new Map(xs.map((x) => [planeKey(x - xs[0], 0), 1])),
     `W${R.N}`,
@@ -45911,7 +45914,7 @@ function rleFile(name, notes, pop, rule, two) {
   for (let i = 0; i < body.length; i += 70) lines.push(body.slice(i, i + 70));
   return [
     `#N ${name}`,
-    `#C Tessera: ${location.href}`,
+    `#C Tessera: ${SITE}${location.hash}`,
     ...notes.map((n) => `#C ${n}`),
     `x = ${Math.max(...xs) - Math.min(...xs) + 1}, y = ${Math.max(...ys) - Math.min(...ys) + 1}, rule = ${rule}`,
     ...lines,

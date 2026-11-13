@@ -124,7 +124,7 @@ space: a `<br>` alone at a paragraph's end makes no line).
 - One session a piece of work, named as it, each in its own worktree (`.claude/worktrees/…`), never two in one folder:
   `tools/ship.sh` sets aside a folder's uncommitted changes while it rebases, another session's work in progress among
   them. Each ships to main by `tools/ship.sh`.
-- A prototype or experiment given up keeps its row in `REMOVED.md` (its commit stays in main's history).
+- A prototype or experiment given up keeps its row in `DISCONTINUED.md` (its commit stays in main's history).
 
 <p align="center"><br>* * *</p>
 
@@ -217,8 +217,8 @@ While the checks run unattended (a night, a meal), also audit what they cannot s
 
 <p align="center"><br>* * *</p>
 
-## Removed features
-A feature taken out gets a row in `REMOVED.md` (in English) at once: its last version, date, commit, a raw.githack link
+## Discontinued features
+A feature taken out gets a row in `DISCONTINUED.md` (in English) at once: its last version, date, commit, a raw.githack link
 that opens it as it was, and why it left.
 - Its rows sorted by date, the oldest first (a row added later goes at its date, not at the end).
 - Its link straight to the feature in a state that shows it: its mode, size, rule, colours, start, the switch that turns

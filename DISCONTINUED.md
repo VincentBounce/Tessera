@@ -1,4 +1,4 @@
-# Features removed along the way
+# Discontinued features
 
 The last version that has each one; "Open" runs it as it was (raw.githack serves the repo at that commit).
 

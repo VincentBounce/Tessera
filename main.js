@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.980';
+const VERSION = '0.4.981';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -14328,7 +14328,7 @@ function torusPoint(i, j, nu, nv, m, tube = TORUS_TUBE) {
  * a neck that goes in through its side and opens into its bottom (see kleinBottlePoint), its tiles narrow in the neck, wide
  * in the body (Paul Bourke's four pieces before v0.4.367, their seams a tile 3 times as long as its neighbour; one drawn
  * from a glass bottle's lines, its tiles a stretched tapestry, v0.4.370 to v0.4.377; the figure 8 before v0.4.14, see
- * REMOVED.md). Flat (m = 0) as the torus's sheet. */
+ * DISCONTINUED.md). Flat (m = 0) as the torus's sheet. */
 function kleinPoint(x, y, nu, nv, m, tube = TORUS_TUBE, up = 0) {
   const f = ((y - up) / nv) * 2 * Math.PI; // (round the tube from the sheet's mirror line, up: Cairo's half square, so that the bottle glues as its sheet does)
   // the bottle: the sheet's ends on the circle it stands on (the bowl's lowest), past its own ends turned over (u to π − u)

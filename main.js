@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.967';
+const VERSION = '0.4.968';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -9734,16 +9734,23 @@ for (const [k, name] of Object.entries(TETRAKIS_SOLIDS)) {
 for (const [k, { a, name, others }] of Object.entries(HEX_SOLIDS)) {
   const on = `${a} of hexagons (and ${others})`;
   MODES[`${k}HexGrid`] = {
-    ...MODES.hexSphereGrid,
+    base: 2,
+    arrows: '↖↗',
+    lattice: 'sphere',
     twin: `${k}HexLR`,
     sphere: `${k}Hex`,
+    grid: true,
+    turns: [60, -60],
     rule: `along the edges of ${on}: <b>0</b> turn left, <b>1</b> turn right`,
-  };
-  const { ant, ...cells } = MODES.hexSphereWalk; // (no ant there)
+  }; // (as the sphere's walks, flat: not round, see hexSphereGrid)
   MODES[`${k}HexLR`] = {
-    ...cells,
+    base: 2,
+    arrows: '↖↗',
+    lattice: 'sphere',
+    cells: true,
     twin: `${k}HexGrid`,
     sphere: `${k}Hex`,
+    net: 'hex',
     rule: `on ${on}: exit through the <b>0</b> front left or <b>1</b> front right edge`,
   };
   for (const [w, how] of [
@@ -16643,8 +16650,8 @@ const sizeCells = (kind, f, marked = false) => {
   }
   return `${formatNumber(S.tiles(f))} ${S.unit}`;
 };
-// a size's cells as its stepper shows them, short (hexas, pentas: its − and + as wide; its tooltip says them whole)
-const shortCells = (text) => text.replace(/hexagons/g, 'hexas').replace(/pentagons/g, 'pentas');
+// a size's cells as its stepper shows them, short (hexas, pentas, octas: its − and + as wide; its tooltip says them whole)
+const shortCells = (text) => text.replace(/agons\b/g, 'as');
 const sizeLabel = (kind, f) => (gridSize(kind, f) ? `${sizeShape(kind, f)} ${sizeCells(kind, f)}` : sizeCells(kind, f));
 // A size of its own (a link, a loop found): an extra entry among the usual ones, by rows (a torus,
 // a Möbius strip) or tiles across (a solid); a torus with the usual tiles per row is the usual size
@@ -42828,9 +42835,22 @@ function gpuSurface(paint, path) {
     gpuBuffer('eN2', n2);
     D.eCount = 2 * E;
     if (D.keys.fanOf !== g) {
-      const fan = surfaceTriangles(g);
+      const fan = surfaceTriangles(g),
+        walls = new Set(g.walls),
+        tileOf = (q) => Math.floor(fan[3 * q] / k); // (its triangle q's tile: its first corner's, k a tile)
       gpuBuffer('fan', fan, GPUBufferUsage.INDEX);
       D.fanCount = fan.length;
+      // the motif's pick: the same triangles but its walls' (its cells of other sides, a solid of hexagons' corners: never
+      // its motif, see gpuPickMiddle)
+      const pickFan = walls.size
+        ? Uint32Array.from(
+            Array.from({ length: fan.length / 3 }, (_, q) => q)
+              .filter((q) => !walls.has(tileOf(q)))
+              .flatMap((q) => [fan[3 * q], fan[3 * q + 1], fan[3 * q + 2]]),
+          )
+        : fan;
+      gpuBuffer('pickFan', pickFan, GPUBufferUsage.INDEX);
+      D.pickFanCount = pickFan.length;
       D.keys.fanOf = g;
     }
     if (D.keys.topo !== `${n}|${k}`) {
@@ -43173,8 +43193,8 @@ function gpuPickMiddle(D, enc, slot, tileBufs, cull) {
   p.setVertexBuffer(0, D.pos);
   p.setVertexBuffer(1, D.nrm);
   p.setVertexBuffer(2, D.tileIds);
-  p.setIndexBuffer(D.fan, 'uint32');
-  p.drawIndexed(D.fanCount);
+  p.setIndexBuffer(D.pickFan, 'uint32');
+  p.drawIndexed(D.pickFanCount);
   p.end();
   for (const pipe of [P.most, P.mostTile]) {
     const c = enc.beginComputePass();

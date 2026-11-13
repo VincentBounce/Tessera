@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.972';
+const VERSION = '0.4.973';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -45880,7 +45880,7 @@ function lifeRle() {
       (base === 'cairo' && (x0 / 2 + cells.reduce((e, c) => Math.min(e, c[1]), Infinity)) & 1 ? 1 : 0);
   const pop = new Map([[planeKey(0, 0), 0], ...cells.map(([x, y, v]) => [planeKey(x - x0, y - y0), v])]); // (a dead cell at its lattice cell's corner: the rows start there)
   return rleFile(
-    `${setupTitle({ setup: getSetup() })}, generation ${stepShown}`,
+    `generation ${stepShown}`,
     kind === 'square' || base === 'hex'
       ? []
       : [`On the app's ${PLANE_CELLS[base]} (not Golly's squares): cells as its slanted grid numbers them`],
@@ -45897,15 +45897,17 @@ function elementaryRle() {
   for (let x = 0; x < 16 * R.n; x++) if (cellOf(R.kept[0], x)) xs.push(x);
   if (!xs.length) return null;
   return rleFile(
-    `${setupTitle({ setup: getSetup() })}, its first row`,
+    'its first row',
     [`Its rows down from it: Golly draws them${R.N % 2 ? ' (its rules Wn for an even n only)' : ''}`],
     new Map(xs.map((x) => [planeKey(x - xs[0], 0), 1])),
     `W${R.N}`,
     true,
   );
 }
-// an RLE file: its name, its comments, its cells (see populationRle) and rule; two states: b and o (Golly's Life-like)
-function rleFile(name, notes, pop, rule, two) {
+// an RLE file: its name and words its setup's as its Gallery card writes them (when: its generation, its first row), its
+// comments, its cells (see populationRle) and rule; two states: b and o (Golly's Life-like)
+function rleFile(when, notes, pop, rule, two) {
+  const x = { setup: getSetup() };
   const xs = [...pop.keys()].map((k) => cellXY(k)[0]),
     ys = [...pop.keys()].map((k) => cellXY(k)[1]);
   let body = populationRle(pop).replace(/^[^:]*:/, '');
@@ -45913,7 +45915,8 @@ function rleFile(name, notes, pop, rule, two) {
   const lines = [];
   for (let i = 0; i < body.length; i += 70) lines.push(body.slice(i, i + 70));
   return [
-    `#N ${name}`,
+    `#N ${setupTitle(x)}, ${when}`,
+    `#C ${setupWords(x)}`,
     `#C Tessera: ${SITE}${location.hash}`,
     ...notes.map((n) => `#C ${n}`),
     `x = ${Math.max(...xs) - Math.min(...xs) + 1}, y = ${Math.max(...ys) - Math.min(...ys) + 1}, rule = ${rule}`,

@@ -8,7 +8,7 @@ A walk driven by the digits of **π**, other famous numbers, formulas and large 
 
 π₃ = 10.0102110122220102110021111102212222201112012121212001…
 
-<p align="center">* * *</p>
+<p align="center">\n * * *</p>
 
 ## Numbers
 

@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.936';
+const VERSION = '0.4.937';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -11144,7 +11144,8 @@ function compute() {
   shownSymbol = sym;
   const base = numberBaseOf(getSetup()); // (Life: K + 1, Digits mixed: 2)
   const key = digitsKey(F, base);
-  $('copyNumber').innerHTML = `${icon('barcode')} Show digits in ${baseWords(base)}`; // (the Full number: the base the digits are written in)
+  $('copyNumber').innerHTML = icon('barcode');
+  $('copyNumber').setAttribute('aria-label', `Show digits in ${baseWords(base)}`); // (the Full number: the base the digits are written in)
   $('copyNumber').title = BASE_BUBBLE_TITLE;
   // The status line under the Number: how the digits came (time, cache), what the number is, and
   // warnings; what is shown is in the description (describe)
@@ -17866,12 +17867,9 @@ function renderWalkTeams() {
   RIVALS.forEach((id, j) => {
     $(id).parentElement.hidden = j >= walkTeams - 1;
   }); // (the walkers' but A's)
-  const fieldA = $('formula').parentElement,
-    digitsButton = $('copyNumber'); // (the Full number's, on its field)
-  if (battleOn() && fieldA.parentElement !== $('formulaAHome')) $('formulaAHome').append(digitsButton, fieldA);
-  if (!battleOn() && fieldA.parentElement !== $('numberPicker')) {
-    $('numberTabs').after(digitsButton, fieldA);
-  }
+  const fieldA = $('formula').parentElement; // (Show digits in it)
+  if (battleOn() && fieldA.parentElement !== $('formulaAHome')) $('formulaAHome').append(fieldA);
+  if (!battleOn() && fieldA.parentElement !== $('numberPicker')) $('numberTabs').after(fieldA);
   battleAsked = BATTLE_FORMULAS.map((id) => $(id).value); // (a battle computed: its numbers as sent)
   tintBattleFormulas();
   if (battleHunt.run && (!battleOn() || battleHunt.key !== battleHuntKey())) stopBattleHunt(); // (its battles fought elsewhere: it stops)

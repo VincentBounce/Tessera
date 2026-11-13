@@ -585,6 +585,28 @@ h3 {
 .field:focus-within .enter {
   display: block;
 }
+/* Show digits: a barcode at the formula's end, where ↵ shows while it is edited (it hides then) */
+.field #copyNumber {
+  position: absolute;
+  right: 4px;
+  top: 4px;
+  width: auto;
+  height: 26px;
+  margin: 0;
+  padding: 0 6px;
+  border: 0;
+  background: none;
+  color: var(--muted-text-color);
+}
+.field #copyNumber:is(:hover, .active) {
+  color: var(--accent-color);
+} /* (open: the number over the view, see toggleNumber) */
+.field:focus-within #copyNumber {
+  display: none;
+}
+.field:has(> #copyNumber:not([hidden])) input {
+  padding-right: 32px;
+}
 .field :is(input, textarea):focus {
   padding-right: 32px;
 }
@@ -1247,10 +1269,9 @@ button.active .bubble.active {
 .rule-cards:has(+ .rule-build:not([hidden])) {
   margin-bottom: 4px;
 } /* your own's block under them: all one (else a list's 10 px) */
-.stack .field,
-#copyNumber {
+.stack .field {
   margin-bottom: 4px;
-} /* fields one under another, as close as cards (a battle's formulas), Show digits on its formula's */
+} /* fields one under another, as close as cards (a battle's formulas) */
 #battleRandom {
   margin-top: 6px;
 } /* Roll under the formulas, apart as a list's (10 px) */

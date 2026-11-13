@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.964';
+const VERSION = '0.4.965';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -10347,18 +10347,29 @@ const customRow = $('antCustomRow'); // (kept: out of the page while a list redr
 // births and survivals); closed on another mode
 let rulesMode = null,
   customOpen = false; // (the mode the rules were last drawn for)
+// the number picker's place and whether it shows, from the setup now (both renders call it, the last one with the battle
+// decided: renderAntRow runs before a surface's sizes are filled, when battleOn cannot tell yet, see battleFits): a walk's
+// Start, its start on a surface first (a creature's at the head of its own Start), then the number read (its digits; a
+// battle's numbers instead, see renderWalkTeams); a start's by the digits (Life's, a creature's) under its Digits tab;
+// read by none, back in the walk's, hidden
+function placeNumberPicker() {
+  const w = tabMode(),
+    m = MODES[w],
+    home =
+      !readsDigits(w) || (!m.life && NAV[w][0] !== 'Ant')
+        ? $('walkStartSection')
+        : m.life
+          ? $('startDigits')
+          : $('antStartDigits');
+  $('numberPicker').hidden = home === $('walkStartSection') && (!readsDigits(w) || battleOn()); // (a battle: A's formula with the others')
+  if ($('numberPicker').parentElement !== home) home.append($('numberPicker'));
+}
 function renderAntRow() {
   const w = tabMode(),
     m = MODES[w],
     ant = NAV[w][0] === 'Ant';
-  // a walk's Start: its start on a surface first (a creature's at the head of its own Start), then the number read (its
-  // digits, see numberPicker; a battle's numbers instead, see renderWalkTeams); a start's by the digits (Life's, a
-  // creature's) under its Digits tab; read by none, back in the walk's, hidden
-  const home =
-    !readsDigits(w) || (!m.life && !ant) ? $('walkStartSection') : m.life ? $('startDigits') : $('antStartDigits');
   $('walkStartSection').hidden = m.life || ant;
-  $('numberPicker').hidden = home === $('walkStartSection') && (!readsDigits(w) || battleOn()); // (a battle: A's formula with the others')
-  if ($('numberPicker').parentElement !== home) home.append($('numberPicker'));
+  placeNumberPicker();
   // (the start row under its heading; under the starts' tabs when a battle shows them there, see renderWalkTeams)
   const startHead = $(ant ? 'antStartSection' : 'walkStartSection').querySelector('h2'),
     lead = startHead.nextElementSibling === $('startWays') ? $('startWays') : startHead;
@@ -17904,6 +17915,7 @@ function renderWalkTeams() {
   if (!oceanPicked) applyDefaults('battle'); // (Ocean on in a walk's battle, till it is clicked: see DISPLAY_DEFAULTS)
   // a battle: its numbers in its Start section, A's formula field moved there from the number's (hidden then), then B's on
   $('battleStart').hidden = $('startWays').hidden = $('battleHunt').hidden = !battleOn();
+  placeNumberPicker(); // (the battle decided now, its sizes filled)
   RIVALS.forEach((id, j) => {
     $(id).parentElement.hidden = j >= walkTeams - 1;
   }); // (the walkers' but A's)

@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.946';
+const VERSION = '0.4.947';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 
 /* ==============================================================================================
@@ -9261,13 +9261,13 @@ function digitsWorker(F, base, n, then) {
   w.postMessage({ ast: F.ast, n, base, mag: F.mag, nodes: F.nodes });
   return w;
 }
-// Digits B to L, a battle's other numbers (see battleOn): their formulas (RIVALS: their fields, made by rivalField) read as the Digits'
+// Digits B to L, a battle's other numbers (see battleOn): their formulas (RIVALS: their fields, made by formulaField) read as the Digits'
 // (formulaOf), as many digits as A's in the same base, for the walkers but A (walkTeams − 1). Null while a worker computes
 // some (then: called once they are all there), { error } for a wrong formula
 const RIVALS = [...'BCDEFGHIJKL'].map((c) => `formula${c}`),
   rivalWorkers = {};
-const rivalName = (id) => (id === 'formula' ? 'Formula' : `Formula ${id.slice(-1)}`); // (A's Formula, then Formula B, Formula C…)
-// a rival's field, as the Digits' (its number at first, its tooltip), in the battle's Start section (see renderWalkTeams)
+const formulaName = (id) => (id === 'formula' ? 'Formula' : `Formula ${id.slice(-1)}`); // (A's Formula, then Formula B, Formula C…)
+// B's, C's… numbers at first
 const RIVAL_FIRSTS = [
   'e',
   'phi',
@@ -9281,33 +9281,37 @@ const RIVAL_FIRSTS = [
   'gamma',
   'catalan',
 ];
-function rivalField(id, j) {
-  const box = document.createElement('div'),
-    c = id.slice(-1);
+// a walker's formula field, the same for every walker (A's the Digits' own, then B's, C's… in a battle's Walkers, see
+// renderWalkTeams): its number at first, its words, ↵; A's Show digits in it (see showDigitsTip)
+const FORMULA_WORDS =
+  "Typed in base 10, then written in the base its use needs (the walk's, or Life's: K + 1, its colours and dead), as the chip beside it says. Any number as a formula: pi, e, phi, gamma, catalan, erdos, rho, sqrt(3), cbrt(2), root(x, k), ln(x), exp(x), log(x, b), zeta(k), 22/7, 2^pi, 8^(1/3), 2^127-1, primorial(p)+1, randprime(size, seed), and + − × ÷ ^ ( ). Digit sequences, used alone: random(seed), champernowne, copelanderdos, primebarcode, primegaps, liouville, kempner, moserdebruijn, dragon. Press Enter to compute";
+function formulaField(id, first) {
+  const box = document.createElement('div');
   box.className = 'field formula-field';
   box.innerHTML =
-    `<input id="${id}" type="text" value="${RIVAL_FIRSTS[j]}" spellcheck="false" autocomplete="off" aria-label="${rivalName(id)}"` +
-    ` title="${c}'s number, typed as the Digits' formula (pi, e, sqrt(2), 22/7, champernowne…), written in the walk's base. Press Enter to compute">` +
-    '<button class="enter" type="button" tabindex="-1" title="Compute (Enter)">↵</button>';
+    `<input id="${id}" type="text" value="${first}" spellcheck="false" autocomplete="off" aria-label="${formulaName(id)}" title="${FORMULA_WORDS}">` +
+    '<button class="enter" type="button" tabindex="-1" title="Compute (Enter)">↵</button>' +
+    (id === 'formula' ? '<button id="copyNumber" type="button" hidden></button>' : '');
   return box;
 }
-$('rivalFormulas').append(...RIVALS.map(rivalField));
+$('numberTabs').after(formulaField('formula', '1/112'));
+$('rivalFormulas').append(...RIVALS.map((id, j) => formulaField(id, RIVAL_FIRSTS[j])));
 function rivalsDigits(base, n, then) {
   const out = [];
   for (const id of RIVALS.slice(0, walkTeams - 1)) {
     const F = formulaOf($(id).value);
-    if (F.error) return { error: `${rivalName(id)}: ${F.error}` };
+    if (F.error) return { error: `${formulaName(id)}: ${F.error}` };
     const known = knownDigits(F, base, n);
     if (known) {
       out.push(known);
       continue;
     }
     rivalWorkers[id]?.terminate();
-    waitBegin(id, `Computing ${rivalName(id)}, ${F.sym ?? ''} in base ${base}`);
+    waitBegin(id, `Computing ${formulaName(id)}, ${F.sym ?? ''} in base ${base}`);
     rivalWorkers[id] = digitsWorker(F, base, n, (error) => {
       delete rivalWorkers[id];
       waitEnd(id);
-      if (error) $('status').textContent = `${rivalName(id)}: ${error}`;
+      if (error) $('status').textContent = `${formulaName(id)}: ${error}`;
       else if (!Object.keys(rivalWorkers).length) then();
     });
   }
@@ -17937,6 +17941,11 @@ function renderWalkTeams() {
 // a battle's formula fields, each bold in its walker's colour once sent to be fought (computed, from Enter, Random or a
 // hunt's pick: battleAsked, see renderWalkTeams; typed since: plain again)
 const BATTLE_FORMULAS = ['formula', ...RIVALS];
+// a walker's formula in use: A's the Digits' (formulaInUse), B's, C's… the one its battle was built with (see battleAsked)
+const formulaInUseOf = (id) => {
+  const s = BATTLE_FORMULAS.indexOf(id);
+  return s ? (battleAsked[s] ?? RIVAL_FIRSTS[s - 1]) : formulaInUse;
+};
 let battleAsked = [];
 function tintBattleFormulas() {
   BATTLE_FORMULAS.forEach((id, s) => {
@@ -45014,7 +45023,7 @@ $('digitsUp').addEventListener('click', () => stepDigits(1));
 // but a wrong formula keeps you in the field, with its error. Esc undoes the edit: back to the value
 // in use. For ↵, mousedown keeps the focus from going to the button first.
 const valueInUse = {
-  formula: () => formulaInUse,
+  ...Object.fromEntries(BATTLE_FORMULAS.map((id) => [id, () => formulaInUseOf(id)])), // (every walker's formula)
   digitsLabel: () => String(randomPrimeSize() ?? lengthAsked()),
   startLabel: () => String(startNo()),
   antRule: () => creatureRules(tabMode()).now, // (a walk's, an ant's, a turmite's, a worm's)
@@ -45049,7 +45058,7 @@ for (const input of document.querySelectorAll('.field input')) {
     const error = input.closest('.formula-field') && formulaOf(input.value).error; // (every walker's formula alike)
     if (error) {
       e.preventDefault();
-      $('status').textContent = `${rivalName(input.id)}: ${error}`;
+      $('status').textContent = `${formulaName(input.id)}: ${error}`;
     } else input.blur();
   });
 }
@@ -46282,9 +46291,9 @@ BATTLE_FORMULAS.forEach((id, s) =>
       computeFramed();
       return;
     }
-    const kept = s ? (battleAsked[s] ?? RIVAL_FIRSTS[s - 1]) : formulaInUse;
+    const kept = formulaInUseOf(id);
     $(id).value = kept;
-    $('status').textContent = `${rivalName(id)}: ${F.error} · ${kept} kept`;
+    $('status').textContent = `${formulaName(id)}: ${F.error} · ${kept} kept`;
   }),
 );
 $('battleHuntBtn').addEventListener('click', () => (battleHunt.run ? stopBattleHunt() : startBattleHunt()));

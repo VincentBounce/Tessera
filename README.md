@@ -236,6 +236,11 @@ A fraction's digits repeat, so its walk makes the same moves again and again: it
 
 **[PATTERNS.md](PATTERNS.md)** lists the most striking ones walk by walk, with how they were found; the **Gallery** starts with a curated choice.
 
+## Finds
+
+- **Thue–Morse in great circles:** τ, the Thue–Morse sequence, walked along the edges of the sphere of hexagons draws straight lines that run right round the sphere, great circles crossing as an icosahedron's edges, and closes after one round (998,405 steps): [τ on the sphere of hexagons](https://vincentbounce.github.io/Tessera/#x=thuemorse&w=hexSphereGrid&d=1000000&s=48).
+- **Rosette spheres:** a sphere tiled with two rosettes of flowers, one round each pole, their rims crenellated so that the south's teeth fit the north's notches along the equator; Life plays on them as on the plane's rosettes (Life › 3D surfaces › Rosettes): [two punks on Flower 10's](https://vincentbounce.github.io/Tessera/#w=lifeRosetteFlower10&s=84&r=B279/S0345/C5&k=2&pop=punk24.6932.9226).
+
 ## Features
 
 - **Tabs** (top): the **Gallery**, then **Life**, **Ant** and **Walk**; under them their spaces: Life's and Rewind's 2D squares, 2D circles, 3D solids and 3D surfaces; Ant's and Walk's 2D infinite, 3D solids, 3D surfaces and, Walk's, Lattice (a 3D lattice). Hover the Gallery to open it in the left pane, click it to keep it open.

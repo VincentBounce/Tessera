@@ -9,13 +9,13 @@ RULES, PATTERNS = GOLLY + '/Rules/{}.rule', GOLLY + '/Patterns/Loops/{}.rle'
 OWN = os.path.join(os.path.dirname(__file__), 'loops', '{}')  # (Sexyloop's rule and start)
 # the app's name of each, Golly's rule and pattern, its year and words (and its files' folder, if not Golly's)
 LOOPS = [
-    ('Langton', 'Langtons-Loops', 'Langtons-Loops', 1984, "Langton's loops: a loop whose signals turning round in it build a copy of it, every 151 generations, into a colony growing as a coral, its dead loops in the middle"),
-    ('Byl', 'Byl-Loop', 'Byl-Loop', 1989, "Byl's loop: Langton's without its inner sheath, 12 cells copied every 25 generations"),
-    ('Chou-Reggia', 'Chou-Reggia-1', 'Chou-Reggia-Loop-1', 1993, "Chou and Reggia's loop: no sheath at all, 5 cells copied every 15 generations"),
+    ('Langton', 'Langtons-Loops', 'Langtons-Loops', 1984, "a loop whose signals turning round in it build a copy of it, every 151 generations, into a colony growing as a coral, its dead loops in the middle"),
+    ('Byl', 'Byl-Loop', 'Byl-Loop', 1989, "Langton's without its inner sheath, 12 cells copied every 25 generations"),
+    ('Chou-Reggia', 'Chou-Reggia-1', 'Chou-Reggia-Loop-1', 1993, "no sheath at all, 5 cells copied every 15 generations"),
     ('Chou-Reggia 2', 'Chou-Reggia-2', 'Chou-Reggia-Loop-2', 1993, "Chou and Reggia's second loop: 5 cells too, copied every 15 generations too, by a table of 65 rules, not 174"),
-    ('Tempesti', 'Tempesti', 'Tempesti-Loop', 1995, "Tempesti's loop: it builds its copy's skeleton first, then lets its program flow in, which opens a gate and writes LSL inside with an arm, the right way up (its table has no turns)"),
+    ('Tempesti', 'Tempesti', 'Tempesti-Loop', 1995, "it builds its copy's skeleton first, then lets its program flow in, which opens a gate and writes LSL inside with an arm, the right way up (its table has no turns)"),
     ('SDSR', 'SDSR-Loop', 'SDSR-Loop', 1998, "Sayama's structurally dissolvable loop: Langton's, its dead loops dissolving, so the colony goes on growing and turning over"),
-    ('Evoloop', 'Evoloop', 'Evoloop', 1999, "Sayama's evoloop: loops that meet change, the smaller ones copying faster and taking the room: natural selection"),
+    ('Evoloop', 'Evoloop', 'Evoloop', 1999, "by Sayama: loops that meet change, the smaller ones copying faster and taking the room: natural selection"),
     ('Sexyloop', 'Sexyloop-M1', 'species13-M1', 2007, "Oros and Nehaniv's loop: the evoloop's, its loops passing part of their genes to those they meet (sex), its species mixing", 'own'),
 ]
 get = lambda path: open(path).read()

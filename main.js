@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.989';
+const VERSION = '0.4.990';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -5163,7 +5163,7 @@ const RULES = [
   // Replicators, Rewind, each its grid's mark) made after (see addLifeRule)
   ...[
     ['■▲◈', 'B3/S23', 'Life', 'Life (2 states)'],
-    ['▲', 'B45/S345/C4', 'Sparse', 'lasting sparse activity (4 states)'],
+    ['▲', 'B45/S345/C4', 'Sparse', 'few cells busy, for long (4 states)'],
     ['▲', 'B34/S2/C4', 'Brink', 'on the edge of extinction (4 states)'],
     [
       '▲',
@@ -5246,11 +5246,11 @@ const RULES = [
       "Life's twin",
       'the closest to Life: soups thin out slowly, small starts now and then blow up',
     ],
-    ['⬡', 'B34/S123/C3', 'Long loops', 'lasts longest, ends in long loops (3 states)'],
-    ['⬡', 'B2/S34', 'Classic hex', 'the classic hexagonal Life: oscillators, settles fast from a soup'],
+    ['⬡', 'B34/S123/C3', 'Long loops', 'lasts longest, then cycles with large periods (3 states)'],
+    ['⬡', 'B2/S34', 'Classic hex', 'the usual Life of hexagons: oscillators, settles fast from a soup'],
     ['⬡', 'B24/S134/C4', 'Brink', 'on the edge of extinction (4 states)'],
     ['⬡', 'B24/S35', 'Hex Life', 'Life-like, lasting, a few survivors'],
-    ['⬡', 'B234/S234', 'Methuselahs', 'methuselahs: 3 cells can last 2,000+ generations'],
+    ['⬡', 'B234/S234', 'Methuselahs', '3 cells can last 2,000+ generations'],
     ['⬡', 'B234/S1234', 'Settling methuselahs', 'methuselahs, and every small start settles'],
     ['⬡', 'B2o/S2m34', "Callahan's Life", "Callahan's hexagonal Life, with gliders (o side by side, m one cell apart)"],
     [
@@ -5265,8 +5265,8 @@ const RULES = [
       'Hex war',
       'a long war: in a hexagon, 3 or 6 colours fight some 1,500 generations, thinly spread',
     ],
-    ['⬡', 'B2/S24/C3', 'Few spread', 'Life-like from a small start: most die, a few spread for a while (3 states)'],
-    ['⬡', 'B1/S0123456', 'Snowflakes', 'snowflakes, grown from a few cells'],
+    ['⬡', 'B2/S24/C3', 'Few spread', 'Life-like from a small start: most die, some grow for a while (3 states)'],
+    ['⬡', 'B1/S0123456', 'Snowflakes', 'grown from a few cells'],
     ['■', 'B36/S23', 'HighLife', 'HighLife, with a replicator'],
     [
       '■',

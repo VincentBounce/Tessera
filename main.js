@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.1025';
+const VERSION = '0.4.1026';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -42370,14 +42370,14 @@ fn band(t: texture_2d<f32>, x: f32) -> vec3f { let w = i32(textureDimensions(t).
 // step i's rainbow (see rainbowBand): a closed loop's steps round its period, along the walk's length u.N (rainbowLength)
 fn rainbow(i0: f32) -> vec3f { var i = i0; if (u.period > 0.0 && i >= u.loopFrom + u.period) { i = u.loopFrom + (i - u.loopFrom) - u.period * floor((i - u.loopFrom) / u.period); } return band(grad, (i + 0.5) / u.N); }
 fn glass(c0: vec3f, a: f32, z: f32) -> vec4f {
-  let c = mix(c0, u.fadeTo, u.fade * (1.0 - unfaded));
+  let c = mix(c0, u.fadeTo, select(u.fade, 1.0 - u.fade, unfaded > 0.5));  // (the motif's tiles the other way: fading in)
   if (u.glass == 0) { return vec4f(c, a); }
   let w = clamp(a * 1e3 * pow(1.0 - z, 8.0), 1e-2, 3e3);
   if (u.glass == 1) { return vec4f(c * a * w, a * w); }
   return vec4f(a);
 }
 struct Lit { @builtin(position) pos: vec4f, @location(0) dark: vec3f, @location(1) lit: vec3f, @location(2) sh: vec3f, @location(3) cutv: f32, @location(4) keep: f32 }
-var<private> unfaded: f32 = 0.0;  // (a tile kept out of the hover's fade: the motif's, its colour's alpha 254, see gpuSurface)
+var<private> unfaded: f32 = 0.0;  // (a tile faded in as the others fade out: the motif's, its colour's alpha 254, see gpuSurface)
 fn light(col: vec3f, n0: vec3f, p: vec3f, bias: f32) -> Lit {  // (as tileLight; sh: its place in the shadows' texture, rows down)
   var o: Lit; var n = n0;
   if (dot(n, u.V) < 0.0) { n = -n; }
@@ -42981,8 +42981,8 @@ function gpuSurface(paint, path) {
     D.geoGen = (D.geoGen ?? 0) + 1;
   }
   paint({ put: (col) => device.queue.writeBuffer(D.tileCol, 0, col), buffer: D.tileCol, n }, n);
-  // (the motif's tiles in its colours over theirs while it shows, lit as the others: see motifOf)
-  if (motifShown && middleTile.g === g && middleTile.t >= 0)
+  // (the motif's tiles in its colours over theirs while it shows and fades out, lit as the others: see motifOf)
+  if ((motifShown || (!startsShown && hoverFade() > 0)) && middleTile.g === g && middleTile.t >= 0)
     for (const [colour, tiles] of motifOf(g, middleTile.t).filled)
       for (const t of tiles)
         device.queue.writeBuffer(D.tileCol, 4 * t, Uint32Array.of((packed(colour) & 0xffffff) | (254 << 24))); // (alpha 254: unfaded, see tileV)

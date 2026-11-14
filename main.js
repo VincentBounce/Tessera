@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.1005';
+const VERSION = '0.4.1006';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -15224,9 +15224,17 @@ function stripGlued(strip) {
   gluedMemo.set(strip, glued);
   return glued;
 }
-// a strip's walls at a size, both faces' (none but a walled strip's)
-const stripWallsAt = (kind, f) =>
-  MOBIUS_KINDS.includes(kind) && rimWallsOf(kind) && !ghostWalls ? 2 * stripWalls(mobiusSheet(kind, f)).length : 0;
+// a strip's walls at a size, both faces' (none but a walled strip's): as many on each length of it (its edges alike all
+// along, see rimRows), read off its least strip once, so a size's count builds no sheet (mobiusCount's length)
+const wallsPerLengthMemo = {};
+const stripWallsAt = (kind, f) => {
+  if (!MOBIUS_KINDS.includes(kind) || !rimWallsOf(kind) || ghostWalls) return 0;
+  const perLength = (wallsPerLengthMemo[kind] ??= (() => {
+    const strip = mobiusSheet(kind, 2);
+    return stripWalls(strip).length / strip.L;
+  })());
+  return 2 * Math.round(perLength * mobiusCount(kind, f).L);
+};
 // a walled strip's walls: its sheet's tiles with a corner on its edge (each on both faces, see mobiusMesh)
 const stripWalls = (strip) => {
   const { ids, onEdge } = stripGlued(strip);

@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.1044';
+const VERSION = '0.4.1045';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -39951,7 +39951,6 @@ function play(on) {
   const was = playing;
   playing = on && walk.n > 0 && !atEnd();
   if (playing !== was) motionChanged();
-  if (playing && !was && walk.life) walk.life.trailFrom = walk.life.gen; // (Trail: what dies from here, see gpuLook)
   // (playing: View, Draw's look only, drawing again once it stops: a link loaded cold the same)
   if (playing && drawing && !brush.view) {
     brush.view = brush.byPlay = true;
@@ -42276,6 +42275,10 @@ function gpuLook(L, out, look) {
     (Math.round(c[1] * 255) << 8) |
     (Math.round(c[2] * 255) << 16) |
     (Math.round(c[3] * 255) << 24);
+  // Trail: drawn while it plays only, of what died since it began to be drawn (L.trailFrom, the generation then: a Play, Trail
+  // turned on, a look that has one): none left at a stop, none of before back
+  const trail = playing ? look.trail : 0;
+  L.trailFrom = trail ? (L.trailFrom ?? L.gen) : null;
   const words = new Int32Array(64),
     enc = device.createCommandEncoder();
   lifeComputePass(
@@ -42286,7 +42289,7 @@ function gpuLook(L, out, look) {
     GPU.pipes.lifeLook,
     {
       gen: L.gen,
-      trail: playing ? look.trail : 0, // (Trail: while it plays only, of what died since Play: none left at a stop, none of before it back)
+      trail,
       trailFrom: L.trailFrom ?? 0,
       by: look.by,
       neg: negative(L) ? 1 : 0,

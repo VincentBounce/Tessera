@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.1011';
+const VERSION = '0.4.1012';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -25534,6 +25534,12 @@ function outlineRibbons(D, name, key, g, sh, R, sets, width = (s) => Math.max(2,
   gpuBuffer(name, data.words());
   return (D[`${name}Outline`] = { g, key, marks: { parts } }).marks;
 }
+// Ghost walls' outline, hollow, as fine as the grid's lines (a pixel)
+const ghostRibbons = (D, g, sh, R) => {
+  const walls = () => [[LIFE_WALL, g.ghostWalls]];
+  return outlineRibbons(D, 'ghost', `${sh.m}|${R}`, g, sh, R, walls, () => 1);
+};
+
 // the motif round its tile (see motifOf), as its form, its tile and its colour change
 const motifRibbons = (D, g, sh, R) =>
   outlineRibbons(D, 'motif', `${middleTile.t}|${sh.m}|${R}|${motifColour()}`, g, sh, R, () => motifOf(g, middleTile.t));
@@ -43366,23 +43372,7 @@ function gpuSurface(paint, path) {
     // its colour and its width on the screen, unfaded, over the tiles; the starts' flags (and cones, hovered: see startHeads)
     const marks = [
       ...(motifShown && middleTile.g === g && middleTile.t >= 0 ? [['motif', motifRibbons(D, g, sh, R)]] : []),
-      ...(g.ghostWalls
-        ? [
-            [
-              'ghost',
-              outlineRibbons(
-                D,
-                'ghost',
-                `${sh.m}|${R}`,
-                g,
-                sh,
-                R,
-                () => [[LIFE_WALL, g.ghostWalls]],
-                () => 1,
-              ),
-            ],
-          ]
-        : []), // (Ghost walls: hollow, always, as fine as the grid's lines)
+      ...(g.ghostWalls ? [['ghost', ghostRibbons(D, g, sh, R)]] : []), // (Ghost walls: hollow, always)
       ...(startsShown ? [['starts', startMarks(g, sh, R)]] : []),
     ];
     if (marks.length) {

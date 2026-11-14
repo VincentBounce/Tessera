@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.1006';
+const VERSION = '0.4.1007';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -14829,61 +14829,71 @@ const mobiusCount = (kind0, size) => (countMemo[`${kind0}|${size}|${stripKey()}`
 function mobiusSheet(kind0, size) {
   return (stripMemo[`${kind0}|${size}|${stripKey()}`] ??= mobiusSheetOf(kind0, size)); // (its mesh's, kept while it is: see meshCache)
 }
-function mobiusSheetOf(kind0, size, count = false) {
-  // count: its tiles counted, not built ({ L, W, n }: see mobiusCount)
+function mobiusSheetOf(kind0, size, count = false, rim = count ? 0 : wallRows(kind0)) {
+  // count: its tiles counted, not built ({ L, W, n }: see mobiusCount); rim: its rows of walls each side (counted: the
+  // rows asked alone, all alive)
   if (kind0.startsWith('mobiusKite')) {
     // the triangles', cut in 3
-    if (count) {
-      const t = mobiusCount(kind0.replace('Kite', 'Tri'), size);
-      return { ...t, n: 3 * t.n };
-    }
-    const t = mobiusSheet(kind0.replace('Kite', 'Tri'), size);
+    const t = mobiusSheetOf(kind0.replace('Kite', 'Tri'), size, count, rim);
+    if (count) return { ...t, n: 3 * t.n };
     return {
       ...t,
       tiles: t.tiles.flatMap(kitesOf),
+      walls: t.walls.flatMap((i) => [3 * i, 3 * i + 1, 3 * i + 2]),
       originCell: t.originCell && [3 * t.originCell[0] + 2, t.originCell[1]],
     }; // (its first triangle's first kite, from its corner: the plane's third of it)
   }
-  return stripSheetOf(kind0, walledSize(kind0, size), count);
+  return stripSheetOf(kind0, size, count, rim);
 }
-// a strip's sheet of so many rows, as built (see mobiusSheetOf: its rows its walls' too)
-function stripSheetOf(kind0, size, count = false) {
+// a strip's sheet of so many rows, as built, and rim rows of walls each side (see wallRows): its length the rows asked
+// alone's, its walls (their indices) the tiles its builder lays beyond them, by its own rule for its edge
+function stripSheetOf(kind0, size, count = false, rim = 0) {
   const tiling = MOBIUS_STRIPS[kind0]?.kind;
   if (tiling)
     return count
-      ? { ...stripFrame(tiling, kind0, size), n: stripCount(tiling, kind0, size) }
-      : tilingStrip(tiling, kind0, size);
+      ? { ...stripFrame(tiling, kind0, size, rim), n: stripCount(tiling, kind0, size, false, rim) }
+      : tilingStrip(tiling, kind0, size, rim);
   // the usual length, a multiple of 12
   const kind = kind0,
     [nv, own] = mobiusSize(size),
+    rows = nv + 2 * rim,
     steps = (W) => stripSteps(kind, nv, W, own),
-    tiles = []; // its length, in steps along
+    tiles = [],
+    walls = []; // its length, in steps along
   let n = 0;
-  const put = (tile) => (count ? n++ : tiles.push(tile())),
-    done = (L, W) => (count ? { L, W, n } : { L, W, tiles }); // (a tile made only when kept)
+  const put = (tile, wall = false) => {
+      if (count) return n++;
+      if (wall) walls.push(tiles.length);
+      tiles.push(tile());
+    },
+    done = (L, W) => (count ? { L, W, n } : { L, W, tiles, walls }); // (a tile made only when kept)
   if (kind === 'mobiusHexTurned') {
-    const W = 1.5 * (nv - 1) + 2,
+    const W = 1.5 * (rows - 1) + 2,
       S3 = Math.sqrt(3),
-      L = (S3 / 2) * steps(W);
-    for (let r = 0; r < nv; r++) {
-      const cy = 1.5 * r + 1;
+      L = (S3 / 2) * steps(1.5 * (nv - 1) + 2);
+    for (let r = 0; r < rows; r++) {
+      const cy = 1.5 * r + 1,
+        wall = r < rim || r >= rows - rim;
       for (let i = -2; S3 * (i - 1) < L; i++) {
         const x0 = S3 * (i + (r % 2) / 2 + 0.5); // its centre, from a whole count (no rounding drift)
         if (x0 < -1e-9 || x0 >= L - 1e-9) continue;
-        put(() =>
-          [0, 1, 2, 3, 4, 5].map((k) => [
-            x0 + Math.cos(((60 * k + 30) * Math.PI) / 180),
-            cy + Math.sin(((60 * k + 30) * Math.PI) / 180),
-          ]),
+        put(
+          () =>
+            [0, 1, 2, 3, 4, 5].map((k) => [
+              x0 + Math.cos(((60 * k + 30) * Math.PI) / 180),
+              cy + Math.sin(((60 * k + 30) * Math.PI) / 180),
+            ]),
+          wall,
         );
       }
     }
     return done(L, W);
   }
   if (kind === 'mobiusTriTurned') {
-    const W = nv,
-      cols = steps(W),
-      L = cols * TRIANGLE_HEIGHT;
+    const W = rows,
+      cols = steps(nv),
+      L = cols * TRIANGLE_HEIGHT,
+      inside = (y, W) => y > 0.25 && y < W - 0.25; // (a triangle's middle across, on the strip asked)
     for (let i = -1; i <= cols; i++) {
       const x0 = i * TRIANGLE_HEIGHT,
         x1 = x0 + TRIANGLE_HEIGHT,
@@ -14896,7 +14906,7 @@ function stripSheetOf(kind0, size, count = false) {
             [x0, y + 1],
           ],
           cr = [(2 * x0 + x1) / 3, y + 0.5]; // ▶
-        if (cr[0] >= 0 && cr[0] < L && cr[1] > 0.25 && cr[1] < W - 0.25) put(() => right);
+        if (cr[0] >= 0 && cr[0] < L && inside(cr[1], W)) put(() => right, !inside(cr[1] - rim, nv));
       }
       for (let y = o1 - 2; y < W + 2; y += 1) {
         const left = [
@@ -14905,7 +14915,7 @@ function stripSheetOf(kind0, size, count = false) {
             [x0, y + 0.5],
           ],
           cl = [(x0 + 2 * x1) / 3, y + 0.5]; // ◀
-        if (cl[0] >= 0 && cl[0] < L && cl[1] > 0.25 && cl[1] < W - 0.25) put(() => left);
+        if (cl[0] >= 0 && cl[0] < L && inside(cl[1], W)) put(() => left, !inside(cl[1] - rim, nv));
       }
     }
     return done(L, W);
@@ -14913,26 +14923,30 @@ function stripSheetOf(kind0, size, count = false) {
   if (kind === 'mobiusCairo') {
     // nv squares of the Cairo grid across, L along with L + nv odd: the ends glued turned over keep
     // the tiling (see cairoCorners); the pentagons whose middles lie on the strip, its edges zigzag along them
-    const W = nv,
-      L = steps(W);
+    const W = rows,
+      L = steps(nv),
+      inside = (y, W) => y > 0 && y < W;
     for (let i = -1; i <= L; i++)
       for (let j = -1; j <= W; j++)
         for (const o of [0, 1]) {
           const [cx, cy] = cairoMiddle(i, j, o);
-          if (cx < 0 || cx >= L || cy <= 0 || cy >= W) continue;
-          put(() => cairoCorners(i, j, o));
+          if (cx < 0 || cx >= L || !inside(cy, W)) continue;
+          put(() => cairoCorners(i, j, o), !inside(cy - rim, nv));
         }
     return done(L, W);
   }
   if (kind === 'mobiusHex') {
-    const W = Math.sqrt(3) * (nv + 0.5),
-      a = steps(W),
+    const W = Math.sqrt(3) * (rows + 0.5),
+      a = steps(Math.sqrt(3) * (nv + 0.5)),
       L = 1.5 * a;
     for (let c = 0; c < a; c++)
-      for (let r = 0; r < nv; r++) {
+      for (let r = 0; r < rows; r++) {
         const cx = 1.5 * c + 1,
           cy = Math.sqrt(3) * (r + (c % 2) / 2) + TRIANGLE_HEIGHT;
-        put(() => [0, 1, 2, 3, 4, 5].map((k) => [cx + Math.cos((k * Math.PI) / 3), cy + Math.sin((k * Math.PI) / 3)]));
+        put(
+          () => [0, 1, 2, 3, 4, 5].map((k) => [cx + Math.cos((k * Math.PI) / 3), cy + Math.sin((k * Math.PI) / 3)]),
+          r < rim || r >= rows - rim,
+        );
       }
     return done(L, W);
   }
@@ -14974,9 +14988,10 @@ function stripSheetOf(kind0, size, count = false) {
 // on the strip's edge (see mobiusMirror), its tiles
 // whose middle is within nv rows of b (a mirror along a: the strip's edges alike) and L along (see MOBIUS_ALONG), as
 // many corners each (the last one repeated); the usual length, the counts' nearest that the twist allows
-function tilingStrip(kind, kind0, size) {
-  const { m, nv, L, W, sides, cells, i0, i1, j0, j1, la } = stripFrame(kind, kind0, size),
+function tilingStrip(kind, kind0, size, rim = 0) {
+  const { m, nv, L, W, sides, cells, i0, i1, j0, j1, la } = stripFrame(kind, kind0, size, rim),
     by = W / nv,
+    band = rim * by, // (its walls' rows, each side: see stripSheetOf)
     cols = Math.ceil(L / la - 1e-9),
     laid = [];
   for (let j = j0; j <= j1; j++)
@@ -14989,6 +15004,7 @@ function tilingStrip(kind, kind0, size) {
           P,
           x,
           y,
+          wall: y < band - 1e-9 || y > W - band + 1e-9, // (beyond the rows asked, as kept above)
           cell: [k + i * m, j],
           latticeCell: Math.floor(y / by + 1e-6) * cols + Math.floor(x / la + 1e-6),
         }); // (cell: the plane's, its x and y)
@@ -15001,6 +15017,7 @@ function tilingStrip(kind, kind0, size) {
     W,
     sides,
     tiles: laid.map(({ P }) => [...P, ...Array(sides - P.length).fill(P.at(-1))]),
+    walls: laid.flatMap(({ wall }, i) => (wall ? [i] : [])),
     mids: laid.flatMap(({ x, y }) => [x, y]),
     latticeCells: laid.map(({ latticeCell }) => latticeCell),
     originCell: laid[0].cell,
@@ -15013,19 +15030,20 @@ function tilingStrip(kind, kind0, size) {
 // its fine grid: a step along and a row across cut in so many (a power of 2: a corner's 6 decimals, and their halves (a mirror
 // midway between two corners), never land on half a cut, where a corner and its twin, 10⁻¹⁴ apart, would round apart)
 const STRIP_GRID = 8192;
-function stripFrame(kind, kind0, size) {
+function stripFrame(kind, kind0, size, rim = 0) {
   const t = TILINGS[kind],
     [a, b] = MOBIUS_STRIPS[kind0].basis,
     turn = -Math.atan2(a[1], a[0]),
     m = t.polys.length,
     { step } = MOBIUS_ALONG[kind0],
     { c } = mobiusMirror(kind, [a, b]);
-  const [nv, own] = mobiusSize(size),
-    W = nv * turnPoint(b, turn)[1],
-    n = stripSteps(kind0, nv, W, own, Math.round(MOBIUS_ALONG[kind0].copyLength / step)); // (its colours' stretches whole copies along)
+  const [asked, own] = mobiusSize(size),
+    by = turnPoint(b, turn)[1],
+    n = stripSteps(kind0, asked, asked * by, own, Math.round(MOBIUS_ALONG[kind0].copyLength / step)), // (its colours' stretches whole copies along; its length the rows asked's)
+    nv = asked + 2 * rim,
+    W = nv * by;
   const L = n * step,
     sides = Math.max(...t.polys.map((P) => P.length)),
-    by = W / nv,
     Q = STRIP_GRID;
   const snap = ([x, y]) => [
     (Math.round((x / step) * Q) / Q) * step,
@@ -15037,7 +15055,7 @@ function stripFrame(kind, kind0, size) {
     [L, 0],
     [0, W],
     [L, W],
-  ].map((p) => inBasis(p, ta, tb));
+  ].map(([x, y]) => inBasis([x, y - rim * by], ta, tb)); // (the plane's, its walls' rows under it)
   const [i0, i1, j0, j1] = [0, 1].flatMap((d) => [
     Math.floor(Math.min(...ends.map((e) => e[d]))) - 1,
     Math.ceil(Math.max(...ends.map((e) => e[d]))) + 1,
@@ -15045,24 +15063,25 @@ function stripFrame(kind, kind0, size) {
   const cells = (i, j, k) =>
     tilingPolys(kind)[k].map(([u, v]) => {
       const [x, y] = turnPoint(tilingWorld(kind, [u + i, v + j]), turn);
-      return snap([x, y - c]);
-    }); // (its mirror on y = 0)
+      return snap([x, y - c + rim * by]);
+    }); // (its mirror on y = 0, under its walls' rows)
   return { t, m, nv, L, W, sides, cells, i0, i1, j0, j1, ta, tb, la: Math.hypot(...a) };
 }
 // its tiles' count, as tilingStrip keeps them, without building it: each of a lattice cell's polygons' middle, moved by
 // the lattice's steps (no corner built; on the fine grid a middle on an edge lands on it: here 10⁻⁵ of it, as near)
 // (a bottle: below its top, see kleinTilingSheet)
-function stripCount(kind, kind0, size, bottle = false) {
+function stripCount(kind, kind0, size, bottle = false, rim = 0) {
   // (once each: a size's sought among them all, see near)
-  return (countMemo[`${kind}|${kind0}|${size}|${bottle}|${ringColours(tabMode())}`] ??= stripCounted(
+  return (countMemo[`${kind}|${kind0}|${size}|${bottle}|${rim}|${ringColours(tabMode())}`] ??= stripCounted(
     kind,
     kind0,
     size,
     bottle,
+    rim,
   ));
 }
-function stripCounted(kind, kind0, size, bottle) {
-  const { m, L, W, cells, i0, i1, j0, j1, ta, tb } = stripFrame(kind, kind0, size),
+function stripCounted(kind, kind0, size, bottle, rim) {
+  const { m, L, W, cells, i0, i1, j0, j1, ta, tb } = stripFrame(kind, kind0, size, rim),
     e = 1e-5;
   const mid = Array.from({ length: m }, (_, k) => {
     const P = cells(0, 0, k);
@@ -15196,7 +15215,7 @@ const turnOver = (c) => {
 // corners turned over. A corner of the sheet is a corner of each face (but one where the faces
 // meet, on the strip's edge); past the glued ends, the front goes on as the back
 // A strip's sheet glued at its ends (the twist): its corners in space (verts), each tile's corner ids (the glued ends'
-// shared) and its edge's corners (onEdge: on a side with one tile), once a sheet (see mobiusMesh, stripWalls)
+// shared) and its edge's corners (onEdge: on a side with one tile), once a sheet (see mobiusMesh, stripEdgeTiles)
 const gluedMemo = new WeakMap(); // (by its sheet itself: a kite strip's, its triangles' spread, never theirs)
 function stripGlued(strip) {
   if (gluedMemo.has(strip)) return gluedMemo.get(strip);
@@ -15224,53 +15243,32 @@ function stripGlued(strip) {
   gluedMemo.set(strip, glued);
   return glued;
 }
-// a strip's walls at a size, both faces' (none but a walled strip's): as many on each length of it (its edges alike all
-// along, see rimRows), read off its least strip once, so a size's count builds no sheet (mobiusCount's length)
-const wallsPerLengthMemo = {};
-const stripWallsAt = (kind, f) => {
-  if (!MOBIUS_KINDS.includes(kind) || !rimWallsOf(kind) || ghostWalls) return 0;
-  const perLength = (wallsPerLengthMemo[kind] ??= (() => {
-    const strip = mobiusSheet(kind, 2);
-    return stripWalls(strip).length / strip.L;
-  })());
-  return 2 * Math.round(perLength * mobiusCount(kind, f).L);
-};
-// a walled strip's walls: its sheet's tiles with a corner on its edge (each on both faces, see mobiusMesh)
-const stripWalls = (strip) => {
+// a strip's tiles with a corner on its edge (Ghost walls', and those rimRows must wall: see mobiusMesh)
+const stripEdgeTiles = (strip) => {
   const { ids, onEdge } = stripGlued(strip);
   return ids.flatMap((t, i) => (t.some((v) => onEdge[v]) ? [i] : []));
 };
-// A walled strip's rows added each side for its walls (see walledSize), the rows asked then all alive: the fewest whose
-// walls (see stripWalls) lie all in them, the same at every size (its rows alike), read off a strip of 4 rows once
+// a strip's walls at a size, both faces' (none but a walled strip's): its tiles built less those asked, counted
+const stripWallsAt = (kind, f) =>
+  MOBIUS_KINDS.includes(kind) ? 2 * (mobiusSheetOf(kind, f, true, wallRows(kind)).n - mobiusCount(kind, f).n) : 0;
+// A walled strip's rows of walls each side: the fewest whose walls (as its builder lays them, see stripSheetOf) take every
+// tile on its edge, the rows asked then all alive; the same at every size (its rows alike), read off a strip of 4 rows once
 const rimRowsMemo = {};
 function rimRows(kind0) {
   return (rimRowsMemo[kind0] ??= (() => {
-    const W = stripSheetOf(kind0, 4, true).W,
-      middle = (P) =>
-        [...new Set(P.map((p) => p.join()))].map((q) => +q.split(',')[1]).reduce((a, y, _, l) => a + y / l.length, 0);
     for (let k = 1; ; k++) {
-      const strip = stripSheetOf(kind0, 4 + 2 * k),
-        band = (strip.W - W) / 2;
-      if (
-        stripWalls(strip).every(
-          (i) => !(middle(strip.tiles[i]) > band + 1e-9 && middle(strip.tiles[i]) < strip.W - band - 1e-9),
-        )
-      )
-        return k;
+      const strip = stripSheetOf(kind0, 4, false, k),
+        walls = new Set(strip.walls);
+      if (stripEdgeTiles(strip).every((i) => walls.has(i))) return k;
     }
   })());
 }
-// a strip's rows built: those asked, and where it has walls (rimWalls, Ghost walls off) rimRows more each side for them
-// (a kite strip's, its triangles')
-function walledSize(kind0, size) {
-  if (!rimWallsOf(kind0) || ghostWalls) return size;
-  const [nv, own] = mobiusSize(size),
-    rows = nv + 2 * rimRows(kind0.replace('Kite', 'Tri'));
-  return own ? `${rows}x${own}` : rows;
-}
+// a strip's rows of walls each side: rimRows where it has walls (rimWalls, Ghost walls off), else none (a kite strip's,
+// its triangles')
+const wallRows = (kind0) => (rimWallsOf(kind0) && !ghostWalls ? rimRows(kind0.replace('Kite', 'Tri')) : 0);
 function mobiusMesh(kind, size) {
   const key = `${kind}${size}|${stripKey()}`,
-    nv = mobiusSize(walledSize(kind, size))[0]; // (its rows built, its walls' too; its length its colours': see stripSteps)
+    nv = mobiusSize(size)[0] + 2 * wallRows(kind); // (its rows built, its walls' too; its length its colours': see stripSteps)
   if (meshCache[key]) return meshCache[key];
   const strip = mobiusSheet(kind, size),
     { L, W, tiles: sheet, mids, latticeCells, originCell } = strip,
@@ -15306,7 +15304,7 @@ function mobiusMesh(kind, size) {
   // (its edges no mirror between tiles: its tiles with a corner on an edge, both faces', walls; Ghost walls: drawn hollow,
   // none in the run; see MOBIUS_ALONG)
   if (rimWallsOf(kind)) {
-    const walls = stripWalls(strip);
+    const walls = ghostWalls ? stripEdgeTiles(strip) : strip.walls;
     mesh[ghostWalls ? 'ghostWalls' : 'walls'] = [...walls, ...walls.map((i) => i + sheet.length)];
   }
   return (meshCache[key] = Object.assign(mesh, {
@@ -16232,7 +16230,7 @@ const SPHERES = {
               columns: (s) => (2 * mobiusCount(kind, s).n) / mobiusSize(s)[0],
               tiles: (s) => 2 * mobiusCount(kind, s).n,
               unit: TILINGS[k].cells,
-            } // (counted, not built: see mobiusCount, stripCount; its walls' rows too, see walledSize)
+            } // (counted, not built: see mobiusCount, stripCount)
           : {
               mesh: (s) => kleinTilingMesh(kind, s),
               radius: (s) => kleinLength(kind, s).W / (2 * Math.PI * TORUS_TUBE),
@@ -16572,7 +16570,7 @@ function gridSize(kind, f) {
   } // (its width in grid cells, a slanted grid's rectangles; its cells but the wall's)
   if (!TORI.includes(kind)) return null;
   const { tiles, unit } = SPHERES[kind],
-    cells = tiles(f) - stripWallsAt(kind, f); // (a walled strip's: its walls apart, see sizeCells)
+    cells = tiles(f); // (a walled strip's: the rows asked, its walls apart, see sizeCells)
   const h = MOBIUS_KINDS.includes(kind) ? mobiusSize(f)[0] : torusDims(kind, f)[0] * (SPHERES[kind].perColumn ?? 1);
   return [h, Math.round((cells / h) * 10) / 10, cells, unit]; // (a strip of teeth: its rows not all alike, on average, to a tenth)
 }

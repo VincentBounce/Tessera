@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.1019';
+const VERSION = '0.4.1020';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -2936,138 +2936,138 @@ const TILINGS = {
     most: 8,
     turns: 6,
     mirror: true,
-    pivot: [0.482673, 0.741336],
+    pivot: [0.482676, 0.741331],
     torus: true,
     basis: [
-      [4.464101615137754, 0],
-      [-2.232050807568877, 3.8660254037844384],
+      [4.464101615137, 0],
+      [-2.232050807566, 3.866025403784],
     ],
     polys: [
       [
-        [-0.081993, 0.612005],
-        [0.094677, 0.612005],
-        [0.224009, 0.741336],
-        [0.224009, 0.870668],
-        [0.047339, 0.870668],
+        [-0.08199, 0.612],
+        [0.094681, 0.612],
+        [0.224013, 0.741331],
+        [0.224013, 0.870663],
+        [0.047342, 0.870663],
       ],
       [
-        [0.094677, 0.482673],
-        [0.224009, 0.482673],
-        [0.482673, 0.741336],
-        [0.224009, 0.741336],
-        [0.094677, 0.612005],
+        [0.094681, 0.482668],
+        [0.224013, 0.482668],
+        [0.482676, 0.741331],
+        [0.224013, 0.741331],
+        [0.094681, 0.612],
       ],
       [
-        [0.816006, 0.408003],
-        [0.918007, 0.306002],
-        [1.094677, 0.482673],
-        [1.094677, 0.612005],
-        [0.918007, 0.612005],
+        [0.81601, 0.407998],
+        [0.91801, 0.305997],
+        [1.094681, 0.482668],
+        [1.094681, 0.612],
+        [0.91801, 0.612],
       ],
       [
-        [0.224009, 0.741336],
-        [0.482673, 0.741336],
-        [0.482673, 1],
-        [0.353341, 1],
-        [0.224009, 0.870668],
+        [0.224013, 0.741331],
+        [0.482676, 0.741331],
+        [0.482676, 0.999995],
+        [0.353345, 0.999995],
+        [0.224013, 0.870663],
       ],
       [
-        [-0.081993, 0.306002],
-        [0.047339, 0.176671],
-        [0.224009, 0.353341],
-        [0.224009, 0.482673],
-        [0.094677, 0.482673],
+        [-0.08199, 0.305997],
+        [0.047342, 0.176665],
+        [0.224013, 0.353336],
+        [0.224013, 0.482668],
+        [0.094681, 0.482668],
       ],
       [
-        [0.612005, 1.129332],
-        [0.741336, 1.129332],
-        [0.918007, 1.306002],
-        [0.816006, 1.408003],
-        [0.612005, 1.306002],
+        [0.612008, 1.129327],
+        [0.74134, 1.129327],
+        [0.91801, 1.305997],
+        [0.81601, 1.407998],
+        [0.612008, 1.305997],
       ],
       [
-        [0.612005, 0.482673],
-        [0.612005, 0.306002],
-        [0.816006, 0.408003],
-        [0.918007, 0.612005],
-        [0.741336, 0.612005],
+        [0.612008, 0.305997],
+        [0.81601, 0.407998],
+        [0.91801, 0.612],
+        [0.74134, 0.612],
+        [0.612008, 0.482668],
       ],
       [
-        [0.741336, 0.612005],
-        [0.918007, 0.612005],
-        [1.047339, 0.870668],
-        [0.870668, 0.870668],
-        [0.741336, 0.741336],
+        [0.74134, 0.612],
+        [0.91801, 0.612],
+        [1.047342, 0.870663],
+        [0.870672, 0.870663],
+        [0.74134, 0.741331],
       ],
       [
-        [0.482673, 0.741336],
-        [0.741336, 0.741336],
-        [0.870668, 0.870668],
-        [0.870668, 1],
-        [0.741336, 1],
+        [0.482676, 0.741331],
+        [0.74134, 0.741331],
+        [0.870672, 0.870663],
+        [0.870672, 0.999995],
+        [0.74134, 0.999995],
       ],
       [
-        [0.482673, 0.482673],
-        [0.612005, 0.482673],
-        [0.741336, 0.612005],
-        [0.741336, 0.741336],
-        [0.482673, 0.741336],
+        [0.482676, 0.482668],
+        [0.612008, 0.482668],
+        [0.74134, 0.612],
+        [0.74134, 0.741331],
+        [0.482676, 0.741331],
       ],
       [
-        [0.047339, 1.176671],
-        [0.149339, 1.07467],
-        [0.353341, 1.176671],
-        [0.353341, 1.353341],
-        [0.224009, 1.353341],
+        [0.047342, 1.176665],
+        [0.149343, 1.074665],
+        [0.353345, 1.176665],
+        [0.353345, 1.353336],
+        [0.224013, 1.353336],
       ],
       [
-        [0.353341, 1],
-        [0.482673, 1],
-        [0.612005, 1.129332],
-        [0.612005, 1.306002],
-        [0.353341, 1.176671],
+        [0.353345, 0.999995],
+        [0.482676, 0.999995],
+        [0.612008, 1.129327],
+        [0.612008, 1.305997],
+        [0.353345, 1.176665],
       ],
       [
-        [0.482673, 0.741336],
-        [0.741336, 1],
-        [0.741336, 1.129332],
-        [0.612005, 1.129332],
-        [0.482673, 1],
+        [0.224013, 0.353336],
+        [0.353345, 0.353336],
+        [0.482676, 0.482668],
+        [0.482676, 0.741331],
+        [0.224013, 0.482668],
       ],
       [
-        [0.224009, 0.482673],
-        [0.224009, 0.353341],
-        [0.353341, 0.353341],
-        [0.482673, 0.482673],
-        [0.482673, 0.741336],
+        [0.74134, 0.999995],
+        [0.870672, 0.999995],
+        [1.047342, 1.176665],
+        [0.91801, 1.305997],
+        [0.74134, 1.129327],
       ],
       [
-        [0.741336, 1],
-        [0.870668, 1],
-        [1.047339, 1.176671],
-        [0.918007, 1.306002],
-        [0.741336, 1.129332],
+        [0.353345, 0.176665],
+        [0.612008, 0.305997],
+        [0.612008, 0.482668],
+        [0.482676, 0.482668],
+        [0.353345, 0.353336],
       ],
       [
-        [0.353341, 0.176671],
-        [0.612005, 0.306002],
-        [0.612005, 0.482673],
-        [0.482673, 0.482673],
-        [0.353341, 0.353341],
+        [0.047342, 0.870663],
+        [0.224013, 0.870663],
+        [0.353345, 0.999995],
+        [0.353345, 1.176665],
+        [0.149343, 1.074665],
       ],
       [
-        [0.047339, 0.870668],
-        [0.224009, 0.870668],
-        [0.353341, 1],
-        [0.353341, 1.176671],
-        [0.149339, 1.07467],
+        [0.482676, 0.741331],
+        [0.74134, 0.999995],
+        [0.74134, 1.129327],
+        [0.612008, 1.129327],
+        [0.482676, 0.999995],
       ],
       [
-        [0.870668, 0.870668],
-        [1.047339, 0.870668],
-        [1.149339, 1.07467],
-        [1.047339, 1.176671],
-        [0.870668, 1],
+        [0.870672, 0.870663],
+        [1.047342, 0.870663],
+        [1.149343, 1.074665],
+        [1.047342, 1.176665],
+        [0.870672, 0.999995],
       ],
     ],
   },
@@ -3080,222 +3080,222 @@ const TILINGS = {
     most: 8,
     turns: 6,
     mirror: true,
-    pivot: [0.348915, 1],
+    pivot: [0.348912, 1],
     torus: true,
     basis: [
-      [5.732050807568877, 0],
-      [2.8660254037844384, 4.964101615137754],
+      [5.732050807567, 0],
+      [2.866025403783, 4.964101615138],
     ],
     polys: [
       [
-        [0.899277, 1.312048],
-        [1.058153, 1.23261],
-        [1.116305, 1.290763],
-        [1.036867, 1.449638],
-        [0.899277, 1.449638],
+        [0.899274, 1.312047],
+        [1.058149, 1.23261],
+        [1.116302, 1.290762],
+        [1.036864, 1.449638],
+        [0.899274, 1.449638],
       ],
       [
-        [0.899277, 1.13759],
-        [1.058153, 1.058153],
-        [1.116305, 1.116305],
-        [1.058153, 1.23261],
-        [0.899277, 1.312048],
+        [0.899274, 1.13759],
+        [1.058149, 1.058152],
+        [1.116302, 1.116304],
+        [1.058149, 1.23261],
+        [0.899274, 1.312047],
       ],
       [
-        [0.581525, 0.883695],
-        [0.639678, 0.941847],
-        [0.581525, 1.058153],
-        [0.46522, 1.116305],
-        [0.348915, 1],
+        [0.581522, 0.883694],
+        [0.639675, 0.941847],
+        [0.581522, 1.058152],
+        [0.465217, 1.116304],
+        [0.348912, 0.999999],
       ],
       [
-        [0.116305, 0.941847],
-        [0.23261, 0.883695],
-        [0.348915, 1],
-        [0.116305, 1.116305],
-        [0.058153, 1.058153],
+        [0.116302, 0.941847],
+        [0.232607, 0.883694],
+        [0.348912, 0.999999],
+        [0.116302, 1.116304],
+        [0.058149, 1.058152],
       ],
       [
-        [1.036867, 1.449638],
-        [1.211325, 1.449638],
-        [1.131887, 1.608514],
-        [1.015582, 1.666667],
-        [0.957429, 1.608514],
+        [1.036864, 1.449638],
+        [1.211322, 1.449638],
+        [1.131884, 1.608514],
+        [1.015579, 1.666666],
+        [0.957426, 1.608514],
       ],
       [
-        [1.015582, 1.666667],
-        [1.131887, 1.608514],
-        [1.211325, 1.687952],
-        [1.036867, 1.86241],
-        [0.957429, 1.782972],
+        [1.015579, 1.666666],
+        [1.131884, 1.608514],
+        [1.211322, 1.687951],
+        [1.036864, 1.862409],
+        [0.957426, 1.782971],
       ],
       [
-        [0.211325, 1.449638],
-        [0.348915, 1.449638],
-        [0.348915, 1.550362],
-        [0.211325, 1.687952],
-        [0.131887, 1.608514],
+        [0.211322, 1.449638],
+        [0.348912, 1.449638],
+        [0.348912, 1.550361],
+        [0.211322, 1.687951],
+        [0.131884, 1.608514],
       ],
       [
-        [0.899277, 1.449638],
-        [1.036867, 1.449638],
-        [0.957429, 1.608514],
-        [0.798554, 1.687952],
-        [0.798554, 1.550362],
+        [0.79855, 1.550361],
+        [0.899274, 1.449638],
+        [1.036864, 1.449638],
+        [0.957426, 1.608514],
+        [0.79855, 1.687951],
       ],
       [
-        [0.798554, 1.687952],
-        [0.957429, 1.608514],
-        [1.015582, 1.666667],
-        [0.957429, 1.782972],
-        [0.798554, 1.86241],
+        [0.79855, 1.687951],
+        [0.957426, 1.608514],
+        [1.015579, 1.666666],
+        [0.957426, 1.782971],
+        [0.79855, 1.862409],
       ],
       [
-        [0.486506, 1.312048],
-        [0.565944, 1.391486],
-        [0.486506, 1.550362],
-        [0.348915, 1.550362],
-        [0.348915, 1.449638],
+        [0.486502, 1.312047],
+        [0.56594, 1.391485],
+        [0.486502, 1.550361],
+        [0.348912, 1.550361],
+        [0.348912, 1.449638],
       ],
       [
-        [0.290763, 1.290763],
-        [0.407068, 1.23261],
-        [0.486506, 1.312048],
-        [0.348915, 1.449638],
-        [0.211325, 1.449638],
+        [0.290759, 1.290762],
+        [0.407065, 1.23261],
+        [0.486502, 1.312047],
+        [0.348912, 1.449638],
+        [0.211322, 1.449638],
       ],
       [
-        [0.348915, 1.550362],
-        [0.486506, 1.550362],
-        [0.407068, 1.709237],
-        [0.290763, 1.76739],
-        [0.211325, 1.687952],
+        [0.348912, 1.550361],
+        [0.486502, 1.550361],
+        [0.407065, 1.709237],
+        [0.290759, 1.767389],
+        [0.211322, 1.687951],
       ],
       [
-        [0.116305, 1.290763],
-        [0.23261, 1.23261],
-        [0.290763, 1.290763],
-        [0.211325, 1.449638],
-        [0.036867, 1.449638],
+        [0.116302, 1.290762],
+        [0.232607, 1.23261],
+        [0.290759, 1.290762],
+        [0.211322, 1.449638],
+        [0.036864, 1.449638],
       ],
       [
-        [0.116305, 1.116305],
-        [0.348915, 1],
-        [0.23261, 1.23261],
-        [0.116305, 1.290763],
-        [0.058153, 1.23261],
+        [0.116302, 1.116304],
+        [0.348912, 0.999999],
+        [0.232607, 1.23261],
+        [0.116302, 1.290762],
+        [0.058149, 1.23261],
       ],
       [
-        [0.348915, 1],
-        [0.46522, 1.116305],
-        [0.407068, 1.23261],
-        [0.290763, 1.290763],
-        [0.23261, 1.23261],
+        [0.348912, 0.999999],
+        [0.465217, 1.116304],
+        [0.407065, 1.23261],
+        [0.290759, 1.290762],
+        [0.232607, 1.23261],
       ],
       [
-        [0.740401, 1.391486],
-        [0.899277, 1.312048],
-        [0.899277, 1.449638],
-        [0.798554, 1.550362],
-        [0.660963, 1.550362],
+        [0.740398, 1.391485],
+        [0.899274, 1.312047],
+        [0.899274, 1.449638],
+        [0.79855, 1.550361],
+        [0.66096, 1.550361],
       ],
       [
-        [0.660963, 1.550362],
-        [0.798554, 1.550362],
-        [0.798554, 1.687952],
-        [0.639678, 1.76739],
-        [0.581525, 1.709237],
+        [0.66096, 1.550361],
+        [0.79855, 1.550361],
+        [0.79855, 1.687951],
+        [0.639675, 1.767389],
+        [0.581522, 1.709237],
       ],
       [
-        [0.798554, 1.86241],
-        [0.957429, 1.782972],
-        [1.036867, 1.86241],
-        [0.899277, 2],
-        [0.798554, 2],
+        [0.79855, 1.862409],
+        [0.957426, 1.782971],
+        [1.036864, 1.862409],
+        [0.899274, 1.999999],
+        [0.79855, 1.999999],
       ],
       [
-        [0.46522, 1.116305],
-        [0.581525, 1.058153],
-        [0.660963, 1.13759],
-        [0.486506, 1.312048],
-        [0.407068, 1.23261],
+        [0.465217, 1.116304],
+        [0.581522, 1.058152],
+        [0.66096, 1.13759],
+        [0.486502, 1.312047],
+        [0.407065, 1.23261],
       ],
       [
-        [0.290763, 1.76739],
-        [0.407068, 1.709237],
-        [0.46522, 1.76739],
-        [0.348915, 2],
-        [0.23261, 1.883695],
+        [0.290759, 1.767389],
+        [0.407065, 1.709237],
+        [0.465217, 1.767389],
+        [0.348912, 1.999999],
+        [0.232607, 1.883694],
       ],
       [
-        [0.486506, 1.550362],
-        [0.660963, 1.550362],
-        [0.581525, 1.709237],
-        [0.46522, 1.76739],
-        [0.407068, 1.709237],
+        [0.486502, 1.550361],
+        [0.66096, 1.550361],
+        [0.581522, 1.709237],
+        [0.465217, 1.767389],
+        [0.407065, 1.709237],
       ],
       [
-        [0.211325, 1.687952],
-        [0.290763, 1.76739],
-        [0.23261, 1.883695],
-        [0.116305, 1.941847],
-        [0.036867, 1.86241],
+        [0.211322, 1.687951],
+        [0.290759, 1.767389],
+        [0.232607, 1.883694],
+        [0.116302, 1.941847],
+        [0.036864, 1.862409],
       ],
       [
-        [0.565944, 1.391486],
-        [0.682249, 1.333333],
-        [0.740401, 1.391486],
-        [0.660963, 1.550362],
-        [0.486506, 1.550362],
+        [0.56594, 1.391485],
+        [0.682245, 1.333333],
+        [0.740398, 1.391485],
+        [0.66096, 1.550361],
+        [0.486502, 1.550361],
       ],
       [
-        [0.660963, 1.13759],
-        [0.740401, 1.217028],
-        [0.682249, 1.333333],
-        [0.565944, 1.391486],
-        [0.486506, 1.312048],
+        [0.66096, 1.13759],
+        [0.740398, 1.217028],
+        [0.682245, 1.333333],
+        [0.56594, 1.391485],
+        [0.486502, 1.312047],
       ],
       [
-        [0.46522, 1.76739],
-        [0.581525, 1.709237],
-        [0.639678, 1.76739],
-        [0.581525, 1.883695],
-        [0.348915, 2],
+        [0.465217, 1.767389],
+        [0.581522, 1.709237],
+        [0.639675, 1.767389],
+        [0.581522, 1.883694],
+        [0.348912, 1.999999],
       ],
       [
-        [0.639678, 1.76739],
-        [0.798554, 1.687952],
-        [0.798554, 1.86241],
-        [0.639678, 1.941847],
-        [0.581525, 1.883695],
+        [0.639675, 1.767389],
+        [0.79855, 1.687951],
+        [0.79855, 1.862409],
+        [0.639675, 1.941847],
+        [0.581522, 1.883694],
       ],
       [
-        [0.740401, 1.217028],
-        [0.899277, 1.13759],
-        [0.899277, 1.312048],
-        [0.740401, 1.391486],
-        [0.682249, 1.333333],
+        [0.740398, 1.217028],
+        [0.899274, 1.13759],
+        [0.899274, 1.312047],
+        [0.740398, 1.391485],
+        [0.682245, 1.333333],
       ],
       [
-        [0.639678, 0.941847],
-        [0.798554, 0.86241],
-        [0.798554, 1],
-        [0.660963, 1.13759],
-        [0.581525, 1.058153],
+        [0.639675, 0.941847],
+        [0.79855, 0.862409],
+        [0.79855, 0.999999],
+        [0.66096, 1.13759],
+        [0.581522, 1.058152],
       ],
       [
-        [0.798554, 1],
-        [0.899277, 1],
-        [0.899277, 1.13759],
-        [0.740401, 1.217028],
-        [0.660963, 1.13759],
+        [0.79855, 0.999999],
+        [0.899274, 0.999999],
+        [0.899274, 1.13759],
+        [0.740398, 1.217028],
+        [0.66096, 1.13759],
       ],
       [
-        [1.036867, 0.86241],
-        [1.116305, 0.941847],
-        [1.058153, 1.058153],
-        [0.899277, 1.13759],
-        [0.899277, 1],
+        [1.036864, 0.862409],
+        [1.116302, 0.941847],
+        [1.058149, 1.058152],
+        [0.899274, 1.13759],
+        [0.899274, 0.999999],
       ],
     ],
   },
@@ -3430,104 +3430,104 @@ const TILINGS = {
     most: 24,
     turns: 6,
     mirror: true,
-    pivot: [0.455342, 0.333334],
+    pivot: [0.45534, 0.333342],
     torus: true,
     basis: [
-      [4.732050807568877, 0],
-      [-2.3660254037844384, 4.098076211353316],
+      [4.732050807568, 0],
+      [-2.366025403782, 4.098076211353],
     ],
     polys: [
       [
-        [0.910684, 0.666667],
-        [1.122008, 0.666667],
-        [1.122008, 0.877992],
+        [0.910682, 0.666675],
+        [1.122006, 0.666675],
+        [1.122006, 0.878],
       ],
       [
-        [0.910684, 0.455342],
-        [1.122008, 0.455342],
-        [1.122008, 0.666667],
+        [0.910682, 0.45535],
+        [1.122006, 0.45535],
+        [1.122006, 0.666675],
       ],
       [
-        [0, 0.211325],
-        [0, 0],
-        [0.122008, -0.122008],
-        [0.333333, -0.122008],
-        [0.57735, 0],
-        [0.788675, 0.211325],
-        [0.910684, 0.455342],
-        [0.910684, 0.666667],
-        [0.788675, 0.788675],
-        [0.57735, 0.788675],
-        [0.333333, 0.666667],
-        [0.122008, 0.455342],
+        [-2e-6, 0.211333],
+        [-2e-6, 8e-6],
+        [0.122006, -0.122],
+        [0.333331, -0.122],
+        [0.577348, 8e-6],
+        [0.788673, 0.211333],
+        [0.910682, 0.45535],
+        [0.910682, 0.666675],
+        [0.788673, 0.788683],
+        [0.577348, 0.788683],
+        [0.333331, 0.666675],
+        [0.122006, 0.45535],
       ],
       [
-        [0.910684, 0.666667],
-        [0.910684, 0.455342],
-        [1.122008, 0.666667],
+        [0.910682, 0.666675],
+        [0.910682, 0.45535],
+        [1.122006, 0.666675],
       ],
       [
-        [0.910684, 0.666667],
-        [1.122008, 0.877992],
-        [1, 1],
-        [0.788675, 0.788675],
+        [0.910682, 0.666675],
+        [1.122006, 0.878],
+        [0.999998, 1.000008],
+        [0.788673, 0.788683],
       ],
       [
-        [0.122008, 0.666667],
-        [0.122008, 0.455342],
-        [0.333333, 0.666667],
+        [0.122006, 0.666675],
+        [0.122006, 0.45535],
+        [0.333331, 0.666675],
       ],
       [
-        [0.122008, 0.666667],
-        [0.333333, 0.666667],
-        [0.333333, 0.877992],
+        [0.122006, 0.666675],
+        [0.333331, 0.666675],
+        [0.333331, 0.878],
       ],
       [
-        [0.122008, 0.666667],
-        [0.333333, 0.877992],
-        [0.122008, 0.877992],
+        [0.122006, 0.666675],
+        [0.333331, 0.878],
+        [0.122006, 0.878],
       ],
       [
-        [0.910684, 0.455342],
-        [0.788675, 0.211325],
-        [1, 0.211325],
-        [1.122008, 0.455342],
+        [0.910682, 0.45535],
+        [0.788673, 0.211333],
+        [0.999998, 0.211333],
+        [1.122006, 0.45535],
       ],
       [
-        [0.788675, 0.788675],
-        [1, 1],
-        [0.788675, 1],
+        [0.788673, 0.788683],
+        [0.999998, 1.000008],
+        [0.788673, 1.000008],
       ],
       [
-        [0.788675, 0.788675],
-        [0.788675, 1],
-        [0.57735, 0.788675],
+        [0.788673, 0.788683],
+        [0.788673, 1.000008],
+        [0.577348, 0.788683],
       ],
       [
-        [0.57735, 0.788675],
-        [0.788675, 1],
-        [0.57735, 1],
+        [0.577348, 0.788683],
+        [0.788673, 1.000008],
+        [0.577348, 1.000008],
       ],
       [
-        [0.57735, 0.788675],
-        [0.57735, 1],
-        [0.333333, 0.877992],
-        [0.333333, 0.666667],
+        [0.577348, 0.788683],
+        [0.577348, 1.000008],
+        [0.333331, 0.878],
+        [0.333331, 0.666675],
       ],
       [
-        [0.788675, 0],
-        [1, 0],
-        [1, 0.211325],
+        [0.788673, 8e-6],
+        [0.999998, 8e-6],
+        [0.999998, 0.211333],
       ],
       [
-        [0.788675, 0],
-        [1, 0.211325],
-        [0.788675, 0.211325],
+        [0.788673, 8e-6],
+        [0.999998, 0.211333],
+        [0.788673, 0.211333],
       ],
       [
-        [0.788675, 0],
-        [0.788675, 0.211325],
-        [0.57735, 0],
+        [0.788673, 8e-6],
+        [0.788673, 0.211333],
+        [0.577348, 8e-6],
       ],
     ],
   },
@@ -3755,16 +3755,9 @@ for (const kind of MOBIUS_TILINGS) {
   const along = [[a, b], ...(e && mobiusMirror(kind, [side(d), side(e)]) ? [[side(d), side(e)]] : [])].sort(
     (x, y) => Math.abs(sideTurn(kind, x[0])) - Math.abs(sideTurn(kind, y[0])),
   );
-  // (rimWalls: its edges no mirror between its tiles, see MOBIUS_ALONG)
-  const rimWalls = (basis) => !mobiusMirror(kind, basis).between;
-  MOBIUS_STRIPS[mobiusOf(kind)] = { kind, basis: along[0], rimWalls: rimWalls(along[0]) }; // (straight: its tiles nearest the plane's way)
-  if (along[1]) MOBIUS_STRIPS[`${mobiusOf(kind)}Turned`] = { kind, basis: along[1], deg, rimWalls: rimWalls(along[1]) };
+  MOBIUS_STRIPS[mobiusOf(kind)] = { kind, basis: along[0] }; // (straight: its tiles nearest the plane's way)
+  if (along[1]) MOBIUS_STRIPS[`${mobiusOf(kind)}Turned`] = { kind, basis: along[1], deg };
 }
-// A Möbius strip's words after its tiles: over its edge onto the face behind, or its edges walls where its tiles do not
-// meet there (rimWalls, see MOBIUS_ALONG); turned, its turned strip's when they differ
-const MOBIUS_EDGE = ['over its edge onto the one behind', 'its edges walls: its tiles do not meet there'];
-const mobiusTail = (walls, turnedWalls = walls) =>
-  ` (both faces, ${MOBIUS_EDGE[+walls]}${walls === turnedWalls ? '' : `; turned, ${MOBIUS_EDGE[+turnedWalls]}`})`;
 // The tilings folded: on a torus (its sheet, see torusSheets, tilingTorusMesh); a strip's sheet glued at its ends turned
 // over, on a Möbius strip (see mobiusMesh), on a Klein bottle glued across too (see kleinTilingSheet). FOLDS: each fold, its
 // family (see FAMILIES), its name, its surfaces' and Life's names, its tilings, which way its turned tiles turn; FOLDED: each
@@ -3780,7 +3773,7 @@ const FOLDS = {
     of: (kind) => `torus${kind[0].toUpperCase()}${kind.slice(1)}`,
     has: (kind) => !!TILINGS[kind].torus,
     way: 'rows round the tube',
-    tail: () => '',
+    tail: '',
     perspective: true,
   },
   mobius: {
@@ -3791,8 +3784,7 @@ const FOLDS = {
     of: mobiusOf,
     has: (kind) => MOBIUS_TILINGS.includes(kind),
     way: 'along the strip',
-    tail: (kind) =>
-      mobiusTail(MOBIUS_STRIPS[mobiusOf(kind)].rimWalls, MOBIUS_STRIPS[`${mobiusOf(kind)}Turned`]?.rimWalls),
+    tail: ' (both faces, over its edge onto the one behind)',
     perspective: true,
   },
   klein: {
@@ -3803,7 +3795,7 @@ const FOLDS = {
     of: (kind) => foldOf('klein', kind),
     has: (kind) => MOBIUS_TILINGS.includes(kind),
     way: 'round the tube',
-    tail: () => '',
+    tail: '',
   },
 };
 const FOLDED = {};
@@ -4752,7 +4744,7 @@ const MODES = {
     life: true,
     perspective: true,
     round: true,
-    where: `a Möbius strip of kites${mobiusTail(false, true)}`, // (see MOBIUS_ALONG's rimWalls)
+    where: 'a Möbius strip of kites (both faces, over its edge onto the one behind)',
   },
   lifeKleinKite: {
     base: 2,
@@ -4806,7 +4798,7 @@ const MODES = {
     life: true,
     perspective: true,
     round: true,
-    where: `a Möbius strip of squares${mobiusTail(false)}`,
+    where: 'a Möbius strip of squares (both faces, over its edge onto the one behind)',
   },
   lifeMobiusHex: {
     base: 2,
@@ -4815,7 +4807,7 @@ const MODES = {
     life: true,
     perspective: true,
     round: true,
-    where: `a Möbius strip of hexagons${mobiusTail(true)}`,
+    where: 'a Möbius strip of hexagons (both faces, over its edge onto the one behind)',
   },
   lifeKlein: {
     base: 2,
@@ -4856,7 +4848,7 @@ const MODES = {
     life: true,
     perspective: true,
     round: true,
-    where: `a Möbius strip of Cairo pentagons${mobiusTail(true)}`,
+    where: 'a Möbius strip of Cairo pentagons (both faces, over its edge onto the one behind)',
   },
   lifeMobiusTri: {
     base: 2,
@@ -4865,7 +4857,7 @@ const MODES = {
     life: true,
     perspective: true,
     round: true,
-    where: `a Möbius strip of triangles${mobiusTail(false, true)}`,
+    where: 'a Möbius strip of triangles (both faces, over its edge onto the one behind)',
   },
   lifeCube: {
     base: 2,
@@ -6469,7 +6461,6 @@ const freshWalk = () => ({
   sweetSpot: undefined, // its sweet spot, worked out once asked (see sweetSpot)
   wormEnd: false,
   wormMade: 0, // a worm's walk only: why and after how many turns of its own it stops
-  wallEnd: false, // a walk or an ant on a Möbius strip with walls: stopped by one (see wallStopAt)
   battle: null, // a battle only (see 7.6b)
   life: null,
   plane: null, // Life's; on the plane, its grid
@@ -6642,7 +6633,7 @@ function describe(base) {
         chips ? lead + around + (after ? ` · ${after}` : '') : mode.rule,
         bridges,
         highway,
-        runStopped() ? loopText() : loopStop(),
+        walk.wormEnd ? loopText() : loopStop(),
       ]
         .filter(Boolean)
         .join(' · '),
@@ -7543,7 +7534,7 @@ const runLoop = () => {
     const s = lifeTime() && walk.life.stable;
     return s ? { T: s.T, last: s.extinct || s.P === 1 ? s.T : s.T + s.P - 1 } : null;
   }
-  return walk.loop ? { T: walk.loop.from, last: walk.n } : runStopped() ? { T: walk.n, last: walk.n } : null;
+  return walk.loop ? { T: walk.loop.from, last: walk.n } : walk.wormEnd ? { T: walk.n, last: walk.n } : null;
 };
 // The run's end, on the step line after its last: its mark always, its words open, the same everywhere, a link in turquoise (--run-end-color, see loopLink): its loop
 // (↻ every P from step T; → a walk's drift, an ant's highway), its death (✝ at step T: a worm, Life dying out) or frozen
@@ -7576,8 +7567,8 @@ function endMark() {
           : ['↻', `every ${formatNumber(k.P)} from gen ${formatNumber(k.T)}`]
     : !o
       ? []
-      : runStopped()
-        ? [runStopped().mark, `at step ${formatNumber(walk.n)}`]
+      : walk.wormEnd
+        ? ['✝', `at step ${formatNumber(walk.n)}`]
         : [
             walk.loop.drift ? '→' : '↻',
             `every ${formatNumber(walk.loop.period ?? walk.n - o.T)} from step ${formatNumber(o.T)}`,
@@ -7643,8 +7634,8 @@ function runStop() {
       label: `${formatNumber(walk.n)} steps until ${walk.battle.winner.until} ■`,
       why: `■ The battle ends at step ${formatNumber(walk.n)}, ${walk.battle.winner.how}: more digits would change nothing`,
     };
-  if (runStopped() && walk.n < asked)
-    return { n: walk.n, label: `${formatNumber(walk.n)} steps max ${runStopped().mark}`, why: loopText() };
+  if (walk.wormEnd && walk.n < asked)
+    return { n: walk.n, label: `${formatNumber(walk.n)} steps max ✝`, why: loopText() };
   if (L && asked >= (L.cap ?? walk.n))
     return {
       n: L.cap ?? walk.n,
@@ -7682,33 +7673,18 @@ function syncDigitsStepper() {
   setTile($('digitsDown'), { greyed: asked <= steps[0] ? 'Already the fewest steps.' : '' });
   setTile($('digitsUp'), { greyed: asked >= (size ? steps.at(-1) : lengthMost()) ? 'Already the most steps.' : '' });
 }
-// A run stopped at its last step, before the length asked: a worm's death (✝), a walker or an ant on a wall (WALL_GLYPH: a
-// Möbius strip's edge where its tiles do not meet, see wallStopAt); its mark and why, else null
-const WALL_GLYPH = '▥';
-function runStopped() {
-  if (walk.wormEnd)
-    return {
-      mark: '✝',
-      why: `✝ The worm stops at step ${formatNumber(walk.n)}, after ${formatNumber(walk.wormMade)} turns of its own: ${
-        {
-          dead: 'no line left to eat at its corner',
-          eaten: 'its rule turns onto a line already eaten',
-          rule: 'its rule has no turn left for a new corner',
-          digits: 'no digit left for a new corner',
-        }[walk.wormEnd]
-      }.`,
-    };
-  if (walk.wallEnd)
-    return {
-      mark: WALL_GLYPH,
-      why: `${WALL_GLYPH} The ${walk.ant ? 'ant' : 'walker'} stops at step ${formatNumber(walk.n)}, on a wall: the strip's edge, where its tiles do not meet.`,
-    };
-  return null;
-}
 // Why a walk that repeats has a most of digits: the loop (or drift), from its first step, and how many
 // rounds are walked; '' when it does not repeat
 function loopText() {
-  if (runStopped()) return runStopped().why;
+  if (walk.wormEnd)
+    return `✝ The worm stops at step ${formatNumber(walk.n)}, after ${formatNumber(walk.wormMade)} turns of its own: ${
+      {
+        dead: 'no line left to eat at its corner',
+        eaten: 'its rule turns onto a line already eaten',
+        rule: 'its rule has no turn left for a new corner',
+        digits: 'no digit left for a new corner',
+      }[walk.wormEnd]
+    }.`;
   const L = loopShownNow();
   if (!L) return '';
   const period = L.period ?? walk.n - L.from;
@@ -8439,7 +8415,6 @@ const ICONS = (() => {
     export: svgPath('M12 15V3M7 8l5-5 5 5M4 14v5a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-5'),
     undo: svgPath('M9 14L4 9L9 4') + svgPath('M4 9H15A5 5 0 0 1 15 19H11'),
     eye: svgPath('M2.5 12Q12 3.5 21.5 12Q12 20.5 2.5 12Z') + '<circle cx="12" cy="12" r="3"/>',
-    ghostWall: `<path d="${pathOf(hex)}" stroke-dasharray="2.4 2"/>`, // a wall hollow, dashed (Ghost walls)
     trash: svgPath('M4 7h16M9 7V4.5h6V7M6 7l1 13h10l1-13M10 11v6M14 11v6'),
     link:
       svgPath('M8 16L16 8') +
@@ -9836,7 +9811,7 @@ for (const [kind, t] of Object.entries(TILINGS)) {
         life: true,
         ...(F.perspective ? { perspective: true } : {}),
         round: true,
-        where: `${F.a} of ${t.where.replace(/^a grid of /, '')}${F.tail(kind)}`,
+        where: `${F.a} of ${t.where.replace(/^a grid of /, '')}${F.tail}`,
       };
       MODE_ICONS[m] = fold;
       NAV[m] = ['Life', 'Surfaces', F.name, 'Life', ''];
@@ -10422,7 +10397,6 @@ const sideWhyNot = (v, s, none, walkRule = null) => {
 // Turned at a mode: its tiling with a turned way round, its blocks coming round so (a block rule's, see blocksTurn); its
 // greyed words
 const TURNED_WHERE = 'This tiling has no other way round (for a block rule, none that brings its blocks round).';
-const GHOST_WHERE = "No walls here: its tiles meet at its edges, or its corners' cells have more sides than a hexagon.";
 const turnedAllowed = (v, turned = false) => {
   const fam = familyOf(v);
   return !!fam && fam.F.tabs.some(([f, tu]) => f === fam.m && tu) && blocksTurn(v, !turned);
@@ -11100,25 +11074,6 @@ function renderModePicker() {
             }),
           ]
         : []),
-      ...(F.tabs.some(([f, tu]) => ghostableOf(shownSurface(MODES[same(f)].sphere, tu)))
-        ? [
-            tile({
-              pic: icon('ghostWall'),
-              text: 'Ghost walls',
-              toggle: true,
-              byDefault: 'off',
-              on: ghostWalls,
-              whyNot: ({ w: v }) => (ghostableOf(surfaceOf(MODES[v])) ? '' : GHOST_WHERE),
-              title:
-                'The walls (a Möbius strip’s along its edges, a solid of hexagons’ at its corners) drawn hollow and gone from the run: Life over them, the walker and the ant across them, as before walls (their cells then with neighbours too many or too few)',
-              click: () => {
-                ghostWalls = !ghostWalls;
-                $('sphereF').dispatchEvent(new Event('change'));
-                renderModePicker();
-              },
-            }),
-          ]
-        : []),
     );
   }
   // the rules, where there are several, each with its picture; those its tiling has not greyed (see walkKindHere)
@@ -11787,8 +11742,13 @@ function turnCam(w) {
   const k = w.map((x) => x / a),
     c = Math.cos(a),
     s = -Math.sin(a);
-  const v = unit(turnAbout(camera.v, k, c, s)),
-    r0 = turnAbout(camera.r, k, c, s),
+  const turn = (x) => {
+    const kx = cross(k, x),
+      d = (1 - c) * (k[0] * x[0] + k[1] * x[1] + k[2] * x[2]);
+    return [0, 1, 2].map((i) => x[i] * c + kx[i] * s + k[i] * d);
+  };
+  const v = unit(turn(camera.v)),
+    r0 = turn(camera.r),
     rv = r0[0] * v[0] + r0[1] * v[1] + r0[2] * v[2];
   const r = unit(r0.map((x, i) => x - rv * v[i]));
   Object.assign(camera, { r, u: cross(v, r), v });
@@ -11803,12 +11763,6 @@ const sub = (p, q) => p.map((v, d) => v - q[d]);
 const dot = (p, q) => p.reduce((sum, v, d) => sum + v * q[d], 0);
 const dot3 = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
 const cross = (a, b) => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
-// x turned about the unit axis k by the angle of cosine c and sine s (Rodrigues' formula)
-const turnAbout = (x, k, c, s) => {
-  const kx = cross(k, x),
-    d = (1 - c) * dot(k, x);
-  return x.map((v, i) => v * c + kx[i] * s + k[i] * d);
-};
 const signedArea = (P) =>
   P.reduce((sum, p, i) => sum + p[0] * P[(i + 1) % P.length][1] - P[(i + 1) % P.length][0] * p[1], 0) / 2;
 const polyArea = (P) => Math.abs(signedArea(P));
@@ -14688,17 +14642,14 @@ const MOBIUS_KINDS = [
 ];
 /* A strip's length L, as a whole count of the steps its tiling repeats by along it, glued with the
  * half twist (see mobiusSheet): ok, the counts that tile it. A size is its rows (the usual length
- * for them), or rows "x" that count, a length of its own (s=16x240: 16 rows of triangles 120 long).
- * rimWalls: its edges not on a mirror between its tiles (a zigzag, or through tiles): the faces then meet there in no
- * way of the tiling (a cell's corners round its rim too many or too few), so its tiles touching an edge are walls in
- * Life (see mobiusMesh). */
+ * for them), or rows "x" that count, a length of its own (s=16x240: 16 rows of triangles 120 long). */
 const MOBIUS_ALONG = {
   mobius: { step: 1, ok: () => true },
   mobiusTri: { step: 0.5, ok: (n, nv) => n % 2 === nv % 2 },
-  mobiusHex: { step: 1.5, ok: (n) => n % 2 === 1, rimWalls: true },
-  mobiusHexTurned: { step: TRIANGLE_HEIGHT, ok: (n, nv) => n % 2 === (nv % 2 ? 0 : 1), rimWalls: true },
-  mobiusTriTurned: { step: TRIANGLE_HEIGHT, ok: (n) => n % 2 === 0, rimWalls: true },
-  mobiusCairo: { step: 1, ok: (n, nv) => (n + nv) % 2 === 1, rimWalls: true },
+  mobiusHex: { step: 1.5, ok: (n) => n % 2 === 1 },
+  mobiusHexTurned: { step: TRIANGLE_HEIGHT, ok: (n, nv) => n % 2 === (nv % 2 ? 0 : 1) },
+  mobiusTriTurned: { step: TRIANGLE_HEIGHT, ok: (n) => n % 2 === 0 },
+  mobiusCairo: { step: 1, ok: (n, nv) => (n + nv) % 2 === 1 },
 };
 MOBIUS_ALONG.mobiusKite = MOBIUS_ALONG.mobiusTri; // kites: the triangles', each cut in 3
 MOBIUS_ALONG.mobiusKiteTurned = MOBIUS_ALONG.mobiusTriTurned;
@@ -14769,7 +14720,6 @@ for (const [strip, { kind, basis }] of Object.entries(MOBIUS_STRIPS)) {
     step,
     copyLength: g > 1e-9 ? g : la,
     ok: (n, nv) => (((n - Math.round((g + nv * bx) / step)) % q) + q) % q === 0,
-    rimWalls: MOBIUS_STRIPS[strip].rimWalls,
   };
 }
 const mobiusSize = (size) => (typeof size === 'number' ? [size, null] : size.split('x').map(Number)); // [rows, count along or null]
@@ -14817,12 +14767,7 @@ const stripSteps = (kind0, nv, W, own, q = 1) => {
     )
   );
 };
-// Ghost walls: a Möbius strip's walls (see MOBIUS_ALONG's rimWalls) drawn hollow, none in the run: Life's cells over its
-// edge, its walkers and ants across it, as before walls (its edge's cells their neighbours too many or too few)
-let ghostWalls = false;
-const rimWallsOf = (surface) => !!MOBIUS_ALONG[surface]?.rimWalls;
-const stripKey = () =>
-  `${ringColours(tabMode())}${MODES[tabMode()]?.margolus ? ' blocks' : ''}${ghostWalls ? ' ghost' : ''}`; // (a strip's length its colours', a reversible one's its blocks', see stripSteps; its walls ghost or not, see mobiusMesh)
+const stripKey = () => `${ringColours(tabMode())}${MODES[tabMode()]?.margolus ? ' blocks' : ''}`; // (a strip's length its colours', a reversible one's its blocks', see stripSteps)
 const stripMemo = remember('stripMemo', weakCache()),
   countMemo = remember('countMemo', {});
 // a strip's length, width and tiles' count, without its tiles (the sizes' ladder asks for many: see mobiusSheetOf's count)
@@ -14830,71 +14775,57 @@ const mobiusCount = (kind0, size) => (countMemo[`${kind0}|${size}|${stripKey()}`
 function mobiusSheet(kind0, size) {
   return (stripMemo[`${kind0}|${size}|${stripKey()}`] ??= mobiusSheetOf(kind0, size)); // (its mesh's, kept while it is: see meshCache)
 }
-function mobiusSheetOf(kind0, size, count = false, rim = count ? 0 : wallRows(kind0)) {
-  // count: its tiles counted, not built ({ L, W, n }: see mobiusCount); rim: its rows of walls each side (counted: the
-  // rows asked alone, all alive)
+function mobiusSheetOf(kind0, size, count = false) {
+  // count: its tiles counted, not built ({ L, W, n }: see mobiusCount)
   if (kind0.startsWith('mobiusKite')) {
     // the triangles', cut in 3
-    const t = mobiusSheetOf(kind0.replace('Kite', 'Tri'), size, count, rim);
-    if (count) return { ...t, n: 3 * t.n };
+    if (count) {
+      const t = mobiusCount(kind0.replace('Kite', 'Tri'), size);
+      return { ...t, n: 3 * t.n };
+    }
+    const t = mobiusSheet(kind0.replace('Kite', 'Tri'), size);
     return {
       ...t,
       tiles: t.tiles.flatMap(kitesOf),
-      walls: t.walls.flatMap((i) => [3 * i, 3 * i + 1, 3 * i + 2]),
       originCell: t.originCell && [3 * t.originCell[0] + 2, t.originCell[1]],
     }; // (its first triangle's first kite, from its corner: the plane's third of it)
   }
-  return stripSheetOf(kind0, size, count, rim);
-}
-// a strip's sheet of so many rows, as built, and rim rows of walls each side (see wallRows): its length the rows asked
-// alone's, its walls (their indices) the tiles its builder lays beyond them, by its own rule for its edge
-function stripSheetOf(kind0, size, count = false, rim = 0) {
   const tiling = MOBIUS_STRIPS[kind0]?.kind;
   if (tiling)
     return count
-      ? { ...stripFrame(tiling, kind0, size, rim), n: stripCount(tiling, kind0, size, false, rim) }
-      : tilingStrip(tiling, kind0, size, rim);
+      ? { ...stripFrame(tiling, kind0, size), n: stripCount(tiling, kind0, size) }
+      : tilingStrip(tiling, kind0, size);
   // the usual length, a multiple of 12
   const kind = kind0,
     [nv, own] = mobiusSize(size),
-    rows = nv + 2 * rim,
     steps = (W) => stripSteps(kind, nv, W, own),
-    tiles = [],
-    walls = []; // its length, in steps along
+    tiles = []; // its length, in steps along
   let n = 0;
-  const put = (tile, wall = false) => {
-      if (count) return n++;
-      if (wall) walls.push(tiles.length);
-      tiles.push(tile());
-    },
-    done = (L, W) => (count ? { L, W, n } : { L, W, tiles, walls }); // (a tile made only when kept)
+  const put = (tile) => (count ? n++ : tiles.push(tile())),
+    done = (L, W) => (count ? { L, W, n } : { L, W, tiles }); // (a tile made only when kept)
   if (kind === 'mobiusHexTurned') {
-    const W = 1.5 * (rows - 1) + 2,
+    const W = 1.5 * (nv - 1) + 2,
       S3 = Math.sqrt(3),
-      L = (S3 / 2) * steps(1.5 * (nv - 1) + 2);
-    for (let r = 0; r < rows; r++) {
-      const cy = 1.5 * r + 1,
-        wall = r < rim || r >= rows - rim;
+      L = (S3 / 2) * steps(W);
+    for (let r = 0; r < nv; r++) {
+      const cy = 1.5 * r + 1;
       for (let i = -2; S3 * (i - 1) < L; i++) {
         const x0 = S3 * (i + (r % 2) / 2 + 0.5); // its centre, from a whole count (no rounding drift)
         if (x0 < -1e-9 || x0 >= L - 1e-9) continue;
-        put(
-          () =>
-            [0, 1, 2, 3, 4, 5].map((k) => [
-              x0 + Math.cos(((60 * k + 30) * Math.PI) / 180),
-              cy + Math.sin(((60 * k + 30) * Math.PI) / 180),
-            ]),
-          wall,
+        put(() =>
+          [0, 1, 2, 3, 4, 5].map((k) => [
+            x0 + Math.cos(((60 * k + 30) * Math.PI) / 180),
+            cy + Math.sin(((60 * k + 30) * Math.PI) / 180),
+          ]),
         );
       }
     }
     return done(L, W);
   }
   if (kind === 'mobiusTriTurned') {
-    const W = rows,
-      cols = steps(nv),
-      L = cols * TRIANGLE_HEIGHT,
-      inside = (y, W) => y > 0.25 && y < W - 0.25; // (a triangle's middle across, on the strip asked)
+    const W = nv,
+      cols = steps(W),
+      L = cols * TRIANGLE_HEIGHT;
     for (let i = -1; i <= cols; i++) {
       const x0 = i * TRIANGLE_HEIGHT,
         x1 = x0 + TRIANGLE_HEIGHT,
@@ -14907,7 +14838,7 @@ function stripSheetOf(kind0, size, count = false, rim = 0) {
             [x0, y + 1],
           ],
           cr = [(2 * x0 + x1) / 3, y + 0.5]; // ▶
-        if (cr[0] >= 0 && cr[0] < L && inside(cr[1], W)) put(() => right, !inside(cr[1] - rim, nv));
+        if (cr[0] >= 0 && cr[0] < L && cr[1] > 0.25 && cr[1] < W - 0.25) put(() => right);
       }
       for (let y = o1 - 2; y < W + 2; y += 1) {
         const left = [
@@ -14916,7 +14847,7 @@ function stripSheetOf(kind0, size, count = false, rim = 0) {
             [x0, y + 0.5],
           ],
           cl = [(x0 + 2 * x1) / 3, y + 0.5]; // ◀
-        if (cl[0] >= 0 && cl[0] < L && inside(cl[1], W)) put(() => left, !inside(cl[1] - rim, nv));
+        if (cl[0] >= 0 && cl[0] < L && cl[1] > 0.25 && cl[1] < W - 0.25) put(() => left);
       }
     }
     return done(L, W);
@@ -14924,30 +14855,26 @@ function stripSheetOf(kind0, size, count = false, rim = 0) {
   if (kind === 'mobiusCairo') {
     // nv squares of the Cairo grid across, L along with L + nv odd: the ends glued turned over keep
     // the tiling (see cairoCorners); the pentagons whose middles lie on the strip, its edges zigzag along them
-    const W = rows,
-      L = steps(nv),
-      inside = (y, W) => y > 0 && y < W;
+    const W = nv,
+      L = steps(W);
     for (let i = -1; i <= L; i++)
       for (let j = -1; j <= W; j++)
         for (const o of [0, 1]) {
           const [cx, cy] = cairoMiddle(i, j, o);
-          if (cx < 0 || cx >= L || !inside(cy, W)) continue;
-          put(() => cairoCorners(i, j, o), !inside(cy - rim, nv));
+          if (cx < 0 || cx >= L || cy <= 0 || cy >= W) continue;
+          put(() => cairoCorners(i, j, o));
         }
     return done(L, W);
   }
   if (kind === 'mobiusHex') {
-    const W = Math.sqrt(3) * (rows + 0.5),
-      a = steps(Math.sqrt(3) * (nv + 0.5)),
+    const W = Math.sqrt(3) * (nv + 0.5),
+      a = steps(W),
       L = 1.5 * a;
     for (let c = 0; c < a; c++)
-      for (let r = 0; r < rows; r++) {
+      for (let r = 0; r < nv; r++) {
         const cx = 1.5 * c + 1,
           cy = Math.sqrt(3) * (r + (c % 2) / 2) + TRIANGLE_HEIGHT;
-        put(
-          () => [0, 1, 2, 3, 4, 5].map((k) => [cx + Math.cos((k * Math.PI) / 3), cy + Math.sin((k * Math.PI) / 3)]),
-          r < rim || r >= rows - rim,
-        );
+        put(() => [0, 1, 2, 3, 4, 5].map((k) => [cx + Math.cos((k * Math.PI) / 3), cy + Math.sin((k * Math.PI) / 3)]));
       }
     return done(L, W);
   }
@@ -14989,10 +14916,9 @@ function stripSheetOf(kind0, size, count = false, rim = 0) {
 // on the strip's edge (see mobiusMirror), its tiles
 // whose middle is within nv rows of b (a mirror along a: the strip's edges alike) and L along (see MOBIUS_ALONG), as
 // many corners each (the last one repeated); the usual length, the counts' nearest that the twist allows
-function tilingStrip(kind, kind0, size, rim = 0) {
-  const { m, nv, L, W, sides, cells, i0, i1, j0, j1, la } = stripFrame(kind, kind0, size, rim),
+function tilingStrip(kind, kind0, size) {
+  const { m, nv, L, W, sides, cells, i0, i1, j0, j1, la } = stripFrame(kind, kind0, size),
     by = W / nv,
-    band = rim * by, // (its walls' rows, each side: see stripSheetOf)
     cols = Math.ceil(L / la - 1e-9),
     laid = [];
   for (let j = j0; j <= j1; j++)
@@ -15005,7 +14931,6 @@ function tilingStrip(kind, kind0, size, rim = 0) {
           P,
           x,
           y,
-          wall: y < band - 1e-9 || y > W - band + 1e-9, // (beyond the rows asked, as kept above)
           cell: [k + i * m, j],
           latticeCell: Math.floor(y / by + 1e-6) * cols + Math.floor(x / la + 1e-6),
         }); // (cell: the plane's, its x and y)
@@ -15018,7 +14943,6 @@ function tilingStrip(kind, kind0, size, rim = 0) {
     W,
     sides,
     tiles: laid.map(({ P }) => [...P, ...Array(sides - P.length).fill(P.at(-1))]),
-    walls: laid.flatMap(({ wall }, i) => (wall ? [i] : [])),
     mids: laid.flatMap(({ x, y }) => [x, y]),
     latticeCells: laid.map(({ latticeCell }) => latticeCell),
     originCell: laid[0].cell,
@@ -15031,20 +14955,19 @@ function tilingStrip(kind, kind0, size, rim = 0) {
 // its fine grid: a step along and a row across cut in so many (a power of 2: a corner's 6 decimals, and their halves (a mirror
 // midway between two corners), never land on half a cut, where a corner and its twin, 10⁻¹⁴ apart, would round apart)
 const STRIP_GRID = 8192;
-function stripFrame(kind, kind0, size, rim = 0) {
+function stripFrame(kind, kind0, size) {
   const t = TILINGS[kind],
     [a, b] = MOBIUS_STRIPS[kind0].basis,
     turn = -Math.atan2(a[1], a[0]),
     m = t.polys.length,
     { step } = MOBIUS_ALONG[kind0],
     { c } = mobiusMirror(kind, [a, b]);
-  const [asked, own] = mobiusSize(size),
-    by = turnPoint(b, turn)[1],
-    n = stripSteps(kind0, asked, asked * by, own, Math.round(MOBIUS_ALONG[kind0].copyLength / step)), // (its colours' stretches whole copies along; its length the rows asked's)
-    nv = asked + 2 * rim,
-    W = nv * by;
+  const [nv, own] = mobiusSize(size),
+    W = nv * turnPoint(b, turn)[1],
+    n = stripSteps(kind0, nv, W, own, Math.round(MOBIUS_ALONG[kind0].copyLength / step)); // (its colours' stretches whole copies along)
   const L = n * step,
     sides = Math.max(...t.polys.map((P) => P.length)),
+    by = W / nv,
     Q = STRIP_GRID;
   const snap = ([x, y]) => [
     (Math.round((x / step) * Q) / Q) * step,
@@ -15056,7 +14979,7 @@ function stripFrame(kind, kind0, size, rim = 0) {
     [L, 0],
     [0, W],
     [L, W],
-  ].map(([x, y]) => inBasis([x, y - rim * by], ta, tb)); // (the plane's, its walls' rows under it)
+  ].map((p) => inBasis(p, ta, tb));
   const [i0, i1, j0, j1] = [0, 1].flatMap((d) => [
     Math.floor(Math.min(...ends.map((e) => e[d]))) - 1,
     Math.ceil(Math.max(...ends.map((e) => e[d]))) + 1,
@@ -15064,25 +14987,24 @@ function stripFrame(kind, kind0, size, rim = 0) {
   const cells = (i, j, k) =>
     tilingPolys(kind)[k].map(([u, v]) => {
       const [x, y] = turnPoint(tilingWorld(kind, [u + i, v + j]), turn);
-      return snap([x, y - c + rim * by]);
-    }); // (its mirror on y = 0, under its walls' rows)
+      return snap([x, y - c]);
+    }); // (its mirror on y = 0)
   return { t, m, nv, L, W, sides, cells, i0, i1, j0, j1, ta, tb, la: Math.hypot(...a) };
 }
 // its tiles' count, as tilingStrip keeps them, without building it: each of a lattice cell's polygons' middle, moved by
 // the lattice's steps (no corner built; on the fine grid a middle on an edge lands on it: here 10⁻⁵ of it, as near)
 // (a bottle: below its top, see kleinTilingSheet)
-function stripCount(kind, kind0, size, bottle = false, rim = 0) {
+function stripCount(kind, kind0, size, bottle = false) {
   // (once each: a size's sought among them all, see near)
-  return (countMemo[`${kind}|${kind0}|${size}|${bottle}|${rim}|${ringColours(tabMode())}`] ??= stripCounted(
+  return (countMemo[`${kind}|${kind0}|${size}|${bottle}|${ringColours(tabMode())}`] ??= stripCounted(
     kind,
     kind0,
     size,
     bottle,
-    rim,
   ));
 }
-function stripCounted(kind, kind0, size, bottle, rim) {
-  const { m, L, W, cells, i0, i1, j0, j1, ta, tb } = stripFrame(kind, kind0, size, rim),
+function stripCounted(kind, kind0, size, bottle) {
+  const { m, L, W, cells, i0, i1, j0, j1, ta, tb } = stripFrame(kind, kind0, size),
     e = 1e-5;
   const mid = Array.from({ length: m }, (_, k) => {
     const P = cells(0, 0, k);
@@ -15215,18 +15137,18 @@ const turnOver = (c) => {
 // The mesh of the strip's two faces: the front of each tile as on the sheet, its back the same
 // corners turned over. A corner of the sheet is a corner of each face (but one where the faces
 // meet, on the strip's edge); past the glued ends, the front goes on as the back
-// A strip's sheet glued at its ends (the twist): its corners in space (verts), each tile's corner ids (the glued ends'
-// shared) and its edge's corners (onEdge: on a side with one tile), once a sheet (see mobiusMesh, stripEdgeTiles)
-const gluedMemo = new WeakMap(); // (by its sheet itself: a kite strip's, its triangles' spread, never theirs)
-function stripGlued(strip) {
-  if (gluedMemo.has(strip)) return gluedMemo.get(strip);
-  const { L, W, tiles: sheet } = strip,
+function mobiusMesh(kind, size) {
+  const key = `${kind}${size}|${stripKey()}`,
+    nv = mobiusSize(size)[0]; // (its length its colours': see stripSteps)
+  if (meshCache[key]) return meshCache[key];
+  const { L, W, tiles: sheet, mids, latticeCells, originCell } = mobiusSheet(kind, size),
     k = sheet[0].length;
   const { verts, add } = vertexStore();
   const ids = sheet.map((t) => t.map(([x, y]) => add(...mobiusPoint(x, y, L, W, 1)))); // the glued ends share corners
   const n0 = verts.length / 3,
     uses = new Map(),
-    onEdge = new Uint8Array(n0);
+    onEdge = new Uint8Array(n0),
+    home = new Float64Array(n0).fill(NaN);
   for (const t of ids)
     for (let q = 0; q < k; q++) {
       // edges with one tile: the strip's edge
@@ -15240,42 +15162,6 @@ function stripGlued(strip) {
       onEdge[Math.floor(e / n0)] = 1;
       onEdge[e % n0] = 1;
     }
-  const glued = { verts, ids, onEdge };
-  gluedMemo.set(strip, glued);
-  return glued;
-}
-// a strip's tiles with a corner on its edge (Ghost walls', and those rimRows must wall: see mobiusMesh)
-const stripEdgeTiles = (strip) => {
-  const { ids, onEdge } = stripGlued(strip);
-  return ids.flatMap((t, i) => (t.some((v) => onEdge[v]) ? [i] : []));
-};
-// a strip's walls at a size, both faces' (none but a walled strip's): its tiles built less those asked, counted
-const stripWallsAt = (kind, f) =>
-  MOBIUS_KINDS.includes(kind) ? 2 * (mobiusSheetOf(kind, f, true, wallRows(kind)).n - mobiusCount(kind, f).n) : 0;
-// A walled strip's rows of walls each side: the fewest whose walls (as its builder lays them, see stripSheetOf) take every
-// tile on its edge, the rows asked then all alive; the same at every size (its rows alike), read off a strip of 4 rows once
-const rimRowsMemo = {};
-function rimRows(kind0) {
-  return (rimRowsMemo[kind0] ??= (() => {
-    for (let k = 1; ; k++) {
-      const strip = stripSheetOf(kind0, 4, false, k),
-        walls = new Set(strip.walls);
-      if (stripEdgeTiles(strip).every((i) => walls.has(i))) return k;
-    }
-  })());
-}
-// a strip's rows of walls each side: rimRows where it has walls (rimWalls, Ghost walls off), else none (a kite strip's,
-// its triangles')
-const wallRows = (kind0) => (rimWallsOf(kind0) && !ghostWalls ? rimRows(kind0.replace('Kite', 'Tri')) : 0);
-function mobiusMesh(kind, size) {
-  const key = `${kind}${size}|${stripKey()}`,
-    nv = mobiusSize(size)[0] + 2 * wallRows(kind); // (its rows built, its walls' too; its length its colours': see stripSteps)
-  if (meshCache[key]) return meshCache[key];
-  const strip = mobiusSheet(kind, size),
-    { L, W, tiles: sheet, mids, latticeCells, originCell } = strip,
-    k = sheet[0].length;
-  const { verts, ids, onEdge } = stripGlued(strip),
-    home = new Float64Array(verts.length / 3).fill(NaN);
   // each sheet corner seen from the side of the glued ends where it was first met: from the other
   // side (x off by about L), its faces swap
   sheet.forEach((t, i) =>
@@ -15302,12 +15188,6 @@ function mobiusMesh(kind, size) {
       uv.push(...(side ? t : turnOver(t)).flat());
     });
   const mesh = finishMesh(cv, tiles, k, nv, null); // as listed: a back faces the other way
-  // (its edges no mirror between tiles: its tiles with a corner on an edge, both faces', walls; Ghost walls: drawn hollow,
-  // none in the run; see MOBIUS_ALONG)
-  if (rimWallsOf(kind)) {
-    const walls = ghostWalls ? stripEdgeTiles(strip) : strip.walls;
-    mesh[ghostWalls ? 'ghostWalls' : 'walls'] = [...walls, ...walls.map((i) => i + sheet.length)];
-  }
   return (meshCache[key] = Object.assign(mesh, {
     torus: true,
     mobius: true,
@@ -15575,7 +15455,7 @@ function twistedSphereMesh(f) {
   return (meshCache[key] = Object.assign(mesh, { tiling: SPHERES.twistedsphere.tiling }));
 }
 function hexSolidMesh(solid, f) {
-  const key = `${solid}hex${f}${ghostWalls ? ' ghost' : ''}`;
+  const key = `${solid}hex${f}`;
   if (meshCache[key]) return meshCache[key];
   const ico = flatPolyhedron(solid, f),
     cells = trianglesRound(ico);
@@ -15590,11 +15470,9 @@ function hexSolidMesh(solid, f) {
   // a walk along its grid starts as the icosahedron's tile walk does: on triangle 0, come in
   // through its edge 0, so that the same digits draw the same path in both tabs
   mesh.gridStart = [0, ico.nbr[0]];
-  // its corners' cells (not 6 triangles round them: a pentagon, a square, a triangle, the stella's hollows' octagons), in a
-  // Game of Life walls: always dead, and no one's neighbour; Ghost walls: drawn hollow, alive, a hexagon's ring with its
-  // sides missing (none where a cell has more sides than a hexagon: the stella's octagons, see ghostableOf)
-  mesh.cornerCells = cells.flatMap((c, v) => (c.length !== 6 ? [v] : []));
-  mesh[ghostWalls && sides === 6 ? 'ghostWalls' : 'walls'] = mesh.cornerCells;
+  // in a Game of Life the corners' cells (not 6 triangles round them: a pentagon, a square, a triangle, the stella's hollows'
+  // octagons) are walls: always dead, and no one's neighbour
+  mesh.walls = cells.flatMap((c, v) => (c.length !== 6 ? [v] : []));
   mesh.hexagons = true; // (its cells hexagons, whatever its walls' sides: the stella's octagons, see patternAt)
   // its solid's corners and faces, its triangles' solid's (see startList): its own (a dodecahedron's, a stella's), else its
   // triangles' faces
@@ -16230,10 +16108,10 @@ const SPHERES = {
           ? {
               mesh: (s) => mobiusMesh(kind, s),
               radius: (s) => mobiusRadius(kind, s),
-              columns: (s) => (2 * mobiusCount(kind, s).n) / mobiusSize(s)[0],
-              tiles: (s) => 2 * mobiusCount(kind, s).n,
+              columns: (s) => (2 * stripCount(k, kind, s)) / mobiusSize(s)[0],
+              tiles: (s) => 2 * stripCount(k, kind, s),
               unit: TILINGS[k].cells,
-            } // (counted, not built: see mobiusCount, stripCount)
+            } // (counted, not built: see stripCount)
           : {
               mesh: (s) => kleinTilingMesh(kind, s),
               radius: (s) => kleinLength(kind, s).W / (2 * Math.PI * TORUS_TUBE),
@@ -16573,7 +16451,7 @@ function gridSize(kind, f) {
   } // (its width in grid cells, a slanted grid's rectangles; its cells but the wall's)
   if (!TORI.includes(kind)) return null;
   const { tiles, unit } = SPHERES[kind],
-    cells = tiles(f); // (a walled strip's: the rows asked, its walls apart, see sizeCells)
+    cells = tiles(f);
   const h = MOBIUS_KINDS.includes(kind) ? mobiusSize(f)[0] : torusDims(kind, f)[0] * (SPHERES[kind].perColumn ?? 1);
   return [h, Math.round((cells / h) * 10) / 10, cells, unit]; // (a strip of teeth: its rows not all alike, on average, to a tenth)
 }
@@ -16785,30 +16663,19 @@ const hexCorners = (kind) => {
     g0 = (facesMemo[kind] ??= S.mesh(S.sizes[0])),
     sidesOf = (t) => new Set(Array.from({ length: g0.sides }, (_, j) => g0.poly[g0.sides * t + j])).size,
     corners = {};
-  for (const t of g0.cornerCells ?? []) corners[sidesOf(t)] = (corners[sidesOf(t)] ?? 0) + 1;
+  for (const t of g0.walls ?? []) corners[sidesOf(t)] = (corners[sidesOf(t)] ?? 0) + 1;
   const names = { 3: 'triangles', 4: 'squares', 5: 'pentagons', 8: 'octagons' };
   return {
     at: Object.entries(corners)
       .map(([c, k]) => `${k} ${names[c]}`)
       .join(' + '),
-    walls: g0.cornerCells?.length ?? 0,
-    ring: g0.sides === 6, // (its corners' cells read as a hexagon's: see ghostableOf)
+    walls: g0.walls?.length ?? 0,
   };
 };
-// the surfaces whose walls Ghost walls makes hollow: a Möbius strip's along its edges (rimWalls), a solid of hexagons'
-// at its corners, read as a hexagon's ring (not the stella's octagons: 8 neighbours)
-const ghostableOf = (surface) =>
-  rimWallsOf(surface) ||
-  (SPHERES[surface]?.unit === 'hexagons' && hexCorners(surface).walls > 0 && hexCorners(surface).ring);
 const sizeCells = (kind, f, marked = false) => {
   // (a solid of hexagons: its hexagons, then its corners' cells, not all said hexagons; marked: in their colours, see sizeTips)
   const d = gridSize(kind, f),
-    S = SPHERES[kind],
-    walls = d && stripWallsAt(kind, f);
-  if (walls) {
-    const at = `${formatNumber(walls)} walls`;
-    return `${formatNumber(d[2])} ${d[3]} + ${marked ? `{o:${at}}` : at}`; // (a walled strip's: its walls in their ochre, see sizeTips)
-  }
+    S = SPHERES[kind];
   if (d) return `${formatNumber(d[2])} ${d[3]}`;
   if (S.unit === 'hexagons') {
     const { at, walls } = hexCorners(kind),
@@ -17181,7 +17048,7 @@ function solidCorners(g) {
     if (!C.some((c) => c[0] * u[0] + c[1] * u[1] + c[2] * u[2] > 1 - 1e-9)) C.push(u);
   };
   if (g.faces) for (const f of g.faces) f.corners.forEach(put);
-  else for (const t of g.cornerCells) put(Array.from(g.cen.subarray(3 * t, 3 * t + 3)));
+  else for (const t of g.walls) put(Array.from(g.cen.subarray(3 * t, 3 * t + 3)));
   return C;
 }
 
@@ -17829,8 +17696,8 @@ const walkStart = (g, mode, j = startNo()) =>
 // its tiles, its places seen (corners or tiles, nodes of them) and the step it has seen them all, its farthest from its
 // start, its digits' counts; begin(key), step(i, digit, key): stopped where it goes round (key, its state: see loopWatch;
 // null, none watched); finish: the walk laid out (more: its own), its shape and its view
-function walkRecorder(seq, ahead, base, R, nodes, len = seq.length, wallAt = null) {
-  // (len: its steps, a worm's asked; wallAt: whether a place is on a wall, which stops it there, see wallStopAt)
+function walkRecorder(seq, ahead, base, R, nodes, len = seq.length) {
+  // (len: its steps, a worm's asked)
   const n = len + 1,
     wx = new Float64Array(n),
     wy = new Float64Array(n),
@@ -17846,11 +17713,9 @@ function walkRecorder(seq, ahead, base, R, nodes, len = seq.length, wallAt = nul
     far = 0,
     start = null,
     steps = len,
-    loop = null,
-    wall = 0;
+    loop = null;
   return {
     put(i, place, t, p) {
-      if (i && !wall && wallAt?.(place)) wall = i;
       // step i: its place (a corner, a tile), its tile, its point
       if (!seen[place]) {
         seen[place] = 1;
@@ -17869,10 +17734,6 @@ function walkRecorder(seq, ahead, base, R, nodes, len = seq.length, wallAt = nul
       // whether it goes round there
       for (let c = 0; c < base; c++) counts[base * i + c] = counts[base * (i - 1) + c];
       counts[base * i + digit]++;
-      if (i === wall) {
-        steps = i;
-        return true;
-      } // (on a wall: stopped there)
       const earlier = key === null ? null : looped(i, key);
       if (earlier !== null) {
         steps = i;
@@ -17884,7 +17745,6 @@ function walkRecorder(seq, ahead, base, R, nodes, len = seq.length, wallAt = nul
       Object.assign(walk, {
         n: steps,
         loop,
-        wallEnd: wall > 0 && wall === steps,
         digits: seq,
         wx,
         wy,
@@ -17918,17 +17778,6 @@ function walkRecorder(seq, ahead, base, R, nodes, len = seq.length, wallAt = nul
     },
   };
 }
-// A Möbius strip's walls (its edges where its tiles do not meet, see MOBIUS_ALONG) stop its walkers and ants (see
-// runStopped): a tile on a wall, or along its grid a corner of one; elsewhere none (a solid's walls, Life's only)
-function wallStopAt(g, corners = false) {
-  if (!g.mobius || !g.walls?.length) return null;
-  const k = g.sides,
-    on = new Uint8Array(corners ? g.verts.length / 3 : g.n);
-  for (const t of g.walls)
-    if (!corners) on[t] = 1;
-    else for (let j = 0; j < k; j++) on[g.poly[k * t + j]] = 1;
-  return (place) => on[place] === 1;
-}
 // a walk along a surface's grid: from corner to corner along its edges, turning by the digits (see nextCorner)
 function buildGridWalk(seq, mode, ahead = new Uint8Array(0)) {
   const { base, initial } = mode,
@@ -17942,7 +17791,8 @@ function buildGridWalk(seq, mode, ahead = new Uint8Array(0)) {
     V = g.verts,
     len = mode.worm || !readsDigits(digitsComputed.mode) ? lengthAsked() : seq.length,
     at = (v) => [V[3 * v], V[3 * v + 1], V[3 * v + 2]]; // (a worm: its steps asked)
-  const vert = new Int32Array(len + 1),
+  const rec = walkRecorder(seq, ahead, base, R, G.nv, len),
+    vert = new Int32Array(len + 1),
     stepTiles = new Int32Array(2 * len),
     S = surfaceSteps(g, mode);
   let state = walkStart(g, mode);
@@ -17952,7 +17802,6 @@ function buildGridWalk(seq, mode, ahead = new Uint8Array(0)) {
     placed = Array.isArray(rivals) && battleStartsOrSay(g, state, true, rivals.length + 1);
   if (rivals?.error) walkSaid = rivals.error;
   if (placed) state = placed.starts[0];
-  const rec = walkRecorder(seq, ahead, base, R, G.nv, len, mode.worm || placed ? null : wallStopAt(g, true)); // (a battle's walkers and a worm: no wall read)
   let v = state[0];
   const put = (i) => {
     rec.put(i, v, G.tileOf[v], at(v));
@@ -18043,17 +17892,17 @@ function buildSphereWalk(seq, mode, ahead = new Uint8Array(0)) {
       )
     : null;
   const base = ant && !antByDigits ? antStep.colours : mode.base,
-    turns = ant ? new Uint8Array(len) : null;
+    turns = ant ? new Uint8Array(len) : null,
+    rec = walkRecorder(seq, ahead, base, R, g.n, len);
   let state = walkStart(g, mode);
+  const put = (i, t = state[0]) => rec.put(i, t, t, [g.cen[3 * t], g.cen[3 * t + 1], g.cen[3 * t + 2]]);
+  put(0);
+  rec.begin(S.key(state)); // (tile, the edge it came in by)
   // a battle (see 7.6b): all its walks (battlePlayer), A's recorded (still once dead); the others' digits null while they
   // are computed: A alone meanwhile
   const rivals = battleOn() && !ant ? rivalsDigits(mode.base, len, buildWalk) : null,
     placed = Array.isArray(rivals) && battleStartsOrSay(g, state, false, rivals.length + 1);
   if (rivals?.error) walkSaid = rivals.error;
-  const rec = walkRecorder(seq, ahead, base, R, g.n, len, placed ? null : wallStopAt(g)); // (a battle's walkers: no wall read)
-  const put = (i, t = state[0]) => rec.put(i, t, t, [g.cen[3 * t], g.cen[3 * t + 1], g.cen[3 * t + 2]]);
-  put(0);
-  rec.begin(S.key(state)); // (tile, the edge it came in by)
   if (placed) {
     const P = battlePlayer(g, false, S, placed.starts, [seq, ...rivals]);
     P.to(Infinity); // (the whole battle: its end known)
@@ -20182,7 +20031,7 @@ function renderBattleHunt() {
  */
 
 // fading trail after a cell dies: from a light slate grey down to the background
-const LIFE_WALL = '#c4934e'; // the walls of a Life run (the hexagon sphere's pentagons), and a Möbius strip's in a walk
+const LIFE_WALL = '#c4934e'; // the walls of a Life run (the hexagon sphere's pentagons)
 
 // Life's neighbours, the plane's grids and the surfaces' alike, from each cell's corners (cStart/cList: cell t's
 // corner ids, cList[cStart[t]] … cList[cStart[t + 1] − 1], in turn round it; nv: how many corners). A cell's
@@ -25500,16 +25349,15 @@ function motifOf(g, t) {
     ...(face ? [[faceRed(), tilesOf(face.face)]] : []),
   ];
 }
-// Sets of tiles outlined as ribbons (see ribbonV) in the buffer name: each [colour, tiles] its sides not shared by two of its
-// tiles, laid on the form shown, its colours' runs of segments; made again only when its key or its mesh change; width: on
-// the screen at a scale (the motif's, as the plane's, see drawMotif)
-function outlineRibbons(D, name, key, g, sh, R, sets, width = (s) => Math.max(2, Math.min(s / 6, 4))) {
-  const memo = D[`${name}Outline`];
-  if (memo?.g === g && memo.key === key) return memo.marks;
+// The motif's outlines as ribbons (see ribbonV): each part's sides not shared by two of its tiles, laid on the form shown, its
+// colours' runs of segments; made again only when its tile, its mesh or its form change
+function motifRibbons(D, g, sh, R) {
+  const key = `${middleTile.t}|${sh.m}|${R}|${motifColour()}`;
+  if (D.motifOf === g && D.motifKey === key) return D.motifParts;
   const k = g.sides,
     data = ribbonSegments(),
     parts = [];
-  for (const [colour, tiles] of sets()) {
+  for (const [colour, tiles] of motifOf(g, middleTile.t)) {
     const from = data.count,
       rim = rimSides(
         tiles.flatMap((t) => Array.from({ length: k }, (_, j) => [t, j])),
@@ -25529,21 +25377,14 @@ function outlineRibbons(D, name, key, g, sh, R, sets, width = (s) => Math.max(2,
       rgb: rgbCached(colour).map((c) => c / 255),
       from,
       count: data.count - from,
-      width,
-    });
+      width: (s) => Math.max(2, Math.min(s / 6, 4)),
+    }); // (its width on the screen at a scale, as the plane's motif, see drawMotif)
   }
-  gpuBuffer(name, data.words());
-  return (D[`${name}Outline`] = { g, key, marks: { parts } }).marks;
+  gpuBuffer('motif', data.words());
+  D.motifOf = g;
+  D.motifKey = key;
+  return (D.motifParts = { parts });
 }
-// Ghost walls' outline, hollow, as fine as the grid's lines (a pixel)
-const ghostRibbons = (D, g, sh, R) => {
-  const walls = () => [[LIFE_WALL, g.ghostWalls]];
-  return outlineRibbons(D, 'ghost', `${sh.m}|${R}`, g, sh, R, walls, () => 1);
-};
-
-// the motif round its tile (see motifOf), as its form, its tile and its colour change
-const motifRibbons = (D, g, sh, R) =>
-  outlineRibbons(D, 'motif', `${middleTile.t}|${sh.m}|${R}|${motifColour()}`, g, sh, R, () => motifOf(g, middleTile.t));
 // a solid's face of its tile t, as listed: its tiles from … to, and its sector's (a face of several of the mesh's in one plane:
 // a dodecahedron's pentagon, 5 triangles); a solid of squares and triangles: its squares' faces, then its triangles', f² cells
 // each; none but on flat faces of cells (a solid of hexagons: its faces' sides through its hexagons' middles)
@@ -26516,16 +26357,8 @@ function blockTutorial(entry, to) {
 }
 // what a rule's page shows: the grid, the rule, its colours and edges; blocks, their max period too (the grid's size, the
 // start's live cells, its return once found)
-// (the grid its page reads, a surface's mesh, by its own number: drawn again once the walk shown has the tab's, see
-// ruleTutorial)
-const gridNumbers = new WeakMap();
-let gridsNumbered = 0;
-const gridNumber = (g) => {
-  if (g && !gridNumbers.has(g)) gridNumbers.set(g, ++gridsNumbered);
-  return gridNumbers.get(g) ?? 0;
-};
 const tutorialKey = (entry) =>
-  `${tabMode()} ${entry.rule} ${entry.name} ${lifeTeams} ${plane.torus} ${gridNumber(walk.geo)}` +
+  `${tabMode()} ${entry.rule} ${entry.name} ${lifeTeams} ${plane.torus}` +
   (walk.life?.margolus ? ` ${walk.life.seed.length} ${walk.life.seedAlive} ${walk.life.stable?.P}` : '');
 // a tiling of several shapes: a bubble each (the cell and its neighbours, its name and how many), the one shown lit
 const tutShape = { mode: null, at: 0 },
@@ -26644,89 +26477,6 @@ function elementaryTutorial(entry) {
     `<h3>From one cell</h3><div class="tut-row"><figure><div><svg class="tut-start" viewBox="-0.2 -0.2 31.4 16.4">${picture}</svg></div><figcaption>16 generations</figcaption></figure></div></div>`;
   $('ruleTuto').prepend(tutTools({ close: () => ruleTutorial(null) }));
 }
-// How it works on a surface: its cells' kinds by their sides (as its mesh lists them), its walls none, each its first cell
-// touching no wall (its picture whole), the most neighbours first
-function surfaceKinds(g, nb) {
-  const M = meshCorners(g),
-    wall = new Set(g.walls ?? []),
-    wallCorners = new Set([...wall].flatMap((w) => [...g.poly.subarray(g.sides * w, g.sides * (w + 1))])),
-    sides = (t) => M.start[t + 1] - M.start[t],
-    touchesWall = (t) => M.list.subarray(M.start[t], M.start[t + 1]).some((v) => wallCorners.has(v)),
-    first = new Map();
-  for (let t = 0; t < g.n; t++) {
-    const shown = first.get(sides(t));
-    if (!wall.has(t) && (shown === undefined || (touchesWall(shown) && !touchesWall(t)))) first.set(sides(t), t);
-  }
-  const count = (t) => nb.start[t + 1] - nb.start[t],
-    kinds = [...first.values()].sort((u, v) => count(v) - count(u));
-  return { kinds, shapeOf: new Map(kinds.map((t) => [t, sides(t)])) };
-}
-// a surface's cell: its corner ids (ids), their points (P), their middle (m) and its plane's normal (N, Newell's)
-function cellPlane(g, t) {
-  const M = meshCorners(g),
-    V = g.verts,
-    ids = [...M.list.subarray(M.start[t], M.start[t + 1])],
-    P = ids.map((v) => [V[3 * v], V[3 * v + 1], V[3 * v + 2]]),
-    n = [0, 0, 0];
-  newellNormal(Float64Array.from(P.flat()), 0, P.length, n);
-  return { ids, P, m: meanPoint(P, 3), N: unit(n) };
-}
-// a surface's cell t drawn flat round cell on (How it works): unfolded onto its plane, turned about a corner they share by
-// the turn that lays its normal on on's (about their shared side, if any: the solid's net; gaps where the surface bends)
-function cellOnPlaneOf(g, t, on) {
-  const { ids, P, m, N } = cellPlane(g, on),
-    a = sub(P[0], m),
-    U = unit(
-      sub(
-        a,
-        N.map((x) => x * dot(a, N)),
-      ),
-    ),
-    W = cross(N, U),
-    cell = cellPlane(g, t),
-    pivot = cell.P[cell.ids.findIndex((v) => ids.includes(v))] ?? m,
-    k = cross(cell.N, N),
-    sin = Math.hypot(...k),
-    axis = sin ? k.map((x) => x / sin) : k;
-  return cell.P.map((p) => {
-    const q = sub(turnAbout(sub(p, pivot), axis, dot(cell.N, N), sin), sub(m, pivot));
-    return [dot(q, U), -dot(q, W)];
-  }); // (y down, as the page's)
-}
-// a surface's cell t drawn round cell on in pure shapes (How it works): on the regular polygon of its sides (side 1), turned
-// as it lies unfolded (see cellOnPlaneOf); a neighbour by a side the regular polygon on that side, outwards; by a corner
-// only, the regular polygon at that corner, towards where it lies unfolded
-function cellPure(g, t, on) {
-  const regular = (n, centre, first, turn) => {
-    const R = 1 / (2 * Math.sin(Math.PI / n)),
-      a = Math.atan2(first[1] - centre[1], first[0] - centre[0]);
-    return Array.from({ length: n }, (_, k) => [
-      centre[0] + R * Math.cos(a + (turn * 2 * Math.PI * k) / n),
-      centre[1] + R * Math.sin(a + (turn * 2 * Math.PI * k) / n),
-    ]);
-  };
-  const flat = cellOnPlaneOf(g, on, on),
-    turn = Math.sign(signedArea(flat)),
-    C = regular(flat.length, [0, 0], flat[0], turn);
-  if (t === on) return C;
-  const ids = cellPlane(g, on).ids,
-    mine = cellPlane(g, t).ids,
-    n = mine.length,
-    shared = ids.flatMap((v, i) => (mine.includes(v) ? [i] : [])),
-    side = shared.find((i) => shared.includes((i + 1) % ids.length));
-  if (side !== undefined) {
-    const [P, Q] = [C[side], C[(side + 1) % ids.length]],
-      middle = [(P[0] + Q[0]) / 2, (P[1] + Q[1]) / 2],
-      out = unit(middle).map((x) => x / (2 * Math.tan(Math.PI / n))),
-      V = regular(n, [middle[0] + out[0], middle[1] + out[1]], P, -turn);
-    return [P, Q, ...V.slice(2)];
-  }
-  const P = C[shared[0]],
-    towards = unit(sub(meanPoint(cellOnPlaneOf(g, t, on)), flat[shared[0]])).map(
-      (x) => x / (2 * Math.sin(Math.PI / n)),
-    );
-  return [P, ...regular(n, [P[0] + towards[0], P[1] + towards[1]], P, 1).slice(1)];
-}
 function ruleTutorial(entry) {
   $('appTab').classList.remove('open'); // (the app's tab, Credits': off, another page or none)
   if (entry) showPage($('ruleTuto'));
@@ -26753,52 +26503,44 @@ function ruleTutorial(entry) {
     kind = PLANE_OF_MARK[mark] ?? 'tri';
   const W = APERIODIC[kind] ? 16 : 8,
     rule = parseRule(entry.rule); // (one that never repeats: room for all its ways)
-  // its grid: the run's own surface (its cells' kinds, see surfaceKinds; each drawn on the plane of the one shown), else its
-  // plane's tiling, W wide
-  const surface = MODES[walk.mode]?.lattice === 'sphere' ? walk.geo : null,
-    nb = surface
-      ? cornerNeighbours(surface, rule.iso === 'hensel' ? 8 : undefined)
-      : planeNeighbours(kind, W, false, rule.iso === 'hensel');
-  const turn = !surface && planeTurn(kind),
-    poly = !surface && cellPolys(kind, W),
-    corners = surface ? (t) => cellPure(surface, t, c) : (t) => poly(t).map((p) => turnPoint(p, turn)); // (turned as the 2D grid is)
+  const nb = planeNeighbours(kind, W, false, rule.iso === 'hensel');
+  const turn = planeTurn(kind),
+    poly = cellPolys(kind, W),
+    corners = (t) => poly(t).map((p) => turnPoint(p, turn)); // (turned as the 2D grid is)
   // its cells' kinds: by their shape (its true corners' sides and angles, mirrored or turned the same) and their count of neighbours (the
   // same shape may have several, by where it lies: Stein's pentagon 7, 6 or 5), of the cells all round by others (each corner
   // a whole turn of cells: its neighbours all there), the one shown picked by its bubble (tutShape), at
   // first the one with the most neighbours, the one nearest the middle of each (a cell by the wall left out: its picture would
   // miss the wall's cell)
   const count = (t) => nb.start[t + 1] - nb.start[t];
-  const { kinds, shapeOf } = surface ? surfaceKinds(surface, nb) : planeKinds();
-  function planeKinds() {
-    const { n } = planeGrid(kind, W),
-      all = Array.from({ length: n }, (_, t) => corners(t)),
-      whole = wholeTurns(all); // (one by the wall: not all round)
-    const shapeKey = (P) => {
-      const Q = P.filter((p, i) => {
-        const a = P.at(i - 1),
-          b = P[(i + 1) % P.length];
-        return Math.abs((p[0] - a[0]) * (b[1] - p[1]) - (p[1] - a[1]) * (b[0] - p[0])) > 1e-4;
-      });
-      const angle = (i) => {
-        const p = Q[i],
-          [u, v] = [Q[(i + 1) % Q.length], Q.at(i - 1)].map((q) => [q[0] - p[0], q[1] - p[1]]);
-        return Math.abs(Math.atan2(u[0] * v[1] - u[1] * v[0], u[0] * v[0] + u[1] * v[1])).toFixed(2);
-      };
-      return `${Q.map((p, i) => Math.hypot(Q[(i + 1) % Q.length][0] - p[0], Q[(i + 1) % Q.length][1] - p[1]).toFixed(2)).sort()}|${Q.map((_, i) => angle(i)).sort()}`;
-    }; // (its sides and its angles: a rhombus not a square)
-    const centre = meanPoint(all.flat()),
-      far = (t) => Math.hypot(all[t][0][0] - centre[0], all[t][0][1] - centre[1]);
-    const shapes = new Map(),
-      shapeOf = new Map();
-    for (let t = 0; t < n; t++) {
-      if (!all[t].every(whole)) continue;
-      const sk = shapeKey(all[t]),
-        k = `${sk}|${count(t)}`;
-      shapeOf.set(t, sk);
-      if (!shapes.has(k) || far(t) < far(shapes.get(k))) shapes.set(k, t);
-    }
-    return { kinds: [...shapes.values()].sort((u, v) => count(v) - count(u)), shapeOf };
+  const { n } = planeGrid(kind, W),
+    all = Array.from({ length: n }, (_, t) => corners(t)),
+    whole = wholeTurns(all); // (one by the wall: not all round)
+  const shapeKey = (P) => {
+    const Q = P.filter((p, i) => {
+      const a = P.at(i - 1),
+        b = P[(i + 1) % P.length];
+      return Math.abs((p[0] - a[0]) * (b[1] - p[1]) - (p[1] - a[1]) * (b[0] - p[0])) > 1e-4;
+    });
+    const angle = (i) => {
+      const p = Q[i],
+        [u, v] = [Q[(i + 1) % Q.length], Q.at(i - 1)].map((q) => [q[0] - p[0], q[1] - p[1]]);
+      return Math.abs(Math.atan2(u[0] * v[1] - u[1] * v[0], u[0] * v[0] + u[1] * v[1])).toFixed(2);
+    };
+    return `${Q.map((p, i) => Math.hypot(Q[(i + 1) % Q.length][0] - p[0], Q[(i + 1) % Q.length][1] - p[1]).toFixed(2)).sort()}|${Q.map((_, i) => angle(i)).sort()}`;
+  }; // (its sides and its angles: a rhombus not a square)
+  const centre = meanPoint(all.flat()),
+    far = (t) => Math.hypot(all[t][0][0] - centre[0], all[t][0][1] - centre[1]);
+  const shapes = new Map(),
+    shapeOf = new Map();
+  for (let t = 0; t < n; t++) {
+    if (!all[t].every(whole)) continue;
+    const sk = shapeKey(all[t]),
+      k = `${sk}|${count(t)}`;
+    shapeOf.set(t, sk);
+    if (!shapes.has(k) || far(t) < far(shapes.get(k))) shapes.set(k, t);
   }
+  const kinds = [...shapes.values()].sort((u, v) => count(v) - count(u));
   if (tutShape.mode !== tabMode()) Object.assign(tutShape, { mode: tabMode(), at: 0 });
   const c = kinds[Math.min(tutShape.at, kinds.length - 1)];
   const mid = (t) => meanPoint(corners(t)),
@@ -26806,13 +26548,7 @@ function ruleTutorial(entry) {
   const around = [...nb.list.subarray(nb.start[c], nb.start[c + 1])].sort(
     (u, v) => Math.atan2(mid(u)[1] - o[1], mid(u)[0] - o[0]) - Math.atan2(mid(v)[1] - o[1], mid(v)[0] - o[0]),
   );
-  // the picture laid on its square's diagonal by its longest stretch (a thin one shown up to √2 larger)
-  const flat = [c, ...around].flatMap((t) => corners(t)),
-    [from, to] = flat
-      .flatMap((p) => flat.map((q) => [p, q]))
-      .reduce((a, b) => (Math.hypot(...sub(b[0], b[1])) > Math.hypot(...sub(a[0], a[1])) ? b : a)),
-    laid = (point) => turnPoint(point, Math.PI / 4 - Math.atan2(to[1] - from[1], to[0] - from[0]));
-  const pts = flat.map(laid),
+  const pts = [c, ...around].flatMap(corners),
     x0 = Math.min(...pts.map((p) => p[0])),
     y0 = Math.min(...pts.map((p) => p[1]));
   const w = Math.max(...pts.map((p) => p[0])) - x0,
@@ -26822,7 +26558,7 @@ function ruleTutorial(entry) {
   const dying = (s) => stateColour(1 - s / (rule.C - 1)); // stage s (1 … C − 2), down the States ramp
   const points = (t) =>
     corners(t)
-      .map((p) => laid(p).join(','))
+      .map((p) => p.join(','))
       .join(' ');
   // the cell after: its state before shown a moment, fading quickly into the new one, kept (once; ↻ plays it again)
   const L = x0 - pad - (side - w) / 2,
@@ -26859,28 +26595,22 @@ function ruleTutorial(entry) {
             ? ['o', 'm', 'p']
             : [],
     classOf = (m) => (iso === 'hensel' ? henselClass(m) : hexClass(m).toLowerCase());
-  const cases = Array.from({ length: around.length + 1 }, (_, k) => k)
-    .flatMap((k) =>
-      (lettersOf(k).length ? lettersOf(k) : ['']).map((x) => {
-        if (!iso) return { k, x, live: new Set(around.slice(0, k)), on: (table) => table[k] === 1 };
-        if (iso === 'vertex') {
-          const j = x ? Number(x.slice(1)) : ways(k)[0];
-          return {
-            k,
-            x,
-            live: new Set([...tips.slice(0, j), ...sides.slice(0, k - j)]),
-            on: (table) => table[16 + 4 * k + j] === 1,
-          };
-        }
-        const m = Array.from({ length: 1 << R }, (_, m) => m).find(
-          (m) => bitCount(m) === k && (!x || classOf(m) === x) && ring.every((u, q) => u >= 0 || !((m >> q) & 1)),
-        ); // (a ring's places with no cell, a pentagon's sixth: never live)
-        return m === undefined
-          ? null
-          : { k, x, live: new Set(ring.filter((_, q) => (m >> q) & 1)), on: (table) => table[16 + m] === 1 };
-      }),
-    )
-    .filter(Boolean);
+  const cases = Array.from({ length: around.length + 1 }, (_, k) => k).flatMap((k) =>
+    (lettersOf(k).length ? lettersOf(k) : ['']).map((x) => {
+      if (!iso) return { k, x, live: new Set(around.slice(0, k)), on: (table) => table[k] === 1 };
+      if (iso === 'vertex') {
+        const j = x ? Number(x.slice(1)) : ways(k)[0];
+        return {
+          k,
+          x,
+          live: new Set([...tips.slice(0, j), ...sides.slice(0, k - j)]),
+          on: (table) => table[16 + 4 * k + j] === 1,
+        };
+      }
+      const m = Array.from({ length: 1 << R }, (_, m) => m).find((m) => bitCount(m) === k && (!x || classOf(m) === x));
+      return { k, x, live: new Set(ring.filter((_, q) => (m >> q) & 1)), on: (table) => table[16 + m] === 1 };
+    }),
+  );
   const pair = (cs, from, to, word) =>
     `<figure><div>${cell(from, cs.live)}<span>→</span>${cell(to, cs.live, from)}</div><figcaption>${cs.k}${cs.x} live: ${word}</figcaption></figure>`;
   const list = (l) =>
@@ -26973,14 +26703,14 @@ function ruleTutorial(entry) {
     const s = stages.indexOf(centre) + 1,
       light = document.documentElement.dataset.theme === 'light';
     return s
-      ? `<text x="${laid(o)[0]}" y="${laid(o)[1]}" font-size="${side / 4}" text-anchor="middle" dominant-baseline="central" fill="${1 - s / (rule.C - 1) > 0.45 === light ? '#fff' : '#1f2328'}">✝</text>`
+      ? `<text x="${o[0]}" y="${o[1]}" font-size="${side / 4}" text-anchor="middle" dominant-baseline="central" fill="${1 - s / (rule.C - 1) > 0.45 === light ? '#fff' : '#1f2328'}">✝</text>`
       : '';
   }
   $('ruleTuto').innerHTML =
     `<div class="tut-body">${tutLetters.on && lettersOf2 ? lettersPage() + '</div>' : ''}` +
     (tutLetters.on && lettersOf2
       ? ''
-      : `<h2>${entry.name} ${ruleSpan(entry.rule)}</h2>${entry.about ? `<p>${capitalised(entry.about)}.</p>` : ''}${kinds.length > 1 ? shapeBubbles(kinds, c, surface ? (t) => cellPure(surface, t, t) : corners, count, shapeOf, { hat: 'hat', spectre: 'spectre' }[kind]) : ''}<p>A cell with ${around.length} neighbours here (sharing an edge or a corner): ${born.length ? `born with ${list(born)} live ones` : 'never born'}, ${stays.length ? `survives with ${list(stays)}` : 'never survives'}, dies otherwise${iso === 'vertex' ? ' (after v, how many of the live ones touch it by a corner only, not a side)' : iso ? ' (the letters: where the live ones sit)' : ''}${rule.C > 2 ? `, then fades through ${rule.C - 2} dying stage${rule.C > 3 ? 's' : ''} (neither alive nor counted) before it is empty again` : ''}.</p>` +
+      : `<h2>${entry.name} ${ruleSpan(entry.rule)}</h2>${entry.about ? `<p>${capitalised(entry.about)}.</p>` : ''}${kinds.length > 1 ? shapeBubbles(kinds, c, corners, count, shapeOf, { hat: 'hat', spectre: 'spectre' }[kind]) : ''}<p>A cell with ${around.length} neighbours here (sharing an edge or a corner): ${born.length ? `born with ${list(born)} live ones` : 'never born'}, ${stays.length ? `survives with ${list(stays)}` : 'never survives'}, dies otherwise${iso === 'vertex' ? ' (after v, how many of the live ones touch it by a corner only, not a side)' : iso ? ' (the letters: where the live ones sit)' : ''}${rule.C > 2 ? `, then fades through ${rule.C - 2} dying stage${rule.C > 3 ? 's' : ''} (neither alive nor counted) before it is empty again` : ''}.</p>` +
         `<h3>Birth${part('B')}</h3><div class="tut-row">${born.map((cs) => pair(cs, UNLIT, LIFE_ALIVE, 'born')).join('') || '<p>none</p>'}</div>${colours()}` +
         `<h3>Survival${part('S')}</h3><div class="tut-row">${stays.map((cs) => pair(cs, LIFE_ALIVE, LIFE_ALIVE, 'stays')).join('') || '<p>none</p>'}</div>` +
         `<h3>Death</h3><div class="tut-row">${dies.map((cs) => pair(cs, LIFE_ALIVE, after, 'dies')).join('')}</div>` +
@@ -39302,7 +39032,6 @@ function getSetup() {
   if (mode.lattice === 'sphere') s.s = $('sphereF').value;
   if (modeStarts() && startNo() > 1) s.st = startNo();
   if (torusTurned && TURNED[mode.sphere]) s.o = 1;
-  if (ghostWalls && ghostableOf(surfaceOf(mode))) s.gw = 1;
   if (mode.life) s.r = ruleBody($('lifeRule').value);
   if (mode.life && !mode.margolus && lifeTeams > 1) s.k = lifeTeams;
   if (battleOn()) {
@@ -39380,7 +39109,6 @@ function applySetup(s) {
   set('mode', s.w);
   $('startNo').value = s.st ?? 1;
   torusTurned = Number(s.o) === 1;
-  ghostWalls = Number(s.gw) === 1;
   if (MODES[s.w].sphere) {
     const kind = surfaceOf(MODES[s.w]);
     fillSphereSizes(kind, MODES[s.w].initial);
@@ -39554,7 +39282,6 @@ const setupDetail = (s) => {
     s.s && `size ${String(s.s).replace('x', ' × ')}`,
     s.st > 1 && `start ${s.st}`,
     Number(s.o) === 1 && 'turned 30°',
-    Number(s.gw) === 1 && 'ghost walls',
     Number(s.q) === 1 && 'square sheet',
   ]
     .filter(Boolean)
@@ -41119,7 +40846,7 @@ function drawSphere() {
     const rgba = (c) => [...rgbCached(c).map((x) => x / 255), 1],
       look = { ...lifeLook(L, true), wall: rgba(LIFE_WALL), dead: rgba(blankTile()) };
     gpuSurface((out) => gpuLook(L, out, look), path);
-  } else gpuSurface(paintLevels(palette, levelOf, walk.battle ? null : wallStopAt(g)), path); // (see 11.4d; a battle's walkers cross the walls)
+  } else gpuSurface(paintLevels(palette, levelOf), path); // (see 11.4d)
   drawHover();
 }
 
@@ -41563,12 +41290,10 @@ function outwardFolds(tri, P, Q, N) {
 }
 // a surface's tiles' colours from a palette (null: unlit) and each tile's place in it (out of it: unlit), into their buffer
 // (out.put, see gpuSurface)
-// (onWall: a Möbius strip's walls, which stop its walker, as Life's: see wallStopAt)
-const paintLevels = (palette, levelOf, onWall) => (out, n) => {
+const paintLevels = (palette, levelOf) => (out, n) => {
   const rgb = palette.map((c) => packed(c ?? blankTile())),
-    wall = packed(LIFE_WALL),
     col = new Uint32Array(n);
-  for (let t = 0; t < n; t++) col[t] = onWall?.(t) ? wall : (rgb[levelOf(t)] ?? rgb[0]);
+  for (let t = 0; t < n; t++) col[t] = rgb[levelOf(t)] ?? rgb[0];
   out.put(eased('tiles', col)); // (every tile's change faded in)
 };
 // Glass: the surface see-through, every layer showing, its grid and path too (weighted blended, see gpuFrame); Cut: a half
@@ -43404,7 +43129,6 @@ function gpuSurface(paint, path) {
     // its colour and its width on the screen, unfaded, over the tiles; the starts' flags (and cones, hovered: see startHeads)
     const marks = [
       ...(motifShown && middleTile.g === g && middleTile.t >= 0 ? [['motif', motifRibbons(D, g, sh, R)]] : []),
-      ...(g.ghostWalls ? [['ghost', ghostRibbons(D, g, sh, R)]] : []), // (Ghost walls: hollow, always)
       ...(startsShown ? [['starts', startMarks(g, sh, R)]] : []),
     ];
     if (marks.length) {

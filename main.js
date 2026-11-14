@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.1001';
+const VERSION = '0.4.1002';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -40897,17 +40897,7 @@ function drawSphere() {
     const rgba = (c) => [...rgbCached(c).map((x) => x / 255), 1],
       look = { ...lifeLook(L, true), wall: rgba(LIFE_WALL), dead: rgba(blankTile()) };
     gpuSurface((out) => gpuLook(L, out, look), path);
-  } else {
-    // a Möbius strip's walls, as Life's (they stop its walker or its ant, see wallStopAt; a battle's walkers: none)
-    const onWall = !walk.battle && wallStopAt(g);
-    if (onWall) {
-      const wall = palette.length,
-        level = levelOf;
-      palette = [...palette, LIFE_WALL];
-      levelOf = (t) => (onWall(t) ? wall : level(t));
-    }
-    gpuSurface(paintLevels(palette, levelOf), path); // (see 11.4d)
-  }
+  } else gpuSurface(paintLevels(palette, levelOf, !walk.battle && wallStopAt(g)), path); // (see 11.4d; a battle's walkers cross the walls)
   drawHover();
 }
 
@@ -41351,10 +41341,12 @@ function outwardFolds(tri, P, Q, N) {
 }
 // a surface's tiles' colours from a palette (null: unlit) and each tile's place in it (out of it: unlit), into their buffer
 // (out.put, see gpuSurface)
-const paintLevels = (palette, levelOf) => (out, n) => {
+// (onWall: a Möbius strip's walls, which stop its walker, as Life's: see wallStopAt)
+const paintLevels = (palette, levelOf, onWall) => (out, n) => {
   const rgb = palette.map((c) => packed(c ?? blankTile())),
+    wall = packed(LIFE_WALL),
     col = new Uint32Array(n);
-  for (let t = 0; t < n; t++) col[t] = rgb[levelOf(t)] ?? rgb[0];
+  for (let t = 0; t < n; t++) col[t] = onWall?.(t) ? wall : (rgb[levelOf(t)] ?? rgb[0]);
   out.put(eased('tiles', col)); // (every tile's change faded in)
 };
 // Glass: the surface see-through, every layer showing, its grid and path too (weighted blended, see gpuFrame); Cut: a half

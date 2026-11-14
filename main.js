@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.1017';
+const VERSION = '0.4.1018';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -26644,17 +26644,21 @@ function elementaryTutorial(entry) {
     `<h3>From one cell</h3><div class="tut-row"><figure><div><svg class="tut-start" viewBox="-0.2 -0.2 31.4 16.4">${picture}</svg></div><figcaption>16 generations</figcaption></figure></div></div>`;
   $('ruleTuto').prepend(tutTools({ close: () => ruleTutorial(null) }));
 }
-// How it works on a surface: its cells' kinds by their sides (as its mesh lists them) and their count of neighbours (nb),
-// each its first cell, the most neighbours first
+// How it works on a surface: its cells' kinds by their sides (as its mesh lists them), its walls none, each its first cell
+// touching no wall (its picture whole), the most neighbours first
 function surfaceKinds(g, nb) {
   const M = meshCorners(g),
     wall = new Set(g.walls ?? []),
-    count = (t) => nb.start[t + 1] - nb.start[t],
+    wallCorners = new Set([...wall].flatMap((w) => [...g.poly.subarray(g.sides * w, g.sides * (w + 1))])),
     sides = (t) => M.start[t + 1] - M.start[t],
+    touchesWall = (t) => M.list.subarray(M.start[t], M.start[t + 1]).some((v) => wallCorners.has(v)),
     first = new Map();
-  for (let t = 0; t < g.n; t++)
-    if (!wall.has(t) && !first.has(`${sides(t)}|${count(t)}`)) first.set(`${sides(t)}|${count(t)}`, t);
-  const kinds = [...first.values()].sort((u, v) => count(v) - count(u));
+  for (let t = 0; t < g.n; t++) {
+    const shown = first.get(sides(t));
+    if (!wall.has(t) && (shown === undefined || (touchesWall(shown) && !touchesWall(t)))) first.set(sides(t), t);
+  }
+  const count = (t) => nb.start[t + 1] - nb.start[t],
+    kinds = [...first.values()].sort((u, v) => count(v) - count(u));
   return { kinds, shapeOf: new Map(kinds.map((t) => [t, sides(t)])) };
 }
 // a surface's cell: its corner ids (ids), their points (P), their middle (m) and its plane's normal (N, Newell's)

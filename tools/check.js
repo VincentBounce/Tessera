@@ -836,7 +836,7 @@ function checkFirstStarts(fail) {
       kind = surfaceOf(mode),
       S = SPHERES[kind];
     if (S.columns) continue;
-    const counts = solidTeamCounts(kind, mode);
+    const counts = solidTeamCounts(kind);
     if (counts.some.every((K) => counts.any.includes(K))) continue; // (any start: none depends on it)
     const kindOfStart = (size) => {
       const g = S.mesh(size),
@@ -847,7 +847,7 @@ function checkFirstStarts(fail) {
     };
     const sizes = sizesOf(kind, mode).filter((size) => S.tiles(size) <= 30000);
     for (const size of sizes) {
-      const least = startClassLeast(kind, mode, size);
+      const least = startClassLeast(kind, size);
       if (least === size) continue;
       checked++;
       if (kindOfStart(size) !== kindOfStart(least))

@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.1029';
+const VERSION = '0.4.1030';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -42941,14 +42941,16 @@ function gpuSurface(paint, path) {
       gpuBuffer('fan', fan, GPUBufferUsage.INDEX);
       D.fanCount = fan.length;
       // the motif's pick: the same triangles but its walls' (its cells of other sides, a solid of hexagons' corners: never
-      // its motif, see gpuPickMiddle)
-      const pickFan = walls.size
-        ? Uint32Array.from(
-            Array.from({ length: fan.length / 3 }, (_, q) => q)
-              .filter((q) => !walls.has(tileOf(q)))
-              .flatMap((q) => [fan[3 * q], fan[3 * q + 1], fan[3 * q + 2]]),
-          )
-        : fan;
+      // its motif, see gpuPickMiddle) and, on a sheet, those of a motif cut by its edge or its seam (a strip's, a bottle's:
+      // its lattice cell's tiles fewer than its motif's), while it has a whole one
+      const cut = (t) =>
+          (g.torus || g.klein) && latticeCellTiles(g).get(latticeCellOf(g, t)).length < latticeCellSize(g),
+        whole = Array.from({ length: fan.length / 3 }, (_, q) => q).filter(
+          (q) => !walls.has(tileOf(q)) && !cut(tileOf(q)),
+        ),
+        pickFan = Uint32Array.from(
+          whole.length ? whole.flatMap((q) => [fan[3 * q], fan[3 * q + 1], fan[3 * q + 2]]) : fan,
+        );
       gpuBuffer('pickFan', pickFan, GPUBufferUsage.INDEX);
       D.pickFanCount = pickFan.length;
       D.keys.fanOf = g;

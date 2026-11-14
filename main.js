@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.1035';
+const VERSION = '0.4.1036';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -18102,14 +18102,15 @@ function tintBattleFormulas() {
   });
 }
 // A battle's symmetric starts: A's, then each moved by the surface's own symmetry: a group of K of its maps (see
-// battleGroups: a solid's turns, a ring's shifts; each a map of its places that keeps every tile's corners' order, see
-// placeMap), the one whose maps of A's place lie the furthest apart (their nearest pair), the identity first; null: none
-// of K, or A's place on an axis (K walkers cannot start apart from it)
+// battleGroups: its turns in space, then a ring's shifts along its sheet; each a map of its places that keeps every tile's
+// corners' order, see placeMap), a turn's first, the one whose maps of A's place lie the furthest apart (their nearest
+// pair), the identity first; null: none of K, or A's place on an axis (K walkers cannot start apart from it)
 function battleMaps(g, start, grid, K) {
   const spread = startSpread(g, grid, start),
-    groups = battleGroups(g, K),
-    G = groups.length ? groups.reduce((a, b) => (spread(b) > spread(a) + 1e-9 ? b : a)) : null;
-  return G && spread(G) >= 1e-9 ? G : null;
+    apart = battleGroups(g, K).filter((G) => spread(G) >= 1e-9),
+    turns = apart.filter((G) => !G.slide),
+    among = turns.length ? turns : apart; // (a turn in space first: each walker where A is on the shape turned)
+  return among.length ? among.reduce((a, b) => (spread(b) > spread(a) + 1e-9 ? b : a)) : null;
 }
 // a walk's state ([tile, the edge it comes in by], along the grid [corner, the corner it comes from]) moved by map M
 function movedStart(g, start, grid, M) {
@@ -18156,7 +18157,7 @@ const STARTS_WAYS = [
   [
     'symmetric',
     'Symmetric',
-    "A's start, picked below, moved by the surface's symmetries: each walker starts as A, the battle fair",
+    "A's start, picked below, moved by the surface's symmetries: a turn of the shape in space first (each walker where A would be on the shape turned), else a slide along its sheet (a Möbius strip's: to its other face); each walker starts as A, the battle fair",
   ],
   [
     'centred',
@@ -18401,8 +18402,10 @@ function tileImage(g, corner, t) {
   return to.every((u) => u >= 0) ? (G.edgeTiles.get(G.key(to[0], to[1]))?.find(same) ?? -1) : -1;
 }
 // a turn in space as its places' map, once a turn and a mesh: a place found again by its point turned (a corner's, a tile's
-// middle), each when first asked; on a Möbius strip or a Klein bottle, one side only, every tile checked (see placeMap: a
-// turn there may lay tiles the other way round, a mirror); elsewhere a turn keeps every tile's order
+// middle), each when first asked; on a Möbius strip or a Klein bottle, every tile checked (see placeMap: a turn there may
+// lay tiles the other way round, a mirror), a place a point and a face: a tile's image the one at its middle turned that
+// faces as its own normal turned (a Möbius strip's two faces' tiles at one point, see mobiusMesh), its corners that tile's
+// at their points turned; elsewhere a turn keeps every tile's order
 const turnMap = (g, M) => {
   const memo = (g.turnMaps ??= new Map()),
     id = roundedKey(M.flat()),
@@ -18414,9 +18417,27 @@ const turnMap = (g, M) => {
   const at = (g.cornerAt ??= codes(V)),
     turned = (P, u) => pointCode(...M.map((row) => row[0] * P[3 * u] + row[1] * P[3 * u + 1] + row[2] * P[3 * u + 2]));
   if (g.mobius || g.klein) {
+    const k = g.sides,
+      cornersOf = (t) => Array.from(g.poly.subarray(k * t, k * t + k)),
+      normal = (t) => {
+        const n = [0, 0, 0];
+        newellNormal(Float64Array.from(cornersOf(t).flatMap((v) => [V[3 * v], V[3 * v + 1], V[3 * v + 2]])), 0, k, n);
+        return n;
+      },
+      tilesAt = (g.tilesAt ??= Map.groupBy([...Array(g.n).keys()], (t) =>
+        pointCode(C[3 * t], C[3 * t + 1], C[3 * t + 2]),
+      )),
+      cornerCode = (w) => pointCode(V[3 * w], V[3 * w + 1], V[3 * w + 2]),
+      corners = new Int32Array(V.length / 3).fill(-1);
+    for (let t = 0; t < g.n; t++) {
+      const there = tilesAt.get(turned(C, t)) ?? [],
+        image = there.length > 1 ? there.find((b) => dot(normal(b), matTimesPoint(M, normal(t))) > 0) : there[0]; // (a face's: its side)
+      if (image === undefined) continue;
+      for (const v of cornersOf(t)) corners[v] = cornersOf(image).find((w) => cornerCode(w) === turned(V, v)) ?? -1;
+    }
     memo.set(
       id,
-      placeMap(g, (u) => at.get(turned(V, u))),
+      placeMap(g, (u) => (corners[u] >= 0 ? corners[u] : undefined)),
     );
     return memo.get(id);
   }
@@ -18498,17 +18519,19 @@ function mobiusShiftsApart(g, K, u, grid) {
   const P = grid ? g.verts : g.cen;
   return images.every((v) => v >= 0) && pointsApart(images.map((v) => [0, 1, 2].map((d) => P[3 * v + d]))) > 1e-9;
 }
-// the groups of K for a battle's starts (see battleMaps), each its places' maps (see placeMap), the identity first: a
-// ring's shifts (see ringGroup); the surface's turns in space (see rotationGroups: a solid's, a ring's round its axis, a
-// Möbius strip's half turn) that keep its tiles' corners' order (see turnMap; the mirror through its centre never does)
+// the groups of K for a battle's starts (see battleMaps), each its places' maps (see placeMap), the identity first: the
+// surface's turns in space (see rotationGroups: a solid's, a ring's round its axis, a Möbius strip's half turn) that keep
+// its tiles' corners' order (see turnMap; the mirror through its centre never does), then a ring's shifts along its sheet
+// (see ringGroup: a torus's a turn too, a Möbius strip's not: its half loop the same place on its other face), marked slide
 const battleGroups = (g, K, enough = Infinity, good = null) => {
   const maps = (G) => {
     const F = G.map((M) => turnMap(g, M));
     return F.every(Boolean) ? F : null;
   };
+  const slides = g.torus && ringGroup(g, K);
   return [
-    ...(g.torus ? [ringGroup(g, K)] : []),
     ...rotationGroups(g, K, enough, (G) => !!maps(G) && (!good || good(maps(G)))).map(maps),
+    ...(slides ? [Object.assign(slides, { slide: true })] : []),
   ].filter((G) => G && (!good || good(G)));
 };
 // whether a battle on mode w's surface (see battleMode) can have K teams, from its start: its surface has a group of K that

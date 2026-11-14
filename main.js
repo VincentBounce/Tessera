@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.1032';
+const VERSION = '0.4.1033';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -13914,7 +13914,7 @@ const globeFewest = (K) => K * Math.ceil(12 / K);
 // cells, at a band's middle, would be under 1/√2 as wide as high (cos(lat) E / N), down to F; the cap the rest, once they would be
 // at F, or less than a band's height is left; the south its mirror (before v0.3.101 each band as high as wide, Mercator's: its
 // cells square, its parallels 0.71 to 1.40 apart, a jump at each halving)
-function globeBands(E, K = ringColours(tabMode())) {
+function globeBands(E, K = ringColours(ringMode())) {
   const F = globeFewest(K),
     h = (2 * Math.PI) / E,
     north = [];
@@ -13933,7 +13933,7 @@ function globeBands(E, K = ringColours(tabMode())) {
   return { N: [N[0], ...N, N.at(-1)], lines: [...north.map(([, t]) => -t).reverse(), 0, ...north.map(([, t]) => t)] };
 }
 function globeMesh(E) {
-  const K = ringColours(tabMode()),
+  const K = ringColours(ringMode()),
     key = `globe${E}|${globeFewest(K)}`;
   if (meshCache[key]) return meshCache[key];
   const { N, lines } = globeBands(E, K),
@@ -14271,8 +14271,13 @@ const ringColours = (w) =>
       ? lifeTeams
       : !battleMode(w) || !SPHERES[surfaceOf(MODES[w])]?.columns
         ? 1
-        : (teamsBuilding ?? walkTeams); // (a reversible torus: Trio's, its start on the middle square; a walk's battle on a ring: its walkers asked, see battleCounts; never whether they fit, judged on this very mesh)
-let teamsBuilding = null; // (a ring's mesh made for so many walkers, to judge them: see battleCounts)
+        : ringBuilt?.w === w
+          ? ringBuilt.K
+          : walkTeams; // (a reversible torus: Trio's, its start on the middle square; a walk's battle on a ring: its walkers asked, see battleCounts; never whether they fit, judged on this very mesh)
+// the mode a ring's mesh is made for (its colours, its blocks, a battle's walkers: see ringColours, stripKey): the tab's, else
+// one being judged (ringBuilt, its K walkers: see battleFits), never the tab's by accident (the menu judges other modes)
+let ringBuilt = null;
+const ringMode = () => ringBuilt?.w ?? tabMode();
 function ringLength(x, square, unit, ok = () => true) {
   // (the whole count of u nearest t that ok allows: below and above it in turn, the nearer first; before v0.3.90 one more before one
   // less, whatever their distance: a strip 84 long, not 82, for 82.9)
@@ -14289,7 +14294,7 @@ function ringLength(x, square, unit, ok = () => true) {
 // a torus's (a Klein bottle's) columns round the ring near x: its colours' blocks a × b (see torusBlocks; a bottle's, slices
 // along its ring), a whole count of them and of step (the hexagons' and the triangles': even)
 function ringColumns(x, nv, step = 1, klein = false, ok) {
-  const K = ringColours(tabMode()),
+  const K = ringColours(ringMode()),
     [a, b] = klein ? [K, 1] : torusBlocks(K, { nv });
   return ringLength(x, (x * TORUS_TUBE * a) / b, a % step ? a * step : a, ok);
 }
@@ -14719,8 +14724,8 @@ function mobiusPoint(x, y, L, W, m) {
 // q steps (a tiling's copy along), as its twist allows
 const stripSteps = (kind0, nv, W, own, q = 1) => {
   const { step, ok } = MOBIUS_ALONG[kind0],
-    K = ringColours(tabMode()),
-    along = MODES[tabMode()]?.margolus ? (BLOCK_ALONG[kind0] ?? 1) : 1; // (a reversible one's: its blocks' sets come round along it)
+    K = ringColours(ringMode()),
+    along = MODES[ringMode()]?.margolus ? (BLOCK_ALONG[kind0] ?? 1) : 1; // (a reversible one's: its blocks' sets come round along it)
   return (
     own ??
     ringLength(
@@ -14731,7 +14736,7 @@ const stripSteps = (kind0, nv, W, own, q = 1) => {
     )
   );
 };
-const stripKey = () => `${ringColours(tabMode())}${MODES[tabMode()]?.margolus ? ' blocks' : ''}`; // (a strip's length its colours', a reversible one's its blocks', see stripSteps)
+const stripKey = () => `${ringColours(ringMode())}${MODES[ringMode()]?.margolus ? ' blocks' : ''}`; // (a strip's length its colours', a reversible one's its blocks', see stripSteps)
 const stripMemo = remember('stripMemo', weakCache()),
   countMemo = remember('countMemo', {});
 // a strip's length, width and tiles' count, without its tiles (the sizes' ladder asks for many: see mobiusSheetOf's count)
@@ -14974,7 +14979,7 @@ function stripFrame(kind, kind0, size) {
 // (a bottle: below its top, see kleinTilingSheet)
 function stripCount(kind, kind0, size, bottle = false) {
   // (once each: a size's sought among them all, see near)
-  return (countMemo[`${kind}|${kind0}|${size}|${bottle}|${ringColours(tabMode())}`] ??= stripCounted(
+  return (countMemo[`${kind}|${kind0}|${size}|${bottle}|${ringColours(ringMode())}`] ??= stripCounted(
     kind,
     kind0,
     size,
@@ -15010,7 +15015,7 @@ const kleinRows = (kindK) => {
 };
 const kleinMemo = remember('kleinMemo', weakCache());
 function kleinTilingSheet(kindK, size) {
-  return (kleinMemo[`${kindK}|${size}|${ringColours(tabMode())}`] ??= (() => {
+  return (kleinMemo[`${kindK}|${size}|${ringColours(ringMode())}`] ??= (() => {
     const { kind, strip, turn, nv, n, W, step, by, a } = kleinLength(kindK, size);
     const s = tilingStrip(kind, strip, `${nv}x${n}`),
       keep = s.tiles.map((_, i) => i).filter((i) => s.mids[2 * i + 1] < W - 1e-9);
@@ -15037,7 +15042,7 @@ const kleinCount = (kindK, size) => {
   const { kind, strip, nv, n } = kleinLength(kindK, size);
   return stripCount(kind, strip, `${nv}x${n}`, true);
 };
-function kleinLength(kindK, size, K = ringColours(tabMode())) {
+function kleinLength(kindK, size, K = ringColours(ringMode())) {
   // (K: the colours it is made for, the count asked when judging one, see teamsFairOwn)
   const { strip } = FOLDED[kindK],
     {
@@ -15057,7 +15062,7 @@ function kleinLength(kindK, size, K = ringColours(tabMode())) {
   return { kind, strip, turn, nv, n, W, step, by, a };
 }
 function kleinTilingMesh(kindK, size) {
-  const key = `${kindK}${size}|${ringColours(tabMode())}`; // (its length its colours': see kleinLength)
+  const key = `${kindK}${size}|${ringColours(ringMode())}`; // (its length its colours': see kleinLength)
   if (meshCache[key]) return meshCache[key];
   const { kind, turn, L, W, n, nv, step, by, sides, tiles, mids, latticeCells, originCell } = kleinTilingSheet(
       kindK,
@@ -16221,7 +16226,7 @@ const SPHERES = {
   globe: {
     mesh: globeMesh,
     radius: (E) => E / (2 * Math.PI),
-    tiles: (E, K = ringColours(tabMode())) =>
+    tiles: (E, K = ringColours(ringMode())) =>
       globeBands(E, K)
         .N.slice(1, -1)
         .reduce((sum, n) => sum + n, 2),
@@ -16231,7 +16236,7 @@ const SPHERES = {
       return `{y:${formatNumber(N.length - 2)} bands}, a unit high, of {k:${formatNumber(E)} cells} at the equator, halved towards the poles down to {k:${formatNumber(N[1])}} + {r:2 caps}`;
     },
     // (its sizes its colours': its equator's columns F, 2F, 4F…, each halving down to F, see globeBands; as many cells as the others')
-    ownSizes: (K = ringColours(tabMode())) => {
+    ownSizes: (K = ringColours(ringMode())) => {
       const out = [];
       for (let E = globeFewest(K); SPHERES.globe.tiles(E, K) <= CELLS.most; E *= 2)
         if (SPHERES.globe.tiles(E, K) >= CELLS.least) out.push(E);
@@ -16527,7 +16532,7 @@ const sizeSides = (kind, f) => {
   }
   // (and a colour's, Life's in colours: its block of the rectangle, a ring's a × b (a bottle's, a strip's, slices along it), the
   // plane's cols × rows; in a circle or a hexagon, its slice as a square)
-  const K = ringColours(tabMode()),
+  const K = ringColours(ringMode()),
     [x, y] = [Math.sqrt(d[2] * r), Math.sqrt(d[2] / r)],
     [a, b] = !S
       ? wallSlices(K, kind)
@@ -18523,7 +18528,7 @@ const battleFits = (
   const fits = () => {
     const solid = !sphere.columns && solidTeamCounts(kind, mode);
     if (solid && (solid.any.includes(K) || !solid.some.includes(K))) return solid.any.includes(K); // (no group of K: none)
-    teamsBuilding = sphere.columns ? K : null;
+    ringBuilt = sphere.columns ? { w, K } : null;
     try {
       // (a solid's start 1 the same kind of point at every size of its class, by construction: the edge farthest from A in
       // its kite, see startList, and its class its size's rest by its startPeriod; and K's fit A's start's kind of point
@@ -18543,7 +18548,7 @@ const battleFits = (
           }).length > 0)
       ); // (its turns, see battleGroups)
     } finally {
-      teamsBuilding = null;
+      ringBuilt = null;
     }
   };
   return (memo[K] ??= fits());

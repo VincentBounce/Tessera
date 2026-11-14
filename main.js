@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.1016';
+const VERSION = '0.4.1017';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -26768,7 +26768,13 @@ function ruleTutorial(entry) {
   const around = [...nb.list.subarray(nb.start[c], nb.start[c + 1])].sort(
     (u, v) => Math.atan2(mid(u)[1] - o[1], mid(u)[0] - o[0]) - Math.atan2(mid(v)[1] - o[1], mid(v)[0] - o[0]),
   );
-  const pts = [c, ...around].flatMap(corners),
+  // the picture laid on its square's diagonal by its longest stretch (a thin one shown up to √2 larger)
+  const flat = [c, ...around].flatMap((t) => corners(t)),
+    [from, to] = flat
+      .flatMap((p) => flat.map((q) => [p, q]))
+      .reduce((a, b) => (Math.hypot(...sub(b[0], b[1])) > Math.hypot(...sub(a[0], a[1])) ? b : a)),
+    laid = (point) => turnPoint(point, Math.PI / 4 - Math.atan2(to[1] - from[1], to[0] - from[0]));
+  const pts = flat.map(laid),
     x0 = Math.min(...pts.map((p) => p[0])),
     y0 = Math.min(...pts.map((p) => p[1]));
   const w = Math.max(...pts.map((p) => p[0])) - x0,
@@ -26778,7 +26784,7 @@ function ruleTutorial(entry) {
   const dying = (s) => stateColour(1 - s / (rule.C - 1)); // stage s (1 … C − 2), down the States ramp
   const points = (t) =>
     corners(t)
-      .map((p) => p.join(','))
+      .map((p) => laid(p).join(','))
       .join(' ');
   // the cell after: its state before shown a moment, fading quickly into the new one, kept (once; ↻ plays it again)
   const L = x0 - pad - (side - w) / 2,
@@ -26929,7 +26935,7 @@ function ruleTutorial(entry) {
     const s = stages.indexOf(centre) + 1,
       light = document.documentElement.dataset.theme === 'light';
     return s
-      ? `<text x="${o[0]}" y="${o[1]}" font-size="${side / 4}" text-anchor="middle" dominant-baseline="central" fill="${1 - s / (rule.C - 1) > 0.45 === light ? '#fff' : '#1f2328'}">✝</text>`
+      ? `<text x="${laid(o)[0]}" y="${laid(o)[1]}" font-size="${side / 4}" text-anchor="middle" dominant-baseline="central" fill="${1 - s / (rule.C - 1) > 0.45 === light ? '#fff' : '#1f2328'}">✝</text>`
       : '';
   }
   $('ruleTuto').innerHTML =

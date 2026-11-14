@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.1023';
+const VERSION = '0.4.1024';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -14788,6 +14788,7 @@ function mobiusSheetOf(kind0, size, count = false) {
     return {
       ...t,
       tiles: t.tiles.flatMap(kitesOf),
+      latticeCells: t.latticeCells.flatMap((c) => [c, c, c]),
       originCell: t.originCell && [3 * t.originCell[0] + 2, t.originCell[1]],
     }; // (its first triangle's first kite, from its corner: the plane's third of it)
   }
@@ -14800,10 +14801,16 @@ function mobiusSheetOf(kind0, size, count = false) {
   const kind = kind0,
     [nv, own] = mobiusSize(size),
     steps = (W) => stripSteps(kind, nv, W, own),
-    tiles = []; // its length, in steps along
+    tiles = [],
+    latticeCells = []; // its length, in steps along
   let n = 0;
-  const put = (tile) => (count ? n++ : tiles.push(tile())),
-    done = (L, W) => (count ? { L, W, n } : { L, W, tiles }); // (a tile made only when kept)
+  // (a tile made only when kept; cell: its lattice cell, the motif it was laid from, as a tiling's strip's: see tilingStrip)
+  const put = (tile, cell = tiles.length) => {
+      if (count) return n++;
+      tiles.push(tile());
+      latticeCells.push(cell);
+    },
+    done = (L, W) => (count ? { L, W, n } : { L, W, tiles, latticeCells });
   if (kind === 'mobiusHexTurned') {
     const W = 1.5 * (nv - 1) + 2,
       S3 = Math.sqrt(3),
@@ -14839,7 +14846,8 @@ function mobiusSheetOf(kind0, size, count = false) {
             [x0, y + 1],
           ],
           cr = [(2 * x0 + x1) / 3, y + 0.5]; // ▶
-        if (cr[0] >= 0 && cr[0] < L && cr[1] > 0.25 && cr[1] < W - 0.25) put(() => right);
+        if (cr[0] >= 0 && cr[0] < L && cr[1] > 0.25 && cr[1] < W - 0.25)
+          put(() => right, 4096 * i + Math.round(2 * y) + 64);
       }
       for (let y = o1 - 2; y < W + 2; y += 1) {
         const left = [
@@ -14848,7 +14856,8 @@ function mobiusSheetOf(kind0, size, count = false) {
             [x0, y + 0.5],
           ],
           cl = [(x0 + 2 * x1) / 3, y + 0.5]; // ◀
-        if (cl[0] >= 0 && cl[0] < L && cl[1] > 0.25 && cl[1] < W - 0.25) put(() => left);
+        if (cl[0] >= 0 && cl[0] < L && cl[1] > 0.25 && cl[1] < W - 0.25)
+          put(() => left, 4096 * i + Math.round(2 * y) + 63); // (with the ▶ half a row up: their side shared)
       }
     }
     return done(L, W);
@@ -14863,7 +14872,7 @@ function mobiusSheetOf(kind0, size, count = false) {
         for (const o of [0, 1]) {
           const [cx, cy] = cairoMiddle(i, j, o);
           if (cx < 0 || cx >= L || cy <= 0 || cy >= W) continue;
-          put(() => cairoCorners(i, j, o));
+          put(() => cairoCorners(i, j, o), 4096 * i + j + 64); // (its square's two pentagons)
         }
     return done(L, W);
   }
@@ -14886,18 +14895,25 @@ function mobiusSheetOf(kind0, size, count = false) {
       const y0 = j * TRIANGLE_HEIGHT,
         y1 = y0 + TRIANGLE_HEIGHT;
       for (let a = (j % 2) / 2 - 2; a < L + 2; a += 1) {
+        const cell = 4096 * j + Math.round(2 * a) + 64; // (▲ and the ▼ beside it, their side shared)
         if (a + 0.5 >= 0 && a + 0.5 < L)
-          put(() => [
-            [a, y0],
-            [a + 1, y0],
-            [a + 0.5, y1],
-          ]); // ▲, its centre at a + ½
+          put(
+            () => [
+              [a, y0],
+              [a + 1, y0],
+              [a + 0.5, y1],
+            ],
+            cell,
+          ); // ▲, its centre at a + ½
         if (a + 1 >= 0 && a + 1 < L)
-          put(() => [
-            [a + 0.5, y1],
-            [a + 1, y0],
-            [a + 1.5, y1],
-          ]); // ▼, at a + 1
+          put(
+            () => [
+              [a + 0.5, y1],
+              [a + 1, y0],
+              [a + 1.5, y1],
+            ],
+            cell,
+          ); // ▼, at a + 1
       }
     }
     return { ...done(L, W), originCell: [-1, 0] }; // (its first tile: row 0's ▼ at a = −1, the plane's triangle −1)
@@ -14918,9 +14934,7 @@ function mobiusSheetOf(kind0, size, count = false) {
 // whose middle is within nv rows of b (a mirror along a: the strip's edges alike) and L along (see MOBIUS_ALONG), as
 // many corners each (the last one repeated); the usual length, the counts' nearest that the twist allows
 function tilingStrip(kind, kind0, size) {
-  const { m, nv, L, W, sides, cells, i0, i1, j0, j1, la } = stripFrame(kind, kind0, size),
-    by = W / nv,
-    cols = Math.ceil(L / la - 1e-9),
+  const { m, L, W, sides, cells, i0, i1, j0, j1 } = stripFrame(kind, kind0, size),
     laid = [];
   for (let j = j0; j <= j1; j++)
     for (let i = i0; i <= i1; i++)
@@ -14933,8 +14947,8 @@ function tilingStrip(kind, kind0, size) {
           x,
           y,
           cell: [k + i * m, j],
-          latticeCell: Math.floor(y / by + 1e-6) * cols + Math.floor(x / la + 1e-6),
-        }); // (cell: the plane's, its x and y)
+          latticeCell: (j - j0) * (i1 - i0 + 1) + (i - i0),
+        }); // (cell: the plane's, its x and y; latticeCell: the plane's lattice cell it was laid from, its motif)
       }
   // lattice cell by lattice cell from its corner: a row of b (its sides mirrors, as y = 0), |a| along it, m tiles each; a mirror through
   // tiles, those on its far edge after; a glide's twist, half a lattice cell at its end
@@ -15205,7 +15219,8 @@ function mobiusMesh(kind, size) {
     uv: new Float64Array(uv),
     front: sheet.length,
     originCell,
-    ...(mids && { uvMid: new Float64Array([...mids, ...mids]), latticeCells: [...latticeCells, ...latticeCells] }),
+    latticeCells: [...latticeCells, ...latticeCells],
+    ...(mids && { uvMid: new Float64Array([...mids, ...mids]) }),
   })); // (a tiling's: its tiles' own middles, see sheetMiddle)
 }
 // The sheet point of a surface: a torus, or a Möbius strip
@@ -16567,7 +16582,7 @@ const sizeHow = (kind, f) => {
 // a sheet's motif, so many tiles: a tiling's torus, Möbius strip or Klein bottle, its lattice cell (g.latticeCells: each tile's, see
 // tilingStrip, tilingTorusMesh); a plain torus's, its sheet cell; the others', the plane's
 const latticeCellSize = (g) =>
-  g.latticeCells
+  g.tiling
     ? TILINGS[g.tiling].polys.length
     : g.torus && !g.mobius && !g.klein
       ? g.n / (g.nu * g.nv)

@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.1051';
+const VERSION = '0.4.1052';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -17534,7 +17534,7 @@ function torusLoops() {
       if (!kept || loop.off < kept.off) best.set(`${loop.laps}`, loop);
     };
     if (g.mobius) {
-      if (!['mobius', 'mobiusTri'].includes(kind) || Math.abs(T[0]) < 1e-6) return; // zigzag edges; or straight across: any length closes it alike
+      if (MOBIUS_ALONG[kind].edgeCuts || Math.abs(T[0]) < 1e-6) return; // zigzag edges; or straight across: any length closes it alike
       const { step, ok } = MOBIUS_ALONG[kind],
         most = Math.floor((LOOP_STEPS - s0 - L) / L);
       for (let nv = Math.min(...S.sizes); nv <= Math.max(...S.sizes); nv++) {
@@ -17558,8 +17558,9 @@ function torusLoops() {
     if (Math.abs(T[0]) < 1e-6 || Math.abs(T[1]) < 1e-6) return; // not diagonal: any size closes it alike
     const U = Math.round(2 * T[0]),
       V = Math.round(2 * T[1]),
-      usual = 48 / (S.columns(48) * S.perRow); // in half tiles
+      usual = 48 / (S.columns(48) * S.perRow); // in half tiles (at 48 rows: its columns whole there, no rounding in its proportions)
     for (let rows = 32; rows <= 64; rows += S.steps[0]) {
+      // (32 to 64 rows: loops of a size to read, whatever the size in use; every size of the surface scattered them from 12 to 237 rows)
       for (let e = Math.ceil(rows / usual / TORUS_RATIO[1]); e <= rows / usual / TORUS_RATIO[0]; e++) {
         if (e % S.steps[1]) continue;
         const cols = e / S.perRow,

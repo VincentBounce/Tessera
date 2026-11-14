@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.1002';
+const VERSION = '0.4.1003';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -8439,6 +8439,7 @@ const ICONS = (() => {
     export: svgPath('M12 15V3M7 8l5-5 5 5M4 14v5a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-5'),
     undo: svgPath('M9 14L4 9L9 4') + svgPath('M4 9H15A5 5 0 0 1 15 19H11'),
     eye: svgPath('M2.5 12Q12 3.5 21.5 12Q12 20.5 2.5 12Z') + '<circle cx="12" cy="12" r="3"/>',
+    ghostWall: `<path d="${pathOf(hex)}" stroke-dasharray="2.4 2"/>`, // a wall hollow, dashed (Ghost walls)
     trash: svgPath('M4 7h16M9 7V4.5h6V7M6 7l1 13h10l1-13M10 11v6M14 11v6'),
     link:
       svgPath('M8 16L16 8') +
@@ -10421,6 +10422,7 @@ const sideWhyNot = (v, s, none, walkRule = null) => {
 // Turned at a mode: its tiling with a turned way round, its blocks coming round so (a block rule's, see blocksTurn); its
 // greyed words
 const TURNED_WHERE = 'This tiling has no other way round (for a block rule, none that brings its blocks round).';
+const GHOST_WHERE = 'Its tiles meet at its edges: no walls.';
 const turnedAllowed = (v, turned = false) => {
   const fam = familyOf(v);
   return !!fam && fam.F.tabs.some(([f, tu]) => f === fam.m && tu) && blocksTurn(v, !turned);
@@ -11095,6 +11097,25 @@ function renderModePicker() {
               whyNot: ({ w: v }) => (turnedAllowed(v, isTurned) ? '' : TURNED_WHERE),
               title: turns ? F.tabs[tabOf(here, true)][4] : 'The tiling turned, its rows another way round',
               click: turn,
+            }),
+          ]
+        : []),
+      ...(MODES[w].sphere?.startsWith('mobius')
+        ? [
+            tile({
+              pic: icon('ghostWall'),
+              text: 'Ghost walls',
+              toggle: true,
+              byDefault: 'off',
+              on: ghostWalls,
+              whyNot: ({ w: v }) => (rimWallsOf(surfaceOf(MODES[v])) ? '' : GHOST_WHERE),
+              title:
+                'The walls along its edges drawn hollow and gone from the run: Life over its edge, the walker and the ant across it, as before walls (its edge’s cells then with neighbours too many or too few)',
+              click: () => {
+                ghostWalls = !ghostWalls;
+                $('sphereF').dispatchEvent(new Event('change'));
+                renderModePicker();
+              },
             }),
           ]
         : []),
@@ -14795,7 +14816,12 @@ const stripSteps = (kind0, nv, W, own, q = 1) => {
     )
   );
 };
-const stripKey = () => `${ringColours(tabMode())}${MODES[tabMode()]?.margolus ? ' blocks' : ''}`; // (a strip's length its colours', a reversible one's its blocks', see stripSteps)
+// Ghost walls: a Möbius strip's walls (see MOBIUS_ALONG's rimWalls) drawn hollow, none in the run: Life's cells over its
+// edge, its walkers and ants across it, as before walls (its edge's cells their neighbours too many or too few)
+let ghostWalls = false;
+const rimWallsOf = (surface) => !!MOBIUS_ALONG[surface]?.rimWalls;
+const stripKey = () =>
+  `${ringColours(tabMode())}${MODES[tabMode()]?.margolus ? ' blocks' : ''}${ghostWalls ? ' ghost' : ''}`; // (a strip's length its colours', a reversible one's its blocks', see stripSteps; its walls ghost or not, see mobiusMesh)
 const stripMemo = remember('stripMemo', weakCache()),
   countMemo = remember('countMemo', {});
 // a strip's length, width and tiles' count, without its tiles (the sizes' ladder asks for many: see mobiusSheetOf's count)
@@ -15219,7 +15245,7 @@ function mobiusMesh(kind, size) {
   // (its edges no mirror between tiles: its tiles with a corner on an edge, both faces', walls; see MOBIUS_ALONG)
   if (MOBIUS_ALONG[kind].rimWalls) {
     const edge = new Set([...index].filter(([key]) => key % 2 === 0 && onEdge[key / 2]).map(([, c]) => c));
-    mesh.walls = [...tiles.keys()].filter((t) => tiles[t].some((c) => edge.has(c)));
+    mesh[ghostWalls ? 'ghostWalls' : 'walls'] = [...tiles.keys()].filter((t) => tiles[t].some((c) => edge.has(c))); // (Ghost walls: drawn hollow, none in the run)
   }
   return (meshCache[key] = Object.assign(mesh, {
     torus: true,
@@ -25400,15 +25426,15 @@ function motifOf(g, t) {
     ...(face ? [[faceRed(), tilesOf(face.face)]] : []),
   ];
 }
-// The motif's outlines as ribbons (see ribbonV): each part's sides not shared by two of its tiles, laid on the form shown, its
-// colours' runs of segments; made again only when its tile, its mesh or its form change
-function motifRibbons(D, g, sh, R) {
-  const key = `${middleTile.t}|${sh.m}|${R}|${motifColour()}`;
-  if (D.motifOf === g && D.motifKey === key) return D.motifParts;
+// Sets of tiles outlined as ribbons (see ribbonV) in the buffer name: each [colour, tiles] its sides not shared by two of its
+// tiles, laid on the form shown, its colours' runs of segments; made again only when its key or its mesh change
+function outlineRibbons(D, name, key, g, sh, R, sets) {
+  const memo = D[`${name}Outline`];
+  if (memo?.g === g && memo.key === key) return memo.marks;
   const k = g.sides,
     data = ribbonSegments(),
     parts = [];
-  for (const [colour, tiles] of motifOf(g, middleTile.t)) {
+  for (const [colour, tiles] of sets()) {
     const from = data.count,
       rim = rimSides(
         tiles.flatMap((t) => Array.from({ length: k }, (_, j) => [t, j])),
@@ -25431,11 +25457,12 @@ function motifRibbons(D, g, sh, R) {
       width: (s) => Math.max(2, Math.min(s / 6, 4)),
     }); // (its width on the screen at a scale, as the plane's motif, see drawMotif)
   }
-  gpuBuffer('motif', data.words());
-  D.motifOf = g;
-  D.motifKey = key;
-  return (D.motifParts = { parts });
+  gpuBuffer(name, data.words());
+  return (D[`${name}Outline`] = { g, key, marks: { parts } }).marks;
 }
+// the motif round its tile (see motifOf), as its form, its tile and its colour change
+const motifRibbons = (D, g, sh, R) =>
+  outlineRibbons(D, 'motif', `${middleTile.t}|${sh.m}|${R}|${motifColour()}`, g, sh, R, () => motifOf(g, middleTile.t));
 // a solid's face of its tile t, as listed: its tiles from … to, and its sector's (a face of several of the mesh's in one plane:
 // a dodecahedron's pentagon, 5 triangles); a solid of squares and triangles: its squares' faces, then its triangles', f² cells
 // each; none but on flat faces of cells (a solid of hexagons: its faces' sides through its hexagons' middles)
@@ -39083,6 +39110,7 @@ function getSetup() {
   if (mode.lattice === 'sphere') s.s = $('sphereF').value;
   if (modeStarts() && startNo() > 1) s.st = startNo();
   if (torusTurned && TURNED[mode.sphere]) s.o = 1;
+  if (ghostWalls && rimWallsOf(surfaceOf(mode))) s.gw = 1;
   if (mode.life) s.r = ruleBody($('lifeRule').value);
   if (mode.life && !mode.margolus && lifeTeams > 1) s.k = lifeTeams;
   if (battleOn()) {
@@ -39160,6 +39188,7 @@ function applySetup(s) {
   set('mode', s.w);
   $('startNo').value = s.st ?? 1;
   torusTurned = Number(s.o) === 1;
+  ghostWalls = Number(s.gw) === 1;
   if (MODES[s.w].sphere) {
     const kind = surfaceOf(MODES[s.w]);
     fillSphereSizes(kind, MODES[s.w].initial);
@@ -39333,6 +39362,7 @@ const setupDetail = (s) => {
     s.s && `size ${String(s.s).replace('x', ' × ')}`,
     s.st > 1 && `start ${s.st}`,
     Number(s.o) === 1 && 'turned 30°',
+    Number(s.gw) === 1 && 'ghost walls',
     Number(s.q) === 1 && 'square sheet',
   ]
     .filter(Boolean)
@@ -43182,6 +43212,9 @@ function gpuSurface(paint, path) {
     // its colour and its width on the screen, unfaded, over the tiles; the starts' flags (and cones, hovered: see startHeads)
     const marks = [
       ...(motifShown && middleTile.g === g && middleTile.t >= 0 ? [['motif', motifRibbons(D, g, sh, R)]] : []),
+      ...(g.ghostWalls
+        ? [['ghost', outlineRibbons(D, 'ghost', `${sh.m}|${R}`, g, sh, R, () => [[LIFE_WALL, g.ghostWalls]])]]
+        : []), // (Ghost walls: hollow, always)
       ...(startsShown ? [['starts', startMarks(g, sh, R)]] : []),
     ];
     if (marks.length) {

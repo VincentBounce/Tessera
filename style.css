@@ -258,8 +258,6 @@ textarea {
 :where(input[type='number'], input[type='text'], select, textarea) {
   font: inherit;
 } /* (of no weight: a class's font wins over it, .rule's) */
-/* the formula, like the number of digits under it: a field that looks like a label until it
-   is hovered or used; in yellow bold when it is the number chosen (no card matches it) */
 /* a formula of its own, in yellow on a picked tile's pale gold: no card matches it (beside its cards: in a battle's Walkers,
    none); at rest only: edited, it is edited as every field is */
 .field :is(input, textarea).custom:not(#battleStart *, :focus) {
@@ -616,7 +614,7 @@ h3 {
    the choice buttons, from the left, and edited alike, in plain monospace on a yellow-framed field, ↵
    at its end; the steppers' (digits, start) centred at rest, written out ("20,000 digits") */
 .field :is(input, textarea) {
-  background: transparent;
+  background: var(--page-background); /* (light grey at rest, the page's: white or black edited, gold picked) */
   border-color: var(--border-color);
   text-align: left;
 }

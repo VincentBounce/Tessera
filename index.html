@@ -10,7 +10,7 @@
   <meta property="og:url" content="https://vincentbounce.github.io/Tessera/">
   <meta property="og:type" content="website">
   <link id="favicon" rel="icon">  <!-- the app's logo, set at start-up (see LOGO_PATH) -->
-  <link rel="stylesheet" href="style.css?v=0.4.1039">
+  <link rel="stylesheet" href="style.css?v=0.4.1040">
   <script>  // the theme before the first paint (see applyTheme)
     try { const t = localStorage.getItem('tesseraTheme'); document.documentElement.dataset.theme = t === 'light' || t === 'dark' ? t : matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark'; } catch { document.documentElement.dataset.theme = 'dark'; }
   </script>
@@ -449,7 +449,7 @@
               <button id="stop" data-icon="stop" title="Stop" aria-label="Stop"></button>
               <button id="play" title="Play" aria-label="Play"></button>
               <button id="step" data-icon="step" title="One step" aria-label="One step"></button>
-              <button id="end" data-icon="end" title="Jump to the end, through its stops" aria-label="Jump to the end"></button>  <!-- (a run with an end known at once: a walk; Life, a reversible one: its green link and +10k) -->
+              <button id="end" data-icon="end" title="Jump to the end, through its stops" aria-label="Jump to the end"></button>  <!-- (a run with an end known: a walk's at once; Life's, a reversible one's, once its loop is found: +10k till then) -->
               <button id="jump10k" title="10,000 generations ahead (E, while its end is not known)">+10k</button>
             </div>
           </div>
@@ -518,10 +518,10 @@
     </div>
   </main>
 
-  <script src="pixelarticons.js?v=0.4.1039"></script>
-  <script src="punks.js?v=0.4.1039"></script>
-  <script src="loops.js?v=0.4.1039"></script>
-  <script src="emoji.js?v=0.4.1039"></script>
-  <script src="main.js?v=0.4.1039"></script>
+  <script src="pixelarticons.js?v=0.4.1040"></script>
+  <script src="punks.js?v=0.4.1040"></script>
+  <script src="loops.js?v=0.4.1040"></script>
+  <script src="emoji.js?v=0.4.1040"></script>
+  <script src="main.js?v=0.4.1040"></script>
 </body>
 </html>

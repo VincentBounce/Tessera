@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.1039';
+const VERSION = '0.4.1040';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -44745,10 +44745,9 @@ function updateStats() {
   setTile($('back'), {
     greyed: tooFar ? 'So far from its start: played again from it, more than a second.' : backAtStart,
   });
-  $('jump10k').hidden = !lifePlayer(); // (Life, a reversible one: 10,000 generations ahead, while its end is not known)
-  setTile($('jump10k'), {
-    greyed: busy ? 'Its run is not built yet.' : runLoop() ? 'Its loop is known: its end is in sight.' : '',
-  });
+  // (Life, a reversible one: 10,000 generations ahead while its end is not known; known, its loop found: End in its place)
+  $('jump10k').hidden = !lifePlayer() || !!runLoop();
+  setTile($('jump10k'), { greyed: busy ? 'Its run is not built yet.' : '' });
   // (a button its way's arrow, stopped or turning back at the slowest: that way's own; its rabbit at the fastest: none faster)
   const fastest = (id) => playerButton(id).pic === 'faster' && playerButton(id).next === undefined;
   setTile($('stop'), { greyed: playing || reversing ? '' : 'Already stopped.' });
@@ -44765,7 +44764,7 @@ function updateStats() {
           : backAtStart,
   });
   setTile($('step'), { greyed: atEnd() ? 'Already at the end.' : '' });
-  $('end').hidden = lifePlayer(); // (Life, a reversible one: its green link and +10k)
+  $('end').hidden = lifePlayer() && !runLoop(); // (Life, a reversible one: +10k till its end is known)
   if (drawing && walk.plane && drawAway() !== drawToolsAway) renderDrawTools(); // (Draw: its tools at gen 0 only; drawn again as play leaves it or comes back, not each frame: 785 cards)
   setTile($('end'), { greyed: runStops().some((g) => g > stepShown) ? '' : 'No stop ahead.' });
   // the step or generation shown, its own line, every mode: Step 15,964, Gen 132; its last after it where the run has one
@@ -45241,8 +45240,9 @@ $('reverse').addEventListener('click', () => playerButton('reverse').go());
 $('jump10k').addEventListener('click', () => advanceTo(stepShown + 10000));
 // Begin (⏮): back to its start (0), then to its first (a reversible one's past's furthest); its loop and its ordered moments
 // by their links instead (see loopLink, genLink). Its start, written at once (restart), not played to
-const runStops = () => [...new Set([runStart(), 0, runEnd()])].filter(Number.isFinite).sort((x, y) => x - y);
-// End (⏭), the same forth (a run with its end known at once: a walk; Life's and a reversible one's, their green link and +10k)
+const runStops = () => [...new Set([runStart(), 0, seekFar()])].filter(Number.isFinite).sort((x, y) => x - y);
+// End (⏭), the same forth (a run with its end known: a walk's at once; Life's and a reversible one's once its loop is found,
+// its last step, +10k in its place till then)
 function goStop(dir) {
   // (stopped there, as a step's buttons stop it)
   const g = dir < 0 ? runStops().findLast((x) => x < stepShown) : runStops().find((x) => x > stepShown);

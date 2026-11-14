@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.1013';
+const VERSION = '0.4.1014';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -26648,18 +26648,20 @@ function surfaceKinds(g, nb) {
   const kinds = [...first.values()].sort((u, v) => count(v) - count(u));
   return { kinds, shapeOf: new Map(kinds.map((t) => [t, sides(t)])) };
 }
-// a surface's cell: its corners (P), their middle (m) and its plane's normal (N, Newell's)
+// a surface's cell: its corner ids (ids), their points (P), their middle (m) and its plane's normal (N, Newell's)
 function cellPlane(g, t) {
   const M = meshCorners(g),
     V = g.verts,
-    P = Array.from(M.list.subarray(M.start[t], M.start[t + 1]), (v) => [V[3 * v], V[3 * v + 1], V[3 * v + 2]]),
+    ids = [...M.list.subarray(M.start[t], M.start[t + 1])],
+    P = ids.map((v) => [V[3 * v], V[3 * v + 1], V[3 * v + 2]]),
     n = [0, 0, 0];
   newellNormal(Float64Array.from(P.flat()), 0, P.length, n);
-  return { P, m: meanPoint(P, 3), N: unit(n) };
+  return { ids, P, m: meanPoint(P, 3), N: unit(n) };
 }
-// a surface's cell t drawn flat: its corners on the plane of cell on (see cellPlane), from its middle
+// a surface's cell t drawn flat round cell on (How it works): unfolded onto its plane, turned about a corner they share by
+// the turn that lays its normal on on's (about their shared side, if any: the solid's net; gaps where the surface bends)
 function cellOnPlaneOf(g, t, on) {
-  const { P, m, N } = cellPlane(g, on),
+  const { ids, P, m, N } = cellPlane(g, on),
     a = sub(P[0], m),
     U = unit(
       sub(
@@ -26667,8 +26669,23 @@ function cellOnPlaneOf(g, t, on) {
         N.map((x) => x * dot(a, N)),
       ),
     ),
-    W = cross(N, U);
-  return cellPlane(g, t).P.map((p) => [dot(sub(p, m), U), -dot(sub(p, m), W)]); // (y down, as the page's)
+    W = cross(N, U),
+    cell = cellPlane(g, t),
+    pivot = cell.P[cell.ids.findIndex((v) => ids.includes(v))] ?? m,
+    k = cross(cell.N, N),
+    sin = Math.hypot(...k),
+    cos = dot(cell.N, N),
+    axis = sin > 1e-9 ? k.map((x) => x / sin) : [0, 0, 0];
+  const unfold = (p) => {
+    const v = sub(p, pivot),
+      along = axis.map((x) => x * dot(axis, v) * (1 - cos)),
+      turned = v.map((x, d) => x * cos + cross(axis, v)[d] * sin + along[d]);
+    return turned.map((x, d) => x + pivot[d] - m[d]);
+  }; // (Rodrigues')
+  return cell.P.map((p) => {
+    const q = sin > 1e-9 ? unfold(p) : sub(p, m);
+    return [dot(q, U), -dot(q, W)];
+  }); // (y down, as the page's)
 }
 function ruleTutorial(entry) {
   $('appTab').classList.remove('open'); // (the app's tab, Credits': off, another page or none)

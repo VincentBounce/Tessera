@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.1024';
+const VERSION = '0.4.1025';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -25297,15 +25297,14 @@ const planeMotifCells = () => {
 };
 const FADING = 0.3; // (the cells this pale: under a walk's line, or Area's Light)
 // A size hovered (its motif) or the start (the starts): the others faded under them, every one alike, fills and outlines
-// (the stage's class: see style.css; the graphics card's by its shaders, the starts only: a surface's motif its tiles
-// filled, see motifOf); the plane's motif drawn on its own layer, a surface's motif and starts by the graphics card (see
-// gpuSurface)
+// (the stage's class: see style.css; the graphics card's by its shaders, a surface's motif's tiles kept unfaded, see
+// tileV); the plane's motif drawn on its own layer, a surface's motif and starts by the graphics card (see gpuSurface)
 // how far the others are faded (0 to 1): easing to the hover's over WALK_FADE_SECONDS, as a cell fades in, back from where it
 // is when left before the end (the graphics card's by its shader, f[66]; the stage's canvases by their style, as long)
 const hoverFading = { from: 0, to: 0, at: 0 };
 function hoverFade() {
   const now = performance.now() / 1000,
-    want = startsShown ? 1 : 0,
+    want = motifShown || startsShown ? 1 : 0,
     { from, to, at } = hoverFading,
     level = from + (to - from) * Math.min(1, (now - at) / WALK_FADE_SECONDS);
   if (want !== to) {
@@ -42371,13 +42370,14 @@ fn band(t: texture_2d<f32>, x: f32) -> vec3f { let w = i32(textureDimensions(t).
 // step i's rainbow (see rainbowBand): a closed loop's steps round its period, along the walk's length u.N (rainbowLength)
 fn rainbow(i0: f32) -> vec3f { var i = i0; if (u.period > 0.0 && i >= u.loopFrom + u.period) { i = u.loopFrom + (i - u.loopFrom) - u.period * floor((i - u.loopFrom) / u.period); } return band(grad, (i + 0.5) / u.N); }
 fn glass(c0: vec3f, a: f32, z: f32) -> vec4f {
-  let c = mix(c0, u.fadeTo, u.fade);
+  let c = mix(c0, u.fadeTo, u.fade * (1.0 - unfaded));
   if (u.glass == 0) { return vec4f(c, a); }
   let w = clamp(a * 1e3 * pow(1.0 - z, 8.0), 1e-2, 3e3);
   if (u.glass == 1) { return vec4f(c * a * w, a * w); }
   return vec4f(a);
 }
-struct Lit { @builtin(position) pos: vec4f, @location(0) dark: vec3f, @location(1) lit: vec3f, @location(2) sh: vec3f, @location(3) cutv: f32 }
+struct Lit { @builtin(position) pos: vec4f, @location(0) dark: vec3f, @location(1) lit: vec3f, @location(2) sh: vec3f, @location(3) cutv: f32, @location(4) keep: f32 }
+var<private> unfaded: f32 = 0.0;  // (a tile kept out of the hover's fade: the motif's, its colour's alpha 254, see gpuSurface)
 fn light(col: vec3f, n0: vec3f, p: vec3f, bias: f32) -> Lit {  // (as tileLight; sh: its place in the shadows' texture, rows down)
   var o: Lit; var n = n0;
   if (dot(n, u.V) < 0.0) { n = -n; }
@@ -42392,6 +42392,7 @@ fn light(col: vec3f, n0: vec3f, p: vec3f, bias: f32) -> Lit {  // (as tileLight;
 @group(1) @binding(1) var shadowCmp: sampler_comparison;
 @fragment fn shadowedF(i: Lit) -> @location(0) vec4f {  // (the share of the light: 9 looks round it, each softened by the hardware's compare)
   if (u.cut == 1 && i.cutv > 0.0) { discard; }
+  unfaded = i.keep;
   if (u.front > 0.5) { return glass(i.dark + i.lit, 1.0, i.pos.z); }  // (the view's axes: lit, no shadow, not in the world)
   let t = 1.0 / ${SHADOW_SIZE}.0; var s = 0.0;
   for (var a = -1; a <= 1; a++) { for (var b = -1; b <= 1; b++) {
@@ -42405,7 +42406,9 @@ fn light(col: vec3f, n0: vec3f, p: vec3f, bias: f32) -> Lit {  // (as tileLight;
 @vertex fn tileV(@location(0) pos: vec3f, @location(1) nrm: vec3f, @location(2) id: u32) -> Lit {
   var col = u.plain.rgb;  // (the back of an open sheet; else its tile's colour)
   if (u.plain.a <= 0.0) { col = unpack4x8unorm(tileCol[id]).rgb; }
-  return light(col, nrm, pos, 0.0);
+  var o = light(col, nrm, pos, 0.0);
+  if (u.plain.a <= 0.0 && unpack4x8unorm(tileCol[id]).a < 0.999) { o.keep = 1.0; }
+  return o;
 }
 // a 3D walk's step as a bar, from a to b0 as its life draws it (see lifeOf: its step its instance's, k), u.halfW thick, its
 // ends closed past its points by half its thickness: a unit cube's corner c (and its normal) laid along it; none yet: off
@@ -42543,7 +42546,7 @@ function gpuView(words, k, depth, more = {}) {
   f.set([canvasWidth, canvasHeight], 46);
   i[48] = cutOn() ? 1 : 0;
   f.set(cutNormal(), 60); // (Cut's plane, facing its axis: see CUT_AXES)
-  f[66] = (1 - FADING) * hoverFade(); // (the start hovered: all but the starts this pale, see drawHover)
+  f[66] = (1 - FADING) * hoverFade(); // (a size or the start hovered: all but the motif this pale, see drawHover)
   const now = glideAt();
   i[63] = Math.floor(now);
   f[65] = now - Math.floor(now); // (the step shown and its share of the next: the lines' lives, see lifeOf)
@@ -42981,7 +42984,8 @@ function gpuSurface(paint, path) {
   // (the motif's tiles in its colours over theirs while it shows, lit as the others: see motifOf)
   if (motifShown && middleTile.g === g && middleTile.t >= 0)
     for (const [colour, tiles] of motifOf(g, middleTile.t).filled)
-      for (const t of tiles) device.queue.writeBuffer(D.tileCol, 4 * t, Uint32Array.of(packed(colour)));
+      for (const t of tiles)
+        device.queue.writeBuffer(D.tileCol, 4 * t, Uint32Array.of((packed(colour) & 0xffffff) | (254 << 24))); // (alpha 254: unfaded, see tileV)
   const depth = 4 * R * Math.max(sh.extent, sh.maxExtent ?? sh.extent),
     tileSize = R * sh.extent * Math.sqrt((4 * Math.PI) / n);
   const edgeBias = (0.07 * tileSize) / depth,

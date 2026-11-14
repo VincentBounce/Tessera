@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.1045';
+const VERSION = '0.4.1046';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -14263,7 +14263,7 @@ for (const k of Object.keys(TUBE_SHAPE)) TUBE_SHAPE[k.replace('torus', 'klein')]
 const tubeFor = (kind, nv, nu) => (TUBE_SHAPE[kind] * nv) / nu;
 // One length for every ring and strip (a torus's, a Klein bottle's round its ring, a Möbius strip's along it), in its steps: near
 // x (its usual), its colours' blocks square (as long round as across: square) when that is 20 % shorter to 60 % longer, a whole
-// count of unit (each colour's block whole) as ok allows (a twist's), else the nearest ok allows. Life's colours, a walk's battle's walkers.
+// count of the first of units (each colour's block whole: the coarsest first) ok allows (a twist's), else the nearest ok allows. Life's colours, a walk's battle's walkers.
 // Square or not by the shape asked, then rounded (by its rounding, Duel's square, 0.8 x on the dot, went one size in two)
 const ringColours = (w) =>
   MODES[w]?.margolus
@@ -14279,7 +14279,7 @@ const ringColours = (w) =>
 // one being judged (ringBuilt, its K walkers: see battleFits), never the tab's by accident (the menu judges other modes)
 let ringBuilt = null;
 const ringMode = () => ringBuilt?.w ?? tabMode();
-function ringLength(x, square, unit, ok = () => true) {
+function ringLength(x, square, units, ok = () => true) {
   // (the whole count of u nearest t that ok allows: below and above it in turn, the nearer first; before v0.3.90 one more before one
   // less, whatever their distance: a strip 84 long, not 82, for 82.9)
   const near = (t, u) => {
@@ -14288,16 +14288,18 @@ function ringLength(x, square, unit, ok = () => true) {
       for (const n of [Math.floor(c) - d, Math.ceil(c) + d].sort((a, b) => Math.abs(a - c) - Math.abs(b - c)))
         if (n >= 1 && ok(n * u)) return n * u;
   };
-  return square >= 0.8 * x - 1e-9 && square <= 1.6 * x + 1e-9
-    ? (near(square, unit) ?? near(square, 1))
-    : (near(x, unit) ?? near(x, 1));
+  const t = square >= 0.8 * x - 1e-9 && square <= 1.6 * x + 1e-9 ? square : x;
+  for (const u of [...units, 1]) {
+    const n = near(t, u);
+    if (n) return n;
+  }
 }
 // a torus's (a Klein bottle's) columns round the ring near x: its colours' blocks a × b (see torusBlocks; a bottle's, slices
 // along its ring), a whole count of them and of step (the hexagons' and the triangles': even)
 function ringColumns(x, nv, step = 1, klein = false, ok) {
   const K = ringColours(ringMode()),
     [a, b] = klein ? [K, 1] : torusBlocks(K, { nv });
-  return ringLength(x, (x * TORUS_TUBE * a) / b, a % step ? a * step : a, ok);
+  return ringLength(x, (x * TORUS_TUBE * a) / b, [a % step ? a * step : a], ok);
 }
 
 /* Grid point (i, j) of an nu × nv torus, rolled up by m ∈ [0, 1]: at m = 0 a flat rectangle
@@ -14613,13 +14615,18 @@ const MOBIUS_KINDS = [
  * half twist (see mobiusSheet): ok, the counts that tile it. A size is its rows (the usual length
  * for them), or rows "x" that count, a length of its own (s=16x240: 16 rows of triangles 120 long). */
 const MOBIUS_ALONG = {
-  mobius: { step: 1, ok: () => true },
-  mobiusTri: { step: 0.5, ok: (n, nv) => n % 2 === nv % 2 },
-  mobiusHex: { step: 1.5, ok: (n) => n % 2 === 1, edgeCuts: true },
-  mobiusHexTurned: { step: TRIANGLE_HEIGHT, ok: (n, nv) => n % 2 === (nv % 2 ? 0 : 1), edgeCuts: true },
-  mobiusTriTurned: { step: TRIANGLE_HEIGHT, ok: (n) => n % 2 === 0, edgeCuts: true },
-  mobiusCairo: { step: 1, ok: (n, nv) => (n + nv) % 2 === 1, edgeCuts: true },
-}; // (edgeCuts: its edges no mirror between its tiles, its edge's cells' neighbours not as in its middle: see edgeCells)
+  mobius: { step: 1, copyLength: 1, ok: () => true },
+  mobiusTri: { step: 0.5, copyLength: 1, ok: (n, nv) => n % 2 === nv % 2 },
+  mobiusHex: { step: 1.5, copyLength: 3, ok: (n) => n % 2 === 1, edgeCuts: true },
+  mobiusHexTurned: {
+    step: TRIANGLE_HEIGHT,
+    copyLength: 2 * TRIANGLE_HEIGHT,
+    ok: (n, nv) => n % 2 === (nv % 2 ? 0 : 1),
+    edgeCuts: true,
+  },
+  mobiusTriTurned: { step: TRIANGLE_HEIGHT, copyLength: 2 * TRIANGLE_HEIGHT, ok: (n) => n % 2 === 0, edgeCuts: true },
+  mobiusCairo: { step: 1, copyLength: 2, ok: (n, nv) => (n + nv) % 2 === 1, edgeCuts: true },
+}; // (copyLength: the least slide along that brings its tiling onto itself, a tiling's strip's too: see mobiusMirror; edgeCuts: its edges no mirror between its tiles, its edge's cells' neighbours not as in its middle: see edgeCells)
 MOBIUS_ALONG.mobiusKite = MOBIUS_ALONG.mobiusTri; // kites: the triangles', each cut in 3
 MOBIUS_ALONG.mobiusKiteTurned = MOBIUS_ALONG.mobiusTriTurned;
 // A tiling's mirror along a side a of its lattice (with b, a lattice cell), the plane turned so that a runs along x: the
@@ -14722,9 +14729,11 @@ function mobiusPoint(x, y, L, W, m) {
  *   wide, an even number of columns; the edges zigzag along them. */
 // a Möbius strip's length in its steps along (see MOBIUS_ALONG): its own, else as a ring's (see ringLength): its usual (its circle,
 // its width MOBIUS_WIDTH times its radius), its K colours' stretches of its loop (its two faces, 2L) square (W long), whole counts of
-// q steps (a tiling's copy along), as its twist allows
-const stripSteps = (kind0, nv, W, own, q = 1) => {
-  const { step, ok } = MOBIUS_ALONG[kind0],
+// q steps (its tiling's copy along, see MOBIUS_ALONG: a slide by a stretch then lays the tiling on itself, a battle's walkers
+// starting alike, see battleFits), else of steps, as its twist allows
+const stripSteps = (kind0, nv, W, own) => {
+  const { step, ok, copyLength } = MOBIUS_ALONG[kind0],
+    q = Math.round(copyLength / step),
     K = ringColours(ringMode()),
     along = MODES[ringMode()]?.margolus ? (BLOCK_ALONG[kind0] ?? 1) : 1; // (a reversible one's: its blocks' sets come round along it)
   return (
@@ -14732,7 +14741,7 @@ const stripSteps = (kind0, nv, W, own, q = 1) => {
     ringLength(
       (2 * Math.PI * W) / MOBIUS_WIDTH / step,
       (K * W) / 2 / step,
-      (K * q) % 2 ? K * q : (K * q) / 2,
+      [q, 1].map((steps) => ((K * steps) % 2 ? K * steps : (K * steps) / 2)),
       (n) => ok(n, nv) && n % along === 0,
     )
   );
@@ -14954,7 +14963,7 @@ function stripFrame(kind, kind0, size) {
     { c } = mobiusMirror(kind, [a, b]);
   const [nv, own] = mobiusSize(size),
     W = nv * turnPoint(b, turn)[1],
-    n = stripSteps(kind0, nv, W, own, Math.round(MOBIUS_ALONG[kind0].copyLength / step)); // (its colours' stretches whole copies along)
+    n = stripSteps(kind0, nv, W, own); // (its colours' stretches whole copies along)
   const L = n * step,
     sides = Math.max(...t.polys.map((P) => P.length)),
     by = W / nv,
@@ -15066,7 +15075,7 @@ function kleinLength(kindK, size, K = ringColours(ringMode())) {
   // (a glide's half a lattice cell, turned over: as teamsFair counts them, each tile in its own middle's, see partPlaces), as the twist
   // allows (whole lattice cells, Pent 15's twist asking an odd length, had none for Trio)
   const x = W / TORUS_TUBE / step,
-    n = own ?? ringLength(x, x * TORUS_TUBE * K, K * Math.round(copyLength / step), (c) => ok(c, nv));
+    n = own ?? ringLength(x, x * TORUS_TUBE * K, [K * Math.round(copyLength / step)], (c) => ok(c, nv));
   return { kind, strip, turn, nv, n, W, step, by, a };
 }
 function kleinTilingMesh(kindK, size) {

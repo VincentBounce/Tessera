@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.1022';
+const VERSION = '0.4.1023';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -25282,14 +25282,15 @@ const planeMotifCells = () => {
 };
 const FADING = 0.3; // (the cells this pale: under a walk's line, or Area's Light)
 // A size hovered (its motif) or the start (the starts): the others faded under them, every one alike, fills and outlines
-// (the stage's class: see style.css; the graphics card's by its shaders); the plane's motif drawn on its own layer, a
-// surface's motif and starts by the graphics card (see gpuSurface)
+// (the stage's class: see style.css; the graphics card's by its shaders, the starts only: a surface's motif its tiles
+// filled, see motifOf); the plane's motif drawn on its own layer, a surface's motif and starts by the graphics card (see
+// gpuSurface)
 // how far the others are faded (0 to 1): easing to the hover's over WALK_FADE_SECONDS, as a cell fades in, back from where it
 // is when left before the end (the graphics card's by its shader, f[66]; the stage's canvases by their style, as long)
 const hoverFading = { from: 0, to: 0, at: 0 };
 function hoverFade() {
   const now = performance.now() / 1000,
-    want = motifShown || startsShown ? 1 : 0,
+    want = startsShown ? 1 : 0,
     { from, to, at } = hoverFading,
     level = from + (to - from) * Math.min(1, (now - at) / WALK_FADE_SECONDS);
   if (want !== to) {
@@ -25337,9 +25338,9 @@ let middleTile = { g: null, t: -1 };
 const latticeCellTiles = (g) =>
   (g.latticeCellTiles ??= Map.groupBy([...Array(g.n).keys()], (t) => latticeCellOf(g, t)));
 // A surface's motif round tile t (see middleTile), as its size's tooltip tells it, each part its colour and its
-// tiles: a sheet's lattice cell, a rosette sphere's disc's middle (the half t is on), a solid's cell (a kite's triangle, a
-// tetrakis square, a square of a solid of squares and triangles: blue), violet; its first cell green when it has several; a
-// solid's face red round it (its sector blue)
+// tiles: filled (see gpuSurface), a sheet's lattice cell, a rosette sphere's disc's middle (the half t is on), a solid's
+// cell (a kite's triangle, a tetrakis square, a square of a solid of squares and triangles: blue), violet, its first cell
+// green when it has several; outlined (see motifRibbons), a solid's face red round it (its sector blue)
 function motifOf(g, t) {
   const m = g.kite ? 3 : g.squares ? 4 : 1, // (a kite's triangle, 3 kites; a tetrakis square, 4 triangles)
     motif = g.rosette
@@ -25349,12 +25350,16 @@ function motifOf(g, t) {
         : Array.from({ length: m }, (_, j) => Math.floor(t / m) * m + j);
   const square = g.triFaces && t < g.triFirst,
     face = faceOf(g, motif[0]);
-  return [
-    [square ? cssColour('--sector-color') : motifColour(), motif],
-    ...(motif.length > 1 ? [[cssColour('--cell-color'), [motif[0]]]] : []),
-    ...(face?.sector ? [[cssColour('--sector-color'), tilesOf(face.sector)]] : []),
-    ...(face ? [[faceRed(), tilesOf(face.face)]] : []),
-  ];
+  return {
+    filled: [
+      [square ? cssColour('--sector-color') : motifColour(), motif],
+      ...(motif.length > 1 ? [[cssColour('--cell-color'), [motif[0]]]] : []),
+    ],
+    outlined: [
+      ...(face?.sector ? [[cssColour('--sector-color'), tilesOf(face.sector)]] : []),
+      ...(face ? [[faceRed(), tilesOf(face.face)]] : []),
+    ],
+  };
 }
 // Sets of tiles outlined as ribbons (see ribbonV) in the buffer name: each [colour, tiles] its sides not shared by two of its
 // tiles, laid on the form shown, its colours' runs of segments; made again only when its key or its mesh change; width: on
@@ -25387,8 +25392,11 @@ function outlineRibbons(D, name, key, g, sh, R, sets, width = (s) => Math.max(2,
   return (D[`${name}Outline`] = { g, key, marks: { parts } }).marks;
 }
 // the motif round its tile (see motifOf), as its form, its tile and its colour change
-const motifRibbons = (D, g, sh, R) =>
-  outlineRibbons(D, 'motif', `${middleTile.t}|${sh.m}|${R}|${motifColour()}`, g, sh, R, () => motifOf(g, middleTile.t));
+const motifRibbons = (D, g, sh, R) => {
+  const outlined = () => motifOf(g, middleTile.t).outlined;
+  return outlineRibbons(D, 'motif', `${middleTile.t}|${sh.m}|${R}|${faceRed()}`, g, sh, R, outlined);
+};
+
 // a Möbius strip's edge's cells (see edgeCells), outlined as fine as the grid's lines (a pixel)
 const edgeRibbons = (D, g, sh, R) => {
   const cells = () => [[cssColour('--edge-cells-color'), g.edgeCells]];
@@ -42520,7 +42528,7 @@ function gpuView(words, k, depth, more = {}) {
   f.set([canvasWidth, canvasHeight], 46);
   i[48] = cutOn() ? 1 : 0;
   f.set(cutNormal(), 60); // (Cut's plane, facing its axis: see CUT_AXES)
-  f[66] = (1 - FADING) * hoverFade(); // (a size or the start hovered: all but the motif this pale, see drawHover)
+  f[66] = (1 - FADING) * hoverFade(); // (the start hovered: all but the starts this pale, see drawHover)
   const now = glideAt();
   i[63] = Math.floor(now);
   f[65] = now - Math.floor(now); // (the step shown and its share of the next: the lines' lives, see lifeOf)
@@ -42955,6 +42963,10 @@ function gpuSurface(paint, path) {
     D.geoGen = (D.geoGen ?? 0) + 1;
   }
   paint({ put: (col) => device.queue.writeBuffer(D.tileCol, 0, col), buffer: D.tileCol, n }, n);
+  // (the motif's tiles in its colours over theirs while it shows, lit as the others: see motifOf)
+  if (motifShown && middleTile.g === g && middleTile.t >= 0)
+    for (const [colour, tiles] of motifOf(g, middleTile.t).filled)
+      for (const t of tiles) device.queue.writeBuffer(D.tileCol, 4 * t, Uint32Array.of(packed(colour)));
   const depth = 4 * R * Math.max(sh.extent, sh.maxExtent ?? sh.extent),
     tileSize = R * sh.extent * Math.sqrt((4 * Math.PI) / n);
   const edgeBias = (0.07 * tileSize) / depth,

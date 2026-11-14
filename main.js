@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.993';
+const VERSION = '0.4.994';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -880,8 +880,8 @@ const DIRS = [
   [0, 1],
   [-1, 0],
 ]; // N, E, S, W (screen y points down)
-const H = Math.sqrt(3) / 2; // height of a triangle with side 1
-const TRI_Y0 = (-2 * H) / 3; // offset that puts the centre of the starting triangle at (0, 0)
+const TRIANGLE_HEIGHT = Math.sqrt(3) / 2; // height of a triangle with side 1
+const TRI_Y0 = (-2 * TRIANGLE_HEIGHT) / 3; // offset that puts the centre of the starting triangle at (0, 0)
 const BANDS = 256;
 // The walk's colours, per theme (see applyTheme): the rainbow darker on a light page, the digits'
 // grey instead of white, the one colour a deeper amber
@@ -12614,7 +12614,7 @@ function key3(x, y, z) {
 
 /* ---- 6.3 Hexagons ------------------------------------------------------------------------- */
 /* Hexagonal tiling (flat-topped hexagons, centres 1 apart).
- * Position = a·u0 + b·u1 with u0 = N = (0, −1) and u1 = NE = (H, −1/2) on screen.
+ * Position = a·u0 + b·u1 with u0 = N = (0, −1) and u1 = NE = (TRIANGLE_HEIGHT, −1/2) on screen.
  * Directions clockwise: 0 = N, 1 = NE, 2 = SE, 3 = S, 4 = SW, 5 = NW. */
 const HEX_DIRS = [
   [1, 0],
@@ -12693,7 +12693,7 @@ function wormStepper(digits) {
     a += HEX_DIRS[d][0];
     b += HEX_DIRS[d][1];
     step.took = c;
-    return [planeKey(a, b), b * H, -a - b / 2, 0];
+    return [planeKey(a, b), b * TRIANGLE_HEIGHT, -a - b / 2, 0];
   };
   return step;
 }
@@ -12751,7 +12751,7 @@ function hexSpiralStepper() {
     return hexAt(a, b);
   };
 }
-const hexAt = (a, b) => [planeKey(a, b), b * H, -a - b / 2, 0]; // a hexagon (a, b): its key and its centre
+const hexAt = (a, b) => [planeKey(a, b), b * TRIANGLE_HEIGHT, -a - b / 2, 0]; // a hexagon (a, b): its key and its centre
 
 /* ---- 6.4 Triangles ------------------------------------------------------------------------ */
 /* Triangle tiling: cell (c, r) points up when c + r is even.
@@ -12779,7 +12779,13 @@ function triStepper(kind) {
       right = ccw[(i + 1) % 3];
     if (kind !== 'spiral' && kind[g][0] === 'pivot') {
       entry = ccw[mod(i - kind[g][1], 3)];
-      return [planeKey(c, r), c / 2, r * H + (up ? (2 * H) / 3 : H / 3) + TRI_Y0, 0, entry];
+      return [
+        planeKey(c, r),
+        c / 2,
+        r * TRIANGLE_HEIGHT + (up ? (2 * TRIANGLE_HEIGHT) / 3 : TRIANGLE_HEIGHT / 3) + TRI_Y0,
+        0,
+        entry,
+      ];
     } // (l: its edges one round to the left)
     const edge =
       kind === 'spiral'
@@ -12793,7 +12799,12 @@ function triStepper(kind) {
     entry = edge;
     visited.add(planeKey(c, r));
     const upNow = ((c + r) & 1) === 0,
-      at = [planeKey(c, r), c / 2, r * H + (upNow ? (2 * H) / 3 : H / 3) + TRI_Y0, 0];
+      at = [
+        planeKey(c, r),
+        c / 2,
+        r * TRIANGLE_HEIGHT + (upNow ? (2 * TRIANGLE_HEIGHT) / 3 : TRIANGLE_HEIGHT / 3) + TRI_Y0,
+        0,
+      ];
     return spot ? [...at, entry] : at;
   };
 }
@@ -14278,9 +14289,9 @@ const TUBE_SHAPE = {
   torus: 1,
   torusCairo: 1,
   torusHex: 2 / Math.sqrt(3),
-  torusTri: H,
-  torusKite: H,
-  torusHexTurned: H,
+  torusTri: TRIANGLE_HEIGHT,
+  torusKite: TRIANGLE_HEIGHT,
+  torusHexTurned: TRIANGLE_HEIGHT,
   torusTriTurned: 2 / Math.sqrt(3),
   torusKiteTurned: 2 / Math.sqrt(3),
 };
@@ -14636,8 +14647,8 @@ const MOBIUS_ALONG = {
   mobius: { step: 1, ok: () => true },
   mobiusTri: { step: 0.5, ok: (n, nv) => n % 2 === nv % 2 },
   mobiusHex: { step: 1.5, ok: (n) => n % 2 === 1 },
-  mobiusHexTurned: { step: H, ok: (n, nv) => n % 2 === (nv % 2 ? 0 : 1) },
-  mobiusTriTurned: { step: H, ok: (n) => n % 2 === 0 },
+  mobiusHexTurned: { step: TRIANGLE_HEIGHT, ok: (n, nv) => n % 2 === (nv % 2 ? 0 : 1) },
+  mobiusTriTurned: { step: TRIANGLE_HEIGHT, ok: (n) => n % 2 === 0 },
   mobiusCairo: { step: 1, ok: (n, nv) => (n + nv) % 2 === 1 },
 };
 MOBIUS_ALONG.mobiusKite = MOBIUS_ALONG.mobiusTri; // kites: the triangles', each cut in 3
@@ -14814,10 +14825,10 @@ function mobiusSheetOf(kind0, size, count = false) {
   if (kind === 'mobiusTriTurned') {
     const W = nv,
       cols = steps(W),
-      L = cols * H;
+      L = cols * TRIANGLE_HEIGHT;
     for (let i = -1; i <= cols; i++) {
-      const x0 = i * H,
-        x1 = x0 + H,
+      const x0 = i * TRIANGLE_HEIGHT,
+        x1 = x0 + TRIANGLE_HEIGHT,
         o0 = mod(i, 2) / 2,
         o1 = 0.5 - o0; // the lattice's rows on either side
       for (let y = o0 - 2; y < W + 2; y += 1) {
@@ -14862,17 +14873,17 @@ function mobiusSheetOf(kind0, size, count = false) {
     for (let c = 0; c < a; c++)
       for (let r = 0; r < nv; r++) {
         const cx = 1.5 * c + 1,
-          cy = Math.sqrt(3) * (r + (c % 2) / 2) + H;
+          cy = Math.sqrt(3) * (r + (c % 2) / 2) + TRIANGLE_HEIGHT;
         put(() => [0, 1, 2, 3, 4, 5].map((k) => [cx + Math.cos((k * Math.PI) / 3), cy + Math.sin((k * Math.PI) / 3)]));
       }
     return done(L, W);
   }
   if (kind === 'mobiusTri') {
-    const W = nv * H,
+    const W = nv * TRIANGLE_HEIGHT,
       L = steps(W) / 2;
     for (let j = 0; j < nv; j++) {
-      const y0 = j * H,
-        y1 = y0 + H;
+      const y0 = j * TRIANGLE_HEIGHT,
+        y1 = y0 + TRIANGLE_HEIGHT;
       for (let a = (j % 2) / 2 - 2; a < L + 2; a += 1) {
         if (a + 0.5 >= 0 && a + 0.5 < L)
           put(() => [
@@ -22147,7 +22158,7 @@ const kiteCorners = (x, y) => {
         ],
   )[mod(x, 3)];
 };
-const latticeAt = (a, b) => [a + b / 2, b * H]; // a corner of the triangles, a centre of the hexagons
+const latticeAt = (a, b) => [a + b / 2, b * TRIANGLE_HEIGHT]; // a corner of the triangles, a centre of the hexagons
 // An aperiodic tiling's grid of side W (the hats, Penrose's rhombi): from a patch of it (items: their middles m, each
 // about a square unit; p: its corners, flat, x and y in turn, or each(item, f) for them), the W² items nearest a middle (a disc), in W bands from the top,
 // each by x (a cell (x, y) as on the other grids); the items round them, its walls
@@ -22269,7 +22280,7 @@ const HAT = (() => {
     trot = affineTurn,
     ttrans = affineShift;
   const pt = (x, y) => ({ x, y }),
-    hexPt = (x, y) => pt(x + 0.5 * y, H * y);
+    hexPt = (x, y) => pt(x + 0.5 * y, TRIANGLE_HEIGHT * y);
   const inv = (T) => {
     const det = T[0] * T[4] - T[1] * T[3];
     return [
@@ -22311,7 +22322,7 @@ const HAT = (() => {
   const corners = outline.flatMap((p, i) => {
     const q = outline[(i + 1) % outline.length],
       L = Math.hypot(q.x - p.x, q.y - p.y),
-      k = Math.round(Number.isInteger(Math.round(2 * L * 1e6) / 1e6) ? 2 * L : L / H);
+      k = Math.round(Number.isInteger(Math.round(2 * L * 1e6) / 1e6) ? 2 * L : L / TRIANGLE_HEIGHT);
     return Array.from({ length: k }, (_, j) => pt(p.x + ((q.x - p.x) * j) / k, p.y + ((q.y - p.y) * j) / k));
   });
   const hat = { hat: true };
@@ -22334,19 +22345,50 @@ const HAT = (() => {
       for (const canvasHeight of this.children) canvasHeight.T = mul(ttrans(-cx, -cy), canvasHeight.T);
     }
   }
-  const H0 = new Meta([pt(0, 0), pt(4, 0), pt(4.5, H), pt(2.5, 5 * H), pt(1.5, 5 * H), pt(-0.5, H)]);
+  const H0 = new Meta([
+    pt(0, 0),
+    pt(4, 0),
+    pt(4.5, TRIANGLE_HEIGHT),
+    pt(2.5, 5 * TRIANGLE_HEIGHT),
+    pt(1.5, 5 * TRIANGLE_HEIGHT),
+    pt(-0.5, TRIANGLE_HEIGHT),
+  ]);
   H0.add(matchTwo(outline[5], outline[7], H0.shape[5], H0.shape[0]), hat);
   H0.add(matchTwo(outline[9], outline[11], H0.shape[1], H0.shape[2]), hat);
   H0.add(matchTwo(outline[5], outline[7], H0.shape[3], H0.shape[4]), hat);
-  H0.add(mul(ttrans(2.5, H), mul([-0.5, -H, 0, H, -0.5, 0], [0.5, 0, 0, 0, -0.5, 0])), hat); // the one turned over
-  const T0 = new Meta([pt(0, 0), pt(3, 0), pt(1.5, 3 * H)]);
-  T0.add([0.5, 0, 0.5, 0, 0.5, H], hat);
-  const P0 = new Meta([pt(0, 0), pt(4, 0), pt(3, 2 * H), pt(-1, 2 * H)]);
-  P0.add([0.5, 0, 1.5, 0, 0.5, H], hat);
-  P0.add(mul(ttrans(0, 2 * H), mul([0.5, H, 0, -H, 0.5, 0], [0.5, 0, 0, 0, 0.5, 0])), hat);
-  const F0 = new Meta([pt(0, 0), pt(3, 0), pt(3.5, H), pt(3, 2 * H), pt(-1, 2 * H)]);
-  F0.add([0.5, 0, 1.5, 0, 0.5, H], hat);
-  F0.add(mul(ttrans(0, 2 * H), mul([0.5, H, 0, -H, 0.5, 0], [0.5, 0, 0, 0, 0.5, 0])), hat);
+  H0.add(
+    mul(
+      ttrans(2.5, TRIANGLE_HEIGHT),
+      mul([-0.5, -TRIANGLE_HEIGHT, 0, TRIANGLE_HEIGHT, -0.5, 0], [0.5, 0, 0, 0, -0.5, 0]),
+    ),
+    hat,
+  ); // the one turned over
+  const T0 = new Meta([pt(0, 0), pt(3, 0), pt(1.5, 3 * TRIANGLE_HEIGHT)]);
+  T0.add([0.5, 0, 0.5, 0, 0.5, TRIANGLE_HEIGHT], hat);
+  const P0 = new Meta([pt(0, 0), pt(4, 0), pt(3, 2 * TRIANGLE_HEIGHT), pt(-1, 2 * TRIANGLE_HEIGHT)]);
+  P0.add([0.5, 0, 1.5, 0, 0.5, TRIANGLE_HEIGHT], hat);
+  P0.add(
+    mul(
+      ttrans(0, 2 * TRIANGLE_HEIGHT),
+      mul([0.5, TRIANGLE_HEIGHT, 0, -TRIANGLE_HEIGHT, 0.5, 0], [0.5, 0, 0, 0, 0.5, 0]),
+    ),
+    hat,
+  );
+  const F0 = new Meta([
+    pt(0, 0),
+    pt(3, 0),
+    pt(3.5, TRIANGLE_HEIGHT),
+    pt(3, 2 * TRIANGLE_HEIGHT),
+    pt(-1, 2 * TRIANGLE_HEIGHT),
+  ]);
+  F0.add([0.5, 0, 1.5, 0, 0.5, TRIANGLE_HEIGHT], hat);
+  F0.add(
+    mul(
+      ttrans(0, 2 * TRIANGLE_HEIGHT),
+      mul([0.5, TRIANGLE_HEIGHT, 0, -TRIANGLE_HEIGHT, 0.5, 0], [0.5, 0, 0, 0, 0.5, 0]),
+    ),
+    hat,
+  );
   // a patch of the four metatiles, each placed along an edge of one before (hatviz's rules)
   const RULES = [
     ['H'],
@@ -22561,17 +22603,17 @@ const SPECTRE = (() => {
   const spectre = [
     [0, 0],
     [1, 0],
-    [1.5, -H],
-    [1.5 + H, 0.5 - H],
-    [1.5 + H, 1.5 - H],
-    [2.5 + H, 1.5 - H],
-    [3 + H, 1.5],
+    [1.5, -TRIANGLE_HEIGHT],
+    [1.5 + TRIANGLE_HEIGHT, 0.5 - TRIANGLE_HEIGHT],
+    [1.5 + TRIANGLE_HEIGHT, 1.5 - TRIANGLE_HEIGHT],
+    [2.5 + TRIANGLE_HEIGHT, 1.5 - TRIANGLE_HEIGHT],
+    [3 + TRIANGLE_HEIGHT, 1.5],
     [3, 2],
-    [3 - H, 1.5],
-    [2.5 - H, 1.5 + H],
-    [1.5 - H, 1.5 + H],
-    [0.5 - H, 1.5 + H],
-    [-H, 1.5],
+    [3 - TRIANGLE_HEIGHT, 1.5],
+    [2.5 - TRIANGLE_HEIGHT, 1.5 + TRIANGLE_HEIGHT],
+    [1.5 - TRIANGLE_HEIGHT, 1.5 + TRIANGLE_HEIGHT],
+    [0.5 - TRIANGLE_HEIGHT, 1.5 + TRIANGLE_HEIGHT],
+    [-TRIANGLE_HEIGHT, 1.5],
     [0, 1],
   ];
   const quad = [spectre[3], spectre[5], spectre[7], spectre[11]];
@@ -23325,7 +23367,7 @@ function planeCellAt(kind, W, wx, wy, how = 'in') {
     x = Math.round(wx);
     y = Math.round(wy);
   } else {
-    const b = wy / H,
+    const b = wy / TRIANGLE_HEIGHT,
       a = wx - b / 2;
     if (kind === 'hex') {
       // the nearest centre, in cube coordinates
@@ -26722,11 +26764,11 @@ function walkCell(lattice, [x, y]) {
       y + Math.sin((k * Math.PI) / 3) / Math.sqrt(3),
     ]);
   if (lattice === 'tri') {
-    const s = ((((y - TRI_Y0) / H) % 1) + 1) % 1 > 0.5 ? 1 : -1;
+    const s = ((((y - TRI_Y0) / TRIANGLE_HEIGHT) % 1) + 1) % 1 > 0.5 ? 1 : -1;
     return [
-      [x, y - (s * 2 * H) / 3],
-      [x + 0.5, y + (s * H) / 3],
-      [x - 0.5, y + (s * H) / 3],
+      [x, y - (s * 2 * TRIANGLE_HEIGHT) / 3],
+      [x + 0.5, y + (s * TRIANGLE_HEIGHT) / 3],
+      [x - 0.5, y + (s * TRIANGLE_HEIGHT) / 3],
     ];
   } // (▲ or ▼)
   return cairoCorners(...cairoAt(x, y)).map((p) => p.map((v, a) => (v - CAIRO_0[a]) * CAIRO));
@@ -40204,13 +40246,13 @@ function drawGrid() {
     drawLines(ctx, 1, 0, at, stepCells);
     drawLines(ctx, 0, 1, at, stepCells);
   } else if (lat === 'tri' && !walk.lines) {
-    // y = y0 + k·H and x ± (y − y0)/√3 = k
-    drawLines(ctx, 0, 1, TRI_Y0, H * stepCells);
+    // y = y0 + k·TRIANGLE_HEIGHT and x ± (y − y0)/√3 = k
+    drawLines(ctx, 0, 1, TRI_Y0, TRIANGLE_HEIGHT * stepCells);
     drawLines(ctx, 1, 1 / r3, TRI_Y0 / r3, stepCells);
     drawLines(ctx, 1, -1 / r3, -TRI_Y0 / r3, stepCells);
   } else if (lat === 'hex' && walk.lines) {
-    // through the hexagon centres (b·H, −a − b/2): x = k·H and y ± x/√3 = k
-    drawLines(ctx, 1, 0, 0, H * stepCells);
+    // through the hexagon centres (b·TRIANGLE_HEIGHT, −a − b/2): x = k·TRIANGLE_HEIGHT and y ± x/√3 = k
+    drawLines(ctx, 1, 0, 0, TRIANGLE_HEIGHT * stepCells);
     drawLines(ctx, 1 / r3, 1, 0, stepCells);
     drawLines(ctx, -1 / r3, 1, 0, stepCells);
   } else if (lat === 'cairo') drawCairoGrid(ctx);
@@ -40318,8 +40360,8 @@ function draw3DFrame(ctx) {
 }
 
 // Hexagons of radius 1/√3, each drawing its 3 top edges (the others belong to the neighbours below):
-// flat-topped around the hexagon cells' centres (b·H, −a − b/2, see hexAt), or pointy-topped
-// around the corners of the triangle cells (c/2, y0 + r·H with c + r even, see triStepper), the
+// flat-topped around the hexagon cells' centres (b·TRIANGLE_HEIGHT, −a − b/2, see hexAt), or pointy-topped
+// around the corners of the triangle cells (c/2, y0 + r·TRIANGLE_HEIGHT with c + r even, see triStepper), the
 // hexagons whose corners are the triangles' centres. Hidden when too small.
 // The Cairo pentagons in view, each edge twice (the pentagons on both sides)
 function drawCairoGrid(ctx) {
@@ -40356,13 +40398,18 @@ function drawHexGrid(ctx, pointy) {
     for (let k = 1; k < 4; k++) ctx.lineTo(ox + x * s + v[k][0], oy + y * s + v[k][1]);
   };
   if (pointy) {
-    for (let r = Math.floor((yTop - TRI_Y0) / H) - 1; r <= Math.ceil((yBot - TRI_Y0) / H) + 1; r++) {
+    for (
+      let r = Math.floor((yTop - TRI_Y0) / TRIANGLE_HEIGHT) - 1;
+      r <= Math.ceil((yBot - TRI_Y0) / TRIANGLE_HEIGHT) + 1;
+      r++
+    ) {
       for (let c = Math.floor(2 * xL) - 2; c <= Math.ceil(2 * xR) + 2; c++)
-        if (((c + r) & 1) === 0) hexagon(c / 2, TRI_Y0 + r * H);
+        if (((c + r) & 1) === 0) hexagon(c / 2, TRI_Y0 + r * TRIANGLE_HEIGHT);
     }
   } else {
-    for (let b = Math.floor(xL / H) - 1; b <= Math.ceil(xR / H) + 1; b++) {
-      for (let a = Math.floor(-yBot - b / 2) - 1; a <= Math.ceil(-yTop - b / 2) + 1; a++) hexagon(b * H, -a - b / 2);
+    for (let b = Math.floor(xL / TRIANGLE_HEIGHT) - 1; b <= Math.ceil(xR / TRIANGLE_HEIGHT) + 1; b++) {
+      for (let a = Math.floor(-yBot - b / 2) - 1; a <= Math.ceil(-yTop - b / 2) + 1; a++)
+        hexagon(b * TRIANGLE_HEIGHT, -a - b / 2);
     }
   }
 }
@@ -41303,14 +41350,14 @@ const CELL_TEMPLATES = {
   ],
   tri: [
     [
-      [0, (-2 * H) / 3],
-      [0.5, H / 3],
-      [-0.5, H / 3],
+      [0, (-2 * TRIANGLE_HEIGHT) / 3],
+      [0.5, TRIANGLE_HEIGHT / 3],
+      [-0.5, TRIANGLE_HEIGHT / 3],
     ],
     [
-      [-0.5, -H / 3],
-      [0.5, -H / 3],
-      [0, (2 * H) / 3],
+      [-0.5, -TRIANGLE_HEIGHT / 3],
+      [0.5, -TRIANGLE_HEIGHT / 3],
+      [0, (2 * TRIANGLE_HEIGHT) / 3],
     ],
   ], // ▲, ▼
   hex: [
@@ -41324,7 +41371,8 @@ const CELL_TEMPLATES = {
 const cellTemplate = (lat, x, y) =>
   lat === 'cairo'
     ? cairoType(...cairoAt(x, y))
-    : lat === 'tri' && y - (TRI_Y0 + Math.floor((y - TRI_Y0) / H) * H) <= H / 2
+    : lat === 'tri' &&
+        y - (TRI_Y0 + Math.floor((y - TRI_Y0) / TRIANGLE_HEIGHT) * TRIANGLE_HEIGHT) <= TRIANGLE_HEIGHT / 2
       ? 1
       : 0;
 const templateArray = (templates) => {
@@ -43836,8 +43884,11 @@ function visitCells() {
     total = [];
   for (let i = 0; i <= n; i++) {
     // whole-number coordinates of each cell centre, per tiling
-    const kx = lat === 'hex' ? Math.round(xs[i] / H) : Math.round((lat === 'cairo' ? 8 : 2) * xs[i]);
-    const ky = lat === 'tri' ? Math.round(((ys[i] - TRI_Y0) * 3) / H) : Math.round((lat === 'cairo' ? 8 : 2) * ys[i]);
+    const kx = lat === 'hex' ? Math.round(xs[i] / TRIANGLE_HEIGHT) : Math.round((lat === 'cairo' ? 8 : 2) * xs[i]);
+    const ky =
+      lat === 'tri'
+        ? Math.round(((ys[i] - TRI_Y0) * 3) / TRIANGLE_HEIGHT)
+        : Math.round((lat === 'cairo' ? 8 : 2) * ys[i]);
     const k = (kx + 33554432) * 67108864 + (ky + 33554432);
     let c = index.get(k);
     if (c === undefined) {
@@ -43945,11 +43996,11 @@ const FILL_GRIDS = {
     tpl: () => 0,
   },
   tri: {
-    // the triangles' corners (u / 2, TRI_Y0 + v·H), u + v even (see triStepper)
+    // the triangles' corners (u / 2, TRI_Y0 + v·TRIANGLE_HEIGHT), u + v even (see triStepper)
     u: (x) => Math.round(2 * x),
-    v: (y) => Math.round((y - TRI_Y0) / H),
+    v: (y) => Math.round((y - TRI_Y0) / TRIANGLE_HEIGHT),
     x: (u) => u / 2,
-    y: (v) => TRI_Y0 + v * H,
+    y: (v) => TRI_Y0 + v * TRIANGLE_HEIGHT,
     i: (u, v, u0) => (u - u0) >> 1,
     j: (u, v, v0) => v - v0,
     uOf: (i, j, u0, v0) => u0 + 2 * i + ((v0 + j) & 1),

@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.1056';
+const VERSION = '0.4.1057';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -14324,11 +14324,12 @@ function ringLength(x, square, units, ok = () => true) {
   }
 }
 // a torus's (a Klein bottle's) columns round the ring near x: its colours' blocks a × b (see torusBlocks; a bottle's, slices
-// along its ring), a whole count of them and of step (the hexagons' and the triangles': even)
-function ringColumns(x, nv, step = 1, klein = false, ok) {
+// along its ring), a whole count of them and of step (the hexagons' and the triangles': even); own: columns of its own (a
+// link's "16x40"), in its usual's place: the nearest its tiling allows, never a ring glued askew (as a strip's, see stripSteps)
+function ringColumns(x, nv, step = 1, klein = false, ok, own) {
   const K = ringColours(ringMode()),
     [a, b] = klein ? [K, 1] : torusBlocks(K, { nv });
-  return ringLength(x, (x * TORUS_TUBE * a) / b, [a % step ? a * step : a], ok);
+  return ringLength(own ?? x, own ?? (x * TORUS_TUBE * a) / b, [a % step ? a * step : a], ok);
 }
 
 /* Grid point (i, j) of an nu × nv torus, rolled up by m ∈ [0, 1]: at m = 0 a flat rectangle
@@ -14473,14 +14474,14 @@ function kleinBottlePoint(s, u) {
 // corners one vertex per point of the bottle, found by their place on the sheet (not in space: it crosses
 // itself, and the points where it does are two)
 const kleinColumns = {
-  klein: (nv) => ringColumns(nv / TORUS_TUBE, nv, 1, true),
-  kleinHex: (nv) => torusHexColumns(nv, true),
-  kleinTri: (nv) => torusTriColumns(nv, true),
-  kleinCairo: (nv) => ringColumns(nv / TORUS_TUBE, nv, 1, true, (n) => n % 2 === 1),
+  klein: (nv, own) => ringColumns(nv / TORUS_TUBE, nv, 1, true, undefined, own),
+  kleinHex: (nv, own) => torusHexColumns(nv, own, true),
+  kleinTri: (nv, own) => torusTriColumns(nv, own, true),
+  kleinCairo: (nv, own) => ringColumns(nv / TORUS_TUBE, nv, 1, true, (n) => n % 2 === 1, own),
 }; // Cairo: an odd length, so that the ends turned over keep the tiling
 kleinColumns.kleinKite = kleinColumns.kleinTri; // kites: the triangles', each cut in 3
-kleinColumns.kleinTriTurned = kleinColumns.kleinKiteTurned = (nv) => torusHexColumns(nv); // turned by 30° (as the tori, see turnedTorus)
-kleinColumns.kleinHexTurned = (nv) => torusTriColumns(nv, true);
+kleinColumns.kleinTriTurned = kleinColumns.kleinKiteTurned = (nv, own) => torusHexColumns(nv, own); // turned by 30° (as the tori, see turnedTorus)
+kleinColumns.kleinHexTurned = (nv, own) => torusTriColumns(nv, own, true);
 // a point of a Klein bottle's sheet, its place brought within the sheet (up: Cairo's mirror line, see kleinMesh), and that
 // place as a key
 function kleinSheetPlace(x0, y0, nu, nv, up) {
@@ -15252,7 +15253,8 @@ const sheetPoint = (g, i, j, m) => {
  * odd columns sit half a row higher, so nu must be even for the columns to close up. In sheet
  * units a column is 1.5·R wide and a row √3·R high; the sheet is 2π by 2π·TUBE, so the hexagons
  * are regular when nu / nv = √3 / (1.5·TUBE). Every hexagon has 6 neighbours, all across an edge. */
-const torusHexColumns = (nv, klein = false) => ringColumns((2 * nv * Math.sqrt(3)) / (3 * TORUS_TUBE), nv, 2, klein);
+const torusHexColumns = (nv, own, klein = false) =>
+  ringColumns((2 * nv * Math.sqrt(3)) / (3 * TORUS_TUBE), nv, 2, klein, undefined, own);
 function torusHexMesh(nv, nu = torusHexColumns(nv)) {
   return sheetTorus(`torusHex${nv}x${nu}`, 'torusHex', nv, nu, 6, () => hexSheet(nu, nv)); // (tile c·nv + r, like the square torus)
 }
@@ -15260,7 +15262,7 @@ function torusHexMesh(nv, nu = torusHexColumns(nv)) {
 // A torus of Cairo pentagons: nv squares of the Cairo grid round the tube, nu round the ring (both even:
 // the tiling repeats every other square), two pentagons a square (tile 2 (i·nv + j) + o, see cairoCorners),
 // listed counterclockwise on the sheet as the squares are
-const torusCairoColumns = (nv) => ringColumns(nv / TORUS_TUBE, nv, 2);
+const torusCairoColumns = (nv, own) => ringColumns(nv / TORUS_TUBE, nv, 2, false, undefined, own);
 function torusCairoMesh(nv, nu = torusCairoColumns(nv)) {
   return sheetTorus(
     `torusCairo${nv}x${nu}`,
@@ -15537,7 +15539,8 @@ function hexSolidMesh(solid, f) {
  * a triangle, nu corners along each row. In sheet units a triangle is 1 wide and its row √3/2 high;
  * the sheet is 2π by 2π·TUBE, so the triangles are equilateral when nu / nv = √3 / (2·TUBE).
  * Every corner has 6 edges: the triangular grid that wraps around both ways. */
-const torusTriColumns = (nv, klein = false) => ringColumns((nv * Math.sqrt(3)) / (2 * TORUS_TUBE), nv, 2, klein);
+const torusTriColumns = (nv, own, klein = false) =>
+  ringColumns((nv * Math.sqrt(3)) / (2 * TORUS_TUBE), nv, 2, klein, undefined, own);
 /* Kites (the deltoidal trihexagonal tiling, the grid of the hat monotile): each triangle of the triangles'
  * grid cut in 3 from its middle to its sides' middles, a kite at each corner (that corner, the middles of
  * its two sides, the triangle's middle); 6 kites round a corner of the triangles make a hexagon. A kite
@@ -15989,7 +15992,7 @@ const SPHERES = {
   torus: {
     mesh: (s) => torusMesh(...torusDims('torus', s)),
     radius: (s) => torusDims('torus', s)[0] / (2 * Math.PI * TORUS_TUBE), // edge around the tube = 1 unit
-    columns: (nv) => ringColumns(nv / TORUS_TUBE, nv),
+    columns: (nv, own) => ringColumns(nv / TORUS_TUBE, nv, 1, false, undefined, own),
     perRow: 1,
     steps: [1, 1],
     least: 3,
@@ -16153,7 +16156,7 @@ const SPHERES = {
           : {
               mesh: (s) => kleinTilingMesh(kind, s),
               radius: (s) => kleinLength(kind, s).W / (2 * Math.PI * TORUS_TUBE),
-              columns: (s) => kleinLength(kind, s).n,
+              columns: (s, own) => kleinLength(kind, own ? `${s}x${own}` : s).n,
               perRow: 1,
               steps: [kleinRows(kind), 1],
               tiles: (s) => kleinCount(kind, s),
@@ -16340,7 +16343,7 @@ for (const name of foldedIn('torus')) {
   SPHERES[name] = {
     mesh: (z) => tilingTorusMesh(kind, ...torusDims(name, z), turned),
     radius: (z) => (torusDims(name, z)[0] * tube) / (2 * Math.PI * TORUS_TUBE),
-    columns: (nv) => ringColumns((nv * tube) / (ring * TORUS_TUBE), nv),
+    columns: (nv, own) => ringColumns((nv * tube) / (ring * TORUS_TUBE), nv, 1, false, undefined, own),
     perRow: per,
     steps: [1, 1],
     least: 2,
@@ -16468,7 +16471,7 @@ function stepSize(delta) {
 // taller or wider)
 const sizeOf = (v) => (String(v).includes('x') ? String(v) : Number(v)); // (a size as the list has it, "16" or "16x10": 16, or "16x10")
 const sphereSize = () => walkersSize(surfaceOf(MODES[tabMode()]), sizeOf($('sphereF').value)); // (the size played: the menu's the size asked, kept as its walkers change, see walkersSize)
-// A torus's rows and columns: its tiles per row from its rows (squares or regular tiles), unless given
+// A torus's rows and columns: its tiles per row from its rows (squares or regular tiles), or the nearest those given
 function torusDims(kind, size) {
   size = sizeOf(size); // (as the list has it: a size's tooltip's, "16" before v0.3.70, NaN cells on every tiling's torus)
   if (MOBIUS_KINDS.includes(kind)) {
@@ -16477,7 +16480,7 @@ function torusDims(kind, size) {
   }
   if (typeof size === 'number') return [size, SPHERES[kind].columns(size)];
   const [rows, perRow] = size.split('x').map(Number);
-  return [rows, perRow / SPHERES[kind].perRow];
+  return [rows, SPHERES[kind].columns(rows, perRow / SPHERES[kind].perRow)]; // (columns of its own: the nearest its tiling allows, see ringColumns)
 }
 /* A grid's size, one way for all of them: its height × its width, their product its cells. On the plane
  * (kind: its cells' shape), its rows × the lattice cells of a row (its cells all of them, a lattice cell's several); on a torus or a Klein bottle, its cells round

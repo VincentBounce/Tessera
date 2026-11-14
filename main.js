@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.1004';
+const VERSION = '0.4.1005';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -40986,7 +40986,7 @@ function drawSphere() {
     const rgba = (c) => [...rgbCached(c).map((x) => x / 255), 1],
       look = { ...lifeLook(L, true), wall: rgba(LIFE_WALL), dead: rgba(blankTile()) };
     gpuSurface((out) => gpuLook(L, out, look), path);
-  } else gpuSurface(paintLevels(palette, levelOf, !walk.battle && wallStopAt(g)), path); // (see 11.4d; a battle's walkers cross the walls)
+  } else gpuSurface(paintLevels(palette, levelOf, walk.battle ? null : wallStopAt(g)), path); // (see 11.4d; a battle's walkers cross the walls)
   drawHover();
 }
 

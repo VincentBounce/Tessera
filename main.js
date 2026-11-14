@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.1027';
+const VERSION = '0.4.1028';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -40876,7 +40876,10 @@ function drawSphere() {
     // Life's look, the plane's (see lifeLook): the walls, the pentagons of the hexagon sphere, in stone grey
     const rgba = (c) => [...rgbCached(c).map((x) => x / 255), 1],
       look = { ...lifeLook(L, true), wall: rgba(LIFE_WALL), dead: rgba(blankTile()) };
-    gpuSurface((out) => gpuLook(L, out, look), path);
+    gpuSurface((out) => {
+      gpuLook(L, out, look);
+      for (const [t, c] of motifColours(g)) GPU.device.queue.writeBuffer(out.buffer, 4 * t, Uint32Array.of(c));
+    }, path);
   } else gpuSurface(paintLevels(palette, levelOf), path); // (see 11.4d)
   drawHover();
 }
@@ -41325,8 +41328,17 @@ const paintLevels = (palette, levelOf) => (out, n) => {
   const rgb = palette.map((c) => packed(c ?? blankTile())),
     col = new Uint32Array(n);
   for (let t = 0; t < n; t++) col[t] = rgb[levelOf(t)] ?? rgb[0];
-  out.put(eased('tiles', col)); // (every tile's change faded in)
+  for (const [t, c] of motifColours(walk.geo)) col[t] = c;
+  out.put(eased('tiles', col)); // (every tile's change faded in, the motif's too)
 };
+// a surface's motif's tiles while it shows (see motifOf), lit as the others: each its colour, alpha 254 (unfaded, see tileV);
+// a walk's eased in as its tiles' colours (see paintLevels), Life's written over its own at once
+const motifColours = (g) =>
+  motifShown && middleTile.g === g && middleTile.t >= 0
+    ? motifOf(g, middleTile.t).filled.flatMap(([colour, tiles]) =>
+        tiles.map((t) => [t, ((packed(colour) & 0xffffff) | (254 << 24)) >>> 0]),
+      )
+    : [];
 // Glass: the surface see-through, every layer showing, its grid and path too (weighted blended, see gpuFrame); Cut: a half
 // gone, by a fixed plane through the middle (see CUT_AXES); the two apart: with both, what is left see-through
 const GLASS_ALPHA = 0.4; // (a tile's share: a layer behind seen at 60%, two at 36%…)
@@ -42981,11 +42993,6 @@ function gpuSurface(paint, path) {
     D.geoGen = (D.geoGen ?? 0) + 1;
   }
   paint({ put: (col) => device.queue.writeBuffer(D.tileCol, 0, col), buffer: D.tileCol, n }, n);
-  // (the motif's tiles in its colours over theirs while it shows, lit as the others: see motifOf)
-  if (motifShown && middleTile.g === g && middleTile.t >= 0)
-    for (const [colour, tiles] of motifOf(g, middleTile.t).filled)
-      for (const t of tiles)
-        device.queue.writeBuffer(D.tileCol, 4 * t, Uint32Array.of((packed(colour) & 0xffffff) | (254 << 24))); // (alpha 254: unfaded, see tileV)
   const depth = 4 * R * Math.max(sh.extent, sh.maxExtent ?? sh.extent),
     tileSize = R * sh.extent * Math.sqrt((4 * Math.PI) / n);
   const edgeBias = (0.07 * tileSize) / depth,

@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.1012';
+const VERSION = '0.4.1013';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -26635,49 +26635,18 @@ function elementaryTutorial(entry) {
     `<h3>From one cell</h3><div class="tut-row"><figure><div><svg class="tut-start" viewBox="-0.2 -0.2 31.4 16.4">${picture}</svg></div><figcaption>16 generations</figcaption></figure></div></div>`;
   $('ruleTuto').prepend(tutTools({ close: () => ruleTutorial(null) }));
 }
-// How it works on a surface: its cells' kinds by their sides and their count of neighbours (nb), each the cell drawn the
-// flattest on a solid (it and its neighbours in one of its faces, not bent over its edge: see cellOnPlaneOf), then the farthest from another kind's (in steps from neighbour to
-// neighbour: a sphere's hexagon away from its pentagons), the most neighbours first
+// How it works on a surface: its cells' kinds by their sides (as its mesh lists them) and their count of neighbours (nb),
+// each its first cell, the most neighbours first
 function surfaceKinds(g, nb) {
   const M = meshCorners(g),
     wall = new Set(g.walls ?? []),
-    keyOf = (t) => `${M.start[t + 1] - M.start[t]}|${nb.start[t + 1] - nb.start[t]}`,
-    near = (t) => nb.list.subarray(nb.start[t], nb.start[t + 1]),
-    steps = new Int32Array(g.n).fill(-1),
-    queue = [];
+    count = (t) => nb.start[t + 1] - nb.start[t],
+    sides = (t) => M.start[t + 1] - M.start[t],
+    first = new Map();
   for (let t = 0; t < g.n; t++)
-    if (!wall.has(t) && near(t).some((u) => keyOf(u) !== keyOf(t))) {
-      steps[t] = 0;
-      queue.push(t);
-    }
-  for (let i = 0; i < queue.length; i++)
-    for (const u of near(queue[i]))
-      if (steps[u] < 0) {
-        steps[u] = steps[queue[i]] + 1;
-        queue.push(u);
-      }
-  const bent = (t) => {
-    if (g.torus || g.klein) return 0; // (a sheet rolled: no cell flat in space, its picture as it is)
-    const { m, N } = cellPlane(g, t),
-      off = (u) => Math.max(...cellPlane(g, u).P.map((p) => Math.abs(dot(sub(p, m), N))));
-    return Math.round(Math.max(off(t), ...Array.from(near(t), off)) * 1e6); // (its picture, it and its neighbours, off its plane, to 10⁻⁶: flat ones alike)
-  };
-  // the farthest first, each kind's search over at its first flat picture
-  const order = [...Array(g.n).keys()].filter((t) => !wall.has(t)).sort((u, v) => steps[v] - steps[u]),
-    kindCount = new Set(order.map(keyOf)).size,
-    best = new Map(),
-    flat = new Set();
-  for (const t of order) {
-    const k = keyOf(t);
-    if (flat.has(k)) continue;
-    const b = bent(t);
-    if (!best.has(k) || b < best.get(k).b) best.set(k, { t, b });
-    if (b === 0) flat.add(k);
-    if (flat.size === kindCount) break;
-  }
-  const count = (t) => nb.start[t + 1] - nb.start[t],
-    kinds = [...best.values()].map(({ t }) => t).sort((u, v) => count(v) - count(u));
-  return { kinds, shapeOf: new Map(kinds.map((t) => [t, keyOf(t).split('|')[0]])) };
+    if (!wall.has(t) && !first.has(`${sides(t)}|${count(t)}`)) first.set(`${sides(t)}|${count(t)}`, t);
+  const kinds = [...first.values()].sort((u, v) => count(v) - count(u));
+  return { kinds, shapeOf: new Map(kinds.map((t) => [t, sides(t)])) };
 }
 // a surface's cell: its corners (P), their middle (m) and its plane's normal (N, Newell's)
 function cellPlane(g, t) {

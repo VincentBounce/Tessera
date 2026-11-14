@@ -176,12 +176,16 @@ main {
    Constants) */
 .visually-hidden {
   position: absolute;
+  top: 0;
+  left: 0;
   width: 1px;
   height: 1px;
   overflow: hidden;
   clip-path: inset(50%);
   white-space: nowrap;
-} /* (read by screen readers and search engines, not drawn) */
+} /* (read by screen readers and search engines, not drawn; at its positioned ancestor's corner, never where the flow
+     would lay it: in a pane that scrolls, not its ancestor, that place lay past the page's end and lengthened it: a
+     hunt's 🎲 at the panel's foot, a scrollbar on the whole page) */
 /* a section's title: its gold picture, then its name */
 .panel h2 {
   display: flex;

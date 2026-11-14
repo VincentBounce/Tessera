@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.1018';
+const VERSION = '0.4.1019';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -26693,6 +26693,40 @@ function cellOnPlaneOf(g, t, on) {
     return [dot(q, U), -dot(q, W)];
   }); // (y down, as the page's)
 }
+// a surface's cell t drawn round cell on in pure shapes (How it works): on the regular polygon of its sides (side 1), turned
+// as it lies unfolded (see cellOnPlaneOf); a neighbour by a side the regular polygon on that side, outwards; by a corner
+// only, the regular polygon at that corner, towards where it lies unfolded
+function cellPure(g, t, on) {
+  const regular = (n, centre, first, turn) => {
+    const R = 1 / (2 * Math.sin(Math.PI / n)),
+      a = Math.atan2(first[1] - centre[1], first[0] - centre[0]);
+    return Array.from({ length: n }, (_, k) => [
+      centre[0] + R * Math.cos(a + (turn * 2 * Math.PI * k) / n),
+      centre[1] + R * Math.sin(a + (turn * 2 * Math.PI * k) / n),
+    ]);
+  };
+  const flat = cellOnPlaneOf(g, on, on),
+    turn = Math.sign(signedArea(flat)),
+    C = regular(flat.length, [0, 0], flat[0], turn);
+  if (t === on) return C;
+  const ids = cellPlane(g, on).ids,
+    mine = cellPlane(g, t).ids,
+    n = mine.length,
+    shared = ids.flatMap((v, i) => (mine.includes(v) ? [i] : [])),
+    side = shared.find((i) => shared.includes((i + 1) % ids.length));
+  if (side !== undefined) {
+    const [P, Q] = [C[side], C[(side + 1) % ids.length]],
+      middle = [(P[0] + Q[0]) / 2, (P[1] + Q[1]) / 2],
+      out = unit(middle).map((x) => x / (2 * Math.tan(Math.PI / n))),
+      V = regular(n, [middle[0] + out[0], middle[1] + out[1]], P, -turn);
+    return [P, Q, ...V.slice(2)];
+  }
+  const P = C[shared[0]],
+    towards = unit(sub(meanPoint(cellOnPlaneOf(g, t, on)), flat[shared[0]])).map(
+      (x) => x / (2 * Math.sin(Math.PI / n)),
+    );
+  return [P, ...regular(n, [P[0] + towards[0], P[1] + towards[1]], P, 1).slice(1)];
+}
 function ruleTutorial(entry) {
   $('appTab').classList.remove('open'); // (the app's tab, Credits': off, another page or none)
   if (entry) showPage($('ruleTuto'));
@@ -26727,7 +26761,7 @@ function ruleTutorial(entry) {
       : planeNeighbours(kind, W, false, rule.iso === 'hensel');
   const turn = !surface && planeTurn(kind),
     poly = !surface && cellPolys(kind, W),
-    corners = surface ? (t) => cellOnPlaneOf(surface, t, c) : (t) => poly(t).map((p) => turnPoint(p, turn)); // (turned as the 2D grid is)
+    corners = surface ? (t) => cellPure(surface, t, c) : (t) => poly(t).map((p) => turnPoint(p, turn)); // (turned as the 2D grid is)
   // its cells' kinds: by their shape (its true corners' sides and angles, mirrored or turned the same) and their count of neighbours (the
   // same shape may have several, by where it lies: Stein's pentagon 7, 6 or 5), of the cells all round by others (each corner
   // a whole turn of cells: its neighbours all there), the one shown picked by its bubble (tutShape), at
@@ -26946,7 +26980,7 @@ function ruleTutorial(entry) {
     `<div class="tut-body">${tutLetters.on && lettersOf2 ? lettersPage() + '</div>' : ''}` +
     (tutLetters.on && lettersOf2
       ? ''
-      : `<h2>${entry.name} ${ruleSpan(entry.rule)}</h2>${entry.about ? `<p>${capitalised(entry.about)}.</p>` : ''}${kinds.length > 1 ? shapeBubbles(kinds, c, surface ? (t) => cellOnPlaneOf(surface, t, t) : corners, count, shapeOf, { hat: 'hat', spectre: 'spectre' }[kind]) : ''}<p>A cell with ${around.length} neighbours here (sharing an edge or a corner): ${born.length ? `born with ${list(born)} live ones` : 'never born'}, ${stays.length ? `survives with ${list(stays)}` : 'never survives'}, dies otherwise${iso === 'vertex' ? ' (after v, how many of the live ones touch it by a corner only, not a side)' : iso ? ' (the letters: where the live ones sit)' : ''}${rule.C > 2 ? `, then fades through ${rule.C - 2} dying stage${rule.C > 3 ? 's' : ''} (neither alive nor counted) before it is empty again` : ''}.</p>` +
+      : `<h2>${entry.name} ${ruleSpan(entry.rule)}</h2>${entry.about ? `<p>${capitalised(entry.about)}.</p>` : ''}${kinds.length > 1 ? shapeBubbles(kinds, c, surface ? (t) => cellPure(surface, t, t) : corners, count, shapeOf, { hat: 'hat', spectre: 'spectre' }[kind]) : ''}<p>A cell with ${around.length} neighbours here (sharing an edge or a corner): ${born.length ? `born with ${list(born)} live ones` : 'never born'}, ${stays.length ? `survives with ${list(stays)}` : 'never survives'}, dies otherwise${iso === 'vertex' ? ' (after v, how many of the live ones touch it by a corner only, not a side)' : iso ? ' (the letters: where the live ones sit)' : ''}${rule.C > 2 ? `, then fades through ${rule.C - 2} dying stage${rule.C > 3 ? 's' : ''} (neither alive nor counted) before it is empty again` : ''}.</p>` +
         `<h3>Birth${part('B')}</h3><div class="tut-row">${born.map((cs) => pair(cs, UNLIT, LIFE_ALIVE, 'born')).join('') || '<p>none</p>'}</div>${colours()}` +
         `<h3>Survival${part('S')}</h3><div class="tut-row">${stays.map((cs) => pair(cs, LIFE_ALIVE, LIFE_ALIVE, 'stays')).join('') || '<p>none</p>'}</div>` +
         `<h3>Death</h3><div class="tut-row">${dies.map((cs) => pair(cs, LIFE_ALIVE, after, 'dies')).join('')}</div>` +

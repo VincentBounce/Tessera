@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.1040';
+const VERSION = '0.4.1041';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -39770,8 +39770,9 @@ function cutAtReturn(L, batch, dir) {
   batch.length = j + 1;
   L.alive = L.seed.slice(); // (its cells there its start's: sent again, see gpuOld)
 }
-// a run's loop's last generation (T + P − 1, see runLoop) while it plays: Play stops there, a round of it played (Play again:
-// another round, see looping); none still, frozen or dead
+// a run's loop's last generation (T + P − 1, see runLoop) while it plays: Play stops there, a round of it played and its
+// trail from before it faded (see trailFaded: more rounds till then; Play again: another round, see looping); none still,
+// frozen or dead
 const loopRound = () => (playing && looping() ? runLoop().last : 0);
 // the generation asked while its batch is on the card (see lifeStepGPU): tick asks it again, frame after frame; null, none
 function lifeTo(target, until = Infinity) {
@@ -39854,10 +39855,10 @@ function lifeTo(target, until = Infinity) {
         L.bornBy.set(b.bornBy);
         L.deadBy.set(b.deadBy);
       }
-      if (loopRound() && stepShown === loopRound()) {
+      if (loopRound() && stepShown === loopRound() && trailFaded()) {
         play(false);
         ended = true;
-      } // (a round of its loop played: Play again, another; none: 0, not gen 0)
+      } // (a round of its loop played, its trail from before it faded: Play again, another; none: 0, not gen 0)
     }
     const end = L.margolus ? runEnd() : runLoop()?.last;
     if (!known && end !== undefined) k = Math.min(k, end - stepShown); // (its end found on the way: to it, not round it on)
@@ -39930,14 +39931,14 @@ function advanceTo(target, until = Infinity) {
   }
 }
 
+// a run's end's trail faded (Trail: what died before its end, T, fades on for LIFE_TRAIL.length generations, its time
+// the run's, L.gen: played on past its end, dead, frozen or round its loop, the generation shown its end's)
+const trailFaded = () => !(trailOn() && walk.life.gen <= walk.life.stable.T + LIFE_TRAIL.length);
 // a Game of Life that died out or froze: shown at the generation it ended
-// a run ended: nothing moves any more (all dead or still), its trail faded (Trail: the generations of its fading played
-// on, the generation shown its end's)
+// a run ended: nothing moves any more (all dead or still), its trail faded
 const lifeEnded = () => {
   const s = walk.life?.stable;
-  return (
-    !!s && (s.extinct || s.P === 1) && stepShown === s.T && !(trailOn() && walk.life.gen <= s.T + LIFE_TRAIL.length)
-  );
+  return !!s && (s.extinct || s.P === 1) && stepShown === s.T && trailFaded();
 };
 // at its end: its last step (a loop known: none, round it on, see looping), or a run that froze or died there
 const atEnd = () => (stepShown >= runEnd() && !looping()) || lifeEnded();

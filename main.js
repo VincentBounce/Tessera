@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.1003';
+const VERSION = '0.4.1004';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -14844,6 +14844,10 @@ function mobiusSheetOf(kind0, size, count = false) {
       originCell: t.originCell && [3 * t.originCell[0] + 2, t.originCell[1]],
     }; // (its first triangle's first kite, from its corner: the plane's third of it)
   }
+  return stripSheetOf(kind0, walledSize(kind0, size), count);
+}
+// a strip's sheet of so many rows, as built (see mobiusSheetOf: its rows its walls' too)
+function stripSheetOf(kind0, size, count = false) {
   const tiling = MOBIUS_STRIPS[kind0]?.kind;
   if (tiling)
     return count
@@ -15191,18 +15195,18 @@ const turnOver = (c) => {
 // The mesh of the strip's two faces: the front of each tile as on the sheet, its back the same
 // corners turned over. A corner of the sheet is a corner of each face (but one where the faces
 // meet, on the strip's edge); past the glued ends, the front goes on as the back
-function mobiusMesh(kind, size) {
-  const key = `${kind}${size}|${stripKey()}`,
-    nv = mobiusSize(size)[0]; // (its length its colours': see stripSteps)
-  if (meshCache[key]) return meshCache[key];
-  const { L, W, tiles: sheet, mids, latticeCells, originCell } = mobiusSheet(kind, size),
+// A strip's sheet glued at its ends (the twist): its corners in space (verts), each tile's corner ids (the glued ends'
+// shared) and its edge's corners (onEdge: on a side with one tile), once a sheet (see mobiusMesh, stripWalls)
+const gluedMemo = new WeakMap(); // (by its sheet itself: a kite strip's, its triangles' spread, never theirs)
+function stripGlued(strip) {
+  if (gluedMemo.has(strip)) return gluedMemo.get(strip);
+  const { L, W, tiles: sheet } = strip,
     k = sheet[0].length;
   const { verts, add } = vertexStore();
   const ids = sheet.map((t) => t.map(([x, y]) => add(...mobiusPoint(x, y, L, W, 1)))); // the glued ends share corners
   const n0 = verts.length / 3,
     uses = new Map(),
-    onEdge = new Uint8Array(n0),
-    home = new Float64Array(n0).fill(NaN);
+    onEdge = new Uint8Array(n0);
   for (const t of ids)
     for (let q = 0; q < k; q++) {
       // edges with one tile: the strip's edge
@@ -15216,6 +15220,55 @@ function mobiusMesh(kind, size) {
       onEdge[Math.floor(e / n0)] = 1;
       onEdge[e % n0] = 1;
     }
+  const glued = { verts, ids, onEdge };
+  gluedMemo.set(strip, glued);
+  return glued;
+}
+// a strip's walls at a size, both faces' (none but a walled strip's)
+const stripWallsAt = (kind, f) =>
+  MOBIUS_KINDS.includes(kind) && rimWallsOf(kind) && !ghostWalls ? 2 * stripWalls(mobiusSheet(kind, f)).length : 0;
+// a walled strip's walls: its sheet's tiles with a corner on its edge (each on both faces, see mobiusMesh)
+const stripWalls = (strip) => {
+  const { ids, onEdge } = stripGlued(strip);
+  return ids.flatMap((t, i) => (t.some((v) => onEdge[v]) ? [i] : []));
+};
+// A walled strip's rows added each side for its walls (see walledSize), the rows asked then all alive: the fewest whose
+// walls (see stripWalls) lie all in them, the same at every size (its rows alike), read off a strip of 4 rows once
+const rimRowsMemo = {};
+function rimRows(kind0) {
+  return (rimRowsMemo[kind0] ??= (() => {
+    const W = stripSheetOf(kind0, 4, true).W,
+      middle = (P) =>
+        [...new Set(P.map((p) => p.join()))].map((q) => +q.split(',')[1]).reduce((a, y, _, l) => a + y / l.length, 0);
+    for (let k = 1; ; k++) {
+      const strip = stripSheetOf(kind0, 4 + 2 * k),
+        band = (strip.W - W) / 2;
+      if (
+        stripWalls(strip).every(
+          (i) => !(middle(strip.tiles[i]) > band + 1e-9 && middle(strip.tiles[i]) < strip.W - band - 1e-9),
+        )
+      )
+        return k;
+    }
+  })());
+}
+// a strip's rows built: those asked, and where it has walls (rimWalls, Ghost walls off) rimRows more each side for them
+// (a kite strip's, its triangles')
+function walledSize(kind0, size) {
+  if (!rimWallsOf(kind0) || ghostWalls) return size;
+  const [nv, own] = mobiusSize(size),
+    rows = nv + 2 * rimRows(kind0.replace('Kite', 'Tri'));
+  return own ? `${rows}x${own}` : rows;
+}
+function mobiusMesh(kind, size) {
+  const key = `${kind}${size}|${stripKey()}`,
+    nv = mobiusSize(walledSize(kind, size))[0]; // (its rows built, its walls' too; its length its colours': see stripSteps)
+  if (meshCache[key]) return meshCache[key];
+  const strip = mobiusSheet(kind, size),
+    { L, W, tiles: sheet, mids, latticeCells, originCell } = strip,
+    k = sheet[0].length;
+  const { verts, ids, onEdge } = stripGlued(strip),
+    home = new Float64Array(verts.length / 3).fill(NaN);
   // each sheet corner seen from the side of the glued ends where it was first met: from the other
   // side (x off by about L), its faces swap
   sheet.forEach((t, i) =>
@@ -15242,10 +15295,11 @@ function mobiusMesh(kind, size) {
       uv.push(...(side ? t : turnOver(t)).flat());
     });
   const mesh = finishMesh(cv, tiles, k, nv, null); // as listed: a back faces the other way
-  // (its edges no mirror between tiles: its tiles with a corner on an edge, both faces', walls; see MOBIUS_ALONG)
-  if (MOBIUS_ALONG[kind].rimWalls) {
-    const edge = new Set([...index].filter(([key]) => key % 2 === 0 && onEdge[key / 2]).map(([, c]) => c));
-    mesh[ghostWalls ? 'ghostWalls' : 'walls'] = [...tiles.keys()].filter((t) => tiles[t].some((c) => edge.has(c))); // (Ghost walls: drawn hollow, none in the run)
+  // (its edges no mirror between tiles: its tiles with a corner on an edge, both faces', walls; Ghost walls: drawn hollow,
+  // none in the run; see MOBIUS_ALONG)
+  if (rimWallsOf(kind)) {
+    const walls = stripWalls(strip);
+    mesh[ghostWalls ? 'ghostWalls' : 'walls'] = [...walls, ...walls.map((i) => i + sheet.length)];
   }
   return (meshCache[key] = Object.assign(mesh, {
     torus: true,
@@ -16167,10 +16221,10 @@ const SPHERES = {
           ? {
               mesh: (s) => mobiusMesh(kind, s),
               radius: (s) => mobiusRadius(kind, s),
-              columns: (s) => (2 * stripCount(k, kind, s)) / mobiusSize(s)[0],
-              tiles: (s) => 2 * stripCount(k, kind, s),
+              columns: (s) => (2 * mobiusCount(kind, s).n) / mobiusSize(s)[0],
+              tiles: (s) => 2 * mobiusCount(kind, s).n,
               unit: TILINGS[k].cells,
-            } // (counted, not built: see stripCount)
+            } // (counted, not built: see mobiusCount, stripCount; its walls' rows too, see walledSize)
           : {
               mesh: (s) => kleinTilingMesh(kind, s),
               radius: (s) => kleinLength(kind, s).W / (2 * Math.PI * TORUS_TUBE),
@@ -16510,7 +16564,7 @@ function gridSize(kind, f) {
   } // (its width in grid cells, a slanted grid's rectangles; its cells but the wall's)
   if (!TORI.includes(kind)) return null;
   const { tiles, unit } = SPHERES[kind],
-    cells = tiles(f);
+    cells = tiles(f) - stripWallsAt(kind, f); // (a walled strip's: its walls apart, see sizeCells)
   const h = MOBIUS_KINDS.includes(kind) ? mobiusSize(f)[0] : torusDims(kind, f)[0] * (SPHERES[kind].perColumn ?? 1);
   return [h, Math.round((cells / h) * 10) / 10, cells, unit]; // (a strip of teeth: its rows not all alike, on average, to a tenth)
 }
@@ -16734,7 +16788,12 @@ const hexCorners = (kind) => {
 const sizeCells = (kind, f, marked = false) => {
   // (a solid of hexagons: its hexagons, then its corners' cells, not all said hexagons; marked: in their colours, see sizeTips)
   const d = gridSize(kind, f),
-    S = SPHERES[kind];
+    S = SPHERES[kind],
+    walls = d && stripWallsAt(kind, f);
+  if (walls) {
+    const at = `${formatNumber(walls)} walls`;
+    return `${formatNumber(d[2])} ${d[3]} + ${marked ? `{o:${at}}` : at}`; // (a walled strip's: its walls in their ochre, see sizeTips)
+  }
   if (d) return `${formatNumber(d[2])} ${d[3]}`;
   if (S.unit === 'hexagons') {
     const { at, walls } = hexCorners(kind),

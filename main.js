@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.1000';
+const VERSION = '0.4.1001';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -20082,7 +20082,7 @@ function renderBattleHunt() {
  */
 
 // fading trail after a cell dies: from a light slate grey down to the background
-const LIFE_WALL = '#c4934e'; // the walls of a Life run (the hexagon sphere's pentagons)
+const LIFE_WALL = '#c4934e'; // the walls of a Life run (the hexagon sphere's pentagons), and a Möbius strip's in a walk
 
 // Life's neighbours, the plane's grids and the surfaces' alike, from each cell's corners (cStart/cList: cell t's
 // corner ids, cList[cStart[t]] … cList[cStart[t + 1] − 1], in turn round it; nv: how many corners). A cell's
@@ -40897,7 +40897,17 @@ function drawSphere() {
     const rgba = (c) => [...rgbCached(c).map((x) => x / 255), 1],
       look = { ...lifeLook(L, true), wall: rgba(LIFE_WALL), dead: rgba(blankTile()) };
     gpuSurface((out) => gpuLook(L, out, look), path);
-  } else gpuSurface(paintLevels(palette, levelOf), path); // (see 11.4d)
+  } else {
+    // a Möbius strip's walls, as Life's (they stop its walker or its ant, see wallStopAt; a battle's walkers: none)
+    const onWall = !walk.battle && wallStopAt(g);
+    if (onWall) {
+      const wall = palette.length,
+        level = levelOf;
+      palette = [...palette, LIFE_WALL];
+      levelOf = (t) => (onWall(t) ? wall : level(t));
+    }
+    gpuSurface(paintLevels(palette, levelOf), path); // (see 11.4d)
+  }
   drawHover();
 }
 

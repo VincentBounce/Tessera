@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.991';
+const VERSION = '0.4.992';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -9057,6 +9057,16 @@ function renderNumberPicker(active) {
   );
   tabs.classList.add('text-tabs');
   $('numberTabs').replaceChildren(tabs);
+  // A number card's tooltip (its menu's too): its symbol a picture, its name in bold over its words; a fraction's, the
+  // fraction itself, its name in its words; then the formula it writes (one built from its menu or drawn, once picked)
+  const numberTip = (el, id) => {
+    const p = PRESETS[id],
+      formula = id === active ? formulaInUse : typeof p.f === 'string' ? p.f : '',
+      fraction = isFraction(formula);
+    el.setAttribute('aria-label', fraction ? formula : p.name);
+    el.title = (fraction ? [p.name, p.detail] : [p.detail]).filter(Boolean).join(', ');
+    el.dataset.formula = fraction ? '' : formula;
+  };
   $('numberList').replaceChildren(
     ...NUMBER_GROUPS.map((group) => {
       const box = document.createElement('div'),
@@ -9074,13 +9084,7 @@ function renderNumberPicker(active) {
           const p = PRESETS[id],
             b = document.createElement('button');
           b.innerHTML = cardSymbol(p.sym);
-          // its symbol a picture: its name in bold over its words (see the tooltips); a fraction's, the fraction itself, its
-          // name in its words; then the formula it writes (one built from its menu or drawn, once picked), unless its name
-          const formula = id === active ? formulaInUse : typeof p.f === 'string' ? p.f : '',
-            fraction = isFraction(formula);
-          b.setAttribute('aria-label', fraction ? formula : p.name);
-          b.title = (fraction ? [p.name, p.detail] : [p.detail]).filter(Boolean).join(', ');
-          b.dataset.formula = fraction ? '' : formula;
+          numberTip(b, id);
           b.setAttribute('role', 'option');
           setTile(b, { on: id === active, again: true }); // (clicked again: its page, see toggleNumber)
           b.addEventListener('click', () => (id === active ? toggleNumber() : pick(id)));
@@ -9102,7 +9106,11 @@ function renderNumberPicker(active) {
           return b;
         });
       box.append(grid, ...draws);
-      if (group === 'Random and primes') box.append($('mersenneRow'), $('primorialRow'));
+      if (group === 'Random and primes') {
+        numberTip($('mersenneRow'), 'mersenne'); // (a prime's menu: its card's tooltip)
+        numberTip($('primorialRow'), 'primorial');
+        box.append($('mersenneRow'), $('primorialRow'));
+      }
       return box;
     }),
   );

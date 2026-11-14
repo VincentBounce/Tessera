@@ -261,8 +261,8 @@ textarea {
 /* the formula, like the number of digits under it: a field that looks like a label until it
    is hovered or used; in yellow bold when it is the number chosen (no card matches it) */
 /* a formula of its own, in yellow on a picked tile's pale gold: no card matches it (beside its cards: in a battle's Walkers,
-   none) */
-.field :is(input, textarea).custom:not(#battleStart *) {
+   none); at rest only: edited, it is edited as every field is */
+.field :is(input, textarea).custom:not(#battleStart *, :focus) {
   color: var(--accent-color);
   border-color: var(--accent-color);
   background: var(--picked-background);

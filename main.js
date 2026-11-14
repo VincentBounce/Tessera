@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.1057';
+const VERSION = '0.4.1058';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -7259,22 +7259,25 @@ const trailApplies = (w = walk.life && walk.mode, rule = $('lifeRule').value, lo
   look !== 'digit'; // (w: the walk shown's, or a mode's: its rule the one in use)  // (a reversible rule's blocks: none, their cells move, none dies, and backwards a trail would show where they are born)
 const trailOn = () => $('lifeTrail').checked && trailApplies();
 const TRAIL_WHERE = 'Not with dying stages (Generations), on Rewind, or with Activity.'; // (Trail's greyed words)
-// Trail, a tile turned on and off (see tile): its picture a live cell with its comet fading in amber behind (LIFE_TRAIL); greyed for Activity
-// and dying stages
+// Trail, a tile turned on and off (see tile): its picture a live cell with its trail paling behind (LIFE_TRAIL, the theme's:
+// drawn again with it); greyed for Activity and dying stages
 let trailButton = null; // kept: it goes after Life's looks, in their row (see renderColourButtons)
 function renderTrailButton() {
-  const sq = (k, c) => `<rect x="${(17 * k) / 3}" y="${17 - (17 * k) / 3}" width="7" height="7" rx="1" fill="${c}"/>`;
+  const sq = (k, c) => `<rect x="${(17 * k) / 3}" y="${17 - (17 * k) / 3}" width="7" height="7" rx="1" fill="${c}"/>`,
+    pic = `<svg viewBox="0 0 24 24" aria-hidden="true">${sq(0, LIFE_TRAIL[5]) + sq(1, LIFE_TRAIL[3]) + sq(2, LIFE_TRAIL[1])}${sq(3, LIFE_ALIVE)}</svg>`; // (up the diagonal)
   trailButton ??= tile({
-    pic: `<svg viewBox="0 0 24 24" aria-hidden="true">${sq(0, LIFE_TRAIL[5]) + sq(1, LIFE_TRAIL[3]) + sq(2, LIFE_TRAIL[1])}${sq(3, LIFE_ALIVE)}</svg>`,
+    pic,
     text: 'Trail',
     id: 'lifeTrailButton',
-    toggle: true, // up the diagonal
-    title: 'A dead cell fades in amber for a few generations (States and Age)',
+    toggle: true,
+    title:
+      'While it plays, a cell just dead stays pale for a few generations, fading to an empty cell (States and Age)',
     click: () => {
       $('lifeTrail').checked = !$('lifeTrail').checked;
       $('lifeTrail').dispatchEvent(new Event('change'));
     },
   });
+  trailButton.querySelector('svg').outerHTML = pic;
   setTile(trailButton, {
     on: $('lifeTrail').checked && trailApplies(),
     byDefault: 'On by default in Solo\nOff by default in colours',

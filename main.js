@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.1014';
+const VERSION = '0.4.1015';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -11787,13 +11787,8 @@ function turnCam(w) {
   const k = w.map((x) => x / a),
     c = Math.cos(a),
     s = -Math.sin(a);
-  const turn = (x) => {
-    const kx = cross(k, x),
-      d = (1 - c) * (k[0] * x[0] + k[1] * x[1] + k[2] * x[2]);
-    return [0, 1, 2].map((i) => x[i] * c + kx[i] * s + k[i] * d);
-  };
-  const v = unit(turn(camera.v)),
-    r0 = turn(camera.r),
+  const v = unit(turnAbout(camera.v, k, c, s)),
+    r0 = turnAbout(camera.r, k, c, s),
     rv = r0[0] * v[0] + r0[1] * v[1] + r0[2] * v[2];
   const r = unit(r0.map((x, i) => x - rv * v[i]));
   Object.assign(camera, { r, u: cross(v, r), v });
@@ -11808,6 +11803,12 @@ const sub = (p, q) => p.map((v, d) => v - q[d]);
 const dot = (p, q) => p.reduce((sum, v, d) => sum + v * q[d], 0);
 const dot3 = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
 const cross = (a, b) => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
+// x turned about the unit axis k by the angle of cosine c and sine s (Rodrigues' formula)
+const turnAbout = (x, k, c, s) => {
+  const kx = cross(k, x),
+    d = (1 - c) * dot(k, x);
+  return x.map((v, i) => v * c + kx[i] * s + k[i] * d);
+};
 const signedArea = (P) =>
   P.reduce((sum, p, i) => sum + p[0] * P[(i + 1) % P.length][1] - P[(i + 1) % P.length][0] * p[1], 0) / 2;
 const polyArea = (P) => Math.abs(signedArea(P));
@@ -26674,16 +26675,9 @@ function cellOnPlaneOf(g, t, on) {
     pivot = cell.P[cell.ids.findIndex((v) => ids.includes(v))] ?? m,
     k = cross(cell.N, N),
     sin = Math.hypot(...k),
-    cos = dot(cell.N, N),
-    axis = sin > 1e-9 ? k.map((x) => x / sin) : [0, 0, 0];
-  const unfold = (p) => {
-    const v = sub(p, pivot),
-      along = axis.map((x) => x * dot(axis, v) * (1 - cos)),
-      turned = v.map((x, d) => x * cos + cross(axis, v)[d] * sin + along[d]);
-    return turned.map((x, d) => x + pivot[d] - m[d]);
-  }; // (Rodrigues')
+    axis = sin ? k.map((x) => x / sin) : k;
   return cell.P.map((p) => {
-    const q = sin > 1e-9 ? unfold(p) : sub(p, m);
+    const q = sub(turnAbout(sub(p, pivot), axis, dot(cell.N, N), sin), sub(m, pivot));
     return [dot(q, U), -dot(q, W)];
   }); // (y down, as the page's)
 }

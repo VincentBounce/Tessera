@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.1049';
+const VERSION = '0.4.1050';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -14736,15 +14736,14 @@ const stripSteps = (kind0, nv, W, own) => {
     q = Math.round(copyLength / step),
     K = ringColours(ringMode()),
     along = MODES[ringMode()]?.margolus ? (BLOCK_ALONG[kind0] ?? 1) : 1; // (a reversible one's: its blocks' sets come round along it)
-  const allowed = (n) => ok(n, nv) && n % along === 0;
-  return own
-    ? ringLength(own, own, [], allowed) // (a length of its own: itself, or the nearest its twist allows, never a strip glued askew)
-    : ringLength(
-        (2 * Math.PI * W) / MOBIUS_WIDTH / step,
-        (K * W) / 2 / step,
-        [q, 1].map((steps) => ((K * steps) % 2 ? K * steps : (K * steps) / 2)),
-        allowed,
-      );
+  // (a length of its own: in its usual's place, the nearest whole stretches and its twist allow as well, never a strip glued
+  // askew, nor one its walkers do not fit)
+  return ringLength(
+    own ?? (2 * Math.PI * W) / MOBIUS_WIDTH / step,
+    own ?? (K * W) / 2 / step,
+    [q, 1].map((steps) => ((K * steps) % 2 ? K * steps : (K * steps) / 2)),
+    (n) => ok(n, nv) && n % along === 0,
+  );
 };
 const stripKey = () => `${ringColours(ringMode())}${MODES[ringMode()]?.margolus ? ' blocks' : ''}`; // (a strip's length its colours', a reversible one's its blocks', see stripSteps)
 const stripMemo = remember('stripMemo', weakCache()),
@@ -15075,10 +15074,7 @@ function kleinLength(kindK, size, K = ringColours(ringMode())) {
   // (a glide's half a lattice cell, turned over: as teamsFair counts them, each tile in its own middle's, see partPlaces), as the twist
   // allows (whole lattice cells, Pent 15's twist asking an odd length, had none for Trio)
   const x = W / TORUS_TUBE / step,
-    allowed = (c) => ok(c, nv),
-    n = own
-      ? ringLength(own, own, [], allowed) // (a length of its own: as a strip's, see stripSteps)
-      : ringLength(x, x * TORUS_TUBE * K, [K * Math.round(copyLength / step)], allowed);
+    n = ringLength(own ?? x, own ?? x * TORUS_TUBE * K, [K * Math.round(copyLength / step)], (c) => ok(c, nv)); // (a length of its own: in its usual's place, as a strip's, see stripSteps)
   return { kind, strip, turn, nv, n, W, step, by, a };
 }
 function kleinTilingMesh(kindK, size) {

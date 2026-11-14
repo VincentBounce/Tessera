@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.1046';
+const VERSION = '0.4.1047';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -18558,16 +18558,9 @@ const battleFits = (
       const g = sphere.mesh(solid && j <= 1 ? startClassLeast(kind, mode, size) : size),
         start = walkStart(g, mode, j > 1 ? Math.min(j, startList(g).length) : 1),
         apart = startSpread(g, !!mode.grid, start);
-      return (
-        (g.mobius
-          ? mobiusShiftsApart(g, K, start[0], !!mode.grid)
-          : battleGroups(g, K, 1, (G) => apart(G) > 1e-9).length > 0) || // (one group is enough to know)
-        (g.mobius &&
-          rotationGroups(g, K, 1, (G) => {
-            const F = G.map((M) => turnMap(g, M));
-            return F.every(Boolean) && apart(F) > 1e-9;
-          }).length > 0)
-      ); // (its turns, see battleGroups)
+      return g.mobius
+        ? mobiusShiftsApart(g, K, start[0], !!mode.grid)
+        : battleGroups(g, K, 1, (G) => apart(G) > 1e-9).length > 0; // (one group is enough to know; a strip's half turn in space is no map of its two faces, see turnMap)
     } finally {
       ringBuilt = null;
     }

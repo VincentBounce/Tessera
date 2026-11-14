@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.1055';
+const VERSION = '0.4.1056';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -14939,8 +14939,8 @@ function mobiusSheetOf(kind0, size, count = false) {
 // on the strip's edge (see mobiusMirror), its tiles
 // whose middle is within nv rows of b (a mirror along a: the strip's edges alike) and L along (see MOBIUS_ALONG), as
 // many corners each (the last one repeated); the usual length, the counts' nearest that the twist allows
-function tilingStrip(kind, kind0, size) {
-  const { m, nv, L, W, sides, cells, i0, i1, j0, j1, la } = stripFrame(kind, kind0, size),
+function tilingStrip(kind, kind0, size, bottle = false) {
+  const { m, nv, L, W, sides, cells, i0, i1, j0, j1, la } = stripFrame(kind, kind0, size, bottle),
     by = W / nv,
     cols = Math.ceil((2 * L) / la - 1e-9),
     laid = [];
@@ -14982,7 +14982,8 @@ function tilingStrip(kind, kind0, size) {
 // its fine grid: a step along and a row across cut in so many (a power of 2: a corner's 6 decimals, and their halves (a mirror
 // midway between two corners), never land on half a cut, where a corner and its twin, 10⁻¹⁴ apart, would round apart)
 const STRIP_GRID = 8192;
-function stripFrame(kind, kind0, size) {
+// (bottle: a Klein bottle's sheet, its length given, its own gluing's, see kleinLength: as it is, never the strip's twist's nearest)
+function stripFrame(kind, kind0, size, bottle = false) {
   const t = TILINGS[kind],
     [a, b] = MOBIUS_STRIPS[kind0].basis,
     turn = -Math.atan2(a[1], a[0]),
@@ -14991,7 +14992,7 @@ function stripFrame(kind, kind0, size) {
     { c } = mobiusMirror(kind, [a, b]);
   const [nv, own] = mobiusSize(size),
     W = nv * turnPoint(b, turn)[1],
-    n = stripSteps(kind0, nv, W, own); // (its colours' stretches whole copies along)
+    n = bottle ? own : stripSteps(kind0, nv, W, own); // (its colours' stretches whole copies along)
   const L = n * step,
     sides = Math.max(...t.polys.map((P) => P.length)),
     by = W / nv,
@@ -15031,7 +15032,7 @@ function stripCount(kind, kind0, size, bottle = false) {
   ));
 }
 function stripCounted(kind, kind0, size, bottle) {
-  const { m, L, W, cells, i0, i1, j0, j1, ta, tb } = stripFrame(kind, kind0, size),
+  const { m, L, W, cells, i0, i1, j0, j1, ta, tb } = stripFrame(kind, kind0, size, bottle),
     e = 1e-5;
   const mid = Array.from({ length: m }, (_, k) => {
     const P = cells(0, 0, k);
@@ -15061,7 +15062,7 @@ const kleinMemo = remember('kleinMemo', weakCache());
 function kleinTilingSheet(kindK, size) {
   return (kleinMemo[`${kindK}|${size}|${ringColours(ringMode())}`] ??= (() => {
     const { kind, strip, turn, nv, n, W, step, by, a } = kleinLength(kindK, size);
-    const s = tilingStrip(kind, strip, `${nv}x${n}`),
+    const s = tilingStrip(kind, strip, `${nv}x${n}`, true),
       keep = s.tiles.map((_, i) => i).filter((i) => s.mids[2 * i + 1] < W - 1e-9);
     return {
       kind,

@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.1010';
+const VERSION = '0.4.1011';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -25500,8 +25500,9 @@ function motifOf(g, t) {
   ];
 }
 // Sets of tiles outlined as ribbons (see ribbonV) in the buffer name: each [colour, tiles] its sides not shared by two of its
-// tiles, laid on the form shown, its colours' runs of segments; made again only when its key or its mesh change
-function outlineRibbons(D, name, key, g, sh, R, sets) {
+// tiles, laid on the form shown, its colours' runs of segments; made again only when its key or its mesh change; width: on
+// the screen at a scale (the motif's, as the plane's, see drawMotif)
+function outlineRibbons(D, name, key, g, sh, R, sets, width = (s) => Math.max(2, Math.min(s / 6, 4))) {
   const memo = D[`${name}Outline`];
   if (memo?.g === g && memo.key === key) return memo.marks;
   const k = g.sides,
@@ -25527,8 +25528,8 @@ function outlineRibbons(D, name, key, g, sh, R, sets) {
       rgb: rgbCached(colour).map((c) => c / 255),
       from,
       count: data.count - from,
-      width: (s) => Math.max(2, Math.min(s / 6, 4)),
-    }); // (its width on the screen at a scale, as the plane's motif, see drawMotif)
+      width,
+    });
   }
   gpuBuffer(name, data.words());
   return (D[`${name}Outline`] = { g, key, marks: { parts } }).marks;
@@ -43366,8 +43367,22 @@ function gpuSurface(paint, path) {
     const marks = [
       ...(motifShown && middleTile.g === g && middleTile.t >= 0 ? [['motif', motifRibbons(D, g, sh, R)]] : []),
       ...(g.ghostWalls
-        ? [['ghost', outlineRibbons(D, 'ghost', `${sh.m}|${R}`, g, sh, R, () => [[LIFE_WALL, g.ghostWalls]])]]
-        : []), // (Ghost walls: hollow, always)
+        ? [
+            [
+              'ghost',
+              outlineRibbons(
+                D,
+                'ghost',
+                `${sh.m}|${R}`,
+                g,
+                sh,
+                R,
+                () => [[LIFE_WALL, g.ghostWalls]],
+                () => 1,
+              ),
+            ],
+          ]
+        : []), // (Ghost walls: hollow, always, as fine as the grid's lines)
       ...(startsShown ? [['starts', startMarks(g, sh, R)]] : []),
     ];
     if (marks.length) {

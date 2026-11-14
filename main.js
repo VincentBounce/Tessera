@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.1008';
+const VERSION = '0.4.1009';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -26628,6 +26628,58 @@ function elementaryTutorial(entry) {
     `<h3>From one cell</h3><div class="tut-row"><figure><div><svg class="tut-start" viewBox="-0.2 -0.2 31.4 16.4">${picture}</svg></div><figcaption>16 generations</figcaption></figure></div></div>`;
   $('ruleTuto').prepend(tutTools({ close: () => ruleTutorial(null) }));
 }
+// How it works on a surface: its cells' kinds by their sides and their count of neighbours (nb), each the cell farthest from
+// another kind's (in steps from neighbour to neighbour: a sphere's hexagon away from its pentagons), the most neighbours
+// first
+function surfaceKinds(g, nb) {
+  const M = meshCorners(g),
+    wall = new Set(g.walls ?? []),
+    keyOf = (t) => `${M.start[t + 1] - M.start[t]}|${nb.start[t + 1] - nb.start[t]}`,
+    near = (t) => nb.list.subarray(nb.start[t], nb.start[t + 1]),
+    steps = new Int32Array(g.n).fill(-1),
+    queue = [];
+  for (let t = 0; t < g.n; t++)
+    if (!wall.has(t) && near(t).some((u) => keyOf(u) !== keyOf(t))) {
+      steps[t] = 0;
+      queue.push(t);
+    }
+  for (let i = 0; i < queue.length; i++)
+    for (const u of near(queue[i]))
+      if (steps[u] < 0) {
+        steps[u] = steps[queue[i]] + 1;
+        queue.push(u);
+      }
+  const best = new Map(),
+    shapeOf = new Map();
+  for (let t = 0; t < g.n; t++) {
+    if (wall.has(t)) continue;
+    const k = keyOf(t);
+    shapeOf.set(t, k.split('|')[0]);
+    if (!best.has(k) || steps[t] > steps[best.get(k)]) best.set(k, t);
+  }
+  const count = (t) => nb.start[t + 1] - nb.start[t];
+  return { kinds: [...best.values()].sort((u, v) => count(v) - count(u)), shapeOf };
+}
+// a surface's cell t drawn flat: its corners on the plane of cell on (across its normal, Newell's, from its middle)
+function cellOnPlaneOf(g, t, on) {
+  const M = meshCorners(g),
+    V = g.verts,
+    at = (u) => Array.from(M.list.subarray(M.start[u], M.start[u + 1]), (v) => [V[3 * v], V[3 * v + 1], V[3 * v + 2]]),
+    P = at(on),
+    m = meanPoint(P, 3),
+    n = [0, 0, 0];
+  newellNormal(Float64Array.from(P.flat()), 0, P.length, n);
+  const N = unit(n),
+    a = sub(P[0], m),
+    U = unit(
+      sub(
+        a,
+        N.map((x) => x * dot(a, N)),
+      ),
+    ),
+    W = cross(N, U);
+  return at(t).map((p) => [dot(sub(p, m), U), -dot(sub(p, m), W)]); // (y down, as the page's)
+}
 function ruleTutorial(entry) {
   $('appTab').classList.remove('open'); // (the app's tab, Credits': off, another page or none)
   if (entry) showPage($('ruleTuto'));
@@ -26654,44 +26706,52 @@ function ruleTutorial(entry) {
     kind = PLANE_OF_MARK[mark] ?? 'tri';
   const W = APERIODIC[kind] ? 16 : 8,
     rule = parseRule(entry.rule); // (one that never repeats: room for all its ways)
-  const nb = planeNeighbours(kind, W, false, rule.iso === 'hensel');
-  const turn = planeTurn(kind),
-    poly = cellPolys(kind, W),
-    corners = (t) => poly(t).map((p) => turnPoint(p, turn)); // (turned as the 2D grid is)
+  // its grid: the run's own surface (its cells' kinds, see surfaceKinds; each drawn on the plane of the one shown), else its
+  // plane's tiling, W wide
+  const surface = MODES[walk.mode]?.lattice === 'sphere' ? walk.geo : null,
+    nb = surface
+      ? cornerNeighbours(surface, rule.iso === 'hensel' ? 8 : undefined)
+      : planeNeighbours(kind, W, false, rule.iso === 'hensel');
+  const turn = !surface && planeTurn(kind),
+    poly = !surface && cellPolys(kind, W),
+    corners = surface ? (t) => cellOnPlaneOf(surface, t, c) : (t) => poly(t).map((p) => turnPoint(p, turn)); // (turned as the 2D grid is)
   // its cells' kinds: by their shape (its true corners' sides and angles, mirrored or turned the same) and their count of neighbours (the
   // same shape may have several, by where it lies: Stein's pentagon 7, 6 or 5), of the cells all round by others (each corner
   // a whole turn of cells: its neighbours all there), the one shown picked by its bubble (tutShape), at
   // first the one with the most neighbours, the one nearest the middle of each (a cell by the wall left out: its picture would
   // miss the wall's cell)
   const count = (t) => nb.start[t + 1] - nb.start[t];
-  const { n } = planeGrid(kind, W),
-    all = Array.from({ length: n }, (_, t) => corners(t)),
-    whole = wholeTurns(all); // (one by the wall: not all round)
-  const shapeKey = (P) => {
-    const Q = P.filter((p, i) => {
-      const a = P.at(i - 1),
-        b = P[(i + 1) % P.length];
-      return Math.abs((p[0] - a[0]) * (b[1] - p[1]) - (p[1] - a[1]) * (b[0] - p[0])) > 1e-4;
-    });
-    const angle = (i) => {
-      const p = Q[i],
-        [u, v] = [Q[(i + 1) % Q.length], Q.at(i - 1)].map((q) => [q[0] - p[0], q[1] - p[1]]);
-      return Math.abs(Math.atan2(u[0] * v[1] - u[1] * v[0], u[0] * v[0] + u[1] * v[1])).toFixed(2);
-    };
-    return `${Q.map((p, i) => Math.hypot(Q[(i + 1) % Q.length][0] - p[0], Q[(i + 1) % Q.length][1] - p[1]).toFixed(2)).sort()}|${Q.map((_, i) => angle(i)).sort()}`;
-  }; // (its sides and its angles: a rhombus not a square)
-  const centre = meanPoint(all.flat()),
-    far = (t) => Math.hypot(all[t][0][0] - centre[0], all[t][0][1] - centre[1]);
-  const shapes = new Map(),
-    shapeOf = new Map();
-  for (let t = 0; t < n; t++) {
-    if (!all[t].every(whole)) continue;
-    const sk = shapeKey(all[t]),
-      k = `${sk}|${count(t)}`;
-    shapeOf.set(t, sk);
-    if (!shapes.has(k) || far(t) < far(shapes.get(k))) shapes.set(k, t);
+  const { kinds, shapeOf } = surface ? surfaceKinds(surface, nb) : planeKinds();
+  function planeKinds() {
+    const { n } = planeGrid(kind, W),
+      all = Array.from({ length: n }, (_, t) => corners(t)),
+      whole = wholeTurns(all); // (one by the wall: not all round)
+    const shapeKey = (P) => {
+      const Q = P.filter((p, i) => {
+        const a = P.at(i - 1),
+          b = P[(i + 1) % P.length];
+        return Math.abs((p[0] - a[0]) * (b[1] - p[1]) - (p[1] - a[1]) * (b[0] - p[0])) > 1e-4;
+      });
+      const angle = (i) => {
+        const p = Q[i],
+          [u, v] = [Q[(i + 1) % Q.length], Q.at(i - 1)].map((q) => [q[0] - p[0], q[1] - p[1]]);
+        return Math.abs(Math.atan2(u[0] * v[1] - u[1] * v[0], u[0] * v[0] + u[1] * v[1])).toFixed(2);
+      };
+      return `${Q.map((p, i) => Math.hypot(Q[(i + 1) % Q.length][0] - p[0], Q[(i + 1) % Q.length][1] - p[1]).toFixed(2)).sort()}|${Q.map((_, i) => angle(i)).sort()}`;
+    }; // (its sides and its angles: a rhombus not a square)
+    const centre = meanPoint(all.flat()),
+      far = (t) => Math.hypot(all[t][0][0] - centre[0], all[t][0][1] - centre[1]);
+    const shapes = new Map(),
+      shapeOf = new Map();
+    for (let t = 0; t < n; t++) {
+      if (!all[t].every(whole)) continue;
+      const sk = shapeKey(all[t]),
+        k = `${sk}|${count(t)}`;
+      shapeOf.set(t, sk);
+      if (!shapes.has(k) || far(t) < far(shapes.get(k))) shapes.set(k, t);
+    }
+    return { kinds: [...shapes.values()].sort((u, v) => count(v) - count(u)), shapeOf };
   }
-  const kinds = [...shapes.values()].sort((u, v) => count(v) - count(u));
   if (tutShape.mode !== tabMode()) Object.assign(tutShape, { mode: tabMode(), at: 0 });
   const c = kinds[Math.min(tutShape.at, kinds.length - 1)];
   const mid = (t) => meanPoint(corners(t)),
@@ -26746,22 +26806,28 @@ function ruleTutorial(entry) {
             ? ['o', 'm', 'p']
             : [],
     classOf = (m) => (iso === 'hensel' ? henselClass(m) : hexClass(m).toLowerCase());
-  const cases = Array.from({ length: around.length + 1 }, (_, k) => k).flatMap((k) =>
-    (lettersOf(k).length ? lettersOf(k) : ['']).map((x) => {
-      if (!iso) return { k, x, live: new Set(around.slice(0, k)), on: (table) => table[k] === 1 };
-      if (iso === 'vertex') {
-        const j = x ? Number(x.slice(1)) : ways(k)[0];
-        return {
-          k,
-          x,
-          live: new Set([...tips.slice(0, j), ...sides.slice(0, k - j)]),
-          on: (table) => table[16 + 4 * k + j] === 1,
-        };
-      }
-      const m = Array.from({ length: 1 << R }, (_, m) => m).find((m) => bitCount(m) === k && (!x || classOf(m) === x));
-      return { k, x, live: new Set(ring.filter((_, q) => (m >> q) & 1)), on: (table) => table[16 + m] === 1 };
-    }),
-  );
+  const cases = Array.from({ length: around.length + 1 }, (_, k) => k)
+    .flatMap((k) =>
+      (lettersOf(k).length ? lettersOf(k) : ['']).map((x) => {
+        if (!iso) return { k, x, live: new Set(around.slice(0, k)), on: (table) => table[k] === 1 };
+        if (iso === 'vertex') {
+          const j = x ? Number(x.slice(1)) : ways(k)[0];
+          return {
+            k,
+            x,
+            live: new Set([...tips.slice(0, j), ...sides.slice(0, k - j)]),
+            on: (table) => table[16 + 4 * k + j] === 1,
+          };
+        }
+        const m = Array.from({ length: 1 << R }, (_, m) => m).find(
+          (m) => bitCount(m) === k && (!x || classOf(m) === x) && ring.every((u, q) => u >= 0 || !((m >> q) & 1)),
+        ); // (a ring's places with no cell, a pentagon's sixth: never live)
+        return m === undefined
+          ? null
+          : { k, x, live: new Set(ring.filter((_, q) => (m >> q) & 1)), on: (table) => table[16 + m] === 1 };
+      }),
+    )
+    .filter(Boolean);
   const pair = (cs, from, to, word) =>
     `<figure><div>${cell(from, cs.live)}<span>→</span>${cell(to, cs.live, from)}</div><figcaption>${cs.k}${cs.x} live: ${word}</figcaption></figure>`;
   const list = (l) =>
@@ -26861,7 +26927,7 @@ function ruleTutorial(entry) {
     `<div class="tut-body">${tutLetters.on && lettersOf2 ? lettersPage() + '</div>' : ''}` +
     (tutLetters.on && lettersOf2
       ? ''
-      : `<h2>${entry.name} ${ruleSpan(entry.rule)}</h2>${entry.about ? `<p>${capitalised(entry.about)}.</p>` : ''}${kinds.length > 1 ? shapeBubbles(kinds, c, corners, count, shapeOf, { hat: 'hat', spectre: 'spectre' }[kind]) : ''}<p>A cell with ${around.length} neighbours here (sharing an edge or a corner): ${born.length ? `born with ${list(born)} live ones` : 'never born'}, ${stays.length ? `survives with ${list(stays)}` : 'never survives'}, dies otherwise${iso === 'vertex' ? ' (after v, how many of the live ones touch it by a corner only, not a side)' : iso ? ' (the letters: where the live ones sit)' : ''}${rule.C > 2 ? `, then fades through ${rule.C - 2} dying stage${rule.C > 3 ? 's' : ''} (neither alive nor counted) before it is empty again` : ''}.</p>` +
+      : `<h2>${entry.name} ${ruleSpan(entry.rule)}</h2>${entry.about ? `<p>${capitalised(entry.about)}.</p>` : ''}${kinds.length > 1 ? shapeBubbles(kinds, c, surface ? (t) => cellOnPlaneOf(surface, t, t) : corners, count, shapeOf, { hat: 'hat', spectre: 'spectre' }[kind]) : ''}<p>A cell with ${around.length} neighbours here (sharing an edge or a corner): ${born.length ? `born with ${list(born)} live ones` : 'never born'}, ${stays.length ? `survives with ${list(stays)}` : 'never survives'}, dies otherwise${iso === 'vertex' ? ' (after v, how many of the live ones touch it by a corner only, not a side)' : iso ? ' (the letters: where the live ones sit)' : ''}${rule.C > 2 ? `, then fades through ${rule.C - 2} dying stage${rule.C > 3 ? 's' : ''} (neither alive nor counted) before it is empty again` : ''}.</p>` +
         `<h3>Birth${part('B')}</h3><div class="tut-row">${born.map((cs) => pair(cs, UNLIT, LIFE_ALIVE, 'born')).join('') || '<p>none</p>'}</div>${colours()}` +
         `<h3>Survival${part('S')}</h3><div class="tut-row">${stays.map((cs) => pair(cs, LIFE_ALIVE, LIFE_ALIVE, 'stays')).join('') || '<p>none</p>'}</div>` +
         `<h3>Death</h3><div class="tut-row">${dies.map((cs) => pair(cs, LIFE_ALIVE, after, 'dies')).join('')}</div>` +

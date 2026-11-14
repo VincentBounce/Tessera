@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.1009';
+const VERSION = '0.4.1010';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -26628,9 +26628,9 @@ function elementaryTutorial(entry) {
     `<h3>From one cell</h3><div class="tut-row"><figure><div><svg class="tut-start" viewBox="-0.2 -0.2 31.4 16.4">${picture}</svg></div><figcaption>16 generations</figcaption></figure></div></div>`;
   $('ruleTuto').prepend(tutTools({ close: () => ruleTutorial(null) }));
 }
-// How it works on a surface: its cells' kinds by their sides and their count of neighbours (nb), each the cell farthest from
-// another kind's (in steps from neighbour to neighbour: a sphere's hexagon away from its pentagons), the most neighbours
-// first
+// How it works on a surface: its cells' kinds by their sides and their count of neighbours (nb), each the cell drawn the
+// flattest on a solid (it and its neighbours in one of its faces, not bent over its edge: see cellOnPlaneOf), then the farthest from another kind's (in steps from neighbour to
+// neighbour: a sphere's hexagon away from its pentagons), the most neighbours first
 function surfaceKinds(g, nb) {
   const M = meshCorners(g),
     wall = new Set(g.walls ?? []),
@@ -26649,27 +26649,41 @@ function surfaceKinds(g, nb) {
         steps[u] = steps[queue[i]] + 1;
         queue.push(u);
       }
-  const best = new Map(),
-    shapeOf = new Map();
-  for (let t = 0; t < g.n; t++) {
-    if (wall.has(t)) continue;
+  const bent = (t) => {
+    if (g.torus || g.klein) return 0; // (a sheet rolled: no cell flat in space, its picture as it is)
+    const { m, N } = cellPlane(g, t),
+      off = (u) => Math.max(...cellPlane(g, u).P.map((p) => Math.abs(dot(sub(p, m), N))));
+    return Math.round(Math.max(off(t), ...Array.from(near(t), off)) * 1e6); // (its picture, it and its neighbours, off its plane, to 10⁻⁶: flat ones alike)
+  };
+  // the farthest first, each kind's search over at its first flat picture
+  const order = [...Array(g.n).keys()].filter((t) => !wall.has(t)).sort((u, v) => steps[v] - steps[u]),
+    kindCount = new Set(order.map(keyOf)).size,
+    best = new Map(),
+    flat = new Set();
+  for (const t of order) {
     const k = keyOf(t);
-    shapeOf.set(t, k.split('|')[0]);
-    if (!best.has(k) || steps[t] > steps[best.get(k)]) best.set(k, t);
+    if (flat.has(k)) continue;
+    const b = bent(t);
+    if (!best.has(k) || b < best.get(k).b) best.set(k, { t, b });
+    if (b === 0) flat.add(k);
+    if (flat.size === kindCount) break;
   }
-  const count = (t) => nb.start[t + 1] - nb.start[t];
-  return { kinds: [...best.values()].sort((u, v) => count(v) - count(u)), shapeOf };
+  const count = (t) => nb.start[t + 1] - nb.start[t],
+    kinds = [...best.values()].map(({ t }) => t).sort((u, v) => count(v) - count(u));
+  return { kinds, shapeOf: new Map(kinds.map((t) => [t, keyOf(t).split('|')[0]])) };
 }
-// a surface's cell t drawn flat: its corners on the plane of cell on (across its normal, Newell's, from its middle)
-function cellOnPlaneOf(g, t, on) {
+// a surface's cell: its corners (P), their middle (m) and its plane's normal (N, Newell's)
+function cellPlane(g, t) {
   const M = meshCorners(g),
     V = g.verts,
-    at = (u) => Array.from(M.list.subarray(M.start[u], M.start[u + 1]), (v) => [V[3 * v], V[3 * v + 1], V[3 * v + 2]]),
-    P = at(on),
-    m = meanPoint(P, 3),
+    P = Array.from(M.list.subarray(M.start[t], M.start[t + 1]), (v) => [V[3 * v], V[3 * v + 1], V[3 * v + 2]]),
     n = [0, 0, 0];
   newellNormal(Float64Array.from(P.flat()), 0, P.length, n);
-  const N = unit(n),
+  return { P, m: meanPoint(P, 3), N: unit(n) };
+}
+// a surface's cell t drawn flat: its corners on the plane of cell on (see cellPlane), from its middle
+function cellOnPlaneOf(g, t, on) {
+  const { P, m, N } = cellPlane(g, on),
     a = sub(P[0], m),
     U = unit(
       sub(
@@ -26678,7 +26692,7 @@ function cellOnPlaneOf(g, t, on) {
       ),
     ),
     W = cross(N, U);
-  return at(t).map((p) => [dot(sub(p, m), U), -dot(sub(p, m), W)]); // (y down, as the page's)
+  return cellPlane(g, t).P.map((p) => [dot(sub(p, m), U), -dot(sub(p, m), W)]); // (y down, as the page's)
 }
 function ruleTutorial(entry) {
   $('appTab').classList.remove('open'); // (the app's tab, Credits': off, another page or none)

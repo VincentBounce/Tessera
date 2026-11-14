@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.1033';
+const VERSION = '0.4.1034';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -14902,7 +14902,9 @@ function mobiusSheetOf(kind0, size, count = false) {
 // whose middle is within nv rows of b (a mirror along a: the strip's edges alike) and L along (see MOBIUS_ALONG), as
 // many corners each (the last one repeated); the usual length, the counts' nearest that the twist allows
 function tilingStrip(kind, kind0, size) {
-  const { m, L, W, sides, cells, i0, i1, j0, j1 } = stripFrame(kind, kind0, size),
+  const { m, nv, L, W, sides, cells, i0, i1, j0, j1, la } = stripFrame(kind, kind0, size),
+    by = W / nv,
+    cols = Math.ceil(L / la - 1e-9),
     laid = [];
   for (let j = j0; j <= j1; j++)
     for (let i = i0; i <= i1; i++)
@@ -14916,7 +14918,10 @@ function tilingStrip(kind, kind0, size) {
           y,
           cell: [k + i * m, j],
           latticeCell: (j - j0) * (i1 - i0 + 1) + (i - i0),
-        }); // (cell: the plane's, its x and y; latticeCell: the plane's lattice cell it was laid from, its motif)
+          colourCell: Math.floor(y / by + 1e-6) * cols + Math.floor(x / la + 1e-6),
+        }); // (cell: the plane's, its x and y; latticeCell: the plane's lattice cell it was laid from, its motif; colourCell: its
+        // colour's unit, a box of the strip a row high and a lattice cell long, alike all round it, across the twist too: a
+        // lattice cell cut by the ends is not, its tiles past them in others, see colourUnitPlaces)
       }
   // lattice cell by lattice cell from its corner: a row of b (its sides mirrors, as y = 0), |a| along it, m tiles each; a mirror through
   // tiles, those on its far edge after; a glide's twist, half a lattice cell at its end
@@ -14928,6 +14933,7 @@ function tilingStrip(kind, kind0, size) {
     tiles: laid.map(({ P }) => [...P, ...Array(sides - P.length).fill(P.at(-1))]),
     mids: laid.flatMap(({ x, y }) => [x, y]),
     latticeCells: laid.map(({ latticeCell }) => latticeCell),
+    colourCells: laid.map(({ colourCell }) => colourCell),
     originCell: laid[0].cell,
   };
 }
@@ -15033,6 +15039,7 @@ function kleinTilingSheet(kindK, size) {
       tiles: keep.map((i) => s.tiles[i]),
       mids: keep.flatMap((i) => [s.mids[2 * i], s.mids[2 * i + 1]]),
       latticeCells: keep.map((i) => s.latticeCells[i]),
+      colourCells: keep.map((i) => s.colourCells[i]),
       originCell: s.originCell,
     };
   })());
@@ -15064,10 +15071,8 @@ function kleinLength(kindK, size, K = ringColours(ringMode())) {
 function kleinTilingMesh(kindK, size) {
   const key = `${kindK}${size}|${ringColours(ringMode())}`; // (its length its colours': see kleinLength)
   if (meshCache[key]) return meshCache[key];
-  const { kind, turn, L, W, n, nv, step, by, sides, tiles, mids, latticeCells, originCell } = kleinTilingSheet(
-      kindK,
-      size,
-    ),
+  const { kind, turn, L, W, n, nv, step, by, sides, tiles, mids, latticeCells, colourCells, originCell } =
+      kleinTilingSheet(kindK, size),
     Q = STRIP_GRID,
     ids = new Map(),
     verts = [];
@@ -15107,6 +15112,7 @@ function kleinTilingMesh(kindK, size) {
     uv: new Float64Array(sheet.flat(2)),
     uvMid: new Float64Array(mids),
     latticeCells,
+    colourCells,
     originCell,
   }));
 }
@@ -15124,7 +15130,7 @@ function mobiusMesh(kind, size) {
   const key = `${kind}${size}|${stripKey()}`,
     nv = mobiusSize(size)[0]; // (its length its colours': see stripSteps)
   if (meshCache[key]) return meshCache[key];
-  const { L, W, tiles: sheet, mids, latticeCells, originCell } = mobiusSheet(kind, size),
+  const { L, W, tiles: sheet, mids, latticeCells, colourCells, originCell } = mobiusSheet(kind, size),
     k = sheet[0].length;
   const { verts, add } = vertexStore();
   const ids = sheet.map((t) => t.map(([x, y]) => add(...mobiusPoint(x, y, L, W, 1)))); // the glued ends share corners
@@ -15188,6 +15194,7 @@ function mobiusMesh(kind, size) {
     front: sheet.length,
     originCell,
     latticeCells: [...latticeCells, ...latticeCells],
+    ...(colourCells && { colourCells: [...colourCells, ...colourCells] }),
     ...(mids && { uvMid: new Float64Array([...mids, ...mids]) }),
   })); // (a tiling's: its tiles' own middles, see sheetMiddle)
 }
@@ -16558,8 +16565,8 @@ const latticeCellSize = (g) =>
       : gridCells(cellKind(g));
 // a sheet's tile's lattice cell, as laid (g.latticeCells, else latticeCellSize(g) tiles at a time as listed), a Möbius strip's back's apart from its
 // front's (the same lattice cells listed twice, see mobiusMesh)
-const latticeCellOf = (g, t) =>
-  2 * (g.latticeCells?.[t] ?? Math.floor(tilePlace(g, t) / latticeCellSize(g))) + (g.mobius && t >= g.front ? 1 : 0);
+const latticeCellOf = (g, t, cells = g.latticeCells) =>
+  2 * (cells?.[t] ?? Math.floor(tilePlace(g, t) / latticeCellSize(g))) + (g.mobius && t >= g.front ? 1 : 0); // (cells: a strip's colour units, see colourUnitPlaces)
 // a motif that repeats turned, not by sliding alone (Cairo's 2 pentagons: the next 2 the same a quarter turn round; its least
 // cell that slides onto itself, 4)
 const turnedCellNote = (kind) => (kind === 'cairo' ? ' (the next ones the same turned by a quarter)' : '');
@@ -29459,13 +29466,15 @@ function planeFrame() {
 }
 // a sheet's tiles where their colour units are: each its unit's middle on the sheet (a Möbius strip's on its loop, 2L, a side
 // a lattice cell), its tiles' middles the shortest way round from its first one's: its colours' blocks of whole units, as the plane's. A
-// tiling's torus's by its sheet's cells, not its lattice cells (its motif's, see latticeCellOf): rectangles of the sheet, never across its
-// seam (a slanted cell is: v0.3.73 to 0.3.84, its tiles past the seam in the other colour, drawn at the sheet's other end)
+// tiling's torus's by its sheet's cells, a tiling's strip's and bottle's by its boxes (colourCells, see tilingStrip), not their lattice
+// cells (their motif's, see latticeCellOf): rectangles of the sheet, never across its seam (a slanted cell is: v0.3.73 to 0.3.84, its tiles
+// past the seam in the other colour, drawn at the sheet's other end; v0.4.1024 to 0.4.1033 a strip's, Pent10's 3 colours 751 / 760 / 769)
 function colourUnitPlaces(g) {
   if (g.colourUnitPlaces) return g.colourUnitPlaces;
   const [P, Q] = g.mobius ? [2 * g.L, Infinity] : g.klein ? [Infinity, Infinity] : [g.nu, g.nv],
     near = (d, p) => (p < Infinity ? d - p * Math.round(d / p) : d);
-  const key = (t) => (g.sheet ? Math.floor(t / (g.n / (g.nu * g.nv))) : latticeCellOf(g, t)),
+  const key = (t) =>
+      g.sheet ? Math.floor(t / (g.n / (g.nu * g.nv))) : latticeCellOf(g, t, g.colourCells ?? g.latticeCells),
     sums = new Map(),
     out = new Float64Array(2 * g.n); // (a sheet cell's tiles listed together, see tilingTorusMesh)
   for (let t = 0; t < g.n; t++) {

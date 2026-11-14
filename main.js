@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.1042';
+const VERSION = '0.4.1043';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -7249,6 +7249,7 @@ const trailApplies = (w = walk.life && walk.mode, rule = $('lifeRule').value, lo
   (parseRule(ruleBody(lifeRuleAt(rule, w)))?.C ?? 2) === 2 &&
   look !== 'digit'; // (w: the walk shown's, or a mode's: its rule the one in use)  // (a reversible rule's blocks: none, their cells move, none dies, and backwards a trail would show where they are born)
 const trailOn = () => $('lifeTrail').checked && trailApplies();
+const TRAIL_GENERATIONS = 8; // (a dead cell's fade lasts as many at the speed played, see gpuLook)
 const trailShade = (f) => rampAt([LIFE_ALIVE, UNLIT], f); // (a dead cell's colour f of its fade through, in a control's picture)
 const TRAIL_WHERE = 'Not with dying stages (Generations), on Rewind, or with Activity.'; // (Trail's greyed words)
 // Trail, a tile turned on and off (see tile): its picture a live cell and three fading to the empty cell's colour behind (see trailShade); greyed for Activity
@@ -7261,7 +7262,7 @@ function renderTrailButton() {
     text: 'Trail',
     id: 'lifeTrailButton',
     toggle: true, // up the diagonal
-    title: 'A dead cell fades out in half a second (States and Age)',
+    title: 'A dead cell fades out over 8 generations, half a second at most (States and Age)',
     click: () => {
       $('lifeTrail').checked = !$('lifeTrail').checked;
       $('lifeTrail').dispatchEvent(new Event('change'));
@@ -25184,7 +25185,7 @@ function lifeLook(L, lifted = false) {
     value: {
       table,
       by: colour === 'digit' ? 2 : colour === 'mono' ? 0 : 1,
-      trail: trailOn() ? WALK_FADE_SECONDS * 1000 : 0,
+      trail: trailOn(),
     },
   }; // (trail: a dead cell's fade, in ms, see gpuLook)
   return L.look.value;
@@ -42275,8 +42276,9 @@ function gpuLook(L, out, look) {
       }),
     });
   }
-  const now = performance.now();
-  if (look.trail && E.shownAt + look.trail > now) fadingUntil = Math.max(fadingUntil, (E.shownAt + look.trail) / 1000); // (drawn again till the cells dead since its last change have faded)
+  const now = performance.now(),
+    trail = look.trail ? 1000 * Math.min(WALK_FADE_SECONDS, TRAIL_GENERATIONS / stepsPerSecond()) : 0; // (a dead cell's fade, in ms: so many generations at the speed played, a walk's cells' at most)
+  if (E.shownAt + trail > now) fadingUntil = Math.max(fadingUntil, (E.shownAt + trail) / 1000); // (drawn again till the cells dead since its last change have faded)
   const pack = (c) =>
     Math.round(c[0] * 255) |
     (Math.round(c[1] * 255) << 8) |
@@ -42292,7 +42294,7 @@ function gpuLook(L, out, look) {
     GPU.pipes.lifeLook,
     {
       now: Math.round(now),
-      trail: look.trail,
+      trail,
       by: look.by,
       neg: negative(L) ? 1 : 0,
       wall: pack(look.wall),

@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.1047';
+const VERSION = '0.4.1048';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -16985,34 +16985,44 @@ function edgeStarts(G, v0, way) {
 
 // On a Möbius strip's faces, as on a torus, the different walks are one per direction of edge (2 on
 // squares, 3 on hexagons and triangles): from the corner of the front nearest the middle of the sheet
-// (or the next one, to head the other way), north (or the nearest after it) first, then east.
+// (or the next one, to head the other way), north (or the nearest after it) first, then east; none on the strip's middle
+// line (the corner the nearest whose starts are all off it).
 function mobiusStarts(g) {
   const G = gridGraph(g),
-    k = g.sides;
-  let v0 = g.poly[0],
-    best = Infinity;
-  const face = mobiusMiddle(g) < g.L ? 0 : g.front; // the face in view
+    k = g.sides,
+    face = mobiusMiddle(g) < g.L ? 0 : g.front, // the face in view
+    far = new Map(), // (its corners: how far from the sheet's middle, and their height across it)
+    across = new Map();
   for (let q = k * face; q < k * (face + g.front); q++) {
-    // its corners
-    const d = Math.hypot(g.uv[2 * q] - g.L / 2, g.uv[2 * q + 1] - g.W / 2);
-    if (d < best) {
-      best = d;
-      v0 = g.poly[q];
-    }
+    if (far.has(g.poly[q])) continue;
+    far.set(g.poly[q], Math.hypot(g.uv[2 * q] - g.L / 2, g.uv[2 * q + 1] - g.W / 2));
+    across.set(g.poly[q], g.uv[2 * q + 1]);
   }
-  // the step from each corner round it to it, on the sheet as seen from its face (a back: mirrored)
-  const delta = new Map();
-  for (let t = 0; t < 2 * g.front; t++)
-    for (let q = 0; q < k; q++) {
-      const a = g.poly[k * t + q],
-        b = g.poly[k * t + ((q + 1) % k)],
-        i = 2 * (k * t + q),
-        j = 2 * (k * t + ((q + 1) % k)),
-        back = t >= g.front ? -1 : 1;
-      if (b === v0) delta.set(a, [g.uv[j] - g.uv[i], (g.uv[j + 1] - g.uv[i + 1]) * back]);
-      if (a === v0) delta.set(b, [g.uv[i] - g.uv[j], (g.uv[i + 1] - g.uv[j + 1]) * back]);
-    }
-  return edgeStarts(G, v0, (f) => delta.get(f));
+  // the starts round corner v0, the step from each corner round it to it, on the sheet as seen from its face (a back: mirrored)
+  const startsRound = (v0) => {
+    const delta = new Map();
+    for (let t = 0; t < 2 * g.front; t++)
+      for (let q = 0; q < k; q++) {
+        const a = g.poly[k * t + q],
+          b = g.poly[k * t + ((q + 1) % k)],
+          i = 2 * (k * t + q),
+          j = 2 * (k * t + ((q + 1) % k)),
+          back = t >= g.front ? -1 : 1;
+        if (b === v0) delta.set(a, [g.uv[j] - g.uv[i], (g.uv[j + 1] - g.uv[i + 1]) * back]);
+        if (a === v0) delta.set(b, [g.uv[i] - g.uv[j], (g.uv[i + 1] - g.uv[j + 1]) * back]);
+      }
+    return edgeStarts(G, v0, (f) => delta.get(f));
+  };
+  // off the strip's middle line: half a loop on, a place on that line is the same point, on the other face, so two walkers
+  // there would start together (see battleFits): a start's corner (along the grid) and its tile's middle (on cells)
+  const onLine = (y) => Math.abs(y - g.W / 2) < 1e-6,
+    tileAcross = (t) => Array.from({ length: k }, (_, i) => g.uv[2 * (k * t + i) + 1]).reduce((a, b) => a + b) / k,
+    clear = ([v, f]) => !onLine(across.get(v)) && !onLine(tileAcross(cellStart(g, [v, f])[0]));
+  // the corner nearest the sheet's middle whose starts all lie off that line
+  for (const v0 of [...far.keys()].sort((a, b) => far.get(a) - far.get(b))) {
+    const starts = startsRound(v0);
+    if (starts.every(clear)) return starts;
+  }
 }
 
 // The rotations (3×3 matrices, by rows) that map a solid onto itself, from its corners' directions:
@@ -18496,18 +18506,6 @@ function ringGroup(g, K) {
   const G = [[0, 0], ...shifts].map(([dx, dy]) => sheetShift(g, dx, dy));
   return G.every(Boolean) ? G : null;
 }
-// a Möbius strip's K shifts along it (see ringGroup) setting a battle's walkers apart from A's start (place u, a corner or a
-// tile), each judged on one tile and the start only: its sheet a periodic tiling, a shift laying one tile on a tile, its
-// corners in the same order, is one of its translations, every tile's (see sheetShift, its whole map)
-function mobiusShiftsApart(g, K, u, grid) {
-  const images = Array.from({ length: K }, (_, i) => {
-    const corner = sheetCorner(g, (i * 2 * g.L) / K, 0),
-      at = (v) => corner(v) ?? -1;
-    return tileImage(g, at, 0) < 0 ? -1 : grid ? at(u) : tileImage(g, at, u);
-  });
-  const P = grid ? g.verts : g.cen;
-  return images.every((v) => v >= 0) && pointsApart(images.map((v) => [0, 1, 2].map((d) => P[3 * v + d]))) > 1e-9;
-}
 // the groups of K for a battle's starts (see battleMaps), each its places' maps (see placeMap), the identity first: a
 // ring's shifts (see ringGroup); the surface's turns in space (see rotationGroups: a solid's, a ring's round its axis, a
 // Möbius strip's half turn) that keep its tiles' corners' order (see turnMap; the mirror through its centre never does)
@@ -18522,9 +18520,8 @@ const battleGroups = (g, K, enough = Infinity, good = null) => {
   ].filter((G) => G && (!good || good(G)));
 };
 // whether a battle on mode w's surface (see battleMode) can have K teams, from its start: its surface has a group of K that
-// sets them apart from A's start (see battleGroups, startSpread), a ring's judged on its mesh made for K (its length its
-// walkers', as Life's colours', see ringColours); none elsewhere. One count asked, one count made (a Möbius strip's: a mesh
-// each), the menu's search asking one team tile's at every mode round
+// sets them apart from A's start (see battleGroups, startSpread): a ring's known by construction, no mesh; a solid's by its
+// turns, its start's kind of point judged on a mesh; none elsewhere. The menu's search asks one team tile's at every mode round
 // (at a size, or its mode's: the tab's the menu's only, none before it holds its surface: a strip's sizes depend on its walkers
 // (ringColours, by battleOn), so sizeAt for the tab would come back here)
 const battleFits = (
@@ -18535,35 +18532,38 @@ const battleFits = (
 ) => {
   // (j: A's start's number asked, its list's at most)
   if (K < 2 || !size || !battleMode(w)) return false; // (none)
-  // a ring's by its kind, known by construction (its length made for its walkers, see ringColours): a torus takes every
-  // count (its shift of 1/K round it), a Klein bottle a Duel only (its gluing: its half turn, see ringGroup); a Möbius strip's tried
-  const ring = SPHERES[surfaceOf(MODES[w])].columns && familyOf(w)?.F.name;
-  if (ring === FOLDS.torus.name) return true;
-  if (ring === FOLDS.klein.name) return K === 2;
   const mode = MODES[w],
     kind = surfaceOf(mode),
-    sphere = SPHERES[kind],
-    memo = (battleCountsMemo[`${w}|${size}|${j}`] ??= {}); // (the start asked: its count made by each K's mesh, see walkStart)
-  // K's: a closed solid's for any start, or none where it has no group of K (no mesh, see solidTeamCounts), else a group of K setting A's start's walkers apart,
-  // on its mesh at the size picked (a Möbius strip's made for K, see ringColours)
-  const fits = () => {
-    const solid = !sphere.columns && solidTeamCounts(kind, mode);
-    if (solid && (solid.any.includes(K) || !solid.some.includes(K))) return solid.any.includes(K); // (no group of K: none)
-    ringBuilt = sphere.columns ? { w, K } : null;
+    sphere = SPHERES[kind];
+  // a ring's by its kind (its length made for its walkers, see ringColours): a torus takes every count (its shift of 1/K
+  // round it), a Klein bottle a Duel only (its gluing: its half turn, see ringGroup), a Möbius strip the counts whose
+  // stretch of its loop (its two faces, 2L / K) is whole copies of its tiling, a slide by it laying the tiling on itself
+  // (see stripSteps: so made where its twist allows; its starts off its middle line, so set apart, see mobiusStarts)
+  const ring = sphere.columns && familyOf(w)?.F.name;
+  if (ring === FOLDS.torus.name) return true;
+  if (ring === FOLDS.klein.name) return K === 2;
+  if (ring) {
+    ringBuilt = { w, K };
     try {
-      // (a solid's start 1 the same kind of point at every size of its class, by construction: the edge farthest from A in
-      // its kite, see startList, and its class its size's rest by its startPeriod; and K's fit A's start's kind of point
-      // only, the turns leaving it in place: start 1 judged on its class's least mesh, never a mesh of the size asked built
-      // for it, checked by tesseraCheck's checkFirstStarts)
-      const g = sphere.mesh(solid && j <= 1 ? startClassLeast(kind, mode, size) : size),
-        start = walkStart(g, mode, j > 1 ? Math.min(j, startList(g).length) : 1),
-        apart = startSpread(g, !!mode.grid, start);
-      return g.mobius
-        ? mobiusShiftsApart(g, K, start[0], !!mode.grid)
-        : battleGroups(g, K, 1, (G) => apart(G) > 1e-9).length > 0; // (one group is enough to know; a strip's half turn in space is no map of its two faces, see turnMap)
+      const copies = (2 * mobiusCount(kind, size).L) / K / MOBIUS_ALONG[kind].copyLength;
+      return Math.abs(copies - Math.round(copies)) < 1e-6;
     } finally {
       ringBuilt = null;
     }
+  }
+  // a closed solid's: for any start, or none where it has no group of K (no mesh, see solidTeamCounts), else a group of K
+  // setting A's start's walkers apart. Its start 1 the same kind of point at every size of its class, by construction (the
+  // edge farthest from A in its kite, see startList, its class its size's rest by its startPeriod), and K's fit A's start's
+  // kind of point only, the turns leaving it in place: start 1 judged on its class's least mesh, never a mesh of the size
+  // asked built for it (checked by tesseraCheck's checkFirstStarts); another start on the mesh at the size picked
+  const solid = solidTeamCounts(kind, mode);
+  if (solid.any.includes(K) || !solid.some.includes(K)) return solid.any.includes(K); // (no group of K: none)
+  const memo = (battleCountsMemo[`${w}|${size}|${j}`] ??= {});
+  const fits = () => {
+    const g = sphere.mesh(j <= 1 ? startClassLeast(kind, mode, size) : size),
+      start = walkStart(g, mode, j > 1 ? Math.min(j, startList(g).length) : 1),
+      apart = startSpread(g, !!mode.grid, start);
+    return battleGroups(g, K, 1, (G) => apart(G) > 1e-9).length > 0; // (one group is enough to know)
   };
   return (memo[K] ??= fits());
 };

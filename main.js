@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.992';
+const VERSION = '0.4.993';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -10845,6 +10845,7 @@ function creatureRules(w) {
       now: walkRuleOf(m),
       typed: true,
       set: (r) => setWalkRule(w, r),
+      reads: (r) => !!walkCommandsOf(w, r),
       base: (r) => baseWords(ruleCommands(r).length),
       cards: rulesFor(w),
       name: `Rule, a command per digit: ${commandsTaken(m).join(' ')}`,
@@ -10856,6 +10857,7 @@ function creatureRules(w) {
       typed: !worm.byDigits, // (by the digits: no rule in use, its turns the digits')
       cards: worm.byDigits ? [] : rulesFor(w),
       set: setWormRule, // (by its rule: no digits read)
+      reads: (r) => !!wormRuleOf(r),
       name: 'Rule, a turn at each new corner: L2, L, N, R, R2',
     };
   const turns = antCommands(w).join(' ');
@@ -10864,6 +10866,7 @@ function creatureRules(w) {
     now: antRuleOf(w),
     typed: true,
     set: (r) => setAntRule(w, r),
+    reads: (r) => !!antRuleRead(w, r),
     base: antByDigits ? () => baseWords(2) : null, // (by colour: no digits read)
     cards: rulesFor(w),
     name: `Rule, per state an entry per colour: its colour left, its turn (${turns}), its state next; the states parted by |; or an ant's turns alone, one a colour (RL)`,
@@ -10891,8 +10894,11 @@ function ruleIn(w, rule, turmite) {
 // a rule typed that this walk or creature cannot take: the one in use put back, and why said (its words, see creatureRules)
 function refuseRule(typed, kept) {
   $('antRule').value = kept;
-  $('status').textContent = `“${typed}”: not a rule here · ${creatureRules(tabMode()).name} · ${kept} kept`;
+  $('status').textContent = `${creatureRuleError(typed)} · ${kept} kept`;
 }
+// a walk's, an ant's, a turmite's or a worm's rule typed: its error, '' when its creature reads it
+const creatureRuleError = (typed, w = tabMode()) =>
+  creatureRules(w).reads(typed) ? '' : `“${typed}”: not a rule here · ${creatureRules(w).name}`;
 function setWormRule(rule) {
   if (!wormRuleOf(rule)) {
     refuseRule(rule, worm.rule);
@@ -45072,7 +45078,7 @@ $('digitsUp').addEventListener('click', () => stepDigits(1));
 // The edited fields (the formula, number of digits, start, the ant's and Life's rules): entering
 // one shows the value in use, the cursor at its end (the plain number for the digits; formulaInUse is
 // the last valid formula; a rule as it was). Enter or ↵ leaves the field, and leaving it applies it;
-// but a wrong formula keeps you in the field, with its error. Esc undoes the edit: back to the value
+// but a wrong formula or rule keeps you in the field, with its error. Esc undoes the edit: back to the value
 // in use. For ↵, mousedown keeps the focus from going to the button first.
 const valueInUse = {
   ...Object.fromEntries(BATTLE_FORMULAS.map((id) => [id, () => formulaInUseOf(id)])), // (every walker's formula)
@@ -45081,6 +45087,16 @@ const valueInUse = {
   antRule: () => creatureRules(tabMode()).now, // (a walk's, an ant's, a turmite's, a worm's)
   lifeRule: () => (walk.life?.ruleText ? ruleBody(walk.life.ruleText) : walk.rows ? `W${walk.rows.N}` : null),
 }; // (the rule the game plays, its colours apart; Elementary's, its rows'; none yet: the field's as it was, see putBack)
+// a typed field's error, '' when right: Enter keeps you in the field with it (a formula, every walker's alike; a rule)
+const fieldError = (input) => {
+  if (input.closest('.formula-field')) {
+    const error = formulaOf(input.value).error;
+    return error ? `${formulaName(input.id)}: ${error}` : '';
+  }
+  if (input.id === 'lifeRule') return lifeRuleError(input.value);
+  if (input.id === 'antRule') return creatureRuleError(input.value);
+  return '';
+};
 for (const input of document.querySelectorAll('.field input')) {
   let before = '';
   valueInUse[input.id] ??= () => before; // (a field with no value of its own in use: as it was when entered)
@@ -45107,10 +45123,10 @@ for (const input of document.querySelectorAll('.field input')) {
       input.blur();
     }
     if (e.key !== 'Enter') return;
-    const error = input.closest('.formula-field') && formulaOf(input.value).error; // (every walker's formula alike)
+    const error = fieldError(input);
     if (error) {
       e.preventDefault();
-      $('status').textContent = `${formulaName(input.id)}: ${error}`;
+      $('status').textContent = error;
     } else input.blur();
   });
 }
@@ -45854,15 +45870,21 @@ document.addEventListener('click', (e) => {
   )
     ruleTutorial(null);
 });
-$('lifeRule').addEventListener('change', () => {
-  const mode = MODES[tabMode()];
-  if (!ruleFits(ruleBody($('lifeRule').value), mode)) {
-    // (not a rule, or not this grid's: the one in use back in the field)
-    $('status').textContent = mode.elementary
+// a Life rule typed: its error, '' when it fits the tab's grid
+const lifeRuleError = (typed, mode = MODES[tabMode()]) =>
+  ruleFits(ruleBody(typed), mode)
+    ? ''
+    : mode.elementary
       ? 'Enter W and its number, 0 to 255: W30, W110'
       : mode.margolus
         ? 'Enter a block rule of this grid, as its cards show it'
         : 'Enter a rule like B3/S23, B2/S/C3 (2 to 25 states) or, on hexagons, B2o/S2m34 (the colours: Colors, above)';
+$('lifeRule').addEventListener('change', () => {
+  const mode = MODES[tabMode()],
+    error = lifeRuleError($('lifeRule').value, mode);
+  if (error) {
+    // (not a rule, or not this grid's: the one in use back in the field)
+    $('status').textContent = error;
     $('lifeRule').value = ruleBody(shapeRules[lifeMark(mode)] ?? walk.life?.ruleText ?? 'B3/S23');
     return;
   }

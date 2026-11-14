@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.1041';
+const VERSION = '0.4.1042';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -950,7 +950,6 @@ const PALETTES = {
 const hexRgb = (c) => [1, 3, 5].map((i) => parseInt(c.slice(i, i + 2), 16)); // [r, g, b] of a #rrggbb colour (any CSS colour: see rgbOf)
 const GRADIENT = [],
   DIGIT_COLORS = [],
-  LIFE_TRAIL = [],
   DIRECTION_COLOURS = {};
 // Life's colours (civilisations), as bright as the walks' rainbow in each theme (its saturation and
 // lightness), in an order that keeps them apart: up to 8 (red, blue, gold, green, violet, cyan, magenta, orange: the
@@ -972,13 +971,6 @@ const rampAt = (stops, f) => {
 // grey-blue to the ink (alive), f from 0 to 1: a Life cell's dying stages, an ant's states alike
 const stateColour = (f, under = UNLIT) => rampAt([under, PALETTE.dying, LIFE_ALIVE], f);
 const statesPicture = () => swatch([0.25, 0.5, 0.75, 1].map((f) => stateColour(f))); // (States' tile, Life's and an ant's)
-// Trail: a Life cell just dead, fading over 8 generations to the empty cell's colour (UNLIT), pale from its first one: a
-// warm echo, read as dead at once (till v0.4.1038 from a near black, a dead cell as dark as a live one for 3 generations:
-// at 72 generations a second, steps of grey all over a soup), not a state
-const TRAIL_INK = {
-  light: ['#b9ae98', '#e7e0d0'],
-  dark: ['#636b7c', '#3a4150'],
-};
 let PALETTE, MONO, UNLIT, OCEAN, LANDS, LIFE_ALIVE, EDGE_RGB, EDGE_ALPHA, SHADE, FADE_EDGES, TILE_LIFT; // TILE_LIFT: the tiles' rainbow mixed with white  // EDGE_RGB, EDGE_ALPHA: the tile edges; SHADE: how dark a tile turned away gets
 function setPalette(theme) {
   const P = PALETTES[theme];
@@ -993,7 +985,6 @@ function setPalette(theme) {
   FADE_EDGES = !!P.fadeEdges;
   TILE_LIFT = P.tileLift ?? 0;
   PALETTE = P;
-  LIFE_TRAIL.splice(0, 8, ...Array.from({ length: 8 }, (_, i) => rampAt([...TRAIL_INK[theme], UNLIT], i / 8)));
   LIFE_HUES.forEach((h, k) => {
     LIFE_COLOURS[k] = `hsl(${h}, 85%, ${PALETTES.light.light}%)`;
   }); // the light page's, on a dark one too (to compare)
@@ -7258,18 +7249,19 @@ const trailApplies = (w = walk.life && walk.mode, rule = $('lifeRule').value, lo
   (parseRule(ruleBody(lifeRuleAt(rule, w)))?.C ?? 2) === 2 &&
   look !== 'digit'; // (w: the walk shown's, or a mode's: its rule the one in use)  // (a reversible rule's blocks: none, their cells move, none dies, and backwards a trail would show where they are born)
 const trailOn = () => $('lifeTrail').checked && trailApplies();
+const trailShade = (f) => rampAt([LIFE_ALIVE, UNLIT], f); // (a dead cell's colour f of its fade through, in a control's picture)
 const TRAIL_WHERE = 'Not with dying stages (Generations), on Rewind, or with Activity.'; // (Trail's greyed words)
-// Trail, a tile turned on and off (see tile): its picture a live cell with its comet fading in amber behind (LIFE_TRAIL); greyed for Activity
+// Trail, a tile turned on and off (see tile): its picture a live cell and three fading to the empty cell's colour behind (see trailShade); greyed for Activity
 // and dying stages
 let trailButton = null; // kept: it goes after Life's looks, in their row (see renderColourButtons)
 function renderTrailButton() {
   const sq = (k, c) => `<rect x="${(17 * k) / 3}" y="${17 - (17 * k) / 3}" width="7" height="7" rx="1" fill="${c}"/>`;
   trailButton ??= tile({
-    pic: `<svg viewBox="0 0 24 24" aria-hidden="true">${sq(0, LIFE_TRAIL[5]) + sq(1, LIFE_TRAIL[3]) + sq(2, LIFE_TRAIL[1])}${sq(3, LIFE_ALIVE)}</svg>`,
+    pic: `<svg viewBox="0 0 24 24" aria-hidden="true">${[0.75, 0.5, 0.25, 0].map((f, k) => sq(k, trailShade(f))).join('')}</svg>`,
     text: 'Trail',
     id: 'lifeTrailButton',
     toggle: true, // up the diagonal
-    title: 'A dead cell fades in amber for a few generations (States and Age)',
+    title: 'A dead cell fades out in half a second (States and Age)',
     click: () => {
       $('lifeTrail').checked = !$('lifeTrail').checked;
       $('lifeTrail').dispatchEvent(new Event('change'));
@@ -7481,7 +7473,7 @@ function lifeLookPicture(look) {
   const g = appRainbowAt; // (a control's picture: the app's rainbow, never Ocean's)
   if (look === 'mono')
     return lifeTeams > 1 ? swatch([LIFE_COLOURS[0], UNLIT, UNLIT, LIFE_COLOURS[1]]) : statesPicture(); // in colours: a red, a blue
-  if (look === 'gradient') return swatch([g(1), g(0.5), g(0), LIFE_TRAIL[Math.floor(LIFE_TRAIL.length / 3)]]); // warm newborns to cold old cells
+  if (look === 'gradient') return swatch([g(1), g(0.5), g(0), trailShade(0.5)]); // warm newborns to cold old cells
   return heatRings(g);
 }
 // a 2 × 2 swatch of four colours (a look's picture, Life's and a walk's)
@@ -25150,7 +25142,6 @@ function lifeLook(L, lifted = false) {
     maxAct,
     LIFE_ALIVE,
     PALETTE.dying,
-    LIFE_TRAIL[0],
     rainbowNow()[0],
     LIFE_COLOURS[0],
     oceanOn(),
@@ -25161,8 +25152,7 @@ function lifeLook(L, lifted = false) {
     const [r, g, b] = rgbOf(c);
     return ((255 << 24) | (b << 16) | (g << 8) | r) >>> 0;
   };
-  const trail = LIFE_TRAIL.map(pack),
-    alive = pack(oceanOn() ? LANDS[0] : LIFE_ALIVE),
+  const alive = pack(oceanOn() ? LANDS[0] : LIFE_ALIVE),
     civ = [0, ...civColours(L.colours, L.C).map(pack)];
   const grad = Array.from({ length: 32 }, (_, i) => pack(lift(gradientAt(i / 31))));
   // the colours on a log scale, in tables (millions of cells): of an age (up to 64), of an activity
@@ -25175,8 +25165,7 @@ function lifeLook(L, lifted = false) {
   const byDying = Uint32Array.from({ length: L.C }, (_, st) =>
     st < 2 ? 0 : pack(stateColour(1 - (st - 1) / (L.C - 1), oceanOn() ? OCEAN : UNLIT)),
   ); // (a dying stage down the States ramp, see stateColour)
-  const trailLength = L.C === 2 && trailOn() ? trail.length : 0,
-    K = L.colours; // the trail after death (Trail)
+  const K = L.colours;
   // its colours by the graphics card, by these tables (see gpuLook)
   const table = new Uint32Array(4096 * 17);
   for (let st = 1; st < 256; st++) {
@@ -25189,9 +25178,15 @@ function lifeLook(L, lifted = false) {
           : (byDying[1 + Math.floor((st - 1) / K)] ?? 0);
   }
   table.set(byAge, 512);
-  table.set(trail.slice(0, trailLength), 1024);
   if (byActivity) table.set(byActivity, 4096);
-  L.look = { key, value: { table, by: colour === 'digit' ? 2 : colour === 'mono' ? 0 : 1, trail: trailLength } };
+  L.look = {
+    key,
+    value: {
+      table,
+      by: colour === 'digit' ? 2 : colour === 'mono' ? 0 : 1,
+      trail: trailOn() ? WALK_FADE_SECONDS * 1000 : 0,
+    },
+  }; // (trail: a dead cell's fade, in ms, see gpuLook)
   return L.look.value;
 }
 function drawLifePlane() {
@@ -27685,7 +27680,7 @@ const lifeRuleAt = (rule, w) =>
 function lifeReset() {
   const L = walk.life;
   L.alive.set(L.seed); // cell states: 0 dead, 1 alive, 2 … C−1 dying (two civilisations: 1 red, 2 blue); their ages… there, from them (see gpuLifePut)
-  L.gen = 0; // generations computed, never wound back by a loop (the trail fades on, see died)
+  L.gen = 0; // generations computed, never wound back by a loop
   L.extinctAt = Array.from({ length: L.colours + 1 }, (_, k) =>
     k && (L.colours === 1 ? L.seedAlive : L.seedByColour[k]) === 0 ? 0 : null,
   ); // each colour's last generation alive, once all died out
@@ -27861,7 +27856,7 @@ function blockStep(M, a, b, g) {
 // they sit, Callahan's letters); a newborn takes the colour most of them have; on a tie, the one colour missing
 // around it if just one is (QuadLife's way: 4 colours, 1 + 1 + 1), else none (it stays dead). With C > 2 states a cell
 // that fails to survive goes through the dying stages, keeping its colour, and cannot be born again until
-// it is dead. A cell dying at generation g records died = g (fading trail).
+// it is dead.
 // Blocks (Margolus's neighbourhood, on any of the reversible tab's grids): a grid's cells round its corners of most cells,
 // 4 squares, 6 triangles (a hexagon), 3 hexagons, 4 Cairo pentagons; those corners in sets, each set's blocks every cell
 // once, the sets in turn a generation each (turn: squares, a corner and the one across a square, Margolus's; triangles,
@@ -39770,9 +39765,8 @@ function cutAtReturn(L, batch, dir) {
   batch.length = j + 1;
   L.alive = L.seed.slice(); // (its cells there its start's: sent again, see gpuOld)
 }
-// a run's loop's last generation (T + P − 1, see runLoop) while it plays: Play stops there, a round of it played and its
-// trail from before it faded (see trailFaded: more rounds till then; Play again: another round, see looping); none still,
-// frozen or dead
+// a run's loop's last generation (T + P − 1, see runLoop) while it plays: Play stops there, a round of it played (Play
+// again: another round, see looping); none still, frozen or dead
 const loopRound = () => (playing && looping() ? runLoop().last : 0);
 // the generation asked while its batch is on the card (see lifeStepGPU): tick asks it again, frame after frame; null, none
 function lifeTo(target, until = Infinity) {
@@ -39828,12 +39822,10 @@ function lifeTo(target, until = Infinity) {
       } // (its cell-generations till it settles or loops)
       if ((s.extinct || s.P === 1) && stepShown >= s.T) {
         stepShown = s.T;
-        if (lifeEnded()) {
-          play(false);
-          ended = true;
-        }
+        play(false);
+        ended = true;
         continue;
-      } // nothing moves any more: it ends there (its trail fading first)
+      } // nothing moves any more: it ends there
       if (!L.loopAvg) {
         // found: each colour's live cells over the loop (its generations' counts, see lifeStep), their mean
         for (let g = s.T; g < s.T + s.P; g++)
@@ -39847,7 +39839,7 @@ function lifeTo(target, until = Infinity) {
       }
       if (stepShown >= s.T + s.P) {
         // a loop: round it again from T (its state there the same), the counter too, its births and deaths those of that generation
-        stepShown = s.T + ((stepShown - s.T) % s.P); // (found late, a blocks' return: rounds already played; a trail goes on fading: its time is L.gen's)
+        stepShown = s.T + ((stepShown - s.T) % s.P); // (found late, a blocks' return: rounds already played)
         const b = traced(L, stepShown).born;
         L.order = traced(L, stepShown).order;
         L.born = b.born;
@@ -39855,10 +39847,10 @@ function lifeTo(target, until = Infinity) {
         L.bornBy.set(b.bornBy);
         L.deadBy.set(b.deadBy);
       }
-      if (loopRound() && stepShown === loopRound() && trailFaded()) {
+      if (loopRound() && stepShown === loopRound()) {
         play(false);
         ended = true;
-      } // (a round of its loop played, its trail from before it faded: Play again, another; none: 0, not gen 0)
+      } // (a round of its loop played: Play again, another; none: 0, not gen 0)
     }
     const end = L.margolus ? runEnd() : runLoop()?.last;
     if (!known && end !== undefined) k = Math.min(k, end - stepShown); // (its end found on the way: to it, not round it on)
@@ -39931,14 +39923,11 @@ function advanceTo(target, until = Infinity) {
   }
 }
 
-// a run's end's trail faded (Trail: what died before its end, T, fades on for LIFE_TRAIL.length generations, its time
-// the run's, L.gen: played on past its end, dead, frozen or round its loop, the generation shown its end's)
-const trailFaded = () => !(trailOn() && walk.life.gen <= walk.life.stable.T + LIFE_TRAIL.length);
 // a Game of Life that died out or froze: shown at the generation it ended
-// a run ended: nothing moves any more (all dead or still), its trail faded
+// a run ended: nothing moves any more (all dead or still)
 const lifeEnded = () => {
   const s = walk.life?.stable;
-  return !!s && (s.extinct || s.P === 1) && stepShown === s.T && trailFaded();
+  return !!s && (s.extinct || s.P === 1) && stepShown === s.T;
 };
 // at its end: its last step (a loop known: none, round it on, see looping), or a run that froze or died there
 const atEnd = () => (stepShown >= runEnd() && !looping()) || lifeEnded();
@@ -41670,7 +41659,7 @@ function lifeGPU(L) {
   const E = (GPU.game = gpuLifeEngine(L, 1, LIFE_BATCH));
   if (E)
     E.shown = GPU.device.createBuffer({
-      size: 4 * 5 * E.total,
+      size: 4 * 4 * E.total,
       usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST | GPUBufferUsage.COPY_SRC,
     }); // (read back by gpuShownCheck)
   L.gpuOld = true;
@@ -41763,8 +41752,9 @@ function lifeStepGPU(L, gen, back = false, k = 1) {
 // the cells shown (E.shown): its cells now, copied once a batch is adopted or its cells sent (the card's own run ahead with the next)
 function gpuShow(E) {
   const enc = GPU.device.createCommandEncoder();
-  enc.copyBufferToBuffer(E.cell, 4 * E.side * 5 * E.total, E.shown, 0, 4 * 5 * E.total);
+  enc.copyBufferToBuffer(E.cell, 4 * E.side * 4 * E.total, E.shown, 0, 4 * 4 * E.total);
   GPU.device.queue.submit([enc.finish()]);
+  E.shownAt = performance.now(); // (when the cells shown last changed: a dead one's fade lasts from there, see gpuLook)
 }
 // the Life asked (walk.lifeGoal, see lifeTo) played to its end: each batch awaited (a check's, Space-time's)
 async function lifeSettle() {
@@ -41777,8 +41767,8 @@ async function lifeSettle() {
 }
 /* ---- 11.4c Life on WebGPU ----------------------------------------------------------------- */
 /* Life's engine as compute passes (checked by tesseraCheck's known results, and gpuShownCheck: the picture the game's). Storage
- * buffers only, no textures: the grid's numbers in one (each list at its offset), the cells' five fields (state, age,
- * changes, last death, colours had) twice (now and next, side 0 or 1) in another, a cell a word, runs of cells side by side
+ * buffers only, no textures: the grid's numbers in one (each list at its offset), the cells' four fields (state, age,
+ * changes, colours had) twice (now and next, side 0 or 1) in another, a cell a word, runs of cells side by side
  * (a hunt's starts, each its n rounded up to 64: a workgroup's cells in one run); the sums, a generation's column of each
  * run's, added by atomics. A pass's numbers (its column, its side, its generation…) a slot of 256 bytes, by a dynamic
  * offset: a batch's passes written at once, then played in one submit. */
@@ -41807,7 +41797,7 @@ async function gpuSetup() {
       compute: { module, entryPoint },
     });
   const looks = device.createBindGroupLayout({
-    entries: [entry(0, 'read-only-storage'), entry(1, 'storage'), entry(2, 'read-only-storage')],
+    entries: [entry(0, 'read-only-storage'), entry(1, 'storage'), entry(2, 'read-only-storage'), entry(3, 'storage')],
   });
   GPU = {
     device,
@@ -41833,7 +41823,7 @@ const GPU_PARAMS = [
   'loops',
   'loopN',
   'lin',
-  'gen',
+  'now',
   'back',
   'negA',
   'negB',
@@ -41878,7 +41868,7 @@ struct P { ${GPU_PARAMS.map((k) => `${k}: i32`).join(', ')} }
 @group(0) @binding(3) var<uniform> p: P;
 var<private> base: i32;
 fn I(o: i32, i: i32) -> i32 { return num[o + i]; }
-fn F(s: i32, f: i32, g: i32) -> u32 { return u32((s * 5 + f) * p.total + g); }  // (field f of side s: 0 state, 1 age, 2 changes, 3 last death, 4 colours had)
+fn F(s: i32, f: i32, g: i32) -> u32 { return u32((s * 4 + f) * p.total + g); }  // (field f of side s: 0 state, 1 age, 2 changes, 3 colours had)
 fn live(v: i32) -> bool { return v > 0 && v <= p.K; }
 fn A(t: i32) -> i32 { return i32(cell[F(p.side, 0, base + t)]); }
 fn cellAt(id: vec3u) -> i32 { return p.r0 * p.stride + i32(id.x + id.y * 4194240u); }  // (a cell's number: 65,535 workgroups of 64 a row)
@@ -41952,22 +41942,22 @@ fn blockNext(t: i32) -> i32 {
   if (t < p.n) { v = blockNext(select(t, I(p.oMove, t), p.stars == 1 && p.back == 1)); }
   cell[F(1 - p.side, 0, t)] = u32(v);
 }
-// a generation's counts: age, changes, last death, colours had (bit 0: it ever lived); back, one less
+// a generation's counts: age, changes, colours had (bit 0: it ever lived); back, one less
 @compute @workgroup_size(64) fn lifeBook(@builtin(global_invocation_id) id: vec3u) {
   let g = cellAt(id);
   if (g >= p.r1 * p.stride) { return; }
   let a = p.side; let b = 1 - p.side;
-  if (g - g / p.stride * p.stride >= p.n) { cell[F(b, 1, g)] = 0u; cell[F(b, 2, g)] = 0u; cell[F(b, 3, g)] = 0u; cell[F(b, 4, g)] = 0u; return; }
+  if (g - g / p.stride * p.stride >= p.n) { cell[F(b, 1, g)] = 0u; cell[F(b, 2, g)] = 0u; cell[F(b, 3, g)] = 0u; return; }
   let was = i32(cell[F(a, 0, g)]); let now = i32(cell[F(b, 0, g)]);
-  var age = cell[F(a, 1, g)]; var act = cell[F(a, 2, g)]; var died = bitcast<i32>(cell[F(a, 3, g)]); var ever = cell[F(a, 4, g)];
+  var age = cell[F(a, 1, g)]; var act = cell[F(a, 2, g)]; var ever = cell[F(a, 3, g)];
   let on = live(now); let wasOn = live(was);
   if (p.back == 1) { if (now == was) { if (now > 0) { age = max(1u, age - 1u); } } else { age = u32(now > 0); if (act > 0u) { act--; } } }
   else {
     if (p.K > 1 && on && !wasOn) { ever |= 1u << u32(now); }
     if (now == was) { if (on && age < 65535u) { age++; } }
-    else { act++; if (on) { age = 1u; ever |= 1u; } else if (wasOn) { age = 0u; died = p.gen; } }
+    else { act++; if (on) { age = 1u; ever |= 1u; } else if (wasOn) { age = 0u; } }
   }
-  cell[F(b, 1, g)] = age; cell[F(b, 2, g)] = act; cell[F(b, 3, g)] = bitcast<u32>(died); cell[F(b, 4, g)] = ever;
+  cell[F(b, 1, g)] = age; cell[F(b, 2, g)] = act; cell[F(b, 3, g)] = ever;
 }
 // a generation's sums: a workgroup's 64 cells added in its own memory,
 // then into its run's column x (the most changes, sum 5: a max)
@@ -41984,7 +41974,7 @@ fn add(j: i32, v: u32) { if (v != 0u) { atomicAdd(&acc[j], v); } }
   if (g < p.r1 * p.stride && c < p.n) {
     let was = i32(cell[F(a, 0, g)]); let now = i32(cell[F(b, 0, g)]);
     let on = shown(now, g, p.negB == 1); let wasOn = shown(was, g, p.negA == 1);
-    let e0 = cell[F(a, 4, g)]; let e1 = cell[F(b, 4, g)];
+    let e0 = cell[F(a, 3, g)]; let e1 = cell[F(b, 3, g)];
     add(0, u32(on)); add(1, u32(now > 0 && !live(now))); add(2, u32(on && !wasOn)); add(3, u32(wasOn && !on));
     add(4, u32((e0 & 1u) == 0u && (e1 & 1u) == 1u)); atomicMax(&acc[5], cell[F(b, 2, g)]);
     if (now > 0) { add(6, mixed(u32(c) * 0x9e3779b9u + u32(now))); add(7, mixed((u32(c) * 0x85ebca6bu) ^ (u32(now) * 0xc2b2ae35u))); }
@@ -42016,6 +42006,7 @@ fn add(j: i32, v: u32) { if (v != 0u) { atomicAdd(&acc[j], v); } }
 @group(1) @binding(0) var<storage, read> look: array<u32>;
 @group(1) @binding(1) var<storage, read_write> outCol: array<u32>;
 @group(1) @binding(2) var<storage, read> shownCells: array<u32>;
+@group(1) @binding(3) var<storage, read_write> fade: array<u32>;  // (a cell's two words: the colour it was last drawn alive in, 0 none; when it was first drawn dead since, in ms, 0 not yet)
 fn S(f: i32, t: i32) -> u32 { return shownCells[u32(f * p.total + t)]; }
 @compute @workgroup_size(64) fn lifeLook(@builtin(global_invocation_id) id: vec3u) {
   let t = cellAt(id);
@@ -42025,10 +42016,20 @@ fn S(f: i32, t: i32) -> u32 { return shownCells[u32(f * p.total + t)]; }
   var st = i32(S(0, t));
   if (p.neg == 1 && I(p.oIn, t) > 0) { st = 1 - st; }
   if (p.by == 2) { outCol[t] = look[4096u + min(S(2, t), 65535u)]; return; }
-  if (live(st)) { if (p.by == 1) { outCol[t] = look[512u + min(S(1, t), 64u)]; } else { outCol[t] = look[st]; } return; }
+  if (live(st)) {
+    var c = look[st];
+    if (p.by == 1) { c = look[512u + min(S(1, t), 64u)]; }
+    fade[2 * t] = c; fade[2 * t + 1] = 0u; outCol[t] = c; return;
+  }
   if (st > 0) { outCol[t] = look[256 + st]; return; }
-  let d = p.gen - bitcast<i32>(S(3, t));
-  if (d >= 0 && d < p.trail) { outCol[t] = look[1024 + d]; } else { outCol[t] = u32(p.dead); }
+  // dead: Trail (p.trail, its ms), the colour it was last drawn alive in fading to the empty cell's from when it was first
+  // drawn dead (p.now), a transparent one (the plane's) keeping its colour; born again, alive at once (above)
+  let lit = fade[2 * t];
+  if (lit != 0u && fade[2 * t + 1] == 0u) { fade[2 * t + 1] = u32(max(p.now, 1)); }
+  let past = p.now - i32(fade[2 * t + 1]);
+  if (lit == 0u || past >= p.trail) { fade[2 * t] = 0u; outCol[t] = u32(p.dead); return; }
+  let a = unpack4x8unorm(lit); let b = unpack4x8unorm(u32(p.dead));
+  outCol[t] = pack4x8unorm(mix(a, vec4f(mix(a.rgb, b.rgb, b.a), b.a), f32(past) / f32(p.trail)));
 }`;
 // An engine for L: its runs side by side, h generations' sums kept a batch; null where the card can't hold it
 function gpuLifeEngine(L, runs = 1, h = 1) {
@@ -42119,13 +42120,17 @@ function gpuLifeEngine(L, runs = 1, h = 1) {
   });
   return E;
 }
-const gpuLifeFree = (E) => ['num', 'cell', 'sums', 'read', 'params', 'shown', 'look'].forEach((k) => E[k]?.destroy()); // (every buffer of its own: the cells shown and its look's table too, else left on the card, game after game)
-// a start's cells into run r: states, a live one 1 old, ever alive and of its colour, no change, no death yet
+const gpuLifeFree = (E) =>
+  [
+    ...['num', 'cell', 'sums', 'read', 'params', 'shown', 'look'].map((k) => E[k]),
+    ...[...(E.looks ?? [])].map(([, l]) => l.fade),
+  ].forEach((b) => b?.destroy()); // (every buffer of its own: the cells shown and its look's table too, else left on the card, game after game)
+// a start's cells into run r: states, a live one 1 old, ever alive and of its colour, no change
 function gpuLifePut(E, alive, r = 0) {
   const { device } = GPU,
     L = E.L,
     live = (v) => v > 0 && v <= L.colours,
-    at = (f) => 4 * ((E.side * 5 + f) * E.total + r * E.stride);
+    at = (f) => 4 * ((E.side * 4 + f) * E.total + r * E.stride);
   const field = (f, make) => {
     const a = new Uint32Array(E.stride);
     for (let t = 0; t < E.n; t++) a[t] = make(t);
@@ -42134,8 +42139,7 @@ function gpuLifePut(E, alive, r = 0) {
   field(0, (t) => alive[t]);
   field(1, (t) => (live(alive[t]) ? 1 : 0));
   field(2, () => 0);
-  field(3, () => -1e9 >>> 0);
-  field(4, (t) => (live(alive[t]) ? 1 : 0) | (L.colours > 1 && L.seed[t] ? 1 << L.seed[t] : 0));
+  field(3, (t) => (live(alive[t]) ? 1 : 0) | (L.colours > 1 && L.seed[t] ? 1 << L.seed[t] : 0));
 }
 // a compute pass of E's: its numbers into slot k of words (the grid's, then numbers), count cells, more: its look's group
 function lifeComputePass(E, enc, words, k, pipe, numbers, count, more = null) {
@@ -42200,14 +42204,14 @@ async function gpuLifeSteps(E, { gen = 0, back = false, k = 1, r0 = 0, r1 = E.ru
         E.stride,
       );
     else pass('lifeRule', {}, cells);
-    pass('lifeBook', { gen: L.gen + 1 + x, back: back ? 1 : 0 }, cells);
+    pass('lifeBook', { back: back ? 1 : 0 }, cells);
     pass('lifeCount', { x, negA: negA ? 1 : 0, negB: negB ? 1 : 0 }, cells);
     E.side = 1 - E.side;
   }
   device.queue.writeBuffer(E.params, 0, words.subarray(0, 64 * slot));
   const sumBytes = 4 * k * E.runs * E.J;
   enc.copyBufferToBuffer(E.sums, 0, E.read, 0, sumBytes);
-  enc.copyBufferToBuffer(E.cell, 4 * E.side * 5 * E.total, E.read, sumBytes, 4 * E.n);
+  enc.copyBufferToBuffer(E.cell, 4 * E.side * 4 * E.total, E.read, sumBytes, 4 * E.n);
   device.queue.submit([enc.finish()]);
   await E.read.mapAsync(GPUMapMode.READ, 0, sumBytes + 4 * E.n);
   const got = new Uint32Array(E.read.getMappedRange(0, sumBytes + 4 * E.n)).slice();
@@ -42261,14 +42265,18 @@ function gpuLook(L, out, look) {
     device.queue.writeBuffer(E.look, 0, table);
     E.lookSent = table;
   }
-  if (!E.looks.has(out.buffer))
-    E.looks.set(
-      out.buffer,
-      device.createBindGroup({
+  if (!E.looks.has(out.buffer)) {
+    const fade = device.createBuffer({ size: 8 * Math.max(E.n, out.n), usage: GPUBufferUsage.STORAGE }); // (its dead cells' fades, see the shader's fade: none yet)
+    E.looks.set(out.buffer, {
+      fade,
+      group: device.createBindGroup({
         layout: GPU.looks,
-        entries: [E.look, out.buffer, E.shown].map((b, i) => ({ binding: i, resource: { buffer: b } })),
+        entries: [E.look, out.buffer, E.shown, fade].map((b, i) => ({ binding: i, resource: { buffer: b } })),
       }),
-    );
+    });
+  }
+  const now = performance.now();
+  if (look.trail && E.shownAt + look.trail > now) fadingUntil = Math.max(fadingUntil, (E.shownAt + look.trail) / 1000); // (drawn again till the cells dead since its last change have faded)
   const pack = (c) =>
     Math.round(c[0] * 255) |
     (Math.round(c[1] * 255) << 8) |
@@ -42283,7 +42291,7 @@ function gpuLook(L, out, look) {
     0,
     GPU.pipes.lifeLook,
     {
-      gen: L.gen,
+      now: Math.round(now),
       trail: look.trail,
       by: look.by,
       neg: negative(L) ? 1 : 0,
@@ -42292,7 +42300,7 @@ function gpuLook(L, out, look) {
       outN: out.n,
     },
     out.n,
-    E.looks.get(out.buffer),
+    E.looks.get(out.buffer).group,
   );
   device.queue.writeBuffer(E.params, 0, words);
   device.queue.submit([enc.finish()]);

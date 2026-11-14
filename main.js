@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.1038';
+const VERSION = '0.4.1039';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -972,12 +972,13 @@ const rampAt = (stops, f) => {
 // grey-blue to the ink (alive), f from 0 to 1: a Life cell's dying stages, an ant's states alike
 const stateColour = (f, under = UNLIT) => rampAt([under, PALETTE.dying, LIFE_ALIVE], f);
 const statesPicture = () => swatch([0.25, 0.5, 0.75, 1].map((f) => stateColour(f))); // (States' tile, Life's and an ant's)
-// Trail: a Life cell just dead, fading over 8 generations, deep to pale (a dark page's: bright to dark), Ink (Langton's black on
-// white, softened), not a state
+// Trail: a Life cell just dead, fading over 8 generations to the empty cell's colour (UNLIT), pale from its first one: a
+// warm echo, read as dead at once (till v0.4.1038 from a near black, a dead cell as dark as a live one for 3 generations:
+// at 72 generations a second, steps of grey all over a soup), not a state
 const TRAIL_INK = {
-  light: ['#2b2f3a', '#6f6a60', '#b9ae98', '#e7e0d0'],
-  dark: ['#c8c2b5', '#959ba6', '#636b7c', '#3a4150'],
-}; // (dark: its cream a shade lower, not glaring on the black)
+  light: ['#b9ae98', '#e7e0d0'],
+  dark: ['#636b7c', '#3a4150'],
+};
 let PALETTE, MONO, UNLIT, OCEAN, LANDS, LIFE_ALIVE, EDGE_RGB, EDGE_ALPHA, SHADE, FADE_EDGES, TILE_LIFT; // TILE_LIFT: the tiles' rainbow mixed with white  // EDGE_RGB, EDGE_ALPHA: the tile edges; SHADE: how dark a tile turned away gets
 function setPalette(theme) {
   const P = PALETTES[theme];
@@ -992,7 +993,7 @@ function setPalette(theme) {
   FADE_EDGES = !!P.fadeEdges;
   TILE_LIFT = P.tileLift ?? 0;
   PALETTE = P;
-  LIFE_TRAIL.splice(0, 8, ...Array.from({ length: 8 }, (_, i) => rampAt(TRAIL_INK[theme], i / 8)));
+  LIFE_TRAIL.splice(0, 8, ...Array.from({ length: 8 }, (_, i) => rampAt([...TRAIL_INK[theme], UNLIT], i / 8)));
   LIFE_HUES.forEach((h, k) => {
     LIFE_COLOURS[k] = `hsl(${h}, 85%, ${PALETTES.light.light}%)`;
   }); // the light page's, on a dark one too (to compare)

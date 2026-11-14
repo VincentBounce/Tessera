@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.1015';
+const VERSION = '0.4.1016';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -26516,8 +26516,16 @@ function blockTutorial(entry, to) {
 }
 // what a rule's page shows: the grid, the rule, its colours and edges; blocks, their max period too (the grid's size, the
 // start's live cells, its return once found)
+// (the grid its page reads, a surface's mesh, by its own number: drawn again once the walk shown has the tab's, see
+// ruleTutorial)
+const gridNumbers = new WeakMap();
+let gridsNumbered = 0;
+const gridNumber = (g) => {
+  if (g && !gridNumbers.has(g)) gridNumbers.set(g, ++gridsNumbered);
+  return gridNumbers.get(g) ?? 0;
+};
 const tutorialKey = (entry) =>
-  `${tabMode()} ${entry.rule} ${entry.name} ${lifeTeams} ${plane.torus}` +
+  `${tabMode()} ${entry.rule} ${entry.name} ${lifeTeams} ${plane.torus} ${gridNumber(walk.geo)}` +
   (walk.life?.margolus ? ` ${walk.life.seed.length} ${walk.life.seedAlive} ${walk.life.stable?.P}` : '');
 // a tiling of several shapes: a bubble each (the cell and its neighbours, its name and how many), the one shown lit
 const tutShape = { mode: null, at: 0 },

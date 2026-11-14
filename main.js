@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.1007';
+const VERSION = '0.4.1008';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -10422,7 +10422,7 @@ const sideWhyNot = (v, s, none, walkRule = null) => {
 // Turned at a mode: its tiling with a turned way round, its blocks coming round so (a block rule's, see blocksTurn); its
 // greyed words
 const TURNED_WHERE = 'This tiling has no other way round (for a block rule, none that brings its blocks round).';
-const GHOST_WHERE = 'Its tiles meet at its edges: no walls.';
+const GHOST_WHERE = "No walls here: its tiles meet at its edges, or its corners' cells have more sides than a hexagon.";
 const turnedAllowed = (v, turned = false) => {
   const fam = familyOf(v);
   return !!fam && fam.F.tabs.some(([f, tu]) => f === fam.m && tu) && blocksTurn(v, !turned);
@@ -11100,7 +11100,7 @@ function renderModePicker() {
             }),
           ]
         : []),
-      ...(MODES[w].sphere?.startsWith('mobius')
+      ...(F.tabs.some(([f, tu]) => ghostableOf(shownSurface(MODES[same(f)].sphere, tu)))
         ? [
             tile({
               pic: icon('ghostWall'),
@@ -11108,9 +11108,9 @@ function renderModePicker() {
               toggle: true,
               byDefault: 'off',
               on: ghostWalls,
-              whyNot: ({ w: v }) => (rimWallsOf(surfaceOf(MODES[v])) ? '' : GHOST_WHERE),
+              whyNot: ({ w: v }) => (ghostableOf(surfaceOf(MODES[v])) ? '' : GHOST_WHERE),
               title:
-                'The walls along its edges drawn hollow and gone from the run: Life over its edge, the walker and the ant across it, as before walls (its edge’s cells then with neighbours too many or too few)',
+                'The walls (a Möbius strip’s along its edges, a solid of hexagons’ at its corners) drawn hollow and gone from the run: Life over them, the walker and the ant across them, as before walls (their cells then with neighbours too many or too few)',
               click: () => {
                 ghostWalls = !ghostWalls;
                 $('sphereF').dispatchEvent(new Event('change'));
@@ -15574,7 +15574,7 @@ function twistedSphereMesh(f) {
   return (meshCache[key] = Object.assign(mesh, { tiling: SPHERES.twistedsphere.tiling }));
 }
 function hexSolidMesh(solid, f) {
-  const key = `${solid}hex${f}`;
+  const key = `${solid}hex${f}${ghostWalls ? ' ghost' : ''}`;
   if (meshCache[key]) return meshCache[key];
   const ico = flatPolyhedron(solid, f),
     cells = trianglesRound(ico);
@@ -15589,9 +15589,11 @@ function hexSolidMesh(solid, f) {
   // a walk along its grid starts as the icosahedron's tile walk does: on triangle 0, come in
   // through its edge 0, so that the same digits draw the same path in both tabs
   mesh.gridStart = [0, ico.nbr[0]];
-  // in a Game of Life the corners' cells (not 6 triangles round them: a pentagon, a square, a triangle, the stella's hollows'
-  // octagons) are walls: always dead, and no one's neighbour
-  mesh.walls = cells.flatMap((c, v) => (c.length !== 6 ? [v] : []));
+  // its corners' cells (not 6 triangles round them: a pentagon, a square, a triangle, the stella's hollows' octagons), in a
+  // Game of Life walls: always dead, and no one's neighbour; Ghost walls: drawn hollow, alive, a hexagon's ring with its
+  // sides missing (none where a cell has more sides than a hexagon: the stella's octagons, see ghostableOf)
+  mesh.cornerCells = cells.flatMap((c, v) => (c.length !== 6 ? [v] : []));
+  mesh[ghostWalls && sides === 6 ? 'ghostWalls' : 'walls'] = mesh.cornerCells;
   mesh.hexagons = true; // (its cells hexagons, whatever its walls' sides: the stella's octagons, see patternAt)
   // its solid's corners and faces, its triangles' solid's (see startList): its own (a dodecahedron's, a stella's), else its
   // triangles' faces
@@ -16782,15 +16784,21 @@ const hexCorners = (kind) => {
     g0 = (facesMemo[kind] ??= S.mesh(S.sizes[0])),
     sidesOf = (t) => new Set(Array.from({ length: g0.sides }, (_, j) => g0.poly[g0.sides * t + j])).size,
     corners = {};
-  for (const t of g0.walls ?? []) corners[sidesOf(t)] = (corners[sidesOf(t)] ?? 0) + 1;
+  for (const t of g0.cornerCells ?? []) corners[sidesOf(t)] = (corners[sidesOf(t)] ?? 0) + 1;
   const names = { 3: 'triangles', 4: 'squares', 5: 'pentagons', 8: 'octagons' };
   return {
     at: Object.entries(corners)
       .map(([c, k]) => `${k} ${names[c]}`)
       .join(' + '),
-    walls: g0.walls?.length ?? 0,
+    walls: g0.cornerCells?.length ?? 0,
+    ring: g0.sides === 6, // (its corners' cells read as a hexagon's: see ghostableOf)
   };
 };
+// the surfaces whose walls Ghost walls makes hollow: a Möbius strip's along its edges (rimWalls), a solid of hexagons'
+// at its corners, read as a hexagon's ring (not the stella's octagons: 8 neighbours)
+const ghostableOf = (surface) =>
+  rimWallsOf(surface) ||
+  (SPHERES[surface]?.unit === 'hexagons' && hexCorners(surface).walls > 0 && hexCorners(surface).ring);
 const sizeCells = (kind, f, marked = false) => {
   // (a solid of hexagons: its hexagons, then its corners' cells, not all said hexagons; marked: in their colours, see sizeTips)
   const d = gridSize(kind, f),
@@ -17172,7 +17180,7 @@ function solidCorners(g) {
     if (!C.some((c) => c[0] * u[0] + c[1] * u[1] + c[2] * u[2] > 1 - 1e-9)) C.push(u);
   };
   if (g.faces) for (const f of g.faces) f.corners.forEach(put);
-  else for (const t of g.walls) put(Array.from(g.cen.subarray(3 * t, 3 * t + 3)));
+  else for (const t of g.cornerCells) put(Array.from(g.cen.subarray(3 * t, 3 * t + 3)));
   return C;
 }
 
@@ -39175,7 +39183,7 @@ function getSetup() {
   if (mode.lattice === 'sphere') s.s = $('sphereF').value;
   if (modeStarts() && startNo() > 1) s.st = startNo();
   if (torusTurned && TURNED[mode.sphere]) s.o = 1;
-  if (ghostWalls && rimWallsOf(surfaceOf(mode))) s.gw = 1;
+  if (ghostWalls && ghostableOf(surfaceOf(mode))) s.gw = 1;
   if (mode.life) s.r = ruleBody($('lifeRule').value);
   if (mode.life && !mode.margolus && lifeTeams > 1) s.k = lifeTeams;
   if (battleOn()) {

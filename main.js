@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.1021';
+const VERSION = '0.4.1022';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -14646,11 +14646,11 @@ const MOBIUS_KINDS = [
 const MOBIUS_ALONG = {
   mobius: { step: 1, ok: () => true },
   mobiusTri: { step: 0.5, ok: (n, nv) => n % 2 === nv % 2 },
-  mobiusHex: { step: 1.5, ok: (n) => n % 2 === 1 },
-  mobiusHexTurned: { step: TRIANGLE_HEIGHT, ok: (n, nv) => n % 2 === (nv % 2 ? 0 : 1) },
-  mobiusTriTurned: { step: TRIANGLE_HEIGHT, ok: (n) => n % 2 === 0 },
-  mobiusCairo: { step: 1, ok: (n, nv) => (n + nv) % 2 === 1 },
-};
+  mobiusHex: { step: 1.5, ok: (n) => n % 2 === 1, edgeCuts: true },
+  mobiusHexTurned: { step: TRIANGLE_HEIGHT, ok: (n, nv) => n % 2 === (nv % 2 ? 0 : 1), edgeCuts: true },
+  mobiusTriTurned: { step: TRIANGLE_HEIGHT, ok: (n) => n % 2 === 0, edgeCuts: true },
+  mobiusCairo: { step: 1, ok: (n, nv) => (n + nv) % 2 === 1, edgeCuts: true },
+}; // (edgeCuts: its edges no mirror between its tiles, its edge's cells' neighbours not as in its middle: see edgeCells)
 MOBIUS_ALONG.mobiusKite = MOBIUS_ALONG.mobiusTri; // kites: the triangles', each cut in 3
 MOBIUS_ALONG.mobiusKiteTurned = MOBIUS_ALONG.mobiusTriTurned;
 // A tiling's mirror along a side a of its lattice (with b, a lattice cell), the plane turned so that a runs along x: the
@@ -14713,13 +14713,14 @@ function mobiusMirror(kind, [a, b] = TILINGS[kind].basis) {
 // tilingStrip): with its mirror on y = 0, L − g a lattice vector's way along with nv rows across, nv·b_x + k·|a|; in
 // steps of |a| / q, the least that g and b_x are whole counts of
 for (const [strip, { kind, basis }] of Object.entries(MOBIUS_STRIPS)) {
-  const { g, la, bx, q } = mobiusMirror(kind, basis),
+  const { g, la, bx, q, between } = mobiusMirror(kind, basis),
     step = la / q;
   // (copyLength: the least slide along that brings it onto itself, turned over on a glide: a bottle's colours' slices whole counts of it)
   MOBIUS_ALONG[strip] = {
     step,
     copyLength: g > 1e-9 ? g : la,
     ok: (n, nv) => (((n - Math.round((g + nv * bx) / step)) % q) + q) % q === 0,
+    edgeCuts: !between,
   };
 }
 const mobiusSize = (size) => (typeof size === 'number' ? [size, null] : size.split('x').map(Number)); // [rows, count along or null]
@@ -15188,7 +15189,10 @@ function mobiusMesh(kind, size) {
       uv.push(...(side ? t : turnOver(t)).flat());
     });
   const mesh = finishMesh(cv, tiles, k, nv, null); // as listed: a back faces the other way
+  // (its edge's cells, both faces': those with a corner on it, where its edges cut its tiles; marked, see edgeRibbons)
+  const edge = MOBIUS_ALONG[kind].edgeCuts ? ids.flatMap((t, i) => (t.some((v) => onEdge[v]) ? [i] : [])) : [];
   return (meshCache[key] = Object.assign(mesh, {
+    edgeCells: [...edge, ...edge.map((i) => i + sheet.length)],
     torus: true,
     mobius: true,
     kite: kind.startsWith('mobiusKite'),
@@ -16331,6 +16335,9 @@ function syncSizeStepper() {
     SPHERES[kind] && sel.selectedOptions[0] ? sizeCells(kind, f, true) : '',
     [
       SPHERES[kind] && sel.selectedOptions[0] ? `${sizeHow(kind, f)}\n${sizeSides(kind, f)}`.trim() : '',
+      ...(MOBIUS_ALONG[kind]?.edgeCuts
+        ? [`\n{b:Specific cells}\n{e:${formatNumber(SPHERES[kind].mesh(f).edgeCells.length)} cells}`]
+        : []), // (a strip's edge's cells, as outlined: see edgeRibbons)
       `\n${lastPicked()}`,
     ]
       .filter(Boolean)
@@ -16500,11 +16507,11 @@ const sizeTips = (row, total, text) => {
   const marks = (t) =>
     t
       .replace(/[&<>]/g, (c) => `&#${c.charCodeAt(0)};`)
-      .replace(/\{([yroskbg]):([^}]*)\}/g, (_, c, w) =>
+      .replace(/\{([yroskbge]):([^}]*)\}/g, (_, c, w) =>
         c === 'g' ? `<span class="tip-default">${w}</span>` : `<b${c === 'b' ? '' : ` class="tip-${c}"`}>${w}</b>`,
       ); // ({g:…}: grey, as a default)
   total = marks(total);
-  const plain = text.replace(/\{[yroskbg]:([^}]*)\}/g, '$1'),
+  const plain = text.replace(/\{[yroskbge]:([^}]*)\}/g, '$1'),
     html = marks(text).replace(/\n/g, '<br>'); // ({b:…}: bold alone)
   const box = $(`${row}Box`); // (− + its label and its slider, one block; its name and its total first, as a control's; shown again at once if hovered: − + clicked)
   box.dataset.tip = plain;
@@ -25349,15 +25356,16 @@ function motifOf(g, t) {
     ...(face ? [[faceRed(), tilesOf(face.face)]] : []),
   ];
 }
-// The motif's outlines as ribbons (see ribbonV): each part's sides not shared by two of its tiles, laid on the form shown, its
-// colours' runs of segments; made again only when its tile, its mesh or its form change
-function motifRibbons(D, g, sh, R) {
-  const key = `${middleTile.t}|${sh.m}|${R}|${motifColour()}`;
-  if (D.motifOf === g && D.motifKey === key) return D.motifParts;
+// Sets of tiles outlined as ribbons (see ribbonV) in the buffer name: each [colour, tiles] its sides not shared by two of its
+// tiles, laid on the form shown, its colours' runs of segments; made again only when its key or its mesh change; width: on
+// the screen at a scale (the motif's, as the plane's, see drawMotif)
+function outlineRibbons(D, name, key, g, sh, R, sets, width = (s) => Math.max(2, Math.min(s / 6, 4))) {
+  const memo = D[`${name}Outline`];
+  if (memo?.g === g && memo.key === key) return memo.marks;
   const k = g.sides,
     data = ribbonSegments(),
     parts = [];
-  for (const [colour, tiles] of motifOf(g, middleTile.t)) {
+  for (const [colour, tiles] of sets()) {
     const from = data.count,
       rim = rimSides(
         tiles.flatMap((t) => Array.from({ length: k }, (_, j) => [t, j])),
@@ -25373,18 +25381,19 @@ function motifRibbons(D, g, sh, R) {
         0,
       ); // (both ends capped, see ribbonV)
     }
-    parts.push({
-      rgb: rgbCached(colour).map((c) => c / 255),
-      from,
-      count: data.count - from,
-      width: (s) => Math.max(2, Math.min(s / 6, 4)),
-    }); // (its width on the screen at a scale, as the plane's motif, see drawMotif)
+    parts.push({ rgb: rgbCached(colour).map((c) => c / 255), from, count: data.count - from, width });
   }
-  gpuBuffer('motif', data.words());
-  D.motifOf = g;
-  D.motifKey = key;
-  return (D.motifParts = { parts });
+  gpuBuffer(name, data.words());
+  return (D[`${name}Outline`] = { g, key, marks: { parts } }).marks;
 }
+// the motif round its tile (see motifOf), as its form, its tile and its colour change
+const motifRibbons = (D, g, sh, R) =>
+  outlineRibbons(D, 'motif', `${middleTile.t}|${sh.m}|${R}|${motifColour()}`, g, sh, R, () => motifOf(g, middleTile.t));
+// a Möbius strip's edge's cells (see edgeCells), outlined as fine as the grid's lines (a pixel)
+const edgeRibbons = (D, g, sh, R) => {
+  const cells = () => [[cssColour('--edge-cells-color'), g.edgeCells]];
+  return outlineRibbons(D, 'edge', `${sh.m}|${R}|${cssColour('--edge-cells-color')}`, g, sh, R, cells, () => 1);
+};
 // a solid's face of its tile t, as listed: its tiles from … to, and its sector's (a face of several of the mesh's in one plane:
 // a dodecahedron's pentagon, 5 triangles); a solid of squares and triangles: its squares' faces, then its triangles', f² cells
 // each; none but on flat faces of cells (a solid of hexagons: its faces' sides through its hexagons' middles)
@@ -43129,6 +43138,7 @@ function gpuSurface(paint, path) {
     // its colour and its width on the screen, unfaded, over the tiles; the starts' flags (and cones, hovered: see startHeads)
     const marks = [
       ...(motifShown && middleTile.g === g && middleTile.t >= 0 ? [['motif', motifRibbons(D, g, sh, R)]] : []),
+      ...(g.edgeCells?.length ? [['edge', edgeRibbons(D, g, sh, R)]] : []), // (a strip's edge's cells: always)
       ...(startsShown ? [['starts', startMarks(g, sh, R)]] : []),
     ];
     if (marks.length) {

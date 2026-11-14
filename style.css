@@ -40,6 +40,7 @@
   --motif-color: #bc8cff; /* a grid's motif, outlined while its size is hovered (see drawMotif), its words in the size's tooltip */
   --face-color: #e5484d; /* a solid's face round it */
   --sector-color: #58a6ff; /* a face's sector round it (a dodecahedron's pentagon, 5 triangles) */
+  --edge-cells-color: #e3b341; /* a Möbius strip's edge's cells, their neighbours not as in its middle (see edgeRibbons) */
   --cell-color: #3fb950; /* a cell of the motif, when it has several (a triangle's 3 kites) */
   --axis-east-color: #ff7b72; /* the view's axes in its corner (see gpuAxes): E, */
   --axis-north-color: #3fb950; /* N, */
@@ -65,6 +66,7 @@
   --motif-color: #8250df;
   --face-color: #c4161c;
   --sector-color: #0969da;
+  --edge-cells-color: #bf8700;
   --cell-color: #2da44e;
   --run-end-color: #0d9488;
   --sweet-spot-color: #8250df;
@@ -2045,6 +2047,9 @@ button.active .bubble.active {
 }
 .tip-o {
   color: #c4934e;
+}
+.tip-e {
+  color: var(--edge-cells-color);
 } /* a size's words in the colours drawn (see sizeTips; the walls': LIFE_WALL) */
 
 @media (max-width: 720px) {

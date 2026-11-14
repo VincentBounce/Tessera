@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.999';
+const VERSION = '0.4.1000';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -6469,6 +6469,7 @@ const freshWalk = () => ({
   sweetSpot: undefined, // its sweet spot, worked out once asked (see sweetSpot)
   wormEnd: false,
   wormMade: 0, // a worm's walk only: why and after how many turns of its own it stops
+  wallEnd: false, // a walk or an ant on a Möbius strip with walls: stopped by one (see wallStopAt)
   battle: null, // a battle only (see 7.6b)
   life: null,
   plane: null, // Life's; on the plane, its grid
@@ -6641,7 +6642,7 @@ function describe(base) {
         chips ? lead + around + (after ? ` · ${after}` : '') : mode.rule,
         bridges,
         highway,
-        walk.wormEnd ? loopText() : loopStop(),
+        runStopped() ? loopText() : loopStop(),
       ]
         .filter(Boolean)
         .join(' · '),
@@ -7542,7 +7543,7 @@ const runLoop = () => {
     const s = lifeTime() && walk.life.stable;
     return s ? { T: s.T, last: s.extinct || s.P === 1 ? s.T : s.T + s.P - 1 } : null;
   }
-  return walk.loop ? { T: walk.loop.from, last: walk.n } : walk.wormEnd ? { T: walk.n, last: walk.n } : null;
+  return walk.loop ? { T: walk.loop.from, last: walk.n } : runStopped() ? { T: walk.n, last: walk.n } : null;
 };
 // The run's end, on the step line after its last: its mark always, its words open, the same everywhere, a link in turquoise (--run-end-color, see loopLink): its loop
 // (↻ every P from step T; → a walk's drift, an ant's highway), its death (✝ at step T: a worm, Life dying out) or frozen
@@ -7575,8 +7576,8 @@ function endMark() {
           : ['↻', `every ${formatNumber(k.P)} from gen ${formatNumber(k.T)}`]
     : !o
       ? []
-      : walk.wormEnd
-        ? ['✝', `at step ${formatNumber(walk.n)}`]
+      : runStopped()
+        ? [runStopped().mark, `at step ${formatNumber(walk.n)}`]
         : [
             walk.loop.drift ? '→' : '↻',
             `every ${formatNumber(walk.loop.period ?? walk.n - o.T)} from step ${formatNumber(o.T)}`,
@@ -7642,8 +7643,8 @@ function runStop() {
       label: `${formatNumber(walk.n)} steps until ${walk.battle.winner.until} ■`,
       why: `■ The battle ends at step ${formatNumber(walk.n)}, ${walk.battle.winner.how}: more digits would change nothing`,
     };
-  if (walk.wormEnd && walk.n < asked)
-    return { n: walk.n, label: `${formatNumber(walk.n)} steps max ✝`, why: loopText() };
+  if (runStopped() && walk.n < asked)
+    return { n: walk.n, label: `${formatNumber(walk.n)} steps max ${runStopped().mark}`, why: loopText() };
   if (L && asked >= (L.cap ?? walk.n))
     return {
       n: L.cap ?? walk.n,
@@ -7681,18 +7682,33 @@ function syncDigitsStepper() {
   setTile($('digitsDown'), { greyed: asked <= steps[0] ? 'Already the fewest steps.' : '' });
   setTile($('digitsUp'), { greyed: asked >= (size ? steps.at(-1) : lengthMost()) ? 'Already the most steps.' : '' });
 }
+// A run stopped at its last step, before the length asked: a worm's death (✝), a walker or an ant on a wall (WALL_GLYPH: a
+// Möbius strip's edge where its tiles do not meet, see wallStopAt); its mark and why, else null
+const WALL_GLYPH = '▥';
+function runStopped() {
+  if (walk.wormEnd)
+    return {
+      mark: '✝',
+      why: `✝ The worm stops at step ${formatNumber(walk.n)}, after ${formatNumber(walk.wormMade)} turns of its own: ${
+        {
+          dead: 'no line left to eat at its corner',
+          eaten: 'its rule turns onto a line already eaten',
+          rule: 'its rule has no turn left for a new corner',
+          digits: 'no digit left for a new corner',
+        }[walk.wormEnd]
+      }.`,
+    };
+  if (walk.wallEnd)
+    return {
+      mark: WALL_GLYPH,
+      why: `${WALL_GLYPH} The ${walk.ant ? 'ant' : 'walker'} stops at step ${formatNumber(walk.n)}, on a wall: the strip's edge, where its tiles do not meet.`,
+    };
+  return null;
+}
 // Why a walk that repeats has a most of digits: the loop (or drift), from its first step, and how many
 // rounds are walked; '' when it does not repeat
 function loopText() {
-  if (walk.wormEnd)
-    return `✝ The worm stops at step ${formatNumber(walk.n)}, after ${formatNumber(walk.wormMade)} turns of its own: ${
-      {
-        dead: 'no line left to eat at its corner',
-        eaten: 'its rule turns onto a line already eaten',
-        rule: 'its rule has no turn left for a new corner',
-        digits: 'no digit left for a new corner',
-      }[walk.wormEnd]
-    }.`;
+  if (runStopped()) return runStopped().why;
   const L = loopShownNow();
   if (!L) return '';
   const period = L.period ?? walk.n - L.from;
@@ -17713,8 +17729,8 @@ const walkStart = (g, mode, j = startNo()) =>
 // its tiles, its places seen (corners or tiles, nodes of them) and the step it has seen them all, its farthest from its
 // start, its digits' counts; begin(key), step(i, digit, key): stopped where it goes round (key, its state: see loopWatch;
 // null, none watched); finish: the walk laid out (more: its own), its shape and its view
-function walkRecorder(seq, ahead, base, R, nodes, len = seq.length) {
-  // (len: its steps, a worm's asked)
+function walkRecorder(seq, ahead, base, R, nodes, len = seq.length, wallAt = null) {
+  // (len: its steps, a worm's asked; wallAt: whether a place is on a wall, which stops it there, see wallStopAt)
   const n = len + 1,
     wx = new Float64Array(n),
     wy = new Float64Array(n),
@@ -17730,9 +17746,11 @@ function walkRecorder(seq, ahead, base, R, nodes, len = seq.length) {
     far = 0,
     start = null,
     steps = len,
-    loop = null;
+    loop = null,
+    wall = 0;
   return {
     put(i, place, t, p) {
+      if (i && !wall && wallAt?.(place)) wall = i;
       // step i: its place (a corner, a tile), its tile, its point
       if (!seen[place]) {
         seen[place] = 1;
@@ -17751,6 +17769,10 @@ function walkRecorder(seq, ahead, base, R, nodes, len = seq.length) {
       // whether it goes round there
       for (let c = 0; c < base; c++) counts[base * i + c] = counts[base * (i - 1) + c];
       counts[base * i + digit]++;
+      if (i === wall) {
+        steps = i;
+        return true;
+      } // (on a wall: stopped there)
       const earlier = key === null ? null : looped(i, key);
       if (earlier !== null) {
         steps = i;
@@ -17762,6 +17784,7 @@ function walkRecorder(seq, ahead, base, R, nodes, len = seq.length) {
       Object.assign(walk, {
         n: steps,
         loop,
+        wallEnd: wall > 0 && wall === steps,
         digits: seq,
         wx,
         wy,
@@ -17795,6 +17818,17 @@ function walkRecorder(seq, ahead, base, R, nodes, len = seq.length) {
     },
   };
 }
+// A Möbius strip's walls (its edges where its tiles do not meet, see MOBIUS_ALONG) stop its walkers and ants (see
+// runStopped): a tile on a wall, or along its grid a corner of one; elsewhere none (a solid's walls, Life's only)
+function wallStopAt(g, corners = false) {
+  if (!g.mobius || !g.walls?.length) return null;
+  const k = g.sides,
+    on = new Uint8Array(corners ? g.verts.length / 3 : g.n);
+  for (const t of g.walls)
+    if (!corners) on[t] = 1;
+    else for (let j = 0; j < k; j++) on[g.poly[k * t + j]] = 1;
+  return (place) => on[place] === 1;
+}
 // a walk along a surface's grid: from corner to corner along its edges, turning by the digits (see nextCorner)
 function buildGridWalk(seq, mode, ahead = new Uint8Array(0)) {
   const { base, initial } = mode,
@@ -17808,8 +17842,7 @@ function buildGridWalk(seq, mode, ahead = new Uint8Array(0)) {
     V = g.verts,
     len = mode.worm || !readsDigits(digitsComputed.mode) ? lengthAsked() : seq.length,
     at = (v) => [V[3 * v], V[3 * v + 1], V[3 * v + 2]]; // (a worm: its steps asked)
-  const rec = walkRecorder(seq, ahead, base, R, G.nv, len),
-    vert = new Int32Array(len + 1),
+  const vert = new Int32Array(len + 1),
     stepTiles = new Int32Array(2 * len),
     S = surfaceSteps(g, mode);
   let state = walkStart(g, mode);
@@ -17819,6 +17852,7 @@ function buildGridWalk(seq, mode, ahead = new Uint8Array(0)) {
     placed = Array.isArray(rivals) && battleStartsOrSay(g, state, true, rivals.length + 1);
   if (rivals?.error) walkSaid = rivals.error;
   if (placed) state = placed.starts[0];
+  const rec = walkRecorder(seq, ahead, base, R, G.nv, len, mode.worm || placed ? null : wallStopAt(g, true)); // (a battle's walkers and a worm: no wall read)
   let v = state[0];
   const put = (i) => {
     rec.put(i, v, G.tileOf[v], at(v));
@@ -17909,17 +17943,17 @@ function buildSphereWalk(seq, mode, ahead = new Uint8Array(0)) {
       )
     : null;
   const base = ant && !antByDigits ? antStep.colours : mode.base,
-    turns = ant ? new Uint8Array(len) : null,
-    rec = walkRecorder(seq, ahead, base, R, g.n, len);
+    turns = ant ? new Uint8Array(len) : null;
   let state = walkStart(g, mode);
-  const put = (i, t = state[0]) => rec.put(i, t, t, [g.cen[3 * t], g.cen[3 * t + 1], g.cen[3 * t + 2]]);
-  put(0);
-  rec.begin(S.key(state)); // (tile, the edge it came in by)
   // a battle (see 7.6b): all its walks (battlePlayer), A's recorded (still once dead); the others' digits null while they
   // are computed: A alone meanwhile
   const rivals = battleOn() && !ant ? rivalsDigits(mode.base, len, buildWalk) : null,
     placed = Array.isArray(rivals) && battleStartsOrSay(g, state, false, rivals.length + 1);
   if (rivals?.error) walkSaid = rivals.error;
+  const rec = walkRecorder(seq, ahead, base, R, g.n, len, placed ? null : wallStopAt(g)); // (a battle's walkers: no wall read)
+  const put = (i, t = state[0]) => rec.put(i, t, t, [g.cen[3 * t], g.cen[3 * t + 1], g.cen[3 * t + 2]]);
+  put(0);
+  rec.begin(S.key(state)); // (tile, the edge it came in by)
   if (placed) {
     const P = battlePlayer(g, false, S, placed.starts, [seq, ...rivals]);
     P.to(Infinity); // (the whole battle: its end known)

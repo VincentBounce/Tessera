@@ -814,7 +814,7 @@ async function coloursOffered(fail) {
     let some = false;
     for (const s of sizes) {
       location.hash = `#w=${w}&s=${s}`;
-      await until(shown(w, () => String(sphereSize()) === String(s)));
+      await until(shown(w, () => $('sphereF').value === String(s))); // (the size asked: the one played may be a row off, its walkers')
       if (TEAM_COUNTS.some((K) => K > 1 && teamsFit(K))) {
         some = true;
         break;

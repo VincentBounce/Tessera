@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.1054';
+const VERSION = '0.4.1055';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -10602,18 +10602,15 @@ function choicesAt(s, reads = null, teamsMemo = new Map()) {
             if (!c.why) go(`walkRule:${here}|${c.rule}`, here, `${r} ${c.rule}`, { walkRule: c.rule });
         } else go(`rule:${r}`, navPick(w, 3, r), r);
       }
-  const set = (key, field, v, why, words, more = {}) => {
-    if (s[field] !== v && !why) out.push([key, { ...s, [field]: v, ...more }, words]);
+  const set = (key, field, v, why, words) => {
+    if (s[field] !== v && !why) out.push([key, { ...s, [field]: v }, words]);
   }; // (a choice greyed there: no click)
   if (MODES[w].life && wants('lifeTeams'))
     for (const k of TEAM_COUNTS)
       set(`lifeTeams:${k}`, 'lifeTeams', k, lifeTeamsWhyNot(k, w, s.size, s.rule), TEAM_NAMES[k]);
   if (battleMode(w)) {
     if (wants('teams'))
-      for (const k of TEAM_COUNTS)
-        set(`teams:${k}`, 'teams', k, teamsWhyNot(k, w, s.size, s.startNo), TEAM_NAMES[k], {
-          size: s.size && teamsSize(w, k, s.size),
-        }); // (its size the one its walkers take, see teamsSize)
+      for (const k of TEAM_COUNTS) set(`teams:${k}`, 'teams', k, teamsWhyNot(k, w, s.size, s.startNo), TEAM_NAMES[k]);
     if (s.teams > 1 && wants('battleRule'))
       BATTLE_RULES.forEach(([kind, name], p) =>
         set(`battleRule:${p}`, 'battleRule', p, battleRuleWhyNot(kind, w), name),
@@ -14302,11 +14299,14 @@ const surfaceWalkers = (kind) => {
       : walkTeams
     : 1;
 };
-// the size nearest f a surface's walkers fit at (see battleFits: a strip's rows, their parity its twist's; a solid of
-// hexagons', its rest by 3 its start 1's kind of point): f, else one less or more; f where none (the count greyed there)
+// the size played for a size asked (the menu's, a link's: see sphereSize), the nearest a surface's walkers fit at (see
+// battleFits: a strip's rows, their parity its twist's; a solid of hexagons', its rest by 3 its start 1's kind of point):
+// f, else one less or more; f where none (the count greyed there), or a size of its own (a link's "16x240": as asked)
 const walkersSize = (kind, f) => {
   const K = surfaceWalkers(kind);
-  return K > 1 ? ([f, f - 1, f + 1].find((size) => size > 1 && battleFits(ringMode(), K, size)) ?? f) : f;
+  return K > 1 && typeof f === 'number'
+    ? ([f, f - 1, f + 1].find((size) => size > 1 && battleFits(ringMode(), K, size)) ?? f)
+    : f;
 };
 function ringLength(x, square, units, ok = () => true) {
   // (the whole count of u nearest t that ok allows: below and above it in turn, the nearer first; before v0.3.90 one more before one
@@ -16466,7 +16466,7 @@ function stepSize(delta) {
 // The size in use: tiles across (a solid), rows (a torus), or rows "x" tiles per row (a torus made
 // taller or wider)
 const sizeOf = (v) => (String(v).includes('x') ? String(v) : Number(v)); // (a size as the list has it, "16" or "16x10": 16, or "16x10")
-const sphereSize = () => sizeOf($('sphereF').value);
+const sphereSize = () => walkersSize(surfaceOf(MODES[tabMode()]), sizeOf($('sphereF').value)); // (the size played: the menu's the size asked, kept as its walkers change, see walkersSize)
 // A torus's rows and columns: its tiles per row from its rows (squares or regular tiles), unless given
 function torusDims(kind, size) {
   size = sizeOf(size); // (as the list has it: a size's tooltip's, "16" before v0.3.70, NaN cells on every tiling's torus)
@@ -16775,30 +16775,18 @@ const sizeAt = (kind, initial = SPHERES[kind].initial, mode) => {
     f = Number(picked ? SPHERES[kind].near(picked) : SPHERES[kind].nearest(initial));
   return sizes.reduce((a, b) => (Math.abs(b - f) < Math.abs(a - f) ? b : a));
 };
-// the size a surface has from rows (the menu's, a setup's): rows where it offers them (or a size of its own, a link's, its
-// battle's walkers fit at), else the one it opens at (see sizeAt: the size picked's nearest, never drifting)
-const sizeIn = (kind, rows, initial, mode) => {
-  const own =
-    String(rows).includes('x') &&
-    surfaceWalkers(kind) > 1 &&
-    battleFits(ringMode(), surfaceWalkers(kind), sizeOf(rows));
-  return rows !== null && (own || sizesOf(kind, mode).map(String).includes(String(rows)))
-    ? sizeOf(rows)
-    : sizeAt(kind, initial, mode);
-};
-// the size mode w's battle of K walkers takes from a size (the menu's if none): the one its menu goes to as K is picked
-const teamsSize = (w, K, size = figureSize(w)) =>
-  ringFor(w, K, () => sizeIn(surfaceOf(MODES[w]), size, MODES[w].initial, MODES[w]));
+// the size mode w's battle of K walkers plays from a size asked (the menu's if none): where a count is judged (see teamsWhyNot)
+const teamsSize = (w, K, size = figureSize(w)) => ringFor(w, K, () => walkersSize(surfaceOf(MODES[w]), sizeOf(size)));
 function fillSphereSizes(kind, initial = SPHERES[kind].initial) {
   const step = blockSizeStep(kind),
     sizes = sizesOf(kind);
   const sel = $('sphereF'),
     key = `${kind} ${initial} ${lifeTeams} ${surfaceWalkers(kind)} ${step}`,
-    [was] = (sel.dataset.kind ?? '').split(' '); // (a torus's sizes: its columns as its colours, see ringColumns)
+    [was] = (sel.dataset.kind ?? '').split(' '); // (a torus's sizes: its columns as its colours, see ringColumns; its walkers: the sizes played theirs, see walkersSize)
   if (sel.dataset.kind === key && sel.dataset.picked === String(picked)) return; // (a size picked on another grid: its nearest here)
   const rows = was === kind && sel.dataset.picked === String(picked) ? sel.value : null; // (the same surface, its colours changed: its rows kept, its columns its colours')
-  sel.replaceChildren(...sizes.map((f) => new Option(sizeLabel(kind, f), f)));
-  sel.value = sizeIn(kind, rows, initial);
+  sel.replaceChildren(...sizes.map((f) => new Option(sizeLabel(kind, walkersSize(kind, f)), f))); // (a size asked, its words the size played's)
+  sel.value = rows && sizes.map(String).includes(rows) ? rows : sizeAt(kind, initial);
   sel.dataset.kind = key;
   sel.dataset.picked = picked;
 }
@@ -16922,20 +16910,18 @@ for (const kind of TORI)
 // each surface's sizes and its first one, from the ladder (see SIDES), when first asked for
 for (const [kind, S] of Object.entries(SPHERES)) {
   const step = S.steps?.[0] ?? 1,
-    ladder = (fitted) => {
-      // (its cells growing with its size: none counted past the most; fitted: each the nearest its battle's walkers fit at)
+    ladder = () => {
+      // (its cells growing with its size: none counted past the most)
       const sizes = [];
-      for (const side of SIDES) {
-        const f = fitted ? walkersSize(kind, side) : side;
-        if (f % step === 0 && f >= (S.least ?? 2) && f <= (S.most ?? Infinity) && f !== sizes.at(-1)) {
+      for (const f of SIDES)
+        if (f % step === 0 && f >= (S.least ?? 2) && f <= (S.most ?? Infinity)) {
           const n = S.tiles(f);
           if (n > CELLS.most) break;
           if (n >= CELLS.least) sizes.push(f);
         }
-      }
       return sizes;
     };
-  const lists = {}; // (by its colours: a torus's columns theirs, its cells, see stripKey; and a battle's walkers, its sizes those they fit at)
+  const lists = {}; // (by its colours: a torus's columns theirs, its cells, see stripKey; the first's kept for all before)
   const edged = (sizes) => {
     // (edges: its squares' sides as the icons' widths, each in place of the size nearest it)
     for (const e of S.edges ?? []) {
@@ -16950,14 +16936,7 @@ for (const [kind, S] of Object.entries(SPHERES)) {
     }
     return sizes;
   };
-  // (plainSizes: its own, whatever its battle; sizes: those its walkers fit at, see surfaceWalkers)
-  Object.defineProperty(S, 'plainSizes', { get: () => S.ownSizes?.() ?? (lists[stripKey()] ??= edged(ladder(false))) });
-  Object.defineProperty(S, 'sizes', {
-    get: () =>
-      surfaceWalkers(kind) > 1 && !S.ownSizes
-        ? (lists[`${stripKey()} ${surfaceWalkers(kind)} ${ringMode()}`] ??= edged(ladder(true))) // (its mode's: along the grid or on cells, their starts' places differ)
-        : S.plainSizes,
-  }); // (ownSizes: a surface's own, the globe's)
+  Object.defineProperty(S, 'sizes', { get: () => S.ownSizes?.() ?? (lists[stripKey()] ??= edged(ladder())) }); // (ownSizes: a surface's own, the globe's)
   Object.defineProperty(S, 'initial', { get: () => S.near(START[TORI.includes(kind) ? 'surface' : 'solid']) });
   S.near = (n) => nearCells(S.sizes, S.tiles, n); // the usual size with about n cells
   S.nearest = (f) => S.near(S.tiles(f)); // a mode's own size: the usual one with about as many cells
@@ -18621,7 +18600,7 @@ const battleCountsMemo = remember('battleCountsMemo', {});
 // hexagons' 3: its grid's corners the middles of its faces' small triangles, a face's middle one of them unless 3 divides
 // its size; every other solid's start 1 alike at every size, 1)
 const startClassLeast = (kind, size) =>
-  SPHERES[kind].plainSizes.find((f) => (f - size) % (SPHERES[kind].startPeriod ?? 1) === 0) ?? size;
+  SPHERES[kind].sizes.find((f) => (f - size) % (SPHERES[kind].startPeriod ?? 1) === 0) ?? size;
 // the teams a battle can have on mode w's surface: every count that fits (see battleFits)
 const battleCounts = (w, size, j) => TEAM_COUNTS.filter((K) => battleFits(w, K, size, j));
 // A closed solid's team counts, once a solid, its turns the same at every size (see surfaceRotations): some, K it has a
@@ -18631,7 +18610,7 @@ const battleCounts = (w, size, j) => TEAM_COUNTS.filter((K) => battleFits(w, K, 
 const solidTeamCountsMemo = remember('solidTeamCountsMemo', {});
 const solidTeamCounts = (kind) =>
   (solidTeamCountsMemo[kind] ??= (() => {
-    const g = SPHERES[kind].mesh(Math.min(...SPHERES[kind].plainSizes)),
+    const g = SPHERES[kind].mesh(Math.min(...SPHERES[kind].sizes)),
       groups = (K) => (K > 1 ? rotationGroups(g, K) : []); // (its least size: its turns its every size's)
     const some = TEAM_COUNTS.filter((K) => groups(K).length);
     return {
@@ -18646,7 +18625,7 @@ const solidTeamCounts = (kind) =>
 // a team count's, a count of colours' greyed words at a mode (at a size, or the one it opens at): one source, their tiles'
 // and the menu's graph's (see choicesAt)
 const teamsWhyNot = (k, v, size = null, j = startAsked()) =>
-  k === 1 || (battleMode(v) && battleFits(v, k, teamsSize(v, k, size ?? undefined), j)) ? '' : TEAMS_WHERE; // (at the size its click goes to: a ring's nearest its walkers fit at, see teamsSize)
+  k === 1 || (battleMode(v) && battleFits(v, k, teamsSize(v, k, size ?? undefined), j)) ? '' : TEAMS_WHERE; // (at the size its walkers play, see teamsSize)
 const lifeTeamsWhyNot = (k, w, size = null, rule = $('lifeRule').value) =>
   !teamsStatesFit(k, rule)
     ? TEAMS_STATES_WHERE

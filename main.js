@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.1052';
+const VERSION = '0.4.1053';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -17470,14 +17470,15 @@ function gridState(g, [v, from]) {
 /* A fraction's digits repeat with a period L. When the turns of a period add up to 0°, each period
  * shifts the walk by the same T on the flat sheet (columns east, rows north). A diagonal one, T both
  * ways, closes after the fewest periods m that make m·T a whole number of turns both ways, and how
- * many depends on the torus's size. For each start, the sizes (32 to 64 rows, proportions within
+ * many depends on the torus's size. For each start, the sizes (their rows from the size picked's to LOOP_ROWS times it, see
+ * picked: loops of about the size in hand, the same list as they are browsed; proportions within
  * TORUS_RATIO of the usual ones) where it closes within LOOP_STEPS steps without its strands touching
  * (the sheet's area over the chain's length, the room between strands, at least the motif's width
  * across T plus LOOP_GAP), one per number of laps, the nearest the usual proportions: Browse loops
  * goes through the LOOP_MAX with the fewest laps.
  * On a Möbius strip (its faces a slanted torus, see mobiusDelta), m·T must be a whole number of
  * lengths a along it, and then a whole number of 2W across once those come back a·W: its widths
- * from its narrowest to its widest size, its lengths within TORUS_RATIO of the usual one. A walk
+ * the same rows, its lengths within TORUS_RATIO of the usual one. A walk
  * straight along it depends on its length too (going once along turns it over): only one straight
  * across closes alike at any length. Its laps: along the strip, and across both faces. Only on a
  * strip of squares or of triangles, its edges straight: along the zigzag edges of the others, going
@@ -17485,12 +17486,14 @@ function gridState(g, [v, from]) {
 const TORUS_RATIO = [0.8, 1.25],
   LOOP_STEPS = 20000,
   LOOP_GAP = 1,
-  LOOP_MAX = 12;
+  LOOP_MAX = 12,
+  LOOP_ROWS = 2;
 let torusLoopList = null; // { key, loops: [{ start, size, laps: [ring, tube], steps }] } for the number in use
 function torusLoops() {
   const mode = MODES[tabMode()];
   if (!mode.net || !TORI.includes(surfaceOf(mode))) return []; // a walk by a rule's commands (its network's: not an ant's), along the grid or on cells, on a torus or a Möbius strip
-  const key = `${formulaInUse} ${tabMode()} ${surfaceOf(mode)} ${walkRuleOf(mode)}`; // (its loops its rule's turns)
+  const least = picked ? SPHERES[surfaceOf(mode)].near(picked) : SPHERES[surfaceOf(mode)].initial; // (its rows: the size picked's, else the one it opens at)
+  const key = `${formulaInUse} ${tabMode()} ${surfaceOf(mode)} ${walkRuleOf(mode)} ${least}`; // (its loops its rule's turns)
   if (
     digitsComputed?.formula !== formulaInUse ||
     digitsComputed.mode !== tabMode() ||
@@ -17537,7 +17540,7 @@ function torusLoops() {
       if (MOBIUS_ALONG[kind].edgeCuts || Math.abs(T[0]) < 1e-6) return; // zigzag edges; or straight across: any length closes it alike
       const { step, ok } = MOBIUS_ALONG[kind],
         most = Math.floor((LOOP_STEPS - s0 - L) / L);
-      for (let nv = Math.min(...S.sizes); nv <= Math.max(...S.sizes); nv++) {
+      for (let nv = least; nv <= LOOP_ROWS * least; nv++) {
         const { W, L: Lu } = mobiusCount(kind, nv),
           usual = Lu / step;
         for (let n = Math.ceil(usual * TORUS_RATIO[0]); n <= usual * TORUS_RATIO[1]; n++) {
@@ -17559,8 +17562,8 @@ function torusLoops() {
     const U = Math.round(2 * T[0]),
       V = Math.round(2 * T[1]),
       usual = 48 / (S.columns(48) * S.perRow); // in half tiles (at 48 rows: its columns whole there, no rounding in its proportions)
-    for (let rows = 32; rows <= 64; rows += S.steps[0]) {
-      // (32 to 64 rows: loops of a size to read, whatever the size in use; every size of the surface scattered them from 12 to 237 rows)
+    for (let rows = least; rows <= LOOP_ROWS * least; rows += S.steps[0]) {
+      // (every size of the surface scattered them from 12 to 237 rows)
       for (let e = Math.ceil(rows / usual / TORUS_RATIO[1]); e <= rows / usual / TORUS_RATIO[0]; e++) {
         if (e % S.steps[1]) continue;
         const cols = e / S.perRow,

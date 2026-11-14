@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.1031';
+const VERSION = '0.4.1032';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -15968,6 +15968,7 @@ const SPHERES = {
     radius: (f) => (f * Math.sqrt(3)) / 2,
     tiles: (f) => 10 * f * f + 2,
     unit: 'hexagons',
+    startPeriod: 3,
   },
   twistedsphere: {
     mesh: twistedSphereMesh,
@@ -16130,7 +16131,7 @@ const SPHERES = {
   ...Object.fromEntries(
     Object.entries(HEX_SOLIDS).map(([k, { radius, cells }]) => [
       `${k}Hex`,
-      { mesh: (f) => hexSolidMesh(k, f), radius, tiles: cells, unit: 'hexagons' },
+      { mesh: (f) => hexSolidMesh(k, f), radius, tiles: cells, unit: 'hexagons', startPeriod: 3 },
     ]),
   ), // (see hexSolidMesh)
   tetra: {
@@ -18524,10 +18525,11 @@ const battleFits = (
     if (solid && (solid.any.includes(K) || !solid.some.includes(K))) return solid.any.includes(K); // (no group of K: none)
     teamsBuilding = sphere.columns ? K : null;
     try {
-      // (a solid's start 1 the same kind of point at every size, by construction: the edge farthest from A in its kite, see
-      // startList; and K's fit A's start's kind of point only, the turns leaving it in place: start 1 judged on the solid's
-      // least mesh, never a mesh of the size asked built for it, checked by tesseraCheck's checkFirstStarts)
-      const g = sphere.mesh(solid && j <= 1 ? Math.min(...sizesOf(kind, mode)) : size),
+      // (a solid's start 1 the same kind of point at every size of its class, by construction: the edge farthest from A in
+      // its kite, see startList, and its class its size's rest by its startPeriod; and K's fit A's start's kind of point
+      // only, the turns leaving it in place: start 1 judged on its class's least mesh, never a mesh of the size asked built
+      // for it, checked by tesseraCheck's checkFirstStarts)
+      const g = sphere.mesh(solid && j <= 1 ? startClassLeast(kind, mode, size) : size),
         start = walkStart(g, mode, j > 1 ? Math.min(j, startList(g).length) : 1),
         apart = startSpread(g, !!mode.grid, start);
       return (
@@ -18547,6 +18549,11 @@ const battleFits = (
   return (memo[K] ??= fits());
 };
 const battleCountsMemo = remember('battleCountsMemo', {});
+// a solid's least size whose start 1 is the same kind of point as at size: the same rest by its startPeriod (a solid of
+// hexagons' 3: its grid's corners the middles of its faces' small triangles, a face's middle one of them unless 3 divides
+// its size; every other solid's start 1 alike at every size, 1)
+const startClassLeast = (kind, mode, size) =>
+  sizesOf(kind, mode).find((f) => (f - size) % (SPHERES[kind].startPeriod ?? 1) === 0) ?? size;
 // the teams a battle can have on mode w's surface: every count that fits (see battleFits)
 const battleCounts = (w, size, j) => TEAM_COUNTS.filter((K) => battleFits(w, K, size, j));
 // A closed solid's team counts, once a solid, its turns the same at every size (see surfaceRotations): some, K it has a

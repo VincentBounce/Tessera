@@ -593,11 +593,13 @@ function hoverGreyed(fail) {
     await wait(200);
     await until(() => true);
   };
+  const largeDone = new Set(); // (each mode once at its largest: a whyNot's cost is its mesh's, not the setup's)
   return async (where) => {
     hoverAll(where);
     const F = $('sphereF'),
       largest = F.options[F.options.length - 1]?.value;
-    if (MODES[tabMode()].plane || !largest || F.value === largest) return;
+    if (MODES[tabMode()].plane || !largest || F.value === largest || largeDone.has(tabMode())) return;
+    largeDone.add(tabMode());
     const was = F.value;
     await resize(largest);
     hoverAll(`${where} at ${largest}`);
@@ -843,13 +845,14 @@ function checkFirstStarts(fail) {
         p = [P[3 * v], P[3 * v + 1], P[3 * v + 2]];
       return solidRotations(solidCorners(g)).filter((M) => pointsApart([p, matTimesPoint(M, p)]) < 1e-7).length;
     };
-    const sizes = sizesOf(kind, mode).filter((size) => S.tiles(size) <= 30000),
-      first = kindOfStart(sizes[0]);
-    for (const size of sizes.slice(1)) {
+    const sizes = sizesOf(kind, mode).filter((size) => S.tiles(size) <= 30000);
+    for (const size of sizes) {
+      const least = startClassLeast(kind, mode, size);
+      if (least === size) continue;
       checked++;
-      if (kindOfStart(size) !== first)
+      if (kindOfStart(size) !== kindOfStart(least))
         fail(
-          `${w} at ${size}: start 1 another kind of point than at ${sizes[0]} (battleFits judges it on the least mesh)`,
+          `${w} at ${size}: start 1 another kind of point than at ${least} (battleFits judges it on its class's least mesh)`,
         );
     }
   }

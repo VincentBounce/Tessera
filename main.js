@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.997';
+const VERSION = '0.4.998';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -3755,9 +3755,16 @@ for (const kind of MOBIUS_TILINGS) {
   const along = [[a, b], ...(e && mobiusMirror(kind, [side(d), side(e)]) ? [[side(d), side(e)]] : [])].sort(
     (x, y) => Math.abs(sideTurn(kind, x[0])) - Math.abs(sideTurn(kind, y[0])),
   );
-  MOBIUS_STRIPS[mobiusOf(kind)] = { kind, basis: along[0] }; // (straight: its tiles nearest the plane's way)
-  if (along[1]) MOBIUS_STRIPS[`${mobiusOf(kind)}Turned`] = { kind, basis: along[1], deg };
+  // (rimWalls: its edges no mirror between its tiles, see MOBIUS_ALONG)
+  const rimWalls = (basis) => !mobiusMirror(kind, basis).between;
+  MOBIUS_STRIPS[mobiusOf(kind)] = { kind, basis: along[0], rimWalls: rimWalls(along[0]) }; // (straight: its tiles nearest the plane's way)
+  if (along[1]) MOBIUS_STRIPS[`${mobiusOf(kind)}Turned`] = { kind, basis: along[1], deg, rimWalls: rimWalls(along[1]) };
 }
+// A Möbius strip's words after its tiles: over its edge onto the face behind, or its edges walls where its tiles do not
+// meet there (rimWalls, see MOBIUS_ALONG); turned, its turned strip's when they differ
+const MOBIUS_EDGE = ['over its edge onto the one behind', 'its edges walls: its tiles do not meet there'];
+const mobiusTail = (walls, turnedWalls = walls) =>
+  ` (both faces, ${MOBIUS_EDGE[+walls]}${walls === turnedWalls ? '' : `; turned, ${MOBIUS_EDGE[+turnedWalls]}`})`;
 // The tilings folded: on a torus (its sheet, see torusSheets, tilingTorusMesh); a strip's sheet glued at its ends turned
 // over, on a Möbius strip (see mobiusMesh), on a Klein bottle glued across too (see kleinTilingSheet). FOLDS: each fold, its
 // family (see FAMILIES), its name, its surfaces' and Life's names, its tilings, which way its turned tiles turn; FOLDED: each
@@ -3773,7 +3780,7 @@ const FOLDS = {
     of: (kind) => `torus${kind[0].toUpperCase()}${kind.slice(1)}`,
     has: (kind) => !!TILINGS[kind].torus,
     way: 'rows round the tube',
-    tail: '',
+    tail: () => '',
     perspective: true,
   },
   mobius: {
@@ -3784,7 +3791,8 @@ const FOLDS = {
     of: mobiusOf,
     has: (kind) => MOBIUS_TILINGS.includes(kind),
     way: 'along the strip',
-    tail: ' (both faces, over its edge onto the one behind)',
+    tail: (kind) =>
+      mobiusTail(MOBIUS_STRIPS[mobiusOf(kind)].rimWalls, MOBIUS_STRIPS[`${mobiusOf(kind)}Turned`]?.rimWalls),
     perspective: true,
   },
   klein: {
@@ -3795,7 +3803,7 @@ const FOLDS = {
     of: (kind) => foldOf('klein', kind),
     has: (kind) => MOBIUS_TILINGS.includes(kind),
     way: 'round the tube',
-    tail: '',
+    tail: () => '',
   },
 };
 const FOLDED = {};
@@ -4744,7 +4752,7 @@ const MODES = {
     life: true,
     perspective: true,
     round: true,
-    where: 'a Möbius strip of kites (both faces, over its edge onto the one behind)',
+    where: `a Möbius strip of kites${mobiusTail(false, true)}`, // (see MOBIUS_ALONG's rimWalls)
   },
   lifeKleinKite: {
     base: 2,
@@ -4798,7 +4806,7 @@ const MODES = {
     life: true,
     perspective: true,
     round: true,
-    where: 'a Möbius strip of squares (both faces, over its edge onto the one behind)',
+    where: `a Möbius strip of squares${mobiusTail(false)}`,
   },
   lifeMobiusHex: {
     base: 2,
@@ -4807,7 +4815,7 @@ const MODES = {
     life: true,
     perspective: true,
     round: true,
-    where: 'a Möbius strip of hexagons (both faces, over its edge onto the one behind)',
+    where: `a Möbius strip of hexagons${mobiusTail(true)}`,
   },
   lifeKlein: {
     base: 2,
@@ -4848,7 +4856,7 @@ const MODES = {
     life: true,
     perspective: true,
     round: true,
-    where: 'a Möbius strip of Cairo pentagons (both faces, over its edge onto the one behind)',
+    where: `a Möbius strip of Cairo pentagons${mobiusTail(true)}`,
   },
   lifeMobiusTri: {
     base: 2,
@@ -4857,7 +4865,7 @@ const MODES = {
     life: true,
     perspective: true,
     round: true,
-    where: 'a Möbius strip of triangles (both faces, over its edge onto the one behind)',
+    where: `a Möbius strip of triangles${mobiusTail(false, true)}`,
   },
   lifeCube: {
     base: 2,
@@ -9811,7 +9819,7 @@ for (const [kind, t] of Object.entries(TILINGS)) {
         life: true,
         ...(F.perspective ? { perspective: true } : {}),
         round: true,
-        where: `${F.a} of ${t.where.replace(/^a grid of /, '')}${F.tail}`,
+        where: `${F.a} of ${t.where.replace(/^a grid of /, '')}${F.tail(kind)}`,
       };
       MODE_ICONS[m] = fold;
       NAV[m] = ['Life', 'Surfaces', F.name, 'Life', ''];
@@ -14642,14 +14650,17 @@ const MOBIUS_KINDS = [
 ];
 /* A strip's length L, as a whole count of the steps its tiling repeats by along it, glued with the
  * half twist (see mobiusSheet): ok, the counts that tile it. A size is its rows (the usual length
- * for them), or rows "x" that count, a length of its own (s=16x240: 16 rows of triangles 120 long). */
+ * for them), or rows "x" that count, a length of its own (s=16x240: 16 rows of triangles 120 long).
+ * rimWalls: its edges not on a mirror between its tiles (a zigzag, or through tiles): the faces then meet there in no
+ * way of the tiling (a cell's corners round its rim too many or too few), so its tiles touching an edge are walls in
+ * Life (see mobiusMesh). */
 const MOBIUS_ALONG = {
   mobius: { step: 1, ok: () => true },
   mobiusTri: { step: 0.5, ok: (n, nv) => n % 2 === nv % 2 },
-  mobiusHex: { step: 1.5, ok: (n) => n % 2 === 1 },
-  mobiusHexTurned: { step: TRIANGLE_HEIGHT, ok: (n, nv) => n % 2 === (nv % 2 ? 0 : 1) },
-  mobiusTriTurned: { step: TRIANGLE_HEIGHT, ok: (n) => n % 2 === 0 },
-  mobiusCairo: { step: 1, ok: (n, nv) => (n + nv) % 2 === 1 },
+  mobiusHex: { step: 1.5, ok: (n) => n % 2 === 1, rimWalls: true },
+  mobiusHexTurned: { step: TRIANGLE_HEIGHT, ok: (n, nv) => n % 2 === (nv % 2 ? 0 : 1), rimWalls: true },
+  mobiusTriTurned: { step: TRIANGLE_HEIGHT, ok: (n) => n % 2 === 0, rimWalls: true },
+  mobiusCairo: { step: 1, ok: (n, nv) => (n + nv) % 2 === 1, rimWalls: true },
 };
 MOBIUS_ALONG.mobiusKite = MOBIUS_ALONG.mobiusTri; // kites: the triangles', each cut in 3
 MOBIUS_ALONG.mobiusKiteTurned = MOBIUS_ALONG.mobiusTriTurned;
@@ -14720,6 +14731,7 @@ for (const [strip, { kind, basis }] of Object.entries(MOBIUS_STRIPS)) {
     step,
     copyLength: g > 1e-9 ? g : la,
     ok: (n, nv) => (((n - Math.round((g + nv * bx) / step)) % q) + q) % q === 0,
+    rimWalls: MOBIUS_STRIPS[strip].rimWalls,
   };
 }
 const mobiusSize = (size) => (typeof size === 'number' ? [size, null] : size.split('x').map(Number)); // [rows, count along or null]
@@ -15188,6 +15200,11 @@ function mobiusMesh(kind, size) {
       uv.push(...(side ? t : turnOver(t)).flat());
     });
   const mesh = finishMesh(cv, tiles, k, nv, null); // as listed: a back faces the other way
+  // (its edges no mirror between tiles: its tiles with a corner on an edge, both faces', walls; see MOBIUS_ALONG)
+  if (MOBIUS_ALONG[kind].rimWalls) {
+    const edge = new Set([...index].filter(([key]) => key % 2 === 0 && onEdge[key / 2]).map(([, c]) => c));
+    mesh.walls = [...tiles.keys()].filter((t) => tiles[t].some((c) => edge.has(c)));
+  }
   return (meshCache[key] = Object.assign(mesh, {
     torus: true,
     mobius: true,

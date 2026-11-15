@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.5';
+const VERSION = '0.5.6';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -3803,7 +3803,7 @@ const HULL_SOLIDS = {
     mark: '■',
     cells: 'Rhombi', // (its own cells' tab, beside its cuts')
     cuts: ['tetrakis', 'halves'],
-    place: [1, 'Square orthobicupola'],
+    place: [1, 'Dodecahedron'],
     where: "a rhombic dodecahedron of rhombi (the cuboctahedron's dual: 3 or 4 round each corner)",
   },
 };
@@ -10256,16 +10256,20 @@ function shapeGroupsOf(kind, space) {
   const planeOf = (sh) =>
     VARIANTS[Object.keys(NAV).find((m) => NAV[m][0] === kind && NAV[m][1] === space && NAV[m][2] === sh)]?.plane;
   const SQUARED = ['Cube', 'Pits', 'Bumps', 'Frame', 'Sponge'],
-    HULLS = Object.values(HULL_SOLIDS).map(({ name }) => name),
-    sheet = (sh) => SHEETS.includes(sh);
+    sheet = (sh) => SHEETS.includes(sh),
+    // (a hull solid with faces of two kinds or more, by its faces found, see hullFacesOf: the others' faces all alike)
+    mixed = (sh) =>
+      Object.entries(HULL_SOLIDS).some(
+        ([k, { name }]) => name === sh && new Set(hullFacesOf(k).map(({ corners }) => corners.length)).size > 1,
+      );
   const groups =
     flat && shapes.length > 8
       ? SHAPE_GROUPS.map(([g]) => [g, (sh) => shapeGroup(planeOf(sh)) === g]) // (in their order: the circles' four, squares, parallelograms, rhombi)
       : solid
         ? [
-            ['Squares', (sh) => SQUARED.includes(sh), SQUARED],
-            ['Solid', (sh) => !sheet(sh) && !SQUARED.includes(sh) && !HULLS.includes(sh)],
-            ['Polyhedra', (sh) => HULLS.includes(sh)],
+            ['Cubes', (sh) => SQUARED.includes(sh), SQUARED],
+            ['Regular polyhedra', (sh) => !sheet(sh) && !SQUARED.includes(sh) && !mixed(sh)], // (their faces all alike)
+            ['Irregular polyhedra', mixed],
             ['Surface', sheet, SHEETS],
           ]
         : [[null, () => true]];

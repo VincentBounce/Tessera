@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.1078';
+const VERSION = '0.4.1079';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -1399,28 +1399,28 @@ const PRESETS = {
   torus93_92: {
     group: 'Fractions',
     sym: '93/92',
-    name: 'A pattern round the square torus, along its grid (size 48)',
+    name: 'A pattern round the square torus, along its edges (size 48)',
     detail: 'in base 3',
     f: '93/92',
   },
   torus89_87: {
     group: 'Fractions',
     sym: '89/87',
-    name: 'Never an edge twice round the triangle torus, along its grid (size 48)',
+    name: 'Never an edge twice round the triangle torus, along its edges (size 48)',
     detail: 'in base 5',
     f: '89/87',
   },
   torus88_87: {
     group: 'Fractions',
     sym: '88/87',
-    name: 'A pattern round the hex torus, along its grid (size 48)',
+    name: 'A pattern round the hex torus, along its edges (size 48)',
     detail: 'in base 2',
     f: '88/87',
   },
   tetra61_59: {
     group: 'Fractions',
     sym: '61/59',
-    name: 'A pattern round the tetrahedron, along its grid (size 48)',
+    name: 'A pattern round the tetrahedron, along its edges (size 48)',
     detail: 'in base 5',
     f: '61/59',
   },
@@ -4310,7 +4310,7 @@ const MODES = {
     round: true,
     rule: 'on an icosahedron of triangles: exit through the <b>0</b> left or <b>1</b> right edge',
   },
-  // along the grid: from corner to corner, turning by these angles (degrees, left positive), or as close
+  // along the edges: from corner to corner, turning by these angles (degrees, left positive), or as close
   // to them as the edges at a corner allow
   torusGrid: {
     base: 3,
@@ -4318,7 +4318,7 @@ const MODES = {
     lattice: 'sphere',
     twin: 'torusWalk',
     sphere: 'torus',
-    grid: true,
+    edges: true,
     initial: 48,
     turns: [90, 0, -90],
     perspective: true,
@@ -4331,7 +4331,7 @@ const MODES = {
     lattice: 'sphere',
     twin: 'torusTriWalk',
     sphere: 'torusTri',
-    grid: true,
+    edges: true,
     initial: 48,
     turns: [120, 60, 0, -60, -120],
     perspective: true,
@@ -4344,7 +4344,7 @@ const MODES = {
     lattice: 'sphere',
     twin: 'torusHexWalk',
     sphere: 'torusHex',
-    grid: true,
+    edges: true,
     initial: 48,
     turns: [60, -60],
     perspective: true,
@@ -4357,7 +4357,7 @@ const MODES = {
     lattice: 'sphere',
     twin: 'mobiusWalk',
     sphere: 'mobius',
-    grid: true,
+    edges: true,
     turns: [90, 0, -90],
     perspective: true,
     round: true,
@@ -4369,7 +4369,7 @@ const MODES = {
     lattice: 'sphere',
     twin: 'mobiusHexWalk',
     sphere: 'mobiusHex',
-    grid: true,
+    edges: true,
     turns: [60, -60],
     perspective: true,
     round: true,
@@ -4381,7 +4381,7 @@ const MODES = {
     lattice: 'sphere',
     twin: 'mobiusTriWalk',
     sphere: 'mobiusTri',
-    grid: true,
+    edges: true,
     turns: [120, 60, 0, -60, -120],
     perspective: true,
     round: true,
@@ -4393,7 +4393,7 @@ const MODES = {
     lattice: 'sphere',
     twin: 'kleinWalk',
     sphere: 'klein',
-    grid: true,
+    edges: true,
     turns: [90, 0, -90],
     round: true,
     rule: 'along the edges of a Klein bottle of squares: <b>0</b> turn left, <b>1</b> straight on, <b>2</b> turn right',
@@ -4404,7 +4404,7 @@ const MODES = {
     lattice: 'sphere',
     twin: 'kleinHexWalk',
     sphere: 'kleinHex',
-    grid: true,
+    edges: true,
     turns: [60, -60],
     round: true,
     rule: 'along the edges of a Klein bottle of hexagons: <b>0</b> turn left, <b>1</b> turn right',
@@ -4415,7 +4415,7 @@ const MODES = {
     lattice: 'sphere',
     twin: 'kleinTriWalk',
     sphere: 'kleinTri',
-    grid: true,
+    edges: true,
     turns: [120, 60, 0, -60, -120],
     round: true,
     rule: 'along the edges of a Klein bottle of triangles: <b>0</b> sharp left, <b>1</b> left, <b>2</b> straight, <b>3</b> right, <b>4</b> sharp right',
@@ -4426,7 +4426,7 @@ const MODES = {
     lattice: 'sphere',
     twin: 'cubeFlat',
     sphere: 'cube',
-    grid: true,
+    edges: true,
     initial: 48,
     turns: [90, 0, -90],
     perspective: true,
@@ -4438,7 +4438,7 @@ const MODES = {
     lattice: 'sphere',
     twin: 'tetraLR',
     sphere: 'tetra',
-    grid: true,
+    edges: true,
     initial: 48,
     turns: [120, 60, 0, -60, -120],
     rule: 'along the edges of a tetrahedron of triangles: <b>0</b> sharp left, <b>1</b> left, <b>2</b> straight, <b>3</b> right, <b>4</b> sharp right (at a corner of the solid, the nearest edge)',
@@ -4450,15 +4450,15 @@ const MODES = {
     twin: 'octaLR',
     sphere: 'octa',
     initial: 48,
-    grid: true,
+    edges: true,
     turns: [120, 60, 0, -60, -120],
     rule: 'along the edges of an octahedron of triangles: <b>0</b> sharp left, <b>1</b> left, <b>2</b> straight, <b>3</b> right, <b>4</b> sharp right (at a corner of the solid, the nearest edge)',
   },
   // Set aside: on triangles, turns of ±60° only walk a hidden grid of hexagons (3 times fewer
   // corners), so they need many triangles for few patterns; the hexagon sphere does it directly.
-  // icosaGrid2: { base: 2, lattice: 'sphere', sphere: 'icosa', grid: true, turns: [60, -60], round: true,
+  // icosaGrid2: { base: 2, lattice: 'sphere', sphere: 'icosa', edges: true, turns: [60, -60], round: true,
   //               rule: 'along the edges of an icosahedron of triangles: <b>0</b> front left, <b>1</b> front right (at a corner of the solid, the nearest edge)' },
-  // icosaGrid3: { base: 3, lattice: 'sphere', sphere: 'icosa', grid: true, turns: [60, 0, -60], round: true,
+  // icosaGrid3: { base: 3, lattice: 'sphere', sphere: 'icosa', edges: true, turns: [60, 0, -60], round: true,
   //               rule: 'along the edges of an icosahedron of triangles: <b>0</b> front left, <b>1</b> forward, <b>2</b> front right (at a corner of the solid, the nearest edge)' },
   hexSphereGrid: {
     base: 2,
@@ -4466,7 +4466,7 @@ const MODES = {
     lattice: 'sphere',
     twin: 'hexSphereWalk',
     sphere: 'hexsphere',
-    grid: true,
+    edges: true,
     turns: [60, -60],
     round: true,
     rule: 'along the edges of a sphere of hexagons (and 12 pentagons): <b>0</b> turn left, <b>1</b> turn right',
@@ -4477,7 +4477,7 @@ const MODES = {
     lattice: 'sphere',
     twin: 'stellaLR',
     sphere: 'stella',
-    grid: true,
+    edges: true,
     turns: [120, 60, 0, -60, -120],
     rule: 'along the edges of a stella octangula (two tetrahedra) of triangles: <b>0</b> sharp left, <b>1</b> left, <b>2</b> straight, <b>3</b> right, <b>4</b> sharp right (at a tip or a hollow corner, the nearest edge)',
   },
@@ -4487,7 +4487,7 @@ const MODES = {
     lattice: 'sphere',
     twin: 'dodecaLR',
     sphere: 'dodeca',
-    grid: true,
+    edges: true,
     turns: [120, 60, 0, -60, -120],
     rule: 'along the edges of a dodecahedron, its pentagons cut into triangles: <b>0</b> sharp left, <b>1</b> left, <b>2</b> straight, <b>3</b> right, <b>4</b> sharp right (at a corner of the solid, the nearest edge)',
   },
@@ -4497,7 +4497,7 @@ const MODES = {
     lattice: 'sphere',
     twin: 'icosaLR',
     sphere: 'icosa',
-    grid: true,
+    edges: true,
     turns: [120, 60, 0, -60, -120],
     round: true,
     rule: 'along the edges of an icosahedron of triangles: <b>0</b> sharp left, <b>1</b> left, <b>2</b> straight, <b>3</b> right, <b>4</b> sharp right (at a corner of the solid, the nearest edge)',
@@ -5056,7 +5056,7 @@ const RULE_KINDS = {
   walk: {},
   ant: { side: 'cells', pic: 'ant' },
   turmite: { side: 'cells', pic: 'turmite' },
-  worm: { side: 'grid', pic: 'worm' },
+  worm: { side: 'edges', pic: 'worm' },
 };
 const RULES = [
   // the walks by a rule (a command per digit), per network, the first it takes its rule at first
@@ -6681,7 +6681,7 @@ function describe(base) {
 // step that closed them; or the tiles coloured by their visits (Heatmap, on cells only).
 const VIEW_3D = ['autoRotate', 'upright', 'perspective', 'light']; // a 3D view's: Default, Free, Upright, Auto-rotate, Perspective, Side light (Space-time's too)
 const DISPLAY_BY_TAB = {
-  '2D walks': ['heatmap', 'fill', 'translucent', 'cells', 'visits', 'digit', 'grid'],
+  '2D walks': ['heatmap', 'fill', 'translucent', 'cells', 'visits', 'digit', 'edges'],
   '3D walks': ['colours', 'digit', 'grid', ...VIEW_3D],
   'Walks on surfaces': [
     'shape',
@@ -6695,9 +6695,9 @@ const DISPLAY_BY_TAB = {
     'ocean',
     'cut',
   ],
-  'Automata on the plane': ['colours', 'digit', 'mono', 'grid'],
+  'Automata on the plane': ['colours', 'digit', 'mono', 'edges'],
   'Automata on surfaces': ['shape', 'colours', 'digit', 'mono', 'grid', ...VIEW_3D, 'glass', 'ocean', 'cut'], // (Glass, Cut: the surfaces' tiles only, see gpuFrame, cutOn)
-  '2D spirals': ['heatmap', 'fill', 'translucent', 'cells', 'visits', 'digit', 'grid'], // the 2D walks' menu, some of it greyed out
+  '2D spirals': ['heatmap', 'fill', 'translucent', 'cells', 'visits', 'digit', 'edges'], // the 2D walks' menu, some of it greyed out
 };
 // The Display settings' defaults, one table: each its control (a box's id), when it comes back (open: the page's opening
 // only, kept from tab to tab; tab: another tab; mode: every mode; lifeTeams: Life's count of teams; battle: a battle's
@@ -6800,7 +6800,7 @@ function updateDisplayMenu() {
   // the cells' looks as tiles (see renderCellModes), in 2D and on a surface: no boxes for Path and Heatmap
   $('showPathRow').hidden = $('heatmapRow').hidden = true;
   renderCellModes(mode);
-  $('showPath').disabled = !mode.cells; // along the grid, the walk is the path
+  $('showPath').disabled = !mode.cells; // along the edges, the walk is the path
   // in 2D, Path fades the cells under the rainbow line (on a layer of its own), so that it shows all along
   $('pathLayer').style.opacity =
     shows('cells', tabMode()) && $('showPath').checked && !$('showPath').disabled ? 0.15 : '';
@@ -8151,7 +8151,7 @@ const ICONS = (() => {
       svgPath('M15 12.5H20V20'), // Langton's loop: its sheathed ring, its arm out
     // the tilings of a surface (see FAMILIES): a 2 × 2 grid, a triangle cut in 4, 3 hexagons, and turned by 30°
     tilesSq: svgPath(pathOf(sq)) + svgPath('M12 4V20M4 12H20'),
-    onGrid: svgPath('M9.33 4V20M14.67 4V20M4 9.33H20M4 14.67H20'), // (along the grid: 3 × 3 cut, its lines, no outline)
+    onEdges: svgPath('M9.33 4V20M14.67 4V20M4 9.33H20M4 14.67H20'), // (along the edges: 3 × 3 cut, its lines, no outline)
     onCells:
       svgPath(pathOf(sq)) +
       svgPath('M9.33 4V20M14.67 4V20M4 9.33H20M4 14.67H20') +
@@ -9349,7 +9349,7 @@ function digitsInUse() {
   return { head, frac: digitsComputed.digits.subarray(0, n - head.length) };
 }
 // The digits just after those walked (as many as are known, up to LOOP_AHEAD): a walk compares
-// them to tell a loop (see buildGridWalk)
+// them to tell a loop (see buildEdgesWalk)
 const LOOP_AHEAD = 64;
 function digitsAhead() {
   const n = digitsNeeded(),
@@ -9579,54 +9579,54 @@ function splitModeLabel(text) {
 }
 
 /* The menu, from the top: what moves (Walk, Langton's Ant, Life), where (2D, 3D, Surfaces), on
- * which shape, by which rule, and along the grid or on cells ('' where neither); in the menu's order.
+ * which shape, by which rule, and along the edges or on cells ('' where neither); in the menu's order.
  * A family's tilings (Torus, Möbius strip, Sphere) share their place, picked by tabs under the shapes. */
 const NAV = {
-  turtle: ['Walk', '2D', 'Squares', 'Turtle', 'grid'],
+  turtle: ['Walk', '2D', 'Squares', 'Turtle', 'edges'],
   turtleCells: ['Walk', '2D', 'Squares', 'Turtle', 'cells'],
   spiral: ['Walk', '2D', 'Squares', 'Spiral', ''],
-  triTurtle: ['Walk', '2D', 'Triangles', 'Turtle', 'grid'],
+  triTurtle: ['Walk', '2D', 'Triangles', 'Turtle', 'edges'],
   triTurtleCells: ['Walk', '2D', 'Triangles', 'Turtle', 'cells'],
   triSpiral: ['Walk', '2D', 'Triangles', 'Spiral', ''],
-  hexTurtle: ['Walk', '2D', 'Hexagons', 'Turtle', 'grid'],
+  hexTurtle: ['Walk', '2D', 'Hexagons', 'Turtle', 'edges'],
   hexTurtleCells: ['Walk', '2D', 'Hexagons', 'Turtle', 'cells'],
   hexSpiral: ['Walk', '2D', 'Hexagons', 'Spiral', ''],
   cairo: ['Walk', '2D', 'Cairo', 'Turtle', 'cells'],
   cairoSpiral: ['Walk', '2D', 'Cairo', 'Spiral', ''],
-  cubeRel: ['Walk', '3D', 'Cubes', 'Turtle', 'grid'],
+  cubeRel: ['Walk', '3D', 'Cubes', 'Turtle', 'edges'],
   cubeRelCells: ['Walk', '3D', 'Cubes', 'Turtle', 'cells'],
-  diag: ['Walk', '3D', 'Cubes', 'Diagonals', 'grid'],
+  diag: ['Walk', '3D', 'Cubes', 'Diagonals', 'edges'],
   diagCells: ['Walk', '3D', 'Cubes', 'Diagonals', 'cells'],
-  diamond: ['Walk', '3D', 'Diamond', 'Polymer', 'grid'],
-  cubeGrid: ['Walk', 'Surfaces', 'Cube', 'Turtle', 'grid'],
+  diamond: ['Walk', '3D', 'Diamond', 'Polymer', 'edges'],
+  cubeGrid: ['Walk', 'Surfaces', 'Cube', 'Turtle', 'edges'],
   cubeFlat: ['Walk', 'Surfaces', 'Cube', 'Turtle', 'cells'],
-  torusGrid: ['Walk', 'Surfaces', 'Torus', 'Turtle', 'grid'],
+  torusGrid: ['Walk', 'Surfaces', 'Torus', 'Turtle', 'edges'],
   torusWalk: ['Walk', 'Surfaces', 'Torus', 'Turtle', 'cells'],
-  torusHexGrid: ['Walk', 'Surfaces', 'Torus', 'Turtle', 'grid'],
+  torusHexGrid: ['Walk', 'Surfaces', 'Torus', 'Turtle', 'edges'],
   torusHexWalk: ['Walk', 'Surfaces', 'Torus', 'Turtle', 'cells'],
-  torusTriGrid: ['Walk', 'Surfaces', 'Torus', 'Turtle', 'grid'],
+  torusTriGrid: ['Walk', 'Surfaces', 'Torus', 'Turtle', 'edges'],
   torusTriWalk: ['Walk', 'Surfaces', 'Torus', 'Turtle', 'cells'],
-  mobiusGrid: ['Walk', 'Surfaces', 'Möbius strip', 'Turtle', 'grid'],
+  mobiusGrid: ['Walk', 'Surfaces', 'Möbius strip', 'Turtle', 'edges'],
   mobiusWalk: ['Walk', 'Surfaces', 'Möbius strip', 'Turtle', 'cells'],
-  mobiusHexGrid: ['Walk', 'Surfaces', 'Möbius strip', 'Turtle', 'grid'],
+  mobiusHexGrid: ['Walk', 'Surfaces', 'Möbius strip', 'Turtle', 'edges'],
   mobiusHexWalk: ['Walk', 'Surfaces', 'Möbius strip', 'Turtle', 'cells'],
-  mobiusTriGrid: ['Walk', 'Surfaces', 'Möbius strip', 'Turtle', 'grid'],
+  mobiusTriGrid: ['Walk', 'Surfaces', 'Möbius strip', 'Turtle', 'edges'],
   mobiusTriWalk: ['Walk', 'Surfaces', 'Möbius strip', 'Turtle', 'cells'],
-  tetraGrid: ['Walk', 'Surfaces', 'Tetrahedron', 'Turtle', 'grid'],
+  tetraGrid: ['Walk', 'Surfaces', 'Tetrahedron', 'Turtle', 'edges'],
   tetraLR: ['Walk', 'Surfaces', 'Tetrahedron', 'Turtle', 'cells'],
-  octaGrid: ['Walk', 'Surfaces', 'Octahedron', 'Turtle', 'grid'],
+  octaGrid: ['Walk', 'Surfaces', 'Octahedron', 'Turtle', 'edges'],
   octaLR: ['Walk', 'Surfaces', 'Octahedron', 'Turtle', 'cells'],
-  stellaGrid: ['Walk', 'Surfaces', 'Stella octangula', 'Turtle', 'grid'],
+  stellaGrid: ['Walk', 'Surfaces', 'Stella octangula', 'Turtle', 'edges'],
   stellaLR: ['Walk', 'Surfaces', 'Stella octangula', 'Turtle', 'cells'],
-  dodecaGrid: ['Walk', 'Surfaces', 'Dodecahedron', 'Turtle', 'grid'],
+  dodecaGrid: ['Walk', 'Surfaces', 'Dodecahedron', 'Turtle', 'edges'],
   dodecaLR: ['Walk', 'Surfaces', 'Dodecahedron', 'Turtle', 'cells'],
-  hexSphereGrid: ['Walk', 'Surfaces', 'Sphere', 'Turtle', 'grid'],
+  hexSphereGrid: ['Walk', 'Surfaces', 'Sphere', 'Turtle', 'edges'],
   hexSphereWalk: ['Walk', 'Surfaces', 'Sphere', 'Turtle', 'cells'],
-  icosaGrid: ['Walk', 'Surfaces', 'Sphere', 'Turtle', 'grid'],
+  icosaGrid: ['Walk', 'Surfaces', 'Sphere', 'Turtle', 'edges'],
   icosaLR: ['Walk', 'Surfaces', 'Sphere', 'Turtle', 'cells'],
   antSquare: ['Ant', '2D', 'Squares', 'Ant', 'cells'],
   antTri: ['Ant', '2D', 'Triangles', 'Ant', 'cells'],
-  worm: ['Ant', '2D', 'Triangles', 'Ant', 'grid'], // (the worm: the triangles' ant along their grid, see its Grid tab)
+  worm: ['Ant', '2D', 'Triangles', 'Ant', 'edges'], // (the worm: the triangles' ant along their edges, see its Edges tab)
   antHex: ['Ant', '2D', 'Hexagons', 'Ant', 'cells'],
   antCairo: ['Ant', '2D', 'Cairo', 'Ant', 'cells'],
   antCube: ['Ant', 'Surfaces', 'Cube', 'Ant', 'cells'],
@@ -9683,9 +9683,9 @@ const NAV = {
   kleinWalk: ['Walk', 'Surfaces', 'Klein bottle', 'Turtle', 'cells'],
   kleinHexWalk: ['Walk', 'Surfaces', 'Klein bottle', 'Turtle', 'cells'],
   kleinTriWalk: ['Walk', 'Surfaces', 'Klein bottle', 'Turtle', 'cells'],
-  kleinGrid: ['Walk', 'Surfaces', 'Klein bottle', 'Turtle', 'grid'],
-  kleinHexGrid: ['Walk', 'Surfaces', 'Klein bottle', 'Turtle', 'grid'],
-  kleinTriGrid: ['Walk', 'Surfaces', 'Klein bottle', 'Turtle', 'grid'],
+  kleinGrid: ['Walk', 'Surfaces', 'Klein bottle', 'Turtle', 'edges'],
+  kleinHexGrid: ['Walk', 'Surfaces', 'Klein bottle', 'Turtle', 'edges'],
+  kleinTriGrid: ['Walk', 'Surfaces', 'Klein bottle', 'Turtle', 'edges'],
   kleinCairoWalk: ['Walk', 'Surfaces', 'Klein bottle', 'Turtle', 'cells'],
   lifeKlein: ['Life', 'Surfaces', 'Klein bottle', 'Life', ''],
   lifeKleinHex: ['Life', 'Surfaces', 'Klein bottle', 'Life', ''],
@@ -9722,7 +9722,7 @@ for (const [k, name] of Object.entries(TETRAKIS_SOLIDS)) {
   MODE_ICONS[m] = MODE_ICONS[base];
   NAV[m] = ['Life', 'Surfaces', name, 'Life', ''];
 }
-// the walks on the solids' hexagons (see hexSolidMesh), as the sphere's: along their grid, on their cells (its cells of
+// the walks on the solids' hexagons (see hexSolidMesh), as the sphere's: along their edges, on their cells (its cells of
 // other sides walked on too)
 for (const [k, { a, name, others }] of Object.entries(HEX_SOLIDS)) {
   const on = `${a} of hexagons (and ${others})`;
@@ -9732,7 +9732,7 @@ for (const [k, { a, name, others }] of Object.entries(HEX_SOLIDS)) {
     lattice: 'sphere',
     twin: `${k}HexLR`,
     sphere: `${k}Hex`,
-    grid: true,
+    edges: true,
     turns: [60, -60],
     rule: `along the edges of ${on}: <b>0</b> turn left, <b>1</b> turn right`,
   }; // (as the sphere's walks, flat: not round, see hexSphereGrid)
@@ -9747,7 +9747,7 @@ for (const [k, { a, name, others }] of Object.entries(HEX_SOLIDS)) {
     rule: `on ${on}: exit through the <b>0</b> front left or <b>1</b> front right edge`,
   };
   for (const [w, how] of [
-    [`${k}HexGrid`, 'grid'],
+    [`${k}HexGrid`, 'edges'],
     [`${k}HexLR`, 'cells'],
   ]) {
     MODE_ICONS[w] = MODE_ICONS.hexSphereGrid;
@@ -10144,7 +10144,7 @@ function navPick(from, level, ...values) {
 const navUnder = remember('navUnder', {}); // (the modes under a menu's choices, see modesUnder, once each: the menu's tables fixed once the page has loaded)
 // Of the modes a click may land on, the nearest from the mode it is clicked from: the fewest settings changed (its menu's
 // levels, its tiling by name, see modeChanges: from a sphere of hexagons, Klein bottle opens on its hexagons); on a tie
-// its family's tiling last chosen, then the menu's order (its shapes as shown, Grid before Cells). One rule for every click
+// its family's tiling last chosen, then the menu's order (its shapes as shown, Edges before Cells). One rule for every click
 // (a tab's, a space's, a shape's, a tiling's, a side's), the menu's graph's too (see choicesAt)
 function nearestMode(from, candidates, want = NAV[from]) {
   const shown = shapeGroups(want[0], want[1]).flatMap(([, these]) => these);
@@ -10184,7 +10184,7 @@ function navGo(level, ...values) {
 }
 
 // Surfaces that come in several tilings are one entry each in the list (Torus, Sphere), their
-// tiling picked by tabs under the list: modes, its modes per tiling (walks along the grid and on
+// tiling picked by tabs under the list: modes, its modes per tiling (walks along the edges and on
 // cells, ants, Life);
 // tabs, [tiling, turned by 30° (see TURNED), icon, its shape (as the 2D grids name it, see shapeLabel), title: a turned one's its
 // shape, then ', turned by …' (its tile's tooltip those words, see renderModePicker)]; tab, the one in use or last chosen
@@ -10354,7 +10354,7 @@ const walkKindHere = (v, r) => {
 };
 const walkSidesOf = (v) => [...new Set(walksThere(v).map((u) => NAV[u][4]))];
 // a side's greyed words at a mode (Grid, Cells; see walkOn): none there (none: its words), or a walk by a rule whose rule
-// cannot go there (a diagonal along the grid: the word why); '' where it can
+// cannot go there (a diagonal along the edges: the word why); '' where it can
 const sideWhyNot = (v, s, none, walkRule = null) => {
   // (walkRule: a setup's, see walkRuleAt)
   const ways = walkSidesOf(v),
@@ -10598,7 +10598,7 @@ function choicesAt(s, reads = null, teamsMemo = new Map()) {
           ),
           name,
         );
-  for (const u of walksThere(w)) go(`side:${NAV[u][4]}`, u, NAV[u][4] === 'grid' ? 'Grid' : 'Cells');
+  for (const u of walksThere(w)) go(`side:${NAV[u][4]}`, u, NAV[u][4] === 'edges' ? 'Edges' : 'Cells');
   // the shape's other rules as the page shows them (see navRules): a walk by a rule there, its rules' cards (each to it with
   // that rule); else its card
   if (shape)
@@ -10990,7 +10990,7 @@ function renderModePicker() {
       ]; // (Stacks: Life on squares')
     }),
   );
-  // a family picked: its tilings as tabs, the same walk (along the grid or on cells) on another one
+  // a family picked: its tilings as tabs, the same walk (along the edges or on cells) on another one
   const inFamily = familyOf(w);
   if (inFamily) inFamily.F.tab = inFamily.tab;
   // How it works: its tiling's picture (the tab's in a family, else its shape's), the one it opens on
@@ -11004,7 +11004,7 @@ function renderModePicker() {
   if (inFamily) $('tilesLabel').textContent = `${inFamily.F.name} tiles`;
   if (inFamily) {
     const { F, tab } = inFamily;
-    // the same kind (walk, ant, Life) on another tiling, along the grid or on cells as now; only the
+    // the same kind (walk, ant, Life) on another tiling, along the edges or on cells as now; only the
     // tilings it has
     // (else the same rule on the other side, else its first walk: Cairo pentagons have no grid walk)
     const same = (f) =>
@@ -11069,7 +11069,7 @@ function renderModePicker() {
   }
   // the rules, where there are several, each with its picture; those its tiling has not greyed (see walkKindHere)
   // the rules, one list of cards: a walk's, its rules (a command per digit) then the others (Spiral, Diagonals); a creature's, its
-  // rules (see ruleCards: the ants' and turmites' on cells, the worm's along the triangles' grid, its Grid tab)
+  // rules (see ruleCards: the ants' and turmites' on cells, the worm's along the triangles' edges, its Edges tab)
   const creatures = kind === 'Ant';
   const rules = navValues(3, [kind, space, shape]);
   $('navRules').hidden = !creatures && rules.length < 2 && !MODES[w].net;
@@ -11141,10 +11141,10 @@ function renderModePicker() {
   };
   const cellsWord = space === '3D' ? 'Cube' : 'Cells';
   side(
-    $('walkOnGrid'),
-    'grid',
-    'Grid',
-    creatures ? 'Along the grid, only the worm, on triangles.' : 'Not on the grid.',
+    $('walkOnEdges'),
+    'edges',
+    'Edges',
+    creatures ? 'Along the edges, only the worm, on triangles.' : 'Not along the edges.',
   );
   side($('walkOnCells'), 'cells', cellsWord, space === '3D' ? 'Not on cubes.' : 'Not on cells.');
   $('walkOnCells').querySelector('svg').outerHTML = icon(space === '3D' ? 'cubeFilled' : 'onCells');
@@ -11528,7 +11528,11 @@ function buildWalkOf() {
     syncDigitsStepper();
   };
   if (MODES[digitsComputed.mode].lattice === 'sphere') {
-    (MODES[digitsComputed.mode].grid ? buildGridWalk : buildSphereWalk)(seq, MODES[digitsComputed.mode], digitsAhead());
+    (MODES[digitsComputed.mode].edges ? buildEdgesWalk : buildSphereWalk)(
+      seq,
+      MODES[digitsComputed.mode],
+      digitsAhead(),
+    );
     loopCount();
     syncLoopRow();
     return;
@@ -12267,7 +12271,7 @@ const SURFACE_ANTS = {
   antKleinTri: ['kleinTriWalk', 'Klein bottle'],
   antKleinCairo: ['kleinCairoWalk', 'Klein bottle'],
 };
-// the worms on the triangles' grids of the surfaces with ants on triangles: their walks along it, its Grid tab beside the ants'
+// the worms on the triangles' grids of the surfaces with ants on triangles: their walks along it, its Edges tab beside the ants'
 const SURFACE_WORMS = {
   wormIcosa: 'icosaGrid',
   wormTorus: 'torusTriGrid',
@@ -12280,7 +12284,7 @@ for (const [w, walkMode] of Object.entries(SURFACE_WORMS)) {
     base: 5,
     arrows: '↙↖↑↗↘',
     lattice: 'sphere',
-    grid: true,
+    edges: true,
     sphere,
     initial,
     turns,
@@ -12291,7 +12295,7 @@ for (const [w, walkMode] of Object.entries(SURFACE_WORMS)) {
       return wormRuleText();
     },
   };
-  NAV[w] = ['Ant', NAV[walkMode][1], NAV[walkMode][2], 'Ant', 'grid'];
+  NAV[w] = ['Ant', NAV[walkMode][1], NAV[walkMode][2], 'Ant', 'edges'];
   MODE_ICONS[w] = 'worm';
   FAMILIES.flatMap((F) => F.modes)
     .find((ms) => ms.includes(walkMode))
@@ -12688,11 +12692,11 @@ function wormStepper(digits) {
   };
   return step;
 }
-// its body on a surface: along its grid as a walk there (see surfaceStep: its folds, a Möbius strip's or a Klein bottle's
+// its body on a surface: along its edges as a walk there (see surfaceStep: its folds, a Möbius strip's or a Klein bottle's
 // left carried), its five turns 120°, 60°, 0, −60°, −120°; at a corner of fewer lines (a solid's), each line once (the first
-// turn to it); state: a walk's along the grid, from its start
+// turn to it); state: a walk's along the edges, from its start
 function surfaceWormStepper(g, start, digits) {
-  const G = gridGraph(g),
+  const G = edgeGraph(g),
     turn = surfaceStep(
       g,
       true,
@@ -12979,7 +12983,7 @@ const walkKey = (m) =>
     ? `${m.net} surface${m.net && surfaceCommands(m.net).some((t) => walkCommandWhy(m, t)) ? ` ${m.sphere}` : ''}`
     : m.net; // (no network, no commands: a creature's)  // (a surface with fewer of its network's commands: its own)
 const surfaceCommands = (net) => Object.keys(WALK_NETS[net].turns).filter((t) => t !== 'U'); // (a surface's turns, left to right)
-// a surface walk's acts, one per digit (see surfaceSteps): by its rule's commands (a turn: its edges on, or degrees along the grid,
+// a surface walk's acts, one per digit (see surfaceSteps): by its rule's commands (a turn: its edges on, or degrees along the edges,
 // as its turns list them left to right; l r a: a notch on the spot, a parity's), else by its turns (an ant's)
 const SURFACE_NOTCHES = { square: 4, hex: 6, tri: 3 }; // (a turn on the spot: a notch an edge of its cells, of its grid's corners)
 function surfaceActs(mode, commands = mode.net && ruleCommands(walkRuleOf(mode))) {
@@ -12991,7 +12995,7 @@ function surfaceActs(mode, commands = mode.net && ruleCommands(walkRuleOf(mode))
         ? ['parity']
         : t === 'B'
           ? ['back']
-          : mode.grid
+          : mode.edges
             ? ['turn', t === 'U' ? 180 : mode.turns[surfaceCommands(mode.net).indexOf(t)]]
             : cellTurn(mode.net, t) === 'straight'
               ? ['straight']
@@ -13020,9 +13024,9 @@ const cellSides = (kind) =>
     for (let t = 0; t < g.n; t++) out.add(new Set(Array.from({ length: k }, (_, q) => g.poly[k * t + q])).size);
     return [...out];
   })());
-// why a command cannot go on a walk, or '': not its network's; a diagonal along the grid; on a surface, no fixed way (no north)
+// why a command cannot go on a walk, or '': not its network's; a diagonal along the edges; on a surface, no fixed way (no north)
 const walkCommandWhy = (m, t) =>
-  m.lattice === 'sphere' && !m.grid
+  m.lattice === 'sphere' && !m.edges
     ? cellCommandWhy(m, t)
     : m.lattice === 'sphere'
       ? (surfaceCommands(m.net).includes(t) && m.turns[surfaceCommands(m.net).indexOf(t)] != null) ||
@@ -13036,7 +13040,7 @@ const walkCommandWhy = (m, t) =>
       : !commandAct(m.net, t)
         ? `${t} is not a command here.`
         : m.lines && WALK_NETS[m.net].diagonals?.includes(t)
-          ? `${t} is a diagonal step: along the grid, it follows no line.`
+          ? `${t} is a diagonal step: along the edges, it follows no line.`
           : '';
 // a command on a surface's cells: its edge on every cell (see cellTurn, cellSides): straight on, cells of an even count of sides;
 // the j-th from the entry either way, cells of 2j + 1 sides at least; on the spot and parity, its network's notches
@@ -13067,7 +13071,7 @@ const walkTakes = (m, rule) => {
 };
 const walkCommandsOf = (w, rule = walkRuleOf(MODES[w])) => walkTakes(MODES[w], rule);
 // the rule a walk plays: its network's in use (walkRules), if it takes it, else its network's first it takes (a rule its twin
-// on cells took, King's diagonals, the grid's lines cannot: kept for the cells, the grid's tab greyed, see side)
+// on cells took, King's diagonals, the grid's lines cannot: kept for the cells, the edges' tab greyed, see side)
 const walkRuleOf = (m) => {
   const r = walkRuleKept(m);
   return walkTakes(m, r) ? r : firstWalkRule(m);
@@ -13088,7 +13092,7 @@ const walkRuleText = (w) =>
     .map((t, d) => `<b>${d}</b> ${COMMANDS[t].short}`)
     .join(', ')}${MODES[w].tail ?? ''}`;
 // The surfaces' turtles by a rule too: on cells, their tiles' network (net: its commands, a command's edge by construction, see
-// cellTurn); along the grid turns, one per command of their tiles' network in degrees (its turns left to right; null, a command
+// cellTurn); along the edges turns, one per command of their tiles' network in degrees (its turns left to right; null, a command
 // it has not), their network by how many
 const NET_BY_TURNS = { 2: 'tri', 3: 'square', 4: 'cairo', 5: 'hex' };
 for (const [w, m] of Object.entries(MODES)) {
@@ -15578,7 +15582,7 @@ function hexSolidMesh(solid, f) {
       sides,
       f,
     ); // the triangles' centres are the corners
-  // a walk along its grid starts as the icosahedron's tile walk does: on triangle 0, come in
+  // a walk along its edges starts as the icosahedron's tile walk does: on triangle 0, come in
   // through its edge 0, so that the same digits draw the same path in both tabs
   mesh.gridStart = [0, ico.nbr[0]];
   // in a Game of Life the corners' cells (not 6 triangles round them: a pentagon, a square, a triangle, the stella's hollows'
@@ -15872,7 +15876,7 @@ function initShape(kind) {
     updateMorphButton();
     return;
   }
-  // the same surface (its other tilings, along the grid or on cells) keeps the form it had
+  // the same surface (its other tilings, along the edges or on cells) keeps the form it had
   const surface = (w) => familyOf(w)?.F.name ?? MODES[w].sphere;
   const mode = digitsComputed.mode,
     keep = previousShape && surface(previousShape.mode) === surface(mode);
@@ -15895,14 +15899,14 @@ function surfaceBounds() {
   return { minX: -r, maxX: r, minY: -r, maxY: r };
 }
 
-// the place a walk's state comes from (see surfaceSteps): along the grid the corner it comes from, on cells the tile across
+// the place a walk's state comes from (see surfaceSteps): along the edges the corner it comes from, on cells the tile across
 // the edge it came in by: its heading as it starts (see headFrame)
-const cameFrom = (g, grid, state) => (grid ? state[1] : g.nbr[g.sides * state[0] + state[1]]);
-// A walk's place on the shape shown, its point: along the grid a corner (on a tile it belongs to), else a tile's centre
+const cameFrom = (g, alongEdges, state) => (alongEdges ? state[1] : g.nbr[g.sides * state[0] + state[1]]);
+// A walk's place on the shape shown, its point: along the edges a corner (on a tile it belongs to), else a tile's centre
 function placePoint(p) {
   const sh = walk.shape,
     R = walk.R,
-    G = walk.geo.grid,
+    G = walk.geo.edgeGraph,
     X = walk.vert ? sh.corners : sh.cen;
   const c = walk.vert ? 3 * (walk.geo.sides * G.tileOf[p] + G.cornerOf[p]) : 3 * p;
   return [X[c] * R, X[c + 1] * R, X[c + 2] * R];
@@ -16869,15 +16873,15 @@ function fillSphereSizes(kind, initial = SPHERES[kind].initial) {
 }
 
 // Walk from tile to tile (see surfaceSteps)
-/* Walks on surfaces, along the grid: from corner to corner along the tile edges. Arriving at a corner, the digit
+/* Walks on surfaces, along the edges: from corner to corner along the tile edges. Arriving at a corner, the digit
  * gives a turn (degrees, left positive, measured in the plane tangent to the surface there) and the
  * walker leaves by the edge closest to it: on squares, left, straight on or right; on triangles, five
  * turns of 60°. Where fewer edges meet (a cube's corners, a polyhedron's), the nearest edge is
  * taken, the first one on a tie. */
 // The grid of a mesh: each corner's neighbours, a tile it belongs to (and which corner of it it is),
 // the tiles on each side of each edge, and the corner's normal (the mean of its tiles' normals)
-function gridGraph(g) {
-  if (g.grid) return g.grid;
+function edgeGraph(g) {
+  if (g.edgeGraph) return g.edgeGraph;
   const nv = g.verts.length / 3,
     k = g.sides,
     V = g.verts;
@@ -16916,12 +16920,12 @@ function gridGraph(g) {
       for (let d = 0; d < 3; d++) normal[3 * p + d] += n[d];
     }
   }
-  return (g.grid = { nv, nbrs, tileOf, cornerOf, edgeTiles, normal, key });
+  return (g.edgeGraph = { nv, nbrs, tileOf, cornerOf, edgeTiles, normal, key });
 }
 
 /* ---- The distinct starts on the solids ---------------------------------------------------- */
 /* On the cube, the tetrahedron, the octahedron, the icosahedron and the sphere of hexagons, a walk
- * along the grid starts on a corner, arriving by one of its edges. The rotations that map the solid
+ * along the edges starts on a corner, arriving by one of its edges. The rotations that map the solid
  * onto itself map the grid onto itself, and a walk's rule only looks at its own turns, so turned
  * starts draw the same walk, turned. A mirror does not count: it swaps left and right. */
 const SOLIDS = [
@@ -16967,7 +16971,7 @@ const TORI = [
 ]; // sized by rows × tiles per row
 // A surface's mesh made once for its size and what it is made for (a ring's length, a globe's bands: its colours or walkers,
 // a reversible one's blocks: see stripKey): the same mesh each time it is asked for while it is in use (its starts, grid,
-// rotations… kept on it, see startList, gridGraph), let go once not (a weak memory, as meshCache: a strong one, its last
+// rotations… kept on it, see startList, edgeGraph), let go once not (a weak memory, as meshCache: a strong one, its last
 // two of each surface, kept a mesh of every surface's largest size after a tour of them, 16 GB)
 const surfaceMeshMemo = remember('surfaceMeshMemo', weakCache());
 for (const [kind, S] of Object.entries(SPHERES)) {
@@ -17051,7 +17055,7 @@ const STARTS_ON = [...SOLIDS, ...TORI]; // the surfaces with a start selector
 // nearest the middle of the sheet (or the next one, to head the other way), heading between north
 // and south through the east, in that order: north (or the nearest after it) first, then east.
 function torusStarts(g) {
-  const G = gridGraph(g),
+  const G = edgeGraph(g),
     { nu, nv } = g;
   const at = (v) => cornerUv(g, G, v);
   // a step in the flat sheet, across the seams: east, north (in the sheet's units, see torusPoint)
@@ -17094,7 +17098,7 @@ function edgeStarts(G, v0, way) {
 // (or the next one, to head the other way), north (or the nearest after it) first, then east; none on the strip's middle
 // line (the corner the nearest whose starts are all off it).
 function mobiusStarts(g) {
-  const G = gridGraph(g),
+  const G = edgeGraph(g),
     k = g.sides,
     face = mobiusMiddle(g) < g.L ? 0 : g.front, // the face in view
     far = new Float64Array(G.nv).fill(Infinity), // (its corners: how far from the sheet's middle, their height across it, where first listed)
@@ -17124,7 +17128,7 @@ function mobiusStarts(g) {
     return edgeStarts(G, v0, (f) => delta.get(f));
   };
   // off the strip's middle line: half a loop on, a place on that line is the same point, on the other face, so two walkers
-  // there would start together (see battleFits): a start's corner (along the grid) and its tile's middle (on cells)
+  // there would start together (see battleFits): a start's corner (along the edges) and its tile's middle (on cells)
   const onLine = (y) => Math.abs(y - g.W / 2) < 1e-6,
     tileAcross = (t) => Array.from({ length: k }, (_, i) => g.uv[2 * (k * t + i) + 1]).reduce((a, b) => a + b) / k,
     clear = ([v, f]) => !onLine(across[v]) && !onLine(tileAcross(cellStart(g, [v, f])[0]));
@@ -17219,7 +17223,7 @@ function startList(g) {
   if (g.starts) return g.starts;
   if (g.mobius) return (g.starts = mobiusStarts(g));
   if (g.torus) return (g.starts = torusStarts(g));
-  const G = gridGraph(g),
+  const G = edgeGraph(g),
     V = g.verts,
     nv = G.nv,
     at = (v) => [V[3 * v], V[3 * v + 1], V[3 * v + 2]];
@@ -17355,20 +17359,20 @@ function startList(g) {
   return (g.starts = starts);
 }
 
-// The starts of the current mode (a walk along a surface's grid or on its cells), else null; the
+// The starts of the current mode (a walk along a surface's edges or on its cells), else null; the
 // chosen one, 1 … their number
 function modeStarts() {
   const mode = MODES[tabMode()];
-  return (mode.grid || mode.cells) && STARTS_ON.includes(surfaceOf(mode))
+  return (mode.edges || mode.cells) && STARTS_ON.includes(surfaceOf(mode))
     ? startList(SPHERES[surfaceOf(mode)].mesh(sphereSize()))
     : null;
 }
-// A start on cells: a start along the grid, from corner f to corner v, crosses into the tile on its
+// A start on cells: a start along the edges, from corner f to corner v, crosses into the tile on its
 // right, through that edge. The two tiles of an edge stand for its two directions as its two corners
-// do, so the starts on cells are as many as along the grid, numbered alike. [tile, edge come in by]
+// do, so the starts on cells are as many as along the edges, numbered alike. [tile, edge come in by]
 function cellStart(g, [v, f]) {
   const k = g.sides;
-  for (const t of gridGraph(g).edgeTiles.get(gridGraph(g).key(v, f))) {
+  for (const t of edgeGraph(g).edgeTiles.get(edgeGraph(g).key(v, f))) {
     for (let e = 0; e < k; e++) if (g.poly[k * t + e] === v && g.poly[k * t + ((e + 1) % k)] === f) return [t, e];
   }
 }
@@ -17386,10 +17390,10 @@ let startsShown = false; // while the start row ([− start +]) is hovered: the 
 function startMarks(g, sh, R) {
   const key = `${sh.m}|${R}`;
   if (walk.startMarks?.key === key) return walk.startMarks;
-  const grid = !!walk.vert,
-    G = gridGraph(g),
-    normal = (p) => (grid ? unit([0, 1, 2].map((d) => G.normal[3 * p + d])) : tileUp(p)),
-    stateOf = (st) => (grid ? gridState(g, st) : [...cellStart(g, st), 0, 0]),
+  const alongEdges = !!walk.vert,
+    G = edgeGraph(g),
+    normal = (p) => (alongEdges ? unit([0, 1, 2].map((d) => G.normal[3 * p + d])) : tileUp(p)),
+    stateOf = (st) => (alongEdges ? edgeState(g, st) : [...cellStart(g, st), 0, 0]),
     list = startList(g).map(stateOf),
     maps = walk.battle ? walk.battle.maps : [(u) => u],
     width = (s) => Math.max(1, Math.min(s * 0.06, 2.5)),
@@ -17398,8 +17402,8 @@ function startMarks(g, sh, R) {
   const edge = (from, to, n) => data.put(placePoint(from), placePoint(to), n, 3, 0); // (both ends capped, see ribbonV)
   walkersOf().forEach((W, s) => {
     const from = data.count;
-    for (const state of maps ? list.map((st) => movedStart(g, st, grid, maps[s])) : [])
-      edge(cameFrom(g, grid, state), state[0], normal(state[0]));
+    for (const state of maps ? list.map((st) => movedStart(g, st, alongEdges, maps[s])) : [])
+      edge(cameFrom(g, alongEdges, state), state[0], normal(state[0]));
     parts.push({ rgb: rgbCached('#8b949e').map((c) => c / 255), from, count: data.count - from, width });
     const [place, came] = W.start;
     edge(came, place, normal(place));
@@ -17435,7 +17439,7 @@ function sheetDelta(g, G, a, b) {
     .reduce((p, q) => (Math.hypot(...q) < Math.hypot(...p) ? q : p));
 }
 
-// The corner a walk along the grid goes to from v, having come from `from`, for a turn of angle
+// The corner a walk along the edges goes to from v, having come from `from`, for a turn of angle
 // (radians): the edge nearest the turn, between two as near the left one (a rule that turns with the
 // solid). The turn is measured on the plane tangent at v; on a torus, on its flat sheet (east, north;
 // see torusPoint): rolled up, its tiles are bent unevenly, squeezed on the inside of the ring and
@@ -17473,7 +17477,7 @@ function nextCorner(g, G, v, from, angle) {
   return next;
 }
 
-/* On a Möbius strip and a Klein bottle, a walker along the grid carries its left: the tile on its left of the edge it came
+/* On a Möbius strip and a Klein bottle, a walker along the edges carries its left: the tile on its left of the edge it came
  * by, its frame (a Klein bottle one-sided: round a corner on its seam, some tiles listed one way, some the other; a Möbius
  * strip's corner on both its faces). A turn is measured round the corner from that edge, through its frame and on, tile to
  * tile by the edges they share (on its face while there is one: over the strip's edge onto the face behind), in proportion
@@ -17531,12 +17535,12 @@ const acrossEdge = (g, G, t, v, w) => {
   const sides = G.edgeTiles.get(G.key(v, w)).filter((s) => s !== t);
   return sides.find((s) => !g.mobius || s < g.front === t < g.front) ?? sides[0];
 };
-// a walk along the grid's state at its start, at v from corner from: [v, from, p, q] (p, q: a pivot's and a parity's, see
+// a walk along the edges's state at its start, at v from corner from: [v, from, p, q] (p, q: a pivot's and a parity's, see
 // surfaceSteps), a Möbius strip's and a Klein bottle's its frame too (its walker's left carried, see nextCornerCarried): the
 // tile listing the step, from then v (a Möbius strip's on its front face)
-function gridState(g, [v, from]) {
+function edgeState(g, [v, from]) {
   if (!g.mobius && !g.klein) return [v, from, 0, 0];
-  const G = gridGraph(g),
+  const G = edgeGraph(g),
     k = g.sides,
     lists = (t) => g.poly[k * t + ((g.poly.subarray(k * t, k * t + k).indexOf(from) + 1) % k)] === v;
   return [v, from, 0, 0, G.edgeTiles.get(G.key(from, v)).find((t) => (!g.mobius || t < g.front) && lists(t))];
@@ -17567,7 +17571,7 @@ const TORUS_RATIO = [0.8, 1.25],
 let torusLoopList = null; // { key, loops: [{ start, size, laps: [ring, tube], steps }] } for the number in use
 function torusLoops() {
   const mode = MODES[tabMode()];
-  if (!mode.net || !TORI.includes(surfaceOf(mode))) return []; // a walk by a rule's commands (its network's: not an ant's), along the grid or on cells, on a torus or a Möbius strip
+  if (!mode.net || !TORI.includes(surfaceOf(mode))) return []; // a walk by a rule's commands (its network's: not an ant's), along the edges or on cells, on a torus or a Möbius strip
   const least = picked ? SPHERES[surfaceOf(mode)].near(picked) : SPHERES[surfaceOf(mode)].initial; // (its rows: the size picked's, else the one it opens at)
   const key = `${formulaInUse} ${tabMode()} ${surfaceOf(mode)} ${walkRuleOf(mode)} ${least}`; // (its loops its rule's turns)
   if (
@@ -17728,15 +17732,15 @@ function mobiusDelta(g, p, q) {
     }
   return best;
 }
-// a walk's step on surface g (along its grid or on its cells; net, its walk's net) by its rule's acts (see surfaceActs): a
+// a walk's step on surface g (along its edges or on its cells; net, its walk's net) by its rule's acts (see surfaceActs): a
 // turn, then a step; a turn on the spot, p the notches turned since the last step (right positive), the next step k/2 − p
-// edges on from its entry (along the grid: turned back by p notches of N); a parity's, a step, then p a notch right at an
+// edges on from its entry (along the edges: turned back by p notches of N); a parity's, a step, then p a notch right at an
 // odd digit, left at an even one (q: the parity of the digits read). Its state and its next from a digit d, nothing of the
 // page: a battle's worker plays it too (see battle.js)
-function surfaceStep(g, grid, net, acts) {
+function surfaceStep(g, alongEdges, net, acts) {
   const parity = acts.some(([kind]) => kind === 'parity');
-  if (grid) {
-    const G = gridGraph(g),
+  if (alongEdges) {
+    const G = edgeGraph(g),
       N = SURFACE_NOTCHES[net] ?? 1,
       carried = g.mobius || g.klein; // (its walker's left carried, see nextCornerCarried)
     return ([v, from, p, q, frame], d) => {
@@ -17789,20 +17793,20 @@ function surfaceStep(g, grid, net, acts) {
     return [...next, kind === 'parity' ? (q ? -1 : 1) : 0, read, ...(klein ? [turned ? -hand : hand] : [])];
   };
 }
-// The steps of a walk on a surface, along the grid (from corner to corner, the state [corner, the corner it came from]) or
+// The steps of a walk on a surface, along the edges (from corner to corner, the state [corner, the corner it came from]) or
 // on cells (from tile to tile, [tile, the edge it came in by]): the state of start i, the state after a digit (surfaceStep),
 // as a whole number, and on a torus or a Möbius strip the step on the flat sheet (columns east, rows north; on cells, from
 // tile centre to tile centre)
 function surfaceSteps(g, mode, acts = surfaceActs(mode)) {
   const starts = () => startList(g),
-    step = surfaceStep(g, mode.grid, mode.net, acts);
-  if (mode.grid) {
-    const G = gridGraph(g),
+    step = surfaceStep(g, mode.edges, mode.net, acts);
+  if (mode.edges) {
+    const G = edgeGraph(g),
       N = SURFACE_NOTCHES[mode.net] ?? 1,
       carried = g.mobius || g.klein;
     const corner = (v) => mobiusAt(g, G.tileOf[v], cornerUv(g, G, v));
     return {
-      start: (i) => gridState(g, starts()[i]),
+      start: (i) => edgeState(g, starts()[i]),
       step,
       key: ([v, from, p, q, frame]) => {
         const key = ((v * G.nv + from) * N + ((p + N) % N)) * 2 + q;
@@ -17825,14 +17829,14 @@ function surfaceSteps(g, mode, acts = surfaceActs(mode)) {
   };
 }
 
-// a walk's first state on surface g (see surfaceSteps): along the grid [corner, the corner it comes from], the start picked
+// a walk's first state on surface g (see surfaceSteps): along the edges [corner, the corner it comes from], the start picked
 // where the surface has a start picker (start k of N, see STARTS_ON), else its first; on cells [tile, the edge it comes in
 // by]; then its turns on the spot and its digits' parity, p and q, at 0 (j: another start of the list, a hunt's)
 const walkStart = (g, mode, j = startNo()) =>
-  mode.grid
-    ? gridState(g, STARTS_ON.includes(surfaceOf(mode)) ? startList(g)[j - 1] : firstStart(g, gridGraph(g)))
+  mode.edges
+    ? edgeState(g, STARTS_ON.includes(surfaceOf(mode)) ? startList(g)[j - 1] : firstStart(g, edgeGraph(g)))
     : [...cellStart(g, startList(g)[j - 1]), 0, 0]; // (on cells: its start alone, no steps built)
-// A walk on a surface recorded step by step (see buildGridWalk, buildSphereWalk): its points (on the unit surface, R times),
+// A walk on a surface recorded step by step (see buildEdgesWalk, buildSphereWalk): its points (on the unit surface, R times),
 // its tiles, its places seen (corners or tiles, nodes of them) and the step it has seen them all, its farthest from its
 // start, its digits' counts; begin(key), step(i, digit, key): stopped where it goes round (key, its state: see loopWatch;
 // null, none watched); finish: the walk laid out (more: its own), its shape and its view
@@ -17918,8 +17922,8 @@ function walkRecorder(seq, ahead, base, R, nodes, len = seq.length) {
     },
   };
 }
-// a walk along a surface's grid: from corner to corner along its edges, turning by the digits (see nextCorner)
-function buildGridWalk(seq, mode, ahead = new Uint8Array(0)) {
+// a walk along a surface's edges: from corner to corner along its edges, turning by the digits (see nextCorner)
+function buildEdgesWalk(seq, mode, ahead = new Uint8Array(0)) {
   const { base, initial } = mode,
     kind = surfaceOf(mode);
   fillSphereSizes(kind, initial);
@@ -17927,7 +17931,7 @@ function buildGridWalk(seq, mode, ahead = new Uint8Array(0)) {
   const size = sphereSize(),
     g = mesh(size),
     R = radius(size),
-    G = gridGraph(g),
+    G = edgeGraph(g),
     V = g.verts,
     len = mode.worm || !readsDigits(digitsComputed.mode) ? lengthAsked() : seq.length,
     at = (v) => [V[3 * v], V[3 * v + 1], V[3 * v + 2]]; // (a worm: its steps asked)
@@ -18072,36 +18076,36 @@ function buildSphereWalk(seq, mode, ahead = new Uint8Array(0)) {
 
 /* ---- 7.6b Battles: two or three numbers' walks on one surface ----------------------------- */
 /* Walk › Duel or Trio: A's number (Digits), B's (Digits B) and in a Trio C's (Digits C) walk the sphere or the cube at
- * once, on its cells or along its grid, a digit each a step, from places spread by the solid's own symmetry (battleMaps):
+ * once, on its cells or along its edges, a digit each a step, from places spread by the solid's own symmetry (battleMaps):
  * B opposite A in a Duel, B and C a third of a turn round from A in a Trio, each turning as A does.
  * Each holds the places it walked, its body: its steps from its tail (its oldest) to its head. A head stepping on another's
  * body cuts it there: the other loses that place and all its steps behind it, to its tail (its own body: nothing). Two
  * heads meeting (on one place, or passing each other): the shorter dies, its body gone (as long: both). The battle ends
- * with one walker left, the winner (none: a draw), or as the digits end: the longest wins (as long: a draw). Along the grid
+ * with one walker left, the winner (none: a draw), or as the digits end: the longest wins (as long: a draw). Along the edges
  * a body is drawn as a line along its edges, as a walk's path. The walks are made as the battle is first played
  * (battlePlayer), then replayed to the step shown. */
 let walkTeams = 1; // a walk's teams: 1 Solo, 2 Duel, 3 Trio… 12 Dozen (as Life's, see renderTeams; which, see battleCounts)
 let battleRule = 0; // a battle's way with an enemy's body as picked: its place in BATTLE_RULES, 0 the first, by default; the one played, see battleRuleInUse
 // its choice (one tab group under the teams), in the tab's order (its place its number: a link's br=, pe= before v0.4.458): its word, its name, its picture (a red head and a blue body
-// or land), its words; along the grid Cut and the Land grids, on cells Cut and Land cells (each greyed in the other's place)
+// or land), its words; along the edges Cut and the Land edges, on cells Cut and Land cells (each greyed in the other's place)
 const BATTLE_RULES = [
   [
-    'landGrid',
-    'Land grid 1',
+    'landEdges',
+    'Land edges 1',
     'M1.5 0H2.5V4H1.5ZM0 1.5H4V2.5H0ZM0 0H1V1H0Z',
-    "Along the grid: a walker's line, the edges it went along, stays (crossing it: a fork); its land the regions it closes. A head pierces an enemy's line going through it (on it, then off it by the other side) or along it: the line let go each way up to a fork or its end, its land there let go too; each walker keeps its land, no line of another in it. A loop closed has its empty tiles painted its colour; an enemy's land surrounded there stays its own, taken only by piercing its line. Heads meeting (two or more at once) all die: they stop conquering, their land stays, the others' to take; with one walker left or none, it ends: the most land wins, the dead's too",
+    "Along the edges: a walker's line, the edges it went along, stays (crossing it: a fork); its land the regions it closes. A head pierces an enemy's line going through it (on it, then off it by the other side) or along it: the line let go each way up to a fork or its end, its land there let go too; each walker keeps its land, no line of another in it. A loop closed has its empty tiles painted its colour; an enemy's land surrounded there stays its own, taken only by piercing its line. Heads meeting (two or more at once) all die: they stop conquering, their land stays, the others' to take; with one walker left or none, it ends: the most land wins, the dead's too",
   ],
   [
     'landStop',
     'Land no collision',
     'M0 1.5H1.5V2.5H0ZM2.5 0H3.5V4H2.5Z',
-    "As Land grid 1, and nothing is ever pierced: a walker stops for good just before its first step along or across another's line (on cells, just before its first step onto another's tile); heads meeting (two or more at once) all stop there. The others go on, until all have stopped or the digits end: the most land wins",
+    "As Land edges 1, and nothing is ever pierced: a walker stops for good just before its first step along or across another's line (on cells, just before its first step onto another's tile); heads meeting (two or more at once) all stop there. The others go on, until all have stopped or the digits end: the most land wins",
   ],
   [
     'landMerge',
-    'Land grid merge',
+    'Land edges merge',
     'M0 1H4V3H0Z',
-    'As Land grid 1, and nothing is ever pierced or stopped: lines cross and run along each other; the first heads meeting (two or more at once) end the battle, every walker stopping there: the most land wins',
+    'As Land edges 1, and nothing is ever pierced or stopped: lines cross and run along each other; the first heads meeting (two or more at once) end the battle, every walker stopping there: the most land wins',
   ],
   [
     'landCells',
@@ -18122,24 +18126,24 @@ const BATTLE_RULES = [
     "On cells, as Cut, each walker a snake: on an even step it grows a cell, till a tenth of the surface; on an odd step a cell for each cell it has eaten; else its tail slides. A head on another's body bites it there: the bitten loses its body to its tail, the cells the biter eats. Heads meeting, all but the longest die (as long: all); the last survivor wins (as the digits end: the longest)",
   ],
   [
-    'landGrid2',
-    'Land grid 2',
+    'landEdges2',
+    'Land edges 2',
     'M0 1.5H2.5V2.5H0Z',
-    "Along the grid: each walker's land, the tiles its body closes stay its own (an enemy's too); a head on another's body cuts it; a head going into an enemy's land takes the tiles it goes through. Heads meeting (two or more at once) all die: they stop conquering, their land stays, the others' to take; with one walker left or none, it ends: the most land wins, the dead's too",
+    "Along the edges: each walker's land, the tiles its body closes stay its own (an enemy's too); a head on another's body cuts it; a head going into an enemy's land takes the tiles it goes through. Heads meeting (two or more at once) all die: they stop conquering, their land stays, the others' to take; with one walker left or none, it ends: the most land wins, the dead's too",
   ],
   [
-    'landGrid3',
-    'Land grid 3',
+    'landEdges3',
+    'Land edges 3',
     'M1.5 0H2.5V4H1.5ZM0 1.5H4V2.5H0Z',
-    "As Land grid 1, and a walker dies by its head, its last thread, from its head to its fork, let go: its head on another's (both die), or another's head along or across its last thread (it dies; touched, nothing); elsewhere a thread pierced, as in Land grid 1",
+    "As Land edges 1, and a walker dies by its head, its last thread, from its head to its fork, let go: its head on another's (both die), or another's head along or across its last thread (it dies; touched, nothing); elsewhere a thread pierced, as in Land edges 1",
   ],
 ];
-// a link of v0.4.378 or before: its pe= in the order they were added (then: Land grid 1, Land cells, Cut, Land grid 2, Land
-// grid 3, Land no collision, Land grid merge, Snake cells), its place now (see applySetup)
+// a link of v0.4.378 or before: its pe= in the order they were added (then: Land edges 1, Land cells, Cut, Land edges 2, Land
+// grid 3, Land no collision, Land edges merge, Snake cells), its place now (see applySetup)
 const PE_BEFORE = [0, 3, 4, 6, 7, 1, 2, 5];
-// the ways along the grid's lines (a walker's line, its land the regions it closes, see battlePlayer)
-const BATTLE_LINED = ['landGrid', 'landGrid3', 'landStop', 'landMerge'];
-// a walk that can be a battle: one on a surface (on cells or along the grid, its steps surfaceSteps'), with as many
+// the ways along the edges's lines (a walker's line, its land the regions it closes, see battlePlayer)
+const BATTLE_LINED = ['landEdges', 'landEdges3', 'landStop', 'landMerge'];
+// a walk that can be a battle: one on a surface (on cells or along the edges, its steps surfaceSteps'), with as many
 // walkers as its turns allow at its size (see battleCounts: its walkers start alike, see battleMaps)
 const battleMode = (w) => NAV[w]?.[0] === 'Walk' && MODES[w].lattice === 'sphere' && !!SPHERES[surfaceOf(MODES[w])];
 // a battle at mode w with so many teams (at a size, or its own), the one in use's (battleOn): its teams a count its surface takes
@@ -18242,16 +18246,17 @@ function tintBattleFormulas() {
 // battleGroups: a solid's turns, a ring's shifts; each a map of its places that keeps every tile's corners' order, see
 // placeMap), the one whose maps of A's place lie the furthest apart (their nearest pair), the identity first; null: none
 // of K, or A's place on an axis (K walkers cannot start apart from it)
-function battleMaps(g, start, grid, K) {
-  const spread = startSpread(g, grid, start),
+function battleMaps(g, start, alongEdges, K) {
+  const spread = startSpread(g, alongEdges, start),
     groups = battleGroups(g, K),
     G = groups.length ? groups.reduce((a, b) => (spread(b) > spread(a) + 1e-9 ? b : a)) : null;
   return G && spread(G) >= 1e-9 ? G : null;
 }
-// a walk's state ([tile, the edge it comes in by], along the grid [corner, the corner it comes from]) moved by map M
-function movedStart(g, start, grid, M) {
-  const across = (u) => M(u, grid);
-  if (grid) return [across(start[0]), across(start[1]), start[2], start[3], ...start.slice(4).map((t) => M(t, false))]; // (its corners turned; a pivot or parity walk's p, q kept; a Klein bottle's frame moved)
+// a walk's state ([tile, the edge it comes in by], along the edges [corner, the corner it comes from]) moved by map M
+function movedStart(g, start, alongEdges, M) {
+  const across = (u) => M(u, alongEdges);
+  if (alongEdges)
+    return [across(start[0]), across(start[1]), start[2], start[3], ...start.slice(4).map((t) => M(t, false))]; // (its corners turned; a pivot or parity walk's p, q kept; a Klein bottle's frame moved)
   const [t, entry] = start,
     k = g.sides,
     b = across(t),
@@ -18259,11 +18264,11 @@ function movedStart(g, start, grid, M) {
   for (let e = 0; e < k; e++) if (g.nbr[k * b + e] === from) return [b, e, ...start.slice(2)]; // (a pivot or parity walk's p, q kept)
   throw new Error('no tile turned from the start');
 }
-// how far apart group G's maps set a battle's walkers from A's start (their places' points, along the grid a corner's, on
+// how far apart group G's maps set a battle's walkers from A's start (their places' points, along the edges a corner's, on
 // cells a tile's middle): their nearest pair's distance (0: on an axis of one of its turns, some start together)
-const startSpread = (g, grid, start) => {
-  const P = grid ? g.verts : g.cen;
-  return (G) => pointsApart(G.map((M) => [0, 1, 2].map((d) => P[3 * M(start[0], grid) + d])));
+const startSpread = (g, alongEdges, start) => {
+  const P = alongEdges ? g.verts : g.cen;
+  return (G) => pointsApart(G.map((M) => [0, 1, 2].map((d) => P[3 * M(start[0], alongEdges) + d])));
 };
 // points' nearest pair's distance (0: two of them one)
 const pointsApart = (q) => {
@@ -18320,12 +18325,12 @@ const startsOrder = (K, order = battleOrder) =>
   order.some((i, s) => i !== s)
     ? order
     : null;
-// The battle rule a mode plays: the one picked where it goes, else its twin there (on cells a Land grid's Land cells; along
-// the grid Land cells' Land grid 1, Snake cells' Cut): what its card lights, its link writes and its battle plays, one source
+// The battle rule a mode plays: the one picked where it goes, else its twin there (on cells a Land edges's Land cells; along
+// the grid Land cells' Land edges 1, Snake cells' Cut): what its card lights, its link writes and its battle plays, one source
 const battleRuleInUse = (w, p = battleRule) => {
   const kind = BATTLE_RULES[p][0];
   if (!battleMode(w) || !battleRuleWhyNot(kind, w)) return p;
-  const twin = !MODES[w].grid ? 'landCells' : kind === 'snakeCells' ? 'cut' : 'landGrid';
+  const twin = !MODES[w].edges ? 'landCells' : kind === 'snakeCells' ? 'cut' : 'landEdges';
   return BATTLE_RULES.findIndex(([k]) => k === twin);
 };
 // Centred's greyed words; a battle rule's at a mode: a way on cells only (Land cells, Snake cells) along a grid, or one along
@@ -18336,11 +18341,11 @@ const battleRuleWhyNot = (kind, v) => {
   const cells = kind === 'landCells' || kind === 'snakeCells';
   return !battleMode(v)
     ? 'There is no battle here.'
-    : kind === 'cut' || kind === 'landStop' || cells !== !!MODES[v].grid
+    : kind === 'cut' || kind === 'landStop' || cells !== !!MODES[v].edges
       ? ''
       : cells
-        ? 'This rule plays on cells; this walk goes along the grid.'
-        : 'This rule plays along the grid; this walk is on cells.';
+        ? 'This rule plays on cells; this walk goes along the edges.'
+        : 'This rule plays along the edges; this walk is on cells.';
 };
 const startsWayCan = (way, w, size, teams = walkTeams) => way !== 'centred' || groupedCan(w, size, teams);
 const startsWayNow = () => (battleOn() && startsWayCan(battleStartsWay, tabMode()) ? battleStartsWay : 'symmetric');
@@ -18349,22 +18354,22 @@ const startsWayIn = ({ w, size = null, teams = walkTeams, startsWay = battleStar
   battleAt(w, teams, size ?? undefined) && startsWayCan(startsWay, w, size ?? undefined, teams)
     ? startsWay
     : 'symmetric'; // (the one played: Symmetric where the one picked cannot be)
-// K walkers' starts anywhere, each its own place, drawn from seed: along the grid a corner and the corner it comes from,
+// K walkers' starts anywhere, each its own place, drawn from seed: along the edges a corner and the corner it comes from,
 // on cells a tile and the edge it comes in by (A's start's other parts kept: a pivot's, a parity's)
-function randomStarts(g, start, grid, K, seed) {
+function randomStarts(g, start, alongEdges, K, seed) {
   const next = seededRandom(seed),
     pick = (n) => next() % n,
-    G = gridGraph(g),
+    G = edgeGraph(g),
     k = g.sides,
     taken = new Set(),
     out = [];
   while (out.length < K) {
-    const place = pick(grid ? G.nv : g.n);
+    const place = pick(alongEdges ? G.nv : g.n);
     if (taken.has(place)) continue;
     taken.add(place);
-    if (grid) {
+    if (alongEdges) {
       const from = G.nbrs[place][pick(G.nbrs[place].length)];
-      out.push(gridState(g, [place, from]));
+      out.push(edgeState(g, [place, from]));
       continue;
     }
     const edges = [...Array(k).keys()].filter((e) => g.nbr[k * place + e] >= 0);
@@ -18374,7 +18379,7 @@ function randomStarts(g, start, grid, K, seed) {
 }
 function groupedStarts(g, start, K) {
   if (g.torus || g.mobius || g.klein) return null;
-  const G = gridGraph(g),
+  const G = edgeGraph(g),
     dir = (v) => unit([0, 1, 2].map((d) => g.verts[3 * v + d])),
     a = dir(start[0]),
     C = solidCorners(g); // (by direction: a mesh may lie flat on the solid's faces)
@@ -18411,7 +18416,7 @@ function groupedStarts(g, start, K) {
   return [...out]
     .sort((x, y) => angle(x) - angle(y))
     .filter((_, i) => i % (out.length / K) === 0)
-    .map((e) => gridState(g, e));
+    .map((e) => edgeState(g, e));
 }
 // The edges out of the points a solid's walkers may start round (see groupedStarts: its faces' centres, its corners), by its
 // kind: at a size 3 divides (thirds), at the others (a triangle face's centre a corner of the grid, else a small
@@ -18439,20 +18444,20 @@ const centredEdges = (kind, size) => {
 // its points that they share them evenly, see groupedStarts)
 const groupedCan = (w, size = null, teams = walkTeams) =>
   battleMode(w) &&
-  !!MODES[w].grid &&
+  !!MODES[w].edges &&
   teams > 1 &&
   centredEdges(surfaceOf(MODES[w]), size ?? figureSize(w)).some((edges) => edges % teams === 0);
 // a battle's starts and the maps that moved A's to them (symmetric, see battleMaps; else null: grouped, groupedStarts',
 // where it can, or Random's), or none, said in the status: A's place on an axis of the solid
-function battleStartsOrSay(g, start, grid, K, seed = battleSeed, order = battleOrder) {
+function battleStartsOrSay(g, start, alongEdges, K, seed = battleSeed, order = battleOrder) {
   // (seed: Random's draw, another a hunt's; order: the starts' order, another a hunt's)
   const way = startsWayNow(),
     own =
       way === 'random'
-        ? randomStarts(g, start, grid, K, seed)
-        : way === 'centred' && grid && groupedStarts(g, start, K),
-    found = way === 'random' || own ? null : battleMaps(g, start, grid, K),
-    laid = own || found?.map((M, s) => (s ? movedStart(g, start, grid, M) : start)),
+        ? randomStarts(g, start, alongEdges, K, seed)
+        : way === 'centred' && alongEdges && groupedStarts(g, start, K),
+    found = way === 'random' || own ? null : battleMaps(g, start, alongEdges, K),
+    laid = own || found?.map((M, s) => (s ? movedStart(g, start, alongEdges, M) : start)),
     dealt = (list) => (list && startsOrder(K, order) ? startsOrder(K, order).map((i) => list[i]) : list), // (each walker its start, see startsOrder)
     starts = dealt(laid),
     maps = dealt(found);
@@ -18551,20 +18556,20 @@ const fitsMesh = (g, M) => {
   return true;
 };
 // A map of a surface's places from its corners' (corner(u): corner u's image, undefined where none): each tile onto the
-// tile its corners' images make, in the same order, which its walks turn by (on cells by its edges' order, along the grid
+// tile its corners' images make, in the same order, which its walks turn by (on cells by its edges' order, along the edges
 // by its angles: a map that turns them over, a mirror, would have a walker walk as A's mirror); null where one has none. A
 // tile known by its corners in their order (a Möbius strip's two faces share theirs, the other way round)
 function placeMap(g, corner) {
   const corners = Int32Array.from({ length: g.verts.length / 3 }, (_, u) => corner(u) ?? -1),
     tiles = new Int32Array(g.n);
   for (let t = 0; t < g.n; t++) if ((tiles[t] = tileImage(g, (u) => corners[u], t)) < 0) return null;
-  return (u, grid) => (grid ? corners[u] : tiles[u]);
+  return (u, alongEdges) => (alongEdges ? corners[u] : tiles[u]);
 }
 // tile t's image by its corners' (corner(u): -1 where none): a tile of the edge its first two corners' images make (two,
 // each the other way round), the one that lists all of them in the same order (round from any of them); -1 where none
 function tileImage(g, corner, t) {
   const k = g.sides,
-    G = gridGraph(g),
+    G = edgeGraph(g),
     P = g.poly,
     cycle = (cs) => cs.filter((u, q) => u !== cs[(q + 1) % cs.length]); // (a corner listed twice in a row once: the pentagons)
   const to = cycle(Array.from(P.subarray(k * t, k * t + k), corner)); // (its corners' images, in its order)
@@ -18598,8 +18603,8 @@ const turnMap = (g, M) => {
   const tileAt = (g.tileAt ??= codes(C)),
     corners = new Int32Array(V.length / 3).fill(-2),
     tiles = new Int32Array(g.n).fill(-2); // (-2: not asked yet; -1: none)
-  memo.set(id, (u, grid) =>
-    grid
+  memo.set(id, (u, alongEdges) =>
+    alongEdges
       ? corners[u] > -2
         ? corners[u]
         : (corners[u] = at.get(turned(V, u)) ?? -1)
@@ -18712,7 +18717,7 @@ const battleFits = (
   const fits = () => {
     const g = sphere.mesh(j <= 1 ? startClassLeast(kind, size) : size),
       start = walkStart(g, mode, j > 1 ? Math.min(j, startList(g).length) : 1),
-      apart = startSpread(g, !!mode.grid, start);
+      apart = startSpread(g, !!mode.edges, start);
     return battleGroups(g, K, 1, (G) => apart(G) > 1e-9).length > 0; // (one group is enough to know)
   };
   return (memo[K] ??= fits());
@@ -18813,11 +18818,11 @@ function surfaceRotations(g) {
   return (g.rotations = list);
 }
 
-// A battle's regions' graph along the grid (see battleAreas, the Land grids: on cells none, a battle's lands its own
+// A battle's regions' graph along the edges (see battleAreas, the Land edges: on cells none, a battle's lands its own
 // colours), once a mesh: its links, tile pairs (an edge's two tiles), eu and ev their ends, index each surface edge's
 // link; each node's links (start, other, via)
 function battleLinks(g) {
-  const G = gridGraph(g);
+  const G = edgeGraph(g);
   return (g.battleLinks ??= (() => {
     const eu = [],
       ev = [],
@@ -18848,13 +18853,13 @@ function battleLinks(g) {
     return { eu: Int32Array.from(eu), ev: Int32Array.from(ev), index, nodes, start, other, via };
   })());
 }
-// the wall step q of a walker's places Q makes along the grid: the edge it goes along, a, b the two corners it joins, j
+// the wall step q of a walker's places Q makes along the edges: the edge it goes along, a, b the two corners it joins, j
 // the link of L it cuts; null: none (on the spot)
 function battleWall(g, L, Q, q) {
   const a = Q[q - 1],
     b = Q[q];
   if (a === b) return null;
-  const j = L.index.get(gridGraph(g).key(a, b));
+  const j = L.index.get(edgeGraph(g).key(a, b));
   return j === undefined ? null : { a, b, j };
 }
 const unionFind = (parent, i) => {
@@ -18891,32 +18896,32 @@ function smallerSide(L, cut, j) {
 // first time (S: surfaceSteps', from starts, by their digits), places[s] each walker's step by step (a dead one's: where it
 // died); owner and at, each place's walker (1, 2, 3; 0 none) and the step it took it; from[s], size[s]: a walker's body,
 // its steps from from[s] on and its places (only a cut takes a place from it, with all its steps up to that place's
-// last); dead[s]: the step it died (−1: alive); n: its last step (one walker left or none, else the digits' end). Its surface g, along its grid or not. pen, its battleRule (see BATTLE_RULES), its way:
-// cut, as above. Along the grid, landGrid2 (bite): each walker holds land, land[t] its tiles' walker + 1: a wall of
+// last); dead[s]: the step it died (−1: alive); n: its last step (one walker left or none, else the digits' end). Its surface g, along its edges or not. pen, its battleRule (see BATTLE_RULES), its way:
+// cut, as above. Along the edges, landEdges2 (bite): each walker holds land, land[t] its tiles' walker + 1: a wall of
 // its body closing a loop (its walls' pieces a union-find, step by step, joined again from its body after a cut) gives it
 // the loop's smaller side (smallerSide), an enemy's land too; its head bites into an enemy's land, taking the edge's two
-// tiles; a head on an enemy's body cuts it. landGrid: lines and their land as lined says. On cells,
+// tiles; a head on an enemy's body cuts it. landEdges: lines and their land as lined says. On cells,
 // landCells: painted. With land, heads meeting all die (see collisions), their land staying: it ends with one or none
 // left, the most land winning (the dead's too): its worth, its land, who wins
-function battlePlayer(g, grid, S, starts, digits, pen = battleRuleInUse(tabMode())) {
-  let way = BATTLE_RULES[pen][0]; // (its rule in use: on cells Cut, Land no collision, Land cells and Snake cells; along the grid Cut and the Land grids, see battleRuleInUse)
+function battlePlayer(g, alongEdges, S, starts, digits, pen = battleRuleInUse(tabMode())) {
+  let way = BATTLE_RULES[pen][0]; // (its rule in use: on cells Cut, Land no collision, Land cells and Snake cells; along the edges Cut and the Land edges, see battleRuleInUse)
   // Snake cells: Cut, each body a snake's, its tail sliding unless it grows: on an even step till a tenth of the surface
   // (cap), on an odd step a cell of those it has eaten (food: the cells its bites cut off), see slide
-  const snake = way === 'snakeCells' && !grid,
+  const snake = way === 'snakeCells' && !alongEdges,
     cap = Math.floor(g.n / 10),
     food = Array(starts.length).fill(0);
   if (way === 'snakeCells') way = 'cut'; // (its bodies Cut's, a snake's: see slide)
-  const stops = way === 'landStop'; // (Land no collision: as Land grid 1 or Land cells, a walker stopped before it would pierce or paint over another, see stop)
-  const merges = way === 'landMerge'; // (Land grid merge: as Land grid 1, nothing pierced nor stopped; the first heads meeting end it, see meet)
-  if (way !== 'cut') way = !grid ? 'landCells' : way; // (on cells, Land no collision paints too: see stops)
+  const stops = way === 'landStop'; // (Land no collision: as Land edges 1 or Land cells, a walker stopped before it would pierce or paint over another, see stop)
+  const merges = way === 'landMerge'; // (Land edges merge: as Land edges 1, nothing pierced nor stopped; the first heads meeting end it, see meet)
+  if (way !== 'cut') way = !alongEdges ? 'landCells' : way; // (on cells, Land no collision paints too: see stops)
   // Land cells (painted): no body; each walker paints the tile it goes into its colour (land[t], whatever it was), and a zone
   // closed by its colour (see closeAt) is painted inside
   const painted = way === 'landCells';
   const bite = way !== 'cut',
-    count = grid ? gridGraph(g).nv : g.n,
+    count = alongEdges ? edgeGraph(g).nv : g.n,
     k = g.sides,
-    G = gridGraph(g),
-    L = bite && grid ? battleLinks(g) : null; // (its walls along the grid only: Land cells paints, see closeAt)
+    G = edgeGraph(g),
+    L = bite && alongEdges ? battleLinks(g) : null; // (its walls along the edges only: Land cells paints, see closeAt)
   const wallsOf = L ? starts.map(() => new Int32Array(count)) : [],
     cutsOf = L ? starts.map(() => new Uint16Array(L.eu.length)) : [];
   const land = new Uint8Array(g.n),
@@ -18938,13 +18943,13 @@ function battlePlayer(g, grid, S, starts, digits, pen = battleRuleInUse(tabMode(
   starts.forEach((st, s) => {
     places[s][0] = st[0];
   });
-  // Land grid 1 along the grid (lined): a walker's line the edges it went along, never let go by itself (crossing it:
+  // Land edges 1 along the edges (lined): a walker's line the edges it went along, never let go by itself (crossing it:
   // a fork); its land the regions its line closes; a head on an enemy's line pierces it (see pierce). Each line's links
   // (lineOf: their count, linksOf: the set), its corners' edges (degree), its pieces (a union-find of its corners), the
   // tiles it closes (closedOf, as battleAreas: outside its largest region, its size, the largest closed one's)
   const lined = BATTLE_LINED.includes(way),
     E = lined ? L.eu.length : 0;
-  const unwinds = way === 'landGrid3'; // (Land grid 3: a walker dies by its head, its last thread let go: see tailOf)
+  const unwinds = way === 'landEdges3'; // (Land edges 3: a walker dies by its head, its last thread let go: see tailOf)
   const lineOf = lined ? starts.map(() => new Uint16Array(E)) : null,
     linksOf = lined ? starts.map(() => new Set()) : null;
   const degree = lined ? starts.map(() => new Uint8Array(count)) : null,
@@ -19001,7 +19006,7 @@ function battlePlayer(g, grid, S, starts, digits, pen = battleRuleInUse(tabMode(
   };
   // heads meeting (see collisions), each way's what becomes of a group of them, in one place: Cut, the worthiest lives (its
   // worth before the step; as worthy: none), the others die, their bodies gone; Land no collision, they stop there; Land
-  // grid merge, every walker stops there, the battle over; Land grid 3, they die, each one's last thread let go, their
+  // grid merge, every walker stops there, the battle over; Land edges 3, they die, each one's last thread let go, their
   // step not taken; the other Land ways, they die, their step taken (their army gone: they stop conquering, their land and
   // lines stay, the others' to take)
   const meet =
@@ -19016,7 +19021,7 @@ function battlePlayer(g, grid, S, starts, digits, pen = battleRuleInUse(tabMode(
       },
       landStop: (group) => group.forEach(stop),
       landMerge: () => living().forEach(stop),
-      landGrid3: (group) =>
+      landEdges3: (group) =>
         group.forEach((s) => {
           pierce(s, places[s][i - 1]);
           dead[s] = i;
@@ -19030,7 +19035,7 @@ function battlePlayer(g, grid, S, starts, digits, pen = battleRuleInUse(tabMode(
   // the walkers on the map: the living; with land the dead too (their land, lines, bodies, paint stay)
   const standing = () => (bite ? everyone : living());
   // the collisions at step i: the living heads met, on one place or passing each other along an edge, in groups (two met,
-  // three, … as many as a place's neighbours: along the grid 3 at a corner, on cells up to a tile's sides, by the tiling)
+  // three, … as many as a place's neighbours: along the edges 3 at a corner, on cells up to a tile's sides, by the tiling)
   const collisions = () => {
     const now = living(),
       group = new Map(now.map((s) => [s, s])),
@@ -19087,7 +19092,7 @@ function battlePlayer(g, grid, S, starts, digits, pen = battleRuleInUse(tabMode(
       if (!merges)
         for (const s of rest)
           for (let o = 0; o < K; o++) {
-            // (Land grid merge: lines run along and across each other, nothing broken)  // (a dead one's line too: still there, to pierce)
+            // (Land edges merge: lines run along and across each other, nothing broken)  // (a dead one's line too: still there, to pierce)
             if (o === s) continue;
             // o's line is a frontier: going along an edge of it pierces it there; then, at the corner s just passed, going from
             // one side of o's line to the other (its way in and out not joined round that corner but through o's edges) pierces
@@ -19096,7 +19101,7 @@ function battlePlayer(g, grid, S, starts, digits, pen = battleRuleInUse(tabMode(
               p = places[s][i - 1],
               j = i > 0 ? linkOf(p, c) : undefined,
               edgeTile = (a, b) => G.edgeTiles.get(G.key(a, b))[0];
-            // its line broken at v (along it, or across it), on what: on its last thread (Land grid 3), o dies, that thread let go;
+            // its line broken at v (along it, or across it), on what: on its last thread (Land edges 3), o dies, that thread let go;
             // else pierced there (a touch breaks nothing)
             const broken = (v, ...on) =>
               breaks.push(
@@ -19123,9 +19128,9 @@ function battlePlayer(g, grid, S, starts, digits, pen = battleRuleInUse(tabMode(
         for (const [o, v, dies] of breaks) {
           if (dies) dead[o] = i;
           pierce(o, v);
-        } // (Land grid 3: two necks broken at once, both dead)
+        } // (Land edges 3: two necks broken at once, both dead)
       rest.forEach((s) => dead[s] < 0 && take(s, i));
-      if (i > 0 && living().length <= (stops || merges ? 0 : 1)) n = i; // (Land grid 3: one killed by a head on its last thread)
+      if (i > 0 && living().length <= (stops || merges ? 0 : 1)) n = i; // (Land edges 3: one killed by a head on its last thread)
       return;
     }
     const hits = rest.map((s) => {
@@ -19217,7 +19222,7 @@ function battlePlayer(g, grid, S, starts, digits, pen = battleRuleInUse(tabMode(
     const p = wallsOf[s];
     for (let v = 0; v < count; v++) p[v] = v;
   };
-  // s's step i (Land grid 2): after a cut, its walls cut off gone and its pieces joined again from its body; its new wall,
+  // s's step i (Land edges 2): after a cut, its walls cut off gone and its pieces joined again from its body; its new wall,
   // closing a loop, gives it the smaller side; its head bites into an enemy's land
   const grow = (s) => {
     const Q = places[s],
@@ -19242,7 +19247,7 @@ function battlePlayer(g, grid, S, starts, digits, pen = battleRuleInUse(tabMode(
     closeWall(s, w.a, w.b);
     for (const t of G.edgeTiles.get(G.key(w.a, w.b))) if (land[t] && land[t] !== s + 1) own(t, s); // (a bite: the edge's two tiles)
   };
-  // a wall of s's from corner a to b (along the grid) added: its link cut once more; closing a loop, the first time
+  // a wall of s's from corner a to b (along the edges) added: its link cut once more; closing a loop, the first time
   // that link is, s's land the smaller side (see grow)
   const closeWall = (s, a0, b0) => {
     const j = L.index.get(G.key(a0, b0));
@@ -19259,10 +19264,10 @@ function battlePlayer(g, grid, S, starts, digits, pen = battleRuleInUse(tabMode(
     const X = smallerSide(L, cutsOf[s], j);
     if (X) for (const t of X) if (land[t] !== s + 1) own(t, s);
   };
-  // Land grid 1: a line's edge from corner a to b, its link (undefined: none)
+  // Land edges 1: a line's edge from corner a to b, its link (undefined: none)
   const linkOf = (a, b) => L.index.get(G.key(a, b));
-  // Land grid 1's lines as played (see lifeOf): each link on a walker's line a span [s, a, b, born, gone], from corner a to
-  // b as it walked it, born the step before it took it, gone the step before it was let go (pierced, Land grid 3's last
+  // Land edges 1's lines as played (see lifeOf): each link on a walker's line a span [s, a, b, born, gone], from corner a to
+  // b as it walked it, born the step before it took it, gone the step before it was let go (pierced, Land edges 3's last
   // thread), SEGMENT_NEVER while it stays; openSpans[s], s's link → its span open; kept the first time it is played
   const spans = [],
     openSpans = starts.map(() => new Map());
@@ -19362,7 +19367,7 @@ function battlePlayer(g, grid, S, starts, digits, pen = battleRuleInUse(tabMode(
       else if (was && !closedOf[s][t]) release(t, s);
     }
   };
-  // link j's two corners (along the grid: its edge's), from the surface's edges once a mesh
+  // link j's two corners (along the edges: its edge's), from the surface's edges once a mesh
   const cornersOf = (j) => {
     L.corners ??= (() => {
       const c = new Int32Array(2 * E);
@@ -19448,7 +19453,7 @@ function battlePlayer(g, grid, S, starts, digits, pen = battleRuleInUse(tabMode(
       else largest[o] = Math.max(largest[o], area);
     }
   };
-  // Land grid 1: whether tiles t and u lie on one side of o's line round the corners given: joined by the tiles round
+  // Land edges 1: whether tiles t and u lie on one side of o's line round the corners given: joined by the tiles round
   // them, through no edge of o's line
   const sameSide = (o, corners, t, u) => {
     const next = new Map(); // (each tile round those corners, the tiles across their edges not of o's line)
@@ -19475,7 +19480,7 @@ function battlePlayer(g, grid, S, starts, digits, pen = battleRuleInUse(tabMode(
     }
     return false;
   };
-  // Land grid 1: the land painted as lines close (see splitLine: a loop closed paints its empty tiles, an
+  // Land edges 1: the land painted as lines close (see splitLine: a loop closed paints its empty tiles, an
   // enemy's land surrounded stays); tile t no longer closed by s (its line pierced): s's land no more,
   // another's that still closes it (a dead one's too), else none
   const release = (t, s) => {
@@ -19488,7 +19493,7 @@ function battlePlayer(g, grid, S, starts, digits, pen = battleRuleInUse(tabMode(
       landCount[s]--;
     }
   };
-  // the edges of s's line as drawn (Land grid 1), their links
+  // the edges of s's line as drawn (Land edges 1), their links
   const lineLinks = (s) => [...linksOf[s]];
   // each walker's worth as it is: its body; with bite, its land (its tiles, counted)
   const worth = () => (bite ? [...landCount] : [...size]);
@@ -19515,12 +19520,12 @@ function battlePlayer(g, grid, S, starts, digits, pen = battleRuleInUse(tabMode(
     const w = worth();
     for (let s = 0; s < K; s++) bestOf[s][i] = Math.max(i > 0 ? bestOf[s][i - 1] : 0, w[s]);
   };
-  // (ownLines: its lines drawn by their spans, where an edge is let go: Land grid 1's pierced, 3's let go, see spans; No
+  // (ownLines: its lines drawn by their spans, where an edge is let go: Land edges 1's pierced, 3's let go, see spans; No
   // collision's and Merge's never are, their lines paths, drawn walker by walker in their steps' order as Cut's, see pathSegments)
   const P = {
     K,
     g,
-    grid,
+    alongEdges,
     way,
     bite,
     lined,
@@ -19567,7 +19572,7 @@ function battlePlayer(g, grid, S, starts, digits, pen = battleRuleInUse(tabMode(
         for (let s = 0; s < K && L; s++) {
           freshWalls(s);
           if (lined) freshLine(s);
-        } // (walls along the grid only, see L)
+        } // (walls along the edges only, see L)
       while (i < Math.min(j, n)) {
         step();
         keepBest();
@@ -19625,7 +19630,7 @@ const versusTitle = (names) =>
     ? names.join('')
     : names.map((name, s) => `<span style="color:${teamColour(s)}">${name}</span>`).join(' vs '); // (one alone: no team to tell apart, the text's colour)
 // A battle's closed areas at the step it is at (P: its player; Area, see drawSphere), each tile's walker + 1 (0: none):
-// for each living walker along the grid (Cut's, Area on; on cells none: Area greyed there), the regions its body cuts off,
+// for each living walker along the edges (Cut's, Area on; on cells none: Area greyed there), the regions its body cuts off,
 // as a walk's (see areaSteps: tiles parted by its edges), the largest (the outside) left out; a tile closed by two or
 // three, the one closing fewer tiles's. Its walls: pairs of corners (an edge walked), each cutting one link of the
 // regions' graph (tile pairs; once a mesh).
@@ -19655,7 +19660,7 @@ function battleAreas(P) {
       out: new Uint8Array(g.n),
     });
     for (let s = 0; s < K; s++) {
-      A.walls.push(new Int32Array(gridGraph(g).nv));
+      A.walls.push(new Int32Array(edgeGraph(g).nv));
       A.cut.push(new Uint8Array(L.eu.length));
       A.node.push(new Uint8Array(L.nodes));
       A.tile.push(new Uint8Array(g.n));
@@ -19885,12 +19890,12 @@ function battleWorkerMain() {
   onmessage = ({ data: m }) => {
     if (m.setup) {
       const s = m.setup;
-      game = { ...s, cards: new Map(s.cards), S: { step: surfaceStep(s.g, s.grid, s.net, s.acts) } };
+      game = { ...s, cards: new Map(s.cards), S: { step: surfaceStep(s.g, s.alongEdges, s.net, s.acts) } };
       return;
     }
-    const { g, grid, pen, base, n, cards, fixed, S } = game,
+    const { g, alongEdges, pen, base, n, cards, fixed, S } = game,
       digits = fixed ?? m.fs.map((f) => cards.get(f) ?? rootDigits(Number(f.slice(5, -1)), base, n)); // (the shown numbers: each its walker's, their starts dealt in the order drawn, see placed)
-    postMessage({ id: m.id, ...huntScore(battlePlayer(g, grid, S, m.placed, digits, pen)) });
+    postMessage({ id: m.id, ...huntScore(battlePlayer(g, alongEdges, S, m.placed, digits, pen)) });
   };
 }
 // a battle played to its end, what the hunt ranks it by: its steps, ended or not, its winner, lands, smallest land, first stop
@@ -19906,7 +19911,7 @@ function huntScore(P) {
     stop: Math.min(...P.dead.map((d) => (d < 0 ? Infinity : d))),
   };
 }
-// a surface's data for a worker: its own, not its caches holding functions (made again there, see gridGraph)
+// a surface's data for a worker: its own, not its caches holding functions (made again there, see edgeGraph)
 const meshData = (g) =>
   Object.fromEntries(
     Object.entries(g).filter(([, v]) => {
@@ -19925,7 +19930,7 @@ async function startBattleHunt() {
     n = digitsNeeded(),
     base = mode.base,
     K = walkTeams,
-    grid = !!mode.grid,
+    alongEdges = !!mode.edges,
     way = startsWayNow();
   const numbers = [...BATTLE_CARDS, ...DRAWN_ROOTS],
     N = numbers.length;
@@ -19980,7 +19985,7 @@ async function startBattleHunt() {
         continue; // (an order turned: fought already)
       battleHunt.tried.add(key);
       const order = huntVary.formulas ? null : picks; // (the shown numbers: each in its field, their starts' order drawn; drawn ones: in turn)
-      const placed = battleStartsOrSay(g, walkStart(g, mode, at.n), grid, K, at.seed, order);
+      const placed = battleStartsOrSay(g, walkStart(g, mode, at.n), alongEdges, K, at.seed, order);
       if (placed)
         return {
           id: id++,
@@ -20014,7 +20019,7 @@ async function startBattleHunt() {
   const sent = new Map(),
     setup = {
       g: meshData(g),
-      grid,
+      alongEdges,
       net: mode.net,
       acts: surfaceActs(mode),
       pen: battleRuleInUse(tabMode()),
@@ -26959,7 +26964,7 @@ const flatTwin = (w) =>
       NAV[v]?.[0] === 'Walk' &&
       MODES[v].lattice !== 'sphere' &&
       MODES[v].net === MODES[w].net &&
-      !MODES[v].cells === !!MODES[w].grid,
+      !MODES[v].cells === !!MODES[w].edges,
   );
 // the figures: { d, caption, at (the way in, then the step), here (where it steps from), next (dashed), ends, cells, dashed (the step) };
 // a walk by a rule drawn by its words, then its straight step (S: the way in); words given: one figure each (a creature's, see
@@ -27042,10 +27047,10 @@ function creatureFigures(w) {
     })),
   );
 }
-// How a battle along the grid fights (every way along it: see battlePlayer): its cases on the walk's tiles (squares,
+// How a battle along the edges fights (every way along it: see battlePlayer): its cases on the walk's tiles (squares,
 // triangles, hexagons), each played by the battle itself on a torus of them, its two walkers' moves written as directions on
 // its flat grid (degrees, east 0, north 90; null: a step on the spot), red's and blue's, blue's start reached by pre (not
-// drawn); its words, each way's (a way without: not shown there; Cut's and Land grid 2's, their bodies for lines). Drawn flat: the
+// drawn); its words, each way's (a way without: not shown there; Cut's and Land edges 2's, their bodies for lines). Drawn flat: the
 // tiles, the lines, the land, a line let go dashed, a walker dead or stopped crossed
 const BATTLE_LOOP = {
   square: [90, 90, 180, 180, 270, 270, 0, 0, 0, 0],
@@ -27058,7 +27063,7 @@ const BATTLE_CASES = {
   land: {
     words: {
       ...forLined('A loop closed: the tiles on its smaller side its land'),
-      landGrid2: 'A loop closed by its body: the tiles inside its land',
+      landEdges2: 'A loop closed by its body: the tiles inside its land',
     },
     square: [{ moves: [90, 90, 0, 0, 270, 270, 180, 180] }, { pre: [0, 0, 0, 0], moves: [90] }],
     tri: [{ moves: [0, 0, 120, 120, 240, 240] }, { pre: [0, 0, 0, 0], moves: [60] }],
@@ -27067,7 +27072,7 @@ const BATTLE_CASES = {
   inside: {
     words: {
       ...forLined("A loop closed round an enemy's land: its land the tiles round it, the enemy's staying its"),
-      landGrid2: "A loop closed round an enemy's land: every tile inside its land, the enemy's taken too",
+      landEdges2: "A loop closed round an enemy's land: every tile inside its land, the enemy's taken too",
     },
     square: [
       { moves: [90, 0, 270, 180] },
@@ -27084,13 +27089,13 @@ const BATTLE_CASES = {
   },
   along: {
     words: {
-      landGrid:
+      landEdges:
         "Along an enemy's line: pierced there, cut from that corner to its forks or ends (dashed), the land it closed freed",
-      landGrid3:
+      landEdges3:
         "Along an enemy's line, not its last thread: pierced there, cut from that corner to its forks or ends (dashed), the land it closed freed",
       landStop: "A step along an enemy's line: stopped for good just before it, nothing pierced",
       landMerge: "Along an enemy's line: nothing pierced, the two lines running side by side",
-      landGrid2:
+      landEdges2:
         "Into an enemy's land, along its body: the body cut where the head steps on it (dashed), the tiles the head goes through taken",
     },
     square: [
@@ -27105,7 +27110,7 @@ const BATTLE_CASES = {
   },
   across: {
     words: {
-      landGrid: "Across an enemy's line, at a corner (in on one side, out on the other): pierced there, as along",
+      landEdges: "Across an enemy's line, at a corner (in on one side, out on the other): pierced there, as along",
       landStop:
         "A step across an enemy's line, at a corner (in on one side, out on the other): stopped for good just before it",
       landMerge: "Across an enemy's line, at a corner: nothing pierced, the lines crossing",
@@ -27123,7 +27128,7 @@ const BATTLE_CASES = {
     words: {
       ...forLined("A head on an enemy's line, touching it (stopping there, or out on the side it came in by): nothing"),
       cut: "A head on another's body: cut there, from that corner back to its tail (dashed)",
-      landGrid2: "A head on another's body: cut there, from that corner back to its tail (dashed)",
+      landEdges2: "A head on another's body: cut there, from that corner back to its tail (dashed)",
     },
     square: [
       { pre: [90, 90], moves: [null, null, 270, 270] },
@@ -27140,7 +27145,7 @@ const BATTLE_CASES = {
   },
   neck: {
     words: {
-      landGrid3:
+      landEdges3:
         "Along or across an enemy's last thread (from its head back to its fork): it dies, that thread let go; its loops and land stay",
     },
     square: [
@@ -27160,7 +27165,7 @@ const BATTLE_CASES = {
     ],
   },
   necks: {
-    words: { landGrid3: "Two last threads broken at once, each by the other's head: both die" },
+    words: { landEdges3: "Two last threads broken at once, each by the other's head: both die" },
     square: [
       { pre: [90, 90, 90], moves: [270, 270, 270, 270, 270] },
       { pre: [180, 270], moves: [0, 0, 90, 180, 180] },
@@ -27172,10 +27177,10 @@ const BATTLE_CASES = {
   },
   heads: {
     words: {
-      landGrid: 'Heads meeting on a corner: both die, their lines and land staying',
+      landEdges: 'Heads meeting on a corner: both die, their lines and land staying',
       cut: 'Heads meeting on a corner, as long: both die, their bodies gone (the shorter alone dies)',
-      landGrid2: 'Heads meeting on a corner: both die, their land staying',
-      landGrid3: "Heads meeting on a corner: both die, each one's last thread let go",
+      landEdges2: 'Heads meeting on a corner: both die, their land staying',
+      landEdges3: "Heads meeting on a corner: both die, each one's last thread let go",
       landStop: 'Heads meeting on a corner: both stopped there for good, their lines and land staying',
       landMerge: 'Heads meeting on a corner: the battle over, every walker stopped there',
     },
@@ -27194,10 +27199,10 @@ const BATTLE_CASES = {
   },
   crossing: {
     words: {
-      landGrid: 'Heads crossing, each along the edge the other comes by: both die, their lines and land staying',
+      landEdges: 'Heads crossing, each along the edge the other comes by: both die, their lines and land staying',
       cut: 'Heads crossing, each along the edge the other comes by, as long: both die, their bodies gone',
-      landGrid2: 'Heads crossing, each along the edge the other comes by: both die, their land staying',
-      landGrid3: "Heads crossing, each along the edge the other comes by: both die, each one's last thread let go",
+      landEdges2: 'Heads crossing, each along the edge the other comes by: both die, their land staying',
+      landEdges3: "Heads crossing, each along the edge the other comes by: both die, each one's last thread let go",
       landStop: 'Heads crossing, each along the edge the other comes by: both stopped for good before',
       landMerge: 'Heads crossing, each along the edge the other comes by: the battle over, every walker stopped',
     },
@@ -27215,7 +27220,7 @@ const BATTLE_CASES = {
     ],
   },
 };
-// The cases of a battle on cells (see battlePlayer: Land cells, Land no collision, Cut, Snake cells), as along the grid's (see BATTLE_CASES), their
+// The cases of a battle on cells (see battlePlayer: Land cells, Land no collision, Cut, Snake cells), as along the edges's (see BATTLE_CASES), their
 // moves from tile to tile (degrees, between the tiles' middles; a triangle's alternate: the middle one ▽, its neighbours △);
 // its words, each way's
 const BATTLE_CELL_CASES = {
@@ -27304,12 +27309,12 @@ const BATTLE_CELL_CASES = {
     ],
   },
 };
-// the case's figure, its battle played (see BATTLE_CASES, BATTLE_CELL_CASES): along the grid, from corner to corner; on cells,
+// the case's figure, its battle played (see BATTLE_CASES, BATTLE_CELL_CASES): along the edges, from corner to corner; on cells,
 // from tile to tile (its places their middles). An SVG, null where its moves do not fit the grid
 function battleCaseFigure(grid, way, scripts, cells = false) {
   const g = SPHERES[{ square: 'torus', tri: 'torusTri', hex: cells ? 'torusHex' : 'torusHexTurned' }[grid]].mesh(12),
-    G = gridGraph(g),
-    k = g.sides; // (hexagons: along the grid an edge north, on cells a neighbour)
+    G = edgeGraph(g),
+    k = g.sides; // (hexagons: along the edges an edge north, on cells a neighbour)
   const uvOf = (v) => (cells ? cornersMean(g, v) : cornerUv(g, G, v)),
     count = cells ? g.n : G.nv; // (its places: the tiles, or the grid's corners)
   const nbrsOf = (v) =>
@@ -27362,7 +27367,7 @@ function battleCaseFigure(grid, way, scripts, cells = false) {
     BATTLE_RULES.findIndex(([w]) => w === way),
   );
   P.to(Infinity);
-  // its lines, each by a key and its two places: a line way's links (along the grid), else a body's steps, tail to head (none
+  // its lines, each by a key and its two places: a line way's links (along the edges), else a body's steps, tail to head (none
   // painting: Land cells)
   const n = P.n,
     L = !cells && battleLinks(g),
@@ -27434,14 +27439,14 @@ function battleCaseFigure(grid, way, scripts, cells = false) {
     `${walks.map((_, s) => head(s)).join('')}</svg>`
   );
 }
-// a battle's cases, under its walk's (see walkTutorial): its way's, along the grid or on cells, on the walk's tiles
+// a battle's cases, under its walk's (see walkTutorial): its way's, along the edges or on cells, on the walk's tiles
 function battleTutorial(w) {
   const way = BATTLE_RULES[battleRuleInUse(w)][0],
     g = walk.geo,
     grid = { 4: 'square', 3: 'tri', 6: 'hex' }[g?.sides];
   if (!battleOn()) return '';
   const title = `<h2>Battle: ${BATTLE_RULES[battleRuleInUse(w)][1]}</h2>`,
-    cells = !MODES[w].grid; // (every battle's; its cases drawn on squares, triangles and hexagons)
+    cells = !MODES[w].edges; // (every battle's; its cases drawn on squares, triangles and hexagons)
   const loop = grid && { pre: BATTLE_LOOP_AT[grid], moves: BATTLE_LOOP[grid] };
   const figs = !grid
     ? []
@@ -27462,7 +27467,7 @@ function battleTutorial(w) {
     cells && (way === 'landCells' || way === 'landStop')
       ? "Each walker paints the tiles it goes into its colour. All walkers step at once. Here red's last step makes the case" // (on cells, Land no collision paints too)
       : !BATTLE_LINED.includes(way)
-        ? `Each walker's body: the ${cells ? 'tiles' : 'edges'} it has walked, from its tail to its head${way === 'landGrid2' ? '; its land, the tiles its body closed' : ''}. All walkers step at once. Here red's last step makes the case; a body cut off dashed`
+        ? `Each walker's body: the ${cells ? 'tiles' : 'edges'} it has walked, from its tail to its head${way === 'landEdges2' ? '; its land, the tiles its body closed' : ''}. All walkers step at once. Here red's last step makes the case; a body cut off dashed`
         : "Each walker's line: the edges it has gone along, never let go by itself. All walkers step at once, each step judged on the lines as it found them. Here red's last step makes the case; a line let go dashed";
   return (
     `<div class="form-section">${title}<p>${how}, a walker ${way === 'landStop' || way === 'landMerge' ? 'stopped' : 'dead'} crossed.</p>` +
@@ -27516,7 +27521,7 @@ function walkTutorial(w) {
       `${f.ends.map((p) => dot(p, 'tut-end')).join('')}${dot(from(f), 'tut-here')}${still ? '' : dot(to, 'tut-to')}</svg>`
     );
   };
-  const how = mode.lattice === 'sphere' ? `, turning as on its flat ${mode.grid ? 'grid' : 'tiling'}` : '';
+  const how = mode.lattice === 'sphere' ? `, turning as on its flat ${mode.edges ? "tiling's edges" : 'tiling'}` : '';
   $('ruleTuto').innerHTML =
     `<div class="tut-body">` +
     `<h2>${ruleTitleOf(w)}</h2><p>${creature ? `${mode.rule[0].toUpperCase()}${mode.rule.slice(1)}` : `The number read digit by digit in base ${mode.base}, each digit a step ${mode.rule.replace(/:.*/, '')}${how}`}` +
@@ -29541,7 +29546,7 @@ function planeSlices(K) {
   });
   return (sliceMemo = { key, part, spots, mid, angles, walls }); // (and its middle, as seen)
 }
-// The plane's colour blocks as seen: their columns along the grid's side that runs most across the screen, left to
+// The plane's colour blocks as seen: their columns along the edges's side that runs most across the screen, left to
 // right, their rows along the other, top to bottom, whichever way its lattice lies (turned too, see planeTurn). Each
 // cell by where it is, not by its number: its motif's middle's shares (0 to 1) along those two sides, from the grid's ends
 // (once a grid and a view); a cell's block, and the cell nearest a place (its shares across and down)
@@ -39106,7 +39111,7 @@ function setLifeSeed(seed, how) {
  *   x   the formula          w   the walk mode        d    the number of digits (walks)
  *   s   the surface size (a torus: rows, or rows x tiles per row)
  *   r   the Life rule        canvasHeight   a Life start (champion or patch)
- *   st  the start of a walk along a solid's grid (when not 1)
+ *   st  the start of a walk along a solid's edges (when not 1)
  * It only holds what determines the result. Display choices (colours, areas, grid, sky, camera,
  * zoom…), the speed and the current step are never saved: a link opens with the mode's default
  * view (see DISPLAY_DEFAULTS). A
@@ -39231,7 +39236,7 @@ function getSetup() {
     RIVALS.slice(0, walkTeams - 1).forEach((id) => {
       s[`x${id.slice(-1).toLowerCase()}`] = formulaOf($(id).value).text ?? $(id).value;
     }); // (xb, xc…)
-    if (battleRuleInUse(tabMode())) s.br = battleRuleInUse(tabMode()); // (the one played; none: the first, Land grid 1)
+    if (battleRuleInUse(tabMode())) s.br = battleRuleInUse(tabMode()); // (the one played; none: the first, Land edges 1)
     if (startsWayNow() !== 'symmetric') s.gr = STARTS_WAYS.findIndex(([way]) => way === startsWayNow()); // (its starts: Centred, Random, see STARTS_WAYS)
     if (startsWayNow() === 'random') s.rs = battleSeed;
     if (startsOrder(walkTeams))
@@ -39295,7 +39300,7 @@ function applySetup(s) {
         : !s.v || versionAtMost(s.v, '0.4.378')
           ? PE_BEFORE[Number(s.pe)]
           : Number(s.pe); // (br=; a link of v0.4.457 or before, pe=)  // (an older link's, in its own order)
-  battleRule = walkTeams > 1 && BATTLE_RULES[pe] ? pe : 0; // (none: the first, Land grid 1)
+  battleRule = walkTeams > 1 && BATTLE_RULES[pe] ? pe : 0; // (none: the first, Land edges 1)
   battleStartsWay = STARTS_WAYS[Number(s.gr)]?.[0] ?? 'symmetric';
   battleSeed = Number(s.rs) || 1;
   battleOrder = s.so ? [...String(s.so)].map((c) => c.charCodeAt(0) - 97) : null; // (so=acb: see startsOrder)
@@ -40079,7 +40084,7 @@ function advanceTo(target, until = Infinity) {
   const { xs, ys, wx, wy, wz, is3d } = walk;
   for (let i = stepShown + 1; i <= target; i++) {
     if (walk.stepTiles) {
-      // along the grid: the tiles on both sides of the edge just walked
+      // along the edges: the tiles on both sides of the edge just walked
       for (const t of [walk.stepTiles[2 * i - 2], walk.stepTiles[2 * i - 1]])
         walk.maxVisits = Math.max(walk.maxVisits, ++walk.visits[t]);
     } else if (walk.sphere) walk.maxVisits = Math.max(walk.maxVisits, ++walk.visits[walk.tile[i]]);
@@ -40738,7 +40743,7 @@ function walkersOf() {
   B.to(stepShown);
   return B.places.map((Q, s) => ({
     ...onPlaces((i) => placePoint(Q[i]), [Q[0], cameFrom(walk.geo, !!walk.vert, B.starts[s])]),
-    ...onTiles((i) => (walk.vert ? walk.geo.grid.tileOf[Q[i]] : Q[i])),
+    ...onTiles((i) => (walk.vert ? walk.geo.edgeGraph.tileOf[Q[i]] : Q[i])),
     colour: teamColour(s),
     living: B.dead[s] < 0 || B.dead[s] > stepShown,
   }));
@@ -41013,7 +41018,7 @@ function drawSphere() {
     P.to(stepShown);
     // each tile's level once: with land (the Land ones) its land, always, plain as its bodies are (Area, the
     // classic walks' look, not used); in Cut the areas each body closes, by Area (Light translucent, Plain as its body);
-    // then the bodies over them and their heads (along the grid its bodies are lines, see pathSegments: the land only)
+    // then the bodies over them and their heads (along the edges its bodies are lines, see pathSegments: the land only)
     const closed = P.bite ? P.land : !areaOn() ? null : battleAreas(P),
       light = !P.bite && areaLight();
     const soft = (c, a) => (oceanOn() ? c : faded(c, a)); // (Ocean: its lands in full, not faded into the page's grey)
@@ -41058,13 +41063,13 @@ function firstVisits() {
 // Area on a surface, as for a 2D walk (see Area in 11.5): a region is an area while it is a disc (its Euler
 // characteristic 1, see enclosedFrom): a region that goes round the surface (a torus' band, its χ 0) or holds the walk
 // (the rest of a torus, χ −1) is none. A sphere's regions are all discs: the largest at the end plays the outside.
-// A number with a pattern along the grid: only its areas of PATTERN_AREA tiles at most (see patternAreaCap).
+// A number with a pattern along the edges: only its areas of PATTERN_AREA tiles at most (see patternAreaCap).
 // A number with a pattern (a fraction's digits repeat; a dragon's, a Thue–Morse's, a rabbit's, a Rudin–Shapiro's are made
-// by a rule, see FORMULA_NAMES): along the grid, its walk draws the same figure round and round, its strands closing off
+// by a rule, see FORMULA_NAMES): along the edges, its walk draws the same figure round and round, its strands closing off
 // big parts of the surface (half a sphere, the whole of a Klein bottle, all of a torus: the dragon's) whatever the figure:
 // only the small areas its figure rings are filled, PATTERN_AREA tiles at most (Area's tooltip says so)
 const PATTERN_AREA = 2;
-// A walk along a surface's grid: its sweet spot, the step before its ocean (the largest part of the surface it closes off at
+// A walk along a surface's edges: its sweet spot, the step before its ocean (the largest part of the surface it closes off at
 // once, if more than SWEET_OCEAN of it: its continents made, the surface not flooded yet); null without an ocean. On a
 // surface's cells (none closed off): the step it has visited SWEET_CELLS of them, null before
 const SWEET_OCEAN = 0.1,
@@ -41089,14 +41094,14 @@ const sweetSpot = () => {
   return (walk.sweetSpot = ocean !== null ? ocean - 1 : null);
 };
 const patternAreaCap = () => (walk.stepTiles && digitsComputed?.patterned ? PATTERN_AREA : Infinity);
-// A walk along the grid (on cells none: Area greyed, see areaWhyNot): the regions are made of tiles, two neighbouring
+// A walk along the edges (on cells none: Area greyed, see areaWhyNot): the regions are made of tiles, two neighbouring
 // tiles being separated once the walk has gone along the edge between them, so the areas follow the path exactly; their
 // faces, the corners all round
 let areaData = null;
 function areaSteps() {
   if (areaData) return areaData;
   const g = walk.geo,
-    G = gridGraph(g),
+    G = edgeGraph(g),
     eu = [],
     ev = [],
     crossed = [],
@@ -41299,10 +41304,10 @@ function ribbonSegments(count = 64) {
 // grid, each step on each tile beside its edge. Seen from the tile's face only (gpuSurface), a step on
 // a face turned away is not drawn at all, and nothing jumps across an unrolled sheet's seams.
 // Its segments (see ribbonSegments): caps where two segments of the same plane meet, not at a fold (1 the start, 2 the
-// end); and the first segment of each step (at). P: a battle's player along the grid (see 7.6b), played to its end: all
+// end); and the first segment of each step (at). P: a battle's player along the edges (see 7.6b), played to its end: all
 // its walkers' steps instead, walker after walker, step's place its colour's in the palette (battlePalette), each its
 // steps' lives (born the step before, gone when it leaves its body: see goneOf), at[s][q] the first segment of walker s's
-// step q (q to n + 1); Land grid 1 (lined): its lines' spans instead (see spans), at as Solo's
+// step q (q to n + 1); Land edges 1 (lined): its lines' spans instead (see spans), at as Solo's
 function pathSegments(P = null) {
   const g = walk.geo,
     sh = walk.shape,
@@ -41317,7 +41322,7 @@ function pathSegments(P = null) {
   const out = ribbonSegments(2 * (P?.ownLines ? P.spans.length : (P ? P.K : 1) * n)),
     at = new Int32Array(n + 1);
   const edge = (into, v0, v1, t0, t1, key, born, gone, caps = 3) => {
-    // along the grid: the edge from v0 to v1, on each tile beside it (t0, t1), into a list of segments (caps: both ends,
+    // along the edges: the edge from v0 to v1, on each tile beside it (t0, t1), into a list of segments (caps: both ends,
     // and how it leaves, see ribbonSegments)
     for (const t of t0 === t1 ? [t0] : [t0, t1]) {
       const ends = [v0, v1].map((v) => {
@@ -41328,9 +41333,9 @@ function pathSegments(P = null) {
     }
   };
   if (P?.ownLines) {
-    // (Land grid 1: each span of a link on a line, from the corner it came from, faded out once let go; at[q] the first
+    // (Land edges 1: each span of a link on a line, from the corner it came from, faded out once let go; at[q] the first
     // segment born at step q or later, see spans)
-    const G = gridGraph(g);
+    const G = edgeGraph(g);
     let q = 0;
     for (const [s, a, b, born, gone] of P.spans) {
       while (q <= born) at[q++] = out.count;
@@ -41341,7 +41346,7 @@ function pathSegments(P = null) {
     return { data: out.words(), at };
   }
   if (P) {
-    const G = gridGraph(g),
+    const G = edgeGraph(g),
       ats = [];
     for (let s = 0; s < P.K; s++) {
       const a = new Int32Array(n + 2),
@@ -43047,7 +43052,7 @@ function gpuDrawPipe(
     multisample: { count: pick ? 1 : 4 },
   }));
 }
-// a battle's colours in the palette (pal), for its lines along the grid: A's body, B's (their heads: their arrows, see drawOverlay)
+// a battle's colours in the palette (pal), for its lines along the edges: A's body, B's (their heads: their arrows, see drawOverlay)
 // the commands' palette on the GPU (see stepLook), its places 0 to 255 (past its end, its last; an ant's ramp, all of them)
 function stepPalette(D) {
   const key = `${walk.base}|${walk.ant}|${walk.skipZeros}|${digitsComputed.mode}|${MONO}|${GREY}`;
@@ -43193,7 +43198,7 @@ function gpuSurface(paint, path) {
     },
     `${D.geoGen}|${lightDirection()}|${camera.r}|${depth}|${lightOn()}|${cutOn() && cutAxis}`,
   );
-  // the path's segments, made once a walk (a battle along the grid: all its walkers' steps, see pathSegments); drawn, the
+  // the path's segments, made once a walk (a battle along the edges: all its walkers' steps, see pathSegments); drawn, the
   // path up to the step shown, or each living walker's body: its steps from its tail to its head, a range of them
   const lines = !!walk.battle && !!walk.vert,
     P = lines ? walk.battle.player : null;
@@ -44814,7 +44819,7 @@ const LIFE_TITLES = [
   ['Ever alive'],
 ];
 // a battle's columns, by its battleRule (P: its player): its worth (Cut: its body; else its land), its worth's peak so
-// far, the step it died at, its body if it has one besides (along the grid a line, its edges; on cells its tiles), its head
+// far, the step it died at, its body if it has one besides (along the edges a line, its edges; on cells its tiles), its head
 // from its start
 const battleColumns = (P) => {
   const worth = P.bite ? 'Land' : 'Body',
@@ -46426,11 +46431,11 @@ $('sizeDown').addEventListener('click', () => stepSize(-1));
 $('walkOn').append(
   tileGroup([
     tile({
-      id: 'walkOnGrid',
-      pic: icon('onGrid'),
-      text: 'Grid',
-      title: 'Along the lines of the grid',
-      click: () => navGo(4, 'grid'),
+      id: 'walkOnEdges',
+      pic: icon('onEdges'),
+      text: 'Edges',
+      title: "Along the tiles' edges, from corner to corner",
+      click: () => navGo(4, 'edges'),
     }),
     tile({
       id: 'walkOnCells',
@@ -46517,7 +46522,7 @@ function renderAreaModes() {
 // ANT_STATES); Heatmap of visits. [look, name, title]
 const ANT_STATES = ['States', 'An ant’s cells by their state, pale to deep'];
 // the look a cell mode sets at mode w (colourMode's: see pickCellMode): Path, Cell path under the line (an ant's, its States), along
-// the grid the line alone; Cell path, the cells in the rainbow (along the grid, the line's: greyed there, see cellModeWhyNot)
+// the grid the line alone; Cell path, the cells in the rainbow (along the edges, the line's: greyed there, see cellModeWhyNot)
 const lookAfter = (look, w) =>
   look === 'path'
     ? MODES[w].antOf
@@ -46534,7 +46539,7 @@ const LIFE_LOOKS = [
   ['digit', 'Activity'],
 ]; // (Life's looks, see renderColourButtons)
 const CELL_MODES = [
-  ['path', 'Path', 'The walk’s line in the rainbow along it, over its cells faded (along the grid, its line alone)'],
+  ['path', 'Path', 'The walk’s line in the rainbow along it, over its cells faded (along the edges, its line alone)'],
   ['cells', 'Cell path', 'The cells in the rainbow along the walk'],
   [
     'digit',
@@ -46548,12 +46553,12 @@ const cellModeOf = (mode) =>
     ? 'path'
     : $('colourMode').value === 'gradient'
       ? 'cells'
-      : $('colourMode').value; // (along the grid, the line: Path)  // (a surface's Rainbow: gradient)
+      : $('colourMode').value; // (along the edges, the line: Path)  // (a surface's Rainbow: gradient)
 function cellModePicture(look, ant) {
   // a 2 × 2 swatch, or the rainbow line over faded cells
   const g = appRainbowAt; // (a control's picture: the app's rainbow, never Ocean's)
-  // Path and Cell path: the Grid and Cells tiles' icons (onGrid, onCells) in a faded grey, a rainbow staircase over them: Path its
-  // line along the grid's lines, Cell path its cells
+  // Path and Cell path: the Grid and Cells tiles' icons (onEdges, onCells) in a faded grey, a rainbow staircase over them: Path its
+  // line along the edges's lines, Cell path its cells
   const faded = (name) =>
     `<g fill="none" stroke="currentColor" stroke-width="1.5" opacity="0.3">${ICONS[name].replace(/class="f"/g, 'fill="currentColor"')}</g>`;
   // (a 3 × 3 cut, from 4 to 20: the staircase's points, Path's corners of the grid along its lines, Cell path's cells' corners)
@@ -46568,7 +46573,7 @@ function cellModePicture(look, ant) {
     ];
   if (look === 'path')
     return (
-      `<svg viewBox="0 0 24 24" aria-hidden="true">${faded('onGrid')}` +
+      `<svg viewBox="0 0 24 24" aria-hidden="true">${faded('onEdges')}` +
       stairs
         .slice(1)
         .map(
@@ -46626,7 +46631,7 @@ function renderCellModes(mode) {
       pic: cellModePicture(look, ant),
       ...(look === 'digit' && ant ? { text: ANT_STATES[0], title: ANT_STATES[1] } : { text: name, title }),
       on: look === now,
-      byDefault: look === (ant ? defaultOf('antLook', tabMode()) : mode.cells ? 'cells' : 'path') ? 'yes' : '', // (an ant's States, a walk's Cell path, along the grid its Path: see DISPLAY_DEFAULTS)
+      byDefault: look === (ant ? defaultOf('antLook', tabMode()) : mode.cells ? 'cells' : 'path') ? 'yes' : '', // (an ant's States, a walk's Cell path, along the edges its Path: see DISPLAY_DEFAULTS)
       whyNot: ({ w, teams }) => cellModeWhyNot(look, w, teams),
       choice: `look:${look}`,
       click: () => pickCellMode(look),

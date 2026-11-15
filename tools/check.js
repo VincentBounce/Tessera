@@ -585,7 +585,7 @@ const HOVER_BUDGET = 100;
 // outermost counted), by their names: none over BUILD_BUDGET, whatever the hover's own time
 const SEARCH_BUILDERS = [
   'startList',
-  'gridGraph',
+  'edgeGraph',
   'planeShape',
   'planeTurns',
   'discPatch',
@@ -1021,7 +1021,7 @@ async function huntResultsKept(fail) {
 // where groupedCan says so
 function checkCentred(fail) {
   let checked = 0;
-  for (const w of Object.keys(MODES).filter((w) => battleMode(w) && MODES[w].grid)) {
+  for (const w of Object.keys(MODES).filter((w) => battleMode(w) && MODES[w].edges)) {
     const mode = MODES[w],
       kind = surfaceOf(mode),
       S = SPHERES[kind];
@@ -1051,7 +1051,7 @@ function checkFirstStarts(fail) {
     if (counts.some.every((K) => counts.any.includes(K))) continue; // (any start: none depends on it)
     const kindOfStart = (size) => {
       const g = S.mesh(size),
-        P = mode.grid ? g.verts : g.cen,
+        P = mode.edges ? g.verts : g.cen,
         v = walkStart(g, mode, 1)[0],
         p = [P[3 * v], P[3 * v + 1], P[3 * v + 2]];
       return solidRotations(solidCorners(g)).filter((M) => pointsApart([p, matTimesPoint(M, p)]) < 1e-7).length;
@@ -1079,7 +1079,7 @@ async function battlesFair(fail) {
     location.hash = `#x=pi&w=${w}`;
     await until(shown(w, () => !walk.battle && walk.geo));
     const counts = battleCounts(w),
-      grid = !!MODES[w].grid;
+      grid = !!MODES[w].edges;
     const built = (K, stops) =>
       $('mode').value === w && walk.battle?.player?.K === K && walk.battle.player.stops === stops; // (this link's battle, not the one before it)
     checked++;

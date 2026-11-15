@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.11';
+const VERSION = '0.5.12';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -3801,7 +3801,6 @@ const HULL_SOLIDS = {
     ],
     pic: 'tiling-rhombille', // (along a 3-fold axis: 3 rhombi round it, the rhombille tiling's picture)
     mark: '■',
-    inflated: 0.5, // (its default Shape, half way: see DISPLAY_DEFAULTS)
     cells: 'Squares', // (its own cells' tab, beside its cuts': a grid of squares laid on each rhombus)
     cuts: ['tetrakis', 'halves'],
     place: [1, 'Dodecahedron'],
@@ -4161,7 +4160,6 @@ const VARIANTS = {
     lattice: 'surface',
     cells: true,
     surface: 'hexsphere',
-    round: true,
     fill: false,
     antOf: 'walkIcosahedronHexTurtleCells',
     get rule() {
@@ -4173,7 +4171,6 @@ const VARIANTS = {
     lattice: 'surface',
     cells: true,
     surface: 'icosa',
-    round: true,
     fill: false,
     antOf: 'walkIcosahedronTrianglesTurtleCells',
     get rule() {
@@ -4230,7 +4227,6 @@ const VARIANTS = {
     initial: 48,
     net: 'square',
     perspective: true,
-    round: true,
     rule: 'on a torus of squares: <b>0</b> turn left, <b>1</b> straight on, <b>2</b> turn right',
   },
   walkTorusTrianglesTurtleCells: {
@@ -4243,7 +4239,6 @@ const VARIANTS = {
     initial: 48,
     net: 'tri',
     perspective: true,
-    round: true,
     rule: 'on a torus of triangles: exit through the <b>0</b> left or <b>1</b> right edge',
   },
   // Cairo pentagons: out through one of the 4 other edges, edge k + 1 the sharpest right (as the 2D walk)
@@ -4256,7 +4251,6 @@ const VARIANTS = {
     initial: 32,
     net: 'cairo',
     perspective: true,
-    round: true,
     rule: 'on a torus of Cairo pentagons: out through one of its 4 other edges, <b>0</b> sharp left, <b>1</b> left, <b>2</b> right, <b>3</b> sharp right',
   },
   // hexagons: entering through edge k, edge k + 1 is a sharp right, k + 2 right, k + 3 straight on
@@ -4270,7 +4264,6 @@ const VARIANTS = {
     initial: 48,
     net: 'hex',
     perspective: true,
-    round: true,
     rule: 'on a torus of hexagons: <b>0</b> sharp left, <b>1</b> left, <b>2</b> straight, <b>3</b> right, <b>4</b> sharp right',
   },
   walkMobiusStripSquaresTurtleCells: {
@@ -4282,7 +4275,6 @@ const VARIANTS = {
     surface: 'mobius',
     net: 'square',
     perspective: true,
-    round: true,
     rule: 'on a Möbius strip of squares: <b>0</b> turn left, <b>1</b> straight on, <b>2</b> turn right (over its edge, onto the face behind)',
   },
   walkMobiusStripHexTurtleCells: {
@@ -4294,7 +4286,6 @@ const VARIANTS = {
     surface: 'mobiusHex',
     net: 'hex',
     perspective: true,
-    round: true,
     rule: 'on a Möbius strip of hexagons: <b>0</b> sharp left, <b>1</b> left, <b>2</b> straight, <b>3</b> right, <b>4</b> sharp right (over its edge, onto the face behind)',
   },
   // a Klein bottle (its neck through its side, opening into its bottom): as the torus's walks
@@ -4306,7 +4297,6 @@ const VARIANTS = {
     twin: 'walkKleinBottleSquaresTurtleEdges',
     surface: 'klein',
     net: 'square',
-    round: true,
     rule: 'on a Klein bottle of squares: <b>0</b> turn left, <b>1</b> straight on, <b>2</b> turn right',
   },
   walkKleinBottleHexTurtleCells: {
@@ -4317,7 +4307,6 @@ const VARIANTS = {
     twin: 'walkKleinBottleHexTurtleEdges',
     surface: 'kleinHex',
     net: 'hex',
-    round: true,
     rule: 'on a Klein bottle of hexagons: <b>0</b> sharp left, <b>1</b> left, <b>2</b> straight, <b>3</b> right, <b>4</b> sharp right',
   },
   walkKleinBottleTrianglesTurtleCells: {
@@ -4328,7 +4317,6 @@ const VARIANTS = {
     twin: 'walkKleinBottleTrianglesTurtleEdges',
     surface: 'kleinTri',
     net: 'tri',
-    round: true,
     rule: 'on a Klein bottle of triangles: exit through the <b>0</b> left or <b>1</b> right edge',
   },
   walkKleinBottleCairoTurtleCells: {
@@ -4338,7 +4326,6 @@ const VARIANTS = {
     cells: true,
     surface: 'kleinCairo',
     net: 'cairo',
-    round: true,
     rule: 'on a Klein bottle of Cairo pentagons: out through one of its 4 other edges, <b>0</b> sharp left, <b>1</b> left, <b>2</b> right, <b>3</b> sharp right',
   },
   walkMobiusStripCairoTurtleCells: {
@@ -4349,7 +4336,6 @@ const VARIANTS = {
     surface: 'mobiusCairo',
     net: 'cairo',
     perspective: true,
-    round: true,
     rule: 'on a Möbius strip of Cairo pentagons: out through one of its 4 other edges, <b>0</b> sharp left, <b>1</b> left, <b>2</b> right, <b>3</b> sharp right (over its edge, onto the face behind)',
   },
   walkMobiusStripTrianglesTurtleCells: {
@@ -4361,7 +4347,6 @@ const VARIANTS = {
     surface: 'mobiusTri',
     net: 'tri',
     perspective: true,
-    round: true,
     rule: 'on a Möbius strip of triangles: exit through the <b>0</b> left or <b>1</b> right edge (over its edge, onto the face behind)',
   },
   walkCubeSquaresTurtleCells: {
@@ -4398,7 +4383,6 @@ const VARIANTS = {
     ant: 'antIcosahedronHexCells',
     surface: 'hexsphere',
     net: 'hex',
-    round: true, // (the hexagons' L, R only: no straight on, nor sharp, across a pentagon)
     rule: 'on an icosahedron of hexagons (and 12 pentagons: a Goldberg polyhedron): exit through the <b>0</b> front left or <b>1</b> front right edge',
   },
   walkStellaOctangulaTrianglesTurtleCells: {
@@ -4430,7 +4414,6 @@ const VARIANTS = {
     ant: 'antIcosahedronTrianglesCells',
     surface: 'icosa',
     net: 'tri',
-    round: true,
     rule: 'on an icosahedron of triangles: exit through the <b>0</b> left or <b>1</b> right edge',
   },
   // along the edges: from corner to corner, turning by these angles (degrees, left positive), or as close
@@ -4445,7 +4428,6 @@ const VARIANTS = {
     initial: 48,
     turns: [90, 0, -90],
     perspective: true,
-    round: true,
     rule: 'along the edges of a torus of squares: <b>0</b> turn left, <b>1</b> straight on, <b>2</b> turn right',
   },
   walkTorusTrianglesTurtleEdges: {
@@ -4458,7 +4440,6 @@ const VARIANTS = {
     initial: 48,
     turns: [120, 60, 0, -60, -120],
     perspective: true,
-    round: true,
     rule: 'along the edges of a torus of triangles: <b>0</b> sharp left, <b>1</b> left, <b>2</b> straight, <b>3</b> right, <b>4</b> sharp right',
   },
   walkTorusHexTurtleEdges: {
@@ -4471,7 +4452,6 @@ const VARIANTS = {
     initial: 48,
     turns: [60, -60],
     perspective: true,
-    round: true,
     rule: 'along the edges of a torus of hexagons: <b>0</b> turn left, <b>1</b> turn right',
   },
   walkMobiusStripSquaresTurtleEdges: {
@@ -4483,7 +4463,6 @@ const VARIANTS = {
     edges: true,
     turns: [90, 0, -90],
     perspective: true,
-    round: true,
     rule: 'along the edges of a Möbius strip of squares: <b>0</b> turn left, <b>1</b> straight on, <b>2</b> turn right (over its edge, onto the face behind)',
   },
   walkMobiusStripHexTurtleEdges: {
@@ -4495,7 +4474,6 @@ const VARIANTS = {
     edges: true,
     turns: [60, -60],
     perspective: true,
-    round: true,
     rule: 'along the edges of a Möbius strip of hexagons: <b>0</b> turn left, <b>1</b> turn right (over its edge, onto the face behind)',
   },
   walkMobiusStripTrianglesTurtleEdges: {
@@ -4507,7 +4485,6 @@ const VARIANTS = {
     edges: true,
     turns: [120, 60, 0, -60, -120],
     perspective: true,
-    round: true,
     rule: 'along the edges of a Möbius strip of triangles: <b>0</b> sharp left, <b>1</b> left, <b>2</b> straight, <b>3</b> right, <b>4</b> sharp right (over its edge, onto the face behind)',
   },
   walkKleinBottleSquaresTurtleEdges: {
@@ -4518,7 +4495,6 @@ const VARIANTS = {
     surface: 'klein',
     edges: true,
     turns: [90, 0, -90],
-    round: true,
     rule: 'along the edges of a Klein bottle of squares: <b>0</b> turn left, <b>1</b> straight on, <b>2</b> turn right',
   },
   walkKleinBottleHexTurtleEdges: {
@@ -4529,7 +4505,6 @@ const VARIANTS = {
     surface: 'kleinHex',
     edges: true,
     turns: [60, -60],
-    round: true,
     rule: 'along the edges of a Klein bottle of hexagons: <b>0</b> turn left, <b>1</b> turn right',
   },
   walkKleinBottleTrianglesTurtleEdges: {
@@ -4540,7 +4515,6 @@ const VARIANTS = {
     surface: 'kleinTri',
     edges: true,
     turns: [120, 60, 0, -60, -120],
-    round: true,
     rule: 'along the edges of a Klein bottle of triangles: <b>0</b> sharp left, <b>1</b> left, <b>2</b> straight, <b>3</b> right, <b>4</b> sharp right',
   },
   walkCubeSquaresTurtleEdges: {
@@ -4579,9 +4553,9 @@ const VARIANTS = {
   },
   // Set aside: on triangles, turns of ±60° only walk a hidden grid of hexagons (3 times fewer
   // corners), so they need many triangles for few patterns; the hexagon sphere does it directly.
-  // icosaGrid2: { base: 2, lattice: 'surface', surface: 'icosa', edges: true, turns: [60, -60], round: true,
+  // icosaGrid2: { base: 2, lattice: 'surface', surface: 'icosa', edges: true, turns: [60, -60],
   //               rule: 'along the edges of an icosahedron of triangles: <b>0</b> front left, <b>1</b> front right (at a corner of the solid, the nearest edge)' },
-  // icosaGrid3: { base: 3, lattice: 'surface', surface: 'icosa', edges: true, turns: [60, 0, -60], round: true,
+  // icosaGrid3: { base: 3, lattice: 'surface', surface: 'icosa', edges: true, turns: [60, 0, -60],
   //               rule: 'along the edges of an icosahedron of triangles: <b>0</b> front left, <b>1</b> forward, <b>2</b> front right (at a corner of the solid, the nearest edge)' },
   walkIcosahedronHexTurtleEdges: {
     base: 2,
@@ -4591,7 +4565,6 @@ const VARIANTS = {
     surface: 'hexsphere',
     edges: true,
     turns: [60, -60],
-    round: true,
     rule: 'along the edges of an icosahedron of hexagons (and 12 pentagons: a Goldberg polyhedron): <b>0</b> turn left, <b>1</b> turn right',
   },
   walkStellaOctangulaTrianglesTurtleEdges: {
@@ -4622,7 +4595,6 @@ const VARIANTS = {
     surface: 'icosa',
     edges: true,
     turns: [120, 60, 0, -60, -120],
-    round: true,
     rule: 'along the edges of an icosahedron of triangles: <b>0</b> sharp left, <b>1</b> left, <b>2</b> straight, <b>3</b> right, <b>4</b> sharp right (at a corner of the solid, the nearest edge)',
   },
   lifeSquares: { base: 2, lattice: 'square', life: true, plane: 'square', where: 'a grid of squares' }, // on the plane (see plane)
@@ -4858,7 +4830,6 @@ const VARIANTS = {
     surface: 'torusKite',
     life: true,
     perspective: true,
-    round: true,
     where: 'a torus of kites',
   },
   lifeMobiusStripKites: {
@@ -4867,7 +4838,6 @@ const VARIANTS = {
     surface: 'mobiusKite',
     life: true,
     perspective: true,
-    round: true,
     where: 'a Möbius strip of kites (both faces, over its edge onto the one behind)',
   },
   lifeKleinBottleKites: {
@@ -4875,7 +4845,6 @@ const VARIANTS = {
     lattice: 'surface',
     surface: 'kleinKite',
     life: true,
-    round: true,
     where: 'a Klein bottle of kites',
   },
   lifeTorusSquares: {
@@ -4884,7 +4853,6 @@ const VARIANTS = {
     surface: 'torus',
     life: true,
     perspective: true,
-    round: true,
     where: 'a torus of squares (a grid that wraps around both ways)',
   },
   lifeTorusHex: {
@@ -4893,7 +4861,6 @@ const VARIANTS = {
     surface: 'torusHex',
     life: true,
     perspective: true,
-    round: true,
     where: 'a torus of hexagons',
   },
   lifeTorusTriangles: {
@@ -4902,7 +4869,6 @@ const VARIANTS = {
     surface: 'torusTri',
     life: true,
     perspective: true,
-    round: true,
     where: 'a torus of triangles',
   },
   lifeTorusCairo: {
@@ -4911,7 +4877,6 @@ const VARIANTS = {
     surface: 'torusCairo',
     life: true,
     perspective: true,
-    round: true,
     where: 'a torus of Cairo pentagons',
   },
   // a Möbius strip: its two faces one surface, over its edge onto the face behind (2 colours: a face each)
@@ -4921,7 +4886,6 @@ const VARIANTS = {
     surface: 'mobius',
     life: true,
     perspective: true,
-    round: true,
     where: 'a Möbius strip of squares (both faces, over its edge onto the one behind)',
   },
   lifeMobiusStripHex: {
@@ -4930,7 +4894,6 @@ const VARIANTS = {
     surface: 'mobiusHex',
     life: true,
     perspective: true,
-    round: true,
     where: 'a Möbius strip of hexagons (both faces, over its edge onto the one behind)',
   },
   lifeKleinBottleSquares: {
@@ -4938,7 +4901,6 @@ const VARIANTS = {
     lattice: 'surface',
     surface: 'klein',
     life: true,
-    round: true,
     where: 'a Klein bottle of squares',
   },
   lifeKleinBottleHex: {
@@ -4946,7 +4908,6 @@ const VARIANTS = {
     lattice: 'surface',
     surface: 'kleinHex',
     life: true,
-    round: true,
     where: 'a Klein bottle of hexagons',
   },
   lifeKleinBottleTriangles: {
@@ -4954,7 +4915,6 @@ const VARIANTS = {
     lattice: 'surface',
     surface: 'kleinTri',
     life: true,
-    round: true,
     where: 'a Klein bottle of triangles',
   },
   lifeKleinBottleCairo: {
@@ -4962,7 +4922,6 @@ const VARIANTS = {
     lattice: 'surface',
     surface: 'kleinCairo',
     life: true,
-    round: true,
     where: 'a Klein bottle of Cairo pentagons',
   },
   lifeMobiusStripCairo: {
@@ -4971,7 +4930,6 @@ const VARIANTS = {
     surface: 'mobiusCairo',
     life: true,
     perspective: true,
-    round: true,
     where: 'a Möbius strip of Cairo pentagons (both faces, over its edge onto the one behind)',
   },
   lifeMobiusStripTriangles: {
@@ -4980,7 +4938,6 @@ const VARIANTS = {
     surface: 'mobiusTri',
     life: true,
     perspective: true,
-    round: true,
     where: 'a Möbius strip of triangles (both faces, over its edge onto the one behind)',
   },
   lifeCubeSquares: {
@@ -5056,7 +5013,6 @@ const VARIANTS = {
     lattice: 'surface',
     surface: 'icosaKite',
     life: true,
-    round: true,
     where: 'an icosahedron of kites (each triangle cut in 3)',
   },
   lifeStellaOctangulaKites: {
@@ -5078,7 +5034,6 @@ const VARIANTS = {
     lattice: 'surface',
     surface: 'globe',
     life: true,
-    round: true,
     where: 'a globe: squares between its parallels and meridians, one cell round each pole',
   },
   lifeStellaOctangulaTriangles: {
@@ -5100,7 +5055,6 @@ const VARIANTS = {
     lattice: 'surface',
     surface: 'icosa',
     life: true,
-    round: true,
     where: 'an icosahedron of triangles',
   },
   lifeIcosahedronHex: {
@@ -5108,7 +5062,6 @@ const VARIANTS = {
     lattice: 'surface',
     surface: 'hexsphere',
     life: true,
-    round: true,
     where: 'an icosahedron of hexagons, a Goldberg polyhedron (its 12 pentagons are walls)',
   },
   lifeIcosahedronTwisted: {
@@ -5116,7 +5069,6 @@ const VARIANTS = {
     lattice: 'surface',
     surface: 'twistedsphere',
     life: true,
-    round: true,
     where:
       'an icosahedron of hexagons (a Goldberg polyhedron) turned 15°, a triangle between each three (Twisted on a sphere, its 12 pentagons too)',
   },
@@ -6818,6 +6770,17 @@ const DISPLAY_BY_TAB = {
 // state, as long as none picks it; ant: an ant coming in), its value: one for all, or each tab's ({ all, Life… }:
 // a tab's own, else all's), or by the variant or a battle (a function); displayDefaults and the variant's change set them, and
 // the tiles' marks read them (see defaultOf, defaultMark)
+// Each shape's Shape at first, by the menu's name (Flat 0 ── Inflated 1): the balls and the sheets rolled up round, the
+// rhombic dodecahedron half way; the others flat
+const SHAPE_INFLATED = {
+  Globe: 1,
+  Sphere: 1,
+  Rosettes: 1,
+  Torus: 1,
+  'Möbius strip': 1,
+  'Klein bottle': 1,
+  'Rhombic dodecahedron': 0.5,
+};
 const DISPLAY_DEFAULTS = {
   look: [
     'colourMode',
@@ -6830,7 +6793,7 @@ const DISPLAY_DEFAULTS = {
   autoRotate: ['autoRotate', 'tab', false],
   autoFit: ['autoFit', 'variant', true],
   upright: ['upright', 'variant', false],
-  shape: ['shapeM', 'variant', (variant) => variant.inflated ?? (variant.round ? 1 : 0)], // (Flat 0 ── Inflated 1: a round surface inflated, a solid flat; a variant's own, its inflated)
+  shape: ['shapeM', 'variant', (variant, w) => SHAPE_INFLATED[NAV[w][2]] ?? 0], // (Flat 0 ── Inflated 1: by its shape, see SHAPE_INFLATED)
   perspective: [
     'perspective',
     'variant',
@@ -9918,7 +9881,7 @@ for (const [k, S] of Object.entries(HULL_SOLIDS)) {
     ...(S.cuts ?? []).map((c) => [`${k}${HULL_CUTS[c].name}`, HULL_CUTS[c].name, `${S.where}, ${HULL_CUTS[c].words}`]),
   ]) {
     const w = variantName('Life', S.name, tiling);
-    VARIANTS[w] = { base: 2, lattice: 'surface', surface, life: true, where, inflated: S.inflated }; // (none: its round's)
+    VARIANTS[w] = { base: 2, lattice: 'surface', surface, life: true, where };
     VARIANT_ICONS[w] = hullIcon(k);
     NAV[w] = ['Life', 'Surfaces', S.name, 'Life', ''];
     variantOption(w, 'Automata on surfaces', where);
@@ -9940,7 +9903,6 @@ for (const [kind, t] of Object.entries(TILINGS)) {
         surface: F.of(kind),
         life: true,
         ...(F.perspective ? { perspective: true } : {}),
-        round: true,
         where: `${F.a} of ${t.where.replace(/^a grid of /, '')}${F.tail}`,
       };
       VARIANT_ICONS[m] = fold;
@@ -12457,7 +12419,7 @@ const SURFACE_WORMS = {
   antKleinBottleTrianglesEdges: 'walkKleinBottleTrianglesTurtleEdges',
 };
 for (const [w, walkVariant] of Object.entries(SURFACE_WORMS)) {
-  const { surface, initial, turns, perspective, round } = VARIANTS[walkVariant];
+  const { surface, initial, turns, perspective } = VARIANTS[walkVariant];
   VARIANTS[w] = {
     base: 5,
     arrows: '↙↖↑↗↘',
@@ -12467,7 +12429,6 @@ for (const [w, walkVariant] of Object.entries(SURFACE_WORMS)) {
     initial,
     turns,
     perspective,
-    round,
     worm: true,
     get rule() {
       return wormRuleText();
@@ -12480,7 +12441,7 @@ for (const [w, walkVariant] of Object.entries(SURFACE_WORMS)) {
     .push(w);
 }
 for (const [w, [walkVariant, place]] of Object.entries(SURFACE_ANTS)) {
-  const { surface, initial, turns, perspective, round } = VARIANTS[walkVariant];
+  const { surface, initial, turns, perspective } = VARIANTS[walkVariant];
   VARIANTS[w] = {
     base: 2,
     lattice: 'surface',
@@ -12489,7 +12450,6 @@ for (const [w, [walkVariant, place]] of Object.entries(SURFACE_ANTS)) {
     initial,
     turns,
     perspective,
-    round,
     fill: false,
     antOf: walkVariant,
     get rule() {
@@ -14432,7 +14392,6 @@ for (const k of Object.keys(ROSETTE_SPHERES)) {
     lattice: 'surface',
     surface: `${k}Sphere`,
     life: true,
-    round: true,
     where: `a sphere of two ${name} rosettes, the south's teeth in the north's notches`,
   };
   variantOption(w, 'Automata on surfaces', `${name} sphere`);
@@ -16110,11 +16069,19 @@ function updateMorphButton() {
   });
   const [kind, space] = NAV[walk.variant],
     sheet = ['Torus', 'Möbius strip', 'Klein bottle'],
-    ways = { Inflated: [], Rolled: [], Flat: [] };
+    ways = { Inflated: [], Rolled: [], 'Half inflated': [], Flat: [] };
   for (const s of navValues(2, [kind, space])) {
     const w = Object.keys(NAV).find((v) => NAV[v][0] === kind && NAV[v][1] === space && NAV[v][2] === s);
     if (!['pits', 'bumps', 'menger'].includes(VARIANTS[w].surface.replace(/Tetrakis$/, '')))
-      ways[VARIANTS[w].round ? (sheet.includes(s) ? 'Rolled' : 'Inflated') : 'Flat'].push(SHAPE_SHORT[s] ?? s);
+      ways[
+        (SHAPE_INFLATED[s] ?? 0) === 0
+          ? 'Flat'
+          : SHAPE_INFLATED[s] < 1
+            ? 'Half inflated'
+            : sheet.includes(s)
+              ? 'Rolled'
+              : 'Inflated'
+      ].push(SHAPE_SHORT[s] ?? s);
   }
   const box = $('shapeRow').querySelector('.shape-slider');
   box.dataset.default = Object.entries(ways)

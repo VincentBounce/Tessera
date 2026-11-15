@@ -11,13 +11,13 @@
  *
  * How it fits together
  *   1. The Number is a formula (Part 4). It is parsed and checked on the page, then evaluated
- *      in a worker (Part 1), which sends back its digits in the base the mode needs.
- *   2. The walk mode turns each digit into a move: on a lattice or along a spiral (Part 6), or
+ *      in a worker (Part 1), which sends back its digits in the base the variant needs.
+ *   2. The walk variant turns each digit into a move: on a lattice or along a spiral (Part 6), or
  *      from tile to tile on a surface (Part 7). The Game of Life (Part 8) instead reads one
  *      digit per tile of a surface as its starting state.
  *   3. The whole walk is built at once (arrays of positions, Part 5); the animation (Part 11)
  *      only reveals it step by step, so jumping anywhere is instant.
- *   4. A setup (Part 10) — number, mode, surface, rule, Life start — lives in the page link, in
+ *   4. A setup (Part 10) — number, variant, surface, rule, Life start — lives in the page link, in
  *      the Gallery and in its JSON files. Display choices are never part of it.
  *
  * Contents
@@ -25,7 +25,7 @@
  *   Part 2   Catalogues and state
  *   Part 3   Labels, digit counts and random draws
  *   Part 4   Number formulas: the language, its checks and the Number cards
- *   Part 5   Picking a mode, computing, building the walk, 3D projection
+ *   Part 5   Picking a variant, computing, building the walk, 3D projection
  *   Part 6   Walks on lattices and spirals
  *   Part 7   Tiled surfaces: meshes, flat ↔ round, walks on surfaces
  *   Part 8   Game of Life on the surfaces
@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.2';
+const VERSION = '0.5.3';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -852,7 +852,7 @@ function iroot(v, k) {
  * PART 2 — CATALOGUES AND STATE
  * ==============================================================================================
  *
- * The fixed lists (Number cards, walk modes, known primes) and the global state of the page.
+ * The fixed lists (Number cards, walk variants, known primes) and the global state of the page.
  */
 
 /* ---- 2.1 Helpers, directions and colours -------------------------------------------------- */
@@ -1572,11 +1572,11 @@ const FORMULA_NOTES = {
   dragon: () => 'the folds of a strip folded in two again and again (0 and 1): the dragon curve, as turns',
 };
 
-/* ---- 2.3 Walk modes ----------------------------------------------------------------------- */
+/* ---- 2.3 Walk variants ----------------------------------------------------------------------- */
 // base: the base the digits are written in; arrows: each digit's step as the walker sees it, heading
 // up (⊙ up toward you, ⊗ down; a spiral's □ moved, ■ drawn), shown above the digits (none where a digit is not a turn); lattice: how a step is taken ('square', 'tri', 'hex',
 // 'cube' or 'surface' for a tiled surface); life: a Game of Life instead of a walk. The (hidden)
-// mode menu in index.html lists them, grouped as the tabs of the Walk section.
+// variant menu in index.html lists them, grouped as the tabs of the Walk section.
 // The 2D walks go along the lines of a grid, or from cell to cell (cells: true), twin: the other
 // way round. Along lines, the walk goes from corner to corner, and the corners of a grid are the
 // cell centres of another: of squares for squares, of hexagons for triangles, of triangles for
@@ -3764,7 +3764,7 @@ for (const kind of MOBIUS_TILINGS) {
 // family (see FAMILIES), its name, its surfaces' and Life's names, its tilings, which way its turned tiles turn; FOLDED: each
 // folded surface (torusRhombitri, mobiusRhombitri, kleinRhombitriTurned…), its fold, its tiling, its strip (MOBIUS_STRIPS:
 // a strip's or a bottle's sheet), its turn (turned: by deg) and its sheet's side round the ring (its tiles' turn, see
-// tilesTurn); its modes, tabs, turned twin, cells and sizes all from it
+// tilesTurn); its variants, tabs, turned twin, cells and sizes all from it
 const FOLDS = {
   torus: {
     family: 0,
@@ -3870,7 +3870,7 @@ const tilingWorld = (kind, [u, v]) => {
 };
 
 // the rosettes built in 2n cones round their middle, a family a tile: Mirror n, the mirrored houses (see HOUSES), and Hexa n,
-// Sugimoto's equilateral hexagons (see HEXAS); for each n here its own mark (its rules', see the rule menu); their modes,
+// Sugimoto's equilateral hexagons (see HEXAS); for each n here its own mark (its rules', see the rule menu); their variants,
 // names, icons and tables made from this list, never written one by one
 const CONED = {
   mirror: {
@@ -3906,7 +3906,7 @@ const conedFamily = (kind) =>
   Object.keys(CONED).find(
     (fam) => CONED[fam].marks[kind.slice(fam.length)] && kind === `${fam}${kind.slice(fam.length)}`,
   );
-const MODES = {
+const VARIANTS = {
   // the walks by a rule, a command per digit (see 6.4b): net, the cells they go through (a grid's walk: its dual's cells)
   walkSquaresTurtleEdges: {
     lattice: 'square',
@@ -5067,7 +5067,7 @@ const MODES = {
 // Every rule to pick, one table: its kind, its name (the card's), its rule (as typed in the field), what it does (about,
 // its tooltip's), its tiling (the network whose commands it is written in; any: an ant's or a turmite's, in the commands
 // every grid shares, L R a notch, L2 R2 two, N, U, B: see COMMANDS) and its picture where not its kind's. A creature's side (Grid: along
-// the edges; Cells: from cell to cell; a walk's: its mode's, either) and picture in RULE_KINDS.
+// the edges; Cells: from cell to cell; a walk's: its variant's, either) and picture in RULE_KINDS.
 const RULE_KINDS = {
   walk: {},
   ant: { side: 'cells', pic: 'ant' },
@@ -6421,10 +6421,10 @@ const PRIMORIAL_DIGITS = {
 
 /* ---- 2.5 Global state --------------------------------------------------------------------- */
 // Digits already computed stay in the cache (key: canonical formula + base), so going back to a
-// number or a mode is instant.
+// number or a variant is instant.
 const digitsCache = remember('digitsCache', {}); // key → { intPart: "10", digits: Uint8Array (fractional part) }
 const digitsKey = (F, base) => `${F.text}|${base}`; // (a number's digits in a base: pi|2, π's binary digits)
-let digitsComputed = null; // the number's digits computed: { head: integer-part digits, digits, base, mode they are for, … }
+let digitsComputed = null; // the number's digits computed: { head: integer-part digits, digits, base, variant they are for, … }
 let numberWorker = null; // (the page's number's digits being computed, see compute)
 
 // A walk's every field, as it starts: each build begins from these (see buildWalkOf), then sets its own.
@@ -6434,9 +6434,9 @@ let numberWorker = null; // (the page's number's digits being computed, see comp
 // field here or there: either a field a builder sets is missing from this list (declare it here, once),
 // or the debris is not in `walk` at all. Then it is one of two other kinds, each fixed at its own root:
 // - state kept outside `walk` (fill, visitData, hunt, the layers…): reset with it in buildWalkOf, or moved into `walk`;
-// - the tab picked mixed with the walk shown: while a walk is made the tab (tabMode()) is already the next
-//   one. What describes the walk shown reads walk.mode; what sets up the next one reads the tab, and only
-//   the tab's own figure (see pickedFigure), never walk.geo with the tab's mode.
+// - the tab picked mixed with the walk shown: while a walk is made the tab (tabVariant()) is already the next
+//   one. What describes the walk shown reads walk.variant; what sets up the next one reads the tab, and only
+//   the tab's own figure (see pickedFigure), never walk.geo with the tab's variant.
 // Checked every night (CLAUDE.md, Night audits: clean transitions).
 const freshWalk = () => ({
   n: 0, // number of steps
@@ -6487,7 +6487,7 @@ const freshWalk = () => ({
   persp: null, // the perspective camera (see setPerspective)
   widestShown: 0, // the furthest step or generation shown yet: the step line as wide, never narrower (see formatNumberAsWide)
 });
-const walk = { mode: null, ...freshWalk() }; // (mode: the one it is built for, see buildWalkOf)
+const walk = { variant: null, ...freshWalk() }; // (variant: the one it is built for, see buildWalkOf)
 
 let stepShown = 0; // steps taken so far
 let drawn = 0; // steps already drawn on the path layer
@@ -6536,20 +6536,20 @@ function updateRuleText() {} // the rule is shown by describe (the Play card)
 
 // Game of Life needs one base-(K + 1) digit per cell; walks use the requested number of digits
 function digitsNeeded() {
-  const mode = MODES[tabMode()],
+  const variant = VARIANTS[tabVariant()],
     size = randomPrimeSize();
-  if (!readsDigits(tabMode())) return 0; // (none read, none computed: a creature by its rule, Life from no digits, the loops)
-  if (mode.life)
-    return mode.elementary
+  if (!readsDigits(tabVariant())) return 0; // (none read, none computed: a creature by its rule, Life from no digits, the loops)
+  if (variant.life)
+    return variant.elementary
       ? 2 * lengthAsked() + 16
-      : mode.plane
-        ? gridSize(planeKind(mode.plane), plane.side)[2]
-        : SURFACES[surfaceOf(mode)].tiles(gridSizePlayed()); // all the digits for a start by the digits (a cell each); else a hunt's patch
+      : variant.plane
+        ? gridSize(planeKind(variant.plane), plane.side)[2]
+        : SURFACES[surfaceOf(variant)].tiles(gridSizePlayed()); // all the digits for a start by the digits (a cell each); else a hunt's patch
   // a worm by the digits: one read at a new situation only (its free lines at a corner, met for the first time: a few
   // dozen at most, see wormMind), the number's next that fits: WORM_DIGITS enough, its steps the length asked
-  if (mode.worm) return Math.min(lengthAsked(), WORM_DIGITS);
+  if (variant.worm) return Math.min(lengthAsked(), WORM_DIGITS);
   // a random prime is walked whole: its size (decimal digits) written in the walk's base
-  return size ? Math.ceil((size * Math.log(10)) / Math.log(mode.base)) + 1 : lengthAsked();
+  return size ? Math.ceil((size * Math.log(10)) / Math.log(variant.base)) + 1 : lengthAsked();
 }
 
 // The Play card says what is shown: its title the number, the loop and the base; open, the walk and
@@ -6589,16 +6589,16 @@ const stepLook = (look) => {
 let lifeStart = null; // where a Life start comes from when it is not the number's digits (see setLifeSeed)
 let barTitle = ''; // a walk's title: its number, a creature's name and what it turns by (its loop's link after it, see updateStats)
 function describe(base) {
-  const mode = MODES[walk.mode],
+  const variant = VARIANTS[walk.variant],
     sym = withIcons(shownSymbol); // (the walk shown's, described once built)
   setLinks($('barNum'), (barTitle = withIcons(shownSymbol)));
   $('barNum').title = formulaInUse;
   // the chips after the title, in one order everywhere: a walk's base, then the rule (a walk's, a creature's, Life's: a click,
   // how it works); a creature turns by its rule, or by the digits of a number: that number first
-  const w = walk.mode,
-    creature = MODES[w].worm || ANTS[w],
+  const w = walk.variant,
+    creature = VARIANTS[w].worm || ANTS[w],
     colours = antColours(w);
-  const walkRule = !creature && !mode.life && WALK_NETS[mode.net] ? walkRuleOf(mode) : '';
+  const walkRule = !creature && !variant.life && WALK_NETS[variant.net] ? walkRuleOf(variant) : '';
   $('barBase').hidden = !readsNumber(getSetup()); // (its number read: a walk, a creature by the digits, Life's Digits)
   $('barBase').textContent = baseWords(base);
   showDigitsTip($('barBase'), baseWords(base)); // (a click shows the number, as the Show digits button)
@@ -6612,7 +6612,7 @@ function describe(base) {
     const R = creatureRules(w);
     setLinks($('barNum'), (barTitle = walkName(w)));
     $('barRule').title = [
-      R.byDigits ? `It turns by the digits of ${shownSymbol}, base ${MODES[w].base}` : 'It turns by its rule',
+      R.byDigits ? `It turns by the digits of ${shownSymbol}, base ${VARIANTS[w].base}` : 'It turns by its rule',
       colours && `${colours} colours`,
     ]
       .filter(Boolean)
@@ -6622,15 +6622,15 @@ function describe(base) {
   if (colours) base = colours; // its chips, one per colour
   $('barLoop').hidden = true; // (a reversible one's: not back yet; a walk's loop, its title's link, see updateStats)
   $('ruleChips').replaceChildren();
-  if (!mode.life) {
+  if (!variant.life) {
     // the rule: what comes before its colon, then its digits as chips, when it names each one
-    const at = mode.rule.indexOf(': '),
-      lead = at < 0 ? mode.rule : mode.rule.slice(0, at);
-    const items = [...mode.rule.slice(at + 2).matchAll(/<b>(\d+)<\/b>\s*([^,<]*)/g)];
-    const chips = at >= 0 && items.length === base && base <= (mode.antOf ? 12 : 8); // an ant: up to its 12 colours
-    const after = mode.rule.match(/\(([^)]*)\)\s*$/)?.[1]; // a closing note: "(at a corner of the cube, the nearest edge)"
+    const at = variant.rule.indexOf(': '),
+      lead = at < 0 ? variant.rule : variant.rule.slice(0, at);
+    const items = [...variant.rule.slice(at + 2).matchAll(/<b>(\d+)<\/b>\s*([^,<]*)/g)];
+    const chips = at >= 0 && items.length === base && base <= (variant.antOf ? 12 : 8); // an ant: up to its 12 colours
+    const after = variant.rule.match(/\(([^)]*)\)\s*$/)?.[1]; // a closing note: "(at a corner of the cube, the nearest edge)"
     // the words around the digits, kept in the description: "exit through the … edge"
-    const tail = mode.rule.slice(at + 2),
+    const tail = variant.rule.slice(at + 2),
       pre = tail.slice(0, tail.indexOf('<b>')).trim(),
       edge = / edge\b/.test(tail) ? ' edge' : '';
     const around = pre ? ` · ${pre} …${edge}` : '';
@@ -6647,7 +6647,7 @@ function describe(base) {
         : '';
     $('description').innerHTML = capitalised(
       [
-        chips ? lead + around + (after ? ` · ${after}` : '') : mode.rule,
+        chips ? lead + around + (after ? ` · ${after}` : '') : variant.rule,
         bridges,
         highway,
         walk.wormEnd ? loopText() : loopStop(),
@@ -6665,7 +6665,7 @@ function describe(base) {
             .replace(/\s+(or|edge)$/, '');
           const c = document.createElement('span');
           c.className = 'rule-chip';
-          c.innerHTML = `<b style="background:${(mode.antOf ? antChipColour : digitColour)(Number(d))}">${d}</b><span>${what.trim()}<small id="count${d}">0</small></span>`;
+          c.innerHTML = `<b style="background:${(variant.antOf ? antChipColour : digitColour)(Number(d))}">${d}</b><span>${what.trim()}<small id="count${d}">0</small></span>`;
           c.title = `${d}: ${what.trim()}. A click: how it works`;
           return c;
         }),
@@ -6688,7 +6688,7 @@ function describe(base) {
     `Neighbours share an edge or a corner · ${startLead(`${sym} in base ${base} seeds`, `the ${formatNumber(walk.life.seed.length)} cells`)}`; // (the rule, a newborn's colour too: How it works)
 }
 
-// What the Display menu offers depends only on the walk tab (the group of the mode in the menu).
+// What the Display menu offers depends only on the walk tab (the group of the variant in the menu).
 // Colours: a list (colours: Rainbow along the walk always; cells, visits, one per digit, one colour
 // where listed), or the toggles Heatmap of visits and Digits (heatmap); the walks on cells or along
 // the grid are chosen beside the list of walks (Grid / Cells).
@@ -6716,9 +6716,9 @@ const DISPLAY_BY_TAB = {
   '2D spirals': ['heatmap', 'fill', 'translucent', 'cells', 'visits', 'digit', 'edges'], // the 2D walks' menu, some of it greyed out
 };
 // The Display settings' defaults, one table: each its control (a box's id), when it comes back (open: the page's opening
-// only, kept from tab to tab; tab: another tab; mode: every mode; lifeTeams: Life's count of teams; battle: a battle's
+// only, kept from tab to tab; tab: another tab; variant: every variant; lifeTeams: Life's count of teams; battle: a battle's
 // state, as long as none picks it; ant: an ant coming in), its value: one for all, or each tab's ({ all, Life… }:
-// a tab's own, else all's), or by the mode or a battle (a function); displayDefaults and the mode's change set them, and
+// a tab's own, else all's), or by the variant or a battle (a function); displayDefaults and the variant's change set them, and
 // the tiles' marks read them (see defaultOf, defaultMark)
 const DISPLAY_DEFAULTS = {
   look: [
@@ -6726,23 +6726,23 @@ const DISPLAY_DEFAULTS = {
     'tab',
     { Walk: 'gradient', Ant: 'gradient', Life: 'mono', Replicators: 'mono', Rewind: 'mono', Elementary: 'gradient' },
   ], // (Cells: a walk's Rainbow, Life's States, Elementary's Age: the simplest)
-  area: ['area', 'tab', (mode, w) => (NAV[w][0] !== 'Walk' ? 'empty' : NAV[w][1] === '2D' ? 'light' : 'plain')],
+  area: ['area', 'tab', (variant, w) => (NAV[w][0] !== 'Walk' ? 'empty' : NAV[w][1] === '2D' ? 'light' : 'plain')],
   path: ['showPath', 'tab', false], // (Area: Empty, a walk's Light in 2D, Plain in 3D; on cells the cells alone)
   centered: ['centered', 'tab', true],
   autoRotate: ['autoRotate', 'tab', false],
-  autoFit: ['autoFit', 'mode', true],
-  upright: ['upright', 'mode', false],
-  shape: ['shapeM', 'mode', (mode) => (mode.round ? 1 : 0)], // (Flat 0 ── Inflated 1: a round surface inflated, a solid flat)
+  autoFit: ['autoFit', 'variant', true],
+  upright: ['upright', 'variant', false],
+  shape: ['shapeM', 'variant', (variant) => (variant.round ? 1 : 0)], // (Flat 0 ── Inflated 1: a round surface inflated, a solid flat)
   perspective: [
     'perspective',
-    'mode',
-    (mode, w) => perspectiveFor(mode, defaultOf('shape', w), spaceTime && spaceTimeApplies(w)),
-  ], // (as each mode's own, hand-tuned)
+    'variant',
+    (variant, w) => perspectiveFor(variant, defaultOf('shape', w), spaceTime && spaceTimeApplies(w)),
+  ], // (as each variant's own, hand-tuned)
   light: ['light', 'open', true],
   glass: ['glass', 'open', false],
   grid: ['showGrid', 'open', true],
   trail: ['lifeTrail', 'lifeTeams', () => lifeTeams === 1], // (Life's Trail: on in Solo, two states, off in teams; when the teams change)
-  ocean: ['ocean', 'battle', () => battleOn() && NAV[tabMode()][0] === 'Walk'], // (on in a walk's battle on a surface, as long as none picks it)
+  ocean: ['ocean', 'battle', () => battleOn() && NAV[tabVariant()][0] === 'Walk'], // (on in a walk's battle on a surface, as long as none picks it)
   cut: [null, 'open', 0],
   blocks: [null, 'open', false],
   sound: [null, 'open', false],
@@ -6753,31 +6753,31 @@ const DISPLAY_DEFAULTS = {
 function applyDefaults(at) {
   for (const [key, [id, when]] of Object.entries(DISPLAY_DEFAULTS)) {
     if (when !== at || !id) continue; // (one with no box: read where it is used, see defaultOf)
-    const v = defaultOf(key, tabMode());
+    const v = defaultOf(key, tabVariant());
     if (typeof v === 'boolean') $(id).checked = v;
     else $(id).value = v;
   }
 }
-// a setting's default for mode w: its tab's, else all's, or by the mode
+// a setting's default for variant w: its tab's, else all's, or by the variant
 const defaultOf = (key, w) => {
   const v = DISPLAY_DEFAULTS[key][2];
-  return typeof v === 'function' ? v(MODES[w], w) : v && typeof v === 'object' ? (v[NAV[w][0]] ?? v.all) : v;
+  return typeof v === 'function' ? v(VARIANTS[w], w) : v && typeof v === 'object' ? (v[NAV[w][0]] ?? v.all) : v;
 };
 // a tile's mark (see setTile's byDefault): its setting's default, 'on' or 'off'
-const defaultMark = (key) => (defaultOf(key, tabMode()) ? 'on' : 'off');
+const defaultMark = (key) => (defaultOf(key, tabVariant()) ? 'on' : 'off');
 // Shown but greyed out, by the menu's group or the tab: a spiral never crosses itself, so it closes no area and visits each
 // cell once; and its marks read as cells, the line along the spiral (Rainbow along the walk) shows nothing more. Elementary's
 // cells never change once made: no Activity
-// a mode's option in the menu; the menu's group of the mode on (its space: 2D, Surfaces…)
-// the tab's mode: the next walk's (what sets it up reads it; what describes the walk shown reads walk.mode)
-const tabMode = () => $('mode').value;
-const modeOptionOf = (w) => $('mode').querySelector(`option[value="${w}"]`);
-const modeGroup = (w) => modeOptionOf(w).parentElement.label; // (a mode's)
+// a variant's option in the menu; the menu's group of the variant on (its space: 2D, Surfaces…)
+// the tab's variant: the next walk's (what sets it up reads it; what describes the walk shown reads walk.variant)
+const tabVariant = () => $('variant').value;
+const variantOptionOf = (w) => $('variant').querySelector(`option[value="${w}"]`);
+const variantGroup = (w) => variantOptionOf(w).parentElement.label; // (a variant's)
 const DISPLAY_GREYED = { '2D spirals': ['fill', 'visits', 'line'], Elementary: ['digit'] };
-const greyed = (item, w) => [modeGroup(w), NAV[w]?.[0]].some((k) => DISPLAY_GREYED[k]?.includes(item));
+const greyed = (item, w) => [variantGroup(w), NAV[w]?.[0]].some((k) => DISPLAY_GREYED[k]?.includes(item));
 const shows = (item, w, stacked = spaceTime) =>
-  DISPLAY_BY_TAB[modeGroup(w)].includes(item) || (stacked && spaceTimeApplies(w) && VIEW_3D.includes(item)); // (stacked: Stacks on, a setup's, see spaceTime)
-// a display setting greyed at a mode: none in its view, the views that have it said (Grid, Upright, Perspective…); else ''
+  DISPLAY_BY_TAB[variantGroup(w)].includes(item) || (stacked && spaceTimeApplies(w) && VIEW_3D.includes(item)); // (stacked: Stacks on, a setup's, see spaceTime)
+// a display setting greyed at a variant: none in its view, the views that have it said (Grid, Upright, Perspective…); else ''
 const viewWhyNot = (item, w, stacked = spaceTime) =>
   shows(item, w, stacked)
     ? ''
@@ -6785,7 +6785,7 @@ const viewWhyNot = (item, w, stacked = spaceTime) =>
         .filter((g) => DISPLAY_BY_TAB[g].includes(item))
         .join(', ')}.`;
 const useful = (item, w) => shows(item, w) && !greyed(item, w);
-// a look greyed at a mode (Rainbow along a spiral, its Heatmap, Elementary's Activity), its words; else ''
+// a look greyed at a variant (Rainbow along a spiral, its Heatmap, Elementary's Activity), its words; else ''
 const LOOK_WHERE = {
   gradient: 'On a spiral, the line tells nothing.',
   visits: 'On a spiral, each cell is visited once only.',
@@ -6809,25 +6809,25 @@ function updateDisplayMenu() {
     ocean: 'oceanRow',
     cut: 'cutRow',
   };
-  for (const [item, id] of Object.entries(rows)) $(id).hidden = !shows(item, tabMode());
+  for (const [item, id] of Object.entries(rows)) $(id).hidden = !shows(item, tabVariant());
   // Heatmap of visits and Digits instead of a list of colours, on cells only (Digits in 2D only;
   // a spiral marks its cells, each once: both greyed out)
-  const mode = MODES[tabMode()];
+  const variant = VARIANTS[tabVariant()];
   // the cells' looks as tiles (see renderCellModes), in 2D and on a surface: no boxes for Path and Heatmap
   $('showPathRow').hidden = $('heatmapRow').hidden = true;
-  renderCellModes(mode);
-  $('showPath').disabled = !mode.cells; // along the edges, the walk is the path
+  renderCellModes(variant);
+  $('showPath').disabled = !variant.cells; // along the edges, the walk is the path
   // in 2D, Path fades the cells under the rainbow line (on a layer of its own), so that it shows all along
   $('pathLayer').style.opacity =
-    shows('cells', tabMode()) && $('showPath').checked && !$('showPath').disabled ? 0.15 : '';
-  $('heatmap').disabled = !mode.cells;
+    shows('cells', tabVariant()) && $('showPath').checked && !$('showPath').disabled ? 0.15 : '';
+  $('heatmap').disabled = !variant.cells;
   $('heatmap').checked = $('colourMode').value === 'visits';
   // Grid stays in sight, Auto-fit beside it while the box is open; then Centered pattern (Default view), the view's
   // switches as tiles (Perspective, Side light, Auto-rotate: see renderViewTiles) and the shape
-  const spin = shows('autoRotate', tabMode());
+  const spin = shows('autoRotate', tabVariant());
   $('centeredRow').hidden = !spin;
   $('centeredName').textContent = centersPattern() ? 'Centered pattern' : 'Default view'; // (as the hint says it)
-  $('fillAreasRow').hidden = !shows('fill', tabMode()) || !!mode.antOf; // an ant fills no areas
+  $('fillAreasRow').hidden = !shows('fill', tabVariant()) || !!variant.antOf; // an ant fills no areas
   $('fillTooBig').hidden = !(areaFill?.tooBig && areaOn());
   renderAreaModes();
   $('fillLayer').style.opacity = areaLight() ? 0.35 : 1;
@@ -6839,7 +6839,7 @@ function updateDisplayMenu() {
 }
 // The view's switches, standard tiles (toggle): each its checkbox's (the source, kept out of sight), on as it is checked,
 // greyed where its row is hidden (it applies in 3D only); drawn again with the
-// display box and when the box opens (a hand rotation, a new mode: their boxes changed)
+// display box and when the box opens (a hand rotation, a new variant: their boxes changed)
 const VIEW_TILES = [
   [
     'perspective',
@@ -6869,7 +6869,7 @@ function renderViewTiles() {
   );
   if (!$('viewTiles').children.length) $('viewTiles').replaceChildren(...viewTiles);
   // (their defaults, see DISPLAY_DEFAULTS; Perspective's, the shapes' of this kind and space: on for some, off for the others)
-  const [kind, space] = NAV[tabMode()],
+  const [kind, space] = NAV[tabVariant()],
     ways = { on: [], off: [] };
   for (const sh of navValues(2, [kind, space])) {
     const w = Object.keys(NAV).find((v) => NAV[v][0] === kind && NAV[v][1] === space && NAV[v][2] === sh);
@@ -6932,7 +6932,7 @@ function renderViewModes() {
   const c = $('centered').checked,
     u = $('upright').checked && !$('uprightRow').hidden;
   const first = (centered, upright) =>
-    defaultOf('centered', tabMode()) === centered && defaultOf('upright', tabMode()) === upright ? 'yes' : ''; // (its default: the pair DISPLAY_DEFAULTS sets)
+    defaultOf('centered', tabVariant()) === centered && defaultOf('upright', tabVariant()) === upright ? 'yes' : ''; // (its default: the pair DISPLAY_DEFAULTS sets)
   setTile(viewModes[0], { on: c, byDefault: first(true, false) });
   setTile(viewModes[1], { on: !c && !u, byDefault: first(false, false) });
   setTile(viewModes[2], {
@@ -6986,8 +6986,8 @@ $('viewTools').addEventListener('mouseenter', renderHeadTiles);
 
 // The colour menu means something else for the Game of Life, and depends on its number of states.
 // In Life the plain states come first (the default); walks keep the gradient first.
-function relabelColours(mode) {
-  const life = !!mode.life,
+function relabelColours(variant) {
+  const life = !!variant.life,
     C = life ? (lifeRuleNow()?.C ?? 2) : 2,
     K = life ? lifeTeams : 1,
     two = K > 1;
@@ -7013,25 +7013,25 @@ function relabelColours(mode) {
         visits: '',
       };
   const sel = $('colourMode');
-  sel.querySelector('option[value="digit"]').text = mode.antOf ? "The ant's colours" : names.digit;
-  if (shows('cells', tabMode())) {
+  sel.querySelector('option[value="digit"]').text = variant.antOf ? "The ant's colours" : names.digit;
+  if (shows('cells', tabVariant())) {
     // 2D: along lines the rainbow line; on cells the rainbow cells or the heatmap (Digits writes over either); an ant its colours
-    sel.value = mode.antOf
-      ? defaultOf('antLook', tabMode())
-      : mode.twin && !mode.cells
+    sel.value = variant.antOf
+      ? defaultOf('antLook', tabVariant())
+      : variant.twin && !variant.cells
         ? 'gradient'
-        : mode.cells && sel.value === 'visits'
+        : variant.cells && sel.value === 'visits'
           ? 'visits'
           : 'cells';
     return;
   }
-  if (shows('heatmap', tabMode()) && mode.antOf) {
-    if (!['digit', 'cells', 'visits'].includes(sel.value)) sel.value = defaultOf('antLook', tabMode());
+  if (shows('heatmap', tabVariant()) && variant.antOf) {
+    if (!['digit', 'cells', 'visits'].includes(sel.value)) sel.value = defaultOf('antLook', tabVariant());
     return;
   } // an ant on a surface: its looks as in 2D
-  if (shows('heatmap', tabMode())) {
+  if (shows('heatmap', tabVariant())) {
     // on a surface: the rainbow line (over the tiles walked, on cells), or the heatmap on cells
-    sel.value = mode.cells && sel.value === 'visits' ? 'visits' : 'gradient';
+    sel.value = variant.cells && sel.value === 'visits' ? 'visits' : 'gradient';
     return;
   }
   const order = life
@@ -7042,8 +7042,8 @@ function relabelColours(mode) {
     byValue[v].text = names[v];
     sel.append(byValue[v]);
   });
-  for (const v of ['cells', 'visits', 'digit', 'mono']) byValue[v].hidden = !shows(v, tabMode());
-  for (const v of ['gradient', 'visits', 'digit']) byValue[v].disabled = !!lookWhyNot(v, tabMode()); // (Rainbow along a spiral, its Heatmap, Elementary's Activity)
+  for (const v of ['cells', 'visits', 'digit', 'mono']) byValue[v].hidden = !shows(v, tabVariant());
+  for (const v of ['gradient', 'visits', 'digit']) byValue[v].disabled = !!lookWhyNot(v, tabVariant()); // (Rainbow along a spiral, its Heatmap, Elementary's Activity)
   if (sel.selectedOptions[0]?.hidden || sel.selectedOptions[0]?.disabled) {
     sel.value = Array.from(sel.options).find((o) => !o.hidden && !o.disabled).value; // the first one left
   }
@@ -7116,9 +7116,9 @@ const setBadge = (el, count) => {
 // (byDefault: as the tooltip tells it, see tip: 'yes', the choice picked at first; 'on' or 'off', a switch's at first)
 // (greyed: why it is, as the tooltip tells it, a sentence: 'Not in Solo.', 'The Gallery is empty.'…; greyed by it, '' allowed:
 // a control whose state no setup holds, a stepper's end, the player's; else whyNot)
-// (whyNot(setup): what greys it in a setup, { w, size, colours, teams, battleRule } (a mode, at a size or the one it opens
+// (whyNot(setup): what greys it in a setup, { w, size, colours, teams, battleRule } (a variant, at a size or the one it opens
 // at; its colours, a walk's teams, its battle rule: the ones picked if none), '' when allowed: its one
-// source; greyed here (at: its mode, the tab's by default) or not, its words why, and the menu's nearest buttons that would
+// source; greyed here (at: its variant, the tab's by default) or not, its words why, and the menu's nearest buttons that would
 // allow it, highlighted by a click on it (see enablersFor))
 const setTile = (
   b,
@@ -7131,12 +7131,12 @@ const setTile = (
     turn = 0,
     byDefault,
     whyNot = null,
-    at = tabMode(),
+    at = tabVariant(),
     judgedAt = null,
   },
 ) => {
   if (whyNot) {
-    const why = whyNot({ w: at ?? tabMode() });
+    const why = whyNot({ w: at ?? tabVariant() });
     if (why) {
       can = false;
       greyed = why;
@@ -7276,13 +7276,13 @@ function cardWords(name, detail = '', rule = '') {
   return words;
 }
 // Trail: a dead cell fades through greys for a few generations (States and Age, in colours too; two states)
-const trailApplies = (w = walk.life && walk.mode, rule = $('lifeRule').value, look = $('colourMode').value) =>
+const trailApplies = (w = walk.life && walk.variant, rule = $('lifeRule').value, look = $('colourMode').value) =>
   !!w &&
-  !!MODES[w].life &&
-  !MODES[w].margolus &&
-  !MODES[w].elementary &&
+  !!VARIANTS[w].life &&
+  !VARIANTS[w].margolus &&
+  !VARIANTS[w].elementary &&
   (parseRule(ruleBody(lifeRuleAt(rule, w)))?.C ?? 2) === 2 &&
-  look !== 'digit'; // (w: the walk shown's, or a mode's: its rule the one in use)  // (a reversible rule's blocks: none, their cells move, none dies, and backwards a trail would show where they are born)
+  look !== 'digit'; // (w: the walk shown's, or a variant's: its rule the one in use)  // (a reversible rule's blocks: none, their cells move, none dies, and backwards a trail would show where they are born)
 const trailOn = () => $('lifeTrail').checked && trailApplies();
 const TRAIL_WHERE = 'Not with dying stages (Generations), on Rewind, or with Activity.'; // (Trail's greyed words)
 // Trail, a tile turned on and off (see tile): its picture a live cell with its trail paling behind (LIFE_TRAIL, the theme's:
@@ -7308,12 +7308,12 @@ function renderTrailButton() {
     on: $('lifeTrail').checked && trailApplies(),
     byDefault: 'On by default in Solo\nOff by default in colours',
     whyNot: ({ w, rule, look }) => (trailApplies(w, rule, look) ? '' : TRAIL_WHERE),
-    at: walk.mode,
+    at: walk.variant,
   }); // (not for these looks: off)
 }
 // Blocks (Rewind, in Trail's place: no trail there), a tile turned on and off: the blocks of the set the next generation
 // is worked out by, outlined over the cells (see drawBlocks); Ising's squares in turn are no blocks: greyed
-let showBlocks = defaultOf('blocks', tabMode()),
+let showBlocks = defaultOf('blocks', tabVariant()),
   blocksButton = null;
 function renderBlocksButton() {
   blocksButton ??= tile({
@@ -7327,8 +7327,8 @@ function renderBlocksButton() {
       renderBlocksButton();
     },
   });
-  const flat = !!MODES[tabMode()].plane,
-    can = flat && !lifeRuleNow()?.ising; // (the mode and rule picked: the grid not built yet)
+  const flat = !!VARIANTS[tabVariant()].plane,
+    can = flat && !lifeRuleNow()?.ising; // (the variant and rule picked: the grid not built yet)
   setTile(blocksButton, {
     on: showBlocks && can,
     can,
@@ -7340,15 +7340,15 @@ function renderBlocksButton() {
 // stackUp; STACK_MOST cubes at most); with walls only (through a torus's edges no tree grows: Stacks, Walls on with it)
 let spaceTime = false;
 const spaceTimeApplies = (w) => {
-  const m = MODES[w];
+  const m = VARIANTS[w];
   return !!m.plane && !!m.life && !m.margolus && !m.elementary && planeKind(m.plane) === 'square';
 };
-const spaceTimeOn = () => spaceTime && spaceTimeApplies(tabMode());
+const spaceTimeOn = () => spaceTime && spaceTimeApplies(tabVariant());
 // Life's looks as square buttons with pictures (States or Colours, Age, Activity); a walk's, a list
 function renderColourButtons() {
   const sel = $('colourMode'),
     box = $('colourButtons'),
-    L = MODES[tabMode()]?.life;
+    L = VARIANTS[tabVariant()]?.life;
   box.className = 'nav-shapes cell-modes';
   renderTrailButton();
   // a walk's (Space): Rainbow, Commands, as the looks of its cells
@@ -7363,7 +7363,7 @@ function renderColourButtons() {
       text: names[o.value],
       title: o.text,
       on: o.value === sel.value,
-      byDefault: o.value === defaultOf('look', tabMode()) ? 'yes' : '',
+      byDefault: o.value === defaultOf('look', tabVariant()) ? 'yes' : '',
       whyNot: ({ w }) => lookWhyNot(o.value, w),
       choice: `look:${o.value}`,
       click: () => {
@@ -7372,13 +7372,13 @@ function renderColourButtons() {
       },
     }),
   );
-  if (MODES[tabMode()].margolus) renderBlocksButton();
+  if (VARIANTS[tabVariant()].margolus) renderBlocksButton();
   box.replaceChildren(
     ...(buttons.length > 1 ? [tileGroup(buttons)] : buttons),
-    ...(L ? [MODES[tabMode()].margolus ? blocksButton : trailButton] : []),
+    ...(L ? [VARIANTS[tabVariant()].margolus ? blocksButton : trailButton] : []),
   ); // then Life's Trail, a switch (Rewind's Blocks)
 }
-// Sound: Korobeiniki (the Russian song of Tetris, public domain) as 8-bit, while it plays (forth or back, every mode), on a clock of its own (Web
+// Sound: Korobeiniki (the Russian song of Tetris, public domain) as 8-bit, while it plays (forth or back, every variant), on a clock of its own (Web
 // Audio, made here: a browser plays nothing before a click, off at first): its melody a square wave, its bass a triangle
 // (its bar's root and its octave in eighths), drums of noise (a kick on the beats, a hat between); the life's moments over
 // it: an explosion (more born at once than 2.5 times of late, 1 % of the grid at least) a boom of noise falling, louder the
@@ -7439,7 +7439,7 @@ function tuneTick() {
   if (!(playing || reversing) || (lifeTime() && music.stopped)) {
     music.next = c.currentTime + 0.05;
     return;
-  } // (forth or back, every mode; Life's all dead: still)
+  } // (forth or back, every variant; Life's all dead: still)
   while (music.next < c.currentTime + 0.12) {
     const k = music.step++ % notes.length,
       at = music.next;
@@ -7519,11 +7519,11 @@ const swatch = (cs) =>
 // square rings, hot inside (a heatmap, Life's activity)
 const heatRings = (g) =>
   `<svg viewBox="0 0 24 24" aria-hidden="true">${[0, 0.25, 0.5, 0.75, 1].map((f, i) => `<rect x="${2 + 2 * i}" y="${2 + 2 * i}" width="${20 - 4 * i}" height="${20 - 4 * i}" rx="${2 - 0.4 * i}" fill="${g(f)}"/>`).join('')}</svg>`;
-// The length last picked, one for every mode (the stepper's − + or a number typed, its link's d=), never cut: each mode the
+// The length last picked, one for every variant (the stepper's − + or a number typed, its link's d=), never cut: each variant the
 // nearest it allows (lengthAsked: a walk's digits or steps, a reversible rule's or Space-time's generations up to 100,000;
 // a walk that loops stops sooner, as its stepper says); its ladder DIGIT_STEPS
 let lengthPicked = 20000;
-const lengthMost = () => (MODES[tabMode()].elementary ? 50_000 : gensShown() ? 100000 : 50_000_000); // (Elementary's: its cells the square of it, drawn as a picture, see elementaryRows)
+const lengthMost = () => (VARIANTS[tabVariant()].elementary ? 50_000 : gensShown() ? 100000 : 50_000_000); // (Elementary's: its cells the square of it, drawn as a picture, see elementaryRows)
 const lengthAsked = () => Math.min(lengthMost(), Math.max(DIGIT_STEPS[0], Math.round(lengthPicked) || 10));
 
 // The number of digits as a stepper, like the surface size: [ − ] 20,000 digits [ + ] goes through
@@ -7543,7 +7543,7 @@ const randomPrimeSize = () => {
 };
 // In generations (Elementary's rows, computed ahead; Space-time's height, its layers kept): [ − ] 2,000 generations [ + ];
 // Space-time made again. A reversible one has none: played on either way, as a Game of Life forth (see runStart)
-const gensShown = () => !!MODES[tabMode()].elementary || spaceTimeOn();
+const gensShown = () => !!VARIANTS[tabVariant()].elementary || spaceTimeOn();
 // The last step or generation: walk.n (a Game of Life's, a reversible one's: none, played on), or sooner its last before its
 // loop comes round, once found (its slider, its end, its stepper's max)
 const reversibleRun = () => !!walk.life?.margolus && lifeTime();
@@ -7623,7 +7623,7 @@ function setGens(n) {
   if (walk.stacked) {
     restart();
     showAll();
-  } else if (MODES[tabMode()].elementary)
+  } else if (VARIANTS[tabVariant()].elementary)
     compute(); // (its rows built again, see elementaryRows)
   else {
     walk.n = lengthPicked;
@@ -7681,8 +7681,8 @@ const compactCount = (n) =>
   n < 10000 ? String(n) : n < 999500 ? `${Math.round(n / 1000)}k` : `${+(n / 1e6).toFixed(n < 9.95e6 ? 1 : 0)}M`;
 // whether the length asked is used here (a walk's steps, a creature's, Elementary's and Space-time's generations); Life's
 // and Rewind's play on, the length kept for the next tab
-const lengthUsed = () => !MODES[tabMode()].life || gensShown();
-const stepperUnit = () => (NAV[tabMode()]?.[0] === 'Walk' || !readsDigits(tabMode()) ? 'steps' : 'digits');
+const lengthUsed = () => !VARIANTS[tabVariant()].life || gensShown();
+const stepperUnit = () => (NAV[tabVariant()]?.[0] === 'Walk' || !readsDigits(tabVariant()) ? 'steps' : 'digits');
 function syncDigitsStepper() {
   const stop = runStop(),
     size = randomPrimeSize(),
@@ -8064,7 +8064,7 @@ const ICONS = (() => {
       .map(([o, i]) => svgPath(segmentPath(icoOut[o], icoIn[i])))
       .join('');
   return {
-    // walk modes
+    // walk variants
     grid: svgPath(pathOf(sq)) + svgPath('M12 4V20M4 12H20'),
     compass: svgPath('M12 3V21M3 12H21') + svgPath('M9 6L12 3L15 6M9 18L12 21L15 18M6 9L3 12L6 15M18 9L21 12L18 15'),
     triangle: svgPath(pathOf(tri)),
@@ -8461,7 +8461,7 @@ const spaceTimeTile = tile({
   click: () => {
     spaceTime = !spaceTime;
     if (spaceTime) plane.torus = false;
-    $('perspective').checked = perspectiveFor(MODES[tabMode()], 0, spaceTimeOn());
+    $('perspective').checked = perspectiveFor(VARIANTS[tabVariant()], 0, spaceTimeOn());
     compute();
   },
 });
@@ -8915,7 +8915,7 @@ function checkFormula(root) {
 // The formula of the Formula field, checked and written back in canonical form
 let formulaInUse = '1/112'; // the last formula that was valid, for the link and the Gallery
 // The number in use till one is picked: π on a walk, 1/112 elsewhere (a Life start's digits, an ant's turns: a highway for
-// the square ant). One picked, typed or linked other than its mode's own is kept from mode to mode
+// the square ant). One picked, typed or linked other than its variant's own is kept from variant to variant
 const defaultNumber = (w) => (NAV[w]?.[0] === 'Walk' ? 'pi' : '1/112');
 let numberPicked = false;
 const pickNumber = (text, w) => {
@@ -9242,7 +9242,7 @@ function setCurrent(entry, base, kind, ratio = null) {
     head: headDigits(entry.intPart, base),
     digits: entry.digits,
     base,
-    mode: tabMode(),
+    variant: tabVariant(),
     formula: formulaInUse,
     ratio, // its digits end up repeating, an integer's 0s too (see torusLoops)
     patterned: kind === 'int' || kind === 'rat' || !!FORMULA_NAMES[formulaInUse]?.[2],
@@ -9325,7 +9325,7 @@ function formulaField(id, first) {
 $('numberTabs').after(formulaField('formula', '1/112'));
 $('rivalFormulas').append(...RIVALS.map((id, j) => formulaField(id, RIVAL_FIRSTS[j])));
 // the walkers' first numbers: A's the Digits' own on a walk, then B's, C's… (RIVAL_FIRSTS), as many as walkers
-const battleFirsts = () => [defaultNumber(tabMode()), ...RIVAL_FIRSTS.slice(0, walkTeams - 1)];
+const battleFirsts = () => [defaultNumber(tabVariant()), ...RIVAL_FIRSTS.slice(0, walkTeams - 1)];
 function rivalsDigits(base, n, then) {
   const out = [];
   for (const id of RIVALS.slice(0, walkTeams - 1)) {
@@ -9349,7 +9349,7 @@ function rivalsDigits(base, n, then) {
 }
 // whether a battle's other numbers' digits are all there (or wrong: the walk built says it), before its walk is built:
 // else then() once they are, the walk built only then (A's alone shown meanwhile, whole, was a flash of another walk)
-const rivalsReady = (then) => !battleOn() || rivalsDigits(MODES[tabMode()].base, digitsNeeded(), then) !== null;
+const rivalsReady = (then) => !battleOn() || rivalsDigits(VARIANTS[tabVariant()].base, digitsNeeded(), then) !== null;
 const stopRivals = () => {
   for (const id of Object.keys(rivalWorkers)) {
     rivalWorkers[id].terminate();
@@ -9450,17 +9450,17 @@ function numberDigitsIn(b) {
  * PART 5 — PICKING A MODE, COMPUTING, BUILDING THE WALK
  * ==============================================================================================
  *
- * compute() is the one entry point: any change (number, mode, surface, rule, digits) calls it. It
- * reads the formula, shows the controls the mode needs, takes the digits from the cache or from
+ * compute() is the one entry point: any change (number, variant, surface, rule, digits) calls it. It
+ * reads the formula, shows the controls the variant needs, takes the digits from the cache or from
  * the worker, then builds the whole walk (buildWalk) and shows it complete.
  */
 
-/* ---- 5.1 Walk mode picker ----------------------------------------------------------------- */
-// The categories of the (hidden) mode menu as tabs, and every choice of the selected tab as a
+/* ---- 5.1 Walk variant picker ----------------------------------------------------------------- */
+// The categories of the (hidden) variant menu as tabs, and every choice of the selected tab as a
 // list. Picking a choice sets the menu and fires its change event, so the rest of the page only
 // ever deals with the menu.
-// The icon of each walk mode's shape. Filled: the relative modes (turn from your heading); outlined: the fixed directions.
-const MODE_ICONS = {
+// The icon of each walk variant's shape. Filled: the relative variants (turn from your heading); outlined: the fixed directions.
+const VARIANT_ICONS = {
   walkSquaresTurtleEdges: 'grid',
   walkTrianglesTurtleEdges: 'triangleFilled',
   walkHexTurtleEdges: 'hexagonFilled',
@@ -9728,7 +9728,7 @@ const NAV = {
   lifeSquareOrthobicupola: ['Life', 'Surfaces', 'Bicupola', 'Life', ''],
   lifeGlobe: ['Life', 'Surfaces', 'Globe', 'Life', ''],
 };
-// the tilings' Life on the plane (see TILINGS): their modes, after the hats
+// the tilings' Life on the plane (see TILINGS): their variants, after the hats
 const linkWord = (name) =>
   name
     .normalize('NFKD')
@@ -9749,37 +9749,42 @@ const LINK_SHAPES = {
   Hexagons: 'hex',
 };
 const menuWord = (name) => LINK_SHAPES[name] ?? linkWord(name);
-// A mode's key: its link's words in one, in turn (see modeWords): its tab, its shape, its tiling, a walk's kind, its side
-// (lifeTorusHex, walkMobiusStripHexTurtleEdges); made from the menu's names wherever a mode is made, never written by parts
-const modeName = (kind, shape, tiling = null, rule = null, side = '') =>
+// A variant's key: its link's words in one, in turn (see variantWords): its tab, its shape, its tiling, a walk's kind, its side
+// (lifeTorusHex, walkMobiusStripHexTurtleEdges); made from the menu's names wherever a variant is made, never written by parts
+const variantName = (kind, shape, tiling = null, rule = null, side = '') =>
   [kind, shape, tiling, kind === 'Walk' ? rule : null, side]
     .filter(Boolean)
     .map((name, i) => (i ? menuWord(name).replace(/^./, (c) => c.toUpperCase()) : menuWord(name)))
     .join('');
-// Life's mode on a grid of the plane (its kind: square, hex, a tiling's)
-const tilingMode = (kind) =>
-  Object.keys(MODES).find(
-    (w) => MODES[w].plane === kind && MODES[w].life && !MODES[w].margolus && !MODES[w].loops && !MODES[w].elementary,
+// Life's variant on a grid of the plane (its kind: square, hex, a tiling's)
+const tilingVariant = (kind) =>
+  Object.keys(VARIANTS).find(
+    (w) =>
+      VARIANTS[w].plane === kind &&
+      VARIANTS[w].life &&
+      !VARIANTS[w].margolus &&
+      !VARIANTS[w].loops &&
+      !VARIANTS[w].elementary,
   );
 for (const [k, name] of Object.entries(TETRAKIS_SOLIDS)) {
   // the solids of squares as tetrakis triangles (see tetrakisOf): Life, as theirs
-  const base = Object.keys(MODES).find((w) => MODES[w].life && MODES[w].surface === k),
-    m = modeName('Life', name, 'Tetrakis');
-  MODES[m] = {
-    ...MODES[base],
+  const base = Object.keys(VARIANTS).find((w) => VARIANTS[w].life && VARIANTS[w].surface === k),
+    m = variantName('Life', name, 'Tetrakis');
+  VARIANTS[m] = {
+    ...VARIANTS[base],
     surface: `${k}Tetrakis`,
-    where: `${MODES[base].where}, its squares cut in 4 (tetrakis)`,
+    where: `${VARIANTS[base].where}, its squares cut in 4 (tetrakis)`,
   };
-  MODE_ICONS[m] = MODE_ICONS[base];
+  VARIANT_ICONS[m] = VARIANT_ICONS[base];
   NAV[m] = ['Life', 'Surfaces', name, 'Life', ''];
 }
 // the walks on the solids' hexagons (see hexSolidMesh), as the sphere's: along their edges, on their cells (its cells of
 // other sides walked on too)
 for (const [k, { a, name, others }] of Object.entries(HEX_SOLIDS)) {
   const on = `${a} of hexagons (and ${others})`,
-    alongEdges = modeName('Walk', name, 'Hexagons', 'Turtle', 'edges'),
-    onCells = modeName('Walk', name, 'Hexagons', 'Turtle', 'cells');
-  MODES[alongEdges] = {
+    alongEdges = variantName('Walk', name, 'Hexagons', 'Turtle', 'edges'),
+    onCells = variantName('Walk', name, 'Hexagons', 'Turtle', 'cells');
+  VARIANTS[alongEdges] = {
     base: 2,
     arrows: '↖↗',
     lattice: 'surface',
@@ -9789,7 +9794,7 @@ for (const [k, { a, name, others }] of Object.entries(HEX_SOLIDS)) {
     turns: [60, -60],
     rule: `along the edges of ${on}: <b>0</b> turn left, <b>1</b> turn right`,
   }; // (as the sphere's walks, flat: not round, see walkIcosahedronHexTurtleEdges)
-  MODES[onCells] = {
+  VARIANTS[onCells] = {
     base: 2,
     arrows: '↖↗',
     lattice: 'surface',
@@ -9803,38 +9808,38 @@ for (const [k, { a, name, others }] of Object.entries(HEX_SOLIDS)) {
     [alongEdges, 'edges'],
     [onCells, 'cells'],
   ]) {
-    MODE_ICONS[w] = MODE_ICONS.walkIcosahedronHexTurtleEdges;
+    VARIANT_ICONS[w] = VARIANT_ICONS.walkIcosahedronHexTurtleEdges;
     NAV[w] = ['Walk', 'Surfaces', name, 'Turtle', how];
   }
 }
 for (const [k, { a, name }] of Object.entries(HEX_SOLIDS)) {
   // the solids of hexagons (see hexSolidMesh): Life, as their kites'
-  const m = modeName('Life', name, 'Hexagons'),
-    kite = modeName('Life', name, 'Kites');
-  MODES[m] = {
+  const m = variantName('Life', name, 'Hexagons'),
+    kite = variantName('Life', name, 'Kites');
+  VARIANTS[m] = {
     base: 2,
     lattice: 'surface',
     surface: `${k}Hex`,
     life: true,
     where: `${a} of hexagons (folded over its edges; ${HEX_SOLIDS[k].others}: walls)`,
   };
-  MODE_ICONS[m] = MODE_ICONS[kite];
+  VARIANT_ICONS[m] = VARIANT_ICONS[kite];
   NAV[m] = ['Life', 'Surfaces', name, 'Life', ''];
 }
-// each with its option in the mode list (index.html), in its group: made here with the mode, never written apart
-const modeOption = (m, group, text) =>
-  document.querySelector(`#mode optgroup[label="${group}"]`).append(new Option(`Life — ${text}`, m));
+// each with its option in the variant list (index.html), in its group: made here with the variant, never written apart
+const variantOption = (m, group, text) =>
+  document.querySelector(`#variant optgroup[label="${group}"]`).append(new Option(`Life — ${text}`, m));
 for (const [kind, t] of Object.entries(TILINGS)) {
-  const flat = modeName('Life', t.name);
-  MODES[flat] = { base: 2, lattice: kind, life: true, plane: kind, where: t.where };
-  modeOption(flat, 'Automata on the plane', t.where);
-  MODE_ICONS[flat] = `tiling-${kind}`;
+  const flat = variantName('Life', t.name);
+  VARIANTS[flat] = { base: 2, lattice: kind, life: true, plane: kind, where: t.where };
+  variantOption(flat, 'Automata on the plane', t.where);
+  VARIANT_ICONS[flat] = `tiling-${kind}`;
   NAV[flat] = ['Life', '2D', t.name, 'Life', ''];
   for (const [fold, F] of Object.entries(FOLDS))
     if (F.has(kind)) {
       // folded (see FOLDS)
-      const m = modeName('Life', F.name, t.name);
-      MODES[m] = {
+      const m = variantName('Life', F.name, t.name);
+      VARIANTS[m] = {
         base: 2,
         lattice: 'surface',
         surface: F.of(kind),
@@ -9843,18 +9848,18 @@ for (const [kind, t] of Object.entries(TILINGS)) {
         round: true,
         where: `${F.a} of ${t.where.replace(/^a grid of /, '')}${F.tail}`,
       };
-      MODE_ICONS[m] = fold;
+      VARIANT_ICONS[m] = fold;
       NAV[m] = ['Life', 'Surfaces', F.name, 'Life', ''];
-      modeOption(m, 'Automata on surfaces', MODES[m].where);
+      variantOption(m, 'Automata on surfaces', VARIANTS[m].where);
     }
 }
 for (const [k, [n, F]] of Object.entries(conedOf((k, n, F) => [k, [n, F]]))) {
   // the coned rosettes (see CONED), each with its option
-  const w = modeName('Life', `${F.name} ${n}`),
+  const w = variantName('Life', `${F.name} ${n}`),
     where = `a patch of the ${F.how} ${n}-fold rosette (${F.tile}, in rows round its middle, never repeating)`;
-  MODES[w] = { base: 2, lattice: k, life: true, plane: k, where };
-  modeOption(w, 'Automata on the plane', where);
-  MODE_ICONS[w] = k;
+  VARIANTS[w] = { base: 2, lattice: k, life: true, plane: k, where };
+  variantOption(w, 'Automata on the plane', where);
+  VARIANT_ICONS[w] = k;
   NAV[w] = ['Life', '2D', `${F.name} ${n}`, 'Life', ''];
 }
 // a family whose grid is another's but at its middle (rules: that grid's mark): that grid's rules its own too, their tiling
@@ -9882,13 +9887,13 @@ const REVERSIBLE_SHEETS = [
 const BLOCK_STEPS = { torusHex: 3, torusTriTurned: 3, mobius: 2 };
 const BLOCK_ALONG = { mobius: 2 }; // (a Möbius strip of squares: its length in squares even, its blocks' two sets coming round along it, see stripSteps)  // (their sizes a multiple: their 3 sets of blocks come round the tube only so, see meshBlocks)
 for (const [w, life, blocks, k] of REVERSIBLE_SHEETS) {
-  MODES[w] = {
-    ...MODES[life],
+  VARIANTS[w] = {
+    ...VARIANTS[life],
     margolus: true,
     blocks,
-    where: `${MODES[life].where.split(' (')[0]} in blocks of ${k} round a corner, as the plane's, 3 squares round it, its start on the middle one`,
+    where: `${VARIANTS[life].where.split(' (')[0]} in blocks of ${k} round a corner, as the plane's, 3 squares round it, its start on the middle one`,
   };
-  MODE_ICONS[w] = MODE_ICONS[life];
+  VARIANT_ICONS[w] = VARIANT_ICONS[life];
   NAV[w] = ['Rewind', 'Surfaces', NAV[life][2], 'Blocks', ''];
 }
 // Replicators: Langton's self-reproducing loops on Life's grid of squares, by a table of transitions (see parseLoops)
@@ -9901,28 +9906,28 @@ for (const [w, life] of [
   ['replicatorsCubeFrameSquares', 'lifeCubeFrameSquares'],
 ]) {
   // (squares: 4 sides each, the same way round on each: no Möbius strip nor Klein bottle; nor Menger's sponge, its flat pieces narrower than a loop)
-  MODES[w] = {
-    ...MODES[life],
+  VARIANTS[w] = {
+    ...VARIANTS[life],
     loops: true,
     ...(['replicatorsSquares', 'replicatorsTorus'].includes(w) && { north: true }),
-    where: `${MODES[life].where.split(' (')[0]}, each cell by its 4 sides in turn (von Neumann), or its 8 (Moore)`,
+    where: `${VARIANTS[life].where.split(' (')[0]}, each cell by its 4 sides in turn (von Neumann), or its 8 (Moore)`,
   }; // (north: every cell's the same, the plane's and the torus's sheet's: a table with no turns, see loopFits)
-  MODE_ICONS[w] = MODE_ICONS[life];
+  VARIANT_ICONS[w] = VARIANT_ICONS[life];
   NAV[w] = ['Replicators', NAV[life][1], NAV[life][2], 'Langton', ''];
 }
 // Elementary: Wolfram's rules on an unbounded grid of squares, a row a generation down (see parseElementary), its rows built
 // as a walk's steps (see elementaryRows); Life's for its rules and starts
-MODES.elementarySquares = {
-  ...MODES.lifeSquares,
+VARIANTS.elementarySquares = {
+  ...VARIANTS.lifeSquares,
   elementary: true,
   where: 'an unbounded grid of squares, a row a generation, each cell by the three above it',
 };
-MODE_ICONS.elementarySquares = MODE_ICONS.lifeSquares;
+VARIANT_ICONS.elementarySquares = VARIANT_ICONS.lifeSquares;
 NAV.elementarySquares = ['Elementary', NAV.lifeSquares[1], NAV.lifeSquares[2], 'Wolfram', ''];
-MODE_ICONS.lifeCubePitsSquares = 'pits';
-MODE_ICONS.lifeCubeBumpsSquares = 'bumps';
-MODE_ICONS.lifeCubeMengerSpongeSquares = 'menger';
-MODE_ICONS.lifeCubeFrameSquares = 'frame';
+VARIANT_ICONS.lifeCubePitsSquares = 'pits';
+VARIANT_ICONS.lifeCubeBumpsSquares = 'bumps';
+VARIANT_ICONS.lifeCubeMengerSpongeSquares = 'menger';
+VARIANT_ICONS.lifeCubeFrameSquares = 'frame';
 // in each shape's rules: Turtle, then Pivot (the cubes'), then the others as they come; among the shapes,
 // Cairo right after Squares, Hexagons before Triangles (right after Kites where they are), Tetrakis after Hexagons, the Klein bottle after the Möbius strip, the
 // Sphere before the Tetrahedron
@@ -9988,7 +9993,7 @@ MODE_ICONS.lifeCubeFrameSquares = 'frame';
   for (const [w] of sorted) delete NAV[w];
   for (const [w, n] of sorted) NAV[w] = n;
 }
-const NAV_KINDS = [
+const MODE_TABS = [
   ['Life', 'glider', 'Cells born and dying by their neighbours, generation after generation'],
   ['Walk', 'compass', "A path, each step the number's next digit"],
   ['Ant', 'ant', "A creature on the cells, turned by each cell's colour, by its rule or by the digits"],
@@ -10130,14 +10135,14 @@ const SHAPE_SHORT = {
   Rhombicuboctahedron: 'Rhombi',
 };
 const shapeLabel = (shape) => SHAPE_SHORT[shape] ?? shape;
-// a mode in words, a shape's or a tiling's tooltip (the mode its click goes to): where it plays (an automaton's grid, a walk's
+// a variant in words, a shape's or a tiling's tooltip (the variant its click goes to): where it plays (an automaton's grid, a walk's
 // way); an ant's, its walk's on cells (antOf's, else its twin on cells: a 2D walk's on its lines), a worm's, its surface's grid
 // walk; never its name: the button's (Squares) again
 const rideOf = (w) => {
-  const a = MODES[w].antOf;
-  return a ? (MODES[a].cells ? a : MODES[a].twin) : SURFACE_WORMS[w];
+  const a = VARIANTS[w].antOf;
+  return a ? (VARIANTS[a].cells ? a : VARIANTS[a].twin) : SURFACE_WORMS[w];
 };
-const modeWhere = (w) => capitalised(MODES[w].where ?? MODES[rideOf(w)]?.where ?? modeOptionOf(w).text);
+const variantWhere = (w) => capitalised(VARIANTS[w].where ?? VARIANTS[rideOf(w)]?.where ?? variantOptionOf(w).text);
 // the section's title
 const WALK_HEADINGS = {
   Walk: 'Walk',
@@ -10159,7 +10164,7 @@ const navValues = (level, pre) => [
 // their grid's natural shape (see SHAPE_GROUPS); in 3D, the solids of squares first (the cube, the cubes carved), the other
 // solids, those of squares and triangles, then the surfaces (the balls: Globe, Sphere, Rosettes; a sheet rolled up: Torus,
 // Möbius, Klein; see SHEETS); else as the menu lists them. Made once a kind and space (the menu's tables fixed once the
-// page has loaded: the graph's search asks it at each edge, 1.5 ms each, see nearestMode)
+// page has loaded: the graph's search asks it at each edge, 1.5 ms each, see nearestVariant)
 const shapeGroupsMemo = remember('shapeGroupsMemo', {});
 const shapeGroups = (kind, space) => (shapeGroupsMemo[`${kind}|${space}`] ??= shapeGroupsOf(kind, space));
 function shapeGroupsOf(kind, space) {
@@ -10167,7 +10172,7 @@ function shapeGroupsOf(kind, space) {
     flat = space.startsWith('2D'),
     solid = space.startsWith('3D ');
   const planeOf = (sh) =>
-    MODES[Object.keys(NAV).find((m) => NAV[m][0] === kind && NAV[m][1] === space && NAV[m][2] === sh)]?.plane;
+    VARIANTS[Object.keys(NAV).find((m) => NAV[m][0] === kind && NAV[m][1] === space && NAV[m][2] === sh)]?.plane;
   const SQUARED = ['Cube', 'Pits', 'Bumps', 'Frame', 'Sponge'],
     MIXED = ['Cuboctahedron', 'Rhombicuboctahedron', 'Bicupola', 'Pyramid'],
     sheet = (sh) => SHEETS.includes(sh);
@@ -10186,26 +10191,26 @@ function shapeGroupsOf(kind, space) {
     .map(([g, has, order]) => [g, (order ?? shapes).filter((sh) => shapes.includes(sh) && has(sh))])
     .filter(([, these]) => these.length); // (in its own order, if it has one)
 }
-// The mode for a choice at a level (values: from that level on, one or more: a space and its shape): the levels above as
-// they are, then the nearest from the mode clicked from (see nearestMode)
+// The variant for a choice at a level (values: from that level on, one or more: a space and its shape): the levels above as
+// they are, then the nearest from the variant clicked from (see nearestVariant)
 function navPick(from, level, ...values) {
-  // (from: the mode clicked from, the tab's in the menu, any in a path, see choicesAt)
+  // (from: the variant clicked from, the tab's in the menu, any in a path, see choicesAt)
   const want = [...NAV[from]],
     to = level + values.length;
   want.splice(level, values.length, ...values);
-  return nearestMode(from, (navUnder[want.slice(0, to).join('|')] ??= modesUnder(...want.slice(0, to))), want);
+  return nearestVariant(from, (navUnder[want.slice(0, to).join('|')] ??= variantsUnder(...want.slice(0, to))), want);
 }
-const navUnder = remember('navUnder', {}); // (the modes under a menu's choices, see modesUnder, once each: the menu's tables fixed once the page has loaded)
-// Of the modes a click may land on, the nearest from the mode it is clicked from: the fewest settings changed (its menu's
-// levels, its tiling by name, see modeChanges: from a sphere of hexagons, Klein bottle opens on its hexagons); on a tie
+const navUnder = remember('navUnder', {}); // (the variants under a menu's choices, see variantsUnder, once each: the menu's tables fixed once the page has loaded)
+// Of the variants a click may land on, the nearest from the variant it is clicked from: the fewest settings changed (its menu's
+// levels, its tiling by name, see variantChanges: from a sphere of hexagons, Klein bottle opens on its hexagons); on a tie
 // its family's tiling last chosen, then the menu's order (its shapes as shown, Edges before Cells). One rule for every click
 // (a tab's, a space's, a shape's, a tiling's, a side's), the menu's graph's too (see choicesAt)
-function nearestMode(from, candidates, want = NAV[from]) {
+function nearestVariant(from, candidates, want = NAV[from]) {
   const shown = shapeGroups(want[0], want[1]).flatMap(([, these]) => these);
   const key = (w) => {
     const fam = familyOf(w);
     return [
-      modeChanges(from, w),
+      variantChanges(from, w),
       fam && fam.F.tabs[fam.F.tab][0] === fam.m ? 0 : 1,
       shown.indexOf(NAV[w][2]),
       NAV[w][4] === 'cells' ? 1 : 0,
@@ -10223,29 +10228,29 @@ function nearestMode(from, candidates, want = NAV[from]) {
   }
   return best;
 }
-// Walk, Ant, Life: each one's mode when left, to come back to (the number, the one followed by all)
-const kindLeft = {};
+// Walk, Ant, Life: each one's variant when left, to come back to (the number, the one followed by all)
+const modeLeft = {};
 function navGo(level, ...values) {
-  const from = tabMode(),
+  const from = tabVariant(),
     value = values[0],
-    w = (level === 0 && kindLeft[value]) || navPick(from, level, ...values);
+    w = (level === 0 && modeLeft[value]) || navPick(from, level, ...values);
   if (!w || w === from) return;
-  if (level === 0) kindLeft[NAV[from][0]] = from;
+  if (level === 0) modeLeft[NAV[from][0]] = from;
   const fam = familyOf(w);
   if (fam) torusTurned = fam.F.tabs[fam.F.tab][1]; // the tiling last chosen, turned or not
-  $('mode').value = w;
-  $('mode').dispatchEvent(new Event('change'));
+  $('variant').value = w;
+  $('variant').dispatchEvent(new Event('change'));
 }
 
 // Surfaces that come in several tilings are one entry each in the list (Torus, Sphere), their
-// tiling picked by tabs under the list: modes, its modes per tiling (walks along the edges and on
+// tiling picked by tabs under the list: variants, its variants per tiling (walks along the edges and on
 // cells, ants, Life);
 // tabs, [tiling, turned by 30° (see TURNED), icon, its shape (as the 2D grids name it, see shapeLabel), title: a turned one's its
 // shape, then ', turned by …' (its tile's tooltip those words, see renderModePicker)]; tab, the one in use or last chosen
 const FAMILIES = [
   {
     name: 'Torus',
-    modes: [
+    variants: [
       ['walkTorusSquaresTurtleEdges', 'walkTorusSquaresTurtleCells', 'lifeTorusSquares'],
       ['walkTorusHexTurtleEdges', 'walkTorusHexTurtleCells', 'lifeTorusHex'],
       ['walkTorusTrianglesTurtleEdges', 'walkTorusTrianglesTurtleCells', 'lifeTorusTriangles'],
@@ -10266,7 +10271,7 @@ const FAMILIES = [
   },
   {
     name: 'Möbius strip',
-    modes: [
+    variants: [
       ['walkMobiusStripSquaresTurtleEdges', 'walkMobiusStripSquaresTurtleCells', 'lifeMobiusStripSquares'],
       ['walkMobiusStripHexTurtleEdges', 'walkMobiusStripHexTurtleCells', 'lifeMobiusStripHex'],
       ['walkMobiusStripTrianglesTurtleEdges', 'walkMobiusStripTrianglesTurtleCells', 'lifeMobiusStripTriangles'],
@@ -10287,7 +10292,7 @@ const FAMILIES = [
   },
   {
     name: 'Klein bottle',
-    modes: [
+    variants: [
       ['walkKleinBottleSquaresTurtleEdges', 'walkKleinBottleSquaresTurtleCells', 'lifeKleinBottleSquares'],
       ['walkKleinBottleCairoTurtleCells', 'lifeKleinBottleCairo'],
       ['walkKleinBottleHexTurtleEdges', 'walkKleinBottleHexTurtleCells', 'lifeKleinBottleHex'],
@@ -10310,9 +10315,9 @@ const FAMILIES = [
   ...Object.entries(TETRAKIS_SOLIDS).map(([k, name]) => ({
     name,
     tab: 0,
-    modes: [
-      Object.keys(MODES).filter((w) => MODES[w].surface === k),
-      [Object.keys(MODES).find((w) => MODES[w].surface === `${k}Tetrakis`)],
+    variants: [
+      Object.keys(VARIANTS).filter((w) => VARIANTS[w].surface === k),
+      [Object.keys(VARIANTS).find((w) => VARIANTS[w].surface === `${k}Tetrakis`)],
     ],
     tabs: [
       [0, false, 'tilesSq', 'Squares', 'Squares'],
@@ -10329,16 +10334,16 @@ const FAMILIES = [
     ['Dodecahedron', 'dodeca'],
   ].map(([name, k]) => {
     const sphere = k === 'icosa',
-      walks = (tiling) => ['edges', 'cells'].map((side) => modeName('Walk', name, tiling, 'Turtle', side)),
-      ant = (tiling) => [modeName('Ant', name, tiling, null, 'cells')].filter((w) => MODES[w]);
+      walks = (tiling) => ['edges', 'cells'].map((side) => variantName('Walk', name, tiling, 'Turtle', side)),
+      ant = (tiling) => [variantName('Ant', name, tiling, null, 'cells')].filter((w) => VARIANTS[w]);
     return {
       name,
       tab: 0,
-      modes: [
-        [...walks('Triangles'), ...ant('Triangles'), modeName('Life', name, 'Triangles')],
-        [modeName('Life', name, 'Kites')],
-        [...walks('Hexagons'), ...ant('Hexagons'), modeName('Life', name, 'Hexagons')],
-        ...(sphere ? [[modeName('Life', name, 'Twisted')]] : []),
+      variants: [
+        [...walks('Triangles'), ...ant('Triangles'), variantName('Life', name, 'Triangles')],
+        [variantName('Life', name, 'Kites')],
+        [...walks('Hexagons'), ...ant('Hexagons'), variantName('Life', name, 'Hexagons')],
+        ...(sphere ? [[variantName('Life', name, 'Twisted')]] : []),
       ],
       tabs: [
         [1, false, 'kites', 'Kites', 'Kites (each triangle cut in 3)'],
@@ -10378,35 +10383,35 @@ for (const Fo of Object.values(FOLDS))
     const F = FAMILIES[Fo.family],
       turned = FOLDED[`${Fo.of(kind)}Turned`],
       { name } = TILINGS[kind];
-    F.tabs.push([F.modes.length, false, `tiling-${kind}`, name, name]);
+    F.tabs.push([F.variants.length, false, `tiling-${kind}`, name, name]);
     if (turned)
-      F.tabs.push([F.modes.length, true, `tiling-${kind}`, name, `${name}, turned by ${turned.deg}° (${Fo.way})`]);
-    F.modes.push([modeName('Life', Fo.name, name)]);
+      F.tabs.push([F.variants.length, true, `tiling-${kind}`, name, `${name}, turned by ${turned.deg}° (${Fo.way})`]);
+    F.variants.push([variantName('Life', Fo.name, name)]);
   }
 for (const [w, life] of REVERSIBLE_SHEETS)
-  FAMILIES.flatMap((F) => F.modes)
+  FAMILIES.flatMap((F) => F.variants)
     .find((ms) => ms.includes(life))
     .push(w); // (each reversible sheet in its tiling's tab, beside Life's)
-// the family of a walk mode, its tiling there and its tab (null: not in a family)
-// a mode's sides there (Grid, Cells): its kind's and its rule's, on its tiling only (Cairo pentagons: no grid; on a surface's
+// the family of a walk variant, its tiling there and its tab (null: not in a family)
+// a variant's sides there (Grid, Cells): its kind's and its rule's, on its tiling only (Cairo pentagons: no grid; on a surface's
 // hexagons, no worm: the grid its triangles' only)
 const walksThere = (v) => {
   const [kind, space, shape, rule] = NAV[v],
     fam = familyOf(v),
-    tiling = fam?.F.modes[fam.m];
+    tiling = fam?.F.variants[fam.m];
   return Object.keys(NAV).filter(
     (u) => [kind, space, shape, rule].every((x, i) => NAV[u][i] === x) && (!tiling || tiling.includes(u)),
   );
 };
-// a walk of kind r (Turtle, Spiral…) at a mode's place: on its shape, on its tiling (see walksThere)
+// a walk of kind r (Turtle, Spiral…) at a variant's place: on its shape, on its tiling (see walksThere)
 const walkKindHere = (v, r) => {
   const [kind, space, shape] = NAV[v],
     fam = familyOf(v),
-    tiling = fam?.F.modes[fam.m];
-  return modesUnder(kind, space, shape, r).some((u) => !tiling || tiling.includes(u));
+    tiling = fam?.F.variants[fam.m];
+  return variantsUnder(kind, space, shape, r).some((u) => !tiling || tiling.includes(u));
 };
 const walkSidesOf = (v) => [...new Set(walksThere(v).map((u) => NAV[u][4]))];
-// a side's greyed words at a mode (Grid, Cells; see walkOn): none there (none: its words), or a walk by a rule whose rule
+// a side's greyed words at a variant (Grid, Cells; see walkOn): none there (none: its words), or a walk by a rule whose rule
 // cannot go there (a diagonal along the edges: the word why); '' where it can
 const sideWhyNot = (v, s, none, walkRule = null) => {
   // (walkRule: a setup's, see walkRuleAt)
@@ -10414,13 +10419,13 @@ const sideWhyNot = (v, s, none, walkRule = null) => {
     there = ways.includes('') ? (s === 'cells' ? v : null) : walksThere(v).find((u) => NAV[u][4] === s);
   if (!there) return none;
   const rule = walkRuleAt({ w: v, walkRule }, there);
-  return MODES[there].net && !walkCommandsOf(there, rule)
+  return VARIANTS[there].net && !walkCommandsOf(there, rule)
     ? (ruleCommands(rule)
-        .map((t) => walkCommandWhy(MODES[there], t))
+        .map((t) => walkCommandWhy(VARIANTS[there], t))
         .find(Boolean) ?? '')
     : '';
 };
-// Turned at a mode: its tiling with a turned way round, its blocks coming round so (a block rule's, see blocksTurn); its
+// Turned at a variant: its tiling with a turned way round, its blocks coming round so (a block rule's, see blocksTurn); its
 // greyed words
 const TURNED_WHERE = 'This tiling has no other way round (for a block rule, none that brings its blocks round).';
 const turnedAllowed = (v, turned = false) => {
@@ -10429,9 +10434,9 @@ const turnedAllowed = (v, turned = false) => {
 };
 function familyOf(w) {
   for (const F of FAMILIES) {
-    const m = F.modes.findIndex((pair) => pair.includes(w));
+    const m = F.variants.findIndex((pair) => pair.includes(w));
     if (m < 0) continue;
-    const turnable = !!TURNED[MODES[w].surface];
+    const turnable = !!TURNED[VARIANTS[w].surface];
     return { F, m, tab: F.tabs.findIndex(([t, turned]) => t === m && turned === (turnable && torusTurned)) };
   }
   return null;
@@ -10439,21 +10444,23 @@ function familyOf(w) {
 // whether the number's digits are read: not by an ant by colour, nor by Life but for a start by the digits (the number
 // then neither shown nor in the link: x= is the number followed, the cells' start is pop= and p=)
 const readsDigits = (w) =>
-  !(ANTS[w] && !antByDigits) && !(MODES[w].worm && !worm.byDigits) && !(MODES[w].life && plane.start !== 'digits');
+  !(ANTS[w] && !antByDigits) &&
+  !(VARIANTS[w].worm && !worm.byDigits) &&
+  !(VARIANTS[w].life && plane.start !== 'digits');
 // A creature's sections, as Life's: Start, by its rule or by the digits; Rule, its creature (see renderModePicker), then its rules as cards, its
 // rule and its words (see creatureRules), then your own, its rule typed
 const customRow = $('antCustomRow'); // (kept: out of the page while a list redrawn has it not)
 // the Custom rule card clicked (Life's, a walk's, a creature's): your own shown, a known rule in use or not (Life: its states,
-// births and survivals); closed on another mode
-let rulesMode = null,
-  customOpen = false; // (the mode the rules were last drawn for)
+// births and survivals); closed on another variant
+let rulesVariant = null,
+  customOpen = false; // (the variant the rules were last drawn for)
 // the number picker's place and whether it shows, from the setup now: a walk's Start, its start on a surface first (a
 // creature's at the head of its own Start), then the number read (its digits; a battle's numbers instead, see
 // renderWalkTeams); a start's by the digits (Life's, a creature's) under its Digits tab; read by none, back in the walk's,
 // hidden
 function placeNumberPicker() {
-  const w = tabMode(),
-    m = MODES[w],
+  const w = tabVariant(),
+    m = VARIANTS[w],
     home =
       !readsDigits(w) || (!m.life && NAV[w][0] !== 'Ant')
         ? $('walkStartSection')
@@ -10464,8 +10471,8 @@ function placeNumberPicker() {
   if ($('numberPicker').parentElement !== home) home.append($('numberPicker'));
 }
 function renderAntRow() {
-  const w = tabMode(),
-    m = MODES[w],
+  const w = tabVariant(),
+    m = VARIANTS[w],
     ant = NAV[w][0] === 'Ant';
   $('walkStartSection').hidden = m.life || ant;
   placeNumberPicker();
@@ -10489,14 +10496,14 @@ function renderAntRow() {
 }
 // A rules list's cards, one manager for a creature's and a walk's (see creatureRules): its rules, each with its picture, one
 // that cannot go there greyed (why, in its tooltip), then Custom rule (your own, typed in the field under the list);
-// here: w is the mode in use (else a pick goes to it first)
+// here: w is the variant in use (else a pick goes to it first)
 function ruleCards(w, here = true) {
   const R = creatureRules(w),
     mine = here && (customOpen || !ruleKnown(R));
   const go = (then) => () => {
     if (!here) {
-      $('mode').value = w;
-      $('mode').dispatchEvent(new Event('change'));
+      $('variant').value = w;
+      $('variant').dispatchEvent(new Event('change'));
     }
     then();
   };
@@ -10519,7 +10526,7 @@ function ruleCards(w, here = true) {
       whyNot: source && (({ w: v }) => ruleWhyNot(v, source)),
       at: w,
       choice: source?.startsWith('walk ') ? `walkRule:${w}|${code}` : null,
-    }); // (a walk's rule: its choice's key, its walk's and its rule's, see choicesAt)  // (its picture: how it works, picked first; greyed, why: rulesFor's, any mode's)
+    }); // (a walk's rule: its choice's key, its walk's and its rule's, see choicesAt)  // (its picture: how it works, picked first; greyed, why: rulesFor's, any variant's)
   return [
     ...R.cards.map(({ rule: r, source, name, pic, title }) =>
       make(
@@ -10554,15 +10561,15 @@ function ruleCards(w, here = true) {
     customRow,
   ]; // (its field right after it, the list's next rules after the field; always in it, shown by renderAntRow)
 }
-// The modes under a button of the menu: its place in the tree (NAV: kind, space, shape, rule, side), all those below it
-const modesUnder = (...place) => Object.keys(NAV).filter((u) => place.every((x, i) => NAV[u][i] === x));
-// The menu as a graph (the setup a node, a click an edge): a setup, what the app holds as a link does ({ w: the mode, size:
+// The variants under a button of the menu: its place in the tree (NAV: kind, space, shape, rule, side), all those below it
+const variantsUnder = (...place) => Object.keys(NAV).filter((u) => place.every((x, i) => NAV[u][i] === x));
+// The menu as a graph (the setup a node, a click an edge): a setup, what the app holds as a link does ({ w: the variant, size:
 // null for the one it opens at, its colours, a walk's teams, its battle rule, its starts' way, a Life's start, its hunt's
-// zone and its rule, as typed: the one a mode plays from it, lifeRuleAt; its look, colourMode's; Stacks on; a walk's rule, see
-// walkRuleAt; A's start's number, a mode's list's at most; Newcomer picked, see newcomerCan; a plane's outline, see outlineIn), the
+// zone and its rule, as typed: the one a variant plays from it, lifeRuleAt; its look, colourMode's; Stacks on; a walk's rule, see
+// walkRuleAt; A's start's number, a variant's list's at most; Newcomer picked, see newcomerCan; a plane's outline, see outlineIn), the
 // one in use first
 const setupNow = () => ({
-  w: tabMode(),
+  w: tabVariant(),
   size: null,
   lifeTeams,
   teams: walkTeams,
@@ -10573,7 +10580,7 @@ const setupNow = () => ({
   rule: $('lifeRule').value,
   look: $('colourMode').value,
   stacked: spaceTime,
-  walkRule: MODES[tabMode()].net ? walkRuleOf(MODES[tabMode()]) : null,
+  walkRule: VARIANTS[tabVariant()].net ? walkRuleOf(VARIANTS[tabVariant()]) : null,
   startNo: startNo(),
   newcomer,
   outline: `${plane.shape}|${plane.torus ? 1 : 0}`,
@@ -10594,24 +10601,26 @@ const SETUP_FIELDS = [
   'newcomer',
   'outline',
 ];
-// a plane grid's outline at kind k (as stored: its mode's plane) from a setup's (its outline tiles' shape and torus, 'hex|0'),
+// a plane grid's outline at kind k (as stored: its variant's plane) from a setup's (its outline tiles' shape and torus, 'hex|0'),
 // as outlineOf makes it there
 const outlineIn = (outline, k) => {
   if (!outline) return outlineOf(k);
   const [shape, torus] = outline.split('|');
   return outlineOf(k, shape, torus === '1' && !APERIODIC[k]);
 };
-// a walk's rule at mode u from setup s: the setup's walk's (walkRule) where u keeps its rules under the same key (its network's,
+// a walk's rule at variant u from setup s: the setup's walk's (walkRule) where u keeps its rules under the same key (its network's,
 // see walkKey: a plane's grid and cells share theirs), else u's kept one
 const walkRuleAt = (s, u) =>
-  s.walkRule && MODES[s.w].net && walkKey(MODES[u]) === walkKey(MODES[s.w]) ? s.walkRule : walkRuleKept(MODES[u]); // (its fields but the mode: a key's, a path's changes)
+  s.walkRule && VARIANTS[s.w].net && walkKey(VARIANTS[u]) === walkKey(VARIANTS[s.w])
+    ? s.walkRule
+    : walkRuleKept(VARIANTS[u]); // (its fields but the variant: a key's, a path's changes)
 const setupKey = (s) => [s.w, ...SETUP_FIELDS.map((f) => s[f])].join('|');
 // The menu's choices at a setup, each a click: its key (its button's data-choice) and the setup it leads to, by the menu's
-// own navigation (navPick, kindLeft, nearestMode, walksThere): the tabs, spaces, shapes, tilings, sides, walks' kinds, then a
+// own navigation (navPick, modeLeft, nearestVariant, walksThere): the tabs, spaces, shapes, tilings, sides, walks' kinds, then a
 // Life's colours, a battle's teams and rule; a surface's sizes at the start only (one stepper, see pathsTo). reads: the fields
 // a search asks (see pathsTo), the others' edges not made (their greyed words the costliest: colours', teams'); none, all
 function choicesAt(s, reads = null, teamsMemo = new Map()) {
-  // (each [key, the setup it leads to, its button's words]; teamsMemo: a search's, its colours by mode, one state all along)
+  // (each [key, the setup it leads to, its button's words]; teamsMemo: a search's, its colours by variant, one state all along)
   const wants = (field) => !reads || reads.has(field);
   const teamsAt = (v) => {
     const k = `${v}|${s.lifeTeams}|${s.rule}`;
@@ -10630,13 +10639,13 @@ function choicesAt(s, reads = null, teamsMemo = new Map()) {
             w: v,
             size: null,
             lifeTeams: wants('lifeTeams') ? teamsAt(v) : s.lifeTeams,
-            walkRule: MODES[v].net ? walkRuleAt(s, v) : null,
+            walkRule: VARIANTS[v].net ? walkRuleAt(s, v) : null,
             ...more,
           },
           words,
         ]);
     };
-  for (const [k] of NAV_KINDS) if (k !== kind) go(`kind:${k}`, kindLeft[k] ?? navPick(w, 0, k), k);
+  for (const [k] of MODE_TABS) if (k !== kind) go(`mode:${k}`, modeLeft[k] ?? navPick(w, 0, k), k);
   for (const sp of navValues(1, [kind])) go(`space:${sp}`, navPick(w, 1, sp), SPACES[sp][0]);
   for (const sh of navValues(2, [kind, space])) go(`shape:${sh}`, navPick(w, 2, sh), shapeLabel(sh));
   const fam = familyOf(w);
@@ -10645,9 +10654,9 @@ function choicesAt(s, reads = null, teamsMemo = new Map()) {
       if (!turned && f !== fam.m)
         go(
           `tiling:${f}`,
-          nearestMode(
+          nearestVariant(
             w,
-            fam.F.modes[f].filter((v) => NAV[v][0] === kind),
+            fam.F.variants[f].filter((v) => NAV[v][0] === kind),
           ),
           name,
         );
@@ -10659,7 +10668,7 @@ function choicesAt(s, reads = null, teamsMemo = new Map()) {
       if (r !== rule) {
         const here =
           kind !== 'Ant' && Object.keys(NAV).find((m) => NAV[m].slice(0, 4).join() === [kind, space, shape, r].join());
-        if (here && MODES[here].net) {
+        if (here && VARIANTS[here].net) {
           for (const c of (rulesForMemo[here] ??= rulesFor(here)))
             if (!c.why) go(`walkRule:${here}|${c.rule}`, here, `${r} ${c.rule}`, { walkRule: c.rule });
         } else go(`rule:${r}`, navPick(w, 3, r), r);
@@ -10667,10 +10676,10 @@ function choicesAt(s, reads = null, teamsMemo = new Map()) {
   const set = (key, field, v, why, words) => {
     if (s[field] !== v && !why) out.push([key, { ...s, [field]: v }, words]);
   }; // (a choice greyed there: no click)
-  if (MODES[w].life && wants('lifeTeams'))
+  if (VARIANTS[w].life && wants('lifeTeams'))
     for (const k of TEAM_COUNTS)
       set(`lifeTeams:${k}`, 'lifeTeams', k, lifeTeamsWhyNot(k, w, s.size, s.rule), TEAM_NAMES[k]);
-  if (battleMode(w)) {
+  if (battleVariant(w)) {
     if (wants('teams'))
       for (const k of TEAM_COUNTS) set(`teams:${k}`, 'teams', k, teamsWhyNot(k, w, s.size, s.startNo), TEAM_NAMES[k]);
     if (s.teams > 1 && wants('battleRule'))
@@ -10689,7 +10698,7 @@ function choicesAt(s, reads = null, teamsMemo = new Map()) {
       );
   }
   // a Life's starts (its tabs: Hunt, Text, Digits, Draw), and its hunt's zones on the grid shown (their room known there only, see huntFits; Custom a link's, no tile)
-  const m = MODES[w];
+  const m = VARIANTS[w];
   if (m.life && !m.loops && !m.elementary && wants('start'))
     for (const [start, name] of LIFE_STARTS) set(`start:${start}`, 'start', start, startWhyNot(start, w), name);
   if (m.life && wants('rule'))
@@ -10717,39 +10726,39 @@ function choicesAt(s, reads = null, teamsMemo = new Map()) {
       newcomerCan(s.lifeTeams, w, s.size, s.start, s.rule) ? '' : 'none',
       'Newcomer',
     ); // (a switch where it can be)
-  const starts = wants('startNo') && w === tabMode() && modeStarts(); // (a start's −, +: at the mode shown, its starts' list known there)
+  const starts = wants('startNo') && w === tabVariant() && variantStarts(); // (a start's −, +: at the variant shown, its starts' list known there)
   if (starts) {
     set('startNo:-1', 'startNo', startStep(s.startNo, -1, starts.length), '', 'Previous start');
     set('startNo:+1', 'startNo', startStep(s.startNo, 1, starts.length), '', 'Next start');
   }
-  if (wants('zone') && w === walk.mode && s.lifeTeams === lifeTeams && s.start === 'random' && huntOn())
+  if (wants('zone') && w === walk.variant && s.lifeTeams === lifeTeams && s.start === 'random' && huntOn())
     for (const [zone, fits] of Object.entries(huntFits()))
       if (fits && zone !== 'custom') set(`zone:${zone}`, 'zone', zone, '', HUNT_ZONES[zone][1]);
   return out;
 }
 // how many settings two setups differ by: the menu's levels, the tiling, the fields
-// a mode's tiling by its name (Hexagons, whatever its place in its family's list; in 2D its shape, the plane's tiling),
+// a variant's tiling by its name (Hexagons, whatever its place in its family's list; in 2D its shape, the plane's tiling),
 // none on a solid or a lattice
-const tilingNames = remember('tilingNames', {}); // (once a mode: the menu's tables fixed, the graph's search asks it at each edge)
+const tilingNames = remember('tilingNames', {}); // (once a variant: the menu's tables fixed, the graph's search asks it at each edge)
 const tilingNameOf = (w) => {
   if (w in tilingNames) return tilingNames[w];
   const fam = familyOf(w);
   return (tilingNames[w] = fam
     ? fam.F.tabs.find(([t]) => t === fam.m)[3]
-    : !['surface', 'cube'].includes(MODES[w].lattice)
+    : !['surface', 'cube'].includes(VARIANTS[w].lattice)
       ? NAV[w][2]
       : null);
 };
-// the settings changed from mode v to w: the menu's levels, a kind's own (its rule, its side) compared within one kind only
+// the settings changed from variant v to w: the menu's levels, a kind's own (its rule, its side) compared within one kind only
 // (Life's and a walk's mean other things: Life's empty side is no Spiral's), and the tiling by name
-const modeChanges = (v, w) =>
+const variantChanges = (v, w) =>
   [0, 1, 2, 3, 4].filter((i) => (i < 3 || NAV[v][0] === NAV[w][0]) && NAV[v][i] !== NAV[w][i]).length +
   (tilingNameOf(v) !== tilingNameOf(w));
-const changes = (a, b) => modeChanges(a.w, b.w) + SETUP_FIELDS.filter((f) => a[f] !== b[f]).length;
+const changes = (a, b) => variantChanges(a.w, b.w) + SETUP_FIELDS.filter((f) => a[f] !== b[f]).length;
 // The shortest paths from the setup in use to one fits takes, at n clicks: breadth first, each setup once, layer by layer
 // till one holds some; of these the fewest settings changed, each its clicks [key, words] (budget: setups tried at most).
-// Only the clicks that change what fits reads: its fields, as it reads them (the mode always), so a control judged by few
-// fields searches those only (a hunt's zone, judged on the grid built: none but its mode's)
+// Only the clicks that change what fits reads: its fields, as it reads them (the variant always), so a control judged by few
+// fields searches those only (a hunt's zone, judged on the grid built: none but its variant's)
 // The buttons out of the graph, by their choice's key: greyed, their tooltip says why and nothing is sought for what would
 // allow them (no "Allowed on", no button lit by a click on them): no search, so no hover of theirs can ever be slow. One
 // list, each with its reason; a button enters it by decision, when keeping its search fast took fixing its code again
@@ -10761,13 +10770,13 @@ const OFF_GRAPH = {
 // the menu's edges found since a tile was last drawn (see setTile), by their setup and the fields asked: one search's, kept
 // for the next greyed control hovered (a row's tiles ask the same: the four symmetries, each 170 ms of the same edges)
 const menuEdges = new Map(),
-  menuTeams = new Map(); // (its colours by mode, see choicesAt's teamsMemo: as long)
+  menuTeams = new Map(); // (its colours by variant, see choicesAt's teamsMemo: as long)
 function pathsTo(fits, budget = 5000, judgedAt = null) {
-  // (judgedAt: a control judged on the grid built only, its mode's setups only)
+  // (judgedAt: a control judged on the grid built only, its variant's setups only)
   const start = setupNow(),
     seen = new Set([setupKey(start)]),
     w = start.w,
-    kind = !MODES[w].plane && surfaceOf(MODES[w]),
+    kind = !VARIANTS[w].plane && surfaceOf(VARIANTS[w]),
     now = SURFACES[kind] && figureSize(w);
   const reads = new Set(['w']),
     edges = (s) => {
@@ -10786,9 +10795,9 @@ function pathsTo(fits, budget = 5000, judgedAt = null) {
       ); // (the fields it reads, as it reads them)
   const readChanged = (a, b) => Object.keys(b).some((f) => b[f] !== a[f] && reads.has(f)); // (a click's fields changed, as its setup says them: one fits reads)
   judged(start);
-  // (a surface's sizes, the 8 nearest by construction: its mode's, see sizesOf; the size stepper, a click away)
+  // (a surface's sizes, the 8 nearest by construction: its variant's, see sizesOf; the size stepper, a click away)
   const sizes = now
-    ? sizesOf(kind, MODES[w])
+    ? sizesOf(kind, VARIANTS[w])
         .filter((f) => f !== now)
         .sort((a, b) => Math.abs(a - now) - Math.abs(b - now))
         .slice(0, 8)
@@ -10829,7 +10838,7 @@ const enablersFor = (fits, judgedAt = null) =>
   [...new Set(pathsTo(fits, 5000, judgedAt).map(([[key]]) => key))]
     .map((key) => (key === 'size' ? $('sizeBox') : document.querySelector(`[data-choice="${key}"]`)))
     .filter(Boolean);
-// a rule card's greyed words in a mode (see rulesFor): its why there, or none there at all
+// a rule card's greyed words in a variant (see rulesFor): its why there, or none there at all
 const ruleWhyNot = (v, source) => {
   const c = rulesFor(v).find((r) => r.source === source);
   return c ? c.why : 'Not a rule here.';
@@ -10840,22 +10849,22 @@ const capitalised = (t) => t.replace(/^./, (c) => c.toUpperCase());
 // a walk's or a creature's rule in use, as How it works titles it: its card's name (Custom rule: none has it) and the rule, as
 // Life's (Life B3/S23); a walk with no rules, its own name
 const ruleTitleOf = (w) => {
-  if (!WALK_NETS[MODES[w].net] && NAV[w][0] !== 'Ant') return walkName(w);
+  if (!WALK_NETS[VARIANTS[w].net] && NAV[w][0] !== 'Ant') return walkName(w);
   const R = creatureRules(w);
   if (!R.now) return walkName(w); // (no rule in use: the worm by the digits)
   return `${R.cards.find((c) => c.rule === R.now)?.name ?? 'Custom rule'} ${ruleSpan(R.now)}`;
 };
-// a mode's kinds of rules (see RULES): a walk's, else the creatures' of its side (Cells: the ants and turmites; Grid: the worm)
+// a variant's kinds of rules (see RULES): a walk's, else the creatures' of its side (Cells: the ants and turmites; Grid: the worm)
 const kindsOf = (w) =>
-  MODES[w].net
+  VARIANTS[w].net
     ? ['walk']
     : NAV[w]?.[0] === 'Ant'
       ? Object.keys(RULE_KINDS).filter((k) => RULE_KINDS[k].side === NAV[w][4])
       : []; // (none but a walk's and the Ant tab's)
-// a mode's rules to pick, from RULES, each in its own words: { rule, name, pic, why (greyed: the command it lacks), title (its
-// rule, then what it does) }; those a mode cannot take greyed, never left out (a click: where they play, see enablersFor)
+// a variant's rules to pick, from RULES, each in its own words: { rule, name, pic, why (greyed: the command it lacks), title (its
+// rule, then what it does) }; those a variant cannot take greyed, never left out (a click: where they play, see enablersFor)
 function rulesFor(w) {
-  const m = MODES[w];
+  const m = VARIANTS[w];
   return kindsOf(w).flatMap((kind) =>
     rulesOf(kind, m.net).flatMap((r) => {
       const card = (rule, why = '', name = r.name, about = r.about) => [
@@ -10882,7 +10891,7 @@ function rulesFor(w) {
 // a creature's or a walk's rules: its cards (see rulesFor), the rule in use, how to set one, whether one is typed, a rule's base
 // (where it reads digits: its card's bubble), the field's title
 function creatureRules(w) {
-  const m = MODES[w],
+  const m = VARIANTS[w],
     N = WALK_NETS[m.net];
   if (N)
     return {
@@ -10894,7 +10903,7 @@ function creatureRules(w) {
       cards: rulesFor(w),
       name: `Rule, a command per digit: ${commandsTaken(m).join(' ')}`,
     };
-  if (MODES[w].worm)
+  if (VARIANTS[w].worm)
     return {
       byDigits: worm.byDigits,
       now: worm.byDigits ? null : worm.rule,
@@ -10941,7 +10950,7 @@ function refuseRule(typed, kept) {
   $('status').textContent = `${creatureRuleError(typed)} · ${kept} kept`;
 }
 // a walk's, an ant's, a turmite's or a worm's rule typed: its error, '' when its creature reads it
-const creatureRuleError = (typed, w = tabMode()) =>
+const creatureRuleError = (typed, w = tabVariant()) =>
   creatureRules(w).reads(typed) ? '' : `“${typed}”: not a rule here · ${creatureRules(w).name}`;
 function setWormRule(rule) {
   if (!wormRuleOf(rule)) {
@@ -10967,15 +10976,15 @@ function setAntRule(w, rule) {
   compute();
 }
 function renderModePicker() {
-  const w = tabMode(),
+  const w = tabVariant(),
     [kind, space, shape, rule] = NAV[w];
-  if (rulesMode !== w) customOpen = false; // (Custom rule closed on another mode, before its cards are drawn)
-  rulesMode = w;
+  if (rulesVariant !== w) customOpen = false; // (Custom rule closed on another variant, before its cards are drawn)
+  rulesVariant = w;
   const button = (html, active, go, title = '', more = {}) => tile({ html, title, on: active, click: go, ...more });
   // at the top: Walk, Ant, Life
   $('modeTabs').replaceChildren(
     galleryTab(),
-    ...NAV_KINDS.map(([k, pic, title]) => {
+    ...MODE_TABS.map(([k, pic, title]) => {
       const b = button(
         `${icon(pic)} ${k}`,
         k === kind,
@@ -10986,7 +10995,7 @@ function renderModePicker() {
         title,
       );
       b.setAttribute('role', 'tab');
-      b.dataset.choice = `kind:${k}`; // (its choice's key, see choicesAt)
+      b.dataset.choice = `mode:${k}`; // (its choice's key, see choicesAt)
       return b;
     }),
   );
@@ -11018,7 +11027,7 @@ function renderModePicker() {
       return [
         ...title,
         ...these.flatMap((sh) => {
-          const again = sh === shape && !!MODES[w].plane && !APERIODIC[MODES[w].plane],
+          const again = sh === shape && !!VARIANTS[w].plane && !APERIODIC[VARIANTS[w].plane],
             b = button(
               `${icon(SHAPE_ICONS[sh])}<span>${shapeLabel(sh)}</span>`,
               sh === shape,
@@ -11030,7 +11039,7 @@ function renderModePicker() {
                 plane.torus = !plane.torus;
                 compute();
               },
-              modeWhere(navPick(w, 2, sh)),
+              variantWhere(navPick(w, 2, sh)),
             );
           b.dataset.choice = `shape:${sh}`; // (its choice's key, see choicesAt)
           if (again) {
@@ -11039,7 +11048,7 @@ function renderModePicker() {
           } // (its words kept, then what a click does, as a card's: see card)
           return [b];
         }),
-        ...(g === shapeGroup('square') && MODES[w].life && MODES[w].plane ? [spaceTimeTile] : []),
+        ...(g === shapeGroup('square') && VARIANTS[w].life && VARIANTS[w].plane ? [spaceTimeTile] : []),
       ]; // (Stacks: Life on squares')
     }),
   );
@@ -11061,10 +11070,10 @@ function renderModePicker() {
     // tilings it has
     // (else the same rule on the other side, else its first walk: Cairo pentagons have no grid walk)
     const same = (f) =>
-      nearestMode(
+      nearestVariant(
         w,
-        F.modes[f].filter((v) => NAV[v][0] === kind),
-      ); // (its tile's: the nearest there, see nearestMode)
+        F.variants[f].filter((v) => NAV[v][0] === kind),
+      ); // (its tile's: the nearest there, see nearestVariant)
     // its tilings as the 2D grids are, a picture and a name each, 4 a row; one that turns by 30° (another grid: its rows
     // round the tube), a switch once picked: a click turns it (its picture turned) or back; then Turned (a torus's, a
     // strip's, a bottle's), the same: on, the tiling turned; off, not; greyed, a tiling that has none
@@ -11089,16 +11098,16 @@ function renderModePicker() {
             }
             F.tab = tabOf(f, false);
             torusTurned = false;
-            $('mode').value = same(f);
-            $('mode').dispatchEvent(new Event('change'));
+            $('variant').value = same(f);
+            $('variant').dispatchEvent(new Event('change'));
           },
           f === here && turns
             ? `${capitalised(F.tabs[tabOf(f, true)][4].slice(shape.length + 2))}: a click turns it${isTurned ? ' back' : ''}`
-            : modeWhere(same(f)),
+            : variantWhere(same(f)),
           {
             again: f === here && turns,
             byDefault: f === F.tabs[0][0] ? 'yes' : '',
-            turn: tilesTurn(shownSurface(MODES[same(f)].surface, f === here && isTurned)),
+            turn: tilesTurn(shownSurface(VARIANTS[same(f)].surface, f === here && isTurned)),
           },
         ); // its picture as its tiles lie (a torus's, a strip's alike: clockwise, as the pictures laid on it)
         b.dataset.choice = `tiling:${f}`; // (its choice's key, see choicesAt)
@@ -11125,14 +11134,14 @@ function renderModePicker() {
   // rules (see ruleCards: the ants' and turmites' on cells, the worm's along the triangles' edges, its Edges tab)
   const creatures = kind === 'Ant';
   const rules = navValues(3, [kind, space, shape]);
-  $('navRules').hidden = !creatures && rules.length < 2 && !MODES[w].net;
+  $('navRules').hidden = !creatures && rules.length < 2 && !VARIANTS[w].net;
   $('navRules').replaceChildren(
     ...rules.flatMap((r, i) => {
       const here = Object.keys(NAV).find((m) => NAV[m].slice(0, 4).join() === [kind, space, shape, r].join());
       const v = here ?? Object.keys(NAV).find((m) => NAV[m][0] === kind && NAV[m][1] === space && NAV[m][3] === r); // (elsewhere: its first shape)
-      if (!creatures && here && MODES[here].net) return ruleCards(r === rule ? w : here, r === rule); // a walk by a rule: its rules' cards (the side picked kept)
+      if (!creatures && here && VARIANTS[here].net) return ruleCards(r === rule ? w : here, r === rule); // a walk by a rule: its rules' cards (the side picked kept)
       if (creatures) return ruleCards(w); // (its rules: an ant's, a turmite's, the worm's)
-      const { base, detail } = splitModeLabel(modeOptionOf(v).text); // (a spiral's, the diagonals': their base, their words)
+      const { base, detail } = splitModeLabel(variantOptionOf(v).text); // (a spiral's, the diagonals': their base, their words)
       const pic = icon(
         r === 'Turtle'
           ? 'turtle'
@@ -11142,15 +11151,15 @@ function renderModePicker() {
               ? 'walk2d'
               : r === 'Ant'
                 ? 'ant'
-                : MODE_ICONS[v],
+                : VARIANT_ICONS[v],
       ); // a turtle for the walks turning relative to their heading
       const go = () => {
         if (here) {
           navGo(3, r);
           return;
         }
-        $('mode').value = v;
-        $('mode').dispatchEvent(new Event('change'));
+        $('variant').value = v;
+        $('variant').dispatchEvent(new Event('change'));
       };
       const how =
         walkTutorialFits(here ?? v) &&
@@ -11158,7 +11167,7 @@ function renderModePicker() {
           if (r === rule) walkTutorialToggle();
           else {
             go();
-            walkTutorial(tabMode());
+            walkTutorial(tabVariant());
           }
         }); // (its picture: how it works, picked first)
       return [
@@ -11255,44 +11264,45 @@ const workerOf = (main) =>
 const newFormulaWorker = () => workerOf(formulaWorker);
 function compute() {
   for (const stage in timings) setTiming(stage); // (each walk its own times: none of the one before)
-  const mode = MODES[tabMode()];
-  if (!numberPicked) $('formula').value = defaultNumber(tabMode());
+  const variant = VARIANTS[tabVariant()];
+  if (!numberPicked) $('formula').value = defaultNumber(tabVariant());
   surfaceDraw = false;
-  if (torusTurned && !blocksTurn(tabMode(), true)) torusTurned = false; // (a reversible sheet turned only where its blocks are: a link's too)
+  if (torusTurned && !blocksTurn(tabVariant(), true)) torusTurned = false; // (a reversible sheet turned only where its blocks are: a link's too)
   renderModePicker();
-  if (mode.surface) fillGridSizes(surfaceOf(mode), mode.initial);
-  if (mode.life) fitLifeTeams(mode); // (its colours first: the digits' base, its sizes, see fitLifeTeams)
+  if (variant.surface) fillGridSizes(surfaceOf(variant), variant.initial);
+  if (variant.life) fitLifeTeams(variant); // (its colours first: the digits' base, its sizes, see fitLifeTeams)
   const n = digitsNeeded(),
-    want = mode.life ? n : n + LOOP_AHEAD; // a walk also reads the digits ahead
+    want = variant.life ? n : n + LOOP_AHEAD; // a walk also reads the digits ahead
   syncDigitsStepper();
-  relabelColours(mode);
-  $('automataSection').hidden = !mode.life; // rule and hunt, for the cellular automata only
-  $('planeRow').hidden = !mode.plane || !!mode.elementary; // Life on the plane: its grid (Elementary's: none, see elementaryRows)
-  $('lifeStartRow').hidden = !mode.life;
-  $('copyRle').hidden = !mode.plane; // (the plane's cells only)  // its start: Hunt, Draw (the plane only), Digits
-  if (mode.life)
-    plane.start = mode.elementary
+  relabelColours(variant);
+  $('automataSection').hidden = !variant.life; // rule and hunt, for the cellular automata only
+  $('planeRow').hidden = !variant.plane || !!variant.elementary; // Life on the plane: its grid (Elementary's: none, see elementaryRows)
+  $('lifeStartRow').hidden = !variant.life;
+  $('copyRle').hidden = !variant.plane; // (the plane's cells only)  // its start: Hunt, Draw (the plane only), Digits
+  if (variant.life)
+    plane.start = variant.elementary
       ? ELEMENTARY_STARTS.includes(plane.start)
         ? plane.start
         : 'cell'
       : ELEMENTARY_STARTS.includes(plane.start) && plane.start !== 'digits'
         ? 'random'
         : plane.start; // (Elementary's starts, see elementaryRows)
-  $('startSection').hidden = !mode.life || !!mode.loops; // (loops: their start their loops, one a lineage, see layLoops)
-  $('returnRow').hidden = !mode.margolus; // (a reversible one's return to its start, wherever it is)
+  $('startSection').hidden = !variant.life || !!variant.loops; // (loops: their start their loops, one a lineage, see layLoops)
+  $('returnRow').hidden = !variant.margolus; // (a reversible one's return to its start, wherever it is)
   fitRuleToShape();
-  $('colourSection').hidden = !walkTeamsHere(tabMode()) && (!mode.life || !!mode.margolus || !!mode.elementary); // (blocks, Elementary: one colour; a walk's on a surface)
+  $('colourSection').hidden =
+    !walkTeamsHere(tabVariant()) && (!variant.life || !!variant.margolus || !!variant.elementary); // (blocks, Elementary: one colour; a walk's on a surface)
   renderViewTiles();
   renderTeams();
   renderWalkTeams();
   renderRuleSection();
-  if (!mode.life || mode.elementary) {
+  if (!variant.life || variant.elementary) {
     stopHunt();
     $('huntRow').hidden = true;
   } // (no hunt: a walk, or Elementary's rows, built by buildWalk)
   renderPlaneRow();
   // a new number, surface, size or rule ends any hunt: its champion would not fit any more
-  $('surfaceRow').hidden = $('sizeRow').hidden = mode.lattice !== 'surface'; // the size under the tiles; a walk's starts and loops further down
+  $('surfaceRow').hidden = $('sizeRow').hidden = variant.lattice !== 'surface'; // the size under the tiles; a walk's starts and loops further down
   syncSizeStepper();
   updateRuleText();
   if (numberWorker) {
@@ -11467,8 +11477,8 @@ function setBusy(on, words = 'Computing') {
 /* ---- 5.3 Building the walk ---------------------------------------------------------------- */
 // All positions, distances and counts are computed once into typed arrays: the animation, the
 // stats and the jumps only read them.
-let previousShape = null; // the form of the surface just replaced: { target, mode }
-// A walk built (a new number, mode, size, start, count of digits…): then the link follows it
+let previousShape = null; // the form of the surface just replaced: { target, variant }
+// A walk built (a new number, variant, size, start, count of digits…): then the link follows it
 // what building the walk has to say (a battle's number wrong, its walkers unable to start apart): in the status after it
 let walkSaid = '';
 function buildWalk() {
@@ -11525,8 +11535,8 @@ function walkRepeat() {
   const { s0, L, digit } = P,
     tries = Math.min(24, Math.floor((most - s0) / L)),
     n = s0 + tries * L;
-  const step = STEPPERS[digitsComputed.mode](),
-    { lattice: lat, cells } = MODES[digitsComputed.mode],
+  const step = STEPPERS[digitsComputed.variant](),
+    { lattice: lat, cells } = VARIANTS[digitsComputed.variant],
     round = (v) => roundOff(v, 1e6);
   const pos = new Float64Array(3 * (n + 1)),
     code = new Int32Array(n + 1),
@@ -11557,13 +11567,13 @@ function walkRepeat() {
 }
 
 function buildWalkOf() {
-  const rows = MODES[digitsComputed.mode].elementary ? elementaryRows() : null; // (Elementary: a step a generation, see elementaryRows)
-  if (MODES[digitsComputed.mode].elementary && !rows) return; // (its rows on their way: the walk shown kept meanwhile)
-  previousShape = walk.shape && { target: walk.shape.target, mode: walk.shape.mode };
+  const rows = VARIANTS[digitsComputed.variant].elementary ? elementaryRows() : null; // (Elementary: a step a generation, see elementaryRows)
+  if (VARIANTS[digitsComputed.variant].elementary && !rows) return; // (its rows on their way: the walk shown kept meanwhile)
+  previousShape = walk.shape && { target: walk.shape.target, variant: walk.shape.variant };
   visitData = firstVisitData = areaData = null; // and its cells' visits and areas too
   gpuClear(); // a surface drawn before (see 11.4d)
   areaFill = null; // a new walk: its enclosed areas are computed again, and its layer starts empty
-  Object.assign(walk, freshWalk(), { mode: digitsComputed.mode }); // (all its fields fresh; the mode it is built for: its colours by it, current.mode ahead of it while another is made, see compute)
+  Object.assign(walk, freshWalk(), { variant: digitsComputed.variant }); // (all its fields fresh; the variant it is built for: its colours by it, current.variant ahead of it while another is made, see compute)
   $('fillTooBig').hidden = true;
   layers.fill.clearRect(0, 0, canvasWidth, canvasHeight);
   const { head, frac } = digitsInUse();
@@ -11571,8 +11581,8 @@ function buildWalkOf() {
   seq.set(head);
   seq.set(frac, head.length);
   if (rows) seq = new Uint8Array(rows.G);
-  else if (MODES[digitsComputed.mode].life) {
-    buildLife(seq, MODES[digitsComputed.mode]);
+  else if (VARIANTS[digitsComputed.variant].life) {
+    buildLife(seq, VARIANTS[digitsComputed.variant]);
     return;
   }
   // a walk that loops takes only the digits of its first round: the count says so (and the link),
@@ -11580,35 +11590,36 @@ function buildWalkOf() {
   const loopCount = () => {
     syncDigitsStepper();
   };
-  if (MODES[digitsComputed.mode].lattice === 'surface') {
-    (MODES[digitsComputed.mode].edges ? buildEdgesWalk : buildCellsWalk)(
+  if (VARIANTS[digitsComputed.variant].lattice === 'surface') {
+    (VARIANTS[digitsComputed.variant].edges ? buildEdgesWalk : buildCellsWalk)(
       seq,
-      MODES[digitsComputed.mode],
+      VARIANTS[digitsComputed.variant],
       digitsAhead(),
     );
     loopCount();
     syncLoopRow();
     return;
   }
-  const len = MODES[digitsComputed.mode].worm || !readsDigits(digitsComputed.mode) ? lengthAsked() : seq.length; // (its steps asked: a worm's, its digits read at its new corners only; a creature by its rule's, none read)
-  const is3d = MODES[digitsComputed.mode].lattice === 'cube';
+  const len =
+    VARIANTS[digitsComputed.variant].worm || !readsDigits(digitsComputed.variant) ? lengthAsked() : seq.length; // (its steps asked: a worm's, its digits read at its new corners only; a creature by its rule's, none read)
+  const is3d = VARIANTS[digitsComputed.variant].lattice === 'cube';
   const wx = new Float64Array(len + 1);
   const wy = new Float64Array(len + 1);
   const wz = is3d ? new Float64Array(len + 1) : null;
   const cells = new Int32Array(len + 1);
   const maxDist = new Float64Array(len + 1);
-  const ant = !!MODES[digitsComputed.mode].antOf,
-    isWorm = !!MODES[digitsComputed.mode].worm,
+  const ant = !!VARIANTS[digitsComputed.variant].antOf,
+    isWorm = !!VARIANTS[digitsComputed.variant].worm,
     step = rows
       ? (
           (y = 0) =>
           () => [planeKey(0, ++y), 0, y, 0]
         )()
-      : STEPPERS[digitsComputed.mode](seq); // (Elementary's walker: down its middle, a row a step)
+      : STEPPERS[digitsComputed.variant](seq); // (Elementary's walker: down its middle, a row a step)
   // an ant by its rule: counted by the colour it turned on (each colour its turn), not by digit; by the
   // digits: by the turn it took (left or right), the other way from its digit on a dark cell
   const byColour = ant && !antByDigits,
-    base = byColour ? step.colours : MODES[digitsComputed.mode].base;
+    base = byColour ? step.colours : VARIANTS[digitsComputed.variant].base;
   const counts = new Int32Array(base * (len + 1)),
     left = ant ? new Uint8Array(len) : null,
     turns = ant ? new Uint8Array(len) : null;
@@ -11618,7 +11629,9 @@ function buildWalkOf() {
   // a fraction's walk repeats (see walkRepeat), walked 8 rounds; not an ant's, whose state is all its
   // cells, nor a spiral's, whose path the digits do not steer (its sides grow: it never repeats)
   let loop =
-    digitsComputed.ratio && !ant && !isWorm && !rows && !MODES[digitsComputed.mode].skipZeros ? walkRepeat() : null; // (a worm: its digits only at its new corners)
+    digitsComputed.ratio && !ant && !isWorm && !rows && !VARIANTS[digitsComputed.variant].skipZeros
+      ? walkRepeat()
+      : null; // (a worm: its digits only at its new corners)
   let steps = loop ? Math.min(len, loop.cap) : len,
     m = 0,
     walked = 0,
@@ -11711,9 +11724,9 @@ function buildWalkOf() {
     maxDist,
     base,
     counts,
-    lattice: MODES[digitsComputed.mode].lattice,
-    lines: !!MODES[digitsComputed.mode].lines,
-    skipZeros: !!MODES[digitsComputed.mode].skipZeros,
+    lattice: VARIANTS[digitsComputed.variant].lattice,
+    lines: !!VARIANTS[digitsComputed.variant].lines,
+    skipZeros: !!VARIANTS[digitsComputed.variant].skipZeros,
     ant: ant ? step.colours : 0,
     turns,
     antStates,
@@ -11887,8 +11900,8 @@ function rotateView(w) {
 
 // On a solid, a walk's pattern to keep in front (see faceWalk); elsewhere the camera's default view
 const centersPattern = () => {
-  const mode = MODES[tabMode()];
-  return SOLIDS.includes(surfaceOf(mode)) && !mode.life;
+  const variant = VARIANTS[tabVariant()];
+  return SOLIDS.includes(surfaceOf(variant)) && !variant.life;
 };
 function updateHint() {
   showZoom();
@@ -12331,9 +12344,9 @@ const SURFACE_WORMS = {
   antMobiusStripTrianglesEdges: 'walkMobiusStripTrianglesTurtleEdges',
   antKleinBottleTrianglesEdges: 'walkKleinBottleTrianglesTurtleEdges',
 };
-for (const [w, walkMode] of Object.entries(SURFACE_WORMS)) {
-  const { surface, initial, turns, perspective, round } = MODES[walkMode];
-  MODES[w] = {
+for (const [w, walkVariant] of Object.entries(SURFACE_WORMS)) {
+  const { surface, initial, turns, perspective, round } = VARIANTS[walkVariant];
+  VARIANTS[w] = {
     base: 5,
     arrows: '↙↖↑↗↘',
     lattice: 'surface',
@@ -12348,15 +12361,15 @@ for (const [w, walkMode] of Object.entries(SURFACE_WORMS)) {
       return wormRuleText();
     },
   };
-  NAV[w] = ['Ant', NAV[walkMode][1], NAV[walkMode][2], 'Ant', 'edges'];
-  MODE_ICONS[w] = 'worm';
-  FAMILIES.flatMap((F) => F.modes)
-    .find((ms) => ms.includes(walkMode))
+  NAV[w] = ['Ant', NAV[walkVariant][1], NAV[walkVariant][2], 'Ant', 'edges'];
+  VARIANT_ICONS[w] = 'worm';
+  FAMILIES.flatMap((F) => F.variants)
+    .find((ms) => ms.includes(walkVariant))
     .push(w);
 }
-for (const [w, [walkMode, place]] of Object.entries(SURFACE_ANTS)) {
-  const { surface, initial, turns, perspective, round } = MODES[walkMode];
-  MODES[w] = {
+for (const [w, [walkVariant, place]] of Object.entries(SURFACE_ANTS)) {
+  const { surface, initial, turns, perspective, round } = VARIANTS[walkVariant];
+  VARIANTS[w] = {
     base: 2,
     lattice: 'surface',
     cells: true,
@@ -12366,16 +12379,16 @@ for (const [w, [walkMode, place]] of Object.entries(SURFACE_ANTS)) {
     perspective,
     round,
     fill: false,
-    antOf: walkMode,
+    antOf: walkVariant,
     get rule() {
       return antRuleText(w);
     },
   };
-  ANTS[w] = { walk: walkMode };
+  ANTS[w] = { walk: walkVariant };
   NAV[w] = ['Ant', 'Surfaces', place, 'Ant', 'cells'];
-  MODE_ICONS[w] = MODE_ICONS[walkMode];
-  FAMILIES.flatMap((F) => F.modes)
-    .find((ms) => ms.includes(walkMode))
+  VARIANT_ICONS[w] = VARIANT_ICONS[walkVariant];
+  FAMILIES.flatMap((F) => F.variants)
+    .find((ms) => ms.includes(walkVariant))
     .push(w);
 }
 // An ant's rule, a turmite's (Greg Turk, Jim Propp): per state an entry per colour of its cell, each the colour it leaves
@@ -12391,12 +12404,12 @@ const turnCommands = (rule) => rule.toUpperCase().match(/[LR]2?|N/g) ?? [];
 // a walk's arrows, one per digit (an ant's: per turn of the walk it goes through the cells with), none: []
 const ARROW_LISTS = {};
 const arrowsOf = (w) => {
-  const a = MODES[w].antOf ? (ANTS[w].arrows ?? antArrows(w)) : (MODES[w].arrows ?? '');
+  const a = VARIANTS[w].antOf ? (ANTS[w].arrows ?? antArrows(w)) : (VARIANTS[w].arrows ?? '');
   return typeof a === 'string' ? (ARROW_LISTS[a] ??= [...a]) : a;
 }; // (a walk by a rule, an ant: theirs, see walkArrows)
 // An ant's words: those the walk it goes through the cells with can take (see walkCommandsOf), its turns first, as they come
 // (a step's turn: its index here); their arrows
-const antCommands = (w) => (ANTS[w].words ??= commandsTaken(MODES[ANTS[w].walk]));
+const antCommands = (w) => (ANTS[w].words ??= commandsTaken(VARIANTS[ANTS[w].walk]));
 // the commands walk m takes, its network's that fit it (see walkCommandWhy): its turns, B, its ways, on the spot, a cube's
 const commandsTaken = (m) => {
   const N = WALK_NETS[m.net];
@@ -12410,7 +12423,7 @@ const commandsTaken = (m) => {
 };
 const antArrows = (w) =>
   (ANTS[w].commandArrows ??= antCommands(w).map(
-    (t) => WALK_NETS[MODES[ANTS[w].walk].net].arrows[t] ?? SPOT_ARROWS[t] ?? '',
+    (t) => WALK_NETS[VARIANTS[ANTS[w].walk].net].arrows[t] ?? SPOT_ARROWS[t] ?? '',
   ));
 // a turn in words, for the Play card's chips (L, R a notch on every grid; L2, R2 two)
 const antText = (table) => {
@@ -12448,7 +12461,7 @@ const antRuleText = (w) => {
   return `${S > 1 ? `a turmite of ${S} states` : 'an ant'}: ${S > 1 ? 'in a state, ' : ''}on a cell of a colour it leaves a colour there, turns${S > 1 ? ' and takes a state' : ''}, by its rule${antByDigits ? '; a digit 1 turns the other way' : ''}`;
 };
 // its colours (one chip each), its rule's
-const antColours = (w) => (MODES[w].antOf ? antTableOf(w, antRuleOf(w)).C : 0);
+const antColours = (w) => (VARIANTS[w].antOf ? antTableOf(w, antRuleOf(w)).C : 0);
 // the step: turned, the colour of the cell it turned on; took, its chip (its cell's colour; by the digits, the digit); left,
 // the colour it gave it; first, the step the cell it is now on was first walked; cells, how many it walked; next(), the
 // colour the cell it is on would take. Its cells in one map, each its first step × 16 + its colour (12 colours at most)
@@ -12494,7 +12507,7 @@ const antUsedCommands = (w) => [
 ]; // (each once; by the digits, their mirrors too)
 function antWalkStepper(w) {
   const used = antUsedCommands(w);
-  const step = commandStepper(MODES[ANTS[w].walk].net, used),
+  const step = commandStepper(VARIANTS[ANTS[w].walk].net, used),
     local = antCommands(w).map((t) => used.indexOf(t));
   return (t) => step(local[t]);
 }
@@ -12543,7 +12556,7 @@ const STEPPERS = {
     };
   },
   walkSquaresTurtleCells: () => walkStepper('walkSquaresTurtleCells'), // squares: the same steps, the grid half a cell away
-  walkTrianglesTurtleEdges: () => walkStepper('walkTrianglesTurtleEdges'), // along triangles: the steps of hexagon cells (see MODES)
+  walkTrianglesTurtleEdges: () => walkStepper('walkTrianglesTurtleEdges'), // along triangles: the steps of hexagon cells (see VARIANTS)
   walkHexTurtleEdges: () => walkStepper('walkHexTurtleEdges'), // along hexagons: the steps of triangle cells
   walkTrianglesTurtleCells: () => walkStepper('walkTrianglesTurtleCells'),
   walkHexTurtleCells: () => walkStepper('walkHexTurtleCells'),
@@ -13039,8 +13052,8 @@ const surfaceCommands = (net) => Object.keys(WALK_NETS[net].turns).filter((t) =>
 // a surface walk's acts, one per digit (see surfaceSteps): by its rule's commands (a turn: its edges on, or degrees along the edges,
 // as its turns list them left to right; l r a: a notch on the spot, a parity's), else by its turns (an ant's)
 const SURFACE_NOTCHES = { square: 4, hex: 6, tri: 3 }; // (a turn on the spot: a notch an edge of its cells, of its grid's corners)
-function surfaceActs(mode, commands = mode.net && ruleCommands(walkRuleOf(mode))) {
-  if (!commands) return (mode.turns ?? []).map((t) => ['turn', t]);
+function surfaceActs(variant, commands = variant.net && ruleCommands(walkRuleOf(variant))) {
+  if (!commands) return (variant.turns ?? []).map((t) => ['turn', t]);
   return commands.map((t) =>
     t === 'l' || t === 'r'
       ? ['pivot', t === 'r' ? 1 : -1]
@@ -13048,11 +13061,11 @@ function surfaceActs(mode, commands = mode.net && ruleCommands(walkRuleOf(mode))
         ? ['parity']
         : t === 'B'
           ? ['back']
-          : mode.edges
-            ? ['turn', t === 'U' ? 180 : mode.turns[surfaceCommands(mode.net).indexOf(t)]]
-            : cellTurn(mode.net, t) === 'straight'
+          : variant.edges
+            ? ['turn', t === 'U' ? 180 : variant.turns[surfaceCommands(variant.net).indexOf(t)]]
+            : cellTurn(variant.net, t) === 'straight'
               ? ['straight']
-              : ['turn', cellTurn(mode.net, t)],
+              : ['turn', cellTurn(variant.net, t)],
   ); // (on cells: its command's edge, see cellTurn; straight, half way round)
 }
 // A command's turn on cells, edges on from the one come in by (see surfaceStep), by construction from its network's commands left
@@ -13122,17 +13135,17 @@ const walkTakes = (m, rule) => {
     ? commands
     : null;
 };
-const walkCommandsOf = (w, rule = walkRuleOf(MODES[w])) => walkTakes(MODES[w], rule);
+const walkCommandsOf = (w, rule = walkRuleOf(VARIANTS[w])) => walkTakes(VARIANTS[w], rule);
 // the rule a walk plays: its network's in use (walkRules), if it takes it, else its network's first it takes (a rule its twin
 // on cells took, King's diagonals, the grid's lines cannot: kept for the cells, the edges' tab greyed, see side)
 const walkRuleOf = (m) => {
   const r = walkRuleKept(m);
   return walkTakes(m, r) ? r : firstWalkRule(m);
 };
-const walkStepper = (w) => commandStepper(MODES[w].net, walkCommandsOf(w));
+const walkStepper = (w) => commandStepper(VARIANTS[w].net, walkCommandsOf(w));
 // a walk's arrows, one per command (a command with none: ''), by its rule
 const walkArrows = (w) => {
-  const m = MODES[w],
+  const m = VARIANTS[w],
     r = walkRuleOf(m);
   return (
     m.arrowsMemo?.[0] === r
@@ -13141,14 +13154,14 @@ const walkArrows = (w) => {
   )[1];
 };
 const walkRuleText = (w) =>
-  `${MODES[w].where}: ${walkCommandsOf(w)
+  `${VARIANTS[w].where}: ${walkCommandsOf(w)
     .map((t, d) => `<b>${d}</b> ${COMMANDS[t].short}`)
-    .join(', ')}${MODES[w].tail ?? ''}`;
+    .join(', ')}${VARIANTS[w].tail ?? ''}`;
 // The surfaces' turtles by a rule too: on cells, their tiles' network (net: its commands, a command's edge by construction, see
 // cellTurn); along the edges turns, one per command of their tiles' network in degrees (its turns left to right; null, a command
 // it has not), their network by how many
 const NET_BY_TURNS = { 2: 'tri', 3: 'square', 4: 'cairo', 5: 'hex' };
-for (const [w, m] of Object.entries(MODES)) {
+for (const [w, m] of Object.entries(VARIANTS)) {
   if (NAV[w]?.[0] !== 'Walk' || NAV[w][3] !== 'Turtle' || m.lattice !== 'surface' || !(m.turns || m.net)) continue;
   Object.assign(m, {
     net: m.net ?? NET_BY_TURNS[m.turns.length],
@@ -13157,7 +13170,7 @@ for (const [w, m] of Object.entries(MODES)) {
   }); // (its words before its digits', its note after)
 }
 // every walk by a rule: its base, arrows and rule's text by it; on squares, no Area with a diagonal (steps across no edge)
-for (const [w, m] of Object.entries(MODES))
+for (const [w, m] of Object.entries(VARIANTS))
   if (m.net) {
     Object.defineProperties(m, {
       base: { get: () => walkCommandsOf(w).length },
@@ -13180,9 +13193,9 @@ const walkRuleKept = (m) => (walkRules[walkKey(m)] ??= firstWalkRule(m)); // (it
 // a rule typed or picked for a walk: kept if its commands fit it (else the field back to the rule in use)
 function setWalkRule(w, rule) {
   const commands = walkCommandsOf(w, rule),
-    k = walkKey(MODES[w]);
+    k = walkKey(VARIANTS[w]);
   if (!commands) {
-    refuseRule(rule, walkRuleOf(MODES[w]));
+    refuseRule(rule, walkRuleOf(VARIANTS[w]));
     return;
   }
   walkRules[k] = ruleOfCommands(commands);
@@ -13999,7 +14012,7 @@ const globeFewest = (K) => K * Math.ceil(12 / K);
 // cells, at a band's middle, would be under 1/√2 as wide as high (cos(lat) E / N), down to F; the cap the rest, once they would be
 // at F, or less than a band's height is left; the south its mirror (before v0.3.101 each band as high as wide, Mercator's: its
 // cells square, its parallels 0.71 to 1.40 apart, a jump at each halving)
-function globeBands(E, K = ringColours(ringMode())) {
+function globeBands(E, K = ringColours(ringVariant())) {
   const F = globeFewest(K),
     h = (2 * Math.PI) / E,
     north = [];
@@ -14018,7 +14031,7 @@ function globeBands(E, K = ringColours(ringMode())) {
   return { N: [N[0], ...N, N.at(-1)], lines: [...north.map(([, t]) => -t).reverse(), 0, ...north.map(([, t]) => t)] };
 }
 function globeMesh(E) {
-  const K = ringColours(ringMode()),
+  const K = ringColours(ringVariant()),
     key = `globe${E}|${globeFewest(K)}`;
   if (meshCache[key]) return meshCache[key];
   const { N, lines } = globeBands(E, K),
@@ -14316,13 +14329,13 @@ function rosetteSphereMesh(kind, W) {
   )); // (south: the south half's first cell, its cells the north's m on, walls and all; middles: each half's, the north's and the south's; disc: its flat grid, its cells the plane's, a south cell's place its north twin's, see flatGrid)
 }
 
-// Life on them: a mode each, one shape (Rosettes) with a tab each, its rosette's name and picture
-FAMILIES.push({ name: 'Rosettes', tab: 0, modes: [], tabs: [] });
+// Life on them: a variant each, one shape (Rosettes) with a tab each, its rosette's name and picture
+FAMILIES.push({ name: 'Rosettes', tab: 0, variants: [], tabs: [] });
 for (const k of Object.keys(ROSETTE_SPHERES)) {
-  const name = NAV[tilingMode(k)][2],
-    w = modeName('Life', 'Rosettes', name),
+  const name = NAV[tilingVariant(k)][2],
+    w = variantName('Life', 'Rosettes', name),
     F = FAMILIES.at(-1);
-  MODES[w] = {
+  VARIANTS[w] = {
     base: 2,
     lattice: 'surface',
     surface: `${k}Sphere`,
@@ -14330,11 +14343,17 @@ for (const k of Object.keys(ROSETTE_SPHERES)) {
     round: true,
     where: `a sphere of two ${name} rosettes, the south's teeth in the north's notches`,
   };
-  modeOption(w, 'Automata on surfaces', `${name} sphere`);
+  variantOption(w, 'Automata on surfaces', `${name} sphere`);
   NAV[w] = ['Life', 'Surfaces', 'Rosettes', 'Life', ''];
-  MODE_ICONS[w] = k;
-  F.tabs.push([F.modes.length, false, k, name, `${name}: its disc on each half, their teeth biting into each other`]);
-  F.modes.push([w]);
+  VARIANT_ICONS[w] = k;
+  F.tabs.push([
+    F.variants.length,
+    false,
+    k,
+    name,
+    `${name}: its disc on each half, their teeth biting into each other`,
+  ]);
+  F.variants.push([w]);
 }
 
 /* ---- 7.4 Torus ---------------------------------------------------------------------------- */
@@ -14363,19 +14382,19 @@ const tubeFor = (kind, nv, nu) => (TUBE_SHAPE[kind] * nv) / nu;
 // count of the first of units (each colour's block whole: the coarsest first) ok allows (a twist's), else the nearest ok allows. Life's colours, a walk's battle's walkers.
 // Square or not by the shape asked, then rounded (by its rounding, Duel's square, 0.8 x on the dot, went one size in two)
 const ringColours = (w) =>
-  MODES[w]?.margolus
+  VARIANTS[w]?.margolus
     ? 3
-    : MODES[w]?.life
+    : VARIANTS[w]?.life
       ? lifeTeams
-      : !battleMode(w) || !SURFACES[surfaceOf(MODES[w])]?.columns
+      : !battleVariant(w) || !SURFACES[surfaceOf(VARIANTS[w])]?.columns
         ? 1
         : ringBuilt?.w === w
           ? ringBuilt.K
           : walkTeams; // (a reversible torus: Trio's, its start on the middle square; a walk's battle on a ring: its walkers asked, see battleCounts; never whether they fit, judged on this very mesh)
-// the mode a ring's mesh is made for (its colours, its blocks, a battle's walkers: see ringColours, stripKey): the tab's, else
-// one being judged (ringBuilt, its K walkers: see battleFits), never the tab's by accident (the menu judges other modes)
+// the variant a ring's mesh is made for (its colours, its blocks, a battle's walkers: see ringColours, stripKey): the tab's, else
+// one being judged (ringBuilt, its K walkers: see battleFits), never the tab's by accident (the menu judges other variants)
 let ringBuilt = null;
-const ringMode = () => ringBuilt?.w ?? tabMode();
+const ringVariant = () => ringBuilt?.w ?? tabVariant();
 const ringFor = (w, K, make) => {
   const before = ringBuilt; // (one judged within another: back to it)
   ringBuilt = { w, K };
@@ -14385,12 +14404,12 @@ const ringFor = (w, K, make) => {
     ringBuilt = before;
   }
 };
-// a surface's walkers its sizes follow: its battle's, where the mode judged or shown (see ringMode) walks on it and their
+// a surface's walkers its sizes follow: its battle's, where the variant judged or shown (see ringVariant) walks on it and their
 // fit is known with no mesh of the size (a ring's: its length's; a solid's from its start 1: its size's class, see
-// startClassLeast); 1, none (Life's colours, another surface's mode, a solid's other starts)
+// startClassLeast); 1, none (Life's colours, another surface's variant, a solid's other starts)
 const surfaceWalkers = (kind) => {
-  const w = ringMode();
-  return battleMode(w) && surfaceOf(MODES[w]) === kind && (SURFACES[kind].columns || startAsked() <= 1)
+  const w = ringVariant();
+  return battleVariant(w) && surfaceOf(VARIANTS[w]) === kind && (SURFACES[kind].columns || startAsked() <= 1)
     ? ringBuilt?.w === w
       ? ringBuilt.K
       : walkTeams
@@ -14402,7 +14421,7 @@ const surfaceWalkers = (kind) => {
 const walkersSize = (kind, f) => {
   const K = surfaceWalkers(kind);
   return K > 1 && typeof f === 'number'
-    ? ([f, f - 1, f + 1].find((size) => size > 1 && battleFits(ringMode(), K, size)) ?? f)
+    ? ([f, f - 1, f + 1].find((size) => size > 1 && battleFits(ringVariant(), K, size)) ?? f)
     : f;
 };
 function ringLength(x, square, units, ok = () => true) {
@@ -14424,7 +14443,7 @@ function ringLength(x, square, units, ok = () => true) {
 // along its ring), a whole count of them and of step (the hexagons' and the triangles': even); own: columns of its own (a
 // link's "16x40"), in its usual's place: the nearest its tiling allows, never a ring glued askew (as a strip's, see stripSteps)
 function ringColumns(x, nv, step = 1, klein = false, ok, own) {
-  const K = ringColours(ringMode()),
+  const K = ringColours(ringVariant()),
     [a, b] = klein ? [K, 1] : torusBlocks(K, { nv });
   return ringLength(own ?? x, own ?? (x * TORUS_TUBE * a) / b, [a % step ? a * step : a], ok);
 }
@@ -14875,8 +14894,8 @@ function mobiusPoint(x, y, L, W, m) {
 const stripSteps = (kind0, nv, W, own) => {
   const { step, ok, copyLength } = MOBIUS_ALONG[kind0],
     q = Math.round(copyLength / step),
-    K = ringColours(ringMode()),
-    along = MODES[ringMode()]?.margolus ? (BLOCK_ALONG[kind0] ?? 1) : 1; // (a reversible one's: its blocks' sets come round along it)
+    K = ringColours(ringVariant()),
+    along = VARIANTS[ringVariant()]?.margolus ? (BLOCK_ALONG[kind0] ?? 1) : 1; // (a reversible one's: its blocks' sets come round along it)
   // (a length of its own: in its usual's place, the nearest whole stretches and its twist allow as well, never a strip glued
   // askew, nor one its walkers do not fit)
   return ringLength(
@@ -14886,7 +14905,7 @@ const stripSteps = (kind0, nv, W, own) => {
     (n) => ok(n, nv) && n % along === 0,
   );
 };
-const stripKey = () => `${ringColours(ringMode())}${MODES[ringMode()]?.margolus ? ' blocks' : ''}`; // (a strip's length its colours', a reversible one's its blocks', see stripSteps)
+const stripKey = () => `${ringColours(ringVariant())}${VARIANTS[ringVariant()]?.margolus ? ' blocks' : ''}`; // (a strip's length its colours', a reversible one's its blocks', see stripSteps)
 const stripMemo = remember('stripMemo', weakCache()),
   countMemo = remember('countMemo', {});
 // a strip's length, width and tiles' count, without its tiles (the sizes' ladder asks for many: see mobiusSheetOf's count)
@@ -15152,7 +15171,7 @@ function stripFrame(kind, kind0, size, bottle = false) {
 // (a bottle: below its top, see kleinTilingSheet)
 function stripCount(kind, kind0, size, bottle = false) {
   // (once each: a size's sought among them all, see near)
-  return (countMemo[`${kind}|${kind0}|${size}|${bottle}|${ringColours(ringMode())}`] ??= stripCounted(
+  return (countMemo[`${kind}|${kind0}|${size}|${bottle}|${ringColours(ringVariant())}`] ??= stripCounted(
     kind,
     kind0,
     size,
@@ -15190,7 +15209,7 @@ const kleinRows = (kindK) => {
 };
 const kleinMemo = remember('kleinMemo', weakCache());
 function kleinTilingSheet(kindK, size) {
-  return (kleinMemo[`${kindK}|${size}|${ringColours(ringMode())}`] ??= (() => {
+  return (kleinMemo[`${kindK}|${size}|${ringColours(ringVariant())}`] ??= (() => {
     const { kind, strip, turn, nv, n, W, step, by, a } = kleinLength(kindK, size);
     const s = tilingStrip(kind, strip, `${nv}x${n}`, true),
       keep = s.tiles.map((_, i) => i).filter((i) => s.mids[2 * i + 1] < W - 1e-9);
@@ -15218,7 +15237,7 @@ const kleinCount = (kindK, size) => {
   const { kind, strip, nv, n } = kleinLength(kindK, size);
   return stripCount(kind, strip, `${nv}x${n}`, true);
 };
-function kleinLength(kindK, size, K = ringColours(ringMode())) {
+function kleinLength(kindK, size, K = ringColours(ringVariant())) {
   // (K: the colours it is made for, the count asked when judging one, see teamsFairOwn)
   const { strip } = FOLDED[kindK],
     {
@@ -15238,7 +15257,7 @@ function kleinLength(kindK, size, K = ringColours(ringMode())) {
   return { kind, strip, turn, nv, n, W, step, by, a };
 }
 function kleinTilingMesh(kindK, size) {
-  const key = `${kindK}${size}|${ringColours(ringMode())}`; // (its length its colours': see kleinLength)
+  const key = `${kindK}${size}|${ringColours(ringVariant())}`; // (its length its colours': see kleinLength)
   if (meshCache[key]) return meshCache[key];
   const { kind, turn, L, W, n, nv, step, by, sides, tiles, mids, latticeCells, colourCells, originCell } =
       kleinTilingSheet(kindK, size),
@@ -15921,7 +15940,7 @@ function shapeSign(g) {
   return g.shapeSign;
 }
 
-// A new walk mode starts in its default form (round for the icosahedron and the torus, flat
+// A new walk variant starts in its default form (round for the icosahedron and the torus, flat
 // otherwise); the same surface rebuilt (another tiling, Grid / Cells, size, number or rule) keeps it
 function initShape(kind) {
   if (!MORPHABLE.includes(kind)) {
@@ -15930,16 +15949,16 @@ function initShape(kind) {
     return;
   }
   // the same surface (its other tilings, along the edges or on cells) keeps the form it had
-  const surface = (w) => familyOf(w)?.F.name ?? MODES[w].surface;
-  const mode = digitsComputed.mode,
-    keep = previousShape && surface(previousShape.mode) === surface(mode);
+  const surface = (w) => familyOf(w)?.F.name ?? VARIANTS[w].surface;
+  const variant = digitsComputed.variant,
+    keep = previousShape && surface(previousShape.variant) === surface(variant);
   const g = walk.geo,
-    m = keep ? previousShape.target : defaultOf('shape', mode),
+    m = keep ? previousShape.target : defaultOf('shape', variant),
     shape = shapeAt(g, m);
   // its flat and round forms' extents, once a mesh (the form shown one of them, mostly)
   const extents = (g.formExtents ??= {});
   for (const f of [0, 1]) extents[f] ??= f === m ? shape.extent : shapeAt(g, f).extent;
-  walk.shape = { ...shape, target: m, maxExtent: Math.max(extents[0], extents[1]), mode };
+  walk.shape = { ...shape, target: m, maxExtent: Math.max(extents[0], extents[1]), variant };
 }
 
 // The frame of a surface: the sphere round its current form (flat or round), centred on its centre,
@@ -15984,7 +16003,7 @@ function applyShape() {
 // shape; the animation runs in tick (morphStep) and the walk or Life run goes on meanwhile
 function updateMorphButton() {
   const sh = walk.shape;
-  $('shapeRow').hidden = !sh || !shows('shape', tabMode());
+  $('shapeRow').hidden = !sh || !shows('shape', tabVariant());
   if (!sh) return;
   [$('shapeFlat').textContent, $('shapeRound').textContent] = walk.geo.torus
     ? ['Unrolled', 'Rolled']
@@ -15994,18 +16013,18 @@ function updateMorphButton() {
   // greyed on the pits and the sponge (their holes: no form between); its default, told in its tooltip, each shape's of
   // this tab (round: a sheet rolled up, a solid inflated)
   greyInput($('shapeM'), $('shapeRow'), ({ w: v }) => {
-    const k = surfaceOf(MODES[v]);
+    const k = surfaceOf(VARIANTS[v]);
     return MORPHABLE.includes(k) && !['pits', 'bumps', 'menger'].includes(k.replace(/Tetrakis$/, ''))
       ? ''
       : MORPH_WHERE;
   });
-  const [kind, space] = NAV[walk.mode],
+  const [kind, space] = NAV[walk.variant],
     sheet = ['Torus', 'Möbius strip', 'Klein bottle'],
     ways = { Inflated: [], Rolled: [], Flat: [] };
   for (const s of navValues(2, [kind, space])) {
     const w = Object.keys(NAV).find((v) => NAV[v][0] === kind && NAV[v][1] === space && NAV[v][2] === s);
-    if (!['pits', 'bumps', 'menger'].includes(MODES[w].surface.replace(/Tetrakis$/, '')))
-      ways[MODES[w].round ? (sheet.includes(s) ? 'Rolled' : 'Inflated') : 'Flat'].push(SHAPE_SHORT[s] ?? s);
+    if (!['pits', 'bumps', 'menger'].includes(VARIANTS[w].surface.replace(/Tetrakis$/, '')))
+      ways[VARIANTS[w].round ? (sheet.includes(s) ? 'Rolled' : 'Inflated') : 'Flat'].push(SHAPE_SHORT[s] ?? s);
   }
   const box = $('shapeRow').querySelector('.shape-slider');
   box.dataset.default = Object.entries(ways)
@@ -16031,14 +16050,14 @@ $('shapeM').addEventListener('input', () => {
 $('shapeM').addEventListener('change', () => {
   const m = Number($('shapeM').value);
   if (m !== 0 && m !== 1) return;
-  $('perspective').checked = perspectiveFor(MODES[walk.mode], m, walk.stacked);
+  $('perspective').checked = perspectiveFor(VARIANTS[walk.variant], m, walk.stacked);
   $('perspective').dispatchEvent(new Event('change'));
 });
 
-// The perspective a surface starts with, in its form m: the walk mode's, but none on a solid
+// The perspective a surface starts with, in its form m: the walk variant's, but none on a solid
 // inflated (a ball is seen whole without it)
-const perspectiveFor = (mode, m, stacked) =>
-  (!!mode.perspective || (!!mode.plane && stacked)) && !(m === 1 && SOLIDS.includes(mode.surface)); // (Space-time: on)
+const perspectiveFor = (variant, m, stacked) =>
+  (!!variant.perspective || (!!variant.plane && stacked)) && !(m === 1 && SOLIDS.includes(variant.surface)); // (Space-time: on)
 // One animation frame of the change of shape (about 0.7 s from flat to round)
 function morphStep(dt) {
   const sh = walk.shape;
@@ -16408,7 +16427,7 @@ const SURFACES = {
   globe: {
     mesh: globeMesh,
     radius: (E) => E / (2 * Math.PI),
-    tiles: (E, K = ringColours(ringMode())) =>
+    tiles: (E, K = ringColours(ringVariant())) =>
       globeBands(E, K)
         .N.slice(1, -1)
         .reduce((sum, n) => sum + n, 2),
@@ -16418,7 +16437,7 @@ const SURFACES = {
       return `{y:${formatNumber(N.length - 2)} bands}, a unit high, of {k:${formatNumber(E)} cells} at the equator, halved towards the poles down to {k:${formatNumber(N[1])}} + {r:2 caps}`;
     },
     // (its sizes its colours': its equator's columns F, 2F, 4F…, each halving down to F, see globeBands; as many cells as the others')
-    ownSizes: (K = ringColours(ringMode())) => {
+    ownSizes: (K = ringColours(ringVariant())) => {
       const out = [];
       for (let E = globeFewest(K); SURFACES.globe.tiles(E, K) <= CELLS.most; E *= 2)
         if (SURFACES.globe.tiles(E, K) >= CELLS.least) out.push(E);
@@ -16483,12 +16502,12 @@ for (const name of foldedIn('torus')) {
 }
 
 // The surface size as a stepper: [ − ] 6,144 squares [ + ] goes through the sizes of the (hidden)
-// menu one by one; the menu stays the source of truth, as for the walk modes
+// menu one by one; the menu stays the source of truth, as for the walk variants
 function syncSizeStepper() {
   const sel = $('gridSizeField');
   syncLoopRow();
   // the size (see gridSize)
-  const kind = surfaceOf(MODES[tabMode()]),
+  const kind = surfaceOf(VARIANTS[tabVariant()]),
     f = gridSizePlayed();
   // (a torus that turns: its turn too, 0° or its own)
   const turn = kind && TURNED[kind.replace(/Turned$/, '')] ? ` · ${Math.round(Math.abs(tilesTurn(kind)))}°` : ''; // (as its tiles lie)
@@ -16519,7 +16538,7 @@ function syncSizeStepper() {
     (k) => label(sizeOf(sel.options[k].value)),
     (k) => stepSize(k - sel.selectedIndex),
   ); // (a size of its own, a link's: a notch of its own too, as long as it is picked)
-  const starts = modeStarts();
+  const starts = variantStarts();
   $('startRow').hidden = !starts;
   if (!starts) return;
   if (document.activeElement !== $('startLabel'))
@@ -16558,7 +16577,7 @@ function sizeGauge(el, n, i, preview, pick, byDefault = -1) {
 }
 // a slider greyed as a tile is (see setTile): whyNot(setup) its one source, its row's greyed words, its enablers
 function greyInput(input, row, whyNot) {
-  const why = whyNot({ w: tabMode() });
+  const why = whyNot({ w: tabVariant() });
   input.disabled = !!why;
   row.dataset.greyed = why;
   input.enablers = () => enablersFor((setup) => !whyNot(setup));
@@ -16593,14 +16612,14 @@ function stepSize(delta) {
   if (i < 0 || i >= sel.options.length) return;
   sel.selectedIndex = i;
   for (const o of [...sel.options]) if (o.dataset.own && o !== sel.selectedOptions[0]) o.remove();
-  seek(surfaceOf(MODES[tabMode()]));
+  seek(surfaceOf(VARIANTS[tabVariant()]));
   sel.dispatchEvent(new Event('change'));
 }
 
 // The size in use: tiles across (a solid), rows (a torus), or rows "x" tiles per row (a torus made
 // taller or wider)
 const sizeOf = (v) => (String(v).includes('x') ? String(v) : Number(v)); // (a size as the list has it, "16" or "16x10": 16, or "16x10")
-const gridSizePlayed = () => walkersSize(surfaceOf(MODES[tabMode()]), sizeOf($('gridSizeField').value)); // (the size played: the menu's the size asked, kept as its walkers change, see walkersSize)
+const gridSizePlayed = () => walkersSize(surfaceOf(VARIANTS[tabVariant()]), sizeOf($('gridSizeField').value)); // (the size played: the menu's the size asked, kept as its walkers change, see walkersSize)
 // A torus's rows and columns: its tiles per row from its rows (squares or regular tiles), or the nearest those given
 function torusDims(kind, size) {
   size = sizeOf(size); // (as the list has it: a size's tooltip's, "16" before v0.3.70, NaN cells on every tiling's torus)
@@ -16714,7 +16733,7 @@ const sizeSides = (kind, f) => {
   }
   // (and a colour's, Life's in colours: its block of the rectangle, a ring's a × b (a bottle's, a strip's, slices along it), the
   // plane's cols × rows; in a circle or a hexagon, its slice as a square)
-  const K = ringColours(ringMode()),
+  const K = ringColours(ringVariant()),
     [x, y] = [Math.sqrt(d[2] * r), Math.sqrt(d[2] / r)],
     [a, b] = !S
       ? wallSlices(K, kind)
@@ -16890,27 +16909,28 @@ function linkSize(kind, s) {
   return TORI.includes(kind) && along ? `${n}x${along}` : n;
 }
 
-// Fill the Sphere size menu for the kind of sphere of the current mode
-// The sizes of a surface, from its default one or the walk mode's (see MODES: initial)
+// Fill the Sphere size menu for the kind of sphere of the current variant
+// The sizes of a surface, from its default one or the walk variant's (see VARIANTS: initial)
 // a surface's sizes' step: a reversible one's, its blocks' sets coming round (see BLOCK_STEPS), else 1
-const blockSizeStep = (kind, mode = MODES[tabMode()]) => (mode.margolus ? (BLOCK_STEPS[kind] ?? 1) : 1);
+const blockSizeStep = (kind, variant = VARIANTS[tabVariant()]) => (variant.margolus ? (BLOCK_STEPS[kind] ?? 1) : 1);
 const seek = (kind) => {
   picked = SURFACES[kind].tiles(parseInt($('gridSizeField').value));
   $('gridSizeField').dataset.picked = picked;
 }; // (the size picked: its cells, see picked; the menu shows it)
 // a surface's sizes (a reversible torus's: its blocks' sets come round), and the one it opens at: the size picked's nearest
-// there (picked on another grid), else its mode's first (initial); any mode's, the one its button goes to too (see enablersFor)
-const sizesOf = (kind, mode) => {
-  const step = blockSizeStep(kind, mode);
+// there (picked on another grid), else its variant's first (initial); any variant's, the one its button goes to too (see enablersFor)
+const sizesOf = (kind, variant) => {
+  const step = blockSizeStep(kind, variant);
   return SURFACES[kind].sizes.filter((f) => f % step === 0);
 };
-const sizeAt = (kind, initial = SURFACES[kind].initial, mode) => {
-  const sizes = sizesOf(kind, mode),
+const sizeAt = (kind, initial = SURFACES[kind].initial, variant) => {
+  const sizes = sizesOf(kind, variant),
     f = Number(picked ? SURFACES[kind].near(picked) : SURFACES[kind].nearest(initial));
   return sizes.reduce((a, b) => (Math.abs(b - f) < Math.abs(a - f) ? b : a));
 };
-// the size mode w's battle of K walkers plays from a size asked (the menu's if none): where a count is judged (see teamsWhyNot)
-const teamsSize = (w, K, size = figureSize(w)) => ringFor(w, K, () => walkersSize(surfaceOf(MODES[w]), sizeOf(size)));
+// the size variant w's battle of K walkers plays from a size asked (the menu's if none): where a count is judged (see teamsWhyNot)
+const teamsSize = (w, K, size = figureSize(w)) =>
+  ringFor(w, K, () => walkersSize(surfaceOf(VARIANTS[w]), sizeOf(size)));
 function fillGridSizes(kind, initial = SURFACES[kind].initial) {
   const step = blockSizeStep(kind),
     sizes = sizesOf(kind);
@@ -17073,9 +17093,9 @@ for (const [kind, S] of Object.entries(SURFACES)) {
   Object.defineProperty(S, 'sizes', { get: () => S.ownSizes?.() ?? (lists[stripKey()] ??= edged(ladder())) }); // (ownSizes: a surface's own, the globe's)
   Object.defineProperty(S, 'initial', { get: () => S.near(START[TORI.includes(kind) ? 'surface' : 'solid']) });
   S.near = (n) => nearCells(S.sizes, S.tiles, n); // the usual size with about n cells
-  S.nearest = (f) => S.near(S.tiles(f)); // a mode's own size: the usual one with about as many cells
+  S.nearest = (f) => S.near(S.tiles(f)); // a variant's own size: the usual one with about as many cells
 }
-// The tori turned by 30° (⟲ 30°, under its tilings: the hexagons, the triangles and the tilings of six turns): the surface a mode walks on
+// The tori turned by 30° (⟲ 30°, under its tilings: the hexagons, the triangles and the tilings of six turns): the surface a variant walks on
 const TURNED = {
   torusTri: 'torusTriTurned',
   torusHex: 'torusHexTurned',
@@ -17100,7 +17120,7 @@ let torusTurned = false;
 const POINTY = new Set(['torusHex', 'mobiusHex', 'kleinHex']);
 const shownSurface = (surface, turned) =>
   TURNED[surface] && turned !== POINTY.has(surface) ? TURNED[surface] : surface;
-const surfaceOf = (mode) => shownSurface(mode.surface, torusTurned);
+const surfaceOf = (variant) => shownSurface(variant.surface, torusTurned);
 const STARTS_ON = [...SOLIDS, ...TORI]; // the surfaces with a start selector
 
 // On a torus every corner is like any other (shifting the sheet maps the grid onto itself), and
@@ -17413,12 +17433,12 @@ function startList(g) {
   return (g.starts = starts);
 }
 
-// The starts of the current mode (a walk along a surface's edges or on its cells), else null; the
+// The starts of the current variant (a walk along a surface's edges or on its cells), else null; the
 // chosen one, 1 … their number
-function modeStarts() {
-  const mode = MODES[tabMode()];
-  return (mode.edges || mode.cells) && STARTS_ON.includes(surfaceOf(mode))
-    ? startList(SURFACES[surfaceOf(mode)].mesh(gridSizePlayed()))
+function variantStarts() {
+  const variant = VARIANTS[tabVariant()];
+  return (variant.edges || variant.cells) && STARTS_ON.includes(surfaceOf(variant))
+    ? startList(SURFACES[surfaceOf(variant)].mesh(gridSizePlayed()))
     : null;
 }
 // A start on cells: a start along the edges, from corner f to corner v, crosses into the tile on its
@@ -17430,10 +17450,10 @@ function cellStart(g, [v, f]) {
     for (let e = 0; e < k; e++) if (g.poly[k * t + e] === v && g.poly[k * t + ((e + 1) % k)] === f) return [t, e];
   }
 }
-// the start's number asked (its field's), and the one played: the mode's list's at most (the team counts read the one asked, its
+// the start's number asked (its field's), and the one played: the variant's list's at most (the team counts read the one asked, its
 // list's at most on the mesh they make: a ring's list hangs on its size, its size on its battle's teams, see battleCounts)
 const startAsked = () => Math.max(1, Number($('startNo').value) || 1);
-const startNo = () => Math.min(startAsked(), modeStarts()?.length ?? 1);
+const startNo = () => Math.min(startAsked(), variantStarts()?.length ?? 1);
 let startsShown = false; // while the start row ([− start +]) is hovered: the starts shown over the walk, faded (see startMarks), the view as it was
 
 // The starts' marks while the start number is hovered, each walker's (see walkersOf: Solo's, a battle's each): its
@@ -17624,26 +17644,26 @@ const TORUS_RATIO = [0.8, 1.25],
   LOOP_ROWS = 2;
 let torusLoopList = null; // { key, loops: [{ start, size, laps: [ring, tube], steps }] } for the number in use
 function torusLoops() {
-  const mode = MODES[tabMode()];
-  if (!mode.net || !TORI.includes(surfaceOf(mode))) return []; // a walk by a rule's commands (its network's: not an ant's), along the edges or on cells, on a torus or a Möbius strip
-  const least = picked ? SURFACES[surfaceOf(mode)].near(picked) : SURFACES[surfaceOf(mode)].initial; // (its rows: the size picked's, else the one it opens at)
-  const key = `${formulaInUse} ${tabMode()} ${surfaceOf(mode)} ${walkRuleOf(mode)} ${least}`; // (its loops its rule's turns)
+  const variant = VARIANTS[tabVariant()];
+  if (!variant.net || !TORI.includes(surfaceOf(variant))) return []; // a walk by a rule's commands (its network's: not an ant's), along the edges or on cells, on a torus or a Möbius strip
+  const least = picked ? SURFACES[surfaceOf(variant)].near(picked) : SURFACES[surfaceOf(variant)].initial; // (its rows: the size picked's, else the one it opens at)
+  const key = `${formulaInUse} ${tabVariant()} ${surfaceOf(variant)} ${walkRuleOf(variant)} ${least}`; // (its loops its rule's turns)
   if (
     digitsComputed?.formula !== formulaInUse ||
-    digitsComputed.mode !== tabMode() ||
-    digitsComputed.base !== mode.base
+    digitsComputed.variant !== tabVariant() ||
+    digitsComputed.base !== variant.base
   )
-    return []; // its digits on their way: of another number, mode, or rule's base (a link's rule set, its digits not yet read)
+    return []; // its digits on their way: of another number, variant, or rule's base (a link's rule set, its digits not yet read)
   if (torusLoopList?.key === key) return torusLoopList.loops;
   const loops = [];
   torusLoopList = { key, loops };
   const P = fractionPeriod(20000n, 2); // (two periods' digits)
   if (!P) return loops;
   const { s0, L, digit } = P;
-  const kind = surfaceOf(mode),
+  const kind = surfaceOf(variant),
     S = SURFACES[kind],
     g = S.mesh(gridSizePlayed()),
-    walker = surfaceSteps(g, mode);
+    walker = surfaceSteps(g, variant);
   startList(g).forEach((_, i) => {
     let state = walker.start(i),
       x = 0,
@@ -17719,7 +17739,7 @@ function torusLoops() {
 }
 // The loop shown, if the start and size in use are one of them
 function loopShown(loops) {
-  const kind = surfaceOf(MODES[tabMode()]),
+  const kind = surfaceOf(VARIANTS[tabVariant()]),
     [rows, cols] = torusDims(kind, gridSizePlayed());
   return loops.findIndex((l) => l.start === startNo() && `${torusDims(kind, l.size)}` === `${rows},${cols}`);
 }
@@ -17742,7 +17762,7 @@ function browseLoop(delta) {
     next = loops[i < 0 ? (delta > 0 ? 0 : loops.length - 1) : i + delta];
   if (!next) return;
   $('startNo').value = next.start;
-  selectSize(surfaceOf(MODES[tabMode()]), next.size);
+  selectSize(surfaceOf(VARIANTS[tabVariant()]), next.size);
   lengthPicked = next.steps;
   compute();
 }
@@ -17851,12 +17871,12 @@ function surfaceStep(g, alongEdges, net, acts) {
 // on cells (from tile to tile, [tile, the edge it came in by]): the state of start i, the state after a digit (surfaceStep),
 // as a whole number, and on a torus or a Möbius strip the step on the flat sheet (columns east, rows north; on cells, from
 // tile centre to tile centre)
-function surfaceSteps(g, mode, acts = surfaceActs(mode)) {
+function surfaceSteps(g, variant, acts = surfaceActs(variant)) {
   const starts = () => startList(g),
-    step = surfaceStep(g, mode.edges, mode.net, acts);
-  if (mode.edges) {
+    step = surfaceStep(g, variant.edges, variant.net, acts);
+  if (variant.edges) {
     const G = edgeGraph(g),
-      N = SURFACE_NOTCHES[mode.net] ?? 1,
+      N = SURFACE_NOTCHES[variant.net] ?? 1,
       carried = g.mobius || g.klein;
     const corner = (v) => mobiusAt(g, G.tileOf[v], cornerUv(g, G, v));
     return {
@@ -17871,7 +17891,7 @@ function surfaceSteps(g, mode, acts = surfaceActs(mode)) {
   }
   const k = g.sides;
   return {
-    start: (i) => walkStart(g, mode, i + 1),
+    start: (i) => walkStart(g, variant, i + 1),
     step,
     key: ([t, entry, p, q, hand = 1]) => (((t * k + entry) * k + ((p + k) % k)) * 2 + q) * 2 + (hand < 0 ? 1 : 0), // (its hand: a Klein bottle's, see surfaceStep)
     sheet: ([a], [b]) => {
@@ -17886,9 +17906,9 @@ function surfaceSteps(g, mode, acts = surfaceActs(mode)) {
 // a walk's first state on surface g (see surfaceSteps): along the edges [corner, the corner it comes from], the start picked
 // where the surface has a start picker (start k of N, see STARTS_ON), else its first; on cells [tile, the edge it comes in
 // by]; then its turns on the spot and its digits' parity, p and q, at 0 (j: another start of the list, a hunt's)
-const walkStart = (g, mode, j = startNo()) =>
-  mode.edges
-    ? edgeState(g, STARTS_ON.includes(surfaceOf(mode)) ? startList(g)[j - 1] : firstStart(g, edgeGraph(g)))
+const walkStart = (g, variant, j = startNo()) =>
+  variant.edges
+    ? edgeState(g, STARTS_ON.includes(surfaceOf(variant)) ? startList(g)[j - 1] : firstStart(g, edgeGraph(g)))
     : [...cellStart(g, startList(g)[j - 1]), 0, 0]; // (on cells: its start alone, no steps built)
 // A walk on a surface recorded step by step (see buildEdgesWalk, buildCellsWalk): its points (on the unit surface, R times),
 // its tiles, its places seen (corners or tiles, nodes of them) and the step it has seen them all, its farthest from its
@@ -17977,9 +17997,9 @@ function walkRecorder(seq, ahead, base, R, nodes, len = seq.length) {
   };
 }
 // a walk along a surface's edges: from corner to corner along its edges, turning by the digits (see nextCorner)
-function buildEdgesWalk(seq, mode, ahead = new Uint8Array(0)) {
-  const { base, initial } = mode,
-    kind = surfaceOf(mode);
+function buildEdgesWalk(seq, variant, ahead = new Uint8Array(0)) {
+  const { base, initial } = variant,
+    kind = surfaceOf(variant);
   fillGridSizes(kind, initial);
   const { mesh, radius } = SURFACES[kind];
   const size = gridSizePlayed(),
@@ -17987,13 +18007,13 @@ function buildEdgesWalk(seq, mode, ahead = new Uint8Array(0)) {
     R = radius(size),
     G = edgeGraph(g),
     V = g.verts,
-    len = mode.worm || !readsDigits(digitsComputed.mode) ? lengthAsked() : seq.length,
+    len = variant.worm || !readsDigits(digitsComputed.variant) ? lengthAsked() : seq.length,
     at = (v) => [V[3 * v], V[3 * v + 1], V[3 * v + 2]]; // (a worm: its steps asked)
   const rec = walkRecorder(seq, ahead, base, R, G.nv, len),
     vert = new Int32Array(len + 1),
     stepTiles = new Int32Array(2 * len),
-    S = surfaceSteps(g, mode);
-  let state = walkStart(g, mode);
+    S = surfaceSteps(g, variant);
+  let state = walkStart(g, variant);
   // a battle (see 7.6b): all its walks (battlePlayer), A's recorded (still once dead), from its own start (grouped: its
   // group's first, see groupedStarts); the others' digits null while they are computed: A alone meanwhile
   const rivals = battleOn() ? rivalsDigits(base, len, buildWalk) : null,
@@ -18022,7 +18042,7 @@ function buildEdgesWalk(seq, mode, ahead = new Uint8Array(0)) {
     rec.finish(kind, g, { vert, stepTiles, n: P.n, battle: battleOf(P, placed.maps) }); // (the battle set as the walk is: shown at once)
     return;
   }
-  if (mode.worm) {
+  if (variant.worm) {
     // a worm: its turns its own (see surfaceWormStepper), till it stops
     const step = surfaceWormStepper(g, state, seq),
       took = new Uint8Array(len);
@@ -18046,7 +18066,7 @@ function buildEdgesWalk(seq, mode, ahead = new Uint8Array(0)) {
       digits: took,
       wormEnd: step.end,
       wormMade: step.made ?? 0,
-      came: cameFrom(g, true, walkStart(g, mode)),
+      came: cameFrom(g, true, walkStart(g, variant)),
     });
     return;
   }
@@ -18063,21 +18083,21 @@ function buildEdgesWalk(seq, mode, ahead = new Uint8Array(0)) {
     put(i + 1);
     if (rec.step(i + 1, seq[i], S.key(state))) break;
   }
-  rec.finish(kind, g, { vert, stepTiles, came: cameFrom(g, true, walkStart(g, mode)) });
+  rec.finish(kind, g, { vert, stepTiles, came: cameFrom(g, true, walkStart(g, variant)) });
 }
 // a walk on a surface's tiles: from tile to tile by the digits (see surfaceSteps), or an ant's, by its turns
-function buildCellsWalk(seq, mode, ahead = new Uint8Array(0)) {
-  const { initial } = mode,
-    kind = surfaceOf(mode);
+function buildCellsWalk(seq, variant, ahead = new Uint8Array(0)) {
+  const { initial } = variant,
+    kind = surfaceOf(variant);
   fillGridSizes(kind, initial);
   const { mesh, radius } = SURFACES[kind];
-  const len = readsDigits(digitsComputed.mode) ? seq.length : lengthAsked(),
-    w = digitsComputed.mode,
-    ant = !!mode.antOf; // (an ant by its rule: its steps asked, no digit read)
+  const len = readsDigits(digitsComputed.variant) ? seq.length : lengthAsked(),
+    w = digitsComputed.variant,
+    ant = !!variant.antOf; // (an ant by its rule: its steps asked, no digit read)
   const size = gridSizePlayed(),
     g = mesh(size),
     R = radius(size),
-    S = surfaceSteps(g, mode, ant ? surfaceActs(MODES[ANTS[w].walk], antCommands(w)) : undefined); // (an ant: by its words)
+    S = surfaceSteps(g, variant, ant ? surfaceActs(VARIANTS[ANTS[w].walk], antCommands(w)) : undefined); // (an ant: by its words)
   // an ant: it walks the surface's cells by its turns, the cells keeping their colours (see antStepper)
   const antStep = ant
     ? antStepper(
@@ -18086,19 +18106,19 @@ function buildCellsWalk(seq, mode, ahead = new Uint8Array(0)) {
           state = S.step(state, d);
           return state;
         },
-        walkStart(g, mode)[0],
+        walkStart(g, variant)[0],
       )
     : null;
-  const base = ant && !antByDigits ? antStep.colours : mode.base,
+  const base = ant && !antByDigits ? antStep.colours : variant.base,
     turns = ant ? new Uint8Array(len) : null,
     rec = walkRecorder(seq, ahead, base, R, g.n, len);
-  let state = walkStart(g, mode);
+  let state = walkStart(g, variant);
   const put = (i, t = state[0]) => rec.put(i, t, t, [g.cen[3 * t], g.cen[3 * t + 1], g.cen[3 * t + 2]]);
   put(0);
   rec.begin(S.key(state)); // (tile, the edge it came in by)
   // a battle (see 7.6b): all its walks (battlePlayer), A's recorded (still once dead); the others' digits null while they
   // are computed: A alone meanwhile
-  const rivals = battleOn() && !ant ? rivalsDigits(mode.base, len, buildWalk) : null,
+  const rivals = battleOn() && !ant ? rivalsDigits(variant.base, len, buildWalk) : null,
     placed = Array.isArray(rivals) && battleStartsOrSay(g, state, false, rivals.length + 1);
   if (rivals?.error) walkSaid = rivals.error;
   if (placed) {
@@ -18124,7 +18144,7 @@ function buildCellsWalk(seq, mode, ahead = new Uint8Array(0)) {
     turns,
     vert: null,
     stepTiles: null,
-    came: cameFrom(g, false, walkStart(g, mode)),
+    came: cameFrom(g, false, walkStart(g, variant)),
   });
 }
 
@@ -18196,15 +18216,16 @@ const BATTLE_RULES = [
 const BATTLE_LINED = ['landEdges', 'landEdges3', 'landStop', 'landMerge'];
 // a walk that can be a battle: one on a surface (on cells or along the edges, its steps surfaceSteps'), with as many
 // walkers as its turns allow at its size (see battleCounts: its walkers start alike, see battleMaps)
-const battleMode = (w) => NAV[w]?.[0] === 'Walk' && MODES[w].lattice === 'surface' && !!SURFACES[surfaceOf(MODES[w])];
-// a battle at mode w with so many teams (at a size, or its own), the one in use's (battleOn): its teams a count its surface takes
+const battleVariant = (w) =>
+  NAV[w]?.[0] === 'Walk' && VARIANTS[w].lattice === 'surface' && !!SURFACES[surfaceOf(VARIANTS[w])];
+// a battle at variant w with so many teams (at a size, or its own), the one in use's (battleOn): its teams a count its surface takes
 const battleAt = (w, teams = walkTeams, size = undefined) => battleFits(w, teams, size);
-const battleOn = () => battleAt(tabMode());
+const battleOn = () => battleAt(tabVariant());
 // Solo, Duel, Trio… (those the solid has no group of turns for greyed, see battleCounts), under the size and start
 // of a walk on a surface (Life's tiles, see renderTeams); then a battle's numbers in its Start section
-const walkTeamsHere = (w) => NAV[w]?.[0] === 'Walk' && MODES[w].lattice === 'surface'; // (a walk's teams: on a surface)
+const walkTeamsHere = (w) => NAV[w]?.[0] === 'Walk' && VARIANTS[w].lattice === 'surface'; // (a walk's teams: on a surface)
 function renderWalkTeams() {
-  const w = tabMode(),
+  const w = tabVariant(),
     here = walkTeamsHere(w);
   if (!oceanPicked) applyDefaults('battle'); // (Ocean on in a walk's battle, till it is clicked: see DISPLAY_DEFAULTS)
   // a battle: its numbers in its Start section, A's formula field moved there from the number's (hidden then), then B's on
@@ -18231,22 +18252,22 @@ function renderWalkTeams() {
       name,
       detail: words,
       title: words,
-      on: p === battleRuleInUse(tabMode()),
+      on: p === battleRuleInUse(tabVariant()),
       whyNot: ({ w: v }) => battleRuleWhyNot(kind, v),
       choice: `battleRule:${p}`,
       byDefault: p === 0 ? 'yes' : '',
       click: () => {
-        if (p !== battleRuleInUse(tabMode())) {
+        if (p !== battleRuleInUse(tabVariant())) {
           battleRule = p;
           compute();
         }
       },
       how: () => {
-        if (p === battleRuleInUse(tabMode())) walkTutorialToggle();
+        if (p === battleRuleInUse(tabVariant())) walkTutorialToggle();
         else {
           battleRule = p;
           compute();
-          walkTutorial(tabMode());
+          walkTutorial(tabVariant());
         }
       },
     }); // (its picture: how it works, picked first, as a walk's rule's)
@@ -18376,30 +18397,30 @@ const startsOrder = (K, order = battleOrder) =>
   order.some((i, s) => i !== s)
     ? order
     : null;
-// The battle rule a mode plays: the one picked where it goes, else its twin there (on cells a Land edges's Land cells; along
+// The battle rule a variant plays: the one picked where it goes, else its twin there (on cells a Land edges's Land cells; along
 // the grid Land cells' Land edges 1, Snake cells' Cut): what its card lights, its link writes and its battle plays, one source
 const battleRuleInUse = (w, p = battleRule) => {
   const kind = BATTLE_RULES[p][0];
-  if (!battleMode(w) || !battleRuleWhyNot(kind, w)) return p;
-  const twin = !MODES[w].edges ? 'landCells' : kind === 'snakeCells' ? 'cut' : 'landEdges';
+  if (!battleVariant(w) || !battleRuleWhyNot(kind, w)) return p;
+  const twin = !VARIANTS[w].edges ? 'landCells' : kind === 'snakeCells' ? 'cut' : 'landEdges';
   return BATTLE_RULES.findIndex(([k]) => k === twin);
 };
-// Centred's greyed words; a battle rule's at a mode: a way on cells only (Land cells, Snake cells) along a grid, or one along
-// the grid only on cells; a mode with no battle, none (Cut and Land no collision: anywhere)
+// Centred's greyed words; a battle rule's at a variant: a way on cells only (Land cells, Snake cells) along a grid, or one along
+// the grid only on cells; a variant with no battle, none (Cut and Land no collision: anywhere)
 const CENTRED_WHERE =
   "Only along a closed solid's grid, where each point has as many edges out as walkers, or a multiple.";
 const battleRuleWhyNot = (kind, v) => {
   const cells = kind === 'landCells' || kind === 'snakeCells';
-  return !battleMode(v)
+  return !battleVariant(v)
     ? 'There is no battle here.'
-    : kind === 'cut' || kind === 'landStop' || cells !== !!MODES[v].edges
+    : kind === 'cut' || kind === 'landStop' || cells !== !!VARIANTS[v].edges
       ? ''
       : cells
         ? 'This rule plays on cells; this walk goes along the edges.'
         : 'This rule plays along the edges; this walk is on cells.';
 };
 const startsWayCan = (way, w, size, teams = walkTeams) => way !== 'centred' || groupedCan(w, size, teams);
-const startsWayNow = () => (battleOn() && startsWayCan(battleStartsWay, tabMode()) ? battleStartsWay : 'symmetric');
+const startsWayNow = () => (battleOn() && startsWayCan(battleStartsWay, tabVariant()) ? battleStartsWay : 'symmetric');
 // the starts' way played in a setup (see setupNow): its own where a battle can have it, else Symmetric (as startsWayNow)
 const startsWayIn = ({ w, size = null, teams = walkTeams, startsWay = battleStartsWay }) =>
   battleAt(w, teams, size ?? undefined) && startsWayCan(startsWay, w, size ?? undefined, teams)
@@ -18471,7 +18492,7 @@ function groupedStarts(g, start, K) {
 }
 // The edges out of the points a solid's walkers may start round (see groupedStarts: its faces' centres, its corners), by its
 // kind: at a size 3 divides (thirds), at the others (a triangle face's centre a corner of the grid, else a small
-// triangle's three), or at any. Known with no mesh: asked of every mode next to the one shown, by a greyed tile's search
+// triangle's three), or at any. Known with no mesh: asked of every variant next to the one shown, by a greyed tile's search
 // (see choicesAt; a mesh and its starts built for each, 5.5 s at Centred's first hover till v0.4.1065); as the meshes'
 // own, see tools/check.js's checkCentred
 const CENTRED_EDGES = {
@@ -18491,13 +18512,13 @@ const centredEdges = (kind, size) => {
   const edges = CENTRED_EDGES[kind]; // (none: a ring, a solid with no grid to walk along)
   return edges?.any ?? (size % 3 ? edges?.other : edges?.thirds) ?? [];
 };
-// (a mode's, at a size or the one it opens at: its walkers, a setup's teams, can be grouped: so many edges out of one of
+// (a variant's, at a size or the one it opens at: its walkers, a setup's teams, can be grouped: so many edges out of one of
 // its points that they share them evenly, see groupedStarts)
 const groupedCan = (w, size = null, teams = walkTeams) =>
-  battleMode(w) &&
-  !!MODES[w].edges &&
+  battleVariant(w) &&
+  !!VARIANTS[w].edges &&
   teams > 1 &&
-  centredEdges(surfaceOf(MODES[w]), size ?? figureSize(w)).some((edges) => edges % teams === 0);
+  centredEdges(surfaceOf(VARIANTS[w]), size ?? figureSize(w)).some((edges) => edges % teams === 0);
 // a battle's starts and the maps that moved A's to them (symmetric, see battleMaps; else null: grouped, groupedStarts',
 // where it can, or Random's), or none, said in the status: A's place on an axis of the solid
 function battleStartsOrSay(g, start, alongEdges, K, seed = battleSeed, order = battleOrder) {
@@ -18730,21 +18751,21 @@ const battleGroups = (g, K, enough = Infinity, good = null) => {
     ...rotationGroups(g, K, enough, (G) => !!maps(G) && (!good || good(maps(G)))).map(maps),
   ].filter((G) => G && (!good || good(G)));
 };
-// whether a battle on mode w's surface (see battleMode) can have K teams, from its start: its surface has a group of K that
+// whether a battle on variant w's surface (see battleVariant) can have K teams, from its start: its surface has a group of K that
 // sets them apart from A's start (see battleGroups, startSpread): a ring's known by construction, no mesh; a solid's by its
-// turns, its start's kind of point judged on a mesh; none elsewhere. The menu's search asks one team tile's at every mode round
-// (at a size, or its mode's: the tab's the menu's only, none before it holds its surface: a strip's sizes depend on its walkers
+// turns, its start's kind of point judged on a mesh; none elsewhere. The menu's search asks one team tile's at every variant round
+// (at a size, or its variant's: the tab's the menu's only, none before it holds its surface: a strip's sizes depend on its walkers
 // (ringColours, by battleOn), so sizeAt for the tab would come back here)
 const battleFits = (
   w,
   K,
-  size = battleMode(w) && figureSize(w), // (the size it has or opens at, the menu filled or not: one answer through a change)
+  size = battleVariant(w) && figureSize(w), // (the size it has or opens at, the menu filled or not: one answer through a change)
   j = startAsked(),
 ) => {
   // (j: A's start's number asked, its list's at most)
-  if (K < 2 || !size || !battleMode(w)) return false; // (none)
-  const mode = MODES[w],
-    kind = surfaceOf(mode),
+  if (K < 2 || !size || !battleVariant(w)) return false; // (none)
+  const variant = VARIANTS[w],
+    kind = surfaceOf(variant),
     surface = SURFACES[kind];
   // a ring's by its kind (its length made for its walkers, see ringColours): a torus takes every count (its shift of 1/K
   // round it), a Klein bottle a Duel only (its gluing: its half turn, see ringGroup), a Möbius strip the counts whose
@@ -18767,8 +18788,8 @@ const battleFits = (
   const memo = (battleCountsMemo[`${w}|${size}|${j}`] ??= {});
   const fits = () => {
     const g = surface.mesh(j <= 1 ? startClassLeast(kind, size) : size),
-      start = walkStart(g, mode, j > 1 ? Math.min(j, startList(g).length) : 1),
-      apart = startSpread(g, !!mode.edges, start);
+      start = walkStart(g, variant, j > 1 ? Math.min(j, startList(g).length) : 1),
+      apart = startSpread(g, !!variant.edges, start);
     return battleGroups(g, K, 1, (G) => apart(G) > 1e-9).length > 0; // (one group is enough to know)
   };
   return (memo[K] ??= fits());
@@ -18779,7 +18800,7 @@ const battleCountsMemo = remember('battleCountsMemo', {});
 // its size; every other solid's start 1 alike at every size, 1)
 const startClassLeast = (kind, size) =>
   SURFACES[kind].sizes.find((f) => (f - size) % (SURFACES[kind].startPeriod ?? 1) === 0) ?? size;
-// the teams a battle can have on mode w's surface: every count that fits (see battleFits)
+// the teams a battle can have on variant w's surface: every count that fits (see battleFits)
 const battleCounts = (w, size, j) => TEAM_COUNTS.filter((K) => battleFits(w, K, size, j));
 // A closed solid's team counts, once a solid, its turns the same at every size (see surfaceRotations): some, K it has a
 // group of; any, K whatever its start: every axis of its groups of K has one of them none of whose turns is round it (a
@@ -18800,10 +18821,10 @@ const solidTeamCounts = (kind) =>
       ),
     }; // (each group's identity first)
   })());
-// a team count's, a count of colours' greyed words at a mode (at a size, or the one it opens at): one source, their tiles'
+// a team count's, a count of colours' greyed words at a variant (at a size, or the one it opens at): one source, their tiles'
 // and the menu's graph's (see choicesAt)
 const teamsWhyNot = (k, v, size = null, j = startAsked()) =>
-  k === 1 || (battleMode(v) && battleFits(v, k, teamsSize(v, k, size ?? undefined), j)) ? '' : TEAMS_WHERE; // (at the size its walkers play, see teamsSize)
+  k === 1 || (battleVariant(v) && battleFits(v, k, teamsSize(v, k, size ?? undefined), j)) ? '' : TEAMS_WHERE; // (at the size its walkers play, see teamsSize)
 const lifeTeamsWhyNot = (k, w, size = null, rule = $('lifeRule').value) =>
   !teamsStatesFit(k, rule)
     ? TEAMS_STATES_WHERE
@@ -18954,7 +18975,7 @@ function smallerSide(L, cut, j) {
 // tiles; a head on an enemy's body cuts it. landEdges: lines and their land as lined says. On cells,
 // landCells: painted. With land, heads meeting all die (see collisions), their land staying: it ends with one or none
 // left, the most land winning (the dead's too): its worth, its land, who wins
-function battlePlayer(g, alongEdges, S, starts, digits, pen = battleRuleInUse(tabMode())) {
+function battlePlayer(g, alongEdges, S, starts, digits, pen = battleRuleInUse(tabVariant())) {
   let way = BATTLE_RULES[pen][0]; // (its rule in use: on cells Cut, Land no collision, Land cells and Snake cells; along the edges Cut and the Land edges, see battleRuleInUse)
   // Snake cells: Cut, each body a snake's, its tail sliding unless it grows: on an even step till a tenth of the surface
   // (cap), on an odd step a cell of those it has eaten (food: the cells its bites cut off), see slide
@@ -19833,7 +19854,7 @@ const huntVary = { formulas: false, starts: false };
 // its rankings: [picture, name, tooltip, the button's words, its list's title, a battle's score (none: Longest's two lists),
 // a card's figure]
 // A hunt's result, every hunt's alike: its light (green, orange, red, grey: [colour, word, why]; none), what it is ranked by
-// first (its mode's), how it ends then who and where under it; its tooltip in full, its light's why with it; a press plays it,
+// first (its variant's), how it ends then who and where under it; its tooltip in full, its light's why with it; a press plays it,
 // at once, even while the hunt goes on
 function huntCard({ light, title, detail, on, pick }) {
   const [colour, word, why] = light ?? [],
@@ -19896,7 +19917,7 @@ const HUNT_RANKS = {
 };
 let huntRank = 'longest';
 const huntGoal = () =>
-  huntRank === 'even' && BATTLE_RULES[battleRuleInUse(tabMode())][0] === 'cut' ? 'longest' : huntRank; // (Even lands: with land only, else Longest)
+  huntRank === 'even' && BATTLE_RULES[battleRuleInUse(tabVariant())][0] === 'cut' ? 'longest' : huntRank; // (Even lands: with land only, else Longest)
 const huntStarts = () => huntVary.starts && startsWayNow() !== 'centred'; // (Starts varied: in Symmetric and Random)
 // A hunt's results belong to what they were found at (its key: what the hunt does not vary, its battles' setup, Life's
 // game): asked elsewhere, the hunt stops and its results go (fresh: its state with none). One rule for both hunts (the
@@ -19912,10 +19933,10 @@ const battleHunt = { run: null, ended: [], open: [], endedCount: 0, tried: new S
 const battleHuntKey = () =>
   [
     huntGoal(),
-    tabMode(),
+    tabVariant(),
     walkTeams,
     startsWayNow(),
-    battleRuleInUse(tabMode()),
+    battleRuleInUse(tabVariant()),
     gridSizePlayed(),
     digitsNeeded(),
     huntVary.formulas || BATTLE_FORMULAS.map((id) => $(id).value).join(), // (its numbers, each in its field: it draws their starts' order, never in its key, see startsOrder)
@@ -19977,15 +19998,15 @@ const meshData = (g) =>
 async function startBattleHunt() {
   huntAt(battleHunt, battleHuntKey(), BATTLE_FRESH, stopBattleHunt);
   const run = (battleHunt.run = { stop: false, workers: [] }),
-    mode = MODES[tabMode()],
+    variant = VARIANTS[tabVariant()],
     n = digitsNeeded(),
-    base = mode.base,
+    base = variant.base,
     K = walkTeams,
-    alongEdges = !!mode.edges,
+    alongEdges = !!variant.edges,
     way = startsWayNow();
   const numbers = [...BATTLE_CARDS, ...DRAWN_ROOTS],
     N = numbers.length;
-  const starts = huntStarts() ? (way === 'symmetric' ? modeStarts().length : Infinity) : 1; // (Random's draws: no end)
+  const starts = huntStarts() ? (way === 'symmetric' ? variantStarts().length : Infinity) : 1; // (Random's draws: no end)
   // the numbers' orders, A's place first: where the walkers start as one group's images (Symmetric, Centred), K orders turned round
   // them are one battle seen turned, A the smallest of them its one (see huntOrderCount); Random's, every order its own
   const round = way !== 'random';
@@ -20036,7 +20057,7 @@ async function startBattleHunt() {
         continue; // (an order turned: fought already)
       battleHunt.tried.add(key);
       const order = huntVary.formulas ? null : picks; // (the shown numbers: each in its field, their starts' order drawn; drawn ones: in turn)
-      const placed = battleStartsOrSay(g, walkStart(g, mode, at.n), alongEdges, K, at.seed, order);
+      const placed = battleStartsOrSay(g, walkStart(g, variant, at.n), alongEdges, K, at.seed, order);
       if (placed)
         return {
           id: id++,
@@ -20071,9 +20092,9 @@ async function startBattleHunt() {
     setup = {
       g: meshData(g),
       alongEdges,
-      net: mode.net,
-      acts: surfaceActs(mode),
-      pen: battleRuleInUse(tabMode()),
+      net: variant.net,
+      acts: surfaceActs(variant),
+      pen: battleRuleInUse(tabVariant()),
       base,
       n,
       cards: [...cards],
@@ -20116,7 +20137,7 @@ function playBattle(fs, { n, seed, order = null } = {}) {
   stopBattleHunt();
   $('formula').value = fs[0];
   readFormula();
-  pickNumber(formulaInUse, tabMode());
+  pickNumber(formulaInUse, tabVariant());
   fs.slice(1).forEach((f, j) => {
     $(RIVALS[j]).value = f;
   });
@@ -20199,7 +20220,7 @@ function renderBattleHunt() {
       `Numbers: the ${BATTLE_CARDS.length} cards and the roots √n, n up to 9,999 (${formatNumber(BATTLE_CARDS.length + DRAWN_ROOTS.length)})`,
     huntStarts() &&
       (startsWayNow() === 'symmetric'
-        ? `Starts: Symmetric's ${formatNumber(modeStarts()?.length ?? 1)}`
+        ? `Starts: Symmetric's ${formatNumber(variantStarts()?.length ?? 1)}`
         : "Starts: Random's draws, no end"),
     walkTeams > 2 &&
       (huntVary.formulas
@@ -20696,7 +20717,7 @@ function elementaryWorkerMain() {
   };
 }
 function elementaryReady(then) {
-  if (!MODES[digitsComputed.mode].elementary) {
+  if (!VARIANTS[digitsComputed.variant].elementary) {
     elementaryMade = null;
     return true;
   } // (another grid: its rows let go, tens of MB)
@@ -20978,15 +20999,15 @@ function startParts(seed) {
 // Life's colours for its grid, before anything is made of them (the digits' base, K + 1; the sizes; the tiles): from those
 // before, those it has fair blocks or spots for (see teamsOn); on a surface, its size's mesh made for them (a torus's
 // columns their blocks', see ringColumns), its sizes again for them; a link's the same
-function fitLifeTeams(mode) {
-  if (mode.plane) {
+function fitLifeTeams(variant) {
+  if (variant.plane) {
     fitTeams();
     return;
   }
-  const kind = surfaceOf(mode);
-  fillGridSizes(kind, mode.initial);
+  const kind = surfaceOf(variant);
+  fillGridSizes(kind, variant.initial);
   fitTeams(); // (its size's mesh made for them, see pickedFigure)
-  fillGridSizes(kind, mode.initial);
+  fillGridSizes(kind, variant.initial);
 }
 // A Life's game (walk.life) by its rule, on its grid's cells (grid: its neighbours, rings, seed, blocks…), n of them: its
 // cells' arrays made (the graphics card's copies too), its seed counted; and the walk's fields every Life has, the others
@@ -21013,7 +21034,7 @@ function startLife(seq, rule, n, grid) {
   lifeStart = null; // the number's digits
   const one = new Float64Array(1);
   Object.assign(walk, {
-    n: MODES[walk.mode].elementary ? lengthAsked() : Infinity,
+    n: VARIANTS[walk.variant].elementary ? lengthAsked() : Infinity,
     digits: seq,
     keys: seq,
     wx: one,
@@ -21022,19 +21043,19 @@ function startLife(seq, rule, n, grid) {
     base: rule.base,
   });
 }
-function buildLife(seq, mode) {
-  if (mode.plane) {
+function buildLife(seq, variant) {
+  if (variant.plane) {
     buildLifePlane(seq);
     return;
   }
-  const kind = surfaceOf(mode),
+  const kind = surfaceOf(variant),
     { mesh, radius } = SURFACES[kind];
   const size = gridSizePlayed();
   const g = mesh(size);
   const nbr = cornerNeighbours(g);
   let rule = lifeRuleNow() || parseRule('B3/S23');
   const ring =
-    rule.iso === 'hensel' && lifeMark(mode) === '■'
+    rule.iso === 'hensel' && lifeMark(variant) === '■'
       ? cornerNeighbours(g, 8).ring
       : rule.iso === 'hex'
         ? nbr.ring
@@ -21053,7 +21074,7 @@ function buildLife(seq, mode) {
     side: rule.iso === 'vertex' ? sideOf(nbr) : null,
     ringMore: rule.iso === 'hensel' && ring ? cornerNeighbours(g, 8).more : null,
     seed,
-    margolus: mode.margolus && rule.margolus ? ruleBlocks(rule, blocksGrid(mode), g.nu, true, g.nv, g) : null,
+    margolus: variant.margolus && rule.margolus ? ruleBlocks(rule, blocksGrid(variant), g.nu, true, g.nv, g) : null,
   });
   Object.assign(walk, {
     is3d: true,
@@ -21093,7 +21114,7 @@ function buildLife(seq, mode) {
 // as built (its rectangle's: its rows and its row): once; a grid of 2 lattice cells across at least; a hexagon's by its side
 // alone, each its own (its hexagon fitted only when shown, see shapeW)
 // (outline: the one its grid is built in, a setup's: its sides as many as that outline's grid allows, a hexagon's 2 across at least)
-const planeCells = (side, kind = MODES[tabMode()].plane, k = planeKind(kind), outline = outlineOf(kind)) => {
+const planeCells = (side, kind = VARIANTS[tabVariant()].plane, k = planeKind(kind), outline = outlineOf(kind)) => {
   const W = shaped(kind, outline) ? sideW(k, side) : planeW(k, side, undefined, outline);
   return W * planeRow(k, W);
 }; // a side's grid's cells, counted, not built (see picked)
@@ -21106,7 +21127,7 @@ const planeSides = (
   grid = (f) => `${W(f)}|${planeRow(k, W(f))}`,
 ) =>
   [
-    ...(MODES[tabMode()]?.margolus ? [6, 8] : []),
+    ...(VARIANTS[tabVariant()]?.margolus ? [6, 8] : []),
     ...SIDES.filter((f) => cells(f) >= CELLS.least && cells(f) <= CELLS.most),
   ].filter((f, i, a) => W(f) >= 2 && (!i || grid(f) !== grid(a[i - 1])));
 // side: the grid's, the nearest it offers to the last picked (by hand or a link: kept, whatever grid comes); icons: an Icon
@@ -21116,8 +21137,8 @@ const planeSideOf = (k, outline = outlineOf(k)) =>
   nearCells(planeSides(k, k, outline), (f) => planeCells(f, k, k, outline), picked ?? planeCells(48, k, k, outline));
 const plane = {
   get side() {
-    return planeSideOf(planeKind(MODES[tabMode()].plane));
-  }, // (the mode in use's)
+    return planeSideOf(planeKind(VARIANTS[tabVariant()].plane));
+  }, // (the variant in use's)
   torus: true,
   shape: 'hex',
   text: APP_TITLE,
@@ -22341,8 +22362,8 @@ const sideW = (kind, side) =>
       ? Math.round((side * Math.sqrt(Math.PI)) / 2)
       : Math.round(side / Math.sqrt(gridCells(kind) * (RECT_ASPECT[kind] ?? 1))); // (a rectangle's: W rows of W × its aspect motifs, see planeColumns)
 // blocks on a torus: the nearest size their sets fit round (else a cell in two blocks of a set at the seam: the rule broken)
-const planeW = (kind, side, mode = MODES[tabMode()], outline = outlineOf(kind)) =>
-  mode?.margolus && planeTorus(kind)
+const planeW = (kind, side, variant = VARIANTS[tabVariant()], outline = outlineOf(kind)) =>
+  variant?.margolus && planeTorus(kind)
     ? blockWrapW(kind, sideW(kind, side))
     : shaped(kind, outline)
       ? shapeW(kind, sideW(kind, side), outline)
@@ -23491,7 +23512,7 @@ const APERIODIC = {
 // the grids in their spaces (see SPACES): everyone's surfaces, sheets or solids; the automata's plane, round (these) or not
 for (const [w, n] of Object.entries(NAV))
   if (n[1] === 'Surfaces') n[1] = SHEETS.includes(n[2]) ? '3D surfaces' : '3D solids';
-  else if (n[1] === '2D' && MODES[w].life) n[1] = APERIODIC[MODES[w].plane] ? '2D circles' : '2D squares';
+  else if (n[1] === '2D' && VARIANTS[w].life) n[1] = APERIODIC[VARIANTS[w].plane] ? '2D circles' : '2D squares';
 // the flat grid cells lie on: the plane's; a rosette sphere's, its disc's (its north half's cells numbered as the plane's: a start
 // laid on it as on the plane, see rosetteSphereMesh)
 function flatGrid() {
@@ -24112,7 +24133,7 @@ const loopCode = (name) => {
   return `${R.loopStates} states${R.loopRing === 8 ? ', 8 neighbours' : ''}`;
 }; // (its Golly table's name not shown: the card's name again)
 // a loop table fits a grid of squares: turned, any; with no turns (Tempesti's), only where every cell has the same north
-const loopFits = (rule, mode) => !!rule?.loopStates && (rule.loopTurns || !!mode.north); // (a loop's rule: its table's states)
+const loopFits = (rule, variant) => !!rule?.loopStates && (rule.loopTurns || !!variant.north); // (a loop's rule: its table's states)
 // The loops' start (see loops.js) on empty cells: its RLE's states (. 0, A 1, B 2…), its rows ($), laid tile by tile from the
 // middle of each colour's part (see partMiddle): up and left half its box, then its rows down and its cells right, each
 // step across a side to the tile beyond, its sides turned as they come (so it crosses a cube's edges as its faces); in K
@@ -24169,7 +24190,7 @@ function layLoops(seed) {
   }
 }
 function buildLifePlane(seq) {
-  const kind = planeKind(MODES[digitsComputed.mode].plane); // (a rectangle's, if so)
+  const kind = planeKind(VARIANTS[digitsComputed.variant].plane); // (a rectangle's, if so)
   const W = planeW(kind, plane.side),
     row = planeRow(kind, W),
     { n, xy, at } = planeGrid(kind, W);
@@ -24188,11 +24209,11 @@ function buildLifePlane(seq) {
         ? nbr.ring
         : null,
     side: rule.iso === 'vertex' ? sideOf(nbr) : null,
-    margolus: MODES[digitsComputed.mode].margolus && rule.margolus ? ruleBlocks(rule, kind, W) : null,
+    margolus: VARIANTS[digitsComputed.variant].margolus && rule.margolus ? ruleBlocks(rule, kind, W) : null,
     seed: planeSeed(kind, seq, rule.C, rule.colours),
   });
   Object.assign(walk, {
-    stacked: spaceTime && spaceTimeApplies(walk.mode),
+    stacked: spaceTime && spaceTimeApplies(walk.variant),
     geo: { n },
     plane: { kind, W, row, n, xy, at, torus: planeTorus(kind), flat: planeFlat(kind, W, planeTorus(kind)) },
     xs: walk.wx,
@@ -24439,7 +24460,7 @@ function startLead(number, seeded) {
   const sym = kind ? SYMMETRIES[symmetryOf(kind)][2] : '',
     where = kind
       ? `a ${side} × ${side} grid of ${PLANE_CELLS[kind]}${{ tri: ' (two a rhombus)', cairo: ' (two a square)', kite: ' (six a rhombus)', hat: ' (an aperiodic tiling: one tile that never repeats)', penrose: ' (an aperiodic tiling)', pinwheel: ' (an aperiodic tiling: one right triangle, turned every way)', ammann: ' (an aperiodic tiling, eightfold)', rhombs12: ' (an aperiodic tiling, twelvefold)', rhombs14: ' (an aperiodic tiling, fourteenfold)', flower: " (Hirschhorn's flower: one pentagon, six-fold, never repeating)", flower5: ' (a rosette: one pentagon, five-fold, never repeating)', flower7: ' (a rosette: one pentagon, seven-fold, never repeating)', ...conedOf((k, n, F) => [k, ` (a ${F.how} rosette: ${F.one}, ${n}-fold, never repeating)`]), flower3: ' (a rosette: one pentagon, three-fold, never repeating)', flower4: ' (a rosette: one pentagon, four-fold, never repeating)', flower8: ' (a rosette: one pentagon, eight-fold, never repeating)', flower9: ' (a rosette: one pentagon, nine-fold, never repeating)', flower10: ' (a rosette: one pentagon, ten-fold, never repeating)', ring7: ' (a ring: one pentagon round a heptagonal hole, seven-fold, never repeating)', ring8: ' (a ring: one pentagon round an octagonal hole, eight-fold, never repeating)', ring9: ' (a ring: one pentagon round a nonagonal hole, nine-fold, never repeating)', ring10: ' (a ring: one pentagon round a decagonal hole, ten-fold, never repeating)', ring12: ' (a ring: one pentagon round a dodecagonal hole, twelve-fold, never repeating)', spectre: ' (an aperiodic tiling: one tile that never repeats, never turned over)' }[kind] ?? ''} ${planeTorus(kind) ? 'wrapping around (a torus)' : planeShape(kind, walk.plane.W) ? 'walled in a hexagon' : 'with dead edges'}`
-      : MODES[walk.mode].where; // (the run shown's: the tab may already show the next)
+      : VARIANTS[walk.variant].where; // (the run shown's: the tab may already show the next)
   const found = { hunt: 'A start found by the hunt', saved: 'A saved start', battle: 'A battle found by the hunt' }[
     lifeStart
   ];
@@ -24488,7 +24509,7 @@ function startFromSetup(s) {
 let surfaceDraw = false; // a surface's Draw tab open: its patterns shown, greyed (the start stays as it was); a view of this game only, closed by a new one (see compute), as its link has it
 // Symmetry, under the zones (a zone's sub-mode): the grid's (see symmetriesHere), those it has not greyed; its inputs the grid,
 // the rule, the start and its zone (see renderPlaneRow, renderHunt)
-// a symmetry at a mode: the walk shown's, by its grid (and its block rule, see symmetriesHere); another's, on the plane, by its
+// a symmetry at a variant: the walk shown's, by its grid (and its block rule, see symmetriesHere); another's, on the plane, by its
 // grid at the side picked (a block rule's known once its grid is built: none there)
 const symmetryAllowed = (
   y,
@@ -24496,20 +24517,20 @@ const symmetryAllowed = (
   { start, zone, lifeTeams: teams = lifeTeams, newcomer: n = newcomer, size = null, outline: outlineSet, rule } = {},
 ) => {
   const parts = teams - (n && newcomerCan(teams, v, size, start ?? plane.start, rule) ? 1 : 0); // (a setup's teams' parts: Newcomer's, one fewer)
-  const m = MODES[v],
+  const m = VARIANTS[v],
     outline = m.plane && outlineIn(outlineSet, m.plane),
     k = m.plane && planeKind(m.plane, outline),
     by = { start, zone, K: parts === lifeTeams - (newcomerOn() ? 1 : 0) ? undefined : parts, outline }; // (the game's where they are its)
-  if (v === walk.mode && walk.plane && outline === outlineOf(m.plane))
+  if (v === walk.variant && walk.plane && outline === outlineOf(m.plane))
     return symmetriesHere(walk.plane.kind, walk.plane.W, undefined, by).includes(y);
   if (!m.plane || m.elementary || m.margolus || !m.life) return y === 'none';
   const W = walk.plane?.kind === k ? planeW(k, planeSideOf(k, outline), m, outline) : null; // (its side in that outline, see planeSides: asked of the kind built only, where a colour's parts are known, see partSymmetries)
   return symmetriesHere(k, W, null, by).includes(y);
 };
 function renderSymmetry() {
-  const kind = MODES[tabMode()].plane,
+  const kind = VARIANTS[tabVariant()].plane,
     now = walk.plane ? symmetryOf(walk.plane.kind) : 'none';
-  $('symmetryRow').hidden = !kind || !!MODES[tabMode()].elementary; // (Elementary: a row, no copies)
+  $('symmetryRow').hidden = !kind || !!VARIANTS[tabVariant()].elementary; // (Elementary: a row, no copies)
   $('symmetryTiles').replaceChildren(
     tileGroup(
       Object.keys(SYMMETRIES).map((y) => {
@@ -24520,7 +24541,7 @@ function renderSymmetry() {
           title: SYMMETRIES[y][3],
           on: y === now,
           byDefault: y === 'none' ? 'yes' : '',
-          at: walk.mode,
+          at: walk.variant,
           whyNot: (setup) => (symmetryAllowed(y, setup.w, setup) ? '' : SYMMETRY_WHERE),
           click: () => {
             if (y !== symmetryOf(walk.plane.kind)) {
@@ -24539,8 +24560,8 @@ function renderSymmetry() {
 const SYMMETRY_WHERE =
   'The grid is not its own copy this way (squares: all ways; a grid in a hexagon: as its tiles allow; a block rule: as its blocks and its rule allow too; in colours, as their parts do, each copy one whole part; the others: none). Not on Famous and Anywhere either: their patterns are laid whole where they are.'; // (a symmetry's greyed words)
 const DRAW_WHERE = 'On a reversible surface, a block rule has no patterns to show or draw.';
-// a Life's starts, its tabs (see renderPlaneRow), and why one cannot be at mode v: Draw on a surface (its rule's patterns:
-// none for blocks); Text where no picture fits (its room known on the grid built only: another mode's not judged, not claimed)
+// a Life's starts, its tabs (see renderPlaneRow), and why one cannot be at variant v: Draw on a surface (its rule's patterns:
+// none for blocks); Text where no picture fits (its room known on the grid built only: another variant's not judged, not claimed)
 const LIFE_STARTS = [
   ['random', 'Hunt'],
   ['text', 'Text'],
@@ -24549,11 +24570,11 @@ const LIFE_STARTS = [
 ];
 const startWhyNot = (start, v) =>
   start === 'draw'
-    ? !MODES[v].plane && MODES[v].margolus
+    ? !VARIANTS[v].plane && VARIANTS[v].margolus
       ? DRAW_WHERE
       : ''
     : start === 'text'
-      ? v !== tabMode()
+      ? v !== tabVariant()
         ? TEXT_WHERE
         : !walk.life || digitsComputed?.mode !== v || setFits(iconMax(textSet()), textSet())
           ? ''
@@ -24562,17 +24583,17 @@ const startWhyNot = (start, v) =>
 const TEXT_WHERE = 'No picture can be laid here, as with Emoji (the grid too small, or a solid with no face for it).';
 const PNG_WHERE = 'Only on a grid of squares: one pixel per square.'; // (Export PNG's greyed words)
 function renderPlaneRow() {
-  const kind = MODES[tabMode()].plane;
-  const blocks = !!MODES[tabMode()].margolus;
+  const kind = VARIANTS[tabVariant()].plane;
+  const blocks = !!VARIANTS[tabVariant()].margolus;
   for (const b of $('lifeStartTabs').querySelectorAll('button')) {
     // the starts, on any grid (Draw on a surface: its patterns, to see)
     const s = b.dataset.start,
       on = surfaceDraw ? s === 'draw' : s === plane.start;
-    b.hidden = !!MODES[tabMode()].elementary !== ELEMENTARY_STARTS.includes(s) && s !== 'digits'; // (Elementary's starts, see elementaryRows)
+    b.hidden = !!VARIANTS[tabVariant()].elementary !== ELEMENTARY_STARTS.includes(s) && s !== 'digits'; // (Elementary's starts, see elementaryRows)
     if (s === 'random') b.innerHTML = `${icon(blocks ? 'dice' : 'search')}<span>${blocks ? 'Random' : 'Hunt'}</span>`; // (blocks: no hunt, its zones' starts)
     b.dataset.choice = `start:${s}`; // (its choice's key, see choicesAt)
     if (s === 'draw' || s === 'text')
-      setTile(b, { on, whyNot: ({ w: v }) => startWhyNot(s, v), judgedAt: s === 'text' ? tabMode() : null }); // (Text's room: on the grid built only)  // (a picture's room known on the grid built only: another mode's not judged, not claimed)  // (its grid's, once built)
+      setTile(b, { on, whyNot: ({ w: v }) => startWhyNot(s, v), judgedAt: s === 'text' ? tabVariant() : null }); // (Text's room: on the grid built only)  // (a picture's room known on the grid built only: another variant's not judged, not claimed)  // (its grid's, once built)
     else setTile(b, { on });
   }
   $('startTextInput').value = plane.text; // (its words, on any grid)
@@ -24586,7 +24607,7 @@ function renderPlaneRow() {
     $('startDigits').hidden = plane.start !== 'digits' || surfaceDraw;
     if (!surfaceDraw) return;
     // a surface: the rule's patterns on its grid, greyed (they cannot be drawn here: Famous lays them)
-    const cells = PLANE_OF_MARK[lifeMark(MODES[tabMode()])],
+    const cells = PLANE_OF_MARK[lifeMark(VARIANTS[tabVariant()])],
       rule = ruleBody(parseRule(ruleBody($('lifeRule').value))?.text ?? '');
     for (const b of $('brushCards').children) {
       const p = DRAW_BY_ID.get(b.dataset.brush);
@@ -24599,7 +24620,9 @@ function renderPlaneRow() {
     return;
   }
   $('drawNote').hidden = true;
-  setTile($('exportPng'), { whyNot: ({ w: v }) => (MODES[v].plane === 'square' && MODES[v].life ? '' : PNG_WHERE) });
+  setTile($('exportPng'), {
+    whyNot: ({ w: v }) => (VARIANTS[v].plane === 'square' && VARIANTS[v].life ? '' : PNG_WHERE),
+  });
   const sides = planeSides(kind);
   const label = (side) => {
     $('planeLabel').innerHTML =
@@ -24634,8 +24657,8 @@ function renderPlaneRow() {
     setTile($(`outline-${shape}-${torus ? 'torus' : 'walled'}`), {
       on: outlineOf(kind) === shape && planeTorus(kind) === torus,
       whyNot: ({ w: v }) => {
-        const k = MODES[v].plane;
-        return k && MODES[v].life && !APERIODIC[k] && outlineOf(k, shape, torus) === shape ? '' : where;
+        const k = VARIANTS[v].plane;
+        return k && VARIANTS[v].life && !APERIODIC[k] && outlineOf(k, shape, torus) === shape ? '' : where;
       },
     });
   }
@@ -24650,7 +24673,7 @@ function renderPlaneRow() {
   $('startDigits').hidden = plane.start !== 'digits';
   // Draw: the brushes (the patterns on squares only), the colours and the eraser, the turns (greyed for a cell)
   const rule = ruleBody(parseRule(ruleBody($('lifeRule').value))?.text ?? ''),
-    mine = !ruleCard(rule, tabMode());
+    mine = !ruleCard(rule, tabVariant());
   const fits = (p) => !p[1] || (p[1] === baseOf(kind) && (mine || p[2].includes(rule))); // the rule's patterns; your own rule: all the grid's
   if (!fits(DRAW_BY_ID.get(brush.id))) brush.id = 'cell';
   brush.turn %= gridTurns(kind);
@@ -24698,7 +24721,7 @@ function renderPlaneRow() {
 // drawn there only; Go to gen 0, the way back)
 let drawToolsAway = null; // (whether Draw's tools were last drawn away from gen 0, see updateStats)
 function renderDrawTools() {
-  const kind = MODES[tabMode()].plane,
+  const kind = VARIANTS[tabVariant()].plane,
     away = drawAway(),
     why = "Away from gen 0: its start's cells are drawn there.";
   drawToolsAway = away;
@@ -25647,8 +25670,8 @@ function faceOf(g, t) {
 }
 const redFaces = (g) => !!(g?.perFace || g?.triFaces); // (the solids whose faces are drawn red, as their tooltip says them)
 const tilesOf = ([from, to]) => Array.from({ length: to - from }, (_, j) => from + j);
-// the shape a Life mode's cells have, as the rule menu marks the rules that suit it (■ ▲ ⬡); on
-// coming to another mode, a rule marked for another shape gives way to the first one for this shape
+// the shape a Life variant's cells have, as the rule menu marks the rules that suit it (■ ▲ ⬡); on
+// coming to another variant, a rule marked for another shape gives way to the first one for this shape
 // the cells of each surface (else triangles): one table for every surface, whatever its shape
 const SURFACE_CELLS = {
   cube: '■',
@@ -25724,25 +25747,25 @@ const PLANE_MARKS = {
 };
 const PLANE_OF_MARK = Object.fromEntries(Object.entries(PLANE_MARKS).map(([k, m]) => [m, k]));
 for (const k of Object.keys(ROSETTE_SPHERES)) SURFACE_CELLS[`${k}Sphere`] = PLANE_MARKS[k]; // (a rosette surface: its rosette's cells, rules and all)
-const blocksGrid = (mode) => mode.blocks ?? mode.plane; // (a block rule's grid: the plane's, or a surface's, its cells' shape)
+const blocksGrid = (variant) => variant.blocks ?? variant.plane; // (a block rule's grid: the plane's, or a surface's, its cells' shape)
 const LOOPS_MARK = '⟲'; // (the loops' rules' mark)
 // a rule's card on a grid: its entry among its own rules (see RULES: those of its cells' mark, as its rule cards, see
 // renderRuleSection), none if not one of them (another grid's of the same words: not its)
 const ruleCard = (rule, w) => {
-  const m = MODES[w],
+  const m = VARIANTS[w],
     mark = m && lifeMark(m);
   return rulesOf('life').find((r) => r.rule === rule && r.tiling.includes(mark));
 };
-const lifeMark = (mode) =>
-  mode.elementary
+const lifeMark = (variant) =>
+  variant.elementary
     ? ELEMENTARY_MARK
-    : mode.loops
+    : variant.loops
       ? LOOPS_MARK
-      : mode.margolus
-        ? (BLOCKS[blocksGrid(mode)] ?? STARS[blocksGrid(mode)]).mark
-        : mode.plane
-          ? PLANE_MARKS[mode.plane]
-          : (SURFACE_CELLS[mode.surface] ?? '▲');
+      : variant.margolus
+        ? (BLOCKS[blocksGrid(variant)] ?? STARS[blocksGrid(variant)]).mark
+        : variant.plane
+          ? PLANE_MARKS[variant.plane]
+          : (SURFACE_CELLS[variant.surface] ?? '▲');
 // Life's colours, apart from its rule (which they do not change): 1, alive or dead (and a Generations
 // rule's dying stages), or 2 to 6 civilisations (k= in a link). The engine reads them as the rule's tail
 // ("/Immigration", "/Colours4", see lifeRuleNow)
@@ -25751,15 +25774,15 @@ let lifeTeams = 1,
   newcomer = false; // the teams: a new figure's the nearest to those before (see teamsOn); teamsMix: Mixed, the colours mixed in one place (see huntParts)
 // Mixed as it counts in a zone: on, colours to mix, and a zone of cells at random (Spark … Jungle, Wild, Formula): the others lay
 // each colour's own picture or part (Icon, Punk, Emoji, Famous, Anywhere, Realm, Mirror), Mixed greyed there, kept for later
-const mixable = (zone, mode = MODES[tabMode()], start = plane.start) =>
-  !!mode.life &&
-  !mode.loops &&
-  (start === 'digits' || // (by the mode, not its game: a link opened cold, before its game, mixes as the page did)
+const mixable = (zone, variant = VARIANTS[tabVariant()], start = plane.start) =>
+  !!variant.life &&
+  !variant.loops &&
+  (start === 'digits' || // (by the variant, not its game: a link opened cold, before its game, mixes as the page did)
     (start === 'random' && (zoneRadius(zone) > 0 || zone === 'full' || zone === 'numbers'))); // (a hunt's zones: a soup's start)
 const teamsMixed = (zone = hunt.zone) => teamsMix && lifeTeams > 1 && mixable(zone);
 // Newcomer, a switch: the teams below's start (Trio's: Duel's, laid as Duel lays them), the last colour none at first, born only
 // of a tie between the others (the colour missing, see colourMissing); where a start lays teams (a soup's zones, Text); at
-// mode w and size, its figure made only when its teams' fit is asked (a mesh: the graph's search asks every mode round)
+// variant w and size, its figure made only when its teams' fit is asked (a mesh: the graph's search asks every variant round)
 const newcomerCan = (teams = lifeTeams, w, size = null, start = plane.start, rule = $('lifeRule').value) =>
   teams > 2 &&
   colourMissing(teams, rule) &&
@@ -25770,7 +25793,7 @@ const newcomerWhere = (teams) =>
 // Mixed's greyed words (see mixable)
 const MIXED_WHERE =
   "Not in Solo, Replicators, Text or Draw, nor in the hunt zones that lay each colour's own picture or part (Icon, Punk, Emoji, Famous, Anywhere, Realm, Opposite).";
-const newcomerOn = () => newcomer && newcomerCan(lifeTeams, tabMode());
+const newcomerOn = () => newcomer && newcomerCan(lifeTeams, tabVariant());
 // a rule that turns an empty block full (Critters, Tron): every other generation shown negative, its dead cells alive (as
 // Margolus showed Critters: its picture then the same way round, its cells as particles that keep their count)
 const negative = (L) => !!L.margolus?.flips && mod(stepShown, 2) === 1; // (its past's too: a phase by its generation, below 0 as above)
@@ -25845,25 +25868,25 @@ const solidCounts = (surface) => {
 // at most (Faders' 25: ten colours)
 const teamsStatesFit = (k, rule = $('lifeRule').value) => k * ((parseRule(ruleBody(rule))?.C ?? 2) - 1) <= 255;
 const TEAMS_STATES_WHERE = "So many teams, each with this rule's dying states, pass a cell's 255 states.";
-function teamsFit(k, f = pickedFigure(tabMode()), rule = $('lifeRule').value) {
-  // f: the figure, its mode and its surface (a torus's sizes)
-  const { mode, g } = f;
+function teamsFit(k, f = pickedFigure(tabVariant()), rule = $('lifeRule').value) {
+  // f: the figure, its variant and its surface (a torus's sizes)
+  const { variant, g } = f;
   if (k === 1) return true;
   if (!teamsFair(k, f)) return false; // (its parts not alike: greyed, see teamsFair)
   if (!teamsStatesFit(k, rule)) return false;
-  if (mode.plane) {
+  if (variant.plane) {
     return true; // its blocks (rounded down when they do not divide it, as on a torus); with dead edges, its halves, quarters, or slices round the middle (see planeSlices)
   }
-  if (solidCounts(mode.surface)) return solidCounts(mode.surface).includes(k);
+  if (solidCounts(variant.surface)) return solidCounts(variant.surface).includes(k);
   if (g?.mobius || g?.globe || g?.rosette) return true; // a Möbius strip: in turn along it (see huntParts); a globe: its quarters (see teamsFairOwn); a rosette surface: its lunes, or its discs (see rosetteParts)
   if (g?.nu) return true; // a torus: its blocks (see torusBlocks), its columns made for its colours (see ringColumns), its rows judged by teamsFairOwn; not the torus in view's columns (before v0.3.94: Rhombitri at 5, 8 to 12 colours offered or not by the count picked)
   return false;
 }
-// the colours mode w takes (at size, or the one it opens at) coming from a setup with `from`: as many, else the nearest count
+// the colours variant w takes (at size, or the one it opens at) coming from a setup with `from`: as many, else the nearest count
 // it places (colours still, never Solo; fewer on a tie; none: Solo, Klein Dual 16 at 4 and 24); Solo, Solo; blocks and
 // Elementary one. A click's, one rule: the app's (fitTeams) and the menu graph's edges (choicesAt)
 const teamsOn = (w, from, size = null, rule = $('lifeRule').value) => {
-  const m = MODES[w];
+  const m = VARIANTS[w];
   if (!m.life) return from; // (a walk: Life's colours kept for the next)
   if (from === 1 || m.margolus || m.elementary) return 1;
   const f = pickedFigure(w, size),
@@ -25874,7 +25897,7 @@ const teamsOn = (w, from, size = null, rule = $('lifeRule').value) => {
   return k === Infinity ? 1 : k;
 };
 const fitTeams = () => {
-  lifeTeams = teamsOn(tabMode(), lifeTeams);
+  lifeTeams = teamsOn(tabVariant(), lifeTeams);
 };
 const teamBlock = (k, newcomer = false, cs = k === 1 ? [LIFE_ALIVE] : LIFE_COLOURS.slice(0, k)) => {
   // (its colours squares all, as many a row as their blocks, else as near a square: 5, 3 and 2, a hole; newcomer: its last one's outline only, Newcomer's; cs: other colours, Earth's)
@@ -25908,27 +25931,27 @@ const figureTurns = (kind) =>
 // solid; never on a grid that never repeats, a disc: no symmetry halves its parts, a rosette's a spiral's (Flower 6's 12 colours 63 to
 // 65 cells, Penrose's 10, 72 to 77, before v0.3.90); nor on a sheet or a globe, its blocks, slices or quarters made for K itself
 // (Klein Type 15's 10, its twist odd, before v0.3.94); nor on a solid, its parts its own colourings', see solidCounts)
-const teamsFair = (K, f = pickedFigure(tabMode())) => {
-  const { mode, g } = f;
+const teamsFair = (K, f = pickedFigure(tabVariant())) => {
+  const { variant, g } = f;
   return (
     teamsFairOwn(K, f) ||
     (!g?.torus &&
       !g?.globe &&
-      !APERIODIC[mode?.plane] &&
-      !solidCounts(mode?.surface) &&
+      !APERIODIC[variant?.plane] &&
+      !solidCounts(variant?.surface) &&
       (([8, 10, 12].includes(K) && teamsFairOwn(K / 2, f)) || (K === 9 && teamsFairOwn(3, f) && !teamsFairOwn(6, f))))
   );
 };
-// The figure picked, its colours judged on: the tab's mode and its surface's frame at the size picked (see surfaceFrame;
+// The figure picked, its colours judged on: the tab's variant and its surface's frame at the size picked (see surfaceFrame;
 // none on the plane), known by construction, never the walk shown's (another while this one is made, none at first)
-// (another mode's, w: as its button would open it, at size or the one it opens at, see figureSize)
+// (another variant's, w: as its button would open it, at size or the one it opens at, see figureSize)
 const pickedFigure = (w, size = null) => {
-  const mode = MODES[w],
-    kind = !mode.plane && surfaceOf(mode);
-  return { mode, g: kind && SURFACES[kind] ? surfaceFrame(kind, size ?? figureSize(w)) : null };
+  const variant = VARIANTS[w],
+    kind = !variant.plane && surfaceOf(variant);
+  return { variant, g: kind && SURFACES[kind] ? surfaceFrame(kind, size ?? figureSize(w)) : null };
 };
 // A surface's frame at a size, all its teams are judged on (teamsFit, teamsFairOwn, torusBlocks): what it is and a torus's
-// rows, without its tiles (a mesh of a million cells built in 1.5 s for each mode next to it, by a greyed tile's search, see
+// rows, without its tiles (a mesh of a million cells built in 1.5 s for each variant next to it, by a greyed tile's search, see
 // choicesAt); the flags its mesh carries the same (see finishTorus, kleinMesh, mobiusMesh, globeMesh, rosetteSphereMesh)
 function surfaceFrame(kind, size) {
   if (kind === 'globe') return { globe: true };
@@ -25950,14 +25973,16 @@ function surfaceFrame(kind, size) {
   const [nv, nu] = torusDims(kind, size);
   return { torus: true, klein: KLEIN_BOTTLES.some(([k]) => k === kind), nu, nv };
 }
-// a surface mode's size: the one in the menu where the menu holds its surface's sizes (the tab's, once filled), else the one
-// it opens at (see sizeAt: another mode's, or the tab's a moment after it changed, its menu still the surface before's)
-const figureSize = (w) => menuSizeOf(w) ?? sizeAt(surfaceOf(MODES[w]), MODES[w].initial, MODES[w]);
+// a surface variant's size: the one in the menu where the menu holds its surface's sizes (the tab's, once filled), else the one
+// it opens at (see sizeAt: another variant's, or the tab's a moment after it changed, its menu still the surface before's)
+const figureSize = (w) => menuSizeOf(w) ?? sizeAt(surfaceOf(VARIANTS[w]), VARIANTS[w].initial, VARIANTS[w]);
 // the tab's size where the menu holds its surface's sizes (filled for it), else none (see figureSize)
 const menuSizeOf = (w) =>
-  w === tabMode() && $('gridSizeField').dataset.kind?.split(' ')[0] === surfaceOf(MODES[w]) ? gridSizePlayed() : null;
-const teamsFairOwn = (K, { mode, g } = pickedFigure(tabMode())) => {
-  const kind = mode?.plane;
+  w === tabVariant() && $('gridSizeField').dataset.kind?.split(' ')[0] === surfaceOf(VARIANTS[w])
+    ? gridSizePlayed()
+    : null;
+const teamsFairOwn = (K, { variant, g } = pickedFigure(tabVariant())) => {
+  const kind = variant?.plane;
   if (K === 1) return true;
   if (kind && (planeTorus(kind) || figureTurns(kind) === 1)) return true; // (a torus: blocks of its side, see colourW, all alike; no turns, a hat's, a spectre's or a pinwheel's circle, as many cells each, see planeSlices)
   if (kind) {
@@ -25967,8 +25992,10 @@ const teamsFairOwn = (K, { mode, g } = pickedFigure(tabMode())) => {
       mirror = !APERIODIC[kind] && canMirror(kind);
     return n > 1 && (n % K === 0 || (mirror && K === 2 * n));
   }
-  if (solidCounts(mode?.surface))
-    return solidCounts(mode.surface).includes(K) && (!SURFACES[mode.surface]?.chiral || turnsAlike(mode.surface, K));
+  if (solidCounts(variant?.surface))
+    return (
+      solidCounts(variant.surface).includes(K) && (!SURFACES[variant.surface]?.chiral || turnsAlike(variant.surface, K))
+    );
   if (g?.globe) return true; // (a globe: each count its own, its bands all multiples of it, see globeMesh)
   if (g?.rosette) return true; // (a rosette surface: its lunes dealt out alike, or its two discs, see rosetteParts)
   if (g?.mobius) return true;
@@ -25996,7 +26023,7 @@ const colourMissing = (K, rule = $('lifeRule').value) => {
 };
 // Teams, Life's and a walk's alike (its own: see walkTeamTiles)
 function renderTeams() {
-  const w = tabMode();
+  const w = tabVariant();
   if (walkTeamsHere(w)) {
     $('colourBlocks').replaceChildren(...walkTeamTiles());
     return;
@@ -26044,7 +26071,7 @@ function renderTeams() {
       byDefault: 'off',
       on: teamsMixed(),
       whyNot: ({ w, lifeTeams: teams = lifeTeams, start = plane.start, zone = hunt.zone }) =>
-        teams > 1 && mixable(zone, MODES[w], start) ? '' : MIXED_WHERE,
+        teams > 1 && mixable(zone, VARIANTS[w], start) ? '' : MIXED_WHERE,
       click: () => {
         teamsMix = !teamsMix;
         compute();
@@ -26377,7 +26404,7 @@ const replayPictures = () =>
 function blockTutorial(entry, to) {
   // on a small grid of its own, the grid picked's (not the one built: picked again, its rule and blocks may not be): the
   // smallest with blocks in each phase (the triangles' at 6: no whole hexagon)
-  const kind = planeKind(blocksGrid(MODES[tabMode()])),
+  const kind = planeKind(blocksGrid(VARIANTS[tabVariant()])),
     R = parseRule(entry.rule),
     stars = !!R?.stars,
     ising = !!R?.ising;
@@ -26595,10 +26622,10 @@ function blockTutorial(entry, to) {
 // what a rule's page shows: the grid, the rule, its colours and edges; blocks, their max period too (the grid's size, the
 // start's live cells, its return once found)
 const tutorialKey = (entry) =>
-  `${tabMode()} ${entry.rule} ${entry.name} ${lifeTeams} ${plane.torus}` +
+  `${tabVariant()} ${entry.rule} ${entry.name} ${lifeTeams} ${plane.torus}` +
   (walk.life?.margolus ? ` ${walk.life.seed.length} ${walk.life.seedAlive} ${walk.life.stable?.P}` : '');
 // a tiling of several shapes: a bubble each (the cell and its neighbours, its name and how many), the one shown lit
-const tutShape = { mode: null, at: 0 },
+const tutShape = { variant: null, at: 0 },
   tutLetters = { on: false }; // (Letters: their page instead of the rule's, see ruleTutorial)
 function shapeBubbles(kinds, c, corners, count, shapeOf, own) {
   // own: the tile's own name (a hat, a spectre)
@@ -26736,7 +26763,7 @@ function ruleTutorial(entry) {
     loopTutorial(entry);
     return;
   }
-  const mark = lifeMark(MODES[tabMode()]),
+  const mark = lifeMark(VARIANTS[tabVariant()]),
     kind = PLANE_OF_MARK[mark] ?? 'tri';
   const W = APERIODIC[kind] ? 16 : 8,
     rule = parseRule(entry.rule); // (one that never repeats: room for all its ways)
@@ -26778,7 +26805,7 @@ function ruleTutorial(entry) {
     if (!shapes.has(k) || far(t) < far(shapes.get(k))) shapes.set(k, t);
   }
   const kinds = [...shapes.values()].sort((u, v) => count(v) - count(u));
-  if (tutShape.mode !== tabMode()) Object.assign(tutShape, { mode: tabMode(), at: 0 });
+  if (tutShape.variant !== tabVariant()) Object.assign(tutShape, { variant: tabVariant(), at: 0 });
   const c = kinds[Math.min(tutShape.at, kinds.length - 1)];
   const mid = (t) => meanPoint(corners(t)),
     o = mid(c);
@@ -26983,9 +27010,9 @@ function ruleTutorial(entry) {
 const walkTutorialFits = (w) =>
   NAV[w]?.[0] === 'Ant' ||
   (NAV[w]?.[0] === 'Walk' &&
-    (MODES[w].lattice === 'surface'
-      ? !!(MODES[w].turns || MODES[w].net)
-      : ['square', 'hex', 'tri', 'cairo'].includes(MODES[w].lattice)));
+    (VARIANTS[w].lattice === 'surface'
+      ? !!(VARIANTS[w].turns || VARIANTS[w].net)
+      : ['square', 'hex', 'tri', 'cairo'].includes(VARIANTS[w].lattice)));
 // a 2D walk's cell round its middle
 function walkCell(lattice, [x, y]) {
   if (lattice === 'square')
@@ -27012,43 +27039,43 @@ function walkCell(lattice, [x, y]) {
 }
 // a surface walk's flat twin: the plane's walk on the same network, on cells or along the lines as it (How it works drawn on it)
 const flatTwin = (w) =>
-  Object.keys(MODES).find(
+  Object.keys(VARIANTS).find(
     (v) =>
       NAV[v]?.[0] === 'Walk' &&
-      MODES[v].lattice !== 'surface' &&
-      MODES[v].net === MODES[w].net &&
-      !MODES[v].cells === !!MODES[w].edges,
+      VARIANTS[v].lattice !== 'surface' &&
+      VARIANTS[v].net === VARIANTS[w].net &&
+      !VARIANTS[v].cells === !!VARIANTS[w].edges,
   );
 // the figures: { d, caption, at (the way in, then the step), here (where it steps from), next (dashed), ends, cells, dashed (the step) };
 // a walk by a rule drawn by its words, then its straight step (S: the way in); words given: one figure each (a creature's, see
 // creatureFigures; a parity's at an odd digit)
 function walkFigures(w, given = null) {
-  if (MODES[w].lattice === 'surface') return walkFigures(flatTwin(w), given ?? walkCommandsOf(w)); // (a surface: as its flat tiling, the same words)
-  const mode = MODES[w],
-    N = WALK_NETS[mode.net];
+  if (VARIANTS[w].lattice === 'surface') return walkFigures(flatTwin(w), given ?? walkCommandsOf(w)); // (a surface: as its flat tiling, the same words)
+  const variant = VARIANTS[w],
+    N = WALK_NETS[variant.net];
   const ruled = N && [...(given ?? walkCommandsOf(w)), N.straight],
     S = ruled ? ruled.length - 1 : 0;
-  const digits = [...Array(ruled ? S : mode.base).keys()],
+  const digits = [...Array(ruled ? S : variant.base).keys()],
     words = {};
-  for (const [, d, t] of mode.rule.matchAll(/<b>(\d+)<\/b>\s*([^<]*)/g)) words[d] = t.replace(/[,\s]+(or\s*)?$/, '');
+  for (const [, d, t] of variant.rule.matchAll(/<b>(\d+)<\/b>\s*([^<]*)/g)) words[d] = t.replace(/[,\s]+(or\s*)?$/, '');
   if (ruled)
     ruled.slice(0, S).forEach((t, d) => {
       words[d] = COMMANDS[t].short;
     }); // (by its words: theirs, a surface's too)
   const start = [[0, 0]];
   const path = (seq) => {
-    const step = ruled ? commandStepper(mode.net, ruled) : STEPPERS[w]();
+    const step = ruled ? commandStepper(variant.net, ruled) : STEPPERS[w]();
     return [...start, ...seq.map((g) => step(g).slice(1, 3))];
   };
   const spiral = /Spiral$|^spiral$/.test(w),
-    cells = mode.cells || spiral;
+    cells = variant.cells || spiral;
   const figure = (d, into, after = [], caption = words[d]) => {
     const at = path([...into, d, ...after]),
       here = start.length - 1 + into.length;
     const ends = spiral ? [] : digits.map((g) => path([...into, g]).at(-1)); // (the ways on: each digit's end)
     const drawn = !cells
       ? []
-      : [...new Map([...at, ...ends].map((p) => [pointKey(...p), walkCell(mode.lattice, p)])).values()];
+      : [...new Map([...at, ...ends].map((p) => [pointKey(...p), walkCell(variant.lattice, p)])).values()];
     return {
       d,
       caption,
@@ -27078,7 +27105,7 @@ function walkFigures(w, given = null) {
 // A creature's: an ant's (a turmite's), a figure per state and colour of its cell: the turn of the walk it goes through the
 // cells with (by the digits, a 1 the other way), its cell's colour then the one it leaves, its state next; a worm's, its 5 turns at a corner (its rule: one for each new corner, in turn)
 function creatureFigures(w) {
-  const m = MODES[w];
+  const m = VARIANTS[w];
   if (m.worm) {
     const figs = walkFigures('walkTrianglesTurtleEdges', surfaceCommands('hex'));
     return Object.entries(WORM_TURNS).map(([t, d]) => ({
@@ -27499,7 +27526,7 @@ function battleTutorial(w) {
     grid = { 4: 'square', 3: 'tri', 6: 'hex' }[g?.sides];
   if (!battleOn()) return '';
   const title = `<h2>Battle: ${BATTLE_RULES[battleRuleInUse(w)][1]}</h2>`,
-    cells = !MODES[w].edges; // (every battle's; its cases drawn on squares, triangles and hexagons)
+    cells = !VARIANTS[w].edges; // (every battle's; its cases drawn on squares, triangles and hexagons)
   const loop = grid && { pre: BATTLE_LOOP_AT[grid], moves: BATTLE_LOOP[grid] };
   const figs = !grid
     ? []
@@ -27534,7 +27561,7 @@ function walkTutorial(w) {
     b.classList.add('switch');
   }
   $('ruleTuto').dataset.shown = w;
-  const mode = MODES[w],
+  const variant = VARIANTS[w],
     creature = NAV[w][0] === 'Ant',
     figs = creature ? creatureFigures(w) : walkFigures(w),
     cellsOn = (f, p) =>
@@ -27574,53 +27601,54 @@ function walkTutorial(w) {
       `${f.ends.map((p) => dot(p, 'tut-end')).join('')}${dot(from(f), 'tut-here')}${still ? '' : dot(to, 'tut-to')}</svg>`
     );
   };
-  const how = mode.lattice === 'surface' ? `, turning as on its flat ${mode.edges ? "tiling's edges" : 'tiling'}` : '';
+  const how =
+    variant.lattice === 'surface' ? `, turning as on its flat ${variant.edges ? "tiling's edges" : 'tiling'}` : '';
   $('ruleTuto').innerHTML =
     `<div class="tut-body">` +
-    `<h2>${ruleTitleOf(w)}</h2><p>${creature ? `${mode.rule[0].toUpperCase()}${mode.rule.slice(1)}` : `The number read digit by digit in base ${mode.base}, each digit a step ${mode.rule.replace(/:.*/, '')}${how}`}` +
+    `<h2>${ruleTitleOf(w)}</h2><p>${creature ? `${variant.rule[0].toUpperCase()}${variant.rule.slice(1)}` : `The number read digit by digit in base ${variant.base}, each digit a step ${variant.rule.replace(/:.*/, '')}${how}`}` +
     `${figs.some((f) => f.here) ? '; the way it came in grey' : ''}${figs.some((f) => f.next?.length > 1) ? ', the step after dashed' : ''}.</p>` +
     `<div class="tut-row tut-walk">${figs.map((f) => `<figure><div>${fig(f)}</div><figcaption>${f.label ?? `<b>${f.d}</b>`} ${f.caption ?? ''}</figcaption></figure>`).join('')}</div>${commandsReminder()}${battleTutorial(w)}</div>`;
   $('ruleTuto').prepend(tutTools({ replay: () => walkTutorial(w), close: () => ruleTutorial(null) })); // (its steps appearing again)
 }
 const walkTutorialToggle = () =>
-  $('ruleTuto').hidden || creditsShown() ? walkTutorial(tabMode()) : ruleTutorial(null);
+  $('ruleTuto').hidden || creditsShown() ? walkTutorial(tabVariant()) : ruleTutorial(null);
 // a rule's words without its name when they open with it ("Maze, grows corridors": grows corridors), else as they are (Byl's
 // loop, Fredkin's Replicator, the Ising model)
 const unnamed = (words, name) =>
   words.startsWith(name) && /^(?:[,:]|\s\(|$)/.test(words.slice(name.length))
     ? words.slice(name.length).replace(/^[,:]?\s*/, '')
     : words;
-// a Life mode's rules' cards: its shape's, those its grid takes (a block rule's blocks, a loop's), once a mode
+// a Life variant's rules' cards: its shape's, those its grid takes (a block rule's blocks, a loop's), once a variant
 const lifeRulesMemo = remember('lifeRulesMemo', {}),
-  rulesForMemo = remember('rulesForMemo', {}); // (a mode's rules' cards, once a mode: see choicesAt)
+  rulesForMemo = remember('rulesForMemo', {}); // (a variant's rules' cards, once a variant: see choicesAt)
 const lifeRulesListed = (w) =>
   (lifeRulesMemo[w] ??= rulesOf('life').filter((r) => {
-    const mode = MODES[w];
+    const variant = VARIANTS[w];
     return (
-      r.tiling.includes(lifeMark(mode)) &&
-      (!mode.margolus || blocksFit(parseRule(r.rule), mode)) &&
-      (!mode.loops || loopFits(parseRule(r.rule), mode))
+      r.tiling.includes(lifeMark(variant)) &&
+      (!variant.margolus || blocksFit(parseRule(r.rule), variant)) &&
+      (!variant.loops || loopFits(parseRule(r.rule), variant))
     );
   }));
 let ruleTab = null; // Elementary's tab clicked and the rule then in use ({ tab, now }: kept while it is, see renderRuleSection)
 function renderRuleSection() {
-  const mode = MODES[tabMode()];
-  if (!mode.life) {
+  const variant = VARIANTS[tabVariant()];
+  if (!variant.life) {
     if (!creditsShown()) {
-      if (!$('ruleTuto').hidden && walkTutorialFits(tabMode())) walkTutorial(tabMode());
+      if (!$('ruleTuto').hidden && walkTutorialFits(tabVariant())) walkTutorial(tabVariant());
       else ruleTutorial(null);
     }
     return;
   } // (a walk's: it follows the walk; Credits stay)
-  const mark = lifeMark(mode),
+  const mark = lifeMark(variant),
     now = ruleBody($('lifeRule').value);
-  const listed = lifeRulesListed(tabMode()),
+  const listed = lifeRulesListed(tabVariant()),
     mine = listed.find((r) => r.rule === now);
   // Elementary's, in two tabs over How it works: Main, the known ones; Others, the rest (the rule in use's; one clicked, while that rule stays)
   const main = (r) => ELEMENTARY_MAIN.has(parseRule(r.rule).wolfram),
     tab = ruleTab?.now === now ? ruleTab.tab : mine && !main(mine) ? 'others' : 'main';
   $('ruleTabs').replaceChildren(
-    ...(mode.elementary
+    ...(variant.elementary
       ? [
           tileGroup(
             [
@@ -27648,16 +27676,16 @@ function renderRuleSection() {
         ]
       : []),
   );
-  const known = mode.elementary ? listed.filter((o) => main(o) === (tab === 'main')) : listed;
+  const known = variant.elementary ? listed.filter((o) => main(o) === (tab === 'main')) : listed;
   const yours = { rule: now, name: 'Custom rule' },
-    mineNot = !mine || (customOpen && !mode.loops); // (your own, for how a rule works; none for a loop: a table is not typed)
+    mineNot = !mine || (customOpen && !variant.loops); // (your own, for how a rule works; none for a loop: a table is not typed)
   const shown = mineNot ? yours : mine;
   if (!$('ruleTuto').hidden && !creditsShown() && $('ruleTuto').dataset.shown !== tutorialKey(shown))
     ruleTutorial(shown); // how a rule works follows the grid and the rule (Credits stay)
   $('ruleCards').replaceChildren(
     ...known.map((o, i) => {
       const picked = o.rule === now && !customOpen;
-      const bw = MODES[tabMode()].margolus && !carriesColours(parseRule(o.rule)); // (a block rule its cells carry no colour on: black and white)
+      const bw = VARIANTS[tabVariant()].margolus && !carriesColours(parseRule(o.rule)); // (a block rule its cells carry no colour on: black and white)
       const pick = () => {
         customOpen = false;
         if (o.rule === now) {
@@ -27679,7 +27707,7 @@ function renderRuleSection() {
             ruleTutorial(o);
           }
         }, // (its picture: how it works, picked first, as the walks')  // (the first: the shape's, see fitRuleToShape)
-        rule: ruleSpan(mode.loops ? loopCode(o.rule) : o.rule),
+        rule: ruleSpan(variant.loops ? loopCode(o.rule) : o.rule),
         detail: unnamed(o.about, o.name),
         click: pick,
         choice: `lifeRule:${o.rule}`,
@@ -27689,7 +27717,7 @@ function renderRuleSection() {
   // after them, your own: picked when the rule in use is none of them, or clicked (its states, births and survivals below); none for a loop
   $('watchRule').onclick = () => ruleTutorial(!$('ruleTuto').hidden && !creditsShown() ? null : shown); // (the rule in use: a card's, or your own)
   const howShown = (o) => !$('ruleTuto').hidden && $('ruleTuto').dataset.shown === tutorialKey(o); // (a card's picture again: closed)
-  if (!mode.loops)
+  if (!variant.loops)
     $('ruleCards').append(
       card({
         pic: pixelIcon('..o..,..o..,ooooo,..o..,..o..'),
@@ -27699,7 +27727,7 @@ function renderRuleSection() {
         rule: mineNot ? ruleSpan(now) : '',
         detail: mineNot
           ? 'your own'
-          : mode.elementary
+          : variant.elementary
             ? 'your own: W and its number, 0 to 255'
             : 'your own: its states, births and survivals',
         click: () => {
@@ -27709,7 +27737,7 @@ function renderRuleSection() {
       }),
     );
   document.querySelector('.rule-build').hidden = $('lifeCustomRow').hidden = !mineNot; // (its states and chips, its text: your own's only)
-  if (mode.margolus || mode.loops || mode.elementary) {
+  if (variant.margolus || variant.loops || variant.elementary) {
     document.querySelector('.rule-build').hidden = true;
     return;
   } // (a block rule, a table, Wolfram's: typed only, no births nor survivals)
@@ -27860,26 +27888,28 @@ const shapeRules = {}; // each shape's last rule, by its mark: back on a shape, 
 // else none of them) and its letters, if any (Callahan's hexagons, Hensel's squares on the plane; v: any). Not its counts: a
 // count past the grid's neighbours never happens there (B9 on squares plays as B), the rule as deterministic, kept as typed
 // from grid to grid
-function ruleFits(text, mode) {
+function ruleFits(text, variant) {
   const r = parseRule(text);
   if (!r) return false;
-  const kind = mode.elementary
+  const kind = variant.elementary
     ? !!r.elementary
-    : mode.margolus
-      ? blocksFit(r, mode)
-      : mode.loops
-        ? loopFits(r, mode)
+    : variant.margolus
+      ? blocksFit(r, variant)
+      : variant.loops
+        ? loopFits(r, variant)
         : !r.margolus && !r.loops && !r.elementary;
-  return kind && (!r.iso || r.iso === 'vertex' || (r.iso === 'hex' ? lifeMark(mode) === '⬡' : lifeMark(mode) === '■'));
+  return (
+    kind && (!r.iso || r.iso === 'vertex' || (r.iso === 'hex' ? lifeMark(variant) === '⬡' : lifeMark(variant) === '■'))
+  );
 }
 function fitRuleToShape() {
-  const w = tabMode(),
-    mode = MODES[w];
-  if (!mode.life) return;
+  const w = tabVariant(),
+    variant = VARIANTS[w];
+  if (!variant.life) return;
   // a rule known, even without its dying states (none with colours: B34/S123 is B34/S123/C3)
   const rule = $('lifeRule').value,
-    mark = lifeMark(mode);
-  if (ruleFittedTo === w && ruleFits(rule, mode)) {
+    mark = lifeMark(variant);
+  if (ruleFittedTo === w && ruleFits(rule, variant)) {
     shapeRules[mark] = rule;
     return;
   } // (fitted already, a link's as it is: if it fits the grid at all)
@@ -27891,22 +27921,22 @@ function fitRuleToShape() {
     $('lifeRule').value = fit;
   }
 }
-// the Life rule mode w plays from rule (see fitRuleToShape): kept where it fits, a rule typed (its letters, if any, this
+// the Life rule variant w plays from rule (see fitRuleToShape): kept where it fits, a rule typed (its letters, if any, this
 // shape's: Callahan's hexagons, Hensel's squares on the plane) or one for this shape; else this shape's last, else its first,
 // if this grid takes it (the loops' grids share a mark, not their rules); else as it is
 const ruleKeptAt = (rule, w) => {
   const now = rulesOf('life').find((r) => r.rule === rule || r.rule.replace(/\/C\d+$/, '') === rule);
-  return ruleFits(rule, MODES[w]) && (!now || now.tiling.includes(lifeMark(MODES[w])));
+  return ruleFits(rule, VARIANTS[w]) && (!now || now.tiling.includes(lifeMark(VARIANTS[w])));
 };
 const lifeRuleAt = (rule, w) =>
   ruleKeptAt(rule, w)
     ? rule
     : ([
-        shapeRules[lifeMark(MODES[w])],
+        shapeRules[lifeMark(VARIANTS[w])],
         ...rulesOf('life')
-          .filter((r) => r.tiling.includes(lifeMark(MODES[w])))
+          .filter((r) => r.tiling.includes(lifeMark(VARIANTS[w])))
           .map((r) => r.rule),
-      ].find((r) => r && ruleFits(r, MODES[w])) ?? rule);
+      ].find((r) => r && ruleFits(r, VARIANTS[w])) ?? rule);
 
 function lifeReset() {
   const L = walk.life;
@@ -28326,14 +28356,14 @@ function meshBlocks(g, kind, stars, four) {
 // alive and dead as long), so it runs back; its turns: each colour's squares, its sides: each square's 4
 // a block rule's blocks on a grid (Ising: its squares in turn): the plane's (see planeBlocks, meshIsing)
 let blocksMemo = null; // (the last grid's: its blocks the same whatever its start, 1 s at 2²⁰ cells)
-// a mode's surface, turned or not: one of its grid's block rules with its blocks there (any other mode: yes); not the rule
+// a variant's surface, turned or not: one of its grid's block rules with its blocks there (any other variant: yes); not the rule
 // now, fitted after (see fitRuleToShape), then to it
 const blocksTurn = (w, turned) =>
-  !MODES[w].margolus ||
+  !VARIANTS[w].margolus ||
   rulesOf('life').some(
     (r) =>
-      r.tiling.includes(lifeMark(MODES[w])) &&
-      blocksFit(parseRule(r.rule), MODES[w], shownSurface(MODES[w].surface, turned)),
+      r.tiling.includes(lifeMark(VARIANTS[w])) &&
+      blocksFit(parseRule(r.rule), VARIANTS[w], shownSurface(VARIANTS[w].surface, turned)),
   );
 // (a surface's, g: by its mesh, kept on it, see meshBlocks, meshIsing; null: they do not come round it)
 const surfaceBlocks = (g, kind, rule) =>
@@ -28354,9 +28384,9 @@ const ruleBlocks = (rule, kind, W, torus = planeTorus(kind), cols = planeColumns
 };
 // The sets of blocks that do not come round a surface (a rule's: Ising's squares in turn, its 4 phases, its stars, else its
 // blocks), at none of its sizes (see BLOCK_STEPS: its sizes those they come round at): a Klein bottle's checkerboard, a
-// Möbius strip's and a Klein bottle's triangles turned. Declared, no mesh built to know it (asked of every mode next to the
+// Möbius strip's and a Klein bottle's triangles turned. Declared, no mesh built to know it (asked of every variant next to the
 // one shown, by a greyed tile's search, see choicesAt; and a mesh made from another tab took that tab's colours: a torus of
-// squares judged with no rule till v0.4.1067); as the meshes say, each made for its own mode: tools/check.js's checkBlocksRound
+// squares judged with no rule till v0.4.1067); as the meshes say, each made for its own variant: tools/check.js's checkBlocksRound
 const BLOCKS_NOT_ROUND = {
   klein: ['ising'],
   mobiusTriTurned: ['blocks', 'stars'],
@@ -28365,9 +28395,9 @@ const BLOCKS_NOT_ROUND = {
 const blockSetName = (R) => (R.ising ? 'ising' : R.four ? 'four' : R.stars ? 'stars' : 'blocks');
 // a block rule on a grid: of its blocks' size (Ising, 4 phases: squares), on a surface (sp: its own, or turned) its blocks
 // coming round it
-const blocksFit = (R, mode, sp = mode.surface && surfaceOf(mode)) =>
+const blocksFit = (R, variant, sp = variant.surface && surfaceOf(variant)) =>
   !!R?.margolus &&
-  (R.ising || R.four ? blocksGrid(mode) === 'square' : R.k === (R.stars ? STARS : BLOCKS)[blocksGrid(mode)]?.k) &&
+  (R.ising || R.four ? blocksGrid(variant) === 'square' : R.k === (R.stars ? STARS : BLOCKS)[blocksGrid(variant)]?.k) &&
   !BLOCKS_NOT_ROUND[sp]?.includes(blockSetName(R));
 // flips: a rule that turns an empty block full (Critters, Tron), shown negative every other generation (see negative): a
 // cell's colour goes with the cells shown alive; keeps: each block as many cells shown alive after as before (the
@@ -29217,7 +29247,7 @@ const textSet = () => ({
   label: () => plane.text,
   source: `text ${plane.text} in ${plane.font}`,
 }); // (its source: the picture, its font too, see iconChoices' memo)
-// the grid in use, for the caches built on it (not its mode's name: Turned, another grid of the same mode): the plane's,
+// the grid in use, for the caches built on it (not its variant's name: Turned, another grid of the same variant): the plane's,
 // by its kind, side, torus and hexagon (see shaped); a surface's, its mesh, a number of its own
 let gridCount = 0;
 const gridKey = () =>
@@ -29254,7 +29284,8 @@ const iconIndex = (name, set = iconSet(hunt.zone)) => Math.max(0, set.names.inde
 const HUNT_GENERATIONS = [50000, 4000]; // a hunt's start played up to so many generations: in Solo, in colours (a battle)
 const DENSITY = [0.1, 0.7]; // a random start's density, drawn between these
 const density = () => DENSITY[0] + Math.random() * (DENSITY[1] - DENSITY[0]);
-const realmOnFaces = () => !!SOLID_SPOTS[MODES[walk.mode].surface] || !!HULL_SOLIDS[MODES[walk.mode].surface]; // (a solid: Realm its faces, see realmParts)
+const realmOnFaces = () =>
+  !!SOLID_SPOTS[VARIANTS[walk.variant].surface] || !!HULL_SOLIDS[VARIANTS[walk.variant].surface]; // (a solid: Realm its faces, see realmParts)
 const zoneRadius = (zone) => (zone.startsWith('radius') ? Number(zone.slice(6)) : 0);
 // Realm: on a solid, each colour's whole face, the one its patch is in the middle of (see patchSpots); none (greyed) where a
 // patch is on a corner or an edge (the stella's tips and hollows): a face cut.
@@ -29276,9 +29307,9 @@ function realmParts(K) {
     const own = parts.map((p) => p.filter(apart));
     return own.every((p) => p.length) ? own : null; // (a grid too small: greyed)
   }
-  const hull = hullColours(MODES[walk.mode].surface, K);
-  if (HULL_SOLIDS[MODES[walk.mode].surface]) return hull && hull.groups.map((gr) => hullFaceCells(gr[0])); // (a hull solid: each colour's first face, as the cube's, see hullColourings)
-  const surface = MODES[walk.mode].surface,
+  const hull = hullColours(VARIANTS[walk.variant].surface, K);
+  if (HULL_SOLIDS[VARIANTS[walk.variant].surface]) return hull && hull.groups.map((gr) => hullFaceCells(gr[0])); // (a hull solid: each colour's first face, as the cube's, see hullColourings)
+  const surface = VARIANTS[walk.variant].surface,
     g = walk.geo,
     L = walk.life,
     mids = FACE_MIDDLES[surface](),
@@ -29853,7 +29884,7 @@ function partPlaces(r, K, mirror, mixed) {
     }
     return parts.map((_, i) => lifePatch(r, middleCells(i, K))); // (a patch at each colour's spot on its disc, see patternFrame)
   }
-  const hull = hullColours(MODES[walk.mode].surface, K);
+  const hull = hullColours(VARIANTS[walk.variant].surface, K);
   if (hull) {
     // a hull solid (see hullColourings): Wild, a colour's faces its own (two opposite faces a colour: its first), the others' cells each to the nearest colour's face's middle; Mirror, its two faces; a zone, round each colour's first face's middle
     if (r) return hull.groups.map((_, i) => lifePatch(r, middleCells(i, K)));
@@ -29873,7 +29904,7 @@ function partPlaces(r, K, mirror, mixed) {
     }
     return parts;
   }
-  const surface = MODES[walk.mode].surface,
+  const surface = VARIANTS[walk.variant].surface,
     col = K === 1 ? null : colouring(surface, K, mirror && !r),
     up = (t) => unit(Array.from(g.cen.subarray(3 * t, 3 * t + 3)));
   // a cell by its face (the one its own middle faces most, see FACE_MIDDLES): faces dealt out whole, its face's colour;
@@ -29904,7 +29935,7 @@ function partPlaces(r, K, mirror, mixed) {
   return col.patch.map((i) => lifePatch(r, centreCells(col.items[i]))); // round the open cells nearest each spot
 }
 // the triangle faces of a face of the solid: 5 for a dodecahedron's pentagon, else 1
-const facesPer = () => (['dodeca', 'dodecaKite'].includes(MODES[walk.mode].surface) ? 5 : 1);
+const facesPer = () => (['dodeca', 'dodecaKite'].includes(VARIANTS[walk.variant].surface) ? 5 : 1);
 const zoneParts = (zone, K) =>
   zone === 'realm' ? (realmParts(K) ?? []) : huntParts(zoneRadius(zone), K, false, teamsMixed(zone));
 // The zone: each colour's part (see huntParts). On the plane, with a symmetry it defines the start: the
@@ -30037,10 +30068,10 @@ function huntPlan() {
 }
 const huntOn = () =>
   !!walk.life &&
-  !!MODES[tabMode()].life &&
+  !!VARIANTS[tabVariant()].life &&
   !walk.life.loops &&
   plane.start === 'random' &&
-  TEAM_COUNTS.includes(walk.life.colours); // (a Life mode's: not a walk's while the run before it still plays)
+  TEAM_COUNTS.includes(walk.life.colours); // (a Life variant's: not a walk's while the run before it still plays)
 // the zones that fit the grid: a radius whose patches would overlap, or patterns with none here, greyed
 function huntFits() {
   const K = lifeParts(),
@@ -30069,10 +30100,11 @@ function huntFits() {
           !walk.plane &&
             !walk.geo.torus &&
             K > 1 &&
-            (!!colouring(MODES[walk.mode].surface, K, true) || !!hullColours(MODES[walk.mode].surface, K)?.pairs),
+            (!!colouring(VARIANTS[walk.variant].surface, K, true) ||
+              !!hullColours(VARIANTS[walk.variant].surface, K)?.pairs),
         ]; // (a solid, two parts a colour)
       if (isIcon(zone)) return [zone, iconFits(iconSize(zone), iconSet(zone).P)];
-      if (zone === 'full' && hullColours(MODES[walk.mode].surface, K)) {
+      if (zone === 'full' && hullColours(VARIANTS[walk.variant].surface, K)) {
         const p = huntParts(0, K, false, teamsMixed(zone));
         return [zone, !peakHunt() && p.every((x) => x.length === p[0].length)];
       } // (a hull solid's Wild: its parts alike, else greyed)
@@ -30105,7 +30137,7 @@ const zoneGreyed = (zone) =>
 // blocks: the search for its return, whatever the start (see searchBack)
 function renderBack() {
   const L = walk.life;
-  if (!L?.margolus) return; // (its section shown by its mode, see compute)
+  if (!L?.margolus) return; // (its section shown by its variant, see compute)
   $('backBtn').innerHTML = L.stable
     ? `${icon('search')} Back to start at gen ${formatNumber(L.stable.P)}`
     : backSearch.life === L
@@ -30157,11 +30189,11 @@ function renderHunt() {
     setTile(b, {
       on: b.dataset.zone === hunt.zone,
       again: true,
-      at: walk.mode,
-      judgedAt: walk.mode,
+      at: walk.variant,
+      judgedAt: walk.variant,
       greyed: busy ? 'Not while a hunt runs.' : '',
-      whyNot: ({ w: v }) => (v === walk.mode && fits[b.dataset.zone] ? '' : zoneGreyed(b.dataset.zone)),
-    }); // (its room known on the grid built only: another mode's, not judged)  // (picked: a click draws another start)
+      whyNot: ({ w: v }) => (v === walk.variant && fits[b.dataset.zone] ? '' : zoneGreyed(b.dataset.zone)),
+    }); // (its room known on the grid built only: another variant's, not judged)  // (picked: a click draws another start)
     if (b.dataset.zone === 'custom') b.hidden = hunt.zone !== 'custom';
   }
   // one line under the button: what the zone has put on the grid, and (Life) what a hunt will try; how far it got while it
@@ -30423,8 +30455,8 @@ const triFace = (surface, K, i) =>
 const patternsOn = () => {
   // (by the teams laid, lifeParts: with Newcomer, one fewer than the colours, as patternPlace lays them)
   if (!walk.life) return false;
-  const m = MODES[walk.mode],
-    K = lifeParts(); // (the Life shown's own mode: another tab picked meanwhile, as Elementary, not built yet)
+  const m = VARIANTS[walk.variant],
+    K = lifeParts(); // (the Life shown's own variant: another tab picked meanwhile, as Elementary, not built yet)
   return (
     !!flatGrid() ||
     !!walk.geo?.torus ||
@@ -30443,7 +30475,7 @@ const cellKind = (g) =>
       ? 'kite'
       : ((g.hexagons ? 'hex' : { 3: 'tri', 5: 'cairo', 6: 'hex' }[g.sides]) ?? 'square')); // (a mesh's cells, as the plane's grids)
 const patternKind = () => {
-  const h = hullColours(MODES[walk.mode].surface, walk.life && lifeParts());
+  const h = hullColours(VARIANTS[walk.variant].surface, walk.life && lifeParts());
   return flatGrid()?.kind ?? (h && h.groups[0][0] >= h.squares && !walk.geo.tiling ? 'tri' : cellKind(walk.geo));
 }; // (a hull solid's: its first colour's face's, a square or a triangle)
 // a face's level way (its normal n: across it, square to the world's up; a face looking straight up or down, east) and the
@@ -30511,7 +30543,7 @@ function cellIndex(g) {
 // turned: q its level side, AB, BC or CA); on a hull solid's square, a solid of hexagons' or the cube's face, its face
 function patternPlace(i, K) {
   const g = walk.geo,
-    surface = MODES[walk.mode].surface; // (the walk shown's, as g)
+    surface = VARIANTS[walk.variant].surface; // (the walk shown's, as g)
   if (flatGrid()) return { on: 'plane' };
   if (g.torus) return { on: 'sheet' };
   const hull = hullColours(surface, K),
@@ -30904,7 +30936,7 @@ function sheetUnits(g, kind) {
     [f1, f2] = [d(uv, 1), d(uv, j)],
     D = e1[0] * e2[1] - e1[1] * e2[0];
   const k = Math.sqrt(polyArea(flat) / polyArea(planeCorners(kind, 0, 0))),
-    turn = (tilesTurn(surfaceOf(MODES[walk.mode])) * Math.PI) / 180; // (the walk shown's surface: g its, see patternFrame)
+    turn = (tilesTurn(surfaceOf(VARIANTS[walk.variant])) * Math.PI) / 180; // (the walk shown's surface: g its, see patternFrame)
   return (p) => {
     // (a length laid flat: its parts along the first tile's two sides there, the same parts of them in sheet units)
     const [x, y] = turnPoint(p, turn).map((c) => c * k),
@@ -38892,7 +38924,7 @@ function laidChoices(centred, any = false) {
     kind = patternKind(),
     rule = L.ruleText,
     [cols, rows] = TEAM_GRID[K];
-  const mine = !ruleCard(rule, tabMode());
+  const mine = !ruleCard(rule, tabVariant());
   if (onDisc()) return centredChoices(kind, K, rule, mine, any, centred);
   // (centred: a rectangle's room and its patterns' spans in its grid's lattice cells, as on that grid)
   const R = RECTS[kind],
@@ -39160,10 +39192,10 @@ function setLifeSeed(seed, how) {
  * ==============================================================================================
  *
  * A setup is a flat object of words, each saying what it holds, the same for the page link (#…), the Gallery in this
- * browser (localStorage), its JSON files and the code: its mode by its parts (mode, shape, tiling, walkKind, on, see
- * modeWords), then teams, playRule, maxSteps, gridSize, walkNumberA, popStart… (see setupVariant and getSetup)
+ * browser (localStorage), its JSON files and the code: its variant by its parts (variant, shape, tiling, walkKind, on, see
+ * variantWords), then teams, playRule, maxSteps, gridSize, walkNumberA, popStart… (see setupVariant and getSetup)
  * It only holds what determines the result. Display choices (colours, areas, grid, sky, camera,
- * zoom…), the speed and the current step are never saved: a link opens with the mode's default
+ * zoom…), the speed and the current step are never saved: a link opens with the variant's default
  * view (see DISPLAY_DEFAULTS). A
  * Life start does not depend on the number: it replaces the digits.
  */
@@ -39256,7 +39288,7 @@ const zonePop = () =>
   famousZone(hunt.zone) && plane.picks
     ? `${wordOfZone(hunt.zone)}.${plane.picks.join('.')}` // (Famous, Anywhere: its patterns, a hunt's too)
     : isIcon(lifeStart?.zone ?? '')
-      ? `${zoneWord()}.${plane.icons.map((i) => iconSet(lifeStart.zone).names[i]).join('.')}` // (the icons laid, see iconCells: never the game's colours counted, another mode's while one is built)
+      ? `${zoneWord()}.${plane.icons.map((i) => iconSet(lifeStart.zone).names[i]).join('.')}` // (the icons laid, see iconCells: never the game's colours counted, another variant's while one is built)
       : lifeStart?.zone === 'numbers'
         ? `${zoneWord()}.${plane.number}`
         : `${zoneWord()}.${plane.density}.${plane.seed}`; // (Formula: its number, formula.16/9)
@@ -39271,22 +39303,25 @@ const sameSetup = (a, b, apart = ['version']) =>
     (k) => apart.includes(k) || String(a[k] ?? '') === String(b[k] ?? ''),
   ); // (apart: the keys not compared)
 function getSetup() {
-  const w = tabMode(),
-    mode = MODES[w],
-    s = { ...modeWords(w), ...(readsDigits(w) ? { [mode.life ? 'popNumber' : 'walkNumberA']: formulaInUse } : {}) };
-  if (!mode.life || gensShown()) s.maxSteps = lengthAsked(); // (the length asked: digits, or generations)
-  if (mode.lattice === 'surface') s.gridSize = $('gridSizeField').value;
-  if (modeStarts() && startNo() > 1) s.walkStart = startNo();
-  if (torusTurned && TURNED[mode.surface]) s.gridTurned = 1;
-  if (mode.life) s.playRule = ruleBody($('lifeRule').value);
-  if (mode.life && !mode.margolus && lifeTeams > 1) s.teams = lifeTeams;
+  const w = tabVariant(),
+    variant = VARIANTS[w],
+    s = {
+      ...variantWords(w),
+      ...(readsDigits(w) ? { [variant.life ? 'popNumber' : 'walkNumberA']: formulaInUse } : {}),
+    };
+  if (!variant.life || gensShown()) s.maxSteps = lengthAsked(); // (the length asked: digits, or generations)
+  if (variant.lattice === 'surface') s.gridSize = $('gridSizeField').value;
+  if (variantStarts() && startNo() > 1) s.walkStart = startNo();
+  if (torusTurned && TURNED[variant.surface]) s.gridTurned = 1;
+  if (variant.life) s.playRule = ruleBody($('lifeRule').value);
+  if (variant.life && !variant.margolus && lifeTeams > 1) s.teams = lifeTeams;
   if (battleOn()) {
     // (a walk's Duel or Trio, as Life's: its teams; B's number, C's)
     s.teams = walkTeams;
     RIVALS.slice(0, walkTeams - 1).forEach((id) => {
       s[`walkNumber${id.slice(-1)}`] = formulaOf($(id).value).text ?? $(id).value;
     }); // (xb, xc…)
-    if (battleRuleInUse(tabMode())) s.battleRule = linkWord(BATTLE_RULES[battleRuleInUse(tabMode())][1]); // (the one played, by its name: landNoCollision; none: the first, Land edges 1)
+    if (battleRuleInUse(tabVariant())) s.battleRule = linkWord(BATTLE_RULES[battleRuleInUse(tabVariant())][1]); // (the one played, by its name: landNoCollision; none: the first, Land edges 1)
     if (startsWayNow() !== 'symmetric') s.battleStarts = startsWayNow(); // (its starts: centred, random, see STARTS_WAYS)
     if (startsWayNow() === 'random') s.battleDraw = battleSeed;
     if (startsOrder(walkTeams))
@@ -39294,29 +39329,29 @@ function getSetup() {
         .map((i) => String.fromCharCode(97 + i))
         .join(''); // (its starts' order: so=acb)
   }
-  if (mode.life && teamsMix && lifeTeams > 1) s.popMixed = 1;
-  if (mode.life && newcomerOn()) s.popNewcomer = 1; // (Newcomer)  // (Mixed, kept where its zone greys it: the other zones' fits by it, see huntFits)
-  if (mode.plane) {
+  if (variant.life && teamsMix && lifeTeams > 1) s.popMixed = 1;
+  if (variant.life && newcomerOn()) s.popNewcomer = 1; // (Newcomer)  // (Mixed, kept where its zone greys it: the other zones' fits by it, see huntFits)
+  if (variant.plane) {
     // the grid's side, dead edges (e=1), its start ("random.30.7", "draw" with p=, "digits"), its symmetry (y=)
-    if (!mode.elementary) s.gridSize = plane.side; // (Elementary's: none, see elementaryRows)
+    if (!variant.elementary) s.gridSize = plane.side; // (Elementary's: none, see elementaryRows)
     if (!plane.torus) s.gridWalls = 1;
-    const ol = outlineOf(MODES[w].plane);
-    if (ol !== outlineOf(MODES[w].plane, 'hex')) s.gridOutline = ol;
+    const ol = outlineOf(VARIANTS[w].plane);
+    if (ol !== outlineOf(VARIANTS[w].plane, 'hex')) s.gridOutline = ol;
     if (walk.plane && symmetryOf(walk.plane.kind) !== 'none') s.popSymmetry = symmetryOf(walk.plane.kind);
     if (plane.start === 'draw' && population.size) s.popCells = populationRle(population);
     if (spaceTimeOn()) s.popStacked = 1; // (Space-time)
   }
-  if (mode.life && !mode.loops)
+  if (variant.life && !variant.loops)
     Object.assign(
       s,
       popWords(plane.start === 'random' ? zonePop() : plane.start === 'text' ? `text.${plane.text}` : plane.start),
     ); // its start (a surface's no Draw)
-  if (mode.life && !mode.loops && plane.start === 'text' && plane.font !== 'sans') s.popFont = plane.font; // (its font)
-  if (mode.net && walkRuleOf(mode) !== firstWalkRule(mode)) s.playRule = walkRuleOf(mode); // (a walk's rule: none, its own)
-  if (mode.antOf) s.playRule = `${antByDigits ? 'digits ' : ''}${antRuleOf(w)}`; // ("digits 1R0 0L0": by the digits)
-  if (mode.worm) s.playRule = worm.byDigits ? 'digits' : worm.rule;
+  if (variant.life && !variant.loops && plane.start === 'text' && plane.font !== 'sans') s.popFont = plane.font; // (its font)
+  if (variant.net && walkRuleOf(variant) !== firstWalkRule(variant)) s.playRule = walkRuleOf(variant); // (a walk's rule: none, its own)
+  if (variant.antOf) s.playRule = `${antByDigits ? 'digits ' : ''}${antRuleOf(w)}`; // ("digits 1R0 0L0": by the digits)
+  if (variant.worm) s.playRule = worm.byDigits ? 'digits' : worm.rule;
   if (championCode) s.popFound = championCode;
-  if (walk.mode === w && stepShown !== (lifeTime() ? 0 : firstShown())) s.step = stepShown; // (the step or generation shown, when not the one it opens at)
+  if (walk.variant === w && stepShown !== (lifeTime() ? 0 : firstShown())) s.step = stepShown; // (the step or generation shown, when not the one it opens at)
   s.version = setupFrom && sameSetup(setupFrom.setup, s, ['version', 'step']) ? setupFrom.v : VERSION; // (last: the version it was made with, see setupFrom)
   return s;
 }
@@ -39338,7 +39373,7 @@ function applySetup(s) {
     pickNumber(formulaInUse, w);
   }
   if (s.maxSteps !== undefined) lengthPicked = Number(s.maxSteps);
-  walkTeams = !MODES[w].life && TEAM_COUNTS.includes(Number(s.teams)) ? Number(s.teams) : 1; // (a walk's battle, if its surface allows it at its size: see battleOn)
+  walkTeams = !VARIANTS[w].life && TEAM_COUNTS.includes(Number(s.teams)) ? Number(s.teams) : 1; // (a walk's battle, if its surface allows it at its size: see battleOn)
   const ruled = BATTLE_RULES.findIndex(([, name]) => linkWord(name) === s.battleRule);
   battleRule = walkTeams > 1 && ruled > 0 ? ruled : 0; // (none: the first, Land edges 1)
   battleStartsWay = STARTS_WAYS.some(([way]) => way === s.battleStarts) ? s.battleStarts : 'symmetric';
@@ -39347,31 +39382,31 @@ function applySetup(s) {
   RIVALS.forEach((id, j) => {
     $(id).value = s[`walkNumber${id.slice(-1)}`] ?? RIVAL_FIRSTS[j];
   }); // (one the link gives not: its number at first)
-  set('mode', w);
+  set('variant', w);
   $('startNo').value = s.walkStart ?? 1;
   torusTurned = Number(s.gridTurned) === 1;
-  if (MODES[w].surface) {
-    const kind = surfaceOf(MODES[w]);
-    fillGridSizes(kind, MODES[w].initial);
+  if (VARIANTS[w].surface) {
+    const kind = surfaceOf(VARIANTS[w]);
+    fillGridSizes(kind, VARIANTS[w].initial);
     if (s.gridSize !== undefined) {
       selectSize(kind, linkSize(kind, s.gridSize));
       seek(kind);
     }
   }
-  if (s.playRule && MODES[w].worm) {
+  if (s.playRule && VARIANTS[w].worm) {
     worm.byDigits = s.playRule === 'digits';
     if (!worm.byDigits && wormRuleOf(s.playRule)) worm.rule = wormRuleOf(s.playRule).join(' ');
-  } else if (s.playRule && MODES[w].antOf) {
+  } else if (s.playRule && VARIANTS[w].antOf) {
     antByDigits = s.playRule.startsWith('digits');
     const T = antRuleRead(w, antByDigits ? s.playRule.slice(6).trim() : s.playRule);
     if (T) antRules[w] = T.text;
-  } else if (MODES[w].net) {
-    const m = MODES[w],
+  } else if (VARIANTS[w].net) {
+    const m = VARIANTS[w],
       commands = s.playRule && walkCommandsOf(w, s.playRule);
     walkRules[walkKey(m)] = commands ? ruleOfCommands(commands) : firstWalkRule(m);
-  } else if (s.playRule || MODES[w].life) {
+  } else if (s.playRule || VARIANTS[w].life) {
     // (Life: its size and start without a rule too, the grid's first then)
-    if (MODES[w].plane) planeFromSetup(s);
+    if (VARIANTS[w].plane) planeFromSetup(s);
     else startFromSetup(s); // (a surface's)
     lifeTeams = Number(s.teams) || 1;
     applyDefaults('lifeTeams'); // (Trail: see DISPLAY_DEFAULTS)
@@ -39382,7 +39417,7 @@ function applySetup(s) {
       $('lifeRule').value = ruleBody(s.playRule);
     } // a link's rule as it is
   }
-  // the display is not part of a setup: it takes the defaults of the walk mode's tab, when the tab
+  // the display is not part of a setup: it takes the defaults of the walk variant's tab, when the tab
   // changes (as picking a walk does); within a tab, what was chosen stays
   if (modeTabOf() !== displayTab) displayDefaults();
   $('perspective').checked = defaultOf('perspective', w);
@@ -39425,17 +39460,17 @@ const whenBuilt = () => new Promise((ok) => builtWaiters.push(ok));
 /* ---- 10.3 The page link ------------------------------------------------------------------- */
 // The page link always holds the current setup (#mode=walk&shape=squares&walk=turtle&on=edges&x=pi&…), for bookmarks and
 // sharing. Readable links: x=(1+sqrt(5))/2 — formulas and rules keep / + ^ , : as they are
-// A mode in a link: no name of its own, its parts as the menu says them (see NAV), each a word: mode (its tab: walk, life,
+// A variant in a link: no name of its own, its parts as the menu says them (see NAV), each a word: variant (its tab: walk, life,
 // ant…), shape, tiling (a shape with tilings: a torus of hexagons), walk (a walk's kind: turtle, spiral…), on (edges or
-// cells); a setup holds its mode's key (w), the link its words. A word: its menu's name in one word, no accent
+// cells); a setup holds its variant's key (w), the link its words. A word: its menu's name in one word, no accent
 // (Möbius strip: mobiusStrip; Kis checker: kisChecker)
-const MODE_WORDS = ['mode', 'shape', 'tiling', 'walkKind', 'on'];
-const modeWordsMemo = remember('modeWordsMemo', {}); // (once a mode: the menu's tables fixed)
-const modeWords = (w) => {
-  if (modeWordsMemo[w]) return modeWordsMemo[w];
+const VARIANT_WORDS = ['mode', 'shape', 'tiling', 'walkKind', 'on'];
+const variantWordsMemo = remember('variantWordsMemo', {}); // (once a variant: the menu's tables fixed)
+const variantWords = (w) => {
+  if (variantWordsMemo[w]) return variantWordsMemo[w];
   const [kind, , shape, rule, side] = NAV[w],
     fam = familyOf(w);
-  return (modeWordsMemo[w] = {
+  return (variantWordsMemo[w] = {
     mode: menuWord(kind),
     shape: menuWord(shape),
     ...(fam ? { tiling: menuWord(tilingNameOf(w)) } : {}),
@@ -39444,16 +39479,16 @@ const modeWords = (w) => {
   });
 };
 // the mode a link's words say: the first of the menu with each word given (one left out: any)
-const modeOfWords = (s) =>
-  Object.keys(NAV).find((w) => MODE_WORDS.every((k) => s[k] === undefined || modeWords(w)[k] === s[k]));
+const variantOfWords = (s) =>
+  Object.keys(NAV).find((w) => VARIANT_WORDS.every((k) => s[k] === undefined || variantWords(w)[k] === s[k]));
 // A setup's fields are the link's words, each saying what it holds, the same in the link, the Gallery and the code: what all
-// modes have, one word, no prefix (teams, playRule, maxSteps, step, version); what one family has, its prefix: grid (the
-// tiling's sheet), walk, battle, pop (a population: Life, Rewind, Replicators, Elementary); its mode by its parts (see
-// modeWords); a choice by its name, never its place (battleRule, battleStarts, gridOutline)
-// the mode's key a setup's words say (see modeOfWords), once a setup
+// variants have, one word, no prefix (teams, playRule, maxSteps, step, version); what one family has, its prefix: grid (the
+// tiling's sheet), walk, battle, pop (a population: Life, Rewind, Replicators, Elementary); its variant by its parts (see
+// variantWords); a choice by its name, never its place (battleRule, battleStarts, gridOutline)
+// the variant's key a setup's words say (see variantOfWords), once a setup
 const setupVariants = new WeakMap();
 const setupVariant = (s) => {
-  if (!setupVariants.has(s)) setupVariants.set(s, s.mode ? modeOfWords(s) : undefined);
+  if (!setupVariants.has(s)) setupVariants.set(s, s.mode ? variantOfWords(s) : undefined);
   return setupVariants.get(s);
 };
 // its number: a population's (popNumber), a walk's or an ant's (walkNumberA: A's in a battle)
@@ -39485,7 +39520,7 @@ const toHash = (setup) =>
         `${k}=${encodeURIComponent(String(v)).replace(/%(2F|2B|5E|2C|3A|24)/g, (c) => decodeURIComponent(c))}`,
     )
     .join('&');
-// a link's setup (its hash; none said, the page's): its words as they are; null: no mode of the menu said
+// a link's setup (its hash; none said, the page's): its words as they are; null: no variant of the menu said
 function parseHash(hash = location.hash) {
   if (hash.length < 2) return null;
   try {
@@ -39523,7 +39558,7 @@ const GALLERY_KEY = 'tessera.setups',
   CURATED_KEY = 'tessera.curated';
 // one card a setup (as its thumbnail's key: neither its version nor how it is looked at): a setup saved twice (imported, or by an
 // old version), its last saved only
-// (an entry whose words say no mode of the menu: not read)
+// (an entry whose words say no variant of the menu: not read)
 const readEntry = (x) => (x?.setup && setupVariant(x.setup) ? x : null);
 function readGallery() {
   let list;
@@ -39571,7 +39606,7 @@ function writeGallery(list) {
 // a setup's row: a walk's 2D, 3D or Lattice, its walk, size, start, turn and rule; a Game of Life's rule (its name on its grid,
 // see ruleCard), colours (Newcomer's), size and start
 const setupDetail = (s) => {
-  const life = MODES[setupVariant(s)]?.life,
+  const life = VARIANTS[setupVariant(s)]?.life,
     { code, name } = ruleWords(s);
   return [
     life && shapeAndTiles(setupVariant(s)),
@@ -39591,7 +39626,7 @@ const setupDetail = (s) => {
 // ruleSpan: B3/S23, LNR, 1R0 0L0), its HTML as every place writes it (the bar, a card, a tooltip) and its name when it has one (a Life rule's, see ruleCard); a walk's first rule, written in
 // no link, its network's first; by the digits ("digits", "digits 1R0 0L0"): its code without the word
 const ruleWords = (s) => {
-  const m = MODES[setupVariant(s)],
+  const m = VARIANTS[setupVariant(s)],
     r = String(s.playRule ?? (m?.net ? firstWalkRule(m) : '')),
     byDigits = /^digits\b/.test(r),
     code = r.replace(/^digits ?/, ''),
@@ -39607,9 +39642,9 @@ const ruleWords = (s) => {
 // by its rule its rule alone, Glider vs Diehard · B3/S23); its grid, its size and the rest in its tooltip (see setupWords)
 const setupTitle = (x) => {
   const s = x.setup,
-    life = MODES[setupVariant(s)]?.life;
+    life = VARIANTS[setupVariant(s)]?.life;
   const { code, byDigits } = ruleWords(s),
-    creature = MODES[setupVariant(s)].worm || ANTS[setupVariant(s)],
+    creature = VARIANTS[setupVariant(s)].worm || ANTS[setupVariant(s)],
     reads = life ? startWords(s).join(' vs ') : creature ? byDigits && formulaOf(setupNumber(s)).sym : walkNumbersOf(s);
   return [reads, code].filter(Boolean).join(' · ');
 };
@@ -39618,13 +39653,13 @@ const walkNumbersOf = (s) =>
   [setupNumber(s), ...RIVALS.slice(0, (Number(s.teams) || 1) - 1).map((id) => s[`walkNumber${id.slice(-1)}`])]
     .map((f) => formulaOf(f).sym ?? f)
     .join(' vs ');
-// two setups in the menu's order: their mode as the menu lists it (NAV: its space, shape, tiles), then its size, its rule, its
+// two setups in the menu's order: their variant as the menu lists it (NAV: its space, shape, tiles), then its size, its rule, its
 // number, all of it (its title only after them, see fillGalleryList)
 const setupOrder = (a, b) => {
-  const modes = Object.keys(NAV),
+  const variants = Object.keys(NAV),
     words = (x, y) => String(x ?? '').localeCompare(String(y ?? ''), undefined, { numeric: true });
   return (
-    modes.indexOf(setupVariant(a)) - modes.indexOf(setupVariant(b)) ||
+    variants.indexOf(setupVariant(a)) - variants.indexOf(setupVariant(b)) ||
     (parseFloat(a.s) || 0) - (parseFloat(b.s) || 0) ||
     words(a.r, b.r) ||
     words(a.x, b.x) ||
@@ -39637,7 +39672,7 @@ const setupWords = (x) => {
     base = readBaseOf(s);
   return [
     setupDetail(s),
-    !MODES[setupVariant(s)].life &&
+    !VARIANTS[setupVariant(s)].life &&
       Number(s.teams) > 1 &&
       (BATTLE_RULES.find(([, name]) => linkWord(name) === s.battleRule) ?? BATTLE_RULES[0])[1],
     base && `digits in base ${base}`,
@@ -39646,23 +39681,23 @@ const setupWords = (x) => {
     .join(' · ');
 };
 // The base a setup's number is read in, digit by digit, its one source (its digits computed in it, see compute; its bar's
-// chip; a card's words): a walk's, its rule's commands; a creature's, its mode's; a Game of Life's, its colours + 1 (Digits
+// chip; a card's words): a walk's, its rule's commands; a creature's, its variant's; a Game of Life's, its colours + 1 (Digits
 // mixed: 2, painted at random, see paintOwn)
 const numberBaseOf = (s) => {
-  const m = MODES[setupVariant(s)];
+  const m = VARIANTS[setupVariant(s)];
   if (m.life) return popOf(s) === 'digits' && Number(s.popMixed) === 1 ? 2 : (Number(s.teams) || 1) + 1;
   return m.net ? walkTakes(m, ruleWords(s).code).length : m.base;
 };
 // whether its start reads its number's digits: a walk's always, a creature's by the digits, a Game of Life's Digits
 const readsNumber = (s) => {
-  const m = MODES[setupVariant(s)];
+  const m = VARIANTS[setupVariant(s)];
   return m.life ? popOf(s) === 'digits' : m.worm || ANTS[setupVariant(s)] ? ruleWords(s).byDigits : true;
 };
 // the base its start reads digits in, any: its number's, a Formula start's own number's (numberSeed), else none (0)
 const readBaseOf = (s) =>
   readsNumber(s)
     ? numberBaseOf(s)
-    : MODES[setupVariant(s)].life && zoneOfWord(String(popOf(s)).split('.')[0]) === 'numbers'
+    : VARIANTS[setupVariant(s)].life && zoneOfWord(String(popOf(s)).split('.')[0]) === 'numbers'
       ? NUMBER_START_BASE
       : 0;
 // a setup saved: its name its title's, one of its own in the list (a row is deleted by its name, see uniqueName)
@@ -39742,15 +39777,15 @@ function fillGalleryList() {
   const rows = list.filter((x) => NAV[setupVariant(x.setup)]).map((x) => [setupTitle(x), setupWords(x), x]);
   const kindOf = (x) => NAV[setupVariant(x.setup)][0];
   $('yourList').replaceChildren(
-    ...NAV_KINDS.flatMap(([kind]) => {
+    ...MODE_TABS.flatMap(([kind]) => {
       const mine = rows
         .filter(([, , x]) => kindOf(x) === kind)
         .sort((a, b) => setupOrder(a[2].setup, b[2].setup) || a[0].localeCompare(b[0], undefined, { numeric: true }));
-      if (!mine.length && kind !== NAV[tabMode()]?.[0]) return [];
+      if (!mine.length && kind !== NAV[tabVariant()]?.[0]) return [];
       const section = document.createElement('section'),
         cards = Object.assign(document.createElement('div'), { className: 'gallery-grid' }); // a section each, as Life's, its picture as the tab's
       section.dataset.kind = kind; // (opened from a tab: scrolled to its section, see showPane)
-      section.innerHTML = `<h2>${icon(NAV_KINDS.find(([k]) => k === kind)[1])}${kind}</h2>`; // (the Gallery shut by its tab, see showPane)
+      section.innerHTML = `<h2>${icon(MODE_TABS.find(([k]) => k === kind)[1])}${kind}</h2>`; // (the Gallery shut by its tab, see showPane)
       if (!mine.length)
         cards.innerHTML = `<p class="caption">None in ${kind} yet: the ☆ of Gallery's tab keeps the setup in view</p>`;
       cards.append(
@@ -40010,7 +40045,7 @@ async function adoptShown(x, row) {
 // (evenSpeed): a step every k frames below its refresh, k steps a frame above, so that each step shows as long as the
 // others (60 a second at 144 Hz: 2 frames then 3, a stutter; at 72, 2 frames each)
 const SPEEDS = [0.6, 1.2, 6, 12, 60, 120, 600, 1200, 6000, 12000, 60000, 120000, 600000, 1200000, 6000000];
-let speed = defaultOf('speed', tabMode());
+let speed = defaultOf('speed', tabVariant());
 // the screen's refresh, as measured: its frame (frameTime, the mean of its last ones, see tick)
 const screenHz = () => Math.round(1 / frameTime);
 const evenSpeed = (v) => {
@@ -40038,7 +40073,7 @@ function updateSpeedLabel() {
       $('speedLabel').textContent = speedWords(SPEEDS[k]);
     },
     (k) => setSpeed(SPEEDS[k]),
-    SPEEDS.indexOf(defaultOf('speed', tabMode())),
+    SPEEDS.indexOf(defaultOf('speed', tabVariant())),
   );
 }
 function setSpeed(s) {
@@ -40306,10 +40341,10 @@ const playOrStop = () => $(playing || reversing ? 'stop' : 'play').click(); // (
 // rule's, by its rule); Space-time's, its layers made (see stackUp)
 const lifeTime = () => !!walk.life && !walk.stacked;
 const playsBack = () => !lifeTime() || !!walk.life.margolus; // (◀: a walk, Space-time, a reversible one)
-// a run's player, Life's and a reversible one's (+10k; no End: its end found by playing, its green link), by the mode
+// a run's player, Life's and a reversible one's (+10k; no End: its end found by playing, its green link), by the variant
 // chosen: its run built or not yet (a big grid's, a moment); a reversible one's ◀ too (see playsBack)
 const lifePlayer = () => {
-  const m = MODES[walk.mode];
+  const m = VARIANTS[walk.variant];
   return !!m?.life && !m.elementary && !walk.stacked;
 }; // (Elementary's rows: a walk's, its end known)
 function reverse(on) {
@@ -40539,7 +40574,7 @@ function drawGrid() {
     return;
   }
   // The lines bound the cells whose centres the walk joins; along lines, they go through the
-  // walk's points, which are the corners of the grid drawn (see MODES)
+  // walk's points, which are the corners of the grid drawn (see VARIANTS)
   const r3 = Math.sqrt(3),
     lat = walk.lattice;
   if (lat === 'square') {
@@ -40725,7 +40760,8 @@ const deeper = (c) =>
   `rgb(${rgbOf(c)
     .map((v) => Math.round(v * 0.62))
     .join(', ')})`;
-const wayCommand = (w, k) => !!(MODES[w].net && WALK_NETS[MODES[w].net].ways?.[walkCommandsOf(w)?.[k]] !== undefined); // (a walk's digit k: a fixed way)
+const wayCommand = (w, k) =>
+  !!(VARIANTS[w].net && WALK_NETS[VARIANTS[w].net].ways?.[walkCommandsOf(w)?.[k]] !== undefined); // (a walk's digit k: a fixed way)
 const antTurnColour = (a) =>
   ({
     '↖': DIRECTION_COLOURS['←'],
@@ -40742,7 +40778,7 @@ const antTurnColour = (a) =>
 // the walk shown read its number's digits (an ant by its rule none: its digits empty), as it was built, whatever is asked
 // meanwhile (Rule × Digits clicked: the walk by its rule still shown till the digits come)
 const walkReadsDigits = () => walk.digits?.length > 0;
-const antChipColour = (k) => rampColour(k, walkReadsDigits() ? 2 : antColours(walk.mode)); // (the walk's own mode: see buildWalkOf)
+const antChipColour = (k) => rampColour(k, walkReadsDigits() ? 2 : antColours(walk.variant)); // (the walk's own variant: see buildWalkOf)
 // a digit's colour: its direction's (an ant's: the turn it took, or its state), else in the digits' order
 const digitColour = (k) =>
   walk.ant
@@ -40751,10 +40787,11 @@ const digitColour = (k) =>
       ? k
         ? DIGIT_COLORS[0]
         : GREY // a spiral: 1 blue, drawn; 0 grey, moved without drawing
-      : arrowsOf(digitsComputed.mode)[k]
-        ? (wayCommand(digitsComputed.mode, k) || !['Turtle', 'Pivot', 'Parity'].includes(NAV[digitsComputed.mode]?.[3])
+      : arrowsOf(digitsComputed.variant)[k]
+        ? (wayCommand(digitsComputed.variant, k) ||
+            !['Turtle', 'Pivot', 'Parity'].includes(NAV[digitsComputed.variant]?.[3])
             ? (a) => DIRECTION_COLOURS[a]
-            : antTurnColour)(arrowsOf(digitsComputed.mode)[k]) // fixed directions: by the compass
+            : antTurnColour)(arrowsOf(digitsComputed.variant)[k]) // fixed directions: by the compass
         : walk.base <= DIGIT_COLORS.length
           ? DIGIT_COLORS[k]
           : `hsl(${(k * 360) / walk.base}, 80%, 62%)`;
@@ -41081,15 +41118,15 @@ function drawSurface() {
   const L = walk.life,
     stepped = !L && stepLook($('colourMode').value),
     line = !!stepped; // Rainbow or Commands: its steps' colours (see stepLook)
-  const path = !L && !walk.battle && (MODES[walk.mode].cells ? $('showPath').checked : line); // on cells, with Show path only (a battle: its bodies, no path)
+  const path = !L && !walk.battle && (VARIANTS[walk.variant].cells ? $('showPath').checked : line); // on cells, with Show path only (a battle: its bodies, no path)
   if (line) {
     // a tile walked through (Fill cells) in its first visit's colour, by the look; enclosed (Area, Rainbow only), or dark
-    const cells = MODES[walk.mode].cells && firstVisits(),
+    const cells = VARIANTS[walk.variant].cells && firstVisits(),
       areas = !walk.ant && areaOn() && areaSteps();
     const rainbow = rainbowNow().map(liftTile),
       band = (p) => rainbowBand(Math.max(0, p - 1)); // (point p's step, as in 2D: see stepLook)
     const colours = stepped.key ? stepped.palette.map(liftTile) : rainbow,
-      faint = (cs) => (path && MODES[walk.mode].cells ? cs.map((c) => faded(c, FADING)) : cs); // Path: the tiles faded under the line
+      faint = (cs) => (path && VARIANTS[walk.variant].cells ? cs.map((c) => faded(c, FADING)) : cs); // Path: the tiles faded under the line
     const level = stepped.key ? (p) => 1 + stepped.at(p) : (p) => 1 + band(p); // (see stepLook: the start, no command)
     palette = [
       null,
@@ -41602,10 +41639,10 @@ const paintLevels = (palette, levelOf) => (out, n) => {
 // gone, by a fixed plane through the middle (see CUT_AXES); the two apart: with both, what is left see-through
 const GLASS_ALPHA = 0.4; // (a tile's share: a layer behind seen at 60%, two at 36%…)
 const glassOn = () => $('glass').checked && !$('glassRow').hidden;
-const oceanFits = (w = tabMode(), lifeCount = lifeTeams, walkCount = walkTeams) =>
-  (MODES[w].life ? lifeCount : battleAt(w, walkCount) ? walkCount : 1) <= LANDS.length; // (its lands a Sextet's at most, Life's teams or a battle's walkers: beyond, greyed; at a setup, see whyNot)
+const oceanFits = (w = tabVariant(), lifeCount = lifeTeams, walkCount = walkTeams) =>
+  (VARIANTS[w].life ? lifeCount : battleAt(w, walkCount) ? walkCount : 1) <= LANDS.length; // (its lands a Sextet's at most, Life's teams or a battle's walkers: beyond, greyed; at a setup, see whyNot)
 let oceanPicked = false; // (Ocean clicked since its default was set: kept, else it follows its default, see DISPLAY_DEFAULTS)
-const oceanOn = () => $('ocean').checked && shows('ocean', tabMode()) && oceanFits(); // (its row's rule, not its row: drawn later)
+const oceanOn = () => $('ocean').checked && shows('ocean', tabVariant()) && oceanFits(); // (its row's rule, not its row: drawn later)
 const blankTile = () => (oceanOn() ? OCEAN : UNLIT); // (a surface's tile none has painted: Ocean's sea blue, or the theme's)
 const teamColour = (s) => (oceanOn() && LANDS[s] ? LANDS[s] : LIFE_COLOURS[s]); // (team s, a battle's walker or Life's colour: Earth's lands up to a Sextet, else Life's colours)
 const LAND_NAMES = ['green', 'ochre', 'yellow', 'lime', 'white', 'cyan']; // (Earth's lands, see PALETTES)
@@ -41613,7 +41650,7 @@ const teamName = (s) => (oceanOn() && LANDS[s] ? LAND_NAMES[s] : LIFE_COLOUR_NAM
 // Cut: Off, or a fixed plane through the middle facing S, E or Up (the view's corner draws E, N and Up, see gpuAxes), the half on
 // that axis's side gone: its notches on a row as Flat ── Inflated (see sizeGauge)
 const CUT_AXES = [['Off'], ['S', [0, -1, 0]], ['E', [1, 0, 0]], ['Up', [0, 0, 1]]];
-let cutAxis = defaultOf('cut', tabMode());
+let cutAxis = defaultOf('cut', tabVariant());
 const cutOn = () => cutAxis > 0 && !$('cutRow').hidden;
 const cutNormal = () => CUT_AXES[cutAxis][1] ?? [0, 0, 0];
 const setCut = (k) => {
@@ -41631,10 +41668,10 @@ const setCut = (k) => {
 // cells: always on a spiral (its line is greyed out), else, a walk on cells, for Rainbow, Heatmap and Commands
 // (a colour per digit; an ant's turns or states); along the lines, none: its line (a look left from cells, its colours)
 const flatCellsOn = () => {
-  const w = walk.mode;
+  const w = walk.variant;
   return (
     greyed('line', w) ||
-    (!!MODES[w]?.cells &&
+    (!!VARIANTS[w]?.cells &&
       (($('colourMode').value === 'cells' && shows('cells', w)) ||
         ($('colourMode').value === 'visits' && useful('visits', w)) ||
         ($('colourMode').value === 'digit' && shows('cells', w))))
@@ -41887,8 +41924,8 @@ const CELL_SHAPES = {
 // A 3D walk on cells: the cell of each point up to to (a cube, see CELL_SHAPES), drawn in the walk's
 // order with the depth buffer, so that a cell shows the colour of its last visit (the rainbow by the
 // step, its digit's, or one colour) and hides the ones behind it
-const cellShape = () => CELL_SHAPES[MODES[digitsComputed.mode].shape ?? 'cube'];
-const cubesWalk = () => walk.is3d && (!!MODES[walk.mode].cells || walk.stacked); // (a 3D walk on cells, Life's Space-time: cubes)
+const cellShape = () => CELL_SHAPES[VARIANTS[digitsComputed.variant].shape ?? 'cube'];
+const cubesWalk = () => walk.is3d && (!!VARIANTS[walk.variant].cells || walk.stacked); // (a 3D walk on cells, Life's Space-time: cubes)
 // a 3D walk on cells' cubes, points 0 … n: where, their colours by the look (the rainbow by the step, its digit's)
 function walkCubes(mode) {
   const n = walk.n,
@@ -43156,7 +43193,7 @@ function gpuDrawPipe(
 // a battle's colours in the palette (pal), for its lines along the edges: A's body, B's (their heads: their arrows, see drawOverlay)
 // the commands' palette on the GPU (see stepLook), its places 0 to 255 (past its end, its last; an ant's ramp, all of them)
 function stepPalette(D) {
-  const key = `${walk.base}|${walk.ant}|${walk.skipZeros}|${digitsComputed.mode}|${MONO}|${GREY}`;
+  const key = `${walk.base}|${walk.ant}|${walk.skipZeros}|${digitsComputed.variant}|${MONO}|${GREY}`;
   if (D.keys.pal === key) return;
   const colours = stepLook('digit').palette,
     pal = new Uint8Array(4 * 256); // (a walk's: its start's grey last)
@@ -43799,7 +43836,7 @@ function gpuFlat(to) {
       D.flatCellsAt,
       D.cellTpl,
       cellCount,
-      shows('cells', walk.mode) && line ? 0.15 : 1,
+      shows('cells', walk.variant) && line ? 0.15 : 1,
       walkFadeSteps(),
     );
   const walked = Math.min(Math.ceil(glideAt()), walk.n); // (the steps walked, its next on its way: from step 0 on, its first line grows too)
@@ -44229,24 +44266,24 @@ function visitCells() {
 let areaFill = null; // Area's: { at, cx, cy, tpl, templates, count, tooBig } for the current walk (see computeFill)
 // Area goes with the colours where the path has one colour per step (not Visits, not By digit)
 const fillAreasApply = (w) => !areaWhyNot(w);
-// Area greyed at a mode: on cells (its cells its own colours, a battle's its lands: along the lines only), a walk closing none
-// (a spiral, a mode without it), a look over the cells (Heatmap, Commands); else '' (Snake cells, its tails sliding: on
+// Area greyed at a variant: on cells (its cells its own colours, a battle's its lands: along the lines only), a walk closing none
+// (a spiral, a variant without it), a look over the cells (Heatmap, Commands); else '' (Snake cells, its tails sliding: on
 // cells, the first)
 // (p: the battle rule picked, the one it plays at w judged, see battleRuleInUse)
 const areaWhyNot = (w, teams = walkTeams, p = battleRule, look = $('colourMode').value) =>
-  MODES[w].cells
+  VARIANTS[w].cells
     ? 'On cells, the walk colours its cells itself (in a battle, its lands).'
     : battleAt(w, teams) && BATTLE_RULES[battleRuleInUse(w, p)][0] !== 'cut'
       ? 'This battle colours its lands (only Cut, its bodies alone, keeps Area).'
-      : !useful('fill', w) || MODES[w].fill === false
+      : !useful('fill', w) || VARIANTS[w].fill === false
         ? 'The walk closes no area to fill (a spiral, an ant…).'
         : ['visits', 'digit'].includes(look)
           ? 'Heatmap and Commands give the cells their own colours.'
           : '';
-// (the walk drawn may still be the last mode's while the new one is computed: a tiling with a fill)
+// (the walk drawn may still be the last variant's while the new one is computed: a tiling with a fill)
 // Area (one choice: Empty, Light, Plain, see AREA_MODES): filled where it applies; Light, translucent, only over a line
-const areaOn = () => $('area').value !== 'empty' && !!walk.mode && fillAreasApply(walk.mode); // (the walk shown's: while the next is made, the tab's mode is already the next one's)
-const areaLight = () => areaOn() && $('area').value === 'light' && shows('translucent', walk.mode);
+const areaOn = () => $('area').value !== 'empty' && !!walk.variant && fillAreasApply(walk.variant); // (the walk shown's: while the next is made, the tab's variant is already the next one's)
+const areaLight = () => areaOn() && $('area').value === 'light' && shows('translucent', walk.variant);
 const fillOn = () => areaOn() && walk.n && !walk.is3d && !!FILL_GRIDS[walk.lattice];
 // the fill, computed once per walk; beside the toggle, a word when the walk is too big to fill
 function fillNow() {
@@ -45064,7 +45101,7 @@ function updateStats() {
   $('end').hidden = lifePlayer() && !runLoop(); // (Life, a reversible one: +10k till its end is known)
   if (drawing && walk.plane && drawAway() !== drawToolsAway) renderDrawTools(); // (Draw: its tools at gen 0 only; drawn again as play leaves it or comes back, not each frame: 785 cards)
   setTile($('end'), { greyed: runStops().some((g) => g > stepShown) ? '' : 'No stop ahead.' });
-  // the step or generation shown, its own line, every mode: Step 15,964, Gen 132; its last after it where the run has one
+  // the step or generation shown, its own line, every variant: Step 15,964, Gen 132; its last after it where the run has one
   // (a walk's, Elementary's, Space-time's: see runEnd; Life's, a reversible one's, once its loop is known: see runLoop), its slider's end (see seekFar)
   const far = seekFar(),
     gens = !!walk.life || walk.stacked || !!walk.rows;
@@ -45165,8 +45202,8 @@ function updateStats() {
   // end it finishes with the last one. The window then shrinks until "…", "0." and "." fit too.
   // above each digit, its step as an arrow (an ant's: the turn it took); before both lines, the walker:
   // a turtle turning relative to its heading, a compass going by fixed directions, a spiral winding round
-  const mode = MODES[digitsComputed.mode],
-    arrows = arrowsOf(digitsComputed.mode);
+  const variant = VARIANTS[digitsComputed.variant],
+    arrows = arrowsOf(digitsComputed.variant);
   strip.classList.add('line');
   strip.classList.toggle('turns', arrows.length > 0);
   const cols = stripColumns(strip),
@@ -45216,9 +45253,9 @@ function updateStats() {
   html += end;
   if (stepShown >= n) top += end; // the head past the last digit, on both lines
   const walker = icon(
-    mode.skipZeros
+    variant.skipZeros
       ? 'spiral'
-      : ['Turtle', 'Ant', 'Polymer'].includes(NAV[digitsComputed.mode][3])
+      : ['Turtle', 'Ant', 'Polymer'].includes(NAV[digitsComputed.variant][3])
         ? 'turtle'
         : 'compass',
   );
@@ -45446,7 +45483,7 @@ const valueInUse = {
   ...Object.fromEntries(BATTLE_FORMULAS.map((id) => [id, () => formulaInUseOf(id)])), // (every walker's formula)
   digitsLabel: () => String(randomPrimeSize() ?? lengthAsked()),
   startLabel: () => String(startNo()),
-  antRule: () => creatureRules(tabMode()).now, // (a walk's, an ant's, a turmite's, a worm's)
+  antRule: () => creatureRules(tabVariant()).now, // (a walk's, an ant's, a turmite's, a worm's)
   lifeRule: () => (walk.life?.ruleText ? ruleBody(walk.life.ruleText) : walk.rows ? `W${walk.rows.N}` : null),
 }; // (the rule the game plays, its colours apart; Elementary's, its rows'; none yet: the field's as it was, see putBack)
 // a typed field's error, '' when right: Enter keeps you in the field with it (a formula, every walker's alike; a rule)
@@ -45518,7 +45555,7 @@ $('digitsLabel').addEventListener('change', () => {
     return;
   }
   lengthPicked = Number($('digitsLabel').value);
-  lengthPicked = lengthAsked(); // (the number as this mode takes it, kept)
+  lengthPicked = lengthAsked(); // (the number as this variant takes it, kept)
   $('digitsLabel').blur();
   if (lengthUsed()) compute();
   else syncDigitsStepper(); // (unused here: kept for the next tab)
@@ -45738,7 +45775,7 @@ for (const [id, k] of [
   ['planeUp', 1],
 ]) {
   $(id).addEventListener('click', () => {
-    const sides = planeSides(planeKind(MODES[tabMode()].plane));
+    const sides = planeSides(planeKind(VARIANTS[tabVariant()].plane));
     picked = planeCells(sides[Math.min(sides.length - 1, Math.max(0, sides.indexOf(plane.side) + k))]);
     compute();
   });
@@ -45775,7 +45812,7 @@ $('lifeStartTabs').append(
 );
 for (const b of $('lifeStartTabs').querySelectorAll('button')) {
   b.addEventListener('click', () => {
-    if (!MODES[tabMode()].plane) {
+    if (!VARIANTS[tabVariant()].plane) {
       // a surface: Draw shows its patterns, the others go back to the start as it was
       surfaceDraw = b.dataset.start === 'draw';
       if (surfaceDraw || plane.start === b.dataset.start) {
@@ -45848,7 +45885,7 @@ $('pngFile').addEventListener('change', async () => {
     g = c.getContext('2d');
   g.drawImage(img, 0, 0);
   const d = g.getImageData(0, 0, img.width, img.height).data,
-    kind = MODES[tabMode()].plane,
+    kind = VARIANTS[tabVariant()].plane,
     sides = planeSides(kind);
   const side = sides.find((f) => planeW(kind, f) >= Math.max(img.width, img.height));
   if (side === undefined) {
@@ -45924,7 +45961,7 @@ $('drawView').addEventListener('click', () => {
   renderPlaneRow();
 });
 $('brushTurn').addEventListener('click', () => {
-  brush.turn = (brush.turn + 1) % gridTurns(MODES[tabMode()].plane);
+  brush.turn = (brush.turn + 1) % gridTurns(VARIANTS[tabVariant()].plane);
   renderPlaneRow();
 });
 $('brushFlip').addEventListener('click', () => {
@@ -46120,7 +46157,7 @@ $('primorialP').value = '392113,1';
 // A menu choice, or a new value in its helper menu, writes its formula
 const pickPreset = (id) => {
   $('formula').value = presetFormula(id);
-  pickNumber($('formula').value, tabMode());
+  pickNumber($('formula').value, tabVariant());
   computeFramed();
 };
 $('mersenneP').addEventListener('change', () => pickPreset('mersenne'));
@@ -46183,7 +46220,7 @@ pillRow(
     axis ? `The half on the ${name} side gone, the inside showing` : 'The figure whole',
   ]),
   cutAxis,
-  defaultOf('cut', tabMode()),
+  defaultOf('cut', tabVariant()),
   setCut,
 );
 $('perspective').addEventListener('change', () => {
@@ -46195,7 +46232,7 @@ $('perspective').addEventListener('change', () => {
 // How it works on a walk's rules or a creature's: as Life's (one on each list of rules, on its first card); the digits' chips too
 document.addEventListener('click', (e) => {
   if (!e.target.closest?.('.how-it-works, .rule-chip') || e.target.closest('.how-it-works') === $('watchRule')) return;
-  if (MODES[tabMode()].life) $('watchRule').click();
+  if (VARIANTS[tabVariant()].life) $('watchRule').click();
   else walkTutorialToggle(); // (a walk's)
 });
 // how a rule works closes on a click anywhere but on it, the rules (your own's too), the populations and the grids (it follows them: renderRuleSection)
@@ -46234,21 +46271,21 @@ document.addEventListener('click', (e) => {
     ruleTutorial(null);
 });
 // a Life rule typed: its error, '' when it fits the tab's grid
-const lifeRuleError = (typed, mode = MODES[tabMode()]) =>
-  ruleFits(ruleBody(typed), mode)
+const lifeRuleError = (typed, variant = VARIANTS[tabVariant()]) =>
+  ruleFits(ruleBody(typed), variant)
     ? ''
-    : mode.elementary
+    : variant.elementary
       ? 'Enter W and its number, 0 to 255: W30, W110'
-      : mode.margolus
+      : variant.margolus
         ? 'Enter a block rule of this grid, as its cards show it'
         : 'Enter a rule like B3/S23, B2/S/C3 (2 to 25 states) or, on hexagons, B2o/S2m34 (the colours: Colors, above)';
 $('lifeRule').addEventListener('change', () => {
-  const mode = MODES[tabMode()],
-    error = lifeRuleError($('lifeRule').value, mode);
+  const variant = VARIANTS[tabVariant()],
+    error = lifeRuleError($('lifeRule').value, variant);
   if (error) {
     // (not a rule, or not this grid's: the one in use back in the field)
     $('status').textContent = error;
-    $('lifeRule').value = ruleBody(shapeRules[lifeMark(mode)] ?? walk.life?.ruleText ?? 'B3/S23');
+    $('lifeRule').value = ruleBody(shapeRules[lifeMark(variant)] ?? walk.life?.ruleText ?? 'B3/S23');
     return;
   }
   // typed: a known one's card picked (its own text), else your own
@@ -46256,7 +46293,7 @@ $('lifeRule').addEventListener('change', () => {
     known = rulesOf('life').find((r) => parseRule(r.rule)?.text === typed.text);
   customOpen = !known;
   if (known) $('lifeRule').value = known.rule;
-  if (MODES[tabMode()].life) compute(); // restart from generation 0; a new state count needs a new base
+  if (VARIANTS[tabVariant()].life) compute(); // restart from generation 0; a new state count needs a new base
 });
 // Copy RLE: the generation shown as an RLE file, Golly's and LifeWiki's (its size and rule on top, rows of runs, 70
 // characters a line): two states as b and o; more as . A B … (alive, then each dying stage; in colours, all alive as
@@ -46475,11 +46512,11 @@ function showNumber() {
 // (not − / +) shows every start on an empty globe, turned towards the chosen one.
 function setStart(n) {
   // (all again, as any setting: its teams and battle hang on its start too, its digits cached)
-  $('startNo').value = Math.max(1, Math.min(n, modeStarts().length));
+  $('startNo').value = Math.max(1, Math.min(n, variantStarts().length));
   compute();
 }
 // the start d places on from n, round the list of L (− at the first: the last; + at the last: the first)
-const startStep = (n, d, L = modeStarts().length) => ((((n - 1 + d) % L) + L) % L) + 1;
+const startStep = (n, d, L = variantStarts().length) => ((((n - 1 + d) % L) + L) % L) + 1;
 $('startDown').addEventListener('click', () => setStart(startStep(startNo(), -1)));
 $('startUp').addEventListener('click', () => setStart(startStep(startNo(), 1)));
 $('startLabel').addEventListener('input', () => {
@@ -46490,7 +46527,7 @@ $('startLabel').addEventListener('blur', syncSizeStepper); // "start 1 of 2,304"
 // (the field shows it again)
 $('startLabel').addEventListener('change', () => {
   if (!$('startLabel').value) return;
-  const n = Math.max(1, Math.min(Number($('startLabel').value), modeStarts().length));
+  const n = Math.max(1, Math.min(Number($('startLabel').value), variantStarts().length));
   if (n !== startNo()) setStart(n);
 });
 // Hovering the start row ([− start +]) shows each walker's starts, its own in its colour (see startMarks), and leaves the view as it
@@ -46566,7 +46603,7 @@ for (const [id, digits] of [
 ]) {
   // (a worm's own, by its rule or the digits)
   $(id).addEventListener('click', () => {
-    const w = MODES[tabMode()];
+    const w = VARIANTS[tabVariant()];
     if ((w.worm ? worm.byDigits : antByDigits) === digits) return;
     if (w.worm) worm.byDigits = digits;
     else antByDigits = digits;
@@ -46575,7 +46612,7 @@ for (const [id, digits] of [
   });
 }
 $('antRule').addEventListener('change', () => {
-  const w = tabMode();
+  const w = tabVariant();
   creatureRules(w).set($('antRule').value);
   const R = creatureRules(w);
   if (ruleKnown(R)) {
@@ -46595,10 +46632,10 @@ const AREA_MODES = [
   ['plain', 'Plain', 'In the colour of the step that closed them'],
 ];
 function renderAreaModes() {
-  const light = shows('translucent', tabMode());
+  const light = shows('translucent', tabVariant());
   const shown = (v) => (v === 'light' && !light ? 'plain' : v); // (Light only over a line: else Plain)
   const now = AREA_MODES.findIndex(([look]) => look === shown($('area').value)),
-    first = shown(defaultOf('area', tabMode()));
+    first = shown(defaultOf('area', tabVariant()));
   pillRow(
     $('areaModes'),
     'Area',
@@ -46622,16 +46659,16 @@ function renderAreaModes() {
 // states); Rainbow along the walk; Commands, a colour per command read (an ant's: States, its cells by their state, see
 // ANT_STATES); Heatmap of visits. [look, name, title]
 const ANT_STATES = ['States', 'An ant’s cells by their state, pale to deep'];
-// the look a cell mode sets at mode w (colourMode's: see pickCellMode): Path, Cell path under the line (an ant's, its States), along
+// the look a cell variant sets at variant w (colourMode's: see pickCellMode): Path, Cell path under the line (an ant's, its States), along
 // the grid the line alone; Cell path, the cells in the rainbow (along the edges, the line's: greyed there, see cellModeWhyNot)
 const lookAfter = (look, w) =>
   look === 'path'
-    ? MODES[w].antOf
+    ? VARIANTS[w].antOf
       ? 'digit'
-      : MODES[w].cells
+      : VARIANTS[w].cells
         ? 'cells'
         : 'gradient'
-    : look === 'cells' && !MODES[w].cells
+    : look === 'cells' && !VARIANTS[w].cells
       ? 'gradient'
       : look;
 const LIFE_LOOKS = [
@@ -46649,8 +46686,8 @@ const CELL_MODES = [
   ],
   ['visits', 'Heatmap', 'The cells by how often the walk comes back to them'],
 ];
-const cellModeOf = (mode) =>
-  $('showPath').checked || (!mode.cells && $('colourMode').value === 'gradient')
+const cellModeOf = (variant) =>
+  $('showPath').checked || (!variant.cells && $('colourMode').value === 'gradient')
     ? 'path'
     : $('colourMode').value === 'gradient'
       ? 'cells'
@@ -46708,31 +46745,31 @@ function cellModePicture(look, ant) {
 }
 const CELLS_ONLY = 'Only on cells, not along the lines.'; // (a walk's cells' look along its lines: none)
 const COMMANDS_WHERE = 'Not in a battle: each walker has its own colour.';
-// a cells' look greyed at a mode: Path and Heatmap along the lines (no cells), Commands in a battle (an
+// a cells' look greyed at a variant: Path and Heatmap along the lines (no cells), Commands in a battle (an
 // ant's States everywhere), Heatmap on a spiral; else ''
 const cellModeWhyNot = (look, w, teams = walkTeams) =>
   look === 'digit'
-    ? !MODES[w].antOf && battleAt(w, teams)
+    ? !VARIANTS[w].antOf && battleAt(w, teams)
       ? COMMANDS_WHERE
       : ''
-    : !MODES[w].cells && look !== 'path'
+    : !VARIANTS[w].cells && look !== 'path'
       ? CELLS_ONLY
       : look === 'visits'
         ? lookWhyNot('visits', w)
         : '';
-function renderCellModes(mode) {
-  $('cellModes').hidden = !shows('cells', tabMode()) && !shows('heatmap', tabMode()) && !mode.antOf; // a walk in 2D or on a surface, an ant anywhere
+function renderCellModes(variant) {
+  $('cellModes').hidden = !shows('cells', tabVariant()) && !shows('heatmap', tabVariant()) && !variant.antOf; // a walk in 2D or on a surface, an ant anywhere
   if ($('cellModes').hidden) return;
   // an ant: Path, Rainbow, States, Heatmap; a walk: Path, Rainbow, Commands, Heatmap
   const looks = CELL_MODES,
-    now = cellModeOf(mode),
-    ant = !!mode.antOf; // (all four everywhere, the same row: Commands greyed where there are none, see cellModeWhyNot)
+    now = cellModeOf(variant),
+    ant = !!variant.antOf; // (all four everywhere, the same row: Commands greyed where there are none, see cellModeWhyNot)
   const button = ([look, name, title]) =>
     tile({
       pic: cellModePicture(look, ant),
       ...(look === 'digit' && ant ? { text: ANT_STATES[0], title: ANT_STATES[1] } : { text: name, title }),
       on: look === now,
-      byDefault: look === (ant ? defaultOf('antLook', tabMode()) : mode.cells ? 'cells' : 'path') ? 'yes' : '', // (an ant's States, a walk's Cell path, along the edges its Path: see DISPLAY_DEFAULTS)
+      byDefault: look === (ant ? defaultOf('antLook', tabVariant()) : variant.cells ? 'cells' : 'path') ? 'yes' : '', // (an ant's States, a walk's Cell path, along the edges its Path: see DISPLAY_DEFAULTS)
       whyNot: ({ w, teams }) => cellModeWhyNot(look, w, teams),
       choice: `look:${look}`,
       click: () => pickCellMode(look),
@@ -46741,7 +46778,7 @@ function renderCellModes(mode) {
 }
 function pickCellMode(look) {
   $('showPath').checked = look === 'path';
-  $('colourMode').value = lookAfter(look, tabMode());
+  $('colourMode').value = lookAfter(look, tabVariant());
   $('colourMode').dispatchEvent(new Event('change'));
   needsFull = true;
   updateDisplayMenu();
@@ -46756,9 +46793,9 @@ $('sizeUp').addEventListener('click', () => stepSize(1));
 // ⟲ 30°: a torus turned or back; at the same size if it has one
 function turnTorus(turned) {
   if (turned === torusTurned) return;
-  const mode = MODES[tabMode()];
+  const variant = VARIANTS[tabVariant()];
   torusTurned = turned;
-  fillGridSizes(surfaceOf(mode), mode.initial); // as many cells
+  fillGridSizes(surfaceOf(variant), variant.initial); // as many cells
   $('startNo').value = 1; // the starts are not the same
   $('gridSizeField').dispatchEvent(new Event('change'));
 }
@@ -46773,7 +46810,7 @@ BATTLE_FORMULAS.forEach((id, s) =>
     const F = s ? formulaOf($(id).value) : readFormula();
     if (!F.error) {
       if (s) $(id).value = F.text;
-      else pickNumber(formulaInUse, tabMode());
+      else pickNumber(formulaInUse, tabVariant());
       computeFramed();
       return;
     }
@@ -46801,20 +46838,20 @@ function computeFramed() {
   $('autoFit').checked = true;
   compute();
 }
-// Another mode in the same tab keeps the Display settings; another tab starts from its defaults
+// Another variant in the same tab keeps the Display settings; another tab starts from its defaults
 let displayTab = null;
-const modeTabOf = () => `${NAV[tabMode()]?.[0]}|${modeGroup(tabMode())}`; // (the menu's tab, Life or Elementary, and its space: the select's group holds several tabs)
+const modeTabOf = () => `${NAV[tabVariant()]?.[0]}|${variantGroup(tabVariant())}`; // (the menu's tab, Life or Elementary, and its space: the select's group holds several tabs)
 function displayDefaults() {
   applyDefaults('tab');
   oceanPicked = false;
   displayTab = modeTabOf();
 }
-$('mode').addEventListener('change', () => {
+$('variant').addEventListener('change', () => {
   if (modeTabOf() !== displayTab) displayDefaults();
-  // the form of the view belongs to the walk mode: its perspective, the camera's starting angle
+  // the form of the view belongs to the walk variant: its perspective, the camera's starting angle
   // (auto-fit may have turned it to follow a walker) and its flat or round form (see initShape)
-  // come back with every new mode
-  applyDefaults('mode'); // (its perspective, the view free and framed)
+  // come back with every new variant
+  applyDefaults('variant'); // (its perspective, the view free and framed)
   Object.assign(camera, CAMERA_START);
   $('startNo').value = 1;
   compute();
@@ -46944,8 +46981,8 @@ const BUILT_IN = [
   [{ mode: 'walk', shape: 'squares', walkKind: 'turtle', on: 'edges', walkNumberA: 'pi', maxSteps: 20000 }],
 ];
 // the walk's name, as in the walk list ("Squares turtle"; a surface's own name)
-const walkName = (w) => splitModeLabel(modeOptionOf(w)?.text ?? w).name;
-// a mode's shape and its tiles, as the Grid's menu names them: a surface of a family (a torus, a strip, a bottle, the
+const walkName = (w) => splitModeLabel(variantOptionOf(w)?.text ?? w).name;
+// a variant's shape and its tiles, as the Grid's menu names them: a surface of a family (a torus, a strip, a bottle, the
 // rosettes' spheres) and its tiles there (Torus · Kites, Rosettes · Flower 9); else its space and its shape, its tiles in its
 // name (2D circles · Flower 9, 3D solids · Cube)
 const shapeAndTiles = (w) => {
@@ -46965,7 +47002,7 @@ let cardShown = null; // (the card clicked last: its setup adopted once built)
 function setupRow(name, detail, x) {
   const { setup } = x,
     b = card({
-      pic: icon(SHAPE_ICONS[NAV[setupVariant(setup)]?.[2]] ?? MODE_ICONS[setupVariant(setup)]),
+      pic: icon(SHAPE_ICONS[NAV[setupVariant(setup)]?.[2]] ?? VARIANT_ICONS[setupVariant(setup)]),
       name,
       detail,
       on: isInUse(setup),
@@ -47031,7 +47068,7 @@ function showPane(gallery) {
   if (gallery) {
     renderGallery();
     showInViewPicture();
-    $('yourList').querySelector(`[data-kind="${NAV[tabMode()]?.[0]}"]`)?.scrollIntoView({ block: 'start' });
+    $('yourList').querySelector(`[data-kind="${NAV[tabVariant()]?.[0]}"]`)?.scrollIntoView({ block: 'start' });
   } // (the tab in use's section)
 }
 // The setup in view's picture, at the band's right: taken as the Gallery opens (a frame drawn without the grid, see

@@ -14,7 +14,7 @@
 //   await tesseraCheck({ known: true });                                   // Life's known results, played on the graphics card: a minute
 // Returns { ok, failures, checked }. The meshes: a torus straight and turned, its tiles' neighbours alike; a Möbius
 // strip's cells away from its edges, as many neighbours as the torus of its tiles, a Klein bottle's all; each surface its cells as many as
-// said; the grids that never repeat, their walls closed; every button shown its tooltip; those in a hexagon, their walls closed, turning onto themselves, as many cells as said. The crawl: no error, the link's mode the one shown, the size said its cells' count. Known:
+// said; the grids that never repeat, their walls closed; every button shown its tooltip; those in a hexagon, their walls closed, turning onto themselves, as many cells as said. The crawl: no error, the link's variant the one shown, the size said its cells' count. Known:
 // Life's oscillators' periods and methuselahs' loops (PATTERNS.md's), a hunt's best, reversible rules' returns to their start.
 
 const neighbourCounts = (g, keep = () => true) => {
@@ -237,7 +237,7 @@ function checkMeshes(fail) {
     if (Math.abs(live.length / want - 1) > 0.3 + 4 / W)
       fail(`${what}: ${live.length} cells, ${Math.round(want)} wanted`);
   }
-  // every grid that repeats, as a torus (its sides round: a rectangle's columns not its rows; its size as Life's, whatever the mode): each cell's neighbours
+  // every grid that repeats, as a torus (its sides round: a rectangle's columns not its rows; its size as Life's, whatever the variant): each cell's neighbours
   // touching it, a few cells' width away at most the shortest way round (not glued to far ones, as v0.1.1305's to 1371's)
   for (const kind of ['square', 'hex', 'tri', 'cairo', 'kite', ...Object.keys(TILINGS), ...Object.keys(RECTS)]) {
     if ((!tilingOf(kind) && !TILES_PER_GRID_CELL[kind]) || APERIODIC[kind]) continue;
@@ -272,7 +272,7 @@ function checkMeshes(fail) {
   return checked;
 }
 
-// after an action: no error, the link's mode the one shown, a surface's cells as many as said, more than one start (the crawl's, the fuzz's)
+// after an action: no error, the link's variant the one shown, a surface's cells as many as said, more than one start (the crawl's, the fuzz's)
 const wait = (ms) => new Promise((go) => setTimeout(go, ms));
 // ok() true and nothing waited for (the app's waits, see waitBegin: digits, a build on its way, a battle's others), 10 s at most
 const until = async (ok) => {
@@ -281,14 +281,14 @@ const until = async (ok) => {
 const shown =
   (w, more = () => true) =>
   () =>
-    $('mode').value === w && more(); // (mode w on the page, and more)
-// a Life link opened and its own game built: a new one, of its mode and its setup (not the one before, still shown while the
+    $('variant').value === w && more(); // (variant w on the page, and more)
+// a Life link opened and its own game built: a new one, of its variant and its setup (not the one before, still shown while the
 // next is built: a wait's guess, 1.5 s, read the grid before's symmetries on a page busy after the other checks)
 const openLife = async (link) => {
   const before = walk.life,
     w = setupVariant(parseHash(link));
   location.hash = link;
-  await until(shown(w, () => walk.life && walk.life !== before && walk.mode === w && isInUse(parseHash())));
+  await until(shown(w, () => walk.life && walk.life !== before && walk.variant === w && isInUse(parseHash())));
 };
 // to generation g, its batches awaited (Life's on the card come back later, see lifeSettle)
 const goTo = async (g) => {
@@ -349,7 +349,7 @@ function checker(fail) {
     await wait(ms);
     for (let t = 0; waits.size && t < 600; t++) await wait(100); // (its digits or its build still on their way: the link follows the walk once built, see buildWalk)
     c.checked++;
-    const w = $('mode').value,
+    const w = $('variant').value,
       hashW = parseHash() && setupVariant(parseHash()),
       said = [
         ...$('sizeLabel')
@@ -357,7 +357,7 @@ function checker(fail) {
           .at(-1)
           .matchAll(/([\d,]+)\s+[a-z]+/gi),
       ].reduce((sum, m) => sum + Number(m[1].replace(/,/g, '')), 0); // (its cells, its terms summed: 1,910 hexagons + 12 pentagons)
-    const n = MODES[w].surface && !MODES[w].plane ? walk.geo?.n : null;
+    const n = VARIANTS[w].surface && !VARIANTS[w].plane ? walk.geo?.n : null;
     const nan = document.querySelectorAll('svg[viewBox*="NaN"], svg[viewBox*="Infinity"]').length; // (a picture with nothing to frame: no error thrown, drawn empty)
     const starts = $('startSection').hidden
       ? 2
@@ -376,7 +376,7 @@ function checker(fail) {
   };
   return c;
 }
-// (each: on each mode reached, after its look: clickAll's; from: the look it starts at, each look's number kept in
+// (each: on each variant reached, after its look: clickAll's; from: the look it starts at, each look's number kept in
 // localStorage.tesseraCrawlAt: a pass that took the tab down, run again from there)
 async function crawl(fail, each = null, from = 0) {
   let at = 0;
@@ -501,12 +501,12 @@ const panel = (d) =>
           .join(' '),
       ]),
   );
-// Links opened cold, each in a page of its own (an iframe): their walk built, its mode the link's, its battle or its symmetry
+// Links opened cold, each in a page of its own (an iframe): their walk built, its variant the link's, its battle or its symmetry
 // as the link asks (v0.4.426: a strip's battle looped on its own size, opened cold; v0.4.423: a symmetry before any walk)
 const COLD_LINKS = [
   [
     toHash({
-      ...modeWords('walkKleinBottleHexTurtleEdges'),
+      ...variantWords('walkKleinBottleHexTurtleEdges'),
       walkNumberA: 'pi',
       maxSteps: 3000,
       gridSize: 72,
@@ -517,7 +517,7 @@ const COLD_LINKS = [
   ],
   [
     toHash({
-      ...modeWords('walkMobiusStripHexTurtleCells'),
+      ...variantWords('walkMobiusStripHexTurtleCells'),
       walkNumberA: 'pi',
       maxSteps: 3000,
       gridSize: 5,
@@ -530,7 +530,7 @@ const COLD_LINKS = [
   ],
   [
     toHash({
-      ...modeWords('walkIcosahedronHexTurtleEdges'),
+      ...variantWords('walkIcosahedronHexTurtleEdges'),
       walkNumberA: 'pi',
       maxSteps: 3000,
       gridSize: 24,
@@ -539,7 +539,7 @@ const COLD_LINKS = [
     }),
     { teams: 2 },
   ],
-  [toHash({ ...modeWords('lifeHex'), playRule: 'B3/S23', popSymmetry: 'mirror' }), { symmetry: 'mirror' }],
+  [toHash({ ...variantWords('lifeHex'), playRule: 'B3/S23', popSymmetry: 'mirror' }), { symmetry: 'mirror' }],
 ];
 async function checkColdLinks(fail) {
   for (const [link, want] of COLD_LINKS) {
@@ -549,22 +549,22 @@ async function checkColdLinks(fail) {
     f.src = `${location.pathname}?cold=${Date.now()}#${link}&version=${VERSION}`;
     document.body.append(f);
     await new Promise((go) => f.addEventListener('load', go, { once: true }));
-    for (let t = 0; t < 60 && f.contentWindow.eval('walk.mode') !== w; t++) await wait(100); // (built: its walk the link's mode, 6 s at most)
-    let mode, teams, symmetry;
+    for (let t = 0; t < 60 && f.contentWindow.eval('walk.variant') !== w; t++) await wait(100); // (built: its walk the link's variant, 6 s at most)
+    let variant, teams, symmetry;
     try {
-      [mode, teams, symmetry] = f.contentWindow.eval('[walk.mode, battleOn() ? walkTeams : 1, plane.sym]');
+      [variant, teams, symmetry] = f.contentWindow.eval('[walk.variant, battleOn() ? walkTeams : 1, plane.sym]');
     } catch (e) {
-      mode = `${e.name}: ${e.message}`;
+      variant = `${e.name}: ${e.message}`;
     } // (its page broken: said, not thrown)
     f.remove();
-    if (mode !== w) fail(`#${link} opened cold: no walk built (${mode})`);
+    if (variant !== w) fail(`#${link} opened cold: no walk built (${variant})`);
     else if (want.teams && teams !== want.teams) fail(`#${link} opened cold: ${teams} teams, not ${want.teams}`);
     else if (want.symmetry && symmetry !== want.symmetry)
       fail(`#${link} opened cold: symmetry ${symmetry}, not ${want.symmetry}`);
   }
   return COLD_LINKS.length;
 }
-// Click everything, as a brute (a night's, clickAll): on each mode the crawl reaches, every control seen and not greyed (the
+// Click everything, as a brute (a night's, clickAll): on each variant the crawl reaches, every control seen and not greyed (the
 // panel's, Display's, the player's), clicked then clicked again (back as it was), then a step on, a step back and the start:
 // no error thrown, its control named. Not the crawl's own (tabs, spaces, shapes, tilings, rules, sides), nor what downloads,
 // copies, erases or plays a sound (Display › Blocks threw from v0.4.21 to v0.4.503: the fuzz picks menus only)
@@ -684,7 +684,7 @@ function watchSearches() {
     stop: () => undo.forEach((back) => back()),
   };
 }
-// (sized: each mode's largest size hovered too, the crawl's; not the fuzz's, its sizes its own)
+// (sized: each variant's largest size hovered too, the crawl's; not the fuzz's, its sizes its own)
 function hoverGreyed(fail, sized = true) {
   const name = (b) => (b.querySelector('.mode-name') ?? b).textContent.trim().slice(0, 30) || b.id;
   const hoverAll = (where) => {
@@ -708,14 +708,14 @@ function hoverGreyed(fail, sized = true) {
     await wait(200);
     await until(() => true);
   };
-  const largeDone = new Set(); // (each mode once at its largest: a whyNot's cost is its mesh's, not the setup's)
+  const largeDone = new Set(); // (each variant once at its largest: a whyNot's cost is its mesh's, not the setup's)
   return async (where) => {
     hoverAll(where);
     if (!sized) return;
     const F = $('gridSizeField'),
       largest = F.options[F.options.length - 1]?.value;
-    if (MODES[tabMode()].plane || !largest || F.value === largest || largeDone.has(tabMode())) return;
-    largeDone.add(tabMode());
+    if (VARIANTS[tabVariant()].plane || !largest || F.value === largest || largeDone.has(tabVariant())) return;
+    largeDone.add(tabVariant());
     const was = F.value;
     await resize(largest);
     hoverAll(`${where} at ${largest}`);
@@ -840,7 +840,7 @@ async function fuzz(fail, count, seedv, cold = false, each = null) {
 
 // The deep crawl (a night's): every grid of Life and Rewind from its link, then on each: every rule of its menu and one of
 // your own (B36/S23; blocks: their menu's), each with How it works (and its Letters page); every colour (and Mixed); every zone of
-// Hunt; its smallest size; 30 generations played. No error anywhere (a click's included), the link's mode the one shown.
+// Hunt; its smallest size; 30 generations played. No error anywhere (a click's included), the link's variant the one shown.
 // only: those grids alone; from: the grid it starts at (after a crash: localStorage.tesseraDeep holds the one it was on, and its failures so far)
 async function deep(fail, from, only) {
   const wait = (ms) => new Promise((go) => setTimeout(go, ms)),
@@ -873,14 +873,14 @@ async function deep(fail, from, only) {
     }
     if (!$('ruleTuto').hidden) $('ruleTuto').querySelector('.tut-close')?.click();
   };
-  const all = (only ?? Object.keys(MODES)).filter(
-    (m) => MODES[m].life && [...$('mode').options].some((o) => o.value === m),
+  const all = (only ?? Object.keys(VARIANTS)).filter(
+    (m) => VARIANTS[m].life && [...$('variant').options].some((o) => o.value === m),
   );
   for (const w of all.slice(Math.max(0, all.indexOf(from)))) {
     localStorage.tesseraDeep = `${w} ${Math.round((performance.memory?.usedJSHeapSize ?? 0) / 1e6)} MB`; // (the page's memory too)
-    location.hash = toHash(modeWords(w));
+    location.hash = toHash(variantWords(w));
     await look(`${w} from its link`, 900);
-    if ($('mode').value !== w) fail(`${w}: the link opened ${$('mode').value}`);
+    if ($('variant').value !== w) fail(`${w}: the link opened ${$('variant').value}`);
     for (let i = 0; i < $('ruleCards').children.length; i++) {
       const b = $('ruleCards').children[i],
         name = b.querySelector('.mode-name')?.textContent ?? '';
@@ -890,7 +890,7 @@ async function deep(fail, from, only) {
       await play(`${w} rule ${name}`);
       if (i < 2) await how(`${w} rule ${name}`); // (How it works: the first two, and your own)
     }
-    if (!MODES[w].margolus) {
+    if (!VARIANTS[w].margolus) {
       // (blocks: their rules tables of their own size, all in the menu)
       $('lifeRule').value = 'B36/S23';
       $('lifeRule').dispatchEvent(new Event('change'));
@@ -907,7 +907,7 @@ async function deep(fail, from, only) {
         b.click();
         await look(`${w} zone ${b.textContent.trim()}`);
       }
-    const down = MODES[w].plane ? $('planeDown') : $('sizeDown');
+    const down = VARIANTS[w].plane ? $('planeDown') : $('sizeDown');
     for (let k = 0; k < 12 && !down.disabled; k++) {
       down.click();
       await wait(250);
@@ -923,14 +923,14 @@ async function deep(fail, from, only) {
 // any: its colours never fair there, as Klein Trihex's were, its length always half a period off)
 async function coloursOffered(fail) {
   let checked = 0;
-  for (const w of Object.keys(MODES).filter(
-    (m) => MODES[m].life && MODES[m].surface && [...$('mode').options].some((o) => o.value === m),
+  for (const w of Object.keys(VARIANTS).filter(
+    (m) => VARIANTS[m].life && VARIANTS[m].surface && [...$('variant').options].some((o) => o.value === m),
   )) {
-    const kind = surfaceOf(MODES[w]),
+    const kind = surfaceOf(VARIANTS[w]),
       sizes = SURFACES[kind]?.sizes ?? [];
     let some = false;
     for (const s of sizes) {
-      location.hash = toHash({ ...modeWords(w), gridSize: s });
+      location.hash = toHash({ ...variantWords(w), gridSize: s });
       await until(shown(w, () => $('gridSizeField').value === String(s))); // (the size asked: the one played may be a row off, its walkers')
       if (TEAM_COUNTS.some((K) => K > 1 && teamsFit(K))) {
         some = true;
@@ -946,30 +946,30 @@ async function coloursOffered(fail) {
 // A solid's start 1 the same kind of point at every size (the turns of the solid leaving it in place as many): what lets
 // battleFits judge it on the solid's least mesh (see battleFits), every walk on a closed solid whose team counts depend on
 // the start, its sizes to 30,000 cells
-// The sets of blocks that come round a surface (BLOCKS_NOT_ROUND) as its meshes say: every block mode on a surface, as it is
+// The sets of blocks that come round a surface (BLOCKS_NOT_ROUND) as its meshes say: every block variant on a surface, as it is
 // and turned, each of its rules' sets: its blocks there at each of its small sizes (to 32 a side, its sizes' step's), the
-// mesh made for that mode (its colours, see ringFor), as blocksFit says
+// mesh made for that variant (its colours, see ringFor), as blocksFit says
 function checkBlocksRound(fail) {
   let checked = 0;
   const rules = rulesOf('life')
     .map((r) => [r, parseRule(r.rule)])
     .filter(([, R]) => R?.margolus);
-  for (const w of Object.keys(MODES).filter((w) => MODES[w].margolus && MODES[w].surface)) {
-    const mode = MODES[w],
+  for (const w of Object.keys(VARIANTS).filter((w) => VARIANTS[w].margolus && VARIANTS[w].surface)) {
+    const variant = VARIANTS[w],
       seen = new Set();
     for (const turned of [false, true]) {
-      const sp = shownSurface(mode.surface, turned);
+      const sp = shownSurface(variant.surface, turned);
       for (const [r, R] of rules) {
         const key = `${sp} ${blockSetName(R)}`;
-        if (!r.tiling.includes(lifeMark(mode)) || !blocksFit(R, mode, null) || seen.has(key)) continue;
+        if (!r.tiling.includes(lifeMark(variant)) || !blocksFit(R, variant, null) || seen.has(key)) continue;
         seen.add(key);
         checked++;
         const round = ringFor(w, 3, () =>
           SURFACES[sp].sizes
             .filter((f) => f <= 32 && f % (BLOCK_STEPS[sp] ?? 1) === 0)
-            .every((f) => !!surfaceBlocks(SURFACES[sp].mesh(f), blocksGrid(mode), R)),
+            .every((f) => !!surfaceBlocks(SURFACES[sp].mesh(f), blocksGrid(variant), R)),
         );
-        if (round !== blocksFit(R, mode, sp))
+        if (round !== blocksFit(R, variant, sp))
           fail(`${w} on ${sp}: its ${blockSetName(R)} come round: ${round}, said ${!round}`);
       }
     }
@@ -1013,7 +1013,7 @@ async function huntResultsKept(fail) {
   };
   // the battles' hunt: three walkers' orders drawn with the starts alone, then with the numbers
   const trio = {
-    ...modeWords('walkIcosahedronHexTurtleEdges'),
+    ...variantWords('walkIcosahedronHexTurtleEdges'),
     walkNumberA: 'sqrt(2923)',
     maxSteps: 20000,
     gridSize: 24,
@@ -1058,36 +1058,36 @@ async function huntResultsKept(fail) {
   }
   return checked;
 }
-// Every mode's key its link's words in one (see modeName): its tab, its shape, its tiling, a walk's kind, its side, as the
+// Every variant's key its link's words in one (see variantName): its tab, its shape, its tiling, a walk's kind, its side, as the
 // menu says them (NAV, its family's tab); and a place in the menu each
-function checkModeNames(fail) {
-  for (const w of Object.keys(MODES)) {
+function checkVariantNames(fail) {
+  for (const w of Object.keys(VARIANTS)) {
     if (!NAV[w]) {
       fail(`${w}: no place in the menu`);
       continue;
     }
     const [kind, , shape, rule, side] = NAV[w],
-      want = modeName(kind, shape, familyOf(w) ? tilingNameOf(w) : null, rule, side);
+      want = variantName(kind, shape, familyOf(w) ? tilingNameOf(w) : null, rule, side);
     if (w !== want) fail(`${w}: its key is not its link's words, ${want}`);
   }
-  return Object.keys(MODES).length;
+  return Object.keys(VARIANTS).length;
 }
 // Centred's edges (CENTRED_EDGES) as the meshes' own: every battle along a solid's grid, at its two least sizes of each
 // class (3 divides it or not): the edges out of its faces' centres and corners as its table says, and its walkers grouped
 // where groupedCan says so
 function checkCentred(fail) {
   let checked = 0;
-  for (const w of Object.keys(MODES).filter((w) => battleMode(w) && MODES[w].edges)) {
-    const mode = MODES[w],
-      kind = surfaceOf(mode),
+  for (const w of Object.keys(VARIANTS).filter((w) => battleVariant(w) && VARIANTS[w].edges)) {
+    const variant = VARIANTS[w],
+      kind = surfaceOf(variant),
       S = SURFACES[kind];
     if (S.columns) continue;
-    const sizes = sizesOf(kind, mode);
+    const sizes = sizesOf(kind, variant);
     for (const size of [0, 1].flatMap((rest) => sizes.filter((f) => !(f % 3) === !rest).slice(0, 2))) {
       const g = S.mesh(size);
       checked++;
       for (const K of TEAM_COUNTS.filter((K) => K > 1))
-        if (!!groupedStarts(g, walkStart(g, mode), K) !== groupedCan(w, size, K))
+        if (!!groupedStarts(g, walkStart(g, variant), K) !== groupedCan(w, size, K))
           fail(`${w} at ${size}: ${K} walkers centred, the mesh says ${!groupedCan(w, size, K)}`);
       const edges = [...new Set((g.groupedOut ?? []).map((q) => q.out.length))].sort((a, b) => a - b);
       if (`${edges}` !== `${centredEdges(kind, size)}`)
@@ -1098,21 +1098,21 @@ function checkCentred(fail) {
 }
 function checkFirstStarts(fail) {
   let checked = 0;
-  for (const w of Object.keys(MODES).filter(battleMode)) {
-    const mode = MODES[w],
-      kind = surfaceOf(mode),
+  for (const w of Object.keys(VARIANTS).filter(battleVariant)) {
+    const variant = VARIANTS[w],
+      kind = surfaceOf(variant),
       S = SURFACES[kind];
     if (S.columns) continue;
     const counts = solidTeamCounts(kind);
     if (counts.some.every((K) => counts.any.includes(K))) continue; // (any start: none depends on it)
     const kindOfStart = (size) => {
       const g = S.mesh(size),
-        P = mode.edges ? g.verts : g.cen,
-        v = walkStart(g, mode, 1)[0],
+        P = variant.edges ? g.verts : g.cen,
+        v = walkStart(g, variant, 1)[0],
         p = [P[3 * v], P[3 * v + 1], P[3 * v + 2]];
       return solidRotations(solidCorners(g)).filter((M) => pointsApart([p, matTimesPoint(M, p)]) < 1e-7).length;
     };
-    const sizes = sizesOf(kind, mode).filter((size) => S.tiles(size) <= 30000);
+    const sizes = sizesOf(kind, variant).filter((size) => S.tiles(size) <= 30000);
     for (const size of sizes) {
       const least = startClassLeast(kind, size);
       if (least === size) continue;
@@ -1126,23 +1126,23 @@ function checkFirstStarts(fail) {
   return checked;
 }
 
-// Battles fair: every walk on a surface (see battleMode), at its size, offers a count of walkers past Solo, and in each
+// Battles fair: every walk on a surface (see battleVariant), at its size, offers a count of walkers past Solo, and in each
 // count offered every walker, its digits A's, walks A's path moved by its map (see battleMaps, placeMap), step for step,
 // till one dies: none its mirror. A night's (4 minutes)
 async function battlesFair(fail) {
   let checked = 0;
-  for (const w of Object.keys(MODES).filter(battleMode)) {
-    location.hash = toHash({ ...modeWords(w), walkNumberA: 'pi' });
+  for (const w of Object.keys(VARIANTS).filter(battleVariant)) {
+    location.hash = toHash({ ...variantWords(w), walkNumberA: 'pi' });
     await until(shown(w, () => !walk.battle && walk.geo));
     const counts = battleCounts(w),
-      grid = !!MODES[w].edges;
+      grid = !!VARIANTS[w].edges;
     const built = (K, stops) =>
-      $('mode').value === w && walk.battle?.player?.K === K && walk.battle.player.stops === stops; // (this link's battle, not the one before it)
+      $('variant').value === w && walk.battle?.player?.K === K && walk.battle.player.stops === stops; // (this link's battle, not the one before it)
     checked++;
     if (!counts.length) fail(`${w}: no battle at size ${gridSizePlayed()}`);
     for (const K of counts) {
       location.hash = toHash({
-        ...modeWords(w),
+        ...variantWords(w),
         walkNumberA: 'pi',
         maxSteps: 3000,
         teams: K,
@@ -1157,7 +1157,7 @@ async function battlesFair(fail) {
         continue;
       }
       P.to(Infinity);
-      const start = walkStart(g, MODES[w]),
+      const start = walkStart(g, VARIANTS[w]),
         spread = startSpread(g, grid, start),
         G = battleGroups(g, K).reduce((a, b) => (spread(b) > spread(a) + 1e-9 ? b : a));
       const end = Math.min(...P.dead.map((d) => (d < 0 ? P.n : d)));
@@ -1166,7 +1166,7 @@ async function battlesFair(fail) {
         for (let i = 0; i < end; i++) if (P.places[s][i] !== G[s](P.places[0][i], grid)) off++;
       if (off)
         fail(
-          `${w} ${K} walkers: ${off} steps off A's path moved (#${toHash({ ...modeWords(w), walkNumberA: 'pi', teams: K })})`,
+          `${w} ${K} walkers: ${off} steps off A's path moved (#${toHash({ ...variantWords(w), walkNumberA: 'pi', teams: K })})`,
         );
     }
     // Land no collision, its fewest walkers: no walker's step along another's (a line's edge along the grid, a tile
@@ -1175,7 +1175,7 @@ async function battlesFair(fail) {
       K = counts[0],
       ruled = (br) =>
         `#${toHash({
-          ...modeWords(w),
+          ...variantWords(w),
           walkNumberA: 'pi',
           maxSteps: 3000,
           teams: K,
@@ -1223,7 +1223,7 @@ async function battlesFair(fail) {
       t < 30 &&
       !(
         walk.battle?.player?.K === K &&
-        $('mode').value === w &&
+        $('variant').value === w &&
         parseHash()?.battleRule === linkWord(BATTLE_RULES[snake][1])
       );
       t++
@@ -1288,7 +1288,7 @@ function checkDiscs(fail) {
 function checkBlockWraps(fail) {
   let checked = 0;
   for (const k0 of new Set(
-    Object.values(MODES)
+    Object.values(VARIANTS)
       .filter((m) => m.margolus && m.plane)
       .map((m) => m.plane),
   )) {
@@ -1364,7 +1364,7 @@ async function checkKnown(fail) {
   location.hash = '#mode=rewind&shape=hex&playRule=M0,2,4,5,1,6,3,7&gridSize=6&popStart=random&popDraw=10.6';
   for (
     let i = 0;
-    i < 100 && !($('mode').value === 'rewindHex' && walk.life?.margolus && walk.life.seedAlive === 6 && !waits.size);
+    i < 100 && !($('variant').value === 'rewindHex' && walk.life?.margolus && walk.life.seedAlive === 6 && !waits.size);
     i++
   )
     await wait(100); // (built, not a wait's guess)
@@ -1447,7 +1447,9 @@ async function checkKnown(fail) {
     ['lifeFlorets', 'half rotate'],
     ['rewindHex', ''],
   ]) {
-    await openLife(`#${toHash({ ...modeWords(w), gridSize: 32, gridWalls: 1, popStart: 'random', popDraw: '30.1' })}`);
+    await openLife(
+      `#${toHash({ ...variantWords(w), gridSize: 32, gridWalls: 1, popStart: 'random', popDraw: '30.1' })}`,
+    );
     const { kind, W } = walk.plane,
       has = symmetriesHere(kind, W)
         .filter((y) => y !== 'none')
@@ -1492,17 +1494,17 @@ async function checkKnown(fail) {
 // and the solids made of its cells
 function checkMarks(fail) {
   for (const [kind, t] of Object.entries(TILINGS)) {
-    const others = Object.keys(MODES).filter(
+    const others = Object.keys(VARIANTS).filter(
       (w) =>
-        MODES[w].life &&
-        !MODES[w].margolus &&
-        !MODES[w].loops &&
-        !MODES[w].elementary &&
-        lifeMark(MODES[w]) === t.mark &&
-        MODES[w].plane !== kind &&
-        FOLDED[MODES[w].surface]?.kind !== kind &&
-        !(kind === 'tetrakis' && MODES[w].surface?.endsWith('Tetrakis')) &&
-        SURFACES[MODES[w].surface]?.tiling !== kind,
+        VARIANTS[w].life &&
+        !VARIANTS[w].margolus &&
+        !VARIANTS[w].loops &&
+        !VARIANTS[w].elementary &&
+        lifeMark(VARIANTS[w]) === t.mark &&
+        VARIANTS[w].plane !== kind &&
+        FOLDED[VARIANTS[w].surface]?.kind !== kind &&
+        !(kind === 'tetrakis' && VARIANTS[w].surface?.endsWith('Tetrakis')) &&
+        SURFACES[VARIANTS[w].surface]?.tiling !== kind,
     ); // (a surface of its cells: see SURFACES' tiling)  // (the solids of squares cut as tetrakis: its triangles, see TETRAKIS_SOLIDS)
     if (others.length) fail(`${t.name}'s mark ${t.mark} also ${others.join(', ')}'s: their rules shown on it`);
   }
@@ -1562,7 +1564,7 @@ async function checkSheets(fail) {
   // every size of every count
   for (const K of TEAM_COUNTS) {
     for (const E of SURFACES.globe.ownSizes(K)) {
-      // (K's own sizes, not those offered for the mode and colours in use)
+      // (K's own sizes, not those offered for the variant and colours in use)
       const { N, lines } = globeBands(E, K),
         off = N.slice(1, -1)
           .map((n, j) => (2 * Math.PI * Math.cos((lines[j] + lines[j + 1]) / 2)) / n / (lines[j + 1] - lines[j]))
@@ -1585,7 +1587,7 @@ async function checkSheets(fail) {
     const offered = [];
     for (const K of [1, 3]) {
       lifeTeams = K;
-      location.hash = toHash({ ...modeWords(w), teams: K });
+      location.hash = toHash({ ...variantWords(w), teams: K });
       await until(shown(w, () => lifeTeams === K));
       offered.push(TEAM_COUNTS.filter((k) => teamsFit(k)).join(','));
     }
@@ -1593,7 +1595,7 @@ async function checkSheets(fail) {
     if (w === 'lifeKleinBottleType15' && offered[0].split(',').some((k) => k % 2 === 0))
       fail(`${w}: an even count of colours offered (${offered[0]}), its twist asking an odd length`); // (v0.3.88 to 0.3.93: g.period left by the rename, every count offered)
     for (const K of [2, 3, 5].filter((k) => offered[0].split(',').includes(`${k}`))) {
-      location.hash = toHash({ ...modeWords(w), teams: K });
+      location.hash = toHash({ ...variantWords(w), teams: K });
       await until(shown(w, () => lifeTeams === K && walk.life?.colours === K));
       const sizes = huntParts(null, K).map((p) => p.length);
       if (lifeTeams !== K) fail(`${w}: ${K} colours offered, ${lifeTeams} taken`);
@@ -1612,30 +1614,30 @@ async function partsEqual(fail) {
   const keepPicked = picked;
   picked = null; // (each grid at its own first size, whatever was picked by hand: a picked one of 350,000 cells, a build longer than the waits)
   let checked = 0;
-  const lifeModes = Object.keys(MODES).filter(
+  const lifeVariants = Object.keys(VARIANTS).filter(
     (w) =>
-      MODES[w].life &&
-      !MODES[w].margolus &&
-      !MODES[w].elementary &&
-      !MODES[w].loops &&
-      [...$('mode').options].some((o) => o.value === w),
+      VARIANTS[w].life &&
+      !VARIANTS[w].margolus &&
+      !VARIANTS[w].elementary &&
+      !VARIANTS[w].loops &&
+      [...$('variant').options].some((o) => o.value === w),
   );
   const runs = [
-    ...lifeModes
-      .filter((w) => MODES[w].plane)
+    ...lifeVariants
+      .filter((w) => VARIANTS[w].plane)
       .flatMap((w) => [
         [w, {}, 1],
         [w, { gridWalls: 1 }, 1],
       ]),
-    ...lifeModes
-      .filter((w) => MODES[w].surface && !TORI.includes(surfaceOf(MODES[w])))
-      .map((w) => [w, {}, SURFACES[MODES[w].surface]?.disc ? 1 : 0]),
+    ...lifeVariants
+      .filter((w) => VARIANTS[w].surface && !TORI.includes(surfaceOf(VARIANTS[w])))
+      .map((w) => [w, {}, SURFACES[VARIANTS[w].surface]?.disc ? 1 : 0]),
   ]; // (a rosette sphere: its discs' lunes, cells whole, one apart as the plane's)
   for (const [w, walls, slack] of runs) {
-    location.hash = toHash({ ...modeWords(w), ...walls, teams: 1 });
+    location.hash = toHash({ ...variantWords(w), ...walls, teams: 1 });
     await until(shown(w, () => lifeTeams === 1));
     for (const K of TEAM_COUNTS.filter((k) => k > 1 && teamsFit(k))) {
-      location.hash = toHash({ ...modeWords(w), ...walls, teams: K });
+      location.hash = toHash({ ...variantWords(w), ...walls, teams: K });
       await until(shown(w, () => lifeTeams === K && walk.life?.colours === K));
       const sizes = huntParts(null, K).map((p) => p.length);
       if (lifeTeams !== K) fail(`${w}${walls}: ${K} colours offered, ${lifeTeams} taken`);
@@ -1793,7 +1795,7 @@ window.tesseraCheck = async ({
     checkTwistedSphere(fail) +
     checkDiscCuts(fail) +
     checkFirstStarts(fail) +
-    checkModeNames(fail) +
+    checkVariantNames(fail) +
     checkCentred(fail) +
     checkBlocksRound(fail) +
     (await checkSheets(fail)) +

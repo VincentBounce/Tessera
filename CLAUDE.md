@@ -195,10 +195,10 @@ While the checks run unattended (a night, a meal), also audit what they cannot s
   0, no fade on it, in Solo and in a battle (each walker's line), every look (Rainbow, Commands); each cell fades in from
   nothing over WALK_FADE_SECONDS, the start cell never; paused, all whole. A link opened at
   a step (`at=0`, a few steps, the end) framed as Begin or the step buttons frame that step (the start centred at 0).
-- **Every night, clean transitions, no debris**: while a walk is computed the tab (`tabMode()`) already shows the
-  next mode and the walk shown (`walk`, `walk.mode`) is still the old one: grep every read of `tabMode()` (the judges take their mode in each call, no default) and check
+- **Every night, clean transitions, no debris**: while a walk is computed the tab (`tabVariant()`) already shows the
+  next mode and the walk shown (`walk`, `walk.variant`) is still the old one: grep every read of `tabVariant()` (the judges take their mode in each call, no default) and check
   none is mixed with the walk shown (`walk.geo`, `walk.life`, `walk.plane`…): what describes the walk shown reads
-  `walk.mode`, what sets up the next one reads the tab, a figure's colours read the mode of their own mesh; then the fuzz and
+  `walk.variant`, what sets up the next one reads the tab, a figure's colours read the mode of their own mesh; then the fuzz and
   the cold fuzz, switching tabs fast (before the walk is built), no error, nothing of the old walk left on screen.
 - **Every night, the tooltips' redundancies**: each tooltip and card read as it shows (the `#tip` box after a mouseover):
   nothing said twice, its bold name never again in its words, not even spelt otherwise (a loop's Golly table

@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.21';
+const VERSION = '0.5.22';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -3902,7 +3902,6 @@ const FOLDS = {
     has: (kind) => !!TILINGS[kind].torus,
     way: 'rows round the tube',
     tail: '',
-    perspective: true,
   },
   mobius: {
     family: 1,
@@ -3912,7 +3911,6 @@ const FOLDS = {
     has: (kind) => MOBIUS_TILINGS.includes(kind),
     way: 'along the strip',
     tail: ' (both faces, over its edge onto the one behind)',
-    perspective: true,
   },
   klein: {
     family: 2,
@@ -4151,7 +4149,6 @@ const VARIANTS = {
     cells: true,
     surface: 'cube',
     initial: 48,
-    perspective: true,
     fill: false,
     antOf: 'walkCubeSquaresTurtleCells',
     get rule() {
@@ -4229,7 +4226,6 @@ const VARIANTS = {
     surface: 'torus',
     initial: 48,
     net: 'square',
-    perspective: true,
     rule: 'on a torus of squares: <b>0</b> turn left, <b>1</b> straight on, <b>2</b> turn right',
   },
   walkTorusTrianglesTurtleCells: {
@@ -4241,7 +4237,6 @@ const VARIANTS = {
     surface: 'torusTri',
     initial: 48,
     net: 'tri',
-    perspective: true,
     rule: 'on a torus of triangles: exit through the <b>0</b> left or <b>1</b> right edge',
   },
   // Cairo pentagons: out through one of the 4 other edges, edge k + 1 the sharpest right (as the 2D walk)
@@ -4253,7 +4248,6 @@ const VARIANTS = {
     surface: 'torusCairo',
     initial: 32,
     net: 'cairo',
-    perspective: true,
     rule: 'on a torus of Cairo pentagons: out through one of its 4 other edges, <b>0</b> sharp left, <b>1</b> left, <b>2</b> right, <b>3</b> sharp right',
   },
   // hexagons: entering through edge k, edge k + 1 is a sharp right, k + 2 right, k + 3 straight on
@@ -4266,7 +4260,6 @@ const VARIANTS = {
     surface: 'torusHex',
     initial: 48,
     net: 'hex',
-    perspective: true,
     rule: 'on a torus of hexagons: <b>0</b> sharp left, <b>1</b> left, <b>2</b> straight, <b>3</b> right, <b>4</b> sharp right',
   },
   walkMobiusStripSquaresTurtleCells: {
@@ -4277,7 +4270,6 @@ const VARIANTS = {
     twin: 'walkMobiusStripSquaresTurtleEdges',
     surface: 'mobius',
     net: 'square',
-    perspective: true,
     rule: 'on a Möbius strip of squares: <b>0</b> turn left, <b>1</b> straight on, <b>2</b> turn right (over its edge, onto the face behind)',
   },
   walkMobiusStripHexTurtleCells: {
@@ -4288,7 +4280,6 @@ const VARIANTS = {
     twin: 'walkMobiusStripHexTurtleEdges',
     surface: 'mobiusHex',
     net: 'hex',
-    perspective: true,
     rule: 'on a Möbius strip of hexagons: <b>0</b> sharp left, <b>1</b> left, <b>2</b> straight, <b>3</b> right, <b>4</b> sharp right (over its edge, onto the face behind)',
   },
   // a Klein bottle (its neck through its side, opening into its bottom): as the torus's walks
@@ -4338,7 +4329,6 @@ const VARIANTS = {
     cells: true,
     surface: 'mobiusCairo',
     net: 'cairo',
-    perspective: true,
     rule: 'on a Möbius strip of Cairo pentagons: out through one of its 4 other edges, <b>0</b> sharp left, <b>1</b> left, <b>2</b> right, <b>3</b> sharp right (over its edge, onto the face behind)',
   },
   walkMobiusStripTrianglesTurtleCells: {
@@ -4349,7 +4339,6 @@ const VARIANTS = {
     twin: 'walkMobiusStripTrianglesTurtleEdges',
     surface: 'mobiusTri',
     net: 'tri',
-    perspective: true,
     rule: 'on a Möbius strip of triangles: exit through the <b>0</b> left or <b>1</b> right edge (over its edge, onto the face behind)',
   },
   walkCubeSquaresTurtleCells: {
@@ -4362,7 +4351,6 @@ const VARIANTS = {
     surface: 'cube',
     initial: 48,
     net: 'square',
-    perspective: true,
     rule: 'on the surface of a cube: <b>0</b> turn left, <b>1</b> straight on, <b>2</b> turn right',
   },
   walkOctahedronTrianglesTurtleCells: {
@@ -4430,7 +4418,6 @@ const VARIANTS = {
     edges: true,
     initial: 48,
     turns: [90, 0, -90],
-    perspective: true,
     rule: 'along the edges of a torus of squares: <b>0</b> turn left, <b>1</b> straight on, <b>2</b> turn right',
   },
   walkTorusTrianglesTurtleEdges: {
@@ -4442,7 +4429,6 @@ const VARIANTS = {
     edges: true,
     initial: 48,
     turns: [120, 60, 0, -60, -120],
-    perspective: true,
     rule: 'along the edges of a torus of triangles: <b>0</b> sharp left, <b>1</b> left, <b>2</b> straight, <b>3</b> right, <b>4</b> sharp right',
   },
   walkTorusHexTurtleEdges: {
@@ -4454,7 +4440,6 @@ const VARIANTS = {
     edges: true,
     initial: 48,
     turns: [60, -60],
-    perspective: true,
     rule: 'along the edges of a torus of hexagons: <b>0</b> turn left, <b>1</b> turn right',
   },
   walkMobiusStripSquaresTurtleEdges: {
@@ -4465,7 +4450,6 @@ const VARIANTS = {
     surface: 'mobius',
     edges: true,
     turns: [90, 0, -90],
-    perspective: true,
     rule: 'along the edges of a Möbius strip of squares: <b>0</b> turn left, <b>1</b> straight on, <b>2</b> turn right (over its edge, onto the face behind)',
   },
   walkMobiusStripHexTurtleEdges: {
@@ -4476,7 +4460,6 @@ const VARIANTS = {
     surface: 'mobiusHex',
     edges: true,
     turns: [60, -60],
-    perspective: true,
     rule: 'along the edges of a Möbius strip of hexagons: <b>0</b> turn left, <b>1</b> turn right (over its edge, onto the face behind)',
   },
   walkMobiusStripTrianglesTurtleEdges: {
@@ -4487,7 +4470,6 @@ const VARIANTS = {
     surface: 'mobiusTri',
     edges: true,
     turns: [120, 60, 0, -60, -120],
-    perspective: true,
     rule: 'along the edges of a Möbius strip of triangles: <b>0</b> sharp left, <b>1</b> left, <b>2</b> straight, <b>3</b> right, <b>4</b> sharp right (over its edge, onto the face behind)',
   },
   walkKleinBottleSquaresTurtleEdges: {
@@ -4529,7 +4511,6 @@ const VARIANTS = {
     edges: true,
     initial: 48,
     turns: [90, 0, -90],
-    perspective: true,
     rule: 'along the edges of the squares of a cube: <b>0</b> turn left, <b>1</b> straight on, <b>2</b> turn right (at a corner of the cube, the nearest edge)',
   },
   walkTetrahedronTrianglesTurtleEdges: {
@@ -4832,7 +4813,6 @@ const VARIANTS = {
     lattice: 'surface',
     surface: 'torusKite',
     life: true,
-    perspective: true,
     where: 'a torus of kites',
   },
   lifeMobiusStripKites: {
@@ -4840,7 +4820,6 @@ const VARIANTS = {
     lattice: 'surface',
     surface: 'mobiusKite',
     life: true,
-    perspective: true,
     where: 'a Möbius strip of kites (both faces, over its edge onto the one behind)',
   },
   lifeKleinBottleKites: {
@@ -4855,7 +4834,6 @@ const VARIANTS = {
     lattice: 'surface',
     surface: 'torus',
     life: true,
-    perspective: true,
     where: 'a torus of squares (a grid that wraps around both ways)',
   },
   lifeTorusHex: {
@@ -4863,7 +4841,6 @@ const VARIANTS = {
     lattice: 'surface',
     surface: 'torusHex',
     life: true,
-    perspective: true,
     where: 'a torus of hexagons',
   },
   lifeTorusTriangles: {
@@ -4871,7 +4848,6 @@ const VARIANTS = {
     lattice: 'surface',
     surface: 'torusTri',
     life: true,
-    perspective: true,
     where: 'a torus of triangles',
   },
   lifeTorusCairo: {
@@ -4879,7 +4855,6 @@ const VARIANTS = {
     lattice: 'surface',
     surface: 'torusCairo',
     life: true,
-    perspective: true,
     where: 'a torus of Cairo pentagons',
   },
   // a Möbius strip: its two faces one surface, over its edge onto the face behind (2 colours: a face each)
@@ -4888,7 +4863,6 @@ const VARIANTS = {
     lattice: 'surface',
     surface: 'mobius',
     life: true,
-    perspective: true,
     where: 'a Möbius strip of squares (both faces, over its edge onto the one behind)',
   },
   lifeMobiusStripHex: {
@@ -4896,7 +4870,6 @@ const VARIANTS = {
     lattice: 'surface',
     surface: 'mobiusHex',
     life: true,
-    perspective: true,
     where: 'a Möbius strip of hexagons (both faces, over its edge onto the one behind)',
   },
   lifeKleinBottleSquares: {
@@ -4932,7 +4905,6 @@ const VARIANTS = {
     lattice: 'surface',
     surface: 'mobiusCairo',
     life: true,
-    perspective: true,
     where: 'a Möbius strip of Cairo pentagons (both faces, over its edge onto the one behind)',
   },
   lifeMobiusStripTriangles: {
@@ -4940,7 +4912,6 @@ const VARIANTS = {
     lattice: 'surface',
     surface: 'mobiusTri',
     life: true,
-    perspective: true,
     where: 'a Möbius strip of triangles (both faces, over its edge onto the one behind)',
   },
   lifeCubeSquares: {
@@ -4948,7 +4919,6 @@ const VARIANTS = {
     lattice: 'surface',
     surface: 'cube',
     life: true,
-    perspective: true,
     where: 'the surface of a cube',
   },
   lifeCubePitsSquares: {
@@ -4956,7 +4926,6 @@ const VARIANTS = {
     lattice: 'surface',
     surface: 'pits',
     life: true,
-    perspective: true,
     where: 'the surface of a cube with a pit in each face',
   },
   lifeCubeBumpsSquares: {
@@ -4964,7 +4933,6 @@ const VARIANTS = {
     lattice: 'surface',
     surface: 'bumps',
     life: true,
-    perspective: true,
     where: 'the surface of a cube with a bump on each face',
   },
   lifeCubeMengerSpongeSquares: {
@@ -4972,7 +4940,6 @@ const VARIANTS = {
     lattice: 'surface',
     surface: 'menger',
     life: true,
-    perspective: true,
     where: "the surface of Menger's sponge (its holes down to one square)",
   },
   lifeCubeFrameSquares: {
@@ -4980,7 +4947,6 @@ const VARIANTS = {
     lattice: 'surface',
     surface: 'frame',
     life: true,
-    perspective: true,
     where: "the surface of a cube's frame (its edges as wide as its holes)",
   },
   lifeTetrahedronTriangles: {
@@ -5078,7 +5044,6 @@ const VARIANTS = {
   walkCubesTurtleEdges: {
     lattice: 'cube',
     twin: 'walkCubesTurtleCells',
-    perspective: true,
     net: 'cube',
     where: 'in 3D cubes',
   },
@@ -5086,12 +5051,10 @@ const VARIANTS = {
     base: 8,
     lattice: 'cube',
     twin: 'walkCubesDiagonalsCells',
-    perspective: true,
     rule: 'along the diagonals of the cubes, to one of their 8 corners (the 3 bits of each digit the signs of east, north and up): <b>0</b> SW down, <b>1</b> SW up, <b>2</b> NW down, <b>3</b> NW up, <b>4</b> SE down, <b>5</b> SE up, <b>6</b> NE down, <b>7</b> NE up',
   },
   walkDiamondPolymerEdges: {
     lattice: 'cube',
-    perspective: true,
     net: 'diamond',
     where:
       'along the bonds of a diamond, as a polymer chain (straight: trans, the zigzag goes on; left, right: gauche)',
@@ -5101,7 +5064,6 @@ const VARIANTS = {
     lattice: 'cube',
     cells: true,
     twin: 'walkCubesTurtleEdges',
-    perspective: true,
     net: 'cube',
     where: 'from cube to cube',
   },
@@ -5111,7 +5073,6 @@ const VARIANTS = {
     cells: true,
     twin: 'walkCubesDiagonalsEdges',
     shape: 'truncOcta',
-    perspective: true,
     rule: 'from truncated octahedron to truncated octahedron (they fill space), through a hexagon (the 3 bits of each digit the signs of east, north and up): <b>0</b> SW down, <b>1</b> SW up, <b>2</b> NW down, <b>3</b> NW up, <b>4</b> SE down, <b>5</b> SE up, <b>6</b> NE down, <b>7</b> NE up',
   },
 };
@@ -6773,16 +6734,24 @@ const DISPLAY_BY_TAB = {
 // state, as long as none picks it; ant: an ant coming in), its value: one for all, or each tab's ({ all, Life… }:
 // a tab's own, else all's), or by the variant or a battle (a function); displayDefaults and the variant's change set them, and
 // the tiles' marks read them (see defaultOf, defaultMark)
-// Each shape's Shape at first, by the menu's name (Flat 0 ── Inflated 1): the balls and the sheets rolled up round, the
-// rhombic dodecahedron half way; the others flat
-const SHAPE_INFLATED = {
-  Globe: 1,
-  Sphere: 1,
-  Rosettes: 1,
-  Torus: 1,
-  'Möbius strip': 1,
-  'Klein bottle': 1,
-  'Rhombic dodecahedron': 0.5,
+// Each shape's view at first, by the menu's name, in every mode: inflated, its Shape (Flat 0 ── Inflated 1: the balls and
+// the sheets rolled up round, the rhombic dodecahedron half way; the others flat); perspective, Perspective on (the cubes,
+// the torus and the Möbius strip, the 3D lattices; the others off)
+const SHAPE_DEFAULTS = {
+  Cube: { perspective: true },
+  Pits: { perspective: true },
+  Bumps: { perspective: true },
+  Frame: { perspective: true },
+  Sponge: { perspective: true },
+  Cubes: { perspective: true },
+  Diamond: { perspective: true },
+  Globe: { inflated: 1 },
+  Sphere: { inflated: 1 },
+  Rosettes: { inflated: 1 },
+  Torus: { inflated: 1, perspective: true },
+  'Möbius strip': { inflated: 1, perspective: true },
+  'Klein bottle': { inflated: 1 },
+  'Rhombic dodecahedron': { inflated: 0.5 },
 };
 const DISPLAY_DEFAULTS = {
   look: [
@@ -6796,12 +6765,12 @@ const DISPLAY_DEFAULTS = {
   autoRotate: ['autoRotate', 'tab', false],
   autoFit: ['autoFit', 'variant', true],
   upright: ['upright', 'variant', false],
-  shape: ['shapeM', 'variant', (variant, w) => SHAPE_INFLATED[NAV[w][2]] ?? 0], // (Flat 0 ── Inflated 1: by its shape, see SHAPE_INFLATED)
+  shape: ['shapeM', 'variant', (variant, w) => SHAPE_DEFAULTS[NAV[w][2]]?.inflated ?? 0], // (Flat 0 ── Inflated 1: by its shape, see SHAPE_DEFAULTS)
   perspective: [
     'perspective',
     'variant',
-    (variant, w) => perspectiveFor(variant, defaultOf('shape', w), spaceTime && spaceTimeApplies(w)),
-  ], // (as each variant's own, hand-tuned)
+    (variant, w) => perspectiveFor(w, defaultOf('shape', w), spaceTime && spaceTimeApplies(w)),
+  ], // (by its shape, see SHAPE_DEFAULTS)
   light: ['light', 'open', true],
   glass: ['glass', 'open', false],
   grid: ['showGrid', 'open', true],
@@ -8518,7 +8487,7 @@ const spaceTimeTile = tile({
   click: () => {
     spaceTime = !spaceTime;
     if (spaceTime) plane.torus = false;
-    $('perspective').checked = perspectiveFor(VARIANTS[tabVariant()], 0, spaceTimeOn());
+    $('perspective').checked = perspectiveFor(tabVariant(), 0, spaceTimeOn());
     compute();
   },
 });
@@ -9932,7 +9901,6 @@ for (const [kind, t] of Object.entries(TILINGS)) {
         lattice: 'surface',
         surface: F.of(kind),
         life: true,
-        ...(F.perspective ? { perspective: true } : {}),
         where: `${F.a} of ${t.where.replace(/^a grid of /, '')}${F.tail}`,
       };
       VARIANT_ICONS[m] = fold;
@@ -12408,7 +12376,7 @@ const SURFACE_WORMS = {
   antKleinBottleTrianglesEdges: 'walkKleinBottleTrianglesTurtleEdges',
 };
 for (const [w, walkVariant] of Object.entries(SURFACE_WORMS)) {
-  const { surface, initial, turns, perspective } = VARIANTS[walkVariant];
+  const { surface, initial, turns } = VARIANTS[walkVariant];
   VARIANTS[w] = {
     base: 5,
     arrows: '↙↖↑↗↘',
@@ -12417,7 +12385,6 @@ for (const [w, walkVariant] of Object.entries(SURFACE_WORMS)) {
     surface,
     initial,
     turns,
-    perspective,
     worm: true,
     get rule() {
       return wormRuleText();
@@ -12430,7 +12397,7 @@ for (const [w, walkVariant] of Object.entries(SURFACE_WORMS)) {
     .push(w);
 }
 for (const [w, [walkVariant, place]] of Object.entries(SURFACE_ANTS)) {
-  const { surface, initial, turns, perspective } = VARIANTS[walkVariant];
+  const { surface, initial, turns } = VARIANTS[walkVariant];
   VARIANTS[w] = {
     base: 2,
     lattice: 'surface',
@@ -12438,7 +12405,6 @@ for (const [w, [walkVariant, place]] of Object.entries(SURFACE_ANTS)) {
     surface,
     initial,
     turns,
-    perspective,
     fill: false,
     antOf: walkVariant,
     get rule() {
@@ -16137,9 +16103,9 @@ function updateMorphButton() {
     const w = Object.keys(NAV).find((v) => NAV[v][0] === kind && NAV[v][1] === space && NAV[v][2] === s);
     if (!['pits', 'bumps', 'menger'].includes(VARIANTS[w].surface.replace(/Tetrakis$/, '')))
       ways[
-        (SHAPE_INFLATED[s] ?? 0) === 0
+        (SHAPE_DEFAULTS[s]?.inflated ?? 0) === 0
           ? 'Flat'
-          : SHAPE_INFLATED[s] < 1
+          : SHAPE_DEFAULTS[s]?.inflated < 1
             ? 'Half inflated'
             : sheet.includes(s)
               ? 'Rolled'
@@ -16170,14 +16136,14 @@ $('shapeM').addEventListener('input', () => {
 $('shapeM').addEventListener('change', () => {
   const m = Number($('shapeM').value);
   if (m !== 0 && m !== 1) return;
-  $('perspective').checked = perspectiveFor(VARIANTS[walk.variant], m, walk.stacked);
+  $('perspective').checked = perspectiveFor(walk.variant, m, walk.stacked);
   $('perspective').dispatchEvent(new Event('change'));
 });
 
-// The perspective a surface starts with, in its form m: the walk variant's, but none on a solid
-// inflated (a ball is seen whole without it)
-const perspectiveFor = (variant, m, stacked) =>
-  (!!variant.perspective || (!!variant.plane && stacked)) && !(m === 1 && SOLIDS.includes(variant.surface)); // (Space-time: on)
+// The perspective variant w starts with, in its form m: its shape's (see SHAPE_DEFAULTS), but none on a solid made round
+const perspectiveFor = (w, m, stacked) =>
+  (!!SHAPE_DEFAULTS[NAV[w][2]]?.perspective || (!!VARIANTS[w].plane && stacked)) &&
+  !(m === 1 && SOLIDS.includes(VARIANTS[w].surface)); // (Space-time: on)
 // One animation frame of the change of shape (about 0.7 s from flat to round)
 function morphStep(dt) {
   const sh = walk.shape;

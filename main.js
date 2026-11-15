@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.8';
+const VERSION = '0.5.9';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -23900,7 +23900,7 @@ const roundWalls = (K) =>
 // Colour i's picture's way, by construction (see patternFrame: where the plane's x and y go there): tilt, the plane's angle
 // its x lies along (its bottom a quarter turn on: the plane's y down as drawn), and whether it shows mirrored (the plane
 // landing there seen from the other side). Its bottom: down as drawn on the plane; out in a hexagon's walls; on a solid's
-// face or a sheet (unrolled: a level face), down it as a marble rolls (a level face: south)
+// face or a sheet (unrolled: a level face), down it as a marble rolls (a level face: south); on squares, the grid's nearest way
 function iconWay(i, K) {
   const frame = patternFrame(i, K),
     { ex, ey, n } = frame;
@@ -23920,9 +23920,13 @@ function iconWay(i, K) {
     dx = dot3(down, ex),
     dy = dot3(down, ey),
     D = xx * yy - xy * xy;
+  // (on squares, its way the grid's own, a whole quarter turn, the nearest its bottom down: its pixels the cells, 1:1, whatever
+  // the face's shape in space, a rhombus's as a square's; elsewhere its bottom down, its cells sampled)
+  const down2 = Math.atan2((dy * xx - dx * xy) / D, (dx * yy - dy * xy) / D) - Math.PI / 2,
+    quarter = Math.PI / 2;
   return {
     ...frame,
-    tilt: Math.atan2((dy * xx - dx * xy) / D, (dx * yy - dy * xy) / D) - Math.PI / 2,
+    tilt: patternKind() === 'square' ? Math.round(down2 / quarter) * quarter : down2,
     mirror: dot3(cross(ex, ey), n) > 0,
   };
 }

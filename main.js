@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.48';
+const VERSION = '0.5.49';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -10401,8 +10401,8 @@ const FAMILIES = [
       [1, false, 'tiling-tetrakis', 'Tetrakis', 'Tetrakis: each square cut in 4 from its middle'],
     ],
   })),
-  // the volumes of triangles, one menu: Kites first (the one in use, Life only: elsewhere, the others), Hexagons (the
-  // sphere's its own, with its walks; the solids' folded over their edges, see hexSolidMesh), Triangles
+  // the volumes of triangles, one menu: Hexagons (the sphere's its own, with its walks; the solids' folded over their edges,
+  // see hexSolidMesh), Triangles, Kites (each triangle cut in 3), then the sphere's Twisted and Penrose
   ...[
     ['Sphere', 'icosa'],
     ['Tetrahedron', 'tetra'],
@@ -10431,7 +10431,6 @@ const FAMILIES = [
           : []),
       ],
       tabs: [
-        [1, false, 'kites', 'Kites', 'Kites (each triangle cut in 3)'],
         [
           2,
           false,
@@ -10442,6 +10441,7 @@ const FAMILIES = [
             : `Hexagons (folded over the edges; ${HEX_SOLIDS[k].others}, walls in Life)`,
         ],
         [0, false, 'tilesTri', 'Triangles', sphere ? 'Triangles (an icosahedron, inflated)' : 'Triangles'],
+        [1, false, 'kites', 'Kites', 'Kites (each triangle cut in 3)'],
         ...(sphere
           ? [
               [

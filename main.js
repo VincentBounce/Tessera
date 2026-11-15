@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.14';
+const VERSION = '0.5.15';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -3804,7 +3804,8 @@ const HULL_SOLIDS = {
     cells: 'Squares', // (its own cells' tab, beside its cuts': a grid of squares laid on each rhombus)
     cuts: ['tetrakis', 'halves'],
     place: [1, 'Dodecahedron'],
-    where: "a rhombic dodecahedron of rhombi (the cuboctahedron's dual: 3 or 4 round each corner)",
+    where:
+      "a rhombic dodecahedron, each of its 12 rhombi a grid of squares (the cuboctahedron's dual: 3 or 4 rhombi round each corner)",
   },
 };
 // a hull solid's icon: its own (its pic's paths, ICONS[k]) or another's it names (pic: an icon's name)
@@ -11117,6 +11118,9 @@ function renderModePicker() {
               variantWhere(navPick(w, 2, sh)),
             );
           b.dataset.choice = `shape:${sh}`; // (its choice's key, see choicesAt)
+          const to = navPick(w, 2, sh),
+            surface = !VARIANTS[to].plane && surfaceOf(VARIANTS[to]);
+          if (SURFACES[surface]?.tiles) b.tipMore = () => sizeCardHtml(...surfaceCard(surface, sizeOf(figureSize(to)))); // (its size's card where it opens, made when hovered)
           if (again) {
             setTile(b, { on: true, again });
             b.title += plane.torus ? '\nA torus · Clicked again: walls' : '\nWalls · Clicked again: a torus';
@@ -12047,7 +12051,9 @@ document.addEventListener('mouseover', (e) => {
       return div;
     }; // (note: beside its title, fainter)
   const allowed = greyedOf(greyed ?? el)?.paths && pathsWords(greyedOf(greyed ?? el).paths()); // (greyed: the shortest paths that allow it, see pathsTo)
+  const more = el?.tipMore?.(); // (a part of its own, made when shown: a shape's size, see tipMore)
   const told = [
+    ...(more ? [Object.assign(part(), { innerHTML: more })] : []),
     ...(greyed ? [section('Why greyed out?', greyed.dataset.greyed)] : []),
     ...(allowed ? [section('Allowed on', allowed, 'click to locate the buttons on screen')] : []), // (a click on it lights them, see setTile's enablers)
     ...(el?.dataset.formula ? [section('Formula', el.dataset.formula)] : []), // (a number card's, see renderNumberPicker)
@@ -16551,6 +16557,20 @@ for (const name of foldedIn('torus')) {
   };
 }
 
+// a surface's size's card at f: its total, then how it is counted, its sides, a strip's edge's cells, the size last picked
+// (the size box's, a shape's at the size it opens at: see the shapes' tooltips)
+const surfaceCard = (kind, f) => [
+  sizeCells(kind, f, true),
+  [
+    `${sizeHow(kind, f)}\n${sizeSides(kind, f)}`.trim(),
+    ...(MOBIUS_ALONG[kind]?.edgeCuts
+      ? [`\n{b:Specific cells}\n{e:${formatNumber(SURFACES[kind].mesh(f).edgeCells.length)} cells}`]
+      : []), // (a strip's edge's cells, as outlined: see edgeRibbons)
+    `\n${lastPicked()}`,
+  ]
+    .filter(Boolean)
+    .join('\n'),
+];
 // The surface size as a stepper: [ − ] 6,144 squares [ + ] goes through the sizes of the (hidden)
 // menu one by one; the menu stays the source of truth, as for the walk variants
 function syncSizeStepper() {
@@ -16566,19 +16586,7 @@ function syncSizeStepper() {
   };
   if (SURFACES[kind]?.tiles && sel.selectedOptions[0]) label(f);
   else $('sizeLabel').textContent = sel.selectedOptions[0]?.text ?? '';
-  sizeTips(
-    'size',
-    SURFACES[kind] && sel.selectedOptions[0] ? sizeCells(kind, f, true) : '',
-    [
-      SURFACES[kind] && sel.selectedOptions[0] ? `${sizeHow(kind, f)}\n${sizeSides(kind, f)}`.trim() : '',
-      ...(MOBIUS_ALONG[kind]?.edgeCuts
-        ? [`\n{b:Specific cells}\n{e:${formatNumber(SURFACES[kind].mesh(f).edgeCells.length)} cells}`]
-        : []), // (a strip's edge's cells, as outlined: see edgeRibbons)
-      `\n${lastPicked()}`,
-    ]
-      .filter(Boolean)
-      .join('\n'),
-  );
+  sizeTips('size', ...(SURFACES[kind] && sel.selectedOptions[0] ? surfaceCard(kind, f) : ['', `\n${lastPicked()}`]));
   setTile($('sizeDown'), { greyed: sel.selectedIndex <= 0 ? 'Already the smallest size.' : '' });
   setTile($('sizeUp'), { greyed: sel.selectedIndex >= sel.options.length - 1 ? 'Already the largest size.' : '' });
   sizeGauge(
@@ -16738,19 +16746,20 @@ const nearCells = (sizes, cells, n) =>
   sizes.reduce((a, b) => (Math.abs(Math.log(cells(b) / n)) < Math.abs(Math.log(cells(a) / n)) ? b : a)); // the size with about n cells
 const lastPicked = () =>
   picked ? `{b:Last picked}\nSize: {b:${formatNumber(picked)} cells} (picked with − + or the slider)` : '';
-const sizeTips = (row, total, text) => {
+// a size's card in words marked ({b:…} bold, {g:…} grey, {y:…} and the others coloured), as html: its total, then its words
+const sizeCardHtml = (total, text) => {
   const marks = (t) =>
     t
       .replace(/[&<>]/g, (c) => `&#${c.charCodeAt(0)};`)
       .replace(/\{([yroskbge]):([^}]*)\}/g, (_, c, w) =>
         c === 'g' ? `<span class="tip-default">${w}</span>` : `<b${c === 'b' ? '' : ` class="tip-${c}"`}>${w}</b>`,
       ); // ({g:…}: grey, as a default)
-  total = marks(total);
-  const plain = text.replace(/\{[yroskbge]:([^}]*)\}/g, '$1'),
-    html = marks(text).replace(/\n/g, '<br>'); // ({b:…}: bold alone)
+  return `<b class="tip-name">Size: ${marks(total)}</b>${marks(text).replace(/\n/g, '<br>')}`; // ({b:…}: bold alone)
+};
+const sizeTips = (row, total, text) => {
   const box = $(`${row}Box`); // (− + its label and its slider, one block; its name and its total first, as a control's; shown again at once if hovered: − + clicked)
-  box.dataset.tip = plain;
-  box.dataset.tipHtml = `<b class="tip-name">Size: ${total}</b>${html}`;
+  box.dataset.tip = text.replace(/\{[yroskbge]:([^}]*)\}/g, '$1');
+  box.dataset.tipHtml = sizeCardHtml(total, text);
   if (box.matches(':hover')) $('tip').innerHTML = box.dataset.tipHtml;
 };
 const facesMemo = remember('facesMemo', {}); // (a solid's least mesh: its faces, see howCounted)

@@ -10,7 +10,7 @@
   <meta property="og:url" content="https://vincentbounce.github.io/Tessera/">
   <meta property="og:type" content="website">
   <link id="favicon" rel="icon">  <!-- the app's logo, set at start-up (see LOGO_PATH) -->
-  <link rel="stylesheet" href="style.css?v=0.4.1075">
+  <link rel="stylesheet" href="style.css?v=0.4.1076">
   <script>  // the theme before the first paint (see applyTheme)
     try { const t = localStorage.getItem('tesseraTheme'); document.documentElement.dataset.theme = t === 'light' || t === 'dark' ? t : matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark'; } catch { document.documentElement.dataset.theme = 'dark'; }
   </script>
@@ -133,7 +133,7 @@
           </label>
         </div>
         <div id="battleStart" hidden>  <!-- a battle's: how they fight, each walker's formula (A's the number's own, moved here: see renderWalkTeams), Random, the longest battles (see 7.6c) -->
-          <div id="startWays" class="nav-shapes" hidden></div>  <!-- a battle's starts: Symmetric, Centred, Random, over the start row (see renderWalkTeams) -->
+          <div id="startWays" class="pill-row" hidden></div>  <!-- a battle's starts: Symmetric, Centred, Random, over the start row (see renderWalkTeams) -->
           <h3>Walkers</h3>
           <div class="stack">  <!-- the walkers' formulas, as close as cards, then their first numbers and Roll -->
             <div id="formulaAHome"></div>  <!-- (the number's formula field, A's in a battle) -->
@@ -518,10 +518,10 @@
     </div>
   </main>
 
-  <script src="pixelarticons.js?v=0.4.1075"></script>
-  <script src="punks.js?v=0.4.1075"></script>
-  <script src="loops.js?v=0.4.1075"></script>
-  <script src="emoji.js?v=0.4.1075"></script>
-  <script src="main.js?v=0.4.1075"></script>
+  <script src="pixelarticons.js?v=0.4.1076"></script>
+  <script src="punks.js?v=0.4.1076"></script>
+  <script src="loops.js?v=0.4.1076"></script>
+  <script src="emoji.js?v=0.4.1076"></script>
+  <script src="main.js?v=0.4.1076"></script>
 </body>
 </html>

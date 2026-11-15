@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.1075';
+const VERSION = '0.4.1076';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -16518,10 +16518,14 @@ function pillRow(el, title, about, choices, at, first, set, whyNot = null) {
       }),
     );
   mark(at);
+  el.classList.add('pill-row');
+  el.replaceChildren(Object.assign(document.createElement('h3'), { textContent: title }), pillGroup(pills));
+}
+// a choice among a few as pills: tiles of words only in one frame (see .pill-group; a row's, pillRow; a battle's starts' ways)
+function pillGroup(pills) {
   const group = Object.assign(document.createElement('div'), { className: 'pill-group' });
   group.append(...pills);
-  el.classList.add('pill-row');
-  el.replaceChildren(Object.assign(document.createElement('h3'), { textContent: title }), group);
+  return group;
 }
 // − / +: the usual sizes (from a torus size of its own, the usual ones just below or above it)
 function stepSize(delta) {
@@ -18191,14 +18195,13 @@ function renderWalkTeams() {
     }); // (its picture: how it works, picked first, as a walk's rule's)
   };
   $('battleRuleCards').replaceChildren(...BATTLE_RULES.map((P, p) => way(P, p)));
-  // its starts' tabs, over the start selector (see STARTS_WAYS; the selector greyed but in Symmetric, see syncSizeStepper)
+  // its starts' ways as pills, words only, over the start selector (see STARTS_WAYS; the selector greyed but in Symmetric, see syncSizeStepper)
   if ($('startRow').previousElementSibling !== $('startWays')) $('startRow').before($('startWays'));
   const ways = STARTS_WAYS; // (one list: its tabs and a link's gr=)
   $('startWays').replaceChildren(
-    tileGroup(
+    pillGroup(
       ways.map(([way, text, title]) =>
         tile({
-          pic: teamBlock(walkTeams),
           text,
           title,
           on: way === startsWayNow(),

@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.1072';
+const VERSION = '0.4.1073';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -7118,11 +7118,12 @@ const setTile = (
       can = false;
       greyed = why;
     }
-    b.enablers = why ? () => enablersFor((setup) => !whyNot(setup), judgedAt) : null;
+    const searched = why && !(b.dataset.choice in OFF_GRAPH); // (out of the graph: its words why, nothing sought)
+    b.enablers = searched ? () => enablersFor((setup) => !whyNot(setup), judgedAt) : null;
     b.pathsMemo = null;
     menuEdges.clear();
     menuTeams.clear(); // (a tile drawn again: the menu's state may have changed)
-    b.paths = why ? () => (b.pathsMemo ??= pathsTo((setup) => !whyNot(setup), 5000, judgedAt)) : null;
+    b.paths = searched ? () => (b.pathsMemo ??= pathsTo((setup) => !whyNot(setup), 5000, judgedAt)) : null;
   } // (its paths found once a drawing: at its first tooltip)  // (at: none, no walk shown yet: the tab's)
   if (byDefault !== undefined) b.dataset.default = byDefault;
   b.dataset.greyed = can ? '' : greyed; // (its words why only while greyed: whyNot's, or its own)
@@ -10690,6 +10691,14 @@ const changes = (a, b) => modeChanges(a.w, b.w) + SETUP_FIELDS.filter((f) => a[f
 // till one holds some; of these the fewest settings changed, each its clicks [key, words] (budget: setups tried at most).
 // Only the clicks that change what fits reads: its fields, as it reads them (the mode always), so a control judged by few
 // fields searches those only (a hunt's zone, judged on the grid built: none but its mode's)
+// The buttons out of the graph, by their choice's key: greyed, their tooltip says why and nothing is sought for what would
+// allow them (no "Allowed on", no button lit by a click on them): no search, so no hover of theirs can ever be slow. One
+// list, each with its reason; a button enters it by decision, when keeping its search fast took fixing its code again
+// and again (never a search hidden in the background: what is slow must stay seen)
+const OFF_GRAPH = {
+  newcomer:
+    'allowed three clicks away at best from the loops (Life › Trio › a rule): thousands of setups tried, 0.4 to 7 s a hover (2026-11-15)',
+};
 // the menu's edges found since a tile was last drawn (see setTile), by their setup and the fields asked: one search's, kept
 // for the next greyed control hovered (a row's tiles ask the same: the four symmetries, each 170 ms of the same edges)
 const menuEdges = new Map(),

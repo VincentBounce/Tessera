@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.1086';
+const VERSION = '0.4.1087';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -39558,15 +39558,22 @@ function syncLink() {
 }
 
 /* ---- 10.4 The Gallery and its JSON files -------------------------------------------------- */
-// The Gallery: the setups saved in this browser (localStorage), as { name, setup, saved } (its key, and its files' setups:, as they were)
+// The Gallery: the setups saved in this browser (localStorage), as { name, setup, saved }, its setup in the link's words (see storedEntry; its files' setups: the same)
 const GALLERY_KEY = 'tessera.setups',
   CURATED_KEY = 'tessera.curated';
 // one card a setup (as its thumbnail's key: neither its version nor how it is looked at): a setup saved twice (imported, or by an
 // old version), its last saved only
+// An entry as kept (this browser's, a file's): its setup in the link's words (see linkWordsOf), never the code's own keys: a
+// mode or a field renamed in the code changes no entry. Read back to a setup (none: its words say no mode of the menu)
+const storedEntry = (x) => ({ ...x, setup: linkWordsOf(x.setup) });
+const readEntry = (x) => {
+  const setup = x?.setup && setupOfLinkWords(x.setup);
+  return setup ? { ...x, setup } : null;
+};
 function readGallery() {
   let list;
   try {
-    list = JSON.parse(localStorage.getItem(GALLERY_KEY)) || [];
+    list = (JSON.parse(localStorage.getItem(GALLERY_KEY)) || []).map(readEntry).filter(Boolean);
   } catch {
     return [];
   }
@@ -39599,7 +39606,7 @@ function seedCurated() {
 }
 function writeGallery(list) {
   try {
-    localStorage.setItem(GALLERY_KEY, JSON.stringify(list));
+    localStorage.setItem(GALLERY_KEY, JSON.stringify(list.map(storedEntry)));
     return true;
   } catch {
     return false;
@@ -39871,7 +39878,7 @@ function deleteSetup(name) {
 function exportGallery(list = readGallery().filter((x) => !selecting() || selectedNames.has(x.name))) {
   // (the cards selected, else all)
   if (!list.length) return; // nothing to export yet
-  const blob = new Blob([JSON.stringify({ app: 'Tessera', version: 1, setups: list }, null, 2)], {
+  const blob = new Blob([JSON.stringify({ app: 'Tessera', version: 2, setups: list.map(storedEntry) }, null, 2)], {
     type: 'application/json',
   });
   const a = document.createElement('a');
@@ -39884,7 +39891,7 @@ function exportGallery(list = readGallery().filter((x) => !selecting() || select
 async function importGallery(file) {
   try {
     const data = JSON.parse(await file.text());
-    const incoming = (data.setups || []).filter((x) => x && x.name && x.setup && x.setup.w);
+    const incoming = (data.setups || []).map(readEntry).filter((x) => x?.name);
     const list = readGallery();
     for (const x of incoming) {
       // a name already used gets a suffix instead of overwriting

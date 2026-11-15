@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.1069';
+const VERSION = '0.4.1070';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -19824,9 +19824,12 @@ const battleHuntKey = () =>
     battleRuleInUse(tabMode()),
     sphereSize(),
     digitsNeeded(),
-    huntVary.formulas || BATTLE_FORMULAS.map((id) => $(id).value).join(),
+    huntVary.formulas ||
+      BATTLE_FORMULAS.map((id) => $(id).value)
+        .sort()
+        .join(), // (its numbers, whoever walks each: it draws their orders, see huntOrderCount)
     huntStarts() || `${startNo()}|${battleSeed}`,
-  ].join('|'); // (what its battles are fought at: what it does not vary)
+  ].join('|'); // (what its battles are fought at: what it does not vary; a result played keeps it, see playBattle)
 // √r's first n digits in base b, its integer part first (on the page: one integer root, as numberSeed's)
 const rootDigits = (r, base, n) =>
   Uint8Array.from(

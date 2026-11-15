@@ -970,7 +970,8 @@ async function huntResultsKept(fail) {
         fail(`${what}: result ${i} (${said}) clicked, ${cards(id).length} results left of ${before}`);
         break;
       }
-      const at = cards(id).findIndex((c) => c.textContent.trim().slice(0, 60) === said); // (its place now: a battle ended as the hunt stopped may have come in over it)
+      const same = (c) => c?.textContent.trim().slice(0, 60) === said,
+        at = same(cards(id)[i]) ? i : cards(id).findIndex(same); // (two results may say the same: its own place first) // (its place now: a battle ended as the hunt stopped may have come in over it)
       if (`${lit}` !== `${at}`)
         fail(`${what}: result ${i} (${said}) clicked, now at ${at}, lit: ${lit.length ? lit : 'none'}`);
       const got = played();

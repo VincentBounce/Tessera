@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.43';
+const VERSION = '0.5.44';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -5054,6 +5054,14 @@ const VARIANTS = {
     life: true,
     where: 'an icosahedron of hexagons, a Goldberg polyhedron (its 12 pentagons are walls)',
   },
+  lifeIcosahedronPenrose: {
+    base: 2,
+    lattice: 'surface',
+    surface: 'penroseSphere',
+    life: true,
+    where:
+      "Penrose's rhombi on a sphere: their pentagon round their five-fold middle laid on each of a dodecahedron's faces (Twarock and Konevtsova's tilings, as Hamish Todd builds them)",
+  },
   lifeIcosahedronTwisted: {
     base: 2,
     lattice: 'surface',
@@ -9633,6 +9641,7 @@ const VARIANT_ICONS = {
   lifeGlobe: 'globe',
   lifeIcosahedronHex: 'hexagon',
   lifeIcosahedronTwisted: 'tiling-twisttri',
+  lifeIcosahedronPenrose: 'penrose',
   walkSquaresSpiral: 'spiral',
   walkTrianglesSpiral: 'triSpiral',
   walkHexSpiral: 'hexSpiral',
@@ -9768,6 +9777,7 @@ const NAV = {
   lifeIcosahedronTriangles: ['Life', 'Surfaces', 'Sphere', 'Life', ''],
   lifeIcosahedronHex: ['Life', 'Surfaces', 'Sphere', 'Life', ''],
   lifeIcosahedronTwisted: ['Life', 'Surfaces', 'Sphere', 'Life', ''],
+  lifeIcosahedronPenrose: ['Life', 'Surfaces', 'Sphere', 'Life', ''],
   lifeTorusKites: ['Life', 'Surfaces', 'Torus', 'Life', ''],
   lifeMobiusStripKites: ['Life', 'Surfaces', 'Möbius strip', 'Life', ''],
   lifeKleinBottleKites: ['Life', 'Surfaces', 'Klein bottle', 'Life', ''],
@@ -10386,7 +10396,7 @@ const FAMILIES = [
         [...walks('Triangles'), ...ant('Triangles'), variantName('Life', name, 'Triangles')],
         [variantName('Life', name, 'Kites')],
         [...walks('Hexagons'), ...ant('Hexagons'), variantName('Life', name, 'Hexagons')],
-        ...(sphere ? [[variantName('Life', name, 'Twisted')]] : []),
+        ...(sphere ? [[variantName('Life', name, 'Twisted')], [variantName('Life', name, 'Penrose')]] : []),
       ],
       tabs: [
         [1, false, 'kites', 'Kites', 'Kites (each triangle cut in 3)'],
@@ -10408,6 +10418,13 @@ const FAMILIES = [
                 'tiling-twisttri',
                 'Twisted',
                 'Twisted: the hexagons turned 15°, a triangle between each three (and 12 pentagons)',
+              ],
+              [
+                4,
+                false,
+                'penrose',
+                'Penrose',
+                "Penrose's rhombi on a dodecahedron, inflated (Twarock and Konevtsova's tilings)",
               ],
             ]
           : []),
@@ -15777,6 +15794,182 @@ function twistedSphereMesh(f) {
     );
   return (meshCache[key] = Object.assign(mesh, { tiling: SURFACES.twistedsphere.tiling }));
 }
+/* The Penrose sphere: Twarock and Konevtsova's spherical Penrose tilings, as Hamish Todd builds them (Bridges 2018, "A Class
+ * of Spherical Penrose-Like Tilings…"; its prototype penrose-sphere/). Penrose's rhombi (penroseRhombi: five-fold round their
+ * middle and mirrored, sides 1 here) cut in a regular pentagon round their middle, its corner P1, laid on each of the
+ * dodecahedron's 12 faces the same way round (the icosahedron's turns: the pentagon's content its own at 72°, any of a face's
+ * 5 turns lays the same); its corners joined where they lie a side apart along the surface (two faces unfolded over their
+ * edge), its cells the faces of that graph. The dodecahedron the icosahedron's dual (POLYHEDRA.icosa: its faces' ways the
+ * icosahedron's corners, its corners its faces' middles): the sphere's spots, its colours, the icosahedron's. Its sizes the
+ * P1 that close with Penrose's rhombi alone, by their cells (PENROSE_SPHERES, found by penroseSphereSizes() in tools/check.js) */
+const PENROSE_SPHERES = {
+  90: [1.538841769, 0.5],
+  960: [3.077683537, -4.236067977],
+  1110: [-0.951056516, 5.545084972],
+  1650: [6.518638338, -2.118033989],
+  1950: [7.106423591, 2.309016994],
+  2310: [-3.440954801, 7.354101966],
+}; // (each size's cells: its corner P1, made by penroseSphereSizes())
+// the pentagon's content for corner P1: the rhombi's corners in it, P1 along x (each face's own frame), and its key, one of it
+// and its mirror's (two P1 laying the same points lay the same tiling, or its mirror image)
+function penroseFace(P1) {
+  const rho = Math.hypot(P1[0], P1[1]),
+    a = Math.atan2(P1[1], P1[0]),
+    pentagon = [0, 1, 2, 3, 4].map((k) => [
+      rho * Math.cos((2 * Math.PI * k) / 5),
+      rho * Math.sin((2 * Math.PI * k) / 5),
+    ]),
+    inside = (p) =>
+      pentagon.every((c, k) => {
+        const d = pentagon[(k + 1) % 5];
+        return (d[0] - c[0]) * (p[1] - c[1]) - (d[1] - c[1]) * (p[0] - c[0]) >= -1e-7;
+      });
+  const corners = new Map();
+  for (const { p } of penroseRhombi(Math.max(1, ((rho + 2) * PENROSE_SIDE - 6) * Math.sqrt(Math.PI))))
+    // (its disc's reach past the pentagon)
+    for (let i = 0; i < p.length; i += 2) {
+      const x = p[i] / PENROSE_SIDE,
+        y = p[i + 1] / PENROSE_SIDE,
+        q = [x * Math.cos(a) + y * Math.sin(a), -x * Math.sin(a) + y * Math.cos(a)];
+      if (inside(q)) corners.set(pointKey(q[0], q[1]), q);
+    }
+  const framed = [...corners.values()],
+    key = (flip) =>
+      framed
+        .map(([x, y]) => `${Math.round(x * 1e5)},${Math.round((flip ? -y : y) * 1e5)}`)
+        .sort()
+        .join(' ');
+  return { rho, framed, content: [key(false), key(true)].sort()[0] };
+}
+// the sphere's graph for corner P1: its points on the dodecahedron (sides 1), each one's neighbours in turn round it, its
+// cells (each a face of the graph, its points in turn), its edges' count
+function penroseSphereGraph(P1, face = penroseFace(P1)) {
+  const { rho, framed } = face,
+    ico = POLYHEDRA.icosa,
+    mids = ico.faces.map((f) => unit(f.reduce((m, v) => m.map((x, d) => x + ico.P[v][d]), [0, 0, 0])));
+  // its faces: round each of the icosahedron's corners, its 5 faces' middles, in turn round it; scaled to the pentagon's radius
+  const faces = ico.P.map((c, i) => {
+    const n = unit(c),
+      own = ico.faces.flatMap((f, j) => (f.includes(i) ? [mids[j]] : [])),
+      mid = own.reduce((m, q) => m.map((x, d) => x + q[d] / own.length), [0, 0, 0]),
+      u0 = unit(sub(own[0], mid)),
+      w0 = cross(n, u0),
+      angle = (q) => Math.atan2(dot3(sub(q, mid), w0), dot3(sub(q, mid), u0));
+    return { n, mid, corners: own.sort((p, q) => angle(p) - angle(q)) };
+  });
+  const scale = rho / Math.hypot(...sub(faces[0].corners[0], faces[0].mid));
+  for (const f of faces) {
+    f.mid = f.mid.map((x) => x * scale);
+    f.corners = f.corners.map((q) => q.map((x) => x * scale));
+    f.u = unit(sub(f.corners[0], f.mid));
+    f.w = cross(f.n, f.u); // (its frame: x to its first corner, y a quarter turn on, outward)
+  }
+  // its points, one each however many faces it lies on (on their edge, at their corner), and those faces
+  const points = [],
+    onFaces = [],
+    at = new Map();
+  faces.forEach((f, fi) => {
+    for (const [x, y] of framed) {
+      const q = f.mid.map((v, d) => v + x * f.u[d] + y * f.w[d]),
+        k = q.map((v) => Math.round(v * 1e5)).join();
+      let i = at.get(k);
+      if (i === undefined) {
+        i = points.length;
+        at.set(k, i);
+        points.push(q);
+        onFaces.push([]);
+      }
+      if (!onFaces[i].includes(fi)) onFaces[i].push(fi);
+    }
+  });
+  // the distance along the surface: on a face both lie on, straight; else over the edge two of theirs share, the second's
+  // point unfolded into the first's plane (its distance to the edge's line laid on the far side)
+  const edgeOf = (f, g) => {
+    const shared = faces[f].corners.filter((c) => faces[g].corners.some((d) => Math.hypot(...sub(c, d)) < 1e-6));
+    return shared.length === 2 ? shared : null;
+  };
+  const along = (i, j) => {
+    const p = points[i],
+      q = points[j];
+    if (onFaces[i].some((f) => onFaces[j].includes(f))) return Math.hypot(...sub(p, q));
+    let best = Infinity;
+    for (const f of onFaces[i])
+      for (const g of onFaces[j]) {
+        const e = edgeOf(f, g);
+        if (!e) continue;
+        const t = unit(sub(e[1], e[0])),
+          s = dot3(sub(q, e[0]), t),
+          off = sub(
+            sub(q, e[0]),
+            t.map((v) => v * s),
+          ),
+          out0 = sub(e[0], faces[f].mid),
+          out = unit(
+            sub(
+              out0,
+              t.map((v) => v * dot3(out0, t)),
+            ),
+          ),
+          unfolded = e[0].map((v, d) => v + t[d] * s + out[d] * Math.hypot(...off));
+        best = Math.min(best, Math.hypot(...sub(p, unfolded)));
+      }
+    return best;
+  };
+  // its edges: pairs a side apart, sought in a grid of unit cells
+  const grid = new Map(),
+    cellOf = (p) => p.map((v) => Math.floor(v)).join();
+  points.forEach((p, i) => (grid.get(cellOf(p)) ?? grid.set(cellOf(p), []).get(cellOf(p))).push(i));
+  const nbrs = points.map(() => []);
+  points.forEach((p, i) => {
+    const [x, y, z] = p.map((v) => Math.floor(v));
+    for (let dx = -1; dx <= 1; dx++)
+      for (let dy = -1; dy <= 1; dy++)
+        for (let dz = -1; dz <= 1; dz++)
+          for (const j of grid.get([x + dx, y + dy, z + dz].join()) ?? [])
+            if (j > i && Math.abs(Math.hypot(...sub(p, points[j])) - 1) < 0.3 && Math.abs(along(i, j) - 1) < 1e-6) {
+              nbrs[i].push(j);
+              nbrs[j].push(i);
+            }
+  });
+  nbrs.forEach((list, i) => {
+    const n = unit(points[i]),
+      u = unit(cross(n, Math.abs(n[0]) < 0.9 ? [1, 0, 0] : [0, 1, 0])),
+      w = cross(n, u),
+      angle = (j) => Math.atan2(dot3(sub(points[j], points[i]), w), dot3(sub(points[j], points[i]), u));
+    list.sort((p, q) => angle(p) - angle(q));
+  }); // (each point's neighbours in turn round its outward way)
+  // its cells: each edge's way walked, turning at each point to the neighbour before the one it came from
+  const done = new Set(),
+    tiles = [];
+  points.forEach((_, i) => {
+    for (const j of nbrs[i]) {
+      if (done.has(`${i}>${j}`)) continue;
+      const ring = [];
+      let u = i,
+        v = j;
+      while (!done.has(`${u}>${v}`) && ring.length < 64) {
+        done.add(`${u}>${v}`);
+        ring.push(u);
+        const list = nbrs[v],
+          w = list[(list.indexOf(u) - 1 + list.length) % list.length];
+        u = v;
+        v = w;
+      }
+      tiles.push(ring);
+    }
+  });
+  return { points, nbrs, tiles, edges: nbrs.reduce((sum, l) => sum + l.length, 0) / 2 };
+}
+// the mesh of a size (its cells): its points on the unit sphere, its flat form the dodecahedron they lie on (see shapeAt)
+function penroseSphereMesh(cells) {
+  const key = `penroseSphere${cells}`;
+  if (meshCache[key]) return meshCache[key];
+  const { points, tiles } = penroseSphereGraph(PENROSE_SPHERES[cells]),
+    R = Math.max(...points.map((p) => Math.hypot(...p)));
+  return (meshCache[key] = Object.assign(finishMesh(points.flatMap(unit), tiles, 4, cells), {
+    flatVerts: Float64Array.from(points.flat(), (v) => v / R),
+  }));
+}
 function hexSolidMesh(solid, f) {
   const key = `${solid}hex${f}`;
   if (meshCache[key]) return meshCache[key];
@@ -15959,6 +16152,7 @@ const MORPHABLE = [
   'torusTriTurned',
   'hexsphere',
   'twistedsphere',
+  'penroseSphere',
   ...MOBIUS_KINDS,
   ...foldedIn('torus'),
 ];
@@ -16318,6 +16512,15 @@ const SURFACES = {
     unit: 'hexagons',
     startPeriod: 3,
   },
+  penroseSphere: {
+    mesh: penroseSphereMesh,
+    radius: (n) => Math.sqrt(n / (4 * Math.PI)), // (its rhombi about a square unit each, as the rosette spheres' cells)
+    ownSizes: () => Object.keys(PENROSE_SPHERES).map(Number),
+    tiles: (n) => n,
+    unit: 'rhombi',
+    tiling: 'penrose',
+    chiral: true,
+  }, // (its sizes its cells, see PENROSE_SPHERES; tiling: its rules Penrose's)
   twistedsphere: {
     mesh: twistedSphereMesh,
     radius: (f) => (f * Math.sqrt(3)) / 2,
@@ -22970,16 +23173,19 @@ const HAT = (() => {
 })();
 /* Penrose's rhombi (P3): a wheel of 10 Robinson triangles cut again and again (a thin one in 2, a thick one in 3, each
  * time φ smaller; about φ² as many), two of a colour sharing their base a rhombus (thick: 72°, thin: 36°): a tiling that
- * never repeats, with five-fold symmetry. As the hats' (see discPatch); each rhombus about a square unit */
-const PENROSE = (() => {
+ * never repeats, with five-fold symmetry round its middle, and its mirror. Its rhombi round a disc of W² (their corners p,
+ * their middle m; sides PENROSE_SIDE: their mean area 1), the same round the middle at every W; laid in the disc as the
+ * hats' (see discPatch), and on a sphere (see penroseSphereGraph) */
+const PENROSE_SIDE = 1.11;
+const penroseRhombi = (() => {
   const phi = (1 + Math.sqrt(5)) / 2,
     lerp = (p, q, t) => [p[0] + (q[0] - p[0]) * t, p[1] + (q[1] - p[1]) * t];
-  return discMemo((W) => {
+  return (W) => {
     let n = 0;
     while (10 * phi ** (2 * n) < 14 * W * W) n++; // (about 6 W² rhombi, 2 triangles each)
     while (n % 4 !== 1) n++; // (n one more than a multiple of 4 at every size: the wheel's middle comes back every 4 cuts,
     // its patterns found there at 43, n 9, see CENTRED; other n, another middle, none of them laid at 21 or 85 before)
-    const R = 1.11 * phi ** n; // the rhombi's sides 1.11: their mean area 1
+    const R = PENROSE_SIDE * phi ** n; // (the wheel's: its rhombi's sides PENROSE_SIDE)
     let tris = Array.from({ length: 10 }, (_, i) => {
       const B = [R * Math.cos(((2 * i - 1) * Math.PI) / 10), R * Math.sin(((2 * i - 1) * Math.PI) / 10)],
         C = [R * Math.cos(((2 * i + 1) * Math.PI) / 10), R * Math.sin(((2 * i + 1) * Math.PI) / 10)];
@@ -23019,9 +23225,10 @@ const PENROSE = (() => {
       const p = [A, B, other, C];
       items.push({ p: p.flat(), m: [(B[0] + C[0]) / 2, (B[1] + C[1]) / 2] });
     }
-    return discPatch(items, W, [0, 0]); // (round the wheel's middle: five-fold)
-  });
+    return items;
+  };
 })();
+const PENROSE = discMemo((W) => discPatch(penroseRhombi(W), W, [0, 0])); // (round the wheel's middle: five-fold)
 /* The Spectre (Smith, Myers, Kaplan and Goodman-Strauss, 2023): one tile, 14 sides all 1 long, that tiles the plane
  * only without ever repeating, and never turned over (its mirror image not needed). Built by substitution, as Kaplan's
  * code (in AaronWebster/spectre-app, Apache 2.0): nine kinds of tiles (Gamma: two spectres, the "mystic"), each a
@@ -25888,7 +26095,6 @@ const SURFACE_CELLS = {
   ...Object.fromEntries(hullCuts.map(([, c, cut]) => [cut, HULL_CUTS[c].mark])),
 };
 for (const [s, { kind }] of Object.entries(FOLDED)) SURFACE_CELLS[s] = TILINGS[kind].mark;
-for (const [s, S] of Object.entries(SURFACES)) if (S.tiling) SURFACE_CELLS[s] = TILINGS[S.tiling].mark; // (a surface of a tiling's cells: its rules)
 // each plane's mark (its rules', see the rule menu), and the plane of a mark
 const PLANE_MARKS = {
   ...Object.fromEntries(Object.entries(TILINGS).map(([k, t]) => [k, t.mark])),
@@ -25924,6 +26130,7 @@ const PLANE_MARKS = {
 };
 const PLANE_OF_MARK = Object.fromEntries(Object.entries(PLANE_MARKS).map(([k, m]) => [m, k]));
 for (const k of Object.keys(ROSETTE_SPHERES)) SURFACE_CELLS[`${k}Sphere`] = PLANE_MARKS[k]; // (a rosette surface: its rosette's cells, rules and all)
+for (const [s, S] of Object.entries(SURFACES)) if (S.tiling) SURFACE_CELLS[s] = PLANE_MARKS[S.tiling]; // (a surface of a tiling's cells: its rules, the twisted sphere's, the Penrose sphere's)
 const blocksGrid = (variant) => variant.blocks ?? variant.plane; // (a block rule's grid: the plane's, or a surface's, its cells' shape)
 const LOOPS_MARK = '⟲'; // (the loops' rules' mark)
 // a rule's card on a grid: its entry among its own rules (see RULES: those of its cells' mark, as its rule cards, see
@@ -29569,6 +29776,7 @@ const SOLID_SPOTS = {
   icosa: ICOSA_SPOTS,
   hexsphere: ICOSA_SPOTS,
   twistedsphere: ICOSA_SPOTS,
+  penroseSphere: ICOSA_SPOTS,
 };
 for (const k of ['tetra', 'octa', 'icosa', 'stella', 'dodeca']) SOLID_SPOTS[`${k}Kite`] = SOLID_SPOTS[k]; // kites: the triangles' solids
 for (const k of hexSolids) SOLID_SPOTS[`${k}Hex`] = SOLID_SPOTS[k]; // hexagons: theirs too
@@ -29595,6 +29803,7 @@ const FACE_BASE = {
   menger: 'cube',
   hexsphere: 'icosa',
   twistedsphere: 'icosa',
+  penroseSphere: 'icosa',
   tetraKite: 'tetra',
   octaKite: 'octa',
   icosaKite: 'icosa',
@@ -39266,6 +39475,11 @@ function middleCells(i = 0, K = 1) {
     { start } = walk.life.nbr,
     n = walk.life.seed.length;
   if (K === 1 && !walk.plane && !g.torus && g.faces && facesPer() > 1) return centreCells(frontPentagon()); // (its pentagon's middle)
+  if (APERIODIC[patternKind()] && !flatGrid() && !g.disc) {
+    // (cells with no lattice on a surface, the Penrose sphere's: those nearest the colour's spot, or the cell in front)
+    const spot = K > 1 ? patchSpots(VARIANTS[walk.variant].surface, K)?.[i] : null;
+    return centreCells(spot ?? Array.from(g.cen.subarray(3 * frontCell(), 3 * frontCell() + 3)));
+  }
   const F = patternFrame(i, K),
     c = F.centre,
     far = new Float64Array(n).fill(Infinity);

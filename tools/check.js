@@ -503,20 +503,17 @@ const panel = (d) =>
 // Links opened cold, each in a page of its own (an iframe): their walk built, its mode the link's, its battle or its symmetry
 // as the link asks (v0.4.426: a strip's battle looped on its own size, opened cold; v0.4.423: a symmetry before any walk)
 const COLD_LINKS = [
-  ['x=pi&mode=walk&shape=kleinBottle&tiling=hexagons&walk=turtle&on=edges&d=3000&s=72&k=2&xb=e', { teams: 2 }],
-  [
-    'x=pi&mode=walk&shape=mobiusStrip&tiling=hexagons&walk=turtle&on=cells&d=3000&s=5&k=3&xb=sqrt(2)&xc=sqrt(3)&br=3',
-    { teams: 3 },
-  ],
-  ['x=pi&mode=walk&shape=sphere&tiling=hexagons&walk=turtle&on=edges&d=3000&s=24&k=2&xb=e', { teams: 2 }],
-  ['mode=life&shape=hexagons&r=B3/S23&y=mirror', { symmetry: 'mirror' }],
+  [toHash({ x: 'pi', w: 'kleinHexGrid', d: 3000, s: 72, k: 2, xb: 'e' }), { teams: 2 }],
+  [toHash({ x: 'pi', w: 'mobiusHexWalk', d: 3000, s: 5, k: 3, xb: 'sqrt(2)', xc: 'sqrt(3)', br: 3 }), { teams: 3 }],
+  [toHash({ x: 'pi', w: 'hexSphereGrid', d: 3000, s: 24, k: 2, xb: 'e' }), { teams: 2 }],
+  [toHash({ w: 'life2dHex', r: 'B3/S23', y: 'mirror' }), { symmetry: 'mirror' }],
 ];
 async function checkColdLinks(fail) {
   for (const [link, want] of COLD_LINKS) {
     const f = document.createElement('iframe'),
       w = parseHash(link).w;
     f.style.cssText = 'position:fixed;left:0;top:0;width:1200px;height:900px;opacity:0;pointer-events:none';
-    f.src = `${location.pathname}?cold=${Date.now()}#${link}&v=${VERSION}`;
+    f.src = `${location.pathname}?cold=${Date.now()}#${link}&version=${VERSION}`;
     document.body.append(f);
     await new Promise((go) => f.addEventListener('load', go, { once: true }));
     for (let t = 0; t < 60 && f.contentWindow.eval('walk.mode') !== w; t++) await wait(100); // (built: its walk the link's mode, 6 s at most)
@@ -848,7 +845,7 @@ async function deep(fail, from, only) {
   );
   for (const w of all.slice(Math.max(0, all.indexOf(from)))) {
     localStorage.tesseraDeep = `${w} ${Math.round((performance.memory?.usedJSHeapSize ?? 0) / 1e6)} MB`; // (the page's memory too)
-    location.hash = `${toHash({ w })}`;
+    location.hash = toHash({ w });
     await look(`${w} from its link`, 900);
     if ($('mode').value !== w) fail(`${w}: the link opened ${$('mode').value}`);
     for (let i = 0; i < $('ruleCards').children.length; i++) {
@@ -900,7 +897,7 @@ async function coloursOffered(fail) {
       sizes = SPHERES[kind]?.sizes ?? [];
     let some = false;
     for (const s of sizes) {
-      location.hash = `#${toHash({ w })}&s=${s}`;
+      location.hash = toHash({ w, s });
       await until(shown(w, () => $('sphereF').value === String(s))); // (the size asked: the one played may be a row off, its walkers')
       if (TEAM_COUNTS.some((K) => K > 1 && teamsFit(K))) {
         some = true;
@@ -982,13 +979,21 @@ async function huntResultsKept(fail) {
     }
   };
   // the battles' hunt: three walkers' orders drawn with the starts alone, then with the numbers
-  const link =
-    '#x=sqrt(2923)&mode=walk&shape=sphere&tiling=hexagons&walk=turtle&on=edges&d=20000&s=24&k=3&xb=sqrt(5359)&xc=sqrt(3363)&br=1';
+  const trio = {
+    x: 'sqrt(2923)',
+    w: 'hexSphereGrid',
+    d: 20000,
+    s: 24,
+    k: 3,
+    xb: 'sqrt(5359)',
+    xc: 'sqrt(3363)',
+    br: 1,
+  };
   for (const [formulas, starts] of [
     [false, true],
     [true, false],
   ]) {
-    location.hash = `${link}&st=${formulas ? 2 : 3}`; // (another link each: opened again)
+    location.hash = toHash({ ...trio, st: formulas ? 2 : 3 }); // (another link each: opened again)
     await wait(500);
     await until(shown('hexSphereGrid', () => walk.battle?.player?.K === 3));
     const tiles = $('battleHuntVary').children;
@@ -1005,8 +1010,8 @@ async function huntResultsKept(fail) {
   }
   // Life's hunt: one colour (the longest lives: a start's cells), then two (a battle's: its list and its light only)
   for (const [life, K] of [
-    ['#mode=life&shape=squares&s=32&k=1', 1],
-    ['#mode=life&shape=squares&s=32&k=2', 2],
+    ['#mode=life&shape=squares&gridSize=32&teams=1', 1],
+    ['#mode=life&shape=squares&gridSize=32&teams=2', 2],
   ]) {
     await openLife(life);
     $('huntBtn').click();
@@ -1080,7 +1085,7 @@ function checkFirstStarts(fail) {
 async function battlesFair(fail) {
   let checked = 0;
   for (const w of Object.keys(MODES).filter(battleMode)) {
-    location.hash = `#x=pi&${toHash({ w })}`;
+    location.hash = toHash({ x: 'pi', w });
     await until(shown(w, () => !walk.battle && walk.geo));
     const counts = battleCounts(w),
       grid = !!MODES[w].edges;
@@ -1089,11 +1094,13 @@ async function battlesFair(fail) {
     checked++;
     if (!counts.length) fail(`${w}: no battle at size ${sphereSize()}`);
     for (const K of counts) {
-      location.hash = `#x=pi&${toHash({ w })}&d=3000&k=${K}&${'bcdefghijkl'
-        .slice(0, K - 1)
-        .split('')
-        .map((c) => `x${c}=pi`)
-        .join('&')}`;
+      location.hash = toHash({
+        x: 'pi',
+        w,
+        d: 3000,
+        k: K,
+        ...Object.fromEntries([...'bcdefghijkl'.slice(0, K - 1)].map((c) => [`x${c}`, 'pi'])),
+      });
       for (let t = 0; t < 30 && !built(K, false); t++) await wait(300);
       const P = walk.battle?.player,
         g = walk.geo;
@@ -1110,17 +1117,23 @@ async function battlesFair(fail) {
       let off = 0;
       for (let s = 1; s < K; s++)
         for (let i = 0; i < end; i++) if (P.places[s][i] !== G[s](P.places[0][i], grid)) off++;
-      if (off) fail(`${w} ${K} walkers: ${off} steps off A's path moved (#x=pi&${toHash({ w })}&k=${K})`);
+      if (off) fail(`${w} ${K} walkers: ${off} steps off A's path moved (#${toHash({ x: 'pi', w, k: K })})`);
     }
     // Land no collision, its fewest walkers: no walker's step along another's (a line's edge along the grid, a tile
     // on cells), and none moving once stopped
     const stop = BATTLE_RULES.findIndex((p) => p[0] === 'landStop'),
       K = counts[0],
-      link = `#x=pi&${toHash({ w })}&d=3000&k=${K}&br=${stop}&${'bcdefghijkl'
-        .slice(0, K - 1)
-        .split('')
-        .map((c, j) => `x${c}=sqrt(${j + 2})`)
-        .join('&')}&v=${VERSION}`; // (its version: a link without one is read as an old one, pe= in its order then, see PE_BEFORE)
+      ruled = (br) =>
+        `#${toHash({
+          x: 'pi',
+          w,
+          d: 3000,
+          k: K,
+          br,
+          ...Object.fromEntries([...'bcdefghijkl'.slice(0, K - 1)].map((c, j) => [`x${c}`, `sqrt(${j + 2})`])),
+          v: VERSION,
+        })}`,
+      link = ruled(stop); // (its version: a link without one is read as an old one, pe= in its order then, see PE_BEFORE)
     if (!K) continue;
     location.hash = link;
     for (let t = 0; t < 30 && !built(K, true); t++) await wait(300);
@@ -1154,11 +1167,11 @@ async function battlesFair(fail) {
     // surface, an odd one by what it has eaten), and none past a tenth before the first bite (no cells eaten yet)
     const snake = BATTLE_RULES.findIndex((p) => p[0] === 'snakeCells');
     if (grid || snake < 0) continue;
-    const slink = link.replace(`&br=${stop}&`, `&br=${snake}&`);
+    const slink = ruled(snake);
     location.hash = slink;
     for (
       let t = 0;
-      t < 30 && !(walk.battle?.player?.K === K && $('mode').value === w && location.hash.includes(`br=${snake}`));
+      t < 30 && !(walk.battle?.player?.K === K && $('mode').value === w && parseHash()?.br === String(snake));
       t++
     )
       await wait(300);
@@ -1240,19 +1253,43 @@ function checkBlockWraps(fail) {
 // start (from a seeded start: played, and Find its return's); a hunt's 8 best of all a zone's starts (the processor's
 // worker's, v0.1.1394)
 const KNOWN = [
-  ['#mode=life&shape=squares&r=B3678/S34678&s=64&pop=draw&p=32,32:.A$.A$2A$A!', null, 16],
-  ['#mode=life&shape=squares&r=B3678/S34678&s=64&pop=draw&p=32,32:2.A$2A2.A$2A2.A$A.2A$2A.2A!', 219, null],
-  ['#mode=life&shape=squares&r=B36/S23&s=64&pop=draw&p=32,32:5.A2.A$2A2.A3.A$2A2.2A.2A!', null, 10],
-  ['#mode=life&shape=squares&r=B2/S/C3&s=64&pop=draw&p=32,32:3.2A$A$.4A$4.A$3A.A!', 2595, null],
-  ['#mode=life&shape=squares&r=B36/S23&s=64&pop=draw&p=32,32:A.2A$3.2A$2A$3.2A$3A!', 2652, 2],
-  ['#mode=life&shape=squares&r=B3/S12345&s=64&pop=draw&p=32,32:A3.A$2.A$2A$5A!', 430, 1],
-  ['#mode=life&shape=hexagons&r=B2/S34&s=64&pop=draw&p=58,16:A$2A.A$.A.A!', 0, 48],
-  ['#mode=life&shape=hexagons&r=B2/S34&s=64&pop=draw&p=54,16:4.A2.A$.A.3A.A$A.A.A!', 254, 20],
-  ['#mode=life&shape=hexagons&r=B2o/S2m34&s=64&pop=draw&p=53,16:6.A$A.5A.A.A.A$.A2.A2.A2.A!', 0, 30],
-  ['#mode=life&shape=triangles&r=B3/S23&s=64&pop=draw&p=80,12:A3.2A.A!', 430, 8],
-  ['#mode=rewind&shape=squares&r=M15,1,2,3,4,5,6,7,8,9,10,11,12,13,14,0&s=6&g=2000&pop=random.30.6', 0, 70],
-  ['#mode=rewind&shape=squares&r=Q2R&s=6&g=2000&pop=random.30.6', 0, 116],
-  ['#mode=rewind&shape=tetrakis&r=M0,4,8,12,1,10,9,13,2,6,5,14,3,7,11,15*&s=8&g=2000&pop=random.30.8', 0, 84],
+  ['#mode=life&shape=squares&playRule=B3678/S34678&gridSize=64&popStart=draw&popCells=32,32:.A$.A$2A$A!', null, 16],
+  [
+    '#mode=life&shape=squares&playRule=B3678/S34678&gridSize=64&popStart=draw&popCells=32,32:2.A$2A2.A$2A2.A$A.2A$2A.2A!',
+    219,
+    null,
+  ],
+  [
+    '#mode=life&shape=squares&playRule=B36/S23&gridSize=64&popStart=draw&popCells=32,32:5.A2.A$2A2.A3.A$2A2.2A.2A!',
+    null,
+    10,
+  ],
+  [
+    '#mode=life&shape=squares&playRule=B2/S/C3&gridSize=64&popStart=draw&popCells=32,32:3.2A$A$.4A$4.A$3A.A!',
+    2595,
+    null,
+  ],
+  ['#mode=life&shape=squares&playRule=B36/S23&gridSize=64&popStart=draw&popCells=32,32:A.2A$3.2A$2A$3.2A$3A!', 2652, 2],
+  ['#mode=life&shape=squares&playRule=B3/S12345&gridSize=64&popStart=draw&popCells=32,32:A3.A$2.A$2A$5A!', 430, 1],
+  ['#mode=life&shape=hex&playRule=B2/S34&gridSize=64&popStart=draw&popCells=58,16:A$2A.A$.A.A!', 0, 48],
+  ['#mode=life&shape=hex&playRule=B2/S34&gridSize=64&popStart=draw&popCells=54,16:4.A2.A$.A.3A.A$A.A.A!', 254, 20],
+  [
+    '#mode=life&shape=hex&playRule=B2o/S2m34&gridSize=64&popStart=draw&popCells=53,16:6.A$A.5A.A.A.A$.A2.A2.A2.A!',
+    0,
+    30,
+  ],
+  ['#mode=life&shape=triangles&playRule=B3/S23&gridSize=64&popStart=draw&popCells=80,12:A3.2A.A!', 430, 8],
+  [
+    '#mode=rewind&shape=squares&playRule=M15,1,2,3,4,5,6,7,8,9,10,11,12,13,14,0&gridSize=6&g=2000&popStart=random&popDraw=30.6',
+    0,
+    70,
+  ],
+  ['#mode=rewind&shape=squares&playRule=Q2R&gridSize=6&g=2000&popStart=random&popDraw=30.6', 0, 116],
+  [
+    '#mode=rewind&shape=tetrakis&playRule=M0,4,8,12,1,10,9,13,2,6,5,14,3,7,11,15*&gridSize=8&g=2000&popStart=random&popDraw=30.8',
+    0,
+    84,
+  ],
 ];
 async function checkKnown(fail) {
   let checked = 0;
@@ -1270,7 +1307,7 @@ async function checkKnown(fail) {
       fail(`${link}: repeats from ${L.stable?.T} with period ${L.stable?.P}, known ${T} and ${P}`);
   }
   // Find its return, past the generations played (Swirl on hexagons, 6 cells of 90: 48,924, found by the graphics card too)
-  location.hash = '#mode=rewind&shape=hexagons&r=M0,2,4,5,1,6,3,7&s=6&pop=random.10.6';
+  location.hash = '#mode=rewind&shape=hex&playRule=M0,2,4,5,1,6,3,7&gridSize=6&popStart=random&popDraw=10.6';
   for (
     let i = 0;
     i < 100 && !($('mode').value === 'blocks2dHex' && walk.life?.margolus && walk.life.seedAlive === 6 && !waits.size);
@@ -1287,7 +1324,8 @@ async function checkKnown(fail) {
   // a run played back and round its loop: a Game of Life's back (no rule backwards: round its loop forth, else again from its
   // start, see advanceTo) the very state played to (a pentadecathlon, a domino dying: from 1, period 15; v0.2.52); a jump across
   // a reversible one's return to its end, not its start (v0.2.50)
-  location.hash = '#mode=life&shape=squares&r=B3/S23&s=32&e=1&p=10,10:2A7$2.A4.A$2A.4A.2A$2.A4.A!&pop=draw';
+  location.hash =
+    '#mode=life&shape=squares&playRule=B3/S23&gridSize=32&gridWalls=1&popCells=10,10:2A7$2.A4.A$2A.4A.2A$2.A4.A!&popStart=draw';
   await until(shown('life2d', () => plane.side === 32 && !plane.torus));
   restart();
   const at = [],
@@ -1315,7 +1353,7 @@ async function checkKnown(fail) {
       );
   }
   await openLife(
-    '#x=1/28&mode=rewind&shape=squares&d=200&r=M15,1,2,3,4,5,6,7,8,9,10,11,12,13,14,0&s=16&e=1&pop=digits',
+    '#mode=rewind&shape=squares&popNumber=1/28&maxSteps=200&playRule=M15,1,2,3,4,5,6,7,8,9,10,11,12,13,14,0&gridSize=16&gridWalls=1&popStart=digits',
   );
   restart();
   await goTo(30);
@@ -1327,10 +1365,10 @@ async function checkKnown(fail) {
   // a start's symmetry (see symmetricStart): its shape the same on every copy; in colours, a start by parts each colour as many
   // (v0.2.79, v0.2.82); a text in colours laid at all (v0.2.78)
   for (const link of [
-    '#mode=life&shape=squares&r=B3/S23&k=4&s=48&e=1&y=rotate&pop=random.30.5',
-    '#mode=life&shape=squares&r=B3/S23&k=4&s=144&e=1&y=rotate&pop=text.Walking%0Api&tf=hand',
-    '#mode=life&shape=squares&r=B3/S23&k=4&s=144&e=1&pop=text.Walking%0Api&tf=mono',
-    '#x=pi&mode=life&shape=squares&r=B3/S23&s=48&e=1&y=kaleido&pop=digits',
+    '#mode=life&shape=squares&playRule=B3/S23&teams=4&gridSize=48&gridWalls=1&popSymmetry=rotate&popStart=random&popDraw=30.5',
+    '#mode=life&shape=squares&playRule=B3/S23&teams=4&gridSize=144&gridWalls=1&popSymmetry=rotate&popStart=text&popText=Walking%0Api&popFont=hand',
+    '#mode=life&shape=squares&playRule=B3/S23&teams=4&gridSize=144&gridWalls=1&popStart=text&popText=Walking%0Api&popFont=mono',
+    '#mode=life&shape=squares&popNumber=pi&playRule=B3/S23&gridSize=48&gridWalls=1&popSymmetry=kaleido&popStart=digits',
   ]) {
     await openLife(link);
     const { kind, W } = walk.plane,
@@ -1355,7 +1393,7 @@ async function checkKnown(fail) {
     ['life2dFloret', 'half rotate'],
     ['blocks2dHex', ''],
   ]) {
-    await openLife(`#${toHash({ w })}&s=32&e=1&pop=random.30.1`);
+    await openLife(`#${toHash({ w, s: 32, e: 1, pop: 'random.30.1' })}`);
     const { kind, W } = walk.plane,
       has = symmetriesHere(kind, W)
         .filter((y) => y !== 'none')
@@ -1377,7 +1415,7 @@ async function checkKnown(fail) {
     plane.sym = 'none';
   }
   // a hunt: of the 2^14 starts of 14 cells (radius 2's first), the 8 longest
-  location.hash = '#mode=life&shape=squares&r=B3/S23&s=48&pop=random.49.5';
+  location.hash = '#mode=life&shape=squares&playRule=B3/S23&gridSize=48&popStart=random&popDraw=49.5';
   await until(shown('life2d', () => plane.side === 48 && plane.torus));
   hunt.zone = 'radius2';
   const plan = { cells: huntPlan().cells.slice(0, 14), copies: [], all: 2 ** 14 };
@@ -1487,7 +1525,7 @@ async function checkSheets(fail) {
     const offered = [];
     for (const K of [1, 3]) {
       lifeTeams = K;
-      location.hash = `#${toHash({ w })}&k=${K}`;
+      location.hash = toHash({ w, k: K });
       await until(shown(w, () => lifeTeams === K));
       offered.push(TEAM_COUNTS.filter((k) => teamsFit(k)).join(','));
     }
@@ -1495,7 +1533,7 @@ async function checkSheets(fail) {
     if (w === 'lifeKleinPent15' && offered[0].split(',').some((k) => k % 2 === 0))
       fail(`${w}: an even count of colours offered (${offered[0]}), its twist asking an odd length`); // (v0.3.88 to 0.3.93: g.period left by the rename, every count offered)
     for (const K of [2, 3, 5].filter((k) => offered[0].split(',').includes(`${k}`))) {
-      location.hash = `#${toHash({ w })}&k=${K}`;
+      location.hash = toHash({ w, k: K });
       await until(shown(w, () => lifeTeams === K && walk.life?.colours === K));
       const sizes = huntParts(null, K).map((p) => p.length);
       if (lifeTeams !== K) fail(`${w}: ${K} colours offered, ${lifeTeams} taken`);
@@ -1526,18 +1564,18 @@ async function partsEqual(fail) {
     ...lifeModes
       .filter((w) => MODES[w].plane)
       .flatMap((w) => [
-        [w, '', 1],
-        [w, '&e=1', 1],
+        [w, {}, 1],
+        [w, { e: 1 }, 1],
       ]),
     ...lifeModes
       .filter((w) => MODES[w].sphere && !TORI.includes(surfaceOf(MODES[w])))
-      .map((w) => [w, '', SPHERES[MODES[w].sphere]?.disc ? 1 : 0]),
+      .map((w) => [w, {}, SPHERES[MODES[w].sphere]?.disc ? 1 : 0]),
   ]; // (a rosette sphere: its discs' lunes, cells whole, one apart as the plane's)
   for (const [w, walls, slack] of runs) {
-    location.hash = `#${toHash({ w })}${walls}&k=1`;
+    location.hash = toHash({ w, ...walls, k: 1 });
     await until(shown(w, () => lifeTeams === 1));
     for (const K of TEAM_COUNTS.filter((k) => k > 1 && teamsFit(k))) {
-      location.hash = `#${toHash({ w })}${walls}&k=${K}`;
+      location.hash = toHash({ w, ...walls, k: K });
       await until(shown(w, () => lifeTeams === K && walk.life?.colours === K));
       const sizes = huntParts(null, K).map((p) => p.length);
       if (lifeTeams !== K) fail(`${w}${walls}: ${K} colours offered, ${lifeTeams} taken`);

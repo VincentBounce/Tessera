@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.1081';
+const VERSION = '0.4.1082';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -39106,11 +39106,11 @@ function setLifeSeed(seed, how) {
  * PART 10 — SETUPS AND LINKS
  * ==============================================================================================
  *
- * A setup is a flat object of short keys, the same for the page link (#…), the Gallery in
- * this browser (localStorage) and the JSON export:
- *   x   the formula          w   the walk mode        d    the number of digits (walks)
- *   s   the surface size (a torus: rows, or rows x tiles per row)
- *   r   the Life rule        canvasHeight   a Life start (champion or patch)
+ * A setup is a flat object of short keys, the code's own, the same for the Gallery in this browser (localStorage) and
+ * the JSON export; the page link (#…) writes each under a word that says it (see LINK_NAMES, modeWords):
+ *   x   the formula          w   the mode's key       d    the length asked (steps, generations)
+ *   s   the grid's size (a torus: rows, or rows x tiles per row)
+ *   r   the rule played      ch  a Life start found (a hunt's)
  *   st  the start of a walk along a solid's edges (when not 1)
  * It only holds what determines the result. Display choices (colours, areas, grid, sky, camera,
  * zoom…), the speed and the current step are never saved: a link opens with the mode's default
@@ -39396,47 +39396,137 @@ const linkWord = (name) =>
     .split(' ')
     .map((part, i) => (i ? part[0].toUpperCase() + part.slice(1) : part.toLowerCase()))
     .join('');
-const MODE_WORDS = ['mode', 'shape', 'tiling', 'walk', 'on'];
+const SHORT_WORDS = { mobiusStrip: 'mobius', hexagons: 'hex', kleinBottle: 'klein' }; // (the menu's names cut short, in a link)
+const menuWord = (name) => SHORT_WORDS[linkWord(name)] ?? linkWord(name);
+const MODE_WORDS = ['mode', 'shape', 'tiling', 'walkKind', 'on'];
 const modeWordsMemo = remember('modeWordsMemo', {}); // (once a mode: the menu's tables fixed)
 const modeWords = (w) => {
   if (modeWordsMemo[w]) return modeWordsMemo[w];
   const [kind, , shape, rule, side] = NAV[w],
     fam = familyOf(w);
   return (modeWordsMemo[w] = {
-    mode: linkWord(kind),
-    shape: linkWord(shape),
-    ...(fam ? { tiling: linkWord(tilingNameOf(w)) } : {}),
-    ...(kind === 'Walk' ? { walk: linkWord(rule) } : {}),
+    mode: menuWord(kind),
+    shape: menuWord(shape),
+    ...(fam ? { tiling: menuWord(tilingNameOf(w)) } : {}),
+    ...(kind === 'Walk' ? { walkKind: menuWord(rule) } : {}),
     ...(side ? { on: side } : {}),
   });
 };
 // the mode a link's words say: the first of the menu with each word given (one left out: any)
 const modeOfWords = (s) =>
   Object.keys(NAV).find((w) => MODE_WORDS.every((k) => s[k] === undefined || modeWords(w)[k] === s[k]));
+// A setup's fields in a link, each under a word that says it (a setup's own, short: the code's): what all modes have, one
+// word, no prefix (teams, playRule, maxSteps); what one family has, its prefix: grid (the tiling's sheet), walk, battle,
+// pop (a population: Life, Rewind, Replicators, Elementary). Apart from this table: the number (x: popNumber, or
+// walkNumberA and the others' B to L), a population's start (pop: popStart, then its draw, its text or its picks), and
+// the choices written by their names, not their places (battleRule, battleStarts, gridOutline)
+const LINK_NAMES = {
+  k: 'teams',
+  r: 'playRule',
+  d: 'maxSteps',
+  at: 'step',
+  v: 'version',
+  s: 'gridSize',
+  o: 'gridTurned',
+  e: 'gridWalls',
+  ol: 'gridOutline',
+  st: 'walkStart',
+  br: 'battleRule',
+  gr: 'battleStarts',
+  so: 'battleOrder',
+  rs: 'battleDraw',
+  tf: 'popFont',
+  p: 'popCells',
+  ch: 'popFound',
+  y: 'popSymmetry',
+  mx: 'popMixed',
+  nc: 'popNewcomer',
+  sp: 'popStacked',
+};
+const FIELD_OF_NAME = Object.fromEntries(Object.entries(LINK_NAMES).map(([field, name]) => [name, field]));
+// a choice written by its name: a field's value to its word and back (none: as it is)
+const LINK_CHOICES = {
+  br: BATTLE_RULES.map(([, name]) => linkWord(name)), // (landEdges1, landNoCollision…: its card's name)
+  gr: STARTS_WAYS.map(([way]) => way),
+  ol: { s: 'square', r: 'rhombus' },
+};
+const linkChoice = (field, v) => LINK_CHOICES[field]?.[v] ?? v;
+const fieldChoice = (field, word) => {
+  const at = Object.entries(LINK_CHOICES[field] ?? {}).find(([, name]) => name === word);
+  return at ? at[0] : word;
+};
+// a population's start in words: popStart, then what comes with it: its draw (a soup's density and seed, 30.7), its text,
+// its picks (a zone's icons, patterns or number)
+const popWords = (pop) => {
+  const [start, ...rest] = String(pop).split('.'),
+    more = rest.join('.');
+  return {
+    popStart: start,
+    ...(start === 'text'
+      ? { popText: more }
+      : /^\d+\.\d+$/.test(more)
+        ? { popDraw: more }
+        : more
+          ? { popPicks: more }
+          : {}),
+  };
+};
+const POP_WORDS = ['popStart', 'popText', 'popDraw', 'popPicks'];
+// a setup in a link's words, in turn: its mode's, its numbers, the rest as the setup holds them
 // (a setup of a mode the app has no more, a Gallery's old entry: its key as saved, w=, read by nothing: its card stays, its key its own)
-const toHash = ({ w, ...rest }) =>
-  Object.entries({ ...(NAV[w] ? modeWords(w) : { w }), ...rest })
+function linkWordsOf({ w, x, ...rest }) {
+  const pop = !!MODES[w]?.life,
+    words = {
+      ...(NAV[w] ? modeWords(w) : { w }),
+      ...(x === undefined ? {} : { [pop ? 'popNumber' : 'walkNumberA']: x }),
+    };
+  for (const [field, v] of Object.entries(rest)) {
+    if (field === 'pop') Object.assign(words, popWords(v));
+    else if (/^x[b-l]$/.test(field)) words[`walkNumber${field[1].toUpperCase()}`] = v;
+    else words[LINK_NAMES[field] ?? field] = linkChoice(field, v);
+  }
+  return words;
+}
+// and back: a link's words to a setup (null: no mode said, or none of the menu's)
+function setupOfLinkWords(said) {
+  const w = said.mode && modeOfWords(said);
+  if (!w) return null;
+  const x = said.popNumber ?? said.walkNumberA,
+    s = { ...(x === undefined ? {} : { x }), w }; // (its number first, then its mode: as getSetup's)
+  for (const [name, v] of Object.entries(said)) {
+    const rival = name.match(/^walkNumber([B-L])$/);
+    if (MODE_WORDS.includes(name) || name === 'popNumber' || name === 'walkNumberA') continue;
+    if (name === 'popStart')
+      s.pop = [v, said.popText ?? said.popDraw ?? said.popPicks].filter((part) => part !== undefined).join('.');
+    else if (POP_WORDS.includes(name)) continue;
+    else if (rival) s[`x${rival[1].toLowerCase()}`] = v;
+    else if (FIELD_OF_NAME[name]) s[FIELD_OF_NAME[name]] = fieldChoice(FIELD_OF_NAME[name], v);
+    else s[name] = v;
+  }
+  return s;
+}
+const toHash = (setup) =>
+  Object.entries(linkWordsOf(setup))
     .map(
       ([k, v]) =>
         `${k}=${encodeURIComponent(String(v)).replace(/%(2F|2B|5E|2C|3A|24)/g, (c) => decodeURIComponent(c))}`,
     )
     .join('&');
-// a link's setup (its hash; none said, the page's): its words read, its mode's the mode they say (see modeWords); null: none
+// a link's setup (its hash; none said, the page's): its words read (see setupOfLinkWords); null: none
 function parseHash(hash = location.hash) {
   if (hash.length < 2) return null;
   try {
-    const said = Object.fromEntries(
-      hash
-        .replace(/^#/, '')
-        .split('&')
-        .map((kv) => {
-          const at = kv.indexOf('=');
-          return [kv.slice(0, at), decodeURIComponent(kv.slice(at + 1))];
-        }),
+    return setupOfLinkWords(
+      Object.fromEntries(
+        hash
+          .replace(/^#/, '')
+          .split('&')
+          .map((kv) => {
+            const at = kv.indexOf('=');
+            return [kv.slice(0, at), decodeURIComponent(kv.slice(at + 1))];
+          }),
+      ),
     );
-    const w = said.mode && modeOfWords(said),
-      rest = Object.fromEntries(Object.entries(said).filter(([k]) => !MODE_WORDS.includes(k) && k !== 'w'));
-    return w ? { ...(rest.x === undefined ? {} : { x: rest.x }), w, ...rest } : null; // (its number first, then its mode: as getSetup's)
   } catch {
     return null;
   }

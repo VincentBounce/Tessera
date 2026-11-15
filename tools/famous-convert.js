@@ -1,7 +1,7 @@
 // Famous and Anywhere starts written by their patterns (v0.4.924: pop=famous.Glider:3.Diehard), no longer by a seed
 // (pop=famous.30.8): an old link converted, run in the page (it uses the app's own functions):
 //   await import(`/tools/famous-convert.js?${Date.now()}`);
-//   await famousLinkNow('#mode=life&shape=squares&k=2&s=96&pop=famous.30.8');   // the link as it is now: its patterns
+//   await famousLinkNow('#mode=life&shape=squares&teams=2&gridSize=96&popStart=famous&popDraw=30.8');   // the link as it is now: its patterns
 //   await famousGalleryNow();                                     // the Gallery's (this browser's) converted in place
 // Each old link opened, its grid built, its seed played as the draw did then (seededRandom, a colour's choice after the
 // other, see drawChoice), its patterns written; a link of another start given back as it was.
@@ -15,7 +15,7 @@ const openBuilt = async (hash) => {
       await new Promise((ok) => setTimeout(ok, 100));
     await new Promise((ok) => setTimeout(ok, 300));
   };
-  location.hash = '#x=pi&mode=walk&shape=squares&walk=turtle&on=edges';
+  location.hash = '#mode=walk&shape=squares&walkKind=turtle&on=edges&walkNumberA=pi';
   await built('turtle', false);
   location.hash = hash;
   await built(new URLSearchParams(hash.slice(1)).get('w'), true);

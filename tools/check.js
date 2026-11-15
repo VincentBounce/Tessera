@@ -6,6 +6,7 @@
 //   await tesseraCheck({ fuzz: 400, seed: 7 });                            // 400 actions at random, menu to menu (transitions, smallest sizes)
 //   await tesseraCheck({ fuzz: 400, seed: 7, hovers: true });              // and after each, every greyed control hovered: its search builds nothing (see watchSearches)
 //   await tesseraCheck({ fuzz: 100, cold: true });                          // and after each, its link loaded cold beside: the same menus offered
+//   await tesseraCheck({ hunts: true });                                   // a hunt's results each clicked: its list kept, the one clicked lit, what it says played (battles', Life's)
 //   await tesseraCheck({ colours: true });                                 // every Life surface offers colours (more than Solo) at one of its sizes at least
 //   await tesseraCheck({ battles: true });                                 // every walk on a surface: its battles' walkers each A's path moved, Land no collision kept apart, 5 minutes
 //   await tesseraCheck({ parts: true });                                   // every count of colours offered, as many cells a colour: plane and solids, 7 minutes
@@ -942,6 +943,78 @@ function checkBlocksRound(fail) {
   }
   return checked;
 }
+// A hunt's results, each clicked in turn (the battles' hunt, Life's): its list as long after as before (never emptied: a
+// battle of another order of its numbers played emptied both lists till v0.4.1069), the one clicked lit and no other, and
+// what it says played: a battle's steps, a Life start's cells. No error is thrown by a list emptied: click-everything
+// cannot see it, and it stops each hunt 120 ms after starting it
+async function huntResultsKept(fail) {
+  let checked = 0;
+  const cards = (id) => [...$(id).querySelectorAll('button')],
+    number = (b) => Number(b.textContent.match(/[\d,]+/)[0].replace(/,/g, ''));
+  const clickEach = async (what, id, says, played) => {
+    for (let t = 0; t < 150 && cards(id).length < 3; t++) await wait(100); // (a few found: 15 s at most)
+    if (!cards(id).length) return fail(`${what}: the hunt found nothing in 15 s`);
+    let kept = null;
+    for (let i = 0; i < (kept ?? cards(id).length); i++) {
+      const b = cards(id)[i],
+        before = cards(id).length,
+        said = b.textContent.trim().slice(0, 60);
+      b.click();
+      await wait(300);
+      await until(() => true);
+      await wait(300);
+      kept ??= cards(id).length; // (the first click stops the hunt: its list as it is then)
+      checked++;
+      const lit = cards(id).flatMap((c, j) => (c.classList.contains('active') ? [j] : []));
+      if (cards(id).length < before) {
+        fail(`${what}: result ${i} (${said}) clicked, ${cards(id).length} results left of ${before}`);
+        break;
+      }
+      const at = cards(id).findIndex((c) => c.textContent.trim().slice(0, 60) === said); // (its place now: a battle ended as the hunt stopped may have come in over it)
+      if (`${lit}` !== `${at}`)
+        fail(`${what}: result ${i} (${said}) clicked, now at ${at}, lit: ${lit.length ? lit : 'none'}`);
+      const got = played();
+      if (at >= 0 && got !== says(cards(id)[at])) fail(`${what}: result ${i} says ${said}, played ${got}`);
+    }
+  };
+  // the battles' hunt: three walkers' orders drawn with the starts alone, then with the numbers
+  const link = '#x=sqrt(2923)&w=hexSphereGrid&d=20000&s=24&k=3&xb=sqrt(5359)&xc=sqrt(3363)&br=1';
+  for (const [formulas, starts] of [
+    [false, true],
+    [true, false],
+  ]) {
+    location.hash = `${link}&st=${formulas ? 2 : 3}`; // (another link each: opened again)
+    await wait(500);
+    await until(shown('hexSphereGrid', () => walk.battle?.player?.K === 3));
+    const tiles = $('battleHuntVary').children;
+    if (huntVary.formulas !== formulas) tiles[0].click();
+    if (huntVary.starts !== starts) $('battleHuntVary').children[1].click();
+    $('battleHuntBtn').click();
+    await clickEach(
+      `battles' hunt (${formulas ? 'Numbers' : 'Starts'})`,
+      'battleHuntTop',
+      number,
+      () => walk.battle?.player?.n ?? -1,
+    );
+    stopBattleHunt();
+  }
+  // Life's hunt: one colour (the longest lives: a start's cells), then two (a battle's: its list and its light only)
+  for (const [life, K] of [
+    ['#w=life2d&s=32&k=1', 1],
+    ['#w=life2d&s=32&k=2', 2],
+  ]) {
+    await openLife(life);
+    $('huntBtn').click();
+    await clickEach(
+      `Life's hunt (${K} colour${K > 1 ? 's' : ''})`,
+      'huntTop',
+      (b) => (K > 1 ? 0 : Number(b.textContent.match(/· ([\d,]+) cells/)[1].replace(/,/g, ''))), // (one colour: its start's cells; a battle's: its list and its light only)
+      () => (K > 1 ? 0 : walk.life.seedAlive),
+    );
+    if (hunt.run) stopHunt();
+  }
+  return checked;
+}
 // Centred's edges (CENTRED_EDGES) as the meshes' own: every battle along a solid's grid, at its two least sizes of each
 // class (3 divides it or not): the edges out of its faces' centres and corners as its table says, and its walkers grouped
 // where groupedCan says so
@@ -1590,6 +1663,7 @@ window.tesseraCheck = async ({
   clickAll = false,
   clickFrom = 0,
   hovers = false,
+  hunts = false,
   deep: andDeep = false,
   fuzz: actions = 0,
   cold = false,
@@ -1624,6 +1698,7 @@ window.tesseraCheck = async ({
   if (clickAll) checked += await crawl(fail, clickEverything(fail), clickFrom);
   if (hovers && !actions) checked += await crawl(fail, hoverGreyed(fail));
   if (actions) checked += await fuzz(fail, actions, seed, cold, hovers ? hoverGreyed(fail, false) : null);
+  if (hunts) checked += await huntResultsKept(fail);
   if (colours) checked += await coloursOffered(fail);
   if (battles) checked += await battlesFair(fail);
   if (parts) checked += await partsEqual(fail);

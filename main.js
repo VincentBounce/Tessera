@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.40';
+const VERSION = '0.5.41';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -3809,6 +3809,27 @@ const HULL_SOLIDS = {
     where:
       "a rhombic dodecahedron, each of its 12 rhombi a grid of squares (the cuboctahedron's dual: 3 or 4 rhombi round each corner)",
   },
+  rhombicTriaconta: {
+    name: 'Rhombic triacontahedron',
+    short: 'RhTria',
+    // (the icosahedron's 12 corners, 5 rhombi round each, and the dodecahedron's 20, 3 round each: (0, ±φ, ±1), (±1, ±1, ±1),
+    // (0, ±1/φ, ±φ), each turned round its axes)
+    corners: () => {
+      const phi = (1 + Math.sqrt(5)) / 2,
+        turns = (p) => [p, [p[2], p[0], p[1]], [p[1], p[2], p[0]]],
+        signs = (p) =>
+          p.reduce((all, v, d) => (v ? all.flatMap((q) => [q, q.map((w, e) => (e === d ? -w : w))]) : all), [p]);
+      return [...turns([0, phi, 1]).flatMap(signs), ...signs([1, 1, 1]), ...turns([0, 1 / phi, phi]).flatMap(signs)];
+    },
+    pic: 'penrose', // (along a 5-fold axis: 5 rhombi round a corner, Penrose's sun)
+    mark: '■',
+    cells: 'Squares', // (as the rhombic dodecahedron's: a grid of squares laid on each rhombus)
+    walks: true,
+    cuts: ['tetrakis', 'halves'],
+    place: [1, 'Rhombic dodecahedron'],
+    where:
+      "a rhombic triacontahedron, each of its 30 golden rhombi a grid of squares (the icosidodecahedron's dual: 3 or 5 rhombi round each corner)",
+  },
 };
 // a hull solid's icon: its own (its pic's paths, ICONS[k]) or another's it names (pic: an icon's name)
 const hullIcon = (k) => (typeof HULL_SOLIDS[k].pic === 'string' ? HULL_SOLIDS[k].pic : k);
@@ -6752,6 +6773,7 @@ const SHAPE_DEFAULTS = {
   'Möbius strip': { inflated: 1, perspective: true },
   'Klein bottle': { inflated: 1 },
   'Rhombic dodecahedron': { inflated: 0.5 },
+  'Rhombic triacontahedron': { inflated: 0.5 },
 };
 const DISPLAY_DEFAULTS = {
   look: [
@@ -14449,7 +14471,7 @@ for (const k of Object.keys(ROSETTE_SPHERES)) {
     ['Hexagons', 1, 'Kites'],
     ...Object.values(HULL_SOLIDS).map(({ name, place: [after, other] }) => [name, after, other]),
     ['Sphere', 1, 'Dodecahedron'],
-    ['Sphere', 1, 'Rhombic dodecahedron'], // (the icosahedron among the polyhedra: after the rhombic dodecahedron where it is, else the dodecahedron)
+    ['Sphere', 1, 'Rhombic triacontahedron'], // (the icosahedron among the polyhedra: after the rhombic solids where they are, else the dodecahedron)
     ['Stella octangula', 1, 'Sphere'],
     ['Globe', 1, 'Sphere'],
   ]; // (1 after, 0 before)

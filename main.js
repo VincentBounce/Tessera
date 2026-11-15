@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.51';
+const VERSION = '0.5.52';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -29716,7 +29716,7 @@ const HUNT_GENERATIONS = [50000, 4000]; // a hunt's start played up to so many g
 const DENSITY = [0.1, 0.7]; // a random start's density, drawn between these
 const density = () => DENSITY[0] + Math.random() * (DENSITY[1] - DENSITY[0]);
 const realmOnFaces = () =>
-  !!SOLID_SPOTS[VARIANTS[walk.variant].surface] || !!HULL_SOLIDS[VARIANTS[walk.variant].surface]; // (a solid: Realm its faces, see realmParts)
+  !!SOLID_SPOTS[VARIANTS[walk.variant].surface] || !!hullSolidOf(VARIANTS[walk.variant].surface); // (a solid: Realm its faces, a cut's its solid's, see realmParts)
 const zoneRadius = (zone) => (zone.startsWith('radius') ? Number(zone.slice(6)) : 0);
 // Realm: on a solid, each colour's whole face, the one its patch is in the middle of (see patchSpots); none (greyed) where a
 // patch is on a corner or an edge (the stella's tips and hollows): a face cut.
@@ -30893,7 +30893,7 @@ const patternsOn = () => {
     !!flatGrid() ||
     !!walk.geo?.torus ||
     (['cube', 'pits', 'bumps'].includes(m.surface.replace(/Tetrakis$/, '')) && CUBE_FACES.includes(K)) ||
-    (!!HULL_SOLIDS[m.surface] && (K === 1 || ['square', 'tri'].includes(hullColours(m.surface, K)?.kind))) ||
+    (!!hullSolidOf(m.surface) && (K === 1 || ['square', 'tri'].includes(hullColours(m.surface, K)?.kind))) || // (a cut's: its solid's)
     (!!walk.geo?.hexagons && !m.plane) ||
     (!!TRI_FACES[m.surface] && (K === 1 || !!triFace(m.surface, K, 0)))
   );
@@ -30987,13 +30987,11 @@ function patternPlace(i, K) {
         : Math.floor(frontCell() / (g.triFaces ? g.size * g.size : g.perFace)),
     );
   }
-  if (g.squareFaces)
+  const { squareFaces } = g.uncut ?? g; // (a cut's: its solid's)
+  if (squareFaces)
     return {
       on: 'square',
-      f: g.squareFaces.reduce(
-        (b, fc, k) => (dot3(fc.n, AXES[3]) > dot3(g.squareFaces[b].n, AXES[3]) + 1e-9 ? k : b),
-        0,
-      ),
+      f: squareFaces.reduce((b, fc, k) => (dot3(fc.n, AXES[3]) > dot3(squareFaces[b].n, AXES[3]) + 1e-9 ? k : b), 0),
     }; // (one colour: the square most in front)
   if (g.hexagons) {
     // (the face most its way, its middle: a stella's tip, a face of it; one colour, the front's)

@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.1061';
+const VERSION = '0.4.1062';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -7120,6 +7120,8 @@ const setTile = (
     }
     b.enablers = why ? () => enablersFor((setup) => !whyNot(setup), judgedAt) : null;
     b.pathsMemo = null;
+    menuEdges.clear();
+    menuTeams.clear(); // (a tile drawn again: the menu's state may have changed)
     b.paths = why ? () => (b.pathsMemo ??= pathsTo((setup) => !whyNot(setup), 5000, judgedAt)) : null;
   } // (its paths found once a drawing: at its first tooltip)  // (at: none, no walk shown yet: the tab's)
   if (byDefault !== undefined) b.dataset.default = byDefault;
@@ -10689,6 +10691,10 @@ const changes = (a, b) => modeChanges(a.w, b.w) + SETUP_FIELDS.filter((f) => a[f
 // till one holds some; of these the fewest settings changed, each its clicks [key, words] (budget: setups tried at most).
 // Only the clicks that change what fits reads: its fields, as it reads them (the mode always), so a control judged by few
 // fields searches those only (a hunt's zone, judged on the grid built: none but its mode's)
+// the menu's edges found since a tile was last drawn (see setTile), by their setup and the fields asked: one search's, kept
+// for the next greyed control hovered (a row's tiles ask the same: the four symmetries, each 170 ms of the same edges)
+const menuEdges = new Map(),
+  menuTeams = new Map(); // (its colours by mode, see choicesAt's teamsMemo: as long)
 function pathsTo(fits, budget = 5000, judgedAt = null) {
   // (judgedAt: a control judged on the grid built only, its mode's setups only)
   const start = setupNow(),
@@ -10697,7 +10703,11 @@ function pathsTo(fits, budget = 5000, judgedAt = null) {
     kind = !MODES[w].plane && surfaceOf(MODES[w]),
     now = SPHERES[kind] && figureSize(w);
   const reads = new Set(['w']),
-    teamsMemo = new Map(),
+    edges = (s) => {
+      const key = `${setupKey(s)}|${[...reads].sort()}`;
+      if (!menuEdges.has(key)) menuEdges.set(key, choicesAt(s, reads, menuTeams));
+      return menuEdges.get(key);
+    },
     judged = (t) =>
       fits(
         new Proxy(t, {
@@ -10723,7 +10733,7 @@ function pathsTo(fits, budget = 5000, judgedAt = null) {
     const hits = [],
       next = [];
     for (const [s, path] of layer) {
-      for (const [key, t, words] of [...choicesAt(s, reads, teamsMemo), ...(path.length ? [] : sizes)]) {
+      for (const [key, t, words] of [...edges(s), ...(path.length ? [] : sizes)]) {
         const k = setupKey(t);
         if (seen.has(k) || !readChanged(s, t) || (judgedAt && t.w !== judgedAt) || ++tried > budget) continue;
         seen.add(k);

@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.45';
+const VERSION = '0.5.46';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -3821,14 +3821,7 @@ const HULL_SOLIDS = {
           p.reduce((all, v, d) => (v ? all.flatMap((q) => [q, q.map((w, e) => (e === d ? -w : w))]) : all), [p]);
       return [...turns([0, phi, 1]).flatMap(signs), ...signs([1, 1, 1]), ...turns([0, 1 / phi, phi]).flatMap(signs)];
     },
-    pic: [
-      'M12 12L15.63 7L12 2L8.37 7ZM12 12L8.37 7L2.49 8.91L6.12 13.91ZM12 12L6.12 13.91L6.12 20.09L12 18.18ZM12 12L12 18.18L17.88 20.09L17.88 13.91ZM12 12L17.88 13.91L21.51 8.91L15.63 7Z',
-      [
-        'M8.37 7L12 2L6.12 3.91L2.49 8.91ZM6.12 13.91L2.49 8.91L2.49 15.09L6.12 20.09ZM12 18.18L6.12 20.09L12 22L17.88 20.09ZM17.88 13.91L17.88 20.09L21.51 15.09L21.51 8.91ZM15.63 7L21.51 8.91L17.88 3.91L12 2Z',
-        'f',
-      ],
-      'M21.51 8.91L17.88 3.91L12 2L6.12 3.91L2.49 8.91L2.49 15.09L6.12 20.09L12 22L17.88 20.09L21.51 15.09Z',
-    ], // (along a 5-fold axis: 5 rhombi round its middle, 5 between them foreshortened, filled, its outline a decagon)
+    pic: 'penrose', // (along a 5-fold axis: 5 rhombi round a corner, Penrose's sun)
     mark: '■',
     cells: 'Squares', // (as the rhombic dodecahedron's: a grid of squares laid on each rhombus)
     walks: true,
@@ -9896,7 +9889,7 @@ const variantOption = (m, group, text) =>
   document.querySelector(`#variant optgroup[label="${group}"]`).append(new Option(`Life — ${text}`, m));
 // the hull solids' Life (see HULL_SOLIDS): a variant each, said by its declaration
 for (const [k, S] of Object.entries(HULL_SOLIDS)) {
-  if (Array.isArray(S.pic)) ICONS[k] = S.pic.map((d) => svgPath(...[d].flat())).join(''); // (a path, or [path, its class]: 'f' filled)
+  if (Array.isArray(S.pic)) ICONS[k] = S.pic.map((d) => svgPath(d)).join('');
   for (const [surface, tiling, where] of [
     [k, S.cuts && S.cells, S.where],
     ...(S.cuts ?? []).map((c) => [`${k}${HULL_CUTS[c].name}`, HULL_CUTS[c].name, `${S.where}, ${HULL_CUTS[c].words}`]),

@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.1071';
+const VERSION = '0.4.1072';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -18151,7 +18151,7 @@ function renderWalkTeams() {
     `Each walker back to its first number${firsts.length > 3 ? `: ${firsts.join(' vs ')}` : ''}`; // (those its label cuts: all of them; else none, its label says them)
   battleAsked = BATTLE_FORMULAS.map((id) => $(id).value); // (a battle computed: its numbers as sent)
   tintBattleFormulas();
-  if (battleHunt.run && (!battleOn() || battleHunt.key !== battleHuntKey())) stopBattleHunt(); // (its battles fought elsewhere: it stops)
+  if (battleHunt.run && !battleOn()) stopBattleHunt(); // (no battle here: it stops; its battles fought elsewhere, see huntAt)
   if (battleOn()) renderBattleHunt();
   if (!here || !battleOn()) return;
   // its ways as cards, as Life's rules: a picture (a red head, a blue body or land), its name over its words
@@ -19813,7 +19813,16 @@ let huntRank = 'longest';
 const huntGoal = () =>
   huntRank === 'even' && BATTLE_RULES[battleRuleInUse(tabMode())][0] === 'cut' ? 'longest' : huntRank; // (Even lands: with land only, else Longest)
 const huntStarts = () => huntVary.starts && startsWayNow() !== 'centred'; // (Starts varied: in Symmetric and Random)
-const BATTLE_FRESH = () => ({ ended: [], open: [], endedCount: 0, tried: new Set(), key: battleHuntKey(), status: '' }); // (a hunt's results, none yet)
+// A hunt's results belong to what they were found at (its key: what the hunt does not vary, its battles' setup, Life's
+// game): asked elsewhere, the hunt stops and its results go (fresh: its state with none). One rule for both hunts (the
+// battles', Life's), asked as each draws its list: never a list emptied by hand where a setting changes
+const huntAt = (H, key, fresh, stop) => {
+  if (H.key === key) return;
+  const run = H.run;
+  Object.assign(H, fresh(), { key, run });
+  if (run) stop();
+};
+const BATTLE_FRESH = () => ({ ended: [], open: [], endedCount: 0, tried: new Set(), status: '' }); // (a hunt's results, none yet)
 const battleHunt = { run: null, ended: [], open: [], endedCount: 0, tried: new Set(), key: '', status: '' };
 const battleHuntKey = () =>
   [
@@ -19886,7 +19895,7 @@ const meshData = (g) =>
     }),
   );
 async function startBattleHunt() {
-  if (battleHunt.key !== battleHuntKey()) Object.assign(battleHunt, BATTLE_FRESH());
+  huntAt(battleHunt, battleHuntKey(), BATTLE_FRESH, stopBattleHunt);
   const run = (battleHunt.run = { stop: false, workers: [] }),
     mode = MODES[tabMode()],
     n = digitsNeeded(),
@@ -20043,7 +20052,7 @@ function stopBattleHunt() {
 // its switches (what it varies: Formulas, Starts), its button (Hunt, or Stop; greyed varying nothing), its count, its two
 // lists as cards under their labels: a click plays one (its numbers, its start)
 function renderBattleHunt() {
-  if (battleHunt.key !== battleHuntKey() && !battleHunt.run) Object.assign(battleHunt, BATTLE_FRESH());
+  huntAt(battleHunt, battleHuntKey(), BATTLE_FRESH, stopBattleHunt);
   const vary = (what, text, title, can = true, greyed = '') =>
     tile({
       pic: icon(what === 'formulas' ? 'search' : 'play'),
@@ -20974,9 +20983,7 @@ function buildLife(seq, mode) {
   countSeed(walk.life);
   restart();
   if (walk.shape) applyShape();
-  hunt.top = []; // a new surface, rule or colours: the starts found were another game's
-  hunt.status = '';
-  stopHunt();
+  stopHunt(); // (a new surface, rule or colours: the starts found were another game's, see lifeHuntKey)
   renderTeams(); // the blocks a figure fits, now that it is built
   renderPlaneRow(); // (its starts: Text where a picture can be laid)
   if (!$('ruleTuto').hidden) renderRuleSection(); // (its page, now that it is built: blocks, their max period here)
@@ -24105,9 +24112,7 @@ function buildLifePlane(seq) {
   countSeed(walk.life);
   updateHint();
   restart();
-  hunt.top = []; // a new grid, rule or colours: the starts found were another game's
-  hunt.status = '';
-  stopHunt();
+  stopHunt(); // (a new grid, rule or colours: the starts found were another game's, see lifeHuntKey)
   renderTeams(); // the blocks a figure fits, and its size's words (its colours fitted), now that it is built
   renderPlaneRow();
   if (!$('ruleTuto').hidden) renderRuleSection(); // (its page, now that it is built: blocks, their max period here)
@@ -24430,7 +24435,6 @@ function renderSymmetry() {
           click: () => {
             if (y !== symmetryOf(walk.plane.kind)) {
               plane.sym = y;
-              hunt.top = [];
               lifeReseed();
               renderHunt();
             }
@@ -29021,7 +29025,7 @@ function huntRuns(L, { cells, copies, all, choices, nth }, cap, goal, report) {
   setTimeout(slice, 0);
   return hunt;
 }
-const hunt = { run: null, zone: 'full', top: [], status: '', picked: null, goal: 'longest' }; // goal in one colour: longest, dies, peak or cover (colours: a battle)
+const hunt = { run: null, zone: 'full', top: [], status: '', picked: null, goal: 'longest', key: '' }; // goal in one colour: longest, dies, peak or cover (colours: a battle)
 let huntKept = 0; // the results kept so far, all hunts: each one's number its identity (picked: the one played's)
 // What the hunt looks for in one colour: the longest life, the longest till it dies out, or ends full (more than FULL_END of
 // its cells alive, as it settles or loops: a rule whose soups fill the grid), the most cells alive at once,
@@ -29049,8 +29053,6 @@ function pickGoal(goal) {
   hunt.goal = goal;
   if (!huntFits()[hunt.zone])
     pickZone([8, 7, 6, 5, 4, 3, 2, 1].map((k) => `radius${k}`).find((z) => huntFits()[z]) ?? 'radius1'); // (Peak: not Wild)
-  hunt.top = [];
-  hunt.status = '';
   renderHunt();
   syncLink();
 }
@@ -30019,7 +30021,16 @@ function renderBack() {
       : `${icon('search')} Find its return to the start`;
   setTile($('backBtn'), { greyed: L.stable ? 'Found already: it comes back to its start.' : '' });
 }
+// what Life's hunt's starts were found at: the game built (a new one at each surface, grid, rule or count of colours: a
+// number of its own, as a grid's, see gridKey), its symmetry, its goal and its zone
+let lifeGames = 0;
+const lifeHuntKey = () =>
+  walk.life // (no game, a walk: none)
+    ? `${(walk.life.huntId ??= ++lifeGames)}|${walk.plane ? symmetryOf(walk.plane.kind) : ''}|${hunt.goal}|${hunt.zone}`
+    : '';
+const HUNT_FRESH = () => ({ top: [], status: '' }); // (its results, none yet)
 function renderHunt() {
+  huntAt(hunt, lifeHuntKey(), HUNT_FRESH, stopHunt);
   renderBack();
   $('huntZones').hidden = !huntOn() || surfaceDraw;
   $('huntRow').hidden = $('huntZones').hidden || !!walk.life.margolus; // (blocks: their zones' starts only, no hunt of their own)
@@ -30250,8 +30261,6 @@ function layZone() {
 function pickZone(zone) {
   hunt.zone = zone;
   renderTeams(); // (Mixed: greyed or not in it)
-  hunt.top = [];
-  hunt.status = '';
   plane.density = Math.round(100 * density()); // a new start each time, as dense as drawn (in whole percents), from a new seed
   plane.seed = 1 + Math.floor(Math.random() * 999999999);
   plane.picks = null; // (Famous, Anywhere: drawn again as laid, see zoneSeed)

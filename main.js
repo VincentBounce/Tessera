@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.27';
+const VERSION = '0.5.28';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -16817,7 +16817,8 @@ const sizeSides = (kind, f) => {
     S = SURFACES[kind];
   if (S?.disc) return `{g:${formatNumber(f)} × ${formatNumber(f)} cells a disc, as the plane's}`; // (a rosette surface: no face, its two discs)
   if (!d) {
-    const g = (facesMemo[kind] ??= S.mesh(S.sizes[0])),
+    const mesh = (facesMemo[kind] ??= S.mesh(S.sizes[0])),
+      g = mesh.uncut ?? mesh, // (a cut's faces its solid's, see HULL_CUTS)
       F =
         { tetra: 4, octa: 8, icosa: 20, stella: 24, dodeca: 12 }[FACE_BASE[kind] ?? kind.replace(/Kite$/, '')] ??
         (g.triFaces ? g.triFaces.length + g.squareFaces.length : 6),
@@ -16918,10 +16919,10 @@ const howCounted = (kind, f) => {
   if (d)
     return `(Edge=${formatNumber(d[0])}) rows × {y:${formatNumber(d[1] * det)} ${m > 1 ? 'lattice cells' : d[3]}} a row${det > 1 ? ` (${det} a rectangle of the grid: its cell slanted, the grid straight)` : ''}${m > 1 ? ` × {k:${m} ${d[3]} each}${turnedCellNote(kind)}` : ''}${all > d[2] ? ` − ${formatNumber(all - d[2])} in the wall` : ''} = ${formatNumber(d[2])} ${d[3]}`;
   // a solid of flat faces: each face's cells, f to an edge (its faces as its least size's mesh has them, the same at every size)
-  const base = kind.endsWith('Tetrakis') && SURFACES[kind.slice(0, -8)] ? kind.slice(0, -8) : kind,
-    B = SURFACES[base]; // (a solid of tetrakis triangles: its squares', 4 each)
-  const g = B && !TORI.includes(base) && (facesMemo[base] ??= B.mesh(B.sizes[0])),
-    cut = base !== kind ? 4 : g?.kite ? 3 : 1;
+  // (a cut's, by construction: the solid it cuts, its faces' cells cut into so many each, see HULL_CUTS; kites, 3 a triangle)
+  const mesh = S && !TORI.includes(kind) && (facesMemo[kind] ??= S.mesh(S.sizes[0])),
+    g = mesh?.uncut ?? mesh,
+    cut = mesh?.per ?? (mesh?.kite ? 3 : 1);
   if (g?.faces || g?.triFaces) {
     const by = g.faces ? {} : { 3: g.triFaces.length, 4: g.squareFaces.length },
       adj = { 3: 'triangular', 4: 'square', 5: 'pentagonal', 6: 'hexagonal' },
@@ -16930,7 +16931,7 @@ const howCounted = (kind, f) => {
     for (const F of g.faces ?? []) by[F.corners.length] = (by[F.corners.length] ?? 0) + 1; // (a solid of triangles and squares: its faces of each, see Johnson solids)
     for (const c in by) if (!by[c]) delete by[c];
     if (Object.entries(by).reduce((sum, [c, k]) => sum + k * (round[c] ?? 1) * f * f * cut, 0) === n) {
-      const red = redFaces(base === kind ? g : (facesMemo[kind] ??= S.mesh(S.sizes[0]))),
+      const red = redFaces(g),
         mark = (c, w) => (red ? `{${c}:${w}}` : w); // (in the colours drawn: its faces red, its motif's cells violet)
       return `${Object.entries(by)
         .map(

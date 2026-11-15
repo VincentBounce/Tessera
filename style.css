@@ -1232,15 +1232,7 @@ button.active .bubble.active {
   align-items: center;
   gap: 6px;
   margin: 2px 0 10px;
-} /* under Grid | Cells: the switch, and Clear while drawing */
-.draw-row .check {
-  flex: 1;
-  margin: 0;
-}
-.draw-row button {
-  width: auto;
-  padding: 4px 12px;
-}
+} /* Draw's colours, a row of swatches */
 .start-panel {
   margin: 0 0 10px;
 }
@@ -1293,9 +1285,9 @@ button.active .bubble.active {
 .stack .field {
   margin-bottom: 4px;
 } /* fields one under another, as close as cards (a battle's formulas) */
-.stack > .draw-row {
+#battleNumbers {
   margin-top: 10px;
-} /* its buttons under its fields, apart as a list's (the last field's 4 px merged into it): a battle's first numbers and Roll */
+} /* its tiles under its fields, apart as a list's (the last field's 4 px merged into it): a battle's first numbers and Roll */
 .build-cols {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -1395,9 +1387,6 @@ button.active .bubble.active {
   width: 18px;
   height: 18px;
 }
-.turn-row button {
-  flex: 1;
-} /* the turns, always there (greyed for a cell); Open and Export PNG */
 .colour-swatches span {
   font-size: var(--label-text-size);
   color: var(--muted-text-color);
@@ -2246,7 +2235,6 @@ button.switch.active,
 .head-btn.active,
 .tut-tools button.active,
 .choice-list button.active,
-.draw-row button.active,
 .tut-shapes figure.active {
   border-color: var(--accent-color);
   color: var(--accent-color);

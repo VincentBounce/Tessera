@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.30';
+const VERSION = '0.5.31';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -18366,7 +18366,8 @@ function renderWalkTeams() {
   if (battleOn() && fieldA.parentElement !== $('formulaAHome')) $('formulaAHome').append(fieldA);
   if (!battleOn() && fieldA.parentElement !== $('numberPicker')) $('numberTabs').after(fieldA);
   const firsts = battleFirsts().map((f) => formulaOf(f).sym);
-  $('battleFirsts').textContent = firsts.slice(0, 3).join(' vs ') + (firsts.length > 3 ? '…' : ''); // (its first 3: one line)
+  $('battleFirsts').querySelector('span').textContent =
+    firsts.slice(0, 3).join(' vs ') + (firsts.length > 3 ? '…' : ''); // (its first 3: one line)
   $('battleFirsts').title =
     `Each walker back to its first number${firsts.length > 3 ? `: ${firsts.join(' vs ')}` : ''}`; // (those its label cuts: all of them; else none, its label says them)
   battleAsked = BATTLE_FORMULAS.map((id) => $(id).value); // (a battle computed: its numbers as sent)
@@ -24741,7 +24742,7 @@ function renderPlaneRow() {
   $('startTextInput').value = plane.text; // (its words, on any grid)
   $('startTextInput').style.setProperty('--text-start-font', TEXT_FONTS[plane.font][1]); // (at rest, in its font, see style.css)
   for (const b of $('textFonts').querySelectorAll('button')) setTile(b, { on: b.dataset.font === plane.font });
-  for (const r of $('startDraw').querySelectorAll('#startCells, .draw-row')) r.hidden = !kind; // the start's cells (Clear), the turns, the colours: to draw, on the plane (a surface's Draw: its patterns to see only)
+  for (const r of $('startDraw').querySelectorAll('#startCells, #brushTurns, .draw-row, #pngTools')) r.hidden = !kind; // the start's cells (Clear), the turns, the colours: to draw, on the plane (a surface's Draw: its patterns to see only)
   if (!kind) {
     $('symmetryRow').hidden = true;
     $('startDraw').hidden = !surfaceDraw;
@@ -24855,7 +24856,7 @@ function renderPlaneRow() {
       renderPlaneRow();
     });
   });
-  $('brushTurn').textContent = `↻ ${(brush.turn * 360) / gridTurns(kind)}°`;
+  $('brushTurn').querySelector('span').textContent = `↻ ${(brush.turn * 360) / gridTurns(kind)}°`;
   $('brushFlip').classList.toggle('active', brush.flip && canMirror(kind));
   renderDrawTools();
 }
@@ -46002,7 +46003,26 @@ $('startTextInput').addEventListener('keydown', (e) => {
 });
 // Open PNG: a picture, its dark pixels alive (its transparent ones dead), a pixel a square, on the smallest grid it fits in
 // (the plane's sizes: from 16 × 16, every rule's), in the middle; Export PNG: the generation shown, its live cells black
-$('openPng').addEventListener('click', () => $('pngFile').click());
+// Draw's row tiles (see tile's row): the brush's turn and Mirror; Open and Export PNG
+$('brushTurns').append(
+  tile({ id: 'brushTurn', row: true, text: '↻ 0°', title: 'A quarter turn more' }),
+  tile({ id: 'brushFlip', row: true, toggle: true, text: '⇋ Mirror', title: 'Mirrored' }),
+);
+$('pngTools').append(
+  tile({
+    id: 'openPng',
+    row: true,
+    text: 'Open PNG',
+    title: 'Opens a black and white picture as the start, a pixel a square',
+    click: () => $('pngFile').click(),
+  }),
+  tile({
+    id: 'exportPng',
+    row: true,
+    text: 'Export PNG',
+    title: 'Saves the generation shown as a black and white picture, a square a pixel',
+  }),
+);
 $('pngFile').addEventListener('change', async () => {
   const file = $('pngFile').files[0];
   $('pngFile').value = '';
@@ -46948,6 +46968,17 @@ BATTLE_FORMULAS.forEach((id, s) =>
 );
 $('battleHuntBtn').addEventListener('click', () => (battleHunt.run ? stopBattleHunt() : startBattleHunt()));
 // Random (under the battle's ways): as many numbers as walkers, each another, drawn from the hunt's (BATTLE_CARDS, DRAWN_ROOTS), fought
+$('battleNumbers').append(
+  tile({ id: 'battleFirsts', row: true, title: 'Each walker back to its first number' }),
+  tile({
+    id: 'battleRandom',
+    row: true,
+    pic: icon('dice'),
+    text: 'Roll',
+    title:
+      "As many numbers as walkers drawn at random from the hunt's (the Number cards' reals and sequences, √2 to √9999), fought here",
+  }),
+); // (a battle's row tiles, see tile's row)
 $('battleFirsts').addEventListener('click', () => playBattle(battleFirsts()));
 $('battleRandom').addEventListener('click', () => {
   const numbers = [...BATTLE_CARDS, ...DRAWN_ROOTS],

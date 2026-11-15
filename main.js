@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.32';
+const VERSION = '0.5.33';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -20297,7 +20297,7 @@ function renderBattleHunt() {
   huntAt(battleHunt, battleHuntKey(), BATTLE_FRESH, stopBattleHunt);
   const vary = (what, text, title, can = true, greyed = '') =>
     tile({
-      pic: icon(what === 'formulas' ? 'search' : 'play'),
+      pic: icon(what === 'formulas' ? 'barcode' : 'play'), // (Numbers: a number's digits, as the Digits start's)
       text,
       title,
       toggle: true,
@@ -24703,6 +24703,9 @@ function renderSymmetry() {
 const SYMMETRY_WHERE =
   'The grid is not its own copy this way (squares: all ways; a grid in a hexagon: as its tiles allow; a block rule: as its blocks and its rule allow too; in colours, as their parts do, each copy one whole part; the others: none). Not on Famous and Anywhere either: their patterns are laid whole where they are.'; // (a symmetry's greyed words)
 const DRAW_WHERE = 'On a reversible surface, a block rule has no patterns to show or draw.';
+// Draw's brushes and View, at variant w: drawn on the plane only; on a surface its rule's patterns are to see (View on)
+const drawOnPlane = ({ w }) =>
+  VARIANTS[w].plane ? '' : "Drawn on the plane only: on a surface, Famous lays the rule's patterns.";
 // a Life's starts, its tabs (see renderPlaneRow), and why one cannot be at variant v: Draw on a surface (its rule's patterns:
 // none for blocks); Text where no picture fits (its room known on the grid built only: another variant's not judged, not claimed)
 const LIFE_STARTS = [
@@ -24749,17 +24752,16 @@ function renderPlaneRow() {
     $('startText').hidden = plane.start !== 'text' || surfaceDraw;
     $('startDigits').hidden = plane.start !== 'digits' || surfaceDraw;
     if (!surfaceDraw) return;
-    // a surface: the rule's patterns on its grid, greyed (they cannot be drawn here: Famous lays them)
+    // a surface: the rule's patterns on its grid, to see (greyed by renderDrawTools: Famous lays them)
     const cells = PLANE_OF_MARK[lifeMark(VARIANTS[tabVariant()])],
       rule = ruleBody(parseRule(ruleBody($('lifeRule').value))?.text ?? '');
     for (const b of $('brushCards').children) {
       const p = DRAW_BY_ID.get(b.dataset.brush);
       b.hidden = !(p[1] === cells && p[2].includes(rule));
-      b.disabled = true;
-      b.classList.remove('active');
       if (!b.hidden) discCard(b, p);
     }
     $('drawNote').hidden = [...$('brushCards').children].some((b) => !b.hidden);
+    renderDrawTools();
     return;
   }
   $('drawNote').hidden = true;
@@ -24869,12 +24871,18 @@ function renderDrawTools() {
     why = "Away from gen 0: its start's cells are drawn there.";
   drawToolsAway = away;
   stage.classList.toggle('drawing', drawsHere()); // (the crosshair: a click draws, see drawsHere)
-  const grey = (b, own = false, ownWhy = '', on = b.classList.contains('active')) =>
-    setTile(b, { on, greyed: away ? why : own ? ownWhy : '' }); // (its own on)
+  const grey = (b, own = false, ownWhy = '', on = b.classList.contains('active'), whyNot = null) =>
+    setTile(b, { on, greyed: away ? why : own ? ownWhy : '', whyNot }); // (its own on; whyNot, a setup's: a brush on the plane only)
   const tooBig = (p) => discPattern(p) && flatGrid()?.kind === p[1] && !discCells(p[1]).laid(p[4], 0); // (a disc's pattern past the disc shown)
-  setTile($('drawView'), { on: brush.view }); // (at any generation)
+  setTile($('drawView'), { on: brush.view || !kind, whyNot: drawOnPlane }); // (at any generation; a surface's, on: to see)
   for (const b of $('brushCards').children)
-    grey(b, tooBig(DRAW_BY_ID.get(b.dataset.brush)), 'Too big for this disc: at a larger size.');
+    grey(
+      b,
+      tooBig(DRAW_BY_ID.get(b.dataset.brush)),
+      'Too big for this disc: at a larger size.',
+      !!kind && b.classList.contains('active'),
+      drawOnPlane,
+    );
   const tool = brush.view || !DRAW_BY_ID.get(brush.id)[1]; // (View or a cell: no pattern to turn)
   grey(
     $('brushTurn'),

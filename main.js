@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.15';
+const VERSION = '0.5.16';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -11120,7 +11120,8 @@ function renderModePicker() {
           b.dataset.choice = `shape:${sh}`; // (its choice's key, see choicesAt)
           const to = navPick(w, 2, sh),
             surface = !VARIANTS[to].plane && surfaceOf(VARIANTS[to]);
-          if (SURFACES[surface]?.tiles) b.tipMore = () => sizeCardHtml(...surfaceCard(surface, sizeOf(figureSize(to)))); // (its size's card where it opens, made when hovered)
+          if (SURFACES[surface]?.tiles)
+            b.tipMore = () => sizeCardHtml(...surfaceCard(surface, sizeOf(figureSize(to)), to === w)); // (its size's card where it opens, made when hovered)
           if (again) {
             setTile(b, { on: true, again });
             b.title += plane.torus ? '\nA torus · Clicked again: walls' : '\nWalls · Clicked again: a torus';
@@ -12053,7 +12054,7 @@ document.addEventListener('mouseover', (e) => {
   const allowed = greyedOf(greyed ?? el)?.paths && pathsWords(greyedOf(greyed ?? el).paths()); // (greyed: the shortest paths that allow it, see pathsTo)
   const more = el?.tipMore?.(); // (a part of its own, made when shown: a shape's size, see tipMore)
   const told = [
-    ...(more ? [Object.assign(part(), { innerHTML: more })] : []),
+    ...(more ? [Object.assign(part(), { innerHTML: `<div>${more}</div>` })] : []), // (in a block of its own: as the size box's, its lines its own)
     ...(greyed ? [section('Why greyed out?', greyed.dataset.greyed)] : []),
     ...(allowed ? [section('Allowed on', allowed, 'click to locate the buttons on screen')] : []), // (a click on it lights them, see setTile's enablers)
     ...(el?.dataset.formula ? [section('Formula', el.dataset.formula)] : []), // (a number card's, see renderNumberPicker)
@@ -16558,15 +16559,15 @@ for (const name of foldedIn('torus')) {
 }
 
 // a surface's size's card at f: its total, then how it is counted, its sides, a strip's edge's cells, the size last picked
-// (the size box's, a shape's at the size it opens at: see the shapes' tooltips)
-const surfaceCard = (kind, f) => [
+// (the size box's; a shape's at the size it opens at, not shown: what its counts say alone, see the shapes' tooltips)
+const surfaceCard = (kind, f, shown = true) => [
   sizeCells(kind, f, true),
   [
     `${sizeHow(kind, f)}\n${sizeSides(kind, f)}`.trim(),
-    ...(MOBIUS_ALONG[kind]?.edgeCuts
+    ...(shown && MOBIUS_ALONG[kind]?.edgeCuts
       ? [`\n{b:Specific cells}\n{e:${formatNumber(SURFACES[kind].mesh(f).edgeCells.length)} cells}`]
-      : []), // (a strip's edge's cells, as outlined: see edgeRibbons)
-    `\n${lastPicked()}`,
+      : []), // (a strip's edge's cells, as outlined: see edgeRibbons; counted on its mesh, the one shown only)
+    ...(shown ? [`\n${lastPicked()}`] : []), // (the size picked: the one shown's)
   ]
     .filter(Boolean)
     .join('\n'),

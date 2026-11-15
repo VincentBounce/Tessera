@@ -912,6 +912,36 @@ async function coloursOffered(fail) {
 // A solid's start 1 the same kind of point at every size (the turns of the solid leaving it in place as many): what lets
 // battleFits judge it on the solid's least mesh (see battleFits), every walk on a closed solid whose team counts depend on
 // the start, its sizes to 30,000 cells
+// The sets of blocks that come round a surface (BLOCKS_NOT_ROUND) as its meshes say: every block mode on a surface, as it is
+// and turned, each of its rules' sets: its blocks there at each of its small sizes (to 32 a side, its sizes' step's), the
+// mesh made for that mode (its colours, see ringFor), as blocksFit says
+function checkBlocksRound(fail) {
+  let checked = 0;
+  const rules = rulesOf('life')
+    .map((r) => [r, parseRule(r.rule)])
+    .filter(([, R]) => R?.margolus);
+  for (const w of Object.keys(MODES).filter((w) => MODES[w].margolus && MODES[w].sphere)) {
+    const mode = MODES[w],
+      seen = new Set();
+    for (const turned of [false, true]) {
+      const sp = shownSurface(mode.sphere, turned);
+      for (const [r, R] of rules) {
+        const key = `${sp} ${blockSetName(R)}`;
+        if (!r.tiling.includes(lifeMark(mode)) || !blocksFit(R, mode, null) || seen.has(key)) continue;
+        seen.add(key);
+        checked++;
+        const round = ringFor(w, 3, () =>
+          SPHERES[sp].sizes
+            .filter((f) => f <= 32 && f % (BLOCK_STEPS[sp] ?? 1) === 0)
+            .every((f) => !!surfaceBlocks(SPHERES[sp].mesh(f), blocksGrid(mode), R)),
+        );
+        if (round !== blocksFit(R, mode, sp))
+          fail(`${w} on ${sp}: its ${blockSetName(R)} come round: ${round}, said ${!round}`);
+      }
+    }
+  }
+  return checked;
+}
 // Centred's edges (CENTRED_EDGES) as the meshes' own: every battle along a solid's grid, at its two least sizes of each
 // class (3 divides it or not): the edges out of its faces' centres and corners as its table says, and its walkers grouped
 // where groupedCan says so
@@ -1585,6 +1615,7 @@ window.tesseraCheck = async ({
     checkDiscCuts(fail) +
     checkFirstStarts(fail) +
     checkCentred(fail) +
+    checkBlocksRound(fail) +
     (await checkSheets(fail)) +
     (await checkNames(fail)) +
     (await checkColdLinks(fail));

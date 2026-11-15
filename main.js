@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.1067';
+const VERSION = '0.4.1068';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -28253,17 +28253,23 @@ const ruleBlocks = (rule, kind, W, torus = planeTorus(kind), cols = planeColumns
   const blocks = g ? surfaceBlocks(g, kind, rule) : blocksMemo.blocks;
   return rule.ising ? { ...blocks } : { ...blocks, to: rule.margolus, ...blockKind(rule.margolus) };
 };
+// The sets of blocks that do not come round a surface (a rule's: Ising's squares in turn, its 4 phases, its stars, else its
+// blocks), at none of its sizes (see BLOCK_STEPS: its sizes those they come round at): a Klein bottle's checkerboard, a
+// Möbius strip's and a Klein bottle's triangles turned. Declared, no mesh built to know it (asked of every mode next to the
+// one shown, by a greyed tile's search, see choicesAt; and a mesh made from another tab took that tab's colours: a torus of
+// squares judged with no rule till v0.4.1067); as the meshes say, each made for its own mode: tools/check.js's checkBlocksRound
+const BLOCKS_NOT_ROUND = {
+  klein: ['ising'],
+  mobiusTriTurned: ['blocks', 'stars'],
+  kleinTriTurned: ['blocks', 'stars'],
+};
+const blockSetName = (R) => (R.ising ? 'ising' : R.four ? 'four' : R.stars ? 'stars' : 'blocks');
 // a block rule on a grid: of its blocks' size (Ising, 4 phases: squares), on a surface (sp: its own, or turned) its blocks
-// there at each of its small sizes (to 32 a side), as at all of them (its sizes coming round, see BLOCK_STEPS; a surface whose
-// blocks come round at some sizes only, a Klein bottle's triangles turned at 8, 32, 128: none; a Klein bottle's
-// checkerboard never, nor a Möbius strip's triangles turned)
+// coming round it
 const blocksFit = (R, mode, sp = mode.sphere && surfaceOf(mode)) =>
   !!R?.margolus &&
   (R.ising || R.four ? blocksGrid(mode) === 'square' : R.k === (R.stars ? STARS : BLOCKS)[blocksGrid(mode)]?.k) &&
-  (!sp ||
-    SPHERES[sp].sizes
-      .filter((f) => f <= 32 && f % (BLOCK_STEPS[sp] ?? 1) === 0)
-      .every((f) => !!surfaceBlocks(SPHERES[sp].mesh(f), blocksGrid(mode), R)));
+  !BLOCKS_NOT_ROUND[sp]?.includes(blockSetName(R));
 // flips: a rule that turns an empty block full (Critters, Tron), shown negative every other generation (see negative): a
 // cell's colour goes with the cells shown alive; keeps: each block as many cells shown alive after as before (the
 // billiard balls, the gases, Critters: their cells carry their colours, back by the inverse)

@@ -394,9 +394,10 @@ async function crawl(fail, each = null, from = 0) {
       how.click();
       await look(`How it works ${tabs()[ti].textContent.trim()}`);
     }
-    for (let si = 0; si < $('navSpace').children.length; si++) {
-      $('navSpace').children[si].click();
-      await look(`space ${$('navSpace').children[si]?.textContent}`);
+    const spaces = () => $('navSpace').querySelectorAll('button'); // (its tab group's buttons, not the group)
+    for (let si = 0; si < spaces().length; si++) {
+      spaces()[si].click();
+      await look(`space ${spaces()[si]?.textContent}`);
       const shapeButtons = () => $('navShapes').querySelectorAll('button'); // (in 2D, among the groups' titles)
       for (let hi = 0; hi < shapeButtons().length; hi++) {
         const b = shapeButtons()[hi],

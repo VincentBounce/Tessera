@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.1059';
+const VERSION = '0.4.1060';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -14735,12 +14735,13 @@ function mobiusMirror(kind, [a, b] = TILINGS[kind].basis) {
 // tilingStrip): with its mirror on y = 0, L − g a lattice vector's way along with nv rows across, nv·b_x + k·|a|; in
 // steps of |a| / q, the least that g and b_x are whole counts of
 for (const [strip, { kind, basis }] of Object.entries(MOBIUS_STRIPS)) {
-  const { g, la, bx, q, between } = mobiusMirror(kind, basis),
+  const { c, g, la, bx, q, between } = mobiusMirror(kind, basis),
     step = la / q;
-  // (copyLength: the least slide along that brings it onto itself, turned over on a glide: a bottle's colours' slices whole counts of it)
+  // (copyLength: the least slide along that brings it onto itself, turned over on a glide: a bottle's colours' slices whole counts of it; mirrorY: its mirror's line, laid on the strip's edge, see stripFrame)
   MOBIUS_ALONG[strip] = {
     step,
     copyLength: g > 1e-9 ? g : la,
+    mirrorY: c,
     ok: (n, nv) => (((n - Math.round((g + nv * bx) / step)) % q) + q) % q === 0,
     edgeCuts: !between,
   };
@@ -14806,8 +14807,8 @@ const mobiusCount = (kind0, size) => (countMemo[`${kind0}|${size}|${stripKey()}`
 function mobiusSheet(kind0, size) {
   return (stripMemo[`${kind0}|${size}|${stripKey()}`] ??= mobiusSheetOf(kind0, size)); // (its mesh's, kept while it is: see meshCache)
 }
-function mobiusSheetOf(kind0, size, count = false) {
-  // count: its tiles counted, not built ({ L, W, n }: see mobiusCount)
+function mobiusSheetOf(kind0, size, count = false, along = null) {
+  // count: its tiles counted, not built ({ L, W, n }: see mobiusCount); along: so many steps long, a copy of its tiling's
   if (kind0.startsWith('mobiusKite')) {
     // the triangles', cut in 3
     if (count) {
@@ -14830,9 +14831,19 @@ function mobiusSheetOf(kind0, size, count = false) {
   // the usual length, a multiple of 12
   const kind = kind0,
     [nv, own] = mobiusSize(size),
-    steps = (W) => stripSteps(kind, nv, W, own),
+    steps = (W) => along ?? stripSteps(kind, nv, W, own),
     tiles = [],
     latticeCells = []; // its length, in steps along
+  if (count && !along) {
+    // (one copy of its tiling along counted: the others the same; then what is left of one past its whole copies)
+    const { step, copyLength, width } = MOBIUS_ALONG[kind],
+      W = width(nv),
+      full = stripSteps(kind, nv, W, own),
+      copy = Math.round(copyLength / step),
+      rest = full % copy,
+      counted = (length) => (length ? mobiusSheetOf(kind, size, true, length).n : 0);
+    return { L: step * full, W, n: ((full - rest) / copy) * counted(copy) + counted(rest) };
+  }
   let n = 0;
   // (a tile made only when kept; cell: its lattice cell, the motif it was laid from, as a tiling's strip's: see tilingStrip)
   const put = (tile, cell = tiles.length) => {
@@ -15012,14 +15023,13 @@ function stripFrame(kind, kind0, size, bottle = false) {
     [a, b] = MOBIUS_STRIPS[kind0].basis,
     turn = -Math.atan2(a[1], a[0]),
     m = t.polys.length,
-    { step } = MOBIUS_ALONG[kind0],
-    { c } = mobiusMirror(kind, [a, b]);
+    { step, mirrorY } = MOBIUS_ALONG[kind0];
   const [nv, own] = mobiusSize(size),
-    W = nv * turnPoint(b, turn)[1],
+    [bx, by] = turnPoint(b, turn),
+    W = nv * by,
     n = bottle ? own : stripSteps(kind0, nv, W, own); // (its colours' stretches whole copies along)
   const L = n * step,
     sides = Math.max(...t.polys.map((P) => P.length)),
-    by = W / nv,
     Q = STRIP_GRID;
   const snap = ([x, y]) => [
     (Math.round((x / step) * Q) / Q) * step,
@@ -15039,9 +15049,9 @@ function stripFrame(kind, kind0, size, bottle = false) {
   const cells = (i, j, k) =>
     tilingPolys(kind)[k].map(([u, v]) => {
       const [x, y] = turnPoint(tilingWorld(kind, [u + i, v + j]), turn);
-      return snap([x, y - c]);
+      return snap([x, y - mirrorY]);
     }); // (its mirror on y = 0)
-  return { t, m, nv, L, W, sides, cells, i0, i1, j0, j1, ta, tb, la: Math.hypot(...a) };
+  return { t, m, nv, L, W, sides, cells, i0, i1, j0, j1, ta, tb, la: Math.hypot(...a), bx };
 }
 // its tiles' count, as tilingStrip keeps them, without building it: each of a lattice cell's polygons' middle, moved by
 // the lattice's steps (no corner built; on the fine grid a middle on an edge lands on it: here 10⁻⁵ of it, as near)
@@ -15056,20 +15066,22 @@ function stripCount(kind, kind0, size, bottle = false) {
   ));
 }
 function stripCounted(kind, kind0, size, bottle) {
-  const { m, L, W, cells, i0, i1, j0, j1, ta, tb } = stripFrame(kind, kind0, size, bottle),
-    e = 1e-5;
-  const mid = Array.from({ length: m }, (_, k) => {
-    const P = cells(0, 0, k);
-    return [0, 1].map((d) => P.reduce((s2, p) => s2 + p[d], 0) / P.length);
-  });
+  // (each of a lattice cell's middles, row by row of its lattice (b: a row up, bx along): in its copy of the tiling along,
+  // la long, as in every whole copy of the strip's, and in what is left of one past them)
+  const { m, nv, L, W, cells, la, bx } = stripFrame(kind, kind0, size, bottle),
+    e = 1e-5,
+    by = W / nv,
+    copies = Math.floor((L + e) / la),
+    rest = L - copies * la;
   let count = 0;
-  for (let j = j0; j <= j1; j++)
-    for (let i = i0; i <= i1; i++)
-      for (const [mx, my] of mid) {
-        const x = mx + i * ta[0] + j * tb[0],
-          y = my + i * ta[1] + j * tb[1];
-        if (x >= -e && x < L - e && y >= -e && (bottle ? y < W - e : y <= W + e)) count++;
-      }
+  for (let k = 0; k < m; k++) {
+    const P = cells(0, 0, k),
+      [mx, my] = [0, 1].map((d) => P.reduce((s2, p) => s2 + p[d], 0) / P.length);
+    for (let j = Math.ceil((-e - my) / by); bottle ? my + j * by < W - e : my + j * by <= W + e; j++) {
+      const x = mx + j * bx;
+      count += copies + (x - la * Math.floor((x + e) / la) < rest - e);
+    }
+  }
   return count;
 }
 // A tiling's Klein bottle: its strip's sheet (see tilingStrip), L along and W across, glued at its ends turned over as the

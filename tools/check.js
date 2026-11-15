@@ -56,7 +56,7 @@ function checkMeshes(fail) {
   let checked = 0;
   const size = () => 12; // (a size every torus takes)
   // the tori: their cells as many as said; a tiling's, straight and turned alike
-  const tori = Object.keys(SPHERES).filter((k) => /torus/.test(k) && !/Turned$/.test(k));
+  const tori = Object.keys(SURFACES).filter((k) => /torus/.test(k) && !/Turned$/.test(k));
   const ref = {};
   // each tile's sheet corners its corners, in the same order (unrolled, its grid's edges drawn from them, see gpuSurface)
   const sheetOff = (g) => {
@@ -91,34 +91,35 @@ function checkMeshes(fail) {
           if (A[0] * B[1] - A[1] * B[0] <= 0) fail(`${kind} ${way}: its torus the plane's mirror`);
         }
   for (const kind of tori) {
-    const g = SPHERES[kind].mesh(size(kind)),
+    const g = SURFACES[kind].mesh(size(kind)),
       c = neighbourCounts(g);
     ref[kind] = c;
     checked++;
     for (const [name, h] of [
       [kind, g],
-      ...(TURNED[kind] && SPHERES[TURNED[kind]] ? [[TURNED[kind], SPHERES[TURNED[kind]].mesh(size(kind))]] : []),
+      ...(TURNED[kind] && SURFACES[TURNED[kind]] ? [[TURNED[kind], SURFACES[TURNED[kind]].mesh(size(kind))]] : []),
     ])
       if (h.uv && !h.mobius) {
         const bad = sheetOff(h);
         if (bad) fail(`${name}: ${bad} sheet corners off their corners`);
       }
-    if (SPHERES[kind].tiles(size(kind)) !== g.n) fail(`${kind}: ${g.n} cells, said ${SPHERES[kind].tiles(size(kind))}`);
-    if (TURNED[kind] && SPHERES[TURNED[kind]]) {
-      const h = neighbourCounts(SPHERES[TURNED[kind]].mesh(size(kind)));
+    if (SURFACES[kind].tiles(size(kind)) !== g.n)
+      fail(`${kind}: ${g.n} cells, said ${SURFACES[kind].tiles(size(kind))}`);
+    if (TURNED[kind] && SURFACES[TURNED[kind]]) {
+      const h = neighbourCounts(SURFACES[TURNED[kind]].mesh(size(kind)));
       checked++;
       if (!alike(c, h)) fail(`${kind}: straight ${show(c)}, turned ${show(h)}`);
     }
   }
   // the strips: away from their edges (a lattice side and a half), as on the torus
   for (const kind of MOBIUS_KINDS) {
-    const g = SPHERES[kind].mesh(6),
+    const g = SURFACES[kind].mesh(6),
       torus = ref[torusOfStrip(kind)],
       far = g.tiling ? 1.5 * Math.max(...TILINGS[g.tiling].basis.map((v) => Math.hypot(...v))) : 2;
     const y = (t) => sheetMiddle(g, t)[1]; // (its middle across the strip)
     const inside = neighbourCounts(g, (t) => t < g.front && y(t) > far && y(t) < g.W - far);
     checked++;
-    if (SPHERES[kind].tiles(6) !== g.n) fail(`${kind}: ${g.n} cells, said ${SPHERES[kind].tiles(6)}`);
+    if (SURFACES[kind].tiles(6) !== g.n) fail(`${kind}: ${g.n} cells, said ${SURFACES[kind].tiles(6)}`);
     {
       const bad = sheetOff(g);
       if (bad) fail(`${kind}: ${bad} sheet corners off their corners`);
@@ -128,11 +129,11 @@ function checkMeshes(fail) {
     else if (!within(inside, torus)) fail(`${kind}: inside ${show(inside)}, its torus ${show(torus)}`);
   }
   // the Klein bottles: no edge, every cell as on the torus of its tiles (a tiling's, or the squares', hexagons', … own)
-  for (const kind of Object.keys(SPHERES).filter((k) => /^klein/.test(k))) {
+  for (const kind of Object.keys(SURFACES).filter((k) => /^klein/.test(k))) {
     const torus =
       ref[FOLDED[kind] ? FOLDS.torus.of(FOLDED[kind].kind) : kind.replace(/^klein/, 'torus').replace(/Turned$/, '')];
     if (!torus) continue; // (a fold with no torus of its own tiles)
-    const c = neighbourCounts(SPHERES[kind].mesh(6));
+    const c = neighbourCounts(SURFACES[kind].mesh(6));
     checked++;
     if (!alike(c, torus)) fail(`${kind}: ${show(c)}, its torus ${show(torus)}`);
   }
@@ -356,7 +357,7 @@ function checker(fail) {
           .at(-1)
           .matchAll(/([\d,]+)\s+[a-z]+/gi),
       ].reduce((sum, m) => sum + Number(m[1].replace(/,/g, '')), 0); // (its cells, its terms summed: 1,910 hexagons + 12 pentagons)
-    const n = MODES[w].sphere && !MODES[w].plane ? walk.geo?.n : null;
+    const n = MODES[w].surface && !MODES[w].plane ? walk.geo?.n : null;
     const nan = document.querySelectorAll('svg[viewBox*="NaN"], svg[viewBox*="Infinity"]').length; // (a picture with nothing to frame: no error thrown, drawn empty)
     const starts = $('startSection').hidden
       ? 2
@@ -667,7 +668,7 @@ function watchSearches() {
     }
   };
   for (const name of SEARCH_BUILDERS) wrap(window, name, name, timed);
-  for (const [kind, S] of Object.entries(SPHERES)) wrap(S, 'mesh', `${kind}'s mesh`, timed);
+  for (const [kind, S] of Object.entries(SURFACES)) wrap(S, 'mesh', `${kind}'s mesh`, timed);
   return {
     // (the builders of the searches since the last ask, the costliest first: "startList 3,200 ms, octa's mesh 1,000 ms", '' under the budget)
     built: () => {
@@ -702,8 +703,8 @@ function hoverGreyed(fail, sized = true) {
     watch.stop();
   };
   const resize = async (value) => {
-    $('sphereF').value = value;
-    $('sphereF').dispatchEvent(new Event('change'));
+    $('gridSizeField').value = value;
+    $('gridSizeField').dispatchEvent(new Event('change'));
     await wait(200);
     await until(() => true);
   };
@@ -711,7 +712,7 @@ function hoverGreyed(fail, sized = true) {
   return async (where) => {
     hoverAll(where);
     if (!sized) return;
-    const F = $('sphereF'),
+    const F = $('gridSizeField'),
       largest = F.options[F.options.length - 1]?.value;
     if (MODES[tabMode()].plane || !largest || F.value === largest || largeDone.has(tabMode())) return;
     largeDone.add(tabMode());
@@ -923,14 +924,14 @@ async function deep(fail, from, only) {
 async function coloursOffered(fail) {
   let checked = 0;
   for (const w of Object.keys(MODES).filter(
-    (m) => MODES[m].life && MODES[m].sphere && [...$('mode').options].some((o) => o.value === m),
+    (m) => MODES[m].life && MODES[m].surface && [...$('mode').options].some((o) => o.value === m),
   )) {
     const kind = surfaceOf(MODES[w]),
-      sizes = SPHERES[kind]?.sizes ?? [];
+      sizes = SURFACES[kind]?.sizes ?? [];
     let some = false;
     for (const s of sizes) {
       location.hash = toHash({ ...modeWords(w), gridSize: s });
-      await until(shown(w, () => $('sphereF').value === String(s))); // (the size asked: the one played may be a row off, its walkers')
+      await until(shown(w, () => $('gridSizeField').value === String(s))); // (the size asked: the one played may be a row off, its walkers')
       if (TEAM_COUNTS.some((K) => K > 1 && teamsFit(K))) {
         some = true;
         break;
@@ -953,20 +954,20 @@ function checkBlocksRound(fail) {
   const rules = rulesOf('life')
     .map((r) => [r, parseRule(r.rule)])
     .filter(([, R]) => R?.margolus);
-  for (const w of Object.keys(MODES).filter((w) => MODES[w].margolus && MODES[w].sphere)) {
+  for (const w of Object.keys(MODES).filter((w) => MODES[w].margolus && MODES[w].surface)) {
     const mode = MODES[w],
       seen = new Set();
     for (const turned of [false, true]) {
-      const sp = shownSurface(mode.sphere, turned);
+      const sp = shownSurface(mode.surface, turned);
       for (const [r, R] of rules) {
         const key = `${sp} ${blockSetName(R)}`;
         if (!r.tiling.includes(lifeMark(mode)) || !blocksFit(R, mode, null) || seen.has(key)) continue;
         seen.add(key);
         checked++;
         const round = ringFor(w, 3, () =>
-          SPHERES[sp].sizes
+          SURFACES[sp].sizes
             .filter((f) => f <= 32 && f % (BLOCK_STEPS[sp] ?? 1) === 0)
-            .every((f) => !!surfaceBlocks(SPHERES[sp].mesh(f), blocksGrid(mode), R)),
+            .every((f) => !!surfaceBlocks(SURFACES[sp].mesh(f), blocksGrid(mode), R)),
         );
         if (round !== blocksFit(R, mode, sp))
           fail(`${w} on ${sp}: its ${blockSetName(R)} come round: ${round}, said ${!round}`);
@@ -1079,7 +1080,7 @@ function checkCentred(fail) {
   for (const w of Object.keys(MODES).filter((w) => battleMode(w) && MODES[w].edges)) {
     const mode = MODES[w],
       kind = surfaceOf(mode),
-      S = SPHERES[kind];
+      S = SURFACES[kind];
     if (S.columns) continue;
     const sizes = sizesOf(kind, mode);
     for (const size of [0, 1].flatMap((rest) => sizes.filter((f) => !(f % 3) === !rest).slice(0, 2))) {
@@ -1100,7 +1101,7 @@ function checkFirstStarts(fail) {
   for (const w of Object.keys(MODES).filter(battleMode)) {
     const mode = MODES[w],
       kind = surfaceOf(mode),
-      S = SPHERES[kind];
+      S = SURFACES[kind];
     if (S.columns) continue;
     const counts = solidTeamCounts(kind);
     if (counts.some.every((K) => counts.any.includes(K))) continue; // (any start: none depends on it)
@@ -1138,7 +1139,7 @@ async function battlesFair(fail) {
     const built = (K, stops) =>
       $('mode').value === w && walk.battle?.player?.K === K && walk.battle.player.stops === stops; // (this link's battle, not the one before it)
     checked++;
-    if (!counts.length) fail(`${w}: no battle at size ${sphereSize()}`);
+    if (!counts.length) fail(`${w}: no battle at size ${gridSizePlayed()}`);
     for (const K of counts) {
       location.hash = toHash({
         ...modeWords(w),
@@ -1499,10 +1500,10 @@ function checkMarks(fail) {
         !MODES[w].elementary &&
         lifeMark(MODES[w]) === t.mark &&
         MODES[w].plane !== kind &&
-        FOLDED[MODES[w].sphere]?.kind !== kind &&
-        !(kind === 'tetrakis' && MODES[w].sphere?.endsWith('Tetrakis')) &&
-        SPHERES[MODES[w].sphere]?.tiling !== kind,
-    ); // (a surface of its cells: see SPHERES' tiling)  // (the solids of squares cut as tetrakis: its triangles, see TETRAKIS_SOLIDS)
+        FOLDED[MODES[w].surface]?.kind !== kind &&
+        !(kind === 'tetrakis' && MODES[w].surface?.endsWith('Tetrakis')) &&
+        SURFACES[MODES[w].surface]?.tiling !== kind,
+    ); // (a surface of its cells: see SURFACES' tiling)  // (the solids of squares cut as tetrakis: its triangles, see TETRAKIS_SOLIDS)
     if (others.length) fail(`${t.name}'s mark ${t.mark} also ${others.join(', ')}'s: their rules shown on it`);
   }
   return 1;
@@ -1523,7 +1524,7 @@ async function checkSheets(fail) {
   let checked = 0;
   const sizeOne = (S) => S.sizes?.[1] ?? S.sizes?.[0];
   for (const name of foldedIn('torus')) {
-    const S = SPHERES[name],
+    const S = SURFACES[name],
       g = S.mesh(sizeOne(S)),
       m = TILINGS[g.tiling].polys.length;
     const bricks = Map.groupBy([...Array(g.n).keys()], (t) => g.latticeCells[t]),
@@ -1544,7 +1545,7 @@ async function checkSheets(fail) {
   }
   for (const name of foldedIn('klein'))
     for (const K of [2, 4]) {
-      const off = SPHERES[name].sizes
+      const off = SURFACES[name].sizes
         .filter((s) => Number(s) >= 24)
         .map((s) => {
           const L = kleinLength(name, s, K);
@@ -1560,7 +1561,7 @@ async function checkSheets(fail) {
   // the globe, made for its colours (see globeBands): its parallels a unit apart, every band's cells 0.70 to 1.42 as wide as high, at
   // every size of every count
   for (const K of TEAM_COUNTS) {
-    for (const E of SPHERES.globe.ownSizes(K)) {
+    for (const E of SURFACES.globe.ownSizes(K)) {
       // (K's own sizes, not those offered for the mode and colours in use)
       const { N, lines } = globeBands(E, K),
         off = N.slice(1, -1)
@@ -1627,8 +1628,8 @@ async function partsEqual(fail) {
         [w, { gridWalls: 1 }, 1],
       ]),
     ...lifeModes
-      .filter((w) => MODES[w].sphere && !TORI.includes(surfaceOf(MODES[w])))
-      .map((w) => [w, {}, SPHERES[MODES[w].sphere]?.disc ? 1 : 0]),
+      .filter((w) => MODES[w].surface && !TORI.includes(surfaceOf(MODES[w])))
+      .map((w) => [w, {}, SURFACES[MODES[w].surface]?.disc ? 1 : 0]),
   ]; // (a rosette sphere: its discs' lunes, cells whole, one apart as the plane's)
   for (const [w, walls, slack] of runs) {
     location.hash = toHash({ ...modeWords(w), ...walls, teams: 1 });
@@ -1695,12 +1696,12 @@ function checkDiscCuts(fail) {
 function checkTwistedSphere(fail) {
   let checked = 0;
   for (const f of [2, 5, 16]) {
-    const g = SPHERES.twistedsphere.mesh(f),
+    const g = SURFACES.twistedsphere.mesh(f),
       k = g.sides,
       corners = (t) => [...new Set(g.poly.subarray(k * t, k * t + k))],
       at = new Map();
-    if (g.n !== SPHERES.twistedsphere.tiles(f))
-      fail(`twisted sphere ${f}: ${g.n} cells, ${SPHERES.twistedsphere.tiles(f)} said`);
+    if (g.n !== SURFACES.twistedsphere.tiles(f))
+      fail(`twisted sphere ${f}: ${g.n} cells, ${SURFACES.twistedsphere.tiles(f)} said`);
     for (let t = 0; t < g.n; t++) for (const v of corners(t)) (at.get(v) ?? at.set(v, []).get(v)).push(t);
     if ([...at.values()].some((ts) => ts.length !== 3)) fail(`twisted sphere ${f}: a corner not of three cells`);
     const kinds = {}; // (by its corners: its neighbours, those sharing one)
@@ -1724,9 +1725,9 @@ function checkTwistedSphere(fail) {
 function checkRosetteSpheres(fail) {
   let checked = 0;
   for (const k of Object.keys(ROSETTE_SPHERES))
-    for (const W of [SPHERES[`${k}Sphere`].sizes[0], SPHERES[`${k}Sphere`].sizes.at(-1)]) {
+    for (const W of [SURFACES[`${k}Sphere`].sizes[0], SURFACES[`${k}Sphere`].sizes.at(-1)]) {
       const rough = rosetteSeam(APERIODIC[k](W)).best[1],
-        g = SPHERES[`${k}Sphere`].mesh(W),
+        g = SURFACES[`${k}Sphere`].mesh(W),
         uses = new Map();
       for (let t = 0; t < g.n; t++)
         for (let q = 0; q < g.sides; q++) {
@@ -1739,8 +1740,8 @@ function checkRosetteSpheres(fail) {
       checked++;
       if (!(rough < ROSETTE_BITE)) fail(`${k} sphere W${W}: its rims ${rough.toFixed(3)} of a tile apart`);
       if (open) fail(`${k} sphere W${W}: ${open} sides not shared by two tiles`);
-      if (g.n !== SPHERES[`${k}Sphere`].tiles(W))
-        fail(`${k} sphere W${W}: ${g.n} cells, said ${SPHERES[`${k}Sphere`].tiles(W)}`);
+      if (g.n !== SURFACES[`${k}Sphere`].tiles(W))
+        fail(`${k} sphere W${W}: ${g.n} cells, said ${SURFACES[`${k}Sphere`].tiles(W)}`);
       // its north disc seen from outside as the plane draws it (the plane's y down, the sphere's y up seen from its north: not
       // mirrored), its cells the plane's (its start laid as there, see flatGrid)
       const F = APERIODIC[k](W),

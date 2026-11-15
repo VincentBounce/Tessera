@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.1';
+const VERSION = '0.5.2';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -1575,7 +1575,7 @@ const FORMULA_NOTES = {
 /* ---- 2.3 Walk modes ----------------------------------------------------------------------- */
 // base: the base the digits are written in; arrows: each digit's step as the walker sees it, heading
 // up (⊙ up toward you, ⊗ down; a spiral's □ moved, ■ drawn), shown above the digits (none where a digit is not a turn); lattice: how a step is taken ('square', 'tri', 'hex',
-// 'cube' or 'sphere' for a tiled surface); life: a Game of Life instead of a walk. The (hidden)
+// 'cube' or 'surface' for a tiled surface); life: a Game of Life instead of a walk. The (hidden)
 // mode menu in index.html lists them, grouped as the tabs of the Walk section.
 // The 2D walks go along the lines of a grid, or from cell to cell (cells: true), twin: the other
 // way round. Along lines, the walk goes from corner to corner, and the corners of a grid are the
@@ -3688,7 +3688,7 @@ const MOBIUS_TILINGS = [
   'demi13',
 ];
 // the flat solids with hexagons too, folded over their edges (see hexSolidMesh): each one's name, its family's, its size
-// (as its triangles', see SPHERES), its cells (one a corner of its triangles) and those of other sides (where fewer or more
+// (as its triangles', see SURFACES), its cells (one a corner of its triangles) and those of other sides (where fewer or more
 // than 6 of its triangles meet: walls in Life, walked on)
 const HEX_SOLIDS = {
   tetra: {
@@ -4019,9 +4019,9 @@ const MODES = {
   // on a surface: the ant on the cells of its walk there, which keep their colours (turns: as the walk's)
   antCubeSquaresCells: {
     base: 2,
-    lattice: 'sphere',
+    lattice: 'surface',
     cells: true,
-    sphere: 'cube',
+    surface: 'cube',
     initial: 48,
     perspective: true,
     fill: false,
@@ -4032,9 +4032,9 @@ const MODES = {
   },
   antIcosahedronHexCells: {
     base: 2,
-    lattice: 'sphere',
+    lattice: 'surface',
     cells: true,
-    sphere: 'hexsphere',
+    surface: 'hexsphere',
     round: true,
     fill: false,
     antOf: 'walkIcosahedronHexTurtleCells',
@@ -4044,9 +4044,9 @@ const MODES = {
   },
   antIcosahedronTrianglesCells: {
     base: 2,
-    lattice: 'sphere',
+    lattice: 'surface',
     cells: true,
-    sphere: 'icosa',
+    surface: 'icosa',
     round: true,
     fill: false,
     antOf: 'walkIcosahedronTrianglesTurtleCells',
@@ -4086,10 +4086,10 @@ const MODES = {
   walkTetrahedronTrianglesTurtleCells: {
     base: 2,
     arrows: '↖↗',
-    lattice: 'sphere',
+    lattice: 'surface',
     cells: true,
     twin: 'walkTetrahedronTrianglesTurtleEdges',
-    sphere: 'tetra',
+    surface: 'tetra',
     initial: 48,
     net: 'tri',
     rule: 'on a tetrahedron of triangles: exit through the <b>0</b> left or <b>1</b> right edge',
@@ -4097,10 +4097,10 @@ const MODES = {
   walkTorusSquaresTurtleCells: {
     base: 3,
     arrows: '←↑→',
-    lattice: 'sphere',
+    lattice: 'surface',
     cells: true,
     twin: 'walkTorusSquaresTurtleEdges',
-    sphere: 'torus',
+    surface: 'torus',
     initial: 48,
     net: 'square',
     perspective: true,
@@ -4110,10 +4110,10 @@ const MODES = {
   walkTorusTrianglesTurtleCells: {
     base: 2,
     arrows: '↖↗',
-    lattice: 'sphere',
+    lattice: 'surface',
     cells: true,
     twin: 'walkTorusTrianglesTurtleEdges',
-    sphere: 'torusTri',
+    surface: 'torusTri',
     initial: 48,
     net: 'tri',
     perspective: true,
@@ -4124,9 +4124,9 @@ const MODES = {
   walkTorusCairoTurtleCells: {
     base: 4,
     arrows: '↙↖↗↘',
-    lattice: 'sphere',
+    lattice: 'surface',
     cells: true,
-    sphere: 'torusCairo',
+    surface: 'torusCairo',
     initial: 32,
     net: 'cairo',
     perspective: true,
@@ -4137,10 +4137,10 @@ const MODES = {
   walkTorusHexTurtleCells: {
     base: 5,
     arrows: '↙↖↑↗↘',
-    lattice: 'sphere',
+    lattice: 'surface',
     cells: true,
     twin: 'walkTorusHexTurtleEdges',
-    sphere: 'torusHex',
+    surface: 'torusHex',
     initial: 48,
     net: 'hex',
     perspective: true,
@@ -4150,10 +4150,10 @@ const MODES = {
   walkMobiusStripSquaresTurtleCells: {
     base: 3,
     arrows: '←↑→',
-    lattice: 'sphere',
+    lattice: 'surface',
     cells: true,
     twin: 'walkMobiusStripSquaresTurtleEdges',
-    sphere: 'mobius',
+    surface: 'mobius',
     net: 'square',
     perspective: true,
     round: true,
@@ -4162,10 +4162,10 @@ const MODES = {
   walkMobiusStripHexTurtleCells: {
     base: 5,
     arrows: '↙↖↑↗↘',
-    lattice: 'sphere',
+    lattice: 'surface',
     cells: true,
     twin: 'walkMobiusStripHexTurtleEdges',
-    sphere: 'mobiusHex',
+    surface: 'mobiusHex',
     net: 'hex',
     perspective: true,
     round: true,
@@ -4175,10 +4175,10 @@ const MODES = {
   walkKleinBottleSquaresTurtleCells: {
     base: 3,
     arrows: '←↑→',
-    lattice: 'sphere',
+    lattice: 'surface',
     cells: true,
     twin: 'walkKleinBottleSquaresTurtleEdges',
-    sphere: 'klein',
+    surface: 'klein',
     net: 'square',
     round: true,
     rule: 'on a Klein bottle of squares: <b>0</b> turn left, <b>1</b> straight on, <b>2</b> turn right',
@@ -4186,10 +4186,10 @@ const MODES = {
   walkKleinBottleHexTurtleCells: {
     base: 5,
     arrows: '↙↖↑↗↘',
-    lattice: 'sphere',
+    lattice: 'surface',
     cells: true,
     twin: 'walkKleinBottleHexTurtleEdges',
-    sphere: 'kleinHex',
+    surface: 'kleinHex',
     net: 'hex',
     round: true,
     rule: 'on a Klein bottle of hexagons: <b>0</b> sharp left, <b>1</b> left, <b>2</b> straight, <b>3</b> right, <b>4</b> sharp right',
@@ -4197,10 +4197,10 @@ const MODES = {
   walkKleinBottleTrianglesTurtleCells: {
     base: 2,
     arrows: '↖↗',
-    lattice: 'sphere',
+    lattice: 'surface',
     cells: true,
     twin: 'walkKleinBottleTrianglesTurtleEdges',
-    sphere: 'kleinTri',
+    surface: 'kleinTri',
     net: 'tri',
     round: true,
     rule: 'on a Klein bottle of triangles: exit through the <b>0</b> left or <b>1</b> right edge',
@@ -4208,9 +4208,9 @@ const MODES = {
   walkKleinBottleCairoTurtleCells: {
     base: 4,
     arrows: '↙↖↗↘',
-    lattice: 'sphere',
+    lattice: 'surface',
     cells: true,
-    sphere: 'kleinCairo',
+    surface: 'kleinCairo',
     net: 'cairo',
     round: true,
     rule: 'on a Klein bottle of Cairo pentagons: out through one of its 4 other edges, <b>0</b> sharp left, <b>1</b> left, <b>2</b> right, <b>3</b> sharp right',
@@ -4218,9 +4218,9 @@ const MODES = {
   walkMobiusStripCairoTurtleCells: {
     base: 4,
     arrows: '↙↖↗↘',
-    lattice: 'sphere',
+    lattice: 'surface',
     cells: true,
-    sphere: 'mobiusCairo',
+    surface: 'mobiusCairo',
     net: 'cairo',
     perspective: true,
     round: true,
@@ -4229,10 +4229,10 @@ const MODES = {
   walkMobiusStripTrianglesTurtleCells: {
     base: 2,
     arrows: '↖↗',
-    lattice: 'sphere',
+    lattice: 'surface',
     cells: true,
     twin: 'walkMobiusStripTrianglesTurtleEdges',
-    sphere: 'mobiusTri',
+    surface: 'mobiusTri',
     net: 'tri',
     perspective: true,
     round: true,
@@ -4241,11 +4241,11 @@ const MODES = {
   walkCubeSquaresTurtleCells: {
     base: 3,
     arrows: '←↑→',
-    lattice: 'sphere',
+    lattice: 'surface',
     cells: true,
     twin: 'walkCubeSquaresTurtleEdges',
     ant: 'antCubeSquaresCells',
-    sphere: 'cube',
+    surface: 'cube',
     initial: 48,
     net: 'square',
     perspective: true,
@@ -4254,10 +4254,10 @@ const MODES = {
   walkOctahedronTrianglesTurtleCells: {
     base: 2,
     arrows: '↖↗',
-    lattice: 'sphere',
+    lattice: 'surface',
     cells: true,
     twin: 'walkOctahedronTrianglesTurtleEdges',
-    sphere: 'octa',
+    surface: 'octa',
     initial: 48,
     net: 'tri',
     rule: 'on an octahedron of triangles: exit through the <b>0</b> left or <b>1</b> right edge',
@@ -4266,11 +4266,11 @@ const MODES = {
   walkIcosahedronHexTurtleCells: {
     base: 2,
     arrows: '↖↗',
-    lattice: 'sphere',
+    lattice: 'surface',
     cells: true,
     twin: 'walkIcosahedronHexTurtleEdges',
     ant: 'antIcosahedronHexCells',
-    sphere: 'hexsphere',
+    surface: 'hexsphere',
     net: 'hex',
     round: true, // (the hexagons' L, R only: no straight on, nor sharp, across a pentagon)
     rule: 'on an icosahedron of hexagons (and 12 pentagons: a Goldberg polyhedron): exit through the <b>0</b> front left or <b>1</b> front right edge',
@@ -4278,31 +4278,31 @@ const MODES = {
   walkStellaOctangulaTrianglesTurtleCells: {
     base: 2,
     arrows: '↖↗',
-    lattice: 'sphere',
+    lattice: 'surface',
     cells: true,
     twin: 'walkStellaOctangulaTrianglesTurtleEdges',
-    sphere: 'stella',
+    surface: 'stella',
     net: 'tri',
     rule: 'on a stella octangula (two tetrahedra) of triangles: exit through the <b>0</b> left or <b>1</b> right edge',
   },
   walkDodecahedronTrianglesTurtleCells: {
     base: 2,
     arrows: '↖↗',
-    lattice: 'sphere',
+    lattice: 'surface',
     cells: true,
     twin: 'walkDodecahedronTrianglesTurtleEdges',
-    sphere: 'dodeca',
+    surface: 'dodeca',
     net: 'tri',
     rule: 'on a dodecahedron, its pentagons cut into triangles: exit through the <b>0</b> left or <b>1</b> right edge',
   },
   walkIcosahedronTrianglesTurtleCells: {
     base: 2,
     arrows: '↖↗',
-    lattice: 'sphere',
+    lattice: 'surface',
     cells: true,
     twin: 'walkIcosahedronTrianglesTurtleEdges',
     ant: 'antIcosahedronTrianglesCells',
-    sphere: 'icosa',
+    surface: 'icosa',
     net: 'tri',
     round: true,
     rule: 'on an icosahedron of triangles: exit through the <b>0</b> left or <b>1</b> right edge',
@@ -4312,9 +4312,9 @@ const MODES = {
   walkTorusSquaresTurtleEdges: {
     base: 3,
     arrows: '←↑→',
-    lattice: 'sphere',
+    lattice: 'surface',
     twin: 'walkTorusSquaresTurtleCells',
-    sphere: 'torus',
+    surface: 'torus',
     edges: true,
     initial: 48,
     turns: [90, 0, -90],
@@ -4325,9 +4325,9 @@ const MODES = {
   walkTorusTrianglesTurtleEdges: {
     base: 5,
     arrows: '↙↖↑↗↘',
-    lattice: 'sphere',
+    lattice: 'surface',
     twin: 'walkTorusTrianglesTurtleCells',
-    sphere: 'torusTri',
+    surface: 'torusTri',
     edges: true,
     initial: 48,
     turns: [120, 60, 0, -60, -120],
@@ -4338,9 +4338,9 @@ const MODES = {
   walkTorusHexTurtleEdges: {
     base: 2,
     arrows: '↖↗',
-    lattice: 'sphere',
+    lattice: 'surface',
     twin: 'walkTorusHexTurtleCells',
-    sphere: 'torusHex',
+    surface: 'torusHex',
     edges: true,
     initial: 48,
     turns: [60, -60],
@@ -4351,9 +4351,9 @@ const MODES = {
   walkMobiusStripSquaresTurtleEdges: {
     base: 3,
     arrows: '←↑→',
-    lattice: 'sphere',
+    lattice: 'surface',
     twin: 'walkMobiusStripSquaresTurtleCells',
-    sphere: 'mobius',
+    surface: 'mobius',
     edges: true,
     turns: [90, 0, -90],
     perspective: true,
@@ -4363,9 +4363,9 @@ const MODES = {
   walkMobiusStripHexTurtleEdges: {
     base: 2,
     arrows: '↖↗',
-    lattice: 'sphere',
+    lattice: 'surface',
     twin: 'walkMobiusStripHexTurtleCells',
-    sphere: 'mobiusHex',
+    surface: 'mobiusHex',
     edges: true,
     turns: [60, -60],
     perspective: true,
@@ -4375,9 +4375,9 @@ const MODES = {
   walkMobiusStripTrianglesTurtleEdges: {
     base: 5,
     arrows: '↙↖↑↗↘',
-    lattice: 'sphere',
+    lattice: 'surface',
     twin: 'walkMobiusStripTrianglesTurtleCells',
-    sphere: 'mobiusTri',
+    surface: 'mobiusTri',
     edges: true,
     turns: [120, 60, 0, -60, -120],
     perspective: true,
@@ -4387,9 +4387,9 @@ const MODES = {
   walkKleinBottleSquaresTurtleEdges: {
     base: 3,
     arrows: '←↑→',
-    lattice: 'sphere',
+    lattice: 'surface',
     twin: 'walkKleinBottleSquaresTurtleCells',
-    sphere: 'klein',
+    surface: 'klein',
     edges: true,
     turns: [90, 0, -90],
     round: true,
@@ -4398,9 +4398,9 @@ const MODES = {
   walkKleinBottleHexTurtleEdges: {
     base: 2,
     arrows: '↖↗',
-    lattice: 'sphere',
+    lattice: 'surface',
     twin: 'walkKleinBottleHexTurtleCells',
-    sphere: 'kleinHex',
+    surface: 'kleinHex',
     edges: true,
     turns: [60, -60],
     round: true,
@@ -4409,9 +4409,9 @@ const MODES = {
   walkKleinBottleTrianglesTurtleEdges: {
     base: 5,
     arrows: '↙↖↑↗↘',
-    lattice: 'sphere',
+    lattice: 'surface',
     twin: 'walkKleinBottleTrianglesTurtleCells',
-    sphere: 'kleinTri',
+    surface: 'kleinTri',
     edges: true,
     turns: [120, 60, 0, -60, -120],
     round: true,
@@ -4420,9 +4420,9 @@ const MODES = {
   walkCubeSquaresTurtleEdges: {
     base: 3,
     arrows: '←↑→',
-    lattice: 'sphere',
+    lattice: 'surface',
     twin: 'walkCubeSquaresTurtleCells',
-    sphere: 'cube',
+    surface: 'cube',
     edges: true,
     initial: 48,
     turns: [90, 0, -90],
@@ -4432,9 +4432,9 @@ const MODES = {
   walkTetrahedronTrianglesTurtleEdges: {
     base: 5,
     arrows: '↙↖↑↗↘',
-    lattice: 'sphere',
+    lattice: 'surface',
     twin: 'walkTetrahedronTrianglesTurtleCells',
-    sphere: 'tetra',
+    surface: 'tetra',
     edges: true,
     initial: 48,
     turns: [120, 60, 0, -60, -120],
@@ -4443,9 +4443,9 @@ const MODES = {
   walkOctahedronTrianglesTurtleEdges: {
     base: 5,
     arrows: '↙↖↑↗↘',
-    lattice: 'sphere',
+    lattice: 'surface',
     twin: 'walkOctahedronTrianglesTurtleCells',
-    sphere: 'octa',
+    surface: 'octa',
     initial: 48,
     edges: true,
     turns: [120, 60, 0, -60, -120],
@@ -4453,16 +4453,16 @@ const MODES = {
   },
   // Set aside: on triangles, turns of ±60° only walk a hidden grid of hexagons (3 times fewer
   // corners), so they need many triangles for few patterns; the hexagon sphere does it directly.
-  // icosaGrid2: { base: 2, lattice: 'sphere', sphere: 'icosa', edges: true, turns: [60, -60], round: true,
+  // icosaGrid2: { base: 2, lattice: 'surface', surface: 'icosa', edges: true, turns: [60, -60], round: true,
   //               rule: 'along the edges of an icosahedron of triangles: <b>0</b> front left, <b>1</b> front right (at a corner of the solid, the nearest edge)' },
-  // icosaGrid3: { base: 3, lattice: 'sphere', sphere: 'icosa', edges: true, turns: [60, 0, -60], round: true,
+  // icosaGrid3: { base: 3, lattice: 'surface', surface: 'icosa', edges: true, turns: [60, 0, -60], round: true,
   //               rule: 'along the edges of an icosahedron of triangles: <b>0</b> front left, <b>1</b> forward, <b>2</b> front right (at a corner of the solid, the nearest edge)' },
   walkIcosahedronHexTurtleEdges: {
     base: 2,
     arrows: '↖↗',
-    lattice: 'sphere',
+    lattice: 'surface',
     twin: 'walkIcosahedronHexTurtleCells',
-    sphere: 'hexsphere',
+    surface: 'hexsphere',
     edges: true,
     turns: [60, -60],
     round: true,
@@ -4471,9 +4471,9 @@ const MODES = {
   walkStellaOctangulaTrianglesTurtleEdges: {
     base: 5,
     arrows: '↙↖↑↗↘',
-    lattice: 'sphere',
+    lattice: 'surface',
     twin: 'walkStellaOctangulaTrianglesTurtleCells',
-    sphere: 'stella',
+    surface: 'stella',
     edges: true,
     turns: [120, 60, 0, -60, -120],
     rule: 'along the edges of a stella octangula (two tetrahedra) of triangles: <b>0</b> sharp left, <b>1</b> left, <b>2</b> straight, <b>3</b> right, <b>4</b> sharp right (at a tip or a hollow corner, the nearest edge)',
@@ -4481,9 +4481,9 @@ const MODES = {
   walkDodecahedronTrianglesTurtleEdges: {
     base: 5,
     arrows: '↙↖↑↗↘',
-    lattice: 'sphere',
+    lattice: 'surface',
     twin: 'walkDodecahedronTrianglesTurtleCells',
-    sphere: 'dodeca',
+    surface: 'dodeca',
     edges: true,
     turns: [120, 60, 0, -60, -120],
     rule: 'along the edges of a dodecahedron, its pentagons cut into triangles: <b>0</b> sharp left, <b>1</b> left, <b>2</b> straight, <b>3</b> right, <b>4</b> sharp right (at a corner of the solid, the nearest edge)',
@@ -4491,9 +4491,9 @@ const MODES = {
   walkIcosahedronTrianglesTurtleEdges: {
     base: 5,
     arrows: '↙↖↑↗↘',
-    lattice: 'sphere',
+    lattice: 'surface',
     twin: 'walkIcosahedronTrianglesTurtleCells',
-    sphere: 'icosa',
+    surface: 'icosa',
     edges: true,
     turns: [120, 60, 0, -60, -120],
     round: true,
@@ -4728,8 +4728,8 @@ const MODES = {
   },
   lifeTorusKites: {
     base: 2,
-    lattice: 'sphere',
-    sphere: 'torusKite',
+    lattice: 'surface',
+    surface: 'torusKite',
     life: true,
     perspective: true,
     round: true,
@@ -4737,8 +4737,8 @@ const MODES = {
   },
   lifeMobiusStripKites: {
     base: 2,
-    lattice: 'sphere',
-    sphere: 'mobiusKite',
+    lattice: 'surface',
+    surface: 'mobiusKite',
     life: true,
     perspective: true,
     round: true,
@@ -4746,16 +4746,16 @@ const MODES = {
   },
   lifeKleinBottleKites: {
     base: 2,
-    lattice: 'sphere',
-    sphere: 'kleinKite',
+    lattice: 'surface',
+    surface: 'kleinKite',
     life: true,
     round: true,
     where: 'a Klein bottle of kites',
   },
   lifeTorusSquares: {
     base: 2,
-    lattice: 'sphere',
-    sphere: 'torus',
+    lattice: 'surface',
+    surface: 'torus',
     life: true,
     perspective: true,
     round: true,
@@ -4763,8 +4763,8 @@ const MODES = {
   },
   lifeTorusHex: {
     base: 2,
-    lattice: 'sphere',
-    sphere: 'torusHex',
+    lattice: 'surface',
+    surface: 'torusHex',
     life: true,
     perspective: true,
     round: true,
@@ -4772,8 +4772,8 @@ const MODES = {
   },
   lifeTorusTriangles: {
     base: 2,
-    lattice: 'sphere',
-    sphere: 'torusTri',
+    lattice: 'surface',
+    surface: 'torusTri',
     life: true,
     perspective: true,
     round: true,
@@ -4781,8 +4781,8 @@ const MODES = {
   },
   lifeTorusCairo: {
     base: 2,
-    lattice: 'sphere',
-    sphere: 'torusCairo',
+    lattice: 'surface',
+    surface: 'torusCairo',
     life: true,
     perspective: true,
     round: true,
@@ -4791,8 +4791,8 @@ const MODES = {
   // a Möbius strip: its two faces one surface, over its edge onto the face behind (2 colours: a face each)
   lifeMobiusStripSquares: {
     base: 2,
-    lattice: 'sphere',
-    sphere: 'mobius',
+    lattice: 'surface',
+    surface: 'mobius',
     life: true,
     perspective: true,
     round: true,
@@ -4800,8 +4800,8 @@ const MODES = {
   },
   lifeMobiusStripHex: {
     base: 2,
-    lattice: 'sphere',
-    sphere: 'mobiusHex',
+    lattice: 'surface',
+    surface: 'mobiusHex',
     life: true,
     perspective: true,
     round: true,
@@ -4809,40 +4809,40 @@ const MODES = {
   },
   lifeKleinBottleSquares: {
     base: 2,
-    lattice: 'sphere',
-    sphere: 'klein',
+    lattice: 'surface',
+    surface: 'klein',
     life: true,
     round: true,
     where: 'a Klein bottle of squares',
   },
   lifeKleinBottleHex: {
     base: 2,
-    lattice: 'sphere',
-    sphere: 'kleinHex',
+    lattice: 'surface',
+    surface: 'kleinHex',
     life: true,
     round: true,
     where: 'a Klein bottle of hexagons',
   },
   lifeKleinBottleTriangles: {
     base: 2,
-    lattice: 'sphere',
-    sphere: 'kleinTri',
+    lattice: 'surface',
+    surface: 'kleinTri',
     life: true,
     round: true,
     where: 'a Klein bottle of triangles',
   },
   lifeKleinBottleCairo: {
     base: 2,
-    lattice: 'sphere',
-    sphere: 'kleinCairo',
+    lattice: 'surface',
+    surface: 'kleinCairo',
     life: true,
     round: true,
     where: 'a Klein bottle of Cairo pentagons',
   },
   lifeMobiusStripCairo: {
     base: 2,
-    lattice: 'sphere',
-    sphere: 'mobiusCairo',
+    lattice: 'surface',
+    surface: 'mobiusCairo',
     life: true,
     perspective: true,
     round: true,
@@ -4850,8 +4850,8 @@ const MODES = {
   },
   lifeMobiusStripTriangles: {
     base: 2,
-    lattice: 'sphere',
-    sphere: 'mobiusTri',
+    lattice: 'surface',
+    surface: 'mobiusTri',
     life: true,
     perspective: true,
     round: true,
@@ -4859,164 +4859,164 @@ const MODES = {
   },
   lifeCubeSquares: {
     base: 2,
-    lattice: 'sphere',
-    sphere: 'cube',
+    lattice: 'surface',
+    surface: 'cube',
     life: true,
     perspective: true,
     where: 'the surface of a cube',
   },
   lifeCubePitsSquares: {
     base: 2,
-    lattice: 'sphere',
-    sphere: 'pits',
+    lattice: 'surface',
+    surface: 'pits',
     life: true,
     perspective: true,
     where: 'the surface of a cube with a pit in each face',
   },
   lifeCubeBumpsSquares: {
     base: 2,
-    lattice: 'sphere',
-    sphere: 'bumps',
+    lattice: 'surface',
+    surface: 'bumps',
     life: true,
     perspective: true,
     where: 'the surface of a cube with a bump on each face',
   },
   lifeCubeMengerSpongeSquares: {
     base: 2,
-    lattice: 'sphere',
-    sphere: 'menger',
+    lattice: 'surface',
+    surface: 'menger',
     life: true,
     perspective: true,
     where: "the surface of Menger's sponge (its holes down to one square)",
   },
   lifeCubeFrameSquares: {
     base: 2,
-    lattice: 'sphere',
-    sphere: 'frame',
+    lattice: 'surface',
+    surface: 'frame',
     life: true,
     perspective: true,
     where: "the surface of a cube's frame (its edges as wide as its holes)",
   },
   lifeTetrahedronTriangles: {
     base: 2,
-    lattice: 'sphere',
-    sphere: 'tetra',
+    lattice: 'surface',
+    surface: 'tetra',
     life: true,
     where: 'a tetrahedron of triangles',
   },
   lifeOctahedronTriangles: {
     base: 2,
-    lattice: 'sphere',
-    sphere: 'octa',
+    lattice: 'surface',
+    surface: 'octa',
     life: true,
     where: 'an octahedron of triangles',
   },
   lifeTetrahedronKites: {
     base: 2,
-    lattice: 'sphere',
-    sphere: 'tetraKite',
+    lattice: 'surface',
+    surface: 'tetraKite',
     life: true,
     where: 'a tetrahedron of kites (each triangle cut in 3)',
   },
   lifeOctahedronKites: {
     base: 2,
-    lattice: 'sphere',
-    sphere: 'octaKite',
+    lattice: 'surface',
+    surface: 'octaKite',
     life: true,
     where: 'an octahedron of kites (each triangle cut in 3)',
   },
   lifeIcosahedronKites: {
     base: 2,
-    lattice: 'sphere',
-    sphere: 'icosaKite',
+    lattice: 'surface',
+    surface: 'icosaKite',
     life: true,
     round: true,
     where: 'an icosahedron of kites (each triangle cut in 3)',
   },
   lifeStellaOctangulaKites: {
     base: 2,
-    lattice: 'sphere',
-    sphere: 'stellaKite',
+    lattice: 'surface',
+    surface: 'stellaKite',
     life: true,
     where: 'a stella octangula (two tetrahedra) of kites (each triangle cut in 3)',
   },
   lifeDodecahedronKites: {
     base: 2,
-    lattice: 'sphere',
-    sphere: 'dodecaKite',
+    lattice: 'surface',
+    surface: 'dodecaKite',
     life: true,
     where: 'a dodecahedron, its pentagons cut into triangles, of kites (each triangle cut in 3)',
   },
   lifeCuboctahedron: {
     base: 2,
-    lattice: 'sphere',
-    sphere: 'cubocta',
+    lattice: 'surface',
+    surface: 'cubocta',
     life: true,
     where: 'a cuboctahedron of squares and triangles',
   },
   lifeSquarePyramid: {
     base: 2,
-    lattice: 'sphere',
-    sphere: 'pyramid',
+    lattice: 'surface',
+    surface: 'pyramid',
     life: true,
     where: 'a square pyramid of squares and triangles',
   },
   lifeRhombicuboctahedron: {
     base: 2,
-    lattice: 'sphere',
-    sphere: 'rhombi',
+    lattice: 'surface',
+    surface: 'rhombi',
     life: true,
     where: 'a rhombicuboctahedron of squares and triangles',
   },
   lifeSquareOrthobicupola: {
     base: 2,
-    lattice: 'sphere',
-    sphere: 'bicupola',
+    lattice: 'surface',
+    surface: 'bicupola',
     life: true,
     where: 'a square orthobicupola of squares and triangles',
   },
   lifeGlobe: {
     base: 2,
-    lattice: 'sphere',
-    sphere: 'globe',
+    lattice: 'surface',
+    surface: 'globe',
     life: true,
     round: true,
     where: 'a globe: squares between its parallels and meridians, one cell round each pole',
   },
   lifeStellaOctangulaTriangles: {
     base: 2,
-    lattice: 'sphere',
-    sphere: 'stella',
+    lattice: 'surface',
+    surface: 'stella',
     life: true,
     where: 'a stella octangula (two tetrahedra) of triangles',
   },
   lifeDodecahedronTriangles: {
     base: 2,
-    lattice: 'sphere',
-    sphere: 'dodeca',
+    lattice: 'surface',
+    surface: 'dodeca',
     life: true,
     where: 'a dodecahedron, its pentagons cut into triangles',
   },
   lifeIcosahedronTriangles: {
     base: 2,
-    lattice: 'sphere',
-    sphere: 'icosa',
+    lattice: 'surface',
+    surface: 'icosa',
     life: true,
     round: true,
     where: 'an icosahedron of triangles',
   },
   lifeIcosahedronHex: {
     base: 2,
-    lattice: 'sphere',
-    sphere: 'hexsphere',
+    lattice: 'surface',
+    surface: 'hexsphere',
     life: true,
     round: true,
     where: 'an icosahedron of hexagons, a Goldberg polyhedron (its 12 pentagons are walls)',
   },
   lifeIcosahedronTwisted: {
     base: 2,
-    lattice: 'sphere',
-    sphere: 'twistedsphere',
+    lattice: 'surface',
+    surface: 'twistedsphere',
     life: true,
     round: true,
     where:
@@ -6458,7 +6458,7 @@ const freshWalk = () => ({
   lines: false,
   skipZeros: false,
   points: false,
-  sphere: false,
+  surface: false,
   geo: null,
   R: 1,
   tile: null,
@@ -6544,7 +6544,7 @@ function digitsNeeded() {
       ? 2 * lengthAsked() + 16
       : mode.plane
         ? gridSize(planeKind(mode.plane), plane.side)[2]
-        : SPHERES[surfaceOf(mode)].tiles(sphereSize()); // all the digits for a start by the digits (a cell each); else a hunt's patch
+        : SURFACES[surfaceOf(mode)].tiles(gridSizePlayed()); // all the digits for a start by the digits (a cell each); else a hunt's patch
   // a worm by the digits: one read at a new situation only (its free lines at a corner, met for the first time: a few
   // dozen at most, see wormMind), the number's next that fits: WORM_DIGITS enough, its steps the length asked
   if (mode.worm) return Math.min(lengthAsked(), WORM_DIGITS);
@@ -8204,7 +8204,7 @@ const ICONS = (() => {
       svgPath('M3.5 9H20.5M3.5 15H20.5M12 3C8 6 8 18 12 21M12 3C16 6 16 18 12 21'), // a globe: its parallels and meridians
     rosettes:
       svgPath('M12 3A9 9 0 1 0 12.01 3Z') +
-      svgPath('M3 10.6L5.25 13.4L7.5 10.6L9.75 13.4L12 10.6L14.25 13.4L16.5 10.6L18.75 13.4L21 10.6'), // a rosette sphere: the globe, its seam crenellated (one disc's teeth in the other's notches)
+      svgPath('M3 10.6L5.25 13.4L7.5 10.6L9.75 13.4L12 10.6L14.25 13.4L16.5 10.6L18.75 13.4L21 10.6'), // a rosette surface: the globe, its seam crenellated (one disc's teeth in the other's notches)
     spiral: svgPath(pathOf(spiralOf(4, 11), false)),
     triSpiral: svgPath(pathOf(spiralOf(3, 7), false)),
     hexSpiral: svgPath(pathOf(spiralOf(6, 15), false)),
@@ -9763,9 +9763,13 @@ const tilingMode = (kind) =>
   );
 for (const [k, name] of Object.entries(TETRAKIS_SOLIDS)) {
   // the solids of squares as tetrakis triangles (see tetrakisOf): Life, as theirs
-  const base = Object.keys(MODES).find((w) => MODES[w].life && MODES[w].sphere === k),
+  const base = Object.keys(MODES).find((w) => MODES[w].life && MODES[w].surface === k),
     m = modeName('Life', name, 'Tetrakis');
-  MODES[m] = { ...MODES[base], sphere: `${k}Tetrakis`, where: `${MODES[base].where}, its squares cut in 4 (tetrakis)` };
+  MODES[m] = {
+    ...MODES[base],
+    surface: `${k}Tetrakis`,
+    where: `${MODES[base].where}, its squares cut in 4 (tetrakis)`,
+  };
   MODE_ICONS[m] = MODE_ICONS[base];
   NAV[m] = ['Life', 'Surfaces', name, 'Life', ''];
 }
@@ -9778,9 +9782,9 @@ for (const [k, { a, name, others }] of Object.entries(HEX_SOLIDS)) {
   MODES[alongEdges] = {
     base: 2,
     arrows: '↖↗',
-    lattice: 'sphere',
+    lattice: 'surface',
     twin: onCells,
-    sphere: `${k}Hex`,
+    surface: `${k}Hex`,
     edges: true,
     turns: [60, -60],
     rule: `along the edges of ${on}: <b>0</b> turn left, <b>1</b> turn right`,
@@ -9788,10 +9792,10 @@ for (const [k, { a, name, others }] of Object.entries(HEX_SOLIDS)) {
   MODES[onCells] = {
     base: 2,
     arrows: '↖↗',
-    lattice: 'sphere',
+    lattice: 'surface',
     cells: true,
     twin: alongEdges,
-    sphere: `${k}Hex`,
+    surface: `${k}Hex`,
     net: 'hex',
     rule: `on ${on}: exit through the <b>0</b> front left or <b>1</b> front right edge`,
   };
@@ -9809,8 +9813,8 @@ for (const [k, { a, name }] of Object.entries(HEX_SOLIDS)) {
     kite = modeName('Life', name, 'Kites');
   MODES[m] = {
     base: 2,
-    lattice: 'sphere',
-    sphere: `${k}Hex`,
+    lattice: 'surface',
+    surface: `${k}Hex`,
     life: true,
     where: `${a} of hexagons (folded over its edges; ${HEX_SOLIDS[k].others}: walls)`,
   };
@@ -9832,8 +9836,8 @@ for (const [kind, t] of Object.entries(TILINGS)) {
       const m = modeName('Life', F.name, t.name);
       MODES[m] = {
         base: 2,
-        lattice: 'sphere',
-        sphere: F.of(kind),
+        lattice: 'surface',
+        surface: F.of(kind),
         life: true,
         ...(F.perspective ? { perspective: true } : {}),
         round: true,
@@ -10307,8 +10311,8 @@ const FAMILIES = [
     name,
     tab: 0,
     modes: [
-      Object.keys(MODES).filter((w) => MODES[w].sphere === k),
-      [Object.keys(MODES).find((w) => MODES[w].sphere === `${k}Tetrakis`)],
+      Object.keys(MODES).filter((w) => MODES[w].surface === k),
+      [Object.keys(MODES).find((w) => MODES[w].surface === `${k}Tetrakis`)],
     ],
     tabs: [
       [0, false, 'tilesSq', 'Squares', 'Squares'],
@@ -10427,7 +10431,7 @@ function familyOf(w) {
   for (const F of FAMILIES) {
     const m = F.modes.findIndex((pair) => pair.includes(w));
     if (m < 0) continue;
-    const turnable = !!TURNED[MODES[w].sphere];
+    const turnable = !!TURNED[MODES[w].surface];
     return { F, m, tab: F.tabs.findIndex(([t, turned]) => t === m && turned === (turnable && torusTurned)) };
   }
   return null;
@@ -10732,7 +10736,7 @@ const tilingNameOf = (w) => {
   const fam = familyOf(w);
   return (tilingNames[w] = fam
     ? fam.F.tabs.find(([t]) => t === fam.m)[3]
-    : !['sphere', 'cube'].includes(MODES[w].lattice)
+    : !['surface', 'cube'].includes(MODES[w].lattice)
       ? NAV[w][2]
       : null);
 };
@@ -10764,7 +10768,7 @@ function pathsTo(fits, budget = 5000, judgedAt = null) {
     seen = new Set([setupKey(start)]),
     w = start.w,
     kind = !MODES[w].plane && surfaceOf(MODES[w]),
-    now = SPHERES[kind] && figureSize(w);
+    now = SURFACES[kind] && figureSize(w);
   const reads = new Set(['w']),
     edges = (s) => {
       const key = `${setupKey(s)}|${[...reads].sort()}`;
@@ -11094,7 +11098,7 @@ function renderModePicker() {
           {
             again: f === here && turns,
             byDefault: f === F.tabs[0][0] ? 'yes' : '',
-            turn: tilesTurn(shownSurface(MODES[same(f)].sphere, f === here && isTurned)),
+            turn: tilesTurn(shownSurface(MODES[same(f)].surface, f === here && isTurned)),
           },
         ); // its picture as its tiles lie (a torus's, a strip's alike: clockwise, as the pictures laid on it)
         b.dataset.choice = `tiling:${f}`; // (its choice's key, see choicesAt)
@@ -11256,7 +11260,7 @@ function compute() {
   surfaceDraw = false;
   if (torusTurned && !blocksTurn(tabMode(), true)) torusTurned = false; // (a reversible sheet turned only where its blocks are: a link's too)
   renderModePicker();
-  if (mode.sphere) fillSphereSizes(surfaceOf(mode), mode.initial);
+  if (mode.surface) fillGridSizes(surfaceOf(mode), mode.initial);
   if (mode.life) fitLifeTeams(mode); // (its colours first: the digits' base, its sizes, see fitLifeTeams)
   const n = digitsNeeded(),
     want = mode.life ? n : n + LOOP_AHEAD; // a walk also reads the digits ahead
@@ -11288,7 +11292,7 @@ function compute() {
   } // (no hunt: a walk, or Elementary's rows, built by buildWalk)
   renderPlaneRow();
   // a new number, surface, size or rule ends any hunt: its champion would not fit any more
-  $('sphereRow').hidden = $('sizeRow').hidden = mode.lattice !== 'sphere'; // the size under the tiles; a walk's starts and loops further down
+  $('surfaceRow').hidden = $('sizeRow').hidden = mode.lattice !== 'surface'; // the size under the tiles; a walk's starts and loops further down
   syncSizeStepper();
   updateRuleText();
   if (numberWorker) {
@@ -11576,8 +11580,8 @@ function buildWalkOf() {
   const loopCount = () => {
     syncDigitsStepper();
   };
-  if (MODES[digitsComputed.mode].lattice === 'sphere') {
-    (MODES[digitsComputed.mode].edges ? buildEdgesWalk : buildSphereWalk)(
+  if (MODES[digitsComputed.mode].lattice === 'surface') {
+    (MODES[digitsComputed.mode].edges ? buildEdgesWalk : buildCellsWalk)(
       seq,
       MODES[digitsComputed.mode],
       digitsAhead(),
@@ -11718,7 +11722,7 @@ function buildWalkOf() {
     wormEnd: isWorm && step.end,
     wormMade: isWorm ? (step.made ?? 0) : 0,
     keys,
-    sphere: false,
+    surface: false,
     life: null,
     rows,
     xs: is3d ? new Float64Array(len + 1) : wx,
@@ -11769,7 +11773,7 @@ function setPerspective() {
     walk.persp = boxPersp(stack?.box ?? bounds3);
     return;
   } // Space-time: its cubes' box (being made: the box till then)
-  if (walk.sphere) {
+  if (walk.surface) {
     // one camera distance for both forms of the shape (the flat torus is wider)
     walk.persp = { c: [0, 0, 0], D: 2.5 * walk.R * walk.shape.maxExtent };
     return;
@@ -11865,7 +11869,7 @@ const screenTurn = (a, b, c) => [0, 1, 2].map((i) => a * camera.r[i] + b * camer
 // surface that box grows unevenly with the walk: turning around it made the solid slide while
 // auto-fit followed the walker.) Then recompute the projection; the frame does not change.
 function rotateView(w) {
-  const c = walk.sphere ? [0, 0, 0] : boxMiddle(frameBox3 ?? bounds3 ?? [0, 0, 0, 0, 0, 0]); // (round its frame's centre)
+  const c = walk.surface ? [0, 0, 0] : boxMiddle(frameBox3 ?? bounds3 ?? [0, 0, 0, 0, 0, 0]); // (round its frame's centre)
   const before = projectPoint(...c);
   turnCam(w);
   if (!walk.is3d) return;
@@ -12328,13 +12332,13 @@ const SURFACE_WORMS = {
   antKleinBottleTrianglesEdges: 'walkKleinBottleTrianglesTurtleEdges',
 };
 for (const [w, walkMode] of Object.entries(SURFACE_WORMS)) {
-  const { sphere, initial, turns, perspective, round } = MODES[walkMode];
+  const { surface, initial, turns, perspective, round } = MODES[walkMode];
   MODES[w] = {
     base: 5,
     arrows: '↙↖↑↗↘',
-    lattice: 'sphere',
+    lattice: 'surface',
     edges: true,
-    sphere,
+    surface,
     initial,
     turns,
     perspective,
@@ -12351,12 +12355,12 @@ for (const [w, walkMode] of Object.entries(SURFACE_WORMS)) {
     .push(w);
 }
 for (const [w, [walkMode, place]] of Object.entries(SURFACE_ANTS)) {
-  const { sphere, initial, turns, perspective, round } = MODES[walkMode];
+  const { surface, initial, turns, perspective, round } = MODES[walkMode];
   MODES[w] = {
     base: 2,
-    lattice: 'sphere',
+    lattice: 'surface',
     cells: true,
-    sphere,
+    surface,
     initial,
     turns,
     perspective,
@@ -13028,8 +13032,8 @@ function commandStepper(net, commands) {
 }
 // a walk's rule's key: its network's, the plane's and the surfaces' apart (see walkRules)
 const walkKey = (m) =>
-  m.lattice === 'sphere'
-    ? `${m.net} surface${m.net && surfaceCommands(m.net).some((t) => walkCommandWhy(m, t)) ? ` ${m.sphere}` : ''}`
+  m.lattice === 'surface'
+    ? `${m.net} surface${m.net && surfaceCommands(m.net).some((t) => walkCommandWhy(m, t)) ? ` ${m.surface}` : ''}`
     : m.net; // (no network, no commands: a creature's)  // (a surface with fewer of its network's commands: its own)
 const surfaceCommands = (net) => Object.keys(WALK_NETS[net].turns).filter((t) => t !== 'U'); // (a surface's turns, left to right)
 // a surface walk's acts, one per digit (see surfaceSteps): by its rule's commands (a turn: its edges on, or degrees along the edges,
@@ -13066,7 +13070,7 @@ const cellTurn = (net, command) => {
 const cellSidesMemo = remember('cellSidesMemo', {});
 const cellSides = (kind) =>
   (cellSidesMemo[kind] ??= (() => {
-    const S = SPHERES[kind],
+    const S = SURFACES[kind],
       g = S.mesh(S.sizes[0]),
       k = g.sides,
       out = new Set();
@@ -13075,9 +13079,9 @@ const cellSides = (kind) =>
   })());
 // why a command cannot go on a walk, or '': not its network's; a diagonal along the edges; on a surface, no fixed way (no north)
 const walkCommandWhy = (m, t) =>
-  m.lattice === 'sphere' && !m.edges
+  m.lattice === 'surface' && !m.edges
     ? cellCommandWhy(m, t)
-    : m.lattice === 'sphere'
+    : m.lattice === 'surface'
       ? (surfaceCommands(m.net).includes(t) && m.turns[surfaceCommands(m.net).indexOf(t)] != null) ||
         t === 'U' ||
         (t === 'B' && SURFACE_NOTCHES[m.net] % 2 === 0) ||
@@ -13145,7 +13149,7 @@ const walkRuleText = (w) =>
 // it has not), their network by how many
 const NET_BY_TURNS = { 2: 'tri', 3: 'square', 4: 'cairo', 5: 'hex' };
 for (const [w, m] of Object.entries(MODES)) {
-  if (NAV[w]?.[0] !== 'Walk' || NAV[w][3] !== 'Turtle' || m.lattice !== 'sphere' || !(m.turns || m.net)) continue;
+  if (NAV[w]?.[0] !== 'Walk' || NAV[w][3] !== 'Turtle' || m.lattice !== 'surface' || !(m.turns || m.net)) continue;
   Object.assign(m, {
     net: m.net ?? NET_BY_TURNS[m.turns.length],
     where: m.rule.split(':')[0],
@@ -13160,7 +13164,7 @@ for (const [w, m] of Object.entries(MODES))
       arrows: { get: () => walkArrows(w) },
       rule: { get: () => walkRuleText(w) },
     });
-    if (m.net === 'square' && !m.sphere)
+    if (m.net === 'square' && !m.surface)
       Object.defineProperty(m, 'fill', {
         get: () => (walkCommandsOf(w).some((t) => WALK_NETS.square.diagonals.includes(t)) ? false : undefined),
       });
@@ -13643,9 +13647,9 @@ const HULL_PLANES = [
   [0, 1, -1],
 ];
 const hullColourMemo = remember('hullColourMemo', {});
-function hullColourings(sphere) {
-  if (hullColourMemo[sphere]) return hullColourMemo[sphere];
-  const all = hullFaces(HULL_SOLIDS[sphere]()),
+function hullColourings(surface) {
+  if (hullColourMemo[surface]) return hullColourMemo[surface];
+  const all = hullFaces(HULL_SOLIDS[surface]()),
     faces = [...all.filter((fc) => fc.corners.length === 4), ...all.filter((fc) => fc.corners.length === 3)];
   const mids = faces.map(({ corners }) => meanPoint(corners, 3)),
     out = {};
@@ -13678,7 +13682,7 @@ function hullColourings(sphere) {
   // swapping its groups: each group the first's image by one of them, all groups onto groups. Its symmetries, by construction:
   // the cube's 48 (axes swapped, signs changed) that keep its corners, every hull solid laid on the axes. Before v0.3.90, a
   // kind's faces taken whatever their families: the bicupola's 10 squares, its 2 caps with its 8 sides, 36 to 66 cells a colour)
-  const corners = HULL_SOLIDS[sphere](),
+  const corners = HULL_SOLIDS[surface](),
     key3 = (p) => p.map((v) => roundOff(v, 1e6)).join(),
     cornerKeys = new Set(corners.map(key3));
   const signed = [
@@ -13757,9 +13761,9 @@ function hullColourings(sphere) {
     'all',
     faces.map((_, q) => [q]),
   );
-  return (hullColourMemo[sphere] = out);
+  return (hullColourMemo[surface] = out);
 }
-const hullColours = (sphere, K) => (HULL_SOLIDS[sphere] && K > 1 ? (hullColourings(sphere)[K] ?? null) : null);
+const hullColours = (surface, K) => (HULL_SOLIDS[surface] && K > 1 ? (hullColourings(surface)[K] ?? null) : null);
 // a face's cells
 const hullFaceCells = (q) => Array.from({ length: walk.geo.size ** 2 }, (_, k) => q * walk.geo.size ** 2 + k);
 
@@ -13872,7 +13876,7 @@ POLYHEDRA.dodeca = (() => {
 /* Stella octangula (two tetrahedra, crossed): its outside, an octahedron with a small tetrahedron on
  * each face, 24 equilateral triangles; 3 meet at a tip, 8 at a corner of the octahedron (480°:
  * a saddle). It turns as the octahedron does: its starts are found on the octahedron's 6 corners
- * and 8 faces (towards the tips). Not convex: drawn tile by tile, far to near (see drawSphere). */
+ * and 8 faces (towards the tips). Not convex: drawn tile by tile, far to near (see drawSurface). */
 POLYHEDRA.stella = (() => {
   const P = [...POLYHEDRA.octa.P],
     faces = [];
@@ -13986,7 +13990,7 @@ function flatPolyhedron(name, f, kites = false) {
  * its two caps one cell each, round its pole (not triangles meeting there, each touching all the others). A band's cell under a
  * band of twice as many: 5 corners, the line between them its neighbours' (a square's 4); a cap's, its band's F, 12 to 20 (every
  * tile listed with as many corners, its last again: see finishMesh). On the unit sphere, as every solid's (its radius E / 2π: its
- * equator's cells a unit a side, see SPHERES.globe) */
+ * equator's cells a unit a side, see SURFACES.globe) */
 // its fewest columns, a pole's band's and its cap's sides: the least multiple of K from 12 (12 for 2, 3, 4, 6 and 12; 14 for 7, 15
 // for 5, 16 for 8, 18 for 9, 20 for 10)
 const globeFewest = (K) => K * Math.ceil(12 / K);
@@ -14320,8 +14324,8 @@ for (const k of Object.keys(ROSETTE_SPHERES)) {
     F = FAMILIES.at(-1);
   MODES[w] = {
     base: 2,
-    lattice: 'sphere',
-    sphere: `${k}Sphere`,
+    lattice: 'surface',
+    surface: `${k}Sphere`,
     life: true,
     round: true,
     where: `a sphere of two ${name} rosettes, the south's teeth in the north's notches`,
@@ -14363,7 +14367,7 @@ const ringColours = (w) =>
     ? 3
     : MODES[w]?.life
       ? lifeTeams
-      : !battleMode(w) || !SPHERES[surfaceOf(MODES[w])]?.columns
+      : !battleMode(w) || !SURFACES[surfaceOf(MODES[w])]?.columns
         ? 1
         : ringBuilt?.w === w
           ? ringBuilt.K
@@ -14386,13 +14390,13 @@ const ringFor = (w, K, make) => {
 // startClassLeast); 1, none (Life's colours, another surface's mode, a solid's other starts)
 const surfaceWalkers = (kind) => {
   const w = ringMode();
-  return battleMode(w) && surfaceOf(MODES[w]) === kind && (SPHERES[kind].columns || startAsked() <= 1)
+  return battleMode(w) && surfaceOf(MODES[w]) === kind && (SURFACES[kind].columns || startAsked() <= 1)
     ? ringBuilt?.w === w
       ? ringBuilt.K
       : walkTeams
     : 1;
 };
-// the size played for a size asked (the menu's, a link's: see sphereSize), the nearest a surface's walkers fit at (see
+// the size played for a size asked (the menu's, a link's: see gridSizePlayed), the nearest a surface's walkers fit at (see
 // battleFits: a strip's rows, their parity its twist's; a solid of hexagons', its rest by 3 its start 1's kind of point):
 // f, else one less or more; f where none (the count greyed there), or a size of its own (a link's "16x240": as asked)
 const walkersSize = (kind, f) => {
@@ -15616,7 +15620,7 @@ function twistedSphereMesh(f) {
       most,
       f,
     );
-  return (meshCache[key] = Object.assign(mesh, { tiling: SPHERES.twistedsphere.tiling }));
+  return (meshCache[key] = Object.assign(mesh, { tiling: SURFACES.twistedsphere.tiling }));
 }
 function hexSolidMesh(solid, f) {
   const key = `${solid}hex${f}`;
@@ -15877,7 +15881,7 @@ function shapeAt(g, m) {
     nrm[3 * t + 1] = ny;
     nrm[3 * t + 2] = nz;
     if (!folds || g.planeOf?.[t] !== -1) continue;
-    // a tile folded over an edge of the solid (the flat hexagon sphere: on no one face, see hexSolidMesh): the normals of its
+    // a tile folded over an edge of the solid (the flat hexagon surface: on no one face, see hexSolidMesh): the normals of its
     // parts, so that it still shows when one part faces the viewer and the whole does not
     const parts = [];
     for (let q = 0; q < k; q++) {
@@ -15926,7 +15930,7 @@ function initShape(kind) {
     return;
   }
   // the same surface (its other tilings, along the edges or on cells) keeps the form it had
-  const surface = (w) => familyOf(w)?.F.name ?? MODES[w].sphere;
+  const surface = (w) => familyOf(w)?.F.name ?? MODES[w].surface;
   const mode = digitsComputed.mode,
     keep = previousShape && surface(previousShape.mode) === surface(mode);
   const g = walk.geo,
@@ -16000,7 +16004,7 @@ function updateMorphButton() {
     ways = { Inflated: [], Rolled: [], Flat: [] };
   for (const s of navValues(2, [kind, space])) {
     const w = Object.keys(NAV).find((v) => NAV[v][0] === kind && NAV[v][1] === space && NAV[v][2] === s);
-    if (!['pits', 'bumps', 'menger'].includes(MODES[w].sphere.replace(/Tetrakis$/, '')))
+    if (!['pits', 'bumps', 'menger'].includes(MODES[w].surface.replace(/Tetrakis$/, '')))
       ways[MODES[w].round ? (sheet.includes(s) ? 'Rolled' : 'Inflated') : 'Flat'].push(SHAPE_SHORT[s] ?? s);
   }
   const box = $('shapeRow').querySelector('.shape-slider');
@@ -16034,7 +16038,7 @@ $('shapeM').addEventListener('change', () => {
 // The perspective a surface starts with, in its form m: the walk mode's, but none on a solid
 // inflated (a ball is seen whole without it)
 const perspectiveFor = (mode, m, stacked) =>
-  (!!mode.perspective || (!!mode.plane && stacked)) && !(m === 1 && SOLIDS.includes(mode.sphere)); // (Space-time: on)
+  (!!mode.perspective || (!!mode.plane && stacked)) && !(m === 1 && SOLIDS.includes(mode.surface)); // (Space-time: on)
 // One animation frame of the change of shape (about 0.7 s from flat to round)
 function morphStep(dt) {
   const sh = walk.shape;
@@ -16066,7 +16070,7 @@ const KLEIN_BOTTLES = [
   ['kleinTriTurned', 'triangles', 2],
   ['kleinKiteTurned', 'kites', 6],
 ];
-const SPHERES = {
+const SURFACES = {
   cube: {
     mesh: walkCubeSquaresTurtleCells,
     radius: (n) => n / 2, // half the cube side: square edge = 1 unit
@@ -16416,8 +16420,8 @@ const SPHERES = {
     // (its sizes its colours': its equator's columns F, 2F, 4F…, each halving down to F, see globeBands; as many cells as the others')
     ownSizes: (K = ringColours(ringMode())) => {
       const out = [];
-      for (let E = globeFewest(K); SPHERES.globe.tiles(E, K) <= CELLS.most; E *= 2)
-        if (SPHERES.globe.tiles(E, K) >= CELLS.least) out.push(E);
+      for (let E = globeFewest(K); SURFACES.globe.tiles(E, K) <= CELLS.most; E *= 2)
+        if (SURFACES.globe.tiles(E, K) >= CELLS.least) out.push(E);
       return out;
     },
   }, // (E: its equator's columns, see globeMesh)
@@ -16432,9 +16436,9 @@ const SPHERES = {
 // the rosette spheres (see rosetteSphereMesh): their sizes their discs' W, their discs' houses twice, a unit each
 for (const [k, table] of Object.entries(ROSETTE_SPHERES)) {
   const cells = Object.fromEntries(table.flatMap((W, i) => (i % 2 ? [] : [[W, table[i + 1]]]))); // (a size's cells: its table's pairs)
-  SPHERES[`${k}Sphere`] = {
+  SURFACES[`${k}Sphere`] = {
     mesh: (W) => rosetteSphereMesh(k, W),
-    radius: (W) => Math.sqrt(SPHERES[`${k}Sphere`].tiles(W) / (4 * Math.PI)),
+    radius: (W) => Math.sqrt(SURFACES[`${k}Sphere`].tiles(W) / (4 * Math.PI)),
     unit: 'cells',
     ownSizes: () => Object.keys(cells).map(Number),
     disc: true,
@@ -16448,8 +16452,8 @@ for (const [k, table] of Object.entries(ROSETTE_SPHERES)) {
 }
 // the solids of squares as tetrakis triangles (see tetrakisOf): sized as their squares, 4 cells a square
 for (const k of Object.keys(TETRAKIS_SOLIDS)) {
-  const S = SPHERES[k];
-  SPHERES[`${k}Tetrakis`] = {
+  const S = SURFACES[k];
+  SURFACES[`${k}Tetrakis`] = {
     ...S,
     mesh: (s) => tetrakisOf(`tetrakis-${k}${s}`, S.mesh(s)),
     tiles: (s) => 4 * S.tiles(s),
@@ -16466,7 +16470,7 @@ for (const name of foldedIn('torus')) {
   const ring = Math.hypot(p * a[0] + q * b[0], p * a[1] + q * b[1]),
     tube = Math.hypot(r * a[0] + s * b[0], r * a[1] + s * b[1]),
     per = t.polys.length * Math.abs(p * s - q * r); // (cells a cell of the sheet)
-  SPHERES[name] = {
+  SURFACES[name] = {
     mesh: (z) => tilingTorusMesh(kind, ...torusDims(name, z), turned),
     radius: (z) => (torusDims(name, z)[0] * tube) / (2 * Math.PI * TORUS_TUBE),
     columns: (nv, own) => ringColumns((nv * tube) / (ring * TORUS_TUBE), nv, 1, false, undefined, own),
@@ -16481,25 +16485,25 @@ for (const name of foldedIn('torus')) {
 // The surface size as a stepper: [ − ] 6,144 squares [ + ] goes through the sizes of the (hidden)
 // menu one by one; the menu stays the source of truth, as for the walk modes
 function syncSizeStepper() {
-  const sel = $('sphereF');
+  const sel = $('gridSizeField');
   syncLoopRow();
   // the size (see gridSize)
   const kind = surfaceOf(MODES[tabMode()]),
-    f = sphereSize();
+    f = gridSizePlayed();
   // (a torus that turns: its turn too, 0° or its own)
   const turn = kind && TURNED[kind.replace(/Turned$/, '')] ? ` · ${Math.round(Math.abs(tilesTurn(kind)))}°` : ''; // (as its tiles lie)
   const label = (f) => {
     $('sizeLabel').innerHTML = `${sizeShape(kind, f)}${turn}<small>${shortCells(sizeCells(kind, f))}</small>`;
   };
-  if (SPHERES[kind]?.tiles && sel.selectedOptions[0]) label(f);
+  if (SURFACES[kind]?.tiles && sel.selectedOptions[0]) label(f);
   else $('sizeLabel').textContent = sel.selectedOptions[0]?.text ?? '';
   sizeTips(
     'size',
-    SPHERES[kind] && sel.selectedOptions[0] ? sizeCells(kind, f, true) : '',
+    SURFACES[kind] && sel.selectedOptions[0] ? sizeCells(kind, f, true) : '',
     [
-      SPHERES[kind] && sel.selectedOptions[0] ? `${sizeHow(kind, f)}\n${sizeSides(kind, f)}`.trim() : '',
+      SURFACES[kind] && sel.selectedOptions[0] ? `${sizeHow(kind, f)}\n${sizeSides(kind, f)}`.trim() : '',
       ...(MOBIUS_ALONG[kind]?.edgeCuts
-        ? [`\n{b:Specific cells}\n{e:${formatNumber(SPHERES[kind].mesh(f).edgeCells.length)} cells}`]
+        ? [`\n{b:Specific cells}\n{e:${formatNumber(SURFACES[kind].mesh(f).edgeCells.length)} cells}`]
         : []), // (a strip's edge's cells, as outlined: see edgeRibbons)
       `\n${lastPicked()}`,
     ]
@@ -16584,7 +16588,7 @@ function pillRow(el, title, about, choices, at, first, set, whyNot = null) {
 }
 // − / +: the usual sizes (from a torus size of its own, the usual ones just below or above it)
 function stepSize(delta) {
-  const sel = $('sphereF'),
+  const sel = $('gridSizeField'),
     i = sel.selectedIndex + delta;
   if (i < 0 || i >= sel.options.length) return;
   sel.selectedIndex = i;
@@ -16596,7 +16600,7 @@ function stepSize(delta) {
 // The size in use: tiles across (a solid), rows (a torus), or rows "x" tiles per row (a torus made
 // taller or wider)
 const sizeOf = (v) => (String(v).includes('x') ? String(v) : Number(v)); // (a size as the list has it, "16" or "16x10": 16, or "16x10")
-const sphereSize = () => walkersSize(surfaceOf(MODES[tabMode()]), sizeOf($('sphereF').value)); // (the size played: the menu's the size asked, kept as its walkers change, see walkersSize)
+const gridSizePlayed = () => walkersSize(surfaceOf(MODES[tabMode()]), sizeOf($('gridSizeField').value)); // (the size played: the menu's the size asked, kept as its walkers change, see walkersSize)
 // A torus's rows and columns: its tiles per row from its rows (squares or regular tiles), or the nearest those given
 function torusDims(kind, size) {
   size = sizeOf(size); // (as the list has it: a size's tooltip's, "16" before v0.3.70, NaN cells on every tiling's torus)
@@ -16604,9 +16608,9 @@ function torusDims(kind, size) {
     // a Möbius strip: its rows and its length, as a count of steps along (see MOBIUS_ALONG)
     return [mobiusSize(size)[0], Math.round(mobiusLength(kind, size) / MOBIUS_ALONG[kind].step)]; // (its length the one built: one of its own, the nearest its twist allows, see stripSteps)
   }
-  if (typeof size === 'number') return [size, SPHERES[kind].columns(size)];
+  if (typeof size === 'number') return [size, SURFACES[kind].columns(size)];
   const [rows, perRow] = size.split('x').map(Number);
-  return [rows, SPHERES[kind].columns(rows, perRow / SPHERES[kind].perRow)]; // (columns of its own: the nearest its tiling allows, see ringColumns)
+  return [rows, SURFACES[kind].columns(rows, perRow / SURFACES[kind].perRow)]; // (columns of its own: the nearest its tiling allows, see ringColumns)
 }
 /* A grid's size, one way for all of them: its height × its width, their product its cells. On the plane
  * (kind: its cells' shape), its rows × the lattice cells of a row (its cells all of them, a lattice cell's several); on a torus or a Klein bottle, its cells round
@@ -16619,9 +16623,9 @@ function gridSize(kind, f) {
     return [h, w / gridCells(kind), planeGrid(kind, h).n, kind === 'cairo' ? 'pentagons' : PLANE_CELLS[kind]];
   } // (its width in grid cells, a slanted grid's rectangles; its cells but the wall's)
   if (!TORI.includes(kind)) return null;
-  const { tiles, unit } = SPHERES[kind],
+  const { tiles, unit } = SURFACES[kind],
     cells = tiles(f);
-  const h = MOBIUS_KINDS.includes(kind) ? mobiusSize(f)[0] : torusDims(kind, f)[0] * (SPHERES[kind].perColumn ?? 1);
+  const h = MOBIUS_KINDS.includes(kind) ? mobiusSize(f)[0] : torusDims(kind, f)[0] * (SURFACES[kind].perColumn ?? 1);
   return [h, Math.round((cells / h) * 10) / 10, cells, unit]; // (a strip of teeth: its rows not all alike, on average, to a tenth)
 }
 // on top, the grid as height × width (a solid: its edge); under it, its cells
@@ -16642,13 +16646,13 @@ const sizeShape = (kind, f) => {
   const d = gridSize(kind, f);
   return APERIODIC[kind]
     ? `⌀ ${formatNumber(discOf(d[0]))}`
-    : SPHERES[kind]?.disc
+    : SURFACES[kind]?.disc
       ? `⌀ ${formatNumber(discOf(f))} × 2`
       : shaped(kind)
         ? hexagonOf(kind, f)
         : d
           ? `${formatNumber(d[0])} × ${formatNumber(d[1])}`
-          : `Edge ${formatNumber(SPHERES[kind]?.edge?.(f) ?? f)}`;
+          : `Edge ${formatNumber(SURFACES[kind]?.edge?.(f) ?? f)}`;
 }; // (a circle: its diameter; a solid: its edge, a frame's and a sponge's their cube's)
 // how its cells are counted (the size's tooltip): its own words (Pits, Frame, Menger, theirs as tetrakis triangles), else its
 // count's form, c × f² (+ k: a sphere of hexagons' 12 pentagons, see goldberg), else the grid's rows × cells a row
@@ -16686,8 +16690,8 @@ const facesMemo = remember('facesMemo', {}); // (a solid's least mesh: its faces
 // and rows as many); a solid's, a face's as a square (its cells shared out among its faces: a carved cube's, its walls' too)
 const sizeSides = (kind, f) => {
   const d = gridSize(kind, f),
-    S = SPHERES[kind];
-  if (S?.disc) return `{g:${formatNumber(f)} × ${formatNumber(f)} cells a disc, as the plane's}`; // (a rosette sphere: no face, its two discs)
+    S = SURFACES[kind];
+  if (S?.disc) return `{g:${formatNumber(f)} × ${formatNumber(f)} cells a disc, as the plane's}`; // (a rosette surface: no face, its two discs)
   if (!d) {
     const g = (facesMemo[kind] ??= S.mesh(S.sizes[0])),
       F =
@@ -16742,7 +16746,7 @@ const latticeCellOf = (g, t) =>
 // cell that slides onto itself, 4)
 const turnedCellNote = (kind) => (kind === 'cairo' ? ' (the next ones the same turned by a quarter)' : '');
 const howCounted = (kind, f) => {
-  const S = SPHERES[kind],
+  const S = SURFACES[kind],
     d = gridSize(kind, f),
     n = S?.tiles?.(f) ?? d?.[2],
     unit = S?.unit ?? d?.[3];
@@ -16790,8 +16794,8 @@ const howCounted = (kind, f) => {
   if (d)
     return `(Edge=${formatNumber(d[0])}) rows × {y:${formatNumber(d[1] * det)} ${m > 1 ? 'lattice cells' : d[3]}} a row${det > 1 ? ` (${det} a rectangle of the grid: its cell slanted, the grid straight)` : ''}${m > 1 ? ` × {k:${m} ${d[3]} each}${turnedCellNote(kind)}` : ''}${all > d[2] ? ` − ${formatNumber(all - d[2])} in the wall` : ''} = ${formatNumber(d[2])} ${d[3]}`;
   // a solid of flat faces: each face's cells, f to an edge (its faces as its least size's mesh has them, the same at every size)
-  const base = kind.endsWith('Tetrakis') && SPHERES[kind.slice(0, -8)] ? kind.slice(0, -8) : kind,
-    B = SPHERES[base]; // (a solid of tetrakis triangles: its squares', 4 each)
+  const base = kind.endsWith('Tetrakis') && SURFACES[kind.slice(0, -8)] ? kind.slice(0, -8) : kind,
+    B = SURFACES[base]; // (a solid of tetrakis triangles: its squares', 4 each)
   const g = B && !TORI.includes(base) && (facesMemo[base] ??= B.mesh(B.sizes[0])),
     cut = base !== kind ? 4 : g?.kite ? 3 : 1;
   if (g?.faces || g?.triFaces) {
@@ -16828,7 +16832,7 @@ const howCounted = (kind, f) => {
 };
 // a solid of hexagons' corners: its cells there, by their sides (12 pentagons; 8 triangles + 6 octagons), as its least mesh has them
 const hexCorners = (kind) => {
-  const S = SPHERES[kind],
+  const S = SURFACES[kind],
     g0 = (facesMemo[kind] ??= S.mesh(S.sizes[0])),
     sidesOf = (t) => new Set(Array.from({ length: g0.sides }, (_, j) => g0.poly[g0.sides * t + j])).size,
     corners = {};
@@ -16844,7 +16848,7 @@ const hexCorners = (kind) => {
 const sizeCells = (kind, f, marked = false) => {
   // (a solid of hexagons: its hexagons, then its corners' cells, not all said hexagons; marked: in their colours, see sizeTips)
   const d = gridSize(kind, f),
-    S = SPHERES[kind];
+    S = SURFACES[kind];
   if (d) return `${formatNumber(d[2])} ${d[3]}`;
   if (S.unit === 'hexagons') {
     const { at, walls } = hexCorners(kind),
@@ -16859,7 +16863,7 @@ const sizeLabel = (kind, f) => (gridSize(kind, f) ? `${sizeShape(kind, f)} ${siz
 // A size of its own (a link, a loop found): an extra entry among the usual ones, by rows (a torus,
 // a Möbius strip) or tiles across (a solid); a torus with the usual tiles per row is the usual size
 function selectSize(kind, size) {
-  const sel = $('sphereF'),
+  const sel = $('gridSizeField'),
     dims = (s) => (TORI.includes(kind) ? torusDims(kind, s) : [Number(s)]),
     [rows] = dims(size);
   for (const o of [...sel.options]) if (o.dataset.own) o.remove();
@@ -16876,7 +16880,7 @@ function selectSize(kind, size) {
 // A size from a link: any number of rows or tiles across, from the surface's smallest that builds
 // (least: below it a tiny torus breaks; else 1) to its largest usual one
 function linkSize(kind, s) {
-  const { sizes, least = 1 } = SPHERES[kind],
+  const { sizes, least = 1 } = SURFACES[kind],
     [rows, along] = String(s).split('x'),
     step = blockSizeStep(kind);
   const n =
@@ -16891,26 +16895,26 @@ function linkSize(kind, s) {
 // a surface's sizes' step: a reversible one's, its blocks' sets coming round (see BLOCK_STEPS), else 1
 const blockSizeStep = (kind, mode = MODES[tabMode()]) => (mode.margolus ? (BLOCK_STEPS[kind] ?? 1) : 1);
 const seek = (kind) => {
-  picked = SPHERES[kind].tiles(parseInt($('sphereF').value));
-  $('sphereF').dataset.picked = picked;
+  picked = SURFACES[kind].tiles(parseInt($('gridSizeField').value));
+  $('gridSizeField').dataset.picked = picked;
 }; // (the size picked: its cells, see picked; the menu shows it)
 // a surface's sizes (a reversible torus's: its blocks' sets come round), and the one it opens at: the size picked's nearest
 // there (picked on another grid), else its mode's first (initial); any mode's, the one its button goes to too (see enablersFor)
 const sizesOf = (kind, mode) => {
   const step = blockSizeStep(kind, mode);
-  return SPHERES[kind].sizes.filter((f) => f % step === 0);
+  return SURFACES[kind].sizes.filter((f) => f % step === 0);
 };
-const sizeAt = (kind, initial = SPHERES[kind].initial, mode) => {
+const sizeAt = (kind, initial = SURFACES[kind].initial, mode) => {
   const sizes = sizesOf(kind, mode),
-    f = Number(picked ? SPHERES[kind].near(picked) : SPHERES[kind].nearest(initial));
+    f = Number(picked ? SURFACES[kind].near(picked) : SURFACES[kind].nearest(initial));
   return sizes.reduce((a, b) => (Math.abs(b - f) < Math.abs(a - f) ? b : a));
 };
 // the size mode w's battle of K walkers plays from a size asked (the menu's if none): where a count is judged (see teamsWhyNot)
 const teamsSize = (w, K, size = figureSize(w)) => ringFor(w, K, () => walkersSize(surfaceOf(MODES[w]), sizeOf(size)));
-function fillSphereSizes(kind, initial = SPHERES[kind].initial) {
+function fillGridSizes(kind, initial = SURFACES[kind].initial) {
   const step = blockSizeStep(kind),
     sizes = sizesOf(kind);
-  const sel = $('sphereF'),
+  const sel = $('gridSizeField'),
     key = `${kind} ${initial} ${lifeTeams} ${surfaceWalkers(kind)} ${step}`,
     [was] = (sel.dataset.kind ?? '').split(' '); // (a torus's sizes: its columns as its colours, see ringColumns; its walkers: the sizes played theirs, see walkersSize)
   if (sel.dataset.kind === key && sel.dataset.picked === String(picked)) return; // (a size picked on another grid: its nearest here)
@@ -17023,7 +17027,7 @@ const TORI = [
 // rotations… kept on it, see startList, edgeGraph), let go once not (a weak memory, as meshCache: a strong one, its last
 // two of each surface, kept a mesh of every surface's largest size after a tour of them, 16 GB)
 const surfaceMeshMemo = remember('surfaceMeshMemo', weakCache());
-for (const [kind, S] of Object.entries(SPHERES)) {
+for (const [kind, S] of Object.entries(SURFACES)) {
   const make = S.mesh;
   S.mesh = (s) => {
     const key = `${kind}|${s}|${stripKey()}`;
@@ -17033,12 +17037,12 @@ for (const [kind, S] of Object.entries(SPHERES)) {
 // their sizes on screen by their own tubes (see TUBE_SHAPE; their radii said for TORUS_TUBE's)
 for (const kind of TORI)
   if (!MOBIUS_KINDS.includes(kind) && !kind.startsWith('mobius')) {
-    const S = SPHERES[kind],
+    const S = SURFACES[kind],
       r = S.radius;
     S.radius = (s) => (r(s) * TORUS_TUBE) / tubeOf(S.mesh(s));
   }
 // each surface's sizes and its first one, from the ladder (see SIDES), when first asked for
-for (const [kind, S] of Object.entries(SPHERES)) {
+for (const [kind, S] of Object.entries(SURFACES)) {
   const step = S.steps?.[0] ?? 1,
     ladder = () => {
       // (its cells growing with its size: none counted past the most)
@@ -17094,8 +17098,9 @@ for (const s of Object.keys(FOLDED)) if (FOLDED[`${s}Turned`]) TURNED[s] = `${s}
 let torusTurned = false;
 // the hexagons' tori, strips and bottles at 0° pointy as the plane's (their Turned ones), turned their flat ones
 const POINTY = new Set(['torusHex', 'mobiusHex', 'kleinHex']);
-const shownSurface = (sphere, turned) => (TURNED[sphere] && turned !== POINTY.has(sphere) ? TURNED[sphere] : sphere);
-const surfaceOf = (mode) => shownSurface(mode.sphere, torusTurned);
+const shownSurface = (surface, turned) =>
+  TURNED[surface] && turned !== POINTY.has(surface) ? TURNED[surface] : surface;
+const surfaceOf = (mode) => shownSurface(mode.surface, torusTurned);
 const STARTS_ON = [...SOLIDS, ...TORI]; // the surfaces with a start selector
 
 // On a torus every corner is like any other (shifting the sheet maps the grid onto itself), and
@@ -17413,7 +17418,7 @@ function startList(g) {
 function modeStarts() {
   const mode = MODES[tabMode()];
   return (mode.edges || mode.cells) && STARTS_ON.includes(surfaceOf(mode))
-    ? startList(SPHERES[surfaceOf(mode)].mesh(sphereSize()))
+    ? startList(SURFACES[surfaceOf(mode)].mesh(gridSizePlayed()))
     : null;
 }
 // A start on cells: a start along the edges, from corner f to corner v, crosses into the tile on its
@@ -17621,7 +17626,7 @@ let torusLoopList = null; // { key, loops: [{ start, size, laps: [ring, tube], s
 function torusLoops() {
   const mode = MODES[tabMode()];
   if (!mode.net || !TORI.includes(surfaceOf(mode))) return []; // a walk by a rule's commands (its network's: not an ant's), along the edges or on cells, on a torus or a Möbius strip
-  const least = picked ? SPHERES[surfaceOf(mode)].near(picked) : SPHERES[surfaceOf(mode)].initial; // (its rows: the size picked's, else the one it opens at)
+  const least = picked ? SURFACES[surfaceOf(mode)].near(picked) : SURFACES[surfaceOf(mode)].initial; // (its rows: the size picked's, else the one it opens at)
   const key = `${formulaInUse} ${tabMode()} ${surfaceOf(mode)} ${walkRuleOf(mode)} ${least}`; // (its loops its rule's turns)
   if (
     digitsComputed?.formula !== formulaInUse ||
@@ -17636,8 +17641,8 @@ function torusLoops() {
   if (!P) return loops;
   const { s0, L, digit } = P;
   const kind = surfaceOf(mode),
-    S = SPHERES[kind],
-    g = S.mesh(sphereSize()),
+    S = SURFACES[kind],
+    g = S.mesh(gridSizePlayed()),
     walker = surfaceSteps(g, mode);
   startList(g).forEach((_, i) => {
     let state = walker.start(i),
@@ -17715,7 +17720,7 @@ function torusLoops() {
 // The loop shown, if the start and size in use are one of them
 function loopShown(loops) {
   const kind = surfaceOf(MODES[tabMode()]),
-    [rows, cols] = torusDims(kind, sphereSize());
+    [rows, cols] = torusDims(kind, gridSizePlayed());
   return loops.findIndex((l) => l.start === startNo() && `${torusDims(kind, l.size)}` === `${rows},${cols}`);
 }
 function syncLoopRow() {
@@ -17885,7 +17890,7 @@ const walkStart = (g, mode, j = startNo()) =>
   mode.edges
     ? edgeState(g, STARTS_ON.includes(surfaceOf(mode)) ? startList(g)[j - 1] : firstStart(g, edgeGraph(g)))
     : [...cellStart(g, startList(g)[j - 1]), 0, 0]; // (on cells: its start alone, no steps built)
-// A walk on a surface recorded step by step (see buildEdgesWalk, buildSphereWalk): its points (on the unit surface, R times),
+// A walk on a surface recorded step by step (see buildEdgesWalk, buildCellsWalk): its points (on the unit surface, R times),
 // its tiles, its places seen (corners or tiles, nodes of them) and the step it has seen them all, its farthest from its
 // start, its digits' counts; begin(key), step(i, digit, key): stopped where it goes round (key, its state: see loopWatch;
 // null, none watched); finish: the walk laid out (more: its own), its shape and its view
@@ -17947,10 +17952,10 @@ function walkRecorder(seq, ahead, base, R, nodes, len = seq.length) {
         maxDist,
         base,
         counts,
-        lattice: 'sphere',
+        lattice: 'surface',
         skipZeros: false,
         keys: seq,
-        sphere: true,
+        surface: true,
         geo: g,
         R,
         tile,
@@ -17975,9 +17980,9 @@ function walkRecorder(seq, ahead, base, R, nodes, len = seq.length) {
 function buildEdgesWalk(seq, mode, ahead = new Uint8Array(0)) {
   const { base, initial } = mode,
     kind = surfaceOf(mode);
-  fillSphereSizes(kind, initial);
-  const { mesh, radius } = SPHERES[kind];
-  const size = sphereSize(),
+  fillGridSizes(kind, initial);
+  const { mesh, radius } = SURFACES[kind];
+  const size = gridSizePlayed(),
     g = mesh(size),
     R = radius(size),
     G = edgeGraph(g),
@@ -18061,15 +18066,15 @@ function buildEdgesWalk(seq, mode, ahead = new Uint8Array(0)) {
   rec.finish(kind, g, { vert, stepTiles, came: cameFrom(g, true, walkStart(g, mode)) });
 }
 // a walk on a surface's tiles: from tile to tile by the digits (see surfaceSteps), or an ant's, by its turns
-function buildSphereWalk(seq, mode, ahead = new Uint8Array(0)) {
+function buildCellsWalk(seq, mode, ahead = new Uint8Array(0)) {
   const { initial } = mode,
     kind = surfaceOf(mode);
-  fillSphereSizes(kind, initial);
-  const { mesh, radius } = SPHERES[kind];
+  fillGridSizes(kind, initial);
+  const { mesh, radius } = SURFACES[kind];
   const len = readsDigits(digitsComputed.mode) ? seq.length : lengthAsked(),
     w = digitsComputed.mode,
     ant = !!mode.antOf; // (an ant by its rule: its steps asked, no digit read)
-  const size = sphereSize(),
+  const size = gridSizePlayed(),
     g = mesh(size),
     R = radius(size),
     S = surfaceSteps(g, mode, ant ? surfaceActs(MODES[ANTS[w].walk], antCommands(w)) : undefined); // (an ant: by its words)
@@ -18191,13 +18196,13 @@ const BATTLE_RULES = [
 const BATTLE_LINED = ['landEdges', 'landEdges3', 'landStop', 'landMerge'];
 // a walk that can be a battle: one on a surface (on cells or along the edges, its steps surfaceSteps'), with as many
 // walkers as its turns allow at its size (see battleCounts: its walkers start alike, see battleMaps)
-const battleMode = (w) => NAV[w]?.[0] === 'Walk' && MODES[w].lattice === 'sphere' && !!SPHERES[surfaceOf(MODES[w])];
+const battleMode = (w) => NAV[w]?.[0] === 'Walk' && MODES[w].lattice === 'surface' && !!SURFACES[surfaceOf(MODES[w])];
 // a battle at mode w with so many teams (at a size, or its own), the one in use's (battleOn): its teams a count its surface takes
 const battleAt = (w, teams = walkTeams, size = undefined) => battleFits(w, teams, size);
 const battleOn = () => battleAt(tabMode());
 // Solo, Duel, Trio… (those the solid has no group of turns for greyed, see battleCounts), under the size and start
 // of a walk on a surface (Life's tiles, see renderTeams); then a battle's numbers in its Start section
-const walkTeamsHere = (w) => NAV[w]?.[0] === 'Walk' && MODES[w].lattice === 'sphere'; // (a walk's teams: on a surface)
+const walkTeamsHere = (w) => NAV[w]?.[0] === 'Walk' && MODES[w].lattice === 'surface'; // (a walk's teams: on a surface)
 function renderWalkTeams() {
   const w = tabMode(),
     here = walkTeamsHere(w);
@@ -18740,12 +18745,12 @@ const battleFits = (
   if (K < 2 || !size || !battleMode(w)) return false; // (none)
   const mode = MODES[w],
     kind = surfaceOf(mode),
-    sphere = SPHERES[kind];
+    surface = SURFACES[kind];
   // a ring's by its kind (its length made for its walkers, see ringColours): a torus takes every count (its shift of 1/K
   // round it), a Klein bottle a Duel only (its gluing: its half turn, see ringGroup), a Möbius strip the counts whose
   // stretch of its loop (its two faces, 2L / K) is whole copies of its tiling, a slide by it laying the tiling on itself
   // (see stripSteps: so made where its twist allows; its starts off its middle line, so set apart, see mobiusStarts)
-  const ring = sphere.columns && familyOf(w)?.F.name;
+  const ring = surface.columns && familyOf(w)?.F.name;
   if (ring === FOLDS.torus.name) return true;
   if (ring === FOLDS.klein.name) return K === 2;
   if (ring) {
@@ -18761,7 +18766,7 @@ const battleFits = (
   if (solid.any.includes(K) || !solid.some.includes(K)) return solid.any.includes(K); // (no group of K: none)
   const memo = (battleCountsMemo[`${w}|${size}|${j}`] ??= {});
   const fits = () => {
-    const g = sphere.mesh(j <= 1 ? startClassLeast(kind, size) : size),
+    const g = surface.mesh(j <= 1 ? startClassLeast(kind, size) : size),
       start = walkStart(g, mode, j > 1 ? Math.min(j, startList(g).length) : 1),
       apart = startSpread(g, !!mode.edges, start);
     return battleGroups(g, K, 1, (G) => apart(G) > 1e-9).length > 0; // (one group is enough to know)
@@ -18773,7 +18778,7 @@ const battleCountsMemo = remember('battleCountsMemo', {});
 // hexagons' 3: its grid's corners the middles of its faces' small triangles, a face's middle one of them unless 3 divides
 // its size; every other solid's start 1 alike at every size, 1)
 const startClassLeast = (kind, size) =>
-  SPHERES[kind].sizes.find((f) => (f - size) % (SPHERES[kind].startPeriod ?? 1) === 0) ?? size;
+  SURFACES[kind].sizes.find((f) => (f - size) % (SURFACES[kind].startPeriod ?? 1) === 0) ?? size;
 // the teams a battle can have on mode w's surface: every count that fits (see battleFits)
 const battleCounts = (w, size, j) => TEAM_COUNTS.filter((K) => battleFits(w, K, size, j));
 // A closed solid's team counts, once a solid, its turns the same at every size (see surfaceRotations): some, K it has a
@@ -18783,7 +18788,7 @@ const battleCounts = (w, size, j) => TEAM_COUNTS.filter((K) => battleFits(w, K, 
 const solidTeamCountsMemo = remember('solidTeamCountsMemo', {});
 const solidTeamCounts = (kind) =>
   (solidTeamCountsMemo[kind] ??= (() => {
-    const g = SPHERES[kind].mesh(Math.min(...SPHERES[kind].sizes)),
+    const g = SURFACES[kind].mesh(Math.min(...SURFACES[kind].sizes)),
       groups = (K) => (K > 1 ? rotationGroups(g, K) : []); // (its least size: its turns its every size's)
     const some = TEAM_COUNTS.filter((K) => groups(K).length);
     return {
@@ -19675,7 +19680,7 @@ const versusTitle = (names) =>
   names.length < 2
     ? names.join('')
     : names.map((name, s) => `<span style="color:${teamColour(s)}">${name}</span>`).join(' vs '); // (one alone: no team to tell apart, the text's colour)
-// A battle's closed areas at the step it is at (P: its player; Area, see drawSphere), each tile's walker + 1 (0: none):
+// A battle's closed areas at the step it is at (P: its player; Area, see drawSurface), each tile's walker + 1 (0: none):
 // for each living walker along the edges (Cut's, Area on; on cells none: Area greyed there), the regions its body cuts off,
 // as a walk's (see areaSteps: tiles parted by its edges), the largest (the outside) left out; a tile closed by two or
 // three, the one closing fewer tiles's. Its walls: pairs of corners (an edge walked), each cutting one link of the
@@ -19911,7 +19916,7 @@ const battleHuntKey = () =>
     walkTeams,
     startsWayNow(),
     battleRuleInUse(tabMode()),
-    sphereSize(),
+    gridSizePlayed(),
     digitsNeeded(),
     huntVary.formulas || BATTLE_FORMULAS.map((id) => $(id).value).join(), // (its numbers, each in its field: it draws their starts' order, never in its key, see startsOrder)
     huntStarts() || `${startNo()}|${battleSeed}`,
@@ -20979,9 +20984,9 @@ function fitLifeTeams(mode) {
     return;
   }
   const kind = surfaceOf(mode);
-  fillSphereSizes(kind, mode.initial);
+  fillGridSizes(kind, mode.initial);
   fitTeams(); // (its size's mesh made for them, see pickedFigure)
-  fillSphereSizes(kind, mode.initial);
+  fillGridSizes(kind, mode.initial);
 }
 // A Life's game (walk.life) by its rule, on its grid's cells (grid: its neighbours, rings, seed, blocks…), n of them: its
 // cells' arrays made (the graphics card's copies too), its seed counted; and the walk's fields every Life has, the others
@@ -21023,8 +21028,8 @@ function buildLife(seq, mode) {
     return;
   }
   const kind = surfaceOf(mode),
-    { mesh, radius } = SPHERES[kind];
-  const size = sphereSize();
+    { mesh, radius } = SURFACES[kind];
+  const size = gridSizePlayed();
   const g = mesh(size);
   const nbr = cornerNeighbours(g);
   let rule = lifeRuleNow() || parseRule('B3/S23');
@@ -21052,8 +21057,8 @@ function buildLife(seq, mode) {
   });
   Object.assign(walk, {
     is3d: true,
-    lattice: 'sphere',
-    sphere: true,
+    lattice: 'surface',
+    surface: true,
     geo: g,
     R: radius(size),
     tile: new Int32Array(1),
@@ -23778,7 +23783,7 @@ const iconCellsOf = (K) => {
 // the plane's colours cut round its middle in walls a hexagon's or a circle's (a grid that never repeats): their pictures
 // out, against their walls (see iconLay)
 const roundWalls = (K) =>
-  !!walk.plane && K > 1 && wallSlices(K) && (shaped(walk.plane.kind) || !!APERIODIC[walk.plane.kind]); // (a rosette sphere: none, its lunes go on south)
+  !!walk.plane && K > 1 && wallSlices(K) && (shaped(walk.plane.kind) || !!APERIODIC[walk.plane.kind]); // (a rosette surface: none, its lunes go on south)
 // Colour i's picture's way, by construction (see patternFrame: where the plane's x and y go there): tilt, the plane's angle
 // its x lies along (its bottom a quarter turn on: the plane's y down as drawn), and whether it shows mirrored (the plane
 // landing there seen from the other side). Its bottom: down as drawn on the plane; out in a hexagon's walls; on a solid's
@@ -25683,7 +25688,7 @@ const SURFACE_CELLS = {
   bicupola: '◈',
 };
 for (const [s, { kind }] of Object.entries(FOLDED)) SURFACE_CELLS[s] = TILINGS[kind].mark;
-for (const [s, S] of Object.entries(SPHERES)) if (S.tiling) SURFACE_CELLS[s] = TILINGS[S.tiling].mark; // (a surface of a tiling's cells: its rules)
+for (const [s, S] of Object.entries(SURFACES)) if (S.tiling) SURFACE_CELLS[s] = TILINGS[S.tiling].mark; // (a surface of a tiling's cells: its rules)
 // each plane's mark (its rules', see the rule menu), and the plane of a mark
 const PLANE_MARKS = {
   ...Object.fromEntries(Object.entries(TILINGS).map(([k, t]) => [k, t.mark])),
@@ -25718,7 +25723,7 @@ const PLANE_MARKS = {
   ring12: '❈',
 };
 const PLANE_OF_MARK = Object.fromEntries(Object.entries(PLANE_MARKS).map(([k, m]) => [m, k]));
-for (const k of Object.keys(ROSETTE_SPHERES)) SURFACE_CELLS[`${k}Sphere`] = PLANE_MARKS[k]; // (a rosette sphere: its rosette's cells, rules and all)
+for (const k of Object.keys(ROSETTE_SPHERES)) SURFACE_CELLS[`${k}Sphere`] = PLANE_MARKS[k]; // (a rosette surface: its rosette's cells, rules and all)
 const blocksGrid = (mode) => mode.blocks ?? mode.plane; // (a block rule's grid: the plane's, or a surface's, its cells' shape)
 const LOOPS_MARK = '⟲'; // (the loops' rules' mark)
 // a rule's card on a grid: its entry among its own rules (see RULES: those of its cells' mark, as its rule cards, see
@@ -25737,7 +25742,7 @@ const lifeMark = (mode) =>
         ? (BLOCKS[blocksGrid(mode)] ?? STARS[blocksGrid(mode)]).mark
         : mode.plane
           ? PLANE_MARKS[mode.plane]
-          : (SURFACE_CELLS[mode.sphere] ?? '▲');
+          : (SURFACE_CELLS[mode.surface] ?? '▲');
 // Life's colours, apart from its rule (which they do not change): 1, alive or dead (and a Generations
 // rule's dying stages), or 2 to 6 civilisations (k= in a link). The engine reads them as the rule's tail
 // ("/Immigration", "/Colours4", see lifeRuleNow)
@@ -25823,14 +25828,16 @@ function torusBlocks(K, g = walk.geo) {
 // edges…); on a torus, a lattice of k blocks (a × b, each dividing its side); a grid with dead edges,
 // its halves or quarters
 // a solid's counts of colours: its faces dealt out whole, its spots paired, its spots (see colouring)
-const solidCounts = (sphere) => {
-  if (HULL_SOLIDS[sphere])
-    return Object.keys(hullColourings(sphere))
+const solidCounts = (surface) => {
+  if (HULL_SOLIDS[surface])
+    return Object.keys(hullColourings(surface))
       .map(Number)
       .sort((a, b) => a - b); // (see hullColourings)
-  if (!SOLID_SPOTS[sphere]) return null;
-  const base = FACE_BASE[sphere] ?? sphere;
-  return [...new Set([FACE_GROUPS[base], SPOT_PAIRS[base], SOLID_SPOTS[sphere]()].flatMap((t) => Object.keys(t ?? {})))]
+  if (!SOLID_SPOTS[surface]) return null;
+  const base = FACE_BASE[surface] ?? surface;
+  return [
+    ...new Set([FACE_GROUPS[base], SPOT_PAIRS[base], SOLID_SPOTS[surface]()].flatMap((t) => Object.keys(t ?? {}))),
+  ]
     .map(Number)
     .sort((a, b) => a - b);
 };
@@ -25847,8 +25854,8 @@ function teamsFit(k, f = pickedFigure(tabMode()), rule = $('lifeRule').value) {
   if (mode.plane) {
     return true; // its blocks (rounded down when they do not divide it, as on a torus); with dead edges, its halves, quarters, or slices round the middle (see planeSlices)
   }
-  if (solidCounts(mode.sphere)) return solidCounts(mode.sphere).includes(k);
-  if (g?.mobius || g?.globe || g?.rosette) return true; // a Möbius strip: in turn along it (see huntParts); a globe: its quarters (see teamsFairOwn); a rosette sphere: its lunes, or its discs (see rosetteParts)
+  if (solidCounts(mode.surface)) return solidCounts(mode.surface).includes(k);
+  if (g?.mobius || g?.globe || g?.rosette) return true; // a Möbius strip: in turn along it (see huntParts); a globe: its quarters (see teamsFairOwn); a rosette surface: its lunes, or its discs (see rosetteParts)
   if (g?.nu) return true; // a torus: its blocks (see torusBlocks), its columns made for its colours (see ringColumns), its rows judged by teamsFairOwn; not the torus in view's columns (before v0.3.94: Rhombitri at 5, 8 to 12 colours offered or not by the count picked)
   return false;
 }
@@ -25908,7 +25915,7 @@ const teamsFair = (K, f = pickedFigure(tabMode())) => {
     (!g?.torus &&
       !g?.globe &&
       !APERIODIC[mode?.plane] &&
-      !solidCounts(mode?.sphere) &&
+      !solidCounts(mode?.surface) &&
       (([8, 10, 12].includes(K) && teamsFairOwn(K / 2, f)) || (K === 9 && teamsFairOwn(3, f) && !teamsFairOwn(6, f))))
   );
 };
@@ -25918,14 +25925,14 @@ const teamsFair = (K, f = pickedFigure(tabMode())) => {
 const pickedFigure = (w, size = null) => {
   const mode = MODES[w],
     kind = !mode.plane && surfaceOf(mode);
-  return { mode, g: kind && SPHERES[kind] ? surfaceFrame(kind, size ?? figureSize(w)) : null };
+  return { mode, g: kind && SURFACES[kind] ? surfaceFrame(kind, size ?? figureSize(w)) : null };
 };
 // A surface's frame at a size, all its teams are judged on (teamsFit, teamsFairOwn, torusBlocks): what it is and a torus's
 // rows, without its tiles (a mesh of a million cells built in 1.5 s for each mode next to it, by a greyed tile's search, see
 // choicesAt); the flags its mesh carries the same (see finishTorus, kleinMesh, mobiusMesh, globeMesh, rosetteSphereMesh)
 function surfaceFrame(kind, size) {
   if (kind === 'globe') return { globe: true };
-  if (SPHERES[kind].disc) return { rosette: true };
+  if (SURFACES[kind].disc) return { rosette: true };
   if (MOBIUS_KINDS.includes(kind)) return { torus: true, mobius: true };
   if (FOLDED[kind]?.fold === 'klein') {
     const { n, step, W } = kleinLength(kind, size);
@@ -25948,7 +25955,7 @@ function surfaceFrame(kind, size) {
 const figureSize = (w) => menuSizeOf(w) ?? sizeAt(surfaceOf(MODES[w]), MODES[w].initial, MODES[w]);
 // the tab's size where the menu holds its surface's sizes (filled for it), else none (see figureSize)
 const menuSizeOf = (w) =>
-  w === tabMode() && $('sphereF').dataset.kind?.split(' ')[0] === surfaceOf(MODES[w]) ? sphereSize() : null;
+  w === tabMode() && $('gridSizeField').dataset.kind?.split(' ')[0] === surfaceOf(MODES[w]) ? gridSizePlayed() : null;
 const teamsFairOwn = (K, { mode, g } = pickedFigure(tabMode())) => {
   const kind = mode?.plane;
   if (K === 1) return true;
@@ -25960,10 +25967,10 @@ const teamsFairOwn = (K, { mode, g } = pickedFigure(tabMode())) => {
       mirror = !APERIODIC[kind] && canMirror(kind);
     return n > 1 && (n % K === 0 || (mirror && K === 2 * n));
   }
-  if (solidCounts(mode?.sphere))
-    return solidCounts(mode.sphere).includes(K) && (!SPHERES[mode.sphere]?.chiral || turnsAlike(mode.sphere, K));
+  if (solidCounts(mode?.surface))
+    return solidCounts(mode.surface).includes(K) && (!SURFACES[mode.surface]?.chiral || turnsAlike(mode.surface, K));
   if (g?.globe) return true; // (a globe: each count its own, its bands all multiples of it, see globeMesh)
-  if (g?.rosette) return true; // (a rosette sphere: its lunes dealt out alike, or its two discs, see rosetteParts)
+  if (g?.rosette) return true; // (a rosette surface: its lunes dealt out alike, or its two discs, see rosetteParts)
   if (g?.mobius) return true;
   if (g?.copyLength) {
     const { n, step } = kleinLength(g.kindK, g.size, K),
@@ -26976,7 +26983,7 @@ function ruleTutorial(entry) {
 const walkTutorialFits = (w) =>
   NAV[w]?.[0] === 'Ant' ||
   (NAV[w]?.[0] === 'Walk' &&
-    (MODES[w].lattice === 'sphere'
+    (MODES[w].lattice === 'surface'
       ? !!(MODES[w].turns || MODES[w].net)
       : ['square', 'hex', 'tri', 'cairo'].includes(MODES[w].lattice)));
 // a 2D walk's cell round its middle
@@ -27008,7 +27015,7 @@ const flatTwin = (w) =>
   Object.keys(MODES).find(
     (v) =>
       NAV[v]?.[0] === 'Walk' &&
-      MODES[v].lattice !== 'sphere' &&
+      MODES[v].lattice !== 'surface' &&
       MODES[v].net === MODES[w].net &&
       !MODES[v].cells === !!MODES[w].edges,
   );
@@ -27016,7 +27023,7 @@ const flatTwin = (w) =>
 // a walk by a rule drawn by its words, then its straight step (S: the way in); words given: one figure each (a creature's, see
 // creatureFigures; a parity's at an odd digit)
 function walkFigures(w, given = null) {
-  if (MODES[w].lattice === 'sphere') return walkFigures(flatTwin(w), given ?? walkCommandsOf(w)); // (a surface: as its flat tiling, the same words)
+  if (MODES[w].lattice === 'surface') return walkFigures(flatTwin(w), given ?? walkCommandsOf(w)); // (a surface: as its flat tiling, the same words)
   const mode = MODES[w],
     N = WALK_NETS[mode.net];
   const ruled = N && [...(given ?? walkCommandsOf(w)), N.straight],
@@ -27358,7 +27365,7 @@ const BATTLE_CELL_CASES = {
 // the case's figure, its battle played (see BATTLE_CASES, BATTLE_CELL_CASES): along the edges, from corner to corner; on cells,
 // from tile to tile (its places their middles). An SVG, null where its moves do not fit the grid
 function battleCaseFigure(grid, way, scripts, cells = false) {
-  const g = SPHERES[{ square: 'torus', tri: 'torusTri', hex: cells ? 'torusHex' : 'torusHexTurned' }[grid]].mesh(12),
+  const g = SURFACES[{ square: 'torus', tri: 'torusTri', hex: cells ? 'torusHex' : 'torusHexTurned' }[grid]].mesh(12),
     G = edgeGraph(g),
     k = g.sides; // (hexagons: along the edges an edge north, on cells a neighbour)
   const uvOf = (v) => (cells ? cornersMean(g, v) : cornerUv(g, G, v)),
@@ -27567,7 +27574,7 @@ function walkTutorial(w) {
       `${f.ends.map((p) => dot(p, 'tut-end')).join('')}${dot(from(f), 'tut-here')}${still ? '' : dot(to, 'tut-to')}</svg>`
     );
   };
-  const how = mode.lattice === 'sphere' ? `, turning as on its flat ${mode.edges ? "tiling's edges" : 'tiling'}` : '';
+  const how = mode.lattice === 'surface' ? `, turning as on its flat ${mode.edges ? "tiling's edges" : 'tiling'}` : '';
   $('ruleTuto').innerHTML =
     `<div class="tut-body">` +
     `<h2>${ruleTitleOf(w)}</h2><p>${creature ? `${mode.rule[0].toUpperCase()}${mode.rule.slice(1)}` : `The number read digit by digit in base ${mode.base}, each digit a step ${mode.rule.replace(/:.*/, '')}${how}`}` +
@@ -28326,7 +28333,7 @@ const blocksTurn = (w, turned) =>
   rulesOf('life').some(
     (r) =>
       r.tiling.includes(lifeMark(MODES[w])) &&
-      blocksFit(parseRule(r.rule), MODES[w], shownSurface(MODES[w].sphere, turned)),
+      blocksFit(parseRule(r.rule), MODES[w], shownSurface(MODES[w].surface, turned)),
   );
 // (a surface's, g: by its mesh, kept on it, see meshBlocks, meshIsing; null: they do not come round it)
 const surfaceBlocks = (g, kind, rule) =>
@@ -28358,7 +28365,7 @@ const BLOCKS_NOT_ROUND = {
 const blockSetName = (R) => (R.ising ? 'ising' : R.four ? 'four' : R.stars ? 'stars' : 'blocks');
 // a block rule on a grid: of its blocks' size (Ising, 4 phases: squares), on a surface (sp: its own, or turned) its blocks
 // coming round it
-const blocksFit = (R, mode, sp = mode.sphere && surfaceOf(mode)) =>
+const blocksFit = (R, mode, sp = mode.surface && surfaceOf(mode)) =>
   !!R?.margolus &&
   (R.ising || R.four ? blocksGrid(mode) === 'square' : R.k === (R.stars ? STARS : BLOCKS)[blocksGrid(mode)]?.k) &&
   !BLOCKS_NOT_ROUND[sp]?.includes(blockSetName(R));
@@ -29247,7 +29254,7 @@ const iconIndex = (name, set = iconSet(hunt.zone)) => Math.max(0, set.names.inde
 const HUNT_GENERATIONS = [50000, 4000]; // a hunt's start played up to so many generations: in Solo, in colours (a battle)
 const DENSITY = [0.1, 0.7]; // a random start's density, drawn between these
 const density = () => DENSITY[0] + Math.random() * (DENSITY[1] - DENSITY[0]);
-const realmOnFaces = () => !!SOLID_SPOTS[MODES[walk.mode].sphere] || !!HULL_SOLIDS[MODES[walk.mode].sphere]; // (a solid: Realm its faces, see realmParts)
+const realmOnFaces = () => !!SOLID_SPOTS[MODES[walk.mode].surface] || !!HULL_SOLIDS[MODES[walk.mode].surface]; // (a solid: Realm its faces, see realmParts)
 const zoneRadius = (zone) => (zone.startsWith('radius') ? Number(zone.slice(6)) : 0);
 // Realm: on a solid, each colour's whole face, the one its patch is in the middle of (see patchSpots); none (greyed) where a
 // patch is on a corner or an edge (the stella's tips and hollows): a face cut.
@@ -29269,13 +29276,13 @@ function realmParts(K) {
     const own = parts.map((p) => p.filter(apart));
     return own.every((p) => p.length) ? own : null; // (a grid too small: greyed)
   }
-  const hull = hullColours(MODES[walk.mode].sphere, K);
-  if (HULL_SOLIDS[MODES[walk.mode].sphere]) return hull && hull.groups.map((gr) => hullFaceCells(gr[0])); // (a hull solid: each colour's first face, as the cube's, see hullColourings)
-  const sphere = MODES[walk.mode].sphere,
+  const hull = hullColours(MODES[walk.mode].surface, K);
+  if (HULL_SOLIDS[MODES[walk.mode].surface]) return hull && hull.groups.map((gr) => hullFaceCells(gr[0])); // (a hull solid: each colour's first face, as the cube's, see hullColourings)
+  const surface = MODES[walk.mode].surface,
     g = walk.geo,
     L = walk.life,
-    mids = FACE_MIDDLES[sphere](),
-    col = colouring(sphere, K);
+    mids = FACE_MIDDLES[surface](),
+    col = colouring(surface, K);
   // (each colour's patch face: faces dealt out whole, its patch's; spots, the face whose middle its patch's spot is, if all are)
   const faces = !col
     ? []
@@ -29423,8 +29430,8 @@ const SPOT_PAIRS = {
 // The colouring of a solid for K colours (mirror: each colour's two parts opposite): its items (directions: its faces'
 // middles, its spots), each item's colour, each colour's patch item; faces: its faces dealt out whole (Realm, Famous).
 // Else its own spots, one a colour. Null: none (no such count, no mirror)
-function colouring(sphere, K, mirror = false) {
-  const base = FACE_BASE[sphere] ?? sphere,
+function colouring(surface, K, mirror = false) {
+  const base = FACE_BASE[surface] ?? surface,
     f = FACE_GROUPS[base]?.[K],
     t = f ?? SPOT_PAIRS[base]?.[K],
     read = (str) => [...str].map((c) => parseInt(c, 36));
@@ -29432,22 +29439,22 @@ function colouring(sphere, K, mirror = false) {
     if (mirror && !t[2]) return null;
     const [c, p] = mirror ? t.slice(2) : t;
     return {
-      items: f ? FACE_MIDDLES[sphere]() : SOLID_SPOTS[sphere]()[2 * K].map(unit),
+      items: f ? FACE_MIDDLES[surface]() : SOLID_SPOTS[surface]()[2 * K].map(unit),
       colour: read(c),
       patch: read(p),
       faces: !!f,
     };
   }
-  const own = SOLID_SPOTS[sphere]?.()[K];
+  const own = SOLID_SPOTS[surface]?.()[K];
   return own && !mirror
     ? { items: own.map(unit), colour: own.map((_, i) => i), patch: own.map((_, i) => i), faces: false }
     : null;
 }
-// a colouring's parts copies of each other by the solid's turns alone (no mirror: a chiral surface, see SPHERES): the colours a
+// a colouring's parts copies of each other by the solid's turns alone (no mirror: a chiral surface, see SURFACES): the colours a
 // turn maps colour 0's items onto, all K (the 8 corners of a cube in a dodecahedron: two tetrahedra, a mirror between them)
-const turnsAlike = (sphere, K) => {
-  const c = colouring(sphere, K),
-    base = FACE_BASE[sphere] ?? sphere,
+const turnsAlike = (surface, K) => {
+  const c = colouring(surface, K),
+    base = FACE_BASE[surface] ?? surface,
     turns = solidRotations(POLYHEDRA[base].P.map(unit)),
     reached = new Set();
   const at = (p) => c.items.findIndex((q) => dot3(p, q) > 1 - 1e-6);
@@ -29465,8 +29472,8 @@ const turnsAlike = (sphere, K) => {
   return reached.size === K;
 };
 // the patches' spots: the colours' patch items
-const patchSpots = (sphere, K) => {
-  const c = colouring(sphere, K);
+const patchSpots = (surface, K) => {
+  const c = colouring(surface, K);
   return c.patch.map((i) => c.items[i]);
 };
 // Each colour's part of the grid: radius r, a patch round each spot; else (r = 0) the whole grid,
@@ -29846,7 +29853,7 @@ function partPlaces(r, K, mirror, mixed) {
     }
     return parts.map((_, i) => lifePatch(r, middleCells(i, K))); // (a patch at each colour's spot on its disc, see patternFrame)
   }
-  const hull = hullColours(MODES[walk.mode].sphere, K);
+  const hull = hullColours(MODES[walk.mode].surface, K);
   if (hull) {
     // a hull solid (see hullColourings): Wild, a colour's faces its own (two opposite faces a colour: its first), the others' cells each to the nearest colour's face's middle; Mirror, its two faces; a zone, round each colour's first face's middle
     if (r) return hull.groups.map((_, i) => lifePatch(r, middleCells(i, K)));
@@ -29866,14 +29873,14 @@ function partPlaces(r, K, mirror, mixed) {
     }
     return parts;
   }
-  const sphere = MODES[walk.mode].sphere,
-    col = K === 1 ? null : colouring(sphere, K, mirror && !r),
+  const surface = MODES[walk.mode].surface,
+    col = K === 1 ? null : colouring(surface, K, mirror && !r),
     up = (t) => unit(Array.from(g.cen.subarray(3 * t, 3 * t + 3)));
   // a cell by its face (the one its own middle faces most, see FACE_MIDDLES): faces dealt out whole, its face's colour;
   // else its face's nearest spot's, so that a face nearer one spot goes to it whole; a face as near spots of two colours or
   // more, by the cell's own middle; a cell on an edge, a corner (as near two faces or more), as near spots of two colours
   // or more: theirs if they all have the same, else no one's, as on the plane's lines between slices (the parts all alike)
-  const mids = K === 1 ? [] : FACE_MIDDLES[sphere]();
+  const mids = K === 1 ? [] : FACE_MIDDLES[surface]();
   const colourOf = (items, colour, d) => {
     const v = items.map((x) => faceDot(x, d)),
       top = Math.max(...v),
@@ -29897,7 +29904,7 @@ function partPlaces(r, K, mirror, mixed) {
   return col.patch.map((i) => lifePatch(r, centreCells(col.items[i]))); // round the open cells nearest each spot
 }
 // the triangle faces of a face of the solid: 5 for a dodecahedron's pentagon, else 1
-const facesPer = () => (['dodeca', 'dodecaKite'].includes(MODES[walk.mode].sphere) ? 5 : 1);
+const facesPer = () => (['dodeca', 'dodecaKite'].includes(MODES[walk.mode].surface) ? 5 : 1);
 const zoneParts = (zone, K) =>
   zone === 'realm' ? (realmParts(K) ?? []) : huntParts(zoneRadius(zone), K, false, teamsMixed(zone));
 // The zone: each colour's part (see huntParts). On the plane, with a symmetry it defines the start: the
@@ -30062,10 +30069,10 @@ function huntFits() {
           !walk.plane &&
             !walk.geo.torus &&
             K > 1 &&
-            (!!colouring(MODES[walk.mode].sphere, K, true) || !!hullColours(MODES[walk.mode].sphere, K)?.pairs),
+            (!!colouring(MODES[walk.mode].surface, K, true) || !!hullColours(MODES[walk.mode].surface, K)?.pairs),
         ]; // (a solid, two parts a colour)
       if (isIcon(zone)) return [zone, iconFits(iconSize(zone), iconSet(zone).P)];
-      if (zone === 'full' && hullColours(MODES[walk.mode].sphere, K)) {
+      if (zone === 'full' && hullColours(MODES[walk.mode].surface, K)) {
         const p = huntParts(0, K, false, teamsMixed(zone));
         return [zone, !peakHunt() && p.every((x) => x.length === p[0].length)];
       } // (a hull solid's Wild: its parts alike, else greyed)
@@ -30411,8 +30418,8 @@ TRI_FACES.dodeca = () => ({});
 TRI_FACES.stella = () => ({ 2: [CORNERS8[0], CORNERS8[7]], 4: TETRA_CORNERS, 8: CORNERS8 });
 for (const k of ['dodeca', 'stella']) TRI_FACES[`${k}Kite`] = () => TRI_FACES[k]();
 // colour i's face for its pattern, as a direction (null: none for this count)
-const triFace = (sphere, K, i) =>
-  colouring(sphere, K)?.faces ? patchSpots(sphere, K)[i] : (TRI_FACES[sphere]?.()[K]?.[i] ?? null);
+const triFace = (surface, K, i) =>
+  colouring(surface, K)?.faces ? patchSpots(surface, K)[i] : (TRI_FACES[surface]?.()[K]?.[i] ?? null);
 const patternsOn = () => {
   // (by the teams laid, lifeParts: with Newcomer, one fewer than the colours, as patternPlace lays them)
   if (!walk.life) return false;
@@ -30421,10 +30428,10 @@ const patternsOn = () => {
   return (
     !!flatGrid() ||
     !!walk.geo?.torus ||
-    (['cube', 'pits', 'bumps'].includes(m.sphere.replace(/Tetrakis$/, '')) && CUBE_FACES.includes(K)) ||
-    (!!HULL_SOLIDS[m.sphere] && (K === 1 || ['square', 'tri'].includes(hullColours(m.sphere, K)?.kind))) ||
+    (['cube', 'pits', 'bumps'].includes(m.surface.replace(/Tetrakis$/, '')) && CUBE_FACES.includes(K)) ||
+    (!!HULL_SOLIDS[m.surface] && (K === 1 || ['square', 'tri'].includes(hullColours(m.surface, K)?.kind))) ||
     (!!walk.geo?.hexagons && !m.plane) ||
-    (!!TRI_FACES[m.sphere] && (K === 1 || !!triFace(m.sphere, K, 0)))
+    (!!TRI_FACES[m.surface] && (K === 1 || !!triFace(m.surface, K, 0)))
   );
 };
 // the grid the patterns are of: the plane's, else the cells' (the cube's squares, the sheets', the solids' triangles)
@@ -30436,7 +30443,7 @@ const cellKind = (g) =>
       ? 'kite'
       : ((g.hexagons ? 'hex' : { 3: 'tri', 5: 'cairo', 6: 'hex' }[g.sides]) ?? 'square')); // (a mesh's cells, as the plane's grids)
 const patternKind = () => {
-  const h = hullColours(MODES[walk.mode].sphere, walk.life && lifeParts());
+  const h = hullColours(MODES[walk.mode].surface, walk.life && lifeParts());
   return flatGrid()?.kind ?? (h && h.groups[0][0] >= h.squares && !walk.geo.tiling ? 'tri' : cellKind(walk.geo));
 }; // (a hull solid's: its first colour's face's, a square or a triangle)
 // a face's level way (its normal n: across it, square to the world's up; a face looking straight up or down, east) and the
@@ -30504,17 +30511,17 @@ function cellIndex(g) {
 // turned: q its level side, AB, BC or CA); on a hull solid's square, a solid of hexagons' or the cube's face, its face
 function patternPlace(i, K) {
   const g = walk.geo,
-    sphere = MODES[walk.mode].sphere; // (the walk shown's, as g)
+    surface = MODES[walk.mode].surface; // (the walk shown's, as g)
   if (flatGrid()) return { on: 'plane' };
   if (g.torus) return { on: 'sheet' };
-  const hull = hullColours(sphere, K),
+  const hull = hullColours(surface, K),
     squares = g.squareFaces?.length ?? 0; // (a hull solid's colour: its first face, see hullColourings)
   if (hull) {
     const f = hull.groups[i][0];
     return f < squares ? { on: 'square', f } : triPlace(f - squares);
   } // (a square or a triangle, its own face's: a pyramid's both)
   if ((g.sides === 3 && !g.squares) || g.kite) {
-    const d = K === 1 ? null : unit(triFace(sphere, K, i)),
+    const d = K === 1 ? null : unit(triFace(surface, K, i)),
       faces = g.triFaces ?? g.faces;
     return triPlace(
       d
@@ -30532,9 +30539,9 @@ function patternPlace(i, K) {
     }; // (one colour: the square most in front)
   if (g.hexagons) {
     // (the face most its way, its middle: a stella's tip, a face of it; one colour, the front's)
-    const base = FACE_BASE[sphere] ?? sphere,
+    const base = FACE_BASE[surface] ?? surface,
       c = K === 1 ? frontCell() : -1,
-      d = unit(K === 1 ? [0, 1, 2].map((a) => g.cen[3 * c + a]) : (triFace(base, K, i) ?? patchSpots(sphere, K)[i]));
+      d = unit(K === 1 ? [0, 1, 2].map((a) => g.cen[3 * c + a]) : (triFace(base, K, i) ?? patchSpots(surface, K)[i]));
     return {
       on: 'hex',
       c0: centreCells(POLYHEDRA[base] ? middles(base).reduce((b, m) => (dot3(m, d) > dot3(b, d) ? m : b)) : d)[0],
@@ -39268,9 +39275,9 @@ function getSetup() {
     mode = MODES[w],
     s = { ...modeWords(w), ...(readsDigits(w) ? { [mode.life ? 'popNumber' : 'walkNumberA']: formulaInUse } : {}) };
   if (!mode.life || gensShown()) s.maxSteps = lengthAsked(); // (the length asked: digits, or generations)
-  if (mode.lattice === 'sphere') s.gridSize = $('sphereF').value;
+  if (mode.lattice === 'surface') s.gridSize = $('gridSizeField').value;
   if (modeStarts() && startNo() > 1) s.walkStart = startNo();
-  if (torusTurned && TURNED[mode.sphere]) s.gridTurned = 1;
+  if (torusTurned && TURNED[mode.surface]) s.gridTurned = 1;
   if (mode.life) s.playRule = ruleBody($('lifeRule').value);
   if (mode.life && !mode.margolus && lifeTeams > 1) s.teams = lifeTeams;
   if (battleOn()) {
@@ -39343,9 +39350,9 @@ function applySetup(s) {
   set('mode', w);
   $('startNo').value = s.walkStart ?? 1;
   torusTurned = Number(s.gridTurned) === 1;
-  if (MODES[w].sphere) {
+  if (MODES[w].surface) {
     const kind = surfaceOf(MODES[w]);
-    fillSphereSizes(kind, MODES[w].initial);
+    fillGridSizes(kind, MODES[w].initial);
     if (s.gridSize !== undefined) {
       selectSize(kind, linkSize(kind, s.gridSize));
       seek(kind);
@@ -40181,7 +40188,7 @@ function advanceTo(target, until = Infinity) {
       // along the edges: the tiles on both sides of the edge just walked
       for (const t of [walk.stepTiles[2 * i - 2], walk.stepTiles[2 * i - 1]])
         walk.maxVisits = Math.max(walk.maxVisits, ++walk.visits[t]);
-    } else if (walk.sphere) walk.maxVisits = Math.max(walk.maxVisits, ++walk.visits[walk.tile[i]]);
+    } else if (walk.surface) walk.maxVisits = Math.max(walk.maxVisits, ++walk.visits[walk.tile[i]]);
     if (is3d) {
       const b = bounds3;
       b[0] = Math.min(b[0], wx[i]);
@@ -40207,7 +40214,7 @@ function advanceTo(target, until = Infinity) {
   if (stepShown >= walk.n) play(false);
   // the walk has just ended: auto-fit framed it with room to grow, so ease to the final frame,
   // the one Fit view gives (surfaces follow the walker instead)
-  if (reachedEnd && !walk.sphere && $('autoFit').checked) {
+  if (reachedEnd && !walk.surface && $('autoFit').checked) {
     includeBox(true); // (framed again round all of it, as fitWhole: a 3D walk's camera too)
     viewGoal = viewFor(bounds);
   }
@@ -40316,7 +40323,7 @@ function reverse(on) {
 
 // the step a new walk is shown at: its end; on a surface's cells, the step it has visited them all if it does (coverStep:
 // more would only colour them again); along a grid, its end, its sweet spot a link away (see sweetSpot)
-const firstShown = () => (walk.sphere && !walk.vert && walk.coverStep >= 0 ? walk.coverStep : walk.n);
+const firstShown = () => (walk.surface && !walk.vert && walk.coverStep >= 0 ? walk.coverStep : walk.n);
 // A new walk is shown at once (complete, or on a surface's cells as they are all visited); Play replays it from the start
 // A walk built again while it played (− or + of its digits, see stepDigits): the step it plays on from, not its end
 let resumeAt = null;
@@ -40340,7 +40347,7 @@ function showAll() {
 // whichever way the walk turns, so turning it never zooms
 function includeBox(refit = false) {
   // (refit: framed again, its centre the box's now: a fit, or the walk out of its frame)
-  if (!walk.is3d || walk.sphere) return;
+  if (!walk.is3d || walk.surface) return;
   if (refit || !frameBox3) {
     frameBox3 = bounds3.slice();
     if (walk.persp) walk.persp = boxPersp(frameBox3);
@@ -40373,7 +40380,7 @@ function restart() {
   bounds = { minX: 0, maxX: 0, minY: 0, maxY: 0 };
   bounds3 = [0, 0, 0, 0, 0, 0];
   frameBox3 = null;
-  if (walk.sphere) {
+  if (walk.surface) {
     // the frame is the whole sphere, centred on the origin
     const R = walk.R;
     bounds = surfaceBounds(); // the current form, flat or round
@@ -40424,18 +40431,18 @@ const FIT_ROOM = 0.2;
 const BAR_HALF_WIDTH = 0.1; // (a 3D walk's line, its bars' half thickness: a cube's side 1, see gpuCubes)  // (a walk out of its frame: framed again with this share of its size more each side, room to grow: see tick)
 const zoomRange = () => {
   const fit = viewFor(bounds).scale,
-    flat = !walk.is3d && !walk.sphere;
+    flat = !walk.is3d && !walk.surface;
   return [
     Math.max(MIN_SCALE, fit / ZOOM_OUT),
     flat ? Math.max(fit, Math.min(canvasWidth, canvasHeight) / ZOOM_CELLS) : fit * ZOOM_IN,
   ];
 };
 function viewFor(b) {
-  const half = walk.is3d || walk.plane || walk.sphere ? 0 : 1; // a walk's bounds its cells' middles: half a cell more each side (a grid's, a surface's: its corners, its sphere)
+  const half = walk.is3d || walk.plane || walk.surface ? 0 : 1; // a walk's bounds its cells' middles: half a cell more each side (a grid's, a surface's: its corners, its sphere)
   const w = b.maxX - b.minX + half;
   const h = b.maxY - b.minY + half;
   // down to 10⁻⁶ pixel per cell: a walk of 10 million steps can drift millions of cells away
-  const fixed = walk.sphere || walk.plane; // a surface or a grid fills the view at any size; a walk starts no closer than 40 px a cell
+  const fixed = walk.surface || walk.plane; // a surface or a grid fills the view at any size; a walk starts no closer than 40 px a cell
   const scale = Math.min(
     fixed ? Infinity : 40,
     Math.max(MIN_SCALE, Math.min((canvasWidth - 2 * VIEW_GAP) / w, (canvasHeight - 2 * VIEW_GAP) / h)),
@@ -40640,7 +40647,7 @@ function draw3DFrame(ctx) {
     const [px, py] = proj(X[i], Y[j], Z[k]);
     return [view.ox + px * view.scale, view.oy + py * view.scale];
   };
-  for (let a = 0; a < 2 && !walk.sphere; a++)
+  for (let a = 0; a < 2 && !walk.surface; a++)
     for (let b = 0; b < 2; b++) {
       for (const [p, q] of [
         [pt(0, a, b), pt(1, a, b)],
@@ -40753,7 +40760,7 @@ const digitColour = (k) =>
           : `hsl(${(k * 360) / walk.base}, 80%, 62%)`;
 
 /* ---- 11.4 Surfaces ------------------------------------------------------------------------ */
-const sphereDraw = { at: 0, cost: 0 };
+const surfacePaint = { at: 0, cost: 0 };
 
 // A walker's frame on a surface at step i: its place, heading (its last step; at the start, the one it came by), its tile's
 // outward normal (up: a start's flag's pole; an ogive is round its heading) and its size (see headSize, by its tile's area); P(i), tileAt(i):
@@ -40813,7 +40820,7 @@ function walkersOf() {
   const at = (i) => [walk.wx[i], walk.wy[i], walk.wz[i]],
     onTiles = (tileAt) => ({ upAt: (i) => tileUp(tileAt(i)), areaAt: (i) => tileArea(tileAt(i)) }),
     onPlaces = (P, start) => ({ P, start, before: placePoint(start[1]) }); // (start: its first place, the one it comes from)
-  if (!walk.sphere)
+  if (!walk.surface)
     return [
       {
         P: at,
@@ -40959,7 +40966,7 @@ function drawArrow(ctx, fill, at, notch = -0.3, half = 0.7) {
   ctx.fill(); // (no outline)
 }
 
-// Auto-fit on the sphere: ease the camera towards the walker so that it faces the viewer
+// Auto-fit on the surface: ease the camera towards the walker so that it faces the viewer
 // (then it projects onto the centre), by the shortest turn: around the axis walker × viewer.
 // While the starts show, towards the chosen one.
 // A walk shown whole on a solid: the camera at once in front of the walk's middle (the mean of its
@@ -40983,7 +40990,7 @@ const walkMiddle = () => {
 };
 function faceWalk() {
   faced = true;
-  if (startsShown || !walk.sphere || walk.geo.torus || !$('centered').checked || $('autoRotate').checked || !walk.n)
+  if (startsShown || !walk.surface || walk.geo.torus || !$('centered').checked || $('autoRotate').checked || !walk.n)
     return;
   faceToward(walkMiddle(), 1);
 }
@@ -41021,7 +41028,7 @@ const follow = (s) => {
 };
 // the walkers' names in the title, on a surface each a link (a link's look, see .gen-link): a click, the camera follows it
 const walkerLinks = (names) =>
-  walk.sphere
+  walk.surface
     ? names.map(
         (name, s) =>
           `<a class="walker-link${followed === s ? ' followed' : ''}" href="#" data-walker="${s}" title="${followed === s ? 'Followed by the camera: a click lets it go' : 'A click: the camera follows it'}">${name}</a>`,
@@ -41059,7 +41066,7 @@ const halfway = (L) => {
   return h.map((x) => x / m);
 };
 // Sphere: visible tiles coloured by visit count (log scale) and shading
-function drawSphere() {
+function drawSurface() {
   const ctx = layers.path;
   ctx.clearRect(0, 0, canvasWidth, canvasHeight);
   layers.line.clearRect(0, 0, canvasWidth, canvasHeight); // the 2D path over cells, if any was left
@@ -41170,7 +41177,7 @@ const SWEET_OCEAN = 0.1,
   SWEET_CELLS = 0.5;
 const sweetSpot = () => {
   if (walk.sweetSpot !== undefined) return walk.sweetSpot;
-  if (!walk.sphere || walk.life || !walk.n) return (walk.sweetSpot = null); // (a walk's only: Life's runs none)
+  if (!walk.surface || walk.life || !walk.n) return (walk.sweetSpot = null); // (a walk's only: Life's runs none)
   if (!walk.vert) {
     const i = walk.cells.findIndex((c) => c >= SWEET_CELLS * walk.nodes);
     return (walk.sweetSpot = i >= 0 ? i : null);
@@ -41508,7 +41515,7 @@ const surfaceEdges = (g) =>
   })());
 // a surface's tiles as triangles, their corners' slots (k·t + q): each tile its corners once (one with fewer listed with its
 // last again), cut into ears in its own plane (across its normal, Newell's): a tile not convex as well (Mirror 7's houses on
-// the rosette sphere: a fan from its first corner left holes, before v0.4.3); a Möbius strip's back tile its front's
+// the rosette surface: a fan from its first corner left holes, before v0.4.3); a Möbius strip's back tile its front's
 // triangles, turned over as turnOver lists it (its corner d − 1 − q the front's q): its own ears took the other diagonals,
 // two folds crossing in one place, spots where each shadowed the other; made once a mesh
 const surfaceTriangles = (g) =>
@@ -44536,7 +44543,7 @@ function drawOverlay() {
   }
   if (!walk.n || walk.life || walk.rows) return; // no walker in the Game of Life, nor Elementary
   if (walk.battle) return; // a battle: its heads and flags drawn with its tiles (see headsOf)
-  if (walk.sphere || walk.is3d) return; // (its head and its start's flag drawn in 3D, with its tiles, cubes or bars: see gpuHeads)
+  if (walk.surface || walk.is3d) return; // (its head and its start's flag drawn in 3D, with its tiles, cubes or bars: see gpuHeads)
   // the walker at step i: its place and heading, its last step's (up at the start), in a frame at(forward, across)
   const a = headSize(
     polyArea(
@@ -44877,8 +44884,8 @@ function renderWalkGauges() {
     [
       walk.vert ? 'Corners visited' : 'Cells visited',
       null,
-      c / (walk.sphere ? walk.nodes : walk.cells[walk.n]),
-      !walk.sphere
+      c / (walk.surface ? walk.nodes : walk.cells[walk.n]),
+      !walk.surface
         ? formatNumber(c)
         : walk.coverStep >= 0 && stepShown >= walk.coverStep
           ? `all ${formatNumber(walk.nodes)} · by step ${formatNumber(walk.coverStep)}`
@@ -45331,7 +45338,7 @@ function tick(now = performance.now()) {
     syncLink();
   } // (still: the link at the step shown, see getSetup's at)
   includeBox();
-  if (walk.n && !walk.sphere && $('autoFit').checked && boundsOffscreen(viewGoal || view)) {
+  if (walk.n && !walk.surface && $('autoFit').checked && boundsOffscreen(viewGoal || view)) {
     // FIT_ROOM to grow (a surface's frame is fixed)
     includeBox(true); // (a 3D walk: framed again round its box now)
     const mx = (bounds.maxX - bounds.minX) * FIT_ROOM,
@@ -45344,7 +45351,7 @@ function tick(now = performance.now()) {
     });
   }
   easeView(dt);
-  if (walk.n && !walk.sphere && !walk.plane) showZoom(); // (a walk: its fit grows with it)
+  if (walk.n && !walk.surface && !walk.plane) showZoom(); // (a walk: its fit grows with it)
   // a Game of Life on its way to a generation asked (a seek: back, from its start again, see advanceTo), not playing: its
   // picture as it was till there, never its start or a generation on the way
   if (now / 1000 < fadingUntil) needsFull = true; // (cells still fading in: drawn again, still or not)
@@ -45373,7 +45380,7 @@ function tick(now = performance.now()) {
     requestAnimationFrame(tick);
     return;
   }
-  if (walk.sphere) {
+  if (walk.surface) {
     // the sphere is redrawn as a whole (heat map + recent trail)
     morphStep(dt); // flat ↔ round, while it is changing
     // the camera turned to keep the walker followed in front (see followed; on a torus, its tile facing it)
@@ -45381,13 +45388,13 @@ function tick(now = performance.now()) {
     if (gliding()) statsDirty = true; // (its heads gliding: drawn again each frame, as far as its cost allows)
     // a big sphere can take tens of ms to draw: while animating, redraw at most every 3× that time
     const now = performance.now();
-    if (!held && (needsFull || (statsDirty && now - sphereDraw.at > 3 * sphereDraw.cost))) {
+    if (!held && (needsFull || (statsDirty && now - surfacePaint.at > 3 * surfacePaint.cost))) {
       drawGrid();
-      drawSphere();
+      drawSurface();
       drawOverlay();
       updateStats();
-      sphereDraw.cost = performance.now() - now;
-      sphereDraw.at = now;
+      surfacePaint.cost = performance.now() - now;
+      surfacePaint.at = now;
       GPU.draw?.device.queue.onSubmittedWorkDone().then(() => setTiming('3D image', performance.now() - now)); // (its whole cost: the card's work done)
       needsFull = statsDirty = false;
     }
@@ -45550,7 +45557,7 @@ const seekFar = () => (!lifeTime() ? runEnd() : (runLoop()?.last ?? walk.life.tr
 function walkBack(v) {
   for (let i = stepShown; i > v; i--) {
     if (walk.stepTiles) for (const t of [walk.stepTiles[2 * i - 2], walk.stepTiles[2 * i - 1]]) walk.visits[t]--;
-    else if (walk.sphere) walk.visits[walk.tile[i]]--;
+    else if (walk.surface) walk.visits[walk.tile[i]]--;
   }
   stepShown = v;
   needsFull = statsDirty = true;
@@ -46182,7 +46189,7 @@ pillRow(
 $('perspective').addEventListener('change', () => {
   setPerspective();
   rotateView([0, 0, 0]); // the projection again
-  if (walk.sphere) bounds = surfaceBounds(); // its frame, larger in perspective
+  if (walk.surface) bounds = surfaceBounds(); // its frame, larger in perspective
   if ($('autoFit').checked) fitWhole();
 });
 // How it works on a walk's rules or a creature's: as Life's (one on each list of rules, on its first card); the digits' chips too
@@ -46751,11 +46758,11 @@ function turnTorus(turned) {
   if (turned === torusTurned) return;
   const mode = MODES[tabMode()];
   torusTurned = turned;
-  fillSphereSizes(surfaceOf(mode), mode.initial); // as many cells
+  fillGridSizes(surfaceOf(mode), mode.initial); // as many cells
   $('startNo').value = 1; // the starts are not the same
-  $('sphereF').dispatchEvent(new Event('change'));
+  $('gridSizeField').dispatchEvent(new Event('change'));
 }
-$('sphereF').addEventListener('change', () => {
+$('gridSizeField').addEventListener('change', () => {
   syncSizeStepper();
   compute(); // (as any setting: a Life's digits, one per cell; a walk's teams and Centred, by its size)
 });

@@ -10,7 +10,7 @@
   <meta property="og:url" content="https://vincentbounce.github.io/Tessera/">
   <meta property="og:type" content="website">
   <link id="favicon" rel="icon">  <!-- the app's logo, set at start-up (see LOGO_PATH) -->
-  <link rel="stylesheet" href="style.css?v=0.5.1">
+  <link rel="stylesheet" href="style.css?v=0.5.2">
   <script>  // the theme before the first paint (see applyTheme)
     try { const t = localStorage.getItem('tesseraTheme'); document.documentElement.dataset.theme = t === 'light' || t === 'dark' ? t : matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark'; } catch { document.documentElement.dataset.theme = 'dark'; }
   </script>
@@ -53,7 +53,7 @@
             </div>
             <div id="sizeGauge" class="size-gauge" hidden></div>
           </div>
-          <select id="sphereF" hidden></select>
+          <select id="gridSizeField" hidden></select>
         </div>
         <div id="planeRow" hidden>  <!-- Life on the plane: its outline and walls or a torus, its size -->
           <div id="planeOutline"><h3>Outline</h3>
@@ -68,7 +68,7 @@
             <div id="planeGauge" class="size-gauge" hidden></div>
           </div>
         </div>
-        <div id="sphereRow" hidden>
+        <div id="surfaceRow" hidden>
           <input id="startNo" type="hidden" value="1">
           <div id="loopRow" class="stepper" title="The sizes and starts where this fraction's chain closes in the fewest laps around the ring and the tube" hidden>
             <button id="loopDown" title="Previous loop">−</button>
@@ -518,10 +518,10 @@
     </div>
   </main>
 
-  <script src="pixelarticons.js?v=0.5.1"></script>
-  <script src="punks.js?v=0.5.1"></script>
-  <script src="loops.js?v=0.5.1"></script>
-  <script src="emoji.js?v=0.5.1"></script>
-  <script src="main.js?v=0.5.1"></script>
+  <script src="pixelarticons.js?v=0.5.2"></script>
+  <script src="punks.js?v=0.5.2"></script>
+  <script src="loops.js?v=0.5.2"></script>
+  <script src="emoji.js?v=0.5.2"></script>
+  <script src="main.js?v=0.5.2"></script>
 </body>
 </html>

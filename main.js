@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.7';
+const VERSION = '0.5.8';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -3801,7 +3801,7 @@ const HULL_SOLIDS = {
     ],
     pic: 'tiling-rhombille', // (along a 3-fold axis: 3 rhombi round it, the rhombille tiling's picture)
     mark: '■',
-    cells: 'Rhombi', // (its own cells' tab, beside its cuts')
+    cells: 'Squares', // (its own cells' tab, beside its cuts': a grid of squares laid on each rhombus)
     cuts: ['tetrakis', 'halves'],
     place: [1, 'Dodecahedron'],
     where: "a rhombic dodecahedron of rhombi (the cuboctahedron's dual: 3 or 4 round each corner)",
@@ -10412,7 +10412,7 @@ const FAMILIES = [
         Object.keys(VARIANTS).find((w) => VARIANTS[w].surface === surface),
       ]),
       tabs: [
-        [0, false, 'tiling-rhombille', S.cells, S.cells],
+        [0, false, 'tilesSq', S.cells, S.cells],
         ...S.cuts.map((c, i) => [
           i + 1,
           false,
@@ -13533,7 +13533,10 @@ function halvesOf(key, g) {
           ]),
     );
   }
-  return (meshCache[key] = Object.assign(finishMesh(Array.from(g.verts), tiles, 3, g.size, null), { squares: g }));
+  return (meshCache[key] = Object.assign(finishMesh(Array.from(g.verts), tiles, 3, g.size, null), {
+    uncut: g,
+    per: 2,
+  }));
 }
 function tetrakisOf(key, g) {
   if (meshCache[key]) return meshCache[key];
@@ -13547,7 +13550,7 @@ function tetrakisOf(key, g) {
   }
   return (meshCache[key] = Object.assign(
     finishMesh(verts, tiles, 3, g.size, null),
-    { squares: g },
+    { uncut: g, per: 4 },
     g.perFace && { perFace: 4 * g.perFace },
   )); // (as listed: its squares' turn; triangle t of square t >> 2; the cube's: a face's 4 times as many)
 }
@@ -17123,11 +17126,24 @@ const TORI = [
 // rotations… kept on it, see startList, edgeGraph), let go once not (a weak memory, as meshCache: a strong one, its last
 // two of each surface, kept a mesh of every surface's largest size after a tour of them, 16 GB)
 const surfaceMeshMemo = remember('surfaceMeshMemo', weakCache());
+// A surface's cells: what its tiles' tab says (the choice made: Squares, Kites, Type 9, Flower 6…), as the plane's grid of
+// that name has them (its kind: square, kite, pent9, flower…); a turned surface, its own's; one with no tab (the globe, a
+// hull solid of several faces' kinds), squares. Known by the choice, never by its cells' sides counted
+const surfaceCellsMemo = {};
+const surfaceCells = (kind) =>
+  (surfaceCellsMemo[kind] ??= (() => {
+    const own = Object.keys(TURNED).find((k) => TURNED[k] === kind) ?? kind,
+      w = Object.keys(VARIANTS).find((v) => VARIANTS[v].surface === own && familyOf(v)),
+      tab = w && tilingNameOf(w),
+      flat =
+        tab && Object.keys(NAV).find((v) => NAV[v][0] === 'Life' && NAV[v][1].startsWith('2D') && NAV[v][2] === tab);
+    return flat ? VARIANTS[flat].plane : 'square';
+  })());
 for (const [kind, S] of Object.entries(SURFACES)) {
   const make = S.mesh;
   S.mesh = (s) => {
     const key = `${kind}|${s}|${stripKey()}`;
-    return surfaceMeshMemo[key] ?? (surfaceMeshMemo[key] = make(s));
+    return surfaceMeshMemo[key] ?? (surfaceMeshMemo[key] = Object.assign(make(s), { cells: surfaceCells(kind) })); // (its cells' kind, see cellKind)
   };
 }
 // their sizes on screen by their own tubes (see TUBE_SHAPE; their radii said for TORUS_TUBE's)
@@ -25671,7 +25687,7 @@ const latticeCellTiles = (g) =>
 // tetrakis square, a square of a solid of squares and triangles: blue), violet; its first cell green when it has several; a
 // solid's face red round it (its sector blue)
 function motifOf(g, t) {
-  const m = g.kite ? 3 : g.squares ? 4 : 1, // (a kite's triangle, 3 kites; a tetrakis square, 4 triangles)
+  const m = g.kite ? 3 : (g.per ?? 1), // (a kite's triangle, 3 kites; a cell cut again, its cells: see HULL_CUTS)
     motif = g.rosette
       ? g.middles[t >= g.south ? 1 : 0]
       : g.torus
@@ -30541,13 +30557,7 @@ const patternsOn = () => {
   );
 };
 // the grid the patterns are of: the plane's, else the cells' (the cube's squares, the sheets', the solids' triangles)
-const cellKind = (g) =>
-  g.tiling ??
-  (g.squares
-    ? 'tetrakis'
-    : g.kite
-      ? 'kite'
-      : ((g.hexagons ? 'hex' : { 3: 'tri', 5: 'cairo', 6: 'hex' }[g.sides]) ?? 'square')); // (a mesh's cells, as the plane's grids)
+const cellKind = (g) => g.cells; // (a mesh's cells' kind, its surface's tab's, see surfaceCells)
 const patternKind = () => {
   const h = hullColours(VARIANTS[walk.variant].surface, walk.life && lifeParts());
   return flatGrid()?.kind ?? (h && h.groups[0][0] >= h.squares && !walk.geo.tiling ? 'tri' : cellKind(walk.geo));
@@ -30626,7 +30636,7 @@ function patternPlace(i, K) {
     const f = hull.groups[i][0];
     return f < squares ? { on: 'square', f } : triPlace(f - squares);
   } // (a square or a triangle, its own face's: a pyramid's both)
-  if ((g.sides === 3 && !g.squares) || g.kite) {
+  if ((g.sides === 3 && !g.uncut) || g.kite) {
     const d = K === 1 ? null : unit(triFace(surface, K, i)),
       faces = g.triFaces ?? g.faces;
     return triPlace(
@@ -30692,7 +30702,7 @@ function cellPlace(t) {
   if (flatGrid()) return { on: 'plane' };
   if (g.torus) return { on: 'sheet' };
   if (g.squareFaces && t < g.triFirst) return { on: 'square', f: Math.floor(t / g.size ** 2) };
-  if (g.triFaces || (g.sides === 3 && !g.squares) || g.kite)
+  if (g.triFaces || (g.sides === 3 && !g.uncut) || g.kite)
     return triPlace(Math.floor((t - (g.triFirst ?? 0)) / (g.triFaces ? g.size * g.size : g.perFace)));
   if (g.hexagons) {
     const k = g.planeOf[t],
@@ -30723,7 +30733,7 @@ function cellPlace(t) {
 // and column, its middle in space
 function cubeFace(f) {
   const g = walk.geo,
-    S = g.squares ?? g,
+    S = g.uncut ?? g,
     a = S.floors ? S.floorSize : S.size;
   const square = (r, c) => (S.floors ? S.floors[f * a * a + r * a + c] : f * S.perFace + r * a + c);
   return { a, square, at: (r, c) => Array.from(S.cen.subarray(3 * square(r, c), 3 * square(r, c) + 3)) };
@@ -30921,7 +30931,7 @@ function patternFrame(i, K, place = patternPlace(i, K)) {
     centre = mean([sq.at(0, 0), sq.at(sq.a - 1, sq.a - 1)]);
     const own = new Set();
     for (let r = 0; r < sq.a; r++) for (let c = 0; c < sq.a; c++) own.add(sq.square(r, c));
-    on = (t) => own.has(g.squares ? t >> 2 : t); // (tetrakis: its triangles, 4 a square)
+    on = (t) => own.has(g.uncut ? Math.floor(t / g.per) : t); // (a cell cut again: its cells, so many a cell)
   }
   const lin = (p) => {
     const [al, be] = inBasis(p, a, b);
@@ -39015,8 +39025,8 @@ function laidChoices(centred, any = false) {
       ? Math.min((2 * g.L) / K, g.nv) // (a Möbius strip: a stretch of its loop)
       : g.torus
         ? Math.min(g.nu / torusBlocks(K)[0], g.nv / torusBlocks(K)[1])
-        : g.squares
-          ? (g.squares.floorSize ?? g.size)
+        : g.uncut
+          ? (g.uncut.floorSize ?? g.size)
           : g.floors
             ? g.floorSize
             : g.sides === 3 || g.kite
@@ -39223,9 +39233,10 @@ function centreCells(d) {
 // square on square grids, a small disc of triangles on the polyhedra), or r − 1 steps from the cells
 // round a middle corner (on an even side: 2×2, 4×4, 6×6)
 function lifePatch(r, centre = centreCells()) {
-  const sq = walk.geo?.squares; // (tetrakis triangles: their squares' patch, see tetrakisOf, 4 cells each)
+  const sq = walk.geo?.uncut, // (a cell cut again: the uncut cells' patch, so many cells each, see HULL_CUTS)
+    per = walk.geo?.per;
   const { start, list } = sq ? cornerNeighbours(sq) : walk.life.nbr,
-    seen = new Set([centre].flat().map((t) => (sq ? t >> 2 : t)));
+    seen = new Set([centre].flat().map((t) => (sq ? Math.floor(t / per) : t)));
   let ring = [...seen];
   for (let k = seen.size > 1 ? 1 : 0; k < r; k++) {
     const next = [];
@@ -39237,7 +39248,7 @@ function lifePatch(r, centre = centreCells()) {
         }
     ring = next;
   }
-  return sq ? [...seen].flatMap((s) => [4 * s, 4 * s + 1, 4 * s + 2, 4 * s + 3]) : [...seen];
+  return sq ? [...seen].flatMap((s) => Array.from({ length: per }, (_, j) => per * s + j)) : [...seen];
 }
 
 /* ---- 9.3 Loading a start ------------------------------------------------------------------ */

@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.1079';
+const VERSION = '0.4.1080';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -39383,28 +39383,59 @@ let builtWaiters = [];
 const whenBuilt = () => new Promise((ok) => builtWaiters.push(ok));
 
 /* ---- 10.3 The page link ------------------------------------------------------------------- */
-// The page link always holds the current setup (#x=pi&w=turtle&…), for bookmarks and sharing.
-// Readable links: #x=(1+sqrt(5))/2&w=turtle — formulas and rules keep / + ^ , : as they are
-const toHash = (s) =>
-  Object.entries(s)
+// The page link always holds the current setup (#mode=walk&shape=squares&walk=turtle&on=edges&x=pi&…), for bookmarks and
+// sharing. Readable links: x=(1+sqrt(5))/2 — formulas and rules keep / + ^ , : as they are
+// A mode in a link: no name of its own, its parts as the menu says them (see NAV), each a word: mode (its tab: walk, life,
+// ant…), shape, tiling (a shape with tilings: a torus of hexagons), walk (a walk's kind: turtle, spiral…), on (edges or
+// cells); a setup holds its mode's key (w), the link its words. A word: its menu's name in one word, no accent
+// (Möbius strip: mobiusStrip; Kis checker: kisChecker)
+const linkWord = (name) =>
+  name
+    .normalize('NFKD')
+    .replace(/[^\p{L}\p{N} ]/gu, '')
+    .split(' ')
+    .map((part, i) => (i ? part[0].toUpperCase() + part.slice(1) : part.toLowerCase()))
+    .join('');
+const MODE_WORDS = ['mode', 'shape', 'tiling', 'walk', 'on'];
+const modeWordsMemo = remember('modeWordsMemo', {}); // (once a mode: the menu's tables fixed)
+const modeWords = (w) => {
+  if (modeWordsMemo[w]) return modeWordsMemo[w];
+  const [kind, , shape, rule, side] = NAV[w],
+    fam = familyOf(w);
+  return (modeWordsMemo[w] = {
+    mode: linkWord(kind),
+    shape: linkWord(shape),
+    ...(fam ? { tiling: linkWord(tilingNameOf(w)) } : {}),
+    ...(kind === 'Walk' ? { walk: linkWord(rule) } : {}),
+    ...(side ? { on: side } : {}),
+  });
+};
+// the mode a link's words say: the first of the menu with each word given (one left out: any)
+const modeOfWords = (s) =>
+  Object.keys(NAV).find((w) => MODE_WORDS.every((k) => s[k] === undefined || modeWords(w)[k] === s[k]));
+const toHash = ({ w, ...rest }) =>
+  Object.entries({ ...modeWords(w), ...rest })
     .map(
       ([k, v]) =>
         `${k}=${encodeURIComponent(String(v)).replace(/%(2F|2B|5E|2C|3A|24)/g, (c) => decodeURIComponent(c))}`,
     )
     .join('&');
-function parseHash() {
-  if (location.hash.length < 2) return null;
+// a link's setup (its hash; none said, the page's): its words read, its mode's the mode they say (see modeWords); null: none
+function parseHash(hash = location.hash) {
+  if (hash.length < 2) return null;
   try {
-    const s = Object.fromEntries(
-      location.hash
-        .slice(1)
+    const said = Object.fromEntries(
+      hash
+        .replace(/^#/, '')
         .split('&')
         .map((kv) => {
           const at = kv.indexOf('=');
           return [kv.slice(0, at), decodeURIComponent(kv.slice(at + 1))];
         }),
     );
-    return s.w ? s : null;
+    const w = said.mode && modeOfWords(said),
+      rest = Object.fromEntries(Object.entries(said).filter(([k]) => !MODE_WORDS.includes(k) && k !== 'w'));
+    return w ? { ...(rest.x === undefined ? {} : { x: rest.x }), w, ...rest } : null; // (its number first, then its mode: as getSetup's)
   } catch {
     return null;
   }

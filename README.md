@@ -236,9 +236,9 @@ Of the duals of the k-uniform tilings of pentagons (Wikipedia, *Pentagonal tilin
 
 A fraction's digits repeat, so its walk makes the same moves again and again: it draws regular patterns, and many of them close on themselves, which the app sees (`… digits max ↻`). A few of them:
 
-- **Rosettes** in 2D: [11/604](https://vincentbounce.github.io/Tessera/#x=11/604&w=triTurtle&d=451) on Triangles turtle, [3/497](https://vincentbounce.github.io/Tessera/#x=3/497&w=hexTurtle&d=631) on Hexagons turtle, [2/541](https://vincentbounce.github.io/Tessera/#x=2/541&w=turtle&d=541) on Squares turtle.
-- **Loops on surfaces**: [96/95](https://vincentbounce.github.io/Tessera/#x=96/95&w=torusGrid&d=5760&s=64x160) on the square torus, [189/188](https://vincentbounce.github.io/Tessera/#x=189/188&w=cubeGrid&d=6625&s=48) round the cube, [149/148](https://vincentbounce.github.io/Tessera/#x=149/148&w=icosaGrid&d=8641&s=48) round the triangle sphere.
-- **Braids on the sphere of hexagons**: [318/305](https://vincentbounce.github.io/Tessera/#x=318/305&w=hexSphereGrid&d=10000&s=32&st=3).
+- **Rosettes** in 2D: [11/604](https://vincentbounce.github.io/Tessera/#x=11/604&mode=walk&shape=triangles&walk=turtle&on=edges&d=451) on Triangles turtle, [3/497](https://vincentbounce.github.io/Tessera/#x=3/497&mode=walk&shape=hexagons&walk=turtle&on=edges&d=631) on Hexagons turtle, [2/541](https://vincentbounce.github.io/Tessera/#x=2/541&mode=walk&shape=squares&walk=turtle&on=edges&d=541) on Squares turtle.
+- **Loops on surfaces**: [96/95](https://vincentbounce.github.io/Tessera/#x=96/95&mode=walk&shape=torus&tiling=squares&walk=turtle&on=edges&d=5760&s=64x160) on the square torus, [189/188](https://vincentbounce.github.io/Tessera/#x=189/188&mode=walk&shape=cube&tiling=squares&walk=turtle&on=edges&d=6625&s=48) round the cube, [149/148](https://vincentbounce.github.io/Tessera/#x=149/148&mode=walk&shape=sphere&tiling=triangles&walk=turtle&on=edges&d=8641&s=48) round the triangle sphere.
+- **Braids on the sphere of hexagons**: [318/305](https://vincentbounce.github.io/Tessera/#x=318/305&mode=walk&shape=sphere&tiling=hexagons&walk=turtle&on=edges&d=10000&s=32&st=3).
 
 **[PATTERNS.md](PATTERNS.md)** lists the most striking ones walk by walk, with how they were found; the **Gallery** starts with a curated choice.
 
@@ -246,8 +246,8 @@ A fraction's digits repeat, so its walk makes the same moves again and again: it
 
 ## Discoveries by Vincent Bounce
 
-- **Thue–Morse draws a solid's net:** τ, the Thue–Morse sequence, walked along the edges of the sphere of hexagons draws the net of a pentakis dodecahedron, the same at every size: 60 equal triangles, 5 round each of 12 corners and 6 round each of 20 (each 35 tiles at size 16, 155 at 32, 361 at 48), the walk closing after one round: [τ on the sphere of hexagons, size 16](https://vincentbounce.github.io/Tessera/#x=thuemorse&w=hexSphereGrid&d=1000000&s=16).
-- **Rosette spheres:** a sphere tiled with two rosettes of flowers, one round each pole, their rims crenellated so that the south's teeth fit the north's notches along the equator; Life plays on them as on the plane's rosettes (Life › 3D surfaces › Rosettes): [two punks on Flower 10's](https://vincentbounce.github.io/Tessera/#w=lifeRosetteFlower10&s=84&r=B279/S0345/C5&k=2&pop=punk24.6932.9226).
+- **Thue–Morse draws a solid's net:** τ, the Thue–Morse sequence, walked along the edges of the sphere of hexagons draws the net of a pentakis dodecahedron, the same at every size: 60 equal triangles, 5 round each of 12 corners and 6 round each of 20 (each 35 tiles at size 16, 155 at 32, 361 at 48), the walk closing after one round: [τ on the sphere of hexagons, size 16](https://vincentbounce.github.io/Tessera/#x=thuemorse&mode=walk&shape=sphere&tiling=hexagons&walk=turtle&on=edges&d=1000000&s=16).
+- **Rosette spheres:** a sphere tiled with two rosettes of flowers, one round each pole, their rims crenellated so that the south's teeth fit the north's notches along the equator; Life plays on them as on the plane's rosettes (Life › 3D surfaces › Rosettes): [two punks on Flower 10's](https://vincentbounce.github.io/Tessera/#mode=life&shape=rosettes&tiling=flower10&s=84&r=B279/S0345/C5&k=2&pop=punk24.6932.9226).
 
 <p align="center"><br>* * *</p>
 

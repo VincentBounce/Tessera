@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.12';
+const VERSION = '0.5.13';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -10066,15 +10066,14 @@ const SPACES = {
     '2D': ['2D infinite', 'grid', 'An endless plane, the walk going as far as its digits take it'],
     '2D squares': ['2D squares', 'grid', 'A flat grid, its edges walls or wrapping round'],
     '2D circles': ['2D circles', 'ring12', 'Grids of rings round a middle, as flowers'],
-    '3D solids': ['3D solids', 'cube', 'The faces of a solid (a cube…), the grid going round it'],
-    '3D surfaces': [
-      '3D surfaces',
-      'globe',
-      'Round surfaces, a ball or a sheet rolled up: globe, sphere, rosettes, torus, Möbius strip, Klein bottle',
+    '3D solids': [
+      '3D solids',
+      'cube',
+      'The faces of a solid (a cube…), or a round surface (a ball, a sheet rolled up), the grid going round it',
     ],
     '3D': ['Lattice', 'cubeFilled', 'A 3D lattice, the walk going in space'],
   },
-  SHEETS = ['Globe', 'Sphere', 'Rosettes', 'Torus', 'Möbius strip', 'Klein bottle']; // (3D surfaces' shapes, in their order: the balls, then the sheets)
+  SHEETS = ['Globe', 'Sphere', 'Rosettes', 'Torus', 'Möbius strip', 'Klein bottle']; // (the round surfaces' shapes, their group in 3D solids, in their order: the balls, then the sheets)
 // a tiling's icon: its polygons round a cell's middle, fitted in the 24 × 24 box
 function tilingIcon(kind) {
   const m = TILINGS[kind].polys.length,
@@ -10238,7 +10237,7 @@ function shapeGroupsOf(kind, space) {
             ['Cubes', (sh) => SQUARED.includes(sh), SQUARED],
             ['Regular polyhedra', (sh) => !sheet(sh) && !SQUARED.includes(sh) && !mixed(sh)], // (their faces all alike)
             ['Irregular polyhedra', mixed],
-            ['Surface', sheet, SHEETS],
+            ['Surfaces', sheet, SHEETS],
           ]
         : [[null, () => true]];
   return groups
@@ -23571,7 +23570,8 @@ const APERIODIC = {
 }; // the grids that never repeat: a disc of them, walls round it, never a torus
 // the grids in their spaces (see SPACES): everyone's surfaces, sheets or solids; the automata's plane, round (these) or not
 for (const [w, n] of Object.entries(NAV))
-  if (n[1] === 'Surfaces') n[1] = SHEETS.includes(n[2]) ? '3D surfaces' : '3D solids';
+  if (n[1] === 'Surfaces')
+    n[1] = '3D solids'; // (the solids and the round surfaces, one space: its groups, see shapeGroupsOf)
   else if (n[1] === '2D' && VARIANTS[w].life) n[1] = APERIODIC[VARIANTS[w].plane] ? '2D circles' : '2D squares';
 // the flat grid cells lie on: the plane's; a rosette sphere's, its disc's (its north half's cells numbered as the plane's: a start
 // laid on it as on the plane, see rosetteSphereMesh)

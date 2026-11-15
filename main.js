@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.3';
+const VERSION = '0.5.4';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -3687,6 +3687,103 @@ const MOBIUS_TILINGS = [
   'demi10',
   'demi13',
 ];
+// The solids made from their corners (see hullMesh): their faces the planes through 3 of them with all the others behind
+// (the convex hull), each face of 4 corners (a square, a rhombus: a parallelogram) cut into f × f of its kind, each
+// triangle into f² triangles. One declaration each, all a solid is said from: its name (the menu's, its link's word), its
+// tile's short name, its corners (made when asked), its picture, its rules' mark (see SURFACE_CELLS), its place in the menu
+// ([1 after, 0 before, a shape]: see the menu's moves) and its words; its variant, its surface, its size, its group in the
+// menu derived (see the hull solids' Life, SURFACES)
+const SILVER_RATIO = 1 + Math.SQRT2,
+  PYRAMID_Z = -Math.SQRT2 / 4;
+const HULL_SOLIDS = {
+  // the cube's edges' middles (±1, ±1, 0) and their turns: edge √2
+  cubocta: {
+    name: 'Cuboctahedron',
+    short: 'Cubocta',
+    corners: () =>
+      [
+        [1, 1, 0],
+        [1, 0, 1],
+        [0, 1, 1],
+      ].flatMap((v) =>
+        [-1, 1].flatMap((a) =>
+          [-1, 1].map((b) => {
+            const s = [a, b];
+            return v.map((c) => (c ? c * s.shift() : 0));
+          }),
+        ),
+      ),
+    pic: ['M4 4H20V20H4Z', 'M12 4L20 12L12 20L4 12Z'], // (face on: a square, its 4 corners triangles)
+    mark: '◈',
+    place: [0, 'Torus'],
+    where: 'a cuboctahedron of squares and triangles',
+  },
+  // a square (±1, ±1, z0), its tip √2 above (its volume's middle at 0): edge 2
+  pyramid: {
+    name: 'Square pyramid',
+    short: 'Pyramid',
+    corners: () => [
+      [-1, -1, PYRAMID_Z],
+      [1, -1, PYRAMID_Z],
+      [1, 1, PYRAMID_Z],
+      [-1, 1, PYRAMID_Z],
+      [0, 0, PYRAMID_Z + Math.SQRT2],
+    ],
+    pic: ['M12 3L3 17L10 21L21 16Z', 'M12 3L10 21'], // (a corner of its square in front)
+    mark: '◈',
+    place: [1, 'Tetrahedron'],
+    where: 'a square pyramid of squares and triangles',
+  },
+  // (±1, ±1, ±(1 + √2)) and their turns: edge 2, 18 squares and 8 triangles
+  rhombi: {
+    name: 'Rhombicuboctahedron',
+    short: 'Rhombi',
+    corners: () =>
+      [
+        [1, 1, SILVER_RATIO],
+        [1, SILVER_RATIO, 1],
+        [SILVER_RATIO, 1, 1],
+      ].flatMap((v) =>
+        [-1, 1].flatMap((a) => [-1, 1].flatMap((b) => [-1, 1].map((c) => [a * v[0], b * v[1], c * v[2]]))),
+      ),
+    pic: ['M8 3H16L21 8V16L16 21H8L3 16V8Z', 'M8 8H16V16H8Z', 'M8 3V8H3M16 3V8H21M8 21V16H3M16 21V16H21'], // (face on: its square, 4 squares round, 4 triangles in the corners)
+    mark: '◈',
+    place: [1, 'Cuboctahedron'],
+    where: 'a rhombicuboctahedron of squares and triangles',
+  },
+  // an octagon (±1, ±(1 + √2), 0), (±(1 + √2), ±1, 0), squares (±1, ±1, ±√2) over and under it: edge 2
+  bicupola: {
+    name: 'Square orthobicupola',
+    short: 'Bicupola',
+    corners: () =>
+      [-1, 1].flatMap((a) =>
+        [-1, 1].flatMap((b) => [
+          [a, b * SILVER_RATIO, 0],
+          [a * SILVER_RATIO, b, 0],
+          [a, b, Math.SQRT2],
+          [a, b, -Math.SQRT2],
+        ]),
+      ),
+    pic: ['M8 3H16L21 9V15L16 21H8L3 15V9Z', 'M3 12H21M8 3L6 12L8 21M16 3L18 12L16 21'], // (from the side: its two cupolas)
+    mark: '◈',
+    place: [1, 'Rhombicuboctahedron'],
+    where: 'a square orthobicupola of squares and triangles',
+  },
+  // the cuboctahedron's dual: the cube's corners (±1, ±1, ±1) and (±2, 0, 0) and their turns, 12 rhombi, 3 round a cube's
+  // corner, 4 round the others: edge √3; its cells rhombi, 4 sides each as squares (the cube's rules)
+  rhombicDodeca: {
+    name: 'Rhombic dodecahedron',
+    short: 'RhDodeca',
+    corners: () => [
+      ...[-1, 1].flatMap((a) => [-1, 1].flatMap((b) => [-1, 1].map((c) => [a, b, c]))),
+      ...[0, 1, 2].flatMap((d) => [-2, 2].map((v) => [0, 1, 2].map((e) => (e === d ? v : 0)))),
+    ],
+    pic: ['M12 3L21 12L12 21L3 12Z', 'M7.5 7.5L16.5 16.5M16.5 7.5L7.5 16.5'], // (along a 4-fold axis: 4 rhombi round it)
+    mark: '■',
+    place: [1, 'Square orthobicupola'],
+    where: "a rhombic dodecahedron of rhombi (the cuboctahedron's dual: 3 or 4 round each corner)",
+  },
+};
 // the flat solids with hexagons too, folded over their edges (see hexSolidMesh): each one's name, its family's, its size
 // (as its triangles', see SURFACES), its cells (one a corner of its triangles) and those of other sides (where fewer or more
 // than 6 of its triangles meet: walls in Life, walked on)
@@ -4946,34 +5043,6 @@ const VARIANTS = {
     surface: 'dodecaKite',
     life: true,
     where: 'a dodecahedron, its pentagons cut into triangles, of kites (each triangle cut in 3)',
-  },
-  lifeCuboctahedron: {
-    base: 2,
-    lattice: 'surface',
-    surface: 'cubocta',
-    life: true,
-    where: 'a cuboctahedron of squares and triangles',
-  },
-  lifeSquarePyramid: {
-    base: 2,
-    lattice: 'surface',
-    surface: 'pyramid',
-    life: true,
-    where: 'a square pyramid of squares and triangles',
-  },
-  lifeRhombicuboctahedron: {
-    base: 2,
-    lattice: 'surface',
-    surface: 'rhombi',
-    life: true,
-    where: 'a rhombicuboctahedron of squares and triangles',
-  },
-  lifeSquareOrthobicupola: {
-    base: 2,
-    lattice: 'surface',
-    surface: 'bicupola',
-    life: true,
-    where: 'a square orthobicupola of squares and triangles',
   },
   lifeGlobe: {
     base: 2,
@@ -8192,13 +8261,6 @@ const ICONS = (() => {
         .join(''),
     icosahedron: ico,
     dodecahedron: dodeca,
-    cubocta: svgPath('M4 4H20V20H4Z') + svgPath('M12 4L20 12L12 20L4 12Z'), // a cuboctahedron face on: a square, its 4 corners triangles
-    pyramid: svgPath('M12 3L3 17L10 21L21 16Z') + svgPath('M12 3L10 21'), // a square pyramid, a corner of its square in front
-    rhombi:
-      svgPath('M8 3H16L21 8V16L16 21H8L3 16V8Z') +
-      svgPath('M8 8H16V16H8Z') +
-      svgPath('M8 3V8H3M16 3V8H21M8 21V16H3M16 21V16H21'), // a rhombicuboctahedron face on: its square, 4 squares round, 4 triangles in the corners
-    bicupola: svgPath('M8 3H16L21 9V15L16 21H8L3 15V9Z') + svgPath('M3 12H21M8 3L6 12L8 21M16 3L18 12L16 21'), // a square orthobicupola from the side: its two cupolas on its middle
     globe:
       svgPath('M12 3A9 9 0 1 0 12.01 3Z') +
       svgPath('M3.5 9H20.5M3.5 15H20.5M12 3C8 6 8 18 12 21M12 3C16 6 16 18 12 21'), // a globe: its parallels and meridians
@@ -9572,10 +9634,6 @@ const VARIANT_ICONS = {
   lifeIcosahedronKites: 'icosahedron',
   lifeStellaOctangulaKites: 'stella',
   lifeDodecahedronKites: 'dodecahedron',
-  lifeCuboctahedron: 'cubocta',
-  lifeSquarePyramid: 'pyramid',
-  lifeRhombicuboctahedron: 'rhombi',
-  lifeSquareOrthobicupola: 'bicupola',
   lifeGlobe: 'globe',
   lifeIcosahedronHex: 'hexagon',
   lifeIcosahedronTwisted: 'tiling-twisttri',
@@ -9722,10 +9780,6 @@ const NAV = {
   lifeIcosahedronKites: ['Life', 'Surfaces', 'Sphere', 'Life', ''],
   lifeStellaOctangulaKites: ['Life', 'Surfaces', 'Stella octangula', 'Life', ''],
   lifeDodecahedronKites: ['Life', 'Surfaces', 'Dodecahedron', 'Life', ''],
-  lifeCuboctahedron: ['Life', 'Surfaces', 'Cuboctahedron', 'Life', ''],
-  lifeSquarePyramid: ['Life', 'Surfaces', 'Pyramid', 'Life', ''],
-  lifeRhombicuboctahedron: ['Life', 'Surfaces', 'Rhombicuboctahedron', 'Life', ''],
-  lifeSquareOrthobicupola: ['Life', 'Surfaces', 'Bicupola', 'Life', ''],
   lifeGlobe: ['Life', 'Surfaces', 'Globe', 'Life', ''],
 };
 // the tilings' Life on the plane (see TILINGS): their variants, after the hats
@@ -9744,8 +9798,6 @@ const LINK_SHAPES = {
   Bumps: 'cubeBumps',
   Frame: 'cubeFrame',
   Sponge: 'cubeMengerSponge',
-  Bicupola: 'squareOrthobicupola',
-  Pyramid: 'squarePyramid',
   Hexagons: 'hex',
 };
 const menuWord = (name) => LINK_SHAPES[name] ?? linkWord(name);
@@ -9829,6 +9881,15 @@ for (const [k, { a, name }] of Object.entries(HEX_SOLIDS)) {
 // each with its option in the variant list (index.html), in its group: made here with the variant, never written apart
 const variantOption = (m, group, text) =>
   document.querySelector(`#variant optgroup[label="${group}"]`).append(new Option(`Life — ${text}`, m));
+// the hull solids' Life (see HULL_SOLIDS): a variant each, said by its declaration
+for (const [k, S] of Object.entries(HULL_SOLIDS)) {
+  const w = variantName('Life', S.name);
+  VARIANTS[w] = { base: 2, lattice: 'surface', surface: k, life: true, where: S.where };
+  VARIANT_ICONS[w] = k;
+  NAV[w] = ['Life', 'Surfaces', S.name, 'Life', ''];
+  ICONS[k] = S.pic.map((d) => svgPath(d)).join('');
+  variantOption(w, 'Automata on surfaces', S.name.toLowerCase());
+}
 for (const [kind, t] of Object.entries(TILINGS)) {
   const flat = variantName('Life', t.name);
   VARIANTS[flat] = { base: 2, lattice: kind, life: true, plane: kind, where: t.where };
@@ -9971,10 +10032,7 @@ VARIANT_ICONS.lifeCubeFrameSquares = 'frame';
     ['Klein bottle', 1, 'Möbius strip'],
     ['Sphere', 0, 'Tetrahedron'],
     ['Hexagons', 1, 'Kites'],
-    ['Cuboctahedron', 0, 'Torus'],
-    ['Pyramid', 1, 'Tetrahedron'],
-    ['Rhombicuboctahedron', 1, 'Cuboctahedron'],
-    ['Bicupola', 1, 'Rhombicuboctahedron'],
+    ...Object.values(HULL_SOLIDS).map(({ name, place: [after, other] }) => [name, after, other]),
     ['Globe', 1, 'Sphere'],
   ]; // (1 after, 0 before)
   for (const [shape, after, other] of moves)
@@ -10111,10 +10169,7 @@ const SHAPE_ICONS = {
   Octahedron: 'octahedron',
   'Stella octangula': 'stella',
   Dodecahedron: 'dodecahedron',
-  Cuboctahedron: 'cubocta',
-  Pyramid: 'pyramid',
-  Rhombicuboctahedron: 'rhombi',
-  Bicupola: 'bicupola',
+  ...Object.fromEntries(Object.entries(HULL_SOLIDS).map(([k, { name }]) => [name, k])),
   Globe: 'globe',
   Rosettes: 'rosettes',
   Sphere: 'icosahedron',
@@ -10131,8 +10186,7 @@ const SHAPE_SHORT = {
   Tetrahedron: 'Tetra',
   Octahedron: 'Octa',
   Dodecahedron: 'Dodeca',
-  Cuboctahedron: 'Cubocta',
-  Rhombicuboctahedron: 'Rhombi',
+  ...Object.fromEntries(Object.values(HULL_SOLIDS).map(({ name, short }) => [name, short])),
 };
 const shapeLabel = (shape) => SHAPE_SHORT[shape] ?? shape;
 // a variant in words, a shape's or a tiling's tooltip (the variant its click goes to): where it plays (an automaton's grid, a walk's
@@ -10174,7 +10228,7 @@ function shapeGroupsOf(kind, space) {
   const planeOf = (sh) =>
     VARIANTS[Object.keys(NAV).find((m) => NAV[m][0] === kind && NAV[m][1] === space && NAV[m][2] === sh)]?.plane;
   const SQUARED = ['Cube', 'Pits', 'Bumps', 'Frame', 'Sponge'],
-    MIXED = ['Cuboctahedron', 'Rhombicuboctahedron', 'Bicupola', 'Pyramid'],
+    HULLS = Object.values(HULL_SOLIDS).map(({ name }) => name),
     sheet = (sh) => SHEETS.includes(sh);
   const groups =
     flat && shapes.length > 8
@@ -10182,8 +10236,8 @@ function shapeGroupsOf(kind, space) {
       : solid
         ? [
             ['Squares', (sh) => SQUARED.includes(sh), SQUARED],
-            ['Solid', (sh) => !sheet(sh) && !SQUARED.includes(sh) && !MIXED.includes(sh)],
-            ['Squares & triangles', (sh) => MIXED.includes(sh)],
+            ['Solid', (sh) => !sheet(sh) && !SQUARED.includes(sh) && !HULLS.includes(sh)],
+            ['Polyhedra', (sh) => HULLS.includes(sh)],
             ['Surface', sheet, SHEETS],
           ]
         : [[null, () => true]];
@@ -13537,54 +13591,9 @@ function mengerMesh(L, m = 1) {
   return (meshCache[key] = mesh);
 }
 
-/* Solids of squares and triangles of one edge, from their corners: their faces the planes through 3 of them with all the
- * others behind (the convex hull), each square cut into f × f squares, each triangle into f² triangles (its last corner
- * twice, as the sphere of hexagons' pentagons); its squares first, then its triangles (squareFaces, triFaces: their corners
- * round them seen from outside, their normals), f² cells a face. The cuboctahedron: the cube's edges' middles (±1, ±1, 0
- * and their turns); the square pyramid: a square (±1, ±1, z0), its tip √2 above (its volume's middle at 0); the
- * rhombicuboctahedron: (±1, ±1, ±(1 + √2)) and their turns; the square orthobicupola: an octagon (±1, ±(1 + √2), 0),
- * (±(1 + √2), ±1, 0), squares (±1, ±1, ±√2) over and under it */
-const SILVER_RATIO = 1 + Math.SQRT2,
-  PYRAMID_Z = -Math.SQRT2 / 4;
-const HULL_SOLIDS = {
-  cubocta: () =>
-    [
-      [1, 1, 0],
-      [1, 0, 1],
-      [0, 1, 1],
-    ].flatMap((v) =>
-      [-1, 1].flatMap((a) =>
-        [-1, 1].map((b) => {
-          const s = [a, b];
-          return v.map((c) => (c ? c * s.shift() : 0));
-        }),
-      ),
-    ),
-  pyramid: () => [
-    [-1, -1, PYRAMID_Z],
-    [1, -1, PYRAMID_Z],
-    [1, 1, PYRAMID_Z],
-    [-1, 1, PYRAMID_Z],
-    [0, 0, PYRAMID_Z + Math.SQRT2],
-  ],
-  rhombi: () =>
-    [
-      [1, 1, SILVER_RATIO],
-      [1, SILVER_RATIO, 1],
-      [SILVER_RATIO, 1, 1],
-    ].flatMap((v) =>
-      [-1, 1].flatMap((a) => [-1, 1].flatMap((b) => [-1, 1].map((c) => [a * v[0], b * v[1], c * v[2]]))),
-    ),
-  bicupola: () =>
-    [-1, 1].flatMap((a) =>
-      [-1, 1].flatMap((b) => [
-        [a, b * SILVER_RATIO, 0],
-        [a * SILVER_RATIO, b, 0],
-        [a, b, Math.SQRT2],
-        [a, b, -Math.SQRT2],
-      ]),
-    ),
-};
+// a hull solid's faces, once (see HULL_SOLIDS)
+const hullFacesMemo = remember('hullFacesMemo', {}),
+  hullFacesOf = (kind) => (hullFacesMemo[kind] ??= hullFaces(HULL_SOLIDS[kind].corners()));
 function hullFaces(P) {
   const faces = new Map();
   for (let a = 0; a < P.length; a++)
@@ -13613,7 +13622,7 @@ function hullFaces(P) {
 function hullMesh(kind, f) {
   const key = `${kind}${f}`;
   if (meshCache[key]) return meshCache[key];
-  const faces = hullFaces(HULL_SOLIDS[kind]()),
+  const faces = hullFacesOf(kind),
     squareFaces = faces.filter((fc) => fc.corners.length === 4),
     triFaces = faces.filter((fc) => fc.corners.length === 3);
   const { verts, add } = vertexStore(),
@@ -13662,7 +13671,7 @@ const HULL_PLANES = [
 const hullColourMemo = remember('hullColourMemo', {});
 function hullColourings(surface) {
   if (hullColourMemo[surface]) return hullColourMemo[surface];
-  const all = hullFaces(HULL_SOLIDS[surface]()),
+  const all = hullFacesOf(surface),
     faces = [...all.filter((fc) => fc.corners.length === 4), ...all.filter((fc) => fc.corners.length === 3)];
   const mids = faces.map(({ corners }) => meanPoint(corners, 3)),
     out = {};
@@ -13695,7 +13704,7 @@ function hullColourings(surface) {
   // swapping its groups: each group the first's image by one of them, all groups onto groups. Its symmetries, by construction:
   // the cube's 48 (axes swapped, signs changed) that keep its corners, every hull solid laid on the axes. Before v0.3.90, a
   // kind's faces taken whatever their families: the bicupola's 10 squares, its 2 caps with its 8 sides, 36 to 66 cells a colour)
-  const corners = HULL_SOLIDS[surface](),
+  const corners = HULL_SOLIDS[surface].corners(),
     key3 = (p) => p.map((v) => roundOff(v, 1e6)).join(),
     cornerKeys = new Set(corners.map(key3));
   const signed = [
@@ -15811,10 +15820,7 @@ const MORPHABLE = [
   'stellaKite',
   'dodecaKite',
   ...hexSolids.map((k) => `${k}Hex`),
-  'cubocta',
-  'pyramid',
-  'rhombi',
-  'bicupola',
+  ...Object.keys(HULL_SOLIDS),
   'globe',
   ...Object.keys(ROSETTE_SPHERES).map((k) => `${k}Sphere`),
   'torus',
@@ -16396,34 +16402,6 @@ const SURFACES = {
     tiles: (f) => 72 * f * f,
     unit: 'kites',
   },
-  cubocta: {
-    mesh: (f) => hullMesh('cubocta', f),
-    radius: (f) => f / Math.SQRT2,
-    tiles: (f) => 14 * f * f,
-    unit: 'cells',
-    edges: [12, 24, 48],
-  }, // edge √2
-  pyramid: {
-    mesh: (f) => hullMesh('pyramid', f),
-    radius: (f) => f / 2,
-    tiles: (f) => 5 * f * f,
-    unit: 'cells',
-    edges: [12, 24, 48],
-  }, // edge 2
-  rhombi: {
-    mesh: (f) => hullMesh('rhombi', f),
-    radius: (f) => f / 2,
-    tiles: (f) => 26 * f * f,
-    unit: 'cells',
-    edges: [12, 24, 48],
-  }, // edge 2: 18 squares, 8 triangles
-  bicupola: {
-    mesh: (f) => hullMesh('bicupola', f),
-    radius: (f) => f / 2,
-    tiles: (f) => 18 * f * f,
-    unit: 'cells',
-    edges: [12, 24, 48],
-  },
   globe: {
     mesh: globeMesh,
     radius: (E) => E / (2 * Math.PI),
@@ -16452,6 +16430,19 @@ const SURFACES = {
     how: (f) => `{r:12 pentagonal faces} × {s:5 sectors} × {y:(Edge=${formatNumber(f)})² triangles} × {k:3 kites each}`,
   },
 };
+// the hull solids (see HULL_SOLIDS): their sizes their edges' cells, their radius an edge of f cells (its edge's length from
+// its first face's first side), their faces f² cells each
+for (const k of Object.keys(HULL_SOLIDS))
+  SURFACES[k] = {
+    mesh: (f) => hullMesh(k, f),
+    radius: (f) => {
+      const [A, B] = hullFacesOf(k)[0].corners;
+      return f / Math.hypot(...sub(B, A));
+    },
+    tiles: (f) => hullFacesOf(k).length * f * f,
+    unit: 'cells',
+    edges: [12, 24, 48],
+  };
 // the rosette spheres (see rosetteSphereMesh): their sizes their discs' W, their discs' houses twice, a unit each
 for (const [k, table] of Object.entries(ROSETTE_SPHERES)) {
   const cells = Object.fromEntries(table.flatMap((W, i) => (i % 2 ? [] : [[W, table[i + 1]]]))); // (a size's cells: its table's pairs)
@@ -17016,10 +17007,7 @@ const SOLIDS = [
   'icosaKite',
   'stellaKite',
   'dodecaKite',
-  'cubocta',
-  'pyramid',
-  'rhombi',
-  'bicupola',
+  ...Object.keys(HULL_SOLIDS),
 ];
 const TORI = [
   'klein',
@@ -25705,10 +25693,7 @@ const SURFACE_CELLS = {
   icosaKite: '◆',
   stellaKite: '◆',
   dodecaKite: '◆',
-  cubocta: '◈',
-  pyramid: '◈',
-  rhombi: '◈',
-  bicupola: '◈',
+  ...Object.fromEntries(Object.entries(HULL_SOLIDS).map(([k, { mark }]) => [k, mark])),
 };
 for (const [s, { kind }] of Object.entries(FOLDED)) SURFACE_CELLS[s] = TILINGS[kind].mark;
 for (const [s, S] of Object.entries(SURFACES)) if (S.tiling) SURFACE_CELLS[s] = TILINGS[S.tiling].mark; // (a surface of a tiling's cells: its rules)

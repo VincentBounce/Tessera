@@ -4,6 +4,7 @@
 //   await tesseraCheck({ clickAll: true, clickFrom: 0 });                  // and on each, every control clicked (a night's, ~25 minutes; from a look's number, localStorage.tesseraCrawlAt, after a crash)
 //   await tesseraCheck({ hovers: true });                                  // and on each, every greyed control's first hover under 100 ms, there and at its surface's largest size (a night's)
 //   await tesseraCheck({ fuzz: 400, seed: 7 });                            // 400 actions at random, menu to menu (transitions, smallest sizes)
+//   await tesseraCheck({ fuzz: 400, seed: 7, hovers: true });              // and after each, every greyed control hovered: its search builds nothing (see watchSearches)
 //   await tesseraCheck({ fuzz: 100, cold: true });                          // and after each, its link loaded cold beside: the same menus offered
 //   await tesseraCheck({ colours: true });                                 // every Life surface offers colours (more than Solo) at one of its sizes at least
 //   await tesseraCheck({ battles: true });                                 // every walk on a surface: its battles' walkers each A's path moved, Land no collision kept apart, 5 minutes
@@ -577,16 +578,95 @@ function clickEverything(fail) {
 // shown and, on a surface, at its largest: none slower than HOVER_BUDGET at its first hover (Hunt › Longest on a globe of
 // 795,026 cells, 9.7 s till v0.4.787: each surface next to it built whole to judge its teams, see surfaceFrame)
 const HOVER_BUDGET = 100;
-function hoverGreyed(fail) {
+// What a greyed control's search builds: its question (whyNot) is asked of hundreds of setups next to the one shown (see
+// pathsTo), so an answer that builds a figure (a mesh, a grid's shape, a list of starts, a table) is paid at each: every
+// slow hover found so far. While a search runs (pathsTo wrapped), the time spent in the app's builders (wrapped too, the
+// outermost counted), by their names: none over BUILD_BUDGET, whatever the hover's own time
+const SEARCH_BUILDERS = [
+  'startList',
+  'gridGraph',
+  'planeShape',
+  'planeTurns',
+  'discPatch',
+  'placeCells',
+  'huntParts',
+  'iconLay',
+  'tilingStrip',
+  'mobiusSheetOf',
+  'stripCounted',
+  'loopTransitions',
+  'hexSolidMesh',
+  'meshBlocks',
+  'planeBlocks',
+  'planeSlices',
+  'partPlaces',
+];
+const BUILD_BUDGET = 30;
+function watchSearches() {
+  let searching = 0,
+    building = false,
+    built = {};
+  const undo = [];
+  const wrap = (holder, key, name, around) => {
+    const f = holder[key];
+    holder[key] = function (...args) {
+      return around(() => f.apply(this, args), name);
+    };
+    undo.push(() => (holder[key] = f));
+  };
+  wrap(window, 'pathsTo', 'pathsTo', (run) => {
+    searching++;
+    try {
+      return run();
+    } finally {
+      searching--;
+    }
+  });
+  const timed = (run, name) => {
+    if (!searching || building) return run();
+    building = true;
+    const t = performance.now();
+    try {
+      return run();
+    } finally {
+      building = false;
+      built[name] = (built[name] ?? 0) + performance.now() - t;
+    }
+  };
+  for (const name of SEARCH_BUILDERS) wrap(window, name, name, timed);
+  for (const [kind, S] of Object.entries(SPHERES)) wrap(S, 'mesh', `${kind}'s mesh`, timed);
+  return {
+    // (the builders of the searches since the last ask, the costliest first: "startList 3,200 ms, octa's mesh 1,000 ms", '' under the budget)
+    built: () => {
+      const total = Object.values(built).reduce((a, b) => a + b, 0),
+        words = Object.entries(built)
+          .filter(([, ms]) => ms >= 5)
+          .sort((a, b) => b[1] - a[1])
+          .map(([name, ms]) => `${name} ${Math.round(ms)} ms`)
+          .join(', ');
+      built = {};
+      return total > BUILD_BUDGET ? words : '';
+    },
+    stop: () => undo.forEach((back) => back()),
+  };
+}
+// (sized: each mode's largest size hovered too, the crawl's; not the fuzz's, its sizes its own)
+function hoverGreyed(fail, sized = true) {
   const name = (b) => (b.querySelector('.mode-name') ?? b).textContent.trim().slice(0, 30) || b.id;
   const hoverAll = (where) => {
+    const watch = watchSearches();
     for (const b of document.querySelectorAll('aside.panel button, #viewTools button, #animBar button'))
       if (b.disabled && b.offsetParent) {
         const t = performance.now();
         b.dispatchEvent(new MouseEvent('mouseover', { bubbles: true }));
-        const ms = performance.now() - t;
-        if (ms > HOVER_BUDGET) fail(`${where} › ${name(b)}: its first hover ${Math.round(ms)} ms`);
+        const ms = performance.now() - t,
+          built = watch.built();
+        if (ms > HOVER_BUDGET || built)
+          fail(
+            `${where} › ${name(b)}: its first hover ${Math.round(ms)} ms${built ? `, its search built ${built}` : ''}`,
+          );
       }
+    watch.stop();
   };
   const resize = async (value) => {
     $('sphereF').value = value;
@@ -597,6 +677,7 @@ function hoverGreyed(fail) {
   const largeDone = new Set(); // (each mode once at its largest: a whyNot's cost is its mesh's, not the setup's)
   return async (where) => {
     hoverAll(where);
+    if (!sized) return;
     const F = $('sphereF'),
       largest = F.options[F.options.length - 1]?.value;
     if (MODES[tabMode()].plane || !largest || F.value === largest || largeDone.has(tabMode())) return;
@@ -628,7 +709,7 @@ async function coldLike(fail, what) {
     .map((k) => `${k}: «${a[k]}» here, «${b[k]}» cold`);
   if (diff.length) fail(`${what} ${location.hash}: ${diff.join('; ')}`);
 }
-async function fuzz(fail, count, seedv, cold = false) {
+async function fuzz(fail, count, seedv, cold = false, each = null) {
   const C = checker(fail);
   let sd = seedv >>> 0 || 1;
   const rnd = () => (sd = (Math.imul(sd, 1103515245) + 12345) >>> 0) / 4294967296,
@@ -716,6 +797,7 @@ async function fuzz(fail, count, seedv, cold = false) {
     trail.push(what);
     if (trail.length > 8) trail.shift();
     if (!(await C.look(`fuzz #${i} (seed ${seedv}) ${trail.join(' › ')}`, 300))) trail.length = 0;
+    else if (each) await each(`fuzz #${i} (seed ${seedv}) ${trail.join(' › ')}`);
     else if (cold) await coldLike(fail, `fuzz #${i} (seed ${seedv}) ${trail.join(' › ')}`);
   }
   C.stop();
@@ -1509,8 +1591,8 @@ window.tesseraCheck = async ({
   if (known) checked += await checkKnown(fail);
   if (andCrawl) checked += await crawl(fail);
   if (clickAll) checked += await crawl(fail, clickEverything(fail), clickFrom);
-  if (hovers) checked += await crawl(fail, hoverGreyed(fail));
-  if (actions) checked += await fuzz(fail, actions, seed, cold);
+  if (hovers && !actions) checked += await crawl(fail, hoverGreyed(fail));
+  if (actions) checked += await fuzz(fail, actions, seed, cold, hovers ? hoverGreyed(fail, false) : null);
   if (colours) checked += await coloursOffered(fail);
   if (battles) checked += await battlesFair(fail);
   if (parts) checked += await partsEqual(fail);

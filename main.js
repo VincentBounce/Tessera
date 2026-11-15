@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.1084';
+const VERSION = '0.4.1085';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -44788,7 +44788,9 @@ function renderGauges(L) {
 // The gauges' rows (name, colour: none, the theme's live cells'; its bar's share: none, figures only; its figures), built
 // again when their names change (Life's, a walk's)
 // Each stage's last time, in ms, or its words ('cached'): Digits (the worker's), Build (the walk or the start, its mesh with it),
-// Rows (Elementary's worker), 3D image (the card's work done); shown in the app's page, Stats/debug, as it is set (setTiming; none: gone)
+// Rows (Elementary's worker), 3D image (the card's work done); shown in the app's page, Stats/debug, as it is set (setTiming;
+// none: #NA, its row kept: a table of the same rows whatever the view, none coming and going)
+const TIMING_STAGES = ['Digits', 'Build', 'Rows', '3D image'];
 const timings = {};
 const setTiming = (stage, ms) => {
   if (ms === undefined) delete timings[stage];
@@ -44804,12 +44806,10 @@ const timed = (stage, make) => {
 // (as the commands' reminder: a compact table, its times at the right; shown only while the app's page is)
 const paintTimings = () => {
   if ($('timings'))
-    $('timings').innerHTML = Object.entries(timings)
-      .map(
-        ([stage, ms]) =>
-          `<tr><td>${stage}</td><td class="number">${typeof ms === 'number' ? (ms < 1000 ? `${ms.toFixed(1)} ms` : `${(ms / 1000).toFixed(2)} s`) : ms}</td></tr>`,
-      )
-      .join('');
+    $('timings').innerHTML = TIMING_STAGES.map((stage) => {
+      const ms = timings[stage] ?? '#NA';
+      return `<tr><td>${stage}</td><td class="number">${typeof ms === 'number' ? (ms < 1000 ? `${ms.toFixed(1)} ms` : `${(ms / 1000).toFixed(2)} s`) : ms}</td></tr>`;
+    }).join('');
 };
 // the stats' gauges: a row each, its name, its bar (share: none, null), its number
 function paintGauges(rows) {

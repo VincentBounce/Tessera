@@ -663,8 +663,8 @@ function hoverGreyed(fail, sized = true) {
           built = watch.built();
         if (ms > HOVER_BUDGET || built)
           fail(
-            `${where} › ${name(b)}: its first hover ${Math.round(ms)} ms${built ? `, its search built ${built}` : ''}`,
-          );
+            `${where} › ${name(b)}: its first hover ${Math.round(ms)} ms${built ? `, its search built ${built}` : ''} (${location.hash})`,
+          ); // (its link: the setup to open it again at)
       }
     watch.stop();
   };

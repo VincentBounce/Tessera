@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.1062';
+const VERSION = '0.4.1063';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -10132,12 +10132,9 @@ function navPick(from, level, ...values) {
   const want = [...NAV[from]],
     to = level + values.length;
   want.splice(level, values.length, ...values);
-  return nearestMode(
-    from,
-    Object.keys(NAV).filter((w) => NAV[w].slice(0, to).every((v, i) => v === want[i])),
-    want,
-  );
+  return nearestMode(from, (navUnder[want.slice(0, to).join('|')] ??= modesUnder(...want.slice(0, to))), want);
 }
+const navUnder = remember('navUnder', {}); // (the modes under a menu's choices, see modesUnder, once each: the menu's tables fixed once the page has loaded)
 // Of the modes a click may land on, the nearest from the mode it is clicked from: the fewest settings changed (its menu's
 // levels, its tiling by name, see modeChanges: from a sphere of hexagons, Klein bottle opens on its hexagons); on a tie
 // its family's tiling last chosen, then the menu's order (its shapes as shown, Grid before Cells). One rule for every click
@@ -10673,13 +10670,15 @@ function choicesAt(s, reads = null, teamsMemo = new Map()) {
 // how many settings two setups differ by: the menu's levels, the tiling, the fields
 // a mode's tiling by its name (Hexagons, whatever its place in its family's list; in 2D its shape, the plane's tiling),
 // none on a solid or a lattice
+const tilingNames = remember('tilingNames', {}); // (once a mode: the menu's tables fixed, the graph's search asks it at each edge)
 const tilingNameOf = (w) => {
+  if (w in tilingNames) return tilingNames[w];
   const fam = familyOf(w);
-  return fam
+  return (tilingNames[w] = fam
     ? fam.F.tabs.find(([t]) => t === fam.m)[3]
     : !['sphere', 'cube'].includes(MODES[w].lattice)
       ? NAV[w][2]
-      : null;
+      : null);
 };
 // the settings changed from mode v to w: the menu's levels, a kind's own (its rule, its side) compared within one kind only
 // (Life's and a walk's mean other things: Life's empty side is no Spiral's), and the tiling by name

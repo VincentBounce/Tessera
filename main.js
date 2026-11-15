@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.1073';
+const VERSION = '0.4.1074';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -19753,7 +19753,7 @@ function battleAreas(P) {
 const BATTLE_CARDS = Object.values(PRESETS)
   .filter((p) => ['Constants', 'Sequences'].includes(p.group) && typeof p.f === 'string')
   .map((p) => p.f);
-const huntVary = { formulas: true, starts: false };
+const huntVary = { formulas: false, starts: false };
 // its rankings: [picture, name, tooltip, the button's words, its list's title, a battle's score (none: Longest's two lists),
 // a card's figure]
 // A hunt's result, every hunt's alike: its light (green, orange, red, grey: [colour, word, why]; none), what it is ranked by
@@ -19912,6 +19912,8 @@ async function startBattleHunt() {
     K = walkTeams,
     grid = !!mode.grid,
     way = startsWayNow();
+  battleHunt.status = 'Starting…';
+  renderBattleHunt(); // (its button Stop at once, as Life's hunt: whatever it varies)
   // the cards' digits first, once (a worker each, cached as A's); the roots' made as they are drawn
   if (huntVary.formulas)
     for (const f of BATTLE_CARDS) {
@@ -20071,7 +20073,7 @@ function renderBattleHunt() {
       on: huntVary[what] && can,
       can,
       greyed,
-      byDefault: what === 'formulas' ? 'on' : 'off',
+      byDefault: 'off',
       click: () => {
         huntVary[what] = !huntVary[what];
         stopBattleHunt();

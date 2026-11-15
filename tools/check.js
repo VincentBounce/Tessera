@@ -1334,24 +1334,24 @@ async function partsEqual(fail) {
   return checked;
 }
 
-// The rosette spheres' sizes (ROSETTE_SPHERES in main.js): each rosette's discs, W from 4 to most, whose rims pair teeth to
+// The rosette spheres' sizes and their cells (ROSETTE_SPHERES in main.js): each rosette's discs, W from 4 to most, whose rims pair teeth to
 // notches within ROSETTE_BITE of a tile (see rosetteSeam), one W a disc (two Ws the same tiles: the first), as many cells as the
 // others (CELLS); in the console, its line for main.js
 window.rosetteSphereSizes = (most = 100) => {
   const out = {};
   for (const k of Object.keys(ROSETTES)) {
-    const Ws = [],
+    const cells = [],
       seen = new Set();
     for (let W = 4; W <= most; W++) {
       const F = APERIODIC[k](W);
       if (seen.has(F.m) || 2 * F.m < CELLS.least || 2 * F.m > CELLS.most) continue;
       seen.add(F.m);
-      if (rosetteSeam(F).best[1] < ROSETTE_BITE) Ws.push(W);
+      if (rosetteSeam(F).best[1] < ROSETTE_BITE) cells.push(W, 2 * F.m);
     }
-    if (Ws.length) out[k] = Ws;
+    if (cells.length) out[k] = cells;
   }
   return `const ROSETTE_SPHERES = { ${Object.entries(out)
-    .map(([k, Ws]) => `${k}: [${Ws.join(', ')}]`)
+    .map(([k, cells]) => `${k}: [${cells.join(', ')}]`)
     .join(', ')} };`;
 };
 // the discs that never repeat each one tiling cut to their sizes: every cell of a small disc in a large one, at its place
@@ -1410,8 +1410,8 @@ function checkTwistedSphere(fail) {
 // its cells as many as said
 function checkRosetteSpheres(fail) {
   let checked = 0;
-  for (const [k, Ws] of Object.entries(ROSETTE_SPHERES))
-    for (const W of [Ws[0], Ws.at(-1)]) {
+  for (const k of Object.keys(ROSETTE_SPHERES))
+    for (const W of [SPHERES[`${k}Sphere`].sizes[0], SPHERES[`${k}Sphere`].sizes.at(-1)]) {
       const rough = rosetteSeam(APERIODIC[k](W)).best[1],
         g = SPHERES[`${k}Sphere`].mesh(W),
         uses = new Map();

@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.1063';
+const VERSION = '0.4.1064';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -13998,37 +13998,50 @@ function globeMesh(E) {
 const ROSETTE_LENTIL = 0.15; // (flat: its half thickness, see rosetteSphereMesh's flatVerts)
 const ROSETTE_BITE = 0.28; // (Ring 12's 0.26 to 0.27 in, a tooth on a tooth about a tile out)
 const ROSETTE_SPHERES = {
-  flower: [13, 17, 28, 34, 49, 51, 68],
-  flower7: [11, 15, 16, 25, 26, 29, 48, 71],
-  flower8: [11, 12, 13, 16, 17, 18, 21, 22, 26, 31, 71],
-  flower9: [12, 13, 14, 17, 18, 19, 38, 44, 45, 64, 71, 90, 97],
-  flower10: [9, 13, 18, 19, 20, 29, 30, 31, 40, 41, 42, 51, 52, 53, 62, 63, 73, 84],
-  flower11: [13, 14, 19, 20, 21, 25, 42, 43, 44, 65, 66, 67, 88, 89, 90],
+  flower: [13, 468, 17, 756, 28, 1800, 34, 2628, 49, 5220, 51, 5652, 68, 9828],
+  flower7: [11, 378, 15, 616, 16, 672, 25, 1512, 26, 1596, 29, 1960, 48, 5082, 71, 10752],
+  flower8: [11, 384, 12, 432, 13, 480, 16, 704, 17, 768, 18, 832, 21, 1120, 22, 1200, 26, 1632, 31, 2240, 71, 10800],
+  flower9: [
+    12, 432, 13, 486, 14, 540, 17, 792, 18, 864, 19, 936, 38, 3312, 44, 4374, 45, 4536, 64, 8892, 71, 10836, 90, 17172,
+    97, 19836,
+  ],
+  flower10: [
+    9, 280, 13, 480, 18, 880, 19, 960, 20, 1040, 29, 2040, 30, 2160, 31, 2280, 40, 3680, 41, 3840, 42, 4000, 51, 5800,
+    52, 6000, 53, 6200, 62, 8400, 63, 8640, 73, 11480, 84, 15040,
+  ],
+  flower11: [
+    13, 528, 14, 594, 19, 968, 20, 1056, 21, 1144, 25, 1540, 42, 4048, 43, 4224, 44, 4400, 65, 9240, 66, 9504, 67, 9768,
+    88, 16544, 89, 16896, 90, 17248,
+  ],
   flower12: [
-    9, 10, 14, 15, 16, 20, 21, 22, 26, 27, 28, 32, 33, 34, 38, 39, 40, 44, 45, 46, 50, 51, 52, 56, 57, 58, 62, 63, 64,
-    68, 69, 70, 74, 75, 76, 80, 81, 82, 86, 87, 88, 92, 93, 94, 98, 99, 100,
+    9, 288, 10, 336, 14, 576, 15, 648, 16, 720, 20, 1056, 21, 1152, 22, 1248, 26, 1680, 27, 1800, 28, 1920, 32, 2448,
+    33, 2592, 34, 2736, 38, 3360, 39, 3528, 40, 3696, 44, 4416, 45, 4608, 46, 4800, 50, 5616, 51, 5832, 52, 6048, 56,
+    6960, 57, 7200, 58, 7440, 62, 8448, 63, 8712, 64, 8976, 68, 10080, 69, 10368, 70, 10656, 74, 11856, 75, 12168, 76,
+    12480, 80, 13776, 81, 14112, 82, 14448, 86, 15840, 87, 16200, 88, 16560, 92, 18048, 93, 18432, 94, 18816, 98, 20400,
+    99, 20808, 100, 21216,
   ],
-  mirror5: [11, 14],
-  mirror6: [12, 19],
-  mirror7: [13, 28],
-  mirror8: [10, 14, 18, 22, 26, 30, 34, 42, 50],
-  mirror9: [10, 19, 36, 53],
-  mirror10: [11, 20, 29, 38, 47],
-  mirror11: [11, 16, 21, 35, 68, 82],
-  mirror12: [12, 17, 22, 27, 66, 71],
-  hexa5: [18, 27],
-  hexa6: [10, 15, 27],
-  hexa7: [11, 16, 45, 53],
-  hexa8: [17, 34, 51],
+  mirror5: [11, 320, 14, 500],
+  mirror6: [12, 384, 19, 864],
+  mirror7: [13, 448, 28, 1792],
+  mirror8: [10, 288, 14, 512, 18, 800, 22, 1152, 26, 1568, 30, 2048, 34, 2592, 42, 3872, 50, 5408],
+  mirror9: [10, 324, 19, 900, 36, 2916, 53, 6084],
+  mirror10: [11, 360, 20, 1000, 29, 1960, 38, 3240, 47, 4840],
+  mirror11: [11, 396, 16, 704, 21, 1100, 35, 2816, 68, 9900, 82, 14256],
+  mirror12: [12, 432, 17, 768, 22, 1200, 27, 1728, 66, 9408, 71, 10800],
+  hexa5: [18, 810, 27, 1690],
+  hexa6: [10, 300, 15, 588, 27, 1728],
+  hexa7: [11, 350, 16, 686, 45, 4536, 53, 6174],
+  hexa8: [17, 784, 34, 2704, 51, 5776],
   hexa9: [
-    9, 12, 15, 18, 21, 24, 27, 30, 33, 36, 39, 42, 45, 48, 51, 54, 57, 60, 63, 66, 69, 72, 75, 78, 81, 84, 87, 90, 93,
-    96, 99,
+    9, 288, 12, 450, 15, 648, 18, 882, 21, 1152, 24, 1458, 27, 1800, 30, 2178, 33, 2592, 36, 3042, 39, 3528, 42, 4050,
+    45, 4608, 48, 5202, 51, 5832, 54, 6498, 57, 7200, 60, 7938, 63, 8712, 66, 9522, 69, 10368, 72, 11250, 75, 12168, 78,
+    13122, 81, 14112, 84, 15138, 87, 16200, 90, 17298, 93, 18432, 96, 19602, 99, 20808,
   ],
-  hexa10: [13, 16, 19, 38, 57, 76],
-  hexa11: [10, 14, 20, 30, 40, 73],
-  hexa12: [14, 21, 28, 52, 97],
-  ring12: [10, 17, 31, 38, 45],
-}; // (each rosette's sizes, its discs' W: made by rosetteSphereSizes())
+  hexa10: [13, 500, 16, 720, 19, 980, 38, 3380, 57, 7220, 76, 12500],
+  hexa11: [10, 352, 14, 550, 20, 1078, 30, 2200, 40, 3718, 73, 11638],
+  hexa12: [14, 600, 21, 1176, 28, 1944, 52, 6144, 97, 20184],
+  ring12: [10, 290, 17, 722, 31, 2162, 38, 3170, 45, 4370],
+}; // (each rosette's sizes, its discs' W, each followed by its sphere's cells: made by rosetteSphereSizes())
 // a disc's rim and its pairing (see above): its corners, sides and rim; best, [s, rough]: corner i paired with the other's
 // s − i, rough the most the pairs' radii's sum moves (Infinity: no pairing with sides alike)
 function rosetteSeam(F) {
@@ -16349,14 +16362,15 @@ const SPHERES = {
   },
 };
 // the rosette spheres (see rosetteSphereMesh): their sizes their discs' W, their discs' houses twice, a unit each
-for (const [k, Ws] of Object.entries(ROSETTE_SPHERES)) {
+for (const [k, table] of Object.entries(ROSETTE_SPHERES)) {
+  const cells = Object.fromEntries(table.flatMap((W, i) => (i % 2 ? [] : [[W, table[i + 1]]]))); // (a size's cells: its table's pairs)
   SPHERES[`${k}Sphere`] = {
     mesh: (W) => rosetteSphereMesh(k, W),
     radius: (W) => Math.sqrt(SPHERES[`${k}Sphere`].tiles(W) / (4 * Math.PI)),
     unit: 'cells',
-    ownSizes: () => Ws,
+    ownSizes: () => Object.keys(cells).map(Number),
     disc: true,
-    tiles: (W) => 2 * APERIODIC[k](W).m, // (its disc's houses, walls too, counted flat)
+    tiles: (W) => cells[W] ?? 2 * APERIODIC[k](W).m, // (its two discs' houses, walls too: its table's, no disc built; a size out of its list, counted flat)
     how: (W) => {
       const F = APERIODIC[k](W),
         c = F.coreIds.length;

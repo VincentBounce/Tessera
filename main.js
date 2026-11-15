@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.1076';
+const VERSION = '0.4.1077';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -7042,6 +7042,13 @@ function tileGroup(buttons) {
   g.append(...buttons);
   return g;
 }
+// the menu's tabs of words only, one choice among several in one frame, each its share of the row (see .text-tabs: the
+// Number's ℚ ℝ ℙ, a battle's starts' ways)
+function textTabs(buttons) {
+  const g = tileGroup(buttons);
+  g.classList.add('text-tabs');
+  return g;
+}
 // A tile, every one alike (the shapes, the colours, the looks, the zones, Walls, Square, Trail, the theme): a square
 // button, its picture over its name (html: both as one), fixed whatever its state (but a switch's own while off, see
 // offPic); a click, once. Its states: on (gold) or off,
@@ -9011,7 +9018,7 @@ function renderNumberPicker(active) {
     numberTab = numberTabOf(active) ?? numberTab;
   }
   const shown = NUMBER_TABS.find(([name]) => name === numberTab)[1];
-  const tabs = tileGroup(
+  const tabs = textTabs(
     NUMBER_TABS.map(([name, , title]) => {
       const b = document.createElement('button');
       b.type = 'button';
@@ -9025,7 +9032,6 @@ function renderNumberPicker(active) {
       return b;
     }),
   );
-  tabs.classList.add('text-tabs');
   $('numberTabs').replaceChildren(tabs);
   // A number card's tooltip (its menu's too): its symbol a picture, its name in bold over its words; a fraction's, the
   // fraction itself, its name in its words; then the formula it writes (one built from its menu or drawn, once picked)
@@ -16518,14 +16524,10 @@ function pillRow(el, title, about, choices, at, first, set, whyNot = null) {
       }),
     );
   mark(at);
-  el.classList.add('pill-row');
-  el.replaceChildren(Object.assign(document.createElement('h3'), { textContent: title }), pillGroup(pills));
-}
-// a choice among a few as pills: tiles of words only in one frame (see .pill-group; a row's, pillRow; a battle's starts' ways)
-function pillGroup(pills) {
   const group = Object.assign(document.createElement('div'), { className: 'pill-group' });
   group.append(...pills);
-  return group;
+  el.classList.add('pill-row');
+  el.replaceChildren(Object.assign(document.createElement('h3'), { textContent: title }), group);
 }
 // − / +: the usual sizes (from a torus size of its own, the usual ones just below or above it)
 function stepSize(delta) {
@@ -18195,11 +18197,11 @@ function renderWalkTeams() {
     }); // (its picture: how it works, picked first, as a walk's rule's)
   };
   $('battleRuleCards').replaceChildren(...BATTLE_RULES.map((P, p) => way(P, p)));
-  // its starts' ways as pills, words only, over the start selector (see STARTS_WAYS; the selector greyed but in Symmetric, see syncSizeStepper)
+  // its starts' ways as tabs of words only (see textTabs), over the start selector (see STARTS_WAYS; the selector greyed but in Symmetric, see syncSizeStepper)
   if ($('startRow').previousElementSibling !== $('startWays')) $('startRow').before($('startWays'));
   const ways = STARTS_WAYS; // (one list: its tabs and a link's gr=)
   $('startWays').replaceChildren(
-    pillGroup(
+    textTabs(
       ways.map(([way, text, title]) =>
         tile({
           text,

@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.26';
+const VERSION = '0.5.27';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -10012,7 +10012,7 @@ const SPACES = {
     ],
     '3D': ['Lattice', 'cubeFilled', 'A 3D lattice, the walk going in space'],
   },
-  SHEETS = ['Globe', 'Rosettes', 'Torus', 'Möbius strip', 'Klein bottle']; // (the round surfaces' shapes, their group in 3D solids, in their order: the balls, then the sheets)
+  SHEETS = ['Torus', 'Möbius strip', 'Klein bottle', 'Globe', 'Rosettes']; // (the round surfaces' shapes, their group in 3D solids, in their order: the sheets, then the balls)
 // a tiling's icon: its polygons round a cell's middle, fitted in the 24 × 24 box
 function tilingIcon(kind) {
   const m = TILINGS[kind].polys.length,
@@ -10150,8 +10150,8 @@ const navValues = (level, pre) => [
 ];
 // A space's shapes in the order shown, in their groups ([title, shapes] each, those it has): in 2D, many of them, grouped by
 // their grid's natural shape (see SHAPE_GROUPS); in 3D, the regular solids (faces all alike),
-// the irregular ones (the cubes carved, those of squares and triangles), then the surfaces (the balls: Globe, Sphere, Rosettes; a sheet rolled up: Torus,
-// Möbius, Klein; see SHEETS); else as the menu lists them. Made once a kind and space (the menu's tables fixed once the
+// the irregular ones (the cubes carved, those of squares and triangles), then the surfaces (a sheet rolled up: Torus, Möbius,
+// Klein; the balls: Globe, Rosettes; see SHEETS); else as the menu lists them. Made once a kind and space (the menu's tables fixed once the
 // page has loaded: the graph's search asks it at each edge, 1.5 ms each, see nearestVariant)
 const shapeGroupsMemo = remember('shapeGroupsMemo', {});
 const shapeGroups = (kind, space) => (shapeGroupsMemo[`${kind}|${space}`] ??= shapeGroupsOf(kind, space));

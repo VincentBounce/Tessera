@@ -285,7 +285,7 @@ const shown =
 // next is built: a wait's guess, 1.5 s, read the grid before's symmetries on a page busy after the other checks)
 const openLife = async (link) => {
   const before = walk.life,
-    w = parseHash(link).w;
+    w = setupVariant(parseHash(link));
   location.hash = link;
   await until(shown(w, () => walk.life && walk.life !== before && walk.mode === w && isInUse(parseHash())));
 };
@@ -349,7 +349,7 @@ function checker(fail) {
     for (let t = 0; waits.size && t < 600; t++) await wait(100); // (its digits or its build still on their way: the link follows the walk once built, see buildWalk)
     c.checked++;
     const w = $('mode').value,
-      hashW = parseHash()?.w,
+      hashW = parseHash() && setupVariant(parseHash()),
       said = [
         ...$('sizeLabel')
           .innerText.split('\n')
@@ -503,18 +503,47 @@ const panel = (d) =>
 // Links opened cold, each in a page of its own (an iframe): their walk built, its mode the link's, its battle or its symmetry
 // as the link asks (v0.4.426: a strip's battle looped on its own size, opened cold; v0.4.423: a symmetry before any walk)
 const COLD_LINKS = [
-  [toHash({ x: 'pi', w: 'walkKleinBottleHexTurtleEdges', d: 3000, s: 72, k: 2, xb: 'e' }), { teams: 2 }],
   [
-    toHash({ x: 'pi', w: 'walkMobiusStripHexTurtleCells', d: 3000, s: 5, k: 3, xb: 'sqrt(2)', xc: 'sqrt(3)', br: 3 }),
+    toHash({
+      ...modeWords('walkKleinBottleHexTurtleEdges'),
+      walkNumberA: 'pi',
+      maxSteps: 3000,
+      gridSize: 72,
+      teams: 2,
+      walkNumberB: 'e',
+    }),
+    { teams: 2 },
+  ],
+  [
+    toHash({
+      ...modeWords('walkMobiusStripHexTurtleCells'),
+      walkNumberA: 'pi',
+      maxSteps: 3000,
+      gridSize: 5,
+      teams: 3,
+      walkNumberB: 'sqrt(2)',
+      walkNumberC: 'sqrt(3)',
+      battleRule: 'landCells',
+    }),
     { teams: 3 },
   ],
-  [toHash({ x: 'pi', w: 'walkIcosahedronHexTurtleEdges', d: 3000, s: 24, k: 2, xb: 'e' }), { teams: 2 }],
-  [toHash({ w: 'lifeHex', r: 'B3/S23', y: 'mirror' }), { symmetry: 'mirror' }],
+  [
+    toHash({
+      ...modeWords('walkIcosahedronHexTurtleEdges'),
+      walkNumberA: 'pi',
+      maxSteps: 3000,
+      gridSize: 24,
+      teams: 2,
+      walkNumberB: 'e',
+    }),
+    { teams: 2 },
+  ],
+  [toHash({ ...modeWords('lifeHex'), playRule: 'B3/S23', popSymmetry: 'mirror' }), { symmetry: 'mirror' }],
 ];
 async function checkColdLinks(fail) {
   for (const [link, want] of COLD_LINKS) {
     const f = document.createElement('iframe'),
-      w = parseHash(link).w;
+      w = setupVariant(parseHash(link));
     f.style.cssText = 'position:fixed;left:0;top:0;width:1200px;height:900px;opacity:0;pointer-events:none';
     f.src = `${location.pathname}?cold=${Date.now()}#${link}&version=${VERSION}`;
     document.body.append(f);
@@ -848,7 +877,7 @@ async function deep(fail, from, only) {
   );
   for (const w of all.slice(Math.max(0, all.indexOf(from)))) {
     localStorage.tesseraDeep = `${w} ${Math.round((performance.memory?.usedJSHeapSize ?? 0) / 1e6)} MB`; // (the page's memory too)
-    location.hash = toHash({ w });
+    location.hash = toHash(modeWords(w));
     await look(`${w} from its link`, 900);
     if ($('mode').value !== w) fail(`${w}: the link opened ${$('mode').value}`);
     for (let i = 0; i < $('ruleCards').children.length; i++) {
@@ -900,7 +929,7 @@ async function coloursOffered(fail) {
       sizes = SPHERES[kind]?.sizes ?? [];
     let some = false;
     for (const s of sizes) {
-      location.hash = toHash({ w, s });
+      location.hash = toHash({ ...modeWords(w), gridSize: s });
       await until(shown(w, () => $('sphereF').value === String(s))); // (the size asked: the one played may be a row off, its walkers')
       if (TEAM_COUNTS.some((K) => K > 1 && teamsFit(K))) {
         some = true;
@@ -983,20 +1012,20 @@ async function huntResultsKept(fail) {
   };
   // the battles' hunt: three walkers' orders drawn with the starts alone, then with the numbers
   const trio = {
-    x: 'sqrt(2923)',
-    w: 'walkIcosahedronHexTurtleEdges',
-    d: 20000,
-    s: 24,
-    k: 3,
-    xb: 'sqrt(5359)',
-    xc: 'sqrt(3363)',
-    br: 1,
+    ...modeWords('walkIcosahedronHexTurtleEdges'),
+    walkNumberA: 'sqrt(2923)',
+    maxSteps: 20000,
+    gridSize: 24,
+    teams: 3,
+    walkNumberB: 'sqrt(5359)',
+    walkNumberC: 'sqrt(3363)',
+    battleRule: 'landNoCollision',
   };
   for (const [formulas, starts] of [
     [false, true],
     [true, false],
   ]) {
-    location.hash = toHash({ ...trio, st: formulas ? 2 : 3 }); // (another link each: opened again)
+    location.hash = toHash({ ...trio, walkStart: formulas ? 2 : 3 }); // (another link each: opened again)
     await wait(500);
     await until(shown('walkIcosahedronHexTurtleEdges', () => walk.battle?.player?.K === 3));
     const tiles = $('battleHuntVary').children;
@@ -1102,7 +1131,7 @@ function checkFirstStarts(fail) {
 async function battlesFair(fail) {
   let checked = 0;
   for (const w of Object.keys(MODES).filter(battleMode)) {
-    location.hash = toHash({ x: 'pi', w });
+    location.hash = toHash({ ...modeWords(w), walkNumberA: 'pi' });
     await until(shown(w, () => !walk.battle && walk.geo));
     const counts = battleCounts(w),
       grid = !!MODES[w].edges;
@@ -1112,11 +1141,11 @@ async function battlesFair(fail) {
     if (!counts.length) fail(`${w}: no battle at size ${sphereSize()}`);
     for (const K of counts) {
       location.hash = toHash({
-        x: 'pi',
-        w,
-        d: 3000,
-        k: K,
-        ...Object.fromEntries([...'bcdefghijkl'.slice(0, K - 1)].map((c) => [`x${c}`, 'pi'])),
+        ...modeWords(w),
+        walkNumberA: 'pi',
+        maxSteps: 3000,
+        teams: K,
+        ...Object.fromEntries([...'BCDEFGHIJKL'.slice(0, K - 1)].map((c) => [`walkNumber${c}`, 'pi'])),
       });
       for (let t = 0; t < 30 && !built(K, false); t++) await wait(300);
       const P = walk.battle?.player,
@@ -1134,7 +1163,10 @@ async function battlesFair(fail) {
       let off = 0;
       for (let s = 1; s < K; s++)
         for (let i = 0; i < end; i++) if (P.places[s][i] !== G[s](P.places[0][i], grid)) off++;
-      if (off) fail(`${w} ${K} walkers: ${off} steps off A's path moved (#${toHash({ x: 'pi', w, k: K })})`);
+      if (off)
+        fail(
+          `${w} ${K} walkers: ${off} steps off A's path moved (#${toHash({ ...modeWords(w), walkNumberA: 'pi', teams: K })})`,
+        );
     }
     // Land no collision, its fewest walkers: no walker's step along another's (a line's edge along the grid, a tile
     // on cells), and none moving once stopped
@@ -1142,15 +1174,14 @@ async function battlesFair(fail) {
       K = counts[0],
       ruled = (br) =>
         `#${toHash({
-          x: 'pi',
-          w,
-          d: 3000,
-          k: K,
-          br,
-          ...Object.fromEntries([...'bcdefghijkl'.slice(0, K - 1)].map((c, j) => [`x${c}`, `sqrt(${j + 2})`])),
-          v: VERSION,
+          ...modeWords(w),
+          walkNumberA: 'pi',
+          maxSteps: 3000,
+          teams: K,
+          battleRule: linkWord(BATTLE_RULES[br][1]),
+          ...Object.fromEntries([...'BCDEFGHIJKL'.slice(0, K - 1)].map((c, j) => [`walkNumber${c}`, `sqrt(${j + 2})`])),
         })}`,
-      link = ruled(stop); // (its version: a link without one is read as an old one, pe= in its order then, see PE_BEFORE)
+      link = ruled(stop);
     if (!K) continue;
     location.hash = link;
     for (let t = 0; t < 30 && !built(K, true); t++) await wait(300);
@@ -1188,7 +1219,12 @@ async function battlesFair(fail) {
     location.hash = slink;
     for (
       let t = 0;
-      t < 30 && !(walk.battle?.player?.K === K && $('mode').value === w && parseHash()?.br === String(snake));
+      t < 30 &&
+      !(
+        walk.battle?.player?.K === K &&
+        $('mode').value === w &&
+        parseHash()?.battleRule === linkWord(BATTLE_RULES[snake][1])
+      );
       t++
     )
       await wait(300);
@@ -1410,7 +1446,7 @@ async function checkKnown(fail) {
     ['lifeFlorets', 'half rotate'],
     ['rewindHex', ''],
   ]) {
-    await openLife(`#${toHash({ w, s: 32, e: 1, pop: 'random.30.1' })}`);
+    await openLife(`#${toHash({ ...modeWords(w), gridSize: 32, gridWalls: 1, popStart: 'random', popDraw: '30.1' })}`);
     const { kind, W } = walk.plane,
       has = symmetriesHere(kind, W)
         .filter((y) => y !== 'none')
@@ -1548,7 +1584,7 @@ async function checkSheets(fail) {
     const offered = [];
     for (const K of [1, 3]) {
       lifeTeams = K;
-      location.hash = toHash({ w, k: K });
+      location.hash = toHash({ ...modeWords(w), teams: K });
       await until(shown(w, () => lifeTeams === K));
       offered.push(TEAM_COUNTS.filter((k) => teamsFit(k)).join(','));
     }
@@ -1556,7 +1592,7 @@ async function checkSheets(fail) {
     if (w === 'lifeKleinBottleType15' && offered[0].split(',').some((k) => k % 2 === 0))
       fail(`${w}: an even count of colours offered (${offered[0]}), its twist asking an odd length`); // (v0.3.88 to 0.3.93: g.period left by the rename, every count offered)
     for (const K of [2, 3, 5].filter((k) => offered[0].split(',').includes(`${k}`))) {
-      location.hash = toHash({ w, k: K });
+      location.hash = toHash({ ...modeWords(w), teams: K });
       await until(shown(w, () => lifeTeams === K && walk.life?.colours === K));
       const sizes = huntParts(null, K).map((p) => p.length);
       if (lifeTeams !== K) fail(`${w}: ${K} colours offered, ${lifeTeams} taken`);
@@ -1588,17 +1624,17 @@ async function partsEqual(fail) {
       .filter((w) => MODES[w].plane)
       .flatMap((w) => [
         [w, {}, 1],
-        [w, { e: 1 }, 1],
+        [w, { gridWalls: 1 }, 1],
       ]),
     ...lifeModes
       .filter((w) => MODES[w].sphere && !TORI.includes(surfaceOf(MODES[w])))
       .map((w) => [w, {}, SPHERES[MODES[w].sphere]?.disc ? 1 : 0]),
   ]; // (a rosette sphere: its discs' lunes, cells whole, one apart as the plane's)
   for (const [w, walls, slack] of runs) {
-    location.hash = toHash({ w, ...walls, k: 1 });
+    location.hash = toHash({ ...modeWords(w), ...walls, teams: 1 });
     await until(shown(w, () => lifeTeams === 1));
     for (const K of TEAM_COUNTS.filter((k) => k > 1 && teamsFit(k))) {
-      location.hash = toHash({ w, ...walls, k: K });
+      location.hash = toHash({ ...modeWords(w), ...walls, teams: K });
       await until(shown(w, () => lifeTeams === K && walk.life?.colours === K));
       const sizes = huntParts(null, K).map((p) => p.length);
       if (lifeTeams !== K) fail(`${w}${walls}: ${K} colours offered, ${lifeTeams} taken`);

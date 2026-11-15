@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.0';
+const VERSION = '0.5.1';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -18187,9 +18187,6 @@ const BATTLE_RULES = [
     "As Land edges 1, and a walker dies by its head, its last thread, from its head to its fork, let go: its head on another's (both die), or another's head along or across its last thread (it dies; touched, nothing); elsewhere a thread pierced, as in Land edges 1",
   ],
 ];
-// a link of v0.4.378 or before: its pe= in the order they were added (then: Land edges 1, Land cells, Cut, Land edges 2, Land
-// grid 3, Land no collision, Land edges merge, Snake cells), its place now (see applySetup)
-const PE_BEFORE = [0, 3, 4, 6, 7, 1, 2, 5];
 // the ways along the edges's lines (a walker's line, its land the regions it closes, see battlePlayer)
 const BATTLE_LINED = ['landEdges', 'landEdges3', 'landStop', 'landMerge'];
 // a walk that can be a battle: one on a surface (on cells or along the edges, its steps surfaceSteps'), with as many
@@ -24409,13 +24406,13 @@ function zoneWords(zone) {
 // each (π vs e); the number's symbol, a text, Drawn, Found (cells a hunt found: its ch), each colour's pattern (Famous,
 // Anywhere) or picture (Icon, Punk), a number laid, else its zone's name and seed (Wild #7, Bloom #7)
 function startWords(s) {
-  const [kind, a, b] = String(s.pop ?? 'random').split('.'),
+  const [kind, a, b] = String(popOf(s) ?? 'random').split('.'),
     zone = zoneOfWord(kind) ?? 'full',
-    each = String(s.pop).split('.').slice(1);
-  if (kind === 'digits') return [formulaOf(s.x).sym];
-  if (kind === 'text') return [`«${String(s.pop).slice(5) || APP_TITLE}»`];
+    each = String(popOf(s)).split('.').slice(1);
+  if (kind === 'digits') return [formulaOf(setupNumber(s)).sym];
+  if (kind === 'text') return [`«${String(popOf(s)).slice(5) || APP_TITLE}»`];
   if (kind === 'draw') return ['Drawn'];
-  if (s.ch) return ['Found'];
+  if (s.popFound) return ['Found'];
   const tab = !zoneOfWord(kind) && kind !== 'random' && START_TABS.find(([k]) => k === kind);
   if (tab) return [tab[2]]; // (a start of its own, no zone's: Elementary's One cell, Two cells, Half)
   if (famousZone(zone)) return each.map((word) => word.split(':')[0]);
@@ -24454,32 +24451,32 @@ function startLead(number, seeded) {
   return `${how} on ${where}`;
 }
 function planeFromSetup(s) {
-  plane.torus = Number(s.e) !== 1;
-  plane.shape = { s: 'square', r: 'rhombus' }[s.ol] ?? 'hex'; // (ol: its outline, not its own: a six-fold grid's a hexagon walled, the others' a rectangle)
-  if (s.s !== undefined) picked = planeCells(Number(s.s)); // (the grid at the nearest it offers, see plane.side; as its edges are: walls, a hexagon's cells)
-  spaceTime = Number(s.sp) === 1 && !plane.torus; // (3D: with walls only)
-  plane.sym = SYMMETRIES[s.y] ? s.y : 'none';
+  plane.torus = Number(s.gridWalls) !== 1;
+  plane.shape = ['square', 'rhombus'].includes(s.gridOutline) ? s.gridOutline : 'hex'; // (ol: its outline, not its own: a six-fold grid's a hexagon walled, the others' a rectangle)
+  if (s.gridSize !== undefined) picked = planeCells(Number(s.gridSize)); // (the grid at the nearest it offers, see plane.side; as its edges are: walls, a hexagon's cells)
+  spaceTime = Number(s.popStacked) === 1 && !plane.torus; // (3D: with walls only)
+  plane.sym = SYMMETRIES[s.popSymmetry] ? s.popSymmetry : 'none';
   startFromSetup(s);
 }
 // a link's start (pop=), the plane's or a surface's: a soup or a zone's, from its seed; Draw (p=, the plane's), the digits, a text
 function startFromSetup(s) {
-  const [kind, a, b] = String(s.pop ?? 'random').split('.');
+  const [kind, a, b] = String(popOf(s) ?? 'random').split('.');
   if (kind === 'random' || zoneOfWord(kind)) {
     plane.start = 'random';
     plane.density = Math.min(70, Math.max(5, Number(a) || 30)); // (as the hunt draws them, see DENSITY)
     hunt.zone = zoneOfWord(kind) ?? 'full'; // (pop=bloom.30.7: Bloom's patches, from that seed)
     plane.seed = Number(b) || 1;
     if (isIcon(hunt.zone))
-      plane.icons = String(s.pop)
+      plane.icons = String(popOf(s))
         .split('.')
         .slice(1)
         .map((name) => iconIndex(name)); // (pop=icon24.star.heart: each colour's)
     if (hunt.zone === 'numbers') plane.number = NUMBER_DRAWN.test(a) ? a : '1/7'; // (pop=formula.16/9, formula.sqrt(7))
-    plane.picks = famousZone(hunt.zone) ? String(s.pop).split('.').slice(1) : null; // (pop=famous.Glider.R-pentomino:2: each colour's)
+    plane.picks = famousZone(hunt.zone) ? String(popOf(s)).split('.').slice(1) : null; // (pop=famous.Glider.R-pentomino:2: each colour's)
   } else plane.start = ['draw', 'text', ...ELEMENTARY_STARTS].includes(kind) ? kind : 'random';
-  if (kind === 'text') plane.text = String(s.pop).slice(5) || APP_TITLE;
-  plane.font = TEXT_FONTS[s.tf] ? s.tf : 'sans'; // (Text's font, tf=)
-  population = plane.start === 'draw' ? populationOf(s.p) : population;
+  if (kind === 'text') plane.text = String(popOf(s)).slice(5) || APP_TITLE;
+  plane.font = TEXT_FONTS[s.popFont] ? s.popFont : 'sans'; // (Text's font, tf=)
+  population = plane.start === 'draw' ? populationOf(s.popCells) : population;
 }
 // the grid's size, its edges and its start, as the controls say (the patterns and the turns of a
 // square on squares only)
@@ -39155,12 +39152,9 @@ function setLifeSeed(seed, how) {
  * PART 10 — SETUPS AND LINKS
  * ==============================================================================================
  *
- * A setup is a flat object of short keys, the code's own, the same for the Gallery in this browser (localStorage) and
- * the JSON export; the page link (#…) writes each under a word that says it (see LINK_NAMES, modeWords):
- *   x   the formula          w   the mode's key       d    the length asked (steps, generations)
- *   s   the grid's size (a torus: rows, or rows x tiles per row)
- *   r   the rule played      ch  a Life start found (a hunt's)
- *   st  the start of a walk along a solid's edges (when not 1)
+ * A setup is a flat object of words, each saying what it holds, the same for the page link (#…), the Gallery in this
+ * browser (localStorage), its JSON files and the code: its mode by its parts (mode, shape, tiling, walkKind, on, see
+ * modeWords), then teams, playRule, maxSteps, gridSize, walkNumberA, popStart… (see setupVariant and getSetup)
  * It only holds what determines the result. Display choices (colours, areas, grid, sky, camera,
  * zoom…), the speed and the current step are never saved: a link opens with the mode's default
  * view (see DISPLAY_DEFAULTS). A
@@ -39265,139 +39259,129 @@ const zoneOfWord = (w) => Object.keys(HUNT_ZONES).find((z) => z !== 'full' && z 
 // (git log --grep "(v0.2.0)", its bundle, tools/at.sh 0.2.0); changed, the version now. Not read otherwise (no old links
 // handled), nor part of what tells setups apart (see isInUse)
 let setupFrom = null; // { setup, v }
-const sameSetup = (a, b, apart = ['v']) =>
+const sameSetup = (a, b, apart = ['version']) =>
   [...new Set([...Object.keys(a), ...Object.keys(b)])].every(
     (k) => apart.includes(k) || String(a[k] ?? '') === String(b[k] ?? ''),
   ); // (apart: the keys not compared)
 function getSetup() {
   const w = tabMode(),
     mode = MODES[w],
-    s = readsDigits(w) ? { x: formulaInUse, w } : { w };
-  if (!mode.life || gensShown()) s.d = lengthAsked(); // (the length asked: digits, or generations)
-  if (mode.lattice === 'sphere') s.s = $('sphereF').value;
-  if (modeStarts() && startNo() > 1) s.st = startNo();
-  if (torusTurned && TURNED[mode.sphere]) s.o = 1;
-  if (mode.life) s.r = ruleBody($('lifeRule').value);
-  if (mode.life && !mode.margolus && lifeTeams > 1) s.k = lifeTeams;
+    s = { ...modeWords(w), ...(readsDigits(w) ? { [mode.life ? 'popNumber' : 'walkNumberA']: formulaInUse } : {}) };
+  if (!mode.life || gensShown()) s.maxSteps = lengthAsked(); // (the length asked: digits, or generations)
+  if (mode.lattice === 'sphere') s.gridSize = $('sphereF').value;
+  if (modeStarts() && startNo() > 1) s.walkStart = startNo();
+  if (torusTurned && TURNED[mode.sphere]) s.gridTurned = 1;
+  if (mode.life) s.playRule = ruleBody($('lifeRule').value);
+  if (mode.life && !mode.margolus && lifeTeams > 1) s.teams = lifeTeams;
   if (battleOn()) {
     // (a walk's Duel or Trio, as Life's: its teams; B's number, C's)
-    s.k = walkTeams;
+    s.teams = walkTeams;
     RIVALS.slice(0, walkTeams - 1).forEach((id) => {
-      s[`x${id.slice(-1).toLowerCase()}`] = formulaOf($(id).value).text ?? $(id).value;
+      s[`walkNumber${id.slice(-1)}`] = formulaOf($(id).value).text ?? $(id).value;
     }); // (xb, xc…)
-    if (battleRuleInUse(tabMode())) s.br = battleRuleInUse(tabMode()); // (the one played; none: the first, Land edges 1)
-    if (startsWayNow() !== 'symmetric') s.gr = STARTS_WAYS.findIndex(([way]) => way === startsWayNow()); // (its starts: Centred, Random, see STARTS_WAYS)
-    if (startsWayNow() === 'random') s.rs = battleSeed;
+    if (battleRuleInUse(tabMode())) s.battleRule = linkWord(BATTLE_RULES[battleRuleInUse(tabMode())][1]); // (the one played, by its name: landNoCollision; none: the first, Land edges 1)
+    if (startsWayNow() !== 'symmetric') s.battleStarts = startsWayNow(); // (its starts: centred, random, see STARTS_WAYS)
+    if (startsWayNow() === 'random') s.battleDraw = battleSeed;
     if (startsOrder(walkTeams))
-      s.so = startsOrder(walkTeams)
+      s.battleOrder = startsOrder(walkTeams)
         .map((i) => String.fromCharCode(97 + i))
         .join(''); // (its starts' order: so=acb)
   }
-  if (mode.life && teamsMix && lifeTeams > 1) s.mx = 1;
-  if (mode.life && newcomerOn()) s.nc = 1; // (Newcomer)  // (Mixed, kept where its zone greys it: the other zones' fits by it, see huntFits)
+  if (mode.life && teamsMix && lifeTeams > 1) s.popMixed = 1;
+  if (mode.life && newcomerOn()) s.popNewcomer = 1; // (Newcomer)  // (Mixed, kept where its zone greys it: the other zones' fits by it, see huntFits)
   if (mode.plane) {
     // the grid's side, dead edges (e=1), its start ("random.30.7", "draw" with p=, "digits"), its symmetry (y=)
-    if (!mode.elementary) s.s = plane.side; // (Elementary's: none, see elementaryRows)
-    if (!plane.torus) s.e = 1;
+    if (!mode.elementary) s.gridSize = plane.side; // (Elementary's: none, see elementaryRows)
+    if (!plane.torus) s.gridWalls = 1;
     const ol = outlineOf(MODES[w].plane);
-    if (ol !== outlineOf(MODES[w].plane, 'hex')) s.ol = ol[0];
-    if (walk.plane && symmetryOf(walk.plane.kind) !== 'none') s.y = symmetryOf(walk.plane.kind);
-    if (plane.start === 'draw' && population.size) s.p = populationRle(population);
-    if (spaceTimeOn()) s.sp = 1; // (Space-time)
+    if (ol !== outlineOf(MODES[w].plane, 'hex')) s.gridOutline = ol;
+    if (walk.plane && symmetryOf(walk.plane.kind) !== 'none') s.popSymmetry = symmetryOf(walk.plane.kind);
+    if (plane.start === 'draw' && population.size) s.popCells = populationRle(population);
+    if (spaceTimeOn()) s.popStacked = 1; // (Space-time)
   }
   if (mode.life && !mode.loops)
-    s.pop = plane.start === 'random' ? zonePop() : plane.start === 'text' ? `text.${plane.text}` : plane.start; // its start (a surface's no Draw)
-  if (mode.life && !mode.loops && plane.start === 'text' && plane.font !== 'sans') s.tf = plane.font; // (its font)
-  if (mode.net && walkRuleOf(mode) !== firstWalkRule(mode)) s.r = walkRuleOf(mode); // (a walk's rule: none, its own)
-  if (mode.antOf) s.r = `${antByDigits ? 'digits ' : ''}${antRuleOf(w)}`; // ("digits 1R0 0L0": by the digits)
-  if (mode.worm) s.r = worm.byDigits ? 'digits' : worm.rule;
-  if (championCode) s.ch = championCode;
-  if (walk.mode === w && stepShown !== (lifeTime() ? 0 : firstShown())) s.at = stepShown; // (the step or generation shown, when not the one it opens at)
-  s.v = setupFrom && sameSetup(setupFrom.setup, s, ['v', 'at']) ? setupFrom.v : VERSION; // (last: the version it was made with, see setupFrom)
+    Object.assign(
+      s,
+      popWords(plane.start === 'random' ? zonePop() : plane.start === 'text' ? `text.${plane.text}` : plane.start),
+    ); // its start (a surface's no Draw)
+  if (mode.life && !mode.loops && plane.start === 'text' && plane.font !== 'sans') s.popFont = plane.font; // (its font)
+  if (mode.net && walkRuleOf(mode) !== firstWalkRule(mode)) s.playRule = walkRuleOf(mode); // (a walk's rule: none, its own)
+  if (mode.antOf) s.playRule = `${antByDigits ? 'digits ' : ''}${antRuleOf(w)}`; // ("digits 1R0 0L0": by the digits)
+  if (mode.worm) s.playRule = worm.byDigits ? 'digits' : worm.rule;
+  if (championCode) s.popFound = championCode;
+  if (walk.mode === w && stepShown !== (lifeTime() ? 0 : firstShown())) s.step = stepShown; // (the step or generation shown, when not the one it opens at)
+  s.version = setupFrom && sameSetup(setupFrom.setup, s, ['version', 'step']) ? setupFrom.v : VERSION; // (last: the version it was made with, see setupFrom)
   return s;
 }
 
-// version v (0.4.N) the same as w or before it
-const versionAtMost = (v, w) => {
-  const a = String(v).split('.').map(Number),
-    b = w.split('.').map(Number);
-  for (let i = 0; i < b.length; i++) if ((a[i] ?? 0) !== b[i]) return (a[i] ?? 0) < b[i];
-  return true;
-};
 // a link's step or generation shown (at=), gone to once its walk is built (see applyPendingView)
 let pendingAt = null;
 function applySetup(s) {
-  setupFrom = s.v ? { setup: s, v: s.v } : null;
-  pendingAt = s.at !== undefined && Number.isFinite(Number(s.at)) ? Number(s.at) : null;
+  setupFrom = s.version ? { setup: s, v: s.version } : null;
+  pendingAt = s.step !== undefined && Number.isFinite(Number(s.step)) ? Number(s.step) : null;
   const set = (id, v) => {
     if (v !== undefined && v !== null) $(id).value = v;
   };
-  if (!MODES[s.w]) return false;
-  if (typeof s.x === 'string') {
+  const w = setupVariant(s);
+  if (!w) return false;
+  if (typeof setupNumber(s) === 'string') {
     // (none: the number kept, not read)
-    $('formula').value = s.x;
+    $('formula').value = setupNumber(s);
     if (readFormula().error) return false;
-    pickNumber(formulaInUse, s.w);
+    pickNumber(formulaInUse, w);
   }
-  if (s.d !== undefined) lengthPicked = Number(s.d);
-  walkTeams = !MODES[s.w].life && TEAM_COUNTS.includes(Number(s.k)) ? Number(s.k) : 1; // (a walk's battle, if its surface allows it at its size: see battleOn)
-  const pe =
-    s.br !== undefined
-      ? Number(s.br)
-      : s.pe === undefined
-        ? 0
-        : !s.v || versionAtMost(s.v, '0.4.378')
-          ? PE_BEFORE[Number(s.pe)]
-          : Number(s.pe); // (br=; a link of v0.4.457 or before, pe=)  // (an older link's, in its own order)
-  battleRule = walkTeams > 1 && BATTLE_RULES[pe] ? pe : 0; // (none: the first, Land edges 1)
-  battleStartsWay = STARTS_WAYS[Number(s.gr)]?.[0] ?? 'symmetric';
-  battleSeed = Number(s.rs) || 1;
-  battleOrder = s.so ? [...String(s.so)].map((c) => c.charCodeAt(0) - 97) : null; // (so=acb: see startsOrder)
+  if (s.maxSteps !== undefined) lengthPicked = Number(s.maxSteps);
+  walkTeams = !MODES[w].life && TEAM_COUNTS.includes(Number(s.teams)) ? Number(s.teams) : 1; // (a walk's battle, if its surface allows it at its size: see battleOn)
+  const ruled = BATTLE_RULES.findIndex(([, name]) => linkWord(name) === s.battleRule);
+  battleRule = walkTeams > 1 && ruled > 0 ? ruled : 0; // (none: the first, Land edges 1)
+  battleStartsWay = STARTS_WAYS.some(([way]) => way === s.battleStarts) ? s.battleStarts : 'symmetric';
+  battleSeed = Number(s.battleDraw) || 1;
+  battleOrder = s.battleOrder ? [...String(s.battleOrder)].map((c) => c.charCodeAt(0) - 97) : null; // (so=acb: see startsOrder)
   RIVALS.forEach((id, j) => {
-    $(id).value = s[`x${id.slice(-1).toLowerCase()}`] ?? RIVAL_FIRSTS[j];
+    $(id).value = s[`walkNumber${id.slice(-1)}`] ?? RIVAL_FIRSTS[j];
   }); // (one the link gives not: its number at first)
-  set('mode', s.w);
-  $('startNo').value = s.st ?? 1;
-  torusTurned = Number(s.o) === 1;
-  if (MODES[s.w].sphere) {
-    const kind = surfaceOf(MODES[s.w]);
-    fillSphereSizes(kind, MODES[s.w].initial);
-    if (s.s !== undefined) {
-      selectSize(kind, linkSize(kind, s.s));
+  set('mode', w);
+  $('startNo').value = s.walkStart ?? 1;
+  torusTurned = Number(s.gridTurned) === 1;
+  if (MODES[w].sphere) {
+    const kind = surfaceOf(MODES[w]);
+    fillSphereSizes(kind, MODES[w].initial);
+    if (s.gridSize !== undefined) {
+      selectSize(kind, linkSize(kind, s.gridSize));
       seek(kind);
     }
   }
-  if (s.r && MODES[s.w].worm) {
-    worm.byDigits = s.r === 'digits';
-    if (!worm.byDigits && wormRuleOf(s.r)) worm.rule = wormRuleOf(s.r).join(' ');
-  } else if (s.r && MODES[s.w].antOf) {
-    antByDigits = s.r.startsWith('digits');
-    const T = antRuleRead(s.w, antByDigits ? s.r.slice(6).trim() : s.r);
-    if (T) antRules[s.w] = T.text;
-  } else if (MODES[s.w].net) {
-    const m = MODES[s.w],
-      commands = s.r && walkCommandsOf(s.w, s.r);
+  if (s.playRule && MODES[w].worm) {
+    worm.byDigits = s.playRule === 'digits';
+    if (!worm.byDigits && wormRuleOf(s.playRule)) worm.rule = wormRuleOf(s.playRule).join(' ');
+  } else if (s.playRule && MODES[w].antOf) {
+    antByDigits = s.playRule.startsWith('digits');
+    const T = antRuleRead(w, antByDigits ? s.playRule.slice(6).trim() : s.playRule);
+    if (T) antRules[w] = T.text;
+  } else if (MODES[w].net) {
+    const m = MODES[w],
+      commands = s.playRule && walkCommandsOf(w, s.playRule);
     walkRules[walkKey(m)] = commands ? ruleOfCommands(commands) : firstWalkRule(m);
-  } else if (s.r || MODES[s.w].life) {
+  } else if (s.playRule || MODES[w].life) {
     // (Life: its size and start without a rule too, the grid's first then)
-    if (MODES[s.w].plane) planeFromSetup(s);
+    if (MODES[w].plane) planeFromSetup(s);
     else startFromSetup(s); // (a surface's)
-    lifeTeams = Number(s.k) || 1;
+    lifeTeams = Number(s.teams) || 1;
     applyDefaults('lifeTeams'); // (Trail: see DISPLAY_DEFAULTS)
-    teamsMix = Number(s.mx) === 1;
-    newcomer = Number(s.nc) === 1;
-    if (s.r) {
-      ruleFittedTo = s.w;
-      $('lifeRule').value = ruleBody(s.r);
+    teamsMix = Number(s.popMixed) === 1;
+    newcomer = Number(s.popNewcomer) === 1;
+    if (s.playRule) {
+      ruleFittedTo = w;
+      $('lifeRule').value = ruleBody(s.playRule);
     } // a link's rule as it is
   }
   // the display is not part of a setup: it takes the defaults of the walk mode's tab, when the tab
   // changes (as picking a walk does); within a tab, what was chosen stays
   if (modeTabOf() !== displayTab) displayDefaults();
-  $('perspective').checked = defaultOf('perspective', s.w);
+  $('perspective').checked = defaultOf('perspective', w);
   Object.assign(camera, CAMERA_START);
   $('upright').checked = false; // (the default view: free, on each surface)
-  pendingChampion = s.ch || null;
+  pendingChampion = s.popFound || null;
   compute(); // a champion follows once the walk is built
   return true;
 }
@@ -39455,48 +39439,20 @@ const modeWords = (w) => {
 // the mode a link's words say: the first of the menu with each word given (one left out: any)
 const modeOfWords = (s) =>
   Object.keys(NAV).find((w) => MODE_WORDS.every((k) => s[k] === undefined || modeWords(w)[k] === s[k]));
-// A setup's fields in a link, each under a word that says it (a setup's own, short: the code's): what all modes have, one
-// word, no prefix (teams, playRule, maxSteps); what one family has, its prefix: grid (the tiling's sheet), walk, battle,
-// pop (a population: Life, Rewind, Replicators, Elementary). Apart from this table: the number (x: popNumber, or
-// walkNumberA and the others' B to L), a population's start (pop: popStart, then its draw, its text or its picks), and
-// the choices written by their names, not their places (battleRule, battleStarts, gridOutline)
-const LINK_NAMES = {
-  k: 'teams',
-  r: 'playRule',
-  d: 'maxSteps',
-  at: 'step',
-  v: 'version',
-  s: 'gridSize',
-  o: 'gridTurned',
-  e: 'gridWalls',
-  ol: 'gridOutline',
-  st: 'walkStart',
-  br: 'battleRule',
-  gr: 'battleStarts',
-  so: 'battleOrder',
-  rs: 'battleDraw',
-  tf: 'popFont',
-  p: 'popCells',
-  ch: 'popFound',
-  y: 'popSymmetry',
-  mx: 'popMixed',
-  nc: 'popNewcomer',
-  sp: 'popStacked',
+// A setup's fields are the link's words, each saying what it holds, the same in the link, the Gallery and the code: what all
+// modes have, one word, no prefix (teams, playRule, maxSteps, step, version); what one family has, its prefix: grid (the
+// tiling's sheet), walk, battle, pop (a population: Life, Rewind, Replicators, Elementary); its mode by its parts (see
+// modeWords); a choice by its name, never its place (battleRule, battleStarts, gridOutline)
+// the mode's key a setup's words say (see modeOfWords), once a setup
+const setupVariants = new WeakMap();
+const setupVariant = (s) => {
+  if (!setupVariants.has(s)) setupVariants.set(s, s.mode ? modeOfWords(s) : undefined);
+  return setupVariants.get(s);
 };
-const FIELD_OF_NAME = Object.fromEntries(Object.entries(LINK_NAMES).map(([field, name]) => [name, field]));
-// a choice written by its name: a field's value to its word and back (none: as it is)
-const LINK_CHOICES = {
-  br: BATTLE_RULES.map(([, name]) => linkWord(name)), // (landEdges1, landNoCollision…: its card's name)
-  gr: STARTS_WAYS.map(([way]) => way),
-  ol: { s: 'square', r: 'rhombus' },
-};
-const linkChoice = (field, v) => LINK_CHOICES[field]?.[v] ?? v;
-const fieldChoice = (field, word) => {
-  const at = Object.entries(LINK_CHOICES[field] ?? {}).find(([, name]) => name === word);
-  return at ? at[0] : word;
-};
+// its number: a population's (popNumber), a walk's or an ant's (walkNumberA: A's in a battle)
+const setupNumber = (s) => s.popNumber ?? s.walkNumberA;
 // a population's start in words: popStart, then what comes with it: its draw (a soup's density and seed, 30.7), its text,
-// its picks (a zone's icons, patterns or number)
+// its picks (a zone's icons, patterns or number); and whole again, as its readers take it (random.30.7, text.Hello)
 const popWords = (pop) => {
   const [start, ...rest] = String(pop).split('.'),
     more = rest.join('.');
@@ -39511,62 +39467,31 @@ const popWords = (pop) => {
           : {}),
   };
 };
-const POP_WORDS = ['popStart', 'popText', 'popDraw', 'popPicks'];
-// a setup in a link's words, in turn: its mode's, its numbers, the rest as the setup holds them
-// (a setup of a mode the app has no more, a Gallery's old entry: its key as saved, w=, read by nothing: its card stays, its key its own)
-function linkWordsOf({ w, x, ...rest }) {
-  const pop = !!MODES[w]?.life,
-    words = {
-      ...(NAV[w] ? modeWords(w) : { w }),
-      ...(x === undefined ? {} : { [pop ? 'popNumber' : 'walkNumberA']: x }),
-    };
-  for (const [field, v] of Object.entries(rest)) {
-    if (field === 'pop') Object.assign(words, popWords(v));
-    else if (/^x[b-l]$/.test(field)) words[`walkNumber${field[1].toUpperCase()}`] = v;
-    else words[LINK_NAMES[field] ?? field] = linkChoice(field, v);
-  }
-  return words;
-}
-// and back: a link's words to a setup (null: no mode said, or none of the menu's)
-function setupOfLinkWords(said) {
-  const w = said.mode && modeOfWords(said);
-  if (!w) return null;
-  const x = said.popNumber ?? said.walkNumberA,
-    s = { ...(x === undefined ? {} : { x }), w }; // (its number first, then its mode: as getSetup's)
-  for (const [name, v] of Object.entries(said)) {
-    const rival = name.match(/^walkNumber([B-L])$/);
-    if (MODE_WORDS.includes(name) || name === 'popNumber' || name === 'walkNumberA') continue;
-    if (name === 'popStart')
-      s.pop = [v, said.popText ?? said.popDraw ?? said.popPicks].filter((part) => part !== undefined).join('.');
-    else if (POP_WORDS.includes(name)) continue;
-    else if (rival) s[`x${rival[1].toLowerCase()}`] = v;
-    else if (FIELD_OF_NAME[name]) s[FIELD_OF_NAME[name]] = fieldChoice(FIELD_OF_NAME[name], v);
-    else s[name] = v;
-  }
-  return s;
-}
+const popOf = (s) =>
+  s.popStart === undefined
+    ? undefined
+    : [s.popStart, s.popText ?? s.popDraw ?? s.popPicks].filter((part) => part !== undefined).join('.');
 const toHash = (setup) =>
-  Object.entries(linkWordsOf(setup))
+  Object.entries(setup)
     .map(
       ([k, v]) =>
         `${k}=${encodeURIComponent(String(v)).replace(/%(2F|2B|5E|2C|3A|24)/g, (c) => decodeURIComponent(c))}`,
     )
     .join('&');
-// a link's setup (its hash; none said, the page's): its words read (see setupOfLinkWords); null: none
+// a link's setup (its hash; none said, the page's): its words as they are; null: no mode of the menu said
 function parseHash(hash = location.hash) {
   if (hash.length < 2) return null;
   try {
-    return setupOfLinkWords(
-      Object.fromEntries(
-        hash
-          .replace(/^#/, '')
-          .split('&')
-          .map((kv) => {
-            const at = kv.indexOf('=');
-            return [kv.slice(0, at), decodeURIComponent(kv.slice(at + 1))];
-          }),
-      ),
+    const s = Object.fromEntries(
+      hash
+        .replace(/^#/, '')
+        .split('&')
+        .map((kv) => {
+          const at = kv.indexOf('=');
+          return [kv.slice(0, at), decodeURIComponent(kv.slice(at + 1))];
+        }),
     );
+    return setupVariant(s) ? s : null;
   } catch {
     return null;
   }
@@ -39586,18 +39511,13 @@ function syncLink() {
 }
 
 /* ---- 10.4 The Gallery and its JSON files -------------------------------------------------- */
-// The Gallery: the setups saved in this browser (localStorage), as { name, setup, saved }, its setup in the link's words (see storedEntry; its files' setups: the same)
+// The Gallery: the setups saved in this browser (localStorage), as { name, setup, saved }, its setup the link's words (its files' setups: the same)
 const GALLERY_KEY = 'tessera.setups',
   CURATED_KEY = 'tessera.curated';
 // one card a setup (as its thumbnail's key: neither its version nor how it is looked at): a setup saved twice (imported, or by an
 // old version), its last saved only
-// An entry as kept (this browser's, a file's): its setup in the link's words (see linkWordsOf), never the code's own keys: a
-// mode or a field renamed in the code changes no entry. Read back to a setup (none: its words say no mode of the menu)
-const storedEntry = (x) => ({ ...x, setup: linkWordsOf(x.setup) });
-const readEntry = (x) => {
-  const setup = x?.setup && setupOfLinkWords(x.setup);
-  return setup ? { ...x, setup } : null;
-};
+// (an entry whose words say no mode of the menu: not read)
+const readEntry = (x) => (x?.setup && setupVariant(x.setup) ? x : null);
 function readGallery() {
   let list;
   try {
@@ -39634,7 +39554,7 @@ function seedCurated() {
 }
 function writeGallery(list) {
   try {
-    localStorage.setItem(GALLERY_KEY, JSON.stringify(list.map(storedEntry)));
+    localStorage.setItem(GALLERY_KEY, JSON.stringify(list));
     return true;
   } catch {
     return false;
@@ -39644,15 +39564,17 @@ function writeGallery(list) {
 // a setup's row: a walk's 2D, 3D or Lattice, its walk, size, start, turn and rule; a Game of Life's rule (its name on its grid,
 // see ruleCard), colours (Newcomer's), size and start
 const setupDetail = (s) => {
-  const life = MODES[s.w]?.life,
+  const life = MODES[setupVariant(s)]?.life,
     { code, name } = ruleWords(s);
   return [
-    life && shapeAndTiles(s.w),
-    life ? name || (!code && 'Life') : SPACES[NAV[s.w]?.[1]]?.[0],
-    life ? Number(s.k) > 1 && `${s.k} teams${Number(s.nc) === 1 ? ', the last a newcomer' : ''}` : walkName(s.w),
-    s.s && `size ${String(s.s).replace('x', ' × ')}`,
-    s.st > 1 && `start ${s.st}`,
-    Number(s.o) === 1 && 'turned 30°',
+    life && shapeAndTiles(setupVariant(s)),
+    life ? name || (!code && 'Life') : SPACES[NAV[setupVariant(s)]?.[1]]?.[0],
+    life
+      ? Number(s.teams) > 1 && `${s.teams} teams${Number(s.popNewcomer) === 1 ? ', the last a newcomer' : ''}`
+      : walkName(setupVariant(s)),
+    s.gridSize && `size ${String(s.gridSize).replace('x', ' × ')}`,
+    s.walkStart > 1 && `start ${s.walkStart}`,
+    Number(s.gridTurned) === 1 && 'turned 30°',
     Number(s.q) === 1 && 'square sheet',
   ]
     .filter(Boolean)
@@ -39662,31 +39584,31 @@ const setupDetail = (s) => {
 // ruleSpan: B3/S23, LNR, 1R0 0L0), its HTML as every place writes it (the bar, a card, a tooltip) and its name when it has one (a Life rule's, see ruleCard); a walk's first rule, written in
 // no link, its network's first; by the digits ("digits", "digits 1R0 0L0"): its code without the word
 const ruleWords = (s) => {
-  const m = MODES[s.w],
-    r = String(s.r ?? (m?.net ? firstWalkRule(m) : '')),
+  const m = MODES[setupVariant(s)],
+    r = String(s.playRule ?? (m?.net ? firstWalkRule(m) : '')),
     byDigits = /^digits\b/.test(r),
     code = r.replace(/^digits ?/, ''),
-    name = m?.life && ruleCard(code, s.w)?.name;
+    name = m?.life && ruleCard(code, setupVariant(s))?.name;
   return {
     code,
     byDigits,
     name: name && name !== code ? name : '',
-    html: [byDigits && withIcons(formulaOf(s.x).sym), code && ruleSpan(code)].filter(Boolean).join(' · '), // (by the digits: the number read first, as the bar says it)
+    html: [byDigits && withIcons(formulaOf(setupNumber(s)).sym), code && ruleSpan(code)].filter(Boolean).join(' · '), // (by the digits: the number read first, as the bar says it)
   };
 };
 // its title, from its setup, never stale: what it reads, then its rule (π · LNR, π vs e vs φ · LR, 1/438 · 1L0 0R0, an ant
 // by its rule its rule alone, Glider vs Diehard · B3/S23); its grid, its size and the rest in its tooltip (see setupWords)
 const setupTitle = (x) => {
   const s = x.setup,
-    life = MODES[s.w]?.life;
+    life = MODES[setupVariant(s)]?.life;
   const { code, byDigits } = ruleWords(s),
-    creature = MODES[s.w].worm || ANTS[s.w],
-    reads = life ? startWords(s).join(' vs ') : creature ? byDigits && formulaOf(s.x).sym : walkNumbersOf(s);
+    creature = MODES[setupVariant(s)].worm || ANTS[setupVariant(s)],
+    reads = life ? startWords(s).join(' vs ') : creature ? byDigits && formulaOf(setupNumber(s)).sym : walkNumbersOf(s);
   return [reads, code].filter(Boolean).join(' · ');
 };
 // a walk's numbers, as its bar writes them: a battle's walkers' (π vs e vs φ), else its number's symbol
 const walkNumbersOf = (s) =>
-  [s.x, ...RIVALS.slice(0, (Number(s.k) || 1) - 1).map((id) => s[`x${id.slice(-1).toLowerCase()}`])]
+  [setupNumber(s), ...RIVALS.slice(0, (Number(s.teams) || 1) - 1).map((id) => s[`walkNumber${id.slice(-1)}`])]
     .map((f) => formulaOf(f).sym ?? f)
     .join(' vs ');
 // two setups in the menu's order: their mode as the menu lists it (NAV: its space, shape, tiles), then its size, its rule, its
@@ -39695,7 +39617,7 @@ const setupOrder = (a, b) => {
   const modes = Object.keys(NAV),
     words = (x, y) => String(x ?? '').localeCompare(String(y ?? ''), undefined, { numeric: true });
   return (
-    modes.indexOf(a.w) - modes.indexOf(b.w) ||
+    modes.indexOf(setupVariant(a)) - modes.indexOf(setupVariant(b)) ||
     (parseFloat(a.s) || 0) - (parseFloat(b.s) || 0) ||
     words(a.r, b.r) ||
     words(a.x, b.x) ||
@@ -39708,7 +39630,9 @@ const setupWords = (x) => {
     base = readBaseOf(s);
   return [
     setupDetail(s),
-    !MODES[s.w].life && Number(s.k) > 1 && BATTLE_RULES[Number(s.br) || 0][1],
+    !MODES[setupVariant(s)].life &&
+      Number(s.teams) > 1 &&
+      (BATTLE_RULES.find(([, name]) => linkWord(name) === s.battleRule) ?? BATTLE_RULES[0])[1],
     base && `digits in base ${base}`,
   ]
     .filter(Boolean)
@@ -39718,20 +39642,20 @@ const setupWords = (x) => {
 // chip; a card's words): a walk's, its rule's commands; a creature's, its mode's; a Game of Life's, its colours + 1 (Digits
 // mixed: 2, painted at random, see paintOwn)
 const numberBaseOf = (s) => {
-  const m = MODES[s.w];
-  if (m.life) return s.pop === 'digits' && Number(s.mx) === 1 ? 2 : (Number(s.k) || 1) + 1;
+  const m = MODES[setupVariant(s)];
+  if (m.life) return popOf(s) === 'digits' && Number(s.popMixed) === 1 ? 2 : (Number(s.teams) || 1) + 1;
   return m.net ? walkTakes(m, ruleWords(s).code).length : m.base;
 };
 // whether its start reads its number's digits: a walk's always, a creature's by the digits, a Game of Life's Digits
 const readsNumber = (s) => {
-  const m = MODES[s.w];
-  return m.life ? s.pop === 'digits' : m.worm || ANTS[s.w] ? ruleWords(s).byDigits : true;
+  const m = MODES[setupVariant(s)];
+  return m.life ? popOf(s) === 'digits' : m.worm || ANTS[setupVariant(s)] ? ruleWords(s).byDigits : true;
 };
 // the base its start reads digits in, any: its number's, a Formula start's own number's (numberSeed), else none (0)
 const readBaseOf = (s) =>
   readsNumber(s)
     ? numberBaseOf(s)
-    : MODES[s.w].life && zoneOfWord(String(s.pop).split('.')[0]) === 'numbers'
+    : MODES[setupVariant(s)].life && zoneOfWord(String(popOf(s)).split('.')[0]) === 'numbers'
       ? NUMBER_START_BASE
       : 0;
 // a setup saved: its name its title's, one of its own in the list (a row is deleted by its name, see uniqueName)
@@ -39808,8 +39732,8 @@ function fillGalleryList() {
   const list = readGallery();
   // every tab's (Life, Ant, Walk…), each under its name, the tab in use's even with none (the ☆ said there); by their titles
   // (two alike: their tooltips tell them apart, see setupTitle)
-  const rows = list.filter((x) => NAV[x.setup.w]).map((x) => [setupTitle(x), setupWords(x), x]);
-  const kindOf = (x) => NAV[x.setup.w][0];
+  const rows = list.filter((x) => NAV[setupVariant(x.setup)]).map((x) => [setupTitle(x), setupWords(x), x]);
+  const kindOf = (x) => NAV[setupVariant(x.setup)][0];
   $('yourList').replaceChildren(
     ...NAV_KINDS.flatMap(([kind]) => {
       const mine = rows
@@ -39906,7 +39830,7 @@ function deleteSetup(name) {
 function exportGallery(list = readGallery().filter((x) => !selecting() || selectedNames.has(x.name))) {
   // (the cards selected, else all)
   if (!list.length) return; // nothing to export yet
-  const blob = new Blob([JSON.stringify({ app: 'Tessera', version: 2, setups: list.map(storedEntry) }, null, 2)], {
+  const blob = new Blob([JSON.stringify({ app: 'Tessera', version: 2, setups: list }, null, 2)], {
     type: 'application/json',
   });
   const a = document.createElement('a');
@@ -46893,42 +46817,124 @@ $('mode').addEventListener('change', () => {
 /* The striking setups found so far, part of the page (nothing stored): hovering one shows it in the
  * view, leaving the list brings back the setup in use, a click keeps it. */
 const BUILT_IN = [
-  [{ x: '1/923', w: 'walkSquaresTurtleEdges', d: 421 }],
-  [{ x: '2/541', w: 'walkSquaresTurtleEdges', d: 541 }],
-  [{ x: '1/709', w: 'walkSquaresTurtleEdges', d: 709 }],
-  [{ x: '1/983', w: 'walkSquaresTurtleEdges', d: 1965 }],
-  [{ x: '1/383', w: 'walkHexTurtleEdges', d: 1147 }],
-  [{ x: '3/497', w: 'walkHexTurtleEdges', d: 631 }],
-  [{ x: '1/463', w: 'walkHexTurtleEdges', d: 1387 }],
-  [{ x: '1/967', w: 'walkHexTurtleEdges', d: 2899 }],
-  [{ x: '11/604', w: 'walkTrianglesTurtleEdges', d: 451 }],
-  [{ x: '1/599', w: 'walkTrianglesTurtleEdges', d: 898 }],
-  [{ x: '1/856', w: 'walkTrianglesTurtleEdges', d: 637 }],
-  [{ x: '21/976', w: 'walkTrianglesTurtleEdges', d: 361 }],
-  [{ x: '96/95', w: 'walkTorusSquaresTurtleEdges', d: 5760, s: '64x160' }],
-  [{ x: '96/95', w: 'walkTorusSquaresTurtleCells', d: 4320, s: 48 }],
-  [{ x: '226/221', w: 'walkCubeSquaresTurtleEdges', d: 289, s: 24 }],
-  [{ x: '1/383', w: 'walkTorusTrianglesTurtleEdges', d: 9168, s: '63x168', st: 2, o: 1 }],
-  [{ x: '120/109', w: 'walkIcosahedronHexTurtleEdges', d: 5760, s: 32 }],
-  [{ x: 'dragon', w: 'walkSquaresTurtleEdges', d: 20000 }],
-  [{ x: 'thuemorse', w: 'walkTrianglesTurtleEdges', r: 'N r', d: 4096 }],
-  // added later: their batch number, so that a browser that took the first ones gets these once too (see seedCurated)
+  [{ mode: 'walk', shape: 'squares', walkKind: 'turtle', on: 'edges', walkNumberA: '1/923', maxSteps: 421 }],
+  [{ mode: 'walk', shape: 'squares', walkKind: 'turtle', on: 'edges', walkNumberA: '2/541', maxSteps: 541 }],
+  [{ mode: 'walk', shape: 'squares', walkKind: 'turtle', on: 'edges', walkNumberA: '1/709', maxSteps: 709 }],
+  [{ mode: 'walk', shape: 'squares', walkKind: 'turtle', on: 'edges', walkNumberA: '1/983', maxSteps: 1965 }],
+  [{ mode: 'walk', shape: 'hex', walkKind: 'turtle', on: 'edges', walkNumberA: '1/383', maxSteps: 1147 }],
+  [{ mode: 'walk', shape: 'hex', walkKind: 'turtle', on: 'edges', walkNumberA: '3/497', maxSteps: 631 }],
+  [{ mode: 'walk', shape: 'hex', walkKind: 'turtle', on: 'edges', walkNumberA: '1/463', maxSteps: 1387 }],
+  [{ mode: 'walk', shape: 'hex', walkKind: 'turtle', on: 'edges', walkNumberA: '1/967', maxSteps: 2899 }],
+  [{ mode: 'walk', shape: 'triangles', walkKind: 'turtle', on: 'edges', walkNumberA: '11/604', maxSteps: 451 }],
+  [{ mode: 'walk', shape: 'triangles', walkKind: 'turtle', on: 'edges', walkNumberA: '1/599', maxSteps: 898 }],
+  [{ mode: 'walk', shape: 'triangles', walkKind: 'turtle', on: 'edges', walkNumberA: '1/856', maxSteps: 637 }],
+  [{ mode: 'walk', shape: 'triangles', walkKind: 'turtle', on: 'edges', walkNumberA: '21/976', maxSteps: 361 }],
   [
     {
-      w: 'lifeMobiusStripSquares',
-      s: 8,
-      r: 'B3/S23',
-      k: 2,
-      pop: 'random.69.711421864',
-      ch: 'v3.ASqAAgAAAAEBAgEAAQAAAAEAAQIAAQQAAAAAAAIAAAEBAAEBAQAAAAAAAAAA',
+      mode: 'walk',
+      shape: 'torus',
+      tiling: 'squares',
+      walkKind: 'turtle',
+      on: 'edges',
+      walkNumberA: '96/95',
+      maxSteps: 5760,
+      gridSize: '64x160',
+    },
+  ],
+  [
+    {
+      mode: 'walk',
+      shape: 'torus',
+      tiling: 'squares',
+      walkKind: 'turtle',
+      on: 'cells',
+      walkNumberA: '96/95',
+      maxSteps: 4320,
+      gridSize: 48,
+    },
+  ],
+  [
+    {
+      mode: 'walk',
+      shape: 'cube',
+      tiling: 'squares',
+      walkKind: 'turtle',
+      on: 'edges',
+      walkNumberA: '226/221',
+      maxSteps: 289,
+      gridSize: 24,
+    },
+  ],
+  [
+    {
+      mode: 'walk',
+      shape: 'torus',
+      tiling: 'triangles',
+      walkKind: 'turtle',
+      on: 'edges',
+      walkNumberA: '1/383',
+      maxSteps: 9168,
+      gridSize: '63x168',
+      walkStart: 2,
+      gridTurned: 1,
+    },
+  ],
+  [
+    {
+      mode: 'walk',
+      shape: 'icosahedron',
+      tiling: 'hex',
+      walkKind: 'turtle',
+      on: 'edges',
+      walkNumberA: '120/109',
+      maxSteps: 5760,
+      gridSize: 32,
+    },
+  ],
+  [{ mode: 'walk', shape: 'squares', walkKind: 'turtle', on: 'edges', walkNumberA: 'dragon', maxSteps: 20000 }],
+  [
+    {
+      mode: 'walk',
+      shape: 'triangles',
+      walkKind: 'turtle',
+      on: 'edges',
+      walkNumberA: 'thuemorse',
+      playRule: 'N r',
+      maxSteps: 4096,
+    },
+  ],
+  [
+    {
+      mode: 'life',
+      shape: 'mobiusStrip',
+      tiling: 'squares',
+      gridSize: 8,
+      playRule: 'B3/S23',
+      teams: 2,
+      popStart: 'random',
+      popDraw: '69.711421864',
+      popFound: 'v3.ASqAAgAAAAEBAgEAAQAAAAEAAQIAAQQAAAAAAAIAAAEBAAEBAQAAAAAAAAAA',
     },
     2,
   ],
-  [{ x: '1/438', w: 'antSquaresCells', d: 540989, r: 'digits 1L0 0R0' }, 2],
-  [{ x: 'rabbit', w: 'walkSquaresTurtleEdges', r: 'N a', d: 4181 }],
-  [{ x: 'rudinshapiro', w: 'walkHexTurtleEdges', d: 16384 }],
-  [{ x: 'primebarcode', w: 'walkSquaresSpiral', d: 20000 }],
-  [{ x: 'pi', w: 'walkSquaresTurtleEdges', d: 20000 }],
+  [
+    { mode: 'ant', shape: 'squares', on: 'cells', walkNumberA: '1/438', maxSteps: 540989, playRule: 'digits 1L0 0R0' },
+    2,
+  ],
+  [
+    {
+      mode: 'walk',
+      shape: 'squares',
+      walkKind: 'turtle',
+      on: 'edges',
+      walkNumberA: 'rabbit',
+      playRule: 'N a',
+      maxSteps: 4181,
+    },
+  ],
+  [{ mode: 'walk', shape: 'hex', walkKind: 'turtle', on: 'edges', walkNumberA: 'rudinshapiro', maxSteps: 16384 }],
+  [{ mode: 'walk', shape: 'squares', walkKind: 'spiral', walkNumberA: 'primebarcode', maxSteps: 20000 }],
+  [{ mode: 'walk', shape: 'squares', walkKind: 'turtle', on: 'edges', walkNumberA: 'pi', maxSteps: 20000 }],
 ];
 // the walk's name, as in the walk list ("Squares turtle"; a surface's own name)
 const walkName = (w) => splitModeLabel(modeOptionOf(w)?.text ?? w).name;
@@ -46943,7 +46949,7 @@ const shapeAndTiles = (w) => {
 // the setup in use (its Gallery row lit, the ☆ lit): all of it the same (its number, walk, size, start, rule, teams,
 // symmetry, edges, cells drawn or found…) but its version, its length (its digits or generations: d) and how it is looked at
 // (Space-time, its step): one Gallery card a setup, a thumbnail, whatever its length
-const SETUP_LOOKS = ['v', 'd', 'sp', 'at'];
+const SETUP_LOOKS = ['version', 'maxSteps', 'popStacked', 'step'];
 const isInUse = (setup) => sameSetup(setup, getSetup(), SETUP_LOOKS);
 // A setup's row, built-in or saved: the walk's icon, a name and a detail, its check (seen while selecting); a click shows it,
 // framed and still (Auto-fit on: a hand rotation or zoom may have turned it off, and the walk could be on the far side), or
@@ -46952,7 +46958,7 @@ let cardShown = null; // (the card clicked last: its setup adopted once built)
 function setupRow(name, detail, x) {
   const { setup } = x,
     b = card({
-      pic: icon(SHAPE_ICONS[NAV[setup.w]?.[2]] ?? MODE_ICONS[setup.w]),
+      pic: icon(SHAPE_ICONS[NAV[setupVariant(setup)]?.[2]] ?? MODE_ICONS[setupVariant(setup)]),
       name,
       detail,
       on: isInUse(setup),
@@ -47199,10 +47205,10 @@ function memoriesRows() {
     .join('');
 }
 // The link's rows (Stats/debug): the setup shown, a word a row with what it says, as the link writes them (see
-// linkWordsOf); drawn again each time the link is written (see syncLink), while its page is open
+// getSetup); drawn again each time the link is written (see syncLink), while its page is open
 function paintUrl() {
   if ($('urlWords'))
-    $('urlWords').innerHTML = Object.entries(linkWordsOf(getSetup()))
+    $('urlWords').innerHTML = Object.entries(getSetup())
       .map(([word, said]) => `<tr><td>${word}</td><td>${htmlText(String(said))}</td></tr>`)
       .join('');
 }

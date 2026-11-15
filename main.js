@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.1064';
+const VERSION = '0.4.1065';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -20378,49 +20378,60 @@ function loopCells(rle) {
 }
 const loopName = (text) => Object.keys(LOOP_RULES).find((k) => k.toLowerCase() === ruleBody(text).trim().toLowerCase());
 const loopTables = {};
-// a table of transitions (Golly's: its states, neighbourhood, symmetries, variables, lines C N … C'), its keys in order
-// (see GPU_LIFE's lifeRule), once each
+// a table of transitions (Golly's: its states, neighbourhood, symmetries, variables, lines C N … C'), once each: what it is
+// (its states n, its neighbours k, turned or not) read at once, its transitions (to) made when first read (a rule's card, a
+// grid it fits on ask the first only: see loopCode, loopFits)
 function loopTable(table) {
   return (loopTables[table] ??= (() => {
-    const vars = {},
-      lines = [],
-      to = new Map();
-    let n = 0,
-      k = 4,
-      turns = true;
-    for (const line of table.split('\n')) {
-      if (line.startsWith('n_states:')) n = Number(line.slice(9));
-      else if (line === 'neighborhood:Moore') k = 8;
-      else if (line === 'symmetries:none') turns = false;
-      else if (line.startsWith('var ')) {
-        const [, v, set] = line.match(/^var (\w+)=\{(.*)\}$/);
-        vars[v] = set.split(',').map(Number);
-      } else if (!line.includes(':')) lines.push(line.includes(',') ? line.split(',') : [...line]);
-    }
-    for (const terms of lines) {
-      const names = [...new Set(terms.filter((x) => vars[x]))],
-        bound = {};
-      const each = (j) => {
-        if (j < names.length) {
-          for (const v of vars[names[j]]) {
-            bound[names[j]] = v;
-            each(j + 1);
-          }
-          return;
-        }
-        const [c, ...rest] = terms.map((x) => (x in bound ? bound[x] : Number(x))),
-          next = rest.pop();
-        for (let r = 0; r < (turns ? 4 : 1); r++) {
-          // (turned: by a quarter, its neighbours k / 4 further round)
-          const i = [c, ...rest.map((_, q) => rest[(q + (r * k) / 4) % k])].reduce((m, v) => n * m + v, 0);
-          if (!to.has(i)) to.set(i, next); // (the first line that fits, as Golly reads them)
-        }
-      };
-      each(0);
-    }
-    const keys = [...to.keys()].sort((a, b) => a - b);
-    return { n, k, turns, to: Int32Array.from(keys.flatMap((i) => [i, to.get(i)])) }; // (its keys in order, each with its state: found by halves, see GPU_LIFE's lifeRule)
+    const rows = table.split('\n'),
+      n = Number(rows.find((line) => line.startsWith('n_states:'))?.slice(9) ?? 0),
+      k = rows.includes('neighborhood:Moore') ? 8 : 4,
+      turns = !rows.includes('symmetries:none');
+    let to = null;
+    return {
+      n,
+      k,
+      turns,
+      get to() {
+        return (to ??= loopTransitions(rows, n, k, turns));
+      },
+    };
   })());
+}
+// its transitions, its keys in order (see GPU_LIFE's lifeRule)
+function loopTransitions(rows, n, k, turns) {
+  const vars = {},
+    lines = [],
+    to = new Map();
+  for (const line of rows) {
+    if (line.startsWith('var ')) {
+      const [, v, set] = line.match(/^var (\w+)=\{(.*)\}$/);
+      vars[v] = set.split(',').map(Number);
+    } else if (!line.includes(':')) lines.push(line.includes(',') ? line.split(',') : [...line]);
+  }
+  for (const terms of lines) {
+    const names = [...new Set(terms.filter((x) => vars[x]))],
+      bound = {};
+    const each = (j) => {
+      if (j < names.length) {
+        for (const v of vars[names[j]]) {
+          bound[names[j]] = v;
+          each(j + 1);
+        }
+        return;
+      }
+      const [c, ...rest] = terms.map((x) => (x in bound ? bound[x] : Number(x))),
+        next = rest.pop();
+      for (let r = 0; r < (turns ? 4 : 1); r++) {
+        // (turned: by a quarter, its neighbours k / 4 further round)
+        const i = [c, ...rest.map((_, q) => rest[(q + (r * k) / 4) % k])].reduce((m, v) => n * m + v, 0);
+        if (!to.has(i)) to.set(i, next); // (the first line that fits, as Golly reads them)
+      }
+    };
+    each(0);
+  }
+  const keys = [...to.keys()].sort((a, b) => a - b);
+  return Int32Array.from(keys.flatMap((i) => [i, to.get(i)])); // (its keys in order, each with its state: found by halves, see GPU_LIFE's lifeRule)
 }
 function parseLoops(text) {
   const name = loopName(text);
@@ -20428,7 +20439,9 @@ function parseLoops(text) {
   const T = loopTable(LOOP_RULES[name].table);
   const K = /\/Immigration$/i.test(text) ? 2 : Number(text.match(/\/Colours(\d+)$/i)?.[1] ?? 1);
   return {
-    loops: T.to,
+    get loops() {
+      return T.to; // (its transitions: made when first read, see loopTable)
+    },
     loopStates: T.n,
     loopRing: T.k,
     loopTurns: T.turns,
@@ -23976,7 +23989,7 @@ const loopCode = (name) => {
   return `${R.loopStates} states${R.loopRing === 8 ? ', 8 neighbours' : ''}`;
 }; // (its Golly table's name not shown: the card's name again)
 // a loop table fits a grid of squares: turned, any; with no turns (Tempesti's), only where every cell has the same north
-const loopFits = (rule, mode) => !!rule?.loops && (rule.loopTurns || !!mode.north);
+const loopFits = (rule, mode) => !!rule?.loopStates && (rule.loopTurns || !!mode.north); // (a loop's rule: its table's states)
 // The loops' start (see loops.js) on empty cells: its RLE's states (. 0, A 1, B 2…), its rows ($), laid tile by tile from the
 // middle of each colour's part (see partMiddle): up and left half its box, then its rows down and its cells right, each
 // step across a side to the tile beyond, its sides turned as they come (so it crosses a cube's edges as its faces); in K

@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.1074';
+const VERSION = '0.4.1075';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -19912,6 +19912,17 @@ async function startBattleHunt() {
     K = walkTeams,
     grid = !!mode.grid,
     way = startsWayNow();
+  const numbers = [...BATTLE_CARDS, ...DRAWN_ROOTS],
+    N = numbers.length;
+  const starts = huntStarts() ? (way === 'symmetric' ? modeStarts().length : Infinity) : 1; // (Random's draws: no end)
+  // the numbers' orders, A's place first: where the walkers start as one group's images (Symmetric, Centred), K orders turned round
+  // them are one battle seen turned, A the smallest of them its one (see huntOrderCount); Random's, every order its own
+  const round = way !== 'random';
+  const sets =
+    (huntVary.formulas
+      ? Array.from({ length: K }, (_, j) => N - j).reduce((a, b) => a * b) / (round ? K : 1)
+      : huntOrderCount(K)) * starts;
+  if (battleHunt.tried.size >= sets) Object.assign(battleHunt, BATTLE_FRESH()); // (every one fought: a new hunt, from none; else it goes on, none fought twice)
   battleHunt.status = 'Starting…';
   renderBattleHunt(); // (its button Stop at once, as Life's hunt: whatever it varies)
   // the cards' digits first, once (a worker each, cached as A's); the roots' made as they are drawn
@@ -19930,18 +19941,8 @@ async function startBattleHunt() {
     g = walk.geo,
     { head, frac } = digitsInUse(),
     shownFs = BATTLE_FORMULAS.slice(0, K).map((id) => $(id).value);
-  const numbers = [...BATTLE_CARDS, ...DRAWN_ROOTS],
-    N = numbers.length,
-    cards = new Map(BATTLE_CARDS.map((f) => [f, knownDigits(formulaOf(f), base, n)]));
+  const cards = new Map(BATTLE_CARDS.map((f) => [f, knownDigits(formulaOf(f), base, n)]));
   const shownDigits = (f, s) => (s ? knownDigits(formulaOf(f), base, n) : Uint8Array.from([...head, ...frac]));
-  const starts = huntStarts() ? (way === 'symmetric' ? modeStarts().length : Infinity) : 1; // (Random's draws: no end)
-  // the numbers' orders, A's place first: where the walkers start as one group's images (Symmetric, Centred), K orders turned round
-  // them are one battle seen turned, A the smallest of them its one (see huntOrderCount); Random's, every order its own
-  const round = way !== 'random';
-  const sets =
-    (huntVary.formulas
-      ? Array.from({ length: K }, (_, j) => N - j).reduce((a, b) => a * b) / (round ? K : 1)
-      : huntOrderCount(K)) * starts;
   // the next battle not fought yet: its numbers and its start (none left: null)
   let id = 0,
     drawn = 0;

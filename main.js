@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.17';
+const VERSION = '0.5.18';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -3803,7 +3803,7 @@ const HULL_SOLIDS = {
     pic: 'tiling-rhombille', // (along a 3-fold axis: 3 rhombi round it, the rhombille tiling's picture)
     mark: '■',
     cells: 'Squares', // (its own cells' tab, beside its cuts': a grid of squares laid on each rhombus)
-    walks: true, // (the turtle along its squares' edges and on them, as the cube's: 3 or 4 edges a corner, 4 sides a cell)
+    walks: true, // (the turtle along its squares' edges and on them, as the cube's: 3 or 4 edges a corner, 4 sides a cell; its ant, its replicators)
     cuts: ['tetrakis', 'halves'],
     place: [1, 'Dodecahedron'],
     where:
@@ -9991,6 +9991,9 @@ for (const [w, life] of [
   ['replicatorsCubePitsSquares', 'lifeCubePitsSquares'],
   ['replicatorsCubeBumpsSquares', 'lifeCubeBumpsSquares'],
   ['replicatorsCubeFrameSquares', 'lifeCubeFrameSquares'],
+  ...Object.values(HULL_SOLIDS)
+    .filter((S) => S.walks)
+    .map((S) => [variantName('Replicators', S.name, S.cells), variantName('Life', S.name, S.cells)]), // (a hull solid of squares)
 ]) {
   // (squares: 4 sides each, the same way round on each: no Möbius strip nor Klein bottle; nor Menger's sponge, its flat pieces narrower than a loop)
   VARIANTS[w] = {
@@ -12447,6 +12450,15 @@ const SURFACE_ANTS = {
   antKleinBottleHexCells: ['walkKleinBottleHexTurtleCells', 'Klein bottle'],
   antKleinBottleTrianglesCells: ['walkKleinBottleTrianglesTurtleCells', 'Klein bottle'],
   antKleinBottleCairoCells: ['walkKleinBottleCairoTurtleCells', 'Klein bottle'],
+  // (a hull solid's with walks, on its cells' walk: see HULL_SOLIDS)
+  ...Object.fromEntries(
+    Object.values(HULL_SOLIDS)
+      .filter((S) => S.walks)
+      .map((S) => [
+        variantName('Ant', S.name, S.cells, null, 'cells'),
+        [variantName('Walk', S.name, S.cells, 'Turtle', 'cells'), S.name],
+      ]),
+  ),
 };
 // the worms on the triangles' grids of the surfaces with ants on triangles: their walks along it, its Edges tab beside the ants'
 const SURFACE_WORMS = {
@@ -12499,6 +12511,15 @@ for (const [w, [walkVariant, place]] of Object.entries(SURFACE_ANTS)) {
   FAMILIES.flatMap((F) => F.variants)
     .find((ms) => ms.includes(walkVariant))
     .push(w);
+}
+// a hull solid's ant and replicators (made above from its declaration: see HULL_SOLIDS' walks), their options as its walks'
+for (const S of Object.values(HULL_SOLIDS).filter((S) => S.walks)) {
+  document
+    .querySelector('#variant optgroup[label="Walks on surfaces"]')
+    .append(new Option(`${S.name} ant — base 2 (Langton's ant)`, variantName('Ant', S.name, S.cells, null, 'cells')));
+  document
+    .querySelector('#variant optgroup[label="Automata on surfaces"]')
+    .append(new Option(`Replicators — ${S.name.toLowerCase()}`, variantName('Replicators', S.name, S.cells)));
 }
 // An ant's rule, a turmite's (Greg Turk, Jim Propp): per state an entry per colour of its cell, each the colour it leaves
 // there, a word of the walk it goes through the cells with (its turn, see antCommands) and its state next, the states parted by

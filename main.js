@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.33';
+const VERSION = '0.5.34';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -20052,7 +20052,13 @@ const HUNT_RANKS = {
 let huntRank = 'longest';
 const huntGoal = () =>
   huntRank === 'even' && BATTLE_RULES[battleRuleInUse(tabVariant())][0] === 'cut' ? 'longest' : huntRank; // (Even lands: with land only, else Longest)
-const huntStarts = () => huntVary.starts && startsWayNow() !== 'centred'; // (Starts varied: in Symmetric and Random)
+// What Starts varies, one definition: the starts' places (Symmetric's numbers, Random's draws, no end; Centred's one) and
+// which walker takes each, their orders (see huntOrderCount: a group's images turned round, the same battle); off, the
+// starts shown in their order. Varied: on, with something to vary
+const huntStartPlaces = () =>
+  ({ symmetric: variantStarts()?.length ?? 1, random: Infinity, centred: 1 })[startsWayNow()];
+const startsVaryNothing = () => huntStartPlaces() === 1 && huntOrderCount() < 2;
+const huntStarts = () => huntVary.starts && !startsVaryNothing();
 // A hunt's results belong to what they were found at (its key: what the hunt does not vary, its battles' setup, Life's
 // game): asked elsewhere, the hunt stops and its results go (fresh: its state with none). One rule for both hunts (the
 // battles', Life's), asked as each draws its list: never a list emptied by hand where a setting changes
@@ -20074,7 +20080,7 @@ const battleHuntKey = () =>
     gridSizePlayed(),
     digitsNeeded(),
     huntVary.formulas || BATTLE_FORMULAS.map((id) => $(id).value).join(), // (its numbers, each in its field: it draws their starts' order, never in its key, see startsOrder)
-    huntStarts() || `${startNo()}|${battleSeed}`,
+    huntStarts() || `${startNo()}|${battleSeed}|${startsOrder(walkTeams)}`, // (Starts off: the starts shown, in their order)
   ].join('|'); // (what its battles are fought at: what it does not vary; a result played keeps it, see playBattle)
 // √r's first n digits in base b, its integer part first (on the page: one integer root, as numberSeed's)
 const rootDigits = (r, base, n) =>
@@ -20140,14 +20146,16 @@ async function startBattleHunt() {
     way = startsWayNow();
   const numbers = [...BATTLE_CARDS, ...DRAWN_ROOTS],
     N = numbers.length;
-  const starts = huntStarts() ? (way === 'symmetric' ? variantStarts().length : Infinity) : 1; // (Random's draws: no end)
+  const starts = huntStarts() ? huntStartPlaces() : 1;
   // the numbers' orders, A's place first: where the walkers start as one group's images (Symmetric, Centred), K orders turned round
   // them are one battle seen turned, A the smallest of them its one (see huntOrderCount); Random's, every order its own
   const round = way !== 'random';
   const sets =
     (huntVary.formulas
       ? Array.from({ length: K }, (_, j) => N - j).reduce((a, b) => a * b) / (round ? K : 1)
-      : huntOrderCount(K)) * starts;
+      : huntStarts()
+        ? huntOrderCount(K)
+        : 1) * starts; // (the shown numbers: their orders Starts', see huntStartPlaces)
   if (battleHunt.tried.size >= sets) Object.assign(battleHunt, BATTLE_FRESH()); // (every one fought: a new hunt, from none; else it goes on, none fought twice)
   battleHunt.status = 'Starting…';
   renderBattleHunt(); // (its button Stop at once, as Life's hunt: whatever it varies)
@@ -20179,12 +20187,15 @@ async function startBattleHunt() {
     while (battleHunt.tried.size < sets) {
       const picks = huntVary.formulas
           ? Array.from({ length: K }, () => Math.floor(Math.random() * N))
-          : drawnOrder(K, round),
-        at = !huntStarts()
-          ? {}
-          : way === 'symmetric'
-            ? { n: 1 + Math.floor(Math.random() * starts) }
-            : { seed: freshDraw() };
+          : huntStarts()
+            ? drawnOrder(K, round)
+            : (startsOrder(K) ?? Array.from({ length: K }, (_, s) => s)), // (Starts off: the order shown)
+        at =
+          !huntStarts() || huntStartPlaces() === 1
+            ? {}
+            : way === 'symmetric'
+              ? { n: 1 + Math.floor(Math.random() * starts) }
+              : { seed: freshDraw() };
       const key = `${picks.join()}|${at.n ?? at.seed ?? ''}`;
       if (
         new Set(picks).size < picks.length ||
@@ -20338,17 +20349,15 @@ function renderBattleHunt() {
     vary(
       'starts',
       'Starts',
-      "The hunt draws the start too: Symmetric's number, Random's draw (else the start shown)",
-      startsWayNow() !== 'centred',
-      'in Centred: its centres all alike, nothing to vary',
+      "The hunt draws the starts too: their places (Symmetric's number, Random's draw) and which walker takes each (else the starts shown, in their order)",
+      !startsVaryNothing(),
+      "Nothing to vary here: one start, and its walkers' orders are one battle seen turned.",
     ),
   );
   $('battleHuntRank').replaceChildren(tileGroup(Object.entries(HUNT_RANKS).map(rank)));
   setTile($('battleHuntBtn'), {
     greyed:
-      !huntVary.formulas && !huntStarts() && huntOrderCount() < 2
-        ? 'It varies nothing: Numbers and Starts are off, and a duel has one order.'
-        : '',
+      !huntVary.formulas && !huntStarts() ? 'It varies nothing: Numbers off, Starts off or nothing to vary here.' : '',
   });
   $('battleHuntBtn').title =
     'Battles fought one after another, each set once: what the switches above vary drawn at random';
@@ -20357,10 +20366,12 @@ function renderBattleHunt() {
     huntVary.formulas &&
       `Numbers: the ${BATTLE_CARDS.length} cards and the roots √n, n up to 9,999 (${formatNumber(BATTLE_CARDS.length + DRAWN_ROOTS.length)})`,
     huntStarts() &&
+      huntStartPlaces() > 1 &&
       (startsWayNow() === 'symmetric'
         ? `Starts: Symmetric's ${formatNumber(variantStarts()?.length ?? 1)}`
         : "Starts: Random's draws, no end"),
-    walkTeams > 2 &&
+    (huntVary.formulas || huntStarts()) &&
+      huntOrderCount() > 1 &&
       (huntVary.formulas
         ? `Orders: each set of numbers in its ${formatNumber(huntOrderCount())} orders${startsWayNow() === 'random' ? '' : ', A on the smallest (all of them turned one place round: the same battle, seen turned)'}`
         : `Starts' orders: the walkers' starts dealt in their ${formatNumber(huntOrderCount())} orders, each its number and its colour${startsWayNow() === 'random' ? '' : ', A on its own (all of them turned one place round: the same battle, seen turned)'}`),

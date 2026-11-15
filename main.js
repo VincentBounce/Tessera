@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.47';
+const VERSION = '0.5.48';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -9931,6 +9931,27 @@ for (const [k, S] of Object.entries(HULL_SOLIDS)) {
     }
   }
 }
+// the sphere's quadrilaterals' turtle on their cells, as the cube's (4 sides: 3 a digit, left, on or right, on: out by the side
+// across): its kites, Penrose's rhombi; on cells only (their corners 3 to 7 edges: no left, on and right along them)
+for (const [tiling, surface] of [
+  ['Kites', 'icosaKite'],
+  ['Penrose', 'penroseSphere'],
+]) {
+  const w = variantName('Walk', 'Sphere', tiling, 'Turtle', 'cells'),
+    where = `on a sphere of ${tiling === 'Kites' ? 'kites' : "Penrose's rhombi"}`,
+    { ant, twin, initial, ...cube } = VARIANTS[variantName('Walk', 'Cube', 'Squares', 'Turtle', 'cells')]; // (its own: no ant, no edges, its sizes)
+  VARIANTS[w] = {
+    ...cube,
+    surface,
+    where,
+    rule: `${where}: <b>0</b> turn left, <b>1</b> straight on, <b>2</b> turn right`,
+  };
+  VARIANT_ICONS[w] = VARIANT_ICONS[variantName('Life', 'Sphere', tiling)];
+  NAV[w] = ['Walk', 'Surfaces', 'Sphere', 'Turtle', 'cells'];
+  document
+    .querySelector('#variant optgroup[label="Walks on surfaces"]')
+    .append(new Option(`Sphere of ${tiling.toLowerCase()} — base 3 (left / forward / right)`, w));
+}
 for (const [kind, t] of Object.entries(TILINGS)) {
   const flat = variantName('Life', t.name);
   VARIANTS[flat] = { base: 2, lattice: kind, life: true, plane: kind, where: t.where };
@@ -10397,9 +10418,17 @@ const FAMILIES = [
       tab: 0,
       variants: [
         [...walks('Triangles'), ...ant('Triangles'), variantName('Life', name, 'Triangles')],
-        [variantName('Life', name, 'Kites')],
+        [
+          ...(sphere ? [variantName('Walk', name, 'Kites', 'Turtle', 'cells')] : []),
+          variantName('Life', name, 'Kites'),
+        ],
         [...walks('Hexagons'), ...ant('Hexagons'), variantName('Life', name, 'Hexagons')],
-        ...(sphere ? [[variantName('Life', name, 'Twisted')], [variantName('Life', name, 'Penrose')]] : []),
+        ...(sphere
+          ? [
+              [variantName('Life', name, 'Twisted')],
+              [variantName('Walk', name, 'Penrose', 'Turtle', 'cells'), variantName('Life', name, 'Penrose')],
+            ]
+          : []),
       ],
       tabs: [
         [1, false, 'kites', 'Kites', 'Kites (each triangle cut in 3)'],
@@ -12405,7 +12434,8 @@ const SURFACE_ANTS = {
   antKleinBottleHexCells: ['walkKleinBottleHexTurtleCells', 'Klein bottle'],
   antKleinBottleTrianglesCells: ['walkKleinBottleTrianglesTurtleCells', 'Klein bottle'],
   antKleinBottleCairoCells: ['walkKleinBottleCairoTurtleCells', 'Klein bottle'],
-  // (the regular solids' of triangles and of hexagons, as the sphere's; a hull solid's with walks: see HULL_SOLIDS)
+  // (the regular solids' of triangles and of hexagons, as the sphere's; a hull solid's with walks: see HULL_SOLIDS; the sphere's
+  // kites and Penrose rhombi, on their walks on cells)
   ...Object.fromEntries(
     [
       ...['Tetrahedron', 'Octahedron', 'Dodecahedron', 'Stella octangula'].flatMap((place) =>
@@ -12414,6 +12444,8 @@ const SURFACE_ANTS = {
       ...Object.values(HULL_SOLIDS)
         .filter((S) => S.walks)
         .map((S) => [S.name, S.cells]),
+      ['Sphere', 'Kites'],
+      ['Sphere', 'Penrose'],
     ].map(([place, tiling]) => [
       variantName('Ant', place, tiling, null, 'cells'),
       [variantName('Walk', place, tiling, 'Turtle', 'cells'), place],
@@ -15961,16 +15993,23 @@ function penroseSphereGraph(P1, face = penroseFace(P1)) {
       tiles.push(ring);
     }
   });
-  return { points, nbrs, tiles, edges: nbrs.reduce((sum, l) => sum + l.length, 0) / 2 };
+  return {
+    points,
+    nbrs,
+    tiles,
+    edges: nbrs.reduce((sum, l) => sum + l.length, 0) / 2,
+    solid: { corners: mids, centres: ico.P.map(unit) }, // (the dodecahedron it lies on: its corners, its faces' middles' ways)
+  };
 }
 // the mesh of a size (its cells): its points on the unit sphere, its flat form the dodecahedron they lie on (see shapeAt)
 function penroseSphereMesh(cells) {
   const key = `penroseSphere${cells}`;
   if (meshCache[key]) return meshCache[key];
-  const { points, tiles } = penroseSphereGraph(PENROSE_SPHERES[cells]),
+  const { points, tiles, solid } = penroseSphereGraph(PENROSE_SPHERES[cells]),
     R = Math.max(...points.map((p) => Math.hypot(...p)));
   return (meshCache[key] = Object.assign(finishMesh(points.flatMap(unit), tiles, 4, cells), {
     flatVerts: Float64Array.from(points.flat(), (v) => v / R),
+    solid, // (its symmetries the dodecahedron's, see solidCorners)
   }));
 }
 function hexSolidMesh(solid, f) {
@@ -16520,6 +16559,7 @@ const SURFACES = {
     radius: (n) => Math.sqrt(n / (4 * Math.PI)), // (its rhombi about a square unit each, as the rosette spheres' cells)
     ownSizes: () => Object.keys(PENROSE_SPHERES).map(Number),
     tiles: (n) => n,
+    edge: (n) => Math.round(20 * Math.hypot(...PENROSE_SPHERES[n]) * Math.sin(Math.PI / 5)) / 10, // (its dodecahedron's, in rhombi's sides: its pentagon's side)
     unit: 'rhombi',
     tiling: 'penrose',
     chiral: true,

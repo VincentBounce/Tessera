@@ -305,3 +305,15 @@ particles/'s bins: bin, scan, place; think, grow, eat, birth, spawn); 64k slots 
 `agentsCheck()` in its console: each pass on the GPU against the CPU from the same buffers (births and spawns found by
 their parent: the slots they land in depend on the atomics' order), then a run of 16k slots for 6,000 steps living by
 itself (above the spawning floor) and its lineages narrowing (4,096 founders → ~150).
+
+<p align="center"><br>* * *</p>
+
+## Penrose sphere prototype (penrose-sphere/)
+A separate page (`penrose-sphere/index.html`, `penrose-sphere.js`), not part of main.js: Twarock and Konevtsova's spherical
+Penrose tilings as Hamish Todd builds them (Bridges 2018): a Penrose rhombus tiling (de Bruijn's pentagrid, every γ 0.2:
+five-fold round its middle) cut in a regular pentagon round its middle, laid on the dodecahedron's 12 faces the same way
+round, its points joined where they lie 1 apart along the surface (two faces unfolded over their edge), the tiles the
+faces of that graph. Todd's algorithm II's candidates for the pentagon's corner P1 (the tiling's points, and those plus φ,
+1 or tan 18° along the decagon's ways), those that close kept (every corner 3 edges or more, every tile a rhombus, a
+pentagon or a triangle, V − E + F = 2): 24 up to radius 6, the smallest of 30 thick rhombi the rhombic triacontahedron,
+the largest 1,110 rhombi.

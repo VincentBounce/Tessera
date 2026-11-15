@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.20';
+const VERSION = '0.5.21';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -10018,70 +10018,6 @@ VARIANT_ICONS.lifeCubePitsSquares = 'pits';
 VARIANT_ICONS.lifeCubeBumpsSquares = 'bumps';
 VARIANT_ICONS.lifeCubeMengerSpongeSquares = 'menger';
 VARIANT_ICONS.lifeCubeFrameSquares = 'frame';
-// in each shape's rules: Turtle, then Pivot (the cubes'), then the others as they come; among the shapes,
-// Cairo right after Squares, Hexagons before Triangles (right after Kites where they are), Tetrakis after Hexagons, the Klein bottle after the Möbius strip, the
-// Sphere before the Tetrahedron
-{
-  const group = (n) => n.slice(0, 3).join(),
-    first = [...new Set(Object.values(NAV).map(group))],
-    rank = { Turtle: 0, Pivot: 1, Parity: 2 };
-  const moves = [
-    ['Cairo', 1, 'Squares'],
-    ['Hexagons', 0, 'Triangles'],
-    ['Tetrakis', 1, 'Hexagons'],
-    ['Kites', 1, 'Triangles'],
-    ['Penrose', 1, 'Kites'],
-    ['Ammann', 1, 'Penrose'],
-    ['Rhombs 12', 1, 'Ammann'],
-    ['Rhombs 14', 1, 'Rhombs 12'],
-    ['Flower 3', 1, 'Rhombs 14'],
-    ['Flower 4', 1, 'Flower 3'],
-    ['Flower 5', 1, 'Flower 4'],
-    ['Flower 6', 1, 'Flower 5'],
-    ['Flower 7', 1, 'Flower 6'],
-    ['Flower 8', 1, 'Flower 7'],
-    ['Flower 9', 1, 'Flower 8'],
-    ['Flower 10', 1, 'Flower 9'],
-    ['Flower 11', 1, 'Flower 10'],
-    ['Flower 12', 1, 'Flower 11'],
-    ...Object.values(conedOf((k, n, F) => [k, `${F.name} ${n}`])).map((name, i, names) => [
-      name,
-      1,
-      i ? names[i - 1] : 'Flower 12',
-    ]),
-    ['Ring 7', 1, Object.values(conedOf((k, n, F) => [k, `${F.name} ${n}`])).at(-1)],
-    ['Ring 8', 1, 'Ring 7'],
-    ['Ring 9', 1, 'Ring 8'],
-    ['Ring 10', 1, 'Ring 9'],
-    ['Ring 11', 1, 'Ring 10'],
-    ['Ring 12', 1, 'Ring 11'],
-    ['Hats', 1, 'Ring 12'],
-    ['Spectre', 1, 'Hats'],
-    ['Pinwheel', 1, 'Spectre'],
-    ['Klein bottle', 1, 'Möbius strip'],
-    ['Hexagons', 1, 'Kites'],
-    ...Object.values(HULL_SOLIDS).map(({ name, place: [after, other] }) => [name, after, other]),
-    ['Sphere', 1, 'Dodecahedron'],
-    ['Sphere', 1, 'Rhombic dodecahedron'], // (the icosahedron among the polyhedra: after the rhombic dodecahedron where it is, else the dodecahedron)
-    ['Stella octangula', 1, 'Sphere'],
-    ['Globe', 1, 'Sphere'],
-  ]; // (1 after, 0 before)
-  for (const [shape, after, other] of moves)
-    for (const g of first.filter((x) => x.endsWith(`,${shape}`))) {
-      const o = g.slice(0, -shape.length) + other;
-      if (!first.includes(o)) continue;
-      first.splice(first.indexOf(g), 1);
-      first.splice(first.indexOf(o) + after, 0, g);
-    }
-  const sorted = Object.entries(NAV)
-    .map((e, i) => [...e, i])
-    .sort(
-      ([, a, i], [, b, j]) =>
-        first.indexOf(group(a)) - first.indexOf(group(b)) || (rank[a[3]] ?? 3) - (rank[b[3]] ?? 3) || i - j,
-    );
-  for (const [w] of sorted) delete NAV[w];
-  for (const [w, n] of sorted) NAV[w] = n;
-}
 const MODE_TABS = [
   ['Life', 'glider', 'Cells born and dying by their neighbours, generation after generation'],
   ['Walk', 'compass', "A path, each step the number's next digit"],
@@ -10245,7 +10181,7 @@ const navValues = (level, pre) => [
   ),
 ];
 // A space's shapes in the order shown, in their groups ([title, shapes] each, those it has): in 2D, many of them, grouped by
-// their grid's natural shape (see SHAPE_GROUPS); in 3D, the regular solids (faces all alike, the cube after the tetrahedron),
+// their grid's natural shape (see SHAPE_GROUPS); in 3D, the regular solids (faces all alike),
 // the irregular ones (the cubes carved, those of squares and triangles), then the surfaces (the balls: Globe, Sphere, Rosettes; a sheet rolled up: Torus,
 // Möbius, Klein; see SHEETS); else as the menu lists them. Made once a kind and space (the menu's tables fixed once the
 // page has loaded: the graph's search asks it at each edge, 1.5 ms each, see nearestVariant)
@@ -10269,14 +10205,8 @@ function shapeGroupsOf(kind, space) {
       ? SHAPE_GROUPS.map(([g]) => [g, (sh) => shapeGroup(planeOf(sh)) === g]) // (in their order: the circles' four, squares, parallelograms, rhombi)
       : solid
         ? [
-            [
-              'Regular polyhedra',
-              (sh) => !sheet(sh) && !CARVED.includes(sh) && !mixed(sh),
-              shapes.includes('Tetrahedron')
-                ? shapes.filter((sh) => sh !== 'Cube').flatMap((sh) => (sh === 'Tetrahedron' ? [sh, 'Cube'] : [sh]))
-                : shapes,
-            ], // (their faces all alike, the cube after the tetrahedron)
-            ['Irregular polyhedra', (sh) => CARVED.includes(sh) || mixed(sh), [...new Set([...CARVED, ...shapes])]],
+            ['Regular polyhedra', (sh) => !sheet(sh) && !CARVED.includes(sh) && !mixed(sh)], // (their faces all alike)
+            ['Irregular polyhedra', (sh) => CARVED.includes(sh) || mixed(sh)],
             ['Surfaces', sheet, SHEETS],
           ]
         : [[null, () => true]];
@@ -14473,6 +14403,71 @@ for (const k of Object.keys(ROSETTE_SPHERES)) {
     `${name}: its disc on each half, their teeth biting into each other`,
   ]);
   F.variants.push([w]);
+}
+// the menu's order, once every variant made (the surfaces' ants and the rosette spheres too): in each shape's rules: Turtle, then Pivot
+// Cairo right after Squares, Hexagons before Triangles (right after Kites where they are), Tetrakis after Hexagons, the Klein bottle after the Möbius strip, the
+// Sphere before the Tetrahedron
+{
+  const group = (n) => n.slice(0, 3).join(),
+    first = [...new Set(Object.values(NAV).map(group))],
+    rank = { Turtle: 0, Pivot: 1, Parity: 2 };
+  const moves = [
+    ['Cairo', 1, 'Squares'],
+    ['Hexagons', 0, 'Triangles'],
+    ['Tetrakis', 1, 'Hexagons'],
+    ['Kites', 1, 'Triangles'],
+    ['Penrose', 1, 'Kites'],
+    ['Ammann', 1, 'Penrose'],
+    ['Rhombs 12', 1, 'Ammann'],
+    ['Rhombs 14', 1, 'Rhombs 12'],
+    ['Flower 3', 1, 'Rhombs 14'],
+    ['Flower 4', 1, 'Flower 3'],
+    ['Flower 5', 1, 'Flower 4'],
+    ['Flower 6', 1, 'Flower 5'],
+    ['Flower 7', 1, 'Flower 6'],
+    ['Flower 8', 1, 'Flower 7'],
+    ['Flower 9', 1, 'Flower 8'],
+    ['Flower 10', 1, 'Flower 9'],
+    ['Flower 11', 1, 'Flower 10'],
+    ['Flower 12', 1, 'Flower 11'],
+    ...Object.values(conedOf((k, n, F) => [k, `${F.name} ${n}`])).map((name, i, names) => [
+      name,
+      1,
+      i ? names[i - 1] : 'Flower 12',
+    ]),
+    ['Ring 7', 1, Object.values(conedOf((k, n, F) => [k, `${F.name} ${n}`])).at(-1)],
+    ['Ring 8', 1, 'Ring 7'],
+    ['Ring 9', 1, 'Ring 8'],
+    ['Ring 10', 1, 'Ring 9'],
+    ['Ring 11', 1, 'Ring 10'],
+    ['Ring 12', 1, 'Ring 11'],
+    ['Hats', 1, 'Ring 12'],
+    ['Spectre', 1, 'Hats'],
+    ['Pinwheel', 1, 'Spectre'],
+    ['Klein bottle', 1, 'Möbius strip'],
+    ['Cube', 1, 'Tetrahedron'],
+    ['Hexagons', 1, 'Kites'],
+    ...Object.values(HULL_SOLIDS).map(({ name, place: [after, other] }) => [name, after, other]),
+    ['Sphere', 1, 'Dodecahedron'],
+    ['Sphere', 1, 'Rhombic dodecahedron'], // (the icosahedron among the polyhedra: after the rhombic dodecahedron where it is, else the dodecahedron)
+    ['Stella octangula', 1, 'Sphere'],
+    ['Globe', 1, 'Sphere'],
+  ]; // (1 after, 0 before)
+  for (const [shape, after, other] of moves)
+    for (const g of first.filter((x) => x.endsWith(`,${shape}`))) {
+      const o = g.slice(0, -shape.length) + other;
+      if (!first.includes(o)) continue;
+      first.splice(first.indexOf(g), 1);
+      first.splice(first.indexOf(o) + after, 0, g);
+    }
+  const sorted = Object.entries(NAV)
+    .map((e, i) => [...e, i])
+    .sort(
+      ([, a, i], [, b, j]) =>
+        first.indexOf(group(a)) - first.indexOf(group(b)) || (rank[a[3]] ?? 3) - (rank[b[3]] ?? 3) || i - j,
+    );
+  for (const [w] of sorted) delete NAV[w];
+  for (const [w, n] of sorted) NAV[w] = n;
 }
 
 /* ---- 7.4 Torus ---------------------------------------------------------------------------- */

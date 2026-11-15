@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.10';
+const VERSION = '0.5.11';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -9918,14 +9918,7 @@ for (const [k, S] of Object.entries(HULL_SOLIDS)) {
     ...(S.cuts ?? []).map((c) => [`${k}${HULL_CUTS[c].name}`, HULL_CUTS[c].name, `${S.where}, ${HULL_CUTS[c].words}`]),
   ]) {
     const w = variantName('Life', S.name, tiling);
-    VARIANTS[w] = {
-      base: 2,
-      lattice: 'surface',
-      surface,
-      life: true,
-      where,
-      ...(S.inflated !== undefined && { inflated: S.inflated }),
-    };
+    VARIANTS[w] = { base: 2, lattice: 'surface', surface, life: true, where, inflated: S.inflated }; // (none: its round's)
     VARIANT_ICONS[w] = hullIcon(k);
     NAV[w] = ['Life', 'Surfaces', S.name, 'Life', ''];
     variantOption(w, 'Automata on surfaces', where);

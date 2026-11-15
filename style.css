@@ -464,10 +464,11 @@ button:hover:not(:disabled),
 .rule-chip:hover {
   border-color: var(--muted-text-color);
 } /* (a digit's chip too: a click opens How it works) */
-button:disabled {
+button:disabled,
+input[type='text']:disabled {
   opacity: 0.45;
   cursor: default;
-}
+} /* a control greyed, a button or a field of words (Symmetric's start number): no click, no edit cursor */
 button.primary {
   width: 100%;
   background: var(--accent-color);

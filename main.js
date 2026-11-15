@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.1058';
+const VERSION = '0.4.1059';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -14648,18 +14648,31 @@ const MOBIUS_KINDS = [
  * half twist (see mobiusSheet): ok, the counts that tile it. A size is its rows (the usual length
  * for them), or rows "x" that count, a length of its own (s=16x240: 16 rows of triangles 120 long). */
 const MOBIUS_ALONG = {
-  mobius: { step: 1, copyLength: 1, ok: () => true },
-  mobiusTri: { step: 0.5, copyLength: 1, ok: (n, nv) => n % 2 === nv % 2 },
-  mobiusHex: { step: 1.5, copyLength: 3, ok: (n) => n % 2 === 1, edgeCuts: true },
+  mobius: { step: 1, copyLength: 1, width: (nv) => nv, ok: () => true },
+  mobiusTri: { step: 0.5, copyLength: 1, width: (nv) => nv * TRIANGLE_HEIGHT, ok: (n, nv) => n % 2 === nv % 2 },
+  mobiusHex: {
+    step: 1.5,
+    copyLength: 3,
+    width: (nv) => Math.sqrt(3) * (nv + 0.5),
+    ok: (n) => n % 2 === 1,
+    edgeCuts: true,
+  },
   mobiusHexTurned: {
     step: TRIANGLE_HEIGHT,
     copyLength: 2 * TRIANGLE_HEIGHT,
+    width: (nv) => 1.5 * (nv - 1) + 2,
     ok: (n, nv) => n % 2 === (nv % 2 ? 0 : 1),
     edgeCuts: true,
   },
-  mobiusTriTurned: { step: TRIANGLE_HEIGHT, copyLength: 2 * TRIANGLE_HEIGHT, ok: (n) => n % 2 === 0, edgeCuts: true },
-  mobiusCairo: { step: 1, copyLength: 2, ok: (n, nv) => (n + nv) % 2 === 1, edgeCuts: true },
-}; // (copyLength: the least slide along that brings its tiling onto itself, a tiling's strip's too: see mobiusMirror; edgeCuts: its edges no mirror between its tiles, its edge's cells' neighbours not as in its middle: see edgeCells)
+  mobiusTriTurned: {
+    step: TRIANGLE_HEIGHT,
+    copyLength: 2 * TRIANGLE_HEIGHT,
+    width: (nv) => nv,
+    ok: (n) => n % 2 === 0,
+    edgeCuts: true,
+  },
+  mobiusCairo: { step: 1, copyLength: 2, width: (nv) => nv, ok: (n, nv) => (n + nv) % 2 === 1, edgeCuts: true },
+}; // (width: its width for its rows; copyLength: the least slide along that brings its tiling onto itself, a tiling's strip's too: see mobiusMirror; edgeCuts: its edges no mirror between its tiles, its edge's cells' neighbours not as in its middle: see edgeCells)
 MOBIUS_ALONG.mobiusKite = MOBIUS_ALONG.mobiusTri; // kites: the triangles', each cut in 3
 MOBIUS_ALONG.mobiusKiteTurned = MOBIUS_ALONG.mobiusTriTurned;
 // A tiling's mirror along a side a of its lattice (with b, a lattice cell), the plane turned so that a runs along x: the
@@ -14782,6 +14795,13 @@ const stripKey = () => `${ringColours(ringMode())}${MODES[ringMode()]?.margolus 
 const stripMemo = remember('stripMemo', weakCache()),
   countMemo = remember('countMemo', {});
 // a strip's length, width and tiles' count, without its tiles (the sizes' ladder asks for many: see mobiusSheetOf's count)
+// a strip's length alone, no tile built nor counted (a count picked is judged by it at every size round, see battleFits)
+const mobiusLength = (kind0, size) => {
+  if (MOBIUS_STRIPS[kind0]) return stripFrame(MOBIUS_STRIPS[kind0].kind, kind0, size).L;
+  const [nv, own] = mobiusSize(size),
+    { step, width } = MOBIUS_ALONG[kind0];
+  return step * stripSteps(kind0, nv, width(nv), own);
+};
 const mobiusCount = (kind0, size) => (countMemo[`${kind0}|${size}|${stripKey()}`] ??= mobiusSheetOf(kind0, size, true)); // (its length its colours': see stripSteps)
 function mobiusSheet(kind0, size) {
   return (stripMemo[`${kind0}|${size}|${stripKey()}`] ??= mobiusSheetOf(kind0, size)); // (its mesh's, kept while it is: see meshCache)
@@ -14822,7 +14842,7 @@ function mobiusSheetOf(kind0, size, count = false) {
     },
     done = (L, W) => (count ? { L, W, n } : { L, W, tiles, latticeCells });
   if (kind === 'mobiusHexTurned') {
-    const W = 1.5 * (nv - 1) + 2,
+    const W = MOBIUS_ALONG[kind].width(nv),
       S3 = Math.sqrt(3),
       L = (S3 / 2) * steps(W);
     for (let r = 0; r < nv; r++) {
@@ -14841,7 +14861,7 @@ function mobiusSheetOf(kind0, size, count = false) {
     return done(L, W);
   }
   if (kind === 'mobiusTriTurned') {
-    const W = nv,
+    const W = MOBIUS_ALONG[kind].width(nv),
       cols = steps(W),
       L = cols * TRIANGLE_HEIGHT;
     for (let i = -1; i <= cols; i++) {
@@ -14875,7 +14895,7 @@ function mobiusSheetOf(kind0, size, count = false) {
   if (kind === 'mobiusCairo') {
     // nv squares of the Cairo grid across, L along with L + nv odd: the ends glued turned over keep
     // the tiling (see cairoCorners); the pentagons whose middles lie on the strip, its edges zigzag along them
-    const W = nv,
+    const W = MOBIUS_ALONG[kind].width(nv),
       L = steps(W);
     for (let i = -1; i <= L; i++)
       for (let j = -1; j <= W; j++)
@@ -14887,7 +14907,7 @@ function mobiusSheetOf(kind0, size, count = false) {
     return done(L, W);
   }
   if (kind === 'mobiusHex') {
-    const W = Math.sqrt(3) * (nv + 0.5),
+    const W = MOBIUS_ALONG[kind].width(nv),
       a = steps(W),
       L = 1.5 * a;
     for (let c = 0; c < a; c++)
@@ -14899,7 +14919,7 @@ function mobiusSheetOf(kind0, size, count = false) {
     return done(L, W);
   }
   if (kind === 'mobiusTri') {
-    const W = nv * TRIANGLE_HEIGHT,
+    const W = MOBIUS_ALONG[kind].width(nv),
       L = steps(W) / 2;
     for (let j = 0; j < nv; j++) {
       const y0 = j * TRIANGLE_HEIGHT,
@@ -15932,7 +15952,7 @@ const SIDES = [
 ]; // (every multiple of 24 up to 192: an icon's whole size)
 const CELLS = { least: 2 ** 8, most: 2 ** 20 },
   START = { surface: 2688, solid: 6144 };
-const mobiusRadius = (kind, s) => mobiusCount(kind, s).L / (2 * Math.PI); // (its length: no tile built)  // a Möbius strip's circle, L tile edges round
+const mobiusRadius = (kind, s) => mobiusLength(kind, s) / (2 * Math.PI); // a Möbius strip's circle, L tile edges round
 // the Klein bottles of tiles round their tube (kleinMesh): each its cells, how many a lattice cell, how wide across
 const KLEIN_BOTTLES = [
   ['klein', 'squares', 1],
@@ -16479,7 +16499,7 @@ function torusDims(kind, size) {
   size = sizeOf(size); // (as the list has it: a size's tooltip's, "16" before v0.3.70, NaN cells on every tiling's torus)
   if (MOBIUS_KINDS.includes(kind)) {
     // a Möbius strip: its rows and its length, as a count of steps along (see MOBIUS_ALONG)
-    return [mobiusSize(size)[0], Math.round(mobiusCount(kind, size).L / MOBIUS_ALONG[kind].step)]; // (its length the one built: one of its own, the nearest its twist allows, see stripSteps)
+    return [mobiusSize(size)[0], Math.round(mobiusLength(kind, size) / MOBIUS_ALONG[kind].step)]; // (its length the one built: one of its own, the nearest its twist allows, see stripSteps)
   }
   if (typeof size === 'number') return [size, SPHERES[kind].columns(size)];
   const [rows, perRow] = size.split('x').map(Number);
@@ -17027,13 +17047,17 @@ function mobiusStarts(g) {
   const G = gridGraph(g),
     k = g.sides,
     face = mobiusMiddle(g) < g.L ? 0 : g.front, // the face in view
-    far = new Map(), // (its corners: how far from the sheet's middle, and their height across it)
-    across = new Map();
+    far = new Float64Array(G.nv).fill(Infinity), // (its corners: how far from the sheet's middle, their height across it, where first listed)
+    across = new Float64Array(G.nv).fill(NaN),
+    listed = new Int32Array(G.nv);
   for (let q = k * face; q < k * (face + g.front); q++) {
-    if (far.has(g.poly[q])) continue;
-    far.set(g.poly[q], Math.hypot(g.uv[2 * q] - g.L / 2, g.uv[2 * q + 1] - g.W / 2));
-    across.set(g.poly[q], g.uv[2 * q + 1]);
+    const v = g.poly[q];
+    if (far[v] < Infinity) continue;
+    far[v] = Math.hypot(g.uv[2 * q] - g.L / 2, g.uv[2 * q + 1] - g.W / 2);
+    across[v] = g.uv[2 * q + 1];
+    listed[v] = q;
   }
+  const nearer = (a, b) => far[a] < far[b] || (far[a] === far[b] && listed[a] < listed[b]); // (as far: the first listed)
   // the starts round corner v0, the step from each corner round it to it, on the sheet as seen from its face (a back: mirrored)
   const startsRound = (v0) => {
     const delta = new Map();
@@ -17053,10 +17077,14 @@ function mobiusStarts(g) {
   // there would start together (see battleFits): a start's corner (along the grid) and its tile's middle (on cells)
   const onLine = (y) => Math.abs(y - g.W / 2) < 1e-6,
     tileAcross = (t) => Array.from({ length: k }, (_, i) => g.uv[2 * (k * t + i) + 1]).reduce((a, b) => a + b) / k,
-    clear = ([v, f]) => !onLine(across.get(v)) && !onLine(tileAcross(cellStart(g, [v, f])[0]));
-  // the corner nearest the sheet's middle whose starts all lie off that line
-  for (const v0 of [...far.keys()].sort((a, b) => far.get(a) - far.get(b))) {
-    const starts = startsRound(v0);
+    clear = ([v, f]) => !onLine(across[v]) && !onLine(tileAcross(cellStart(g, [v, f])[0]));
+  // the corner nearest the sheet's middle whose starts all lie off that line: the nearest, then the next, a few at most
+  // (none sorted: hundreds of thousands of corners on a large strip)
+  for (let last = -1, least = -1; ; last = least, least = -1) {
+    for (let v = 0; v < G.nv; v++)
+      if (far[v] < Infinity && (last < 0 || nearer(last, v)) && (least < 0 || nearer(v, least))) least = v;
+    if (least < 0) return undefined; // (none clear: no strip so narrow)
+    const starts = startsRound(least);
     if (starts.every(clear)) return starts;
   }
 }
@@ -17539,8 +17567,8 @@ function torusLoops() {
       const { step, ok } = MOBIUS_ALONG[kind],
         most = Math.floor((LOOP_STEPS - s0 - L) / L);
       for (let nv = least; nv <= LOOP_ROWS * least; nv++) {
-        const { W, L: Lu } = mobiusCount(kind, nv),
-          usual = Lu / step;
+        const W = MOBIUS_ALONG[kind].width(nv),
+          usual = mobiusLength(kind, nv) / step;
         for (let n = Math.ceil(usual * TORUS_RATIO[0]); n <= usual * TORUS_RATIO[1]; n++) {
           if (!ok(n, nv)) continue;
           const Ls = n * step,
@@ -18583,7 +18611,7 @@ const battleFits = (
   if (ring === FOLDS.torus.name) return true;
   if (ring === FOLDS.klein.name) return K === 2;
   if (ring) {
-    const copies = ringFor(w, K, () => (2 * mobiusCount(kind, size).L) / K / MOBIUS_ALONG[kind].copyLength);
+    const copies = ringFor(w, K, () => (2 * mobiusLength(kind, size)) / K / MOBIUS_ALONG[kind].copyLength);
     return Math.abs(copies - Math.round(copies)) < 1e-6;
   }
   // a closed solid's: for any start, or none where it has no group of K (no mesh, see solidTeamCounts), else a group of K

@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.1060';
+const VERSION = '0.4.1061';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -22009,10 +22009,10 @@ const SYMMETRIES = {
 // A grid's symmetries, known by construction: about its centre, a turn of order N and a mirror. Squares: the grid's middle,
 // quarter turns; a grid in a hexagon (see planeShape): its middle o, a centre of the tiling's sixths, sixth turns, a mirror if
 // its tiles have one (Florets, Snub: none); the others none
-const planeSymmetries = (kind, W, outline = outlineOf(kind)) =>
-  kind === 'square' || (planeShape(kind, W, outline) && TILINGS[baseOf(kind)]?.mirror !== false)
+const planeSymmetries = (kind, outline = outlineOf(kind)) =>
+  kind === 'square' || (shaped(kind, outline) && TILINGS[baseOf(kind)]?.mirror !== false)
     ? ['none', 'half', 'rotate', 'mirror', 'kaleido']
-    : planeShape(kind, W, outline)
+    : shaped(kind, outline)
       ? ['none', 'half', 'rotate']
       : ['none'];
 // its turn r and its mirror m, a cell → the cell it goes to, made when first asked: squares by their index; a grid in a
@@ -22087,7 +22087,7 @@ function symmetriesHere(
 ) {
   // (M: a block rule's, the walk shown's: its cells' turns, a built grid's)
   const byParts = K > 1 && (start === 'random' || start === 'text'); // (as symmetricStart colours them)
-  const all = (start === 'random' && famousZone(zone) ? ['none'] : planeSymmetries(kind, W, outline)).filter(
+  const all = (start === 'random' && famousZone(zone) ? ['none'] : planeSymmetries(kind, outline)).filter(
     (y) => !byParts || partSymmetries(kind, W, K, outline).includes(y),
   );
   if (!M) return all;
@@ -22129,7 +22129,7 @@ function symmetriesHere(
   if (!blockSymmetriesMemo.has(key))
     blockSymmetriesMemo.set(
       key,
-      planeSymmetries(kind, W).filter((y) => y === 'none' || keeps(symmetryMaps(kind, W, y))),
+      planeSymmetries(kind).filter((y) => y === 'none' || keeps(symmetryMaps(kind, W, y))),
     );
   return blockSymmetriesMemo.get(key).filter((y) => all.includes(y));
 }
@@ -22149,7 +22149,7 @@ function partSymmetries(kind, W, K, outline = outlineOf(kind)) {
   return partMemo
     .set(
       key,
-      planeSymmetries(kind, W).filter((y) =>
+      planeSymmetries(kind).filter((y) =>
         symmetryMaps(kind, W, y).every((f) => parts.every((part) => part.every((t) => own[f(t)] === own[f(part[0])]))),
       ),
     )
@@ -24346,7 +24346,8 @@ const symmetryAllowed = (
   if (v === walk.mode && walk.plane && outline === outlineOf(m.plane))
     return symmetriesHere(walk.plane.kind, walk.plane.W, undefined, by).includes(y);
   if (!m.plane || m.elementary || m.margolus || !m.life) return y === 'none';
-  return symmetriesHere(k, planeW(k, planeSideOf(k, outline), m, outline), null, by).includes(y); // (its side in that outline, see planeSides)
+  const W = walk.plane?.kind === k ? planeW(k, planeSideOf(k, outline), m, outline) : null; // (its side in that outline, see planeSides: asked of the kind built only, where a colour's parts are known, see partSymmetries)
+  return symmetriesHere(k, W, null, by).includes(y);
 };
 function renderSymmetry() {
   const kind = MODES[tabMode()].plane,
@@ -25023,7 +25024,7 @@ for (const base of ['hex', 'tri', 'kite', ...Object.keys(TILINGS)]) {
   const best = step && { step, U: W(step[0]), V: W(step[1]), det: step[0][0] * step[1][1] - step[0][1] * step[1][0] };
   if (!best) continue;
   if (straight(step)) STRAIGHT_RECTS.add(base);
-  // its cells when first asked for (RECTS[kind]: built then, kept)
+  // its cells when first asked for (RECTS[kind].polys, its nat: built then, kept); what it is, known at once
   const kind = `${base}Rect`,
     build = () => {
       const { U, V, det, step } = best,
@@ -25057,36 +25058,31 @@ for (const base of ['hex', 'tri', 'kite', ...Object.keys(TILINGS)]) {
             [al, be] = inRect(cellMiddle(base, x, m));
           return { x, y: m, al, be, polys: planeCorners(base, x, m).map(inRect) };
         });
-      if (tiles.length !== det * per) return undefined; // (a rectangle of whole lattice cells: as many as their cells)
-      tiles.sort((p, q) => p.be - q.be || p.al - q.al);
-      const t = TILINGS[base],
-        R = {
-          base,
-          name: t?.name,
-          mark: t?.mark,
-          cells: t?.cells ?? PLANE_CELLS[base],
-          basis: [U, V],
-          polys: tiles.map((c) => c.polys),
-          nat: tiles.map((c) => [c.x, c.y]),
-          step,
-        };
-      return R;
+      tiles.sort((p, q) => p.be - q.be || p.al - q.al); // (a rectangle of whole lattice cells: det × per tiles)
+      return { polys: tiles.map((c) => c.polys), nat: tiles.map((c) => [c.x, c.y]) };
     };
+  let built = null;
   [TILES_PER_GRID_CELL[kind], RECT_ASPECT[kind]] = [
     Math.abs(best.det) * per,
     Math.hypot(...best.V) / Math.hypot(...best.U),
   ]; // (its tables at once: its size said before it is built; its height over its width, see planeColumns)
   PATTERN_TURNS[kind] = gridTurns(base);
   PLANE_CELLS[kind] = PLANE_CELLS[base];
-  Object.defineProperty(RECTS, kind, {
-    configurable: true,
-    enumerable: true,
-    get: () => {
-      const R = build();
-      Object.defineProperty(RECTS, kind, { value: R, writable: true, enumerable: true });
-      return R;
+  const t = TILINGS[base];
+  RECTS[kind] = {
+    base,
+    name: t?.name,
+    mark: t?.mark,
+    cells: t?.cells ?? PLANE_CELLS[base],
+    basis: [best.U, best.V],
+    step: best.step,
+    get polys() {
+      return (built ??= build()).polys;
     },
-  });
+    get nat() {
+      return (built ??= build()).nat;
+    },
+  };
 }
 // A pattern turned and mirrored, as cells [dx, dy, state] from its first square (Cairo: an even one): the
 // middles of its cells mirrored across an upright line the grid is mirrored across, turned about a point

@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.16';
+const VERSION = '0.5.17';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -3690,7 +3690,8 @@ const MOBIUS_TILINGS = [
 // The solids made from their corners (see hullMesh): their faces the planes through 3 of them with all the others behind
 // (the convex hull), each face of 4 corners (a square, a rhombus: a parallelogram) cut into f × f of its kind, each
 // triangle into f² triangles. One declaration each, all a solid is said from: its name (the menu's, its link's word), its
-// tile's short name, its corners (made when asked), its picture (its paths, or an icon's name), its rules' mark (see SURFACE_CELLS), its cells cut again
+// tile's short name, its corners (made when asked), its picture (its paths, or an icon's name), its rules' mark (see SURFACE_CELLS), its walks (the
+// cube's turtle on its own cells: walks), its cells cut again
 // (cells: its own cells' name; cuts: see HULL_CUTS, a tab each), its place in the menu
 // ([1 after, 0 before, a shape]: see the menu's moves) and its words; its variant, its surface, its size, its group in the
 // menu derived (see the hull solids' Life, SURFACES)
@@ -3802,6 +3803,7 @@ const HULL_SOLIDS = {
     pic: 'tiling-rhombille', // (along a 3-fold axis: 3 rhombi round it, the rhombille tiling's picture)
     mark: '■',
     cells: 'Squares', // (its own cells' tab, beside its cuts': a grid of squares laid on each rhombus)
+    walks: true, // (the turtle along its squares' edges and on them, as the cube's: 3 or 4 edges a corner, 4 sides a cell)
     cuts: ['tetrakis', 'halves'],
     place: [1, 'Dodecahedron'],
     where:
@@ -9887,6 +9889,33 @@ for (const [k, S] of Object.entries(HULL_SOLIDS)) {
     NAV[w] = ['Life', 'Surfaces', S.name, 'Life', ''];
     variantOption(w, 'Automata on surfaces', where);
   }
+  // its turtle walks, as the cube's (its squares' cells: 3 a digit, left, on or right), each the other's twin
+  if (S.walks) {
+    const [onEdges, onCells] = ['edges', 'cells'].map((side) => variantName('Walk', S.name, S.cells, 'Turtle', side)),
+      a = `a ${S.name.toLowerCase()}`;
+    for (const [w, side, twin, rule] of [
+      [
+        onEdges,
+        'edges',
+        onCells,
+        `along the edges of the squares of ${a}: <b>0</b> turn left, <b>1</b> straight on, <b>2</b> turn right (at a corner of the solid, the nearest edge)`,
+      ],
+      [
+        onCells,
+        'cells',
+        onEdges,
+        `on the surface of ${a}: <b>0</b> turn left, <b>1</b> straight on, <b>2</b> turn right`,
+      ],
+    ]) {
+      const { ant, ...cube } = VARIANTS[variantName('Walk', 'Cube', 'Squares', 'Turtle', side)]; // (its own: no ant)
+      VARIANTS[w] = { ...cube, surface: k, twin, rule };
+      VARIANT_ICONS[w] = hullIcon(k);
+      NAV[w] = ['Walk', 'Surfaces', S.name, 'Turtle', side];
+      document
+        .querySelector('#variant optgroup[label="Walks on surfaces"]')
+        .append(new Option(`${S.name} — base 3 (left / forward / right)`, w));
+    }
+  }
 }
 for (const [kind, t] of Object.entries(TILINGS)) {
   const flat = variantName('Life', t.name);
@@ -10373,9 +10402,9 @@ const FAMILIES = [
     .map(([k, S]) => ({
       name: S.name,
       tab: 0,
-      variants: [k, ...S.cuts.map((c) => `${k}${HULL_CUTS[c].name}`)].map((surface) => [
-        Object.keys(VARIANTS).find((w) => VARIANTS[w].surface === surface),
-      ]),
+      variants: [k, ...S.cuts.map((c) => `${k}${HULL_CUTS[c].name}`)].map((surface) =>
+        Object.keys(VARIANTS).filter((w) => VARIANTS[w].surface === surface),
+      ),
       tabs: [
         [0, false, 'tilesSq', S.cells, S.cells],
         ...S.cuts.map((c, i) => [
@@ -17323,6 +17352,8 @@ function solidRotations(C) {
   return rots;
 }
 
+// a solid's faces, as built: a flat polyhedron's (its faces), a hull solid's (its squares', then its triangles': see hullMesh)
+const solidFaces = (g) => g.faces ?? (g.squareFaces && [...g.squareFaces, ...g.triFaces]);
 // The solid's corners: its own (the dodecahedron's, not its pentagons' centres), of its faces, or the
 // walls of a solid of hexagons (the sphere's 12 pentagons: their middles)
 function solidCorners(g) {
@@ -17332,7 +17363,7 @@ function solidCorners(g) {
     const u = unit(p);
     if (!C.some((c) => c[0] * u[0] + c[1] * u[1] + c[2] * u[2] > 1 - 1e-9)) C.push(u);
   };
-  if (g.faces) for (const f of g.faces) f.corners.forEach(put);
+  if (solidFaces(g)) for (const f of solidFaces(g)) f.corners.forEach(put);
   else for (const t of g.walls) put(Array.from(g.cen.subarray(3 * t, 3 * t + 3)));
   return C;
 }
@@ -17345,7 +17376,7 @@ const firstStart = (g, G) => g.gridStart ?? [g.poly[0], G.nbrs[g.poly[0]][0]];
 function solidFaceCentres(g, C) {
   const sum = (ps) => unit([0, 1, 2].map((d) => ps.reduce((s, p) => s + p[d], 0)));
   if (g.solid) return g.solid.centres;
-  if (g.faces) return g.faces.map((f) => sum(f.corners));
+  if (solidFaces(g)) return solidFaces(g).map((f) => sum(f.corners));
   if (g.faceCentres) return g.faceCentres; // (a solid of hexagons: its triangles' solid's, see hexSolidMesh)
   const O = [];
   for (let i = 0; i < 12; i++)
@@ -18563,7 +18594,8 @@ function groupedStarts(g, start, K) {
 }
 // The edges out of the points a solid's walkers may start round (see groupedStarts: its faces' centres, its corners), by its
 // kind: at a size 3 divides (thirds), at the others (a triangle face's centre a corner of the grid, else a small
-// triangle's three), or at any. Known with no mesh: asked of every variant next to the one shown, by a greyed tile's search
+// triangle's three); at an even size, an odd one (a rhombus's centre a corner of its squares, else a square's middle, its 4
+// corners round it); or at any. Known with no mesh: asked of every variant next to the one shown, by a greyed tile's search
 // (see choicesAt; a mesh and its starts built for each, 5.5 s at Centred's first hover till v0.4.1065); as the meshes'
 // own, see tools/check.js's checkCentred
 const CENTRED_EDGES = {
@@ -18578,10 +18610,13 @@ const CENTRED_EDGES = {
   octaHex: { thirds: [4, 6], other: [3, 4] },
   stellaHex: { any: [3, 8] },
   dodecaHex: { any: [5, 6] },
+  rhombicDodeca: { even: [3, 4], odd: [3, 4, 8] },
 };
 const centredEdges = (kind, size) => {
   const edges = CENTRED_EDGES[kind]; // (none: a ring, a solid with no grid to walk along)
-  return edges?.any ?? (size % 3 ? edges?.other : edges?.thirds) ?? [];
+  return (
+    edges?.any ?? (edges?.even ? (size % 2 ? edges.odd : edges.even) : size % 3 ? edges?.other : edges?.thirds) ?? []
+  );
 };
 // (a variant's, at a size or the one it opens at: its walkers, a setup's teams, can be grouped: so many edges out of one of
 // its points that they share them evenly, see groupedStarts)

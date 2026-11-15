@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.9';
+const VERSION = '0.5.10';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -3801,6 +3801,7 @@ const HULL_SOLIDS = {
     ],
     pic: 'tiling-rhombille', // (along a 3-fold axis: 3 rhombi round it, the rhombille tiling's picture)
     mark: '■',
+    inflated: 0.5, // (its default Shape, half way: see DISPLAY_DEFAULTS)
     cells: 'Squares', // (its own cells' tab, beside its cuts': a grid of squares laid on each rhombus)
     cuts: ['tetrakis', 'halves'],
     place: [1, 'Dodecahedron'],
@@ -6829,7 +6830,7 @@ const DISPLAY_DEFAULTS = {
   autoRotate: ['autoRotate', 'tab', false],
   autoFit: ['autoFit', 'variant', true],
   upright: ['upright', 'variant', false],
-  shape: ['shapeM', 'variant', (variant) => (variant.round ? 1 : 0)], // (Flat 0 ── Inflated 1: a round surface inflated, a solid flat)
+  shape: ['shapeM', 'variant', (variant) => variant.inflated ?? (variant.round ? 1 : 0)], // (Flat 0 ── Inflated 1: a round surface inflated, a solid flat; a variant's own, its inflated)
   perspective: [
     'perspective',
     'variant',
@@ -9917,7 +9918,14 @@ for (const [k, S] of Object.entries(HULL_SOLIDS)) {
     ...(S.cuts ?? []).map((c) => [`${k}${HULL_CUTS[c].name}`, HULL_CUTS[c].name, `${S.where}, ${HULL_CUTS[c].words}`]),
   ]) {
     const w = variantName('Life', S.name, tiling);
-    VARIANTS[w] = { base: 2, lattice: 'surface', surface, life: true, where };
+    VARIANTS[w] = {
+      base: 2,
+      lattice: 'surface',
+      surface,
+      life: true,
+      where,
+      ...(S.inflated !== undefined && { inflated: S.inflated }),
+    };
     VARIANT_ICONS[w] = hullIcon(k);
     NAV[w] = ['Life', 'Surfaces', S.name, 'Life', ''];
     variantOption(w, 'Automata on surfaces', where);

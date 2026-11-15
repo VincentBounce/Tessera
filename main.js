@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.6';
+const VERSION = '0.5.7';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -3690,7 +3690,7 @@ const MOBIUS_TILINGS = [
 // The solids made from their corners (see hullMesh): their faces the planes through 3 of them with all the others behind
 // (the convex hull), each face of 4 corners (a square, a rhombus: a parallelogram) cut into f × f of its kind, each
 // triangle into f² triangles. One declaration each, all a solid is said from: its name (the menu's, its link's word), its
-// tile's short name, its corners (made when asked), its picture, its rules' mark (see SURFACE_CELLS), its cells cut again
+// tile's short name, its corners (made when asked), its picture (its paths, or an icon's name), its rules' mark (see SURFACE_CELLS), its cells cut again
 // (cells: its own cells' name; cuts: see HULL_CUTS, a tab each), its place in the menu
 // ([1 after, 0 before, a shape]: see the menu's moves) and its words; its variant, its surface, its size, its group in the
 // menu derived (see the hull solids' Life, SURFACES)
@@ -3794,12 +3794,12 @@ const HULL_SOLIDS = {
   // corner, 4 round the others: edge √3; its cells rhombi, 4 sides each as squares (the cube's rules)
   rhombicDodeca: {
     name: 'Rhombic dodecahedron',
-    short: 'RhDodeca',
+    short: 'RhDode',
     corners: () => [
       ...[-1, 1].flatMap((a) => [-1, 1].flatMap((b) => [-1, 1].map((c) => [a, b, c]))),
       ...[0, 1, 2].flatMap((d) => [-2, 2].map((v) => [0, 1, 2].map((e) => (e === d ? v : 0)))),
     ],
-    pic: ['M12 3L21 12L12 21L3 12Z', 'M7.5 7.5L16.5 16.5M16.5 7.5L7.5 16.5'], // (along a 4-fold axis: 4 rhombi round it)
+    pic: 'tiling-rhombille', // (along a 3-fold axis: 3 rhombi round it, the rhombille tiling's picture)
     mark: '■',
     cells: 'Rhombi', // (its own cells' tab, beside its cuts')
     cuts: ['tetrakis', 'halves'],
@@ -3807,6 +3807,11 @@ const HULL_SOLIDS = {
     where: "a rhombic dodecahedron of rhombi (the cuboctahedron's dual: 3 or 4 round each corner)",
   },
 };
+// a hull solid's icon: its own (its pic's paths, ICONS[k]) or another's it names (pic: an icon's name)
+const hullIcon = (k) => (typeof HULL_SOLIDS[k].pic === 'string' ? HULL_SOLIDS[k].pic : k);
+const hullCuts = Object.entries(HULL_SOLIDS).flatMap(([k, S]) =>
+  (S.cuts ?? []).map((c) => [k, c, `${k}${HULL_CUTS[c].name}`]),
+);
 // the flat solids with hexagons too, folded over their edges (see hexSolidMesh): each one's name, its family's, its size
 // (as its triangles', see SURFACES), its cells (one a corner of its triangles) and those of other sides (where fewer or more
 // than 6 of its triangles meet: walls in Life, walked on)
@@ -9906,14 +9911,14 @@ const variantOption = (m, group, text) =>
   document.querySelector(`#variant optgroup[label="${group}"]`).append(new Option(`Life — ${text}`, m));
 // the hull solids' Life (see HULL_SOLIDS): a variant each, said by its declaration
 for (const [k, S] of Object.entries(HULL_SOLIDS)) {
-  ICONS[k] = S.pic.map((d) => svgPath(d)).join('');
+  if (Array.isArray(S.pic)) ICONS[k] = S.pic.map((d) => svgPath(d)).join('');
   for (const [surface, tiling, where] of [
     [k, S.cuts && S.cells, S.where],
     ...(S.cuts ?? []).map((c) => [`${k}${HULL_CUTS[c].name}`, HULL_CUTS[c].name, `${S.where}, ${HULL_CUTS[c].words}`]),
   ]) {
     const w = variantName('Life', S.name, tiling);
     VARIANTS[w] = { base: 2, lattice: 'surface', surface, life: true, where };
-    VARIANT_ICONS[w] = k;
+    VARIANT_ICONS[w] = hullIcon(k);
     NAV[w] = ['Life', 'Surfaces', S.name, 'Life', ''];
     variantOption(w, 'Automata on surfaces', where);
   }
@@ -10197,7 +10202,7 @@ const SHAPE_ICONS = {
   Octahedron: 'octahedron',
   'Stella octangula': 'stella',
   Dodecahedron: 'dodecahedron',
-  ...Object.fromEntries(Object.entries(HULL_SOLIDS).map(([k, { name }]) => [name, k])),
+  ...Object.fromEntries(Object.entries(HULL_SOLIDS).map(([k, { name }]) => [name, hullIcon(k)])),
   Globe: 'globe',
   Rosettes: 'rosettes',
   Sphere: 'icosahedron',
@@ -13666,9 +13671,6 @@ function mengerMesh(L, m = 1) {
 
 // a hull solid's faces, once (see HULL_SOLIDS)
 // a hull solid's surfaces cut again (see HULL_CUTS): [solid, cut, its surface's key]
-const hullCuts = Object.entries(HULL_SOLIDS).flatMap(([k, S]) =>
-  (S.cuts ?? []).map((c) => [k, c, `${k}${HULL_CUTS[c].name}`]),
-);
 const hullFacesMemo = remember('hullFacesMemo', {}),
   hullFacesOf = (kind) => (hullFacesMemo[kind] ??= hullFaces(HULL_SOLIDS[kind].corners()));
 function hullFaces(P) {

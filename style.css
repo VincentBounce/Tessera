@@ -748,7 +748,10 @@ h4 {
   gap: 6px;
   height: auto;
   padding: 4px 12px;
-} /* a tile low, its picture left of its name (see tile's row): as Draw's turns */
+  background: var(--page-background);
+  color: var(--text-color);
+  font-size: inherit;
+} /* a tile low, its picture left of its name (see tile's row): a button's look (its grey, its text), a tile's states */
 .nav-shapes button.row-tile svg {
   width: 16px;
   height: 16px;

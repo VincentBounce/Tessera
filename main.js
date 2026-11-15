@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.19';
+const VERSION = '0.5.20';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -10245,8 +10245,8 @@ const navValues = (level, pre) => [
   ),
 ];
 // A space's shapes in the order shown, in their groups ([title, shapes] each, those it has): in 2D, many of them, grouped by
-// their grid's natural shape (see SHAPE_GROUPS); in 3D, the solids of squares first (the cube, the cubes carved), the other
-// solids, those of squares and triangles, then the surfaces (the balls: Globe, Sphere, Rosettes; a sheet rolled up: Torus,
+// their grid's natural shape (see SHAPE_GROUPS); in 3D, the regular solids (faces all alike, the cube after the tetrahedron),
+// the irregular ones (the cubes carved, those of squares and triangles), then the surfaces (the balls: Globe, Sphere, Rosettes; a sheet rolled up: Torus,
 // Möbius, Klein; see SHEETS); else as the menu lists them. Made once a kind and space (the menu's tables fixed once the
 // page has loaded: the graph's search asks it at each edge, 1.5 ms each, see nearestVariant)
 const shapeGroupsMemo = remember('shapeGroupsMemo', {});
@@ -10257,7 +10257,7 @@ function shapeGroupsOf(kind, space) {
     solid = space.startsWith('3D ');
   const planeOf = (sh) =>
     VARIANTS[Object.keys(NAV).find((m) => NAV[m][0] === kind && NAV[m][1] === space && NAV[m][2] === sh)]?.plane;
-  const SQUARED = ['Cube', 'Pits', 'Bumps', 'Frame', 'Sponge'],
+  const CARVED = ['Pits', 'Bumps', 'Frame', 'Sponge'], // (the cubes carved: their faces not all alike)
     sheet = (sh) => SHEETS.includes(sh),
     // (a hull solid with faces of two kinds or more, by its faces found, see hullFacesOf: the others' faces all alike)
     mixed = (sh) =>
@@ -10269,9 +10269,14 @@ function shapeGroupsOf(kind, space) {
       ? SHAPE_GROUPS.map(([g]) => [g, (sh) => shapeGroup(planeOf(sh)) === g]) // (in their order: the circles' four, squares, parallelograms, rhombi)
       : solid
         ? [
-            ['Cubes', (sh) => SQUARED.includes(sh), SQUARED],
-            ['Regular polyhedra', (sh) => !sheet(sh) && !SQUARED.includes(sh) && !mixed(sh)], // (their faces all alike)
-            ['Irregular polyhedra', mixed],
+            [
+              'Regular polyhedra',
+              (sh) => !sheet(sh) && !CARVED.includes(sh) && !mixed(sh),
+              shapes.includes('Tetrahedron')
+                ? shapes.filter((sh) => sh !== 'Cube').flatMap((sh) => (sh === 'Tetrahedron' ? [sh, 'Cube'] : [sh]))
+                : shapes,
+            ], // (their faces all alike, the cube after the tetrahedron)
+            ['Irregular polyhedra', (sh) => CARVED.includes(sh) || mixed(sh), [...new Set([...CARVED, ...shapes])]],
             ['Surfaces', sheet, SHEETS],
           ]
         : [[null, () => true]];

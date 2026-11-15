@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.37';
+const VERSION = '0.5.38';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -39453,7 +39453,7 @@ function getSetup() {
     };
   if (!variant.life || gensShown()) s.maxSteps = lengthAsked(); // (the length asked: digits, or generations)
   if (variant.lattice === 'surface') s.gridSize = $('gridSizeField').value;
-  if (variantStarts() && startNo() > 1) s.walkStart = startNo();
+  if (variantStarts() && startsWayNow() === 'symmetric' && startNo() > 1) s.walkStart = startNo(); // (Symmetric's: Centred and Random place their own)
   if (torusTurned && TURNED[variant.surface]) s.gridTurned = 1;
   if (variant.life) s.playRule = ruleBody($('lifeRule').value);
   if (variant.life && !variant.margolus && lifeTeams > 1) s.teams = lifeTeams;

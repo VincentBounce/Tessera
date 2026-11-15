@@ -119,28 +119,40 @@ function dodecahedron(radius) {
  * on two faces sharing an edge, the second unfolded into the first's plane over it. Each point's neighbours
  * in turn round it (its way out from the middle its normal); each tile, a face of that graph, walked round.
  */
-function sphereTiling(P1) {
+// the tiling's points, made once for the largest radius asked (a pentagon picks its own from them)
+let planeMade = { R: 0, points: [] };
+const planePoints = (R) => (R > planeMade.R ? (planeMade = { R, points: penrosePoints(R) }) : planeMade).points;
+// The pentagon's content for corner P1: the tiling's points in it, P1 along x (the face's own frame), and its key, one of
+// it and its mirror's: two P1 laying the same points lay the same tiling, or its mirror image
+function faceContent(P1) {
   const rho = Math.hypot(P1[0], P1[1]),
     a = Math.atan2(P1[1], P1[0]),
-    faces = dodecahedron(rho),
-    pentagon = [0, 1, 2, 3, 4].map((k) => [rho * Math.cos(a + (TAU * k) / 5), rho * Math.sin(a + (TAU * k) / 5)]);
+    pentagon = [0, 1, 2, 3, 4].map((k) => [rho * Math.cos((TAU * k) / 5), rho * Math.sin((TAU * k) / 5)]);
   const inside = (p) =>
     pentagon.every((c, k) => {
       const d = pentagon[(k + 1) % 5];
       return (d[0] - c[0]) * (p[1] - c[1]) - (d[1] - c[1]) * (p[0] - c[0]) >= -1e-7;
     });
-  const plane = penrosePoints(rho + 1).filter(inside),
-    toFace = (f, p) => {
-      const x = (p[0] * Math.cos(a) + p[1] * Math.sin(a)) * 1,
-        y = -p[0] * Math.sin(a) + p[1] * Math.cos(a); // (the plane turned so that P1 lies along x)
-      return add3(f.mid, add3(mul3(f.u, x), mul3(f.w, y)));
-    };
+  const framed = planePoints(rho + 1)
+      .map((p) => [p[0] * Math.cos(a) + p[1] * Math.sin(a), -p[0] * Math.sin(a) + p[1] * Math.cos(a)])
+      .filter(inside),
+    key = (flip) =>
+      framed
+        .map(([x, y]) => `${Math.round(x * 1e5)},${Math.round((flip ? -y : y) * 1e5)}`)
+        .sort()
+        .join(' ');
+  return { rho, framed, content: [key(false), key(true)].sort()[0] };
+}
+function sphereTiling(P1, face = faceContent(P1)) {
+  const { rho, framed, content } = face,
+    faces = dodecahedron(rho),
+    toFace = (f, [x, y]) => add3(f.mid, add3(mul3(f.u, x), mul3(f.w, y)));
   // the points, one each however many faces it lies on, and its faces
   const points = [],
     onFaces = [],
     at = new Map();
   faces.forEach((f, fi) => {
-    for (const p of plane) {
+    for (const p of framed) {
       const q = toFace(f, p),
         k = q.map((v) => Math.round(v * 1e5)).join();
       let i = at.get(k);
@@ -232,7 +244,7 @@ function sphereTiling(P1) {
     }
   });
   const edges = nbrs.reduce((s, l) => s + l.length, 0) / 2;
-  return { points, nbrs, tiles, edges, faces, rho };
+  return { points, nbrs, tiles, edges, faces, rho, content };
 }
 
 // a tile's kind: a thick rhombus (72°), a thin one (36°), a pentagon, a triangle, else its sides (a hole: no tiling)
@@ -254,9 +266,11 @@ function tileKind(t, points) {
  *
  * Todd's algorithm II: P1 lands on a three-fold point of the sphere (a corner of the dodecahedron), so it is a
  * point of the tiling or the middle of a three-fold shape round one: the tiling's points v, and v + λ d for d
- * one of the decagon's 10 ways, λ in {φ, 1, tan 18°}. One of each turn by 72° kept, by the pentagon's radius.
- * A candidate closes where every point has 3 neighbours or more and every tile is a rhombus, a pentagon or a
- * triangle (no hole), and Euler's V − E + F = 2 holds.
+ * one of the decagon's 10 ways, λ in {φ, 1, tan 18°}, by the pentagon's radius. A candidate closes where every
+ * point has 3 neighbours or more and every tile is a rhombus, a pentagon or a triangle (no hole), and Euler's
+ * V − E + F = 2 holds; kept if its tiles are Penrose's, thick and thin rhombi both (not the icosahedron's 20
+ * triangles, nor the rhombic triacontahedron's 30 thick rhombi alone), once each: one tiling of each face's
+ * content, turned or mirrored (see faceContent).
  */
 function candidates(R) {
   const out = new Map(),
@@ -267,12 +281,12 @@ function candidates(R) {
         const p = [v[0] + l * Math.cos((Math.PI * d) / 5), v[1] + l * Math.sin((Math.PI * d) / 5)],
           rho = Math.hypot(p[0], p[1]);
         if (rho < 0.5 || rho > R) continue;
-        const turn = ((((Math.atan2(p[1], p[0]) % (TAU / 5)) + TAU / 5) % (TAU / 5)) * 180) / Math.PI; // (one of each turn by 72°)
-        const k = `${rho.toFixed(5)}|${turn.toFixed(3)}`;
+        const k = `${p[0].toFixed(5)},${p[1].toFixed(5)}`;
         if (!out.has(k)) out.set(k, p);
       }
   return [...out.values()].sort((a, b) => Math.hypot(a[0], a[1]) - Math.hypot(b[0], b[1]));
 }
+const penroseKinds = (T) => ['thick', 'thin'].every((k) => T.tiles.some((t) => tileKind(t, T.points) === k));
 const closes = (T) =>
   T.nbrs.every((l) => l.length >= 3) &&
   T.tiles.every((t) => ['thick', 'thin', 'pentagon', 'triangle'].includes(tileKind(t, T.points))) &&
@@ -359,7 +373,14 @@ function show(k) {
 // the candidates up to a radius, those that close kept (Todd's algorithm II, judged by the tiling it makes)
 function search(R) {
   const t0 = performance.now();
-  good = candidates(R).filter((P1) => closes(sphereTiling(P1)));
+  const seen = new Set();
+  good = candidates(R).filter((P1) => {
+    const face = faceContent(P1);
+    if (seen.has(face.content)) return false; // (a tiling met already: its graph not built again)
+    seen.add(face.content);
+    const T = sphereTiling(P1, face);
+    return closes(T) && penroseKinds(T);
+  });
   console.log(
     `penrose-sphere: ${good.length} sizes close up to radius ${R}, in ${Math.round(performance.now() - t0)} ms`,
   );

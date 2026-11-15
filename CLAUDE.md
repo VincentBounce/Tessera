@@ -315,5 +315,6 @@ five-fold round its middle) cut in a regular pentagon round its middle, laid on 
 round, its points joined where they lie 1 apart along the surface (two faces unfolded over their edge), the tiles the
 faces of that graph. Todd's algorithm II's candidates for the pentagon's corner P1 (the tiling's points, and those plus φ,
 1 or tan 18° along the decagon's ways), those that close kept (every corner 3 edges or more, every tile a rhombus, a
-pentagon or a triangle, V − E + F = 2): 24 up to radius 6, the smallest of 30 thick rhombi the rhombic triacontahedron,
-the largest 1,110 rhombi.
+pentagon or a triangle, V − E + F = 2), Penrose's (thick and thin rhombi both: not the icosahedron's 20 triangles nor the
+rhombic triacontahedron's 30 thick rhombi), once each (a pentagon's content, turned or mirrored, one tiling: see
+faceContent, read before any graph is built): 11 up to radius 6, from 1.62 (60 thick, 30 thin) to 5.63 (1,110 rhombi).

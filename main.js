@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.1085';
+const VERSION = '0.4.1086';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -4276,7 +4276,7 @@ const MODES = {
     sphere: 'hexsphere',
     net: 'hex',
     round: true, // (the hexagons' L, R only: no straight on, nor sharp, across a pentagon)
-    rule: 'on a sphere of hexagons (and 12 pentagons): exit through the <b>0</b> front left or <b>1</b> front right edge',
+    rule: 'on an icosahedron of hexagons (and 12 pentagons: a Goldberg polyhedron): exit through the <b>0</b> front left or <b>1</b> front right edge',
   },
   stellaLR: {
     base: 2,
@@ -4469,7 +4469,7 @@ const MODES = {
     edges: true,
     turns: [60, -60],
     round: true,
-    rule: 'along the edges of a sphere of hexagons (and 12 pentagons): <b>0</b> turn left, <b>1</b> turn right',
+    rule: 'along the edges of an icosahedron of hexagons (and 12 pentagons: a Goldberg polyhedron): <b>0</b> turn left, <b>1</b> turn right',
   },
   stellaGrid: {
     base: 5,
@@ -5002,7 +5002,7 @@ const MODES = {
     sphere: 'hexsphere',
     life: true,
     round: true,
-    where: 'a sphere of hexagons (its 12 pentagons are walls)',
+    where: 'an icosahedron of hexagons, a Goldberg polyhedron (its 12 pentagons are walls)',
   },
   lifeTwistedSphere: {
     base: 2,
@@ -5010,7 +5010,8 @@ const MODES = {
     sphere: 'twistedsphere',
     life: true,
     round: true,
-    where: 'a sphere of hexagons turned 15°, a triangle between each three (Twisted on a sphere, its 12 pentagons too)',
+    where:
+      'an icosahedron of hexagons (a Goldberg polyhedron) turned 15°, a triangle between each three (Twisted on a sphere, its 12 pentagons too)',
   },
   cubeRel: { lattice: 'cube', twin: 'cubeRelCells', perspective: true, net: 'cube', where: 'in 3D cubes' },
   diag: {
@@ -39396,8 +39397,19 @@ const linkWord = (name) =>
     .split(' ')
     .map((part, i) => (i ? part[0].toUpperCase() + part.slice(1) : part.toLowerCase()))
     .join('');
-const SHORT_WORDS = { mobiusStrip: 'mobius', hexagons: 'hex', kleinBottle: 'klein' }; // (the menu's names cut short, in a link)
-const menuWord = (name) => SHORT_WORDS[linkWord(name)] ?? linkWord(name);
+// the menu's names that a link says otherwise: a shape by its full name (the menu's Sphere: an icosahedron, of triangles or of
+// hexagons; the cubes carved; a solid's whole name), Hexagons cut short
+const LINK_SHAPES = {
+  Sphere: 'icosahedron',
+  Pits: 'cubePits',
+  Bumps: 'cubeBumps',
+  Frame: 'cubeFrame',
+  Sponge: 'cubeMengerSponge',
+  Bicupola: 'squareOrthobicupola',
+  Pyramid: 'squarePyramid',
+  Hexagons: 'hex',
+};
+const menuWord = (name) => LINK_SHAPES[name] ?? linkWord(name);
 const MODE_WORDS = ['mode', 'shape', 'tiling', 'walkKind', 'on'];
 const modeWordsMemo = remember('modeWordsMemo', {}); // (once a mode: the menu's tables fixed)
 const modeWords = (w) => {

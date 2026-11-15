@@ -503,10 +503,13 @@ const panel = (d) =>
 // Links opened cold, each in a page of its own (an iframe): their walk built, its mode the link's, its battle or its symmetry
 // as the link asks (v0.4.426: a strip's battle looped on its own size, opened cold; v0.4.423: a symmetry before any walk)
 const COLD_LINKS = [
-  [toHash({ x: 'pi', w: 'kleinHexGrid', d: 3000, s: 72, k: 2, xb: 'e' }), { teams: 2 }],
-  [toHash({ x: 'pi', w: 'mobiusHexWalk', d: 3000, s: 5, k: 3, xb: 'sqrt(2)', xc: 'sqrt(3)', br: 3 }), { teams: 3 }],
-  [toHash({ x: 'pi', w: 'hexSphereGrid', d: 3000, s: 24, k: 2, xb: 'e' }), { teams: 2 }],
-  [toHash({ w: 'life2dHex', r: 'B3/S23', y: 'mirror' }), { symmetry: 'mirror' }],
+  [toHash({ x: 'pi', w: 'walkKleinBottleHexTurtleEdges', d: 3000, s: 72, k: 2, xb: 'e' }), { teams: 2 }],
+  [
+    toHash({ x: 'pi', w: 'walkMobiusStripHexTurtleCells', d: 3000, s: 5, k: 3, xb: 'sqrt(2)', xc: 'sqrt(3)', br: 3 }),
+    { teams: 3 },
+  ],
+  [toHash({ x: 'pi', w: 'walkIcosahedronHexTurtleEdges', d: 3000, s: 24, k: 2, xb: 'e' }), { teams: 2 }],
+  [toHash({ w: 'lifeHex', r: 'B3/S23', y: 'mirror' }), { symmetry: 'mirror' }],
 ];
 async function checkColdLinks(fail) {
   for (const [link, want] of COLD_LINKS) {
@@ -981,7 +984,7 @@ async function huntResultsKept(fail) {
   // the battles' hunt: three walkers' orders drawn with the starts alone, then with the numbers
   const trio = {
     x: 'sqrt(2923)',
-    w: 'hexSphereGrid',
+    w: 'walkIcosahedronHexTurtleEdges',
     d: 20000,
     s: 24,
     k: 3,
@@ -995,7 +998,7 @@ async function huntResultsKept(fail) {
   ]) {
     location.hash = toHash({ ...trio, st: formulas ? 2 : 3 }); // (another link each: opened again)
     await wait(500);
-    await until(shown('hexSphereGrid', () => walk.battle?.player?.K === 3));
+    await until(shown('walkIcosahedronHexTurtleEdges', () => walk.battle?.player?.K === 3));
     const tiles = $('battleHuntVary').children;
     if (huntVary.formulas !== formulas) tiles[0].click();
     if (huntVary.starts !== starts) $('battleHuntVary').children[1].click();
@@ -1024,6 +1027,20 @@ async function huntResultsKept(fail) {
     if (hunt.run) stopHunt();
   }
   return checked;
+}
+// Every mode's key its link's words in one (see modeName): its tab, its shape, its tiling, a walk's kind, its side, as the
+// menu says them (NAV, its family's tab); and a place in the menu each
+function checkModeNames(fail) {
+  for (const w of Object.keys(MODES)) {
+    if (!NAV[w]) {
+      fail(`${w}: no place in the menu`);
+      continue;
+    }
+    const [kind, , shape, rule, side] = NAV[w],
+      want = modeName(kind, shape, familyOf(w) ? tilingNameOf(w) : null, rule, side);
+    if (w !== want) fail(`${w}: its key is not its link's words, ${want}`);
+  }
+  return Object.keys(MODES).length;
 }
 // Centred's edges (CENTRED_EDGES) as the meshes' own: every battle along a solid's grid, at its two least sizes of each
 // class (3 divides it or not): the edges out of its faces' centres and corners as its table says, and its walkers grouped
@@ -1310,7 +1327,7 @@ async function checkKnown(fail) {
   location.hash = '#mode=rewind&shape=hex&playRule=M0,2,4,5,1,6,3,7&gridSize=6&popStart=random&popDraw=10.6';
   for (
     let i = 0;
-    i < 100 && !($('mode').value === 'blocks2dHex' && walk.life?.margolus && walk.life.seedAlive === 6 && !waits.size);
+    i < 100 && !($('mode').value === 'rewindHex' && walk.life?.margolus && walk.life.seedAlive === 6 && !waits.size);
     i++
   )
     await wait(100); // (built, not a wait's guess)
@@ -1326,7 +1343,7 @@ async function checkKnown(fail) {
   // a reversible one's return to its end, not its start (v0.2.50)
   location.hash =
     '#mode=life&shape=squares&playRule=B3/S23&gridSize=32&gridWalls=1&popCells=10,10:2A7$2.A4.A$2A.4A.2A$2.A4.A!&popStart=draw';
-  await until(shown('life2d', () => plane.side === 32 && !plane.torus));
+  await until(shown('lifeSquares', () => plane.side === 32 && !plane.torus));
   restart();
   const at = [],
     cells = () => Uint8Array.from(walk.life.alive, (v) => +(v > 0));
@@ -1385,13 +1402,13 @@ async function checkKnown(fail) {
   // each symmetry a grid offers kept 60 generations on (a grid in a hexagon: about its own middle, v0.2.89): squares and the
   // grids in a hexagon all four, Florets no mirror (its tiles have none), hexagons' blocks none (their blocks not onto blocks)
   for (const [w, offers] of [
-    ['life2d', 'half rotate mirror kaleido'],
-    ['blocks2d', 'half rotate mirror kaleido'],
-    ['life2dHex', 'half rotate mirror kaleido'],
-    ['life2dTri', 'half rotate mirror kaleido'],
-    ['life2dDual56', 'half rotate mirror kaleido'],
-    ['life2dFloret', 'half rotate'],
-    ['blocks2dHex', ''],
+    ['lifeSquares', 'half rotate mirror kaleido'],
+    ['rewindSquares', 'half rotate mirror kaleido'],
+    ['lifeHex', 'half rotate mirror kaleido'],
+    ['lifeTriangles', 'half rotate mirror kaleido'],
+    ['lifeDual56', 'half rotate mirror kaleido'],
+    ['lifeFlorets', 'half rotate'],
+    ['rewindHex', ''],
   ]) {
     await openLife(`#${toHash({ w, s: 32, e: 1, pop: 'random.30.1' })}`);
     const { kind, W } = walk.plane,
@@ -1416,7 +1433,7 @@ async function checkKnown(fail) {
   }
   // a hunt: of the 2^14 starts of 14 cells (radius 2's first), the 8 longest
   location.hash = '#mode=life&shape=squares&playRule=B3/S23&gridSize=48&popStart=random&popDraw=49.5';
-  await until(shown('life2d', () => plane.side === 48 && plane.torus));
+  await until(shown('lifeSquares', () => plane.side === 48 && plane.torus));
   hunt.zone = 'radius2';
   const plan = { cells: huntPlan().cells.slice(0, 14), copies: [], all: 2 ** 14 };
   const top = await new Promise((done) => {
@@ -1521,7 +1538,13 @@ async function checkSheets(fail) {
     }
     checked++;
   }
-  for (const w of ['lifeKleinPrismatic', 'lifeKleinPent15', 'lifeTorusRhombitri', 'lifeMobiusPent10', 'lifeGlobe']) {
+  for (const w of [
+    'lifeKleinBottlePrismatic',
+    'lifeKleinBottleType15',
+    'lifeTorusRhombitri',
+    'lifeMobiusStripType10',
+    'lifeGlobe',
+  ]) {
     const offered = [];
     for (const K of [1, 3]) {
       lifeTeams = K;
@@ -1530,7 +1553,7 @@ async function checkSheets(fail) {
       offered.push(TEAM_COUNTS.filter((k) => teamsFit(k)).join(','));
     }
     if (offered[0] !== offered[1]) fail(`${w}: colours offered ${offered[0]} in Solo, ${offered[1]} in Trio`);
-    if (w === 'lifeKleinPent15' && offered[0].split(',').some((k) => k % 2 === 0))
+    if (w === 'lifeKleinBottleType15' && offered[0].split(',').some((k) => k % 2 === 0))
       fail(`${w}: an even count of colours offered (${offered[0]}), its twist asking an odd length`); // (v0.3.88 to 0.3.93: g.period left by the rename, every count offered)
     for (const K of [2, 3, 5].filter((k) => offered[0].split(',').includes(`${k}`))) {
       location.hash = toHash({ w, k: K });
@@ -1733,6 +1756,7 @@ window.tesseraCheck = async ({
     checkTwistedSphere(fail) +
     checkDiscCuts(fail) +
     checkFirstStarts(fail) +
+    checkModeNames(fail) +
     checkCentred(fail) +
     checkBlocksRound(fail) +
     (await checkSheets(fail)) +

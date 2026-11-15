@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.1087';
+const VERSION = '0.5.0';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -3770,7 +3770,6 @@ const FOLDS = {
     family: 0,
     name: 'Torus',
     a: 'a torus',
-    life: 'Torus',
     of: (kind) => `torus${kind[0].toUpperCase()}${kind.slice(1)}`,
     has: (kind) => !!TILINGS[kind].torus,
     way: 'rows round the tube',
@@ -3781,7 +3780,6 @@ const FOLDS = {
     family: 1,
     name: 'Möbius strip',
     a: 'a Möbius strip',
-    life: 'Mobius',
     of: mobiusOf,
     has: (kind) => MOBIUS_TILINGS.includes(kind),
     way: 'along the strip',
@@ -3792,7 +3790,6 @@ const FOLDS = {
     family: 2,
     name: 'Klein bottle',
     a: 'a Klein bottle',
-    life: 'Klein',
     of: (kind) => foldOf('klein', kind),
     has: (kind) => MOBIUS_TILINGS.includes(kind),
     way: 'round the tube',
@@ -3911,84 +3908,84 @@ const conedFamily = (kind) =>
   );
 const MODES = {
   // the walks by a rule, a command per digit (see 6.4b): net, the cells they go through (a grid's walk: its dual's cells)
-  turtle: {
+  walkSquaresTurtleEdges: {
     lattice: 'square',
     lines: true,
-    twin: 'turtleCells',
-    ant: 'antSquare',
+    twin: 'walkSquaresTurtleCells',
+    ant: 'antSquaresCells',
     net: 'square',
     where: 'along the lines of a square grid',
   },
-  triTurtle: {
+  walkTrianglesTurtleEdges: {
     lattice: 'hex',
     lines: true,
-    twin: 'triTurtleCells',
-    ant: 'antTri',
+    twin: 'walkTrianglesTurtleCells',
+    ant: 'antTrianglesCells',
     net: 'hex',
     where: 'along the lines of a triangle grid',
   },
-  hexTurtle: {
+  walkHexTurtleEdges: {
     lattice: 'tri',
     lines: true,
-    twin: 'hexTurtleCells',
-    ant: 'antHex',
+    twin: 'walkHexTurtleCells',
+    ant: 'antHexCells',
     net: 'tri',
     where: 'along the lines of a hexagon grid',
   },
-  turtleCells: {
+  walkSquaresTurtleCells: {
     lattice: 'square',
     cells: true,
-    twin: 'turtle',
+    twin: 'walkSquaresTurtleEdges',
     net: 'square',
     where: 'from cell to cell of a square grid',
   },
-  triTurtleCells: {
+  walkTrianglesTurtleCells: {
     lattice: 'tri',
     cells: true,
-    twin: 'triTurtle',
+    twin: 'walkTrianglesTurtleEdges',
     net: 'tri',
     where: 'from cell to cell of a triangle grid',
   },
-  hexTurtleCells: {
+  walkHexTurtleCells: {
     lattice: 'hex',
     cells: true,
-    twin: 'hexTurtle',
+    twin: 'walkHexTurtleEdges',
     net: 'hex',
     where: 'from cell to cell of a hexagon grid',
   },
-  cairo: {
+  walkCairoTurtleCells: {
     lattice: 'cairo',
     cells: true,
     fill: false,
-    ant: 'antCairo',
+    ant: 'antCairoCells',
     net: 'cairo',
     where: 'from pentagon to pentagon of the Cairo tiling',
   },
   // Langton's ant on the cells of a turtle walk (antOf: its walk in the list; see ANTS), its rule in the
   // ant settings (see antRuleText)
-  antSquare: {
+  antSquaresCells: {
     base: 2,
     lattice: 'square',
     cells: true,
     fill: false,
-    antOf: 'turtle',
+    antOf: 'walkSquaresTurtleEdges',
     get rule() {
-      return antRuleText('antSquare');
+      return antRuleText('antSquaresCells');
     },
   },
-  antTri: {
+  antTrianglesCells: {
     base: 2,
     lattice: 'tri',
     cells: true,
     fill: false,
-    antOf: 'triTurtle',
+    antOf: 'walkTrianglesTurtleEdges',
     get rule() {
-      return antRuleText('antTri');
+      return antRuleText('antTrianglesCells');
     },
   },
   // Paterson's worm: along the lines of the triangles, as their turtle (see wormStepper); its turns counted, its digits
   // read by the digits only
-  worm: {
+  antTrianglesEdges: {
     base: 5,
     arrows: '↙↖↑↗↘',
     lattice: 'hex',
@@ -3999,28 +3996,28 @@ const MODES = {
       return wormRuleText();
     },
   },
-  antHex: {
+  antHexCells: {
     base: 2,
     lattice: 'hex',
     cells: true,
     fill: false,
-    antOf: 'hexTurtle',
+    antOf: 'walkHexTurtleEdges',
     get rule() {
-      return antRuleText('antHex');
+      return antRuleText('antHexCells');
     },
   },
-  antCairo: {
+  antCairoCells: {
     base: 2,
     lattice: 'cairo',
     cells: true,
     fill: false,
-    antOf: 'cairo',
+    antOf: 'walkCairoTurtleCells',
     get rule() {
-      return antRuleText('antCairo');
+      return antRuleText('antCairoCells');
     },
   },
   // on a surface: the ant on the cells of its walk there, which keep their colours (turns: as the walk's)
-  antCube: {
+  antCubeSquaresCells: {
     base: 2,
     lattice: 'sphere',
     cells: true,
@@ -4028,50 +4025,50 @@ const MODES = {
     initial: 48,
     perspective: true,
     fill: false,
-    antOf: 'cubeFlat',
+    antOf: 'walkCubeSquaresTurtleCells',
     get rule() {
-      return antRuleText('antCube');
+      return antRuleText('antCubeSquaresCells');
     },
   },
-  antHexSphere: {
+  antIcosahedronHexCells: {
     base: 2,
     lattice: 'sphere',
     cells: true,
     sphere: 'hexsphere',
     round: true,
     fill: false,
-    antOf: 'hexSphereWalk',
+    antOf: 'walkIcosahedronHexTurtleCells',
     get rule() {
-      return antRuleText('antHexSphere');
+      return antRuleText('antIcosahedronHexCells');
     },
   },
-  antIcosa: {
+  antIcosahedronTrianglesCells: {
     base: 2,
     lattice: 'sphere',
     cells: true,
     sphere: 'icosa',
     round: true,
     fill: false,
-    antOf: 'icosaLR',
+    antOf: 'walkIcosahedronTrianglesTurtleCells',
     get rule() {
-      return antRuleText('antIcosa');
+      return antRuleText('antIcosahedronTrianglesCells');
     },
   },
-  spiral: {
+  walkSquaresSpiral: {
     base: 2,
     arrows: '□■',
     lattice: 'square',
     skipZeros: true,
     rule: 'along a square spiral (Ulam): <b>1</b> draw the step, <b>0</b> move without drawing',
   },
-  triSpiral: {
+  walkTrianglesSpiral: {
     base: 2,
     arrows: '□■',
     lattice: 'tri',
     skipZeros: true,
     rule: 'along a spiral of triangles: <b>1</b> draw the step, <b>0</b> move without drawing',
   },
-  cairoSpiral: {
+  walkCairoSpiral: {
     base: 2,
     arrows: '□■',
     lattice: 'cairo',
@@ -4079,30 +4076,30 @@ const MODES = {
     fill: false,
     rule: 'along a spiral of Cairo pentagons: <b>1</b> draw the step, <b>0</b> move without drawing',
   },
-  hexSpiral: {
+  walkHexSpiral: {
     base: 2,
     arrows: '□■',
     lattice: 'hex',
     skipZeros: true,
     rule: 'along a spiral of hexagons: <b>1</b> draw the step, <b>0</b> move without drawing',
   },
-  tetraLR: {
+  walkTetrahedronTrianglesTurtleCells: {
     base: 2,
     arrows: '↖↗',
     lattice: 'sphere',
     cells: true,
-    twin: 'tetraGrid',
+    twin: 'walkTetrahedronTrianglesTurtleEdges',
     sphere: 'tetra',
     initial: 48,
     net: 'tri',
     rule: 'on a tetrahedron of triangles: exit through the <b>0</b> left or <b>1</b> right edge',
   },
-  torusWalk: {
+  walkTorusSquaresTurtleCells: {
     base: 3,
     arrows: '←↑→',
     lattice: 'sphere',
     cells: true,
-    twin: 'torusGrid',
+    twin: 'walkTorusSquaresTurtleEdges',
     sphere: 'torus',
     initial: 48,
     net: 'square',
@@ -4110,12 +4107,12 @@ const MODES = {
     round: true,
     rule: 'on a torus of squares: <b>0</b> turn left, <b>1</b> straight on, <b>2</b> turn right',
   },
-  torusTriWalk: {
+  walkTorusTrianglesTurtleCells: {
     base: 2,
     arrows: '↖↗',
     lattice: 'sphere',
     cells: true,
-    twin: 'torusTriGrid',
+    twin: 'walkTorusTrianglesTurtleEdges',
     sphere: 'torusTri',
     initial: 48,
     net: 'tri',
@@ -4124,7 +4121,7 @@ const MODES = {
     rule: 'on a torus of triangles: exit through the <b>0</b> left or <b>1</b> right edge',
   },
   // Cairo pentagons: out through one of the 4 other edges, edge k + 1 the sharpest right (as the 2D walk)
-  torusCairoWalk: {
+  walkTorusCairoTurtleCells: {
     base: 4,
     arrows: '↙↖↗↘',
     lattice: 'sphere',
@@ -4137,12 +4134,12 @@ const MODES = {
     rule: 'on a torus of Cairo pentagons: out through one of its 4 other edges, <b>0</b> sharp left, <b>1</b> left, <b>2</b> right, <b>3</b> sharp right',
   },
   // hexagons: entering through edge k, edge k + 1 is a sharp right, k + 2 right, k + 3 straight on
-  torusHexWalk: {
+  walkTorusHexTurtleCells: {
     base: 5,
     arrows: '↙↖↑↗↘',
     lattice: 'sphere',
     cells: true,
-    twin: 'torusHexGrid',
+    twin: 'walkTorusHexTurtleEdges',
     sphere: 'torusHex',
     initial: 48,
     net: 'hex',
@@ -4150,24 +4147,24 @@ const MODES = {
     round: true,
     rule: 'on a torus of hexagons: <b>0</b> sharp left, <b>1</b> left, <b>2</b> straight, <b>3</b> right, <b>4</b> sharp right',
   },
-  mobiusWalk: {
+  walkMobiusStripSquaresTurtleCells: {
     base: 3,
     arrows: '←↑→',
     lattice: 'sphere',
     cells: true,
-    twin: 'mobiusGrid',
+    twin: 'walkMobiusStripSquaresTurtleEdges',
     sphere: 'mobius',
     net: 'square',
     perspective: true,
     round: true,
     rule: 'on a Möbius strip of squares: <b>0</b> turn left, <b>1</b> straight on, <b>2</b> turn right (over its edge, onto the face behind)',
   },
-  mobiusHexWalk: {
+  walkMobiusStripHexTurtleCells: {
     base: 5,
     arrows: '↙↖↑↗↘',
     lattice: 'sphere',
     cells: true,
-    twin: 'mobiusHexGrid',
+    twin: 'walkMobiusStripHexTurtleEdges',
     sphere: 'mobiusHex',
     net: 'hex',
     perspective: true,
@@ -4175,40 +4172,40 @@ const MODES = {
     rule: 'on a Möbius strip of hexagons: <b>0</b> sharp left, <b>1</b> left, <b>2</b> straight, <b>3</b> right, <b>4</b> sharp right (over its edge, onto the face behind)',
   },
   // a Klein bottle (its neck through its side, opening into its bottom): as the torus's walks
-  kleinWalk: {
+  walkKleinBottleSquaresTurtleCells: {
     base: 3,
     arrows: '←↑→',
     lattice: 'sphere',
     cells: true,
-    twin: 'kleinGrid',
+    twin: 'walkKleinBottleSquaresTurtleEdges',
     sphere: 'klein',
     net: 'square',
     round: true,
     rule: 'on a Klein bottle of squares: <b>0</b> turn left, <b>1</b> straight on, <b>2</b> turn right',
   },
-  kleinHexWalk: {
+  walkKleinBottleHexTurtleCells: {
     base: 5,
     arrows: '↙↖↑↗↘',
     lattice: 'sphere',
     cells: true,
-    twin: 'kleinHexGrid',
+    twin: 'walkKleinBottleHexTurtleEdges',
     sphere: 'kleinHex',
     net: 'hex',
     round: true,
     rule: 'on a Klein bottle of hexagons: <b>0</b> sharp left, <b>1</b> left, <b>2</b> straight, <b>3</b> right, <b>4</b> sharp right',
   },
-  kleinTriWalk: {
+  walkKleinBottleTrianglesTurtleCells: {
     base: 2,
     arrows: '↖↗',
     lattice: 'sphere',
     cells: true,
-    twin: 'kleinTriGrid',
+    twin: 'walkKleinBottleTrianglesTurtleEdges',
     sphere: 'kleinTri',
     net: 'tri',
     round: true,
     rule: 'on a Klein bottle of triangles: exit through the <b>0</b> left or <b>1</b> right edge',
   },
-  kleinCairoWalk: {
+  walkKleinBottleCairoTurtleCells: {
     base: 4,
     arrows: '↙↖↗↘',
     lattice: 'sphere',
@@ -4218,7 +4215,7 @@ const MODES = {
     round: true,
     rule: 'on a Klein bottle of Cairo pentagons: out through one of its 4 other edges, <b>0</b> sharp left, <b>1</b> left, <b>2</b> right, <b>3</b> sharp right',
   },
-  mobiusCairoWalk: {
+  walkMobiusStripCairoTurtleCells: {
     base: 4,
     arrows: '↙↖↗↘',
     lattice: 'sphere',
@@ -4229,82 +4226,82 @@ const MODES = {
     round: true,
     rule: 'on a Möbius strip of Cairo pentagons: out through one of its 4 other edges, <b>0</b> sharp left, <b>1</b> left, <b>2</b> right, <b>3</b> sharp right (over its edge, onto the face behind)',
   },
-  mobiusTriWalk: {
+  walkMobiusStripTrianglesTurtleCells: {
     base: 2,
     arrows: '↖↗',
     lattice: 'sphere',
     cells: true,
-    twin: 'mobiusTriGrid',
+    twin: 'walkMobiusStripTrianglesTurtleEdges',
     sphere: 'mobiusTri',
     net: 'tri',
     perspective: true,
     round: true,
     rule: 'on a Möbius strip of triangles: exit through the <b>0</b> left or <b>1</b> right edge (over its edge, onto the face behind)',
   },
-  cubeFlat: {
+  walkCubeSquaresTurtleCells: {
     base: 3,
     arrows: '←↑→',
     lattice: 'sphere',
     cells: true,
-    twin: 'cubeGrid',
-    ant: 'antCube',
+    twin: 'walkCubeSquaresTurtleEdges',
+    ant: 'antCubeSquaresCells',
     sphere: 'cube',
     initial: 48,
     net: 'square',
     perspective: true,
     rule: 'on the surface of a cube: <b>0</b> turn left, <b>1</b> straight on, <b>2</b> turn right',
   },
-  octaLR: {
+  walkOctahedronTrianglesTurtleCells: {
     base: 2,
     arrows: '↖↗',
     lattice: 'sphere',
     cells: true,
-    twin: 'octaGrid',
+    twin: 'walkOctahedronTrianglesTurtleEdges',
     sphere: 'octa',
     initial: 48,
     net: 'tri',
     rule: 'on an octahedron of triangles: exit through the <b>0</b> left or <b>1</b> right edge',
   },
   // hexagons and pentagons alike: the edges two away from the one you came in through, on either side
-  hexSphereWalk: {
+  walkIcosahedronHexTurtleCells: {
     base: 2,
     arrows: '↖↗',
     lattice: 'sphere',
     cells: true,
-    twin: 'hexSphereGrid',
-    ant: 'antHexSphere',
+    twin: 'walkIcosahedronHexTurtleEdges',
+    ant: 'antIcosahedronHexCells',
     sphere: 'hexsphere',
     net: 'hex',
     round: true, // (the hexagons' L, R only: no straight on, nor sharp, across a pentagon)
     rule: 'on an icosahedron of hexagons (and 12 pentagons: a Goldberg polyhedron): exit through the <b>0</b> front left or <b>1</b> front right edge',
   },
-  stellaLR: {
+  walkStellaOctangulaTrianglesTurtleCells: {
     base: 2,
     arrows: '↖↗',
     lattice: 'sphere',
     cells: true,
-    twin: 'stellaGrid',
+    twin: 'walkStellaOctangulaTrianglesTurtleEdges',
     sphere: 'stella',
     net: 'tri',
     rule: 'on a stella octangula (two tetrahedra) of triangles: exit through the <b>0</b> left or <b>1</b> right edge',
   },
-  dodecaLR: {
+  walkDodecahedronTrianglesTurtleCells: {
     base: 2,
     arrows: '↖↗',
     lattice: 'sphere',
     cells: true,
-    twin: 'dodecaGrid',
+    twin: 'walkDodecahedronTrianglesTurtleEdges',
     sphere: 'dodeca',
     net: 'tri',
     rule: 'on a dodecahedron, its pentagons cut into triangles: exit through the <b>0</b> left or <b>1</b> right edge',
   },
-  icosaLR: {
+  walkIcosahedronTrianglesTurtleCells: {
     base: 2,
     arrows: '↖↗',
     lattice: 'sphere',
     cells: true,
-    twin: 'icosaGrid',
-    ant: 'antIcosa',
+    twin: 'walkIcosahedronTrianglesTurtleEdges',
+    ant: 'antIcosahedronTrianglesCells',
     sphere: 'icosa',
     net: 'tri',
     round: true,
@@ -4312,11 +4309,11 @@ const MODES = {
   },
   // along the edges: from corner to corner, turning by these angles (degrees, left positive), or as close
   // to them as the edges at a corner allow
-  torusGrid: {
+  walkTorusSquaresTurtleEdges: {
     base: 3,
     arrows: '←↑→',
     lattice: 'sphere',
-    twin: 'torusWalk',
+    twin: 'walkTorusSquaresTurtleCells',
     sphere: 'torus',
     edges: true,
     initial: 48,
@@ -4325,11 +4322,11 @@ const MODES = {
     round: true,
     rule: 'along the edges of a torus of squares: <b>0</b> turn left, <b>1</b> straight on, <b>2</b> turn right',
   },
-  torusTriGrid: {
+  walkTorusTrianglesTurtleEdges: {
     base: 5,
     arrows: '↙↖↑↗↘',
     lattice: 'sphere',
-    twin: 'torusTriWalk',
+    twin: 'walkTorusTrianglesTurtleCells',
     sphere: 'torusTri',
     edges: true,
     initial: 48,
@@ -4338,11 +4335,11 @@ const MODES = {
     round: true,
     rule: 'along the edges of a torus of triangles: <b>0</b> sharp left, <b>1</b> left, <b>2</b> straight, <b>3</b> right, <b>4</b> sharp right',
   },
-  torusHexGrid: {
+  walkTorusHexTurtleEdges: {
     base: 2,
     arrows: '↖↗',
     lattice: 'sphere',
-    twin: 'torusHexWalk',
+    twin: 'walkTorusHexTurtleCells',
     sphere: 'torusHex',
     edges: true,
     initial: 48,
@@ -4351,11 +4348,11 @@ const MODES = {
     round: true,
     rule: 'along the edges of a torus of hexagons: <b>0</b> turn left, <b>1</b> turn right',
   },
-  mobiusGrid: {
+  walkMobiusStripSquaresTurtleEdges: {
     base: 3,
     arrows: '←↑→',
     lattice: 'sphere',
-    twin: 'mobiusWalk',
+    twin: 'walkMobiusStripSquaresTurtleCells',
     sphere: 'mobius',
     edges: true,
     turns: [90, 0, -90],
@@ -4363,11 +4360,11 @@ const MODES = {
     round: true,
     rule: 'along the edges of a Möbius strip of squares: <b>0</b> turn left, <b>1</b> straight on, <b>2</b> turn right (over its edge, onto the face behind)',
   },
-  mobiusHexGrid: {
+  walkMobiusStripHexTurtleEdges: {
     base: 2,
     arrows: '↖↗',
     lattice: 'sphere',
-    twin: 'mobiusHexWalk',
+    twin: 'walkMobiusStripHexTurtleCells',
     sphere: 'mobiusHex',
     edges: true,
     turns: [60, -60],
@@ -4375,11 +4372,11 @@ const MODES = {
     round: true,
     rule: 'along the edges of a Möbius strip of hexagons: <b>0</b> turn left, <b>1</b> turn right (over its edge, onto the face behind)',
   },
-  mobiusTriGrid: {
+  walkMobiusStripTrianglesTurtleEdges: {
     base: 5,
     arrows: '↙↖↑↗↘',
     lattice: 'sphere',
-    twin: 'mobiusTriWalk',
+    twin: 'walkMobiusStripTrianglesTurtleCells',
     sphere: 'mobiusTri',
     edges: true,
     turns: [120, 60, 0, -60, -120],
@@ -4387,44 +4384,44 @@ const MODES = {
     round: true,
     rule: 'along the edges of a Möbius strip of triangles: <b>0</b> sharp left, <b>1</b> left, <b>2</b> straight, <b>3</b> right, <b>4</b> sharp right (over its edge, onto the face behind)',
   },
-  kleinGrid: {
+  walkKleinBottleSquaresTurtleEdges: {
     base: 3,
     arrows: '←↑→',
     lattice: 'sphere',
-    twin: 'kleinWalk',
+    twin: 'walkKleinBottleSquaresTurtleCells',
     sphere: 'klein',
     edges: true,
     turns: [90, 0, -90],
     round: true,
     rule: 'along the edges of a Klein bottle of squares: <b>0</b> turn left, <b>1</b> straight on, <b>2</b> turn right',
   },
-  kleinHexGrid: {
+  walkKleinBottleHexTurtleEdges: {
     base: 2,
     arrows: '↖↗',
     lattice: 'sphere',
-    twin: 'kleinHexWalk',
+    twin: 'walkKleinBottleHexTurtleCells',
     sphere: 'kleinHex',
     edges: true,
     turns: [60, -60],
     round: true,
     rule: 'along the edges of a Klein bottle of hexagons: <b>0</b> turn left, <b>1</b> turn right',
   },
-  kleinTriGrid: {
+  walkKleinBottleTrianglesTurtleEdges: {
     base: 5,
     arrows: '↙↖↑↗↘',
     lattice: 'sphere',
-    twin: 'kleinTriWalk',
+    twin: 'walkKleinBottleTrianglesTurtleCells',
     sphere: 'kleinTri',
     edges: true,
     turns: [120, 60, 0, -60, -120],
     round: true,
     rule: 'along the edges of a Klein bottle of triangles: <b>0</b> sharp left, <b>1</b> left, <b>2</b> straight, <b>3</b> right, <b>4</b> sharp right',
   },
-  cubeGrid: {
+  walkCubeSquaresTurtleEdges: {
     base: 3,
     arrows: '←↑→',
     lattice: 'sphere',
-    twin: 'cubeFlat',
+    twin: 'walkCubeSquaresTurtleCells',
     sphere: 'cube',
     edges: true,
     initial: 48,
@@ -4432,22 +4429,22 @@ const MODES = {
     perspective: true,
     rule: 'along the edges of the squares of a cube: <b>0</b> turn left, <b>1</b> straight on, <b>2</b> turn right (at a corner of the cube, the nearest edge)',
   },
-  tetraGrid: {
+  walkTetrahedronTrianglesTurtleEdges: {
     base: 5,
     arrows: '↙↖↑↗↘',
     lattice: 'sphere',
-    twin: 'tetraLR',
+    twin: 'walkTetrahedronTrianglesTurtleCells',
     sphere: 'tetra',
     edges: true,
     initial: 48,
     turns: [120, 60, 0, -60, -120],
     rule: 'along the edges of a tetrahedron of triangles: <b>0</b> sharp left, <b>1</b> left, <b>2</b> straight, <b>3</b> right, <b>4</b> sharp right (at a corner of the solid, the nearest edge)',
   },
-  octaGrid: {
+  walkOctahedronTrianglesTurtleEdges: {
     base: 5,
     arrows: '↙↖↑↗↘',
     lattice: 'sphere',
-    twin: 'octaLR',
+    twin: 'walkOctahedronTrianglesTurtleCells',
     sphere: 'octa',
     initial: 48,
     edges: true,
@@ -4460,51 +4457,51 @@ const MODES = {
   //               rule: 'along the edges of an icosahedron of triangles: <b>0</b> front left, <b>1</b> front right (at a corner of the solid, the nearest edge)' },
   // icosaGrid3: { base: 3, lattice: 'sphere', sphere: 'icosa', edges: true, turns: [60, 0, -60], round: true,
   //               rule: 'along the edges of an icosahedron of triangles: <b>0</b> front left, <b>1</b> forward, <b>2</b> front right (at a corner of the solid, the nearest edge)' },
-  hexSphereGrid: {
+  walkIcosahedronHexTurtleEdges: {
     base: 2,
     arrows: '↖↗',
     lattice: 'sphere',
-    twin: 'hexSphereWalk',
+    twin: 'walkIcosahedronHexTurtleCells',
     sphere: 'hexsphere',
     edges: true,
     turns: [60, -60],
     round: true,
     rule: 'along the edges of an icosahedron of hexagons (and 12 pentagons: a Goldberg polyhedron): <b>0</b> turn left, <b>1</b> turn right',
   },
-  stellaGrid: {
+  walkStellaOctangulaTrianglesTurtleEdges: {
     base: 5,
     arrows: '↙↖↑↗↘',
     lattice: 'sphere',
-    twin: 'stellaLR',
+    twin: 'walkStellaOctangulaTrianglesTurtleCells',
     sphere: 'stella',
     edges: true,
     turns: [120, 60, 0, -60, -120],
     rule: 'along the edges of a stella octangula (two tetrahedra) of triangles: <b>0</b> sharp left, <b>1</b> left, <b>2</b> straight, <b>3</b> right, <b>4</b> sharp right (at a tip or a hollow corner, the nearest edge)',
   },
-  dodecaGrid: {
+  walkDodecahedronTrianglesTurtleEdges: {
     base: 5,
     arrows: '↙↖↑↗↘',
     lattice: 'sphere',
-    twin: 'dodecaLR',
+    twin: 'walkDodecahedronTrianglesTurtleCells',
     sphere: 'dodeca',
     edges: true,
     turns: [120, 60, 0, -60, -120],
     rule: 'along the edges of a dodecahedron, its pentagons cut into triangles: <b>0</b> sharp left, <b>1</b> left, <b>2</b> straight, <b>3</b> right, <b>4</b> sharp right (at a corner of the solid, the nearest edge)',
   },
-  icosaGrid: {
+  walkIcosahedronTrianglesTurtleEdges: {
     base: 5,
     arrows: '↙↖↑↗↘',
     lattice: 'sphere',
-    twin: 'icosaLR',
+    twin: 'walkIcosahedronTrianglesTurtleCells',
     sphere: 'icosa',
     edges: true,
     turns: [120, 60, 0, -60, -120],
     round: true,
     rule: 'along the edges of an icosahedron of triangles: <b>0</b> sharp left, <b>1</b> left, <b>2</b> straight, <b>3</b> right, <b>4</b> sharp right (at a corner of the solid, the nearest edge)',
   },
-  life2d: { base: 2, lattice: 'square', life: true, plane: 'square', where: 'a grid of squares' }, // on the plane (see plane)
+  lifeSquares: { base: 2, lattice: 'square', life: true, plane: 'square', where: 'a grid of squares' }, // on the plane (see plane)
   // a reversible automaton: the grid in 2 × 2 blocks, shifted by one each generation (Margolus's), each block by its rule
-  blocks2d: {
+  rewindSquares: {
     base: 2,
     lattice: 'square',
     life: true,
@@ -4512,7 +4509,7 @@ const MODES = {
     margolus: true,
     where: "a grid of squares in blocks of 4 round a corner, a corner and the one across a square in turn (Margolus's)",
   },
-  blocks2dTri: {
+  rewindTriangles: {
     base: 2,
     lattice: 'tri',
     life: true,
@@ -4520,7 +4517,7 @@ const MODES = {
     margolus: true,
     where: 'a grid of triangles in blocks of 6 (hexagons) round a corner, 3 sets of corners in turn',
   },
-  blocks2dHex: {
+  rewindHex: {
     base: 2,
     lattice: 'hex',
     life: true,
@@ -4528,7 +4525,7 @@ const MODES = {
     margolus: true,
     where: 'a grid of hexagons in blocks of 3 round a corner, 2 sets of corners in turn',
   },
-  blocks2dCairo: {
+  rewindCairo: {
     base: 2,
     lattice: 'cairo',
     life: true,
@@ -4536,7 +4533,7 @@ const MODES = {
     margolus: true,
     where: 'a grid of Cairo pentagons in blocks of 4 round a corner, its 2 kinds of corners in turn',
   },
-  blocks2dTetrakis: {
+  rewindTetrakis: {
     base: 2,
     lattice: 'tetrakis',
     life: true,
@@ -4545,57 +4542,57 @@ const MODES = {
     where:
       'a grid of triangles in squares of 4, each triangle first swapped with the one across its outer side (the isometric von Neumann neighbourhood, stellated)',
   },
-  life2dTri: { base: 2, lattice: 'tri', life: true, plane: 'tri', where: 'a grid of triangles' },
-  life2dHex: {
+  lifeTriangles: { base: 2, lattice: 'tri', life: true, plane: 'tri', where: 'a grid of triangles' },
+  lifeHex: {
     base: 2,
     lattice: 'hex',
     life: true,
     plane: 'hex',
     where: 'a grid of hexagons (pentagons tile as it does, a corner on a side: their types 2, 3 and 12, and some of 1)',
   },
-  life2dCairo: {
+  lifeCairo: {
     base: 2,
     lattice: 'cairo',
     life: true,
     plane: 'cairo',
     where: 'a grid of Cairo pentagons (the pentagons of types 4 and 8 tile as it does, and some of 2)',
   },
-  life2dKite: {
+  lifeKites: {
     base: 2,
     lattice: 'kite',
     life: true,
     plane: 'kite',
     where: 'a grid of kites (each triangle cut in 3)',
   },
-  life2dHat: {
+  lifeHats: {
     base: 2,
     lattice: 'hat',
     life: true,
     plane: 'hat',
     where: 'a patch of hats, the tile that never repeats',
   },
-  life2dPenrose: {
+  lifePenrose: {
     base: 2,
     lattice: 'penrose',
     life: true,
     plane: 'penrose',
     where: "a patch of Penrose's rhombi (they never repeat)",
   },
-  life2dPinwheel: {
+  lifePinwheel: {
     base: 2,
     lattice: 'pinwheel',
     life: true,
     plane: 'pinwheel',
     where: "a patch of the pinwheel's right triangles (they never repeat, turned every way)",
   },
-  life2dAmmann: {
+  lifeAmmann: {
     base: 2,
     lattice: 'ammann',
     life: true,
     plane: 'ammann',
     where: 'a patch of Ammann–Beenker squares and rhombi (they never repeat, eightfold)',
   },
-  life2dRhombs14: {
+  lifeRhombs14: {
     base: 2,
     lattice: 'rhombs14',
     life: true,
@@ -4603,133 +4600,133 @@ const MODES = {
     where:
       "a patch of de Bruijn's rhombi of 7 families of lines (three kinds of rhombi, never repeating, fourteenfold)",
   },
-  life2dRhombs12: {
+  lifeRhombs12: {
     base: 2,
     lattice: 'rhombs12',
     life: true,
     plane: 'rhombs12',
     where: "a patch of squares and 30° and 60° rhombi (de Bruijn's, never repeating, twelvefold)",
   },
-  life2dFlower: {
+  lifeFlower6: {
     base: 2,
     lattice: 'flower',
     life: true,
     plane: 'flower',
     where: "a patch of Hirschhorn's flower (one pentagon, six-fold round its middle, never repeating)",
   },
-  life2dFlower5: {
+  lifeFlower5: {
     base: 2,
     lattice: 'flower5',
     life: true,
     plane: 'flower5',
     where: "a patch of the 5-fold rosette (Sugimoto's pentagon, five-fold round its middle, never repeating)",
   },
-  life2dFlower7: {
+  lifeFlower7: {
     base: 2,
     lattice: 'flower7',
     life: true,
     plane: 'flower7',
     where: "a patch of the 7-fold rosette (Sugimoto's pentagon, seven-fold round its middle, never repeating)",
   },
-  life2dFlower3: {
+  lifeFlower3: {
     base: 2,
     lattice: 'flower3',
     life: true,
     plane: 'flower3',
     where: "a patch of the 3-fold rosette (Sugimoto's pentagon, 3-fold round its middle, never repeating)",
   },
-  life2dFlower4: {
+  lifeFlower4: {
     base: 2,
     lattice: 'flower4',
     life: true,
     plane: 'flower4',
     where: "a patch of the 4-fold rosette (Sugimoto's pentagon, 4-fold round its middle, never repeating)",
   },
-  life2dFlower8: {
+  lifeFlower8: {
     base: 2,
     lattice: 'flower8',
     life: true,
     plane: 'flower8',
     where: "a patch of the 8-fold rosette (Sugimoto's pentagon, 8-fold round its middle, never repeating)",
   },
-  life2dFlower9: {
+  lifeFlower9: {
     base: 2,
     lattice: 'flower9',
     life: true,
     plane: 'flower9',
     where: "a patch of the 9-fold rosette (Sugimoto's pentagon, 9-fold round its middle, never repeating)",
   },
-  life2dFlower10: {
+  lifeFlower10: {
     base: 2,
     lattice: 'flower10',
     life: true,
     plane: 'flower10',
     where: "a patch of the 10-fold rosette (Sugimoto's pentagon, 10-fold round its middle, never repeating)",
   },
-  life2dFlower11: {
+  lifeFlower11: {
     base: 2,
     lattice: 'flower11',
     life: true,
     plane: 'flower11',
     where: "a patch of the 11-fold rosette (Sugimoto's pentagon, 11-fold round its middle, never repeating)",
   },
-  life2dFlower12: {
+  lifeFlower12: {
     base: 2,
     lattice: 'flower12',
     life: true,
     plane: 'flower12',
     where: "a patch of the 12-fold rosette (Sugimoto's pentagon, 12-fold round its middle, never repeating)",
   },
-  life2dRing7: {
+  lifeRing7: {
     base: 2,
     lattice: 'ring7',
     life: true,
     plane: 'ring7',
     where: "a patch of the 7-fold ring (Sugimoto's pentagon round a regular 7-gon left empty, never repeating)",
   },
-  life2dRing8: {
+  lifeRing8: {
     base: 2,
     lattice: 'ring8',
     life: true,
     plane: 'ring8',
     where: "a patch of the 8-fold ring (Sugimoto's pentagon round a regular 8-gon left empty, never repeating)",
   },
-  life2dRing10: {
+  lifeRing10: {
     base: 2,
     lattice: 'ring10',
     life: true,
     plane: 'ring10',
     where: "a patch of the 10-fold ring (Sugimoto's pentagon round a decagonal hole, never repeating)",
   },
-  life2dRing9: {
+  lifeRing9: {
     base: 2,
     lattice: 'ring9',
     life: true,
     plane: 'ring9',
     where: "a patch of the 9-fold ring (Sugimoto's pentagon round a regular 9-gon left empty, never repeating)",
   },
-  life2dRing11: {
+  lifeRing11: {
     base: 2,
     lattice: 'ring11',
     life: true,
     plane: 'ring11',
     where: "a patch of the 11-fold ring (Sugimoto's pentagon round a regular 11-gon, never repeating)",
   },
-  life2dRing12: {
+  lifeRing12: {
     base: 2,
     lattice: 'ring12',
     life: true,
     plane: 'ring12',
     where: "a patch of the 12-fold ring (Sugimoto's pentagon round a regular 12-gon left empty, never repeating)",
   },
-  life2dSpectre: {
+  lifeSpectre: {
     base: 2,
     lattice: 'spectre',
     life: true,
     plane: 'spectre',
     where: 'a patch of spectres, the tile that never repeats and is never turned over',
   },
-  lifeTorusKite: {
+  lifeTorusKites: {
     base: 2,
     lattice: 'sphere',
     sphere: 'torusKite',
@@ -4738,7 +4735,7 @@ const MODES = {
     round: true,
     where: 'a torus of kites',
   },
-  lifeMobiusKite: {
+  lifeMobiusStripKites: {
     base: 2,
     lattice: 'sphere',
     sphere: 'mobiusKite',
@@ -4747,7 +4744,7 @@ const MODES = {
     round: true,
     where: 'a Möbius strip of kites (both faces, over its edge onto the one behind)',
   },
-  lifeKleinKite: {
+  lifeKleinBottleKites: {
     base: 2,
     lattice: 'sphere',
     sphere: 'kleinKite',
@@ -4755,7 +4752,7 @@ const MODES = {
     round: true,
     where: 'a Klein bottle of kites',
   },
-  lifeTorus: {
+  lifeTorusSquares: {
     base: 2,
     lattice: 'sphere',
     sphere: 'torus',
@@ -4773,7 +4770,7 @@ const MODES = {
     round: true,
     where: 'a torus of hexagons',
   },
-  lifeTorusTri: {
+  lifeTorusTriangles: {
     base: 2,
     lattice: 'sphere',
     sphere: 'torusTri',
@@ -4792,7 +4789,7 @@ const MODES = {
     where: 'a torus of Cairo pentagons',
   },
   // a Möbius strip: its two faces one surface, over its edge onto the face behind (2 colours: a face each)
-  lifeMobius: {
+  lifeMobiusStripSquares: {
     base: 2,
     lattice: 'sphere',
     sphere: 'mobius',
@@ -4801,7 +4798,7 @@ const MODES = {
     round: true,
     where: 'a Möbius strip of squares (both faces, over its edge onto the one behind)',
   },
-  lifeMobiusHex: {
+  lifeMobiusStripHex: {
     base: 2,
     lattice: 'sphere',
     sphere: 'mobiusHex',
@@ -4810,7 +4807,7 @@ const MODES = {
     round: true,
     where: 'a Möbius strip of hexagons (both faces, over its edge onto the one behind)',
   },
-  lifeKlein: {
+  lifeKleinBottleSquares: {
     base: 2,
     lattice: 'sphere',
     sphere: 'klein',
@@ -4818,7 +4815,7 @@ const MODES = {
     round: true,
     where: 'a Klein bottle of squares',
   },
-  lifeKleinHex: {
+  lifeKleinBottleHex: {
     base: 2,
     lattice: 'sphere',
     sphere: 'kleinHex',
@@ -4826,7 +4823,7 @@ const MODES = {
     round: true,
     where: 'a Klein bottle of hexagons',
   },
-  lifeKleinTri: {
+  lifeKleinBottleTriangles: {
     base: 2,
     lattice: 'sphere',
     sphere: 'kleinTri',
@@ -4834,7 +4831,7 @@ const MODES = {
     round: true,
     where: 'a Klein bottle of triangles',
   },
-  lifeKleinCairo: {
+  lifeKleinBottleCairo: {
     base: 2,
     lattice: 'sphere',
     sphere: 'kleinCairo',
@@ -4842,7 +4839,7 @@ const MODES = {
     round: true,
     where: 'a Klein bottle of Cairo pentagons',
   },
-  lifeMobiusCairo: {
+  lifeMobiusStripCairo: {
     base: 2,
     lattice: 'sphere',
     sphere: 'mobiusCairo',
@@ -4851,7 +4848,7 @@ const MODES = {
     round: true,
     where: 'a Möbius strip of Cairo pentagons (both faces, over its edge onto the one behind)',
   },
-  lifeMobiusTri: {
+  lifeMobiusStripTriangles: {
     base: 2,
     lattice: 'sphere',
     sphere: 'mobiusTri',
@@ -4860,7 +4857,7 @@ const MODES = {
     round: true,
     where: 'a Möbius strip of triangles (both faces, over its edge onto the one behind)',
   },
-  lifeCube: {
+  lifeCubeSquares: {
     base: 2,
     lattice: 'sphere',
     sphere: 'cube',
@@ -4868,7 +4865,7 @@ const MODES = {
     perspective: true,
     where: 'the surface of a cube',
   },
-  lifePits: {
+  lifeCubePitsSquares: {
     base: 2,
     lattice: 'sphere',
     sphere: 'pits',
@@ -4876,7 +4873,7 @@ const MODES = {
     perspective: true,
     where: 'the surface of a cube with a pit in each face',
   },
-  lifeBumps: {
+  lifeCubeBumpsSquares: {
     base: 2,
     lattice: 'sphere',
     sphere: 'bumps',
@@ -4884,7 +4881,7 @@ const MODES = {
     perspective: true,
     where: 'the surface of a cube with a bump on each face',
   },
-  lifeMenger: {
+  lifeCubeMengerSpongeSquares: {
     base: 2,
     lattice: 'sphere',
     sphere: 'menger',
@@ -4892,7 +4889,7 @@ const MODES = {
     perspective: true,
     where: "the surface of Menger's sponge (its holes down to one square)",
   },
-  lifeFrame: {
+  lifeCubeFrameSquares: {
     base: 2,
     lattice: 'sphere',
     sphere: 'frame',
@@ -4900,23 +4897,35 @@ const MODES = {
     perspective: true,
     where: "the surface of a cube's frame (its edges as wide as its holes)",
   },
-  lifeTetra: { base: 2, lattice: 'sphere', sphere: 'tetra', life: true, where: 'a tetrahedron of triangles' },
-  lifeOcta: { base: 2, lattice: 'sphere', sphere: 'octa', life: true, where: 'an octahedron of triangles' },
-  lifeTetraKite: {
+  lifeTetrahedronTriangles: {
+    base: 2,
+    lattice: 'sphere',
+    sphere: 'tetra',
+    life: true,
+    where: 'a tetrahedron of triangles',
+  },
+  lifeOctahedronTriangles: {
+    base: 2,
+    lattice: 'sphere',
+    sphere: 'octa',
+    life: true,
+    where: 'an octahedron of triangles',
+  },
+  lifeTetrahedronKites: {
     base: 2,
     lattice: 'sphere',
     sphere: 'tetraKite',
     life: true,
     where: 'a tetrahedron of kites (each triangle cut in 3)',
   },
-  lifeOctaKite: {
+  lifeOctahedronKites: {
     base: 2,
     lattice: 'sphere',
     sphere: 'octaKite',
     life: true,
     where: 'an octahedron of kites (each triangle cut in 3)',
   },
-  lifeIcosaKite: {
+  lifeIcosahedronKites: {
     base: 2,
     lattice: 'sphere',
     sphere: 'icosaKite',
@@ -4924,42 +4933,42 @@ const MODES = {
     round: true,
     where: 'an icosahedron of kites (each triangle cut in 3)',
   },
-  lifeStellaKite: {
+  lifeStellaOctangulaKites: {
     base: 2,
     lattice: 'sphere',
     sphere: 'stellaKite',
     life: true,
     where: 'a stella octangula (two tetrahedra) of kites (each triangle cut in 3)',
   },
-  lifeDodecaKite: {
+  lifeDodecahedronKites: {
     base: 2,
     lattice: 'sphere',
     sphere: 'dodecaKite',
     life: true,
     where: 'a dodecahedron, its pentagons cut into triangles, of kites (each triangle cut in 3)',
   },
-  lifeCubocta: {
+  lifeCuboctahedron: {
     base: 2,
     lattice: 'sphere',
     sphere: 'cubocta',
     life: true,
     where: 'a cuboctahedron of squares and triangles',
   },
-  lifePyramid: {
+  lifeSquarePyramid: {
     base: 2,
     lattice: 'sphere',
     sphere: 'pyramid',
     life: true,
     where: 'a square pyramid of squares and triangles',
   },
-  lifeRhombi: {
+  lifeRhombicuboctahedron: {
     base: 2,
     lattice: 'sphere',
     sphere: 'rhombi',
     life: true,
     where: 'a rhombicuboctahedron of squares and triangles',
   },
-  lifeBicupola: {
+  lifeSquareOrthobicupola: {
     base: 2,
     lattice: 'sphere',
     sphere: 'bicupola',
@@ -4974,21 +4983,21 @@ const MODES = {
     round: true,
     where: 'a globe: squares between its parallels and meridians, one cell round each pole',
   },
-  lifeStella: {
+  lifeStellaOctangulaTriangles: {
     base: 2,
     lattice: 'sphere',
     sphere: 'stella',
     life: true,
     where: 'a stella octangula (two tetrahedra) of triangles',
   },
-  lifeDodeca: {
+  lifeDodecahedronTriangles: {
     base: 2,
     lattice: 'sphere',
     sphere: 'dodeca',
     life: true,
     where: 'a dodecahedron, its pentagons cut into triangles',
   },
-  lifeIcosa: {
+  lifeIcosahedronTriangles: {
     base: 2,
     lattice: 'sphere',
     sphere: 'icosa',
@@ -4996,7 +5005,7 @@ const MODES = {
     round: true,
     where: 'an icosahedron of triangles',
   },
-  lifeHexSphere: {
+  lifeIcosahedronHex: {
     base: 2,
     lattice: 'sphere',
     sphere: 'hexsphere',
@@ -5004,7 +5013,7 @@ const MODES = {
     round: true,
     where: 'an icosahedron of hexagons, a Goldberg polyhedron (its 12 pentagons are walls)',
   },
-  lifeTwistedSphere: {
+  lifeIcosahedronTwisted: {
     base: 2,
     lattice: 'sphere',
     sphere: 'twistedsphere',
@@ -5013,15 +5022,21 @@ const MODES = {
     where:
       'an icosahedron of hexagons (a Goldberg polyhedron) turned 15°, a triangle between each three (Twisted on a sphere, its 12 pentagons too)',
   },
-  cubeRel: { lattice: 'cube', twin: 'cubeRelCells', perspective: true, net: 'cube', where: 'in 3D cubes' },
-  diag: {
+  walkCubesTurtleEdges: {
+    lattice: 'cube',
+    twin: 'walkCubesTurtleCells',
+    perspective: true,
+    net: 'cube',
+    where: 'in 3D cubes',
+  },
+  walkCubesDiagonalsEdges: {
     base: 8,
     lattice: 'cube',
-    twin: 'diagCells',
+    twin: 'walkCubesDiagonalsCells',
     perspective: true,
     rule: 'along the diagonals of the cubes, to one of their 8 corners (the 3 bits of each digit the signs of east, north and up): <b>0</b> SW down, <b>1</b> SW up, <b>2</b> NW down, <b>3</b> NW up, <b>4</b> SE down, <b>5</b> SE up, <b>6</b> NE down, <b>7</b> NE up',
   },
-  diamond: {
+  walkDiamondPolymerEdges: {
     lattice: 'cube',
     perspective: true,
     net: 'diamond',
@@ -5029,19 +5044,19 @@ const MODES = {
       'along the bonds of a diamond, as a polymer chain (straight: trans, the zigzag goes on; left, right: gauche)',
   },
   // the same steps from cell to cell (their centres make the same lattice), the cells coloured (see gpuCubes)
-  cubeRelCells: {
+  walkCubesTurtleCells: {
     lattice: 'cube',
     cells: true,
-    twin: 'cubeRel',
+    twin: 'walkCubesTurtleEdges',
     perspective: true,
     net: 'cube',
     where: 'from cube to cube',
   },
-  diagCells: {
+  walkCubesDiagonalsCells: {
     base: 8,
     lattice: 'cube',
     cells: true,
-    twin: 'diag',
+    twin: 'walkCubesDiagonalsEdges',
     shape: 'truncOcta',
     perspective: true,
     rule: 'from truncated octahedron to truncated octahedron (they fill space), through a hexagon (the 3 bits of each digit the signs of east, north and up): <b>0</b> SW down, <b>1</b> SW up, <b>2</b> NW down, <b>3</b> NW up, <b>4</b> SE down, <b>5</b> SE up, <b>6</b> NE down, <b>7</b> NE up',
@@ -9446,128 +9461,128 @@ function numberDigitsIn(b) {
 // ever deals with the menu.
 // The icon of each walk mode's shape. Filled: the relative modes (turn from your heading); outlined: the fixed directions.
 const MODE_ICONS = {
-  turtle: 'grid',
-  triTurtle: 'triangleFilled',
-  hexTurtle: 'hexagonFilled',
-  turtleCells: 'grid',
-  triTurtleCells: 'triangleFilled',
-  hexTurtleCells: 'hexagonFilled',
-  cairo: 'pentagons',
-  antSquare: 'grid',
-  antTri: 'triangleFilled',
-  worm: 'worm',
-  antHex: 'hexagonFilled',
-  antCairo: 'pentagons',
-  antCube: 'cube',
-  antHexSphere: 'hexagon',
-  antIcosa: 'icosahedron',
-  cubeRel: 'cubeFilled',
-  cubeRelCells: 'cubeFilled',
-  diag: 'cube',
-  diagCells: 'cube',
-  diamond: 'tetrahedron',
-  torusWalk: 'torus',
-  torusTriWalk: 'torus',
-  torusHexWalk: 'torus',
-  cubeFlat: 'cube',
-  mobiusWalk: 'mobius',
-  mobiusGrid: 'mobius',
-  mobiusHexGrid: 'mobius',
-  mobiusHexWalk: 'mobius',
-  mobiusTriGrid: 'mobius',
-  mobiusTriWalk: 'mobius',
-  tetraLR: 'tetrahedron',
-  octaLR: 'octahedron',
-  stellaLR: 'stella',
-  stellaGrid: 'stella',
-  lifeStella: 'stella',
-  dodecaLR: 'dodecahedron',
-  dodecaGrid: 'dodecahedron',
-  lifeDodeca: 'dodecahedron',
-  icosaLR: 'icosahedron',
-  torusGrid: 'torus',
-  torusTriGrid: 'torus',
-  torusHexGrid: 'torus',
-  cubeGrid: 'cube',
-  tetraGrid: 'tetrahedron',
-  octaGrid: 'octahedron',
-  icosaGrid: 'icosahedron',
-  hexSphereWalk: 'hexagon',
-  /* icosaGrid2: 'icosahedron', icosaGrid3: 'icosahedron', */ hexSphereGrid: 'hexagon',
-  life2dKite: 'kites',
-  life2dHat: 'hat',
-  life2dPenrose: 'penrose',
-  life2dPinwheel: 'pinwheel',
-  life2dSpectre: 'spectre',
-  life2dAmmann: 'ammann',
-  life2dRhombs12: 'rhombs12',
-  life2dRhombs14: 'rhombs14',
-  life2dFlower: 'flower',
-  life2dFlower5: 'flower5',
-  life2dFlower7: 'flower7',
-  life2dFlower3: 'flower3',
-  life2dFlower4: 'flower4',
-  life2dFlower8: 'flower8',
-  life2dFlower9: 'flower9',
-  life2dFlower10: 'flower10',
-  life2dFlower11: 'flower11',
-  life2dFlower12: 'flower12',
-  life2dRing7: 'ring7',
-  life2dRing8: 'ring8',
-  life2dRing9: 'ring9',
-  life2dRing10: 'ring10',
-  life2dRing11: 'ring11',
-  life2dRing12: 'ring12',
-  lifeTorusKite: 'torus',
-  lifeMobiusKite: 'mobius',
-  lifeKleinKite: 'klein',
-  life2d: 'grid',
-  blocks2d: 'grid',
-  blocks2dTri: 'triangle',
-  blocks2dHex: 'hexagon',
-  blocks2dCairo: 'pentagons',
-  blocks2dTetrakis: 'tetrakis',
-  life2dTri: 'triangle',
-  life2dHex: 'hexagon',
-  life2dCairo: 'pentagons',
-  lifeTorus: 'torus',
+  walkSquaresTurtleEdges: 'grid',
+  walkTrianglesTurtleEdges: 'triangleFilled',
+  walkHexTurtleEdges: 'hexagonFilled',
+  walkSquaresTurtleCells: 'grid',
+  walkTrianglesTurtleCells: 'triangleFilled',
+  walkHexTurtleCells: 'hexagonFilled',
+  walkCairoTurtleCells: 'pentagons',
+  antSquaresCells: 'grid',
+  antTrianglesCells: 'triangleFilled',
+  antTrianglesEdges: 'worm',
+  antHexCells: 'hexagonFilled',
+  antCairoCells: 'pentagons',
+  antCubeSquaresCells: 'cube',
+  antIcosahedronHexCells: 'hexagon',
+  antIcosahedronTrianglesCells: 'icosahedron',
+  walkCubesTurtleEdges: 'cubeFilled',
+  walkCubesTurtleCells: 'cubeFilled',
+  walkCubesDiagonalsEdges: 'cube',
+  walkCubesDiagonalsCells: 'cube',
+  walkDiamondPolymerEdges: 'tetrahedron',
+  walkTorusSquaresTurtleCells: 'torus',
+  walkTorusTrianglesTurtleCells: 'torus',
+  walkTorusHexTurtleCells: 'torus',
+  walkCubeSquaresTurtleCells: 'cube',
+  walkMobiusStripSquaresTurtleCells: 'mobius',
+  walkMobiusStripSquaresTurtleEdges: 'mobius',
+  walkMobiusStripHexTurtleEdges: 'mobius',
+  walkMobiusStripHexTurtleCells: 'mobius',
+  walkMobiusStripTrianglesTurtleEdges: 'mobius',
+  walkMobiusStripTrianglesTurtleCells: 'mobius',
+  walkTetrahedronTrianglesTurtleCells: 'tetrahedron',
+  walkOctahedronTrianglesTurtleCells: 'octahedron',
+  walkStellaOctangulaTrianglesTurtleCells: 'stella',
+  walkStellaOctangulaTrianglesTurtleEdges: 'stella',
+  lifeStellaOctangulaTriangles: 'stella',
+  walkDodecahedronTrianglesTurtleCells: 'dodecahedron',
+  walkDodecahedronTrianglesTurtleEdges: 'dodecahedron',
+  lifeDodecahedronTriangles: 'dodecahedron',
+  walkIcosahedronTrianglesTurtleCells: 'icosahedron',
+  walkTorusSquaresTurtleEdges: 'torus',
+  walkTorusTrianglesTurtleEdges: 'torus',
+  walkTorusHexTurtleEdges: 'torus',
+  walkCubeSquaresTurtleEdges: 'cube',
+  walkTetrahedronTrianglesTurtleEdges: 'tetrahedron',
+  walkOctahedronTrianglesTurtleEdges: 'octahedron',
+  walkIcosahedronTrianglesTurtleEdges: 'icosahedron',
+  walkIcosahedronHexTurtleCells: 'hexagon',
+  /* icosaGrid2: 'icosahedron', icosaGrid3: 'icosahedron', */ walkIcosahedronHexTurtleEdges: 'hexagon',
+  lifeKites: 'kites',
+  lifeHats: 'hat',
+  lifePenrose: 'penrose',
+  lifePinwheel: 'pinwheel',
+  lifeSpectre: 'spectre',
+  lifeAmmann: 'ammann',
+  lifeRhombs12: 'rhombs12',
+  lifeRhombs14: 'rhombs14',
+  lifeFlower6: 'flower',
+  lifeFlower5: 'flower5',
+  lifeFlower7: 'flower7',
+  lifeFlower3: 'flower3',
+  lifeFlower4: 'flower4',
+  lifeFlower8: 'flower8',
+  lifeFlower9: 'flower9',
+  lifeFlower10: 'flower10',
+  lifeFlower11: 'flower11',
+  lifeFlower12: 'flower12',
+  lifeRing7: 'ring7',
+  lifeRing8: 'ring8',
+  lifeRing9: 'ring9',
+  lifeRing10: 'ring10',
+  lifeRing11: 'ring11',
+  lifeRing12: 'ring12',
+  lifeTorusKites: 'torus',
+  lifeMobiusStripKites: 'mobius',
+  lifeKleinBottleKites: 'klein',
+  lifeSquares: 'grid',
+  rewindSquares: 'grid',
+  rewindTriangles: 'triangle',
+  rewindHex: 'hexagon',
+  rewindCairo: 'pentagons',
+  rewindTetrakis: 'tetrakis',
+  lifeTriangles: 'triangle',
+  lifeHex: 'hexagon',
+  lifeCairo: 'pentagons',
+  lifeTorusSquares: 'torus',
   lifeTorusHex: 'torus',
   lifeTorusCairo: 'torus',
-  lifeTorusTri: 'torus',
-  torusCairoWalk: 'torus',
-  lifeMobius: 'mobius',
-  lifeMobiusHex: 'mobius',
-  lifeMobiusTri: 'mobius',
-  lifeMobiusCairo: 'mobius',
-  mobiusCairoWalk: 'mobius',
-  kleinWalk: 'klein',
-  kleinHexWalk: 'klein',
-  kleinTriWalk: 'klein',
-  kleinCairoWalk: 'klein',
-  lifeKlein: 'klein',
-  lifeKleinHex: 'klein',
-  lifeKleinTri: 'klein',
-  lifeKleinCairo: 'klein',
-  lifeCube: 'cube',
-  lifeTetra: 'tetrahedron',
-  lifeOcta: 'octahedron',
-  lifeIcosa: 'icosahedron',
-  lifeTetraKite: 'tetrahedron',
-  lifeOctaKite: 'octahedron',
-  lifeIcosaKite: 'icosahedron',
-  lifeStellaKite: 'stella',
-  lifeDodecaKite: 'dodecahedron',
-  lifeCubocta: 'cubocta',
-  lifePyramid: 'pyramid',
-  lifeRhombi: 'rhombi',
-  lifeBicupola: 'bicupola',
+  lifeTorusTriangles: 'torus',
+  walkTorusCairoTurtleCells: 'torus',
+  lifeMobiusStripSquares: 'mobius',
+  lifeMobiusStripHex: 'mobius',
+  lifeMobiusStripTriangles: 'mobius',
+  lifeMobiusStripCairo: 'mobius',
+  walkMobiusStripCairoTurtleCells: 'mobius',
+  walkKleinBottleSquaresTurtleCells: 'klein',
+  walkKleinBottleHexTurtleCells: 'klein',
+  walkKleinBottleTrianglesTurtleCells: 'klein',
+  walkKleinBottleCairoTurtleCells: 'klein',
+  lifeKleinBottleSquares: 'klein',
+  lifeKleinBottleHex: 'klein',
+  lifeKleinBottleTriangles: 'klein',
+  lifeKleinBottleCairo: 'klein',
+  lifeCubeSquares: 'cube',
+  lifeTetrahedronTriangles: 'tetrahedron',
+  lifeOctahedronTriangles: 'octahedron',
+  lifeIcosahedronTriangles: 'icosahedron',
+  lifeTetrahedronKites: 'tetrahedron',
+  lifeOctahedronKites: 'octahedron',
+  lifeIcosahedronKites: 'icosahedron',
+  lifeStellaOctangulaKites: 'stella',
+  lifeDodecahedronKites: 'dodecahedron',
+  lifeCuboctahedron: 'cubocta',
+  lifeSquarePyramid: 'pyramid',
+  lifeRhombicuboctahedron: 'rhombi',
+  lifeSquareOrthobicupola: 'bicupola',
   lifeGlobe: 'globe',
-  lifeHexSphere: 'hexagon',
-  lifeTwistedSphere: 'tiling-twisttri',
-  spiral: 'spiral',
-  triSpiral: 'triSpiral',
-  hexSpiral: 'hexSpiral',
-  cairoSpiral: 'pentagons',
+  lifeIcosahedronHex: 'hexagon',
+  lifeIcosahedronTwisted: 'tiling-twisttri',
+  walkSquaresSpiral: 'spiral',
+  walkTrianglesSpiral: 'triSpiral',
+  walkHexSpiral: 'hexSpiral',
+  walkCairoSpiral: 'pentagons',
 };
 
 // "Cubes — base 5 (5 relative turns)" → name "Cubes", base "base 5", detail "5 relative turns"
@@ -9583,142 +9598,173 @@ function splitModeLabel(text) {
  * which shape, by which rule, and along the edges or on cells ('' where neither); in the menu's order.
  * A family's tilings (Torus, Möbius strip, Sphere) share their place, picked by tabs under the shapes. */
 const NAV = {
-  turtle: ['Walk', '2D', 'Squares', 'Turtle', 'edges'],
-  turtleCells: ['Walk', '2D', 'Squares', 'Turtle', 'cells'],
-  spiral: ['Walk', '2D', 'Squares', 'Spiral', ''],
-  triTurtle: ['Walk', '2D', 'Triangles', 'Turtle', 'edges'],
-  triTurtleCells: ['Walk', '2D', 'Triangles', 'Turtle', 'cells'],
-  triSpiral: ['Walk', '2D', 'Triangles', 'Spiral', ''],
-  hexTurtle: ['Walk', '2D', 'Hexagons', 'Turtle', 'edges'],
-  hexTurtleCells: ['Walk', '2D', 'Hexagons', 'Turtle', 'cells'],
-  hexSpiral: ['Walk', '2D', 'Hexagons', 'Spiral', ''],
-  cairo: ['Walk', '2D', 'Cairo', 'Turtle', 'cells'],
-  cairoSpiral: ['Walk', '2D', 'Cairo', 'Spiral', ''],
-  cubeRel: ['Walk', '3D', 'Cubes', 'Turtle', 'edges'],
-  cubeRelCells: ['Walk', '3D', 'Cubes', 'Turtle', 'cells'],
-  diag: ['Walk', '3D', 'Cubes', 'Diagonals', 'edges'],
-  diagCells: ['Walk', '3D', 'Cubes', 'Diagonals', 'cells'],
-  diamond: ['Walk', '3D', 'Diamond', 'Polymer', 'edges'],
-  cubeGrid: ['Walk', 'Surfaces', 'Cube', 'Turtle', 'edges'],
-  cubeFlat: ['Walk', 'Surfaces', 'Cube', 'Turtle', 'cells'],
-  torusGrid: ['Walk', 'Surfaces', 'Torus', 'Turtle', 'edges'],
-  torusWalk: ['Walk', 'Surfaces', 'Torus', 'Turtle', 'cells'],
-  torusHexGrid: ['Walk', 'Surfaces', 'Torus', 'Turtle', 'edges'],
-  torusHexWalk: ['Walk', 'Surfaces', 'Torus', 'Turtle', 'cells'],
-  torusTriGrid: ['Walk', 'Surfaces', 'Torus', 'Turtle', 'edges'],
-  torusTriWalk: ['Walk', 'Surfaces', 'Torus', 'Turtle', 'cells'],
-  mobiusGrid: ['Walk', 'Surfaces', 'Möbius strip', 'Turtle', 'edges'],
-  mobiusWalk: ['Walk', 'Surfaces', 'Möbius strip', 'Turtle', 'cells'],
-  mobiusHexGrid: ['Walk', 'Surfaces', 'Möbius strip', 'Turtle', 'edges'],
-  mobiusHexWalk: ['Walk', 'Surfaces', 'Möbius strip', 'Turtle', 'cells'],
-  mobiusTriGrid: ['Walk', 'Surfaces', 'Möbius strip', 'Turtle', 'edges'],
-  mobiusTriWalk: ['Walk', 'Surfaces', 'Möbius strip', 'Turtle', 'cells'],
-  tetraGrid: ['Walk', 'Surfaces', 'Tetrahedron', 'Turtle', 'edges'],
-  tetraLR: ['Walk', 'Surfaces', 'Tetrahedron', 'Turtle', 'cells'],
-  octaGrid: ['Walk', 'Surfaces', 'Octahedron', 'Turtle', 'edges'],
-  octaLR: ['Walk', 'Surfaces', 'Octahedron', 'Turtle', 'cells'],
-  stellaGrid: ['Walk', 'Surfaces', 'Stella octangula', 'Turtle', 'edges'],
-  stellaLR: ['Walk', 'Surfaces', 'Stella octangula', 'Turtle', 'cells'],
-  dodecaGrid: ['Walk', 'Surfaces', 'Dodecahedron', 'Turtle', 'edges'],
-  dodecaLR: ['Walk', 'Surfaces', 'Dodecahedron', 'Turtle', 'cells'],
-  hexSphereGrid: ['Walk', 'Surfaces', 'Sphere', 'Turtle', 'edges'],
-  hexSphereWalk: ['Walk', 'Surfaces', 'Sphere', 'Turtle', 'cells'],
-  icosaGrid: ['Walk', 'Surfaces', 'Sphere', 'Turtle', 'edges'],
-  icosaLR: ['Walk', 'Surfaces', 'Sphere', 'Turtle', 'cells'],
-  antSquare: ['Ant', '2D', 'Squares', 'Ant', 'cells'],
-  antTri: ['Ant', '2D', 'Triangles', 'Ant', 'cells'],
-  worm: ['Ant', '2D', 'Triangles', 'Ant', 'edges'], // (the worm: the triangles' ant along their edges, see its Edges tab)
-  antHex: ['Ant', '2D', 'Hexagons', 'Ant', 'cells'],
-  antCairo: ['Ant', '2D', 'Cairo', 'Ant', 'cells'],
-  antCube: ['Ant', 'Surfaces', 'Cube', 'Ant', 'cells'],
-  antHexSphere: ['Ant', 'Surfaces', 'Sphere', 'Ant', 'cells'],
-  antIcosa: ['Ant', 'Surfaces', 'Sphere', 'Ant', 'cells'],
-  life2dKite: ['Life', '2D', 'Kites', 'Life', ''],
-  life2dHat: ['Life', '2D', 'Hats', 'Life', ''],
-  life2dPenrose: ['Life', '2D', 'Penrose', 'Life', ''],
-  life2dPinwheel: ['Life', '2D', 'Pinwheel', 'Life', ''],
-  life2dSpectre: ['Life', '2D', 'Spectre', 'Life', ''],
-  life2dAmmann: ['Life', '2D', 'Ammann', 'Life', ''],
-  life2dRhombs12: ['Life', '2D', 'Rhombs 12', 'Life', ''],
-  life2dRhombs14: ['Life', '2D', 'Rhombs 14', 'Life', ''],
-  life2dFlower: ['Life', '2D', 'Flower 6', 'Life', ''],
-  life2dFlower5: ['Life', '2D', 'Flower 5', 'Life', ''],
-  life2dFlower7: ['Life', '2D', 'Flower 7', 'Life', ''],
-  life2dFlower3: ['Life', '2D', 'Flower 3', 'Life', ''],
-  life2dFlower4: ['Life', '2D', 'Flower 4', 'Life', ''],
-  life2dFlower8: ['Life', '2D', 'Flower 8', 'Life', ''],
-  life2dFlower9: ['Life', '2D', 'Flower 9', 'Life', ''],
-  life2dFlower10: ['Life', '2D', 'Flower 10', 'Life', ''],
-  life2dFlower11: ['Life', '2D', 'Flower 11', 'Life', ''],
-  life2dFlower12: ['Life', '2D', 'Flower 12', 'Life', ''],
-  life2dRing7: ['Life', '2D', 'Ring 7', 'Life', ''],
-  life2dRing8: ['Life', '2D', 'Ring 8', 'Life', ''],
-  life2dRing9: ['Life', '2D', 'Ring 9', 'Life', ''],
-  life2dRing10: ['Life', '2D', 'Ring 10', 'Life', ''],
-  life2dRing11: ['Life', '2D', 'Ring 11', 'Life', ''],
-  life2dRing12: ['Life', '2D', 'Ring 12', 'Life', ''],
-  life2d: ['Life', '2D', 'Squares', 'Life', ''],
-  blocks2d: ['Rewind', '2D', 'Squares', 'Blocks', ''],
-  blocks2dTri: ['Rewind', '2D', 'Triangles', 'Blocks', ''],
-  blocks2dHex: ['Rewind', '2D', 'Hexagons', 'Blocks', ''],
-  blocks2dCairo: ['Rewind', '2D', 'Cairo', 'Blocks', ''],
-  blocks2dTetrakis: ['Rewind', '2D', 'Tetrakis', 'Blocks', ''],
-  life2dTri: ['Life', '2D', 'Triangles', 'Life', ''],
-  life2dHex: ['Life', '2D', 'Hexagons', 'Life', ''],
-  life2dCairo: ['Life', '2D', 'Cairo', 'Life', ''],
-  lifeCube: ['Life', 'Surfaces', 'Cube', 'Life', ''],
-  lifePits: ['Life', 'Surfaces', 'Pits', 'Life', ''],
-  lifeBumps: ['Life', 'Surfaces', 'Bumps', 'Life', ''],
-  lifeFrame: ['Life', 'Surfaces', 'Frame', 'Life', ''],
-  lifeMenger: ['Life', 'Surfaces', 'Sponge', 'Life', ''],
-  lifeTorus: ['Life', 'Surfaces', 'Torus', 'Life', ''],
+  walkSquaresTurtleEdges: ['Walk', '2D', 'Squares', 'Turtle', 'edges'],
+  walkSquaresTurtleCells: ['Walk', '2D', 'Squares', 'Turtle', 'cells'],
+  walkSquaresSpiral: ['Walk', '2D', 'Squares', 'Spiral', ''],
+  walkTrianglesTurtleEdges: ['Walk', '2D', 'Triangles', 'Turtle', 'edges'],
+  walkTrianglesTurtleCells: ['Walk', '2D', 'Triangles', 'Turtle', 'cells'],
+  walkTrianglesSpiral: ['Walk', '2D', 'Triangles', 'Spiral', ''],
+  walkHexTurtleEdges: ['Walk', '2D', 'Hexagons', 'Turtle', 'edges'],
+  walkHexTurtleCells: ['Walk', '2D', 'Hexagons', 'Turtle', 'cells'],
+  walkHexSpiral: ['Walk', '2D', 'Hexagons', 'Spiral', ''],
+  walkCairoTurtleCells: ['Walk', '2D', 'Cairo', 'Turtle', 'cells'],
+  walkCairoSpiral: ['Walk', '2D', 'Cairo', 'Spiral', ''],
+  walkCubesTurtleEdges: ['Walk', '3D', 'Cubes', 'Turtle', 'edges'],
+  walkCubesTurtleCells: ['Walk', '3D', 'Cubes', 'Turtle', 'cells'],
+  walkCubesDiagonalsEdges: ['Walk', '3D', 'Cubes', 'Diagonals', 'edges'],
+  walkCubesDiagonalsCells: ['Walk', '3D', 'Cubes', 'Diagonals', 'cells'],
+  walkDiamondPolymerEdges: ['Walk', '3D', 'Diamond', 'Polymer', 'edges'],
+  walkCubeSquaresTurtleEdges: ['Walk', 'Surfaces', 'Cube', 'Turtle', 'edges'],
+  walkCubeSquaresTurtleCells: ['Walk', 'Surfaces', 'Cube', 'Turtle', 'cells'],
+  walkTorusSquaresTurtleEdges: ['Walk', 'Surfaces', 'Torus', 'Turtle', 'edges'],
+  walkTorusSquaresTurtleCells: ['Walk', 'Surfaces', 'Torus', 'Turtle', 'cells'],
+  walkTorusHexTurtleEdges: ['Walk', 'Surfaces', 'Torus', 'Turtle', 'edges'],
+  walkTorusHexTurtleCells: ['Walk', 'Surfaces', 'Torus', 'Turtle', 'cells'],
+  walkTorusTrianglesTurtleEdges: ['Walk', 'Surfaces', 'Torus', 'Turtle', 'edges'],
+  walkTorusTrianglesTurtleCells: ['Walk', 'Surfaces', 'Torus', 'Turtle', 'cells'],
+  walkMobiusStripSquaresTurtleEdges: ['Walk', 'Surfaces', 'Möbius strip', 'Turtle', 'edges'],
+  walkMobiusStripSquaresTurtleCells: ['Walk', 'Surfaces', 'Möbius strip', 'Turtle', 'cells'],
+  walkMobiusStripHexTurtleEdges: ['Walk', 'Surfaces', 'Möbius strip', 'Turtle', 'edges'],
+  walkMobiusStripHexTurtleCells: ['Walk', 'Surfaces', 'Möbius strip', 'Turtle', 'cells'],
+  walkMobiusStripTrianglesTurtleEdges: ['Walk', 'Surfaces', 'Möbius strip', 'Turtle', 'edges'],
+  walkMobiusStripTrianglesTurtleCells: ['Walk', 'Surfaces', 'Möbius strip', 'Turtle', 'cells'],
+  walkTetrahedronTrianglesTurtleEdges: ['Walk', 'Surfaces', 'Tetrahedron', 'Turtle', 'edges'],
+  walkTetrahedronTrianglesTurtleCells: ['Walk', 'Surfaces', 'Tetrahedron', 'Turtle', 'cells'],
+  walkOctahedronTrianglesTurtleEdges: ['Walk', 'Surfaces', 'Octahedron', 'Turtle', 'edges'],
+  walkOctahedronTrianglesTurtleCells: ['Walk', 'Surfaces', 'Octahedron', 'Turtle', 'cells'],
+  walkStellaOctangulaTrianglesTurtleEdges: ['Walk', 'Surfaces', 'Stella octangula', 'Turtle', 'edges'],
+  walkStellaOctangulaTrianglesTurtleCells: ['Walk', 'Surfaces', 'Stella octangula', 'Turtle', 'cells'],
+  walkDodecahedronTrianglesTurtleEdges: ['Walk', 'Surfaces', 'Dodecahedron', 'Turtle', 'edges'],
+  walkDodecahedronTrianglesTurtleCells: ['Walk', 'Surfaces', 'Dodecahedron', 'Turtle', 'cells'],
+  walkIcosahedronHexTurtleEdges: ['Walk', 'Surfaces', 'Sphere', 'Turtle', 'edges'],
+  walkIcosahedronHexTurtleCells: ['Walk', 'Surfaces', 'Sphere', 'Turtle', 'cells'],
+  walkIcosahedronTrianglesTurtleEdges: ['Walk', 'Surfaces', 'Sphere', 'Turtle', 'edges'],
+  walkIcosahedronTrianglesTurtleCells: ['Walk', 'Surfaces', 'Sphere', 'Turtle', 'cells'],
+  antSquaresCells: ['Ant', '2D', 'Squares', 'Ant', 'cells'],
+  antTrianglesCells: ['Ant', '2D', 'Triangles', 'Ant', 'cells'],
+  antTrianglesEdges: ['Ant', '2D', 'Triangles', 'Ant', 'edges'], // (the worm: the triangles' ant along their edges, see its Edges tab)
+  antHexCells: ['Ant', '2D', 'Hexagons', 'Ant', 'cells'],
+  antCairoCells: ['Ant', '2D', 'Cairo', 'Ant', 'cells'],
+  antCubeSquaresCells: ['Ant', 'Surfaces', 'Cube', 'Ant', 'cells'],
+  antIcosahedronHexCells: ['Ant', 'Surfaces', 'Sphere', 'Ant', 'cells'],
+  antIcosahedronTrianglesCells: ['Ant', 'Surfaces', 'Sphere', 'Ant', 'cells'],
+  lifeKites: ['Life', '2D', 'Kites', 'Life', ''],
+  lifeHats: ['Life', '2D', 'Hats', 'Life', ''],
+  lifePenrose: ['Life', '2D', 'Penrose', 'Life', ''],
+  lifePinwheel: ['Life', '2D', 'Pinwheel', 'Life', ''],
+  lifeSpectre: ['Life', '2D', 'Spectre', 'Life', ''],
+  lifeAmmann: ['Life', '2D', 'Ammann', 'Life', ''],
+  lifeRhombs12: ['Life', '2D', 'Rhombs 12', 'Life', ''],
+  lifeRhombs14: ['Life', '2D', 'Rhombs 14', 'Life', ''],
+  lifeFlower6: ['Life', '2D', 'Flower 6', 'Life', ''],
+  lifeFlower5: ['Life', '2D', 'Flower 5', 'Life', ''],
+  lifeFlower7: ['Life', '2D', 'Flower 7', 'Life', ''],
+  lifeFlower3: ['Life', '2D', 'Flower 3', 'Life', ''],
+  lifeFlower4: ['Life', '2D', 'Flower 4', 'Life', ''],
+  lifeFlower8: ['Life', '2D', 'Flower 8', 'Life', ''],
+  lifeFlower9: ['Life', '2D', 'Flower 9', 'Life', ''],
+  lifeFlower10: ['Life', '2D', 'Flower 10', 'Life', ''],
+  lifeFlower11: ['Life', '2D', 'Flower 11', 'Life', ''],
+  lifeFlower12: ['Life', '2D', 'Flower 12', 'Life', ''],
+  lifeRing7: ['Life', '2D', 'Ring 7', 'Life', ''],
+  lifeRing8: ['Life', '2D', 'Ring 8', 'Life', ''],
+  lifeRing9: ['Life', '2D', 'Ring 9', 'Life', ''],
+  lifeRing10: ['Life', '2D', 'Ring 10', 'Life', ''],
+  lifeRing11: ['Life', '2D', 'Ring 11', 'Life', ''],
+  lifeRing12: ['Life', '2D', 'Ring 12', 'Life', ''],
+  lifeSquares: ['Life', '2D', 'Squares', 'Life', ''],
+  rewindSquares: ['Rewind', '2D', 'Squares', 'Blocks', ''],
+  rewindTriangles: ['Rewind', '2D', 'Triangles', 'Blocks', ''],
+  rewindHex: ['Rewind', '2D', 'Hexagons', 'Blocks', ''],
+  rewindCairo: ['Rewind', '2D', 'Cairo', 'Blocks', ''],
+  rewindTetrakis: ['Rewind', '2D', 'Tetrakis', 'Blocks', ''],
+  lifeTriangles: ['Life', '2D', 'Triangles', 'Life', ''],
+  lifeHex: ['Life', '2D', 'Hexagons', 'Life', ''],
+  lifeCairo: ['Life', '2D', 'Cairo', 'Life', ''],
+  lifeCubeSquares: ['Life', 'Surfaces', 'Cube', 'Life', ''],
+  lifeCubePitsSquares: ['Life', 'Surfaces', 'Pits', 'Life', ''],
+  lifeCubeBumpsSquares: ['Life', 'Surfaces', 'Bumps', 'Life', ''],
+  lifeCubeFrameSquares: ['Life', 'Surfaces', 'Frame', 'Life', ''],
+  lifeCubeMengerSpongeSquares: ['Life', 'Surfaces', 'Sponge', 'Life', ''],
+  lifeTorusSquares: ['Life', 'Surfaces', 'Torus', 'Life', ''],
   lifeTorusHex: ['Life', 'Surfaces', 'Torus', 'Life', ''],
   lifeTorusCairo: ['Life', 'Surfaces', 'Torus', 'Life', ''],
-  lifeTorusTri: ['Life', 'Surfaces', 'Torus', 'Life', ''],
-  torusCairoWalk: ['Walk', 'Surfaces', 'Torus', 'Turtle', 'cells'],
-  lifeMobius: ['Life', 'Surfaces', 'Möbius strip', 'Life', ''],
-  lifeMobiusHex: ['Life', 'Surfaces', 'Möbius strip', 'Life', ''],
-  lifeMobiusTri: ['Life', 'Surfaces', 'Möbius strip', 'Life', ''],
-  lifeMobiusCairo: ['Life', 'Surfaces', 'Möbius strip', 'Life', ''],
-  mobiusCairoWalk: ['Walk', 'Surfaces', 'Möbius strip', 'Turtle', 'cells'],
-  kleinWalk: ['Walk', 'Surfaces', 'Klein bottle', 'Turtle', 'cells'],
-  kleinHexWalk: ['Walk', 'Surfaces', 'Klein bottle', 'Turtle', 'cells'],
-  kleinTriWalk: ['Walk', 'Surfaces', 'Klein bottle', 'Turtle', 'cells'],
-  kleinGrid: ['Walk', 'Surfaces', 'Klein bottle', 'Turtle', 'edges'],
-  kleinHexGrid: ['Walk', 'Surfaces', 'Klein bottle', 'Turtle', 'edges'],
-  kleinTriGrid: ['Walk', 'Surfaces', 'Klein bottle', 'Turtle', 'edges'],
-  kleinCairoWalk: ['Walk', 'Surfaces', 'Klein bottle', 'Turtle', 'cells'],
-  lifeKlein: ['Life', 'Surfaces', 'Klein bottle', 'Life', ''],
-  lifeKleinHex: ['Life', 'Surfaces', 'Klein bottle', 'Life', ''],
-  lifeKleinTri: ['Life', 'Surfaces', 'Klein bottle', 'Life', ''],
-  lifeKleinCairo: ['Life', 'Surfaces', 'Klein bottle', 'Life', ''],
-  lifeTetra: ['Life', 'Surfaces', 'Tetrahedron', 'Life', ''],
-  lifeOcta: ['Life', 'Surfaces', 'Octahedron', 'Life', ''],
-  lifeStella: ['Life', 'Surfaces', 'Stella octangula', 'Life', ''],
-  lifeDodeca: ['Life', 'Surfaces', 'Dodecahedron', 'Life', ''],
-  lifeIcosa: ['Life', 'Surfaces', 'Sphere', 'Life', ''],
-  lifeHexSphere: ['Life', 'Surfaces', 'Sphere', 'Life', ''],
-  lifeTwistedSphere: ['Life', 'Surfaces', 'Sphere', 'Life', ''],
-  lifeTorusKite: ['Life', 'Surfaces', 'Torus', 'Life', ''],
-  lifeMobiusKite: ['Life', 'Surfaces', 'Möbius strip', 'Life', ''],
-  lifeKleinKite: ['Life', 'Surfaces', 'Klein bottle', 'Life', ''],
-  lifeTetraKite: ['Life', 'Surfaces', 'Tetrahedron', 'Life', ''],
-  lifeOctaKite: ['Life', 'Surfaces', 'Octahedron', 'Life', ''],
-  lifeIcosaKite: ['Life', 'Surfaces', 'Sphere', 'Life', ''],
-  lifeStellaKite: ['Life', 'Surfaces', 'Stella octangula', 'Life', ''],
-  lifeDodecaKite: ['Life', 'Surfaces', 'Dodecahedron', 'Life', ''],
-  lifeCubocta: ['Life', 'Surfaces', 'Cuboctahedron', 'Life', ''],
-  lifePyramid: ['Life', 'Surfaces', 'Pyramid', 'Life', ''],
-  lifeRhombi: ['Life', 'Surfaces', 'Rhombicuboctahedron', 'Life', ''],
-  lifeBicupola: ['Life', 'Surfaces', 'Bicupola', 'Life', ''],
+  lifeTorusTriangles: ['Life', 'Surfaces', 'Torus', 'Life', ''],
+  walkTorusCairoTurtleCells: ['Walk', 'Surfaces', 'Torus', 'Turtle', 'cells'],
+  lifeMobiusStripSquares: ['Life', 'Surfaces', 'Möbius strip', 'Life', ''],
+  lifeMobiusStripHex: ['Life', 'Surfaces', 'Möbius strip', 'Life', ''],
+  lifeMobiusStripTriangles: ['Life', 'Surfaces', 'Möbius strip', 'Life', ''],
+  lifeMobiusStripCairo: ['Life', 'Surfaces', 'Möbius strip', 'Life', ''],
+  walkMobiusStripCairoTurtleCells: ['Walk', 'Surfaces', 'Möbius strip', 'Turtle', 'cells'],
+  walkKleinBottleSquaresTurtleCells: ['Walk', 'Surfaces', 'Klein bottle', 'Turtle', 'cells'],
+  walkKleinBottleHexTurtleCells: ['Walk', 'Surfaces', 'Klein bottle', 'Turtle', 'cells'],
+  walkKleinBottleTrianglesTurtleCells: ['Walk', 'Surfaces', 'Klein bottle', 'Turtle', 'cells'],
+  walkKleinBottleSquaresTurtleEdges: ['Walk', 'Surfaces', 'Klein bottle', 'Turtle', 'edges'],
+  walkKleinBottleHexTurtleEdges: ['Walk', 'Surfaces', 'Klein bottle', 'Turtle', 'edges'],
+  walkKleinBottleTrianglesTurtleEdges: ['Walk', 'Surfaces', 'Klein bottle', 'Turtle', 'edges'],
+  walkKleinBottleCairoTurtleCells: ['Walk', 'Surfaces', 'Klein bottle', 'Turtle', 'cells'],
+  lifeKleinBottleSquares: ['Life', 'Surfaces', 'Klein bottle', 'Life', ''],
+  lifeKleinBottleHex: ['Life', 'Surfaces', 'Klein bottle', 'Life', ''],
+  lifeKleinBottleTriangles: ['Life', 'Surfaces', 'Klein bottle', 'Life', ''],
+  lifeKleinBottleCairo: ['Life', 'Surfaces', 'Klein bottle', 'Life', ''],
+  lifeTetrahedronTriangles: ['Life', 'Surfaces', 'Tetrahedron', 'Life', ''],
+  lifeOctahedronTriangles: ['Life', 'Surfaces', 'Octahedron', 'Life', ''],
+  lifeStellaOctangulaTriangles: ['Life', 'Surfaces', 'Stella octangula', 'Life', ''],
+  lifeDodecahedronTriangles: ['Life', 'Surfaces', 'Dodecahedron', 'Life', ''],
+  lifeIcosahedronTriangles: ['Life', 'Surfaces', 'Sphere', 'Life', ''],
+  lifeIcosahedronHex: ['Life', 'Surfaces', 'Sphere', 'Life', ''],
+  lifeIcosahedronTwisted: ['Life', 'Surfaces', 'Sphere', 'Life', ''],
+  lifeTorusKites: ['Life', 'Surfaces', 'Torus', 'Life', ''],
+  lifeMobiusStripKites: ['Life', 'Surfaces', 'Möbius strip', 'Life', ''],
+  lifeKleinBottleKites: ['Life', 'Surfaces', 'Klein bottle', 'Life', ''],
+  lifeTetrahedronKites: ['Life', 'Surfaces', 'Tetrahedron', 'Life', ''],
+  lifeOctahedronKites: ['Life', 'Surfaces', 'Octahedron', 'Life', ''],
+  lifeIcosahedronKites: ['Life', 'Surfaces', 'Sphere', 'Life', ''],
+  lifeStellaOctangulaKites: ['Life', 'Surfaces', 'Stella octangula', 'Life', ''],
+  lifeDodecahedronKites: ['Life', 'Surfaces', 'Dodecahedron', 'Life', ''],
+  lifeCuboctahedron: ['Life', 'Surfaces', 'Cuboctahedron', 'Life', ''],
+  lifeSquarePyramid: ['Life', 'Surfaces', 'Pyramid', 'Life', ''],
+  lifeRhombicuboctahedron: ['Life', 'Surfaces', 'Rhombicuboctahedron', 'Life', ''],
+  lifeSquareOrthobicupola: ['Life', 'Surfaces', 'Bicupola', 'Life', ''],
   lifeGlobe: ['Life', 'Surfaces', 'Globe', 'Life', ''],
 };
 // the tilings' Life on the plane (see TILINGS): their modes, after the hats
-const tilingMode = (kind) => `life2d${kind[0].toUpperCase()}${kind.slice(1)}`;
+const linkWord = (name) =>
+  name
+    .normalize('NFKD')
+    .replace(/[^\p{L}\p{N} ]/gu, '')
+    .split(' ')
+    .map((part, i) => (i ? part[0].toUpperCase() + part.slice(1) : part.toLowerCase()))
+    .join('');
+// the menu's names that a link says otherwise: a shape by its full name (the menu's Sphere: an icosahedron, of triangles or of
+// hexagons; the cubes carved; a solid's whole name), Hexagons cut short
+const LINK_SHAPES = {
+  Sphere: 'icosahedron',
+  Pits: 'cubePits',
+  Bumps: 'cubeBumps',
+  Frame: 'cubeFrame',
+  Sponge: 'cubeMengerSponge',
+  Bicupola: 'squareOrthobicupola',
+  Pyramid: 'squarePyramid',
+  Hexagons: 'hex',
+};
+const menuWord = (name) => LINK_SHAPES[name] ?? linkWord(name);
+// A mode's key: its link's words in one, in turn (see modeWords): its tab, its shape, its tiling, a walk's kind, its side
+// (lifeTorusHex, walkMobiusStripHexTurtleEdges); made from the menu's names wherever a mode is made, never written by parts
+const modeName = (kind, shape, tiling = null, rule = null, side = '') =>
+  [kind, shape, tiling, kind === 'Walk' ? rule : null, side]
+    .filter(Boolean)
+    .map((name, i) => (i ? menuWord(name).replace(/^./, (c) => c.toUpperCase()) : menuWord(name)))
+    .join('');
+// Life's mode on a grid of the plane (its kind: square, hex, a tiling's)
+const tilingMode = (kind) =>
+  Object.keys(MODES).find(
+    (w) => MODES[w].plane === kind && MODES[w].life && !MODES[w].margolus && !MODES[w].loops && !MODES[w].elementary,
+  );
 for (const [k, name] of Object.entries(TETRAKIS_SOLIDS)) {
   // the solids of squares as tetrakis triangles (see tetrakisOf): Life, as theirs
   const base = Object.keys(MODES).find((w) => MODES[w].life && MODES[w].sphere === k),
-    m = `${base}Tetrakis`;
+    m = modeName('Life', name, 'Tetrakis');
   MODES[m] = { ...MODES[base], sphere: `${k}Tetrakis`, where: `${MODES[base].where}, its squares cut in 4 (tetrakis)` };
   MODE_ICONS[m] = MODE_ICONS[base];
   NAV[m] = ['Life', 'Surfaces', name, 'Life', ''];
@@ -9726,39 +9772,41 @@ for (const [k, name] of Object.entries(TETRAKIS_SOLIDS)) {
 // the walks on the solids' hexagons (see hexSolidMesh), as the sphere's: along their edges, on their cells (its cells of
 // other sides walked on too)
 for (const [k, { a, name, others }] of Object.entries(HEX_SOLIDS)) {
-  const on = `${a} of hexagons (and ${others})`;
-  MODES[`${k}HexGrid`] = {
+  const on = `${a} of hexagons (and ${others})`,
+    alongEdges = modeName('Walk', name, 'Hexagons', 'Turtle', 'edges'),
+    onCells = modeName('Walk', name, 'Hexagons', 'Turtle', 'cells');
+  MODES[alongEdges] = {
     base: 2,
     arrows: '↖↗',
     lattice: 'sphere',
-    twin: `${k}HexLR`,
+    twin: onCells,
     sphere: `${k}Hex`,
     edges: true,
     turns: [60, -60],
     rule: `along the edges of ${on}: <b>0</b> turn left, <b>1</b> turn right`,
-  }; // (as the sphere's walks, flat: not round, see hexSphereGrid)
-  MODES[`${k}HexLR`] = {
+  }; // (as the sphere's walks, flat: not round, see walkIcosahedronHexTurtleEdges)
+  MODES[onCells] = {
     base: 2,
     arrows: '↖↗',
     lattice: 'sphere',
     cells: true,
-    twin: `${k}HexGrid`,
+    twin: alongEdges,
     sphere: `${k}Hex`,
     net: 'hex',
     rule: `on ${on}: exit through the <b>0</b> front left or <b>1</b> front right edge`,
   };
   for (const [w, how] of [
-    [`${k}HexGrid`, 'edges'],
-    [`${k}HexLR`, 'cells'],
+    [alongEdges, 'edges'],
+    [onCells, 'cells'],
   ]) {
-    MODE_ICONS[w] = MODE_ICONS.hexSphereGrid;
+    MODE_ICONS[w] = MODE_ICONS.walkIcosahedronHexTurtleEdges;
     NAV[w] = ['Walk', 'Surfaces', name, 'Turtle', how];
   }
 }
 for (const [k, { a, name }] of Object.entries(HEX_SOLIDS)) {
   // the solids of hexagons (see hexSolidMesh): Life, as their kites'
-  const m = foldOf('life', `${k}Hex`),
-    kite = foldOf('life', `${k}Kite`);
+  const m = modeName('Life', name, 'Hexagons'),
+    kite = modeName('Life', name, 'Kites');
   MODES[m] = {
     base: 2,
     lattice: 'sphere',
@@ -9773,14 +9821,15 @@ for (const [k, { a, name }] of Object.entries(HEX_SOLIDS)) {
 const modeOption = (m, group, text) =>
   document.querySelector(`#mode optgroup[label="${group}"]`).append(new Option(`Life — ${text}`, m));
 for (const [kind, t] of Object.entries(TILINGS)) {
-  MODES[tilingMode(kind)] = { base: 2, lattice: kind, life: true, plane: kind, where: t.where };
-  modeOption(tilingMode(kind), 'Automata on the plane', t.where);
-  MODE_ICONS[tilingMode(kind)] = `tiling-${kind}`;
-  NAV[tilingMode(kind)] = ['Life', '2D', t.name, 'Life', ''];
+  const flat = modeName('Life', t.name);
+  MODES[flat] = { base: 2, lattice: kind, life: true, plane: kind, where: t.where };
+  modeOption(flat, 'Automata on the plane', t.where);
+  MODE_ICONS[flat] = `tiling-${kind}`;
+  NAV[flat] = ['Life', '2D', t.name, 'Life', ''];
   for (const [fold, F] of Object.entries(FOLDS))
     if (F.has(kind)) {
       // folded (see FOLDS)
-      const m = foldOf(`life${F.life}`, kind);
+      const m = modeName('Life', F.name, t.name);
       MODES[m] = {
         base: 2,
         lattice: 'sphere',
@@ -9797,7 +9846,7 @@ for (const [kind, t] of Object.entries(TILINGS)) {
 }
 for (const [k, [n, F]] of Object.entries(conedOf((k, n, F) => [k, [n, F]]))) {
   // the coned rosettes (see CONED), each with its option
-  const w = tilingMode(k),
+  const w = modeName('Life', `${F.name} ${n}`),
     where = `a patch of the ${F.how} ${n}-fold rosette (${F.tile}, in rows round its middle, never repeating)`;
   MODES[w] = { base: 2, lattice: k, life: true, plane: k, where };
   modeOption(w, 'Automata on the plane', where);
@@ -9814,17 +9863,17 @@ for (const F of Object.values(CONED))
 // Rewind on the tori: Life's, in blocks as the plane's (its blocks' grid, so many cells a block, see meshBlocks), 3 squares
 // round it (see ringColours), its start on the middle one (see startColours)
 const REVERSIBLE_SHEETS = [
-  ['blocksTorus', 'lifeTorus', 'square', 4],
-  ['blocksTorusHex', 'lifeTorusHex', 'hex', 3],
-  ['blocksTorusTri', 'lifeTorusTri', 'tri', 6],
-  ['blocksTorusCairo', 'lifeTorusCairo', 'cairo', 4],
-  ['blocksTorusTetrakis', 'lifeTorusTetrakis', 'tetrakis', 4],
-  ['blocksMobius', 'lifeMobius', 'square', 4],
-  ['blocksMobiusTri', 'lifeMobiusTri', 'tri', 6],
-  ['blocksMobiusTetrakis', 'lifeMobiusTetrakis', 'tetrakis', 4],
-  ['blocksKlein', 'lifeKlein', 'square', 4],
-  ['blocksKleinTri', 'lifeKleinTri', 'tri', 6],
-  ['blocksKleinTetrakis', 'lifeKleinTetrakis', 'tetrakis', 4],
+  ['rewindTorusSquares', 'lifeTorusSquares', 'square', 4],
+  ['rewindTorusHex', 'lifeTorusHex', 'hex', 3],
+  ['rewindTorusTriangles', 'lifeTorusTriangles', 'tri', 6],
+  ['rewindTorusCairo', 'lifeTorusCairo', 'cairo', 4],
+  ['rewindTorusTetrakis', 'lifeTorusTetrakis', 'tetrakis', 4],
+  ['rewindMobiusStripSquares', 'lifeMobiusStripSquares', 'square', 4],
+  ['rewindMobiusStripTriangles', 'lifeMobiusStripTriangles', 'tri', 6],
+  ['rewindMobiusStripTetrakis', 'lifeMobiusStripTetrakis', 'tetrakis', 4],
+  ['rewindKleinBottleSquares', 'lifeKleinBottleSquares', 'square', 4],
+  ['rewindKleinBottleTriangles', 'lifeKleinBottleTriangles', 'tri', 6],
+  ['rewindKleinBottleTetrakis', 'lifeKleinBottleTetrakis', 'tetrakis', 4],
 ]; // (as Life's: the tori, the Möbius strips, the Klein bottles)
 const BLOCK_STEPS = { torusHex: 3, torusTriTurned: 3, mobius: 2 };
 const BLOCK_ALONG = { mobius: 2 }; // (a Möbius strip of squares: its length in squares even, its blocks' two sets coming round along it, see stripSteps)  // (their sizes a multiple: their 3 sets of blocks come round the tube only so, see meshBlocks)
@@ -9840,18 +9889,18 @@ for (const [w, life, blocks, k] of REVERSIBLE_SHEETS) {
 }
 // Replicators: Langton's self-reproducing loops on Life's grid of squares, by a table of transitions (see parseLoops)
 for (const [w, life] of [
-  ['loops2d', 'life2d'],
-  ['loopsTorus', 'lifeTorus'],
-  ['loopsCube', 'lifeCube'],
-  ['loopsPits', 'lifePits'],
-  ['loopsBumps', 'lifeBumps'],
-  ['loopsFrame', 'lifeFrame'],
+  ['replicatorsSquares', 'lifeSquares'],
+  ['replicatorsTorus', 'lifeTorusSquares'],
+  ['replicatorsCubeSquares', 'lifeCubeSquares'],
+  ['replicatorsCubePitsSquares', 'lifeCubePitsSquares'],
+  ['replicatorsCubeBumpsSquares', 'lifeCubeBumpsSquares'],
+  ['replicatorsCubeFrameSquares', 'lifeCubeFrameSquares'],
 ]) {
   // (squares: 4 sides each, the same way round on each: no Möbius strip nor Klein bottle; nor Menger's sponge, its flat pieces narrower than a loop)
   MODES[w] = {
     ...MODES[life],
     loops: true,
-    ...(['loops2d', 'loopsTorus'].includes(w) && { north: true }),
+    ...(['replicatorsSquares', 'replicatorsTorus'].includes(w) && { north: true }),
     where: `${MODES[life].where.split(' (')[0]}, each cell by its 4 sides in turn (von Neumann), or its 8 (Moore)`,
   }; // (north: every cell's the same, the plane's and the torus's sheet's: a table with no turns, see loopFits)
   MODE_ICONS[w] = MODE_ICONS[life];
@@ -9859,17 +9908,17 @@ for (const [w, life] of [
 }
 // Elementary: Wolfram's rules on an unbounded grid of squares, a row a generation down (see parseElementary), its rows built
 // as a walk's steps (see elementaryRows); Life's for its rules and starts
-MODES.elementary2d = {
-  ...MODES.life2d,
+MODES.elementarySquares = {
+  ...MODES.lifeSquares,
   elementary: true,
   where: 'an unbounded grid of squares, a row a generation, each cell by the three above it',
 };
-MODE_ICONS.elementary2d = MODE_ICONS.life2d;
-NAV.elementary2d = ['Elementary', NAV.life2d[1], NAV.life2d[2], 'Wolfram', ''];
-MODE_ICONS.lifePits = 'pits';
-MODE_ICONS.lifeBumps = 'bumps';
-MODE_ICONS.lifeMenger = 'menger';
-MODE_ICONS.lifeFrame = 'frame';
+MODE_ICONS.elementarySquares = MODE_ICONS.lifeSquares;
+NAV.elementarySquares = ['Elementary', NAV.lifeSquares[1], NAV.lifeSquares[2], 'Wolfram', ''];
+MODE_ICONS.lifeCubePitsSquares = 'pits';
+MODE_ICONS.lifeCubeBumpsSquares = 'bumps';
+MODE_ICONS.lifeCubeMengerSpongeSquares = 'menger';
+MODE_ICONS.lifeCubeFrameSquares = 'frame';
 // in each shape's rules: Turtle, then Pivot (the cubes'), then the others as they come; among the shapes,
 // Cairo right after Squares, Hexagons before Triangles (right after Kites where they are), Tetrakis after Hexagons, the Klein bottle after the Möbius strip, the
 // Sphere before the Tetrahedron
@@ -10193,11 +10242,11 @@ const FAMILIES = [
   {
     name: 'Torus',
     modes: [
-      ['torusGrid', 'torusWalk', 'lifeTorus'],
-      ['torusHexGrid', 'torusHexWalk', 'lifeTorusHex'],
-      ['torusTriGrid', 'torusTriWalk', 'lifeTorusTri'],
-      ['torusCairoWalk', 'lifeTorusCairo'],
-      ['lifeTorusKite'],
+      ['walkTorusSquaresTurtleEdges', 'walkTorusSquaresTurtleCells', 'lifeTorusSquares'],
+      ['walkTorusHexTurtleEdges', 'walkTorusHexTurtleCells', 'lifeTorusHex'],
+      ['walkTorusTrianglesTurtleEdges', 'walkTorusTrianglesTurtleCells', 'lifeTorusTriangles'],
+      ['walkTorusCairoTurtleCells', 'lifeTorusCairo'],
+      ['lifeTorusKites'],
     ],
     tab: 0,
     tabs: [
@@ -10214,11 +10263,11 @@ const FAMILIES = [
   {
     name: 'Möbius strip',
     modes: [
-      ['mobiusGrid', 'mobiusWalk', 'lifeMobius'],
-      ['mobiusHexGrid', 'mobiusHexWalk', 'lifeMobiusHex'],
-      ['mobiusTriGrid', 'mobiusTriWalk', 'lifeMobiusTri'],
-      ['mobiusCairoWalk', 'lifeMobiusCairo'],
-      ['lifeMobiusKite'],
+      ['walkMobiusStripSquaresTurtleEdges', 'walkMobiusStripSquaresTurtleCells', 'lifeMobiusStripSquares'],
+      ['walkMobiusStripHexTurtleEdges', 'walkMobiusStripHexTurtleCells', 'lifeMobiusStripHex'],
+      ['walkMobiusStripTrianglesTurtleEdges', 'walkMobiusStripTrianglesTurtleCells', 'lifeMobiusStripTriangles'],
+      ['walkMobiusStripCairoTurtleCells', 'lifeMobiusStripCairo'],
+      ['lifeMobiusStripKites'],
     ],
     tab: 0,
     tabs: [
@@ -10235,11 +10284,11 @@ const FAMILIES = [
   {
     name: 'Klein bottle',
     modes: [
-      ['kleinGrid', 'kleinWalk', 'lifeKlein'],
-      ['kleinCairoWalk', 'lifeKleinCairo'],
-      ['kleinHexGrid', 'kleinHexWalk', 'lifeKleinHex'],
-      ['kleinTriGrid', 'kleinTriWalk', 'lifeKleinTri'],
-      ['lifeKleinKite'],
+      ['walkKleinBottleSquaresTurtleEdges', 'walkKleinBottleSquaresTurtleCells', 'lifeKleinBottleSquares'],
+      ['walkKleinBottleCairoTurtleCells', 'lifeKleinBottleCairo'],
+      ['walkKleinBottleHexTurtleEdges', 'walkKleinBottleHexTurtleCells', 'lifeKleinBottleHex'],
+      ['walkKleinBottleTrianglesTurtleEdges', 'walkKleinBottleTrianglesTurtleCells', 'lifeKleinBottleTriangles'],
+      ['lifeKleinBottleKites'],
     ],
     tab: 0,
     tabs: [
@@ -10275,18 +10324,17 @@ const FAMILIES = [
     ['Stella octangula', 'stella'],
     ['Dodecahedron', 'dodeca'],
   ].map(([name, k]) => {
-    const K = k[0].toUpperCase() + k.slice(1),
-      sphere = k === 'icosa';
+    const sphere = k === 'icosa',
+      walks = (tiling) => ['edges', 'cells'].map((side) => modeName('Walk', name, tiling, 'Turtle', side)),
+      ant = (tiling) => [modeName('Ant', name, tiling, null, 'cells')].filter((w) => MODES[w]);
     return {
       name,
       tab: 0,
       modes: [
-        [`${k}Grid`, `${k}LR`, ...(MODES[`ant${K}`] ? [`ant${K}`] : []), `life${K}`],
-        [`life${K}Kite`],
-        sphere
-          ? ['hexSphereGrid', 'hexSphereWalk', 'antHexSphere', 'lifeHexSphere']
-          : [`${k}HexGrid`, `${k}HexLR`, `life${K}Hex`],
-        ...(sphere ? [['lifeTwistedSphere']] : []),
+        [...walks('Triangles'), ...ant('Triangles'), modeName('Life', name, 'Triangles')],
+        [modeName('Life', name, 'Kites')],
+        [...walks('Hexagons'), ...ant('Hexagons'), modeName('Life', name, 'Hexagons')],
+        ...(sphere ? [[modeName('Life', name, 'Twisted')]] : []),
       ],
       tabs: [
         [1, false, 'kites', 'Kites', 'Kites (each triangle cut in 3)'],
@@ -10329,7 +10377,7 @@ for (const Fo of Object.values(FOLDS))
     F.tabs.push([F.modes.length, false, `tiling-${kind}`, name, name]);
     if (turned)
       F.tabs.push([F.modes.length, true, `tiling-${kind}`, name, `${name}, turned by ${turned.deg}° (${Fo.way})`]);
-    F.modes.push([foldOf(`life${Fo.life}`, kind)]);
+    F.modes.push([modeName('Life', Fo.name, name)]);
   }
 for (const [w, life] of REVERSIBLE_SHEETS)
   FAMILIES.flatMap((F) => F.modes)
@@ -12248,36 +12296,36 @@ function populationOf(text) {
  * cell it leaves takes the next colour. Per tiling: the turtle walk it goes through the cells with (a
  * turn: its digit) and their arrows, its turns, and rules to start from, by the digits and by colour. */
 const ANTS = {
-  antSquare: { walk: 'turtleCells' },
-  antTri: { walk: 'triTurtleCells' },
-  antHex: { walk: 'hexTurtleCells' },
-  antHexSphere: { walk: 'hexSphereWalk' },
-  antIcosa: { walk: 'icosaLR' },
-  antCube: { walk: 'cubeFlat' },
-  antCairo: { walk: 'cairo' },
+  antSquaresCells: { walk: 'walkSquaresTurtleCells' },
+  antTrianglesCells: { walk: 'walkTrianglesTurtleCells' },
+  antHexCells: { walk: 'walkHexTurtleCells' },
+  antIcosahedronHexCells: { walk: 'walkIcosahedronHexTurtleCells' },
+  antIcosahedronTrianglesCells: { walk: 'walkIcosahedronTrianglesTurtleCells' },
+  antCubeSquaresCells: { walk: 'walkCubeSquaresTurtleCells' },
+  antCairoCells: { walk: 'walkCairoTurtleCells' },
 };
 // on the tori, the Möbius strips and the Klein bottles: on the cells of their walks, as the cube's, their turns the walk's,
 // their rules the one list's (see RULES; its place in the menus: the walk's surface and tiling)
 const SURFACE_ANTS = {
-  antTorus: ['torusWalk', 'Torus'],
-  antTorusHex: ['torusHexWalk', 'Torus'],
-  antTorusTri: ['torusTriWalk', 'Torus'],
-  antTorusCairo: ['torusCairoWalk', 'Torus'],
-  antMobius: ['mobiusWalk', 'Möbius strip'],
-  antMobiusHex: ['mobiusHexWalk', 'Möbius strip'],
-  antMobiusTri: ['mobiusTriWalk', 'Möbius strip'],
-  antMobiusCairo: ['mobiusCairoWalk', 'Möbius strip'],
-  antKlein: ['kleinWalk', 'Klein bottle'],
-  antKleinHex: ['kleinHexWalk', 'Klein bottle'],
-  antKleinTri: ['kleinTriWalk', 'Klein bottle'],
-  antKleinCairo: ['kleinCairoWalk', 'Klein bottle'],
+  antTorusSquaresCells: ['walkTorusSquaresTurtleCells', 'Torus'],
+  antTorusHexCells: ['walkTorusHexTurtleCells', 'Torus'],
+  antTorusTrianglesCells: ['walkTorusTrianglesTurtleCells', 'Torus'],
+  antTorusCairoCells: ['walkTorusCairoTurtleCells', 'Torus'],
+  antMobiusStripSquaresCells: ['walkMobiusStripSquaresTurtleCells', 'Möbius strip'],
+  antMobiusStripHexCells: ['walkMobiusStripHexTurtleCells', 'Möbius strip'],
+  antMobiusStripTrianglesCells: ['walkMobiusStripTrianglesTurtleCells', 'Möbius strip'],
+  antMobiusStripCairoCells: ['walkMobiusStripCairoTurtleCells', 'Möbius strip'],
+  antKleinBottleSquaresCells: ['walkKleinBottleSquaresTurtleCells', 'Klein bottle'],
+  antKleinBottleHexCells: ['walkKleinBottleHexTurtleCells', 'Klein bottle'],
+  antKleinBottleTrianglesCells: ['walkKleinBottleTrianglesTurtleCells', 'Klein bottle'],
+  antKleinBottleCairoCells: ['walkKleinBottleCairoTurtleCells', 'Klein bottle'],
 };
 // the worms on the triangles' grids of the surfaces with ants on triangles: their walks along it, its Edges tab beside the ants'
 const SURFACE_WORMS = {
-  wormIcosa: 'icosaGrid',
-  wormTorus: 'torusTriGrid',
-  wormMobius: 'mobiusTriGrid',
-  wormKlein: 'kleinTriGrid',
+  antIcosahedronTrianglesEdges: 'walkIcosahedronTrianglesTurtleEdges',
+  antTorusTrianglesEdges: 'walkTorusTrianglesTurtleEdges',
+  antMobiusStripTrianglesEdges: 'walkMobiusStripTrianglesTurtleEdges',
+  antKleinBottleTrianglesEdges: 'walkKleinBottleTrianglesTurtleEdges',
 };
 for (const [w, walkMode] of Object.entries(SURFACE_WORMS)) {
   const { sphere, initial, turns, perspective, round } = MODES[walkMode];
@@ -12464,14 +12512,14 @@ function highwayOf(xs, ys, n) {
 }
 
 const STEPPERS = {
-  turtle: () => walkStepper('turtle'),
-  cairo: () => walkStepper('cairo'),
-  antSquare: () => antStepper('antSquare'),
-  antTri: () => antStepper('antTri'),
-  worm: (digits) => wormStepper(digits),
-  antHex: () => antStepper('antHex'),
-  antCairo: () => antStepper('antCairo'),
-  spiral() {
+  walkSquaresTurtleEdges: () => walkStepper('walkSquaresTurtleEdges'),
+  walkCairoTurtleCells: () => walkStepper('walkCairoTurtleCells'),
+  antSquaresCells: () => antStepper('antSquaresCells'),
+  antTrianglesCells: () => antStepper('antTrianglesCells'),
+  antTrianglesEdges: (digits) => wormStepper(digits),
+  antHexCells: () => antStepper('antHexCells'),
+  antCairoCells: () => antStepper('antCairoCells'),
+  walkSquaresSpiral() {
     // fixed square spiral from the centre: right, up, left, down with runs 1, 1, 2, 2, 3, 3, …
     let x = 0,
       y = 0,
@@ -12490,19 +12538,19 @@ const STEPPERS = {
       return [planeKey(x, y), x, y, 0];
     };
   },
-  turtleCells: () => walkStepper('turtleCells'), // squares: the same steps, the grid half a cell away
-  triTurtle: () => walkStepper('triTurtle'), // along triangles: the steps of hexagon cells (see MODES)
-  hexTurtle: () => walkStepper('hexTurtle'), // along hexagons: the steps of triangle cells
-  triTurtleCells: () => walkStepper('triTurtleCells'),
-  hexTurtleCells: () => walkStepper('hexTurtleCells'),
-  triSpiral: () => triStepper('spiral'),
-  hexSpiral: () => hexSpiralStepper(),
-  cairoSpiral: () => cairoStepper(true),
-  cubeRel: () => walkStepper('cubeRel'),
-  cubeRelCells: () => walkStepper('cubeRelCells'),
-  diag: () => diagStepper(),
-  diagCells: () => diagStepper(),
-  diamond: () => walkStepper('diamond'),
+  walkSquaresTurtleCells: () => walkStepper('walkSquaresTurtleCells'), // squares: the same steps, the grid half a cell away
+  walkTrianglesTurtleEdges: () => walkStepper('walkTrianglesTurtleEdges'), // along triangles: the steps of hexagon cells (see MODES)
+  walkHexTurtleEdges: () => walkStepper('walkHexTurtleEdges'), // along hexagons: the steps of triangle cells
+  walkTrianglesTurtleCells: () => walkStepper('walkTrianglesTurtleCells'),
+  walkHexTurtleCells: () => walkStepper('walkHexTurtleCells'),
+  walkTrianglesSpiral: () => triStepper('spiral'),
+  walkHexSpiral: () => hexSpiralStepper(),
+  walkCairoSpiral: () => cairoStepper(true),
+  walkCubesTurtleEdges: () => walkStepper('walkCubesTurtleEdges'),
+  walkCubesTurtleCells: () => walkStepper('walkCubesTurtleCells'),
+  walkCubesDiagonalsEdges: () => diagStepper(),
+  walkCubesDiagonalsCells: () => diagStepper(),
+  walkDiamondPolymerEdges: () => walkStepper('walkDiamondPolymerEdges'),
 };
 
 /* ---- 6.2 Cubic lattice -------------------------------------------------------------------- */
@@ -13311,7 +13359,7 @@ const CUBE_FRAMES = [
     [0, 1, 0],
   ],
 ];
-function cubeFlat(n) {
+function walkCubeSquaresTurtleCells(n) {
   const key = `flat${n}`;
   if (meshCache[key]) return meshCache[key];
   const { verts, add } = vertexStore();
@@ -14267,8 +14315,8 @@ function rosetteSphereMesh(kind, W) {
 // Life on them: a mode each, one shape (Rosettes) with a tab each, its rosette's name and picture
 FAMILIES.push({ name: 'Rosettes', tab: 0, modes: [], tabs: [] });
 for (const k of Object.keys(ROSETTE_SPHERES)) {
-  const w = `lifeRosette${k[0].toUpperCase()}${k.slice(1)}`,
-    name = NAV[tilingMode(k)][2],
+  const name = NAV[tilingMode(k)][2],
+    w = modeName('Life', 'Rosettes', name),
     F = FAMILIES.at(-1);
   MODES[w] = {
     base: 2,
@@ -16020,7 +16068,7 @@ const KLEIN_BOTTLES = [
 ];
 const SPHERES = {
   cube: {
-    mesh: cubeFlat,
+    mesh: walkCubeSquaresTurtleCells,
     radius: (n) => n / 2, // half the cube side: square edge = 1 unit
     tiles: (n) => 6 * n * n,
     unit: 'squares',
@@ -27028,7 +27076,7 @@ function walkFigures(w, given = null) {
 function creatureFigures(w) {
   const m = MODES[w];
   if (m.worm) {
-    const figs = walkFigures('triTurtle', surfaceCommands('hex'));
+    const figs = walkFigures('walkTrianglesTurtleEdges', surfaceCommands('hex'));
     return Object.entries(WORM_TURNS).map(([t, d]) => ({
       ...figs[d],
       label: `<b>${t}</b>`,
@@ -39390,26 +39438,6 @@ const whenBuilt = () => new Promise((ok) => builtWaiters.push(ok));
 // ant…), shape, tiling (a shape with tilings: a torus of hexagons), walk (a walk's kind: turtle, spiral…), on (edges or
 // cells); a setup holds its mode's key (w), the link its words. A word: its menu's name in one word, no accent
 // (Möbius strip: mobiusStrip; Kis checker: kisChecker)
-const linkWord = (name) =>
-  name
-    .normalize('NFKD')
-    .replace(/[^\p{L}\p{N} ]/gu, '')
-    .split(' ')
-    .map((part, i) => (i ? part[0].toUpperCase() + part.slice(1) : part.toLowerCase()))
-    .join('');
-// the menu's names that a link says otherwise: a shape by its full name (the menu's Sphere: an icosahedron, of triangles or of
-// hexagons; the cubes carved; a solid's whole name), Hexagons cut short
-const LINK_SHAPES = {
-  Sphere: 'icosahedron',
-  Pits: 'cubePits',
-  Bumps: 'cubeBumps',
-  Frame: 'cubeFrame',
-  Sponge: 'cubeMengerSponge',
-  Bicupola: 'squareOrthobicupola',
-  Pyramid: 'squarePyramid',
-  Hexagons: 'hex',
-};
-const menuWord = (name) => LINK_SHAPES[name] ?? linkWord(name);
 const MODE_WORDS = ['mode', 'shape', 'tiling', 'walkKind', 'on'];
 const modeWordsMemo = remember('modeWordsMemo', {}); // (once a mode: the menu's tables fixed)
 const modeWords = (w) => {
@@ -46865,29 +46893,29 @@ $('mode').addEventListener('change', () => {
 /* The striking setups found so far, part of the page (nothing stored): hovering one shows it in the
  * view, leaving the list brings back the setup in use, a click keeps it. */
 const BUILT_IN = [
-  [{ x: '1/923', w: 'turtle', d: 421 }],
-  [{ x: '2/541', w: 'turtle', d: 541 }],
-  [{ x: '1/709', w: 'turtle', d: 709 }],
-  [{ x: '1/983', w: 'turtle', d: 1965 }],
-  [{ x: '1/383', w: 'hexTurtle', d: 1147 }],
-  [{ x: '3/497', w: 'hexTurtle', d: 631 }],
-  [{ x: '1/463', w: 'hexTurtle', d: 1387 }],
-  [{ x: '1/967', w: 'hexTurtle', d: 2899 }],
-  [{ x: '11/604', w: 'triTurtle', d: 451 }],
-  [{ x: '1/599', w: 'triTurtle', d: 898 }],
-  [{ x: '1/856', w: 'triTurtle', d: 637 }],
-  [{ x: '21/976', w: 'triTurtle', d: 361 }],
-  [{ x: '96/95', w: 'torusGrid', d: 5760, s: '64x160' }],
-  [{ x: '96/95', w: 'torusWalk', d: 4320, s: 48 }],
-  [{ x: '226/221', w: 'cubeGrid', d: 289, s: 24 }],
-  [{ x: '1/383', w: 'torusTriGrid', d: 9168, s: '63x168', st: 2, o: 1 }],
-  [{ x: '120/109', w: 'hexSphereGrid', d: 5760, s: 32 }],
-  [{ x: 'dragon', w: 'turtle', d: 20000 }],
-  [{ x: 'thuemorse', w: 'triTurtle', r: 'N r', d: 4096 }],
+  [{ x: '1/923', w: 'walkSquaresTurtleEdges', d: 421 }],
+  [{ x: '2/541', w: 'walkSquaresTurtleEdges', d: 541 }],
+  [{ x: '1/709', w: 'walkSquaresTurtleEdges', d: 709 }],
+  [{ x: '1/983', w: 'walkSquaresTurtleEdges', d: 1965 }],
+  [{ x: '1/383', w: 'walkHexTurtleEdges', d: 1147 }],
+  [{ x: '3/497', w: 'walkHexTurtleEdges', d: 631 }],
+  [{ x: '1/463', w: 'walkHexTurtleEdges', d: 1387 }],
+  [{ x: '1/967', w: 'walkHexTurtleEdges', d: 2899 }],
+  [{ x: '11/604', w: 'walkTrianglesTurtleEdges', d: 451 }],
+  [{ x: '1/599', w: 'walkTrianglesTurtleEdges', d: 898 }],
+  [{ x: '1/856', w: 'walkTrianglesTurtleEdges', d: 637 }],
+  [{ x: '21/976', w: 'walkTrianglesTurtleEdges', d: 361 }],
+  [{ x: '96/95', w: 'walkTorusSquaresTurtleEdges', d: 5760, s: '64x160' }],
+  [{ x: '96/95', w: 'walkTorusSquaresTurtleCells', d: 4320, s: 48 }],
+  [{ x: '226/221', w: 'walkCubeSquaresTurtleEdges', d: 289, s: 24 }],
+  [{ x: '1/383', w: 'walkTorusTrianglesTurtleEdges', d: 9168, s: '63x168', st: 2, o: 1 }],
+  [{ x: '120/109', w: 'walkIcosahedronHexTurtleEdges', d: 5760, s: 32 }],
+  [{ x: 'dragon', w: 'walkSquaresTurtleEdges', d: 20000 }],
+  [{ x: 'thuemorse', w: 'walkTrianglesTurtleEdges', r: 'N r', d: 4096 }],
   // added later: their batch number, so that a browser that took the first ones gets these once too (see seedCurated)
   [
     {
-      w: 'lifeMobius',
+      w: 'lifeMobiusStripSquares',
       s: 8,
       r: 'B3/S23',
       k: 2,
@@ -46896,11 +46924,11 @@ const BUILT_IN = [
     },
     2,
   ],
-  [{ x: '1/438', w: 'antSquare', d: 540989, r: 'digits 1L0 0R0' }, 2],
-  [{ x: 'rabbit', w: 'turtle', r: 'N a', d: 4181 }],
-  [{ x: 'rudinshapiro', w: 'hexTurtle', d: 16384 }],
-  [{ x: 'primebarcode', w: 'spiral', d: 20000 }],
-  [{ x: 'pi', w: 'turtle', d: 20000 }],
+  [{ x: '1/438', w: 'antSquaresCells', d: 540989, r: 'digits 1L0 0R0' }, 2],
+  [{ x: 'rabbit', w: 'walkSquaresTurtleEdges', r: 'N a', d: 4181 }],
+  [{ x: 'rudinshapiro', w: 'walkHexTurtleEdges', d: 16384 }],
+  [{ x: 'primebarcode', w: 'walkSquaresSpiral', d: 20000 }],
+  [{ x: 'pi', w: 'walkSquaresTurtleEdges', d: 20000 }],
 ];
 // the walk's name, as in the walk list ("Squares turtle"; a surface's own name)
 const walkName = (w) => splitModeLabel(modeOptionOf(w)?.text ?? w).name;
@@ -47227,7 +47255,7 @@ seedCurated();
 fillGalleryList();
 // the card first (its device asked once, see gpuSetup); then a link with a setup opens that setup; otherwise Life, the first
 // tab: 6 colours at war on the cube
-const linked = parseHash() ?? { w: 'lifeCube', s: '48', r: 'B3/S23', k: '6', pop: 'random.49.8259995' };
+const linked = parseHash() ?? { w: 'lifeCubeSquares', s: '48', r: 'B3/S23', k: '6', pop: 'random.49.8259995' };
 gpuSetup()
   .catch((e) => {
     console.warn('WebGPU off:', e.message);

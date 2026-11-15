@@ -6,6 +6,7 @@
 # pushed, tagged v<version> (its tag pushed too); a push refused because another session went first starts again from
 # main, any other refusal stops. Never edit VERSION or the cache key yourself.
 # tools/ship.sh "subject without its version" ["body: the Co-Authored-By line…"]
+# STEP=1 tools/ship.sh …: a step the user names (0.4 → 0.5): the middle number up, the last one back at 0
 repo="${0:A:h:h}"; cd "$repo" || exit 1
 subject=$1; body=$2
 [[ -n $subject ]] || { echo 'tools/ship.sh "subject" ["body"]'; exit 1; }
@@ -32,6 +33,7 @@ for try in 1 2 3 4 5; do
   # (a real conflict, two sessions on the same lines: stopped, the commit kept, for a person to look at)
   git rebase -q --autostash origin/main || { git rebase --abort; echo "conflict with origin/main: the commit is kept, rebase by hand"; exit 1; }
   base=$(git rev-parse origin/main) old=$(version) key=$(cacheKey); new="${old%.*}.$(( ${old##*.} + 1 ))"
+  if [[ -n $STEP ]]; then parts=(${(s:.:)old}); new="${parts[1]}.$(( parts[2] + 1 )).0"; fi
   stamp "$old" "$new" "$key" "$new"
   git add main.js index.html && git commit -q --amend -m "$(message $new)" || exit 1
   # (its tag v0.4.N on it, pushed with it: a version found by its name, git diff v0.4.664 v0.4.668, GitHub's compare)

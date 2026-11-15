@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.4';
+const VERSION = '0.5.5';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -3690,9 +3690,30 @@ const MOBIUS_TILINGS = [
 // The solids made from their corners (see hullMesh): their faces the planes through 3 of them with all the others behind
 // (the convex hull), each face of 4 corners (a square, a rhombus: a parallelogram) cut into f × f of its kind, each
 // triangle into f² triangles. One declaration each, all a solid is said from: its name (the menu's, its link's word), its
-// tile's short name, its corners (made when asked), its picture, its rules' mark (see SURFACE_CELLS), its place in the menu
+// tile's short name, its corners (made when asked), its picture, its rules' mark (see SURFACE_CELLS), its cells cut again
+// (cells: its own cells' name; cuts: see HULL_CUTS, a tab each), its place in the menu
 // ([1 after, 0 before, a shape]: see the menu's moves) and its words; its variant, its surface, its size, its group in the
 // menu derived (see the hull solids' Life, SURFACES)
+// A solid of quadrilaterals' cells cut again (see HULL_SOLIDS' cuts): each its own tiles' tab, its name, its picture, its
+// cells a quadrilateral's, its making from the solid's mesh, its words, its rules' mark (see SURFACE_CELLS)
+const HULL_CUTS = {
+  tetrakis: {
+    name: 'Tetrakis',
+    pic: 'tiling-tetrakis',
+    per: 4,
+    of: (key, g) => tetrakisOf(key, g),
+    words: 'each cell cut in 4 from its middle (tetrakis)',
+    mark: '◩',
+  },
+  halves: {
+    name: 'Triangles',
+    pic: 'tilesTri',
+    per: 2,
+    of: (key, g) => halvesOf(key, g),
+    words: 'each cell cut in 2 across its shorter diagonal',
+    mark: '▲',
+  },
+};
 const SILVER_RATIO = 1 + Math.SQRT2,
   PYRAMID_Z = -Math.SQRT2 / 4;
 const HULL_SOLIDS = {
@@ -3780,6 +3801,8 @@ const HULL_SOLIDS = {
     ],
     pic: ['M12 3L21 12L12 21L3 12Z', 'M7.5 7.5L16.5 16.5M16.5 7.5L7.5 16.5'], // (along a 4-fold axis: 4 rhombi round it)
     mark: '■',
+    cells: 'Rhombi', // (its own cells' tab, beside its cuts')
+    cuts: ['tetrakis', 'halves'],
     place: [1, 'Square orthobicupola'],
     where: "a rhombic dodecahedron of rhombi (the cuboctahedron's dual: 3 or 4 round each corner)",
   },
@@ -9883,12 +9906,17 @@ const variantOption = (m, group, text) =>
   document.querySelector(`#variant optgroup[label="${group}"]`).append(new Option(`Life — ${text}`, m));
 // the hull solids' Life (see HULL_SOLIDS): a variant each, said by its declaration
 for (const [k, S] of Object.entries(HULL_SOLIDS)) {
-  const w = variantName('Life', S.name);
-  VARIANTS[w] = { base: 2, lattice: 'surface', surface: k, life: true, where: S.where };
-  VARIANT_ICONS[w] = k;
-  NAV[w] = ['Life', 'Surfaces', S.name, 'Life', ''];
   ICONS[k] = S.pic.map((d) => svgPath(d)).join('');
-  variantOption(w, 'Automata on surfaces', S.name.toLowerCase());
+  for (const [surface, tiling, where] of [
+    [k, S.cuts && S.cells, S.where],
+    ...(S.cuts ?? []).map((c) => [`${k}${HULL_CUTS[c].name}`, HULL_CUTS[c].name, `${S.where}, ${HULL_CUTS[c].words}`]),
+  ]) {
+    const w = variantName('Life', S.name, tiling);
+    VARIANTS[w] = { base: 2, lattice: 'surface', surface, life: true, where };
+    VARIANT_ICONS[w] = k;
+    NAV[w] = ['Life', 'Surfaces', S.name, 'Life', ''];
+    variantOption(w, 'Automata on surfaces', where);
+  }
 }
 for (const [kind, t] of Object.entries(TILINGS)) {
   const flat = variantName('Life', t.name);
@@ -10365,6 +10393,26 @@ const FAMILIES = [
       [2, true, 'tilesHexTurned', 'Hexagons', 'Hexagons, turned by 30° (flat-topped, columns round the ring)'],
     ],
   },
+  // the hull solids cut again (see HULL_CUTS): their own cells, then each cut, a tab each (Life only)
+  ...Object.entries(HULL_SOLIDS)
+    .filter(([, S]) => S.cuts)
+    .map(([k, S]) => ({
+      name: S.name,
+      tab: 0,
+      variants: [k, ...S.cuts.map((c) => `${k}${HULL_CUTS[c].name}`)].map((surface) => [
+        Object.keys(VARIANTS).find((w) => VARIANTS[w].surface === surface),
+      ]),
+      tabs: [
+        [0, false, 'tiling-rhombille', S.cells, S.cells],
+        ...S.cuts.map((c, i) => [
+          i + 1,
+          false,
+          HULL_CUTS[c].pic,
+          HULL_CUTS[c].name,
+          `${HULL_CUTS[c].name}: ${HULL_CUTS[c].words}`,
+        ]),
+      ],
+    })),
   // the solids of squares: their squares, or as tetrakis triangles (Life only)
   ...Object.entries(TETRAKIS_SOLIDS).map(([k, name]) => ({
     name,
@@ -13457,6 +13505,27 @@ function walkCubeSquaresTurtleCells(n) {
 }
 
 // A solid of squares as tetrakis triangles: each square cut in 4 from its middle (as the tetrakis tiling), turned as it is
+// a mesh of quadrilaterals' cells, each cut in 2 triangles across its shorter diagonal (see HULL_CUTS)
+function halvesOf(key, g) {
+  if (meshCache[key]) return meshCache[key];
+  const far = (a, b) => Math.hypot(...[0, 1, 2].map((d) => g.verts[3 * a + d] - g.verts[3 * b + d])),
+    tiles = [];
+  for (let t = 0; t < g.n; t++) {
+    const [a, b, c, d] = g.poly.subarray(4 * t, 4 * t + 4);
+    tiles.push(
+      ...(far(a, c) <= far(b, d)
+        ? [
+            [a, b, c],
+            [a, c, d],
+          ]
+        : [
+            [b, c, d],
+            [b, d, a],
+          ]),
+    );
+  }
+  return (meshCache[key] = Object.assign(finishMesh(Array.from(g.verts), tiles, 3, g.size, null), { squares: g }));
+}
 function tetrakisOf(key, g) {
   if (meshCache[key]) return meshCache[key];
   const verts = Array.from(g.verts),
@@ -13592,6 +13661,10 @@ function mengerMesh(L, m = 1) {
 }
 
 // a hull solid's faces, once (see HULL_SOLIDS)
+// a hull solid's surfaces cut again (see HULL_CUTS): [solid, cut, its surface's key]
+const hullCuts = Object.entries(HULL_SOLIDS).flatMap(([k, S]) =>
+  (S.cuts ?? []).map((c) => [k, c, `${k}${HULL_CUTS[c].name}`]),
+);
 const hullFacesMemo = remember('hullFacesMemo', {}),
   hullFacesOf = (kind) => (hullFacesMemo[kind] ??= hullFaces(HULL_SOLIDS[kind].corners()));
 function hullFaces(P) {
@@ -15821,6 +15894,7 @@ const MORPHABLE = [
   'dodecaKite',
   ...hexSolids.map((k) => `${k}Hex`),
   ...Object.keys(HULL_SOLIDS),
+  ...hullCuts.map(([, , cut]) => cut),
   'globe',
   ...Object.keys(ROSETTE_SPHERES).map((k) => `${k}Sphere`),
   'torus',
@@ -16443,6 +16517,13 @@ for (const k of Object.keys(HULL_SOLIDS))
     unit: 'cells',
     edges: [12, 24, 48],
   };
+for (const [k, c, cut] of hullCuts)
+  SURFACES[cut] = {
+    ...SURFACES[k],
+    mesh: (f) => HULL_CUTS[c].of(`${cut}${f}`, SURFACES[k].mesh(f)),
+    tiles: (f) => HULL_CUTS[c].per * SURFACES[k].tiles(f),
+    unit: 'triangles',
+  };
 // the rosette spheres (see rosetteSphereMesh): their sizes their discs' W, their discs' houses twice, a unit each
 for (const [k, table] of Object.entries(ROSETTE_SPHERES)) {
   const cells = Object.fromEntries(table.flatMap((W, i) => (i % 2 ? [] : [[W, table[i + 1]]]))); // (a size's cells: its table's pairs)
@@ -17008,6 +17089,7 @@ const SOLIDS = [
   'stellaKite',
   'dodecaKite',
   ...Object.keys(HULL_SOLIDS),
+  ...hullCuts.map(([, , cut]) => cut),
 ];
 const TORI = [
   'klein',
@@ -25694,6 +25776,7 @@ const SURFACE_CELLS = {
   stellaKite: '◆',
   dodecaKite: '◆',
   ...Object.fromEntries(Object.entries(HULL_SOLIDS).map(([k, { mark }]) => [k, mark])),
+  ...Object.fromEntries(hullCuts.map(([, c, cut]) => [cut, HULL_CUTS[c].mark])),
 };
 for (const [s, { kind }] of Object.entries(FOLDED)) SURFACE_CELLS[s] = TILINGS[kind].mark;
 for (const [s, S] of Object.entries(SURFACES)) if (S.tiling) SURFACE_CELLS[s] = TILINGS[S.tiling].mark; // (a surface of a tiling's cells: its rules)

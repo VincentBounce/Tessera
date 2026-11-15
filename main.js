@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.50';
+const VERSION = '0.5.51';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -15844,7 +15844,9 @@ const PENROSE_SPHERES = {
   1650: [6.518638338, -2.118033989],
   1950: [7.106423591, 2.309016994],
   2310: [-3.440954801, 7.354101966],
-}; // (each size's cells: its corner P1, made by penroseSphereSizes())
+  4110: [-7.106423591, 8.163118961],
+  5670: [12.08622016, -3.927050983],
+}; // (each size's cells: its corner P1, made by penroseSphereSizes(16), 2.5 min)
 // the pentagon's content for corner P1: the rhombi's corners in it, P1 along x (each face's own frame), and its key, one of it
 // and its mirror's (two P1 laying the same points lay the same tiling, or its mirror image)
 function penroseFace(P1) {
@@ -18908,6 +18910,7 @@ const CENTRED_EDGES = {
   stellaHex: { any: [3, 8] },
   dodecaHex: { any: [5, 6] },
   rhombicDodeca: { even: [3, 4], odd: [3, 4, 8] },
+  rhombicTriaconta: { even: [3, 4, 5], odd: [3, 5, 8] }, // (its corners 3 or 5 rhombi round them, no 4)
 };
 const centredEdges = (kind, size) => {
   const edges = CENTRED_EDGES[kind]; // (none: a ring, a solid with no grid to walk along)

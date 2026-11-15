@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.18';
+const VERSION = '0.5.19';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -12450,14 +12450,19 @@ const SURFACE_ANTS = {
   antKleinBottleHexCells: ['walkKleinBottleHexTurtleCells', 'Klein bottle'],
   antKleinBottleTrianglesCells: ['walkKleinBottleTrianglesTurtleCells', 'Klein bottle'],
   antKleinBottleCairoCells: ['walkKleinBottleCairoTurtleCells', 'Klein bottle'],
-  // (a hull solid's with walks, on its cells' walk: see HULL_SOLIDS)
+  // (the regular solids' of triangles and of hexagons, as the sphere's; a hull solid's with walks: see HULL_SOLIDS)
   ...Object.fromEntries(
-    Object.values(HULL_SOLIDS)
-      .filter((S) => S.walks)
-      .map((S) => [
-        variantName('Ant', S.name, S.cells, null, 'cells'),
-        [variantName('Walk', S.name, S.cells, 'Turtle', 'cells'), S.name],
-      ]),
+    [
+      ...['Tetrahedron', 'Octahedron', 'Dodecahedron', 'Stella octangula'].flatMap((place) =>
+        ['Triangles', 'Hex'].map((tiling) => [place, tiling]),
+      ),
+      ...Object.values(HULL_SOLIDS)
+        .filter((S) => S.walks)
+        .map((S) => [S.name, S.cells]),
+    ].map(([place, tiling]) => [
+      variantName('Ant', place, tiling, null, 'cells'),
+      [variantName('Walk', place, tiling, 'Turtle', 'cells'), place],
+    ]),
   ),
 };
 // the worms on the triangles' grids of the surfaces with ants on triangles: their walks along it, its Edges tab beside the ants'
@@ -12507,16 +12512,16 @@ for (const [w, [walkVariant, place]] of Object.entries(SURFACE_ANTS)) {
   };
   ANTS[w] = { walk: walkVariant };
   NAV[w] = ['Ant', 'Surfaces', place, 'Ant', 'cells'];
+  document
+    .querySelector('#variant optgroup[label="Walks on surfaces"]')
+    .append(new Option(`${variantOptionOf(walkVariant).text.split(' — ')[0]} ant — base 2 (Langton's ant)`, w)); // (its walk's words)
   VARIANT_ICONS[w] = VARIANT_ICONS[walkVariant];
   FAMILIES.flatMap((F) => F.variants)
     .find((ms) => ms.includes(walkVariant))
     .push(w);
 }
-// a hull solid's ant and replicators (made above from its declaration: see HULL_SOLIDS' walks), their options as its walks'
+// a hull solid's replicators (made above from its declaration: see HULL_SOLIDS' walks), its option as its walks'
 for (const S of Object.values(HULL_SOLIDS).filter((S) => S.walks)) {
-  document
-    .querySelector('#variant optgroup[label="Walks on surfaces"]')
-    .append(new Option(`${S.name} ant — base 2 (Langton's ant)`, variantName('Ant', S.name, S.cells, null, 'cells')));
   document
     .querySelector('#variant optgroup[label="Automata on surfaces"]')
     .append(new Option(`Replicators — ${S.name.toLowerCase()}`, variantName('Replicators', S.name, S.cells)));

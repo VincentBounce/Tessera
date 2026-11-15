@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.13';
+const VERSION = '0.5.14';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -10026,9 +10026,11 @@ VARIANT_ICONS.lifeCubeFrameSquares = 'frame';
     ['Spectre', 1, 'Hats'],
     ['Pinwheel', 1, 'Spectre'],
     ['Klein bottle', 1, 'Möbius strip'],
-    ['Sphere', 0, 'Tetrahedron'],
     ['Hexagons', 1, 'Kites'],
     ...Object.values(HULL_SOLIDS).map(({ name, place: [after, other] }) => [name, after, other]),
+    ['Sphere', 1, 'Dodecahedron'],
+    ['Sphere', 1, 'Rhombic dodecahedron'], // (the icosahedron among the polyhedra: after the rhombic dodecahedron where it is, else the dodecahedron)
+    ['Stella octangula', 1, 'Sphere'],
     ['Globe', 1, 'Sphere'],
   ]; // (1 after, 0 before)
   for (const [shape, after, other] of moves)
@@ -10073,7 +10075,7 @@ const SPACES = {
     ],
     '3D': ['Lattice', 'cubeFilled', 'A 3D lattice, the walk going in space'],
   },
-  SHEETS = ['Globe', 'Sphere', 'Rosettes', 'Torus', 'Möbius strip', 'Klein bottle']; // (the round surfaces' shapes, their group in 3D solids, in their order: the balls, then the sheets)
+  SHEETS = ['Globe', 'Rosettes', 'Torus', 'Möbius strip', 'Klein bottle']; // (the round surfaces' shapes, their group in 3D solids, in their order: the balls, then the sheets)
 // a tiling's icon: its polygons round a cell's middle, fitted in the 24 × 24 box
 function tilingIcon(kind) {
   const m = TILINGS[kind].polys.length,

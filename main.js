@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.34';
+const VERSION = '0.5.35';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -20153,9 +20153,7 @@ async function startBattleHunt() {
   const sets =
     (huntVary.formulas
       ? Array.from({ length: K }, (_, j) => N - j).reduce((a, b) => a * b) / (round ? K : 1)
-      : huntStarts()
-        ? huntOrderCount(K)
-        : 1) * starts; // (the shown numbers: their orders Starts', see huntStartPlaces)
+      : huntOrderCount(K)) * starts; // (the shown numbers: their orders Starts', see huntStartPlaces: on, else the hunt is greyed)
   if (battleHunt.tried.size >= sets) Object.assign(battleHunt, BATTLE_FRESH()); // (every one fought: a new hunt, from none; else it goes on, none fought twice)
   battleHunt.status = 'Starting…';
   renderBattleHunt(); // (its button Stop at once, as Life's hunt: whatever it varies)
@@ -20187,9 +20185,7 @@ async function startBattleHunt() {
     while (battleHunt.tried.size < sets) {
       const picks = huntVary.formulas
           ? Array.from({ length: K }, () => Math.floor(Math.random() * N))
-          : huntStarts()
-            ? drawnOrder(K, round)
-            : (startsOrder(K) ?? Array.from({ length: K }, (_, s) => s)), // (Starts off: the order shown)
+          : drawnOrder(K, round),
         at =
           !huntStarts() || huntStartPlaces() === 1
             ? {}
@@ -20370,8 +20366,7 @@ function renderBattleHunt() {
       (startsWayNow() === 'symmetric'
         ? `Starts: Symmetric's ${formatNumber(variantStarts()?.length ?? 1)}`
         : "Starts: Random's draws, no end"),
-    (huntVary.formulas || huntStarts()) &&
-      huntOrderCount() > 1 &&
+    huntOrderCount() > 1 &&
       (huntVary.formulas
         ? `Orders: each set of numbers in its ${formatNumber(huntOrderCount())} orders${startsWayNow() === 'random' ? '' : ', A on the smallest (all of them turned one place round: the same battle, seen turned)'}`
         : `Starts' orders: the walkers' starts dealt in their ${formatNumber(huntOrderCount())} orders, each its number and its colour${startsWayNow() === 'random' ? '' : ', A on its own (all of them turned one place round: the same battle, seen turned)'}`),

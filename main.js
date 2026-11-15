@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.1065';
+const VERSION = '0.4.1066';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -18387,12 +18387,35 @@ function groupedStarts(g, start, K) {
     .filter((_, i) => i % (out.length / K) === 0)
     .map((e) => gridState(g, e));
 }
-const groupedCan = (w, size = null, teams = walkTeams) => {
-  // (a mode's, at a size or the one it opens at: its walkers, a setup's teams, can be grouped)
-  const mode = MODES[w],
-    g = battleMode(w) && mode.grid && teams > 1 && pickedMesh(w, size); // (a battle's: two walkers or more)
-  return !!g && !!groupedStarts(g, walkStart(g, mode), teams);
+// The edges out of the points a solid's walkers may start round (see groupedStarts: its faces' centres, its corners), by its
+// kind: at a size 3 divides (thirds), at the others (a triangle face's centre a corner of the grid, else a small
+// triangle's three), or at any. Known with no mesh: asked of every mode next to the one shown, by a greyed tile's search
+// (see choicesAt; a mesh and its starts built for each, 5.5 s at Centred's first hover till v0.4.1065); as the meshes'
+// own, see tools/check.js's checkCentred
+const CENTRED_EDGES = {
+  cube: { any: [3, 4] },
+  tetra: { thirds: [3, 6], other: [3, 12] },
+  octa: { thirds: [4, 6], other: [4, 12] },
+  icosa: { thirds: [5, 6], other: [5, 12] },
+  hexsphere: { thirds: [5, 6], other: [3, 5] },
+  stella: { any: [3, 8] },
+  dodeca: { any: [5, 6] },
+  tetraHex: { thirds: [3, 6], other: [3] },
+  octaHex: { thirds: [4, 6], other: [3, 4] },
+  stellaHex: { any: [3, 8] },
+  dodecaHex: { any: [5, 6] },
 };
+const centredEdges = (kind, size) => {
+  const edges = CENTRED_EDGES[kind]; // (none: a ring, a solid with no grid to walk along)
+  return edges?.any ?? (size % 3 ? edges?.other : edges?.thirds) ?? [];
+};
+// (a mode's, at a size or the one it opens at: its walkers, a setup's teams, can be grouped: so many edges out of one of
+// its points that they share them evenly, see groupedStarts)
+const groupedCan = (w, size = null, teams = walkTeams) =>
+  battleMode(w) &&
+  !!MODES[w].grid &&
+  teams > 1 &&
+  centredEdges(surfaceOf(MODES[w]), size ?? figureSize(w)).some((edges) => edges % teams === 0);
 // a battle's starts and the maps that moved A's to them (symmetric, see battleMaps; else null: grouped, groupedStarts',
 // where it can, or Random's), or none, said in the status: A's place on an axis of the solid
 function battleStartsOrSay(g, start, grid, K, seed = battleSeed) {
@@ -25828,11 +25851,6 @@ function surfaceFrame(kind, size) {
   const [nv, nu] = torusDims(kind, size);
   return { torus: true, klein: KLEIN_BOTTLES.some(([k]) => k === kind), nu, nv };
 }
-// the mesh of mode w at a size (or the one it opens at): a battle's starts are laid on it (see groupedCan)
-const pickedMesh = (w, size = null) => {
-  const kind = !MODES[w].plane && surfaceOf(MODES[w]);
-  return kind && SPHERES[kind] ? SPHERES[kind].mesh(size ?? figureSize(w)) : null;
-};
 // a surface mode's size: the one in the menu where the menu holds its surface's sizes (the tab's, once filled), else the one
 // it opens at (see sizeAt: another mode's, or the tab's a moment after it changed, its menu still the surface before's)
 const figureSize = (w) => menuSizeOf(w) ?? sizeAt(surfaceOf(MODES[w]), MODES[w].initial, MODES[w]);

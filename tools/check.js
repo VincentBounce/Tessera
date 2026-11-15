@@ -830,6 +830,30 @@ async function coloursOffered(fail) {
 // A solid's start 1 the same kind of point at every size (the turns of the solid leaving it in place as many): what lets
 // battleFits judge it on the solid's least mesh (see battleFits), every walk on a closed solid whose team counts depend on
 // the start, its sizes to 30,000 cells
+// Centred's edges (CENTRED_EDGES) as the meshes' own: every battle along a solid's grid, at its two least sizes of each
+// class (3 divides it or not): the edges out of its faces' centres and corners as its table says, and its walkers grouped
+// where groupedCan says so
+function checkCentred(fail) {
+  let checked = 0;
+  for (const w of Object.keys(MODES).filter((w) => battleMode(w) && MODES[w].grid)) {
+    const mode = MODES[w],
+      kind = surfaceOf(mode),
+      S = SPHERES[kind];
+    if (S.columns) continue;
+    const sizes = sizesOf(kind, mode);
+    for (const size of [0, 1].flatMap((rest) => sizes.filter((f) => !(f % 3) === !rest).slice(0, 2))) {
+      const g = S.mesh(size);
+      checked++;
+      for (const K of TEAM_COUNTS.filter((K) => K > 1))
+        if (!!groupedStarts(g, walkStart(g, mode), K) !== groupedCan(w, size, K))
+          fail(`${w} at ${size}: ${K} walkers centred, the mesh says ${!groupedCan(w, size, K)}`);
+      const edges = [...new Set((g.groupedOut ?? []).map((q) => q.out.length))].sort((a, b) => a - b);
+      if (`${edges}` !== `${centredEdges(kind, size)}`)
+        fail(`${w} at ${size}: edges out ${edges}, said ${centredEdges(kind, size)}`);
+    }
+  }
+  return checked;
+}
 function checkFirstStarts(fail) {
   let checked = 0;
   for (const w of Object.keys(MODES).filter(battleMode)) {
@@ -1478,6 +1502,7 @@ window.tesseraCheck = async ({
     checkTwistedSphere(fail) +
     checkDiscCuts(fail) +
     checkFirstStarts(fail) +
+    checkCentred(fail) +
     (await checkSheets(fail)) +
     (await checkNames(fail)) +
     (await checkColdLinks(fail));

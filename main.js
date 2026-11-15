@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.1080';
+const VERSION = '0.4.1081';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -39413,8 +39413,9 @@ const modeWords = (w) => {
 // the mode a link's words say: the first of the menu with each word given (one left out: any)
 const modeOfWords = (s) =>
   Object.keys(NAV).find((w) => MODE_WORDS.every((k) => s[k] === undefined || modeWords(w)[k] === s[k]));
+// (a setup of a mode the app has no more, a Gallery's old entry: its key as saved, w=, read by nothing: its card stays, its key its own)
 const toHash = ({ w, ...rest }) =>
-  Object.entries({ ...modeWords(w), ...rest })
+  Object.entries({ ...(NAV[w] ? modeWords(w) : { w }), ...rest })
     .map(
       ([k, v]) =>
         `${k}=${encodeURIComponent(String(v)).replace(/%(2F|2B|5E|2C|3A|24)/g, (c) => decodeURIComponent(c))}`,

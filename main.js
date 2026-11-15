@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.49';
+const VERSION = '0.5.50';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -17400,6 +17400,7 @@ const SOLIDS = [
   'icosaKite',
   'stellaKite',
   'dodecaKite',
+  'penroseSphere', // (its dodecahedron declared, see penroseSphereMesh)
   ...Object.keys(HULL_SOLIDS),
   ...hullCuts.map(([, , cut]) => cut),
 ];

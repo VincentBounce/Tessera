@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.28';
+const VERSION = '0.5.29';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -9297,11 +9297,12 @@ function knownDigits(F, base, n) {
   all.set(hit.digits, head.length);
   return all.subarray(0, n);
 }
-// a worker computing them, cached when done (then: called with its error, if any); it, to be stopped
-function digitsWorker(F, base, n, then) {
+// a worker computing them, cached when done (then: called with its error, if any; share: with its share done, as it goes);
+// it, to be stopped
+function digitsWorker(F, base, n, then, share = () => {}) {
   const w = newFormulaWorker();
   w.onmessage = ({ data: d }) => {
-    if (d.type === 'progress') return;
+    if (d.type === 'progress') return share(d.p);
     w.terminate();
     if (d.type !== 'error')
       digitsCache[digitsKey(F, base)] = {
@@ -9364,12 +9365,18 @@ function rivalsDigits(base, n, then) {
     }
     rivalWorkers[id]?.terminate();
     waitBegin(id, `Computing ${formulaName(id)}, ${F.sym ?? ''} in base ${base}`);
-    rivalWorkers[id] = digitsWorker(F, base, n, (error) => {
-      delete rivalWorkers[id];
-      waitEnd(id);
-      if (error) $('status').textContent = `${formulaName(id)}: ${error}`;
-      else if (!Object.keys(rivalWorkers).length) then();
-    });
+    rivalWorkers[id] = digitsWorker(
+      F,
+      base,
+      n,
+      (error) => {
+        delete rivalWorkers[id];
+        waitEnd(id);
+        if (error) $('status').textContent = `${formulaName(id)}: ${error}`;
+        else if (!Object.keys(rivalWorkers).length) then();
+      },
+      (p) => waitShare(id, p),
+    );
   }
   return Object.keys(rivalWorkers).length ? null : out;
 }
@@ -20144,11 +20151,14 @@ async function startBattleHunt() {
   if (huntVary.formulas)
     for (const f of BATTLE_CARDS) {
       const F = formulaOf(f);
-      battleHunt.status = `Computing ${F.sym}…`;
-      renderBattleHunt();
+      const status = (p) => {
+        battleHunt.status = `Computing ${F.sym}… ${Math.floor(100 * p)} %`;
+        renderBattleHunt();
+      };
+      status(0);
       if (!knownDigits(F, base, n))
         await new Promise((ok) => {
-          run.worker = digitsWorker(F, base, n, ok);
+          run.worker = digitsWorker(F, base, n, ok, status);
         });
       if (run.stop) return;
     }

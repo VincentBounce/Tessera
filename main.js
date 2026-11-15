@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.25';
+const VERSION = '0.5.26';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -13792,9 +13792,13 @@ function hullColourings(surface) {
   );
   return (hullColourMemo[surface] = out);
 }
-const hullColours = (surface, K) => (HULL_SOLIDS[surface] && K > 1 ? (hullColourings(surface)[K] ?? null) : null);
-// a face's cells
-const hullFaceCells = (q) => Array.from({ length: walk.geo.size ** 2 }, (_, k) => q * walk.geo.size ** 2 + k);
+// the hull solid a surface is (itself, or the solid it cuts: see FACE_BASE), else null
+const hullSolidOf = (surface) => (HULL_SOLIDS[FACE_BASE[surface] ?? surface] ? (FACE_BASE[surface] ?? surface) : null);
+const hullColours = (surface, K) =>
+  hullSolidOf(surface) && K > 1 ? (hullColourings(hullSolidOf(surface))[K] ?? null) : null;
+// a face's cells, on the walk's mesh: its f² cells, each cut into so many on a cut, in turn (see HULL_CUTS)
+const hullFaceSize = (g) => g.size ** 2 * (g.per ?? 1);
+const hullFaceCells = (q) => Array.from({ length: hullFaceSize(walk.geo) }, (_, k) => q * hullFaceSize(walk.geo) + k);
 
 /* ---- 7.3 Polyhedra with triangular faces -------------------------------------------------- */
 /* Flat polyhedra with triangular faces, each face cut into f² triangles (not inflated):
@@ -25973,8 +25977,8 @@ function torusBlocks(K, g = walk.geo) {
 // its halves or quarters
 // a solid's counts of colours: its faces dealt out whole, its spots paired, its spots (see colouring)
 const solidCounts = (surface) => {
-  if (HULL_SOLIDS[surface])
-    return Object.keys(hullColourings(surface))
+  if (hullSolidOf(surface))
+    return Object.keys(hullColourings(hullSolidOf(surface)))
       .map(Number)
       .sort((a, b) => a - b); // (see hullColourings)
   if (!SOLID_SPOTS[surface]) return null;
@@ -29429,7 +29433,7 @@ function realmParts(K) {
     return own.every((p) => p.length) ? own : null; // (a grid too small: greyed)
   }
   const hull = hullColours(VARIANTS[walk.variant].surface, K);
-  if (HULL_SOLIDS[VARIANTS[walk.variant].surface]) return hull && hull.groups.map((gr) => hullFaceCells(gr[0])); // (a hull solid: each colour's first face, as the cube's, see hullColourings)
+  if (hullSolidOf(VARIANTS[walk.variant].surface)) return hull && hull.groups.map((gr) => hullFaceCells(gr[0])); // (a hull solid: each colour's first face, as the cube's, see hullColourings)
   const surface = VARIANTS[walk.variant].surface,
     g = walk.geo,
     L = walk.life,
@@ -29533,12 +29537,7 @@ const FACE_MIDDLES = {
 };
 const FACE_BASE = {
   ...Object.fromEntries(hexSolids.map((k) => [`${k}Hex`, k])),
-  cubeTetrakis: 'cube',
-  pitsTetrakis: 'cube',
-  bumpsTetrakis: 'cube',
   bumps: 'cube',
-  frameTetrakis: 'cube',
-  mengerTetrakis: 'cube',
   pits: 'cube',
   frame: 'cube',
   menger: 'cube',
@@ -29550,6 +29549,10 @@ const FACE_BASE = {
   stellaKite: 'stella',
   dodecaKite: 'dodeca',
 };
+// a cut's faces its solid's, by construction (its cells its solid's cells cut, so many each: see HULL_CUTS): the cube's and
+// the carved cubes' tetrakis, a hull solid's cuts
+for (const k of Object.keys(TETRAKIS_SOLIDS)) FACE_BASE[`${k}Tetrakis`] = FACE_BASE[k] ?? k;
+for (const [k, , cut] of hullCuts) FACE_BASE[cut] = k;
 for (const [k, of] of Object.entries(FACE_BASE)) FACE_MIDDLES[k] = FACE_MIDDLES[of];
 // A solid's colourings (made by tools/faceparts.js), each item's colour (base 36), each colour's patch item:
 // FACE_GROUPS, its faces (FACE_MIDDLES' order) dealt out whole, for each count that divides them: the groups in one piece,
@@ -30013,7 +30016,7 @@ function partPlaces(r, K, mirror, mixed) {
     const own = hull.groups.flatMap((gr, k) => (hull.pairs ? [gr[0]] : gr).map((q) => [hull.mids[q], k])),
       owner = new Map(hull.groups.flatMap((gr, k) => (hull.pairs ? [gr[0]] : gr).map((q) => [q, k])));
     for (let t = 0; t < n; t++) {
-      const q = Math.floor(t / (g.size * g.size));
+      const q = Math.floor(t / hullFaceSize(g));
       if (owner.has(q)) {
         parts[owner.get(q)].push(t);
         continue;
@@ -30662,7 +30665,7 @@ function patternPlace(i, K) {
   if (flatGrid()) return { on: 'plane' };
   if (g.torus) return { on: 'sheet' };
   const hull = hullColours(surface, K),
-    squares = g.squareFaces?.length ?? 0; // (a hull solid's colour: its first face, see hullColourings)
+    squares = (g.uncut ?? g).squareFaces?.length ?? 0; // (a hull solid's colour: its first face, see hullColourings; a cut's, its solid's)
   if (hull) {
     const f = hull.groups[i][0];
     return f < squares ? { on: 'square', f } : triPlace(f - squares);
@@ -30760,13 +30763,13 @@ function cellPlace(t) {
     ),
   };
 }
-// the cube's face f (its squares, or its pit's floor's: the cube with pits): its squares' side, a square's index by its row
-// and column, its middle in space
-function cubeFace(f) {
+// a solid's face f of squares (the cube's, its pit's floor's on the cube with pits, a hull solid's), on the solid a cut cuts:
+// its squares' side, a square's index by its row and column, its middle in space
+function squaresFace(f) {
   const g = walk.geo,
     S = g.uncut ?? g,
     a = S.floors ? S.floorSize : S.size;
-  const square = (r, c) => (S.floors ? S.floors[f * a * a + r * a + c] : f * S.perFace + r * a + c);
+  const square = (r, c) => (S.floors ? S.floors[f * a * a + r * a + c] : f * (S.perFace ?? a * a) + r * a + c);
   return { a, square, at: (r, c) => Array.from(S.cen.subarray(3 * square(r, c), 3 * square(r, c) + 3)) };
 }
 // its frame round c0: its middle C, its normal n, a cell's step s, the plane's x along u (its rows: the most level of its 6
@@ -30943,19 +30946,12 @@ function patternFrame(i, K, place = patternPlace(i, K)) {
   } else {
     // a face of squares (a hull solid's, the cube's): its square (0, 0) the plane's lattice cell (0, 0), along its columns and rows
     const fq = place.f,
-      sq =
-        place.on === 'square'
-          ? {
-              a: g.size,
-              square: (r, c) => fq * g.size * g.size + r * g.size + c,
-              at: (r, c) => cen(fq * g.size * g.size + r * g.size + c),
-            }
-          : cubeFace(fq),
+      sq = squaresFace(fq),
       per = gridCells(kind);
     [A3, B3, n, o3, op] = [
       sub(sq.at(0, 1), sq.at(0, 0)),
       sub(sq.at(1, 0), sq.at(0, 0)),
-      place.on === 'square' ? g.squareFaces[fq].n : AXES[fq],
+      place.on === 'square' ? (g.uncut ?? g).squareFaces[fq].n : AXES[fq],
       sq.at(0, 0),
       mean(Array.from({ length: per }, (_, x) => cellMiddle(kind, x, 0))),
     ];

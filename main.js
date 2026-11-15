@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.22';
+const VERSION = '0.5.23';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -14046,6 +14046,22 @@ function globeBands(E, K = ringColours(ringVariant())) {
   const N = [...north.map(([n]) => n).reverse(), ...north.map(([n]) => n)];
   return { N: [N[0], ...N, N.at(-1)], lines: [...north.map(([, t]) => -t).reverse(), 0, ...north.map(([, t]) => t)] };
 }
+// A unit sphere's flat form, a lentil of its two halves (see shapeAt's flatVerts: the globe's, a rosette sphere's): each corner
+// its way from its pole round it flat (as on the sphere), its height a half ellipse from its pole to the equator, flat in the
+// middle and rounded to it
+const LENTIL_HALF_THICKNESS = 0.15;
+const lentilVerts = (verts) =>
+  Float64Array.from({ length: verts.length }, (_, i) => {
+    const v = i - (i % 3),
+      [x, y, z] = [verts[v], verts[v + 1], verts[v + 2]],
+      r = Math.acos(Math.abs(z)),
+      a = Math.atan2(y, x);
+    return [
+      r * Math.cos(a),
+      r * Math.sin(a),
+      Math.sign(z) * LENTIL_HALF_THICKNESS * Math.sqrt(Math.max(0, 1 - (r / (Math.PI / 2)) ** 2)),
+    ][i % 3];
+  });
 function globeMesh(E) {
   const K = ringColours(ringVariant()),
     key = `globe${E}|${globeFewest(K)}`;
@@ -14082,7 +14098,7 @@ function globeMesh(E) {
       sides,
       E,
     ),
-    { globe: true, columns: N, along: Float64Array.from(along) },
+    { globe: true, columns: N, along: Float64Array.from(along), flatVerts: lentilVerts(verts) },
   ));
 }
 
@@ -14096,7 +14112,6 @@ function globeMesh(E) {
 // its longitude the two's mean, its latitude half the two's radii apart (the tooth's bite); each half's other corners the
 // mean of their neighbours weighed by Floater's mean value coordinates from where they were (Tutte's embedding), again till
 // still; then on the sphere by their distance from its pole (azimuthal equidistant: a tooth's bite the same on both halves)
-const ROSETTE_LENTIL = 0.15; // (flat: its half thickness, see rosetteSphereMesh's flatVerts)
 const ROSETTE_BITE = 0.28; // (Ring 12's 0.26 to 0.27 in, a tooth on a tooth about a tile out)
 const ROSETTE_SPHERES = {
   flower: [13, 468, 17, 756, 28, 1800, 34, 2628, 49, 5220, 51, 5652, 68, 9828],
@@ -14314,19 +14329,6 @@ function rosetteSphereMesh(kind, W) {
   }
   const most = tiles.reduce((s2, c) => Math.max(s2, c.length), 0),
     plane = planeGrid(kind, W);
-  // flat, its two discs a lentil (see shapeAt): each corner its way from its pole round it flat (the discs' own, as on the
-  // sphere), its height a half ellipse from its pole to the seam, flat in the middle and rounded to it
-  const flatVerts = Float64Array.from({ length: verts.length }, (_, i) => {
-    const v = i - (i % 3),
-      [x, y, z] = [verts[v], verts[v + 1], verts[v + 2]],
-      r = Math.acos(Math.abs(z)),
-      a = Math.atan2(y, x);
-    return [
-      r * Math.cos(a),
-      r * Math.sin(a),
-      Math.sign(z) * ROSETTE_LENTIL * Math.sqrt(Math.max(0, 1 - (r / (Math.PI / 2)) ** 2)),
-    ][i % 3];
-  });
   return (meshCache[key] = Object.assign(
     finishMesh(
       verts,
@@ -14336,7 +14338,7 @@ function rosetteSphereMesh(kind, W) {
       null,
     ),
     {
-      flatVerts,
+      flatVerts: lentilVerts(verts),
       rosette: true,
       south: m,
       middles: [F.coreIds, F.coreIds.map((t) => m + t)],
@@ -15857,7 +15859,7 @@ const turnedTorusHexMesh = (nv, nu = torusTriColumns(nv)) =>
 /* ---- 7.5 Flat ↔ round: the same tiles and neighbours, shown flat or inflated -------------- */
 /* walk.shape = { m, target, corners, cen, nrm, extent, bent } for surfaces that can change shape:
  * polyhedra (each vertex slides from its face towards the circumscribed sphere), the torus
- * (rolled up from a flat rectangle) and a mesh with a flat form of its own (flatVerts: a rosette sphere's lentil,
+ * (rolled up from a flat rectangle) and a mesh with a flat form of its own (flatVerts: the globe's and a rosette sphere's lentil, see lentilVerts,
  * each vertex straight from there to the sphere). The cells and their neighbours never change, so a walk or a
  * Game of Life run goes on unchanged: only the drawing and the 3D positions move. */
 const MORPH_WHERE =

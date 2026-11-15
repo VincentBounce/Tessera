@@ -738,6 +738,21 @@ h4 {
   width: 24px;
   height: 24px;
 }
+.nav-shapes:has(> .row-tile) {
+  display: flex;
+} /* a row of row tiles: each its share of it */
+.nav-shapes button.row-tile {
+  flex: 1;
+  flex-direction: row;
+  justify-content: center;
+  gap: 6px;
+  height: auto;
+  padding: 4px 12px;
+} /* a tile low, its picture left of its name (see tile's row): as Draw's turns */
+.nav-shapes button.row-tile svg {
+  width: 16px;
+  height: 16px;
+}
 /* icons: 24 px in a tile, a tab or by a section's title, 20 px on a card, 16 px in a line of text */
 /* a group of tiles, one choice among them: joined in one frame, across its row, its buttons as wide as they share */
 .tile-group {

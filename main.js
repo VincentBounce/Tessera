@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.29';
+const VERSION = '0.5.30';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -7106,7 +7106,8 @@ function textTabs(buttons) {
 // draws another start, a shape's switches walls and a torus): its hover gold; toggle: a switch on or off (Trail, Walls,
 // Turned, the theme…), said once when made and kept: its hover gold on, a pale gold off (as a choice picked); offPic, offText: a
 // switch's picture and name while off, if it has its own (the theme: Light on, Dark off); turn: its picture turned by so many
-// degrees (a second state a click again gives: a torus's tiles turned)
+// degrees (a second state a click again gives: a torus's tiles turned); row: low, its picture left of its name, the tiles of
+// its row sharing it (as Draw's turns, see .row-tile)
 const tile = ({
   pic = '',
   text = '',
@@ -7121,6 +7122,7 @@ const tile = ({
   offPic = null,
   offText = text,
   turn = 0,
+  row = false,
   byDefault,
   greyed,
   click = null,
@@ -7133,6 +7135,7 @@ const tile = ({
   if (choice) b.dataset.choice = choice; // (its choice's key, lifeTeams:3: a greyed one's path, see choicesAt)
   if (id) b.id = id;
   if (toggle) b.dataset.toggle = '';
+  if (row) b.classList.add('row-tile');
   if (title) b.title = title;
   b.innerHTML = html ?? `${pic}<span>${text}</span>`;
   if (offPic) b.faces = { on: b.innerHTML, off: `${offPic}<span>${offText}</span>` }; // (see setTile)
@@ -20297,6 +20300,7 @@ function renderBattleHunt() {
       text,
       title,
       toggle: true,
+      row: true,
       on: huntVary[what] && can,
       can,
       greyed,

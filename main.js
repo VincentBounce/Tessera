@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.39';
+const VERSION = '0.5.40';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -46396,10 +46396,12 @@ document.addEventListener('click', (e) => {
   if (VARIANTS[tabVariant()].life) $('watchRule').click();
   else walkTutorialToggle(); // (a walk's)
 });
-// how a rule works closes on a click anywhere but on it, the rules (your own's too), the populations and the grids (it follows them: renderRuleSection)
+// how a rule works closes on a click anywhere but on it, the rules (your own's too), the populations and the grids (it follows them:
+// renderRuleSection); Credits stay, as there (its URL's rows following the setup, see paintUrl): closed by its cross or its tab
 document.addEventListener('click', (e) => {
   if (
     !$('ruleTuto').hidden &&
+    !creditsShown() &&
     !e
       .composedPath()
       .some(
@@ -47388,7 +47390,8 @@ $('appTab').innerHTML = `${icon('logo')} ${APP_TITLE} v${VERSION}`;
 $('favicon').href =
   `data:image/svg+xml,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="${cssColour('--accent-color')}" fill-rule="evenodd" d="${LOGO_PATH}"/></svg>`)}`; // (no page's style there: the accent's colour)
 // Credits: the people whose work it shows, a page in the middle pane as How it works, opened and closed by the app's tab (π,
-// its name and version; lit while it shows, as Gallery's); closed as How it works is, by a click elsewhere; Share link and Home there
+// its name and version; lit while it shows, as Gallery's); kept over the settings changed (its URL's rows follow them), closed by its
+// cross or its tab; Share link and Home there
 const creditsShown = () => !$('ruleTuto').hidden && $('ruleTuto').dataset.shown === 'credits';
 const AUTHOR =
   '🇫🇷 Vincent ᗱƆᑌᑎϹᗴ 👾 · <b>𝕏 <a href="https://x.com/VincentBounce" target="_blank" rel="noopener">@VincentBounce</a></b>'; // (its author, as signed)

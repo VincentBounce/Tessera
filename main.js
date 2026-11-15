@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.24';
+const VERSION = '0.5.25';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -14046,7 +14046,7 @@ function globeBands(E, K = ringColours(ringVariant())) {
   const N = [...north.map(([n]) => n).reverse(), ...north.map(([n]) => n)];
   return { N: [N[0], ...N, N.at(-1)], lines: [...north.map(([, t]) => -t).reverse(), 0, ...north.map(([, t]) => t)] };
 }
-// A unit sphere's flat form, a lentil of its two halves (see shapeAt's flatVerts: the globe's, a rosette sphere's): each corner
+// A unit sphere's flat form, a lentil of its two halves (see shapeAt's flatVerts: a rosette sphere's): each corner
 // its way from its pole round it flat (as on the sphere), its height a half ellipse from its pole to the equator, flat in the
 // middle and rounded to it
 const LENTIL_HALF_THICKNESS = 0.15;
@@ -14061,6 +14061,19 @@ const lentilVerts = (verts) =>
       r * Math.sin(a),
       Math.sign(z) * LENTIL_HALF_THICKNESS * Math.sqrt(Math.max(0, 1 - (r / (Math.PI / 2)) ** 2)),
     ][i % 3];
+  });
+// The globe's flat form, a cylinder of radius 1 (see shapeAt's flatVerts): its belt (its rows of E cells, up to latitude
+// rim) its side, each corner at its longitude and its latitude up it (its cells square: as wide as a row is high); its
+// caps (its rows narrowing to the poles) its top and its bottom, each corner at its longitude, from the rim's circle to
+// the pole in the middle by its latitude
+const cylinderVerts = (verts, rim) =>
+  Float64Array.from({ length: verts.length }, (_, i) => {
+    const v = i - (i % 3),
+      [x, y, z] = [verts[v], verts[v + 1], verts[v + 2]],
+      lat = Math.asin(Math.max(-1, Math.min(1, z))),
+      a = Math.atan2(y, x),
+      r = Math.abs(lat) <= rim + 1e-9 ? 1 : (Math.PI / 2 - Math.abs(lat)) / (Math.PI / 2 - rim);
+    return [r * Math.cos(a), r * Math.sin(a), r < 1 ? Math.sign(z) * rim : lat][i % 3];
   });
 function globeMesh(E) {
   const K = ringColours(ringVariant()),
@@ -14098,7 +14111,12 @@ function globeMesh(E) {
       sides,
       E,
     ),
-    { globe: true, columns: N, along: Float64Array.from(along), flatVerts: lentilVerts(verts) },
+    {
+      globe: true,
+      columns: N,
+      along: Float64Array.from(along),
+      flatVerts: cylinderVerts(verts, Math.max(0, ...N.slice(1, -1).map((n, j) => (n === E ? lines[j + 1] : 0)))),
+    }, // (flat: a cylinder, its side its belt, the bands of E cells, up to the top of the highest)
   ));
 }
 
@@ -15859,7 +15877,7 @@ const turnedTorusHexMesh = (nv, nu = torusTriColumns(nv)) =>
 /* ---- 7.5 Flat ↔ round: the same tiles and neighbours, shown flat or inflated -------------- */
 /* walk.shape = { m, target, corners, cen, nrm, extent, bent } for surfaces that can change shape:
  * polyhedra (each vertex slides from its face towards the circumscribed sphere), the torus
- * (rolled up from a flat rectangle) and a mesh with a flat form of its own (flatVerts: the globe's and a rosette sphere's lentil, see lentilVerts,
+ * (rolled up from a flat rectangle) and a mesh with a flat form of its own (flatVerts: the globe's cylinder, see cylinderVerts; a rosette sphere's lentil, see lentilVerts;
  * each vertex straight from there to the sphere). The cells and their neighbours never change, so a walk or a
  * Game of Life run goes on unchanged: only the drawing and the 3D positions move. */
 const MORPH_WHERE =

@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.4.1082';
+const VERSION = '0.4.1083';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -47150,6 +47150,11 @@ function memoriesRows() {
     )
     .join('');
 }
+// The link's rows (Stats/debug): the setup shown, a word a row with what it says, as the link writes them (see linkWordsOf)
+const urlRows = () =>
+  Object.entries(linkWordsOf(getSetup()))
+    .map(([word, said]) => `<tr><td>${word}</td><td>${htmlText(String(said))}</td></tr>`)
+    .join('');
 function credits(open) {
   ruleTutorial(null);
   if (!open) return;
@@ -47162,7 +47167,7 @@ function credits(open) {
     CREDITS.map(([title, who]) => `<h3>${title}</h3><p>${who}.</p>`).join('') +
     `<p><a href="https://github.com/VincentBounce/Tessera#readme" target="_blank" rel="noopener">Its README</a> · <a href="https://github.com/VincentBounce/Tessera" target="_blank" rel="noopener">its code</a></p>` +
     `<h3>Made with 🩷</h3><p>${AUTHOR}</p>` + // (its signature, at the end of what it tells)
-    '<div class="form-section"><h2>Stats/debug</h2><h3>Times for this view</h3><table id="timings" class="tut-commands"></table>' + // (the walk shown's times, see timings)
+    `<div class="form-section"><h2>Stats/debug</h2><h3>URL</h3><table class="tut-commands">${urlRows()}</table><h3>Times for this view</h3><table id="timings" class="tut-commands"></table>` + // (the walk shown's times, see timings)
     `<h3>Screen: ${screenHz()} Hz</h3><table class="tut-commands"><tr><td class="number">Speed asked</td><td class="number">played</td></tr>${SPEEDS.map((v) => `<tr><td class="number">${formatNumber(v)}/s</td><td class="number">${speedWords(v)}</td></tr>`).join('')}</table>` + // (its refresh, and each speed as it plays there: see evenSpeed)
     `<h3>Computed this session</h3><table class="tut-commands">${memoriesRows()}</table>` + // (what the memories keep, see remember)
     `<section class="clean-storage"><h3>Clean Tessera's storage in this browser</h3><button id="eraseAll" type="button" class="wide" title="All Tessera keeps in this browser erased (the Gallery, its thumbnails, the theme): the app as at a first visit, the curated setups back; the Gallery saved first as a JSON file (a click, then Confirm erase in its place)">${icon('trash')} Erase all</button></section></div></div>`;

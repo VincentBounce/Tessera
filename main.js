@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.23';
+const VERSION = '0.5.24';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -3753,7 +3753,7 @@ const HULL_SOLIDS = {
     ],
     pic: ['M12 3L3 17L10 21L21 16Z', 'M12 3L10 21'], // (a corner of its square in front)
     mark: '◈',
-    place: [1, 'Tetrahedron'],
+    place: [0, 'Cuboctahedron'],
     where: 'a square pyramid of squares and triangles',
   },
   // (±1, ±1, ±(1 + √2)) and their turns: edge 2, 18 squares and 8 triangles
@@ -3788,7 +3788,7 @@ const HULL_SOLIDS = {
       ),
     pic: ['M8 3H16L21 9V15L16 21H8L3 15V9Z', 'M3 12H21M8 3L6 12L8 21M16 3L18 12L16 21'], // (from the side: its two cupolas)
     mark: '◈',
-    place: [1, 'Rhombicuboctahedron'],
+    place: [1, 'Cuboctahedron'],
     where: 'a square orthobicupola of squares and triangles',
   },
   // the cuboctahedron's dual: the cube's corners (±1, ±1, ±1) and (±2, 0, 0) and their turns, 12 rhombi, 3 round a cube's

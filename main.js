@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.160';
+const VERSION = '0.5.161';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -41450,19 +41450,16 @@ function drawGrid() {
   placeAxesLabels();
   // Elementary's run a sheet on the sky, as the plane's (see gpuPlane): its picture's size, in the page's colour, the grid
   // on it only; its sides on the grid's own pixels (see drawLines)
+  // (its picture's rectangle exactly, see runX; the grid's lines a pixel past it on the right and below, its last ones: on
+  // the sky at its edge)
   const R = walk.rows,
-    sheet = R && [
-      Math.round(view.ox + (-R.c - 0.5) * s),
-      Math.round(view.oy - 0.5 * s),
-      Math.round(view.ox + (R.W - R.c - 0.5) * s),
-      Math.round(view.oy + (R.G + 0.5) * s),
-    ];
+    sheet = R && [runX(0), runY(0), runX(R.PW * R.B) - runX(0), runY(R.G + 1) - runY(0)];
   if (sheet) {
     ctx.fillStyle = cssColour('--page-background');
-    ctx.fillRect(sheet[0], sheet[1], sheet[2] - sheet[0] + 1, sheet[3] - sheet[1] + 1);
+    ctx.fillRect(...sheet);
     ctx.save();
     ctx.beginPath();
-    ctx.rect(sheet[0], sheet[1], sheet[2] - sheet[0] + 1, sheet[3] - sheet[1] + 1);
+    ctx.rect(sheet[0], sheet[1], sheet[2] + 1, sheet[3] + 1);
     ctx.clip();
   }
   drawGridLines(ctx, s);
@@ -42660,6 +42657,10 @@ const PART_MOST = 80e6,
   PART_CELLS = 32e6;
 // the 2D grid's lines a cell apart from this many screen pixels a cell (fewer: every 5, 25… cells, see drawGrid)
 const LINE_PIXELS = 10;
+// Elementary's run on the screen, one placing for its sheet, its picture, its parts and its squares: a cell side x cells
+// from its left, a row side t rows down, rounded as the grid's lines are (see drawLines)
+const runX = (x) => Math.round(view.ox + (x - walk.rows.c - 0.5) * view.scale),
+  runY = (t) => Math.round(view.oy + (t - 0.5) * view.scale);
 function drawElementary(to) {
   const R = walk.rows,
     ctx = layers.path,
@@ -42705,8 +42706,6 @@ function drawElementary(to) {
   };
   ctx.clearRect(0, 0, canvasWidth, canvasHeight);
   ctx.imageSmoothingEnabled = false;
-  const d = window.devicePixelRatio || 1,
-    pin = (v) => Math.round(v * d) / d; // (its corner on a screen pixel: unsmoothed, its rows' pixels then still as it pans, a moiré moving with it)
   const fine = Math.max(1, 2 ** Math.floor(Math.log2(1 / s))),
     inView = ((canvasWidth / s) * canvasHeight) / s; // (about a cell a screen pixel; the cells in view)
   const b = fine < 16 && inView > PART_CELLS ? 16 : fine,
@@ -42722,21 +42721,20 @@ function drawElementary(to) {
     const own = R.B > 1 ? elementaryPart(R, x0, x1, t0, t1) : null,
       w = x1 - x0 + 1,
       { counts, breaks } = own ?? R,
-      inset = gridShown() ? 1 : 0,
-      X = (x) => Math.round(ox + (x - R.c - 0.5) * s),
-      Y = (t) => Math.round(oy + (t - 0.5) * s);
+      inset = gridShown() ? 1 : 0;
     for (let t = t0; t <= Math.min(t1, last); t++) {
       const row = rowColour(t);
       for (let x = x0; x <= x1; x++) {
         const at = own ? (t - t0) * w + x - x0 : t * R.PW + x;
         if (!counts[at]) continue;
         ctx.fillStyle = `rgb(${colourAt(at, counts[at], row, breaks, R.entropy)})`;
-        ctx.fillRect(X(x) + inset, Y(t) + inset, X(x + 1) - X(x) - inset, Y(t + 1) - Y(t) - inset);
+        ctx.fillRect(runX(x) + inset, runY(t) + inset, runX(x + 1) - runX(x) - inset, runY(t + 1) - runY(t) - inset);
       }
     }
     return;
   }
-  if (b !== R.B && look !== 'entropy' && partWork(R, x0, x1, t0, t1) <= PART_MOST) {
+  if (b < R.B && look !== 'entropy' && partWork(R, x0, x1, t0, t1) <= PART_MOST) {
+    // (finer than its picture: that part made again; coarser, its picture made smaller, see below)
     const key = `${x0}|${x1}|${t0}|${t1}|${b}|${look}|${LIFE_ALIVE}`;
     if (R.part?.key !== key) {
       const { counts, breaks } = elementaryPart(R, x0, x1, t0, t1, b),
@@ -42752,10 +42750,10 @@ function drawElementary(to) {
         0,
         R.part.w,
         h,
-        pin(ox + (x0 - R.c - 0.5) * s),
-        pin(oy + (t0 - 0.5) * s),
-        R.part.w * b * s,
-        h * b * s,
+        runX(x0),
+        runY(t0),
+        runX(x0 + R.part.w * b) - runX(x0),
+        runY(t0 + h * b) - runY(t0),
       );
     return;
   }
@@ -42765,17 +42763,7 @@ function drawElementary(to) {
   const h = Math.min(R.PH, Math.ceil((last + 1) / R.B));
   ctx.imageSmoothingEnabled = R.B * s < 1; // (made smaller: its pixels averaged, no bands; larger: sharp)
   ctx.imageSmoothingQuality = 'high';
-  ctx.drawImage(
-    R.picture.cv,
-    0,
-    0,
-    R.PW,
-    h,
-    pin(ox + (-R.c - 0.5) * s),
-    pin(oy - 0.5 * s),
-    R.PW * R.B * s,
-    h * R.B * s,
-  ); // (its last pixels past the row's end: empty)
+  ctx.drawImage(R.picture.cv, 0, 0, R.PW, h, runX(0), runY(0), runX(R.PW * R.B) - runX(0), runY(h * R.B) - runY(0)); // (its last pixels past the row's end: empty)
 }
 // the walk's cells, each point's tile with its colour band (the heatmap: its visits so far), in the walk's order: (x, y, band,
 // template) each, at: its point

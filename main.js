@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.87';
+const VERSION = '0.5.88';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -47821,7 +47821,16 @@ $('galleryTools').replaceChildren(
     click: refreshThumbnails,
   }),
 );
-$('galleryViewTiles').replaceChildren(
+$('galleryShareTiles').replaceChildren(
+  tile({
+    id: 'galleryShare',
+    pic: icon('link'),
+    text: 'Share link',
+    title: 'Copy the link to what is shown',
+    click: () => shareView($('galleryShare')),
+  }),
+);
+$('galleryStarTiles').replaceChildren(
   tile({
     id: 'galleryStar',
     pic: icon('star'),
@@ -47830,13 +47839,6 @@ $('galleryViewTiles').replaceChildren(
     title:
       "Save the setup in view in the Gallery, as the ☆ of Gallery's tab; on while it is saved: a click takes it out",
     click: saveSetup,
-  }),
-  tile({
-    id: 'galleryShare',
-    pic: icon('link'),
-    text: 'Share link',
-    title: 'Copy the link to what is shown',
-    click: () => shareView($('galleryShare')),
   }),
 );
 // Confirm erase: the app as at a first visit, all it keeps in this browser gone (its localStorage keys, its thumbnails' store), then

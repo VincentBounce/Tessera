@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.113';
+const VERSION = '0.5.114';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -6396,6 +6396,7 @@ const DISPLAY_DEFAULTS = {
   light: ['light', 'open', true],
   glass: ['glass', 'open', false],
   grid: ['showGrid', 'tab', { all: true, Explore: false }], // (Explore's colours alone, no seams drawn over them)
+  gridLines: ['gridLines', 'tab', { all: 1, Explore: 2 }], // (Medium; Strong on Explore's colours, see GRID_LINES)
   trail: ['lifeTrail', 'lifeTeams', () => lifeTeams === 1], // (Life's Trail: on in Solo, two states, off in teams; when the teams change)
   ocean: ['ocean', 'battle', () => battleOn() && NAV[tabVariant()][0] === 'Walk'], // (on in a walk's battle on a surface, as long as none picks it)
   cut: [null, 'open', 0],
@@ -6649,6 +6650,19 @@ function renderHeadTiles() {
     byDefault: defaultMark('grid'),
     whyNot: ({ w, stacked }) => viewWhyNot('grid', w, stacked),
   });
+  $('gridLinesRow').hidden = !shows('grid', tabVariant());
+  pillRow(
+    $('gridLinesRow'),
+    'Lines',
+    "The grid's lines, how marked",
+    GRID_LINES.map(([name, words]) => [name, words]),
+    Number($('gridLines').value),
+    defaultOf('gridLines', tabVariant()),
+    (k) => {
+      $('gridLines').value = k;
+      needsFull = true;
+    },
+  );
 }
 $('viewTools').addEventListener('mouseenter', renderHeadTiles);
 
@@ -41991,8 +42005,15 @@ function faded(colour, a, under = UNLIT) {
 }
 // The tile edges' opacity on a shape: on a light page, fainter as the tiles get small on screen
 // (thousands of dark lines would grey the whole solid)
+// The grid's lines, how marked: each its name, its words, its factor on the theme's opacity (Faint: as before v0.5.92)
+const GRID_LINES = [
+  ['Faint', 'The lines faint, as before v0.5.92', 0.55],
+  ['Medium', 'The lines as the theme draws them', 1],
+  ['Strong', 'The lines marked twice as much: they show over strong colours (Explore)', 2],
+];
+const gridAlpha = () => EDGE_ALPHA * GRID_LINES[Number($('gridLines').value)][2];
 function edgeAlpha(sh) {
-  if (!FADE_EDGES) return EDGE_ALPHA;
+  if (!FADE_EDGES) return gridAlpha();
   // the tiles' size as the grid's density of lines shows it: 2 × area / half perimeter (each edge is
   // shared), the side of a square of that density (a hexagon of side 1: 1.73, a triangle: 0.58, a
   // square stretched 2.5 times: 1.43), over all the tiles, once per form of the surface
@@ -42026,7 +42047,7 @@ function edgeAlpha(sh) {
     sh.cellSizeAt = sh.m;
   }
   const px = walk.R * sh.cellSize * view.scale;
-  return EDGE_ALPHA * Math.min(1, Math.max(0.35, (px - 4) / 50)); // (fainter at every surface's usual size, stronger zoomed in)
+  return gridAlpha() * Math.min(1, Math.max(0.35, (px - 4) / 50)); // (fainter at every surface's usual size, stronger zoomed in)
 }
 
 /* ---- 11.4b Surfaces: shared pieces -------------------------------------------------------- */
@@ -44855,7 +44876,7 @@ function gpuPlane(paint) {
       }),
     );
     rp.setBindGroup(0, gpuGroup(), [
-      gpuView(D.words, 1, 1, { ...turn, plain: [...EDGE_RGB.map((c) => (c / 255) * EDGE_ALPHA), EDGE_ALPHA] }),
+      gpuView(D.words, 1, 1, { ...turn, plain: [...EDGE_RGB.map((c) => (c / 255) * gridAlpha()), gridAlpha()] }),
     ]);
     rp.setVertexBuffer(0, D.planeEdges);
     rp.draw(D.planeLines);

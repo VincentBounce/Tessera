@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.64';
+const VERSION = '0.5.65';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -10578,7 +10578,6 @@ function renderAntRow() {
   const w = tabVariant(),
     m = VARIANTS[w],
     ant = NAV[w][0] === 'Ant';
-  $('walkStartSection').hidden = m.life || ant;
   placeNumberPicker();
   // (the start row under its heading; under the starts' tabs when a battle shows them there, see renderWalkTeams)
   const startHead = $(ant ? 'antStartSection' : 'walkStartSection').querySelector('h2'),
@@ -10586,7 +10585,6 @@ function renderAntRow() {
   if (lead.nextElementSibling !== $('startRow')) lead.after($('startRow'));
   drawing = !!m.plane && plane.start === 'draw' && !spaceTimeOn(); // Life on the plane draws in its Draw start (not in Space-time)
   stage.classList.toggle('drawing', drawsHere()); // (the crosshair: a click draws, as renderDrawTools keeps it)
-  $('antStartSection').hidden = !ant;
   // your own rule's field: right after its card (see ruleCards); back in the creatures' section, hidden, when no list has it
   if (!customRow.isConnected) $('walkRuleSection').append(customRow);
   customRow.hidden = true;
@@ -11334,7 +11332,6 @@ function renderModePicker() {
   const sides = walkSidesOf(w);
   // (kept, the same height, where there are neither: a spiral's steps from cell to cell, its Cells picked)
   const alone = sides.includes('');
-  $('walkRuleSection').hidden = kind !== 'Walk' && !creatures; // (one Walking rule, a walk's or a creature's)
   $('walkRuleHow').hidden = !walkTutorialFits(w);
   // its tabs (see walkOn): each picked where it is, greyed where there is none (why, in its tooltip)
   const side = (b, s, word, none) => {
@@ -11406,6 +11403,22 @@ const workerOf = (main) =>
     ),
   );
 const newFormulaWorker = () => workerOf(formulaWorker);
+// The menu's parts a variant uses, each by its id, said once: those it does not use hidden, and not drawn (see renderRuleSection)
+const sectionsOf = (w) => {
+  const m = VARIANTS[w],
+    kind = NAV[w][0],
+    plays = m.life && !m.explore; // (Explore: Life's grids, nothing played)
+  return {
+    walkStartSection: kind === 'Walk', // (the number walked, a battle's numbers)
+    antStartSection: kind === 'Ant', // (a creature's start: by its rule or by the digits)
+    walkRuleSection: kind === 'Walk' || kind === 'Ant', // (one Walking rule, a walk's or a creature's)
+    automataSection: plays, // (Life's rule)
+    startSection: plays && !m.loops, // (loops: their start their loops, one a lineage, see layLoops)
+    colourSection: walkTeamsHere(w) || (plays && !m.margolus && !m.elementary), // (blocks, Elementary: one colour; a walk's on a surface)
+    exploreSection: !!m.explore, // (its colours, see renderExplore)
+    animBar: !m.explore, // (the player: Explore plays nothing)
+  };
+};
 function compute() {
   for (const stage in timings) setTiming(stage); // (each walk its own times: none of the one before)
   const variant = VARIANTS[tabVariant()];
@@ -11419,9 +11432,7 @@ function compute() {
     want = variant.life ? n : n + LOOP_AHEAD; // a walk also reads the digits ahead
   syncDigitsStepper();
   relabelColours(variant);
-  $('automataSection').hidden = !variant.life || !!variant.explore; // rule and hunt, for the cellular automata only
-  $('exploreSection').hidden = !variant.explore; // (its colours instead, see renderExplore)
-  $('animBar').hidden = !!variant.explore; // (nothing played: no generation, no count, no player)
+  for (const [id, used] of Object.entries(sectionsOf(tabVariant()))) $(id).hidden = !used;
   if (variant.explore) renderExplore();
   $('planeRow').hidden = !variant.plane || !!variant.elementary; // Life on the plane: its grid (Elementary's: none, see elementaryRows)
   $('lifeStartRow').hidden = !variant.life;
@@ -11434,11 +11445,8 @@ function compute() {
       : ELEMENTARY_STARTS.includes(plane.start) && plane.start !== 'digits'
         ? 'random'
         : plane.start; // (Elementary's starts, see elementaryRows)
-  $('startSection').hidden = !variant.life || !!variant.loops || !!variant.explore; // (loops: their start their loops, one a lineage, see layLoops)
   $('returnRow').hidden = !variant.margolus; // (a reversible one's return to its start, wherever it is)
   fitRuleToShape();
-  $('colourSection').hidden =
-    !walkTeamsHere(tabVariant()) && (!variant.life || !!variant.margolus || !!variant.elementary || !!variant.explore); // (blocks, Elementary: one colour; a walk's on a surface)
   renderViewTiles();
   renderTeams();
   renderWalkTeams();
@@ -28250,7 +28258,7 @@ const lifeRulesListed = (w) =>
 let ruleTab = null; // Elementary's tab clicked and the rule then in use ({ tab, now }: kept while it is, see renderRuleSection)
 function renderRuleSection() {
   const variant = VARIANTS[tabVariant()];
-  if (!variant.life) {
+  if (!sectionsOf(tabVariant()).automataSection) {
     if (!creditsShown()) {
       if (!$('ruleTuto').hidden && walkTutorialFits(tabVariant())) walkTutorial(tabVariant());
       else ruleTutorial(null);

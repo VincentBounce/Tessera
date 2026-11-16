@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.189';
+const VERSION = '0.5.190';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -48388,24 +48388,17 @@ for (const b of document.querySelectorAll('[data-icon]')) b.insertAdjacentHTML('
 play(false); // the Play button with its icon
 seedCurated();
 fillGalleryList();
-// the card first (its device asked once, see gpuSetup); then a link with a setup opens that setup; otherwise Life, the first
-// tab: 6 colours at war on the cube
-const linked = parseHash() ?? {
-  mode: 'life',
-  shape: 'cube',
-  tiling: 'squares',
-  gridSize: '48',
-  playRule: 'B3/S23',
-  teams: '6',
-  popStart: 'random',
-  popDraw: '49.8259995',
-}; // (in a link's words, as parseHash reads them: 0.4's w=, s=, r=… read by none since 0.5, the page fell on the list's first walk)
+// the card first (its device asked once, see gpuSetup); then a link with a setup opens that setup; otherwise the Walk tab,
+// as a click on it opens it (its defaults, its own link written)
+const linked = parseHash();
 gpuSetup()
   .catch((e) => {
     console.warn('WebGPU off:', e.message);
     GPU = false;
   })
   .then(() => {
-    if (!linked || !applySetup(linked)) compute();
+    if (linked && applySetup(linked)) return;
+    $('variant').value = navPick(tabVariant(), 0, 'Walk');
+    $('variant').dispatchEvent(new Event('change'));
   });
 showPane(false);

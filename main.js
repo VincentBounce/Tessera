@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.112';
+const VERSION = '0.5.113';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -6322,7 +6322,7 @@ function describe(base) {
 // step that closed them; or the tiles coloured by their visits (Heatmap, on cells only).
 const VIEW_3D = ['autoRotate', 'upright', 'perspective', 'light']; // a 3D view's: Default, Free, Upright, Auto-rotate, Perspective, Side light (Space-time's too)
 const DISPLAY_BY_TAB = {
-  '2D walks': ['heatmap', 'fill', 'translucent', 'cells', 'visits', 'digit', 'edges'],
+  '2D walks': ['heatmap', 'fill', 'translucent', 'cells', 'visits', 'digit'],
   '3D walks': ['colours', 'digit', 'grid', ...VIEW_3D],
   'Walks on surfaces': [
     'shape',
@@ -6336,10 +6336,10 @@ const DISPLAY_BY_TAB = {
     'ocean',
     'cut',
   ],
-  'Automata on the plane': ['colours', 'digit', 'mono', 'edges'],
+  'Automata on the plane': ['colours', 'digit', 'mono', 'grid'], // (Grid: its cells' outlines, see gpuPlane)
   'Automata on surfaces': ['shape', 'colours', 'digit', 'mono', 'grid', ...VIEW_3D, 'glass', 'ocean', 'cut'], // (Glass, Cut: the surfaces' tiles only, see gpuFrame, cutOn)
-  '2D spirals': ['heatmap', 'fill', 'translucent', 'cells', 'visits', 'digit', 'edges'], // the 2D walks' menu, some of it greyed out
-  'Explore on the plane': ['edges'],
+  '2D spirals': ['heatmap', 'fill', 'translucent', 'cells', 'visits', 'digit'], // the 2D walks' menu, some of it greyed out
+  'Explore on the plane': ['grid'],
   'Explore on surfaces': ['shape', 'grid', ...VIEW_3D, 'glass', 'cut'], // (its view's only: its colours its own, see renderExplore)
 };
 // The Display settings' defaults, one table: each its control (a box's id), when it comes back (open: the page's opening

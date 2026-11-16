@@ -46,8 +46,10 @@ Steps, each shipped and checked on its own:
      walk's or a creature's `label` (its name, base and words, read by `walkName` and a spiral's tile), else its mode and
      where; a variant's group by a rule (`variantGroup`), not the page's; index.html's list empty (its 97 options gone,
      a dead one, `turmite`, among them), the 7 places adding options in code gone.
-4. **One flag, one meaning**: `life` means "plays Life"; Explore no longer carries it, its "but Explore" gone
-   (`plays` in `sectionsOf`, the hunt's stop, the wall, the Outline, `startLife`'s Explore branch).
+4. **One flag, one meaning**, done (v0.5.81): `life` means its cells built and drawn by Life's engine (Explore's too:
+   204 reads, nearly all that); whether a rule is played on them, asked in 3 places under 3 names (`plays` in
+   `sectionsOf`, the Outline's edges, the link's words in `getSetup`), one function, `playsLife`. Explore's own reads
+   (its colours, its link, no player) its own data, kept.
 5. **A night**: `tesseraCheck()`, the Gallery's cards opened cold, the fuzz.
 
 <p align="center"><br>* * *</p>

@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.80';
+const VERSION = '0.5.81';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -4056,6 +4056,9 @@ const conedFamily = (kind) =>
   Object.keys(CONED).find(
     (fam) => CONED[fam].marks[kind.slice(fam.length)] && kind === `${fam}${kind.slice(fam.length)}`,
   );
+// The variants: a mode on a grid (see GRIDS.md). Its fields its grid's (plane, surface, lattice) or its mode's; life: its
+// cells built and drawn by Life's engine (Life, Rewind, Replicators, Elementary, Explore: see startLife), a rule played on
+// them but Explore's (see playsLife)
 const VARIANTS = {
   // the walks by a rule, a command per digit (see 6.4b): net, the cells they go through (a grid's walk: its dual's cells)
   walkSquaresTurtleEdges: {
@@ -9193,6 +9196,9 @@ const VARIANT_ICONS = {
 };
 
 // "Cubes — base 5 (5 relative turns)" → name "Cubes", base "base 5", detail "5 relative turns"
+// a variant's words: a walk's, a creature's, its label (its name, base and words, as splitModeLabel reads them); else its
+// mode's name (Life's: its where, never read)
+const variantLabel = (w) => VARIANTS[w].label ?? `${NAV[w][0]} — ${VARIANTS[w].where}`;
 function splitModeLabel(text) {
   const [head, tail = ''] = text.replace(/^Life — /, '').split(' — ');
   const m = tail.match(/^(base \d+)\s*(?:\((.*)\))?$/) || [null, '', ''];
@@ -11265,7 +11271,7 @@ function renderModePicker() {
       const v = here ?? Object.keys(NAV).find((m) => NAV[m][0] === kind && NAV[m][1] === space && NAV[m][3] === r); // (elsewhere: its first shape)
       if (!creatures && here && VARIANTS[here].net) return ruleCards(r === rule ? w : here, r === rule); // a walk by a rule: its rules' cards (the side picked kept)
       if (creatures) return ruleCards(w); // (its rules: an ant's, a turmite's, the worm's)
-      const { base, detail } = splitModeLabel(VARIANTS[v].label); // (a spiral's, the diagonals': their base, their words)
+      const { base, detail } = splitModeLabel(variantLabel(v)); // (a spiral's, the diagonals': their base, their words)
       const pic = icon(
         r === 'Turtle'
           ? 'turtle'
@@ -11385,11 +11391,13 @@ const workerOf = (main) =>
     ),
   );
 const newFormulaWorker = () => workerOf(formulaWorker);
+// whether a rule is played on a variant's cells, Life's or another automaton's (Explore's: none, its cells coloured once)
+const playsLife = (w) => !!VARIANTS[w].life && !VARIANTS[w].explore;
 // The menu's parts a variant uses, each by its id, said once: those it does not use hidden, and not drawn (see renderRuleSection)
 const sectionsOf = (w) => {
   const m = VARIANTS[w],
     kind = NAV[w][0],
-    plays = m.life && !m.explore; // (Explore: Life's grids, nothing played)
+    plays = playsLife(w);
   return {
     walkStartSection: kind === 'Walk', // (the number walked, a battle's numbers)
     antStartSection: kind === 'Ant', // (a creature's start: by its rule or by the digits)
@@ -14613,10 +14621,8 @@ for (const [life, n] of Object.entries(NAV))
   for (const [w, n] of sorted) NAV[w] = n;
 }
 // The variant list (the tab's variant, see tabVariant): an option a variant, in the menu's order (its first the page's at
-// first), its words its label (a walk's, a creature's: its name, base and words, see splitModeLabel), else its mode and where
-$('variant').append(
-  ...Object.keys(NAV).map((w) => new Option(VARIANTS[w].label ?? `${NAV[w][0]} — ${VARIANTS[w].where}`, w)),
-);
+// first), its words its label (see variantLabel)
+$('variant').append(...Object.keys(NAV).map((w) => new Option(variantLabel(w), w)));
 
 /* ---- 7.4 Torus ---------------------------------------------------------------------------- */
 /* Torus (a ring or "donut"): nu × nv squares, nu around the ring and nv around the tube, with
@@ -25271,7 +25277,7 @@ function renderPlaneRow() {
     },
   );
   $('planeOutline').hidden = !!APERIODIC[kind]; // (a grid that never repeats: always walls, nothing to choose)
-  const edgesChosen = !VARIANTS[tabVariant()].explore; // (Explore: its edges change nothing, no wall drawn: its shapes only)
+  const edgesChosen = playsLife(tabVariant()); // (a torus or walls: Life's edges; Explore's change nothing, no wall drawn: its shapes only)
   for (const [shape, torus] of OUTLINES) {
     const where =
       shape === 'hex'
@@ -39928,7 +39934,7 @@ const sameSetup = (a, b, apart = ['version']) =>
 function getSetup() {
   const w = tabVariant(),
     variant = VARIANTS[w],
-    life = variant.life && !variant.explore, // (Explore's grids Life's, none of its rule nor start: its colours, see exploreLook)
+    life = playsLife(w), // (its rule and start; Explore's: its colours, see exploreLook)
     s = {
       ...variantWords(w),
       ...(readsDigits(w) ? { [life ? 'popNumber' : 'walkNumberA']: formulaInUse } : {}),
@@ -47645,7 +47651,7 @@ const BUILT_IN = [
   [{ mode: 'walk', shape: 'squares', walkKind: 'turtle', on: 'edges', walkNumberA: 'pi', maxSteps: 20000 }],
 ];
 // the walk's name, as in the walk list ("Squares turtle"; a surface's own name)
-const walkName = (w) => splitModeLabel(VARIANTS[w]?.label ?? w).name;
+const walkName = (w) => splitModeLabel(VARIANTS[w] ? variantLabel(w) : w).name;
 // a variant's shape and its tiles, as the Grid's menu names them: a surface of a family (a torus, a strip, a bottle, the
 // rosettes' spheres) and its tiles there (Torus · Kites, Rosettes · Flower 9); else its space and its shape, its tiles in its
 // name (2D circles · Flower 9, 3D solids · Cube)

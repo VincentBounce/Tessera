@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.53';
+const VERSION = '0.5.54';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -15848,7 +15848,10 @@ const PENROSE_SPHERES = {
   2310: [-1.538841769, -7.972135955],
   4110: [0.951056516, -10.781152949],
   5670: [0, -12.708203932],
-}; // (each size's cells: its corner P1, made by penroseSphereSizes(16), 3 min)
+  10080: [0, 16.94427191],
+  15330: [-13.037276677, -16.326237921],
+  24510: [0, 26.416407865],
+}; // (each size's cells: its corner P1, made by penroseSphereSizes(32), 16 min)
 // the Penrose rhombi's corners (sides 1) within reach of their middle, nearest first: one tiling at every reach, its wheel
 // cut PENROSE_SPHERE_CUTS times (the fewest cuts for a disc hang on its size, and so does the tiling past its middle: a
 // size's table and its mesh one tiling, see PENROSE_SPHERES)

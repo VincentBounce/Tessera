@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.90';
+const VERSION = '0.5.91';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -21535,15 +21535,15 @@ const EXPLORE_RULES = [
   ['distance', 'Distance', 'The steps from the first cell, side by side, as rings round it'],
 ];
 const EXPLORE_PALETTES = [
-  ['Azulejo', ['#1F3A93', '#3E6FB0', '#A9C6E8', '#F4F1EA']],
-  ['Terracotta', ['#C8553D', '#F28F3B', '#FFD5C2', '#588B8B']],
-  ['Stained glass', ['#8B1E3F', '#3C153B', '#F2A541', '#1B998B']],
-  ['Bauhaus', ['#E63946', '#F1C40F', '#1D3557', '#F1FAEE']],
-  ['Macaron', ['#FFB5A7', '#FCD5CE', '#B8E0D2', '#9DC3C2']],
-  ['Sage', ['#D4A373', '#FAEDCD', '#CCD5AE', '#8A9A5B']],
-  ['Abyss', ['#0B132B', '#1C2541', '#3A506B', '#5BC0BE', '#C6F1EE']],
-  ['Embers', ['#2B0F0E', '#7A1F1A', '#D1495B', '#F79256', '#FCE38A']],
-];
+  ['Azulejo', ['#1F3A93', '#3E6FB0', '#A9C6E8', '#F4F1EA'], "Blues and cream, as Portugal's glazed tiles"],
+  ['Terracotta', ['#C8553D', '#F28F3B', '#FFD5C2', '#588B8B'], 'Baked clay, apricot and a sea green'],
+  ['Stained glass', ['#8B1E3F', '#3C153B', '#F2A541', '#1B998B'], 'Wine, plum, amber and jade'],
+  ['Bauhaus', ['#E63946', '#F1C40F', '#1D3557', '#F1FAEE'], 'Red, yellow, navy and white'],
+  ['Macaron', ['#FFB5A7', '#FCD5CE', '#B8E0D2', '#9DC3C2'], 'Soft pinks and mints'],
+  ['Sage', ['#D4A373', '#FAEDCD', '#CCD5AE', '#8A9A5B'], 'Sand, cream and sage greens'],
+  ['Abyss', ['#0B132B', '#1C2541', '#3A506B', '#5BC0BE', '#C6F1EE'], 'From night blue to sea foam'],
+  ['Embers', ['#2B0F0E', '#7A1F1A', '#D1495B', '#F79256', '#FCE38A'], 'From soot to flame'],
+]; // (name, colours, words)
 const exploreLook = { rule: 'colouring', palette: 0 },
   explorePalette = () => EXPLORE_PALETTES[exploreLook.palette][1];
 // each cell's colour, 1 to the palette's: by its neighbours by a side (nbr, see sideOf), the first colour none of those
@@ -21607,7 +21607,7 @@ function renderExplore() {
     ),
   );
   $('explorePalettes').replaceChildren(
-    ...EXPLORE_PALETTES.map(([name, colours], i) =>
+    ...EXPLORE_PALETTES.map(([name, colours, words], i) =>
       tile({
         pic: `<svg class="icon" viewBox="0 0 24 24">${colours
           .map(
@@ -21616,6 +21616,7 @@ function renderExplore() {
           )
           .join('')}</svg>`,
         text: name,
+        title: words,
         on: exploreLook.palette === i,
         click: pick('palette', i),
         choice: `explorePalette:${i}`,

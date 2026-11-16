@@ -1,20 +1,21 @@
-// A Brave of its own, driven from the terminal (no dependency: the DevTools protocol over Node's WebSocket): its own
-// profile, hidden, its timers never slowed, so that checks and night searches run without the app's browser pane.
-//   node tools/brave.js start              Brave started (port 9444: 9333 another session's Chrome), nothing shown
-//   node tools/brave.js open <url>         a new tab at url: its id (a tab: its id or its id's start, never a number:
-//   node tools/brave.js tabs               its tabs: id, url              Brave lists them by their last use)
-//   node tools/brave.js eval <tab> <js>    js run in that tab (await allowed): its value, as JSON
-//   node tools/brave.js go <tab> <url>     that tab to url
-//   node tools/brave.js shot <tab> <file>  that tab's picture, a PNG
-//   node tools/brave.js stop               Brave closed
+// A browser of its own, driven from the terminal (no dependency: the DevTools protocol over Node's WebSocket): Chrome for
+// Testing (Playwright's, an app apart: a hidden Brave or Chrome took over the user's own, its Dock icon opening nothing), its
+// own profile, hidden, its timers never slowed, so that checks and night searches run without the app's browser pane.
+//   node tools/browser.js start              started (port 9444: 9333 another session's Chrome), nothing shown
+//   node tools/browser.js open <url>         a new tab at url: its id (a tab: its id or its id's start, never a number:
+//   node tools/browser.js tabs               its tabs: id, url              listed by their last use)
+//   node tools/browser.js eval <tab> <js>    js run in that tab (await allowed): its value, as JSON
+//   node tools/browser.js go <tab> <url>     that tab to url
+//   node tools/browser.js shot <tab> <file>  that tab's picture, a PNG
+//   node tools/browser.js stop               closed
 const { spawn } = require('node:child_process');
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
 
-const BRAVE = '/Applications/Brave Browser.app/Contents/MacOS/Brave Browser',
+const BROWSER = path.join(os.homedir(), 'Library/Caches/ms-playwright/chromium-1254/chrome-mac-arm64/Google Chrome for Testing.app/Contents/MacOS/Google Chrome for Testing'),
   PORT = 9444,
-  PROFILE = path.join(os.homedir(), 'Library/Caches/tessera-brave'),
+  PROFILE = path.join(os.homedir(), 'Library/Caches/tessera-browser'),
   HTTP = `http://127.0.0.1:${PORT}`;
 // (hidden: a window, WebGPU's, never drawn on the screen; its timers and drawing at full speed while hidden)
 const FLAGS = [
@@ -62,7 +63,7 @@ const commands = {
       await pages();
       return 'already running';
     } catch {}
-    spawn(BRAVE, [...FLAGS, 'about:blank'], { detached: true, stdio: 'ignore' }).unref();
+    spawn(BROWSER, [...FLAGS, 'about:blank'], { detached: true, stdio: 'ignore' }).unref();
     for (let i = 0; i < 50; i++) {
       await new Promise((r) => setTimeout(r, 200));
       try {
@@ -70,7 +71,7 @@ const commands = {
         return `started on port ${PORT}`;
       } catch {}
     }
-    throw new Error('Brave did not start');
+    throw new Error('the browser did not start');
   },
   open: async (url) => {
     return (await (await fetch(`${HTTP}/json/new?${encodeURI(url)}`, { method: 'PUT' })).json()).id;
@@ -108,7 +109,7 @@ if (!commands[name]) {
 commands[name](...args).then(
   (out) => {
     console.log(out);
-    process.exit(0); // (Brave left running: its child)
+    process.exit(0); // (the browser left running: its child)
   },
   (e) => {
     console.error(e.message);

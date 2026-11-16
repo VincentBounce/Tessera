@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.86';
+const VERSION = '0.5.87';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -6217,7 +6217,7 @@ function describe(base) {
   const variant = VARIANTS[walk.variant],
     sym = withIcons(shownSymbol); // (the walk shown's, described once built)
   setLinks($('barNum'), (barTitle = withIcons(shownSymbol)));
-  $('barNum').title = formulaInUse;
+  $('barNum').title = readsDigits(walk.variant) ? formulaInUse : ''; // (the number read, if its digits are: none for Life's own starts)
   // the chips after the title, in one order everywhere: a walk's base, then the rule (a walk's, a creature's, Life's: a click,
   // how it works); a creature turns by its rule, or by the digits of a number: that number first
   const w = walk.variant,
@@ -12060,7 +12060,7 @@ function updateHint() {
 // tooltip "Name: words": that name in bold, its words under it)
 new MutationObserver((ms) => {
   for (const { target: el } of ms)
-    if (el.title && el.matches(':hover')) {
+    if (el.hasAttribute('title') && el.matches(':hover')) {
       el.dataset.tip = el.title;
       el.removeAttribute('title');
     }
@@ -12074,10 +12074,10 @@ const opensWith = (words, name) => !!name && words.startsWith(name) && /^[:;,.]/
 const tipOf = (target) => {
   const greyed = target.closest?.('[data-greyed]:not([data-greyed=""])') ?? null,
     el = target.closest?.('[title], [data-tip], [data-default]:not([data-default=""])') ?? greyed;
-  if (el?.title) {
+  if (el?.hasAttribute('title')) {
     el.dataset.tip = el.title;
     el.removeAttribute('title');
-  }
+  } // (a title set again, emptied too: its words then, none)
   return { el, tip: el?.dataset.tip ?? '', greyed };
 };
 document.addEventListener('mouseover', (e) => {

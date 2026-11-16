@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.153';
+const VERSION = '0.5.154';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -7191,17 +7191,25 @@ function lifeLookPicture(look) {
   if (look === 'mono')
     return lifeTeams > 1 ? swatch([LIFE_COLOURS[0], UNLIT, UNLIT, LIFE_COLOURS[1]]) : statesPicture(); // in colours: a red, a blue
   if (look === 'gradient') return swatch([g(1), g(0.5), g(0), LIFE_TRAIL[Math.floor(LIFE_TRAIL.length / 3)]]); // warm newborns to cold old cells
-  if (look === 'domain') {
-    const pale = faded(LIFE_ALIVE, 0.3, cssColour('--page-background')),
-      gold = cssColour('--accent-color');
-    return swatch([pale, gold, gold, pale]); // (the background pale, a defect across it in gold)
-  }
-  if (look === 'entropy') {
-    const page = cssColour('--page-background'),
-      gold = cssColour('--accent-color');
-    return swatch([page, faded(gold, 0.4, page), faded(gold, 0.7, page), gold]); // (low to high)
-  }
+  if (look === 'domain')
+    return bandPicture([faded(LIFE_ALIVE, 0.3, cssColour('--page-background'))], [cssColour('--accent-color')]); // (the background pale, its defects gold)
+  if (look === 'entropy') return bandPicture([g(0)], [g(1), g(0.8), g(0.9)]); // (what repeats blue, chaos red, as drawn)
   return heatRings(g);
+}
+// Elementary's run in small, 8 × 8 cells (Domains', Entropy's pictures): a background of stripes, a diagonal band across it, each
+// its colours in turn
+function bandPicture(background, band) {
+  const cells = [];
+  for (let y = 0; y < 8; y++)
+    for (let x = 0; x < 8; x++) {
+      const across = x + y >= 5 && x + y <= 9 && x < 6,
+        colours = across ? band : background;
+      if (across ? (7 * x + 3 * y) % 3 : (x + y) % 3 === 0 || (x + 2 * y) % 5 === 1)
+        cells.push(
+          `<rect x="${x}" y="${y}" width="1" height="1" fill="${colours[(5 * x + 3 * y) % colours.length]}"/>`,
+        );
+    }
+  return `<svg viewBox="0 0 8 8" shape-rendering="crispEdges" aria-hidden="true">${cells.join('')}</svg>`;
 }
 // a 2 × 2 swatch of four colours (a look's picture, Life's and a walk's)
 const swatch = (cs) =>

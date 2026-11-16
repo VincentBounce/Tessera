@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.91';
+const VERSION = '0.5.92';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -941,7 +941,7 @@ const PALETTES = {
     dying: '#7d8896',
     alive: '#1f2328',
     edgeRgb: [0, 0, 0],
-    edgeAlpha: 0.11,
+    edgeAlpha: 0.2,
     shade: 0.35,
     fadeEdges: true,
     tileLift: 0.22,
@@ -42022,7 +42022,7 @@ function edgeAlpha(sh) {
     sh.cellSizeAt = sh.m;
   }
   const px = walk.R * sh.cellSize * view.scale;
-  return EDGE_ALPHA * Math.min(1, Math.max(0.15, (px - 4) / 50)); // as faint at every surface's usual size, stronger zoomed in
+  return EDGE_ALPHA * Math.min(1, Math.max(0.35, (px - 4) / 50)); // (fainter at every surface's usual size, stronger zoomed in)
 }
 
 /* ---- 11.4b Surfaces: shared pieces -------------------------------------------------------- */

@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.121';
+const VERSION = '0.5.122';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -21538,9 +21538,9 @@ function fitLifeTeams(variant) {
 }
 // Explore: its rule (how a cell's colour is found) and its palette (see EXPLORE_PALETTES), each a choice of its section
 const EXPLORE_RULES = [
-  ['colouring', 'Tiles', 'Two cells side by side never the same colour'],
-  ['faces', 'Sides', "Two sides of the solid side by side never the same colour (a solid's only)"],
-  ['sides', 'Kind of tile', 'A colour for each kind of tile, by its number of sides'],
+  ['tiles', 'Tiles', 'Two cells side by side never the same colour'],
+  ['sides', 'Sides', "Two sides of the solid side by side never the same colour (a solid's only)"],
+  ['kind', 'Kind of tile', 'A colour for each kind of tile, by its number of sides'],
   ['distance', 'Distance', 'The steps from the first cell, side by side, as rings round it'],
 ];
 const EXPLORE_PALETTES = [
@@ -21554,7 +21554,7 @@ const EXPLORE_PALETTES = [
   ['Abyss', ['#0B132B', '#1C2541', '#3A506B', '#5BC0BE', '#C6F1EE'], 'From night blue to sea foam'],
   ['Embers', ['#2B0F0E', '#7A1F1A', '#D1495B', '#F79256', '#FCE38A'], 'From soot to flame'],
 ]; // (name, colours, words)
-const exploreLook = { rule: 'colouring', palette: 0 },
+const exploreLook = { rule: 'tiles', palette: 0 },
   explorePalette = () => EXPLORE_PALETTES[exploreLook.palette][1];
 // a graph's greedy colouring: each node the first colour (1, 2…) none of its neighbours before it has (put: each neighbour)
 function greedyColours(count, eachNeighbour) {
@@ -21593,7 +21593,7 @@ function cellFaces(g, surface) {
 function exploreLevels(nbr, n, faces) {
   const side = sideOf(nbr),
     P = explorePalette().length,
-    rule = exploreLook.rule === 'faces' && !faces ? 'colouring' : exploreLook.rule;
+    rule = exploreLook.rule === 'sides' && !faces ? 'tiles' : exploreLook.rule;
   let level = new Uint8Array(n);
   const sides = (t) => {
     let k = 0;
@@ -21603,14 +21603,14 @@ function exploreLevels(nbr, n, faces) {
   const bySide = (t, put) => {
     for (let q = nbr.start[t]; q < nbr.start[t + 1]; q++) if (side[q]) put(nbr.list[q]);
   };
-  if (rule === 'colouring') level = greedyColours(n, bySide);
-  if (rule === 'faces') {
+  if (rule === 'tiles') level = greedyColours(n, bySide);
+  if (rule === 'sides') {
     const touching = Array.from({ length: Math.max(...faces) + 1 }, () => new Set());
     for (let t = 0; t < n; t++) bySide(t, (u) => faces[u] !== faces[t] && touching[faces[t]].add(faces[u]));
     const colour = greedyColours(touching.length, (f, put) => touching[f].forEach(put));
     for (let t = 0; t < n; t++) level[t] = colour[faces[t]];
   }
-  if (rule === 'sides') {
+  if (rule === 'kind') {
     const counts = [...new Set(Array.from({ length: n }, (_, t) => sides(t)))].sort((a, b) => a - b);
     for (let t = 0; t < n; t++) level[t] = 1 + counts.indexOf(sides(t));
   }
@@ -21645,7 +21645,7 @@ function renderExplore() {
           title,
           on: exploreLook.rule === key,
           whyNot: ({ w }) =>
-            key === 'faces' && !SOLIDS.includes(surfaceOf(VARIANTS[w])) ? 'On a solid only: its sides.' : '',
+            key === 'sides' && !SOLIDS.includes(surfaceOf(VARIANTS[w])) ? 'On a solid only: its sides.' : '',
           click: pick('rule', key),
           choice: `exploreRule:${key}`,
         }),

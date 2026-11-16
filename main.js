@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.77';
+const VERSION = '0.5.78';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -4605,7 +4605,6 @@ const VARIANTS = {
     turns: [120, 60, 0, -60, -120],
     rule: 'along the edges of an icosahedron of triangles: <b>0</b> sharp left, <b>1</b> left, <b>2</b> straight, <b>3</b> right, <b>4</b> sharp right (at a corner of the solid, the nearest edge)',
   },
-  lifeSquares: { base: 2, lattice: 'square', life: true, plane: 'square', where: 'a grid of squares' }, // on the plane (see plane)
   // a reversible automaton: the grid in 2 × 2 blocks, shifted by one each generation (Margolus's), each block by its rule
   rewindSquares: {
     base: 2,
@@ -4647,431 +4646,6 @@ const VARIANTS = {
     margolus: true,
     where:
       'a grid of triangles in squares of 4, each triangle first swapped with the one across its outer side (the isometric von Neumann neighbourhood, stellated)',
-  },
-  lifeTriangles: { base: 2, lattice: 'tri', life: true, plane: 'tri', where: 'a grid of triangles' },
-  lifeHex: {
-    base: 2,
-    lattice: 'hex',
-    life: true,
-    plane: 'hex',
-    where: 'a grid of hexagons (pentagons tile as it does, a corner on a side: their types 2, 3 and 12, and some of 1)',
-  },
-  lifeCairo: {
-    base: 2,
-    lattice: 'cairo',
-    life: true,
-    plane: 'cairo',
-    where: 'a grid of Cairo pentagons (the pentagons of types 4 and 8 tile as it does, and some of 2)',
-  },
-  lifeKites: {
-    base: 2,
-    lattice: 'kite',
-    life: true,
-    plane: 'kite',
-    where: 'a grid of kites (each triangle cut in 3)',
-  },
-  lifeHats: {
-    base: 2,
-    lattice: 'hat',
-    life: true,
-    plane: 'hat',
-    where: 'a patch of hats, the tile that never repeats',
-  },
-  lifePenrose: {
-    base: 2,
-    lattice: 'penrose',
-    life: true,
-    plane: 'penrose',
-    where: "a patch of Penrose's rhombi (they never repeat)",
-  },
-  lifePinwheel: {
-    base: 2,
-    lattice: 'pinwheel',
-    life: true,
-    plane: 'pinwheel',
-    where: "a patch of the pinwheel's right triangles (they never repeat, turned every way)",
-  },
-  lifeAmmann: {
-    base: 2,
-    lattice: 'ammann',
-    life: true,
-    plane: 'ammann',
-    where: 'a patch of Ammann–Beenker squares and rhombi (they never repeat, eightfold)',
-  },
-  lifeRhombs14: {
-    base: 2,
-    lattice: 'rhombs14',
-    life: true,
-    plane: 'rhombs14',
-    where:
-      "a patch of de Bruijn's rhombi of 7 families of lines (three kinds of rhombi, never repeating, fourteenfold)",
-  },
-  lifeRhombs12: {
-    base: 2,
-    lattice: 'rhombs12',
-    life: true,
-    plane: 'rhombs12',
-    where: "a patch of squares and 30° and 60° rhombi (de Bruijn's, never repeating, twelvefold)",
-  },
-  lifeFlower6: {
-    base: 2,
-    lattice: 'flower',
-    life: true,
-    plane: 'flower',
-    where: "a patch of Hirschhorn's flower (one pentagon, six-fold round its middle, never repeating)",
-  },
-  lifeFlower5: {
-    base: 2,
-    lattice: 'flower5',
-    life: true,
-    plane: 'flower5',
-    where: "a patch of the 5-fold rosette (Sugimoto's pentagon, five-fold round its middle, never repeating)",
-  },
-  lifeFlower7: {
-    base: 2,
-    lattice: 'flower7',
-    life: true,
-    plane: 'flower7',
-    where: "a patch of the 7-fold rosette (Sugimoto's pentagon, seven-fold round its middle, never repeating)",
-  },
-  lifeFlower3: {
-    base: 2,
-    lattice: 'flower3',
-    life: true,
-    plane: 'flower3',
-    where: "a patch of the 3-fold rosette (Sugimoto's pentagon, 3-fold round its middle, never repeating)",
-  },
-  lifeFlower4: {
-    base: 2,
-    lattice: 'flower4',
-    life: true,
-    plane: 'flower4',
-    where: "a patch of the 4-fold rosette (Sugimoto's pentagon, 4-fold round its middle, never repeating)",
-  },
-  lifeFlower8: {
-    base: 2,
-    lattice: 'flower8',
-    life: true,
-    plane: 'flower8',
-    where: "a patch of the 8-fold rosette (Sugimoto's pentagon, 8-fold round its middle, never repeating)",
-  },
-  lifeFlower9: {
-    base: 2,
-    lattice: 'flower9',
-    life: true,
-    plane: 'flower9',
-    where: "a patch of the 9-fold rosette (Sugimoto's pentagon, 9-fold round its middle, never repeating)",
-  },
-  lifeFlower10: {
-    base: 2,
-    lattice: 'flower10',
-    life: true,
-    plane: 'flower10',
-    where: "a patch of the 10-fold rosette (Sugimoto's pentagon, 10-fold round its middle, never repeating)",
-  },
-  lifeFlower11: {
-    base: 2,
-    lattice: 'flower11',
-    life: true,
-    plane: 'flower11',
-    where: "a patch of the 11-fold rosette (Sugimoto's pentagon, 11-fold round its middle, never repeating)",
-  },
-  lifeFlower12: {
-    base: 2,
-    lattice: 'flower12',
-    life: true,
-    plane: 'flower12',
-    where: "a patch of the 12-fold rosette (Sugimoto's pentagon, 12-fold round its middle, never repeating)",
-  },
-  lifeRing7: {
-    base: 2,
-    lattice: 'ring7',
-    life: true,
-    plane: 'ring7',
-    where: "a patch of the 7-fold ring (Sugimoto's pentagon round a regular 7-gon left empty, never repeating)",
-  },
-  lifeRing8: {
-    base: 2,
-    lattice: 'ring8',
-    life: true,
-    plane: 'ring8',
-    where: "a patch of the 8-fold ring (Sugimoto's pentagon round a regular 8-gon left empty, never repeating)",
-  },
-  lifeRing10: {
-    base: 2,
-    lattice: 'ring10',
-    life: true,
-    plane: 'ring10',
-    where: "a patch of the 10-fold ring (Sugimoto's pentagon round a decagonal hole, never repeating)",
-  },
-  lifeRing9: {
-    base: 2,
-    lattice: 'ring9',
-    life: true,
-    plane: 'ring9',
-    where: "a patch of the 9-fold ring (Sugimoto's pentagon round a regular 9-gon left empty, never repeating)",
-  },
-  lifeRing11: {
-    base: 2,
-    lattice: 'ring11',
-    life: true,
-    plane: 'ring11',
-    where: "a patch of the 11-fold ring (Sugimoto's pentagon round a regular 11-gon, never repeating)",
-  },
-  lifeRing12: {
-    base: 2,
-    lattice: 'ring12',
-    life: true,
-    plane: 'ring12',
-    where: "a patch of the 12-fold ring (Sugimoto's pentagon round a regular 12-gon left empty, never repeating)",
-  },
-  lifeSpectre: {
-    base: 2,
-    lattice: 'spectre',
-    life: true,
-    plane: 'spectre',
-    where: 'a patch of spectres, the tile that never repeats and is never turned over',
-  },
-  lifeTorusKites: {
-    base: 2,
-    lattice: 'surface',
-    surface: 'torusKite',
-    life: true,
-    where: 'a torus of kites',
-  },
-  lifeMobiusStripKites: {
-    base: 2,
-    lattice: 'surface',
-    surface: 'mobiusKite',
-    life: true,
-    where: 'a Möbius strip of kites (both faces, over its edge onto the one behind)',
-  },
-  lifeKleinBottleKites: {
-    base: 2,
-    lattice: 'surface',
-    surface: 'kleinKite',
-    life: true,
-    where: 'a Klein bottle of kites',
-  },
-  lifeTorusSquares: {
-    base: 2,
-    lattice: 'surface',
-    surface: 'torus',
-    life: true,
-    where: 'a torus of squares (a grid that wraps around both ways)',
-  },
-  lifeTorusHex: {
-    base: 2,
-    lattice: 'surface',
-    surface: 'torusHex',
-    life: true,
-    where: 'a torus of hexagons',
-  },
-  lifeTorusTriangles: {
-    base: 2,
-    lattice: 'surface',
-    surface: 'torusTri',
-    life: true,
-    where: 'a torus of triangles',
-  },
-  lifeTorusCairo: {
-    base: 2,
-    lattice: 'surface',
-    surface: 'torusCairo',
-    life: true,
-    where: 'a torus of Cairo pentagons',
-  },
-  // a Möbius strip: its two faces one surface, over its edge onto the face behind (2 colours: a face each)
-  lifeMobiusStripSquares: {
-    base: 2,
-    lattice: 'surface',
-    surface: 'mobius',
-    life: true,
-    where: 'a Möbius strip of squares (both faces, over its edge onto the one behind)',
-  },
-  lifeMobiusStripHex: {
-    base: 2,
-    lattice: 'surface',
-    surface: 'mobiusHex',
-    life: true,
-    where: 'a Möbius strip of hexagons (both faces, over its edge onto the one behind)',
-  },
-  lifeKleinBottleSquares: {
-    base: 2,
-    lattice: 'surface',
-    surface: 'klein',
-    life: true,
-    where: 'a Klein bottle of squares',
-  },
-  lifeKleinBottleHex: {
-    base: 2,
-    lattice: 'surface',
-    surface: 'kleinHex',
-    life: true,
-    where: 'a Klein bottle of hexagons',
-  },
-  lifeKleinBottleTriangles: {
-    base: 2,
-    lattice: 'surface',
-    surface: 'kleinTri',
-    life: true,
-    where: 'a Klein bottle of triangles',
-  },
-  lifeKleinBottleCairo: {
-    base: 2,
-    lattice: 'surface',
-    surface: 'kleinCairo',
-    life: true,
-    where: 'a Klein bottle of Cairo pentagons',
-  },
-  lifeMobiusStripCairo: {
-    base: 2,
-    lattice: 'surface',
-    surface: 'mobiusCairo',
-    life: true,
-    where: 'a Möbius strip of Cairo pentagons (both faces, over its edge onto the one behind)',
-  },
-  lifeMobiusStripTriangles: {
-    base: 2,
-    lattice: 'surface',
-    surface: 'mobiusTri',
-    life: true,
-    where: 'a Möbius strip of triangles (both faces, over its edge onto the one behind)',
-  },
-  lifeCubeSquares: {
-    base: 2,
-    lattice: 'surface',
-    surface: 'cube',
-    life: true,
-    where: 'the surface of a cube',
-  },
-  lifeCubePitsSquares: {
-    base: 2,
-    lattice: 'surface',
-    surface: 'pits',
-    life: true,
-    where: 'the surface of a cube with a pit in each face',
-  },
-  lifeCubeBumpsSquares: {
-    base: 2,
-    lattice: 'surface',
-    surface: 'bumps',
-    life: true,
-    where: 'the surface of a cube with a bump on each face',
-  },
-  lifeCubeMengerSpongeSquares: {
-    base: 2,
-    lattice: 'surface',
-    surface: 'menger',
-    life: true,
-    where: "the surface of Menger's sponge (its holes down to one square)",
-  },
-  lifeCubeFrameSquares: {
-    base: 2,
-    lattice: 'surface',
-    surface: 'frame',
-    life: true,
-    where: "the surface of a cube's frame (its edges as wide as its holes)",
-  },
-  lifeTetrahedronTriangles: {
-    base: 2,
-    lattice: 'surface',
-    surface: 'tetra',
-    life: true,
-    where: 'a tetrahedron of triangles',
-  },
-  lifeOctahedronTriangles: {
-    base: 2,
-    lattice: 'surface',
-    surface: 'octa',
-    life: true,
-    where: 'an octahedron of triangles',
-  },
-  lifeTetrahedronKites: {
-    base: 2,
-    lattice: 'surface',
-    surface: 'tetraKite',
-    life: true,
-    where: 'a tetrahedron of kites (each triangle cut in 3)',
-  },
-  lifeOctahedronKites: {
-    base: 2,
-    lattice: 'surface',
-    surface: 'octaKite',
-    life: true,
-    where: 'an octahedron of kites (each triangle cut in 3)',
-  },
-  lifeIcosahedronKites: {
-    base: 2,
-    lattice: 'surface',
-    surface: 'icosaKite',
-    life: true,
-    where: 'an icosahedron of kites (each triangle cut in 3)',
-  },
-  lifeStellaOctangulaKites: {
-    base: 2,
-    lattice: 'surface',
-    surface: 'stellaKite',
-    life: true,
-    where: 'a stella octangula (two tetrahedra) of kites (each triangle cut in 3)',
-  },
-  lifeDodecahedronKites: {
-    base: 2,
-    lattice: 'surface',
-    surface: 'dodecaKite',
-    life: true,
-    where: 'a dodecahedron, its pentagons cut into triangles, of kites (each triangle cut in 3)',
-  },
-  lifeGlobe: {
-    base: 2,
-    lattice: 'surface',
-    surface: 'globe',
-    life: true,
-    where: 'a globe: squares between its parallels and meridians, one cell round each pole',
-  },
-  lifeStellaOctangulaTriangles: {
-    base: 2,
-    lattice: 'surface',
-    surface: 'stella',
-    life: true,
-    where: 'a stella octangula (two tetrahedra) of triangles',
-  },
-  lifeDodecahedronTriangles: {
-    base: 2,
-    lattice: 'surface',
-    surface: 'dodeca',
-    life: true,
-    where: 'a dodecahedron, its pentagons cut into triangles',
-  },
-  lifeIcosahedronTriangles: {
-    base: 2,
-    lattice: 'surface',
-    surface: 'icosa',
-    life: true,
-    where: 'an icosahedron of triangles',
-  },
-  lifeIcosahedronHex: {
-    base: 2,
-    lattice: 'surface',
-    surface: 'hexsphere',
-    life: true,
-    where: 'an icosahedron of hexagons, a Goldberg polyhedron (its 12 pentagons are walls)',
-  },
-  lifeIcosahedronPenrose: {
-    base: 2,
-    lattice: 'surface',
-    surface: 'penroseSphere',
-    life: true,
-    where:
-      "Penrose's rhombi on a sphere: their pentagon round their five-fold middle laid on each of a dodecahedron's faces (Twarock and Konevtsova's tilings, as Hamish Todd builds them)",
-  },
-  lifeIcosahedronTwisted: {
-    base: 2,
-    lattice: 'surface',
-    surface: 'twistedsphere',
-    life: true,
-    where:
-      'an icosahedron of hexagons (a Goldberg polyhedron) turned 15°, a triangle between each three (Twisted on a sphere, its 12 pentagons too)',
   },
   walkCubesTurtleEdges: {
     lattice: 'cube',
@@ -9574,10 +9148,8 @@ const VARIANT_ICONS = {
   walkOctahedronTrianglesTurtleCells: 'octahedron',
   walkStellaOctangulaTrianglesTurtleCells: 'stella',
   walkStellaOctangulaTrianglesTurtleEdges: 'stella',
-  lifeStellaOctangulaTriangles: 'stella',
   walkDodecahedronTrianglesTurtleCells: 'dodecahedron',
   walkDodecahedronTrianglesTurtleEdges: 'dodecahedron',
-  lifeDodecahedronTriangles: 'dodecahedron',
   walkIcosahedronTrianglesTurtleCells: 'icosahedron',
   walkTorusSquaresTurtleEdges: 'torus',
   walkTorusTrianglesTurtleEdges: 'torus',
@@ -9588,73 +9160,17 @@ const VARIANT_ICONS = {
   walkIcosahedronTrianglesTurtleEdges: 'icosahedron',
   walkIcosahedronHexTurtleCells: 'hexagon',
   /* icosaGrid2: 'icosahedron', icosaGrid3: 'icosahedron', */ walkIcosahedronHexTurtleEdges: 'hexagon',
-  lifeKites: 'kites',
-  lifeHats: 'hat',
-  lifePenrose: 'penrose',
-  lifePinwheel: 'pinwheel',
-  lifeSpectre: 'spectre',
-  lifeAmmann: 'ammann',
-  lifeRhombs12: 'rhombs12',
-  lifeRhombs14: 'rhombs14',
-  lifeFlower6: 'flower',
-  lifeFlower5: 'flower5',
-  lifeFlower7: 'flower7',
-  lifeFlower3: 'flower3',
-  lifeFlower4: 'flower4',
-  lifeFlower8: 'flower8',
-  lifeFlower9: 'flower9',
-  lifeFlower10: 'flower10',
-  lifeFlower11: 'flower11',
-  lifeFlower12: 'flower12',
-  lifeRing7: 'ring7',
-  lifeRing8: 'ring8',
-  lifeRing9: 'ring9',
-  lifeRing10: 'ring10',
-  lifeRing11: 'ring11',
-  lifeRing12: 'ring12',
-  lifeTorusKites: 'torus',
-  lifeMobiusStripKites: 'mobius',
-  lifeKleinBottleKites: 'klein',
-  lifeSquares: 'grid',
   rewindSquares: 'grid',
   rewindTriangles: 'triangle',
   rewindHex: 'hexagon',
   rewindCairo: 'pentagons',
   rewindTetrakis: 'tetrakis',
-  lifeTriangles: 'triangle',
-  lifeHex: 'hexagon',
-  lifeCairo: 'pentagons',
-  lifeTorusSquares: 'torus',
-  lifeTorusHex: 'torus',
-  lifeTorusCairo: 'torus',
-  lifeTorusTriangles: 'torus',
   walkTorusCairoTurtleCells: 'torus',
-  lifeMobiusStripSquares: 'mobius',
-  lifeMobiusStripHex: 'mobius',
-  lifeMobiusStripTriangles: 'mobius',
-  lifeMobiusStripCairo: 'mobius',
   walkMobiusStripCairoTurtleCells: 'mobius',
   walkKleinBottleSquaresTurtleCells: 'klein',
   walkKleinBottleHexTurtleCells: 'klein',
   walkKleinBottleTrianglesTurtleCells: 'klein',
   walkKleinBottleCairoTurtleCells: 'klein',
-  lifeKleinBottleSquares: 'klein',
-  lifeKleinBottleHex: 'klein',
-  lifeKleinBottleTriangles: 'klein',
-  lifeKleinBottleCairo: 'klein',
-  lifeCubeSquares: 'cube',
-  lifeTetrahedronTriangles: 'tetrahedron',
-  lifeOctahedronTriangles: 'octahedron',
-  lifeIcosahedronTriangles: 'icosahedron',
-  lifeTetrahedronKites: 'tetrahedron',
-  lifeOctahedronKites: 'octahedron',
-  lifeIcosahedronKites: 'icosahedron',
-  lifeStellaOctangulaKites: 'stella',
-  lifeDodecahedronKites: 'dodecahedron',
-  lifeGlobe: 'globe',
-  lifeIcosahedronHex: 'hexagon',
-  lifeIcosahedronTwisted: 'tiling-twisttri',
-  lifeIcosahedronPenrose: 'penrose',
   walkSquaresSpiral: 'spiral',
   walkTrianglesSpiral: 'triSpiral',
   walkHexSpiral: 'hexSpiral',
@@ -9724,53 +9240,12 @@ const NAV = {
   antCubeSquaresCells: ['Ant', 'Surfaces', 'Cube', 'Ant', 'cells'],
   antIcosahedronHexCells: ['Ant', 'Surfaces', 'Sphere', 'Ant', 'cells'],
   antIcosahedronTrianglesCells: ['Ant', 'Surfaces', 'Sphere', 'Ant', 'cells'],
-  lifeKites: ['Life', '2D', 'Kites', 'Life', ''],
-  lifeHats: ['Life', '2D', 'Hats', 'Life', ''],
-  lifePenrose: ['Life', '2D', 'Penrose', 'Life', ''],
-  lifePinwheel: ['Life', '2D', 'Pinwheel', 'Life', ''],
-  lifeSpectre: ['Life', '2D', 'Spectre', 'Life', ''],
-  lifeAmmann: ['Life', '2D', 'Ammann', 'Life', ''],
-  lifeRhombs12: ['Life', '2D', 'Rhombs 12', 'Life', ''],
-  lifeRhombs14: ['Life', '2D', 'Rhombs 14', 'Life', ''],
-  lifeFlower6: ['Life', '2D', 'Flower 6', 'Life', ''],
-  lifeFlower5: ['Life', '2D', 'Flower 5', 'Life', ''],
-  lifeFlower7: ['Life', '2D', 'Flower 7', 'Life', ''],
-  lifeFlower3: ['Life', '2D', 'Flower 3', 'Life', ''],
-  lifeFlower4: ['Life', '2D', 'Flower 4', 'Life', ''],
-  lifeFlower8: ['Life', '2D', 'Flower 8', 'Life', ''],
-  lifeFlower9: ['Life', '2D', 'Flower 9', 'Life', ''],
-  lifeFlower10: ['Life', '2D', 'Flower 10', 'Life', ''],
-  lifeFlower11: ['Life', '2D', 'Flower 11', 'Life', ''],
-  lifeFlower12: ['Life', '2D', 'Flower 12', 'Life', ''],
-  lifeRing7: ['Life', '2D', 'Ring 7', 'Life', ''],
-  lifeRing8: ['Life', '2D', 'Ring 8', 'Life', ''],
-  lifeRing9: ['Life', '2D', 'Ring 9', 'Life', ''],
-  lifeRing10: ['Life', '2D', 'Ring 10', 'Life', ''],
-  lifeRing11: ['Life', '2D', 'Ring 11', 'Life', ''],
-  lifeRing12: ['Life', '2D', 'Ring 12', 'Life', ''],
-  lifeSquares: ['Life', '2D', 'Squares', 'Life', ''],
   rewindSquares: ['Rewind', '2D', 'Squares', 'Blocks', ''],
   rewindTriangles: ['Rewind', '2D', 'Triangles', 'Blocks', ''],
   rewindHex: ['Rewind', '2D', 'Hexagons', 'Blocks', ''],
   rewindCairo: ['Rewind', '2D', 'Cairo', 'Blocks', ''],
   rewindTetrakis: ['Rewind', '2D', 'Tetrakis', 'Blocks', ''],
-  lifeTriangles: ['Life', '2D', 'Triangles', 'Life', ''],
-  lifeHex: ['Life', '2D', 'Hexagons', 'Life', ''],
-  lifeCairo: ['Life', '2D', 'Cairo', 'Life', ''],
-  lifeCubeSquares: ['Life', 'Surfaces', 'Cube', 'Life', ''],
-  lifeCubePitsSquares: ['Life', 'Surfaces', 'Pits', 'Life', ''],
-  lifeCubeBumpsSquares: ['Life', 'Surfaces', 'Bumps', 'Life', ''],
-  lifeCubeFrameSquares: ['Life', 'Surfaces', 'Frame', 'Life', ''],
-  lifeCubeMengerSpongeSquares: ['Life', 'Surfaces', 'Sponge', 'Life', ''],
-  lifeTorusSquares: ['Life', 'Surfaces', 'Torus', 'Life', ''],
-  lifeTorusHex: ['Life', 'Surfaces', 'Torus', 'Life', ''],
-  lifeTorusCairo: ['Life', 'Surfaces', 'Torus', 'Life', ''],
-  lifeTorusTriangles: ['Life', 'Surfaces', 'Torus', 'Life', ''],
   walkTorusCairoTurtleCells: ['Walk', 'Surfaces', 'Torus', 'Turtle', 'cells'],
-  lifeMobiusStripSquares: ['Life', 'Surfaces', 'Möbius strip', 'Life', ''],
-  lifeMobiusStripHex: ['Life', 'Surfaces', 'Möbius strip', 'Life', ''],
-  lifeMobiusStripTriangles: ['Life', 'Surfaces', 'Möbius strip', 'Life', ''],
-  lifeMobiusStripCairo: ['Life', 'Surfaces', 'Möbius strip', 'Life', ''],
   walkMobiusStripCairoTurtleCells: ['Walk', 'Surfaces', 'Möbius strip', 'Turtle', 'cells'],
   walkKleinBottleSquaresTurtleCells: ['Walk', 'Surfaces', 'Klein bottle', 'Turtle', 'cells'],
   walkKleinBottleHexTurtleCells: ['Walk', 'Surfaces', 'Klein bottle', 'Turtle', 'cells'],
@@ -9779,28 +9254,585 @@ const NAV = {
   walkKleinBottleHexTurtleEdges: ['Walk', 'Surfaces', 'Klein bottle', 'Turtle', 'edges'],
   walkKleinBottleTrianglesTurtleEdges: ['Walk', 'Surfaces', 'Klein bottle', 'Turtle', 'edges'],
   walkKleinBottleCairoTurtleCells: ['Walk', 'Surfaces', 'Klein bottle', 'Turtle', 'cells'],
-  lifeKleinBottleSquares: ['Life', 'Surfaces', 'Klein bottle', 'Life', ''],
-  lifeKleinBottleHex: ['Life', 'Surfaces', 'Klein bottle', 'Life', ''],
-  lifeKleinBottleTriangles: ['Life', 'Surfaces', 'Klein bottle', 'Life', ''],
-  lifeKleinBottleCairo: ['Life', 'Surfaces', 'Klein bottle', 'Life', ''],
-  lifeTetrahedronTriangles: ['Life', 'Surfaces', 'Tetrahedron', 'Life', ''],
-  lifeOctahedronTriangles: ['Life', 'Surfaces', 'Octahedron', 'Life', ''],
-  lifeStellaOctangulaTriangles: ['Life', 'Surfaces', 'Stella octangula', 'Life', ''],
-  lifeDodecahedronTriangles: ['Life', 'Surfaces', 'Dodecahedron', 'Life', ''],
-  lifeIcosahedronTriangles: ['Life', 'Surfaces', 'Sphere', 'Life', ''],
-  lifeIcosahedronHex: ['Life', 'Surfaces', 'Sphere', 'Life', ''],
-  lifeIcosahedronTwisted: ['Life', 'Surfaces', 'Sphere', 'Life', ''],
-  lifeIcosahedronPenrose: ['Life', 'Surfaces', 'Sphere', 'Life', ''],
-  lifeTorusKites: ['Life', 'Surfaces', 'Torus', 'Life', ''],
-  lifeMobiusStripKites: ['Life', 'Surfaces', 'Möbius strip', 'Life', ''],
-  lifeKleinBottleKites: ['Life', 'Surfaces', 'Klein bottle', 'Life', ''],
-  lifeTetrahedronKites: ['Life', 'Surfaces', 'Tetrahedron', 'Life', ''],
-  lifeOctahedronKites: ['Life', 'Surfaces', 'Octahedron', 'Life', ''],
-  lifeIcosahedronKites: ['Life', 'Surfaces', 'Sphere', 'Life', ''],
-  lifeStellaOctangulaKites: ['Life', 'Surfaces', 'Stella octangula', 'Life', ''],
-  lifeDodecahedronKites: ['Life', 'Surfaces', 'Dodecahedron', 'Life', ''],
-  lifeGlobe: ['Life', 'Surfaces', 'Globe', 'Life', ''],
 };
+// The grids of Life's said here, each once: its key, its menu's space and shape, its icon, its fields (see lifeGrid); the
+// others made from their families' declarations below (the tilings and their folds, the solids, the rosettes)
+const LIFE_GRIDS = [
+  [
+    'lifeKites',
+    '2D',
+    'Kites',
+    'kites',
+    { lattice: 'kite', plane: 'kite', where: 'a grid of kites (each triangle cut in 3)' },
+  ],
+  [
+    'lifeHats',
+    '2D',
+    'Hats',
+    'hat',
+    { lattice: 'hat', plane: 'hat', where: 'a patch of hats, the tile that never repeats' },
+  ],
+  [
+    'lifePenrose',
+    '2D',
+    'Penrose',
+    'penrose',
+    { lattice: 'penrose', plane: 'penrose', where: "a patch of Penrose's rhombi (they never repeat)" },
+  ],
+  [
+    'lifePinwheel',
+    '2D',
+    'Pinwheel',
+    'pinwheel',
+    {
+      lattice: 'pinwheel',
+      plane: 'pinwheel',
+      where: "a patch of the pinwheel's right triangles (they never repeat, turned every way)",
+    },
+  ],
+  [
+    'lifeSpectre',
+    '2D',
+    'Spectre',
+    'spectre',
+    {
+      lattice: 'spectre',
+      plane: 'spectre',
+      where: 'a patch of spectres, the tile that never repeats and is never turned over',
+    },
+  ],
+  [
+    'lifeAmmann',
+    '2D',
+    'Ammann',
+    'ammann',
+    {
+      lattice: 'ammann',
+      plane: 'ammann',
+      where: 'a patch of Ammann–Beenker squares and rhombi (they never repeat, eightfold)',
+    },
+  ],
+  [
+    'lifeRhombs12',
+    '2D',
+    'Rhombs 12',
+    'rhombs12',
+    {
+      lattice: 'rhombs12',
+      plane: 'rhombs12',
+      where: "a patch of squares and 30° and 60° rhombi (de Bruijn's, never repeating, twelvefold)",
+    },
+  ],
+  [
+    'lifeRhombs14',
+    '2D',
+    'Rhombs 14',
+    'rhombs14',
+    {
+      lattice: 'rhombs14',
+      plane: 'rhombs14',
+      where:
+        "a patch of de Bruijn's rhombi of 7 families of lines (three kinds of rhombi, never repeating, fourteenfold)",
+    },
+  ],
+  [
+    'lifeFlower6',
+    '2D',
+    'Flower 6',
+    'flower',
+    {
+      lattice: 'flower',
+      plane: 'flower',
+      where: "a patch of Hirschhorn's flower (one pentagon, six-fold round its middle, never repeating)",
+    },
+  ],
+  [
+    'lifeFlower5',
+    '2D',
+    'Flower 5',
+    'flower5',
+    {
+      lattice: 'flower5',
+      plane: 'flower5',
+      where: "a patch of the 5-fold rosette (Sugimoto's pentagon, five-fold round its middle, never repeating)",
+    },
+  ],
+  [
+    'lifeFlower7',
+    '2D',
+    'Flower 7',
+    'flower7',
+    {
+      lattice: 'flower7',
+      plane: 'flower7',
+      where: "a patch of the 7-fold rosette (Sugimoto's pentagon, seven-fold round its middle, never repeating)",
+    },
+  ],
+  [
+    'lifeFlower3',
+    '2D',
+    'Flower 3',
+    'flower3',
+    {
+      lattice: 'flower3',
+      plane: 'flower3',
+      where: "a patch of the 3-fold rosette (Sugimoto's pentagon, 3-fold round its middle, never repeating)",
+    },
+  ],
+  [
+    'lifeFlower4',
+    '2D',
+    'Flower 4',
+    'flower4',
+    {
+      lattice: 'flower4',
+      plane: 'flower4',
+      where: "a patch of the 4-fold rosette (Sugimoto's pentagon, 4-fold round its middle, never repeating)",
+    },
+  ],
+  [
+    'lifeFlower8',
+    '2D',
+    'Flower 8',
+    'flower8',
+    {
+      lattice: 'flower8',
+      plane: 'flower8',
+      where: "a patch of the 8-fold rosette (Sugimoto's pentagon, 8-fold round its middle, never repeating)",
+    },
+  ],
+  [
+    'lifeFlower9',
+    '2D',
+    'Flower 9',
+    'flower9',
+    {
+      lattice: 'flower9',
+      plane: 'flower9',
+      where: "a patch of the 9-fold rosette (Sugimoto's pentagon, 9-fold round its middle, never repeating)",
+    },
+  ],
+  [
+    'lifeFlower10',
+    '2D',
+    'Flower 10',
+    'flower10',
+    {
+      lattice: 'flower10',
+      plane: 'flower10',
+      where: "a patch of the 10-fold rosette (Sugimoto's pentagon, 10-fold round its middle, never repeating)",
+    },
+  ],
+  [
+    'lifeFlower11',
+    '2D',
+    'Flower 11',
+    'flower11',
+    {
+      lattice: 'flower11',
+      plane: 'flower11',
+      where: "a patch of the 11-fold rosette (Sugimoto's pentagon, 11-fold round its middle, never repeating)",
+    },
+  ],
+  [
+    'lifeFlower12',
+    '2D',
+    'Flower 12',
+    'flower12',
+    {
+      lattice: 'flower12',
+      plane: 'flower12',
+      where: "a patch of the 12-fold rosette (Sugimoto's pentagon, 12-fold round its middle, never repeating)",
+    },
+  ],
+  [
+    'lifeRing7',
+    '2D',
+    'Ring 7',
+    'ring7',
+    {
+      lattice: 'ring7',
+      plane: 'ring7',
+      where: "a patch of the 7-fold ring (Sugimoto's pentagon round a regular 7-gon left empty, never repeating)",
+    },
+  ],
+  [
+    'lifeRing8',
+    '2D',
+    'Ring 8',
+    'ring8',
+    {
+      lattice: 'ring8',
+      plane: 'ring8',
+      where: "a patch of the 8-fold ring (Sugimoto's pentagon round a regular 8-gon left empty, never repeating)",
+    },
+  ],
+  [
+    'lifeRing9',
+    '2D',
+    'Ring 9',
+    'ring9',
+    {
+      lattice: 'ring9',
+      plane: 'ring9',
+      where: "a patch of the 9-fold ring (Sugimoto's pentagon round a regular 9-gon left empty, never repeating)",
+    },
+  ],
+  [
+    'lifeRing10',
+    '2D',
+    'Ring 10',
+    'ring10',
+    {
+      lattice: 'ring10',
+      plane: 'ring10',
+      where: "a patch of the 10-fold ring (Sugimoto's pentagon round a decagonal hole, never repeating)",
+    },
+  ],
+  [
+    'lifeRing11',
+    '2D',
+    'Ring 11',
+    'ring11',
+    {
+      lattice: 'ring11',
+      plane: 'ring11',
+      where: "a patch of the 11-fold ring (Sugimoto's pentagon round a regular 11-gon, never repeating)",
+    },
+  ],
+  [
+    'lifeRing12',
+    '2D',
+    'Ring 12',
+    'ring12',
+    {
+      lattice: 'ring12',
+      plane: 'ring12',
+      where: "a patch of the 12-fold ring (Sugimoto's pentagon round a regular 12-gon left empty, never repeating)",
+    },
+  ],
+  ['lifeSquares', '2D', 'Squares', 'grid', { lattice: 'square', plane: 'square', where: 'a grid of squares' }], // on the plane (see plane)
+  ['lifeTriangles', '2D', 'Triangles', 'triangle', { lattice: 'tri', plane: 'tri', where: 'a grid of triangles' }],
+  [
+    'lifeHex',
+    '2D',
+    'Hexagons',
+    'hexagon',
+    {
+      lattice: 'hex',
+      plane: 'hex',
+      where:
+        'a grid of hexagons (pentagons tile as it does, a corner on a side: their types 2, 3 and 12, and some of 1)',
+    },
+  ],
+  [
+    'lifeCairo',
+    '2D',
+    'Cairo',
+    'pentagons',
+    {
+      lattice: 'cairo',
+      plane: 'cairo',
+      where: 'a grid of Cairo pentagons (the pentagons of types 4 and 8 tile as it does, and some of 2)',
+    },
+  ],
+  [
+    'lifeCubeSquares',
+    'Surfaces',
+    'Cube',
+    'cube',
+    { lattice: 'surface', surface: 'cube', where: 'the surface of a cube' },
+  ],
+  [
+    'lifeCubePitsSquares',
+    'Surfaces',
+    'Pits',
+    'pits',
+    { lattice: 'surface', surface: 'pits', where: 'the surface of a cube with a pit in each face' },
+  ],
+  [
+    'lifeCubeBumpsSquares',
+    'Surfaces',
+    'Bumps',
+    'bumps',
+    { lattice: 'surface', surface: 'bumps', where: 'the surface of a cube with a bump on each face' },
+  ],
+  [
+    'lifeCubeFrameSquares',
+    'Surfaces',
+    'Frame',
+    'frame',
+    { lattice: 'surface', surface: 'frame', where: "the surface of a cube's frame (its edges as wide as its holes)" },
+  ],
+  [
+    'lifeCubeMengerSpongeSquares',
+    'Surfaces',
+    'Sponge',
+    'menger',
+    { lattice: 'surface', surface: 'menger', where: "the surface of Menger's sponge (its holes down to one square)" },
+  ],
+  [
+    'lifeTorusSquares',
+    'Surfaces',
+    'Torus',
+    'torus',
+    { lattice: 'surface', surface: 'torus', where: 'a torus of squares (a grid that wraps around both ways)' },
+  ],
+  [
+    'lifeTorusHex',
+    'Surfaces',
+    'Torus',
+    'torus',
+    { lattice: 'surface', surface: 'torusHex', where: 'a torus of hexagons' },
+  ],
+  [
+    'lifeTorusCairo',
+    'Surfaces',
+    'Torus',
+    'torus',
+    { lattice: 'surface', surface: 'torusCairo', where: 'a torus of Cairo pentagons' },
+  ],
+  [
+    'lifeTorusTriangles',
+    'Surfaces',
+    'Torus',
+    'torus',
+    { lattice: 'surface', surface: 'torusTri', where: 'a torus of triangles' },
+  ],
+  // a Möbius strip: its two faces one surface, over its edge onto the face behind (2 colours: a face each)
+  [
+    'lifeMobiusStripSquares',
+    'Surfaces',
+    'Möbius strip',
+    'mobius',
+    {
+      lattice: 'surface',
+      surface: 'mobius',
+      where: 'a Möbius strip of squares (both faces, over its edge onto the one behind)',
+    },
+  ],
+  [
+    'lifeMobiusStripHex',
+    'Surfaces',
+    'Möbius strip',
+    'mobius',
+    {
+      lattice: 'surface',
+      surface: 'mobiusHex',
+      where: 'a Möbius strip of hexagons (both faces, over its edge onto the one behind)',
+    },
+  ],
+  [
+    'lifeMobiusStripTriangles',
+    'Surfaces',
+    'Möbius strip',
+    'mobius',
+    {
+      lattice: 'surface',
+      surface: 'mobiusTri',
+      where: 'a Möbius strip of triangles (both faces, over its edge onto the one behind)',
+    },
+  ],
+  [
+    'lifeMobiusStripCairo',
+    'Surfaces',
+    'Möbius strip',
+    'mobius',
+    {
+      lattice: 'surface',
+      surface: 'mobiusCairo',
+      where: 'a Möbius strip of Cairo pentagons (both faces, over its edge onto the one behind)',
+    },
+  ],
+  [
+    'lifeKleinBottleSquares',
+    'Surfaces',
+    'Klein bottle',
+    'klein',
+    { lattice: 'surface', surface: 'klein', where: 'a Klein bottle of squares' },
+  ],
+  [
+    'lifeKleinBottleHex',
+    'Surfaces',
+    'Klein bottle',
+    'klein',
+    { lattice: 'surface', surface: 'kleinHex', where: 'a Klein bottle of hexagons' },
+  ],
+  [
+    'lifeKleinBottleTriangles',
+    'Surfaces',
+    'Klein bottle',
+    'klein',
+    { lattice: 'surface', surface: 'kleinTri', where: 'a Klein bottle of triangles' },
+  ],
+  [
+    'lifeKleinBottleCairo',
+    'Surfaces',
+    'Klein bottle',
+    'klein',
+    { lattice: 'surface', surface: 'kleinCairo', where: 'a Klein bottle of Cairo pentagons' },
+  ],
+  [
+    'lifeTetrahedronTriangles',
+    'Surfaces',
+    'Tetrahedron',
+    'tetrahedron',
+    { lattice: 'surface', surface: 'tetra', where: 'a tetrahedron of triangles' },
+  ],
+  [
+    'lifeOctahedronTriangles',
+    'Surfaces',
+    'Octahedron',
+    'octahedron',
+    { lattice: 'surface', surface: 'octa', where: 'an octahedron of triangles' },
+  ],
+  [
+    'lifeStellaOctangulaTriangles',
+    'Surfaces',
+    'Stella octangula',
+    'stella',
+    { lattice: 'surface', surface: 'stella', where: 'a stella octangula (two tetrahedra) of triangles' },
+  ],
+  [
+    'lifeDodecahedronTriangles',
+    'Surfaces',
+    'Dodecahedron',
+    'dodecahedron',
+    { lattice: 'surface', surface: 'dodeca', where: 'a dodecahedron, its pentagons cut into triangles' },
+  ],
+  [
+    'lifeIcosahedronTriangles',
+    'Surfaces',
+    'Sphere',
+    'icosahedron',
+    { lattice: 'surface', surface: 'icosa', where: 'an icosahedron of triangles' },
+  ],
+  [
+    'lifeIcosahedronHex',
+    'Surfaces',
+    'Sphere',
+    'hexagon',
+    {
+      lattice: 'surface',
+      surface: 'hexsphere',
+      where: 'an icosahedron of hexagons, a Goldberg polyhedron (its 12 pentagons are walls)',
+    },
+  ],
+  [
+    'lifeIcosahedronTwisted',
+    'Surfaces',
+    'Sphere',
+    'tiling-twisttri',
+    {
+      lattice: 'surface',
+      surface: 'twistedsphere',
+      where:
+        'an icosahedron of hexagons (a Goldberg polyhedron) turned 15°, a triangle between each three (Twisted on a sphere, its 12 pentagons too)',
+    },
+  ],
+  [
+    'lifeIcosahedronPenrose',
+    'Surfaces',
+    'Sphere',
+    'penrose',
+    {
+      lattice: 'surface',
+      surface: 'penroseSphere',
+      where:
+        "Penrose's rhombi on a sphere: their pentagon round their five-fold middle laid on each of a dodecahedron's faces (Twarock and Konevtsova's tilings, as Hamish Todd builds them)",
+    },
+  ],
+  [
+    'lifeTorusKites',
+    'Surfaces',
+    'Torus',
+    'torus',
+    { lattice: 'surface', surface: 'torusKite', where: 'a torus of kites' },
+  ],
+  [
+    'lifeMobiusStripKites',
+    'Surfaces',
+    'Möbius strip',
+    'mobius',
+    {
+      lattice: 'surface',
+      surface: 'mobiusKite',
+      where: 'a Möbius strip of kites (both faces, over its edge onto the one behind)',
+    },
+  ],
+  [
+    'lifeKleinBottleKites',
+    'Surfaces',
+    'Klein bottle',
+    'klein',
+    { lattice: 'surface', surface: 'kleinKite', where: 'a Klein bottle of kites' },
+  ],
+  [
+    'lifeTetrahedronKites',
+    'Surfaces',
+    'Tetrahedron',
+    'tetrahedron',
+    { lattice: 'surface', surface: 'tetraKite', where: 'a tetrahedron of kites (each triangle cut in 3)' },
+  ],
+  [
+    'lifeOctahedronKites',
+    'Surfaces',
+    'Octahedron',
+    'octahedron',
+    { lattice: 'surface', surface: 'octaKite', where: 'an octahedron of kites (each triangle cut in 3)' },
+  ],
+  [
+    'lifeIcosahedronKites',
+    'Surfaces',
+    'Sphere',
+    'icosahedron',
+    { lattice: 'surface', surface: 'icosaKite', where: 'an icosahedron of kites (each triangle cut in 3)' },
+  ],
+  [
+    'lifeStellaOctangulaKites',
+    'Surfaces',
+    'Stella octangula',
+    'stella',
+    {
+      lattice: 'surface',
+      surface: 'stellaKite',
+      where: 'a stella octangula (two tetrahedra) of kites (each triangle cut in 3)',
+    },
+  ],
+  [
+    'lifeDodecahedronKites',
+    'Surfaces',
+    'Dodecahedron',
+    'dodecahedron',
+    {
+      lattice: 'surface',
+      surface: 'dodecaKite',
+      where: 'a dodecahedron, its pentagons cut into triangles, of kites (each triangle cut in 3)',
+    },
+  ],
+  [
+    'lifeGlobe',
+    'Surfaces',
+    'Globe',
+    'globe',
+    {
+      lattice: 'surface',
+      surface: 'globe',
+      where: 'a globe: squares between its parallels and meridians, one cell round each pole',
+    },
+  ],
+];
+// A grid of Life's, said once: its variant (base 2: a cell alive or dead), its place in the menu, its icon, its option in the
+// variant list, its words in its space's group (index.html: none of Life's written there)
+function lifeGrid(w, space, shape, icon, fields) {
+  VARIANTS[w] = { base: 2, life: true, ...fields };
+  NAV[w] = ['Life', space, shape, 'Life', ''];
+  if (icon) VARIANT_ICONS[w] = icon;
+  $('variant')
+    .querySelector(`optgroup[label="Automata ${fields.plane ? 'on the plane' : 'on surfaces'}"]`)
+    .append(new Option(`Life — ${fields.where}`, w));
+}
+for (const [w, space, shape, icon, fields] of LIFE_GRIDS) lifeGrid(w, space, shape, icon, fields);
 // the tilings' Life on the plane (see TILINGS): their variants, after the hats
 const linkWord = (name) =>
   name
@@ -9857,15 +9889,12 @@ const tilingVariant = (kind) =>
   );
 for (const [k, name] of Object.entries(TETRAKIS_SOLIDS)) {
   // the solids of squares as tetrakis triangles (see tetrakisOf): Life, as theirs
-  const base = Object.keys(VARIANTS).find((w) => VARIANTS[w].life && VARIANTS[w].surface === k),
-    m = variantName('Life', name, 'Tetrakis');
-  VARIANTS[m] = {
-    ...VARIANTS[base],
+  const base = Object.keys(VARIANTS).find((w) => VARIANTS[w].life && VARIANTS[w].surface === k);
+  lifeGrid(variantName('Life', name, 'Tetrakis'), 'Surfaces', name, VARIANT_ICONS[base], {
+    lattice: 'surface',
     surface: `${k}Tetrakis`,
     where: `${VARIANTS[base].where}, its squares cut in 4 (tetrakis)`,
-  };
-  VARIANT_ICONS[m] = VARIANT_ICONS[base];
-  NAV[m] = ['Life', 'Surfaces', name, 'Life', ''];
+  });
 }
 // the walks on the solids' hexagons (see hexSolidMesh), as the sphere's: along their edges, on their cells (its cells of
 // other sides walked on too)
@@ -9903,21 +9932,12 @@ for (const [k, { a, name, others }] of Object.entries(HEX_SOLIDS)) {
 }
 for (const [k, { a, name }] of Object.entries(HEX_SOLIDS)) {
   // the solids of hexagons (see hexSolidMesh): Life, as their kites'
-  const m = variantName('Life', name, 'Hexagons'),
-    kite = variantName('Life', name, 'Kites');
-  VARIANTS[m] = {
-    base: 2,
+  lifeGrid(variantName('Life', name, 'Hexagons'), 'Surfaces', name, VARIANT_ICONS[variantName('Life', name, 'Kites')], {
     lattice: 'surface',
     surface: `${k}Hex`,
-    life: true,
     where: `${a} of hexagons (folded over its edges; ${HEX_SOLIDS[k].others}: walls)`,
-  };
-  VARIANT_ICONS[m] = VARIANT_ICONS[kite];
-  NAV[m] = ['Life', 'Surfaces', name, 'Life', ''];
+  });
 }
-// each with its option in the variant list (index.html), in its group: made here with the variant, never written apart
-const variantOption = (m, group, text) =>
-  document.querySelector(`#variant optgroup[label="${group}"]`).append(new Option(`Life — ${text}`, m));
 // the hull solids' Life (see HULL_SOLIDS): a variant each, said by its declaration
 for (const [k, S] of Object.entries(HULL_SOLIDS)) {
   if (Array.isArray(S.pic)) ICONS[k] = S.pic.map((d) => svgPath(d)).join('');
@@ -9925,11 +9945,11 @@ for (const [k, S] of Object.entries(HULL_SOLIDS)) {
     [k, S.cuts && S.cells, S.where],
     ...(S.cuts ?? []).map((c) => [`${k}${HULL_CUTS[c].name}`, HULL_CUTS[c].name, `${S.where}, ${HULL_CUTS[c].words}`]),
   ]) {
-    const w = variantName('Life', S.name, tiling);
-    VARIANTS[w] = { base: 2, lattice: 'surface', surface, life: true, where };
-    VARIANT_ICONS[w] = hullIcon(k);
-    NAV[w] = ['Life', 'Surfaces', S.name, 'Life', ''];
-    variantOption(w, 'Automata on surfaces', where);
+    lifeGrid(variantName('Life', S.name, tiling), 'Surfaces', S.name, hullIcon(k), {
+      lattice: 'surface',
+      surface,
+      where,
+    });
   }
   // its turtle walks, as the cube's (its squares' cells: 3 a digit, left, on or right), each the other's twin
   if (S.walks) {
@@ -9981,35 +10001,22 @@ for (const [tiling, surface] of [
     .append(new Option(`Sphere of ${tiling.toLowerCase()} — base 3 (left / forward / right)`, w));
 }
 for (const [kind, t] of Object.entries(TILINGS)) {
-  const flat = variantName('Life', t.name);
-  VARIANTS[flat] = { base: 2, lattice: kind, life: true, plane: kind, where: t.where };
-  variantOption(flat, 'Automata on the plane', t.where);
-  VARIANT_ICONS[flat] = `tiling-${kind}`;
-  NAV[flat] = ['Life', '2D', t.name, 'Life', ''];
+  lifeGrid(variantName('Life', t.name), '2D', t.name, `tiling-${kind}`, { lattice: kind, plane: kind, where: t.where });
   for (const [fold, F] of Object.entries(FOLDS))
     if (F.has(kind)) {
       // folded (see FOLDS)
-      const m = variantName('Life', F.name, t.name);
-      VARIANTS[m] = {
-        base: 2,
+      lifeGrid(variantName('Life', F.name, t.name), 'Surfaces', F.name, fold, {
         lattice: 'surface',
         surface: F.of(kind),
-        life: true,
         where: `${F.a} of ${t.where.replace(/^a grid of /, '')}${F.tail}`,
-      };
-      VARIANT_ICONS[m] = fold;
-      NAV[m] = ['Life', 'Surfaces', F.name, 'Life', ''];
-      variantOption(m, 'Automata on surfaces', VARIANTS[m].where);
+      });
     }
 }
 for (const [k, [n, F]] of Object.entries(conedOf((k, n, F) => [k, [n, F]]))) {
   // the coned rosettes (see CONED), each with its option
   const w = variantName('Life', `${F.name} ${n}`),
     where = `a patch of the ${F.how} ${n}-fold rosette (${F.tile}, in rows round its middle, never repeating)`;
-  VARIANTS[w] = { base: 2, lattice: k, life: true, plane: k, where };
-  variantOption(w, 'Automata on the plane', where);
-  VARIANT_ICONS[w] = k;
-  NAV[w] = ['Life', '2D', `${F.name} ${n}`, 'Life', ''];
+  lifeGrid(w, '2D', `${F.name} ${n}`, k, { lattice: k, plane: k, where });
 }
 // a family whose grid is another's but at its middle (rules: that grid's mark): that grid's rules its own too, their tiling
 // marked with its marks (see RULES); those counting neighbours only (no letters: a letter tells where a neighbour is round a ring of 6)
@@ -10029,10 +10036,6 @@ VARIANTS.elementarySquares = {
 };
 VARIANT_ICONS.elementarySquares = VARIANT_ICONS.lifeSquares;
 NAV.elementarySquares = ['Elementary', NAV.lifeSquares[1], NAV.lifeSquares[2], 'Wolfram', ''];
-VARIANT_ICONS.lifeCubePitsSquares = 'pits';
-VARIANT_ICONS.lifeCubeBumpsSquares = 'bumps';
-VARIANT_ICONS.lifeCubeMengerSpongeSquares = 'menger';
-VARIANT_ICONS.lifeCubeFrameSquares = 'frame';
 const MODE_TABS = [
   ['Explore', 'search', "Life's grids to look at, each cell coloured by its neighbours, its sides or its distance"],
   ['Life', 'glider', 'Cells born and dying by their neighbours, generation after generation'],
@@ -14491,16 +14494,11 @@ for (const k of Object.keys(ROSETTE_SPHERES)) {
   const name = NAV[tilingVariant(k)][2],
     w = variantName('Life', 'Rosettes', name),
     F = FAMILIES.at(-1);
-  VARIANTS[w] = {
-    base: 2,
+  lifeGrid(w, 'Surfaces', 'Rosettes', k, {
     lattice: 'surface',
     surface: `${k}Sphere`,
-    life: true,
     where: `a sphere of two ${name} rosettes, the south's teeth in the north's notches`,
-  };
-  variantOption(w, 'Automata on surfaces', `${name} sphere`);
-  NAV[w] = ['Life', 'Surfaces', 'Rosettes', 'Life', ''];
-  VARIANT_ICONS[w] = k;
+  });
   F.tabs.push([
     F.variants.length,
     false,

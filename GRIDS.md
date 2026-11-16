@@ -32,8 +32,11 @@ Steps, each shipped and checked on its own:
      hand gone (`REVERSIBLE_SHEETS`, Replicators' 6 and its hull solids'). One change: `replicatorsTorus` named
      `replicatorsTorusSquares`, in the torus's family as the cube's (its link's `tiling=squares`; an old link without it
      still opens it).
-   - **3a**: Life's grids declared once (geometry, words, icon, menu, option), Life's and Explore's made from them; the
-     page's options gone.
+   - **3a, done (v0.5.78)**: every grid of Life's said once, by `lifeGrid` (its variant, its place in the menu, its
+     icon, its option, its words its `where`, in its space's group): the 62 written as they were in 4 places (`VARIANTS`,
+     `NAV`, `VARIANT_ICONS`, index.html) one table, `LIFE_GRIDS`, in the menu's order; the families' loops (tilings and
+     folds, solids, cones, rosettes) through it too; index.html's 71 options of Life's gone. One change: the carved
+     cubes' tetrakis grids get their cube's icon (none before: copied before it was set).
    - **3b**: the walks' turtle rules in a table by tiling, each walk made from its grid and that rule.
 4. **One flag, one meaning**: `life` means "plays Life"; Explore no longer carries it, its "but Explore" gone
    (`plays` in `sectionsOf`, the hunt's stop, the wall, the Outline, `startLife`'s Explore branch).

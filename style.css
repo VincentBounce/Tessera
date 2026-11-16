@@ -570,10 +570,10 @@ h3 {
 .formula-field input.custom {
   font-weight: 600;
 } /* a formula of its own bold (a card's: plain, its card picked shows it) */
-#formula:not(#battleStart *, :focus) {
+.formula-field input:not(:focus) {
   border-color: var(--accent-color);
   background: var(--picked-background);
-} /* the number in use, always on a picked tile's pale gold, a card's or its own */
+} /* a number in use (the Number's, each walker's), always on a picked tile's pale gold, a card's or its own */
 .field :is(input, textarea) {
   margin: 0;
 }

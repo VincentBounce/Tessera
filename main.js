@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.57';
+const VERSION = '0.5.58';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -11070,7 +11070,7 @@ function setAntRule(w, rule) {
   compute();
 }
 // The mode tabs that do not fit the header's row, from the last: moved into a "…" tab's menu, a list under it (the same
-// buttons, their clicks and active state as in the row); the "…" active when the tab shown is in it
+// buttons, their clicks and active state as in the row), Gallery the last; the "…" active when the tab shown is in it
 const moreMenu = Object.assign(document.createElement('div'), { className: 'tab-menu', hidden: true }),
   moreTabs = Object.assign(document.createElement('div'), { className: 'tabs-more', hidden: true });
 moreTabs.append(
@@ -11098,8 +11098,8 @@ function fitModeTabs() {
   for (const b of [...moreMenu.children]) row.insertBefore(b, moreTabs);
   moreTabs.hidden = true;
   moreTabs.hidden = fits();
-  while (!fits() && moreTabs.previousElementSibling !== galleryTab()) moreMenu.prepend(moreTabs.previousElementSibling);
-  moreTabs.firstChild.classList.toggle('active', !!moreMenu.querySelector('.active'));
+  while (!fits() && moreTabs.previousElementSibling) moreMenu.prepend(moreTabs.previousElementSibling);
+  moreTabs.firstChild.classList.toggle('active', !!moreMenu.querySelector('.active, .pane-tab.open'));
 }
 new ResizeObserver(fitModeTabs).observe(document.querySelector('.header-row'));
 function renderModePicker() {
@@ -47580,6 +47580,7 @@ function showPane(gallery) {
   $('paramsPane').hidden = gallery;
   $('galleryPane').hidden = !gallery;
   galleryTab().classList.toggle('open', gallery);
+  fitModeTabs(); // (the "…" lit if Gallery is in it)
   if (gallery) {
     renderGallery();
     showInViewPicture();

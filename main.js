@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.71';
+const VERSION = '0.5.72';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -10063,7 +10063,7 @@ VARIANT_ICONS.lifeCubeBumpsSquares = 'bumps';
 VARIANT_ICONS.lifeCubeMengerSpongeSquares = 'menger';
 VARIANT_ICONS.lifeCubeFrameSquares = 'frame';
 const MODE_TABS = [
-  ['Explore', 'eye', "Life's grids to look at, each cell coloured by its neighbours, its sides or its distance"],
+  ['Explore', 'search', "Life's grids to look at, each cell coloured by its neighbours, its sides or its distance"],
   ['Life', 'glider', 'Cells born and dying by their neighbours, generation after generation'],
   ['Walk', 'compass', "A path, each step the number's next digit"],
   ['Ant', 'ant', "A creature on the cells, turned by each cell's colour, by its rule or by the digits"],

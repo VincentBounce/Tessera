@@ -2,10 +2,11 @@
 // main.js): in the page's console, after loading this file,
 //   tilesSearch()  → the table, as main.js has it (each variant's grids that do, by their cells' count)
 // Every Explore variant, every size its Size offers (a surface's sizes, the plane's sides), built as the app builds it;
-// its cells side by side coloured in 3 by the search, given STEPS steps at most: those it colours within them are listed.
+// its cells side by side coloured in 3 by the search, given STEPS steps a cell at most: those it colours within them are
+// listed (soon: as many steps as a few a cell, whatever its size).
 // A grid that needs 4 (a Hexa rosette of 5, the colours turning round its middle) or that the search would take too long
 // on is left out: DSatur's there.
-const STEPS = 200000;
+const STEPS = 4;
 window.tilesSearch = async (only = null) => {
   const built = (w, old) => walk.life && walk.variant === w && walk.life !== old; // (a new one: its own grid)
   const wait = async (w, old = null) => {
@@ -40,7 +41,7 @@ window.tilesSearch = async (only = null) => {
         bySide = (t, put) => {
           for (let q = L.nbr.start[t]; q < L.nbr.start[t + 1]; q++) if (side[q]) put(L.nbr.list[q]);
         };
-      const colours = paletteColours(n, bySide, 3, STEPS); // (past 3 when 3 cannot do: none of ours)
+      const colours = paletteColours(n, bySide, 3, STEPS * n); // (past 3 when 3 cannot do: none of ours)
       if (colours && colours.every((k) => k <= 3)) (table[w] ??= []).includes(n) || table[w].push(n);
     }
     console.log(w, table[w]?.length ?? 0, 'of', sizes.length);

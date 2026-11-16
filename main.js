@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.126';
+const VERSION = '0.5.127';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -21702,27 +21702,25 @@ function exploreLevels(nbr, n, faces) {
   for (let t = 0; t < n; t++) level[t] = 1 + ((level[t] - 1) % P);
   return level;
 }
-// its section: the rules, then the palettes, each a tile with its colours
+// its section: the rules as cards, then the palettes, each a tile with its colours
 function renderExplore() {
   const pick = (key, value) => () => {
     exploreLook[key] = value;
     compute();
   };
   $('exploreRules').replaceChildren(
-    textTabs(
-      EXPLORE_RULES.map(([key, name, title]) =>
-        tile({
-          text: name,
-          title,
-          on: exploreLook.rule === key,
-          whyNot: ({ w }) =>
-            key === 'sides' && !SOLIDS.includes(surfaceOf(VARIANTS[w])) ? 'On a solid only: its sides.' : '',
-          click: pick('rule', key),
-          choice: `exploreRule:${key}`,
-        }),
-      ),
+    ...EXPLORE_RULES.map(([key, name, detail]) =>
+      card({
+        name,
+        detail,
+        on: exploreLook.rule === key,
+        whyNot: ({ w }) =>
+          key === 'sides' && !SOLIDS.includes(surfaceOf(VARIANTS[w])) ? 'On a solid only: its sides.' : '',
+        click: pick('rule', key),
+        choice: `exploreRule:${key}`,
+      }),
     ),
-  );
+  ); // (cards, as the rules of Life: their pictures to come)
   $('explorePalettes').replaceChildren(
     tileGroup(
       EXPLORE_PALETTES.map(([name, colours, words], i) =>

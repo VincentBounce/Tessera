@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.144';
+const VERSION = '0.5.145';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -25466,7 +25466,7 @@ function renderPlaneRow() {
     else setTile(b, { on });
   }
   $('startTextInput').value = plane.text; // (its words, on any grid)
-  syncTextDraw();
+  syncTextButtons();
   $('startTextInput').style.setProperty('--text-start-font', TEXT_FONTS[plane.font][1]); // (at rest, in its font, see style.css)
   for (const b of $('textFonts').querySelectorAll('button')) setTile(b, { on: b.dataset.font === plane.font });
   for (const r of $('startDraw').querySelectorAll('#startCells, #brushTurns, .draw-row, #pngTools')) r.hidden = !kind; // the start's cells (Clear), the turns, the colours: to draw, on the plane (a surface's Draw: its patterns to see only)
@@ -46722,16 +46722,25 @@ $('textFonts').append(
     }),
   ),
 );
-// Text's lines: Enter a new line; drawn on a change (Draw under them, a click outside, or ⌘ Enter: see the fields' keys).
-// Draw: greyed while its words are those drawn; pressed, the field left (its change: drawn), the field's focus kept till then
-function syncTextDraw() {
-  setTile($('textDraw'), {
-    greyed: ($('startTextInput').value.trim() || APP_TITLE) === plane.text ? 'These words are drawn already.' : '',
-  });
+// Text's lines: Enter a new line; drawn on a change (OK under them, a click outside, or ⌘ Enter: see the fields' keys).
+// Cancel and OK, row tiles: greyed while its words are those drawn; Cancel puts them back (as Escape), OK leaves the field
+// (its change: drawn), the field's focus kept till then
+$('textButtons').append(
+  tile({ id: 'textCancel', row: true, text: '✕ Cancel', title: 'The words drawn back (Escape)' }),
+  tile({ id: 'textOk', row: true, text: '✓ OK', title: 'Draws the words typed (⌘ Enter, a click outside)' }),
+);
+function syncTextButtons() {
+  const same = ($('startTextInput').value.trim() || APP_TITLE) === plane.text;
+  for (const id of ['textCancel', 'textOk']) setTile($(id), { greyed: same ? 'These words are drawn already.' : '' });
 }
-$('startTextInput').addEventListener('input', syncTextDraw);
-$('textDraw').addEventListener('mousedown', (e) => e.preventDefault());
-$('textDraw').addEventListener('click', () => $('startTextInput').blur());
+$('startTextInput').addEventListener('input', syncTextButtons);
+for (const id of ['textCancel', 'textOk']) $(id).addEventListener('mousedown', (e) => e.preventDefault());
+$('textCancel').addEventListener('click', () => {
+  $('startTextInput').value = plane.text;
+  $('startTextInput').blur();
+  syncTextButtons();
+});
+$('textOk').addEventListener('click', () => $('startTextInput').blur());
 $('startTextInput').addEventListener('change', () => {
   plane.text = $('startTextInput').value.trim() || APP_TITLE;
   compute();

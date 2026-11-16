@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.179';
+const VERSION = '0.5.180';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -13324,8 +13324,7 @@ const cellTurn = (net, command) => {
 const cellSidesMemo = remember('cellSidesMemo', {});
 const cellSides = (kind) =>
   (cellSidesMemo[kind] ??= (() => {
-    const S = SURFACES[kind],
-      g = S.mesh(S.sizes[0]),
+    const g = leastMesh(kind),
       k = g.sides,
       out = new Set();
     for (let t = 0; t < g.n; t++) out.add(new Set(Array.from({ length: k }, (_, q) => g.poly[k * t + q])).size);
@@ -17363,11 +17362,15 @@ const sizeTips = (row, total, text) => {
   box.dataset.tipHtml = `${grid}<div class="tip-state"><div>${sizeCardHtml(total, text)}</div></div>`;
   if (box.matches(':hover')) $('tip').innerHTML = box.dataset.tipHtml;
 };
-const facesMemo = remember('facesMemo', {}); // (a solid's least mesh: its faces, see howCounted)
-// a surface's solid's faces, by its cells' (see cellFaces, its least mesh's); none off a solid (a torus)
+// a face by its corners (a solid's, a sector's count round its middle)
+const FACE_ADJECTIVES = { 3: 'triangular', 4: 'square', 5: 'pentagonal', 6: 'hexagonal' };
+// a surface's least mesh, at its first size (made once): what is the same at every size (its faces, its lattice cell, its cells'
+// sides), read there
+const leastMeshes = remember('leastMeshes', {}),
+  leastMesh = (kind) => (leastMeshes[kind] ??= SURFACES[kind].mesh(SURFACES[kind].sizes[0]));
+// a surface's solid's faces, by its cells' (see cellFaces); none off a solid (a torus, a globe)
 const facesCount = (kind) => {
-  const S = SURFACES[kind],
-    g = S?.sizes && (facesMemo[kind] ??= S.mesh(S.sizes[0]));
+  const g = SURFACES[kind]?.sizes && leastMesh(kind);
   return g?.cellFaces ? g.cellFaces.reduce((m, f) => Math.max(m, f + 1), 0) : 0;
 };
 // its cells as a rectangle as wide as the grid lies, for an idea of its resolution (grey, as the walk's description): the plane's a
@@ -17378,13 +17381,9 @@ const sizeSides = (kind, f) => {
     S = SURFACES[kind];
   if (S?.disc) return `{g:${formatNumber(f)} × ${formatNumber(f)} cells a disc, as the plane's}`; // (a rosette surface: no face, its two discs)
   if (!d) {
-    const mesh = (facesMemo[kind] ??= S.mesh(S.sizes[0])),
-      g = mesh.uncut ?? mesh, // (a cut's faces its solid's, see HULL_CUTS)
-      F =
-        { tetra: 4, octa: 8, icosa: 20, stella: 24, dodeca: 12 }[FACE_BASE[kind] ?? kind.replace(/Kite$/, '')] ??
-        (g.triFaces ? g.triFaces.length + g.squareFaces.length : 6),
-      a = formatNumber(Math.round(Math.sqrt(S.tiles(f) / F)));
-    return `{g:≈ ${a} × ${a} ${S.unit} a face}`;
+    const F = facesCount(kind), // (none: a globe's, no face to share out)
+      a = F && formatNumber(Math.round(Math.sqrt(S.tiles(f) / F)));
+    return F ? `{g:≈ ${a} × ${a} ${S.unit} a face}` : '';
   }
   let r = 1;
   if (kind.startsWith('mobius')) {
@@ -17394,7 +17393,7 @@ const sizeSides = (kind, f) => {
     const { n, step, W } = kleinLength(kind, f);
     r = (n * step) / W;
   } else if (S) {
-    const g = (facesMemo[kind] ??= S.mesh(S.sizes[0])),
+    const g = leastMesh(kind),
       [nv, nu] = torusDims(kind, f);
     r = (nu * g.nv) / (nv * g.nu * tubeOf(g));
   }
@@ -17462,7 +17461,7 @@ const howCounted = (kind, f) => {
   if (d && TORI.includes(kind)) {
     // a sheet's (a torus, a Möbius strip, a Klein bottle): its rows × its lattice cells (its motif, violet) × their cells (green)
     // (a tiling's torus: its sheet a rectangle, det lattice cells when its cell is slanted, each a motif, see tilingTorusMesh)
-    const g = (facesMemo[kind] ??= S.mesh(S.sizes[0])),
+    const g = leastMesh(kind),
       m = latticeCellSize(g),
       L = d[2] / d[0] / m,
       whole = Number.isInteger(L),
@@ -17481,12 +17480,12 @@ const howCounted = (kind, f) => {
     return `(Edge=${formatNumber(d[0])}) rows × {y:${formatNumber(d[1] * det)} ${m > 1 ? 'lattice cells' : d[3]}} a row${det > 1 ? ` (${det} a rectangle of the grid: its cell slanted, the grid straight)` : ''}${m > 1 ? ` × {k:${m} ${d[3]} each}${turnedCellNote(kind)}` : ''}${all > d[2] ? ` − ${formatNumber(all - d[2])} in the wall` : ''} = ${formatNumber(d[2])} ${d[3]}`;
   // a solid of flat faces: each face's cells, f to an edge (its faces as its least size's mesh has them, the same at every size)
   // (a cut's, by construction: the solid it cuts, its faces' cells cut into so many each, see HULL_CUTS; kites, 3 a triangle)
-  const mesh = S && !TORI.includes(kind) && (facesMemo[kind] ??= S.mesh(S.sizes[0])),
+  const mesh = S && !TORI.includes(kind) && leastMesh(kind),
     g = mesh?.uncut ?? mesh,
     cut = mesh?.per ?? (mesh?.kite ? 3 : 1);
   if (g?.faces || g?.triFaces) {
     const by = g.faces ? {} : { 3: g.triFaces.length, 4: g.squareFaces.length },
-      adj = { 3: 'triangular', 4: 'square', 5: 'pentagonal', 6: 'hexagonal' },
+      adj = FACE_ADJECTIVES,
       cells = { 3: 'triangles', 4: 'squares', 5: 'triangles', 6: 'triangles' },
       round = { 5: 5, 6: 6 }; // (a pentagon, a hexagon: as many triangles round its middle)
     for (const F of g.faces ?? []) by[F.corners.length] = (by[F.corners.length] ?? 0) + 1; // (a solid of triangles and squares: its faces of each, see Johnson solids)
@@ -17504,8 +17503,11 @@ const howCounted = (kind, f) => {
   }
   if (S?.unit === 'hexagons' && !TORI.includes(kind)) {
     // a solid of triangles blown up: f² / 2 hexagons a face, a cell of its own at each corner (see goldberg)
-    const F = (2 * (n - 2)) / (f * f);
-    const faces = kind === 'dodecaHex' ? `12 pentagonal faces × 5 sectors` : `${F} triangular faces`; // (the dodecahedron's pentagons: 5 triangles each; not red: not drawn, see motifOf)
+    // (its triangles F, its solid's faces so many sectors each: the dodecahedron's pentagons 5, the stella's triangles 3)
+    const F = (2 * (n - 2)) / (f * f),
+      sectors = F / facesCount(kind),
+      faces =
+        sectors > 1 ? `${F / sectors} ${FACE_ADJECTIVES[sectors]} faces × ${sectors} sectors` : `${F} triangular faces`;
     // (a sum on lines: its faces, a triangle f steps a side as big as f² / 2 hexagons; + 2: its corners, 5 faces round a
     // pentagon, not 6, each counted 5/6 by them, 12 × 1/6 (Euler's 2 on any of them); its cells, its corners' and its hexagons)
     return `${faces} × (Edge=${formatNumber(f)})² / 2 = ${formatNumber(n - 2)}\n+ 2 (its corners: fewer than 6 faces round each)\n= ${formatNumber(n)} cells`; // (its hexagons and its corners' cells: in the title, see sizeCells)
@@ -17518,8 +17520,7 @@ const howCounted = (kind, f) => {
 };
 // a solid of hexagons' corners: its cells there, by their sides (12 pentagons; 8 triangles + 6 octagons), as its least mesh has them
 const hexCorners = (kind) => {
-  const S = SURFACES[kind],
-    g0 = (facesMemo[kind] ??= S.mesh(S.sizes[0])),
+  const g0 = leastMesh(kind),
     sidesOf = (t) => new Set(Array.from({ length: g0.sides }, (_, j) => g0.poly[g0.sides * t + j])).size,
     corners = {};
   for (const t of g0.cornerCells ?? []) corners[sidesOf(t)] = (corners[sidesOf(t)] ?? 0) + 1;
@@ -21936,8 +21937,8 @@ const tileKinds = (corners, protos = null) =>
   );
 // a variant's grid with its solid's faces (see cellFaces), as its surface's smallest mesh has them (made once)
 const facedGrid = (w) => {
-  const S = SURFACES[surfaceOf(VARIANTS[w])];
-  return !!S?.sizes && !!S.mesh(S.sizes[0]).cellFaces;
+  const kind = surfaceOf(VARIANTS[w]);
+  return !!SURFACES[kind]?.sizes && !!leastMesh(kind).cellFaces;
 };
 // its section: the rules as cards, then the palettes, each a tile with its colours
 function renderExplore() {

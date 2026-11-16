@@ -10,6 +10,12 @@ faire glandouiller des demi-heures depuis des semaines pour faire 99 % de tests 
 find the convention that let the bug happen and fix that, once (v0.4.384: a reset list by hand in `buildWalkOf`, one
 field more, where each walk should start from one definition of its fields).
 
+**NEVER A DOUBLE: THE APP HAS A ROUTINE FOR EVERYTHING.** A year of work: before writing any function, table or count,
+grep main.js for the notion (its words, its numbers: `faces`, `sides`, `corners`, `least`…) and read what answers it already;
+reuse it, or replace the old one by the new, never both. Two sources of one notion drift and lie (v0.5.179: `facesCount`
+added beside `sizeSides`' hand table of faces and `sizeHow`'s own `dodecaHex` case, the stella 8 faces in one and 24 in the
+other; five copies of a surface's least mesh, `leastMesh` since v0.5.180).
+
 **SIMPLER = LESS REDUNDANT, NOT SHORTER.** "Simplify" never means compacting code as the minifier does (several statements
 squeezed on one line, a comma expression for a `return`): it means thinking whether code is redundant or useless, and
 removing it. Taking a notion out (a "haut", a mode, a case) must take its code out: if the balance grows, something was

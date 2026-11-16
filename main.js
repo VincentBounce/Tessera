@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.124';
+const VERSION = '0.5.125';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -21585,10 +21585,13 @@ const EXPLORE_PALETTES = [
   ['Stained glass', ['#8B1E3F', '#3C153B', '#F2A541', '#1B998B'], 'Wine, plum, amber and jade'],
   ['Bauhaus', ['#E63946', '#F1C40F', '#1D3557', '#F1FAEE'], 'Red, yellow, navy and white'],
   ['Macaron', ['#FFB5A7', '#FCD5CE', '#B8E0D2', '#9DC3C2'], 'Soft pinks and mints'],
-  ['Blush', ['#F6E6E1', '#F0DCD5', '#EAD1C9', '#E3C6BD'], 'Faded pinks of one hue, barely apart'],
   ['Sage', ['#D4A373', '#FAEDCD', '#CCD5AE', '#8A9A5B'], 'Sand, cream and sage greens'],
   ['Abyss', ['#0B132B', '#1C2541', '#3A506B', '#5BC0BE', '#C6F1EE'], 'From night blue to sea foam'],
   ['Embers', ['#2B0F0E', '#7A1F1A', '#D1495B', '#F79256', '#FCE38A'], 'From soot to flame'],
+  ['Blush', ['#F6E6E1', '#F0DCD5', '#EAD1C9', '#E3C6BD'], 'Faded pinks of one hue, barely apart'],
+  ['Mist', ['#E6EDF3', '#DCE5EE', '#D1DDE8', '#C6D4E2'], 'Faded blues of one hue, barely apart'],
+  ['Celadon', ['#E4F0E9', '#D9E9E0', '#CDE2D6', '#C2DACC'], 'Faded greens of one hue, barely apart'],
+  ['Lilac', ['#EEE7F3', '#E5DCEE', '#DCD1E8', '#D2C6E2'], 'Faded violets of one hue, barely apart'],
 ]; // (name, colours, words)
 const exploreLook = { rule: 'tiles', palette: 0 },
   explorePalette = () => EXPLORE_PALETTES[exploreLook.palette][1];

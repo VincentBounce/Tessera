@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.186';
+const VERSION = '0.5.187';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -40370,9 +40370,9 @@ function applySetup(s) {
       $('lifeRule').value = ruleBody(s.playRule);
     } // a link's rule as it is
   }
-  // the display is not part of a setup: it takes the defaults of the walk variant's tab, when the tab
-  // changes (as picking a walk does); within a tab, what was chosen stays
-  if (modeTabOf() !== displayTab) displayDefaults();
+  // the display is not part of a setup: a link opens on its tab's defaults (Grid's 11 % in 2D…), whatever was chosen
+  // before; within a tab, a click on another walk keeps what was chosen (see the variant's change)
+  displayDefaults();
   $('perspective').checked = defaultOf('perspective', w);
   Object.assign(camera, CAMERA_START);
   $('upright').checked = false; // (the default view: free, on each surface)

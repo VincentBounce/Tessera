@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.185';
+const VERSION = '0.5.186';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -21825,138 +21825,6 @@ const EXPLORE_PALETTES = [
 ]; // (name, colours, words)
 const exploreLook = { rule: 'tiles', palette: 0 },
   explorePalette = () => EXPLORE_PALETTES[exploreLook.palette][1];
-// The Explore grids whose cells go in 3 colours, a search finding them soon (made by tools/tilesearch.js, in the page's
-// console: tilesSearch()): each variant's grids that do, by their cells' count; the others coloured by DSatur alone (see
-// exploreLevels; the solids of hexagons left out: measured while their corners' cells were walls, see cornerCells)
-// prettier-ignore
-const TILES_IN_THREE = {
-  explorePenrose: [440, 780, 1845, 3240, 4095],
-  explorePinwheel: [441, 784],
-  exploreAmmann: [440, 776, 1840, 3232, 4024, 7176, 11120, 12736, 16368, 22104, 28896],
-  exploreRhombs12: [408, 780, 1824, 3240, 4068],
-  exploreRhombs14: [406, 784, 1834, 3248],
-  exploreFlower4: [440, 784, 1848, 3248, 4096, 7224, 11236, 12768, 16384, 22200, 28900, 51528, 115600, 206116, 463760, 822648],
-  exploreFlower8: [440, 784, 1848, 3248, 4096, 7224, 11232, 12768, 16384, 22200, 28896, 51528, 115600, 206112, 463760, 822648],
-  exploreFlower12: [432, 780, 1848, 3240, 4092, 7224, 11232, 12768, 16380, 22200, 28896, 51528, 115596, 206112, 463752, 822648],
-  exploreSquares: [256, 576, 1024, 2304, 4096, 5184, 9216, 14400, 16384, 20736, 28224, 36864, 65536, 147456, 262144, 589824, 1048576],
-  exploreTriangles: [576, 1008, 2232, 4032, 5076, 8928, 14720, 16660, 20900, 28416, 36792, 65184, 147752, 263640, 591008],
-  exploreHex: [2340, 9360, 14208, 16560, 28080, 147084],
-  exploreCairo: [288, 14112, 16200, 20808],
-  exploreCubeSquares: [384, 864, 1536, 3456, 6144, 13824, 24576, 31104, 55296, 86400, 98304, 124416, 169344, 221184, 393216, 884736],
-  exploreCubePitsSquares: [264],
-  exploreCubeBumpsSquares: [264],
-  exploreCubeFrameSquares: [288, 648, 1152],
-  exploreTorusSquares: [360, 640, 1440, 2560, 5760, 10240, 12960, 23040, 36000, 40960, 51840, 70560, 92160, 163840, 368640, 655360],
-  exploreTorusHex: [8832, 11232, 44928],
-  exploreTorusCairo: [720, 2880, 11520, 25920, 46080, 72000, 103680, 141120, 184320, 737280],
-  exploreTorusTriangles: [288, 624, 1088, 2496, 4480, 9984, 17664, 22464, 39936, 62400, 71168, 89856, 122304, 159744, 283648, 638976],
-  exploreMobiusStripSquares: [300, 432, 768, 1728, 3072, 6912, 12224, 27552, 49024, 62064, 110208, 172320, 196096, 248256, 337680, 441216, 784384],
-  exploreMobiusStripTriangles: [336, 510, 744, 1312, 2976, 5312, 11904, 21248, 47808, 84992, 107424, 190848, 298560, 339456, 429696, 585312, 764160],
-  exploreKleinBottleSquares: [360, 640, 1440, 2560, 5760, 10240, 12960, 23040, 36000, 40960, 51840, 70560, 92160, 163840, 368640, 655360],
-  exploreKleinBottleHex: [8832, 11232, 44928],
-  exploreKleinBottleTriangles: [288, 624, 1088, 2496, 4480, 9984, 17664, 22464, 39936, 62400, 71168, 89856, 122304, 159744, 283648, 638976],
-  exploreTetrahedronTriangles: [256, 576, 1024, 2304, 4096, 9216, 16384, 20736, 36864, 57600, 65536, 82944, 112896, 147456, 262144, 589824, 1048576],
-  exploreOctahedronTriangles: [288, 512, 1152, 2048, 4608, 8192, 18432, 32768, 41472, 73728, 115200, 131072, 165888, 225792, 294912, 524288],
-  exploreStellaOctangulaTriangles: [384, 600, 864, 1536, 3456, 6144, 13824, 24576, 55296, 98304, 124416, 221184, 345600, 393216, 497664, 677376, 884736],
-  exploreDodecahedronTriangles: [540, 960, 1500, 2160, 3840, 8640, 15360, 34560, 61440, 138240, 245760, 311040, 552960, 864000, 983040],
-  exploreIcosahedronTriangles: [320, 500, 720, 1280, 2880, 5120, 11520, 20480, 46080, 81920, 103680, 184320, 288000, 327680, 414720, 564480, 737280],
-  exploreDodecahedronPenrose: [90, 210, 360, 960, 1110, 1650, 1950],
-  exploreGlobe: [746, 3074, 12434, 49658, 198650, 795026],
-  exploreCubeTetrakis: [384, 600, 864, 1536, 3456, 6144, 13824, 24576, 55296, 98304, 124416, 221184, 345600, 393216, 497664, 677376, 884736],
-  exploreCubePitsTetrakis: [1056, 4224, 16896, 67584, 152064, 270336, 422400, 608256, 827904],
-  exploreCubeBumpsTetrakis: [1056, 4224, 16896, 67584, 152064, 270336, 422400, 608256, 827904],
-  exploreCubeFrameTetrakis: [1152, 2592, 4608, 7200, 10368, 18432, 41472, 73728, 165888, 294912, 663552],
-  exploreCubeMengerSpongeTetrakis: [4224, 72192],
-  exploreCuboctahedron: [350, 504, 896, 2016, 3584, 8064, 14336, 32256, 57344, 72576, 129024, 201600, 229376, 290304, 395136, 516096, 917504],
-  exploreSquarePyramid: [320, 720, 1280, 2880, 5120, 11520, 20480, 25920, 46080, 72000, 81920, 103680, 141120, 184320, 327680, 737280],
-  exploreRhombicuboctahedron: [416, 650, 936, 1664, 3744, 6656, 14976, 26624, 59904, 106496, 134784, 239616, 374400, 425984, 539136, 733824, 958464],
-  exploreSquareOrthobicupola: [288, 450, 648, 1152, 2592, 4608, 10368, 18432, 41472, 73728, 93312, 165888, 259200, 294912, 373248, 508032, 663552],
-  exploreRhombicDodecahedronSquares: [300, 432, 768, 1728, 3072, 6912, 12288, 27648, 49152, 62208, 110592, 172800, 196608, 248832, 338688, 442368, 786432],
-  exploreRhombicDodecahedronTetrakis: [432, 768, 1200, 1728, 3072, 6912, 12288, 27648, 49152, 110592, 196608, 248832, 442368, 691200, 786432, 995328],
-  exploreRhombicDodecahedronTriangles: [384, 600, 864, 1536, 3456, 6144, 13824, 24576, 55296, 98304, 124416, 221184, 345600, 393216, 497664, 677376, 884736],
-  exploreRhombicTriacontahedronSquares: [270, 480, 750, 1080, 1920, 4320, 7680, 17280, 30720, 69120, 122880, 155520, 276480, 432000, 491520, 622080, 846720],
-  exploreRhombicTriacontahedronTetrakis: [480, 1080, 1920, 3000, 4320, 7680, 17280, 30720, 69120, 122880, 276480, 491520, 622080],
-  exploreRhombicTriacontahedronTriangles: [540, 960, 1500, 2160, 3840, 8640, 15360, 34560, 61440, 138240, 245760, 311040, 552960, 864000, 983040],
-  exploreTorusRhombille: [408, 660, 936],
-  exploreMobiusStripRhombille: [310, 546],
-  exploreRhombitri: [540, 1008, 2160, 4032, 5184, 9072, 14904, 16464, 21120, 28416, 36792, 65184, 147168, 264420, 592176],
-  exploreTorusRhombitri: [288, 420, 648, 1152, 2448, 4416, 10080, 17664, 39744, 70656, 89856, 160128, 249120, 284160, 359424, 487872, 638208],
-  exploreMobiusStripRhombitri: [578, 800],
-  exploreKleinBottleRhombitri: [288, 648, 1152, 2448, 4416, 10080, 17664, 22464, 39744, 62640, 70656, 89856, 121968, 160128, 284160, 638208],
-  exploreFlorets: [540, 1008, 2160, 4032, 5184, 9072, 264420],
-  exploreTorusFlorets: [648, 2448, 10080, 39744, 89856, 160128, 249120, 359424, 487872, 638208],
-  exploreSnub: [270, 504, 1080, 4320, 5148, 9180, 16560, 21060, 586908],
-  exploreTorusSnub: [630, 972, 26496],
-  exploreTetrakis: [256, 576, 1024, 2304, 4096, 5184, 9216, 14400, 16384, 20736, 28224, 36864, 65536, 147456, 262144, 589824, 1048576],
-  exploreTorusTetrakis: [360, 640, 1440, 2560, 5760, 10240, 23040, 40960, 51840, 92160, 144000, 163840, 207360, 282240, 368640, 655360],
-  exploreMobiusStripTetrakis: [432, 768, 1200, 1728, 3072, 6912, 12288, 27648, 48896, 110208, 196096, 248256, 440832, 689280, 784384, 993024],
-  exploreKleinBottleTetrakis: [260, 360, 640, 1440, 2560, 5760, 10240, 23040, 40960, 51840, 92160, 144000, 163840, 207360, 282240, 368640, 655360],
-  explorePythagoras: [640, 1000, 4000, 9000, 14440, 16000, 21160, 262440],
-  exploreTorusPythagoras: [400, 1600, 3600, 6400, 14400, 25600, 57600, 102400, 129600, 230400, 360000, 409600, 518400, 705600, 921600],
-  exploreElongated: [570, 2220, 9000, 13950, 16362, 37638, 261144, 588060],
-  exploreTorusElongated: [504, 1410, 2016, 3600, 57408],
-  exploreMobiusStripElongated: [308, 670, 1776],
-  exploreKleinBottleElongated: [504, 888, 2016, 3600, 14304, 229248],
-  explorePrismatic: [960, 2160, 4284, 9300, 16236, 20424, 64944, 146124],
-  exploreTorusPrismatic: [2400, 152832, 193536, 611328, 774144],
-  exploreMobiusStripPrismatic: [720, 1110, 45696, 231552, 926208],
-  exploreCapitalI: [567, 1008, 2268, 4032, 5103, 9072, 14175, 16128, 20412, 27783, 1048383],
-  exploreKisChecker: [640, 1000, 2250, 4000, 5290, 9000, 14440, 16000, 21160, 28090, 37210, 65610, 146410, 262440, 590490],
-  exploreTorusKisChecker: [400, 600, 900, 1600, 3600, 6400, 14400, 25600, 57600, 102400, 129600, 230400, 360000, 409600, 518400, 705600, 921600],
-  exploreMobiusStripKisChecker: [270, 460, 750, 1050, 1880, 4260, 7600, 17160, 30560, 68880, 122560, 155160, 276000, 431400, 489600, 619920, 844200],
-  exploreKleinBottleKisChecker: [380, 870, 1560, 3540, 6320, 14280, 25440, 32220, 57360, 89700, 102080, 129240, 175980, 229920, 408960, 920640],
-  exploreKisrhombille: [672, 1080, 2016, 4080, 5016, 9360, 15048, 16800, 20064, 28080, 37440, 66240, 149760, 259752, 588336],
-  exploreTorusKisrhombille: [432, 936, 1632, 2640, 3744, 6720, 14976, 26496, 59904, 106752, 239616, 425472, 539136, 958464],
-  exploreMobiusStripKisrhombille: [480, 1116, 2016, 3060, 4464, 7872, 17856, 31872, 71424, 127488, 286848, 509952, 644544],
-  exploreKleinBottleKisrhombille: [432, 936, 1632, 3744, 6720, 14976, 26496, 59904, 106752, 134784, 239616, 374400, 425472, 539136, 733824, 958464],
-  exploreType9: [288, 14112, 16200, 20808],
-  exploreTorusType9: [6336, 25344, 57024, 101376, 158400, 718848],
-  exploreType13: [288, 14112, 16200, 20808],
-  exploreTorusType13: [528, 2160, 8640, 34560, 138240, 311040, 552960, 864000],
-  exploreMobiusStripType13: [4576, 73600],
-  exploreType15: [300],
-  exploreMobiusStripType15: [900],
-  exploreKleinBottleType15: [432, 1080, 1824, 4176, 7488, 16992, 30336, 37584, 67392, 105840, 120576, 151200, 206640, 270720, 480768],
-  exploreTrihex: [270, 504, 1020, 2340, 4200, 5016, 9360, 14208, 16560, 21060, 28080, 37440, 64938, 147084, 262350, 588336],
-  exploreTorusTrihex: [408, 660, 936, 1680, 3744, 6624, 14976, 26688, 59904, 106368, 134784, 239616, 374400, 425472, 539136, 732816, 957312],
-  exploreMobiusStripTrihex: [288, 492, 780, 1134, 1992, 4500, 7920, 17928, 31776, 71568, 127296, 161352, 286560, 447480, 509568, 644976, 877464],
-  exploreKleinBottleTrihex: [420, 918, 1656, 3708, 6672, 14904, 26592, 33588, 59760, 93420, 106560, 134568, 183204, 239328, 425856, 957888],
-  exploreOctagons: [2312, 9248, 20808, 36992, 147968, 262088, 1048352],
-  exploreTorusOctagons: [320, 720, 1280, 2880, 5120, 11520, 20480, 25920, 46080, 72000, 81920, 103680, 141120, 184320, 327680, 737280],
-  exploreMobiusStripOctagons: [660, 24830, 55678, 98814, 124990, 677370, 884730],
-  exploreKleinBottleOctagons: [320, 720, 1280, 2880, 5120, 11520, 20480, 25920, 46080, 72000, 81920, 103680, 141120, 184320, 327680, 737280],
-  exploreSnubSquare: [294, 600, 1014, 2400, 4056, 5046, 9126, 14406, 16224, 20886, 28566, 36504, 66150, 147894, 262086, 591576, 1048344],
-  exploreTorusSnubSquare: [360, 540, 960, 2160, 3840, 8640, 15360, 34560, 61440, 77760, 138240, 216000, 245760, 311040, 423360, 552960, 983040],
-  exploreMobiusStripSnubSquare: [276, 630, 1128, 1770, 2556, 4560, 10296, 41328, 293760, 371952, 661824],
-  exploreKleinBottleSnubSquare: [375, 522, 936, 2124, 3792, 8568, 15264, 34416, 61248, 77544, 137952, 215640, 245376, 310608, 422856, 552384, 982272],
-  exploreBigRhombitri: [336, 540, 1008, 2508, 4032, 5376, 9072, 14040, 16128, 21120, 28416, 36792, 65184, 146160, 260736, 586656],
-  exploreTorusBigRhombitri: [468, 816, 1320, 1872, 3360, 7488, 13248, 29952, 53376, 119808, 212736, 269568, 479232, 748800, 850944],
-  exploreKleinBottleBigRhombitri: [468, 816, 1872, 3360, 7488, 13248, 29952, 53376, 67392, 119808, 187200, 212736, 269568, 366912, 479232, 850944],
-  exploreDual16: [300, 588, 972, 2352, 3888, 5292, 9408, 14700, 16428, 21168, 27648, 36300, 65712, 147852, 262848, 591408],
-  exploreTorusDual16: [480, 720, 1080, 1920, 4320, 7680, 17280, 30720, 69120, 122880, 155520, 276480, 432000, 491520, 622080, 846720],
-  exploreKleinBottleDual16: [270, 456, 750, 1044, 1872, 4248, 7584, 17136, 30528, 68832, 122496, 155088, 275904, 431280, 490752, 621216, 845712],
-  exploreDual56: [9072, 27216, 36288, 586656],
-  exploreTorusDual56: [648, 39744, 808704],
-  exploreDual314: [360, 2700, 5040, 15120, 20160, 37620, 150480, 261000],
-  exploreTorusDual314: [1080, 66240],
-  exploreDemi2: [294, 600, 1014, 2400, 4056, 5046, 9126, 14406, 16224, 20886, 28566, 36504, 66150, 147894, 262086, 591576, 1048344],
-  exploreTorusDemi2: [360, 540, 960, 2160, 3840, 8640, 15360, 34560, 61440, 77760, 138240, 216000, 245760, 311040, 423360, 552960, 983040],
-  exploreMobiusStripDemi2: [312, 1200, 2664, 73726, 165886, 294910, 373246],
-  exploreKleinBottleDemi2: [540, 960, 2160, 3840, 8640, 15360, 34560, 61440, 77760, 138240, 216000, 245760, 311040, 423360, 552960, 983040],
-  exploreDemi10: [720, 960, 2304, 4032, 5376, 8928, 14720, 16128, 20304, 28160, 35712, 66640, 147168, 260736, 591008],
-  exploreTorusDemi10: [288, 624, 1088, 1760, 2496, 4480, 9984, 17664, 39936, 71168, 159744, 283648, 359424, 638976, 998400],
-  exploreMobiusStripDemi10: [320, 744, 1344, 2040, 2976, 5248, 11904, 21248, 47616, 84992, 191232, 339968, 429696, 763392],
-  exploreKleinBottleDemi10: [288, 624, 1088, 2496, 4480, 9984, 17664, 39936, 71168, 89856, 159744, 249600, 283648, 359424, 489216, 638976],
-  exploreDemi13: [480, 896, 1920, 4608, 5440, 9568, 14336, 15776, 20064, 29440, 37440, 64192, 149760, 264960, 586688],
-  exploreTorusDemi13: [576, 1248, 2176, 3520, 4992, 8960, 19968, 35328, 79872, 142336, 319488, 567296, 718848],
-  exploreMobiusStripDemi13: [680, 1550, 2772, 4182, 6076, 10660, 24056, 42828, 95728, 170648, 383460, 681264, 860884],
-  exploreKleinBottleDemi13: [576, 1248, 2176, 4992, 8960, 19968, 35328, 79872, 142336, 179712, 319488, 499200, 567296, 718848, 978432],
-  exploreDemi20: [630, 1176, 2520, 4704, 8778, 14112, 16380, 20706, 29400, 38640, 65520, 147420, 262080, 589680, 1048320],
-  exploreTorusDemi20: [756, 1638, 2856, 4620, 6552, 11760, 26208, 46368, 104832, 186816, 419328, 744576, 943488],
-  exploreHexa6: [438, 780, 1848, 3240, 4092, 7218, 11232, 12768, 16374, 22200, 28896, 51528, 115596, 206112, 463752, 822648],
-  exploreHexa9: [441, 774, 1836, 3249, 4086, 7218, 11232, 12762, 16371, 22194, 28899, 51516, 115596, 206100, 463752, 822636],
-  exploreHexa12: [432, 768, 1848, 3240, 4080, 7212, 11220, 12756, 16380, 22200, 28896, 51528, 115584, 206112, 463740, 822648],
-};
 // a graph's colouring, no two neighbours alike (eachNeighbour(a, put): each of node a's), DSatur's (Brélaz 1979): the node
 // most bound first (the most colours among its neighbours), its first colour free (1, 2…); its order and its colours. As
 // many colours as a planar graph's 4 most often, not always
@@ -21991,9 +21859,8 @@ function dsatur(count, eachNeighbour) {
 }
 // a small graph's colours, 1 to P, no two neighbours alike: in DSatur's order, each node its first colour free of those
 // before it, back to the last with another free when none is (a search, complete, as long as the graph is small: a solid's
-// faces; a grid's where tools/tilesearch.js found it soon, see TILES_IN_THREE; past P colours only where P cannot do, one
-// more each time). steps: tools/tilesearch.js's, the steps it waits at most (beyond them: null)
-function paletteColours(count, eachNeighbour, P, steps = Infinity) {
+// faces; past P colours only where P cannot do, one more each time)
+function paletteColours(count, eachNeighbour, P) {
   const { order } = dsatur(count, eachNeighbour),
     at = new Int32Array(count);
   order.forEach((a, p) => (at[a] = p));
@@ -22002,7 +21869,6 @@ function paletteColours(count, eachNeighbour, P, steps = Infinity) {
     colour.fill(0);
     let p = 0;
     while (p >= 0 && p < count) {
-      if (!steps--) return null;
       const a = order[p];
       let used = 0;
       eachNeighbour(a, (b) => at[b] < p && (used |= 1 << colour[b]));
@@ -22027,8 +21893,7 @@ function exploreLevels(nbr, n, faces, kinds) {
   const bySide = (t, put) => {
     for (let q = nbr.start[t]; q < nbr.start[t + 1]; q++) if (side[q]) put(nbr.list[q]);
   };
-  if (rule === 'tiles')
-    level = TILES_IN_THREE[walk.variant]?.includes(n) ? paletteColours(n, bySide, 3) : dsatur(n, bySide).colour; // (a grid's cells: a search only where it was found soon)
+  if (rule === 'tiles') level = dsatur(n, bySide).colour; // (a grid's cells: DSatur alone, sometimes a 4th colour where 3 would do: 3 exactly, NP-complete, no search, see DISCONTINUED.md)
   if (rule === 'sides') {
     // (the faces' graph, their sides touching)
     const touching = Array.from({ length: faces.reduce((m, f) => Math.max(m, f), -1) + 1 }, () => new Set());

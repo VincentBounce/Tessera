@@ -1697,7 +1697,8 @@ async function partsEqual(fail) {
 // the copies meet: inside, Penrose's own tiling), its points there 3 neighbours or more, its cells there rhombi; then those
 // kept built whole: their graph closes (V − E + F = 2) with Penrose's rhombi alone, thick and thin both, by their cells; in the
 // console, its table for main.js
-window.penroseSphereSizes = (most = 10, band = 3) => {
+window.penroseSphereSizes = (most = 10, band = 3, from = 0.5) => {
+  // (from: the corners P1 from that radius on only, a search cut in slices)
   const phi = (1 + Math.sqrt(5)) / 2,
     corners = penroseCorners(most + 2);
   const tried = new Map();
@@ -1706,7 +1707,7 @@ window.penroseSphereSizes = (most = 10, band = 3) => {
       for (let d = 0; d < (l ? 10 : 1); d++) {
         const P1 = [v[0] + l * Math.cos((Math.PI * d) / 5), v[1] + l * Math.sin((Math.PI * d) / 5)],
           rho = Math.hypot(...P1);
-        if (rho < 0.5 || rho > most) continue;
+        if (rho < from || rho > most) continue;
         let turn = ((((Math.atan2(P1[1], P1[0]) * 180) / Math.PI) % 72) + 72) % 72;
         if (turn > 72 - 1e-6) turn = 0;
         tried.set(`${rho.toFixed(6)}|${Math.min(turn, 72 - turn).toFixed(4)}`, P1); // (its turn by 72° and its mirror one)
@@ -1734,7 +1735,9 @@ window.penroseSphereSizes = (most = 10, band = 3) => {
   }
   return `const PENROSE_SPHERES = {\n${Object.entries(out)
     .map(([n, [x, y]]) => `  ${n}: [${x}, ${y}],`)
-    .join('\n')}\n}; // (each size's cells: its corner P1, made by penroseSphereSizes(${most}))`;
+    .join(
+      '\n',
+    )}\n}; // (each size's cells: its corner P1, made by penroseSphereSizes(${most}${from > 0.5 ? `, ${band}, ${from}` : ''}))`;
 };
 
 // The rosette spheres' sizes and their cells (ROSETTE_SPHERES in main.js): each rosette's discs, W from 4 to most, whose rims pair teeth to

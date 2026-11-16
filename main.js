@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.166';
+const VERSION = '0.5.167';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -42696,6 +42696,20 @@ const LINE_PIXELS = 10;
 // from its left, a row side t rows down, rounded as the grid's lines are (see drawLines)
 const runX = (x) => Math.round(view.ox + (x - walk.rows.c - 0.5) * view.scale),
   runY = (t) => Math.round(view.oy + (t - 0.5) * view.scale);
+// a picture of Elementary's run (its picture, a part), w pixels of b × b cells from cell x0 and row t0, drawn down to row
+// end: its last pixels' rows cut there, as their cells are (see paint), never past the sheet
+const drawRows = (cv, w, b, x0, t0, end) =>
+  layers.path.drawImage(
+    cv,
+    0,
+    0,
+    w,
+    (end - t0) / b,
+    runX(x0),
+    runY(t0),
+    runX(x0 + w * b) - runX(x0),
+    runY(end) - runY(t0),
+  );
 function drawElementary(to) {
   const R = walk.rows,
     ctx = layers.path,
@@ -42720,12 +42734,16 @@ function drawElementary(to) {
           ? defect
           : background
         : row;
-  const paint = (w, h, counts, breaks, cells, rowOf) => {
-    // (w × h pixels, each its live cells of cells and its row; a pixel a word: its alpha, blue, green, red)
+  const paint = (w, h, counts, breaks, b, t0, end) => {
+    // (w × h pixels, each b × b cells from row t0, the last ones up to row end only: its live cells of its own cells, its
+    // middle row's colour; a pixel a word: its alpha, blue, green, red)
     const img = new ImageData(w, h),
       px = new Uint32Array(img.data.buffer);
     for (let y = 0; y < h; y++) {
-      const row = rowColour(rowOf(y));
+      const top = t0 + y * b,
+        rows = Math.min(b, end - top),
+        cells = b * rows,
+        row = rowColour(top + (rows >> 1));
       for (let x = 0; x < w; x++) {
         const at = y * w + x,
           live = counts[at];
@@ -42772,30 +42790,16 @@ function drawElementary(to) {
       const { counts, breaks } = elementaryPart(R, x0, x1, t0, t1, b),
         w = Math.ceil((x1 - x0 + 1) / b),
         h = Math.ceil((t1 - t0 + 1) / b);
-      R.part = { key, w, h, cv: paint(w, h, counts, breaks, b * b, (y) => t0 + y * b + (b >> 1)) };
+      R.part = { key, w, h, cv: paint(w, h, counts, breaks, b, t0, t1 + 1) };
     }
-    const h = Math.min(R.part.h, Math.ceil((last - t0 + 1) / b)); // (up to the row shown)
-    if (h > 0)
-      ctx.drawImage(
-        R.part.cv,
-        0,
-        0,
-        R.part.w,
-        h,
-        runX(x0),
-        runY(t0),
-        runX(x0 + R.part.w * b) - runX(x0),
-        runY(t0 + h * b) - runY(t0),
-      );
+    if (last >= t0) drawRows(R.part.cv, R.part.w, b, x0, t0, Math.min(t1, last) + 1);
     return;
   }
   const key = `${look}|${LIFE_ALIVE}`; // (its picture, once a look)
-  if (R.picture?.key !== key)
-    R.picture = { key, cv: paint(R.PW, R.PH, R.counts, R.breaks, R.B * R.B, (y) => y * R.B + (R.B >> 1)) };
-  const h = Math.min(R.PH, Math.ceil((last + 1) / R.B));
+  if (R.picture?.key !== key) R.picture = { key, cv: paint(R.PW, R.PH, R.counts, R.breaks, R.B, 0, R.G + 1) };
   ctx.imageSmoothingEnabled = R.B * s < 1; // (made smaller: its pixels averaged, no bands; larger: sharp)
   ctx.imageSmoothingQuality = 'high';
-  ctx.drawImage(R.picture.cv, 0, 0, R.PW, h, runX(0), runY(0), runX(R.PW * R.B) - runX(0), runY(h * R.B) - runY(0)); // (its last pixels past the row's end: empty)
+  drawRows(R.picture.cv, R.PW, R.B, 0, 0, last + 1);
 }
 // the walk's cells, each point's tile with its colour band (the heatmap: its visits so far), in the walk's order: (x, y, band,
 // template) each, at: its point

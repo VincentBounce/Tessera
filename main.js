@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.125';
+const VERSION = '0.5.126';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -21724,22 +21724,24 @@ function renderExplore() {
     ),
   );
   $('explorePalettes').replaceChildren(
-    ...EXPLORE_PALETTES.map(([name, colours, words], i) =>
-      tile({
-        pic: `<svg class="icon" viewBox="0 0 24 24">${colours
-          .map(
-            (c, k) =>
-              `<rect x="${2 + (k * 20) / colours.length}" y="4" width="${20 / colours.length}" height="16" fill="${c}"/>`,
-          )
-          .join('')}</svg>`,
-        text: name,
-        title: words,
-        on: exploreLook.palette === i,
-        click: pick('palette', i),
-        choice: `explorePalette:${i}`,
-      }),
+    tileGroup(
+      EXPLORE_PALETTES.map(([name, colours, words], i) =>
+        tile({
+          pic: `<svg class="icon" viewBox="0 0 24 24">${colours
+            .map(
+              (c, k) =>
+                `<rect x="${2 + (k * 20) / colours.length}" y="4" width="${20 / colours.length}" height="16" fill="${c}"/>`,
+            )
+            .join('')}</svg>`,
+          text: name,
+          title: words,
+          on: exploreLook.palette === i,
+          click: pick('palette', i),
+          choice: `explorePalette:${i}`,
+        }),
+      ),
     ),
-  );
+  ); // (one choice among them: a tile group, as the hunt's zones)
 }
 // A Life's game (walk.life) by its rule, on its grid's cells (grid: its neighbours, rings, seed, blocks…), n of them: its
 // cells' arrays made (the graphics card's copies too), its seed counted; and the walk's fields every Life has, the others

@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.172';
+const VERSION = '0.5.173';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -3841,7 +3841,7 @@ const hullCuts = Object.entries(HULL_SOLIDS).flatMap(([k, S]) =>
 );
 // the flat solids with hexagons too, folded over their edges (see hexSolidMesh): each one's name, its family's, its size
 // (as its triangles', see SURFACES), its cells (one a corner of its triangles) and those of other sides (where fewer or more
-// than 6 of its triangles meet: walls in Life, walked on)
+// than 6 of its triangles meet: cells as the others)
 const HEX_SOLIDS = {
   tetra: {
     a: 'a tetrahedron',
@@ -9787,7 +9787,7 @@ const LIFE_GRIDS = [
     {
       lattice: 'surface',
       surface: 'hexsphere',
-      where: 'an icosahedron of hexagons, a Goldberg polyhedron (its 12 pentagons are walls)',
+      where: 'an icosahedron of hexagons, a Goldberg polyhedron (and its 12 pentagons)',
     },
   ],
   [
@@ -10001,7 +10001,7 @@ for (const [k, { a, name }] of Object.entries(HEX_SOLIDS)) {
   lifeGrid(variantName('Life', name, 'Hexagons'), 'Surfaces', name, VARIANT_ICONS[variantName('Life', name, 'Kites')], {
     lattice: 'surface',
     surface: `${k}Hex`,
-    where: `${a} of hexagons (folded over its edges; ${HEX_SOLIDS[k].others}: walls)`,
+    where: `${a} of hexagons (folded over its edges; and ${HEX_SOLIDS[k].others})`,
   });
 }
 // the hull solids' Life (see HULL_SOLIDS): a variant each, said by its declaration
@@ -10486,9 +10486,7 @@ const FAMILIES = [
           false,
           'tilesHex',
           'Hexagons',
-          sphere
-            ? 'Hexagons (and 12 pentagons)'
-            : `Hexagons (folded over the edges; ${HEX_SOLIDS[k].others}, walls in Life)`,
+          sphere ? 'Hexagons (and 12 pentagons)' : `Hexagons (folded over the edges; and ${HEX_SOLIDS[k].others})`,
         ],
         [0, false, 'tilesTri', 'Triangles', sphere ? 'Triangles (an icosahedron, inflated)' : 'Triangles'],
         [1, false, 'kites', 'Kites', 'Kites (each triangle cut in 3)'],
@@ -16247,10 +16245,10 @@ function hexSolidMesh(solid, f) {
   // a walk along its edges starts as the icosahedron's tile walk does: on triangle 0, come in
   // through its edge 0, so that the same digits draw the same path in both tabs
   mesh.gridStart = [0, ico.nbr[0]];
-  // in a Game of Life the corners' cells (not 6 triangles round them: a pentagon, a square, a triangle, the stella's hollows'
-  // octagons) are walls: always dead, and no one's neighbour
-  mesh.walls = cells.flatMap((c, v) => (c.length !== 6 ? [v] : []));
-  mesh.hexagons = true; // (its cells hexagons, whatever its walls' sides: the stella's octagons, see patternAt)
+  // its corners' cells (not 6 triangles round them: a pentagon, a square, a triangle, the stella's hollows' octagons): cells
+  // as the others, named apart (its size's words, its solid's corners, its motif's pick)
+  mesh.cornerCells = cells.flatMap((c, v) => (c.length !== 6 ? [v] : []));
+  mesh.hexagons = true; // (its cells hexagons, whatever its corners' cells' sides: the stella's octagons, see patternAt)
   // its solid's corners and faces, its triangles' solid's (see startList): its own (a dodecahedron's, a stella's), else its
   // triangles' faces
   if (ico.solid) mesh.solid = ico.solid;
@@ -17318,7 +17316,7 @@ const sizeShape = (kind, f) => {
 // how its cells are counted (the size's tooltip): its own words (Pits, Frame, Menger, theirs as tetrakis triangles), else its
 // count's form, c × f² (+ k: a sphere of hexagons' 12 pentagons, see goldberg), else the grid's rows × cells a row
 // a size's tooltip on its block, − + its label and its slider, as its motif shows on it (see drawMotif); its words
-// marked {y:…} {r:…} {o:…} in the colours they are drawn in: the motif's violet, a face's red, the walls' ochre
+// marked {y:…} {r:…} {o:…} in the colours they are drawn in: the motif's violet, a face's red, the corners' cells' ochre
 const cssColour = (name) => getComputedStyle(document.documentElement).getPropertyValue(name).trim(),
   motifColour = () => cssColour('--motif-color'),
   faceRed = () => cssColour('--face-color'); // (the page's, as its theme has them: see style.css)
@@ -17499,13 +17497,13 @@ const hexCorners = (kind) => {
     g0 = (facesMemo[kind] ??= S.mesh(S.sizes[0])),
     sidesOf = (t) => new Set(Array.from({ length: g0.sides }, (_, j) => g0.poly[g0.sides * t + j])).size,
     corners = {};
-  for (const t of g0.walls ?? []) corners[sidesOf(t)] = (corners[sidesOf(t)] ?? 0) + 1;
+  for (const t of g0.cornerCells ?? []) corners[sidesOf(t)] = (corners[sidesOf(t)] ?? 0) + 1;
   const names = { 3: 'triangles', 4: 'squares', 5: 'pentagons', 8: 'octagons' };
   return {
     at: Object.entries(corners)
       .map(([c, k]) => `${k} ${names[c]}`)
       .join(' + '),
-    walls: g0.walls?.length ?? 0,
+    others: g0.cornerCells?.length ?? 0,
   };
 };
 const sizeCells = (kind, f, marked = false) => {
@@ -17514,8 +17512,8 @@ const sizeCells = (kind, f, marked = false) => {
     S = SURFACES[kind];
   if (d) return `${formatNumber(d[2])} ${d[3]}`;
   if (S.unit === 'hexagons') {
-    const { at, walls } = hexCorners(kind),
-      hex = `${formatNumber(S.tiles(f) - walls)} hexagons`;
+    const { at, others } = hexCorners(kind),
+      hex = `${formatNumber(S.tiles(f) - others)} hexagons`;
     return marked ? `{y:${hex}} + {o:${at}}` : `${hex} + ${at}`;
   }
   return `${formatNumber(S.tiles(f))} ${S.unit}`;
@@ -17911,7 +17909,7 @@ function solidRotations(C) {
 // a solid's faces, as built: a flat polyhedron's (its faces), a hull solid's (its squares', then its triangles': see hullMesh)
 const solidFaces = (g) => g.faces ?? (g.squareFaces && [...g.squareFaces, ...g.triFaces]);
 // The solid's corners: its own (the dodecahedron's, not its pentagons' centres), of its faces, or the
-// walls of a solid of hexagons (the sphere's 12 pentagons: their middles)
+// corners' cells of a solid of hexagons (the sphere's 12 pentagons: their middles)
 function solidCorners(g) {
   if (g.solid) return g.solid.corners;
   const C = [];
@@ -17920,7 +17918,7 @@ function solidCorners(g) {
     if (!C.some((c) => c[0] * u[0] + c[1] * u[1] + c[2] * u[2] > 1 - 1e-9)) C.push(u);
   };
   if (solidFaces(g)) for (const f of solidFaces(g)) f.corners.forEach(put);
-  else for (const t of g.walls) put(Array.from(g.cen.subarray(3 * t, 3 * t + 3)));
+  else for (const t of g.cornerCells) put(Array.from(g.cen.subarray(3 * t, 3 * t + 3)));
   return C;
 }
 
@@ -20960,7 +20958,7 @@ function renderBattleHunt() {
  */
 
 // fading trail after a cell dies: from a light slate grey down to the background
-const LIFE_WALL = '#c4934e'; // the walls of a Life run (the hexagon sphere's pentagons)
+const LIFE_WALL = '#c4934e'; // the walls of a Life run (a disc's round the plane's cells)
 
 // Life's neighbours, the plane's grids and the surfaces' alike, from each cell's corners (cStart/cList: cell t's
 // corner ids, cList[cStart[t]] … cList[cStart[t + 1] − 1], in turn round it; nv: how many corners). A cell's
@@ -21046,19 +21044,17 @@ function cellNeighbours(cStart, cList, nv, sides = 0) {
 // A grid's corners, the plane's and the surfaces' alike: each cell's corner ids in turn round it (cell t's, list[start[t]]
 // … list[start[t + 1] − 1]), each corner one id however many cells share it (nv: how many; a torus's the same each side
 // of its seam): what Life's neighbours, their sides, Ising and the blocks read (see planeMesh, meshCorners)
-// a surface's: its tiles' corners (a repeated one, a pentagon's of the hexagon sphere, once; a wall: none)
+// a surface's: its tiles' corners (a repeated one, a pentagon's of the hexagon sphere, once)
 function meshCorners(g) {
   if (g.corners) return g.corners;
   const k = g.sides,
-    wall = new Set(g.walls),
     start = new Int32Array(g.n + 1),
     list = [];
   for (let t = 0; t < g.n; t++) {
-    if (!wall.has(t))
-      for (let j = 0; j < k; j++) {
-        const v = g.poly[k * t + j];
-        if (v !== g.poly[k * t + ((j + 1) % k)]) list.push(v);
-      }
+    for (let j = 0; j < k; j++) {
+      const v = g.poly[k * t + j];
+      if (v !== g.poly[k * t + ((j + 1) % k)]) list.push(v);
+    }
     start[t + 1] = list.length;
   }
   return (g.corners = { start, list: Int32Array.from(list), nv: g.verts.length / 3 });
@@ -21066,7 +21062,7 @@ function meshCorners(g) {
 // A surface's Life neighbours, by its corners: on hexagons, their ring (Callahan's letters); on squares, sides 8 asked
 // (Hensel's)
 function cornerNeighbours(g, sides = g.sides === 6 || g.hexagons ? 6 : 0) {
-  // (a solid of hexagons: its walls of more sides too, the stella's)
+  // (a solid of hexagons: its corners' cells of more sides too, the stella's)
   const key = `life${sides}`,
     M = meshCorners(g);
   return (g[key] ??= cellNeighbours(M.start, M.list, M.nv, sides));
@@ -21651,9 +21647,9 @@ const civColours = (K, C) => [
 
 // A surface's start, as the Start says: its digits (one digit a cell in base K + 1: 0 dead, k alive in colour k), or a soup as dense as said, from its seed (in colours, each live cell's colour
 // drawn too)
-function surfaceSeed(seq, n, K, walls) {
+function surfaceSeed(seq, n, K) {
   const seed = new Uint8Array(n);
-  if (plane.start === 'digits') digitsOn(seed, seq, walls);
+  if (plane.start === 'digits') digitsOn(seed, seq);
   else for (let t = 0; t < n; t++) seed[t] = soupState(t, K);
   return seed;
 }
@@ -21662,11 +21658,9 @@ function surfaceSeed(seq, n, K, walls) {
 const soupState = (p, K) =>
   cellRandom(plane.seed, p) >= plane.density / 100 ? 0 : K > 1 ? 1 + Math.floor(cellRandom(plane.seed + 1, p) * K) : 1;
 // the digits as a start: one a cell, in turn (a grid in a hexagon or a circle from its middle out, wound round it; a
-// rectangle's row by row: see planeGrid); on a surface, on its open cells (a wall's, none: its digits not lost there)
-function digitsOn(seed, seq, walls = []) {
-  const out = new Set(walls);
-  let k = 0;
-  for (let t = 0; t < seed.length; t++) seed[t] = out.has(t) ? 0 : (seq[k++] ?? 0);
+// rectangle's row by row: see planeGrid); on a surface, its tiles in turn
+function digitsOn(seed, seq) {
+  for (let t = 0; t < seed.length; t++) seed[t] = seq[t] ?? 0;
 }
 // the same grid, another soup (a new seed, density): a surface's or the plane's
 function lifeReseed() {
@@ -21675,8 +21669,7 @@ function lifeReseed() {
     return;
   }
   const L = walk.life;
-  L.seed.set(surfaceSeed(walk.digits, L.seed.length, lifeParts(), walk.geo.walls));
-  for (const t of walk.geo.walls ?? []) L.seed[t] = 0;
+  L.seed.set(surfaceSeed(walk.digits, L.seed.length, lifeParts()));
   startColours(L.seed);
   setLifeSeed(L.seed.slice(), lifeStart?.zone === 'mirror' ? lifeStart : null);
 }
@@ -21756,10 +21749,9 @@ function startParts(seed) {
   const z = zoneSeed(); // the zone picked, again on this grid (a radius, patterns)
   if (z) {
     seed.set(z);
-    for (const t of walk.geo.walls ?? []) seed[t] = 0;
     lifeStart = { zone: hunt.zone };
     return;
-  } // (none on the wall's cells)
+  }
   if (K === 1) return;
   const coloured = new Uint8Array(seed.length);
   huntParts(0, K).forEach((part, i) => {
@@ -22021,8 +22013,7 @@ function buildLife(seq, variant) {
   }
   $('lifeRule').value = ruleBody(rule.text); // the colours apart (see lifeTeams)
   if (plane.start === 'draw') plane.start = 'random'; // no drawing on the surfaces
-  const seed = surfaceSeed(seq, g.n, rule.colours, g.walls);
-  for (const t of g.walls ?? []) seed[t] = 0;
+  const seed = surfaceSeed(seq, g.n, rule.colours);
   startLife(seq, rule, g.n, {
     nbr,
     ring: rule.loops ? loopRing(rule, meshSides(meshCorners(g))) : rule.iso && rule.iso !== 'vertex' ? ring : null,
@@ -24748,8 +24739,7 @@ let iconCellsMemo = null;
 const iconCellsOf = (K) => {
   const key = `${gridKey()}|${K}`;
   if (iconCellsMemo?.key === key) return iconCellsMemo;
-  const dead = new Set(walk.geo.walls ?? []),
-    part = new Int32Array(walk.life.seed.length).fill(-1);
+  const part = new Int32Array(walk.life.seed.length).fill(-1);
   huntParts(0, K, false, false).forEach((p, k) => {
     for (const t of p) part[t] = k;
   });
@@ -24758,13 +24748,13 @@ const iconCellsOf = (K) => {
       cells = [],
       uv = [];
     for (let t = 0; t < part.length; t++)
-      if (part[t] === i && !dead.has(t) && (F.on?.(t) ?? true)) {
+      if (part[t] === i && (F.on?.(t) ?? true)) {
         cells.push(t);
         uv.push(...F.from(F.place(t)));
       }
     return { cells: Int32Array.from(cells), uv: Float64Array.from(uv) };
   });
-  return (iconCellsMemo = { key, dead, part, of });
+  return (iconCellsMemo = { key, part, of });
 };
 // the plane's colours cut round its middle in walls a hexagon's or a circle's (a grid that never repeats): their pictures
 // out, against their walls (see iconLay)
@@ -24860,9 +24850,9 @@ function iconLay(N, P = 24) {
     K = lifeParts(),
     g = walk.geo;
   if (!patternsOn()) return null;
-  const { dead, part, of } = iconCellsOf(K),
+  const { part, of } = iconCellsOf(K),
     walled = roundWalls(K) && planeSlices(K),
-    live = (t, i) => t >= 0 && part[t] === i && !dead.has(t);
+    live = (t, i) => t >= 0 && part[t] === i;
   const o = cellMiddle(kind, 0, 0),
     a = latticeStep(kind),
     b = cellMiddle(kind, 0, 1).map((c, d) => c - o[d]),
@@ -30955,7 +30945,7 @@ function numberSeed(x, own) {
       r %= Number(q);
     }
   }
-  digitsOn(seed, digits, walk.geo.walls);
+  digitsOn(seed, digits);
   if (lifeParts() > 1) paintOwn(seed, own);
   symmetricStart(seed);
   seed.number = x;
@@ -31574,10 +31564,9 @@ function cellPlace(t) {
       far = (c) => Math.hypot(...at(c).map((v, d) => v - g.faceMids[k][d]));
     g.faceMiddleCells ??= [];
     if (g.faceMiddleCells[k] === undefined) {
-      const wall = new Set(g.walls ?? []),
-        own = [...Array(g.n).keys()].filter((c) => g.cellFaces[c] === k && !wall.has(c));
+      const own = [...Array(g.n).keys()].filter((c) => g.cellFaces[c] === k);
       g.faceMiddleCells[k] = own.length ? own.reduce((b, c) => (far(c) < far(b) ? c : b)) : -1;
-    } // (its face's middle cell, of its cells: a wall's no cell, its frame none)
+    } // (its face's middle cell, of its cells: none, its frame none)
     return g.faceMiddleCells[k] < 0 ? null : { on: 'hex', c0: g.faceMiddleCells[k] };
   }
   return {
@@ -39970,13 +39959,12 @@ function frontCell() {
   const g = walk.geo,
     dir = CAMERA_START.v;
   return (g.frontCell ??= (() => {
-    const wall = new Set(g.walls);
     let best = 0,
       bestDot = -Infinity;
     for (let t = 0; t < g.n; t++) {
       const c = g.cen.subarray(3 * t, 3 * t + 3),
         dot = (c[0] * dir[0] + c[1] * dir[1] + c[2] * dir[2]) / Math.hypot(...c);
-      if (dot > bestDot && !wall.has(t)) {
+      if (dot > bestDot) {
         bestDot = dot;
         best = t;
       }
@@ -40114,7 +40102,6 @@ function setLifeSeed(seed, how) {
   L.seed.set(seed);
   const picked = seed.pick && famousZone(hunt.zone); // (a hunt's Famous or Anywhere start: its patterns, its link's)
   if (picked) plane.picks = seed.pick.map((c, i) => choiceWord(patternChoices(hunt.zone === 'centred')[i], c));
-  for (const t of walk.geo.walls ?? []) L.seed[t] = 0;
   countSeed(L);
   championCode = how && !how.zone && !picked ? encodeCells(L.seed, walk.base) : null; // a hunt's, a battle's, a saved start, in its shortest form (a zone's or the grid's own, its patterns too: its pop says it, see getSetup)
   lifeStart = how;
@@ -42159,7 +42146,7 @@ function drawSurface() {
   // the torus, and any polyhedron that is not flat, is drawn tile by tile from its current form;
   // a flat polyhedron is drawn face by face below
   if (L) {
-    // Life's look, the plane's (see lifeLook): the walls, the pentagons of the hexagon sphere, in stone grey
+    // Life's look, the plane's (see lifeLook): a cell with no neighbours (none on a surface) a wall, in stone
     const rgba = (c) => [...rgbCached(c).map((x) => x / 255), 1],
       look = { ...lifeLook(L, true), wall: rgba(LIFE_WALL), dead: rgba(blankTile()) };
     gpuSurface((out) => gpuLook(L, out, look), path);
@@ -44263,17 +44250,17 @@ function gpuSurface(paint, path) {
     D.eCount = 2 * E;
     if (D.keys.fanOf !== g) {
       const fan = surfaceTriangles(g),
-        walls = new Set(g.walls),
+        corners = new Set(g.cornerCells),
         tileOf = (q) => Math.floor(fan[3 * q] / k); // (its triangle q's tile: its first corner's, k a tile)
       gpuBuffer('fan', fan, GPUBufferUsage.INDEX);
       D.fanCount = fan.length;
-      // the motif's pick: the same triangles but its walls' (its cells of other sides, a solid of hexagons' corners: never
+      // the motif's pick: the same triangles but its corners' cells' (its cells of other sides, a solid of hexagons': never
       // its motif, see gpuPickMiddle) and, on a sheet, those of a motif cut by its edge or its seam (a strip's, a bottle's:
       // its lattice cell's tiles fewer than its motif's), while it has a whole one
       const cut = (t) =>
           (g.torus || g.klein) && latticeCellTiles(g).get(latticeCellOf(g, t)).length < latticeCellSize(g),
         whole = Array.from({ length: fan.length / 3 }, (_, q) => q).filter(
-          (q) => !walls.has(tileOf(q)) && !cut(tileOf(q)),
+          (q) => !corners.has(tileOf(q)) && !cut(tileOf(q)),
         ),
         pickFan = Uint32Array.from(
           whole.length ? whole.flatMap((q) => [fan[3 * q], fan[3 * q + 1], fan[3 * q + 2]]) : fan,

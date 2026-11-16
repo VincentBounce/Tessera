@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.141';
+const VERSION = '0.5.142';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -46345,6 +46345,7 @@ const valueInUse = {
   digitsLabel: () => String(randomPrimeSize() ?? lengthAsked()),
   startLabel: () => String(startNo()),
   antRule: () => creatureRules(tabVariant()).now, // (a walk's, an ant's, a turmite's, a worm's)
+  startTextInput: () => plane.text,
   lifeRule: () => (walk.life?.ruleText ? ruleBody(walk.life.ruleText) : walk.rows ? `W${walk.rows.N}` : null),
 }; // (the rule the game plays, its colours apart; Elementary's, its rows'; none yet: the field's as it was, see putBack)
 // a typed field's error, '' when right: Enter keeps you in the field with it (a formula, every walker's alike; a rule)
@@ -46357,7 +46358,9 @@ const fieldError = (input) => {
   if (input.id === 'antRule') return creatureRuleError(input.value);
   return '';
 };
-for (const input of document.querySelectorAll('.field input')) {
+// every field typed in, one way (a line's and Text's lines alike): Escape its value in use back, leaving it; Enter (in lines,
+// ⌘ Enter: Enter a new line) leaving it, or its error said and staying
+for (const input of document.querySelectorAll('.field :is(input, textarea)')) {
   let before = '';
   valueInUse[input.id] ??= () => before; // (a field with no value of its own in use: as it was when entered)
   // its value in use put back, as typed: its listeners told (a battle's formula bold in its colour again, see tintBattleFormulas)
@@ -46382,12 +46385,11 @@ for (const input of document.querySelectorAll('.field input')) {
       putBack();
       input.blur();
     }
-    if (e.key !== 'Enter') return;
+    if (e.key !== 'Enter' || (input.tagName === 'TEXTAREA' && !e.metaKey && !e.ctrlKey)) return;
+    e.preventDefault();
     const error = fieldError(input);
-    if (error) {
-      e.preventDefault();
-      $('status').textContent = error;
-    } else input.blur();
+    if (error) $('status').textContent = error;
+    else input.blur();
   });
 }
 for (const b of document.querySelectorAll('.field .enter')) {
@@ -46719,16 +46721,10 @@ $('textFonts').append(
     }),
   ),
 );
-// Text's lines: Enter a new line; drawn on a change (↵, a click outside, or ⌘ Enter)
+// Text's lines: Enter a new line; drawn on a change (↵, a click outside, or ⌘ Enter: see the fields' keys)
 $('startTextInput').addEventListener('change', () => {
   plane.text = $('startTextInput').value.trim() || APP_TITLE;
   compute();
-});
-$('startTextInput').addEventListener('keydown', (e) => {
-  if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
-    e.preventDefault();
-    $('startTextInput').blur();
-  }
 });
 // Open PNG: a picture, its dark pixels alive (its transparent ones dead), a pixel a square, on the smallest grid it fits in
 // (the plane's sizes: from 16 × 16, every rule's), in the middle; Export PNG: the generation shown, its live cells black

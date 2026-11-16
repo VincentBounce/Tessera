@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.192';
+const VERSION = '0.5.193';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -18120,7 +18120,7 @@ function startList(g) {
 function variantStarts() {
   const variant = VARIANTS[tabVariant()];
   return (variant.edges || variant.cells) && STARTS_ON.includes(surfaceOf(variant))
-    ? startList(SURFACES[surfaceOf(variant)].mesh(gridSizePlayed()))
+    ? startList(SURFACES[surfaceOf(variant)].mesh(sizeOf(figureSize(tabVariant())))) // (the menu's size where its field holds this surface's sizes, else its own: another tab's while it changes)
     : null;
 }
 // A start on cells: a start along the edges, from corner f to corner v, crosses into the tile on its

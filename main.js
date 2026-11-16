@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.132';
+const VERSION = '0.5.133';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -7245,9 +7245,11 @@ const runLoop = () => {
 // (■ from gen T), the length asked (STEPS_GLYPH, its stepper's), a battle's end before its digits (■ the first heads met at step T); '' while none is known (Space-time
 // and Elementary: none)
 const STEPS_GLYPH = '𓊍'; // the length asked's mark: its stepper's unit, a run ended by it (Egyptian hieroglyph O40, a stair)
+// the run ended by the length asked (its stepper's, at the top right), not by its own end
+const endsAtLength = () => lengthUsed() && seekFar() === lengthAsked() && !runLoop();
 function endMark() {
   if (walk.stacked || walk.rows) return '';
-  if (lengthUsed() && seekFar() === lengthAsked() && !runLoop())
+  if (endsAtLength())
     return `<a class="gen-link gen-loop" href="#" data-stepper data-gen="${walk.n}" title="The length asked: a click goes there and shows its stepper, at the top right">${STEPS_GLYPH}<span class="end-words"> max defined upper-right</span></a>`; // (its end the length asked: a click goes there and highlights its stepper)
   if (walk.battle) {
     const why = walk.battle.winner.until;
@@ -45900,10 +45902,21 @@ function updateStats() {
           ? 'A Game of Life has no rule backwards: it plays forth only.'
           : backAtStart,
   });
-  setTile($('step'), { greyed: atEnd() ? 'Already at the end.' : '' });
+  // (at the length asked: a click on them, greyed, highlights its stepper, as the step line's mark does, see endMark)
+  const atLength = atEnd() && endsAtLength(),
+    toLength = atLength ? () => [document.querySelector('.max-steps')] : null;
+  setTile($('step'), {
+    greyed: atEnd() ? `Already at the end${atLength ? ': the length asked, at the top right' : ''}.` : '',
+  });
+  $('step').enablers = toLength;
   $('end').hidden = lifePlayer() && !runLoop(); // (Life, a reversible one: +10k till its end is known)
   if (drawing && walk.plane && drawAway() !== drawToolsAway) renderDrawTools(); // (Draw: its tools at gen 0 only; drawn again as play leaves it or comes back, not each frame: 785 cards)
-  setTile($('end'), { greyed: runStops().some((g) => g > stepShown) ? '' : 'No stop ahead.' });
+  setTile($('end'), {
+    greyed: runStops().some((g) => g > stepShown)
+      ? ''
+      : `No stop ahead${atLength ? ': the length asked, at the top right' : ''}.`,
+  });
+  $('end').enablers = toLength;
   // the step or generation shown, its own line, every variant: Step 15,964, Gen 132; its last after it where the run has one
   // (a walk's, Elementary's, Space-time's: see runEnd; Life's, a reversible one's, once its loop is known: see runLoop), its slider's end (see seekFar)
   const far = seekFar(),

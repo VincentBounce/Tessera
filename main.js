@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.162';
+const VERSION = '0.5.163';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -6733,8 +6733,11 @@ function relabelColours(variant) {
     byValue[v].hidden = !shows(v, tabVariant());
   for (const v of ['gradient', 'visits', 'digit', 'domain', 'entropy'])
     byValue[v].disabled = !!lookWhyNot(v, tabVariant()); // (Rainbow along a spiral, its Heatmap; Elementary's measures past their cells)
-  if (sel.selectedOptions[0]?.hidden || sel.selectedOptions[0]?.disabled) {
-    sel.value = Array.from(sel.options).find((o) => !o.hidden && !o.disabled).value; // the first one left
+  // (the look in use no longer allowed: the variant's default one, else the first one left)
+  const allowed = (o) => o && !o.hidden && !o.disabled;
+  if (!allowed(sel.selectedOptions[0])) {
+    const usual = byValue[defaultOf('look', tabVariant())];
+    sel.value = (allowed(usual) ? usual : Array.from(sel.options).find(allowed)).value;
   }
   renderColourButtons();
 }

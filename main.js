@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.101';
+const VERSION = '0.5.102';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -30882,8 +30882,10 @@ function renderHunt() {
   const zone = shown + (sym !== 'none' ? ` · ${SYMMETRIES[sym][2]}` : '');
   $('huntBtn').innerHTML = busy ? `${icon('stop')} Stop hunt and play` : `${icon('search')} ${capitalised(what)}`;
   setTile($('huntBtn'), {
-    greyed: !busy && hunt.zone === 'custom' ? 'A start from a link: pick a zone to hunt in first.' : '',
-  });
+    whyNot: busy
+      ? null
+      : ({ zone = hunt.zone }) => (zone === 'custom' ? 'A start from a link: pick a zone to hunt in first.' : ''),
+  }); // (by the setup's zone: a click on it lights the zones that allow it, see enablersFor; running, Stop, never greyed)
   $('huntBtn').title = `${hunts}\n${zone}`;
   $('huntBtn').dataset.limits =
     `Each start played up to ${formatNumber(HUNT_GENERATIONS[K === 1 ? 0 : 1])} generations${K === 1 ? '' : ' (a battle)'}` +

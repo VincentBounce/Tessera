@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.111';
+const VERSION = '0.5.112';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -6395,7 +6395,7 @@ const DISPLAY_DEFAULTS = {
   ], // (by its shape, see SHAPE_DEFAULTS)
   light: ['light', 'open', true],
   glass: ['glass', 'open', false],
-  grid: ['showGrid', 'open', true],
+  grid: ['showGrid', 'tab', { all: true, Explore: false }], // (Explore's colours alone, no seams drawn over them)
   trail: ['lifeTrail', 'lifeTeams', () => lifeTeams === 1], // (Life's Trail: on in Solo, two states, off in teams; when the teams change)
   ocean: ['ocean', 'battle', () => battleOn() && NAV[tabVariant()][0] === 'Walk'], // (on in a walk's battle on a surface, as long as none picks it)
   cut: [null, 'open', 0],

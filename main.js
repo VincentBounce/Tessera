@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.168';
+const VERSION = '0.5.169';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -21358,13 +21358,13 @@ function localEntropy(T, first, G, wrap, W, B, PW, PH) {
     }
   };
   run((t, x, k) => counts[k]++);
-  const sum = new Float32Array(PW * PH);
-  run((t, x, k) => {
-    sum[Math.floor(t / B) * PW + Math.floor(x / B)] +=
-      Math.min(1, -Math.log2(counts[k] / (counts[k] + counts[k ^ 1]))) / (B * B);
-  });
-  return sum;
+  const means = new Float32Array(PW * PH);
+  run((t, x, k) => (means[Math.floor(t / B) * PW + Math.floor(x / B)] += entropyBits(counts, k)));
+  for (let y = 0; y < PH; y++) for (let x = 0; x < PW; x++) means[y * PW + x] /= B * Math.min(B, G + 1 - y * B); // (its own cells)
+  return { model: counts, means };
 }
+// a cell's local entropy rate by the run's counts (model), k its column's past and itself: 0 to 1 bit (more: 1)
+const entropyBits = (model, k) => Math.min(1, -Math.log2(model[k] / (model[k] + model[k ^ 1])));
 function elementaryRowsOf(G, start, N, digits) {
   // (alone: in the page or in a worker, see elementaryReady)
   const wrap = start === 'digits',
@@ -21384,7 +21384,7 @@ function elementaryRowsOf(G, start, N, digits) {
     breaks = W * (G + 1) <= DOMAINS_MOST ? new Uint32Array(PW * PH) : null, // (its live cells that break their background: see rowDefects; none past DOMAINS_MOST cells)
     upTo = new Float64Array(G + 2),
     kept = [],
-    entropy = localEntropy(T, wordsOf(first), G, wrap, W, B, PW, PH);
+    measured = localEntropy(T, wordsOf(first), G, wrap, W, B, PW, PH);
   let r = wordsOf(first),
     next = new Uint16Array(n);
   for (let t = 0; t <= G; t++) {
@@ -21422,7 +21422,8 @@ function elementaryRowsOf(G, start, N, digits) {
     PH,
     counts,
     breaks,
-    entropy,
+    entropy: measured?.means ?? null,
+    entropyModel: measured?.model ?? null,
     upTo,
     kept,
     wrap,
@@ -21490,7 +21491,7 @@ const elementaryRows = () => (elementaryReady(compute) ? elementaryMade : null);
 // partWork: its words stepped, what it costs
 const partSpan = (R, x0, x1, t0, t1) => {
   // (the words its cone reaches from the row kept; a ring's (Digits) reaching an end: all of it, the other end its neighbour)
-  const from = Math.floor(t0 / KEEP) * KEEP,
+  const from = Math.floor(Math.max(0, t0 - ENTROPY_PAST) / KEEP) * KEEP, // (its columns' pasts known from t0: see localEntropy)
     m = t1 - from + 1,
     lo = Math.max(0, (x0 - m) >> 4),
     hi = Math.min(R.n - 1, (x1 + m) >> 4);
@@ -21500,17 +21501,28 @@ const partWork = (R, x0, x1, t0, t1) => {
   const { from, lo, hi } = partSpan(R, x0, x1, t0, t1);
   return (t1 - from + 1) * (hi - lo + 1);
 };
-function elementaryPart(R, x0, x1, t0, t1, b = 1) {
+function elementaryPart(R, x0, x1, t0, t1, b = 1, measure = false) {
+  // (measure: its cells' local entropy too, by the run's counts: each block's mean, see localEntropy)
   const { from, lo, hi } = partSpan(R, x0, x1, t0, t1),
     k = from / KEEP,
     full = lo === 0 && hi === R.n - 1;
   const T = wolframTable(R.N),
     w = Math.ceil((x1 - x0 + 1) / b),
     counts = new Uint32Array(w * Math.ceil((t1 - t0 + 1) / b)),
-    breaks = new Uint32Array(counts.length);
+    breaks = new Uint32Array(counts.length),
+    entropy = measure ? new Float32Array(counts.length) : null,
+    past = measure ? new Uint16Array(x1 - x0 + 1) : null;
   let r = R.kept[k].slice(),
     next = new Uint16Array(R.n);
   for (let t = from; t <= t1; t++) {
+    if (measure)
+      for (let x = x0; x <= x1; x++) {
+        const c = cellOf(r, x),
+          key = (past[x - x0] << 1) | c;
+        if (t >= t0 && t - from >= ENTROPY_PAST)
+          entropy[Math.floor((t - t0) / b) * w + Math.floor((x - x0) / b)] += entropyBits(R.entropyModel, key);
+        past[x - x0] = key & ((1 << ENTROPY_PAST) - 1);
+      }
     if (t >= t0) {
       const at = Math.floor((t - t0) / b) * w,
         defects = R.breaks && rowDefects(r, R.wrap); // (none past DOMAINS_MOST cells: Domains greyed)
@@ -21530,7 +21542,13 @@ function elementaryPart(R, x0, x1, t0, t1, b = 1) {
     wolframStep(T, r, next, lo, hi, R.wrap && full);
     [r, next] = [next, r];
   }
-  return { counts, breaks };
+  if (measure)
+    for (let at = 0; at < entropy.length; at++) {
+      const y = Math.floor(at / w),
+        x = at % w;
+      entropy[at] /= Math.min(b, x1 + 1 - x0 - x * b) * Math.min(b, t1 + 1 - t0 - y * b); // (its own cells)
+    }
+  return { counts, breaks, entropy };
 }
 function parseRule(text) {
   if (/^\s*(M|Q2R)/i.test(text)) return parseBlocks(text);
@@ -42745,7 +42763,7 @@ function drawElementary(to) {
           ? defect
           : background
         : row;
-  const paint = (w, h, counts, breaks, b, t0, end) => {
+  const paint = (w, h, { counts, breaks, entropy }, b, t0, end) => {
     // (w × h pixels, each b × b cells from row t0, the last ones up to row end only: its live cells of its own cells, its
     // middle row's colour; a pixel a word: its alpha, blue, green, red)
     const img = new ImageData(w, h),
@@ -42758,7 +42776,7 @@ function drawElementary(to) {
       for (let x = 0; x < w; x++) {
         const at = y * w + x,
           live = counts[at];
-        if (live) px[at] = ((255 << 24) | mixed(colourAt(at, live, row, breaks, R.entropy), live / cells)) >>> 0; // (a dead one clear: the grid under it seen)
+        if (live) px[at] = ((255 << 24) | mixed(colourAt(at, live, row, breaks, entropy), live / cells)) >>> 0; // (a dead one clear: the grid under it seen)
       }
     }
     const cv = Object.assign(document.createElement('canvas'), { width: w, height: h });
@@ -42778,34 +42796,34 @@ function drawElementary(to) {
   if (x1 < x0 || t1 < t0) return;
   if (s >= LINE_PIXELS) {
     // zoomed in: each live cell its square
-    const own = R.B > 1 ? elementaryPart(R, x0, x1, t0, t1) : null,
+    const own = R.B > 1 ? elementaryPart(R, x0, x1, t0, t1, 1, look === 'entropy') : null,
       w = x1 - x0 + 1,
-      { counts, breaks } = own ?? R;
+      { counts, breaks, entropy } = own ?? R;
     for (let t = t0; t <= Math.min(t1, last); t++) {
       const row = rowColour(t);
       for (let x = x0; x <= x1; x++) {
         const at = own ? (t - t0) * w + x - x0 : t * R.PW + x;
         if (!counts[at]) continue;
-        ctx.fillStyle = `rgb(${colourAt(at, counts[at], row, breaks, R.entropy)})`;
+        ctx.fillStyle = `rgb(${colourAt(at, counts[at], row, breaks, entropy)})`;
         ctx.fillRect(runX(x), runY(t), runX(x + 1) - runX(x), runY(t + 1) - runY(t));
       }
     }
     return;
   }
-  if (b < R.B && look !== 'entropy' && partWork(R, x0, x1, t0, t1) <= PART_MOST) {
+  if (b < R.B && partWork(R, x0, x1, t0, t1) <= PART_MOST) {
     // (finer than its picture: that part made again; coarser, its picture made smaller, see below)
     const key = `${x0}|${x1}|${t0}|${t1}|${b}|${look}|${LIFE_ALIVE}`;
     if (R.part?.key !== key) {
-      const { counts, breaks } = elementaryPart(R, x0, x1, t0, t1, b),
+      const part = elementaryPart(R, x0, x1, t0, t1, b, look === 'entropy'),
         w = Math.ceil((x1 - x0 + 1) / b),
         h = Math.ceil((t1 - t0 + 1) / b);
-      R.part = { key, w, h, cv: paint(w, h, counts, breaks, b, t0, t1 + 1) };
+      R.part = { key, w, h, cv: paint(w, h, part, b, t0, t1 + 1) };
     }
     if (last >= t0) drawRows(R.part.cv, R.part.w, b, x0, t0, Math.min(t1, last) + 1);
     return;
   }
   const key = `${look}|${LIFE_ALIVE}`; // (its picture, once a look)
-  if (R.picture?.key !== key) R.picture = { key, cv: paint(R.PW, R.PH, R.counts, R.breaks, R.B, 0, R.G + 1) };
+  if (R.picture?.key !== key) R.picture = { key, cv: paint(R.PW, R.PH, R, R.B, 0, R.G + 1) };
   ctx.imageSmoothingEnabled = R.B * s < 1; // (made smaller: its pixels averaged, no bands; larger: sharp)
   ctx.imageSmoothingQuality = 'high';
   drawRows(R.picture.cv, R.PW, R.B, 0, 0, last + 1);

@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.131';
+const VERSION = '0.5.132';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -6336,9 +6336,10 @@ const DISPLAY_BY_TAB = {
     'ocean',
     'cut',
   ],
-  'Automata on the plane': ['colours', 'digit', 'mono', 'grid'], // (Grid: its cells' outlines, see gpuPlane)
-  'Automata on surfaces': ['shape', 'colours', 'digit', 'mono', 'grid', ...VIEW_3D, 'glass', 'ocean', 'cut'], // (Glass, Cut: the surfaces' tiles only, see gpuFrame, cutOn)
+  'Automata on the plane': ['colours', 'digit', 'mono', 'trail', 'grid'], // (Grid: its cells' outlines, see gpuPlane; Trail: Rewind's Blocks in its place)
+  'Automata on surfaces': ['shape', 'colours', 'digit', 'mono', 'trail', 'grid', ...VIEW_3D, 'glass', 'ocean', 'cut'], // (Glass, Cut: the surfaces' tiles only, see gpuFrame, cutOn)
   '2D spirals': ['heatmap', 'fill', 'translucent', 'cells', 'visits', 'digit'], // the 2D walks' menu, some of it greyed out
+  Elementary: ['colours', 'mono', 'grid'], // (its cells never change once made: no Heatmap, no Trail)
   'Explore on the plane': ['grid'],
   'Explore on surfaces': ['shape', 'grid', ...VIEW_3D, 'glass', 'cut'], // (its view's only: its colours its own, see renderExplore)
 };
@@ -6420,9 +6421,8 @@ const defaultOf = (key, w) => {
 };
 // a tile's mark (see setTile's byDefault): its setting's default, 'on' or 'off'
 const defaultMark = (key) => (defaultOf(key, tabVariant()) ? 'on' : 'off');
-// Shown but greyed out, by the menu's group or the tab: a spiral never crosses itself, so it closes no area and visits each
-// cell once; and its marks read as cells, the line along the spiral (Rainbow along the walk) shows nothing more. Elementary's
-// cells never change once made: no Heatmap
+// Shown but greyed out, by the menu's group: a spiral never crosses itself, so it closes no area and visits each cell once;
+// and its marks read as cells, the line along the spiral (Rainbow along the walk) shows nothing more
 // a variant's option in the menu; the menu's group of the variant on (its space: 2D, Surfaces…)
 // the tab's variant: the next walk's (what sets it up reads it; what describes the walk shown reads walk.variant)
 const tabVariant = () => $('variant').value;
@@ -6431,18 +6431,20 @@ const tabVariant = () => $('variant').value;
 const variantGroup = (w) => {
   const { life, plane } = VARIANTS[w],
     [, space, , rule] = NAV[w];
-  return life
-    ? `${playsLife(w) ? 'Automata' : 'Explore'} ${plane ? 'on the plane' : 'on surfaces'}`
-    : rule === 'Spiral'
-      ? '2D spirals'
-      : space === '2D'
-        ? '2D walks'
-        : space === '3D'
-          ? '3D walks'
-          : 'Walks on surfaces';
+  return VARIANTS[w].elementary
+    ? 'Elementary'
+    : life
+      ? `${playsLife(w) ? 'Automata' : 'Explore'} ${plane ? 'on the plane' : 'on surfaces'}`
+      : rule === 'Spiral'
+        ? '2D spirals'
+        : space === '2D'
+          ? '2D walks'
+          : space === '3D'
+            ? '3D walks'
+            : 'Walks on surfaces';
 };
-const DISPLAY_GREYED = { '2D spirals': ['fill', 'visits', 'line'], Elementary: ['digit'] };
-const greyed = (item, w) => [variantGroup(w), NAV[w]?.[0]].some((k) => DISPLAY_GREYED[k]?.includes(item));
+const DISPLAY_GREYED = { '2D spirals': ['fill', 'visits', 'line'] };
+const greyed = (item, w) => !!DISPLAY_GREYED[variantGroup(w)]?.includes(item);
 const shows = (item, w, stacked = spaceTime) =>
   DISPLAY_BY_TAB[variantGroup(w)].includes(item) || (stacked && spaceTimeApplies(w) && VIEW_3D.includes(item)); // (stacked: Stacks on, a setup's, see spaceTime)
 // a display setting greyed at a variant: none in its view, the views that have it said (Grid, Upright, Perspective…); else ''
@@ -6453,18 +6455,13 @@ const viewWhyNot = (item, w, stacked = spaceTime) =>
         .filter((g) => DISPLAY_BY_TAB[g].includes(item))
         .join(', ')}.`;
 const useful = (item, w) => shows(item, w) && !greyed(item, w);
-// a look greyed at a variant (Rainbow along a spiral, its Heatmap, Elementary's), its words; else ''
+// a look greyed at a variant (Rainbow along a spiral, its Heatmap), its words; else ''
 const LOOK_WHERE = {
   gradient: 'On a spiral, the line tells nothing.',
   visits: 'On a spiral, each cell is visited once only.',
-  digit: 'On Elementary, a cell never changes once made: there is no heatmap.',
 };
 const lookWhyNot = (look, w) =>
-  (look === 'gradient' && greyed('line', w)) ||
-  (look === 'visits' && !useful('visits', w)) ||
-  (look === 'digit' && greyed('digit', w))
-    ? LOOK_WHERE[look]
-    : '';
+  (look === 'gradient' && greyed('line', w)) || (look === 'visits' && !useful('visits', w)) ? LOOK_WHERE[look] : '';
 function updateDisplayMenu() {
   const rows = {
     colours: 'coloursRow',
@@ -6717,7 +6714,7 @@ function relabelColours(variant) {
     sel.append(byValue[v]);
   });
   for (const v of ['cells', 'visits', 'digit', 'mono']) byValue[v].hidden = !shows(v, tabVariant());
-  for (const v of ['gradient', 'visits', 'digit']) byValue[v].disabled = !!lookWhyNot(v, tabVariant()); // (Rainbow along a spiral, its Heatmap, Elementary's)
+  for (const v of ['gradient', 'visits', 'digit']) byValue[v].disabled = !!lookWhyNot(v, tabVariant()); // (Rainbow along a spiral, its Heatmap)
   if (sel.selectedOptions[0]?.hidden || sel.selectedOptions[0]?.disabled) {
     sel.value = Array.from(sel.options).find((o) => !o.hidden && !o.disabled).value; // the first one left
   }
@@ -7052,7 +7049,7 @@ function renderColourButtons() {
   if (VARIANTS[tabVariant()].margolus) renderBlocksButton();
   box.replaceChildren(
     ...(buttons.length > 1 ? [tileGroup(buttons)] : buttons),
-    ...(L ? [VARIANTS[tabVariant()].margolus ? blocksButton : trailButton] : []),
+    ...(shows('trail', tabVariant()) ? [VARIANTS[tabVariant()].margolus ? blocksButton : trailButton] : []),
   ); // then Life's Trail, a switch (Rewind's Blocks)
 }
 // Sound: Korobeiniki (the Russian song of Tetris, public domain) as 8-bit, while it plays (forth or back, every variant), on a clock of its own (Web

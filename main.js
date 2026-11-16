@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.102';
+const VERSION = '0.5.103';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -6339,6 +6339,8 @@ const DISPLAY_BY_TAB = {
   'Automata on the plane': ['colours', 'digit', 'mono', 'edges'],
   'Automata on surfaces': ['shape', 'colours', 'digit', 'mono', 'grid', ...VIEW_3D, 'glass', 'ocean', 'cut'], // (Glass, Cut: the surfaces' tiles only, see gpuFrame, cutOn)
   '2D spirals': ['heatmap', 'fill', 'translucent', 'cells', 'visits', 'digit', 'edges'], // the 2D walks' menu, some of it greyed out
+  'Explore on the plane': ['edges'],
+  'Explore on surfaces': ['shape', 'grid', ...VIEW_3D, 'glass', 'cut'], // (its view's only: its colours its own, see renderExplore)
 };
 // The Display settings' defaults, one table: each its control (a box's id), when it comes back (open: the page's opening
 // only, kept from tab to tab; tab: another tab; variant: every variant; lifeTeams: Life's count of teams; battle: a battle's
@@ -6424,13 +6426,13 @@ const defaultMark = (key) => (defaultOf(key, tabVariant()) ? 'on' : 'off');
 // a variant's option in the menu; the menu's group of the variant on (its space: 2D, Surfaces…)
 // the tab's variant: the next walk's (what sets it up reads it; what describes the walk shown reads walk.variant)
 const tabVariant = () => $('variant').value;
-// a variant's group, as its view's settings go (see DISPLAY_BY_TAB): an automaton on the plane or on surfaces, a spiral, a walk
-// in 2D, in 3D or on a surface
+// a variant's group, as its view's settings go (see DISPLAY_BY_TAB): an automaton on the plane or on surfaces, Explore's
+// grids (no look of Life's), a spiral, a walk in 2D, in 3D or on a surface
 const variantGroup = (w) => {
   const { life, plane } = VARIANTS[w],
     [, space, , rule] = NAV[w];
   return life
-    ? `Automata ${plane ? 'on the plane' : 'on surfaces'}`
+    ? `${playsLife(w) ? 'Automata' : 'Explore'} ${plane ? 'on the plane' : 'on surfaces'}`
     : rule === 'Spiral'
       ? '2D spirals'
       : space === '2D'

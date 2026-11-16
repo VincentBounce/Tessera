@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.157';
+const VERSION = '0.5.158';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -41464,7 +41464,7 @@ function drawGrid() {
     lat = walk.lattice;
   if (lat === 'square') {
     // the cell centres at whole coordinates, their sides half a cell away
-    const at = walk.lines ? 0 : 0.5;
+    const at = walk.lines ? 0 : -0.5; // (cell 0's sides: its first row's top on a line every 5 or 25 cells too)
     drawLines(ctx, 1, 0, at, stepCells);
     drawLines(ctx, 0, 1, at, stepCells);
   } else if (lat === 'tri' && !walk.lines) {

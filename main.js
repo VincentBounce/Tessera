@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.99';
+const VERSION = '0.5.100';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -7657,11 +7657,22 @@ const ICONS = (() => {
       [20, 6.8],
       [8, 6.8],
     ];
-  // a square cut in 2 × 2 cells (Grid, a torus's squares), its 3 × 3 cut's lines (along the edges), in 3 × 3 cells (on cells, the
-  // hunt's Reach all and Ends ≥3/4)
+  // a square cut in 2 × 2 cells (Grid, a torus's squares), its 3 × 3 cut's lines (along the edges), in 3 × 3 cells, those of a
+  // pattern filled, a row after another, o a cell filled (on cells, a glider, the hunt's Reach all and Ends ≥3/4)
   const halvesGrid = svgPath(pathOf(sq)) + svgPath('M12 4V20M4 12H20'),
     thirdsLines = svgPath('M9.33 4V20M14.67 4V20M4 9.33H20M4 14.67H20'),
-    thirdsGrid = svgPath(pathOf(sq)) + thirdsLines;
+    thirdsGrid = (pattern = '') =>
+      svgPath(pathOf(sq)) +
+      thirdsLines +
+      pattern
+        .split(',')
+        .flatMap((row, y) => [...row].map((c, x) => (c === 'o' ? [x, y] : null)))
+        .filter(Boolean)
+        .map(
+          ([x, y]) =>
+            `<rect class="f" x="${hundredths(4 + x * 5.33)}" y="${hundredths(4 + y * 5.33)}" width="5.33" height="5.33"/>`,
+        )
+        .join('');
   const cube = (fillTop) =>
     svgPath(pathOf(hex)) +
     [0, 2, 4].map((k) => svgPath(segmentPath([12, 12], hex[k]))).join('') +
@@ -7752,9 +7763,9 @@ const ICONS = (() => {
     rhombusWalled: walledEl(rhombus, 2),
     goalLongest: svgPath('M12 12C10 8.5 4 8.5 4 12C4 15.5 10 15.5 12 12C14 8.5 20 8.5 20 12C20 15.5 14 15.5 12 12Z'), // the hunt's goals (see HUNT_GOALS): ∞
     goalDies: svgPath('M12 3V21M6 8.5H18'), // (a cross)
-    goalFull: thirdsGrid + svgPath('M14.67 4H20V9.33H14.67ZM9.33 9.33H20V14.67H9.33ZM4 14.67H20V20H4Z', 'f'), // (Reach all's, filled but a corner's 3)
+    goalFull: thirdsGrid('..o,.oo,ooo'), // (Reach all's, filled but a corner's 3)
     goalPeak: svgPath('M12 4L21 19H3Z', 'f'),
-    goalCover: thirdsGrid, // (all cells: a grid)
+    goalCover: thirdsGrid(), // (all cells: a grid)
     goalBattle: svgPath('M4 4L17 17M20 4L7 17M14 20L20 14M4 14L10 20M17.5 17.5L20.5 20.5M6.5 17.5L3.5 20.5'), // (crossed swords)
     king: svgPath('M12 3V21M3 12H21M5.6 5.6L18.4 18.4M18.4 5.6L5.6 18.4'), // the 8 ways out
     pentagons: svgPath(
@@ -7842,7 +7853,7 @@ const ICONS = (() => {
     // the tilings of a surface (see FAMILIES): a 2 × 2 grid, a triangle cut in 4, 3 hexagons, and turned by 30°
     tilesSq: halvesGrid,
     onEdges: thirdsLines, // (along the edges: its lines, no outline)
-    onCells: thirdsGrid + svgPath('M9.33 9.33H14.67V14.67H9.33Z', 'f'), // (on cells: its middle cell painted)
+    onCells: thirdsGrid('...,.o.'), // (on cells: its middle cell painted)
     tilesTri: tiledTriangle(-90),
     tilesTriTurned: tiledTriangle(0),
     tilesHex: hexCluster(30),
@@ -7902,23 +7913,9 @@ const ICONS = (() => {
       '<path d="M10.5 10L7 8.4 5.6 5.4M13.5 10L17 8.4 18.4 5.4M10.2 11.4L5.2 11.8 3.4 13.6M13.8 11.4L18.8 11.8 20.6 13.6M10.4 12.8L7.2 15.6 6.4 19.6M13.6 12.8L16.8 15.6 17.6 19.6M10.8 4.8L9.2 2.6 7.4 2.8M13.2 4.8L14.8 2.6 16.6 2.8" stroke-width="1.8"/>' +
       '<ellipse class="f" cx="12" cy="6.2" rx="2.5" ry="2.2"/><ellipse class="f" cx="12" cy="11.1" rx="2" ry="2.5"/><ellipse class="f" cx="12" cy="17.8" rx="3.3" ry="4.4"/>',
     walk2d: svgPath('M3 20V15H8V10H12V16H17V6H21V3'), // a walk on the square grid
-    glider:
-      svgPath(pathOf(sq)) +
-      svgPath('M9.33 4V20M14.67 4V20M4 9.33H20M4 14.67H20') +
-      [
-        [1, 0],
-        [2, 1],
-        [0, 2],
-        [1, 2],
-        [2, 2],
-      ]
-        .map(
-          ([x, y]) =>
-            `<rect class="f" x="${hundredths(4 + x * 5.33)}" y="${hundredths(4 + y * 5.33)}" width="5.33" height="5.33"/>`,
-        )
-        .join(''),
+    glider: thirdsGrid('.o.,..o,ooo'),
     // hunt zones: the whole surface, then a patch of radius 1, 2 or 3
-    zoneAll: svgPath(pathOf(sq)) + svgPath('M9.33 4V20M14.67 4V20M4 9.33H20M4 14.67H20'),
+    zoneAll: thirdsGrid(),
     // the symmetries of a Life start on the plane
     // the theme's switch: Light on, Dark off (see themeSwitch)
     sun:

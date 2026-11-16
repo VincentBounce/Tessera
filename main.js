@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.150';
+const VERSION = '0.5.151';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -21293,10 +21293,10 @@ function rowDefects(r, wrap) {
 // The most cells its Domains and Entropy measure (past them, drawn as Age)
 const MEASURE_MOST = 16e6;
 // Its local entropy rate (Lizier, Prokopenko and Zomaya, 2008; the Entropy look): how unforeseen each cell is from its own
-// column's last ENTROPY_PAST cells, −log₂ p(it | them), counted over the whole run: what repeats near 0, chaos about a bit, a
+// column's last ENTROPY_PAST cells (as Lizier's), −log₂ p(it | them), counted over the whole run: what repeats near 0, chaos about a bit, a
 // particle crossing a background more. Its rows made again twice (counted, then measured): each pixel's mean (B × B cells),
 // 0 to 1 bit (more: 1); null past MEASURE_MOST cells
-const ENTROPY_PAST = 8;
+const ENTROPY_PAST = 16; // (8: rule 30's regular edge as unforeseen as its chaos, its stripes longer)
 function localEntropy(T, first, G, wrap, W, B, PW, PH) {
   if (W * (G + 1) > MEASURE_MOST) return null;
   const n = first.length,

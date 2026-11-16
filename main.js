@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.149';
+const VERSION = '0.5.150';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -6339,7 +6339,7 @@ const DISPLAY_BY_TAB = {
   'Automata on the plane': ['colours', 'digit', 'mono', 'trail', 'grid'], // (Grid: its cells' outlines, see gpuPlane; Trail: Rewind's Blocks in its place)
   'Automata on surfaces': ['shape', 'colours', 'digit', 'mono', 'trail', 'grid', ...VIEW_3D, 'glass', 'ocean', 'cut'], // (Glass, Cut: the surfaces' tiles only, see gpuFrame, cutOn)
   '2D spirals': ['heatmap', 'fill', 'translucent', 'cells', 'visits', 'digit', 'grid'], // the 2D walks' menu, some of it greyed out
-  Elementary: ['colours', 'mono', 'domain', 'complexity', 'grid'], // (its cells never change once made: no Heatmap, no Trail; Domains its own)
+  Elementary: ['colours', 'mono', 'domain', 'entropy', 'grid'], // (its cells never change once made: no Heatmap, no Trail; Domains its own)
   'Explore on the plane': ['grid'],
   'Explore on surfaces': ['shape', 'grid', ...VIEW_3D, 'glass', 'cut'], // (its view's only: its colours its own, see renderExplore)
 };
@@ -6671,7 +6671,7 @@ function relabelColours(variant) {
         digit: 'One colour per digit',
         mono: 'One colour',
         domain: '',
-        complexity: '',
+        entropy: '',
       }
     : {
         mono: two
@@ -6683,8 +6683,8 @@ function relabelColours(variant) {
             : 'Live cells by how old they are, warm newborns to cold old ones + fading trail',
         digit: 'State changes',
         domain: 'The background, what repeats, pale; what breaks it in gold (its domains and particles)',
-        complexity:
-          'Each cell by how rare its past is among those that tell the same future (its local complexity): the background pale, structures gold',
+        entropy:
+          'Each cell by how unforeseen it is from its own column above it (its local entropy rate): what repeats pale, chaos and what breaks a background in colour',
         cells: '',
         visits: '',
       };
@@ -6711,14 +6711,14 @@ function relabelColours(variant) {
     return;
   }
   const order = life
-    ? ['mono', 'gradient', 'digit', 'domain', 'complexity', 'cells', 'visits']
-    : ['gradient', 'cells', 'visits', 'digit', 'mono', 'domain', 'complexity'];
+    ? ['mono', 'gradient', 'digit', 'domain', 'entropy', 'cells', 'visits']
+    : ['gradient', 'cells', 'visits', 'digit', 'mono', 'domain', 'entropy'];
   const byValue = Object.fromEntries(Array.from(sel.options, (o) => [o.value, o]));
   order.forEach((v) => {
     byValue[v].text = names[v];
     sel.append(byValue[v]);
   });
-  for (const v of ['cells', 'visits', 'digit', 'mono', 'domain', 'complexity'])
+  for (const v of ['cells', 'visits', 'digit', 'mono', 'domain', 'entropy'])
     byValue[v].hidden = !shows(v, tabVariant());
   for (const v of ['gradient', 'visits', 'digit']) byValue[v].disabled = !!lookWhyNot(v, tabVariant()); // (Rainbow along a spiral, its Heatmap)
   if (sel.selectedOptions[0]?.hidden || sel.selectedOptions[0]?.disabled) {
@@ -7033,7 +7033,7 @@ function renderColourButtons() {
   renderTrailButton();
   // a walk's (Space): Rainbow, Commands, as the looks of its cells
   const names = L
-    ? { mono: 'States', gradient: 'Age', digit: 'Heatmap', domain: 'Domains', complexity: 'Complexity' }
+    ? { mono: 'States', gradient: 'Age', digit: 'Heatmap', domain: 'Domains', entropy: 'Entropy' }
     : { gradient: 'Path', cells: 'Cell path', visits: 'Heatmap', digit: 'Commands' };
   const picture = (v) => (L ? lifeLookPicture(v) : cellModePicture(v === 'gradient' ? 'cells' : v));
   const looks = Array.from(sel.options).filter((o) => !o.hidden && names[o.value]);
@@ -7196,7 +7196,7 @@ function lifeLookPicture(look) {
       gold = cssColour('--accent-color');
     return swatch([pale, gold, gold, pale]); // (the background pale, a defect across it in gold)
   }
-  if (look === 'complexity') {
+  if (look === 'entropy') {
     const page = cssColour('--page-background'),
       gold = cssColour('--accent-color');
     return swatch([page, faded(gold, 0.4, page), faded(gold, 0.7, page), gold]); // (low to high)
@@ -21290,62 +21290,38 @@ function rowDefects(r, wrap) {
   for (let x = 0; x < W; x++) if (!regular[x]) out[x >> 4] |= 1 << (15 - (x & 15));
   return out;
 }
-// Its local statistical complexity (Shalizi, Haslinger, Rouquier, Klinkner and Moore, 2006; the Complexity look): each cell's
-// past light cone (itself and the 3 + 5 + 7 cells above it that reach it, 16 bits) and future one (the 3 + 5 below it that
-// it reaches, 8 bits), counted over the whole run (the pasts met only); the pasts that tell the same futures (their shares to an eighth) one state;
-// a cell's complexity −log₂ of its state's share, rare structures high, the common background low (a periodic one's, log₂ of
-// its period). Its rows made again, twice (counted, then each cell its complexity): each pixel's mean (B × B cells), 0 its
-// background's (the median) or less, 1 the most; null past CONE_MOST cells
-const CONE_MOST = 16e6;
-function lightConeComplexity(T, first, G, wrap, W, B, PW, PH) {
-  if (W * (G + 1) > CONE_MOST) return null;
+// The most cells its Domains and Entropy measure (past them, drawn as Age)
+const MEASURE_MOST = 16e6;
+// Its local entropy rate (Lizier, Prokopenko and Zomaya, 2008; the Entropy look): how unforeseen each cell is from its own
+// column's last ENTROPY_PAST cells, −log₂ p(it | them), counted over the whole run: what repeats near 0, chaos about a bit, a
+// particle crossing a background more. Its rows made again twice (counted, then measured): each pixel's mean (B × B cells),
+// 0 to 1 bit (more: 1); null past MEASURE_MOST cells
+const ENTROPY_PAST = 8;
+function localEntropy(T, first, G, wrap, W, B, PW, PH) {
+  if (W * (G + 1) > MEASURE_MOST) return null;
   const n = first.length,
-    bits = Array.from({ length: 6 }, () => new Uint8Array(W)); // (the last 6 rows' cells, a byte each, oldest first)
-  const at = (c, x) => (x >= 0 && x < W ? c[x] : wrap ? c[(x + W) % W] : 0),
-    span = (c, x, k) => {
-      let v = 0;
-      for (let d = -k; d <= k; d++) v = (v << 1) | at(c, x + d);
-      return v;
-    }; // (a row's 2k + 1 cells round x, as bits)
-  const cone = (x) => [
-    (bits[3][x] << 15) | (span(bits[2], x, 1) << 12) | (span(bits[1], x, 2) << 7) | span(bits[0], x, 3),
-    (span(bits[4], x, 1) << 5) | span(bits[5], x, 2),
-  ]; // (the row 2 above the last's cell x: its past, its future)
+    counts = new Uint32Array(2 << ENTROPY_PAST); // (each column's past and its next cell)
   const run = (each) => {
+    const past = new Uint16Array(W);
     let r = first.slice(),
       next = new Uint16Array(n);
     for (let t = 0; t <= G; t++) {
-      const row = bits.shift();
-      for (let x = 0; x < W; x++) row[x] = cellOf(r, x);
-      bits.push(row);
-      if (t >= 5) for (let x = 0; x < W; x++) each(t - 2, x, ...cone(x));
+      for (let x = 0; x < W; x++) {
+        const c = cellOf(r, x);
+        if (t >= ENTROPY_PAST) each(t, x, (past[x] << 1) | c);
+        past[x] = ((past[x] << 1) | c) & ((1 << ENTROPY_PAST) - 1);
+      }
       wolframStep(T, r, next, 0, n - 1, wrap);
       [r, next] = [next, r];
     }
   };
-  const futures = new Map(); // (each past met: its futures' counts)
-  run((t, x, past, future) => (futures.get(past) ?? futures.set(past, new Uint32Array(256)).get(past))[future]++);
-  // (each past its state: the same futures' shares, to an eighth; each state its share of all the cells)
-  const states = new Map(),
-    stateOf = new Map(),
-    share = [];
-  let all = 0;
-  for (const [p, counts] of futures) {
-    const total = counts.reduce((a, b) => a + b, 0),
-      key = Array.from(counts, (c) => Math.round((8 * c) / total)).join();
-    if (!states.has(key)) states.set(key, share.push(0) - 1);
-    stateOf.set(p, states.get(key));
-    share[states.get(key)] += total;
-    all += total;
-  }
+  run((t, x, k) => counts[k]++);
   const sum = new Float32Array(PW * PH);
-  run((t, x, past) => {
-    sum[Math.floor(t / B) * PW + Math.floor(x / B)] += -Math.log2(share[stateOf.get(past)] / all) / (B * B);
+  run((t, x, k) => {
+    sum[Math.floor(t / B) * PW + Math.floor(x / B)] +=
+      Math.min(1, -Math.log2(counts[k] / (counts[k] + counts[k ^ 1]))) / (B * B);
   });
-  const sorted = sum.slice().sort(),
-    base = sorted[sorted.length >> 1],
-    most = Math.max(base + 1e-9, sorted.at(-1));
-  return sum.map((v) => Math.max(0, (v - base) / (most - base)));
+  return sum;
 }
 function elementaryRowsOf(G, start, N, digits) {
   // (alone: in the page or in a worker, see elementaryReady)
@@ -21363,10 +21339,10 @@ function elementaryRowsOf(G, start, N, digits) {
     PW = Math.ceil(W / B),
     PH = Math.ceil((G + 1) / B);
   const counts = new Uint32Array(PW * PH),
-    breaks = W * (G + 1) <= CONE_MOST ? new Uint32Array(PW * PH) : null, // (its live cells that break their background: see rowDefects; none past CONE_MOST cells)
+    breaks = W * (G + 1) <= MEASURE_MOST ? new Uint32Array(PW * PH) : null, // (its live cells that break their background: see rowDefects; none past MEASURE_MOST cells)
     upTo = new Float64Array(G + 2),
     kept = [],
-    complexity = lightConeComplexity(T, wordsOf(first), G, wrap, W, B, PW, PH);
+    entropy = localEntropy(T, wordsOf(first), G, wrap, W, B, PW, PH);
   let r = wordsOf(first),
     next = new Uint16Array(n);
   for (let t = 0; t <= G; t++) {
@@ -21403,7 +21379,7 @@ function elementaryRowsOf(G, start, N, digits) {
     PH,
     counts,
     breaks,
-    complexity,
+    entropy,
     upTo,
     kept,
     wrap,
@@ -21433,7 +21409,7 @@ function elementaryWorkerMain() {
     const t = performance.now(),
       R = elementaryRowsOf(...e.data);
     R.ms = performance.now() - t;
-    postMessage(R, [R.counts.buffer, R.upTo.buffer, ...R.kept.map((k) => k.buffer)]); // (its breaks and complexity copied)
+    postMessage(R, [R.counts.buffer, R.upTo.buffer, ...R.kept.map((k) => k.buffer)]); // (its breaks and entropy copied)
   };
 }
 function elementaryReady(then) {
@@ -21494,7 +21470,7 @@ function elementaryPart(R, x0, x1, t0, t1, b = 1) {
   for (let t = from; t <= t1; t++) {
     if (t >= t0) {
       const at = Math.floor((t - t0) / b) * w,
-        defects = R.breaks && rowDefects(r, R.wrap); // (none past CONE_MOST cells: Domains not drawn)
+        defects = R.breaks && rowDefects(r, R.wrap); // (none past MEASURE_MOST cells: Domains not drawn)
       for (let i = x0 >> 4; i <= x1 >> 4; i++) {
         const live = r[i],
           wrong = defects ? live & defects[i] : 0;
@@ -42657,9 +42633,9 @@ function drawElementary(to) {
     { scale: s, ox, oy } = view,
     last = Math.min(to, R.G),
     look =
-      ($('colourMode').value === 'complexity' && !R.complexity) || ($('colourMode').value === 'domain' && !R.breaks)
+      ($('colourMode').value === 'entropy' && !R.entropy) || ($('colourMode').value === 'domain' && !R.breaks)
         ? 'gradient'
-        : $('colourMode').value; // (Complexity, Domains: up to CONE_MOST cells, else Age)
+        : $('colourMode').value; // (Entropy, Domains: up to MEASURE_MOST cells, else Age)
   const word = ([r, g, b]) => (b << 16) | (g << 8) | r,
     rgb = (t) => word(rgbCached(look === 'mono' ? LIFE_ALIVE : rainbowNow()[Math.floor((t * BANDS) / (R.G + 1))])),
     page = rgbCached(cssColour('--page-background')),
@@ -42667,7 +42643,7 @@ function drawElementary(to) {
       rgbCached,
     ), // (Domains: opaque, each pixel its colour mixed with the page's by its live cells, its dead ones the page's)
     mixed = (c, share) => word(page.map((v, d) => Math.round(v + (c[d] - v) * share))),
-    rainbow = rainbowNow().map(rgbCached); // (Complexity: its colours, low to high, from the page)
+    rainbow = rainbowNow().map(rgbCached); // (Entropy: its colours, low to high, from the page)
   const paint = (w, h, counts, breaks, cells, rowOf) => {
     // (w × h pixels, each its live cells of cells and its row; a pixel a word: its alpha, blue, green, red)
     const img = new ImageData(w, h),
@@ -42677,8 +42653,8 @@ function drawElementary(to) {
       for (let x = 0; x < w; x++) {
         const live = counts[y * w + x],
           wrong = breaks[y * w + x];
-        if (look === 'complexity') {
-          const v = R.complexity[y * w + x];
+        if (look === 'entropy') {
+          const v = R.entropy[y * w + x];
           px[y * w + x] =
             ((255 << 24) | mixed(rainbow[Math.round(v * (rainbow.length - 1))], Math.min(1, 3 * v))) >>> 0;
         } else if (look === 'domain')
@@ -42703,7 +42679,7 @@ function drawElementary(to) {
     t0 = Math.max(0, snap(-oy / s)),
     t1 = Math.min(R.G, Math.ceil((canvasHeight - oy) / s));
   if (x1 < x0 || t1 < t0) return;
-  if (b !== R.B && look !== 'complexity' && partWork(R, x0, x1, t0, t1) <= PART_MOST) {
+  if (b !== R.B && look !== 'entropy' && partWork(R, x0, x1, t0, t1) <= PART_MOST) {
     const key = `${x0}|${x1}|${t0}|${t1}|${b}|${look}|${LIFE_ALIVE}`;
     if (R.part?.key !== key) {
       const { counts, breaks } = elementaryPart(R, x0, x1, t0, t1, b),
@@ -47637,7 +47613,7 @@ const LIFE_LOOKS = [
   ['gradient', 'Age'],
   ['digit', 'Heatmap'],
   ['domain', 'Domains'],
-  ['complexity', 'Complexity'],
+  ['entropy', 'Entropy'],
 ]; // (Life's looks, see renderColourButtons)
 const CELL_MODES = [
   ['path', 'Path', 'The walk’s line in the rainbow along it, over its cells faded (along the edges, its line alone)'],

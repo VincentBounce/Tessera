@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.68';
+const VERSION = '0.5.69';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -10063,11 +10063,11 @@ VARIANT_ICONS.lifeCubeBumpsSquares = 'bumps';
 VARIANT_ICONS.lifeCubeMengerSpongeSquares = 'menger';
 VARIANT_ICONS.lifeCubeFrameSquares = 'frame';
 const MODE_TABS = [
+  ['Explore', 'eye', "Life's grids to look at, each cell coloured by its neighbours, its sides or its distance"],
   ['Life', 'glider', 'Cells born and dying by their neighbours, generation after generation'],
   ['Walk', 'compass', "A path, each step the number's next digit"],
   ['Ant', 'ant', "A creature on the cells, turned by each cell's colour, by its rule or by the digits"],
   ['Rewind', 'reversible', 'Rules on blocks of cells that play backwards as well: nothing is ever lost'],
-  ['Explore', 'eye', "Life's grids to look at, each cell coloured by its neighbours, its sides or its distance"],
   ['Replicators', 'replicator', "Langton's loops: a pattern that makes copies of itself, by a table of transitions"],
   [
     'Elementary',
@@ -11413,6 +11413,7 @@ const sectionsOf = (w) => {
     antStartSection: kind === 'Ant', // (a creature's start: by its rule or by the digits)
     walkRuleSection: kind === 'Walk' || kind === 'Ant', // (one Walking rule, a walk's or a creature's)
     automataSection: plays, // (Life's rule)
+    huntSection: (plays && !m.elementary) || battleVariant(w), // (Life's hunt, a walk's battle's; Elementary's rows: none)
     startSection: plays && !m.loops, // (loops: their start their loops, one a lineage, see layLoops)
     colourSection: walkTeamsHere(w) || (plays && !m.margolus && !m.elementary), // (blocks, Elementary: one colour; a walk's on a surface)
     exploreSection: !!m.explore, // (its colours, see renderExplore)
@@ -11451,7 +11452,7 @@ function compute() {
   renderTeams();
   renderWalkTeams();
   renderRuleSection();
-  if (!variant.life || variant.elementary || variant.explore) {
+  if (!variant.life || !sectionsOf(tabVariant()).huntSection) {
     stopHunt();
     $('huntRow').hidden = true;
   } // (no hunt: a walk, or Elementary's rows, built by buildWalk)

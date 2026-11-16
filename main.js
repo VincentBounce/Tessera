@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.128';
+const VERSION = '0.5.129';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -13710,7 +13710,7 @@ function mengerMesh(L, m = 1) {
                 return at(p);
               };
             quads.push([P(0, 0), P(1, 0), P(1, 1), P(0, 1)]);
-            faces.push([x, y, z][d] === (s ? n - 1 : 0) ? 2 * d + 1 - s : -1); // (on the cube's outside: its face, AXES' order; inside, a hole's: none)
+            faces.push(2 * d + 1 - s); // (the cube's face it faces, AXES' order: outside, its own; in a hole, the one it looks to)
           }
       }
   // outwards: off the cell kept, along the axis its square lies across (its coordinate on a grid line)
@@ -13929,8 +13929,8 @@ const hullSolidOf = (surface) => (HULL_SOLIDS[FACE_BASE[surface] ?? surface] ? (
 const hullColours = (surface, K) =>
   hullSolidOf(surface) && K > 1 ? (hullColourings(hullSolidOf(surface))[K] ?? null) : null;
 // a face's cells, on the walk's mesh: its f² cells, each cut into so many on a cut, in turn (see HULL_CUTS)
-const hullFaceSize = (g) => g.size ** 2 * (g.per ?? 1);
-const hullFaceCells = (q) => Array.from({ length: hullFaceSize(walk.geo) }, (_, k) => q * hullFaceSize(walk.geo) + k);
+// a face's cells (see cellFaces)
+const faceCells = (g, q) => [...g.cellFaces.keys()].filter((t) => g.cellFaces[t] === q);
 
 /* ---- 7.3 Polyhedra with triangular faces -------------------------------------------------- */
 /* Flat polyhedra with triangular faces, each face cut into f² triangles (not inflated):
@@ -14072,12 +14072,17 @@ for (const S of Object.values(POLYHEDRA)) {
     return [0, 1, 2].map((d) => vs.reduce((sum, v) => sum + S.P[v][d], 0) / vs.length);
   });
 }
-// a cell made of a polyhedron's triangles (f² cells a triangle, in turn: see flatPolyhedron), its face: theirs if all are on
-// one, else -1 (folded over an edge of the solid)
-const trianglesFace = (S, perTriangle, tris) => {
-  const face = S.triangleFaces[Math.floor(tris[0] / perTriangle)];
-  return tris.every((t) => S.triangleFaces[Math.floor(t / perTriangle)] === face) ? face : -1;
+// a cell's face, by its parts' faces (its triangles', its corners'): the one most of them are on, the lowest among equals (a
+// cell across an edge: one face, the same for all those of that edge)
+const mostFace = (faces) => {
+  const count = new Map();
+  for (const f of faces) count.set(f, (count.get(f) ?? 0) + 1);
+  let best = -1;
+  for (const [f, c] of count) if (best < 0 || c > count.get(best) || (c === count.get(best) && f < best)) best = f;
+  return best;
 };
+// a cell made of a polyhedron's triangles (f² cells a triangle, in turn: see flatPolyhedron), its face
+const trianglesFace = (S, perTriangle, tris) => mostFace(tris.map((t) => S.triangleFaces[Math.floor(t / perTriangle)]));
 
 // kites: each triangle cut in 3 (see kitesOf); round a corner of the solid, a flower of 3, 4 or 5 kites (not 6)
 function flatPolyhedron(name, f, kites = false) {
@@ -14169,6 +14174,7 @@ function flatPolyhedron(name, f, kites = false) {
     { length: mesh.n },
     (_, t) => POLYHEDRA[name].triangleFaces[Math.floor(t / mesh.perFace)],
   ); // (each cell's face, see POLYHEDRA's faces)
+  mesh.faceMids = POLYHEDRA[name].faceMids;
   mesh.kite = kites;
   // faces cut from the solid's own (the dodecahedron's pentagons): its corners and its faces' centres
   const n = POLYHEDRA[name].corners;
@@ -15954,7 +15960,7 @@ function twistedSphereMesh(f) {
       most,
       f,
     );
-  // each cell's face: a cell's its triangles' (else -1, across an edge), a triangle its own triangle's
+  // each cell's face: a cell's by its triangles' (see trianglesFace), a triangle its own triangle's
   const faceOfTriangles = (ts) => trianglesFace(POLYHEDRA.icosa, f * f, ts);
   return (meshCache[key] = Object.assign(mesh, {
     tiling: SURFACES.twistedsphere.tiling,
@@ -16152,7 +16158,7 @@ function penroseSphereGraph(P1, face = penroseFace(P1)) {
     nbrs,
     tiles,
     edges: nbrs.reduce((sum, l) => sum + l.length, 0) / 2,
-    tileFaces: tiles.map((ring) => onFaces[ring[0]].find((fi) => ring.every((i) => onFaces[i].includes(fi))) ?? -1), // (each tile's face: the one all its points are on, else -1, across an edge)
+    tileFaces: tiles.map((ring) => mostFace(ring.flatMap((i) => onFaces[i]))), // (each tile's face: the one most of its points are on, see mostFace)
     solid: { corners: mids, centres: ico.P.map(unit) }, // (the dodecahedron it lies on: its corners, its faces' middles' ways)
     depth, // (each point's distance to its pentagon's nearest side: a band's judged near the sides only, see penroseSphereSizes)
   };
@@ -16194,8 +16200,10 @@ function hexSolidMesh(solid, f) {
   if (ico.solid) mesh.solid = ico.solid;
   else
     mesh.faceCentres = ico.faces.map((fc) => unit([0, 1, 2].map((d) => fc.corners.reduce((sum, p) => sum + p[d], 0)))); // (see solidFaceCentres)
-  // each cell's face: its triangles', else -1 (folded over an edge), and its solid's faces' middles
+  // each cell's face (see trianglesFace), whether it is folded over an edge (its triangles on two faces), its solid's faces'
+  // middles
   mesh.cellFaces = Int32Array.from(cells, (tris) => trianglesFace(POLYHEDRA[solid], f * f, tris));
+  mesh.folded = Uint8Array.from(cells, (tris) => new Set(tris.map((t) => Math.floor(t / (f * f)))).size > 1);
   mesh.faceMids = POLYHEDRA[solid].faceMids;
   return (meshCache[key] = mesh);
 }
@@ -16415,7 +16423,7 @@ function shapeAt(g, m) {
     nrm[3 * t] = nx;
     nrm[3 * t + 1] = ny;
     nrm[3 * t + 2] = nz;
-    if (!folds || g.cellFaces?.[t] !== -1) continue;
+    if (!folds || !g.folded?.[t]) continue;
     // a tile folded over an edge of the solid (the flat hexagon surface: on no one face, see hexSolidMesh): the normals of its
     // parts, so that it still shows when one part faces the viewer and the whole does not
     const parts = [];
@@ -21657,8 +21665,7 @@ function paletteColours(count, eachNeighbour, P, steps = Infinity) {
   }
 }
 // each cell's colour, 1 to the palette's: two cells side by side (nbr, see sideOf) never alike (Tiles), two faces of the solid
-// side by side never alike, a cell across an edge with a face beside it (Sides, by each cell's face: see cellFaces; off a
-// solid, Tiles), each kind of tile, by its sides (Kind of tile), or its steps from cell 0 spread over the palette (round the
+// side by side never alike (Sides, by each cell's face: see cellFaces; off a solid, Tiles), each kind of tile, by its sides (Kind of tile), or its steps from cell 0 spread over the palette (round the
 // palette past its last: Tiles where DSatur takes more colours, see dsatur; the faces only where the palette cannot do, see
 // paletteColours)
 function exploreLevels(nbr, n, faces) {
@@ -21677,16 +21684,11 @@ function exploreLevels(nbr, n, faces) {
   if (rule === 'tiles')
     level = TILES_IN_THREE[walk.variant]?.includes(n) ? paletteColours(n, bySide, 3) : dsatur(n, bySide).colour; // (a grid's cells: a search only where it was found soon)
   if (rule === 'sides') {
-    // (a cell across an edge, with a face it touches by a side: a face's cell beside it, the first; the faces' graph, their
-    // sides touching)
-    const face = Int32Array.from(faces),
-      queue = [...face.keys()].filter((t) => face[t] >= 0);
-    for (let i = 0; i < queue.length; i++)
-      bySide(queue[i], (u) => face[u] < 0 && (face[u] = face[queue[i]]) >= 0 && queue.push(u));
-    const touching = Array.from({ length: face.reduce((m, f) => Math.max(m, f), -1) + 1 }, () => new Set());
-    for (let t = 0; t < n; t++) bySide(t, (u) => face[u] !== face[t] && touching[face[t]].add(face[u]));
+    // (the faces' graph, their sides touching)
+    const touching = Array.from({ length: faces.reduce((m, f) => Math.max(m, f), -1) + 1 }, () => new Set());
+    for (let t = 0; t < n; t++) bySide(t, (u) => faces[u] !== faces[t] && touching[faces[t]].add(faces[u]));
     const colour = paletteColours(touching.length, (a, put) => touching[a].forEach(put), P);
-    for (let t = 0; t < n; t++) level[t] = colour[face[t]];
+    for (let t = 0; t < n; t++) level[t] = colour[faces[t]];
   }
   if (rule === 'kind') {
     const counts = [...new Set(Array.from({ length: n }, (_, t) => sides(t)))].sort((a, b) => a - b);
@@ -21709,6 +21711,11 @@ function exploreLevels(nbr, n, faces) {
   for (let t = 0; t < n; t++) level[t] = 1 + ((level[t] - 1) % P);
   return level;
 }
+// a variant's grid with its solid's faces (see cellFaces), as its surface's smallest mesh has them (made once)
+const facedGrid = (w) => {
+  const S = SURFACES[surfaceOf(VARIANTS[w])];
+  return !!S?.sizes && !!S.mesh(S.sizes[0]).cellFaces;
+};
 // its section: the rules as cards, then the palettes, each a tile with its colours
 function renderExplore() {
   const pick = (key, value) => () => {
@@ -21721,8 +21728,7 @@ function renderExplore() {
         name,
         detail,
         on: exploreLook.rule === key,
-        whyNot: ({ w }) =>
-          key === 'sides' && !SOLIDS.includes(surfaceOf(VARIANTS[w])) ? 'On a solid only: its sides.' : '',
+        whyNot: ({ w }) => (key === 'sides' && !facedGrid(w) ? 'On a solid only: its sides.' : ''),
         click: pick('rule', key),
         choice: `exploreRule:${key}`,
       }),
@@ -26371,8 +26377,8 @@ function motifOf(g, t) {
   return [
     [square ? cssColour('--sector-color') : motifColour(), motif],
     ...(motif.length > 1 ? [[cssColour('--cell-color'), [motif[0]]]] : []),
-    ...(face?.sector ? [[cssColour('--sector-color'), tilesOf(face.sector)]] : []),
-    ...(face ? [[faceRed(), tilesOf(face.face)]] : []),
+    ...(face?.sector ? [[cssColour('--sector-color'), face.sector]] : []),
+    ...(face ? [[faceRed(), face.face]] : []),
   ];
 }
 // Sets of tiles outlined as ribbons (see ribbonV) in the buffer name: each [colour, tiles] its sides not shared by two of its
@@ -26413,28 +26419,16 @@ const edgeRibbons = (D, g, sh, R) => {
   const cells = () => [[cssColour('--edge-cells-color'), g.edgeCells]];
   return outlineRibbons(D, 'edge', `${sh.m}|${R}|${cssColour('--edge-cells-color')}`, g, sh, R, cells, () => 1);
 };
-// a solid's face of its tile t, as listed: its tiles from … to, and its sector's (a face of several of the mesh's in one plane:
-// a dodecahedron's pentagon, 5 triangles); a solid of squares and triangles: its squares' faces, then its triangles', f² cells
-// each; none but on flat faces of cells (a solid of hexagons: its faces' sides through its hexagons' middles)
+// a solid's face of its tile t (see cellFaces): its tiles, and its sector's (a face of several of the mesh's triangles in one
+// plane: a dodecahedron's pentagon, t's triangle's tiles); none but on the solids whose faces are drawn red (see redFaces)
 function faceOf(g, t) {
-  if (g.triFaces) {
-    const sq = g.size ** 2,
-      tri = t >= g.triFirst,
-      lo = (tri ? g.triFirst : 0) + Math.floor((tri ? t - g.triFirst : t) / sq) * sq;
-    return { face: [lo, lo + sq] };
-  }
-  const per = g.perFace ?? 0; // (the cube's tetrakis triangles: 4 a square, its squares a face at a time)
-  if (!per) return null;
-  const fi = Math.floor(t / per),
-    flat = (i) => g.faces?.[i] && dot3(g.faces[i].normal, g.faces[fi].normal) > 1 - 1e-9; // (in one plane: a dodecahedron's pentagon's triangles)
-  let lo = fi,
-    hi = fi;
-  while (flat(lo - 1)) lo--;
-  while (flat(hi + 1)) hi++;
-  return { face: [lo * per, (hi + 1) * per], sector: hi > lo ? [fi * per, (fi + 1) * per] : null };
+  if (!redFaces(g)) return null;
+  const face = faceCells(g, g.cellFaces[t]),
+    per = g.perFace,
+    lo = per && Math.floor(t / per) * per;
+  return { face, sector: per && face.length > per ? Array.from({ length: per }, (_, k) => lo + k) : null };
 }
 const redFaces = (g) => !!(g?.perFace || g?.triFaces); // (the solids whose faces are drawn red, as their tooltip says them)
-const tilesOf = ([from, to]) => Array.from({ length: to - from }, (_, j) => from + j);
 // the shape a Life variant's cells have, as the rule menu marks the rules that suit it (■ ▲ ⬡); on
 // coming to another variant, a rule marked for another shape gives way to the first one for this shape
 // the cells of each surface (else triangles): one table for every surface, whatever its shape
@@ -30071,7 +30065,7 @@ function realmParts(K) {
     return own.every((p) => p.length) ? own : null; // (a grid too small: greyed)
   }
   const hull = hullColours(VARIANTS[walk.variant].surface, K);
-  if (hullSolidOf(VARIANTS[walk.variant].surface)) return hull && hull.groups.map((gr) => hullFaceCells(gr[0])); // (a hull solid: each colour's first face, as the cube's, see hullColourings)
+  if (hullSolidOf(VARIANTS[walk.variant].surface)) return hull && hull.groups.map((gr) => faceCells(walk.geo, gr[0])); // (a hull solid: each colour's first face, as the cube's, see hullColourings)
   const surface = VARIANTS[walk.variant].surface,
     g = walk.geo,
     L = walk.life,
@@ -30085,7 +30079,7 @@ function realmParts(K) {
       : col.patch.map((i) => mids.findIndex((m) => dot3(unit(m), unit(col.items[i])) > 1 - 1e-9));
   if (!faces.length || faces.includes(-1)) return null;
   const parts = faces.map(() => []);
-  for (let t = 0; t < g.n; t++) if (L.nbr.start[t] < L.nbr.start[t + 1]) parts[faces.indexOf(g.cellFaces[t])]?.push(t); // (a cell by its face, see cellFaces: across an edge none, as Wild's; a wall's none)
+  for (let t = 0; t < g.n; t++) if (L.nbr.start[t] < L.nbr.start[t + 1]) parts[faces.indexOf(g.cellFaces[t])]?.push(t); // (a cell by its face, see cellFaces; a wall's none)
   return parts;
 }
 const COLOUR_PARTS = {
@@ -30645,11 +30639,11 @@ function partPlaces(r, K, mirror, mixed) {
   if (hull) {
     // a hull solid (see hullColourings): Wild, a colour's faces its own (two opposite faces a colour: its first), the others' cells each to the nearest colour's face's middle; Mirror, its two faces; a zone, round each colour's first face's middle
     if (r) return hull.groups.map((_, i) => lifePatch(r, middleCells(i, K)));
-    if (mirror) return hull.groups.map((gr) => gr.flatMap(hullFaceCells)); // (Mirror: its two opposite faces only)
+    if (mirror) return hull.groups.map((gr) => gr.flatMap((q) => faceCells(g, q))); // (Mirror: its two opposite faces only)
     const own = hull.groups.flatMap((gr, k) => (hull.pairs ? [gr[0]] : gr).map((q) => [hull.mids[q], k])),
       owner = new Map(hull.groups.flatMap((gr, k) => (hull.pairs ? [gr[0]] : gr).map((q) => [q, k])));
     for (let t = 0; t < n; t++) {
-      const q = Math.floor(t / hullFaceSize(g));
+      const q = g.cellFaces[t];
       if (owner.has(q)) {
         parts[owner.get(q)].push(t);
         continue;
@@ -30665,8 +30659,8 @@ function partPlaces(r, K, mirror, mixed) {
     col = K === 1 ? null : colouring(surface, K, mirror && !r),
     up = (t) => unit(Array.from(g.cen.subarray(3 * t, 3 * t + 3)));
   // a cell by its face (see cellFaces): faces dealt out whole, its face's colour; else its face's nearest spot's, so that a
-  // face nearer one spot goes to it whole; a face as near spots of two colours or more, by the cell's own middle; a cell
-  // across an edge, by its own middle too (faces dealt out whole: no one's, as on the plane's lines between slices)
+  // face nearer one spot goes to it whole; a face as near spots of two colours or more, by the cell's own middle (the
+  // stella's: no faces, its spots alone)
   const mids = K === 1 ? [] : FACE_MIDDLES[surface]();
   const colourOf = (items, colour, d) => {
     const v = items.map((x) => faceDot(x, d)),
@@ -30675,8 +30669,8 @@ function partPlaces(r, K, mirror, mixed) {
     return cs.size === 1 ? [...cs][0] : -1;
   };
   const nearestSpot = (t) => {
-    const f = mids.length ? g.cellFaces[t] : -1; // (the stella's: no faces, its spots alone)
-    if (col.faces) return f < 0 ? -1 : col.colour[f];
+    const f = mids.length ? g.cellFaces[t] : -1;
+    if (col.faces) return col.colour[f];
     const k = f < 0 ? -1 : colourOf(col.items, col.colour, mids[f]);
     return k >= 0 ? k : colourOf(col.items, col.colour, up(t));
   };
@@ -30687,8 +30681,6 @@ function partPlaces(r, K, mirror, mixed) {
   if (K === 1) return [lifePatch(r)];
   return col.patch.map((i) => lifePatch(r, centreCells(col.items[i]))); // round the open cells nearest each spot
 }
-// the triangle faces of a face of the solid: 5 for a dodecahedron's pentagon, else 1
-const facesPer = () => (['dodeca', 'dodecaKite'].includes(VARIANTS[walk.variant].surface) ? 5 : 1);
 const zoneParts = (zone, K) =>
   zone === 'realm' ? (realmParts(K) ?? []) : huntParts(zoneRadius(zone), K, false, teamsMixed(zone));
 // The zone: each colour's part (see huntParts). On the plane, with a symmetry it defines the start: the
@@ -31371,7 +31363,6 @@ function cellPlace(t) {
     const k = g.cellFaces[t],
       at = (c) => Array.from(g.cen.subarray(3 * c, 3 * c + 3)),
       far = (c) => Math.hypot(...at(c).map((v, d) => v - g.faceMids[k][d]));
-    if (k < 0) return null;
     g.faceMiddleCells ??= [];
     if (g.faceMiddleCells[k] === undefined) {
       const wall = new Set(g.walls ?? []),
@@ -39842,7 +39833,8 @@ function middleCells(i = 0, K = 1) {
   const g = walk.geo,
     { start } = walk.life.nbr,
     n = walk.life.seed.length;
-  if (K === 1 && !walk.plane && !g.torus && g.faces && facesPer() > 1) return centreCells(frontPentagon()); // (its pentagon's middle)
+  if (K === 1 && !walk.plane && g.faceMids?.length < g.faces?.length)
+    return centreCells(g.faceMids[g.cellFaces[frontCell()]]); // (a face of several triangles, a dodecahedron's pentagon: its middle)
   if (APERIODIC[patternKind()] && !flatGrid() && !g.disc) {
     // (cells with no lattice on a surface, the Penrose sphere's: those nearest the colour's spot, or the cell in front)
     const spot = K > 1 ? patchSpots(VARIANTS[walk.variant].surface, K)?.[i] : null;
@@ -39858,15 +39850,6 @@ function middleCells(i = 0, K = 1) {
   middleMemo.set(key, cells);
   return cells;
 }
-// the pentagon in front's middle, as a direction (a dodecahedron's: 5 of its triangle faces)
-const frontPentagon = () => {
-  const g = walk.geo,
-    per = facesPer(),
-    f0 = Math.floor(Math.floor(frontCell() / g.perFace) / per) * per;
-  return [0, 1, 2].map((a) =>
-    g.faces.slice(f0, f0 + per).reduce((sum, fc) => sum + fc.corners.reduce((s, c) => s + c[a], 0), 0),
-  );
-};
 // The cells at the middle (one colour's: see middleCells); on a solid, the open cells nearest a direction d (a colour's spot)
 function centreCells(d) {
   if (!d) return middleCells();

@@ -1589,7 +1589,7 @@ button.active .bubble.active {
     width: var(--display-open-width);
   }
 }
-/* the theme's switch stays at the top right; hovering opens the settings: Sound, Auto-fit and Grid on its left, tiles a quarter of the box, the rest below */
+/* the theme's switch stays at the top right; hovering opens the settings: Sound and Auto-fit on its left, the rest below */
 .display-menu .stage-head {
   display: flex;
   justify-content: flex-end;
@@ -1599,20 +1599,10 @@ button.active .bubble.active {
   justify-content: flex-end;
   gap: var(--tile-gap);
   margin-bottom: 0;
-} /* closed: the theme's switch alone, on the right */
+} /* on the right, closed (the theme's switch alone) as open */
 .head-tiles button {
   width: var(--tile-width);
 } /* (closed as open: a tile's width) */
-.stage-box:hover .head-tiles {
-  display: grid;
-  flex: 1;
-} /* open: the tiles' own grid (.nav-shapes), the box across, a tab group as wide as its tiles and their gaps */
-@media (hover: none) {
-  .stage-box:focus-within .head-tiles {
-    display: grid;
-    flex: 1;
-  }
-}
 #headTiles {
   margin-bottom: 0;
 } /* (the sections below: their own line and margins, see .form-section) */

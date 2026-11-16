@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.79';
+const VERSION = '0.5.80';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -4059,6 +4059,7 @@ const conedFamily = (kind) =>
 const VARIANTS = {
   // the walks by a rule, a command per digit (see 6.4b): net, the cells they go through (a grid's walk: its dual's cells)
   walkSquaresTurtleEdges: {
+    label: 'Squares (along the grid, by a rule)',
     lattice: 'square',
     lines: true,
     twin: 'walkSquaresTurtleCells',
@@ -4067,6 +4068,7 @@ const VARIANTS = {
     where: 'along the lines of a square grid',
   },
   walkTrianglesTurtleEdges: {
+    label: 'Triangles (along the grid, by a rule)',
     lattice: 'hex',
     lines: true,
     twin: 'walkTrianglesTurtleCells',
@@ -4075,6 +4077,7 @@ const VARIANTS = {
     where: 'along the lines of a triangle grid',
   },
   walkHexTurtleEdges: {
+    label: 'Hexagons (along the grid, by a rule)',
     lattice: 'tri',
     lines: true,
     twin: 'walkHexTurtleCells',
@@ -4083,6 +4086,7 @@ const VARIANTS = {
     where: 'along the lines of a hexagon grid',
   },
   walkSquaresTurtleCells: {
+    label: 'Squares (from cell to cell, by a rule)',
     lattice: 'square',
     cells: true,
     twin: 'walkSquaresTurtleEdges',
@@ -4090,6 +4094,7 @@ const VARIANTS = {
     where: 'from cell to cell of a square grid',
   },
   walkTrianglesTurtleCells: {
+    label: 'Triangles (from cell to cell, by a rule)',
     lattice: 'tri',
     cells: true,
     twin: 'walkTrianglesTurtleEdges',
@@ -4097,6 +4102,7 @@ const VARIANTS = {
     where: 'from cell to cell of a triangle grid',
   },
   walkHexTurtleCells: {
+    label: 'Hexagons (from cell to cell, by a rule)',
     lattice: 'hex',
     cells: true,
     twin: 'walkHexTurtleEdges',
@@ -4104,6 +4110,7 @@ const VARIANTS = {
     where: 'from cell to cell of a hexagon grid',
   },
   walkCairoTurtleCells: {
+    label: 'Cairo pentagons (by a rule)',
     lattice: 'cairo',
     cells: true,
     fill: false,
@@ -4114,6 +4121,7 @@ const VARIANTS = {
   // Langton's ant on the cells of a turtle walk (antOf: its walk in the list; see ANTS), its rule in the
   // ant settings (see antRuleText)
   antSquaresCells: {
+    label: "Squares ant — base 2 (Langton's ant)",
     base: 2,
     lattice: 'square',
     cells: true,
@@ -4124,6 +4132,7 @@ const VARIANTS = {
     },
   },
   antTrianglesCells: {
+    label: "Triangles ant — base 2 (Langton's ant)",
     base: 2,
     lattice: 'tri',
     cells: true,
@@ -4136,6 +4145,7 @@ const VARIANTS = {
   // Paterson's worm: along the lines of the triangles, as their turtle (see wormStepper); its turns counted, its digits
   // read by the digits only
   antTrianglesEdges: {
+    label: "Paterson's worm — base 5 (5 relative turns)",
     base: 5,
     arrows: '↙↖↑↗↘',
     lattice: 'hex',
@@ -4147,6 +4157,7 @@ const VARIANTS = {
     },
   },
   antHexCells: {
+    label: "Hexagons ant — base 2 (Langton's ant)",
     base: 2,
     lattice: 'hex',
     cells: true,
@@ -4157,6 +4168,7 @@ const VARIANTS = {
     },
   },
   antCairoCells: {
+    label: "Cairo pentagons ant — base 2 (Langton's ant)",
     base: 2,
     lattice: 'cairo',
     cells: true,
@@ -4168,6 +4180,7 @@ const VARIANTS = {
   },
   // on a surface: the ant on the cells of its walk there, which keep their colours (turns: as the walk's)
   antCubeSquaresCells: {
+    label: "Cube ant — base 2 (Langton's ant)",
     base: 2,
     lattice: 'surface',
     cells: true,
@@ -4180,6 +4193,7 @@ const VARIANTS = {
     },
   },
   antIcosahedronHexCells: {
+    label: "Hexagon sphere ant — base 2 (Langton's ant)",
     base: 2,
     lattice: 'surface',
     cells: true,
@@ -4191,6 +4205,7 @@ const VARIANTS = {
     },
   },
   antIcosahedronTrianglesCells: {
+    label: "Triangle sphere ant — base 2 (Langton's ant)",
     base: 2,
     lattice: 'surface',
     cells: true,
@@ -4202,6 +4217,7 @@ const VARIANTS = {
     },
   },
   walkSquaresSpiral: {
+    label: 'Ulam square spiral — base 2 (1 = draw, 0 = skip)',
     base: 2,
     arrows: '□■',
     lattice: 'square',
@@ -4209,6 +4225,7 @@ const VARIANTS = {
     rule: 'along a square spiral (Ulam): <b>1</b> draw the step, <b>0</b> move without drawing',
   },
   walkTrianglesSpiral: {
+    label: 'Ulam triangle spiral — base 2 (1 = draw, 0 = skip)',
     base: 2,
     arrows: '□■',
     lattice: 'tri',
@@ -4216,6 +4233,7 @@ const VARIANTS = {
     rule: 'along a spiral of triangles: <b>1</b> draw the step, <b>0</b> move without drawing',
   },
   walkCairoSpiral: {
+    label: 'Cairo pentagon spiral — base 2 (1 = draw, 0 = skip)',
     base: 2,
     arrows: '□■',
     lattice: 'cairo',
@@ -4224,6 +4242,7 @@ const VARIANTS = {
     rule: 'along a spiral of Cairo pentagons: <b>1</b> draw the step, <b>0</b> move without drawing',
   },
   walkHexSpiral: {
+    label: 'Ulam hexagon spiral — base 2 (1 = draw, 0 = skip)',
     base: 2,
     arrows: '□■',
     lattice: 'hex',
@@ -4231,6 +4250,7 @@ const VARIANTS = {
     rule: 'along a spiral of hexagons: <b>1</b> draw the step, <b>0</b> move without drawing',
   },
   walkTetrahedronTrianglesTurtleCells: {
+    label: 'Tetrahedron — base 2 (left / right)',
     lattice: 'surface',
     cells: true,
     twin: 'walkTetrahedronTrianglesTurtleEdges',
@@ -4240,6 +4260,7 @@ const VARIANTS = {
     where: 'on a tetrahedron of triangles',
   },
   walkTorusSquaresTurtleCells: {
+    label: 'Square torus — base 3 (left / forward / right)',
     lattice: 'surface',
     cells: true,
     twin: 'walkTorusSquaresTurtleEdges',
@@ -4249,6 +4270,7 @@ const VARIANTS = {
     where: 'on a torus of squares',
   },
   walkTorusTrianglesTurtleCells: {
+    label: 'Triangle torus — base 2 (left / right)',
     lattice: 'surface',
     cells: true,
     twin: 'walkTorusTrianglesTurtleEdges',
@@ -4259,6 +4281,7 @@ const VARIANTS = {
   },
   // Cairo pentagons: out through one of the 4 other edges, edge k + 1 the sharpest right (as the 2D walk)
   walkTorusCairoTurtleCells: {
+    label: 'Cairo torus — base 4 (4 edges out)',
     lattice: 'surface',
     cells: true,
     surface: 'torusCairo',
@@ -4268,6 +4291,7 @@ const VARIANTS = {
   },
   // hexagons: entering through edge k, edge k + 1 is a sharp right, k + 2 right, k + 3 straight on
   walkTorusHexTurtleCells: {
+    label: 'Hex torus — base 5 (5 relative turns)',
     lattice: 'surface',
     cells: true,
     twin: 'walkTorusHexTurtleEdges',
@@ -4277,6 +4301,7 @@ const VARIANTS = {
     where: 'on a torus of hexagons',
   },
   walkMobiusStripSquaresTurtleCells: {
+    label: 'Möbius strip — base 3 (left / forward / right)',
     lattice: 'surface',
     cells: true,
     twin: 'walkMobiusStripSquaresTurtleEdges',
@@ -4286,6 +4311,7 @@ const VARIANTS = {
     tail: ' (over its edge, onto the face behind)',
   },
   walkMobiusStripHexTurtleCells: {
+    label: 'Möbius strip of hexagons — base 5 (5 relative turns)',
     lattice: 'surface',
     cells: true,
     twin: 'walkMobiusStripHexTurtleEdges',
@@ -4296,6 +4322,7 @@ const VARIANTS = {
   },
   // a Klein bottle (its neck through its side, opening into its bottom): as the torus's walks
   walkKleinBottleSquaresTurtleCells: {
+    label: 'Klein bottle — base 3 (left / forward / right)',
     lattice: 'surface',
     cells: true,
     twin: 'walkKleinBottleSquaresTurtleEdges',
@@ -4304,6 +4331,7 @@ const VARIANTS = {
     where: 'on a Klein bottle of squares',
   },
   walkKleinBottleHexTurtleCells: {
+    label: 'Klein bottle of hexagons — base 5 (5 relative turns)',
     lattice: 'surface',
     cells: true,
     twin: 'walkKleinBottleHexTurtleEdges',
@@ -4312,6 +4340,7 @@ const VARIANTS = {
     where: 'on a Klein bottle of hexagons',
   },
   walkKleinBottleTrianglesTurtleCells: {
+    label: 'Klein bottle of triangles — base 2 (left / right)',
     lattice: 'surface',
     cells: true,
     twin: 'walkKleinBottleTrianglesTurtleEdges',
@@ -4320,6 +4349,7 @@ const VARIANTS = {
     where: 'on a Klein bottle of triangles',
   },
   walkKleinBottleCairoTurtleCells: {
+    label: 'Klein bottle of Cairo pentagons — base 4 (4 edges out)',
     lattice: 'surface',
     cells: true,
     surface: 'kleinCairo',
@@ -4327,6 +4357,7 @@ const VARIANTS = {
     where: 'on a Klein bottle of Cairo pentagons',
   },
   walkMobiusStripCairoTurtleCells: {
+    label: 'Möbius strip of Cairo pentagons — base 4 (4 edges out)',
     lattice: 'surface',
     cells: true,
     surface: 'mobiusCairo',
@@ -4335,6 +4366,7 @@ const VARIANTS = {
     tail: ' (over its edge, onto the face behind)',
   },
   walkMobiusStripTrianglesTurtleCells: {
+    label: 'Möbius strip of triangles — base 2 (left / right)',
     lattice: 'surface',
     cells: true,
     twin: 'walkMobiusStripTrianglesTurtleEdges',
@@ -4344,6 +4376,7 @@ const VARIANTS = {
     tail: ' (over its edge, onto the face behind)',
   },
   walkCubeSquaresTurtleCells: {
+    label: 'Cube — base 3 (left / forward / right)',
     lattice: 'surface',
     cells: true,
     twin: 'walkCubeSquaresTurtleEdges',
@@ -4354,6 +4387,7 @@ const VARIANTS = {
     where: 'on the surface of a cube',
   },
   walkOctahedronTrianglesTurtleCells: {
+    label: 'Octahedron — base 2 (left / right)',
     lattice: 'surface',
     cells: true,
     twin: 'walkOctahedronTrianglesTurtleEdges',
@@ -4364,6 +4398,7 @@ const VARIANTS = {
   },
   // hexagons and pentagons alike: the edges two away from the one you came in through, on either side
   walkIcosahedronHexTurtleCells: {
+    label: 'Hexagon sphere (icosahedron) — base 2 (front left / front right)',
     lattice: 'surface',
     cells: true,
     twin: 'walkIcosahedronHexTurtleEdges',
@@ -4373,6 +4408,7 @@ const VARIANTS = {
     where: 'on an icosahedron of hexagons (and 12 pentagons',
   },
   walkStellaOctangulaTrianglesTurtleCells: {
+    label: 'Stella octangula (two tetrahedra) — base 2 (left / right)',
     lattice: 'surface',
     cells: true,
     twin: 'walkStellaOctangulaTrianglesTurtleEdges',
@@ -4381,6 +4417,7 @@ const VARIANTS = {
     where: 'on a stella octangula (two tetrahedra) of triangles',
   },
   walkDodecahedronTrianglesTurtleCells: {
+    label: 'Dodecahedron (pentagons cut into 5 triangles) — base 2 (left / right)',
     lattice: 'surface',
     cells: true,
     twin: 'walkDodecahedronTrianglesTurtleEdges',
@@ -4389,6 +4426,7 @@ const VARIANTS = {
     where: 'on a dodecahedron, its pentagons cut into triangles',
   },
   walkIcosahedronTrianglesTurtleCells: {
+    label: 'Triangle sphere (icosahedron) — base 2 (left / right)',
     lattice: 'surface',
     cells: true,
     twin: 'walkIcosahedronTrianglesTurtleEdges',
@@ -4400,6 +4438,7 @@ const VARIANTS = {
   // along the edges: from corner to corner, turning by these angles (degrees, left positive), or as close
   // to them as the edges at a corner allow
   walkTorusSquaresTurtleEdges: {
+    label: 'Square torus — base 3 (left / forward / right)',
     lattice: 'surface',
     twin: 'walkTorusSquaresTurtleCells',
     surface: 'torus',
@@ -4409,6 +4448,7 @@ const VARIANTS = {
     where: 'along the edges of a torus of squares',
   },
   walkTorusTrianglesTurtleEdges: {
+    label: 'Triangle torus — base 5 (5 relative turns)',
     lattice: 'surface',
     twin: 'walkTorusTrianglesTurtleCells',
     surface: 'torusTri',
@@ -4418,6 +4458,7 @@ const VARIANTS = {
     where: 'along the edges of a torus of triangles',
   },
   walkTorusHexTurtleEdges: {
+    label: 'Hex torus — base 2 (left / right)',
     lattice: 'surface',
     twin: 'walkTorusHexTurtleCells',
     surface: 'torusHex',
@@ -4427,6 +4468,7 @@ const VARIANTS = {
     where: 'along the edges of a torus of hexagons',
   },
   walkMobiusStripSquaresTurtleEdges: {
+    label: 'Möbius strip — base 3 (left / forward / right)',
     lattice: 'surface',
     twin: 'walkMobiusStripSquaresTurtleCells',
     surface: 'mobius',
@@ -4436,6 +4478,7 @@ const VARIANTS = {
     tail: ' (over its edge, onto the face behind)',
   },
   walkMobiusStripHexTurtleEdges: {
+    label: 'Möbius strip of hexagons — base 2 (left / right)',
     lattice: 'surface',
     twin: 'walkMobiusStripHexTurtleCells',
     surface: 'mobiusHex',
@@ -4445,6 +4488,7 @@ const VARIANTS = {
     tail: ' (over its edge, onto the face behind)',
   },
   walkMobiusStripTrianglesTurtleEdges: {
+    label: 'Möbius strip of triangles — base 5 (5 relative turns)',
     lattice: 'surface',
     twin: 'walkMobiusStripTrianglesTurtleCells',
     surface: 'mobiusTri',
@@ -4454,6 +4498,7 @@ const VARIANTS = {
     tail: ' (over its edge, onto the face behind)',
   },
   walkKleinBottleSquaresTurtleEdges: {
+    label: 'Klein bottle — base 3 (left / forward / right)',
     lattice: 'surface',
     twin: 'walkKleinBottleSquaresTurtleCells',
     surface: 'klein',
@@ -4462,6 +4507,7 @@ const VARIANTS = {
     where: 'along the edges of a Klein bottle of squares',
   },
   walkKleinBottleHexTurtleEdges: {
+    label: 'Klein bottle of hexagons — base 2 (left / right)',
     lattice: 'surface',
     twin: 'walkKleinBottleHexTurtleCells',
     surface: 'kleinHex',
@@ -4470,6 +4516,7 @@ const VARIANTS = {
     where: 'along the edges of a Klein bottle of hexagons',
   },
   walkKleinBottleTrianglesTurtleEdges: {
+    label: 'Klein bottle of triangles — base 5 (5 relative turns)',
     lattice: 'surface',
     twin: 'walkKleinBottleTrianglesTurtleCells',
     surface: 'kleinTri',
@@ -4478,6 +4525,7 @@ const VARIANTS = {
     where: 'along the edges of a Klein bottle of triangles',
   },
   walkCubeSquaresTurtleEdges: {
+    label: 'Cube — base 3 (left / forward / right)',
     lattice: 'surface',
     twin: 'walkCubeSquaresTurtleCells',
     surface: 'cube',
@@ -4488,6 +4536,7 @@ const VARIANTS = {
     tail: ' (at a corner of the cube, the nearest edge)',
   },
   walkTetrahedronTrianglesTurtleEdges: {
+    label: 'Tetrahedron — base 5 (5 relative turns)',
     lattice: 'surface',
     twin: 'walkTetrahedronTrianglesTurtleCells',
     surface: 'tetra',
@@ -4498,6 +4547,7 @@ const VARIANTS = {
     tail: ' (at a corner of the solid, the nearest edge)',
   },
   walkOctahedronTrianglesTurtleEdges: {
+    label: 'Octahedron — base 5 (5 relative turns)',
     lattice: 'surface',
     twin: 'walkOctahedronTrianglesTurtleCells',
     surface: 'octa',
@@ -4514,6 +4564,7 @@ const VARIANTS = {
   // icosaGrid3: { base: 3, lattice: 'surface', surface: 'icosa', edges: true, turns: [60, 0, -60],
   //               rule: 'along the edges of an icosahedron of triangles: <b>0</b> front left, <b>1</b> forward, <b>2</b> front right (at a corner of the solid, the nearest edge)' },
   walkIcosahedronHexTurtleEdges: {
+    label: 'Hexagon sphere (icosahedron) — base 2 (left / right)',
     lattice: 'surface',
     twin: 'walkIcosahedronHexTurtleCells',
     surface: 'hexsphere',
@@ -4522,6 +4573,7 @@ const VARIANTS = {
     where: 'along the edges of an icosahedron of hexagons (and 12 pentagons',
   },
   walkStellaOctangulaTrianglesTurtleEdges: {
+    label: 'Stella octangula (two tetrahedra) — base 5 (5 relative turns)',
     lattice: 'surface',
     twin: 'walkStellaOctangulaTrianglesTurtleCells',
     surface: 'stella',
@@ -4531,6 +4583,7 @@ const VARIANTS = {
     tail: ' (at a tip or a hollow corner, the nearest edge)',
   },
   walkDodecahedronTrianglesTurtleEdges: {
+    label: 'Dodecahedron (pentagons cut into 5 triangles) — base 5 (5 relative turns)',
     lattice: 'surface',
     twin: 'walkDodecahedronTrianglesTurtleCells',
     surface: 'dodeca',
@@ -4540,6 +4593,7 @@ const VARIANTS = {
     tail: ' (at a corner of the solid, the nearest edge)',
   },
   walkIcosahedronTrianglesTurtleEdges: {
+    label: 'Triangle sphere (icosahedron) — base 5 (5 relative turns)',
     lattice: 'surface',
     twin: 'walkIcosahedronTrianglesTurtleCells',
     surface: 'icosa',
@@ -4591,18 +4645,21 @@ const VARIANTS = {
       'a grid of triangles in squares of 4, each triangle first swapped with the one across its outer side (the isometric von Neumann neighbourhood, stellated)',
   },
   walkCubesTurtleEdges: {
+    label: 'Cubes (along the grid, by a rule)',
     lattice: 'cube',
     twin: 'walkCubesTurtleCells',
     net: 'cube',
     where: 'in 3D cubes',
   },
   walkCubesDiagonalsEdges: {
+    label: 'Diagonals — base 8 (8 cube corners)',
     base: 8,
     lattice: 'cube',
     twin: 'walkCubesDiagonalsCells',
     rule: 'along the diagonals of the cubes, to one of their 8 corners (the 3 bits of each digit the signs of east, north and up): <b>0</b> SW down, <b>1</b> SW up, <b>2</b> NW down, <b>3</b> NW up, <b>4</b> SE down, <b>5</b> SE up, <b>6</b> NE down, <b>7</b> NE up',
   },
   walkDiamondPolymerEdges: {
+    label: 'Diamond (a polymer chain, by a rule)',
     lattice: 'cube',
     net: 'diamond',
     where:
@@ -4610,6 +4667,7 @@ const VARIANTS = {
   },
   // the same steps from cell to cell (their centres make the same lattice), the cells coloured (see gpuCubes)
   walkCubesTurtleCells: {
+    label: 'Cubes (from cube to cube, by a rule)',
     lattice: 'cube',
     cells: true,
     twin: 'walkCubesTurtleEdges',
@@ -4617,6 +4675,7 @@ const VARIANTS = {
     where: 'from cube to cube',
   },
   walkCubesDiagonalsCells: {
+    label: 'Diagonals — base 8 (truncated octahedra)',
     base: 8,
     lattice: 'cube',
     cells: true,
@@ -6362,8 +6421,21 @@ const defaultMark = (key) => (defaultOf(key, tabVariant()) ? 'on' : 'off');
 // a variant's option in the menu; the menu's group of the variant on (its space: 2D, Surfaces…)
 // the tab's variant: the next walk's (what sets it up reads it; what describes the walk shown reads walk.variant)
 const tabVariant = () => $('variant').value;
-const variantOptionOf = (w) => $('variant').querySelector(`option[value="${w}"]`);
-const variantGroup = (w) => variantOptionOf(w).parentElement.label; // (a variant's)
+// a variant's group, as its view's settings go (see DISPLAY_BY_TAB): an automaton on the plane or on surfaces, a spiral, a walk
+// in 2D, in 3D or on a surface
+const variantGroup = (w) => {
+  const { life, plane } = VARIANTS[w],
+    [, space, , rule] = NAV[w];
+  return life
+    ? `Automata ${plane ? 'on the plane' : 'on surfaces'}`
+    : rule === 'Spiral'
+      ? '2D spirals'
+      : space === '2D'
+        ? '2D walks'
+        : space === '3D'
+          ? '3D walks'
+          : 'Walks on surfaces';
+};
 const DISPLAY_GREYED = { '2D spirals': ['fill', 'visits', 'line'], Elementary: ['digit'] };
 const greyed = (item, w) => [variantGroup(w), NAV[w]?.[0]].some((k) => DISPLAY_GREYED[k]?.includes(item));
 const shows = (item, w, stacked = spaceTime) =>
@@ -9765,15 +9837,11 @@ const LIFE_GRIDS = [
     },
   ],
 ];
-// A grid of Life's, said once: its variant (base 2: a cell alive or dead), its place in the menu, its icon, its option in the
-// variant list, its words in its space's group (index.html: none of Life's written there)
+// A grid of Life's, said once: its variant (base 2: a cell alive or dead), its place in the menu, its icon
 function lifeGrid(w, space, shape, icon, fields) {
   VARIANTS[w] = { base: 2, life: true, ...fields };
   NAV[w] = ['Life', space, shape, 'Life', ''];
   if (icon) VARIANT_ICONS[w] = icon;
-  $('variant')
-    .querySelector(`optgroup[label="Automata ${fields.plane ? 'on the plane' : 'on surfaces'}"]`)
-    .append(new Option(`Life — ${fields.where}`, w));
 }
 for (const [w, space, shape, icon, fields] of LIFE_GRIDS) lifeGrid(w, space, shape, icon, fields);
 // the tilings' Life on the plane (see TILINGS): their variants, after the hats
@@ -9852,6 +9920,7 @@ for (const [k, { a, name, others }] of Object.entries(HEX_SOLIDS)) {
     edges: true,
     net: 'tri',
     where: `along the edges of ${on}`,
+    label: `${name} of hexagons — base 2 (left / right)`,
   }; // (as the sphere's walks, flat: not round, see walkIcosahedronHexTurtleEdges)
   VARIANTS[onCells] = {
     lattice: 'surface',
@@ -9860,6 +9929,7 @@ for (const [k, { a, name, others }] of Object.entries(HEX_SOLIDS)) {
     surface: `${k}Hex`,
     net: 'hex',
     where: `on ${on}`,
+    label: `${name} of hexagons — base 2 (front left / front right)`,
   };
   for (const [w, how] of [
     [alongEdges, 'edges'],
@@ -9905,12 +9975,9 @@ for (const [k, S] of Object.entries(HULL_SOLIDS)) {
       [onCells, 'cells', onEdges, `on the surface of ${a}`, ''],
     ]) {
       const { ant, ...cube } = VARIANTS[variantName('Walk', 'Cube', 'Squares', 'Turtle', side)]; // (its own: no ant)
-      VARIANTS[w] = { ...cube, surface: k, twin, where, tail };
+      VARIANTS[w] = { ...cube, surface: k, twin, where, tail, label: `${S.name} — base 3 (left / forward / right)` };
       VARIANT_ICONS[w] = hullIcon(k);
       NAV[w] = ['Walk', 'Surfaces', S.name, 'Turtle', side];
-      document
-        .querySelector('#variant optgroup[label="Walks on surfaces"]')
-        .append(new Option(`${S.name} — base 3 (left / forward / right)`, w));
     }
   }
 }
@@ -9923,12 +9990,15 @@ for (const [tiling, surface] of [
   const w = variantName('Walk', 'Sphere', tiling, 'Turtle', 'cells'),
     where = `on a sphere of ${tiling === 'Kites' ? 'kites' : "Penrose's rhombi"}`,
     { ant, twin, initial, ...cube } = VARIANTS[variantName('Walk', 'Cube', 'Squares', 'Turtle', 'cells')]; // (its own: no ant, no edges, its sizes)
-  VARIANTS[w] = { ...cube, surface, where, tail: '' };
+  VARIANTS[w] = {
+    ...cube,
+    surface,
+    where,
+    tail: '',
+    label: `Sphere of ${tiling.toLowerCase()} — base 3 (left / forward / right)`,
+  };
   VARIANT_ICONS[w] = VARIANT_ICONS[variantName('Life', 'Sphere', tiling)];
   NAV[w] = ['Walk', 'Surfaces', 'Sphere', 'Turtle', 'cells'];
-  document
-    .querySelector('#variant optgroup[label="Walks on surfaces"]')
-    .append(new Option(`Sphere of ${tiling.toLowerCase()} — base 3 (left / forward / right)`, w));
 }
 // The surfaces' turtles by a rule too, declared by their tiles' network (net: its commands; on cells a command's edge by
 // construction, see cellTurn) and their words (where, its note tail); along the edges, their network's turns, one per command
@@ -10116,9 +10186,9 @@ const shapeLabel = (shape) => SHAPE_SHORT[shape] ?? shape;
 // walk; never its name: the button's (Squares) again
 const rideOf = (w) => {
   const a = VARIANTS[w].antOf;
-  return a ? (VARIANTS[a].cells ? a : VARIANTS[a].twin) : SURFACE_WORMS[w];
+  return a ? (VARIANTS[a].cells ? a : VARIANTS[a].twin) : SURFACE_WORMS[w]?.[0];
 };
-const variantWhere = (w) => capitalised(VARIANTS[w].where ?? VARIANTS[rideOf(w)]?.where ?? variantOptionOf(w).text);
+const variantWhere = (w) => capitalised(VARIANTS[w].where ?? VARIANTS[rideOf(w)]?.where ?? VARIANTS[w].label);
 // the section's title
 const WALK_HEADINGS = {
   Walk: 'Walk',
@@ -11195,7 +11265,7 @@ function renderModePicker() {
       const v = here ?? Object.keys(NAV).find((m) => NAV[m][0] === kind && NAV[m][1] === space && NAV[m][3] === r); // (elsewhere: its first shape)
       if (!creatures && here && VARIANTS[here].net) return ruleCards(r === rule ? w : here, r === rule); // a walk by a rule: its rules' cards (the side picked kept)
       if (creatures) return ruleCards(w); // (its rules: an ant's, a turmite's, the worm's)
-      const { base, detail } = splitModeLabel(variantOptionOf(v).text); // (a spiral's, the diagonals': their base, their words)
+      const { base, detail } = splitModeLabel(VARIANTS[v].label); // (a spiral's, the diagonals': their base, their words)
       const pic = icon(
         r === 'Turtle'
           ? 'turtle'
@@ -12426,12 +12496,12 @@ const SURFACE_ANTS = {
 };
 // the worms on the triangles' grids of the surfaces with ants on triangles: their walks along it, its Edges tab beside the ants'
 const SURFACE_WORMS = {
-  antIcosahedronTrianglesEdges: 'walkIcosahedronTrianglesTurtleEdges',
-  antTorusTrianglesEdges: 'walkTorusTrianglesTurtleEdges',
-  antMobiusStripTrianglesEdges: 'walkMobiusStripTrianglesTurtleEdges',
-  antKleinBottleTrianglesEdges: 'walkKleinBottleTrianglesTurtleEdges',
-};
-for (const [w, walkVariant] of Object.entries(SURFACE_WORMS)) {
+  antIcosahedronTrianglesEdges: ['walkIcosahedronTrianglesTurtleEdges', 'sphere'],
+  antTorusTrianglesEdges: ['walkTorusTrianglesTurtleEdges', 'torus'],
+  antMobiusStripTrianglesEdges: ['walkMobiusStripTrianglesTurtleEdges', 'Möbius'],
+  antKleinBottleTrianglesEdges: ['walkKleinBottleTrianglesTurtleEdges', 'Klein'],
+}; // (each its walk, its surface's word)
+for (const [w, [walkVariant, word]] of Object.entries(SURFACE_WORMS)) {
   const { surface, initial, turns } = VARIANTS[walkVariant];
   VARIANTS[w] = {
     base: 5,
@@ -12442,6 +12512,7 @@ for (const [w, walkVariant] of Object.entries(SURFACE_WORMS)) {
     initial,
     turns,
     worm: true,
+    label: `Triangle ${word} worm — base 5 (5 relative turns)`,
     get rule() {
       return wormRuleText();
     },
@@ -12463,25 +12534,17 @@ for (const [w, [walkVariant, place]] of Object.entries(SURFACE_ANTS)) {
     turns,
     fill: false,
     antOf: walkVariant,
+    label: `${VARIANTS[walkVariant].label.split(' — ')[0]} ant — base 2 (Langton's ant)`, // (its walk's words)
     get rule() {
       return antRuleText(w);
     },
   };
   ANTS[w] = { walk: walkVariant };
   NAV[w] = ['Ant', 'Surfaces', place, 'Ant', 'cells'];
-  document
-    .querySelector('#variant optgroup[label="Walks on surfaces"]')
-    .append(new Option(`${variantOptionOf(walkVariant).text.split(' — ')[0]} ant — base 2 (Langton's ant)`, w)); // (its walk's words)
   VARIANT_ICONS[w] = VARIANT_ICONS[walkVariant];
   FAMILIES.flatMap((F) => F.variants)
     .find((ms) => ms.includes(walkVariant))
     .push(w);
-}
-// a hull solid's replicators (made above from its declaration: see HULL_SOLIDS' walks), its option as its walks'
-for (const S of Object.values(HULL_SOLIDS).filter((S) => S.walks)) {
-  document
-    .querySelector('#variant optgroup[label="Automata on surfaces"]')
-    .append(new Option(`Replicators — ${S.name.toLowerCase()}`, variantName('Replicators', S.name, S.cells)));
 }
 // An ant's rule, a turmite's (Greg Turk, Jim Propp): per state an entry per colour of its cell, each the colour it leaves
 // there, a word of the walk it goes through the cells with (its turn, see antCommands) and its state next, the states parted by
@@ -14482,10 +14545,6 @@ for (const [life, n] of Object.entries(NAV))
       VARIANTS[w] = { ...VARIANTS[life], ...fields(life, n) };
       VARIANT_ICONS[w] = VARIANT_ICONS[life];
       NAV[w] = [mode, n[1], n[2], rule, ''];
-      if (mode === 'Explore') {
-        const option = variantOptionOf(life);
-        option.parentElement.append(new Option(option.text.replace(/^Life/, 'Explore'), w)); // (in Life's group: its space)
-      } // (Rewind's and Replicators' in the page, see index.html)
       FAMILIES.flatMap((F) => F.variants)
         .find((ms) => ms.includes(life))
         ?.push(w); // (in its tiling's tab, beside Life's)
@@ -14553,6 +14612,11 @@ for (const [life, n] of Object.entries(NAV))
   for (const [w] of sorted) delete NAV[w];
   for (const [w, n] of sorted) NAV[w] = n;
 }
+// The variant list (the tab's variant, see tabVariant): an option a variant, in the menu's order (its first the page's at
+// first), its words its label (a walk's, a creature's: its name, base and words, see splitModeLabel), else its mode and where
+$('variant').append(
+  ...Object.keys(NAV).map((w) => new Option(VARIANTS[w].label ?? `${NAV[w][0]} — ${VARIANTS[w].where}`, w)),
+);
 
 /* ---- 7.4 Torus ---------------------------------------------------------------------------- */
 /* Torus (a ring or "donut"): nu × nv squares, nu around the ring and nv around the tube, with
@@ -47581,7 +47645,7 @@ const BUILT_IN = [
   [{ mode: 'walk', shape: 'squares', walkKind: 'turtle', on: 'edges', walkNumberA: 'pi', maxSteps: 20000 }],
 ];
 // the walk's name, as in the walk list ("Squares turtle"; a surface's own name)
-const walkName = (w) => splitModeLabel(variantOptionOf(w)?.text ?? w).name;
+const walkName = (w) => splitModeLabel(VARIANTS[w]?.label ?? w).name;
 // a variant's shape and its tiles, as the Grid's menu names them: a surface of a family (a torus, a strip, a bottle, the
 // rosettes' spheres) and its tiles there (Torus · Kites, Rosettes · Flower 9); else its space and its shape, its tiles in its
 // name (2D circles · Flower 9, 3D solids · Cube)

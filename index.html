@@ -10,7 +10,7 @@
   <meta property="og:url" content="https://vincentbounce.github.io/Tessera/">
   <meta property="og:type" content="website">
   <link id="favicon" rel="icon">  <!-- the app's logo, set at start-up (see LOGO_PATH) -->
-  <link rel="stylesheet" href="style.css?v=0.5.79">
+  <link rel="stylesheet" href="style.css?v=0.5.80">
   <script>  // the theme before the first paint (see applyTheme)
     try { const t = localStorage.getItem('tesseraTheme'); document.documentElement.dataset.theme = t === 'light' || t === 'dark' ? t : matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark'; } catch { document.documentElement.dataset.theme = 'dark'; }
   </script>
@@ -179,121 +179,7 @@
         <div id="antCustomRow" hidden><h3 id="antRuleName"></h3>  <!-- not a label: a click on ↵ would focus the field again; moved right after its card (see ruleCards) -->
           <span class="field"><input id="antRule" class="custom rule" type="text" autocomplete="off" spellcheck="false" title="Type a rule, then Enter"><button class="enter" type="button" tabindex="-1" title="Apply (Enter)">↵</button></span>
         </div>
-        <label hidden>Walk mode (menu kept as the source of truth for the tabs in the header)
-          <select id="variant">
-            <optgroup label="2D walks">
-              <option value="walkSquaresTurtleEdges">Squares (along the grid, by a rule)</option>
-              <option value="walkTrianglesTurtleEdges">Triangles (along the grid, by a rule)</option>
-              <option value="walkHexTurtleEdges">Hexagons (along the grid, by a rule)</option>
-              <option value="walkSquaresTurtleCells">Squares (from cell to cell, by a rule)</option>
-              <option value="walkTrianglesTurtleCells">Triangles (from cell to cell, by a rule)</option>
-              <option value="walkHexTurtleCells">Hexagons (from cell to cell, by a rule)</option>
-              <option value="walkCairoTurtleCells">Cairo pentagons (by a rule)</option>
-              <option value="antSquaresCells">Squares ant — base 2 (Langton's ant)</option>
-              <option value="turmite">Squares turmite — base 2 (an ant with states)</option>
-              <option value="antTrianglesCells">Triangles ant — base 2 (Langton's ant)</option>
-              <option value="antTrianglesEdges">Paterson's worm — base 5 (5 relative turns)</option>
-              <option value="antHexCells">Hexagons ant — base 2 (Langton's ant)</option>
-              <option value="antCairoCells">Cairo pentagons ant — base 2 (Langton's ant)</option>
-            </optgroup>
-            <optgroup label="Walks on surfaces">  <!-- along the grid, or on cells (Walk on cells): each followed by its twin -->
-              <option value="walkCubeSquaresTurtleEdges">Cube — base 3 (left / forward / right)</option>
-              <option value="walkCubeSquaresTurtleCells">Cube — base 3 (left / forward / right)</option>
-              <option value="antCubeSquaresCells">Cube ant — base 2 (Langton's ant)</option>
-              <option value="antIcosahedronHexCells">Hexagon sphere ant — base 2 (Langton's ant)</option>
-              <option value="antIcosahedronTrianglesCells">Triangle sphere ant — base 2 (Langton's ant)</option>
-              <option value="antIcosahedronTrianglesEdges">Triangle sphere worm — base 5 (5 relative turns)</option>
-              <option value="antTorusTrianglesEdges">Triangle torus worm — base 5 (5 relative turns)</option>
-              <option value="antMobiusStripTrianglesEdges">Triangle Möbius worm — base 5 (5 relative turns)</option>
-              <option value="antKleinBottleTrianglesEdges">Triangle Klein worm — base 5 (5 relative turns)</option>
-              <option value="walkTorusSquaresTurtleEdges">Square torus — base 3 (left / forward / right)</option>
-              <option value="walkTorusSquaresTurtleCells">Square torus — base 3 (left / forward / right)</option>
-              <option value="walkTorusTrianglesTurtleEdges">Triangle torus — base 5 (5 relative turns)</option>
-              <option value="walkTorusTrianglesTurtleCells">Triangle torus — base 2 (left / right)</option>
-              <option value="walkTorusHexTurtleEdges">Hex torus — base 2 (left / right)</option>
-              <option value="walkTorusCairoTurtleCells">Cairo torus — base 4 (4 edges out)</option>
-              <option value="walkTorusHexTurtleCells">Hex torus — base 5 (5 relative turns)</option>
-              <option value="walkMobiusStripSquaresTurtleEdges">Möbius strip — base 3 (left / forward / right)</option>
-              <option value="walkMobiusStripSquaresTurtleCells">Möbius strip — base 3 (left / forward / right)</option>
-              <option value="walkMobiusStripHexTurtleEdges">Möbius strip of hexagons — base 2 (left / right)</option>
-              <option value="walkMobiusStripHexTurtleCells">Möbius strip of hexagons — base 5 (5 relative turns)</option>
-              <option value="walkKleinBottleSquaresTurtleEdges">Klein bottle — base 3 (left / forward / right)</option>
-              <option value="walkKleinBottleSquaresTurtleCells">Klein bottle — base 3 (left / forward / right)</option>
-              <option value="walkKleinBottleHexTurtleEdges">Klein bottle of hexagons — base 2 (left / right)</option>
-              <option value="walkKleinBottleTrianglesTurtleEdges">Klein bottle of triangles — base 5 (5 relative turns)</option>
-              <option value="walkKleinBottleHexTurtleCells">Klein bottle of hexagons — base 5 (5 relative turns)</option>
-              <option value="walkKleinBottleTrianglesTurtleCells">Klein bottle of triangles — base 2 (left / right)</option>
-              <option value="walkKleinBottleCairoTurtleCells">Klein bottle of Cairo pentagons — base 4 (4 edges out)</option>
-              <option value="walkMobiusStripCairoTurtleCells">Möbius strip of Cairo pentagons — base 4 (4 edges out)</option>
-              <option value="walkMobiusStripTrianglesTurtleEdges">Möbius strip of triangles — base 5 (5 relative turns)</option>
-              <option value="walkMobiusStripTrianglesTurtleCells">Möbius strip of triangles — base 2 (left / right)</option>
-              <option value="walkTetrahedronTrianglesTurtleEdges">Tetrahedron — base 5 (5 relative turns)</option>
-              <option value="walkTetrahedronTrianglesTurtleCells">Tetrahedron — base 2 (left / right)</option>
-              <option value="walkTetrahedronHexTurtleEdges">Tetrahedron of hexagons — base 2 (left / right)</option>
-              <option value="walkTetrahedronHexTurtleCells">Tetrahedron of hexagons — base 2 (front left / front right)</option>
-              <option value="walkOctahedronTrianglesTurtleEdges">Octahedron — base 5 (5 relative turns)</option>
-              <option value="walkOctahedronTrianglesTurtleCells">Octahedron — base 2 (left / right)</option>
-              <option value="walkOctahedronHexTurtleEdges">Octahedron of hexagons — base 2 (left / right)</option>
-              <option value="walkOctahedronHexTurtleCells">Octahedron of hexagons — base 2 (front left / front right)</option>
-              <option value="walkStellaOctangulaTrianglesTurtleEdges">Stella octangula (two tetrahedra) — base 5 (5 relative turns)</option>
-              <option value="walkStellaOctangulaTrianglesTurtleCells">Stella octangula (two tetrahedra) — base 2 (left / right)</option>
-              <option value="walkStellaOctangulaHexTurtleEdges">Stella octangula of hexagons — base 2 (left / right)</option>
-              <option value="walkStellaOctangulaHexTurtleCells">Stella octangula of hexagons — base 2 (front left / front right)</option>
-              <option value="walkDodecahedronTrianglesTurtleEdges">Dodecahedron (pentagons cut into 5 triangles) — base 5 (5 relative turns)</option>
-              <option value="walkDodecahedronTrianglesTurtleCells">Dodecahedron (pentagons cut into 5 triangles) — base 2 (left / right)</option>
-              <option value="walkDodecahedronHexTurtleEdges">Dodecahedron of hexagons — base 2 (left / right)</option>
-              <option value="walkDodecahedronHexTurtleCells">Dodecahedron of hexagons — base 2 (front left / front right)</option>
-              <option value="walkIcosahedronTrianglesTurtleEdges">Triangle sphere (icosahedron) — base 5 (5 relative turns)</option>
-              <option value="walkIcosahedronTrianglesTurtleCells">Triangle sphere (icosahedron) — base 2 (left / right)</option>
-              <!-- set aside (see MODES in main.js):
-              <option value="icosaGrid2">Triangle sphere (icosahedron) — base 2 (front left / front right)</option>
-              <option value="icosaGrid3">Triangle sphere (icosahedron) — base 3 (front left / forward / front right)</option>
-              -->
-              <option value="walkIcosahedronHexTurtleEdges">Hexagon sphere (icosahedron) — base 2 (left / right)</option>
-              <option value="walkIcosahedronHexTurtleCells">Hexagon sphere (icosahedron) — base 2 (front left / front right)</option>
-            </optgroup>
-            <optgroup label="3D walks">
-              <option value="walkCubesTurtleEdges">Cubes (along the grid, by a rule)</option>
-              <option value="walkCubesDiagonalsEdges">Diagonals — base 8 (8 cube corners)</option>
-              <option value="walkCubesTurtleCells">Cubes (from cube to cube, by a rule)</option>
-              <option value="walkCubesDiagonalsCells">Diagonals — base 8 (truncated octahedra)</option>
-              <option value="walkDiamondPolymerEdges">Diamond (a polymer chain, by a rule)</option>
-            </optgroup>
-            <optgroup label="Automata on the plane">
-              <option value="replicatorsSquares">Replicators — square grid</option>
-              <option value="elementarySquares">Elementary — square grid</option>
-              <option value="rewindSquares">Rewind — square grid in blocks</option>
-              <option value="rewindTriangles">Rewind — triangle grid in blocks</option>
-              <option value="rewindHex">Rewind — hexagon grid in blocks</option>
-              <option value="rewindCairo">Rewind — Cairo grid in blocks</option>
-              <option value="rewindTetrakis">Rewind — tetrakis grid in squares of 4, stellated (HPP gas)</option>
-            </optgroup>
-            <optgroup label="Automata on surfaces">
-              <option value="rewindTorusSquares">Rewind — torus of squares in blocks of 4, 3 squares round it</option>
-              <option value="rewindTorusHex">Rewind — torus of hexagons in blocks of 3</option>
-              <option value="rewindTorusTriangles">Rewind — torus of triangles in blocks of 6</option>
-              <option value="rewindTorusCairo">Rewind — torus of Cairo pentagons in blocks of 4</option>
-              <option value="rewindTorusTetrakis">Rewind — torus of tetrakis triangles in squares of 4, stellated</option>
-              <option value="rewindMobiusStripSquares">Rewind — Möbius strip of squares in blocks of 4</option>
-              <option value="rewindMobiusStripTriangles">Rewind — Möbius strip of triangles in blocks of 6</option>
-              <option value="rewindMobiusStripTetrakis">Rewind — Möbius strip of tetrakis triangles, stellated</option>
-              <option value="rewindKleinBottleSquares">Rewind — Klein bottle of squares in blocks of 4</option>
-              <option value="rewindKleinBottleTriangles">Rewind — Klein bottle of triangles in blocks of 6</option>
-              <option value="rewindKleinBottleTetrakis">Rewind — Klein bottle of tetrakis triangles, stellated</option>
-              <option value="replicatorsTorusSquares">Replicators — torus of squares</option>
-              <option value="replicatorsCubeSquares">Replicators — cube of squares</option>
-              <option value="replicatorsCubePitsSquares">Replicators — cube with pits</option>
-              <option value="replicatorsCubeBumpsSquares">Replicators — cube with bumps</option>
-              <option value="replicatorsCubeFrameSquares">Replicators — cube's frame</option>
-            </optgroup>
-            <optgroup label="2D spirals">
-              <option value="walkSquaresSpiral">Ulam square spiral — base 2 (1 = draw, 0 = skip)</option>
-              <option value="walkTrianglesSpiral">Ulam triangle spiral — base 2 (1 = draw, 0 = skip)</option>
-              <option value="walkHexSpiral">Ulam hexagon spiral — base 2 (1 = draw, 0 = skip)</option>
-              <option value="walkCairoSpiral">Cairo pentagon spiral — base 2 (1 = draw, 0 = skip)</option>
-            </optgroup>
-          </select>
-        </label>
+        <select id="variant" hidden></select>  <!-- the tab's variant (see tabVariant): its options made from the variants -->
       </section>
 
 
@@ -438,10 +324,10 @@
     </div>
   </main>
 
-  <script src="pixelarticons.js?v=0.5.79"></script>
-  <script src="punks.js?v=0.5.79"></script>
-  <script src="loops.js?v=0.5.79"></script>
-  <script src="emoji.js?v=0.5.79"></script>
-  <script src="main.js?v=0.5.79"></script>
+  <script src="pixelarticons.js?v=0.5.80"></script>
+  <script src="punks.js?v=0.5.80"></script>
+  <script src="loops.js?v=0.5.80"></script>
+  <script src="emoji.js?v=0.5.80"></script>
+  <script src="main.js?v=0.5.80"></script>
 </body>
 </html>

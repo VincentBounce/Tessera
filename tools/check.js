@@ -1076,7 +1076,7 @@ function checkVariantNames(fail) {
 // them) or its mode's (the same for each mode and its own choices there: a walk's kind, its side), none mixed; and the
 // variants as they were (VARIANTS_PRINT: their fields, the menu's places and order, the families, the page's options; the
 // variants made in any order)
-const VARIANTS_PRINT = 1184240808; // (v0.5.79: the surface walks declared by their net and words; base, arrows, rule fields of every walk by a rule)
+const VARIANTS_PRINT = -2023317360; // (v0.5.80: the variant list made from the variants, its words their labels)
 const variantsPrint = () => {
   const text = JSON.stringify([
     Object.keys(NAV)
@@ -1091,7 +1091,7 @@ const variantsPrint = () => {
       ]),
     FAMILIES.map((F) => F.variants.map((ms) => [...ms].sort())),
     MODE_TABS.map(([kind]) => [1, 2].map((level) => navValues(level, [kind]))), // (the menu's order: each mode's spaces and its first space's shapes)
-    [...$('variant').options].map((o) => [o.value, o.parentElement.label]).sort(), // (their place in the list and words never shown: Life's its where)
+    [...$('variant').options].map((o) => [o.value, o.text, variantGroup(o.value)]).sort(), // (the variant list: each its words, its group)
   ]);
   let h = 0;
   for (let i = 0; i < text.length; i++) h = (Math.imul(h, 31) + text.charCodeAt(i)) | 0;

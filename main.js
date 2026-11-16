@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.97';
+const VERSION = '0.5.98';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -7747,7 +7747,10 @@ const ICONS = (() => {
     rhombusWalled: walledEl(rhombus, 2),
     goalLongest: svgPath('M12 12C10 8.5 4 8.5 4 12C4 15.5 10 15.5 12 12C14 8.5 20 8.5 20 12C20 15.5 14 15.5 12 12Z'), // the hunt's goals (see HUNT_GOALS): ∞
     goalDies: svgPath('M12 3V21M6 8.5H18'), // (a cross)
-    goalFull: svgPath(pathOf(sq)) + svgPath('M4 8H20V20H4Z', 'f'), // (a square three quarters filled)
+    goalFull:
+      svgPath(pathOf(sq)) +
+      svgPath('M9.33 4V20M14.67 4V20M4 9.33H20M4 14.67H20') +
+      svgPath('M14.67 4H20V9.33H14.67ZM9.33 9.33H20V14.67H9.33ZM4 14.67H20V20H4Z', 'f'), // (Reach all's grid, its cells filled but a corner's three)
     goalPeak: svgPath('M12 4L21 19H3Z', 'f'),
     goalCover: svgPath(pathOf(sq)) + svgPath('M9.33 4V20M14.67 4V20M4 9.33H20M4 14.67H20'), // (all cells: a grid)
     goalBattle: svgPath('M4 4L17 17M20 4L7 17M14 20L20 14M4 14L10 20M17.5 17.5L20.5 20.5M6.5 17.5L3.5 20.5'), // (crossed swords)
@@ -20399,7 +20402,7 @@ const HUNT_RANKS = {
     'goalLongest',
     'Longest',
     'The hunt keeps the longest battles: the ended ones, and the first still on as the digits end',
-    'Hunt the longest battles',
+    'The longest battles',
     '',
     null,
     (r) => `${r.ended ? '' : '≥ '}${formatNumber(r.steps)} steps`,
@@ -20408,7 +20411,7 @@ const HUNT_RANKS = {
     'goalBattle',
     'Even lands',
     "The hunt keeps the battles whose smallest land at the end is the largest: every walker's land big, all alike",
-    'Hunt the most even lands',
+    'The most even lands',
     'The most even lands',
     (r) => r.even,
     (r) => `lands ${r.lands.map(formatNumber).join(' / ')}`,
@@ -20417,7 +20420,7 @@ const HUNT_RANKS = {
     'goalDies',
     'Latest first stop',
     'The hunt keeps the battles whose first walker to stop (or die) does so the latest, none stopping the best: the walkers kept apart',
-    'Hunt the latest first stop',
+    'The latest first stop',
     'The latest first stops',
     (r) => r.stop,
     firstStop,
@@ -29599,7 +29602,7 @@ function huntRuns(L, { cells, copies, all, choices, nth }, cap, goal, report) {
       let first = 0; // the start's cells
       for (let t = 0; t < n; t++) first += seed[t] > 0;
       const extinct = s.alive + s.dying === 0,
-        full = s.alive > FULL_END * n,
+        full = s.alive >= FULL_END * n,
         { peak, peakAt, allAt, reached } = s; // (full: so many alive as it ends, its loop's state)
       // (Reach all: the sooner the better, ahead of any that never does, those by the cells they reached)
       const score =
@@ -29787,14 +29790,13 @@ function huntRuns(L, { cells, copies, all, choices, nth }, cap, goal, report) {
 }
 const hunt = { run: null, zone: 'full', top: [], status: '', picked: null, goal: 'longest', key: '' }; // goal in one colour: longest, dies, peak or cover (colours: a battle)
 let huntKept = 0; // the results kept so far, all hunts: each one's number its identity (picked: the one played's)
-// What the hunt looks for in one colour: the longest life, the longest till it dies out, or ends full (more than FULL_END of
-// its cells alive, as it settles or loops: a rule whose soups fill the grid), the most cells alive at once,
-// or every cell alive once the soonest (seen in Activity); the last two from a start in a zone, not the whole grid
-// (colours: the longest battle, the goals hidden). Each: its picture, its name, its words
+// What the hunt looks for in one colour: the longest life, the longest till it dies out, the most cells alive at once,
+// or every cell alive once the soonest (seen in Activity), the last two from a start in a zone, not the whole grid; the
+// longest battle (in colours, the goals hidden); last, the longest that ends with FULL_END of its cells alive or more (as
+// it settles or loops: a rule whose soups fill the grid). Each: its picture, its name, its words
 const HUNT_GOALS = {
   longest: ['goalLongest', 'Longest', 'The start that lasts longest, however it ends'],
   dies: ['goalDies', 'Dies out', 'The start that lasts longest and dies out, to the last cell'],
-  full: ['goalFull', 'Ends full', 'The start that lasts longest and ends with more than 3/4 of its cells alive'],
   peak: ['goalPeak', 'Peak', 'The start that has the most cells alive at once, from a zone (not the whole grid)'],
   cover: [
     'goalCover',
@@ -29806,8 +29808,9 @@ const HUNT_GOALS = {
     'Battle',
     'The battle that lasts longest, its colours touching and even: in colours, the only hunt',
   ],
+  full: ['goalFull', 'Ends ≥3/4', 'The start that lasts longest and ends with 3/4 of its cells alive or more'],
 };
-const FULL_END = 0.75; // (Ends full: more alive than this share of the cells as it ends)
+const FULL_END = 0.75; // (Ends ≥3/4: this share of the cells alive or more as it ends)
 const peakHunt = () => walk.life.colours === 1 && (hunt.goal === 'peak' || hunt.goal === 'cover'); // (a zone's: the whole grid a soup full already)
 function pickGoal(goal) {
   hunt.goal = goal;
@@ -30881,7 +30884,7 @@ function renderHunt() {
       ? 'A start found by a hunt, from a link: pick a zone to hunt in'
       : `${all ? `All its ${formatNumber(all)} ${tried} tried, each once, then done` : `On and on until stopped: ${tried} at random one in 3, the others tweaks of the best`}; a click on one found plays it`;
   const zone = shown + (sym !== 'none' ? ` · ${SYMMETRIES[sym][2]}` : '');
-  $('huntBtn').innerHTML = busy ? `${icon('stop')} Stop hunt and play` : `${icon('search')} Hunt ${what}`;
+  $('huntBtn').innerHTML = busy ? `${icon('stop')} Stop hunt and play` : `${icon('search')} ${capitalised(what)}`;
   setTile($('huntBtn'), {
     greyed: !busy && hunt.zone === 'custom' ? 'A start from a link: pick a zone to hunt in first.' : '',
   });
@@ -31059,7 +31062,7 @@ function huntClick() {
     (top, n, done, [on, g] = []) => {
       if (top) hunt.top = top;
       if (done) {
-        hunt.status = `All ${formatNumber(all)} tried · ${hunt.top.length ? `${formatNumber(hunt.top.length)} kept` : K > 1 ? 'no battle' : hunt.goal === 'dies' ? 'none dies out' : hunt.goal === 'full' ? 'none ends full' : 'nothing lasts'}`;
+        hunt.status = `All ${formatNumber(all)} tried · ${hunt.top.length ? `${formatNumber(hunt.top.length)} kept` : K > 1 ? 'no battle' : hunt.goal === 'dies' ? 'none dies out' : hunt.goal === 'full' ? 'none ends 3/4 alive' : 'nothing lasts'}`;
         stopHunt();
         return;
       }

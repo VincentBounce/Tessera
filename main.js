@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.167';
+const VERSION = '0.5.168';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -41483,22 +41483,31 @@ function drawGrid() {
   ctx.clearRect(0, 0, canvasWidth, canvasHeight);
   paintSky();
   placeAxesLabels();
-  // Elementary's run a sheet on the sky, as the plane's (see gpuPlane): its picture's size, in the page's colour, the grid
-  // on it only; its sides on the grid's own pixels (see drawLines)
-  // (its picture's rectangle exactly, see runX; the grid's lines a pixel past it on the right and below, its last ones: on
-  // the sky at its edge)
-  const R = walk.rows,
-    sheet = R && [runX(0), runY(0), runX(R.PW * R.B) - runX(0), runY(R.G + 1) - runY(0)];
-  if (sheet) {
-    ctx.fillStyle = cssColour('--page-background');
-    ctx.fillRect(...sheet);
-    ctx.save();
-    ctx.beginPath();
-    ctx.rect(sheet[0], sheet[1], sheet[2] + 1, sheet[3] + 1);
-    ctx.clip();
+  if (walk.rows) drawElementarySheet(ctx, walk.rows);
+  else drawGridLines(ctx, s);
+}
+// Elementary's run a sheet on the sky, as the plane's (see gpuPlane): its cells in the page's colour, its grid their sides,
+// zoomed in only, as the plane's (see sidesShown): from its first cell to its last, none past it
+function drawElementarySheet(ctx, R) {
+  const W = R.PW * R.B,
+    [left, top, right, bottom] = [runX(0), runY(0), runX(W), runY(R.G + 1)];
+  ctx.fillStyle = cssColour('--page-background');
+  ctx.fillRect(left, top, right - left, bottom - top);
+  if (!sidesShown(view.scale)) return;
+  const s = view.scale,
+    first = (edge) => Math.max(0, Math.floor(-edge / s)); // (the first side in view, the sheet's edge at edge)
+  ctx.strokeStyle = gridColour();
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  for (let x = first(left), X = Math.min(W, x + Math.ceil(canvasWidth / s) + 1); x <= X; x++) {
+    ctx.moveTo(runX(x) + 0.5, top);
+    ctx.lineTo(runX(x) + 0.5, bottom);
   }
-  drawGridLines(ctx, s);
-  if (sheet) ctx.restore();
+  for (let t = first(top), T = Math.min(R.G + 1, t + Math.ceil(canvasHeight / s) + 1); t <= T; t++) {
+    ctx.moveTo(left, runY(t) + 0.5);
+    ctx.lineTo(right, runY(t) + 0.5);
+  }
+  ctx.stroke();
 }
 // its lines (none while Grid is off or no grid is built)
 function drawGridLines(ctx, s) {
@@ -41518,8 +41527,8 @@ function drawGridLines(ctx, s) {
     lat = walk.lattice;
   if (lat === 'square') {
     // the cell centres at whole coordinates, their sides half a cell away
-    // (zoomed out, a line every 5 or 25 cells from the grid's corner: cell 0's, Elementary's picture's top left)
-    const [atX, atY] = walk.lines ? [0, 0] : walk.rows ? [-walk.rows.c - 0.5, -0.5] : [-0.5, -0.5];
+    // (zoomed out, a line every 5 or 25 cells from the grid's corner: cell 0's)
+    const [atX, atY] = walk.lines ? [0, 0] : [-0.5, -0.5];
     drawLines(ctx, 1, 0, atX, stepCells);
     drawLines(ctx, 0, 1, atY, stepCells);
   } else if (lat === 'tri' && !walk.lines) {
@@ -42692,8 +42701,10 @@ const PART_MOST = 80e6,
   PART_CELLS = 32e6;
 // the 2D grid's lines a cell apart from this many screen pixels a cell (fewer: every 5, 25… cells, see drawGrid)
 const LINE_PIXELS = 10;
-// Elementary's run on the screen, one placing for its sheet, its picture, its parts and its squares: a cell side x cells
-// from its left, a row side t rows down, rounded as the grid's lines are (see drawLines)
+// a sheet's grid its cells' sides, from this many screen pixels a cell (the plane's, Elementary's: none zoomed out)
+const sidesShown = (s) => gridShown() && s >= 6;
+// Elementary's run on the screen, one placing for its sheet, its picture, its parts, its squares and its sides: a cell side
+// x cells from its left, a row side t rows down, on a whole pixel
 const runX = (x) => Math.round(view.ox + (x - walk.rows.c - 0.5) * view.scale),
   runY = (t) => Math.round(view.oy + (t - 0.5) * view.scale);
 // a picture of Elementary's run (its picture, a part), w pixels of b × b cells from cell x0 and row t0, drawn down to row
@@ -42766,19 +42777,17 @@ function drawElementary(to) {
     t1 = Math.min(R.G, Math.ceil((canvasHeight - oy) / s));
   if (x1 < x0 || t1 < t0) return;
   if (s >= LINE_PIXELS) {
-    // zoomed in, a line a cell: each live cell its square, its sides on the grid's own pixels (a side at round(v), its line
-    // the pixel after, see drawLines), inside the lines when they show: no cell over a line, none off it
+    // zoomed in: each live cell its square
     const own = R.B > 1 ? elementaryPart(R, x0, x1, t0, t1) : null,
       w = x1 - x0 + 1,
-      { counts, breaks } = own ?? R,
-      inset = gridShown() ? 1 : 0;
+      { counts, breaks } = own ?? R;
     for (let t = t0; t <= Math.min(t1, last); t++) {
       const row = rowColour(t);
       for (let x = x0; x <= x1; x++) {
         const at = own ? (t - t0) * w + x - x0 : t * R.PW + x;
         if (!counts[at]) continue;
         ctx.fillStyle = `rgb(${colourAt(at, counts[at], row, breaks, R.entropy)})`;
-        ctx.fillRect(runX(x) + inset, runY(t) + inset, runX(x + 1) - runX(x) - inset, runY(t + 1) - runY(t) - inset);
+        ctx.fillRect(runX(x), runY(t), runX(x + 1) - runX(x), runY(t + 1) - runY(t));
       }
     }
     return;
@@ -45125,7 +45134,7 @@ function gpuPlane(paint) {
     D.keys.planeBase = `${bg}|${wallShown}`;
   }
   paint({ put: (col) => device.queue.writeBuffer(D.planeCol, 0, col), buffer: D.planeCol, n: F.m }, F.m);
-  const outline = gridShown() && s >= 6;
+  const outline = sidesShown(s);
   if (outline && !D.planeLines) {
     const { start, xy } = F,
       seen = new Set(),

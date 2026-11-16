@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.127';
+const VERSION = '0.5.128';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -21595,6 +21595,10 @@ const EXPLORE_PALETTES = [
 ]; // (name, colours, words)
 const exploreLook = { rule: 'tiles', palette: 0 },
   explorePalette = () => EXPLORE_PALETTES[exploreLook.palette][1];
+// The Explore grids whose cells go in 3 colours, a search finding them soon (made by tools/tilesearch.js, in the page's
+// console: tilesSearch()): each variant's grids that do, by their cells' count; the others coloured by DSatur alone (see
+// exploreLevels)
+const TILES_IN_THREE = {};
 // a graph's colouring, no two neighbours alike (eachNeighbour(a, put): each of node a's), DSatur's (Brélaz 1979): the node
 // most bound first (the most colours among its neighbours), its first colour free (1, 2…); its order and its colours. As
 // many colours as a planar graph's 4 most often, not always
@@ -21629,8 +21633,9 @@ function dsatur(count, eachNeighbour) {
 }
 // a small graph's colours, 1 to P, no two neighbours alike: in DSatur's order, each node its first colour free of those
 // before it, back to the last with another free when none is (a search, complete, as long as the graph is small: a solid's
-// faces; past P colours only where P cannot do, one more each time)
-function paletteColours(count, eachNeighbour, P) {
+// faces; a grid's where tools/tilesearch.js found it soon, see TILES_IN_THREE; past P colours only where P cannot do, one
+// more each time). steps: tools/tilesearch.js's, the steps it waits at most (beyond them: null)
+function paletteColours(count, eachNeighbour, P, steps = Infinity) {
   const { order } = dsatur(count, eachNeighbour),
     at = new Int32Array(count);
   order.forEach((a, p) => (at[a] = p));
@@ -21639,6 +21644,7 @@ function paletteColours(count, eachNeighbour, P) {
     colour.fill(0);
     let p = 0;
     while (p >= 0 && p < count) {
+      if (!steps--) return null;
       const a = order[p];
       let used = 0;
       eachNeighbour(a, (b) => at[b] < p && (used |= 1 << colour[b]));
@@ -21668,7 +21674,8 @@ function exploreLevels(nbr, n, faces) {
   const bySide = (t, put) => {
     for (let q = nbr.start[t]; q < nbr.start[t + 1]; q++) if (side[q]) put(nbr.list[q]);
   };
-  if (rule === 'tiles') level = dsatur(n, bySide).colour; // (a grid's cells: too many for a search)
+  if (rule === 'tiles')
+    level = TILES_IN_THREE[walk.variant]?.includes(n) ? paletteColours(n, bySide, 3) : dsatur(n, bySide).colour; // (a grid's cells: a search only where it was found soon)
   if (rule === 'sides') {
     // (a cell across an edge, with a face it touches by a side: a face's cell beside it, the first; the faces' graph, their
     // sides touching)

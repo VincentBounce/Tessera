@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.156';
+const VERSION = '0.5.157';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -41450,7 +41450,7 @@ function drawGrid() {
   if (!gridShown() || !walk.lattice) return; // (no grid built yet, at load: no lines)
   const s = view.scale;
   let stepCells = 1;
-  while (s * stepCells < 10) stepCells *= 5;
+  while (s * stepCells < LINE_PIXELS) stepCells *= 5;
   ctx.strokeStyle = gridColour();
   ctx.lineWidth = 1;
   ctx.beginPath();
@@ -42635,6 +42635,8 @@ const countUpTo = (sorted, n, v) => {
 // cells
 const PART_MOST = 80e6,
   PART_CELLS = 32e6;
+// the 2D grid's lines a cell apart from this many screen pixels a cell (fewer: every 5, 25… cells, see drawGrid)
+const LINE_PIXELS = 10;
 function drawElementary(to) {
   const R = walk.rows,
     ctx = layers.path,
@@ -42653,6 +42655,15 @@ function drawElementary(to) {
     ), // (Domains')
     mixed = (c, share) => word(page.map((v, d) => Math.round(v + (c[d] - v) * share))),
     rainbow = rainbowNow().map(rgbCached); // (Entropy's, low to high)
+  // (a pixel's or a cell's colour, by the look: its row's, Domains', Entropy's; at its place in counts, breaks and entropy)
+  const colourAt = (at, live, row, breaks, entropy) =>
+    look === 'entropy'
+      ? rainbow[Math.round(entropy[at] * (rainbow.length - 1))]
+      : look === 'domain'
+        ? 2 * breaks[at] >= live && live
+          ? defect
+          : background
+        : row;
   const paint = (w, h, counts, breaks, cells, rowOf) => {
     // (w × h pixels, each its live cells of cells and its row; a pixel a word: its alpha, blue, green, red)
     const img = new ImageData(w, h),
@@ -42661,16 +42672,8 @@ function drawElementary(to) {
       const row = rowColour(rowOf(y));
       for (let x = 0; x < w; x++) {
         const at = y * w + x,
-          live = counts[at],
-          colour =
-            look === 'entropy'
-              ? rainbow[Math.round(R.entropy[at] * (rainbow.length - 1))]
-              : look === 'domain'
-                ? 2 * breaks[at] >= live && live
-                  ? defect
-                  : background
-                : row;
-        if (live) px[at] = ((255 << 24) | mixed(colour, live / cells)) >>> 0; // (a dead one clear: the grid under it seen)
+          live = counts[at];
+        if (live) px[at] = ((255 << 24) | mixed(colourAt(at, live, row, breaks, R.entropy), live / cells)) >>> 0; // (a dead one clear: the grid under it seen)
       }
     }
     const cv = Object.assign(document.createElement('canvas'), { width: w, height: h });
@@ -42690,6 +42693,26 @@ function drawElementary(to) {
     t0 = Math.max(0, snap(-oy / s)),
     t1 = Math.min(R.G, Math.ceil((canvasHeight - oy) / s));
   if (x1 < x0 || t1 < t0) return;
+  if (s >= LINE_PIXELS) {
+    // zoomed in, a line a cell: each live cell its square, its sides on the grid's own pixels (a side at round(v), its line
+    // the pixel after, see drawLines), inside the lines when they show: no cell over a line, none off it
+    const own = R.B > 1 ? elementaryPart(R, x0, x1, t0, t1) : null,
+      w = x1 - x0 + 1,
+      { counts, breaks } = own ?? R,
+      inset = gridShown() ? 1 : 0,
+      X = (x) => Math.round(ox + (x - R.c - 0.5) * s),
+      Y = (t) => Math.round(oy + (t - 0.5) * s);
+    for (let t = t0; t <= Math.min(t1, last); t++) {
+      const row = rowColour(t);
+      for (let x = x0; x <= x1; x++) {
+        const at = own ? (t - t0) * w + x - x0 : t * R.PW + x;
+        if (!counts[at]) continue;
+        ctx.fillStyle = `rgb(${colourAt(at, counts[at], row, breaks, R.entropy)})`;
+        ctx.fillRect(X(x) + inset, Y(t) + inset, X(x + 1) - X(x) - inset, Y(t + 1) - Y(t) - inset);
+      }
+    }
+    return;
+  }
   if (b !== R.B && look !== 'entropy' && partWork(R, x0, x1, t0, t1) <= PART_MOST) {
     const key = `${x0}|${x1}|${t0}|${t1}|${b}|${look}|${LIFE_ALIVE}`;
     if (R.part?.key !== key) {

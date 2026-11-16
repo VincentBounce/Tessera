@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.69';
+const VERSION = '0.5.70';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -44775,15 +44775,16 @@ function gpuPlane(paint) {
     D.keys.planeBase = null;
   }
   const bg = getComputedStyle(document.documentElement).getPropertyValue('--page-background') || '#fff';
-  if (D.keys.planeBase !== bg) {
+  const wallShown = !walk.life?.palette; // (Explore: no wall, its cells alone on the view)
+  if (D.keys.planeBase !== `${bg}|${wallShown}`) {
     const page = packed(bg.trim()),
       walled = packed(LIFE_WALL);
     device.queue.writeBuffer(
       D.planeBase,
       0,
-      Uint32Array.from({ length: F.m }, (_, t) => (t >= n ? walled : page)),
+      Uint32Array.from({ length: F.m }, (_, t) => (t < n ? page : wallShown ? walled : 0)), // (0: clear)
     );
-    D.keys.planeBase = bg;
+    D.keys.planeBase = `${bg}|${wallShown}`;
   }
   paint({ put: (col) => device.queue.writeBuffer(D.planeCol, 0, col), buffer: D.planeCol, n: F.m }, F.m);
   const outline = $('showGrid').checked && s >= 6;

@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.62';
+const VERSION = '0.5.63';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -6790,7 +6790,15 @@ const DISPLAY_DEFAULTS = {
   look: [
     'colourMode',
     'tab',
-    { Walk: 'gradient', Ant: 'gradient', Life: 'mono', Replicators: 'mono', Rewind: 'mono', Elementary: 'gradient' },
+    {
+      Walk: 'gradient',
+      Ant: 'gradient',
+      Life: 'mono',
+      Replicators: 'mono',
+      Rewind: 'mono',
+      Elementary: 'gradient',
+      Explore: 'mono',
+    },
   ], // (Cells: a walk's Rainbow, Life's States, Elementary's Age: the simplest)
   area: ['area', 'tab', (variant, w) => (NAV[w][0] !== 'Walk' ? 'empty' : NAV[w][1] === '2D' ? 'light' : 'plain')],
   path: ['showPath', 'tab', false], // (Area: Empty, a walk's Light in 2D, Plain in 3D; on cells the cells alone)
@@ -10059,6 +10067,7 @@ const MODE_TABS = [
   ['Walk', 'compass', "A path, each step the number's next digit"],
   ['Ant', 'ant', "A creature on the cells, turned by each cell's colour, by its rule or by the digits"],
   ['Rewind', 'reversible', 'Rules on blocks of cells that play backwards as well: nothing is ever lost'],
+  ['Explore', 'eye', "Life's grids to look at, each cell coloured by its neighbours, its sides or its distance"],
   ['Replicators', 'replicator', "Langton's loops: a pattern that makes copies of itself, by a table of transitions"],
   [
     'Elementary',
@@ -10207,6 +10216,7 @@ const WALK_HEADINGS = {
   Replicators: 'Grid',
   Elementary: 'Grid',
   Rewind: 'Grid',
+  Explore: 'Grid',
 };
 // the values at a level under the choices above it (pre), in the menu's order
 const navValues = (level, pre) => [
@@ -11091,6 +11101,7 @@ document.addEventListener('pointerdown', (e) => {
 moreMenu.addEventListener('click', () => openMoreMenu(false)); // (a tab picked in it too; open while the row is drawn again)
 function fitModeTabs() {
   const row = $('modeTabs');
+  if (!moreTabs.isConnected) return; // (the row not made yet: see renderModePicker)
   // (the last tab's right edge against the row's: never its width scrolled, the menu open over it counted in it)
   const fits = () =>
     (moreTabs.hidden ? moreTabs.previousElementSibling : moreTabs).getBoundingClientRect().right <=
@@ -11408,7 +11419,10 @@ function compute() {
     want = variant.life ? n : n + LOOP_AHEAD; // a walk also reads the digits ahead
   syncDigitsStepper();
   relabelColours(variant);
-  $('automataSection').hidden = !variant.life; // rule and hunt, for the cellular automata only
+  $('automataSection').hidden = !variant.life || !!variant.explore; // rule and hunt, for the cellular automata only
+  $('exploreSection').hidden = !variant.explore; // (its colours instead, see renderExplore)
+  $('animBar').hidden = !!variant.explore; // (nothing played: no generation, no count, no player)
+  if (variant.explore) renderExplore();
   $('planeRow').hidden = !variant.plane || !!variant.elementary; // Life on the plane: its grid (Elementary's: none, see elementaryRows)
   $('lifeStartRow').hidden = !variant.life;
   $('copyRle').hidden = !variant.plane; // (the plane's cells only)  // its start: Hunt, Draw (the plane only), Digits
@@ -11420,16 +11434,16 @@ function compute() {
       : ELEMENTARY_STARTS.includes(plane.start) && plane.start !== 'digits'
         ? 'random'
         : plane.start; // (Elementary's starts, see elementaryRows)
-  $('startSection').hidden = !variant.life || !!variant.loops; // (loops: their start their loops, one a lineage, see layLoops)
+  $('startSection').hidden = !variant.life || !!variant.loops || !!variant.explore; // (loops: their start their loops, one a lineage, see layLoops)
   $('returnRow').hidden = !variant.margolus; // (a reversible one's return to its start, wherever it is)
   fitRuleToShape();
   $('colourSection').hidden =
-    !walkTeamsHere(tabVariant()) && (!variant.life || !!variant.margolus || !!variant.elementary); // (blocks, Elementary: one colour; a walk's on a surface)
+    !walkTeamsHere(tabVariant()) && (!variant.life || !!variant.margolus || !!variant.elementary || !!variant.explore); // (blocks, Elementary: one colour; a walk's on a surface)
   renderViewTiles();
   renderTeams();
   renderWalkTeams();
   renderRuleSection();
-  if (!variant.life || variant.elementary) {
+  if (!variant.life || variant.elementary || variant.explore) {
     stopHunt();
     $('huntRow').hidden = true;
   } // (no hunt: a walk, or Elementary's rows, built by buildWalk)
@@ -14517,6 +14531,19 @@ for (const k of Object.keys(ROSETTE_SPHERES)) {
 }
 // the menu's order, once every variant made (the surfaces' ants and the rosette spheres too): in each shape's rules: Turtle, then Pivot
 // Cairo right after Squares, Hexagons before Triangles (right after Kites where they are), Tetrakis after Hexagons, the Klein bottle after the Möbius strip, the
+// Explore: every grid of Life's, its cells coloured once (see exploreLevels), no generation played
+for (const [life, n] of Object.entries(NAV))
+  if (n[0] === 'Life') {
+    const w = `explore${life.slice(4)}`;
+    VARIANTS[w] = { ...VARIANTS[life], explore: true };
+    VARIANT_ICONS[w] = VARIANT_ICONS[life];
+    NAV[w] = ['Explore', n[1], n[2], 'Colours', ''];
+    const option = variantOptionOf(life);
+    option.parentElement.append(new Option(option.text.replace(/^Life/, 'Explore'), w)); // (in Life's group: its space)
+    FAMILIES.flatMap((F) => F.variants)
+      .find((ms) => ms.includes(life))
+      ?.push(w); // (in its tiling's tab, beside Life's, as the reversible sheets)
+  }
 // Sphere before the Tetrahedron
 {
   const group = (n) => n.slice(0, 3).join(),
@@ -21395,6 +21422,7 @@ const lifeParts = () =>
 // start's teams fewer with Newcomer, its states the same
 const colourState = (i, v) => (walk.life.colours > 1 ? i + 1 + walk.life.colours * (v - 1) : v);
 function startColours(seed) {
+  if (walk.life.palette) return; // (Explore's: its colours, see exploreLevels)
   if (walk.life.loops) {
     layLoops(seed);
     return;
@@ -21482,16 +21510,114 @@ function fitLifeTeams(variant) {
   fitTeams(); // (its size's mesh made for them, see pickedFigure)
   fillGridSizes(kind, variant.initial);
 }
+// Explore: its rule (how a cell's colour is found) and its palette (see EXPLORE_PALETTES), each a choice of its section
+const EXPLORE_RULES = [
+  ['colouring', 'Colouring', 'Two cells side by side never the same colour'],
+  ['sides', 'Sides', 'A colour for each number of sides'],
+  ['distance', 'Distance', 'The steps from the first cell, side by side, as rings round it'],
+];
+const EXPLORE_PALETTES = [
+  ['Azulejo', ['#1F3A93', '#3E6FB0', '#A9C6E8', '#F4F1EA']],
+  ['Terracotta', ['#C8553D', '#F28F3B', '#FFD5C2', '#588B8B']],
+  ['Stained glass', ['#8B1E3F', '#3C153B', '#F2A541', '#1B998B']],
+  ['Bauhaus', ['#E63946', '#F1C40F', '#1D3557', '#F1FAEE']],
+  ['Macaron', ['#FFB5A7', '#FCD5CE', '#B8E0D2', '#9DC3C2']],
+  ['Sage', ['#D4A373', '#FAEDCD', '#CCD5AE', '#8A9A5B']],
+  ['Abyss', ['#0B132B', '#1C2541', '#3A506B', '#5BC0BE', '#C6F1EE']],
+  ['Embers', ['#2B0F0E', '#7A1F1A', '#D1495B', '#F79256', '#FCE38A']],
+];
+const exploreLook = { rule: 'colouring', palette: 0 },
+  explorePalette = () => EXPLORE_PALETTES[exploreLook.palette][1];
+// each cell's colour, 1 to the palette's: by its neighbours by a side (nbr, see sideOf), the first colour none of those
+// before has (Colouring: greedy, round the palette past its last), its sides counted, or its steps from cell 0 spread
+// over the palette
+function exploreLevels(nbr, n) {
+  const side = sideOf(nbr),
+    P = explorePalette().length,
+    level = new Uint8Array(n);
+  const sides = (t) => {
+    let k = 0;
+    for (let q = nbr.start[t]; q < nbr.start[t + 1]; q++) k += side[q];
+    return k;
+  };
+  if (exploreLook.rule === 'colouring')
+    for (let t = 0; t < n; t++) {
+      let used = 0;
+      for (let q = nbr.start[t]; q < nbr.start[t + 1]; q++) if (side[q]) used |= 1 << level[nbr.list[q]];
+      let k = 1;
+      while (used & (1 << k)) k++;
+      level[t] = k;
+    }
+  if (exploreLook.rule === 'sides') {
+    const counts = [...new Set(Array.from({ length: n }, (_, t) => sides(t)))].sort((a, b) => a - b);
+    for (let t = 0; t < n; t++) level[t] = 1 + counts.indexOf(sides(t));
+  }
+  if (exploreLook.rule === 'distance') {
+    const steps = new Int32Array(n).fill(-1),
+      queue = [0];
+    steps[0] = 0;
+    for (let i = 0; i < queue.length; i++)
+      for (let q = nbr.start[queue[i]]; q < nbr.start[queue[i] + 1]; q++)
+        if (side[q] && steps[nbr.list[q]] < 0) {
+          steps[nbr.list[q]] = steps[queue[i]] + 1;
+          queue.push(nbr.list[q]);
+        }
+    const far = Math.max(1, ...steps);
+    for (let t = 0; t < n; t++) level[t] = 1 + Math.round((Math.max(0, steps[t]) / far) * (P - 1));
+    return level;
+  }
+  for (let t = 0; t < n; t++) level[t] = 1 + ((level[t] - 1) % P);
+  return level;
+}
+// its section: the rules, then the palettes, each a tile with its colours
+function renderExplore() {
+  const pick = (key, value) => () => {
+    exploreLook[key] = value;
+    compute();
+  };
+  $('exploreRules').replaceChildren(
+    textTabs(
+      EXPLORE_RULES.map(([key, name, title]) =>
+        tile({
+          text: name,
+          title,
+          on: exploreLook.rule === key,
+          click: pick('rule', key),
+          choice: `exploreRule:${key}`,
+        }),
+      ),
+    ),
+  );
+  $('explorePalettes').replaceChildren(
+    ...EXPLORE_PALETTES.map(([name, colours], i) =>
+      tile({
+        pic: `<svg class="icon" viewBox="0 0 24 24">${colours
+          .map(
+            (c, k) =>
+              `<rect x="${2 + (k * 20) / colours.length}" y="4" width="${20 / colours.length}" height="16" fill="${c}"/>`,
+          )
+          .join('')}</svg>`,
+        text: name,
+        on: exploreLook.palette === i,
+        click: pick('palette', i),
+        choice: `explorePalette:${i}`,
+      }),
+    ),
+  );
+}
 // A Life's game (walk.life) by its rule, on its grid's cells (grid: its neighbours, rings, seed, blocks…), n of them: its
 // cells' arrays made (the graphics card's copies too), its seed counted; and the walk's fields every Life has, the others
 // freshWalk's (a grid's own given after, by its builder)
 function startLife(seq, rule, n, grid) {
+  const explore = !!VARIANTS[walk.variant].explore;
+  if (explore) grid.seed = exploreLevels(grid.nbr, n); // (Explore: each cell alive in its colour, see exploreLevels)
   walk.life = {
     B: rule.B,
     S: rule.S,
     C: rule.C,
     two: rule.two,
-    colours: rule.colours,
+    colours: explore ? explorePalette().length : rule.colours,
+    palette: explore ? explorePalette() : null,
     ruleText: ruleBody(rule.text),
     loops: rule.loops ?? null,
     loopStates: rule.loopStates,
@@ -21507,7 +21633,7 @@ function startLife(seq, rule, n, grid) {
   lifeStart = null; // the number's digits
   const one = new Float64Array(1);
   Object.assign(walk, {
-    n: VARIANTS[walk.variant].elementary ? lengthAsked() : Infinity,
+    n: VARIANTS[walk.variant].elementary ? lengthAsked() : explore ? 0 : Infinity,
     digits: seq,
     keys: seq,
     wx: one,
@@ -25898,6 +26024,7 @@ function lifeLook(L, lifted = false) {
     rainbowNow()[0],
     LIFE_COLOURS[0],
     oceanOn(),
+    L.palette,
   ].join('|');
   if (L.look?.key === key) return L.look.value;
   const lift = lifted ? liftTile : (c) => c;
@@ -25907,7 +26034,7 @@ function lifeLook(L, lifted = false) {
   };
   const trail = LIFE_TRAIL.map(pack),
     alive = pack(oceanOn() ? LANDS[0] : LIFE_ALIVE),
-    civ = [0, ...civColours(L.colours, L.C).map(pack)];
+    civ = [0, ...(L.palette ?? civColours(L.colours, L.C)).map(pack)];
   const grad = Array.from({ length: 32 }, (_, i) => pack(lift(gradientAt(i / 31))));
   // the colours on a log scale, in tables (millions of cells): of an age (up to 64), of an activity
   const level = (v, max) => Math.min(31, Math.round((Math.log(v) / Math.log(Math.max(2, max))) * 31));

@@ -10,7 +10,7 @@
   <meta property="og:url" content="https://vincentbounce.github.io/Tessera/">
   <meta property="og:type" content="website">
   <link id="favicon" rel="icon">  <!-- the app's logo, set at start-up (see LOGO_PATH) -->
-  <link rel="stylesheet" href="style.css?v=0.5.62">
+  <link rel="stylesheet" href="style.css?v=0.5.63">
   <script>  // the theme before the first paint (see applyTheme)
     try { const t = localStorage.getItem('tesseraTheme'); document.documentElement.dataset.theme = t === 'light' || t === 'dark' ? t : matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark'; } catch { document.documentElement.dataset.theme = 'dark'; }
   </script>
@@ -76,6 +76,12 @@
             <button id="loopUp" title="Next loop">+</button>
           </div>
         </div>
+      </section>
+
+      <section id="exploreSection" hidden>  <!-- Explore: its cells' colours, by a rule and a palette (see exploreLevels) -->
+        <h2 data-icon="eye">Colours</h2>
+        <div id="exploreRules" class="nav-shapes"></div>
+        <div id="explorePalettes" class="nav-shapes"></div>
       </section>
 
       <section id="antStartSection" hidden>  <!-- a creature's start: by its rule or by the digits (a turmite: by its rule only) -->
@@ -503,10 +509,10 @@
     </div>
   </main>
 
-  <script src="pixelarticons.js?v=0.5.62"></script>
-  <script src="punks.js?v=0.5.62"></script>
-  <script src="loops.js?v=0.5.62"></script>
-  <script src="emoji.js?v=0.5.62"></script>
-  <script src="main.js?v=0.5.62"></script>
+  <script src="pixelarticons.js?v=0.5.63"></script>
+  <script src="punks.js?v=0.5.63"></script>
+  <script src="loops.js?v=0.5.63"></script>
+  <script src="emoji.js?v=0.5.63"></script>
+  <script src="main.js?v=0.5.63"></script>
 </body>
 </html>

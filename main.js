@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.135';
+const VERSION = '0.5.136';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -6322,7 +6322,7 @@ function describe(base) {
 // step that closed them; or the tiles coloured by their visits (Heatmap, on cells only).
 const VIEW_3D = ['autoRotate', 'upright', 'perspective', 'light']; // a 3D view's: Default, Free, Upright, Auto-rotate, Perspective, Side light (Space-time's too)
 const DISPLAY_BY_TAB = {
-  '2D walks': ['heatmap', 'fill', 'translucent', 'cells', 'visits', 'digit'],
+  '2D walks': ['heatmap', 'fill', 'translucent', 'cells', 'visits', 'digit', 'grid'],
   '3D walks': ['colours', 'digit', 'grid', ...VIEW_3D],
   'Walks on surfaces': [
     'shape',
@@ -6338,7 +6338,7 @@ const DISPLAY_BY_TAB = {
   ],
   'Automata on the plane': ['colours', 'digit', 'mono', 'trail', 'grid'], // (Grid: its cells' outlines, see gpuPlane; Trail: Rewind's Blocks in its place)
   'Automata on surfaces': ['shape', 'colours', 'digit', 'mono', 'trail', 'grid', ...VIEW_3D, 'glass', 'ocean', 'cut'], // (Glass, Cut: the surfaces' tiles only, see gpuFrame, cutOn)
-  '2D spirals': ['heatmap', 'fill', 'translucent', 'cells', 'visits', 'digit'], // the 2D walks' menu, some of it greyed out
+  '2D spirals': ['heatmap', 'fill', 'translucent', 'cells', 'visits', 'digit', 'grid'], // the 2D walks' menu, some of it greyed out
   Elementary: ['colours', 'mono', 'domain', 'grid'], // (its cells never change once made: no Heatmap, no Trail; Domains its own)
   'Explore on the plane': ['grid'],
   'Explore on surfaces': ['shape', 'grid', ...VIEW_3D, 'glass', 'cut'], // (its view's only: its colours its own, see renderExplore)
@@ -25826,13 +25826,9 @@ function planeWalls(kind, W) {
 }
 // Behind the grid (grid layer, at each view): the sky or the page outside it (the grid itself, its page, its walls and its
 // outlines, see gpuPlane)
-// the plane's grid lines, faint: white over a dark sky, dark over a light one, else the page's grid colour
-const gridColour = () =>
-  darkSky()
-    ? 'rgba(255,255,255,0.06)'
-    : skyStops()
-      ? 'rgba(0, 0, 0, 0.08)'
-      : getComputedStyle(document.documentElement).getPropertyValue('--grid-line-color');
+// the 2D grid's lines (the walks', the spirals', Elementary's), as every grid's: the theme's edge colour at Grid's opacity
+// (see gridAlpha)
+const gridColour = () => `rgba(${EDGE_RGB.join(', ')}, ${gridAlpha()})`;
 function drawPlaneGrid() {
   layers.grid.clearRect(0, 0, canvasWidth, canvasHeight);
   paintSky();
@@ -41488,7 +41484,6 @@ const SKIES = {
   ], // dawn
 };
 const skyStops = () => (walk.is3d || walk.plane ? SKIES[themeName()] : null);
-const darkSky = () => skyStops() === SKIES.dark;
 // the underside of an open sheet (a torus unrolled, its inside): the foot of the other theme's sky (on a light page,
 // Twilight's; on a dark one, Dawn's)
 const undersideColour = () => (document.documentElement.dataset.theme === 'light' ? SKIES.dark : SKIES.light).at(-1)[1];

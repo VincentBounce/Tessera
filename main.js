@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.118';
+const VERSION = '0.5.119';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -44859,7 +44859,9 @@ function gpuPlane(paint) {
     rp.drawIndexed(D.planeCount);
   };
   cells(D.planeBase, 0);
+  cells(D.planeCol, 2);
   if (outline) {
+    // the grid over every cell, alive or not, as a surface's edges over its tiles
     rp.setPipeline(
       gpuDrawPipe('planeLines', {
         vertex: 'planeLinesV',
@@ -44876,7 +44878,6 @@ function gpuPlane(paint) {
     rp.setVertexBuffer(0, D.planeEdges);
     rp.draw(D.planeLines);
   }
-  cells(D.planeCol, 2);
   rp.end();
   device.queue.writeBuffer(D.uni, 0, D.words, 0, 512 * 3);
   device.queue.submit([enc.finish()]);
@@ -46876,10 +46877,10 @@ function applyTheme(theme) {
   gpuPalette();
   renderColourButtons();
   renderTeams(); // Life's colour blocks, in the theme's colours
+  renderHeadTiles(); // (Grid's opacities, the theme's)
   needsFull = statsDirty = true; // (Life's gauges and curve in the theme's colours too)
 }
 applyTheme(themeName());
-renderHeadTiles();
 // what lies over the view keeps its presses, double clicks and wheel (the view's: a drag, a recentre, a zoom): the animation
 // bar (its step slider), Display's box, how a rule works and the number (their text selected, their scroll), the axes (a click
 // a view: two quick ones were a recentre too, facing the walk's middle)

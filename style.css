@@ -1902,7 +1902,8 @@ button.active .bubble.active {
   display: flex;
   gap: 6px;
   align-items: flex-end;
-} /* the buttons where they were, open or not; the speed after them as one more (their gap, see .play-row) */
+} /* the buttons where they were, open or not; the speed after them as one more (their gap, see .play-row), to the card's right
+   edge (250 px at least: a battle's ranking may widen the card) */
 .player-main {
   flex: none;
 }
@@ -1916,8 +1917,7 @@ button.active .bubble.active {
   }
 }
 .player-side {
-  flex: none;
-  width: 250px;
+  flex: 1 0 250px;
   display: flex;
   flex-direction: column;
   justify-content: space-between;

@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.161';
+const VERSION = '0.5.162';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -6459,9 +6459,20 @@ const useful = (item, w) => shows(item, w) && !greyed(item, w);
 const LOOK_WHERE = {
   gradient: 'On a spiral, the line tells nothing.',
   visits: 'On a spiral, each cell is visited once only.',
+  get domain() {
+    return `Too many cells to measure (${formatNumber(DOMAINS_MOST / 1e6)} million at most): fewer generations.`;
+  },
+  get entropy() {
+    return `Too many cells to measure (${formatNumber(ENTROPY_MOST / 1e6)} million at most): fewer generations.`;
+  }, // (their caps declared further down: read when a look is greyed)
 };
 const lookWhyNot = (look, w) =>
-  (look === 'gradient' && greyed('line', w)) || (look === 'visits' && !useful('visits', w)) ? LOOK_WHERE[look] : '';
+  (look === 'gradient' && greyed('line', w)) ||
+  (look === 'visits' && !useful('visits', w)) ||
+  (look === 'domain' && elementaryCells() > DOMAINS_MOST) ||
+  (look === 'entropy' && elementaryCells() > ENTROPY_MOST)
+    ? LOOK_WHERE[look]
+    : '';
 function updateDisplayMenu() {
   const rows = {
     colours: 'coloursRow',
@@ -6720,7 +6731,8 @@ function relabelColours(variant) {
   });
   for (const v of ['cells', 'visits', 'digit', 'mono', 'domain', 'entropy'])
     byValue[v].hidden = !shows(v, tabVariant());
-  for (const v of ['gradient', 'visits', 'digit']) byValue[v].disabled = !!lookWhyNot(v, tabVariant()); // (Rainbow along a spiral, its Heatmap)
+  for (const v of ['gradient', 'visits', 'digit', 'domain', 'entropy'])
+    byValue[v].disabled = !!lookWhyNot(v, tabVariant()); // (Rainbow along a spiral, its Heatmap; Elementary's measures past their cells)
   if (sel.selectedOptions[0]?.hidden || sel.selectedOptions[0]?.disabled) {
     sel.value = Array.from(sel.options).find((o) => !o.hidden && !o.disabled).value; // the first one left
   }
@@ -21298,15 +21310,20 @@ function rowDefects(r, wrap) {
   for (let x = 0; x < W; x++) if (!regular[x]) out[x >> 4] |= 1 << (15 - (x & 15));
   return out;
 }
-// The most cells its Domains and Entropy measure (past them, drawn as Age)
-const MEASURE_MOST = 16e6;
+// The most cells of a run its Domains and Entropy measure, each about 3 seconds (Domains 181 ns a cell, its 32 periods;
+// Entropy 31 ns, its two passes): past them, their look greyed (see lookWhyNot)
+const DOMAINS_MOST = 16e6,
+  ENTROPY_MOST = 100e6;
+// its rows' width for G generations from a start (16 cells a word, as far as its cells can reach either way), and its cells
+const elementaryWidth = (G, start) => 16 * Math.ceil((2 * (G + (start === 'two' ? G >> 1 : 0)) + 1) / 16),
+  elementaryCells = (G = lengthAsked(), start = plane.start) => elementaryWidth(G, start) * (G + 1);
 // Its local entropy rate (Lizier, Prokopenko and Zomaya, 2008; the Entropy look): how unforeseen each cell is from its own
 // column's last ENTROPY_PAST cells (as Lizier's), −log₂ p(it | them), counted over the whole run: what repeats near 0, chaos about a bit, a
 // particle crossing a background more. Its rows made again twice (counted, then measured): each pixel's mean (B × B cells),
-// 0 to 1 bit (more: 1); null past MEASURE_MOST cells
+// 0 to 1 bit (more: 1); null past ENTROPY_MOST cells
 const ENTROPY_PAST = 16; // (8: rule 30's regular edge as unforeseen as its chaos, its stripes longer)
 function localEntropy(T, first, G, wrap, W, B, PW, PH) {
-  if (W * (G + 1) > MEASURE_MOST) return null;
+  if (W * (G + 1) > ENTROPY_MOST) return null;
   const n = first.length,
     counts = new Uint32Array(2 << ENTROPY_PAST); // (each column's past and its next cell)
   const run = (each) => {
@@ -21335,8 +21352,8 @@ function elementaryRowsOf(G, start, N, digits) {
   // (alone: in the page or in a worker, see elementaryReady)
   const wrap = start === 'digits',
     T = wolframTable(N);
-  const n = Math.ceil((2 * (G + (start === 'two' ? G >> 1 : 0)) + 1) / 16),
-    W = 16 * n,
+  const W = elementaryWidth(G, start),
+    n = W / 16,
     c = W >> 1,
     first = new Uint8Array(W);
   if (wrap)
@@ -21347,7 +21364,7 @@ function elementaryRowsOf(G, start, N, digits) {
     PW = Math.ceil(W / B),
     PH = Math.ceil((G + 1) / B);
   const counts = new Uint32Array(PW * PH),
-    breaks = W * (G + 1) <= MEASURE_MOST ? new Uint32Array(PW * PH) : null, // (its live cells that break their background: see rowDefects; none past MEASURE_MOST cells)
+    breaks = W * (G + 1) <= DOMAINS_MOST ? new Uint32Array(PW * PH) : null, // (its live cells that break their background: see rowDefects; none past DOMAINS_MOST cells)
     upTo = new Float64Array(G + 2),
     kept = [],
     entropy = localEntropy(T, wordsOf(first), G, wrap, W, B, PW, PH);
@@ -21478,7 +21495,7 @@ function elementaryPart(R, x0, x1, t0, t1, b = 1) {
   for (let t = from; t <= t1; t++) {
     if (t >= t0) {
       const at = Math.floor((t - t0) / b) * w,
-        defects = R.breaks && rowDefects(r, R.wrap); // (none past MEASURE_MOST cells: Domains not drawn)
+        defects = R.breaks && rowDefects(r, R.wrap); // (none past DOMAINS_MOST cells: Domains greyed)
       for (let i = x0 >> 4; i <= x1 >> 4; i++) {
         const live = r[i],
           wrong = defects ? live & defects[i] : 0;
@@ -42669,7 +42686,7 @@ function drawElementary(to) {
     look =
       ($('colourMode').value === 'entropy' && !R.entropy) || ($('colourMode').value === 'domain' && !R.breaks)
         ? 'gradient'
-        : $('colourMode').value; // (Entropy, Domains: up to MEASURE_MOST cells, else Age)
+        : $('colourMode').value; // (Entropy, Domains not measured: greyed, see lookWhyNot; Age meanwhile)
   // (every look opaque where it has live cells: each pixel its colour mixed with the page's by them; one with none clear)
   const word = ([r, g, b]) => (b << 16) | (g << 8) | r,
     rowColour = (t) => rgbCached(look === 'mono' ? LIFE_ALIVE : rainbowNow()[Math.floor((t * BANDS) / (R.G + 1))]),

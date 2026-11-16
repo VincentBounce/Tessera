@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.154';
+const VERSION = '0.5.155';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -7196,15 +7196,15 @@ function lifeLookPicture(look) {
   if (look === 'entropy') return bandPicture([g(0)], [g(1), g(0.8), g(0.9)]); // (what repeats blue, chaos red, as drawn)
   return heatRings(g);
 }
-// Elementary's run in small, 8 × 8 cells (Domains', Entropy's pictures): a background of stripes, a diagonal band across it, each
-// its colours in turn
+// Elementary's run in small, 8 × 8 cells (Domains', Entropy's pictures): a background of stripes, a diagonal band across it,
+// whole (no blank between), each its colours in turn
 function bandPicture(background, band) {
   const cells = [];
   for (let y = 0; y < 8; y++)
     for (let x = 0; x < 8; x++) {
       const across = x + y >= 5 && x + y <= 9 && x < 6,
         colours = across ? band : background;
-      if (across ? (7 * x + 3 * y) % 3 : (x + y) % 3 === 0 || (x + 2 * y) % 5 === 1)
+      if (across || (x + y) % 3 === 0 || (x + 2 * y) % 5 === 1)
         cells.push(
           `<rect x="${x}" y="${y}" width="1" height="1" fill="${colours[(5 * x + 3 * y) % colours.length]}"/>`,
         );

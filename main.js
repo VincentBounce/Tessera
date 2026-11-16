@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.134';
+const VERSION = '0.5.135';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -6339,7 +6339,7 @@ const DISPLAY_BY_TAB = {
   'Automata on the plane': ['colours', 'digit', 'mono', 'trail', 'grid'], // (Grid: its cells' outlines, see gpuPlane; Trail: Rewind's Blocks in its place)
   'Automata on surfaces': ['shape', 'colours', 'digit', 'mono', 'trail', 'grid', ...VIEW_3D, 'glass', 'ocean', 'cut'], // (Glass, Cut: the surfaces' tiles only, see gpuFrame, cutOn)
   '2D spirals': ['heatmap', 'fill', 'translucent', 'cells', 'visits', 'digit'], // the 2D walks' menu, some of it greyed out
-  Elementary: ['colours', 'mono', 'grid'], // (its cells never change once made: no Heatmap, no Trail)
+  Elementary: ['colours', 'mono', 'domain', 'grid'], // (its cells never change once made: no Heatmap, no Trail; Domains its own)
   'Explore on the plane': ['grid'],
   'Explore on surfaces': ['shape', 'grid', ...VIEW_3D, 'glass', 'cut'], // (its view's only: its colours its own, see renderExplore)
 };
@@ -6670,6 +6670,7 @@ function relabelColours(variant) {
         visits: 'Rainbow by number of visits',
         digit: 'One colour per digit',
         mono: 'One colour',
+        domain: '',
       }
     : {
         mono: two
@@ -6680,6 +6681,7 @@ function relabelColours(variant) {
             ? 'Live cells by how old they are, warm newborns to cold old ones + dying stages'
             : 'Live cells by how old they are, warm newborns to cold old ones + fading trail',
         digit: 'State changes',
+        domain: 'The background, what repeats, pale; what breaks it in gold (its domains and particles)',
         cells: '',
         visits: '',
       };
@@ -6706,14 +6708,14 @@ function relabelColours(variant) {
     return;
   }
   const order = life
-    ? ['mono', 'gradient', 'digit', 'cells', 'visits']
-    : ['gradient', 'cells', 'visits', 'digit', 'mono'];
+    ? ['mono', 'gradient', 'digit', 'domain', 'cells', 'visits']
+    : ['gradient', 'cells', 'visits', 'digit', 'mono', 'domain'];
   const byValue = Object.fromEntries(Array.from(sel.options, (o) => [o.value, o]));
   order.forEach((v) => {
     byValue[v].text = names[v];
     sel.append(byValue[v]);
   });
-  for (const v of ['cells', 'visits', 'digit', 'mono']) byValue[v].hidden = !shows(v, tabVariant());
+  for (const v of ['cells', 'visits', 'digit', 'mono', 'domain']) byValue[v].hidden = !shows(v, tabVariant());
   for (const v of ['gradient', 'visits', 'digit']) byValue[v].disabled = !!lookWhyNot(v, tabVariant()); // (Rainbow along a spiral, its Heatmap)
   if (sel.selectedOptions[0]?.hidden || sel.selectedOptions[0]?.disabled) {
     sel.value = Array.from(sel.options).find((o) => !o.hidden && !o.disabled).value; // the first one left
@@ -7027,7 +7029,7 @@ function renderColourButtons() {
   renderTrailButton();
   // a walk's (Space): Rainbow, Commands, as the looks of its cells
   const names = L
-    ? { mono: 'States', gradient: 'Age', digit: 'Heatmap' }
+    ? { mono: 'States', gradient: 'Age', digit: 'Heatmap', domain: 'Domains' }
     : { gradient: 'Path', cells: 'Cell path', visits: 'Heatmap', digit: 'Commands' };
   const picture = (v) => (L ? lifeLookPicture(v) : cellModePicture(v === 'gradient' ? 'cells' : v));
   const looks = Array.from(sel.options).filter((o) => !o.hidden && names[o.value]);
@@ -7185,6 +7187,11 @@ function lifeLookPicture(look) {
   if (look === 'mono')
     return lifeTeams > 1 ? swatch([LIFE_COLOURS[0], UNLIT, UNLIT, LIFE_COLOURS[1]]) : statesPicture(); // in colours: a red, a blue
   if (look === 'gradient') return swatch([g(1), g(0.5), g(0), LIFE_TRAIL[Math.floor(LIFE_TRAIL.length / 3)]]); // warm newborns to cold old cells
+  if (look === 'domain') {
+    const pale = faded(LIFE_ALIVE, 0.3, cssColour('--page-background')),
+      gold = cssColour('--accent-color');
+    return swatch([pale, gold, gold, pale]); // (the background pale, a defect across it in gold)
+  }
   return heatRings(g);
 }
 // a 2 × 2 swatch of four colours (a look's picture, Life's and a walk's)
@@ -21256,6 +21263,35 @@ function parseElementary(text) {
 // in KEEP (to draw a part near enough again, see elementaryPart); digits, its first row, its digits written over it (see drawOverlay)
 const ELEMENTARY_STARTS = ['cell', 'two', 'half', 'digits'],
   KEEP = 64;
+// Its background and its defects (Hanson and Crutchfield's domains and particles, 1992; the Domains look): a row's cells in
+// words (16 a word, its first cell bit 15), word i's cells that break the background's period p, unlike the cell p to their
+// left or to their right (p 0: no background, every cell its own)
+function periodBreaks(r, i, p, wrap) {
+  if (!p) return 0xffff;
+  const n = r.length,
+    at = (j) => (j >= 0 && j < n ? r[j] : wrap ? r[(j + n) % n] : 0),
+    w = r[i];
+  return (w ^ ((((at(i - 1) << 16) | w) >>> p) & 0xffff)) | (w ^ ((((w << 16) | at(i + 1)) >>> (16 - p)) & 0xffff));
+}
+// its background's period: the shift (1 to 16 cells) a row's cells keep most, in the rows after its first ones (a few
+// kept rows' worth), the shortest of those as good; 0 where none keeps 3 cells in 4 (no background: chaos)
+function backgroundPeriod(T, first, G, wrap) {
+  const n = first.length,
+    rate = new Float64Array(17);
+  let r = first.slice(),
+    next = new Uint16Array(n),
+    cells = 0;
+  for (let t = 0; t <= Math.min(G, 3 * KEEP); t++) {
+    if (t >= Math.min(G, 3 * KEEP) / 2) {
+      cells += 16 * n;
+      for (let p = 1; p <= 16; p++) for (let i = 0; i < n; i++) rate[p] += POP16[periodBreaks(r, i, p, wrap)];
+    }
+    wolframStep(T, r, next, 0, n - 1, wrap);
+    [r, next] = [next, r];
+  }
+  const best = Math.min(...rate.slice(1));
+  return best / cells > 0.25 ? 0 : rate.findIndex((v, p) => p && v <= best + 0.01 * cells);
+}
 function elementaryRowsOf(G, start, N, digits) {
   // (alone: in the page or in a worker, see elementaryReady)
   const wrap = start === 'digits',
@@ -21272,8 +21308,10 @@ function elementaryRowsOf(G, start, N, digits) {
     PW = Math.ceil(W / B),
     PH = Math.ceil((G + 1) / B);
   const counts = new Uint32Array(PW * PH),
+    breaks = new Uint32Array(PW * PH), // (its live cells that break its background: see periodBreaks)
     upTo = new Float64Array(G + 2),
-    kept = [];
+    kept = [],
+    period = backgroundPeriod(T, wordsOf(first), G, wrap);
   let r = wordsOf(first),
     next = new Uint16Array(n);
   for (let t = 0; t <= G; t++) {
@@ -21283,9 +21321,16 @@ function elementaryRowsOf(G, start, N, digits) {
     for (let i = 0; i < n; i++) {
       const w = r[i];
       if (!w) continue;
+      const b = w & periodBreaks(r, i, period, wrap);
       live += POP16[w];
-      if (B > 1) counts[at + Math.floor((16 * i) / B)] += POP16[w];
-      else for (let k = 0; k < 16; k++) counts[at + 16 * i + k] += (w >> (15 - k)) & 1;
+      if (B > 1) {
+        counts[at + Math.floor((16 * i) / B)] += POP16[w];
+        breaks[at + Math.floor((16 * i) / B)] += POP16[b];
+      } else
+        for (let k = 0; k < 16; k++) {
+          counts[at + 16 * i + k] += (w >> (15 - k)) & 1;
+          breaks[at + 16 * i + k] += (b >> (15 - k)) & 1;
+        }
     }
     upTo[t + 1] = upTo[t] + live;
     wolframStep(T, r, next, 0, n - 1, wrap);
@@ -21301,6 +21346,8 @@ function elementaryRowsOf(G, start, N, digits) {
     PW,
     PH,
     counts,
+    breaks,
+    period,
     upTo,
     kept,
     wrap,
@@ -21330,7 +21377,7 @@ function elementaryWorkerMain() {
     const t = performance.now(),
       R = elementaryRowsOf(...e.data);
     R.ms = performance.now() - t;
-    postMessage(R, [R.counts.buffer, R.upTo.buffer, ...R.kept.map((k) => k.buffer)]);
+    postMessage(R, [R.counts.buffer, R.breaks.buffer, R.upTo.buffer, ...R.kept.map((k) => k.buffer)]);
   };
 }
 function elementaryReady(then) {
@@ -21364,7 +21411,8 @@ function elementaryReady(then) {
 const elementaryRows = () => (elementaryReady(compute) ? elementaryMade : null); // (not made yet: all again once they are)
 // a part of its rows in view (x0 to x1, rows t0 to t1): again from the kept row above it, on its words and as many more each side
 // as rows walked (what lies past them cannot reach it); its live cells counted in blocks of b × b (b 1: its cells; 16 or more, a
-// word at a time, x0 a multiple of b), a row of blocks after another. partWork: its words stepped, what it costs
+// word at a time, x0 a multiple of b), a row of blocks after another, and those that break its background (see periodBreaks).
+// partWork: its words stepped, what it costs
 const partSpan = (R, x0, x1, t0, t1) => {
   // (the words its cone reaches from the row kept; a ring's (Digits) reaching an end: all of it, the other end its neighbour)
   const from = Math.floor(t0 / KEEP) * KEEP,
@@ -21383,19 +21431,30 @@ function elementaryPart(R, x0, x1, t0, t1, b = 1) {
     full = lo === 0 && hi === R.n - 1;
   const T = wolframTable(R.N),
     w = Math.ceil((x1 - x0 + 1) / b),
-    out = new Uint32Array(w * Math.ceil((t1 - t0 + 1) / b));
+    counts = new Uint32Array(w * Math.ceil((t1 - t0 + 1) / b)),
+    breaks = new Uint32Array(counts.length);
   let r = R.kept[k].slice(),
     next = new Uint16Array(R.n);
   for (let t = from; t <= t1; t++) {
     if (t >= t0) {
       const at = Math.floor((t - t0) / b) * w;
-      if (b >= 16) for (let i = x0 >> 4; i <= x1 >> 4; i++) out[at + Math.floor((16 * i - x0) / b)] += POP16[r[i]];
-      else for (let x = x0; x <= x1; x++) out[at + Math.floor((x - x0) / b)] += cellOf(r, x);
+      for (let i = x0 >> 4; i <= x1 >> 4; i++) {
+        const live = r[i],
+          wrong = live & periodBreaks(r, i, R.period, R.wrap);
+        if (b >= 16) {
+          counts[at + Math.floor((16 * i - x0) / b)] += POP16[live];
+          breaks[at + Math.floor((16 * i - x0) / b)] += POP16[wrong];
+        } else
+          for (let q = Math.max(0, x0 - 16 * i); q < 16 && 16 * i + q <= x1; q++) {
+            counts[at + Math.floor((16 * i + q - x0) / b)] += (live >> (15 - q)) & 1;
+            breaks[at + Math.floor((16 * i + q - x0) / b)] += (wrong >> (15 - q)) & 1;
+          }
+      }
     }
     wolframStep(T, r, next, lo, hi, R.wrap && full);
     [r, next] = [next, r];
   }
-  return out;
+  return { counts, breaks };
 }
 function parseRule(text) {
   if (/^\s*(M|Q2R)/i.test(text)) return parseBlocks(text);
@@ -42535,7 +42594,8 @@ const countUpTo = (sorted, n, v) => {
 // pixels are not so (finer or coarser: never a cell picked out of many, nor one pixel stretched) and quick enough (PART_MOST words
 // stepped; under blocks of 16 its cells counted one by one, PART_CELLS of them at most, else blocks of 16), kept while the view
 // stays; else its picture (B × B cells a pixel), smoothed only made smaller. Each row its rainbow (Age), or Life's live colour
-// (States)
+// (States); Domains: its background's cells pale, its defects in gold (see periodBreaks), a pixel the colour of most of its
+// cells
 const PART_MOST = 80e6,
   PART_CELLS = 32e6;
 function drawElementary(to) {
@@ -42543,18 +42603,23 @@ function drawElementary(to) {
     ctx = layers.path,
     { scale: s, ox, oy } = view,
     last = Math.min(to, R.G),
-    mono = $('colourMode').value === 'mono';
-  const rgb = (t) => rgbCached(mono ? LIFE_ALIVE : rainbowNow()[Math.floor((t * BANDS) / (R.G + 1))]);
-  const paint = (w, h, alpha, rowOf) => {
-    // (w × h pixels, each its opacity and its row)
+    look = $('colourMode').value;
+  const word = ([r, g, b]) => (b << 16) | (g << 8) | r,
+    rgb = (t) => word(rgbCached(look === 'mono' ? LIFE_ALIVE : rainbowNow()[Math.floor((t * BANDS) / (R.G + 1))])),
+    [background, defect] = [LIFE_ALIVE, cssColour('--accent-color')].map((c) => word(rgbCached(c)));
+  const paint = (w, h, counts, breaks, cells, rowOf) => {
+    // (w × h pixels, each its live cells of cells and its row; a pixel a word: its alpha, blue, green, red)
     const img = new ImageData(w, h),
-      px = new Uint32Array(img.data.buffer); // (a pixel a word: its alpha, blue, green, red)
+      px = new Uint32Array(img.data.buffer);
     for (let y = 0; y < h; y++) {
-      const [cr, cg, cb] = rgb(rowOf(y)),
-        c = (cb << 16) | (cg << 8) | cr;
+      const c = rgb(rowOf(y));
       for (let x = 0; x < w; x++) {
-        const a = alpha(x, y);
-        if (a) px[y * w + x] = ((a << 24) | c) >>> 0;
+        const live = counts[y * w + x],
+          wrong = breaks[y * w + x];
+        if (!live) continue;
+        const [a, colour] =
+          look !== 'domain' ? [live, c] : 2 * wrong >= live ? [wrong, defect] : [0.3 * (live - wrong), background]; // (the background pale)
+        px[y * w + x] = ((Math.round((255 * a) / cells) << 24) | colour) >>> 0;
       }
     }
     const cv = Object.assign(document.createElement('canvas'), { width: w, height: h });
@@ -42575,22 +42640,12 @@ function drawElementary(to) {
     t1 = Math.min(R.G, Math.ceil((canvasHeight - oy) / s));
   if (x1 < x0 || t1 < t0) return;
   if (b !== R.B && partWork(R, x0, x1, t0, t1) <= PART_MOST) {
-    const key = `${x0}|${x1}|${t0}|${t1}|${b}|${mono}|${LIFE_ALIVE}`;
+    const key = `${x0}|${x1}|${t0}|${t1}|${b}|${look}|${LIFE_ALIVE}`;
     if (R.part?.key !== key) {
-      const counts = elementaryPart(R, x0, x1, t0, t1, b),
+      const { counts, breaks } = elementaryPart(R, x0, x1, t0, t1, b),
         w = Math.ceil((x1 - x0 + 1) / b),
         h = Math.ceil((t1 - t0 + 1) / b);
-      R.part = {
-        key,
-        w,
-        h,
-        cv: paint(
-          w,
-          h,
-          (x, y) => Math.round((255 * counts[y * w + x]) / (b * b)),
-          (y) => t0 + y * b + (b >> 1),
-        ),
-      };
+      R.part = { key, w, h, cv: paint(w, h, counts, breaks, b * b, (y) => t0 + y * b + (b >> 1)) };
     }
     const h = Math.min(R.part.h, Math.ceil((last - t0 + 1) / b)); // (up to the row shown)
     if (h > 0)
@@ -42607,17 +42662,9 @@ function drawElementary(to) {
       );
     return;
   }
-  const key = `${mono}|${LIFE_ALIVE}`; // (its picture, once a look)
+  const key = `${look}|${LIFE_ALIVE}`; // (its picture, once a look)
   if (R.picture?.key !== key)
-    R.picture = {
-      key,
-      cv: paint(
-        R.PW,
-        R.PH,
-        (x, y) => Math.round((255 * R.counts[y * R.PW + x]) / (R.B * R.B)),
-        (y) => y * R.B + (R.B >> 1),
-      ),
-    };
+    R.picture = { key, cv: paint(R.PW, R.PH, R.counts, R.breaks, R.B * R.B, (y) => y * R.B + (R.B >> 1)) };
   const h = Math.min(R.PH, Math.ceil((last + 1) / R.B));
   ctx.imageSmoothingEnabled = R.B * s < 1; // (made smaller: its pixels averaged, no bands; larger: sharp)
   ctx.imageSmoothingQuality = 'high';
@@ -47511,6 +47558,7 @@ const LIFE_LOOKS = [
   ['mono', 'States'],
   ['gradient', 'Age'],
   ['digit', 'Heatmap'],
+  ['domain', 'Domains'],
 ]; // (Life's looks, see renderColourButtons)
 const CELL_MODES = [
   ['path', 'Path', 'The walk’s line in the rainbow along it, over its cells faded (along the edges, its line alone)'],

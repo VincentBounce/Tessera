@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.173';
+const VERSION = '0.5.174';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -3829,7 +3829,7 @@ const HULL_SOLIDS = {
     cells: 'Squares', // (as the rhombic dodecahedron's: a grid of squares laid on each rhombus)
     walks: true,
     cuts: ['tetrakis', 'halves'],
-    place: [1, 'Rhombic dodecahedron'],
+    place: [1, 'Stella octangula'], // (the most faces: 30, last)
     where:
       "a rhombic triacontahedron, each of its 30 golden rhombi a grid of squares (the icosidodecahedron's dual: 3 or 5 rhombi round each corner)",
   },
@@ -9803,9 +9803,9 @@ const LIFE_GRIDS = [
     },
   ],
   [
-    'lifeIcosahedronPenrose',
+    'lifeDodecahedronPenrose',
     'Surfaces',
-    'Sphere',
+    'Dodecahedron',
     'penrose',
     {
       lattice: 'surface',
@@ -10040,11 +10040,11 @@ for (const [k, S] of Object.entries(HULL_SOLIDS)) {
 }
 // the sphere's quadrilaterals' turtle on their cells, as the cube's (4 sides: 3 a digit, left, on or right, on: out by the side
 // across): its kites, Penrose's rhombi; on cells only (their corners 3 to 7 edges: no left, on and right along them)
-for (const [tiling, surface] of [
-  ['Kites', 'icosaKite'],
-  ['Penrose', 'penroseSphere'],
+for (const [shape, tiling, surface] of [
+  ['Sphere', 'Kites', 'icosaKite'],
+  ['Dodecahedron', 'Penrose', 'penroseSphere'],
 ]) {
-  const w = variantName('Walk', 'Sphere', tiling, 'Turtle', 'cells'),
+  const w = variantName('Walk', shape, tiling, 'Turtle', 'cells'),
     where = `on a sphere of ${tiling === 'Kites' ? 'kites' : "Penrose's rhombi"}`,
     { ant, twin, initial, ...cube } = VARIANTS[variantName('Walk', 'Cube', 'Squares', 'Turtle', 'cells')]; // (its own: no ant, no edges, its sizes)
   VARIANTS[w] = {
@@ -10054,8 +10054,8 @@ for (const [tiling, surface] of [
     tail: '',
     label: `Sphere of ${tiling.toLowerCase()} — base 3 (left / forward / right)`,
   };
-  VARIANT_ICONS[w] = VARIANT_ICONS[variantName('Life', 'Sphere', tiling)];
-  NAV[w] = ['Walk', 'Surfaces', 'Sphere', 'Turtle', 'cells'];
+  VARIANT_ICONS[w] = VARIANT_ICONS[variantName('Life', shape, tiling)];
+  NAV[w] = ['Walk', 'Surfaces', shape, 'Turtle', 'cells'];
 }
 // The surfaces' turtles by a rule too, declared by their tiles' network (net: its commands; on cells a command's edge by
 // construction, see cellTurn) and their words (where, its note tail); along the edges, their network's turns, one per command
@@ -10234,7 +10234,8 @@ const SHAPE_SHORT = {
   'Stella octangula': 'Stella',
   Tetrahedron: 'Tetra',
   Octahedron: 'Octa',
-  Dodecahedron: 'Dodeca',
+  Dodecahedron: 'Dode sph',
+  Sphere: 'Ico sph',
   ...Object.fromEntries(Object.values(HULL_SOLIDS).map(({ name, short }) => [name, short])),
 };
 const shapeLabel = (shape) => SHAPE_SHORT[shape] ?? shape;
@@ -10452,7 +10453,8 @@ const FAMILIES = [
     ],
   })),
   // the volumes of triangles, one menu: Hexagons (the sphere's its own, with its walks; the solids' folded over their edges,
-  // see hexSolidMesh), Triangles, Kites (each triangle cut in 3), then the sphere's Twisted and Penrose
+  // see hexSolidMesh), Triangles, Kites (each triangle cut in 3), then the sphere's Twisted, the dodecahedron's Penrose (its
+  // rhombi laid on its faces, see penroseSphereMesh)
   ...[
     ['Sphere', 'icosa'],
     ['Tetrahedron', 'tetra'],
@@ -10461,6 +10463,7 @@ const FAMILIES = [
     ['Dodecahedron', 'dodeca'],
   ].map(([name, k]) => {
     const sphere = k === 'icosa',
+      penrose = k === 'dodeca',
       walks = (tiling) => ['edges', 'cells'].map((side) => variantName('Walk', name, tiling, 'Turtle', side)),
       ant = (tiling) => [variantName('Ant', name, tiling, null, 'cells')].filter((w) => VARIANTS[w]);
     return {
@@ -10473,11 +10476,9 @@ const FAMILIES = [
           variantName('Life', name, 'Kites'),
         ],
         [...walks('Hexagons'), ...ant('Hexagons'), variantName('Life', name, 'Hexagons')],
-        ...(sphere
-          ? [
-              [variantName('Life', name, 'Twisted')],
-              [variantName('Walk', name, 'Penrose', 'Turtle', 'cells'), variantName('Life', name, 'Penrose')],
-            ]
+        ...(sphere ? [[variantName('Life', name, 'Twisted')]] : []),
+        ...(penrose
+          ? [[variantName('Walk', name, 'Penrose', 'Turtle', 'cells'), variantName('Life', name, 'Penrose')]]
           : []),
       ],
       tabs: [
@@ -10499,8 +10500,12 @@ const FAMILIES = [
                 'Twisted',
                 'Twisted: the hexagons turned 15°, a triangle between each three (and 12 pentagons)',
               ],
+            ]
+          : []),
+        ...(penrose
+          ? [
               [
-                4,
+                3,
                 false,
                 'penrose',
                 'Penrose',
@@ -12556,7 +12561,7 @@ const SURFACE_ANTS = {
         .filter((S) => S.walks)
         .map((S) => [S.name, S.cells]),
       ['Sphere', 'Kites'],
-      ['Sphere', 'Penrose'],
+      ['Dodecahedron', 'Penrose'],
     ].map(([place, tiling]) => [
       variantName('Ant', place, tiling, null, 'cells'),
       [variantName('Walk', place, tiling, 'Turtle', 'cells'), place],
@@ -14705,10 +14710,9 @@ for (const [life, n] of Object.entries(NAV))
     ['Klein bottle', 1, 'Möbius strip'],
     ['Cube', 1, 'Tetrahedron'],
     ['Hexagons', 1, 'Kites'],
-    ...Object.values(HULL_SOLIDS).map(({ name, place: [after, other] }) => [name, after, other]),
     ['Sphere', 1, 'Dodecahedron'],
-    ['Sphere', 1, 'Rhombic triacontahedron'], // (the icosahedron among the polyhedra: after the rhombic solids where they are, else the dodecahedron)
     ['Stella octangula', 1, 'Sphere'],
+    ...Object.values(HULL_SOLIDS).map(({ name, place: [after, other] }) => [name, after, other]), // (after: the regular ones by their faces, see place)
     ['Globe', 1, 'Sphere'],
   ]; // (1 after, 0 before)
   for (const [shape, after, other] of moves)

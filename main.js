@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.123';
+const VERSION = '0.5.124';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -30548,11 +30548,11 @@ function partPlaces(r, K, mirror, mixed) {
   }
   const L = walk.life,
     g = walk.geo,
-    n = L.seed.length,
-    [cols, rows] = TEAM_GRID[K];
+    n = L.seed.length;
   const parts = Array.from({ length: K }, () => []);
   if (walk.plane) {
-    const F = planeFrame(),
+    const [cols, rows] = TEAM_GRID[K], // (the plane's blocks only: a solid's counts its own, see solidCounts)
+      F = planeFrame(),
       block = (t) => F.block(t, cols, rows);
     if (wallSlices(K)) {
       const { part } = planeSlices(K);

@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.63';
+const VERSION = '0.5.64';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -39914,16 +39914,17 @@ const sameSetup = (a, b, apart = ['version']) =>
 function getSetup() {
   const w = tabVariant(),
     variant = VARIANTS[w],
+    life = variant.life && !variant.explore, // (Explore's grids Life's, none of its rule nor start: its colours, see exploreLook)
     s = {
       ...variantWords(w),
-      ...(readsDigits(w) ? { [variant.life ? 'popNumber' : 'walkNumberA']: formulaInUse } : {}),
+      ...(readsDigits(w) ? { [life ? 'popNumber' : 'walkNumberA']: formulaInUse } : {}),
     };
   if (!variant.life || gensShown()) s.maxSteps = lengthAsked(); // (the length asked: digits, or generations)
   if (variant.lattice === 'surface') s.gridSize = $('gridSizeField').value;
   if (variantStarts() && startsWayNow() === 'symmetric' && startNo() > 1) s.walkStart = startNo(); // (Symmetric's: Centred and Random place their own)
   if (torusTurned && TURNED[variant.surface]) s.gridTurned = 1;
-  if (variant.life) s.playRule = ruleBody($('lifeRule').value);
-  if (variant.life && !variant.margolus && lifeTeams > 1) s.teams = lifeTeams;
+  if (life) s.playRule = ruleBody($('lifeRule').value);
+  if (life && !variant.margolus && lifeTeams > 1) s.teams = lifeTeams;
   if (battleOn()) {
     // (a walk's Duel or Trio, as Life's: its teams; B's number, C's)
     s.teams = walkTeams;
@@ -39938,8 +39939,8 @@ function getSetup() {
         .map((i) => String.fromCharCode(97 + i))
         .join(''); // (its starts' order: so=acb)
   }
-  if (variant.life && teamsMix && lifeTeams > 1) s.popMixed = 1;
-  if (variant.life && newcomerOn()) s.popNewcomer = 1; // (Newcomer)  // (Mixed, kept where its zone greys it: the other zones' fits by it, see huntFits)
+  if (life && teamsMix && lifeTeams > 1) s.popMixed = 1;
+  if (life && newcomerOn()) s.popNewcomer = 1; // (Newcomer)  // (Mixed, kept where its zone greys it: the other zones' fits by it, see huntFits)
   if (variant.plane) {
     // the grid's side, dead edges (e=1), its start ("random.30.7", "draw" with p=, "digits"), its symmetry (y=)
     if (!variant.elementary) s.gridSize = plane.side; // (Elementary's: none, see elementaryRows)
@@ -39950,15 +39951,17 @@ function getSetup() {
     if (plane.start === 'draw' && population.size) s.popCells = populationRle(population);
     if (spaceTimeOn()) s.popStacked = 1; // (Space-time)
   }
-  if (variant.life && !variant.loops)
+  if (life && !variant.loops)
     Object.assign(
       s,
       popWords(plane.start === 'random' ? zonePop() : plane.start === 'text' ? `text.${plane.text}` : plane.start),
     ); // its start (a surface's no Draw)
-  if (variant.life && !variant.loops && plane.start === 'text' && plane.font !== 'sans') s.popFont = plane.font; // (its font)
+  if (life && !variant.loops && plane.start === 'text' && plane.font !== 'sans') s.popFont = plane.font; // (its font)
   if (variant.net && walkRuleOf(variant) !== firstWalkRule(variant)) s.playRule = walkRuleOf(variant); // (a walk's rule: none, its own)
   if (variant.antOf) s.playRule = `${antByDigits ? 'digits ' : ''}${antRuleOf(w)}`; // ("digits 1R0 0L0": by the digits)
   if (variant.worm) s.playRule = worm.byDigits ? 'digits' : worm.rule;
+  if (variant.explore && exploreLook.rule !== EXPLORE_RULES[0][0]) s.exploreRule = exploreLook.rule;
+  if (variant.explore && exploreLook.palette) s.explorePalette = linkWord(EXPLORE_PALETTES[exploreLook.palette][0]); // (by its name: abyss)
   if (championCode) s.popFound = championCode;
   if (walk.variant === w && stepShown !== (lifeTime() ? 0 : firstShown())) s.step = stepShown; // (the step or generation shown, when not the one it opens at)
   s.version = setupFrom && sameSetup(setupFrom.setup, s, ['version', 'step']) ? setupFrom.v : VERSION; // (last: the version it was made with, see setupFrom)
@@ -39987,6 +39990,11 @@ function applySetup(s) {
   battleRule = walkTeams > 1 && ruled > 0 ? ruled : 0; // (none: the first, Land edges 1)
   battleStartsWay = STARTS_WAYS.some(([way]) => way === s.battleStarts) ? s.battleStarts : 'symmetric';
   battleSeed = Number(s.battleDraw) || 1;
+  exploreLook.rule = EXPLORE_RULES.some(([key]) => key === s.exploreRule) ? s.exploreRule : EXPLORE_RULES[0][0];
+  exploreLook.palette = Math.max(
+    0,
+    EXPLORE_PALETTES.findIndex(([name]) => linkWord(name) === s.explorePalette),
+  ); // (none: the first)
   battleOrder = s.battleOrder ? [...String(s.battleOrder)].map((c) => c.charCodeAt(0) - 97) : null; // (so=acb: see startsOrder)
   RIVALS.forEach((id, j) => {
     $(id).value = s[`walkNumber${id.slice(-1)}`] ?? RIVAL_FIRSTS[j];

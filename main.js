@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.137';
+const VERSION = '0.5.138';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -42601,7 +42601,11 @@ function drawElementary(to) {
     look = $('colourMode').value;
   const word = ([r, g, b]) => (b << 16) | (g << 8) | r,
     rgb = (t) => word(rgbCached(look === 'mono' ? LIFE_ALIVE : rainbowNow()[Math.floor((t * BANDS) / (R.G + 1))])),
-    [background, defect] = [LIFE_ALIVE, cssColour('--accent-color')].map((c) => word(rgbCached(c)));
+    page = rgbCached(cssColour('--page-background')),
+    [background, defect] = [faded(LIFE_ALIVE, 0.3, cssColour('--page-background')), cssColour('--accent-color')].map(
+      rgbCached,
+    ), // (Domains: opaque, each pixel its colour mixed with the page's by its live cells, its dead ones the page's)
+    mixed = (c, share) => word(page.map((v, d) => Math.round(v + (c[d] - v) * share)));
   const paint = (w, h, counts, breaks, cells, rowOf) => {
     // (w × h pixels, each its live cells of cells and its row; a pixel a word: its alpha, blue, green, red)
     const img = new ImageData(w, h),
@@ -42611,10 +42615,9 @@ function drawElementary(to) {
       for (let x = 0; x < w; x++) {
         const live = counts[y * w + x],
           wrong = breaks[y * w + x];
-        if (!live) continue;
-        const [a, colour] =
-          look !== 'domain' ? [live, c] : 2 * wrong >= live ? [wrong, defect] : [0.3 * (live - wrong), background]; // (the background pale)
-        px[y * w + x] = ((Math.round((255 * a) / cells) << 24) | colour) >>> 0;
+        if (look === 'domain')
+          px[y * w + x] = ((255 << 24) | mixed(2 * wrong >= live && live ? defect : background, live / cells)) >>> 0;
+        else if (live) px[y * w + x] = ((Math.round((255 * live) / cells) << 24) | c) >>> 0;
       }
     }
     const cv = Object.assign(document.createElement('canvas'), { width: w, height: h });

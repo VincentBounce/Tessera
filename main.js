@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.110';
+const VERSION = '0.5.111';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -45400,10 +45400,10 @@ function drawActivity() {
     }
 }
 // One colour: fixed gauges of how it goes, not of a record, a row each: in gold as the curve and its mark (see drawActivity),
-// alive (against the most) and the most alive at once (and when, against the grid); in blue, its order (see orderOf) and the
-// most ordered so far (and when); then its turnover, this generation's births and deaths against the cells alive before and
-// after (100 %: every cell changes; 0: nothing moves), the cells ever alive (against the grid), its growth, births less
-// deaths, in figures (a bar for it swung too much)
+// alive (against the most) and the most alive at once (and when, against the grid); in violet, the cells ever alive (against
+// the grid); in blue, its order (see orderOf) and the most ordered so far (and when); then its turnover, this generation's
+// births and deaths against the cells alive before and after (100 %: every cell changes; 0: nothing moves), its growth,
+// births less deaths, in figures (a bar for it swung too much)
 // a generation of the run in view, as a link, always (the one shown too: one look, the same everywhere): clicked, it goes
 // there (see seekTo: a reversible one's by its rule, Life's played again from its start)
 const genLink = (g, text = `${walk.life ? 'gen' : 'step'} ${formatNumber(g)}`, kind = '') =>
@@ -45439,15 +45439,15 @@ function renderGauges(L) {
       `<b>${varies ? meanText(avg[1]) : formatNumber(L.aliveCount)}</b>`,
     ],
     ['Peak alive', gold, P.alive / n, `${formatNumber(P.alive)} · ${genLink(P.aliveGen)}`],
-    ['Order', blue, L.order, `${Math.round(100 * L.order)} %`],
-    ['Peak order', blue, P.order, `${Math.round(100 * P.order)} % · ${genLink(P.orderGen)}`],
-    ['Turnover', null, turnover, `${Math.round(100 * turnover)} %`],
     [
       'Ever alive',
       'var(--sweet-spot-color)', // (violet, as the Heatmap's middle)
       L.everAlive / n,
       `<span title="${formatNumber(L.everAlive)} of ${formatNumber(n)} cells alive at least once">${formatNumber(L.everAlive)} · ${Math.round((100 * L.everAlive) / n)} %</span>`,
     ], // (its share of the grid, the cells reached: what Hunt › Reach all hunts)
+    ['Order', blue, L.order, `${Math.round(100 * L.order)} %`],
+    ['Peak order', blue, P.order, `${Math.round(100 * P.order)} % · ${genLink(P.orderGen)}`],
+    ['Turnover', null, turnover, `${Math.round(100 * turnover)} %`],
     ['Growth', null, null, `${b - d > 0 ? '+' : b < d ? '−' : ''}${formatNumber(Math.abs(b - d))} a gen`],
   ];
   paintGauges(rows);

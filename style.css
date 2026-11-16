@@ -1918,7 +1918,6 @@ button.active .bubble.active {
 .player-side {
   flex: none;
   width: 250px;
-  margin-left: auto;
   display: flex;
   flex-direction: column;
   justify-content: space-between;

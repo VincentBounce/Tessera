@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.170';
+const VERSION = '0.5.171';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -6396,7 +6396,11 @@ const DISPLAY_DEFAULTS = {
   ], // (by its shape, see SHAPE_DEFAULTS)
   light: ['light', 'open', true],
   glass: ['glass', 'open', false],
-  grid: ['gridLines', 'tab', (variant, w) => (variant.explore ? 0 : NAV[w][1].startsWith('2D') ? 1 : 2)], // (its lines Faint in 2D, Medium in 3D; Explore's colours alone, no seams drawn over them: see GRID_LINES)
+  grid: [
+    'gridLines',
+    ['tab', 'exploreRule'],
+    (variant, w) => (variant.explore ? (exploreLook.rule === 'kind' ? 2 : 0) : NAV[w][1].startsWith('2D') ? 1 : 2),
+  ], // (its lines Faint in 2D, Medium in 3D; Explore's colours alone, no seams drawn over them, but its kinds of tile's, Medium: see GRID_LINES)
   trail: ['lifeTrail', 'lifeTeams', () => lifeTeams === 1], // (Life's Trail: on in Solo, two states, off in teams; when the teams change)
   ocean: ['ocean', 'battle', () => battleOn() && NAV[tabVariant()][0] === 'Walk'], // (on in a walk's battle on a surface, as long as none picks it)
   cut: [null, 'open', 0],
@@ -6408,7 +6412,7 @@ const DISPLAY_DEFAULTS = {
 // its settings that come back at `at`: each box set, checked or valued
 function applyDefaults(at) {
   for (const [key, [id, when]] of Object.entries(DISPLAY_DEFAULTS)) {
-    if (when !== at || !id) continue; // (one with no box: read where it is used, see defaultOf)
+    if (![when].flat().includes(at) || !id) continue; // (one with no box: read where it is used, see defaultOf; when: one moment or several)
     const v = defaultOf(key, tabVariant());
     if (typeof v === 'boolean') $(id).checked = v;
     else $(id).value = v;
@@ -21922,6 +21926,7 @@ const facedGrid = (w) => {
 function renderExplore() {
   const pick = (key, value) => () => {
     exploreLook[key] = value;
+    if (key === 'rule') applyDefaults('exploreRule'); // (its grid: see DISPLAY_DEFAULTS)
     compute();
   };
   $('exploreRules').replaceChildren(

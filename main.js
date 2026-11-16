@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.142';
+const VERSION = '0.5.143';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -25466,6 +25466,7 @@ function renderPlaneRow() {
     else setTile(b, { on });
   }
   $('startTextInput').value = plane.text; // (its words, on any grid)
+  syncTextDraw();
   $('startTextInput').style.setProperty('--text-start-font', TEXT_FONTS[plane.font][1]); // (at rest, in its font, see style.css)
   for (const b of $('textFonts').querySelectorAll('button')) setTile(b, { on: b.dataset.font === plane.font });
   for (const r of $('startDraw').querySelectorAll('#startCells, #brushTurns, .draw-row, #pngTools')) r.hidden = !kind; // the start's cells (Clear), the turns, the colours: to draw, on the plane (a surface's Draw: its patterns to see only)
@@ -46721,7 +46722,16 @@ $('textFonts').append(
     }),
   ),
 );
-// Text's lines: Enter a new line; drawn on a change (↵, a click outside, or ⌘ Enter: see the fields' keys)
+// Text's lines: Enter a new line; drawn on a change (Draw under them, a click outside, or ⌘ Enter: see the fields' keys).
+// Draw: greyed while its words are those drawn; pressed, the field left (its change: drawn), the field's focus kept till then
+function syncTextDraw() {
+  setTile($('textDraw'), {
+    greyed: ($('startTextInput').value.trim() || APP_TITLE) === plane.text ? 'These words are drawn already.' : '',
+  });
+}
+$('startTextInput').addEventListener('input', syncTextDraw);
+$('textDraw').addEventListener('mousedown', (e) => e.preventDefault());
+$('textDraw').addEventListener('click', () => $('startTextInput').blur());
 $('startTextInput').addEventListener('change', () => {
   plane.text = $('startTextInput').value.trim() || APP_TITLE;
   compute();

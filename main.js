@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.152';
+const VERSION = '0.5.153';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -42618,7 +42618,7 @@ const countUpTo = (sorted, n, v) => {
   }
   return lo;
 };
-// Elementary's rows (see elementaryRows), up to the one shown, on the walk's layer, each pixel as opaque as its cells are alive:
+// Elementary's rows (see elementaryRows), up to the one shown, on the walk's layer, each pixel its colour mixed with the page's by its live cells (opaque):
 // the part in view again at about a cell a screen pixel (b × b cells, b a power of 2; see elementaryPart) when its picture's
 // pixels are not so (finer or coarser: never a cell picked out of many, nor one pixel stretched) and quick enough (PART_MOST words
 // stepped; under blocks of 16 its cells counted one by one, PART_CELLS of them at most, else blocks of 16), kept while the view
@@ -42636,29 +42636,33 @@ function drawElementary(to) {
       ($('colourMode').value === 'entropy' && !R.entropy) || ($('colourMode').value === 'domain' && !R.breaks)
         ? 'gradient'
         : $('colourMode').value; // (Entropy, Domains: up to MEASURE_MOST cells, else Age)
+  // (every look opaque: each pixel its colour mixed with the page's by its live cells, its dead ones the page's)
   const word = ([r, g, b]) => (b << 16) | (g << 8) | r,
-    rgb = (t) => word(rgbCached(look === 'mono' ? LIFE_ALIVE : rainbowNow()[Math.floor((t * BANDS) / (R.G + 1))])),
+    rowColour = (t) => rgbCached(look === 'mono' ? LIFE_ALIVE : rainbowNow()[Math.floor((t * BANDS) / (R.G + 1))]),
     page = rgbCached(cssColour('--page-background')),
     [background, defect] = [faded(LIFE_ALIVE, 0.3, cssColour('--page-background')), cssColour('--accent-color')].map(
       rgbCached,
-    ), // (Domains: opaque, each pixel its colour mixed with the page's by its live cells, its dead ones the page's)
+    ), // (Domains')
     mixed = (c, share) => word(page.map((v, d) => Math.round(v + (c[d] - v) * share))),
-    rainbow = rainbowNow().map(rgbCached); // (Entropy: its colours, low to high, from the page)
+    rainbow = rainbowNow().map(rgbCached); // (Entropy's, low to high)
   const paint = (w, h, counts, breaks, cells, rowOf) => {
     // (w × h pixels, each its live cells of cells and its row; a pixel a word: its alpha, blue, green, red)
     const img = new ImageData(w, h),
       px = new Uint32Array(img.data.buffer);
     for (let y = 0; y < h; y++) {
-      const c = rgb(rowOf(y));
+      const row = rowColour(rowOf(y));
       for (let x = 0; x < w; x++) {
-        const live = counts[y * w + x],
-          wrong = breaks[y * w + x];
-        if (look === 'entropy') {
-          const v = R.entropy[y * w + x];
-          px[y * w + x] = ((255 << 24) | mixed(rainbow[Math.round(v * (rainbow.length - 1))], live / cells)) >>> 0; // (its live cells drawn, coloured by it)
-        } else if (look === 'domain')
-          px[y * w + x] = ((255 << 24) | mixed(2 * wrong >= live && live ? defect : background, live / cells)) >>> 0;
-        else if (live) px[y * w + x] = ((Math.round((255 * live) / cells) << 24) | c) >>> 0;
+        const at = y * w + x,
+          live = counts[at],
+          colour =
+            look === 'entropy'
+              ? rainbow[Math.round(R.entropy[at] * (rainbow.length - 1))]
+              : look === 'domain'
+                ? 2 * breaks[at] >= live && live
+                  ? defect
+                  : background
+                : row;
+        px[at] = ((255 << 24) | mixed(colour, live / cells)) >>> 0;
       }
     }
     const cv = Object.assign(document.createElement('canvas'), { width: w, height: h });

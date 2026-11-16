@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.147';
+const VERSION = '0.5.148';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -21272,34 +21272,23 @@ function parseElementary(text) {
 // in KEEP (to draw a part near enough again, see elementaryPart); digits, its first row, its digits written over it (see drawOverlay)
 const ELEMENTARY_STARTS = ['cell', 'two', 'half', 'digits'],
   KEEP = 64;
-// Its background and its defects (Hanson and Crutchfield's domains and particles, 1992; the Domains look): a row's cells in
-// words (16 a word, its first cell bit 15), word i's cells that break the background's period p, unlike the cell p to their
-// left or to their right (p 0: no background, every cell its own)
-function periodBreaks(r, i, p, wrap) {
-  if (!p) return 0xffff;
+// Its backgrounds and their defects (Hanson and Crutchfield's domains and particles, 1992, each region its own: the empty one,
+// an ether…; the Domains look): a row's cells each in a background where a period p (1 to 32) holds round it, every cell from
+// p before it to it alike to the one p further; else a defect. Its defects as its words (16 a word, its first cell bit 15)
+function rowDefects(r, wrap) {
   const n = r.length,
-    at = (j) => (j >= 0 && j < n ? r[j] : wrap ? r[(j + n) % n] : 0),
-    w = r[i];
-  return (w ^ ((((at(i - 1) << 16) | w) >>> p) & 0xffff)) | (w ^ ((((w << 16) | at(i + 1)) >>> (16 - p)) & 0xffff));
-}
-// its background's period: the shift (1 to 16 cells) a row's cells keep most, in the rows after its first ones (a few
-// kept rows' worth), the shortest of those as good; 0 where none keeps 3 cells in 4 (no background: chaos)
-function backgroundPeriod(T, first, G, wrap) {
-  const n = first.length,
-    rate = new Float64Array(17);
-  let r = first.slice(),
-    next = new Uint16Array(n),
-    cells = 0;
-  for (let t = 0; t <= Math.min(G, 3 * KEEP); t++) {
-    if (t >= Math.min(G, 3 * KEEP) / 2) {
-      cells += 16 * n;
-      for (let p = 1; p <= 16; p++) for (let i = 0; i < n; i++) rate[p] += POP16[periodBreaks(r, i, p, wrap)];
+    W = 16 * n,
+    c = Uint8Array.from({ length: W }, (_, x) => cellOf(r, x)),
+    at = (x) => (x < W ? c[x] : wrap ? c[x - W] : 0),
+    regular = new Uint8Array(W),
+    out = new Uint16Array(n);
+  for (let p = 1; p <= 32; p++)
+    for (let x = 0, last = -Infinity; x < W; x++) {
+      if (c[x] !== at(x + p)) last = x; // (the last cell unlike the one p further)
+      if (last < x - p) regular[x] = 1;
     }
-    wolframStep(T, r, next, 0, n - 1, wrap);
-    [r, next] = [next, r];
-  }
-  const best = Math.min(...rate.slice(1));
-  return best / cells > 0.25 ? 0 : rate.findIndex((v, p) => p && v <= best + 0.01 * cells);
+  for (let x = 0; x < W; x++) if (!regular[x]) out[x >> 4] |= 1 << (15 - (x & 15));
+  return out;
 }
 // Its local statistical complexity (Shalizi, Haslinger, Rouquier, Klinkner and Moore, 2006; the Complexity look): each cell's
 // past light cone (itself and the 3 + 5 + 7 cells above it that reach it, 16 bits) and future one (the 3 + 5 below it that
@@ -21374,10 +21363,9 @@ function elementaryRowsOf(G, start, N, digits) {
     PW = Math.ceil(W / B),
     PH = Math.ceil((G + 1) / B);
   const counts = new Uint32Array(PW * PH),
-    breaks = new Uint32Array(PW * PH), // (its live cells that break its background: see periodBreaks)
+    breaks = W * (G + 1) <= CONE_MOST ? new Uint32Array(PW * PH) : null, // (its live cells that break their background: see rowDefects; none past CONE_MOST cells)
     upTo = new Float64Array(G + 2),
     kept = [],
-    period = backgroundPeriod(T, wordsOf(first), G, wrap),
     complexity = lightConeComplexity(T, wordsOf(first), G, wrap, W, B, PW, PH);
   let r = wordsOf(first),
     next = new Uint16Array(n);
@@ -21385,18 +21373,19 @@ function elementaryRowsOf(G, start, N, digits) {
     if (t % KEEP === 0) kept.push(r.slice());
     const at = Math.floor(t / B) * PW;
     let live = 0;
+    const defects = breaks && rowDefects(r, wrap);
     for (let i = 0; i < n; i++) {
       const w = r[i];
       if (!w) continue;
-      const b = w & periodBreaks(r, i, period, wrap);
+      const b = defects ? w & defects[i] : 0;
       live += POP16[w];
       if (B > 1) {
         counts[at + Math.floor((16 * i) / B)] += POP16[w];
-        breaks[at + Math.floor((16 * i) / B)] += POP16[b];
+        if (breaks) breaks[at + Math.floor((16 * i) / B)] += POP16[b];
       } else
         for (let k = 0; k < 16; k++) {
           counts[at + 16 * i + k] += (w >> (15 - k)) & 1;
-          breaks[at + 16 * i + k] += (b >> (15 - k)) & 1;
+          if (breaks) breaks[at + 16 * i + k] += (b >> (15 - k)) & 1;
         }
     }
     upTo[t + 1] = upTo[t] + live;
@@ -21414,7 +21403,6 @@ function elementaryRowsOf(G, start, N, digits) {
     PH,
     counts,
     breaks,
-    period,
     complexity,
     upTo,
     kept,
@@ -21445,7 +21433,7 @@ function elementaryWorkerMain() {
     const t = performance.now(),
       R = elementaryRowsOf(...e.data);
     R.ms = performance.now() - t;
-    postMessage(R, [R.counts.buffer, R.breaks.buffer, R.upTo.buffer, ...R.kept.map((k) => k.buffer)]); // (its complexity copied)
+    postMessage(R, [R.counts.buffer, R.upTo.buffer, ...R.kept.map((k) => k.buffer)]); // (its breaks and complexity copied)
   };
 }
 function elementaryReady(then) {
@@ -21479,7 +21467,7 @@ function elementaryReady(then) {
 const elementaryRows = () => (elementaryReady(compute) ? elementaryMade : null); // (not made yet: all again once they are)
 // a part of its rows in view (x0 to x1, rows t0 to t1): again from the kept row above it, on its words and as many more each side
 // as rows walked (what lies past them cannot reach it); its live cells counted in blocks of b × b (b 1: its cells; 16 or more, a
-// word at a time, x0 a multiple of b), a row of blocks after another, and those that break its background (see periodBreaks).
+// word at a time, x0 a multiple of b), a row of blocks after another, and those that break their background (see rowDefects).
 // partWork: its words stepped, what it costs
 const partSpan = (R, x0, x1, t0, t1) => {
   // (the words its cone reaches from the row kept; a ring's (Digits) reaching an end: all of it, the other end its neighbour)
@@ -21505,10 +21493,11 @@ function elementaryPart(R, x0, x1, t0, t1, b = 1) {
     next = new Uint16Array(R.n);
   for (let t = from; t <= t1; t++) {
     if (t >= t0) {
-      const at = Math.floor((t - t0) / b) * w;
+      const at = Math.floor((t - t0) / b) * w,
+        defects = R.breaks && rowDefects(r, R.wrap); // (none past CONE_MOST cells: Domains not drawn)
       for (let i = x0 >> 4; i <= x1 >> 4; i++) {
         const live = r[i],
-          wrong = live & periodBreaks(r, i, R.period, R.wrap);
+          wrong = defects ? live & defects[i] : 0;
         if (b >= 16) {
           counts[at + Math.floor((16 * i - x0) / b)] += POP16[live];
           breaks[at + Math.floor((16 * i - x0) / b)] += POP16[wrong];
@@ -42658,7 +42647,7 @@ const countUpTo = (sorted, n, v) => {
 // pixels are not so (finer or coarser: never a cell picked out of many, nor one pixel stretched) and quick enough (PART_MOST words
 // stepped; under blocks of 16 its cells counted one by one, PART_CELLS of them at most, else blocks of 16), kept while the view
 // stays; else its picture (B × B cells a pixel), smoothed only made smaller. Each row its rainbow (Age), or Life's live colour
-// (States); Domains: its background's cells pale, its defects in gold (see periodBreaks), a pixel the colour of most of its
+// (States); Domains: its backgrounds' cells pale, their defects in gold (see rowDefects), a pixel the colour of most of its
 // cells
 const PART_MOST = 80e6,
   PART_CELLS = 32e6;
@@ -42667,7 +42656,10 @@ function drawElementary(to) {
     ctx = layers.path,
     { scale: s, ox, oy } = view,
     last = Math.min(to, R.G),
-    look = $('colourMode').value === 'complexity' && !R.complexity ? 'gradient' : $('colourMode').value; // (Complexity: up to CONE_MOST cells, else Age)
+    look =
+      ($('colourMode').value === 'complexity' && !R.complexity) || ($('colourMode').value === 'domain' && !R.breaks)
+        ? 'gradient'
+        : $('colourMode').value; // (Complexity, Domains: up to CONE_MOST cells, else Age)
   const word = ([r, g, b]) => (b << 16) | (g << 8) | r,
     rgb = (t) => word(rgbCached(look === 'mono' ? LIFE_ALIVE : rainbowNow()[Math.floor((t * BANDS) / (R.G + 1))])),
     page = rgbCached(cssColour('--page-background')),

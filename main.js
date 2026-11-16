@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.106';
+const VERSION = '0.5.107';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -45441,7 +45441,12 @@ function renderGauges(L) {
     ['Order', blue, L.order, `${Math.round(100 * L.order)} %`],
     ['Peak order', blue, P.order, `${Math.round(100 * P.order)} % · ${genLink(P.orderGen)}`],
     ['Turnover', null, turnover, `${Math.round(100 * turnover)} %`],
-    ['Ever alive', null, L.everAlive / n, formatNumber(L.everAlive)],
+    [
+      'Ever alive',
+      null,
+      L.everAlive / n,
+      `<span title="${formatNumber(L.everAlive)} of ${formatNumber(n)} cells alive at least once">${formatNumber(L.everAlive)} · ${Math.round((100 * L.everAlive) / n)} %</span>`,
+    ], // (its share of the grid, the cells reached: what Hunt › Reach all hunts)
     ['Growth', null, null, `${b - d > 0 ? '+' : b < d ? '−' : ''}${formatNumber(Math.abs(b - d))} a gen`],
   ];
   paintGauges(rows);

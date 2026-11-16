@@ -142,3 +142,6 @@ To decide, each grid in Explore:
     [Rhombic triacontahedron](http://localhost:8321/#mode=explore&shape=rhombicTriacontahedron&tiling=triangles).
 
 Each one taken in: a walk more by the same rule (no code of its own); kept out: its reason a fact of its grid's.
+
+**Decided 2026-11-16: all 17 kept out for now, to come back to later.** Step 3 makes today's pairs, these left out by
+name (a list of their own, to empty when they are taken in or given their reason).

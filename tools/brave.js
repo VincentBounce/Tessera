@@ -1,8 +1,8 @@
 // A Brave of its own, driven from the terminal (no dependency: the DevTools protocol over Node's WebSocket): its own
 // profile, hidden, its timers never slowed, so that checks and night searches run without the app's browser pane.
 //   node tools/brave.js start              Brave started (port 9444: 9333 another session's Chrome), nothing shown
-//   node tools/brave.js open <url>         a new tab at url: its number
-//   node tools/brave.js tabs               its tabs: number, url
+//   node tools/brave.js open <url>         a new tab at url: its id (a tab: its id or its id's start, never a number:
+//   node tools/brave.js tabs               its tabs: id, url              Brave lists them by their last use)
 //   node tools/brave.js eval <tab> <js>    js run in that tab (await allowed): its value, as JSON
 //   node tools/brave.js go <tab> <url>     that tab to url
 //   node tools/brave.js shot <tab> <file>  that tab's picture, a PNG
@@ -36,7 +36,7 @@ const pages = async () => (await (await fetch(`${HTTP}/json/list`)).json()).filt
 
 // one call of the protocol on a tab (its WebSocket opened for it, closed after)
 async function call(tab, method, params = {}) {
-  const t = (await pages())[tab];
+  const t = (await pages()).find((p) => p.id.startsWith(tab));
   if (!t) throw new Error(`no tab ${tab}`);
   const ws = new WebSocket(t.webSocketDebuggerUrl);
   await new Promise((ok, fail) => {
@@ -73,12 +73,11 @@ const commands = {
     throw new Error('Brave did not start');
   },
   open: async (url) => {
-    await fetch(`${HTTP}/json/new?${encodeURI(url)}`, { method: 'PUT' });
-    return (await pages()).findIndex((t) => t.url === url || t.url.startsWith(url.split('#')[0]));
+    return (await (await fetch(`${HTTP}/json/new?${encodeURI(url)}`, { method: 'PUT' })).json()).id;
   },
-  tabs: async () => (await pages()).map((t, i) => `${i} ${t.url}`).join('\n'),
+  tabs: async () => (await pages()).map((t) => `${t.id.slice(0, 8)} ${t.url}`).join('\n'),
   eval: async (tab, js) => {
-    const r = await call(Number(tab), 'Runtime.evaluate', {
+    const r = await call(tab, 'Runtime.evaluate', {
       expression: `(async () => (${js}))()`,
       awaitPromise: true,
       returnByValue: true,
@@ -87,16 +86,16 @@ const commands = {
     return JSON.stringify(r.result.value, null, 1);
   },
   go: async (tab, url) => {
-    await call(Number(tab), 'Page.navigate', { url });
+    await call(tab, 'Page.navigate', { url });
     return url;
   },
   shot: async (tab, file) => {
-    const { data } = await call(Number(tab), 'Page.captureScreenshot', { format: 'png' });
+    const { data } = await call(tab, 'Page.captureScreenshot', { format: 'png' });
     fs.writeFileSync(file, Buffer.from(data, 'base64'));
     return file;
   },
   stop: async () => {
-    await call(0, 'Browser.close').catch(() => {});
+    await call('', 'Browser.close').catch(() => {});
     return 'stopped';
   },
 };

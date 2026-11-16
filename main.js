@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.191';
+const VERSION = '0.5.192';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -15506,7 +15506,6 @@ function tilingStrip(kind, kind0, size, bottle = false) {
     tiles: laid.map(({ P }) => [...P, ...Array(sides - P.length).fill(P.at(-1))]),
     mids: laid.flatMap(({ x, y }) => [x, y]),
     latticeCells: laid.map(({ latticeCell }) => latticeCell),
-    planeCells: laid.map(({ cell }) => cell), // (each tile's place in the plane's tiling: its lattice cell's i × m + its motif's k, j)
     // its colours' units: boxes a row high and a lattice cell long, laid along its loop from its start (a Möbius strip's back
     // at x + L, its row W − y: see mobiusMesh), every one whole, its loop a whole count of them; not its lattice cells, those
     // cut by its ends having their tiles past them in others (see colourUnitPlaces)
@@ -15618,7 +15617,6 @@ function kleinTilingSheet(kindK, size) {
       tiles: keep.map((i) => s.tiles[i]),
       mids: keep.flatMap((i) => [s.mids[2 * i], s.mids[2 * i + 1]]),
       latticeCells: keep.map((i) => s.latticeCells[i]),
-      planeCells: keep.map((i) => s.planeCells[i]),
       colourCells: keep.map((i) => s.colourBox(s.mids[2 * i], s.mids[2 * i + 1])),
       originCell: s.originCell,
     };
@@ -15651,7 +15649,7 @@ function kleinLength(kindK, size, K = ringColours(ringVariant())) {
 function kleinTilingMesh(kindK, size) {
   const key = `${kindK}${size}|${ringColours(ringVariant())}`; // (its length its colours': see kleinLength)
   if (meshCache[key]) return meshCache[key];
-  const { kind, turn, L, W, n, nv, step, by, sides, tiles, mids, latticeCells, planeCells, colourCells, originCell } =
+  const { kind, turn, L, W, n, nv, step, by, sides, tiles, mids, latticeCells, colourCells, originCell } =
       kleinTilingSheet(kindK, size),
     Q = STRIP_GRID,
     ids = new Map(),
@@ -15692,7 +15690,6 @@ function kleinTilingMesh(kindK, size) {
     uv: new Float64Array(sheet.flat(2)),
     uvMid: new Float64Array(mids),
     latticeCells,
-    planeCells,
     colourCells,
     originCell,
   }));
@@ -21888,36 +21885,7 @@ function paletteColours(count, eachNeighbour, P) {
 // tileKinds), or its steps from cell 0 spread over the palette (round the
 // palette past its last: Tiles where DSatur takes more colours, see dsatur; the faces only where the palette cannot do, see
 // paletteColours)
-// a periodic grid's tiles coloured by a block of its lattice, cloned (places: each tile's [i × m + k, j], its plane's lattice
-// cell (i, j) and its motif's tile k, see planeCells): the least block of p × q lattice cells whose tiles, folded onto it,
-// take P colours (the grid's own sides joining them, its seams' too), each tile its place's colour in it; none: null
-function latticeColours(places, m, n, eachNeighbour, P) {
-  for (let area = 1; area <= 36; area++)
-    for (let p = 1; p <= area; p++) {
-      if (area % p) continue;
-      const q = area / p,
-        key = (t) => {
-          const [c, j] = places[t],
-            i = Math.floor(c / m);
-          return (mod(i, p) * q + mod(j, q)) * m + c - i * m;
-        },
-        adj = Array.from({ length: p * q * m }, () => new Set());
-      let folded = true; // (a tile beside one at its own place in the block: no block of that size)
-      for (let t = 0; t < n && folded; t++)
-        eachNeighbour(t, (u) => {
-          const a = key(t),
-            b = key(u);
-          if (a === b) folded = false;
-          adj[a].add(b);
-          adj[b].add(a);
-        });
-      if (!folded) continue;
-      const colour = paletteColours(adj.length, (a, put) => adj[a].forEach(put), P);
-      if (colour.every((c) => c <= P)) return Uint8Array.from({ length: n }, (_, t) => colour[key(t)]);
-    }
-  return null;
-}
-function exploreLevels(nbr, n, faces, kinds, places) {
+function exploreLevels(nbr, n, faces, kinds) {
   const side = sideOf(nbr),
     P = explorePalette().length,
     rule = exploreLook.rule === 'sides' && !faces ? 'tiles' : exploreLook.rule;
@@ -21925,8 +21893,7 @@ function exploreLevels(nbr, n, faces, kinds, places) {
   const bySide = (t, put) => {
     for (let q = nbr.start[t]; q < nbr.start[t + 1]; q++) if (side[q]) put(nbr.list[q]);
   };
-  if (rule === 'tiles')
-    level = (places && latticeColours(places.cells, places.m, n, bySide, 3)) ?? dsatur(n, bySide).colour; // (a Klein bottle's tiling: its lattice's block cloned; else DSatur, sometimes a 4th colour where 3 would do)
+  if (rule === 'tiles') level = dsatur(n, bySide).colour; // (a grid's cells: DSatur alone, sometimes a 4th colour where 3 would do: 3 exactly, NP-complete, no search, see DISCONTINUED.md)
   if (rule === 'sides') {
     // (the faces' graph, their sides touching)
     const touching = Array.from({ length: faces.reduce((m, f) => Math.max(m, f), -1) + 1 }, () => new Set());
@@ -22010,7 +21977,7 @@ function renderExplore() {
 // freshWalk's (a grid's own given after, by its builder)
 function startLife(seq, rule, n, grid) {
   const explore = !!VARIANTS[walk.variant].explore;
-  if (explore) grid.seed = exploreLevels(grid.nbr, n, grid.faces, grid.kinds, grid.places); // (Explore: each cell alive in its colour, see exploreLevels)
+  if (explore) grid.seed = exploreLevels(grid.nbr, n, grid.faces, grid.kinds); // (Explore: each cell alive in its colour, see exploreLevels)
   walk.life = {
     B: rule.B,
     S: rule.S,
@@ -22075,7 +22042,6 @@ function buildLife(seq, variant) {
     margolus: variant.margolus && rule.margolus ? ruleBlocks(rule, blocksGrid(variant), g.nu, true, g.nv, g) : null,
     faces: variant.explore ? (g.cellFaces ?? null) : null, // (Explore's Sides: each cell's face of its solid, see cellFaces)
     kinds: variant.explore ? tileKinds(meshCorners(g)) : null, // (Explore's Kind of tile)
-    places: variant.explore && g.planeCells ? { cells: g.planeCells, m: TILINGS[g.tiling].polys.length } : null, // (Tiles' lattice, see latticeColours)
   });
   Object.assign(walk, {
     is3d: true,

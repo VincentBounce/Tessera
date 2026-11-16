@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.59';
+const VERSION = '0.5.60';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -46623,7 +46623,7 @@ document.addEventListener('keydown', (e) => {
   if (action) return action();
   controls
     .flatMap((c) => [...document.querySelectorAll(c)])
-    .find((b) => b.offsetParent && !b.disabled)
+    .find((b) => (b.offsetParent || moreMenu.contains(b)) && !b.disabled) // (shown: a tab in the "…" tab's list too)
     ?.click();
 });
 

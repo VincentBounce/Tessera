@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.93';
+const VERSION = '0.5.94';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -41265,24 +41265,24 @@ function drawLines(ctx, a, b, c0, step) {
   }
 }
 
-// 3D background, and the plane's: a vertical sky gradient behind the scene, against the page's tone (Twilight on a light
-// page, Dawn on a dark one: see skyName)
+// 3D background, and the plane's: a vertical sky gradient behind the scene, in the page's tone (Dawn on a light page,
+// Twilight on a dark one: see skyName)
 const SKIES = {
   twilight: [
-    [0, '#0a1530'],
-    [0.45, '#1c2852'],
-    [0.75, '#433262'],
-    [0.92, '#7a4a5e'],
-    [1, '#9c5f52'],
+    [0, '#222c45'],
+    [0.45, '#333e63'],
+    [0.75, '#564672'],
+    [0.92, '#875c6e'],
+    [1, '#a66f63'],
   ],
   dawn: [
-    [0, '#b9d0ea'],
-    [0.5, '#dfe3f1'],
-    [0.8, '#f2dde2'],
-    [1, '#f8d2bd'],
+    [0, '#aabfd7'],
+    [0.5, '#cdd1de'],
+    [0.8, '#dfcbd0'],
+    [1, '#e4c1ae'],
   ],
 };
-const skyName = () => (themeName() === 'light' ? 'twilight' : 'dawn');
+const skyName = () => (themeName() === 'light' ? 'dawn' : 'twilight');
 const skyStops = () => (walk.is3d || walk.plane ? SKIES[skyName()] : null);
 const darkSky = () => skyStops() === SKIES.twilight;
 // the underside of an open sheet (a torus unrolled, its inside): the foot of the other sky

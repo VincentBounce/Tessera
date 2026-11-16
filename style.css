@@ -2103,13 +2103,10 @@ button.active .bubble.active {
   }
   .panel {
     width: auto;
-    max-height: 45vh;
+    max-height: 45%;
     border-right: 0;
     border-bottom: 1px solid var(--border-color);
-  }
-  .stage {
-    min-height: 55vh;
-  }
+  } /* (45% of what is under the header at most, the view the rest: never the window's heights, the header over them) */
   .hint {
     display: none;
   }

@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.92';
+const VERSION = '0.5.93';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -41265,28 +41265,28 @@ function drawLines(ctx, a, b, c0, step) {
   }
 }
 
-// 3D background, and the plane's: a vertical sky gradient behind the scene, in the page's tone (Dawn on a light page,
-// Twilight on a dark one)
+// 3D background, and the plane's: a vertical sky gradient behind the scene, against the page's tone (Twilight on a light
+// page, Dawn on a dark one: see skyName)
 const SKIES = {
-  dark: [
+  twilight: [
     [0, '#0a1530'],
     [0.45, '#1c2852'],
     [0.75, '#433262'],
     [0.92, '#7a4a5e'],
     [1, '#9c5f52'],
-  ], // twilight
-  light: [
+  ],
+  dawn: [
     [0, '#b9d0ea'],
     [0.5, '#dfe3f1'],
     [0.8, '#f2dde2'],
     [1, '#f8d2bd'],
-  ], // dawn
+  ],
 };
-const skyStops = () => (walk.is3d || walk.plane ? SKIES[themeName()] : null);
-const darkSky = () => skyStops() === SKIES.dark;
-// the underside of an open sheet (a torus unrolled, its inside): the foot of the other theme's sky (on a light page,
-// Twilight's; on a dark one, Dawn's)
-const undersideColour = () => (document.documentElement.dataset.theme === 'light' ? SKIES.dark : SKIES.light).at(-1)[1];
+const skyName = () => (themeName() === 'light' ? 'twilight' : 'dawn');
+const skyStops = () => (walk.is3d || walk.plane ? SKIES[skyName()] : null);
+const darkSky = () => skyStops() === SKIES.twilight;
+// the underside of an open sheet (a torus unrolled, its inside): the foot of the other sky
+const undersideColour = () => SKIES[skyName() === 'twilight' ? 'dawn' : 'twilight'].at(-1)[1];
 // the plane's ground at the screen's height y, a solid colour: its sky's there, else the page's background
 function groundAt(y) {
   const stops = skyStops(),

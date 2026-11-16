@@ -570,7 +570,7 @@ h3 {
 .formula-field input.custom {
   font-weight: 600;
 } /* a formula of its own bold (a card's: plain, its card picked shows it) */
-#formula:not(:focus) {
+#formula:not(#battleStart *, :focus) {
   border-color: var(--accent-color);
   background: var(--picked-background);
 } /* the number in use, always on a picked tile's pale gold, a card's or its own */

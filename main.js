@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.52';
+const VERSION = '0.5.53';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -15838,50 +15838,64 @@ function twistedSphereMesh(f) {
  * icosahedron's corners, its corners its faces' middles): the sphere's spots, its colours, the icosahedron's. Its sizes the
  * P1 that close with Penrose's rhombi alone, by their cells (PENROSE_SPHERES, found by penroseSphereSizes() in tools/check.js) */
 const PENROSE_SPHERES = {
-  90: [1.538841769, 0.5],
-  960: [3.077683537, -4.236067977],
-  1110: [-0.951056516, 5.545084972],
-  1650: [6.518638338, -2.118033989],
-  1950: [7.106423591, 2.309016994],
-  2310: [-3.440954801, 7.354101966],
-  4110: [-7.106423591, 8.163118961],
-  5670: [12.08622016, -3.927050983],
-}; // (each size's cells: its corner P1, made by penroseSphereSizes(16), 2.5 min)
-// the pentagon's content for corner P1: the rhombi's corners in it, P1 along x (each face's own frame), and its key, one of it
-// and its mirror's (two P1 laying the same points lay the same tiling, or its mirror image)
-function penroseFace(P1) {
+  90: [-0.951056516, -1.309016994],
+  210: [-0.951056516, 2.309016994],
+  360: [-1.902113033, 2.618033989],
+  960: [0, 5.236067977],
+  1110: [-2.489898285, -5.045084972],
+  1650: [0, -6.854101966],
+  1950: [0, 7.472135955],
+  2310: [-1.538841769, -7.972135955],
+  4110: [0.951056516, -10.781152949],
+  5670: [0, -12.708203932],
+}; // (each size's cells: its corner P1, made by penroseSphereSizes(16), 3 min)
+// the Penrose rhombi's corners (sides 1) within reach of their middle, nearest first: one tiling at every reach, its wheel
+// cut PENROSE_SPHERE_CUTS times (the fewest cuts for a disc hang on its size, and so does the tiling past its middle: a
+// size's table and its mesh one tiling, see PENROSE_SPHERES)
+const PENROSE_SPHERE_CUTS = 13; // (its wheel's radius 1.11 φ¹³: reaches to about 500)
+const penroseCorners = (reach) => {
+  const corners = new Map();
+  for (const { p } of penroseRhombi(Math.max(1, (reach * PENROSE_SIDE - 6) * Math.sqrt(Math.PI)), PENROSE_SPHERE_CUTS))
+    for (let i = 0; i < p.length; i += 2)
+      corners.set(pointKey(p[i], p[i + 1]), [p[i] / PENROSE_SIDE, p[i + 1] / PENROSE_SIDE]);
+  return [...corners.values()].sort((a, b) => Math.hypot(...a) - Math.hypot(...b));
+};
+// the pentagon for corner P1: the rhombi's corners in it (or in its band a width from its sides, band), P1 along x (each
+// face's own frame), and each one's depth, its distance to the pentagon's nearest side (its apothem less its furthest way out)
+function penroseFace(P1, corners = penroseCorners(Math.hypot(...P1) + 2), band = Infinity) {
   const rho = Math.hypot(P1[0], P1[1]),
     a = Math.atan2(P1[1], P1[0]),
-    pentagon = [0, 1, 2, 3, 4].map((k) => [
-      rho * Math.cos((2 * Math.PI * k) / 5),
-      rho * Math.sin((2 * Math.PI * k) / 5),
-    ]),
-    inside = (p) =>
-      pentagon.every((c, k) => {
-        const d = pentagon[(k + 1) % 5];
-        return (d[0] - c[0]) * (p[1] - c[1]) - (d[1] - c[1]) * (p[0] - c[0]) >= -1e-7;
-      });
-  const corners = new Map();
-  for (const { p } of penroseRhombi(Math.max(1, ((rho + 2) * PENROSE_SIDE - 6) * Math.sqrt(Math.PI))))
-    // (its disc's reach past the pentagon)
-    for (let i = 0; i < p.length; i += 2) {
-      const x = p[i] / PENROSE_SIDE,
-        y = p[i + 1] / PENROSE_SIDE,
-        q = [x * Math.cos(a) + y * Math.sin(a), -x * Math.sin(a) + y * Math.cos(a)];
-      if (inside(q)) corners.set(pointKey(q[0], q[1]), q);
+    apothem = rho * Math.cos(Math.PI / 5),
+    outs = [0, 1, 2, 3, 4].map((k) => [Math.cos(((2 * k + 1) * Math.PI) / 5), Math.sin(((2 * k + 1) * Math.PI) / 5)]),
+    depthOf = (q) => apothem - Math.max(...outs.map((n) => q[0] * n[0] + q[1] * n[1]));
+  // (the corners nearest first: those from the band's inner edge out, found by halving)
+  const from = (r) => {
+    let lo = 0,
+      hi = corners.length;
+    while (lo < hi) {
+      const mid = (lo + hi) >> 1;
+      if (Math.hypot(...corners[mid]) < r) lo = mid + 1;
+      else hi = mid;
     }
-  const framed = [...corners.values()],
-    key = (flip) =>
-      framed
-        .map(([x, y]) => `${Math.round(x * 1e5)},${Math.round((flip ? -y : y) * 1e5)}`)
-        .sort()
-        .join(' ');
-  return { rho, framed, content: [key(false), key(true)].sort()[0] };
+    return lo;
+  };
+  const framed = [],
+    depth = [];
+  for (let i = from(apothem - band - 1e-7); i < corners.length && Math.hypot(...corners[i]) <= rho + 1e-7; i++) {
+    const [x, y] = corners[i],
+      q = [x * Math.cos(a) + y * Math.sin(a), -x * Math.sin(a) + y * Math.cos(a)],
+      d = depthOf(q);
+    if (d >= -1e-7 && d <= band) {
+      framed.push(q);
+      depth.push(Math.max(0, d));
+    }
+  }
+  return { rho, framed, depth };
 }
 // the sphere's graph for corner P1: its points on the dodecahedron (sides 1), each one's neighbours in turn round it, its
 // cells (each a face of the graph, its points in turn), its edges' count
 function penroseSphereGraph(P1, face = penroseFace(P1)) {
-  const { rho, framed } = face,
+  const { rho, framed, depth: depthIn } = face,
     ico = POLYHEDRA.icosa,
     mids = ico.faces.map((f) => unit(f.reduce((m, v) => m.map((x, d) => x + ico.P[v][d]), [0, 0, 0])));
   // its faces: round each of the icosahedron's corners, its 5 faces' middles, in turn round it; scaled to the pentagon's radius
@@ -15904,9 +15918,10 @@ function penroseSphereGraph(P1, face = penroseFace(P1)) {
   // its points, one each however many faces it lies on (on their edge, at their corner), and those faces
   const points = [],
     onFaces = [],
+    depth = [],
     at = new Map();
   faces.forEach((f, fi) => {
-    for (const [x, y] of framed) {
+    for (const [j, [x, y]] of framed.entries()) {
       const q = f.mid.map((v, d) => v + x * f.u[d] + y * f.w[d]),
         k = q.map((v) => Math.round(v * 1e5)).join();
       let i = at.get(k);
@@ -15915,6 +15930,7 @@ function penroseSphereGraph(P1, face = penroseFace(P1)) {
         at.set(k, i);
         points.push(q);
         onFaces.push([]);
+        depth.push(depthIn[j]);
       }
       if (!onFaces[i].includes(fi)) onFaces[i].push(fi);
     }
@@ -16001,6 +16017,7 @@ function penroseSphereGraph(P1, face = penroseFace(P1)) {
     tiles,
     edges: nbrs.reduce((sum, l) => sum + l.length, 0) / 2,
     solid: { corners: mids, centres: ico.P.map(unit) }, // (the dodecahedron it lies on: its corners, its faces' middles' ways)
+    depth, // (each point's distance to its pentagon's nearest side: a band's judged near the sides only, see penroseSphereSizes)
   };
 }
 // the mesh of a size (its cells): its points on the unit sphere, its flat form the dodecahedron they lie on (see shapeAt)
@@ -23227,9 +23244,11 @@ const PENROSE_SIDE = 1.11;
 const penroseRhombi = (() => {
   const phi = (1 + Math.sqrt(5)) / 2,
     lerp = (p, q, t) => [p[0] + (q[0] - p[0]) * t, p[1] + (q[1] - p[1]) * t];
-  return (W) => {
+  return (W, cuts = null) => {
+    // (cuts: so many, else the fewest round a disc of W², one more than a multiple of 4)
     let n = 0;
-    while (10 * phi ** (2 * n) < 14 * W * W) n++; // (about 6 W² rhombi, 2 triangles each)
+    while (cuts === null && 10 * phi ** (2 * n) < 14 * W * W) n++; // (about 6 W² rhombi, 2 triangles each)
+    if (cuts !== null) n = cuts;
     while (n % 4 !== 1) n++; // (n one more than a multiple of 4 at every size: the wheel's middle comes back every 4 cuts,
     // its patterns found there at 43, n 9, see CENTRED; other n, another middle, none of them laid at 21 or 85 before)
     const R = PENROSE_SIDE * phi ** n; // (the wheel's: its rhombi's sides PENROSE_SIDE)

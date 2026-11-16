@@ -1651,47 +1651,49 @@ async function partsEqual(fail) {
 }
 
 // The Penrose sphere's sizes (PENROSE_SPHERES in main.js): Todd's algorithm II's corners P1 up to radius most (the rhombi's
-// corners v, and v + λ d along the decagon's 10 ways, λ in {φ, 1, tan 18°}), one of each pentagon's content (see penroseFace),
-// those whose graph closes with Penrose's rhombi alone, thick and thin both (every cell 4 corners, every point 3 neighbours or
-// more, V − E + F = 2), by their cells; in the console, its table for main.js
-window.penroseSphereSizes = (most = 10) => {
+// corners v, and v + λ d along the decagon's 10 ways, λ in {φ, 1, tan 18°}), one of each turned by 72° or mirrored (the
+// rhombi's own symmetries: the same pentagon, the same tiling); each judged first on a band along its pentagon's sides (where
+// the copies meet: inside, Penrose's own tiling), its points there 3 neighbours or more, its cells there rhombi; then those
+// kept built whole: their graph closes (V − E + F = 2) with Penrose's rhombi alone, thick and thin both, by their cells; in the
+// console, its table for main.js
+window.penroseSphereSizes = (most = 10, band = 3) => {
   const phi = (1 + Math.sqrt(5)) / 2,
-    corners = new Map();
-  for (const { p } of penroseRhombi(Math.max(1, ((most + 2) * PENROSE_SIDE - 6) * Math.sqrt(Math.PI))))
-    for (let i = 0; i < p.length; i += 2)
-      corners.set(pointKey(p[i], p[i + 1]), [p[i] / PENROSE_SIDE, p[i + 1] / PENROSE_SIDE]);
+    corners = penroseCorners(most + 2);
   const tried = new Map();
-  for (const v of corners.values())
+  for (const v of corners)
     for (const l of [0, phi, 1, Math.tan(Math.PI / 10)])
       for (let d = 0; d < (l ? 10 : 1); d++) {
         const P1 = [v[0] + l * Math.cos((Math.PI * d) / 5), v[1] + l * Math.sin((Math.PI * d) / 5)],
           rho = Math.hypot(...P1);
-        if (rho >= 0.5 && rho <= most) tried.set(`${P1[0].toFixed(6)},${P1[1].toFixed(6)}`, P1);
+        if (rho < 0.5 || rho > most) continue;
+        let turn = ((((Math.atan2(P1[1], P1[0]) * 180) / Math.PI) % 72) + 72) % 72;
+        if (turn > 72 - 1e-6) turn = 0;
+        tried.set(`${rho.toFixed(6)}|${Math.min(turn, 72 - turn).toFixed(4)}`, P1); // (its turn by 72° and its mirror one)
       }
-  const seen = new Set(),
-    out = {};
+  const rhombus = (G, t) => {
+    const [p, q, r] = [G.points[t[0]], G.points[t[1]], G.points[t[3]]],
+      cos = dot3(unit(sub(q, p)), unit(sub(r, p)));
+    return Math.abs(cos) > Math.cos((54 * Math.PI) / 180) ? 'thin' : 'thick'; // (its sharp corner 36° or 72°)
+  };
+  const out = {};
   for (const P1 of [...tried.values()].sort((a, b) => Math.hypot(...a) - Math.hypot(...b))) {
-    const face = penroseFace(P1);
-    if (seen.has(face.content)) continue;
-    seen.add(face.content);
-    const G = penroseSphereGraph(P1, face),
-      rhombus = (t) => {
-        const [p, q, r] = [G.points[t[0]], G.points[t[1]], G.points[t[3]]],
-          cos = dot3(unit(sub(q, p)), unit(sub(r, p)));
-        return Math.abs(cos) > Math.cos((54 * Math.PI) / 180) ? 'thin' : 'thick'; // (its sharp corner 36° or 72°)
-      };
+    const B = penroseSphereGraph(P1, penroseFace(P1, corners, band)),
+      near = (i) => B.depth[i] <= band - 1.5; // (its neighbours all in the band)
+    if (!B.nbrs.every((l, i) => !near(i) || l.length >= 3)) continue;
+    if (!B.tiles.every((t) => t.some((i) => B.depth[i] > band - 0.5) || t.length === 4)) continue; // (the band's own cut aside)
+    const G = penroseSphereGraph(P1, penroseFace(P1, corners));
     if (
       G.points.length - G.edges + G.tiles.length === 2 &&
       G.nbrs.every((l) => l.length >= 3) &&
       G.tiles.every((t) => t.length === 4) &&
-      new Set(G.tiles.map(rhombus)).size === 2 &&
+      new Set(G.tiles.map((t) => rhombus(G, t))).size === 2 &&
       !out[G.tiles.length]
     )
       out[G.tiles.length] = P1.map((x) => +x.toFixed(9));
   }
   return `const PENROSE_SPHERES = {\n${Object.entries(out)
     .map(([n, [x, y]]) => `  ${n}: [${x}, ${y}],`)
-    .join('\n')}\n}; // (each size's cells: its corner P1, made by penroseSphereSizes())`;
+    .join('\n')}\n}; // (each size's cells: its corner P1, made by penroseSphereSizes(${most}))`;
 };
 
 // The rosette spheres' sizes and their cells (ROSETTE_SPHERES in main.js): each rosette's discs, W from 4 to most, whose rims pair teeth to

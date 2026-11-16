@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.176';
+const VERSION = '0.5.177';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -10582,6 +10582,15 @@ function familyPlace(w) {
   return null;
 }
 // and its tab, its tiling turned as the one picked (see torusTurned)
+// a shape's tilings in this mode, as its tiles name them (Hexagons · Triangles · Kites), else its grid in words (one tiling)
+const tilingsWords = (w) => {
+  const fam = familyOf(w);
+  if (!fam) return variantWhere(w);
+  return fam.F.tabs
+    .filter(([f, turned]) => !turned && fam.F.variants[f].some((v) => NAV[v][0] === NAV[w][0]))
+    .map(([, , , name]) => name)
+    .join(' · ');
+};
 function familyOf(w) {
   const at = familyPlace(w);
   if (!at) return null;
@@ -11232,7 +11241,7 @@ function renderModePicker() {
                 plane.torus = !plane.torus;
                 compute();
               },
-              variantWhere(navPick(w, 2, sh)),
+              tilingsWords(navPick(w, 2, sh)),
             );
           b.dataset.choice = `shape:${sh}`; // (its choice's key, see choicesAt)
           const to = navPick(w, 2, sh),
@@ -17343,10 +17352,13 @@ const sizeCardHtml = (total, text) => {
       ); // ({g:…}: grey, as a default)
   return `<b class="tip-name">Size: ${marks(total)}</b>${marks(text).replace(/\n/g, '<br>')}`; // ({b:…}: bold alone)
 };
+// (its grid first, as its shape's name and its words: Dode sph, a dodecahedron of hexagons…; then its size, under a rule)
 const sizeTips = (row, total, text) => {
-  const box = $(`${row}Box`); // (− + its label and its slider, one block; its name and its total first, as a control's; shown again at once if hovered: − + clicked)
+  const box = $(`${row}Box`), // (− + its label and its slider, one block; its name and its total first, as a control's; shown again at once if hovered: − + clicked)
+    w = tabVariant(),
+    grid = `<b class="tip-name">${shapeLabel(NAV[w][2])}</b>${variantWhere(w)}`;
   box.dataset.tip = text.replace(/\{[yroskbge]:([^}]*)\}/g, '$1');
-  box.dataset.tipHtml = sizeCardHtml(total, text);
+  box.dataset.tipHtml = `${grid}<div class="tip-state"><div>${sizeCardHtml(total, text)}</div></div>`;
   if (box.matches(':hover')) $('tip').innerHTML = box.dataset.tipHtml;
 };
 const facesMemo = remember('facesMemo', {}); // (a solid's least mesh: its faces, see howCounted)

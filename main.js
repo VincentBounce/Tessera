@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.55';
+const VERSION = '0.5.56';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -11091,10 +11091,14 @@ document.addEventListener('pointerdown', (e) => {
 moreMenu.addEventListener('click', () => openMoreMenu(false)); // (a tab picked in it too; open while the row is drawn again)
 function fitModeTabs() {
   const row = $('modeTabs');
+  // (the last tab's right edge against the row's: never its width scrolled, the menu open over it counted in it)
+  const fits = () =>
+    (moreTabs.hidden ? moreTabs.previousElementSibling : moreTabs).getBoundingClientRect().right <=
+    row.getBoundingClientRect().right;
   for (const b of [...moreMenu.children]) row.insertBefore(b, moreTabs);
-  moreTabs.hidden = row.scrollWidth <= row.clientWidth;
-  while (!moreTabs.hidden && row.scrollWidth > row.clientWidth && moreTabs.previousElementSibling !== galleryTab())
-    moreMenu.prepend(moreTabs.previousElementSibling);
+  moreTabs.hidden = true;
+  moreTabs.hidden = fits();
+  while (!fits() && moreTabs.previousElementSibling !== galleryTab()) moreMenu.prepend(moreTabs.previousElementSibling);
   moreTabs.firstChild.classList.toggle('active', !!moreMenu.querySelector('.active'));
 }
 new ResizeObserver(fitModeTabs).observe(document.querySelector('.header-row'));

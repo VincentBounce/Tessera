@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.159';
+const VERSION = '0.5.160';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -41443,12 +41443,34 @@ function userMovedView() {
 
 /* ---- 11.3 Grids, sky and 3D frame --------------------------------------------------------- */
 function drawGrid() {
-  const ctx = layers.grid;
+  const ctx = layers.grid,
+    s = view.scale;
   ctx.clearRect(0, 0, canvasWidth, canvasHeight);
   paintSky();
   placeAxesLabels();
+  // Elementary's run a sheet on the sky, as the plane's (see gpuPlane): its picture's size, in the page's colour, the grid
+  // on it only; its sides on the grid's own pixels (see drawLines)
+  const R = walk.rows,
+    sheet = R && [
+      Math.round(view.ox + (-R.c - 0.5) * s),
+      Math.round(view.oy - 0.5 * s),
+      Math.round(view.ox + (R.W - R.c - 0.5) * s),
+      Math.round(view.oy + (R.G + 0.5) * s),
+    ];
+  if (sheet) {
+    ctx.fillStyle = cssColour('--page-background');
+    ctx.fillRect(sheet[0], sheet[1], sheet[2] - sheet[0] + 1, sheet[3] - sheet[1] + 1);
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(sheet[0], sheet[1], sheet[2] - sheet[0] + 1, sheet[3] - sheet[1] + 1);
+    ctx.clip();
+  }
+  drawGridLines(ctx, s);
+  if (sheet) ctx.restore();
+}
+// its lines (none while Grid is off or no grid is built)
+function drawGridLines(ctx, s) {
   if (!gridShown() || !walk.lattice) return; // (no grid built yet, at load: no lines)
-  const s = view.scale;
   let stepCells = 1;
   while (s * stepCells < LINE_PIXELS) stepCells *= 5;
   ctx.strokeStyle = gridColour();
@@ -41526,7 +41548,7 @@ const SKIES = {
     [1, '#e4c1ae'],
   ], // dawn
 };
-const skyStops = () => (walk.is3d || walk.plane ? SKIES[themeName()] : null);
+const skyStops = () => (walk.is3d || walk.plane || walk.rows ? SKIES[themeName()] : null);
 // the underside of an open sheet (a torus unrolled, its inside): the foot of the other theme's sky (on a light page,
 // Twilight's; on a dark one, Dawn's)
 const undersideColour = () => (document.documentElement.dataset.theme === 'light' ? SKIES.dark : SKIES.light).at(-1)[1];

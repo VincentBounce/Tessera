@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.109';
+const VERSION = '0.5.110';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -45492,14 +45492,14 @@ function paintGauges(rows) {
       .join('');
   }
   rows.forEach(([, colour, share, text], i) => {
-    const [, bar, num] = box.children[i].children;
+    const [label, bar, num] = box.children[i].children;
     if (share !== null)
       Object.assign(bar.firstChild.style, {
         width: `${Math.min(100, 100 * (share || 0))}%`,
         background: colour ?? LIFE_ALIVE,
       }); // (the theme's live cells, as it is now)
     setLinks(num, text);
-    num.style.color = colour ?? '';
+    label.style.color = num.style.color = colour ?? ''; // (its name in its figures' colour)
   });
 }
 // A walk's farthest from its start over all its steps (the whole walk, worked out), and the first step there (its curve's

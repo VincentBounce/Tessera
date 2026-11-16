@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.178';
+const VERSION = '0.5.179';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -11246,8 +11246,10 @@ function renderModePicker() {
           b.dataset.choice = `shape:${sh}`; // (its choice's key, see choicesAt)
           const to = navPick(w, 2, sh),
             surface = !VARIANTS[to].plane && surfaceOf(VARIANTS[to]);
-          if (SURFACES[surface]?.tiles)
-            b.tipMore = () => sizeCardHtml(...surfaceCard(surface, sizeOf(figureSize(to)), to === w)); // (its size's card where it opens, made when hovered)
+          // (made when hovered: the one shown, its size's card; another, its solid's faces, its tiling and size not known yet)
+          if (to === w && SURFACES[surface]?.tiles)
+            b.tipMore = () => sizeCardHtml(...surfaceCard(surface, sizeOf(figureSize(to)), true));
+          else if (surface) b.tipMore = () => (facesCount(surface) ? `${facesCount(surface)} faces` : '');
           if (again) {
             setTile(b, { on: true, again });
             b.title += plane.torus ? '\nA torus · Clicked again: walls' : '\nWalls · Clicked again: a torus';
@@ -17362,6 +17364,12 @@ const sizeTips = (row, total, text) => {
   if (box.matches(':hover')) $('tip').innerHTML = box.dataset.tipHtml;
 };
 const facesMemo = remember('facesMemo', {}); // (a solid's least mesh: its faces, see howCounted)
+// a surface's solid's faces, by its cells' (see cellFaces, its least mesh's); none off a solid (a torus)
+const facesCount = (kind) => {
+  const S = SURFACES[kind],
+    g = S?.sizes && (facesMemo[kind] ??= S.mesh(S.sizes[0]));
+  return g?.cellFaces ? g.cellFaces.reduce((m, f) => Math.max(m, f + 1), 0) : 0;
+};
 // its cells as a rectangle as wide as the grid lies, for an idea of its resolution (grey, as the walk's description): the plane's a
 // square, a ring's or a strip's its sheet laid flat (a Möbius strip's loop, 2L × W; a ring's, its least mesh's proportions, its columns
 // and rows as many); a solid's, a face's as a square (its cells shared out among its faces: a carved cube's, its walls' too)

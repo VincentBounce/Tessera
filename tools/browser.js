@@ -13,7 +13,10 @@ const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
 
-const BROWSER = path.join(os.homedir(), 'Library/Caches/ms-playwright/chromium-1254/chrome-mac-arm64/Google Chrome for Testing.app/Contents/MacOS/Google Chrome for Testing'),
+const BROWSER = path.join(
+    os.homedir(),
+    'Library/Caches/ms-playwright/chromium-1254/chrome-mac-arm64/Google Chrome for Testing.app/Contents/MacOS/Google Chrome for Testing',
+  ),
   PORT = 9444,
   PROFILE = path.join(os.homedir(), 'Library/Caches/tessera-browser'),
   HTTP = `http://127.0.0.1:${PORT}`;
@@ -88,6 +91,7 @@ const commands = {
   },
   go: async (tab, url) => {
     await call(tab, 'Page.navigate', { url });
+    await call(tab, 'Page.reload', { ignoreCache: true }); // (its scripts as they are now: their cache key, the version, changes only when shipped)
     return url;
   },
   shot: async (tab, file) => {

@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.183';
+const VERSION = '0.5.184';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -45921,6 +45921,7 @@ function renderWalkGauges() {
       names.map((name, s) => ({
         colour: teamColour(s),
         name,
+        colourName: teamName(s),
         value: w[s],
         dead: gone(s) && !D.bite,
         diedAt: D.dead[s],
@@ -46011,14 +46012,16 @@ function renderRanking(L) {
     foot = endShown(L) && L.footBy;
   const avg = loopMeans(L),
     live = (k) => avg?.[k] ?? L.byColour[k],
-    mean = !!avg; // (a loop: each colour's mean over it, ≈)
+    mean = !!avg, // (a loop: each colour's mean over it, ≈)
+    names = startWords(getSetup()); // (its players', as its title: one a colour, else none)
   paintRanking(
     Array.from({ length: K }, (_, c) => {
       const k = c + 1,
         num = (v) => (mean && L.loopMax[k] > L.loopMin[k] ? meanText(v) : formatNumber(v));
       return {
         colour: teamColour(c),
-        name: teamName(c),
+        name: names.length === K ? names[c] : '',
+        colourName: teamName(c),
         value: live(k),
         dead: dead(k),
         diedAt: L.extinctAt[k],
@@ -46034,7 +46037,8 @@ function renderRanking(L) {
     LIFE_TITLES,
   );
 }
-// A ranking, the same for Life's battles and a walk's (titles: [name, tip, width in px]): a row each (its colour, name, value, dead or not and when, its
+// A ranking, the same for Life's battles and a walk's (titles: [name, tip, width in px]): a row each (its colour and its name, its player's
+// name, value, dead or not and when, its
 // table's cells, the first its value or ✝ when), its place, its colour, its bar (its share of the living ones' values) and
 // its cells in its colour; the living by value, then the dead, the last died first; each row sliding to its place; all
 // dead, said
@@ -46067,7 +46071,7 @@ function paintRanking(rows, titles) {
         r.innerHTML =
           `<span></span><i style="background:${row.colour}"></i><span class="rank-bar"><i style="background:${row.colour}"></i></span>` +
           `<span class="rank-cell" style="color:${row.colour}"></span>`.repeat(row.cells.length);
-        r.title = row.name;
+        r.title = [row.name, row.colourName].filter(Boolean).join(' · '); // (its player's name and its colour, Life's and a walk's alike)
         return r;
       }),
       Object.assign(document.createElement('span'), { className: 'all-dead' }),

@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.104';
+const VERSION = '0.5.105';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -6422,7 +6422,7 @@ const defaultOf = (key, w) => {
 const defaultMark = (key) => (defaultOf(key, tabVariant()) ? 'on' : 'off');
 // Shown but greyed out, by the menu's group or the tab: a spiral never crosses itself, so it closes no area and visits each
 // cell once; and its marks read as cells, the line along the spiral (Rainbow along the walk) shows nothing more. Elementary's
-// cells never change once made: no Activity
+// cells never change once made: no Heatmap
 // a variant's option in the menu; the menu's group of the variant on (its space: 2D, Surfaces…)
 // the tab's variant: the next walk's (what sets it up reads it; what describes the walk shown reads walk.variant)
 const tabVariant = () => $('variant').value;
@@ -6453,11 +6453,11 @@ const viewWhyNot = (item, w, stacked = spaceTime) =>
         .filter((g) => DISPLAY_BY_TAB[g].includes(item))
         .join(', ')}.`;
 const useful = (item, w) => shows(item, w) && !greyed(item, w);
-// a look greyed at a variant (Rainbow along a spiral, its Heatmap, Elementary's Activity), its words; else ''
+// a look greyed at a variant (Rainbow along a spiral, its Heatmap, Elementary's), its words; else ''
 const LOOK_WHERE = {
   gradient: 'On a spiral, the line tells nothing.',
   visits: 'On a spiral, each cell is visited once only.',
-  digit: 'On Elementary, a cell never changes once made: there is no activity.',
+  digit: 'On Elementary, a cell never changes once made: there is no heatmap.',
 };
 const lookWhyNot = (look, w) =>
   (look === 'gradient' && greyed('line', w)) ||
@@ -6711,7 +6711,7 @@ function relabelColours(variant) {
     sel.append(byValue[v]);
   });
   for (const v of ['cells', 'visits', 'digit', 'mono']) byValue[v].hidden = !shows(v, tabVariant());
-  for (const v of ['gradient', 'visits', 'digit']) byValue[v].disabled = !!lookWhyNot(v, tabVariant()); // (Rainbow along a spiral, its Heatmap, Elementary's Activity)
+  for (const v of ['gradient', 'visits', 'digit']) byValue[v].disabled = !!lookWhyNot(v, tabVariant()); // (Rainbow along a spiral, its Heatmap, Elementary's)
   if (sel.selectedOptions[0]?.hidden || sel.selectedOptions[0]?.disabled) {
     sel.value = Array.from(sel.options).find((o) => !o.hidden && !o.disabled).value; // the first one left
   }
@@ -6955,9 +6955,9 @@ const trailApplies = (w = walk.life && walk.variant, rule = $('lifeRule').value,
   (parseRule(ruleBody(lifeRuleAt(rule, w)))?.C ?? 2) === 2 &&
   look !== 'digit'; // (w: the walk shown's, or a variant's: its rule the one in use)  // (a reversible rule's blocks: none, their cells move, none dies, and backwards a trail would show where they are born)
 const trailOn = () => $('lifeTrail').checked && trailApplies();
-const TRAIL_WHERE = 'Not with dying stages (Generations), on Rewind, or with Activity.'; // (Trail's greyed words)
+const TRAIL_WHERE = 'Not with dying stages (Generations), on Rewind, or with Heatmap.'; // (Trail's greyed words)
 // Trail, a tile turned on and off (see tile): its picture a live cell with its trail paling behind (LIFE_TRAIL, the theme's:
-// drawn again with it); greyed for Activity and dying stages
+// drawn again with it); greyed for Heatmap and dying stages
 let trailButton = null; // kept: it goes after Life's looks, in their row (see renderColourButtons)
 function renderTrailButton() {
   const sq = (k, c) => `<rect x="${(17 * k) / 3}" y="${17 - (17 * k) / 3}" width="7" height="7" rx="1" fill="${c}"/>`,
@@ -7015,7 +7015,7 @@ const spaceTimeApplies = (w) => {
   return !!m.plane && !!m.life && !m.margolus && !m.elementary && planeKind(m.plane) === 'square';
 };
 const spaceTimeOn = () => spaceTime && spaceTimeApplies(tabVariant());
-// Life's looks as square buttons with pictures (States or Colours, Age, Activity); a walk's, a list
+// Life's looks as square buttons with pictures (States or Colours, Age, Heatmap); a walk's, a list
 function renderColourButtons() {
   const sel = $('colourMode'),
     box = $('colourButtons'),
@@ -7024,7 +7024,7 @@ function renderColourButtons() {
   renderTrailButton();
   // a walk's (Space): Rainbow, Commands, as the looks of its cells
   const names = L
-    ? { mono: 'States', gradient: 'Age', digit: 'Activity' }
+    ? { mono: 'States', gradient: 'Age', digit: 'Heatmap' }
     : { gradient: 'Path', cells: 'Cell path', visits: 'Heatmap', digit: 'Commands' };
   const picture = (v) => (L ? lifeLookPicture(v) : cellModePicture(v === 'gradient' ? 'cells' : v));
   const looks = Array.from(sel.options).filter((o) => !o.hidden && names[o.value]);
@@ -7176,7 +7176,7 @@ function lifeMusic(L) {
     for (let k = 1; k <= L.colours; k++) if (L.extinctAt[k] === L.gen) playTone(81, now, 0.3, 'square', 0.05, 45);
 }
 // States: alive and dead cells (Colours: the civilisations' and dead); Age: young (warm) to old (cold), then the fading
-// trail of the dead; Activity: the cells that change most, hot in the middle
+// trail of the dead; Heatmap: the cells that change most, hot in the middle
 function lifeLookPicture(look) {
   const g = appRainbowAt; // (a control's picture: the app's rainbow, never Ocean's)
   if (look === 'mono')
@@ -7187,7 +7187,7 @@ function lifeLookPicture(look) {
 // a 2 × 2 swatch of four colours (a look's picture, Life's and a walk's)
 const swatch = (cs) =>
   `<svg viewBox="0 0 2 2" aria-hidden="true">${cs.map((c, i) => `<rect x="${i % 2}" y="${i >> 1}" width="1" height="1" fill="${c}"/>`).join('')}</svg>`;
-// square rings, hot inside (a heatmap, Life's activity, the hunt's Reach all)
+// square rings, hot inside (a Heatmap, a walk's or Life's, the hunt's Reach all)
 const heatRings = (g) =>
   `<svg viewBox="0 0 24 24" aria-hidden="true">${[0, 0.25, 0.5, 0.75, 1].map((f, i) => `<rect x="${2 + 2 * i}" y="${2 + 2 * i}" width="${20 - 4 * i}" height="${20 - 4 * i}" rx="${2 - 0.4 * i}" fill="${g(f)}"/>`).join('')}</svg>`;
 // The length last picked, one for every variant (the stepper's − + or a number typed, its link's d=), never cut: each variant the
@@ -7767,7 +7767,7 @@ const ICONS = (() => {
     goalDies: svgPath('M12 3V21M6 8.5H18'), // (a cross)
     goalFull: thirdsGrid('..o,.oo,ooo'), // (a 3 × 3 grid, filled but a corner's 3)
     goalPeak: svgPath('M12 4L21 19H3Z', 'f'),
-    goalCover: `<g class="f">${heatRings(appRainbowAt)}</g>`, // (Activity's picture: its rings filled, not stroked)
+    goalCover: `<g class="f">${heatRings(appRainbowAt)}</g>`, // (Heatmap's picture: its rings filled, not stroked)
     goalBattle: svgPath('M4 4L17 17M20 4L7 17M14 20L20 14M4 14L10 20M17.5 17.5L20.5 20.5M6.5 17.5L3.5 20.5'), // (crossed swords)
     king: svgPath('M12 3V21M3 12H21M5.6 5.6L18.4 18.4M18.4 5.6L5.6 18.4'), // the 8 ways out
     pentagons: svgPath(
@@ -10797,7 +10797,7 @@ function choicesAt(s, reads = null, teamsMemo = new Map()) {
   if (m.net && wants('walkRule'))
     for (const r of (rulesForMemo[w] ??= rulesFor(w)))
       set(`walkRule:${w}|${r.rule}`, 'walkRule', r.rule, r.why, `${r.name} ${r.rule}`); // (a walk's rules' cards, those it takes)
-  // its looks (Life's: States, Age, Activity; a walk's cells': Path, Rainbow, Commands, Heatmap), each the look it sets
+  // its looks (Life's: States, Age, Heatmap; a walk's cells': Path, Rainbow, Commands, Heatmap), each the look it sets
   if (wants('look')) {
     if (m.life) for (const [look, name] of LIFE_LOOKS) set(`look:${look}`, 'look', look, lookWhyNot(look, w), name);
     else if (shows('cells', w) || shows('heatmap', w) || m.antOf)
@@ -26026,9 +26026,9 @@ const liftTile = (c) => {
   return `rgb(${v})`;
 };
 // Life's look on any grid (Life, Rewind; the plane, a surface), its colours by the graphics card in tables (see
-// gpuLook): States (each colour, its dying stages, its trail after death), Age or Activity; lifted: a surface's rainbow,
+// gpuLook): States (each colour, its dying stages, its trail after death), Age or Heatmap; lifted: a surface's rainbow,
 // lighter (liftTile). Made again only when what it is made of changes (the look, the theme's colours, the rule's colours and
-// states, Trail, the motif shown; Activity's, its most changes), kept on L: not each frame a view turns (272 KB, before v0.4.1)
+// states, Trail, the motif shown; Heatmap's, its most changes), kept on L: not each frame a view turns (272 KB, before v0.4.1)
 function lifeLook(L, lifted = false) {
   const colour = $('colourMode').value,
     maxAct = colour === 'digit' ? L.maxActivity : 0;
@@ -29789,7 +29789,7 @@ function huntRuns(L, { cells, copies, all, choices, nth }, cap, goal, report) {
 const hunt = { run: null, zone: 'full', top: [], status: '', picked: null, goal: 'longest', key: '' }; // goal in one colour: longest, dies, peak or cover (colours: a battle)
 let huntKept = 0; // the results kept so far, all hunts: each one's number its identity (picked: the one played's)
 // What the hunt looks for in one colour: the longest life, the longest till it dies out, the most cells alive at once,
-// or every cell alive once the soonest (seen in Activity), the last two from a start in a zone, not the whole grid; the
+// or every cell alive once the soonest (seen in Heatmap), the last two from a start in a zone, not the whole grid; the
 // longest battle (in colours, the goals hidden); last, the longest that ends with FULL_END of its cells alive or more (as
 // it settles or loops: a rule whose soups fill the grid). Each: its picture, its name, its words
 const HUNT_GOALS = {
@@ -29799,7 +29799,7 @@ const HUNT_GOALS = {
   cover: [
     'goalCover',
     'Reach all',
-    'Fastest to reach all cells: the start whose cells are all alive once the soonest (Activity shows it), from a zone (not the whole grid)',
+    'Fastest to reach all cells: the start whose cells are all alive once the soonest (Heatmap shows it), from a zone (not the whole grid)',
   ],
   battle: [
     'goalBattle',
@@ -47344,7 +47344,7 @@ const lookAfter = (look, w) =>
 const LIFE_LOOKS = [
   ['mono', 'States'],
   ['gradient', 'Age'],
-  ['digit', 'Activity'],
+  ['digit', 'Heatmap'],
 ]; // (Life's looks, see renderColourButtons)
 const CELL_MODES = [
   ['path', 'Path', 'The walk’s line in the rainbow along it, over its cells faded (along the edges, its line alone)'],

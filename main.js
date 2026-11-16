@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.133';
+const VERSION = '0.5.134';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -7242,15 +7242,15 @@ const runLoop = () => {
 };
 // The run's end, on the step line after its last: its mark always, its words open, the same everywhere, a link in turquoise (--run-end-color, see loopLink): its loop
 // (↻ every P from step T; → a walk's drift, an ant's highway), its death (✝ at step T: a worm, Life dying out) or frozen
-// (■ from gen T), the length asked (STEPS_GLYPH, its stepper's), a battle's end before its digits (■ the first heads met at step T); '' while none is known (Space-time
-// and Elementary: none)
+// (■ from gen T), the length asked (STEPS_GLYPH, its stepper's: Space-time's and Elementary's always), a battle's end before its digits (■ the first heads met at
+// step T); '' while none is known
 const STEPS_GLYPH = '𓊍'; // the length asked's mark: its stepper's unit, a run ended by it (Egyptian hieroglyph O40, a stair)
 // the run ended by the length asked (its stepper's, at the top right), not by its own end
 const endsAtLength = () => lengthUsed() && seekFar() === lengthAsked() && !runLoop();
 function endMark() {
-  if (walk.stacked || walk.rows) return '';
   if (endsAtLength())
     return `<a class="gen-link gen-loop" href="#" data-stepper data-gen="${walk.n}" title="The length asked: a click goes there and shows its stepper, at the top right">${STEPS_GLYPH}<span class="end-words"> max defined upper-right</span></a>`; // (its end the length asked: a click goes there and highlights its stepper)
+  if (walk.stacked || walk.rows) return '';
   if (walk.battle) {
     const why = walk.battle.winner.until;
     return why

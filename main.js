@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.78';
+const VERSION = '0.5.79';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -4231,143 +4231,119 @@ const VARIANTS = {
     rule: 'along a spiral of hexagons: <b>1</b> draw the step, <b>0</b> move without drawing',
   },
   walkTetrahedronTrianglesTurtleCells: {
-    base: 2,
-    arrows: '↖↗',
     lattice: 'surface',
     cells: true,
     twin: 'walkTetrahedronTrianglesTurtleEdges',
     surface: 'tetra',
     initial: 48,
     net: 'tri',
-    rule: 'on a tetrahedron of triangles: exit through the <b>0</b> left or <b>1</b> right edge',
+    where: 'on a tetrahedron of triangles',
   },
   walkTorusSquaresTurtleCells: {
-    base: 3,
-    arrows: '←↑→',
     lattice: 'surface',
     cells: true,
     twin: 'walkTorusSquaresTurtleEdges',
     surface: 'torus',
     initial: 48,
     net: 'square',
-    rule: 'on a torus of squares: <b>0</b> turn left, <b>1</b> straight on, <b>2</b> turn right',
+    where: 'on a torus of squares',
   },
   walkTorusTrianglesTurtleCells: {
-    base: 2,
-    arrows: '↖↗',
     lattice: 'surface',
     cells: true,
     twin: 'walkTorusTrianglesTurtleEdges',
     surface: 'torusTri',
     initial: 48,
     net: 'tri',
-    rule: 'on a torus of triangles: exit through the <b>0</b> left or <b>1</b> right edge',
+    where: 'on a torus of triangles',
   },
   // Cairo pentagons: out through one of the 4 other edges, edge k + 1 the sharpest right (as the 2D walk)
   walkTorusCairoTurtleCells: {
-    base: 4,
-    arrows: '↙↖↗↘',
     lattice: 'surface',
     cells: true,
     surface: 'torusCairo',
     initial: 32,
     net: 'cairo',
-    rule: 'on a torus of Cairo pentagons: out through one of its 4 other edges, <b>0</b> sharp left, <b>1</b> left, <b>2</b> right, <b>3</b> sharp right',
+    where: 'on a torus of Cairo pentagons',
   },
   // hexagons: entering through edge k, edge k + 1 is a sharp right, k + 2 right, k + 3 straight on
   walkTorusHexTurtleCells: {
-    base: 5,
-    arrows: '↙↖↑↗↘',
     lattice: 'surface',
     cells: true,
     twin: 'walkTorusHexTurtleEdges',
     surface: 'torusHex',
     initial: 48,
     net: 'hex',
-    rule: 'on a torus of hexagons: <b>0</b> sharp left, <b>1</b> left, <b>2</b> straight, <b>3</b> right, <b>4</b> sharp right',
+    where: 'on a torus of hexagons',
   },
   walkMobiusStripSquaresTurtleCells: {
-    base: 3,
-    arrows: '←↑→',
     lattice: 'surface',
     cells: true,
     twin: 'walkMobiusStripSquaresTurtleEdges',
     surface: 'mobius',
     net: 'square',
-    rule: 'on a Möbius strip of squares: <b>0</b> turn left, <b>1</b> straight on, <b>2</b> turn right (over its edge, onto the face behind)',
+    where: 'on a Möbius strip of squares',
+    tail: ' (over its edge, onto the face behind)',
   },
   walkMobiusStripHexTurtleCells: {
-    base: 5,
-    arrows: '↙↖↑↗↘',
     lattice: 'surface',
     cells: true,
     twin: 'walkMobiusStripHexTurtleEdges',
     surface: 'mobiusHex',
     net: 'hex',
-    rule: 'on a Möbius strip of hexagons: <b>0</b> sharp left, <b>1</b> left, <b>2</b> straight, <b>3</b> right, <b>4</b> sharp right (over its edge, onto the face behind)',
+    where: 'on a Möbius strip of hexagons',
+    tail: ' (over its edge, onto the face behind)',
   },
   // a Klein bottle (its neck through its side, opening into its bottom): as the torus's walks
   walkKleinBottleSquaresTurtleCells: {
-    base: 3,
-    arrows: '←↑→',
     lattice: 'surface',
     cells: true,
     twin: 'walkKleinBottleSquaresTurtleEdges',
     surface: 'klein',
     net: 'square',
-    rule: 'on a Klein bottle of squares: <b>0</b> turn left, <b>1</b> straight on, <b>2</b> turn right',
+    where: 'on a Klein bottle of squares',
   },
   walkKleinBottleHexTurtleCells: {
-    base: 5,
-    arrows: '↙↖↑↗↘',
     lattice: 'surface',
     cells: true,
     twin: 'walkKleinBottleHexTurtleEdges',
     surface: 'kleinHex',
     net: 'hex',
-    rule: 'on a Klein bottle of hexagons: <b>0</b> sharp left, <b>1</b> left, <b>2</b> straight, <b>3</b> right, <b>4</b> sharp right',
+    where: 'on a Klein bottle of hexagons',
   },
   walkKleinBottleTrianglesTurtleCells: {
-    base: 2,
-    arrows: '↖↗',
     lattice: 'surface',
     cells: true,
     twin: 'walkKleinBottleTrianglesTurtleEdges',
     surface: 'kleinTri',
     net: 'tri',
-    rule: 'on a Klein bottle of triangles: exit through the <b>0</b> left or <b>1</b> right edge',
+    where: 'on a Klein bottle of triangles',
   },
   walkKleinBottleCairoTurtleCells: {
-    base: 4,
-    arrows: '↙↖↗↘',
     lattice: 'surface',
     cells: true,
     surface: 'kleinCairo',
     net: 'cairo',
-    rule: 'on a Klein bottle of Cairo pentagons: out through one of its 4 other edges, <b>0</b> sharp left, <b>1</b> left, <b>2</b> right, <b>3</b> sharp right',
+    where: 'on a Klein bottle of Cairo pentagons',
   },
   walkMobiusStripCairoTurtleCells: {
-    base: 4,
-    arrows: '↙↖↗↘',
     lattice: 'surface',
     cells: true,
     surface: 'mobiusCairo',
     net: 'cairo',
-    rule: 'on a Möbius strip of Cairo pentagons: out through one of its 4 other edges, <b>0</b> sharp left, <b>1</b> left, <b>2</b> right, <b>3</b> sharp right (over its edge, onto the face behind)',
+    where: 'on a Möbius strip of Cairo pentagons',
+    tail: ' (over its edge, onto the face behind)',
   },
   walkMobiusStripTrianglesTurtleCells: {
-    base: 2,
-    arrows: '↖↗',
     lattice: 'surface',
     cells: true,
     twin: 'walkMobiusStripTrianglesTurtleEdges',
     surface: 'mobiusTri',
     net: 'tri',
-    rule: 'on a Möbius strip of triangles: exit through the <b>0</b> left or <b>1</b> right edge (over its edge, onto the face behind)',
+    where: 'on a Möbius strip of triangles',
+    tail: ' (over its edge, onto the face behind)',
   },
   walkCubeSquaresTurtleCells: {
-    base: 3,
-    arrows: '←↑→',
     lattice: 'surface',
     cells: true,
     twin: 'walkCubeSquaresTurtleEdges',
@@ -4375,189 +4351,161 @@ const VARIANTS = {
     surface: 'cube',
     initial: 48,
     net: 'square',
-    rule: 'on the surface of a cube: <b>0</b> turn left, <b>1</b> straight on, <b>2</b> turn right',
+    where: 'on the surface of a cube',
   },
   walkOctahedronTrianglesTurtleCells: {
-    base: 2,
-    arrows: '↖↗',
     lattice: 'surface',
     cells: true,
     twin: 'walkOctahedronTrianglesTurtleEdges',
     surface: 'octa',
     initial: 48,
     net: 'tri',
-    rule: 'on an octahedron of triangles: exit through the <b>0</b> left or <b>1</b> right edge',
+    where: 'on an octahedron of triangles',
   },
   // hexagons and pentagons alike: the edges two away from the one you came in through, on either side
   walkIcosahedronHexTurtleCells: {
-    base: 2,
-    arrows: '↖↗',
     lattice: 'surface',
     cells: true,
     twin: 'walkIcosahedronHexTurtleEdges',
     ant: 'antIcosahedronHexCells',
     surface: 'hexsphere',
     net: 'hex',
-    rule: 'on an icosahedron of hexagons (and 12 pentagons: a Goldberg polyhedron): exit through the <b>0</b> front left or <b>1</b> front right edge',
+    where: 'on an icosahedron of hexagons (and 12 pentagons',
   },
   walkStellaOctangulaTrianglesTurtleCells: {
-    base: 2,
-    arrows: '↖↗',
     lattice: 'surface',
     cells: true,
     twin: 'walkStellaOctangulaTrianglesTurtleEdges',
     surface: 'stella',
     net: 'tri',
-    rule: 'on a stella octangula (two tetrahedra) of triangles: exit through the <b>0</b> left or <b>1</b> right edge',
+    where: 'on a stella octangula (two tetrahedra) of triangles',
   },
   walkDodecahedronTrianglesTurtleCells: {
-    base: 2,
-    arrows: '↖↗',
     lattice: 'surface',
     cells: true,
     twin: 'walkDodecahedronTrianglesTurtleEdges',
     surface: 'dodeca',
     net: 'tri',
-    rule: 'on a dodecahedron, its pentagons cut into triangles: exit through the <b>0</b> left or <b>1</b> right edge',
+    where: 'on a dodecahedron, its pentagons cut into triangles',
   },
   walkIcosahedronTrianglesTurtleCells: {
-    base: 2,
-    arrows: '↖↗',
     lattice: 'surface',
     cells: true,
     twin: 'walkIcosahedronTrianglesTurtleEdges',
     ant: 'antIcosahedronTrianglesCells',
     surface: 'icosa',
     net: 'tri',
-    rule: 'on an icosahedron of triangles: exit through the <b>0</b> left or <b>1</b> right edge',
+    where: 'on an icosahedron of triangles',
   },
   // along the edges: from corner to corner, turning by these angles (degrees, left positive), or as close
   // to them as the edges at a corner allow
   walkTorusSquaresTurtleEdges: {
-    base: 3,
-    arrows: '←↑→',
     lattice: 'surface',
     twin: 'walkTorusSquaresTurtleCells',
     surface: 'torus',
     edges: true,
     initial: 48,
-    turns: [90, 0, -90],
-    rule: 'along the edges of a torus of squares: <b>0</b> turn left, <b>1</b> straight on, <b>2</b> turn right',
+    net: 'square',
+    where: 'along the edges of a torus of squares',
   },
   walkTorusTrianglesTurtleEdges: {
-    base: 5,
-    arrows: '↙↖↑↗↘',
     lattice: 'surface',
     twin: 'walkTorusTrianglesTurtleCells',
     surface: 'torusTri',
     edges: true,
     initial: 48,
-    turns: [120, 60, 0, -60, -120],
-    rule: 'along the edges of a torus of triangles: <b>0</b> sharp left, <b>1</b> left, <b>2</b> straight, <b>3</b> right, <b>4</b> sharp right',
+    net: 'hex',
+    where: 'along the edges of a torus of triangles',
   },
   walkTorusHexTurtleEdges: {
-    base: 2,
-    arrows: '↖↗',
     lattice: 'surface',
     twin: 'walkTorusHexTurtleCells',
     surface: 'torusHex',
     edges: true,
     initial: 48,
-    turns: [60, -60],
-    rule: 'along the edges of a torus of hexagons: <b>0</b> turn left, <b>1</b> turn right',
+    net: 'tri',
+    where: 'along the edges of a torus of hexagons',
   },
   walkMobiusStripSquaresTurtleEdges: {
-    base: 3,
-    arrows: '←↑→',
     lattice: 'surface',
     twin: 'walkMobiusStripSquaresTurtleCells',
     surface: 'mobius',
     edges: true,
-    turns: [90, 0, -90],
-    rule: 'along the edges of a Möbius strip of squares: <b>0</b> turn left, <b>1</b> straight on, <b>2</b> turn right (over its edge, onto the face behind)',
+    net: 'square',
+    where: 'along the edges of a Möbius strip of squares',
+    tail: ' (over its edge, onto the face behind)',
   },
   walkMobiusStripHexTurtleEdges: {
-    base: 2,
-    arrows: '↖↗',
     lattice: 'surface',
     twin: 'walkMobiusStripHexTurtleCells',
     surface: 'mobiusHex',
     edges: true,
-    turns: [60, -60],
-    rule: 'along the edges of a Möbius strip of hexagons: <b>0</b> turn left, <b>1</b> turn right (over its edge, onto the face behind)',
+    net: 'tri',
+    where: 'along the edges of a Möbius strip of hexagons',
+    tail: ' (over its edge, onto the face behind)',
   },
   walkMobiusStripTrianglesTurtleEdges: {
-    base: 5,
-    arrows: '↙↖↑↗↘',
     lattice: 'surface',
     twin: 'walkMobiusStripTrianglesTurtleCells',
     surface: 'mobiusTri',
     edges: true,
-    turns: [120, 60, 0, -60, -120],
-    rule: 'along the edges of a Möbius strip of triangles: <b>0</b> sharp left, <b>1</b> left, <b>2</b> straight, <b>3</b> right, <b>4</b> sharp right (over its edge, onto the face behind)',
+    net: 'hex',
+    where: 'along the edges of a Möbius strip of triangles',
+    tail: ' (over its edge, onto the face behind)',
   },
   walkKleinBottleSquaresTurtleEdges: {
-    base: 3,
-    arrows: '←↑→',
     lattice: 'surface',
     twin: 'walkKleinBottleSquaresTurtleCells',
     surface: 'klein',
     edges: true,
-    turns: [90, 0, -90],
-    rule: 'along the edges of a Klein bottle of squares: <b>0</b> turn left, <b>1</b> straight on, <b>2</b> turn right',
+    net: 'square',
+    where: 'along the edges of a Klein bottle of squares',
   },
   walkKleinBottleHexTurtleEdges: {
-    base: 2,
-    arrows: '↖↗',
     lattice: 'surface',
     twin: 'walkKleinBottleHexTurtleCells',
     surface: 'kleinHex',
     edges: true,
-    turns: [60, -60],
-    rule: 'along the edges of a Klein bottle of hexagons: <b>0</b> turn left, <b>1</b> turn right',
+    net: 'tri',
+    where: 'along the edges of a Klein bottle of hexagons',
   },
   walkKleinBottleTrianglesTurtleEdges: {
-    base: 5,
-    arrows: '↙↖↑↗↘',
     lattice: 'surface',
     twin: 'walkKleinBottleTrianglesTurtleCells',
     surface: 'kleinTri',
     edges: true,
-    turns: [120, 60, 0, -60, -120],
-    rule: 'along the edges of a Klein bottle of triangles: <b>0</b> sharp left, <b>1</b> left, <b>2</b> straight, <b>3</b> right, <b>4</b> sharp right',
+    net: 'hex',
+    where: 'along the edges of a Klein bottle of triangles',
   },
   walkCubeSquaresTurtleEdges: {
-    base: 3,
-    arrows: '←↑→',
     lattice: 'surface',
     twin: 'walkCubeSquaresTurtleCells',
     surface: 'cube',
     edges: true,
     initial: 48,
-    turns: [90, 0, -90],
-    rule: 'along the edges of the squares of a cube: <b>0</b> turn left, <b>1</b> straight on, <b>2</b> turn right (at a corner of the cube, the nearest edge)',
+    net: 'square',
+    where: 'along the edges of the squares of a cube',
+    tail: ' (at a corner of the cube, the nearest edge)',
   },
   walkTetrahedronTrianglesTurtleEdges: {
-    base: 5,
-    arrows: '↙↖↑↗↘',
     lattice: 'surface',
     twin: 'walkTetrahedronTrianglesTurtleCells',
     surface: 'tetra',
     edges: true,
     initial: 48,
-    turns: [120, 60, 0, -60, -120],
-    rule: 'along the edges of a tetrahedron of triangles: <b>0</b> sharp left, <b>1</b> left, <b>2</b> straight, <b>3</b> right, <b>4</b> sharp right (at a corner of the solid, the nearest edge)',
+    net: 'hex',
+    where: 'along the edges of a tetrahedron of triangles',
+    tail: ' (at a corner of the solid, the nearest edge)',
   },
   walkOctahedronTrianglesTurtleEdges: {
-    base: 5,
-    arrows: '↙↖↑↗↘',
     lattice: 'surface',
     twin: 'walkOctahedronTrianglesTurtleCells',
     surface: 'octa',
     initial: 48,
     edges: true,
-    turns: [120, 60, 0, -60, -120],
-    rule: 'along the edges of an octahedron of triangles: <b>0</b> sharp left, <b>1</b> left, <b>2</b> straight, <b>3</b> right, <b>4</b> sharp right (at a corner of the solid, the nearest edge)',
+    net: 'hex',
+    where: 'along the edges of an octahedron of triangles',
+    tail: ' (at a corner of the solid, the nearest edge)',
   },
   // Set aside: on triangles, turns of ±60° only walk a hidden grid of hexagons (3 times fewer
   // corners), so they need many triangles for few patterns; the hexagon sphere does it directly.
@@ -4566,44 +4514,39 @@ const VARIANTS = {
   // icosaGrid3: { base: 3, lattice: 'surface', surface: 'icosa', edges: true, turns: [60, 0, -60],
   //               rule: 'along the edges of an icosahedron of triangles: <b>0</b> front left, <b>1</b> forward, <b>2</b> front right (at a corner of the solid, the nearest edge)' },
   walkIcosahedronHexTurtleEdges: {
-    base: 2,
-    arrows: '↖↗',
     lattice: 'surface',
     twin: 'walkIcosahedronHexTurtleCells',
     surface: 'hexsphere',
     edges: true,
-    turns: [60, -60],
-    rule: 'along the edges of an icosahedron of hexagons (and 12 pentagons: a Goldberg polyhedron): <b>0</b> turn left, <b>1</b> turn right',
+    net: 'tri',
+    where: 'along the edges of an icosahedron of hexagons (and 12 pentagons',
   },
   walkStellaOctangulaTrianglesTurtleEdges: {
-    base: 5,
-    arrows: '↙↖↑↗↘',
     lattice: 'surface',
     twin: 'walkStellaOctangulaTrianglesTurtleCells',
     surface: 'stella',
     edges: true,
-    turns: [120, 60, 0, -60, -120],
-    rule: 'along the edges of a stella octangula (two tetrahedra) of triangles: <b>0</b> sharp left, <b>1</b> left, <b>2</b> straight, <b>3</b> right, <b>4</b> sharp right (at a tip or a hollow corner, the nearest edge)',
+    net: 'hex',
+    where: 'along the edges of a stella octangula (two tetrahedra) of triangles',
+    tail: ' (at a tip or a hollow corner, the nearest edge)',
   },
   walkDodecahedronTrianglesTurtleEdges: {
-    base: 5,
-    arrows: '↙↖↑↗↘',
     lattice: 'surface',
     twin: 'walkDodecahedronTrianglesTurtleCells',
     surface: 'dodeca',
     edges: true,
-    turns: [120, 60, 0, -60, -120],
-    rule: 'along the edges of a dodecahedron, its pentagons cut into triangles: <b>0</b> sharp left, <b>1</b> left, <b>2</b> straight, <b>3</b> right, <b>4</b> sharp right (at a corner of the solid, the nearest edge)',
+    net: 'hex',
+    where: 'along the edges of a dodecahedron, its pentagons cut into triangles',
+    tail: ' (at a corner of the solid, the nearest edge)',
   },
   walkIcosahedronTrianglesTurtleEdges: {
-    base: 5,
-    arrows: '↙↖↑↗↘',
     lattice: 'surface',
     twin: 'walkIcosahedronTrianglesTurtleCells',
     surface: 'icosa',
     edges: true,
-    turns: [120, 60, 0, -60, -120],
-    rule: 'along the edges of an icosahedron of triangles: <b>0</b> sharp left, <b>1</b> left, <b>2</b> straight, <b>3</b> right, <b>4</b> sharp right (at a corner of the solid, the nearest edge)',
+    net: 'hex',
+    where: 'along the edges of an icosahedron of triangles',
+    tail: ' (at a corner of the solid, the nearest edge)',
   },
   // a reversible automaton: the grid in 2 × 2 blocks, shifted by one each generation (Margolus's), each block by its rule
   rewindSquares: {
@@ -9903,24 +9846,20 @@ for (const [k, { a, name, others }] of Object.entries(HEX_SOLIDS)) {
     alongEdges = variantName('Walk', name, 'Hexagons', 'Turtle', 'edges'),
     onCells = variantName('Walk', name, 'Hexagons', 'Turtle', 'cells');
   VARIANTS[alongEdges] = {
-    base: 2,
-    arrows: '↖↗',
     lattice: 'surface',
     twin: onCells,
     surface: `${k}Hex`,
     edges: true,
-    turns: [60, -60],
-    rule: `along the edges of ${on}: <b>0</b> turn left, <b>1</b> turn right`,
+    net: 'tri',
+    where: `along the edges of ${on}`,
   }; // (as the sphere's walks, flat: not round, see walkIcosahedronHexTurtleEdges)
   VARIANTS[onCells] = {
-    base: 2,
-    arrows: '↖↗',
     lattice: 'surface',
     cells: true,
     twin: alongEdges,
     surface: `${k}Hex`,
     net: 'hex',
-    rule: `on ${on}: exit through the <b>0</b> front left or <b>1</b> front right edge`,
+    where: `on ${on}`,
   };
   for (const [w, how] of [
     [alongEdges, 'edges'],
@@ -9955,22 +9894,18 @@ for (const [k, S] of Object.entries(HULL_SOLIDS)) {
   if (S.walks) {
     const [onEdges, onCells] = ['edges', 'cells'].map((side) => variantName('Walk', S.name, S.cells, 'Turtle', side)),
       a = `a ${S.name.toLowerCase()}`;
-    for (const [w, side, twin, rule] of [
+    for (const [w, side, twin, where, tail] of [
       [
         onEdges,
         'edges',
         onCells,
-        `along the edges of the squares of ${a}: <b>0</b> turn left, <b>1</b> straight on, <b>2</b> turn right (at a corner of the solid, the nearest edge)`,
+        `along the edges of the squares of ${a}`,
+        ' (at a corner of the solid, the nearest edge)',
       ],
-      [
-        onCells,
-        'cells',
-        onEdges,
-        `on the surface of ${a}: <b>0</b> turn left, <b>1</b> straight on, <b>2</b> turn right`,
-      ],
+      [onCells, 'cells', onEdges, `on the surface of ${a}`, ''],
     ]) {
       const { ant, ...cube } = VARIANTS[variantName('Walk', 'Cube', 'Squares', 'Turtle', side)]; // (its own: no ant)
-      VARIANTS[w] = { ...cube, surface: k, twin, rule };
+      VARIANTS[w] = { ...cube, surface: k, twin, where, tail };
       VARIANT_ICONS[w] = hullIcon(k);
       NAV[w] = ['Walk', 'Surfaces', S.name, 'Turtle', side];
       document
@@ -9988,18 +9923,20 @@ for (const [tiling, surface] of [
   const w = variantName('Walk', 'Sphere', tiling, 'Turtle', 'cells'),
     where = `on a sphere of ${tiling === 'Kites' ? 'kites' : "Penrose's rhombi"}`,
     { ant, twin, initial, ...cube } = VARIANTS[variantName('Walk', 'Cube', 'Squares', 'Turtle', 'cells')]; // (its own: no ant, no edges, its sizes)
-  VARIANTS[w] = {
-    ...cube,
-    surface,
-    where,
-    rule: `${where}: <b>0</b> turn left, <b>1</b> straight on, <b>2</b> turn right`,
-  };
+  VARIANTS[w] = { ...cube, surface, where, tail: '' };
   VARIANT_ICONS[w] = VARIANT_ICONS[variantName('Life', 'Sphere', tiling)];
   NAV[w] = ['Walk', 'Surfaces', 'Sphere', 'Turtle', 'cells'];
   document
     .querySelector('#variant optgroup[label="Walks on surfaces"]')
     .append(new Option(`Sphere of ${tiling.toLowerCase()} — base 3 (left / forward / right)`, w));
 }
+// The surfaces' turtles by a rule too, declared by their tiles' network (net: its commands; on cells a command's edge by
+// construction, see cellTurn) and their words (where, its note tail); along the edges, their network's turns, one per command
+// in degrees, left to right
+const EDGE_TURNS = { tri: [60, -60], square: [90, 0, -90], hex: [120, 60, 0, -60, -120] };
+for (const [w, m] of Object.entries(VARIANTS))
+  if (NAV[w]?.[0] === 'Walk' && NAV[w][3] === 'Turtle' && m.lattice === 'surface' && m.edges)
+    m.turns = EDGE_TURNS[m.net];
 for (const [kind, t] of Object.entries(TILINGS)) {
   lifeGrid(variantName('Life', t.name), '2D', t.name, `tiling-${kind}`, { lattice: kind, plane: kind, where: t.where });
   for (const [fold, F] of Object.entries(FOLDS))
@@ -13312,26 +13249,14 @@ const walkRuleText = (w) =>
   `${VARIANTS[w].where}: ${walkCommandsOf(w)
     .map((t, d) => `<b>${d}</b> ${COMMANDS[t].short}`)
     .join(', ')}${VARIANTS[w].tail ?? ''}`;
-// The surfaces' turtles by a rule too: on cells, their tiles' network (net: its commands, a command's edge by construction, see
-// cellTurn); along the edges turns, one per command of their tiles' network in degrees (its turns left to right; null, a command
-// it has not), their network by how many
-const NET_BY_TURNS = { 2: 'tri', 3: 'square', 4: 'cairo', 5: 'hex' };
-for (const [w, m] of Object.entries(VARIANTS)) {
-  if (NAV[w]?.[0] !== 'Walk' || NAV[w][3] !== 'Turtle' || m.lattice !== 'surface' || !(m.turns || m.net)) continue;
-  Object.assign(m, {
-    net: m.net ?? NET_BY_TURNS[m.turns.length],
-    where: m.rule.split(':')[0],
-    tail: m.rule.match(/ \([^)]*\)$/)?.[0] ?? '',
-  }); // (its words before its digits', its note after)
-}
 // every walk by a rule: its base, arrows and rule's text by it; on squares, no Area with a diagonal (steps across no edge)
 for (const [w, m] of Object.entries(VARIANTS))
   if (m.net) {
     Object.defineProperties(m, {
-      base: { get: () => walkCommandsOf(w).length },
-      arrows: { get: () => walkArrows(w) },
-      rule: { get: () => walkRuleText(w) },
-    });
+      base: { get: () => walkCommandsOf(w).length, enumerable: true },
+      arrows: { get: () => walkArrows(w), enumerable: true },
+      rule: { get: () => walkRuleText(w), enumerable: true },
+    }); // (fields as the others: a copy of it, {...m}, has them)
     if (m.net === 'square' && !m.surface)
       Object.defineProperty(m, 'fill', {
         get: () => (walkCommandsOf(w).some((t) => WALK_NETS.square.diagonals.includes(t)) ? false : undefined),

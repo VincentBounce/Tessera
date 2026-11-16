@@ -1076,7 +1076,7 @@ function checkVariantNames(fail) {
 // them) or its mode's (the same for each mode and its own choices there: a walk's kind, its side), none mixed; and the
 // variants as they were (VARIANTS_PRINT: their fields, the menu's places and order, the families, the page's options; the
 // variants made in any order)
-const VARIANTS_PRINT = -1076512583; // (v0.5.78: Life's grids said once, LIFE_GRIDS; the options by value and group)
+const VARIANTS_PRINT = 1184240808; // (v0.5.79: the surface walks declared by their net and words; base, arrows, rule fields of every walk by a rule)
 const variantsPrint = () => {
   const text = JSON.stringify([
     Object.keys(NAV)

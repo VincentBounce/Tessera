@@ -37,7 +37,12 @@ Steps, each shipped and checked on its own:
      `NAV`, `VARIANT_ICONS`, index.html) one table, `LIFE_GRIDS`, in the menu's order; the families' loops (tilings and
      folds, solids, cones, rosettes) through it too; index.html's 71 options of Life's gone. One change: the carved
      cubes' tetrakis grids get their cube's icon (none before: copied before it was set).
-   - **3b**: the walks' turtle rules in a table by tiling, each walk made from its grid and that rule.
+   - **3b, first part done (v0.5.79)**: a walk on a surface declared as a 2D one, by its network and words (`net`,
+     `where`, its note `tail`): its base, arrows and rule's text made from its commands (`walkRuleText`, as they already
+     were: the declared ones overwritten), its turns along the edges from its network (`EDGE_TURNS`). 49 walks (35 in
+     `VARIANTS`, the hexagon solids', the hull solids', the sphere's quadrilaterals') lose their dead `base`, `arrows`,
+     `rule` and `turns`; the code reading their words back out of their rule's text gone. Left: the walks' 103 options
+     in index.html (their words read for a spiral's base, see `splitModeLabel`).
 4. **One flag, one meaning**: `life` means "plays Life"; Explore no longer carries it, its "but Explore" gone
    (`plays` in `sectionsOf`, the hunt's stop, the wall, the Outline, `startLife`'s Explore branch).
 5. **A night**: `tesseraCheck()`, the Gallery's cards opened cold, the fuzz.

@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.108';
+const VERSION = '0.5.109';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -45444,7 +45444,7 @@ function renderGauges(L) {
     ['Turnover', null, turnover, `${Math.round(100 * turnover)} %`],
     [
       'Ever alive',
-      null,
+      'var(--sweet-spot-color)', // (violet, as the Heatmap's middle)
       L.everAlive / n,
       `<span title="${formatNumber(L.everAlive)} of ${formatNumber(n)} cells alive at least once">${formatNumber(L.everAlive)} · ${Math.round((100 * L.everAlive) / n)} %</span>`,
     ], // (its share of the grid, the cells reached: what Hunt › Reach all hunts)

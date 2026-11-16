@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.54';
+const VERSION = '0.5.55';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -8387,6 +8387,8 @@ const ICONS = (() => {
         .join(''), // Realm: each colour its part, apart
     info: '<circle cx="12" cy="12" r="9"/><path d="M12 10.5V17"/><circle class="f" cx="12" cy="7.3" r="1.3"/>', // How it works: on its buttons and on each rule's card
     twoCells: '<circle class="f" cx="7" cy="12" r="2.2"/><circle class="f" cx="17" cy="12" r="2.2"/>', // Elementary's Two cells
+    moreTabs:
+      '<circle class="f" cx="5" cy="12" r="1.8"/><circle class="f" cx="12" cy="12" r="1.8"/><circle class="f" cx="19" cy="12" r="1.8"/>', // the tabs that do not fit (see fitModeTabs)
     halfRow: '<rect x="3" y="9" width="18" height="6" rx="1"/><path class="f" d="M3 9H12V15H3Z"/>', // its Half: a row, its left half alive
     zoneMirror:
       '<path d="M8 7L16 4M8 20L16 17" stroke-dasharray="1.6 2"/><path class="f" d="M3 7H8V20H3Z"/><path class="f" d="M16 4H21V17H16Z"/>', // two opposite faces: a box's two ends
@@ -11067,13 +11069,43 @@ function setAntRule(w, rule) {
   renderModePicker();
   compute();
 }
+// The mode tabs that do not fit the header's row, from the last: moved into a "…" tab's menu, a list under it (the same
+// buttons, their clicks and active state as in the row); the "…" active when the tab shown is in it
+const moreMenu = Object.assign(document.createElement('div'), { className: 'tab-menu', hidden: true }),
+  moreTabs = Object.assign(document.createElement('div'), { className: 'tabs-more', hidden: true });
+moreTabs.append(
+  tile({
+    html: icon('moreTabs'),
+    title: 'The tabs that do not fit the window',
+    click: () => openMoreMenu(moreMenu.hidden),
+  }),
+  moreMenu,
+);
+const openMoreMenu = (open) => {
+  moreMenu.hidden = !open;
+  moreTabs.classList.toggle('open', open);
+};
+document.addEventListener('pointerdown', (e) => {
+  if (!moreTabs.contains(e.target)) openMoreMenu(false);
+}); // (a click anywhere else closes it)
+moreMenu.addEventListener('click', () => openMoreMenu(false)); // (a tab picked in it too; open while the row is drawn again)
+function fitModeTabs() {
+  const row = $('modeTabs');
+  for (const b of [...moreMenu.children]) row.insertBefore(b, moreTabs);
+  moreTabs.hidden = row.scrollWidth <= row.clientWidth;
+  while (!moreTabs.hidden && row.scrollWidth > row.clientWidth && moreTabs.previousElementSibling !== galleryTab())
+    moreMenu.prepend(moreTabs.previousElementSibling);
+  moreTabs.firstChild.classList.toggle('active', !!moreMenu.querySelector('.active'));
+}
+new ResizeObserver(fitModeTabs).observe(document.querySelector('.header-row'));
 function renderModePicker() {
   const w = tabVariant(),
     [kind, space, shape, rule] = NAV[w];
   if (rulesVariant !== w) customOpen = false; // (Custom rule closed on another variant, before its cards are drawn)
   rulesVariant = w;
   const button = (html, active, go, title = '', more = {}) => tile({ html, title, on: active, click: go, ...more });
-  // at the top: Walk, Ant, Life
+  // at the top: Walk, Ant, Life (made again: those in the "…" tab's menu too)
+  moreMenu.replaceChildren();
   $('modeTabs').replaceChildren(
     galleryTab(),
     ...MODE_TABS.map(([k, pic, title]) => {
@@ -11091,6 +11123,8 @@ function renderModePicker() {
       return b;
     }),
   );
+  $('modeTabs').append(moreTabs);
+  fitModeTabs();
   $('walkHeading').innerHTML = icon(kind === 'Walk' ? 'compass' : 'grid') + WALK_HEADINGS[kind];
   // its spaces (see SPACES), one choice among them: only those it has (no ant nor automaton in Lattice)
   $('navSpace').replaceChildren(
@@ -46573,7 +46607,7 @@ const KEYS = [
   ['r', 'R', ['#restart']],
   ['e', 'E', ['#end', '#barNum .gen-link', '#jump10k']],
   ['f', 'F', ['#autoFitTile'], recentre],
-  ['Escape', 'Escape', ['.tut-close', '.pane-tab.open']],
+  ['Escape', 'Escape', ['.tabs-more.open > button', '.tut-close', '.pane-tab.open']],
 ];
 // a control's key, its name (see KEYS), if it has one
 const shortcutOf = (el) => KEYS.find(([, , controls]) => controls.some((c) => el.matches(c)))?.[1];

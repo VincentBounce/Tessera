@@ -110,9 +110,9 @@ header {
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  flex-wrap: wrap;
 }
 .header-end {
+  flex: none;
   display: flex;
   align-self: stretch;
   align-items: center;
@@ -665,6 +665,39 @@ button.wide.on-list {
 } /* a wide button right under its tiles (How it works), as close as a row of them */
 
 /* Walk mode: one tab per category, then every choice of that category */
+#modeTabs {
+  flex: 1;
+  min-width: 0;
+  flex-wrap: nowrap;
+} /* one row, the app's tab on its right: the tabs that do not fit in the "…" tab's menu (see fitModeTabs) */
+.tabs-more {
+  position: relative;
+  display: flex;
+}
+.tab-menu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  z-index: 7;
+  display: flex;
+  flex-direction: column;
+  padding: 4px;
+  background: var(--panel-background);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+} /* a list under the "…" tab, over everything (the tooltip's 6 included) */
+.tabs .tab-menu button {
+  margin: 0;
+  padding: 8px 12px;
+  border: 0;
+  border-radius: 4px;
+  text-align: left;
+  justify-content: flex-start;
+}
+.tabs .tab-menu button:hover:not(.active) {
+  background: var(--picked-background);
+} /* its rows: each tab's picture and name, the active one in yellow, none underlined */
 /* Tabs: text only, the active one in yellow and underlined on the header's hairline; always bold,
    so the active tab keeps its width */
 .tabs {

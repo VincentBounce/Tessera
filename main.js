@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.151';
+const VERSION = '0.5.152';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -6684,7 +6684,7 @@ function relabelColours(variant) {
         digit: 'State changes',
         domain: 'The background, what repeats, pale; what breaks it in gold (its domains and particles)',
         entropy:
-          'Each cell by how unforeseen it is from its own column above it (its local entropy rate): what repeats pale, chaos and what breaks a background in colour',
+          'Each live cell coloured by how unforeseen it is from its own column above it (its local entropy rate): what repeats blue, chaos and what breaks a background red',
         cells: '',
         visits: '',
       };
@@ -42655,8 +42655,7 @@ function drawElementary(to) {
           wrong = breaks[y * w + x];
         if (look === 'entropy') {
           const v = R.entropy[y * w + x];
-          px[y * w + x] =
-            ((255 << 24) | mixed(rainbow[Math.round(v * (rainbow.length - 1))], Math.min(1, 3 * v))) >>> 0;
+          px[y * w + x] = ((255 << 24) | mixed(rainbow[Math.round(v * (rainbow.length - 1))], live / cells)) >>> 0; // (its live cells drawn, coloured by it)
         } else if (look === 'domain')
           px[y * w + x] = ((255 << 24) | mixed(2 * wrong >= live && live ? defect : background, live / cells)) >>> 0;
         else if (live) px[y * w + x] = ((Math.round((255 * live) / cells) << 24) | c) >>> 0;

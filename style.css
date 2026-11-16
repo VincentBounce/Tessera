@@ -1900,9 +1900,9 @@ button.active .bubble.active {
 /* open, on the buttons' right the speed */
 .player-controls {
   display: flex;
-  gap: 8px;
+  gap: 6px;
   align-items: flex-end;
-} /* the buttons where they were, open or not */
+} /* the buttons where they were, open or not; the speed after them as one more (their gap, see .play-row) */
 .player-main {
   flex: none;
 }

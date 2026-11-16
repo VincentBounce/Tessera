@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.120';
+const VERSION = '0.5.121';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -21538,8 +21538,9 @@ function fitLifeTeams(variant) {
 }
 // Explore: its rule (how a cell's colour is found) and its palette (see EXPLORE_PALETTES), each a choice of its section
 const EXPLORE_RULES = [
-  ['colouring', 'Colouring', 'Two cells side by side never the same colour'],
-  ['sides', 'Sides', 'A colour for each number of sides'],
+  ['colouring', 'Tiles', 'Two cells side by side never the same colour'],
+  ['faces', 'Sides', "Two sides of the solid side by side never the same colour (a solid's only)"],
+  ['sides', 'Kind of tile', 'A colour for each kind of tile, by its number of sides'],
   ['distance', 'Distance', 'The steps from the first cell, side by side, as rings round it'],
 ];
 const EXPLORE_PALETTES = [
@@ -21555,31 +21556,65 @@ const EXPLORE_PALETTES = [
 ]; // (name, colours, words)
 const exploreLook = { rule: 'colouring', palette: 0 },
   explorePalette = () => EXPLORE_PALETTES[exploreLook.palette][1];
+// a graph's greedy colouring: each node the first colour (1, 2…) none of its neighbours before it has (put: each neighbour)
+function greedyColours(count, eachNeighbour) {
+  const colour = new Uint8Array(count);
+  for (let a = 0; a < count; a++) {
+    let used = 0;
+    eachNeighbour(a, (b) => (used |= 1 << colour[b]));
+    let k = 1;
+    while (used & (1 << k)) k++;
+    colour[a] = k;
+  }
+  return colour;
+}
+// each cell's face of its solid, the one whose centre its middle is nearest (as a walk's start, see solidFaceCentres); null
+// off a solid
+function cellFaces(g, surface) {
+  if (!SOLIDS.includes(surface)) return null;
+  const centres = solidFaceCentres(g, solidCorners(g)),
+    face = new Int32Array(g.n);
+  for (let t = 0; t < g.n; t++) {
+    const c = g.cen.subarray(3 * t, 3 * t + 3);
+    let best = -Infinity;
+    centres.forEach((m, f) => {
+      if (dot3(m, c) > best) {
+        best = dot3(m, c);
+        face[t] = f;
+      }
+    });
+  }
+  return face;
+}
 // each cell's colour, 1 to the palette's: by its neighbours by a side (nbr, see sideOf), the first colour none of those
-// before has (Colouring: greedy, round the palette past its last), its sides counted, or its steps from cell 0 spread
+// before has (Tiles: greedy, round the palette past its last), its solid's face's (faces: each cell's, see cellFaces) the
+// same way among the faces (Sides; off a solid, Tiles), its sides counted (Kind of tile), or its steps from cell 0 spread
 // over the palette
-function exploreLevels(nbr, n) {
+function exploreLevels(nbr, n, faces) {
   const side = sideOf(nbr),
     P = explorePalette().length,
-    level = new Uint8Array(n);
+    rule = exploreLook.rule === 'faces' && !faces ? 'colouring' : exploreLook.rule;
+  let level = new Uint8Array(n);
   const sides = (t) => {
     let k = 0;
     for (let q = nbr.start[t]; q < nbr.start[t + 1]; q++) k += side[q];
     return k;
   };
-  if (exploreLook.rule === 'colouring')
-    for (let t = 0; t < n; t++) {
-      let used = 0;
-      for (let q = nbr.start[t]; q < nbr.start[t + 1]; q++) if (side[q]) used |= 1 << level[nbr.list[q]];
-      let k = 1;
-      while (used & (1 << k)) k++;
-      level[t] = k;
-    }
-  if (exploreLook.rule === 'sides') {
+  const bySide = (t, put) => {
+    for (let q = nbr.start[t]; q < nbr.start[t + 1]; q++) if (side[q]) put(nbr.list[q]);
+  };
+  if (rule === 'colouring') level = greedyColours(n, bySide);
+  if (rule === 'faces') {
+    const touching = Array.from({ length: Math.max(...faces) + 1 }, () => new Set());
+    for (let t = 0; t < n; t++) bySide(t, (u) => faces[u] !== faces[t] && touching[faces[t]].add(faces[u]));
+    const colour = greedyColours(touching.length, (f, put) => touching[f].forEach(put));
+    for (let t = 0; t < n; t++) level[t] = colour[faces[t]];
+  }
+  if (rule === 'sides') {
     const counts = [...new Set(Array.from({ length: n }, (_, t) => sides(t)))].sort((a, b) => a - b);
     for (let t = 0; t < n; t++) level[t] = 1 + counts.indexOf(sides(t));
   }
-  if (exploreLook.rule === 'distance') {
+  if (rule === 'distance') {
     const steps = new Int32Array(n).fill(-1),
       queue = [0];
     steps[0] = 0;
@@ -21609,6 +21644,8 @@ function renderExplore() {
           text: name,
           title,
           on: exploreLook.rule === key,
+          whyNot: ({ w }) =>
+            key === 'faces' && !SOLIDS.includes(surfaceOf(VARIANTS[w])) ? 'On a solid only: its sides.' : '',
           click: pick('rule', key),
           choice: `exploreRule:${key}`,
         }),
@@ -21638,7 +21675,7 @@ function renderExplore() {
 // freshWalk's (a grid's own given after, by its builder)
 function startLife(seq, rule, n, grid) {
   const explore = !!VARIANTS[walk.variant].explore;
-  if (explore) grid.seed = exploreLevels(grid.nbr, n); // (Explore: each cell alive in its colour, see exploreLevels)
+  if (explore) grid.seed = exploreLevels(grid.nbr, n, grid.faces); // (Explore: each cell alive in its colour, see exploreLevels)
   walk.life = {
     B: rule.B,
     S: rule.S,
@@ -21702,6 +21739,7 @@ function buildLife(seq, variant) {
     ringMore: rule.iso === 'hensel' && ring ? cornerNeighbours(g, 8).more : null,
     seed,
     margolus: variant.margolus && rule.margolus ? ruleBlocks(rule, blocksGrid(variant), g.nu, true, g.nv, g) : null,
+    faces: variant.explore ? cellFaces(g, kind) : null, // (Explore's Sides: each cell's face of its solid)
   });
   Object.assign(walk, {
     is3d: true,

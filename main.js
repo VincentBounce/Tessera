@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.155';
+const VERSION = '0.5.156';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -42644,7 +42644,7 @@ function drawElementary(to) {
       ($('colourMode').value === 'entropy' && !R.entropy) || ($('colourMode').value === 'domain' && !R.breaks)
         ? 'gradient'
         : $('colourMode').value; // (Entropy, Domains: up to MEASURE_MOST cells, else Age)
-  // (every look opaque: each pixel its colour mixed with the page's by its live cells, its dead ones the page's)
+  // (every look opaque where it has live cells: each pixel its colour mixed with the page's by them; one with none clear)
   const word = ([r, g, b]) => (b << 16) | (g << 8) | r,
     rowColour = (t) => rgbCached(look === 'mono' ? LIFE_ALIVE : rainbowNow()[Math.floor((t * BANDS) / (R.G + 1))]),
     page = rgbCached(cssColour('--page-background')),
@@ -42670,7 +42670,7 @@ function drawElementary(to) {
                   ? defect
                   : background
                 : row;
-        px[at] = ((255 << 24) | mixed(colour, live / cells)) >>> 0;
+        if (live) px[at] = ((255 << 24) | mixed(colour, live / cells)) >>> 0; // (a dead one clear: the grid under it seen)
       }
     }
     const cv = Object.assign(document.createElement('canvas'), { width: w, height: h });

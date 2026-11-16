@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.175';
+const VERSION = '0.5.176';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -17321,7 +17321,7 @@ const sizeShape = (kind, f) => {
 // how its cells are counted (the size's tooltip): its own words (Pits, Frame, Menger, theirs as tetrakis triangles), else its
 // count's form, c × f² (+ k: a sphere of hexagons' 12 pentagons, see goldberg), else the grid's rows × cells a row
 // a size's tooltip on its block, − + its label and its slider, as its motif shows on it (see drawMotif); its words
-// marked {y:…} {r:…} {o:…} in the colours they are drawn in: the motif's violet, a face's red, the corners' cells' ochre
+// marked {y:…} {r:…} {o:…} in the colours they are drawn in: the motif's violet, a face's red, the corners' cells' gold
 const cssColour = (name) => getComputedStyle(document.documentElement).getPropertyValue(name).trim(),
   motifColour = () => cssColour('--motif-color'),
   faceRed = () => cssColour('--face-color'); // (the page's, as its theme has them: see style.css)
@@ -26568,7 +26568,7 @@ const latticeCellTiles = (g) =>
 // A surface's motif round tile t (see middleTile), as its size's tooltip tells it, each part its colour and its
 // tiles: a sheet's lattice cell, a rosette sphere's disc's middle (the half t is on), a solid's cell (a kite's triangle, a
 // tetrakis square, a square of a solid of squares and triangles: blue), violet; its first cell green when it has several; a
-// solid's face red round it (its sector blue)
+// solid's face red round it (its sector blue); a solid of hexagons' corners' cells gold
 function motifOf(g, t) {
   const m = g.kite ? 3 : (g.per ?? 1), // (a kite's triangle, 3 kites; a cell cut again, its cells: see HULL_CUTS)
     motif = g.rosette
@@ -26583,6 +26583,7 @@ function motifOf(g, t) {
     ...(motif.length > 1 ? [[cssColour('--cell-color'), [motif[0]]]] : []),
     ...(face?.sector ? [[cssColour('--sector-color'), face.sector]] : []),
     ...(face ? [[faceRed(), face.face]] : []),
+    ...(g.cornerCells ? [[cssColour('--corner-cells-color'), g.cornerCells]] : []), // (as its tooltip's words: {o:…})
   ];
 }
 // Sets of tiles outlined as ribbons (see ribbonV) in the buffer name: each [colour, tiles] its sides not shared by two of its

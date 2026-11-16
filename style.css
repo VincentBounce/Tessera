@@ -41,6 +41,7 @@
   --sector-color: #58a6ff; /* a face's sector round it (a dodecahedron's pentagon, 5 triangles) */
   --edge-cells-color: #e3b341; /* a Möbius strip's edge's cells, their neighbours not as in its middle (see edgeRibbons) */
   --cell-color: #3fb950; /* a cell of the motif, when it has several (a triangle's 3 kites) */
+  --corner-cells-color: #c4934e; /* a solid of hexagons' corners' cells (the sphere's pentagons), outlined with the motif */
   --axis-east-color: #ff7b72; /* the view's axes in its corner (see gpuAxes): E, */
   --axis-north-color: #3fb950; /* N, */
   --axis-up-color: #4ea1ff; /* Up */
@@ -2132,11 +2133,11 @@ button.active .bubble.active {
   color: var(--cell-color);
 }
 .tip-o {
-  color: #c4934e;
+  color: var(--corner-cells-color);
 }
 .tip-e {
   color: var(--edge-cells-color);
-} /* a size's words in the colours drawn (see sizeTips; the walls': LIFE_WALL) */
+} /* a size's words in the colours drawn (see sizeTips) */
 
 @media (max-width: 720px) {
   main {

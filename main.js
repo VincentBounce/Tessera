@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.165';
+const VERSION = '0.5.166';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -10939,13 +10939,20 @@ function pathsTo(fits, budget = 5000, judgedAt = null) {
         .slice(0, 8)
         .map((size) => ['size', { ...start, size }, 'another size'])
     : [];
+  // (the generations, the steps stepper's ladder: its 8 nearest, a click away as a size)
+  const stepsNear = randomPrimeSize()
+    ? []
+    : DIGIT_STEPS.filter((n) => n !== start.steps && n <= lengthMost())
+        .sort((a, b) => Math.abs(Math.log(a / start.steps)) - Math.abs(Math.log(b / start.steps)))
+        .slice(0, 8)
+        .map((steps) => ['steps', { ...start, steps }, steps < start.steps ? 'fewer steps' : 'more steps']);
   let layer = [[start, []]],
     tried = 0;
   while (layer.length && tried < budget) {
     const hits = [],
       next = [];
     for (const [s, path] of layer) {
-      for (const [key, t, words] of [...edges(s), ...(path.length ? [] : sizes)]) {
+      for (const [key, t, words] of [...edges(s), ...(path.length ? [] : [...sizes, ...stepsNear])]) {
         const k = setupKey(t);
         if (seen.has(k) || !readChanged(s, t) || (judgedAt && t.w !== judgedAt) || ++tried > budget) continue;
         seen.add(k);
@@ -10963,16 +10970,22 @@ function pathsTo(fits, budget = 5000, judgedAt = null) {
 // the greyed control a tooltip is on: itself, or the slider in its row (Shape's)
 const greyedOf = (el) => (el?.disabled ? el : (el?.querySelector?.('input:disabled') ?? null));
 // a greyed control's shortest paths in words, for its tooltip: Torus · Möbius strip, or a line each, Torus › Hexagons (three at most)
-const pathsWords = (paths) =>
-  paths
-    .slice(0, 3)
-    .map((path) => path.map(([, words]) => words).join(' › '))
-    .join(paths.some((path) => path.length > 1) ? '\n' : ' · ') + (paths.length > 3 ? ' …' : ''); // (paths of several clicks, a line each)
+// (each said once: a stepper's rungs all 'fewer steps')
+const pathsWords = (paths) => {
+  const lines = [...new Set(paths.map((path) => path.map(([, words]) => words).join(' › ')))];
+  return lines.slice(0, 3).join(paths.some((path) => path.length > 1) ? '\n' : ' · ') + (lines.length > 3 ? ' …' : ''); // (paths of several clicks, a line each)
+};
 // A greyed button's enablers: the buttons starting the shortest paths that would allow it (see pathsTo), highlighted by a
-// click on it (see highlight); the size stepper for a size
+// click on it (see highlight); the size stepper for a size, the steps stepper for the generations
 const enablersFor = (fits, judgedAt = null) =>
   [...new Set(pathsTo(fits, 5000, judgedAt).map(([[key]]) => key))]
-    .map((key) => (key === 'size' ? $('sizeBox') : document.querySelector(`[data-choice="${key}"]`)))
+    .map((key) =>
+      key === 'size'
+        ? $('sizeBox')
+        : key === 'steps'
+          ? document.querySelector('.max-steps')
+          : document.querySelector(`[data-choice="${key}"]`),
+    )
     .filter(Boolean);
 // a rule card's greyed words in a variant (see rulesFor): its why there, or none there at all
 const ruleWhyNot = (v, source) => {

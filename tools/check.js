@@ -1074,18 +1074,23 @@ function checkVariantNames(fail) {
 }
 // The grids apart from the modes (see GRIDS.md): on each grid, every field of its variants the grid's (the same in all of
 // them) or its mode's (the same for each mode and its own choices there: a walk's kind, its side), none mixed; and the
-// variants as they were (VARIANTS_PRINT: their fields, the menu, the families, the page's options, as step 0 found them)
-const VARIANTS_PRINT = -1414764743; // (v0.5.73)
+// variants as they were (VARIANTS_PRINT: their fields, the menu's places and order, the families, the page's options; the
+// variants made in any order)
+const VARIANTS_PRINT = 1382948307; // (v0.5.77: replicatorsTorus as replicatorsTorusSquares, in the torus's family)
 const variantsPrint = () => {
   const text = JSON.stringify([
-    Object.keys(NAV).map((w) => [
-      w,
-      NAV[w],
-      Object.keys(VARIANTS[w])
-        .sort()
-        .map((k) => [k, typeof VARIANTS[w][k] === 'function' ? 'function' : VARIANTS[w][k]]),
-    ]),
-    FAMILIES.map((F) => F.variants),
+    Object.keys(NAV)
+      .sort()
+      .map((w) => [
+        w,
+        NAV[w],
+        Object.keys(VARIANTS[w])
+          .filter((k) => !k.endsWith('Memo')) // (a memory kept on it as the page goes: arrowsMemo, see walkArrows)
+          .sort()
+          .map((k) => [k, typeof VARIANTS[w][k] === 'function' ? 'function' : VARIANTS[w][k]]),
+      ]),
+    FAMILIES.map((F) => F.variants.map((ms) => [...ms].sort())),
+    MODE_TABS.map(([kind]) => [1, 2].map((level) => navValues(level, [kind]))), // (the menu's order: each mode's spaces and its first space's shapes)
     [...$('variant').options].map((o) => [o.value, o.text, o.parentElement.label]),
   ]);
   let h = 0;

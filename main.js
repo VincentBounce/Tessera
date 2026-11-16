@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.76';
+const VERSION = '0.5.77';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -10018,55 +10018,8 @@ for (const F of Object.values(CONED))
     for (const r of rulesOf('life')) {
       if (r.tiling.startsWith(F.rules) && !/[a-z]/.test(r.rule)) r.tiling = Object.values(F.marks).join('') + r.tiling;
     }
-// Rewind on the tori: Life's, in blocks as the plane's (its blocks' grid, so many cells a block, see meshBlocks), 3 squares
-// round it (see ringColours), its start on the middle one (see startColours)
-const REVERSIBLE_SHEETS = [
-  ['rewindTorusSquares', 'lifeTorusSquares', 'square', 4],
-  ['rewindTorusHex', 'lifeTorusHex', 'hex', 3],
-  ['rewindTorusTriangles', 'lifeTorusTriangles', 'tri', 6],
-  ['rewindTorusCairo', 'lifeTorusCairo', 'cairo', 4],
-  ['rewindTorusTetrakis', 'lifeTorusTetrakis', 'tetrakis', 4],
-  ['rewindMobiusStripSquares', 'lifeMobiusStripSquares', 'square', 4],
-  ['rewindMobiusStripTriangles', 'lifeMobiusStripTriangles', 'tri', 6],
-  ['rewindMobiusStripTetrakis', 'lifeMobiusStripTetrakis', 'tetrakis', 4],
-  ['rewindKleinBottleSquares', 'lifeKleinBottleSquares', 'square', 4],
-  ['rewindKleinBottleTriangles', 'lifeKleinBottleTriangles', 'tri', 6],
-  ['rewindKleinBottleTetrakis', 'lifeKleinBottleTetrakis', 'tetrakis', 4],
-]; // (as Life's: the tori, the Möbius strips, the Klein bottles)
 const BLOCK_STEPS = { torusHex: 3, torusTriTurned: 3, mobius: 2 };
 const BLOCK_ALONG = { mobius: 2 }; // (a Möbius strip of squares: its length in squares even, its blocks' two sets coming round along it, see stripSteps)  // (their sizes a multiple: their 3 sets of blocks come round the tube only so, see meshBlocks)
-for (const [w, life, blocks, k] of REVERSIBLE_SHEETS) {
-  VARIANTS[w] = {
-    ...VARIANTS[life],
-    margolus: true,
-    blocks,
-    where: `${VARIANTS[life].where.split(' (')[0]} in blocks of ${k} round a corner, as the plane's, 3 squares round it, its start on the middle one`,
-  };
-  VARIANT_ICONS[w] = VARIANT_ICONS[life];
-  NAV[w] = ['Rewind', 'Surfaces', NAV[life][2], 'Blocks', ''];
-}
-// Replicators: Langton's self-reproducing loops on Life's grid of squares, by a table of transitions (see parseLoops)
-for (const [w, life] of [
-  ['replicatorsSquares', 'lifeSquares'],
-  ['replicatorsTorus', 'lifeTorusSquares'],
-  ['replicatorsCubeSquares', 'lifeCubeSquares'],
-  ['replicatorsCubePitsSquares', 'lifeCubePitsSquares'],
-  ['replicatorsCubeBumpsSquares', 'lifeCubeBumpsSquares'],
-  ['replicatorsCubeFrameSquares', 'lifeCubeFrameSquares'],
-  ...Object.values(HULL_SOLIDS)
-    .filter((S) => S.walks)
-    .map((S) => [variantName('Replicators', S.name, S.cells), variantName('Life', S.name, S.cells)]), // (a hull solid of squares)
-]) {
-  // (squares: 4 sides each, the same way round on each: no Möbius strip nor Klein bottle; nor Menger's sponge, its flat pieces narrower than a loop)
-  VARIANTS[w] = {
-    ...VARIANTS[life],
-    loops: true,
-    ...(['replicatorsSquares', 'replicatorsTorus'].includes(w) && { north: true }),
-    where: `${VARIANTS[life].where.split(' (')[0]}, each cell by its 4 sides in turn (von Neumann), or its 8 (Moore)`,
-  }; // (north: every cell's the same, the plane's and the torus's sheet's: a table with no turns, see loopFits)
-  VARIANT_ICONS[w] = VARIANT_ICONS[life];
-  NAV[w] = ['Replicators', NAV[life][1], NAV[life][2], 'Langton', ''];
-}
 // Elementary: Wolfram's rules on an unbounded grid of squares, a row a generation down (see parseElementary), its rows built
 // as a walk's steps (see elementaryRows); Life's for its rules and starts
 VARIANTS.elementarySquares = {
@@ -10510,11 +10463,6 @@ for (const Fo of Object.values(FOLDS))
       F.tabs.push([F.variants.length, true, `tiling-${kind}`, name, `${name}, turned by ${turned.deg}° (${Fo.way})`]);
     F.variants.push([variantName('Life', Fo.name, name)]);
   }
-for (const [w, life] of REVERSIBLE_SHEETS)
-  FAMILIES.flatMap((F) => F.variants)
-    .find((ms) => ms.includes(life))
-    .push(w); // (each reversible sheet in its tiling's tab, beside Life's)
-// the family of a walk variant, its tiling there and its tab (null: not in a family)
 // a variant's sides there (Grid, Cells): its kind's and its rule's, on its tiling only (Cairo pentagons: no grid; on a surface's
 // hexagons, no worm: the grid its triangles' only)
 const walksThere = (v) => {
@@ -10554,14 +10502,20 @@ const turnedAllowed = (v, turned = false) => {
   const fam = familyOf(v);
   return !!fam && fam.F.tabs.some(([f, tu]) => f === fam.m && tu) && blocksTurn(v, !turned);
 };
-function familyOf(w) {
+// the family of a variant and its tiling there (null: not in a family), as declared: none of the page's state
+function familyPlace(w) {
   for (const F of FAMILIES) {
     const m = F.variants.findIndex((pair) => pair.includes(w));
-    if (m < 0) continue;
-    const turnable = !!TURNED[VARIANTS[w].surface];
-    return { F, m, tab: F.tabs.findIndex(([t, turned]) => t === m && turned === (turnable && torusTurned)) };
+    if (m >= 0) return { F, m };
   }
   return null;
+}
+// and its tab, its tiling turned as the one picked (see torusTurned)
+function familyOf(w) {
+  const at = familyPlace(w);
+  if (!at) return null;
+  const turnable = !!TURNED[VARIANTS[w].surface];
+  return { ...at, tab: at.F.tabs.findIndex(([t, turned]) => t === at.m && turned === (turnable && torusTurned)) };
 }
 // whether the number's digits are read: not by an ant by colour, nor by Life but for a start by the digits (the number
 // then neither shown nor in the link: x= is the number followed, the cells' start is pop= and p=)
@@ -10862,7 +10816,7 @@ function choicesAt(s, reads = null, teamsMemo = new Map()) {
 const tilingNames = remember('tilingNames', {}); // (once a variant: the menu's tables fixed, the graph's search asks it at each edge)
 const tilingNameOf = (w) => {
   if (w in tilingNames) return tilingNames[w];
-  const fam = familyOf(w);
+  const fam = familyPlace(w);
   return (tilingNames[w] = fam
     ? fam.F.tabs.find(([t]) => t === fam.m)[3]
     : !['surface', 'cube'].includes(VARIANTS[w].lattice)
@@ -14558,19 +14512,61 @@ for (const k of Object.keys(ROSETTE_SPHERES)) {
 }
 // the menu's order, once every variant made (the surfaces' ants and the rosette spheres too): in each shape's rules: Turtle, then Pivot
 // Cairo right after Squares, Hexagons before Triangles (right after Kites where they are), Tetrakis after Hexagons, the Klein bottle after the Möbius strip, the
-// Explore: every grid of Life's, its cells coloured once (see exploreLevels), no generation played
+// The modes made on Life's grids, each by a rule of what the grid is (see GRIDS.md, step 2), never a list: Explore on every
+// one, its cells coloured once (see exploreLevels); Rewind on a sheet's tiling with blocks (BLOCKS_OF: their kind, so many
+// cells a block, see meshBlocks), 3 squares round it (see ringColours), its start on the middle one; Replicators, Langton's
+// loops (see parseLoops), on squares the same way round (no Möbius strip nor Klein bottle: their squares flipped; nor the
+// sponge: its pieces narrower than a loop). Each as Life's there with its own fields, in Life's family beside it; those a
+// rule allows and not taken in yet apart (NOT_YET, see GRIDS.md)
+const BLOCKS_OF = {
+  Squares: ['square', 4],
+  Hexagons: ['hex', 3],
+  Triangles: ['tri', 6],
+  Cairo: ['cairo', 4],
+  Tetrakis: ['tetrakis', 4],
+};
+const NOT_YET = ['rewindMobiusStripHex', 'rewindMobiusStripCairo', 'rewindKleinBottleHex', 'rewindKleinBottleCairo'];
+const ON_LIFE_GRIDS = [
+  ['Explore', 'Colours', () => true, () => ({ explore: true })],
+  [
+    'Rewind',
+    'Blocks',
+    (life, n) => SHEETS.slice(0, 3).includes(n[2]) && !!BLOCKS_OF[tilingNameOf(life)],
+    (life) => ({
+      margolus: true,
+      blocks: BLOCKS_OF[tilingNameOf(life)][0],
+      where: `${VARIANTS[life].where.split(' (')[0]} in blocks of ${BLOCKS_OF[tilingNameOf(life)][1]} round a corner, as the plane's, 3 squares round it, its start on the middle one`,
+    }),
+  ],
+  [
+    'Replicators',
+    'Langton',
+    (life, n) =>
+      (VARIANTS[life].plane === 'square' || tilingNameOf(life) === 'Squares') &&
+      !['Möbius strip', 'Klein bottle', 'Sponge'].includes(n[2]),
+    (life, n) => ({
+      loops: true,
+      ...((VARIANTS[life].plane || n[2] === 'Torus') && { north: true }), // (every cell's the same, the plane's and the torus's sheet's: a table with no turns, see loopFits)
+      where: `${VARIANTS[life].where.split(' (')[0]}, each cell by its 4 sides in turn (von Neumann), or its 8 (Moore)`,
+    }),
+  ],
+];
 for (const [life, n] of Object.entries(NAV))
-  if (n[0] === 'Life') {
-    const w = `explore${life.slice(4)}`;
-    VARIANTS[w] = { ...VARIANTS[life], explore: true };
-    VARIANT_ICONS[w] = VARIANT_ICONS[life];
-    NAV[w] = ['Explore', n[1], n[2], 'Colours', ''];
-    const option = variantOptionOf(life);
-    option.parentElement.append(new Option(option.text.replace(/^Life/, 'Explore'), w)); // (in Life's group: its space)
-    FAMILIES.flatMap((F) => F.variants)
-      .find((ms) => ms.includes(life))
-      ?.push(w); // (in its tiling's tab, beside Life's, as the reversible sheets)
-  }
+  if (n[0] === 'Life')
+    for (const [mode, rule, goes, fields] of ON_LIFE_GRIDS) {
+      const w = `${menuWord(mode)}${life.slice(4)}`;
+      if (!goes(life, n) || NOT_YET.includes(w)) continue;
+      VARIANTS[w] = { ...VARIANTS[life], ...fields(life, n) };
+      VARIANT_ICONS[w] = VARIANT_ICONS[life];
+      NAV[w] = [mode, n[1], n[2], rule, ''];
+      if (mode === 'Explore') {
+        const option = variantOptionOf(life);
+        option.parentElement.append(new Option(option.text.replace(/^Life/, 'Explore'), w)); // (in Life's group: its space)
+      } // (Rewind's and Replicators' in the page, see index.html)
+      FAMILIES.flatMap((F) => F.variants)
+        .find((ms) => ms.includes(life))
+        ?.push(w); // (in its tiling's tab, beside Life's)
+    }
 // Sphere before the Tetrahedron
 {
   const group = (n) => n.slice(0, 3).join(),

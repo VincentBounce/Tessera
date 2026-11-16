@@ -26,7 +26,15 @@ Steps, each shipped and checked on its own:
 2. **`MODES` and `modeGoes`**; the 584 pairs it gives against today's, each difference decided. Done for the rules
    (see [Step 2: each mode's rule](#step-2-each-modes-rule)): 4 differences for Rewind and 13 for the walk to decide.
 3. **Everything made from them**: the 16 places that make variants and the page's 174 options gone; the fingerprint
-   the same.
+   the same. In three deliveries:
+   - **3c, done (v0.5.77)**: Explore, Rewind on the sheets and Replicators made on Life's grids by their rules
+     (`ON_LIFE_GRIDS`), each in its grid's family beside Life's; Rewind's 4 not yet apart (`NOT_YET`). Their lists by
+     hand gone (`REVERSIBLE_SHEETS`, Replicators' 6 and its hull solids'). One change: `replicatorsTorus` named
+     `replicatorsTorusSquares`, in the torus's family as the cube's (its link's `tiling=squares`; an old link without it
+     still opens it).
+   - **3a**: Life's grids declared once (geometry, words, icon, menu, option), Life's and Explore's made from them; the
+     page's options gone.
+   - **3b**: the walks' turtle rules in a table by tiling, each walk made from its grid and that rule.
 4. **One flag, one meaning**: `life` means "plays Life"; Explore no longer carries it, its "but Explore" gone
    (`plays` in `sectionsOf`, the hunt's stop, the wall, the Outline, `startLife`'s Explore branch).
 5. **A night**: `tesseraCheck()`, the Gallery's cards opened cold, the fuzz.
@@ -58,7 +66,7 @@ Steps, each shipped and checked on its own:
 | Life | 229 | every grid of cells |
 | Walk | 35 | 8 of its own (2D infinite, 3D lattices), 27 surfaces by hand |
 | Ant | 32 | the walk's grids on cells (`antOf`): already a rule |
-| Rewind | 16 | the grids with blocks (`REVERSIBLE_SHEETS`, the plane's 5) |
+| Rewind | 16 | the grids with blocks (the plane's 5, the sheets' by a rule since v0.5.77: `BLOCKS_OF`) |
 | Replicators | 8 | squares the same way round, by hand |
 | Elementary | 1 | the plane of squares |
 

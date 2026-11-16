@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.163';
+const VERSION = '0.5.164';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -6466,13 +6466,22 @@ const LOOK_WHERE = {
     return `Too many cells to measure (${formatNumber(ENTROPY_MOST / 1e6)} million at most): fewer generations.`;
   }, // (their caps declared further down: read when a look is greyed)
 };
-const lookWhyNot = (look, w) =>
-  (look === 'gradient' && greyed('line', w)) ||
-  (look === 'visits' && !useful('visits', w)) ||
-  (look === 'domain' && elementaryCells() > DOMAINS_MOST) ||
-  (look === 'entropy' && elementaryCells() > ENTROPY_MOST)
+// (s: a setup, see setupNow: its variant, its generations and its start)
+const lookWhyNot = (look, s) =>
+  (look === 'gradient' && greyed('line', s.w)) ||
+  (look === 'visits' && !useful('visits', s.w)) ||
+  (look === 'domain' && elementaryCells(s.steps, s.start) > DOMAINS_MOST) ||
+  (look === 'entropy' && elementaryCells(s.steps, s.start) > ENTROPY_MOST)
     ? LOOK_WHERE[look]
     : '';
+// A setup's look, in the menu's graph and the page alike: its own where allowed, else its variant's default, else the
+// first one allowed in the list's order
+const lookOrder = (w) =>
+  VARIANTS[w].life
+    ? ['mono', 'gradient', 'digit', 'domain', 'entropy', 'cells', 'visits']
+    : ['gradient', 'cells', 'visits', 'digit', 'mono', 'domain', 'entropy'];
+const lookAllowed = (look, s) => (look === 'gradient' || shows(look, s.w)) && !lookWhyNot(look, s);
+const lookIn = (s) => [s.look, defaultOf('look', s.w), ...lookOrder(s.w)].find((look) => lookAllowed(look, s));
 function updateDisplayMenu() {
   const rows = {
     colours: 'coloursRow',
@@ -6721,9 +6730,8 @@ function relabelColours(variant) {
     sel.value = variant.cells && sel.value === 'visits' ? 'visits' : 'gradient';
     return;
   }
-  const order = life
-    ? ['mono', 'gradient', 'digit', 'domain', 'entropy', 'cells', 'visits']
-    : ['gradient', 'cells', 'visits', 'digit', 'mono', 'domain', 'entropy'];
+  const order = lookOrder(tabVariant()),
+    now = setupNow();
   const byValue = Object.fromEntries(Array.from(sel.options, (o) => [o.value, o]));
   order.forEach((v) => {
     byValue[v].text = names[v];
@@ -6731,14 +6739,8 @@ function relabelColours(variant) {
   });
   for (const v of ['cells', 'visits', 'digit', 'mono', 'domain', 'entropy'])
     byValue[v].hidden = !shows(v, tabVariant());
-  for (const v of ['gradient', 'visits', 'digit', 'domain', 'entropy'])
-    byValue[v].disabled = !!lookWhyNot(v, tabVariant()); // (Rainbow along a spiral, its Heatmap; Elementary's measures past their cells)
-  // (the look in use no longer allowed: the variant's default one, else the first one left)
-  const allowed = (o) => o && !o.hidden && !o.disabled;
-  if (!allowed(sel.selectedOptions[0])) {
-    const usual = byValue[defaultOf('look', tabVariant())];
-    sel.value = (allowed(usual) ? usual : Array.from(sel.options).find(allowed)).value;
-  }
+  for (const v of ['gradient', 'visits', 'digit', 'domain', 'entropy']) byValue[v].disabled = !!lookWhyNot(v, now); // (Rainbow along a spiral, its Heatmap; Elementary's measures past their cells)
+  sel.value = lookIn(now);
   renderColourButtons();
 }
 
@@ -7059,7 +7061,7 @@ function renderColourButtons() {
       title: o.text,
       on: o.value === sel.value,
       byDefault: o.value === defaultOf('look', tabVariant()) ? 'yes' : '',
-      whyNot: ({ w }) => lookWhyNot(o.value, w),
+      whyNot: (s) => lookWhyNot(o.value, s),
       choice: `look:${o.value}`,
       click: () => {
         sel.value = o.value;
@@ -10714,6 +10716,7 @@ const setupNow = () => ({
   zone: hunt.zone,
   rule: $('lifeRule').value,
   look: $('colourMode').value,
+  steps: lengthAsked(),
   stacked: spaceTime,
   walkRule: VARIANTS[tabVariant()].net ? walkRuleOf(VARIANTS[tabVariant()]) : null,
   startNo: startNo(),
@@ -10730,6 +10733,7 @@ const SETUP_FIELDS = [
   'zone',
   'rule',
   'look',
+  'steps',
   'stacked',
   'walkRule',
   'startNo',
@@ -10766,19 +10770,16 @@ function choicesAt(s, reads = null, teamsMemo = new Map()) {
     [kind, space, shape, rule] = NAV[w],
     out = [],
     go = (key, v, words, more = {}) => {
-      if (v && v !== w)
-        out.push([
-          key,
-          {
-            ...s,
-            w: v,
-            size: null,
-            lifeTeams: wants('lifeTeams') ? teamsAt(v) : s.lifeTeams,
-            walkRule: VARIANTS[v].net ? walkRuleAt(s, v) : null,
-            ...more,
-          },
-          words,
-        ]);
+      if (!v || v === w) return;
+      const to = {
+        ...s,
+        w: v,
+        size: null,
+        lifeTeams: wants('lifeTeams') ? teamsAt(v) : s.lifeTeams,
+        walkRule: VARIANTS[v].net ? walkRuleAt(s, v) : null,
+        ...more,
+      };
+      out.push([key, { ...to, look: lookIn(to) }, words]); // (its look as the page would set it there)
     };
   for (const [k] of MODE_TABS) if (k !== kind) go(`mode:${k}`, modeLeft[k] ?? navPick(w, 0, k), k);
   for (const sp of navValues(1, [kind])) go(`space:${sp}`, navPick(w, 1, sp), SPACES[sp][0]);
@@ -10843,7 +10844,7 @@ function choicesAt(s, reads = null, teamsMemo = new Map()) {
       set(`walkRule:${w}|${r.rule}`, 'walkRule', r.rule, r.why, `${r.name} ${r.rule}`); // (a walk's rules' cards, those it takes)
   // its looks (Life's: States, Age, Heatmap; a walk's cells': Path, Rainbow, Commands, Heatmap), each the look it sets
   if (wants('look')) {
-    if (m.life) for (const [look, name] of LIFE_LOOKS) set(`look:${look}`, 'look', look, lookWhyNot(look, w), name);
+    if (m.life) for (const [look, name] of LIFE_LOOKS) set(`look:${look}`, 'look', look, lookWhyNot(look, s), name);
     else if (shows('cells', w) || shows('heatmap', w) || m.antOf)
       for (const [look, name] of CELL_MODES)
         set(`look:${look}`, 'look', lookAfter(look, w), cellModeWhyNot(look, w, s.teams), name);
@@ -21319,7 +21320,7 @@ const DOMAINS_MOST = 16e6,
   ENTROPY_MOST = 100e6;
 // its rows' width for G generations from a start (16 cells a word, as far as its cells can reach either way), and its cells
 const elementaryWidth = (G, start) => 16 * Math.ceil((2 * (G + (start === 'two' ? G >> 1 : 0)) + 1) / 16),
-  elementaryCells = (G = lengthAsked(), start = plane.start) => elementaryWidth(G, start) * (G + 1);
+  elementaryCells = (G, start) => elementaryWidth(G, start) * (G + 1);
 // Its local entropy rate (Lizier, Prokopenko and Zomaya, 2008; the Entropy look): how unforeseen each cell is from its own
 // column's last ENTROPY_PAST cells (as Lizier's), −log₂ p(it | them), counted over the whole run: what repeats near 0, chaos about a bit, a
 // particle crossing a background more. Its rows made again twice (counted, then measured): each pixel's mean (B × B cells),
@@ -21398,6 +21399,7 @@ function elementaryRowsOf(G, start, N, digits) {
   }
   return {
     G,
+    start,
     N,
     n,
     W,
@@ -42686,10 +42688,7 @@ function drawElementary(to) {
     ctx = layers.path,
     { scale: s, ox, oy } = view,
     last = Math.min(to, R.G),
-    look =
-      ($('colourMode').value === 'entropy' && !R.entropy) || ($('colourMode').value === 'domain' && !R.breaks)
-        ? 'gradient'
-        : $('colourMode').value; // (Entropy, Domains not measured: greyed, see lookWhyNot; Age meanwhile)
+    look = lookIn({ w: walk.variant, steps: R.G, start: R.start, look: $('colourMode').value }); // (the run shown's: its measures its own)
   // (every look opaque where it has live cells: each pixel its colour mixed with the page's by them; one with none clear)
   const word = ([r, g, b]) => (b << 16) | (g << 8) | r,
     rowColour = (t) => rgbCached(look === 'mono' ? LIFE_ALIVE : rainbowNow()[Math.floor((t * BANDS) / (R.G + 1))]),
@@ -47759,7 +47758,7 @@ const cellModeWhyNot = (look, w, teams = walkTeams) =>
     : !VARIANTS[w].cells && look !== 'path'
       ? CELLS_ONLY
       : look === 'visits'
-        ? lookWhyNot('visits', w)
+        ? lookWhyNot('visits', { w })
         : '';
 function renderCellModes(variant) {
   $('cellModes').hidden = !shows('cells', tabVariant()) && !shows('heatmap', tabVariant()) && !variant.antOf; // a walk in 2D or on a surface, an ant anywhere

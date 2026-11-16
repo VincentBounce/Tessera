@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.98';
+const VERSION = '0.5.99';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -7657,6 +7657,11 @@ const ICONS = (() => {
       [20, 6.8],
       [8, 6.8],
     ];
+  // a square cut in 2 × 2 cells (Grid, a torus's squares), its 3 × 3 cut's lines (along the edges), in 3 × 3 cells (on cells, the
+  // hunt's Reach all and Ends ≥3/4)
+  const halvesGrid = svgPath(pathOf(sq)) + svgPath('M12 4V20M4 12H20'),
+    thirdsLines = svgPath('M9.33 4V20M14.67 4V20M4 9.33H20M4 14.67H20'),
+    thirdsGrid = svgPath(pathOf(sq)) + thirdsLines;
   const cube = (fillTop) =>
     svgPath(pathOf(hex)) +
     [0, 2, 4].map((k) => svgPath(segmentPath([12, 12], hex[k]))).join('') +
@@ -7734,7 +7739,7 @@ const ICONS = (() => {
       .join('');
   return {
     // walk variants
-    grid: svgPath(pathOf(sq)) + svgPath('M12 4V20M4 12H20'),
+    grid: halvesGrid,
     compass: svgPath('M12 3V21M3 12H21') + svgPath('M9 6L12 3L15 6M9 18L12 21L15 18M6 9L3 12L6 15M18 9L21 12L18 15'),
     triangle: svgPath(pathOf(tri)),
     triangleFilled: svgPath(pathOf(tri), 'f'),
@@ -7747,12 +7752,9 @@ const ICONS = (() => {
     rhombusWalled: walledEl(rhombus, 2),
     goalLongest: svgPath('M12 12C10 8.5 4 8.5 4 12C4 15.5 10 15.5 12 12C14 8.5 20 8.5 20 12C20 15.5 14 15.5 12 12Z'), // the hunt's goals (see HUNT_GOALS): ∞
     goalDies: svgPath('M12 3V21M6 8.5H18'), // (a cross)
-    goalFull:
-      svgPath(pathOf(sq)) +
-      svgPath('M9.33 4V20M14.67 4V20M4 9.33H20M4 14.67H20') +
-      svgPath('M14.67 4H20V9.33H14.67ZM9.33 9.33H20V14.67H9.33ZM4 14.67H20V20H4Z', 'f'), // (Reach all's grid, its cells filled but a corner's three)
+    goalFull: thirdsGrid + svgPath('M14.67 4H20V9.33H14.67ZM9.33 9.33H20V14.67H9.33ZM4 14.67H20V20H4Z', 'f'), // (Reach all's, filled but a corner's 3)
     goalPeak: svgPath('M12 4L21 19H3Z', 'f'),
-    goalCover: svgPath(pathOf(sq)) + svgPath('M9.33 4V20M14.67 4V20M4 9.33H20M4 14.67H20'), // (all cells: a grid)
+    goalCover: thirdsGrid, // (all cells: a grid)
     goalBattle: svgPath('M4 4L17 17M20 4L7 17M14 20L20 14M4 14L10 20M17.5 17.5L20.5 20.5M6.5 17.5L3.5 20.5'), // (crossed swords)
     king: svgPath('M12 3V21M3 12H21M5.6 5.6L18.4 18.4M18.4 5.6L5.6 18.4'), // the 8 ways out
     pentagons: svgPath(
@@ -7838,12 +7840,9 @@ const ICONS = (() => {
       svgPath('M7.5 7H11.5A.5.5 0 0 1 12 7.5V11.5A.5.5 0 0 1 11.5 12H7.5A.5.5 0 0 1 7 11.5V7.5A.5.5 0 0 1 7.5 7Z') +
       svgPath('M15 12.5H20V20'), // Langton's loop: its sheathed ring, its arm out
     // the tilings of a surface (see FAMILIES): a 2 × 2 grid, a triangle cut in 4, 3 hexagons, and turned by 30°
-    tilesSq: svgPath(pathOf(sq)) + svgPath('M12 4V20M4 12H20'),
-    onEdges: svgPath('M9.33 4V20M14.67 4V20M4 9.33H20M4 14.67H20'), // (along the edges: 3 × 3 cut, its lines, no outline)
-    onCells:
-      svgPath(pathOf(sq)) +
-      svgPath('M9.33 4V20M14.67 4V20M4 9.33H20M4 14.67H20') +
-      svgPath('M9.33 9.33H14.67V14.67H9.33Z', 'f'), // (on cells: its middle cell painted)
+    tilesSq: halvesGrid,
+    onEdges: thirdsLines, // (along the edges: its lines, no outline)
+    onCells: thirdsGrid + svgPath('M9.33 9.33H14.67V14.67H9.33Z', 'f'), // (on cells: its middle cell painted)
     tilesTri: tiledTriangle(-90),
     tilesTriTurned: tiledTriangle(0),
     tilesHex: hexCluster(30),

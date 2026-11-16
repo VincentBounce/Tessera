@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.94';
+const VERSION = '0.5.95';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -41266,27 +41266,27 @@ function drawLines(ctx, a, b, c0, step) {
 }
 
 // 3D background, and the plane's: a vertical sky gradient behind the scene, in the page's tone (Dawn on a light page,
-// Twilight on a dark one: see skyName)
+// Twilight on a dark one)
 const SKIES = {
-  twilight: [
+  dark: [
     [0, '#222c45'],
     [0.45, '#333e63'],
     [0.75, '#564672'],
     [0.92, '#875c6e'],
     [1, '#a66f63'],
-  ],
-  dawn: [
+  ], // twilight
+  light: [
     [0, '#aabfd7'],
     [0.5, '#cdd1de'],
     [0.8, '#dfcbd0'],
     [1, '#e4c1ae'],
-  ],
+  ], // dawn
 };
-const skyName = () => (themeName() === 'light' ? 'dawn' : 'twilight');
-const skyStops = () => (walk.is3d || walk.plane ? SKIES[skyName()] : null);
-const darkSky = () => skyStops() === SKIES.twilight;
-// the underside of an open sheet (a torus unrolled, its inside): the foot of the other sky
-const undersideColour = () => SKIES[skyName() === 'twilight' ? 'dawn' : 'twilight'].at(-1)[1];
+const skyStops = () => (walk.is3d || walk.plane ? SKIES[themeName()] : null);
+const darkSky = () => skyStops() === SKIES.dark;
+// the underside of an open sheet (a torus unrolled, its inside): the foot of the other theme's sky (on a light page,
+// Twilight's; on a dark one, Dawn's)
+const undersideColour = () => (document.documentElement.dataset.theme === 'light' ? SKIES.dark : SKIES.light).at(-1)[1];
 // the plane's ground at the screen's height y, a solid colour: its sky's there, else the page's background
 function groundAt(y) {
   const stops = skyStops(),

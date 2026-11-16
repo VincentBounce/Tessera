@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.67';
+const VERSION = '0.5.68';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -21550,41 +21550,14 @@ function exploreLevels(nbr, n) {
     for (let q = nbr.start[t]; q < nbr.start[t + 1]; q++) k += side[q];
     return k;
   };
-  if (exploreLook.rule === 'colouring') {
-    // (in the cells' order, as built: a grid's rows, a solid's faces, its colours a lattice's, 3 on hexagons, their seams
-    // short; a cell with 4 colours round it given one by a Kempe swap: a chain of two colours from one of its neighbours
-    // swapped, kept if one is then free; 4 at most, as on any map)
-    const free = (t) => {
+  if (exploreLook.rule === 'colouring')
+    for (let t = 0; t < n; t++) {
       let used = 0;
       for (let q = nbr.start[t]; q < nbr.start[t + 1]; q++) if (side[q]) used |= 1 << level[nbr.list[q]];
       let k = 1;
       while (used & (1 << k)) k++;
-      return k;
-    };
-    const swapped = (t, a, b) => {
-      for (let q = nbr.start[t]; q < nbr.start[t + 1]; q++) {
-        if (!side[q] || level[nbr.list[q]] !== a) continue;
-        const chain = [nbr.list[q]],
-          inChain = new Set(chain);
-        for (let i = 0; i < chain.length; i++)
-          for (let p = nbr.start[chain[i]]; p < nbr.start[chain[i] + 1]; p++) {
-            const u = nbr.list[p];
-            if (side[p] && !inChain.has(u) && (level[u] === a || level[u] === b)) {
-              inChain.add(u);
-              chain.push(u);
-            }
-          }
-        for (const u of chain) level[u] = level[u] === a ? b : a;
-        if (free(t) <= 4) return;
-        for (const u of chain) level[u] = level[u] === a ? b : a; // (no colour freed: put back)
-      }
-    };
-    for (let t = 0; t < n; t++) {
-      for (let a = 1; a <= 4 && free(t) > 4; a++)
-        for (let b = 1; b <= 4 && free(t) > 4; b++) if (a !== b) swapped(t, a, b);
-      level[t] = free(t);
+      level[t] = k;
     }
-  }
   if (exploreLook.rule === 'sides') {
     const counts = [...new Set(Array.from({ length: n }, (_, t) => sides(t)))].sort((a, b) => a - b);
     for (let t = 0; t < n; t++) level[t] = 1 + counts.indexOf(sides(t));

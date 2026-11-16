@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.103';
+const VERSION = '0.5.104';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -7187,7 +7187,7 @@ function lifeLookPicture(look) {
 // a 2 × 2 swatch of four colours (a look's picture, Life's and a walk's)
 const swatch = (cs) =>
   `<svg viewBox="0 0 2 2" aria-hidden="true">${cs.map((c, i) => `<rect x="${i % 2}" y="${i >> 1}" width="1" height="1" fill="${c}"/>`).join('')}</svg>`;
-// square rings, hot inside (a heatmap, Life's activity)
+// square rings, hot inside (a heatmap, Life's activity, the hunt's Reach all)
 const heatRings = (g) =>
   `<svg viewBox="0 0 24 24" aria-hidden="true">${[0, 0.25, 0.5, 0.75, 1].map((f, i) => `<rect x="${2 + 2 * i}" y="${2 + 2 * i}" width="${20 - 4 * i}" height="${20 - 4 * i}" rx="${2 - 0.4 * i}" fill="${g(f)}"/>`).join('')}</svg>`;
 // The length last picked, one for every variant (the stepper's − + or a number typed, its link's d=), never cut: each variant the
@@ -7765,9 +7765,9 @@ const ICONS = (() => {
     rhombusWalled: walledEl(rhombus, 2),
     goalLongest: svgPath('M12 12C10 8.5 4 8.5 4 12C4 15.5 10 15.5 12 12C14 8.5 20 8.5 20 12C20 15.5 14 15.5 12 12Z'), // the hunt's goals (see HUNT_GOALS): ∞
     goalDies: svgPath('M12 3V21M6 8.5H18'), // (a cross)
-    goalFull: thirdsGrid('..o,.oo,ooo'), // (Reach all's, filled but a corner's 3)
+    goalFull: thirdsGrid('..o,.oo,ooo'), // (a 3 × 3 grid, filled but a corner's 3)
     goalPeak: svgPath('M12 4L21 19H3Z', 'f'),
-    goalCover: thirdsGrid(), // (all cells: a grid)
+    goalCover: `<g class="f">${heatRings(appRainbowAt)}</g>`, // (Activity's picture: its rings filled, not stroked)
     goalBattle: svgPath('M4 4L17 17M20 4L7 17M14 20L20 14M4 14L10 20M17.5 17.5L20.5 20.5M6.5 17.5L3.5 20.5'), // (crossed swords)
     king: svgPath('M12 3V21M3 12H21M5.6 5.6L18.4 18.4M18.4 5.6L5.6 18.4'), // the 8 ways out
     pentagons: svgPath(

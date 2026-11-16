@@ -281,10 +281,6 @@ textarea {
 .external-link:hover {
   text-decoration: underline;
 } /* a page of another site, in a new tab: its words and ↗ (see externalLink in main.js) */
-.field input.battle-formula {
-  color: var(--walker-color);
-  font-weight: 700;
-} /* a battle's formula, its battle built with it: bold in its walker's colour (over .custom's yellow) */
 textarea {
   resize: none;
   line-height: 1.35;
@@ -575,6 +571,10 @@ h3 {
   border-color: var(--accent-color);
   background: var(--picked-background);
 } /* a number in use (the Number's, each walker's), always on a picked tile's pale gold, a card's or its own */
+.formula-field input.battle-formula {
+  background: color-mix(in srgb, var(--walker-color) 25%, var(--panel-background));
+  font-weight: 700;
+} /* a battle's formula, its battle built with it: on its walker's colour, bold, its words as any number's */
 .field :is(input, textarea) {
   margin: 0;
 }

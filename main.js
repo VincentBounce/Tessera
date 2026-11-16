@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.177';
+const VERSION = '0.5.178';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -11241,7 +11241,7 @@ function renderModePicker() {
                 plane.torus = !plane.torus;
                 compute();
               },
-              tilingsWords(navPick(w, 2, sh)),
+              sh === shape ? variantWhere(w) : tilingsWords(navPick(w, 2, sh)), // (the one shown: its grid, as its size's tooltip; another: its tilings)
             );
           b.dataset.choice = `shape:${sh}`; // (its choice's key, see choicesAt)
           const to = navPick(w, 2, sh),

@@ -23,7 +23,8 @@ Steps, each shipped and checked on its own:
 1. **`GRIDS`** drawn from the variants as they are; the variants' fingerprint the same. Done: `gridOf(w)` (a variant's
    grid, the same in every mode) and `grids()` (each grid once, its variants by mode), 235 grids; `checkGrids` in
    `tesseraCheck()` keeps every field the grid's or the mode's, and the variants' print (`VARIANTS_PRINT`) as it was.
-2. **`MODES` and `modeGoes`**; the 584 pairs it gives against today's, each difference decided (see below).
+2. **`MODES` and `modeGoes`**; the 584 pairs it gives against today's, each difference decided. Done for the rules
+   (see [Step 2: each mode's rule](#step-2-each-modes-rule)): 4 differences for Rewind and 13 for the walk to decide.
 3. **Everything made from them**: the 16 places that make variants and the page's 174 options gone; the fingerprint
    the same.
 4. **One flag, one meaning**: `life` means "plays Life"; Explore no longer carries it, its "but Explore" gone
@@ -99,3 +100,45 @@ Life's other surfaces, no walk (125):
 - **The polyhedra's other tiles** : Kites on [the tetrahedron](http://localhost:8321/#mode=explore&shape=tetrahedron&tiling=kites), [the octahedron](http://localhost:8321/#mode=explore&shape=octahedron&tiling=kites), [the dodecahedron](http://localhost:8321/#mode=explore&shape=dodecahedron&tiling=kites), [the stella](http://localhost:8321/#mode=explore&shape=stellaOctangula&tiling=kites); Tetrakis on [the cube](http://localhost:8321/#mode=explore&shape=cube&tiling=tetrakis), [the rhombic dodecahedron](http://localhost:8321/#mode=explore&shape=rhombicDodecahedron&tiling=tetrakis), [the rhombic triacontahedron](http://localhost:8321/#mode=explore&shape=rhombicTriacontahedron&tiling=tetrakis); Triangles on the rhombic solids
 - **Sphere** : [Twisted](http://localhost:8321/#mode=explore&shape=icosahedron&tiling=twisted); **Globe** : [Globe](http://localhost:8321/#mode=explore&shape=globe)
 - **Rosettes** : Flower 6 to 12, Mirror 5 to 12, Hexa 5 to 12, Ring 12, e.g. [Flower 6](http://localhost:8321/#mode=explore&shape=rosettes&tiling=flower6), [Mirror 7](http://localhost:8321/#mode=explore&shape=rosettes&tiling=mirror7), [Hexa 5](http://localhost:8321/#mode=explore&shape=rosettes&tiling=hexa5)
+
+<p align="center"><br>* * *</p>
+
+## Step 2: each mode's rule
+
+A rule each mode, from what its grids are, against where it goes today (v0.5.74). Measured first, the shapes alone
+decide nothing: on the cube, corners of 3 and of 4 edges, walked by a corner's rule of its own; what decides a walk is
+a turtle's rule for the grid's tiling (its turns, its base, its arrows: the mode's fields of step 0).
+
+| Mode | Its rule | Against today |
+|---|---|---|
+| Life, Explore | every grid of cells: a plane, a surface | the same (229) |
+| Elementary | the plane of squares | the same |
+| Ant | where the walk goes on cells, on the plane or a surface (not the 3D lattice of cubes) | the same (32) |
+| Replicators | squares the same way round (no Möbius strip nor Klein bottle: their squares flipped; not the sponge: its pieces narrower than a loop) | the same (8) |
+| Rewind | the plane's and the sheets' (torus, Möbius strip, Klein bottle) tilings with blocks: squares, hexagons, triangles, Cairo, tetrakis | 4 more |
+| Walk | its 2D and 3D lattices; on a surface, a tiling with a turtle's rule: squares, hexagons, triangles, Cairo, kites, Penrose's rhombi | 13 more |
+
+To decide, each grid in Explore:
+
+- **Rewind**, not today: [Möbius · Hexagons](http://localhost:8321/#mode=explore&shape=mobiusStrip&tiling=hex),
+  [Möbius · Cairo](http://localhost:8321/#mode=explore&shape=mobiusStrip&tiling=cairo),
+  [Klein · Hexagons](http://localhost:8321/#mode=explore&shape=kleinBottle&tiling=hex),
+  [Klein · Cairo](http://localhost:8321/#mode=explore&shape=kleinBottle&tiling=cairo): their blocks across the seam,
+  flipped, to check (a fact of the grid's, then, kept with its reason).
+- **Walk**, not today:
+  - squares: [Pits](http://localhost:8321/#mode=explore&shape=cubePits&tiling=squares),
+    [Bumps](http://localhost:8321/#mode=explore&shape=cubeBumps&tiling=squares),
+    [Frame](http://localhost:8321/#mode=explore&shape=cubeFrame&tiling=squares),
+    [Sponge](http://localhost:8321/#mode=explore&shape=cubeMengerSponge&tiling=squares) (their hollow corners: 5 and 6
+    edges, the cube's corner rule never met them);
+  - kites (on cells, as the sphere's): [Torus](http://localhost:8321/#mode=explore&shape=torus&tiling=kites),
+    [Möbius](http://localhost:8321/#mode=explore&shape=mobiusStrip&tiling=kites),
+    [Klein](http://localhost:8321/#mode=explore&shape=kleinBottle&tiling=kites),
+    [Tetrahedron](http://localhost:8321/#mode=explore&shape=tetrahedron&tiling=kites),
+    [Octahedron](http://localhost:8321/#mode=explore&shape=octahedron&tiling=kites),
+    [Dodecahedron](http://localhost:8321/#mode=explore&shape=dodecahedron&tiling=kites),
+    [Stella](http://localhost:8321/#mode=explore&shape=stellaOctangula&tiling=kites);
+  - triangles: [Rhombic dodecahedron](http://localhost:8321/#mode=explore&shape=rhombicDodecahedron&tiling=triangles),
+    [Rhombic triacontahedron](http://localhost:8321/#mode=explore&shape=rhombicTriacontahedron&tiling=triangles).
+
+Each one taken in: a walk more by the same rule (no code of its own); kept out: its reason a fact of its grid's.

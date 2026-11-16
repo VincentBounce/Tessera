@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.73';
+const VERSION = '0.5.74';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -9827,6 +9827,24 @@ const variantName = (kind, shape, tiling = null, rule = null, side = '') =>
     .filter(Boolean)
     .map((name, i) => (i ? menuWord(name).replace(/^./, (c) => c.toUpperCase()) : menuWord(name)))
     .join('');
+// A variant's grid, the same in every mode (see GRIDS.md): its plane's kind, its surface, else its shape on a lattice (the
+// infinite plane's, the 3D ones: the lattice walked its side's, along the edges or on the cells, not the grid's)
+const gridOf = (w) => {
+  const v = VARIANTS[w];
+  return v.plane ? `plane:${v.plane}` : v.lattice === 'surface' ? `surface:${surfaceOf(v)}` : `lattice:${NAV[w][2]}`;
+};
+// The grids, each once: its menu's space and shape, its variants by mode (Life, Walk…), made once every variant is (see
+// the menu's order, 7.x)
+const gridsMemo = remember('gridsMemo', {});
+const grids = () => {
+  if (gridsMemo.made) return gridsMemo.made;
+  const made = {};
+  for (const w of Object.keys(NAV)) {
+    const g = (made[gridOf(w)] ??= { space: NAV[w][1], shape: NAV[w][2], variants: {} });
+    (g.variants[NAV[w][0]] ??= []).push(w);
+  }
+  return (gridsMemo.made = made);
+};
 // Life's variant on a grid of the plane (its kind: square, hex, a tiling's)
 const tilingVariant = (kind) =>
   Object.keys(VARIANTS).find(

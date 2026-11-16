@@ -1072,6 +1072,42 @@ function checkVariantNames(fail) {
   }
   return Object.keys(VARIANTS).length;
 }
+// The grids apart from the modes (see GRIDS.md): on each grid, every field of its variants the grid's (the same in all of
+// them) or its mode's (the same for each mode and its own choices there: a walk's kind, its side), none mixed; and the
+// variants as they were (VARIANTS_PRINT: their fields, the menu, the families, the page's options, as step 0 found them)
+const VARIANTS_PRINT = -1414764743; // (v0.5.73)
+const variantsPrint = () => {
+  const text = JSON.stringify([
+    Object.keys(NAV).map((w) => [
+      w,
+      NAV[w],
+      Object.keys(VARIANTS[w])
+        .sort()
+        .map((k) => [k, typeof VARIANTS[w][k] === 'function' ? 'function' : VARIANTS[w][k]]),
+    ]),
+    FAMILIES.map((F) => F.variants),
+    [...$('variant').options].map((o) => [o.value, o.text, o.parentElement.label]),
+  ]);
+  let h = 0;
+  for (let i = 0; i < text.length; i++) h = (Math.imul(h, 31) + text.charCodeAt(i)) | 0;
+  return h;
+};
+function checkGrids(fail) {
+  const said = (x) => (typeof x === 'function' ? 'function' : JSON.stringify(x));
+  for (const [g, { variants }] of Object.entries(grids())) {
+    const all = Object.values(variants).flat(),
+      fields = new Set(all.flatMap((w) => Object.keys(VARIANTS[w])));
+    for (const f of fields) {
+      const byMode = Map.groupBy(all, (w) => [NAV[w][0], NAV[w][3], NAV[w][4]].join('/'));
+      for (const [mode, ws] of byMode)
+        if (new Set(ws.map((w) => said(VARIANTS[w][f]))).size > 1)
+          fail(`${g}: ${f} differs within ${mode} (${ws.join(', ')}): neither the grid's nor the mode's`);
+    }
+  }
+  if (variantsPrint() !== VARIANTS_PRINT)
+    fail(`the variants changed: their print ${variantsPrint()}, ${VARIANTS_PRINT} before`);
+  return Object.keys(grids()).length;
+}
 // Centred's edges (CENTRED_EDGES) as the meshes' own: every battle along a solid's grid, at its two least sizes of each
 // class (3 divides it or not): the edges out of its faces' centres and corners as its table says, and its walkers grouped
 // where groupedCan says so
@@ -1842,6 +1878,7 @@ window.tesseraCheck = async ({
     checkDiscCuts(fail) +
     checkFirstStarts(fail) +
     checkVariantNames(fail) +
+    checkGrids(fail) +
     checkCentred(fail) +
     checkBlocksRound(fail) +
     (await checkSheets(fail)) +

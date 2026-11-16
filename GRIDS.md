@@ -20,7 +20,9 @@ A grid on its own, a mode a way of going on it: the plan, and its step 0, the in
 Steps, each shipped and checked on its own:
 
 0. **Inventory** (this file).
-1. **`GRIDS`** drawn from the variants as they are; the variants' fingerprint the same.
+1. **`GRIDS`** drawn from the variants as they are; the variants' fingerprint the same. Done: `gridOf(w)` (a variant's
+   grid, the same in every mode) and `grids()` (each grid once, its variants by mode), 235 grids; `checkGrids` in
+   `tesseraCheck()` keeps every field the grid's or the mode's, and the variants' print (`VARIANTS_PRINT`) as it was.
 2. **`MODES` and `modeGoes`**; the 584 pairs it gives against today's, each difference decided (see below).
 3. **Everything made from them**: the 16 places that make variants and the page's 174 options gone; the fingerprint
    the same.

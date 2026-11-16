@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.129';
+const VERSION = '0.5.130';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -17074,8 +17074,32 @@ function syncSizeStepper() {
     sel.options.length,
     sel.selectedIndex,
     (k) => label(sizeOf(sel.options[k].value)),
-    (k) => stepSize(k - sel.selectedIndex),
+    (k) => pickSize(sel.options[k]),
   ); // (a size of its own, a link's: a notch of its own too, as long as it is picked)
+  // its width under it (a torus's, a strip's, a bottle's: see widthsOf), its usual one marked; elsewhere greyed
+  const [rows, width] = TORI.includes(kind) && sel.selectedOptions[0] ? torusDims(kind, sizeOf(sel.value)) : [],
+    widths = rows ? widthsOf(kind, rows) : { list: [[0], [0]], usual: -1 },
+    pickWidth = (k) => {
+      selectSize(kind, widths.list[k][1]);
+      seek(kind);
+      sel.dispatchEvent(new Event('change'));
+    };
+  sizeGauge(
+    $('widthGauge'),
+    widths.list.length,
+    Math.max(
+      0,
+      widths.list.findIndex(([w]) => w === width),
+    ),
+    (k) => rows && label(sizeOf(widths.list[k][1])),
+    (k) => rows && pickWidth(k),
+    widths.usual,
+  );
+  greyInput($('widthGauge').firstChild, $('widthGauge'), ({ w }) =>
+    TORI.includes(surfaceOf(VARIANTS[w]))
+      ? ''
+      : 'On a torus, a Klein bottle or a Möbius strip only: its width round it.',
+  );
   const starts = variantStarts();
   $('startRow').hidden = !starts;
   if (!starts) return;
@@ -17143,14 +17167,29 @@ function pillRow(el, title, about, choices, at, first, set, whyNot = null) {
   el.classList.add('pill-row');
   el.replaceChildren(Object.assign(document.createElement('h3'), { textContent: title }), group);
 }
-// − / +: the usual sizes (from a torus size of its own, the usual ones just below or above it)
+// − / +: the usual size just below or above (a size of its own's too: by its height)
 function stepSize(delta) {
   const sel = $('gridSizeField'),
-    i = sel.selectedIndex + delta;
-  if (i < 0 || i >= sel.options.length) return;
-  sel.selectedIndex = i;
+    now = parseInt(sel.value),
+    usual = [...sel.options].filter((o) => !o.dataset.own),
+    to = delta < 0 ? usual.filter((o) => parseInt(o.value) < now).at(-1) : usual.find((o) => parseInt(o.value) > now);
+  if (to) pickSize(to);
+}
+// a size of the menu (its option), a torus's width kept as a share of its usual one (its shape: see widthsOf)
+function pickSize(option) {
+  const sel = $('gridSizeField'),
+    kind = surfaceOf(VARIANTS[tabVariant()]);
+  const [rows, width] = TORI.includes(kind) ? torusDims(kind, sizeOf(sel.value)) : [],
+    share = rows && width / torusDims(kind, rows)[1];
+  sel.value = option.value;
   for (const o of [...sel.options]) if (o.dataset.own && o !== sel.selectedOptions[0]) o.remove();
-  seek(surfaceOf(VARIANTS[tabVariant()]));
+  if (share && share !== 1 && !option.dataset.own) {
+    const now = Number(sel.value),
+      want = share * torusDims(kind, now)[1],
+      [, size] = widthsOf(kind, now).list.reduce((a, b) => (Math.abs(b[0] - want) < Math.abs(a[0] - want) ? b : a));
+    selectSize(kind, size);
+  }
+  seek(kind);
   sel.dispatchEvent(new Event('change'));
 }
 
@@ -17168,6 +17207,23 @@ function torusDims(kind, size) {
   if (typeof size === 'number') return [size, SURFACES[kind].columns(size)];
   const [rows, perRow] = size.split('x').map(Number);
   return [rows, SURFACES[kind].columns(rows, perRow / SURFACES[kind].perRow)]; // (columns of its own: the nearest its tiling allows, see ringColumns)
+}
+// A torus's, a Klein bottle's or a Möbius strip's widths at its height (round the ring, along the strip: see torusDims): its
+// usual sizes' widths (its heights' ladder, see SURFACES' sizes) from half its usual one to twice it, as its tiling allows
+// them, no more cells than CELLS.most: [width, size] each, narrowest first, and the usual one's place
+function widthsOf(kind, rows) {
+  const usual = torusDims(kind, rows)[1],
+    per = MOBIUS_KINDS.includes(kind) ? 1 : SURFACES[kind].perRow,
+    widths = new Map();
+  for (const c of [usual, ...SURFACES[kind].sizes.map((f) => torusDims(kind, f)[1])].filter(
+    (c) => c >= usual / 2 && c <= 2 * usual,
+  )) {
+    const size = `${rows}x${c * per}`,
+      w = torusDims(kind, size)[1];
+    if (!widths.has(w) && SURFACES[kind].tiles(size) <= CELLS.most) widths.set(w, w === usual ? rows : size);
+  }
+  const list = [...widths].sort((a, b) => a[0] - b[0]);
+  return { list, usual: list.findIndex(([w]) => w === usual) };
 }
 /* A grid's size, one way for all of them: its height × its width, their product its cells. On the plane
  * (kind: its cells' shape), its rows × the lattice cells of a row (its cells all of them, a lattice cell's several); on a torus or a Klein bottle, its cells round

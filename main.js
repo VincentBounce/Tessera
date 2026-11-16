@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.114';
+const VERSION = '0.5.115';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -6395,8 +6395,7 @@ const DISPLAY_DEFAULTS = {
   ], // (by its shape, see SHAPE_DEFAULTS)
   light: ['light', 'open', true],
   glass: ['glass', 'open', false],
-  grid: ['showGrid', 'tab', { all: true, Explore: false }], // (Explore's colours alone, no seams drawn over them)
-  gridLines: ['gridLines', 'tab', { all: 1, Explore: 2 }], // (Medium; Strong on Explore's colours, see GRID_LINES)
+  grid: ['gridLines', 'tab', { all: 2, Explore: 0 }], // (its lines Medium; Explore's colours alone, no seams drawn over them: see GRID_LINES)
   trail: ['lifeTrail', 'lifeTeams', () => lifeTeams === 1], // (Life's Trail: on in Solo, two states, off in teams; when the teams change)
   ocean: ['ocean', 'battle', () => battleOn() && NAV[tabVariant()][0] === 'Walk'], // (on in a walk's battle on a surface, as long as none picks it)
   cut: [null, 'open', 0],
@@ -6469,7 +6468,7 @@ const lookWhyNot = (look, w) =>
 function updateDisplayMenu() {
   const rows = {
     colours: 'coloursRow',
-    grid: 'gridRow',
+    grid: 'gridLinesRow',
     autoRotate: 'autoRotateRow',
     upright: 'uprightRow',
     perspective: 'perspectiveRow',
@@ -6617,9 +6616,9 @@ function renderViewModes() {
   $('viewModes').hidden = $('centeredRow').hidden;
 }
 $('viewTools').addEventListener('mouseenter', renderViewModes);
-// The view's head, standard tiles on the right (toggle): Sound, Auto-fit, Grid while the box is open, each its checkbox's (the
-// source, kept out of sight), then the theme's switch, always (see themeSwitch); drawn again with the display box, when the box
-// opens and as either changes
+// The view's head, standard tiles on the right (toggle): Sound, Auto-fit while the box is open, each its checkbox's (the
+// source, kept out of sight), then the theme's switch, always (see themeSwitch); under them Grid, its lines off or how marked;
+// drawn again with the display box, when the box opens and as either changes
 let headTiles = null;
 function renderHeadTiles() {
   const flip = (id) => () => {
@@ -6638,26 +6637,19 @@ function renderHeadTiles() {
         toggle: true,
         click: flip('autoFit'),
       }),
-      tile({ pic: icon('grid'), text: 'Grid', title: $('gridRow').title, toggle: true, click: flip('showGrid') }),
     ];
     for (const b of [soundButton, ...headTiles]) b.classList.add('open-only');
     $('headTiles').replaceChildren(soundButton, ...headTiles, themeSwitch);
   }
   renderSoundButton();
   setTile(headTiles[0], { on: $('autoFit').checked, byDefault: defaultMark('autoFit') });
-  setTile(headTiles[1], {
-    on: $('showGrid').checked,
-    byDefault: defaultMark('grid'),
-    whyNot: ({ w, stacked }) => viewWhyNot('grid', w, stacked),
-  });
-  $('gridLinesRow').hidden = !shows('grid', tabVariant());
   pillRow(
     $('gridLinesRow'),
-    'Lines',
-    "The grid's lines, how marked",
-    GRID_LINES.map(([name, words]) => [name, words]),
+    'Grid',
+    "The grid's lines: off, or how marked (their opacity)",
+    GRID_LINES.map(([name, words, factor]) => [factor ? `${Math.round(100 * EDGE_ALPHA * factor)}%` : name, words]),
     Number($('gridLines').value),
-    defaultOf('gridLines', tabVariant()),
+    defaultOf('grid', tabVariant()),
     (k) => {
       $('gridLines').value = k;
       needsFull = true;
@@ -40592,12 +40584,12 @@ const thumbnailStore = (mode, ask) =>
 // frame that drew it: asked of the next frame, drawn whole without the grid, and taken as it ends, the grid then as it was
 // (see tick); the sky the view's background, never in it (see paintSky)
 let thumbnailWanted = null,
-  thumbnailGrid = true;
+  thumbnailGrid = '0';
 const wantThumbnail = () =>
   new Promise((ok) => {
     thumbnailWanted = ok;
-    thumbnailGrid = $('showGrid').checked;
-    $('showGrid').checked = false;
+    thumbnailGrid = $('gridLines').value;
+    $('gridLines').value = 0;
     needsFull = true;
   });
 function stageThumbnail() {
@@ -41222,7 +41214,7 @@ function drawGrid() {
   ctx.clearRect(0, 0, canvasWidth, canvasHeight);
   paintSky();
   placeAxesLabels();
-  if (!$('showGrid').checked || !walk.lattice) return; // (no grid built yet, at load: no lines)
+  if (!gridShown() || !walk.lattice) return; // (no grid built yet, at load: no lines)
   const s = view.scale;
   let stepCells = 1;
   while (s * stepCells < 10) stepCells *= 5;
@@ -42005,13 +41997,16 @@ function faded(colour, a, under = UNLIT) {
 }
 // The tile edges' opacity on a shape: on a light page, fainter as the tiles get small on screen
 // (thousands of dark lines would grey the whole solid)
-// The grid's lines, how marked: each its name, its words, its factor on the theme's opacity (Faint: as before v0.5.92)
+// The grid's lines, off or how marked: each its name, its words, its factor on the theme's opacity (shown as the opacity it
+// makes; the faint: as before v0.5.92)
 const GRID_LINES = [
+  ['Off', 'No lines', 0],
   ['Faint', 'The lines faint, as before v0.5.92', 0.55],
   ['Medium', 'The lines as the theme draws them', 1],
-  ['Strong', 'The lines marked twice as much: they show over strong colours (Explore)', 2],
+  ['Strong', "The lines marked twice as much: they show over strong colours (Explore's)", 2],
 ];
-const gridAlpha = () => EDGE_ALPHA * GRID_LINES[Number($('gridLines').value)][2];
+const gridAlpha = () => EDGE_ALPHA * GRID_LINES[Number($('gridLines').value)][2],
+  gridShown = () => gridAlpha() > 0;
 function edgeAlpha(sh) {
   if (!FADE_EDGES) return gridAlpha();
   // the tiles' size as the grid's density of lines shows it: 2 × area / half perimeter (each edge is
@@ -44078,7 +44073,7 @@ function gpuSurface(paint, path) {
     };
     tiles([0, 0, 0, 0], cull);
     if (open) tiles([...rgbCached(undersideColour()).map((c) => c / 255), 1], front === 'back' ? 'front' : 'back');
-    if ($('showGrid').checked && view.scale > 6) {
+    if (gridShown() && view.scale > 6) {
       rp.setPipeline(
         gpuDrawPipe('edge', {
           vertex: 'edgeV',
@@ -44583,7 +44578,7 @@ const VIEW_AXES = [
 ];
 const VIEW_AXES_AT = 44, // (their origin, pixels from the view's top left)
   VIEW_AXES_LENGTH = 26; // (a bar's, pixels)
-const axesShown = () => $('showGrid').checked && !!walk.lattice && !!walk.is3d;
+const axesShown = () => gridShown() && !!walk.lattice && !!walk.is3d;
 function gpuAxes(D, rp, pass, slot) {
   if (!D.barMesh) gpuBuffer('barMesh', CELL_SHAPES.cube.triangles);
   gpuBuffer('axesFrom', new Float32Array(9));
@@ -44826,7 +44821,7 @@ function gpuPlane(paint) {
     D.keys.planeBase = `${bg}|${wallShown}`;
   }
   paint({ put: (col) => device.queue.writeBuffer(D.planeCol, 0, col), buffer: D.planeCol, n: F.m }, F.m);
-  const outline = $('showGrid').checked && s >= 6;
+  const outline = gridShown() && s >= 6;
   if (outline && !D.planeLines) {
     const { start, xy } = F,
       seen = new Set(),
@@ -45995,7 +45990,7 @@ function tick(now = performance.now()) {
     thumbnailWanted = null;
     queueMicrotask(() => {
       ok(stageThumbnail());
-      $('showGrid').checked = thumbnailGrid;
+      $('gridLines').value = thumbnailGrid;
       needsFull = true;
     });
   } // (as this frame ends, all drawn: see wantThumbnail)
@@ -46332,10 +46327,6 @@ $('area').addEventListener('change', () => {
   needsFull = true;
   updateDisplayMenu();
 }); // (not in the link: a display choice)
-$('showGrid').addEventListener('change', () => {
-  needsFull = true;
-  renderHeadTiles();
-});
 $('autoFit').addEventListener('change', () => {
   if ($('autoFit').checked) fitNow();
   renderHeadTiles();

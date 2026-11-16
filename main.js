@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.169';
+const VERSION = '0.5.170';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -21865,19 +21865,15 @@ function paletteColours(count, eachNeighbour, P, steps = Infinity) {
   }
 }
 // each cell's colour, 1 to the palette's: two cells side by side (nbr, see sideOf) never alike (Tiles), two faces of the solid
-// side by side never alike (Sides, by each cell's face: see cellFaces; off a solid, Tiles), each kind of tile, by its sides (Kind of tile), or its steps from cell 0 spread over the palette (round the
+// side by side never alike (Sides, by each cell's face: see cellFaces; off a solid, Tiles), each kind of tile (Kind of tile, see
+// tileKinds), or its steps from cell 0 spread over the palette (round the
 // palette past its last: Tiles where DSatur takes more colours, see dsatur; the faces only where the palette cannot do, see
 // paletteColours)
-function exploreLevels(nbr, n, faces) {
+function exploreLevels(nbr, n, faces, kinds) {
   const side = sideOf(nbr),
     P = explorePalette().length,
     rule = exploreLook.rule === 'sides' && !faces ? 'tiles' : exploreLook.rule;
   let level = new Uint8Array(n);
-  const sides = (t) => {
-    let k = 0;
-    for (let q = nbr.start[t]; q < nbr.start[t + 1]; q++) k += side[q];
-    return k;
-  };
   const bySide = (t, put) => {
     for (let q = nbr.start[t]; q < nbr.start[t + 1]; q++) if (side[q]) put(nbr.list[q]);
   };
@@ -21891,8 +21887,8 @@ function exploreLevels(nbr, n, faces) {
     for (let t = 0; t < n; t++) level[t] = colour[faces[t]];
   }
   if (rule === 'kind') {
-    const counts = [...new Set(Array.from({ length: n }, (_, t) => sides(t)))].sort((a, b) => a - b);
-    for (let t = 0; t < n; t++) level[t] = 1 + counts.indexOf(sides(t));
+    const all = [...new Set(kinds.subarray(0, n))].sort((a, b) => a - b);
+    for (let t = 0; t < n; t++) level[t] = 1 + all.indexOf(kinds[t]);
   }
   if (rule === 'distance') {
     const steps = new Int32Array(n).fill(-1),
@@ -21911,6 +21907,12 @@ function exploreLevels(nbr, n, faces) {
   for (let t = 0; t < n; t++) level[t] = 1 + ((level[t] - 1) % P);
   return level;
 }
+// each cell's kind of tile, by construction: its tiling's own tile where it has several with as many corners (protos: de
+// Bruijn's rhombi, Penrose's thick and thin, see discPatch), else its corners' count (corners: its grid's, see meshCorners)
+const tileKinds = (corners, protos = null) =>
+  Int32Array.from({ length: corners.start.length - 1 }, (_, t) =>
+    protos ? protos[t] : corners.start[t + 1] - corners.start[t],
+  );
 // a variant's grid with its solid's faces (see cellFaces), as its surface's smallest mesh has them (made once)
 const facedGrid = (w) => {
   const S = SURFACES[surfaceOf(VARIANTS[w])];
@@ -21959,7 +21961,7 @@ function renderExplore() {
 // freshWalk's (a grid's own given after, by its builder)
 function startLife(seq, rule, n, grid) {
   const explore = !!VARIANTS[walk.variant].explore;
-  if (explore) grid.seed = exploreLevels(grid.nbr, n, grid.faces); // (Explore: each cell alive in its colour, see exploreLevels)
+  if (explore) grid.seed = exploreLevels(grid.nbr, n, grid.faces, grid.kinds); // (Explore: each cell alive in its colour, see exploreLevels)
   walk.life = {
     B: rule.B,
     S: rule.S,
@@ -22024,6 +22026,7 @@ function buildLife(seq, variant) {
     seed,
     margolus: variant.margolus && rule.margolus ? ruleBlocks(rule, blocksGrid(variant), g.nu, true, g.nv, g) : null,
     faces: variant.explore ? (g.cellFaces ?? null) : null, // (Explore's Sides: each cell's face of its solid, see cellFaces)
+    kinds: variant.explore ? tileKinds(meshCorners(g)) : null, // (Explore's Kind of tile)
   });
   Object.assign(walk, {
     is3d: true,
@@ -23458,6 +23461,7 @@ function discPatch(items, W, mid, norm = Math.hypot, each = flatEach) {
     ...F,
     n: rows.length,
     coreIds,
+    kinds: rows[0].kind === undefined ? null : Uint8Array.from(rows, (h) => h.kind), // (its tiles' kinds, where its tiling has several alike: see tileKinds)
     core: coreIds.map((t) => F.poly(t)),
     norm,
     width: Math.sqrt(area / rows.length),
@@ -23805,7 +23809,7 @@ const penroseRhombi = (() => {
         continue;
       }
       const p = [A, B, other, C];
-      items.push({ p: p.flat(), m: [(B[0] + C[0]) / 2, (B[1] + C[1]) / 2] });
+      items.push({ p: p.flat(), m: [(B[0] + C[0]) / 2, (B[1] + C[1]) / 2], kind: c }); // (its triangles' colour: thick or thin)
     }
     return items;
   };
@@ -24064,7 +24068,7 @@ const DEBRUIJN = (N) => {
           const p = [v(0, 0), v(1, 0), v(1, 1), v(0, 1)];
           if (p.reduce((sum, q, i) => sum + q[0] * p[(i + 1) % 4][1] - p[(i + 1) % 4][0] * q[1], 0) < 0) p.reverse();
           const m = [0, 1].map((t) => p.reduce((sum, q) => sum + q[t], 0) / 4);
-          if (norm(...m) < reach) items.push({ p: p.flat(), m });
+          if (norm(...m) < reach) items.push({ p: p.flat(), m, kind: Math.min(l - j, N - l + j) }); // (its rhombus: its two directions' angle)
         }
     return discPatch(items, W, [0, 0], norm);
   });
@@ -25171,6 +25175,9 @@ function buildLifePlane(seq) {
     side: rule.iso === 'vertex' ? sideOf(nbr) : null,
     margolus: VARIANTS[digitsComputed.variant].margolus && rule.margolus ? ruleBlocks(rule, kind, W) : null,
     seed: planeSeed(kind, seq, rule.C, rule.colours),
+    kinds: VARIANTS[digitsComputed.variant].explore
+      ? tileKinds(planeMesh(kind, W, planeTorus(kind)), APERIODIC[kind]?.(W).kinds)
+      : null, // (Explore's Kind of tile)
   });
   Object.assign(walk, {
     stacked: spaceTime && spaceTimeApplies(walk.variant),

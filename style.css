@@ -750,6 +750,9 @@ h4 {
   gap: var(--tile-gap);
   margin-bottom: 10px;
 } /* the tiles, as many a row as fit (4 in the settings' column) */
+.nav-shapes:not(:has(> :not(.tile-group, [hidden]))) {
+  grid-template-columns: 1fr;
+} /* groups of tabs alone (Space, Start, Walk on…): no tiles' columns, the whole row, as the Number's ℚ ℝ ℙ */
 .nav-shapes button {
   display: flex;
   flex-direction: column;

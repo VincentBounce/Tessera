@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.116';
+const VERSION = '0.5.117';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -42003,7 +42003,7 @@ const GRID_LINES = [
   ['Off', 'No lines', 0],
   ['Faint', 'The lines faint, as before v0.5.92', 0.55],
   ['Medium', 'The lines as the theme draws them', 1],
-  ['Strong', "The lines marked twice as much: they show over strong colours (Explore's)", 2],
+  ['Strong', "The lines at their most, opaque: they show over strong colours (Explore's)", 5],
 ];
 const gridAlpha = () => EDGE_ALPHA * GRID_LINES[Number($('gridLines').value)][2],
   gridShown = () => gridAlpha() > 0;

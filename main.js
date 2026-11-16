@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.81';
+const VERSION = '0.5.82';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -40993,9 +40993,11 @@ function reverse(on) {
   statsDirty = true;
 }
 
-// the step a new walk is shown at: its end; on a surface's cells, the step it has visited them all if it does (coverStep:
-// more would only colour them again); along a grid, its end, its sweet spot a link away (see sweetSpot)
-const firstShown = () => (walk.surface && !walk.vert && walk.coverStep >= 0 ? walk.coverStep : walk.n);
+// the step a new walk is shown at: on a surface, its sweet spot if it has one (see sweetSpot; a battle's, its end); else
+// on a surface's cells the step it has visited them all if it does (coverStep: more would only colour them again), else
+// its end
+const firstShown = () =>
+  (walk.battle ? null : sweetSpot()) ?? (walk.surface && !walk.vert && walk.coverStep >= 0 ? walk.coverStep : walk.n);
 // A new walk is shown at once (complete, or on a surface's cells as they are all visited); Play replays it from the start
 // A walk built again while it played (− or + of its digits, see stepDigits): the step it plays on from, not its end
 let resumeAt = null;

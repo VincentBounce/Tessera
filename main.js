@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.146';
+const VERSION = '0.5.147';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -6339,7 +6339,7 @@ const DISPLAY_BY_TAB = {
   'Automata on the plane': ['colours', 'digit', 'mono', 'trail', 'grid'], // (Grid: its cells' outlines, see gpuPlane; Trail: Rewind's Blocks in its place)
   'Automata on surfaces': ['shape', 'colours', 'digit', 'mono', 'trail', 'grid', ...VIEW_3D, 'glass', 'ocean', 'cut'], // (Glass, Cut: the surfaces' tiles only, see gpuFrame, cutOn)
   '2D spirals': ['heatmap', 'fill', 'translucent', 'cells', 'visits', 'digit', 'grid'], // the 2D walks' menu, some of it greyed out
-  Elementary: ['colours', 'mono', 'domain', 'grid'], // (its cells never change once made: no Heatmap, no Trail; Domains its own)
+  Elementary: ['colours', 'mono', 'domain', 'complexity', 'grid'], // (its cells never change once made: no Heatmap, no Trail; Domains its own)
   'Explore on the plane': ['grid'],
   'Explore on surfaces': ['shape', 'grid', ...VIEW_3D, 'glass', 'cut'], // (its view's only: its colours its own, see renderExplore)
 };
@@ -6671,6 +6671,7 @@ function relabelColours(variant) {
         digit: 'One colour per digit',
         mono: 'One colour',
         domain: '',
+        complexity: '',
       }
     : {
         mono: two
@@ -6682,6 +6683,8 @@ function relabelColours(variant) {
             : 'Live cells by how old they are, warm newborns to cold old ones + fading trail',
         digit: 'State changes',
         domain: 'The background, what repeats, pale; what breaks it in gold (its domains and particles)',
+        complexity:
+          'Each cell by how rare its past is among those that tell the same future (its local complexity): the background pale, structures gold',
         cells: '',
         visits: '',
       };
@@ -6708,14 +6711,15 @@ function relabelColours(variant) {
     return;
   }
   const order = life
-    ? ['mono', 'gradient', 'digit', 'domain', 'cells', 'visits']
-    : ['gradient', 'cells', 'visits', 'digit', 'mono', 'domain'];
+    ? ['mono', 'gradient', 'digit', 'domain', 'complexity', 'cells', 'visits']
+    : ['gradient', 'cells', 'visits', 'digit', 'mono', 'domain', 'complexity'];
   const byValue = Object.fromEntries(Array.from(sel.options, (o) => [o.value, o]));
   order.forEach((v) => {
     byValue[v].text = names[v];
     sel.append(byValue[v]);
   });
-  for (const v of ['cells', 'visits', 'digit', 'mono', 'domain']) byValue[v].hidden = !shows(v, tabVariant());
+  for (const v of ['cells', 'visits', 'digit', 'mono', 'domain', 'complexity'])
+    byValue[v].hidden = !shows(v, tabVariant());
   for (const v of ['gradient', 'visits', 'digit']) byValue[v].disabled = !!lookWhyNot(v, tabVariant()); // (Rainbow along a spiral, its Heatmap)
   if (sel.selectedOptions[0]?.hidden || sel.selectedOptions[0]?.disabled) {
     sel.value = Array.from(sel.options).find((o) => !o.hidden && !o.disabled).value; // the first one left
@@ -7029,7 +7033,7 @@ function renderColourButtons() {
   renderTrailButton();
   // a walk's (Space): Rainbow, Commands, as the looks of its cells
   const names = L
-    ? { mono: 'States', gradient: 'Age', digit: 'Heatmap', domain: 'Domains' }
+    ? { mono: 'States', gradient: 'Age', digit: 'Heatmap', domain: 'Domains', complexity: 'Complexity' }
     : { gradient: 'Path', cells: 'Cell path', visits: 'Heatmap', digit: 'Commands' };
   const picture = (v) => (L ? lifeLookPicture(v) : cellModePicture(v === 'gradient' ? 'cells' : v));
   const looks = Array.from(sel.options).filter((o) => !o.hidden && names[o.value]);
@@ -7191,6 +7195,11 @@ function lifeLookPicture(look) {
     const pale = faded(LIFE_ALIVE, 0.3, cssColour('--page-background')),
       gold = cssColour('--accent-color');
     return swatch([pale, gold, gold, pale]); // (the background pale, a defect across it in gold)
+  }
+  if (look === 'complexity') {
+    const page = cssColour('--page-background'),
+      gold = cssColour('--accent-color');
+    return swatch([page, faded(gold, 0.4, page), faded(gold, 0.7, page), gold]); // (low to high)
   }
   return heatRings(g);
 }
@@ -21292,6 +21301,63 @@ function backgroundPeriod(T, first, G, wrap) {
   const best = Math.min(...rate.slice(1));
   return best / cells > 0.25 ? 0 : rate.findIndex((v, p) => p && v <= best + 0.01 * cells);
 }
+// Its local statistical complexity (Shalizi, Haslinger, Rouquier, Klinkner and Moore, 2006; the Complexity look): each cell's
+// past light cone (itself and the 3 + 5 + 7 cells above it that reach it, 16 bits) and future one (the 3 + 5 below it that
+// it reaches, 8 bits), counted over the whole run (the pasts met only); the pasts that tell the same futures (their shares to an eighth) one state;
+// a cell's complexity −log₂ of its state's share, rare structures high, the common background low (a periodic one's, log₂ of
+// its period). Its rows made again, twice (counted, then each cell its complexity): each pixel's mean (B × B cells), 0 its
+// background's (the median) or less, 1 the most; null past CONE_MOST cells
+const CONE_MOST = 16e6;
+function lightConeComplexity(T, first, G, wrap, W, B, PW, PH) {
+  if (W * (G + 1) > CONE_MOST) return null;
+  const n = first.length,
+    bits = Array.from({ length: 6 }, () => new Uint8Array(W)); // (the last 6 rows' cells, a byte each, oldest first)
+  const at = (c, x) => (x >= 0 && x < W ? c[x] : wrap ? c[(x + W) % W] : 0),
+    span = (c, x, k) => {
+      let v = 0;
+      for (let d = -k; d <= k; d++) v = (v << 1) | at(c, x + d);
+      return v;
+    }; // (a row's 2k + 1 cells round x, as bits)
+  const cone = (x) => [
+    (bits[3][x] << 15) | (span(bits[2], x, 1) << 12) | (span(bits[1], x, 2) << 7) | span(bits[0], x, 3),
+    (span(bits[4], x, 1) << 5) | span(bits[5], x, 2),
+  ]; // (the row 2 above the last's cell x: its past, its future)
+  const run = (each) => {
+    let r = first.slice(),
+      next = new Uint16Array(n);
+    for (let t = 0; t <= G; t++) {
+      const row = bits.shift();
+      for (let x = 0; x < W; x++) row[x] = cellOf(r, x);
+      bits.push(row);
+      if (t >= 5) for (let x = 0; x < W; x++) each(t - 2, x, ...cone(x));
+      wolframStep(T, r, next, 0, n - 1, wrap);
+      [r, next] = [next, r];
+    }
+  };
+  const futures = new Map(); // (each past met: its futures' counts)
+  run((t, x, past, future) => (futures.get(past) ?? futures.set(past, new Uint32Array(256)).get(past))[future]++);
+  // (each past its state: the same futures' shares, to an eighth; each state its share of all the cells)
+  const states = new Map(),
+    stateOf = new Map(),
+    share = [];
+  let all = 0;
+  for (const [p, counts] of futures) {
+    const total = counts.reduce((a, b) => a + b, 0),
+      key = Array.from(counts, (c) => Math.round((8 * c) / total)).join();
+    if (!states.has(key)) states.set(key, share.push(0) - 1);
+    stateOf.set(p, states.get(key));
+    share[states.get(key)] += total;
+    all += total;
+  }
+  const sum = new Float32Array(PW * PH);
+  run((t, x, past) => {
+    sum[Math.floor(t / B) * PW + Math.floor(x / B)] += -Math.log2(share[stateOf.get(past)] / all) / (B * B);
+  });
+  const sorted = sum.slice().sort(),
+    base = sorted[sorted.length >> 1],
+    most = Math.max(base + 1e-9, sorted.at(-1));
+  return sum.map((v) => Math.max(0, (v - base) / (most - base)));
+}
 function elementaryRowsOf(G, start, N, digits) {
   // (alone: in the page or in a worker, see elementaryReady)
   const wrap = start === 'digits',
@@ -21311,7 +21377,8 @@ function elementaryRowsOf(G, start, N, digits) {
     breaks = new Uint32Array(PW * PH), // (its live cells that break its background: see periodBreaks)
     upTo = new Float64Array(G + 2),
     kept = [],
-    period = backgroundPeriod(T, wordsOf(first), G, wrap);
+    period = backgroundPeriod(T, wordsOf(first), G, wrap),
+    complexity = lightConeComplexity(T, wordsOf(first), G, wrap, W, B, PW, PH);
   let r = wordsOf(first),
     next = new Uint16Array(n);
   for (let t = 0; t <= G; t++) {
@@ -21348,6 +21415,7 @@ function elementaryRowsOf(G, start, N, digits) {
     counts,
     breaks,
     period,
+    complexity,
     upTo,
     kept,
     wrap,
@@ -21377,7 +21445,7 @@ function elementaryWorkerMain() {
     const t = performance.now(),
       R = elementaryRowsOf(...e.data);
     R.ms = performance.now() - t;
-    postMessage(R, [R.counts.buffer, R.breaks.buffer, R.upTo.buffer, ...R.kept.map((k) => k.buffer)]);
+    postMessage(R, [R.counts.buffer, R.breaks.buffer, R.upTo.buffer, ...R.kept.map((k) => k.buffer)]); // (its complexity copied)
   };
 }
 function elementaryReady(then) {
@@ -42599,14 +42667,15 @@ function drawElementary(to) {
     ctx = layers.path,
     { scale: s, ox, oy } = view,
     last = Math.min(to, R.G),
-    look = $('colourMode').value;
+    look = $('colourMode').value === 'complexity' && !R.complexity ? 'gradient' : $('colourMode').value; // (Complexity: up to CONE_MOST cells, else Age)
   const word = ([r, g, b]) => (b << 16) | (g << 8) | r,
     rgb = (t) => word(rgbCached(look === 'mono' ? LIFE_ALIVE : rainbowNow()[Math.floor((t * BANDS) / (R.G + 1))])),
     page = rgbCached(cssColour('--page-background')),
     [background, defect] = [faded(LIFE_ALIVE, 0.3, cssColour('--page-background')), cssColour('--accent-color')].map(
       rgbCached,
     ), // (Domains: opaque, each pixel its colour mixed with the page's by its live cells, its dead ones the page's)
-    mixed = (c, share) => word(page.map((v, d) => Math.round(v + (c[d] - v) * share)));
+    mixed = (c, share) => word(page.map((v, d) => Math.round(v + (c[d] - v) * share))),
+    rainbow = rainbowNow().map(rgbCached); // (Complexity: its colours, low to high, from the page)
   const paint = (w, h, counts, breaks, cells, rowOf) => {
     // (w × h pixels, each its live cells of cells and its row; a pixel a word: its alpha, blue, green, red)
     const img = new ImageData(w, h),
@@ -42616,7 +42685,11 @@ function drawElementary(to) {
       for (let x = 0; x < w; x++) {
         const live = counts[y * w + x],
           wrong = breaks[y * w + x];
-        if (look === 'domain')
+        if (look === 'complexity') {
+          const v = R.complexity[y * w + x];
+          px[y * w + x] =
+            ((255 << 24) | mixed(rainbow[Math.round(v * (rainbow.length - 1))], Math.min(1, 3 * v))) >>> 0;
+        } else if (look === 'domain')
           px[y * w + x] = ((255 << 24) | mixed(2 * wrong >= live && live ? defect : background, live / cells)) >>> 0;
         else if (live) px[y * w + x] = ((Math.round((255 * live) / cells) << 24) | c) >>> 0;
       }
@@ -42638,7 +42711,7 @@ function drawElementary(to) {
     t0 = Math.max(0, snap(-oy / s)),
     t1 = Math.min(R.G, Math.ceil((canvasHeight - oy) / s));
   if (x1 < x0 || t1 < t0) return;
-  if (b !== R.B && partWork(R, x0, x1, t0, t1) <= PART_MOST) {
+  if (b !== R.B && look !== 'complexity' && partWork(R, x0, x1, t0, t1) <= PART_MOST) {
     const key = `${x0}|${x1}|${t0}|${t1}|${b}|${look}|${LIFE_ALIVE}`;
     if (R.part?.key !== key) {
       const { counts, breaks } = elementaryPart(R, x0, x1, t0, t1, b),
@@ -47572,6 +47645,7 @@ const LIFE_LOOKS = [
   ['gradient', 'Age'],
   ['digit', 'Heatmap'],
   ['domain', 'Domains'],
+  ['complexity', 'Complexity'],
 ]; // (Life's looks, see renderColourButtons)
 const CELL_MODES = [
   ['path', 'Path', 'The walk’s line in the rainbow along it, over its cells faded (along the edges, its line alone)'],

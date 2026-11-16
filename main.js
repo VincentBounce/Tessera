@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.122';
+const VERSION = '0.5.123';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -13557,11 +13557,15 @@ function walkCubeSquaresTurtleCells(n) {
     return { corners: [pt(-1, -1), pt(1, -1), pt(1, 1), pt(-1, 1)], normal: N, lines };
   });
   mesh.perFace = n * n;
+  mesh.cellFaces = Int32Array.from({ length: mesh.n }, (_, t) => Math.floor(t / mesh.perFace)); // (CUBE_FRAMES' order: AXES')
   return (meshCache[key] = mesh);
 }
 
 // A solid of squares as tetrakis triangles: each square cut in 4 from its middle (as the tetrakis tiling), turned as it is
 // a mesh of quadrilaterals' cells, each cut in 2 triangles across its shorter diagonal (see HULL_CUTS)
+// a mesh's cells cut again, per cells each in turn (see HULL_CUTS): each its cell's face
+const cutFaces = (g, per) =>
+  g.cellFaces ? { cellFaces: Int32Array.from({ length: g.n * per }, (_, t) => g.cellFaces[Math.floor(t / per)]) } : {};
 function halvesOf(key, g) {
   if (meshCache[key]) return meshCache[key];
   const far = (a, b) => Math.hypot(...[0, 1, 2].map((d) => g.verts[3 * a + d] - g.verts[3 * b + d])),
@@ -13583,6 +13587,7 @@ function halvesOf(key, g) {
   return (meshCache[key] = Object.assign(finishMesh(Array.from(g.verts), tiles, 3, g.size, null), {
     uncut: g,
     per: 2,
+    ...cutFaces(g, 2),
   }));
 }
 function tetrakisOf(key, g) {
@@ -13597,7 +13602,7 @@ function tetrakisOf(key, g) {
   }
   return (meshCache[key] = Object.assign(
     finishMesh(verts, tiles, 3, g.size, null),
-    { uncut: g, per: 4 },
+    { uncut: g, per: 4, ...cutFaces(g, 4) },
     g.perFace && { perFace: 4 * g.perFace },
   )); // (as listed: its squares' turn; triangle t of square t >> 2; the cube's: a face's 4 times as many)
 }
@@ -13654,6 +13659,7 @@ function cubePits(n, up = false) {
   mesh.concave = true;
   mesh.floors = Int32Array.from(floors); // face f's floor tile (r, c): floors[f a² + r a + c]
   mesh.floorSize = a;
+  mesh.cellFaces = Int32Array.from({ length: mesh.n }, (_, t) => Math.floor((6 * t) / mesh.n)); // (a face's squares, its pit's or bump's with them, as many a face in turn: AXES' order)
   return (meshCache[key] = mesh);
 }
 
@@ -13683,6 +13689,7 @@ function mengerMesh(L, m = 1) {
     x >= 0 && y >= 0 && z >= 0 && x < n && y < n && z < n && block[(of[x] * B + of[y]) * B + of[z]] === 1;
   const { verts, add } = vertexStore(),
     quads = [],
+    faces = [],
     c = (i) => (2 * i) / n - 1,
     at = (p) => add(...p.map(c));
   for (let x = 0; x < n; x++)
@@ -13703,6 +13710,7 @@ function mengerMesh(L, m = 1) {
                 return at(p);
               };
             quads.push([P(0, 0), P(1, 0), P(1, 1), P(0, 1)]);
+            faces.push([x, y, z][d] === (s ? n - 1 : 0) ? 2 * d + 1 - s : -1); // (on the cube's outside: its face, AXES' order; inside, a hole's: none)
           }
       }
   // outwards: off the cell kept, along the axis its square lies across (its coordinate on a grid line)
@@ -13716,6 +13724,7 @@ function mengerMesh(L, m = 1) {
   const mesh = finishMesh(verts, quads, 4, L, out);
   mesh.concave = true;
   mesh.cubic = true; // (the cube's turns: 3 colours, 2 opposite faces each)
+  mesh.cellFaces = Int32Array.from(faces);
   return (meshCache[key] = mesh);
 }
 
@@ -13779,6 +13788,7 @@ function hullMesh(kind, f) {
     squareFaces,
     triFaces,
     triFirst: squareFaces.length * f * f,
+    cellFaces: Int32Array.from(tiles, (_, t) => Math.floor(t / (f * f))), // (its squares' faces, then its triangles', f² cells each)
   }));
 }
 // A hull solid's colourings (Realm, Wild, the zones, the icons) by its faces' kinds: K colours a face each, of the kind with
@@ -14042,6 +14052,32 @@ POLYHEDRA.stella = (() => {
   }
   return { P, faces, corners: 6, concave: true };
 })();
+// Each polyhedron's faces, by construction: its triangles in one plane one face (a dodecahedron's pentagon its 5 triangles,
+// in turn; the stella's outer triangles 3 a plane), numbered as first met (the dodecahedron's round the icosahedron's
+// corners, as FACE_MIDDLES lists them): each triangle's face (triangleFaces), each face's middle (its corners', faceMids)
+for (const S of Object.values(POLYHEDRA)) {
+  const planes = [];
+  S.triangleFaces = Int32Array.from(S.faces, ([a, b, c]) => {
+    const n = unit(cross(sub(S.P[b], S.P[a]), sub(S.P[c], S.P[a]))),
+      k = planes.findIndex((pl) => dot3(pl.n, n) > 1 - 1e-9 && Math.abs(dot3(pl.n, S.P[a]) - pl.d) < 1e-9);
+    if (k >= 0) {
+      planes[k].corners.push(a, b, c);
+      return k;
+    }
+    planes.push({ n, d: dot3(n, S.P[a]), corners: [a, b, c] });
+    return planes.length - 1;
+  });
+  S.faceMids = planes.map(({ corners }) => {
+    const vs = [...new Set(corners)];
+    return [0, 1, 2].map((d) => vs.reduce((sum, v) => sum + S.P[v][d], 0) / vs.length);
+  });
+}
+// a cell made of a polyhedron's triangles (f² cells a triangle, in turn: see flatPolyhedron), its face: theirs if all are on
+// one, else -1 (folded over an edge of the solid)
+const trianglesFace = (S, perTriangle, tris) => {
+  const face = S.triangleFaces[Math.floor(tris[0] / perTriangle)];
+  return tris.every((t) => S.triangleFaces[Math.floor(t / perTriangle)] === face) ? face : -1;
+};
 
 // kites: each triangle cut in 3 (see kitesOf); round a corner of the solid, a flower of 3, 4 or 5 kites (not 6)
 function flatPolyhedron(name, f, kites = false) {
@@ -14129,6 +14165,10 @@ function flatPolyhedron(name, f, kites = false) {
     return { corners: [A, B, C], normal: normal.map((v) => v / l), lines };
   });
   mesh.perFace = (kites ? 3 : 1) * f * f;
+  mesh.cellFaces = Int32Array.from(
+    { length: mesh.n },
+    (_, t) => POLYHEDRA[name].triangleFaces[Math.floor(t / mesh.perFace)],
+  ); // (each cell's face, see POLYHEDRA's faces)
   mesh.kite = kites;
   // faces cut from the solid's own (the dodecahedron's pentagons): its corners and its faces' centres
   const n = POLYHEDRA[name].corners;
@@ -15914,7 +15954,12 @@ function twistedSphereMesh(f) {
       most,
       f,
     );
-  return (meshCache[key] = Object.assign(mesh, { tiling: SURFACES.twistedsphere.tiling }));
+  // each cell's face: a cell's its triangles' (else -1, across an edge), a triangle its own triangle's
+  const faceOfTriangles = (ts) => trianglesFace(POLYHEDRA.icosa, f * f, ts);
+  return (meshCache[key] = Object.assign(mesh, {
+    tiling: SURFACES.twistedsphere.tiling,
+    cellFaces: Int32Array.from([...cells.map(faceOfTriangles), ...round.map((_, t) => faceOfTriangles([t]))]),
+  }));
 }
 /* The Penrose sphere: Twarock and Konevtsova's spherical Penrose tilings, as Hamish Todd builds them (Bridges 2018, "A Class
  * of Spherical Penrose-Like Tilings…"; its prototype penrose-sphere/). Penrose's rhombi (penroseRhombi: five-fold round their
@@ -16107,6 +16152,7 @@ function penroseSphereGraph(P1, face = penroseFace(P1)) {
     nbrs,
     tiles,
     edges: nbrs.reduce((sum, l) => sum + l.length, 0) / 2,
+    tileFaces: tiles.map((ring) => onFaces[ring[0]].find((fi) => ring.every((i) => onFaces[i].includes(fi))) ?? -1), // (each tile's face: the one all its points are on, else -1, across an edge)
     solid: { corners: mids, centres: ico.P.map(unit) }, // (the dodecahedron it lies on: its corners, its faces' middles' ways)
     depth, // (each point's distance to its pentagon's nearest side: a band's judged near the sides only, see penroseSphereSizes)
   };
@@ -16115,10 +16161,11 @@ function penroseSphereGraph(P1, face = penroseFace(P1)) {
 function penroseSphereMesh(cells) {
   const key = `penroseSphere${cells}`;
   if (meshCache[key]) return meshCache[key];
-  const { points, tiles, solid } = penroseSphereGraph(PENROSE_SPHERES[cells]),
+  const { points, tiles, tileFaces, solid } = penroseSphereGraph(PENROSE_SPHERES[cells]),
     R = Math.max(...points.map((p) => Math.hypot(...p)));
   return (meshCache[key] = Object.assign(finishMesh(points.flatMap(unit), tiles, 4, cells), {
     flatVerts: Float64Array.from(points.flat(), (v) => v / R),
+    cellFaces: Int32Array.from(tileFaces), // (its faces the dodecahedron's, round the icosahedron's corners: FACE_MIDDLES' order)
     solid, // (its symmetries the dodecahedron's, see solidCorners)
   }));
 }
@@ -16147,20 +16194,9 @@ function hexSolidMesh(solid, f) {
   if (ico.solid) mesh.solid = ico.solid;
   else
     mesh.faceCentres = ico.faces.map((fc) => unit([0, 1, 2].map((d) => fc.corners.reduce((sum, p) => sum + p[d], 0)))); // (see solidFaceCentres)
-  // each cell's plane: its solid's face its triangles are all on (f² triangles a face, in turn; faces in one plane, a
-  // pentagon's triangles, one), else -1 (folded over an edge)
-  const { P, faces } = POLYHEDRA[solid],
-    normals = faces.map(([a, b, c]) => unit(cross(sub(P[b], P[a]), sub(P[c], P[a]))));
-  const plane = normals.map((n) => normals.findIndex((m) => m.every((v, d) => Math.abs(v - n[d]) < 1e-9))); // (the same, but for the float's last digits)
-  mesh.planeOf = Int32Array.from(cells, (tris) =>
-    tris.every((t) => plane[Math.floor(t / (f * f))] === plane[Math.floor(tris[0] / (f * f))])
-      ? plane[Math.floor(tris[0] / (f * f))]
-      : -1,
-  );
-  mesh.planeMid = normals.map((_, k) => {
-    const vs = [...new Set(faces.flatMap((fc, j) => (plane[j] === k ? fc : [])))];
-    return vs.length ? [0, 1, 2].map((d) => vs.reduce((sum, v) => sum + P[v][d], 0) / vs.length) : null;
-  }); // (its corners' middle)
+  // each cell's face: its triangles', else -1 (folded over an edge), and its solid's faces' middles
+  mesh.cellFaces = Int32Array.from(cells, (tris) => trianglesFace(POLYHEDRA[solid], f * f, tris));
+  mesh.faceMids = POLYHEDRA[solid].faceMids;
   return (meshCache[key] = mesh);
 }
 
@@ -16379,7 +16415,7 @@ function shapeAt(g, m) {
     nrm[3 * t] = nx;
     nrm[3 * t + 1] = ny;
     nrm[3 * t + 2] = nz;
-    if (!folds || g.planeOf?.[t] !== -1) continue;
+    if (!folds || g.cellFaces?.[t] !== -1) continue;
     // a tile folded over an edge of the solid (the flat hexagon surface: on no one face, see hexSolidMesh): the normals of its
     // parts, so that it still shows when one part faces the viewer and the whole does not
     const parts = [];
@@ -21556,40 +21592,66 @@ const EXPLORE_PALETTES = [
 ]; // (name, colours, words)
 const exploreLook = { rule: 'tiles', palette: 0 },
   explorePalette = () => EXPLORE_PALETTES[exploreLook.palette][1];
-// a graph's greedy colouring: each node the first colour (1, 2…) none of its neighbours before it has (put: each neighbour)
-function greedyColours(count, eachNeighbour) {
-  const colour = new Uint8Array(count);
-  for (let a = 0; a < count; a++) {
-    let used = 0;
-    eachNeighbour(a, (b) => (used |= 1 << colour[b]));
+// a graph's colouring, no two neighbours alike (eachNeighbour(a, put): each of node a's), DSatur's (Brélaz 1979): the node
+// most bound first (the most colours among its neighbours), its first colour free (1, 2…); its order and its colours. As
+// many colours as a planar graph's 4 most often, not always
+function dsatur(count, eachNeighbour) {
+  const order = [],
+    colour = new Uint8Array(count),
+    seen = new Uint32Array(count), // (each node's neighbours' colours so far, as bits)
+    bound = Array.from({ length: 33 }, () => new Set()); // (the nodes not coloured, by how many colours their neighbours have)
+  const colours = (bits) => {
+    let k = 0;
+    for (; bits; bits &= bits - 1) k++;
+    return k;
+  };
+  for (let a = 0; a < count; a++) bound[0].add(a);
+  for (let most = 0; order.length < count;) {
+    while (most > 0 && !bound[most].size) most--;
+    const a = bound[most].values().next().value;
+    bound[most].delete(a);
+    order.push(a);
     let k = 1;
-    while (used & (1 << k)) k++;
+    while (seen[a] & (1 << k)) k++;
     colour[a] = k;
-  }
-  return colour;
-}
-// each cell's face of its solid, the one whose centre its middle is nearest (as a walk's start, see solidFaceCentres); null
-// off a solid
-function cellFaces(g, surface) {
-  if (!SOLIDS.includes(surface)) return null;
-  const centres = solidFaceCentres(g, solidCorners(g)),
-    face = new Int32Array(g.n);
-  for (let t = 0; t < g.n; t++) {
-    const c = g.cen.subarray(3 * t, 3 * t + 3);
-    let best = -Infinity;
-    centres.forEach((m, f) => {
-      if (dot3(m, c) > best) {
-        best = dot3(m, c);
-        face[t] = f;
-      }
+    eachNeighbour(a, (b) => {
+      if (colour[b] || seen[b] & (1 << k)) return;
+      bound[colours(seen[b])].delete(b);
+      seen[b] |= 1 << k;
+      bound[colours(seen[b])].add(b);
+      most = Math.max(most, colours(seen[b]));
     });
   }
-  return face;
+  return { order, colour };
 }
-// each cell's colour, 1 to the palette's: by its neighbours by a side (nbr, see sideOf), the first colour none of those
-// before has (Tiles: greedy, round the palette past its last), its solid's face's (faces: each cell's, see cellFaces) the
-// same way among the faces (Sides; off a solid, Tiles), its sides counted (Kind of tile), or its steps from cell 0 spread
-// over the palette
+// a small graph's colours, 1 to P, no two neighbours alike: in DSatur's order, each node its first colour free of those
+// before it, back to the last with another free when none is (a search, complete, as long as the graph is small: a solid's
+// faces; past P colours only where P cannot do, one more each time)
+function paletteColours(count, eachNeighbour, P) {
+  const { order } = dsatur(count, eachNeighbour),
+    at = new Int32Array(count);
+  order.forEach((a, p) => (at[a] = p));
+  const colour = new Uint8Array(count);
+  for (let most = P; ; most++) {
+    colour.fill(0);
+    let p = 0;
+    while (p >= 0 && p < count) {
+      const a = order[p];
+      let used = 0;
+      eachNeighbour(a, (b) => at[b] < p && (used |= 1 << colour[b]));
+      let k = colour[a] + 1;
+      while (k <= most && used & (1 << k)) k++;
+      colour[a] = k > most ? 0 : k;
+      p += k > most ? -1 : 1;
+    }
+    if (p === count) return colour;
+  }
+}
+// each cell's colour, 1 to the palette's: two cells side by side (nbr, see sideOf) never alike (Tiles), two faces of the solid
+// side by side never alike, a cell across an edge with a face beside it (Sides, by each cell's face: see cellFaces; off a
+// solid, Tiles), each kind of tile, by its sides (Kind of tile), or its steps from cell 0 spread over the palette (round the
+// palette past its last: Tiles where DSatur takes more colours, see dsatur; the faces only where the palette cannot do, see
+// paletteColours)
 function exploreLevels(nbr, n, faces) {
   const side = sideOf(nbr),
     P = explorePalette().length,
@@ -21603,12 +21665,18 @@ function exploreLevels(nbr, n, faces) {
   const bySide = (t, put) => {
     for (let q = nbr.start[t]; q < nbr.start[t + 1]; q++) if (side[q]) put(nbr.list[q]);
   };
-  if (rule === 'tiles') level = greedyColours(n, bySide);
+  if (rule === 'tiles') level = dsatur(n, bySide).colour; // (a grid's cells: too many for a search)
   if (rule === 'sides') {
-    const touching = Array.from({ length: Math.max(...faces) + 1 }, () => new Set());
-    for (let t = 0; t < n; t++) bySide(t, (u) => faces[u] !== faces[t] && touching[faces[t]].add(faces[u]));
-    const colour = greedyColours(touching.length, (f, put) => touching[f].forEach(put));
-    for (let t = 0; t < n; t++) level[t] = colour[faces[t]];
+    // (a cell across an edge, with a face it touches by a side: a face's cell beside it, the first; the faces' graph, their
+    // sides touching)
+    const face = Int32Array.from(faces),
+      queue = [...face.keys()].filter((t) => face[t] >= 0);
+    for (let i = 0; i < queue.length; i++)
+      bySide(queue[i], (u) => face[u] < 0 && (face[u] = face[queue[i]]) >= 0 && queue.push(u));
+    const touching = Array.from({ length: face.reduce((m, f) => Math.max(m, f), -1) + 1 }, () => new Set());
+    for (let t = 0; t < n; t++) bySide(t, (u) => face[u] !== face[t] && touching[face[t]].add(face[u]));
+    const colour = paletteColours(touching.length, (a, put) => touching[a].forEach(put), P);
+    for (let t = 0; t < n; t++) level[t] = colour[face[t]];
   }
   if (rule === 'kind') {
     const counts = [...new Set(Array.from({ length: n }, (_, t) => sides(t)))].sort((a, b) => a - b);
@@ -21624,7 +21692,7 @@ function exploreLevels(nbr, n, faces) {
           steps[nbr.list[q]] = steps[queue[i]] + 1;
           queue.push(nbr.list[q]);
         }
-    const far = Math.max(1, ...steps);
+    const far = steps.reduce((m, x) => Math.max(m, x), 1); // (a loop: a spread of a large grid's overflows the stack)
     for (let t = 0; t < n; t++) level[t] = 1 + Math.round((Math.max(0, steps[t]) / far) * (P - 1));
     return level;
   }
@@ -21739,7 +21807,7 @@ function buildLife(seq, variant) {
     ringMore: rule.iso === 'hensel' && ring ? cornerNeighbours(g, 8).more : null,
     seed,
     margolus: variant.margolus && rule.margolus ? ruleBlocks(rule, blocksGrid(variant), g.nu, true, g.nv, g) : null,
-    faces: variant.explore ? cellFaces(g, kind) : null, // (Explore's Sides: each cell's face of its solid)
+    faces: variant.explore ? (g.cellFaces ?? null) : null, // (Explore's Sides: each cell's face of its solid, see cellFaces)
   });
   Object.assign(walk, {
     is3d: true,
@@ -30007,14 +30075,7 @@ function realmParts(K) {
       : col.patch.map((i) => mids.findIndex((m) => dot3(unit(m), unit(col.items[i])) > 1 - 1e-9));
   if (!faces.length || faces.includes(-1)) return null;
   const parts = faces.map(() => []);
-  for (let t = 0; t < g.n; t++) {
-    // (a cell by the face its middle faces most; as near two: none, as Wild's)
-    if (L.nbr.start[t] === L.nbr.start[t + 1]) continue; // (a wall's)
-    const c = unit(Array.from(g.cen.subarray(3 * t, 3 * t + 3))),
-      v = mids.map((m) => faceDot(m, c)),
-      top = Math.max(...v);
-    if (v.filter((x) => x > top - 1e-9).length === 1) parts[faces.indexOf(v.indexOf(top))]?.push(t);
-  }
+  for (let t = 0; t < g.n; t++) if (L.nbr.start[t] < L.nbr.start[t + 1]) parts[faces.indexOf(g.cellFaces[t])]?.push(t); // (a cell by its face, see cellFaces: across an edge none, as Wild's; a wall's none)
   return parts;
 }
 const COLOUR_PARTS = {
@@ -30104,7 +30165,7 @@ const FACE_BASE = {
   menger: 'cube',
   hexsphere: 'icosa',
   twistedsphere: 'icosa',
-  penroseSphere: 'icosa',
+  penroseSphere: 'dodeca', // (its rhombi laid on the dodecahedron's 12 pentagons, see penroseSphereGraph)
   tetraKite: 'tetra',
   octaKite: 'octa',
   icosaKite: 'icosa',
@@ -30593,10 +30654,9 @@ function partPlaces(r, K, mirror, mixed) {
   const surface = VARIANTS[walk.variant].surface,
     col = K === 1 ? null : colouring(surface, K, mirror && !r),
     up = (t) => unit(Array.from(g.cen.subarray(3 * t, 3 * t + 3)));
-  // a cell by its face (the one its own middle faces most, see FACE_MIDDLES): faces dealt out whole, its face's colour;
-  // else its face's nearest spot's, so that a face nearer one spot goes to it whole; a face as near spots of two colours or
-  // more, by the cell's own middle; a cell on an edge, a corner (as near two faces or more), as near spots of two colours
-  // or more: theirs if they all have the same, else no one's, as on the plane's lines between slices (the parts all alike)
+  // a cell by its face (see cellFaces): faces dealt out whole, its face's colour; else its face's nearest spot's, so that a
+  // face nearer one spot goes to it whole; a face as near spots of two colours or more, by the cell's own middle; a cell
+  // across an edge, by its own middle too (faces dealt out whole: no one's, as on the plane's lines between slices)
   const mids = K === 1 ? [] : FACE_MIDDLES[surface]();
   const colourOf = (items, colour, d) => {
     const v = items.map((x) => faceDot(x, d)),
@@ -30605,13 +30665,10 @@ function partPlaces(r, K, mirror, mixed) {
     return cs.size === 1 ? [...cs][0] : -1;
   };
   const nearestSpot = (t) => {
-    const c = up(t);
-    if (col.faces) return colourOf(mids, col.colour, c);
-    const v = mids.map((m) => faceDot(m, c)),
-      top = Math.max(...v),
-      f = v.filter((x) => x > top - 1e-9).length === 1 ? v.indexOf(top) : -1;
+    const f = mids.length ? g.cellFaces[t] : -1; // (the stella's: no faces, its spots alone)
+    if (col.faces) return f < 0 ? -1 : col.colour[f];
     const k = f < 0 ? -1 : colourOf(col.items, col.colour, mids[f]);
-    return k >= 0 ? k : colourOf(col.items, col.colour, c);
+    return k >= 0 ? k : colourOf(col.items, col.colour, up(t));
   };
   if (!r) {
     for (let t = 0; t < n; t++) parts[K === 1 ? 0 : nearestSpot(t)]?.push(t);
@@ -31301,17 +31358,17 @@ function cellPlace(t) {
   if (g.triFaces || (g.sides === 3 && !g.uncut) || g.kite)
     return triPlace(Math.floor((t - (g.triFirst ?? 0)) / (g.triFaces ? g.size * g.size : g.perFace)));
   if (g.hexagons) {
-    const k = g.planeOf[t],
+    const k = g.cellFaces[t],
       at = (c) => Array.from(g.cen.subarray(3 * c, 3 * c + 3)),
-      far = (c) => Math.hypot(...at(c).map((v, d) => v - g.planeMid[k][d]));
+      far = (c) => Math.hypot(...at(c).map((v, d) => v - g.faceMids[k][d]));
     if (k < 0) return null;
-    g.planeCells ??= [];
-    if (g.planeCells[k] === undefined) {
+    g.faceMiddleCells ??= [];
+    if (g.faceMiddleCells[k] === undefined) {
       const wall = new Set(g.walls ?? []),
-        own = [...Array(g.n).keys()].filter((c) => g.planeOf[c] === k && !wall.has(c));
-      g.planeCells[k] = own.length ? own.reduce((b, c) => (far(c) < far(b) ? c : b)) : -1;
-    } // (its plane's middle cell, of its cells: a wall's no cell, its frame none)
-    return g.planeCells[k] < 0 ? null : { on: 'hex', c0: g.planeCells[k] };
+        own = [...Array(g.n).keys()].filter((c) => g.cellFaces[c] === k && !wall.has(c));
+      g.faceMiddleCells[k] = own.length ? own.reduce((b, c) => (far(c) < far(b) ? c : b)) : -1;
+    } // (its face's middle cell, of its cells: a wall's no cell, its frame none)
+    return g.faceMiddleCells[k] < 0 ? null : { on: 'hex', c0: g.faceMiddleCells[k] };
   }
   return {
     on: 'cube',
@@ -31501,10 +31558,10 @@ function patternFrame(i, K, place = patternPlace(i, K)) {
   } else if (place.on === 'hex') {
     // (the plane's x along u, y along w, a cell's step s each; its cell 0 on c0; its face's middle)
     const { C, s, u, w, n: m } = hexAxes(place.c0),
-      pl = g.planeOf[place.c0],
+      pl = g.cellFaces[place.c0],
       step = (v) => u.map((x, d) => s * (v[0] * x + v[1] * w[d]));
-    [A3, B3, n, o3, op, centre] = [step(a), step(b), m, C, cellMiddle(kind, 0, 0), g.planeMid[pl]];
-    on = (t) => g.planeOf[t] === pl;
+    [A3, B3, n, o3, op, centre] = [step(a), step(b), m, C, cellMiddle(kind, 0, 0), g.faceMids[pl]];
+    on = (t) => g.cellFaces[t] === pl;
   } else {
     // a face of squares (a hull solid's, the cube's): its square (0, 0) the plane's lattice cell (0, 0), along its columns and rows
     const fq = place.f,

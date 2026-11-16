@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.65';
+const VERSION = '0.5.66';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -16663,6 +16663,8 @@ const SURFACES = {
     radius: (f) => (f * Math.sqrt(3)) / 2,
     tiles: (f) => 30 * f * f + 2,
     unit: 'cells',
+    how: (f) =>
+      `20 triangular faces × (Edge=${formatNumber(f)})² triangles: a triangle each\n+ ${formatNumber(10 * f * f + 2)} hexagons and pentagons: one a corner (12 pentagons)`, // (its icosahedron's, see twistedSphereMesh: 20f² triangles, 10f² + 2 corners)
     tiling: 'twisttri',
     chiral: true,
   }, // (tiling: a surface of a tiling's cells, its rules; chiral: no mirror maps it onto itself, see turnsAlike)

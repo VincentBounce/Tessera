@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.89';
+const VERSION = '0.5.90';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -30706,7 +30706,7 @@ function huntPlan() {
 }
 const huntOn = () =>
   !!walk.life &&
-  !!VARIANTS[tabVariant()].life &&
+  playsLife(tabVariant()) && // (a rule played: Explore's cells coloured once, no hunt)
   !walk.life.loops &&
   plane.start === 'random' &&
   TEAM_COUNTS.includes(walk.life.colours); // (a Life variant's: not a walk's while the run before it still plays)

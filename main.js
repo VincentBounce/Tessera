@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.203';
+const VERSION = '0.5.204';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -21942,9 +21942,17 @@ function exploreLevels(nbr, n, faces, kinds, lattice) {
     for (let t = 0; t < n; t++) level[t] = 1 + Math.round((Math.max(0, steps[t]) / far) * (P - 1));
     return level;
   }
-  for (let t = 0; t < n; t++) level[t] = 1 + ((level[t] - 1) % P);
-  return level;
+  return level; // (past the palette's last: its own colours, see exploreColours; never two neighbours alike)
 }
+// Explore's colours, as many as its levels ask: its palette's, then each a mix of two of them side by side (a 5th: its 1st and
+// 2nd half and half…), where DSatur or the faces take more than the palette has
+const exploreColours = (levels) => {
+  const P = explorePalette(),
+    most = levels.reduce((m, c) => Math.max(m, c), 0);
+  return Array.from({ length: Math.max(P.length, most) }, (_, k) =>
+    k < P.length ? P[k] : faded(P[k % P.length], 0.5, P[(k + 1) % P.length]),
+  );
+};
 // each cell's kind of tile, by construction: its tiling's own tile where it has several with as many corners (protos: de
 // Bruijn's rhombi, Penrose's thick and thin, see discPatch), else its corners' count (corners: its grid's, see meshCorners)
 const tileKinds = (corners, protos = null) =>
@@ -22006,8 +22014,8 @@ function startLife(seq, rule, n, grid) {
     S: rule.S,
     C: rule.C,
     two: rule.two,
-    colours: explore ? explorePalette().length : rule.colours,
-    palette: explore ? explorePalette() : null,
+    colours: explore ? exploreColours(grid.seed).length : rule.colours,
+    palette: explore ? exploreColours(grid.seed) : null,
     ruleText: ruleBody(rule.text),
     loops: rule.loops ?? null,
     loopStates: rule.loopStates,

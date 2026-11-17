@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.212';
+const VERSION = '0.5.213';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -10058,7 +10058,12 @@ for (const [k, S] of Object.entries(HULL_SOLIDS)) {
   }
 }
 // the sphere's quadrilaterals' turtle on their cells, as the cube's (4 sides: 3 a digit, left, on or right, on: out by the side
-// across): its kites, Penrose's rhombi; on cells only (their corners 3 to 7 edges: no left, on and right along them)
+// across): its kites, Penrose's rhombi; on cells only (their corners 3 to 7 edges: no left, on and right along them). Not taken
+// in yet, measured 2026-11-17 walking as these do (3,000 steps each, every step to a cell beside, none thrown; see GRIDS.md):
+// the kites of the torus, Möbius strip, Klein bottle, tetrahedron, octahedron, dodecahedron and stella on cells; the carved
+// cubes' squares (Pits, Bumps, Frame, Sponge) on cells and along edges (their hollow corners of 5 and 6 edges walked); the
+// rhombic solids' triangles on cells and along edges. The carved cubes and the rhombic solids' start corners still to give
+// (solidCorners: no faces nor corners' cells on their meshes, walkStart throws there)
 for (const [shape, tiling, surface] of [
   ['Sphere', 'Kites', 'icosaKite'],
   ['Dodecahedron', 'Penrose', 'penroseSphere'],
@@ -14653,7 +14658,9 @@ for (const k of Object.keys(ROSETTE_SPHERES)) {
 // cells a block, see meshBlocks), 3 squares round it (see ringColours), its start on the middle one; Replicators, Langton's
 // loops (see parseLoops), on squares the same way round (no Möbius strip nor Klein bottle: their squares flipped; nor the
 // sponge: its pieces narrower than a loop). Each as Life's there with its own fields, in Life's family beside it; those a
-// rule allows and not taken in yet apart (NOT_YET, see GRIDS.md)
+// rule allows and not taken in yet apart (NOT_YET, see GRIDS.md): Rewind on the Möbius strips and Klein bottles of hexagons and
+// of Cairo, their blocks not coming round the seam turned over (meshBlocks, measured 2026-11-17 at each one's first 6 sizes: the
+// strip of hexagons at 8 only, the bottle of hexagons at 64 only, Cairo's at none)
 const BLOCKS_OF = {
   Squares: ['square', 4],
   Hexagons: ['hex', 3],

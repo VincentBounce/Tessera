@@ -166,3 +166,20 @@ Each one taken in: a walk more by the same rule (no code of its own); kept out: 
 
 **Decided 2026-11-16: all 17 kept out for now, to come back to later.** Step 3 makes today's pairs, these left out by
 name (a list of their own, to empty when they are taken in or given their reason).
+
+**Measured 2026-11-17:**
+
+- **Rewind, the 4 kept out, their reason a fact of their grid's**: their blocks do not come round the seam turned over
+  (`meshBlocks`, at each one's first 6 sizes): the Möbius strip of hexagons at size 8 only, the Klein bottle of
+  hexagons at 64 only, Cairo's strip and bottle at none (`NOT_YET`).
+- **Walk, the 13 walk as their twins do** (3,000 steps at random each, by the rule of the grid they are like: every step
+  to a cell beside or along an edge, none thrown, as many places as their twin):
+  - the 7 kites on cells, as the sphere's kites (1,026 places): torus 1,147, Möbius 1,067, Klein 1,166, tetrahedron 731,
+    octahedron 720, dodecahedron 1,252, stella 903;
+  - the 4 carved cubes' squares on cells and along edges, as the cube's (their corners of 5 and 6 edges walked): Pits
+    and Bumps 1,526 and 1,272, Frame 975 and 987, Sponge 2,276 and 1,973;
+  - the 2 rhombic solids' triangles on cells and along edges, as the octahedron's (on cells 30 and 33, as the
+    octahedron's 33 and the sphere's 32: a turtle of left and right on triangles stays near; along edges 425 and 653).
+  - To take them in: their variants made as their twins' (the sphere's kites' loop, the cube's and the octahedron's
+    walks), and the carved cubes' and rhombic solids' start corners given (`solidCorners` reads faces or corners' cells,
+    none on their meshes: `walkStart` throws there).

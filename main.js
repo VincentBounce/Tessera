@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.312';
+const VERSION = '0.5.313';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -29225,8 +29225,10 @@ function lifeReset() {
     by: [L.seedByColour],
     born: [{ born: 0, dead: 0, bornBy: L.bornBy.slice(), deadBy: L.deadBy.slice() }],
     order: [L.order],
-  }; // each generation's live cells (each colour's too; see drawActivity), its births and deaths till then, its order
-  L.past = { alive: [], by: [], born: [], order: [] }; // (a reversible one's generations before its start, −1 at 1…, see traced)
+    ever: [L.seedAlive],
+  }; // each generation's live cells (each colour's too; see drawActivity), its births and deaths till then, its order, its
+  // cells ever alive till then
+  L.past = { alive: [], by: [], born: [], order: [], ever: [] }; // (a reversible one's generations before its start, −1 at 1…, see traced)
   L.peaks = null; // (see peaks)
 }
 
@@ -29982,7 +29984,7 @@ function foldPast(L) {
   const P = L.stable.P,
     B = L.past.born[P];
   if (!B) {
-    L.past = { alive: [], by: [], born: [], order: [] };
+    L.past = { alive: [], by: [], born: [], order: [], ever: [] };
     L.peaks = null;
     return;
   } // (found going forth: 0 … P played)
@@ -29997,7 +29999,7 @@ function foldPast(L) {
       for (const k of ['alive', 'by', 'order']) L.trace[k][P - h] = L.past[k][h];
       L.trace.born[P - h] = from(L.past.born[h]);
     }
-  L.past = { alive: [], by: [], born: [], order: [] };
+  L.past = { alive: [], by: [], born: [], order: [], ever: [] };
   L.peaks = null; // (its marks, again from its generations: see peaks)
 }
 // a generation's record (see lifeStep, lifeBack): its live cells, each colour's, its births and deaths so far; one before the
@@ -30017,7 +30019,14 @@ function record(L, g, alive, by, order) {
   T.by[i] = by;
   T.born[i] = { born: L.born, dead: L.dead, bornBy: L.bornBy.slice(), deadBy: L.deadBy.slice() };
   T.order[i] = order;
+  T.ever[i] = L.everAlive;
 }
+// the first generation that had as many cells ever alive as now (its cells reached, see the gauges' Ever alive)
+const everAliveGen = (L) =>
+  Math.max(
+    0,
+    L.trace.ever.findIndex((e) => e >= L.everAlive),
+  );
 // How ordered a state is: 1 − its live cells' dead neighbours (their borders) by as many as they would have at random (each
 // neighbour dead as often as a cell is, 1 − p): about 0 a soup, near 1 a picture in one piece (a start's, a return's); none
 // alive or all, 0. Its borders: the graphics card's (see GPU_LIFE's lifeCount), a start's here (bordersOf)
@@ -46144,6 +46153,7 @@ function drawActivity() {
     for (const g of reversibleRun() ? orderMarks(walk.life) : [peaks(walk.life).orderGen])
       mark(g, css.getPropertyValue('--sector-color'), 1);
     mark(peaks(walk.life).aliveGen, accent, 0);
+    mark(everAliveGen(walk.life), css.getPropertyValue('--sweet-spot-color'), 2); // (its cells all reached, in violet as its gauge)
   } else if (walk.battle) {
     // (a battle's deaths, each in its walker's colour; those of one step each a row down, as the others' marks)
     const dead = walk.battle.deaths;
@@ -46173,10 +46183,10 @@ function drawActivity() {
     }
 }
 // One colour: fixed gauges of how it goes, not of a record, a row each: in gold as the curve and its mark (see drawActivity),
-// alive (against the most) and the most alive at once (and when, against the grid); in violet, the cells ever alive (against
-// the grid); in blue, its order (see orderOf) and the most ordered so far (and when); then its turnover, this generation's
-// births and deaths against the cells alive before and after (100 %: every cell changes; 0: nothing moves), its growth,
-// births less deaths, in figures (a bar for it swung too much)
+// alive (against the most) and the most alive at once (and when, against the grid); in violet, the cells ever alive
+// (against the grid, and since when: a link there and its mark); in blue, its order (see orderOf) and the most ordered
+// so far (and when); then its turnover, this generation's births and deaths against the cells alive before and after
+// (100 %: every cell changes; 0: nothing moves), its growth, births less deaths, in figures (a bar for it swung too much)
 // a generation of the run in view, as a link, always (the one shown too: one look, the same everywhere): clicked, it goes
 // there (see seekTo: a reversible one's by its rule, Life's played again from its start)
 const genLink = (g, text = `${walk.life ? 'gen' : 'step'} ${formatNumber(g)}`, kind = '') =>
@@ -46216,7 +46226,7 @@ function renderGauges(L) {
       'Ever alive',
       'var(--sweet-spot-color)', // (violet, as the Heatmap's middle)
       L.everAlive / n,
-      `<span title="${formatNumber(L.everAlive)} of ${formatNumber(n)} cells alive at least once">${formatNumber(L.everAlive)} · ${Math.round((100 * L.everAlive) / n)} %</span>`,
+      `<span title="${formatNumber(L.everAlive)} of ${formatNumber(n)} cells alive at least once, all reached at gen ${formatNumber(everAliveGen(L))}">${Math.round((100 * L.everAlive) / n)} %</span> · ${genLink(everAliveGen(L), undefined, 'sweet')}`,
     ], // (its share of the grid, the cells reached: what Hunt › Reach all hunts)
     ['Order', blue, L.order, `${Math.round(100 * L.order)} %`],
     ['Peak order', blue, P.order, `${Math.round(100 * P.order)} % · ${genLink(P.orderGen)}`],

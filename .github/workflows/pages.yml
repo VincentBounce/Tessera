@@ -23,12 +23,20 @@ jobs:
     runs-on: ubuntu-latest
     environment:
       name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+      url: ${{ steps.deployment.outputs.page_url || steps.deploymentAgain.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
           path: .
+      # GitHub's API now and then misses the artifact just uploaded ("Found 0 artifact(s)", 2026-11-17): once more,
+      # half a minute later, before a failure (and its email)
       - id: deployment
+        uses: actions/deploy-pages@v4
+        continue-on-error: true
+      - if: steps.deployment.outcome == 'failure'
+        run: sleep 30
+      - id: deploymentAgain
+        if: steps.deployment.outcome == 'failure'
         uses: actions/deploy-pages@v4

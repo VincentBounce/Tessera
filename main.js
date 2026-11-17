@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.330';
+const VERSION = '0.5.331';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -17633,7 +17633,7 @@ const howCounted = (kind, f) => {
     c = (n - k) / (f * f);
   return Number.isInteger(c) && S.tiles(2 * f) === 4 * c * f * f + k
     ? `${c} × (Edge=${formatNumber(f)})²${k ? ` + ${k}` : ''} = ${formatNumber(n)} ${unit}`
-    : `${formatNumber(n)} ${unit}`;
+    : `{y:${formatNumber(n)} ${unit}}`; // (its motif a tile alone, violet as drawn: see motifOf)
 };
 // a solid of hexagons' corners: its cells there, by their sides (12 pentagons; 8 triangles + 6 octagons), as its least mesh has them
 const hexCorners = (kind) => {

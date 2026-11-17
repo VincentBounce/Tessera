@@ -1730,8 +1730,10 @@ button.active .bubble.active {
 .gauges .rank-peak {
   padding-left: 8px;
 } /* its run's peak, apart from its figures now */
-.gauges .gauge-row > span:first-child {
+.gauges .gauge-row > span {
   color: var(--muted-text-color);
+} /* a row with no colour of its own: its name and figures alike in grey */
+.gauges .gauge-row > span:first-child {
   white-space: nowrap;
 }
 .ranking .rank-cell {

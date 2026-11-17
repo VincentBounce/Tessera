@@ -1703,9 +1703,10 @@ button.active .bubble.active {
 .gauges:not([hidden]) {
   display: grid;
   grid-template-columns: minmax(64px, max-content) minmax(0, 112px) max-content max-content max-content;
-  grid-auto-rows: 18px;
+  grid-auto-rows: 20px;
   align-items: center;
   column-gap: 6px;
+  font-size: var(--text-size);
 } /* one colour: fixed rows, one set of columns (a figure as wide as it needs, on one line) */
 .gauges .gauge-row {
   display: contents;

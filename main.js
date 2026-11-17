@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.288';
+const VERSION = '0.5.289';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -17579,7 +17579,7 @@ const surfaceCard = (kind, f, shown = true) => [
     ...(shown && MOBIUS_ALONG[kind]?.edgeCuts
       ? [`\n{b:Specific cells}\n{e:${formatNumber(SURFACES[kind].mesh(f).edgeCells.length)} cells}`]
       : []), // (a strip's edge's cells, as outlined: see edgeRibbons; counted on its mesh, the one shown only)
-    ...(shown ? [`\n${lastPicked()}`] : []), // (the size picked: the one shown's)
+    ...(shown ? [lastPicked()] : []), // (the size picked: the one shown's)
   ]
     .filter(Boolean)
     .join('\n'),
@@ -17599,7 +17599,7 @@ function syncSizeStepper() {
   };
   if (SURFACES[kind]?.tiles && sel.selectedOptions[0]) label(f);
   else $('sizeLabel').textContent = sel.selectedOptions[0]?.text ?? '';
-  sizeTips('size', ...(SURFACES[kind] && sel.selectedOptions[0] ? surfaceCard(kind, f) : ['', `\n${lastPicked()}`]));
+  sizeTips('size', ...(SURFACES[kind] && sel.selectedOptions[0] ? surfaceCard(kind, f) : ['', lastPicked()]));
   setTile($('sizeDown'), { greyed: sel.selectedIndex <= 0 ? 'Already the smallest size.' : '' });
   setTile($('sizeUp'), { greyed: sel.selectedIndex >= sel.options.length - 1 ? 'Already the largest size.' : '' });
   sizeGauge(
@@ -17809,7 +17809,7 @@ let picked = null;
 const nearCells = (sizes, cells, n) =>
   sizes.reduce((a, b) => (Math.abs(Math.log(cells(b) / n)) < Math.abs(Math.log(cells(a) / n)) ? b : a)); // the size with about n cells
 const lastPicked = () =>
-  picked ? `{b:Last picked}\nSize: {b:${formatNumber(picked)} cells} (picked with − + or the slider)` : '';
+  picked ? `\n{b:Last picked}\nSize: {b:${formatNumber(picked)} cells} (picked with − + or the slider)` : ''; // (its blank line over it its own: none when none was picked)
 // a size's card in words marked ({b:…} bold, {g:…} grey, {y:…} and the others coloured), as html: its total, then its words
 const sizeCardHtml = (total, text) => {
   const marks = (t) =>
@@ -26311,7 +26311,13 @@ function renderPlaneRow() {
   sizeTips(
     'plane',
     sizeCells(planeKind(kind), plane.side),
-    `${gridSize(planeKind(kind), plane.side) ? `${sizeHow(planeKind(kind), plane.side)}\n${sizeSides(planeKind(kind), plane.side)}\n\n` : ''}${lastPicked()}`,
+    [
+      gridSize(planeKind(kind), plane.side) &&
+        `${sizeHow(planeKind(kind), plane.side)}\n${sizeSides(planeKind(kind), plane.side)}`,
+      lastPicked(),
+    ]
+      .filter(Boolean)
+      .join('\n'), // (as a surface's, see surfaceCard)
   );
   setTile($('planeDown'), { greyed: plane.side <= sides[0] ? 'Already the smallest grid.' : '' });
   setTile($('planeUp'), { greyed: plane.side >= sides.at(-1) ? 'Already the largest grid.' : '' });
@@ -48435,7 +48441,7 @@ $('startRow').addEventListener('mouseleave', () => {
   faced = false; // Centered: the camera turns to the walk (see followWalker)
   if ($('autoFit').checked) fitWhole();
 });
-$('sizeBox').tipColours = coloursUsed; // (Explore's Tiles' colours used, under its size: see coloursUsed)
+for (const el of [$('sizeBox'), $('planeBox')]) el.tipColours = coloursUsed; // (Explore's Tiles' colours used, under its size: see coloursUsed)
 for (const el of [$('sizeBox'), $('planeBox')])
   el.onmouseenter = el.onmouseleave = (e) => {
     motifShown = e.type === 'mouseenter';

@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.300';
+const VERSION = '0.5.301';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -4006,14 +4006,7 @@ const tilingAt = (kind, x, y) => {
   return P[mod(x, m)].map(([u, v]) => [u + i, v + y]);
 }; // lattice units
 // a grid's centre of its turns: a pattern turned about it (see orientPattern), a grid in a hexagon round it (see planeShape)
-const tilingPivot = (kind) =>
-  kind === 'square'
-    ? [0, 0]
-    : kind === 'cairo'
-      ? [-CAIRO_0[0] * CAIRO, -CAIRO_0[1] * CAIRO]
-      : TILINGS[kind]
-        ? tilingWorld(kind, TILINGS[kind].pivot)
-        : latticeAt(0, 0);
+const tilingPivot = (kind) => tilingWorld(kind, TILINGS[kind]?.pivot ?? (kind === 'square' ? [0.5, 0.5] : [0, 0])); // (a square's middle; Cairo's start pentagon's, the triangles' corner)
 const tilingWorld = (kind, [u, v]) => {
   const {
     basis: [a, b],

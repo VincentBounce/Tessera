@@ -124,7 +124,8 @@ header {
   margin: 0;
   width: 176px;
   flex: none;
-} /* the length asked: one width whatever it says (see compactCount) */
+  border-radius: 8px;
+} /* the length asked: one width whatever it says (see compactCount); round, its highlight's ring too (see highlight) */
 
 main {
   flex: 1;
@@ -2352,20 +2353,6 @@ button.switch.active,
 .tut-walk .tut-cell-to {
   animation: tut-appear 0.8s ease-out both;
 } /* the step lit softly, as a cell's colour fades */
-.highlit {
-  animation: highlight 1.5s ease-out;
-} /* highlighted a moment (see highlight): the length asked's stepper, the buttons a greyed one waits for */
-.max-steps.highlit {
-  border-radius: 8px;
-}
-@keyframes highlight {
-  from {
-    box-shadow: inset 0 0 0 10px var(--accent-color);
-  }
-  to {
-    box-shadow: inset 0 0 0 0 transparent;
-  }
-} /* (a ring inside it, shrinking to its border: never cut by a group's round frame, see .tile-group) */
 @keyframes tut-appear {
   0%,
   30% {

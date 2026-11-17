@@ -1,6 +1,7 @@
 :root {
   --tile-width: 57px; /* a tile's width, every tile alike: .nav-shapes, as many a row as fit (4 in the settings' column) */
   --tile-height: 55px; /* a tile's height, every tile alike */
+  --button-height: 34px; /* a button of one line (a stepper's − +, a field) or of an icon alone (see .icon-tabs) */
   --tile-gap: 4px; /* between two tiles */
   --track-background: color-mix(
     in srgb,
@@ -554,7 +555,7 @@ h3 {
 #formula,
 .field input,
 .stepper button {
-  height: 34px;
+  height: var(--button-height);
 }
 /* ↵ at the end of a field being edited: clicking it leaves the field, which computes */
 .field {
@@ -839,7 +840,8 @@ h4 {
   --row-tiles: 6;
   & > button {
     min-width: 0;
-    padding: 6px 2px;
+    height: var(--button-height);
+    padding: 4px 2px;
   }
 } /* tabs of icons only (the Outline's): 6 a row at most, its word in its tooltip */
 .tile-group:not(.icon-tabs):is(

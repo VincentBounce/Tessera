@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.216';
+const VERSION = '0.5.217';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -16795,8 +16795,7 @@ const SURFACES = {
     mesh: (L) => mengerMesh(L),
     radius: (L) => 3 ** L / 2,
     least: 2,
-    most: 3,
-    tiles: (L) => 2 * 20 ** L + 4 * 8 ** L,
+    tiles: (L) => 2 * 20 ** L + 4 * 8 ** L, // (its most the cells' most's, see CELLS: 4 steps, 336,384)
     unit: 'squares',
     edge: (L) => 3 ** L,
     how: (L) =>

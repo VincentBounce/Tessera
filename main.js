@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.234';
+const VERSION = '0.5.235';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -6410,7 +6410,7 @@ const DISPLAY_DEFAULTS = {
   ], // (by its shape, see SHAPE_DEFAULTS)
   light: ['light', 'open', true],
   glass: ['glass', 'open', false],
-  tiles: ['tiles', 'open', false],
+  tiles: ['tiles', 'open', 0], // (Off)
   grid: [
     'gridLines',
     ['tab', 'exploreRule'],
@@ -6555,7 +6555,6 @@ const VIEW_TILES = [
   ],
   ['light', 'lightRow', () => icon('sideLight'), 'Side light'],
   ['glass', 'glassRow', () => icon('glass'), 'Glass'],
-  ['tiles', 'tilesRow', () => teamBlock(4, false, EXPLORE_PALETTES[0][1]), 'Tiles'], // (Explore's first palette, its first four: a picture that never changes)
 ];
 let viewTiles = null;
 function renderViewTiles() {
@@ -6585,7 +6584,7 @@ function renderViewTiles() {
     : !ways.off.length
       ? 'on'
       : `On by default on ${ways.on.join(', ')}\nOff by default on ${ways.off.join(', ')}`;
-  const first = { perspective, light: defaultMark('light'), glass: defaultMark('glass'), tiles: defaultMark('tiles') };
+  const first = { perspective, light: defaultMark('light'), glass: defaultMark('glass') };
   VIEW_TILES.forEach(([id], k) =>
     setTile(viewTiles[k], {
       on: $(id).checked,
@@ -6703,6 +6702,18 @@ function renderHeadTiles() {
     defaultOf('grid', tabVariant()),
     (k) => {
       $('gridLines').value = k;
+      needsFull = true;
+    },
+  );
+  pillRow(
+    $('tilesRow'),
+    'Tiles',
+    $('tilesRow').title,
+    [['Off', 'One ground for all'], ...TILES_PALETTES.map((name) => [name, `In ${name}`])],
+    Number($('tiles').value),
+    defaultOf('tiles', tabVariant()),
+    (k) => {
+      $('tiles').value = k;
       needsFull = true;
     },
   );
@@ -22307,27 +22318,32 @@ const planeColouring = (kind, W) => ({
   kinds: tileKinds(planeMesh(kind, W, planeTorus(kind)), APERIODIC[kind]?.(W).kinds),
   lattice: APERIODIC[kind] ? null : { xy: planeGrid(kind, W).xy, m: gridCells(kind) },
 });
-// Tiles: each cell's ground (what shows where nothing is painted) its colour in Explore, by its colouring and palette there
-// (exploreLevels on the grid shown), packed; off, null: one ground for all, Earth's sea or the theme's (see blankTile)
-const tilesOn = () => $('tiles').checked && shows('tiles', tabVariant());
+// Tiles: each cell's ground (what shows where nothing is painted) its colour in Explore, by its colouring there and a pale
+// palette of its (TILES_PALETTES, the Display's Tiles row: Off, then these; exploreLevels on the grid shown), packed; off,
+// null: one ground for all, Earth's sea or the theme's (see blankTile)
+const TILES_PALETTES = ['Blush', 'Mist', 'Celadon', 'Lilac']; // (Explore's palettes by name: pale, the live cells read over them)
+const tilesPalette = () =>
+  EXPLORE_PALETTES.find(([name]) => name === TILES_PALETTES[Number($('tiles').value) - 1])?.[1] ?? null;
+const tilesOn = () => !!tilesPalette() && shows('tiles', tabVariant());
 let groundMemo = {};
 function groundColours() {
   if (!tilesOn() || !walk.geo) return null;
   const g = walk.geo,
     P = walk.plane,
     of = walk.life ?? g,
-    key = `${exploreLook.rule}|${exploreLook.palette}`;
+    palette = tilesPalette(),
+    key = `${exploreLook.rule}|${palette}`;
   if (groundMemo.of !== of || groundMemo.key !== key) {
     const { faces, kinds, lattice } = P ? planeColouring(P.kind, P.W) : surfaceColouring(g),
-      levels = exploreLevels(walk.life?.nbr ?? cornerNeighbours(g), g.n, faces, kinds, lattice),
-      colours = exploreColours(levels).map(packed);
+      levels = exploreLevels(walk.life?.nbr ?? cornerNeighbours(g), g.n, faces, kinds, lattice, palette),
+      colours = exploreColours(levels, palette).map(packed);
     groundMemo = { of, key, col: Uint32Array.from(levels, (l) => colours[l - 1] ?? packed(UNLIT)) };
   }
   return groundMemo.col;
 }
-function exploreLevels(nbr, n, faces, kinds, lattice) {
+function exploreLevels(nbr, n, faces, kinds, lattice, palette = explorePalette()) {
   const side = sideOf(nbr),
-    P = explorePalette().length,
+    P = palette.length,
     rule = exploreLook.rule === 'sides' && !faces ? 'tiles' : exploreLook.rule;
   let level = new Uint8Array(n);
   const bySide = (t, put) => {
@@ -22366,9 +22382,8 @@ function exploreLevels(nbr, n, faces, kinds, lattice) {
 }
 // Explore's colours, as many as its levels ask: its palette's, then each a mix of two of them side by side (a 5th: its 1st and
 // 2nd half and half…), where DSatur or the faces take more than the palette has
-const exploreColours = (levels) => {
-  const P = explorePalette(),
-    most = levels.reduce((m, c) => Math.max(m, c), 0);
+const exploreColours = (levels, P = explorePalette()) => {
+  const most = levels.reduce((m, c) => Math.max(m, c), 0);
   return Array.from({ length: Math.max(P.length, most) }, (_, k) =>
     k < P.length ? P[k] : faded(P[k % P.length], 0.5, P[(k + 1) % P.length]),
   );
@@ -47812,9 +47827,6 @@ $('light').addEventListener('change', () => {
   needsFull = true;
 });
 $('glass').addEventListener('change', () => {
-  needsFull = true;
-});
-$('tiles').addEventListener('change', () => {
   needsFull = true;
 });
 $('ocean').addEventListener('change', () => {

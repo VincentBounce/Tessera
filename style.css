@@ -373,7 +373,7 @@ input[type='range'] {
 } /* its choices, pills in a pill, its rows' tracks as wide (to the right, after their titles): the one picked raised */
 .pill-group button {
   flex: 1;
-  padding: 4px 6px;
+  padding: 4px 2px; /* (its width its share of the track; 2 px aside, its least: 5 words fit, Tiles' palettes) */
   border: 0;
   border-radius: 999px;
   background: none;

@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.320';
+const VERSION = '0.5.321';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -46221,13 +46221,13 @@ function renderGauges(L) {
     percent = (v) => gaugePercent(v);
   const rows = [
     // name, colour (none: the theme's live cells'), its bar's share (none: figures only), its figures now, its run's peak
-    // (its share, a tick on the bar; its figures; when)
+    // (its figures and when)
     [
       'Alive',
       gold,
       (varies ? avg[1] : L.aliveCount) / P.alive,
       `<b>${varies ? meanText(avg[1]) : count(L.aliveCount)}</b>`,
-      [1, count(P.alive), genLink(P.aliveGen)],
+      [count(P.alive), genLink(P.aliveGen)],
     ],
     [
       'Ever alive',
@@ -46235,12 +46235,11 @@ function renderGauges(L) {
       ever / n,
       `<span title="${formatNumber(ever)} of ${formatNumber(n)} cells alive at least once so far">${percent(ever / n)}</span>`,
       [
-        P.ever / n,
         `<span title="${formatNumber(P.ever)} of ${formatNumber(n)} cells alive at least once, all reached at gen ${formatNumber(P.everGen)}">${percent(P.ever / n)}</span>`,
         genLink(P.everGen, undefined, 'sweet'),
       ],
     ], // (its share of the grid, the cells reached: what Hunt › Reach all hunts)
-    ['Order', blue, L.order, percent(L.order), [P.order, percent(P.order), genLink(P.orderGen)]],
+    ['Order', blue, L.order, percent(L.order), [percent(P.order), genLink(P.orderGen)]],
     ['Turnover', null, turnover, percent(turnover)],
     [
       'Growth',
@@ -46277,8 +46276,8 @@ const paintTimings = () => {
       return `<tr><td>${stage}</td><td class="number">${typeof ms === 'number' ? (ms < 1000 ? `${ms.toFixed(1)} ms` : `${(ms / 1000).toFixed(2)} s`) : ms}</td></tr>`;
     }).join('');
 };
-// the stats' gauges: a row each, its name, its bar (share: none, null), its figures now, its run's peak (its share, a tick
-// on the bar; its figures; when); a row of words, [name, words]: across the table, from the bar's place
+// the stats' gauges: a row each, its name, its bar (share: none, null), its figures now, its run's peak (its figures and
+// when); a row of words, [name, words]: across the table, from the bar's place
 function paintGauges(rows) {
   const box = $('gauges'),
     cells = (row) =>
@@ -46297,9 +46296,7 @@ function paintGauges(rows) {
       .map(
         (row) =>
           `<div class="gauge-row"><span>${row[0]}</span>${cells(row)
-            .map((c) =>
-              c === 'rank-bar' ? '<span class="rank-bar"><i></i><b></b></span>' : `<span class="${c}"></span>`,
-            )
+            .map((c) => (c === 'rank-bar' ? '<span class="rank-bar"><i></i></span>' : `<span class="${c}"></span>`))
             .join('')}</div>`,
       )
       .join('');
@@ -46318,16 +46315,11 @@ function paintGauges(rows) {
         width: `${Math.min(100, 100 * (share || 0))}%`,
         background: colour ?? LIFE_ALIVE,
       }); // (the theme's live cells, as it is now)
-      Object.assign(bar.lastChild.style, {
-        display: peak ? '' : 'none',
-        left: `${Math.min(100, 100 * (peak?.[0] || 0))}%`,
-        background: colour ?? LIFE_ALIVE,
-      }); // (its run's peak, a tick)
     }
     setLinks(num, text);
     for (const [cell, words] of [
-      [best, peak?.[1]],
-      [when, peak?.[2]],
+      [best, peak?.[0]],
+      [when, peak?.[1]],
     ])
       if (cell) {
         setLinks(cell, words ?? '');
@@ -46422,13 +46414,13 @@ function renderWalkGauges() {
         : count(v);
   paintGauges([
     ['Position', `(${[x, y, ...(walk.is3d ? [z] : [])].map(place).join(', ')})`],
-    ['Distance', gold, d / P.far, `<b>${far(d)}</b>`, [1, far(P.far), genLink(P.step)]],
+    ['Distance', gold, d / P.far, `<b>${far(d)}</b>`, [far(P.far), genLink(P.step)]],
     [
       walk.vert ? 'Corners visited' : 'Cells visited',
       null,
       c / (walk.surface ? walk.nodes : last),
       visited(c),
-      [walk.surface ? last / walk.nodes : 1, visited(last), genLink(lastAt)],
+      [visited(last), genLink(lastAt)],
     ], // (its end's, and the first step with as many)
   ]);
 }

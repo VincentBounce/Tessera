@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.274';
+const VERSION = '0.5.275';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -22349,9 +22349,23 @@ function latticeCellColours({ xy, m }, n, eachNeighbour, P) {
   return colour.every((c) => c <= P) ? Uint8Array.from({ length: n }, (_, t) => colour[motif(t)]) : null;
 }
 // A grid's fields for Explore's colourings: its cells' faces (Sides: each cell's face of its solid, see cellFaces), their
-// kinds (Kind of tile), a periodic plane's lattice (Tiles: its lattice cell cloned, see latticeCellColours); a surface's
-// from its mesh, the plane's from its kind and width: Explore's grid and Tiles' ground alike (see groundColours)
-const surfaceColouring = (g) => ({ faces: g.cellFaces ?? null, kinds: tileKinds(meshCorners(g)) });
+// kinds (Kind of tile), a periodic plane's lattice (Tiles: its lattice cell cloned, see latticeCellColours), two cells apart
+// (Tiles: coloured piece by piece, see pieceByPiece); a surface's from its mesh, the plane's from its kind and width:
+// Explore's grid and Tiles' ground alike (see groundColours)
+const surfaceColouring = (g) => ({
+  faces: g.cellFaces ?? null,
+  kinds: tileKinds(meshCorners(g)),
+  apart: cellsApart(g),
+});
+// two neighbouring cells of a surface parted by a fold or a seam: a solid's across its edge (its faces), a sheet's (a
+// torus's, a Möbius strip's, a Klein bottle's) across its seam (their middles on the sheet more than half its length or
+// width apart, see sheetMiddle); null, none
+function cellsApart(g) {
+  if (g.cellFaces) return (t, u) => g.cellFaces[t] !== g.cellFaces[u];
+  if (!g.torus) return null;
+  const at = Array.from({ length: g.n }, (_, t) => sheetMiddle(g, t));
+  return (t, u) => Math.abs(at[t][0] - at[u][0]) > g.nu / 2 || Math.abs(at[t][1] - at[u][1]) > g.nv / 2;
+}
 const planeColouring = (kind, W) => ({
   kinds: tileKinds(planeMesh(kind, W, planeTorus(kind)), APERIODIC[kind]?.(W).kinds),
   lattice: APERIODIC[kind] ? null : { xy: planeGrid(kind, W).xy, m: gridCells(kind) },
@@ -22377,19 +22391,22 @@ function groundColours() {
     palette = tilesPalette(),
     key = `${exploreLook.rule}|${palette}`;
   if (groundMemo.of !== of || groundMemo.key !== key) {
-    const { faces, kinds, lattice } = P ? planeColouring(P.kind, P.W) : surfaceColouring(g),
-      levels = exploreLevels(walk.life?.nbr ?? cornerNeighbours(g), g.n, faces, kinds, lattice, palette),
+    const levels = exploreLevels(
+        walk.life?.nbr ?? cornerNeighbours(g),
+        g.n,
+        P ? planeColouring(P.kind, P.W) : surfaceColouring(g),
+        palette,
+      ),
       colours = exploreColours(levels, palette).map(packed);
     groundMemo = { of, key, col: Uint32Array.from(levels, (l) => colours[l - 1] ?? packed(UNLIT)) };
   }
   return groundMemo.col;
 }
-// A solid's Tiles face by face: each face coloured alone (DSatur among its own cells: a patch of its tiling's plane, its
-// pattern whole), its cells' neighbours across the solid's edge not counted: the edge parts them (inflated, the sphere's
-// edges none, two cells alike may meet there: faces: each cell's, see cellFaces)
-const faceByFace = (n, bySide, faces) =>
-  dsatur(n, (t, put) => bySide(t, (u) => faces[u] === faces[t] && put(u))).colour;
-function exploreLevels(nbr, n, faces, kinds, lattice, palette = explorePalette()) {
+// A surface's Tiles piece by piece: a solid's face by face, a sheet cut along its seam, each a patch of its tiling's plane
+// coloured alone (DSatur, its pattern whole), its cells' neighbours across a fold or the seam not counted: two cells alike
+// may meet there (apart: see cellsApart)
+const pieceByPiece = (n, bySide, apart) => dsatur(n, (t, put) => bySide(t, (u) => !apart(t, u) && put(u))).colour;
+function exploreLevels(nbr, n, { faces, kinds, lattice, apart }, palette = explorePalette()) {
   const side = sideOf(nbr),
     P = palette.length,
     rule = exploreLook.rule === 'sides' && !faces ? 'tiles' : exploreLook.rule;
@@ -22400,7 +22417,7 @@ function exploreLevels(nbr, n, faces, kinds, lattice, palette = explorePalette()
   if (rule === 'tiles')
     level =
       (lattice && (latticeCellColours(lattice, n, bySide, 3) ?? latticeCellColours(lattice, n, bySide, 4))) ??
-      (faces ? faceByFace(n, bySide, faces) : dsatur(n, bySide).colour); // (a periodic plane: its lattice cell cloned, in 4 colours where 3 cannot do (Twisted, Dodecagons, Type 10, 11, 14: a tile in an odd ring, or 4 tiles all touching); a solid, face by face; else DSatur)
+      (apart ? pieceByPiece(n, bySide, apart) : dsatur(n, bySide).colour); // (a periodic plane: its lattice cell cloned, in 4 colours where 3 cannot do (Twisted, Dodecagons, Type 10, 11, 14: a tile in an odd ring, or 4 tiles all touching); a surface, piece by piece; else DSatur)
   if (rule === 'sides') {
     // (the faces' graph, their sides touching)
     const touching = Array.from({ length: faces.reduce((m, f) => Math.max(m, f), -1) + 1 }, () => new Set());
@@ -22439,7 +22456,7 @@ const exploreColours = (levels, P = explorePalette()) => {
 // Explore's tilings whose Tiles break their pattern, at the size each opens at, each its colours there and its tiling's on
 // the plane (Explore's Tiles there: its lattice cell cloned, else DSatur's; 0: the plane's own, DSatur's more than 3):
 // measured once by a run (2026-11-17, v0.5.249: every Explore grid against its tiling on the plane, the same name in the
-// menu), its tile's mark (see tilesBroken). The solids none since v0.5.254: coloured face by face (see faceByFace), their
+// menu), its tile's mark (see tilesBroken). The solids none since v0.5.254: coloured face by face (see pieceByPiece), their
 // colour more is only along their edges, where their faces meet, no face's pattern broken (as the pyramid's, the sponge's)
 const TILES_BROKEN = {
   exploreTorusHex: [5, 3],
@@ -22550,7 +22567,7 @@ function renderExplore() {
 // freshWalk's (a grid's own given after, by its builder)
 function startLife(seq, rule, n, grid) {
   const explore = !!VARIANTS[walk.variant].explore;
-  if (explore) grid.seed = exploreLevels(grid.nbr, n, grid.faces, grid.kinds, grid.lattice); // (Explore: each cell alive in its colour, see exploreLevels)
+  if (explore) grid.seed = exploreLevels(grid.nbr, n, grid); // (Explore: each cell alive in its colour, see exploreLevels)
   walk.life = {
     B: rule.B,
     S: rule.S,

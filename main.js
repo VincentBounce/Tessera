@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.311';
+const VERSION = '0.5.312';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -6634,12 +6634,14 @@ const LOOK_WHERE = {
 };
 // (s: a setup, see setupNow: its variant, its generations and its start)
 const lookWhyNot = (look, s) =>
-  (look === 'gradient' && greyed('line', s.w)) ||
-  (look === 'visits' && !useful('visits', s.w)) ||
-  (look === 'domain' && elementaryCells(s.steps, s.start) > DOMAINS_MOST) ||
-  (look === 'entropy' && elementaryCells(s.steps, s.start) > ENTROPY_MOST)
-    ? LOOK_WHERE[look]
-    : '';
+  look === 'gradient' && VARIANTS[s.w].life && s.lifeTeams > 1
+    ? 'In a battle, each cell shows its team.'
+    : (look === 'gradient' && greyed('line', s.w)) ||
+        (look === 'visits' && !useful('visits', s.w)) ||
+        (look === 'domain' && elementaryCells(s.steps, s.start) > DOMAINS_MOST) ||
+        (look === 'entropy' && elementaryCells(s.steps, s.start) > ENTROPY_MOST)
+      ? LOOK_WHERE[look]
+      : '';
 // A setup's look, in the menu's graph and the page alike: its own where allowed, else its variant's default, else the
 // first one allowed in the list's order
 const lookOrder = (w) =>
@@ -29192,7 +29194,6 @@ function lifeReset() {
     k && (L.colours === 1 ? L.seedAlive : L.seedByColour[k]) === 0 ? 0 : null,
   ); // each colour's last generation alive, once all died out
   L.maxActivity = 0;
-  L.oldest = L.seedAlive ? 1 : 0; // the oldest cell alive's age: 1 at its birth (its start's, see gpuLifePut)
   L.aliveCount = L.everAlive = L.seedAlive;
   L.dyingCount = L.seedDying;
   L.blueCount = L.seedBlue;
@@ -29915,7 +29916,6 @@ function lifeStep(G = lifeStepGPU(walk.life, stepShown + 1)?.[0]) {
   L.born += G.born;
   L.dead += G.dead;
   L.everAlive += G.everNew;
-  L.oldest = G.oldest;
   L.maxActivity = Math.max(L.maxActivity, G.maxAct);
   if (two)
     for (let k = 1; k <= K; k++) {
@@ -29959,7 +29959,6 @@ function lifeBack(G) {
     L.dead -= G.born;
     L.bornNow = G.dead;
     L.deadNow = G.born;
-    L.oldest = G.oldest;
     L.key = G.key;
   }
   for (let k = 1; k <= K; k++) L.sumBy[k] -= traced(L, stepShown)?.by[k] ?? 0;
@@ -43482,7 +43481,6 @@ function lifeStepGPU(L, gen, back = false, k = 1) {
           deadBy: by(2, x),
           everBy: by(3, x),
           edges: r.read(9 + 4 * K, 0, x),
-          oldest: r.read(10 + 4 * K, 0, x),
         })),
       };
     },
@@ -43706,7 +43704,7 @@ fn blockNext(t: i32) -> i32 {
   cell[F(b, 1, g)] = age; cell[F(b, 2, g)] = act; cell[F(b, 3, g)] = bitcast<u32>(died); cell[F(b, 4, g)] = ever;
 }
 // a generation's sums: a workgroup's 64 cells added in its own memory,
-// then into its run's column x (the most changes, sum 5, and the oldest cell alive's age, sum 10 + 4K: maxima)
+// then into its run's column x (the most changes, sum 5: a max)
 var<workgroup> acc: array<atomic<u32>, 64>;
 fn mixed(v: u32) -> u32 { var x = (v ^ (v >> 16u)) * 0x7feb352du; x = (x ^ (x >> 15u)) * 0x846ca68bu; return x ^ (x >> 16u); }
 fn shown(v: i32, t: i32, neg: bool) -> bool { return live(v) != (neg && I(p.oIn, t) > 0); }
@@ -43723,7 +43721,6 @@ fn add(j: i32, v: u32) { if (v != 0u) { atomicAdd(&acc[j], v); } }
     let e0 = cell[F(a, 4, g)]; let e1 = cell[F(b, 4, g)];
     add(0, u32(on)); add(1, u32(now > 0 && !live(now))); add(2, u32(on && !wasOn)); add(3, u32(wasOn && !on));
     add(4, u32((e0 & 1u) == 0u && (e1 & 1u) == 1u)); atomicMax(&acc[5], cell[F(b, 2, g)]);
-    if (on) { atomicMax(&acc[10 + 4 * p.K], cell[F(b, 1, g)]); }
     if (now > 0) { add(6, mixed(u32(c) * 0x9e3779b9u + u32(now))); add(7, mixed((u32(c) * 0x85ebca6bu) ^ (u32(now) * 0xc2b2ae35u))); }
     if (p.K > 1 && live(now)) {
       var odd = 0u;
@@ -43744,7 +43741,7 @@ fn add(j: i32, v: u32) { if (v != 0u) { atomicAdd(&acc[j], v); } }
   let j = i32(li);
   if (j < p.J && base < p.r1 * p.stride) {  // (a workgroup past the cells, the last row's: none)
     let v = atomicLoad(&acc[li]); let s = u32((p.x * p.runs + base / p.stride) * p.J + j);
-    if (j == 5 || j == 10 + 4 * p.K) { atomicMax(&sums[s], v); } else if (v != 0u) { atomicAdd(&sums[s], v); }
+    if (j == 5) { atomicMax(&sums[s], v); } else if (v != 0u) { atomicAdd(&sums[s], v); }
   }
 }
 // each cell's colour, from the cells shown (a batch's last adopted, see gpuShow): by the look's
@@ -43774,7 +43771,7 @@ function gpuLifeEngine(L, runs = 1, h = 1) {
     n = L.seed.length,
     stride = Math.ceil(n / 64) * 64,
     total = runs * stride,
-    J = 11 + 4 * L.colours;
+    J = 10 + 4 * L.colours;
   if (10 * total * 4 > device.limits.maxStorageBufferBindingSize) return null;
   const M = L.margolus,
     none = [0],
@@ -46179,7 +46176,7 @@ function drawActivity() {
 // alive (against the most) and the most alive at once (and when, against the grid); in violet, the cells ever alive (against
 // the grid); in blue, its order (see orderOf) and the most ordered so far (and when); then its turnover, this generation's
 // births and deaths against the cells alive before and after (100 %: every cell changes; 0: nothing moves), its growth,
-// births less deaths, in figures (a bar for it swung too much), and the oldest cell alive (since when: a link there)
+// births less deaths, in figures (a bar for it swung too much)
 // a generation of the run in view, as a link, always (the one shown too: one look, the same everywhere): clicked, it goes
 // there (see seekTo: a reversible one's by its rule, Life's played again from its start)
 const genLink = (g, text = `${walk.life ? 'gen' : 'step'} ${formatNumber(g)}`, kind = '') =>
@@ -46225,12 +46222,6 @@ function renderGauges(L) {
     ['Peak order', blue, P.order, `${Math.round(100 * P.order)} % · ${genLink(P.orderGen)}`],
     ['Turnover', null, turnover, `${Math.round(100 * turnover)} %`],
     ['Growth', null, null, `${b - d > 0 ? '+' : b < d ? '−' : ''}${formatNumber(Math.abs(b - d))} a gen`],
-    [
-      'Oldest',
-      null,
-      null,
-      L.oldest ? `${formatNumber(L.oldest - 1)} gens · since ${genLink(stepShown - L.oldest + 1)}` : '—',
-    ],
   ];
   paintGauges(rows);
 }

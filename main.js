@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.231';
+const VERSION = '0.5.232';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -19565,7 +19565,7 @@ function groupedStarts(g, start, K) {
 // The edges out of the points a solid's walkers may start round (see groupedStarts: its faces' centres, its corners), by its
 // kind: at a size 3 divides (thirds), at the others (a triangle face's centre a corner of the grid, else a small
 // triangle's three); at an even size, an odd one (a rhombus's centre a corner of its squares, else a square's middle, its 4
-// corners round it); or at any. Known with no mesh: asked of every variant next to the one shown, by a greyed tile's search
+// corners round it); at any; or each size its own (the sponge's). Known with no mesh: asked of every variant next to the one shown, by a greyed tile's search
 // (see choicesAt; a mesh and its starts built for each, 5.5 s at Centred's first hover till v0.4.1065); as the meshes'
 // own, see tools/check.js's checkCentred
 const CENTRED_EDGES = {
@@ -19582,11 +19582,20 @@ const CENTRED_EDGES = {
   dodecaHex: { any: [5, 6] },
   rhombicDodeca: { even: [3, 4], odd: [3, 4, 8] },
   rhombicTriaconta: { even: [3, 4, 5], odd: [3, 5, 8] }, // (its corners 3 or 5 rhombi round them, no 4)
+  rhombicDodecaTriangles: { even: [4, 6], odd: [4, 6, 10] },
+  rhombicTriacontaTriangles: { even: [5, 6], odd: [5, 6, 10] },
+  pits: { any: [3, 4] },
+  bumps: { any: [3, 4] },
+  frame: { even: [9, 16], odd: [9, 24] }, // (a face's middle a hole: the ring of its corners round it, see groupedStarts)
+  menger: { 2: [21, 24], 3: [24, 45], 4: [24, 93] }, // (the same: its holes' rings, each size its own)
 };
 const centredEdges = (kind, size) => {
   const edges = CENTRED_EDGES[kind]; // (none: a ring, a solid with no grid to walk along)
   return (
-    edges?.any ?? (edges?.even ? (size % 2 ? edges.odd : edges.even) : size % 3 ? edges?.other : edges?.thirds) ?? []
+    edges?.[size] ??
+    edges?.any ??
+    (edges?.even ? (size % 2 ? edges.odd : edges.even) : size % 3 ? edges?.other : edges?.thirds) ??
+    []
   );
 };
 // (a variant's, at a size or the one it opens at: its walkers, a setup's teams, can be grouped: so many edges out of one of

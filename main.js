@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.281';
+const VERSION = '0.5.282';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -15135,7 +15135,7 @@ function kleinMesh(kind, nv, nu = kleinColumns[kind](nv)) {
   }
   if (kind === 'kleinHex') {
     places = hexPlaces(nu, nv);
-    tiles = places.map(sheetHex);
+    tiles = places.map((place) => sheetHex(place));
   }
   if (kind === 'kleinTri' || kind === 'kleinKite') tiles = triSheet(nu, nv);
   if (kind === 'kleinTri') places = triPlaces(nu, nv);
@@ -15146,7 +15146,7 @@ function kleinMesh(kind, nv, nu = kleinColumns[kind](nv)) {
   if (kind === 'kleinTriTurned') places = triPlaces(nv, nu);
   if (kind === 'kleinHexTurned') {
     places = hexPlaces(nv, nu);
-    tiles = places.map(sheetHex).map(swap);
+    tiles = places.map((place) => sheetHex(place)).map(swap);
   }
   if (kind === 'kleinKite' || kind === 'kleinKiteTurned') tiles = tiles.flatMap(kitesOf); // (each triangle its 3 kites)
   const up = kind === 'kleinCairo' ? 0.5 : 0; // (Cairo's pentagons half a square up its sheet, as the torus's: their mirror line too, see id)
@@ -15555,43 +15555,43 @@ function mobiusSheetOf(kind0, size, count = false, along = null) {
     const W = MOBIUS_ALONG[kind].width(nv),
       a = steps(W),
       L = 1.5 * a;
+    const places = [];
     for (let c = 0; c < a; c++)
-      for (let r = 0; r < nv; r++) {
-        const cx = 1.5 * c + 1,
-          cy = Math.sqrt(3) * (r + (c % 2) / 2) + TRIANGLE_HEIGHT;
-        put(() => [0, 1, 2, 3, 4, 5].map((k) => [cx + Math.cos((k * Math.PI) / 3), cy + Math.sin((k * Math.PI) / 3)]));
-      }
-    return done(L, W);
+      for (let r = 0; r < nv; r++)
+        put(() => {
+          const place = [-r - Math.ceil(c / 2), c]; // (column c, row r: as the tori's, see hexPlaces)
+          places.push(place);
+          return sheetHex(place, ([x, y]) => [
+            Math.sqrt(3) * x * TRIANGLE_HEIGHT + 1,
+            Math.sqrt(3) * y + TRIANGLE_HEIGHT,
+          ]);
+        }); // (its side 1: the plane's √3 times, its columns 1.5 apart)
+    return { ...done(L, W), ...(!count && { cellPlaces: places }) };
   }
   if (kind === 'mobiusTri') {
-    const W = MOBIUS_ALONG[kind].width(nv),
+    const places = [],
+      W = MOBIUS_ALONG[kind].width(nv),
       L = steps(W) / 2;
     for (let j = 0; j < nv; j++) {
       const y0 = j * TRIANGLE_HEIGHT,
         y1 = y0 + TRIANGLE_HEIGHT;
       for (let a = (j % 2) / 2 - 2; a < L + 2; a += 1) {
-        const cell = 4096 * j + Math.round(2 * a) + 64; // (▲ and the ▼ beside it, their side shared)
+        const cell = 4096 * j + Math.round(2 * a) + 64, // (▲ and the ▼ beside it, their side shared)
+          A = a - j / 2; // (the plane's triangles 2A and 2A + 1 of row j, see planeCorners: its corners as they are)
         if (a + 0.5 >= 0 && a + 0.5 < L)
-          put(
-            () => [
-              [a, y0],
-              [a + 1, y0],
-              [a + 0.5, y1],
-            ],
-            cell,
-          ); // ▲, its centre at a + ½
+          put(() => {
+            places.push([2 * A, j]);
+            return planeCorners('tri', 2 * A, j);
+          }, cell); // ▲, its centre at a + ½
         if (a + 1 >= 0 && a + 1 < L)
-          put(
-            () => [
-              [a + 0.5, y1],
-              [a + 1, y0],
-              [a + 1.5, y1],
-            ],
-            cell,
-          ); // ▼, at a + 1
+          put(() => {
+            places.push([2 * A + 1, j]);
+            const [p, q, r] = planeCorners('tri', 2 * A + 1, j);
+            return [r, p, q];
+          }, cell); // ▼, at a + 1 (from its corner on row j + 1)
       }
     }
-    return { ...done(L, W), originCell: [-1, 0] }; // (its first tile: row 0's ▼ at a = −1, the plane's triangle −1)
+    return { ...done(L, W), originCell: [-1, 0], ...(!count && { cellPlaces: places }) }; // (its first tile: row 0's ▼ at a = −1, the plane's triangle −1)
   }
   const L = steps(nv),
     places = [];
@@ -16729,11 +16729,11 @@ const triSheet = (nu, nv) => triPlaces(nu, nv).map(sheetTri);
 // as 1, from the corner at 0°
 const hexPlaces = (nu, nv) =>
   Array.from({ length: nu * nv }, (_, t) => [-(t % nv) - Math.ceil(Math.floor(t / nv) / 2), Math.floor(t / nv)]);
-const sheetHex = (place) => {
-  const k = planeCorners('hex', ...place).map(([x, y]) => [y / TRIANGLE_HEIGHT, -x]);
+const sheetHex = (place, scale = ([x, y]) => [x, y]) => {
+  const k = planeCorners('hex', ...place).map(([x, y]) => scale([y / TRIANGLE_HEIGHT, -x]));
   return [...k.slice(1), k[0]];
 };
-const hexSheet = (nu, nv) => hexPlaces(nu, nv).map(sheetHex);
+const hexSheet = (nu, nv) => hexPlaces(nu, nv).map((place) => sheetHex(place));
 const kitesOf = (c) => {
   const m = [0, 1].map((d) => (c[0][d] + c[1][d] + c[2][d]) / 3),
     half = (p, q) => [(p[0] + q[0]) / 2, (p[1] + q[1]) / 2];

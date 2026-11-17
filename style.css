@@ -1567,19 +1567,10 @@ button.active .bubble.active {
   }
 }
 /* the theme's switch stays at the top right; hovering opens the settings: Sound and Auto-fit on its left, the rest below */
-.display-menu .stage-head {
-  display: flex;
-  justify-content: flex-end;
-}
-.head-tiles {
-  display: flex;
-  justify-content: flex-end;
-  gap: var(--tile-gap);
-  margin-bottom: 0;
-} /* on the right, closed (the theme's switch alone) as open */
-.head-tiles button {
-  width: var(--tile-width);
-} /* (closed as open: a tile's width) */
+.display-menu .nav-shapes {
+  grid-template-columns: repeat(auto-fit, var(--tile-width));
+  justify-content: end;
+} /* every row from the right, its box's corner: a row short of tiles has no empty column (auto-fit), its tiles pushed right */
 #headTiles {
   margin-bottom: 0;
 } /* (the sections below: their own line and margins, see .form-section) */

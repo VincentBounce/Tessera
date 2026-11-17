@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.227';
+const VERSION = '0.5.228';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -16414,10 +16414,18 @@ function kitesDartsOf(G) {
     const halvesIn = members.flatMap((m) => rows[m][0]);
     if (new Set(halvesIn).size === halvesIn.length) orbits.push(members); // (its images sharing no half)
   });
-  const alike = exactCover(
-      halves.length,
-      orbits.map((members) => members.flatMap((m) => rows[m][0])),
-    )?.flatMap((o) => orbits[o]),
+  // (a half and its images left out together, a choice tried last: a hole alike round every corner where no tile fits)
+  const holes = [],
+    inHole = new Set();
+  halves.forEach((_, i) => {
+    if (inHole.has(i)) return;
+    const orbit = [...new Set(halfImages.map((P) => P[i]))];
+    orbit.forEach((j) => inHole.add(j));
+    holes.push(orbit);
+  });
+  const alike = exactCover(halves.length, [...orbits.map((members) => members.flatMap((m) => rows[m][0])), ...holes])
+      ?.filter((o) => o < orbits.length)
+      .flatMap((o) => orbits[o]),
     any = exactCover(
       halves.length,
       rows.map(([h]) => h),
@@ -16559,12 +16567,21 @@ const KITES_DARTS_SPHERES = {
   60: 90,
   140: 210,
   240: 360,
+  560: 960,
   720: 1110,
+  1010: 1650,
   1230: 1950,
   1430: 2310,
   2600: 4110,
+  3510: 5670,
+  6240: 10080,
   9590: 15330,
+  15150: 24510,
+  22650: 36570,
+  40830: 66030,
   49200: 79560,
+  100890: 163170,
+  151320: 244800,
 }; // (each size's cells: its rhombi's size)
 function kitesDartsSphereMesh(cells) {
   const key = `kitesDartsSphere${cells}`;

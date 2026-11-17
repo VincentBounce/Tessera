@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.243';
+const VERSION = '0.5.244';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -17016,7 +17016,7 @@ function updateMorphButton() {
     .join('\n');
   box.dataset.greyed = 'on Pits, Bumps and Sponge';
 }
-// a slider's place, its ends' names faded by it (see .shape-slider: the one the knob nears gone, from a third of the way)
+// a slider's place, its ends' names faded by it (see .shape-slider: both whole from the middle, the one the knob goes to faded out on its way)
 const showSliderAt = (input) => input.parentElement.style.setProperty('--shape-at', input.value);
 const showShapeAt = () => showSliderAt($('shapeM'));
 // Glint: Soft ── Bright, the light's glint from each tile's own colour (never past it) to white added (a pale face facing it

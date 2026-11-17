@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.336';
+const VERSION = '0.5.337';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -6480,6 +6480,7 @@ const DISPLAY_BY_TAB = {
     'grid',
     ...VIEW_3D,
     'glass',
+    'tessera',
     'tiles',
     'ocean',
     'cut',
@@ -6494,6 +6495,7 @@ const DISPLAY_BY_TAB = {
     'grid',
     ...VIEW_3D,
     'glass',
+    'tessera',
     'tiles',
     'ocean',
     'cut',
@@ -6501,7 +6503,7 @@ const DISPLAY_BY_TAB = {
   '2D spirals': ['heatmap', 'fill', 'translucent', 'cells', 'visits', 'digit', 'grid', 'tiles', 'ocean'], // the 2D walks' menu, some of it greyed out
   Elementary: ['colours', 'mono', 'domain', 'entropy', 'grid'], // (its cells never change once made: no Heatmap, no Trail; Domains its own)
   'Explore on the plane': ['grid'],
-  'Explore on surfaces': ['shape', 'grid', ...VIEW_3D, 'glass', 'cut'], // (its view's only: its colours its own, see renderExplore)
+  'Explore on surfaces': ['shape', 'grid', ...VIEW_3D, 'glass', 'tessera', 'cut'], // (its view's only: its colours its own, see renderExplore)
 };
 // The Display settings' defaults, one table: each its control (a box's id), when it comes back (open: the page's opening
 // only, kept from tab to tab; tab: another tab; variant: every variant; lifeTeams: Life's count of teams; battle: a battle's
@@ -6558,6 +6560,7 @@ const DISPLAY_DEFAULTS = {
   light: ['light', 'open', true],
   glint: ['glintM', ['open', 'tab'], (variant, w) => (NAV[w][0] === 'Walk' && NAV[w][1] === '3D' ? 1 : 0.5)], // (halfway: its own colour and white added, see light; a lattice's walk white, its bars' glint bright)
   glass: ['glass', 'open', false],
+  tessera: ['tessera', 'open', false],
   grid: [
     'gridLines',
     ['tab', 'exploreRule'],
@@ -6664,6 +6667,7 @@ function updateDisplayMenu() {
     light: 'lightRow',
     glint: 'glintRow',
     glass: 'glassRow',
+    tessera: 'tesseraRow',
     ocean: 'oceanRow',
     cut: 'cutRow',
   };
@@ -6708,6 +6712,7 @@ const VIEW_TILES = [
   ],
   ['light', 'lightRow', () => icon('sideLight'), 'Side light'],
   ['glass', 'glassRow', () => icon('glass'), 'Glass'],
+  ['tessera', 'tesseraRow', () => icon('tessera'), 'Tessera'],
 ];
 let viewTiles = null;
 function renderViewTiles() {
@@ -6737,7 +6742,12 @@ function renderViewTiles() {
     : !ways.off.length
       ? 'on'
       : `On by default on ${ways.on.join(', ')}\nOff by default on ${ways.off.join(', ')}`;
-  const first = { perspective, light: defaultMark('light'), glass: defaultMark('glass') };
+  const first = {
+    perspective,
+    light: defaultMark('light'),
+    glass: defaultMark('glass'),
+    tessera: defaultMark('tessera'),
+  };
   VIEW_TILES.forEach(([id], k) =>
     setTile(viewTiles[k], {
       on: $(id).checked,
@@ -8169,6 +8179,9 @@ const ICONS = (() => {
       svgPath('M12.5 8.6L21 4.8M13 12H21.5M12.5 15.4L21 19.2'),
     cut: svgPath('M3 12A9 9 0 0 1 21 12Z') + svgPath('M2 15.5H22'), // a ball's back half, the cut's line
     glass: svgPath('M3 12A9 9 0 1 0 21 12A9 9 0 1 0 3 12Z') + svgPath('M3 12A9 3.5 0 0 0 21 12A9 3.5 0 0 0 3 12Z'), // a ball, its equator seen through
+    tessera: svgPath(
+      'M5 3H10A2 2 0 0 1 12 5V10A2 2 0 0 1 10 12H5A2 2 0 0 1 3 10V5A2 2 0 0 1 5 3ZM15 3H19A2 2 0 0 1 21 5V8A2 2 0 0 1 19 10H15A2 2 0 0 1 13 8V5A2 2 0 0 1 15 3ZM16 12H19A2 2 0 0 1 21 14V19A2 2 0 0 1 19 21H16A2 2 0 0 1 14 19V14A2 2 0 0 1 16 12ZM5 14H10A2 2 0 0 1 12 16V19A2 2 0 0 1 10 21H5A2 2 0 0 1 3 19V16A2 2 0 0 1 5 14Z',
+    ), // four rounded pieces of mosaic, their joints between
     viewDefault: svgPath('M12 3L20 7.5V16.5L12 21L4 16.5V7.5Z') + svgPath('M4 7.5L12 12L20 7.5M12 12V21'), // (a cube from its usual corner)
     upright: svgPath('M12 3V17M8 7L12 3L16 7M4 20.5H20'), // (up, over a level line)
     free:
@@ -43050,6 +43063,7 @@ const paintLevels = (palette, levelOf) => (out, n) => {
 // gone, by a fixed plane through the middle (see CUT_AXES); the two apart: with both, what is left see-through
 const GLASS_ALPHA = 0.4; // (a tile's share: a layer behind seen at 60%, two at 36%…)
 const glassOn = () => $('glass').checked && !$('glassRow').hidden;
+const tesseraOn = () => $('tessera').checked && !$('tesseraRow').hidden;
 const oceanFits = (w = tabVariant(), lifeCount = lifeTeams, walkCount = walkTeams) =>
   (VARIANTS[w].life ? lifeCount : battleAt(w, walkCount) ? walkCount : 1) <= LANDS.length; // (its lands a Sextet's at most, Life's teams or a battle's walkers: beyond, greyed; at a setup, see whyNot)
 let oceanPicked = false; // (Ocean clicked since its default was set: kept, else it follows its default, see DISPLAY_DEFAULTS)
@@ -44088,6 +44102,8 @@ function gpuLook(L, out, look) {
  * no antialiasing or the sky in the same picture change it: Chrome's way to that screen, not ours (2026-11-03: key to
  * picture 19 ms, WebGL's 21; 327 KB allocated a frame both, 40 KB since v0.4.1) */
 const gpuCanvas = $('gpuLayer');
+const TESSERA_BEVEL = 0.35, // (Tessera: a tile's rounding, its share of the way from its edge to its middle)
+  TESSERA_JOINT = 0.08; // (its joint's, dark)
 // a draw's numbers, in this order (vec3s padded to 4 words; see struct U)
 const GPU_VIEW = `
 struct U {
@@ -44136,35 +44152,81 @@ fn glass(c0: vec3f, a: f32, z: f32) -> vec4f {
   return vec4f(a);
 }
 struct Lit { @builtin(position) pos: vec4f, @location(0) dark: vec3f, @location(1) lit: vec3f, @location(2) sh: vec3f, @location(3) cutv: f32 }
-fn light(col: vec3f, n0: vec3f, p: vec3f, bias: f32) -> Lit {  // (as tileLight; sh: its place in the shadows' texture, rows down)
-  var o: Lit; var n = n0;
-  if (dot(n, u.V) < 0.0) { n = -n; }
-  o.dark = col * (1.0 - u.shade);
+// the lamp's share of a colour on a face of normal n (facing the viewer): its light and its glint
+fn shine(col: vec3f, n: vec3f) -> vec3f {
   let d = max(0.0, dot(n, u.L)); let g = u.glint * pow(max(0.0, dot(n, u.H)), ${LIGHT_SHINE}.0);
-  o.lit = mix(col * u.shade * ((1.0 - u.glint) * d + g), col * u.shade * d + g, u.glintWhite);  // (Glint Soft: in its own colour, a share of the light, never past its colour; Bright: white added, a pale one washed white)
-  let l = lightSpace(p);
-  o.sh = vec3f(l.x * 0.5 + 0.5, 0.5 - l.y * 0.5, l.z * 0.5 + 0.5);
+  return mix(col * u.shade * ((1.0 - u.glint) * d + g), col * u.shade * d + g, u.glintWhite);  // (Glint Soft: in its own colour, a share of the light, never past its colour; Bright: white added, a pale one washed white)
+}
+fn facing(n: vec3f) -> vec3f { if (dot(n, u.V) < 0.0) { return -n; } return n; }  // (a face's normal turned to the viewer)
+fn shadowPlace(p: vec3f) -> vec3f { let l = lightSpace(p); return vec3f(l.x * 0.5 + 0.5, 0.5 - l.y * 0.5, l.z * 0.5 + 0.5); }  // (its place in the shadows' texture, rows down)
+fn light(col: vec3f, n0: vec3f, p: vec3f, bias: f32) -> Lit {  // (as tileLight)
+  var o: Lit;
+  o.dark = col * (1.0 - u.shade);
+  o.lit = shine(col, facing(n0));
+  o.sh = shadowPlace(p);
   o.cutv = dot(p, u.cutN); o.pos = clipOf(toScreen(p), bias);
   return o;
 }
 @group(1) @binding(0) var shadowMap: texture_depth_2d;
 @group(1) @binding(1) var shadowCmp: sampler_comparison;
-@fragment fn shadowedF(i: Lit) -> @location(0) vec4f {  // (the share of the light: 9 looks round it, each softened by the hardware's compare)
-  if (u.cut == 1 && i.cutv > 0.0) { discard; }
-  if (u.front > 0.5) { return glass(i.dark + i.lit, 1.0, i.pos.z); }  // (the view's axes: lit, no shadow, not in the world)
+fn lightShare(sh: vec3f) -> f32 {  // (the share of the light: 9 looks round it, each softened by the hardware's compare)
   let t = 1.0 / ${SHADOW_SIZE}.0; var s = 0.0;
   for (var a = -1; a <= 1; a++) { for (var b = -1; b <= 1; b++) {
-    let at = i.sh.xy + vec2f(f32(a), f32(b)) * t;
-    s += textureSampleCompareLevel(shadowMap, shadowCmp, at, i.sh.z - 2.0 * t);
+    let at = sh.xy + vec2f(f32(a), f32(b)) * t;
+    s += textureSampleCompareLevel(shadowMap, shadowCmp, at, sh.z - 2.0 * t);
   } }
-  var a = u.alpha;
-  if (u.glass == 0) { a = 1.0; }
-  return glass(i.dark + i.lit * s / 9.0, a, i.pos.z);
+  return s / 9.0;
+}
+fn seen(c: vec3f, z: f32) -> vec4f { var a = u.alpha; if (u.glass == 0) { a = 1.0; } return glass(c, a, z); }  // (Glass: see-through)
+@fragment fn shadowedF(i: Lit) -> @location(0) vec4f {
+  if (u.cut == 1 && i.cutv > 0.0) { discard; }
+  if (u.front > 0.5) { return glass(i.dark + i.lit, 1.0, i.pos.z); }  // (the view's axes: lit, no shadow, not in the world)
+  return seen(i.dark + i.lit * lightShare(i.sh), i.pos.z);
+}
+fn tileColour(id: u32) -> vec3f {  // (the back of an open sheet; else its tile's colour)
+  if (u.plain.a > 0.0) { return u.plain.rgb; }
+  return unpack4x8unorm(tileCol[id]).rgb;
 }
 @vertex fn tileV(@location(0) pos: vec3f, @location(1) nrm: vec3f, @location(2) id: u32) -> Lit {
-  var col = u.plain.rgb;  // (the back of an open sheet; else its tile's colour)
-  if (u.plain.a <= 0.0) { col = unpack4x8unorm(tileCol[id]).rgb; }
-  return light(col, nrm, pos, 0.0);
+  return light(tileColour(id), nrm, pos, 0.0);
+}
+// Tessera (Display): each tile a piece of mosaic, lit pixel by pixel: rounded down to its edges (its normal tilted towards
+// the nearest, over BEVEL of the way from its edge to its middle) and its joint dark (over JOINT of it). Its corners read
+// where they are drawn from (corners, cornersEach a tile, its last repeated: see gpuFrame), the nearest edge found
+@group(2) @binding(0) var<storage, read> corners: array<f32>;
+@group(2) @binding(1) var<uniform> cornersEach: vec4u;
+struct Tess { @builtin(position) pos: vec4f, @location(0) col: vec3f, @location(1) n: vec3f, @location(2) p: vec3f, @location(3) @interpolate(flat) first: u32, @location(4) sh: vec3f, @location(5) cutv: f32 }
+@vertex fn tesseraV(@location(0) pos: vec3f, @location(1) nrm: vec3f, @location(2) id: u32, @builtin(vertex_index) v: u32) -> Tess {
+  let l = light(tileColour(id), nrm, pos, 0.0);
+  var o: Tess;
+  o.pos = l.pos; o.col = tileColour(id); o.n = nrm; o.p = pos; o.sh = l.sh; o.cutv = l.cutv;
+  o.first = v - v % cornersEach.x;  // (its tile's first corner: k a tile)
+  return o;
+}
+fn cornerAt(i: u32) -> vec3f { return vec3f(corners[3u * i], corners[3u * i + 1u], corners[3u * i + 2u]); }
+fn nearestEdge(p: vec3f, first: u32) -> vec4f {  // (the point of the tile's outline nearest p, and how far)
+  let k = cornersEach.x; var best = vec4f(p, 1e30);
+  for (var q = 0u; q < k; q++) {
+    let a = cornerAt(first + q); let b = cornerAt(first + (q + 1u) % k);
+    let ab = b - a; let t = clamp(dot(p - a, ab) / max(dot(ab, ab), 1e-20), 0.0, 1.0);
+    let c = a + t * ab; let d = length(p - c);
+    if (d < best.w) { best = vec4f(c, d); }
+  }
+  return best;
+}
+@fragment fn tesseraF(i: Tess) -> @location(0) vec4f {
+  if (u.cut == 1 && i.cutv > 0.0) { discard; }
+  var middle = vec3f(0.0);
+  for (var q = 0u; q < cornersEach.x; q++) { middle += cornerAt(i.first + q); }
+  middle /= f32(cornersEach.x);
+  let edge = nearestEdge(i.p, i.first);
+  let w = edge.w / max(nearestEdge(middle, i.first).w, 1e-20);  // (0 on its edge, 1 in its middle)
+  let n = facing(normalize(i.n));
+  let out = edge.xyz - i.p; let side = out - n * dot(out, n);  // (towards its nearest edge, along it)
+  let slope = 1.6 * (1.0 - smoothstep(0.0, ${TESSERA_BEVEL}, w));
+  var m = n; if (dot(side, side) > 0.0) { m = normalize(n + normalize(side) * slope); }
+  let col = i.col * mix(0.4, 1.0, smoothstep(0.0, ${TESSERA_JOINT}, w));  // (its joint: dark)
+  return seen(col * (1.0 - u.shade) + shine(col, m) * lightShare(i.sh), i.pos.z);
 }
 // a 3D walk's step as a bar, from a to b0 as its life draws it (see lifeOf: its step its instance's, k), u.halfW thick, its
 // ends closed past its points by half its thickness: a unit cube's corner c (and its normal) laid along it; none yet: off
@@ -44380,6 +44442,12 @@ function gpuDrawSetup() {
       B(1, T.FRAGMENT, { sampler: { type: 'comparison' } }),
     ],
   });
+  const corners = device.createBindGroupLayout({
+    entries: [
+      B(0, T.FRAGMENT, { buffer: { type: 'read-only-storage' } }),
+      B(1, T.VERTEX | T.FRAGMENT, { buffer: { type: 'uniform' } }),
+    ],
+  }); // (Tessera's: the tiles' corners, how many a tile)
   const mixed = device.createBindGroupLayout({
     entries: [
       B(0, T.FRAGMENT, { texture: { sampleType: 'unfilterable-float' } }),
@@ -44402,6 +44470,7 @@ function gpuDrawSetup() {
     module,
     g0,
     shadowed,
+    corners,
     mixed,
     pipes: new Map(),
     keys: {},
@@ -44479,6 +44548,22 @@ const gpuBuffer = (name, data, usage = GPUBufferUsage.VERTEX) => {
   return D[name];
 };
 // the bind group of the frame's numbers, the tiles' colours, the rainbow and the digits' colours
+// Tessera's bind group: the tiles' corners and how many a tile, made again when their buffers are (see gpuBuffer)
+const cornersGroup = (D) => {
+  if (D.cornersGroup?.pos !== D.pos || D.cornersGroup.each !== D.cornersEach)
+    D.cornersGroup = {
+      pos: D.pos,
+      each: D.cornersEach,
+      group: D.device.createBindGroup({
+        layout: D.corners,
+        entries: [
+          { binding: 0, resource: { buffer: D.pos } },
+          { binding: 1, resource: { buffer: D.cornersEach } },
+        ],
+      }),
+    };
+  return D.cornersGroup.group;
+};
 const gpuGroup = (col = null) => {
   const D = GPU.draw;
   if (!D.tileCol)
@@ -44610,6 +44695,7 @@ function gpuDrawPipe(
     pass = 0,
     blend = null,
     shadowed = false,
+    corners = false,
     depth = true,
     writes = true,
     pick = false,
@@ -44617,7 +44703,9 @@ function gpuDrawPipe(
 ) {
   // (writes: its depth; a decal's not, see ribbon; pick: each pixel a tile's number, one sample, see gpuPickMiddle)
   return gpuPipe(`${name}|${cull}|${pass}|${!!blend}|${depth}|${writes}|${pick}`, (D) => ({
-    layout: D.device.createPipelineLayout({ bindGroupLayouts: shadowed ? [D.g0, D.shadowed] : [D.g0] }),
+    layout: D.device.createPipelineLayout({
+      bindGroupLayouts: [D.g0, ...(shadowed ? [D.shadowed] : []), ...(corners ? [D.corners] : [])],
+    }), // (corners: Tessera's, shadowed too)
     vertex: { module: D.module, entryPoint: vertex, buffers },
     fragment: {
       module: D.module,
@@ -44681,7 +44769,8 @@ function gpuSurface(paint, path) {
         nrm[i + 1] = sh.nrm[3 * t + 1];
         nrm[i + 2] = sh.nrm[3 * t + 2];
       }
-    gpuBuffer('pos', pos);
+    gpuBuffer('pos', pos, GPUBufferUsage.VERTEX | GPUBufferUsage.STORAGE); // (Tessera reads its tiles' corners, see tesseraF)
+    gpuBuffer('cornersEach', Uint32Array.of(k, 0, 0, 0), GPUBufferUsage.UNIFORM);
     gpuBuffer('nrm', nrm);
     const edges = surfaceEdges(g),
       E = edges.length / 4,
@@ -44837,18 +44926,21 @@ function gpuSurface(paint, path) {
     const front = shapeSign(g) < 0 ? 'front' : 'back',
       cull = both ? 'none' : front;
     const tiles = (plain, c) => {
+      const mosaic = tesseraOn();
       rp.setPipeline(
-        gpuDrawPipe('tile', {
-          vertex: 'tileV',
-          fragment: 'shadowedF',
+        gpuDrawPipe(mosaic ? 'tessera' : 'tile', {
+          vertex: mosaic ? 'tesseraV' : 'tileV',
+          fragment: mosaic ? 'tesseraF' : 'shadowedF',
           buffers: tileBufs,
           cull: c,
           pass,
           shadowed: true,
+          corners: mosaic,
         }),
       );
       rp.setBindGroup(0, gpuGroup(), [slotOf({ glass: pass, cut, alpha: GLASS_ALPHA, plain })]);
       rp.setBindGroup(1, D.shadow.group);
+      if (mosaic) rp.setBindGroup(2, cornersGroup(D));
       rp.setVertexBuffer(0, D.pos);
       rp.setVertexBuffer(1, D.nrm);
       rp.setVertexBuffer(2, D.tileIds);
@@ -47743,9 +47835,10 @@ for (const id of ['animBar', 'viewTools', 'ruleTuto', 'numberPreview', 'axesLabe
 $('light').addEventListener('change', () => {
   needsFull = true;
 });
-$('glass').addEventListener('change', () => {
-  needsFull = true;
-});
+for (const id of ['glass', 'tessera'])
+  $(id).addEventListener('change', () => {
+    needsFull = true;
+  });
 $('ocean').addEventListener('change', () => {
   oceanPicked = true;
   needsFull = statsDirty = true;

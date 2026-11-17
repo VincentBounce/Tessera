@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.268';
+const VERSION = '0.5.269';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -6900,6 +6900,7 @@ const setTile = (
   if (b.faces && b.dataset.face !== (b.dataset.face = on ? 'on' : 'off')) b.innerHTML = b.faces[b.dataset.face]; // (a switch's own picture and name while off)
   b.classList.toggle('active', on);
   b.classList.toggle('mark', mark && can);
+  b.classList.toggle('switch', can && ((again && on) || 'toggle' in b.dataset)); // (its hover: on, gold; off, a pale gold)
   return b;
 };
 // A card, every one alike (the rules, an ant's, the walks', the brushes, the Gallery's setups, the hunt's finds): a row, its
@@ -28351,6 +28352,7 @@ function ruleTutorial(entry) {
   else $('ruleTuto').hidden = true;
   for (const b of document.querySelectorAll('.how-it-works')) {
     b.classList.toggle('active', !!entry);
+    b.classList.toggle('switch', !!entry);
   } // (lit while it shows, as Full number)
   if (!entry) return;
   $('ruleTuto').dataset.shown = tutorialKey(entry); // (another grid or rule: shown again, see renderRuleSection)
@@ -29161,6 +29163,7 @@ function walkTutorial(w) {
   showPage($('ruleTuto'));
   for (const b of document.querySelectorAll('.how-it-works')) {
     b.classList.add('active');
+    b.classList.add('switch');
   }
   $('ruleTuto').dataset.shown = w;
   const variant = VARIANTS[w],
@@ -48142,7 +48145,7 @@ const base10 = { on: false }; // (Base 10 switched on: the number in base 10 ins
 function closeNumber() {
   $('numberPreview').hidden = true;
   base10.on = false; // (opened again: in its own base)
-  for (const b of numberChips()) b.classList.remove('active');
+  for (const b of numberChips()) b.classList.remove('active', 'switch');
   lightBases();
 }
 const toggleNumber = () => {
@@ -48226,7 +48229,7 @@ function showNumber() {
   );
   v.querySelector('.tut-body').scrollTop = 0;
   showPage(v);
-  for (const b of numberChips()) b.classList.add('active');
+  for (const b of numberChips()) b.classList.add('active', 'switch');
   lightBases();
 }
 // The start selector (hexagon sphere): − / + or a number typed, then Enter. Hovering its field

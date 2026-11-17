@@ -33,7 +33,12 @@
     in srgb,
     rgb(240 180 41) 14%,
     var(--panel-background)
-  ); /* a choice picked: the gold on the panel, opaque (the same whatever lies under it: a box over the sky too) */
+  ); /* a choice picked, a switch's hover: the gold on the panel, opaque */
+  --picked-strong-background: color-mix(
+    in srgb,
+    rgb(240 180 41) 32%,
+    var(--panel-background)
+  ); /* (the same whatever lies under it: a box over the sky too) */
   --motif-color: #bc8cff; /* a grid's motif, outlined while its size is hovered (see drawMotif), its words in the size's tooltip */
   --face-color: #e5484d; /* a solid's face round it */
   --sector-color: #58a6ff; /* a face's sector round it (a dodecahedron's pentagon, 5 triangles) */
@@ -59,6 +64,7 @@
   --on-accent-color: #ffffff;
   --box-background: rgba(255, 255, 255, 0.82);
   --picked-background: color-mix(in srgb, rgb(240 180 41) 8%, var(--panel-background));
+  --picked-strong-background: color-mix(in srgb, rgb(240 180 41) 22%, var(--panel-background));
   --motif-color: #8250df;
   --face-color: #c4161c;
   --sector-color: #0969da;
@@ -266,7 +272,7 @@ textarea {
 .field :is(input, textarea).custom:not(#battleStart *, :focus) {
   color: var(--accent-color);
   border-color: var(--accent-color);
-  background-color: var(--picked-background);
+  background: var(--picked-background);
 }
 .rule {
   font-family: var(--mono-font);
@@ -389,7 +395,7 @@ input[type='range'] {
   color: var(--text-color);
 }
 .pill-group button.active {
-  background-color: var(--picked-background);
+  background: var(--picked-background);
   color: var(--accent-color);
   box-shadow: 0 0 0 1px var(--accent-color);
 } /* (picked as a tile is, see .nav-shapes button.active) */
@@ -575,7 +581,7 @@ h3 {
 } /* a formula of its own bold (a card's: plain, its card picked shows it) */
 .formula-field input:not(:focus) {
   border-color: var(--accent-color);
-  background-color: var(--picked-background);
+  background: var(--picked-background);
 } /* a number in use (the Number's, each walker's), always on a picked tile's pale gold, a card's or its own */
 .formula-field input.battle-formula {
   background: color-mix(in srgb, var(--walker-color) 25%, var(--panel-background));
@@ -705,7 +711,7 @@ button.wide.on-list {
   justify-content: flex-start;
 }
 .tabs .tab-menu button:hover:not(.active) {
-  background-color: var(--picked-background);
+  background: var(--picked-background);
 } /* its rows: each tab's picture and name, the active one in yellow, none underlined */
 /* Tabs: text only, the active one in yellow and underlined on the header's hairline; always bold,
    so the active tab keeps its width */
@@ -870,6 +876,12 @@ h4 {
 .tile-group > button.active + button {
   border-left-color: transparent;
 } /* (the line beside the picked one, its own gold: its neighbours' grey none behind its round corners) */
+button.switch:hover:not(:disabled) {
+  background: var(--picked-background);
+} /* a switch (a button that a click changes again) answers the hover: off, in the pale gold of a choice picked; on, deeper (Dawn sky) */
+button.switch.active:hover:not(:disabled) {
+  background: var(--picked-strong-background);
+}
 #yourList {
   display: contents;
 } /* (its sections the pane's, as Life's: see .panel section) */
@@ -1205,7 +1217,7 @@ button.active .bubble.active {
 } /* a fraction, its numerator over its denominator, in the line's height (see cardSymbol in main.js) */
 :is(.mode-list, #yourList:not(.selecting) .gallery-grid) button.active {
   border-color: var(--accent-color);
-  background-color: var(--picked-background);
+  background: var(--picked-background);
 } /* (a Gallery card too: the setup in view, but while selecting: its star only) */
 :is(.mode-list, #yourList:not(.selecting) .gallery-grid) button.active .mode-name,
 :is(.mode-list, #yourList:not(.selecting) .gallery-grid) button.active .mode-icon {
@@ -2281,14 +2293,14 @@ button.active .bubble.active {
 .tile-group > button.active,
 .number-grid button.active,
 button.wide.active,
-.field button.active,
+button.switch.active,
 .head-btn.active,
 .tut-tools button.active,
 .choice-list button.active,
 .tut-shapes figure.active {
   border-color: var(--accent-color);
   color: var(--accent-color);
-  background-color: var(--picked-background);
+  background: var(--picked-background);
 }
 .tut-shapes figure.active figcaption {
   color: var(--accent-color);

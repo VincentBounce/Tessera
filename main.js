@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.222';
+const VERSION = '0.5.223';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -6322,7 +6322,7 @@ function describe(base) {
 // step that closed them; or the tiles coloured by their visits (Heatmap, on cells only).
 const VIEW_3D = ['autoRotate', 'upright', 'perspective', 'light']; // a 3D view's: Default, Free, Upright, Auto-rotate, Perspective, Side light (Space-time's too)
 const DISPLAY_BY_TAB = {
-  '2D walks': ['heatmap', 'fill', 'translucent', 'cells', 'visits', 'digit', 'grid'],
+  '2D walks': ['heatmap', 'fill', 'translucent', 'cells', 'visits', 'digit', 'grid', 'ocean'],
   '3D walks': ['colours', 'digit', 'grid', ...VIEW_3D],
   'Walks on surfaces': [
     'shape',
@@ -6336,9 +6336,9 @@ const DISPLAY_BY_TAB = {
     'ocean',
     'cut',
   ],
-  'Automata on the plane': ['colours', 'digit', 'mono', 'trail', 'grid'], // (Grid: its cells' outlines, see gpuPlane; Trail: Rewind's Blocks in its place)
+  'Automata on the plane': ['colours', 'digit', 'mono', 'trail', 'grid', 'ocean'], // (Grid: its cells' outlines, see gpuPlane; Trail: Rewind's Blocks in its place)
   'Automata on surfaces': ['shape', 'colours', 'digit', 'mono', 'trail', 'grid', ...VIEW_3D, 'glass', 'ocean', 'cut'], // (Glass, Cut: the surfaces' tiles only, see gpuFrame, cutOn)
-  '2D spirals': ['heatmap', 'fill', 'translucent', 'cells', 'visits', 'digit', 'grid'], // the 2D walks' menu, some of it greyed out
+  '2D spirals': ['heatmap', 'fill', 'translucent', 'cells', 'visits', 'digit', 'grid', 'ocean'], // the 2D walks' menu, some of it greyed out
   Elementary: ['colours', 'mono', 'domain', 'entropy', 'grid'], // (its cells never change once made: no Heatmap, no Trail; Domains its own)
   'Explore on the plane': ['grid'],
   'Explore on surfaces': ['shape', 'grid', ...VIEW_3D, 'glass', 'cut'], // (its view's only: its colours its own, see renderExplore)
@@ -6540,8 +6540,7 @@ const VIEW_TILES = [
   ],
   ['light', 'lightRow', () => icon('sideLight'), 'Side light'],
   ['glass', 'glassRow', () => icon('glass'), 'Glass'],
-  ['ocean', 'oceanRow', () => teamBlock(6, false, earthColours(PALETTES.light)), 'Earth'],
-]; // (Earth's: its six colours as a Sextet's, the light page's)
+];
 let viewTiles = null;
 function renderViewTiles() {
   viewTiles ??= VIEW_TILES.map(([id, row, pic, text, title]) =>
@@ -6570,14 +6569,12 @@ function renderViewTiles() {
     : !ways.off.length
       ? 'on'
       : `On by default on ${ways.on.join(', ')}\nOff by default on ${ways.off.join(', ')}`;
-  const first = { perspective, light: defaultMark('light'), glass: defaultMark('glass'), ocean: defaultMark('ocean') },
-    why = { ocean: 'Only up to a Sextet: Earth has six lands (green, ice white, yellow, lime, cyan, ochre).' };
+  const first = { perspective, light: defaultMark('light'), glass: defaultMark('glass') };
   VIEW_TILES.forEach(([id], k) =>
     setTile(viewTiles[k], {
       on: $(id).checked,
       byDefault: first[id],
-      whyNot: ({ w, stacked, lifeTeams, teams }) =>
-        viewWhyNot(id, w, stacked) || (id === 'ocean' && !oceanFits(w, lifeTeams, teams) ? why.ocean : ''),
+      whyNot: ({ w, stacked }) => viewWhyNot(id, w, stacked),
     }),
   ); // (its row's: see updateDisplayMenu, by shows)
   $('viewTiles').hidden = VIEW_TILES.every(([, row]) => $(row).hidden);
@@ -6659,12 +6656,28 @@ function renderHeadTiles() {
         toggle: true,
         click: flip('autoFit'),
       }),
+      tile({
+        pic: teamBlock(6, false, earthColours(PALETTES.light)),
+        text: 'Earth',
+        title: $('oceanRow').title,
+        toggle: true,
+        click: flip('ocean'),
+      }), // (its six colours as a Sextet's, the light page's)
     ];
     for (const b of [soundButton, ...headTiles]) b.classList.add('open-only');
-    $('headTiles').replaceChildren(soundButton, ...headTiles, themeSwitch);
+    $('headTiles').replaceChildren(headTiles[1], soundButton, headTiles[0], themeSwitch);
   }
   renderSoundButton();
   setTile(headTiles[0], { on: $('autoFit').checked, byDefault: defaultMark('autoFit') });
+  setTile(headTiles[1], {
+    on: $('ocean').checked,
+    byDefault: defaultMark('ocean'),
+    whyNot: ({ w, lifeTeams, teams }) =>
+      viewWhyNot('ocean', w) ||
+      (oceanFits(w, lifeTeams, teams)
+        ? ''
+        : 'Only up to a Sextet: Earth has six lands (green, ice white, yellow, lime, cyan, ochre).'),
+  });
   pillRow(
     $('gridLinesRow'),
     'Grid',
@@ -45563,15 +45576,15 @@ function gpuPlane(paint) {
   }
   const bg = getComputedStyle(document.documentElement).getPropertyValue('--page-background') || '#fff';
   const wallShown = !walk.life?.palette; // (Explore: no wall, its cells alone on the view)
-  if (D.keys.planeBase !== `${bg}|${wallShown}`) {
-    const page = packed(bg.trim()),
+  if (D.keys.planeBase !== `${bg}|${wallShown}|${oceanOn()}`) {
+    const page = packed(oceanOn() ? OCEAN : bg.trim()), // (Earth's: its cells none has painted the sea, as a surface's, see blankTile)
       walled = packed(LIFE_WALL);
     device.queue.writeBuffer(
       D.planeBase,
       0,
       Uint32Array.from({ length: F.m }, (_, t) => (t < n ? page : wallShown ? walled : 0)), // (0: clear)
     );
-    D.keys.planeBase = `${bg}|${wallShown}`;
+    D.keys.planeBase = `${bg}|${wallShown}|${oceanOn()}`;
   }
   paint({ put: (col) => device.queue.writeBuffer(D.planeCol, 0, col), buffer: D.planeCol, n: F.m }, F.m);
   const outline = sidesShown(s);

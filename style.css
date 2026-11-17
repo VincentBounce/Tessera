@@ -11,7 +11,7 @@
     transparent
   ); /* a pill group's track: a wash of the text's colour, seen on any box, in either theme */
   --badged-tile-gap: 8px; /* between two tiles that carry a badge: its 7 px past their corner clear of the next (see .badge) */
-  --panel-width: 286px; /* the settings' column (.panel): its tiles 4 a row in a card (see .panel section) */
+  --panel-width: 282px; /* the settings' column (.panel): its tiles 4 a row in a card (see .panel section), its scrollbar 4 px from them */
   --view-left: var(
     --panel-width
   ); /* the view's left edge: the settings' column over the stage, its cards floating on it */
@@ -148,7 +148,7 @@ main {
   scrollbar-gutter: stable; /* keep room for the scrollbar: the column never shifts */
   scrollbar-width: thin;
   scrollbar-color: var(--border-color) transparent;
-  padding: 0 12px 4px 16px;
+  padding: 0 8px 4px 16px;
 } /* over the stage, no background: its cards float on the view, the room between them its own (its wheel scrolls it) */
 .panel::-webkit-scrollbar {
   width: 8px;

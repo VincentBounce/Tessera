@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.285';
+const VERSION = '0.5.286';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -15639,6 +15639,7 @@ function tilingStrip(kind, kind0, size, bottle = false) {
     tiles: laid.map(({ P }) => [...P, ...Array(sides - P.length).fill(P.at(-1))]),
     mids: laid.flatMap(({ x, y }) => [x, y]),
     latticeCells: laid.map(({ latticeCell }) => latticeCell),
+    cellPlaces: laid.map(({ cell }) => cell), // (each tile's plane cell, see cellPlaces)
     // its colours' units: boxes a row high and a lattice cell long, laid along its loop from its start (a Möbius strip's back
     // at x + L, its row W − y: see mobiusMesh), every one whole, its loop a whole count of them; not its lattice cells, those
     // cut by its ends having their tiles past them in others (see colourUnitPlaces)
@@ -15750,6 +15751,7 @@ function kleinTilingSheet(kindK, size) {
       tiles: keep.map((i) => s.tiles[i]),
       mids: keep.flatMap((i) => [s.mids[2 * i], s.mids[2 * i + 1]]),
       latticeCells: keep.map((i) => s.latticeCells[i]),
+      cellPlaces: keep.map((i) => s.cellPlaces[i]),
       colourCells: keep.map((i) => s.colourBox(s.mids[2 * i], s.mids[2 * i + 1])),
       originCell: s.originCell,
     };
@@ -15782,7 +15784,7 @@ function kleinLength(kindK, size, K = ringColours(ringVariant())) {
 function kleinTilingMesh(kindK, size) {
   const key = `${kindK}${size}|${ringColours(ringVariant())}`; // (its length its colours': see kleinLength)
   if (meshCache[key]) return meshCache[key];
-  const { kind, turn, L, W, n, nv, step, by, sides, tiles, mids, latticeCells, colourCells, originCell } =
+  const { kind, turn, L, W, n, nv, step, by, sides, tiles, mids, latticeCells, cellPlaces, colourCells, originCell } =
       kleinTilingSheet(kindK, size),
     Q = STRIP_GRID,
     ids = new Map(),
@@ -15823,6 +15825,7 @@ function kleinTilingMesh(kindK, size) {
     uv: new Float64Array(sheet.flat(2)),
     uvMid: new Float64Array(mids),
     latticeCells,
+    cellPlaces,
     colourCells,
     originCell,
   }));
@@ -16046,7 +16049,9 @@ function tilingTorusMesh(kind, nv, nu, turned = false) {
       if (!cls.has(key)) cls.set(key, cls.size);
       return [i, j, cls.get(key)];
     }),
-    latticeCells = [];
+    latticeCells = [],
+    cellPlaces = [],
+    m = t.polys.length;
   for (let j0 = 0; j0 < nv; j0++)
     for (let i0 = 0; i0 < nu; i0++)
       polys.forEach((P, k) => {
@@ -16057,6 +16062,8 @@ function tilingTorusMesh(kind, nv, nu, turned = false) {
         tiles.push(c.map(([i, j]) => corner(i, j)));
         uv.push(...c.flat());
         latticeCells.push((mod(j0 + j, nv) * nu + mod(i0 + i, nu)) * Math.abs(det) + d);
+        const [x, y] = nat[k]; // (its plane cell: polygon k's, moved by sheet cell (i0, j0), (p, q) and (r, s) lattice cells each)
+        cellPlaces.push([m * (Math.floor(x / m) + i0 * p + j0 * r) + mod(x, m), y + i0 * q + j0 * s]);
       });
   return (meshCache[key] = Object.assign(finishTorus(verts, tiles, sides, nu, nv, uv, mid, true), {
     tiling: kind,
@@ -16064,6 +16071,7 @@ function tilingTorusMesh(kind, nv, nu, turned = false) {
     tube,
     uvMid: new Float64Array(mid),
     latticeCells,
+    cellPlaces,
     originCell: nat[0],
   }));
 }
@@ -22384,7 +22392,10 @@ const surfaceColouring = (g) => ({
   faces: g.cellFaces ?? null,
   kinds: tileKinds(meshCorners(g)),
   apart: cellsApart(g),
-  alternated: g.cellPlaces && ALTERNATIONS[g.cells] && ((t) => ALTERNATIONS[g.cells](...g.cellPlaces[t])),
+  alternated:
+    g.cellPlaces &&
+    alternationOf(g.tiling ?? g.cells) &&
+    ((t) => alternationOf(g.tiling ?? g.cells)(...g.cellPlaces[t])),
 }); // (alternated: a sheet's cell by its plane cell, its grid's alternation, see cellPlaces)
 // two neighbouring cells of a surface parted by a fold or a seam: a solid's across its edge (its faces), a sheet's (a
 // torus's, a Möbius strip's, a Klein bottle's) across its seam (their middles on the sheet more than half its length or
@@ -22392,10 +22403,13 @@ const surfaceColouring = (g) => ({
 function cellsApart(g) {
   if (g.cellFaces) return (t, u) => g.cellFaces[t] !== g.cellFaces[u];
   if (!g.torus) return null;
-  const P = g.cellPlaces;
+  const P = g.cellPlaces,
+    m = gridCells(g.tiling ?? g.cells);
   if (P)
     return (t, u) =>
-      (g.mobius && t < g.front !== u < g.front) || Math.abs(P[t][0] - P[u][0]) > 3 || Math.abs(P[t][1] - P[u][1]) > 3; // (a sheet that knows its plane cells: neighbours there never more than 3 apart, across its seam its whole length)
+      (g.mobius && t < g.front !== u < g.front) ||
+      Math.abs(Math.floor(P[t][0] / m) - Math.floor(P[u][0] / m)) > 3 ||
+      Math.abs(P[t][1] - P[u][1]) > 3; // (a sheet that knows its plane cells: their lattice cells, neighbours' never more than 3 apart there, across its seam its whole length)
   const at = Array.from({ length: g.n }, (_, t) => sheetMiddle(g, t));
   return (t, u) =>
     (g.mobius && t < g.front !== u < g.front) ||
@@ -42251,6 +42265,28 @@ const ALTERNATIONS = {
   cairo: (x, y) => mod((x >> 1) + 2 * y + 2 * (x & 1) + 2 * (((x >> 1) + y) & 1), 3),
   kite: (x) => [0, 2, 1, 1, 0, 2][mod(x, 6)], // (its rank in its lattice cell of 6, found by trying them all) // (pentagon o of square (i, j): i + 2j + 2o + 2·(i + j's parity), found by trying them all)
 };
+// a grid's alternation: a base grid's (ALTERNATIONS), else a tiling's lattice cell coloured on the plane and cloned, its
+// cell (x, y)'s colour by its rank x mod m (see latticeCellColours); null where its cell cannot be cloned
+const alternationMemo = {};
+function alternationOf(kind) {
+  if (ALTERNATIONS[kind] || !TILINGS[kind]) return ALTERNATIONS[kind] ?? null;
+  if (!(kind in alternationMemo)) {
+    const W = 24,
+      { n, xy } = planeGrid(kind, W),
+      m = gridCells(kind),
+      nbr = planeNeighbours(kind, W, planeTorus(kind)),
+      side = sideOf(nbr),
+      bySide = (t, put) => {
+        for (let q = nbr.start[t]; q < nbr.start[t + 1]; q++) if (side[q]) put(nbr.list[q]);
+      },
+      colour = latticeCellColours({ xy, m }, n, bySide, 3) ?? latticeCellColours({ xy, m }, n, bySide, 4),
+      rank =
+        colour &&
+        Array.from({ length: m }, (_, k) => colour[[...Array(n).keys()].find((t) => mod(xy(t)[0], m) === k)] - 1);
+    alternationMemo[kind] = rank && ((x) => rank[mod(x, m)]);
+  }
+  return alternationMemo[kind];
+}
 // Tiles on the infinite plane (the 2D walks, ants and spirals): its grid's cells, the plane's (planeCorners: their one
 // definition), laid as the walk's lie (a shift: squares along the lines, triangles and pointy hexagons by y0; a quarter turn:
 // the flat hexagons, the upright triangles), each its colour by its plane cell (x, y), never as a neighbour's (squares and

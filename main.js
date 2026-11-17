@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.213';
+const VERSION = '0.5.214';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -7861,6 +7861,9 @@ const ICONS = (() => {
     kitesDarts: svgPath(
       'M12.0 12.0L18.2 3.5L12.0 1.5L5.8 3.5ZM12.0 12.0L5.8 3.5L2.0 8.8L2.0 15.2ZM12.0 12.0L2.0 15.2L5.8 20.5L12.0 22.5ZM12.0 12.0L12.0 22.5L18.2 20.5L22.0 15.2ZM12.0 12.0L22.0 15.2L22.0 8.8L18.2 3.5Z',
     ), // Penrose's sun: the 5 kites at its middle
+    tubingen: svgPath(
+      'M12.0 12.0L15.2 2.0L8.8 2.0ZM12.0 12.0L8.8 2.0L3.5 5.8ZM12.0 12.0L3.5 5.8L1.5 12.0ZM12.0 12.0L1.5 12.0L3.5 18.2ZM12.0 12.0L3.5 18.2L8.8 22.0ZM12.0 12.0L8.8 22.0L15.2 22.0ZM12.0 12.0L15.2 22.0L20.5 18.2ZM12.0 12.0L20.5 18.2L22.5 12.0ZM12.0 12.0L22.5 12.0L20.5 5.8ZM12.0 12.0L20.5 5.8L15.2 2.0Z',
+    ), // the Tübingen wheel: its 10 acute triangles
     hat: svgPath(
       'M7.2 13.4L2.5 16.1L4.1 18.9L10.4 18.9L12 16.1L16.8 18.9L21.5 16.1L19.9 13.4L16.8 13.4L16.8 7.9L12 5.1L10.4 7.9L7.2 7.9Z',
     ), // the hat monotile
@@ -9371,6 +9374,13 @@ const LIFE_GRIDS = [
     { lattice: 'kitesDarts', plane: 'kitesDarts', where: "a patch of Penrose's kites and darts (they never repeat)" },
   ],
   [
+    'lifeTubingen',
+    '2D',
+    'Tübingen',
+    'tubingen',
+    { lattice: 'tubingen', plane: 'tubingen', where: 'a patch of Tübingen triangles (they never repeat)' },
+  ],
+  [
     'lifePinwheel',
     '2D',
     'Pinwheel',
@@ -10212,6 +10222,7 @@ const SHAPE_ICONS = {
   Hats: 'hat',
   Penrose: 'penrose',
   'Kites & darts': 'kitesDarts',
+  Tübingen: 'tubingen',
   Pinwheel: 'pinwheel',
   Spectre: 'spectre',
   Ammann: 'ammann',
@@ -14718,7 +14729,8 @@ for (const [life, n] of Object.entries(NAV))
     ['Kites', 1, 'Triangles'],
     ['Penrose', 1, 'Kites'],
     ['Kites & darts', 1, 'Penrose'],
-    ['Ammann', 1, 'Kites & darts'],
+    ['Tübingen', 1, 'Kites & darts'],
+    ['Ammann', 1, 'Tübingen'],
     ['Rhombs 12', 1, 'Ammann'],
     ['Rhombs 14', 1, 'Rhombs 12'],
     ['Flower 3', 1, 'Rhombs 14'],
@@ -23832,7 +23844,8 @@ const HAT = (() => {
  * by a tiling's own rule, each time φ smaller (about φ² as many), two of a colour sharing an edge one tile: a tiling that never
  * repeats, with five-fold symmetry round its middle, and its mirror. Its tiles round a disc of W² (their corners p, their
  * middle m; their mean area 1), the same round the middle at every W; laid in the disc as the hats' (see discPatch), and the
- * rhombi on a sphere (see penroseSphereGraph). Each rule: its cut, the edge two halves share, the tile's side (mean area 1) */
+ * rhombi on a sphere (see penroseSphereGraph). Each rule: its cut, the edge two halves share (none: each triangle a tile), the
+ * tile's side (mean area 1) */
 const PENROSE_RULES = {
   // the rhombi (P3): a thin triangle in 2, a thick one in 3, two sharing their base B C a rhombus (thick: 72°, thin: 36°)
   rhombi: {
@@ -23876,6 +23889,29 @@ const PENROSE_RULES = {
     shared: (A, B) => [A, B],
     tile: ([A, B, C], [, , other]) => [A, C, B, other],
   },
+  // the Tübingen triangles (Baake, Kramer, Schlottmann and Zeidler, 1990): Robinson's triangles as tiles, each its hand (its
+  // corners' turn): an obtuse one (A 108°) in an obtuse and an acute one, an acute one (A 36°) in two acute and an obtuse one,
+  // as the Tilings Encyclopedia draws them
+  tubingen: {
+    side: 2,
+    cut: (c, A, B, C, lerp, phi) => {
+      if (c === 1) {
+        const P = lerp(B, C, 1 / phi ** 2);
+        return [
+          [1, P, A, B],
+          [0, C, A, P],
+        ];
+      }
+      const X = lerp(A, B, 1 / phi),
+        Y = lerp(A, C, 1 / phi);
+      return [
+        [0, A, Y, X],
+        [1, X, Y, B],
+        [0, B, C, Y],
+      ];
+    },
+    shared: null,
+  },
 };
 const PENROSE_SIDE = PENROSE_RULES.rhombi.side; // (the sphere's rhombi's)
 const penroseTiles = (() => {
@@ -23884,7 +23920,7 @@ const penroseTiles = (() => {
   return (W, cuts = null, rule = PENROSE_RULES.rhombi) => {
     // (cuts: so many, else the fewest round a disc of W², one more than a multiple of 4)
     let n = cuts ?? 0;
-    while (cuts === null && 10 * phi ** (2 * n) < 14 * W * W) n++; // (about 6 W² tiles, 2 triangles each, their mean area 1)
+    while (cuts === null && 10 * phi ** (2 * n) < 14 * W * W) n++; // (about 6 W² tiles, 2 triangles each or fewer, mean area 1)
     while (n % 4 !== 1) n++; // (n one more than a multiple of 4 at every size: the wheel's middle comes back every 4 cuts,
     // its patterns found there at 43, n 9, see CENTRED; other n, another middle, none of them laid at 21 or 85 before)
     const R = rule.side * phi ** n; // (the wheel's: its tiles' sides rule.side)
@@ -23900,6 +23936,12 @@ const penroseTiles = (() => {
         W / Math.sqrt(Math.PI) + 6,
         1,
       ); // (round the disc of W² and its walls' room only)
+    if (!rule.shared)
+      return tris.map(([c, A, B, C]) => ({
+        p: [A, B, C].flat(),
+        m: [(A[0] + B[0] + C[0]) / 3, (A[1] + B[1] + C[1]) / 3],
+        kind: c,
+      }));
     const half = [new Map(), new Map()],
       items = []; // (a colour's halves by their shared edge's middle: a tile's, its own)
     for (const [c, A, B, C] of tris) {
@@ -23918,6 +23960,7 @@ const penroseTiles = (() => {
 })();
 const PENROSE = discMemo((W) => discPatch(penroseTiles(W), W, [0, 0])); // (round the wheel's middle: five-fold)
 const KITES_DARTS = discMemo((W) => discPatch(penroseTiles(W, null, PENROSE_RULES.kitesDarts), W, [0, 0])); // (the same)
+const TUBINGEN = discMemo((W) => discPatch(penroseTiles(W, null, PENROSE_RULES.tubingen), W, [0, 0])); // (the same)
 /* The Spectre (Smith, Myers, Kaplan and Goodman-Strauss, 2023): one tile, 14 sides all 1 long, that tiles the plane
  * only without ever repeating, and never turned over (its mirror image not needed). Built by substitution, as Kaplan's
  * code (in AaronWebster/spectre-app, Apache 2.0): nine kinds of tiles (Gamma: two spectres, the "mystic"), each a
@@ -24565,6 +24608,7 @@ const APERIODIC = {
   hat: HAT,
   penrose: PENROSE,
   kitesDarts: KITES_DARTS,
+  tubingen: TUBINGEN,
   spectre: SPECTRE,
   ammann: AMMANN,
   rhombs12: RHOMBS12,
@@ -25453,6 +25497,7 @@ const PLANE_CELLS = {
   hat: 'hats',
   penrose: 'rhombi',
   kitesDarts: 'kites and darts',
+  tubingen: 'triangles',
   pinwheel: 'triangles',
   spectre: 'spectres',
   ammann: 'squares and rhombi',
@@ -25534,7 +25579,7 @@ function startLead(number, seeded) {
     soup = `${plane.density} % alive (seed ${plane.seed})`;
   const sym = kind ? SYMMETRIES[symmetryOf(kind)][2] : '',
     where = kind
-      ? `a ${side} × ${side} grid of ${PLANE_CELLS[kind]}${{ tri: ' (two a rhombus)', cairo: ' (two a square)', kite: ' (six a rhombus)', hat: ' (an aperiodic tiling: one tile that never repeats)', penrose: ' (an aperiodic tiling)', kitesDarts: ' (an aperiodic tiling)', pinwheel: ' (an aperiodic tiling: one right triangle, turned every way)', ammann: ' (an aperiodic tiling, eightfold)', rhombs12: ' (an aperiodic tiling, twelvefold)', rhombs14: ' (an aperiodic tiling, fourteenfold)', flower: " (Hirschhorn's flower: one pentagon, six-fold, never repeating)", flower5: ' (a rosette: one pentagon, five-fold, never repeating)', flower7: ' (a rosette: one pentagon, seven-fold, never repeating)', ...conedOf((k, n, F) => [k, ` (a ${F.how} rosette: ${F.one}, ${n}-fold, never repeating)`]), flower3: ' (a rosette: one pentagon, three-fold, never repeating)', flower4: ' (a rosette: one pentagon, four-fold, never repeating)', flower8: ' (a rosette: one pentagon, eight-fold, never repeating)', flower9: ' (a rosette: one pentagon, nine-fold, never repeating)', flower10: ' (a rosette: one pentagon, ten-fold, never repeating)', ring7: ' (a ring: one pentagon round a heptagonal hole, seven-fold, never repeating)', ring8: ' (a ring: one pentagon round an octagonal hole, eight-fold, never repeating)', ring9: ' (a ring: one pentagon round a nonagonal hole, nine-fold, never repeating)', ring10: ' (a ring: one pentagon round a decagonal hole, ten-fold, never repeating)', ring12: ' (a ring: one pentagon round a dodecagonal hole, twelve-fold, never repeating)', spectre: ' (an aperiodic tiling: one tile that never repeats, never turned over)' }[kind] ?? ''} ${planeTorus(kind) ? 'wrapping around (a torus)' : planeShape(kind, walk.plane.W) ? 'walled in a hexagon' : 'with dead edges'}`
+      ? `a ${side} × ${side} grid of ${PLANE_CELLS[kind]}${{ tri: ' (two a rhombus)', cairo: ' (two a square)', kite: ' (six a rhombus)', hat: ' (an aperiodic tiling: one tile that never repeats)', penrose: ' (an aperiodic tiling)', kitesDarts: ' (an aperiodic tiling)', tubingen: ' (an aperiodic tiling)', pinwheel: ' (an aperiodic tiling: one right triangle, turned every way)', ammann: ' (an aperiodic tiling, eightfold)', rhombs12: ' (an aperiodic tiling, twelvefold)', rhombs14: ' (an aperiodic tiling, fourteenfold)', flower: " (Hirschhorn's flower: one pentagon, six-fold, never repeating)", flower5: ' (a rosette: one pentagon, five-fold, never repeating)', flower7: ' (a rosette: one pentagon, seven-fold, never repeating)', ...conedOf((k, n, F) => [k, ` (a ${F.how} rosette: ${F.one}, ${n}-fold, never repeating)`]), flower3: ' (a rosette: one pentagon, three-fold, never repeating)', flower4: ' (a rosette: one pentagon, four-fold, never repeating)', flower8: ' (a rosette: one pentagon, eight-fold, never repeating)', flower9: ' (a rosette: one pentagon, nine-fold, never repeating)', flower10: ' (a rosette: one pentagon, ten-fold, never repeating)', ring7: ' (a ring: one pentagon round a heptagonal hole, seven-fold, never repeating)', ring8: ' (a ring: one pentagon round an octagonal hole, eight-fold, never repeating)', ring9: ' (a ring: one pentagon round a nonagonal hole, nine-fold, never repeating)', ring10: ' (a ring: one pentagon round a decagonal hole, ten-fold, never repeating)', ring12: ' (a ring: one pentagon round a dodecagonal hole, twelve-fold, never repeating)', spectre: ' (an aperiodic tiling: one tile that never repeats, never turned over)' }[kind] ?? ''} ${planeTorus(kind) ? 'wrapping around (a torus)' : planeShape(kind, walk.plane.W) ? 'walled in a hexagon' : 'with dead edges'}`
       : VARIANTS[walk.variant].where; // (the run shown's: the tab may already show the next)
   const found = { hunt: 'A start found by the hunt', saved: 'A saved start', battle: 'A battle found by the hunt' }[
     lifeStart
@@ -26790,6 +26835,7 @@ const PLANE_MARKS = {
   hat: '🎩',
   penrose: '✧',
   kitesDarts: '⬗',
+  tubingen: '◭',
   pinwheel: '◺',
   spectre: '✺',
   ammann: '✵',
@@ -26991,10 +27037,12 @@ const TEAM_NAMES = {
 // with walls (K divides n; or K = 2n, a slice and its mirror, if it mirrors: hexagons 1, 2, 3, 6, 12; squares 1, 2, 4, 8; a hat
 // 1), on a torus any (its blocks); on a
 // solid, its fair spots (see colouring); on a torus, blocks that divide it; on a Möbius strip, any
-const MIRRORED_DISCS = ['ammann', 'rhombs12', 'rhombs14', 'penrose', 'kitesDarts']; // the discs that mirror (the rosettes turn as a spiral): their parts a turn's, from half of one (its corner)
+const MIRRORED_DISCS = ['ammann', 'rhombs12', 'rhombs14', 'penrose', 'kitesDarts', 'tubingen']; // the discs that mirror (the rosettes turn as a spiral): their parts a turn's, from half of one (its corner)
 const figureTurns = (kind) =>
   ROSETTES[kind]?.[0] ??
-  { ammann: 8, rhombs12: 12, rhombs14: 14, penrose: 5, kitesDarts: 5, hat: 1, spectre: 1, pinwheel: 1 }[kind] ??
+  { ammann: 8, rhombs12: 12, rhombs14: 14, penrose: 5, kitesDarts: 5, tubingen: 5, hat: 1, spectre: 1, pinwheel: 1 }[
+    kind
+  ] ??
   gridTurns(baseOf(kind));
 // (twice a fair count: each part halved, 2 4 giving 8, 5 10, 3 6 12; 3 without 6, thrice: 9, each third in 3: on the plane and a
 // solid; never on a grid that never repeats, a disc: no symmetry halves its parts, a rosette's a spiral's (Flower 6's 12 colours 63 to

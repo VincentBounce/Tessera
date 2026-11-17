@@ -3,7 +3,8 @@
   --tile-height: 55px; /* a tile's height, every tile alike */
   --button-height: 34px; /* a button of one line (a stepper's − +, a field) or of an icon alone (see .icon-tabs) */
   --tile-gap: 4px; /* between two tiles */
-  --block-gap: 10px; /* between two blocks one under the other: grids of tiles, rows, fields, a section and the next */
+  --block-gap: 10px; /* between two blocks one under the other: grids of tiles, rows, fields */
+  --section-gap: 10px; /* round a section's line, over it and under it (see .form-section) */
   --track-background: color-mix(
     in srgb,
     var(--text-color) 8%,
@@ -1540,6 +1541,9 @@ button.active .bubble.active {
   }
 }
 .display-menu {
+  --block-gap: var(
+    --tile-gap
+  ); /* (its blocks as close as its tiles: rows, pills; its sections' lines aired as everywhere) */
   top: var(--view-gap);
   right: var(--view-gap);
   --display-open-width: calc(4 * var(--tile-width) + 3 * var(--tile-gap) + 2 * 9px);
@@ -1599,10 +1603,10 @@ button.active .bubble.active {
   margin: var(--block-gap) 0 calc(-1 * var(--block-gap));
 } /* below the themes; each row's gap under the last one taken back, so the bottom matches the top */
 .form-section {
-  margin-top: var(--block-gap);
-  padding-top: var(--block-gap);
+  margin-top: var(--section-gap);
+  padding-top: var(--section-gap);
   border-top: 1px solid var(--border-color);
-} /* shape and perspective */
+} /* shape and perspective: its line, the section-gap round it */
 .rule-tuto .form-section {
   margin-top: 18px;
   padding-top: 18px;

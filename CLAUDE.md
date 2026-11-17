@@ -182,6 +182,11 @@ While the checks run unattended (a night, a meal), also audit what they cannot s
 - **Every night, click everything, as a brute**: every visible control not greyed, on every mode, Display's switches and
   looks included (Blocks, Glass, Cut, Ocean, Perspective…), in both themes, then step, seek and click again: no console
   error, nothing drawn empty. The fuzz picks menus only: Display › Blocks threw from v0.4.21 to v0.4.503 unseen.
+- **Every night, the doubles Claude brought in**: Claude's context is too short to remember the routines a year of work
+  made, so it keeps writing a second one beside them. Read the day's commits (`git log --since=yesterday -p`) and for each
+  function, table, test or count they added, grep main.js for its notion (its words, its numbers) and read what answers
+  it already; two found: keep one, its callers moved to it, the other removed, in its own commit (v0.5.333:
+  `faceAdjective` measured a face's diagonals where the solid's declaration knew it).
 - **Every night, dead code**: `python3 tools/deadcode.py` lists what the app declares and nothing alive reads (main.js's
   names, style.css's classes, ids and variables, and a key written twice in one object, as esbuild warns: ICONS' turtle,
   v0.4.840), each at its file:line, a helper's helper too in one run; each removed at

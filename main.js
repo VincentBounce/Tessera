@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.297';
+const VERSION = '0.5.298';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -6409,7 +6409,7 @@ const DISPLAY_DEFAULTS = {
     (variant, w) => perspectiveFor(w, defaultOf('shape', w), spaceTime && spaceTimeApplies(w)),
   ], // (by its shape, see SHAPE_DEFAULTS)
   light: ['light', 'open', true],
-  glint: ['glintM', 'open', 0.5], // (halfway: its own colour and white added, see light)
+  glint: ['glintM', ['open', 'tab'], (variant, w) => (NAV[w][0] === 'Walk' && NAV[w][1] === '3D' ? 1 : 0.5)], // (halfway: its own colour and white added, see light; a lattice's walk white, its bars' glint bright)
   glass: ['glass', 'open', false],
   grid: [
     'gridLines',
@@ -48759,6 +48759,7 @@ let displayTab = null;
 const modeTabOf = () => `${NAV[tabVariant()]?.[0]}|${variantGroup(tabVariant())}`; // (the menu's tab, Life or Elementary, and its space: the select's group holds several tabs)
 function displayDefaults() {
   applyDefaults('tab');
+  showSliderAt($('glintM')); // (its ends' names by its place, see showSliderAt)
   oceanPicked = false;
   displayTab = modeTabOf();
 }

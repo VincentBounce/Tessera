@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.263';
+const VERSION = '0.5.264';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -6907,14 +6907,11 @@ const setTile = (
 // picture on the left, its name over its words (base: a walk's base on its right); a tile all the same (see tile, setTile:
 // on, can); its words as text (a setup's name typed), and its tooltip (in full: the row may cut them short); how: a rule's,
 // how it works, a click on its picture
-// an element highlighted a moment, once (the length asked's stepper; the buttons a greyed one waits for, see enablers): a ring
-// inside it, shrinking to its border (never cut by a joined group's round frame), an animation of its own played once (a
-// class would play it again each time the element shows again: a box closed and opened)
+// an element highlighted a moment, once (the length asked's stepper; the buttons a greyed one waits for, see enablers): filled
+// in gold, fading to its own (never cut by a joined group's round frame), an animation of its own played once (a class would
+// play it again each time the element shows again: a box closed and opened)
 function highlight(el) {
-  el.animate(
-    [{ boxShadow: `inset 0 0 0 10px ${cssColour('--accent-color')}` }, { boxShadow: 'inset 0 0 0 0 transparent' }],
-    { duration: 1500, easing: 'ease-out' },
-  );
+  el.animate([{ backgroundColor: cssColour('--accent-color') }, {}], { duration: 1500, easing: 'ease-out' });
 }
 // a greyed button that knows what would allow it (its enablers: the nearest buttons of the menu taking it there, see
 // setTile's whyNot): a click on it, which a disabled button never gets (its pointer's up it does), highlights them

@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.233';
+const VERSION = '0.5.234';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -6555,7 +6555,7 @@ const VIEW_TILES = [
   ],
   ['light', 'lightRow', () => icon('sideLight'), 'Side light'],
   ['glass', 'glassRow', () => icon('glass'), 'Glass'],
-  ['tiles', 'tilesRow', () => teamBlock(4, false, explorePalette()), 'Tiles'], // (Explore's palette, its first four)
+  ['tiles', 'tilesRow', () => teamBlock(4, false, EXPLORE_PALETTES[0][1]), 'Tiles'], // (Explore's first palette, its first four: a picture that never changes)
 ];
 let viewTiles = null;
 function renderViewTiles() {

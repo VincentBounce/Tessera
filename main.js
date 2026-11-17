@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.318';
+const VERSION = '0.5.319';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -46105,9 +46105,9 @@ function drawActivity() {
     series = [[columns(n, (i) => traced(L, first + i)?.alive ?? 0), accent]];
   } else {
     if (!walk.n || !walk.wx) return;
-    const { wx, wy, wz } = walk;
+    const { wx } = walk;
     if (curveOf?.wx !== wx || curveOf.W !== W || curveOf.n !== n) {
-      curveOf = { wx, W, n, c: columns(n, (i) => Math.hypot(wx[i] - wx[0], wy[i] - wy[0], wz ? wz[i] - wz[0] : 0)) };
+      curveOf = { wx, W, n, c: columns(n, walkFromStart) };
     }
     series = [[curveOf.c, rainbow()]]; // (a walk's: in its rainbow, from its first step to its last, as its path)
   }
@@ -46347,6 +46347,12 @@ function firstReaching(M, v) {
   }
   return lo;
 }
+// how far a walk's step i is from its start, in a straight line (as its farthest, maxDist: on a surface, its start off
+// its centre)
+const walkFromStart = (i) => {
+  const { wx, wy, wz } = walk;
+  return Math.hypot(wx[i] - wx[0], wy[i] - wy[0], wz ? wz[i] - wz[0] : 0);
+};
 // A walk's farthest from its start over all its steps (the whole walk, worked out), and the first step there (its curve's
 // peak; its distances so far only grow)
 function walkPeak() {
@@ -46361,7 +46367,7 @@ function renderWalkGauges() {
   const x = walk.wx[stepShown],
     y = walk.is3d ? walk.wy[stepShown] : -walk.wy[stepShown],
     z = walk.is3d ? walk.wz[stepShown] : 0,
-    d = Math.hypot(x, y, z);
+    d = walkFromStart(stepShown);
   if (walk.battle) {
     // a battle: its walkers ranked as Life's colours are (paintRanking): each its body's length, the Land ones their land; ✝ dead
     const { player: D, names, deaths } = walk.battle; // (deaths: as played to its end, Dead at known at every step, see battleOf)

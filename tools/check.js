@@ -115,7 +115,7 @@ function checkMeshes(fail) {
   for (const kind of MOBIUS_KINDS) {
     const g = SURFACES[kind].mesh(6),
       torus = ref[torusOfStrip(kind)],
-      far = g.tiling ? 1.5 * Math.max(...TILINGS[g.tiling].basis.map((v) => Math.hypot(...v))) : 2;
+      far = g.tiling ? 1.5 * Math.max(...gridMotif(g.tiling).basis.map((v) => Math.hypot(...v))) : 2;
     const y = (t) => sheetMiddle(g, t)[1]; // (its middle across the strip)
     const inside = neighbourCounts(g, (t) => t < g.front && y(t) > far && y(t) < g.W - far);
     checked++;
@@ -1569,7 +1569,7 @@ async function checkSheets(fail) {
   for (const name of foldedIn('torus')) {
     const S = SURFACES[name],
       g = S.mesh(sizeOne(S)),
-      m = TILINGS[g.tiling].polys.length;
+      m = gridMotif(g.tiling).polys.length;
     const bricks = Map.groupBy([...Array(g.n).keys()], (t) => g.latticeCells[t]),
       odd = [...bricks.values()].filter((ts) => ts.length !== m);
     if (odd.length) fail(`${name}: ${odd.length} bricks not one lattice cell (${m} tiles): ${odd[0].length}`);

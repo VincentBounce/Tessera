@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.323';
+const VERSION = '0.5.324';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -46276,56 +46276,38 @@ const paintTimings = () => {
       return `<tr><td>${stage}</td><td class="number">${typeof ms === 'number' ? (ms < 1000 ? `${ms.toFixed(1)} ms` : `${(ms / 1000).toFixed(2)} s`) : ms}</td></tr>`;
     }).join('');
 };
-// the stats' gauges: a row each, its name, its bar (share: none, null), its figures now, its run's peak (its figures and
-// when); a row of words, [name, words]: across the table, from the bar's place
+// the stats' gauges: a row each, its name, its bar (its share), its figures now, its run's peak (its figures and when);
+// a row with no bar (share null): its words across the table, from the bar's place
 function paintGauges(rows) {
   const box = $('gauges'),
-    cells = (row) =>
-      row.length === 2
-        ? ['rank-wide']
-        : [
-            ...(row[2] === null ? [] : ['rank-bar']),
-            row[2] === null ? 'rank-num no-bar' : 'rank-num',
-            'rank-peak',
-            'rank-peak-gen',
-          ],
-    key = rows.map((row) => `${row[0]}|${cells(row)}`).join();
+    cells = (share) => (share === null ? ['gauge-words'] : ['gauge-bar', 'gauge-now', 'gauge-peak', 'gauge-peak-gen']),
+    key = rows.map(([name, , share]) => `${name}|${cells(share)}`).join();
   if (box.dataset.key !== key) {
     box.dataset.key = key;
     box.innerHTML = rows
       .map(
-        (row) =>
-          `<div class="gauge-row"><span>${row[0]}</span>${cells(row)
-            .map((c) => (c === 'rank-bar' ? '<span class="rank-bar"><i></i></span>' : `<span class="${c}"></span>`))
+        ([name, , share]) =>
+          `<div class="gauge-row"><span>${name}</span>${cells(share)
+            .map((c) => `<span class="${c}">${c === 'gauge-bar' ? '<i></i>' : ''}</span>`)
             .join('')}</div>`,
       )
       .join('');
   }
-  rows.forEach((row, i) => {
-    const [, colour = null, share = null, text, peak] = row.length === 2 ? [row[0], null, null, row[1]] : row,
-      [label, bar, num, best, when] = [
-        'span',
-        '.rank-bar',
-        '.rank-num, .rank-wide',
-        '.rank-peak',
-        '.rank-peak-gen',
-      ].map((q) => box.children[i].querySelector(q)); // (a row with no bar: its figures in its room; a row of words: no peak)
-    if (bar) {
+  rows.forEach(([, colour, share, text, peak], i) => {
+    const row = box.children[i],
+      bar = row.querySelector('.gauge-bar');
+    if (bar)
       Object.assign(bar.firstChild.style, {
         width: `${Math.min(100, 100 * (share || 0))}%`,
         background: colour ?? 'var(--muted-text-color)',
       }); // (no colour of its own: the grey of its name and figures)
-    }
-    setLinks(num, text);
-    for (const [cell, words] of [
-      [best, peak?.[0]],
-      [when, peak?.[1]],
-    ])
-      if (cell) {
-        setLinks(cell, words ?? '');
-        cell.style.color = colour ?? '';
-      }
-    label.style.color = num.style.color = colour ?? ''; // (its name in its figures' colour)
+    const words = [text, ...(peak ?? ['', ''])];
+    [...row.children]
+      .filter((c) => c !== bar)
+      .forEach((cell, k) => {
+        if (k) setLinks(cell, words[k - 1]);
+        cell.style.color = colour ?? ''; // (its name and figures in its colour, else grey)
+      });
   });
 }
 // the first step of a walk's counts that only grow (M: one a step) with v at least: halved to it
@@ -46413,7 +46395,7 @@ function renderWalkGauges() {
         ? `<span title="${formatNumber(v)} of ${formatNumber(walk.nodes)} visited">${gaugePercent(v / walk.nodes)}</span>`
         : count(v);
   paintGauges([
-    ['Position', `(${[x, y, ...(walk.is3d ? [z] : [])].map(place).join(', ')})`],
+    ['Position', null, null, `(${[x, y, ...(walk.is3d ? [z] : [])].map(place).join(', ')})`],
     ['Distance', gold, d / P.far, `<b>${far(d)}</b>`, [far(P.far), genLink(P.step)]],
     [
       walk.vert ? 'Corners visited' : 'Cells visited',

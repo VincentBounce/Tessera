@@ -1705,37 +1705,24 @@ button.active .bubble.active {
   grid-template-columns: minmax(64px, max-content) minmax(0, 1fr) max-content max-content max-content;
   grid-auto-rows: 20px;
   align-items: center;
-  column-gap: 6px;
+  column-gap: 8px;
+  margin: 0 0 8px;
   font-size: var(--text-size);
-} /* one colour: fixed rows, one set of columns (a figure as wide as it needs, on one line; the bars the room left) */
+} /* one colour, a walk: fixed rows, one set of columns (a figure as wide as it needs, on one line; the bars the room left) */
 .gauges .gauge-row {
   display: contents;
 }
-.gauges .rank-num,
-.gauges .rank-peak,
-.gauges .rank-peak-gen {
-  white-space: nowrap;
-}
-.gauges .rank-num,
-.gauges .rank-peak {
-  text-align: right;
-}
-.gauges .rank-num.no-bar {
-  grid-column: span 2;
-} /* figures with no bar (a growth): in their bar's room too */
-.gauges .rank-wide {
-  grid-column: 2 / -1;
-  white-space: nowrap;
-} /* a row of words (a place): across the table */ /* figures to the right, a generation to the left: none moving as they change */
-.gauges .rank-peak {
-  padding-left: 8px;
-} /* its run's peak, apart from its figures now */
 .gauges .gauge-row > span {
   color: var(--muted-text-color);
-} /* a row with no colour of its own: its name and figures alike in grey */
-.gauges .gauge-row > span:first-child {
   white-space: nowrap;
-}
+} /* a row with no colour of its own: its name and figures in grey */
+.gauges .gauge-now,
+.gauges .gauge-peak {
+  text-align: right;
+} /* figures to the right, a generation to the left: none moving as they change */
+.gauges .gauge-words {
+  grid-column: 2 / -1;
+} /* a row with no bar (a place, a growth): its words across the table */
 .ranking .rank-cell {
   display: none;
   white-space: nowrap;
@@ -1767,13 +1754,15 @@ button.active .bubble.active {
   height: 12px;
   border-radius: 3px;
 }
-.ranking .rank-bar {
+.ranking .rank-bar,
+.gauges .gauge-bar {
   height: 6px;
   border-radius: 3px;
   background: var(--border-color);
   overflow: hidden;
 }
-.ranking .rank-bar i {
+.ranking .rank-bar i,
+.gauges .gauge-bar i {
   display: block;
   height: 100%;
   border-radius: 3px;

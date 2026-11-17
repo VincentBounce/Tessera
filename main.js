@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.301';
+const VERSION = '0.5.302';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -4017,27 +4017,28 @@ const tilingWorld = (kind, [u, v]) => {
 // a grid's lattice: its two sides, and its cell (0, 0)'s place, in world units (a cell's corners in its units, see
 // latticeCorners): a tiling's; the squares', each its middle on a whole point; Cairo's squares, the start's pentagon's middle at
 // the origin (see CAIRO_0); the triangles', the hexagons' and the kites' (see latticeAt)
-const latticesMemo = remember('latticesMemo', {});
+const latticesMemo = remember('latticesMemo', {}); // (the base grids' only: a tiling's read from it, RECTS' made after)
 const latticeOf = (kind) =>
-  (latticesMemo[kind] ??= tilingOf(kind)
+  tilingOf(kind)
     ? { basis: tilingOf(kind).basis, origin: [0, 0] }
-    : kind === 'square'
-      ? {
-          basis: [
-            [1, 0],
-            [0, 1],
-          ],
-          origin: [-0.5, -0.5],
-        }
-      : kind === 'cairo'
-        ? {
-            basis: [
-              [CAIRO, 0],
-              [0, CAIRO],
-            ],
-            origin: [-CAIRO_0[0] * CAIRO, -CAIRO_0[1] * CAIRO],
-          }
-        : { basis: [[1, 0], latticeAt(0, 1)], origin: [0, 0] });
+    : (latticesMemo[kind] ??=
+        kind === 'square'
+          ? {
+              basis: [
+                [1, 0],
+                [0, 1],
+              ],
+              origin: [-0.5, -0.5],
+            }
+          : kind === 'cairo'
+            ? {
+                basis: [
+                  [CAIRO, 0],
+                  [0, CAIRO],
+                ],
+                origin: [-CAIRO_0[0] * CAIRO, -CAIRO_0[1] * CAIRO],
+              }
+            : { basis: [[1, 0], latticeAt(0, 1)], origin: [0, 0] });
 
 // the rosettes built in 2n cones round their middle, a family a tile: Mirror n, the mirrored houses (see HOUSES), and Hexa n,
 // Sugimoto's equilateral hexagons (see HEXAS); for each n here its own mark (its rules', see the rule menu); their variants,

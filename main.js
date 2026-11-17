@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.289';
+const VERSION = '0.5.290';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -22396,9 +22396,10 @@ const surfaceColouring = (g) => ({
 });
 // two neighbouring cells of a surface parted by a fold or a seam: a solid's across its edge (its faces), a sheet's (a
 // torus's, a Möbius strip's, a Klein bottle's) across its seam (their middles on the sheet more than half its length or
-// width apart, see sheetMiddle), a Möbius strip's front and back; null, none
+// width apart, see sheetMiddle), a Möbius strip's front and back, a rosette sphere's north and south; null, none
 function cellsApart(g) {
   if (g.cellFaces) return (t, u) => g.cellFaces[t] !== g.cellFaces[u];
+  if (g.south) return (t, u) => t < g.south !== u < g.south; // (a rosette sphere's halves, its disc twice: see rosetteSphereMesh)
   if (!g.torus) return null;
   const at = Array.from({ length: g.n }, (_, t) => sheetMiddle(g, t));
   return (t, u) =>

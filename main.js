@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.325';
+const VERSION = '0.5.326';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -46351,7 +46351,7 @@ function renderWalkGauges() {
     d = walkFromStart(stepShown);
   if (walk.battle) {
     // a battle: its walkers ranked as Life's colours are (paintRanking): each its body's length, the Land ones their land; ✝ dead
-    const { player: D, names, deaths } = walk.battle; // (deaths: as played to its end, Dead at known at every step, see battleOf)
+    const { player: D, names, deaths } = walk.battle; // (deaths: as played to its end, Dead at step known at every step, see battleOf)
     D.to(stepShown);
     const w = D.worth(),
       Q = D.places,
@@ -46363,7 +46363,7 @@ function renderWalkGauges() {
     const C = battleColumns(D),
       count = (v) => formatNumberAsWide(v, walk.nodes); // (a count as wide as the board's places: none moving)
     $('gauges').hidden = true;
-    // (with land a dead one keeps its land and its place by it; in Cut it goes under the living; ✝ by its worth, when: Dead at)
+    // (with land a dead one keeps its land and its place by it; in Cut it goes under the living; ✝ by its worth, when: Dead at step)
     const gone = (s) => D.dead[s] >= 0,
       left = D.living(),
       survivor = left.length === 1 ? left[0] : -1; // (the last one alive, the others dead: ♥, as text, not the emoji: U+FE0E; see battleWinner)
@@ -46378,7 +46378,7 @@ function renderWalkGauges() {
         cells: [
           `<b>${count(w[s])}</b>${gone(s) ? ' ✝' : s === survivor ? ' ♥\uFE0E' : '<span class="digits-pad"> ✝</span>'}`,
           count(D.bestAt(s)),
-          deaths[s] >= 0 ? genLink(deaths[s]) : '',
+          deaths[s] >= 0 ? genLink(deaths[s], formatNumberAsWide(deaths[s], walk.widestShown)) : '', // (its title says step)
           ...(C.body ? [count(D.size[s])] : []),
           from(s).toFixed(1),
         ],
@@ -46451,7 +46451,10 @@ const battleColumns = (P) => {
     titles: [
       [worth, P.bite ? 'The tiles it holds' : "Its body's length"],
       [`${worth} peak`, `Its ${worth.toLowerCase()} at its largest so far`],
-      ['Dead at', 'The step it dies at, the battle played to its end (a click: there); none if it lives to the end'],
+      [
+        'Dead at step',
+        'The step it dies at, the battle played to its end (a click: there); none if it lives to the end',
+      ],
       ...(body ? [[body, body === 'Line' ? 'The edges of its line now' : "Its body's tiles now"]] : []),
       ['Distance', 'Its head from its start'],
     ],

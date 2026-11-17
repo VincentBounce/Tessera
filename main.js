@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.201';
+const VERSION = '0.5.202';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -21889,7 +21889,23 @@ function paletteColours(count, eachNeighbour, P) {
 // tileKinds), or its steps from cell 0 spread over the palette (round the
 // palette past its last: Tiles where DSatur takes more colours, see dsatur; the faces only where the palette cannot do, see
 // paletteColours)
-function exploreLevels(nbr, n, faces, kinds) {
+// a periodic plane's tiles coloured by its lattice cell, cloned (lattice: each tile's place xy(t), its column a lattice cell's
+// i × m + its motif's tile k, see planeGrid): the cell's m tiles, joined as their tiles anywhere are, in P colours, each tile its
+// motif's; null where a tile touches its own motif's (a cell too small to clone) or the cell takes more than P
+function latticeCellColours({ xy, m }, n, eachNeighbour, P) {
+  const motif = (t) => mod(xy(t)[0], m),
+    joined = Array.from({ length: m }, () => new Set());
+  let clonable = true;
+  for (let t = 0; t < n; t++)
+    eachNeighbour(t, (u) => {
+      if (motif(u) === motif(t)) clonable = false;
+      joined[motif(t)].add(motif(u));
+    });
+  if (!clonable) return null;
+  const colour = paletteColours(m, (k, put) => joined[k].forEach(put), P);
+  return colour.every((c) => c <= P) ? Uint8Array.from({ length: n }, (_, t) => colour[motif(t)]) : null;
+}
+function exploreLevels(nbr, n, faces, kinds, lattice) {
   const side = sideOf(nbr),
     P = explorePalette().length,
     rule = exploreLook.rule === 'sides' && !faces ? 'tiles' : exploreLook.rule;
@@ -21897,7 +21913,7 @@ function exploreLevels(nbr, n, faces, kinds) {
   const bySide = (t, put) => {
     for (let q = nbr.start[t]; q < nbr.start[t + 1]; q++) if (side[q]) put(nbr.list[q]);
   };
-  if (rule === 'tiles') level = dsatur(n, bySide).colour; // (a grid's cells: DSatur alone, sometimes a 4th colour where 3 would do: 3 exactly, NP-complete, no search, see DISCONTINUED.md)
+  if (rule === 'tiles') level = (lattice && latticeCellColours(lattice, n, bySide, 3)) ?? dsatur(n, bySide).colour; // (a periodic plane: its lattice cell cloned; else DSatur, sometimes a 4th colour where 3 would do)
   if (rule === 'sides') {
     // (the faces' graph, their sides touching)
     const touching = Array.from({ length: faces.reduce((m, f) => Math.max(m, f), -1) + 1 }, () => new Set());
@@ -21981,7 +21997,7 @@ function renderExplore() {
 // freshWalk's (a grid's own given after, by its builder)
 function startLife(seq, rule, n, grid) {
   const explore = !!VARIANTS[walk.variant].explore;
-  if (explore) grid.seed = exploreLevels(grid.nbr, n, grid.faces, grid.kinds); // (Explore: each cell alive in its colour, see exploreLevels)
+  if (explore) grid.seed = exploreLevels(grid.nbr, n, grid.faces, grid.kinds, grid.lattice); // (Explore: each cell alive in its colour, see exploreLevels)
   walk.life = {
     B: rule.B,
     S: rule.S,
@@ -25196,6 +25212,10 @@ function buildLifePlane(seq) {
     kinds: VARIANTS[digitsComputed.variant].explore
       ? tileKinds(planeMesh(kind, W, planeTorus(kind)), APERIODIC[kind]?.(W).kinds)
       : null, // (Explore's Kind of tile)
+    lattice:
+      VARIANTS[digitsComputed.variant].explore && !APERIODIC[kind]
+        ? { xy: planeGrid(kind, W).xy, m: gridCells(kind) }
+        : null, // (Explore's Tiles: its lattice cell cloned, see latticeCellColours)
   });
   Object.assign(walk, {
     stacked: spaceTime && spaceTimeApplies(walk.variant),

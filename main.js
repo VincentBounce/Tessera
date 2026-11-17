@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.270';
+const VERSION = '0.5.271';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -10214,13 +10214,19 @@ const MODE_TABS = [
   ['Walk', 'compass', "A path, each step the number's next digit"],
   ['Ant', 'ant', "A creature on the cells, turned by each cell's colour, by its rule or by the digits"],
   ['Rewind', 'reversible', 'Rules on blocks of cells that play backwards as well: nothing is ever lost'],
-  ['Replicators', 'replicator', "Langton's loops: a pattern that makes copies of itself, by a table of transitions"],
+  [
+    'Replicators',
+    'replicator',
+    "Langton's loops: a pattern that makes copies of itself, by a table of transitions",
+    true,
+  ],
   [
     'Elementary',
     'elementary',
     "Wolfram's 256 rules: a row of cells, each generation the next row down, each cell by the three above it",
+    true,
   ],
-]; // (name, picture, tooltip; in this order: the tabs, the Gallery's sections)
+]; // (name, picture, tooltip, in the "…" tab's menu whatever the room; in this order: the tabs, the Gallery's sections)
 // the spaces, in turn, each its name and picture: a walk's or an ant's plane without an edge; Life's grids on the plane, those
 // that repeat (walls in a hexagon too) and its round ones, never repeating (see APERIODIC); everyone's solids, and surfaces
 // (a sheet rolled up); the walks through a 3D lattice
@@ -11285,8 +11291,9 @@ function fitModeTabs() {
     (moreTabs.hidden ? moreTabs.previousElementSibling : moreTabs).getBoundingClientRect().right <=
     row.getBoundingClientRect().right;
   for (const b of [...moreMenu.children]) row.insertBefore(b, moreTabs);
+  moreMenu.append(...row.querySelectorAll('[data-in-more]')); // (there whatever the room: see MODE_TABS)
   moreTabs.hidden = true;
-  moreTabs.hidden = fits();
+  moreTabs.hidden = fits() && !moreMenu.children.length;
   while (!fits() && moreTabs.previousElementSibling) moreMenu.prepend(moreTabs.previousElementSibling);
   moreTabs.firstChild.classList.toggle('active', !!moreMenu.querySelector('.active, .pane-tab.open'));
 }
@@ -11301,7 +11308,7 @@ function renderModePicker() {
   moreMenu.replaceChildren();
   $('modeTabs').replaceChildren(
     galleryTab(),
-    ...MODE_TABS.map(([k, pic, title]) => {
+    ...MODE_TABS.map(([k, pic, title, inMore]) => {
       const b = button(
         `${icon(pic)} ${k}`,
         k === kind,
@@ -11313,6 +11320,7 @@ function renderModePicker() {
       );
       b.setAttribute('role', 'tab');
       b.dataset.choice = `mode:${k}`; // (its choice's key, see choicesAt)
+      b.toggleAttribute('data-in-more', !!inMore);
       return b;
     }),
   );

@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.309';
+const VERSION = '0.5.310';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -7842,29 +7842,6 @@ const walledEl = (P, d = 2.6) => {
     .join('');
   return svgPath(pathOf(P), 'thin') + svgPath(pathOf(inner), 'thin') + svgPath(mortar, 'thin');
 };
-// The symmetries' pictures: a flag, and its copies (turned by a, mirrored across the upright when m)
-const FLAG = [
-  [12.8, 11.6],
-  [12.8, 1.6],
-  [21.5, 5.4],
-  [12.8, 9.2],
-];
-const flags = (copies) =>
-  copies
-    .map(([a, m]) =>
-      svgPath(
-        pathOf(
-          FLAG.map(([x, y]) => {
-            const u = m ? 24 - x : x,
-              c = Math.cos(a),
-              s = Math.sin(a);
-            return [12 + (u - 12) * c - (y - 12) * s, 12 + (u - 12) * s + (y - 12) * c];
-          }),
-        ),
-        'f',
-      ),
-    )
-    .join('');
 
 // A triangle cut into 4 (its corners' midpoints joined), pointing at angle rot
 const tiledTriangle = (rot) => {
@@ -8203,24 +8180,6 @@ const ICONS = (() => {
       svgPath(
         'M19.46 11.04C20.32 8.68 20.18 6.46 18.86 5.14C16.59 2.87 11.68 4.1 7.89 7.89C4.1 11.68 2.87 16.59 5.14 18.86C7.37 21.09 12.13 19.96 15.88 16.35',
       ) + svgPath('M12 16H16V20'), // (a turn round a slanted orbit)
-    symNone: flags([[0, false]]),
-    symMirror: flags([
-      [0, false],
-      [0, true],
-      [Math.PI, false],
-      [Math.PI, true],
-    ]),
-    symRotate: flags([0, 1, 2, 3].map((k) => [(k * Math.PI) / 2, false])),
-    symKaleido: flags(
-      [0, 1, 2, 3].flatMap((k) => [
-        [(k * Math.PI) / 2, false],
-        [(k * Math.PI) / 2, true],
-      ]),
-    ),
-    symHalf: flags([
-      [0, false],
-      [Math.PI, false],
-    ]),
     ...Object.fromEntries(
       [2.2, 3.5, 4.8, 6, 7.2, 8.4, 9.6, 11].map((r, i) => [`zone${i + 1}`, svgDots([[12, 12]], r)]),
     ),
@@ -23436,24 +23395,21 @@ const DRAW_PATTERNS = [
   ],
   ['kite-b3s12v13-osc', 'kite', ['B3/S12v1.3'], 'Oscillator', '2A.2A!', 'period 6 · 4 cells'],
 ];
-// the symmetries a start may have (see planeSymmetries): [picture, name, as said, tooltip], in their tiles' order
+// the symmetries a start may have (see planeSymmetries): [name, as said, tooltip], in their tabs' order
 const SYMMETRIES = {
-  none: ['symNone', 'None', '', 'The start as it is laid, no copy'],
-  half: ['symHalf', 'Half turn', 'turned by half a turn', 'Half of the start turned by half a turn: two copies'],
+  none: ['None', '', 'The start as it is laid, no copy'],
+  half: ['Half turn', 'turned by half a turn', 'Half of the start turned by half a turn: two copies'],
   rotate: [
-    'symRotate',
     'Rotate',
     'turning',
     "A part of the start turned by the grid's smallest turn, a quarter on squares, a sixth in a hexagon: four or six copies",
   ],
   mirror: [
-    'symMirror',
     'Mirror',
     'mirrored',
     'A quarter of the start mirrored across two lines through the middle, at right angles: four copies',
   ],
   kaleido: [
-    'symKaleido',
     'Kaleido',
     'kaleidoscopic',
     'A part of the start turned and mirrored: eight copies on squares, twelve in a hexagon',
@@ -25756,7 +25712,7 @@ function startLead(number, seeded) {
   const kind = walk.plane?.kind,
     side = kind && formatNumber(walk.plane.W),
     soup = `${plane.density} % alive (seed ${plane.seed})`;
-  const sym = kind ? SYMMETRIES[symmetryOf(kind)][2] : '',
+  const sym = kind ? SYMMETRIES[symmetryOf(kind)][1] : '',
     where = kind
       ? `a ${side} × ${side} grid of ${PLANE_CELLS[kind]}${{ tri: ' (two a rhombus)', cairo: ' (two a square)', kite: ' (six a rhombus)', hat: ' (an aperiodic tiling: one tile that never repeats)', penrose: ' (an aperiodic tiling)', kitesDarts: ' (an aperiodic tiling)', tubingen: ' (an aperiodic tiling)', pinwheel: ' (an aperiodic tiling: one right triangle, turned every way)', ammann: ' (an aperiodic tiling, eightfold)', rhombs12: ' (an aperiodic tiling, twelvefold)', rhombs14: ' (an aperiodic tiling, fourteenfold)', flower: " (Hirschhorn's flower: one pentagon, six-fold, never repeating)", flower5: ' (a rosette: one pentagon, five-fold, never repeating)', flower7: ' (a rosette: one pentagon, seven-fold, never repeating)', ...conedOf((k, n, F) => [k, ` (a ${F.how} rosette: ${F.one}, ${n}-fold, never repeating)`]), flower3: ' (a rosette: one pentagon, three-fold, never repeating)', flower4: ' (a rosette: one pentagon, four-fold, never repeating)', flower8: ' (a rosette: one pentagon, eight-fold, never repeating)', flower9: ' (a rosette: one pentagon, nine-fold, never repeating)', flower10: ' (a rosette: one pentagon, ten-fold, never repeating)', ring7: ' (a ring: one pentagon round a heptagonal hole, seven-fold, never repeating)', ring8: ' (a ring: one pentagon round an octagonal hole, eight-fold, never repeating)', ring9: ' (a ring: one pentagon round a nonagonal hole, nine-fold, never repeating)', ring10: ' (a ring: one pentagon round a decagonal hole, ten-fold, never repeating)', ring12: ' (a ring: one pentagon round a dodecagonal hole, twelve-fold, never repeating)', spectre: ' (an aperiodic tiling: one tile that never repeats, never turned over)' }[kind] ?? ''} ${planeTorus(kind) ? 'wrapping around (a torus)' : planeShape(kind, walk.plane.W) ? 'walled in a hexagon' : 'with dead edges'}`
       : VARIANTS[walk.variant].where; // (the run shown's: the tab may already show the next)
@@ -25831,13 +25787,12 @@ function renderSymmetry() {
     now = walk.plane ? symmetryOf(walk.plane.kind) : 'none';
   $('symmetryRow').hidden = !kind || !!VARIANTS[tabVariant()].elementary; // (Elementary: a row, no copies)
   $('symmetryTiles').replaceChildren(
-    tileGroup(
+    textTabs(
       Object.keys(SYMMETRIES).map((y) => {
         // (one choice: a tab group; the one picked, clicked again: nothing; those the grid has not, greyed)
         return tile({
-          pic: icon(SYMMETRIES[y][0]),
-          text: SYMMETRIES[y][1],
-          title: SYMMETRIES[y][3],
+          text: SYMMETRIES[y][0],
+          title: SYMMETRIES[y][2],
           on: y === now,
           byDefault: y === 'none' ? 'yes' : '',
           at: walk.variant,
@@ -25851,7 +25806,6 @@ function renderSymmetry() {
           },
         }); // (the same start, as its link says it, its symmetry another: the hunt's finds, of another, gone)
       }),
-      true,
     ),
   );
 }
@@ -31523,7 +31477,7 @@ function renderHunt() {
     z === 'custom'
       ? 'A start found by a hunt, from a link: pick a zone to hunt in'
       : `${all ? `All its ${formatNumber(all)} ${tried} tried, each once, then done` : `On and on until stopped: ${tried} at random one in 3, the others tweaks of the best`}; a click on one found plays it`;
-  const zone = shown + (sym !== 'none' ? ` · ${SYMMETRIES[sym][2]}` : '');
+  const zone = shown + (sym !== 'none' ? ` · ${SYMMETRIES[sym][1]}` : '');
   $('huntBtn').innerHTML = busy ? `${icon('stop')} Stop hunt and play` : `${icon('search')} ${capitalised(what)}`;
   setTile($('huntBtn'), {
     whyNot: busy

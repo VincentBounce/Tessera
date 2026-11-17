@@ -845,8 +845,11 @@ h4 {
 } /* one line between them, across a row and from a row to the next: each over the next one's and the row's below by its own */
 .tile-group.text-tabs > button {
   min-width: 0;
+  height: var(--button-height);
+  flex-direction: row;
+  justify-content: center;
   padding: 6px 2px;
-} /* tabs of words only (the Number's): each its share, as tiles, whatever its word */
+} /* tabs of words only (the Number's, Symmetry's): each its share, as tiles, whatever its word, a button high (among tiles too) */
 .tile-group.icon-tabs {
   --row-tiles: 6;
   & > button {

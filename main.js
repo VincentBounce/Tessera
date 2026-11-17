@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.260';
+const VERSION = '0.5.261';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -6907,11 +6907,13 @@ const setTile = (
 // picture on the left, its name over its words (base: a walk's base on its right); a tile all the same (see tile, setTile:
 // on, can); its words as text (a setup's name typed), and its tooltip (in full: the row may cut them short); how: a rule's,
 // how it works, a click on its picture
-// an element highlighted a moment, once (the length asked's stepper; the buttons a greyed one waits for, see enablers)
+// an element highlighted a moment, once (the length asked's stepper; the buttons a greyed one waits for, see enablers): its
+// class gone as its animation ends, else shown again (a box closed and opened) it would play again
 function highlight(el) {
   el.classList.remove('highlit');
   void el.offsetWidth;
   el.classList.add('highlit');
+  el.addEventListener('animationend', () => el.classList.remove('highlit'), { once: true });
 }
 // a greyed button that knows what would allow it (its enablers: the nearest buttons of the menu taking it there, see
 // setTile's whyNot): a click on it, which a disabled button never gets (its pointer's up it does), highlights them

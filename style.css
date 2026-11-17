@@ -2360,12 +2360,12 @@ button.switch.active,
 }
 @keyframes highlight {
   from {
-    box-shadow: 0 0 0 0 var(--accent-color);
+    box-shadow: inset 0 0 0 10px var(--accent-color);
   }
   to {
-    box-shadow: 0 0 0 10px transparent;
+    box-shadow: inset 0 0 0 0 transparent;
   }
-}
+} /* (a ring inside it, shrinking to its border: never cut by a group's round frame, see .tile-group) */
 @keyframes tut-appear {
   0%,
   30% {

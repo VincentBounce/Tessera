@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.294';
+const VERSION = '0.5.295';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -22399,8 +22399,8 @@ const surfaceColouring = (g) => ({
 // width apart, see sheetMiddle), a Möbius strip's front and back, a rosette sphere's north and south; null, none
 function cellsApart(g) {
   if (g.cellFaces) return (t, u) => g.cellFaces[t] !== g.cellFaces[u];
-  // (a rosette sphere's halves, its disc twice: see rosetteSphereMesh. Its south's colours each shifted to the next tells
-  // its halves apart: mod 4 on a Flower, mod 3 on a Hexa; tried in v0.5.293)
+  // (a rosette sphere's halves, its disc twice, see rosetteSphereMesh: each coloured apart, as a rosette, which works mod 4 on
+  // a Flower and mod 3 on a Hexa)
   if (g.south) return (t, u) => t < g.south !== u < g.south;
   if (!g.torus) return null;
   const at = Array.from({ length: g.n }, (_, t) => sheetMiddle(g, t));

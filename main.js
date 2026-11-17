@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.215';
+const VERSION = '0.5.216';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -10033,6 +10033,27 @@ for (const [k, { a, name }] of Object.entries(HEX_SOLIDS)) {
     where: `${a} of hexagons (folded over its edges; and ${HEX_SOLIDS[k].others})`,
   });
 }
+// a solid's two turtle walks on a tiling, along its edges and on its cells, each the other's twin, as a solid's that is like it
+// (like: the cube's squares, the octahedron's triangles): their base, commands and words its
+function twinWalks(name, tiling, surface, like, pic) {
+  const [onEdges, onCells] = ['edges', 'cells'].map((side) => variantName('Walk', name, tiling, 'Turtle', side)),
+    a = `a ${name.toLowerCase()}`;
+  for (const [w, side, twin, where, tail] of [
+    [
+      onEdges,
+      'edges',
+      onCells,
+      `along the edges of the ${tiling.toLowerCase()} of ${a}`,
+      ' (at a corner of the solid, the nearest edge)',
+    ],
+    [onCells, 'cells', onEdges, `on the ${tiling.toLowerCase()} of ${a}`, ''],
+  ]) {
+    const { ant, ...twinOf } = VARIANTS[variantName('Walk', like, tiling, 'Turtle', side)]; // (its own: no ant)
+    VARIANTS[w] = { ...twinOf, surface, twin, where, tail, label: `${name} — ${twinOf.label.split(' — ')[1]}` }; // (its twin's base and words)
+    VARIANT_ICONS[w] = pic;
+    NAV[w] = ['Walk', 'Surfaces', name, 'Turtle', side];
+  }
+}
 // the hull solids' Life (see HULL_SOLIDS): a variant each, said by its declaration
 for (const [k, S] of Object.entries(HULL_SOLIDS)) {
   if (Array.isArray(S.pic)) ICONS[k] = S.pic.map((d) => svgPath(d)).join('');
@@ -10048,30 +10069,22 @@ for (const [k, S] of Object.entries(HULL_SOLIDS)) {
   }
   // its turtle walks, each the other's twin: on its squares as the cube's (3 a digit, left, on or right), on its triangles cut
   // (halves) as the octahedron's (measured 2026-11-17: its corners of 4 to 6 triangles, as the octahedron's and the sphere's)
-  if (S.walks)
-    for (const [tiling, surface, like] of [
-      [S.cells, k, 'Cube'],
-      ...(S.cuts?.includes('halves') ? [[HULL_CUTS.halves.name, `${k}${HULL_CUTS.halves.name}`, 'Octahedron']] : []),
-    ]) {
-      const [onEdges, onCells] = ['edges', 'cells'].map((side) => variantName('Walk', S.name, tiling, 'Turtle', side)),
-        a = `a ${S.name.toLowerCase()}`;
-      for (const [w, side, twin, where, tail] of [
-        [
-          onEdges,
-          'edges',
-          onCells,
-          `along the edges of the ${tiling.toLowerCase()} of ${a}`,
-          ' (at a corner of the solid, the nearest edge)',
-        ],
-        [onCells, 'cells', onEdges, `on the ${tiling.toLowerCase()} of ${a}`, ''],
-      ]) {
-        const { ant, ...twinOf } = VARIANTS[variantName('Walk', like, tiling, 'Turtle', side)]; // (its own: no ant)
-        VARIANTS[w] = { ...twinOf, surface, twin, where, tail, label: `${S.name} — ${twinOf.label.split(' — ')[1]}` }; // (its twin's base and words)
-        VARIANT_ICONS[w] = hullIcon(k);
-        NAV[w] = ['Walk', 'Surfaces', S.name, 'Turtle', side];
-      }
-    }
+  if (S.walks) {
+    twinWalks(S.name, S.cells, k, 'Cube', hullIcon(k));
+    if (S.cuts?.includes('halves'))
+      twinWalks(S.name, HULL_CUTS.halves.name, `${k}${HULL_CUTS.halves.name}`, 'Octahedron', hullIcon(k));
+  }
 }
+// the carved cubes' squares walked as the cube's (measured 2026-11-17: their hollow corners of 5 and 6 edges walked; their start
+// corners the cube's, see cubeSolid)
+for (const k of ['pits', 'bumps', 'frame', 'menger'])
+  twinWalks(
+    TETRAKIS_SOLIDS[k],
+    'Squares',
+    k,
+    'Cube',
+    VARIANT_ICONS[variantName('Life', TETRAKIS_SOLIDS[k], 'Squares')],
+  );
 // the quadrilaterals' turtle on their cells, as the cube's (4 sides: 3 a digit, left, on or right, on: out by the side across):
 // every surface's kites (the sphere's, the torus's, Möbius strip's, Klein bottle's, tetrahedron's, octahedron's, dodecahedron's
 // and stella's: measured 2026-11-17, every step to a cell beside, see GRIDS.md), Penrose's rhombi; on cells only (their corners
@@ -12868,6 +12881,8 @@ const neg = (a) => [-a[0], -a[1], -a[2]];
 const sameVec = (a, b) => a[0] === b[0] && a[1] === b[1] && a[2] === b[2];
 // the cube's 8 corners (g's bits: the signs of x, y, z) and a regular tetrahedron's 4 of them (the diamond's bonds, its spots)
 const CORNERS = [0, 1, 2, 3, 4, 5, 6, 7].map((g) => [g & 4 ? 1 : -1, g & 2 ? 1 : -1, g & 1 ? 1 : -1]);
+// the cube's corners and faces' middles, a carved cube's (Pits, Bumps, Frame, Sponge: its starts round its corners, see startList)
+const cubeSolid = () => ({ corners: CORNERS.map(unit), centres: AXES });
 const TETRA_CORNERS = [
   [1, 1, 1],
   [1, -1, -1],
@@ -13772,6 +13787,7 @@ function cubePits(n, up = false) {
   mesh.floors = Int32Array.from(floors); // face f's floor tile (r, c): floors[f a² + r a + c]
   mesh.floorSize = a;
   mesh.cellFaces = Int32Array.from({ length: mesh.n }, (_, t) => Math.floor((6 * t) / mesh.n)); // (a face's squares, its pit's or bump's with them, as many a face in turn: AXES' order)
+  mesh.solid = cubeSolid();
   return (meshCache[key] = mesh);
 }
 
@@ -13837,6 +13853,7 @@ function mengerMesh(L, m = 1) {
   mesh.concave = true;
   mesh.cubic = true; // (the cube's turns: 3 colours, 2 opposite faces each)
   mesh.cellFaces = Int32Array.from(faces);
+  mesh.solid = cubeSolid();
   return (meshCache[key] = mesh);
 }
 

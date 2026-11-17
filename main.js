@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.255';
+const VERSION = '0.5.256';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -11360,7 +11360,8 @@ function renderModePicker() {
             surface = !VARIANTS[to].plane && surfaceOf(VARIANTS[to]);
           // (made when hovered: the one shown, its size's card; another, its solid's faces, its tiling and size not known yet)
           if (to === w && SURFACES[surface]?.tiles)
-            b.tipMore = () => sizeCardHtml(...surfaceCard(surface, sizeOf(figureSize(to)), true, true));
+            b.tipMore = () => sizeCardHtml(...surfaceCard(surface, sizeOf(figureSize(to)), true));
+          if (to === w) b.tipColours = coloursUsed;
           else if (surface) b.tipMore = () => (facesCount(surface) ? `${facesCount(surface)} faces` : '');
           if (again) {
             setTile(b, { on: true, again, mark: !!broken });
@@ -12314,9 +12315,11 @@ document.addEventListener('mouseover', (e) => {
       return div;
     }; // (note: beside its title, fainter)
   const allowed = greyedOf(greyed ?? el)?.paths && pathsWords(greyedOf(greyed ?? el).paths()); // (greyed: the shortest paths that allow it, see pathsTo)
-  const more = el?.tipMore?.(); // (a part of its own, made when shown: a shape's size, see tipMore)
+  const more = el?.tipMore?.(), // (a part of its own, made when shown: a shape's size, see tipMore)
+    colours = el?.tipColours?.(); // (Explore's Tiles' colours used, made when shown: see coloursUsed)
   const told = [
     ...(more ? [Object.assign(part(), { innerHTML: `<div>${more}</div>` })] : []), // (in a block of its own: as the size box's, its lines its own)
+    ...(colours ? [Object.assign(part(), { innerHTML: `<b>Colours used</b><span>${colours}</span>` })] : []),
     ...(greyed ? [section('Why greyed out?', greyed.dataset.greyed)] : []),
     ...(allowed ? [section('Allowed on', allowed, 'click to locate the buttons on screen')] : []), // (a click on it lights them, see setTile's enablers)
     ...(el?.dataset.formula ? [section('Formula', el.dataset.formula)] : []), // (a number card's, see renderNumberPicker)
@@ -17512,16 +17515,20 @@ for (const name of foldedIn('torus')) {
 
 // a surface's size's card at f: its total, then how it is counted, its sides, a strip's edge's cells, the size last picked
 // (the size box's; a shape's at the size it opens at, not shown: what its counts say alone, see the shapes' tooltips)
-// Explore's Tiles, the grid shown: its colours used (each cell's its level, see exploreLevels); else 0
-const coloursUsed = () => (walk.life?.palette && exploreLook.rule === 'tiles' ? new Set(walk.life.seed).size : 0);
-const surfaceCard = (kind, f, shown = true, hovered = false) => [
+// Explore's Tiles, the grid shown: its colours used (each cell's its level, see exploreLevels), their count and a dot each
+// in its colour; else '': a tooltip's section of its own, made when hovered, the grid built (see tipOf: its shape's, its size's)
+const coloursUsed = () => {
+  if (!walk.life?.palette || exploreLook.rule !== 'tiles') return '';
+  const levels = [...new Set(walk.life.seed)].sort((a, b) => a - b);
+  return `${levels.length} ${levels.map((l) => `<span style="color:${walk.life.palette[l - 1]}">●</span>`).join('')}`;
+};
+const surfaceCard = (kind, f, shown = true) => [
   sizeCells(kind, f, true),
   [
     `${sizeHow(kind, f)}\n${sizeSides(kind, f)}`.trim(),
     ...(shown && MOBIUS_ALONG[kind]?.edgeCuts
       ? [`\n{b:Specific cells}\n{e:${formatNumber(SURFACES[kind].mesh(f).edgeCells.length)} cells}`]
       : []), // (a strip's edge's cells, as outlined: see edgeRibbons; counted on its mesh, the one shown only)
-    ...(hovered && coloursUsed() ? [`\n{b:Colours used}\n{b:${coloursUsed()}}`] : []), // (Explore's Tiles: the one shown's, its card made when hovered, the grid built; not the size's, made before)
     ...(shown ? [`\n${lastPicked()}`] : []), // (the size picked: the one shown's)
   ]
     .filter(Boolean)
@@ -48267,6 +48274,7 @@ $('startRow').addEventListener('mouseleave', () => {
   faced = false; // Centered: the camera turns to the walk (see followWalker)
   if ($('autoFit').checked) fitWhole();
 });
+$('sizeBox').tipColours = coloursUsed; // (Explore's Tiles' colours used, under its size: see coloursUsed)
 for (const el of [$('sizeBox'), $('planeBox')])
   el.onmouseenter = el.onmouseleave = (e) => {
     motifShown = e.type === 'mouseenter';

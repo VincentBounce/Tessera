@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.291';
+const VERSION = '0.5.292';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -22392,15 +22392,14 @@ const surfaceColouring = (g) => ({
   faces: g.cellFaces ?? null,
   kinds: tileKinds(meshCorners(g)),
   apart: cellsApart(g),
-  alternated: g.cellPlaces
-    ? alternatedBy(g.tiling ?? g.cells, (t) => g.cellPlaces[t])
-    : g.disc && discColours(g.disc, g.south), // (a sheet's by its plane cells; a rosette sphere's, its flat rosette's twice)
+  alternated: g.cellPlaces && alternatedBy(g.tiling ?? g.cells, (t) => g.cellPlaces[t]), // (a sheet's by its plane cells)
 });
 // two neighbouring cells of a surface parted by a fold or a seam: a solid's across its edge (its faces), a sheet's (a
 // torus's, a Möbius strip's, a Klein bottle's) across its seam (their middles on the sheet more than half its length or
-// width apart, see sheetMiddle), a Möbius strip's front and back; null, none
+// width apart, see sheetMiddle), a Möbius strip's front and back, a rosette sphere's north and south; null, none
 function cellsApart(g) {
   if (g.cellFaces) return (t, u) => g.cellFaces[t] !== g.cellFaces[u];
+  if (g.south) return (t, u) => t < g.south !== u < g.south; // (a rosette sphere's halves, its disc twice: see rosetteSphereMesh)
   if (!g.torus) return null;
   const at = Array.from({ length: g.n }, (_, t) => sheetMiddle(g, t));
   return (t, u) =>
@@ -42251,15 +42250,6 @@ const ALTERNATIONS = {
 // a grid's alternation: a base grid's (ALTERNATIONS), else a tiling's lattice cell coloured on the plane and cloned (in 2, 3
 // or 4, the fewest), its cell (x, y)'s colour by its rank x mod m (see latticeCellColours); null where its cell cannot be
 // cloned. Read by place, it knows no seam: a torus's, a sheet's, two alike may meet there
-// a rosette sphere, its disc twice (see rosetteSphereMesh): each cell its flat rosette's colour, as Explore shows it, north and south
-const discColours = ({ kind, W }, south) => {
-  const levels = exploreLevels(
-    planeNeighbours(kind, W, planeTorus(kind)),
-    planeGrid(kind, W).n,
-    planeColouring(kind, W),
-  );
-  return (t) => levels[t % south] - 1;
-};
 // each cell t's colour by its grid's alternation at its plane cell place(t); null, none
 const alternatedBy = (kind, place) => alternationOf(kind) && ((t) => alternationOf(kind)(...place(t)));
 // a plane cell (x, y) moved by (p, q) lattice cells (per cells each, see gridCells)

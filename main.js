@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.218';
+const VERSION = '0.5.219';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -10088,8 +10088,7 @@ for (const k of ['pits', 'bumps', 'frame', 'menger'])
 // the quadrilaterals' turtle on their cells, as the cube's (4 sides: 3 a digit, left, on or right, on: out by the side across):
 // every surface's kites (the sphere's, the torus's, Möbius strip's, Klein bottle's, tetrahedron's, octahedron's, dodecahedron's
 // and stella's: measured 2026-11-17, every step to a cell beside, see GRIDS.md), Penrose's rhombi; on cells only (their corners
-// 3 to 8 edges: no left, on and right along them). The carved cubes' squares still out (their start corners to give: see
-// solidCorners)
+// 3 to 8 edges: no left, on and right along them)
 for (const [shape, tiling, surface] of [
   ['Sphere', 'Kites', 'icosaKite'],
   ['Torus', 'Kites', 'torusKite'],

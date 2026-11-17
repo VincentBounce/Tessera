@@ -24,7 +24,8 @@ Steps, each shipped and checked on its own:
    grid, the same in every mode) and `grids()` (each grid once, its variants by mode), 235 grids; `checkGrids` in
    `tesseraCheck()` keeps every field the grid's or the mode's, and the variants' print (`VARIANTS_PRINT`) as it was.
 2. **`MODES` and `modeGoes`**; the 584 pairs it gives against today's, each difference decided. Done for the rules
-   (see [Step 2: each mode's rule](#step-2-each-modes-rule)): 4 differences for Rewind and 13 for the walk to decide.
+   (see [Step 2: each mode's rule](#step-2-each-modes-rule)): 4 differences for Rewind (kept out) and 13 for the walk
+   (taken in, v0.5.215 and v0.5.216).
 3. **Everything made from them**: the 16 places that make variants and the page's 174 options gone; the fingerprint
    the same. In three deliveries:
    - **3c, done (v0.5.77)**: Explore, Rewind on the sheets and Replicators made on Life's grids by their rules
@@ -137,7 +138,7 @@ a turtle's rule for the grid's tiling (its turns, its base, its arrows: the mode
 | Ant | where the walk goes on cells, on the plane or a surface (not the 3D lattice of cubes) | the same (32) |
 | Replicators | squares the same way round (no Möbius strip nor Klein bottle: their squares flipped; not the sponge: its pieces narrower than a loop) | the same (8) |
 | Rewind | the plane's and the sheets' (torus, Möbius strip, Klein bottle) tilings with blocks: squares, hexagons, triangles, Cairo, tetrakis | 4 more |
-| Walk | its 2D and 3D lattices; on a surface, a tiling with a turtle's rule: squares, hexagons, triangles, Cairo, kites, Penrose's rhombi | 13 more |
+| Walk | its 2D and 3D lattices; on a surface, a tiling with a turtle's rule: squares, hexagons, triangles, Cairo, kites, Penrose's rhombi | 13 more, taken in (v0.5.216) |
 
 To decide, each grid in Explore:
 
@@ -164,7 +165,8 @@ To decide, each grid in Explore:
 
 Each one taken in: a walk more by the same rule (no code of its own); kept out: its reason a fact of its grid's.
 
-**Decided 2026-11-16: all 17 kept out for now, to come back to later.** Step 3 makes today's pairs, these left out by
+**Decided 2026-11-16: all 17 kept out for now, to come back to later** (2026-11-17: Rewind's 4 kept out, the walk's 13
+taken in, see below). Step 3 makes today's pairs, these left out by
 name (a list of their own, to empty when they are taken in or given their reason).
 
 **Measured 2026-11-17:**
@@ -180,6 +182,6 @@ name (a list of their own, to empty when they are taken in or given their reason
     and Bumps 1,526 and 1,272, Frame 975 and 987, Sponge 2,276 and 1,973;
   - the 2 rhombic solids' triangles on cells and along edges, as the octahedron's (on cells 30 and 33, as the
     octahedron's 33 and the sphere's 32: a turtle of left and right on triangles stays near; along edges 425 and 653).
-  - To take them in: their variants made as their twins' (the sphere's kites' loop, the cube's and the octahedron's
-    walks), and the carved cubes' and rhombic solids' start corners given (`solidCorners` reads faces or corners' cells,
-    none on their meshes: `walkStart` throws there).
+  - **Taken in**: the 7 kites and the 2 rhombic solids' triangles in v0.5.215 (the quadrilaterals' cell walks' list;
+    `twinWalks`, a solid's two walks as its twin's; a cut's start corners and face centres its uncut solid's), the 4
+    carved cubes in v0.5.216 (their start corners the cube's, `cubeSolid`). Their ants not yet (`ANTS`' list).

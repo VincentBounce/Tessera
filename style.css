@@ -869,6 +869,12 @@ h4 {
   z-index: 3;
   border-radius: 6px; /* (its gold round as the group's frame, wherever it lies: at a corner of the group, its corner whole) */
 } /* its border over its neighbour's (every button its own layer: above the next one); the layers: a button, one hovered (1), the group's frame (2), the one picked (3), its gold whole over the frame */
+.tile-group > button:has(+ button.active) {
+  border-right-color: transparent;
+}
+.tile-group > button.active + button {
+  border-left-color: transparent;
+} /* (the line beside the picked one, its own gold: its neighbours' grey none behind its round corners) */
 button.switch:hover:not(:disabled) {
   background: var(--picked-background);
 } /* a switch (a button that a click changes again) answers the hover: off, in the pale gold of a choice picked; on, deeper (Dawn sky) */

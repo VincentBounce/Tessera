@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.219';
+const VERSION = '0.5.220';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -12601,39 +12601,20 @@ const ANTS = {
   antCubeSquaresCells: { walk: 'walkCubeSquaresTurtleCells' },
   antCairoCells: { walk: 'walkCairoTurtleCells' },
 };
-// on the tori, the Möbius strips and the Klein bottles: on the cells of their walks, as the cube's, their turns the walk's,
-// their rules the one list's (see RULES; its place in the menus: the walk's surface and tiling)
-const SURFACE_ANTS = {
-  antTorusSquaresCells: ['walkTorusSquaresTurtleCells', 'Torus'],
-  antTorusHexCells: ['walkTorusHexTurtleCells', 'Torus'],
-  antTorusTrianglesCells: ['walkTorusTrianglesTurtleCells', 'Torus'],
-  antTorusCairoCells: ['walkTorusCairoTurtleCells', 'Torus'],
-  antMobiusStripSquaresCells: ['walkMobiusStripSquaresTurtleCells', 'Möbius strip'],
-  antMobiusStripHexCells: ['walkMobiusStripHexTurtleCells', 'Möbius strip'],
-  antMobiusStripTrianglesCells: ['walkMobiusStripTrianglesTurtleCells', 'Möbius strip'],
-  antMobiusStripCairoCells: ['walkMobiusStripCairoTurtleCells', 'Möbius strip'],
-  antKleinBottleSquaresCells: ['walkKleinBottleSquaresTurtleCells', 'Klein bottle'],
-  antKleinBottleHexCells: ['walkKleinBottleHexTurtleCells', 'Klein bottle'],
-  antKleinBottleTrianglesCells: ['walkKleinBottleTrianglesTurtleCells', 'Klein bottle'],
-  antKleinBottleCairoCells: ['walkKleinBottleCairoTurtleCells', 'Klein bottle'],
-  // (the regular solids' of triangles and of hexagons, as the sphere's; a hull solid's with walks: see HULL_SOLIDS; the sphere's
-  // kites and Penrose rhombi, on their walks on cells)
-  ...Object.fromEntries(
-    [
-      ...['Tetrahedron', 'Octahedron', 'Dodecahedron', 'Stella octangula'].flatMap((place) =>
-        ['Triangles', 'Hex'].map((tiling) => [place, tiling]),
-      ),
-      ...Object.values(HULL_SOLIDS)
-        .filter((S) => S.walks)
-        .map((S) => [S.name, S.cells]),
-      ['Sphere', 'Kites'],
-      ['Dodecahedron', 'Penrose'],
-    ].map(([place, tiling]) => [
-      variantName('Ant', place, tiling, null, 'cells'),
-      [variantName('Walk', place, tiling, 'Turtle', 'cells'), place],
-    ]),
-  ),
-};
+// on every surface where a walk goes on cells (see GRIDS.md, step 2: an ant's rule): on the cells of its walk, as the cube's, its
+// turns the walk's, its rules the one list's (see RULES; its place in the menus: the walk's surface and tiling), named as it
+// (walkTorusKitesTurtleCells: antTorusKitesCells); those of ANTS apart (the plane's, the sphere's and the cube's, of their own)
+const SURFACE_ANTS = Object.fromEntries(
+  Object.keys(VARIANTS)
+    .filter(
+      (w) =>
+        NAV[w]?.[0] === 'Walk' &&
+        NAV[w][4] === 'cells' &&
+        VARIANTS[w].lattice === 'surface' &&
+        !Object.values(ANTS).some((a) => a.walk === w),
+    )
+    .map((w) => [`ant${w.slice(4).replace(/TurtleCells$/, 'Cells')}`, [w, NAV[w][2]]]),
+);
 // the worms on the triangles' grids of the surfaces with ants on triangles: their walks along it, its Edges tab beside the ants'
 const SURFACE_WORMS = {
   antIcosahedronTrianglesEdges: ['walkIcosahedronTrianglesTurtleEdges', 'sphere'],

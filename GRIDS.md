@@ -184,4 +184,5 @@ name (a list of their own, to empty when they are taken in or given their reason
     octahedron's 33 and the sphere's 32: a turtle of left and right on triangles stays near; along edges 425 and 653).
   - **Taken in**: the 7 kites and the 2 rhombic solids' triangles in v0.5.215 (the quadrilaterals' cell walks' list;
     `twinWalks`, a solid's two walks as its twin's; a cut's start corners and face centres its uncut solid's), the 4
-    carved cubes in v0.5.216 (their start corners the cube's, `cubeSolid`). Their ants not yet (`ANTS`' list).
+    carved cubes in v0.5.216 (their start corners the cube's, `cubeSolid`). Their ants in v0.5.220: an ant on every
+    surface where a walk goes on cells, by the rule (`SURFACE_ANTS`, its list by hand gone).

@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.324';
+const VERSION = '0.5.325';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -20522,7 +20522,7 @@ function battleOf(P, maps) {
 const versusTitle = (names) =>
   names.length < 2
     ? names.join('')
-    : names.map((name, s) => `<span style="color:${teamColour(s)}">${name}</span>`).join(' vs '); // (one alone: no team to tell apart, the text's colour)
+    : names.map((name, s) => `<span style="color:${inkOf(teamColour(s))}">${name}</span>`).join(' vs '); // (one alone: no team to tell apart, the text's colour)
 // A battle's closed areas at the step it is at (P: its player; Area, see drawSurface), each tile's walker + 1 (0: none):
 // for each living walker along the edges (Cut's, Area on; on cells none: Area greyed there), the regions its body cuts off,
 // as a walk's (see areaSteps: tiles parted by its edges), the largest (the outside) left out; a tile closed by two or
@@ -43041,6 +43041,13 @@ const oceanFits = (w = tabVariant(), lifeCount = lifeTeams, walkCount = walkTeam
 let oceanPicked = false; // (Ocean clicked since its default was set: kept, else it follows its default, see DISPLAY_DEFAULTS)
 const oceanOn = () => $('ocean').checked && shows('ocean', tabVariant()) && oceanFits(); // (its row's rule, not its row: drawn later)
 const blankTile = () => (oceanOn() ? OCEAN : UNLIT); // (a surface's tile none has painted: Ocean's sea blue, or the theme's)
+// a colour for text on the page: one too light to read on the light theme (Earth's white land) darkened, else as it is
+const inkOf = (colour) => {
+  const [r, g, b] = rgbOf(colour);
+  return themeName() === 'light' && 0.299 * r + 0.587 * g + 0.114 * b > 200
+    ? `color-mix(in srgb, ${colour}, black 45%)`
+    : colour;
+};
 const teamColour = (s) => (oceanOn() && LANDS[s] ? LANDS[s] : LIFE_COLOURS[s]); // (team s, a battle's walker or Life's colour: Earth's lands up to a Sextet, else Life's colours)
 const LAND_NAMES = ['green', 'white', 'yellow', 'lime', 'cyan', 'ochre']; // (Earth's lands, see PALETTES)
 const teamName = (s) => (oceanOn() && LANDS[s] ? LAND_NAMES[s] : LIFE_COLOUR_NAMES[s]);
@@ -46276,26 +46283,26 @@ const paintTimings = () => {
       return `<tr><td>${stage}</td><td class="number">${typeof ms === 'number' ? (ms < 1000 ? `${ms.toFixed(1)} ms` : `${(ms / 1000).toFixed(2)} s`) : ms}</td></tr>`;
     }).join('');
 };
-// the stats' gauges: a row each, its name, its bar (its share), its figures now, its run's peak (its figures and when);
-// a row with no bar (share null): its words across the table, from the bar's place
+// the stats' gauges, a table (see .stat-table): a row each, its name, its bar (its share), its figures now, its run's
+// peak (its figures and when); a row with no bar (share null): its words across the table, from the bar's place
 function paintGauges(rows) {
   const box = $('gauges'),
-    cells = (share) => (share === null ? ['gauge-words'] : ['gauge-bar', 'gauge-now', 'gauge-peak', 'gauge-peak-gen']),
+    cells = (share) => (share === null ? ['stat-words'] : ['stat-bar', 'stat-num', 'stat-num', '']),
     key = rows.map(([name, , share]) => `${name}|${cells(share)}`).join();
   if (box.dataset.key !== key) {
     box.dataset.key = key;
     box.innerHTML = rows
       .map(
         ([name, , share]) =>
-          `<div class="gauge-row"><span>${name}</span>${cells(share)
-            .map((c) => `<span class="${c}">${c === 'gauge-bar' ? '<i></i>' : ''}</span>`)
+          `<div class="stat-row"><span>${name}</span>${cells(share)
+            .map((c) => `<span class="${c}">${c === 'stat-bar' ? '<i></i>' : ''}</span>`)
             .join('')}</div>`,
       )
       .join('');
   }
   rows.forEach(([, colour, share, text, peak], i) => {
     const row = box.children[i],
-      bar = row.querySelector('.gauge-bar');
+      bar = row.querySelector('.stat-bar');
     if (bar)
       Object.assign(bar.firstChild.style, {
         width: `${Math.min(100, 100 * (share || 0))}%`,
@@ -46353,7 +46360,8 @@ function renderWalkGauges() {
           b = placePoint(Q[s][D.step]);
         return Math.hypot(b[0] - a[0], b[1] - a[1], b[2] - a[2]);
       };
-    const C = battleColumns(D);
+    const C = battleColumns(D),
+      count = (v) => formatNumberAsWide(v, walk.nodes); // (a count as wide as the board's places: none moving)
     $('gauges').hidden = true;
     // (with land a dead one keeps its land and its place by it; in Cut it goes under the living; ✝ by its worth, when: Dead at)
     const gone = (s) => D.dead[s] >= 0,
@@ -46368,10 +46376,10 @@ function renderWalkGauges() {
         dead: gone(s) && !D.bite,
         diedAt: D.dead[s],
         cells: [
-          `<b>${formatNumber(w[s])}</b>${gone(s) ? ' ✝' : s === survivor ? ' ♥\uFE0E' : ''}`,
-          formatNumber(D.bestAt(s)),
+          `<b>${count(w[s])}</b>${gone(s) ? ' ✝' : s === survivor ? ' ♥\uFE0E' : '<span class="digits-pad"> ✝</span>'}`,
+          count(D.bestAt(s)),
           deaths[s] >= 0 ? genLink(deaths[s]) : '',
-          ...(C.body ? [formatNumber(D.size[s])] : []),
+          ...(C.body ? [count(D.size[s])] : []),
           from(s).toFixed(1),
         ],
       })),
@@ -46443,11 +46451,7 @@ const battleColumns = (P) => {
     titles: [
       [worth, P.bite ? 'The tiles it holds' : "Its body's length"],
       [`${worth} peak`, `Its ${worth.toLowerCase()} at its largest so far`],
-      [
-        'Dead at',
-        'The step it dies at, the battle played to its end (a click: there); none if it lives to the end',
-        80,
-      ],
+      ['Dead at', 'The step it dies at, the battle played to its end (a click: there); none if it lives to the end'],
       ...(body ? [[body, body === 'Line' ? 'The edges of its line now' : "Its body's tiles now"]] : []),
       ['Distance', 'Its head from its start'],
     ],
@@ -46455,18 +46459,22 @@ const battleColumns = (P) => {
 };
 function renderRanking(L) {
   const K = L.colours;
-  $('ranking').hidden = $('rankTitles').hidden = K < 2 || (!!L.loops && !L.lineages); // (a loop alone: its states, no colours fighting)
+  $('ranking').hidden = K < 2 || (!!L.loops && !L.lineages); // (a loop alone: its states, no colours fighting)
   if ($('ranking').hidden) return;
   const dead = (k) => colourGone(L, k),
     foot = endShown(L) && L.footBy;
   const avg = loopMeans(L),
     live = (k) => avg?.[k] ?? L.byColour[k],
     mean = !!avg, // (a loop: each colour's mean over it, ≈)
-    names = startWords(getSetup()); // (its players', as its title: one a colour, else none)
+    names = startWords(getSetup()), // (its players', as its title: one a colour, else none)
+    // each figure as wide as its widest, known: a count the grid's cells, its births and deaths their furthest played's
+    count = (v) => formatNumberAsWide(v, L.seed.length),
+    last = L.trace.born.at(-1),
+    most = { born: Math.max(...last.bornBy), dead: Math.max(...last.deadBy) };
   paintRanking(
     Array.from({ length: K }, (_, c) => {
       const k = c + 1,
-        num = (v) => (mean && L.loopMax[k] > L.loopMin[k] ? meanText(v) : formatNumber(v));
+        num = (v) => (mean && L.loopMax[k] > L.loopMin[k] ? meanText(v) : count(v));
       return {
         colour: teamColour(c),
         name: names.length === K ? names[c] : '',
@@ -46476,54 +46484,49 @@ function renderRanking(L) {
         diedAt: L.extinctAt[k],
         cells: [
           dead(k) ? `✝ ${genLink(L.extinctAt[k])}` : `<b>${num(live(k))}</b>`,
-          formatNumber(Math.round((foot ?? L.sumBy)[k] / (foot ? Math.max(1, L.stable.T) : L.gen + 1))),
-          formatNumber(L.bornBy[k]),
-          formatNumber(L.deadBy[k]),
-          formatNumber(L.everBy[k]),
+          count(Math.round((foot ?? L.sumBy)[k] / (foot ? Math.max(1, L.stable.T) : L.gen + 1))),
+          formatNumberAsWide(L.bornBy[k], most.born),
+          formatNumberAsWide(L.deadBy[k], most.dead),
+          count(L.everBy[k]),
         ],
       };
     }),
     LIFE_TITLES,
   );
 }
-// A ranking, the same for Life's battles and a walk's (titles: [name, tip, width in px]): a row each (its colour and its name, its player's
-// name, value, dead or not and when, its
-// table's cells, the first its value or ✝ when), its place, its colour, its bar (its share of the living ones' values) and
-// its cells in its colour; the living by value, then the dead, the last died first; each row sliding to its place; all
-// dead, said
+// A ranking, the same for Life's battles and a walk's, a table (see .stat-table): its titles' row ([name, tip] each), then
+// a row each (its place, its colour, its bar: its share of the living ones' values, its cells in its colour, the first
+// its value or ✝ when; its title its player's name and its colour), the living by value, then the dead, the last died
+// first, each row sliding to its place (--shift: rows from its own); all dead, said under them
 function paintRanking(rows, titles) {
-  const T = $('rankTitles'),
-    names = titles.map((t) => t[0]).join();
-  // its columns as wide as their words, open (--rank-column-widths: the titles' and the rows' grids alike): a title's own width,
-  // else its first and last 70 px, the others 56
-  T.closest('.stage-bar').style.setProperty(
-    '--rank-column-widths',
-    titles.map(([, , w], i) => `${w ?? (i && i < titles.length - 1 ? 56 : 70)}px`).join(' '),
-  );
-  if (T.dataset.key !== names) {
-    T.replaceChildren(
+  const box = $('ranking'),
+    key = [...titles.map((t) => t[0]), ...rows.map((r) => `${r.colour}|${r.name}|${r.cells.length}`)].join();
+  box.hidden = false;
+  if (box.dataset.key !== key) {
+    box.style.setProperty('--stat-columns', titles.length);
+    const head = document.createElement('div');
+    head.className = 'stat-row';
+    head.innerHTML = '<span></span>'.repeat(3);
+    head.append(
       ...titles.map(([name, tip]) =>
-        Object.assign(document.createElement('span'), { textContent: name, title: tip ?? '' }),
+        Object.assign(document.createElement('span'), { className: 'stat-num', textContent: name, title: tip ?? '' }),
       ),
     );
-    T.dataset.key = names;
-  }
-  $('ranking').hidden = T.hidden = false;
-  const box = $('ranking'),
-    H = 18,
-    key = rows.map((r) => `${r.colour}|${r.name}|${r.cells.length}`).join();
-  if (box.dataset.key !== key) {
+    const end = document.createElement('div');
+    end.className = 'stat-row all-dead';
+    end.innerHTML = '<span>All dead</span>';
     box.replaceChildren(
+      head,
       ...rows.map((row) => {
         const r = document.createElement('div');
-        r.className = 'rank-row';
+        r.className = 'stat-row rank-row';
         r.innerHTML =
-          `<span></span><i style="background:${row.colour}"></i><span class="rank-bar"><i style="background:${row.colour}"></i></span>` +
-          `<span class="rank-cell" style="color:${row.colour}"></span>`.repeat(row.cells.length);
-        r.title = [row.name, row.colourName].filter(Boolean).join(' · '); // (its player's name and its colour, Life's and a walk's alike)
+          `<span class="stat-num"></span><i style="background:${row.colour}"></i><span class="stat-bar"><i style="background:${row.colour}"></i></span>` +
+          '<span class="stat-num"></span>'.repeat(row.cells.length);
+        r.title = [row.name, row.colourName].filter(Boolean).join(' · ');
         return r;
       }),
-      Object.assign(document.createElement('span'), { className: 'all-dead' }),
+      end,
     );
     box.dataset.key = key;
   }
@@ -46532,19 +46535,20 @@ function paintRanking(rows, titles) {
     gone = order.filter((k) => rows[k].dead);
   alive.sort((a, b) => rows[b].value - rows[a].value || a - b);
   gone.sort((a, b) => rows[b].diedAt - rows[a].diedAt || a - b);
-  const total = alive.reduce((sum, k) => sum + rows[k].value, 0) || 1,
-    top = alive.length ? 0 : H; // (all dead: a line for it on top)
-  box.style.height = `${rows.length * H + top}px`;
+  const total = alive.reduce((sum, k) => sum + rows[k].value, 0) || 1;
   [...alive, ...gone].forEach((k, place) => {
-    const r = box.children[k],
+    const r = box.children[1 + k],
       row = rows[k];
-    r.style.transform = `translateY(${top + place * H}px)`;
+    r.style.setProperty('--shift', place - k);
     r.classList.toggle('dead', row.dead);
     r.children[0].textContent = place + 1; // (then its colour, its bar, its table)
     r.children[2].firstChild.style.width = row.dead ? '0' : `${(100 * row.value) / total}%`;
-    row.cells.forEach((v, c) => setLinks(r.children[3 + c], v));
+    row.cells.forEach((v, c) => {
+      setLinks(r.children[3 + c], v);
+      r.children[3 + c].style.color = inkOf(row.colour);
+    });
   });
-  box.querySelector('.all-dead').textContent = alive.length ? '' : 'All dead';
+  box.lastChild.hidden = alive.length > 0;
 }
 function updateStats() {
   $('ruleChips').hidden = !!walk.battle; // (a battle: its walkers' turns not shown, see the walk's part below)
@@ -46604,12 +46608,12 @@ function updateStats() {
     endMark() +
       (sweetSpot() !== null ? `${genLink(sweetSpot(), `✦<span class="end-words"> sweet spot</span>`, 'sweet')}` : ''),
   ); // (its link to its sweet spot, after its end's)
-  if (!walk.life && !walk.battle) $('ranking').hidden = $('rankTitles').hidden = true; // (a battle's shown by renderWalkGauges: never hidden in between, its rows' slides kept)
+  if (!walk.life && !walk.battle) $('ranking').hidden = true; // (a battle's shown by renderWalkGauges: never hidden in between, its rows' slides kept)
   const time = walk.stacked && !!stack,
     rows = walk.rows;
   if (time || rows) {
     // Space-time: its cubes up to the generation shown; Elementary: its live cells up to it (see elementaryRows): a gauge, as a walk's and Life's
-    $('ranking').hidden = $('rankTitles').hidden = true;
+    $('ranking').hidden = true;
     $('gauges').hidden = false;
     setLinks($('barNum'), barTitleNow());
     paintGauges([

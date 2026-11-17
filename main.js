@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.196';
+const VERSION = '0.5.197';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -23330,9 +23330,6 @@ const cellCopies = (kind, W, t) => symmetryMaps(kind, W, symmetryOf(kind, W)).ma
 // sizes, see SIDES), its cells regular: triangles 2 a rhombus, Cairo pentagons 2 a square (an even side, so
 // that it wraps round), kites 6 a rhombus (on triangles twice as big)
 const planeTorus = (kind) => plane.torus && !APERIODIC[kind]; // hats and Penrose's rhombi never wrap round: they never repeat
-// a variant's plane at first: a torus (Life, a walk: nothing dies at an edge), Explore's walls (its colours alone: no seam to
-// break its lattice's period, its walls not drawn, see gpuPlane); a link writes it where it differs (gridWalls 1, or 0)
-const torusByDefault = (w) => !VARIANTS[w].explore;
 // every grid of the plane and its tiles a grid cell, the one it repeats as laid: its tiling's lattice cell, or a slanted grid's
 // rectangle (its kind's Rect, det lattice cells: see RECTS); Cairo's 2, the next 2 the same turned
 const TILES_PER_GRID_CELL = {
@@ -25485,7 +25482,7 @@ function startLead(number, seeded) {
   return `${how} on ${where}`;
 }
 function planeFromSetup(s) {
-  plane.torus = s.gridWalls === undefined ? torusByDefault(setupVariant(s)) : Number(s.gridWalls) !== 1;
+  plane.torus = Number(s.gridWalls) !== 1;
   plane.shape = ['square', 'rhombus'].includes(s.gridOutline) ? s.gridOutline : 'hex'; // (ol: its outline, not its own: a six-fold grid's a hexagon walled, the others' a rectangle)
   if (s.gridSize !== undefined) picked = planeCells(Number(s.gridSize)); // (the grid at the nearest it offers, see plane.side; as its edges are: walls, a hexagon's cells)
   spaceTime = Number(s.popStacked) === 1 && !plane.torus; // (3D: with walls only)
@@ -40307,7 +40304,7 @@ function getSetup() {
   if (variant.plane) {
     // the grid's side, dead edges (e=1), its start ("random.30.7", "draw" with p=, "digits"), its symmetry (y=)
     if (!variant.elementary) s.gridSize = plane.side; // (Elementary's: none, see elementaryRows)
-    if (plane.torus !== torusByDefault(w)) s.gridWalls = plane.torus ? 0 : 1;
+    if (!plane.torus) s.gridWalls = 1;
     const ol = outlineOf(VARIANTS[w].plane);
     if (ol !== outlineOf(VARIANTS[w].plane, 'hex')) s.gridOutline = ol;
     if (walk.plane && symmetryOf(walk.plane.kind) !== 'none') s.popSymmetry = symmetryOf(walk.plane.kind);
@@ -47955,10 +47952,7 @@ function displayDefaults() {
   displayTab = modeTabOf();
 }
 $('variant').addEventListener('change', () => {
-  if (modeTabOf() !== displayTab) {
-    plane.torus = torusByDefault(tabVariant()); // (another tab, its plane's at first: Explore's walls, the others' a torus)
-    displayDefaults();
-  }
+  if (modeTabOf() !== displayTab) displayDefaults();
   // the form of the view belongs to the walk variant: its perspective, the camera's starting angle
   // (auto-fit may have turned it to follow a walker) and its flat or round form (see initShape)
   // come back with every new variant

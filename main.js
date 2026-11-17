@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.236';
+const VERSION = '0.5.237';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -44266,7 +44266,7 @@ fn light(col: vec3f, n0: vec3f, p: vec3f, bias: f32) -> Lit {  // (as tileLight;
   var o: Lit; var n = n0;
   if (dot(n, u.V) < 0.0) { n = -n; }
   o.dark = col * (1.0 - u.shade);
-  o.lit = col * (u.shade * max(0.0, dot(n, u.L)) + u.glint * pow(max(0.0, dot(n, u.H)), ${LIGHT_SHINE}.0));  // (its glint in its own colour: a black cell stays black)
+  o.lit = col * u.shade * ((1.0 - u.glint) * max(0.0, dot(n, u.L)) + u.glint * pow(max(0.0, dot(n, u.H)), ${LIGHT_SHINE}.0));  // (its glint in its own colour, a share of the light: never past its colour, a pale one not washed white)
   let l = lightSpace(p);
   o.sh = vec3f(l.x * 0.5 + 0.5, 0.5 - l.y * 0.5, l.z * 0.5 + 0.5);
   o.cutv = dot(p, u.cutN); o.pos = clipOf(toScreen(p), bias);

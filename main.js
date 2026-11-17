@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.252';
+const VERSION = '0.5.253';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -22415,7 +22415,6 @@ const TILES_BROKEN = {
   exploreCubePitsSquares: [4, 2],
   exploreCubeBumpsSquares: [4, 2],
   exploreCubeFrameSquares: [4, 2],
-  exploreCubeMengerSpongeSquares: [4, 2],
   exploreTorusHex: [5, 3],
   exploreTorusKites: [4, 3],
   exploreTorusRhombille: [4, 3],
@@ -22479,7 +22478,8 @@ const TILES_BROKEN = {
   exploreRhombicTriacontahedronSquares: [3, 2],
   exploreRhombicTriacontahedronTriangles: [3, 2],
   exploreCuboctahedron: [3, 2], // (no tiling of its name on the plane: its faces', squares' and triangles', 2 each; the
-  // square pyramid's 3rd colour left out, as it is only along its edges, where its faces meet: no face's pattern broken)
+  // square pyramid's 3rd colour left out, as it is only along its edges, where its faces meet: no face's pattern broken;
+  // the sponge's squares' too, its holes hiding the break)
   exploreSquareOrthobicupola: [3, 2],
   exploreRhombicuboctahedron: [3, 2],
 };

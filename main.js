@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.237';
+const VERSION = '0.5.238';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -6709,7 +6709,7 @@ function renderHeadTiles() {
     $('tilesRow'),
     'Tiles',
     $('tilesRow').title,
-    [['Off', 'One ground for all'], ...TILES_PALETTES.map((name) => [name, `In ${name}`])],
+    [['Off', 'One ground for all'], ...tilesPalettes().map((name) => [name, `In ${name}`])],
     Number($('tiles').value),
     defaultOf('tiles', tabVariant()),
     (k) => {
@@ -22231,6 +22231,10 @@ const EXPLORE_PALETTES = [
   ['Mist', ['#E6EDF3', '#DCE5EE', '#D1DDE8', '#C6D4E2'], 'Faded blues of one hue, barely apart'],
   ['Celadon', ['#E4F0E9', '#D9E9E0', '#CDE2D6', '#C2DACC'], 'Faded greens of one hue, barely apart'],
   ['Lilac', ['#EEE7F3', '#E5DCEE', '#DCD1E8', '#D2C6E2'], 'Faded violets of one hue, barely apart'],
+  ['Garnet', ['#3A2A2D', '#43303A', '#4C3639', '#553C40'], 'Dark pinks of one hue, barely apart'],
+  ['Slate', ['#26303B', '#2C3743', '#323E4B', '#384553'], 'Dark blues of one hue, barely apart'],
+  ['Moss', ['#26332C', '#2C3A32', '#324138', '#38483E'], 'Dark greens of one hue, barely apart'],
+  ['Plum', ['#30293A', '#372F42', '#3E354A', '#453B52'], 'Dark violets of one hue, barely apart'],
 ]; // (name, colours, words)
 const exploreLook = { rule: 'tiles', palette: 0 },
   explorePalette = () => EXPLORE_PALETTES[exploreLook.palette][1];
@@ -22318,12 +22322,16 @@ const planeColouring = (kind, W) => ({
   kinds: tileKinds(planeMesh(kind, W, planeTorus(kind)), APERIODIC[kind]?.(W).kinds),
   lattice: APERIODIC[kind] ? null : { xy: planeGrid(kind, W).xy, m: gridCells(kind) },
 });
-// Tiles: each cell's ground (what shows where nothing is painted) its colour in Explore, by its colouring there and a pale
-// palette of its (TILES_PALETTES, the Display's Tiles row: Off, then these; exploreLevels on the grid shown), packed; off,
+// Tiles: each cell's ground (what shows where nothing is painted) its colour in Explore, by its colouring there and a
+// palette of its, the theme's (TILES_PALETTES, the Display's Tiles row: Off, then these; exploreLevels on the grid shown), packed; off,
 // null: one ground for all, Earth's sea or the theme's (see blankTile)
-const TILES_PALETTES = ['Blush', 'Mist', 'Celadon', 'Lilac']; // (Explore's palettes by name: pale, the live cells read over them)
+const TILES_PALETTES = {
+  light: ['Blush', 'Mist', 'Celadon', 'Lilac'],
+  dark: ['Garnet', 'Slate', 'Moss', 'Plum'],
+}; // (Explore's palettes by name, the page's theme's: pale in the light, the black live cells read over them, dark in the dark, the light ones; a pill each pair, its place kept from one theme to the other)
+const tilesPalettes = () => TILES_PALETTES[themeName()];
 const tilesPalette = () =>
-  EXPLORE_PALETTES.find(([name]) => name === TILES_PALETTES[Number($('tiles').value) - 1])?.[1] ?? null;
+  EXPLORE_PALETTES.find(([name]) => name === tilesPalettes()[Number($('tiles').value) - 1])?.[1] ?? null;
 const tilesOn = () => !!tilesPalette() && shows('tiles', tabVariant());
 let groundMemo = {};
 function groundColours() {

@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.338';
+const VERSION = '0.5.339';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -6480,7 +6480,7 @@ const DISPLAY_BY_TAB = {
     'grid',
     ...VIEW_3D,
     'glass',
-    'tessera',
+    'finish',
     'tiles',
     'ocean',
     'cut',
@@ -6495,7 +6495,7 @@ const DISPLAY_BY_TAB = {
     'grid',
     ...VIEW_3D,
     'glass',
-    'tessera',
+    'finish',
     'tiles',
     'ocean',
     'cut',
@@ -6503,7 +6503,7 @@ const DISPLAY_BY_TAB = {
   '2D spirals': ['heatmap', 'fill', 'translucent', 'cells', 'visits', 'digit', 'grid', 'tiles', 'ocean'], // the 2D walks' menu, some of it greyed out
   Elementary: ['colours', 'mono', 'domain', 'entropy', 'grid'], // (its cells never change once made: no Heatmap, no Trail; Domains its own)
   'Explore on the plane': ['grid'],
-  'Explore on surfaces': ['shape', 'grid', ...VIEW_3D, 'glass', 'tessera', 'cut'], // (its view's only: its colours its own, see renderExplore)
+  'Explore on surfaces': ['shape', 'grid', ...VIEW_3D, 'glass', 'finish', 'cut'], // (its view's only: its colours its own, see renderExplore)
 };
 // The Display settings' defaults, one table: each its control (a box's id), when it comes back (open: the page's opening
 // only, kept from tab to tab; tab: another tab; variant: every variant; lifeTeams: Life's count of teams; battle: a battle's
@@ -6560,7 +6560,7 @@ const DISPLAY_DEFAULTS = {
   light: ['light', 'open', true],
   glint: ['glintM', ['open', 'tab'], (variant, w) => (NAV[w][0] === 'Walk' && NAV[w][1] === '3D' ? 1 : 0.5)], // (halfway: its own colour and white added, see light; a lattice's walk white, its bars' glint bright)
   glass: ['glass', 'open', false],
-  tessera: ['tessera', 'open', false],
+  finish: [null, 'open', 0],
   grid: [
     'gridLines',
     ['tab', 'exploreRule'],
@@ -6667,7 +6667,7 @@ function updateDisplayMenu() {
     light: 'lightRow',
     glint: 'glintRow',
     glass: 'glassRow',
-    tessera: 'tesseraRow',
+    finish: 'finishRow',
     ocean: 'oceanRow',
     cut: 'cutRow',
   };
@@ -6712,7 +6712,6 @@ const VIEW_TILES = [
   ],
   ['light', 'lightRow', () => icon('sideLight'), 'Side light'],
   ['glass', 'glassRow', () => icon('glass'), 'Glass'],
-  ['tessera', 'tesseraRow', () => icon('tessera'), 'Tessera'],
 ];
 let viewTiles = null;
 function renderViewTiles() {
@@ -6742,12 +6741,7 @@ function renderViewTiles() {
     : !ways.off.length
       ? 'on'
       : `On by default on ${ways.on.join(', ')}\nOff by default on ${ways.off.join(', ')}`;
-  const first = {
-    perspective,
-    light: defaultMark('light'),
-    glass: defaultMark('glass'),
-    tessera: defaultMark('tessera'),
-  };
+  const first = { perspective, light: defaultMark('light'), glass: defaultMark('glass') };
   VIEW_TILES.forEach(([id], k) =>
     setTile(viewTiles[k], {
       on: $(id).checked,
@@ -8179,9 +8173,6 @@ const ICONS = (() => {
       svgPath('M12.5 8.6L21 4.8M13 12H21.5M12.5 15.4L21 19.2'),
     cut: svgPath('M3 12A9 9 0 0 1 21 12Z') + svgPath('M2 15.5H22'), // a ball's back half, the cut's line
     glass: svgPath('M3 12A9 9 0 1 0 21 12A9 9 0 1 0 3 12Z') + svgPath('M3 12A9 3.5 0 0 0 21 12A9 3.5 0 0 0 3 12Z'), // a ball, its equator seen through
-    tessera: svgPath(
-      'M5 3H10A2 2 0 0 1 12 5V10A2 2 0 0 1 10 12H5A2 2 0 0 1 3 10V5A2 2 0 0 1 5 3ZM15 3H19A2 2 0 0 1 21 5V8A2 2 0 0 1 19 10H15A2 2 0 0 1 13 8V5A2 2 0 0 1 15 3ZM16 12H19A2 2 0 0 1 21 14V19A2 2 0 0 1 19 21H16A2 2 0 0 1 14 19V14A2 2 0 0 1 16 12ZM5 14H10A2 2 0 0 1 12 16V19A2 2 0 0 1 10 21H5A2 2 0 0 1 3 19V16A2 2 0 0 1 5 14Z',
-    ), // four rounded pieces of mosaic, their joints between
     viewDefault: svgPath('M12 3L20 7.5V16.5L12 21L4 16.5V7.5Z') + svgPath('M4 7.5L12 12L20 7.5M12 12V21'), // (a cube from its usual corner)
     upright: svgPath('M12 3V17M8 7L12 3L16 7M4 20.5H20'), // (up, over a level line)
     free:
@@ -43071,7 +43062,15 @@ const paintLevels = (palette, levelOf) => (out, n) => {
 // gone, by a fixed plane through the middle (see CUT_AXES); the two apart: with both, what is left see-through
 const GLASS_ALPHA = 0.4; // (a tile's share: a layer behind seen at 60%, two at 36%…)
 const glassOn = () => $('glass').checked && !$('glassRow').hidden;
-const tesseraOn = () => $('tessera').checked && !$('tesseraRow').hidden;
+// Finish: the surface's tiles plain (Off), or each painted one lit pixel by pixel from its own corners (see tesseraF): a
+// piece of mosaic (Tessera), a lamp glowing from its middle (Glow); its number, as Cut's, the place of its pill
+const FINISHES = [
+  ['Off', 'The tiles plain, each one colour'],
+  ['Tessera', 'Each tile painted a piece of mosaic: rounded down to its edges, its joint dark'],
+  ['Glow', 'Each tile painted a lamp: its light its own, brightest in its middle'],
+];
+let surfaceFinish = defaultOf('finish', tabVariant());
+const finishOn = () => surfaceFinish > 0 && !$('finishRow').hidden;
 const oceanFits = (w = tabVariant(), lifeCount = lifeTeams, walkCount = walkTeams) =>
   (VARIANTS[w].life ? lifeCount : battleAt(w, walkCount) ? walkCount : 1) <= LANDS.length; // (its lands a Sextet's at most, Life's teams or a battle's walkers: beyond, greyed; at a setup, see whyNot)
 let oceanPicked = false; // (Ocean clicked since its default was set: kept, else it follows its default, see DISPLAY_DEFAULTS)
@@ -44198,22 +44197,24 @@ fn tileColour(id: u32) -> vec4f {  // (the back of an open sheet, as a ground; e
 @vertex fn tileV(@location(0) pos: vec3f, @location(1) nrm: vec3f, @location(2) id: u32) -> Lit {
   return light(tileColour(id).rgb, nrm, pos, 0.0);
 }
-// Tessera (Display): each tile painted a piece of mosaic (none painted: flat, its alpha half, see packed), lit pixel by pixel: rounded down to its edges (its normal tilted towards
-// the nearest, over BEVEL of the way from its edge to its middle) and its joint dark (over JOINT of it). Its corners read
-// where they are drawn from (corners, cornersEach a tile, its last repeated: see gpuFrame), the nearest edge found
+// Finish (Display): each tile painted lit pixel by pixel (none painted: flat, its alpha half, see packed), by how far it
+// is from its edge to its middle: Tessera (pieces.y 1), a piece of mosaic, rounded down to its edges (its normal tilted
+// towards the nearest, over BEVEL of the way) and its joint dark (over JOINT of it); Glow (2), a lamp, its own light
+// brightest in its middle. Its corners read where they are drawn from (corners, pieces.x a tile, its last repeated: see
+// gpuFrame), the nearest edge found
 @group(2) @binding(0) var<storage, read> corners: array<f32>;
-@group(2) @binding(1) var<uniform> cornersEach: vec4u;
+@group(2) @binding(1) var<uniform> pieces: vec4u;  // (x: its corners a tile; y: its Finish)
 struct Tess { @builtin(position) pos: vec4f, @location(0) col: vec4f, @location(1) n: vec3f, @location(2) p: vec3f, @location(3) @interpolate(flat) first: u32, @location(4) sh: vec3f, @location(5) cutv: f32 }
 @vertex fn tesseraV(@location(0) pos: vec3f, @location(1) nrm: vec3f, @location(2) id: u32, @builtin(vertex_index) v: u32) -> Tess {
   let l = light(tileColour(id).rgb, nrm, pos, 0.0);
   var o: Tess;
   o.pos = l.pos; o.col = tileColour(id); o.n = nrm; o.p = pos; o.sh = l.sh; o.cutv = l.cutv;
-  o.first = v - v % cornersEach.x;  // (its tile's first corner: k a tile)
+  o.first = v - v % pieces.x;  // (its tile's first corner: k a tile)
   return o;
 }
 fn cornerAt(i: u32) -> vec3f { return vec3f(corners[3u * i], corners[3u * i + 1u], corners[3u * i + 2u]); }
 fn nearestEdge(p: vec3f, first: u32) -> vec4f {  // (the point of the tile's outline nearest p, and how far)
-  let k = cornersEach.x; var best = vec4f(p, 1e30);
+  let k = pieces.x; var best = vec4f(p, 1e30);
   for (var q = 0u; q < k; q++) {
     let a = cornerAt(first + q); let b = cornerAt(first + (q + 1u) % k);
     let ab = b - a; let t = clamp(dot(p - a, ab) / max(dot(ab, ab), 1e-20), 0.0, 1.0);
@@ -44226,11 +44227,15 @@ fn nearestEdge(p: vec3f, first: u32) -> vec4f {  // (the point of the tile's out
   if (u.cut == 1 && i.cutv > 0.0) { discard; }
   if (i.col.a < 0.75) { return seen(i.col.rgb * (1.0 - u.shade) + shine(i.col.rgb, facing(normalize(i.n))) * lightShare(i.sh), i.pos.z); }  // (none painted: flat)
   var middle = vec3f(0.0);
-  for (var q = 0u; q < cornersEach.x; q++) { middle += cornerAt(i.first + q); }
-  middle /= f32(cornersEach.x);
+  for (var q = 0u; q < pieces.x; q++) { middle += cornerAt(i.first + q); }
+  middle /= f32(pieces.x);
   let edge = nearestEdge(i.p, i.first);
   let w = edge.w / max(nearestEdge(middle, i.first).w, 1e-20);  // (0 on its edge, 1 in its middle)
   let n = facing(normalize(i.n));
+  if (pieces.y == 2u) {  // (Glow: a dim tile, its own light from its middle, never in the lamp's shadow)
+    let lamp = smoothstep(0.0, 1.0, w);
+    return seen(i.col.rgb * (0.25 + 0.2 * max(0.0, dot(n, u.L)) * lightShare(i.sh)) + i.col.rgb * (0.15 + 1.1 * lamp * lamp), i.pos.z);
+  }
   let out = edge.xyz - i.p; let side = out - n * dot(out, n);  // (towards its nearest edge, along it)
   let slope = 1.6 * (1.0 - smoothstep(0.0, ${TESSERA_BEVEL}, w));
   var m = n; if (dot(side, side) > 0.0) { m = normalize(n + normalize(side) * slope); }
@@ -44560,15 +44565,15 @@ const gpuBuffer = (name, data, usage = GPUBufferUsage.VERTEX) => {
 // the bind group of the frame's numbers, the tiles' colours, the rainbow and the digits' colours
 // Tessera's bind group: the tiles' corners and how many a tile, made again when their buffers are (see gpuBuffer)
 const cornersGroup = (D) => {
-  if (D.cornersGroup?.pos !== D.pos || D.cornersGroup.each !== D.cornersEach)
+  if (D.cornersGroup?.pos !== D.pos || D.cornersGroup.each !== D.pieces)
     D.cornersGroup = {
       pos: D.pos,
-      each: D.cornersEach,
+      each: D.pieces,
       group: D.device.createBindGroup({
         layout: D.corners,
         entries: [
           { binding: 0, resource: { buffer: D.pos } },
-          { binding: 1, resource: { buffer: D.cornersEach } },
+          { binding: 1, resource: { buffer: D.pieces } },
         ],
       }),
     };
@@ -44780,7 +44785,7 @@ function gpuSurface(paint, path) {
         nrm[i + 2] = sh.nrm[3 * t + 2];
       }
     gpuBuffer('pos', pos, GPUBufferUsage.VERTEX | GPUBufferUsage.STORAGE); // (Tessera reads its tiles' corners, see tesseraF)
-    gpuBuffer('cornersEach', Uint32Array.of(k, 0, 0, 0), GPUBufferUsage.UNIFORM);
+    gpuBuffer('pieces', Uint32Array.of(k, surfaceFinish, 0, 0), GPUBufferUsage.UNIFORM); // (its corners a tile, its Finish)
     gpuBuffer('nrm', nrm);
     const edges = surfaceEdges(g),
       E = edges.length / 4,
@@ -44936,7 +44941,7 @@ function gpuSurface(paint, path) {
     const front = shapeSign(g) < 0 ? 'front' : 'back',
       cull = both ? 'none' : front;
     const tiles = (plain, c) => {
-      const mosaic = tesseraOn();
+      const mosaic = finishOn();
       rp.setPipeline(
         gpuDrawPipe(mosaic ? 'tessera' : 'tile', {
           vertex: mosaic ? 'tesseraV' : 'tileV',
@@ -44950,7 +44955,10 @@ function gpuSurface(paint, path) {
       );
       rp.setBindGroup(0, gpuGroup(), [slotOf({ glass: pass, cut, alpha: GLASS_ALPHA, plain })]);
       rp.setBindGroup(1, D.shadow.group);
-      if (mosaic) rp.setBindGroup(2, cornersGroup(D));
+      if (mosaic) {
+        D.device.queue.writeBuffer(D.pieces, 4, Uint32Array.of(surfaceFinish)); // (its Finish)
+        rp.setBindGroup(2, cornersGroup(D));
+      }
       rp.setVertexBuffer(0, D.pos);
       rp.setVertexBuffer(1, D.nrm);
       rp.setVertexBuffer(2, D.tileIds);
@@ -47845,16 +47853,27 @@ for (const id of ['animBar', 'viewTools', 'ruleTuto', 'numberPreview', 'axesLabe
 $('light').addEventListener('change', () => {
   needsFull = true;
 });
-for (const id of ['glass', 'tessera'])
-  $(id).addEventListener('change', () => {
-    needsFull = true;
-  });
+$('glass').addEventListener('change', () => {
+  needsFull = true;
+});
 $('ocean').addEventListener('change', () => {
   oceanPicked = true;
   needsFull = statsDirty = true;
   tintBattleFormulas();
   if (walk.n) describe(walk.base);
 }); // (a battle's colours: its fields, its title, its ranking)
+pillRow(
+  $('finishRow'),
+  'Finish',
+  "The surface's tiles: how each one painted is lit",
+  FINISHES,
+  surfaceFinish,
+  defaultOf('finish', tabVariant()),
+  (k) => {
+    needsFull ||= k !== surfaceFinish;
+    surfaceFinish = k;
+  },
+);
 pillRow(
   $('cutRow'),
   'Cut',

@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.292';
+const VERSION = '0.5.293';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -22392,6 +22392,7 @@ const surfaceColouring = (g) => ({
   faces: g.cellFaces ?? null,
   kinds: tileKinds(meshCorners(g)),
   apart: cellsApart(g),
+  south: g.south, // (a rosette sphere's south half: its first 3 colours shifted, see exploreLevels)
   alternated: g.cellPlaces && alternatedBy(g.tiling ?? g.cells, (t) => g.cellPlaces[t]), // (a sheet's by its plane cells)
 });
 // two neighbouring cells of a surface parted by a fold or a seam: a solid's across its edge (its faces), a sheet's (a
@@ -22449,7 +22450,7 @@ function groundColours() {
 // coloured alone (DSatur, its pattern whole), its cells' neighbours across a fold or the seam not counted: two cells alike
 // may meet there (apart: see cellsApart)
 const pieceByPiece = (n, bySide, apart) => dsatur(n, (t, put) => bySide(t, (u) => !apart(t, u) && put(u))).colour;
-function exploreLevels(nbr, n, { faces, kinds, apart, alternated }, palette = explorePalette()) {
+function exploreLevels(nbr, n, { faces, kinds, apart, alternated, south }, palette = explorePalette()) {
   const side = sideOf(nbr),
     P = palette.length,
     rule = exploreLook.rule === 'sides' && !faces ? 'tiles' : exploreLook.rule;
@@ -22463,6 +22464,7 @@ function exploreLevels(nbr, n, { faces, kinds, apart, alternated }, palette = ex
       : apart
         ? pieceByPiece(n, bySide, apart)
         : dsatur(n, bySide).colour; // (a periodic grid, on the plane or a sheet, by its alternation: see alternationOf; a surface else piece by piece; else DSatur)
+  if (rule === 'tiles' && south) for (let t = south; t < n; t++) if (level[t] <= 3) level[t] = (level[t] % 3) + 1; // (a rosette sphere's south: its 3 first colours each the next, its halves told apart)
   if (rule === 'sides') {
     // (the faces' graph, their sides touching)
     const touching = Array.from({ length: faces.reduce((m, f) => Math.max(m, f), -1) + 1 }, () => new Set());

@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.235';
+const VERSION = '0.5.236';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -42617,7 +42617,7 @@ function towardViewer(x, y, z) {
   return x * v[0] + y * v[1] + z * v[2];
 }
 // The light (Light checked): from the top left, in front, turning with the view (a lamp on the camera's shoulder),
-// with its shadows; a tile is darkened by SHADE as it turns away from it, with a white glint where it faces half-way
+// with its shadows; a tile is darkened by SHADE as it turns away from it, with a glint of its colour where it faces half-way
 // between the light and the viewer (glint(), as the shaders' light). Light unchecked: lit from the viewer, no glint, no shadows
 const LIGHT_GLINT = 0.22,
   LIGHT_SHINE = 24,
@@ -44266,7 +44266,7 @@ fn light(col: vec3f, n0: vec3f, p: vec3f, bias: f32) -> Lit {  // (as tileLight;
   var o: Lit; var n = n0;
   if (dot(n, u.V) < 0.0) { n = -n; }
   o.dark = col * (1.0 - u.shade);
-  o.lit = col * u.shade * max(0.0, dot(n, u.L)) + u.glint * pow(max(0.0, dot(n, u.H)), ${LIGHT_SHINE}.0);
+  o.lit = col * (u.shade * max(0.0, dot(n, u.L)) + u.glint * pow(max(0.0, dot(n, u.H)), ${LIGHT_SHINE}.0));  // (its glint in its own colour: a black cell stays black)
   let l = lightSpace(p);
   o.sh = vec3f(l.x * 0.5 + 0.5, 0.5 - l.y * 0.5, l.z * 0.5 + 0.5);
   o.cutv = dot(p, u.cutN); o.pos = clipOf(toScreen(p), bias);

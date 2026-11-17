@@ -1756,9 +1756,11 @@ window.penroseKitesDartsSizes = (most = Infinity, slack = 0) =>
     .map(([n, P1]) => {
       const t0 = performance.now(),
         K = kitesDartsOf(penroseSphereGraph(P1), slack);
-      if (!K) return `${n} rhombi: no cover`;
+      if (!K) return console.log(`${n} rhombi: no cover`) ?? `${n} rhombi: no cover`;
       const kinds = [0, 1, 2].map((k) => K.filter((c) => c.kind === k));
-      return `${n} rhombi: ${K.length} cells: ${kinds[0].length} kites, ${kinds[1].length} darts, ${kinds[2].length} holes (${kinds[2].map((c) => c.corners.length).join(' ')} corners), ${Math.round(performance.now() - t0)} ms`;
+      const line = `${n} rhombi: ${K.length} cells: ${kinds[0].length} kites, ${kinds[1].length} darts, ${kinds[2].length} holes (of ${[...new Set(kinds[2].map((c) => c.corners.length))].join(', ')} corners), ${Math.round(performance.now() - t0)} ms`;
+      console.log(line); // (as it goes: the large ones take minutes)
+      return line;
     });
 
 // The rosette spheres' sizes and their cells (ROSETTE_SPHERES in main.js): each rosette's discs, W from 4 to most, whose rims pair teeth to

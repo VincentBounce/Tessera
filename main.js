@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.326';
+const VERSION = '0.5.327';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -41191,11 +41191,11 @@ function stageThumbnail() {
   const [w, h] = THUMBNAIL_SIZE,
     c = Object.assign(document.createElement('canvas'), { width: w, height: h }),
     g = c.getContext('2d');
-  const W = stage.clientWidth,
-    H = stage.clientHeight,
-    k = Math.max(w / W, h / H);
+  const { x, w: W, h: H } = viewRect(),
+    k = Math.max(w / W, h / H),
+    dpr = $('gridLayer').width / canvasWidth; // (the view's part of each layer, in its pixels)
   for (const id of ['gridLayer', 'fillLayer', 'gpuLayer', 'pathLayer', 'lineLayer', 'overlayLayer'])
-    g.drawImage($(id), (w - W * k) / 2, (h - H * k) / 2, W * k, H * k);
+    g.drawImage($(id), x * dpr, 0, W * dpr, H * dpr, (w - W * k) / 2, (h - H * k) / 2, W * k, H * k);
   return new Promise((ok) => c.toBlob(ok, 'image/webp', 0.85));
 }
 const thumbnailOf = (setup) => thumbnailStore('readonly', (store) => store.get(thumbnailKey(setup))).catch(() => null);
@@ -41702,7 +41702,14 @@ function restart() {
 // works on this form: the scale on a log scale (a steady feeling of zoom at any size) and the
 // centre in world units, so zooming out does not drift sideways.
 const MIN_SCALE = 1e-6; // pixels per cell, the farthest zoom out
-const VIEW_GAP = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--view-gap')); // pixels: a fit's margin, the player's and the view's boxes' (style.css)
+const VIEW_GAP = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--view-gap')),
+  VIEW_LEFT = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--view-left')); // (the settings' column over the stage)
+// the view: the stage's part the settings' column leaves (their cards float over the rest), where a figure is framed and centred
+const viewRect = () => ({ x: VIEW_LEFT, w: canvasWidth - VIEW_LEFT, h: canvasHeight }),
+  viewMiddleX = () => {
+    const { x, w } = viewRect();
+    return x + w / 2;
+  }; // pixels: a fit's margin, the player's and the view's boxes' (style.css)
 // how far the wheel zooms: from the view's fit (the whole of it framed, see viewFor; a walk's as it is now) ZOOM_OUT times
 // farther, whatever its size; nearer, in 3D ZOOM_IN times, in 2D down to ZOOM_CELLS cells across the screen (a cell's size,
 // whatever the size of the whole: a big Sierpiński's cells seen)
@@ -41716,7 +41723,7 @@ const zoomRange = () => {
     flat = !walk.is3d && !walk.surface;
   return [
     Math.max(MIN_SCALE, fit / ZOOM_OUT),
-    flat ? Math.max(fit, Math.min(canvasWidth, canvasHeight) / ZOOM_CELLS) : fit * ZOOM_IN,
+    flat ? Math.max(fit, Math.min(viewRect().w, canvasHeight) / ZOOM_CELLS) : fit * ZOOM_IN,
   ];
 };
 function viewFor(b) {
@@ -41727,13 +41734,13 @@ function viewFor(b) {
   const fixed = walk.surface || walk.plane; // a surface or a grid fills the view at any size; a walk starts no closer than 40 px a cell
   const scale = Math.min(
     fixed ? Infinity : 40,
-    Math.max(MIN_SCALE, Math.min((canvasWidth - 2 * VIEW_GAP) / w, (canvasHeight - 2 * VIEW_GAP) / h)),
+    Math.max(MIN_SCALE, Math.min((viewRect().w - 2 * VIEW_GAP) / w, (canvasHeight - 2 * VIEW_GAP) / h)),
   ); // (the view's gap each side, as the player's)
   return { scale, cx: (b.minX + b.maxX) / 2, cy: (b.minY + b.maxY) / 2 };
 }
 function setView(v) {
   view.scale = v.scale;
-  view.ox = canvasWidth / 2 - v.cx * v.scale;
+  view.ox = viewMiddleX() - v.cx * v.scale;
   view.oy = canvasHeight / 2 - v.cy * v.scale;
   needsFull = true;
   showZoom();
@@ -41750,10 +41757,10 @@ function fitToBounds(b) {
 // walk's frame (a sphere, see includeBox) turns: past them
 function boundsOffscreen(v = view) {
   const m = walk.is3d ? -1 : VIEW_GAP - 0.5,
-    ox = v.ox ?? canvasWidth / 2 - v.cx * v.scale,
+    ox = v.ox ?? viewMiddleX() - v.cx * v.scale,
     oy = v.oy ?? canvasHeight / 2 - v.cy * v.scale;
   return (
-    ox + bounds.minX * v.scale < m ||
+    ox + bounds.minX * v.scale < VIEW_LEFT + m ||
     ox + bounds.maxX * v.scale > canvasWidth - m ||
     oy + bounds.minY * v.scale < m ||
     oy + bounds.maxY * v.scale > canvasHeight - m
@@ -41766,7 +41773,7 @@ let viewGoal = null;
 function easeView(dt) {
   if (!viewGoal) return;
   const k = 1 - Math.exp(-dt / 0.15);
-  const cx = (canvasWidth / 2 - view.ox) / view.scale,
+  const cx = (viewMiddleX() - view.ox) / view.scale,
     cy = (canvasHeight / 2 - view.oy) / view.scale;
   const scale = view.scale * (viewGoal.scale / view.scale) ** k;
   const next = { scale, cx: cx + (viewGoal.cx - cx) * k, cy: cy + (viewGoal.cy - cy) * k };
@@ -48746,7 +48753,7 @@ const TIP_LEAST = 200;
 const placeTips = () => {
   const css = getComputedStyle(stage),
     room =
-      stage.clientWidth -
+      viewRect().w -
       parseFloat(css.getPropertyValue('--player-open-width')) -
       3 * parseFloat(css.getPropertyValue('--view-gap'));
   stage.classList.toggle('tip-under', room < TIP_LEAST);

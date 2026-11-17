@@ -12,6 +12,9 @@
   ); /* a pill group's track: a wash of the text's colour, seen on any box, in either theme */
   --badged-tile-gap: 8px; /* between two tiles that carry a badge: its 7 px past their corner clear of the next (see .badge) */
   --panel-width: 286px; /* the settings' column (.panel): its tiles 4 a row in a card (see .panel section) */
+  --view-left: var(
+    --panel-width
+  ); /* the view's left edge: the settings' column over the stage, its cards floating on it */
   /* the text's sizes, four, each element one of them: */
   --caption-text-size: 11px; /* a card's words, a bubble, a figure's caption */
   --label-text-size: 12px; /* a field's label, a note, a hint, the ranking */
@@ -135,16 +138,18 @@ main {
 } /* (the Gallery over all of it: see #galleryPane) */
 
 .panel {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 1;
   width: var(--panel-width);
-  flex-shrink: 0;
   overflow-y: auto;
   scrollbar-gutter: stable; /* keep room for the scrollbar: the column never shifts */
   scrollbar-width: thin;
   scrollbar-color: var(--border-color) transparent;
-  background: var(--page-background);
-  border-right: 1px solid var(--border-color);
   padding: 0 12px 4px 16px;
-}
+} /* over the stage, no background: its cards float on the view, the room between them its own (its wheel scrolls it) */
 .panel::-webkit-scrollbar {
   width: 8px;
 }
@@ -163,8 +168,9 @@ main {
   padding: 10px 8px;
   border: 1px solid var(--border-color);
   border-radius: 10px;
-  background: var(--panel-background);
-} /* each settings section a card on the page's background, 8 px from the column's sides (its tiles as wide: 4 a row) */
+  background: var(--box-background);
+  backdrop-filter: blur(4px);
+} /* each settings section a card floating on the view, as its boxes (.stage-box), 8 px from the column's sides (its tiles as wide: 4 a row) */
 #yourList > section {
   margin-top: 16px;
 } /* a Gallery group: its title over its tiles, no frame (its tiles are), apart from the one before */
@@ -1485,14 +1491,15 @@ button.active .bubble.active {
 .stage.dragging {
   cursor: grabbing;
 }
-.stage > canvas,
-#stagePreview {
+.stage > canvas {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
-}
+} /* the whole stage, under the settings' column too */
 #stagePreview {
+  position: absolute;
+  inset: 0 0 0 var(--view-left);
   object-fit: cover;
   background: var(--page-background);
 } /* (the thumbnail as taken: the view's middle, see stageThumbnail, on its card's background, the theme's: whole in the frame
@@ -1644,10 +1651,10 @@ button.active .bubble.active {
 /* Grid | Cells under the list: each side of the walk in use, its base and its digits */
 /* the ant's rules to start from, written as they are typed */
 .stage-bar {
-  left: var(--view-gap);
+  left: calc(var(--view-left) + var(--view-gap));
   bottom: var(--view-gap);
   width: min-content;
-  max-width: calc(100% - 2 * var(--view-gap));
+  max-width: calc(100% - var(--view-left) - 2 * var(--view-gap));
   padding: 12px;
   border-radius: 12px;
   outline: none;
@@ -1665,11 +1672,11 @@ button.active .bubble.active {
   }
 }
 .stage:has(> .stage-bar:hover) > .hint {
-  left: calc(2 * var(--view-gap) + var(--player-open-width));
+  left: calc(var(--view-left) + 2 * var(--view-gap) + var(--player-open-width));
 } /* the player open: a tooltip beside it, as narrow as the room left (its lines as many as it takes) */
 @media (hover: none) {
   .stage:has(> .stage-bar:focus-within) > .hint {
-    left: calc(2 * var(--view-gap) + var(--player-open-width));
+    left: calc(var(--view-left) + 2 * var(--view-gap) + var(--player-open-width));
   }
 }
 .stage.tip-under:has(> .stage-bar:hover) > .hint {
@@ -2143,7 +2150,7 @@ button.active .bubble.active {
 /* how a rule works (ruleTutorial): over the grid, its cells as the grid's, a pair each count (before → after) */
 .rule-tuto {
   position: absolute;
-  inset: 0;
+  inset: 0 0 0 var(--view-left);
   z-index: 5;
   overflow: hidden;
   cursor: auto;

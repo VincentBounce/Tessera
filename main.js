@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.272';
+const VERSION = '0.5.273';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -6415,11 +6415,12 @@ const DISPLAY_DEFAULTS = {
     'gridLines',
     ['tab', 'exploreRule'],
     (variant, w) => {
-      if (NAV[w][0] === 'Life') return GRID_LINES.length + TILES_PALETTES.light.indexOf('Mist');
+      if (['Life', 'Walk'].includes(NAV[w][0]) && shows('tiles', w))
+        return GRID_LINES.length + TILES_PALETTES.light.indexOf('Mist');
       if (variant.explore) return exploreLook.rule === 'kind' ? 2 : 0;
       return NAV[w][1].startsWith('2D') ? 1 : 2;
     },
-  ], // (Life: Tiles' Mist, Slate in the dark; else its lines Faint in 2D, Medium in 3D; Explore's colours alone, no seams drawn over them, but its kinds of tile's, Medium: see GRID_LINES)
+  ], // (Life and Walk: Tiles' Mist, Slate in the dark, where it applies (not a walk in a 3D lattice); else its lines Faint in 2D, Medium in 3D; Explore's colours alone, no seams drawn over them, but its kinds of tile's, Medium: see GRID_LINES)
   trail: ['lifeTrail', 'lifeTeams', () => lifeTeams === 1], // (Life's Trail: on in Solo, two states, off in teams; when the teams change)
   ocean: ['ocean', 'battle', () => battleOn() && NAV[tabVariant()][0] === 'Walk'], // (on in a walk's battle on a surface, as long as none picks it)
   cut: [null, 'open', 0],

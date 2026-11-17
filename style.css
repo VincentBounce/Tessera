@@ -800,10 +800,23 @@ h4 {
 /* a group of tiles, one choice among them: joined in one frame, across its row, its buttons as wide as they share */
 .tile-group {
   --row-tiles: 4;
+  position: relative;
   display: flex;
   flex-wrap: wrap;
   grid-column: 1 / -1;
+  padding: 0 1px 1px 0;
+  border-radius: 6px;
+  overflow: hidden;
 } /* (its buttons shown, 4 a row at most, its rows as even as they can be, the longer first: 5 as 3 and 2, see below) */
+.tile-group::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  pointer-events: none;
+} /* its frame, round at its corners whatever its rows: drawn over its buttons' own outer sides, cut square there */
 .tile-group:has(+ :not([hidden])) {
   grid-column: span 2;
 } /* beside a tile (Rotate, Trail): its tiles' columns only */
@@ -815,63 +828,25 @@ h4 {
 } /* (in a section's flow, not a grid of tiles: spaced as a wide button) */
 .tile-group > button {
   flex: 1 1 calc(100% / var(--row-tiles));
+  margin: 0 -1px -1px 0;
   border-radius: 0;
-}
+} /* one line between them, across a row and from a row to the next: each over the next one's and the row's below by its own */
 .tile-group.text-tabs > button {
   min-width: 0;
   padding: 6px 2px;
 } /* tabs of words only (the Number's): each its share, as tiles, whatever its word */
-.tile-group > button {
-  margin-left: -1px;
-}
-.tile-group:not(.icon-tabs) > button:nth-child(4n + 1 of :not([hidden])) {
-  margin-left: 0;
-}
-.tile-group:not(.icon-tabs) > button:nth-child(n + 5 of :not([hidden])) {
-  margin-top: -1px;
-} /* one line between them, across a row and from a row to the next */
-.tile-group:not(.icon-tabs) > button:nth-child(1 of :not([hidden])) {
-  border-top-left-radius: 6px;
-}
-.tile-group:not(.icon-tabs)
-  > button:is(
-    :nth-child(4 of :not([hidden])),
-    :nth-child(-n + 4 of :not([hidden])):nth-last-child(1 of :not([hidden]))
-  ) {
-  border-top-right-radius: 6px;
-}
-.tile-group:not(.icon-tabs) > button:nth-child(4n + 1 of :not([hidden])):nth-last-child(-n + 4 of :not([hidden])) {
-  border-bottom-left-radius: 6px;
-}
-.tile-group:not(.icon-tabs) > button:nth-last-child(1 of :not([hidden])) {
-  border-bottom-right-radius: 6px;
-} /* the frame's corners round: the first's, the first row's last, the last row's first, the last (one row: its first and last) */
+.tile-group.icon-tabs {
+  --row-tiles: 6;
+  & > button {
+    min-width: 0;
+    padding: 6px 2px;
+  }
+} /* tabs of icons only (the Outline's): 6 a row at most, its word in its tooltip */
 .tile-group:not(.icon-tabs):is(
     :has(> :nth-child(5 of :not([hidden]))):not(:has(> :nth-child(7 of :not([hidden])))),
     :has(> :nth-child(9 of :not([hidden]))):not(:has(> :nth-child(10 of :not([hidden]))))
   ) {
   --row-tiles: 3;
-  & > button:nth-child(4n + 1 of :not([hidden])) {
-    margin-left: -1px;
-  }
-  & > button:nth-child(3n + 1 of :not([hidden])) {
-    margin-left: 0;
-  }
-  & > button:nth-child(n + 4 of :not([hidden])) {
-    margin-top: -1px;
-  }
-  & > button:nth-child(4 of :not([hidden])) {
-    border-top-right-radius: 0;
-  }
-  & > button:nth-child(3 of :not([hidden])) {
-    border-top-right-radius: 6px;
-  }
-  & > button:nth-child(4n + 1 of :not([hidden])):nth-last-child(-n + 4 of :not([hidden])) {
-    border-bottom-left-radius: 0;
-  }
-  & > button:nth-child(3n + 1 of :not([hidden])):nth-last-child(-n + 3 of :not([hidden])) {
-    border-bottom-left-radius: 6px;
-  }
 } /* 3 a row (5, 6 or 9 shown: 3 and 2, 3 and 3, 3, 3 and 3); else 4 (7: 4 and 3, 8, 11: 4, 4 and 3, 12) */
 .tile-group > button.active,
 .tile-group > button:hover {
@@ -2527,21 +2502,3 @@ button.mark.active::after {
 .tut-commands td:nth-child(2) {
   white-space: nowrap;
 } /* (a command and its name on one line) */
-.tile-group.icon-tabs {
-  flex-wrap: nowrap;
-  & > button {
-    position: relative;
-    flex: 1 1 0;
-    min-width: 0;
-    padding: 6px 2px;
-    margin: 0 0 0 -1px;
-    border-radius: 0;
-  }
-  & > button:nth-child(1 of :not([hidden])) {
-    margin-left: 0;
-    border-radius: 6px 0 0 6px;
-  }
-  & > button:nth-last-child(1 of :not([hidden])) {
-    border-radius: 0 6px 6px 0;
-  }
-} /* tabs of icons only (the Outline's): up to 6 on one line, each its share, its word in its tooltip */

@@ -848,11 +848,14 @@ h4 {
   ) {
   --row-tiles: 3;
 } /* 3 a row (5, 6 or 9 shown: 3 and 2, 3 and 3, 3, 3 and 3); else 4 (7: 4 and 3, 8, 11: 4, 4 and 3, 12) */
-.tile-group > button.active,
 .tile-group > button:hover {
   position: relative;
   z-index: 1;
-} /* its border over its neighbour's (every button its own layer: above the next one) */
+}
+.tile-group > button.active {
+  position: relative;
+  z-index: 2;
+} /* its border over its neighbour's (every button its own layer: above the next one); the one picked over one hovered, its gold whole */
 button.switch:hover:not(:disabled) {
   background: var(--picked-background);
 } /* a switch (a button that a click changes again) answers the hover: off, in the pale gold of a choice picked; on, deeper (Dawn sky) */

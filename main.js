@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.315';
+const VERSION = '0.5.316';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -46215,13 +46215,13 @@ function renderGauges(L) {
     percent = (v) => `${Math.round(100 * v)} %`;
   const rows = [
     // name, colour (none: the theme's live cells'), its bar's share (none: figures only), its figures now, its run's peak
-    // (its share, a tick on the bar, and its figures and when)
+    // (its share, a tick on the bar; its figures; when)
     [
       'Alive',
       gold,
       (varies ? avg[1] : L.aliveCount) / P.alive,
       `<b>${varies ? meanText(avg[1]) : formatNumber(L.aliveCount)}</b>`,
-      [1, `${formatNumber(P.alive)} · ${genLink(P.aliveGen)}`],
+      [1, formatNumber(P.alive), genLink(P.aliveGen)],
     ],
     [
       'Ever alive',
@@ -46230,10 +46230,11 @@ function renderGauges(L) {
       `<span title="${formatNumber(ever)} of ${formatNumber(n)} cells alive at least once so far">${percent(ever / n)}</span>`,
       [
         P.ever / n,
-        `<span title="${formatNumber(P.ever)} of ${formatNumber(n)} cells alive at least once, all reached at gen ${formatNumber(P.everGen)}">${percent(P.ever / n)}</span> · ${genLink(P.everGen, undefined, 'sweet')}`,
+        `<span title="${formatNumber(P.ever)} of ${formatNumber(n)} cells alive at least once, all reached at gen ${formatNumber(P.everGen)}">${percent(P.ever / n)}</span>`,
+        genLink(P.everGen, undefined, 'sweet'),
       ],
     ], // (its share of the grid, the cells reached: what Hunt › Reach all hunts)
-    ['Order', blue, L.order, percent(L.order), [P.order, `${percent(P.order)} · ${genLink(P.orderGen)}`]],
+    ['Order', blue, L.order, percent(L.order), [P.order, percent(P.order), genLink(P.orderGen)]],
     ['Turnover', null, turnover, `${Math.round(100 * turnover)} %`],
     ['Growth', null, null, `${b - d > 0 ? '+' : b < d ? '−' : ''}${formatNumber(Math.abs(b - d))} a gen`],
   ];
@@ -46274,12 +46275,12 @@ function paintGauges(rows) {
     box.innerHTML = rows
       .map(
         ([name, , share]) =>
-          `<div class="gauge-row"><span>${name}</span>${share === null ? '<span></span>' : '<span class="rank-bar"><i></i><b></b></span>'}<span class="rank-num"></span><span class="rank-peak"></span></div>`,
+          `<div class="gauge-row"><span>${name}</span>${share === null ? '<span></span>' : '<span class="rank-bar"><i></i><b></b></span>'}<span class="rank-num"></span><span class="rank-peak"></span><span class="rank-peak-gen"></span></div>`,
       )
       .join('');
   }
   rows.forEach(([, colour, share, text, peak], i) => {
-    const [label, bar, num, best] = box.children[i].children;
+    const [label, bar, num, best, when] = box.children[i].children;
     if (share !== null) {
       Object.assign(bar.firstChild.style, {
         width: `${Math.min(100, 100 * (share || 0))}%`,
@@ -46293,7 +46294,8 @@ function paintGauges(rows) {
     }
     setLinks(num, text);
     setLinks(best, peak?.[1] ?? '');
-    label.style.color = num.style.color = best.style.color = colour ?? ''; // (its name in its figures' colour)
+    setLinks(when, peak?.[2] ?? '');
+    label.style.color = num.style.color = best.style.color = when.style.color = colour ?? ''; // (its name in its figures' colour)
   });
 }
 // A walk's farthest from its start over all its steps (the whole walk, worked out), and the first step there (its curve's

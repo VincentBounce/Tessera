@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.280';
+const VERSION = '0.5.281';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -15155,6 +15155,7 @@ function kleinMesh(kind, nv, nu = kleinColumns[kind](nv)) {
       for (let j = 0; j < nv; j++)
         for (const o of [0, 1]) {
           tiles.push(cairoCorners(i, j, o).map(([x, y]) => [x + 0.5, y + up])); // (its first pair at the sheet's corner, as the torus's)
+          (places ??= []).push([2 * i + o, j]); // (the plane's cell, see planeCorners)
         }
   const ids = new Map(),
     verts = [],
@@ -15530,6 +15531,7 @@ function mobiusSheetOf(kind0, size, count = false, along = null) {
     return done(L, W);
   }
   if (kind === 'mobiusCairo') {
+    const places = [];
     // nv squares of the Cairo grid across, L along with L + nv odd: the ends glued turned over keep
     // the tiling (see cairoCorners); the pentagons whose middles lie on the strip, its edges zigzag along them
     const W = MOBIUS_ALONG[kind].width(nv),
@@ -15539,9 +15541,15 @@ function mobiusSheetOf(kind0, size, count = false, along = null) {
         for (const o of [0, 1]) {
           const [cx, cy] = cairoMiddle(i, j, o);
           if (cx < 0 || cx >= L || cy <= 0 || cy >= W) continue;
-          put(() => cairoCorners(i, j, o), 4096 * i + j + 64); // (its square's two pentagons)
+          put(
+            () => {
+              places.push([2 * i + o, j]); // (the plane's cell, see planeCorners)
+              return cairoCorners(i, j, o);
+            },
+            4096 * i + j + 64,
+          ); // (its square's two pentagons)
         }
-    return done(L, W);
+    return { ...done(L, W), ...(!count && { cellPlaces: places }) };
   }
   if (kind === 'mobiusHex') {
     const W = MOBIUS_ALONG[kind].width(nv),
@@ -15940,7 +15948,13 @@ function torusCairoMesh(nv, nu = torusCairoColumns(nv)) {
           y + 0.5,
         ]); // (a square's two pentagons reach half a square back: on the sheet, its first pair at its corner)
       }),
-    { cairo: true },
+    {
+      cairo: true,
+      cellPlaces: Array.from({ length: 2 * nu * nv }, (_, t) => [
+        2 * Math.floor(t / (2 * nv)) + (t % 2),
+        Math.floor(t / 2) % nv,
+      ]),
+    }, // (pentagon o of square (i, j): the plane's cell (2i + o, j), see planeCorners)
   );
 }
 
@@ -22372,6 +22386,10 @@ const surfaceColouring = (g) => ({
 function cellsApart(g) {
   if (g.cellFaces) return (t, u) => g.cellFaces[t] !== g.cellFaces[u];
   if (!g.torus) return null;
+  const P = g.cellPlaces;
+  if (P)
+    return (t, u) =>
+      (g.mobius && t < g.front !== u < g.front) || Math.abs(P[t][0] - P[u][0]) > 3 || Math.abs(P[t][1] - P[u][1]) > 3; // (a sheet that knows its plane cells: neighbours there never more than 3 apart, across its seam its whole length)
   const at = Array.from({ length: g.n }, (_, t) => sheetMiddle(g, t));
   return (t, u) =>
     (g.mobius && t < g.front !== u < g.front) ||
@@ -42221,18 +42239,18 @@ function drawGrid() {
   }
 }
 // A base grid's alternation, its plane cell (x, y)'s colour (see planeCorners), never as a neighbour's: squares and
-// triangles in 2, hexagons in 3 round their axes, Cairo's pentagons in 4 by their way (the infinite plane's Tiles, the
+// triangles in 2, hexagons in 3 round their axes, Cairo's pentagons in 3, every 6 squares (the infinite plane's Tiles, the
 // sheets', see planeMotif, cellPlaces)
 const ALTERNATIONS = {
   square: (x, y) => (x + y) & 1,
   tri: (x) => x & 1,
   hex: (x, y) => mod(x - y, 3),
-  cairo: (x, y) => cairoType(x >> 1, y, x & 1),
+  cairo: (x, y) => mod((x >> 1) + 2 * y + 2 * (x & 1) + 2 * (((x >> 1) + y) & 1), 3), // (pentagon o of square (i, j): i + 2j + 2o + 2·(i + j's parity), found by trying them all)
 };
 // Tiles on the infinite plane (the 2D walks, ants and spirals): its grid's cells, the plane's (planeCorners: their one
 // definition), laid as the walk's lie (a shift: squares along the lines, triangles and pointy hexagons by y0; a quarter turn:
 // the flat hexagons, the upright triangles), each its colour by its plane cell (x, y), never as a neighbour's (squares and
-// triangles in 2, hexagons in 3 round their axes, Cairo's pentagons in 4 by their way), a motif repeating every w × h of
+// triangles in 2, hexagons in 3 round their axes, Cairo's pentagons in 3: see ALTERNATIONS), a motif repeating every w × h of
 // the plane from its origin: its cells there, and those across its edges
 function planeMotif(lat, lines) {
   const h = TRIANGLE_HEIGHT,
@@ -42244,7 +42262,7 @@ function planeMotif(lat, lines) {
       lat === 'square'
         ? ['square', shifted(lines ? 0.5 : 0, lines ? 0.5 : 0), 2, 2]
         : lat === 'cairo'
-          ? ['cairo', shifted(0, 0), 2 * CAIRO, 2 * CAIRO]
+          ? ['cairo', shifted(0, 0), 6 * CAIRO, 6 * CAIRO]
           : lat === 'tri'
             ? lines
               ? ['hex', shifted(0, TRI_Y0), 3, 2 * h]

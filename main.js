@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.264';
+const VERSION = '0.5.265';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -6910,6 +6910,12 @@ const setTile = (
 // an element highlighted a moment, once (the length asked's stepper; the buttons a greyed one waits for, see enablers): filled
 // in gold, fading to its own (never cut by a joined group's round frame), an animation of its own played once (a class would
 // play it again each time the element shows again: a box closed and opened)
+// a stepper's parts (− its label or field +, its .stepper's children), each highlighted itself: its box's own fill hidden
+// under them (the size's: its stepper inside it, over its gauges); a field's its input, which paints it (see .field)
+const stepperParts = (box) =>
+  [...(box.matches('.stepper') ? box : box.querySelector('.stepper')).children].map(
+    (part) => part.querySelector('input') ?? part,
+  );
 function highlight(el) {
   el.animate([{ backgroundColor: cssColour('--accent-color') }, {}], { duration: 1500, easing: 'ease-out' });
 }
@@ -11106,12 +11112,12 @@ const pathsWords = (paths) => {
 // click on it (see highlight); the size stepper for a size, the steps stepper for the generations
 const enablersFor = (fits, judgedAt = null) =>
   [...new Set(pathsTo(fits, 5000, judgedAt).map(([[key]]) => key))]
-    .map((key) =>
+    .flatMap((key) =>
       key === 'size'
-        ? $('sizeBox')
+        ? stepperParts($('sizeBox'))
         : key === 'steps'
-          ? document.querySelector('.max-steps')
-          : document.querySelector(`[data-choice="${key}"]`),
+          ? stepperParts(document.querySelector('.max-steps'))
+          : [document.querySelector(`[data-choice="${key}"]`)],
     )
     .filter(Boolean);
 // a rule card's greyed words in a variant (see rulesFor): its why there, or none there at all
@@ -46436,7 +46442,7 @@ document.addEventListener('click', (e) => {
   if (!a) return;
   e.preventDefault();
   if ('gen' in a.dataset) seekTo(Number(a.dataset.gen));
-  if ('stepper' in a.dataset) highlight(document.querySelector('.max-steps'));
+  if ('stepper' in a.dataset) stepperParts(document.querySelector('.max-steps')).forEach(highlight);
 }); // (the length asked's mark: there, and its stepper, see endMark)
 function renderGauges(L) {
   const box = $('gauges'),
@@ -46778,7 +46784,7 @@ function updateStats() {
   });
   // (at the length asked: a click on them, greyed, highlights its stepper, as the step line's mark does, see endMark)
   const atLength = atEnd() && endsAtLength(),
-    toLength = atLength ? () => [document.querySelector('.max-steps')] : null;
+    toLength = atLength ? () => stepperParts(document.querySelector('.max-steps')) : null;
   setTile($('step'), {
     greyed: atEnd() ? `Already at the end${atLength ? ': the length asked, at the top right' : ''}.` : '',
   });

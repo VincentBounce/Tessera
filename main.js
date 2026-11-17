@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.230';
+const VERSION = '0.5.231';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -6333,11 +6333,24 @@ const DISPLAY_BY_TAB = {
     'grid',
     ...VIEW_3D,
     'glass',
+    'tiles',
     'ocean',
     'cut',
   ],
-  'Automata on the plane': ['colours', 'digit', 'mono', 'trail', 'grid', 'ocean'], // (Grid: its cells' outlines, see gpuPlane; Trail: Rewind's Blocks in its place)
-  'Automata on surfaces': ['shape', 'colours', 'digit', 'mono', 'trail', 'grid', ...VIEW_3D, 'glass', 'ocean', 'cut'], // (Glass, Cut: the surfaces' tiles only, see gpuFrame, cutOn)
+  'Automata on the plane': ['colours', 'digit', 'mono', 'trail', 'grid', 'tiles', 'ocean'], // (Grid: its cells' outlines, see gpuPlane; Trail: Rewind's Blocks in its place)
+  'Automata on surfaces': [
+    'shape',
+    'colours',
+    'digit',
+    'mono',
+    'trail',
+    'grid',
+    ...VIEW_3D,
+    'glass',
+    'tiles',
+    'ocean',
+    'cut',
+  ], // (Glass, Cut: the surfaces' tiles only, see gpuFrame, cutOn)
   '2D spirals': ['heatmap', 'fill', 'translucent', 'cells', 'visits', 'digit', 'grid', 'ocean'], // the 2D walks' menu, some of it greyed out
   Elementary: ['colours', 'mono', 'domain', 'entropy', 'grid'], // (its cells never change once made: no Heatmap, no Trail; Domains its own)
   'Explore on the plane': ['grid'],
@@ -6397,6 +6410,7 @@ const DISPLAY_DEFAULTS = {
   ], // (by its shape, see SHAPE_DEFAULTS)
   light: ['light', 'open', true],
   glass: ['glass', 'open', false],
+  tiles: ['tiles', 'open', false],
   grid: [
     'gridLines',
     ['tab', 'exploreRule'],
@@ -6496,6 +6510,7 @@ function updateDisplayMenu() {
     perspective: 'perspectiveRow',
     light: 'lightRow',
     glass: 'glassRow',
+    tiles: 'tilesRow',
     ocean: 'oceanRow',
     cut: 'cutRow',
   };
@@ -6540,6 +6555,7 @@ const VIEW_TILES = [
   ],
   ['light', 'lightRow', () => icon('sideLight'), 'Side light'],
   ['glass', 'glassRow', () => icon('glass'), 'Glass'],
+  ['tiles', 'tilesRow', () => teamBlock(4, false, explorePalette()), 'Tiles'], // (Explore's palette, its first four)
 ];
 let viewTiles = null;
 function renderViewTiles() {
@@ -6569,7 +6585,7 @@ function renderViewTiles() {
     : !ways.off.length
       ? 'on'
       : `On by default on ${ways.on.join(', ')}\nOff by default on ${ways.off.join(', ')}`;
-  const first = { perspective, light: defaultMark('light'), glass: defaultMark('glass') };
+  const first = { perspective, light: defaultMark('light'), glass: defaultMark('glass'), tiles: defaultMark('tiles') };
   VIEW_TILES.forEach(([id], k) =>
     setTile(viewTiles[k], {
       on: $(id).checked,
@@ -22274,6 +22290,32 @@ function latticeCellColours({ xy, m }, n, eachNeighbour, P) {
   const colour = paletteColours(m, (k, put) => joined[k].forEach(put), P);
   return colour.every((c) => c <= P) ? Uint8Array.from({ length: n }, (_, t) => colour[motif(t)]) : null;
 }
+// A grid's fields for Explore's colourings: its cells' faces (Sides: each cell's face of its solid, see cellFaces), their
+// kinds (Kind of tile), a periodic plane's lattice (Tiles: its lattice cell cloned, see latticeCellColours); a surface's
+// from its mesh, the plane's from its kind and width: Explore's grid and Tiles' ground alike (see groundColours)
+const surfaceColouring = (g) => ({ faces: g.cellFaces ?? null, kinds: tileKinds(meshCorners(g)) });
+const planeColouring = (kind, W) => ({
+  kinds: tileKinds(planeMesh(kind, W, planeTorus(kind)), APERIODIC[kind]?.(W).kinds),
+  lattice: APERIODIC[kind] ? null : { xy: planeGrid(kind, W).xy, m: gridCells(kind) },
+});
+// Tiles: each cell's ground (what shows where nothing is painted) its colour in Explore, by its colouring and palette there
+// (exploreLevels on the grid shown), packed; off, null: one ground for all, Earth's sea or the theme's (see blankTile)
+const tilesOn = () => $('tiles').checked && shows('tiles', tabVariant());
+let groundMemo = {};
+function groundColours() {
+  if (!tilesOn() || !walk.geo) return null;
+  const g = walk.geo,
+    P = walk.plane,
+    of = walk.life ?? g,
+    key = `${exploreLook.rule}|${exploreLook.palette}`;
+  if (groundMemo.of !== of || groundMemo.key !== key) {
+    const { faces, kinds, lattice } = P ? planeColouring(P.kind, P.W) : surfaceColouring(g),
+      levels = exploreLevels(walk.life?.nbr ?? cornerNeighbours(g), g.n, faces, kinds, lattice),
+      colours = exploreColours(levels).map(packed);
+    groundMemo = { of, key, col: Uint32Array.from(levels, (l) => colours[l - 1] ?? packed(UNLIT)) };
+  }
+  return groundMemo.col;
+}
 function exploreLevels(nbr, n, faces, kinds, lattice) {
   const side = sideOf(nbr),
     P = explorePalette().length,
@@ -22440,8 +22482,7 @@ function buildLife(seq, variant) {
     ringMore: rule.iso === 'hensel' && ring ? cornerNeighbours(g, 8).more : null,
     seed,
     margolus: variant.margolus && rule.margolus ? ruleBlocks(rule, blocksGrid(variant), g.nu, true, g.nv, g) : null,
-    faces: variant.explore ? (g.cellFaces ?? null) : null, // (Explore's Sides: each cell's face of its solid, see cellFaces)
-    kinds: variant.explore ? tileKinds(meshCorners(g)) : null, // (Explore's Kind of tile)
+    ...(variant.explore && surfaceColouring(g)),
   });
   Object.assign(walk, {
     is3d: true,
@@ -25656,13 +25697,7 @@ function buildLifePlane(seq) {
     side: rule.iso === 'vertex' ? sideOf(nbr) : null,
     margolus: VARIANTS[digitsComputed.variant].margolus && rule.margolus ? ruleBlocks(rule, kind, W) : null,
     seed: planeSeed(kind, seq, rule.C, rule.colours),
-    kinds: VARIANTS[digitsComputed.variant].explore
-      ? tileKinds(planeMesh(kind, W, planeTorus(kind)), APERIODIC[kind]?.(W).kinds)
-      : null, // (Explore's Kind of tile)
-    lattice:
-      VARIANTS[digitsComputed.variant].explore && !APERIODIC[kind]
-        ? { xy: planeGrid(kind, W).xy, m: gridCells(kind) }
-        : null, // (Explore's Tiles: its lattice cell cloned, see latticeCellColours)
+    ...(VARIANTS[digitsComputed.variant].explore && planeColouring(kind, W)),
   });
   Object.assign(walk, {
     stacked: spaceTime && spaceTimeApplies(walk.variant),
@@ -26890,7 +26925,7 @@ function lifeLook(L, lifted = false) {
   const trailLength = L.C === 2 && trailOn() ? trail.length : 0,
     K = L.colours; // the trail after death (Trail)
   // its colours by the graphics card, by these tables (see gpuLook)
-  const table = new Uint32Array(4096 * 17);
+  const table = new Uint32Array(LOOK_TABLE);
   for (let st = 1; st < 256; st++) {
     table[st] = colour !== 'mono' ? 0 : K > 1 ? (civ[st] ?? 0) : st === 1 ? alive : 0;
     table[256 + st] =
@@ -42657,7 +42692,7 @@ function drawSurface() {
   if (L) {
     // Life's look, the plane's (see lifeLook): a cell with no neighbours (none on a surface) a wall, in stone
     const rgba = (c) => [...rgbCached(c).map((x) => x / 255), 1],
-      look = { ...lifeLook(L, true), wall: rgba(LIFE_WALL), dead: rgba(blankTile()) };
+      look = { ...lifeLook(L, true), wall: rgba(LIFE_WALL), dead: rgba(blankTile()), ground: groundColours() };
     gpuSurface((out) => gpuLook(L, out, look), path);
   } else gpuSurface(paintLevels(palette, levelOf), path); // (see 11.4d)
   drawHover();
@@ -43111,12 +43146,14 @@ function outwardFolds(tri, P, Q, N) {
   }
   return tri;
 }
-// a surface's tiles' colours from a palette (null: unlit) and each tile's place in it (out of it: unlit), into their buffer
+// a surface's tiles' colours from a palette (null: its ground) and each tile's place in it (out of it: its ground), into their buffer
 // (out.put, see gpuSurface)
 const paintLevels = (palette, levelOf) => (out, n) => {
-  const rgb = palette.map((c) => packed(c ?? blankTile())),
+  const rgb = palette.map((c) => c && packed(c)),
+    ground = groundColours(),
+    blank = packed(blankTile()),
     col = new Uint32Array(n);
-  for (let t = 0; t < n; t++) col[t] = rgb[levelOf(t)] ?? rgb[0];
+  for (let t = 0; t < n; t++) col[t] = (rgb[levelOf(t)] ?? rgb[0]) || (ground?.[t] ?? blank); // (none painted: its ground)
   out.put(eased('tiles', col)); // (every tile's change faded in)
 };
 // Glass: the surface see-through, every layer showing, its grid and path too (weighted blended, see gpuFrame); Cut: a half
@@ -43649,6 +43686,7 @@ async function gpuSetup() {
   return GPU;
 }
 // a pass's numbers (see P in GPU_LIFE), in this order, a word each
+const LOOK_TABLE = 4096 * 17; // a look's table, its words (see lifeLook): Tiles' ground after it, a word a cell (see gpuLook)
 const GPU_PARAMS = [
   'n',
   'K',
@@ -43696,6 +43734,7 @@ const GPU_PARAMS = [
   'neg',
   'wall',
   'dead',
+  'ground',
   'outN',
 ];
 const GPU_LIFE = `
@@ -43840,7 +43879,7 @@ fn add(j: i32, v: u32) { if (v != 0u) { atomicAdd(&acc[j], v); } }
 }
 // each cell's colour, from the cells shown (a batch's last adopted, see gpuShow): by the look's
 // table (packed RGBA: its live states' from 0, dying from 256, ages from 512, trail from 1024, changes from 4096); a wall's,
-// a dead one's; past the cells, clear
+// a dead one's (Tiles: its ground, after the table); past the cells, clear
 @group(1) @binding(0) var<storage, read> look: array<u32>;
 @group(1) @binding(1) var<storage, read_write> outCol: array<u32>;
 @group(1) @binding(2) var<storage, read> shownCells: array<u32>;
@@ -43857,7 +43896,7 @@ fn S(f: i32, t: i32) -> u32 { return shownCells[u32(f * p.total + t)]; }
   if (st > 0) { outCol[t] = look[256 + st]; return; }
   let died = bitcast<i32>(S(3, t));
   let d = p.gen - died;
-  if (d >= 0 && d < p.trail && died > p.trailFrom) { outCol[t] = look[1024 + d]; } else { outCol[t] = u32(p.dead); }
+  if (d >= 0 && d < p.trail && died > p.trailFrom) { outCol[t] = look[1024 + d]; } else if (p.ground == 1) { outCol[t] = look[${LOOK_TABLE}u + u32(t)]; } else { outCol[t] = u32(p.dead); }
 }`;
 // An engine for L: its runs side by side, h generations' sums kept a batch; null where the card can't hold it
 function gpuLifeEngine(L, runs = 1, h = 1) {
@@ -44079,16 +44118,21 @@ function gpuLook(L, out, look) {
     gpuShow(E);
     L.gpuOld = false;
   }
-  const { table } = look; // (sent again only when made again, see lifeLook)
-  if (!E.look || E.look.size < table.byteLength) {
+  const { table, ground } = look, // (each sent again only when made again, see lifeLook, groundColours)
+    size = table.byteLength + (ground?.byteLength ?? 0); // (Tiles: each cell's ground after the table)
+  if (!E.look || E.look.size < size) {
     E.look?.destroy();
-    E.look = device.createBuffer({ size: table.byteLength, usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST });
+    E.look = device.createBuffer({ size, usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST });
     E.looks = new Map();
-    E.lookSent = null;
+    E.lookSent = E.groundSent = null;
   }
   if (E.lookSent !== table) {
     device.queue.writeBuffer(E.look, 0, table);
     E.lookSent = table;
+  }
+  if (ground && E.groundSent !== ground) {
+    device.queue.writeBuffer(E.look, table.byteLength, ground);
+    E.groundSent = ground;
   }
   if (!E.looks.has(out.buffer))
     E.looks.set(
@@ -44123,6 +44167,7 @@ function gpuLook(L, out, look) {
       neg: negative(L) ? 1 : 0,
       wall: pack(look.wall),
       dead: pack(look.dead),
+      ground: ground ? 1 : 0,
       outN: out.n,
     },
     out.n,
@@ -45649,15 +45694,17 @@ function gpuPlane(paint) {
   }
   const bg = getComputedStyle(document.documentElement).getPropertyValue('--page-background') || '#fff';
   const wallShown = !walk.life?.palette; // (Explore: no wall, its cells alone on the view)
-  if (D.keys.planeBase !== `${bg}|${wallShown}|${oceanOn()}`) {
+  const ground = groundColours();
+  if (D.keys.planeBase !== `${bg}|${wallShown}|${oceanOn()}` || D.planeGround !== ground) {
     const page = packed(oceanOn() ? OCEAN : bg.trim()), // (Earth's: its cells none has painted the sea, as a surface's, see blankTile)
       walled = packed(LIFE_WALL);
     device.queue.writeBuffer(
       D.planeBase,
       0,
-      Uint32Array.from({ length: F.m }, (_, t) => (t < n ? page : wallShown ? walled : 0)), // (0: clear)
+      Uint32Array.from({ length: F.m }, (_, t) => (t < n ? (ground?.[t] ?? page) : wallShown ? walled : 0)), // (0: clear; Tiles: each cell's ground)
     );
     D.keys.planeBase = `${bg}|${wallShown}|${oceanOn()}`;
+    D.planeGround = ground;
   }
   paint({ put: (col) => device.queue.writeBuffer(D.planeCol, 0, col), buffer: D.planeCol, n: F.m }, F.m);
   const outline = sidesShown(s);
@@ -47756,6 +47803,9 @@ $('light').addEventListener('change', () => {
   needsFull = true;
 });
 $('glass').addEventListener('change', () => {
+  needsFull = true;
+});
+$('tiles').addEventListener('change', () => {
   needsFull = true;
 });
 $('ocean').addEventListener('change', () => {

@@ -1507,7 +1507,7 @@ button.active .bubble.active {
    builds) */
 #axesLabels {
   position: absolute;
-  left: 0;
+  left: var(--view-left);
   top: 0;
   padding: 0;
   border: 0;

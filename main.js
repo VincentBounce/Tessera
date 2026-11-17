@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.328';
+const VERSION = '0.5.329';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -45386,7 +45386,7 @@ function gpuAxes(D, rp, pass, slot) {
 // the axes' draw numbers: the world turned as the view, a unit VIEW_AXES_LENGTH pixels, no perspective, before the rest
 const axesLook = (pass) => ({
   glass: pass,
-  view: [VIEW_AXES_LENGTH, VIEW_AXES_AT, VIEW_AXES_AT],
+  view: [VIEW_AXES_LENGTH, viewRect().x + VIEW_AXES_AT, VIEW_AXES_AT], // (in the view's corner, past the settings)
   persp: [0, 0, 0, 0],
   halfW: 1.5 / VIEW_AXES_LENGTH,
   firstBorn: SEGMENT_ALWAYS, // (its bars whole, see bar)

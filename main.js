@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.283';
+const VERSION = '0.5.284';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -15138,12 +15138,17 @@ function kleinMesh(kind, nv, nu = kleinColumns[kind](nv)) {
     tiles = places.map((place) => sheetHex(place));
   }
   if (kind === 'kleinTri' || kind === 'kleinKite') tiles = triSheet(nu, nv);
-  if (kind === 'kleinTri') places = triPlaces(nu, nv);
+  if (kind === 'kleinTri' || kind === 'kleinKite')
+    places = kind === 'kleinKite' ? kitePlaces(triPlaces(nu, nv)) : triPlaces(nu, nv);
   // turned by 30° (as turnedTorus): the tori's, nu and nv swapped back; their mirror across the ring maps them onto themselves
   // (the triangles' corners every half step round the tube, the hexagons' columns an even count)
   const swap = (c) => [c[0], ...c.slice(1).reverse()].map(([i, j]) => [j, i]);
   if (kind === 'kleinTriTurned' || kind === 'kleinKiteTurned') tiles = triSheet(nv, nu).map(swap);
-  if (kind === 'kleinTriTurned') places = triPlaces(nv, nu);
+  if (kind === 'kleinTriTurned' || kind === 'kleinKiteTurned')
+    places =
+      kind === 'kleinKiteTurned'
+        ? kitePlaces(triPlaces(nv, nu).map(([x, j]) => [x, j, [0, 2, 1]])) // (its triangles swapped before cut: see swap)
+        : triPlaces(nv, nu);
   if (kind === 'kleinHexTurned') {
     places = hexPlaces(nv, nu);
     tiles = places.map((place) => sheetHex(place)).map(swap);
@@ -15448,6 +15453,7 @@ function mobiusSheetOf(kind0, size, count = false, along = null) {
       tiles: t.tiles.flatMap(kitesOf),
       latticeCells: t.latticeCells.flatMap((c) => [c, c, c]),
       originCell: t.originCell && [3 * t.originCell[0] + 2, t.originCell[1]],
+      cellPlaces: t.cellPlaces && kitePlaces(t.cellPlaces),
     }; // (its first triangle's first kite, from its corner: the plane's third of it)
   }
   const tiling = MOBIUS_STRIPS[kind0]?.kind;
@@ -15502,7 +15508,7 @@ function mobiusSheetOf(kind0, size, count = false, along = null) {
     // (the plane's triangles turned a quarter, see planeCorners: ▶ an even one, ◀ an odd one, from their corner on column i)
     const places = [],
       turned = (x, b) => {
-        places.push([x, b]);
+        places.push([x, b, [1, 2, 0]]);
         const [p, q, r] = planeCorners('tri', x, b).map(([u, v]) => [v, -u]);
         return [q, r, p];
       },
@@ -15582,7 +15588,7 @@ function mobiusSheetOf(kind0, size, count = false, along = null) {
           }, cell); // ▲, its centre at a + ½
         if (a + 1 >= 0 && a + 1 < L)
           put(() => {
-            places.push([2 * A + 1, j]);
+            places.push([2 * A + 1, j, [2, 0, 1]]);
             const [p, q, r] = planeCorners('tri', 2 * A + 1, j);
             return [r, p, q];
           }, cell); // ▼, at a + 1 (from its corner on row j + 1)
@@ -16721,6 +16727,9 @@ function triPlaces(nu, nv) {
 }
 const sheetTri = (place) => planeCorners('tri', ...place).map(([x, y]) => [x, y / TRIANGLE_HEIGHT]);
 const triSheet = (nu, nv) => triPlaces(nu, nv).map(sheetTri);
+// a triangle's 3 kites (see kitesOf), a kite at each of its corners in turn: the plane's kites (3x + c, j), as its triangle
+// is (x, j) and its corner the plane's c (order: its corners' among the plane's, where listed otherwise; see planeCorners)
+const kitePlaces = (places) => places.flatMap(([x, j, order = [0, 1, 2]]) => order.map((c) => [3 * x + c, j]));
 // a sheet's hexagons, nu columns of nv (tile c·nv + r: column c, row r, odd columns half a row up): their plane cells
 // (−r − ⌈c/2⌉, c), see planeCorners; their corners, the plane's turned a quarter (flat-topped), the columns h apart counted
 // as 1, from the corner at 0°
@@ -16748,7 +16757,7 @@ function torusTriMesh(nv, nu = torusTriColumns(nv), kites = false) {
       const tris = triSheet(nu, nv);
       return kites ? tris.flatMap(kitesOf) : tris;
     },
-    { kite: kites, ...(!kites && { cellPlaces: triPlaces(nu, nv) }) }, // (a kite's plane cell none yet)
+    { kite: kites, cellPlaces: kites ? kitePlaces(triPlaces(nu, nv)) : triPlaces(nu, nv) },
   );
 }
 
@@ -16786,7 +16795,7 @@ const turnedTorusTriMesh = (nv, nu = torusHexColumns(nv), kites = false) =>
     nv,
     nu,
     kites,
-    !kites && { cellPlaces: triPlaces(nv, nu) },
+    { cellPlaces: kites ? kitePlaces(triPlaces(nv, nu)) : triPlaces(nv, nu) },
   ); // (rows: around the ring)
 const turnedTorusHexMesh = (nv, nu = torusTriColumns(nv)) =>
   turnedTorus('torusHexTurned', (cols, rows, put) => hexSheet(cols, rows).forEach(put), 6, nv, nu, false, {
@@ -42236,13 +42245,14 @@ function drawGrid() {
   }
 }
 // A base grid's alternation, its plane cell (x, y)'s colour (see planeCorners), never as a neighbour's: squares and
-// triangles in 2, hexagons in 3 round their axes, Cairo's pentagons in 3, every 6 squares (the infinite plane's Tiles, the
+// triangles in 2, hexagons in 3 round their axes, Cairo's pentagons in 3, every 6 squares, kites in 3 (the infinite plane's Tiles, the
 // sheets', see planeMotif, cellPlaces)
 const ALTERNATIONS = {
   square: (x, y) => (x + y) & 1,
   tri: (x) => x & 1,
   hex: (x, y) => mod(x - y, 3),
-  cairo: (x, y) => mod((x >> 1) + 2 * y + 2 * (x & 1) + 2 * (((x >> 1) + y) & 1), 3), // (pentagon o of square (i, j): i + 2j + 2o + 2·(i + j's parity), found by trying them all)
+  cairo: (x, y) => mod((x >> 1) + 2 * y + 2 * (x & 1) + 2 * (((x >> 1) + y) & 1), 3),
+  kite: (x) => [0, 2, 1, 1, 0, 2][mod(x, 6)], // (its rank in its lattice cell of 6, found by trying them all) // (pentagon o of square (i, j): i + 2j + 2o + 2·(i + j's parity), found by trying them all)
 };
 // Tiles on the infinite plane (the 2D walks, ants and spirals): its grid's cells, the plane's (planeCorners: their one
 // definition), laid as the walk's lie (a shift: squares along the lines, triangles and pointy hexagons by y0; a quarter turn:

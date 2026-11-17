@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.217';
+const VERSION = '0.5.218';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -10337,7 +10337,7 @@ function shapeGroupsOf(kind, space) {
     solid = space.startsWith('3D ');
   const planeOf = (sh) =>
     VARIANTS[Object.keys(NAV).find((m) => NAV[m][0] === kind && NAV[m][1] === space && NAV[m][2] === sh)]?.plane;
-  const CARVED = ['Pits', 'Bumps', 'Frame', 'Sponge'], // (the cubes carved: their faces not all alike)
+  const CARVED = ['Sponge', 'Frame', 'Pits', 'Bumps'], // (the cubes carved: their faces not all alike; in this order, after the others)
     sheet = (sh) => SHEETS.includes(sh),
     // (a hull solid with faces of two kinds or more, by its faces found, see hullFacesOf: the others' faces all alike)
     mixed = (sh) =>
@@ -10350,7 +10350,7 @@ function shapeGroupsOf(kind, space) {
       : solid
         ? [
             ['Regular polyhedra', (sh) => !sheet(sh) && !CARVED.includes(sh) && !mixed(sh)], // (their faces all alike)
-            ['Irregular polyhedra', (sh) => CARVED.includes(sh) || mixed(sh)],
+            ['Irregular polyhedra', (sh) => CARVED.includes(sh) || mixed(sh), [...shapes.filter(mixed), ...CARVED]],
             ['Surfaces', sheet, SHEETS],
           ]
         : [[null, () => true]];

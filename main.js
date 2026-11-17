@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.286';
+const VERSION = '0.5.287';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -22506,37 +22506,24 @@ const exploreColours = (levels, P = explorePalette()) => {
   );
 };
 // Explore's tilings whose Tiles break their pattern, at the size each opens at, each its colours there and its tiling's on
-// the plane (Explore's Tiles there: its lattice cell cloned, else DSatur's; 0: the plane's own, DSatur's more than 3):
-// measured once by a run (2026-11-17, v0.5.276: every Explore grid against its tiling on the plane, the same name in the
-// menu), its tile's mark (see tilesBroken). A surface coloured piece by piece (see pieceByPiece): its colours more inside a
-// piece (a face, a sheet cut along its seam), DSatur's, never two cells alike across a fold or the seam
+// the plane (Explore's Tiles there; 0: the plane's own, DSatur's more than 3, its lattice cell not cloned): measured once by
+// a run (2026-11-17, v0.5.287: every Explore grid against its tiling on the plane, the same name in the menu), its tile's
+// mark (see tilesBroken). A sheet that knows its plane cells by its grid's alternation (see alternationOf), never broken; a
+// surface else piece by piece (see pieceByPiece): its colours more inside a piece (a face, a sheet cut along its seam), DSatur's
 const TILES_BROKEN = {
-  explorePythagoras: [5, 0],
-  exploreElongated: [4, 0],
-  explorePrismatic: [5, 0],
+  explorePythagoras: [4, 0],
   exploreTwisted: [5, 0],
-  exploreOctagons: [5, 0],
   exploreDodecagons: [5, 0],
   exploreCubePitsSquares: [3, 2],
   exploreCubeBumpsSquares: [3, 2],
-  exploreTorusKites: [4, 3],
   exploreTorusPrismatic: [4, 3],
+  exploreTorusKisChecker: [3, 2],
   exploreTorusType14: [5, 4],
-  exploreTorusType15: [4, 3],
-  exploreMobiusStripHex: [4, 3],
-  exploreMobiusStripKites: [4, 3],
-  exploreMobiusStripRhombille: [4, 3],
   exploreMobiusStripPrismatic: [4, 3],
-  exploreMobiusStripType11: [5, 4],
-  exploreMobiusStripType15: [4, 3],
-  exploreMobiusStripDual16: [4, 3],
-  exploreMobiusStripDemi2: [4, 3],
-  exploreKleinBottleKites: [4, 3],
+  exploreMobiusStripKisChecker: [3, 2],
   exploreKleinBottlePrismatic: [4, 3],
+  exploreKleinBottleKisChecker: [3, 2],
   exploreKleinBottleType10: [5, 4],
-  exploreKleinBottleType11: [5, 4],
-  exploreKleinBottleType15: [4, 3],
-  exploreKleinBottleDual56: [5, 4],
   exploreTetrahedronKites: [4, 3],
   exploreOctahedronKites: [4, 3],
   exploreDodecahedronTriangles: [3, 2],

@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.250';
+const VERSION = '0.5.251';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -22478,6 +22478,9 @@ const TILES_BROKEN = {
   exploreStellaOctangulaHex: [4, 3],
   exploreRhombicTriacontahedronSquares: [3, 2],
   exploreRhombicTriacontahedronTriangles: [3, 2],
+  exploreCuboctahedron: [3, 2], // (no tiling of its name on the plane: its faces', squares' and triangles', 2 each)
+  exploreSquareOrthobicupola: [3, 2],
+  exploreRhombicuboctahedron: [3, 2],
 };
 const tilesBroken = (w) => {
   const [here, plane] = TILES_BROKEN[w] ?? [];

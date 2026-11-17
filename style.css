@@ -371,9 +371,17 @@ input[type='range'] {
   border-radius: 999px;
   background: var(--track-background);
 } /* its choices, pills in a pill, its rows' tracks as wide (to the right, after their titles): the one picked raised */
+.pill-group:has(> :nth-child(5)) {
+  flex-wrap: wrap;
+  border-radius: 14px;
+  & > button {
+    flex-basis: 20%;
+  }
+} /* more than 4 choices: 4 a row (Grid's 8: its lines', then Tiles' palettes), the track round its rows (a fifth each at
+   least, with the gaps: a 5th never fits, a wider word, Celadon, keeps its row) */
 .pill-group button {
   flex: 1;
-  padding: 4px 2px; /* (its width its share of the track; 2 px aside, its least: 5 words fit, Tiles' palettes) */
+  padding: 4px 2px; /* (its width its share of the track; 2 px aside, its least: Grid's palettes' words fit, 4 a row) */
   border: 0;
   border-radius: 999px;
   background: none;

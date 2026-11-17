@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.238';
+const VERSION = '0.5.239';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -6410,7 +6410,6 @@ const DISPLAY_DEFAULTS = {
   ], // (by its shape, see SHAPE_DEFAULTS)
   light: ['light', 'open', true],
   glass: ['glass', 'open', false],
-  tiles: ['tiles', 'open', 0], // (Off)
   grid: [
     'gridLines',
     ['tab', 'exploreRule'],
@@ -6510,7 +6509,6 @@ function updateDisplayMenu() {
     perspective: 'perspectiveRow',
     light: 'lightRow',
     glass: 'glassRow',
-    tiles: 'tilesRow',
     ocean: 'oceanRow',
     cut: 'cutRow',
   };
@@ -6696,24 +6694,18 @@ function renderHeadTiles() {
   pillRow(
     $('gridLinesRow'),
     'Grid',
-    "The grid's lines: off, or how marked (their opacity)",
-    GRID_LINES.map(([name, words, factor]) => [factor ? `${Math.round(100 * EDGE_ALPHA * factor)}%` : name, words]),
+    "The cells seen apart: off, the grid's lines (their opacity), or each cell none has painted in its colour in Explore (its colouring there), in a palette",
+    [
+      ...GRID_LINES.map(([name, words, factor]) => [
+        factor ? `${Math.round(100 * EDGE_ALPHA * factor)}%` : name,
+        words,
+      ]),
+      ...tilesPalettes().map((name) => [name, `The cells' ground in ${name}`, ({ w }) => viewWhyNot('tiles', w)]),
+    ],
     Number($('gridLines').value),
     defaultOf('grid', tabVariant()),
     (k) => {
       $('gridLines').value = k;
-      needsFull = true;
-    },
-  );
-  pillRow(
-    $('tilesRow'),
-    'Tiles',
-    $('tilesRow').title,
-    [['Off', 'One ground for all'], ...tilesPalettes().map((name) => [name, `In ${name}`])],
-    Number($('tiles').value),
-    defaultOf('tiles', tabVariant()),
-    (k) => {
-      $('tiles').value = k;
       needsFull = true;
     },
   );
@@ -17605,7 +17597,10 @@ function greyInput(input, row, whyNot) {
 // words only, its words its tooltip's, the default marked, the one picked raised; whyNot(setup): the whole row greyed, as a
 // tile's (see setTile)
 function pillRow(el, title, about, choices, at, first, set, whyNot = null) {
-  const mark = (k) => pills.forEach((b, j) => setTile(b, { on: j === k, byDefault: j === first ? 'yes' : '', whyNot })),
+  const mark = (k) =>
+      pills.forEach((b, j) =>
+        setTile(b, { on: j === k, byDefault: j === first ? 'yes' : '', whyNot: choices[j][2] ?? whyNot }),
+      ), // (a choice's own whyNot, its third, else the row's)
     pills = choices.map(([name, words], k) =>
       tile({
         text: name,
@@ -22323,7 +22318,7 @@ const planeColouring = (kind, W) => ({
   lattice: APERIODIC[kind] ? null : { xy: planeGrid(kind, W).xy, m: gridCells(kind) },
 });
 // Tiles: each cell's ground (what shows where nothing is painted) its colour in Explore, by its colouring there and a
-// palette of its, the theme's (TILES_PALETTES, the Display's Tiles row: Off, then these; exploreLevels on the grid shown), packed; off,
+// palette of its, the theme's (TILES_PALETTES, Grid's last choices, after its lines: see GRID_LINES; exploreLevels on the grid shown), packed; off,
 // null: one ground for all, Earth's sea or the theme's (see blankTile)
 const TILES_PALETTES = {
   light: ['Blush', 'Mist', 'Celadon', 'Lilac'],
@@ -22331,7 +22326,8 @@ const TILES_PALETTES = {
 }; // (Explore's palettes by name, the page's theme's: pale in the light, the black live cells read over them, dark in the dark, the light ones; a pill each pair, its place kept from one theme to the other)
 const tilesPalettes = () => TILES_PALETTES[themeName()];
 const tilesPalette = () =>
-  EXPLORE_PALETTES.find(([name]) => name === tilesPalettes()[Number($('tiles').value) - 1])?.[1] ?? null;
+  EXPLORE_PALETTES.find(([name]) => name === tilesPalettes()[Number($('gridLines').value) - GRID_LINES.length])?.[1] ??
+  null;
 const tilesOn = () => !!tilesPalette() && shows('tiles', tabVariant());
 let groundMemo = {};
 function groundColours() {
@@ -42887,14 +42883,14 @@ function faded(colour, a, under = UNLIT) {
 // The tile edges' opacity on a shape: on a light page, fainter as the tiles get small on screen
 // (thousands of dark lines would grey the whole solid)
 // The grid's lines, off or how marked: each its name, its words, its factor on the theme's opacity (shown as the opacity it
-// makes; the faint: as before v0.5.92)
+// makes; the faint: as before v0.5.92); Grid's choices after them Tiles' palettes (see tilesPalette)
 const GRID_LINES = [
   ['Off', 'No lines', 0],
   ['Faint', 'The lines faint, as before v0.5.92', 0.55],
   ['Medium', 'The lines as the theme draws them', 1],
   ['Strong', "The lines marked four times as much: they show over strong colours (Explore's)", 4],
 ];
-const gridAlpha = () => EDGE_ALPHA * GRID_LINES[Number($('gridLines').value)][2],
+const gridAlpha = () => EDGE_ALPHA * (GRID_LINES[Number($('gridLines').value)]?.[2] ?? 0), // (past them: Tiles', no lines)
   gridShown = () => gridAlpha() > 0;
 function edgeAlpha(sh) {
   if (!FADE_EDGES) return gridAlpha();

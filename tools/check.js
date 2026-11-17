@@ -1675,15 +1675,16 @@ async function partsEqual(fail) {
       .map((w) => [w, {}, SURFACES[VARIANTS[w].surface]?.disc ? 1 : 0]),
   ]; // (a rosette sphere: its discs' lunes, cells whole, one apart as the plane's)
   for (const [w, walls, slack] of runs) {
+    const named = `${w}${walls.gridWalls ? ' walled' : ''}`; // (its walls by a word, an object before: [object Object])
     location.hash = toHash({ ...variantWords(w), ...walls, teams: 1 });
     await until(shown(w, () => lifeTeams === 1));
     for (const K of TEAM_COUNTS.filter((k) => k > 1 && teamsFit(k))) {
       location.hash = toHash({ ...variantWords(w), ...walls, teams: K });
       await until(shown(w, () => lifeTeams === K && walk.life?.colours === K));
       const sizes = huntParts(null, K).map((p) => p.length);
-      if (lifeTeams !== K) fail(`${w}${walls}: ${K} colours offered, ${lifeTeams} taken`);
+      if (lifeTeams !== K) fail(`${named}: ${K} colours offered, ${lifeTeams} taken`);
       else if (Math.max(...sizes) - Math.min(...sizes) > slack)
-        fail(`${w}${walls} in ${K} colours: ${Math.min(...sizes)} to ${Math.max(...sizes)} cells a colour`);
+        fail(`${named} in ${K} colours: ${Math.min(...sizes)} to ${Math.max(...sizes)} cells a colour`);
       checked++;
     }
   }

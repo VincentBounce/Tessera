@@ -1748,6 +1748,19 @@ window.penroseSphereSizes = (most = 10, band = 3, from = 0.5) => {
     )}\n}; // (each size's cells: its corner P1, made by penroseSphereSizes(${most}${from > 0.5 ? `, ${band}, ${from}` : ''}))`;
 };
 
+// The Penrose spheres' kites and darts (see kitesDartsOf): each size of PENROSE_SPHERES, its rhombi turned into kites and darts,
+// whether every half finds its partner, and the graph they make closes (V − E + F = 2); in the console, a line a size
+window.penroseKitesDartsSizes = (most = Infinity, slack = 0) =>
+  Object.entries(PENROSE_SPHERES)
+    .filter(([n]) => +n <= most)
+    .map(([n, P1]) => {
+      const t0 = performance.now(),
+        K = kitesDartsOf(penroseSphereGraph(P1), slack);
+      if (!K) return `${n} rhombi: no cover`;
+      const kinds = [0, 1, 2].map((k) => K.filter((c) => c.kind === k));
+      return `${n} rhombi: ${K.length} cells: ${kinds[0].length} kites, ${kinds[1].length} darts, ${kinds[2].length} holes (${kinds[2].map((c) => c.corners.length).join(' ')} corners), ${Math.round(performance.now() - t0)} ms`;
+    });
+
 // The rosette spheres' sizes and their cells (ROSETTE_SPHERES in main.js): each rosette's discs, W from 4 to most, whose rims pair teeth to
 // notches within ROSETTE_BITE of a tile (see rosetteSeam), one W a disc (two Ws the same tiles: the first), as many cells as the
 // others (CELLS); in the console, its line for main.js

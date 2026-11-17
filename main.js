@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.220';
+const VERSION = '0.5.221';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -9844,6 +9844,18 @@ const LIFE_GRIDS = [
     },
   ],
   [
+    'lifeDodecahedronKitesDarts',
+    'Surfaces',
+    'Dodecahedron',
+    'kitesDarts',
+    {
+      lattice: 'surface',
+      surface: 'kitesDartsSphere',
+      where:
+        "Penrose's kites and darts on a sphere, made from his rhombi's (see Penrose): a cell of its own round each of the dodecahedron's corners",
+    },
+  ],
+  [
     'lifeTorusKites',
     'Surfaces',
     'Torus',
@@ -10533,7 +10545,10 @@ const FAMILIES = [
         [...walks('Hexagons'), ...ant('Hexagons'), variantName('Life', name, 'Hexagons')],
         ...(sphere ? [[variantName('Life', name, 'Twisted')]] : []),
         ...(penrose
-          ? [[variantName('Walk', name, 'Penrose', 'Turtle', 'cells'), variantName('Life', name, 'Penrose')]]
+          ? [
+              [variantName('Walk', name, 'Penrose', 'Turtle', 'cells'), variantName('Life', name, 'Penrose')],
+              [variantName('Life', name, 'Kites & darts')],
+            ]
           : []),
       ],
       tabs: [
@@ -10565,6 +10580,13 @@ const FAMILIES = [
                 'penrose',
                 'Penrose',
                 "Penrose's rhombi on a dodecahedron, inflated (Twarock and Konevtsova's tilings)",
+              ],
+              [
+                4,
+                false,
+                'kitesDarts',
+                'Kites & darts',
+                "Penrose's kites and darts on a dodecahedron, made from his rhombi",
               ],
             ]
           : []),
@@ -16279,6 +16301,196 @@ function penroseSphereGraph(P1, face = penroseFace(P1)) {
     depth, // (each point's distance to its pentagon's nearest side: a band's judged near the sides only, see penroseSphereSizes)
   };
 }
+// Penrose's kites and darts from his rhombi, by their shapes alone (the plane's rule: from penroseTiles' rhombi, its kites and
+// darts again): each rhombus in two halves, a thin one's apexes its sharp corners (36°), a thick one's its blunt ones (108°);
+// a thin half and the thick half whose apex is an end of its base, on that side, one half-kite (the thick apex then on its
+// side: no corner); two half-kites sharing their axis a kite (4 halves), two thick halves sharing their apex and a side a dart
+// (2 halves). On the plane each half has one such tile; on a sphere, along its seams, some two: every half in one tile at once,
+// found by an exact cover (see exactCover); a half in none (round the dodecahedron's corners, where no kite nor dart closes)
+// left out, each hole they leave one cell (its outline). On a graph of rhombi (its tiles its points' numbers): its cells, each
+// its corners in turn, its kind (0 a kite, 1 a dart, 2 a hole) and its rhombus (its first half's), or null if none cover
+function kitesDartsOf(G, slack = 0) {
+  // (slack: the halves so many edges from a corner of the dodecahedron free to be left out)
+  const angle = (i, a, b) => {
+    const p = G.points[i];
+    return Math.acos(dot3(unit(sub(G.points[a], p)), unit(sub(G.points[b], p))));
+  };
+  const halves = []; // (each [0 thin or 1 thick, its apex, its base's ends])
+  for (const t of G.tiles) {
+    const at0 = angle(t[0], t[3], t[1]),
+      at1 = angle(t[1], t[0], t[2]),
+      thin = Math.min(at0, at1) < (54 * Math.PI) / 180,
+      [p, q, r, s] = thin === at0 < at1 ? t : [t[1], t[2], t[3], t[0]]; // (its apexes p and r)
+    halves.push([thin ? 0 : 1, p, q, s], [thin ? 0 : 1, r, q, s]);
+  }
+  const listed = (pairs) => {
+    const by = new Map();
+    for (const [k, v] of pairs) by.set(k, [...(by.get(k) ?? []), v]);
+    return by;
+  };
+  // the half-kites: [its halves (thin, thick), its apex, its axis's other end, its side corner]
+  const thickBySide = listed(
+    halves.flatMap(([c, a, b, d], i) =>
+      c
+        ? [
+            [`${a},${b}`, i],
+            [`${a},${d}`, i],
+          ]
+        : [],
+    ),
+  );
+  const halfKites = halves.flatMap(([c, a, b, d], i) =>
+    c
+      ? []
+      : [b, d].flatMap((e) =>
+          (thickBySide.get(`${e},${a}`) ?? []).map((j) => {
+            const [, , f, g] = halves[j];
+            return [[i, j], f === a ? g : f, e === b ? d : b, a];
+          }),
+        ),
+  );
+  // the tiles that could be: [its halves, its corners in turn, its kind]
+  const kites = [...listed(halfKites.map((h) => [`${h[1]},${h[2]}`, h])).values()].flatMap((l) =>
+    l.flatMap((h, x) =>
+      l
+        .slice(x + 1)
+        .filter((k) => k[3] !== h[3] && !k[0].some((i) => h[0].includes(i)))
+        .map((k) => [[...h[0], ...k[0]], [h[1], h[3], h[2], k[3]], 0]),
+    ),
+  );
+  const darts = [
+    ...listed(
+      halves.flatMap(([c, a, b, d], i) =>
+        c
+          ? [
+              [`${a},${b}`, [i, b, d]],
+              [`${a},${d}`, [i, d, b]],
+            ]
+          : [],
+      ),
+    ),
+  ].flatMap(([k, l]) =>
+    l.flatMap(([i, tip, o], x) => l.slice(x + 1).map(([j, , o2]) => [[i, j], [+k.split(',')[0], o, tip, o2], 1])),
+  );
+  const edge = Math.acos(dot3(unit(G.points[G.tiles[0][0]]), unit(G.points[G.tiles[0][1]]))),
+    corners = G.solid.corners.map(unit),
+    free = halves.map(([, a]) =>
+      corners.some((c) => Math.acos(Math.min(1, dot3(unit(G.points[a]), c))) < slack * edge),
+    );
+  const rows = [...kites, ...darts],
+    chosen = exactCover(
+      halves.length,
+      rows.map(([h]) => h),
+      free,
+    );
+  if (!chosen) return null;
+  const covered = new Set(chosen.flatMap((r) => rows[r][0]));
+  return [
+    ...chosen.map((r) => ({ corners: rows[r][1], kind: rows[r][2], rhombus: rows[r][0][0] >> 1 })),
+    ...holesOf(halves.flatMap((h, i) => (covered.has(i) ? [] : [[i >> 1, h.slice(1)]]))),
+  ];
+}
+// The holes some triangles leave ([its rhombus, its corners] each): each set of them joined by their sides one cell, its
+// outline's corners in turn (its sides in one triangle only, chained), its rhombus its first triangle's
+function holesOf(triangles) {
+  const side = (a, b) => (a < b ? `${a},${b}` : `${b},${a}`),
+    bySide = new Map();
+  triangles.forEach(([, c], i) =>
+    c.forEach((a, k) => bySide.set(side(a, c[(k + 1) % 3]), [...(bySide.get(side(a, c[(k + 1) % 3])) ?? []), i])),
+  );
+  const group = triangles.map((_, i) => i),
+    root = (i) => (group[i] === i ? i : (group[i] = root(group[i])));
+  for (const l of bySide.values()) if (l.length === 2) group[root(l[0])] = root(l[1]);
+  const holes = new Map();
+  triangles.forEach((t, i) => holes.set(root(i), [...(holes.get(root(i)) ?? []), t]));
+  return [...holes.values()].map((ts) => {
+    const next = new Map(); // (each outline corner's two neighbours along it)
+    for (const [, c] of ts)
+      c.forEach((a, k) => {
+        const b = c[(k + 1) % 3];
+        if (bySide.get(side(a, b)).filter((i) => ts.includes(triangles[i])).length > 1) return;
+        next.set(a, [...(next.get(a) ?? []), b]);
+        next.set(b, [...(next.get(b) ?? []), a]);
+      });
+    const corners = [next.keys().next().value];
+    for (let prev = -1; ;) {
+      const here = corners.at(-1),
+        to = next.get(here).find((b) => b !== prev);
+      if (to === corners[0]) break;
+      corners.push(to);
+      prev = here;
+    }
+    return { corners, kind: 2, rhombus: ts[0][0] };
+  });
+}
+// An exact cover (Knuth's algorithm X, with a trail to undo, no recursion): of n columns, rows (each its columns), the rows
+// chosen so that each column is in one exactly, or null; but a column in no row is left out, and a free one too when no row
+// can cover it (its rows tried first: as few left out as it goes); the column with the fewest choices first (one: forced)
+function exactCover(n, rows, free = []) {
+  const byColumn = Array.from({ length: n }, () => []);
+  rows.forEach((r, i) => r.forEach((c) => byColumn[c].push(i)));
+  const alive = new Uint8Array(rows.length).fill(1),
+    count = Int32Array.from(byColumn, (l) => l.length),
+    open = new Uint8Array(n).map((_, c) => (count[c] ? 1 : 0)), // (a column in no row: left out)
+    trail = [], // (each step's rows killed and columns closed, to undo)
+    chosen = [],
+    choices = []; // ([trail's length, chosen's, its column, its choices, the one tried])
+  const close = (c) => {
+    open[c] = 0;
+    trail.push(-1 - c);
+  };
+  const choose = (c, r) => {
+    if (r < 0) return close(c); // (a free column left out)
+    chosen.push(r);
+    for (const c2 of rows[r]) {
+      if (open[c2]) close(c2);
+      for (const r2 of byColumn[c2])
+        if (alive[r2]) {
+          alive[r2] = 0;
+          trail.push(r2);
+          for (const c3 of rows[r2]) count[c3]--;
+        }
+    }
+  };
+  const undoTo = (length) => {
+    while (trail.length > length) {
+      const x = trail.pop();
+      if (x < 0) open[-1 - x] = 1;
+      else {
+        alive[x] = 1;
+        for (const c of rows[x]) count[c]++;
+      }
+    }
+  };
+  for (;;) {
+    let best = -1,
+      fewest = Infinity;
+    for (let c = 0; c < n && fewest > 1; c++)
+      if (open[c] && count[c] + (free[c] ? 1 : 0) < fewest) {
+        best = c;
+        fewest = count[c] + (free[c] ? 1 : 0);
+      }
+    if (best < 0) return chosen;
+    if (fewest > 0) {
+      const tries = [...byColumn[best].filter((r) => alive[r]), ...(free[best] ? [-1] : [])];
+      choices.push([trail.length, chosen.length, best, tries, 0]);
+      choose(best, tries[0]);
+      continue;
+    }
+    // (a column no row covers any more: back to the last choice with another left to try)
+    for (;;) {
+      const top = choices.at(-1);
+      if (!top) return null;
+      undoTo(top[0]);
+      chosen.length = top[1];
+      if (++top[4] < top[3].length) {
+        choose(top[2], top[3][top[4]]);
+        break;
+      }
+      choices.pop();
+    }
+  }
+}
 // the mesh of a size (its cells): its points on the unit sphere, its flat form the dodecahedron they lie on (see shapeAt)
 function penroseSphereMesh(cells) {
   const key = `penroseSphere${cells}`;
@@ -16290,6 +16502,30 @@ function penroseSphereMesh(cells) {
     cellFaces: Int32Array.from(tileFaces), // (its faces the dodecahedron's, round the icosahedron's corners: FACE_MIDDLES' order)
     solid, // (its symmetries the dodecahedron's, see solidCorners)
   }));
+}
+// Penrose's kites and darts on a sphere: a size of rhombi (PENROSE_SPHERES) turned into kites and darts (see kitesDartsOf),
+// its holes round the dodecahedron's corners a cell each; as its rhombi's mesh otherwise, each cell on its rhombus's face
+const KITES_DARTS_SPHERES = { 60: 90, 240: 360, 720: 1110, 1230: 1950 }; // (each size's cells: its rhombi's size)
+function kitesDartsSphereMesh(cells) {
+  const key = `kitesDartsSphere${cells}`;
+  if (meshCache[key]) return meshCache[key];
+  const G = penroseSphereGraph(PENROSE_SPHERES[KITES_DARTS_SPHERES[cells]]),
+    K = kitesDartsOf(G),
+    sides = K.reduce((most, c) => Math.max(most, c.corners.length), 4),
+    R = G.points.reduce((most, p) => Math.max(most, Math.hypot(...p)), 0);
+  return (meshCache[key] = Object.assign(
+    finishMesh(
+      G.points.flatMap(unit),
+      K.map(({ corners: c }) => [...c, ...Array(sides - c.length).fill(c.at(-1))]),
+      sides,
+      cells,
+    ),
+    {
+      flatVerts: Float64Array.from(G.points.flat(), (v) => v / R),
+      cellFaces: Int32Array.from(K, (c) => G.tileFaces[c.rhombus]),
+      solid: G.solid,
+    },
+  ));
 }
 function hexSolidMesh(solid, f) {
   const key = `${solid}hex${f}`;
@@ -16465,6 +16701,7 @@ const MORPHABLE = [
   'hexsphere',
   'twistedsphere',
   'penroseSphere',
+  'kitesDartsSphere',
   ...MOBIUS_KINDS,
   ...foldedIn('torus'),
 ];
@@ -16823,6 +17060,16 @@ const SURFACES = {
     unit: 'hexagons',
     startPeriod: 3,
   },
+  kitesDartsSphere: {
+    mesh: kitesDartsSphereMesh,
+    radius: (n) => Math.sqrt(n / (4 * Math.PI)),
+    ownSizes: () => Object.keys(KITES_DARTS_SPHERES).map(Number),
+    tiles: (n) => n,
+    edge: (n) => Math.round(20 * Math.hypot(...PENROSE_SPHERES[KITES_DARTS_SPHERES[n]]) * Math.sin(Math.PI / 5)) / 10, // (its rhombi's)
+    unit: 'cells',
+    tiling: 'kitesDarts',
+    chiral: true,
+  }, // (its sizes its cells, see KITES_DARTS_SPHERES; its rules the kites and darts')
   penroseSphere: {
     mesh: penroseSphereMesh,
     radius: (n) => Math.sqrt(n / (4 * Math.PI)), // (its rhombi about a square unit each, as the rosette spheres' cells)
@@ -17731,6 +17978,7 @@ const SOLIDS = [
   'stellaKite',
   'dodecaKite',
   'penroseSphere', // (its dodecahedron declared, see penroseSphereMesh)
+  'kitesDartsSphere',
   ...Object.keys(HULL_SOLIDS),
   ...hullCuts.map(([, , cut]) => cut),
 ];
@@ -30508,6 +30756,7 @@ const SOLID_SPOTS = {
   hexsphere: ICOSA_SPOTS,
   twistedsphere: ICOSA_SPOTS,
   penroseSphere: ICOSA_SPOTS,
+  kitesDartsSphere: ICOSA_SPOTS,
 };
 for (const k of ['tetra', 'octa', 'icosa', 'stella', 'dodeca']) SOLID_SPOTS[`${k}Kite`] = SOLID_SPOTS[k]; // kites: the triangles' solids
 for (const k of hexSolids) SOLID_SPOTS[`${k}Hex`] = SOLID_SPOTS[k]; // hexagons: theirs too
@@ -30535,6 +30784,7 @@ const FACE_BASE = {
   hexsphere: 'icosa',
   twistedsphere: 'icosa',
   penroseSphere: 'dodeca', // (its rhombi laid on the dodecahedron's 12 pentagons, see penroseSphereGraph)
+  kitesDartsSphere: 'dodeca',
   tetraKite: 'tetra',
   octaKite: 'octa',
   icosaKite: 'icosa',

@@ -457,8 +457,8 @@ button {
 }
 button:hover:not(:disabled),
 .rule-chip:hover {
-  border-color: var(--muted-text-color);
-} /* (a digit's chip too: a click opens How it works) */
+  background: var(--page-background);
+} /* its inside in the rules' grey (their chips'), its sides as they are (a digit's chip too: a click opens How it works) */
 button:disabled,
 input[type='text']:disabled {
   opacity: 0.45;

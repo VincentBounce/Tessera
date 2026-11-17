@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.308';
+const VERSION = '0.5.309';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -22034,8 +22034,8 @@ function dsatur(count, eachNeighbour) {
 }
 // a small graph's colours, 1 to P, no two neighbours alike: in DSatur's order, each node its first colour free of those
 // before it, back to the last with another free when none is (a search, complete, as long as the graph is small: a solid's
-// faces; past P colours only where P cannot do, one more each time)
-function paletteColours(count, eachNeighbour, P) {
+// faces; past P colours only where P cannot do, one more each time); within budget steps, else null (P not reached)
+function paletteColours(count, eachNeighbour, P, budget = Infinity) {
   const { order } = dsatur(count, eachNeighbour),
     at = new Int32Array(count);
   order.forEach((a, p) => (at[a] = p));
@@ -22044,6 +22044,7 @@ function paletteColours(count, eachNeighbour, P) {
     colour.fill(0);
     let p = 0;
     while (p >= 0 && p < count) {
+      if (--budget < 0) return null;
       const a = order[p];
       let used = 0;
       eachNeighbour(a, (b) => at[b] < p && (used |= 1 << colour[b]));
@@ -22060,24 +22061,23 @@ function paletteColours(count, eachNeighbour, P) {
 // tileKinds), or its steps from cell 0 spread over the palette (round the
 // palette past its last: Tiles where DSatur takes more colours, see dsatur; the faces only where the palette cannot do, see
 // paletteColours)
-// a periodic plane's tiles coloured by its lattice cell, cloned (lattice: each tile's place xy(t), its column a lattice cell's
-// i × m + its motif's tile k, see planeGrid): the cell's m tiles, joined as their tiles anywhere are, in P colours, each tile its
-// motif's; null where a tile touches its own motif's (a cell too small to clone) or the cell takes more than P
-function latticeCellColours({ xy, m }, n, eachNeighbour, P) {
-  const motif = (t) => mod(xy(t)[0], m),
-    joined = Array.from({ length: m }, () => new Set());
-  let clonable = true;
-  for (let t = 0; t < n; t++)
-    eachNeighbour(t, (u) => {
-      if (motif(u) === motif(t)) clonable = false;
-      joined[motif(t)].add(motif(u));
-    });
-  if (!clonable) return null;
-  const colour = paletteColours(m, (k, put) => joined[k].forEach(put), P);
-  return colour.every((c) => c <= P) ? Uint8Array.from({ length: n }, (_, t) => colour[motif(t)]) : null;
+// a periodic plane's tiles coloured by a block of its lattice cells, cloned (each tile's place xy(t), its column a lattice
+// cell's i × m + its motif's tile k, see planeGrid; the block k lattice cells along, l rows up; pairs: its tiles side by side):
+// the block's tiles, joined as their tiles anywhere are, in P colours, each tile its block's (DSatur's, else a search of a
+// few steps); null where a tile touches its own block's copy (a block too small to clone) or the block takes more than P
+function blockColours(xy, pairs, m, P, [k, l]) {
+  const at = (t) => mod(xy(t)[0], k * m) * l + mod(xy(t)[1], l),
+    joined = Array.from({ length: k * m * l }, () => new Set());
+  for (const [t, u] of pairs) {
+    if (at(u) === at(t)) return null;
+    joined[at(t)].add(at(u));
+  }
+  const each = (c, put) => joined[c].forEach(put),
+    within = (colour) => colour?.every((c) => c <= P) && colour;
+  return within(dsatur(k * m * l, each).colour) || within(paletteColours(k * m * l, each, P, 20000)) || null;
 }
 // A grid's fields for Explore's colourings: its cells' faces (Sides: each cell's face of its solid, see cellFaces), their
-// kinds (Kind of tile), a periodic plane's lattice (Tiles: its lattice cell cloned, see latticeCellColours), two cells apart
+// kinds (Kind of tile), a periodic plane's lattice (Tiles: a block of its lattice cells cloned, see alternationOf), two cells apart
 // (Tiles: coloured piece by piece, see pieceByPiece); a surface's from its mesh, the plane's from its kind and width:
 // Explore's grid and Tiles' ground alike (see groundColours)
 const surfaceColouring = (g) => ({
@@ -22086,26 +22086,17 @@ const surfaceColouring = (g) => ({
   apart: cellsApart(g),
   alternated: g.cellPlaces && alternatedBy(g.tiling ?? g.cells, (t) => g.cellPlaces[t]), // (a sheet's by its plane cells)
 });
-// two neighbouring cells of a surface parted by a fold or a seam: a solid's across its edge (its faces), a sheet's (a
-// torus's, a Möbius strip's, a Klein bottle's) across its seam (their middles on the sheet more than half its length or
-// width apart, see sheetMiddle), a Möbius strip's front and back, a rosette sphere's north and south; null, none
+// two neighbouring cells of a surface parted by a fold: a solid's across its edge (its faces), a rosette sphere's north and
+// south; null, none (a sheet's coloured by its grid's alternation, see surfaceColouring)
 function cellsApart(g) {
   if (g.cellFaces) return (t, u) => g.cellFaces[t] !== g.cellFaces[u];
   // (a rosette sphere's halves, its disc twice, see rosetteSphereMesh: each coloured apart, as a rosette; it works when its
   // fold is a multiple of 4 on a Flower (Flower 4, 8, 12) or of 3 on a Hexa (Hexa 6, 9, 12))
-  if (g.south) return (t, u) => t < g.south !== u < g.south;
-  if (!g.torus) return null;
-  const at = Array.from({ length: g.n }, (_, t) => sheetMiddle(g, t));
-  return (t, u) =>
-    (g.mobius && t < g.front !== u < g.front) ||
-    Math.abs(at[t][0] - at[u][0]) > g.nu / 2 ||
-    Math.abs(at[t][1] - at[u][1]) > g.nv / 2; // (a Möbius strip's front and back apart, at its rim as at its seam)
+  return g.south ? (t, u) => t < g.south !== u < g.south : null;
 }
 const planeColouring = (kind, W) => ({
   kinds: tileKinds(planeMesh(kind, W, planeTorus(kind)), APERIODIC[kind]?.(W).kinds),
-  alternated:
-    alternatedBy(baseOf(kind), (t) => basePlace(kind, ...planeGrid(kind, W).xy(t))) ||
-    alternatedBy(kind, planeGrid(kind, W).xy), // (a rectangle's by its base grid's places, else by its own cell, larger)
+  alternated: alternatedBy(baseOf(kind), (t) => basePlace(kind, ...planeGrid(kind, W).xy(t))), // (a rectangle's by its base grid's places)
 });
 // Tiles: each cell's ground (what shows where nothing is painted) its colour in Explore, by its colouring there and a
 // palette of its, the theme's (TILES_PALETTES, Grid's last choices, after its lines: see GRID_LINES; exploreLevels on the grid shown), packed; off,
@@ -22139,9 +22130,9 @@ function groundColours() {
   }
   return groundMemo.col;
 }
-// A surface's Tiles piece by piece: a solid's face by face, a sheet cut along its seam, each a patch of its tiling's plane
-// coloured alone (DSatur, its pattern whole), its cells' neighbours across a fold or the seam not counted: two cells alike
-// may meet there (apart: see cellsApart)
+// A surface's Tiles piece by piece: a solid's face by face, a rosette sphere's half by half, each a patch of its tiling's
+// plane coloured alone (DSatur, its pattern whole), its cells' neighbours across a fold not counted: two cells alike may meet
+// there (apart: see cellsApart)
 const pieceByPiece = (n, bySide, apart) => dsatur(n, (t, put) => bySide(t, (u) => !apart(t, u) && put(u))).colour;
 function exploreLevels(nbr, n, { faces, kinds, apart, alternated }, palette = explorePalette()) {
   const side = sideOf(nbr),
@@ -22195,20 +22186,12 @@ const exploreColours = (levels, P = explorePalette()) => {
 // Explore's tilings whose Tiles break their pattern, at the size each opens at, each its colours there and its tiling's on
 // the plane (Explore's Tiles there; 0: the plane's own, DSatur's more than 3, its lattice cell not cloned): measured once by
 // a run (2026-11-17, v0.5.288: every Explore grid against its tiling on the plane, the same name in the menu), its tile's
-// mark (see tilesBroken). A sheet that knows its plane cells by its grid's alternation (see alternationOf), never broken; a
-// surface else piece by piece (see pieceByPiece): its colours more inside a piece (a face, a sheet cut along its seam), DSatur's
+// mark (see tilesBroken). The plane and a sheet (a torus, a Möbius strip, a Klein bottle), coloured by their grid's
+// alternation (see alternationOf: every periodic grid's, a block of its lattice cells cloned), never broken; a surface else piece by piece (see
+// pieceByPiece): its colours more inside a piece (a face, a rosette sphere's half), DSatur's
 const TILES_BROKEN = {
-  explorePythagoras: [4, 0],
-  exploreTwisted: [5, 0],
-  exploreDodecagons: [5, 0],
   exploreCubePitsSquares: [3, 2],
   exploreCubeBumpsSquares: [3, 2],
-  exploreTorusPrismatic: [4, 3],
-  exploreTorusType14: [5, 4],
-  exploreMobiusStripPrismatic: [4, 3],
-  exploreMobiusStripDemi2: [4, 3],
-  exploreKleinBottlePrismatic: [4, 3],
-  exploreKleinBottleType10: [5, 4],
   exploreTetrahedronKites: [4, 3],
   exploreOctahedronKites: [4, 3],
   exploreDodecahedronTriangles: [3, 2],
@@ -41868,17 +41851,11 @@ function drawGrid() {
     drawGridLines(ctx, s);
   }
 }
-// The alternations no lattice cell gives (its cell one tile, or touching its own copy: see alternationOf), a plane cell (x,
-// y)'s colour (see planeCorners), never as a neighbour's: squares in 2, hexagons in 3 round their axes, Cairo's pentagons in
-// 3 every 6 squares (pentagon o of square (i, j): i + 2j + 2o + 2·(i + j's parity), found by trying them all)
-const ALTERNATIONS = {
-  square: (x, y) => (x + y) & 1,
-  hex: (x, y) => mod(x - y, 3),
-  cairo: (x, y) => mod((x >> 1) + 2 * y + 2 * (x & 1) + 2 * (((x >> 1) + y) & 1), 3),
-};
-// a grid's alternation: a base grid's (ALTERNATIONS), else a tiling's lattice cell coloured on the plane and cloned (in 2, 3
-// or 4, the fewest), its cell (x, y)'s colour by its rank x mod m (see latticeCellColours); null where its cell cannot be
-// cloned. Read by place, it knows no seam: a torus's, a sheet's, two alike may meet there
+// a grid's alternation, a plane cell (x, y)'s colour (see planeCorners), never as a neighbour's: a block of its lattice cells
+// coloured on the plane and cloned (see blockColours), in the fewest colours (2, 3, then 4), the least block that takes them (k
+// lattice cells along, l rows up, 6 each at most: squares 2 × 2 in 2, hexagons 3 × 3 in 3, Cairo's pentagons 6 × 6 squares in
+// 3); null where none does (a grid that never repeats). Read by place, it knows no seam: a torus's, a sheet's, two alike may
+// meet there
 // each cell t's colour by its grid's alternation at its plane cell place(t); null, none
 const alternatedBy = (kind, place) => alternationOf(kind) && ((t) => alternationOf(kind)(...place(t)));
 // a plane cell (x, y) moved by (p, q) lattice cells (per cells each, see gridCells)
@@ -41892,30 +41869,40 @@ function basePlace(kind, x, y) {
     [[p, q], [r, s]] = R.step;
   return cellMoved(gridCells(R.base), R.nat[mod(x, m)], [i * p + y * r, i * q + y * s]);
 }
-const alternationMemo = {};
+const alternationMemo = {},
+  ALTERNATION_BLOCKS = [1, 2, 3, 4, 5, 6]
+    .flatMap((k) => [1, 2, 3, 4, 5, 6].map((l) => [k, l]))
+    .sort((p, q) => p[0] * p[1] - q[0] * q[1] || p[0] - q[0]); // (the least first)
 function alternationOf(kind) {
-  if (ALTERNATIONS[kind] || APERIODIC[kind]) return ALTERNATIONS[kind] ?? null;
+  if (APERIODIC[kind]) return null;
   if (!(kind in alternationMemo)) {
     const W = 24,
       { n, xy } = planeGrid(kind, W),
       m = gridCells(kind),
       nbr = planeNeighbours(kind, W, false), // (no wrap: the motif's own neighbours)
       side = sideOf(nbr),
-      bySide = (t, put) => {
-        for (let q = nbr.start[t]; q < nbr.start[t + 1]; q++) if (side[q]) put(nbr.list[q]);
-      },
-      colour = [2, 3, 4].reduce((c, P) => c ?? latticeCellColours({ xy, m }, n, bySide, P), null), // (the fewest colours first)
-      rank =
-        colour &&
-        Array.from({ length: m }, (_, k) => colour[[...Array(n).keys()].find((t) => mod(xy(t)[0], m) === k)] - 1);
-    alternationMemo[kind] = rank && ((x) => rank[mod(x, m)]);
+      pairs = [];
+    for (let t = 0; t < n; t++)
+      for (let q = nbr.start[t]; q < nbr.start[t + 1]; q++) if (side[q]) pairs.push([t, nbr.list[q]]);
+    let found = null;
+    for (const P of [2, 3, 4]) {
+      for (const block of ALTERNATION_BLOCKS) {
+        const colour = blockColours(xy, pairs, m, P, block);
+        if (colour) {
+          found = { colour, k: block[0] * m, l: block[1] };
+          break;
+        }
+      }
+      if (found) break;
+    }
+    alternationMemo[kind] = found && ((x, y) => found.colour[mod(x, found.k) * found.l + mod(y, found.l)] - 1);
   }
   return alternationMemo[kind];
 }
 // Tiles on the infinite plane (the 2D walks, ants and spirals): its grid's cells, the plane's (planeCorners: their one
 // definition), laid as the walk's lie (a shift: squares along the lines, triangles and pointy hexagons by y0; a quarter turn:
 // the flat hexagons, the upright triangles), each its colour by its plane cell (x, y), never as a neighbour's (squares and
-// triangles in 2, hexagons in 3 round their axes, Cairo's pentagons in 3: see ALTERNATIONS), a motif repeating every w × h of
+// triangles in 2, hexagons in 3 round their axes, Cairo's pentagons in 3: see alternationOf), a motif repeating every w × h of
 // the plane from its origin: its cells there, and those across its edges
 function planeMotif(lat, lines) {
   const h = TRIANGLE_HEIGHT,

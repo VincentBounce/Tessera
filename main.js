@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.329';
+const VERSION = '0.5.330';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -29195,7 +29195,7 @@ function lifeReset() {
   L.extinctAt = Array.from({ length: L.colours + 1 }, (_, k) =>
     k && (L.colours === 1 ? L.seedAlive : L.seedByColour[k]) === 0 ? 0 : null,
   ); // each colour's last generation alive, once all died out
-  L.maxActivity = 0;
+  L.maxActivity = L.seedAlive + L.seedDying ? 1 : 0; // (its start's cells: their first change, see gpuLifePut)
   L.aliveCount = L.everAlive = L.seedAlive;
   L.dyingCount = L.seedDying;
   L.blueCount = L.seedBlue;
@@ -43891,7 +43891,7 @@ function gpuLifePut(E, alive, r = 0) {
   };
   field(0, (t) => alive[t]);
   field(1, (t) => (live(alive[t]) ? 1 : 0));
-  field(2, () => 0);
+  field(2, (t) => (alive[t] ? 1 : 0)); // (a start's cell came from nothing: its first change)
   field(3, () => -1e9 >>> 0);
   field(4, (t) => (live(alive[t]) ? 1 : 0) | (L.colours > 1 && L.seed[t] ? 1 << L.seed[t] : 0));
 }

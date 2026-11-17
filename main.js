@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.204';
+const VERSION = '0.5.205';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -6757,6 +6757,14 @@ function tileGroup(buttons) {
   g.append(...buttons);
   return g;
 }
+// the menu's tabs of icons only, one choice among up to 6 on one line (see .icon-tabs: the Outline's), their words read
+// but not drawn (their tooltip's name, see .visually-hidden)
+function iconTabs(buttons) {
+  for (const b of buttons) b.querySelector(':scope > span')?.classList.add('visually-hidden');
+  const g = tileGroup(buttons);
+  g.classList.add('icon-tabs');
+  return g;
+}
 // the menu's tabs of words only, one choice among several in one frame, each its share of the row (see .text-tabs: the
 // Number's ℚ ℝ ℙ, a battle's starts' ways)
 function textTabs(buttons) {
@@ -8148,7 +8156,7 @@ const OUTLINES = [
   ],
 ];
 $('planeEdges').append(
-  tileGroup(
+  iconTabs(
     OUTLINES.map(([shape, torus, text, title]) =>
       tile({
         pic: icon({ square: 'square', hex: 'hexagon', rhombus: 'rhombus' }[shape] + (torus ? '' : 'Walled')),

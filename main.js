@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.239';
+const VERSION = '0.5.240';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -6320,7 +6320,7 @@ function describe(base) {
 // Walks on surfaces, on cells: the walk as a rainbow line over the tiles, the tiles it passes through
 // filled in the colour of their first visit, those it encloses (Area) in the colour of the
 // step that closed them; or the tiles coloured by their visits (Heatmap, on cells only).
-const VIEW_3D = ['autoRotate', 'upright', 'perspective', 'light']; // a 3D view's: Default, Free, Upright, Auto-rotate, Perspective, Side light (Space-time's too)
+const VIEW_3D = ['autoRotate', 'upright', 'perspective', 'light', 'glint']; // a 3D view's: Default, Free, Upright, Auto-rotate, Perspective, Side light, Glint (Space-time's too)
 const DISPLAY_BY_TAB = {
   '2D walks': ['heatmap', 'fill', 'translucent', 'cells', 'visits', 'digit', 'grid', 'ocean'],
   '3D walks': ['colours', 'digit', 'grid', ...VIEW_3D],
@@ -6409,6 +6409,7 @@ const DISPLAY_DEFAULTS = {
     (variant, w) => perspectiveFor(w, defaultOf('shape', w), spaceTime && spaceTimeApplies(w)),
   ], // (by its shape, see SHAPE_DEFAULTS)
   light: ['light', 'open', true],
+  glint: ['glintM', 'open', 0], // (its own colour, never past it: see light)
   glass: ['glass', 'open', false],
   grid: [
     'gridLines',
@@ -6508,6 +6509,7 @@ function updateDisplayMenu() {
     upright: 'uprightRow',
     perspective: 'perspectiveRow',
     light: 'lightRow',
+    glint: 'glintRow',
     glass: 'glassRow',
     ocean: 'oceanRow',
     cut: 'cutRow',
@@ -17014,10 +17016,15 @@ function updateMorphButton() {
     .join('\n');
   box.dataset.greyed = 'on Pits, Bumps and Sponge';
 }
-// the slider's place, its ends' names faded by it (see .shape-slider: the one the knob nears gone, from a third of the way)
-function showShapeAt() {
-  $('shapeM').parentElement.style.setProperty('--shape-at', $('shapeM').value);
-}
+// a slider's place, its ends' names faded by it (see .shape-slider: the one the knob nears gone, from a third of the way)
+const showSliderAt = (input) => input.parentElement.style.setProperty('--shape-at', input.value);
+const showShapeAt = () => showSliderAt($('shapeM'));
+// Glint: Soft ── Bright, the light's glint from each tile's own colour (never past it) to white added (a pale face facing it
+// washed white, as before v0.5.236)
+$('glintM').addEventListener('input', () => {
+  showSliderAt($('glintM'));
+  needsFull = true;
+});
 // Unrolled ── Rolled (Flat ── Inflated): the form follows the slider at once (the buttons' animation, from
 // one end to the other, when set from elsewhere); its perspective, the form's own at an end
 $('shapeM').addEventListener('input', () => {
@@ -44229,6 +44236,7 @@ struct U {
   fadeTo: vec3f,  // (a size or the start hovered: what is drawn this pale, fade, towards the page's background, see drawHover)
   extent: f32,  // (the figure's radius: a tile's place towards the viewer, its share of it, see pickF)
   firstBorn: i32,  // (the step a line's first instance is walked over, its next one's the next: see lifeOf)
+  glintWhite: f32,  // (Glint: from its tile's own colour, a share of the light, 0, to white added on it, 1: see light)
 }
 @group(0) @binding(0) var<uniform> u: U;
 @group(0) @binding(1) var<storage, read> tileCol: array<u32>;
@@ -44270,7 +44278,8 @@ fn light(col: vec3f, n0: vec3f, p: vec3f, bias: f32) -> Lit {  // (as tileLight;
   var o: Lit; var n = n0;
   if (dot(n, u.V) < 0.0) { n = -n; }
   o.dark = col * (1.0 - u.shade);
-  o.lit = col * u.shade * ((1.0 - u.glint) * max(0.0, dot(n, u.L)) + u.glint * pow(max(0.0, dot(n, u.H)), ${LIGHT_SHINE}.0));  // (its glint in its own colour, a share of the light: never past its colour, a pale one not washed white)
+  let d = max(0.0, dot(n, u.L)); let g = u.glint * pow(max(0.0, dot(n, u.H)), ${LIGHT_SHINE}.0);
+  o.lit = mix(col * u.shade * ((1.0 - u.glint) * d + g), col * u.shade * d + g, u.glintWhite);  // (Glint Soft: in its own colour, a share of the light, never past its colour; Bright: white added, a pale one washed white)
   let l = lightSpace(p);
   o.sh = vec3f(l.x * 0.5 + 0.5, 0.5 - l.y * 0.5, l.z * 0.5 + 0.5);
   o.cutv = dot(p, u.cutN); o.pos = clipOf(toScreen(p), bias);
@@ -44420,6 +44429,7 @@ function gpuView(words, k, depth, more = {}) {
   f[7] = SHADE;
   f.set(camera.v, 8);
   f[11] = glint();
+  f[121] = Number($('glintM').value); // (glintWhite)
   f.set(L, 12);
   f[15] = depth / 4;
   f.set(halfway(L), 16);

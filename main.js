@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.246';
+const VERSION = '0.5.247';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -11344,6 +11344,7 @@ function renderModePicker() {
         ...title,
         ...these.flatMap((sh) => {
           const again = sh === shape && !!VARIANTS[w].plane && !APERIODIC[VARIANTS[w].plane],
+            fourth = takesFourth(navPick(w, 2, sh)),
             b = button(
               `${icon(SHAPE_ICONS[sh])}<span>${shapeLabel(sh)}</span>`,
               sh === shape,
@@ -11355,7 +11356,10 @@ function renderModePicker() {
                 plane.torus = !plane.torus;
                 compute();
               },
-              sh === shape ? variantWhere(w) : tilingsWords(navPick(w, 2, sh)), // (the one shown: its grid, as its size's tooltip; another: its tilings)
+              [sh === shape ? variantWhere(w) : tilingsWords(navPick(w, 2, sh)), fourth && FOURTH_WORDS]
+                .filter(Boolean)
+                .join('\n'), // (the one shown: its grid, as its size's tooltip; another: its tilings; its mark's words)
+              { mark: fourth },
             );
           b.dataset.choice = `shape:${sh}`; // (its choice's key, see choicesAt)
           const to = navPick(w, 2, sh),
@@ -11365,7 +11369,7 @@ function renderModePicker() {
             b.tipMore = () => sizeCardHtml(...surfaceCard(surface, sizeOf(figureSize(to)), true));
           else if (surface) b.tipMore = () => (facesCount(surface) ? `${facesCount(surface)} faces` : '');
           if (again) {
-            setTile(b, { on: true, again });
+            setTile(b, { on: true, again, mark: fourth });
             b.title += plane.torus ? '\nA torus · Clicked again: walls' : '\nWalls · Clicked again: a torus';
           } // (its words kept, then what a click does, as a card's: see card)
           return [b];
@@ -11423,10 +11427,16 @@ function renderModePicker() {
             $('variant').value = same(f);
             $('variant').dispatchEvent(new Event('change'));
           },
-          f === here && turns
-            ? `${capitalised(F.tabs[tabOf(f, true)][4].slice(shape.length + 2))}: a click turns it${isTurned ? ' back' : ''}`
-            : variantWhere(same(f)),
+          [
+            f === here && turns
+              ? `${capitalised(F.tabs[tabOf(f, true)][4].slice(shape.length + 2))}: a click turns it${isTurned ? ' back' : ''}`
+              : variantWhere(same(f)),
+            takesFourth(same(f)) && FOURTH_WORDS,
+          ]
+            .filter(Boolean)
+            .join('\n'),
           {
+            mark: takesFourth(same(f)),
             again: f === here && turns,
             byDefault: f === F.tabs[0][0] ? 'yes' : '',
             turn: tilesTurn(shownSurface(VARIANTS[same(f)].surface, f === here && isTurned)),
@@ -19079,6 +19089,7 @@ function walkRecorder(seq, ahead, base, R, nodes, len = seq.length) {
       initShape(kind);
       setPerspective();
       updateHint();
+      renderModePicker(); // (its tile's mark, now that it is built: see takesFourth)
       restart();
       if (walk.shape) applyShape();
     },
@@ -22324,10 +22335,44 @@ function latticeCellColours({ xy, m }, n, eachNeighbour, P) {
 // kinds (Kind of tile), a periodic plane's lattice (Tiles: its lattice cell cloned, see latticeCellColours); a surface's
 // from its mesh, the plane's from its kind and width: Explore's grid and Tiles' ground alike (see groundColours)
 const surfaceColouring = (g) => ({ faces: g.cellFaces ?? null, kinds: tileKinds(meshCorners(g)) });
+const planeLattice = (kind, W) => (APERIODIC[kind] ? null : { xy: planeGrid(kind, W).xy, m: gridCells(kind) });
 const planeColouring = (kind, W) => ({
   kinds: tileKinds(planeMesh(kind, W, planeTorus(kind)), APERIODIC[kind]?.(W).kinds),
-  lattice: APERIODIC[kind] ? null : { xy: planeGrid(kind, W).xy, m: gridCells(kind) },
+  lattice: planeLattice(kind, W),
 });
+// a grid's neighbours by a side (a corner's none), each of cell t's: put(u)
+const bySideOf =
+  (nbr, side = sideOf(nbr)) =>
+  (t, put) => {
+    for (let q = nbr.start[t]; q < nbr.start[t + 1]; q++) if (side[q]) put(nbr.list[q]);
+  };
+// Tiles' colours, a grid's (Explore's Tiles: two side by side never alike, from 1): a periodic plane's lattice cell cloned,
+// in 4 colours where 3 cannot do (Twisted, Dodecagons, Type 10, 11, 14: a tile in an odd ring, or 4 tiles all touching);
+// else DSatur
+const tileColours = (n, bySide, lattice) =>
+  (lattice && (latticeCellColours(lattice, n, bySide, 3) ?? latticeCellColours(lattice, n, bySide, 4))) ??
+  dsatur(n, bySide).colour;
+// a variant's grid whose Tiles take a 4th colour (its lattice cell's 3 cannot do, or DSatur's), its tile's mark (see renderModePicker): a plane's at the
+// size it opens at, a surface's the one shown only (its mesh built: another's none, a mesh each not built for a menu)
+const fourthMemo = new Map();
+function takesFourth(to) {
+  const P = VARIANTS[to].plane,
+    kind = P && planeKind(P),
+    W = P && planeW(kind, plane.side, VARIANTS[to]),
+    key = P ? `${kind}|${W}` : to === walk.variant && walk.geo?.verts ? walk.geo : null;
+  if (key === null) return false;
+  if (!fourthMemo.has(key)) {
+    const [nbr, n, lattice] = P
+      ? [planeNeighbours(kind, W, planeTorus(kind)), planeGrid(kind, W).n, planeLattice(kind, W)]
+      : [walk.life?.nbr ?? cornerNeighbours(walk.geo), walk.geo.n, null];
+    fourthMemo.set(
+      key,
+      tileColours(n, bySideOf(nbr), lattice).some((c) => c > 3),
+    );
+  }
+  return fourthMemo.get(key);
+}
+const FOURTH_WORDS = "Explore's Tiles colour it in 4 colours or more: a 4th one among the 3";
 // Tiles: each cell's ground (what shows where nothing is painted) its colour in Explore, by its colouring there and a
 // palette of its, the theme's (TILES_PALETTES, Grid's last choices, after its lines: see GRID_LINES; exploreLevels on the grid shown), packed; off,
 // null: one ground for all, Earth's sea or the theme's (see blankTile)
@@ -22361,13 +22406,8 @@ function exploreLevels(nbr, n, faces, kinds, lattice, palette = explorePalette()
     P = palette.length,
     rule = exploreLook.rule === 'sides' && !faces ? 'tiles' : exploreLook.rule;
   let level = new Uint8Array(n);
-  const bySide = (t, put) => {
-    for (let q = nbr.start[t]; q < nbr.start[t + 1]; q++) if (side[q]) put(nbr.list[q]);
-  };
-  if (rule === 'tiles')
-    level =
-      (lattice && (latticeCellColours(lattice, n, bySide, 3) ?? latticeCellColours(lattice, n, bySide, 4))) ??
-      dsatur(n, bySide).colour; // (a periodic plane: its lattice cell cloned, in 4 colours where 3 cannot do (Twisted, Dodecagons, Type 10, 11, 14: a tile in an odd ring, or 4 tiles all touching); else DSatur)
+  const bySide = bySideOf(nbr, side);
+  if (rule === 'tiles') level = tileColours(n, bySide, lattice);
   if (rule === 'sides') {
     // (the faces' graph, their sides touching)
     const touching = Array.from({ length: faces.reduce((m, f) => Math.max(m, f), -1) + 1 }, () => new Set());
@@ -22537,6 +22577,7 @@ function buildLife(seq, variant) {
   initShape(kind);
   setPerspective();
   updateHint();
+  renderModePicker(); // (its tile's mark, now that it is built: see takesFourth)
   startColours(walk.life.seed); // in colours, each in its part
   countSeed(walk.life);
   restart();

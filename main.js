@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.228';
+const VERSION = '0.5.229';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -24174,11 +24174,12 @@ const HAT = (() => {
  * by a tiling's own rule, each time φ smaller (about φ² as many), two of a colour sharing an edge one tile: a tiling that never
  * repeats, with five-fold symmetry round its middle, and its mirror. Its tiles round a disc of W² (their corners p, their
  * middle m; their mean area 1), the same round the middle at every W; laid in the disc as the hats' (see discPatch), and the
- * rhombi on a sphere (see penroseSphereGraph). Each rule: its cut, the edge two halves share (none: each triangle a tile), the
- * tile's side (mean area 1) */
+ * rhombi on a sphere (see penroseSphereGraph). Each rule: its wheel (each triangle's hand round it, + its corners anticlockwise),
+ * its cut, the edge two halves share (none: each triangle a tile), the tile's side (mean area 1) */
 const PENROSE_RULES = {
   // the rhombi (P3): a thin triangle in 2, a thick one in 3, two sharing their base B C a rhombus (thick: 72°, thin: 36°)
   rhombi: {
+    wheel: '+-+-+-+-+-',
     side: 1.11,
     cut: (c, A, B, C, lerp, phi) => {
       if (c === 0) {
@@ -24203,6 +24204,7 @@ const PENROSE_RULES = {
   // its inner corner, B its tip) in a half-kite and a half-dart, two sharing their axis A B a kite (72°, 72°, 72°, 144°) or a
   // dart (72°, 36°, 216°, 36°)
   kitesDarts: {
+    wheel: '+-+-+-+-+-',
     side: 1.41,
     cut: (c, A, B, C, lerp, phi) => {
       const dart = (A, B, C) => {
@@ -24221,8 +24223,10 @@ const PENROSE_RULES = {
   },
   // the Tübingen triangles (Baake, Kramer, Schlottmann and Zeidler, 1990): Robinson's triangles as tiles, each its hand (its
   // corners' turn): an obtuse one (A 108°) in an obtuse and an acute one, an acute one (A 36°) in two acute and an obtuse one,
-  // as the Tilings Encyclopedia draws them
+  // as the Tilings Encyclopedia draws them; its wheel the only one its substitution makes (its 10 acute triangles' hands, the
+  // same at all 1,217 such corners of a triangle cut 11 times: never alternating, so no five-fold symmetry, a mirror only)
   tubingen: {
+    wheel: '++-++--+--',
     side: 2,
     cut: (c, A, B, C, lerp, phi) => {
       if (c === 1) {
@@ -24257,7 +24261,7 @@ const penroseTiles = (() => {
     let tris = Array.from({ length: 10 }, (_, i) => {
       const B = [R * Math.cos(((2 * i - 1) * Math.PI) / 10), R * Math.sin(((2 * i - 1) * Math.PI) / 10)],
         C = [R * Math.cos(((2 * i + 1) * Math.PI) / 10), R * Math.sin(((2 * i + 1) * Math.PI) / 10)];
-      return i % 2 ? [0, [0, 0], C, B] : [0, [0, 0], B, C];
+      return rule.wheel[i] === '+' ? [0, [0, 0], B, C] : [0, [0, 0], C, B];
     });
     for (let k = 0; k < n; k++)
       tris = trianglesNear(
@@ -27367,10 +27371,10 @@ const TEAM_NAMES = {
 // with walls (K divides n; or K = 2n, a slice and its mirror, if it mirrors: hexagons 1, 2, 3, 6, 12; squares 1, 2, 4, 8; a hat
 // 1), on a torus any (its blocks); on a
 // solid, its fair spots (see colouring); on a torus, blocks that divide it; on a Möbius strip, any
-const MIRRORED_DISCS = ['ammann', 'rhombs12', 'rhombs14', 'penrose', 'kitesDarts', 'tubingen']; // the discs that mirror (the rosettes turn as a spiral): their parts a turn's, from half of one (its corner)
+const MIRRORED_DISCS = ['ammann', 'rhombs12', 'rhombs14', 'penrose', 'kitesDarts']; // the discs that mirror (the rosettes turn as a spiral): their parts a turn's, from half of one (its corner)
 const figureTurns = (kind) =>
   ROSETTES[kind]?.[0] ??
-  { ammann: 8, rhombs12: 12, rhombs14: 14, penrose: 5, kitesDarts: 5, tubingen: 5, hat: 1, spectre: 1, pinwheel: 1 }[
+  { ammann: 8, rhombs12: 12, rhombs14: 14, penrose: 5, kitesDarts: 5, tubingen: 1, hat: 1, spectre: 1, pinwheel: 1 }[
     kind
   ] ??
   gridTurns(baseOf(kind));

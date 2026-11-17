@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.317';
+const VERSION = '0.5.318';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -868,10 +868,12 @@ const memoryKeys = (store) =>
   store instanceof Map ? [...store.keys()] : Object.keys(store).filter((k) => store[k] !== undefined); // (a weakCache's: those still kept)
 const formatNumber = (v) => v.toLocaleString('en'); // (its thousands by commas: 39,193)
 // v written as wide as widest: the digits and commas it lacks in front, hidden zeros (every digit as wide, see body's
-// tabular-nums): a count that changes keeps its place (sign: written next to its digits, after them)
-const formatNumberAsWide = (v, widest, sign = '') => {
-  const s = formatNumber(v),
-    w = formatNumber(Math.max(v, widest));
+// tabular-nums): a count that changes keeps its place (sign: written next to its digits, after them; decimals: so many
+// always)
+const formatNumberAsWide = (v, widest, sign = '', decimals = 0) => {
+  const f = (x) => x.toLocaleString('en', { minimumFractionDigits: decimals, maximumFractionDigits: decimals }),
+    s = f(v),
+    w = f(Math.max(v, widest));
   return `<span class="digits-pad">${w.slice(0, w.length - s.length).replace(/\d/g, '0')}</span>${sign}${s}`;
 };
 const DIRS = [
@@ -46185,9 +46187,9 @@ function drawActivity() {
 // (against the grid, and since when: a link there and its mark); in blue, its order (see orderOf) and the most ordered
 // so far (and when); then its turnover, this generation's births and deaths against the cells alive before and after
 // (100 %: every cell changes; 0: nothing moves), its growth, births less deaths, in figures (a bar for it swung too much)
-// a generation of the run in view, as a link, always (the one shown too: one look, the same everywhere): clicked, it goes
+// a generation of the run in view, as a link, always (its number as wide as the furthest shown: in a column, none moving) (the one shown too: one look, the same everywhere): clicked, it goes
 // there (see seekTo: a reversible one's by its rule, Life's played again from its start)
-const genLink = (g, text = `${walk.life ? 'gen' : 'step'} ${formatNumber(g)}`, kind = '') =>
+const genLink = (g, text = `${walk.life ? 'gen' : 'step'} ${formatNumberAsWide(g, walk.widestShown)}`, kind = '') =>
   `<a class="gen-link${kind && ` gen-${kind}`}" href="#" data-gen="${g}" title="Go to ${walk.life ? 'gen' : 'step'} ${formatNumber(g)}">${text}</a>`; // (kind: its colour, see style.css)
 document.addEventListener('click', (e) => {
   const a = e.target.closest?.('.gen-link');
@@ -46196,6 +46198,7 @@ document.addEventListener('click', (e) => {
   if ('gen' in a.dataset) seekTo(Number(a.dataset.gen));
   if ('stepper' in a.dataset) stepperParts(document.querySelector('.max-steps')).forEach(highlight);
 }); // (the length asked's mark: there, and its stepper, see endMark)
+const gaugePercent = (v) => `${formatNumberAsWide(Math.round(100 * v), 100)} %`; // (a share as wide as 100 %)
 function renderGauges(L) {
   const box = $('gauges'),
     n = L.seed.length;
@@ -46213,10 +46216,9 @@ function renderGauges(L) {
     P = peaks(L),
     ever = traced(L, stepShown)?.ever ?? L.everAlive, // (its cells reached by the generation shown)
     // each figure as wide as its widest, known (a count: the grid's cells; a share: 100 %; a generation: the furthest
-    // shown), none moving as they change
+    // shown, see genLink), none moving as they change
     count = (v) => formatNumberAsWide(v, n),
-    percent = (v) => `${formatNumberAsWide(Math.round(100 * v), 100)} %`,
-    when = (g, kind = '') => genLink(g, `gen ${formatNumberAsWide(g, walk.widestShown)}`, kind);
+    percent = (v) => gaugePercent(v);
   const rows = [
     // name, colour (none: the theme's live cells'), its bar's share (none: figures only), its figures now, its run's peak
     // (its share, a tick on the bar; its figures; when)
@@ -46225,7 +46227,7 @@ function renderGauges(L) {
       gold,
       (varies ? avg[1] : L.aliveCount) / P.alive,
       `<b>${varies ? meanText(avg[1]) : count(L.aliveCount)}</b>`,
-      [1, count(P.alive), when(P.aliveGen)],
+      [1, count(P.alive), genLink(P.aliveGen)],
     ],
     [
       'Ever alive',
@@ -46235,10 +46237,10 @@ function renderGauges(L) {
       [
         P.ever / n,
         `<span title="${formatNumber(P.ever)} of ${formatNumber(n)} cells alive at least once, all reached at gen ${formatNumber(P.everGen)}">${percent(P.ever / n)}</span>`,
-        when(P.everGen, 'sweet'),
+        genLink(P.everGen, undefined, 'sweet'),
       ],
     ], // (its share of the grid, the cells reached: what Hunt › Reach all hunts)
-    ['Order', blue, L.order, percent(L.order), [P.order, percent(P.order), when(P.orderGen)]],
+    ['Order', blue, L.order, percent(L.order), [P.order, percent(P.order), genLink(P.orderGen)]],
     ['Turnover', null, turnover, percent(turnover)],
     [
       'Growth',
@@ -46275,22 +46277,43 @@ const paintTimings = () => {
       return `<tr><td>${stage}</td><td class="number">${typeof ms === 'number' ? (ms < 1000 ? `${ms.toFixed(1)} ms` : `${(ms / 1000).toFixed(2)} s`) : ms}</td></tr>`;
     }).join('');
 };
-// the stats' gauges: a row each, its name, its bar (share: none, null), its number
+// the stats' gauges: a row each, its name, its bar (share: none, null), its figures now, its run's peak (its share, a tick
+// on the bar; its figures; when); a row of words, [name, words]: across the table, from the bar's place
 function paintGauges(rows) {
   const box = $('gauges'),
-    key = rows.map(([name, , share]) => `${name}${share === null ? '' : '|'}`).join();
+    cells = (row) =>
+      row.length === 2
+        ? ['rank-wide']
+        : [
+            ...(row[2] === null ? [] : ['rank-bar']),
+            row[2] === null ? 'rank-num no-bar' : 'rank-num',
+            'rank-peak',
+            'rank-peak-gen',
+          ],
+    key = rows.map((row) => `${row[0]}|${cells(row)}`).join();
   if (box.dataset.key !== key) {
     box.dataset.key = key;
     box.innerHTML = rows
       .map(
-        ([name, , share]) =>
-          `<div class="gauge-row"><span>${name}</span>${share === null ? '<span></span>' : '<span class="rank-bar"><i></i><b></b></span>'}<span class="rank-num"></span><span class="rank-peak"></span><span class="rank-peak-gen"></span></div>`,
+        (row) =>
+          `<div class="gauge-row"><span>${row[0]}</span>${cells(row)
+            .map((c) =>
+              c === 'rank-bar' ? '<span class="rank-bar"><i></i><b></b></span>' : `<span class="${c}"></span>`,
+            )
+            .join('')}</div>`,
       )
       .join('');
   }
-  rows.forEach(([, colour, share, text, peak], i) => {
-    const [label, bar, num, best, when] = box.children[i].children;
-    if (share !== null) {
+  rows.forEach((row, i) => {
+    const [, colour = null, share = null, text, peak] = row.length === 2 ? [row[0], null, null, row[1]] : row,
+      [label, bar, num, best, when] = [
+        'span',
+        '.rank-bar',
+        '.rank-num, .rank-wide',
+        '.rank-peak',
+        '.rank-peak-gen',
+      ].map((q) => box.children[i].querySelector(q)); // (a row with no bar: its figures in its room; a row of words: no peak)
+    if (bar) {
       Object.assign(bar.firstChild.style, {
         width: `${Math.min(100, 100 * (share || 0))}%`,
         background: colour ?? LIFE_ALIVE,
@@ -46302,28 +46325,36 @@ function paintGauges(rows) {
       }); // (its run's peak, a tick)
     }
     setLinks(num, text);
-    setLinks(best, peak?.[1] ?? '');
-    setLinks(when, peak?.[2] ?? '');
-    label.style.color = num.style.color = best.style.color = when.style.color = colour ?? ''; // (its name in its figures' colour)
+    for (const [cell, words] of [
+      [best, peak?.[1]],
+      [when, peak?.[2]],
+    ])
+      if (cell) {
+        setLinks(cell, words ?? '');
+        cell.style.color = colour ?? '';
+      }
+    label.style.color = num.style.color = colour ?? ''; // (its name in its figures' colour)
   });
 }
-// A walk's farthest from its start over all its steps (the whole walk, worked out), and the first step there (its curve's
-// peak; its distances so far only grow: halved to it)
-function walkPeak() {
-  const M = walk.maxDist,
-    far = M[walk.n];
+// the first step of a walk's counts that only grow (M: one a step) with v at least: halved to it
+function firstReaching(M, v) {
   let lo = 0,
     hi = walk.n;
   while (lo < hi) {
     const m = (lo + hi) >> 1;
-    if (M[m] < far) lo = m + 1;
+    if (M[m] < v) lo = m + 1;
     else hi = m;
   }
-  return { far, step: lo };
+  return lo;
 }
-// A walk's gauges, as Life's: where it is, how far from its start against its farthest (in gold, as its mark on the curve),
-// its farthest (its bar: as far as it went so far) and when; the cells it visited (on a surface, out of all of them; once
-// all are, the step that reached the last one)
+// A walk's farthest from its start over all its steps (the whole walk, worked out), and the first step there (its curve's
+// peak; its distances so far only grow)
+function walkPeak() {
+  const far = walk.maxDist[walk.n];
+  return { far, step: firstReaching(walk.maxDist, far) };
+}
+// A walk's gauges, as Life's: where it is, how far from its start against its farthest (in gold, as its mark on the curve)
+// and its farthest and when; the cells it visited (on a surface, out of all of them), and its end's and since when
 function renderWalkGauges() {
   $('gauges').hidden = !walk.n || !walk.maxDist;
   if ($('gauges').hidden) return;
@@ -46368,24 +46399,31 @@ function renderWalkGauges() {
     );
     return;
   }
-  const p = (v) => formatNumber(Math.round(v * 100) / 100 || 0),
-    P = walkPeak(),
+  const P = walkPeak(),
     gold = 'var(--accent-color)',
-    c = walk.cells[stepShown];
+    c = walk.cells[stepShown],
+    last = walk.cells[walk.n],
+    lastAt = firstReaching(walk.cells, last), // (the first step that visited as many as its end)
+    // each figure as wide as its widest, known (a place: its start's distance and the farthest from it; a distance: the
+    // farthest; a count: its end's), none moving as they change
+    reach = Math.hypot(walk.wx[0], walk.wy[0], walk.is3d ? walk.wz[0] : 0) + P.far,
+    place = (v) => formatNumberAsWide(Math.abs(v), reach, v < 0 ? '−' : '<span class="digits-pad">−</span>', 2),
+    far = (v) => formatNumberAsWide(v, P.far, '', 1),
+    count = (v) => formatNumberAsWide(v, last),
+    visited = (v) =>
+      walk.surface
+        ? `<span title="${formatNumber(v)} of ${formatNumber(walk.nodes)} visited">${gaugePercent(v / walk.nodes)}</span>`
+        : count(v);
   paintGauges([
-    ['Position', null, null, walk.is3d ? `(${p(x)}, ${p(y)}, ${p(z)})` : `(${p(x)}, ${p(y)})`],
-    ['Distance', gold, d / P.far, `<b>${d.toFixed(1)}</b>`],
-    ['Peak distance', gold, walk.maxDist[stepShown] / P.far, `${P.far.toFixed(1)} · ${genLink(P.step)}`],
+    ['Position', `(${[x, y, ...(walk.is3d ? [z] : [])].map(place).join(', ')})`],
+    ['Distance', gold, d / P.far, `<b>${far(d)}</b>`, [1, far(P.far), genLink(P.step)]],
     [
       walk.vert ? 'Corners visited' : 'Cells visited',
       null,
-      c / (walk.surface ? walk.nodes : walk.cells[walk.n]),
-      !walk.surface
-        ? formatNumber(c)
-        : walk.coverStep >= 0 && stepShown >= walk.coverStep
-          ? `all ${formatNumber(walk.nodes)} · by step ${formatNumber(walk.coverStep)}`
-          : `${formatNumber(c)} / ${formatNumber(walk.nodes)} (${((100 * c) / walk.nodes).toFixed(1)} %)`,
-    ],
+      c / (walk.surface ? walk.nodes : last),
+      visited(c),
+      [walk.surface ? last / walk.nodes : 1, visited(last), genLink(lastAt)],
+    ], // (its end's, and the first step with as many)
   ]);
 }
 // A battle's ranking, always in sight under the generation: the colours by their live cells (a bar, their share of all

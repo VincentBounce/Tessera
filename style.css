@@ -1718,7 +1718,14 @@ button.active .bubble.active {
 .gauges .rank-num,
 .gauges .rank-peak {
   text-align: right;
-} /* figures to the right, a generation to the left: none moving as they change */
+}
+.gauges .rank-num.no-bar {
+  grid-column: span 2;
+} /* figures with no bar (a growth): in their bar's room too */
+.gauges .rank-wide {
+  grid-column: 2 / -1;
+  white-space: nowrap;
+} /* a row of words (a place): across the table */ /* figures to the right, a generation to the left: none moving as they change */
 .gauges .rank-peak {
   padding-left: 8px;
 } /* its run's peak, apart from its figures now */
@@ -1734,6 +1741,7 @@ button.active .bubble.active {
 } /* its run's peak: a tick on its bar */
 .gauges .gauge-row > span:first-child {
   color: var(--muted-text-color);
+  white-space: nowrap;
 }
 .ranking .rank-cell {
   display: none;

@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.279';
+const VERSION = '0.5.280';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -15138,10 +15138,12 @@ function kleinMesh(kind, nv, nu = kleinColumns[kind](nv)) {
     tiles = places.map(sheetHex);
   }
   if (kind === 'kleinTri' || kind === 'kleinKite') tiles = triSheet(nu, nv);
+  if (kind === 'kleinTri') places = triPlaces(nu, nv);
   // turned by 30° (as turnedTorus): the tori's, nu and nv swapped back; their mirror across the ring maps them onto themselves
   // (the triangles' corners every half step round the tube, the hexagons' columns an even count)
   const swap = (c) => [c[0], ...c.slice(1).reverse()].map(([i, j]) => [j, i]);
   if (kind === 'kleinTriTurned' || kind === 'kleinKiteTurned') tiles = triSheet(nv, nu).map(swap);
+  if (kind === 'kleinTriTurned') places = triPlaces(nv, nu);
   if (kind === 'kleinHexTurned') {
     places = hexPlaces(nv, nu);
     tiles = places.map(sheetHex).map(swap);
@@ -16695,16 +16697,19 @@ const torusTriColumns = (nv, own, klein = false) =>
 // The sheets' tiles, in sheet units. Triangles: corner i of row j at (i + (j odd) / 2, j), the two between corners i, i + 1 of
 // rows j and j + 1, nu corners a row, nv rows; flat-topped hexagons: nu columns 1.5 apart, odd ones half a row higher, nv rows
 // √3 apart, column by column (the tori's, the Klein bottles', turned or not)
-function triSheet(nu, nv) {
-  const P = (i, j) => [i + (j % 2) / 2, j],
-    tris = [];
+// a sheet's triangles, nv rows of nu pairs (odd rows half a step along, a pair's second ▲ on even rows, ▼ before it on odd
+// ones): their plane cells (see planeCorners), its corners the plane's, its rows h apart counted as 1
+function triPlaces(nu, nv) {
+  const places = [];
   for (let j = 0; j < nv; j++)
     for (let i = 0; i < nu; i++) {
-      if (j % 2 === 0) tris.push([P(i, j), P(i + 1, j), P(i, j + 1)], [P(i + 1, j), P(i + 1, j + 1), P(i, j + 1)]);
-      else tris.push([P(i, j), P(i + 1, j), P(i + 1, j + 1)], [P(i, j), P(i + 1, j + 1), P(i, j + 1)]);
+      const a = i - Math.floor(j / 2);
+      places.push([2 * a, j], [j % 2 ? 2 * a - 1 : 2 * a + 1, j]);
     }
-  return tris;
+  return places;
 }
+const sheetTri = (place) => planeCorners('tri', ...place).map(([x, y]) => [x, y / TRIANGLE_HEIGHT]);
+const triSheet = (nu, nv) => triPlaces(nu, nv).map(sheetTri);
 // a sheet's hexagons, nu columns of nv (tile c·nv + r: column c, row r, odd columns half a row up): their plane cells
 // (−r − ⌈c/2⌉, c), see planeCorners; their corners, the plane's turned a quarter (flat-topped), the columns h apart counted
 // as 1, from the corner at 0°
@@ -16732,7 +16737,7 @@ function torusTriMesh(nv, nu = torusTriColumns(nv), kites = false) {
       const tris = triSheet(nu, nv);
       return kites ? tris.flatMap(kitesOf) : tris;
     },
-    { kite: kites },
+    { kite: kites, ...(!kites && { cellPlaces: triPlaces(nu, nv) }) }, // (a kite's plane cell none yet)
   );
 }
 
@@ -16770,6 +16775,7 @@ const turnedTorusTriMesh = (nv, nu = torusHexColumns(nv), kites = false) =>
     nv,
     nu,
     kites,
+    !kites && { cellPlaces: triPlaces(nv, nu) },
   ); // (rows: around the ring)
 const turnedTorusHexMesh = (nv, nu = torusTriColumns(nv)) =>
   turnedTorus('torusHexTurned', (cols, rows, put) => hexSheet(cols, rows).forEach(put), 6, nv, nu, false, {

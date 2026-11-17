@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.322';
+const VERSION = '0.5.323';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -46220,7 +46220,7 @@ function renderGauges(L) {
     count = (v) => formatNumberAsWide(v, n),
     percent = (v) => gaugePercent(v);
   const rows = [
-    // name, colour (none: the theme's live cells'), its bar's share (none: figures only), its figures now, its run's peak
+    // name, colour (none: grey), its bar's share (none: figures only), its figures now, its run's peak
     // (its figures and when)
     [
       'Alive',
@@ -46250,7 +46250,7 @@ function renderGauges(L) {
   ];
   paintGauges(rows);
 }
-// The gauges' rows (name, colour: none, the theme's live cells'; its bar's share: none, figures only; its figures), built
+// The gauges' rows (name, colour: none, grey; its bar's share: none, figures only; its figures), built
 // again when their names change (Life's, a walk's)
 // Each stage's last time, in ms, or its words ('cached'): Digits (the worker's), Build (the walk or the start, its mesh with it),
 // Rows (Elementary's worker), 3D image (the card's work done); shown in the app's page, Stats/debug, as it is set (setTiming;
@@ -46313,8 +46313,8 @@ function paintGauges(rows) {
     if (bar) {
       Object.assign(bar.firstChild.style, {
         width: `${Math.min(100, 100 * (share || 0))}%`,
-        background: colour ?? LIFE_ALIVE,
-      }); // (the theme's live cells, as it is now)
+        background: colour ?? 'var(--muted-text-color)',
+      }); // (no colour of its own: the grey of its name and figures)
     }
     setLinks(num, text);
     for (const [cell, words] of [

@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.313';
+const VERSION = '0.5.314';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -30021,12 +30021,6 @@ function record(L, g, alive, by, order) {
   T.order[i] = order;
   T.ever[i] = L.everAlive;
 }
-// the first generation that had as many cells ever alive as now (its cells reached, see the gauges' Ever alive)
-const everAliveGen = (L) =>
-  Math.max(
-    0,
-    L.trace.ever.findIndex((e) => e >= L.everAlive),
-  );
 // How ordered a state is: 1 − its live cells' dead neighbours (their borders) by as many as they would have at random (each
 // neighbour dead as often as a cell is, 1 − p): about 0 a soup, near 1 a picture in one piece (a start's, a return's); none
 // alive or all, 0. Its borders: the graphics card's (see GPU_LIFE's lifeCount), a start's here (bordersOf)
@@ -30042,19 +30036,21 @@ function orderOf(L, alive, borders) {
 // and each run of them at least half as ordered as its start, its most ordered one, if that half is clear of the noise (3
 // times the run's median order at least: a soup's start, nothing to come back to); marked on the curve, Begin and End
 // stopping there
-// the most alive at once and the most ordered of the generations played, past and future (its record's: kept when it plays
-// again from its start), and when: as many again, the one nearest its start kept (reached first, playing from it)
+// the most alive at once, the most ordered and the most cells ever alive (its run's end's) of the generations played, past
+// and future (its record's: kept when it plays again from its start), and when: as many again, the one nearest its start
+// kept (reached first, playing from it)
 const firstPlayed = (L) => Math.min(0, 1 - L.past.alive.length); // (its first generation played: its start, or its past's furthest)
 function peaks(L) {
   const key = `${L.trace.alive.length}|${L.past.alive.length}`;
   if (L.peaks?.key === key) return L.peaks;
-  const p = { key, alive: -1, aliveGen: 0, order: -1, orderGen: 0 };
+  const p = { key, alive: -1, aliveGen: 0, order: -1, orderGen: 0, ever: -1, everGen: 0 };
   for (let g = firstPlayed(L); g < L.trace.alive.length; g++) {
     const T = g < 0 ? L.past : L.trace,
       i = Math.abs(g);
     const better = (v, best, at) => v > best || (v === best && Math.abs(g) < Math.abs(at));
     if (better(T.alive[i], p.alive, p.aliveGen)) [p.alive, p.aliveGen] = [T.alive[i], g];
     if (better(T.order[i], p.order, p.orderGen)) [p.order, p.orderGen] = [T.order[i], g];
+    if (better(T.ever[i], p.ever, p.everGen)) [p.ever, p.everGen] = [T.ever[i], g];
   }
   return (L.peaks = p);
 }
@@ -46153,7 +46149,7 @@ function drawActivity() {
     for (const g of reversibleRun() ? orderMarks(walk.life) : [peaks(walk.life).orderGen])
       mark(g, css.getPropertyValue('--sector-color'), 1);
     mark(peaks(walk.life).aliveGen, accent, 0);
-    mark(everAliveGen(walk.life), css.getPropertyValue('--sweet-spot-color'), 2); // (its cells all reached, in violet as its gauge)
+    mark(peaks(walk.life).everGen, css.getPropertyValue('--sweet-spot-color'), 2); // (its cells all reached, in violet as its gauge)
   } else if (walk.battle) {
     // (a battle's deaths, each in its walker's colour; those of one step each a row down, as the others' marks)
     const dead = walk.battle.deaths;
@@ -46225,8 +46221,8 @@ function renderGauges(L) {
     [
       'Ever alive',
       'var(--sweet-spot-color)', // (violet, as the Heatmap's middle)
-      L.everAlive / n,
-      `<span title="${formatNumber(L.everAlive)} of ${formatNumber(n)} cells alive at least once, all reached at gen ${formatNumber(everAliveGen(L))}">${Math.round((100 * L.everAlive) / n)} %</span> · ${genLink(everAliveGen(L), undefined, 'sweet')}`,
+      P.ever / n,
+      `<span title="${formatNumber(P.ever)} of ${formatNumber(n)} cells alive at least once, all reached at gen ${formatNumber(P.everGen)}">${Math.round((100 * P.ever) / n)} %</span> · ${genLink(P.everGen, undefined, 'sweet')}`,
     ], // (its share of the grid, the cells reached: what Hunt › Reach all hunts)
     ['Order', blue, L.order, `${Math.round(100 * L.order)} %`],
     ['Peak order', blue, P.order, `${Math.round(100 * P.order)} % · ${genLink(P.orderGen)}`],

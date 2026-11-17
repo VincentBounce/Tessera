@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.277';
+const VERSION = '0.5.278';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -15127,16 +15127,12 @@ const kleinSheetKey = (x0, y0, nu, nv, up) => `${kleinSheetPlace(x0, y0, nu, nv,
 function kleinMesh(kind, nv, nu = kleinColumns[kind](nv)) {
   const key = `${kind}${nv}x${nu}`;
   if (meshCache[key]) return meshCache[key];
-  let tiles = [];
-  if (kind === 'klein')
-    for (let i = 0; i < nu; i++)
-      for (let j = 0; j < nv; j++)
-        tiles.push([
-          [i, j],
-          [i + 1, j],
-          [i + 1, j + 1],
-          [i, j + 1],
-        ]);
+  let tiles = [],
+    places = null; // (its tiles' plane cells, where known: see cellPlaces)
+  if (kind === 'klein') {
+    places = Array.from({ length: nu * nv }, (_, t) => [Math.floor(t / nv), t % nv]);
+    tiles = places.map(([i, j]) => sheetSquare(i, j));
+  }
   if (kind === 'kleinHex') tiles = hexSheet(nu, nv);
   if (kind === 'kleinTri' || kind === 'kleinKite') tiles = triSheet(nu, nv);
   // turned by 30° (as turnedTorus): the tori's, nu and nv swapped back; their mirror across the ring maps them onto themselves
@@ -15182,24 +15178,19 @@ function kleinMesh(kind, nv, nu = kleinColumns[kind](nv)) {
     nv,
     tube,
     uv: new Float64Array(sheet.flat(2)),
+    ...(places && { cellPlaces: places }),
   }));
 }
 
 function torusMesh(nv, nu = ringColumns(nv / TORUS_TUBE, nv)) {
-  // squares about as long around the ring as around the tube
-  return sheetTorus(`torus${nv}x${nu}`, 'torus', nv, nu, 4, () =>
-    Array.from({ length: nu * nv }, (_, t) => {
-      const i = Math.floor(t / nv),
-        j = t % nv;
-      return [
-        [i, j],
-        [i + 1, j],
-        [i + 1, j + 1],
-        [i, j + 1],
-      ];
-    }),
-  );
+  // squares about as long around the ring as around the tube, each its plane cell (i, j)
+  const places = Array.from({ length: nu * nv }, (_, t) => [Math.floor(t / nv), t % nv]);
+  return sheetTorus(`torus${nv}x${nu}`, 'torus', nv, nu, 4, () => places.map(([i, j]) => sheetSquare(i, j)), {
+    cellPlaces: places,
+  });
 }
+// a sheet's square (i, j): the plane's (see planeCorners), its corners from i to i + 1 and j to j + 1
+const sheetSquare = (i, j) => planeCorners('square', i, j).map(([x, y]) => [x + 0.5, y + 0.5]);
 // A torus from its sheet's tiles (tiles(): their corners in sheet units, see torusPoint; i = nu and i = 0 meet, the same for
 // j), nu round the ring and nv round the tube, sides corners each; once a size
 function sheetTorus(key, kind, nv, nu, sides, tiles, more = {}) {
@@ -15586,16 +15577,15 @@ function mobiusSheetOf(kind0, size, count = false, along = null) {
     }
     return { ...done(L, W), originCell: [-1, 0] }; // (its first tile: row 0's ▼ at a = −1, the plane's triangle −1)
   }
-  const L = steps(nv);
+  const L = steps(nv),
+    places = [];
   for (let i = 0; i < L; i++)
     for (let j = 0; j < nv; j++)
-      put(() => [
-        [i, j],
-        [i + 1, j],
-        [i + 1, j + 1],
-        [i, j + 1],
-      ]);
-  return done(L, nv);
+      put(() => {
+        places.push([i, j]);
+        return sheetSquare(i, j);
+      });
+  return { ...done(L, nv), ...(!count && { cellPlaces: places }) };
 }
 // A tiling's strip (see MOBIUS_TILINGS): the plane turned so that its lattice's first side a runs along it, its mirror
 // on the strip's edge (see mobiusMirror), its tiles
@@ -15832,7 +15822,7 @@ function mobiusMesh(kind, size) {
   const key = `${kind}${size}|${stripKey()}`,
     nv = mobiusSize(size)[0]; // (its length its colours': see stripSteps)
   if (meshCache[key]) return meshCache[key];
-  const { L, W, tiles: sheet, mids, latticeCells, colourBox, originCell } = mobiusSheet(kind, size),
+  const { L, W, tiles: sheet, mids, latticeCells, colourBox, originCell, cellPlaces } = mobiusSheet(kind, size),
     k = sheet[0].length;
   const { verts, add } = vertexStore();
   const ids = sheet.map((t) => t.map(([x, y]) => add(...mobiusPoint(x, y, L, W, 1)))); // the glued ends share corners
@@ -15896,6 +15886,7 @@ function mobiusMesh(kind, size) {
     front: sheet.length,
     originCell,
     latticeCells: [...latticeCells, ...latticeCells],
+    ...(cellPlaces && { cellPlaces: [...cellPlaces, ...cellPlaces] }), // (its back's the front's, turned over)
     ...(colourBox && {
       colourCells: [0, 1].flatMap((back) =>
         sheet.map((_, i) => colourBox(mids[2 * i] + back * L, back ? W - mids[2 * i + 1] : mids[2 * i + 1])),
@@ -22356,7 +22347,8 @@ const surfaceColouring = (g) => ({
   faces: g.cellFaces ?? null,
   kinds: tileKinds(meshCorners(g)),
   apart: cellsApart(g),
-});
+  alternated: g.cellPlaces && ALTERNATIONS[g.cells] && ((t) => ALTERNATIONS[g.cells](...g.cellPlaces[t])),
+}); // (alternated: a sheet's cell by its plane cell, its grid's alternation, see cellPlaces)
 // two neighbouring cells of a surface parted by a fold or a seam: a solid's across its edge (its faces), a sheet's (a
 // torus's, a Möbius strip's, a Klein bottle's) across its seam (their middles on the sheet more than half its length or
 // width apart, see sheetMiddle); null, none
@@ -22406,7 +22398,7 @@ function groundColours() {
 // coloured alone (DSatur, its pattern whole), its cells' neighbours across a fold or the seam not counted: two cells alike
 // may meet there (apart: see cellsApart)
 const pieceByPiece = (n, bySide, apart) => dsatur(n, (t, put) => bySide(t, (u) => !apart(t, u) && put(u))).colour;
-function exploreLevels(nbr, n, { faces, kinds, lattice, apart }, palette = explorePalette()) {
+function exploreLevels(nbr, n, { faces, kinds, lattice, apart, alternated }, palette = explorePalette()) {
   const side = sideOf(nbr),
     P = palette.length,
     rule = exploreLook.rule === 'sides' && !faces ? 'tiles' : exploreLook.rule;
@@ -22417,7 +22409,11 @@ function exploreLevels(nbr, n, { faces, kinds, lattice, apart }, palette = explo
   if (rule === 'tiles')
     level =
       (lattice && (latticeCellColours(lattice, n, bySide, 3) ?? latticeCellColours(lattice, n, bySide, 4))) ??
-      (apart ? pieceByPiece(n, bySide, apart) : dsatur(n, bySide).colour); // (a periodic plane: its lattice cell cloned, in 4 colours where 3 cannot do (Twisted, Dodecagons, Type 10, 11, 14: a tile in an odd ring, or 4 tiles all touching); a surface, piece by piece; else DSatur)
+      (alternated
+        ? Uint8Array.from({ length: n }, (_, t) => 1 + alternated(t))
+        : apart
+          ? pieceByPiece(n, bySide, apart)
+          : dsatur(n, bySide).colour); // (a periodic plane: its lattice cell cloned, in 4 colours where 3 cannot do (Twisted, Dodecagons, Type 10, 11, 14: a tile in an odd ring, or 4 tiles all touching); a sheet that knows its plane cells, its grid's alternation; a surface, piece by piece; else DSatur)
   if (rule === 'sides') {
     // (the faces' graph, their sides touching)
     const touching = Array.from({ length: faces.reduce((m, f) => Math.max(m, f), -1) + 1 }, () => new Set());
@@ -42204,6 +42200,15 @@ function drawGrid() {
     drawGridLines(ctx, s);
   }
 }
+// A base grid's alternation, its plane cell (x, y)'s colour (see planeCorners), never as a neighbour's: squares and
+// triangles in 2, hexagons in 3 round their axes, Cairo's pentagons in 4 by their way (the infinite plane's Tiles, the
+// sheets', see planeMotif, cellPlaces)
+const ALTERNATIONS = {
+  square: (x, y) => (x + y) & 1,
+  tri: (x) => x & 1,
+  hex: (x, y) => mod(x - y, 3),
+  cairo: (x, y) => cairoType(x >> 1, y, x & 1),
+};
 // Tiles on the infinite plane (the 2D walks, ants and spirals): its grid's cells, the plane's (planeCorners: their one
 // definition), laid as the walk's lie (a shift: squares along the lines, triangles and pointy hexagons by y0; a quarter turn:
 // the flat hexagons, the upright triangles), each its colour by its plane cell (x, y), never as a neighbour's (squares and
@@ -42215,22 +42220,21 @@ function planeMotif(lat, lines) {
     shifted =
       (dx, dy) =>
       ([x, y]) => [x + dx, y + dy],
-    thirds = (x, y) => mod(x - y, 3),
-    [kind, place, colour, w, H] =
+    [kind, place, w, H] =
       lat === 'square'
-        ? ['square', shifted(lines ? 0.5 : 0, lines ? 0.5 : 0), (x, y) => (x + y) & 1, 2, 2]
+        ? ['square', shifted(lines ? 0.5 : 0, lines ? 0.5 : 0), 2, 2]
         : lat === 'cairo'
-          ? ['cairo', shifted(0, 0), (x, y) => cairoType(x >> 1, y, x & 1), 2 * CAIRO, 2 * CAIRO]
+          ? ['cairo', shifted(0, 0), 2 * CAIRO, 2 * CAIRO]
           : lat === 'tri'
             ? lines
-              ? ['hex', shifted(0, TRI_Y0), thirds, 3, 2 * h]
-              : ['tri', shifted(0, TRI_Y0), (x) => x & 1, 1, 2 * h]
+              ? ['hex', shifted(0, TRI_Y0), 3, 2 * h]
+              : ['tri', shifted(0, TRI_Y0), 1, 2 * h]
             : lines
-              ? ['tri', turned, (x) => x & 1, 2 * h, 1]
-              : ['hex', turned, thirds, 2 * h, 3],
+              ? ['tri', turned, 2 * h, 1]
+              : ['hex', turned, 2 * h, 3],
     cells = [];
   for (let x = -14; x <= 14; x++)
-    for (let y = -8; y <= 8; y++) cells.push([colour(x, y), planeCorners(kind, x, y).map(place)]);
+    for (let y = -8; y <= 8; y++) cells.push([ALTERNATIONS[kind](x, y), planeCorners(kind, x, y).map(place)]);
   return { w, h: H, cells };
 }
 // the infinite plane's ground in Tiles' palette (see tilesPalette): its motif drawn once a scale into a picture, filling

@@ -867,6 +867,7 @@ h4 {
 .tile-group > button.active {
   position: relative;
   z-index: 3;
+  border-radius: 6px; /* (its gold round as the group's frame, wherever it lies: at a corner of the group, its corner whole) */
 } /* its border over its neighbour's (every button its own layer: above the next one); the layers: a button, one hovered (1), the group's frame (2), the one picked (3), its gold whole over the frame */
 button.switch:hover:not(:disabled) {
   background: var(--picked-background);

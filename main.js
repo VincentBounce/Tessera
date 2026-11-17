@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.278';
+const VERSION = '0.5.279';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -15133,13 +15133,19 @@ function kleinMesh(kind, nv, nu = kleinColumns[kind](nv)) {
     places = Array.from({ length: nu * nv }, (_, t) => [Math.floor(t / nv), t % nv]);
     tiles = places.map(([i, j]) => sheetSquare(i, j));
   }
-  if (kind === 'kleinHex') tiles = hexSheet(nu, nv);
+  if (kind === 'kleinHex') {
+    places = hexPlaces(nu, nv);
+    tiles = places.map(sheetHex);
+  }
   if (kind === 'kleinTri' || kind === 'kleinKite') tiles = triSheet(nu, nv);
   // turned by 30° (as turnedTorus): the tori's, nu and nv swapped back; their mirror across the ring maps them onto themselves
   // (the triangles' corners every half step round the tube, the hexagons' columns an even count)
   const swap = (c) => [c[0], ...c.slice(1).reverse()].map(([i, j]) => [j, i]);
   if (kind === 'kleinTriTurned' || kind === 'kleinKiteTurned') tiles = triSheet(nv, nu).map(swap);
-  if (kind === 'kleinHexTurned') tiles = hexSheet(nv, nu).map(swap);
+  if (kind === 'kleinHexTurned') {
+    places = hexPlaces(nv, nu);
+    tiles = places.map(sheetHex).map(swap);
+  }
   if (kind === 'kleinKite' || kind === 'kleinKiteTurned') tiles = tiles.flatMap(kitesOf); // (each triangle its 3 kites)
   const up = kind === 'kleinCairo' ? 0.5 : 0; // (Cairo's pentagons half a square up its sheet, as the torus's: their mirror line too, see id)
   if (kind === 'kleinCairo')
@@ -15909,7 +15915,9 @@ const sheetPoint = (g, i, j, m) => {
 const torusHexColumns = (nv, own, klein = false) =>
   ringColumns((2 * nv * Math.sqrt(3)) / (3 * TORUS_TUBE), nv, 2, klein, undefined, own);
 function torusHexMesh(nv, nu = torusHexColumns(nv)) {
-  return sheetTorus(`torusHex${nv}x${nu}`, 'torusHex', nv, nu, 6, () => hexSheet(nu, nv)); // (tile c·nv + r, like the square torus)
+  return sheetTorus(`torusHex${nv}x${nu}`, 'torusHex', nv, nu, 6, () => hexSheet(nu, nv), {
+    cellPlaces: hexPlaces(nu, nv),
+  }); // (tile c·nv + r, like the square torus)
 }
 
 // A torus of Cairo pentagons: nv squares of the Cairo grid round the tube, nu round the ring (both even:
@@ -16697,15 +16705,16 @@ function triSheet(nu, nv) {
     }
   return tris;
 }
-const hexSheet = (nu, nv) =>
-  Array.from({ length: nu * nv }, (_, t) => {
-    const c = Math.floor(t / nv),
-      cj = (t % nv) + (c % 2) / 2;
-    return [0, 1, 2, 3, 4, 5].map((k) => [
-      c + Math.cos((k * Math.PI) / 3) / 1.5,
-      cj + Math.sin((k * Math.PI) / 3) / Math.sqrt(3),
-    ]);
-  });
+// a sheet's hexagons, nu columns of nv (tile c·nv + r: column c, row r, odd columns half a row up): their plane cells
+// (−r − ⌈c/2⌉, c), see planeCorners; their corners, the plane's turned a quarter (flat-topped), the columns h apart counted
+// as 1, from the corner at 0°
+const hexPlaces = (nu, nv) =>
+  Array.from({ length: nu * nv }, (_, t) => [-(t % nv) - Math.ceil(Math.floor(t / nv) / 2), Math.floor(t / nv)]);
+const sheetHex = (place) => {
+  const k = planeCorners('hex', ...place).map(([x, y]) => [y / TRIANGLE_HEIGHT, -x]);
+  return [...k.slice(1), k[0]];
+};
+const hexSheet = (nu, nv) => hexPlaces(nu, nv).map(sheetHex);
 const kitesOf = (c) => {
   const m = [0, 1].map((d) => (c[0][d] + c[1][d] + c[2][d]) / 3),
     half = (p, q) => [(p[0] + q[0]) / 2, (p[1] + q[1]) / 2];
@@ -16734,7 +16743,7 @@ function torusTriMesh(nv, nu = torusTriColumns(nv), kites = false) {
  * Triangles: nv corners around the tube (edge 1), nu rows around the ring (√3/2 apart, nu even);
  * equilateral when nu / nv = 2 / (√3·TUBE). Hexagons: nv columns around the tube (1.5 apart, nv
  * even), nu rows around the ring (√3 apart); regular when nu / nv = √3 / (2·TUBE). */
-function turnedTorus(kind, build, sides, nv, nu, kites = false) {
+function turnedTorus(kind, build, sides, nv, nu, kites = false, more = {}) {
   // kites: each triangle cut in 3 (see kitesOf)
   return sheetTorus(
     `${kind}${nv}x${nu}`,
@@ -16749,7 +16758,7 @@ function turnedTorus(kind, build, sides, nv, nu, kites = false) {
       });
       return tiles;
     },
-    { kite: kites },
+    { kite: kites, ...more },
   );
 }
 // (turned by 30°, the triangles' rows lie as the hexagons' columns, and the other way round: each the other's count)
@@ -16763,7 +16772,9 @@ const turnedTorusTriMesh = (nv, nu = torusHexColumns(nv), kites = false) =>
     kites,
   ); // (rows: around the ring)
 const turnedTorusHexMesh = (nv, nu = torusTriColumns(nv)) =>
-  turnedTorus('torusHexTurned', (cols, rows, put) => hexSheet(cols, rows).forEach(put), 6, nv, nu); // (as on the usual torus)
+  turnedTorus('torusHexTurned', (cols, rows, put) => hexSheet(cols, rows).forEach(put), 6, nv, nu, false, {
+    cellPlaces: hexPlaces(nv, nu),
+  }); // (as on the usual torus)
 
 /* ---- 7.5 Flat ↔ round: the same tiles and neighbours, shown flat or inflated -------------- */
 /* walk.shape = { m, target, corners, cen, nrm, extent, bent } for surfaces that can change shape:
@@ -22351,12 +22362,15 @@ const surfaceColouring = (g) => ({
 }); // (alternated: a sheet's cell by its plane cell, its grid's alternation, see cellPlaces)
 // two neighbouring cells of a surface parted by a fold or a seam: a solid's across its edge (its faces), a sheet's (a
 // torus's, a Möbius strip's, a Klein bottle's) across its seam (their middles on the sheet more than half its length or
-// width apart, see sheetMiddle); null, none
+// width apart, see sheetMiddle), a Möbius strip's front and back; null, none
 function cellsApart(g) {
   if (g.cellFaces) return (t, u) => g.cellFaces[t] !== g.cellFaces[u];
   if (!g.torus) return null;
   const at = Array.from({ length: g.n }, (_, t) => sheetMiddle(g, t));
-  return (t, u) => Math.abs(at[t][0] - at[u][0]) > g.nu / 2 || Math.abs(at[t][1] - at[u][1]) > g.nv / 2;
+  return (t, u) =>
+    (g.mobius && t < g.front !== u < g.front) ||
+    Math.abs(at[t][0] - at[u][0]) > g.nu / 2 ||
+    Math.abs(at[t][1] - at[u][1]) > g.nv / 2; // (a Möbius strip's front and back apart, at its rim as at its seam)
 }
 const planeColouring = (kind, W) => ({
   kinds: tileKinds(planeMesh(kind, W, planeTorus(kind)), APERIODIC[kind]?.(W).kinds),

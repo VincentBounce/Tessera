@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.249';
+const VERSION = '0.5.250';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -22408,16 +22408,19 @@ const exploreColours = (levels, P = explorePalette()) => {
   );
 };
 // Explore's tilings whose Tiles break their pattern, at the size each opens at, each its colours there and its tiling's on
-// the plane (its lattice cell cloned; 0: none, DSatur's more than 3): measured once by a run (2026-11-17, v0.5.248: every
-// Explore grid, its Tiles against its tiling's on the plane, the same name in the menu), its tile's mark (see tilesBroken)
+// the plane (Explore's Tiles there: its lattice cell cloned, else DSatur's; 0: the plane's own, DSatur's more than 3):
+// measured once by a run (2026-11-17, v0.5.249: every Explore grid against its tiling on the plane, the same name in the
+// menu), its tile's mark (see tilesBroken)
 const TILES_BROKEN = {
-  exploreCairo: [4, 0],
-  explorePythagoras: [4, 0],
-  exploreTwisted: [5, 0],
-  exploreDodecagons: [5, 0],
+  exploreCubePitsSquares: [4, 2],
+  exploreCubeBumpsSquares: [4, 2],
+  exploreCubeFrameSquares: [4, 2],
+  exploreCubeMengerSpongeSquares: [4, 2],
+  exploreTorusHex: [5, 3],
   exploreTorusKites: [4, 3],
   exploreTorusRhombille: [4, 3],
   exploreTorusSnub: [4, 3],
+  exploreTorusElongated: [4, 3],
   exploreTorusType9: [5, 4],
   exploreTorusType10: [5, 4],
   exploreTorusType11: [5, 4],
@@ -22425,23 +22428,32 @@ const TILES_BROKEN = {
   exploreTorusType15: [4, 3],
   exploreTorusDual56: [5, 4],
   exploreTorusDual314: [5, 4],
+  exploreMobiusStripHex: [5, 3],
   exploreMobiusStripKites: [4, 3],
   exploreMobiusStripRhombille: [4, 3],
   exploreMobiusStripRhombitri: [4, 2],
+  exploreMobiusStripElongated: [4, 3],
+  exploreMobiusStripPrismatic: [5, 3],
   exploreMobiusStripType9: [5, 4],
   exploreMobiusStripType10: [5, 4],
   exploreMobiusStripType11: [5, 4],
   exploreMobiusStripType13: [5, 4],
   exploreMobiusStripType15: [4, 3],
   exploreMobiusStripTrihex: [3, 2],
+  exploreMobiusStripOctagons: [5, 3],
   exploreMobiusStripSnubSquare: [4, 3],
   exploreMobiusStripBigRhombitri: [5, 3],
   exploreMobiusStripDual16: [4, 3],
   exploreMobiusStripDual56: [5, 4],
   exploreMobiusStripDemi13: [3, 2],
+  exploreKleinBottleSquares: [3, 2],
+  exploreKleinBottleHex: [5, 3],
   exploreKleinBottleTriangles: [3, 2],
+  exploreKleinBottleCairo: [5, 4],
   exploreKleinBottleKites: [4, 3],
   exploreKleinBottleRhombille: [4, 3],
+  exploreKleinBottleElongated: [4, 3],
+  exploreKleinBottlePrismatic: [4, 3],
   exploreKleinBottleKisChecker: [3, 2],
   exploreKleinBottleKisrhombille: [3, 2],
   exploreKleinBottleType9: [5, 4],
@@ -22451,13 +22463,20 @@ const TILES_BROKEN = {
   exploreKleinBottleDemi10: [3, 2],
   exploreTetrahedronTriangles: [3, 2],
   exploreTetrahedronKites: [4, 3],
+  exploreTetrahedronHex: [4, 3],
+  exploreCubeSquares: [3, 2],
   exploreOctahedronKites: [4, 3],
   exploreDodecahedronTriangles: [3, 2],
   exploreDodecahedronKites: [4, 3],
+  exploreDodecahedronHex: [4, 3],
+  exploreRhombicDodecahedronSquares: [3, 2],
   exploreIcosahedronTriangles: [3, 2],
+  exploreIcosahedronHex: [4, 3],
   exploreIcosahedronKites: [4, 3],
   exploreStellaOctangulaTriangles: [3, 2],
   exploreStellaOctangulaKites: [4, 3],
+  exploreStellaOctangulaHex: [4, 3],
+  exploreRhombicTriacontahedronSquares: [3, 2],
   exploreRhombicTriacontahedronTriangles: [3, 2],
 };
 const tilesBroken = (w) => {

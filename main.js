@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.298';
+const VERSION = '0.5.299';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -4015,9 +4015,36 @@ const tilingPivot = (kind) =>
         ? tilingWorld(kind, TILINGS[kind].pivot)
         : latticeAt(0, 0);
 const tilingWorld = (kind, [u, v]) => {
-  const [a, b] = tilingOf(kind).basis;
-  return [u * a[0] + v * b[0], u * a[1] + v * b[1]];
+  const {
+    basis: [a, b],
+    origin: [o, p],
+  } = latticeOf(kind);
+  return [o + u * a[0] + v * b[0], p + u * a[1] + v * b[1]];
 };
+// a grid's lattice: its two sides, and its cell (0, 0)'s place, in world units (a cell's corners in its units, see
+// latticeCorners): a tiling's; the squares', each its middle on a whole point; Cairo's squares, the start's pentagon's middle at
+// the origin (see CAIRO_0); the triangles', the hexagons' and the kites' (see latticeAt)
+const latticesMemo = remember('latticesMemo', {});
+const latticeOf = (kind) =>
+  (latticesMemo[kind] ??= tilingOf(kind)
+    ? { basis: tilingOf(kind).basis, origin: [0, 0] }
+    : kind === 'square'
+      ? {
+          basis: [
+            [1, 0],
+            [0, 1],
+          ],
+          origin: [-0.5, -0.5],
+        }
+      : kind === 'cairo'
+        ? {
+            basis: [
+              [CAIRO, 0],
+              [0, CAIRO],
+            ],
+            origin: [-CAIRO_0[0] * CAIRO, -CAIRO_0[1] * CAIRO],
+          }
+        : { basis: [[1, 0], latticeAt(0, 1)], origin: [0, 0] });
 
 // the rosettes built in 2n cones round their middle, a family a tile: Mirror n, the mirrored houses (see HOUSES), and Hexa n,
 // Sugimoto's equilateral hexagons (see HEXAS); for each n here its own mark (its rules', see the rule menu); their variants,
@@ -24005,23 +24032,7 @@ const planeRow = (kind, W) =>
         ? 2 * W
         : W; // cells a row (two a rhombus, two a square of Cairo pentagons, six kites a rhombus)
 // kite x of row y: kite x % 3 of triangle ⌊x / 3⌋ (as the triangles' x), its corners on the triangles' lattice
-const kiteCorners = (x, y) => {
-  const t = Math.floor(x / 3),
-    i = t >> 1;
-  return kitesOf(
-    t & 1
-      ? [
-          [i + 1, y],
-          [i + 1, y + 1],
-          [i, y + 1],
-        ]
-      : [
-          [i, y],
-          [i + 1, y],
-          [i, y + 1],
-        ],
-  )[mod(x, 3)];
-};
+const kiteCorners = (x, y) => kitesOf(latticeCorners('tri', Math.floor(x / 3), y))[mod(x, 3)];
 const latticeAt = (a, b) => [a + b / 2, b * TRIANGLE_HEIGHT]; // a corner of the triangles, a centre of the hexagons
 // An aperiodic tiling's grid of side W (the hats, Penrose's rhombi): from a patch of it (items: their middles m, each
 // about a square unit; p: its corners, flat, x and y in turn, or each(item, f) for them), the W² items nearest a middle (a disc), in W bands from the top,
@@ -25192,34 +25203,44 @@ function flatGrid() {
   return walk.plane ?? walk.geo?.disc ?? null;
 }
 function planeCorners(kind, x, y) {
-  // a cell's corners, in world units
-  if (kind === 'square')
-    return [
-      [x - 0.5, y - 0.5],
-      [x + 0.5, y - 0.5],
-      [x + 0.5, y + 0.5],
-      [x - 0.5, y + 0.5],
-    ];
-  if (kind === 'hex') {
-    // pointy-topped, the centres 1 apart
-    const [cx, cy] = latticeAt(x, y);
-    return [0, 1, 2, 3, 4, 5].map((k) => [
-      cx + Math.cos(Math.PI / 6 + (k * Math.PI) / 3) / Math.sqrt(3),
-      cy + Math.sin(Math.PI / 6 + (k * Math.PI) / 3) / Math.sqrt(3),
-    ]);
-  }
-  if (kind === 'kite') return kiteCorners(x, y).map(([a, b]) => latticeAt(a, b));
-  if (tilingOf(kind)) return tilingAt(kind, x, y).map((p) => tilingWorld(kind, p));
+  // a cell's corners, in world units: its lattice's (see latticeCorners)
   if (APERIODIC[kind]) {
     const { W } = flatGrid();
     return APERIODIC[kind](W).poly(y * W + x);
   } // (a rosette sphere's: its disc's, see flatGrid)
+  return latticeCorners(kind, x, y).map((p) => tilingWorld(kind, p));
+}
+// a cell's corners in its lattice's units (see latticeOf): a tiling's, its motif's; a square's, from its corner; a hexagon's
+// (pointy-topped, the centres 1 apart), the middles of the triangles round its centre; a triangle's, x = 2i (▲) or 2i + 1
+// (▼) of row y; a kite's, its triangle's (see kiteCorners); Cairo's, pentagon x & 1 of square (x >> 1, y)
+function latticeCorners(kind, x, y) {
+  if (tilingOf(kind)) return tilingAt(kind, x, y);
+  if (kind === 'square')
+    return [
+      [x, y],
+      [x + 1, y],
+      [x + 1, y + 1],
+      [x, y + 1],
+    ];
+  if (kind === 'hex')
+    return HEX_DIRS.map(([a, b], q) => [
+      x + (a + HEX_DIRS[(q + 1) % 6][0]) / 3,
+      y + (b + HEX_DIRS[(q + 1) % 6][1]) / 3,
+    ]);
+  if (kind === 'kite') return kiteCorners(x, y);
   const i = x >> 1;
-  if (kind === 'cairo')
-    return cairoCorners(i, y, x & 1).map(([u, v]) => [(u - CAIRO_0[0]) * CAIRO, (v - CAIRO_0[1]) * CAIRO]); // the walks' pentagons
+  if (kind === 'cairo') return cairoCorners(i, y, x & 1);
   return x & 1
-    ? [latticeAt(i + 1, y), latticeAt(i + 1, y + 1), latticeAt(i, y + 1)]
-    : [latticeAt(i, y), latticeAt(i + 1, y), latticeAt(i, y + 1)];
+    ? [
+        [i + 1, y],
+        [i + 1, y + 1],
+        [i, y + 1],
+      ]
+    : [
+        [i, y],
+        [i + 1, y],
+        [i, y + 1],
+      ];
 }
 // a point inside a polygon (its corners in turn)
 function insidePolygon(pts, u, v) {
@@ -25688,45 +25709,10 @@ function planeSeed(kind, seq, C, K = 1) {
 // the plane's corners (see meshCorners), wrapping round on a torus (row: its cells a row, the grid's or its blocks', see
 // planeBlocks)
 function planeMesh(kind, W, torus, row = planeRow(kind, W)) {
-  const { n, xy } = planeGrid(kind, W, row),
-    HEX = [
-      [1, 0],
-      [0, 1],
-      [-1, 1],
-      [-1, 0],
-      [0, -1],
-      [1, -1],
-    ];
-  // each cell's corners in grid units (a hexagon's: the middles of the triangles round its centre), wrapping round the
-  // grid every its columns' units along (row / its cells a lattice step: a rectangle's not W), W up; the same corner of
+  const { n, xy } = planeGrid(kind, W, row);
+  // each cell's corners in its lattice's units (see latticeCorners; a grid that never repeats: its own, flat), wrapping round
+  // the grid every its columns' units along (row / its cells a lattice step: a rectangle's not W), W up; the same corner of
   // two cells, one id
-  const cornersOf = (x, y) =>
-    kind === 'square'
-      ? [
-          [x, y],
-          [x + 1, y],
-          [x + 1, y + 1],
-          [x, y + 1],
-        ]
-      : kind === 'hex'
-        ? HEX.map(([a, b], q) => [x + (a + HEX[(q + 1) % 6][0]) / 3, y + (b + HEX[(q + 1) % 6][1]) / 3])
-        : kind === 'tri'
-          ? x & 1
-            ? [
-                [(x >> 1) + 1, y],
-                [(x >> 1) + 1, y + 1],
-                [x >> 1, y + 1],
-              ]
-            : [
-                [x >> 1, y],
-                [(x >> 1) + 1, y],
-                [x >> 1, y + 1],
-              ]
-          : tilingOf(kind)
-            ? tilingAt(kind, x, y)
-            : kind === 'kite'
-              ? kiteCorners(x, y)
-              : cairoCorners(x >> 1, y, x & 1); // (kites: on the triangles' lattice; a grid that never repeats: its own, flat)
   // a corner's id: squares, triangles and hexagons have theirs on a grid of 1/q units, numbered in an array; the others
   // by a map (their corners to 1/1000)
   const q = { square: 1, tri: 1, hex: 3 }[kind] ?? 1000,
@@ -25758,7 +25744,7 @@ function planeMesh(kind, W, torus, row = planeRow(kind, W)) {
   for (let t = 0; t < n; t++) {
     const [x, y] = xy(t);
     if (F) for (let i = F.start[t]; i < F.start[t + 1]; i++) add(F.xy[2 * i], F.xy[2 * i + 1]);
-    else for (const [u, v] of cornersOf(x, y)) add(u, v);
+    else for (const [u, v] of latticeCorners(kind, x, y)) add(u, v);
     cStart[t + 1] = at;
   }
   return { start: cStart, list: Int32Array.from(cList), nv };
@@ -26500,17 +26486,15 @@ function planeShape(kind, W, outline = outlineOf(kind)) {
     far = (p, q) => Math.hypot(p[0] - q[0], p[1] - q[1]);
   // the centre: the tiling's centre of its turns (see tilingPivot), a lattice step from it, the nearest the grid's middle
   const P = tilingPivot(baseOf(kind)),
-    [e1, e2] = tilingOf(baseOf(kind))?.basis ?? [[1, 0], latticeAt(0, 1)],
-    D = e1[0] * e2[1] - e1[1] * e2[0];
-  const u = ((c0[0] - P[0]) * e2[1] - (c0[1] - P[1]) * e2[0]) / D,
-    v = (e1[0] * (c0[1] - P[1]) - e1[1] * (c0[0] - P[0])) / D;
+    [e1, e2] = latticeOf(baseOf(kind)).basis,
+    [u, v] = inBasis([c0[0] - P[0], c0[1] - P[1]], e1, e2);
   const o = [Math.floor(u), Math.ceil(u)]
     .flatMap((i) =>
       [Math.floor(v), Math.ceil(v)].map((j) => [P[0] + i * e1[0] + j * e2[0], P[1] + i * e1[1] + j * e2[1]]),
     )
     .reduce((a, b) => (far(b, c0) < far(a, c0) - 1e-9 || (far(b, c0) < far(a, c0) + 1e-9 && b[1] < a[1]) ? b : a)); // (as near two: the upper one)
   // its size: from its middle to a side (its sides along the lattice's rows)
-  const b = tilingOf(baseOf(kind))?.basis[0] ?? [1, 0],
+  const b = latticeOf(baseOf(kind)).basis[0],
     th = Math.atan2(b[1], b[0]) + Math.PI / 2;
   const size = (p) =>
     Math.max(

@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.284';
+const VERSION = '0.5.285';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -22405,6 +22405,7 @@ function cellsApart(g) {
 const planeColouring = (kind, W) => ({
   kinds: tileKinds(planeMesh(kind, W, planeTorus(kind)), APERIODIC[kind]?.(W).kinds),
   lattice: APERIODIC[kind] ? null : { xy: planeGrid(kind, W).xy, m: gridCells(kind) },
+  alternated: ALTERNATIONS[kind] && ((t) => ALTERNATIONS[kind](...planeGrid(kind, W).xy(t))), // (a base grid's, see ALTERNATIONS)
 });
 // Tiles: each cell's ground (what shows where nothing is painted) its colour in Explore, by its colouring there and a
 // palette of its, the theme's (TILES_PALETTES, Grid's last choices, after its lines: see GRID_LINES; exploreLevels on the grid shown), packed; off,
@@ -22451,13 +22452,10 @@ function exploreLevels(nbr, n, { faces, kinds, lattice, apart, alternated }, pal
     for (let q = nbr.start[t]; q < nbr.start[t + 1]; q++) if (side[q]) put(nbr.list[q]);
   };
   if (rule === 'tiles')
-    level =
-      (lattice && (latticeCellColours(lattice, n, bySide, 3) ?? latticeCellColours(lattice, n, bySide, 4))) ??
-      (alternated
-        ? Uint8Array.from({ length: n }, (_, t) => 1 + alternated(t))
-        : apart
-          ? pieceByPiece(n, bySide, apart)
-          : dsatur(n, bySide).colour); // (a periodic plane: its lattice cell cloned, in 4 colours where 3 cannot do (Twisted, Dodecagons, Type 10, 11, 14: a tile in an odd ring, or 4 tiles all touching); a sheet that knows its plane cells, its grid's alternation; a surface, piece by piece; else DSatur)
+    level = alternated
+      ? Uint8Array.from({ length: n }, (_, t) => 1 + alternated(t))
+      : ((lattice && (latticeCellColours(lattice, n, bySide, 3) ?? latticeCellColours(lattice, n, bySide, 4))) ??
+        (apart ? pieceByPiece(n, bySide, apart) : dsatur(n, bySide).colour)); // (a base grid, on the plane or a sheet, by its alternation (see ALTERNATIONS); a periodic plane: its lattice cell cloned, in 4 colours where 3 cannot do (Twisted, Dodecagons, Type 10, 11, 14: a tile in an odd ring, or 4 tiles all touching); a surface, piece by piece; else DSatur)
   if (rule === 'sides') {
     // (the faces' graph, their sides touching)
     const touching = Array.from({ length: faces.reduce((m, f) => Math.max(m, f), -1) + 1 }, () => new Set());
@@ -22499,7 +22497,6 @@ const exploreColours = (levels, P = explorePalette()) => {
 // menu), its tile's mark (see tilesBroken). A surface coloured piece by piece (see pieceByPiece): its colours more inside a
 // piece (a face, a sheet cut along its seam), DSatur's, never two cells alike across a fold or the seam
 const TILES_BROKEN = {
-  exploreCairo: [4, 0],
   explorePythagoras: [5, 0],
   exploreElongated: [4, 0],
   explorePrismatic: [5, 0],

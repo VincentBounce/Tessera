@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.282';
+const VERSION = '0.5.283';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -15480,7 +15480,8 @@ function mobiusSheetOf(kind0, size, count = false, along = null) {
     },
     done = (L, W) => (count ? { L, W, n } : { L, W, tiles, latticeCells });
   if (kind === 'mobiusHexTurned') {
-    const W = MOBIUS_ALONG[kind].width(nv),
+    const places = [],
+      W = MOBIUS_ALONG[kind].width(nv),
       S3 = Math.sqrt(3),
       L = (S3 / 2) * steps(W);
     for (let r = 0; r < nv; r++) {
@@ -15488,18 +15489,24 @@ function mobiusSheetOf(kind0, size, count = false, along = null) {
       for (let i = -2; S3 * (i - 1) < L; i++) {
         const x0 = S3 * (i + (r % 2) / 2 + 0.5); // its centre, from a whole count (no rounding drift)
         if (x0 < -1e-9 || x0 >= L - 1e-9) continue;
-        put(() =>
-          [0, 1, 2, 3, 4, 5].map((k) => [
-            x0 + Math.cos(((60 * k + 30) * Math.PI) / 180),
-            cy + Math.sin(((60 * k + 30) * Math.PI) / 180),
-          ]),
-        );
+        put(() => {
+          const place = [i - Math.floor(r / 2), r]; // (the plane's hexagon, its side 1: √3 times, see planeCorners)
+          places.push(place);
+          return planeCorners('hex', ...place).map(([x, y]) => [S3 * x + S3 / 2, S3 * y + 1]);
+        });
       }
     }
-    return done(L, W);
+    return { ...done(L, W), ...(!count && { cellPlaces: places }) };
   }
   if (kind === 'mobiusTriTurned') {
-    const W = MOBIUS_ALONG[kind].width(nv),
+    // (the plane's triangles turned a quarter, see planeCorners: ▶ an even one, ◀ an odd one, from their corner on column i)
+    const places = [],
+      turned = (x, b) => {
+        places.push([x, b]);
+        const [p, q, r] = planeCorners('tri', x, b).map(([u, v]) => [v, -u]);
+        return [q, r, p];
+      },
+      W = MOBIUS_ALONG[kind].width(nv),
       cols = steps(W),
       L = cols * TRIANGLE_HEIGHT;
     for (let i = -1; i <= cols; i++) {
@@ -15508,27 +15515,17 @@ function mobiusSheetOf(kind0, size, count = false, along = null) {
         o0 = mod(i, 2) / 2,
         o1 = 0.5 - o0; // the lattice's rows on either side
       for (let y = o0 - 2; y < W + 2; y += 1) {
-        const right = [
-            [x0, y],
-            [x1, y + 0.5],
-            [x0, y + 1],
-          ],
-          cr = [(2 * x0 + x1) / 3, y + 0.5]; // ▶
+        const cr = [(2 * x0 + x1) / 3, y + 0.5]; // ▶ (its middle)
         if (cr[0] >= 0 && cr[0] < L && cr[1] > 0.25 && cr[1] < W - 0.25)
-          put(() => right, 4096 * i + Math.round(2 * y) + 64);
+          put(() => turned(2 * (-y - i / 2 - 1), i), 4096 * i + Math.round(2 * y) + 64);
       }
       for (let y = o1 - 2; y < W + 2; y += 1) {
-        const left = [
-            [x1, y],
-            [x1, y + 1],
-            [x0, y + 0.5],
-          ],
-          cl = [(x0 + 2 * x1) / 3, y + 0.5]; // ◀
+        const cl = [(x0 + 2 * x1) / 3, y + 0.5]; // ◀ (its middle)
         if (cl[0] >= 0 && cl[0] < L && cl[1] > 0.25 && cl[1] < W - 0.25)
-          put(() => left, 4096 * i + Math.round(2 * y) + 63); // (with the ▶ half a row up: their side shared)
+          put(() => turned(2 * (-y - (i + 1) / 2 - 1) + 1, i), 4096 * i + Math.round(2 * y) + 63); // (with the ▶ half a row up: their side shared)
       }
     }
-    return done(L, W);
+    return { ...done(L, W), ...(!count && { cellPlaces: places }) };
   }
   if (kind === 'mobiusCairo') {
     const places = [];

@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.316';
+const VERSION = '0.5.317';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -868,11 +868,11 @@ const memoryKeys = (store) =>
   store instanceof Map ? [...store.keys()] : Object.keys(store).filter((k) => store[k] !== undefined); // (a weakCache's: those still kept)
 const formatNumber = (v) => v.toLocaleString('en'); // (its thousands by commas: 39,193)
 // v written as wide as widest: the digits and commas it lacks in front, hidden zeros (every digit as wide, see body's
-// tabular-nums): a count that changes keeps its place
-const formatNumberAsWide = (v, widest) => {
+// tabular-nums): a count that changes keeps its place (sign: written next to its digits, after them)
+const formatNumberAsWide = (v, widest, sign = '') => {
   const s = formatNumber(v),
     w = formatNumber(Math.max(v, widest));
-  return `<span class="digits-pad">${w.slice(0, w.length - s.length).replace(/\d/g, '0')}</span>${s}`;
+  return `<span class="digits-pad">${w.slice(0, w.length - s.length).replace(/\d/g, '0')}</span>${sign}${s}`;
 };
 const DIRS = [
   [0, -1],
@@ -46212,7 +46212,11 @@ function renderGauges(L) {
     blue = 'var(--sector-color)',
     P = peaks(L),
     ever = traced(L, stepShown)?.ever ?? L.everAlive, // (its cells reached by the generation shown)
-    percent = (v) => `${Math.round(100 * v)} %`;
+    // each figure as wide as its widest, known (a count: the grid's cells; a share: 100 %; a generation: the furthest
+    // shown), none moving as they change
+    count = (v) => formatNumberAsWide(v, n),
+    percent = (v) => `${formatNumberAsWide(Math.round(100 * v), 100)} %`,
+    when = (g, kind = '') => genLink(g, `gen ${formatNumberAsWide(g, walk.widestShown)}`, kind);
   const rows = [
     // name, colour (none: the theme's live cells'), its bar's share (none: figures only), its figures now, its run's peak
     // (its share, a tick on the bar; its figures; when)
@@ -46220,8 +46224,8 @@ function renderGauges(L) {
       'Alive',
       gold,
       (varies ? avg[1] : L.aliveCount) / P.alive,
-      `<b>${varies ? meanText(avg[1]) : formatNumber(L.aliveCount)}</b>`,
-      [1, formatNumber(P.alive), genLink(P.aliveGen)],
+      `<b>${varies ? meanText(avg[1]) : count(L.aliveCount)}</b>`,
+      [1, count(P.alive), when(P.aliveGen)],
     ],
     [
       'Ever alive',
@@ -46231,12 +46235,17 @@ function renderGauges(L) {
       [
         P.ever / n,
         `<span title="${formatNumber(P.ever)} of ${formatNumber(n)} cells alive at least once, all reached at gen ${formatNumber(P.everGen)}">${percent(P.ever / n)}</span>`,
-        genLink(P.everGen, undefined, 'sweet'),
+        when(P.everGen, 'sweet'),
       ],
     ], // (its share of the grid, the cells reached: what Hunt › Reach all hunts)
-    ['Order', blue, L.order, percent(L.order), [P.order, percent(P.order), genLink(P.orderGen)]],
-    ['Turnover', null, turnover, `${Math.round(100 * turnover)} %`],
-    ['Growth', null, null, `${b - d > 0 ? '+' : b < d ? '−' : ''}${formatNumber(Math.abs(b - d))} a gen`],
+    ['Order', blue, L.order, percent(L.order), [P.order, percent(P.order), when(P.orderGen)]],
+    ['Turnover', null, turnover, percent(turnover)],
+    [
+      'Growth',
+      null,
+      null,
+      `${formatNumberAsWide(Math.abs(b - d), n, b > d ? '+' : b < d ? '−' : '<span class="digits-pad">+</span>')} a gen`,
+    ], // (its sign's place kept, hidden at 0)
   ];
   paintGauges(rows);
 }

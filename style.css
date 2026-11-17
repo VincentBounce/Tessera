@@ -2043,7 +2043,7 @@ button.active .bubble.active {
 } /* the step or generation shown, as large as the title, folded or open, every mode */
 .digits-pad {
   visibility: hidden;
-} /* a count's hidden zeros in front: as wide as its widest (see fmtAsWide) */
+} /* a count's hidden zeros in front: as wide as its widest (see formatNumberAsWide) */
 .step-line #stepLast {
   color: var(--muted-text-color);
 } /* its last, after it, always: the line keeps its width */

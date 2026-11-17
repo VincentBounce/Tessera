@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.223';
+const VERSION = '0.5.224';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -42063,10 +42063,15 @@ function groundAt(y) {
     .join(', ')})`;
 }
 // The sky (Dawn, Twilight): the view's background, behind all its layers, none of them (faded while a size or the start is
-// hovered, taken in a thumbnail: the Gallery's background behind it); none (a 2D walk), the page's
+// hovered, taken in a thumbnail: the Gallery's background behind it); none (a 2D walk), the page's: its ground, under Earth the
+// sea (its cells none has painted, as a surface's, see blankTile)
 function paintSky() {
   const stops = skyStops(),
-    sky = stops ? `linear-gradient(${stops.map(([at, colour]) => `${colour} ${at * 100}%`).join(', ')})` : '';
+    sky = stops
+      ? `linear-gradient(${stops.map(([at, colour]) => `${colour} ${at * 100}%`).join(', ')})`
+      : oceanOn()
+        ? OCEAN
+        : '';
   if (stage.dataset.sky === sky) return;
   stage.dataset.sky = sky;
   stage.style.background = sky;

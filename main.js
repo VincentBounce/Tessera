@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.221';
+const VERSION = '0.5.222';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -40892,10 +40892,17 @@ function parseHash(hash = location.hash) {
 // own, the last it wrote or read (linkHeld), else its hashchange still to come (a window of a few ms, a Life's batch back
 // between the two: rare by hand, two check passes in three till v0.4.845)
 let linkHeld = location.hash;
+// a click on a choice of the menu's graph (its key, data-choice: an edge, see choicesAt): the link it leads to a new entry of the
+// browser's history, its Back and Forward going from choice to choice (see hashchange); anything else (a step, the view) its
+// own entry's
+let choiceClicked = false;
+document.addEventListener('click', (e) => (choiceClicked ||= !!e.target.closest?.('[data-choice]')), true);
 function syncLink() {
   if (busy || pendingChampion || location.hash !== linkHeld) return; // not while a setup is still being built
-  const h = `#${toHash(getSetup())}`;
-  if (h !== location.hash) history.replaceState(null, '', h);
+  const h = `#${toHash(getSetup())}`,
+    pushed = choiceClicked;
+  choiceClicked = false;
+  if (h !== location.hash) history[pushed ? 'pushState' : 'replaceState'](null, '', h);
   linkHeld = location.hash;
   syncSaveButton();
   paintUrl();

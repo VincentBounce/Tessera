@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.331';
+const VERSION = '0.5.332';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -17613,7 +17613,7 @@ const howCounted = (kind, f) => {
       return `${Object.entries(by)
         .map(
           ([c, k]) =>
-            `${mark('r', `${k} ${adj[c]} face${k > 1 ? 's' : ''}`)} × ${round[c] ? `${round[c]} × ` : ''}${mark(g.triFaces && c === '4' ? 's' : 'y', `(Edge=${formatNumber(f)})² ${cells[c]}`)}`,
+            `${mark('r', `${k} ${adj[c]} face${k > 1 ? 's' : ''}`)} × ${round[c] ? `${round[c]} × ` : ''}${mark(squaresAmongTriangles(g) && c === '4' ? 's' : 'y', `(Edge=${formatNumber(f)})² ${cells[c]}`)}`,
         )
         .join(' + ')}${cut > 1 ? ` × ${mark('k', `${cut} ${unit} each`)}` : ''} = ${formatNumber(n)} ${unit}`;
     }
@@ -26858,7 +26858,7 @@ function motifOf(g, t) {
       : g.torus
         ? latticeCellTiles(g).get(latticeCellOf(g, t))
         : Array.from({ length: m }, (_, j) => Math.floor(t / m) * m + j);
-  const square = g.triFaces && t < g.triFirst,
+  const square = squaresAmongTriangles(g) && Math.floor(t / m) < (g.uncut ?? g).triFirst, // (a cut's: its cell's, see HULL_CUTS)
     face = faceOf(g, motif[0]);
   return [
     [square ? cssColour('--sector-color') : motifColour(), motif],
@@ -26915,7 +26915,12 @@ function faceOf(g, t) {
     lo = per && Math.floor(t / per) * per;
   return { face, sector: per && face.length > per ? Array.from({ length: per }, (_, k) => lo + k) : null };
 }
-const redFaces = (g) => !!(g?.perFace || g?.triFaces); // (the solids whose faces are drawn red, as their tooltip says them)
+const redFaces = (g) => {
+  const solid = g?.uncut ?? g; // (a cut's: the solid it cuts, see HULL_CUTS)
+  return !!(solid?.perFace || solid?.triFaces);
+}; // (the solids whose faces are drawn red, as their tooltip says them)
+// a solid of squares and triangles, its squares blue among its triangles (none: a solid of squares alone, violet as a cube's)
+const squaresAmongTriangles = (g) => (g.uncut ?? g).triFaces?.length > 0;
 // the shape a Life variant's cells have, as the rule menu marks the rules that suit it (■ ▲ ⬡); on
 // coming to another variant, a rule marked for another shape gives way to the first one for this shape
 // the cells of each surface (else triangles): one table for every surface, whatever its shape

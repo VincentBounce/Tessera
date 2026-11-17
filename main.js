@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.276';
+const VERSION = '0.5.277';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -42204,77 +42204,34 @@ function drawGrid() {
     drawGridLines(ctx, s);
   }
 }
-// Tiles on the infinite plane (the 2D walks, ants and spirals): its grid's cells, each its colour by its lattice's own rule,
-// never as a neighbour's (squares and triangles in 2, hexagons in 3 round their axes, Cairo's pentagons in 4 by their way),
-// a motif repeating every w × h of the plane from its origin: its cells there (and those across its edges), as the grid's
-// lines bound them (see drawGridLines)
+// Tiles on the infinite plane (the 2D walks, ants and spirals): its grid's cells, the plane's (planeCorners: their one
+// definition), laid as the walk's lie (a shift: squares along the lines, triangles and pointy hexagons by y0; a quarter turn:
+// the flat hexagons, the upright triangles), each its colour by its plane cell (x, y), never as a neighbour's (squares and
+// triangles in 2, hexagons in 3 round their axes, Cairo's pentagons in 4 by their way), a motif repeating every w × h of
+// the plane from its origin: its cells there, and those across its edges
 function planeMotif(lat, lines) {
   const h = TRIANGLE_HEIGHT,
-    cells = [],
-    ngon = (x, y, n, turn, R) =>
-      Array.from({ length: n }, (_, k) => [
-        x + R * Math.cos(turn + (2 * Math.PI * k) / n),
-        y - R * Math.sin(turn + (2 * Math.PI * k) / n),
-      ]);
-  // triangles in rows (lines y = y0 + r·h and x ± (y − y0)/√3 = k: their corners x in ℤ + r/2), down and up in turn
-  const triangles = (y0) => {
-    for (let r = Math.floor(-y0 / h) - 2; r <= Math.ceil((2 * h - y0) / h) + 1; r++)
-      for (let n = -2; n <= 2; n++) {
-        const [x, y] = [n + r / 2, y0 + r * h];
-        cells.push([
-          0,
-          [
-            [x, y],
-            [x + 1, y],
-            [x + 0.5, y + h],
-          ],
-        ]);
-        cells.push([
-          1,
-          [
-            [x + 0.5, y + h],
-            [x + 1.5, y + h],
-            [x + 1, y],
-          ],
-        ]);
-      }
-  };
-  if (lat === 'square') {
-    const c = lines ? 0.5 : 0;
-    for (let i = -1; i <= 2; i++)
-      for (let j = -1; j <= 2; j++) cells.push([(i + j) & 1, ngon(i + c, j + c, 4, Math.PI / 4, Math.SQRT1_2)]);
-    return { w: 2, h: 2, cells };
-  }
-  if (lat === 'cairo') {
-    for (let i = -1; i <= 3; i++)
-      for (let j = -1; j <= 3; j++)
-        for (const o of [0, 1])
-          cells.push([
-            cairoType(i, j, o),
-            cairoCorners(i, j, o).map(([u, v]) => [(u - CAIRO_0[0]) * CAIRO, (v - CAIRO_0[1]) * CAIRO]),
-          ]);
-    return { w: 2 * CAIRO, h: 2 * CAIRO, cells };
-  }
-  if (lat === 'tri' && !lines) {
-    triangles(TRI_Y0);
-    return { w: 1, h: 2 * h, cells };
-  }
-  if (lat === 'hex' && lines) {
-    triangles(0);
-    for (const [, corners] of cells) for (const p of corners) p.reverse(); // (its lines turned a quarter: x = k·h, y ± x/√3 = k)
-    return { w: 2 * h, h: 1, cells };
-  }
-  if (lines) {
-    // pointy hexagons, their centres (c/2, y0 + r·h), c + r even (see drawHexGrid): c's thirds
-    for (let r = Math.floor(-TRI_Y0 / h) - 2; r <= Math.ceil((2 * h - TRI_Y0) / h) + 1; r++)
-      for (let c = -3; c <= 9; c++)
-        if (((c + r) & 1) === 0) cells.push([mod(c, 3), ngon(c / 2, TRI_Y0 + r * h, 6, Math.PI / 6, 1 / Math.sqrt(3))]);
-    return { w: 3, h: 2 * h, cells };
-  }
-  // flat hexagons, their centres (b·h, −a − b/2) (see drawHexGrid): (b − a)'s thirds
-  for (let b = -2; b <= 4; b++)
-    for (let a = -7; a <= 3; a++) cells.push([mod(b - a, 3), ngon(b * h, -a - b / 2, 6, 0, 1 / Math.sqrt(3))]);
-  return { w: 2 * h, h: 3, cells };
+    turned = ([x, y]) => [y, -x],
+    shifted =
+      (dx, dy) =>
+      ([x, y]) => [x + dx, y + dy],
+    thirds = (x, y) => mod(x - y, 3),
+    [kind, place, colour, w, H] =
+      lat === 'square'
+        ? ['square', shifted(lines ? 0.5 : 0, lines ? 0.5 : 0), (x, y) => (x + y) & 1, 2, 2]
+        : lat === 'cairo'
+          ? ['cairo', shifted(0, 0), (x, y) => cairoType(x >> 1, y, x & 1), 2 * CAIRO, 2 * CAIRO]
+          : lat === 'tri'
+            ? lines
+              ? ['hex', shifted(0, TRI_Y0), thirds, 3, 2 * h]
+              : ['tri', shifted(0, TRI_Y0), (x) => x & 1, 1, 2 * h]
+            : lines
+              ? ['tri', turned, (x) => x & 1, 2 * h, 1]
+              : ['hex', turned, thirds, 2 * h, 3],
+    cells = [];
+  for (let x = -14; x <= 14; x++)
+    for (let y = -8; y <= 8; y++) cells.push([colour(x, y), planeCorners(kind, x, y).map(place)]);
+  return { w, h: H, cells };
 }
 // the infinite plane's ground in Tiles' palette (see tilesPalette): its motif drawn once a scale into a picture, filling
 // the view as a pattern laid on the plane (its origin at the view's), under the walk; none off Tiles

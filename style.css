@@ -1070,9 +1070,6 @@ button.switch.active:hover:not(:disabled) {
   line-height: 1.25;
   background: var(--panel-background);
 }
-.mode-list button:hover {
-  background: var(--page-background);
-}
 .mode-icon {
   font-size: 15px;
   color: var(--muted-text-color);
@@ -1176,9 +1173,6 @@ button.active .bubble.active {
   font-size: var(--text-size);
   white-space: nowrap;
   background: var(--panel-background);
-}
-.number-grid button:hover {
-  background: var(--page-background);
 }
 .number-grid sup {
   line-height: 0;

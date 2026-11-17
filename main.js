@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.253';
+const VERSION = '0.5.254';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -22360,6 +22360,21 @@ function groundColours() {
   }
   return groundMemo.col;
 }
+// A solid's Tiles face by face: each face coloured alone (DSatur among its own cells: a patch of its tiling's plane, its
+// pattern whole), then each cell like a neighbour across the solid's edge given the least colour none of its neighbours has:
+// a colour more, where a pattern cannot go round the solid, along its edges only (faces: each cell's, see cellFaces)
+function faceByFace(n, bySide, faces) {
+  const colour = dsatur(n, (t, put) => bySide(t, (u) => faces[u] === faces[t] && put(u))).colour;
+  for (let t = 0; t < n; t++) {
+    const used = new Set();
+    bySide(t, (u) => used.add(colour[u]));
+    if (!used.has(colour[t])) continue;
+    let c = 1;
+    while (used.has(c)) c++;
+    colour[t] = c;
+  }
+  return colour;
+}
 function exploreLevels(nbr, n, faces, kinds, lattice, palette = explorePalette()) {
   const side = sideOf(nbr),
     P = palette.length,
@@ -22371,7 +22386,7 @@ function exploreLevels(nbr, n, faces, kinds, lattice, palette = explorePalette()
   if (rule === 'tiles')
     level =
       (lattice && (latticeCellColours(lattice, n, bySide, 3) ?? latticeCellColours(lattice, n, bySide, 4))) ??
-      dsatur(n, bySide).colour; // (a periodic plane: its lattice cell cloned, in 4 colours where 3 cannot do (Twisted, Dodecagons, Type 10, 11, 14: a tile in an odd ring, or 4 tiles all touching); else DSatur)
+      (faces ? faceByFace(n, bySide, faces) : dsatur(n, bySide).colour); // (a periodic plane: its lattice cell cloned, in 4 colours where 3 cannot do (Twisted, Dodecagons, Type 10, 11, 14: a tile in an odd ring, or 4 tiles all touching); a solid, face by face; else DSatur)
   if (rule === 'sides') {
     // (the faces' graph, their sides touching)
     const touching = Array.from({ length: faces.reduce((m, f) => Math.max(m, f), -1) + 1 }, () => new Set());
@@ -22410,11 +22425,9 @@ const exploreColours = (levels, P = explorePalette()) => {
 // Explore's tilings whose Tiles break their pattern, at the size each opens at, each its colours there and its tiling's on
 // the plane (Explore's Tiles there: its lattice cell cloned, else DSatur's; 0: the plane's own, DSatur's more than 3):
 // measured once by a run (2026-11-17, v0.5.249: every Explore grid against its tiling on the plane, the same name in the
-// menu), its tile's mark (see tilesBroken)
+// menu), its tile's mark (see tilesBroken). The solids none since v0.5.254: coloured face by face (see faceByFace), their
+// colour more is only along their edges, where their faces meet, no face's pattern broken (as the pyramid's, the sponge's)
 const TILES_BROKEN = {
-  exploreCubePitsSquares: [4, 2],
-  exploreCubeBumpsSquares: [4, 2],
-  exploreCubeFrameSquares: [4, 2],
   exploreTorusHex: [5, 3],
   exploreTorusKites: [4, 3],
   exploreTorusRhombille: [4, 3],
@@ -22460,28 +22473,6 @@ const TILES_BROKEN = {
   exploreKleinBottleType11: [5, 4],
   exploreKleinBottleDual314: [5, 4],
   exploreKleinBottleDemi10: [3, 2],
-  exploreTetrahedronTriangles: [3, 2],
-  exploreTetrahedronKites: [4, 3],
-  exploreTetrahedronHex: [4, 3],
-  exploreCubeSquares: [3, 2],
-  exploreOctahedronKites: [4, 3],
-  exploreDodecahedronTriangles: [3, 2],
-  exploreDodecahedronKites: [4, 3],
-  exploreDodecahedronHex: [4, 3],
-  exploreRhombicDodecahedronSquares: [3, 2],
-  exploreIcosahedronTriangles: [3, 2],
-  exploreIcosahedronHex: [4, 3],
-  exploreIcosahedronKites: [4, 3],
-  exploreStellaOctangulaTriangles: [3, 2],
-  exploreStellaOctangulaKites: [4, 3],
-  exploreStellaOctangulaHex: [4, 3],
-  exploreRhombicTriacontahedronSquares: [3, 2],
-  exploreRhombicTriacontahedronTriangles: [3, 2],
-  exploreCuboctahedron: [3, 2], // (no tiling of its name on the plane: its faces', squares' and triangles', 2 each; the
-  // square pyramid's 3rd colour left out, as it is only along its edges, where its faces meet: no face's pattern broken;
-  // the sponge's squares' too, its holes hiding the break)
-  exploreSquareOrthobicupola: [3, 2],
-  exploreRhombicuboctahedron: [3, 2],
 };
 const tilesBroken = (w) => {
   const [here, plane] = TILES_BROKEN[w] ?? [];

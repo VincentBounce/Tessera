@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.214';
+const VERSION = '0.5.215';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -10046,47 +10046,57 @@ for (const [k, S] of Object.entries(HULL_SOLIDS)) {
       where,
     });
   }
-  // its turtle walks, as the cube's (its squares' cells: 3 a digit, left, on or right), each the other's twin
-  if (S.walks) {
-    const [onEdges, onCells] = ['edges', 'cells'].map((side) => variantName('Walk', S.name, S.cells, 'Turtle', side)),
-      a = `a ${S.name.toLowerCase()}`;
-    for (const [w, side, twin, where, tail] of [
-      [
-        onEdges,
-        'edges',
-        onCells,
-        `along the edges of the squares of ${a}`,
-        ' (at a corner of the solid, the nearest edge)',
-      ],
-      [onCells, 'cells', onEdges, `on the surface of ${a}`, ''],
+  // its turtle walks, each the other's twin: on its squares as the cube's (3 a digit, left, on or right), on its triangles cut
+  // (halves) as the octahedron's (measured 2026-11-17: its corners of 4 to 6 triangles, as the octahedron's and the sphere's)
+  if (S.walks)
+    for (const [tiling, surface, like] of [
+      [S.cells, k, 'Cube'],
+      ...(S.cuts?.includes('halves') ? [[HULL_CUTS.halves.name, `${k}${HULL_CUTS.halves.name}`, 'Octahedron']] : []),
     ]) {
-      const { ant, ...cube } = VARIANTS[variantName('Walk', 'Cube', 'Squares', 'Turtle', side)]; // (its own: no ant)
-      VARIANTS[w] = { ...cube, surface: k, twin, where, tail, label: `${S.name} — base 3 (left / forward / right)` };
-      VARIANT_ICONS[w] = hullIcon(k);
-      NAV[w] = ['Walk', 'Surfaces', S.name, 'Turtle', side];
+      const [onEdges, onCells] = ['edges', 'cells'].map((side) => variantName('Walk', S.name, tiling, 'Turtle', side)),
+        a = `a ${S.name.toLowerCase()}`;
+      for (const [w, side, twin, where, tail] of [
+        [
+          onEdges,
+          'edges',
+          onCells,
+          `along the edges of the ${tiling.toLowerCase()} of ${a}`,
+          ' (at a corner of the solid, the nearest edge)',
+        ],
+        [onCells, 'cells', onEdges, `on the ${tiling.toLowerCase()} of ${a}`, ''],
+      ]) {
+        const { ant, ...twinOf } = VARIANTS[variantName('Walk', like, tiling, 'Turtle', side)]; // (its own: no ant)
+        VARIANTS[w] = { ...twinOf, surface, twin, where, tail, label: `${S.name} — ${twinOf.label.split(' — ')[1]}` }; // (its twin's base and words)
+        VARIANT_ICONS[w] = hullIcon(k);
+        NAV[w] = ['Walk', 'Surfaces', S.name, 'Turtle', side];
+      }
     }
-  }
 }
-// the sphere's quadrilaterals' turtle on their cells, as the cube's (4 sides: 3 a digit, left, on or right, on: out by the side
-// across): its kites, Penrose's rhombi; on cells only (their corners 3 to 7 edges: no left, on and right along them). Not taken
-// in yet, measured 2026-11-17 walking as these do (3,000 steps each, every step to a cell beside, none thrown; see GRIDS.md):
-// the kites of the torus, Möbius strip, Klein bottle, tetrahedron, octahedron, dodecahedron and stella on cells; the carved
-// cubes' squares (Pits, Bumps, Frame, Sponge) on cells and along edges (their hollow corners of 5 and 6 edges walked); the
-// rhombic solids' triangles on cells and along edges. The carved cubes and the rhombic solids' start corners still to give
-// (solidCorners: no faces nor corners' cells on their meshes, walkStart throws there)
+// the quadrilaterals' turtle on their cells, as the cube's (4 sides: 3 a digit, left, on or right, on: out by the side across):
+// every surface's kites (the sphere's, the torus's, Möbius strip's, Klein bottle's, tetrahedron's, octahedron's, dodecahedron's
+// and stella's: measured 2026-11-17, every step to a cell beside, see GRIDS.md), Penrose's rhombi; on cells only (their corners
+// 3 to 8 edges: no left, on and right along them). The carved cubes' squares still out (their start corners to give: see
+// solidCorners)
 for (const [shape, tiling, surface] of [
   ['Sphere', 'Kites', 'icosaKite'],
+  ['Torus', 'Kites', 'torusKite'],
+  ['Möbius strip', 'Kites', 'mobiusKite'],
+  ['Klein bottle', 'Kites', 'kleinKite'],
+  ['Tetrahedron', 'Kites', 'tetraKite'],
+  ['Octahedron', 'Kites', 'octaKite'],
+  ['Dodecahedron', 'Kites', 'dodecaKite'],
+  ['Stella octangula', 'Kites', 'stellaKite'],
   ['Dodecahedron', 'Penrose', 'penroseSphere'],
 ]) {
   const w = variantName('Walk', shape, tiling, 'Turtle', 'cells'),
-    where = `on a sphere of ${tiling === 'Kites' ? 'kites' : "Penrose's rhombi"}`,
+    where = `on ${VARIANTS[variantName('Life', shape, tiling)].where}`,
     { ant, twin, initial, ...cube } = VARIANTS[variantName('Walk', 'Cube', 'Squares', 'Turtle', 'cells')]; // (its own: no ant, no edges, its sizes)
   VARIANTS[w] = {
     ...cube,
     surface,
     where,
     tail: '',
-    label: `Sphere of ${tiling.toLowerCase()} — base 3 (left / forward / right)`,
+    label: `${shape} of ${tiling.toLowerCase()} — base 3 (left / forward / right)`,
   };
   VARIANT_ICONS[w] = VARIANT_ICONS[variantName('Life', shape, tiling)];
   NAV[w] = ['Walk', 'Surfaces', shape, 'Turtle', 'cells'];
@@ -10399,7 +10409,7 @@ const FAMILIES = [
       ['walkTorusHexTurtleEdges', 'walkTorusHexTurtleCells', 'lifeTorusHex'],
       ['walkTorusTrianglesTurtleEdges', 'walkTorusTrianglesTurtleCells', 'lifeTorusTriangles'],
       ['walkTorusCairoTurtleCells', 'lifeTorusCairo'],
-      ['lifeTorusKites'],
+      ['walkTorusKitesTurtleCells', 'lifeTorusKites'],
     ],
     tab: 0,
     tabs: [
@@ -10420,7 +10430,7 @@ const FAMILIES = [
       ['walkMobiusStripHexTurtleEdges', 'walkMobiusStripHexTurtleCells', 'lifeMobiusStripHex'],
       ['walkMobiusStripTrianglesTurtleEdges', 'walkMobiusStripTrianglesTurtleCells', 'lifeMobiusStripTriangles'],
       ['walkMobiusStripCairoTurtleCells', 'lifeMobiusStripCairo'],
-      ['lifeMobiusStripKites'],
+      ['walkMobiusStripKitesTurtleCells', 'lifeMobiusStripKites'],
     ],
     tab: 0,
     tabs: [
@@ -10441,7 +10451,7 @@ const FAMILIES = [
       ['walkKleinBottleCairoTurtleCells', 'lifeKleinBottleCairo'],
       ['walkKleinBottleHexTurtleEdges', 'walkKleinBottleHexTurtleCells', 'lifeKleinBottleHex'],
       ['walkKleinBottleTrianglesTurtleEdges', 'walkKleinBottleTrianglesTurtleCells', 'lifeKleinBottleTriangles'],
-      ['lifeKleinBottleKites'],
+      ['walkKleinBottleKitesTurtleCells', 'lifeKleinBottleKites'],
     ],
     tab: 0,
     tabs: [
@@ -10507,10 +10517,7 @@ const FAMILIES = [
       tab: 0,
       variants: [
         [...walks('Triangles'), ...ant('Triangles'), variantName('Life', name, 'Triangles')],
-        [
-          ...(sphere ? [variantName('Walk', name, 'Kites', 'Turtle', 'cells')] : []),
-          variantName('Life', name, 'Kites'),
-        ],
+        [variantName('Walk', name, 'Kites', 'Turtle', 'cells'), variantName('Life', name, 'Kites')],
         [...walks('Hexagons'), ...ant('Hexagons'), variantName('Life', name, 'Hexagons')],
         ...(sphere ? [[variantName('Life', name, 'Twisted')]] : []),
         ...(penrose
@@ -17980,6 +17987,7 @@ const solidFaces = (g) => g.faces ?? (g.squareFaces && [...g.squareFaces, ...g.t
 // The solid's corners: its own (the dodecahedron's, not its pentagons' centres), of its faces, or the
 // corners' cells of a solid of hexagons (the sphere's 12 pentagons: their middles)
 function solidCorners(g) {
+  g = g.uncut ?? g; // (a cut's: the solid it cuts, see HULL_CUTS)
   if (g.solid) return g.solid.corners;
   const C = [];
   const put = (p) => {
@@ -17997,6 +18005,7 @@ const firstStart = (g, G) => g.gridStart ?? [g.poly[0], G.nbrs[g.poly[0]][0]];
 // The solid's face centres: its own faces' (the dodecahedron's pentagons), of its faces, or of the
 // icosahedron's 20 (3 corners side by side)
 function solidFaceCentres(g, C) {
+  g = g.uncut ?? g; // (a cut's: the solid it cuts, as its corners, see solidCorners)
   const sum = (ps) => unit([0, 1, 2].map((d) => ps.reduce((s, p) => s + p[d], 0)));
   if (g.solid) return g.solid.centres;
   if (solidFaces(g)) return solidFaces(g).map((f) => sum(f.corners));

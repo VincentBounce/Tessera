@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.242';
+const VERSION = '0.5.243';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -6409,7 +6409,7 @@ const DISPLAY_DEFAULTS = {
     (variant, w) => perspectiveFor(w, defaultOf('shape', w), spaceTime && spaceTimeApplies(w)),
   ], // (by its shape, see SHAPE_DEFAULTS)
   light: ['light', 'open', true],
-  glint: ['glintM', 'open', 0], // (its own colour, never past it: see light)
+  glint: ['glintM', 'open', 0.5], // (halfway: its own colour and white added, see light)
   glass: ['glass', 'open', false],
   grid: [
     'gridLines',
@@ -48499,6 +48499,8 @@ function displayDefaults() {
   oceanPicked = false;
   displayTab = modeTabOf();
 }
+applyDefaults('open'); // (the page's first settings, DISPLAY_DEFAULTS': its boxes none of their own)
+showSliderAt($('glintM'));
 $('variant').addEventListener('change', () => {
   if (modeTabOf() !== displayTab) displayDefaults();
   // the form of the view belongs to the walk variant: its perspective, the camera's starting angle

@@ -10,7 +10,7 @@
   <meta property="og:url" content="https://vincentbounce.github.io/Tessera/">
   <meta property="og:type" content="website">
   <link id="favicon" rel="icon">  <!-- the app's logo, set at start-up (see LOGO_PATH) -->
-  <link rel="stylesheet" href="style.css?v=0.5.242">
+  <link rel="stylesheet" href="style.css?v=0.5.243">
   <script>  // the theme before the first paint (see applyTheme)
     try { const t = localStorage.getItem('tesseraTheme'); document.documentElement.dataset.theme = t === 'light' || t === 'dark' ? t : matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark'; } catch { document.documentElement.dataset.theme = 'dark'; }
   </script>
@@ -290,7 +290,7 @@
             <div id="viewTiles" class="nav-shapes view-tiles" hidden></div>  <!-- the view's switches as tiles (see renderViewTiles) -->
             <div hidden>  <!-- their checkboxes, the source (a row hidden: it does not apply) -->
               <label class="check" id="perspectiveRow" hidden><input id="perspective" type="checkbox"> Perspective</label>
-              <label class="check" id="lightRow" hidden title="A lamp at the top left, with its glints and shadows; off, lit from the front (from the viewer, no shadows)"><input id="light" type="checkbox" checked> Side light</label>
+              <label class="check" id="lightRow" hidden title="A lamp at the top left, with its glints and shadows; off, lit from the front (from the viewer, no shadows)"><input id="light" type="checkbox"> Side light</label>
               <label class="check" id="glassRow" hidden title="The surface see-through: every layer shows, its grid and path too, what is nearer more"><input id="glass" type="checkbox"> Glass</label>
               <label class="check" id="oceanRow" hidden title="Rainbow and battle colours in earth colours, on a sea blue"><input id="ocean" type="checkbox"> Earth</label>
               <label class="check" id="autoRotateRow" hidden title="Turn the view slowly, swaying up and down so that the top and the bottom show too; it starts Auto-fit, and a hand rotation stops it"><input id="autoRotate" type="checkbox"> Auto-rotate</label>
@@ -301,7 +301,7 @@
             </div>
             <div id="glintRow" class="pill-row" hidden>  <!-- Glint: a slider as Shape's (see showSliderAt) -->
               <h3>Glint</h3>
-              <div class="shape-slider" title="The light's glint: in each tile's own colour, never past it, or white added on it (a pale face facing it washed white)"><span>Soft</span><span>Bright</span><input id="glintM" type="range" min="0" max="1" step="0.01" value="0" aria-label="From soft to bright"></div>
+              <div class="shape-slider" title="The light's glint: in each tile's own colour, never past it, or white added on it (a pale face facing it washed white)"><span>Soft</span><span>Bright</span><input id="glintM" type="range" min="0" max="1" step="0.01" aria-label="From soft to bright"></div>
             </div>
             <div id="cutRow" hidden></div>  <!-- Off, S, E, Up: pills (see pillRow, CUT_AXES) -->
           </div>
@@ -334,10 +334,10 @@
     </div>
   </main>
 
-  <script src="pixelarticons.js?v=0.5.242"></script>
-  <script src="punks.js?v=0.5.242"></script>
-  <script src="loops.js?v=0.5.242"></script>
-  <script src="emoji.js?v=0.5.242"></script>
-  <script src="main.js?v=0.5.242"></script>
+  <script src="pixelarticons.js?v=0.5.243"></script>
+  <script src="punks.js?v=0.5.243"></script>
+  <script src="loops.js?v=0.5.243"></script>
+  <script src="emoji.js?v=0.5.243"></script>
+  <script src="main.js?v=0.5.243"></script>
 </body>
 </html>

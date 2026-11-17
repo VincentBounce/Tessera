@@ -1717,8 +1717,14 @@ window.penroseSphereSizes = (most = 10, band = 3, from = 0.5) => {
       cos = dot3(unit(sub(q, p)), unit(sub(r, p)));
     return Math.abs(cos) > Math.cos((54 * Math.PI) / 180) ? 'thin' : 'thick'; // (its sharp corner 36° or 72°)
   };
-  const out = {};
-  for (const P1 of [...tried.values()].sort((a, b) => Math.hypot(...a) - Math.hypot(...b))) {
+  const out = {},
+    todo = [...tried.values()].sort((a, b) => Math.hypot(...a) - Math.hypot(...b));
+  let shown = performance.now();
+  for (const [k, P1] of todo.entries()) {
+    if (performance.now() - shown > 60000) {
+      shown = performance.now();
+      console.log(`penroseSphereSizes: ${k} of ${todo.length} corners, radius ${Math.hypot(...P1).toFixed(3)}`); // (where to start again: its from)
+    }
     const B = penroseSphereGraph(P1, penroseFace(P1, corners, band)),
       near = (i) => B.depth[i] <= band - 1.5; // (its neighbours all in the band)
     if (!B.nbrs.every((l, i) => !near(i) || l.length >= 3)) continue;
@@ -1730,8 +1736,10 @@ window.penroseSphereSizes = (most = 10, band = 3, from = 0.5) => {
       G.tiles.every((t) => t.length === 4) &&
       new Set(G.tiles.map((t) => rhombus(G, t))).size === 2 &&
       !out[G.tiles.length]
-    )
+    ) {
       out[G.tiles.length] = P1.map((x) => +x.toFixed(9));
+      console.log(`penroseSphereSizes: ${G.tiles.length} cells at [${out[G.tiles.length]}]`);
+    }
   }
   return `const PENROSE_SPHERES = {\n${Object.entries(out)
     .map(([n, [x, y]]) => `  ${n}: [${x}, ${y}],`)

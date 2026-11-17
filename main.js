@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.193';
+const VERSION = '0.5.194';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -16059,7 +16059,11 @@ const PENROSE_SPHERES = {
   15330: [-13.037276677, -16.326237921],
   24510: [0, 26.416407865],
   36570: [0, 32.270509831],
-}; // (each size's cells: its corner P1, made by penroseSphereSizes(32), 16 min; 36,570 checked by itself, the search past 32 to come)
+  66030: [-41.238457051, -13.399186938],
+  79560: [-27.976666386, -38.506577809],
+  163170: [-64.82311212, -21.062305899],
+  244800: [0, -83.485291572],
+}; // (each size's cells: its corner P1, made by penroseSphereSizes(32), 16 min, then (64, 3, 32), 1 h 56, and (96, 3, 64), 6 h)
 // the Penrose rhombi's corners (sides 1) within reach of their middle, nearest first: one tiling at every reach, its wheel
 // cut PENROSE_SPHERE_CUTS times (the fewest cuts for a disc hang on its size, and so does the tiling past its middle: a
 // size's table and its mesh one tiling, see PENROSE_SPHERES)
@@ -16237,7 +16241,7 @@ function penroseSphereMesh(cells) {
   const key = `penroseSphere${cells}`;
   if (meshCache[key]) return meshCache[key];
   const { points, tiles, tileFaces, solid } = penroseSphereGraph(PENROSE_SPHERES[cells]),
-    R = Math.max(...points.map((p) => Math.hypot(...p)));
+    R = points.reduce((most, p) => Math.max(most, Math.hypot(...p)), 0); // (no spread: a size's 250,000 points pass the call stack)
   return (meshCache[key] = Object.assign(finishMesh(points.flatMap(unit), tiles, 4, cells), {
     flatVerts: Float64Array.from(points.flat(), (v) => v / R),
     cellFaces: Int32Array.from(tileFaces), // (its faces the dodecahedron's, round the icosahedron's corners: FACE_MIDDLES' order)

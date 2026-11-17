@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.332';
+const VERSION = '0.5.333';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -17481,6 +17481,13 @@ const sizeTips = (row, total, text) => {
 };
 // a face by its corners (a solid's, a sector's count round its middle)
 const FACE_ADJECTIVES = { 3: 'triangular', 4: 'square', 5: 'pentagonal', 6: 'hexagonal' };
+// a solid's face's adjective: by its corners, a face of 4 a square where its diagonals are equal, else a rhombus (the
+// rhombic dodecahedron's, the triacontahedron's)
+const faceAdjective = ({ corners }) => {
+  const [a, b, c, d] = corners,
+    rhombus = corners.length === 4 && Math.abs(Math.hypot(...sub(a, c)) - Math.hypot(...sub(b, d))) > 1e-9;
+  return rhombus ? 'rhombic' : FACE_ADJECTIVES[corners.length];
+};
 // a surface's least mesh, at its first size (made once): what is the same at every size (its faces, its lattice cell, its cells'
 // sides), read there
 const leastMeshes = remember('leastMeshes', {}),
@@ -17602,7 +17609,7 @@ const howCounted = (kind, f) => {
     cut = mesh?.per ?? (mesh?.kite ? 3 : 1);
   if (g?.faces || g?.triFaces) {
     const by = g.faces ? {} : { 3: g.triFaces.length, 4: g.squareFaces.length },
-      adj = FACE_ADJECTIVES,
+      adj = (c) => faceAdjective(solidFaces(g).find((F) => F.corners.length === Number(c))),
       cells = { 3: 'triangles', 4: 'squares', 5: 'triangles', 6: 'triangles' },
       round = { 5: 5, 6: 6 }; // (a pentagon, a hexagon: as many triangles round its middle)
     for (const F of g.faces ?? []) by[F.corners.length] = (by[F.corners.length] ?? 0) + 1; // (a solid of triangles and squares: its faces of each, see Johnson solids)
@@ -17613,7 +17620,7 @@ const howCounted = (kind, f) => {
       return `${Object.entries(by)
         .map(
           ([c, k]) =>
-            `${mark('r', `${k} ${adj[c]} face${k > 1 ? 's' : ''}`)} × ${round[c] ? `${round[c]} × ` : ''}${mark(squaresAmongTriangles(g) && c === '4' ? 's' : 'y', `(Edge=${formatNumber(f)})² ${cells[c]}`)}`,
+            `${mark('r', `${k} ${adj(c)} face${k > 1 ? 's' : ''}`)} × ${round[c] ? `${round[c]} × ` : ''}${mark(squaresAmongTriangles(g) && c === '4' ? 's' : 'y', `(Edge=${formatNumber(f)})² ${cells[c]}`)}`,
         )
         .join(' + ')}${cut > 1 ? ` × ${mark('k', `${cut} ${unit} each`)}` : ''} = ${formatNumber(n)} ${unit}`;
     }

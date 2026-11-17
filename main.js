@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.209';
+const VERSION = '0.5.210';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -47096,60 +47096,58 @@ $('huntGoals').replaceChildren(
   ),
 );
 $('animBar').addEventListener('mouseenter', () => requestAnimationFrame(drawActivity)); // the card opened: its curve  // turned on: it plays at once
-// the zones, one choice among them: a tab group (see tileGroup)
+// the zones, one choice among them: tiles in a grid
 $('huntZones').replaceChildren(
-  tileGroup(
-    Object.entries(HUNT_ZONES).map(([zone, [pic, name]]) => {
-      const b = tile({
-        pic: pic
-          ? icon(pic)
-          : zone === 'emoji'
-            ? icon('smiley')
-            : isIcon(zone)
-              ? zone.startsWith('punk')
-                ? pixelIcon(punkArt(27), zone.endsWith('Max') ? 0 : 10)
-                : pixelIcon('.....,.o.o.,.....,o...o,.ooo.', zone.endsWith('Max') ? 0 : 2)
-              : pixelIcon(
-                  zone === 'centred'
-                    ? 'ooooooo,o.....o,o..o..o,o...o.o,o.ooo.o,o.....o,ooooooo'
-                    : '.....,..o..,...o.,.ooo.',
-                ),
-        text: name,
-      }); // Famous: a glider (centred: in a frame); Icon: a face, as big as its size
-      b.dataset.zone = zone;
-      if (zone === 'full') b.dataset.default = 'yes'; // (see hunt)
-      b.title =
-        zone === 'custom'
-          ? 'A start found by a hunt, from a link'
-          : `${
-              zone === 'centred'
-                ? "The rule's patterns, one for each colour at its spot, turned or mirrored"
-                : zone === 'patterns'
-                  ? "The rule's patterns, as Famous, one for each colour anywhere in its part, turned or mirrored (on a disc, only pivoted round its middle: no move keeps a disc)"
-                  : zone === 'mirror'
-                    ? "Each colour's two opposite faces (a solid where a colour has two), random soups in them"
-                    : zone === 'numbers'
-                      ? 'A number at random, its binary digits laid a digit a cell, 1 alive (in colours, each colour alive in its part, as Wild; Mixed, a colour at random): half the time a fraction p/q (q from 2 to 999, p under it), else a root √n (n from 2 to 9,999, no square). The hunt tries each once, in a mixed order, its results each with its number'
-                      : zone === 'emoji'
-                        ? "An emoji at random, of Unicode's 1,923 (Emoji 18.0), as wide as fits, its outline and dark marks alive, in the middle of each colour's part"
-                        : isIcon(zone) && zone.startsWith('punk')
-                          ? `A CryptoPunk at random, ${zone.endsWith('Max') ? 'as wide as fits, its width and height whole, cut off in its corners only (on squares 96, 72, 48 or 24 cells, elsewhere to the cell)' : '24 cells wide'}, one of the 10,000 of Larva Labs (2017), its line drawing alive (its outline, dark marks and contrasts), in the middle of each colour's part`
-                          : isIcon(zone)
-                            ? `An icon at random, ${zone.endsWith('Max') ? 'as wide as fits, its width and height whole, cut off in its corners only (on squares 96, 72, 48 or 24 cells, elsewhere to the cell)' : '24 cells wide'}, one of the 1,036 of Pixelarticons (MIT), its pixels alive, in the middle of each colour's part`
-                            : zone === 'realm'
-                              ? "On a solid, each colour's whole face; elsewhere, its whole part but its cells next to another's: random starts in it (two colours or more)"
-                              : zoneRadius(zone)
-                                ? `Random starts within ${zoneRadius(zone)} step${zoneRadius(zone) > 1 ? 's' : ''} of each spot (radius ${zoneRadius(zone)})`
-                                : 'The whole grid, random soups (a colour with two parts: side by side)'
-            } · Clicked again: another start`; // (picked: a click draws another, see renderHunt)
-      if (zone === 'custom') {
-        b.hidden = true;
-        return b;
-      } // shown, lit, for a start from a link
-      b.addEventListener('click', () => pickZone(zone));
+  ...Object.entries(HUNT_ZONES).map(([zone, [pic, name]]) => {
+    const b = tile({
+      pic: pic
+        ? icon(pic)
+        : zone === 'emoji'
+          ? icon('smiley')
+          : isIcon(zone)
+            ? zone.startsWith('punk')
+              ? pixelIcon(punkArt(27), zone.endsWith('Max') ? 0 : 10)
+              : pixelIcon('.....,.o.o.,.....,o...o,.ooo.', zone.endsWith('Max') ? 0 : 2)
+            : pixelIcon(
+                zone === 'centred'
+                  ? 'ooooooo,o.....o,o..o..o,o...o.o,o.ooo.o,o.....o,ooooooo'
+                  : '.....,..o..,...o.,.ooo.',
+              ),
+      text: name,
+    }); // Famous: a glider (centred: in a frame); Icon: a face, as big as its size
+    b.dataset.zone = zone;
+    if (zone === 'full') b.dataset.default = 'yes'; // (see hunt)
+    b.title =
+      zone === 'custom'
+        ? 'A start found by a hunt, from a link'
+        : `${
+            zone === 'centred'
+              ? "The rule's patterns, one for each colour at its spot, turned or mirrored"
+              : zone === 'patterns'
+                ? "The rule's patterns, as Famous, one for each colour anywhere in its part, turned or mirrored (on a disc, only pivoted round its middle: no move keeps a disc)"
+                : zone === 'mirror'
+                  ? "Each colour's two opposite faces (a solid where a colour has two), random soups in them"
+                  : zone === 'numbers'
+                    ? 'A number at random, its binary digits laid a digit a cell, 1 alive (in colours, each colour alive in its part, as Wild; Mixed, a colour at random): half the time a fraction p/q (q from 2 to 999, p under it), else a root √n (n from 2 to 9,999, no square). The hunt tries each once, in a mixed order, its results each with its number'
+                    : zone === 'emoji'
+                      ? "An emoji at random, of Unicode's 1,923 (Emoji 18.0), as wide as fits, its outline and dark marks alive, in the middle of each colour's part"
+                      : isIcon(zone) && zone.startsWith('punk')
+                        ? `A CryptoPunk at random, ${zone.endsWith('Max') ? 'as wide as fits, its width and height whole, cut off in its corners only (on squares 96, 72, 48 or 24 cells, elsewhere to the cell)' : '24 cells wide'}, one of the 10,000 of Larva Labs (2017), its line drawing alive (its outline, dark marks and contrasts), in the middle of each colour's part`
+                        : isIcon(zone)
+                          ? `An icon at random, ${zone.endsWith('Max') ? 'as wide as fits, its width and height whole, cut off in its corners only (on squares 96, 72, 48 or 24 cells, elsewhere to the cell)' : '24 cells wide'}, one of the 1,036 of Pixelarticons (MIT), its pixels alive, in the middle of each colour's part`
+                          : zone === 'realm'
+                            ? "On a solid, each colour's whole face; elsewhere, its whole part but its cells next to another's: random starts in it (two colours or more)"
+                            : zoneRadius(zone)
+                              ? `Random starts within ${zoneRadius(zone)} step${zoneRadius(zone) > 1 ? 's' : ''} of each spot (radius ${zoneRadius(zone)})`
+                              : 'The whole grid, random soups (a colour with two parts: side by side)'
+          } · Clicked again: another start`; // (picked: a click draws another, see renderHunt)
+    if (zone === 'custom') {
+      b.hidden = true;
       return b;
-    }),
-  ),
+    } // shown, lit, for a start from a link
+    b.addEventListener('click', () => pickZone(zone));
+    return b;
+  }),
 );
 // Emoji: an emoji at random, one this browser draws (in colours: a missing one is a box of one colour)
 let drawsMemo = null;

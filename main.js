@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.303';
+const VERSION = '0.5.304';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -5161,6 +5161,66 @@ const RULES = [
       'B39/S023',
       'Penrose twinkles',
       'the most Life-like in a circle: soups settling after 362 to 1,361 generations (2.18 % alive at the end), oscillators in half of their ash (2 states)',
+    ],
+    [
+      '⬗',
+      'B3/S2368',
+      'Kites & darts Life',
+      "the most Life-like on Penrose's kites and darts, Life with 6 and 8 surviving (score 0.20): soups settling after 433 to 1,983 generations (1.78 % alive at the end), oscillators in all their ash (2 states)",
+    ],
+    [
+      '⬗',
+      'B37/S0345/C4',
+      'Dart embers',
+      'the highest score on kites and darts (0.22): soups settling after 333 to 1,746 generations (2.5 % alive at the end), oscillators in a few of their ash (4 states)',
+    ],
+    [
+      '⬗',
+      'B36/S1345/C5',
+      'Dart fuses',
+      'score 0.19: soups settling after 374 to 4,710 generations (2.67 % alive at the end), oscillators in a quarter of their ash (5 states)',
+    ],
+    [
+      '⬗',
+      'B389/S0237',
+      'Dart sparks',
+      'score 0.16: soups settling after 324 to 832 generations (2.5 % alive at the end), oscillators in most of their ash (2 states)',
+    ],
+    [
+      '⬗',
+      'B39/S236',
+      'Dart twinkles',
+      'score 0.14: soups settling after 385 to 2,691 generations (1.38 % alive at the end), oscillators in most of their ash (2 states)',
+    ],
+    [
+      '◭',
+      'B389/S0678',
+      'Tübingen Life',
+      'the most Life-like on Tübingen triangles (score 0.72): soups settling after 249 to 4,077 generations (1.75 % alive at the end), oscillators in all their ash (2 states)',
+    ],
+    [
+      '◭',
+      'B389/S189',
+      'Tübingen stars',
+      'score 0.68: soups settling after 437 to 4,736 generations (1.81 % alive at the end), oscillators in all their ash (2 states)',
+    ],
+    [
+      '◭',
+      'B38/S0679',
+      'Tübingen sparks',
+      'score 0.51: soups settling after 309 to 1,525 generations (1.98 % alive at the end), oscillators in all their ash (2 states)',
+    ],
+    [
+      '◭',
+      'B379/S08',
+      'Tübingen embers',
+      'score 0.51: soups settling after 385 to 2,195 generations (1.9 % alive at the end), oscillators in most of their ash (2 states)',
+    ],
+    [
+      '◭',
+      'B3/S0678',
+      'Tübingen twinkles',
+      "score 0.44, Life's birth: soups settling after 187 to 877 generations (1.98 % alive at the end), oscillators in all their ash (2 states)",
     ],
     [
       '◺',
@@ -27552,6 +27612,8 @@ const NEIGHBOURS = {
   '◆': 9,
   '🎩': 7,
   '✧': 11,
+  '⬗': 10,
+  '◭': 17,
   '◺': 17,
   '✺': 7,
   '✵': 12,

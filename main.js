@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.271';
+const VERSION = '0.5.272';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -6322,7 +6322,7 @@ function describe(base) {
 // step that closed them; or the tiles coloured by their visits (Heatmap, on cells only).
 const VIEW_3D = ['autoRotate', 'upright', 'perspective', 'light', 'glint']; // a 3D view's: Default, Free, Upright, Auto-rotate, Perspective, Side light, Glint (Space-time's too)
 const DISPLAY_BY_TAB = {
-  '2D walks': ['heatmap', 'fill', 'translucent', 'cells', 'visits', 'digit', 'grid', 'ocean'],
+  '2D walks': ['heatmap', 'fill', 'translucent', 'cells', 'visits', 'digit', 'grid', 'tiles', 'ocean'],
   '3D walks': ['colours', 'digit', 'grid', ...VIEW_3D],
   'Walks on surfaces': [
     'shape',
@@ -6351,7 +6351,7 @@ const DISPLAY_BY_TAB = {
     'ocean',
     'cut',
   ], // (Glass, Cut: the surfaces' tiles only, see gpuFrame, cutOn)
-  '2D spirals': ['heatmap', 'fill', 'translucent', 'cells', 'visits', 'digit', 'grid', 'ocean'], // the 2D walks' menu, some of it greyed out
+  '2D spirals': ['heatmap', 'fill', 'translucent', 'cells', 'visits', 'digit', 'grid', 'tiles', 'ocean'], // the 2D walks' menu, some of it greyed out
   Elementary: ['colours', 'mono', 'domain', 'entropy', 'grid'], // (its cells never change once made: no Heatmap, no Trail; Domains its own)
   'Explore on the plane': ['grid'],
   'Explore on surfaces': ['shape', 'grid', ...VIEW_3D, 'glass', 'cut'], // (its view's only: its colours its own, see renderExplore)
@@ -42171,7 +42171,108 @@ function drawGrid() {
   paintSky();
   placeAxesLabels();
   if (walk.rows) drawElementarySheet(ctx, walk.rows);
-  else drawGridLines(ctx, s);
+  else {
+    drawTilesGround(ctx);
+    drawGridLines(ctx, s);
+  }
+}
+// Tiles on the infinite plane (the 2D walks, ants and spirals): its grid's cells, each its colour by its lattice's own rule,
+// never as a neighbour's (squares and triangles in 2, hexagons in 3 round their axes, Cairo's pentagons in 4 by their way),
+// a motif repeating every w × h of the plane from its origin: its cells there (and those across its edges), as the grid's
+// lines bound them (see drawGridLines)
+function planeMotif(lat, lines) {
+  const h = TRIANGLE_HEIGHT,
+    cells = [],
+    ngon = (x, y, n, turn, R) =>
+      Array.from({ length: n }, (_, k) => [
+        x + R * Math.cos(turn + (2 * Math.PI * k) / n),
+        y - R * Math.sin(turn + (2 * Math.PI * k) / n),
+      ]);
+  // triangles in rows (lines y = y0 + r·h and x ± (y − y0)/√3 = k: their corners x in ℤ + r/2), down and up in turn
+  const triangles = (y0) => {
+    for (let r = Math.floor(-y0 / h) - 2; r <= Math.ceil((2 * h - y0) / h) + 1; r++)
+      for (let n = -2; n <= 2; n++) {
+        const [x, y] = [n + r / 2, y0 + r * h];
+        cells.push([
+          0,
+          [
+            [x, y],
+            [x + 1, y],
+            [x + 0.5, y + h],
+          ],
+        ]);
+        cells.push([
+          1,
+          [
+            [x + 0.5, y + h],
+            [x + 1.5, y + h],
+            [x + 1, y],
+          ],
+        ]);
+      }
+  };
+  if (lat === 'square') {
+    const c = lines ? 0.5 : 0;
+    for (let i = -1; i <= 2; i++)
+      for (let j = -1; j <= 2; j++) cells.push([(i + j) & 1, ngon(i + c, j + c, 4, Math.PI / 4, Math.SQRT1_2)]);
+    return { w: 2, h: 2, cells };
+  }
+  if (lat === 'cairo') {
+    for (let i = -1; i <= 3; i++)
+      for (let j = -1; j <= 3; j++)
+        for (const o of [0, 1])
+          cells.push([
+            cairoType(i, j, o),
+            cairoCorners(i, j, o).map(([u, v]) => [(u - CAIRO_0[0]) * CAIRO, (v - CAIRO_0[1]) * CAIRO]),
+          ]);
+    return { w: 2 * CAIRO, h: 2 * CAIRO, cells };
+  }
+  if (lat === 'tri' && !lines) {
+    triangles(TRI_Y0);
+    return { w: 1, h: 2 * h, cells };
+  }
+  if (lat === 'hex' && lines) {
+    triangles(0);
+    for (const [, corners] of cells) for (const p of corners) p.reverse(); // (its lines turned a quarter: x = k·h, y ± x/√3 = k)
+    return { w: 2 * h, h: 1, cells };
+  }
+  if (lines) {
+    // pointy hexagons, their centres (c/2, y0 + r·h), c + r even (see drawHexGrid): c's thirds
+    for (let r = Math.floor(-TRI_Y0 / h) - 2; r <= Math.ceil((2 * h - TRI_Y0) / h) + 1; r++)
+      for (let c = -3; c <= 9; c++)
+        if (((c + r) & 1) === 0) cells.push([mod(c, 3), ngon(c / 2, TRI_Y0 + r * h, 6, Math.PI / 6, 1 / Math.sqrt(3))]);
+    return { w: 3, h: 2 * h, cells };
+  }
+  // flat hexagons, their centres (b·h, −a − b/2) (see drawHexGrid): (b − a)'s thirds
+  for (let b = -2; b <= 4; b++)
+    for (let a = -7; a <= 3; a++) cells.push([mod(b - a, 3), ngon(b * h, -a - b / 2, 6, 0, 1 / Math.sqrt(3))]);
+  return { w: 2 * h, h: 3, cells };
+}
+// the infinite plane's ground in Tiles' palette (see tilesPalette): its motif drawn once a scale into a picture, filling
+// the view as a pattern laid on the plane (its origin at the view's), under the walk; none off Tiles
+let groundMotif = {};
+function drawTilesGround(ctx) {
+  const palette = tilesOn() && !walk.is3d && !walk.plane && walk.lattice ? tilesPalette() : null;
+  if (!palette) return;
+  const { scale: s, ox, oy } = view,
+    M = planeMotif(walk.lattice, !!walk.lines),
+    [W, H] = [M.w, M.h].map((d) => Math.min(2048, Math.max(16, Math.round(d * s)))), // (its picture's pixels, a bound either way: scaled to the view after)
+    key = `${walk.lattice}|${!!walk.lines}|${palette}|${W}|${H}`;
+  if (groundMotif.key !== key) {
+    const picture = new OffscreenCanvas(W, H),
+      g = picture.getContext('2d');
+    g.scale(W / M.w, H / M.h);
+    for (const [k, corners] of M.cells) {
+      g.fillStyle = palette[k % palette.length];
+      g.beginPath();
+      for (const [x, y] of corners) g.lineTo(x, y);
+      g.fill();
+    }
+    groundMotif = { key, pattern: ctx.createPattern(picture, 'repeat') };
+  }
+  groundMotif.pattern.setTransform(new DOMMatrix([(M.w * s) / W, 0, 0, (M.h * s) / H, ox, oy]));
+  ctx.fillStyle = groundMotif.pattern;
+  ctx.fillRect(0, 0, canvasWidth, canvasHeight);
 }
 // Elementary's run a sheet on the sky, as the plane's (see gpuPlane): its cells in the page's colour, its grid their sides,
 // zoomed in only, as the plane's (see sidesShown): from its first cell to its last, none past it

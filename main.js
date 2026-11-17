@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.256';
+const VERSION = '0.5.257';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -22371,20 +22371,10 @@ function groundColours() {
   return groundMemo.col;
 }
 // A solid's Tiles face by face: each face coloured alone (DSatur among its own cells: a patch of its tiling's plane, its
-// pattern whole), then each cell like a neighbour across the solid's edge given the least colour none of its neighbours has:
-// a colour more, where a pattern cannot go round the solid, along its edges only (faces: each cell's, see cellFaces)
-function faceByFace(n, bySide, faces) {
-  const colour = dsatur(n, (t, put) => bySide(t, (u) => faces[u] === faces[t] && put(u))).colour;
-  for (let t = 0; t < n; t++) {
-    const used = new Set();
-    bySide(t, (u) => used.add(colour[u]));
-    if (!used.has(colour[t])) continue;
-    let c = 1;
-    while (used.has(c)) c++;
-    colour[t] = c;
-  }
-  return colour;
-}
+// pattern whole), its cells' neighbours across the solid's edge not counted: the edge parts them (inflated, the sphere's
+// edges none, two cells alike may meet there: faces: each cell's, see cellFaces)
+const faceByFace = (n, bySide, faces) =>
+  dsatur(n, (t, put) => bySide(t, (u) => faces[u] === faces[t] && put(u))).colour;
 function exploreLevels(nbr, n, faces, kinds, lattice, palette = explorePalette()) {
   const side = sideOf(nbr),
     P = palette.length,

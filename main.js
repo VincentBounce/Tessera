@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.339';
+const VERSION = '0.5.340';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -43063,11 +43063,13 @@ const paintLevels = (palette, levelOf) => (out, n) => {
 const GLASS_ALPHA = 0.4; // (a tile's share: a layer behind seen at 60%, two at 36%…)
 const glassOn = () => $('glass').checked && !$('glassRow').hidden;
 // Finish: the surface's tiles plain (Off), or each painted one lit pixel by pixel from its own corners (see tesseraF): a
-// piece of mosaic (Tessera), a lamp glowing from its middle (Glow); its number, as Cut's, the place of its pill
+// piece of mosaic (Tessera), a lamp glowing from its middle (Glow), its light spilling round it (Neon, see gpuHalo); its
+// number, as Cut's, the place of its pill
 const FINISHES = [
   ['Off', 'The tiles plain, each one colour'],
   ['Tessera', 'Each tile painted a piece of mosaic: rounded down to its edges, its joint dark'],
   ['Glow', 'Each tile painted a lamp: its light its own, brightest in its middle'],
+  ['Neon', "Each tile painted a lamp, as Glow's, its light spilling round it: a halo"],
 ];
 let surfaceFinish = defaultOf('finish', tabVariant());
 const finishOn = () => surfaceFinish > 0 && !$('finishRow').hidden;
@@ -44109,6 +44111,8 @@ function gpuLook(L, out, look) {
  * no antialiasing or the sky in the same picture change it: Chrome's way to that screen, not ours (2026-11-03: key to
  * picture 19 ms, WebGL's 21; 327 KB allocated a frame both, 40 KB since v0.4.1) */
 const gpuCanvas = $('gpuLayer');
+const HALO_WEIGHTS = [0.227, 0.194, 0.121, 0.054, 0.016], // (Neon's halo: a Gaussian's, its middle then each side)
+  HALO_STRENGTH = '1.6'; // (its light added, its share)
 const TESSERA_BEVEL = 0.35, // (Tessera: a tile's rounding, its share of the way from its edge to its middle)
   TESSERA_JOINT = 0.08; // (its joint's, dark)
 // a draw's numbers, in this order (vec3s padded to 4 words; see struct U)
@@ -44223,20 +44227,24 @@ fn nearestEdge(p: vec3f, first: u32) -> vec4f {  // (the point of the tile's out
   }
   return best;
 }
+fn inPiece(p: vec3f, first: u32) -> vec4f {  // (its nearest edge's point, and how far p is from it: 0 on its edge, 1 in its middle)
+  var middle = vec3f(0.0);
+  for (var q = 0u; q < pieces.x; q++) { middle += cornerAt(first + q); }
+  middle /= f32(pieces.x);
+  let edge = nearestEdge(p, first);
+  return vec4f(edge.xyz, edge.w / max(nearestEdge(middle, first).w, 1e-20));
+}
+fn lampLight(col: vec3f, w: f32) -> vec3f { let l = smoothstep(0.0, 1.0, w); return col * (0.15 + 1.1 * l * l); }  // (Glow's, Neon's: brightest in its middle)
 @fragment fn tesseraF(i: Tess) -> @location(0) vec4f {
   if (u.cut == 1 && i.cutv > 0.0) { discard; }
   if (i.col.a < 0.75) { return seen(i.col.rgb * (1.0 - u.shade) + shine(i.col.rgb, facing(normalize(i.n))) * lightShare(i.sh), i.pos.z); }  // (none painted: flat)
-  var middle = vec3f(0.0);
-  for (var q = 0u; q < pieces.x; q++) { middle += cornerAt(i.first + q); }
-  middle /= f32(pieces.x);
-  let edge = nearestEdge(i.p, i.first);
-  let w = edge.w / max(nearestEdge(middle, i.first).w, 1e-20);  // (0 on its edge, 1 in its middle)
+  let piece = inPiece(i.p, i.first); let w = piece.w;
   let n = facing(normalize(i.n));
-  if (pieces.y == 2u) {  // (Glow: a dim tile, its own light from its middle, never in the lamp's shadow)
-    let lamp = smoothstep(0.0, 1.0, w);
-    return seen(i.col.rgb * (0.25 + 0.2 * max(0.0, dot(n, u.L)) * lightShare(i.sh)) + i.col.rgb * (0.15 + 1.1 * lamp * lamp), i.pos.z);
+  if (pieces.y >= 2u) {  // (Glow, Neon: a dim tile, its own light from its middle, never in the lamp's shadow)
+    return seen(i.col.rgb * (0.25 + 0.2 * max(0.0, dot(n, u.L)) * lightShare(i.sh)) + lampLight(i.col.rgb, w), i.pos.z);
   }
-  let out = edge.xyz - i.p; let side = out - n * dot(out, n);  // (towards its nearest edge, along it)
+  let edge = piece.xyz;
+  let out = edge - i.p; let side = out - n * dot(out, n);  // (towards its nearest edge, along it)
   let slope = 1.6 * (1.0 - smoothstep(0.0, ${TESSERA_BEVEL}, w));
   var m = n; if (dot(side, side) > 0.0) { m = normalize(n + normalize(side) * slope); }
   let col = i.col.rgb * mix(0.4, 1.0, smoothstep(0.0, ${TESSERA_JOINT}, w));  // (its joint: dark)
@@ -44315,6 +44323,26 @@ struct Rib { @builtin(position) pos: vec4f, @location(0) col: vec3f, @location(1
 @fragment fn glassMixF(@builtin(position) q: vec4f) -> @location(0) vec4f {
   let p = vec2i(q.xy); let a = textureLoad(acc, p, 0); let r = textureLoad(rev, p, 0).r;
   return vec4f(a.rgb / max(a.a, 1e-5) * (1.0 - r), 1.0 - r);
+}
+// Neon's halo (see gpuHalo): the painted tiles' own light alone (lampsF), at half the frame's size, blurred across then
+// down (HALO_WEIGHTS, every other pixel: wider), then added on the canvas
+@fragment fn lampsF(i: Tess) -> @location(0) vec4f {
+  if (u.cut == 1 && i.cutv > 0.0) { discard; }
+  if (i.col.a < 0.75) { return vec4f(0.0, 0.0, 0.0, 1.0); }  // (none painted: none, hiding those behind)
+  return vec4f(lampLight(i.col.rgb, inPiece(i.p, i.first).w), 1.0);
+}
+fn halo(q: vec4f, d: vec2i) -> vec4f {
+  let w = array<f32, 5>(${HALO_WEIGHTS.join(', ')});
+  let p = vec2i(q.xy); let top = vec2i(textureDimensions(acc)) - 1;
+  var c = textureLoad(acc, p, 0) * w[0];
+  for (var k = 1; k < 5; k++) { c += (textureLoad(acc, clamp(p + d * 2 * k, vec2i(0), top), 0) + textureLoad(acc, clamp(p - d * 2 * k, vec2i(0), top), 0)) * w[k]; }
+  return c;
+}
+@fragment fn haloAcrossF(@builtin(position) q: vec4f) -> @location(0) vec4f { return halo(q, vec2i(1, 0)); }
+@fragment fn haloDownF(@builtin(position) q: vec4f) -> @location(0) vec4f { return halo(q, vec2i(0, 1)); }
+@fragment fn haloAddF(@builtin(position) q: vec4f) -> @location(0) vec4f {  // (premultiplied: as opaque as it is bright)
+  let c = textureLoad(acc, min(vec2i(q.xy) / 2, vec2i(textureDimensions(acc)) - 1), 0).rgb * ${HALO_STRENGTH};
+  return vec4f(c, max(c.r, max(c.g, c.b)));
 }
 // flat drawings (2D walks): world (x, y) to pixels by view (scale, ox, oy)
 struct Col { @builtin(position) pos: vec4f, @location(0) col: vec4f }
@@ -44539,6 +44567,21 @@ const gpuTargets = () => {
     sumOne: make('rgba16float', 1, GPUTextureUsage.TEXTURE_BINDING),
     through: make('rgba8unorm'),
     throughOne: make('rgba8unorm', 1, GPUTextureUsage.TEXTURE_BINDING),
+    ...Object.fromEntries(
+      ['haloA', 'haloB'].map((name) => [
+        name,
+        device.createTexture({
+          size: [Math.ceil(w / 2), Math.ceil(h / 2)],
+          format: 'rgba16float',
+          usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING,
+        }),
+      ]),
+    ), // (Neon's halo: its lamps, then blurred, at half the frame's size, see gpuHalo)
+    haloDepth: device.createTexture({
+      size: [Math.ceil(w / 2), Math.ceil(h / 2)],
+      format: 'depth24plus',
+      usage: GPUTextureUsage.RENDER_ATTACHMENT,
+    }),
   };
   S.all = Object.values(S).filter((t) => t instanceof GPUTexture);
   S.mix = device.createBindGroup({
@@ -44548,8 +44591,56 @@ const gpuTargets = () => {
       { binding: 1, resource: S.throughOne.createView() },
     ],
   });
+  for (const name of ['haloA', 'haloB'])
+    S[`${name}Group`] = device.createBindGroup({
+      layout: D.mixed,
+      entries: [0, 1].map((binding) => ({ binding, resource: S[name].createView() })),
+    }); // (read by the halo's passes, as Glass's mix: see halo)
   return (D.size = S);
 };
+// Neon's halo: the painted tiles' lamps (drawLamps, into a picture of half the frame's size, its own depths), blurred across
+// then down, added on the canvas
+function gpuHalo(enc, drawLamps) {
+  const D = GPU.draw,
+    S = gpuTargets();
+  const lamps = enc.beginRenderPass({
+    colorAttachments: [{ view: S.haloA.createView(), loadOp: 'clear', storeOp: 'store', clearValue: [0, 0, 0, 0] }],
+    depthStencilAttachment: {
+      view: S.haloDepth.createView(),
+      depthLoadOp: 'clear',
+      depthClearValue: 1,
+      depthStoreOp: 'discard',
+    },
+  });
+  drawLamps(lamps);
+  lamps.end();
+  for (const [to, entry, from] of [
+    [S.haloB.createView(), 'haloAcrossF', S.haloAGroup],
+    [S.haloA.createView(), 'haloDownF', S.haloBGroup],
+    [D.ctx.getCurrentTexture().createView(), 'haloAddF', S.haloAGroup],
+  ]) {
+    const add = entry === 'haloAddF',
+      p = enc.beginRenderPass({
+        colorAttachments: [{ view: to, loadOp: add ? 'load' : 'clear', storeOp: 'store', clearValue: [0, 0, 0, 0] }],
+      });
+    p.setPipeline(
+      gpuPipe(`halo|${entry}`, (D2) => ({
+        layout: D2.device.createPipelineLayout({ bindGroupLayouts: [D2.g0, D2.mixed] }),
+        vertex: { module: D2.module, entryPoint: 'quadV' },
+        fragment: {
+          module: D2.module,
+          entryPoint: entry,
+          targets: [{ format: add ? D2.format : 'rgba16float', blend: add ? BLEND_ADD : undefined }],
+        },
+        primitive: { topology: 'triangle-strip' },
+      })),
+    );
+    p.setBindGroup(0, gpuGroup(), [0]);
+    p.setBindGroup(1, from);
+    p.draw(4);
+    p.end();
+  }
+}
 // a vertex buffer, made again only when it grows
 const gpuBuffer = (name, data, usage = GPUBufferUsage.VERTEX) => {
   const D = GPU.draw,
@@ -44691,9 +44782,10 @@ const BLEND_PRE = {
   color: { srcFactor: 'one', dstFactor: 'one-minus-src-alpha' },
   alpha: { srcFactor: 'one', dstFactor: 'one-minus-src-alpha' },
 };
+const BLEND_ADD = { color: { srcFactor: 'one', dstFactor: 'one' }, alpha: { srcFactor: 'one', dstFactor: 'one' } };
 const GLASS_BLEND = [
   null,
-  { color: { srcFactor: 'one', dstFactor: 'one' }, alpha: { srcFactor: 'one', dstFactor: 'one' } },
+  BLEND_ADD,
   {
     color: { srcFactor: 'zero', dstFactor: 'one-minus-src' },
     alpha: { srcFactor: 'zero', dstFactor: 'one-minus-src' },
@@ -44714,10 +44806,12 @@ function gpuDrawPipe(
     depth = true,
     writes = true,
     pick = false,
+    format = null,
   },
 ) {
   // (writes: its depth; a decal's not, see ribbon; pick: each pixel a tile's number, one sample, see gpuPickMiddle)
-  return gpuPipe(`${name}|${cull}|${pass}|${!!blend}|${depth}|${writes}|${pick}`, (D) => ({
+  // (format: another picture's, one sample: Neon's lamps, see gpuHalo)
+  return gpuPipe(`${name}|${cull}|${pass}|${!!blend}|${depth}|${writes}|${pick}|${format}`, (D) => ({
     layout: D.device.createPipelineLayout({
       bindGroupLayouts: [D.g0, ...(shadowed ? [D.shadowed] : []), ...(corners ? [D.corners] : [])],
     }), // (corners: Tessera's, shadowed too)
@@ -44727,7 +44821,7 @@ function gpuDrawPipe(
       entryPoint: fragment,
       targets: [
         {
-          format: pick ? 'r32uint' : [D.format, 'rgba16float', 'rgba8unorm'][pass],
+          format: pick ? 'r32uint' : (format ?? [D.format, 'rgba16float', 'rgba8unorm'][pass]),
           blend: pass ? GLASS_BLEND[pass] : (blend ?? undefined),
         },
         ...(pick ? [{ format: 'r32float' }] : []),
@@ -44736,7 +44830,7 @@ function gpuDrawPipe(
     primitive: { topology, cullMode: cull, frontFace: 'ccw' },
     depthStencil:
       pass || !depth ? undefined : { format: 'depth24plus', depthWriteEnabled: writes, depthCompare: 'less-equal' },
-    multisample: { count: pick ? 1 : 4 },
+    multisample: { count: pick || format ? 1 : 4 },
   }));
 }
 // a battle's colours in the palette (pal), for its lines along the edges: A's body, B's (their heads: their arrows, see drawOverlay)
@@ -44932,6 +45026,19 @@ function gpuSurface(paint, path) {
       : !lines || P.ownLines
         ? [[0, until(D.segsAt, j + 1)]]
         : D.segsAt.map((A, s) => [until(A, firstStaying(P.goneOf[s])), until(A, j + 2)]);
+  // the tiles into rp by pipe (plain, a Finish, Neon's lamps), look its numbers
+  const drawTiles = (rp, pipe, look) => {
+    rp.setPipeline(pipe);
+    rp.setBindGroup(0, gpuGroup(), [slotOf(look)]);
+    rp.setBindGroup(1, D.shadow.group);
+    if (finishOn()) rp.setBindGroup(2, cornersGroup(D));
+    rp.setVertexBuffer(0, D.pos);
+    rp.setVertexBuffer(1, D.nrm);
+    rp.setVertexBuffer(2, D.tileIds);
+    rp.setIndexBuffer(D.fan, 'uint32');
+    rp.drawIndexed(D.fanCount);
+  };
+  if (finishOn()) D.device.queue.writeBuffer(D.pieces, 4, Uint32Array.of(surfaceFinish)); // (its Finish)
   // the tiles, their grid and the path, into pass p (0 the frame; 1, 2 Glass's)
   const drawAll = (rp, pass) => {
     // seen from both sides: Glass, a cut, a Klein bottle (one-sided: its tiles' face inwards in its neck and handle)
@@ -44942,7 +45049,8 @@ function gpuSurface(paint, path) {
       cull = both ? 'none' : front;
     const tiles = (plain, c) => {
       const mosaic = finishOn();
-      rp.setPipeline(
+      drawTiles(
+        rp,
         gpuDrawPipe(mosaic ? 'tessera' : 'tile', {
           vertex: mosaic ? 'tesseraV' : 'tileV',
           fragment: mosaic ? 'tesseraF' : 'shadowedF',
@@ -44952,18 +45060,8 @@ function gpuSurface(paint, path) {
           shadowed: true,
           corners: mosaic,
         }),
+        { glass: pass, cut, alpha: GLASS_ALPHA, plain },
       );
-      rp.setBindGroup(0, gpuGroup(), [slotOf({ glass: pass, cut, alpha: GLASS_ALPHA, plain })]);
-      rp.setBindGroup(1, D.shadow.group);
-      if (mosaic) {
-        D.device.queue.writeBuffer(D.pieces, 4, Uint32Array.of(surfaceFinish)); // (its Finish)
-        rp.setBindGroup(2, cornersGroup(D));
-      }
-      rp.setVertexBuffer(0, D.pos);
-      rp.setVertexBuffer(1, D.nrm);
-      rp.setVertexBuffer(2, D.tileIds);
-      rp.setIndexBuffer(D.fan, 'uint32');
-      rp.drawIndexed(D.fanCount);
     };
     tiles([0, 0, 0, 0], cull);
     if (open) tiles([...rgbCached(undersideColour()).map((c) => c / 255), 1], front === 'back' ? 'front' : 'back');
@@ -45068,6 +45166,21 @@ function gpuSurface(paint, path) {
     );
   };
   gpuFrame(enc, drawAll);
+  if (finishOn() && FINISHES[surfaceFinish][0] === 'Neon')
+    gpuHalo(enc, (rp) =>
+      drawTiles(
+        rp,
+        gpuDrawPipe('lamps', {
+          vertex: 'tesseraV',
+          fragment: 'lampsF',
+          buffers: tileBufs,
+          shadowed: true,
+          corners: true,
+          format: 'rgba16float',
+        }),
+        { cut: cutOn() ? 1 : 0 },
+      ),
+    );
   const picking =
     motifShown &&
     gpuPickMiddle(

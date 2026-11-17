@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.226';
+const VERSION = '0.5.227';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -16322,8 +16322,7 @@ function penroseSphereGraph(P1, face = penroseFace(P1)) {
 // found by an exact cover (see exactCover); a half in none (round the dodecahedron's corners, where no kite nor dart closes)
 // left out, each hole they leave one cell (its outline). On a graph of rhombi (its tiles its points' numbers): its cells, each
 // its corners in turn, its kind (0 a kite, 1 a dart, 2 a hole) and its rhombus (its first half's), or null if none cover
-function kitesDartsOf(G, slack = 0) {
-  // (slack: the halves so many edges from a corner of the dodecahedron free to be left out)
+function kitesDartsOf(G) {
   const angle = (i, a, b) => {
     const p = G.points[i];
     return Math.acos(dot3(unit(sub(G.points[a], p)), unit(sub(G.points[b], p))));
@@ -16385,17 +16384,46 @@ function kitesDartsOf(G, slack = 0) {
   ].flatMap(([k, l]) =>
     l.flatMap(([i, tip, o], x) => l.slice(x + 1).map(([j, , o2]) => [[i, j], [+k.split(',')[0], o, tip, o2], 1])),
   );
-  const edge = Math.acos(dot3(unit(G.points[G.tiles[0][0]]), unit(G.points[G.tiles[0][1]]))),
-    corners = G.solid.corners.map(unit),
-    free = halves.map(([, a]) =>
-      corners.some((c) => Math.acos(Math.min(1, dot3(unit(G.points[a]), c))) < slack * edge),
-    );
-  const rows = [...kites, ...darts],
-    chosen = exactCover(
+  const rows = [...kites, ...darts];
+  // the dodecahedron's 60 turns map the sphere onto itself: a row and its images one choice, a cover alike round every corner
+  const codes = new Map(G.points.map((p, i) => [pointCode(...unit(p)), i])),
+    images = solidRotations(G.solid.corners.map(unit)).map((M) =>
+      G.points.map((p) => codes.get(pointCode(...M.map((r) => dot3(r, unit(p)))))),
+    ),
+    halfKey = (c, a, b, d) => `${c},${a},${Math.min(b, d)},${Math.max(b, d)}`,
+    halfAt = new Map(halves.map((h, i) => [halfKey(...h), i])),
+    halfImages = images.map((P) => halves.map(([c, a, b, d]) => halfAt.get(halfKey(c, P[a], P[b], P[d])))),
+    rowAt = new Map(rows.map(([h], r) => [[...h].sort((x, y) => x - y).join(), r])),
+    orbits = [],
+    inOrbit = new Set();
+  rows.forEach(([h], r) => {
+    if (inOrbit.has(r)) return;
+    const members = [
+      ...new Set(
+        halfImages.map((P) =>
+          rowAt.get(
+            h
+              .map((i) => P[i])
+              .sort((x, y) => x - y)
+              .join(),
+          ),
+        ),
+      ),
+    ];
+    members.forEach((m) => inOrbit.add(m));
+    const halvesIn = members.flatMap((m) => rows[m][0]);
+    if (new Set(halvesIn).size === halvesIn.length) orbits.push(members); // (its images sharing no half)
+  });
+  const alike = exactCover(
+      halves.length,
+      orbits.map((members) => members.flatMap((m) => rows[m][0])),
+    )?.flatMap((o) => orbits[o]),
+    any = exactCover(
       halves.length,
       rows.map(([h]) => h),
-      free,
-    );
+    ),
+    size = (c) => c?.reduce((sum, r) => sum + rows[r][0].length, 0) ?? -1,
+    chosen = size(alike) >= size(any) ? alike : any; // (the one that leaves the fewest halves out, alike if as few)
   if (!chosen) return null;
   const covered = new Set(chosen.flatMap((r) => rows[r][0]));
   return [
@@ -16437,11 +16465,11 @@ function holesOf(triangles) {
   });
 }
 // An exact cover (Knuth's algorithm X, with a trail to undo, no recursion): of n columns, rows (each its columns), the rows
-// chosen so that each column is in one exactly, or null; but a column in no row is left out, and a free one too when no row
-// can cover it (its rows tried first: as few left out as it goes); a column with one choice or none first (forced, or a dead
-// end: those whose choices fell so low kept in a stack), else the first column open (a cursor, back to a column reopened)
-function exactCover(n, rows, free = [], tries = 100000) {
-  // (tries: so many steps back at most, then null: a cover that would take longer, none found)
+// chosen so that each column is in one exactly (a column in no row left out), or null; a column with one row left or none
+// first (forced, or a dead end: those whose rows fell so low kept in a stack), else the first column open (a cursor, back to
+// a column reopened)
+function exactCover(n, rows, stepsBack = 100000) {
+  // (stepsBack: so many at most, then null: a cover that would take longer, none found)
   const byColumn = Array.from({ length: n }, () => []);
   rows.forEach((r, i) => r.forEach((c) => byColumn[c].push(i)));
   const alive = new Uint8Array(rows.length).fill(1),
@@ -16449,16 +16477,14 @@ function exactCover(n, rows, free = [], tries = 100000) {
     open = new Uint8Array(n).map((_, c) => (count[c] ? 1 : 0)), // (a column in no row: left out)
     trail = [], // (each step's rows killed and columns closed, to undo)
     chosen = [],
-    choices = [], // ([trail's length, chosen's, its column, its choices, the one tried])
-    choicesOf = (c) => count[c] + (free[c] ? 1 : 0),
+    choices = [], // ([trail's length, chosen's, its rows to try, the one tried])
     urgent = []; // (the columns whose choices fell to one or none)
   let cursor = 0; // (the columns before it closed)
   const close = (c) => {
     open[c] = 0;
     trail.push(-1 - c);
   };
-  const choose = (c, r) => {
-    if (r < 0) return close(c); // (a free column left out)
+  const choose = (r) => {
     chosen.push(r);
     for (const c2 of rows[r]) {
       if (open[c2]) close(c2);
@@ -16466,7 +16492,7 @@ function exactCover(n, rows, free = [], tries = 100000) {
         if (alive[r2]) {
           alive[r2] = 0;
           trail.push(r2);
-          for (const c3 of rows[r2]) if (--count[c3] + (free[c3] ? 1 : 0) < 2 && open[c3]) urgent.push(c3);
+          for (const c3 of rows[r2]) if (--count[c3] < 2 && open[c3]) urgent.push(c3);
         }
     }
   };
@@ -16486,29 +16512,29 @@ function exactCover(n, rows, free = [], tries = 100000) {
     let best = -1;
     while (urgent.length && best < 0) {
       const c = urgent.pop();
-      if (open[c] && choicesOf(c) < 2) best = c;
+      if (open[c] && count[c] < 2) best = c;
     }
     if (best < 0) {
       while (cursor < n && !open[cursor]) cursor++;
       if (cursor === n) return chosen;
       best = cursor;
     }
-    const fewest = choicesOf(best);
+    const fewest = count[best];
     if (fewest > 0) {
-      const tries = [...byColumn[best].filter((r) => alive[r]), ...(free[best] ? [-1] : [])];
-      choices.push([trail.length, chosen.length, best, tries, 0]);
-      choose(best, tries[0]);
+      const tries = byColumn[best].filter((r) => alive[r]);
+      choices.push([trail.length, chosen.length, tries, 0]);
+      choose(tries[0]);
       continue;
     }
     // (a column no row covers any more: back to the last choice with another left to try)
-    if (--tries < 0) return null;
+    if (--stepsBack < 0) return null;
     for (;;) {
       const top = choices.at(-1);
       if (!top) return null;
       undoTo(top[0]);
       chosen.length = top[1];
-      if (++top[4] < top[3].length) {
-        choose(top[2], top[3][top[4]]);
+      if (++top[3] < top[2].length) {
+        choose(top[2][top[3]]);
         break;
       }
       choices.pop();
@@ -16529,7 +16555,17 @@ function penroseSphereMesh(cells) {
 }
 // Penrose's kites and darts on a sphere: a size of rhombi (PENROSE_SPHERES) turned into kites and darts (see kitesDartsOf),
 // its holes round the dodecahedron's corners a cell each; as its rhombi's mesh otherwise, each cell on its rhombus's face
-const KITES_DARTS_SPHERES = { 60: 90, 240: 360, 720: 1110, 1230: 1950, 49200: 79560 }; // (each size's cells: its rhombi's size)
+const KITES_DARTS_SPHERES = {
+  60: 90,
+  140: 210,
+  240: 360,
+  720: 1110,
+  1230: 1950,
+  1430: 2310,
+  2600: 4110,
+  9590: 15330,
+  49200: 79560,
+}; // (each size's cells: its rhombi's size)
 function kitesDartsSphereMesh(cells) {
   const key = `kitesDartsSphere${cells}`;
   if (meshCache[key]) return meshCache[key];

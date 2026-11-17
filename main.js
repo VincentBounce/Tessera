@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.306';
+const VERSION = '0.5.307';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -5168,15 +5168,15 @@ const RULES = [
     ],
     [
       '⬗',
-      'B3/S2368',
-      'Kites & darts Life',
-      "the most Life-like on Penrose's kites and darts, Life with 6 and 8 surviving (score 0.20): soups settling after 433 to 1,983 generations (1.78 % alive at the end), oscillators in all their ash (2 states)",
-    ],
-    [
-      '⬗',
       'B37/S0345/C4',
       'Dart embers',
       'the highest score on kites and darts (0.22): soups settling after 333 to 1,746 generations (2.5 % alive at the end), oscillators in a few of their ash (4 states)',
+    ],
+    [
+      '⬗',
+      'B3/S2368',
+      'Kites & darts Life',
+      "the most Life-like on Penrose's kites and darts, Life with 6 and 8 surviving (score 0.20): soups settling after 433 to 1,983 generations (1.78 % alive at the end), oscillators in all their ash (2 states)",
     ],
     [
       '⬗',

@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.304';
+const VERSION = '0.5.305';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -15957,7 +15957,7 @@ function sheetCells(kind, [[p, q], [r, s]]) {
       [0, 1],
     ])
   )
-    return { polys: TILINGS[kind].polys, nat: TILINGS[kind].polys.map((_, k) => [k, 0]) };
+    return { polys: gridMotif(kind).polys, nat: gridMotif(kind).polys.map((_, k) => [k, 0]) };
   if (same(R?.step)) return R; // (the 2D rectangle's: the slanted grids', or along the cells' sides)
   const { polys, nat } = sheetCells(kind, [
     [-r, -s],
@@ -15973,7 +15973,7 @@ function tilingTorusMesh(kind, nv, nu, turned = false) {
   // turned: B round the ring, A round the tube (⟲ 30°)
   const key = `${kind}torus${turned ? 'Turned' : ''}${nv}x${nu}`;
   if (meshCache[key]) return meshCache[key];
-  const t = TILINGS[kind],
+  const t = gridMotif(kind),
     sheet = torusSheets(kind)[turned ? 'turned' : 'plain'],
     sides = Math.max(...t.polys.map((P) => P.length));
   // the 2D sheet's cells (its sides 1), their middle (by area) on the sheet's (unrolled, it lies round its middle); turned: B along
@@ -17084,27 +17084,6 @@ const SURFACES = {
   // flat polyhedra: radius = f / (edge of the solid) so that a small triangle's edge is 1 unit
   // a torus's size: its rows (see torusDims); perRow: tiles per column across a row; steps: what rows
   // and tiles per row go by in a size of its own, keeping the sheet's columns even or rows even
-  torus: {
-    mesh: (s) => sheetTorus('torus', ...torusDims('torus', s)),
-    radius: (s) => torusDims('torus', s)[0] / (2 * Math.PI * TORUS_TUBE), // edge around the tube = 1 unit
-    columns: (nv, own) => ringColumns(nv / TORUS_TUBE, nv, 1, false, undefined, own),
-    perRow: 1,
-    steps: [1, 1],
-    least: 3,
-    tiles: (s) => torusDims('torus', s).reduce((a, b) => a * b),
-    unit: 'squares',
-  },
-  // hexagon edge = 1 unit: the tube is nv rows of √3 around
-  torusHex: {
-    mesh: (s) => sheetTorus('torusHex', ...torusDims('torusHex', s)),
-    radius: (s) => (torusDims('torusHex', s)[0] * Math.sqrt(3)) / (2 * Math.PI * TORUS_TUBE),
-    columns: torusHexColumns,
-    perRow: 1,
-    steps: [1, 2], // an even count of columns
-    least: 3,
-    tiles: (s) => torusDims('torusHex', s).reduce((a, b) => a * b),
-    unit: 'hexagons',
-  },
   // Cairo pentagons: the tube nv squares of their grid around, two pentagons a square
   torusCairo: {
     mesh: (s) => sheetTorus('torusCairo', ...torusDims('torusCairo', s)),
@@ -17153,59 +17132,7 @@ const SURFACES = {
     tiling: 'twisttri',
     chiral: true,
   }, // (tiling: a surface of a tiling's cells, its rules; chiral: no mirror maps it onto itself, see turnsAlike)
-  // triangle edge = 1 unit: the tube is nv rows of √3/2 around
-  torusTri: {
-    mesh: (s) => sheetTorus('torusTri', ...torusDims('torusTri', s)),
-    radius: (s) => (torusDims('torusTri', s)[0] * Math.sqrt(3)) / (4 * Math.PI * TORUS_TUBE),
-    columns: torusTriColumns,
-    perRow: 2,
-    steps: [2, 2], // an even count of rows, two triangles per column
-    tiles: (s) => 2 * torusDims('torusTri', s).reduce((a, b) => a * b),
-    unit: 'triangles',
-  },
-  // kites: the triangles', each cut in 3 (see kitesOf), on triangles twice as big (half their sizes): 3/4 of their cells
-  torusKite: {
-    mesh: (s) => sheetTorus('torusKite', ...torusDims('torusKite', s)),
-    radius: (s) => (torusDims('torusKite', s)[0] * Math.sqrt(3)) / (4 * Math.PI * TORUS_TUBE),
-    columns: torusTriColumns,
-    perRow: 6,
-    steps: [2, 2], // an even count of rows, six kites per column
-    tiles: (s) => 6 * torusDims('torusKite', s).reduce((a, b) => a * b),
-    unit: 'kites',
-  },
-  // turned by 30° (see baseSheet): rows around the ring. perColumn: tiles across a corner (a
-  // column) around the tube, for the size's label
-  torusTriTurned: {
-    mesh: (s) => sheetTorus('torusTriTurned', ...torusDims('torusTriTurned', s)),
-    radius: (s) => torusDims('torusTriTurned', s)[0] / (2 * Math.PI * TORUS_TUBE),
-    columns: torusHexColumns,
-    perRow: 1,
-    perColumn: 2,
-    steps: [1, 2], // an even count of rows
-    least: 2,
-    tiles: (s) => 2 * torusDims('torusTriTurned', s).reduce((a, b) => a * b),
-    unit: 'triangles',
-  },
-  torusKiteTurned: {
-    mesh: (s) => sheetTorus('torusKiteTurned', ...torusDims('torusKiteTurned', s)),
-    radius: (s) => torusDims('torusKiteTurned', s)[0] / (2 * Math.PI * TORUS_TUBE),
-    columns: torusHexColumns,
-    perRow: 1,
-    perColumn: 2,
-    steps: [1, 2],
-    least: 2,
-    tiles: (s) => 6 * torusDims('torusKiteTurned', s).reduce((a, b) => a * b),
-    unit: 'kites',
-  },
-  torusHexTurned: {
-    mesh: (s) => sheetTorus('torusHexTurned', ...torusDims('torusHexTurned', s)),
-    radius: (s) => (torusDims('torusHexTurned', s)[0] * 1.5) / (2 * Math.PI * TORUS_TUBE),
-    columns: torusTriColumns,
-    perRow: 1,
-    steps: [2, 1], // an even count of columns, around the tube
-    tiles: (s) => torusDims('torusHexTurned', s).reduce((a, b) => a * b),
-    unit: 'hexagons',
-  },
+
   // the strips (see MOBIUS_STRIPS; Cairo's, its own): a size its rows across, its length the usual; its tiles on both faces,
   // counted, not built (see mobiusCount)
   ...Object.fromEntries(
@@ -17397,10 +17324,19 @@ for (const k of Object.keys(TETRAKIS_SOLIDS)) {
     how: S.how && ((s) => `${S.how(s)} × {k:4 triangles each}`),
   }; // (else its faces', see howCounted)
 }
-// the tilings' tori (see tilingTorusMesh): their rows B round the tube, as many A round the ring as keep them even
-for (const name of foldedIn('torus')) {
-  const { kind, turned } = FOLDED[name],
-    t = TILINGS[kind],
+// the tori laid from a motif (see tilingTorusMesh), the tilings' and the base grids' (named as their strips, see MOBIUS_STRIPS;
+// Cairo's its own, see sheetTorus): their rows B round the tube, as many A round the ring as keep them even
+for (const [name, kind, turned, unit] of [
+  ['torus', 'square', false, 'squares'],
+  ['torusTri', 'tri', false, 'triangles'],
+  ['torusTriTurned', 'tri', true, 'triangles'],
+  ['torusKite', 'kite', false, 'kites'],
+  ['torusKiteTurned', 'kite', true, 'kites'],
+  ['torusHexTurned', 'hex', false, 'hexagons'],
+  ['torusHex', 'hex', true, 'hexagons'],
+  ...foldedIn('torus').map((name) => [name, FOLDED[name].kind, FOLDED[name].turned, TILINGS[FOLDED[name].kind].cells]),
+]) {
+  const t = gridMotif(kind),
     [[p, q], [r, s]] = torusSheets(kind)[turned ? 'turned' : 'plain'],
     [a, b] = t.basis;
   const ring = Math.hypot(p * a[0] + q * b[0], p * a[1] + q * b[1]),
@@ -17414,7 +17350,7 @@ for (const name of foldedIn('torus')) {
     steps: [1, 1],
     least: 2,
     tiles: (z) => per * torusDims(name, z).reduce((x, y) => x * y),
-    unit: t.cells,
+    unit,
   };
 }
 
@@ -26525,7 +26461,7 @@ function rectSides(a, b, turns = 6) {
 // deg: the turn as seen; plain, of the two, the one whose tiles lie nearest the plane's way (see sideTurn).
 // [[p, q], [r, s]]: A = p·a + q·b round the ring, B = r·a + s·b round the tube
 function torusSheets(kind) {
-  const t = TILINGS[kind];
+  const t = gridMotif(kind);
   if (t.sheets) return t.sheets; // (once: kept on it, as it is asked for before here)
   const [a, b] = t.basis,
     W = ([u, v]) => [u * a[0] + v * b[0], u * a[1] + v * b[1]],

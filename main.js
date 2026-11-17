@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.200';
+const VERSION = '0.5.201';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -25635,7 +25635,6 @@ function renderPlaneRow() {
     },
   );
   $('planeOutline').hidden = !!APERIODIC[kind]; // (a grid that never repeats: always walls, nothing to choose)
-  const edgesChosen = playsLife(tabVariant()); // (a torus or walls: Life's edges; Explore's change nothing, no wall drawn: its shapes only)
   for (const [shape, torus] of OUTLINES) {
     const where =
       shape === 'hex'
@@ -25643,9 +25642,8 @@ function renderPlaneRow() {
         : 'Only on a slanted grid, its cells stored as a rhombus (triangles, hexagons, parallelograms…).';
     $(`outline-${shape}-${torus ? 'torus' : 'walled'}`).dataset.choice =
       `outline:${shape}-${torus ? 'torus' : 'walled'}`; // (its choice's key, see choicesAt)
-    $(`outline-${shape}-${torus ? 'torus' : 'walled'}`).hidden = !edgesChosen && !torus && shape !== 'hex'; // (Hex: a shape, walled only)
     setTile($(`outline-${shape}-${torus ? 'torus' : 'walled'}`), {
-      on: outlineOf(kind) === shape && (!edgesChosen || planeTorus(kind) === torus),
+      on: outlineOf(kind) === shape && planeTorus(kind) === torus, // (Explore's too: a torus's seam its colours', its walls not drawn)
       whyNot: ({ w: v }) => {
         const k = VARIANTS[v].plane;
         return k && VARIANTS[v].life && !APERIODIC[k] && outlineOf(k, shape, torus) === shape ? '' : where;

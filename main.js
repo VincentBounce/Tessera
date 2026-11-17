@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.275';
+const VERSION = '0.5.276';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -22455,55 +22455,66 @@ const exploreColours = (levels, P = explorePalette()) => {
 };
 // Explore's tilings whose Tiles break their pattern, at the size each opens at, each its colours there and its tiling's on
 // the plane (Explore's Tiles there: its lattice cell cloned, else DSatur's; 0: the plane's own, DSatur's more than 3):
-// measured once by a run (2026-11-17, v0.5.249: every Explore grid against its tiling on the plane, the same name in the
-// menu), its tile's mark (see tilesBroken). The solids none since v0.5.254: coloured face by face (see pieceByPiece), their
-// colour more is only along their edges, where their faces meet, no face's pattern broken (as the pyramid's, the sponge's)
+// measured once by a run (2026-11-17, v0.5.276: every Explore grid against its tiling on the plane, the same name in the
+// menu), its tile's mark (see tilesBroken). A surface coloured piece by piece (see pieceByPiece): its colours more inside a
+// piece (a face, a sheet cut along its seam), DSatur's, never two cells alike across a fold or the seam
 const TILES_BROKEN = {
-  exploreTorusHex: [5, 3],
+  exploreCairo: [4, 0],
+  explorePythagoras: [5, 0],
+  exploreElongated: [4, 0],
+  explorePrismatic: [5, 0],
+  exploreTwisted: [5, 0],
+  exploreOctagons: [5, 0],
+  exploreDodecagons: [5, 0],
+  exploreCubePitsSquares: [3, 2],
+  exploreCubeBumpsSquares: [3, 2],
   exploreTorusKites: [4, 3],
-  exploreTorusRhombille: [4, 3],
-  exploreTorusSnub: [4, 3],
-  exploreTorusElongated: [4, 3],
-  exploreTorusType9: [5, 4],
-  exploreTorusType10: [5, 4],
-  exploreTorusType11: [5, 4],
+  exploreTorusPrismatic: [4, 3],
   exploreTorusType14: [5, 4],
   exploreTorusType15: [4, 3],
-  exploreTorusDual56: [5, 4],
-  exploreTorusDual314: [5, 4],
-  exploreMobiusStripHex: [5, 3],
+  exploreMobiusStripHex: [4, 3],
   exploreMobiusStripKites: [4, 3],
   exploreMobiusStripRhombille: [4, 3],
-  exploreMobiusStripRhombitri: [4, 2],
-  exploreMobiusStripElongated: [4, 3],
-  exploreMobiusStripPrismatic: [5, 3],
-  exploreMobiusStripType9: [5, 4],
-  exploreMobiusStripType10: [5, 4],
+  exploreMobiusStripPrismatic: [4, 3],
   exploreMobiusStripType11: [5, 4],
-  exploreMobiusStripType13: [5, 4],
   exploreMobiusStripType15: [4, 3],
-  exploreMobiusStripTrihex: [3, 2],
-  exploreMobiusStripOctagons: [5, 3],
-  exploreMobiusStripSnubSquare: [4, 3],
-  exploreMobiusStripBigRhombitri: [5, 3],
   exploreMobiusStripDual16: [4, 3],
-  exploreMobiusStripDual56: [5, 4],
-  exploreMobiusStripDemi13: [3, 2],
-  exploreKleinBottleSquares: [3, 2],
-  exploreKleinBottleHex: [5, 3],
-  exploreKleinBottleTriangles: [3, 2],
-  exploreKleinBottleCairo: [5, 4],
+  exploreMobiusStripDemi2: [4, 3],
   exploreKleinBottleKites: [4, 3],
-  exploreKleinBottleRhombille: [4, 3],
-  exploreKleinBottleElongated: [4, 3],
   exploreKleinBottlePrismatic: [4, 3],
-  exploreKleinBottleKisChecker: [3, 2],
-  exploreKleinBottleKisrhombille: [3, 2],
-  exploreKleinBottleType9: [5, 4],
   exploreKleinBottleType10: [5, 4],
   exploreKleinBottleType11: [5, 4],
-  exploreKleinBottleDual314: [5, 4],
-  exploreKleinBottleDemi10: [3, 2],
+  exploreKleinBottleType15: [4, 3],
+  exploreKleinBottleDual56: [5, 4],
+  exploreTetrahedronKites: [4, 3],
+  exploreOctahedronKites: [4, 3],
+  exploreDodecahedronTriangles: [3, 2],
+  exploreDodecahedronKites: [4, 3],
+  exploreDodecahedronHex: [4, 3],
+  exploreIcosahedronKites: [4, 3],
+  exploreStellaOctangulaKites: [4, 3],
+  exploreRosettesFlower6: [5, 4],
+  exploreRosettesFlower7: [5, 4],
+  exploreRosettesFlower8: [5, 3],
+  exploreRosettesFlower9: [5, 4],
+  exploreRosettesFlower11: [5, 4],
+  exploreRosettesFlower12: [4, 3],
+  exploreRosettesMirror5: [5, 4],
+  exploreRosettesMirror6: [5, 4],
+  exploreRosettesMirror7: [5, 4],
+  exploreRosettesMirror8: [5, 4],
+  exploreRosettesMirror9: [5, 4],
+  exploreRosettesMirror10: [5, 4],
+  exploreRosettesMirror12: [5, 4],
+  exploreRosettesHexa5: [5, 4],
+  exploreRosettesHexa6: [4, 3],
+  exploreRosettesHexa7: [5, 4],
+  exploreRosettesHexa8: [5, 4],
+  exploreRosettesHexa9: [4, 3],
+  exploreRosettesHexa10: [5, 4],
+  exploreRosettesHexa11: [5, 4],
+  exploreRosettesHexa12: [5, 3],
+  exploreRosettesRing12: [5, 4],
 };
 const tilesBroken = (w) => {
   const [here, plane] = TILES_BROKEN[w] ?? [];

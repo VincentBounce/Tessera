@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.337';
+const VERSION = '0.5.338';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -16102,7 +16102,10 @@ const PENROSE_SPHERES = {
   79560: [-27.976666386, -38.506577809],
   163170: [-64.82311212, -21.062305899],
   244800: [0, -83.485291572],
-}; // (each size's cells: its corner P1, made by penroseSphereSizes(32), 16 min, then (64, 3, 32), 1 h 56, and (96, 3, 64), 6 h)
+  444690: [-107.012625687, 34.770509831],
+  536670: [0, -123.60990337],
+}; // (each size's cells: its corner P1, made by penroseSphereSizes(32), 16 min, then (64, 3, 32), 1 h 56, (96, 3, 64), 6 h,
+// and (128, 3, 96), 10 h)
 // the Penrose rhombi's corners (sides 1) within reach of their middle, nearest first: one tiling at every reach, its wheel
 // cut PENROSE_SPHERE_CUTS times (the fewest cuts for a disc hang on its size, and so does the tiling past its middle: a
 // size's table and its mesh one tiling, see PENROSE_SPHERES)
@@ -16543,6 +16546,8 @@ const KITES_DARTS_SPHERES = {
   49200: 79560,
   100890: 163170,
   151320: 244800,
+  274890: 444690,
+  331710: 536670,
 }; // (each size's cells: its rhombi's size)
 function kitesDartsSphereMesh(cells) {
   const key = `kitesDartsSphere${cells}`;
@@ -22103,8 +22108,8 @@ function groundColours() {
         P ? planeColouring(P.kind, P.W) : surfaceColouring(g),
         palette,
       ),
-      colours = exploreColours(levels, palette).map(packed);
-    groundMemo = { of, key, col: Uint32Array.from(levels, (l) => colours[l - 1] ?? packed(UNLIT)) };
+      colours = exploreColours(levels, palette).map((c) => packed(c, GROUND_ALPHA));
+    groundMemo = { of, key, col: Uint32Array.from(levels, (l) => colours[l - 1] ?? packed(UNLIT, GROUND_ALPHA)) };
   }
   return groundMemo.col;
 }
@@ -42594,8 +42599,8 @@ function drawSurface() {
   // a flat polyhedron is drawn face by face below
   if (L) {
     // Life's look, the plane's (see lifeLook): a cell with no neighbours (none on a surface) a wall, in stone
-    const rgba = (c) => [...rgbCached(c).map((x) => x / 255), 1],
-      look = { ...lifeLook(L, true), wall: rgba(LIFE_WALL), dead: rgba(blankTile()), ground: groundColours() };
+    const ground = (c) => [...rgbCached(c).map((x) => x / 255), GROUND_ALPHA],
+      look = { ...lifeLook(L, true), wall: ground(LIFE_WALL), dead: ground(blankTile()), ground: groundColours() };
     gpuSurface((out) => gpuLook(L, out, look), path);
   } else gpuSurface(paintLevels(palette, levelOf), path); // (see 11.4d)
   drawHover();
@@ -42813,10 +42818,13 @@ const rgbCached = (c) => {
   if (!glColour.has(c)) glColour.set(c, rgbOf(c));
   return glColour.get(c);
 };
-const packed = (c) => {
+// RGBA in a number, a texel's; a tile's alpha: 1 painted, half its ground (a tile none painted: blank, a wall, Tiles'
+// colour; flat in Tessera, see tesseraF), 0 none (the plane's, not drawn)
+const packed = (c, a = 1) => {
   const [r, g, b] = rgbCached(c);
-  return ((255 << 24) | (b << 16) | (g << 8) | r) >>> 0;
-}; // (RGBA in a number, a texel's)
+  return ((Math.round(255 * a) << 24) | (b << 16) | (g << 8) | r) >>> 0;
+};
+const GROUND_ALPHA = 0.5;
 // A line's segments for the ribbons (see ribbonV), RIBBON_WORDS words each: its ends a and b, its tile's normal n, its caps (1
 // its start's, 2 its end's; 4 more: it fades out rather than retracts), its key (its step, its command, a battle's walker),
 // then its life as whole numbers (see lifeOf): born, the step it is walked over; gone, the step it leaves over (NEVER: it
@@ -43054,7 +43062,7 @@ function outwardFolds(tri, P, Q, N) {
 const paintLevels = (palette, levelOf) => (out, n) => {
   const rgb = palette.map((c) => c && packed(c)),
     ground = groundColours(),
-    blank = packed(blankTile()),
+    blank = packed(blankTile(), GROUND_ALPHA),
     col = new Uint32Array(n);
   for (let t = 0; t < n; t++) col[t] = (rgb[levelOf(t)] ?? rgb[0]) || (ground?.[t] ?? blank); // (none painted: its ground)
   out.put(eased('tiles', col)); // (every tile's change faded in)
@@ -44183,21 +44191,21 @@ fn seen(c: vec3f, z: f32) -> vec4f { var a = u.alpha; if (u.glass == 0) { a = 1.
   if (u.front > 0.5) { return glass(i.dark + i.lit, 1.0, i.pos.z); }  // (the view's axes: lit, no shadow, not in the world)
   return seen(i.dark + i.lit * lightShare(i.sh), i.pos.z);
 }
-fn tileColour(id: u32) -> vec3f {  // (the back of an open sheet; else its tile's colour)
-  if (u.plain.a > 0.0) { return u.plain.rgb; }
-  return unpack4x8unorm(tileCol[id]).rgb;
+fn tileColour(id: u32) -> vec4f {  // (the back of an open sheet, as a ground; else its tile's colour, its alpha 1 painted)
+  if (u.plain.a > 0.0) { return vec4f(u.plain.rgb, 0.5); }
+  return unpack4x8unorm(tileCol[id]);
 }
 @vertex fn tileV(@location(0) pos: vec3f, @location(1) nrm: vec3f, @location(2) id: u32) -> Lit {
-  return light(tileColour(id), nrm, pos, 0.0);
+  return light(tileColour(id).rgb, nrm, pos, 0.0);
 }
-// Tessera (Display): each tile a piece of mosaic, lit pixel by pixel: rounded down to its edges (its normal tilted towards
+// Tessera (Display): each tile painted a piece of mosaic (none painted: flat, its alpha half, see packed), lit pixel by pixel: rounded down to its edges (its normal tilted towards
 // the nearest, over BEVEL of the way from its edge to its middle) and its joint dark (over JOINT of it). Its corners read
 // where they are drawn from (corners, cornersEach a tile, its last repeated: see gpuFrame), the nearest edge found
 @group(2) @binding(0) var<storage, read> corners: array<f32>;
 @group(2) @binding(1) var<uniform> cornersEach: vec4u;
-struct Tess { @builtin(position) pos: vec4f, @location(0) col: vec3f, @location(1) n: vec3f, @location(2) p: vec3f, @location(3) @interpolate(flat) first: u32, @location(4) sh: vec3f, @location(5) cutv: f32 }
+struct Tess { @builtin(position) pos: vec4f, @location(0) col: vec4f, @location(1) n: vec3f, @location(2) p: vec3f, @location(3) @interpolate(flat) first: u32, @location(4) sh: vec3f, @location(5) cutv: f32 }
 @vertex fn tesseraV(@location(0) pos: vec3f, @location(1) nrm: vec3f, @location(2) id: u32, @builtin(vertex_index) v: u32) -> Tess {
-  let l = light(tileColour(id), nrm, pos, 0.0);
+  let l = light(tileColour(id).rgb, nrm, pos, 0.0);
   var o: Tess;
   o.pos = l.pos; o.col = tileColour(id); o.n = nrm; o.p = pos; o.sh = l.sh; o.cutv = l.cutv;
   o.first = v - v % cornersEach.x;  // (its tile's first corner: k a tile)
@@ -44216,6 +44224,7 @@ fn nearestEdge(p: vec3f, first: u32) -> vec4f {  // (the point of the tile's out
 }
 @fragment fn tesseraF(i: Tess) -> @location(0) vec4f {
   if (u.cut == 1 && i.cutv > 0.0) { discard; }
+  if (i.col.a < 0.75) { return seen(i.col.rgb * (1.0 - u.shade) + shine(i.col.rgb, facing(normalize(i.n))) * lightShare(i.sh), i.pos.z); }  // (none painted: flat)
   var middle = vec3f(0.0);
   for (var q = 0u; q < cornersEach.x; q++) { middle += cornerAt(i.first + q); }
   middle /= f32(cornersEach.x);
@@ -44225,7 +44234,7 @@ fn nearestEdge(p: vec3f, first: u32) -> vec4f {  // (the point of the tile's out
   let out = edge.xyz - i.p; let side = out - n * dot(out, n);  // (towards its nearest edge, along it)
   let slope = 1.6 * (1.0 - smoothstep(0.0, ${TESSERA_BEVEL}, w));
   var m = n; if (dot(side, side) > 0.0) { m = normalize(n + normalize(side) * slope); }
-  let col = i.col * mix(0.4, 1.0, smoothstep(0.0, ${TESSERA_JOINT}, w));  // (its joint: dark)
+  let col = i.col.rgb * mix(0.4, 1.0, smoothstep(0.0, ${TESSERA_JOINT}, w));  // (its joint: dark)
   return seen(col * (1.0 - u.shade) + shine(col, m) * lightShare(i.sh), i.pos.z);
 }
 // a 3D walk's step as a bar, from a to b0 as its life draws it (see lifeOf: its step its instance's, k), u.halfW thick, its
@@ -44331,8 +44340,9 @@ struct Col { @builtin(position) pos: vec4f, @location(0) col: vec4f }
 // its texel's word (clear: off the screen); the outlines in plain (premultiplied)
 fn planeAt(p: vec2f) -> vec4f { return flatAt(u.view.yz + vec2f(u.turnC * p.x - u.turnS * p.y, u.turnS * p.x + u.turnC * p.y) * u.view.x); }
 @vertex fn planeCellsV(@location(0) pos: vec2f, @location(1) id: u32) -> Col {
-  var o: Col; o.col = unpack4x8unorm(tileCol[id]);
-  o.pos = select(planeAt(pos), vec4f(2.0, 2.0, 2.0, 1.0), o.col.a < 0.5);
+  var o: Col; let c = unpack4x8unorm(tileCol[id]);
+  o.pos = select(planeAt(pos), vec4f(2.0, 2.0, 2.0, 1.0), c.a < 0.25);  // (its alpha: 0 not drawn, else drawn whole, painted or its ground, see packed)
+  o.col = vec4f(c.rgb, 1.0);
   return o;
 }
 @vertex fn planeLinesV(@location(0) pos: vec2f) -> Col { var o: Col; o.col = u.plain; o.pos = planeAt(pos); return o; }`;
@@ -45688,8 +45698,8 @@ function gpuPlane(paint) {
   const wallShown = !walk.life?.palette; // (Explore: no wall, its cells alone on the view)
   const ground = groundColours();
   if (D.keys.planeBase !== `${bg}|${wallShown}|${oceanOn()}` || D.planeGround !== ground) {
-    const page = packed(oceanOn() ? OCEAN : bg.trim()), // (Earth's: its cells none has painted the sea, as a surface's, see blankTile)
-      walled = packed(LIFE_WALL);
+    const page = packed(oceanOn() ? OCEAN : bg.trim(), GROUND_ALPHA), // (Earth's: its cells none has painted the sea, as a surface's, see blankTile)
+      walled = packed(LIFE_WALL, GROUND_ALPHA);
     device.queue.writeBuffer(
       D.planeBase,
       0,

@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.342';
+const VERSION = '0.5.343';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -16655,7 +16655,15 @@ function shapeAt(g, m) {
   const corners = new Float64Array(3 * k * n),
     cen = new Float64Array(3 * n),
     nrm = new Float64Array(3 * n);
-  if (g.torus) {
+  if (g.klein) {
+    // a Klein bottle: a straight blend of its two forms (see kleinPoint), its flat sheet's corners and its round one's, made once
+    const [flat, round] = (g.sheetEnds ??= [0, 1].map((e) => {
+      const P = new Float64Array(3 * k * n);
+      for (let q = 0; q < k * n; q++) P.set(sheetPoint(g, g.uv[2 * q], g.uv[2 * q + 1], e), 3 * q);
+      return P;
+    }));
+    for (let i = 0; i < 3 * k * n; i++) corners[i] = flat[i] + m * (round[i] - flat[i]);
+  } else if (g.torus) {
     // per tile, from the sheet coordinates of its corners: at m < 1 the seams open, so corners are not shared
     const { uv } = g;
     for (let q = 0; q < k * n; q++) corners.set(sheetPoint(g, uv[2 * q], uv[2 * q + 1], m), 3 * q);
@@ -44921,14 +44929,17 @@ function gpuSurface(paint, path) {
       n1 = new Float32Array(ends.length),
       n2 = new Float32Array(ends.length);
     for (let e = 0; e < E; e++) {
-      const [i, j, t, o] = edges.subarray(4 * e, 4 * e + 4);
-      ends.set(pos.subarray(3 * i, 3 * i + 3), 6 * e);
-      ends.set(pos.subarray(3 * j, 3 * j + 3), 6 * e + 3);
-      for (const [arr, w] of [
-        [n1, t],
-        [n2, o < 0 ? t : o],
-      ])
-        for (const z of [0, 3]) arr.set(sh.nrm.subarray(3 * w, 3 * w + 3), 6 * e + z);
+      // (plain numbers, no arrays: this runs at every frame of a morph, a million edges and more)
+      const i = 3 * edges[4 * e],
+        j = 3 * edges[4 * e + 1],
+        t = 3 * edges[4 * e + 2],
+        o = edges[4 * e + 3] < 0 ? t : 3 * edges[4 * e + 3];
+      for (let d = 0; d < 3; d++) {
+        ends[6 * e + d] = pos[i + d];
+        ends[6 * e + 3 + d] = pos[j + d];
+        n1[6 * e + d] = n1[6 * e + 3 + d] = sh.nrm[t + d];
+        n2[6 * e + d] = n2[6 * e + 3 + d] = sh.nrm[o + d];
+      }
     }
     gpuBuffer('ePos', ends);
     gpuBuffer('eN1', n1);

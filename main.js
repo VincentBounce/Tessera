@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.352';
+const VERSION = '0.5.353';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -44298,8 +44298,9 @@ fn inPiece(p: vec3f, first: u32) -> vec4f {  // (its nearest edge's point, and h
   return vec4f(edge.xyz, edge.w / max(nearestEdge(middle, first).w, 1e-20));
 }
 fn lampLight(col: vec3f, w: f32) -> vec3f {  // (its own light: Glow's, Neon's brightest in its middle; Neon+'s a tube along its edge, its middle dark)
-  if (pieces.y == 4u) { let t = (w - 0.14) / 0.07; return col * (0.06 + 1.6 * exp(-t * t)); }
-  let l = smoothstep(0.0, 1.0, w); return col * (0.15 + 1.1 * l * l);
+  // (its core white-hot, its colour round it, as a neon's: a lamp lit on any colour, black's too)
+  if (pieces.y == 4u) { let t = (w - 0.14) / 0.07; let g = exp(-t * t); return mix(col * (0.06 + 1.6 * g), vec3f(1.0), 0.6 * g * g); }
+  let l = smoothstep(0.0, 1.0, w); return mix(col * (0.15 + 1.1 * l * l), vec3f(1.0), 0.6 * l * l * l * l);
 }
 @fragment fn tesseraF(i: Tess) -> @location(0) vec4f {
   if (u.cut == 1 && i.cutv > 0.0) { discard; }
@@ -44314,7 +44315,8 @@ fn lampLight(col: vec3f, w: f32) -> vec3f {  // (its own light: Glow's, Neon's b
   let slope = 1.6 * (1.0 - smoothstep(0.0, ${TESSERA_BEVEL}, w));
   var m = n; if (dot(side, side) > 0.0) { m = normalize(n + normalize(side) * slope); }
   let col = i.col.rgb * mix(0.4, 1.0, smoothstep(0.0, ${TESSERA_JOINT}, w));  // (its joint: dark)
-  return seen(col * (1.0 - u.shade) + shine(col, m) * lightShare(i.sh), i.pos.z);
+  let glaze = 0.6 * slope / 1.6 * pow(max(0.0, dot(m, u.H)), 8.0);  // (a glaze's white glint on its rounding, on any colour, black's too)
+  return seen(col * (1.0 - u.shade) + (shine(col, m) + glaze) * lightShare(i.sh), i.pos.z);
 }
 // a 3D walk's step as a bar, from a to b0 as its life draws it (see lifeOf: its step its instance's, k), u.halfW thick, its
 // ends closed past its points by half its thickness: a unit cube's corner c (and its normal) laid along it; none yet: off

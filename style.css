@@ -817,7 +817,7 @@ h4 {
 /* icons: 24 px in a tile, a tab or by a section's title, 20 px on a card, 16 px in a line of text */
 /* a group of tiles, one choice among them: joined in one frame, across its row, its buttons as wide as they share */
 .tile-group {
-  --row-tiles: 4;
+  --tiles-per-row: 4;
   position: relative;
   display: flex;
   flex-wrap: wrap;
@@ -845,7 +845,7 @@ h4 {
   margin-bottom: var(--block-gap);
 } /* (in a section's flow, not a grid of tiles: spaced as a wide button) */
 .tile-group > button {
-  flex: 1 1 calc(100% / var(--row-tiles));
+  flex: 1 1 calc(100% / var(--tiles-per-row));
   margin: 0 -1px -1px 0;
   border-radius: 0;
 } /* one line between them, across a row and from a row to the next: each over the next one's and the row's below by its own */
@@ -857,7 +857,7 @@ h4 {
   padding: 6px 2px;
 } /* tabs of words only (the Number's, Symmetry's): each its share, as tiles, whatever its word, a button high (among tiles too) */
 .tile-group.icon-tabs {
-  --row-tiles: 6;
+  --tiles-per-row: 6;
   & > button {
     min-width: 0;
     height: var(--button-height);
@@ -868,7 +868,7 @@ h4 {
     :has(> :nth-child(5 of :not([hidden]))):not(:has(> :nth-child(7 of :not([hidden])))),
     :has(> :nth-child(9 of :not([hidden]))):not(:has(> :nth-child(10 of :not([hidden]))))
   ) {
-  --row-tiles: 3;
+  --tiles-per-row: 3;
 } /* 3 a row (5, 6 or 9 shown: 3 and 2, 3 and 3, 3, 3 and 3); else 4 (7: 4 and 3, 8, 11: 4, 4 and 3, 12) */
 .tile-group > button:hover {
   position: relative;

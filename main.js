@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.355';
+const VERSION = '0.5.356';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -6469,41 +6469,41 @@ function describe(base) {
 // step that closed them; or the tiles coloured by their visits (Heatmap, on cells only).
 const VIEW_3D = ['autoRotate', 'upright', 'perspective', 'light', 'glint']; // a 3D view's: Default, Free, Upright, Auto-rotate, Perspective, Side light, Glint (Space-time's too)
 const DISPLAY_BY_TAB = {
-  '2D walks': ['heatmap', 'fill', 'translucent', 'cells', 'visits', 'digit', 'grid', 'tiles', 'ocean'],
-  '3D walks': ['colours', 'digit', 'grid', ...VIEW_3D],
+  '2D walks': ['heatmap', 'fill', 'translucent', 'cells', 'visits', 'digit', 'gridFinish', 'tiles', 'ocean'],
+  '3D walks': ['colours', 'digit', 'gridFinish', ...VIEW_3D],
   'Walks on surfaces': [
     'shape',
     'heatmap',
     'visits',
     'fill',
     'translucent',
-    'grid',
+    'gridFinish',
     ...VIEW_3D,
     'glass',
-    'finish',
+    'cellsFinish',
     'tiles',
     'ocean',
     'cut',
   ],
-  'Automata on the plane': ['colours', 'digit', 'mono', 'trail', 'grid', 'tiles', 'ocean'], // (Grid: its cells' outlines, see gpuPlane; Trail: Rewind's Blocks in its place)
+  'Automata on the plane': ['colours', 'digit', 'mono', 'trail', 'gridFinish', 'tiles', 'ocean'], // (Grid: its cells' outlines, see gpuPlane; Trail: Rewind's Blocks in its place)
   'Automata on surfaces': [
     'shape',
     'colours',
     'digit',
     'mono',
     'trail',
-    'grid',
+    'gridFinish',
     ...VIEW_3D,
     'glass',
-    'finish',
+    'cellsFinish',
     'tiles',
     'ocean',
     'cut',
   ], // (Glass, Cut: the surfaces' tiles only, see gpuFrame, cutOn)
-  '2D spirals': ['heatmap', 'fill', 'translucent', 'cells', 'visits', 'digit', 'grid', 'tiles', 'ocean'], // the 2D walks' menu, some of it greyed out
-  Elementary: ['colours', 'mono', 'domain', 'entropy', 'grid'], // (its cells never change once made: no Heatmap, no Trail; Domains its own)
-  'Explore on the plane': ['grid'],
-  'Explore on surfaces': ['shape', 'grid', ...VIEW_3D, 'glass', 'finish', 'cut'], // (its view's only: its colours its own, see renderExplore)
+  '2D spirals': ['heatmap', 'fill', 'translucent', 'cells', 'visits', 'digit', 'gridFinish', 'tiles', 'ocean'], // the 2D walks' menu, some of it greyed out
+  Elementary: ['colours', 'mono', 'domain', 'entropy', 'gridFinish'], // (its cells never change once made: no Heatmap, no Trail; Domains its own)
+  'Explore on the plane': ['gridFinish'],
+  'Explore on surfaces': ['shape', 'gridFinish', ...VIEW_3D, 'glass', 'cellsFinish', 'cut'], // (its view's only: its colours its own, see renderExplore)
 };
 // The Display settings' defaults, one table: each its control (a box's id), when it comes back (open: the page's opening
 // only, kept from tab to tab; tab: another tab; variant: every variant; lifeTeams: Life's count of teams; battle: a battle's
@@ -6560,9 +6560,9 @@ const DISPLAY_DEFAULTS = {
   light: ['light', 'open', true],
   glint: ['glintM', ['open', 'tab'], (variant, w) => (NAV[w][0] === 'Walk' && NAV[w][1] === '3D' ? 1 : 0.5)], // (halfway: its own colour and white added, see light; a lattice's walk white, its bars' glint bright)
   glass: ['glass', 'open', false],
-  finish: [null, 'open', 0],
-  grid: [
-    'gridLines',
+  cellsFinish: [null, 'open', 0],
+  gridFinish: [
+    'gridFinish',
     ['tab', 'exploreRule'],
     (variant, w) => {
       if (['Life', 'Ant'].includes(NAV[w][0])) return GRID_LINES.length + TILES_PALETTES.light.indexOf('Mist');
@@ -6660,14 +6660,14 @@ const lookIn = (s) => [s.look, defaultOf('look', s.w), ...lookOrder(s.w)].find((
 function updateDisplayMenu() {
   const rows = {
     colours: 'coloursRow',
-    grid: 'gridLinesRow',
+    gridFinish: 'gridFinishRow',
     autoRotate: 'autoRotateRow',
     upright: 'uprightRow',
     perspective: 'perspectiveRow',
     light: 'lightRow',
     glint: 'glintRow',
     glass: 'glassRow',
-    finish: 'finishRow',
+    cellsFinish: 'cellsFinishRow',
     ocean: 'oceanRow',
     cut: 'cutRow',
   };
@@ -6851,7 +6851,7 @@ function renderHeadTiles() {
         : 'Only up to a Sextet: Earth has six lands (green, ice white, yellow, lime, cyan, ochre).'),
   });
   pillRow(
-    $('gridLinesRow'),
+    $('gridFinishRow'),
     'Grid',
     "The cells seen apart: off, the grid's lines (their opacity), or each cell none has painted in its colour in Explore (its colouring there), in a palette",
     [
@@ -6861,10 +6861,10 @@ function renderHeadTiles() {
       ]),
       ...tilesPalettes().map((name) => [name, `The cells' ground in ${name}`, ({ w }) => viewWhyNot('tiles', w)]),
     ],
-    Number($('gridLines').value),
-    defaultOf('grid', tabVariant()),
+    Number($('gridFinish').value),
+    defaultOf('gridFinish', tabVariant()),
     (k) => {
-      $('gridLines').value = k;
+      $('gridFinish').value = k;
       needsFull = true;
     },
   );
@@ -22135,7 +22135,7 @@ const TILES_PALETTES = {
 }; // (Explore's palettes by name, the page's theme's: pale in the light, the black live cells read over them, dark in the dark, the light ones; a pill each pair, its place kept from one theme to the other)
 const tilesPalettes = () => TILES_PALETTES[themeName()];
 const tilesPalette = () =>
-  EXPLORE_PALETTES.find(([name]) => name === tilesPalettes()[Number($('gridLines').value) - GRID_LINES.length])?.[1] ??
+  EXPLORE_PALETTES.find(([name]) => name === tilesPalettes()[Number($('gridFinish').value) - GRID_LINES.length])?.[1] ??
   null;
 const tilesOn = () => !!tilesPalette() && shows('tiles', tabVariant());
 let groundMemo = {};
@@ -41256,8 +41256,8 @@ let thumbnailWanted = null,
 const wantThumbnail = () =>
   new Promise((ok) => {
     thumbnailWanted = ok;
-    thumbnailGrid = $('gridLines').value;
-    $('gridLines').value = 0;
+    thumbnailGrid = $('gridFinish').value;
+    $('gridFinish').value = 0;
     needsFull = true;
   });
 function stageThumbnail() {
@@ -42818,7 +42818,7 @@ const GRID_LINES = [
   ['Medium', 'The lines as the theme draws them', 1],
   ['Strong', "The lines marked four times as much: they show over strong colours (Explore's)", 4],
 ];
-const gridAlpha = () => EDGE_ALPHA * (GRID_LINES[Number($('gridLines').value)]?.[2] ?? 0), // (past them: Tiles', no lines)
+const gridAlpha = () => EDGE_ALPHA * (GRID_LINES[Number($('gridFinish').value)]?.[2] ?? 0), // (past them: Tiles', no lines)
   gridShown = () => gridAlpha() > 0;
 function edgeAlpha(sh) {
   if (!FADE_EDGES) return gridAlpha();
@@ -43122,8 +43122,8 @@ const glassOn = () => $('glass').checked && !$('glassRow').hidden;
 // Finish: the surface's tiles plain (Off), or each painted one lit pixel by pixel from its own corners (see tesseraF): as
 // it is with a halo round it (Halo, see gpuHalo), a lamp glowing from its middle, its light spilling round it (Neon), the
 // lamp alone (Glow), a piece of mosaic (Tessera), a tube along its edge, its light spilling far (Tube); its number, as
-// Cut's, the place of its pill, the shaders' by its name (FINISH)
-const FINISHES = [
+// Cut's, the place of its pill, the shaders' by its name (CELLS_FINISH)
+const CELLS_FINISHES = [
   ['Off', 'The tiles plain, each one colour'],
   ['Halo', "Each tile painted as it is, Neon's halo round it, none on it"],
   ['Neon', "Each tile painted a lamp, as Glow's, its light spilling round it: a halo"],
@@ -43131,9 +43131,9 @@ const FINISHES = [
   ['Tessera', 'Each tile painted a piece of mosaic: rounded down to its edges'],
   ['Tube', 'Each tile painted a neon tube along its edge, its middle dark, its light spilling far round it'],
 ];
-const FINISH = Object.fromEntries(FINISHES.map(([name], k) => [name, k]));
-let surfaceFinish = defaultOf('finish', tabVariant());
-const finishOn = () => surfaceFinish > 0 && !$('finishRow').hidden;
+const CELLS_FINISH = Object.fromEntries(CELLS_FINISHES.map(([name], k) => [name, k]));
+let cellsFinish = defaultOf('cellsFinish', tabVariant());
+const cellsFinishOn = () => cellsFinish > 0 && !$('cellsFinishRow').hidden;
 const oceanFits = (w = tabVariant(), lifeCount = lifeTeams, walkCount = walkTeams) =>
   (VARIANTS[w].life ? lifeCount : battleAt(w, walkCount) ? walkCount : 1) <= LANDS.length; // (its lands a Sextet's at most, Life's teams or a battle's walkers: beyond, greyed; at a setup, see whyNot)
 let oceanPicked = false; // (Ocean clicked since its default was set: kept, else it follows its default, see DISPLAY_DEFAULTS)
@@ -44271,7 +44271,7 @@ fn tileColour(id: u32) -> vec4f {  // (the back of an open sheet, as a ground; e
   return light(tileColour(id).rgb, nrm, pos, 0.0);
 }
 // Finish (Display): each tile painted lit pixel by pixel (none painted: flat, its alpha half, see packed), by how far it
-// is from its edge to its middle (pieces.y: its FINISH): Tessera, a piece of mosaic, rounded down to its edges (its normal tilted
+// is from its edge to its middle (pieces.y: its CELLS_FINISH): Tessera, a piece of mosaic, rounded down to its edges (its normal tilted
 // towards the nearest, over BEVEL of the way); Glow, a lamp, its own light
 // brightest in its middle. Its corners read where they are drawn from (corners, pieces.x a tile, its last repeated: see
 // gpuFrame), the nearest edge found
@@ -44305,15 +44305,15 @@ fn inPiece(p: vec3f, first: u32) -> vec4f {  // (its nearest edge's point, and h
 }
 fn lampLight(ink: vec3f, w: f32) -> vec3f {  // (its own light: Glow's, Neon's brightest in its middle; Tube's along its edge, its middle dark)
   let col = select(ink, vec3f(1.0) - ink, dot(ink, vec3f(0.299, 0.587, 0.114)) < 0.2);  // (a dark ink's light its inverse: black's white)
-  if (pieces.y == ${FINISH.Tube}u) { let t = (w - 0.14) / 0.07; return col * (0.06 + 1.6 * exp(-t * t)); }
+  if (pieces.y == ${CELLS_FINISH.Tube}u) { let t = (w - 0.14) / 0.07; return col * (0.06 + 1.6 * exp(-t * t)); }
   let l = smoothstep(0.0, 1.0, w); return col * (0.15 + 1.1 * l * l);
 }
 @fragment fn tesseraF(i: Tess) -> @location(0) vec4f {
   if (u.cut == 1 && i.cutv > 0.0) { discard; }
-  if (i.col.a < 0.75 || pieces.y == ${FINISH.Halo}u) { return seen(i.col.rgb * (1.0 - u.shade) + shine(i.col.rgb, facing(normalize(i.n))) * lightShare(i.sh), i.pos.z); }  // (none painted, or Halo's tiles: flat)
+  if (i.col.a < 0.75 || pieces.y == ${CELLS_FINISH.Halo}u) { return seen(i.col.rgb * (1.0 - u.shade) + shine(i.col.rgb, facing(normalize(i.n))) * lightShare(i.sh), i.pos.z); }  // (none painted, or Halo's tiles: flat)
   let piece = inPiece(i.p, i.first); let w = piece.w;
   let n = facing(normalize(i.n));
-  if (pieces.y != ${FINISH.Tessera}u) {  // (Glow, Neon, Tube: a dim tile, its own light, never in the lamp's shadow)
+  if (pieces.y != ${CELLS_FINISH.Tessera}u) {  // (Glow, Neon, Tube: a dim tile, its own light, never in the lamp's shadow)
     return seen(i.col.rgb * (0.25 + 0.2 * max(0.0, dot(n, u.L)) * lightShare(i.sh)) + lampLight(i.col.rgb, w), i.pos.z);
   }
   let edge = piece.xyz;
@@ -44401,7 +44401,7 @@ struct Rib { @builtin(position) pos: vec4f, @location(0) col: vec3f, @location(1
 @fragment fn lampsF(i: Tess) -> @location(0) vec4f {
   if (u.cut == 1 && i.cutv > 0.0) { discard; }
   if (i.col.a < 0.75) { return vec4f(0.0); }  // (none painted: none, hiding those behind)
-  return vec4f(lampLight(i.col.rgb, inPiece(i.p, i.first).w), select(0.0, 1.0, pieces.y == ${FINISH.Halo}u));  // (its alpha: Halo's lamps marked, its halo kept off them)
+  return vec4f(lampLight(i.col.rgb, inPiece(i.p, i.first).w), select(0.0, 1.0, pieces.y == ${CELLS_FINISH.Halo}u));  // (its alpha: Halo's lamps marked, its halo kept off them)
 }
 fn halo(q: vec4f, d: vec2i) -> vec4f {  // (d: its way, its taps that many pixels apart)
   let w = array<f32, 5>(${HALO_WEIGHTS.join(', ')});
@@ -44965,7 +44965,7 @@ function gpuSurface(paint, path) {
         nrm[i + 2] = sh.nrm[3 * t + 2];
       }
     gpuBuffer('pos', pos, GPUBufferUsage.VERTEX | GPUBufferUsage.STORAGE); // (Tessera reads its tiles' corners, see tesseraF)
-    gpuBuffer('pieces', Uint32Array.of(k, surfaceFinish, 0, 0), GPUBufferUsage.UNIFORM); // (its corners a tile, its Finish)
+    gpuBuffer('pieces', Uint32Array.of(k, cellsFinish, 0, 0), GPUBufferUsage.UNIFORM); // (its corners a tile, its Finish)
     gpuBuffer('nrm', nrm);
     const edges = surfaceEdges(g),
       E = edges.length / 4,
@@ -45120,14 +45120,14 @@ function gpuSurface(paint, path) {
     rp.setPipeline(pipe);
     rp.setBindGroup(0, gpuGroup(), [slotOf(look)]);
     rp.setBindGroup(1, D.shadow.group);
-    if (finishOn()) rp.setBindGroup(2, cornersGroup(D));
+    if (cellsFinishOn()) rp.setBindGroup(2, cornersGroup(D));
     rp.setVertexBuffer(0, D.pos);
     rp.setVertexBuffer(1, D.nrm);
     rp.setVertexBuffer(2, D.tileIds);
     rp.setIndexBuffer(D.fan, 'uint32');
     rp.drawIndexed(D.fanCount);
   };
-  if (finishOn()) D.device.queue.writeBuffer(D.pieces, 4, Uint32Array.of(surfaceFinish)); // (its Finish)
+  if (cellsFinishOn()) D.device.queue.writeBuffer(D.pieces, 4, Uint32Array.of(cellsFinish)); // (its Finish)
   // the tiles, their grid and the path, into pass p (0 the frame; 1, 2 Glass's)
   const drawAll = (rp, pass) => {
     // seen from both sides: Glass, a cut, a Klein bottle (one-sided: its tiles' face inwards in its neck and handle)
@@ -45137,7 +45137,7 @@ function gpuSurface(paint, path) {
     const front = shapeSign(g) < 0 ? 'front' : 'back',
       cull = both ? 'none' : front;
     const tiles = (plain, c) => {
-      const mosaic = finishOn();
+      const mosaic = cellsFinishOn();
       drawTiles(
         rp,
         gpuDrawPipe(mosaic ? 'tessera' : 'tile', {
@@ -45255,7 +45255,7 @@ function gpuSurface(paint, path) {
     );
   };
   gpuFrame(enc, drawAll);
-  if (finishOn() && [FINISH.Halo, FINISH.Neon, FINISH.Tube].includes(surfaceFinish))
+  if (cellsFinishOn() && [CELLS_FINISH.Halo, CELLS_FINISH.Neon, CELLS_FINISH.Tube].includes(cellsFinish))
     gpuHalo(
       enc,
       (rp) =>
@@ -45271,7 +45271,7 @@ function gpuSurface(paint, path) {
           }),
           { cut: cutOn() ? 1 : 0 },
         ),
-      surfaceFinish === FINISH.Tube,
+      cellsFinish === CELLS_FINISH.Tube,
     );
   const picking =
     motifShown &&
@@ -47148,7 +47148,7 @@ function tick(now = performance.now()) {
     thumbnailWanted = null;
     queueMicrotask(() => {
       ok(stageThumbnail());
-      $('gridLines').value = thumbnailGrid;
+      $('gridFinish').value = thumbnailGrid;
       needsFull = true;
     });
   } // (as this frame ends, all drawn: see wantThumbnail)
@@ -48068,15 +48068,15 @@ $('ocean').addEventListener('change', () => {
   if (walk.n) describe(walk.base);
 }); // (a battle's colours: its fields, its title, its ranking)
 pillRow(
-  $('finishRow'),
+  $('cellsFinishRow'),
   'Cells',
   "The surface's tiles: how each one painted is lit",
-  FINISHES,
-  surfaceFinish,
-  defaultOf('finish', tabVariant()),
+  CELLS_FINISHES,
+  cellsFinish,
+  defaultOf('cellsFinish', tabVariant()),
   (k) => {
-    needsFull ||= k !== surfaceFinish;
-    surfaceFinish = k;
+    needsFull ||= k !== cellsFinish;
+    cellsFinish = k;
   },
 );
 pillRow(

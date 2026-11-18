@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.344';
+const VERSION = '0.5.345';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -16649,24 +16649,53 @@ const MORPHABLE = [
   ...foldedIn('torus'),
 ];
 
+// a sheet's corners by their places on it (uv): each place once (places, u v pairs), each corner's (at), made once
+function sheetPlaces(g) {
+  if (g.sheetPlaces) return g.sheetPlaces;
+  const { uv } = g,
+    index = new Map(),
+    places = [],
+    at = new Uint32Array(uv.length / 2);
+  for (let q = 0; q < at.length; q++) {
+    const key = `${uv[2 * q]},${uv[2 * q + 1]}`;
+    let i = index.get(key);
+    if (i === undefined) {
+      index.set(key, (i = places.length / 2));
+      places.push(uv[2 * q], uv[2 * q + 1]);
+    }
+    at[q] = i;
+  }
+  return (g.sheetPlaces = { places, at });
+}
+// the points of a sheet's places in its form m (see sheetPoint), three numbers each
+function sheetPointsAt(g, places, m) {
+  const P = new Float64Array((3 * places.length) / 2);
+  for (let i = 0; i < places.length / 2; i++) P.set(sheetPoint(g, places[2 * i], places[2 * i + 1], m), 3 * i);
+  return P;
+}
 function shapeAt(g, m) {
   const k = g.sides,
     n = g.n;
   const corners = new Float64Array(3 * k * n),
     cen = new Float64Array(3 * n),
     nrm = new Float64Array(3 * n);
-  if (g.klein) {
-    // a Klein bottle: a straight blend of its two forms (see kleinPoint), its flat sheet's corners and its round one's, made once
-    const [flat, round] = (g.sheetEnds ??= [0, 1].map((e) => {
-      const P = new Float64Array(3 * k * n);
-      for (let q = 0; q < k * n; q++) P.set(sheetPoint(g, g.uv[2 * q], g.uv[2 * q + 1], e), 3 * q);
-      return P;
-    }));
-    for (let i = 0; i < 3 * k * n; i++) corners[i] = flat[i] + m * (round[i] - flat[i]);
-  } else if (g.torus) {
-    // per tile, from the sheet coordinates of its corners: at m < 1 the seams open, so corners are not shared
-    const { uv } = g;
-    for (let q = 0; q < k * n; q++) corners.set(sheetPoint(g, uv[2 * q], uv[2 * q + 1], m), 3 * q);
+  if (g.torus) {
+    // per tile, from the sheet coordinates of its corners (at m < 1 the seams open, so corners across them are not shared):
+    // each sheet point once (most a corner of 4 tiles), then its tiles'; a Klein bottle's a straight blend of its two forms
+    // (see kleinPoint), its flat sheet's and its round one's, made once
+    const { places, at } = sheetPlaces(g),
+      np = places.length / 2,
+      P = new Float64Array(3 * np);
+    if (g.klein) {
+      const [flat, round] = (g.sheetEnds ??= [0, 1].map((e) => sheetPointsAt(g, places, e)));
+      for (let i = 0; i < 3 * np; i++) P[i] = flat[i] + m * (round[i] - flat[i]);
+    } else P.set(sheetPointsAt(g, places, m));
+    for (let q = 0; q < k * n; q++) {
+      const c = 3 * at[q];
+      corners[3 * q] = P[c];
+      corners[3 * q + 1] = P[c + 1];
+      corners[3 * q + 2] = P[c + 2];
+    }
   } else {
     const nv = g.verts.length / 3,
       R0 = g.extent,
@@ -16705,7 +16734,7 @@ function shapeAt(g, m) {
       const x = C[o + 3 * q],
         y = C[o + 3 * q + 1],
         z = C[o + 3 * q + 2];
-      extent = Math.max(extent, Math.hypot(x, y, z));
+      extent = Math.max(extent, x * x + y * y + z * z); // (its square: Math.hypot is slow, see below)
       if (q && g.poly[k * t + q] === g.poly[k * t + q - 1]) continue; // (its corners once: a tile with fewer listed with its last again, as finishMesh counts them; before v0.3.93 a pentagon's middle pulled to its last corner, a globe's square's to its fourth)
       cx += x;
       cy += y;
@@ -16717,7 +16746,7 @@ function shapeAt(g, m) {
     cz /= u;
     newellNormal(C, o, k, N);
     let [nx, ny, nz] = N;
-    const l = (Math.hypot(nx, ny, nz) || 1) * sign;
+    const l = (Math.sqrt(nx * nx + ny * ny + nz * nz) || 1) * sign;
     nx /= l;
     ny /= l;
     nz /= l;
@@ -16749,7 +16778,7 @@ function shapeAt(g, m) {
     }
     bent.set(t, parts);
   }
-  return { m, corners, cen, nrm, extent, bent };
+  return { m, corners, cen, nrm, extent: Math.sqrt(extent), bent };
 }
 
 // Torus corners are listed in sheet order, which may run against the mesh's outward order: the sign
@@ -17203,7 +17232,7 @@ for (const k of Object.keys(TETRAKIS_SOLIDS)) {
   }; // (else its faces', see howCounted)
 }
 // the tori laid from a motif (see tilingTorusMesh), the tilings' and the base grids' (named as their strips, see MOBIUS_STRIPS;
-// Cairo's its own, see sheetTorus): their rows B round the tube, as many A round the ring as keep them even
+// Cairo's its own, see torusCairoMesh): their rows B round the tube, as many A round the ring as keep them even
 for (const [name, kind, turned, unit] of [
   ['torus', 'square', false, 'squares'],
   ['torusTri', 'tri', false, 'triangles'],

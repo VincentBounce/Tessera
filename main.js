@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.350';
+const VERSION = '0.5.351';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -981,7 +981,7 @@ const TRAIL_INK = {
   light: ['#b9ae98', '#e7e0d0'],
   dark: ['#636b7c', '#3a4150'],
 };
-let PALETTE, MONO, UNLIT, OCEAN, LANDS, LIFE_ALIVE, EDGE_RGB, EDGE_ALPHA, SHADE, FADE_EDGES, TILE_LIFT; // TILE_LIFT: the tiles' rainbow mixed with white  // EDGE_RGB, EDGE_ALPHA: the tile edges; SHADE: how dark a tile turned away gets
+let PALETTE, MONO, UNLIT, OCEAN, LANDS, LIFE_ALIVE, EDGE_RGB, EDGE_ALPHA, SHADE, FADE_EDGES, TILE_LIFT; // TILE_LIFT: the tiles' rainbow mixed with white  // EDGE_RGB, EDGE_ALPHA: the tile edges; SHADE: how dark a tile turned away gets (the light's: the page's theme, see applyTheme)
 function setPalette(theme) {
   const P = PALETTES[theme];
   // the surfaces' tile edges light on a dark page, dark on a light one, as the 2D grid
@@ -991,7 +991,6 @@ function setPalette(theme) {
   LIFE_ALIVE = P.alive;
   EDGE_RGB = P.edgeRgb;
   EDGE_ALPHA = P.edgeAlpha;
-  SHADE = P.shade;
   FADE_EDGES = !!P.fadeEdges;
   TILE_LIFT = P.tileLift ?? 0;
   PALETTE = P;
@@ -1006,6 +1005,9 @@ function setPalette(theme) {
 }
 // the page's theme (light or dark) and the app's rainbow at f, from 0 to 1 (its GRADIENT, BANDS colours); its colour of hue h
 const themeName = () => (document.documentElement.dataset.theme === 'light' ? 'light' : 'dark');
+// the theme the figure is painted in (its palette: its tiles, its edges, its rainbow): the page's, or dark under a Finish (its
+// lamps glow on dark tiles); its light and its sky the page's
+const figureTheme = () => (finishOn() ? 'dark' : themeName());
 const gradientAt = (f) => rainbowNow()[Math.round(f * (BANDS - 1))];
 function rainbowHue(h) {
   return `hsl(${h}, 85%, ${PALETTE.light}%)`;
@@ -1020,14 +1022,14 @@ const earthColours = (P = PALETTE) => [P.lands[0], P.lands[3], P.lands[2], P.lan
 let gradientKey = null;
 function rainbowNow() {
   const ocean = oceanOn(),
-    key = `${themeName()}|${ocean}`;
+    key = `${figureTheme()}|${ocean}`;
   if (key === gradientKey) return GRADIENT;
   gradientKey = key;
   for (let i = 0; i < BANDS; i++)
     GRADIENT[i] = ocean ? rampAt(earthColours(), i / (BANDS - 1)) : appRainbowAt(i / (BANDS - 1));
   return GRADIENT;
 }
-setPalette(themeName());
+setPalette(themeName()); // (the figure's own once the menu is made: see applyTheme)
 
 /* ---- 2.2 Number cards --------------------------------------------------------------------- */
 // The formula is the single source of truth: a card only writes one, and lights up again when the
@@ -6698,6 +6700,7 @@ function updateDisplayMenu() {
   renderViewModes();
   renderHeadTiles();
   updateMorphButton(); // Shape: only for a surface that can change shape
+  applyTheme(themeName()); // (the figure's palette: Finish shown or not, see figureTheme)
 }
 // The view's switches, standard tiles (toggle): each its checkbox's (the source, kept out of sight), on as it is checked,
 // greyed where its row is hidden (it applies in 3D only); drawn again with the
@@ -22133,7 +22136,7 @@ const TILES_PALETTES = {
   light: ['Blush', 'Mist', 'Celadon', 'Lilac'],
   dark: ['Garnet', 'Slate', 'Moss', 'Plum'],
 }; // (Explore's palettes by name, the page's theme's: pale in the light, the black live cells read over them, dark in the dark, the light ones; a pill each pair, its place kept from one theme to the other)
-const tilesPalettes = () => TILES_PALETTES[themeName()];
+const tilesPalettes = () => TILES_PALETTES[figureTheme()];
 const tilesPalette = () =>
   EXPLORE_PALETTES.find(([name]) => name === tilesPalettes()[Number($('gridLines').value) - GRID_LINES.length])?.[1] ??
   null;
@@ -28290,7 +28293,7 @@ function ruleTutorial(entry) {
   // a dying stage's ✝ (white on the cells nearer the live colour on a light page, as on the grid's)
   function tomb(centre) {
     const s = stages.indexOf(centre) + 1,
-      light = document.documentElement.dataset.theme === 'light';
+      light = figureTheme() === 'light';
     return s
       ? `<text x="${o[0]}" y="${o[1]}" font-size="${side / 4}" text-anchor="middle" dominant-baseline="central" fill="${1 - s / (rule.C - 1) > 0.45 === light ? '#fff' : '#1f2328'}">✝</text>`
       : '';
@@ -48030,11 +48033,15 @@ const themeSwitch = tile({
     applyTheme(theme);
   },
 });
+// (the page's, and the figure's palette: its own theme, see figureTheme; called again as Finish shows or changes)
 function applyTheme(theme) {
   setTile(themeSwitch, { on: theme === 'light' });
-  if (document.documentElement.dataset.theme === theme && MONO === PALETTES[theme].mono) return;
+  if (document.documentElement.dataset.theme !== theme) needsFull = true; // (its light and sky)
   document.documentElement.dataset.theme = theme;
-  setPalette(theme);
+  SHADE = PALETTES[theme].shade;
+  const figure = figureTheme();
+  if (PALETTE === PALETTES[figure] && MONO === PALETTES[figure].mono) return;
+  setPalette(figure);
   glColour.clear();
   gpuPalette();
   renderColourButtons();
@@ -48070,6 +48077,7 @@ pillRow(
   (k) => {
     needsFull ||= k !== surfaceFinish;
     surfaceFinish = k;
+    applyTheme(themeName()); // (the figure's palette, see figureTheme)
   },
 );
 pillRow(

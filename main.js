@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.341';
+const VERSION = '0.5.342';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -21721,6 +21721,7 @@ function elementaryPart(R, x0, x1, t0, t1, b = 1, measure = false) {
     }
   return { counts, breaks, entropy };
 }
+const SHARE_ROW = 32; // (a share rule's tables: a row a count of neighbours, 31 at most, see parseRule)
 function parseRule(text) {
   if (/^\s*(M|Q2R)/i.test(text)) return parseBlocks(text);
   if (/^\s*W\d/i.test(text)) return parseElementary(text);
@@ -21729,16 +21730,22 @@ function parseRule(text) {
     .replace(/\s/g, '')
     .toUpperCase()
     .match(
-      /^B([\dOMPCEKAINYQJRTWZV.-]*)\/S([\dOMPCEKAINYQJRTWZV.-]*)(?:\/C(\d+))?(?:\/(IMMIGRATION)|\/COLOURS(\d+))?H?$/,
+      /^B([\dOMPCEKAINYQJRTWZV.%,-]*)\/S([\dOMPCEKAINYQJRTWZV.%,-]*)(?:\/C(\d+))?(?:\/(IMMIGRATION)|\/COLOURS(\d+))?H?$/,
     );
   if (!m || /^[A-Z-]/.test(m[1]) || /^[A-Z-]/.test(m[2])) return null;
+  // a share rule: its counts as shares of the cell's neighbours, in %, intervals from one share (in) to another (out, none:
+  // up to all), B33-50%/S14-50% (Game of Hats'), for tilings whose cells have not all as many neighbours; its tables by
+  // the cell's neighbours d and its live ones c, at SHARE_ROW × d + c (see GPU_LIFE's mode 3): no share reckoned there
+  const SHARE = /(\d+(?:\.\d+)?)-(\d+(?:\.\d+)?)?%/g,
+    share = /%/.test(m[1] + m[2]);
+  if (share && [m[1], m[2]].some((spec) => spec.replace(SHARE, '').replace(/^,|,(?=,|$)/g, '') !== '')) return null;
   // letters: Callahan's on hexagons (o, m, p), else Hensel's on squares (see henselClass), "-": all but these; or v and the
   // counts of the live ones by a corner only (0 to 3: 5v0, all 5 by a side; 3v01, none or one by a corner; a "." ends them before
   // a count 0 to 3: 2v01.3, 2 with none or one by a corner, then 3, any), the others by a
   // side (the flowers', see sideOf)
   const hex = /[OMP]/.test(m[1] + m[2]),
     vertex = /V/.test(m[1] + m[2]),
-    hensel = /[A-Z-]/.test((m[1] + m[2]).replace(/[OMPV]/g, ''));
+    hensel = !share && /[A-Z-]/.test((m[1] + m[2]).replace(/[OMPV]/g, ''));
   if (hex + hensel + vertex > 1) return null;
   // colours: civilisations, each newborn taking the colour most of its live neighbours have (2: Immigration),
   // apart from the states C (alive, the dying stages, dead). A cell: 0 dead, k alive of colour k (1 … K),
@@ -21752,6 +21759,14 @@ function parseRule(text) {
   const ring = hensel ? 8 : 6,
     classOf = hensel ? (mask) => henselClass(mask).toUpperCase() : hexClass;
   const table = (spec) => {
+    if (share) {
+      const a = new Uint8Array(SHARE_ROW * SHARE_ROW);
+      for (const [, lo, hi] of spec.matchAll(SHARE))
+        for (let d = 1; d < SHARE_ROW; d++)
+          for (let c = 0; c <= d; c++)
+            if (lo * d <= 100 * c && (hi === undefined || 100 * c < hi * d)) a[SHARE_ROW * d + c] = 1;
+      return a;
+    }
     const a = new Uint8Array(16 + (1 << ring)); // by the count, and by 16 + the mask of where they sit
     if (vertex) {
       // (by 16 + 4 × the count + those by a corner only)
@@ -21775,6 +21790,7 @@ function parseRule(text) {
     two,
     colours,
     iso,
+    share,
     base: colours + 1,
     text: `B${m[1].toLowerCase()}/S${m[2].toLowerCase()}${tail}`,
   };
@@ -22262,6 +22278,7 @@ function startLife(seq, rule, n, grid) {
   walk.life = {
     B: rule.B,
     S: rule.S,
+    share: rule.share,
     C: rule.C,
     two: rule.two,
     colours: explore ? exploreColours(grid.seed).length : rule.colours,
@@ -27277,8 +27294,9 @@ const teamsFairOwn = (K, { variant, g } = pickedFigure(tabVariant())) => {
 const colourMissing = (K, rule = $('lifeRule').value) => {
   const r = parseRule(ruleBody(rule));
   if (K < 3 || !r) return false;
-  const counts =
-    r.iso === 'vertex'
+  const counts = r.share
+    ? [...r.B.keys()].filter((i) => r.B[i]).map((i) => i % SHARE_ROW) // (any of its counts of neighbours)
+    : r.iso === 'vertex'
       ? [...Array(16).keys()].filter((c) => [0, 1, 2, 3].some((k) => r.B[16 + 4 * c + k])) // (any of its ways)
       : r.iso
         ? [...Array(1 << (r.iso === 'hensel' ? 8 : 6)).keys()].filter((m) => r.B[16 + m]).map(bitCount)
@@ -28127,7 +28145,10 @@ function ruleTutorial(entry) {
     classOf = (m) => (iso === 'hensel' ? henselClass(m) : hexClass(m).toLowerCase());
   const cases = Array.from({ length: around.length + 1 }, (_, k) => k).flatMap((k) =>
     (lettersOf(k).length ? lettersOf(k) : ['']).map((x) => {
-      if (!iso) return { k, x, live: new Set(around.slice(0, k)), on: (table) => table[k] === 1 };
+      if (!iso) {
+        const at = rule.share ? SHARE_ROW * around.length + k : k; // (a share rule's: by this cell's neighbours too)
+        return { k, x, live: new Set(around.slice(0, k)), on: (table) => table[at] === 1 };
+      }
       if (iso === 'vertex') {
         const j = x ? Number(x.slice(1)) : ways(k)[0];
         return {
@@ -29003,10 +29024,10 @@ function renderRuleSection() {
       }),
     );
   document.querySelector('.rule-build').hidden = $('lifeCustomRow').hidden = !mineNot; // (its states and chips, its text: your own's only)
-  if (variant.margolus || variant.loops || variant.elementary) {
+  if (variant.margolus || variant.loops || variant.elementary || parseRule(now)?.share) {
     document.querySelector('.rule-build').hidden = true;
     return;
-  } // (a block rule, a table, Wolfram's: typed only, no births nor survivals)
+  } // (a block rule, a table, Wolfram's, a share rule: typed only, no births nor survivals by counts)
   // your own: the chips of the rule in use, a count a row; beside 2, 3 and 4 on hexagons, Callahan's letters (where
   // they sit: o side by side, m one cell apart, p opposite); on squares, with a rule written with them, Hensel's
   // (1 to 7, see henselClass); a count partly on when only some of its letters are
@@ -43705,7 +43726,10 @@ fn next(t: i32) -> i32 {
     var k = 0;
     for (var q = s0; q < s1; q++) { let v = A(I(p.oList, q)); if (live(v)) { c++; around[v]++; if (I(p.oSide, q) == 0) { k++; } } }
     c = 16 + 4 * c + min(k, 3);
-  } else { for (var q = s0; q < s1; q++) { let v = A(I(p.oList, q)); if (live(v)) { c++; around[v]++; } } }
+  } else {
+    for (var q = s0; q < s1; q++) { let v = A(I(p.oList, q)); if (live(v)) { c++; around[v]++; } }
+    if (p.mode == 3) { c += ${SHARE_ROW} * min(s1 - s0, ${SHARE_ROW - 1}); }  // (a share rule's: by its neighbours too, see parseRule)
+  }
   if (was > 0) { if (I(p.oS, c) > 0) { return was; } if (p.C > 2) { return was + p.K; } return 0; }
   if (I(p.oB, c) == 0) { return 0; }
   if (p.K < 2) { return 1; }
@@ -43936,7 +43960,7 @@ function lifeComputePass(E, enc, words, k, pipe, numbers, count, more = null) {
       stride: E.stride,
       C: L.C,
       R: L.ring ? L.ring.length / E.n : 0,
-      mode: L.ring ? 1 : L.side ? 2 : 0,
+      mode: L.ring ? 1 : L.side ? 2 : L.share ? 3 : 0,
       more: L.ringMore ? 1 : 0,
       loops: L.loops ? L.loopStates : 0,
       loopN: L.loops ? L.loops.length / 2 : 0,

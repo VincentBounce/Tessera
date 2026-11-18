@@ -1658,6 +1658,7 @@ async function partsEqual(fail) {
   const lifeVariants = Object.keys(VARIANTS).filter(
     (w) =>
       VARIANTS[w].life &&
+      playsLife(w) && // (Explore's colours its Tiles' own, never Life's teams: none to wait for)
       !VARIANTS[w].margolus &&
       !VARIANTS[w].elementary &&
       !VARIANTS[w].loops &&

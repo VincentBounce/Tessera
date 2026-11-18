@@ -1812,9 +1812,9 @@ button.active .bubble.active {
   grid-template-columns: max-content max-content minmax(0, 1fr) repeat(var(--stat-columns), max-content);
 } /* its titles' row, then a row a colour: its place, its colour, its bar, its table */
 .rank-row {
-  transform: translateY(calc(var(--shift, 0) * var(--stat-row-height)));
+  transform: translateY(calc(var(--row-shift, 0) * var(--stat-row-height)));
   transition: transform 0.4s;
-} /* a row slid to its place (--shift: rows from its own) */
+} /* a row slid to its place (--row-shift: rows from its own) */
 .rank-row > i {
   width: 12px;
   height: 12px;

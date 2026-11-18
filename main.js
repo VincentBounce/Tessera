@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.359';
+const VERSION = '0.5.360';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -46989,7 +46989,7 @@ function renderRanking(L) {
 // A ranking, the same for Life's battles and a walk's, a table (see .stat-table): its titles' row ([name, tip] each), then
 // a row each (its place, its colour, its bar: its share of the living ones' values, its cells in its colour, the first
 // its value or ✝ when; its title its player's name and its colour), the living by value, then the dead, the last died
-// first, each row sliding to its place (--shift: rows from its own); all dead, said under them
+// first, each row sliding to its place (--row-shift: rows from its own); all dead, said under them
 function paintRanking(rows, titles) {
   const box = $('ranking'),
     key = [...titles.map((t) => t[0]), ...rows.map((r) => `${r.colour}|${r.name}|${r.cells.length}`)].join();
@@ -47031,7 +47031,7 @@ function paintRanking(rows, titles) {
   [...alive, ...gone].forEach((k, place) => {
     const r = box.children[1 + k],
       row = rows[k];
-    r.style.setProperty('--shift', place - k);
+    r.style.setProperty('--row-shift', place - k);
     r.classList.toggle('dead', row.dead);
     r.children[0].textContent = place + 1; // (then its colour, its bar, its table)
     r.children[2].firstChild.style.width = row.dead ? '0' : `${(100 * row.value) / total}%`;

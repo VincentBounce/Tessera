@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.354';
+const VERSION = '0.5.355';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -6570,7 +6570,7 @@ const DISPLAY_DEFAULTS = {
       return NAV[w][1].startsWith('2D') || NAV[w][1] === '3D' ? 1 : 2; // (11% in 2D and in a lattice, 20% on a solid)
     },
   ], // (Life and Ant: Tiles' Mist, Slate in the dark; else its lines Faint in 2D, Medium in 3D; Explore's colours alone, no seams drawn over them, but its kinds of tile's, Medium: see GRID_LINES)
-  trail: ['lifeTrail', 'lifeTeams', () => lifeTeams === 1], // (Life's Trail: on in Solo, two states, off in teams; when the teams change)
+  trail: ['lifeTrail', 'open', true], // (Life's Trail: on, in Solo and in teams, its colour the one that died, see lifeBook)
   ocean: ['ocean', 'battle', () => battleOn() && NAV[tabVariant()][0] === 'Walk'], // (on in a walk's battle on a surface, as long as none picks it)
   cut: [null, 'open', 0],
   blocks: [null, 'open', false],
@@ -26764,7 +26764,7 @@ function lifeLook(L, lifted = false) {
           : (byDying[1 + Math.floor((st - 1) / K)] ?? 0);
   }
   table.set(byAge, 512);
-  table.set(trail.slice(0, trailLength), 1024);
+  if (trailLength) table.set(K > 1 ? civ.slice(1, K + 1) : [alive], 1025); // (the trail's inks, a colour's at 1024 + its number)
   if (byActivity) table.set(byActivity, 4096);
   L.look = { key, value: { table, by: colour === 'digit' ? 2 : colour === 'mono' ? 0 : 1, trail: trailLength } };
   return L.look.value;
@@ -27362,12 +27362,11 @@ function renderTeams() {
         click: () => {
           if (k !== lifeTeams) {
             lifeTeams = k;
-            applyDefaults('lifeTeams');
             compute();
           }
         },
       }),
-    ), // (Trail: on in Solo, off in teams, at first)
+    ),
     // Mixed, a switch: the colours' cells mixed at random in one place, as one colour's (greyed in one colour and where no zone mixes, see mixable)
     tile({
       pic: `<svg viewBox="0 0 4 4" aria-hidden="true">${[
@@ -40720,7 +40719,6 @@ function applySetup(s) {
     if (VARIANTS[w].plane) planeFromSetup(s);
     else startFromSetup(s); // (a surface's)
     lifeTeams = Number(s.teams) || 1;
-    applyDefaults('lifeTeams'); // (Trail: see DISPLAY_DEFAULTS)
     teamsMix = Number(s.popMixed) === 1;
     newcomer = Number(s.popNewcomer) === 1;
     if (s.playRule) {
@@ -43121,16 +43119,19 @@ const paintLevels = (palette, levelOf) => (out, n) => {
 // gone, by a fixed plane through the middle (see CUT_AXES); the two apart: with both, what is left see-through
 const GLASS_ALPHA = 0.4; // (a tile's share: a layer behind seen at 60%, two at 36%…)
 const glassOn = () => $('glass').checked && !$('glassRow').hidden;
-// Finish: the surface's tiles plain (Off), or each painted one lit pixel by pixel from its own corners (see tesseraF): a
-// piece of mosaic (Tessera), a lamp glowing from its middle (Glow), its light spilling round it (Neon, see gpuHalo), a
-// tube along its edge, its light spilling far (Neon+); its number, as Cut's, the place of its pill
+// Finish: the surface's tiles plain (Off), or each painted one lit pixel by pixel from its own corners (see tesseraF): as
+// it is with a halo round it (Halo, see gpuHalo), a lamp glowing from its middle, its light spilling round it (Neon), the
+// lamp alone (Glow), a piece of mosaic (Tessera), a tube along its edge, its light spilling far (Tube); its number, as
+// Cut's, the place of its pill, the shaders' by its name (FINISH)
 const FINISHES = [
   ['Off', 'The tiles plain, each one colour'],
-  ['Tessera', 'Each tile painted a piece of mosaic: rounded down to its edges, its joint dark'],
-  ['Glow', 'Each tile painted a lamp: its light its own, brightest in its middle'],
+  ['Halo', "Each tile painted as it is, Neon's halo round it, none on it"],
   ['Neon', "Each tile painted a lamp, as Glow's, its light spilling round it: a halo"],
-  ['Neon+', 'Each tile painted a neon tube along its edge, its middle dark, its light spilling far round it'],
+  ['Glow', 'Each tile painted a lamp: its light its own, brightest in its middle'],
+  ['Tessera', 'Each tile painted a piece of mosaic: rounded down to its edges'],
+  ['Tube', 'Each tile painted a neon tube along its edge, its middle dark, its light spilling far round it'],
 ];
+const FINISH = Object.fromEntries(FINISHES.map(([name], k) => [name, k]));
 let surfaceFinish = defaultOf('finish', tabVariant());
 const finishOn = () => surfaceFinish > 0 && !$('finishRow').hidden;
 const oceanFits = (w = tabVariant(), lifeCount = lifeTeams, walkCount = walkTeams) =>
@@ -43725,7 +43726,7 @@ struct P { ${GPU_PARAMS.map((k) => `${k}: i32`).join(', ')} }
 @group(0) @binding(3) var<uniform> p: P;
 var<private> base: i32;
 fn I(o: i32, i: i32) -> i32 { return num[o + i]; }
-fn F(s: i32, f: i32, g: i32) -> u32 { return u32((s * 5 + f) * p.total + g); }  // (field f of side s: 0 state, 1 age, 2 changes, 3 last death, 4 colours had)
+fn F(s: i32, f: i32, g: i32) -> u32 { return u32((s * 5 + f) * p.total + g); }  // (field f of side s: 0 state, 1 age, 2 changes, 3 last death, 4 colours had and its last, see lifeBook)
 fn live(v: i32) -> bool { return v > 0 && v <= p.K; }
 fn A(t: i32) -> i32 { return i32(cell[F(p.side, 0, base + t)]); }
 fn cellAt(id: vec3u) -> i32 { return p.r0 * p.stride + i32(id.x + id.y * 4194240u); }  // (a cell's number: 65,535 workgroups of 64 a row)
@@ -43802,7 +43803,8 @@ fn blockNext(t: i32) -> i32 {
   if (t < p.n) { v = blockNext(select(t, I(p.oMove, t), p.stars == 1 && p.back == 1)); }
   cell[F(1 - p.side, 0, t)] = u32(v);
 }
-// a generation's counts: age, changes, last death, colours had (bit 0: it ever lived); back, one less
+// a generation's counts: age, changes, last death, colours had (bit 0: it ever lived; bits 1 to 12 its colours; 28 to 31 its
+// colour at its last death); back, one less
 @compute @workgroup_size(64) fn lifeBook(@builtin(global_invocation_id) id: vec3u) {
   let g = cellAt(id);
   if (g >= p.r1 * p.stride) { return; }
@@ -43815,7 +43817,7 @@ fn blockNext(t: i32) -> i32 {
   else {
     if (p.K > 1 && on && !wasOn) { ever |= 1u << u32(now); }
     if (now == was) { if (on && age < 65535u) { age++; } }
-    else { act++; if (on) { age = 1u; ever |= 1u; } else if (wasOn) { age = 0u; died = p.gen; } }
+    else { act++; if (on) { age = 1u; ever |= 1u; } else if (wasOn) { age = 0u; died = p.gen; ever = (ever & 0x0fffffffu) | (u32(was) << 28u); } }  // (its colour at its death in the top 4 bits: its trail's)
   }
   cell[F(b, 1, g)] = age; cell[F(b, 2, g)] = act; cell[F(b, 3, g)] = bitcast<u32>(died); cell[F(b, 4, g)] = ever;
 }
@@ -43879,7 +43881,12 @@ fn S(f: i32, t: i32) -> u32 { return shownCells[u32(f * p.total + t)]; }
   if (st > 0) { outCol[t] = look[256 + st]; return; }
   let died = bitcast<i32>(S(3, t));
   let d = p.gen - died;
-  if (d >= 0 && d < p.trail && died > p.trailFrom) { outCol[t] = look[1024 + d]; } else if (p.ground == 1) { outCol[t] = look[${LOOK_TABLE}u + u32(t)]; } else { outCol[t] = u32(p.dead); }
+  var ground = u32(p.dead); if (p.ground == 1) { ground = look[${LOOK_TABLE}u + u32(t)]; }
+  if (d >= 0 && d < p.trail && died > p.trailFrom) {  // (its ink fading over its own ground, as see-through)
+    let ink = unpack4x8unorm(look[1024u + max(1u, S(4, t) >> 28u)]);  // (its colour's at its death)
+    let a = 0.15 * (1.0 - f32(d) / f32(p.trail));  // (from 15% of its ink)
+    outCol[t] = pack4x8unorm(vec4f(mix(unpack4x8unorm(ground).rgb, ink.rgb, a), ${GROUND_ALPHA}));  // (the ground tinted, its alpha the ground's: no lamp, no halo)
+  } else { outCol[t] = ground; }
 }`;
 // An engine for L: its runs side by side, h generations' sums kept a batch; null where the card can't hold it
 function gpuLifeEngine(L, runs = 1, h = 1) {
@@ -44176,8 +44183,7 @@ function gpuLook(L, out, look) {
 const gpuCanvas = $('gpuLayer');
 const HALO_WEIGHTS = [0.227, 0.194, 0.121, 0.054, 0.016], // (Neon's halo: a Gaussian's, its middle then each side)
   HALO_STRENGTH = '1.6'; // (its light added, its share)
-const TESSERA_BEVEL = 0.35, // (Tessera: a tile's rounding, its share of the way from its edge to its middle)
-  TESSERA_JOINT = 0.08; // (its joint's, dark)
+const TESSERA_BEVEL = 0.35; // (Tessera: a tile's rounding, its share of the way from its edge to its middle)
 // a draw's numbers, in this order (vec3s padded to 4 words; see struct U)
 const GPU_VIEW = `
 struct U {
@@ -44265,8 +44271,8 @@ fn tileColour(id: u32) -> vec4f {  // (the back of an open sheet, as a ground; e
   return light(tileColour(id).rgb, nrm, pos, 0.0);
 }
 // Finish (Display): each tile painted lit pixel by pixel (none painted: flat, its alpha half, see packed), by how far it
-// is from its edge to its middle: Tessera (pieces.y 1), a piece of mosaic, rounded down to its edges (its normal tilted
-// towards the nearest, over BEVEL of the way) and its joint dark (over JOINT of it); Glow (2), a lamp, its own light
+// is from its edge to its middle (pieces.y: its FINISH): Tessera, a piece of mosaic, rounded down to its edges (its normal tilted
+// towards the nearest, over BEVEL of the way); Glow, a lamp, its own light
 // brightest in its middle. Its corners read where they are drawn from (corners, pieces.x a tile, its last repeated: see
 // gpuFrame), the nearest edge found
 @group(2) @binding(0) var<storage, read> corners: array<f32>;
@@ -44297,24 +44303,24 @@ fn inPiece(p: vec3f, first: u32) -> vec4f {  // (its nearest edge's point, and h
   let edge = nearestEdge(p, first);
   return vec4f(edge.xyz, edge.w / max(nearestEdge(middle, first).w, 1e-20));
 }
-fn lampLight(col: vec3f, w: f32) -> vec3f {  // (its own light: Glow's, Neon's brightest in its middle; Neon+'s a tube along its edge, its middle dark)
-  if (pieces.y == 4u) { let t = (w - 0.14) / 0.07; return col * (0.06 + 1.6 * exp(-t * t)); }
+fn lampLight(ink: vec3f, w: f32) -> vec3f {  // (its own light: Glow's, Neon's brightest in its middle; Tube's along its edge, its middle dark)
+  let col = select(ink, vec3f(1.0) - ink, dot(ink, vec3f(0.299, 0.587, 0.114)) < 0.2);  // (a dark ink's light its inverse: black's white)
+  if (pieces.y == ${FINISH.Tube}u) { let t = (w - 0.14) / 0.07; return col * (0.06 + 1.6 * exp(-t * t)); }
   let l = smoothstep(0.0, 1.0, w); return col * (0.15 + 1.1 * l * l);
 }
 @fragment fn tesseraF(i: Tess) -> @location(0) vec4f {
   if (u.cut == 1 && i.cutv > 0.0) { discard; }
-  if (i.col.a < 0.75) { return seen(i.col.rgb * (1.0 - u.shade) + shine(i.col.rgb, facing(normalize(i.n))) * lightShare(i.sh), i.pos.z); }  // (none painted: flat)
+  if (i.col.a < 0.75 || pieces.y == ${FINISH.Halo}u) { return seen(i.col.rgb * (1.0 - u.shade) + shine(i.col.rgb, facing(normalize(i.n))) * lightShare(i.sh), i.pos.z); }  // (none painted, or Halo's tiles: flat)
   let piece = inPiece(i.p, i.first); let w = piece.w;
   let n = facing(normalize(i.n));
-  if (pieces.y >= 2u) {  // (Glow, Neon, Neon+: a dim tile, its own light, never in the lamp's shadow)
+  if (pieces.y != ${FINISH.Tessera}u) {  // (Glow, Neon, Tube: a dim tile, its own light, never in the lamp's shadow)
     return seen(i.col.rgb * (0.25 + 0.2 * max(0.0, dot(n, u.L)) * lightShare(i.sh)) + lampLight(i.col.rgb, w), i.pos.z);
   }
   let edge = piece.xyz;
   let out = edge - i.p; let side = out - n * dot(out, n);  // (towards its nearest edge, along it)
   let slope = 1.6 * (1.0 - smoothstep(0.0, ${TESSERA_BEVEL}, w));
   var m = n; if (dot(side, side) > 0.0) { m = normalize(n + normalize(side) * slope); }
-  let col = i.col.rgb * mix(0.4, 1.0, smoothstep(0.0, ${TESSERA_JOINT}, w));  // (its joint: dark)
-  return seen(col * (1.0 - u.shade) + shine(col, m) * lightShare(i.sh), i.pos.z);
+  return seen(i.col.rgb * (1.0 - u.shade) + shine(i.col.rgb, m) * lightShare(i.sh), i.pos.z);
 }
 // a 3D walk's step as a bar, from a to b0 as its life draws it (see lifeOf: its step its instance's, k), u.halfW thick, its
 // ends closed past its points by half its thickness: a unit cube's corner c (and its normal) laid along it; none yet: off
@@ -44394,15 +44400,15 @@ struct Rib { @builtin(position) pos: vec4f, @location(0) col: vec3f, @location(1
 // down (HALO_WEIGHTS, every other pixel: wider), then added on the canvas
 @fragment fn lampsF(i: Tess) -> @location(0) vec4f {
   if (u.cut == 1 && i.cutv > 0.0) { discard; }
-  if (i.col.a < 0.75) { return vec4f(0.0, 0.0, 0.0, 1.0); }  // (none painted: none, hiding those behind)
-  return vec4f(lampLight(i.col.rgb, inPiece(i.p, i.first).w), 1.0);
+  if (i.col.a < 0.75) { return vec4f(0.0); }  // (none painted: none, hiding those behind)
+  return vec4f(lampLight(i.col.rgb, inPiece(i.p, i.first).w), select(0.0, 1.0, pieces.y == ${FINISH.Halo}u));  // (its alpha: Halo's lamps marked, its halo kept off them)
 }
 fn halo(q: vec4f, d: vec2i) -> vec4f {  // (d: its way, its taps that many pixels apart)
   let w = array<f32, 5>(${HALO_WEIGHTS.join(', ')});
   let p = vec2i(q.xy); let top = vec2i(textureDimensions(acc)) - 1;
   var c = textureLoad(acc, p, 0) * w[0];
   for (var k = 1; k < 5; k++) { c += (textureLoad(acc, clamp(p + d * k, vec2i(0), top), 0) + textureLoad(acc, clamp(p - d * k, vec2i(0), top), 0)) * w[k]; }
-  return c;
+  return vec4f(c.rgb, textureLoad(acc, p, 0).a);  // (its alpha the lamps' marks, unblurred)
 }
 ${[1, 2, 4, 8]
   .map(
@@ -44414,10 +44420,11 @@ ${[1, 2, 4, 8]
   .join(
     '\n',
   )}  // (its taps 1 to 8 pixels apart, each filling the next one's gaps: 1 first, every pixel mixed with both its neighbours)
-fn haloAt(p: vec2i) -> vec3f { return textureLoad(acc, clamp(p, vec2i(0), vec2i(textureDimensions(acc)) - 1), 0).rgb; }
+fn haloAt(p: vec2i) -> vec4f { return textureLoad(acc, clamp(p, vec2i(0), vec2i(textureDimensions(acc)) - 1), 0); }
 @fragment fn haloAddF(@builtin(position) q: vec4f) -> @location(0) vec4f {  // (premultiplied: as opaque as it is bright)
   let f = q.xy / 2.0 - 0.5; let i = vec2i(floor(f)); let t = fract(f);  // (between its 4 nearest pixels, of half the size: smooth)
-  let c = mix(mix(haloAt(i), haloAt(i + vec2i(1, 0)), t.x), mix(haloAt(i + vec2i(0, 1)), haloAt(i + vec2i(1, 1)), t.x), t.y) * ${HALO_STRENGTH};
+  let h = mix(mix(haloAt(i), haloAt(i + vec2i(1, 0)), t.x), mix(haloAt(i + vec2i(0, 1)), haloAt(i + vec2i(1, 1)), t.x), t.y);
+  let c = h.rgb * ${HALO_STRENGTH} * (1.0 - h.a);  // (none on Halo's lamps, see lampsF)
   return vec4f(c, max(c.r, max(c.g, c.b)));
 }
 // flat drawings (2D walks): world (x, y) to pixels by view (scale, ox, oy)
@@ -44675,7 +44682,7 @@ const gpuTargets = () => {
   return (D.size = S);
 };
 // Neon's halo: the painted tiles' lamps (drawLamps, into a picture of half the frame's size, its own depths), blurred across
-// then down, its taps 1 then 2 pixels apart (wide: Neon+'s, then 4 and 8 too), added on the canvas
+// then down, its taps 1 then 2 pixels apart (wide: Tube's, then 4 and 8 too), added on the canvas
 function gpuHalo(enc, drawLamps, wide) {
   const D = GPU.draw,
     S = gpuTargets();
@@ -45248,7 +45255,7 @@ function gpuSurface(paint, path) {
     );
   };
   gpuFrame(enc, drawAll);
-  if (finishOn() && FINISHES[surfaceFinish][0].startsWith('Neon'))
+  if (finishOn() && [FINISH.Halo, FINISH.Neon, FINISH.Tube].includes(surfaceFinish))
     gpuHalo(
       enc,
       (rp) =>
@@ -45264,7 +45271,7 @@ function gpuSurface(paint, path) {
           }),
           { cut: cutOn() ? 1 : 0 },
         ),
-      FINISHES[surfaceFinish][0] === 'Neon+',
+      surfaceFinish === FINISH.Tube,
     );
   const picking =
     motifShown &&
@@ -48062,7 +48069,7 @@ $('ocean').addEventListener('change', () => {
 }); // (a battle's colours: its fields, its title, its ranking)
 pillRow(
   $('finishRow'),
-  'Finish',
+  'Cells',
   "The surface's tiles: how each one painted is lit",
   FINISHES,
   surfaceFinish,

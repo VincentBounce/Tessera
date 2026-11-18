@@ -4,7 +4,8 @@
 //   node tools/browser.js start              started (port 9444: 9333 another session's Chrome), nothing shown
 //   node tools/browser.js open <url>         a new tab at url: its id (a tab: its id or its id's start, never a number:
 //   node tools/browser.js tabs               its tabs: id, url              listed by their last use)
-//   node tools/browser.js eval <tab> <js>    js run in that tab (await allowed): its value, as JSON
+//   node tools/browser.js eval <tab> <js>    js run in that tab (await allowed): its value, as JSON (10 minutes at most,
+//                                            else BROWSER_TIMEOUT's)
 //   node tools/browser.js go <tab> <url>     that tab to url
 //   node tools/browser.js shot <tab> <file>  that tab's picture, a PNG
 //   node tools/browser.js stop               closed
@@ -48,7 +49,8 @@ async function call(tab, method, params = {}) {
     ws.onerror = fail;
   });
   const answer = await new Promise((ok, fail) => {
-    setTimeout(() => fail(new Error(`${method}: no answer in 10 minutes`)), 600e3); // (a search's eval may be long)
+    const minutes = Number(process.env.BROWSER_TIMEOUT ?? 10); // (a search's eval may be long: BROWSER_TIMEOUT=60, an hour)
+    setTimeout(() => fail(new Error(`${method}: no answer in ${minutes} minutes`)), minutes * 60e3);
     ws.onmessage = (e) => {
       const m = JSON.parse(e.data);
       if (m.id === 1) ok(m);

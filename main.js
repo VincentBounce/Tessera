@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.347';
+const VERSION = '0.5.348';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -44403,12 +44403,20 @@ fn halo(q: vec4f, d: vec2i) -> vec4f {  // (d: its way, its taps that many pixel
   for (var k = 1; k < 5; k++) { c += (textureLoad(acc, clamp(p + d * k, vec2i(0), top), 0) + textureLoad(acc, clamp(p - d * k, vec2i(0), top), 0)) * w[k]; }
   return c;
 }
-@fragment fn haloAcrossF(@builtin(position) q: vec4f) -> @location(0) vec4f { return halo(q, vec2i(2, 0)); }
-@fragment fn haloDownF(@builtin(position) q: vec4f) -> @location(0) vec4f { return halo(q, vec2i(0, 2)); }
-@fragment fn haloWideAcrossF(@builtin(position) q: vec4f) -> @location(0) vec4f { return halo(q, vec2i(6, 0)); }  // (Neon+'s, after the first: wider)
-@fragment fn haloWideDownF(@builtin(position) q: vec4f) -> @location(0) vec4f { return halo(q, vec2i(0, 6)); }
+${[1, 2, 4, 8]
+  .map(
+    (
+      s,
+    ) => `@fragment fn halo${s}AcrossF(@builtin(position) q: vec4f) -> @location(0) vec4f { return halo(q, vec2i(${s}, 0)); }
+@fragment fn halo${s}DownF(@builtin(position) q: vec4f) -> @location(0) vec4f { return halo(q, vec2i(0, ${s})); }`,
+  )
+  .join(
+    '\n',
+  )}  // (its taps 1 to 8 pixels apart, each filling the next one's gaps: 1 first, every pixel mixed with both its neighbours)
+fn haloAt(p: vec2i) -> vec3f { return textureLoad(acc, clamp(p, vec2i(0), vec2i(textureDimensions(acc)) - 1), 0).rgb; }
 @fragment fn haloAddF(@builtin(position) q: vec4f) -> @location(0) vec4f {  // (premultiplied: as opaque as it is bright)
-  let c = textureLoad(acc, min(vec2i(q.xy) / 2, vec2i(textureDimensions(acc)) - 1), 0).rgb * ${HALO_STRENGTH};
+  let f = q.xy / 2.0 - 0.5; let i = vec2i(floor(f)); let t = fract(f);  // (between its 4 nearest pixels, of half the size: smooth)
+  let c = mix(mix(haloAt(i), haloAt(i + vec2i(1, 0)), t.x), mix(haloAt(i + vec2i(0, 1)), haloAt(i + vec2i(1, 1)), t.x), t.y) * ${HALO_STRENGTH};
   return vec4f(c, max(c.r, max(c.g, c.b)));
 }
 // flat drawings (2D walks): world (x, y) to pixels by view (scale, ox, oy)
@@ -44666,7 +44674,7 @@ const gpuTargets = () => {
   return (D.size = S);
 };
 // Neon's halo: the painted tiles' lamps (drawLamps, into a picture of half the frame's size, its own depths), blurred across
-// then down (wide: Neon+'s, again three times wider), added on the canvas
+// then down, its taps 1 then 2 pixels apart (wide: Neon+'s, then 4 and 8 too), added on the canvas
 function gpuHalo(enc, drawLamps, wide) {
   const D = GPU.draw,
     S = gpuTargets();
@@ -44686,8 +44694,7 @@ function gpuHalo(enc, drawLamps, wide) {
     [S.haloA.createView(), down, S.haloBGroup],
   ];
   for (const [to, entry, from] of [
-    ...blur('haloAcrossF', 'haloDownF'),
-    ...(wide ? blur('haloWideAcrossF', 'haloWideDownF') : []),
+    ...(wide ? [1, 2, 4, 8] : [1, 2]).flatMap((s) => blur(`halo${s}AcrossF`, `halo${s}DownF`)),
     [D.ctx.getCurrentTexture().createView(), 'haloAddF', S.haloAGroup],
   ]) {
     const add = entry === 'haloAddF',

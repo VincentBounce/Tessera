@@ -1417,10 +1417,11 @@ button.active .bubble.active {
 } /* a slider of two knobs: Shape's pill track (see .shape-slider), the interval between its knobs gold */
 .range-track > i {
   position: absolute;
-  top: 9px;
-  height: 6px;
-  background: color-mix(in srgb, var(--accent-color) 45%, transparent);
-} /* (from knob to knob: their middles 12 px in from the ends, see rangeSlider) */
+  top: 0;
+  height: 100%;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--accent-color) 35%, transparent);
+} /* (the track's height, from the low knob's left edge to the high one's right edge, see rangeSlider) */
 .range-track input {
   position: absolute;
   inset: 0;
@@ -1448,7 +1449,13 @@ button.active .bubble.active {
   background: var(--accent-color);
   cursor: pointer;
   pointer-events: auto;
-} /* (both knobs over the whole track, each caught by its knob only) */
+} /* (both knobs over the whole track, each caught by its knob only; the high one over the low one, after it) */
+.range-track input:first-of-type::-webkit-slider-thumb {
+  background: color-mix(in srgb, var(--accent-color) 55%, var(--track-background));
+}
+.range-track input:first-of-type::-moz-range-thumb {
+  background: color-mix(in srgb, var(--accent-color) 55%, var(--track-background));
+} /* (the low knob paler) */
 .build-box {
   min-width: 0;
   padding: 6px 4px;

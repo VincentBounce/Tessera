@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.357';
+const VERSION = '0.5.358';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -6986,8 +6986,8 @@ function rangeSlider({ lo, hi, title, words, change }) {
   const show = () => {
     const [a, b] = knobs.map((k) => Number(k.value));
     said.textContent = words(a, b);
-    fill.style.left = `calc(12px + ${a} * (100% - 24px) / 100)`;
-    fill.style.width = `calc(${b - a} * (100% - 24px) / 100)`; // (a knob's middle 12 px in from the ends at 0 and 100)
+    fill.style.left = `calc(${a} * (100% - 24px) / 100)`;
+    fill.style.width = `calc(24px + ${b - a} * (100% - 24px) / 100)`; // (a knob 24 px wide, its middle 12 px in from the ends at 0 and 100)
   };
   knobs.forEach((k, i) => {
     k.addEventListener('input', () => {

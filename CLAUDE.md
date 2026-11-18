@@ -233,6 +233,7 @@ While the checks run unattended (a night, a meal), also audit what they cannot s
 A feature taken out gets a row in `DISCONTINUED.md` (in English) at once: its last version, date, commit, a raw.githack link
 that opens it as it was, and why it left.
 - Its rows sorted by date, the oldest first (a row added later goes at its date, not at the end).
+- A light one (a look, a default, a tile, an icon) in its section Small features, the others in its first table.
 - Its link straight to the feature in a state that shows it: its mode, size, rule, colours, start, the switch that turns
   it on (`https://raw.githack.com/VincentBounce/Tessera/<commit>/index.html#w=…&s=…&r=…`), never the bare page; what a link
   could not hold then (a hunt zone, a colour mode), written after it as the click to make ("then Hunt › …").

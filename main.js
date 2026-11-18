@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.362';
+const VERSION = '0.5.363';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -6672,6 +6672,7 @@ function updateDisplayMenu() {
     cut: 'cutRow',
   };
   for (const [item, id] of Object.entries(rows)) $(id).hidden = !shows(item, tabVariant());
+  cellsTuning(); // (the debug panel, Life in 3D's)
   // Heatmap of visits and Digits instead of a list of colours, on cells only (Digits in 2D only;
   // a spiral marks its cells, each once: both greyed out)
   const variant = VARIANTS[tabVariant()];
@@ -27433,6 +27434,7 @@ const colourMissing = (K, rule = $('lifeRule').value) => {
 // Teams, Life's and a walk's alike (its own: see walkTeamTiles)
 function renderTeams() {
   const w = tabVariant();
+  cellsTuning(); // (the debug panel's Solo or battle)
   if (walkTeamsHere(w)) {
     $('colourBlocks').replaceChildren(...walkTeamTiles());
     return;
@@ -43279,17 +43281,26 @@ const paintLevels = (palette, levelOf) => (out, n) => {
 // gone, by a fixed plane through the middle (see CUT_AXES); the two apart: with both, what is left see-through
 const GLASS_ALPHA = 0.4; // (a tile's share: a layer behind seen at 60%, two at 36%…)
 const glassOn = () => $('glass').checked && !$('glassRow').hidden;
-// Finish: the surface's tiles plain (Off), or each painted one lit pixel by pixel from its own corners (see tesseraF): as
-// it is with a halo round it (Halo, see gpuHalo), a lamp glowing from its middle, its light spilling round it (Neon), the
-// lamp alone (Glow), a piece of mosaic (Tessera), a tube along its edge, its light spilling far (Tube); its number, as
+// Cells: the surface's tiles plain (Off), or each painted one lit pixel by pixel from its own corners (see tesseraF): as
+// it is with a halo round it (Halo, see gpuHalo), a lamp glowing from its middle, its light spilling round it (Neon), a
+// frosted slab lit from under it (LED), a ceiling's LED panel (Panel), a piece of mosaic (Tessera), a tube along its edge,
+// its light spilling far (Tube), or every light's numbers to try (Debug); its number, as
 // Cut's, the place of its pill, the shaders' by its name (CELLS_FINISH)
 const CELLS_FINISHES = [
   ['Off', 'The tiles plain, each one colour'],
-  ['Halo', "Each tile painted as it is, Neon's halo round it, none on it"],
-  ['Neon', "Each tile painted a lamp, as Glow's, its light spilling round it: a halo"],
-  ['Glow', 'Each tile painted a lamp: its light its own, brightest in its middle'],
+  ['Neon', 'Each tile painted a lamp, brightest in its middle, its light spilling round it: a halo'],
+  [
+    'LED',
+    'Each tile painted a frosted slab lit from under it: brightest over its middle, dark at its joint, the sky still glinting on it, its light spilling a little round it',
+  ],
+  [
+    'Panel',
+    "Each tile painted a ceiling's LED panel, lit evenly to its edges, its light spilling round it; in Solo on a light page in a grey ceiling, its light falling on the tiles round it",
+  ],
   ['Tessera', 'Each tile painted a piece of mosaic: rounded down to its edges'],
   ['Tube', 'Each tile painted a neon tube along its edge, its middle dark, its light spilling far round it'],
+  ['Halo', "Each tile painted as it is, Neon's halo round it, none on it"],
+  ['Debug', 'Each tile painted a lamp, every number of its light to try in the debug panel'],
 ];
 const CELLS_FINISH = Object.fromEntries(CELLS_FINISHES.map(([name], k) => [name, k]));
 let cellsFinish = defaultOf('cellsFinish', tabVariant());
@@ -44028,6 +44039,9 @@ fn add(j: i32, v: u32) { if (v != 0u) { atomicAdd(&acc[j], v); } }
 @group(1) @binding(0) var<storage, read> look: array<u32>;
 @group(1) @binding(1) var<storage, read_write> outCol: array<u32>;
 @group(1) @binding(2) var<storage, read> shownCells: array<u32>;
+// a live cell painted, its age in its alpha (1 newborn, down to 0.75 at 63 generations and more: still painted, see packed;
+// read by Cells › Debug's light by age, see lampLight); a colour not painted left as it is
+fn aged(c: u32, age: u32) -> u32 { return select(c, (c & 0x00ffffffu) | ((255u - min(age, 63u)) << 24u), (c >> 24u) == 255u); }
 fn S(f: i32, t: i32) -> u32 { return shownCells[u32(f * p.total + t)]; }
 @compute @workgroup_size(64) fn lifeLook(@builtin(global_invocation_id) id: vec3u) {
   let t = cellAt(id);
@@ -44037,7 +44051,7 @@ fn S(f: i32, t: i32) -> u32 { return shownCells[u32(f * p.total + t)]; }
   var st = i32(S(0, t));
   if (p.neg == 1 && I(p.oIn, t) > 0) { st = 1 - st; }
   if (p.by == 2) { outCol[t] = look[4096u + min(S(2, t), 65535u)]; return; }
-  if (live(st)) { if (p.by == 1) { outCol[t] = look[512u + min(S(1, t), 64u)]; } else { outCol[t] = look[st]; } return; }
+  if (live(st)) { if (p.by == 1) { outCol[t] = aged(look[512u + min(S(1, t), 64u)], S(1, t)); } else { outCol[t] = aged(look[st], S(1, t)); } return; }
   if (st > 0) { outCol[t] = look[256 + st]; return; }
   let died = bitcast<i32>(S(3, t));
   let d = p.gen - died;
@@ -44333,7 +44347,7 @@ function gpuLook(L, out, look) {
  * hiding what lies behind (no sorting of the tiles, no path cut in halves): fast enough to turn a big surface smoothly. The
  * same projection as projectPoint (orthographic, or perspective around walk.persp); the plane's walker's arrow and motif stay
  * on their 2D layers, the sky the view's background (see paintSky). Shadows: the light's depths and what is nearest it, compared 9 times a pixel; Glass:
- * weighted blended, two pictures then mixed; Cut; 4 samples a pixel. A draw's numbers a slot of 512 bytes (see GPU_VIEW), by
+ * weighted blended, two pictures then mixed; Cut; 4 samples a pixel. A draw's numbers a slot of 512 bytes (see gpuViewCode), by
  * a dynamic offset: a frame's draws written at once. Without WebGPU, nothing (every browser of the last years has it).
  * Judder in Chrome on an external screen on a Mac (an Asus, at 60, 120 and 144 Hz alike, v0.4.0): WebGL's smoother there in
  * 4 blind tests of 5, Safari's WebGPU smoother than WebGL on the same screen, Chrome's WebGPU smooth on the MacBook's own;
@@ -44341,11 +44355,109 @@ function gpuLook(L, out, look) {
  * no antialiasing or the sky in the same picture change it: Chrome's way to that screen, not ours (2026-11-03: key to
  * picture 19 ms, WebGL's 21; 327 KB allocated a frame both, 40 KB since v0.4.1) */
 const gpuCanvas = $('gpuLayer');
-const HALO_WEIGHTS = [0.227, 0.194, 0.121, 0.054, 0.016], // (Neon's halo: a Gaussian's, its middle then each side)
-  HALO_STRENGTH = '1.6'; // (its light added, its share)
+const HALO_WEIGHTS = [0.227, 0.194, 0.121, 0.054, 0.016]; // (Neon's halo: a Gaussian's, its middle then each side)
+// Cells' lamps, their numbers (written into gpuViewCode: tuned by the debug panel, see cellsTuning, which makes it again)
+const CELLS_LIGHT = {
+  cellsBody: 0.25, // (Neon, LED, Panel, Tube, Debug: a lit tile's own colour, dimmed)
+  neonEdge: 0.15, // (Neon: its light at its edge)
+  neonMiddle: 1.1, // (and added in its middle)
+  tubePeak: 1.6, // (Tube: its light along its edge)
+  ledEdge: 0.35, // (LED: its light at its edge)
+  ledMiddle: 0.9, // (and added over its middle, where its lamp is)
+  ledJoint: 0.12, // (its dark joint, its share of the way from its edge to its middle)
+  ledGloss: 0.6, // (the sky's glint on it, its grey)
+  panelLight: 0.85, // (Panel: its light, even)
+  panelCeiling: 1, // (the tiles none painted, darkened: none)
+  panelColour: null, // (its light's colour, a CSS colour; none: its ink's, see lampLight)
+  panelCast: false, // (its halo cast on the tiles round it, else added: see HALOS)
+  debugEdge: 0.85, // (Debug: its light at its edge)
+  debugMiddle: 0, // (and added in its middle)
+  debugSpot: 1, // (its middle's width: wider the higher)
+  debugWhite: 0, // (its light turned white where strongest, its share: a white core)
+  debugFrame: 0, // (its frame, its share of the way from its edge to its middle: none)
+  debugFrameLight: 0, // (the frame's light)
+  debugGloss: 0, // (the sky's glint on it, its grey)
+  debugAngle: 0, // (its light weaker seen aslant, its share)
+  debugCeiling: 1, // (the tiles none painted, darkened: none)
+  debugColour: null, // (its light's colour; none: its ink's)
+  debugCast: false, // (its halo cast on the tiles round it, else added)
+  debugReach: 2, // (its halo's blurs, 1 to 4: wider)
+  debugAge: 0, // (its light by its age, its share: 1, a newborn's whole, an old one's out)
+  debugCompress: 0, // (its light past white brought back softly, its share: see soft)
+  haloHalo: 1.6, // (each mode's halo: its lamps' light added round them, its share)
+  neonHalo: 1.6,
+  tubeHalo: 1.6,
+  ledHalo: 0.8,
+  panelHalo: 1.6,
+  debugHalo: 1.6,
+  cellsDarkInk: 0.2, // (an ink darker than this lights in its inverse: black's white)
+};
+// Panel and Debug in Solo on a light page: a pale yellow panel in a grey ceiling, its halo weaker and cast on the
+// tiles round it (the ground near white: a light added on it cut off to white), as the user tuned it there; every other
+// number as CELLS_LIGHT's
+const CELLS_LIGHT_SOLO_LIGHT = {
+  ...CELLS_LIGHT,
+  panelLight: 1,
+  panelCeiling: 0.67,
+  panelColour: '#fff68f',
+  panelCast: true,
+  panelHalo: 0.84,
+  debugEdge: 1,
+  debugCeiling: 0.67,
+  debugColour: '#fff68f',
+  debugCast: true,
+  debugReach: 3,
+  debugHalo: 0.84,
+};
+// the lamps' numbers now, the view's shader made with them (see gpuDrawSetup)
+const cellsLightNow = () => (lifeTeams === 1 && themeName() === 'light' ? CELLS_LIGHT_SOLO_LIGHT : CELLS_LIGHT);
+// the numbers each mode reads (Halo's halo is Neon's light: see lampsF)
+const CELLS_LIGHT_OF = {
+  Off: [],
+  Halo: ['neonEdge', 'neonMiddle', 'haloHalo', 'cellsDarkInk'],
+  Neon: ['cellsBody', 'neonEdge', 'neonMiddle', 'neonHalo', 'cellsDarkInk'],
+  Tessera: [],
+  Tube: ['cellsBody', 'tubePeak', 'tubeHalo', 'cellsDarkInk'],
+  LED: ['cellsBody', 'ledEdge', 'ledMiddle', 'ledJoint', 'ledGloss', 'ledHalo', 'cellsDarkInk'],
+  Panel: ['cellsBody', 'panelLight', 'panelCeiling', 'panelHalo', 'cellsDarkInk'],
+  Debug: [
+    'cellsBody',
+    'debugEdge',
+    'debugMiddle',
+    'debugSpot',
+    'debugWhite',
+    'debugFrame',
+    'debugFrameLight',
+    'debugGloss',
+    'debugAngle',
+    'debugCeiling',
+    'debugHalo',
+    'debugReach',
+    'debugAge',
+    'debugCompress',
+    'cellsDarkInk',
+  ],
+};
+// the modes with a halo: its blurs' steps (pixels apart, each filling the next one's gaps: see gpuHalo), wider, further;
+// cast, its light falling on what is drawn under it, by its colour (on the tiles round it, none in the air); soft, past
+// white brought back softly (Debug's); by the lamps' numbers now, a function of them
+const HALOS = {
+  Halo: { steps: [1, 2] },
+  Neon: { steps: [1, 2] },
+  LED: { steps: [1] },
+  Tube: { steps: [1, 2, 4, 8] },
+  Panel: (L) => (L.panelCast ? { steps: [1, 2, 4], cast: true } : { steps: [1, 2] }),
+  Debug: (L) => ({
+    steps: [1, 2, 4, 8].slice(0, Math.min(4, Math.max(1, Math.round(L.debugReach)))),
+    cast: L.debugCast,
+    soft: L.debugCompress > 0, // (laid on a copy of the frame, brought back softly: see haloToneAddF)
+  }),
+};
+// a mode's halo now, none: undefined
+const haloOf = (name) => (typeof HALOS[name] === 'function' ? HALOS[name](cellsLightNow()) : HALOS[name]);
 const TESSERA_BEVEL = 0.35; // (Tessera: a tile's rounding, its share of the way from its edge to its middle)
 // a draw's numbers, in this order (vec3s padded to 4 words; see struct U)
-const GPU_VIEW = `
+const gpuViewCode = (L) => `
 struct U {
   R: vec3f, depth: f32, Uu: vec3f, shade: f32, V: vec3f, glint: f32, L: vec3f, lr: f32, H: vec3f, alpha: f32, Lx: vec3f, edge: f32,
   Ly: vec3f, bias: f32, edgeRgb: vec3f, halfW: f32, persp: vec4f, plain: vec4f, view: vec3f, N: f32, cc: vec2f, screen: vec2f,
@@ -44430,10 +44542,9 @@ fn tileColour(id: u32) -> vec4f {  // (the back of an open sheet, as a ground; e
 @vertex fn tileV(@location(0) pos: vec3f, @location(1) nrm: vec3f, @location(2) id: u32) -> Lit {
   return light(tileColour(id).rgb, nrm, pos, 0.0);
 }
-// Finish (Display): each tile painted lit pixel by pixel (none painted: flat, its alpha half, see packed), by how far it
+// Cells (Display): each tile painted lit pixel by pixel (none painted: flat, its alpha half, see packed), by how far it
 // is from its edge to its middle (pieces.y: its CELLS_FINISH): Tessera, a piece of mosaic, rounded down to its edges (its normal tilted
-// towards the nearest, over BEVEL of the way); Glow, a lamp, its own light
-// brightest in its middle. Its corners read where they are drawn from (corners, pieces.x a tile, its last repeated: see
+// towards the nearest, over BEVEL of the way); the others a lamp, its own light (see lampLight). Its corners read where they are drawn from (corners, pieces.x a tile, its last repeated: see
 // gpuFrame), the nearest edge found
 @group(2) @binding(0) var<storage, read> corners: array<f32>;
 @group(2) @binding(1) var<uniform> pieces: vec4u;  // (x: its corners a tile; y: its Finish)
@@ -44463,18 +44574,38 @@ fn inPiece(p: vec3f, first: u32) -> vec4f {  // (its nearest edge's point, and h
   let edge = nearestEdge(p, first);
   return vec4f(edge.xyz, edge.w / max(nearestEdge(middle, first).w, 1e-20));
 }
-fn lampLight(ink: vec3f, w: f32) -> vec3f {  // (its own light: Glow's, Neon's brightest in its middle; Tube's along its edge, its middle dark)
-  let col = select(ink, vec3f(1.0) - ink, dot(ink, vec3f(0.299, 0.587, 0.114)) < 0.2);  // (a dark ink's light its inverse: black's white)
-  if (pieces.y == ${CELLS_FINISH.Tube}u) { let t = (w - 0.14) / 0.07; return col * (0.06 + 1.6 * exp(-t * t)); }
-  let l = smoothstep(0.0, 1.0, w); return col * (0.15 + 1.1 * l * l);
+fn lampLight(c: vec4f, w: f32, n: vec3f) -> vec3f {  // (c: its colour, its alpha a live cell's age, see aged; its own light: Neon's brightest in its middle; Panel's even; Tube's along its edge, its middle dark; n: its normal, the viewer's side)
+  let ink = c.rgb;
+  let col = select(ink, vec3f(1.0) - ink, dot(ink, vec3f(0.299, 0.587, 0.114)) < ${L.cellsDarkInk});  // (a dark ink's light its inverse: black's white)
+  if (pieces.y == ${CELLS_FINISH.Tube}u) { let t = (w - 0.14) / 0.07; return col * (0.06 + ${L.tubePeak} * exp(-t * t)); }
+  let l = smoothstep(0.0, 1.0, w);
+  if (pieces.y == ${CELLS_FINISH.Panel}u) { return ${L.panelColour ? `vec3f(${rgbOf(L.panelColour).map((v) => (v / 255).toFixed(4))})` : 'col'} * ${L.panelLight}; }  // (even to its edges; its light panelColour's, if any)
+  if (pieces.y == ${CELLS_FINISH.Debug}u) {  // (every number of a lamp: its middle, a white core, a frame, weaker aslant; its light debugColour's, if any)
+    let peak = pow(l, 2.0 / ${Math.max(L.debugSpot, 0.05)});
+    let lit = mix(${L.debugColour ? `vec3f(${rgbOf(L.debugColour).map((v) => (v / 255).toFixed(4))})` : 'col'}, vec3f(1.0), ${L.debugWhite} * peak) * (${L.debugEdge} + ${L.debugMiddle} * peak);
+    let framed = lit * mix(${L.debugFrameLight}, 1.0, smoothstep(${L.debugFrame} * 0.7, ${Math.max(L.debugFrame, 1e-4)}, w));
+    let fresh = clamp((c.a - 0.75) * 4.0, 0.0, 1.0);  // (1 newborn, 0 old: see aged; a walk's tile 1)
+    return framed * mix(1.0, max(dot(n, u.V), 0.0), ${L.debugAngle}) * mix(1.0, fresh, ${L.debugAge});
+  }
+  if (pieces.y == ${CELLS_FINISH.LED}u) {  // (a slab over its lamp: brightest over it, dark at its joint)
+    return col * (${L.ledEdge} + ${L.ledMiddle} * l * l) * smoothstep(0.0, ${L.ledJoint}, w);
+  }
+  return col * (${L.neonEdge} + ${L.neonMiddle} * l * l);
 }
 @fragment fn tesseraF(i: Tess) -> @location(0) vec4f {
   if (u.cut == 1 && i.cutv > 0.0) { discard; }
-  if (i.col.a < 0.75 || pieces.y == ${CELLS_FINISH.Halo}u) { return seen(i.col.rgb * (1.0 - u.shade) + shine(i.col.rgb, facing(normalize(i.n))) * lightShare(i.sh), i.pos.z); }  // (none painted, or Halo's tiles: flat)
+  if (i.col.a < 0.75 || pieces.y == ${CELLS_FINISH.Halo}u) {  // (none painted, or Halo's tiles: flat; Panel's and Debug's ceiling a little grey)
+    var ceiling = 1.0; if (i.col.a < 0.75 && pieces.y == ${CELLS_FINISH.Panel}u) { ceiling = ${L.panelCeiling}; } if (i.col.a < 0.75 && pieces.y == ${CELLS_FINISH.Debug}u) { ceiling = ${L.debugCeiling}; }
+    let col = i.col.rgb * ceiling;
+    return seen(col * (1.0 - u.shade) + shine(col, facing(normalize(i.n))) * lightShare(i.sh), i.pos.z);
+  }
   let piece = inPiece(i.p, i.first); let w = piece.w;
   let n = facing(normalize(i.n));
-  if (pieces.y != ${CELLS_FINISH.Tessera}u) {  // (Glow, Neon, Tube: a dim tile, its own light, never in the lamp's shadow)
-    return seen(i.col.rgb * (0.25 + 0.2 * max(0.0, dot(n, u.L)) * lightShare(i.sh)) + lampLight(i.col.rgb, w), i.pos.z);
+  if (pieces.y != ${CELLS_FINISH.Tessera}u) {  // (Neon, LED, Panel, Tube, Debug: a dim tile, its own light, never in the lamp's shadow)
+    var gloss = vec3f(0.0); if (pieces.y == ${CELLS_FINISH.LED}u) { gloss = shine(vec3f(${L.ledGloss}), n) * lightShare(i.sh); }  // (LED: the sky glinting on its slab)
+    if (pieces.y == ${CELLS_FINISH.Debug}u) { gloss = shine(vec3f(${L.debugGloss}), n) * lightShare(i.sh); }
+    if (pieces.y == ${CELLS_FINISH.Debug}u) { return seen(soft(i.col.rgb * (${L.cellsBody} + 0.2 * max(0.0, dot(n, u.L)) * lightShare(i.sh)) + lampLight(i.col, w, n) + gloss), i.pos.z); }
+    return seen(i.col.rgb * (${L.cellsBody} + 0.2 * max(0.0, dot(n, u.L)) * lightShare(i.sh)) + lampLight(i.col, w, n) + gloss, i.pos.z);
   }
   let edge = piece.xyz;
   let out = edge - i.p; let side = out - n * dot(out, n);  // (towards its nearest edge, along it)
@@ -44561,7 +44692,15 @@ struct Rib { @builtin(position) pos: vec4f, @location(0) col: vec3f, @location(1
 @fragment fn lampsF(i: Tess) -> @location(0) vec4f {
   if (u.cut == 1 && i.cutv > 0.0) { discard; }
   if (i.col.a < 0.75) { return vec4f(0.0); }  // (none painted: none, hiding those behind)
-  return vec4f(lampLight(i.col.rgb, inPiece(i.p, i.first).w), select(0.0, 1.0, pieces.y == ${CELLS_FINISH.Halo}u));  // (its alpha: Halo's lamps marked, its halo kept off them)
+  return vec4f(lampLight(i.col, inPiece(i.p, i.first).w, facing(normalize(i.n))) * haloShare(), select(0.0, 1.0, pieces.y == ${CELLS_FINISH.Halo}u));  // (its alpha: Halo's lamps marked, its halo kept off them)
+}
+fn haloShare() -> f32 {  // (its mode's halo, its light's share: the halo's pictures are floats, none cut off)
+  if (pieces.y == ${CELLS_FINISH.LED}u) { return ${L.ledHalo}; }
+  if (pieces.y == ${CELLS_FINISH.Panel}u) { return ${L.panelHalo}; }
+  if (pieces.y == ${CELLS_FINISH.Debug}u) { return ${L.debugHalo}; }
+  if (pieces.y == ${CELLS_FINISH.Halo}u) { return ${L.haloHalo}; }
+  if (pieces.y == ${CELLS_FINISH.Neon}u) { return ${L.neonHalo}; }
+  return ${L.tubeHalo};
 }
 fn halo(q: vec4f, d: vec2i) -> vec4f {  // (d: its way, its taps that many pixels apart)
   let w = array<f32, 5>(${HALO_WEIGHTS.join(', ')});
@@ -44584,8 +44723,31 @@ fn haloAt(p: vec2i) -> vec4f { return textureLoad(acc, clamp(p, vec2i(0), vec2i(
 @fragment fn haloAddF(@builtin(position) q: vec4f) -> @location(0) vec4f {  // (premultiplied: as opaque as it is bright)
   let f = q.xy / 2.0 - 0.5; let i = vec2i(floor(f)); let t = fract(f);  // (between its 4 nearest pixels, of half the size: smooth)
   let h = mix(mix(haloAt(i), haloAt(i + vec2i(1, 0)), t.x), mix(haloAt(i + vec2i(0, 1)), haloAt(i + vec2i(1, 1)), t.x), t.y);
-  let c = h.rgb * ${HALO_STRENGTH} * (1.0 - h.a);  // (none on Halo's lamps, see lampsF)
+  let c = h.rgb * (1.0 - h.a);  // (its share its mode's, see lampsF; none on Halo's lamps)
   return vec4f(c, max(c.r, max(c.g, c.b)));
+}
+fn haloHere(q: vec4f) -> vec3f {  // (the halo at a pixel of the frame, as haloAddF reads it)
+  let f = q.xy / 2.0 - 0.5; let i = vec2i(floor(f)); let t = fract(f);
+  let h = mix(mix(haloAt(i), haloAt(i + vec2i(1, 0)), t.x), mix(haloAt(i + vec2i(0, 1)), haloAt(i + vec2i(1, 1)), t.x), t.y);
+  return h.rgb * (1.0 - h.a);
+}
+// a light past white brought back softly (Debug's debugCompress: 0 cut off at white, as the screen does; 1 eased from half
+// way): below its knee as it is, above it nearing white, never reaching it
+fn soft(x: vec3f) -> vec3f {
+  let knee: f32 = ${1 - 0.5 * Math.min(1, L.debugCompress)};  // (f32: 1 alone would make it an integer)
+  if (knee >= 1.0) { return x; }
+  return select(x, knee + (1.0 - knee) * (1.0 - exp(-(x - knee) / (1.0 - knee))), x > vec3f(knee));
+}
+// the halo laid on a copy of the frame (rev: the frame before it), the sum brought back softly: added, or cast on what is
+// there by its colour (see HALOS)
+@fragment fn haloToneAddF(@builtin(position) q: vec4f) -> @location(0) vec4f {
+  let d = textureLoad(rev, vec2i(q.xy), 0); let c = haloHere(q);
+  let a = max(d.a, max(c.r, max(c.g, c.b)));
+  return vec4f(min(soft(d.rgb + c), vec3f(a)), a);  // (premultiplied: never past its alpha)
+}
+@fragment fn haloToneCastF(@builtin(position) q: vec4f) -> @location(0) vec4f {
+  let d = textureLoad(rev, vec2i(q.xy), 0);
+  return vec4f(min(soft(d.rgb * (1.0 + haloHere(q))), vec3f(d.a)), d.a);
 }
 // flat drawings (2D walks): world (x, y) to pixels by view (scale, ox, oy)
 struct Col { @builtin(position) pos: vec4f, @location(0) col: vec4f }
@@ -44622,6 +44784,11 @@ fn planeAt(p: vec2f) -> vec4f { return flatAt(u.view.yz + vec2f(u.turnC * p.x - 
   return o;
 }
 @vertex fn planeLinesV(@location(0) pos: vec2f) -> Col { var o: Col; o.col = u.plain; o.pos = planeAt(pos); return o; }`;
+// the 3D view's drawing made again from its code (its lamps' numbers tuned, or others now: see cellsLightNow): its pipelines, buffers and textures anew
+function gpuViewAgain() {
+  GPU.draw = null;
+  needsFull = true;
+}
 // a draw's numbers into slot k of the frame's: the camera, the light and its view for the shadows (across it, over the ball that holds what is drawn)
 function gpuView(words, k, depth, more = {}) {
   const f = new Float32Array(words, 512 * k, 128),
@@ -44696,6 +44863,7 @@ const GPU_SLOTS = 32;
 // set up once (after gpuSetup): the canvas, the programs, the textures that last (the rainbow, the digits' colours)
 function gpuDrawSetup() {
   if (!GPU) return null;
+  if (GPU.draw && GPU.draw.lights !== cellsLightNow()) gpuViewAgain(); // (its shader made with other lamps' numbers: Solo on a light page its own)
   if (GPU.draw) {
     if (GPU.draw.gradKey !== (rainbowNow(), gradientKey)) gpuPalette();
     return GPU.draw;
@@ -44703,14 +44871,20 @@ function gpuDrawSetup() {
   const { device } = GPU,
     format = navigator.gpu.getPreferredCanvasFormat(),
     ctx = gpuCanvas.getContext('webgpu');
-  ctx.configure({ device, format, alphaMode: 'premultiplied' });
-  const module = device.createShaderModule({ code: GPU_VIEW });
+  ctx.configure({
+    device,
+    format,
+    alphaMode: 'premultiplied',
+    usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.COPY_SRC, // (copied for a soft halo, see gpuHalo)
+  });
+  const lights = cellsLightNow(),
+    module = device.createShaderModule({ code: gpuViewCode(lights) });
   module
     .getCompilationInfo()
     .then((info) =>
       info.messages
         .filter((m) => m.type === 'error')
-        .forEach((m) => console.error(`GPU_VIEW ${m.lineNum}:${m.linePos} ${m.message}`)),
+        .forEach((m) => console.error(`gpuViewCode ${m.lineNum}:${m.linePos} ${m.message}`)),
     );
   const T = GPUShaderStage,
     B = (binding, visibility, x) => ({ binding, visibility, ...x });
@@ -44750,6 +44924,7 @@ function gpuDrawSetup() {
     return t;
   };
   const D = (GPU.draw = {
+    lights, // (the lamps' numbers its shader was made with)
     device,
     ctx,
     format,
@@ -44820,6 +44995,11 @@ const gpuTargets = () => {
         }),
       ]),
     ), // (Neon's halo: its lamps, then blurred, at half the frame's size, see gpuHalo)
+    frameCopy: device.createTexture({
+      size: [w, h],
+      format: D.format,
+      usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST,
+    }), // (the frame before its halo, a soft one's: see gpuHalo)
     haloDepth: device.createTexture({
       size: [Math.ceil(w / 2), Math.ceil(h / 2)],
       format: 'depth24plus',
@@ -44839,11 +45019,18 @@ const gpuTargets = () => {
       layout: D.mixed,
       entries: [0, 1].map((binding) => ({ binding, resource: S[name].createView() })),
     }); // (read by the halo's passes, as Glass's mix: see halo)
+  S.haloSoftGroup = device.createBindGroup({
+    layout: D.mixed,
+    entries: [
+      { binding: 0, resource: S.haloA.createView() },
+      { binding: 1, resource: S.frameCopy.createView() },
+    ],
+  }); // (the halo and the frame under it: see haloToneAddF)
   return (D.size = S);
 };
 // Neon's halo: the painted tiles' lamps (drawLamps, into a picture of half the frame's size, its own depths), blurred across
-// then down, its taps 1 then 2 pixels apart (wide: Tube's, then 4 and 8 too), added on the canvas
-function gpuHalo(enc, drawLamps, wide) {
+// then down, its taps steps' pixels apart (its mode's HALOS: 1 then 2, LED's 1 alone, Tube's 4 and 8 too), added on the canvas, or cast on it (see HALOS)
+function gpuHalo(enc, drawLamps, { steps, cast, soft }) {
   const D = GPU.draw,
     S = gpuTargets();
   const lamps = enc.beginRenderPass({
@@ -44861,22 +45048,34 @@ function gpuHalo(enc, drawLamps, wide) {
     [S.haloB.createView(), across, S.haloAGroup],
     [S.haloA.createView(), down, S.haloBGroup],
   ];
-  for (const [to, entry, from] of [
-    ...(wide ? [1, 2, 4, 8] : [1, 2]).flatMap((s) => blur(`halo${s}AcrossF`, `halo${s}DownF`)),
-    [D.ctx.getCurrentTexture().createView(), 'haloAddF', S.haloAGroup],
-  ]) {
-    const add = entry === 'haloAddF',
-      p = enc.beginRenderPass({
-        colorAttachments: [{ view: to, loadOp: add ? 'load' : 'clear', storeOp: 'store', clearValue: [0, 0, 0, 0] }],
-      });
+  const passes = [
+    ...steps.flatMap((s) => blur(`halo${s}AcrossF`, `halo${s}DownF`)),
+    [
+      D.ctx.getCurrentTexture().createView(),
+      soft ? (cast ? 'haloToneCastF' : 'haloToneAddF') : 'haloAddF',
+      soft ? S.haloSoftGroup : S.haloAGroup,
+    ], // (on the canvas)
+  ];
+  for (const [k, [to, entry, from]] of passes.entries()) {
+    const add = k === passes.length - 1;
+    if (soft && add)
+      enc.copyTextureToTexture({ texture: D.ctx.getCurrentTexture() }, { texture: S.frameCopy }, [S.w, S.h]); // (the frame under it)
+    const p = enc.beginRenderPass({
+      colorAttachments: [{ view: to, loadOp: add ? 'load' : 'clear', storeOp: 'store', clearValue: [0, 0, 0, 0] }],
+    });
     p.setPipeline(
-      gpuPipe(`halo|${entry}`, (D2) => ({
+      gpuPipe(`halo|${entry}|${add && cast}|${soft}`, (D2) => ({
         layout: D2.device.createPipelineLayout({ bindGroupLayouts: [D2.g0, D2.mixed] }),
         vertex: { module: D2.module, entryPoint: 'quadV' },
         fragment: {
           module: D2.module,
           entryPoint: entry,
-          targets: [{ format: add ? D2.format : 'rgba16float', blend: add ? BLEND_ADD : undefined }],
+          targets: [
+            {
+              format: add ? D2.format : 'rgba16float',
+              blend: add && !soft ? (cast ? BLEND_CAST : BLEND_ADD) : undefined,
+            },
+          ],
         },
         primitive: { topology: 'triangle-strip' },
       })),
@@ -45029,6 +45228,8 @@ const BLEND_PRE = {
   alpha: { srcFactor: 'one', dstFactor: 'one-minus-src-alpha' },
 };
 const BLEND_ADD = { color: { srcFactor: 'one', dstFactor: 'one' }, alpha: { srcFactor: 'one', dstFactor: 'one' } };
+// a light cast on what is drawn: what is there lit by it, by its own colour (none where nothing is: the sky's see-through)
+const BLEND_CAST = { color: { srcFactor: 'dst', dstFactor: 'one' }, alpha: { srcFactor: 'zero', dstFactor: 'one' } };
 const GLASS_BLEND = [
   null,
   BLEND_ADD,
@@ -45415,7 +45616,7 @@ function gpuSurface(paint, path) {
     );
   };
   gpuFrame(enc, drawAll);
-  if (cellsFinishOn() && [CELLS_FINISH.Halo, CELLS_FINISH.Neon, CELLS_FINISH.Tube].includes(cellsFinish))
+  if (cellsFinishOn() && haloOf(CELLS_FINISHES[cellsFinish][0]))
     gpuHalo(
       enc,
       (rp) =>
@@ -45431,7 +45632,7 @@ function gpuSurface(paint, path) {
           }),
           { cut: cutOn() ? 1 : 0 },
         ),
-      cellsFinish === CELLS_FINISH.Tube,
+      haloOf(CELLS_FINISHES[cellsFinish][0]),
     );
   const picking =
     motifShown &&
@@ -45892,6 +46093,7 @@ $('axesLabels').addEventListener('click', () => {
 function placeAxesLabels() {
   const labels = $('axesLabels');
   labels.hidden = !axesShown();
+  document.documentElement.style.setProperty('--view-axes-height', labels.hidden ? '0px' : `${2 * VIEW_AXES_AT}px`); // (what lies under them: the debug panel)
   if (labels.hidden) return;
   labels.style.width = labels.style.height = `${2 * VIEW_AXES_AT}px`; // (round their origin: their bars and names)
   VIEW_AXES.forEach(([, v], k) => {
@@ -48201,7 +48403,52 @@ function applyTheme(theme) {
   setTile(themeSwitch, { on: theme === 'light' });
   if (document.documentElement.dataset.theme === theme && MONO === PALETTES[theme].mono) return;
   document.documentElement.dataset.theme = theme;
-  setPalette(theme);
+  paletteChanged();
+}
+// The debug panel (debug.js) over the 3D view while Life is on a solid or a surface, Solo or a battle: the numbers of Cells'
+// mode shown (see CELLS_LIGHT, CELLS_LIGHT_OF), and the battles' colours: in Solo, a pick the live cell's colour (the theme's palette's, till the page
+// is opened again), in a battle the teams' shown
+const ALIVE_FIRST = { dark: PALETTES.dark.alive, light: PALETTES.light.alive }; // (the live cell's colours as the palettes have them)
+let debugOpen = false; // (opened by Cells › Debug, shut by its cross; open, every mode's numbers)
+function cellsTuning() {
+  const w = tabVariant();
+  if (NAV[w][0] !== 'Life' || VARIANTS[w].plane || !debugOpen) return debugPanel(null);
+  const theme = themeName(),
+    solo = lifeTeams === 1,
+    lights = cellsLightNow(), // (Solo on a light page its own)
+    lightColour = { Panel: 'panelColour', Debug: 'debugColour' }[CELLS_FINISHES[cellsFinish][0]]; // (Panel, Debug: a pick its light's colour, the cell's left as it is)
+  debugPanel({
+    key: `${theme}|${solo}|${cellsFinish}`,
+    title: 'Cells: debug',
+    numbers: lights,
+    shown: CELLS_LIGHT_OF[CELLS_FINISHES[cellsFinish][0]],
+    shared: ['cellsBody', 'cellsDarkInk'], // (every lit mode's)
+    onNumbers: gpuViewAgain,
+    colours: [ALIVE_FIRST[theme], '#ffffff', ...LIFE_COLOURS],
+    picked: lightColour ? lights[lightColour] : PALETTES[theme].alive,
+    onPick: !solo
+      ? null
+      : lightColour
+        ? (c) => {
+            lights[lightColour] = c;
+            gpuViewAgain();
+          }
+        : (c) => {
+            PALETTES[theme].alive = c;
+            paletteChanged();
+          },
+    onClose: () => {
+      debugOpen = false;
+      debugPanel(null);
+    },
+    note: !solo
+      ? 'The battles’ colours, the teams’'
+      : `A colour: ${lightColour ? 'its light' : 'the live cell’s'}, till the page is opened again`,
+  });
+}
+// the theme's palette read again (a theme, or a colour of it changed: see cellsTuning) and everything drawn in it
+function paletteChanged() {
+  setPalette(themeName());
   glColour.clear();
   gpuPalette();
   renderColourButtons();
@@ -48213,8 +48460,11 @@ applyTheme(themeName());
 // what lies over the view keeps its presses, double clicks and wheel (the view's: a drag, a recentre, a zoom): the animation
 // bar (its step slider), Display's box, how a rule works and the number (their text selected, their scroll), the axes (a click
 // a view: two quick ones were a recentre too, facing the walk's middle)
-for (const id of ['animBar', 'viewTools', 'ruleTuto', 'numberPreview', 'axesLabels'])
-  for (const type of ['pointerdown', 'dblclick', 'wheel']) $(id).addEventListener(type, (e) => e.stopPropagation());
+// a view's box too: the debug panel, see debugPanel)
+function keepsItsPresses(box) {
+  for (const type of ['pointerdown', 'dblclick', 'wheel']) box.addEventListener(type, (e) => e.stopPropagation());
+}
+for (const id of ['animBar', 'viewTools', 'ruleTuto', 'numberPreview', 'axesLabels']) keepsItsPresses($(id));
 $('light').addEventListener('change', () => {
   needsFull = true;
 });
@@ -48237,6 +48487,8 @@ pillRow(
   (k) => {
     needsFull ||= k !== cellsFinish;
     cellsFinish = k;
+    if (k === CELLS_FINISH.Debug) debugOpen = true; // (Debug opens the debug panel, its cross shuts it: then on every mode)
+    cellsTuning(); // (the debug panel: this mode's numbers)
   },
 );
 pillRow(

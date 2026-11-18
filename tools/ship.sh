@@ -12,7 +12,9 @@ subject=$1; body=$2
 [[ -n $subject ]] || { echo 'tools/ship.sh "subject" ["body"]'; exit 1; }
 git diff --cached --quiet && { echo "nothing staged: git add first"; exit 1; }
 git diff --cached main.js | grep -q "^[-+]const VERSION" && { echo "VERSION changed by hand: leave it to tools/ship.sh"; exit 1; }
-git diff --cached index.html | grep -q '^[-+].*?v=' && { echo "the cache key changed by hand: leave it to tools/ship.sh"; exit 1; }
+# (a line added with the key as it is, a new script's, is no change of it)
+key=$(git show HEAD:index.html | grep -o 'main\.js?v=[^"]*' | cut -d= -f2)
+git diff --cached index.html | grep '^+[^+]' | grep -o '?v=[^"]*' | grep -qvxF "?v=$key" && { echo "the cache key changed by hand: leave it to tools/ship.sh"; exit 1; }
 # the code staged to Prettier's standard (.prettierrc.json, .prettierignore: the generated data and the prototypes left out),
 # again staged: every version at one standard, none to think of (brew install prettier)
 code=(${(f)"$(git diff --cached --name-only --diff-filter=ACM -- '*.js' '*.css')"})

@@ -17,8 +17,8 @@ const BROWSER = path.join(
     os.homedir(),
     'Library/Caches/ms-playwright/chromium-1254/chrome-mac-arm64/Google Chrome for Testing.app/Contents/MacOS/Google Chrome for Testing',
   ),
-  PORT = 9444,
-  PROFILE = path.join(os.homedir(), 'Library/Caches/tessera-browser'),
+  PORT = Number(process.env.BROWSER_PORT ?? 9444), // (another, BROWSER_PORT=9445: a browser of its own, its own profile, beside a session's)
+  PROFILE = path.join(os.homedir(), `Library/Caches/tessera-browser${PORT === 9444 ? '' : `-${PORT}`}`),
   HTTP = `http://127.0.0.1:${PORT}`;
 // (hidden: a window, WebGPU's, never drawn on the screen; its timers and drawing at full speed while hidden)
 const FLAGS = [

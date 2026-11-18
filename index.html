@@ -10,7 +10,7 @@
   <meta property="og:url" content="https://vincentbounce.github.io/Tessera/">
   <meta property="og:type" content="website">
   <link id="favicon" rel="icon">  <!-- the app's logo, set at start-up (see LOGO_PATH) -->
-  <link rel="stylesheet" href="style.css?v=0.5.356">
+  <link rel="stylesheet" href="style.css?v=0.5.357">
   <script>  // the theme before the first paint (see applyTheme)
     try { const t = localStorage.getItem('tesseraTheme'); document.documentElement.dataset.theme = t === 'light' || t === 'dark' ? t : matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark'; } catch { document.documentElement.dataset.theme = 'dark'; }
   </script>
@@ -191,6 +191,11 @@
         <button id="watchRule" class="wide how-it-works on-list" data-icon="info" type="button" title="The rule in use, step by step: what each cell (each step) sees, and what it does (a click on a rule card's picture, too)">How it works</button>  <!-- how the rule in use works (see ruleTutorial), on its first card -->
         <div id="ruleCards" class="mode-list rule-cards" role="listbox"></div>  <!-- the rules for the grid's shape, as cards -->
         <div class="rule-build">  <!-- your own: the states (a cell's: alive, its dying stages, dead), how many live neighbours give birth, let survive -->
+          <div id="ruleCountTabs"></div>  <!-- by counts of live neighbours (the chips) or by shares of them, in % (the sliders) -->
+          <div id="ruleShares" class="share-boxes" hidden>  <!-- a share rule's: Birth's intervals, Survival's, a slider each -->
+            <div class="build-box"><h4>Birth</h4><div id="shareBirth"></div></div>
+            <div class="build-box"><h4>Survive</h4><div id="shareSurvive"></div></div>
+          </div>
           <div class="build-cols">  <!-- two frames side by side: Birth, Survive -->
             <div class="build-box"><h4>Birth</h4><div id="ruleBirth" class="nchips"></div></div>
             <div class="build-box"><h4>Survive</h4><div id="ruleSurvive" class="nchips"></div></div>
@@ -335,10 +340,10 @@
     </div>
   </main>
 
-  <script src="pixelarticons.js?v=0.5.356"></script>
-  <script src="punks.js?v=0.5.356"></script>
-  <script src="loops.js?v=0.5.356"></script>
-  <script src="emoji.js?v=0.5.356"></script>
-  <script src="main.js?v=0.5.356"></script>
+  <script src="pixelarticons.js?v=0.5.357"></script>
+  <script src="punks.js?v=0.5.357"></script>
+  <script src="loops.js?v=0.5.357"></script>
+  <script src="emoji.js?v=0.5.357"></script>
+  <script src="main.js?v=0.5.357"></script>
 </body>
 </html>

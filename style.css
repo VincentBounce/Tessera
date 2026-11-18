@@ -1385,6 +1385,70 @@ button.active .bubble.active {
   gap: 6px;
   margin-bottom: var(--block-gap);
 } /* Birth, Survive: a frame each */
+.share-boxes {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+} /* a share rule's: Birth, Survive, a frame each, one over the other (a slider wide) */
+.share-boxes .build-box {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 6px 8px;
+}
+.share-boxes h4 {
+  margin: 0;
+}
+.share-counts {
+  font-size: var(--caption-text-size);
+  color: var(--muted-text-color);
+  text-align: center;
+} /* the counts it gives, by the cell's neighbours */
+.range-words {
+  font-size: var(--label-text-size);
+  text-align: center;
+}
+.range-track {
+  position: relative;
+  height: 24px;
+  margin: 2px 0;
+  border-radius: 999px;
+  background: var(--track-background);
+} /* a slider of two knobs: Shape's pill track (see .shape-slider), the interval between its knobs gold */
+.range-track > i {
+  position: absolute;
+  top: 9px;
+  height: 6px;
+  background: color-mix(in srgb, var(--accent-color) 45%, transparent);
+} /* (from knob to knob: their middles 12 px in from the ends, see rangeSlider) */
+.range-track input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  appearance: none;
+  background: none;
+  pointer-events: none;
+}
+.range-track input::-webkit-slider-thumb {
+  appearance: none;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--accent-color);
+  cursor: pointer;
+  pointer-events: auto;
+}
+.range-track input::-moz-range-thumb {
+  width: 24px;
+  height: 24px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--accent-color);
+  cursor: pointer;
+  pointer-events: auto;
+} /* (both knobs over the whole track, each caught by its knob only) */
 .build-box {
   min-width: 0;
   padding: 6px 4px;

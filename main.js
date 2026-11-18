@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.356';
+const VERSION = '0.5.357';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -6962,6 +6962,45 @@ function textTabs(buttons) {
   const g = tileGroup(buttons);
   g.classList.add('text-tabs');
   return g;
+}
+// a slider of two knobs, an interval from lo to hi (0 to 100, by 1), its words over it (words(lo, hi)); change(lo, hi) once
+// a knob is let go (a knob never past the other: they meet)
+function rangeSlider({ lo, hi, title, words, change }) {
+  const box = document.createElement('div'),
+    said = document.createElement('div'),
+    track = document.createElement('div'),
+    fill = document.createElement('i');
+  box.className = 'range-slider';
+  box.title = title;
+  said.className = 'range-words';
+  track.className = 'range-track';
+  const knobs = [lo, hi].map((value) => {
+    const k = document.createElement('input');
+    k.type = 'range';
+    k.min = 0;
+    k.max = 100;
+    k.step = 1;
+    k.value = value;
+    return k;
+  });
+  const show = () => {
+    const [a, b] = knobs.map((k) => Number(k.value));
+    said.textContent = words(a, b);
+    fill.style.left = `calc(12px + ${a} * (100% - 24px) / 100)`;
+    fill.style.width = `calc(${b - a} * (100% - 24px) / 100)`; // (a knob's middle 12 px in from the ends at 0 and 100)
+  };
+  knobs.forEach((k, i) => {
+    k.addEventListener('input', () => {
+      const other = Number(knobs[1 - i].value);
+      if (i ? Number(k.value) < other : Number(k.value) > other) k.value = other;
+      show();
+    });
+    k.addEventListener('change', () => change(Number(knobs[0].value), Number(knobs[1].value)));
+  });
+  track.append(fill, ...knobs);
+  box.append(said, track);
+  show();
+  return box;
 }
 // A tile, every one alike (the shapes, the colours, the looks, the zones, Walls, Square, Trail, the theme): a square
 // button, its picture over its name (html: both as one), fixed whatever its state (but a switch's own while off, see
@@ -21760,6 +21799,53 @@ function elementaryPart(R, x0, x1, t0, t1, b = 1, measure = false) {
   return { counts, breaks, entropy };
 }
 const SHARE_ROW = 32; // (a share rule's tables: a row a count of neighbours, 31 at most, see parseRule)
+// a share rule's text from its intervals (see parseRule), with C states; an empty interval left out
+const shareText = (share, C) => {
+  const part = (spans) =>
+    spans
+      .filter(([lo, hi]) => hi === null || hi > lo)
+      .map(([lo, hi]) => `${lo}-${hi ?? ''}%`)
+      .join(',');
+  return `B${part(share.B)}/S${part(share.S)}${C > 2 ? `/C${C}` : ''}`;
+};
+// a count of live neighbours c on in a rule's table (any of its letters, or of its counts by a corner)
+const countOn = (rule, table, c) =>
+  rule.iso === 'vertex'
+    ? [0, 1, 2, 3].some((k) => table[16 + 4 * c + k])
+    : rule.iso
+      ? table.some((on, i) => i >= 16 && on && bitCount(i - 16) === c)
+      : table[c] === 1;
+// a rule by counts as shares, the same on a cell of d neighbours: each run of counts c to b, from c / d in to (b + 1) / d
+// out (b = d: up to all), rounded down to a whole % (its counts kept, d up to 100)
+function countsAsShares(rule, d) {
+  const spans = (table) => {
+    const out = [];
+    for (let c = 0; c <= d; c++) {
+      if (!countOn(rule, table, c)) continue;
+      let b = c;
+      while (b < d && countOn(rule, table, b + 1)) b++;
+      out.push([Math.floor((100 * c) / d), b === d ? null : Math.floor((100 * (b + 1)) / d)]);
+      c = b;
+    }
+    return out;
+  };
+  return shareText({ B: spans(rule.B), S: spans(rule.S) }, rule.C);
+}
+// a share rule as counts, as it plays on a cell of d neighbours (a count a digit: 9 at most)
+function sharesAsCounts(rule, d) {
+  const digits = (table) => [...Array(Math.min(d, 9) + 1).keys()].filter((c) => table[SHARE_ROW * d + c]).join('');
+  return `B${digits(rule.B)}/S${digits(rule.S)}${rule.C > 2 ? `/C${rule.C}` : ''}`;
+}
+// the counts of neighbours a Life grid's cells have, the most cells' first (a wall's, none, left out)
+function neighbourCounts(L) {
+  const { start } = L.nbr,
+    cells = new Map();
+  for (let t = 0; t + 1 < start.length; t++) {
+    const d = start[t + 1] - start[t];
+    if (d) cells.set(d, (cells.get(d) ?? 0) + 1);
+  }
+  return [...cells.keys()].sort((a, b) => cells.get(b) - cells.get(a));
+}
 function parseRule(text) {
   if (/^\s*(M|Q2R)/i.test(text)) return parseBlocks(text);
   if (/^\s*W\d/i.test(text)) return parseElementary(text);
@@ -21774,8 +21860,11 @@ function parseRule(text) {
   // a share rule: its counts as shares of the cell's neighbours, in %, intervals from one share (in) to another (out, none:
   // up to all), B33-50%/S14-50% (Game of Hats'), for tilings whose cells have not all as many neighbours; its tables by
   // the cell's neighbours d and its live ones c, at SHARE_ROW × d + c (see GPU_LIFE's mode 3): no share reckoned there
+  // (share: its intervals, Birth's and Survival's, each [in, out], out null: up to all)
   const SHARE = /(\d+(?:\.\d+)?)-(\d+(?:\.\d+)?)?%/g,
-    share = /%/.test(m[1] + m[2]);
+    intervals = (spec) =>
+      [...spec.matchAll(SHARE)].map(([, lo, hi]) => [Number(lo), hi === undefined ? null : Number(hi)]),
+    share = /%/.test(m[1] + m[2]) && { B: intervals(m[1]), S: intervals(m[2]) };
   if (share && [m[1], m[2]].some((spec) => spec.replace(SHARE, '').replace(/^,|,(?=,|$)/g, '') !== '')) return null;
   // letters: Callahan's on hexagons (o, m, p), else Hensel's on squares (see henselClass), "-": all but these; or v and the
   // counts of the live ones by a corner only (0 to 3: 5v0, all 5 by a side; 3v01, none or one by a corner; a "." ends them before
@@ -21796,13 +21885,13 @@ function parseRule(text) {
   if (C < 2 || C > 25 || colours > LIFE_COLOURS.length || colours * (C - 1) > 255) return null; // (a cell's state a byte)
   const ring = hensel ? 8 : 6,
     classOf = hensel ? (mask) => henselClass(mask).toUpperCase() : hexClass;
-  const table = (spec) => {
+  const table = (spec, part) => {
     if (share) {
       const a = new Uint8Array(SHARE_ROW * SHARE_ROW);
-      for (const [, lo, hi] of spec.matchAll(SHARE))
+      for (const [lo, hi] of share[part])
         for (let d = 1; d < SHARE_ROW; d++)
           for (let c = 0; c <= d; c++)
-            if (lo * d <= 100 * c && (hi === undefined || 100 * c < hi * d)) a[SHARE_ROW * d + c] = 1;
+            if (lo * d <= 100 * c && (hi === null || 100 * c < hi * d)) a[SHARE_ROW * d + c] = 1;
       return a;
     }
     const a = new Uint8Array(16 + (1 << ring)); // by the count, and by 16 + the mask of where they sit
@@ -21822,8 +21911,8 @@ function parseRule(text) {
   };
   const tail = (C > 2 ? `/C${C}` : '') + (two ? '/Immigration' : colours > 2 ? `/Colours${colours}` : '');
   return {
-    B: table(m[1]),
-    S: table(m[2]),
+    B: table(m[1], 'B'),
+    S: table(m[2], 'S'),
     C,
     two,
     colours,
@@ -22399,7 +22488,7 @@ function buildLife(seq, variant) {
   stopHunt(); // (a new surface, rule or colours: the starts found were another game's, see lifeHuntKey)
   renderTeams(); // the blocks a figure fits, now that it is built
   renderPlaneRow(); // (its starts: Text where a picture can be laid)
-  if (!$('ruleTuto').hidden) renderRuleSection(); // (its page, now that it is built: blocks, their max period here)
+  renderRuleSection(); // (what it shows of the grid, now that it is built: its page's blocks, their max period here; a share rule's counts)
   showStacks();
 }
 
@@ -25549,7 +25638,7 @@ function buildLifePlane(seq) {
   stopHunt(); // (a new grid, rule or colours: the starts found were another game's, see lifeHuntKey)
   renderTeams(); // the blocks a figure fits, and its size's words (its colours fitted), now that it is built
   renderPlaneRow();
-  if (!$('ruleTuto').hidden) renderRuleSection(); // (its page, now that it is built: blocks, their max period here)
+  renderRuleSection(); // (what it shows of the grid, now that it is built: its page's blocks, their max period here; a share rule's counts)
   showStacks();
 }
 // Space-time's cubes (see the Stacks tile beside Walls), a view of the game: Life on squares from its start, played on the card for its
@@ -29061,16 +29150,99 @@ function renderRuleSection() {
       }),
     );
   document.querySelector('.rule-build').hidden = $('lifeCustomRow').hidden = !mineNot; // (its states and chips, its text: your own's only)
-  if (variant.margolus || variant.loops || variant.elementary || parseRule(now)?.share) {
+  if (variant.margolus || variant.loops || variant.elementary) {
     document.querySelector('.rule-build').hidden = true;
     return;
-  } // (a block rule, a table, Wolfram's, a share rule: typed only, no births nor survivals by counts)
-  // your own: the chips of the rule in use, a count a row; beside 2, 3 and 4 on hexagons, Callahan's letters (where
-  // they sit: o side by side, m one cell apart, p opposite); on squares, with a rule written with them, Hensel's
-  // (1 to 7, see henselClass); a count partly on when only some of its letters are
+  } // (a block rule, a table, Wolfram's: typed only, no births nor survivals by counts)
   const rule = parseRule(now) ?? parseRule('B3/S23'),
     N = NEIGHBOURS[mark],
     hex = mark === '⬡';
+  // the counts of neighbours its cells have, the most cells' first: the grid shown's, once built (else the mark's)
+  const counts = walk.variant === tabVariant() && walk.life ? neighbourCounts(walk.life) : [N];
+  const apply = (text) => {
+    customOpen = true;
+    $('lifeRule').value = text;
+    compute();
+  }; // (your own still, even as a known one)
+  // by counts of live neighbours or by shares of them: the other tab writes the rule in use the other way, the same on
+  // the cells of the most cells' count
+  $('ruleCountTabs').replaceChildren(
+    textTabs(
+      [
+        ['Count', false, 'Born or kept by how many live neighbours'],
+        [
+          '%',
+          true,
+          "Born or kept by the share of live ones among the cell's neighbours, for grids whose cells have not all as many",
+        ],
+      ].map(([name, byShare, title]) => {
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.textContent = name;
+        b.title = title;
+        b.classList.toggle('active', !!rule.share === byShare);
+        b.addEventListener('click', () => {
+          if (!!rule.share !== byShare)
+            apply(byShare ? countsAsShares(rule, counts[0]) : sharesAsCounts(rule, counts[0]));
+        });
+        return b;
+      }),
+    ),
+  );
+  document.querySelector('.rule-build > .build-cols').hidden = !!rule.share;
+  $('ruleShares').hidden = !rule.share;
+  // the states (alive, its dying stages, dead): − / +, 2 to 25, as many as a cell's byte holds with the colours
+  // (a state up to K × (C − 1), see parseRule); writeAt: the rule with C states
+  const stepStates = (writeAt) => {
+    const most = Math.min(25, Math.floor(255 / lifeTeams) + 1);
+    $('statesLabel').innerHTML = `${rule.C} states<small>${rule.C > 2 ? `${rule.C - 2} dying` : 'none dying'}</small>`;
+    setTile($('statesDown'), { greyed: rule.C <= 2 ? 'Already 2 states, none dying.' : '' });
+    setTile($('statesUp'), { greyed: rule.C >= most ? `Already the most states, ${most}.` : '' });
+    $('statesDown').onclick = () => apply(writeAt(rule.C - 1));
+    $('statesUp').onclick = () => apply(writeAt(rule.C + 1));
+  };
+  // a share rule's: each interval a slider from its share in to its share out (all the way: up to all), then the counts of
+  // live neighbours it gives, by the cell's neighbours
+  if (rule.share) {
+    for (const [id, part] of [
+      ['shareBirth', 'B'],
+      ['shareSurvive', 'S'],
+    ]) {
+      const spans = rule.share[part].length ? rule.share[part] : [[0, 0]];
+      const counted = document.createElement('div');
+      counted.className = 'share-counts';
+      counted.title = "The counts of live neighbours this gives, by the cell's neighbours";
+      counted.textContent = counts
+        .map((d) => {
+          const on = [...Array(d + 1).keys()].filter((c) => rule[part][SHARE_ROW * d + c]);
+          return `${d}: ${on.length ? on.join(',') : 'none'}`;
+        })
+        .join(' · ');
+      $(id).replaceChildren(
+        ...spans.map(([lo, hi], i) =>
+          rangeSlider({
+            lo,
+            hi: hi ?? 100,
+            title: part === 'B' ? 'Born from this share of live neighbours' : 'Kept from this share of live neighbours',
+            words: (from, to) => (to === 100 ? `${from} % and more` : `${from} – ${to} %`),
+            change: (from, to) =>
+              apply(
+                shareText(
+                  { ...rule.share, [part]: spans.map((s, j) => (j === i ? [from, to === 100 ? null : to] : s)) },
+                  rule.C,
+                ),
+              ),
+          }),
+        ),
+        counted,
+      );
+    }
+    stepStates((C) => shareText(rule.share, C));
+    return;
+  }
+  // your own: the chips of the rule in use, a count a row; beside 2, 3 and 4 on hexagons, Callahan's letters (where
+  // they sit: o side by side, m one cell apart, p opposite); on squares, with a rule written with them, Hensel's
+  // (1 to 7, see henselClass); a count partly on when only some of its letters are
   const hensel = mark === '■'; // (your own on squares: always with Hensel's letters)
   // (on a flower or a ring: v, how many of the live ones by a corner only, 0 to 2; on kites, 0 to 3 or more, a kite having 4
   // neighbours by a side and 5 by a corner: the ways a count can be, letters where it has two or more)
@@ -29153,10 +29325,8 @@ function renderRuleSection() {
       b.title = title;
       b.addEventListener('click', () => {
         click();
-        customOpen = true;
-        $('lifeRule').value = write(B, S, rule.C);
-        compute();
-      }); // (your own still, even as a known one)
+        apply(write(B, S, rule.C));
+      });
       return b;
     };
     const box = (className, items) => {
@@ -29192,19 +29362,7 @@ function renderRuleSection() {
       ),
     );
   }
-  // the states (alive, its dying stages, dead): − / +, 2 to 25, as many as a cell's byte holds with the colours
-  // (a state up to K × (C − 1), see parseRule)
-  const most = Math.min(25, Math.floor(255 / lifeTeams) + 1),
-    states = (C) => {
-      customOpen = true;
-      $('lifeRule').value = write(B, S, C);
-      compute();
-    };
-  $('statesLabel').innerHTML = `${rule.C} states<small>${rule.C > 2 ? `${rule.C - 2} dying` : 'none dying'}</small>`;
-  setTile($('statesDown'), { greyed: rule.C <= 2 ? 'Already 2 states, none dying.' : '' });
-  setTile($('statesUp'), { greyed: rule.C >= most ? `Already the most states, ${most}.` : '' });
-  $('statesDown').onclick = () => states(rule.C - 1);
-  $('statesUp').onclick = () => states(rule.C + 1);
+  stepStates((C) => write(B, S, C));
 }
 let ruleFittedTo = null;
 const shapeRules = {}; // each shape's last rule, by its mark: back on a shape, its rule again (as its size: the last picked)

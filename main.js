@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.358';
+const VERSION = '0.5.359';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -6963,8 +6963,8 @@ function textTabs(buttons) {
   g.classList.add('text-tabs');
   return g;
 }
-// a slider of two knobs, an interval from lo to hi (0 to 100, by 1), its words over it (words(lo, hi)); change(lo, hi) once
-// a knob is let go (a knob never past the other: they meet)
+// a slider of two knobs, upright (0 at the top, as the counts' chips), an interval from lo to hi (0 to 100, by 1), its words
+// over it (words(lo, hi)); change(lo, hi) once a knob is let go (a knob never past the other: they meet)
 function rangeSlider({ lo, hi, title, words, change }) {
   const box = document.createElement('div'),
     said = document.createElement('div'),
@@ -6986,8 +6986,8 @@ function rangeSlider({ lo, hi, title, words, change }) {
   const show = () => {
     const [a, b] = knobs.map((k) => Number(k.value));
     said.textContent = words(a, b);
-    fill.style.left = `calc(${a} * (100% - 24px) / 100)`;
-    fill.style.width = `calc(24px + ${b - a} * (100% - 24px) / 100)`; // (a knob 24 px wide, its middle 12 px in from the ends at 0 and 100)
+    fill.style.top = `calc(${a} * (100% - 24px) / 100)`;
+    fill.style.height = `calc(24px + ${b - a} * (100% - 24px) / 100)`; // (a knob 24 px high, its middle 12 px in from the ends at 0 and 100)
   };
   knobs.forEach((k, i) => {
     k.addEventListener('input', () => {
@@ -29189,7 +29189,7 @@ function renderRuleSection() {
       }),
     ),
   );
-  document.querySelector('.rule-build > .build-cols').hidden = !!rule.share;
+  $('ruleCounts').hidden = !!rule.share;
   $('ruleShares').hidden = !rule.share;
   // the states (alive, its dying stages, dead): − / +, 2 to 25, as many as a cell's byte holds with the colours
   // (a state up to K × (C − 1), see parseRule); writeAt: the rule with C states
@@ -29217,8 +29217,10 @@ function renderRuleSection() {
           const on = [...Array(d + 1).keys()].filter((c) => rule[part][SHARE_ROW * d + c]);
           return `${d}: ${on.length ? on.join(',') : 'none'}`;
         })
-        .join(' · ');
-      $(id).replaceChildren(
+        .join('\n'); // (a line a count of neighbours)
+      const sliders = document.createElement('div');
+      sliders.className = 'share-sliders';
+      sliders.append(
         ...spans.map(([lo, hi], i) =>
           rangeSlider({
             lo,
@@ -29234,8 +29236,8 @@ function renderRuleSection() {
               ),
           }),
         ),
-        counted,
       );
+      $(id).replaceChildren(sliders, counted);
     }
     stepStates((C) => shareText(rule.share, C));
     return;

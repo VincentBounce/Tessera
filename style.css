@@ -1385,43 +1385,46 @@ button.active .bubble.active {
   gap: 6px;
   margin-bottom: var(--block-gap);
 } /* Birth, Survive: a frame each */
-.share-boxes {
+.share-sliders {
   display: flex;
-  flex-direction: column;
-  gap: 6px;
-} /* a share rule's: Birth, Survive, a frame each, one over the other (a slider wide) */
-.share-boxes .build-box {
-  display: flex;
-  flex-direction: column;
   gap: 4px;
-  padding: 6px 8px;
-}
-.share-boxes h4 {
-  margin: 0;
+} /* a share rule's frame: its intervals' upright sliders, side by side, the counts they give right of them */
+#shareBirth,
+#shareSurvive {
+  display: flex;
+  gap: 6px;
+  padding: 0 4px;
 }
 .share-counts {
   font-size: var(--caption-text-size);
   color: var(--muted-text-color);
-  text-align: center;
-} /* the counts it gives, by the cell's neighbours */
+  white-space: pre;
+} /* the counts it gives, a line a count of the cell's neighbours, never cut */
+.range-slider {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
 .range-words {
-  font-size: var(--label-text-size);
-  text-align: center;
+  font-size: var(--caption-text-size);
+  white-space: nowrap;
 }
 .range-track {
   position: relative;
-  height: 24px;
-  margin: 2px 0;
+  width: 24px;
+  height: 192px;
   border-radius: 999px;
   background: var(--track-background);
-} /* a slider of two knobs: Shape's pill track (see .shape-slider), the interval between its knobs gold */
+} /* a slider of two knobs, upright as the counts' chips (8 high): Shape's pill track (see .shape-slider), the interval
+   between its knobs gold */
 .range-track > i {
   position: absolute;
-  top: 0;
-  height: 100%;
+  left: 0;
+  width: 100%;
   border-radius: 999px;
   background: color-mix(in srgb, var(--accent-color) 35%, transparent);
-} /* (the track's height, from the low knob's left edge to the high one's right edge, see rangeSlider) */
+} /* (the track's width, from the low knob's top edge to the high one's bottom edge, see rangeSlider) */
 .range-track input {
   position: absolute;
   inset: 0;
@@ -1429,9 +1432,10 @@ button.active .bubble.active {
   height: 100%;
   margin: 0;
   appearance: none;
+  writing-mode: vertical-lr;
   background: none;
   pointer-events: none;
-}
+} /* (upright, 0 at the top) */
 .range-track input::-webkit-slider-thumb {
   appearance: none;
   width: 24px;

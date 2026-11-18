@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.348';
+const VERSION = '0.5.349';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -18392,7 +18392,7 @@ function nextCorner(g, G, v, from, angle) {
     const e = flat(w),
       c = cross(h, e);
     const turn = Math.atan2((c[0] * n[0] + c[1] * n[1] + c[2] * n[2]) / nl, h[0] * e[0] + h[1] * e[1] + h[2] * e[2]);
-    const off = Math.abs(turn - angle) - (turn > 0 ? 1e-9 : 0);
+    const off = Math.abs(turn - angle) - (turn > angle ? 1e-9 : 0); // (on a tie, the one left of the turn asked, as nextCornerCarried's)
     if (off < err - 1e-12) {
       err = off;
       next = w;

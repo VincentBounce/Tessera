@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.349';
+const VERSION = '0.5.350';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -16649,9 +16649,10 @@ const MORPHABLE = [
   ...foldedIn('torus'),
 ];
 
-// a sheet's corners by their places on it (uv): each place once (places, u v pairs), each corner's (at), made once
-function sheetPlaces(g) {
-  if (g.sheetPlaces) return g.sheetPlaces;
+// a sheet's tiles' corners by their places on it (uv, its seams open: see shapeAt): each place once (places, u v pairs),
+// each tile corner's (at), made once (not sheetPlacesOf's: its mesh corners, for a shift's map)
+function tileCornerPlaces(g) {
+  if (g.tileCornerPlaces) return g.tileCornerPlaces;
   const { uv } = g,
     index = new Map(),
     places = [],
@@ -16665,7 +16666,7 @@ function sheetPlaces(g) {
     }
     at[q] = i;
   }
-  return (g.sheetPlaces = { places, at });
+  return (g.tileCornerPlaces = { places, at });
 }
 // the points of a sheet's places in its form m (see sheetPoint), three numbers each
 function sheetPointsAt(g, places, m) {
@@ -16683,7 +16684,7 @@ function shapeAt(g, m) {
     // per tile, from the sheet coordinates of its corners (at m < 1 the seams open, so corners across them are not shared):
     // each sheet point once (most a corner of 4 tiles), then its tiles'; a Klein bottle's a straight blend of its two forms
     // (see kleinPoint), its flat sheet's and its round one's, made once
-    const { places, at } = sheetPlaces(g),
+    const { places, at } = tileCornerPlaces(g),
       np = places.length / 2,
       P = new Float64Array(3 * np);
     if (g.klein) {

@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.365';
+const VERSION = '0.5.366';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -21827,7 +21827,8 @@ const ruleUnsettable = (rule, most, p) => {
     );
   if (odd)
     return `Typed only: ${odd[0]}-${odd[1] ?? ''}%, the slider going by whole %, from 0 to 100, the lower first.`;
-  if (rule.share?.[p].length > 1) return `Typed only: ${rule.share[p].length} intervals, the slider setting one.`;
+  if (rule.share && rule.share[p].length > 1)
+    return `Typed only: ${rule.share[p].length} intervals, the slider setting one.`;
   const past = !rule.share && countsOn(rule, rule[p]).find((c) => c > most);
   return past ? `Typed only: ${past}, no cell here having as many neighbours (${most} at most).` : '';
 };
@@ -48411,7 +48412,7 @@ function cellsTuning() {
     lightColour = { Panel: 'panelColour', Debug: 'debugColour' }[CELLS_FINISHES[cellsFinish][0]]; // (Panel, Debug: a pick its light's colour, the cell's left as it is)
   debugPanel({
     key: `${theme}|${solo}|${cellsFinish}`,
-    title: 'Cells: debug',
+    title: `Cells › ${CELLS_FINISHES[cellsFinish][0]}`, // (the mode whose numbers it shows)
     numbers: lights,
     shown: CELLS_LIGHT_OF[CELLS_FINISHES[cellsFinish][0]],
     shared: ['cellsBody', 'cellsDarkInk'], // (every lit mode's)

@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.428';
+const VERSION = '0.5.429';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -31091,12 +31091,12 @@ for (const [k, of] of Object.entries(FACE_BASE)) FACE_MIDDLES[k] = FACE_MIDDLES[
 // than K too (a part kept by H's turns: the dodecahedron's opposite faces, 6 colours of its 60 turns). Its points tried: its
 // faces' middles, its corners, one face's cells on its least mesh (its turns the same at every size); kept, on the least
 // mesh, the fewest cells no one's, then the fewest faces cut, then the fewest pieces (each colour in one), then the most
-// turns, then the fewest sides between colours (as tools/faceparts.js chose its tables, before v0.5.411). Mirror: each colour's items carried onto its own by the centre's
+// turns, then the fewest sides between colours (as tools/faceparts.js chose its tables, before v0.5.411). Opposite: each colour's items carried onto its own by the centre's
 // inversion (Symmetry's Opposite). Apart (Teams' Apart, see piecesApart): the most pieces instead, none through the centre
 // but on Opposite (the dodecahedron's 6 colours, two faces apart each). Null: none
 const colouringMemo = remember('colouringMemo', {});
-function colouring(surface, K, mirror = false, apart = piecesApart()) {
-  const id = `${surface}|${K}|${mirror}|${apart}`;
+function colouring(surface, K, opposite = false, apart = piecesApart()) {
+  const id = `${surface}|${K}|${opposite}|${apart}`;
   if (!SOLIDS.includes(surface)) return null; // (a solid's only: a ring's, a globe's, a rosette sphere's parts their own)
   if (id in colouringMemo) return colouringMemo[id];
   const g = leastMesh(surface),
@@ -31127,7 +31127,7 @@ function colouring(surface, K, mirror = false, apart = piecesApart()) {
           colour.push(coset.get(key(M)));
         }
       }
-      if (mirror && !items.every((q, i) => colour.some((c, j) => c === colour[i] && dot3(items[j], q) < -1 + 1e-9)))
+      if (opposite && !items.every((q, i) => colour.some((c, j) => c === colour[i] && dot3(items[j], q) < -1 + 1e-9)))
         continue;
       const order = items.map((q) => roundedKey(q)),
         relabel = new Map(),
@@ -31156,7 +31156,7 @@ function colouring(surface, K, mirror = false, apart = piecesApart()) {
       const pieces = new Set([...of.keys()].filter((t) => of[t] >= 0).map(root)).size,
         across = items.every((q, i) => colour.some((c, j) => c === colour[i] && dot3(items[j], q) < -1 + 1e-9)), // (its pieces each other's through the centre: Opposite's)
         score = apart
-          ? [none, cut.size, across && !mirror ? 1 : 0, -pieces, -G.length, sides]
+          ? [none, cut.size, across && !opposite ? 1 : 0, -pieces, -G.length, sides]
           : [none, cut.size, pieces, -G.length, sides];
       if (!best || lexicoLess(score, best.score)) best = { score, items, colour };
     }
@@ -31579,10 +31579,10 @@ function colourUnitPlaces(g) {
   return (g.colourUnitPlaces = out);
 }
 // each colour's part: its places' open cells only (a wall's, on a surface, no one's: the plane has none, see planeGrid)
-function huntParts(r, K, mirror = plane.sym === 'opposite' && !walk.plane, mixed = teamsMixed()) {
-  // (mirror: Symmetry's Opposite on a solid, see colouring; mixed: Mixed's, else each colour's own place)
+function huntParts(r, K, opposite = plane.sym === 'opposite' && !walk.plane, mixed = teamsMixed()) {
+  // (opposite: Symmetry's Opposite on a solid, see colouring; mixed: Mixed's, else each colour's own place)
   const { start } = walk.life.nbr;
-  return partPlaces(r, K, mirror, mixed).map((part) => part.filter((t) => start[t] < start[t + 1]));
+  return partPlaces(r, K, opposite, mixed).map((part) => part.filter((t) => start[t] < start[t + 1]));
 }
 // a rosette sphere's turns round its axis: its disc's (a frame's, or its mesh's disc's grid's, see figureTurns)
 const rosetteTurns = (g) => g.turns ?? figureTurns(g.disc.kind);
@@ -31611,7 +31611,7 @@ const rosetteParts = (g, K) =>
     }
     return out;
   })());
-function partPlaces(r, K, mirror, mixed) {
+function partPlaces(r, K, opposite, mixed) {
   if (K === 1 && walk.life?.margolus && walk.geo?.torus) return [huntParts(r, 3, false, false)[1]]; // (a reversible sheet: one colour's, Trio's second, in view: a torus's middle square, see lifeParts, patternFrame)
   if (mixed && K > 1) {
     // Mixed: one colour's place, its cells shuffled (by its seed) and dealt out in turn: each colour as many, give or take one
@@ -31712,7 +31712,7 @@ function partPlaces(r, K, mirror, mixed) {
   if (hull) {
     // a hull solid (see hullColourings): Wild, a colour's faces its own (two opposite faces a colour: its first), the others' cells each to the nearest colour's face's middle; Mirror, its two faces; a zone, round each colour's first face's middle
     if (r) return hull.groups.map((_, i) => lifePatch(r, middleCells(i, K)));
-    if (mirror) return hull.groups.map((gr) => gr.flatMap((q) => faceCells(g, q))); // (Mirror: its two opposite faces only)
+    if (opposite) return hull.groups.map((gr) => gr.flatMap((q) => faceCells(g, q))); // (Opposite: its two opposite faces only)
     const own = hull.groups.flatMap((gr, k) => (hull.pairs ? [gr[0]] : gr).map((q) => [hull.mids[q], k])),
       owner = new Map(hull.groups.flatMap((gr, k) => (hull.pairs ? [gr[0]] : gr).map((q) => [q, k])));
     for (let t = 0; t < n; t++) {
@@ -31729,7 +31729,7 @@ function partPlaces(r, K, mirror, mixed) {
     return parts;
   }
   const surface = VARIANTS[walk.variant].surface,
-    col = K === 1 ? null : colouring(surface, K, mirror);
+    col = K === 1 ? null : colouring(surface, K, opposite);
   // a cell by its middle's nearest spot (see spotColours)
   const own = K === 1 ? null : spotColours(col, g);
   if (!r) {

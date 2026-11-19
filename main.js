@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.418';
+const VERSION = '0.5.419';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -22199,8 +22199,12 @@ function symmetricStart(seed) {
       for (const t of part) own[t] = i + 1;
     });
   for (let t = 0; t < seed.length; t++) {
-    // (its first, before it: as it is)
-    const v = seed[firstCopy(t)];
+    // (its first live copy's, before it: as it is; a pattern laid on any of them, Famous's on a solid's part's second piece)
+    const v =
+      startCopies(t)
+        .sort((a, b) => a - b)
+        .map((c) => seed[c])
+        .find(Boolean) ?? 0;
     seed[t] = !v || !own ? v : own[t] ? colourState(own[t] - 1, Math.floor((v - 1) / walk.life.colours) + 1) : 0;
   }
 }
@@ -31131,7 +31135,7 @@ function spotColours(col, g) {
 }
 // the patches' spots: the colours' patch items
 const patchSpots = (surface, K) => {
-  const c = colouring(surface, K);
+  const c = colouring(surface, K, plane.sym === 'opposite'); // (Opposite's: its parts' colouring, see huntParts)
   return c.patch.map((i) => c.items[i]);
 };
 // Each colour's part of the grid: radius r, a patch round each spot; else (r = 0) the whole grid,
@@ -33676,7 +33680,7 @@ function centredChoices(kind, K, rule, mine, any, centred = true) {
     step = (2 * Math.PI) / n;
   // Famous (not centred): all of them, the middle's and those off it, every way the figure turns them, each copy whole in its
   // colour's part
-  const parts = !centred ? huntParts(0, K, false, false).map((p) => new Set(p)) : null,
+  const parts = !centred ? huntParts(0, K, undefined, false).map((p) => new Set(p)) : null,
     inPart = (cs, i) => !parts || cs.every((t, j) => j % 2 || parts[i].has(t));
   for (const [, , , name, cells] of figs) {
     const own = D.way(cells);
@@ -33720,7 +33724,7 @@ const choiceOfWord = (list, word) => {
 function patternChoices(centred = false) {
   // (once a grid, its colours and rule)
   const L = walk.life,
-    id = `${flatGrid() ? `${gridKey()}|${planeTurn()}` : ''}|${L.colours}|${lifeParts()}|${L.ruleText}`,
+    id = `${flatGrid() ? `${gridKey()}|${planeTurn()}` : ''}|${L.colours}|${lifeParts()}|${L.ruleText}|${startSymmetry()}`, // (Opposite's: its parts' own spots)
     m = choicesMemo[centred]; // (its teams laid too: Newcomer's one fewer, see lifeParts)
   if (m?.id !== id || m.g !== walk.geo)
     choicesMemo[centred] = { id, g: walk.geo, choices: laidChoices(centred).map(namedChoices) };
@@ -33779,7 +33783,7 @@ function laidChoices(centred, any = false) {
   // there) and its cells all on cells of that part; few enough moves (FAMOUS_ALL at most, as a hunt tries them all), those
   // kept; more (a big grid), every move, laid when drawn (a lazy list, null where it does not fit: see drawChoice)
   if (!centred)
-    return huntParts(0, K, false, false).map((part, i) => {
+    return huntParts(0, K, undefined, false).map((part, i) => {
       const here = new Set(part),
         laid = shapes.map((cells) => [cells, cells.map(([x, y]) => cellMiddle(kind, x, y)), cells.name]),
         frames = new Map();
@@ -33906,7 +33910,7 @@ function mobiusMiddle(g) {
 // dodecahedron's, its pentagon's: see centreCells). Kept per grid
 const middleMemo = remember('middleMemo', new Map());
 function middleCells(i = 0, K = 1) {
-  const key = `${gridKey()}|${patternKind()}|${i}|${K}`;
+  const key = `${gridKey()}|${patternKind()}|${i}|${K}|${plane.sym}`;
   if (middleMemo.has(key)) return middleMemo.get(key);
   const g = walk.geo,
     { start } = walk.life.nbr,

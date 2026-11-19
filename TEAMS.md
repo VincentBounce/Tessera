@@ -268,28 +268,28 @@ plane's turns and mirrors, a solid's Opposite).
 
 | figure | 1 | 2 (Duel) | 3 to 12 |
 |---|---|---|---|
-| Plane, torus | whole grid | `torusLattice` (Apart: `spread`) | `torusLattice` (Apart: `spread`) |
-| Plane, walled rectangle | whole grid | `planeFrame.block`, `teamGrid`: Up / Down 1 × 2, Left / Right 2 × 1 | 4: blocks 2 × 2; 8 on squares: `planeSlices` as many cells; 3, 6, 12 greyed (`wallTurns`) |
-| Plane, walled hexagon | whole grid | `planeSlices` rings (Left / Right: upright, by angles) | `planeSlices`: rings for 3, 6, 12; angles for 4 (its mirrors' cells no one's) |
-| Plane, disc (never repeats) | whole disc | `planeSlices` from a corner (`CORNER_DISCS`) | `planeSlices` by angles; no turn (Hats, Spectre…): as many cells each |
-| Solid | whole solid | `colouring` → `spotColours` | `colouring` (G, H, a point), Opposite: its mirror, Apart: its pieces apart |
-| Hull solid (Cubocta, RhDode…) | whole solid | `hullColourings` where it has K, else `colouring` | the same |
-| Torus, Klein bottle (3D) | whole | `torusBlocks` (Klein: `kleinLength`'s blocks, its half turn) | the same |
-| Möbius strip | whole | stretches 2L / K along its loop (`partPlaces`) | the same |
-| Globe | whole, its caps | hemispheres (Left / Right: two lunes) | lunes between meridians, its caps no one's |
-| Rosette sphere | whole | its two discs (`poleColours`; Left / Right: two lunes) | `rosetteParts`: lunes, or halves × lunes (`rosetteHalves`) |
+| Life › 2D squares › any repeating tile (Squares, Triangles…) › Square or Rhombus (a torus) | whole grid | `torusLattice` (Apart: `spread`) | `torusLattice` (Apart: `spread`) |
+| Life › 2D squares › any repeating tile › Walls (a rectangle walled; R. walls: a rhombus, its half turn only) | whole grid | `planeFrame.block`, `teamGrid`: Up / Down 1 × 2, Left / Right 2 × 1 | 4: blocks 2 × 2; 8 on squares: `planeSlices` as many cells; 3, 6, 12 greyed (`wallTurns`) |
+| Life › 2D squares › Rectangle torus · Walled hexagon › Triangles, Hexagons… › Hex | whole grid | `planeSlices` rings (Left / Right: upright, by angles) | `planeSlices`: rings for 3, 6, 12; angles for 4 (its mirrors' cells no one's) |
+| Life › 2D circles › Never repeating, Flowers, Mirrors, Hexas, Rings › Penrose, Hats, Flower 6… | whole disc | `planeSlices` from a corner (`CORNER_DISCS`) | `planeSlices` by angles; no turn (Hats, Spectre…): as many cells each |
+| Life › 3D solids › Regular polyhedra (Tetra, Cube, Octa, Dode sph, Ico sph, Stella) and Sponge, Frame, Pits, Bumps › its tiles | whole solid | `colouring` → `spotColours` | `colouring` (G, H, a point), Opposite: its mirror, Apart: its pieces apart |
+| Life › 3D solids › RhDode, RhTria, Pyramid, Cubocta, Bicupola, Rhombi (hull solids) | whole solid | `hullColourings` where it has K, else `colouring` | the same |
+| Life › 3D solids › Surfaces › Torus, Klein › its tiles | whole | `torusBlocks` (Klein: `kleinLength`'s blocks, its half turn) | the same |
+| Life › 3D solids › Surfaces › Möbius › its tiles | whole | stretches 2L / K along its loop (`partPlaces`) | the same |
+| Life › 3D solids › Surfaces › Globe | whole, its caps | hemispheres (Left / Right: two lunes) | lunes between meridians, its caps no one's |
+| Life › 3D solids › Surfaces › Rosettes › Flower 6, Mirror 5… | whole | its two discs (`poleColours`; Left / Right: two lunes) | `rosetteParts`: lunes, or halves × lunes (`rosetteHalves`) |
 
 **Spots, by figure** (where Seed, Icon and Famous lay, each colour's: `patternFrame(i, K).centre`):
 
 | figure | 1 | 2 to 12 |
 |---|---|---|
-| Plane, torus | the grid's middle | `planeFrame.lattice(K).middles` |
-| Plane, walled rectangle | the grid's middle | `planeFrame.middle` (its blocks') or `planeSlices` spots |
-| Plane, walled hexagon, disc | its centre of turns | `planeSlices(K).spots` |
-| Solid, hull solid | the face in front (`frontCell`) | `patchSpots` (the colouring's patch items), a face's middle where they are |
-| Torus, Klein (3D), Möbius | the sheet's middle | its blocks' or stretches' middles (`middleCells`) |
-| Globe | — | — (no frame to lay on: Seed, Icon, Famous greyed) |
-| Rosette sphere | its pole | its lune's middle (`lune`), a disc's pole in a Duel |
+| 2D squares › a tile › Square or Rhombus | the grid's middle | `planeFrame.lattice(K).middles` |
+| 2D squares › a tile › Walls or R. walls | the grid's middle | `planeFrame.middle` (its blocks') or `planeSlices` spots |
+| 2D squares › … › Hex; 2D circles › a tile | its centre of turns | `planeSlices(K).spots` |
+| 3D solids › a solid (Regular, Irregular polyhedra) | the face in front (`frontCell`) | `patchSpots` (the colouring's patch items), a face's middle where they are |
+| 3D solids › Surfaces › Torus, Klein, Möbius | the sheet's middle | its blocks' or stretches' middles (`middleCells`) |
+| 3D solids › Surfaces › Globe | — | — (no frame to lay on: Seed, Icon, Famous greyed) |
+| 3D solids › Surfaces › Rosettes | its pole | its lune's middle (`lune`), a disc's pole in a Duel |
 
 **Starts, by how they use them:**
 

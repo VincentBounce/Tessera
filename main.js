@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.421';
+const VERSION = '0.5.422';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -27594,7 +27594,7 @@ const TEAM_NAMES = {
   12: 'Dozen',
 }; // one colour, then battles
 // the counts of colours fair on the figure, every colour's part a copy of the others' (see teamsFair)
-const MIRRORED_DISCS = ['ammann', 'rhombs12', 'rhombs14', 'penrose', 'kitesDarts']; // the discs that mirror (the rosettes turn as a spiral): their parts a turn's, from half of one (its corner)
+const CORNER_DISCS = ['ammann', 'rhombs12', 'rhombs14', 'penrose', 'kitesDarts']; // the discs whose slices start at a corner, half a turn's step on (the rosettes turn as a spiral, none); those mirrored, DISC_MIRRORS
 // a walled figure's turns round its middle: a hexagon's or a disc's its grid's (see figureTurns); a rectangle's, its half
 // turn only, a four-fold grid's square its quarter turns (as square as can be, see sideW: Pythagoras' 4 colours 640 cells each)
 const wallTurns = (kind) => {
@@ -27675,6 +27675,25 @@ const colourMissing = (K, rule = $('lifeRule').value) => {
   if (K < 3 || !r) return false;
   return countsOn(r, r.B).some((c) => c >= K - 1 && (K === 3 ? (c - 2) % 2 === 0 : c - (K - 1) !== 1));
 };
+// a choice among a few in Teams (DUEL_CUTS, PIECES: [words, title] each), its tabs: the one picked (now) on, its first the
+// default; a click on another picks it (pick) and plays the game again
+const teamsTabs = (list, now, pick) =>
+  textTabs(
+    list.map(([text, title], k) =>
+      tile({
+        text,
+        title,
+        on: now === k,
+        byDefault: k ? '' : 'yes',
+        click: () => {
+          if (now !== k) {
+            pick(k);
+            compute();
+          }
+        },
+      }),
+    ),
+  );
 // Teams, Life's and a walk's alike (its own: see walkTeamTiles)
 function renderTeams() {
   const w = tabVariant();
@@ -27731,48 +27750,9 @@ function renderTeams() {
         compute();
       },
     }),
-    // a Duel's cut, one choice of two (see DUEL_CUTS), where its figure has both
-    ...(lifeTeams === 2 && duelCutsOf(w)
-      ? [
-          textTabs(
-            DUEL_CUTS.map(([text, title], k) =>
-              tile({
-                text,
-                title,
-                on: duelCut === k,
-                byDefault: k ? '' : 'yes',
-                click: () => {
-                  if (duelCut !== k) {
-                    duelCut = k;
-                    compute();
-                  }
-                },
-              }),
-            ),
-          ),
-        ]
-      : []),
-    // a colour's pieces, one choice of two (see PIECES), where its figure has both
-    ...(piecesOf(w)
-      ? [
-          textTabs(
-            PIECES.map(([text, title], k) =>
-              tile({
-                text,
-                title,
-                on: teamsApart === k,
-                byDefault: k ? '' : 'yes',
-                click: () => {
-                  if (teamsApart !== k) {
-                    teamsApart = k;
-                    compute();
-                  }
-                },
-              }),
-            ),
-          ),
-        ]
-      : []),
+    // a Duel's cut and a colour's pieces, each one choice of two, where its figure has both (see DUEL_CUTS, PIECES)
+    ...(lifeTeams === 2 && duelCutsOf(w) ? [teamsTabs(DUEL_CUTS, duelCut, (k) => (duelCut = k))] : []),
+    ...(piecesOf(w) ? [teamsTabs(PIECES, teamsApart, (k) => (teamsApart = k))] : []),
     // Newcomer, a switch (see newcomerCan)
     tile({
       pic: teamBlock(Math.max(3, lifeTeams), true),
@@ -31256,7 +31236,7 @@ function planeSlices(K) {
       (APERIODIC[kind]
         ? {
             o: [(W - 1) / 2, (W - 1) / 2],
-            ...(MIRRORED_DISCS.includes(kind)
+            ...(CORNER_DISCS.includes(kind)
               ? { corner: Math.PI / figureTurns(kind), step: (2 * Math.PI) / figureTurns(kind) }
               : {}),
           }

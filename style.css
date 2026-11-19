@@ -354,12 +354,14 @@ input[type='range'] {
 .shape-slider > span:nth-child(2) {
   opacity: clamp(0, calc((5 / 6 - var(--shape-at, 0)) * 3), 1);
 } /* (both ends' names whole from the middle; the one the knob goes to faded out on its way, gone a sixth from it: never a name under it) */
-.shape-slider input:disabled {
+.shape-slider input:disabled,
+.range-track input:disabled::-webkit-slider-thumb {
   cursor: default;
 }
-.shape-slider:has(input:disabled) {
+.shape-slider:has(input:disabled),
+[data-greyed]:not([data-greyed='']) .range-track {
   opacity: 0.45;
-}
+} /* (a slider greyed, as a button: Shape's, a share rule's in its greyed frame, knobs or none) */
 .pill-row {
   display: flex;
   align-items: center;
@@ -542,13 +544,14 @@ h3 {
 } /* a size: what to picture, then its tiles */
 .stepper span,
 .stepper input,
-.notch-field #speedLabel {
+.notch-field #speedLabel,
+.range-words {
   flex: 1;
   text-align: center;
   color: var(--accent-color);
   font-weight: 600;
   white-space: nowrap;
-} /* the setup at a glance */
+} /* the setup at a glance (a share rule's intervals too, the values of its sliders) */
 .notch-field #speedLabel {
   flex: none;
   min-width: 7.5ch;
@@ -1366,10 +1369,9 @@ button.active .bubble.active {
   gap: 4px;
   margin: 0 0 4px;
 } /* your own's: one block under its card, as close as the cards */
-.rule-build > .build-cols,
-.rule-build > .stepper {
+.rule-build > :not([hidden]) {
   margin-bottom: 0;
-}
+} /* (its parts shown spaced by its gap alone, whatever they are: the tabs, the frames, the states) */
 .rule-cards:has(+ .rule-build:not([hidden])) {
   margin-bottom: 4px;
 } /* your own's block under them: all one (else a list's 10 px) */
@@ -1383,48 +1385,36 @@ button.active .bubble.active {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 6px;
-  margin-bottom: var(--block-gap);
 } /* Birth, Survive: a frame each */
-.share-sliders {
+.share-row {
   display: flex;
   gap: 4px;
-} /* a share rule's frame: its intervals' upright sliders, side by side, the counts they give right of them */
-#shareBirth,
-#shareSurvive {
-  display: flex;
-  gap: 6px;
-  padding: 0 4px;
-}
+} /* a share rule's, in the chips' place: its intervals' sliders, a column of chips each, the counts they give right of them */
 .share-counts {
   font-size: var(--caption-text-size);
   color: var(--muted-text-color);
-  white-space: pre;
-} /* the counts it gives, a line a count of the cell's neighbours, never cut */
-.range-slider {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 4px;
-}
+  white-space: pre-line;
+  min-width: 0;
+} /* the counts it gives, a paragraph a count of the cell's neighbours, wrapped in its column */
 .range-words {
-  font-size: var(--caption-text-size);
-  white-space: nowrap;
-}
+  display: block;
+  white-space: pre-line;
+} /* a share rule's intervals, under its frame's name, a line each (none by counts) */
 .range-track {
   position: relative;
-  width: 24px;
-  height: 192px;
+  flex: none;
+  width: 22px;
   border-radius: 999px;
   background: var(--track-background);
-} /* a slider of two knobs, upright as the counts' chips (8 high): Shape's pill track (see .shape-slider), the interval
-   between its knobs gold */
+} /* a slider of two knobs in the place of a column of chips, as high as the counts beside it (its row's, stretched): Shape's
+   pill track (see .shape-slider), the interval between its knobs gold */
 .range-track > i {
   position: absolute;
   left: 0;
   width: 100%;
   border-radius: 999px;
   background: color-mix(in srgb, var(--accent-color) 35%, transparent);
-} /* (the track's width, from the low knob's top edge to the high one's bottom edge, see rangeSlider) */
+} /* (the track's width, from the low knob's bottom edge to the high one's top edge, see rangeSlider) */
 .range-track input {
   position: absolute;
   inset: 0;
@@ -1433,33 +1423,28 @@ button.active .bubble.active {
   margin: 0;
   appearance: none;
   writing-mode: vertical-lr;
+  direction: rtl;
   background: none;
   pointer-events: none;
-} /* (upright, 0 at the top) */
+} /* (upright, 0 at the bottom, 100 % at the top) */
 .range-track input::-webkit-slider-thumb {
   appearance: none;
-  width: 24px;
-  height: 24px;
+  width: 22px;
+  height: 22px;
   border-radius: 50%;
   background: var(--accent-color);
   cursor: pointer;
   pointer-events: auto;
 }
 .range-track input::-moz-range-thumb {
-  width: 24px;
-  height: 24px;
+  width: 22px;
+  height: 22px;
   border: 0;
   border-radius: 50%;
   background: var(--accent-color);
   cursor: pointer;
   pointer-events: auto;
-} /* (both knobs over the whole track, each caught by its knob only; the high one over the low one, after it) */
-.range-track input:first-of-type::-webkit-slider-thumb {
-  background: color-mix(in srgb, var(--accent-color) 55%, var(--track-background));
-}
-.range-track input:first-of-type::-moz-range-thumb {
-  background: color-mix(in srgb, var(--accent-color) 55%, var(--track-background));
-} /* (the low knob paler) */
+} /* (both knobs over the whole track, each caught by its knob only) */
 .build-box {
   min-width: 0;
   padding: 6px 4px;
@@ -2506,7 +2491,7 @@ button.mark.active::after {
   color: inherit;
   text-decoration: none;
   cursor: pointer;
-} /* a generation of the run in view: clicked, it goes there (see genLink); a walker's name, the camera follows it (see walkerLinks) */
+} /* a generation of the run in view: clicked, it goes there (see stepLink); a walker's name, the camera follows it (see walkerLinks) */
 .gen-link:hover,
 .walker-link:hover,
 .walker-link.followed {

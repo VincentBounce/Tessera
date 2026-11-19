@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.364';
+const VERSION = '0.5.365';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -1589,7 +1589,7 @@ const FORMULA_NOTES = {
  * Laves duals (one shape each, from each vertex's faces), the Pythagorean and Capital I tilings from squares. Each: a
  * lattice (basis: two vectors) and the polygons of one cell of it, in the lattice's units ((u, v): u·a + v·b); its
  * cells a row: those polygons, cell after cell (x = m·i + k: polygon k of lattice cell i), as the kites; neighbours by a
- * shared corner (their corners include every point a neighbour's corner can be on); most: the most neighbours a cell has;
+ * shared corner (their corners include every point a neighbour's corner can be on);
  * a pattern's turns about pivot (lattice units, a centre of the tiling's turns: found by trying each corner, middle and
  * edge's middle), and whether it mirrors across the upright line through it (Florets, Snub, Pythagoras, Capital I: never);
  * torus: on a torus too, its sheet the slanted grid's rectangle (see rectSides, tilingTorusMesh), its lattice cell if at right angles
@@ -1601,7 +1601,6 @@ const TILINGS = {
     mark: '◇',
     cells: 'rhombi',
     where: 'a grid of rhombi, 3 a hexagon (the rhombille tiling)',
-    most: 10,
     turns: 6,
     mirror: true,
     pivot: [0, 0],
@@ -1636,7 +1635,6 @@ const TILINGS = {
     mark: '✳',
     cells: 'tiles',
     where: 'a grid of hexagons, squares and triangles (the rhombitrihexagonal tiling)',
-    most: 12,
     turns: 6,
     mirror: true,
     pivot: [0, 0],
@@ -1690,7 +1688,6 @@ const TILINGS = {
     cells: 'pentagons',
     where:
       'a grid of floret pentagons, 6 round each flower (the pentagons of type 5 tile as it does, and some of 1 and 6)',
-    most: 8,
     turns: 6,
     mirror: false,
     pivot: [0, 0],
@@ -1749,7 +1746,6 @@ const TILINGS = {
     mark: '✶',
     cells: 'tiles',
     where: 'a grid of hexagons and triangles (the snub trihexagonal tiling)',
-    most: 18,
     turns: 6,
     mirror: false,
     pivot: [0, 0],
@@ -1814,7 +1810,6 @@ const TILINGS = {
     mark: '◩',
     cells: 'triangles',
     where: 'a grid of triangles, 4 a square (the tetrakis tiling)',
-    most: 14,
     turns: 4,
     mirror: true,
     pivot: [0, 0],
@@ -1851,7 +1846,6 @@ const TILINGS = {
     mark: '◰',
     cells: 'squares',
     where: 'a grid of squares of two sizes (the Pythagorean tiling)',
-    most: 8,
     turns: 4,
     mirror: false,
     pivot: [0.6, 0.8],
@@ -1884,7 +1878,6 @@ const TILINGS = {
     mark: '⊟',
     cells: 'tiles',
     where: 'a grid of rows of squares and of triangles (the elongated triangular tiling, 3.3.3.4.4)',
-    most: 12,
     turns: 2,
     mirror: true,
     pivot: [0.3660254, 0.2679492],
@@ -1918,7 +1911,6 @@ const TILINGS = {
     cells: 'pentagons',
     where:
       'a grid of prismatic pentagons (houses in rows; the pentagons of types 6 and 7 tile as it does, and some of 1)',
-    most: 7,
     turns: 2,
     mirror: true,
     pivot: [0.3660254, 1.2679492],
@@ -1949,7 +1941,6 @@ const TILINGS = {
     mark: '⌶',
     cells: '𝙸 tiles',
     where: 'a grid of capital 𝙸 tiles (7 squares each)',
-    most: 6,
     turns: 2,
     mirror: false,
     pivot: [6 / 7, 3 / 14],
@@ -1983,7 +1974,6 @@ const TILINGS = {
     mark: '◪',
     cells: 'tiles',
     where: 'a checkerboard of squares and tetrakis squares (every other square cut in 4 triangles from its middle)',
-    most: 16,
     turns: 4,
     mirror: true,
     pivot: [1, 0.5],
@@ -2026,7 +2016,6 @@ const TILINGS = {
     mark: '◬',
     cells: 'triangles',
     where: 'a grid of triangles, 12 a hexagon (the kisrhombille tiling)',
-    most: 16,
     turns: 6,
     mirror: true,
     pivot: [0, 0],
@@ -2103,7 +2092,6 @@ const TILINGS = {
     mark: '✤',
     cells: 'pentagons',
     where: "a grid of Rice's pentagon of type 9 (1976: b = c = d = e, 2A + C = D + 2E = 360°), mirrored one in two",
-    most: 7,
     turns: 2,
     mirror: false,
     pivot: [0.289649, 0.318601],
@@ -2176,7 +2164,6 @@ const TILINGS = {
     mark: '✣',
     cells: 'pentagons',
     where: "a grid of James's pentagon of type 10 (1975: a square with a corner cut off), not edge to edge",
-    most: 7,
     turns: 2,
     mirror: true,
     pivot: [1, 1],
@@ -2240,7 +2227,6 @@ const TILINGS = {
     cells: 'pentagons',
     where:
       "a grid of Rice's pentagon of type 11 (1976: 2a + c = d = e, A = 90°), mirrored one in two, not edge to edge",
-    most: 7,
     turns: 2,
     mirror: false,
     pivot: [0.05, 0.25],
@@ -2322,7 +2308,6 @@ const TILINGS = {
     cells: 'pentagons',
     where:
       "a grid of Rice's pentagon of type 13 (1976: d = 2a = 2e, B = E = 90°), mirrored one in two, not edge to edge",
-    most: 7,
     turns: 2,
     mirror: false,
     pivot: [1.105662, 1.298113],
@@ -2399,7 +2384,6 @@ const TILINGS = {
     mark: '✦',
     cells: 'pentagons',
     where: "a grid of Stein's pentagon (1985, the 14th that tiles, with no freedom: the only other with the 15th)",
-    most: 7,
     turns: 2,
     mirror: false,
     pivot: [0.642825, 0.861384],
@@ -2464,7 +2448,6 @@ const TILINGS = {
     mark: '⬟',
     cells: 'pentagons',
     where: 'a grid of the 15th pentagon (Mann, McLoud-Mann and Von Derau, 2015: the last convex one that tiles)',
-    most: 8,
     turns: 2,
     mirror: false,
     pivot: [0.611646, 0.02452],
@@ -2569,7 +2552,6 @@ const TILINGS = {
     mark: '✡',
     cells: 'tiles',
     where: 'a grid of hexagons and triangles meeting at their corners (the trihexagonal tiling, the kagome)',
-    most: 12,
     turns: 6,
     mirror: true,
     pivot: [0, 0],
@@ -2605,7 +2587,6 @@ const TILINGS = {
     cells: 'tiles',
     where:
       'a grid of hexagons turned 15° and triangles between (the Trihex twisted, the kaleidoscope on the plane: a hexagon 6 hexagons and 6 triangles round it, a triangle 3 hexagons)',
-    most: 12,
     turns: 6,
     mirror: false,
     pivot: [0, 0],
@@ -2646,7 +2627,6 @@ const TILINGS = {
     mark: '❖',
     cells: 'tiles',
     where: 'a grid of octagons and squares (the truncated square tiling)',
-    most: 8,
     turns: 4,
     mirror: true,
     pivot: [0, 0],
@@ -2679,7 +2659,6 @@ const TILINGS = {
     mark: '✠',
     cells: 'tiles',
     where: "a grid of squares and triangles (the snub square tiling, Cairo's dual)",
-    most: 12,
     turns: 4,
     mirror: false,
     pivot: [0, 0],
@@ -2728,7 +2707,6 @@ const TILINGS = {
     mark: '❂',
     cells: 'tiles',
     where: 'a grid of dodecagons and triangles (the truncated hexagonal tiling)',
-    most: 12,
     turns: 6,
     mirror: true,
     pivot: [0, 0],
@@ -2769,7 +2747,6 @@ const TILINGS = {
     mark: '❃',
     cells: 'tiles',
     where: 'a grid of dodecagons, hexagons and squares (the truncated trihexagonal tiling)',
-    most: 12,
     turns: 6,
     mirror: true,
     pivot: [0, 0],
@@ -2834,7 +2811,6 @@ const TILINGS = {
     mark: '❁',
     cells: 'pentagons',
     where: 'a grid of pentagons of two kinds (the dual of the 16th 2-uniform tiling, 3.3.4.3.4 and 3.3.3.4.4)',
-    most: 7,
     turns: 4,
     mirror: false,
     pivot: [1.105662, 1.394338],
@@ -2936,7 +2912,6 @@ const TILINGS = {
     cells: 'pentagons',
     where:
       'a grid of pentagons of 3 kinds (the dual of the 3-uniform tiling no. 56, its corners 3.3.3.4.4, 3.3.4.3.4 and 3.3.3.3.6)',
-    most: 8,
     turns: 6,
     mirror: true,
     pivot: [0.482673, 0.741336],
@@ -3080,7 +3055,6 @@ const TILINGS = {
     cells: 'pentagons',
     where:
       'a grid of pentagons of 5 kinds (the dual of the 5-uniform tiling no. 314, its corners 3.3.3.4.4, 3.3.4.3.4 and 3.3.3.3.6)',
-    most: 8,
     turns: 6,
     mirror: true,
     pivot: [0.348915, 1],
@@ -3308,7 +3282,6 @@ const TILINGS = {
     cells: 'tiles',
     where:
       'a grid of dodecagons, squares and triangles, a square between four dodecagons (the 2nd 2-uniform tiling, 3.12.12 and 3.4.3.12)',
-    most: 16,
     turns: 4,
     mirror: true,
     pivot: [1, 1],
@@ -3366,7 +3339,6 @@ const TILINGS = {
     cells: 'tiles',
     where:
       'a grid of hexagons and triangles, each hexagon a side with three others (the 10th 2-uniform tiling, 3.3.3.3.3.3 and 3.3.6.6)',
-    most: 12,
     turns: 6,
     mirror: true,
     pivot: [0, 0],
@@ -3430,7 +3402,6 @@ const TILINGS = {
     cells: 'tiles',
     where:
       'a grid of dodecagons, squares and triangles, the dodecagons apart in triangles (the 13th 2-uniform tiling, 3.3.3.3.3.3 and 3.3.4.12)',
-    most: 24,
     turns: 6,
     mirror: true,
     pivot: [0.455342, 0.333334],
@@ -3540,7 +3511,6 @@ const TILINGS = {
     cells: 'tiles',
     where:
       'a grid of hexagons and triangles, turning, never mirrored (the 20th 2-uniform tiling, 3.3.3.3.3.3 and 3.3.3.3.6)',
-    most: 18,
     turns: 6,
     mirror: false,
     pivot: [0.923099, 0.230801],
@@ -4047,7 +4017,7 @@ const tilingWorld = (kind, [u, v]) => {
 };
 // a grid's lattice: its two sides, and its cell (0, 0)'s place, in world units (a cell's corners in its units, see
 // latticeCorners): a tiling's; the squares', each its middle on a whole point; Cairo's squares, the start's pentagon's middle at
-// the origin (see CAIRO_0); the triangles', the hexagons' and the kites' (see latticeAt)
+// the origin (see CAIRO_0); the triangles', the hexagons' and the kites' (see latticePoint)
 const latticesMemo = remember('latticesMemo', {}); // (the base grids' only: a tiling's read from it, RECTS' made after)
 const latticeOf = (kind) =>
   tilingOf(kind)
@@ -4069,21 +4039,21 @@ const latticeOf = (kind) =>
                 ],
                 origin: [-CAIRO_0[0] * CAIRO, -CAIRO_0[1] * CAIRO],
               }
-            : { basis: [[1, 0], latticeAt(0, 1)], origin: [0, 0] });
+            : { basis: [[1, 0], latticePoint(0, 1)], origin: [0, 0] });
 /* Kites (the deltoidal trihexagonal tiling, the grid of the hat monotile): each triangle of the triangles'
  * grid cut in 3 from its middle to its sides' middles, a kite at each corner (that corner, the middles of
  * its two sides, the triangle's middle); 6 kites round a corner of the triangles make a hexagon. A kite
  * touches 4 others by an edge and 5 more by a corner: 9 neighbours. Its corners in the triangle's turn. */
 // a triangle's 3 kites, a kite at each of its corners: that corner, its sides' middles and the triangle's middle (see
 // kiteCorners)
-const kitesOf = (c) => {
+const triangleKites = (c) => {
   const m = [0, 1].map((d) => (c[0][d] + c[1][d] + c[2][d]) / 3),
     half = (p, q) => [(p[0] + q[0]) / 2, (p[1] + q[1]) / 2];
   return [0, 1, 2].map((k) => [c[k], half(c[k], c[(k + 1) % 3]), m, half(c[(k + 2) % 3], c[k])]);
 };
 // kite x of row y: kite x % 3 of triangle ⌊x / 3⌋ (as the triangles' x), its corners on the triangles' lattice
-const kiteCorners = (x, y) => kitesOf(latticeCorners('tri', Math.floor(x / 3), y))[mod(x, 3)];
-const latticeAt = (a, b) => [a + b / 2, b * TRIANGLE_HEIGHT]; // a corner of the triangles, a centre of the hexagons
+const kiteCorners = (x, y) => triangleKites(latticeCorners('tri', Math.floor(x / 3), y))[mod(x, 3)];
+const latticePoint = (a, b) => [a + b / 2, b * TRIANGLE_HEIGHT]; // a corner of the triangles, a centre of the hexagons
 // every grid of the plane and its tiles a grid cell, the one it repeats as laid: its tiling's lattice cell, or a slanted grid's
 // rectangle (its kind's Rect, det lattice cells: see RECTS); Cairo's 2, the next 2 the same turned
 const TILES_PER_GRID_CELL = {
@@ -4118,7 +4088,6 @@ const CONED = {
     one: 'one pentagon, a house',
     how: 'mirrored',
     tile: 'houses: a rectangle under a triangle',
-    most: (n) => Math.max(7, n + 2),
     marks: { 3: '⚝', 4: '※', 5: '✩', 6: '✫', 7: '❊', 8: '✱', 9: '✭', 10: '✮', 11: '✰', 12: '⊛' },
   }, // (most: a house 7 round it in its rows, the middle's n + 2)
   hexa: {
@@ -4129,7 +4098,6 @@ const CONED = {
     one: "one hexagon, Sugimoto's",
     how: 'hexagonal',
     tile: 'equilateral hexagons, tips of 360°/n',
-    most: (n) => n + 3,
     rules: '⬡',
     marks: { 4: '⎔', 5: '⬢', 6: '⏣', 7: '◉', 8: '◎', 9: '◍', 10: '◌', 11: '◐', 12: '◑' },
   },
@@ -6964,44 +6932,32 @@ function textTabs(buttons) {
   g.classList.add('text-tabs');
   return g;
 }
-// a slider of two knobs, upright (0 at the top, as the counts' chips), an interval from lo to hi (0 to 100, by 1), its words
-// over it (words(lo, hi)); change(lo, hi) once a knob is let go (a knob never past the other: they meet)
-function rangeSlider({ lo, hi, title, words, change }) {
-  const box = document.createElement('div'),
-    said = document.createElement('div'),
-    track = document.createElement('div'),
-    fill = document.createElement('i');
-  box.className = 'range-slider';
-  box.title = title;
-  said.className = 'range-words';
+// a part's track, upright in the place of a column of chips (0 at the bottom, 100 % at the top), as high as its row: its
+// intervals (each [from, to], 0 to 100) gold bands on it; one alone, two knobs on it to set it (free, either one past the
+// other: the interval from the lower to the higher); show(spans) as a knob moves, change(from, to) once it is let go
+function rangeSlider({ spans, title, show, change }) {
+  const track = document.createElement('div'),
+    fills = spans.map(() => document.createElement('i'));
   track.className = 'range-track';
-  const knobs = [lo, hi].map((value) => {
-    const k = document.createElement('input');
-    k.type = 'range';
-    k.min = 0;
-    k.max = 100;
-    k.step = 1;
-    k.value = value;
-    return k;
-  });
-  const show = () => {
-    const [a, b] = knobs.map((k) => Number(k.value));
-    said.textContent = words(a, b);
-    fill.style.top = `calc(${a} * (100% - 24px) / 100)`;
-    fill.style.height = `calc(24px + ${b - a} * (100% - 24px) / 100)`; // (a knob 24 px high, its middle 12 px in from the ends at 0 and 100)
-  };
-  knobs.forEach((k, i) => {
-    k.addEventListener('input', () => {
-      const other = Number(knobs[1 - i].value);
-      if (i ? Number(k.value) < other : Number(k.value) > other) k.value = other;
-      show();
+  track.title = title;
+  const paint = (list) => {
+    show(list);
+    list.forEach(([a, b], i) => {
+      fills[i].style.bottom = `calc(${a} * (100% - 22px) / 100)`;
+      fills[i].style.height = `calc(22px + ${b - a} * (100% - 22px) / 100)`; // (a knob a chip high, its middle 11 px in from the ends at 0 and 100)
     });
-    k.addEventListener('change', () => change(Number(knobs[0].value), Number(knobs[1].value)));
-  });
-  track.append(fill, ...knobs);
-  box.append(said, track);
-  show();
-  return box;
+  };
+  const knobs = (spans.length === 1 ? spans[0] : []).map((value) =>
+    Object.assign(document.createElement('input'), { type: 'range', min: 0, max: 100, step: 1, value }),
+  );
+  const values = () => knobs.map((k) => Number(k.value)).sort((x, y) => x - y);
+  for (const k of knobs) {
+    k.addEventListener('input', () => paint([values()]));
+    k.addEventListener('change', () => change(...values()));
+  }
+  track.append(...fills, ...knobs);
+  paint(spans); // (its own values, as the rule has them: 33.3, its knob at 33)
+  return track;
 }
 // A tile, every one alike (the shapes, the colours, the looks, the zones, Walls, Square, Trail, the theme): a square
 // button, its picture over its name (html: both as one), fixed whatever its state (but a switch's own while off, see
@@ -7249,7 +7205,7 @@ function renderTrailButton() {
   trailButton.querySelector('svg').outerHTML = pic;
   setTile(trailButton, {
     on: $('lifeTrail').checked && trailApplies(),
-    byDefault: 'On by default in Solo\nOff by default in colours',
+    byDefault: defaultMark('trail'),
     whyNot: ({ w, rule, look }) => (trailApplies(w, rule, look) ? '' : TRAIL_WHERE),
     at: walk.variant,
   }); // (not for these looks: off)
@@ -7541,7 +7497,7 @@ function endMark() {
   if (walk.battle) {
     const why = walk.battle.winner.until;
     return why
-      ? genLink(
+      ? stepLink(
           stepShown !== walk.n ? walk.n : 0,
           `■<span class="end-words"> ${why} at step ${formatNumber(walk.n)}</span>`,
           'loop',
@@ -7568,10 +7524,10 @@ function endMark() {
           ];
   return mark ? loopLink(`${mark}<span class="end-words"> ${words}</span>`) : ''; // (its words: open only, see .end-words)
 }
-// its link, in turquoise (see genLink): to its first step; from there, to its last; an end alone, back to 0
+// its link, in turquoise (see stepLink): to its first step; from there, to its last; an end alone, back to 0
 const loopLink = (text) => {
   const o = runLoop();
-  return genLink(stepShown !== o.T ? o.T : o.last !== o.T ? o.last : 0, text, 'loop');
+  return stepLink(stepShown !== o.T ? o.T : o.last !== o.T ? o.last : 0, text, 'loop');
 };
 // The first: 0, or a reversible one's none (its rule run backwards from its start as far as played: its past); its return
 // found, going back or forth, 0 again (its past folded into it, the timeline shifted onto 0: see foldPast)
@@ -11384,17 +11340,38 @@ function ruleIn(w, rule, turmite) {
   const missing = table.flat().find((e) => !takes(e.command));
   return missing ? { rule, why: lack(missing.command) } : { rule: antText(table), why: '' };
 }
-// a rule typed that this walk or creature cannot take: the one in use put back, and why said (its words, see creatureRules)
-function refuseRule(typed, kept) {
-  $('antRule').value = kept;
-  $('status').textContent = `${creatureRuleError(typed)} · ${kept} kept`;
+// A rule typed or a link's that variant w cannot play, Life's, a walk's or a creature's, one way: the rule kept (Life's,
+// its grid's, see lifeRuleAt, or its counts too many, the one the grid shown plays; a walk's or a creature's, the one in use), and its words, the same everywhere: what was
+// typed, how a rule is written here, the one kept ('' when it plays); told in the tooltip's corner, the field the rule kept
+const ruleKept = (typed, w) =>
+  !VARIANTS[w].life
+    ? (creatureRules(w).now ?? 'digits')
+    : ruleFits(ruleBody(typed), VARIANTS[w])
+      ? walk.life.ruleText // (its counts past the grid shown's: the rule it plays)
+      : lifeRuleAt(ruleBody(typed), w);
+// (a Life rule's counts: none past the most neighbours a cell of the grid shown has, once built: B9 on squares)
+const mostNeighbours = (w) =>
+  walk.variant === w && walk.life ? Math.max(...neighbourCounts(walk.life.nbr.start).keys()) : Infinity;
+const ruleRefusal = (typed, w = tabVariant()) => {
+  const life = VARIANTS[w].life,
+    r = life && parseRule(ruleBody(typed)),
+    within =
+      !r?.B ||
+      r.share ||
+      r.margolus ||
+      r.loops ||
+      r.elementary ||
+      [...countsOn(r, r.B), ...countsOn(r, r.S)].every((c) => c <= mostNeighbours(w));
+  if (life ? ruleFits(ruleBody(typed), VARIANTS[w]) && within : creatureRules(w).reads(typed)) return '';
+  return `“${typed}”: not a rule here\n${life ? lifeRuleHow(VARIANTS[w]) : creatureRules(w).name}\n${ruleKept(typed, w)} kept`;
+};
+function refuseRule(typed, w = tabVariant()) {
+  showInTip(ruleRefusal(typed, w));
+  $(VARIANTS[w].life ? 'lifeRule' : 'antRule').value = ruleKept(typed, w);
 }
-// a walk's, an ant's, a turmite's or a worm's rule typed: its error, '' when its creature reads it
-const creatureRuleError = (typed, w = tabVariant()) =>
-  creatureRules(w).reads(typed) ? '' : `“${typed}”: not a rule here · ${creatureRules(w).name}`;
 function setWormRule(rule) {
   if (!wormRuleOf(rule)) {
-    refuseRule(rule, worm.rule);
+    refuseRule(rule);
     return;
   }
   worm.rule = wormRuleOf(rule).join(' ');
@@ -11408,7 +11385,7 @@ const antRuleRead = (w, rule) => antTableOf(w, rule) ?? antTableOf(w, antOfTurns
 function setAntRule(w, rule) {
   const T = antRuleRead(w, rule);
   if (!T) {
-    refuseRule(rule, antRuleOf(w));
+    refuseRule(rule, w);
     return;
   }
   antRules[w] = T.text;
@@ -12429,6 +12406,15 @@ new MutationObserver((ms) => {
     }
 }) // (a title set again under the mouse: not the browser's)
   .observe(document.body, { attributes: true, attributeFilter: ['title'], subtree: true });
+// words told in the tooltip's corner till the mouse is on something else, as a tooltip: "Name: its words", the name in bold
+// (a rule refused, a formula's error: see refuseRule, fieldError)
+const showInTip = (text) => {
+  const [, name, words] = text.match(/^([^\n]+?): ([^]*)$/) ?? [null, '', text];
+  $('tip').replaceChildren(
+    ...(name ? [Object.assign(document.createElement('b'), { className: 'tip-name', textContent: name })] : []),
+    words.replace(/^./, (c) => c.toUpperCase()),
+  );
+};
 // whether words open with a name, then a mark (One step back; …, Jump to the end, …): said once, in bold (see the tooltips)
 const opensWith = (words, name) => !!name && words.startsWith(name) && /^[:;,.]/.test(words.slice(name.length));
 // What it tells of the element under the mouse: the control (its words, its default, why it is greyed) and its words, each
@@ -13693,7 +13679,7 @@ function setWalkRule(w, rule) {
   const commands = walkCommandsOf(w, rule),
     k = walkKey(VARIANTS[w]);
   if (!commands) {
-    refuseRule(rule, walkRuleOf(VARIANTS[w]));
+    refuseRule(rule, w);
     return;
   }
   walkRules[k] = ruleOfCommands(commands);
@@ -14426,7 +14412,7 @@ const mostFace = (faces) => {
 // a cell made of a polyhedron's triangles (f² cells a triangle, in turn: see flatPolyhedron), its face
 const trianglesFace = (S, perTriangle, tris) => mostFace(tris.map((t) => S.triangleFaces[Math.floor(t / perTriangle)]));
 
-// kites: each triangle cut in 3 (see kitesOf); round a corner of the solid, a flower of 3, 4 or 5 kites (not 6)
+// kites: each triangle cut in 3 (see triangleKites); round a corner of the solid, a flower of 3, 4 or 5 kites (not 6)
 function flatPolyhedron(name, f, kites = false) {
   const key = `${kites ? 'kite' : ''}${name}${f}`;
   if (meshCache[key]) return meshCache[key];
@@ -14451,7 +14437,7 @@ function flatPolyhedron(name, f, kites = false) {
       return v;
     };
     const put = (c) => {
-      for (const t of kites ? kitesOf(c) : [c]) tris.push(t.map(at));
+      for (const t of kites ? triangleKites(c) : [c]) tris.push(t.map(at));
     }; // (i, j): the face's own grid
     for (let i = 0; i < f; i++) {
       for (let j = 0; i + j < f; j++) {
@@ -17574,9 +17560,10 @@ const FACE_ADJECTIVES = { 3: 'triangular', 4: 'square', 5: 'pentagonal', 6: 'hex
 // sides), read there
 const leastMeshes = remember('leastMeshes', {}),
   leastMesh = (kind) => (leastMeshes[kind] ??= SURFACES[kind].mesh(SURFACES[kind].sizes[0]));
-// a surface's solid's faces, by its cells' (see cellFaces); none off a solid (a torus, a globe)
+// a surface's solid's faces, by its cells' (see cellFaces); none off a solid (a torus, a globe), a ring's known by its kind
+// (no mesh built: a greyed control's search judges hundreds of them, 2.3 s a hover of Sides till v0.5.360)
 const facesCount = (kind) => {
-  const g = SURFACES[kind]?.sizes && leastMesh(kind);
+  const g = SURFACES[kind]?.sizes && !TORI.includes(kind) && leastMesh(kind);
   return g?.cellFaces ? g.cellFaces.reduce((m, f) => Math.max(m, f + 1), 0) : 0;
 };
 // its cells as a rectangle as wide as the grid lies, for an idea of its resolution (grey, as the walk's description): the plane's a
@@ -20611,7 +20598,7 @@ function battleOf(P, maps) {
 const versusTitle = (names) =>
   names.length < 2
     ? names.join('')
-    : names.map((name, s) => `<span style="color:${inkOf(teamColour(s))}">${name}</span>`).join(' vs '); // (one alone: no team to tell apart, the text's colour)
+    : names.map((name, s) => `<span style="color:${readableColour(teamColour(s))}">${name}</span>`).join(' vs '); // (one alone: no team to tell apart, the text's colour)
 // A battle's closed areas at the step it is at (P: its player; Area, see drawSurface), each tile's walker + 1 (0: none):
 // for each living walker along the edges (Cut's, Area on; on cells none: Area greyed there), the regions its body cuts off,
 // as a walk's (see areaSteps: tiles parted by its edges), the largest (the outside) left out; a tile closed by two or
@@ -21375,7 +21362,7 @@ const HENSEL_LETTERS = Array.from({ length: 9 }, (_, c) =>
 // "B3/S23", "B2/S/C3" or "B3/S23/Immigration" → birth and survival tables indexed by the number of
 // live neighbours, and C, the number of states: 2 for Life, more for "Generations" rules (dying
 // stages), 3 for two civilisations (two: true). On hexagons, Callahan's letters ("B2o/S2m34") tell
-// where the neighbours sit (iso: true): the tables are then indexed by 16 + the 6-bit mask of them.
+// where the neighbours sit (iso: true): the tables are then indexed by COUNTS_ROW + the 6-bit mask of them.
 // A block rule (Margolus's, see planeBlocks): M and the new state of each of a block's 2^k (its k cells' bits in turn
 // round its corner), a permutation of them, so reversible: its inverse runs it back; a * after, stellated (see STARS); /4 after,
 // on squares, Tyler's Square-4: their 4 sets of corners in turn round a square (Margolus's 2: a corner, the one across); Q2R,
@@ -21799,129 +21786,219 @@ function elementaryPart(R, x0, x1, t0, t1, b = 1, measure = false) {
     }
   return { counts, breaks, entropy };
 }
-const SHARE_ROW = 32; // (a share rule's tables: a row a count of neighbours, 31 at most, see parseRule)
-// a share rule's text from its intervals (see parseRule), with C states; an empty interval left out
-const shareText = (share, C) => {
-  const part = (spans) =>
-    spans
-      .filter(([lo, hi]) => hi === null || hi > lo)
-      .map(([lo, hi]) => `${lo}-${hi ?? ''}%`)
-      .join(',');
-  return `B${part(share.B)}/S${part(share.S)}${C > 2 ? `/C${C}` : ''}`;
+const COUNTS_ROW = 32; // (a cell's neighbours, 31 at most: a rule by counts, its counts first, where they sit after them; a share rule, a row a count of neighbours: see parseRule)
+// a rule's counts as written (each a count, its letters or its v after it: 2, 2ce, 2v01), one way: glued while all are under
+// 10 (B3/S23; a v's counts ended by "." before a count 0 to 3: 2v01.3), else parted by commas, a run of three or more
+// counts c-b (B0,1,3,9,10/S2-4): a count a number, as parseRule reads it
+const countsText = (items) =>
+  items.every((x) => parseInt(x, 10) < 10)
+    ? items.reduce((t, x) => t + (/v\d+$/.test(t) && /^[0-3]/.test(String(x)) ? '.' : '') + x, '')
+    : countRuns(items)
+        .map(([c, b]) => (b - c >= 2 ? `${c}-${b}` : b === c ? c : `${c},${b}`))
+        .join(',');
+// a list's runs of counts one after the other, each [first, last] (a count with its letters, a string: alone)
+const countRuns = (items) =>
+  items.reduce((runs, x) => {
+    const last = runs.at(-1);
+    if (typeof x === 'number' && typeof last?.[1] === 'number' && x === last[1] + 1) last[1] = x;
+    else runs.push([x, x]);
+    return runs;
+  }, []);
+// the counts of live neighbours a rule's table holds: any of their letters, of their counts by a corner, or (a share rule)
+// of the cell's neighbours
+const countsOn = (rule, table) =>
+  [...Array(COUNTS_ROW).keys()].filter((c) =>
+    rule.share
+      ? [...Array(COUNTS_ROW).keys()].some((d) => table[COUNTS_ROW * d + c])
+      : rule.iso === 'vertex'
+        ? [0, 1, 2, 3].some((k) => table[COUNTS_ROW + 4 * c + k])
+        : rule.iso
+          ? table.some((on, i) => i >= COUNTS_ROW && on && bitCount(i - COUNTS_ROW) === c)
+          : table[c] === 1,
+  );
+// what of a Life rule's part p (B, S) its own controls cannot set, its words ('' when they can): a share past its sliders' (whole %, 0 to
+// 100, the lower first: Game of Hats' 33.3 %, its Pulse's 60-37 %; one interval a part), a count past the most neighbours a
+// cell has (B9 on squares)
+const ruleUnsettable = (rule, most, p) => {
+  const odd =
+    rule.share &&
+    rule.share[p].find(
+      ([lo, hi]) => !Number.isInteger(lo) || (hi !== null && (!Number.isInteger(hi) || hi > 100 || hi < lo)),
+    );
+  if (odd)
+    return `Typed only: ${odd[0]}-${odd[1] ?? ''}%, the slider going by whole %, from 0 to 100, the lower first.`;
+  if (rule.share?.[p].length > 1) return `Typed only: ${rule.share[p].length} intervals, the slider setting one.`;
+  const past = !rule.share && countsOn(rule, rule[p]).find((c) => c > most);
+  return past ? `Typed only: ${past}, no cell here having as many neighbours (${most} at most).` : '';
 };
-// a count of live neighbours c on in a rule's table (any of its letters, or of its counts by a corner)
-const countOn = (rule, table, c) =>
-  rule.iso === 'vertex'
-    ? [0, 1, 2, 3].some((k) => table[16 + 4 * c + k])
-    : rule.iso
-      ? table.some((on, i) => i >= 16 && on && bitCount(i - 16) === c)
-      : table[c] === 1;
 // a rule by counts as shares, the same on a cell of d neighbours: each run of counts c to b, from c / d in to (b + 1) / d
 // out (b = d: up to all), rounded down to a whole % (its counts kept, d up to 100)
 function countsAsShares(rule, d) {
-  const spans = (table) => {
-    const out = [];
-    for (let c = 0; c <= d; c++) {
-      if (!countOn(rule, table, c)) continue;
-      let b = c;
-      while (b < d && countOn(rule, table, b + 1)) b++;
-      out.push([Math.floor((100 * c) / d), b === d ? null : Math.floor((100 * (b + 1)) / d)]);
-      c = b;
-    }
-    return out;
-  };
-  return shareText({ B: spans(rule.B), S: spans(rule.S) }, rule.C);
+  const spans = (table) =>
+    countRuns(countsOn(rule, table).filter((c) => c <= d)).map(([c, b]) => [
+      Math.floor((100 * c) / d),
+      b === d ? null : Math.floor((100 * (b + 1)) / d),
+    ]);
+  return ruleTextOf({ share: { B: spans(rule.B), S: spans(rule.S) }, C: rule.C });
 }
-// a share rule as counts, as it plays on a cell of d neighbours (a count a digit: 9 at most)
+// a share rule as counts, as it plays on a cell of d neighbours
 function sharesAsCounts(rule, d) {
-  const digits = (table) => [...Array(Math.min(d, 9) + 1).keys()].filter((c) => table[SHARE_ROW * d + c]).join('');
-  return `B${digits(rule.B)}/S${digits(rule.S)}${rule.C > 2 ? `/C${rule.C}` : ''}`;
+  const counts = (table) => countsText([...Array(d + 1).keys()].filter((c) => table[COUNTS_ROW * d + c]));
+  return `B${counts(rule.B)}/S${counts(rule.S)}${rule.C > 2 ? `/C${rule.C}` : ''}`;
 }
-// the counts of neighbours a Life grid's cells have, the most cells' first (a wall's, none, left out)
-function neighbourCounts(L) {
-  const { start } = L.nbr,
-    cells = new Map();
+// how many cells have each count of neighbours, the most cells' count first (start: a grid's neighbours' starts, a Life
+// grid's L.nbr or a mesh's cornerNeighbours; keep: the cells counted, by default all but those with none, a wall's)
+function neighbourCounts(start, keep = (t, d) => d > 0) {
+  const cells = new Map();
   for (let t = 0; t + 1 < start.length; t++) {
     const d = start[t + 1] - start[t];
-    if (d) cells.set(d, (cells.get(d) ?? 0) + 1);
+    if (keep(t, d)) cells.set(d, (cells.get(d) ?? 0) + 1);
   }
-  return [...cells.keys()].sort((a, b) => cells.get(b) - cells.get(a));
+  return new Map([...cells].sort((a, b) => b[1] - a[1]));
 }
 function parseRule(text) {
   if (/^\s*(M|Q2R)/i.test(text)) return parseBlocks(text);
   if (/^\s*W\d/i.test(text)) return parseElementary(text);
   if (loopName(text)) return parseLoops(text); // (with its lineages, see lifeRuleNow)
+  // B…/S…, then its states, its colours: each part a list of items, each read alone (see readRulePart); any other text, no rule
   const m = text
     .replace(/\s/g, '')
-    .toUpperCase()
-    .match(
-      /^B([\dOMPCEKAINYQJRTWZV.%,-]*)\/S([\dOMPCEKAINYQJRTWZV.%,-]*)(?:\/C(\d+))?(?:\/(IMMIGRATION)|\/COLOURS(\d+))?H?$/,
-    );
-  if (!m || /^[A-Z-]/.test(m[1]) || /^[A-Z-]/.test(m[2])) return null;
-  // a share rule: its counts as shares of the cell's neighbours, in %, intervals from one share (in) to another (out, none:
-  // up to all), B33-50%/S14-50% (Game of Hats'), for tilings whose cells have not all as many neighbours; its tables by
-  // the cell's neighbours d and its live ones c, at SHARE_ROW × d + c (see GPU_LIFE's mode 3): no share reckoned there
-  // (share: its intervals, Birth's and Survival's, each [in, out], out null: up to all)
-  const SHARE = /(\d+(?:\.\d+)?)-(\d+(?:\.\d+)?)?%/g,
-    intervals = (spec) =>
-      [...spec.matchAll(SHARE)].map(([, lo, hi]) => [Number(lo), hi === undefined ? null : Number(hi)]),
-    share = /%/.test(m[1] + m[2]) && { B: intervals(m[1]), S: intervals(m[2]) };
-  if (share && [m[1], m[2]].some((spec) => spec.replace(SHARE, '').replace(/^,|,(?=,|$)/g, '') !== '')) return null;
-  // letters: Callahan's on hexagons (o, m, p), else Hensel's on squares (see henselClass), "-": all but these; or v and the
-  // counts of the live ones by a corner only (0 to 3: 5v0, all 5 by a side; 3v01, none or one by a corner; a "." ends them before
-  // a count 0 to 3: 2v01.3, 2 with none or one by a corner, then 3, any), the others by a
-  // side (the flowers', see sideOf)
-  const hex = /[OMP]/.test(m[1] + m[2]),
-    vertex = /V/.test(m[1] + m[2]),
-    hensel = !share && /[A-Z-]/.test((m[1] + m[2]).replace(/[OMPV]/g, ''));
-  if (hex + hensel + vertex > 1) return null;
+    .toLowerCase()
+    .match(/^b([^/]*)\/s([^/]*?)(?:\/c(\d+))?(?:\/(immigration)|\/colours(\d+))?h?$/);
+  const B = m && readRulePart(m[1]),
+    S = m && readRulePart(m[2]),
+    byShare = !!(B?.share || S?.share);
+  if (!B || !S || (byShare && (B.counts?.size || S.counts?.size)) || (B.iso && S.iso && B.iso !== S.iso)) return null; // (both by counts or both by shares, an empty one either; one kind of letters)
   // colours: civilisations, each newborn taking the colour most of its live neighbours have (2: Immigration),
   // apart from the states C (alive, the dying stages, dead). A cell: 0 dead, k alive of colour k (1 … K),
   // k + K × s dying of colour k at stage s (1 … C − 2). A start has live cells only: one digit a cell in
   // base K + 1 (one colour: base 2, dead or alive)
   const colours = m[4] ? 2 : m[5] ? Number(m[5]) : 1,
-    two = colours === 2,
-    C = m[3] ? Number(m[3]) : 2,
-    iso = hex ? 'hex' : hensel ? 'hensel' : vertex ? 'vertex' : false;
+    C = m[3] ? Number(m[3]) : 2;
   if (C < 2 || C > 25 || colours > LIFE_COLOURS.length || colours * (C - 1) > 255) return null; // (a cell's state a byte)
-  const ring = hensel ? 8 : 6,
-    classOf = hensel ? (mask) => henselClass(mask).toUpperCase() : hexClass;
-  const table = (spec, part) => {
-    if (share) {
-      const a = new Uint8Array(SHARE_ROW * SHARE_ROW);
-      for (const [lo, hi] of share[part])
-        for (let d = 1; d < SHARE_ROW; d++)
-          for (let c = 0; c <= d; c++)
-            if (lo * d <= 100 * c && (hi === null || 100 * c < hi * d)) a[SHARE_ROW * d + c] = 1;
-      return a;
-    }
-    const a = new Uint8Array(16 + (1 << ring)); // by the count, and by 16 + the mask of where they sit
-    if (vertex) {
-      // (by 16 + 4 × the count + those by a corner only)
-      for (const [, d, ks] of spec.matchAll(/(\d)(?:V([0-3]+))?/g))
-        for (let k = 0; k < 4; k++) if (!ks || ks.includes(k)) a[16 + 4 * d + k] = 1;
-      return a;
-    }
-    for (const [, d, not, letters] of spec.matchAll(/(\d)(-?)([A-Z]*)/g)) {
-      if (!letters) a[+d] = 1;
-      for (let mask = 0; mask < 1 << ring; mask++) {
-        if (bitCount(mask) === +d && (!letters || letters.includes(classOf(mask)) !== !!not)) a[16 + mask] = 1;
-      }
-    }
-    return a;
-  };
-  const tail = (C > 2 ? `/C${C}` : '') + (two ? '/Immigration' : colours > 2 ? `/Colours${colours}` : '');
-  return {
-    B: table(m[1], 'B'),
-    S: table(m[2], 'S'),
+  const rule = {
     C,
-    two,
+    two: colours === 2,
     colours,
-    iso,
-    share,
+    iso: B.iso || S.iso || false,
+    share: byShare && { B: B.share || [], S: S.share || [] },
+    counts: !byShare && { B: B.counts, S: S.counts },
     base: colours + 1,
-    text: `B${m[1].toLowerCase()}/S${m[2].toLowerCase()}${tail}`,
   };
+  return Object.assign(rule, { B: ruleTable(rule, 'B'), S: ruleTable(rule, 'S'), text: ruleTextOf(rule) });
+}
+// A rule's part, Birth's or Survival's, read: its items parted by commas (B0,1,3,9,10; a run c-b, B4-6), or glued while
+// each count is a digit (B36, B2ce3); each a count with where its live neighbours sit, if said: Hensel's letters on squares
+// (2ce, "-": all but these, 2-a), Callahan's on hexagons (2o: o side by side, m one apart, p opposite), or v and how many of
+// them by a corner only (5v01; a "." ends them before a count 0 to 3: 2v01.3); or shares of the cell's neighbours, in %,
+// intervals from one share in to another out (none: up to all, B33-50%/S14-50%, Game of Hats'). Its counts a Map, count →
+// null (anywhere) or the Set of its places; its shares sorted, those that touch merged (an empty one kept alone: its
+// slider's); its letters' kind (iso). null: not a part
+function readRulePart(spec) {
+  if (spec.includes('%')) {
+    const spans = [];
+    for (const item of spec ? spec.split(',') : []) {
+      const x = item.match(/^(\d+(?:\.\d+)?)-(\d+(?:\.\d+)?)?%$/);
+      if (!x) return null;
+      spans.push([Number(x[1]), x[2] === undefined ? null : Number(x[2])]);
+    }
+    const empty = ([lo, hi]) => hi !== null && hi <= lo,
+      full = spans.filter((x) => !empty(x)).sort((a, b) => a[0] - b[0]),
+      share = [];
+    for (const x of full) {
+      const last = share.at(-1);
+      if (last && last[1] !== null && x[0] <= last[1]) last[1] = x[1] === null ? null : Math.max(last[1], x[1]);
+      else if (!last || last[1] !== null) share.push([...x]);
+    }
+    return { share: share.length || !spans.length ? share : [spans[0]], iso: false };
+  }
+  const listed = /,|-\d/.test(spec),
+    item = new RegExp(
+      `(${listed ? '\\d+' : '\\d'})(?:-(\\d+))?(?:(-?)([a-uw-z]+)|v([0-3]+))?\\.?${listed ? '(?:,|$)' : ''}`,
+      'y',
+    ),
+    counts = new Map();
+  let iso = false;
+  for (let at = 0; at < spec.length;) {
+    item.lastIndex = at;
+    const x = item.exec(spec);
+    if (!x || item.lastIndex === at) return null;
+    at = item.lastIndex;
+    const [, c, b = c, not, letters, corners] = x,
+      kind = corners ? 'vertex' : letters ? (/^[omp]+$/.test(letters) ? 'hex' : 'hensel') : false;
+    if (+b < +c || (kind && iso && kind !== iso)) return null; // (a run the wrong way, 6-4; two kinds of letters)
+    iso ||= kind;
+    for (let d = +c; d <= +b; d++) {
+      const all = rulePlaces(kind, d),
+        said = letters ?? corners;
+      if (said && [...said].some((q) => !all.includes(q))) return null; // (a letter its count has not: 2z)
+      const places = !said ? null : new Set(not ? all.filter((q) => !said.includes(q)) : [...said]);
+      const was = counts.get(d);
+      counts.set(d, was === null || places === null ? null : new Set([...(was ?? []), ...places]));
+    }
+  }
+  for (const [d, places] of counts)
+    if (places && places.size === rulePlaces(iso, d).length)
+      counts.set(d, null); // (all its places: anywhere)
+    else if (places?.size === 0) counts.delete(d);
+  return { counts: new Map([...counts].sort((a, b) => a[0] - b[0])), share: false, iso };
+}
+// the places a count's live neighbours can sit in, by its letters' kind: Hensel's letters of the count, Callahan's for 2 to 4,
+// v's counts by a corner only, 0 to 3 (a kite's up to 3 or more, a flower's to 2); none by counts alone
+const rulePlaces = (iso, d) =>
+  iso === 'hensel'
+    ? (HENSEL_LETTERS[d] ?? [])
+    : iso === 'hex'
+      ? d >= 2 && d <= 4
+        ? ['o', 'm', 'p']
+        : []
+      : iso === 'vertex'
+        ? ['0', '1', '2', '3']
+        : [];
+// A rule's text as read, one way for each (the field's, a link's, a card's, the chips' and the sliders'): its counts in order,
+// each once, with its places (Hensel's "-" where fewer are left out than in), see countsText; or its shares; its states, colours
+const ruleTextOf = (rule) => {
+  const part = (p) =>
+    rule.share
+      ? rule.share[p].map(([lo, hi]) => `${lo}-${hi ?? ''}%`).join(',')
+      : countsText(
+          [...rule.counts[p]].map(([d, places]) => {
+            if (!places) return d;
+            const all = rulePlaces(rule.iso, d),
+              on = all.filter((q) => places.has(q)),
+              off = all.filter((q) => !places.has(q));
+            if (rule.iso === 'vertex') return `${d}v${on.join('')}`;
+            return rule.iso === 'hensel' && off.length < on.length ? `${d}-${off.join('')}` : `${d}${on.join('')}`;
+          }),
+        );
+  const tail =
+    (rule.C > 2 ? `/C${rule.C}` : '') + (rule.two ? '/Immigration' : rule.colours > 2 ? `/Colours${rule.colours}` : '');
+  return `B${part('B')}/S${part('S')}${tail}`;
+};
+// A rule's table, Birth's or Survival's, for the GPU (see GPU_LIFE): by counts, at the count (COUNTS_ROW of them, 31 at most),
+// then where they sit after them, at COUNTS_ROW + the mask of the ring's live neighbours (Hensel's 8, Callahan's 6) or + 4 ×
+// the count + those by a corner (v); by shares, a row a count of the cell's neighbours d, at COUNTS_ROW × d + its live ones
+function ruleTable(rule, p) {
+  if (rule.share) {
+    const a = new Uint8Array(COUNTS_ROW * COUNTS_ROW);
+    for (const [lo, hi] of rule.share[p])
+      for (let d = 1; d < COUNTS_ROW; d++)
+        for (let c = 0; c <= d; c++)
+          if (lo * d <= 100 * c && (hi === null || 100 * c < hi * d)) a[COUNTS_ROW * d + c] = 1;
+    return a;
+  }
+  const ring = rule.iso === 'hensel' ? 8 : 6,
+    classOf = rule.iso === 'hensel' ? henselClass : (mask) => hexClass(mask).toLowerCase(),
+    a = new Uint8Array(COUNTS_ROW + (1 << ring));
+  for (const [d, places] of rule.counts[p]) {
+    if (!rule.iso) a[d] = 1; // (each kind its own part of the table: the count, the ring's masks or v's)
+    if (rule.iso === 'vertex')
+      for (let k = 0; k < 4; k++) a[COUNTS_ROW + 4 * d + k] = !places || places.has(String(k)) ? 1 : 0;
+    else if (rule.iso)
+      for (let mask = 0; mask < 1 << ring; mask++)
+        if (bitCount(mask) === d && (!places || places.has(classOf(mask)))) a[COUNTS_ROW + mask] = 1;
+  }
+  return a;
 }
 
 // The starting counts of a Life run: live cells (and the blue ones with two civilisations), dying ones
@@ -22246,8 +22323,8 @@ function groundColours() {
         P ? planeColouring(P.kind, P.W) : surfaceColouring(g),
         palette,
       ),
-      colours = exploreColours(levels, palette).map((c) => packed(c, GROUND_ALPHA));
-    groundMemo = { of, key, col: Uint32Array.from(levels, (l) => colours[l - 1] ?? packed(UNLIT, GROUND_ALPHA)) };
+      colours = exploreColours(levels, palette).map((c) => texelRgba(c, GROUND_ALPHA));
+    groundMemo = { of, key, col: Uint32Array.from(levels, (l) => colours[l - 1] ?? texelRgba(UNLIT, GROUND_ALPHA)) };
   }
   return groundMemo.col;
 }
@@ -22356,11 +22433,6 @@ const tileKinds = (corners, protos = null) =>
   Int32Array.from({ length: corners.start.length - 1 }, (_, t) =>
     protos ? protos[t] : corners.start[t + 1] - corners.start[t],
   );
-// a variant's grid with its solid's faces (see cellFaces), as its surface's smallest mesh has them (made once)
-const facedGrid = (w) => {
-  const kind = surfaceOf(VARIANTS[w]);
-  return !!SURFACES[kind]?.sizes && !!leastMesh(kind).cellFaces;
-};
 // its section: the rules as cards, then the palettes, each a tile with its colours
 function renderExplore() {
   const pick = (key, value) => () => {
@@ -22374,7 +22446,8 @@ function renderExplore() {
         name,
         detail,
         on: exploreLook.rule === key,
-        whyNot: ({ w }) => (key === 'sides' && !facedGrid(w) ? 'On a solid only: its sides.' : ''),
+        whyNot: ({ w }) =>
+          key === 'sides' && !facesCount(surfaceOf(VARIANTS[w])) ? 'On a solid only: its sides.' : '',
         click: pick('rule', key),
         choice: `exploreRule:${key}`,
       }),
@@ -25071,7 +25144,7 @@ function planeCellAt(kind, W, wx, wy, how = 'in') {
     return null;
   }
   if (kind === 'kite') {
-    // its triangle's, then its kite: the one round its corner nearest (kite k round corner k, see kitesOf)
+    // its triangle's, then its kite: the one round its corner nearest (kite k round corner k, see triangleKites)
     const t = planeCellAt('tri', W, wx, wy, 'free'),
       d = planeCorners('tri', t[0], t[1]).map(([x, y]) => Math.hypot(x - wx, y - wy)); // (its triangle on the plane)
     return on(3 * t[0] + d.indexOf(Math.min(...d)), t[1]);
@@ -26380,8 +26453,8 @@ function planeWalls(kind, W) {
 // Behind the grid (grid layer, at each view): the sky or the page outside it (the grid itself, its page, its walls and its
 // outlines, see gpuPlane)
 // the 2D grid's lines (the walks', the spirals', Elementary's), as every grid's: the theme's edge colour at Grid's opacity
-// (see gridAlpha)
-const gridColour = () => `rgba(${EDGE_RGB.join(', ')}, ${gridAlpha()})`;
+// (see gridLineAlpha)
+const gridColour = () => `rgba(${EDGE_RGB.join(', ')}, ${gridLineAlpha()})`;
 function drawPlaneGrid() {
   layers.grid.clearRect(0, 0, canvasWidth, canvasHeight);
   paintSky();
@@ -27432,14 +27505,7 @@ const teamsFairOwn = (K, { variant, g } = pickedFigure(tabVariant())) => {
 const colourMissing = (K, rule = $('lifeRule').value) => {
   const r = parseRule(ruleBody(rule));
   if (K < 3 || !r) return false;
-  const counts = r.share
-    ? [...r.B.keys()].filter((i) => r.B[i]).map((i) => i % SHARE_ROW) // (any of its counts of neighbours)
-    : r.iso === 'vertex'
-      ? [...Array(16).keys()].filter((c) => [0, 1, 2, 3].some((k) => r.B[16 + 4 * c + k])) // (any of its ways)
-      : r.iso
-        ? [...Array(1 << (r.iso === 'hensel' ? 8 : 6)).keys()].filter((m) => r.B[16 + m]).map(bitCount)
-        : [...Array(16).keys()].filter((c) => r.B[c]);
-  return counts.some((c) => c >= K - 1 && (K === 3 ? (c - 2) % 2 === 0 : c - (K - 1) !== 1));
+  return countsOn(r, r.B).some((c) => c >= K - 1 && (K === 3 ? (c - 2) % 2 === 0 : c - (K - 1) !== 1));
 };
 // Teams, Life's and a walk's alike (its own: see walkTeamTiles)
 function renderTeams() {
@@ -27548,39 +27614,6 @@ function walkTeamTiles() {
 // The Rule section: the rules known for the grid's shape, as cards, each with a picture (5 × 5 pixels of
 // what it is known for: "o" alive, "+" dying); then your own, as chips (how many live neighbours give
 // birth, let survive) and the states, and the rule as text
-const NEIGHBOURS = {
-  '◈': 12,
-  '■': 8,
-  '⬡': 6,
-  '▲': 12,
-  '⬠': 7,
-  '◆': 9,
-  '🎩': 7,
-  '✧': 11,
-  '⬗': 10,
-  '◭': 17,
-  '◺': 17,
-  '✺': 7,
-  '✵': 12,
-  '❄': 12,
-  '❅': 16,
-  '❀': 8,
-  '✾': 8,
-  '✽': 10,
-  ...Object.fromEntries(Object.values(conedOf((k, n, F) => [k, [F.marks[n], F.most(n)]]))),
-  '✸': 7,
-  '✷': 7,
-  '✹': 11,
-  '⁕': 14,
-  '⚘': 15,
-  '❇': 7,
-  '✲': 8,
-  '✻': 9,
-  '✴': 10,
-  '⊚': 11,
-  '❈': 12,
-}; // (hats: 6 or 7, a few 4 or 5; Penrose's rhombi: 7 to 11, a few fewer)
-for (const t of Object.values(TILINGS)) NEIGHBOURS[t.mark] = t.most;
 const RULE_ICONS = {
   'B3/S23': '.....,..o..,...o.,.ooo.',
   'B36/S23': '..ooo,.o..o,o...o,o..o.,ooo..',
@@ -28284,7 +28317,7 @@ function ruleTutorial(entry) {
   const cases = Array.from({ length: around.length + 1 }, (_, k) => k).flatMap((k) =>
     (lettersOf(k).length ? lettersOf(k) : ['']).map((x) => {
       if (!iso) {
-        const at = rule.share ? SHARE_ROW * around.length + k : k; // (a share rule's: by this cell's neighbours too)
+        const at = rule.share ? COUNTS_ROW * around.length + k : k; // (a share rule's: by this cell's neighbours too)
         return { k, x, live: new Set(around.slice(0, k)), on: (table) => table[at] === 1 };
       }
       if (iso === 'vertex') {
@@ -28293,11 +28326,11 @@ function ruleTutorial(entry) {
           k,
           x,
           live: new Set([...tips.slice(0, j), ...sides.slice(0, k - j)]),
-          on: (table) => table[16 + 4 * k + j] === 1,
+          on: (table) => table[COUNTS_ROW + 4 * k + j] === 1,
         };
       }
       const m = Array.from({ length: 1 << R }, (_, m) => m).find((m) => bitCount(m) === k && (!x || classOf(m) === x));
-      return { k, x, live: new Set(ring.filter((_, q) => (m >> q) & 1)), on: (table) => table[16 + m] === 1 };
+      return { k, x, live: new Set(ring.filter((_, q) => (m >> q) & 1)), on: (table) => table[COUNTS_ROW + m] === 1 };
     }),
   );
   const pair = (cs, from, to, word) =>
@@ -29166,92 +29199,101 @@ function renderRuleSection() {
     document.querySelector('.rule-build').hidden = true;
     return;
   } // (a block rule, a table, Wolfram's: typed only, no births nor survivals by counts)
-  const rule = parseRule(now) ?? parseRule('B3/S23'),
-    N = NEIGHBOURS[mark],
+  // the counts of neighbours its cells have, the most cells' first, and the most: the grid shown's, once built (none before)
+  const counts = walk.variant === tabVariant() && walk.life ? [...neighbourCounts(walk.life.nbr.start).keys()] : [],
+    rule = parseRule(now) ?? parseRule('B3/S23'),
+    N = Math.max(0, ...counts),
     hex = mark === '⬡';
-  // the counts of neighbours its cells have, the most cells' first: the grid shown's, once built (else the mark's)
-  const counts = walk.variant === tabVariant() && walk.life ? neighbourCounts(walk.life) : [N];
-  const apply = (text) => {
+  const playOwnRule = (text) => {
     customOpen = true;
     $('lifeRule').value = text;
     compute();
   }; // (your own still, even as a known one)
   // by counts of live neighbours or by shares of them: the other tab writes the rule in use the other way, the same on
   // the cells of the most cells' count
-  $('ruleCountTabs').replaceChildren(
-    textTabs(
+  const countTabs = textTabs(
+    [
+      ['Count', false, 'Born or kept by how many live neighbours'],
       [
-        ['Count', false, 'Born or kept by how many live neighbours'],
-        [
-          '%',
-          true,
-          "Born or kept by the share of live ones among the cell's neighbours, for grids whose cells have not all as many",
-        ],
-      ].map(([name, byShare, title]) => {
-        const b = document.createElement('button');
-        b.type = 'button';
-        b.textContent = name;
-        b.title = title;
-        b.classList.toggle('active', !!rule.share === byShare);
-        b.addEventListener('click', () => {
-          if (!!rule.share !== byShare)
-            apply(byShare ? countsAsShares(rule, counts[0]) : sharesAsCounts(rule, counts[0]));
-        });
-        return b;
-      }),
-    ),
+        '%',
+        true,
+        "Born or kept by the share of live ones among the cell's neighbours, for grids whose cells have not all as many",
+      ],
+    ].map(([name, byShare, title]) => {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.textContent = name;
+      b.title = title;
+      b.classList.toggle('active', !!rule.share === byShare);
+      b.addEventListener('click', () => {
+        if (!!rule.share !== byShare)
+          playOwnRule(byShare ? countsAsShares(rule, counts[0]) : sharesAsCounts(rule, counts[0]));
+      });
+      return b;
+    }),
   );
-  $('ruleCounts').hidden = !!rule.share;
-  $('ruleShares').hidden = !rule.share;
+  countTabs.id = 'ruleCountTabs';
+  $('ruleCountTabs').replaceWith(countTabs); // (itself a part of the block, spaced as the others)
   // the states (alive, its dying stages, dead): − / +, 2 to 25, as many as a cell's byte holds with the colours
-  // (a state up to K × (C − 1), see parseRule); writeAt: the rule with C states
-  const stepStates = (writeAt) => {
+  // (a state up to K × (C − 1), see parseRule), the rule written with one state less or more (see ruleTextOf)
+  const stepStates = () => {
     const most = Math.min(25, Math.floor(255 / lifeTeams) + 1);
     $('statesLabel').innerHTML = `${rule.C} states<small>${rule.C > 2 ? `${rule.C - 2} dying` : 'none dying'}</small>`;
     setTile($('statesDown'), { greyed: rule.C <= 2 ? 'Already 2 states, none dying.' : '' });
     setTile($('statesUp'), { greyed: rule.C >= most ? `Already the most states, ${most}.` : '' });
-    $('statesDown').onclick = () => apply(writeAt(rule.C - 1));
-    $('statesUp').onclick = () => apply(writeAt(rule.C + 1));
+    $('statesDown').onclick = () => playOwnRule(ruleTextOf({ ...rule, C: rule.C - 1 }));
+    $('statesUp').onclick = () => playOwnRule(ruleTextOf({ ...rule, C: rule.C + 1 }));
   };
-  // a share rule's: each interval a slider from its share in to its share out (all the way: up to all), then the counts of
-  // live neighbours it gives, by the cell's neighbours
-  if (rule.share) {
-    for (const [id, part] of [
-      ['shareBirth', 'B'],
-      ['shareSurvive', 'S'],
+  // a share rule's: in the chips' place, each interval a slider from its share in to its share out (all the way: up to
+  // all), its words under the frame's name, then the counts of live neighbours it gives, by the cell's neighbours
+  $('birthShares').textContent = $('surviveShares').textContent = '';
+  // (its chips or sliders greyed where the rule is more than they can set, see ruleUnsettable: the field its only way)
+  const greyBoards = () => {
+    for (const [id, p] of [
+      ['ruleBirth', 'B'],
+      ['ruleSurvive', 'S'],
     ]) {
-      const spans = rule.share[part].length ? rule.share[part] : [[0, 0]];
+      const why = ruleUnsettable(rule, N || Infinity, p);
+      $(id).dataset.greyed = why;
+      for (const el of $(id).querySelectorAll('button, input')) el.disabled = !!why;
+    }
+  };
+  if (rule.share) {
+    for (const [id, part, wordsId] of [
+      ['ruleBirth', 'B', 'birthShares'],
+      ['ruleSurvive', 'S', 'surviveShares'],
+    ]) {
+      const spans = (rule.share[part].length ? rule.share[part] : [[0, 0]]).map(([lo, hi]) => [lo, hi ?? 100]);
       const counted = document.createElement('div');
       counted.className = 'share-counts';
       counted.title = "The counts of live neighbours this gives, by the cell's neighbours";
       counted.textContent = counts
         .map((d) => {
-          const on = [...Array(d + 1).keys()].filter((c) => rule[part][SHARE_ROW * d + c]);
-          return `${d}: ${on.length ? on.join(',') : 'none'}`;
+          const on = [...Array(d + 1).keys()].filter((c) => rule[part][COUNTS_ROW * d + c]);
+          const runs = countRuns(on).map(([c, b]) => (b === c ? c : `${c}–${b}`));
+          return `${d} neighbour${d === 1 ? '' : 's'}:\n${runs.length ? `${runs.join(', ')} alive` : 'none'}`;
         })
-        .join('\n'); // (a line a count of neighbours)
-      const sliders = document.createElement('div');
-      sliders.className = 'share-sliders';
-      sliders.append(
-        ...spans.map(([lo, hi], i) =>
-          rangeSlider({
-            lo,
-            hi: hi ?? 100,
-            title: part === 'B' ? 'Born from this share of live neighbours' : 'Kept from this share of live neighbours',
-            words: (from, to) => (to === 100 ? `${from} % and more` : `${from} – ${to} %`),
-            change: (from, to) =>
-              apply(
-                shareText(
-                  { ...rule.share, [part]: spans.map((s, j) => (j === i ? [from, to === 100 ? null : to] : s)) },
-                  rule.C,
-                ),
-              ),
-          }),
-        ),
+        .join('\n\n'); // (a paragraph a count of neighbours, wrapped between its counts)
+      const row = document.createElement('div');
+      row.className = 'share-row';
+      row.append(
+        rangeSlider({
+          spans,
+          title: part === 'B' ? 'Born from this share of live neighbours' : 'Kept from this share of live neighbours',
+          show: (list) => {
+            $(wordsId).textContent = list
+              .map(([from, to]) => (to === 100 ? `${from} % and more` : `${from} – ${to} %`))
+              .join('\n');
+          },
+          change: (from, to) =>
+            playOwnRule(ruleTextOf({ ...rule, share: { ...rule.share, [part]: [[from, to === 100 ? null : to]] } })),
+        }),
+        counted,
       );
-      $(id).replaceChildren(sliders, counted);
+      $(id).replaceChildren(row);
     }
-    stepStates((C) => shareText(rule.share, C));
+    greyBoards();
+    stepStates();
     return;
   }
   // your own: the chips of the rule in use, a count a row; beside 2, 3 and 4 on hexagons, Callahan's letters (where
@@ -29279,47 +29321,27 @@ function renderRuleSection() {
             ? ['v0', 'v1', 'v2'].slice(0, Math.min(c, 2) + 1)
             : [];
   const all = (c) => (lettersOf(c).length ? lettersOf(c) : ['']); // a count without letters: one, ''
-  const classOf = (m) => (hex ? hexClass(m).toLowerCase() : henselClass(m)),
-    R = hex ? 6 : 8;
-  const letters = (table) =>
-    Array.from(
-      { length: N + 1 },
-      (_, c) =>
-        new Set(
-          all(c).filter((x) =>
-            rule.iso === 'vertex'
-              ? table[16 + 4 * c + (x ? Number(x[1]) : 0)] === 1
-              : !rule.iso && vertex
-                ? table[c] === 1
-                : rule.iso
-                  ? Array.from({ length: 1 << R }, (_, m) => m).some(
-                      (m) => table[16 + m] && bitCount(m) === c && (x === '' || classOf(m) === x),
-                    )
-                  : table[c] === 1,
-          ),
-        ),
-    );
+  // (each count's chips on, from the rule's places: v's by their counts, v0 its 0; and back, every chip on its count anywhere)
+  const letters = (p) =>
+    Array.from({ length: N + 1 }, (_, c) => {
+      const places = rule.counts[p].get(c);
+      return new Set(
+        !rule.counts[p].has(c) ? [] : places ? all(c).filter((x) => places.has(x.replace(/^v/, ''))) : all(c),
+      );
+    });
   const write = (B, S, C) => {
-    const part = (set) =>
-      set
-        .map((on, c) => {
-          const ls = all(c),
-            off = ls.filter((x) => !on.has(x));
-          if (!on.size) return '';
-          if (!off.length) return c;
-          if (vertex)
-            return `${c}v${ls
-              .filter((x) => on.has(x))
-              .map((x) => x[1])
-              .join('')}`; // (v and the counts by a corner)
-          return hensel && off.length < on.size ? `${c}-${off.join('')}` : c + ls.filter((x) => on.has(x)).join(''); // Hensel's "-": all but these
-        })
-        .filter((x) => x !== '')
-        .reduce((t, x) => t + (vertex && /v\d+$/.test(t) && /^[0-3]/.test(String(x)) ? '.' : '') + x, ''); // (v's counts ended by "." before a count 0 to 3)
-    return `B${part(B)}/S${part(S)}${C > 2 ? `/C${C}` : ''}`;
+    const part = (sets) =>
+      new Map(
+        sets.flatMap((on, c) =>
+          on.size ? [[c, on.size === all(c).length ? null : new Set([...on].map((x) => x.replace(/^v/, '')))]] : [],
+        ),
+      );
+    const counts = { B: part(B), S: part(S) },
+      placed = [...counts.B.values(), ...counts.S.values()].some(Boolean);
+    return ruleTextOf({ counts, C, iso: placed && (hex ? 'hex' : hensel ? 'hensel' : 'vertex') });
   };
-  const B = letters(rule.B),
-    S = letters(rule.S);
+  const B = letters('B'),
+    S = letters('S');
   const WHERE = { o: 'side by side', m: 'one cell apart', p: 'opposite' };
   const said = (c, x) =>
     vertex
@@ -29339,7 +29361,7 @@ function renderRuleSection() {
       b.title = title;
       b.addEventListener('click', () => {
         click();
-        apply(write(B, S, rule.C));
+        playOwnRule(write(B, S, rule.C));
       });
       return b;
     };
@@ -29376,14 +29398,14 @@ function renderRuleSection() {
       ),
     );
   }
-  stepStates((C) => write(B, S, C));
+  greyBoards();
+  stepStates();
 }
 let ruleFittedTo = null;
 const shapeRules = {}; // each shape's last rule, by its mark: back on a shape, its rule again (as its size: the last picked)
 // a rule's text fits a grid's automaton: its kind (blocks: a block rule fitting them only; loops, a table; Elementary, Wolfram's;
-// else none of them) and its letters, if any (Callahan's hexagons, Hensel's squares on the plane; v: any). Not its counts: a
-// count past the grid's neighbours never happens there (B9 on squares plays as B), the rule as deterministic, kept as typed
-// from grid to grid
+// else none of them) and its letters, if any (Callahan's hexagons, Hensel's squares on the plane; v: any). Not its counts,
+// known by the grid built only (see ruleRefusal): kept as typed from grid to grid
 function ruleFits(text, variant) {
   const r = parseRule(text);
   if (!r) return false;
@@ -40878,14 +40900,18 @@ function applySetup(s) {
   if (s.playRule && VARIANTS[w].worm) {
     worm.byDigits = s.playRule === 'digits';
     if (!worm.byDigits && wormRuleOf(s.playRule)) worm.rule = wormRuleOf(s.playRule).join(' ');
+    else if (!worm.byDigits) refuseRule(s.playRule, w);
   } else if (s.playRule && VARIANTS[w].antOf) {
     antByDigits = s.playRule.startsWith('digits');
-    const T = antRuleRead(w, antByDigits ? s.playRule.slice(6).trim() : s.playRule);
+    const rule = antByDigits ? s.playRule.slice(6).trim() : s.playRule,
+      T = antRuleRead(w, rule);
     if (T) antRules[w] = T.text;
+    else refuseRule(rule, w);
   } else if (VARIANTS[w].net) {
     const m = VARIANTS[w],
       commands = s.playRule && walkCommandsOf(w, s.playRule);
     walkRules[walkKey(m)] = commands ? ruleOfCommands(commands) : firstWalkRule(m);
+    if (s.playRule && !commands) refuseRule(s.playRule, w);
   } else if (s.playRule || VARIANTS[w].life) {
     // (Life: its size and start without a rule too, the grid's first then)
     if (VARIANTS[w].plane) planeFromSetup(s);
@@ -40896,7 +40922,8 @@ function applySetup(s) {
     if (s.playRule) {
       ruleFittedTo = w;
       $('lifeRule').value = ruleBody(s.playRule);
-    } // a link's rule as it is
+      if (ruleRefusal(s.playRule, w)) refuseRule(s.playRule, w);
+    } // a link's rule as it is (one its grid cannot play: refused, its grid's kept)
   }
   // the display is not part of a setup: it takes the defaults of the walk variant's tab, when the tab
   // changes (as picking a walk does); within a tab, what was chosen stays
@@ -42195,7 +42222,7 @@ function drawElementarySheet(ctx, R) {
 }
 // its lines (none while Grid is off or no grid is built)
 function drawGridLines(ctx, s) {
-  if (!gridShown() || !walk.lattice) return; // (no grid built yet, at load: no lines)
+  if (!gridLinesShown() || !walk.lattice) return; // (no grid built yet, at load: no lines)
   let stepCells = 1;
   while (s * stepCells < LINE_PIXELS) stepCells *= 5;
   ctx.strokeStyle = gridColour();
@@ -42990,10 +43017,10 @@ const GRID_LINES = [
   ['Medium', 'The lines as the theme draws them', 1],
   ['Strong', "The lines marked four times as much: they show over strong colours (Explore's)", 4],
 ];
-const gridAlpha = () => EDGE_ALPHA * (GRID_LINES[Number($('gridFinish').value)]?.[2] ?? 0), // (past them: Tiles', no lines)
-  gridShown = () => gridAlpha() > 0;
+const gridLineAlpha = () => EDGE_ALPHA * (GRID_LINES[Number($('gridFinish').value)]?.[2] ?? 0), // (past them: Tiles', no lines)
+  gridLinesShown = () => gridLineAlpha() > 0;
 function edgeAlpha(sh) {
-  if (!FADE_EDGES) return gridAlpha();
+  if (!FADE_EDGES) return gridLineAlpha();
   // the tiles' size as the grid's density of lines shows it: 2 × area / half perimeter (each edge is
   // shared), the side of a square of that density (a hexagon of side 1: 1.73, a triangle: 0.58, a
   // square stretched 2.5 times: 1.43), over all the tiles, once per form of the surface
@@ -43027,7 +43054,7 @@ function edgeAlpha(sh) {
     sh.cellSizeAt = sh.m;
   }
   const px = walk.R * sh.cellSize * view.scale;
-  return gridAlpha() * Math.min(1, Math.max(0.35, (px - 4) / 50)); // (fainter at every surface's usual size, stronger zoomed in)
+  return gridLineAlpha() * Math.min(1, Math.max(0.35, (px - 4) / 50)); // (fainter at every surface's usual size, stronger zoomed in)
 }
 
 /* ---- 11.4b Surfaces: shared pieces -------------------------------------------------------- */
@@ -43040,7 +43067,7 @@ const rgbCached = (c) => {
 };
 // RGBA in a number, a texel's; a tile's alpha: 1 painted, half its ground (a tile none painted: blank, a wall, Tiles'
 // colour; flat in Tessera, see tesseraF), 0 none (the plane's, not drawn)
-const packed = (c, a = 1) => {
+const texelRgba = (c, a = 1) => {
   const [r, g, b] = rgbCached(c);
   return ((Math.round(255 * a) << 24) | (b << 16) | (g << 8) | r) >>> 0;
 };
@@ -43280,9 +43307,9 @@ function outwardFolds(tri, P, Q, N) {
 // a surface's tiles' colours from a palette (null: its ground) and each tile's place in it (out of it: its ground), into their buffer
 // (out.put, see gpuSurface)
 const paintLevels = (palette, levelOf) => (out, n) => {
-  const rgb = palette.map((c) => c && packed(c)),
+  const rgb = palette.map((c) => c && texelRgba(c)),
     ground = groundColours(),
-    blank = packed(blankTile(), GROUND_ALPHA),
+    blank = texelRgba(blankTile(), GROUND_ALPHA),
     col = new Uint32Array(n);
   for (let t = 0; t < n; t++) col[t] = (rgb[levelOf(t)] ?? rgb[0]) || (ground?.[t] ?? blank); // (none painted: its ground)
   out.put(eased('tiles', col)); // (every tile's change faded in)
@@ -43321,7 +43348,7 @@ let oceanPicked = false; // (Ocean clicked since its default was set: kept, else
 const oceanOn = () => $('ocean').checked && shows('ocean', tabVariant()) && oceanFits(); // (its row's rule, not its row: drawn later)
 const blankTile = () => (oceanOn() ? OCEAN : UNLIT); // (a surface's tile none has painted: Ocean's sea blue, or the theme's)
 // a colour for text on the page: one too light to read on the light theme (Earth's white land) darkened, else as it is
-const inkOf = (colour) => {
+const readableColour = (colour) => {
   const [r, g, b] = rgbOf(colour);
   return themeName() === 'light' && 0.299 * r + 0.587 * g + 0.114 * b > 200
     ? `color-mix(in srgb, ${colour}, black 45%)`
@@ -43427,7 +43454,7 @@ const PART_MOST = 80e6,
 // the 2D grid's lines a cell apart from this many screen pixels a cell (fewer: every 5, 25… cells, see drawGrid)
 const LINE_PIXELS = 10;
 // a sheet's grid its cells' sides, from this many screen pixels a cell (the plane's, Elementary's: none zoomed out)
-const sidesShown = (s) => gridShown() && s >= 6;
+const sidesShown = (s) => gridLinesShown() && s >= 6;
 // Elementary's run on the screen, one placing for its sheet, its picture, its parts, its squares and its sides: a cell side
 // x cells from its left, a row side t rows down, on a whole pixel
 const runX = (x) => Math.round(view.ox + (x - walk.rows.c - 0.5) * view.scale),
@@ -43941,14 +43968,14 @@ fn next(t: i32) -> i32 {
       }
       if (v >= 0 && live(A(v))) { c |= 1 << u32(q); around[A(v)]++; }
     }
-    c += 16;
+    c += ${COUNTS_ROW};
   } else if (p.mode == 2) {
     var k = 0;
     for (var q = s0; q < s1; q++) { let v = A(I(p.oList, q)); if (live(v)) { c++; around[v]++; if (I(p.oSide, q) == 0) { k++; } } }
-    c = 16 + 4 * c + min(k, 3);
+    c = ${COUNTS_ROW} + 4 * c + min(k, 3);
   } else {
     for (var q = s0; q < s1; q++) { let v = A(I(p.oList, q)); if (live(v)) { c++; around[v]++; } }
-    if (p.mode == 3) { c += ${SHARE_ROW} * min(s1 - s0, ${SHARE_ROW - 1}); }  // (a share rule's: by its neighbours too, see parseRule)
+    if (p.mode == 3) { c += ${COUNTS_ROW} * min(s1 - s0, ${COUNTS_ROW - 1}); }  // (a share rule's: by its neighbours too, see parseRule)
   }
   if (was > 0) { if (I(p.oS, c) > 0) { return was; } if (p.C > 2) { return was + p.K; } return 0; }
   if (I(p.oB, c) == 0) { return 0; }
@@ -44544,7 +44571,7 @@ fn tileColour(id: u32) -> vec4f {  // (the back of an open sheet, as a ground; e
 @vertex fn tileV(@location(0) pos: vec3f, @location(1) nrm: vec3f, @location(2) id: u32) -> Lit {
   return light(tileColour(id).rgb, nrm, pos, 0.0);
 }
-// Cells (Display): each tile painted lit pixel by pixel (none painted: flat, its alpha half, see packed), by how far it
+// Cells (Display): each tile painted lit pixel by pixel (none painted: flat, its alpha half, see texelRgba), by how far it
 // is from its edge to its middle (pieces.y: its CELLS_FINISH): Tessera, a piece of mosaic, rounded down to its edges (its normal tilted
 // towards the nearest, over BEVEL of the way); the others a lamp, its own light (see lampLight). Its corners read where they are drawn from (corners, pieces.x a tile, its last repeated: see
 // gpuFrame), the nearest edge found
@@ -44769,7 +44796,7 @@ struct Col { @builtin(position) pos: vec4f, @location(0) col: vec4f }
 fn planeAt(p: vec2f) -> vec4f { return flatAt(u.view.yz + vec2f(u.turnC * p.x - u.turnS * p.y, u.turnS * p.x + u.turnC * p.y) * u.view.x); }
 @vertex fn planeCellsV(@location(0) pos: vec2f, @location(1) id: u32) -> Col {
   var o: Col; let c = unpack4x8unorm(tileCol[id]);
-  o.pos = select(planeAt(pos), vec4f(2.0, 2.0, 2.0, 1.0), c.a < 0.25);  // (its alpha: 0 not drawn, else drawn whole, painted or its ground, see packed)
+  o.pos = select(planeAt(pos), vec4f(2.0, 2.0, 2.0, 1.0), c.a < 0.25);  // (its alpha: 0 not drawn, else drawn whole, painted or its ground, see texelRgba)
   o.col = vec4f(c.rgb, 1.0);
   return o;
 }
@@ -45289,7 +45316,7 @@ function gpuSurface(paint, path) {
         nrm[i + 2] = sh.nrm[3 * t + 2];
       }
     gpuBuffer('pos', pos, GPUBufferUsage.VERTEX | GPUBufferUsage.STORAGE); // (Tessera reads its tiles' corners, see tesseraF)
-    gpuBuffer('pieces', Uint32Array.of(k, cellsFinish, packed(blankTile(), 1), 0), GPUBufferUsage.UNIFORM); // (its corners a tile, its Finish, the ground's colour)
+    gpuBuffer('pieces', Uint32Array.of(k, cellsFinish, texelRgba(blankTile(), 1), 0), GPUBufferUsage.UNIFORM); // (its corners a tile, its Finish, the ground's colour)
     gpuBuffer('nrm', nrm);
     const edges = surfaceEdges(g),
       E = edges.length / 4,
@@ -45451,7 +45478,7 @@ function gpuSurface(paint, path) {
     rp.setIndexBuffer(D.fan, 'uint32');
     rp.drawIndexed(D.fanCount);
   };
-  if (cellsFinishOn()) D.device.queue.writeBuffer(D.pieces, 4, Uint32Array.of(cellsFinish, packed(blankTile(), 1))); // (its Finish, the ground's colour: see lampLight)
+  if (cellsFinishOn()) D.device.queue.writeBuffer(D.pieces, 4, Uint32Array.of(cellsFinish, texelRgba(blankTile(), 1))); // (its Finish, the ground's colour: see lampLight)
   // the tiles, their grid and the path, into pass p (0 the frame; 1, 2 Glass's)
   const drawAll = (rp, pass) => {
     // seen from both sides: Glass, a cut, a Klein bottle (one-sided: its tiles' face inwards in its neck and handle)
@@ -45478,7 +45505,7 @@ function gpuSurface(paint, path) {
     };
     tiles([0, 0, 0, 0], cull);
     if (open) tiles([...rgbCached(undersideColour()).map((c) => c / 255), 1], front === 'back' ? 'front' : 'back');
-    if (gridShown() && view.scale > 6) {
+    if (gridLinesShown() && view.scale > 6) {
       rp.setPipeline(
         gpuDrawPipe('edge', {
           vertex: 'edgeV',
@@ -46001,7 +46028,7 @@ const VIEW_AXES = [
 ];
 const VIEW_AXES_AT = 44, // (their origin, pixels from the view's top left)
   VIEW_AXES_LENGTH = 26; // (a bar's, pixels)
-const axesShown = () => gridShown() && !!walk.lattice && !!walk.is3d;
+const axesShown = () => gridLinesShown() && !!walk.lattice && !!walk.is3d;
 function gpuAxes(D, rp, pass, slot) {
   if (!D.barMesh) gpuBuffer('barMesh', CELL_SHAPES.cube.triangles);
   gpuBuffer('axesFrom', new Float32Array(9));
@@ -46088,7 +46115,7 @@ function gpuCubes(count, of, make, reach) {
     D.cubeColours = new Uint32Array(rgba.buffer);
   }
   const bars = !cubesWalk() && !walk.stacked; // (a 3D walk along its lines: a bar a step, growing as it glides, no fade, as a 2D line)
-  const blank = packed(blankTile()),
+  const blank = texelRgba(blankTile()),
     want = D.cubeColours.map((c, k) => (bars || k < count ? c : blank)); // (cubes not come yet: blank, so they fade in as they come)
   device.queue.writeBuffer(D.cubeCol, 0, eased('cubes', want));
   if (bars && !D.barMesh) gpuBuffer('barMesh', CELL_SHAPES.cube.triangles);
@@ -46236,8 +46263,8 @@ function gpuPlane(paint) {
   const wallShown = !walk.life?.palette; // (Explore: no wall, its cells alone on the view)
   const ground = groundColours();
   if (D.keys.planeBase !== `${bg}|${wallShown}|${oceanOn()}` || D.planeGround !== ground) {
-    const page = packed(oceanOn() ? OCEAN : bg.trim(), GROUND_ALPHA), // (Earth's: its cells none has painted the sea, as a surface's, see blankTile)
-      walled = packed(LIFE_WALL, GROUND_ALPHA);
+    const page = texelRgba(oceanOn() ? OCEAN : bg.trim(), GROUND_ALPHA), // (Earth's: its cells none has painted the sea, as a surface's, see blankTile)
+      walled = texelRgba(LIFE_WALL, GROUND_ALPHA);
     device.queue.writeBuffer(
       D.planeBase,
       0,
@@ -46299,7 +46326,10 @@ function gpuPlane(paint) {
       }),
     );
     rp.setBindGroup(0, gpuGroup(), [
-      gpuView(D.words, 1, 1, { ...turn, plain: [...EDGE_RGB.map((c) => (c / 255) * gridAlpha()), gridAlpha()] }),
+      gpuView(D.words, 1, 1, {
+        ...turn,
+        plain: [...EDGE_RGB.map((c) => (c / 255) * gridLineAlpha()), gridLineAlpha()],
+      }),
     ]);
     rp.setVertexBuffer(0, D.planeEdges);
     rp.draw(D.planeLines);
@@ -46850,7 +46880,7 @@ function drawActivity() {
 // (100 %: every cell changes; 0: nothing moves), its growth, births less deaths, in figures (a bar for it swung too much)
 // a generation of the run in view, as a link, always (its number as wide as the furthest shown: in a column, none moving) (the one shown too: one look, the same everywhere): clicked, it goes
 // there (see seekTo: a reversible one's by its rule, Life's played again from its start)
-const genLink = (g, text = `${walk.life ? 'gen' : 'step'} ${formatNumberAsWide(g, walk.widestShown)}`, kind = '') =>
+const stepLink = (g, text = `${walk.life ? 'gen' : 'step'} ${formatNumberAsWide(g, walk.widestShown)}`, kind = '') =>
   `<a class="gen-link${kind && ` gen-${kind}`}" href="#" data-gen="${g}" title="Go to ${walk.life ? 'gen' : 'step'} ${formatNumber(g)}">${text}</a>`; // (kind: its colour, see style.css)
 document.addEventListener('click', (e) => {
   const a = e.target.closest?.('.gen-link');
@@ -46877,7 +46907,7 @@ function renderGauges(L) {
     P = peaks(L),
     ever = traced(L, stepShown)?.ever ?? L.everAlive, // (its cells reached by the generation shown)
     // each figure as wide as its widest, known (a count: the grid's cells; a share: 100 %; a generation: the furthest
-    // shown, see genLink), none moving as they change
+    // shown, see stepLink), none moving as they change
     count = (v) => formatNumberAsWide(v, n),
     percent = (v) => gaugePercent(v);
   const rows = [
@@ -46888,7 +46918,7 @@ function renderGauges(L) {
       gold,
       (varies ? avg[1] : L.aliveCount) / P.alive,
       `<b>${varies ? meanText(avg[1]) : count(L.aliveCount)}</b>`,
-      [count(P.alive), genLink(P.aliveGen)],
+      [count(P.alive), stepLink(P.aliveGen)],
     ],
     [
       'Ever alive',
@@ -46897,10 +46927,10 @@ function renderGauges(L) {
       `<span title="${formatNumber(ever)} of ${formatNumber(n)} cells alive at least once so far">${percent(ever / n)}</span>`,
       [
         `<span title="${formatNumber(P.ever)} of ${formatNumber(n)} cells alive at least once, all reached at gen ${formatNumber(P.everGen)}">${percent(P.ever / n)}</span>`,
-        genLink(P.everGen, undefined, 'sweet'),
+        stepLink(P.everGen, undefined, 'sweet'),
       ],
     ], // (its share of the grid, the cells reached: what Hunt › Reach all hunts)
-    ['Order', blue, L.order, percent(L.order), [percent(P.order), genLink(P.orderGen)]],
+    ['Order', blue, L.order, percent(L.order), [percent(P.order), stepLink(P.orderGen)]],
     ['Turnover', null, turnover, percent(turnover)],
     [
       'Growth',
@@ -47032,7 +47062,7 @@ function renderWalkGauges() {
         cells: [
           `<b>${count(w[s])}</b>${gone(s) ? ' ✝' : s === survivor ? ' ♥\uFE0E' : '<span class="digits-pad"> ✝</span>'}`,
           count(D.bestAt(s)),
-          deaths[s] >= 0 ? genLink(deaths[s], formatNumberAsWide(deaths[s], walk.widestShown)) : '', // (its title says step)
+          deaths[s] >= 0 ? stepLink(deaths[s], formatNumberAsWide(deaths[s], walk.widestShown)) : '', // (its title says step)
           ...(C.body ? [count(D.size[s])] : []),
           from(s).toFixed(1),
         ],
@@ -47058,13 +47088,13 @@ function renderWalkGauges() {
         : count(v);
   paintGauges([
     ['Position', null, null, `(${[x, y, ...(walk.is3d ? [z] : [])].map(place).join(', ')})`],
-    ['Distance', gold, d / P.far, `<b>${far(d)}</b>`, [far(P.far), genLink(P.step)]],
+    ['Distance', gold, d / P.far, `<b>${far(d)}</b>`, [far(P.far), stepLink(P.step)]],
     [
       walk.vert ? 'Corners visited' : 'Cells visited',
       null,
       c / (walk.surface ? walk.nodes : last),
       visited(c),
-      [visited(last), genLink(lastAt)],
+      [visited(last), stepLink(lastAt)],
     ], // (its end's, and the first step with as many)
   ]);
 }
@@ -47140,7 +47170,7 @@ function renderRanking(L) {
         dead: dead(k),
         diedAt: L.extinctAt[k],
         cells: [
-          dead(k) ? `✝ ${genLink(L.extinctAt[k])}` : `<b>${num(live(k))}</b>`,
+          dead(k) ? `✝ ${stepLink(L.extinctAt[k])}` : `<b>${num(live(k))}</b>`,
           count(Math.round((foot ?? L.sumBy)[k] / (foot ? Math.max(1, L.stable.T) : L.gen + 1))),
           formatNumberAsWide(L.bornBy[k], most.born),
           formatNumberAsWide(L.deadBy[k], most.dead),
@@ -47202,7 +47232,7 @@ function paintRanking(rows, titles) {
     r.children[2].firstChild.style.width = row.dead ? '0' : `${(100 * row.value) / total}%`;
     row.cells.forEach((v, c) => {
       setLinks(r.children[3 + c], v);
-      r.children[3 + c].style.color = inkOf(row.colour);
+      r.children[3 + c].style.color = readableColour(row.colour);
     });
   });
   box.lastChild.hidden = alive.length > 0;
@@ -47263,7 +47293,7 @@ function updateStats() {
   setLinks(
     $('stepEnd'),
     endMark() +
-      (sweetSpot() !== null ? `${genLink(sweetSpot(), `✦<span class="end-words"> sweet spot</span>`, 'sweet')}` : ''),
+      (sweetSpot() !== null ? `${stepLink(sweetSpot(), `✦<span class="end-words"> sweet spot</span>`, 'sweet')}` : ''),
   ); // (its link to its sweet spot, after its end's)
   if (!walk.life && !walk.battle) $('ranking').hidden = true; // (a battle's shown by renderWalkGauges: never hidden in between, its rows' slides kept)
   const time = walk.stacked && !!stack,
@@ -47644,8 +47674,7 @@ const fieldError = (input) => {
     const error = formulaOf(input.value).error;
     return error ? `${formulaName(input.id)}: ${error}` : '';
   }
-  if (input.id === 'lifeRule') return lifeRuleError(input.value);
-  if (input.id === 'antRule') return creatureRuleError(input.value);
+  if (input.id === 'lifeRule' || input.id === 'antRule') return ruleRefusal(input.value);
   return '';
 };
 // every field typed in, one way (a line's and Text's lines alike): Escape its value in use back, leaving it; Enter (in lines,
@@ -47678,7 +47707,7 @@ for (const input of document.querySelectorAll('.field :is(input, textarea)')) {
     if (e.key !== 'Enter' || (input.tagName === 'TEXTAREA' && !e.metaKey && !e.ctrlKey)) return;
     e.preventDefault();
     const error = fieldError(input);
-    if (error) $('status').textContent = error;
+    if (error) showInTip(error);
     else input.blur();
   });
 }
@@ -47726,7 +47755,7 @@ $('step').addEventListener('click', () => {
 $('reverse').addEventListener('click', () => playerButton('reverse').go());
 $('jump10k').addEventListener('click', () => advanceTo(stepShown + 10000));
 // Begin (⏮): back to its start (0), then to its first (a reversible one's past's furthest); its loop and its ordered moments
-// by their links instead (see loopLink, genLink). Its start, written at once (restart), not played to
+// by their links instead (see loopLink, stepLink). Its start, written at once (restart), not played to
 const runStops = () => [...new Set([runStart(), 0, seekFar()])].filter(Number.isFinite).sort((x, y) => x - y);
 // End (⏭), the same forth (a run with its end known: a walk's at once; Life's and a reversible one's once its loop is found,
 // its last step, +10k in its place till then)
@@ -48515,29 +48544,23 @@ document.addEventListener('click', (e) => {
   )
     ruleTutorial(null);
 });
-// a Life rule typed: its error, '' when it fits the tab's grid
-const lifeRuleError = (typed, variant = VARIANTS[tabVariant()]) =>
-  ruleFits(ruleBody(typed), variant)
-    ? ''
-    : variant.elementary
-      ? 'Enter W and its number, 0 to 255: W30, W110'
-      : variant.margolus
-        ? 'Enter a block rule of this grid, as its cards show it'
-        : 'Enter a rule like B3/S23, B2/S/C3 (2 to 25 states) or, on hexagons, B2o/S2m34 (the colours: Colors, above)';
+// how a Life rule is written on a variant's grid (see ruleRefusal)
+const lifeRuleHow = (variant) =>
+  variant.elementary
+    ? 'Rule, W and its number, 0 to 255: W30, W110'
+    : variant.margolus
+      ? 'Rule, a block rule of this grid, as its cards show it'
+      : `Rule, as B3/S23, B2/S/C3 (2 to 25 states), B3,10,11/S2-4 past 9, its counts ${mostNeighbours(tabVariant())} at most, or on hexagons B2o/S2m34 (the colours: Colors, above)`;
 $('lifeRule').addEventListener('change', () => {
-  const variant = VARIANTS[tabVariant()],
-    error = lifeRuleError($('lifeRule').value, variant);
-  if (error) {
-    // (not a rule, or not this grid's: the one in use back in the field)
-    $('status').textContent = error;
-    $('lifeRule').value = ruleBody(shapeRules[lifeMark(variant)] ?? walk.life?.ruleText ?? 'B3/S23');
+  if (ruleRefusal($('lifeRule').value)) {
+    refuseRule($('lifeRule').value); // (not a rule, or not this grid's: the one in use back in the field)
     return;
   }
   // typed: a known one's card picked (its own text), else your own
   const typed = parseRule(ruleBody($('lifeRule').value)),
     known = rulesOf('life').find((r) => parseRule(r.rule)?.text === typed.text);
   customOpen = !known;
-  if (known) $('lifeRule').value = known.rule;
+  $('lifeRule').value = known?.rule ?? ruleBody(typed.text); // (as read: B35785766 is B35678)
   if (VARIANTS[tabVariant()].life) compute(); // restart from generation 0; a new state count needs a new base
 });
 // Copy RLE: the generation shown as an RLE file, Golly's and LifeWiki's (its size and rule on top, rows of runs, 70

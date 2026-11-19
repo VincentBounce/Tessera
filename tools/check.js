@@ -17,20 +17,12 @@
 // said; the grids that never repeat, their walls closed; every button shown its tooltip; those in a hexagon, their walls closed, turning onto themselves, as many cells as said. The crawl: no error, the link's variant the one shown, the size said its cells' count. Known:
 // Life's oscillators' periods and methuselahs' loops (PATTERNS.md's), a hunt's best, reversible rules' returns to their start.
 
-const neighbourCounts = (g, keep = () => true) => {
-  // how many cells have k neighbours, as shares
-  const { start } = cornerNeighbours(g),
-    walls = new Set(g.walls ?? []),
-    c = {};
-  let n = 0;
-  for (let t = 0; t < g.n; t++)
-    if (!walls.has(t) && keep(t)) {
-      const k = start[t + 1] - start[t];
-      c[k] = (c[k] ?? 0) + 1;
-      n++;
-    }
-  for (const k in c) c[k] /= n;
-  return c;
+const neighbourShares = (g, keep = () => true) => {
+  // the share of a mesh's cells that have k neighbours (see neighbourCounts), its walls left out
+  const walls = new Set(g.walls ?? []),
+    cells = neighbourCounts(cornerNeighbours(g).start, (t) => !walls.has(t) && keep(t)),
+    n = [...cells.values()].reduce((a, b) => a + b, 0);
+  return Object.fromEntries([...cells].map(([k, c]) => [k, c / n]));
 };
 const alike = (a, b) => Object.keys({ ...a, ...b }).every((k) => Math.abs((a[k] ?? 0) - (b[k] ?? 0)) < 0.02);
 const within = (a, b) => Object.keys(a).every((k) => k in b); // (a's counts all among b's)
@@ -92,7 +84,7 @@ function checkMeshes(fail) {
         }
   for (const kind of tori) {
     const g = SURFACES[kind].mesh(size(kind)),
-      c = neighbourCounts(g);
+      c = neighbourShares(g);
     ref[kind] = c;
     checked++;
     for (const [name, h] of [
@@ -106,7 +98,7 @@ function checkMeshes(fail) {
     if (SURFACES[kind].tiles(size(kind)) !== g.n)
       fail(`${kind}: ${g.n} cells, said ${SURFACES[kind].tiles(size(kind))}`);
     if (TURNED[kind] && SURFACES[TURNED[kind]]) {
-      const h = neighbourCounts(SURFACES[TURNED[kind]].mesh(size(kind)));
+      const h = neighbourShares(SURFACES[TURNED[kind]].mesh(size(kind)));
       checked++;
       if (!alike(c, h)) fail(`${kind}: straight ${show(c)}, turned ${show(h)}`);
     }
@@ -117,7 +109,7 @@ function checkMeshes(fail) {
       torus = ref[torusOfStrip(kind)],
       far = g.tiling ? 1.5 * Math.max(...gridMotif(g.tiling).basis.map((v) => Math.hypot(...v))) : 2;
     const y = (t) => sheetMiddle(g, t)[1]; // (its middle across the strip)
-    const inside = neighbourCounts(g, (t) => t < g.front && y(t) > far && y(t) < g.W - far);
+    const inside = neighbourShares(g, (t) => t < g.front && y(t) > far && y(t) < g.W - far);
     checked++;
     if (SURFACES[kind].tiles(6) !== g.n) fail(`${kind}: ${g.n} cells, said ${SURFACES[kind].tiles(6)}`);
     {
@@ -133,7 +125,7 @@ function checkMeshes(fail) {
     const torus =
       ref[FOLDED[kind] ? FOLDS.torus.of(FOLDED[kind].kind) : kind.replace(/^klein/, 'torus').replace(/Turned$/, '')];
     if (!torus) continue; // (a fold with no torus of its own tiles)
-    const c = neighbourCounts(SURFACES[kind].mesh(6));
+    const c = neighbourShares(SURFACES[kind].mesh(6));
     checked++;
     if (!alike(c, torus)) fail(`${kind}: ${show(c)}, its torus ${show(torus)}`);
   }

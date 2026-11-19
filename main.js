@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.416';
+const VERSION = '0.5.417';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -22230,7 +22230,7 @@ function startParts(seed) {
   const fits = huntFits(),
     r = hunt.zone === 'realm' || hunt.zone === 'full' ? Infinity : zoneRadius(hunt.zone); // (Wild greyed, its parts unlike: the widest radius)
   if (hunt.zone === 'custom' || !fits[hunt.zone])
-    hunt.zone = [8, 7, 6, 5, 4, 3, 2, 1].map((k) => `radius${k}`).find((z) => zoneRadius(z) < r && fits[z]) ?? 'full';
+    hunt.zone = r > 1 && seedThatFits(Math.min(SEED_RADII, r - 1)) ? 'seed' : 'full';
   const z = zoneSeed(); // the zone picked, again on this grid (a radius, patterns)
   if (z) {
     seed.set(z);
@@ -22724,7 +22724,8 @@ const plane = {
   seed: 1 + Math.floor(Math.random() * 999999999),
   sym: 'none',
   number: '1/7',
-}; // (number: Formula's, see numberSeed; picks: Famous's and Anywhere's patterns, a colour each, as a link writes them, see choiceWord)  // a soup of its own each visit (a link keeps its seed)
+  seedRadius: 2,
+}; // (seedRadius: Seed's patches' radius, see SEED_RADII; number: Formula's, see numberSeed; picks: Famous's and Anywhere's patterns, a colour each, as a link writes them, see choiceWord)  // a soup of its own each visit (a link keeps its seed)
 // Draw's brush: a cell or a pattern (squares only), turned by quarter turns and mirrored, in a colour
 // (0: the eraser)
 // view: View on, a click draws nothing (at first: a click draws once a brush is picked; see drawsHere), its brush kept
@@ -26032,11 +26033,11 @@ function zoneWords(zone) {
       ? `Each colour random cells within radius ${r} of its spot (${K} spots)`
       : `Each colour a soup of its part (${walk.plane ? COLOUR_PARTS[K] : `${K} parts`}), ${d} % alive`;
 }
-// a Life start's title, what is played: its picture each colour (Punk #4409 vs Punk #4565), its zone and seed (Bloom #7), its
+// a Life start's title, what is played: its picture each colour (Punk #4409 vs Punk #4565), its zone and seed (Seed #7), its
 // number, its text, drawn, found
 // a Life start's title by its setup (its link), the bar's and a saved card's alike, never the game built's: a colour's word
 // each (π vs e); the number's symbol, a text, Drawn, Found (cells a hunt found: its ch), each colour's pattern (Famous,
-// Anywhere) or picture (Icon, Punk), a number laid, else its zone's name and seed (Wild #7, Bloom #7)
+// Anywhere) or picture (Icon, Punk), a number laid, else its zone's name and seed (Wild #7, Seed #7)
 function startWords(s) {
   const [kind, a, b] = String(popOf(s) ?? 'random').split('.'),
     zone = zoneOfWord(kind) ?? 'full',
@@ -26096,7 +26097,8 @@ function startFromSetup(s) {
   if (kind === 'random' || zoneOfWord(kind)) {
     plane.start = 'random';
     plane.density = Math.min(70, Math.max(5, Number(a) || 30)); // (as the hunt draws them, see DENSITY)
-    hunt.zone = zoneOfWord(kind) ?? 'full'; // (pop=bloom.30.7: Bloom's patches, from that seed)
+    hunt.zone = zoneOfWord(kind) ?? 'full'; // (pop=seed4.30.7: Seed's patches of radius 4, from that seed)
+    if (hunt.zone === 'seed') plane.seedRadius = Number(kind.slice(4));
     plane.seed = Number(b) || 1;
     if (isIcon(hunt.zone))
       plane.icons = String(popOf(s))
@@ -27375,7 +27377,7 @@ const lifeMark = (variant) =>
 let lifeTeams = 1,
   teamsMix = false,
   newcomer = false; // the teams: a new figure's the nearest to those before (see teamsOn); teamsMix: Mixed, the colours mixed in one place (see huntParts)
-// Mixed as it counts in a zone: on, colours to mix, and a zone of cells at random (Spark … Jungle, Wild, Formula): the others lay
+// Mixed as it counts in a zone: on, colours to mix, and a zone of cells at random (Seed, Wild, Formula): the others lay
 // each colour's own picture or part (Icon, Punk, Emoji, Famous, Anywhere, Realm, Mirror), Mixed greyed there, kept for later
 const mixable = (zone, variant = VARIANTS[tabVariant()], start = plane.start) =>
   !!variant.life &&
@@ -30754,12 +30756,14 @@ const FULL_END = 0.75; // (Ends ≥3/4: this share of the cells alive or more as
 const peakHunt = () => walk.life.colours === 1 && (hunt.goal === 'peak' || hunt.goal === 'cover'); // (a zone's: the whole grid a soup full already)
 function pickGoal(goal) {
   hunt.goal = goal;
-  if (!huntFits()[hunt.zone])
-    pickZone([8, 7, 6, 5, 4, 3, 2, 1].map((k) => `radius${k}`).find((z) => huntFits()[z]) ?? 'radius1'); // (Peak: not Wild)
+  if (!huntFits()[hunt.zone]) {
+    seedThatFits(SEED_RADII);
+    pickZone('seed'); // (Peak: not Wild, Seed as wide as fits)
+  }
   renderHunt();
   syncLink();
 }
-// The zones: a picture (Icon, Punk, Emoji), patches of radius 1 to 8 round each spot (Spark … Jungle), each colour's face
+// The zones: a picture (Icon, Punk, Emoji), patches of a radius 1 to 8 round each spot (Seed, its slider's), each colour's face
 // or part (Realm), its two opposite ones (Mirror), the whole grid (Wild), a number's digits (Formula), the rule's patterns
 // (Famous, Anywhere); their random starts each as dense as drawn between 10 and 70 % (the records often come from sparse
 // starts, the long lives on average from dense ones: PATTERNS.md, Densities)
@@ -30769,14 +30773,7 @@ const HUNT_ZONES = {
   punk24: [null, 'Punk 24'],
   punkMax: [null, 'Punk max'], // (Punk: a CryptoPunk, as an icon)  // one of Pixelarticons' icons at random, 24 cells wide or as wide as fits (see iconCells)
   emoji: [null, 'Emoji'], // one of Unicode's at random, as big as fits, a picture as an icon (see ICON_SETS)
-  radius1: ['zone1', 'Spark'],
-  radius2: ['zone2', 'Seed'],
-  radius3: ['zone3', 'Sprout'],
-  radius4: ['zone4', 'Bloom'],
-  radius5: ['zone5', 'Grove'],
-  radius6: ['zone6', 'Meadow'],
-  radius7: ['zone7', 'Forest'],
-  radius8: ['zone8', 'Jungle'],
+  seed: ['zone2', 'Seed'], // (patches of plane.seedRadius round each spot, its slider's, see renderSeed)
   realm: ['zoneFace', 'Realm'], // on a solid, each colour's whole face; elsewhere its part, the colours apart (see realmParts)
   mirror: ['zoneMirror', 'Opposite', 'mirror'], // each colour's two opposite faces (or parts: see colouring, hullColourings); its link's word mirror, as before (Mirror the symmetry's name)
   full: ['zoneAll', 'Wild'],
@@ -30866,7 +30863,14 @@ const HUNT_GENERATIONS = [50000, 4000]; // a hunt's start played up to so many g
 const DENSITY = [0.1, 0.7]; // a random start's density, drawn between these
 const density = () => DENSITY[0] + Math.random() * (DENSITY[1] - DENSITY[0]);
 const realmOnFaces = () => SOLIDS.includes(VARIANTS[walk.variant].surface); // (a solid: Realm its faces, a cut's its solid's, see realmParts)
-const zoneRadius = (zone) => (zone.startsWith('radius') ? Number(zone.slice(6)) : 0);
+const zoneRadius = (zone) => (zone === 'seed' ? plane.seedRadius : 0);
+const SEED_RADII = 8; // (Seed's radii, 1 to 8: its slider's notches, see renderSeed)
+// Seed at the widest radius up to r that fits the grid (see huntFits): whether one does (none: radius 1)
+const seedThatFits = (r) => {
+  for (plane.seedRadius = r; plane.seedRadius >= 1; plane.seedRadius--) if (huntFits().seed) return true;
+  plane.seedRadius = 1;
+  return false;
+};
 // Realm: on a solid, each colour's whole face, the one its patch is in the middle of (see patchSpots); none (greyed) where a
 // patch is on a corner or an edge (the stella's tips and hollows): a face cut.
 // Elsewhere (the plane, a torus, a strip), each colour's whole part (see huntParts) but its cells next to another's: the colours
@@ -31721,7 +31725,7 @@ const huntOn = () =>
 function huntFits() {
   const K = lifeParts(),
     laid = `${gridKey()}|${K}|${walk.life.ruleText}`,
-    key = `${laid}|${lifeParts() === 1 ? hunt.goal : teamsMixed('full')}`; // (Mixed as it counts in the soups' zones: their places)
+    key = `${laid}|${lifeParts() === 1 ? hunt.goal : teamsMixed('full')}|${plane.seedRadius}`; // (Seed's radius; Mixed as it counts in the soups' zones: their places)
   if (hunt.laidKey !== laid) {
     hunt.laidKey = laid;
     hunt.laid = {};
@@ -31798,6 +31802,29 @@ const lifeHuntKey = () =>
     ? `${(walk.life.huntId ??= ++lifeGames)}|${walk.plane ? symmetryOf(walk.plane.kind) : ''}|${hunt.goal}|${hunt.zone}`
     : '';
 const HUNT_FRESH = () => ({ top: [], status: '' }); // (its results, none yet)
+// Seed's radius, a notched slider under the zones, Seed's alone (see SEED_RADII): dragged, its patches' width under it, let
+// go, the same start laid again at that radius (its seed and density kept)
+const seedWords = (r) => `Radius ${r} · ⌀ ${2 * r + 1}`;
+function renderSeed() {
+  $('seedField').hidden = hunt.zone !== 'seed';
+  if (hunt.zone !== 'seed') return;
+  $('seedLabel').textContent = seedWords(plane.seedRadius);
+  sizeGauge(
+    $('seedGauge'),
+    SEED_RADII,
+    plane.seedRadius - 1,
+    (k) => {
+      $('seedLabel').textContent = seedWords(k + 1);
+    },
+    (k) => {
+      plane.seedRadius = k + 1;
+      layZone();
+      renderHunt();
+      syncLink();
+    },
+    1,
+  );
+}
 function renderHunt() {
   huntAt(hunt, lifeHuntKey(), HUNT_FRESH, stopHunt);
   renderBack();
@@ -31828,6 +31855,7 @@ function renderHunt() {
     });
   } // (a battle's in teams)
   renderSymmetry(); // (Famous: none)
+  renderSeed();
   const fits = huntFits();
   for (const b of $('huntZones').querySelectorAll('button')) {
     b.dataset.choice = `zone:${b.dataset.zone}`; // (its choice's key, see choicesAt)
@@ -34039,7 +34067,8 @@ function decodeCells(code, n) {
 /* ---- 10.2 The setup object ---------------------------------------------------------------- */
 // a random start's word in a link: random (the soup), or its zone's (spark … jungle, realm, famous), with its density
 // and seed (pop=bloom.30.7); a zone from a link's word, else none
-const wordOfZone = (z) => HUNT_ZONES[z][2] ?? HUNT_ZONES[z][1].toLowerCase().replace(/ /g, ''); // a zone's word in a link: its own, else its name's (Icon 24: icon24)
+const wordOfZone = (z) =>
+  z === 'seed' ? `seed${plane.seedRadius}` : (HUNT_ZONES[z][2] ?? HUNT_ZONES[z][1].toLowerCase().replace(/ /g, '')); // a zone's word in a link: its own, else its name's (Icon 24: icon24; Seed's with its radius, seed3)
 const zoneWord = () =>
   lifeStart?.zone && HUNT_ZONES[lifeStart.zone] && lifeStart.zone !== 'full' ? wordOfZone(lifeStart.zone) : 'random';
 // a zone's start in a link: its word, its density and seed (pop=bloom.30.7); an Icon zone's, its icons' names (pop=icon24.star.heart;
@@ -34052,7 +34081,10 @@ const zonePop = () =>
       : lifeStart?.zone === 'numbers'
         ? `${zoneWord()}.${plane.number}`
         : `${zoneWord()}.${plane.density}.${plane.seed}`; // (Formula: its number, formula.16/9)
-const zoneOfWord = (w) => Object.keys(HUNT_ZONES).find((z) => z !== 'full' && z !== 'custom' && wordOfZone(z) === w);
+const zoneOfWord = (w) =>
+  /^seed[1-8]$/.test(w)
+    ? 'seed'
+    : Object.keys(HUNT_ZONES).find((z) => z !== 'full' && z !== 'custom' && z !== 'seed' && wordOfZone(z) === w);
 // The version a setup was made with (v=0.2.0, last in its link, kept in the Gallery and its files): a link's or a saved
 // one's, kept in the link while the setup in view is that one still, so that a link that fails says where it was made
 // (git log --grep "(v0.2.0)", its bundle, tools/at.sh 0.2.0); changed, the version now. Not read otherwise (no old links

@@ -544,7 +544,7 @@ h3 {
 } /* a size: what to picture, then its tiles */
 .stepper span,
 .stepper input,
-.notch-field #speedLabel,
+.notch-field .notch-words,
 .range-words {
   flex: 1;
   text-align: center;
@@ -552,7 +552,7 @@ h3 {
   font-weight: 600;
   white-space: nowrap;
 } /* the setup at a glance (a share rule's intervals too, the values of its sliders) */
-.notch-field #speedLabel {
+.notch-field .notch-words {
   flex: none;
   min-width: 7.5ch;
   text-align: right;

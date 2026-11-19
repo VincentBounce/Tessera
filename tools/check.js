@@ -1512,7 +1512,7 @@ async function checkKnown(fail) {
   // a hunt: of the 2^14 starts of 14 cells (radius 2's first), the 8 longest
   location.hash = '#mode=life&shape=squares&playRule=B3/S23&gridSize=48&popStart=random&popDraw=49.5';
   await until(shown('lifeSquares', () => plane.side === 48 && plane.torus));
-  hunt.zone = 'radius2';
+  hunt.zone = 'seed';
   const plan = { cells: huntPlan().cells.slice(0, 14), copies: [], all: 2 ** 14 };
   const top = await new Promise((done) => {
     const h = huntRuns(walk.life, plan, 50000, 'longest', (best, n, end) => {

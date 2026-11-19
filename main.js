@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.417';
+const VERSION = '0.5.418';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -22156,7 +22156,7 @@ function lifeReseed() {
   const L = walk.life;
   L.seed.set(surfaceSeed(walk.digits, L.seed.length, lifeParts()));
   startColours(L.seed);
-  setLifeSeed(L.seed.slice(), lifeStart?.zone === 'mirror' ? lifeStart : null);
+  setLifeSeed(L.seed.slice(), null);
 }
 // A start as the Start says, once the grid is built: in Hunt, a soup's colours each in its part of the
 // grid (see huntParts)
@@ -22191,7 +22191,7 @@ function startColours(seed) {
 // in colours, a start laid by parts (a soup, a zone, a text: each colour's in its own) its shape so, each copy in its own part's
 // colour (its dying state kept; none's: dead), as a hunt's (see huntPlan); the digits' and cells drawn their own colours
 function symmetricStart(seed) {
-  if (!walk.plane || symmetryOf(walk.plane.kind) === 'none') return;
+  if (startSymmetry() === 'none') return;
   const K = lifeParts(),
     own = K > 1 && (plane.start === 'random' || plane.start === 'text') ? new Uint8Array(seed.length) : null;
   if (own)
@@ -22204,10 +22204,7 @@ function symmetricStart(seed) {
     seed[t] = !v || !own ? v : own[t] ? colourState(own[t] - 1, Math.floor((v - 1) / walk.life.colours) + 1) : 0;
   }
 }
-const firstCopy = (t) => {
-  const { kind, W } = walk.plane;
-  return Math.min(...cellCopies(kind, W, t));
-};
+const firstCopy = (t) => Math.min(...startCopies(t));
 const firstCell = ([x, y]) => {
   const { at, xy } = walk.plane,
     t = at(x, y);
@@ -22240,8 +22237,8 @@ function startParts(seed) {
   if (K === 1) return;
   // (Wild: each colour's soup in its part, as many alive in each, see soupInParts; on the plane its symmetry's first copies
   // drawn, the others as theirs, see symmetricStart; the cells no one's, on its slices' lines, dead)
-  const own = walk.plane && symmetryOf(walk.plane.kind) !== 'none',
-    first = (t) => !own || Math.min(...cellCopies(walk.plane.kind, walk.plane.W, t)) === t,
+  const own = startSymmetry() !== 'none',
+    first = (t) => !own || firstCopy(t) === t,
     next = seededRandom(plane.seed);
   seed.fill(0);
   soupInParts(
@@ -22249,7 +22246,7 @@ function startParts(seed) {
     plane.density / 100,
     () => next() / 4294967296,
   ).forEach((part, i) => part.forEach((t) => (seed[t] = i + 1)));
-  lifeStart = hunt.zone === 'mirror' ? { zone: 'mirror' } : null; // (Wild mirror: its link's word, see zoneWord; Wild: the soup's)
+  lifeStart = null; // (Wild: the soup's)
 }
 // Life's colours for its grid, before anything is made of them (the digits' base, K + 1; the sizes; the tiles): from those
 // before, those it has fair blocks or spots for (see teamsOn); on a surface, its size's mesh made for them (a torus's
@@ -23758,6 +23755,11 @@ const SYMMETRIES = {
     'kaleidoscopic',
     'A part of the start turned and mirrored: eight copies on squares, twelve in a hexagon',
   ],
+  opposite: [
+    'Opposite',
+    'through the centre',
+    "Half of the start on each colour's part, copied on its other half through the solid's centre (a solid's: each colour's part two opposite pieces, see colouring): two copies",
+  ],
 };
 // A grid's symmetries, known by construction: about its centre, a turn of order N and a mirror. Squares: the grid's middle,
 // quarter turns; a grid in a hexagon (see planeShape): its middle o, a centre of the tiling's sixths, sixth turns, a mirror if
@@ -23892,7 +23894,7 @@ function symmetriesHere(
 const partMemo = remember('partMemo', new Map());
 function partSymmetries(kind, W, K, outline = outlineOf(kind)) {
   if (walk.plane?.kind !== kind || walk.plane.W !== W || outline !== outlineOf(kind)) return ['none']; // (its parts known on the grid built only: another grid's not judged, not claimed)
-  const key = `${gridKey()}|${K}|${hunt.zone === 'mirror'}|${teamsMixed() && mixSeed()}`; // (Mixed: its parts drawn from its seed)
+  const key = `${gridKey()}|${K}|${teamsMixed() && mixSeed()}`; // (Mixed: its parts drawn from its seed)
   if (partMemo.has(key)) return partMemo.get(key);
   const parts = huntParts(0, K),
     own = new Int32Array(walk.life.seed.length);
@@ -23912,6 +23914,36 @@ const symmetryOf = (kind, W = walk.plane?.W) =>
   plane.sym !== 'none' && W && symmetriesHere(kind, W).includes(plane.sym) ? plane.sym : 'none'; // (none picked: none, the grid's own not looked for)
 // a cell and its copies under the grid's symmetry (index y × row + x)
 const cellCopies = (kind, W, t) => symmetryMaps(kind, W, symmetryOf(kind, W)).map((f) => f(t));
+// whether a solid's start can be copied through its centre (Symmetry's Opposite): in colours, its parts two opposite pieces
+// a colour (see colouring's mirror; a hull solid's pairs); one colour, the solid its own copy so
+const oppositeAllowed = (surface, K) =>
+  SOLIDS.includes(surface) &&
+  (K > 1
+    ? !!colouring(surface, K, true) || !!hullColours(surface, K)?.pairs
+    : surfaceSymmetries(leastMesh(surface)).some(
+        (M) => roundedKey(M.flat()) === roundedKey(IDENTITY3.flat().map((x) => -x)),
+      ));
+// the start's symmetry: the plane's (see symmetryOf), a solid's through its centre (Opposite), else none
+const startSymmetry = () =>
+  walk.plane
+    ? symmetryOf(walk.plane.kind)
+    : plane.sym === 'opposite' && walk.geo && oppositeAllowed(VARIANTS[walk.variant].surface, lifeParts())
+      ? 'opposite'
+      : 'none';
+// a cell and its copies by the start's symmetry: the plane's (see cellCopies), a solid's cell and the one across its centre
+const startCopies = (t) =>
+  walk.plane
+    ? cellCopies(walk.plane.kind, walk.plane.W, t)
+    : startSymmetry() === 'opposite'
+      ? [t, oppositeCell(walk.geo, t)]
+      : [t];
+// the cell across a solid's centre from cell t, once a mesh (its middle's opposite point's cell)
+const oppositeCell = (g, t) => {
+  const at = (g.cellAtPoint ??= new Map(
+    Array.from({ length: g.n }, (_, u) => [pointCode(g.cen[3 * u], g.cen[3 * u + 1], g.cen[3 * u + 2]), u]),
+  ));
+  return at.get(pointCode(-g.cen[3 * t], -g.cen[3 * t + 1], -g.cen[3 * t + 2])) ?? t;
+};
 // The rows of a grid of side `side` (the squares' side): about as many cells as side × side squares (as the surfaces'
 // sizes, see SIDES), its cells regular: triangles 2 a rhombus, Cairo pentagons 2 a square (an even side, so
 // that it wraps round), kites 6 a rhombus (on triangles twice as big)
@@ -26017,7 +26049,6 @@ function zoneWords(zone) {
     d = plane.density;
   if (famousZone(zone))
     return `${K === 1 ? 'A pattern of the rule' : 'Patterns of the rule, one for each colour'} ${zone === 'centred' ? `${K === 1 ? 'in the middle' : 'at its spot'}, ${onDisc() ? 'turned' : 'turned or mirrored'} at random` : onDisc() ? 'pivoted at random round the middle (a disc: no move keeps it, only its turns)' : 'anywhere, turned or mirrored at random'}`;
-  if (zone === 'mirror') return `Each colour a soup of its two opposite parts, ${d} % alive`;
   if (zone === 'numbers')
     return `The binary digits of ${plane.number}, a digit a cell${K > 1 ? (teamsMixed() ? ', each live cell a colour at random' : ', each colour in its part') : ''}`;
   if (zone === 'realm' && !r) return 'Each colour random cells on its face';
@@ -26129,6 +26160,8 @@ const symmetryAllowed = (
     outline = m.plane && outlineIn(outlineSet, m.plane),
     k = m.plane && planeKind(m.plane, outline),
     by = { start, zone, K: parts === lifeTeams - (newcomerOn() ? 1 : 0) ? undefined : parts, outline }; // (the game's where they are its)
+  if (SOLIDS.includes(m.surface) && m.life && !m.margolus)
+    return y === 'none' || (y === 'opposite' && oppositeAllowed(m.surface, parts)); // (a solid's: through its centre only)
   if (v === walk.variant && walk.plane && outline === outlineOf(m.plane))
     return symmetriesHere(walk.plane.kind, walk.plane.W, undefined, by).includes(y);
   if (!m.plane || m.elementary || m.margolus || !m.life) return y === 'none';
@@ -26136,9 +26169,9 @@ const symmetryAllowed = (
   return symmetriesHere(k, W, null, by).includes(y);
 };
 function renderSymmetry() {
-  const kind = VARIANTS[tabVariant()].plane,
-    now = walk.plane ? symmetryOf(walk.plane.kind) : 'none';
-  $('symmetryRow').hidden = !kind || !!VARIANTS[tabVariant()].elementary; // (Elementary: a row, no copies)
+  const m = VARIANTS[tabVariant()],
+    now = walk.life ? startSymmetry() : 'none';
+  $('symmetryRow').hidden = !(m.plane || (SOLIDS.includes(m.surface) && m.life)) || !!m.elementary; // (Elementary: a row, no copies; a solid's: Opposite)
   $('symmetryTiles').replaceChildren(
     textTabs(
       Object.keys(SYMMETRIES).map((y) => {
@@ -26151,7 +26184,7 @@ function renderSymmetry() {
           at: walk.variant,
           whyNot: (setup) => (symmetryAllowed(y, setup.w, setup) ? '' : SYMMETRY_WHERE),
           click: () => {
-            if (y !== symmetryOf(walk.plane.kind)) {
+            if (y !== startSymmetry()) {
               plane.sym = y;
               lifeReseed();
               renderHunt();
@@ -30775,7 +30808,6 @@ const HUNT_ZONES = {
   emoji: [null, 'Emoji'], // one of Unicode's at random, as big as fits, a picture as an icon (see ICON_SETS)
   seed: ['zone2', 'Seed'], // (patches of plane.seedRadius round each spot, its slider's, see renderSeed)
   realm: ['zoneFace', 'Realm'], // on a solid, each colour's whole face; elsewhere its part, the colours apart (see realmParts)
-  mirror: ['zoneMirror', 'Opposite', 'mirror'], // each colour's two opposite faces (or parts: see colouring, hullColourings); its link's word mirror, as before (Mirror the symmetry's name)
   full: ['zoneAll', 'Wild'],
   numbers: ['barcode', 'Formula', 'formula'], // a number's digits, a fraction's or a root's, laid as the Digits start lays a number's (see numberSeed); its link's word its own (pop=digits: that start)
   centred: [null, 'Famous'], // the rule's patterns, each at its colour's spot (see patternChoices)
@@ -31428,8 +31460,8 @@ function colourUnitPlaces(g) {
   return (g.colourUnitPlaces = out);
 }
 // each colour's part: its places' open cells only (a wall's, on a surface, no one's: the plane has none, see planeGrid)
-function huntParts(r, K, mirror = hunt.zone === 'mirror', mixed = teamsMixed()) {
-  // (mirror: Wild mirror, see colouring; mixed: Mixed's, else each colour's own place)
+function huntParts(r, K, mirror = plane.sym === 'opposite' && !walk.plane, mixed = teamsMixed()) {
+  // (mirror: Symmetry's Opposite on a solid, see colouring; mixed: Mixed's, else each colour's own place)
   const { start } = walk.life.nbr;
   return partPlaces(r, K, mirror, mixed).map((part) => part.filter((t) => start[t] < start[t + 1]));
 }
@@ -31575,7 +31607,7 @@ function partPlaces(r, K, mirror, mixed) {
     return parts;
   }
   const surface = VARIANTS[walk.variant].surface,
-    col = K === 1 ? null : colouring(surface, K, mirror && !r);
+    col = K === 1 ? null : colouring(surface, K, mirror);
   // a cell by its middle's nearest spot (see spotColours)
   const own = K === 1 ? null : spotColours(col, g);
   if (!r) {
@@ -31586,7 +31618,7 @@ function partPlaces(r, K, mirror, mixed) {
   return col.patch.map((i) => lifePatch(r, centreCells(col.items[i]))); // round the open cells nearest each spot
 }
 const zoneParts = (zone, K) =>
-  zone === 'realm' ? (realmParts(K) ?? []) : huntParts(zoneRadius(zone), K, false, teamsMixed(zone));
+  zone === 'realm' ? (realmParts(K) ?? []) : huntParts(zoneRadius(zone), K, undefined, teamsMixed(zone)); // (Opposite's parts as its soups', see huntParts)
 // The zone: each colour's part (see huntParts). On the plane, with a symmetry it defines the start: the
 // zone and all its copies, of which only the first of each cell's copies is chosen, the others copied
 // from it (in colours, a copy takes the colour of the part it falls in). Returns the cells chosen [cell,
@@ -31699,14 +31731,13 @@ function huntPlan() {
   });
   const cells = [],
     copies = [];
-  if (walk.plane) {
-    const { kind, W } = walk.plane;
-    for (const t of [...zone]) for (const c of cellCopies(kind, W, t)) zone.add(c);
+  if (startSymmetry() !== 'none') {
+    for (const t of [...zone]) for (const c of startCopies(t)) zone.add(c);
     const partOf = new Map(); // a copy outside the patches: its part's colour
-    if (symmetryOf(kind) !== 'none') huntParts(0, K).forEach((p, i) => p.forEach((t) => partOf.set(t, i + 1)));
+    huntParts(0, K).forEach((p, i) => p.forEach((t) => partOf.set(t, i + 1)));
     const colourOf = (t) => mine.get(t) ?? partOf.get(t);
     for (const t of zone) {
-      const first = Math.min(...cellCopies(kind, W, t));
+      const first = firstCopy(t);
       if (first === t) cells.push([t, colourOf(t)]);
       else copies.push([t, first, colourOf(t)]);
     }
@@ -31743,15 +31774,6 @@ function huntFits() {
           (hunt.laid[zone] ??= patternsOn() && laidChoices(zone === 'centred', true).every((c) => c.length > 0)),
         ]; // (whether some, not them all)
       if (zone === 'realm' && !realmParts(K)) return [zone, false]; // (one colour, corners: greyed)
-      if (zone === 'mirror')
-        return [
-          zone,
-          !walk.plane &&
-            !walk.geo.torus &&
-            K > 1 &&
-            (!!colouring(VARIANTS[walk.variant].surface, K, true) ||
-              !!hullColours(VARIANTS[walk.variant].surface, K)?.pairs),
-        ]; // (a solid, two parts a colour)
       if (isIcon(zone)) return [zone, iconFits(iconSize(zone), iconSet(zone).P)];
       if (zone === 'full' && hullColours(VARIANTS[walk.variant].surface, K)) {
         const p = huntParts(0, K, false, teamsMixed(zone));
@@ -31774,15 +31796,13 @@ const zoneGreyed = (zone) =>
     ? 'It cannot fit here.'
     : zone === 'realm'
       ? 'Not in Solo, where a colour has no whole face, or on a grid too small to keep the colours apart.'
-      : zone === 'mirror'
-        ? 'Not on a grid or a torus, in Solo, or where no colouring has its parts opposite.'
-        : famousZone(zone)
-          ? 'The rule has no famous patterns, or they cannot fit.'
-          : zone === 'full'
-            ? "Not when hunting the highest peak (the soup is full already), nor on a solid of squares and triangles whose colours' parts differ."
-            : zone === 'numbers'
-              ? 'Not when hunting the highest peak or all reached (the grid is full already: a digit on each cell).'
-              : "Not where its patch cannot fit each colour's part, nor on a globe (its soup only, for now).";
+      : famousZone(zone)
+        ? 'The rule has no famous patterns, or they cannot fit.'
+        : zone === 'full'
+          ? "Not when hunting the highest peak (the soup is full already), nor on a solid of squares and triangles whose colours' parts differ."
+          : zone === 'numbers'
+            ? 'Not when hunting the highest peak or all reached (the grid is full already: a digit on each cell).'
+            : "Not where its patch cannot fit each colour's part, nor on a globe (its soup only, for now).";
 // blocks: the search for its return, whatever the start (see searchBack)
 function renderBack() {
   const L = walk.life;
@@ -31893,13 +31913,11 @@ function renderHunt() {
               ? `Random cells within ${r} step${r > 1 ? 's' : ''} of ${K === 1 ? 'the middle' : "each colour's spot"}, ${d} % of ${formatNumber(perColour)}${K > 1 ? ' each' : ''}`
               : z === 'realm'
                 ? `Random cells on each colour's face, ${d} % of ${formatNumber(perColour)} each`
-                : z === 'mirror'
-                  ? `Each colour a soup of its two opposite parts, ${d} % alive`
-                  : z === 'numbers'
-                    ? `The binary digits of ${plane.number}, a digit a cell${K > 1 ? (teamsMixed() ? ', each live cell a colour at random' : ', each colour in its part') : ''}`
-                    : K === 1
-                      ? `A random soup, ${d} % alive`
-                      : `Each colour a soup of its part, ${d} % alive`;
+                : z === 'numbers'
+                  ? `The binary digits of ${plane.number}, a digit a cell${K > 1 ? (teamsMixed() ? ', each live cell a colour at random' : ', each colour in its part') : ''}`
+                  : K === 1
+                    ? `A random soup, ${d} % alive`
+                    : `Each colour a soup of its part, ${d} % alive`;
   const tried =
     N || z === 'emoji'
       ? 'pictures'
@@ -31907,7 +31925,7 @@ function renderHunt() {
         ? 'patterns'
         : z === 'numbers'
           ? 'numbers'
-          : z === 'full' || z === 'mirror'
+          : z === 'full'
             ? 'soups'
             : 'starts';
   const hunts =
@@ -32078,7 +32096,7 @@ function pickZone(zone) {
   plane.picks = null; // (Famous, Anywhere: drawn again as laid, see zoneSeed)
   plane.number = drawNumber(Math.random); // (Formula: a number at random)
   plane.icons = Array.from({ length: lifeParts() }, () => Math.floor(Math.random() * iconSet(hunt.zone).names.length)); // (an Icon or Punk zone: one at random a colour, as the hunt draws them)
-  if (zone === 'full' || zone === 'mirror')
+  if (zone === 'full')
     lifeReseed(); // the whole grid: a soup, in colours each in its part
   else layZone();
   renderHunt();
@@ -34130,7 +34148,7 @@ function getSetup() {
     if (!plane.torus) s.gridWalls = 1;
     const ol = outlineOf(VARIANTS[w].plane);
     if (ol !== outlineOf(VARIANTS[w].plane, 'hex')) s.gridOutline = ol;
-    if (walk.plane && symmetryOf(walk.plane.kind) !== 'none') s.popSymmetry = symmetryOf(walk.plane.kind);
+    if (walk.life && startSymmetry() !== 'none') s.popSymmetry = startSymmetry();
     if (plane.start === 'draw' && population.size) s.popCells = populationRle(population);
     if (spaceTimeOn()) s.popStacked = 1; // (Space-time)
   }
@@ -41535,21 +41553,19 @@ $('huntZones').replaceChildren(
               ? "The rule's patterns, one for each colour at its spot, turned or mirrored"
               : zone === 'patterns'
                 ? "The rule's patterns, as Famous, one for each colour anywhere in its part, turned or mirrored (on a disc, only pivoted round its middle: no move keeps a disc)"
-                : zone === 'mirror'
-                  ? "Each colour's two opposite faces (a solid where a colour has two), random soups in them"
-                  : zone === 'numbers'
-                    ? 'A number at random, its binary digits laid a digit a cell, 1 alive (in colours, each colour alive in its part, as Wild; Mixed, a colour at random): half the time a fraction p/q (q from 2 to 999, p under it), else a root √n (n from 2 to 9,999, no square). The hunt tries each once, in a mixed order, its results each with its number'
-                    : zone === 'emoji'
-                      ? "An emoji at random, of Unicode's 1,923 (Emoji 18.0), as wide as fits, its outline and dark marks alive, in the middle of each colour's part"
-                      : isIcon(zone) && zone.startsWith('punk')
-                        ? `A CryptoPunk at random, ${zone.endsWith('Max') ? 'as wide as fits, its width and height whole, cut off in its corners only (on squares 96, 72, 48 or 24 cells, elsewhere to the cell)' : '24 cells wide'}, one of the 10,000 of Larva Labs (2017), its line drawing alive (its outline, dark marks and contrasts), in the middle of each colour's part`
-                        : isIcon(zone)
-                          ? `An icon at random, ${zone.endsWith('Max') ? 'as wide as fits, its width and height whole, cut off in its corners only (on squares 96, 72, 48 or 24 cells, elsewhere to the cell)' : '24 cells wide'}, one of the 1,036 of Pixelarticons (MIT), its pixels alive, in the middle of each colour's part`
-                          : zone === 'realm'
-                            ? "On a solid, each colour's whole face; elsewhere, its whole part but its cells next to another's: random starts in it (two colours or more)"
-                            : zoneRadius(zone)
-                              ? `Random starts within ${zoneRadius(zone)} step${zoneRadius(zone) > 1 ? 's' : ''} of each spot (radius ${zoneRadius(zone)})`
-                              : 'The whole grid, random soups (a colour with two parts: side by side)'
+                : zone === 'numbers'
+                  ? 'A number at random, its binary digits laid a digit a cell, 1 alive (in colours, each colour alive in its part, as Wild; Mixed, a colour at random): half the time a fraction p/q (q from 2 to 999, p under it), else a root √n (n from 2 to 9,999, no square). The hunt tries each once, in a mixed order, its results each with its number'
+                  : zone === 'emoji'
+                    ? "An emoji at random, of Unicode's 1,923 (Emoji 18.0), as wide as fits, its outline and dark marks alive, in the middle of each colour's part"
+                    : isIcon(zone) && zone.startsWith('punk')
+                      ? `A CryptoPunk at random, ${zone.endsWith('Max') ? 'as wide as fits, its width and height whole, cut off in its corners only (on squares 96, 72, 48 or 24 cells, elsewhere to the cell)' : '24 cells wide'}, one of the 10,000 of Larva Labs (2017), its line drawing alive (its outline, dark marks and contrasts), in the middle of each colour's part`
+                      : isIcon(zone)
+                        ? `An icon at random, ${zone.endsWith('Max') ? 'as wide as fits, its width and height whole, cut off in its corners only (on squares 96, 72, 48 or 24 cells, elsewhere to the cell)' : '24 cells wide'}, one of the 1,036 of Pixelarticons (MIT), its pixels alive, in the middle of each colour's part`
+                        : zone === 'realm'
+                          ? "On a solid, each colour's whole face; elsewhere, its whole part but its cells next to another's: random starts in it (two colours or more)"
+                          : zoneRadius(zone)
+                            ? `Random starts within ${zoneRadius(zone)} step${zoneRadius(zone) > 1 ? 's' : ''} of each spot (radius ${zoneRadius(zone)})`
+                            : 'The whole grid, random soups (a colour with two parts: side by side)'
           } · Clicked again: another start`; // (picked: a click draws another, see renderHunt)
     if (zone === 'custom') {
       b.hidden = true;

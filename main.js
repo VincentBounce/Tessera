@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.374';
+const VERSION = '0.5.375';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -15235,13 +15235,13 @@ const kleinCairoColumns = (nv, own) => ringColumns(nv / TORUS_TUBE, nv, 1, true,
 // a point of a Klein bottle's sheet, its place brought within the sheet (up: Cairo's mirror line, see kleinCairoMesh), and that
 // place as a key
 function kleinSheetPlace(x0, y0, nu, nv, up) {
-  const r6 = (v) => Math.round(v * 1e6) / 1e6;
-  let x = r6(x0),
-    y = r6(y0);
-  const k = Math.floor(x / nu);
-  x = r6(x - k * nu);
-  if (k % 2) y = r6(nv + 2 * up - y); // (across the seam, turned over its tiles' mirror line)
-  return [x, r6(mod(y, nv))];
+  // (its periods taken off before it is rounded, as a torus's: 4.330127 + 3.464102 rounded first, 0.866026 off the sheet, a
+  // triangles' corner at 0.866025: the bottle's half turn lost, no Duel on its triangles and kites at most sizes, from v0.5.306)
+  const r6 = (v) => Math.round(v * 1e6) / 1e6 || 0,
+    turns = (v, P) => Math.floor(v / P + 1e-7),
+    k = turns(x0, nu),
+    y = k % 2 ? nv + 2 * up - y0 : y0; // (across the seam, turned over its tiles' mirror line)
+  return [r6(x0 - k * nu), r6(y - turns(y, nv) * nv)];
 }
 const kleinSheetKey = (x0, y0, nu, nv, up) => `${kleinSheetPlace(x0, y0, nu, nv, up)}`;
 function kleinCairoMesh(nv, nu = kleinCairoColumns(nv)) {

@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.400';
+const VERSION = '0.5.401';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -34613,9 +34613,9 @@ const thumbnailStore = (mode, ask) =>
       }),
   );
 // The view as one thumbnail, cut to THUMBNAIL_SIZE from its middle: every layer under the hover's, in their order, as shown
-// (its Grid and Cells too), without the sky (the Gallery's theme behind it, its card's background). WebGPU's picture is only
-// there in the frame that drew it: asked of the next frame, drawn whole, and taken as it ends (see tick); the sky the view's
-// background, never in it (see paintSky)
+// (its Cells, its Tiles), without the grid's lines (see gridLineAlpha) nor the sky (the Gallery's theme behind it, its card's
+// background). WebGPU's picture is only there in the frame that drew it: asked of the next frame, drawn whole without the
+// lines, and taken as it ends, the lines then back (see tick); the sky the view's background, never in it (see paintSky)
 let thumbnailWanted = null;
 const wantThumbnail = () =>
   new Promise((ok) => {
@@ -36186,7 +36186,7 @@ const GRID_LINES = [
   ['Medium', 'The lines as the theme draws them', 1],
   ['Strong', "The lines marked four times as much: they show over strong colours (Explore's)", 4],
 ];
-const gridLineAlpha = () => EDGE_ALPHA * (GRID_LINES[Number($('gridFinish').value)]?.[2] ?? 0), // (past them: Tiles', no lines)
+const gridLineAlpha = () => (thumbnailWanted ? 0 : EDGE_ALPHA * (GRID_LINES[Number($('gridFinish').value)]?.[2] ?? 0)), // (past them: Tiles', no lines; a thumbnail's frame: none)
   gridLinesShown = () => gridLineAlpha() > 0;
 function edgeAlpha(sh) {
   if (!FADE_EDGES) return gridLineAlpha();
@@ -40676,8 +40676,11 @@ let linkedAt = null; // the step shown as the link was last written, still (see 
 function tick(now = performance.now()) {
   if (thumbnailWanted) {
     const ok = thumbnailWanted;
-    thumbnailWanted = null;
-    queueMicrotask(() => ok(stageThumbnail()));
+    queueMicrotask(() => {
+      thumbnailWanted = null;
+      ok(stageThumbnail());
+      needsFull = true;
+    });
   } // (as this frame ends, all drawn: see wantThumbnail)
   const raw = (now - (lastTick || now)) / 1000;
   if (raw > 1 / 250 && raw < 1 / 40) {

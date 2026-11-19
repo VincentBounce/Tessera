@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.410';
+const VERSION = '0.5.411';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -17121,7 +17121,7 @@ const SURFACES = {
       `20 triangular faces × (Edge=${formatNumber(f)})² triangles: a triangle each\n+ ${formatNumber(10 * f * f + 2)} hexagons and pentagons: one a corner (12 pentagons)`, // (its icosahedron's, see twistedSphereMesh: 20f² triangles, 10f² + 2 corners)
     tiling: 'twisttri',
     chiral: true,
-  }, // (tiling: a surface of a tiling's cells, its rules; chiral: no mirror maps it onto itself, see turnsAlike)
+  }, // (tiling: a surface of a tiling's cells, its rules; chiral: no mirror maps it onto itself)
 
   // the strips (see MOBIUS_STRIPS; Cairo's, its own): a size its rows across, its length the usual; its tiles on both faces,
   // counted, not built (see mobiusCount)
@@ -27430,20 +27430,6 @@ function torusBlocks(K, g = walk.geo) {
 // middles (the cube: 2 opposite faces, 3 round a corner, 4 round its belt, 6 faces, 8 corners, 12
 // edges…); on a torus, a lattice of k blocks (a × b, each dividing its side); a grid with dead edges,
 // its halves or quarters
-// a solid's counts of colours: its faces dealt out whole, its spots paired, its spots (see colouring)
-const solidCounts = (surface) => {
-  if (hullSolidOf(surface))
-    return Object.keys(hullColourings(hullSolidOf(surface)))
-      .map(Number)
-      .sort((a, b) => a - b); // (see hullColourings)
-  if (!SOLID_SPOTS[surface]) return null;
-  const base = FACE_BASE[surface] ?? surface;
-  return [
-    ...new Set([FACE_GROUPS[base], SPOT_PAIRS[base], SOLID_SPOTS[surface]()].flatMap((t) => Object.keys(t ?? {}))),
-  ]
-    .map(Number)
-    .sort((a, b) => a - b);
-};
 // k colours' states with a rule (a setup's, the field's by default): each colour its live and dying states, a cell's byte
 // at most (Faders' 25: ten colours)
 const teamsStatesFit = (k, rule = $('lifeRule').value) => k * ((parseRule(ruleBody(rule))?.C ?? 2) - 1) <= 255;
@@ -27574,10 +27560,7 @@ const teamsFairOwn = (K, { variant, g } = pickedFigure(tabVariant())) => {
       mirror = !APERIODIC[kind] && canMirror(kind);
     return n > 1 && (n % K === 0 || (mirror && K === 2 * n));
   }
-  if (solidCounts(variant?.surface))
-    return (
-      solidCounts(variant.surface).includes(K) && (!SURFACES[variant.surface]?.chiral || turnsAlike(variant.surface, K))
-    );
+  if (solidCounts(variant?.surface)) return solidCounts(variant.surface).includes(K); // (a solid: its groups', see colouring)
   if (g?.globe) return true; // (a globe: each count its own, its bands all multiples of it, see globeMesh)
   if (g?.rosette) return true; // (a rosette surface: its lunes dealt out alike, or its two discs, see rosetteParts)
   if (g?.mobius) return true;
@@ -30869,8 +30852,7 @@ const iconIndex = (name, set = iconSet(hunt.zone)) => Math.max(0, set.names.inde
 const HUNT_GENERATIONS = [50000, 4000]; // a hunt's start played up to so many generations: in Solo, in colours (a battle)
 const DENSITY = [0.1, 0.7]; // a random start's density, drawn between these
 const density = () => DENSITY[0] + Math.random() * (DENSITY[1] - DENSITY[0]);
-const realmOnFaces = () =>
-  !!SOLID_SPOTS[VARIANTS[walk.variant].surface] || !!hullSolidOf(VARIANTS[walk.variant].surface); // (a solid: Realm its faces, a cut's its solid's, see realmParts)
+const realmOnFaces = () => SOLIDS.includes(VARIANTS[walk.variant].surface); // (a solid: Realm its faces, a cut's its solid's, see realmParts)
 const zoneRadius = (zone) => (zone.startsWith('radius') ? Number(zone.slice(6)) : 0);
 // Realm: on a solid, each colour's whole face, the one its patch is in the middle of (see patchSpots); none (greyed) where a
 // patch is on a corner or an edge (the stella's tips and hollows): a face cut.
@@ -30897,14 +30879,10 @@ function realmParts(K) {
   const surface = VARIANTS[walk.variant].surface,
     g = walk.geo,
     L = walk.life,
-    mids = FACE_MIDDLES[surface](),
+    mids = FACE_MIDDLES[surface]?.() ?? [],
     col = colouring(surface, K);
-  // (each colour's patch face: faces dealt out whole, its patch's; spots, the face whose middle its patch's spot is, if all are)
-  const faces = !col
-    ? []
-    : col.faces
-      ? col.patch
-      : col.patch.map((i) => mids.findIndex((m) => dot3(unit(m), unit(col.items[i])) > 1 - 1e-9));
+  // (each colour's patch face: the face whose middle its patch's spot is, if all are)
+  const faces = col?.faces ? col.patch.map((i) => mids.findIndex((m) => dot3(unit(m), col.items[i]) > 1 - 1e-9)) : [];
   if (!faces.length || faces.includes(-1)) return null;
   const parts = faces.map(() => []);
   for (let t = 0; t < g.n; t++) if (L.nbr.start[t] < L.nbr.start[t + 1]) parts[faces.indexOf(g.cellFaces[t])]?.push(t); // (a cell by its face, see cellFaces; a wall's none)
@@ -30937,51 +30915,12 @@ const NEAR_RULES = [
 // A solid's fair spots for k colours (see teamsFit), as directions: its faces, corners or edges'
 // middles, or a few of them that its turns swap (2 opposite, 3 round a corner, 4 as a tetrahedron's)
 const CORNERS8 = [...CORNERS].reverse(); // (from (1, 1, 1))
-const EDGES12 = [
-  [1, 1, 0],
-  [1, -1, 0],
-  [-1, 1, 0],
-  [-1, -1, 0],
-  [1, 0, 1],
-  [1, 0, -1],
-  [-1, 0, 1],
-  [-1, 0, -1],
-  [0, 1, 1],
-  [0, 1, -1],
-  [0, -1, 1],
-  [0, -1, -1],
-];
-// (3 round a face's axis d: of its 4 rings of 3, the second, 117° apart, not the first, round the face, 63°)
-const icosaCorners = () => POLYHEDRA.icosa.P,
-  around3 = (d) =>
-    [...icosaCorners()].sort((p, q) => dot3(q, d) / Math.hypot(...q) - dot3(p, d) / Math.hypot(...p)).slice(3, 6);
-// (the counts that divide its faces are dealt out whole instead, see FACE_GROUPS: these are the others)
-const ICOSA_SPOTS = () => ({ 3: around3([1, 1, 1]), 8: CORNERS8, 12: icosaCorners() });
-const SOLID_SPOTS = {
-  cube: () => ({ 4: AXES.slice(0, 4), 8: CORNERS8, 12: EDGES12 }),
-  pits: () => ({ 4: AXES.slice(0, 4) }), // the pits' floors
-  bumps: () => SOLID_SPOTS.pits(), // the bumps' tops
-  frame: () => SOLID_SPOTS.cube(),
-  menger: () => SOLID_SPOTS.cube(),
-  octa: () => ({ 3: [AXES[0], AXES[2], AXES[4]], 6: AXES, 12: EDGES12 }),
-  tetra: () => ({ 6: AXES }),
-  stella: () => ({ 2: AXES.slice(0, 2), 4: TETRA_CORNERS, 6: AXES, 8: CORNERS8 }),
-  dodeca: () => ({}),
-  icosa: ICOSA_SPOTS,
-  hexsphere: ICOSA_SPOTS,
-  twistedsphere: ICOSA_SPOTS,
-  penroseSphere: ICOSA_SPOTS,
-  kitesDartsSphere: ICOSA_SPOTS,
-};
-for (const k of ['tetra', 'octa', 'icosa', 'stella', 'dodeca']) SOLID_SPOTS[`${k}Kite`] = SOLID_SPOTS[k]; // kites: the triangles' solids
-for (const k of hexSolids) SOLID_SPOTS[`${k}Hex`] = SOLID_SPOTS[k]; // hexagons: theirs too
-for (const k of Object.keys(TETRAKIS_SOLIDS)) SOLID_SPOTS[`${k}Tetrakis`] = SOLID_SPOTS[k]; // tetrakis triangles: their squares'
+// (the dodecahedron's faces' middles: the icosahedron's corners)
+const icosaCorners = () => POLYHEDRA.icosa.P;
 // a solid's faces' middles, as directions (its polyhedron's: the sphere of hexagons, the icosahedron's, its pentagons at its
 // corners; the dodecahedron's pentagons, the icosahedron's corners; the stella's, none: its spots are its tips and hollows)
 const middles = (k) =>
   POLYHEDRA[k].faces.map((f) => unit([0, 1, 2].map((d) => f.reduce((sum, v) => sum + POLYHEDRA[k].P[v][d], 0))));
-// (a face's middle on it, not as a direction: m · p / m · m is 1 on its plane, its faces of two sizes the cuboctahedron's)
-const faceDot = (m, p) => dot3(m, p) / dot3(m, m);
 const FACE_MIDDLES = {
   cube: () => AXES,
   tetra: () => middles('tetra'),
@@ -31011,78 +30950,117 @@ const FACE_BASE = {
 for (const k of Object.keys(TETRAKIS_SOLIDS)) FACE_BASE[`${k}Tetrakis`] = FACE_BASE[k] ?? k;
 for (const [k, , cut] of hullCuts) FACE_BASE[cut] = k;
 for (const [k, of] of Object.entries(FACE_BASE)) FACE_MIDDLES[k] = FACE_MIDDLES[of];
-// A solid's colourings (made by tools/faceparts.js), each item's colour (base 36), each colour's patch item:
-// FACE_GROUPS, its faces (FACE_MIDDLES' order) dealt out whole, for each count that divides them: the groups in one piece,
-// all alike, the partition the most turns keep, then the fewest edges between colours; SPOT_PAIRS, its 2K spots (SOLID_SPOTS'
-// order) for K colours, two side by side each. The patches touching the fewest, then as far apart as can be. Where a
-// colour has two faces or spots, then its mirror: each colour's two opposite
-const FACE_GROUPS = {
-  cube: { 2: ['010101', '01'], 3: ['010212', '013', '001122', '024'], 6: ['012345', '012345'] },
-  tetra: { 2: ['0011', '02'], 4: ['0123', '0123'] },
-  octa: { 2: ['00001111', '06'], 4: ['00112233', '0257', '01232301', '0725'], 8: ['01234567', '01234567'] },
-  icosa: {
-    2: ['00000000001111111111', '0d'],
-    4: ['00010201123333223112', '08jb'],
-    5: ['00110022314443322431', '02gic'],
-    10: ['00112342567788934569', '0245g8iace', '01234567893210489567', '01b3ehi7f9'],
-  },
-  dodeca: {
-    2: ['001110101100', '03'],
-    3: ['001220102211', '029'],
-    4: ['001220333211', '0248'],
-    6: ['001122334455', '03478b', '011023324554', '01468a'],
-    12: ['0123456789ab', '0123456789ab'],
-  },
-};
-const SPOT_PAIRS = {
-  tetra: { 3: ['010212', '013', '001122', '024'] },
-  icosa: { 6: ['001122334455', '03478b', '011023324554', '01468a'] },
-  stella: { 3: ['010212', '013', '001122', '024'] },
-};
-// The colouring of a solid for K colours (mirror: each colour's two parts opposite): its items (directions: its faces'
-// middles, its spots), each item's colour, each colour's patch item; faces: its faces dealt out whole (Realm, Famous).
-// Else its own spots, one a colour. Null: none (no such count, no mirror)
+// A solid's colouring for K colours, from its turns (see surfaceRotations, rotationGroups), its items (directions: a point's
+// images), each item's colour, each colour's patch item, and faces (its patches' spots its faces' middles: Realm, a pattern
+// on a face): a group G of its turns and a group H in it, G's K cosets of H its colours; a point p's images by G, each its
+// coset's colour (p's own turns all in H: one point, one colour); a cell to its nearest item's colour (see spotColours), as
+// near two colours no one's. Alike by construction: a turn of G carries a coset onto a coset, a part onto a part, G larger
+// than K too (a part kept by H's turns: the dodecahedron's opposite faces, 6 colours of its 60 turns). Its points tried: its
+// faces' middles, its corners, one face's cells on its least mesh (its turns the same at every size); kept, on the least
+// mesh, the fewest cells no one's, then the fewest faces cut, then the fewest pieces (each colour in one), then the most
+// turns, then the fewest sides between colours (as tools/faceparts.js chose its tables, before v0.5.411). Mirror: each colour's items carried onto its own by the centre's
+// inversion (Wild mirror). Null: none
+const colouringMemo = remember('colouringMemo', {});
 function colouring(surface, K, mirror = false) {
-  const base = FACE_BASE[surface] ?? surface,
-    f = FACE_GROUPS[base]?.[K],
-    t = f ?? SPOT_PAIRS[base]?.[K],
-    read = (str) => [...str].map((c) => parseInt(c, 36));
-  if (t) {
-    if (mirror && !t[2]) return null;
-    const [c, p] = mirror ? t.slice(2) : t;
-    return {
-      items: f ? FACE_MIDDLES[surface]() : SOLID_SPOTS[surface]()[2 * K].map(unit),
-      colour: read(c),
-      patch: read(p),
-      faces: !!f,
-    };
+  const id = `${surface}|${K}|${mirror}`;
+  if (id in colouringMemo) return colouringMemo[id];
+  const g = leastMesh(surface),
+    mids = FACE_MIDDLES[surface]?.() ?? [],
+    key = (M) => roundedKey(M.flat()),
+    E = edgeGraph(g).edgeTiles,
+    at = (t) => unit(Array.from(g.cen.subarray(3 * t, 3 * t + 3)));
+  const one = [...Array(g.n).keys()].filter((t) => !g.cellFaces || g.cellFaces[t] === g.cellFaces[0]), // (one face's cells: the others' points the same turned, their groups the same conjugated, tried too)
+    points = [...mids, ...solidCorners(g), ...one.filter((_, i) => i % Math.ceil(one.length / 12) === 0).map(at)]; // (a dozen of them, evenly: the Menger sponge's face 68 s before)
+  let best = null;
+  for (const [G, H] of colourGroups(g, K)) {
+    const inH = new Set(H.map(key)),
+      coset = new Map();
+    for (const M of G)
+      if (!coset.has(key(M))) {
+        const c = new Set(coset.values()).size;
+        for (const h of H) coset.set(key(matMul(M, h)), c);
+      }
+    for (const p of points) {
+      if (G.some((M) => !inH.has(key(M)) && dot3(matTimesPoint(M, p), p) > 1 - 1e-9)) continue; // (a turn of p's not in H)
+      const items = [],
+        colour = [];
+      for (const M of G) {
+        const q = matTimesPoint(M, p);
+        if (!items.some((x) => dot3(x, q) > 1 - 1e-9)) {
+          items.push(q);
+          colour.push(coset.get(key(M)));
+        }
+      }
+      if (mirror && !items.every((q, i) => colour.some((c, j) => c === colour[i] && dot3(items[j], q) < -1 + 1e-9)))
+        continue;
+      const col = { items, colour },
+        of = spotColours(col, g);
+      let none = 0,
+        sides = 0,
+        cut = new Set();
+      const link = Array.from({ length: g.n }, (_, t) => t),
+        root = (t) => (link[t] === t ? t : (link[t] = root(link[t])));
+      for (const t of of) if (t < 0) none++;
+      for (const ts of E.values())
+        if (ts.length === 2) {
+          const [x, y] = ts;
+          if (of[x] !== of[y]) {
+            sides++;
+            if (g.cellFaces && g.cellFaces[x] === g.cellFaces[y]) cut.add(g.cellFaces[x]);
+          } else if (of[x] >= 0) link[root(x)] = root(y);
+        }
+      const pieces = new Set([...of.keys()].filter((t) => of[t] >= 0).map(root)).size,
+        score = [none, cut.size, pieces, -G.length, sides];
+      if (!best || lexicoLess(score, best.score)) best = { score, items, colour };
+    }
   }
-  const own = SOLID_SPOTS[surface]?.()[K];
-  return own && !mirror
-    ? { items: own.map(unit), colour: own.map((_, i) => i), patch: own.map((_, i) => i), faces: false }
-    : null;
+  if (!best) return (colouringMemo[id] = null);
+  const patch = Array.from({ length: K }, (_, c) => best.colour.indexOf(c));
+  return (colouringMemo[id] = {
+    items: best.items,
+    colour: best.colour,
+    patch,
+    faces: patch.every((i) => mids.some((m) => dot3(unit(m), best.items[i]) > 1 - 1e-9)),
+  });
 }
-// a colouring's parts copies of each other by the solid's turns alone (no mirror: a chiral surface, see SURFACES): the colours a
-// turn maps colour 0's items onto, all K (the 8 corners of a cube in a dodecahedron: two tetrahedra, a mirror between them)
-const turnsAlike = (surface, K) => {
-  const c = colouring(surface, K),
-    base = FACE_BASE[surface] ?? surface,
-    turns = solidRotations(POLYHEDRA[base].P.map(unit)),
-    reached = new Set();
-  const at = (p) => c.items.findIndex((q) => dot3(p, q) > 1 - 1e-6);
-  for (const M of turns) {
-    // (a turn of the colouring: every colour's items onto one colour's)
-    const to = new Map();
-    if (
-      c.items.every((p, i) => {
-        const j = at(M.map((row) => dot3(row, p)));
-        return j >= 0 && (to.get(c.colour[i]) ?? to.set(c.colour[i], c.colour[j]).get(c.colour[i])) === c.colour[j];
-      })
-    )
-      reached.add(to.get(0));
-  }
-  return reached.size === K;
+// whether list a comes before list b, by its first number that differs
+const lexicoLess = (a, b) => {
+  const i = a.findIndex((v, j) => v !== b[j]);
+  return i >= 0 && a[i] < b[i];
 };
+// a solid's pairs of groups of its turns [G, H], H in G with K cosets (once a mesh and a count): its K colours alike
+const colourGroups = (g, K) =>
+  ((g.colourGroups ??= {})[K] ??= (() => {
+    const N = surfaceRotations(g).length,
+      key = (M) => roundedKey(M.flat()),
+      out = [];
+    for (let m = K; m <= N; m += K)
+      if (N % m === 0)
+        for (const G of rotationGroups(g, m)) {
+          const inG = new Set(G.map(key));
+          for (const H of m === K ? [[IDENTITY3]] : rotationGroups(g, m / K))
+            if (H.every((M) => inG.has(key(M)))) out.push([G, H]);
+        }
+    return out;
+  })());
+// the counts of colours a solid takes, its parts alike: those it has groups for (see colourGroups), on its least mesh
+const solidCounts = (surface) =>
+  SURFACES[surface]?.sizes && SOLIDS.includes(surface)
+    ? TEAM_COUNTS.filter((K) => K > 1 && colourGroups(leastMesh(surface), K).length)
+    : null;
+// each cell's colour by a colouring's items (see colouring): its middle's nearest item's, -1 as near two colours (no
+// one's). By its own middle, never its face's (a cell across two faces, a Penrose sphere's rhombus, given one of them: its
+// parts 927 to 972 cells for 6 colours); a face's cells whole all the same where its items are faces' middles, a face's
+// middle the nearest to its own cells
+function spotColours(col, g) {
+  return Int32Array.from({ length: g.n }, (_, t) => {
+    const d = Array.from(g.cen.subarray(3 * t, 3 * t + 3)),
+      v = col.items.map((x) => dot3(x, d)),
+      top = Math.max(...v),
+      cs = new Set(v.flatMap((x, k) => (x > top - 1e-9 ? [col.colour[k]] : [])));
+    return cs.size === 1 ? [...cs][0] : -1;
+  });
+}
 // the patches' spots: the colours' patch items
 const patchSpots = (surface, K) => {
   const c = colouring(surface, K);
@@ -31091,7 +31069,7 @@ const patchSpots = (surface, K) => {
 // Each colour's part of the grid: radius r, a patch round each spot; else (r = 0) the whole grid,
 // each cell to its nearest spot. Spots: on the plane, the middles of a lattice of k blocks (or, for
 // a rule whose colours must start side by side, touching patches round the middle); on a torus, a
-// lattice; on a solid, its fair spots (see SOLID_SPOTS); one colour, the middle or the front
+// lattice; on a solid, its colouring's spots (see colouring); one colour, the middle or the front
 // With dead edges and 3, 6, 8 or 12 colours (not halves or quarters; in a circle or a hexagon, any): slices round the middle, the cells by their
 // angle from it, as many in each (a colour from the middle out to the wall, as much wall as the others); a slice's
 // spot: its cell nearest halfway out along its middle angle. Kept per grid
@@ -31486,26 +31464,11 @@ function partPlaces(r, K, mirror, mixed) {
     return parts;
   }
   const surface = VARIANTS[walk.variant].surface,
-    col = K === 1 ? null : colouring(surface, K, mirror && !r),
-    up = (t) => unit(Array.from(g.cen.subarray(3 * t, 3 * t + 3)));
-  // a cell by its face (see cellFaces): faces dealt out whole, its face's colour; else its face's nearest spot's, so that a
-  // face nearer one spot goes to it whole; a face as near spots of two colours or more, by the cell's own middle (the
-  // stella's: no faces, its spots alone)
-  const mids = K === 1 ? [] : FACE_MIDDLES[surface]();
-  const colourOf = (items, colour, d) => {
-    const v = items.map((x) => faceDot(x, d)),
-      top = Math.max(...v),
-      cs = new Set(v.flatMap((x, k) => (x > top - 1e-9 ? [colour[k]] : [])));
-    return cs.size === 1 ? [...cs][0] : -1;
-  };
-  const nearestSpot = (t) => {
-    const f = mids.length ? g.cellFaces[t] : -1;
-    if (col.faces) return col.colour[f];
-    const k = f < 0 ? -1 : colourOf(col.items, col.colour, mids[f]);
-    return k >= 0 ? k : colourOf(col.items, col.colour, up(t));
-  };
+    col = K === 1 ? null : colouring(surface, K, mirror && !r);
+  // a cell by its middle's nearest spot (see spotColours)
+  const own = K === 1 ? null : spotColours(col, g);
   if (!r) {
-    for (let t = 0; t < n; t++) parts[K === 1 ? 0 : nearestSpot(t)]?.push(t);
+    for (let t = 0; t < n; t++) parts[K === 1 ? 0 : own[t]]?.push(t);
     return parts;
   }
   if (K === 1) return [lifePatch(r)];

@@ -237,3 +237,8 @@ each.
 And the counts' fixes found above: Life's solids by their groups (`solidCounts` replaced, the walks' already right),
 the flat torus's lattices of index K, a walled figure's greyed and missing counts, the rosette spheres' counts, a Klein
 bottle's rows made for its half turn.
+
+**Done:** one count for every fighter (v0.5.410); Life's solids by their groups of turns (v0.5.411: `colouring` made from
+G and H, the hand tables `FACE_GROUPS`, `SPOT_PAIRS`, `SOLID_SPOTS` and `tools/faceparts.js` gone; every count of the 33
+solids measured alike). Left: the mirrors (Icosa in 8, offered before by its 8 corners, now greyed till the groups take
+mirrors too), the hull solids' own colourings (`hullColourings`, still first where they have the count).

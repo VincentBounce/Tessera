@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.388';
+const VERSION = '0.5.389';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -5121,6 +5121,12 @@ const RULES = [
       "Life-like on hats, its patterns like bats: a plateau as Life's, soups settling after 900 to 3,500 generations, oscillators in every ash (2 states)",
     ],
     [
+      '🎩',
+      'B25-35%/S30-40%',
+      'Hat shares',
+      'by shares of the neighbours (a hat has 2 to 7): soups still changing at 600 generations, 2.6 % alive (2 states)',
+    ],
+    [
       '✧',
       'B3/S023',
       'Penrose Life',
@@ -5899,6 +5905,18 @@ const RULES = [
       'B268/S678',
       'Mirror 9 Life',
       'soups settling after 713 to over 6,000 generations (1.29 % alive at the end), oscillators in 83 % of their ash',
+    ],
+    [
+      '✭',
+      'B25-35%/S30-40%',
+      'Mirror 9 shares',
+      'by shares of the neighbours: soups still changing at 600 generations, 10 % alive, the most changing found by shares (2 states)',
+    ],
+    [
+      '✭',
+      'B20-30%/S20-40%',
+      'Mirror 9 tides',
+      'by shares of the neighbours: soups still changing at 600 generations, 12 % alive (2 states)',
     ],
     [
       '✮',

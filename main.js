@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.414';
+const VERSION = '0.5.415';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -27535,7 +27535,7 @@ const pickedFigure = (w, size = null) => {
 // choicesAt); the flags its mesh carries the same (see finishTorus, kleinTilingMesh, mobiusMesh, globeMesh, rosetteSphereMesh)
 function surfaceFrame(kind, size) {
   if (kind === 'globe') return { globe: true };
-  if (SURFACES[kind].disc) return { rosette: true };
+  if (SURFACES[kind].disc) return { rosette: true, turns: figureTurns(kind.replace(/Sphere$/, '')) }; // (as its mesh's, see rosetteTurns)
   if (MOBIUS_KINDS.includes(kind)) return { torus: true, mobius: true };
   if (kleinStrip(kind)) {
     const { n, step, W } = kleinLength(kind, size);
@@ -27575,7 +27575,7 @@ const teamsFair = (K, { variant, g } = pickedFigure(tabVariant())) => {
   }
   if (solidCounts(variant?.surface)) return solidCounts(variant.surface).includes(K); // (a solid: its groups', see colouring)
   if (g?.globe) return true; // (a globe: each count its own, its bands all multiples of it, see globeMesh)
-  if (g?.rosette) return true; // (a rosette surface: its lunes dealt out alike, or its two discs, see rosetteParts)
+  if (g?.rosette) return rosetteTurns(g) % K === 0 || rosetteHalves(g, K); // (a rosette surface: its turns' lunes, or its two discs' each, see rosetteParts)
   if (g?.mobius) return true;
   if (g?.copyLength) return kleinLength(g.kindK, g.size, K).fits; // (a tiling's bottle: its blocks' slices whole copies along, see kleinLength)
   if (g?.nu) return g.nv % torusBlocks(K, g)[1] === 0; // (a torus: its blocks' rows dividing its rows; its columns made for its colours, see ringColumns)
@@ -30976,6 +30976,7 @@ for (const [k, of] of Object.entries(FACE_BASE)) FACE_MIDDLES[k] = FACE_MIDDLES[
 const colouringMemo = remember('colouringMemo', {});
 function colouring(surface, K, mirror = false) {
   const id = `${surface}|${K}|${mirror}`;
+  if (!SOLIDS.includes(surface)) return null; // (a solid's only: a ring's, a globe's, a rosette sphere's parts their own)
   if (id in colouringMemo) return colouringMemo[id];
   const g = leastMesh(surface),
     mids = FACE_MIDDLES[surface]?.() ?? [],
@@ -31428,26 +31429,29 @@ function huntParts(r, K, mirror = hunt.zone === 'mirror', mixed = teamsMixed()) 
   const { start } = walk.life.nbr;
   return partPlaces(r, K, mirror, mixed).map((part) => part.filter((t) => start[t] < start[t + 1]));
 }
+// a rosette sphere's turns round its axis: its disc's (a frame's, or its mesh's disc's grid's, see figureTurns)
+const rosetteTurns = (g) => g.turns ?? figureTurns(g.disc.kind);
+// a rosette sphere's K colours in its two halves, each its disc's K / 2 lunes (its half turn about the equator swapping its
+// discs, its turns round its axis its lunes): K even, K / 2 dividing its turns; Duel's, its two discs (see poleColours)
+const rosetteHalves = (g, K) => !!g?.rosette && K % 2 === 0 && rosetteTurns(g) % (K / 2) === 0;
 // a rosette sphere's two colours (Duel): its two discs, each round its pole (the north's cells first, then the south's,
 // the same cells g.south on: see rosetteSphereMesh), each colour's start at its pole as on the plane at its middle
-const poleColours = (g, K) => !!g?.rosette && K === 2;
-// a rosette sphere's K parts, each cell's: two colours, its discs (see poleColours); else its K lunes, pole to pole: its
-// cells by their middle's longitude round its axis in turn, dealt out as many to each (as a disc that never turns on the
-// plane, see planeSlices), a cell on the axis, a pole's, no one's
+const poleColours = (g, K) => rosetteHalves(g, K) && K === 2;
+// a rosette sphere's K parts, each cell's: its lunes, pole to pole, by its middle's longitude round its axis, each 1 / K of
+// a turn (K dividing its turns: each lune its first turned); or, in halves (see rosetteHalves), each disc's own; a cell on
+// the axis, a pole's, no one's. Alike by construction, before v0.5.415 its lunes dealt as many cells each (Flower 6's 5:
+// 93 and 94 cells, alike in number only)
 const rosetteParts = (g, K) =>
   ((g.parts ??= {})[K] ??= (() => {
-    const out = new Int32Array(g.n).fill(-1),
-      at = (t) => Math.atan2(g.cen[3 * t + 1], g.cen[3 * t]);
-    if (poleColours(g, K)) {
-      for (let t = 0; t < g.n; t++) out[t] = t < g.south ? 0 : 1;
-      return out;
+    const halves = rosetteHalves(g, K),
+      d = halves ? K / 2 : K,
+      out = new Int32Array(g.n).fill(-1);
+    for (let t = 0; t < g.n; t++) {
+      const [x, y] = [g.cen[3 * t], g.cen[3 * t + 1]];
+      if (Math.hypot(x, y) < 1e-4) continue; // (on the axis, a hair off it: Ring 12's poles 1.5e-6 off)
+      const a = (((Math.atan2(y, x) - 1e-3) % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI); // (from a hair past a lune's edge)
+      out[t] = (halves && t >= g.south ? d : 0) + Math.min(d - 1, Math.floor((a * d) / (2 * Math.PI)));
     }
-    const round = [...Array(g.n).keys()]
-      .filter((t) => Math.hypot(g.cen[3 * t], g.cen[3 * t + 1]) > 1e-9)
-      .sort((a, b) => at(a) - at(b));
-    round.forEach((t, k) => {
-      out[t] = Math.floor((k * K) / round.length);
-    });
     return out;
   })());
 function partPlaces(r, K, mirror, mixed) {
@@ -32350,7 +32354,7 @@ function patternFrame(i, K, place = patternPlace(i, K)) {
   if (place.on === 'plane') {
     const flat = flatGrid(),
       { W, n, xy, at, torus } = flat,
-      disc = poleColours(g, K) ? i * g.south : 0; // (disc: its first cell, see poleColours)
+      disc = rosetteHalves(g, K) && i >= K / 2 ? g.south : 0; // (disc: its first cell, a south colour's its half's, see rosetteHalves)
     const mid = (u) => cellMiddle(kind, ...xy(u)),
       box = () => {
         // (its cells' middles' box's middle, once a grid: walk.plane a new one each)

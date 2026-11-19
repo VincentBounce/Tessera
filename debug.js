@@ -45,7 +45,7 @@ const DEBUG_STYLE = `
 #debugPanel .debug-colours button.picked { outline: 2px solid var(--accent-color); outline-offset: 1px; }
 #debugPanel .debug-colours input { width: 24px; height: 22px; padding: 0; border: 0; background: none; }
 #debugPanel p { margin: 6px 0 0; color: var(--muted-text-color); }
-#debugPanel .debug-reset { margin-top: 8px; }
+#debugPanel .debug-button { margin: 8px 6px 0 0; }
 `;
 
 /* ---- The panel ---------------------------------------------------------------------------------- */
@@ -124,18 +124,30 @@ function debugPanel(spec) {
     row.append(words, slider, value);
     panel.append(row);
   }
-  const reset = document.createElement('button');
-  reset.type = 'button';
-  reset.className = 'debug-reset';
-  reset.textContent = 'Reset';
-  reset.title = 'Every number back to its first value';
-  reset.addEventListener('click', () => {
+  let pickedNow = picked; // (the colour picked, as Copy copies it)
+  // its buttons under the sliders, a word each
+  const button = (words, title, click) => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'debug-button';
+    b.textContent = words;
+    b.title = title;
+    b.addEventListener('click', click);
+    panel.append(b);
+  };
+  button('Reset', 'Every number back to its first value', () => {
     Object.assign(numbers, first);
     onNumbers();
     panel.dataset.key = '';
     debugPanel(spec);
   });
-  panel.append(reset);
+  button('Copy', 'The numbers shown and the colour picked, copied as JSON', () =>
+    navigator.clipboard.writeText(
+      JSON.stringify({
+        [title]: { ...Object.fromEntries(shown.map((name) => [name, numbers[name]])), colour: pickedNow },
+      }),
+    ),
+  );
   if (colours.length) {
     const row = document.createElement('div');
     row.className = 'debug-colours';
@@ -149,6 +161,7 @@ function debugPanel(spec) {
         swatch.addEventListener('click', () => {
           row.querySelector('.picked')?.classList.remove('picked');
           swatch.className = 'picked';
+          pickedNow = c;
           onPick(c);
         });
       else {
@@ -161,7 +174,10 @@ function debugPanel(spec) {
       const any = document.createElement('input'); // (any colour)
       any.type = 'color';
       any.title = 'Any colour';
-      any.addEventListener('input', () => onPick(any.value));
+      any.addEventListener('input', () => {
+        pickedNow = any.value;
+        onPick(any.value);
+      });
       row.append(any);
     }
     panel.append(row);

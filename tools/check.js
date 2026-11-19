@@ -432,7 +432,7 @@ async function crawl(fail, each = null, from = 0) {
 // steps, a short play, the link loaded again (not back in the history: it can leave the page); after each, the crawl's checks; a failure told with the
 // actions that led to it
 // what the menus offer (a choice: its name, greyed or not, picked or not), the size said: a link loaded cold offers the same
-const offered = (w) => {
+const offered = (w, apart = []) => {
   const d = w.document,
     row = (sel, all = false) =>
       [...d.querySelectorAll(sel)]
@@ -449,13 +449,13 @@ const offered = (w) => {
     colours: row('#colourBlocks button'),
     zones: row('#huntZones button'),
     rules: row('#navRules button'),
-    ...panel(d),
+    ...panel(d, apart),
   };
 };
 // the page as its link has it, its views closed while looked at, then open again: Draw open on a surface (a view of its
 // rule's patterns, the start as it was, see surfaceDraw); Custom rule open (customOpen, Life's, a walk's or a creature's:
 // a link opens it only on a rule no card has, a card's rule its card's)
-const linked = () => {
+const linked = (apart = []) => {
   const draw = surfaceDraw,
     custom = customOpen,
     views = () => {
@@ -464,11 +464,11 @@ const linked = () => {
       renderRuleSection();
       renderModePicker();
     };
-  if (!draw && !custom) return offered(window);
+  if (!draw && !custom) return offered(window, apart);
   surfaceDraw = customOpen = false;
   views();
   try {
-    return offered(window);
+    return offered(window, apart);
   } finally {
     surfaceDraw = draw;
     customOpen = custom;
@@ -476,8 +476,8 @@ const linked = () => {
   }
 };
 // the whole left panel, section by section (its sections' ids): each button shown, its name, greyed or not, picked or not
-// (what a path through the menus left there, a link loaded cold must show the same)
-const panel = (d) =>
+// (what a path through the menus left there, a link loaded cold must show the same), but those in apart (what a link cannot hold)
+const panel = (d, apart = []) =>
   Object.fromEntries(
     [...d.querySelectorAll('#paramsPane > *')]
       .map((s, i) => [s, `#${s.id || i}`])
@@ -485,7 +485,10 @@ const panel = (d) =>
       .map(([s, k]) => [
         k,
         [...s.querySelectorAll('button')]
-          .filter((b) => !b.closest('[hidden]') && getComputedStyle(b).display !== 'none')
+          .filter(
+            (b) =>
+              !b.closest('[hidden]') && getComputedStyle(b).display !== 'none' && !apart.some((sel) => b.closest(sel)),
+          )
           .map(
             (b) =>
               `${b.textContent.trim().slice(0, 16)}${b.disabled ? '⊘' : ''}${b.classList.contains('active') ? '•' : ''}`,
@@ -722,16 +725,17 @@ async function coldLike(fail, what) {
   await new Promise((go) => f.addEventListener('load', go, { once: true }));
   await wait(1500);
   for (let t = 0; f.contentWindow.eval('waits.size') && t < 600; t++) await wait(100); // (its digits or its build still on their way: as the page's own look waits, see checker)
-  const a = linked(),
-    b = offered(f.contentWindow);
-  f.remove();
-  // (what a link cannot hold, left out: a reversible one's return found by playing it; Draw's tools after a generation played)
-  const unheld = new Set([
+  // (what a link cannot hold, its buttons left out wherever they are: a reversible one's return found by playing it, in its
+  // hunt's section; Draw's tools after a generation played)
+  const unheld = [
     ...(walk.life?.margolus && walk.life.stable ? ['#returnRow'] : []),
     ...(drawing && stepShown > 0 ? ['#startSection'] : []),
-  ]);
+  ];
+  const a = linked(unheld),
+    b = offered(f.contentWindow, unheld);
+  f.remove();
   const diff = [...new Set([...Object.keys(a), ...Object.keys(b)])]
-    .filter((k) => a[k] !== b[k] && !unheld.has(k))
+    .filter((k) => a[k] !== b[k])
     .map((k) => `${k}: «${a[k]}» here, «${b[k]}» cold`);
   if (diff.length) fail(`${what} ${location.hash}: ${diff.join('; ')}`);
 }

@@ -192,3 +192,39 @@ middle), and **a count's parts are the nearest-image regions of a point's orbit 
 group**, its point picked so they are gathered, and a ring's length made so its blocks are square (the spec above, kept
 whole). It would replace `solidCounts` and its colourings, `teamsFairOwn`'s cases, `rosetteParts`' lunes and the Klein
 bottle's slices along only.
+
+<p align="center"><br>* * *</p>
+
+## The plan (the user's spec, 2026-11-19)
+
+**The rule, widened (measured on the dodecahedron):** K colours have parts alike when a group of symmetries carries
+any part onto any other; the group may be larger than K, a part kept by some of its symmetries (K = the group's order /
+a part's own: an opposite pair of the dodecahedron's faces is kept by 10 of its 60 turns, so 6 colours). Its 12 faces in
+6 pairs:
+
+| a colour's two faces | pairings | of them alike | the most symmetric kept by |
+|---|---|---|---|
+| side by side | 125, 5 up to symmetry | 3 | 12 turns |
+| apart (2 faces away) | 125, 5 up to symmetry | 3 | 12 turns |
+| opposite | 1 | 1 | all 60 turns |
+
+What is to come, each its own delivery:
+
+1. **A colour's faces: Together · Apart · Opposite**, one choice among three (a tab group, in Teams): its faces in one
+   piece; none touching another of its own, as far apart as can be; carried onto each other by the centre's inversion.
+   For each, the partition alike that the most symmetries keep, made from the group (no table by hand: `FACE_GROUPS`
+   and `tools/faceparts.js` replaced); greyed where none, with its reason (a colour of one face, the tetrahedron's
+   Opposite).
+2. **A Duel on a sphere in lunes (the globe, the rosette spheres): Up / Down** too, its two halves by its equator,
+   besides its lunes.
+3. **Seeds: one tile, its diameter a slider** (2, 3, …), the eight tiles Spark to Jungle replaced (their link words
+   zone1 to zone8 to ask before changing).
+4. **Mirror, a switch** over any start (a seed, Famous, Wild): each colour's start laid on its part and mirrored on its
+   opposite one; greyed where its parts are not opposite pairs. The zone Opposite goes.
+5. **Famous: the switch Mirror and the faces' choice (1) alike**, each colour's pattern on each of its faces.
+6. **Seeds and Wild: one count for every fighter**, drawn at random once: each colour exactly as many live cells, laid
+   at random in its part.
+
+And the counts' fixes found above: Life's solids by their groups (`solidCounts` replaced, the walks' already right),
+the flat torus's lattices of index K, a walled figure's greyed and missing counts, the rosette spheres' counts, a Klein
+bottle's rows made for its half turn.

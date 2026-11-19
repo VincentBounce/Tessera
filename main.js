@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.382';
+const VERSION = '0.5.383';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -41049,7 +41049,7 @@ function parseHash(hash = location.hash) {
         .split('&')
         .map((kv) => {
           const at = kv.indexOf('=');
-          return [kv.slice(0, at), decodeURIComponent(kv.slice(at + 1).replace(/%(?![\da-f]{2})/gi, '%25'))]; // (a % that begins no escape is itself: a share's, its link decoded once on the way)
+          return [kv.slice(0, at), decodeURIComponent(kv.slice(at + 1))];
         }),
     );
     return setupVariant(s) ? s : null;

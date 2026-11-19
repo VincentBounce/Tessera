@@ -101,8 +101,14 @@ tiling, as `ringColours` makes it today) and round its tube by a whole period ac
   - Along, measured on the 53 bottles, stretching their length freely: **41 take every K offered; 12 take the odd K
     only** (3, 5, 7, 9), their twist asking an odd length: Pent 9, 11, 13, 15 (turned or not), Kischecker, Snubsquare,
     Trihex and Dual 16 (not turned).
-  - Round the tube, the half turn: it lays the tiling on itself when half the rows are a whole period across: an even
-    count of rows (Pent 15, Tetrakis), a multiple of 4 (Rhombille, Kite, Trihex, Dual 314). A row or two more lets it in.
+  - Round the tube, the half turn: a shift by half the tube (v → v + nv / 2), the only shift round it the gluing keeps
+    (turned over, a shift by s comes back as −s: s = −s, so 0 or nv / 2). It is the torus's blocks round the tube, b = 2.
+  - **One condition for every size changed: a shift is a symmetry only as whole copies of the tiling.** Along, each
+    slice whole copies (`ringLength` makes the length so, as the twist allows: the 12 odd bottles' twist asks an odd
+    count, which no stretch makes even). Round the tube, nv / 2 a whole period across: an even count of rows where the
+    period is one row (Pent 15, Tetrakis), a multiple of 4 where it is two (Rhombille, Kite, Trihex, Dual 314); the
+    rows then the nearest that are (f, f ± 1, f ± 2), as `walkersSize` picks a battle's. Parity is never asked for
+    itself: it follows from the copies.
     On [Klein Type 15 at 64](http://localhost:8321/#mode=life&shape=kleinBottle&tiling=type15&gridSize=64&teams=2): two
     halves, top and bottom, of 17,856 cells each, the half turn carrying every cell of one onto the other.
   - So **the 12 odd bottles take 2, 3, 5, 6, 7, 9, 10** (an odd K along, twice one with the half turn), never 4, 8 or

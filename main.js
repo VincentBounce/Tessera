@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.405';
+const VERSION = '0.5.406';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -15753,12 +15753,26 @@ function kleinLength(kindK, size, K = ringColours(ringVariant())) {
     turn = -Math.atan2(a[1], a[0]),
     by = turnPoint(b, turn)[1],
     W = nv * by;
-  // its length as a ring's (see ringLength): near its usual (W / TORUS_TUBE), its colours' slices square, each whole copies along
-  // (a glide's half a lattice cell, turned over: as teamsFair counts them, each tile in its own middle's, see partPlaces), as the twist
-  // allows (whole lattice cells, Pent 15's twist asking an odd length, had none for Trio)
+  // its colours' blocks a × b, as a torus's (see torusBlocks): a slices along, b = 1 or 2 round the tube, its half turn (a shift
+  // by W / 2, the only one round it its gluing keeps: turned over, s comes back as −s), where half its rows are whole rows of
+  // its lattice across (see kleinRows); its length as a ring's (see ringLength) for each: near its usual (W / TORUS_TUBE), its
+  // blocks square, each slice whole copies along (a glide's half a lattice cell, turned over: as teamsFair counts them, each
+  // tile in its own middle's, see partPlaces), as the twist allows (Pent 15's twist asking an odd length: no 2, 4 slices); of
+  // those, the ones whose slices are whole copies (fits), then the squarest blocks
   const x = W / TORUS_TUBE / step,
-    n = ringLength(own ?? x, own ?? x * TORUS_TUBE * K, [K * Math.round(copyLength / step)], (c) => ok(c, nv)); // (a length of its own: in its usual's place, as a strip's, see stripSteps)
-  return { kind, strip, turn, nv, n, W, step, by, a };
+    q = Math.round(copyLength / step);
+  return [1, 2]
+    .filter((b) => K % b === 0 && (b === 1 || (nv / 2) % kleinRows(kindK) === 0))
+    .map((b) => {
+      const blocks = [K / b, b],
+        n = ringLength(own ?? x, own ?? (x * TORUS_TUBE * K) / b / b, [(K / b) * q], (c) => ok(c, nv)), // (a length of its own: in its usual's place, as a strip's, see stripSteps)
+        slice = (n * step * b) / K / copyLength;
+      return { kind, strip, turn, nv, n, W, step, by, a, blocks, fits: Math.abs(slice - Math.round(slice)) < 1e-6 };
+    })
+    .reduce((p, c) => {
+      const off = (m) => (m.fits ? 0 : 100) + Math.abs(Math.log((m.n * m.step * m.blocks[1]) / m.blocks[0] / m.W));
+      return off(c) < off(p) ? c : p;
+    });
 }
 function kleinTilingMesh(kindK, size) {
   const key = `${kindK}${size}|${ringColours(ringVariant())}`; // (its length its colours': see kleinLength)
@@ -27392,12 +27406,12 @@ const TEAM_GRID = {
 };
 // a torus's colour blocks: a round the ring, b round the tube, as square as can be on the torus as seen (its
 // ring 1 / TORUS_TUBE times as long as its tube): 12 colours 6 × 2 rather than 4 × 3; of those whose b divides its rows
-// first (its columns made for a, see ringColumns); a Klein bottle's, slices along the ring only (its ends glued turned
-// over, y → nv − y: blocks round the tube would swap there, a colour going on as another)
+// first (its columns made for a, see ringColumns); a Klein bottle's its length's (see kleinLength: b = 1 or 2, its half turn
+// round the tube), Cairo's slices along the ring only
 function torusBlocks(K, g = walk.geo) {
   let best = [K, 1],
     err = Infinity;
-  if (g?.klein) return best;
+  if (g?.klein) return g.kindK ? kleinLength(g.kindK, g.size, K).blocks : best;
   for (let b = 1; b <= K; b++)
     if (K % b === 0) {
       const fits = !g?.nv || g.nv % b === 0,
@@ -27564,11 +27578,7 @@ const teamsFairOwn = (K, { variant, g } = pickedFigure(tabVariant())) => {
   if (g?.globe) return true; // (a globe: each count its own, its bands all multiples of it, see globeMesh)
   if (g?.rosette) return true; // (a rosette surface: its lunes dealt out alike, or its two discs, see rosetteParts)
   if (g?.mobius) return true;
-  if (g?.copyLength) {
-    const { n, step } = kleinLength(g.kindK, g.size, K),
-      x = (n * step) / torusBlocks(K, g)[0] / g.copyLength;
-    return Math.abs(x - Math.round(x)) < 1e-6;
-  } // (a tiling's bottle: slices a whole count of its copies along, see MOBIUS_ALONG: a glide's turned over)
+  if (g?.copyLength) return kleinLength(g.kindK, g.size, K).fits; // (a tiling's bottle: its blocks' slices whole copies along, see kleinLength)
   if (g?.nu) return g.nv % torusBlocks(K, g)[1] === 0; // (a torus: its blocks' rows dividing its rows; its columns made for its colours, see ringColumns)
   return false;
 };

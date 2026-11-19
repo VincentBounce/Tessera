@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.399';
+const VERSION = '0.5.400';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -34612,17 +34612,14 @@ const thumbnailStore = (mode, ask) =>
         q.onerror = () => fail(q.error);
       }),
   );
-// The view as one thumbnail, cut to THUMBNAIL_SIZE from its middle: every layer under the hover's, in their order, without the
-// grid's lines nor the sky (the Gallery's theme behind it, its card's background). WebGPU's picture is only there in the
-// frame that drew it: asked of the next frame, drawn whole without the grid, and taken as it ends, the grid then as it was
-// (see tick); the sky the view's background, never in it (see paintSky)
-let thumbnailWanted = null,
-  thumbnailGrid = '0';
+// The view as one thumbnail, cut to THUMBNAIL_SIZE from its middle: every layer under the hover's, in their order, as shown
+// (its Grid and Cells too), without the sky (the Gallery's theme behind it, its card's background). WebGPU's picture is only
+// there in the frame that drew it: asked of the next frame, drawn whole, and taken as it ends (see tick); the sky the view's
+// background, never in it (see paintSky)
+let thumbnailWanted = null;
 const wantThumbnail = () =>
   new Promise((ok) => {
     thumbnailWanted = ok;
-    thumbnailGrid = $('gridFinish').value;
-    $('gridFinish').value = 0;
     needsFull = true;
   });
 function stageThumbnail() {
@@ -40680,11 +40677,7 @@ function tick(now = performance.now()) {
   if (thumbnailWanted) {
     const ok = thumbnailWanted;
     thumbnailWanted = null;
-    queueMicrotask(() => {
-      ok(stageThumbnail());
-      $('gridFinish').value = thumbnailGrid;
-      needsFull = true;
-    });
+    queueMicrotask(() => ok(stageThumbnail()));
   } // (as this frame ends, all drawn: see wantThumbnail)
   const raw = (now - (lastTick || now)) / 1000;
   if (raw > 1 / 250 && raw < 1 / 40) {

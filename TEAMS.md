@@ -124,11 +124,58 @@ tiling, as `ringColours` makes it today) and round its tube by a whole period ac
 
 <p align="center"><br>* * *</p>
 
+## Life 2D: the plane
+
+The same rule, the plane's groups:
+
+- **A torus** (a grid that repeats, its walls off): its shifts. A group of K shifts is a lattice of index K in the
+  tiling's, so **any K**, its side a multiple made for it (as `widthForColours` does).
+- **A walled figure** (a rectangle, a six-fold grid's hexagon, a disc that never repeats, a rosette): its turns and
+  mirrors round its middle, C_n or D_n. The grids that repeat have n = 1, 2, 3, 4 or 6; the discs have 5 (Penrose,
+  Kites & darts), 8 (Ammann), 12 and 14 (Rhombs), and the rosettes their n. **K = d or, where the figure mirrors, 2d,
+  for d dividing n.** The cell on the middle, and the cells on a mirror between two parts, are no one's.
+- **A rectangle keeps D2 only** (its half turn and its two mirrors, where the grid has them), whatever its grid's turns.
+  A square of squares keeps D4.
+
+Today (`teamsFairOwn`, `teamsFair`, `planeSlices`, `TEAM_GRID`): on a torus, blocks `TEAM_GRID` (cols × rows); with walls,
+halves and quarters in blocks (2 and 4), else slices round the middle, K dividing the grid's n or K = 2n where it
+mirrors, then 8, 10 and 12 from their halves. Measured in the app (2026-11-19, v0.5.403):
+
+- **Torus, blocks stretched.** `TEAM_GRID` sets 2, 3, 5 and 7 as 1 row, 10 as 5 × 2:
+  [Squares in 7](http://localhost:8321/#mode=life&shape=squares&teams=7) are 7 strips of 49 × 7 cells (343 each), 7 times
+  as long as wide. Alike, but against the square blocks. A lattice of index K gives gathered parts for every K
+  (5 on squares by (2, 1) and (−1, 2), tilted squares; 3 on hexagons by the √3 lattice, hexagons), its side a multiple
+  of K.
+- **Offered, not alike:**
+  - [Hexagons in a rectangle, Trio](http://localhost:8321/#mode=life&shape=hex&gridWalls=1&gridOutline=square&teams=3),
+    3 slices of 780 cells (Sextet too): the rectangle has no third turn, so they are alike in number only.
+  - [Florets walled, Dozen](http://localhost:8321/#mode=life&shape=florets&gridWalls=1&teams=12), 12 slices of 135
+    cells, and Snub tri, Twist tri and Demi 20 the same: chiral, no mirror, so no group of 12; 12 comes from 6 by the
+    halving of `teamsFair`, each half the mirror of the next.
+  - [Pythagoras walled, Octet](http://localhost:8321/#mode=life&shape=pythagoras&gridWalls=1&teams=8), 281 to 282 cells,
+    and Snub square and Dual 16 the same: chiral, C4, 8 from 4 by that halving.
+  - [Hats in 5](http://localhost:8321/#mode=life&shape=hats&teams=5) (370 and 369 cells), and every K on Spectre,
+    Pinwheel and Tübingen: no turn at all, so Solo only by the rule; dealt out as many cells. To decide: grey them, or
+    keep them as the one admitted exception.
+- **Greyed, though possible** (2d by a mirror, d < n):
+  - [Hexagon walled, Quartet](http://localhost:8321/#mode=life&shape=hex&gridWalls=1&teams=4): D2, two mirrors
+    across the middle, a quarter between them (the six-fold mirrored grids alike).
+  - [Penrose, Duel](http://localhost:8321/#mode=life&shape=penrose&teams=2) (and Kites & darts): one mirror, its two
+    halves.
+  - [Rhombs 12, Octet](http://localhost:8321/#mode=life&shape=rhombs12&teams=8): D4 in its D12.
+- **Never possible on a walled grid that repeats: 9** (no turn of order 9 nor 3 × 3): never offered there, right.
+
+The parts of a walled figure are slices from the middle to the wall: the gathered shape for its turns. Dozen's are long,
+30° each, as any group of 12 turns makes them.
+
+<p align="center"><br>* * *</p>
+
 ## One rule for the code (to decide)
 
 One source for the walks and Life alike: **a volume's team counts are the orders of its symmetry groups** (a solid's
 turns, with its mirrors where its tiling has them; a ring's shifts, its length and rows stretched for them; a sphere's
-turns round its axis and its half turn), and **a count's parts are the nearest-image regions of a point's orbit under its
+turns round its axis and its half turn; a flat torus's lattices of index K; a walled figure's C_n and D_n round its
+middle), and **a count's parts are the nearest-image regions of a point's orbit under its
 group**, its point picked so they are gathered, and a ring's length made so its blocks are square (the spec above, kept
 whole). It would replace `solidCounts` and its colourings, `teamsFairOwn`'s cases, `rosetteParts`' lunes and the Klein
 bottle's slices along only.

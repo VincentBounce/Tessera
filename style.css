@@ -934,7 +934,7 @@ button.switch.active:hover:not(:disabled) {
 .gallery-tools-row .nav-shapes {
   display: flex;
   gap: var(--tile-gap);
-  margin-bottom: 4px;
+  margin-bottom: var(--tile-gap);
 } /* (each group's tiles side by side, each a tile's width, as the display box's head tiles) */
 .gallery-tools > .nav-shapes {
   gap: var(--badged-tile-gap);
@@ -943,7 +943,7 @@ button.switch.active:hover:not(:disabled) {
   width: var(--tile-width);
 }
 #inViewPicture {
-  height: calc(var(--tile-height) + 4px + 18px);
+  height: calc(var(--tile-height) + var(--tile-gap) + 18px);
   aspect-ratio: 1;
   min-width: 0; /* (narrower when the band lacks room: cut, its picture covering it) */
   margin: -12px 0 -6px;
@@ -953,7 +953,7 @@ button.switch.active:hover:not(:disabled) {
   position: relative;
   overflow: hidden;
   background: var(--page-background);
-} /* the setup in view's picture, whole: the band's height, a tile's, its tiles' margin under them (4px) and the band's paddings
+} /* the setup in view's picture, whole: the band's height, a tile's, its tiles' margin under them (--tile-gap) and the band's paddings
    (12px, 6px: see .gallery-band); its width by a thumbnail's, square (see THUMBNAIL_SIZE, .gallery-grid .mode-icon) */
 #inViewPicture img {
   position: absolute;
@@ -1203,7 +1203,7 @@ button.active .bubble.active {
 .number-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(48px, 1fr));
-  gap: 4px;
+  gap: var(--tile-gap);
   margin-bottom: var(--block-gap);
 }
 .number-grid button {
@@ -1369,21 +1369,21 @@ button.active .bubble.active {
 .rule-build {
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  margin: 0 0 4px;
+  gap: var(--tile-gap);
+  margin: 0 0 var(--tile-gap);
 } /* your own's: one block under its card, as close as the cards */
 .rule-build > :not([hidden]) {
   margin-bottom: 0;
 } /* (its parts shown spaced by its gap alone, whatever they are: the tabs, the frames, the states) */
 .rule-cards:has(+ .rule-build:not([hidden])) {
-  margin-bottom: 4px;
+  margin-bottom: var(--tile-gap);
 } /* your own's block under them: all one (else a list's 10 px) */
 .stack .field {
-  margin-bottom: 4px;
+  margin-bottom: var(--tile-gap);
 } /* fields one under another, as close as cards (a battle's formulas) */
 #battleNumbers {
   margin-top: var(--block-gap);
-} /* its tiles under its fields, apart as a list's (the last field's 4 px merged into it): a battle's first numbers and Roll */
+} /* its tiles under its fields, apart as a list's (the last field's --tile-gap merged into it): a battle's first numbers and Roll */
 .build-cols {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -1391,7 +1391,7 @@ button.active .bubble.active {
 } /* Birth, Survive: a frame each */
 .share-row {
   display: flex;
-  gap: 4px;
+  gap: var(--tile-gap);
 } /* a share rule's, in the chips' place: its intervals' sliders, a column of chips each, the counts they give right of them */
 .share-counts {
   font-size: var(--caption-text-size);
@@ -1698,7 +1698,7 @@ button.active .bubble.active {
 .choice-list {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: var(--tile-gap);
   margin-bottom: var(--block-gap);
 }
 .choice-list button {

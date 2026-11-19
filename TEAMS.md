@@ -155,8 +155,9 @@ mirrors, then 8, 10 and 12 from their halves. Measured in the app (2026-11-19, v
   - [Pythagoras walled, Octet](http://localhost:8321/#mode=life&shape=pythagoras&gridWalls=1&teams=8), 281 to 282 cells,
     and Snub square and Dual 16 the same: chiral, C4, 8 from 4 by that halving.
   - [Hats in 5](http://localhost:8321/#mode=life&shape=hats&teams=5) (370 and 369 cells), and every K on Spectre,
-    Pinwheel and Tübingen: no turn at all, so Solo only by the rule; dealt out as many cells. To decide: grey them, or
-    keep them as the one admitted exception.
+    Pinwheel and Tübingen: no turn at all, so Solo only by the rule; dealt out as many cells. **Kept as the one admitted
+    exception** (decided 2026-11-19): a grid with no turn takes any K, its parts slices of as many cells round its
+    middle.
 - **Greyed, though possible** (2d by a mirror, d < n):
   - [Hexagon walled, Quartet](http://localhost:8321/#mode=life&shape=hex&gridWalls=1&teams=4): D2, two mirrors
     across the middle, a quarter between them (the six-fold mirrored grids alike).

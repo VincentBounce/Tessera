@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.383';
+const VERSION = '0.5.384';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -11092,13 +11092,7 @@ function choicesAt(s, reads = null, teamsMemo = new Map()) {
   if (ruleShown && wants('rule'))
     for (const [name, byShare] of RULE_WAYS)
       if (!!ruleShown.share !== byShare)
-        set(
-          `ruleWay:${name}`,
-          'rule',
-          ruleWrittenBy(ruleShown, byShare, neighbourCounts(walk.life.nbr.start).keys().next().value),
-          '',
-          name,
-        );
+        set(`ruleWay:${name}`, 'rule', ruleWrittenBy(ruleShown, byShare, shownNeighbourCounts(w)[0]), '', name);
   if (m.net && wants('walkRule'))
     for (const r of (rulesForMemo[w] ??= rulesFor(w)))
       set(`walkRule:${w}|${r.rule}`, 'walkRule', r.rule, r.why, `${r.name} ${r.rule}`); // (a walk's rules' cards, those it takes)
@@ -11362,9 +11356,14 @@ const ruleKept = (typed, w) =>
     : ruleFits(ruleBody(typed), VARIANTS[w])
       ? walk.life.ruleText // (its counts past the grid shown's: the rule it plays)
       : lifeRuleAt(ruleBody(typed), w);
+// the counts of neighbours the cells of the grid shown have, the most cells' first, once built (none before)
+const shownNeighbourCounts = (w) =>
+  walk.variant === w && walk.life ? [...neighbourCounts(walk.life.nbr.start).keys()] : [];
 // (a Life rule's counts: none past the most neighbours a cell of the grid shown has, once built: B9 on squares)
-const mostNeighbours = (w) =>
-  walk.variant === w && walk.life ? Math.max(...neighbourCounts(walk.life.nbr.start).keys()) : Infinity;
+const mostNeighbours = (w) => {
+  const counts = shownNeighbourCounts(w);
+  return counts.length ? Math.max(...counts) : Infinity;
+};
 const ruleRefusal = (typed, w = tabVariant()) => {
   const life = VARIANTS[w].life,
     r = life && parseRule(ruleBody(typed)),
@@ -29231,8 +29230,8 @@ function renderRuleSection() {
     document.querySelector('.rule-build').hidden = true;
     return;
   } // (a block rule, a table, Wolfram's: typed only, no births nor survivals by counts)
-  // the counts of neighbours its cells have, the most cells' first, and the most: the grid shown's, once built (none before)
-  const counts = walk.variant === tabVariant() && walk.life ? [...neighbourCounts(walk.life.nbr.start).keys()] : [],
+  // the counts of neighbours its cells have, the most cells' first, and the most (see shownNeighbourCounts)
+  const counts = shownNeighbourCounts(tabVariant()),
     rule = parseRule(now) ?? parseRule('B3/S23'),
     N = Math.max(0, ...counts),
     hex = mark === '⬡';
@@ -48561,7 +48560,7 @@ const lifeRuleHow = (variant) =>
     ? 'Rule, W and its number, 0 to 255: W30, W110'
     : variant.margolus
       ? 'Rule, a block rule of this grid, as its cards show it'
-      : `Rule, as B3/S23, B2/S/C3 (2 to 25 states), B3,10,11/S2-4 past 9, its counts ${mostNeighbours(tabVariant())} at most, or on hexagons B2o/S2m34 (the colours: Colors, above)`;
+      : `Rule, as B3/S23, B2/S/C3 (2 to 25 states), B3,10,11/S2-4 past 9${Number.isFinite(mostNeighbours(tabVariant())) ? `, its counts ${mostNeighbours(tabVariant())} at most` : ''}, B28-42%/S10-36% by shares of the neighbours, or on hexagons B2o/S2m34 (the colours: Colors, above)`;
 $('lifeRule').addEventListener('change', () => {
   if (ruleRefusal($('lifeRule').value)) {
     refuseRule($('lifeRule').value); // (not a rule, or not this grid's: the one in use back in the field)

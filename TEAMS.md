@@ -208,22 +208,31 @@ a part's own: an opposite pair of the dodecahedron's faces is kept by 10 of its 
 | apart (2 faces away) | 125, 5 up to symmetry | 3 | 12 turns |
 | opposite | 1 | 1 | all 60 turns |
 
-What is to come, each its own delivery:
+What is to come, each its own delivery, **one construction for 2D and 3D alike**: a figure (a solid, a ring, a
+sphere, a flat torus, a walled figure on the plane) has its group; a colour's part is one piece or several, the group
+carrying any part onto any other; a start (a seed, Famous, Wild) is laid on a part and, where it has several pieces, on
+each.
 
-1. **A colour's faces: Together · Apart · Opposite**, one choice among three (a tab group, in Teams): its faces in one
-   piece; none touching another of its own, as far apart as can be; carried onto each other by the centre's inversion.
-   For each, the partition alike that the most symmetries keep, made from the group (no table by hand: `FACE_GROUPS`
-   and `tools/faceparts.js` replaced); greyed where none, with its reason (a colour of one face, the tetrahedron's
-   Opposite).
-2. **A Duel on a sphere in lunes (the globe, the rosette spheres): Up / Down** too, its two halves by its equator,
-   besides its lunes.
-3. **Seeds: one tile, its diameter a slider** (2, 3, …), the eight tiles Spark to Jungle replaced (their link words
-   zone1 to zone8 to ask before changing).
-4. **Mirror, a switch** over any start (a seed, Famous, Wild): each colour's start laid on its part and mirrored on its
-   opposite one; greyed where its parts are not opposite pairs. The zone Opposite goes.
-5. **Famous: the switch Mirror and the faces' choice (1) alike**, each colour's pattern on each of its faces.
+1. **A colour's pieces: Together · Apart · Opposite**, one choice among three (a tab group, in Teams), wherever a colour
+   has several pieces: a solid's faces; a flat torus's blocks (Apart: a colour's blocks as a checkerboard's, Together:
+   in one block); a walled figure's slices (Apart: every other slice, Opposite: a slice and the one across the middle,
+   its half turn). Together: one piece; Apart: none touching another of its own, as far apart as can be; Opposite:
+   carried onto each other by the half turn through the middle (a solid's centre, a walled figure's middle, a ring's
+   half shift). For each, the partition alike that the most symmetries keep, made from the group (no table by hand:
+   `FACE_GROUPS` and `tools/faceparts.js` replaced); greyed where none, with its reason (a colour of one piece, the
+   tetrahedron's Opposite).
+2. **A Duel cut either way:** on a sphere in lunes (the globe, the rosette spheres), Up / Down by its equator besides its
+   lunes; on the plane, a walled figure's halves, left and right or up and down, where both are alike. The same choice:
+   the two subgroups of order 2 that the figure has.
+3. **Seeds: one tile, its diameter a slider** (2, 3, …), on the plane and the surfaces alike (the zones are one code
+   already), the eight tiles Spark to Jungle replaced (their link words zone1 to zone8 to ask before changing).
+4. **Mirror, a switch** over any start (a seed, Famous, Wild), 2D and 3D: each colour's start laid on one piece and
+   carried by the group onto its others (on Opposite, mirrored on the one across); greyed where a colour has one piece.
+   The zone Opposite goes (today a solid's only: greyed on the plane and the tori).
+5. **Famous: the switch Mirror and the pieces' choice (1) alike**, each colour's pattern on each of its pieces, on the
+   plane as on a solid.
 6. **Seeds and Wild: one count for every fighter**, drawn at random once: each colour exactly as many live cells, laid
-   at random in its part.
+   at random in its part, 2D and 3D.
 
 And the counts' fixes found above: Life's solids by their groups (`solidCounts` replaced, the walks' already right),
 the flat torus's lattices of index K, a walled figure's greyed and missing counts, the rosette spheres' counts, a Klein

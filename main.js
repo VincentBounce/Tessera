@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.411';
+const VERSION = '0.5.412';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -19486,12 +19486,13 @@ function battleStartsOrSay(g, start, alongEdges, K, seed = battleSeed, order = b
 }
 // The surface's turns' groups of K (each its matrices, the identity first), once a mesh: made from one or two of its
 // turns (see surfaceRotations), closed under their products (the icosahedron's: 2, 3, 4, 5, 6, 10, 12; the cube's: 2,
-// 3, 4, 6, 8, 12; a torus's: by its columns round it; a Möbius strip's half turn)
-function rotationGroups(g, K, enough = Infinity, good = null) {
+// 3, 4, 6, 8, 12; a torus's: by its columns round it; a Möbius strip's half turn); mirrors: its mirrors' too (see
+// surfaceSymmetries: Life's, its cells unordered; never a walk's, which a mirror would turn over)
+function rotationGroups(g, K, enough = Infinity, good = null, mirrors = false) {
   // (enough: as many found, the search stops; good: those kept)
-  const memo = (g.rotationGroups ??= {});
+  const memo = (g[mirrors ? 'symmetryGroups' : 'rotationGroups'] ??= {});
   if (memo[K]) return good ? memo[K].filter(good).slice(0, enough) : memo[K].slice(0, enough);
-  const R = surfaceRotations(g),
+  const R = mirrors ? surfaceSymmetries(g) : surfaceRotations(g),
     I = IDENTITY3;
   if (R.length % K) return (memo[K] = []); // (a group's order divides its whole group's: Lagrange)
   const key = (M) => roundedKey(M.flat()),
@@ -19512,12 +19513,12 @@ function rotationGroups(g, K, enough = Infinity, good = null) {
     return list.length === K ? { list, id: [...keys].sort().join('|') } : null;
   };
   // (only turns whose order divides K make one; a pair both in a group found makes it again, or less)
-  // (a turn's order from its angle, its trace 1 + 2 cos θ: the least q with q θ a whole turn)
-  const order = (g.rotationOrders ??= R.map((M) => {
-    const turns = Math.acos(Math.max(-1, Math.min(1, (M[0][0] + M[1][1] + M[2][2] - 1) / 2))) / (2 * Math.PI);
-    for (let q = 1; q <= R.length; q++) if (Math.abs(q * turns - Math.round(q * turns)) < 1e-6) return q;
+  // (a turn's order: the least q with M^q the identity, a mirror's too)
+  const order = R.map((M) => {
+    let P = M;
+    for (let q = 1; q <= R.length; q++, P = times(P, M)) if (key(P) === key(I)) return q;
     return 0;
-  }));
+  });
   const ok = R.map((_, a) => K % order[a] === 0),
     seen = new Set(),
     out = [],
@@ -19787,6 +19788,27 @@ const TEAMS_WHERE =
 // solid's rotations (see solidRotations); a ring's (a torus, a Möbius strip, a Klein bottle), its turns round its axis by
 // 2π/m (m from a corner's fellows round the axis at its height and distance, the least angle between them) and its
 // half-turns about the x and y axes, those that fit, closed under their products
+// a solid's turns and its mirrors, once a mesh: a mirror that lays its corners and its cells' middles onto theirs (the
+// centre's inversion, or a plane's between two of its corners, a mirror swapping them), then its turns each after it; its
+// turns alone where none (a chiral tiling's)
+function surfaceSymmetries(g) {
+  if (g.symmetries) return g.symmetries;
+  const cells = new Set(
+      Array.from({ length: g.n }, (_, t) => pointCode(g.cen[3 * t], g.cen[3 * t + 1], g.cen[3 * t + 2])),
+    ),
+    onCells = (M) =>
+      [...Array(g.n).keys()].every((t) =>
+        cells.has(pointCode(...matTimesPoint(M, Array.from(g.cen.subarray(3 * t, 3 * t + 3))))),
+      ),
+    R = surfaceRotations(g),
+    C = solidCorners(g),
+    plane = (n) => [0, 1, 2].map((i) => [0, 1, 2].map((j) => (i === j ? 1 : 0) - 2 * n[i] * n[j])); // (the mirror across the plane of normal n)
+  const S = [
+    IDENTITY3.map((row) => row.map((x) => -x)),
+    ...C.flatMap((a, i) => C.slice(i + 1).map((b) => plane(unit([0, 1, 2].map((d) => a[d] - b[d]))))),
+  ].find((M) => fitsMesh(g, M) && onCells(M));
+  return (g.symmetries = S ? [...R, ...R.map((M) => matMul(S, M))] : R);
+}
 function surfaceRotations(g) {
   if (g.rotations) return g.rotations;
   if (!g.torus) return (g.rotations = solidRotations(solidCorners(g))); // (its mesh made by them: all of them at every size, checked)
@@ -30972,7 +30994,8 @@ function colouring(surface, K, mirror = false) {
   const one = [...Array(g.n).keys()].filter((t) => !g.cellFaces || g.cellFaces[t] === g.cellFaces[0]), // (one face's cells: the others' points the same turned, their groups the same conjugated, tried too)
     points = [...mids, ...solidCorners(g), ...one.filter((_, i) => i % Math.ceil(one.length / 12) === 0).map(at)]; // (a dozen of them, evenly: the Menger sponge's face 68 s before)
   let best = null;
-  for (const [G, H] of colourGroups(g, K)) {
+  const seen = new Set(); // (a partition met already, by a larger group first: tried once)
+  for (const [G, H] of [...colourGroups(g, K)].reverse()) {
     const inH = new Set(H.map(key)),
       coset = new Map();
     for (const M of G)
@@ -30993,6 +31016,14 @@ function colouring(surface, K, mirror = false) {
       }
       if (mirror && !items.every((q, i) => colour.some((c, j) => c === colour[i] && dot3(items[j], q) < -1 + 1e-9)))
         continue;
+      const order = items.map((q) => roundedKey(q)),
+        relabel = new Map(),
+        sig = [...order.keys()]
+          .sort((i, j) => (order[i] < order[j] ? -1 : 1))
+          .map((i) => `${order[i]}:${relabel.get(colour[i]) ?? relabel.set(colour[i], relabel.size).get(colour[i])}`)
+          .join(' ');
+      if (seen.has(sig)) continue;
+      seen.add(sig);
       const col = { items, colour },
         of = spotColours(col, g);
       let none = 0,
@@ -31031,14 +31062,14 @@ const lexicoLess = (a, b) => {
 // a solid's pairs of groups of its turns [G, H], H in G with K cosets (once a mesh and a count): its K colours alike
 const colourGroups = (g, K) =>
   ((g.colourGroups ??= {})[K] ??= (() => {
-    const N = surfaceRotations(g).length,
+    const N = surfaceSymmetries(g).length,
       key = (M) => roundedKey(M.flat()),
       out = [];
     for (let m = K; m <= N; m += K)
       if (N % m === 0)
-        for (const G of rotationGroups(g, m)) {
+        for (const G of rotationGroups(g, m, Infinity, null, true)) {
           const inG = new Set(G.map(key));
-          for (const H of m === K ? [[IDENTITY3]] : rotationGroups(g, m / K))
+          for (const H of m === K ? [[IDENTITY3]] : rotationGroups(g, m / K, Infinity, null, true))
             if (H.every((M) => inG.has(key(M)))) out.push([G, H]);
         }
     return out;
@@ -31053,13 +31084,22 @@ const solidCounts = (surface) =>
 // parts 927 to 972 cells for 6 colours); a face's cells whole all the same where its items are faces' middles, a face's
 // middle the nearest to its own cells
 function spotColours(col, g) {
-  return Int32Array.from({ length: g.n }, (_, t) => {
-    const d = Array.from(g.cen.subarray(3 * t, 3 * t + 3)),
-      v = col.items.map((x) => dot3(x, d)),
-      top = Math.max(...v),
-      cs = new Set(v.flatMap((x, k) => (x > top - 1e-9 ? [col.colour[k]] : [])));
-    return cs.size === 1 ? [...cs][0] : -1;
-  });
+  const { items, colour } = col,
+    out = new Int32Array(g.n),
+    C = g.cen;
+  for (let t = 0; t < g.n; t++) {
+    let top = -Infinity,
+      k = -1;
+    for (let i = 0; i < items.length; i++) {
+      const v = items[i][0] * C[3 * t] + items[i][1] * C[3 * t + 1] + items[i][2] * C[3 * t + 2];
+      if (v > top + 1e-9) {
+        top = v;
+        k = colour[i];
+      } else if (v > top - 1e-9 && colour[i] !== k) k = -1; // (as near two colours, so far)
+    }
+    out[t] = k;
+  }
+  return out;
 }
 // the patches' spots: the colours' patch items
 const patchSpots = (surface, K) => {

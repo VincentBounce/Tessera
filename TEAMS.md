@@ -240,5 +240,6 @@ bottle's rows made for its half turn.
 
 **Done:** one count for every fighter (v0.5.410); Life's solids by their groups of turns (v0.5.411: `colouring` made from
 G and H, the hand tables `FACE_GROUPS`, `SPOT_PAIRS`, `SOLID_SPOTS` and `tools/faceparts.js` gone; every count of the 33
-solids measured alike). Left: the mirrors (Icosa in 8, offered before by its 8 corners, now greyed till the groups take
-mirrors too), the hull solids' own colourings (`hullColourings`, still first where they have the count).
+solids measured alike). Their mirrors too (v0.5.412, `surfaceSymmetries`: a mirror between two corners, or the centre's inversion, then the
+turns after it; Life only, the walks' turns alone): Tetra, Icosa and Dodeca in 8, the Pyramid in 8. Left: the hull solids'
+own colourings (`hullColourings`, still first where they have the count).

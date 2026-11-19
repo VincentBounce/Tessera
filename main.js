@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.409';
+const VERSION = '0.5.410';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -22216,14 +22216,17 @@ function startParts(seed) {
     return;
   }
   if (K === 1) return;
-  const coloured = new Uint8Array(seed.length);
-  huntParts(0, K).forEach((part, i) => {
-    for (const t of part) {
-      coloured[t] = 1;
-      if (seed[t]) seed[t] = i + 1;
-    }
-  });
-  for (let t = 0; t < seed.length; t++) if (!coloured[t]) seed[t] = 0; // (no one's: the cells on its slices' lines, see planeSlices)
+  // (Wild: each colour's soup in its part, as many alive in each, see soupInParts; on the plane its symmetry's first copies
+  // drawn, the others as theirs, see symmetricStart; the cells no one's, on its slices' lines, dead)
+  const own = walk.plane && symmetryOf(walk.plane.kind) !== 'none',
+    first = (t) => !own || Math.min(...cellCopies(walk.plane.kind, walk.plane.W, t)) === t,
+    next = seededRandom(plane.seed);
+  seed.fill(0);
+  soupInParts(
+    huntParts(0, K).map((part) => part.filter(first)),
+    plane.density / 100,
+    () => next() / 4294967296,
+  ).forEach((part, i) => part.forEach((t) => (seed[t] = i + 1)));
   lifeStart = hunt.zone === 'mirror' ? { zone: 'mirror' } : null; // (Wild mirror: its link's word, see zoneWord; Wild: the soup's)
 }
 // Life's colours for its grid, before anything is made of them (the digits' base, K + 1; the sizes; the tiles): from those
@@ -31940,16 +31943,29 @@ function zoneSeed() {
       for (let q = 0; q < f.length; q += 2) seed[f[q]] = f[q + 1];
     });
   } else {
-    for (const [t, k] of cells) if (random() < d) seed[t] = k;
-    for (const k of new Set(cells.map((c) => c[1]))) {
-      // each colour at least one cell alive (as the hunt's starts)
-      const mine = cells.filter((c) => c[1] === k);
-      if (!mine.some(([t]) => seed[t])) seed[mine[Math.floor(random() * mine.length)][0]] = k;
-    }
+    const colours = [...new Set(cells.map((c) => c[1]))];
+    soupInParts(
+      colours.map((k) => cells.filter((c) => c[1] === k).map(([t]) => t)),
+      d,
+      random,
+    ).forEach((part, i) => part.forEach((t) => (seed[t] = colours[i])));
     for (const [t, first, k] of copies) if (seed[first]) seed[t] = k;
   }
   return seed;
 }
+// a soup in parts, every fighter alike: each part's cells alive as many, the density of the least part (one at least), drawn
+// from random in each (a shuffle's first ones)
+const soupInParts = (parts, d, random) => {
+  const c = Math.max(1, Math.round(d * Math.min(...parts.map((p) => p.length))));
+  return parts.map((part) => {
+    const a = [...part];
+    for (let i = 0; i < Math.min(c, a.length); i++) {
+      const j = i + Math.floor(random() * (a.length - i));
+      [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a.slice(0, c);
+  });
+};
 // the zone's start (its icons, plane.icons; its seed, plane.seed) laid as any start: its symmetry too (see startColours)
 function layZone() {
   const seed = new Uint8Array(walk.life.seed.length);

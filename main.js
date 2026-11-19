@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.377';
+const VERSION = '0.5.378';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -25300,7 +25300,13 @@ const patternNamed = (cells, name) => cells && Object.assign(cells, { name });
 const lazyList = (n, f) =>
   new Proxy([], {
     get: (a, k) =>
-      k === 'length' ? n : typeof k === 'string' && /^\d+$/.test(k) ? (a[k] ??= f(Number(k))) : Reflect.get(a, k),
+      k === 'length'
+        ? n
+        : typeof k === 'string' && /^\d+$/.test(k)
+          ? Number(k) < n
+            ? (a[k] ??= f(Number(k)))
+            : undefined // (nothing past its length, as an array: a link's pick from a larger grid's list, see choiceOfWord)
+          : Reflect.get(a, k),
   });
 // once a grid and its colours: each cell's colour's place (part; see huntParts; Mixed's too, each colour's own), a picture
 // cut off at its own, as at the grid's edges; each colour's cells a picture may take (its part's live ones on its face, see

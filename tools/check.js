@@ -871,7 +871,7 @@ async function deep(fail, from, only) {
     if (!$('ruleTuto').hidden) $('ruleTuto').querySelector('.tut-close')?.click();
   };
   const all = (only ?? Object.keys(VARIANTS)).filter(
-    (m) => VARIANTS[m].life && [...$('variant').options].some((o) => o.value === m),
+    (m) => playsLife(m) && [...$('variant').options].some((o) => o.value === m),
   );
   for (const w of all.slice(Math.max(0, all.indexOf(from)))) {
     localStorage.tesseraDeep = `${w} ${Math.round((performance.memory?.usedJSHeapSize ?? 0) / 1e6)} MB`; // (the page's memory too)

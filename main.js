@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.379';
+const VERSION = '0.5.380';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -21952,18 +21952,20 @@ function readRulePart(spec) {
     else if (places?.size === 0) counts.delete(d);
   return { counts: new Map([...counts].sort((a, b) => a[0] - b[0])), share: false, iso };
 }
-// the places a count's live neighbours can sit in, by its letters' kind: Hensel's letters of the count, Callahan's for 2 to 4,
-// v's counts by a corner only, 0 to 3 (a kite's up to 3 or more, a flower's to 2); none by counts alone
-const rulePlaces = (iso, d) =>
-  iso === 'hensel'
-    ? (HENSEL_LETTERS[d] ?? [])
-    : iso === 'hex'
-      ? d >= 2 && d <= 4
-        ? ['o', 'm', 'p']
-        : []
-      : iso === 'vertex'
-        ? ['0', '1', '2', '3']
-        : [];
+// The letters a count k of live neighbours can take, by their kind, one answer for the rule read, the chips and How it
+// works: Hensel's (a square's 8 neighbours: none past 8, a globe's pole's), Callahan's o, m, p for 2 to 4, v and how many
+// of them touch the cell by a corner only (v0 to v3, v3 "3 or more" where more can: a kite's 5), of a cell's sides
+// neighbours by a side and tips by a corner only (a rule read, no cell: any), letters where it can be two ways or more;
+// none by counts alone
+const countLetters = (iso, k, sides = Infinity, tips = Infinity) => {
+  if (iso === 'hensel') return HENSEL_LETTERS[k] ?? [];
+  if (iso === 'hex') return k >= 2 && k <= 4 ? ['o', 'm', 'p'] : [];
+  if (iso !== 'vertex') return [];
+  const ways = [0, 1, 2, 3].filter((j) => j <= Math.min(k, tips) && k - j <= sides + (j === 3 ? tips - 3 : 0));
+  return ways.length > 1 ? ways.map((j) => `v${j}`) : [];
+};
+// a count's places as a rule holds them: its letters, v's by their counts alone (2v01)
+const rulePlaces = (iso, d) => countLetters(iso, d).map((x) => x.replace(/^v/, ''));
 // A rule's text as read, one way for each (the field's, a link's, a card's, the chips' and the sliders'): its counts in order,
 // each once, with its places (Hensel's "-" where fewer are left out than in), see countsText; or its shares; its states, colours
 const ruleTextOf = (rule) => {
@@ -28314,17 +28316,7 @@ function ruleTutorial(entry) {
     bySide = (u) => corners(u).filter((p) => mine.has(pointKey(...p))).length >= 2;
   const sides = around.filter(bySide),
     tips = around.filter((u) => !bySide(u));
-  const ways = (k) => [0, 1, 2, 3].filter((j) => j <= tips.length && k - j >= 0 && k - j <= sides.length);
-  const lettersOf = (k) =>
-      iso === 'vertex'
-        ? ways(k).length > 1
-          ? ways(k).map((j) => `v${j}`)
-          : []
-        : iso === 'hensel'
-          ? HENSEL_LETTERS[k]
-          : iso && k >= 2 && k <= 4
-            ? ['o', 'm', 'p']
-            : [],
+  const lettersOf = (k, kind = iso) => countLetters(kind, k, sides.length, tips.length),
     classOf = (m) => (iso === 'hensel' ? henselClass(m) : hexClass(m).toLowerCase());
   const cases = Array.from({ length: around.length + 1 }, (_, k) => k).flatMap((k) =>
     (lettersOf(k).length ? lettersOf(k) : ['']).map((x) => {
@@ -28333,11 +28325,12 @@ function ruleTutorial(entry) {
         return { k, x, live: new Set(around.slice(0, k)), on: (table) => table[at] === 1 };
       }
       if (iso === 'vertex') {
-        const j = x ? Number(x.slice(1)) : ways(k)[0];
+        const j = x ? Number(x.slice(1)) : Math.min(3, Math.max(0, k - sides.length)), // (one way only: as many by a corner as its sides leave)
+          by = j < 3 ? j : Math.max(3, k - sides.length); // (v3, 3 or more: those its sides leave)
         return {
           k,
           x,
-          live: new Set([...tips.slice(0, j), ...sides.slice(0, k - j)]),
+          live: new Set([...tips.slice(0, by), ...sides.slice(0, k - by)]),
           on: (table) => table[COUNTS_ROW + 4 * k + j] === 1,
         };
       }
@@ -28405,15 +28398,17 @@ function ruleTutorial(entry) {
       `<figure><div>${cell(UNLIT, new Set(live))}</div><figcaption>${name}</figcaption></figure>`;
     if (lettersOf2 === 'vertex') {
       const figs = Array.from({ length: around.length }, (_, k) => k + 1).flatMap((k) =>
-        ways(k).length > 1
-          ? ways(k).map((j) => card([...tips.slice(0, j), ...sides.slice(0, k - j)], `${k}v${j}`))
-          : [],
+        lettersOf(k).map((x) => {
+          const j = Number(x.slice(1)),
+            by = j < 3 ? j : Math.max(3, k - sides.length); // (v3, 3 or more: those its sides leave)
+          return card([...tips.slice(0, by), ...sides.slice(0, k - by)], `${k}${x}`);
+        }),
       );
       return `<h2>Letters</h2><p>On the flowers and the rings, a rule of your own can tell its live neighbours apart: after a count, v and how many of them touch the cell by a corner only, not a side (B25v08: born with 2, with 5 when none of them touch it by a corner only, or with 8).</p><div class="tut-row">${figs.join('')}</div>`;
     }
     const R = lettersOf2 === 'hensel' ? 8 : 6,
       at = [...planeNeighbours(kind, W, false, true).ring.subarray(R * c, R * c + R)];
-    const of = lettersOf2 === 'hensel' ? (k) => HENSEL_LETTERS[k] : (k) => (k >= 2 && k <= 4 ? ['o', 'm', 'p'] : []),
+    const of = (k) => lettersOf(k, lettersOf2),
       classOf2 = lettersOf2 === 'hensel' ? henselClass : (m) => hexClass(m).toLowerCase();
     const figs = [1, 2, 3, 4].flatMap((k) =>
       of(k).map((x) => {
@@ -29316,22 +29311,8 @@ function renderRuleSection() {
   // neighbours by a side and 5 by a corner: the ways a count can be, letters where it has two or more)
   const kites = mark === '◆',
     vertex = !!ROSETTES[PLANE_OF_MARK[mark]] || kites;
-  const kiteWays = (c) => {
-    const ks = [0, 1, 2, 3].filter((k) => (k < 3 ? k <= c && k >= c - 4 : c >= 3));
-    return ks.length > 1 ? ks.map((k) => `v${k}`) : [];
-  };
   const lettersOf = (c) =>
-    hex
-      ? c >= 2 && c <= 4
-        ? ['o', 'm', 'p']
-        : []
-      : hensel
-        ? (HENSEL_LETTERS[c] ?? []) // (Hensel's, a square's 8 neighbours' only: none past 8, a globe's pole's)
-        : kites
-          ? kiteWays(c)
-          : vertex && c
-            ? ['v0', 'v1', 'v2'].slice(0, Math.min(c, 2) + 1)
-            : [];
+    countLetters(hex ? 'hex' : hensel ? 'hensel' : vertex && 'vertex', c, kites ? 4 : Infinity, kites ? 5 : 2);
   const all = (c) => (lettersOf(c).length ? lettersOf(c) : ['']); // a count without letters: one, ''
   // (each count's chips on, from the rule's places: v's by their counts, v0 its 0; and back, every chip on its count anywhere)
   const letters = (p) =>

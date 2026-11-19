@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.427';
+const VERSION = '0.5.428';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -23893,7 +23893,7 @@ function symmetriesHere(
 const partMemo = remember('partMemo', new Map());
 function partSymmetries(kind, W, K, outline = outlineOf(kind)) {
   if (walk.plane?.kind !== kind || walk.plane.W !== W || outline !== outlineOf(kind)) return ['none']; // (its parts known on the grid built only: another grid's not judged, not claimed)
-  const key = `${gridKey()}|${K}|${teamsMixed() && mixSeed()}|${piecesApart()}|${duelAcross()}`; // (Mixed: its parts drawn from its seed)
+  const key = `${gridKey()}|${K}|${teamsMixed() && mixSeed()}|${placementKey()}`; // (Mixed: its parts drawn from its seed)
   if (partMemo.has(key)) return partMemo.get(key);
   const parts = huntParts(0, K),
     own = new Int32Array(walk.life.seed.length);
@@ -25624,7 +25624,7 @@ const setFits = (N, set) => iconFits(N, set.P ?? N);
 function iconChoices(N, set) {
   const K = lifeParts(),
     kind = patternKind(),
-    key = `${N}|${set.source}|${gridKey()}|${kind}|${K}`;
+    key = `${N}|${set.source}|${gridKey()}|${kind}|${K}|${placementKey()}`; // (its spots: before v0.5.428 kept through a Duel's cut, Apart, Opposite)
   if (iconMemo?.key === key) return iconMemo.choices;
   const P = set.P ?? N,
     lays = iconLay(N, P); // (each colour's cells and their pixels; a set's P null: a pixel a cell)
@@ -27428,6 +27428,11 @@ const DUEL_CUTS = [
   ],
 ];
 const duelAcross = () => lifeTeams === 2 && duelCut === 1; // (Left / Right picked, in a Duel)
+// what each colour's parts and spots hang on besides the grid and its colours, as picked (Symmetry, a Duel's cut, Apart, Wild's
+// Face): one key for every memo of them (partSymmetries, planeSlices, patternChoices, middleCells, iconChoices), never one by
+// hand each (iconChoices' had none of them till v0.5.428); the choices themselves, never what they make (Symmetry's allowed
+// asks for these very parts)
+const placementKey = () => `${plane.sym}|${duelCut}|${teamsApart}|${wildFace}`;
 // a colour's pieces, one choice of two (PIECES, the link's teamsApart: its place): in one piece, or in several as far apart
 // as can be (a solid's faces, see colouring's apart; a flat torus's blocks, see torusLattice), where its figure has both (see
 // piecesOf); a colour's pieces through the centre are Symmetry's Opposite
@@ -31231,7 +31236,7 @@ const wallSlices = (K, kind = flatGrid()?.kind) =>
 function planeSlices(K) {
   const { kind, W, n, xy } = flatGrid(),
     turn = planeTurn(),
-    key = `${gridKey()}|${K}|${turn}|${duelAcross()}`;
+    key = `${gridKey()}|${K}|${turn}|${placementKey()}`;
   if (sliceMemo?.key === key) return sliceMemo;
   // as seen (turned, see planeTurn), from red's, its middle up and to the left (½ a slice left of straight up), clockwise;
   // in a circle or a hexagon: round its own middle, slices of one angle each (a hexagon's from a corner: on 3, 6 or 12
@@ -33828,7 +33833,7 @@ const choiceOfWord = (list, word) => {
 function patternChoices(centred = false) {
   // (once a grid, its colours and rule)
   const L = walk.life,
-    id = `${flatGrid() ? `${gridKey()}|${planeTurn()}` : ''}|${L.colours}|${lifeParts()}|${L.ruleText}|${startSymmetry()}|${piecesApart()}|${duelAcross()}`, // (Opposite's, Apart's, a Duel's cut: their parts' own spots)
+    id = `${flatGrid() ? `${gridKey()}|${planeTurn()}` : ''}|${L.colours}|${lifeParts()}|${L.ruleText}|${placementKey()}`, // (their parts' own spots)
     m = choicesMemo[centred]; // (its teams laid too: Newcomer's one fewer, see lifeParts)
   if (m?.id !== id || m.g !== walk.geo)
     choicesMemo[centred] = { id, g: walk.geo, choices: laidChoices(centred).map(namedChoices) };
@@ -34014,7 +34019,7 @@ function mobiusMiddle(g) {
 // dodecahedron's, its pentagon's: see centreCells). Kept per grid
 const middleMemo = remember('middleMemo', new Map());
 function middleCells(i = 0, K = 1) {
-  const key = `${gridKey()}|${patternKind()}|${i}|${K}|${plane.sym}|${piecesApart()}|${duelAcross()}`;
+  const key = `${gridKey()}|${patternKind()}|${i}|${K}|${placementKey()}`;
   if (middleMemo.has(key)) return middleMemo.get(key);
   const g = walk.geo,
     { start } = walk.life.nbr,

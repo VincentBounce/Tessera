@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.387';
+const VERSION = '0.5.388';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -43081,7 +43081,8 @@ const texelRgba = (c, a = 1) => {
   const [r, g, b] = rgbCached(c);
   return ((Math.round(255 * a) << 24) | (b << 16) | (g << 8) | r) >>> 0;
 };
-const GROUND_ALPHA = 0.5;
+const GROUND_ALPHA = 0.5,
+  SEEN_THROUGH = 0.25; // (a texel's alpha under it: an ink seen through at that share, over what is drawn under it, see planeCellsV)
 // A line's segments for the ribbons (see ribbonV), RIBBON_WORDS words each: its ends a and b, its tile's normal n, its caps (1
 // its start's, 2 its end's; 4 more: it fades out rather than retracts), its key (its step, its command, a battle's walker),
 // then its life as whole numbers (see lifeOf): born, the step it is walked over; gone, the step it leaves over (NEVER: it
@@ -44100,10 +44101,12 @@ fn S(f: i32, t: i32) -> u32 { return shownCells[u32(f * p.total + t)]; }
   let died = bitcast<i32>(S(3, t));
   let d = p.gen - died;
   var ground = u32(p.dead); if (p.ground == 1) { ground = look[${LOOK_TABLE}u + u32(t)]; }
-  if (d >= 0 && d < p.trail && died > p.trailFrom) {  // (its ink fading over its own ground, as see-through)
+  if (d >= 0 && d < p.trail && died > p.trailFrom) {  // (its ink over what is under it, seen through)
     let ink = unpack4x8unorm(look[1024u + max(1u, S(4, t) >> 28u)]);  // (its colour's at its death)
     let a = 0.15 * (1.0 - f32(d) / f32(p.trail));  // (from 15% of its ink)
-    outCol[t] = pack4x8unorm(vec4f(mix(unpack4x8unorm(ground).rgb, ink.rgb, a), ${GROUND_ALPHA}));  // (the ground tinted, its alpha the ground's: no lamp, no halo)
+    let under = unpack4x8unorm(ground);
+    if (under.a == 0.0) { outCol[t] = pack4x8unorm(vec4f(ink.rgb, a)); }  // (none under it here, the plane's own tile drawn under: the ink alone, at its share, see planeCellsV)
+    else { outCol[t] = pack4x8unorm(vec4f(mix(under.rgb, ink.rgb, a), ${GROUND_ALPHA})); }  // (its ground tinted, its alpha the ground's: no lamp, no halo)
   } else { outCol[t] = ground; }
 }`;
 // An engine for L: its runs side by side, h generations' sums kept a batch; null where the card can't hold it
@@ -44806,8 +44809,8 @@ struct Col { @builtin(position) pos: vec4f, @location(0) col: vec4f }
 fn planeAt(p: vec2f) -> vec4f { return flatAt(u.view.yz + vec2f(u.turnC * p.x - u.turnS * p.y, u.turnS * p.x + u.turnC * p.y) * u.view.x); }
 @vertex fn planeCellsV(@location(0) pos: vec2f, @location(1) id: u32) -> Col {
   var o: Col; let c = unpack4x8unorm(tileCol[id]);
-  o.pos = select(planeAt(pos), vec4f(2.0, 2.0, 2.0, 1.0), c.a < 0.25);  // (its alpha: 0 not drawn, else drawn whole, painted or its ground, see texelRgba)
-  o.col = vec4f(c.rgb, 1.0);
+  o.pos = select(planeAt(pos), vec4f(2.0, 2.0, 2.0, 1.0), c.a == 0.0);  // (its alpha: 0 not drawn; under ${SEEN_THROUGH} an ink seen through at that share, laid over the tile under it (a trail); else drawn whole, painted or its ground, see texelRgba)
+  o.col = select(vec4f(c.rgb, 1.0), vec4f(c.rgb * c.a, c.a), c.a < ${SEEN_THROUGH});  // (premultiplied)
   return o;
 }
 @vertex fn planeLinesV(@location(0) pos: vec2f) -> Col { var o: Col; o.col = u.plain; o.pos = planeAt(pos); return o; }`;
@@ -46311,6 +46314,7 @@ function gpuPlane(paint) {
       gpuDrawPipe('planeCells', {
         vertex: 'planeCellsV',
         fragment: 'colF',
+        blend: BLEND_PRE, // (an ink seen through over the tile under it: a trail, see planeCellsV)
         depth: false,
         buffers: [vertexLayout(8, [vertexAttribute(0, 'float32x2')]), vertexLayout(4, [vertexAttribute(1, 'uint32')])],
       }),

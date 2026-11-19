@@ -245,4 +245,68 @@ turns after it; Life only, the walks' turns alone): Tetra, Icosa and Dodeca in 8
 lattice of index K (v0.5.413, `torusLattice`); the walled figures by C_n and D_n (v0.5.414, `wallTurns`; Penrose's and
 Kites & darts' discs measured not quite mirrored: no 2, no 10); the rosette spheres by their turns and halves (v0.5.415,
 `rosetteHalves`). Left: the hull solids' own colourings (`hullColourings`, still first where they have the count); a Klein
-bottle's least sizes, whose rows do not take its half turn (greyed there, as a count is at a size); items 1 to 5.
+bottle's least sizes, whose rows do not take its half turn (greyed there, as a count is at a size).
+
+The plan's items, done: 3, Seed one tile, its radius a slider (v0.5.417, `pop=seed4`); 4, Opposite a tab of Symmetry on a
+solid, over any start (v0.5.418: the plane's Symmetry row's, rather than a switch of its own; the zone Opposite gone); 5,
+Famous with it (v0.5.419); 2, a Duel cut Up / Down or Left / Right (v0.5.420, `duelCut`); 1, a colour's pieces Together or
+Apart (v0.5.421, `teamsApart`: a solid's colouring apart, a flat torus's 2K blocks; Opposite is Symmetry's, not a third tab).
+A walled figure's slices apart are left: a colour's two slices would be its opposite ones (Opposite on the plane, Half
+turn).
+
+<p align="center"><br>* * *</p>
+
+## Placements: each start on each figure
+
+Each cell names the code that places it (v0.5.422), for 1 colour, a Duel (2), and 3 to 12. Two steps everywhere: the
+**parts** (each colour's cells: `partPlaces`, by figure) and the **spots** (each colour's middle: `middleCells` by
+`patternFrame`'s centre); a start then fills a part (Wild, Formula, Realm, Anywhere) or lays at a spot (Seed, Icon, Famous).
+Wild and Seed give every colour as many live cells (`soupInParts`); Symmetry copies any start (`symmetricStart`: the
+plane's turns and mirrors, a solid's Opposite).
+
+**Parts, by figure** (what Wild, Formula, Realm and Anywhere fill):
+
+| figure | 1 | 2 (Duel) | 3 to 12 |
+|---|---|---|---|
+| Plane, torus | whole grid | `torusLattice` (Apart: `spread`) | `torusLattice` (Apart: `spread`) |
+| Plane, walled rectangle | whole grid | `planeFrame.block`, `teamGrid`: Up / Down 1 × 2, Left / Right 2 × 1 | 4: blocks 2 × 2; 8 on squares: `planeSlices` as many cells; 3, 6, 12 greyed (`wallTurns`) |
+| Plane, walled hexagon | whole grid | `planeSlices` rings (Left / Right: upright, by angles) | `planeSlices`: rings for 3, 6, 12; angles for 4 (its mirrors' cells no one's) |
+| Plane, disc (never repeats) | whole disc | `planeSlices` from a corner (`CORNER_DISCS`) | `planeSlices` by angles; no turn (Hats, Spectre…): as many cells each |
+| Solid | whole solid | `colouring` → `spotColours` | `colouring` (G, H, a point), Opposite: its mirror, Apart: its pieces apart |
+| Hull solid (Cubocta, RhDode…) | whole solid | `hullColourings` where it has K, else `colouring` | the same |
+| Torus, Klein bottle (3D) | whole | `torusBlocks` (Klein: `kleinLength`'s blocks, its half turn) | the same |
+| Möbius strip | whole | stretches 2L / K along its loop (`partPlaces`) | the same |
+| Globe | whole, its caps | hemispheres (Left / Right: two lunes) | lunes between meridians, its caps no one's |
+| Rosette sphere | whole | its two discs (`poleColours`; Left / Right: two lunes) | `rosetteParts`: lunes, or halves × lunes (`rosetteHalves`) |
+
+**Spots, by figure** (where Seed, Icon and Famous lay, each colour's: `patternFrame(i, K).centre`):
+
+| figure | 1 | 2 to 12 |
+|---|---|---|
+| Plane, torus | the grid's middle | `planeFrame.lattice(K).middles` |
+| Plane, walled rectangle | the grid's middle | `planeFrame.middle` (its blocks') or `planeSlices` spots |
+| Plane, walled hexagon, disc | its centre of turns | `planeSlices(K).spots` |
+| Solid, hull solid | the face in front (`frontCell`) | `patchSpots` (the colouring's patch items), a face's middle where they are |
+| Torus, Klein (3D), Möbius | the sheet's middle | its blocks' or stretches' middles (`middleCells`) |
+| Globe | — | — (no frame to lay on: Seed, Icon, Famous greyed) |
+| Rosette sphere | its pole | its lune's middle (`lune`), a disc's pole in a Duel |
+
+**Starts, by how they use them:**
+
+| start | 1 | 2 to 12 |
+|---|---|---|
+| Wild | a soup over all (`soupState`) | each part a soup, one count for all (`soupInParts`) |
+| Seed | `lifePatch(r)` at the spot, radius `plane.seedRadius` | the same at each colour's spot, one count for all; near rules (`NEAR_RULES`): patches touching round the middle |
+| Icon, Punk, Emoji | `iconLay` at the spot | `iconLay` at each colour's spot |
+| Famous | `laidChoices` at the spot (discs: `centredChoices`) | the same at each colour's spot |
+| Anywhere | `laidChoices` anywhere | each colour's pattern anywhere in its part |
+| Formula | `numberSeed`: the digits a cell in turn (`digitsOn`) | the same, each live cell its part's colour (`paintOwn`) |
+| Realm | — | each part, its cells next to another's left out (`realmParts`; a solid's: its whole faces) |
+
+**In the code, as a table? Recommended.** The parts and the spots are each a chain of branches by figure today
+(`partPlaces`: plane, Möbius, torus, globe, rosette, hull, solid; `patternFrame`'s centre, `middleCells`), and each memo
+keys itself by hand (`partMemo`, `choicesMemo`, `middleMemo`, `iconMemo`: Symmetry, Apart and a Duel's cut each added
+where they were met, `iconMemo` still without them). One table, a figure a row, `{ parts(K), spot(i, K) }`, picked once by
+the figure built, and one key of what a placement depends on (its figure, K, Symmetry, Apart, the Duel's cut) would make
+each start figure-blind (Wild: the parts and a soup; Seed: a patch at the spot) and each cell above one entry to read or to
+change. About 2 to 3 hours, the checks after; nothing would look different.

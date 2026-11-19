@@ -456,7 +456,7 @@ const offered = (w, apart = []) => {
 // the page as its link has it, its views closed while looked at, then open again: Draw open on a surface (a view of its
 // rule's patterns, the start as it was, see surfaceDraw); Custom rule open (customOpen, Life's, a walk's or a creature's:
 // a link opens it only on a rule no card has, a card's rule its card's)
-const linked = (apart = []) => {
+const linkedAgain = (apart = []) => {
   const draw = surfaceDraw,
     custom = customOpen,
     views = () => {
@@ -733,7 +733,7 @@ async function coldLike(fail, what) {
     ...(walk.life?.margolus && walk.life.stable ? ['#returnRow'] : []),
     ...(drawing && stepShown > 0 ? ['#startSection'] : []),
   ];
-  const a = linked(unheld),
+  const a = linkedAgain(unheld),
     b = offered(f.contentWindow, unheld);
   f.remove();
   const diff = [...new Set([...Object.keys(a), ...Object.keys(b)])]

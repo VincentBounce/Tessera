@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.385';
+const VERSION = '0.5.386';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -11364,7 +11364,7 @@ const mostNeighbours = (w) => {
   const counts = shownNeighbourCounts(w);
   return counts.length ? Math.max(...counts) : Infinity;
 };
-const ruleRefusal = (typed, w = tabVariant()) => {
+const ruleRefusal = (typed, w) => {
   const life = VARIANTS[w].life,
     r = life && parseRule(ruleBody(typed)),
     within =
@@ -11377,13 +11377,13 @@ const ruleRefusal = (typed, w = tabVariant()) => {
   if (life ? ruleFits(ruleBody(typed), VARIANTS[w]) && within : creatureRules(w).reads(typed)) return '';
   return `“${typed}”: not a rule here\n${life ? lifeRuleHow(w) : creatureRules(w).name}\n${ruleKept(typed, w)} kept`;
 };
-function refuseRule(typed, w = tabVariant()) {
+function refuseRule(typed, w) {
   showInTip(ruleRefusal(typed, w));
   $(VARIANTS[w].life ? 'lifeRule' : 'antRule').value = ruleKept(typed, w);
 }
 function setWormRule(rule) {
   if (!wormRuleOf(rule)) {
-    refuseRule(rule);
+    refuseRule(rule, tabVariant()); // (the worm's field: the tab's)
     return;
   }
   worm.rule = wormRuleOf(rule).join(' ');
@@ -47684,7 +47684,7 @@ const fieldError = (input) => {
     const error = formulaOf(input.value).error;
     return error ? `${formulaName(input.id)}: ${error}` : '';
   }
-  if (input.id === 'lifeRule' || input.id === 'antRule') return ruleRefusal(input.value);
+  if (input.id === 'lifeRule' || input.id === 'antRule') return ruleRefusal(input.value, tabVariant()); // (a field of the tab's)
   return '';
 };
 // every field typed in, one way (a line's and Text's lines alike): Escape its value in use back, leaving it; Enter (in lines,
@@ -48562,8 +48562,8 @@ const lifeRuleHow = (w) =>
       ? 'Rule, a block rule of this grid, as its cards show it'
       : `Rule, as B3/S23, B2/S/C3 (2 to 25 states), B3,10,11/S2-4 past 9${Number.isFinite(mostNeighbours(w)) ? `, its counts ${mostNeighbours(w)} at most` : ''}, B28-42%/S10-36% by shares of the neighbours, or on hexagons B2o/S2m34 (the colours: Colors, above)`;
 $('lifeRule').addEventListener('change', () => {
-  if (ruleRefusal($('lifeRule').value)) {
-    refuseRule($('lifeRule').value); // (not a rule, or not this grid's: the one in use back in the field)
+  if (ruleRefusal($('lifeRule').value, tabVariant())) {
+    refuseRule($('lifeRule').value, tabVariant()); // (not a rule, or not this grid's: the one in use back in the field)
     return;
   }
   // typed: a known one's card picked (its own text), else your own

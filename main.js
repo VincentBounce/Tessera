@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.372';
+const VERSION = '0.5.373';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -11733,6 +11733,9 @@ const workerOf = (main) =>
 const newFormulaWorker = () => workerOf(formulaWorker);
 // whether a rule is played on a variant's cells, Life's or another automaton's (Explore's: none, its cells coloured once)
 const playsLife = (w) => !!VARIANTS[w].life && !VARIANTS[w].explore;
+// Life's teams a variant plays, as its link holds them (see getSetup): Life's picked, 1 where none are played (a walk, Explore,
+// a reversible rule: lifeTeams kept for the next, see teamsOn); what its grid is made for (see colourW, ringColours)
+const teamsPlayed = (w = tabVariant()) => (playsLife(w) && !VARIANTS[w].margolus ? lifeTeams : 1);
 // The menu's parts a variant uses, each by its id, said once: those it does not use hidden, and not drawn (see renderRuleSection)
 const sectionsOf = (w) => {
   const m = VARIANTS[w],
@@ -15022,12 +15025,14 @@ const ringColours = (w) =>
   VARIANTS[w]?.margolus
     ? 3
     : VARIANTS[w]?.life
-      ? lifeTeams
+      ? teamsPlayed(w)
       : !battleVariant(w) || !SURFACES[surfaceOf(VARIANTS[w])]?.columns
         ? 1
         : ringBuilt?.w === w
           ? ringBuilt.K
-          : walkTeams; // (a reversible torus: Trio's, its start on the middle square; a walk's battle on a ring: its walkers asked, see battleCounts; never whether they fit, judged on this very mesh)
+          : ringFor(w, walkTeams, () => battleFits(w, walkTeams))
+            ? walkTeams
+            : 1; // (a reversible torus: Trio's, its start on the middle square; a walk's battle on a ring: its walkers in play, as its link holds them, see getSetup: a count it cannot take (a Klein bottle's 5) asked but not played; their fit judged with its length made for them, ringFor's)
 // the variant a ring's mesh is made for (its colours, its blocks, a battle's walkers: see ringColours, stripKey): the tab's, else
 // one being judged (ringBuilt, its K walkers: see battleFits), never the tab's by accident (the menu judges other variants)
 let ringBuilt = null;
@@ -23825,7 +23830,7 @@ const planeW = (kind, side, variant = VARIANTS[tabVariant()], outline = outlineO
       : colourW(kind, sideW(kind, side));
 // colours in blocks (on a torus, or 2 and 4 with walls along the edges: see huntParts), cols × rows of them: the nearest side
 // they divide (12, 4 × 3: a multiple of 12), every colour as many cells
-const colourW = (kind, x, K = lifeTeams) => {
+const colourW = (kind, x, K = teamsPlayed()) => {
   // (x, its rows or its motifs a row: the nearest its colours' blocks' columns and rows divide; K: its colours)
   const [c, r] = TEAM_GRID[K] ?? [1, 1],
     l = (c * r) / gcd(c, r);
@@ -23852,7 +23857,7 @@ function blockWrapW(kind, W) {
     );
   return blockWraps.get(key);
 }
-const planeColumns = (kind, W, K = lifeTeams) => colourW(kind, W * (RECT_ASPECT[kind] ?? 1), K); // its motifs a row: as many as make it square (its motif's height over its width)
+const planeColumns = (kind, W, K = teamsPlayed()) => colourW(kind, W * (RECT_ASPECT[kind] ?? 1), K); // its motifs a row: as many as make it square (its motif's height over its width)
 const planeRow = (kind, W) =>
   tilingOf(kind)
     ? tilingOf(kind).polys.length * planeColumns(kind, W)
@@ -40809,7 +40814,7 @@ function getSetup() {
   if (variantStarts() && startsWayNow() === 'symmetric' && startNo() > 1) s.walkStart = startNo(); // (Symmetric's: Centred and Random place their own)
   if (torusTurned && TURNED[variant.surface]) s.gridTurned = 1;
   if (life) s.playRule = ruleBody($('lifeRule').value);
-  if (life && !variant.margolus && lifeTeams > 1) s.teams = lifeTeams;
+  if (teamsPlayed(w) > 1) s.teams = teamsPlayed(w);
   if (battleOn()) {
     // (a walk's Duel or Trio, as Life's: its teams; B's number, C's)
     s.teams = walkTeams;

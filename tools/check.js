@@ -1632,7 +1632,8 @@ async function checkSheets(fail) {
       await until(shown(w, () => lifeTeams === K && walk.life?.colours === K));
       const sizes = huntParts(null, K).map((p) => p.length);
       if (lifeTeams !== K) fail(`${w}: ${K} colours offered, ${lifeTeams} taken`);
-      else if (new Set(sizes).size > 1) fail(`${w} in ${K} colours: its parts ${sizes.join(' / ')}`);
+      else if (new Set(sizes).size > 1)
+        fail(`${w} in ${K} colours: its parts ${sizes.join(' / ')} (${walk.life.seed.length} cells, ${location.hash})`); // (its link: the grid as it was, a size kept from the grid before when the link writes none)
     }
     checked += 2;
   }

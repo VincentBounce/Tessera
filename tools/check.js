@@ -584,6 +584,7 @@ function clickEverything(fail) {
       if (!b) break;
       done.add(name(b));
       at = `${where} › ${name(b)}`;
+      localStorage.tesseraClickAt = `${new Date().toTimeString().slice(0, 8)} ${at}`; // (the click under way: a slow one found)
       b.click();
       await wait(120);
       const again = list().find((x) => name(x) === name(b));

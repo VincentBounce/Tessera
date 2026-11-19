@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.378';
+const VERSION = '0.5.379';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -11831,8 +11831,11 @@ function compute() {
     waitBegin(waiting, 'Building (the page stops meanwhile)', 0);
     requestAnimationFrame(() =>
       setTimeout(() => {
-        if (job === computeJob) timed('Build', buildWalk); // (its times in Display's Times, see timings)
-        waitEnd(waiting);
+        try {
+          if (job === computeJob) timed('Build', buildWalk); // (its times in Display's Times, see timings)
+        } finally {
+          waitEnd(waiting); // (a build that threw ends its wait too: its gauge never left on, the page's waits never stuck)
+        }
         if (job !== computeJob) return;
         $('status').textContent = status();
         describe(base);

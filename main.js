@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.393';
+const VERSION = '0.5.394';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -41751,7 +41751,10 @@ function lifeTo(target, until = Infinity) {
     back -= batch.length;
     if (!looped && loopBack()) back = toStart ? 0 : back % L.stable.P;
     target = stepShown; // (where it is: round its loop, its number the loop's)
-    if (performance.now() >= until) break; // (a batch at least)
+    if (back > 0 && performance.now() >= until) {
+      waiting = stepShown - back;
+      break;
+    } // (a batch at least; the rest asked again next frame, see tick)
   }
   statsDirty = true;
   let k = target - stepShown,
@@ -41818,7 +41821,10 @@ function lifeTo(target, until = Infinity) {
     }
     const end = L.margolus ? runEnd() : runLoop()?.last;
     if (!known && end !== undefined) k = Math.min(k, end - stepShown); // (its end found on the way: to it, not round it on)
-    if (performance.now() >= until) break; // (a batch at least)
+    if (k > 0 && !ended && performance.now() >= until) {
+      waiting = stepShown + k;
+      break;
+    } // (a batch at least; the rest asked again next frame, see tick: a frame's time out never ends a seek where it is)
   }
   walk.lifeGoal = waiting;
   statsDirty = true;

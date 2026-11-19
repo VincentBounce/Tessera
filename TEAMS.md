@@ -111,6 +111,12 @@ tiling, as `ringColours` makes it today) and round its tube by a whole period ac
     itself: it follows from the copies.
     On [Klein Type 15 at 64](http://localhost:8321/#mode=life&shape=kleinBottle&tiling=type15&gridSize=64&teams=2): two
     halves, top and bottom, of 17,856 cells each, the half turn carrying every cell of one onto the other.
+  - **The walks take the half turn only, rightly:** a walker turns by its tiles' order, and a shift along carries the
+    tiles past the seam turned over (`placeMap` refuses it, measured: Triangles and Squares bottles, a shift of one copy,
+    a half or a third of the length all refused, the half turn kept): a walker there would walk as A's mirror. Life's
+    cells have no order (a rule counts its neighbours, its letters mirrored alike), so Life takes the shifts along too.
+    The walks' groups keep the tiles' order (turns), Life's keep only who neighbours whom (turns and mirrors): one rule,
+    each its own kind of symmetry.
   - So **the 12 odd bottles take 2, 3, 5, 6, 7, 9, 10** (an odd K along, twice one with the half turn), never 4, 8 or
     12; **the 41 others every K**.
   - With the half turn, a part is K / 2 slices along by 2 round the tube: its length made for K / 2 square blocks of half

@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.419';
+const VERSION = '0.5.420';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -27413,6 +27413,7 @@ const lifeMark = (variant) =>
 // ("/Immigration", "/Colours4", see lifeRuleNow)
 let lifeTeams = 1,
   teamsMix = false,
+  duelCut = 0,
   newcomer = false; // the teams: a new figure's the nearest to those before (see teamsOn); teamsMix: Mixed, the colours mixed in one place (see huntParts)
 // Mixed as it counts in a zone: on, colours to mix, and a zone of cells at random (Seed, Wild, Formula): the others lay
 // each colour's own picture or part (Icon, Punk, Emoji, Famous, Anywhere, Realm, Mirror), Mixed greyed there, kept for later
@@ -27421,6 +27422,30 @@ const mixable = (zone, variant = VARIANTS[tabVariant()], start = plane.start) =>
   !variant.loops &&
   (start === 'digits' || // (by the variant, not its game: a link opened cold, before its game, mixes as the page did)
     (start === 'random' && (zoneRadius(zone) > 0 || zone === 'full' || zone === 'numbers'))); // (a hunt's zones: a soup's start)
+// a Duel's two halves, one choice of two (DUEL_CUTS, the link's duelCut: its place): up and down, or left and right, as
+// seen (a sphere's: its two discs or hemispheres, or two lunes); where its figure has both (see duelCutsOf)
+const DUEL_CUTS = [
+  ['Up / Down', "The two colours one over the other: a sphere's north and south, a walled figure's top and bottom"],
+  [
+    'Left / Right',
+    "The two colours side by side: a sphere's two lunes, pole to pole, a walled figure's left and right",
+  ],
+];
+const duelAcross = () => lifeTeams === 2 && duelCut === 1; // (Left / Right picked, in a Duel)
+// whether a figure takes its Duel both ways (a variant's, as its button opens it): a globe, a rosette sphere of an even
+// turn, a walled figure of the plane (its half turn), never a torus nor a solid (its own colouring)
+const duelCutsOf = (w) => {
+  const m = VARIANTS[w],
+    { g } = pickedFigure(w);
+  return (
+    !!m.life &&
+    (m.plane
+      ? !planeTorus(m.plane) && wallTurns(m.plane) % 2 === 0
+      : !!g?.globe || (!!g?.rosette && rosetteTurns(g) % 2 === 0))
+  );
+};
+// a plane's colour blocks, cols × rows (see TEAM_GRID): a Duel's up and down, one over the other, unless Left / Right
+const teamGrid = (K) => (K === 2 && !duelAcross() ? [1, 2] : TEAM_GRID[K]);
 const teamsMixed = (zone = hunt.zone) => teamsMix && lifeTeams > 1 && mixable(zone);
 // Newcomer, a switch: the teams below's start (Trio's: Duel's, laid as Duel lays them), the last colour none at first, born only
 // of a tie between the others (the colour missing, see colourMissing); where a start lays teams (a soup's zones, Text); at
@@ -27684,6 +27709,27 @@ function renderTeams() {
         compute();
       },
     }),
+    // a Duel's cut, one choice of two (see DUEL_CUTS), where its figure has both
+    ...(lifeTeams === 2 && duelCutsOf(w)
+      ? [
+          textTabs(
+            DUEL_CUTS.map(([text, title], k) =>
+              tile({
+                text,
+                title,
+                on: duelCut === k,
+                byDefault: k ? '' : 'yes',
+                click: () => {
+                  if (duelCut !== k) {
+                    duelCut = k;
+                    compute();
+                  }
+                },
+              }),
+            ),
+          ),
+        ]
+      : []),
     // Newcomer, a switch (see newcomerCan)
     tile({
       pic: teamBlock(Math.max(3, lifeTeams), true),
@@ -31151,7 +31197,7 @@ const wallSlices = (K, kind = flatGrid()?.kind) =>
 function planeSlices(K) {
   const { kind, W, n, xy } = flatGrid(),
     turn = planeTurn(),
-    key = `${gridKey()}|${K}|${turn}`;
+    key = `${gridKey()}|${K}|${turn}|${duelAcross()}`;
   if (sliceMemo?.key === key) return sliceMemo;
   // as seen (turned, see planeTurn), from red's, its middle up and to the left (½ a slice left of straight up), clockwise;
   // in a circle or a hexagon: round its own middle, slices of one angle each (a hexagon's from a corner: on 3, 6 or 12
@@ -31172,8 +31218,9 @@ function planeSlices(K) {
     mid = shape ? turnPoint(shape.o, turn) : [(b.minX + b.maxX) / 2, (b.minY + b.maxY) / 2];
   // (in a circle, a hexagon or an octagon: from the left, a corner just over it, the same for any count: 2's edge one of
   // 4's and 8's, red's up and to the left; else red's middle up and to the left)
-  let from = shape ? -Math.PI + 0.01 : -Math.PI / 2 - slice;
-  if (shape?.corner != null) {
+  const across = K === 2 && duelAcross(); // (a Duel left and right: its cut upright, through its middle, from no corner)
+  let from = across ? -Math.PI / 2 + 1e-3 : shape ? -Math.PI + 0.01 : -Math.PI / 2 - slice;
+  if (shape?.corner != null && !across) {
     const c = shape.corner + turn,
       step = shape.step ?? Math.PI / 3;
     from = c + Math.floor((from - c) / step) * step;
@@ -31188,7 +31235,7 @@ function planeSlices(K) {
   // the cells on the lines between them no one's either: all as many)
   const halves = shape && figureTurns(kind) % K !== 0,
     byCells = !shape || figureTurns(kind) === 1; // (no turns, a hat's, a spectre's, a pinwheel's: as many cells each, round its middle)
-  const byRings = shape?.rings && (6 % K === 0 || K === 12),
+  const byRings = shape?.rings && !across && (6 % K === 0 || K === 12),
     off = byRings && ((Math.round((from + 1e-4 - shape.corner) / (Math.PI / 3)) % 6) + 6) % 6;
   if (byRings) {
     // a hexagon's, by its rings (see planeShape): a slice its sixths' share of each, from the sixth from's corner starts (off)
@@ -31476,14 +31523,16 @@ const rosetteTurns = (g) => g.turns ?? figureTurns(g.disc.kind);
 const rosetteHalves = (g, K) => !!g?.rosette && K % 2 === 0 && rosetteTurns(g) % (K / 2) === 0;
 // a rosette sphere's two colours (Duel): its two discs, each round its pole (the north's cells first, then the south's,
 // the same cells g.south on: see rosetteSphereMesh), each colour's start at its pole as on the plane at its middle
-const poleColours = (g, K) => rosetteHalves(g, K) && K === 2;
+const poleColours = (g, K) => rosetteHalved(g, K) && K === 2;
+// a rosette sphere's colours in its halves (see rosetteHalves): a Duel's unless Left / Right, its two lunes, where it turns evenly
+const rosetteHalved = (g, K) => rosetteHalves(g, K) && !(K === 2 && duelAcross() && rosetteTurns(g) % 2 === 0);
 // a rosette sphere's K parts, each cell's: its lunes, pole to pole, by its middle's longitude round its axis, each 1 / K of
 // a turn (K dividing its turns: each lune its first turned); or, in halves (see rosetteHalves), each disc's own; a cell on
 // the axis, a pole's, no one's. Alike by construction, before v0.5.415 its lunes dealt as many cells each (Flower 6's 5:
 // 93 and 94 cells, alike in number only)
 const rosetteParts = (g, K) =>
-  ((g.parts ??= {})[K] ??= (() => {
-    const halves = rosetteHalves(g, K),
+  ((g.parts ??= {})[`${K}${rosetteHalved(g, K)}`] ??= (() => {
+    const halves = rosetteHalved(g, K),
       d = halves ? K / 2 : K,
       out = new Int32Array(g.n).fill(-1);
     for (let t = 0; t < g.n; t++) {
@@ -31510,7 +31559,7 @@ function partPlaces(r, K, mirror, mixed) {
     n = L.seed.length;
   const parts = Array.from({ length: K }, () => []);
   if (walk.plane) {
-    const [cols, rows] = TEAM_GRID[K], // (the plane's blocks only: a solid's counts its own, see solidCounts)
+    const [cols, rows] = teamGrid(K), // (the plane's blocks only: a solid's counts its own, see solidCounts)
       F = planeFrame(),
       block = (t) => (planeTorus(walk.plane.kind) ? F.lattice(K).part[t] : F.block(t, cols, rows));
     if (wallSlices(K)) {
@@ -31574,7 +31623,8 @@ function partPlaces(r, K, mirror, mixed) {
   // a globe: K quarters, each the cells between two meridians, whole columns of every band (each band's a multiple of K), its two
   // caps no one's
   if (g.globe) {
-    const quarter = (t) => (t > 0 && t < g.n - 1 ? Math.floor(g.along[t] * K) : -1); // (its middle's way round, as laid: see globeMesh)
+    const up = K === 2 && !duelAcross(), // (a Duel up and down: its hemispheres, its caps theirs)
+      quarter = (t) => (up ? (g.cen[3 * t + 2] > 0 ? 0 : 1) : t > 0 && t < g.n - 1 ? Math.floor(g.along[t] * K) : -1); // (its middle's way round, as laid: see globeMesh)
     if (!r) {
       for (let t = 0; t < n; t++) if (quarter(t) >= 0) parts[quarter(t)].push(t);
       return parts;
@@ -32400,11 +32450,11 @@ function patternFrame(i, K, place = patternPlace(i, K)) {
       D = xx * yy - xy * xy;
     return [(dx * yy - dy * xy) / D, (dy * xx - dx * xy) / D];
   };
-  const [cols, rows] = TEAM_GRID[K];
+  const [cols, rows] = teamGrid(K);
   if (place.on === 'plane') {
     const flat = flatGrid(),
       { W, n, xy, at, torus } = flat,
-      disc = rosetteHalves(g, K) && i >= K / 2 ? g.south : 0; // (disc: its first cell, a south colour's its half's, see rosetteHalves)
+      disc = rosetteHalved(g, K) && i >= K / 2 ? g.south : 0; // (disc: its first cell, a south colour's its half's, see rosetteHalved)
     const mid = (u) => cellMiddle(kind, ...xy(u)),
       box = () => {
         // (its cells' middles' box's middle, once a grid: walk.plane a new one each)
@@ -33737,7 +33787,7 @@ function laidChoices(centred, any = false) {
     K = lifeParts(),
     kind = patternKind(),
     rule = L.ruleText,
-    [cols, rows] = TEAM_GRID[K];
+    [cols, rows] = teamGrid(K);
   const mine = !ruleCard(rule, tabVariant());
   if (onDisc()) return centredChoices(kind, K, rule, mine, any, centred);
   // (centred: a rectangle's room and its patterns' spans in its grid's lattice cells, as on that grid)
@@ -34145,6 +34195,7 @@ function getSetup() {
         .join(''); // (its starts' order: so=acb)
   }
   if (life && teamsMix && lifeTeams > 1) s.popMixed = 1;
+  if (life && duelAcross() && duelCutsOf(tabVariant())) s.duelCut = 1; // (its place in DUEL_CUTS: Up / Down, 0, in no link)
   if (life && newcomerOn()) s.popNewcomer = 1; // (Newcomer)  // (Mixed, kept where its zone greys it: the other zones' fits by it, see huntFits)
   if (variant.plane) {
     // the grid's side, dead edges (e=1), its start ("random.30.7", "draw" with p=, "digits"), its symmetry (y=)
@@ -34236,6 +34287,7 @@ function applySetup(s) {
     else startFromSetup(s); // (a surface's)
     lifeTeams = Number(s.teams) || 1;
     teamsMix = Number(s.popMixed) === 1;
+    duelCut = Number(s.duelCut) === 1 ? 1 : 0;
     newcomer = Number(s.popNewcomer) === 1;
     if (s.playRule) {
       ruleFittedTo = w;

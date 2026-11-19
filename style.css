@@ -349,10 +349,10 @@ input[type='range'] {
   background: var(--accent-color);
 } /* (its knob gold, as the Size slider's) */
 .shape-slider > span:first-child {
-  opacity: clamp(0, calc((var(--shape-at, 0) - 1 / 6) * 3), 1);
+  opacity: clamp(0, calc((var(--slider-value, 0) - 1 / 6) * 3), 1);
 }
 .shape-slider > span:nth-child(2) {
-  opacity: clamp(0, calc((5 / 6 - var(--shape-at, 0)) * 3), 1);
+  opacity: clamp(0, calc((5 / 6 - var(--slider-value, 0)) * 3), 1);
 } /* (both ends' names whole from the middle; the one the knob goes to faded out on its way, gone a sixth from it: never a name under it) */
 .shape-slider input:disabled,
 .range-track input:disabled::-webkit-slider-thumb {

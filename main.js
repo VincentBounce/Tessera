@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.395';
+const VERSION = '0.5.396';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -44214,11 +44214,9 @@ fn S(f: i32, t: i32) -> u32 { return shownCells[u32(f * p.total + t)]; }
   var ground = u32(p.dead); if (p.ground == 1) { ground = look[${LOOK_TABLE}u + u32(t)]; }
   if (d >= 0 && d < p.trail && died > p.trailFrom) {  // (its ink over what is under it, seen through)
     let f = f32(d) / f32(p.trail);  // (its age, 0 to 1 over the trail)
-    // smoke: its colour at its death greying as it ages, faded softly (eased, not a line), each cell its own wisp that
-    // flickers (a hash of the cell and its age by 3 generations: frame to frame alike, never the same two cells)
-    let wisp = f32((u32(t) * 747796405u + u32(d / 3) * 2891336453u) >> 24u) / 255.0;
+    // smoke: its colour at its death greying as it ages, faded softly (eased, not a line)
     let ink = vec4f(mix(unpack4x8unorm(look[1024u + max(1u, S(4, t) >> 28u)]).rgb, vec3f(0.55), smoothstep(0.0, 0.7, f)), 1.0);
-    let a = 0.18 * (1.0 - smoothstep(0.0, 1.0, f)) * (0.45 + 0.9 * wisp);  // (from about 18% of its ink, more or less by its wisp)
+    let a = 0.18 * (1.0 - smoothstep(0.0, 1.0, f));  // (from 18% of its ink)
     let under = unpack4x8unorm(ground);
     if (under.a == 0.0) { outCol[t] = pack4x8unorm(vec4f(ink.rgb, a)); }  // (none under it here, the plane's own tile drawn under: the ink alone, at its share, see planeCellsV)
     else { outCol[t] = pack4x8unorm(vec4f(mix(under.rgb, ink.rgb, a), ${GROUND_ALPHA})); }  // (its ground tinted, its alpha the ground's: no lamp, no halo)

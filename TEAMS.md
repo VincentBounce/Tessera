@@ -260,11 +260,11 @@ turn).
 
 Each cell names the code that places it (v0.5.422), for 1 colour, a Duel (2), and 3 to 12. Two steps everywhere: the
 **parts** (each colour's cells: `partPlaces`, by figure) and the **spots** (each colour's middle: `middleCells` by
-`patternFrame`'s centre); a start then fills a part (Wild, Formula, Realm, Anywhere) or lays at a spot (Seed, Icon, Famous).
+`patternFrame`'s centre); a start then fills a part (Wild, Formula, Anywhere) or lays at a spot (Seed, Icon, Famous).
 Wild and Seed give every colour as many live cells (`soupInParts`); Symmetry copies any start (`symmetricStart`: the
 plane's turns and mirrors, a solid's Opposite).
 
-**Parts, by figure** (what Wild, Formula, Realm and Anywhere fill):
+**Parts, by figure** (what Wild, Formula and Anywhere fill):
 
 | figure | 1 | 2 (Duel) | 3 to 12 |
 |---|---|---|---|
@@ -295,13 +295,12 @@ plane's turns and mirrors, a solid's Opposite).
 
 | start | 1 | 2 to 12 |
 |---|---|---|
-| Wild | a soup over all (`soupState`) | each part a soup, one count for all (`soupInParts`) |
+| Wild | a soup over all (`soupState`) | each part a soup, one count for all (`soupInParts`); on a solid, Wild › Face: each colour's face only (`faceParts`) |
 | Seed | `lifePatch(r)` at the spot, radius `plane.seedRadius` | the same at each colour's spot, one count for all; near rules (`NEAR_RULES`): patches touching round the middle |
 | Icon, Punk, Emoji | `iconLay` at the spot | `iconLay` at each colour's spot |
 | Famous | `laidChoices` at the spot (discs: `centredChoices`) | the same at each colour's spot |
 | Anywhere | `laidChoices` anywhere | each colour's pattern anywhere in its part |
 | Formula | `numberSeed`: the digits a cell in turn (`digitsOn`) | the same, each live cell its part's colour (`paintOwn`) |
-| Realm | — | each part, its cells next to another's left out (`realmParts`; a solid's: its whole faces) |
 
 **In the code, as a table? Recommended.** The parts and the spots are each a chain of branches by figure today
 (`partPlaces`: plane, Möbius, torus, globe, rosette, hull, solid; `patternFrame`'s centre, `middleCells`), and each memo

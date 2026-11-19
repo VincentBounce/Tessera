@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.380';
+const VERSION = '0.5.381';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -11086,6 +11086,19 @@ function choicesAt(s, reads = null, teamsMemo = new Map()) {
     for (const [start, name] of LIFE_STARTS) set(`start:${start}`, 'start', start, startWhyNot(start, w), name);
   if (m.life && wants('rule'))
     for (const r of lifeRulesListed(w)) set(`lifeRule:${r.rule}`, 'rule', r.rule, '', r.name); // (its rules' cards)
+  // the Count / % tabs: the rule written the other way, on the grid shown (its cells' counts known once built)
+  const ruleShown =
+    m.life && !m.loops && !m.elementary && !m.margolus && w === walk.variant && walk.life && parseRule(s.rule);
+  if (ruleShown && wants('rule'))
+    for (const [name, byShare] of RULE_WAYS)
+      if (!!ruleShown.share !== byShare)
+        set(
+          `ruleWay:${name}`,
+          'rule',
+          ruleWrittenBy(ruleShown, byShare, neighbourCounts(walk.life.nbr.start).keys().next().value),
+          '',
+          name,
+        );
   if (m.net && wants('walkRule'))
     for (const r of (rulesForMemo[w] ??= rulesFor(w)))
       set(`walkRule:${w}|${r.rule}`, 'walkRule', r.rule, r.why, `${r.name} ${r.rule}`); // (a walk's rules' cards, those it takes)
@@ -21852,9 +21865,21 @@ function countsAsShares(rule, d) {
 }
 // a share rule as counts, as it plays on a cell of d neighbours
 function sharesAsCounts(rule, d) {
-  const counts = (table) => countsText([...Array(d + 1).keys()].filter((c) => table[COUNTS_ROW * d + c]));
-  return `B${counts(rule.B)}/S${counts(rule.S)}${rule.C > 2 ? `/C${rule.C}` : ''}`;
+  const counts = (table) =>
+    new Map([...Array(d + 1).keys()].filter((c) => table[COUNTS_ROW * d + c]).map((c) => [c, null]));
+  return ruleTextOf({ counts: { B: counts(rule.B), S: counts(rule.S) }, C: rule.C });
 }
+// a rule's two ways, the Count / % tabs: by counts of live neighbours or by shares of them, each the rule in use written
+// that way, as it plays on a cell of d neighbours (the most cells' count)
+const RULE_WAYS = [
+  ['Count', false, 'Born or kept by how many live neighbours'],
+  [
+    '%',
+    true,
+    "Born or kept by the share of live ones among the cell's neighbours, for grids whose cells have not all as many",
+  ],
+];
+const ruleWrittenBy = (rule, byShare, d) => (byShare ? countsAsShares(rule, d) : sharesAsCounts(rule, d));
 // how many cells have each count of neighbours, the most cells' count first (start: a grid's neighbours' starts, a Life
 // grid's L.nbr or a mesh's cornerNeighbours; keep: the cells counted, by default all but those with none, a wall's)
 function neighbourCounts(start, keep = (t, d) => d > 0) {
@@ -29219,22 +29244,15 @@ function renderRuleSection() {
   // by counts of live neighbours or by shares of them: the other tab writes the rule in use the other way, the same on
   // the cells of the most cells' count
   const countTabs = textTabs(
-    [
-      ['Count', false, 'Born or kept by how many live neighbours'],
-      [
-        '%',
-        true,
-        "Born or kept by the share of live ones among the cell's neighbours, for grids whose cells have not all as many",
-      ],
-    ].map(([name, byShare, title]) => {
+    RULE_WAYS.map(([name, byShare, title]) => {
       const b = document.createElement('button');
       b.type = 'button';
       b.textContent = name;
       b.title = title;
+      b.dataset.choice = `ruleWay:${name}`; // (its choice's key, see choicesAt)
       b.classList.toggle('active', !!rule.share === byShare);
       b.addEventListener('click', () => {
-        if (!!rule.share !== byShare)
-          playOwnRule(byShare ? countsAsShares(rule, counts[0]) : sharesAsCounts(rule, counts[0]));
+        if (!!rule.share !== byShare) playOwnRule(ruleWrittenBy(rule, byShare, counts[0]));
       });
       return b;
     }),

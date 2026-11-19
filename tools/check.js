@@ -269,6 +269,7 @@ const wait = (ms) => new Promise((go) => setTimeout(go, ms));
 // ok() true and nothing waited for (the app's waits, see waitBegin: digits, a build on its way, a battle's others), 10 s at most
 const until = async (ok) => {
   for (let t = 0; t < 100 && !(ok() && !waits.size); t++) await wait(100);
+  return ok(); // (whether it came, in 10 s at most)
 };
 const shown =
   (w, more = () => true) =>
@@ -1633,10 +1634,12 @@ async function checkSheets(fail) {
       fail(`${w}: an even count of colours offered (${offered[0]}), its twist asking an odd length`); // (v0.3.88 to 0.3.93: g.period left by the rename, every count offered)
     for (const K of [2, 3, 5].filter((k) => offered[0].split(',').includes(`${k}`))) {
       location.hash = toHash({ ...variantWords(w), teams: K });
-      await until(shown(w, () => lifeTeams === K && walk.life?.colours === K));
+      if (!(await until(shown(w, () => lifeTeams === K && walk.life?.colours === K)))) {
+        fail(`${w}: ${K} colours offered, ${lifeTeams} taken${walk.life ? '' : ', no grid built'} (${location.hash})`);
+        continue;
+      }
       const sizes = huntParts(null, K).map((p) => p.length);
-      if (lifeTeams !== K) fail(`${w}: ${K} colours offered, ${lifeTeams} taken`);
-      else if (new Set(sizes).size > 1)
+      if (new Set(sizes).size > 1)
         fail(`${w} in ${K} colours: its parts ${sizes.join(' / ')} (${walk.life.seed.length} cells, ${location.hash})`); // (its link: the grid as it was, a size kept from the grid before when the link writes none)
     }
     checked += 2;

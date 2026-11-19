@@ -5,6 +5,33 @@ symmetries, measured on their meshes (2026-11-19, v0.5.401). Research only: no c
 
 <p align="center"><br>* * *</p>
 
+## The spec the code already holds
+
+Every rule below binds the new one as much as its parts alike:
+
+- **The counts:** 1 to 10, and 12 (`TEAM_COUNTS`): no 11.
+- **The states:** K × (the rule's states − 1) at most 255 (`teamsStatesFit`); a reversible rule (Margolus) in Trio only
+  (`ringColours`).
+- **A colour's block square, never stretched** (`ringLength`): every ring's length is the one that makes each colour's
+  block as long round as across, when that is 20 % shorter to 60 % longer than its usual, else its usual; then a whole
+  count of its tiling's copies, as its twist allows.
+  - Torus: blocks a × b as square as can be on the torus as seen (12: 6 × 2, not 4 × 3), b dividing its rows first
+    (`torusBlocks`).
+  - Möbius strip: its K stretches of its loop (2L) each W long (`stripSteps`); its width `MOBIUS_WIDTH` = 1.05 ≈ 4π / 12,
+    so that Dozen's 12 stretches are square unstretched; a reversible rule's length even.
+  - Klein bottle: its K slices along, each square (`kleinLength`).
+- **Globe:** each band a multiple of K, at least K × ⌈12 / K⌉ columns, no cell narrower than 1 / √2 of its height
+  (`globeBands`).
+- **Size:** the nearest that fits a battle, f, f − 1 or f + 1 (`walkersSize`); a closed solid's never changed for it.
+- **Plane:** K divides its grid's turns n, or K = 2n where it mirrors; a torus's blocks `TEAM_GRID`; walls, 2 and 4 in
+  blocks (`widthForColours`); a grid with no turn (hat, spectre, pinwheel) in slices of as many cells; 8, 10, 12 from their
+  halves and 9 from 3 on a grid that repeats only (`teamsFair`).
+
+So the new rule's parts are **gathered, never long**: a ring's blocks square by its length, a solid's orbit point picked so
+its parts are round (not lunes; to check on each solid), a sphere's lunes out (see below).
+
+<p align="center"><br>* * *</p>
+
 ## The rule
 
 **K colours have parts alike when a group of K symmetries of the volume carries each part onto another.** A symmetry is a
@@ -71,15 +98,17 @@ tiling, as `ringColours` makes it today) and round its tube by a whole period ac
 - **Möbius strip:** any K, stretches of its double loop, 2L / K whole copies.
 - **Klein bottle:** along by any count its twist allows, round its tube by its **half turn only** (a quarter turn round
   it is not a symmetry: the bottle's turning over makes it three quarters). So **K = along × 1 or 2.**
-  - Along, measured on the 53 bottles, stretching their length freely: **41 take every K from 2 to 12; 12 take the odd K
-    only** (3, 5, 7, 9, 11), their twist asking an odd length: Pent 9, 11, 13, 15 (turned or not), Kischecker, Snubsquare,
+  - Along, measured on the 53 bottles, stretching their length freely: **41 take every K offered; 12 take the odd K
+    only** (3, 5, 7, 9), their twist asking an odd length: Pent 9, 11, 13, 15 (turned or not), Kischecker, Snubsquare,
     Trihex and Dual 16 (not turned).
   - Round the tube, the half turn: it lays the tiling on itself when half the rows are a whole period across: an even
     count of rows (Pent 15, Tetrakis), a multiple of 4 (Rhombille, Kite, Trihex, Dual 314). A row or two more lets it in.
     On [Klein Type 15 at 64](http://localhost:8321/#mode=life&shape=kleinBottle&tiling=type15&gridSize=64&teams=2): two
     halves, top and bottom, of 17,856 cells each, the half turn carrying every cell of one onto the other.
-  - So **the 12 odd bottles take 2, 3, 5, 6, 7, 9, 10, 11** (an odd K along, twice one with the half turn), never 4, 8 or
-    12; **the 41 others every K**. Today Duel, Sextet and Decet are greyed on the 12: the half turn round the tube is
+  - So **the 12 odd bottles take 2, 3, 5, 6, 7, 9, 10** (an odd K along, twice one with the half turn), never 4, 8 or
+    12; **the 41 others every K**.
+  - With the half turn, a part is K / 2 slices along by 2 round the tube: its length made for K / 2 square blocks of half
+    the tube (as `ringLength`'s), gathered as a torus's are, not K long slices. Today Duel, Sextet and Decet are greyed on the 12: the half turn round the tube is
     the walks' Duel already (`ringGroup`), never Life's.
 
 <p align="center"><br>* * *</p>
@@ -91,7 +120,7 @@ tiling, as `ringColours` makes it today) and round its tube by a whole period ac
   the equator swapping the two discs: **K divides n, or twice a divisor** (Flower 6: 2, 3, 6 measured, and 4, 12 with the half turn, to measure). Today every K is
   offered by lunes dealt out as many cells each:
   [Flower 6 sphere in 5](http://localhost:8321/#mode=life&shape=rosettes&tiling=flower6&teams=5), lunes of 93 and 94
-  cells, alike in number only.
+  cells, alike in number only, and long: Dozen's 12 lunes, pole to pole, are thin as threads.
 
 <p align="center"><br>* * *</p>
 
@@ -100,5 +129,6 @@ tiling, as `ringColours` makes it today) and round its tube by a whole period ac
 One source for the walks and Life alike: **a volume's team counts are the orders of its symmetry groups** (a solid's
 turns, with its mirrors where its tiling has them; a ring's shifts, its length and rows stretched for them; a sphere's
 turns round its axis and its half turn), and **a count's parts are the nearest-image regions of a point's orbit under its
-group**. It would replace `solidCounts` and its colourings, `teamsFairOwn`'s cases, `rosetteParts`' lunes and the Klein
+group**, its point picked so they are gathered, and a ring's length made so its blocks are square (the spec above, kept
+whole). It would replace `solidCounts` and its colourings, `teamsFairOwn`'s cases, `rosetteParts`' lunes and the Klein
 bottle's slices along only.

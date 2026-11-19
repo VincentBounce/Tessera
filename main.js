@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.420';
+const VERSION = '0.5.421';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -23898,7 +23898,7 @@ function symmetriesHere(
 const partMemo = remember('partMemo', new Map());
 function partSymmetries(kind, W, K, outline = outlineOf(kind)) {
   if (walk.plane?.kind !== kind || walk.plane.W !== W || outline !== outlineOf(kind)) return ['none']; // (its parts known on the grid built only: another grid's not judged, not claimed)
-  const key = `${gridKey()}|${K}|${teamsMixed() && mixSeed()}`; // (Mixed: its parts drawn from its seed)
+  const key = `${gridKey()}|${K}|${teamsMixed() && mixSeed()}|${piecesApart()}|${duelAcross()}`; // (Mixed: its parts drawn from its seed)
   if (partMemo.has(key)) return partMemo.get(key);
   const parts = huntParts(0, K),
     own = new Int32Array(walk.life.seed.length);
@@ -23972,7 +23972,7 @@ const widthForColours = (kind, x, K = teamsPlayed()) => {
   // (x, its rows or its motifs a row: the nearest its colours' blocks' columns and rows divide; K: its colours)
   const [c, r] = TEAM_GRID[K] ?? [1, 1],
     l = (c * r) / gcd(c, r);
-  const u = planeTorus(kind) ? K : l, // (a torus's: its lattice's, see torusLattice; with walls, its blocks')
+  const u = planeTorus(kind) ? K * (piecesApart() ? 2 : 1) : l, // (a torus's: its lattice's, see torusLattice, twice its colours apart; with walls, its blocks')
     m =
       K < 2 || APERIODIC[kind] || !(planeTorus(kind) || K === 2 || K === 4)
         ? 1
@@ -27414,6 +27414,7 @@ const lifeMark = (variant) =>
 let lifeTeams = 1,
   teamsMix = false,
   duelCut = 0,
+  teamsApart = 0,
   newcomer = false; // the teams: a new figure's the nearest to those before (see teamsOn); teamsMix: Mixed, the colours mixed in one place (see huntParts)
 // Mixed as it counts in a zone: on, colours to mix, and a zone of cells at random (Seed, Wild, Formula): the others lay
 // each colour's own picture or part (Icon, Punk, Emoji, Famous, Anywhere, Realm, Mirror), Mixed greyed there, kept for later
@@ -27432,6 +27433,27 @@ const DUEL_CUTS = [
   ],
 ];
 const duelAcross = () => lifeTeams === 2 && duelCut === 1; // (Left / Right picked, in a Duel)
+// a colour's pieces, one choice of two (PIECES, the link's teamsApart: its place): in one piece, or in several as far apart
+// as can be (a solid's faces, see colouring's apart; a flat torus's blocks, see torusLattice), where its figure has both (see
+// piecesOf); a colour's pieces through the centre are Symmetry's Opposite
+const PIECES = [
+  ['Together', "Each colour's part in one piece"],
+  ['Apart', "Each colour's part in pieces as far apart as can be: a solid's faces, a torus's blocks"],
+];
+const piecesApart = () => teamsApart === 1 && lifeTeams > 1;
+// whether a figure takes its colours apart (a variant's, as its button opens it): a flat torus; a solid whose colouring
+// apart has more pieces than together
+const piecesOf = (w) => {
+  const m = VARIANTS[w],
+    K = lifeTeams;
+  if (!m.life || K < 2) return false;
+  if (m.plane) return planeTorus(m.plane);
+  const sym = plane.sym === 'opposite';
+  return (
+    SOLIDS.includes(m.surface) &&
+    (colouring(m.surface, K, sym, true)?.pieces ?? 0) > (colouring(m.surface, K, sym, false)?.pieces ?? 0)
+  );
+};
 // whether a figure takes its Duel both ways (a variant's, as its button opens it): a globe, a rosette sphere of an even
 // turn, a walled figure of the plane (its half turn), never a torus nor a solid (its own colouring)
 const duelCutsOf = (w) => {
@@ -27722,6 +27744,27 @@ function renderTeams() {
                 click: () => {
                   if (duelCut !== k) {
                     duelCut = k;
+                    compute();
+                  }
+                },
+              }),
+            ),
+          ),
+        ]
+      : []),
+    // a colour's pieces, one choice of two (see PIECES), where its figure has both
+    ...(piecesOf(w)
+      ? [
+          textTabs(
+            PIECES.map(([text, title], k) =>
+              tile({
+                text,
+                title,
+                on: teamsApart === k,
+                byDefault: k ? '' : 'yes',
+                click: () => {
+                  if (teamsApart !== k) {
+                    teamsApart = k;
                     compute();
                   }
                 },
@@ -31058,10 +31101,11 @@ for (const [k, of] of Object.entries(FACE_BASE)) FACE_MIDDLES[k] = FACE_MIDDLES[
 // faces' middles, its corners, one face's cells on its least mesh (its turns the same at every size); kept, on the least
 // mesh, the fewest cells no one's, then the fewest faces cut, then the fewest pieces (each colour in one), then the most
 // turns, then the fewest sides between colours (as tools/faceparts.js chose its tables, before v0.5.411). Mirror: each colour's items carried onto its own by the centre's
-// inversion (Wild mirror). Null: none
+// inversion (Symmetry's Opposite). Apart (Teams' Apart, see piecesApart): the most pieces instead, none through the centre
+// but on Opposite (the dodecahedron's 6 colours, two faces apart each). Null: none
 const colouringMemo = remember('colouringMemo', {});
-function colouring(surface, K, mirror = false) {
-  const id = `${surface}|${K}|${mirror}`;
+function colouring(surface, K, mirror = false, apart = piecesApart()) {
+  const id = `${surface}|${K}|${mirror}|${apart}`;
   if (!SOLIDS.includes(surface)) return null; // (a solid's only: a ring's, a globe's, a rosette sphere's parts their own)
   if (id in colouringMemo) return colouringMemo[id];
   const g = leastMesh(surface),
@@ -31119,7 +31163,10 @@ function colouring(surface, K, mirror = false) {
           } else if (of[x] >= 0) link[root(x)] = root(y);
         }
       const pieces = new Set([...of.keys()].filter((t) => of[t] >= 0).map(root)).size,
-        score = [none, cut.size, pieces, -G.length, sides];
+        across = items.every((q, i) => colour.some((c, j) => c === colour[i] && dot3(items[j], q) < -1 + 1e-9)), // (its pieces each other's through the centre: Opposite's)
+        score = apart
+          ? [none, cut.size, across && !mirror ? 1 : 0, -pieces, -G.length, sides]
+          : [none, cut.size, pieces, -G.length, sides];
       if (!best || lexicoLess(score, best.score)) best = { score, items, colour };
     }
   }
@@ -31128,6 +31175,7 @@ function colouring(surface, K, mirror = false) {
   return (colouringMemo[id] = {
     items: best.items,
     colour: best.colour,
+    pieces: apart ? -best.score[3] : best.score[2], // (its colours' pieces on the least mesh, see piecesOf)
     patch,
     faces: patch.every((i) => mids.some((m) => dot3(unit(m), best.items[i]) > 1 - 1e-9)),
   });
@@ -31374,7 +31422,7 @@ function planeFrame() {
   return (frameMemo = {
     key,
     block,
-    lattice: (K) => (middles[`lattice${K}`] ??= torusLattice(walk.plane, K)),
+    lattice: (K) => (middles[`lattice${K}${piecesApart()}`] ??= torusLattice(walk.plane, K, piecesApart())),
     middle: (i, cols, rows) =>
       (middles[`${cols}x${rows}`] ??= (() => {
         // (a block's very middle, its cells' middles': an even block's, between them)
@@ -31414,8 +31462,32 @@ function planeFrame() {
 // each motif to its nearest shift of the first one's place (a hair off a motif's middle: no motif as near two). Alike by
 // construction, each part its first's shifted. A lattice of index K over the torus's (Hermite's form: a·d = K, 0 ≤ b < d,
 // its shifts (a, b)/K and (0, d)/K of the torus round each way), the motifs a row and the rows multiples of K (see
-// widthForColours); its shifts those that lay the grid on itself. { part: each cell's colour, middles: each colour's }
-function torusLattice(plane, K) {
+// widthForColours); its shifts those that lay the grid on itself. { part: each cell's colour, middles: each colour's }; spread
+// (Teams' Apart): 2K blocks, each colour's two a shift of order 2 apart, the farthest
+function torusLattice(plane, K, spread = false) {
+  if (spread) {
+    // (apart: 2K blocks, each colour two of them, a shift h of order 2 between them, the farthest: alike, shifted)
+    const L = torusLattice(plane, 2 * K),
+      { kind, W, row } = plane,
+      cols = row / gridCells(kind),
+      sum = ([a, b], [c, d]) => [(a + c) % cols, (b + d) % W],
+      same = (p, q) => p[0] === q[0] && p[1] === q[1],
+      h = L.shifts
+        .filter((x) => !same(x, [0, 0]) && same(sum(x, x), [0, 0]))
+        .reduce((b, x) => (!b || L.far(x) > L.far(b) ? x : b), null),
+      colour = L.shifts.map(() => -1);
+    if (!h) return null;
+    L.shifts.forEach((x, i) => {
+      if (colour[i] >= 0) return;
+      const c = Math.max(-1, ...colour) + 1;
+      colour[i] = c;
+      colour[L.shifts.findIndex((y) => same(y, sum(x, h)))] = c;
+    });
+    return {
+      part: L.part.map((k) => colour[k]),
+      middles: Array.from({ length: K }, (_, c) => L.middles[colour.indexOf(c)]),
+    }; // (each colour's first block's middle)
+  }
   const { kind, W, row, n, xy } = plane,
     per = gridCells(kind),
     cols = row / per,
@@ -31478,7 +31550,12 @@ function torusLattice(plane, K) {
     });
     part[t] = k;
   }
-  return { part, middles: places };
+  return {
+    part,
+    middles: places,
+    shifts: best.shifts,
+    far: ([i, j]) => Math.hypot(...apart(at(0, 0), at(i, j))),
+  }; // (its shifts and how far each goes, for its colours apart)
 }
 // a sheet's tiles where their colour units are: each its unit's middle on the sheet (a Möbius strip's on its loop, 2L, a side
 // a lattice cell), its tiles' middles the shortest way round from its first one's: its colours' blocks of whole units, as the plane's. A
@@ -33774,7 +33851,7 @@ const choiceOfWord = (list, word) => {
 function patternChoices(centred = false) {
   // (once a grid, its colours and rule)
   const L = walk.life,
-    id = `${flatGrid() ? `${gridKey()}|${planeTurn()}` : ''}|${L.colours}|${lifeParts()}|${L.ruleText}|${startSymmetry()}`, // (Opposite's: its parts' own spots)
+    id = `${flatGrid() ? `${gridKey()}|${planeTurn()}` : ''}|${L.colours}|${lifeParts()}|${L.ruleText}|${startSymmetry()}|${piecesApart()}|${duelAcross()}`, // (Opposite's, Apart's, a Duel's cut: their parts' own spots)
     m = choicesMemo[centred]; // (its teams laid too: Newcomer's one fewer, see lifeParts)
   if (m?.id !== id || m.g !== walk.geo)
     choicesMemo[centred] = { id, g: walk.geo, choices: laidChoices(centred).map(namedChoices) };
@@ -33960,7 +34037,7 @@ function mobiusMiddle(g) {
 // dodecahedron's, its pentagon's: see centreCells). Kept per grid
 const middleMemo = remember('middleMemo', new Map());
 function middleCells(i = 0, K = 1) {
-  const key = `${gridKey()}|${patternKind()}|${i}|${K}|${plane.sym}`;
+  const key = `${gridKey()}|${patternKind()}|${i}|${K}|${plane.sym}|${piecesApart()}|${duelAcross()}`;
   if (middleMemo.has(key)) return middleMemo.get(key);
   const g = walk.geo,
     { start } = walk.life.nbr,
@@ -34196,6 +34273,7 @@ function getSetup() {
   }
   if (life && teamsMix && lifeTeams > 1) s.popMixed = 1;
   if (life && duelAcross() && duelCutsOf(tabVariant())) s.duelCut = 1; // (its place in DUEL_CUTS: Up / Down, 0, in no link)
+  if (life && piecesApart() && piecesOf(tabVariant())) s.teamsApart = 1; // (its place in PIECES: Together, 0, in no link)
   if (life && newcomerOn()) s.popNewcomer = 1; // (Newcomer)  // (Mixed, kept where its zone greys it: the other zones' fits by it, see huntFits)
   if (variant.plane) {
     // the grid's side, dead edges (e=1), its start ("random.30.7", "draw" with p=, "digits"), its symmetry (y=)
@@ -34288,6 +34366,7 @@ function applySetup(s) {
     lifeTeams = Number(s.teams) || 1;
     teamsMix = Number(s.popMixed) === 1;
     duelCut = Number(s.duelCut) === 1 ? 1 : 0;
+    teamsApart = Number(s.teamsApart) === 1 ? 1 : 0;
     newcomer = Number(s.popNewcomer) === 1;
     if (s.playRule) {
       ruleFittedTo = w;

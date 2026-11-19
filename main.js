@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.412';
+const VERSION = '0.5.413';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -23935,10 +23935,11 @@ const widthForColours = (kind, x, K = teamsPlayed()) => {
   // (x, its rows or its motifs a row: the nearest its colours' blocks' columns and rows divide; K: its colours)
   const [c, r] = TEAM_GRID[K] ?? [1, 1],
     l = (c * r) / gcd(c, r);
-  const m =
-    K < 2 || APERIODIC[kind] || !(planeTorus(kind) || K === 2 || K === 4)
-      ? 1
-      : l * (baseOf(kind) === 'cairo' && l % 2 ? 2 : 1); // (Cairo's: even)
+  const u = planeTorus(kind) ? K : l, // (a torus's: its lattice's, see torusLattice; with walls, its blocks')
+    m =
+      K < 2 || APERIODIC[kind] || !(planeTorus(kind) || K === 2 || K === 4)
+        ? 1
+        : u * (baseOf(kind) === 'cairo' && u % 2 ? 2 : 1); // (Cairo's: even)
   return Math.max(m, Math.round(x / m) * m);
 };
 const blockWraps = new Map();
@@ -31295,6 +31296,7 @@ function planeFrame() {
   return (frameMemo = {
     key,
     block,
+    lattice: (K) => (middles[`lattice${K}`] ??= torusLattice(walk.plane, K)),
     middle: (i, cols, rows) =>
       (middles[`${cols}x${rows}`] ??= (() => {
         // (a block's very middle, its cells' middles': an even block's, between them)
@@ -31328,6 +31330,77 @@ function planeFrame() {
         : W,
     down: RECTS[kind] ? (lr * W) / (W - 1) / Math.hypot(...latticeStep(RECTS[kind].base)) : xAcross ? W : row / per, // (the cells, or lattice cells, along each: a share's step)
   });
+}
+// A flat torus's K colours (see planeFrame): a group of K of its shifts by whole motifs, the one whose shifts lie the
+// farthest apart (its parts the roundest: 5 on squares by (2, 1) and (−1, 2), tilted squares; blocks a × b where those are),
+// each motif to its nearest shift of the first one's place (a hair off a motif's middle: no motif as near two). Alike by
+// construction, each part its first's shifted. A lattice of index K over the torus's (Hermite's form: a·d = K, 0 ≤ b < d,
+// its shifts (a, b)/K and (0, d)/K of the torus round each way), the motifs a row and the rows multiples of K (see
+// widthForColours); its shifts those that lay the grid on itself. { part: each cell's colour, middles: each colour's }
+function torusLattice(plane, K) {
+  const { kind, W, row, n, xy } = plane,
+    per = gridCells(kind),
+    cols = row / per,
+    m = (x, y) => cellMiddle(kind, x, y),
+    o = m(0, 0),
+    c1 = [0, 1].map((d) => (m(row - per, 0)[d] - o[d]) / (cols - 1)),
+    r1 = [0, 1].map((d) => (m(0, W - 1)[d] - o[d]) / (W - 1)),
+    at = (i, j) => [0, 1].map((d) => o[d] + i * c1[d] + j * r1[d]),
+    wrap = (v, k) => ((v % k) + k) % k;
+  // (the shortest way between two places round the torus, as a vector)
+  const apart = (p, q) => {
+    let best = null;
+    for (const a of [-1, 0, 1])
+      for (const b of [-1, 0, 1]) {
+        const v = [0, 1].map((d) => q[d] - p[d] + a * cols * c1[d] + b * W * r1[d]);
+        if (!best || Math.hypot(...v) < Math.hypot(...best)) best = v;
+      }
+    return best;
+  };
+  // (a shift by i motifs and j rows lays the grid on itself: every cell's middle moved as the first one's)
+  const fits = ([i, j]) =>
+    [...Array(n).keys()].every((t) => {
+      const [x, y] = xy(t),
+        q = m(wrap(x + i * per, row), wrap(y + j, W)),
+        v = apart(m(x, y), q),
+        w = apart(o, m(wrap(i * per, row), wrap(j, W)));
+      return Math.hypot(v[0] - w[0], v[1] - w[1]) < 1e-6;
+    });
+  let best = null;
+  for (let a = 1; a <= K; a++)
+    if (K % a === 0)
+      for (let b = 0; b < K / a; b++) {
+        const gens = [
+          [(a * cols) / K, (b * W) / K],
+          [0, ((K / a) * W) / K],
+        ];
+        if (!gens.every(fits)) continue;
+        const shifts = [[0, 0]];
+        for (let s = 0; s < shifts.length; s++)
+          for (const [i, j] of gens) {
+            const q = [wrap(shifts[s][0] + i, cols), wrap(shifts[s][1] + j, W)];
+            if (!shifts.some(([x, y]) => x === q[0] && y === q[1])) shifts.push(q);
+          }
+        const near = Math.min(...shifts.slice(1).map(([i, j]) => Math.hypot(...apart(at(0, 0), at(i, j)))));
+        if (!best || near > best.near + 1e-9) best = { near, shifts };
+      }
+  const places = best.shifts.map(([i, j]) => at(i + 0.01, j + 0.003)),
+    part = new Int32Array(n);
+  for (let t = 0; t < n; t++) {
+    const [x, y] = xy(t),
+      q = at(Math.floor(x / per), y); // (its motif's place: a motif's cells one colour)
+    let k = 0,
+      far = Infinity;
+    places.forEach((p, i) => {
+      const d = Math.hypot(...apart(p, q));
+      if (d < far) {
+        far = d;
+        k = i;
+      }
+    });
+    part[t] = k;
+  }
+  return { part, middles: places };
 }
 // a sheet's tiles where their colour units are: each its unit's middle on the sheet (a Möbius strip's on its loop, 2L, a side
 // a lattice cell), its tiles' middles the shortest way round from its first one's: its colours' blocks of whole units, as the plane's. A
@@ -31405,7 +31478,7 @@ function partPlaces(r, K, mirror, mixed) {
   if (walk.plane) {
     const [cols, rows] = TEAM_GRID[K], // (the plane's blocks only: a solid's counts its own, see solidCounts)
       F = planeFrame(),
-      block = (t) => F.block(t, cols, rows);
+      block = (t) => (planeTorus(walk.plane.kind) ? F.lattice(K).part[t] : F.block(t, cols, rows));
     if (wallSlices(K)) {
       const { part } = planeSlices(K);
       if (!r) {
@@ -32317,7 +32390,9 @@ function patternFrame(i, K, place = patternPlace(i, K)) {
         : !one && wallSlices(K)
           ? mid(planeSlices(K).spots[i])
           : !one
-            ? planeFrame().middle(i, cols, rows)
+            ? planeTorus(kind)
+              ? planeFrame().lattice(K).middles[i]
+              : planeFrame().middle(i, cols, rows)
             : APERIODIC[kind]
               ? [(W - 1) / 2, (W - 1) / 2]
               : (planeShape(kind, W)?.o ?? box());

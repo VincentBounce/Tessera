@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.384';
+const VERSION = '0.5.385';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -11375,7 +11375,7 @@ const ruleRefusal = (typed, w = tabVariant()) => {
       r.elementary ||
       [...countsOn(r, r.B), ...countsOn(r, r.S)].every((c) => c <= mostNeighbours(w));
   if (life ? ruleFits(ruleBody(typed), VARIANTS[w]) && within : creatureRules(w).reads(typed)) return '';
-  return `“${typed}”: not a rule here\n${life ? lifeRuleHow(VARIANTS[w]) : creatureRules(w).name}\n${ruleKept(typed, w)} kept`;
+  return `“${typed}”: not a rule here\n${life ? lifeRuleHow(w) : creatureRules(w).name}\n${ruleKept(typed, w)} kept`;
 };
 function refuseRule(typed, w = tabVariant()) {
   showInTip(ruleRefusal(typed, w));
@@ -48555,12 +48555,12 @@ document.addEventListener('click', (e) => {
     ruleTutorial(null);
 });
 // how a Life rule is written on a variant's grid (see ruleRefusal)
-const lifeRuleHow = (variant) =>
-  variant.elementary
+const lifeRuleHow = (w) =>
+  VARIANTS[w].elementary
     ? 'Rule, W and its number, 0 to 255: W30, W110'
-    : variant.margolus
+    : VARIANTS[w].margolus
       ? 'Rule, a block rule of this grid, as its cards show it'
-      : `Rule, as B3/S23, B2/S/C3 (2 to 25 states), B3,10,11/S2-4 past 9${Number.isFinite(mostNeighbours(tabVariant())) ? `, its counts ${mostNeighbours(tabVariant())} at most` : ''}, B28-42%/S10-36% by shares of the neighbours, or on hexagons B2o/S2m34 (the colours: Colors, above)`;
+      : `Rule, as B3/S23, B2/S/C3 (2 to 25 states), B3,10,11/S2-4 past 9${Number.isFinite(mostNeighbours(w)) ? `, its counts ${mostNeighbours(w)} at most` : ''}, B28-42%/S10-36% by shares of the neighbours, or on hexagons B2o/S2m34 (the colours: Colors, above)`;
 $('lifeRule').addEventListener('change', () => {
   if (ruleRefusal($('lifeRule').value)) {
     refuseRule($('lifeRule').value); // (not a rule, or not this grid's: the one in use back in the field)

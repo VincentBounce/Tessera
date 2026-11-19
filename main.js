@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.369';
+const VERSION = '0.5.370';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -26899,7 +26899,7 @@ function lifeLook(L, lifted = false) {
   if (L.look?.key === key) return L.look.value;
   const lift = lifted ? liftTile : (c) => c;
   // a colour painted, its life left in its alpha (1 alive, a dying stage's share: see dyingShare, lampLight)
-  const pack = (c, life = 1) => packed(c, (192 + Math.round(63 * life)) / 255);
+  const pack = (c, life = 1) => texelRgba(c, (192 + Math.round(63 * life)) / 255);
   const trail = LIFE_TRAIL.map((c) => pack(c)),
     alive = pack(oceanOn() ? LANDS[0] : LIFE_ALIVE),
     civ = [

@@ -241,5 +241,8 @@ bottle's rows made for its half turn.
 **Done:** one count for every fighter (v0.5.410); Life's solids by their groups of turns (v0.5.411: `colouring` made from
 G and H, the hand tables `FACE_GROUPS`, `SPOT_PAIRS`, `SOLID_SPOTS` and `tools/faceparts.js` gone; every count of the 33
 solids measured alike). Their mirrors too (v0.5.412, `surfaceSymmetries`: a mirror between two corners, or the centre's inversion, then the
-turns after it; Life only, the walks' turns alone): Tetra, Icosa and Dodeca in 8, the Pyramid in 8. Left: the hull solids'
-own colourings (`hullColourings`, still first where they have the count).
+turns after it; Life only, the walks' turns alone): Tetra, Icosa and Dodeca in 8, the Pyramid in 8. The flat torus by a
+lattice of index K (v0.5.413, `torusLattice`); the walled figures by C_n and D_n (v0.5.414, `wallTurns`; Penrose's and
+Kites & darts' discs measured not quite mirrored: no 2, no 10); the rosette spheres by their turns and halves (v0.5.415,
+`rosetteHalves`). Left: the hull solids' own colourings (`hullColourings`, still first where they have the count); a Klein
+bottle's least sizes, whose rows do not take its half turn (greyed there, as a count is at a size); items 1 to 5.

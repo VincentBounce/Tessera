@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.398';
+const VERSION = '0.5.399';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -21233,6 +21233,7 @@ function renderBattleHunt() {
 
 // fading trail after a cell dies: from a light slate grey down to the background
 const LIFE_WALL = '#c4934e'; // the walls of a Life run (a disc's round the plane's cells)
+const WALL_GOLDS = ['#cc9b56', LIFE_WALL, '#bc8b46', '#b4833e']; // (Tiles on: the wall's bricks, its gold and three beside it, barely apart)
 
 // Life's neighbours, the plane's grids and the surfaces' alike, from each cell's corners (cStart/cList: cell t's
 // corner ids, cList[cStart[t]] … cList[cStart[t + 1] − 1], in turn round it; nv: how many corners). A cell's
@@ -22345,10 +22346,14 @@ function cellsApart(g) {
   // fold is a multiple of 4 on a Flower (Flower 4, 8, 12) or of 3 on a Hexa (Hexa 6, 9, 12))
   return g.south ? (t, u) => t < g.south !== u < g.south : null;
 }
-const planeColouring = (kind, W) => ({
-  kinds: tileKinds(planeMesh(kind, W, planeTorus(kind)), APERIODIC[kind]?.(W).kinds),
-  alternated: alternatedBy(baseOf(kind), (t) => basePlace(kind, ...planeGrid(kind, W).xy(t))), // (a rectangle's by its base grid's places)
-});
+const planeColouring = (kind, W) => {
+  const { n, xy } = planeGrid(kind, W),
+    walls = planeWallPlaces(kind, W, planeTorus(kind));
+  return {
+    kinds: tileKinds(planeMesh(kind, W, planeTorus(kind)), APERIODIC[kind]?.(W).kinds),
+    alternated: alternatedBy(baseOf(kind), (t) => basePlace(kind, ...(t < n ? xy(t) : walls[t - n]))), // (a rectangle's by its base grid's places, its walls' too)
+  };
+};
 // Tiles: each cell's ground (what shows where nothing is painted) its colour in Explore, by its colouring there and a
 // palette of its, the theme's (TILES_PALETTES, Grid's last choices, after its lines: see GRID_LINES; exploreLevels on the grid shown), packed; off,
 // null: one ground for all, Earth's sea or the theme's (see blankTile)
@@ -22370,14 +22375,23 @@ function groundColours() {
     palette = tilesPalette(),
     key = `${exploreLook.rule}|${palette}`;
   if (groundMemo.of !== of || groundMemo.key !== key) {
-    const levels = exploreLevels(
-        walk.life?.nbr ?? cornerNeighbours(g),
-        g.n,
+    // (the plane's walls coloured with its cells, as tiles of its grid: each brick in the gold of its colour, see WALL_GOLDS)
+    const M = P && planeMesh(P.kind, P.W, P.torus, P.row, true),
+      levels = exploreLevels(
+        M ? cellNeighbours(M.start, M.list, M.nv) : (walk.life?.nbr ?? cornerNeighbours(g)),
+        M ? M.start.length - 1 : g.n,
         P ? planeColouring(P.kind, P.W) : surfaceColouring(g),
         palette,
       ),
-      colours = exploreColours(levels, palette).map((c) => texelRgba(c, GROUND_ALPHA));
-    groundMemo = { of, key, col: Uint32Array.from(levels, (l) => colours[l - 1] ?? texelRgba(UNLIT, GROUND_ALPHA)) };
+      colours = exploreColours(levels, palette).map((c) => texelRgba(c, GROUND_ALPHA)),
+      golds = WALL_GOLDS.map((c) => texelRgba(c, GROUND_ALPHA));
+    groundMemo = {
+      of,
+      key,
+      col: Uint32Array.from(levels, (l, t) =>
+        t < g.n ? (colours[l - 1] ?? texelRgba(UNLIT, GROUND_ALPHA)) : golds[(l - 1) % golds.length],
+      ),
+    };
   }
   return groundMemo.col;
 }
@@ -25594,8 +25608,11 @@ function planeSeed(kind, seq, C, K = 1) {
 }
 // the plane's corners (see meshCorners), wrapping round on a torus (row: its cells a row, the grid's or its blocks', see
 // planeBlocks)
-function planeMesh(kind, W, torus, row = planeRow(kind, W)) {
-  const { n, xy } = planeGrid(kind, W, row);
+function planeMesh(kind, W, torus, row = planeRow(kind, W), withWalls = false) {
+  const { n, xy } = planeGrid(kind, W, row),
+    F = APERIODIC[kind]?.(W),
+    walls = withWalls && !F ? planeWallPlaces(kind, W, torus) : [],
+    m = withWalls && F ? F.m : n + walls.length; // (withWalls: its walls after its cells, as planeFlat has them)
   // each cell's corners in its lattice's units (see latticeCorners; a grid that never repeats: its own, flat), wrapping round
   // the grid every its columns' units along (row / its cells a lattice step: a rectangle's not W), W up; the same corner of
   // two cells, one id
@@ -25608,10 +25625,9 @@ function planeMesh(kind, W, torus, row = planeRow(kind, W)) {
     const k = Math.round(a * q);
     return torus ? ((k % P[d]) + P[d]) % P[d] : k + 2 * q;
   };
-  const F = APERIODIC[kind]?.(W),
-    byGrid = q < 1000 ? new Int32Array(S * S).fill(-1) : null,
+  const byGrid = q < 1000 ? new Int32Array(S * S).fill(-1) : null,
     byMap = new Map(),
-    cStart = new Int32Array(n + 1),
+    cStart = new Int32Array(m + 1),
     cList = [];
   let nv = 0,
     at = 0;
@@ -25627,10 +25643,9 @@ function planeMesh(kind, W, torus, row = planeRow(kind, W)) {
     }
     cList[at++] = id;
   };
-  for (let t = 0; t < n; t++) {
-    const [x, y] = xy(t);
+  for (let t = 0; t < m; t++) {
     if (F) for (let i = F.start[t]; i < F.start[t + 1]; i++) add(F.xy[2 * i], F.xy[2 * i + 1]);
-    else for (const [u, v] of latticeCorners(kind, x, y)) add(u, v);
+    else for (const [u, v] of latticeCorners(kind, ...(t < n ? xy(t) : walls[t - n]))) add(u, v);
     cStart[t + 1] = at;
   }
   return { start: cStart, list: Int32Array.from(cList), nv };
@@ -36843,12 +36858,12 @@ const flatPolys = (m, start, xy) => ({
     return P;
   },
 });
+// a plane's walls' places (a torus: none; in a hexagon: its own, see planeShape), after its cells in planeFlat and planeMesh
+const planeWallPlaces = (kind, W, torus) => (torus ? [] : (planeShape(kind, W)?.walls ?? planeWalls(kind, W)));
 function planeFlat(kind, W, torus) {
   // a plane's cells then its walls (a grid that never repeats: its own)
   if (APERIODIC[kind]) return APERIODIC[kind](W);
-  const walls = torus
-    ? []
-    : (planeShape(kind, W)?.walls ?? planeWalls(kind, W)).map(([x, y]) => planeCorners(kind, x, y)); // (in a hexagon: its own)
+  const walls = planeWallPlaces(kind, W, torus).map(([x, y]) => planeCorners(kind, x, y));
   const poly = cellPolys(kind, W),
     { n } = planeGrid(kind, W),
     m = n + walls.length,
@@ -39429,7 +39444,9 @@ function gpuPlane(paint) {
     device.queue.writeBuffer(
       D.planeBase,
       0,
-      Uint32Array.from({ length: F.m }, (_, t) => (t < n ? (ground?.[t] ?? page) : wallShown ? walled : 0)), // (0: clear; Tiles: each cell's ground)
+      Uint32Array.from({ length: F.m }, (_, t) =>
+        t < n ? (ground?.[t] ?? page) : wallShown ? (ground?.[t] ?? walled) : 0,
+      ), // (0: clear; Tiles: each cell's ground, each brick's)
     );
     D.keys.planeBase = `${bg}|${wallShown}|${oceanOn()}`;
     D.planeGround = ground;

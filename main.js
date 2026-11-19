@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.426';
+const VERSION = '0.5.427';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -20837,14 +20837,19 @@ const huntLight = (q, [hi, lo], [good, some, poor]) =>
 // all k! (12 walkers: 479 million, the tab out of memory from v0.4.506); a battle hunt's count of them, its walkers' a group's
 // images (Symmetric, Centred): (k − 1)!, A on the smallest, the others turned round it the same battle (see startBattleHunt)
 function drawnOrder(k, firstKept) {
-  const o = Array.from({ length: k }, (_, i) => i),
-    from = firstKept ? 1 : 0;
-  for (let i = k - 1; i > from; i--) {
-    const j = from + Math.floor(Math.random() * (i + 1 - from));
-    [o[i], o[j]] = [o[j], o[i]];
-  } // (Fisher–Yates)
-  return o;
+  const from = firstKept ? 1 : 0,
+    rest = Array.from({ length: k - from }, (_, i) => i + from);
+  return [...(firstKept ? [0] : []), ...shuffled(rest, rest.length, Math.random)];
 }
+// the first n of a list's items in a random order (random: numbers in [0, 1)), each as likely: Fisher–Yates, stopped at n
+const shuffled = (list, n, random) => {
+  const a = [...list];
+  for (let i = 0; i < Math.min(n, a.length); i++) {
+    const j = i + Math.floor(random() * (a.length - i));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a.slice(0, n);
+};
 const huntOrderCount = (K = walkTeams) =>
   Array.from({ length: K }, (_, i) => i + 1).reduce((a, b) => a * b, 1) / (startsWayNow() === 'random' ? 1 : K);
 const firstStop = (r) => (r.stop === Infinity ? 'no stop' : `first stop ${formatNumber(r.stop)}`);
@@ -32180,17 +32185,10 @@ function zoneSeed() {
   return seed;
 }
 // a soup in parts, every fighter alike: each part's cells alive as many, the density of the least part (one at least), drawn
-// from random in each (a shuffle's first ones)
+// from random in each (see shuffled)
 const soupInParts = (parts, d, random) => {
   const c = Math.max(1, Math.round(d * Math.min(...parts.map((p) => p.length))));
-  return parts.map((part) => {
-    const a = [...part];
-    for (let i = 0; i < Math.min(c, a.length); i++) {
-      const j = i + Math.floor(random() * (a.length - i));
-      [a[i], a[j]] = [a[j], a[i]];
-    }
-    return a.slice(0, c);
-  });
+  return parts.map((part) => shuffled(part, c, random));
 };
 // the zone's start (its icons, plane.icons; its seed, plane.seed) laid as any start: its symmetry too (see startColours)
 function layZone() {

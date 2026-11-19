@@ -1589,13 +1589,14 @@ async function checkSheets(fail) {
       const off = SURFACES[name].sizes
         .filter((s) => Number(s) >= 24)
         .map((s) => {
-          const L = kleinLength(name, s, K);
-          return [s, (L.n * L.step) / K / L.W];
+          const L = kleinLength(name, s, K),
+            [a, b] = L.blocks; // (its blocks a × b: slices along, or halves round the tube by its half turn)
+          return [s, (L.n * L.step * b) / a / L.W];
         })
         .filter(([, r]) => r < 0.85 || r > 1.15);
       if (off.length)
         fail(
-          `${name} in ${K} colours: its slices not square at ${off.map(([s, r]) => `${s} (${r.toFixed(2)})`).join(', ')}`,
+          `${name} in ${K} colours: its blocks not square at ${off.map(([s, r]) => `${s} (${r.toFixed(2)})`).join(', ')}`,
         );
       checked++;
     }
@@ -1631,8 +1632,10 @@ async function checkSheets(fail) {
       offered.push(TEAM_COUNTS.filter((k) => teamsFit(k)).join(','));
     }
     if (offered[0] !== offered[1]) fail(`${w}: colours offered ${offered[0]} in Solo, ${offered[1]} in Trio`);
-    if (w === 'lifeKleinBottleType15' && offered[0].split(',').some((k) => k % 2 === 0))
-      fail(`${w}: an even count of colours offered (${offered[0]}), its twist asking an odd length`); // (v0.3.88 to 0.3.93: g.period left by the rename, every count offered)
+    if (w === 'lifeKleinBottleType15' && offered[0] !== '1,2,3,5,6,7,9,10')
+      fail(
+        `${w}: colours offered ${offered[0]}, not 1,2,3,5,6,7,9,10 (its twist odd: an odd count along, twice one by its half turn, see TEAMS.md)`,
+      ); // (v0.3.88 to 0.3.93: g.period left by the rename, every count offered)
     for (const K of [2, 3, 5].filter((k) => offered[0].split(',').includes(`${k}`))) {
       location.hash = toHash({ ...variantWords(w), teams: K });
       if (!(await until(shown(w, () => lifeTeams === K && walk.life?.colours === K)))) {

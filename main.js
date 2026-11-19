@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.367';
+const VERSION = '0.5.368';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -44432,7 +44432,7 @@ const CELLS_LIGHT_SOLO_LIGHT = {
   ...CELLS_LIGHT,
   panelLight: 1,
   panelCeiling: 0.67,
-  panelColour: '#fff68f',
+  panelColour: '#f7ffb8',
   panelCast: true,
   panelHalo: 0.84,
   debugEdge: 1,

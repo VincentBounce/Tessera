@@ -234,7 +234,7 @@ function checkMeshes(fail) {
   for (const kind of ['square', 'hex', 'tri', 'cairo', 'kite', ...Object.keys(TILINGS), ...Object.keys(RECTS)]) {
     if ((!tilingOf(kind) && !TILES_PER_GRID_CELL[kind]) || APERIODIC[kind]) continue;
     Object.assign(plane, { torus: true });
-    const W = colourW(kind, sideW(kind, 32)),
+    const W = widthForColours(kind, sideW(kind, 32)),
       row = planeRow(kind, W),
       { start, list } = planeNeighbours(kind, W, true),
       c0 = cellMiddle(kind, 0, 0);

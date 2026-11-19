@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.386';
+const VERSION = '0.5.387';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -11746,7 +11746,7 @@ const newFormulaWorker = () => workerOf(formulaWorker);
 // whether a rule is played on a variant's cells, Life's or another automaton's (Explore's: none, its cells coloured once)
 const playsLife = (w) => !!VARIANTS[w].life && !VARIANTS[w].explore;
 // Life's teams a variant plays, as its link holds them (see getSetup): Life's picked, 1 where none are played (a walk, Explore,
-// a reversible rule: lifeTeams kept for the next, see teamsOn); what its grid is made for (see colourW, ringColours)
+// a reversible rule: lifeTeams kept for the next, see teamsOn); what its grid is made for (see widthForColours, ringColours)
 const teamsPlayed = (w = tabVariant()) => (playsLife(w) && !VARIANTS[w].margolus ? lifeTeams : 1);
 // The menu's parts a variant uses, each by its id, said once: those it does not use hidden, and not drawn (see renderRuleSection)
 const sectionsOf = (w) => {
@@ -23856,10 +23856,10 @@ const planeW = (kind, side, variant = VARIANTS[tabVariant()], outline = outlineO
     ? blockWrapW(kind, sideW(kind, side))
     : shaped(kind, outline)
       ? shapeW(kind, sideW(kind, side), outline)
-      : colourW(kind, sideW(kind, side));
+      : widthForColours(kind, sideW(kind, side));
 // colours in blocks (on a torus, or 2 and 4 with walls along the edges: see huntParts), cols × rows of them: the nearest side
 // they divide (12, 4 × 3: a multiple of 12), every colour as many cells
-const colourW = (kind, x, K = teamsPlayed()) => {
+const widthForColours = (kind, x, K = teamsPlayed()) => {
   // (x, its rows or its motifs a row: the nearest its colours' blocks' columns and rows divide; K: its colours)
   const [c, r] = TEAM_GRID[K] ?? [1, 1],
     l = (c * r) / gcd(c, r);
@@ -23878,7 +23878,7 @@ const blocksWrap = (kind, W) => {
 };
 function blockWrapW(kind, W) {
   const key = `${kind} ${W}`,
-    d = baseOf(kind) === 'cairo' ? 2 : 1; // (Cairo's: even, as colourW's)
+    d = baseOf(kind) === 'cairo' ? 2 : 1; // (Cairo's: even, as widthForColours's)
   if (!blockWraps.has(key))
     blockWraps.set(
       key,
@@ -23886,7 +23886,7 @@ function blockWrapW(kind, W) {
     );
   return blockWraps.get(key);
 }
-const planeColumns = (kind, W, K = teamsPlayed()) => colourW(kind, W * (RECT_ASPECT[kind] ?? 1), K); // its motifs a row: as many as make it square (its motif's height over its width)
+const planeColumns = (kind, W, K = teamsPlayed()) => widthForColours(kind, W * (RECT_ASPECT[kind] ?? 1), K); // its motifs a row: as many as make it square (its motif's height over its width)
 const planeRow = (kind, W) =>
   tilingOf(kind)
     ? tilingOf(kind).polys.length * planeColumns(kind, W)
@@ -27514,7 +27514,7 @@ const menuSizeOf = (w) =>
 const teamsFairOwn = (K, { variant, g } = pickedFigure(tabVariant())) => {
   const kind = variant?.plane;
   if (K === 1) return true;
-  if (kind && (planeTorus(kind) || figureTurns(kind) === 1)) return true; // (a torus: blocks of its side, see colourW, all alike; no turns, a hat's, a spectre's or a pinwheel's circle, as many cells each, see planeSlices)
+  if (kind && (planeTorus(kind) || figureTurns(kind) === 1)) return true; // (a torus: blocks of its side, see widthForColours, all alike; no turns, a hat's, a spectre's or a pinwheel's circle, as many cells each, see planeSlices)
   if (kind) {
     // (a slice and its mirror: a grid that repeats; a disc that never does, its turns' slices only: tiles on its mirror lines, one
     // side's, Penrose's 10 colours 180 to 189 cells before v0.3.90; the rosettes turn as a spiral, no mirror)
@@ -44812,7 +44812,7 @@ fn planeAt(p: vec2f) -> vec4f { return flatAt(u.view.yz + vec2f(u.turnC * p.x - 
 }
 @vertex fn planeLinesV(@location(0) pos: vec2f) -> Col { var o: Col; o.col = u.plain; o.pos = planeAt(pos); return o; }`;
 // the 3D view's drawing made again from its code (its lamps' numbers tuned, or others now: see cellsLightNow): its pipelines, buffers and textures anew
-function gpuViewAgain() {
+function rebuildGpuView() {
   GPU.draw = null;
   needsFull = true;
 }
@@ -44890,7 +44890,7 @@ const GPU_SLOTS = 32;
 // set up once (after gpuSetup): the canvas, the programs, the textures that last (the rainbow, the digits' colours)
 function gpuDrawSetup() {
   if (!GPU) return null;
-  if (GPU.draw && GPU.draw.lights !== cellsLightNow()) gpuViewAgain(); // (its shader made with other lamps' numbers: Solo on a light page its own)
+  if (GPU.draw && GPU.draw.lights !== cellsLightNow()) rebuildGpuView(); // (its shader made with other lamps' numbers: Solo on a light page its own)
   if (GPU.draw) {
     if (GPU.draw.gradKey !== (rainbowNow(), gradientKey)) gpuPalette();
     return GPU.draw;
@@ -48425,7 +48425,7 @@ function cellsTuning() {
     numbers: lights,
     shown: CELLS_LIGHT_OF[CELLS_FINISHES[cellsFinish][0]],
     shared: ['cellsBody', 'cellsDarkInk'], // (every lit mode's)
-    onNumbers: gpuViewAgain,
+    onNumbers: rebuildGpuView,
     colours: [ALIVE_FIRST[theme], '#ffffff', ...LIFE_COLOURS],
     picked: lightColour ? lights[lightColour] : PALETTES[theme].alive,
     onPick: !solo
@@ -48433,7 +48433,7 @@ function cellsTuning() {
       : lightColour
         ? (c) => {
             lights[lightColour] = c;
-            gpuViewAgain();
+            rebuildGpuView();
           }
         : (c) => {
             PALETTES[theme].alive = c;

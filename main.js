@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.472';
+const VERSION = '0.5.473';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -11586,6 +11586,24 @@ function renderModePicker() {
             }),
           ]
         : []),
+      // Triple, a Klein bottle's switch (see kleinTriple)
+      ...(F.name === FOLDS.klein.name
+        ? [
+            tile({
+              pic: icon('klein'),
+              text: 'Triple',
+              toggle: true,
+              byDefault: 'off',
+              on: tripleOn(w),
+              title:
+                "Jeener's triple Klein bottle: three bulbs round a deltoid, each one's neck straight into the next one's bottom (its cells the same, the bottle's)",
+              click: () => {
+                kleinTriple = !kleinTriple;
+                compute();
+              },
+            }),
+          ]
+        : []),
     );
   }
   // the rules, where there are several, each with its picture; those its tiling has not greyed (see walkKindHere)
@@ -15171,32 +15189,63 @@ function kleinAt(q, u) {
     nz = -(B[0] - A[0]) / l; // (its normal in the plane: east at the body's top, west at the mouth)
   return [x + KLEIN_TUBE * Math.cos(u) * nx, KLEIN_TUBE * Math.sin(u), z + KLEIN_TUBE * Math.cos(u) * nz];
 }
-// its length along it, once: the body's profile, then the neck's line, its share s ∈ [0, 1) to its q (the tiles as long
-// everywhere along it); the bowl's lowest's share (the sheet's ends there), and its frame (centred, 3 high)
-let kleinTable = null;
-function kleinBottle() {
-  if (kleinTable) return kleinTable;
+// The triple bottle, Jeener's (Edmond Bonan's form of it, J.-F. Colonna's page, Commentaires_NKleinBottle.01): a tube round a
+// deltoid (S = 2: S cos w + cos Sw, S sin w − sin Sw), its radius W swelling three times (its bulbs, T = 4), its circle turned
+// half a turn along it ((S − 1) w / 2): a Klein bottle, one face (N = S + 1 odd), glued as ours, F(w + 2π, u) = F(w, π − u);
+// q ∈ [0, 3] along it (w = 2π q / 3, as kleinAt's), u round it, its deltoid upright in the x–z plane (y its thickness)
+const JEENER_S = 2,
+  JEENER_T = 4;
+function jeenerAt(q, u) {
+  const S = JEENER_S,
+    w = (2 * Math.PI * q) / 3,
+    W = ((S + 1) / 4) * (Math.cos((S + 1) * w + Math.PI / JEENER_T) + Math.SQRT2);
+  return [
+    S * Math.cos(w) + Math.cos(S * w) - W * Math.sin(((S - 1) / 2) * w) * Math.cos(u),
+    W * Math.sin(u),
+    S * Math.sin(w) - Math.sin(S * w) - W * Math.cos(((S - 1) / 2) * w) * Math.cos(u),
+  ];
+}
+// a bottle's shape, once a shape (Triple, see kleinTriple: Jeener's; else ours): its point (at), its length along it, its
+// share s ∈ [0, 1) to its q (the tiles as long everywhere along it: ours by its profile's and neck's lines, Jeener's by its
+// surface's speed round it, its deltoid stopping at its tips), the sheet's ends' share (ours: the bowl's lowest; Jeener's: a
+// neck's narrowest) and its frame (centred, 3 high)
+const kleinTables = {};
+function kleinBottle(triple = tripleOn()) {
+  if (kleinTables[triple]) return kleinTables[triple];
   const N = 6000,
     q = (i) => (3 * i) / N,
-    mid = (i) => (q(i) < 2 ? kleinProfile(q(i)) : kleinNeck(q(i) - 2)),
+    at = triple ? jeenerAt : kleinAt,
     along = new Float64Array(N + 1);
-  for (let i = 1; i <= N; i++) {
-    const a = q(i) >= 2 && q(i - 1) < 2 ? kleinNeck(0) : mid(i - 1),
-      b = mid(i);
-    along[i] = along[i - 1] + Math.hypot(a[0] - b[0], a[1] - b[1]);
-  }
+  const mid = (i) => (q(i) < 2 ? kleinProfile(q(i)) : kleinNeck(q(i) - 2)),
+    step = (i) => {
+      if (!triple) {
+        const a = q(i) >= 2 && q(i - 1) < 2 ? kleinNeck(0) : mid(i - 1),
+          b = mid(i);
+        return Math.hypot(a[0] - b[0], a[1] - b[1]);
+      }
+      let sum = 0;
+      for (let j = 0; j < 8; j++) {
+        const a = jeenerAt(q(i - 1), (j * Math.PI) / 4),
+          b = jeenerAt(q(i), (j * Math.PI) / 4);
+        sum += Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]) / 8;
+      }
+      return sum;
+    };
+  for (let i = 1; i <= N; i++) along[i] = along[i - 1] + step(i);
   const lo = [Infinity, Infinity, Infinity],
     hi = [-Infinity, -Infinity, -Infinity];
   for (let i = 0; i <= 600; i++)
     for (let j = 0; j < 48; j++)
-      kleinAt((3 * i) / 600, (j * Math.PI) / 24).forEach((v, d) => {
+      at((3 * i) / 600, (j * Math.PI) / 24).forEach((v, d) => {
         lo[d] = Math.min(lo[d], v);
         hi[d] = Math.max(hi[d], v);
       });
-  return (kleinTable = {
+  const neck = Math.round(((N / 3) * (Math.PI - Math.PI / JEENER_T)) / (2 * Math.PI)); // (W least: (S + 1) w + π / T = π)
+  return (kleinTables[triple] = {
+    at,
     N,
     along,
-    bottom: along[N / 6] / along[N],
+    bottom: along[triple ? neck : N / 6] / along[N],
     centre: lo.map((v, d) => (v + hi[d]) / 2),
     scale: 3 / (hi[2] - lo[2]),
   });
@@ -15204,7 +15253,7 @@ function kleinBottle() {
 // The bottle at s along it (0 to 1, from the bowl's mouth), u round it: standing, centred, 3 high, turned half a turn round
 // the vertical: its neck's arch east
 function kleinBottlePoint(s, u) {
-  const { N, along, centre, scale } = kleinBottle(),
+  const { at: shapeAt, N, along, centre, scale } = kleinBottle(),
     at = s * along[N];
   let lo = 0,
     hi = N;
@@ -15213,7 +15262,7 @@ function kleinBottlePoint(s, u) {
     if (along[m] < at) lo = m;
     else hi = m;
   }
-  const [x, y, z] = kleinAt((3 * (lo + (at - along[lo]) / (along[hi] - along[lo] || 1))) / N, u);
+  const [x, y, z] = shapeAt((3 * (lo + (at - along[lo]) / (along[hi] - along[lo] || 1))) / N, u);
   return [-(x - centre[0]) * scale, -(y - centre[1]) * scale, (z - centre[2]) * scale];
 }
 // Cairo's Klein bottle: its tiles as its torus's (in the same order), their corners one vertex per point of the bottle, found
@@ -15233,7 +15282,7 @@ function kleinSheetPlace(x0, y0, nu, nv, up) {
 }
 const kleinSheetKey = (x0, y0, nu, nv, up) => `${kleinSheetPlace(x0, y0, nu, nv, up)}`;
 function kleinCairoMesh(nv, nu = kleinCairoColumns(nv)) {
-  const key = `kleinCairo${nv}x${nu}`;
+  const key = `kleinCairo${nv}x${nu}|${tripleOn()}`; // (its shape, Triple's)
   if (meshCache[key]) return meshCache[key];
   const { tiles, places } = cairoSheet(nu, nv),
     up = 0.5; // (its pentagons half a square up its sheet, as the torus's: their mirror line too, see id)
@@ -15488,7 +15537,8 @@ const stripSteps = (kind0, nv, W, own) => {
     (n) => ok(n, nv) && n % along === 0,
   );
 };
-const stripKey = () => `${ringColours(ringVariant())}${VARIANTS[ringVariant()]?.margolus ? ' blocks' : ''}`; // (a strip's length its colours', a reversible one's its blocks', see stripSteps)
+const stripKey = () =>
+  `${ringColours(ringVariant())}${VARIANTS[ringVariant()]?.margolus ? ' blocks' : ''}${tripleOn() ? ' triple' : ''}`; // (a strip's length its colours', a reversible one's its blocks', see stripSteps)
 const stripMemo = remember('stripMemo', weakCache()),
   countMemo = remember('countMemo', {});
 // a strip's length, width and tiles' count, without its tiles (the sizes' ladder asks for many: see mobiusSheetOf's count)
@@ -15730,7 +15780,7 @@ function kleinLength(kindK, size, K = ringColours(ringVariant())) {
     });
 }
 function kleinTilingMesh(kindK, size) {
-  const key = `${kindK}${size}|${ringColours(ringVariant())}`; // (its length its colours': see kleinLength)
+  const key = `${kindK}${size}|${ringColours(ringVariant())}|${tripleOn()}`; // (its length its colours': see kleinLength; its shape, Triple's)
   if (meshCache[key]) return meshCache[key];
   const { kind, turn, L, W, n, nv, step, by, sides, tiles, mids, latticeCells, cellPlaces, colourCells, originCell } =
       kleinTilingSheet(kindK, size),
@@ -18001,6 +18051,10 @@ const POINTY = new Set(['torusHex', 'mobiusHex', 'kleinHex']);
 const shownSurface = (surface, turned) =>
   TURNED[surface] && turned !== POINTY.has(surface) ? TURNED[surface] : surface;
 const surfaceOf = (variant) => shownSurface(variant.surface, torusTurned);
+// a Klein bottle's shape (Triple, a switch; the link's kleinTriple): Jeener's triple bottle, its sheet ours (see jeenerAt); the
+// mesh made for a variant's, as its colours (see stripKey)
+let kleinTriple = false;
+const tripleOn = (w = ringVariant()) => kleinTriple && /^klein/.test(VARIANTS[w]?.surface ?? '');
 const STARTS_ON = [...SOLIDS, ...TORI]; // the surfaces with a start selector
 
 // On a torus every corner is like any other (shifting the sheet maps the grid onto itself), and
@@ -34237,6 +34291,7 @@ function getSetup() {
   if (variant.surface) s.gridSize = $('gridSizeField').value;
   if (variantStarts() && startsWayNow() === 'symmetric' && startNo() > 1) s.walkStart = startNo(); // (Symmetric's: Centred and Random place their own)
   if (torusTurned && TURNED[variant.surface]) s.gridTurned = 1;
+  if (tripleOn(w)) s.kleinTriple = 1; // (Triple)
   if (life) s.playRule = ruleBody($('lifeRule').value);
   if (teamsPlayed(w) > 1) s.teams = teamsPlayed(w);
   if (battleOn()) {
@@ -34319,6 +34374,7 @@ function applySetup(s) {
   set('variant', w);
   $('startNo').value = s.walkStart ?? 1;
   torusTurned = Number(s.gridTurned) === 1;
+  kleinTriple = Number(s.kleinTriple) === 1;
   if (VARIANTS[w].surface) {
     const kind = surfaceOf(VARIANTS[w]);
     fillGridSizes(kind, VARIANTS[w].initial);

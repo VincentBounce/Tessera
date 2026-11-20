@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.455';
+const VERSION = '0.5.456';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -38749,6 +38749,11 @@ function battlePalette(D) {
   D.keys.pal = key; // (a flat walk's palette written again after it, see its palKey)
 }
 // A surface, its tiles' colours by paint (paintLevels', or Life's by gpuLook)
+// a surface's tiles seen from both sides: a cut, a Klein bottle (one-sided: its tiles' face inwards in its neck and
+// handle); else their back faces not drawn, facesHidden's (which way its tiles turn: see shapeSign); one rule, the tiles',
+// the picking's and the halo's passes (a Möbius strip's halo its two faces, each a cell, as before: see gpuHalo)
+const bothSides = (g) => cutOn() || !!g.klein;
+const facesHidden = (g) => (shapeSign(g) < 0 ? 'front' : 'back');
 function gpuSurface(paint, path) {
   const D = gpuDrawSetup();
   if (!D) return false;
@@ -38939,11 +38944,10 @@ function gpuSurface(paint, path) {
     D.device.queue.writeBuffer(D.pieces, 4, Uint32Array.of(cellsFinish(), texelRgba(blankTile(), 1))); // (its Finish, the ground's colour: see lampLight)
   // the tiles, their grid and the path, into pass p (0 the frame; 1, 2 Glass's)
   const drawAll = (rp, pass) => {
-    // seen from both sides: Glass, a cut, a Klein bottle (one-sided: its tiles' face inwards in its neck and handle)
-    const both = pass || cutOn() || !!g.klein,
+    const both = pass || bothSides(g),
       cut = cutOn() ? 1 : 0,
       open = !both && g.torus && !g.mobius && sh.m < 1;
-    const front = shapeSign(g) < 0 ? 'front' : 'back',
+    const front = facesHidden(g),
       cull = both ? 'none' : front;
     const tiles = (plain, c) => {
       const mosaic = cellsFinishOn();
@@ -39074,6 +39078,7 @@ function gpuSurface(paint, path) {
             vertex: 'tesseraV',
             fragment: 'lampsF',
             buffers: tileBufs,
+            cull: bothSides(g) || g.mobius ? 'none' : facesHidden(g), // (the faces seen; a Möbius strip's face behind too, as before)
             shadowed: true,
             corners: true,
             format: 'rgba16float',
@@ -39089,7 +39094,7 @@ function gpuSurface(paint, path) {
       enc,
       slotOf({ cut: cutOn() ? 1 : 0, extent: R * (g.extent || 1) }),
       tileBufs,
-      cutOn() || !!g.klein ? 'none' : shapeSign(g) < 0 ? 'front' : 'back',
+      bothSides(g) ? 'none' : facesHidden(g),
     );
   device.queue.writeBuffer(D.uni, 0, D.words, 0, 512 * slot);
   device.queue.submit([enc.finish()]);

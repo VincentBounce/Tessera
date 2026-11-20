@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.443';
+const VERSION = '0.5.444';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -36765,19 +36765,15 @@ const paintLevels = (palette, levelOf) => (out, n) => {
 const GLASS_ALPHA = 0.4; // (a tile's share: a layer behind seen at 60%, two at 36%…)
 const glassOn = () => $('glass').checked && !$('glassRow').hidden;
 // Cells: the surface's tiles plain (Off), or each painted one lit pixel by pixel from its own corners (see tesseraF): as
-// it is with a halo round it (Halo, see gpuHalo), a lamp glowing from its middle, its light spilling round it (Neon), the
-// same inside out, bright at its edge (Rim), a frosted slab lit from under it (LED), a ceiling's LED panel (Panel), a piece
-// of mosaic (Tessera), a tube along its edge, its light spilling far (Tube), or every light's numbers to try (Debug); its
+// it is with a halo round it (Halo, see gpuHalo), a lamp glowing from its middle, its light spilling round it (Neon), a
+// frosted slab lit from under it (LED), a ceiling's LED panel (Panel), a piece of mosaic (Tessera), a tube along its edge,
+// its light spilling far (Tube), or every light's numbers to try (Debug: Neon inside out too, its middle below 0); its
 // number, as
 // Cut's, the place of its pill, the shaders' by its name (CELLS_FINISH)
 const CELLS_FINISHES = [
   ['Off', 'The tiles plain, each one colour'],
   ['Halo', "Each tile painted as it is, Neon's halo round it, none on it"],
   ['Neon', 'Each tile painted a lamp, brightest in its middle, its light spilling round it: a halo'],
-  [
-    'Rim',
-    'Each tile painted Neon turned inside out: brightest at its edge, its middle dark, its light spilling round it',
-  ],
   [
     'LED',
     'Each tile painted a frosted slab lit from under it: brightest over its middle, dark at its joint, the sky still glinting on it, its light spilling a little round it',
@@ -37846,14 +37842,12 @@ const gpuCanvas = $('gpuLayer');
 const HALO_WEIGHTS = [0.227, 0.194, 0.121, 0.054, 0.016]; // (Neon's halo: a Gaussian's, its middle then each side)
 // Cells' lamps, their numbers (written into gpuViewCode: tuned by the debug panel, see cellsTuning, which makes it again)
 const CELLS_LIGHT = {
-  cellsBody: 0.25, // (Neon, Rim, LED, Panel, Tube, Debug: a lit tile's own colour, dimmed)
+  cellsBody: 0.25, // (Neon, LED, Panel, Tube, Debug: a lit tile's own colour, dimmed)
   cellsSky: 0.2, // (and the sky's lamp on it, its share)
   tesseraBevel: 0.35, // (Tessera: a tile's rounding, its share of the way from its edge to its middle)
   tesseraSlope: 1.6, // (its rounding's slope at its edge)
   neonEdge: 0.15, // (Neon: its light at its edge)
   neonMiddle: 1.1, // (and added in its middle)
-  rimEdge: 1.2, // (Rim: its light at its edge)
-  rimMiddle: -1.1, // (and added in its middle: less, dark there)
   tubePeak: 1.6, // (Tube: its light, strongest at tubeAt)
   tubeAt: 0.14, // (its tube's middle, its share of the way from its edge to its middle)
   tubeWidth: 0.07, // (its tube's width, the same share)
@@ -37867,7 +37861,7 @@ const CELLS_LIGHT = {
   panelColour: null, // (its light's colour, a CSS colour; none: its ink's, see lampLight)
   panelCast: false, // (its halo cast on the tiles round it, else added: see HALOS)
   debugEdge: 0.85, // (Debug: its light at its edge)
-  debugMiddle: 0, // (and added in its middle)
+  debugMiddle: 0, // (and added in its middle: below 0, dark there, Neon inside out)
   debugSpot: 1, // (its middle's width: wider the higher)
   debugWhite: 0, // (its light turned white where strongest, its share: a white core)
   debugFrame: 0, // (its frame, its share of the way from its edge to its middle: none)
@@ -37881,7 +37875,6 @@ const CELLS_LIGHT = {
   debugReach: 2, // (its halo's blurs, 1 to 4: wider)
   haloHalo: 1.6, // (each mode's halo: its lamps' light added round them, its share)
   neonHalo: 1.6,
-  rimHalo: 1.6,
   tubeHalo: 1.6,
   ledHalo: 0.8,
   panelHalo: 1.6,
@@ -37918,7 +37911,6 @@ const CELLS_LIGHT_OF = {
   Halo: ['neonEdge', 'neonMiddle', 'haloHalo', 'cellsDarkInk'],
   Neon: ['cellsBody', 'cellsSky', 'neonEdge', 'neonMiddle', 'neonHalo', 'cellsDarkInk'],
   Tessera: ['tesseraBevel', 'tesseraSlope'],
-  Rim: ['cellsBody', 'cellsSky', 'rimEdge', 'rimMiddle', 'rimHalo', 'cellsDarkInk'],
   Tube: ['cellsBody', 'cellsSky', 'tubePeak', 'tubeAt', 'tubeWidth', 'tubeFloor', 'tubeHalo', 'cellsDarkInk'],
   LED: ['cellsBody', 'cellsSky', 'ledEdge', 'ledMiddle', 'ledJoint', 'ledGloss', 'ledHalo', 'cellsDarkInk'],
   Panel: ['cellsBody', 'cellsSky', 'panelLight', 'panelCeiling', 'panelHalo', 'cellsDarkInk'],
@@ -37946,7 +37938,6 @@ const CELLS_LIGHT_OF = {
 const HALOS = {
   Halo: { steps: [1, 2] },
   Neon: { steps: [1, 2] },
-  Rim: { steps: [1, 2] },
   LED: { steps: [1] },
   Tube: { steps: [1, 2, 4, 8] },
   Panel: (L) => (L.panelCast ? { steps: [1, 2, 4], cast: true } : { steps: [1, 2] }),
@@ -38092,12 +38083,11 @@ fn lampAt(ink: vec3f, w: f32, n: vec3f) -> vec3f {  // (its own light: Neon's br
     let peak = pow(l, 2.0 / ${Math.max(L.debugSpot, 0.05)});
     let lit = mix(${L.debugColour ? `vec3f(${rgbOf(L.debugColour).map((v) => (v / 255).toFixed(4))})` : 'col'}, vec3f(1.0), ${L.debugWhite} * peak) * (${L.debugEdge} + ${L.debugMiddle} * peak);
     let framed = lit * mix(${L.debugFrameLight}, 1.0, smoothstep(${L.debugFrame} * ${L.debugFrameFade}, ${Math.max(L.debugFrame, 1e-4)}, w));
-    return framed * mix(1.0, max(dot(n, u.V), 0.0), ${L.debugAngle});
+    return max(framed * mix(1.0, max(dot(n, u.V), 0.0), ${L.debugAngle}), vec3f(0.0));  // (debugMiddle below 0: never a light below none)
   }
   if (pieces.y == ${CELLS_FINISH.LED}u) {  // (a slab over its lamp: brightest over it, dark at its joint)
     return col * (${L.ledEdge} + ${L.ledMiddle} * l * l) * smoothstep(0.0, ${L.ledJoint}, w);
   }
-  if (pieces.y == ${CELLS_FINISH.Rim}u) { return col * max(${L.rimEdge} + ${L.rimMiddle} * l * l, 0.0); }
   return col * (${L.neonEdge} + ${L.neonMiddle} * l * l);
 }
 fn flatTile(col: vec3f, n: vec3f, sh: vec3f) -> vec3f { return col * (1.0 - u.shade) + shine(col, n) * lightShare(sh); }  // (a tile drawn flat, as Off draws it)
@@ -38220,7 +38210,6 @@ fn haloShare() -> f32 {  // (its mode's halo, its light's share: the halo's pict
   if (pieces.y == ${CELLS_FINISH.Debug}u) { return ${L.debugHalo}; }
   if (pieces.y == ${CELLS_FINISH.Halo}u) { return ${L.haloHalo}; }
   if (pieces.y == ${CELLS_FINISH.Neon}u) { return ${L.neonHalo}; }
-  if (pieces.y == ${CELLS_FINISH.Rim}u) { return ${L.rimHalo}; }
   return ${L.tubeHalo};
 }
 fn halo(q: vec4f, d: vec2i) -> vec4f {  // (d: its way, its taps that many pixels apart)
@@ -41979,6 +41968,7 @@ function cellsTuning() {
     numbers: lights,
     shown: CELLS_LIGHT_OF[CELLS_FINISHES[cellsFinish][0]],
     shared: ['cellsBody', 'cellsSky', 'cellsDarkInk'], // (every lit mode's)
+    signed: ['debugMiddle'], // (below 0: its middle dark)
     onNumbers: rebuildGpuView,
     colours: [ALIVE_FIRST[theme], '#ffffff', ...LIFE_COLOURS],
     picked: lightColour ? lights[lightColour] : PALETTES[theme].alive,

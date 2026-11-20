@@ -7,10 +7,10 @@
  * takes it away. Its numbers are an object's, changed in place; what they change is the caller's (its onChange).
  *   debugPanel({
  *     key, title,                             what it shows (the same key: the panel left as it is), its name
- *     numbers, shown, shared, onNumbers,      an object of numbers, those named in shown (all if none) each a slider (0
- *                                             to 3 times its first value), those of them in shared apart under their
- *                                             own heading (numbers others read too), and what to do once one changed
- *                                             (the object's own values already set)
+ *     numbers, shown, shared, signed,         an object of numbers, those named in shown (all if none) each a slider (0
+ *     onNumbers,                              to 3 times its first value; those in signed as far below 0), those of them
+ *                                             in shared apart under their own heading (numbers others read too), and
+ *                                             what to do once one changed (the object's own values already set)
  *     colours, picked, onPick, note,          colours to pick from, the one picked, what a pick does (none: shown only),
  *                                             and a line under them
  *     onClose,                                its cross clicked (How it works' cross, see tutTools)
@@ -74,6 +74,7 @@ function debugPanel(spec) {
     numbers,
     shown = Object.keys(numbers),
     shared = [],
+    signed = [],
     onNumbers,
     onClose,
     colours = [],
@@ -107,10 +108,10 @@ function debugPanel(spec) {
       slider = document.createElement('input'),
       value = document.createElement('output');
     words.textContent = name;
-    const reach = Math.max(1, 3 * Math.abs(first[name])); // (a number below 0 at first: as far below as above, see rimMiddle)
+    const reach = Math.max(signed.includes(name) ? 3 : 1, 3 * Math.abs(first[name])); // (a signed one from 0 at first: ±3)
     Object.assign(slider, {
       type: 'range',
-      min: first[name] < 0 ? -reach : 0,
+      min: signed.includes(name) ? -reach : 0,
       max: reach,
       step: 0.01,
       value: numbers[name],

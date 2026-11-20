@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.454';
+const VERSION = '0.5.455';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -19673,7 +19673,9 @@ const battleCounts = (w, size, j) => TEAM_COUNTS.filter((K) => battleFits(w, K, 
 // A closed solid's team counts, once a solid, its turns the same at every size (see surfaceRotations): some, K it has a
 // group of; any, K whatever its start: every axis of its groups of K has one of them none of whose turns is round it (a
 // start's point lies on one axis at most, so that group leaves it apart; the icosahedron's: all its orders; the cube's: not
-// 8 nor 12, its D4s and its T each round its faces' axes)
+// 8 nor 12, its D4s and its T each round its faces' axes). The rule of Life's colours (see solidCounts) for walkers: K
+// alike things, |G| / |H| of them, a walker a point, so H none but the identity (no turn leaves A's start where it is) and
+// G turns only (a mirror turns a walker's tiles the other way)
 const solidTeamCountsMemo = remember('solidTeamCountsMemo', {});
 const solidTeamCounts = (kind) =>
   (solidTeamCountsMemo[kind] ??= (() => {
@@ -31129,7 +31131,9 @@ const colourGroups = (g, K) =>
         }
     return out;
   })());
-// the counts of colours a solid takes, its parts alike: those it has groups for (see colourGroups), on its least mesh
+// the counts of colours a solid takes, its parts alike: those it has groups for (see colourGroups), on its least mesh: K
+// alike parts, |G| / |H| of them, G its turns and mirrors, H a part's own (a part a region: H may keep it on itself, the
+// dodecahedron's 6 colours of its 60 turns); a battle's walkers the same rule, H none (see solidTeamCounts)
 const solidCounts = (surface) =>
   SURFACES[surface]?.sizes && SOLIDS.includes(surface)
     ? TEAM_COUNTS.filter((K) => K > 1 && colourGroups(leastMesh(surface), K).length)

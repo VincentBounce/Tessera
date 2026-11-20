@@ -72,6 +72,11 @@ chiral: then the cells on a mirror are no one's).
 | Dodeca, Icosa, RhTria, Hexsphere… | 60 | 2, 3, 4, 5, 6, 10, 12 | + 8 |
 | Penrose, Kites & darts spheres (chiral) | 60 | 2, 3, 4, 5, 6, 10, 12 | none: no mirror keeps them |
 
+**Two functions, one rule** (2026-11-20): K alike things are |G| / |H|, G a group of the solid's symmetries and H the
+part's own. Life's colours (`solidCounts`, `colourGroups`): G its turns and mirrors, H any (a part a region). A battle's
+walkers (`solidTeamCounts`, `rotationGroups`): a walker a point, H the identity alone, G turns only (a mirror turns a
+walker's tiles the other way). Kept apart, each its own conditions.
+
 The walks already judge their battles this way (`solidTeamCounts`, the groups of turns); Life does not (`solidCounts`, its
 faces' colourings), and the two disagree on 30 solids of 38:
 

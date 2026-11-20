@@ -10,7 +10,7 @@
   <meta property="og:url" content="https://vincentbounce.github.io/Tessera/">
   <meta property="og:type" content="website">
   <link id="favicon" rel="icon">  <!-- the app's logo, set at start-up (see LOGO_PATH) -->
-  <link rel="stylesheet" href="style.css?v=0.5.468">
+  <link rel="stylesheet" href="style.css?v=0.5.469">
   <script>  // the theme before the first paint (see applyTheme)
     try { const t = localStorage.getItem('tesseraTheme'); document.documentElement.dataset.theme = t === 'light' || t === 'dark' ? t : matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark'; } catch { document.documentElement.dataset.theme = 'dark'; }
   </script>
@@ -239,7 +239,6 @@
       <canvas id="lineLayer"></canvas>
       <canvas id="hoverLayer"></canvas>  <!-- a size's motif, the starts: the others faded under it (see drawHover) -->
       <canvas id="overlayLayer"></canvas>
-      <button id="axesLabels" type="button" hidden aria-label="Views" title="From the south, the east, above: a click each, the next (the view freed, as a drag)"><span>E</span><span>N</span><span>Up</span></button>  <!-- the view's axes' names, at their bars' ends (see gpuAxes), and a click on them the next view (see VIEWS_FROM) -->
       <img id="stagePreview" alt="" hidden>  <!-- a Gallery card clicked: its thumbnail over the view while its setup is built (see setupRow) -->
       <div class="hint"><div id="tip"></div><div id="hint" hidden></div></div>  <!-- what the mouse is on: a tooltip, or on the view how to move it -->
       <div id="ruleTuto" class="rule-tuto" hidden></div>  <!-- how the rule picked works, in place of the grid (see ruleTutorial) -->
@@ -288,8 +287,8 @@
             <div id="gridFinishRow"></div>  <!-- Off, the lines' opacities and Tiles' palettes: pills (see pillRow, GRID_LINES) -->
             <div id="cellsFinishRow" hidden></div>  <!-- Off, Halo, Neon…: pills (see pillRow, CELLS_FINISHES) -->
           </div>
-          <div id="viewSection" class="form-section">  <!-- the view (Default, Upright or Free, its switches as tiles), then its form -->
-            <div id="viewModes" class="nav-shapes" hidden></div>  <!-- Default view | Upright | Free, tabs (see renderViewModes) -->
+          <div id="viewSection" class="form-section">  <!-- the view (View: its pills; its switches as tiles), then its form -->
+            <div id="viewModes" hidden></div>  <!-- View: Default, Free, Upright, S, E, Up: pills (see pillRow, renderViewModes) -->
             <div hidden>  <!-- their checkboxes, the source (a row hidden: it does not apply) -->
               <label id="centeredRow" hidden title="On a solid, the camera faces the middle of a walk shown whole (a walker's name in the title clicked: the camera follows it); elsewhere, the camera as it starts (turning the view frees it)"><input id="centered" type="checkbox" checked> <span id="centeredName">Centered pattern</span></label>
               <label id="uprightRow" hidden title="The view from the front, level, a drag turning it round the vertical only"><input id="upright" type="checkbox"></label>
@@ -341,11 +340,11 @@
     </div>
   </main>
 
-  <script src="pixelarticons.js?v=0.5.468"></script>
-  <script src="punks.js?v=0.5.468"></script>
-  <script src="loops.js?v=0.5.468"></script>
-  <script src="emoji.js?v=0.5.468"></script>
-  <script src="debug.js?v=0.5.468"></script>  <!-- a panel to try settings by eye (see debugPanel) -->
-  <script src="main.js?v=0.5.468"></script>
+  <script src="pixelarticons.js?v=0.5.469"></script>
+  <script src="punks.js?v=0.5.469"></script>
+  <script src="loops.js?v=0.5.469"></script>
+  <script src="emoji.js?v=0.5.469"></script>
+  <script src="debug.js?v=0.5.469"></script>  <!-- a panel to try settings by eye (see debugPanel) -->
+  <script src="main.js?v=0.5.469"></script>
 </body>
 </html>

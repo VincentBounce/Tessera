@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.468';
+const VERSION = '0.5.469';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -6668,6 +6668,7 @@ const VIEW_TILES = [
   ],
   ['light', 'lightRow', () => icon('sideLight'), 'Side light'],
   ['glass', 'glassRow', () => icon('glass'), 'Glass'],
+  ['autoRotate', 'autoRotateRow', () => icon('autoRotate'), 'Auto-rotate'],
 ];
 let viewTiles = null;
 function renderViewTiles() {
@@ -6697,7 +6698,12 @@ function renderViewTiles() {
     : !ways.off.length
       ? 'on'
       : `On by default on ${ways.on.join(', ')}\nOff by default on ${ways.off.join(', ')}`;
-  const first = { perspective, light: defaultMark('light'), glass: defaultMark('glass') };
+  const first = {
+    perspective,
+    light: defaultMark('light'),
+    glass: defaultMark('glass'),
+    autoRotate: defaultMark('autoRotate'),
+  };
   VIEW_TILES.forEach(([id], k) =>
     setTile(viewTiles[k], {
       on: $(id).checked,
@@ -6708,58 +6714,53 @@ function renderViewTiles() {
   $('viewTiles').hidden = VIEW_TILES.every(([, row]) => $(row).hidden);
 }
 $('viewTools').addEventListener('mouseenter', renderViewTiles);
-// The view, tabs (see tileGroup): Default view (Centered pattern where it faces one), Free (neither: as turned by hand), Upright;
-// each its checkbox's (the source), in 3D (Upright greyed where its row is hidden); Auto-rotate on their right, a switch
-let viewModes = null,
-  rotateTile = null;
+// The view, one choice of several (pills, see pillRow): Default view (Centered pattern where it faces one), Free (as turned by
+// hand), Upright, then from the south, the east, above (north up: VIEWS_FROM, the sides Cut faces); Default and Upright their
+// checkboxes' (the source), a view from a side kept till a drag frees it (viewFrom)
+const VIEWS_FROM = [cameraFrom(0, 0), cameraFrom(-Math.PI / 2, 0), cameraFrom(0, Math.PI / 2)];
+let viewFrom = -1; // (the side looked from, VIEWS_FROM's; -1 none: freed by a drag, or another view)
 function renderViewModes() {
-  const set = (centered, upright) => () => {
+  const set = (centered, upright) => {
+    viewFrom = -1;
     $('centered').checked = centered;
     $('centered').dispatchEvent(new Event('change'));
     $('upright').checked = upright;
     $('upright').dispatchEvent(new Event('change'));
-    renderViewModes();
   };
-  viewModes ??= [
-    tile({ pic: icon('viewDefault'), text: 'Default', click: set(true, false) }),
-    tile({
-      pic: icon('free'),
-      text: 'Free',
-      title: 'The view as turned by hand (a drag frees it)',
-      click: set(false, false),
-    }),
-    tile({ pic: icon('upright'), text: 'Upright', title: $('uprightRow').title, click: set(false, true) }),
-  ];
-  rotateTile ??= tile({
-    pic: icon('autoRotate'),
-    text: 'Auto-rotate',
-    title: $('autoRotateRow').title,
-    toggle: true,
-    click: () => {
-      $('autoRotate').checked = !$('autoRotate').checked;
-      $('autoRotate').dispatchEvent(new Event('change'));
-      renderViewModes();
-    },
-  });
-  if (!$('viewModes').children.length) $('viewModes').replaceChildren(tileGroup(viewModes), rotateTile);
-  viewModes[0].title = $('centeredRow').title;
-  viewModes[0].querySelector('span').textContent = centersPattern() ? 'Centered' : 'Default';
+  const from = (k) => {
+    viewFrom = k;
+    for (const id of ['centered', 'upright', 'autoRotate']) $(id).checked = false;
+    followed = -1;
+    Object.assign(camera, VIEWS_FROM[k]);
+    rotateView([0, 0, 0]);
+  };
   const c = $('centered').checked,
-    u = $('upright').checked && !$('uprightRow').hidden;
-  const first = (centered, upright) =>
-    defaultOf('centered', tabVariant()) === centered && defaultOf('upright', tabVariant()) === upright ? 'yes' : ''; // (its default: the pair DISPLAY_DEFAULTS sets)
-  setTile(viewModes[0], { on: c, byDefault: first(true, false) });
-  setTile(viewModes[1], { on: !c && !u, byDefault: first(false, false) });
-  setTile(viewModes[2], {
-    on: u,
-    byDefault: first(false, true),
-    whyNot: ({ w, stacked }) => viewWhyNot('upright', w, stacked),
-  });
-  setTile(rotateTile, {
-    on: $('autoRotate').checked,
-    byDefault: defaultMark('autoRotate'),
-    whyNot: ({ w, stacked }) => viewWhyNot('autoRotate', w, stacked),
-  });
+    u = $('upright').checked && !$('uprightRow').hidden,
+    pairs = [
+      [true, false],
+      [false, false],
+      [false, true],
+    ],
+    first = pairs.findIndex(
+      ([centered, upright]) =>
+        defaultOf('centered', tabVariant()) === centered && defaultOf('upright', tabVariant()) === upright,
+    ); // (its default: the pair DISPLAY_DEFAULTS sets)
+  pillRow(
+    $('viewModes'),
+    'View',
+    'The camera',
+    [
+      [centersPattern() ? 'Centered' : 'Default', $('centeredRow').title],
+      ['Free', 'The view as turned by hand (a drag frees it)'],
+      ['Upright', $('uprightRow').title, ({ w, stacked }) => viewWhyNot('upright', w, stacked)],
+      ['S', 'From the south, level'],
+      ['E', 'From the east, level'],
+      ['Up', 'From above, north up'],
+    ],
+    viewFrom >= 0 ? 3 + viewFrom : c ? 0 : u ? 2 : 1,
+    first,
+    (k) => (k < 3 ? set(...pairs[k]) : from(k - 3)),
+  );
   $('viewModes').hidden = $('centeredRow').hidden;
 }
 $('viewTools').addEventListener('mouseenter', renderViewModes);
@@ -26562,7 +26563,6 @@ const gridColour = () => `rgba(${EDGE_RGB.join(', ')}, ${gridLineAlpha()})`;
 function drawPlaneGrid() {
   layers.grid.clearRect(0, 0, canvasWidth, canvasHeight);
   paintSky();
-  placeAxesLabels();
 }
 // a cell's middle, its corners' mean; the grid's own cells' once a grid (walk.plane: a new one each grid; a middle its kind's
 // and its place's only, see planeCorners)
@@ -35506,7 +35506,6 @@ function drawGrid() {
     s = view.scale;
   ctx.clearRect(0, 0, canvasWidth, canvasHeight);
   paintSky();
-  placeAxesLabels();
   if (walk.rows) drawElementarySheet(ctx, walk.rows);
   else {
     drawTilesGround(ctx);
@@ -35753,7 +35752,7 @@ function paintSky() {
   stage.style.background = sky;
 }
 
-// 3D: wireframe bounding box of the walk (the view's axes: see gpuAxes)
+// 3D: wireframe bounding box of the walk
 function draw3DFrame(ctx) {
   const proj = projectPoint; // (in perspective)
   const [x0, x1, y0, y1, z0, z1] = bounds3;
@@ -36786,7 +36785,7 @@ const readableColour = (colour) => {
 const teamColour = (s) => (oceanOn() && LANDS[s] ? LANDS[s] : LIFE_COLOURS[s]); // (team s, a battle's walker or Life's colour: Earth's lands up to a Sextet, else Life's colours)
 const LAND_NAMES = ['green', 'white', 'yellow', 'lime', 'cyan', 'ochre']; // (Earth's lands, see PALETTES)
 const teamName = (s) => (oceanOn() && LANDS[s] ? LAND_NAMES[s] : LIFE_COLOUR_NAMES[s]);
-// Cut: Off, or a fixed plane through the middle facing S, E or Up (the view's corner draws E, N and Up, see gpuAxes), the half on
+// Cut: Off, or a fixed plane through the middle facing S, E or Up (the sides View's S, E and Up look from), the half on
 // that axis's side gone: its notches on a row as Flat ── Inflated (see sizeGauge)
 const CUT_AXES = [['Off'], ['S', [0, -1, 0]], ['E', [1, 0, 0]], ['Up', [0, 0, 1]]];
 let cutAxis = defaultOf('cut', tabVariant());
@@ -37959,7 +37958,7 @@ const gpuViewCode = (L) => `
 struct U {
   R: vec3f, depth: f32, Uu: vec3f, shade: f32, V: vec3f, glint: f32, L: vec3f, lr: f32, H: vec3f, alpha: f32, Lx: vec3f, edge: f32,
   Ly: vec3f, bias: f32, edgeRgb: vec3f, halfW: f32, persp: vec4f, plain: vec4f, view: vec3f, N: f32, cc: vec2f, screen: vec2f,
-  cut: i32, glass: i32, both: i32, colour: i32, alphaF: f32, bright: f32, width: f32, loopFrom: f32, period: f32, turnC: f32, turnS: f32, cutN: vec3f, stepWhole: i32, fadeSteps: f32, stepPart: f32, fade: f32, front: f32,
+  cut: i32, glass: i32, both: i32, colour: i32, alphaF: f32, bright: f32, width: f32, loopFrom: f32, period: f32, turnC: f32, turnS: f32, cutN: vec3f, stepWhole: i32, fadeSteps: f32, stepPart: f32, fade: f32,
   tpl: array<vec4f, 12>,  // (the polygons' corners, two a vec4)
   fadeTo: vec3f,  // (a size or the start hovered: what is drawn this pale, fade, towards the page's background, see drawHover)
   extent: f32,  // (the figure's radius: a tile's place towards the viewer, its share of it, see pickF)
@@ -37975,9 +37974,9 @@ fn toScreen(p: vec3f) -> vec3f {  // pixels on the stage, and the depth towards 
   if (u.persp.w > 0.0) { let k = u.persp.w / (u.persp.w - t); X = u.cc.x + (X - u.cc.x) * k; Y = u.cc.y + (Y - u.cc.y) * k; }
   return vec3f(u.view.y + X * u.view.x, u.view.z + Y * u.view.x, t);
 }
-fn clipOf(s: vec3f, bias: f32) -> vec4f {  // (depth 0 to 1; front: before all else, in its own order, the view's axes)
+fn clipOf(s: vec3f, bias: f32) -> vec4f {  // (depth 0 to 1)
   let z = clamp(-s.z / u.depth - bias, -1.0, 1.0) * 0.5 + 0.5;
-  return vec4f(s.x / u.screen.x * 2.0 - 1.0, 1.0 - s.y / u.screen.y * 2.0, mix(z, z * 0.01, u.front), 1.0);
+  return vec4f(s.x / u.screen.x * 2.0 - 1.0, 1.0 - s.y / u.screen.y * 2.0, z, 1.0);
 }
 fn clipAt(q: vec2f) -> vec4f { return vec4f(q.x / u.screen.x * 2.0 - 1.0, 1.0 - q.y / u.screen.y * 2.0, 0.0, 1.0); }
 fn lightSpace(p: vec3f) -> vec3f { return vec3f(dot(p, u.Lx), dot(p, u.Ly), -dot(p, u.L)) / u.lr; }
@@ -38034,7 +38033,6 @@ fn lightShare(sh: vec3f) -> f32 {  // (the share of the light: 9 looks round it,
 fn seen(c: vec3f, z: f32) -> vec4f { var a = u.alpha; if (u.glass == 0) { a = 1.0; } return glass(c, a, z); }  // (Glass: see-through)
 @fragment fn shadowedF(i: Lit) -> @location(0) vec4f {
   if (u.cut == 1 && i.cutv > 0.0) { discard; }
-  if (u.front > 0.5) { return glass(i.dark + i.lit, 1.0, i.pos.z); }  // (the view's axes: lit, no shadow, not in the world)
   return seen(i.dark + i.lit * lightShare(i.sh), i.pos.z);
 }
 fn tileColour(id: u32) -> vec4f {  // (the back of an open sheet, as a ground; else its tile's colour, its alpha 1 painted)
@@ -38353,7 +38351,6 @@ function gpuView(words, k, depth, more = {}) {
     turnS: [58, 'f'],
     fadeSteps: [64, 'f'],
     fade: [66, 'f'],
-    front: [67, 'f'],
     extent: [119, 'f'],
     firstBorn: [120, 'i'],
   };
@@ -39097,7 +39094,6 @@ function gpuSurface(paint, path) {
         rp.draw(4, count, 0, from);
       }
     }
-    if (axesShown()) gpuAxes(D, rp, pass, slotOf(axesLook(pass)));
     gpuHeads(
       D,
       rp,
@@ -39522,82 +39518,6 @@ function gpuHeads(D, rp, pass, slot, heads = headsOf(), name = 'head') {
   rp.setVertexBuffer(2, D[`${name}Col`]);
   heads.forEach((_, j) => rp.draw(from[j + 1] - from[j], 1, from[j], j));
 }
-// The view's axes in its top left corner, with the grid in 3D (none in a thumbnail: its frame drawn without the grid, see
-// wantThumbnail): E, N and Up as a 3D walk's bars (see barV), turned as the world, without perspective, lit, before the
-// rest (u.front); their names at their ends, HTML (see #axesLabels: never faded, never in a picture taken)
-const VIEW_AXES = [
-  ['E', [1, 0, 0], '--axis-east-color'],
-  ['N', [0, 1, 0], '--axis-north-color'],
-  ['Up', [0, 0, 1], '--axis-up-color'],
-];
-const VIEW_AXES_AT = 44, // (their origin, pixels from the view's top left)
-  VIEW_AXES_LENGTH = 26; // (a bar's, pixels)
-const axesShown = () => gridLinesShown() && !!walk.is3d && !!(walk.lattice || walk.surface);
-function gpuAxes(D, rp, pass, slot) {
-  if (!D.barMesh) gpuBuffer('barMesh', CELL_SHAPES.cube.triangles);
-  gpuBuffer('axesFrom', new Float32Array(9));
-  gpuBuffer('axesTo', Float32Array.from(VIEW_AXES.flatMap(([, v]) => v)));
-  gpuBuffer('axesCol', Uint8Array.from(VIEW_AXES.flatMap(([, , name]) => [...rgbCached(cssColour(name)), 255])));
-  rp.setPipeline(
-    gpuDrawPipe('bar', {
-      vertex: 'barV',
-      fragment: 'shadowedF',
-      shadowed: true,
-      pass,
-      buffers: [
-        vertexLayout(24, [vertexAttribute(0, 'float32x3', 0), vertexAttribute(1, 'float32x3', 12)]),
-        vertexLayout(12, [vertexAttribute(2, 'float32x3')], 'instance'),
-        vertexLayout(12, [vertexAttribute(3, 'float32x3')], 'instance'),
-        vertexLayout(4, [vertexAttribute(4, 'unorm8x4')], 'instance'),
-      ],
-    }),
-  );
-  rp.setBindGroup(0, gpuGroup(), [slot]);
-  rp.setBindGroup(1, D.shadow.group);
-  rp.setVertexBuffer(0, D.barMesh);
-  rp.setVertexBuffer(1, D.axesFrom);
-  rp.setVertexBuffer(2, D.axesTo);
-  rp.setVertexBuffer(3, D.axesCol);
-  rp.draw(CELL_SHAPES.cube.triangles.length / 6, VIEW_AXES.length);
-}
-// the axes' draw numbers: the world turned as the view, a unit VIEW_AXES_LENGTH pixels, no perspective, before the rest
-const axesLook = (pass) => ({
-  glass: pass,
-  view: [VIEW_AXES_LENGTH, viewRect().x + VIEW_AXES_AT, VIEW_AXES_AT], // (in the view's corner, past the settings)
-  persp: [0, 0, 0, 0],
-  halfW: 1.5 / VIEW_AXES_LENGTH,
-  firstBorn: SEGMENT_ALWAYS, // (its bars whole, see bar)
-  front: 1,
-  fade: 0,
-});
-// The views a click on the axes goes through, in turn (see #axesLabels): from the south, the east, above (north up), then
-// the view's at the start (CAMERA_START); the view freed, as a drag does (Centered, Upright, Auto-rotate off, no walker
-// followed)
-const VIEWS_FROM = [cameraFrom(0, 0), cameraFrom(-Math.PI / 2, 0), cameraFrom(0, Math.PI / 2), CAMERA_START];
-let viewFrom = -1; // (the last one gone to)
-$('axesLabels').addEventListener('click', () => {
-  viewFrom = (viewFrom + 1) % VIEWS_FROM.length;
-  for (const id of ['centered', 'upright', 'autoRotate']) $(id).checked = false;
-  followed = -1;
-  Object.assign(camera, VIEWS_FROM[viewFrom]);
-  rotateView([0, 0, 0]);
-  renderViewModes();
-});
-// their names at their ends, where the view turns them (shown with them)
-function placeAxesLabels() {
-  const labels = $('axesLabels');
-  labels.hidden = !axesShown();
-  document.documentElement.style.setProperty('--view-axes-height', labels.hidden ? '0px' : `${2 * VIEW_AXES_AT}px`); // (what lies under them: the debug panel)
-  if (labels.hidden) return;
-  labels.style.width = labels.style.height = `${2 * VIEW_AXES_AT}px`; // (round their origin: their bars and names)
-  VIEW_AXES.forEach(([, v], k) => {
-    const [x, y] = orthoPoint(...v);
-    Object.assign(labels.children[k].style, {
-      left: `${VIEW_AXES_AT + x * (VIEW_AXES_LENGTH + 9)}px`,
-      top: `${VIEW_AXES_AT + y * (VIEW_AXES_LENGTH + 9)}px`,
-    });
-  });
-}
 function gpuCubes(count, of, make, reach) {
   const D = gpuDrawSetup();
   if (!D) return false;
@@ -39710,7 +39630,6 @@ function gpuCubes(count, of, make, reach) {
   }
   gpuHeads(D, rp, 0, slot); // (a 3D walk's head and start's flag, as a surface's)
   gpuHeads(D, rp, 0, slot, startHeads(), 'start');
-  if (axesShown()) gpuAxes(D, rp, 0, gpuView(D.words, 1, depth, axesLook(0)));
   rp.end();
   device.queue.writeBuffer(D.uni, 0, D.words, 0, 1024);
   device.queue.submit([enc.finish()]);
@@ -41479,6 +41398,7 @@ stage.addEventListener('pointermove', (e) => {
     $('autoRotate').checked = false;
     $('centered').checked = false;
     followed = -1;
+    viewFrom = -1; // (a side's view freed: Free, see renderViewModes)
     rotateView(
       $('upright').checked ? [0, 0, (camera.u[2] < 0 ? -1 : 1) * dx * 0.008] : screenTurn(dy * 0.008, dx * 0.008, 0),
     ); // a trackball: drag right turns around the screen's up; Upright: round the world's up only
@@ -41498,6 +41418,7 @@ function recentre() {
     $('autoRotate').checked = false;
     $('centered').checked = true;
     $('upright').checked = false; // (the default view: free again)
+    viewFrom = -1;
     Object.assign(camera, CAMERA_START);
     rotateView([0, 0, 0]); // the projection and the frame again
     faced = false;
@@ -42013,13 +41934,12 @@ function paletteChanged() {
 }
 applyTheme(themeName());
 // what lies over the view keeps its presses, double clicks and wheel (the view's: a drag, a recentre, a zoom): the animation
-// bar (its step slider), Display's box, how a rule works and the number (their text selected, their scroll), the axes (a click
-// a view: two quick ones were a recentre too, facing the walk's middle)
+// bar (its step slider), Display's box, how a rule works and the number (their text selected, their scroll)
 // a view's box too: the debug panel, see debugPanel)
 function keepsItsPresses(box) {
   for (const type of ['pointerdown', 'dblclick', 'wheel']) box.addEventListener(type, (e) => e.stopPropagation());
 }
-for (const id of ['animBar', 'viewTools', 'ruleTuto', 'numberPreview', 'axesLabels']) keepsItsPresses($(id));
+for (const id of ['animBar', 'viewTools', 'ruleTuto', 'numberPreview']) keepsItsPresses($(id));
 $('light').addEventListener('change', () => {
   needsFull = true;
 });
@@ -42035,7 +41955,7 @@ $('ocean').addEventListener('change', () => {
 pillRow(
   $('cutRow'),
   'Cut',
-  "A cross-section by a fixed plane through the middle (the view's corner draws E, N and Up: S the way opposite N)",
+  "A cross-section by a fixed plane through the middle, facing S, E or Up (the sides View's S, E and Up look from)",
   CUT_AXES.map(([name, axis]) => [
     name,
     axis ? `The half on the ${name} side gone, the inside showing` : 'The figure whole',

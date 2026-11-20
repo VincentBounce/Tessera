@@ -22,7 +22,7 @@ const DEBUG_STYLE = `
 #debugPanel {
   position: absolute;
   left: calc(var(--view-left) + var(--view-gap));
-  top: calc(var(--view-axes-height, 0px) + var(--view-gap)); /* (under the axes, as high as they leave: see placeAxesLabels) */
+  top: var(--view-gap);
   z-index: 5;
   width: 240px;
   padding: 8px 10px;

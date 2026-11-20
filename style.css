@@ -48,9 +48,6 @@
   --edge-cells-color: #e3b341; /* a Möbius strip's edge's cells, their neighbours not as in its middle (see edgeRibbons) */
   --cell-color: #3fb950; /* a cell of the motif, when it has several (a triangle's 3 kites) */
   --corner-cells-color: #c4934e; /* a solid of hexagons' corners' cells (the sphere's pentagons), outlined with the motif */
-  --axis-east-color: #ff7b72; /* the view's axes in its corner (see gpuAxes): E, */
-  --axis-north-color: #3fb950; /* N, */
-  --axis-up-color: #4ea1ff; /* Up */
   --run-end-color: #2dd4bf;
   --sweet-spot-color: #bc8cff; /* a walk's sweet spot: its link on the step line, its mark on the curve (see sweetSpot) */ /* where a run ends or loops: its link on the step line, its mark on the curve (turquoise: no curve's colour) */
   color-scheme: dark;
@@ -390,6 +387,9 @@ input[type='range'] {
   }
 } /* more than 4 choices: 4 a row (Grid's 8: its lines', then Tiles' palettes), the track round its rows (a fifth each at
    least, with the gaps: a 5th never fits, a wider word, Celadon, keeps its row) */
+.pill-group:has(> :nth-child(5)):not(:has(> :nth-child(7))) > button {
+  flex-basis: 30%;
+} /* 5 or 6 choices: 3 a row (View's 6: 3 and 3, never 4 and 2 stretched) */
 .pill-group button {
   flex: 1;
   padding: 4px 2px; /* (its width its share of the track; 2 px aside, its least: Grid's palettes' words fit, 4 a row) */
@@ -1568,30 +1568,6 @@ button.active .bubble.active {
 } /* (the thumbnail as taken: the view's middle, see stageThumbnail, on its card's background, the theme's: whole in the frame
    painted before the setup is built, the figure before never seen through it; no fade: a fade does not play while the page
    builds) */
-#axesLabels {
-  position: absolute;
-  left: var(--view-left);
-  top: 0;
-  padding: 0;
-  border: 0;
-  background: none;
-  cursor: pointer;
-} /* the view's axes: a click, the next view (see VIEWS_FROM), over their bars (drawn by the graphics card, see gpuAxes) */
-#axesLabels > span {
-  position: absolute;
-  transform: translate(-50%, -50%);
-  font-size: var(--text-size);
-  pointer-events: none;
-} /* the view's axes' names at their bars' ends, facing the viewer (see placeAxesLabels) */
-#axesLabels > :nth-child(1) {
-  color: var(--axis-east-color);
-}
-#axesLabels > :nth-child(2) {
-  color: var(--axis-north-color);
-}
-#axesLabels > :nth-child(3) {
-  color: var(--axis-up-color);
-}
 .stage > canvas:not(#hoverLayer):not(#gpuLayer) {
   transition: opacity var(--fade-seconds) linear;
 }

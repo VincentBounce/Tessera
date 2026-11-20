@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.433';
+const VERSION = '0.5.434';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -6658,7 +6658,7 @@ function updateDisplayMenu() {
     cut: 'cutRow',
   };
   for (const [item, id] of Object.entries(rows)) $(id).hidden = !shows(item, tabVariant());
-  cellsTuning(); // (the debug panel, Life in 3D's)
+  cellsTuning(); // (the debug panel, Life's)
   // Heatmap of visits and Digits instead of a list of colours, on cells only (Digits in 2D only;
   // a spiral marks its cells, each once: both greyed out)
   const variant = VARIANTS[tabVariant()];
@@ -41933,7 +41933,7 @@ const ALIVE_FIRST = { dark: PALETTES.dark.alive, light: PALETTES.light.alive }; 
 let debugOpen = false; // (opened by Cells › Debug, shut by its cross; open, every mode's numbers)
 function cellsTuning() {
   const w = tabVariant();
-  if (NAV[w][0] !== 'Life' || VARIANTS[w].plane || !debugOpen) return debugPanel(null);
+  if (NAV[w][0] !== 'Life' || !debugOpen) return debugPanel(null);
   const theme = themeName(),
     solo = lifeTeams === 1,
     lights = cellsLightNow(), // (Solo on a light page its own)

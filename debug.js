@@ -107,14 +107,15 @@ function debugPanel(spec) {
       slider = document.createElement('input'),
       value = document.createElement('output');
     words.textContent = name;
+    const reach = Math.max(1, 3 * Math.abs(first[name])); // (a number below 0 at first: as far below as above, see rimMiddle)
     Object.assign(slider, {
       type: 'range',
-      min: 0,
-      max: Math.max(1, 3 * first[name]),
+      min: first[name] < 0 ? -reach : 0,
+      max: reach,
       step: 0.01,
       value: numbers[name],
     });
-    slider.title = `${name}: from 0 to ${slider.max}, ${first[name]} at first`;
+    slider.title = `${name}: from ${slider.min} to ${slider.max}, ${first[name]} at first`;
     value.textContent = numbers[name].toFixed(2);
     slider.addEventListener('input', () => {
       numbers[name] = Number(slider.value);

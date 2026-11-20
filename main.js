@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.457';
+const VERSION = '0.5.458';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -7041,11 +7041,8 @@ const setTile = (
     }
     const searched = why && !(b.dataset.choice in OFF_GRAPH); // (out of the graph: its words why, nothing sought)
     b.enablers = searched ? () => enablersFor((setup) => !whyNot(setup), judgedAt) : null;
-    b.pathsMemo = null;
-    menuEdges.clear();
-    menuTeams.clear(); // (a tile drawn again: the menu's state may have changed)
-    b.paths = searched ? () => (b.pathsMemo ??= pathsTo((setup) => !whyNot(setup), 5000, judgedAt)) : null;
-  } // (its paths found once a drawing: at its first tooltip)  // (at: none, no walk shown yet: the tab's)
+    b.paths = searched ? pathsKept(b, (setup) => !whyNot(setup), judgedAt) : null;
+  } // (its paths found at its first tooltip, kept while the setup is the same)  // (at: none, no walk shown yet: the tab's)
   if (byDefault !== undefined) b.dataset.default = byDefault;
   b.dataset.greyed = can ? '' : greyed; // (its words why only while greyed: whyNot's, or its own)
   const pic = b.querySelector('svg');
@@ -11099,15 +11096,32 @@ const OFF_GRAPH = {
   newcomer:
     'allowed three clicks away at best from the loops (Life › Trio › a rule): thousands of setups tried, 0.4 to 7 s a hover (2026-11-15)',
 };
-// the menu's edges found since a tile was last drawn (see setTile), by their setup and the fields asked: one search's, kept
-// for the next greyed control hovered (a row's tiles ask the same: the four symmetries, each 170 ms of the same edges)
+// the menu's edges found from the setup in use, by their setup and the fields asked: one search's, kept for the next greyed
+// control hovered (a row's tiles ask the same: the four symmetries, each 170 ms of the same edges), while that setup is the
+// same: the menu is a graph of setups (see choicesAt), a tile drawn again changes none of it
 const menuEdges = new Map(),
   menuTeams = new Map(); // (its colours by variant, see choicesAt's teamsMemo: as long)
+let menuEdgesFrom = null; // (the setup they were found from)
+// a greyed control's paths (see pathsTo), found once a setup and kept on it (holder) while the setup in use is the same:
+// before v0.5.458 found again each time its tile was drawn, and Display's tiles are drawn as the view turns (Display › Age
+// in a battle on the cube 48: 1.9 s a hover, again and again)
+const pathsKept =
+  (holder, fits, judgedAt = null) =>
+  () => {
+    const key = setupKey(setupNow());
+    if (holder.pathsFrom !== key) Object.assign(holder, { pathsFrom: key, pathsFound: pathsTo(fits, 5000, judgedAt) });
+    return holder.pathsFound;
+  };
 function pathsTo(fits, budget = 5000, judgedAt = null) {
   // (judgedAt: a control judged on the grid built only, its variant's setups only)
   const start = setupNow(),
-    seen = new Set([setupKey(start)]),
-    w = start.w,
+    seen = new Set([setupKey(start)]);
+  if (menuEdgesFrom !== setupKey(start)) {
+    menuEdges.clear();
+    menuTeams.clear();
+    menuEdgesFrom = setupKey(start);
+  } // (another setup in use: the menu's edges found from it anew)
+  const w = start.w,
     kind = !VARIANTS[w].plane && surfaceOf(VARIANTS[w]),
     now = SURFACES[kind] && figureSize(w);
   const reads = new Set(['w']),
@@ -17362,8 +17376,7 @@ function greyInput(input, row, whyNot) {
   input.disabled = !!why;
   row.dataset.greyed = why;
   input.enablers = () => enablersFor((setup) => !whyNot(setup));
-  input.pathsMemo = null;
-  input.paths = () => (input.pathsMemo ??= pathsTo((setup) => !whyNot(setup)));
+  input.paths = pathsKept(input, (setup) => !whyNot(setup));
 }
 // A choice among a few on a row (Cut, Area): its title (h3), then its choices as pills (see .pill-group), each a tile of
 // words only, its words its tooltip's, the default marked, the one picked raised; whyNot(setup): the whole row greyed, as a

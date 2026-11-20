@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.470';
+const VERSION = '0.5.471';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -6722,6 +6722,7 @@ let viewFrom = -1; // (the side looked from, VIEWS_FROM's; -1 none: freed by a d
 function renderViewModes() {
   const set = (centered, upright) => {
     viewFrom = -1;
+    if (!upright) $('autoRotate').checked = false; // (a view picked stops Auto-rotate; Upright turns on with it)
     $('centered').checked = centered;
     $('centered').dispatchEvent(new Event('change'));
     $('upright').checked = upright;
@@ -6729,7 +6730,7 @@ function renderViewModes() {
   };
   const from = (k) => {
     viewFrom = k;
-    for (const id of ['centered', 'upright']) $(id).checked = false; // (Auto-rotate kept: a view picked, not a drag)
+    for (const id of ['centered', 'upright', 'autoRotate']) $(id).checked = false;
     followed = -1;
     Object.assign(camera, VIEWS_FROM[k]);
     rotateView([0, 0, 0]);
@@ -6759,7 +6760,11 @@ function renderViewModes() {
     ],
     viewFrom >= 0 ? 3 + viewFrom : c ? 0 : u ? 2 : 1,
     first,
-    (k) => (k < 3 ? set(...pairs[k]) : from(k - 3)),
+    (k) => {
+      if (k < 3) set(...pairs[k]);
+      else from(k - 3);
+      renderViewTiles(); // (Auto-rotate's tile as it is now)
+    },
   );
   $('viewModes').hidden = $('centeredRow').hidden;
 }

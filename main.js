@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.458';
+const VERSION = '0.5.459';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -11095,6 +11095,8 @@ const changes = (a, b) => variantChanges(a.w, b.w) + SETUP_FIELDS.filter((f) => 
 const OFF_GRAPH = {
   newcomer:
     'allowed three clicks away at best from the loops (Life › Trio › a rule): thousands of setups tried, 0.4 to 7 s a hover (2026-11-15)',
+  'look:gradient':
+    "Life's Age in a battle: its search asks every solid's teams, their subgroups (0.55 s each of the icosahedron's), 1.9 s its first hover on a cube (2026-11-20); its words say it already: Solo",
 };
 // the menu's edges found from the setup in use, by their setup and the fields asked: one search's, kept for the next greyed
 // control hovered (a row's tiles ask the same: the four symmetries, each 170 ms of the same edges), while that setup is the

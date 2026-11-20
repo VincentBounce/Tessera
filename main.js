@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.464';
+const VERSION = '0.5.465';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -23960,7 +23960,7 @@ const widthForColours = (kind, x, K = teamsPlayed()) => {
     m =
       K < 2 || APERIODIC[kind] || !(planeTorus(kind) || K === 2 || K === 4)
         ? 1
-        : u * (baseOf(kind) === 'cairo' && u % 2 ? 2 : 1); // (Cairo's: even)
+        : u * (baseOf(kind) === 'cairo' ? 2 : 1); // (Cairo's: its tiling repeats every other square, each way: its blocks' sides even)
   return Math.max(m, Math.round(x / m) * m);
 };
 const blockWraps = new Map();
@@ -31463,8 +31463,7 @@ function torusLattice(plane, K, spread = false) {
     // (apart: 2K blocks, each colour two of them, a shift h of order 2 between them, the farthest: alike, shifted)
     const L = torusLattice(plane, 2 * K),
       { kind, W, row } = plane,
-      cols = row / gridCells(kind),
-      sum = ([a, b], [c, d]) => [(a + c) % cols, (b + d) % W],
+      sum = ([a, b], [c, d]) => [(a + c) % row, (b + d) % W], // (its shifts in cells along a row and rows, see below)
       same = (p, q) => p[0] === q[0] && p[1] === q[1],
       h = L.shifts
         .filter((x) => !same(x, [0, 0]) && same(sum(x, x), [0, 0]))
@@ -31490,13 +31489,14 @@ function torusLattice(plane, K, spread = false) {
     c1 = [0, 1].map((d) => (m(row - per, 0)[d] - o[d]) / (cols - 1)),
     r1 = [0, 1].map((d) => (m(0, W - 1)[d] - o[d]) / (W - 1)),
     at = (i, j) => [0, 1].map((d) => o[d] + i * c1[d] + j * r1[d]),
-    wrap = (v, k) => ((v % k) + k) % k;
+    wrap = (v, k) => ((v % k) + k) % k,
+    [P, Q] = [m(row, 0), m(0, W)].map((e) => [0, 1].map((d) => e[d] - o[d])); // (its periods: the cell a row on, a column on, by construction; never a row's mean step times its motifs, Cairo's rows not straight)
   // (the shortest way between two places round the torus, as a vector)
   const apart = (p, q) => {
     let best = null;
     for (const a of [-1, 0, 1])
       for (const b of [-1, 0, 1]) {
-        const v = [0, 1].map((d) => q[d] - p[d] + a * cols * c1[d] + b * W * r1[d]);
+        const v = [0, 1].map((d) => q[d] - p[d] + a * P[d] + b * Q[d]);
         if (!best || Math.hypot(...v) < Math.hypot(...best)) best = v;
       }
     return best;
@@ -31508,38 +31508,47 @@ function torusLattice(plane, K, spread = false) {
         q = m(wrap(x + i * per, row), wrap(y + j, W)),
         v = apart(m(x, y), q),
         w = apart(o, m(wrap(i * per, row), wrap(j, W)));
-      return Math.hypot(v[0] - w[0], v[1] - w[1]) < 1e-6;
+      return Math.hypot(...apart(w, v)) < 1e-6; // (the same move round the torus: half a turn either way alike)
     });
+  const far = ([c, j]) => Math.hypot(...apart(at(0, 0), at(c / per, j))); // (a shift by c cells along a row and j rows: how far it goes)
   let best = null;
   for (let a = 1; a <= K; a++)
     if (K % a === 0)
       for (let b = 0; b < K / a; b++) {
+        // (its generators in cells along a row and rows, whole: a grid not made for K has none; their shifts closed in whole
+        // numbers, exactly, never a third added up as 0.999…)
         const gens = [
-          [(a * cols) / K, (b * W) / K],
-          [0, ((K / a) * W) / K],
+          [(a * row) / K, (b * W) / K],
+          [0, W / a],
         ];
-        if (!gens.flat().every(Number.isInteger) || !gens.every(fits)) continue; // (a shift of the grid by whole motifs and rows: a grid not made for K has none, its shifts never closing)
+        if (!gens.flat().every(Number.isInteger) || !gens.every(([c, j]) => fits([c / per, j]))) continue;
         const shifts = [[0, 0]];
         for (let s = 0; s < shifts.length; s++)
-          for (const [i, j] of gens) {
-            const q = [wrap(shifts[s][0] + i, cols), wrap(shifts[s][1] + j, W)];
+          for (const [c, j] of gens) {
+            const q = [wrap(shifts[s][0] + c, row), wrap(shifts[s][1] + j, W)];
             if (!shifts.some(([x, y]) => x === q[0] && y === q[1])) shifts.push(q);
           }
-        const near = Math.min(...shifts.slice(1).map(([i, j]) => Math.hypot(...apart(at(0, 0), at(i, j)))));
+        const near = Math.min(...shifts.slice(1).map((q) => far(q)));
         if (!best || near > best.near + 1e-9) best = { near, shifts };
       }
   if (!best) return null; // (no lattice of K blocks: as Apart's none)
-  const places = best.shifts.map(([i, j]) => at(i + 0.01, j + 0.003)),
+  // (each block's middle the first one's moved by its shift, as it moves the cells; a motif's place its first cell's middle:
+  // all by construction, so each block's motifs the first's moved, every colour as many)
+  const first = at(0.01, 0.003),
+    places = best.shifts.map(([c, j]) => {
+      const move = apart(o, m(c, j));
+      return [first[0] + move[0], first[1] + move[1]];
+    }),
     part = new Int32Array(n);
   for (let t = 0; t < n; t++) {
     const [x, y] = xy(t),
-      q = at(Math.floor(x / per), y); // (its motif's place: a motif's cells one colour)
+      q = m(per * Math.floor(x / per), y); // (its motif's place: a motif's cells one colour)
     let k = 0,
-      far = Infinity;
+      least = Infinity;
     places.forEach((p, i) => {
       const d = Math.hypot(...apart(p, q));
-      if (d < far) {
-        far = d;
+      if (d < least) {
+        least = d;
         k = i;
       }
     });
@@ -31549,8 +31558,8 @@ function torusLattice(plane, K, spread = false) {
     part,
     middles: places,
     shifts: best.shifts,
-    far: ([i, j]) => Math.hypot(...apart(at(0, 0), at(i, j))),
-  }; // (its shifts and how far each goes, for its colours apart)
+    far,
+  }; // (its shifts, in cells along a row and rows, and how far each goes, for its colours apart)
 }
 // a sheet's tiles where their colour units are: each its unit's middle on the sheet (a Möbius strip's on its loop, 2L, a side
 // a lattice cell), its tiles' middles the shortest way round from its first one's: its colours' blocks of whole units, as the plane's. A

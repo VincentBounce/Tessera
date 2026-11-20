@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.438';
+const VERSION = '0.5.439';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -37877,10 +37877,10 @@ const CELLS_LIGHT = {
   debugHalo: 1.6,
   cellsDarkInk: 0.2, // (an ink darker than this lights in its inverse: black's white)
 };
-// Panel and Debug in Solo on a light page: a pale yellow panel in a grey ceiling, its halo weaker and cast on the
+// Panel and Debug in Solo on a light page, in 3D: a pale yellow panel in a grey ceiling, its halo weaker and cast on the
 // tiles round it (the ground near white: a light added on it cut off to white), as the user tuned it there; every other
 // number as CELLS_LIGHT's
-const CELLS_LIGHT_SOLO_LIGHT = {
+const CELLS_LIGHT_SOLO_3D = {
   ...CELLS_LIGHT,
   panelLight: 1,
   panelCeiling: 0.67,
@@ -37894,15 +37894,13 @@ const CELLS_LIGHT_SOLO_LIGHT = {
   debugReach: 3,
   debugHalo: 0.84,
 };
-// the same on the plane: Panel's light white and dimmer, as the user tuned it there
-const CELLS_LIGHT_SOLO_LIGHT_PLANE = { ...CELLS_LIGHT_SOLO_LIGHT, panelLight: 0.47, panelColour: '#ffffff' };
-// the lamps' numbers now, the view's shader made with them (see gpuDrawSetup)
-const cellsLightNow = () =>
-  lifeTeams !== 1 || themeName() !== 'light'
-    ? CELLS_LIGHT
-    : walk.plane
-      ? CELLS_LIGHT_SOLO_LIGHT_PLANE
-      : CELLS_LIGHT_SOLO_LIGHT;
+// the same in 2D: Panel's light white and dimmer, as the user tuned it there
+const CELLS_LIGHT_SOLO_2D = { ...CELLS_LIGHT_SOLO_3D, panelLight: 0.47, panelColour: '#ffffff' };
+// the lamps' numbers now, the view's shader made with them (see gpuDrawSetup): three cases
+const cellsLightNow = () => {
+  if (lifeTeams !== 1 || themeName() !== 'light') return CELLS_LIGHT; // (a battle, or a dark page: 2D and 3D alike)
+  return walk.plane ? CELLS_LIGHT_SOLO_2D : CELLS_LIGHT_SOLO_3D;
+};
 // the numbers each mode reads (Halo's halo is Neon's light: see lampsF)
 const CELLS_LIGHT_OF = {
   Off: [],

@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.474';
+const VERSION = '0.5.475';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -12739,6 +12739,13 @@ function cairoStepper(spiral = false) {
  * "$" the next row (a count before for empty ones), "!" the end: "40,-12:3A.B$2.CA!" */
 let population = new Map();
 const cellXY = (k) => [Math.floor(k / 2 ** 22) - 2 ** 21, (k % 2 ** 22) - 2 ** 21]; // key's inverse
+// a pattern's cell drawn (its key in the population, its state v in the pattern): alive in the brush's colour, or dying of it
+// (see parseRule); the eraser: off
+function brushOn(k, v) {
+  const K = walk.life.colours;
+  if (brush.colour) population.set(k, K > 1 ? brush.colour + K * (v - 1) : v);
+  else population.delete(k);
+}
 // a cell drawn (its key in the population): in the brush's colour, or off if it has it; one colour: alive, then each dying
 // state, back to dead
 function toggleDrawn(k) {
@@ -26236,8 +26243,6 @@ const SYMMETRY_WHERE =
   'The grid is not its own copy this way (squares: all ways; a grid in a hexagon: as its tiles allow; a block rule: as its blocks and its rule allow too; in colours, as their parts do, each copy one whole part; the others: none). Not on Famous and Anywhere either: their patterns are laid whole where they are.'; // (a symmetry's greyed words)
 const DRAW_WHERE = 'On a reversible surface, a block rule has no patterns to show or draw.';
 // Draw's brushes and View, at variant w: drawn on the plane only; on a surface its rule's patterns are to see (View on)
-const drawOnPlane = ({ w }) =>
-  VARIANTS[w].plane ? '' : "Drawn on the plane only: on a surface, Famous lays the rule's patterns.";
 // a Life's starts, its tabs (see renderPlaneRow), and why one cannot be at variant v: Draw on a surface (its rule's patterns:
 // none for blocks); Text where no picture fits (its room known on the grid built only: another variant's not judged, not claimed)
 const LIFE_STARTS = [
@@ -26278,26 +26283,16 @@ function renderPlaneRow() {
   syncTextButtons();
   $('startTextInput').style.setProperty('--text-start-font', TEXT_FONTS[plane.font][1]); // (at rest, in its font, see style.css)
   for (const b of $('textFonts').querySelectorAll('button')) setTile(b, { on: b.dataset.font === plane.font });
-  for (const r of $('startDraw').querySelectorAll('#brushTurns, #pngTools')) r.hidden = !kind; // (the turns, a picture: the plane's)
+  $('pngTools').hidden = !kind; // (a picture: the plane's)
   if (!kind) {
     $('symmetryRow').hidden = true;
     $('startDraw').hidden = plane.start !== 'draw';
     $('startText').hidden = plane.start !== 'text';
     $('startDigits').hidden = plane.start !== 'digits';
     if (plane.start !== 'draw') return;
-    // a surface: its cells drawn one by one, a tile clicked (see pickedTile); the rule's patterns on its grid shown
-    const cells = PLANE_OF_MARK[lifeMark(VARIANTS[tabVariant()])],
-      rule = ruleBody(parseRule(ruleBody($('lifeRule').value))?.text ?? '');
-    for (const b of $('brushCards').children) {
-      const p = DRAW_BY_ID.get(b.dataset.brush);
-      b.hidden = b.dataset.brush !== 'cell' && !(p[1] === cells && p[2].includes(rule));
-      if (!b.hidden && b.dataset.brush !== 'cell') discCard(b, p);
-    }
-    $('drawNote').hidden = [...$('brushCards').children].some((b) => !b.hidden);
-    renderDrawTools();
+    renderBrushes(PLANE_OF_MARK[lifeMark(VARIANTS[tabVariant()])]); // (a surface: its cells' grid, a tile clicked, see pickedTile)
     return;
   }
-  $('drawNote').hidden = true;
   setTile($('exportPng'), {
     whyNot: ({ w: v }) => (VARIANTS[v].plane === 'square' && VARIANTS[v].life ? '' : PNG_WHERE),
   });
@@ -26355,7 +26350,11 @@ function renderPlaneRow() {
   $('startDraw').hidden = plane.start !== 'draw';
   $('startText').hidden = plane.start !== 'text';
   $('startDigits').hidden = plane.start !== 'digits';
-  // Draw: the brushes (the patterns on squares only), the colours and the eraser, the turns (greyed for a cell)
+  renderBrushes(kind);
+}
+// Draw: the brushes on a grid (the plane's, or a surface's cells': see PLANE_OF_MARK): the rule's patterns, the colours and the
+// eraser, the turns (greyed for a cell); a note where the rule has none there
+function renderBrushes(kind) {
   const rule = ruleBody(parseRule(ruleBody($('lifeRule').value))?.text ?? ''),
     mine = !ruleCard(rule, tabVariant());
   const fits = (p) => !p[1] || (p[1] === baseOf(kind) && (mine || p[2].includes(rule))); // the rule's patterns; your own rule: all the grid's
@@ -26399,6 +26398,7 @@ function renderPlaneRow() {
   });
   $('brushTurn').querySelector('span').textContent = `↻ ${(brush.turn * 360) / gridTurns(kind)}°`;
   $('brushFlip').classList.toggle('active', brush.flip && canMirror(kind));
+  $('drawNote').hidden = [...$('brushCards').children].some((b) => !b.hidden && b.dataset.brush !== 'cell');
   renderDrawTools();
 }
 // Draw's tools on the plane, each as it can (a cell: no turn), all greyed away from gen 0 (the cells drawn are its start's:
@@ -26420,15 +26420,20 @@ function renderDrawTools() {
       tooBig(DRAW_BY_ID.get(b.dataset.brush)),
       'Too big for this disc: at a larger size.',
       b.classList.contains('active'),
-      b.dataset.brush === 'cell' ? null : drawOnPlane,
+      null,
     );
-  const tool = brush.view || !DRAW_BY_ID.get(brush.id)[1]; // (View or a cell: no pattern to turn)
+  const tool = brush.view || !DRAW_BY_ID.get(brush.id)[1], // (View or a cell: no pattern to turn)
+    brushGrid = walk.life ? patternKind() : kind; // (the grid shown's, the plane's or a surface's cells: see brushCells)
   grey(
     $('brushTurn'),
-    tool || gridTurns(kind) === 1,
+    tool || gridTurns(brushGrid) === 1,
     'Not for View or a cell, nor on a grid a pattern cannot turn on (on a disc, it turns towards the cell clicked).',
   );
-  grey($('brushFlip'), tool || !canMirror(kind), 'Not for View or a cell, nor on a grid a pattern cannot mirror on.');
+  grey(
+    $('brushFlip'),
+    tool || !canMirror(brushGrid),
+    'Not for View or a cell, nor on a grid a pattern cannot mirror on.',
+  );
 
   grey($('openPng'), kind !== 'square', 'Only on a grid of squares: one pixel per square.');
   $('brushColours').classList.toggle('off', away);
@@ -26980,7 +26985,7 @@ function orientPattern(kind, rle, turn, flip) {
 }
 let brushMemo = null;
 function brushCells() {
-  const kind = walk.plane.kind,
+  const kind = patternKind(),
     k = `${kind}|${brush.id}|${brush.turn}|${brush.flip}`;
   if (brushMemo?.k !== k)
     brushMemo = {
@@ -32738,6 +32743,14 @@ function patternFrame(i, K, place = patternPlace(i, K)) {
     cellAt: (q) => find(q, on),
   });
 }
+// a pattern laid on a surface, its first cell on cell t, in t's face's frame F (see cellPlace, patternFrame): its cells (their
+// middles ms on the plane, see cellMiddle) moved by whole steps (see translations), each its cell there (−1 none); Anywhere's
+// and Draw's brush's
+function patternOnCell(F, ms, t) {
+  const p = F.from(F.place(t)),
+    d = latticeNear(patternKind(), [p[0] - ms[0][0], p[1] - ms[0][1]]);
+  return ms.map((m) => F.cellAt(F.at([m[0] + d[0], m[1] + d[1]])));
+}
 // the move by whole steps (see translations) nearest a plane vector e
 const latticeNear = (kind, e) => {
   const [A, B] = translations(kind),
@@ -33966,15 +33979,12 @@ function laidChoices(centred, any = false) {
         return pl && frames.get(key);
       };
       const lay = ([cells, ms, name], t) => {
-        const F = frameOf(t);
-        if (!F) return null;
-        const p = F.from(F.place(t)),
-          d = latticeNear(kind, [p[0] - ms[0][0], p[1] - ms[0][1]]),
-          at = (k) => F.cellAt(F.at([ms[k][0] + d[0], ms[k][1] + d[1]]));
-        if (at(0) !== t) return null;
+        const F = frameOf(t),
+          at = F && patternOnCell(F, ms, t);
+        if (!at || at[0] !== t) return null;
         const cs = [];
         for (let k = 0; k < cells.length; k++) {
-          const c = at(k);
+          const c = at[k];
           if (c < 0 || !here.has(c)) return null;
           cs.push(c, colourState(i, cells[k][2]));
         }
@@ -41412,7 +41422,7 @@ $('startCells').addEventListener('click', () => {
     return;
   }
   [population, cleared] = cleared ? [cleared, null] : [new Map(), population];
-  planeReseed();
+  lifeReseed(); // (the plane's or a surface's)
 });
 $('colourMode').addEventListener('change', () => {
   needsFull = true;
@@ -41756,7 +41766,7 @@ $('drawView').addEventListener('click', () => {
   renderPlaneRow();
 });
 $('brushTurn').addEventListener('click', () => {
-  brush.turn = (brush.turn + 1) % gridTurns(VARIANTS[tabVariant()].plane);
+  brush.turn = (brush.turn + 1) % gridTurns(patternKind()); // (the grid shown's: see brushCells)
   renderPlaneRow();
 });
 $('brushFlip').addEventListener('click', () => {
@@ -41862,10 +41872,24 @@ stage.addEventListener('pointerdown', (e) => {
 stage.addEventListener('pointerup', (e) => {
   if (!drawFrom || Math.hypot(e.clientX - drawFrom[0], e.clientY - drawFrom[1]) > 4) return;
   if (walk.surface) {
-    // a surface: the tile under the pointer (see pickedTile), a cell
-    if (pickedTile < 0 || pickedTile >= walk.life.seed.length) return;
+    // a surface: the tile under the pointer (see pickedTile): a cell as the plane's, a pattern laid on its face (see
+    // patternOnCell; none on a cell folded over an edge, see cellPlace)
+    const t = pickedTile;
+    if (t < 0 || t >= walk.life.seed.length) return;
     cleared = null; // drawn again: no Undo
-    toggleDrawn(populationKey(pickedTile));
+    if (brush.id === 'cell' && brush.colour) toggleDrawn(populationKey(t));
+    else if (brush.id === 'cell') brushOn(populationKey(t), 1);
+    else {
+      const place = cellPlace(t);
+      if (!place) return;
+      const cells = brushCells(),
+        at = patternOnCell(
+          patternFrame(0, 1, place),
+          cells.map(([x, y]) => cellMiddle(patternKind(), x, y)),
+          t,
+        );
+      cells.forEach(([, , v], k) => at[k] >= 0 && brushOn(populationKey(at[k]), v));
+    }
     lifeReseed();
     return;
   }
@@ -41879,13 +41903,8 @@ stage.addEventListener('pointerup', (e) => {
     const cell = planeCellAt(walk.plane.kind, walk.plane.W, wx, wy);
     if (!cell) return;
     cleared = null; // drawn again: no Undo
-    const K = walk.life.colours; // a pattern's state: alive in the brush's colour, or dying of it (see parseRule)
     if (brush.id !== 'cell' || !brush.colour)
-      for (const [x0, y0, v] of brushAt(cell)) {
-        const [x, y] = firstCell([x0, y0]);
-        if (brush.colour) population.set(planeKey(x, y), K > 1 ? brush.colour + K * (v - 1) : v);
-        else population.delete(planeKey(x, y));
-      } // (drawn at its first copy: anywhere, all of them)
+      for (const [x0, y0, v] of brushAt(cell)) brushOn(planeKey(...firstCell([x0, y0])), v); // (drawn at its first copy: anywhere, all of them)
     else toggleDrawn(planeKey(...firstCell(cell)));
     planeReseed();
   }

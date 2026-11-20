@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.460';
+const VERSION = '0.5.461';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -11567,6 +11567,25 @@ function renderModePicker() {
             }),
           ]
         : []),
+      // Two walls, a Klein bottle's switch (see kleinWalls)
+      ...(F.name === FOLDS.klein.name
+        ? [
+            tile({
+              pic: icon('klein'),
+              text: 'Two walls',
+              toggle: true,
+              byDefault: 'off',
+              on: wallsOn(w),
+              whyNot: ({ w: v }) => (wallsAllowed(v) ? '' : WALLS_WHERE),
+              title:
+                "Its inner wall and its outer, a cell each: a cell crossing the seam goes on on the other wall (the bottle's cover, a torus twice as long)",
+              click: () => {
+                kleinWalls = !kleinWalls;
+                compute();
+              },
+            }),
+          ]
+        : []),
     );
   }
   // the rules, where there are several, each with its picture; those its tiling has not greyed (see walkKindHere)
@@ -15469,7 +15488,8 @@ const stripSteps = (kind0, nv, W, own) => {
     (n) => ok(n, nv) && n % along === 0,
   );
 };
-const stripKey = () => `${ringColours(ringVariant())}${VARIANTS[ringVariant()]?.margolus ? ' blocks' : ''}`; // (a strip's length its colours', a reversible one's its blocks', see stripSteps)
+const stripKey = () =>
+  `${ringColours(ringVariant())}${VARIANTS[ringVariant()]?.margolus ? ' blocks' : ''}${wallsOn() ? ' walls' : ''}`; // (a strip's length its colours', a reversible one's its blocks', see stripSteps)
 const stripMemo = remember('stripMemo', weakCache()),
   countMemo = remember('countMemo', {});
 // a strip's length, width and tiles' count, without its tiles (the sizes' ladder asks for many: see mobiusSheetOf's count)
@@ -15710,36 +15730,41 @@ function kleinLength(kindK, size, K = ringColours(ringVariant())) {
       return off(c) < off(p) ? c : p;
     });
 }
-function kleinTilingMesh(kindK, size) {
-  const key = `${kindK}${size}|${ringColours(ringVariant())}`; // (its length its colours': see kleinLength)
+// (walls: its two walls, each tile twice, the Möbius strip's way (see mobiusMesh): its outer wall as listed, its inner turned
+// over; past its seam a wall goes on as the other, the bottle's own cover, a torus twice as long)
+function kleinTilingMesh(kindK, size, walls = wallsOn()) {
+  const key = `${kindK}${size}|${ringColours(ringVariant())}|${walls}`; // (its length its colours': see kleinLength)
   if (meshCache[key]) return meshCache[key];
   const { kind, turn, L, W, n, nv, step, by, sides, tiles, mids, latticeCells, cellPlaces, colourCells, originCell } =
       kleinTilingSheet(kindK, size),
     Q = STRIP_GRID,
     ids = new Map(),
     verts = [];
-  const id = ([x, y]) => {
-    // a corner by its place on tilingStrip's fine grid, brought within the sheet (turned over past its end)
+  const id = ([x, y], wall) => {
+    // a corner by its place on tilingStrip's fine grid, brought within the sheet (turned over past its end: on the other wall)
     let i = Math.round((x / step) * Q),
       j = Math.round((y / by) * Q);
     const k = Math.floor(i / (n * Q));
     i -= k * n * Q;
     if (k % 2) j = nv * Q - j;
     j = ((j % (nv * Q)) + nv * Q) % (nv * Q);
-    if (!ids.has(i * nv * Q + j)) {
-      ids.set(i * nv * Q + j, verts.length / 3);
+    const at = 2 * (i * nv * Q + j) + (walls ? wall ^ (k & 1) : 0);
+    if (!ids.has(at)) {
+      ids.set(at, verts.length / 3);
       verts.push(...kleinPoint(x, y, L, W, 1, W / L));
     }
-    return ids.get(i * nv * Q + j);
+    return ids.get(at);
   };
-  const sheet = tiles.map(turnOver),
+  const faces = walls ? [0, 1] : [0],
+    twice = (list) => faces.flatMap(() => list),
+    sheet = faces.flatMap((wall) => tiles.map((t) => (wall ? t : turnOver(t)))),
     mesh = finishMesh(
       verts,
-      sheet.map((t) => t.map(id)),
+      sheet.map((t, i) => t.map((p) => id(p, i >= tiles.length ? 1 : 0))),
       sides,
       nv,
       null,
-    ); // one-sided: as listed, turned over (see kleinCairoMesh)
+    ); // one-sided: as listed, turned over (see kleinCairoMesh); its inner wall as listed
   return (meshCache[key] = Object.assign(mesh, {
     torus: true,
     klein: true,
@@ -15752,11 +15777,12 @@ function kleinTilingMesh(kindK, size) {
     tiling: kind,
     stripTurn: turn,
     uv: new Float64Array(sheet.flat(2)),
-    uvMid: new Float64Array(mids),
-    latticeCells,
-    cellPlaces,
-    colourCells,
+    uvMid: new Float64Array(twice(mids)),
+    latticeCells: twice(latticeCells),
+    cellPlaces: cellPlaces && twice(cellPlaces),
+    colourCells: twice(colourCells),
     originCell,
+    ...(walls && { walls: true, front: tiles.length, L, W }), // (its inner wall's tiles past its outer's, in their order; its loop L, W, see mobiusLoop)
   }));
 }
 // a tile's corners the other way round, its last one repeated still last (a tile with fewer corners than the strip's:
@@ -17086,7 +17112,7 @@ const SURFACES = {
           columns: (s, own) => kleinLength(kind, own ? `${s}x${own}` : s).n,
           perRow: 1,
           steps: [kleinRows(kind), 1],
-          tiles: (s) => kleinCount(kind, s),
+          tiles: (s) => kleinCount(kind, s) * (wallsOn() ? 2 : 1),
           unit: MOBIUS_STRIPS[kleinStrip(kind)].unit,
         },
       ]),
@@ -17606,7 +17632,7 @@ const latticeCellSize = (g) =>
 // a sheet's tile's lattice cell, as laid (g.latticeCells, else latticeCellSize(g) tiles at a time as listed), a Möbius strip's back's apart from its
 // front's (the same lattice cells listed twice, see mobiusMesh)
 const latticeCellOf = (g, t) =>
-  2 * (g.latticeCells?.[t] ?? Math.floor(tilePlace(g, t) / latticeCellSize(g))) + (g.mobius && t >= g.front ? 1 : 0);
+  2 * (g.latticeCells?.[t] ?? Math.floor(tilePlace(g, t) / latticeCellSize(g))) + (t >= g.front ? 1 : 0);
 // a motif that repeats turned, not by sliding alone (Cairo's 2 pentagons: the next 2 the same a quarter turn round; its least
 // cell that slides onto itself, 4)
 const turnedCellNote = (kind) => (kind === 'cairo' ? ' (the next ones the same turned by a quarter)' : '');
@@ -17982,6 +18008,13 @@ const POINTY = new Set(['torusHex', 'mobiusHex', 'kleinHex']);
 const shownSurface = (surface, turned) =>
   TURNED[surface] && turned !== POINTY.has(surface) ? TURNED[surface] : surface;
 const surfaceOf = (variant) => shownSurface(variant.surface, torusTurned);
+// a Klein bottle's two walls (Two walls, a switch; the link's kleinWalls): its inner wall and its outer, each tile twice (see
+// kleinTilingMesh); a bottle laid from a strip's (Cairo's its own), Life's; the mesh made for a variant's, as its colours (see
+// stripKey)
+let kleinWalls = false;
+const WALLS_WHERE = "A Klein bottle's two walls: Life's, on a bottle laid from a strip (Cairo's its own)";
+const wallsAllowed = (w) => !!VARIANTS[w]?.life && !!kleinStrip(VARIANTS[w].surface ?? '');
+const wallsOn = (w = ringVariant()) => kleinWalls && wallsAllowed(w);
 const STARTS_ON = [...SOLIDS, ...TORI]; // the surfaces with a start selector
 
 // On a torus every corner is like any other (shifting the sheet maps the grid onto itself), and
@@ -18661,7 +18694,7 @@ function loopWatch(seq, ahead) {
 // point p to point q, the shortest of its copies.
 const mobiusAt = (g, t, [x, y]) => (t < g.front ? [x, y] : [x, 2 * g.W - y]);
 // a tile's place: a Möbius strip's two faces, one place (tile t and t + front, see mobiusMesh)
-const tilePlace = (g, t) => (g.mobius ? t % g.front : t);
+const tilePlace = (g, t) => (g.front ? t % g.front : t); // (two faces, a strip's or a bottle's walls: the front's twin)
 function mobiusDelta(g, p, q) {
   let best = null;
   for (let a = -1; a <= 1; a++)
@@ -19586,21 +19619,23 @@ function sheetPlacesOf(g) {
   const k = g.sides,
     round = (v) => Math.round(v * 1e4) || 0,
     turns = (x, P) => Math.floor(x / P + 1e-7);
-  const key = g.klein
-    ? (x, y) => kleinSheetKey(x, y, g.nu, g.nv, g.cairo ? 0.5 : 0)
-    : g.mobius
-      ? (x, y, face) => {
-          const m = turns(x, g.L);
-          return `${(face + m) & 1},${round(x - m * g.L)},${round(m & 1 ? g.W - y : y)}`;
-        }
-      : (x, y) => `${round(x - turns(x, g.nu) * g.nu)},${round(y - turns(y, g.nv) * g.nv)}`;
+  const key = g.walls
+    ? (x, y, face) => `${(face + turns(x, g.nu)) & 1},${kleinSheetKey(x, y, g.nu, g.nv, 0)}` // (past its seam on the other wall)
+    : g.klein
+      ? (x, y) => kleinSheetKey(x, y, g.nu, g.nv, g.cairo ? 0.5 : 0)
+      : g.mobius
+        ? (x, y, face) => {
+            const m = turns(x, g.L);
+            return `${(face + m) & 1},${round(x - m * g.L)},${round(m & 1 ? g.W - y : y)}`;
+          }
+        : (x, y) => `${round(x - turns(x, g.nu) * g.nu)},${round(y - turns(y, g.nv) * g.nv)}`;
   const cornerAt = new Map(),
     placed = []; // (each corner's place, one of its tiles', and its face)
   for (let t = 0; t < g.n; t++)
     for (let q = 0; q < k; q++) {
       const x = g.uv[2 * (k * t + q)],
         y = g.uv[2 * (k * t + q) + 1],
-        face = g.mobius && t >= g.front ? 1 : 0;
+        face = t >= g.front ? 1 : 0;
       cornerAt.set(key(x, y, face), g.poly[k * t + q]);
       placed[g.poly[k * t + q]] ??= [x, y, face];
     }
@@ -32712,12 +32747,14 @@ function sheetUnits(g, kind) {
 }
 // a tile's place on the sheet (a Möbius strip: on its two sides as one strip, see mobiusLoop), and the
 // tile at a place, across the seams (a Klein bottle's turning over)
-const sheetPlace = (g, t) => (g.mobius ? mobiusLoop(g, t) : sheetMiddle(g, t));
+const sheetPlace = (g, t) => (g.front ? mobiusLoop(g, t) : sheetMiddle(g, t));
 function sheetIndex(g) {
   if (g.famousIndex) return g.famousIndex;
   const key = ([u, v]) => {
-    if (g.mobius) u = ((u % (2 * g.L)) + 2 * g.L) % (2 * g.L);
-    else {
+    if (g.front) {
+      u = mod(u, 2 * g.L);
+      if (g.walls) v = mod(v, g.W); // (a bottle's two walls: one torus twice as long)
+    } else {
       const k = Math.floor(u / g.nu);
       u -= k * g.nu;
       if (g.klein && k % 2) v = g.nv - v;
@@ -32727,7 +32764,7 @@ function sheetIndex(g) {
       const q = roundOff(x);
       return n && q === roundOff(n) ? 0 : q;
     };
-    return r(u, g.mobius ? 2 * g.L : g.nu) * 2 ** 22 + r(v, g.mobius ? 0 : g.nv) + 2 ** 21; // (a number: millions looked up for an icon)
+    return r(u, g.front ? 2 * g.L : g.nu) * 2 ** 22 + r(v, g.mobius ? 0 : g.nv) + 2 ** 21; // (a number: millions looked up for an icon)
   };
   const at = new Map();
   for (let t = 0; t < g.n; t++) at.set(key(sheetPlace(g, t)), t);
@@ -34198,6 +34235,7 @@ function getSetup() {
   if (variant.surface) s.gridSize = $('gridSizeField').value;
   if (variantStarts() && startsWayNow() === 'symmetric' && startNo() > 1) s.walkStart = startNo(); // (Symmetric's: Centred and Random place their own)
   if (torusTurned && TURNED[variant.surface]) s.gridTurned = 1;
+  if (wallsOn(w)) s.kleinWalls = 1; // (Two walls)
   if (life) s.playRule = ruleBody($('lifeRule').value);
   if (teamsPlayed(w) > 1) s.teams = teamsPlayed(w);
   if (battleOn()) {
@@ -34280,6 +34318,7 @@ function applySetup(s) {
   set('variant', w);
   $('startNo').value = s.walkStart ?? 1;
   torusTurned = Number(s.gridTurned) === 1;
+  kleinWalls = Number(s.kleinWalls) === 1;
   if (VARIANTS[w].surface) {
     const kind = surfaceOf(VARIANTS[w]);
     fillGridSizes(kind, VARIANTS[w].initial);
@@ -36645,7 +36684,7 @@ const surfaceTriangles = (g) =>
       out = [],
       own = [];
     for (let t = 0; t < g.n; t++) {
-      if (g.mobius && t >= g.front) {
+      if (t >= g.front) {
         const f = t - g.front,
           d = own[f].d;
         for (let e = own[f].from; e < own[f].to; e += 3)
@@ -38769,9 +38808,10 @@ function battlePalette(D) {
 }
 // A surface, its tiles' colours by paint (paintLevels', or Life's by gpuLook)
 // a surface's tiles seen from both sides: a cut, a Klein bottle (one-sided: its tiles' face inwards in its neck and
-// handle); else their back faces not drawn, facesHidden's (which way its tiles turn: see shapeSign); one rule, the tiles',
-// the picking's and the halo's passes (a Möbius strip's two faces each a cell, the one seen alone, its halo too)
-const bothSides = (g) => cutOn() || !!g.klein;
+// handle); else their back faces not drawn, facesHidden's (which way its tiles turn: see shapeSign); never a mesh of two
+// faces (g.front: a Möbius strip, a Klein bottle's two walls), each face a cell, the one seen alone, its halo too, cut or
+// not; one rule, the tiles', the picking's and the halo's passes
+const bothSides = (g) => !g.front && (cutOn() || !!g.klein);
 const facesHidden = (g) => (shapeSign(g) < 0 ? 'front' : 'back');
 function gpuSurface(paint, path) {
   const D = gpuDrawSetup();

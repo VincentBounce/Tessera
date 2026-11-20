@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.477';
+const VERSION = '0.5.478';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -25881,6 +25881,8 @@ function buildLifePlane(seq) {
     rule = parseRule('B3/S23');
   }
   $('lifeRule').value = ruleBody(rule.text); // the colours apart (see lifeTeams)
+  // the grid first: all that is made of it reads it (Explore's colours, its walls: see planeColouring, planeCorners)
+  walk.plane = { kind, W, row, n, xy, at, torus: planeTorus(kind), polygons: planePolygons(kind, W, planeTorus(kind)) };
   const nbr = planeNeighbours(kind, W, planeTorus(kind), rule.iso === 'hensel');
   startLife(seq, rule, n, {
     nbr,
@@ -25896,7 +25898,6 @@ function buildLifePlane(seq) {
   });
   Object.assign(walk, {
     stacked: spaceTime && spaceTimeApplies(walk.variant),
-    plane: { kind, W, row, n, xy, at, torus: planeTorus(kind), polygons: planePolygons(kind, W, planeTorus(kind)) },
     xs: walk.wx,
     ys: walk.wx, // (one point, as its world's: see startLife)
   });

@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.431';
+const VERSION = '0.5.432';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -6471,7 +6471,7 @@ const DISPLAY_BY_TAB = {
     'ocean',
     'cut',
   ],
-  'Automata on the plane': ['colours', 'digit', 'mono', 'trail', 'gridFinish', 'tiles', 'ocean'], // (Grid: its cells' outlines, see gpuPlane; Trail: Rewind's Blocks in its place)
+  'Automata on the plane': ['colours', 'digit', 'mono', 'trail', 'gridFinish', 'cellsFinish', 'tiles', 'ocean'], // (Grid: its cells' outlines, see gpuPlane; Trail: Rewind's Blocks in its place)
   'Automata on surfaces': [
     'shape',
     'colours',
@@ -38078,20 +38078,27 @@ fn ceiling() -> f32 {  // (the tiles none painted, darkened: Panel's and Debug's
   if (i.col.a < 0.75 || pieces.y == ${CELLS_FINISH.Halo}u) {  // (none painted, or Halo's tiles: flat; Panel's and Debug's ceiling a little grey)
     return seen(flatTile(i.col.rgb * select(1.0, ceiling(), i.col.a < 0.75), facing(normalize(i.n)), i.sh), i.pos.z);
   }
-  let piece = inPiece(i.p, i.first); let w = piece.w;
+  let piece = inPiece(i.p, i.first);
   let n = facing(normalize(i.n));
-  if (pieces.y != ${CELLS_FINISH.Tessera}u) {  // (Neon, LED, Panel, Tube, Debug: a dim tile, its own light, never in the lamp's shadow)
-    var gloss = vec3f(0.0); if (pieces.y == ${CELLS_FINISH.LED}u) { gloss = shine(vec3f(${L.ledGloss}), n) * lightShare(i.sh); }  // (LED: the sky glinting on its slab)
-    if (pieces.y == ${CELLS_FINISH.Debug}u) { gloss = shine(vec3f(${L.debugGloss}), n) * lightShare(i.sh); }
-    let lit = liveColour(i.col) * (${L.cellsBody} + 0.2 * max(0.0, dot(n, u.L)) * lightShare(i.sh)) + lampLight(i.col, w, n) + gloss;
-    let ground = flatTile(unpack4x8unorm(pieces.z).rgb * ceiling(), n, i.sh);  // (the ground as it is drawn, its ceiling's too)
-    return seen(mix(ground, lit, lifeLeft(i.col)), i.pos.z);  // (a dying cell going out, from lit to the ground drawn, with its life)
+  let out = piece.xyz - i.p;
+  let lit = cellLit(i.col, piece.w, n, out - n * dot(out, n), lightShare(i.sh));
+  if (pieces.y == ${CELLS_FINISH.Tessera}u) { return seen(lit, i.pos.z); }
+  let ground = flatTile(unpack4x8unorm(pieces.z).rgb * ceiling(), n, i.sh);  // (the ground as it is drawn, its ceiling's too)
+  return seen(mix(ground, lit, lifeLeft(i.col)), i.pos.z);  // (a dying cell going out, from lit to the ground drawn, with its life)
+}
+// a painted tile lit by its Cells (pieces.y), w its place from its edge to its middle (see inPiece), n its normal (the
+// viewer's side), side its way to its nearest edge along it, share the lamp's (its shadows'): Neon, LED, Panel, Tube, Debug a
+// dim tile, its own light, never in the lamp's shadow; Tessera a piece of mosaic, its normal tilted towards its nearest edge
+// over BEVEL of the way
+fn cellLit(c: vec4f, w: f32, n: vec3f, side: vec3f, share: f32) -> vec3f {
+  if (pieces.y != ${CELLS_FINISH.Tessera}u) {
+    var gloss = vec3f(0.0); if (pieces.y == ${CELLS_FINISH.LED}u) { gloss = shine(vec3f(${L.ledGloss}), n) * share; }  // (LED: the sky glinting on its slab)
+    if (pieces.y == ${CELLS_FINISH.Debug}u) { gloss = shine(vec3f(${L.debugGloss}), n) * share; }
+    return liveColour(c) * (${L.cellsBody} + 0.2 * max(0.0, dot(n, u.L)) * share) + lampLight(c, w, n) + gloss;
   }
-  let edge = piece.xyz;
-  let out = edge - i.p; let side = out - n * dot(out, n);  // (towards its nearest edge, along it)
   let slope = 1.6 * (1.0 - smoothstep(0.0, ${TESSERA_BEVEL}, w));
   var m = n; if (dot(side, side) > 0.0) { m = normalize(n + normalize(side) * slope); }
-  return seen(i.col.rgb * (1.0 - u.shade) + shine(i.col.rgb, m) * lightShare(i.sh), i.pos.z);
+  return c.rgb * (1.0 - u.shade) + shine(c.rgb, m) * share;
 }
 // a 3D walk's step as a bar, from a to b0 as its life draws it (see lifeOf: its step its instance's, k), u.halfW thick, its
 // ends closed past its points by half its thickness: a unit cube's corner c (and its normal) laid along it; none yet: off
@@ -38240,7 +38247,31 @@ fn planeAt(p: vec2f) -> vec4f { return flatAt(u.view.yz + vec2f(u.turnC * p.x - 
   o.col = select(vec4f(c.rgb, 1.0), vec4f(c.rgb * c.a, c.a), c.a < ${SEEN_THROUGH});  // (premultiplied)
   return o;
 }
-@vertex fn planeLinesV(@location(0) pos: vec2f) -> Col { var o: Col; o.col = u.plain; o.pos = planeAt(pos); return o; }`;
+@vertex fn planeLinesV(@location(0) pos: vec2f) -> Col { var o: Col; o.col = u.plain; o.pos = planeAt(pos); return o; }
+// Cells on the plane (see planeLamps): its painted cells lit as a surface's tiles facing the viewer (tesseraF's cellLit, its
+// normal the view's V, its ways on the screen the view's R and Uu: the same lamp), a cell's corners read from its first
+// (pieces.x a cell); a trail's ink seen through as planeCellsV's
+struct PlaneLamp { @builtin(position) pos: vec4f, @location(0) col: vec4f, @location(1) p: vec3f, @location(2) @interpolate(flat) first: u32 }
+@vertex fn planeLampV(@location(0) pos: vec3f, @location(1) id: u32, @builtin(vertex_index) v: u32) -> PlaneLamp {
+  var o: PlaneLamp; let c = unpack4x8unorm(tileCol[id]);
+  o.pos = select(planeAt(pos.xy), vec4f(2.0, 2.0, 2.0, 1.0), c.a == 0.0); o.col = c; o.p = pos;
+  o.first = v - v % pieces.x;
+  return o;
+}
+fn onScreen(d: vec3f) -> vec3f {  // (a way on the plane, turned, as the view's: right R, down −Uu, see planeAt)
+  return (u.turnC * d.x - u.turnS * d.y) * u.R - (u.turnS * d.x + u.turnC * d.y) * u.Uu;
+}
+@fragment fn planeLampF(i: PlaneLamp) -> @location(0) vec4f {
+  if (i.col.a < 0.75 || pieces.y == ${CELLS_FINISH.Halo}u) { return select(vec4f(i.col.rgb, 1.0), vec4f(i.col.rgb * i.col.a, i.col.a), i.col.a < ${SEEN_THROUGH}); }  // (a trail, a ground, or Halo's: as planeCellsV draws them)
+  let piece = inPiece(i.p, i.first);
+  let lit = cellLit(i.col, piece.w, u.V, onScreen(piece.xyz - i.p), 1.0);
+  if (pieces.y == ${CELLS_FINISH.Tessera}u) { return vec4f(lit, 1.0); }
+  return vec4f(mix(unpack4x8unorm(pieces.z).rgb, lit, lifeLeft(i.col)), 1.0);  // (a dying cell going out, from lit to the ground)
+}
+@fragment fn planeLampsF(i: PlaneLamp) -> @location(0) vec4f {  // (its halo's lamps, as lampsF's)
+  if (i.col.a < 0.75) { return vec4f(0.0); }
+  return vec4f(lampLight(i.col, inPiece(i.p, i.first).w, u.V) * lifeLeft(i.col) * haloShare(), select(0.0, 1.0, pieces.y == ${CELLS_FINISH.Halo}u));
+}`;
 // the 3D view's drawing made again from its code (its lamps' numbers tuned, or others now: see cellsLightNow): its pipelines, buffers and textures anew
 function rebuildGpuView() {
   GPU.draw = null;
@@ -38529,21 +38560,23 @@ const gpuBuffer = (name, data, usage = GPUBufferUsage.VERTEX) => {
   return D[name];
 };
 // the bind group of the frame's numbers, the tiles' colours, the rainbow and the digits' colours
-// Tessera's bind group: the tiles' corners and how many a tile, made again when their buffers are (see gpuBuffer)
-const cornersGroup = (D) => {
-  if (D.cornersGroup?.pos !== D.pos || D.cornersGroup.each !== D.pieces)
-    D.cornersGroup = {
-      pos: D.pos,
-      each: D.pieces,
+// Cells' bind group: the tiles' corners and how many a tile (a surface's, pos and pieces; the plane's, see planeLamps), made
+// again when their buffers are (see gpuBuffer)
+const cornersGroup = (D, pos = 'pos', pieces = 'pieces') => {
+  const memo = (D.cornersGroups ??= {});
+  if (memo[pos]?.pos !== D[pos] || memo[pos].each !== D[pieces])
+    memo[pos] = {
+      pos: D[pos],
+      each: D[pieces],
       group: D.device.createBindGroup({
         layout: D.corners,
         entries: [
-          { binding: 0, resource: { buffer: D.pos } },
-          { binding: 1, resource: { buffer: D.pieces } },
+          { binding: 0, resource: { buffer: D[pos] } },
+          { binding: 1, resource: { buffer: D[pieces] } },
         ],
       }),
     };
-  return D.cornersGroup.group;
+  return memo[pos].group;
 };
 const gpuGroup = (col = null) => {
   const D = GPU.draw;
@@ -38598,19 +38631,17 @@ const gpuRenderPass = (enc, colour = null, clear = [0, 0, 0, 0], depth = true) =
       : undefined,
   });
 };
-// the shadows: the light's depths, again only when key changes; draw(pass) draws the pieces
-function gpuShadows(enc, slot, draw, key) {
-  const D = GPU.draw,
-    { device } = D;
+// the shadows' depths and their bind group, made once (the plane's Cells bind it, never drawing into it: see planeLamps)
+function shadowGroup(D) {
   if (!D.shadow) {
     const make = (format) =>
-      device.createTexture({
+      D.device.createTexture({
         size: [SHADOW_SIZE, SHADOW_SIZE],
         format,
         usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING,
       });
     D.shadow = { depth: make('depth24plus') };
-    D.shadow.group = device.createBindGroup({
+    D.shadow.group = D.device.createBindGroup({
       layout: D.shadowed,
       entries: [
         { binding: 0, resource: D.shadow.depth.createView() },
@@ -38618,6 +38649,12 @@ function gpuShadows(enc, slot, draw, key) {
       ],
     });
   }
+  return D.shadow.group;
+}
+// the shadows: the light's depths, again only when key changes; draw(pass) draws the pieces
+function gpuShadows(enc, slot, draw, key) {
+  const D = GPU.draw;
+  shadowGroup(D);
   if (key !== null && D.keys.shadow === key) return;
   D.keys.shadow = key;
   const p = enc.beginRenderPass({
@@ -39653,6 +39690,34 @@ function gpuCubes(count, of, make, reach) {
   return true;
 }
 
+// A plane's cells and walls as the GPU draws them: each polygon's corners (those on a straight side left out), its number
+// each, its triangles; with k (Cells, see tesseraF), every polygon k corners, its last repeated, a corner's xyz (z 0): a
+// cell's corners then found from its first, as a surface's tiles' are (see planeLampV)
+function planeVertices(F, k = 0) {
+  const straight = (P, i) => {
+    const [a, b, c] = [P.at(i - 1), P[i], P[(i + 1) % P.length]];
+    return Math.abs((b[0] - a[0]) * (c[1] - a[1]) - (b[1] - a[1]) * (c[0] - a[0])) <= 1e-12;
+  };
+  const N = k ? k * F.m : F.start[F.m],
+    d = k ? 3 : 2,
+    pos = new Float32Array(d * N),
+    ids = new Uint32Array(N),
+    tris = new Uint32Array(3 * F.start[F.m]);
+  let v = 0,
+    c = 0;
+  for (let t = 0; t < F.m; t++) {
+    const P = F.poly(t).filter((_, i, P2) => !straight(P2, i)),
+      v0 = v;
+    for (let q = 0; q < (k || P.length); q++) {
+      const [x, y] = P[Math.min(q, P.length - 1)];
+      pos[d * v] = x;
+      pos[d * v + 1] = y;
+      ids[v++] = t;
+    }
+    for (const i of polygonTriangles(P)) tris[c++] = v0 + i;
+  }
+  return { pos: pos.subarray(0, d * v), ids: ids.subarray(0, v), tris: tris.subarray(0, c) };
+}
 // Life on the plane: its cells' triangles and walls', once a grid; the page's colour on the cells and the walls'
 // on the walls under all, zoomed in enough the outlines, over all the generation's colours (paint: into their buffer)
 function gpuPlane(paint) {
@@ -39664,29 +39729,10 @@ function gpuPlane(paint) {
     key = gridKey(),
     F = walk.plane.flat;
   if (D.keys.plane !== key) {
-    const N = F.start[F.m],
-      pos = new Float32Array(2 * N),
-      ids = new Uint32Array(N),
-      tris = new Uint32Array(3 * N);
-    const straight = (P, i) => {
-      const [a, b, c] = [P.at(i - 1), P[i], P[(i + 1) % P.length]];
-      return Math.abs((b[0] - a[0]) * (c[1] - a[1]) - (b[1] - a[1]) * (c[0] - a[0])) <= 1e-12;
-    };
-    let v = 0,
-      c = 0;
-    for (let k = 0; k < F.m; k++) {
-      const P = F.poly(k).filter((_, i, P2) => !straight(P2, i)),
-        v0 = v;
-      for (const [x, y] of P) {
-        pos[2 * v] = x;
-        pos[2 * v + 1] = y;
-        ids[v++] = k;
-      }
-      for (const i of polygonTriangles(P)) tris[c++] = v0 + i;
-    }
-    gpuBuffer('planePos', pos.subarray(0, 2 * v));
-    gpuBuffer('planeIds', ids.subarray(0, v));
-    gpuBuffer('planeTris', tris.subarray(0, c), GPUBufferUsage.INDEX);
+    const { pos, ids, tris } = planeVertices(F);
+    gpuBuffer('planePos', pos);
+    gpuBuffer('planeIds', ids);
+    gpuBuffer('planeTris', tris, GPUBufferUsage.INDEX);
     for (const b of ['planeBase', 'planeCol']) {
       D[b]?.destroy();
       D[b] = device.createBuffer({
@@ -39695,7 +39741,7 @@ function gpuPlane(paint) {
       });
     }
     D.groups = null;
-    Object.assign(D, { planeCount: c, planeLines: null });
+    Object.assign(D, { planeCount: tris.length, planeLines: null });
     D.keys.plane = key;
     D.keys.planeBase = null;
   }
@@ -39755,7 +39801,9 @@ function gpuPlane(paint) {
     rp.drawIndexed(D.planeCount);
   };
   cells(D.planeBase, 0);
-  cells(D.planeCol, 2);
+  const lamps = cellsFinishOn() && planeLampsReady(D, F, texelRgba(oceanOn() ? OCEAN : bg.trim(), 1));
+  if (lamps) drawPlaneLamps(D, rp, 'planeLampF', 3);
+  else cells(D.planeCol, 2);
   if (outline) {
     // the grid over every cell, alive or not, as a surface's edges over its tiles
     rp.setPipeline(
@@ -39778,8 +39826,51 @@ function gpuPlane(paint) {
     rp.draw(D.planeLines);
   }
   rp.end();
-  device.queue.writeBuffer(D.uni, 0, D.words, 0, 512 * 3);
+  if (lamps && haloOf(CELLS_FINISHES[cellsFinish][0]))
+    gpuHalo(enc, (lampsPass) => drawPlaneLamps(D, lampsPass, 'planeLampsF', 3), haloOf(CELLS_FINISHES[cellsFinish][0]));
+  device.queue.writeBuffer(D.uni, 0, D.words, 0, 512 * 4);
   device.queue.submit([enc.finish()]);
+}
+// Cells on the plane: its polygons' corners laid k a cell (its most), once a grid and only while Cells is on, then its
+// Finish and ground's colour each drawing (see planeLampV); true when ready
+function planeLampsReady(D, F, ground) {
+  if (D.keys.planeLamps !== D.keys.plane) {
+    let k = 3;
+    for (let t = 0; t < F.m; t++) k = Math.max(k, F.start[t + 1] - F.start[t]);
+    const { pos, ids, tris } = planeVertices(F, k);
+    gpuBuffer('planeLampPos', pos, GPUBufferUsage.VERTEX | GPUBufferUsage.STORAGE);
+    gpuBuffer('planeLampIds', ids);
+    gpuBuffer('planeLampTris', tris, GPUBufferUsage.INDEX);
+    Object.assign(D, { planeLampCount: tris.length, planeLampK: k });
+    D.keys.planeLamps = D.keys.plane;
+  }
+  gpuBuffer('planePieces', Uint32Array.of(D.planeLampK, cellsFinish, ground, 0), GPUBufferUsage.UNIFORM);
+  return true;
+}
+// the plane's painted cells under Cells into rp, by fragment (lit, or its halo's lamps: format its picture's), look slot
+function drawPlaneLamps(D, rp, fragment, slot) {
+  const halo = fragment === 'planeLampsF';
+  rp.setPipeline(
+    gpuDrawPipe(fragment, {
+      vertex: 'planeLampV',
+      fragment,
+      blend: halo ? null : BLEND_PRE,
+      depth: halo, // (the halo's pass has its depths, see gpuHalo)
+      shadowed: true, // (its bind groups as tesseraF's: corners the third)
+      corners: true,
+      format: halo ? 'rgba16float' : null,
+      buffers: [vertexLayout(12, [vertexAttribute(0, 'float32x3')]), vertexLayout(4, [vertexAttribute(1, 'uint32')])],
+    }),
+  );
+  rp.setBindGroup(0, gpuGroup(D.planeCol), [
+    gpuView(D.words, slot, 1, { turnC: Math.cos(planeTurn()), turnS: Math.sin(planeTurn()) }),
+  ]);
+  rp.setBindGroup(1, shadowGroup(D));
+  rp.setBindGroup(2, cornersGroup(D, 'planeLampPos', 'planePieces'));
+  rp.setVertexBuffer(0, D.planeLampPos);
+  rp.setVertexBuffer(1, D.planeLampIds);
+  rp.setIndexBuffer(D.planeLampTris, 'uint32');
+  rp.drawIndexed(D.planeLampCount);
 }
 
 /* ---- 11.5 Path, overlay and stats --------------------------------------------------------- */

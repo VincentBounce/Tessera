@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.447';
+const VERSION = '0.5.448';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -31614,17 +31614,19 @@ const poleColours = (g, K) => rosetteHalved(g, K) && K === 2;
 const rosetteHalved = (g, K) => rosetteHalves(g, K) && !(K === 2 && duelAcross() && rosetteTurns(g) % 2 === 0);
 // a rosette sphere's K parts, each cell's: its lunes, pole to pole, by its middle's longitude round its axis, each 1 / K of
 // a turn (K dividing its turns: each lune its first turned); or, in halves (see rosetteHalves), each disc's own; a cell on
-// the axis, a pole's, no one's. Alike by construction, before v0.5.415 its lunes dealt as many cells each (Flower 6's 5:
-// 93 and 94 cells, alike in number only)
+// the axis, a pole's, no one's: a disc's middle when one cell (its turns lay it on itself: on the axis, see g.middles; one
+// of several round it lies in a lune). Alike by construction, before v0.5.415 its lunes dealt as many cells each (Flower
+// 6's 5: 93 and 94 cells, alike in number only)
 const rosetteParts = (g, K) =>
   ((g.parts ??= {})[`${K}${rosetteHalved(g, K)}`] ??= (() => {
     const halves = rosetteHalved(g, K),
       d = halves ? K / 2 : K,
-      out = new Int32Array(g.n).fill(-1);
+      out = new Int32Array(g.n).fill(-1),
+      poles = new Set(g.middles.filter((cells) => cells.length === 1).flat());
     for (let t = 0; t < g.n; t++) {
-      const [x, y] = [g.cen[3 * t], g.cen[3 * t + 1]];
-      if (Math.hypot(x, y) < 1e-4) continue; // (on the axis, a hair off it: Ring 12's poles 1.5e-6 off)
-      const a = (((Math.atan2(y, x) - 1e-3) % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI); // (from a hair past a lune's edge)
+      if (poles.has(t)) continue;
+      const [x, y] = [g.cen[3 * t], g.cen[3 * t + 1]],
+        a = (((Math.atan2(y, x) - 1e-3) % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI); // (from a hair past a lune's edge)
       out[t] = (halves && t >= g.south ? d : 0) + Math.min(d - 1, Math.floor((a * d) / (2 * Math.PI)));
     }
     return out;
@@ -38301,13 +38303,13 @@ struct PlaneLamp { @builtin(position) pos: vec4f, @location(0) col: vec4f, @loca
   o.first = v - v % pieces.x;
   return o;
 }
-fn onScreen(d: vec3f) -> vec3f {  // (a way on the plane, turned, as the view's: right R, down −Uu, see planeAt)
+fn planeWayInView(d: vec3f) -> vec3f {  // (a way on the plane, turned, as the view's: right R, down −Uu, see planeAt)
   let s = planeTurned(d.xy); return s.x * u.R - s.y * u.Uu;
 }
 @fragment fn planeLampF(i: PlaneLamp) -> @location(0) vec4f {
   if (i.col.a < 0.75 || pieces.y == ${CELLS_FINISH.Halo}u) { return planeInk(i.col); }  // (a trail, a ground, or Halo's: as planeCellsV draws them)
   let piece = inPiece(i.p, i.first);
-  let lit = cellLit(i.col, piece.w, u.V, onScreen(piece.xyz - i.p), 1.0);
+  let lit = cellLit(i.col, piece.w, u.V, planeWayInView(piece.xyz - i.p), 1.0);
   if (pieces.y == ${CELLS_FINISH.Tessera}u) { return vec4f(lit, 1.0); }
   return vec4f(mix(unpack4x8unorm(pieces.z).rgb, lit, lifeLeft(i.col)), 1.0);  // (a dying cell going out, from lit to the ground)
 }

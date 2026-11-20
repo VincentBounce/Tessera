@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.473';
+const VERSION = '0.5.474';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -10823,7 +10823,7 @@ function renderAntRow() {
   const startHead = $(ant ? 'antStartSection' : 'walkStartSection').querySelector('h2'),
     lead = startHead.nextElementSibling === $('startWays') ? $('startWays') : startHead;
   if (lead.nextElementSibling !== $('startRow')) lead.after($('startRow'));
-  drawing = !!m.plane && plane.start === 'draw' && !spaceTimeOn(); // Life on the plane draws in its Draw start (not in Space-time)
+  drawing = !!m.life && plane.start === 'draw' && !spaceTimeOn(); // Life draws in its Draw start, on the plane or a surface (not in Space-time)
   stage.classList.toggle('drawing', drawsHere()); // (the crosshair: a click draws, as renderDrawTools keeps it)
   // your own rule's field: right after its card (see ruleCards); back in the creatures' section, hidden, when no list has it
   if (!customRow.isConnected) $('walkRuleSection').append(customRow);
@@ -11764,7 +11764,6 @@ function compute() {
   for (const stage in timings) setTiming(stage); // (each walk its own times: none of the one before)
   const variant = VARIANTS[tabVariant()];
   if (!numberPicked) $('formula').value = defaultNumber(tabVariant());
-  surfaceDraw = false;
   if (torusTurned && !blocksTurn(tabVariant(), true)) torusTurned = false; // (a reversible sheet turned only where its blocks are: a link's too)
   renderModePicker();
   if (variant.surface) fillGridSizes(surfaceOf(variant), variant.initial);
@@ -12740,6 +12739,16 @@ function cairoStepper(spiral = false) {
  * "$" the next row (a count before for empty ones), "!" the end: "40,-12:3A.B$2.CA!" */
 let population = new Map();
 const cellXY = (k) => [Math.floor(k / 2 ** 22) - 2 ** 21, (k % 2 ** 22) - 2 ** 21]; // key's inverse
+// a cell drawn (its key in the population): in the brush's colour, or off if it has it; one colour: alive, then each dying
+// state, back to dead
+function toggleDrawn(k) {
+  const v = population.get(k) ?? 0,
+    c = walk.life.colours > 1 ? (v === brush.colour ? 0 : brush.colour) : (v + 1) % walk.life.C;
+  if (c) population.set(k, c);
+  else population.delete(k);
+}
+// cell t's key in a population: on the plane its place (x, y); on a surface its tile (t, 0), a row of them in a link
+const populationKey = (t) => (walk.plane ? planeKey(...walk.plane.xy(t)) : planeKey(t, 0));
 const rleState = (c) =>
   c === 0
     ? '.'
@@ -22158,6 +22167,8 @@ const civColours = (K, C) => [
 function surfaceSeed(seq, n, K) {
   const seed = new Uint8Array(n);
   if (plane.start === 'digits') digitsOn(seed, seq);
+  else if (plane.start === 'draw')
+    for (const [k, c] of population) seed[cellXY(k)[0]] = c; // (its tiles drawn, see populationKey)
   else for (let t = 0; t < n; t++) seed[t] = soupState(t, K);
   return seed;
 }
@@ -22664,7 +22675,6 @@ function buildLife(seq, variant) {
     rule = parseRule('B3/S23');
   }
   $('lifeRule').value = ruleBody(rule.text); // the colours apart (see lifeTeams)
-  if (plane.start === 'draw') plane.start = 'random'; // no drawing on the surfaces
   const seed = surfaceSeed(seq, g.n, rule.colours);
   startLife(seq, rule, g.n, {
     nbr,
@@ -26172,7 +26182,6 @@ function startFromSetup(s) {
 }
 // the grid's size, its edges and its start, as the controls say (the patterns and the turns of a
 // square on squares only)
-let surfaceDraw = false; // a surface's Draw tab open: its patterns shown, greyed (the start stays as it was); a view of this game only, closed by a new one (see compute), as its link has it
 // Symmetry, under the zones (a zone's sub-mode): the grid's (see symmetriesHere), those it has not greyed; its inputs the grid,
 // the rule, the start and its zone (see renderPlaneRow, renderHunt)
 // a symmetry at a variant: the walk shown's, by its grid (and its block rule, see symmetriesHere); another's, on the plane, by its
@@ -26255,9 +26264,9 @@ function renderPlaneRow() {
   const kind = VARIANTS[tabVariant()].plane;
   const blocks = !!VARIANTS[tabVariant()].margolus;
   for (const b of $('lifeStartTabs').querySelectorAll('button')) {
-    // the starts, on any grid (Draw on a surface: its patterns, to see)
+    // the starts, on any grid
     const s = b.dataset.start,
-      on = surfaceDraw ? s === 'draw' : s === plane.start;
+      on = s === plane.start;
     b.hidden = !!VARIANTS[tabVariant()].elementary !== ELEMENTARY_STARTS.includes(s) && s !== 'digits'; // (Elementary's starts, see elementaryRows)
     if (s === 'random') b.innerHTML = `${icon(blocks ? 'dice' : 'search')}<span>${blocks ? 'Random' : 'Hunt'}</span>`; // (blocks: no hunt, its zones' starts)
     b.dataset.choice = `start:${s}`; // (its choice's key, see choicesAt)
@@ -26269,20 +26278,20 @@ function renderPlaneRow() {
   syncTextButtons();
   $('startTextInput').style.setProperty('--text-start-font', TEXT_FONTS[plane.font][1]); // (at rest, in its font, see style.css)
   for (const b of $('textFonts').querySelectorAll('button')) setTile(b, { on: b.dataset.font === plane.font });
-  for (const r of $('startDraw').querySelectorAll('#startCells, #brushTurns, .draw-row, #pngTools')) r.hidden = !kind; // the start's cells (Clear), the turns, the colours: to draw, on the plane (a surface's Draw: its patterns to see only)
+  for (const r of $('startDraw').querySelectorAll('#brushTurns, #pngTools')) r.hidden = !kind; // (the turns, a picture: the plane's)
   if (!kind) {
     $('symmetryRow').hidden = true;
-    $('startDraw').hidden = !surfaceDraw;
-    $('startText').hidden = plane.start !== 'text' || surfaceDraw;
-    $('startDigits').hidden = plane.start !== 'digits' || surfaceDraw;
-    if (!surfaceDraw) return;
-    // a surface: the rule's patterns on its grid, to see (greyed by renderDrawTools: Famous lays them)
+    $('startDraw').hidden = plane.start !== 'draw';
+    $('startText').hidden = plane.start !== 'text';
+    $('startDigits').hidden = plane.start !== 'digits';
+    if (plane.start !== 'draw') return;
+    // a surface: its cells drawn one by one, a tile clicked (see pickedTile); the rule's patterns on its grid shown
     const cells = PLANE_OF_MARK[lifeMark(VARIANTS[tabVariant()])],
       rule = ruleBody(parseRule(ruleBody($('lifeRule').value))?.text ?? '');
     for (const b of $('brushCards').children) {
       const p = DRAW_BY_ID.get(b.dataset.brush);
-      b.hidden = !(p[1] === cells && p[2].includes(rule));
-      if (!b.hidden) discCard(b, p);
+      b.hidden = b.dataset.brush !== 'cell' && !(p[1] === cells && p[2].includes(rule));
+      if (!b.hidden && b.dataset.brush !== 'cell') discCard(b, p);
     }
     $('drawNote').hidden = [...$('brushCards').children].some((b) => !b.hidden);
     renderDrawTools();
@@ -26404,14 +26413,14 @@ function renderDrawTools() {
   const grey = (b, own = false, ownWhy = '', on = b.classList.contains('active'), whyNot = null) =>
     setTile(b, { on, greyed: away ? why : own ? ownWhy : '', whyNot }); // (its own on; whyNot, a setup's: a brush on the plane only)
   const tooBig = (p) => discPattern(p) && cellsPlane()?.kind === p[1] && !discCells(p[1]).laid(p[4], 0); // (a disc's pattern past the disc shown)
-  setTile($('drawView'), { on: brush.view || !kind, whyNot: drawOnPlane }); // (at any generation; a surface's, on: to see)
+  setTile($('drawView'), { on: brush.view }); // (at any generation)
   for (const b of $('brushCards').children)
     grey(
       b,
       tooBig(DRAW_BY_ID.get(b.dataset.brush)),
       'Too big for this disc: at a larger size.',
-      !!kind && b.classList.contains('active'),
-      drawOnPlane,
+      b.classList.contains('active'),
+      b.dataset.brush === 'cell' ? null : drawOnPlane,
     );
   const tool = brush.view || !DRAW_BY_ID.get(brush.id)[1]; // (View or a cell: no pattern to turn)
   grey(
@@ -27255,7 +27264,7 @@ function drawMotif(ctx) {
   turnLayer(ctx, 0);
 }
 // The motif's tile, the one most facing the viewer, in front and near the view's middle as the graphics card drew it (see
-// gpuPickMiddle), on its mesh: none (−1) where no tile shows
+// gpuPick), on its mesh: none (−1) where no tile shows
 let middleTile = { g: null, t: -1 };
 // a sheet's tiles by their lattice cell (see latticeCellOf), once a mesh
 const latticeCellTiles = (g) =>
@@ -32019,7 +32028,7 @@ function renderSeed() {
 function renderHunt() {
   huntAt(hunt, lifeHuntKey(), HUNT_FRESH, stopHunt);
   renderBack();
-  $('huntZones').hidden = !huntOn() || surfaceDraw;
+  $('huntZones').hidden = !huntOn();
   $('huntRow').hidden = $('huntZones').hidden || !!walk.life.margolus; // (blocks: their zones' starts only, no hunt of their own)
   if ($('huntZones').hidden) return; // (the zones drawn wherever they show, Rewind's too: its hunt hidden only)
 
@@ -34320,9 +34329,9 @@ function getSetup() {
     const ol = outlineOf(VARIANTS[w].plane);
     if (ol !== outlineOf(VARIANTS[w].plane, 'hex')) s.gridOutline = ol;
     if (walk.life && startSymmetry() !== 'none') s.popSymmetry = startSymmetry();
-    if (plane.start === 'draw' && population.size) s.popCells = populationRle(population);
     if (spaceTimeOn()) s.popStacked = 1; // (Space-time)
   }
+  if (life && plane.start === 'draw' && population.size) s.popCells = populationRle(population); // (a surface's: its tiles, see populationKey)
   if (life && !variant.loops)
     Object.assign(
       s,
@@ -38221,7 +38230,7 @@ fn deep(p: vec3f) -> Deep { var o: Deep; let l = lightSpace(p); o.pos = vec4f(l.
 @vertex fn depthCubeV(@location(0) corner: vec3f, @location(1) at: vec3f) -> Deep { return deep(at + corner); }
 @fragment fn depthF(i: Deep) { if (u.cut == 1 && i.cutv > 0.0) { discard; } }
 // each tile's number (+ 1: 0 none) where it is drawn, and how much it is the motif's there: facing the viewer, in front, near
-// the view's middle (the most's read back, see gpuPickMiddle)
+// the view's middle (the most's read back, see gpuPick)
 struct Pick { @builtin(position) pos: vec4f, @location(0) @interpolate(flat) id: u32, @location(1) cutv: f32, @location(2) p: vec3f, @location(3) n: vec3f, @location(4) s: vec2f }
 @vertex fn pickV(@location(0) pos: vec3f, @location(1) nrm: vec3f, @location(2) id: u32) -> Pick {
   var o: Pick; o.id = id; o.cutv = dot(pos, u.cutN); o.p = pos; o.n = nrm; let s = toScreen(pos); o.s = s.xy; o.pos = clipOf(s, 0.0); return o;
@@ -38814,7 +38823,7 @@ function gpuDrawPipe(
     format = null,
   },
 ) {
-  // (writes: its depth; a decal's not, see ribbon; pick: each pixel a tile's number, one sample, see gpuPickMiddle)
+  // (writes: its depth; a decal's not, see ribbon; pick: each pixel a tile's number, one sample, see gpuPick)
   // (format: another picture's, one sample: Neon's lamps, see gpuHalo)
   return gpuPipe(`${name}|${cull}|${pass}|${!!blend}|${depth}|${writes}|${pick}|${format}`, (D) => ({
     layout: D.device.createPipelineLayout({
@@ -38920,7 +38929,7 @@ function gpuSurface(paint, path) {
       gpuBuffer('fan', fan, GPUBufferUsage.INDEX);
       D.fanCount = fan.length;
       // the motif's pick: the same triangles but its corners' cells' (its cells of other sides, a solid of hexagons': never
-      // its motif, see gpuPickMiddle) and, on a sheet, those of a motif cut by its edge or its seam (a strip's, a bottle's:
+      // its motif, see gpuPick) and, on a sheet, those of a motif cut by its edge or its seam (a strip's, a bottle's:
       // its lattice cell's tiles fewer than its motif's), while it has a whole one
       const cut = (t) =>
           (g.torus || g.klein) && latticeCellTiles(g).get(latticeCellOf(g, t)).length < latticeCellSize(g),
@@ -39197,15 +39206,18 @@ function gpuSurface(paint, path) {
         ),
       haloOf(CELLS_FINISHES[cellsFinish()][0]),
     );
-  const picking =
-    motifShown &&
-    gpuPickMiddle(
-      D,
-      enc,
-      slotOf({ cut: cutOn() ? 1 : 0, extent: R * (g.extent || 1) }),
-      tileBufs,
-      bothSides(g) ? 'none' : facesHidden(g),
-    );
+  const under = drawsHere() && pointerPixel, // (Draw on a surface: the tile under the pointer)
+    picking =
+      (motifShown || under) &&
+      gpuPick(
+        D,
+        enc,
+        slotOf({ cut: cutOn() ? 1 : 0, extent: R * (g.extent || 1) }),
+        tileBufs,
+        bothSides(g) ? 'none' : facesHidden(g),
+        motifShown,
+        under,
+      );
   device.queue.writeBuffer(D.uni, 0, D.words, 0, 512 * slot);
   device.queue.submit([enc.finish()]);
   if (picking) picking();
@@ -39229,11 +39241,14 @@ fn drawn(p: vec3u) -> vec2u {  // (its tile + 1 and its score's bits; 0: none, o
 @compute @workgroup_size(8, 8) fn mostTile(@builtin(global_invocation_id) p: vec3u) {
   let t = drawn(p); if (t.x > 0u && t.y == atomicLoad(&best[0])) { atomicMin(&best[1], t.x - 1u); }
 }`;
-// The motif's tile (see motifOf), as the graphics card drew it: each tile's number and score written where it shows (a pass of
-// its own, its depths as the frame's: facing the viewer, in front, near the view's middle, see pickF), the most's looked for
-// (see GPU_PICK), read back once the frame is done; none (−1) where no tile shows. One read at a time: the next frame's waits for it. Gives the reading to start after
-// the frame's submit
-function gpuPickMiddle(D, enc, slot, tileBufs, cull) {
+// The tiles as the graphics card drew them: each tile's number and score written where it shows (a pass of its own, its depths
+// as the frame's: facing the viewer, in front, near the view's middle, see pickF); then the motif's tile (middle, see motifOf),
+// the most's looked for (see GPU_PICK), and the tile under the pointer (at, a pixel: Draw's, see pickedTile); read back once
+// the frame is done, none (−1) where no tile shows. One read at a time: the next frame's waits for it. Gives the reading to
+// start after the frame's submit
+let pickedTile = -1, // (the tile under the pointer, as last read; −1 none)
+  pointerPixel = null; // (the pointer's pixel on the view, while Draw draws on a surface)
+function gpuPick(D, enc, slot, tileBufs, cull, middle, at) {
   if (D.picking) return null;
   const { device } = D,
     w = gpuCanvas.width,
@@ -39261,6 +39276,7 @@ function gpuPickMiddle(D, enc, slot, tileBufs, cull) {
         usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC | GPUBufferUsage.COPY_DST,
       }),
       read: device.createBuffer({ size: 8, usage: GPUBufferUsage.MAP_READ | GPUBufferUsage.COPY_DST }),
+      under: device.createBuffer({ size: 4, usage: GPUBufferUsage.MAP_READ | GPUBufferUsage.COPY_DST }),
     };
   }
   const P = D.pick;
@@ -39270,7 +39286,7 @@ function gpuPickMiddle(D, enc, slot, tileBufs, cull) {
     P.depth?.destroy();
     const make = (format, more = 0) =>
       device.createTexture({ size: [w, h], format, usage: GPUTextureUsage.RENDER_ATTACHMENT | more });
-    P.ids = make('r32uint', GPUTextureUsage.TEXTURE_BINDING);
+    P.ids = make('r32uint', GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_SRC); // (its pixel under the pointer copied out, see at)
     P.scores = make('r32float', GPUTextureUsage.TEXTURE_BINDING);
     P.depth = make('depth24plus');
     P.group = device.createBindGroup({
@@ -39306,26 +39322,37 @@ function gpuPickMiddle(D, enc, slot, tileBufs, cull) {
   p.setIndexBuffer(D.pickFan, 'uint32');
   p.drawIndexed(D.pickFanCount);
   p.end();
-  for (const pipe of [P.most, P.mostTile]) {
-    const c = enc.beginComputePass();
-    c.setPipeline(pipe);
-    c.setBindGroup(0, P.group);
-    c.dispatchWorkgroups(Math.ceil(w / 8), Math.ceil(h / 8));
-    c.end();
+  if (middle) {
+    for (const pipe of [P.most, P.mostTile]) {
+      const c = enc.beginComputePass();
+      c.setPipeline(pipe);
+      c.setBindGroup(0, P.group);
+      c.dispatchWorkgroups(Math.ceil(w / 8), Math.ceil(h / 8));
+      c.end();
+    }
+    enc.copyBufferToBuffer(P.best, 0, P.read, 0, 8);
   }
-  enc.copyBufferToBuffer(P.best, 0, P.read, 0, 8);
+  const pixel = at && [Math.min(w - 1, Math.max(0, at[0])), Math.min(h - 1, Math.max(0, at[1]))];
+  if (pixel) enc.copyTextureToBuffer({ texture: P.ids, origin: pixel }, { buffer: P.under }, [1, 1]);
   D.picking = true;
   const g = walk.surface;
   return () =>
-    P.read.mapAsync(GPUMapMode.READ).then(() => {
-      const found = new Uint32Array(P.read.getMappedRange())[1],
-        t = found === 0xffffffff ? -1 : found;
-      P.read.unmap();
-      D.picking = false;
-      if (middleTile.g === g && middleTile.t === t) return;
-      middleTile = { g, t };
-      statsDirty = true; // (its motif drawn, see drawAll)
-    });
+    Promise.all([
+      middle &&
+        P.read.mapAsync(GPUMapMode.READ).then(() => {
+          const found = new Uint32Array(P.read.getMappedRange())[1],
+            t = found === 0xffffffff ? -1 : found;
+          P.read.unmap();
+          if (middleTile.g === g && middleTile.t === t) return;
+          middleTile = { g, t };
+          statsDirty = true; // (its motif drawn, see drawAll)
+        }),
+      pixel &&
+        P.under.mapAsync(GPUMapMode.READ).then(() => {
+          pickedTile = new Uint32Array(P.under.getMappedRange())[0] - 1; // (its tile + 1, 0 none, see pickF)
+          P.under.unmap();
+        }),
+    ]).then(() => (D.picking = false));
 }
 // the frame's passes: as it is, or Glass's two pictures then mixed on the canvas
 function gpuFrame(enc, drawAll) {
@@ -41443,6 +41470,15 @@ stage.addEventListener('pointerdown', (e) => {
   stage.classList.add('dragging');
 });
 stage.addEventListener('pointermove', (e) => {
+  if (drawsHere() && walk.surface && !e.target.closest('.stage-box')) {
+    // Draw on a surface: the pointer's pixel, its tile read with the next frame (see gpuPick)
+    const r = gpuCanvas.getBoundingClientRect();
+    pointerPixel = [
+      Math.floor(((e.clientX - r.left) * gpuCanvas.width) / r.width),
+      Math.floor(((e.clientY - r.top) * gpuCanvas.height) / r.height),
+    ];
+    statsDirty = true;
+  }
   if (drawsHere() && walk.plane && !e.target.closest('.stage-box')) {
     // Draw: the brush follows the pointer (at gen 0 only)
     const r = stage.getBoundingClientRect();
@@ -41551,15 +41587,6 @@ $('lifeStartTabs').append(
 );
 for (const b of $('lifeStartTabs').querySelectorAll('button')) {
   b.addEventListener('click', () => {
-    if (!VARIANTS[tabVariant()].plane) {
-      // a surface: Draw shows its patterns, the others go back to the start as it was
-      surfaceDraw = b.dataset.start === 'draw';
-      if (surfaceDraw || plane.start === b.dataset.start) {
-        renderPlaneRow();
-        renderHunt();
-        return;
-      }
-    }
     if (plane.start === b.dataset.start) return;
     if (b.dataset.start === 'draw' && walk.life) {
       // (the generation in view, to draw on: Clear for an empty one)
@@ -41573,9 +41600,7 @@ for (const b of $('lifeStartTabs').querySelectorAll('button')) {
             : mod(stepShown, L.margolus.turns.length)
           : 0;
       if (off) seekTo(stepShown - off);
-      population = new Map(
-        [...L.alive].flatMap((c, t) => (c ? [[planeKey(...walk.plane.xy(t)), L.margolus ? 1 : c]] : [])),
-      );
+      population = new Map([...L.alive].flatMap((c, t) => (c ? [[populationKey(t), L.margolus ? 1 : c]] : [])));
     }
     plane.start = b.dataset.start;
     cleared = null;
@@ -41835,7 +41860,15 @@ stage.addEventListener('pointerdown', (e) => {
   drawFrom = drawsHere() && e.button === 0 ? [e.clientX, e.clientY] : null;
 }); // (its start's cells: at gen 0 only)
 stage.addEventListener('pointerup', (e) => {
-  if (!drawFrom || !walk.plane || Math.hypot(e.clientX - drawFrom[0], e.clientY - drawFrom[1]) > 4) return;
+  if (!drawFrom || Math.hypot(e.clientX - drawFrom[0], e.clientY - drawFrom[1]) > 4) return;
+  if (walk.surface) {
+    // a surface: the tile under the pointer (see pickedTile), a cell
+    if (pickedTile < 0 || pickedTile >= walk.life.seed.length) return;
+    cleared = null; // drawn again: no Undo
+    toggleDrawn(populationKey(pickedTile));
+    lifeReseed();
+    return;
+  }
   const r = stage.getBoundingClientRect();
   const [wx, wy] = turnPoint(
     [(e.clientX - r.left - view.ox) / view.scale, (e.clientY - r.top - view.oy) / view.scale],
@@ -41853,14 +41886,7 @@ stage.addEventListener('pointerup', (e) => {
         if (brush.colour) population.set(planeKey(x, y), K > 1 ? brush.colour + K * (v - 1) : v);
         else population.delete(planeKey(x, y));
       } // (drawn at its first copy: anywhere, all of them)
-    else {
-      // a cell: in the brush's colour, or off if it has it; one colour: alive, then each dying state, back to dead
-      const k = planeKey(...firstCell(cell)),
-        v = population.get(k) ?? 0;
-      const c = walk.life.colours > 1 ? (v === brush.colour ? 0 : brush.colour) : (v + 1) % walk.life.C;
-      if (c) population.set(k, c);
-      else population.delete(k);
-    }
+    else toggleDrawn(planeKey(...firstCell(cell)));
     planeReseed();
   }
 });

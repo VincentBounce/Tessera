@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.435';
+const VERSION = '0.5.436';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -37877,7 +37877,7 @@ const CELLS_LIGHT = {
   debugHalo: 1.6,
   cellsDarkInk: 0.2, // (an ink darker than this lights in its inverse: black's white)
 };
-// Panel and Debug in Solo on a light page: a pale yellow panel in a grey ceiling, its halo weaker and cast on the
+// Panel and Debug in Solo on a light page, on a surface (the plane's as a battle's): a pale yellow panel in a grey ceiling, its halo weaker and cast on the
 // tiles round it (the ground near white: a light added on it cut off to white), as the user tuned it there; every other
 // number as CELLS_LIGHT's
 const CELLS_LIGHT_SOLO_LIGHT = {
@@ -37895,7 +37895,8 @@ const CELLS_LIGHT_SOLO_LIGHT = {
   debugHalo: 0.84,
 };
 // the lamps' numbers now, the view's shader made with them (see gpuDrawSetup)
-const cellsLightNow = () => (lifeTeams === 1 && themeName() === 'light' ? CELLS_LIGHT_SOLO_LIGHT : CELLS_LIGHT);
+const cellsLightNow = () =>
+  lifeTeams === 1 && themeName() === 'light' && !walk.plane ? CELLS_LIGHT_SOLO_LIGHT : CELLS_LIGHT;
 // the numbers each mode reads (Halo's halo is Neon's light: see lampsF)
 const CELLS_LIGHT_OF = {
   Off: [],

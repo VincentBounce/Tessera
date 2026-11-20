@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.481';
+const VERSION = '0.5.482';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -11081,7 +11081,8 @@ function choicesAt(s, reads = null, teamsMemo = new Map()) {
   }
   if (wants('zone') && w === walk.variant && s.lifeTeams === lifeTeams && s.start === 'random' && huntOn())
     for (const [zone, fits] of Object.entries(huntFits()))
-      if (fits && zone !== 'custom') set(`zone:${zone}`, 'zone', zone, '', HUNT_ZONES[zone][1]);
+      if ((zone === 'seed' ? seedFits() : fits) && zone !== 'custom')
+        set(`zone:${zone}`, 'zone', zone, '', HUNT_ZONES[zone][1]); // (Seed's, see seedFits)
   return out;
 }
 // how many settings two setups differ by: the menu's levels, the tiling, the fields
@@ -22270,9 +22271,6 @@ function startParts(seed) {
     return;
   } // (Text: its word as a picture, each colour's, see iconLay)
   if (plane.start !== 'random') return;
-  // Seed's radius one that fits this grid when one does (the widest up to it): its tile judged by it, the same however the
-  // grid was reached (a radius left by a smaller grid before, or a link's default)
-  if (!huntFits().seed) seedThatFits(plane.seedRadius);
   // the zone picked, if it does not fit here: a smaller radius, else the soup (also for the link's start)
   const fits = huntFits(),
     r = hunt.zone === 'full' ? Infinity : zoneRadius(hunt.zone); // (Wild greyed, its parts unlike: the widest radius)
@@ -31812,6 +31810,12 @@ function partPlaces(r, K, opposite, mixed) {
   if (K === 1) return [lifePatch(r)];
   return col.patch.map((i) => lifePatch(r, centreCells(col.items[i]))); // round the open cells nearest each spot
 }
+// patches that lie apart: each its own cells, none without
+const patchesApart = (parts) =>
+  parts.every((p) => p.length) && new Set(parts.flat()).size === parts.reduce((sum, p) => sum + p.length, 0);
+// Seed laid at all on the grid shown, at its least radius, 1 (its tile's: its radius the one picked, the widest that fits taken
+// as it is clicked, see pickZone; never shrunk as a grid goes by, its tile judged the same however the grid was reached)
+const seedFits = () => patchesApart(huntParts(1, lifeParts(), undefined, teamsMixed('seed')));
 const zoneParts = (zone, K) =>
   zone === 'full' && wildOnFaces() ? faceParts(K) : huntParts(zoneRadius(zone), K, undefined, teamsMixed(zone)); // (Opposite's parts as its soups', see huntParts)
 // The zone: each colour's part (see huntParts). On the plane, with a symmetry it defines the start: the
@@ -31974,11 +31978,7 @@ function huntFits() {
         return [zone, !peakHunt() && p.every((x) => x.length === p[0].length)];
       } // (a hull solid's Wild: its parts alike, else greyed)
       if (!r) return [zone, !peakHunt()]; // (the whole grid: no peak to look for, a soup full already)
-      const parts = zoneParts(zone, K); // (each its own cells, none without: a face for each colour)
-      return [
-        zone,
-        parts.every((p) => p.length) && new Set(parts.flat()).size === parts.reduce((sum, p) => sum + p.length, 0),
-      ];
+      return [zone, patchesApart(zoneParts(zone, K))]; // (each its own cells, none without: a face for each colour)
     }),
   );
   hunt.fitKey = key;
@@ -32078,7 +32078,10 @@ function renderHunt() {
       at: walk.variant,
       judgedAt: walk.variant,
       greyed: busy ? 'Not while a hunt runs.' : '',
-      whyNot: ({ w: v }) => (v === walk.variant && fits[b.dataset.zone] ? '' : zoneGreyed(b.dataset.zone)),
+      whyNot: ({ w: v }) =>
+        v === walk.variant && (b.dataset.zone === 'seed' ? seedFits() : fits[b.dataset.zone])
+          ? ''
+          : zoneGreyed(b.dataset.zone),
     }); // (its room known on the grid built only: another variant's, not judged)  // (picked: a click draws another start)
     if (b.dataset.zone === 'custom') b.hidden = hunt.zone !== 'custom';
   }
@@ -32276,6 +32279,7 @@ function layZone() {
 }
 function pickZone(zone) {
   hunt.zone = zone;
+  if (zone === 'seed' && !huntFits().seed) seedThatFits(plane.seedRadius); // (the widest radius up to the one picked that fits)
   renderTeams(); // (Mixed: greyed or not in it)
   plane.density = Math.round(100 * density()); // a new start each time, as dense as drawn (in whole percents), from a new seed
   plane.seed = 1 + Math.floor(Math.random() * 999999999);

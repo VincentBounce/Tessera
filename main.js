@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.459';
+const VERSION = '0.5.460';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -37986,12 +37986,16 @@ fn shine(col: vec3f, n: vec3f) -> vec3f {
   let d = max(0.0, dot(n, u.L)); let g = u.glint * pow(max(0.0, dot(n, u.H)), ${LIGHT_SHINE}.0);
   return mix(col * u.shade * ((1.0 - u.glint) * d + g), col * u.shade * d + g, u.glintWhite);  // (Glint Soft: in its own colour, a share of the light, never past its colour; Bright: white added, a pale one washed white)
 }
-fn facing(n: vec3f) -> vec3f { if (dot(n, u.V) < 0.0) { return -n; } return n; }  // (a face's normal turned to the viewer)
+fn toEye(p: vec3f) -> vec3f {  // (the way from p to the eye: in perspective the eye's own place, u.persp.w along V from its middle, as toScreen's; else V)
+  if (u.persp.w > 0.0) { return u.persp.xyz + u.V * u.persp.w - p; }
+  return u.V;
+}
+fn facing(n: vec3f, p: vec3f) -> vec3f { if (dot(n, toEye(p)) < 0.0) { return -n; } return n; }  // (a face's normal turned to the eye, seen from p: a wall seen inside by a cut, its inside, before v0.5.460 by V alone: a whole wall flipping as the view crossed its plane)
 fn shadowPlace(p: vec3f) -> vec3f { let l = lightSpace(p); return vec3f(l.x * 0.5 + 0.5, 0.5 - l.y * 0.5, l.z * 0.5 + 0.5); }  // (its place in the shadows' texture, rows down)
 fn light(col: vec3f, n0: vec3f, p: vec3f, bias: f32) -> Lit {  // (as tileLight)
   var o: Lit;
   o.dark = col * (1.0 - u.shade);
-  o.lit = shine(col, facing(n0));
+  o.lit = shine(col, facing(n0, p));
   o.sh = shadowPlace(p);
   o.cutv = dot(p, u.cutN); o.pos = clipOf(toScreen(p), bias);
   return o;
@@ -38073,10 +38077,10 @@ ${lampBranches(L, 'ceiling', (k) => `return ${k};`)}
 @fragment fn tesseraF(i: Tess) -> @location(0) vec4f {
   if (u.cut == 1 && i.cutv > 0.0) { discard; }
   if (i.col.a < 0.75 || pieces.y == ${CELLS_FINISH.Halo}u) {  // (none painted, or Halo's tiles: flat; Panel's and Debug's ceiling a little grey)
-    return seen(flatTile(i.col.rgb * select(1.0, ceiling(), i.col.a < 0.75), facing(normalize(i.n)), i.sh), i.pos.z);
+    return seen(flatTile(i.col.rgb * select(1.0, ceiling(), i.col.a < 0.75), facing(normalize(i.n), i.p), i.sh), i.pos.z);
   }
   let piece = inPiece(i.p, i.first);
-  let n = facing(normalize(i.n));
+  let n = facing(normalize(i.n), i.p);
   let out = piece.xyz - i.p;
   let lit = cellLit(i.col, piece.w, n, out - n * dot(out, n), lightShare(i.sh));
   if (pieces.y == ${CELLS_FINISH.Tessera}u) { return seen(lit, i.pos.z); }
@@ -38176,7 +38180,7 @@ struct Rib { @builtin(position) pos: vec4f, @location(0) col: vec3f, @location(1
 @fragment fn lampsF(i: Tess) -> @location(0) vec4f {
   if (u.cut == 1 && i.cutv > 0.0) { discard; }
   if (i.col.a < 0.75) { return vec4f(0.0); }  // (none painted: none, hiding those behind)
-  return vec4f(lampLight(i.col, inPiece(i.p, i.first).w, facing(normalize(i.n))) * lifeLeft(i.col) * haloShare(), select(0.0, 1.0, pieces.y == ${CELLS_FINISH.Halo}u));  // (its alpha: Halo's lamps marked, its halo kept off them)
+  return vec4f(lampLight(i.col, inPiece(i.p, i.first).w, facing(normalize(i.n), i.p)) * lifeLeft(i.col) * haloShare(), select(0.0, 1.0, pieces.y == ${CELLS_FINISH.Halo}u));  // (its alpha: Halo's lamps marked, its halo kept off them)
 }
 fn haloShare() -> f32 {  // (its mode's halo, its light's share: the halo's pictures are floats, none cut off; see LAMPS)
 ${lampBranches(L, 'halo', (h) => `return ${h.share};`)}

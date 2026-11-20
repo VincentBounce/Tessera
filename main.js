@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.456';
+const VERSION = '0.5.457';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -38751,7 +38751,7 @@ function battlePalette(D) {
 // A surface, its tiles' colours by paint (paintLevels', or Life's by gpuLook)
 // a surface's tiles seen from both sides: a cut, a Klein bottle (one-sided: its tiles' face inwards in its neck and
 // handle); else their back faces not drawn, facesHidden's (which way its tiles turn: see shapeSign); one rule, the tiles',
-// the picking's and the halo's passes (a Möbius strip's halo its two faces, each a cell, as before: see gpuHalo)
+// the picking's and the halo's passes (a Möbius strip's two faces each a cell, the one seen alone, its halo too)
 const bothSides = (g) => cutOn() || !!g.klein;
 const facesHidden = (g) => (shapeSign(g) < 0 ? 'front' : 'back');
 function gpuSurface(paint, path) {
@@ -39078,7 +39078,7 @@ function gpuSurface(paint, path) {
             vertex: 'tesseraV',
             fragment: 'lampsF',
             buffers: tileBufs,
-            cull: bothSides(g) || g.mobius ? 'none' : facesHidden(g), // (the faces seen; a Möbius strip's face behind too, as before)
+            cull: bothSides(g) ? 'none' : facesHidden(g), // (the faces seen: a Möbius strip's face behind, at the same depth, lit through before v0.5.457 when drawn after its twin)
             shadowed: true,
             corners: true,
             format: 'rgba16float',

@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.445';
+const VERSION = '0.5.446';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -6494,8 +6494,7 @@ const DISPLAY_BY_TAB = {
   'Explore on the plane': ['gridFinish'],
   'Explore on surfaces': ['shape', 'gridFinish', ...VIEW_3D, 'glass', 'cellsFinish', 'cut'], // (its view's only: its colours its own, see renderExplore)
 };
-// The Display settings' defaults, one table: each its control (a box's id; one with no box, how to set it, or null: read
-// where it is used), when it comes back (open: the page's opening
+// The Display settings' defaults, one table: each its control (a box's id), when it comes back (open: the page's opening
 // only, kept from tab to tab; tab: another tab; variant: every variant; lifeTeams: Life's count of teams; battle: a battle's
 // state, as long as none picks it; ant: an ant coming in), its value: one for all, or each tab's ({ all, Life… }:
 // a tab's own, else all's), or by the variant or a battle (a function); displayDefaults and the variant's change set them, and
@@ -6551,11 +6550,7 @@ const DISPLAY_DEFAULTS = {
   glint: ['glintM', ['open', 'tab'], (variant, w) => (NAV[w][0] === 'Walk' && NAV[w][1] === '3D' ? 1 : 0.5)], // (halfway: its own colour and white added, see light; a lattice's walk white, its bars' glint bright)
   glass: ['glass', 'open', false],
   cellsFinish: [
-    (k) => {
-      needsFull ||= k !== cellsFinish;
-      cellsFinish = k;
-      renderCellsFinish();
-    },
+    'cellsFinish',
     ['open', 'tab'],
     (variant, w) => (NAV[w][0] === 'Life' && NAV[w][1] === '3D solids' ? CELLS_FINISH.Neon : 0),
   ], // (Life in 3D: Neon; else Off)
@@ -6576,13 +6571,12 @@ const DISPLAY_DEFAULTS = {
   speed: [null, 'open', 60], // (Cut Off; Life's Blocks hidden; no sound; 60 steps a second: their own state, read where it is kept)
   antLook: [null, 'ant', 'digit'], // (an ant's look as it comes in: States, its cells by their state)
 };
-// its settings that come back at `at`: each box set, checked or valued (one with no box, by its own setter)
+// its settings that come back at `at`: each box set, checked or valued
 function applyDefaults(at) {
   for (const [key, [id, when]] of Object.entries(DISPLAY_DEFAULTS)) {
     if (![when].flat().includes(at) || !id) continue; // (one with no box: read where it is used, see defaultOf; when: one moment or several)
     const v = defaultOf(key, tabVariant());
-    if (typeof id === 'function') id(v);
-    else if (typeof v === 'boolean') $(id).checked = v;
+    if (typeof v === 'boolean') $(id).checked = v;
     else $(id).value = v;
   }
 }
@@ -6866,6 +6860,20 @@ function renderHeadTiles() {
     (k) => {
       $('gridFinish').value = k;
       needsFull = true;
+    },
+  );
+  pillRow(
+    $('cellsFinishRow'),
+    'Cells',
+    "The surface's tiles: how each one painted is lit",
+    CELLS_FINISHES,
+    cellsFinish(),
+    defaultOf('cellsFinish', tabVariant()),
+    (k) => {
+      $('cellsFinish').value = k;
+      needsFull = true;
+      if (k === CELLS_FINISH.Debug) debugOpen = true; // (Debug opens the debug panel, its cross shuts it: then on every mode)
+      cellsTuning(); // (the debug panel: this mode's numbers)
     },
   );
 }
@@ -36797,8 +36805,8 @@ const CELLS_FINISHES = [
   ['Debug', 'Each tile painted a lamp, every number of its light to try in the debug panel'],
 ];
 const CELLS_FINISH = Object.fromEntries(CELLS_FINISHES.map(([name], k) => [name, k]));
-let cellsFinish = defaultOf('cellsFinish', tabVariant());
-const cellsFinishOn = () => cellsFinish > 0 && !$('cellsFinishRow').hidden;
+const cellsFinish = () => Number($('cellsFinish').value); // (its box's, see DISPLAY_DEFAULTS)
+const cellsFinishOn = () => cellsFinish() > 0 && !$('cellsFinishRow').hidden;
 const oceanFits = (w = tabVariant(), lifeCount = lifeTeams, walkCount = walkTeams) =>
   (VARIANTS[w].life ? lifeCount : battleAt(w, walkCount) ? walkCount : 1) <= LANDS.length; // (its lands a Sextet's at most, Life's teams or a battle's walkers: beyond, greyed; at a setup, see whyNot)
 let oceanPicked = false; // (Ocean clicked since its default was set: kept, else it follows its default, see DISPLAY_DEFAULTS)
@@ -38826,7 +38834,7 @@ function gpuSurface(paint, path) {
         nrm[i + 2] = sh.nrm[3 * t + 2];
       }
     gpuBuffer('pos', pos, GPUBufferUsage.VERTEX | GPUBufferUsage.STORAGE); // (Tessera reads its tiles' corners, see tesseraF)
-    gpuBuffer('pieces', Uint32Array.of(k, cellsFinish, texelRgba(blankTile(), 1), 0), GPUBufferUsage.UNIFORM); // (its corners a tile, its Finish, the ground's colour)
+    gpuBuffer('pieces', Uint32Array.of(k, cellsFinish(), texelRgba(blankTile(), 1), 0), GPUBufferUsage.UNIFORM); // (its corners a tile, its Finish, the ground's colour)
     gpuBuffer('nrm', nrm);
     const edges = surfaceEdges(g),
       E = edges.length / 4,
@@ -38988,7 +38996,8 @@ function gpuSurface(paint, path) {
     rp.setIndexBuffer(D.fan, 'uint32');
     rp.drawIndexed(D.fanCount);
   };
-  if (cellsFinishOn()) D.device.queue.writeBuffer(D.pieces, 4, Uint32Array.of(cellsFinish, texelRgba(blankTile(), 1))); // (its Finish, the ground's colour: see lampLight)
+  if (cellsFinishOn())
+    D.device.queue.writeBuffer(D.pieces, 4, Uint32Array.of(cellsFinish(), texelRgba(blankTile(), 1))); // (its Finish, the ground's colour: see lampLight)
   // the tiles, their grid and the path, into pass p (0 the frame; 1, 2 Glass's)
   const drawAll = (rp, pass) => {
     // seen from both sides: Glass, a cut, a Klein bottle (one-sided: its tiles' face inwards in its neck and handle)
@@ -39116,7 +39125,7 @@ function gpuSurface(paint, path) {
     );
   };
   gpuFrame(enc, drawAll);
-  if (cellsFinishOn() && haloOf(CELLS_FINISHES[cellsFinish][0]))
+  if (cellsFinishOn() && haloOf(CELLS_FINISHES[cellsFinish()][0]))
     gpuHalo(
       enc,
       (rp) =>
@@ -39132,7 +39141,7 @@ function gpuSurface(paint, path) {
           }),
           { cut: cutOn() ? 1 : 0 },
         ),
-      haloOf(CELLS_FINISHES[cellsFinish][0]),
+      haloOf(CELLS_FINISHES[cellsFinish()][0]),
     );
   const picking =
     motifShown &&
@@ -39860,8 +39869,12 @@ function gpuPlane(paint) {
     rp.draw(D.planeLines);
   }
   rp.end();
-  if (lamps && haloOf(CELLS_FINISHES[cellsFinish][0]))
-    gpuHalo(enc, (lampsPass) => drawPlaneLamps(D, lampsPass, 'planeLampsF', 3), haloOf(CELLS_FINISHES[cellsFinish][0]));
+  if (lamps && haloOf(CELLS_FINISHES[cellsFinish()][0]))
+    gpuHalo(
+      enc,
+      (lampsPass) => drawPlaneLamps(D, lampsPass, 'planeLampsF', 3),
+      haloOf(CELLS_FINISHES[cellsFinish()][0]),
+    );
   device.queue.writeBuffer(D.uni, 0, D.words, 0, 512 * 4);
   device.queue.submit([enc.finish()]);
 }
@@ -39878,7 +39891,7 @@ function planeLampsReady(D, F, ground) {
     Object.assign(D, { planeLampCount: tris.length, planeLampK: k });
     D.keys.planeLamps = D.keys.plane;
   }
-  gpuBuffer('planePieces', Uint32Array.of(D.planeLampK, cellsFinish, ground, 0), GPUBufferUsage.UNIFORM);
+  gpuBuffer('planePieces', Uint32Array.of(D.planeLampK, cellsFinish(), ground, 0), GPUBufferUsage.UNIFORM);
   return true;
 }
 // the plane's painted cells under Cells into rp, by fragment (lit, or its halo's lamps: format its picture's), look slot
@@ -41971,12 +41984,12 @@ function cellsTuning() {
   const theme = themeName(),
     solo = lifeTeams === 1,
     lights = cellsLightNow(), // (Solo on a light page its own)
-    lightColour = { Panel: 'panelColour', Debug: 'debugColour' }[CELLS_FINISHES[cellsFinish][0]]; // (Panel, Debug: a pick its light's colour, the cell's left as it is)
+    lightColour = { Panel: 'panelColour', Debug: 'debugColour' }[CELLS_FINISHES[cellsFinish()][0]]; // (Panel, Debug: a pick its light's colour, the cell's left as it is)
   debugPanel({
-    key: `${theme}|${solo}|${cellsFinish}`,
-    title: `Cells › ${CELLS_FINISHES[cellsFinish][0]}`, // (the mode whose numbers it shows)
+    key: `${theme}|${solo}|${cellsFinish()}`,
+    title: `Cells › ${CELLS_FINISHES[cellsFinish()][0]}`, // (the mode whose numbers it shows)
     numbers: lights,
-    shown: CELLS_LIGHT_OF[CELLS_FINISHES[cellsFinish][0]],
+    shown: CELLS_LIGHT_OF[CELLS_FINISHES[cellsFinish()][0]],
     shared: ['cellsBody', 'cellsSky', 'cellsDarkInk'], // (every lit mode's)
     signed: ['debugMiddle'], // (below 0: its middle dark)
     onNumbers: rebuildGpuView,
@@ -42033,24 +42046,6 @@ $('ocean').addEventListener('change', () => {
   tintBattleFormulas();
   if (walk.n) describe(walk.base);
 }); // (a battle's colours: its fields, its title, its ranking)
-// Cells' pills, the one picked and the tab's default marked: again when its default sets it (see DISPLAY_DEFAULTS)
-function renderCellsFinish() {
-  pillRow(
-    $('cellsFinishRow'),
-    'Cells',
-    "The surface's tiles: how each one painted is lit",
-    CELLS_FINISHES,
-    cellsFinish,
-    defaultOf('cellsFinish', tabVariant()),
-    (k) => {
-      needsFull ||= k !== cellsFinish;
-      cellsFinish = k;
-      if (k === CELLS_FINISH.Debug) debugOpen = true; // (Debug opens the debug panel, its cross shuts it: then on every mode)
-      cellsTuning(); // (the debug panel: this mode's numbers)
-    },
-  );
-}
-renderCellsFinish();
 pillRow(
   $('cutRow'),
   'Cut',

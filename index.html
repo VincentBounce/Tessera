@@ -10,7 +10,7 @@
   <meta property="og:url" content="https://vincentbounce.github.io/Tessera/">
   <meta property="og:type" content="website">
   <link id="favicon" rel="icon">  <!-- the app's logo, set at start-up (see LOGO_PATH) -->
-  <link rel="stylesheet" href="style.css?v=0.5.445">
+  <link rel="stylesheet" href="style.css?v=0.5.446">
   <script>  // the theme before the first paint (see applyTheme)
     try { const t = localStorage.getItem('tesseraTheme'); document.documentElement.dataset.theme = t === 'light' || t === 'dark' ? t : matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark'; } catch { document.documentElement.dataset.theme = 'dark'; }
   </script>
@@ -283,6 +283,7 @@
             <div hidden>  <!-- Auto-fit's checkbox and Grid's level, the source (see renderHeadTiles) -->
               <label id="autoFitRow" title="Fit the view to the walk and keep it fitted; a double-click fits it again"><input id="autoFit" type="checkbox" checked></label>
               <input id="gridFinish" type="hidden" value="2">  <!-- Grid: its lines off or how marked, or Tiles' palette (see GRID_LINES, TILES_PALETTES) -->
+              <input id="cellsFinish" type="hidden" value="0">  <!-- Cells: how a painted cell is lit (see CELLS_FINISHES) -->
             </div>
             <div id="gridFinishRow"></div>  <!-- Off, the lines' opacities and Tiles' palettes: pills (see pillRow, GRID_LINES) -->
             <div id="cellsFinishRow" hidden></div>  <!-- Off, Halo, Neon…: pills (see pillRow, CELLS_FINISHES) -->
@@ -340,11 +341,11 @@
     </div>
   </main>
 
-  <script src="pixelarticons.js?v=0.5.445"></script>
-  <script src="punks.js?v=0.5.445"></script>
-  <script src="loops.js?v=0.5.445"></script>
-  <script src="emoji.js?v=0.5.445"></script>
-  <script src="debug.js?v=0.5.445"></script>  <!-- a panel to try settings by eye (see debugPanel) -->
-  <script src="main.js?v=0.5.445"></script>
+  <script src="pixelarticons.js?v=0.5.446"></script>
+  <script src="punks.js?v=0.5.446"></script>
+  <script src="loops.js?v=0.5.446"></script>
+  <script src="emoji.js?v=0.5.446"></script>
+  <script src="debug.js?v=0.5.446"></script>  <!-- a panel to try settings by eye (see debugPanel) -->
+  <script src="main.js?v=0.5.446"></script>
 </body>
 </html>

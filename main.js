@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.480';
+const VERSION = '0.5.481';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -22210,7 +22210,9 @@ const lifeParts = () =>
     ? plane.start === 'random' && /24$/.test(hunt.zone)
       ? 3
       : 1
-    : walk.life.colours - (newcomerOn() ? 1 : 0); // (any sheet's mesh a torus's; Newcomer: the teams below's)
+    : !playsLife(walk.variant)
+      ? 1 // (Explore: its colours its tiles' looks, no teams, see teamsPlayed)
+      : walk.life.colours - (newcomerOn() ? 1 : 0); // (any sheet's mesh a torus's; Newcomer: the teams below's)
 // colour i's (from 0) cell at stage v (1 alive, then its dying states), as the colours alive count them (see parseRule): a
 // start's teams fewer with Newcomer, its states the same
 const colourState = (i, v) => (walk.life.colours > 1 ? i + 1 + walk.life.colours * (v - 1) : v);

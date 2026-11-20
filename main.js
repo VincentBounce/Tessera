@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.448';
+const VERSION = '0.5.449';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -27613,13 +27613,15 @@ const TEAM_NAMES = {
 }; // one colour, then battles
 // the counts of colours fair on the figure, every colour's part a copy of the others' (see teamsFair)
 const CORNER_DISCS = ['ammann', 'rhombs12', 'rhombs14', 'penrose', 'kitesDarts']; // the discs whose slices start at a corner, half a turn's step on (the rosettes turn as a spiral, none); those mirrored, DISC_MIRRORS
-// a walled figure's turns round its middle: a hexagon's or a disc's its grid's (see figureTurns); a rectangle's or a rhombus's,
-// its half turn only, a four-fold grid's square its quarter turns (as square as can be, see sideW: Pythagoras' 4 colours 640
-// cells each; a rhombus of a six-fold grid offered 3 and 6 before v0.5.424, not alike)
+// a walled figure's turns round its middle: those its grid (see figureTurns) and its outline have both, by construction;
+// an outline's own: a hexagon's 6, a square's 4 (a four-fold grid's made as square as can be, see sideW: Pythagoras' 4
+// colours 640 cells each; a rectangle, another grid's, keeps 2 of them), a rhombus's 2, a disc's every turn (a rhombus of a
+// six-fold grid offered 3 and 6 before v0.5.424, not alike)
+const OUTLINE_TURNS = { hex: 6, square: 4, rhombus: 2, disc: Infinity };
 const wallTurns = (kind) => {
   const n = figureTurns(kind),
-    outline = outlineOf(kind);
-  return outline === 'hex' || APERIODIC[kind] ? n : outline === 'square' && n % 4 === 0 ? 4 : n % 2 ? 1 : 2;
+    outline = OUTLINE_TURNS[outlineOf(kind)];
+  return outline === Infinity ? n : gcd(n, outline);
 };
 const DISC_MIRRORS = ['ammann', 'rhombs12', 'rhombs14']; // (the discs whose mirrors lay them on themselves, measured; Penrose's and Kites & darts' pentagrids, shifted, not quite: Penrose's 2 halves 918 and 927 cells)
 const figureTurns = (kind) =>

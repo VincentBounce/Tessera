@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.439';
+const VERSION = '0.5.440';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -22403,10 +22403,11 @@ const tilesPalette = () =>
 const tilesOn = () => !!tilesPalette() && shows('tiles', tabVariant());
 let groundMemo = {};
 function groundColours() {
-  if (!tilesOn() || !walk.geo) return null;
+  if (!tilesOn() || !(walk.plane || walk.geo)) return null;
   const g = walk.geo,
     P = walk.plane,
-    of = walk.life ?? g,
+    n = P ? P.n : g.n, // (its cells, then the plane's walls)
+    of = walk.life ?? P ?? g,
     palette = tilesPalette(),
     key = `${exploreLook.rule}|${palette}`;
   if (groundMemo.of !== of || groundMemo.key !== key) {
@@ -22414,7 +22415,7 @@ function groundColours() {
     const M = P && planeMesh(P.kind, P.W, P.torus, P.row, true),
       levels = exploreLevels(
         M ? cellNeighbours(M.start, M.list, M.nv) : (walk.life?.nbr ?? cornerNeighbours(g)),
-        M ? M.start.length - 1 : g.n,
+        M ? M.start.length - 1 : n,
         P ? planeColouring(P.kind, P.W) : surfaceColouring(g),
         palette,
       ),
@@ -22424,7 +22425,7 @@ function groundColours() {
       of,
       key,
       col: Uint32Array.from(levels, (l, t) =>
-        t < g.n ? (colours[l - 1] ?? texelRgba(UNLIT, GROUND_ALPHA)) : golds[(l - 1) % golds.length],
+        t < n ? (colours[l - 1] ?? texelRgba(UNLIT, GROUND_ALPHA)) : golds[(l - 1) % golds.length],
       ),
     };
   }
@@ -25850,7 +25851,6 @@ function buildLifePlane(seq) {
   });
   Object.assign(walk, {
     stacked: spaceTime && spaceTimeApplies(walk.variant),
-    geo: { n },
     plane: { kind, W, row, n, xy, at, torus: planeTorus(kind), flat: planeFlat(kind, W, planeTorus(kind)) },
     xs: walk.wx,
     ys: walk.wx, // (one point, as its world's: see startLife)

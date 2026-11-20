@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.444';
+const VERSION = '0.5.445';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -6494,7 +6494,8 @@ const DISPLAY_BY_TAB = {
   'Explore on the plane': ['gridFinish'],
   'Explore on surfaces': ['shape', 'gridFinish', ...VIEW_3D, 'glass', 'cellsFinish', 'cut'], // (its view's only: its colours its own, see renderExplore)
 };
-// The Display settings' defaults, one table: each its control (a box's id), when it comes back (open: the page's opening
+// The Display settings' defaults, one table: each its control (a box's id; one with no box, how to set it, or null: read
+// where it is used), when it comes back (open: the page's opening
 // only, kept from tab to tab; tab: another tab; variant: every variant; lifeTeams: Life's count of teams; battle: a battle's
 // state, as long as none picks it; ant: an ant coming in), its value: one for all, or each tab's ({ all, Life… }:
 // a tab's own, else all's), or by the variant or a battle (a function); displayDefaults and the variant's change set them, and
@@ -6549,7 +6550,15 @@ const DISPLAY_DEFAULTS = {
   light: ['light', 'open', true],
   glint: ['glintM', ['open', 'tab'], (variant, w) => (NAV[w][0] === 'Walk' && NAV[w][1] === '3D' ? 1 : 0.5)], // (halfway: its own colour and white added, see light; a lattice's walk white, its bars' glint bright)
   glass: ['glass', 'open', false],
-  cellsFinish: [null, 'open', 0],
+  cellsFinish: [
+    (k) => {
+      needsFull ||= k !== cellsFinish;
+      cellsFinish = k;
+      renderCellsFinish();
+    },
+    ['open', 'tab'],
+    (variant, w) => (NAV[w][0] === 'Life' && NAV[w][1] === '3D solids' ? CELLS_FINISH.Neon : 0),
+  ], // (Life in 3D: Neon; else Off)
   gridFinish: [
     'gridFinish',
     ['tab', 'exploreRule'],
@@ -6567,12 +6576,13 @@ const DISPLAY_DEFAULTS = {
   speed: [null, 'open', 60], // (Cut Off; Life's Blocks hidden; no sound; 60 steps a second: their own state, read where it is kept)
   antLook: [null, 'ant', 'digit'], // (an ant's look as it comes in: States, its cells by their state)
 };
-// its settings that come back at `at`: each box set, checked or valued
+// its settings that come back at `at`: each box set, checked or valued (one with no box, by its own setter)
 function applyDefaults(at) {
   for (const [key, [id, when]] of Object.entries(DISPLAY_DEFAULTS)) {
     if (![when].flat().includes(at) || !id) continue; // (one with no box: read where it is used, see defaultOf; when: one moment or several)
     const v = defaultOf(key, tabVariant());
-    if (typeof v === 'boolean') $(id).checked = v;
+    if (typeof id === 'function') id(v);
+    else if (typeof v === 'boolean') $(id).checked = v;
     else $(id).value = v;
   }
 }
@@ -42023,20 +42033,24 @@ $('ocean').addEventListener('change', () => {
   tintBattleFormulas();
   if (walk.n) describe(walk.base);
 }); // (a battle's colours: its fields, its title, its ranking)
-pillRow(
-  $('cellsFinishRow'),
-  'Cells',
-  "The surface's tiles: how each one painted is lit",
-  CELLS_FINISHES,
-  cellsFinish,
-  defaultOf('cellsFinish', tabVariant()),
-  (k) => {
-    needsFull ||= k !== cellsFinish;
-    cellsFinish = k;
-    if (k === CELLS_FINISH.Debug) debugOpen = true; // (Debug opens the debug panel, its cross shuts it: then on every mode)
-    cellsTuning(); // (the debug panel: this mode's numbers)
-  },
-);
+// Cells' pills, the one picked and the tab's default marked: again when its default sets it (see DISPLAY_DEFAULTS)
+function renderCellsFinish() {
+  pillRow(
+    $('cellsFinishRow'),
+    'Cells',
+    "The surface's tiles: how each one painted is lit",
+    CELLS_FINISHES,
+    cellsFinish,
+    defaultOf('cellsFinish', tabVariant()),
+    (k) => {
+      needsFull ||= k !== cellsFinish;
+      cellsFinish = k;
+      if (k === CELLS_FINISH.Debug) debugOpen = true; // (Debug opens the debug panel, its cross shuts it: then on every mode)
+      cellsTuning(); // (the debug panel: this mode's numbers)
+    },
+  );
+}
+renderCellsFinish();
 pillRow(
   $('cutRow'),
   'Cut',

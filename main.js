@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.430';
+const VERSION = '0.5.431';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -31611,116 +31611,8 @@ const rosetteParts = (g, K) =>
     }
     return out;
   })());
-// Each figure's colours, one row a figure (see figureOf), as TEAMS.md's placements tables: parts(K, opposite), each cell's
-// colour (-1: no one's); centre(i, K, opposite), colour i's patch's middle cells (Seed's, a hunt's zones), else its middle
-// (see middleCells); solo: its parts asked in one colour too (a globe's caps, a rosette sphere's poles: no one's). One way to
-// place a start on every figure (see partPlaces), its figure's row read, never a branch by figure in the starts
-const FIGURE_PARTS = {
-  // a flat torus: its lattice's blocks (see torusLattice)
-  lattice: { parts: (K) => planeFrame().lattice(K).part },
-  // a walled grid in a hexagon or a disc, or of 3, 6, 8 or 12 colours: its slices round the middle (see planeSlices)
-  slices: { parts: (K) => planeSlices(K).part },
-  // a walled rectangle: its blocks, cols × rows (see teamGrid)
-  blocks: {
-    parts: (K) => {
-      const [cols, rows] = teamGrid(K),
-        F = planeFrame();
-      return Int32Array.from({ length: walk.life.seed.length }, (_, t) => F.block(t, cols, rows));
-    },
-  },
-  // a Möbius strip: its colours in turn along it twice round (its two sides one strip, 2L, see mobiusLoop: s and s + L are
-  // one place, its two sides), each its stretch, 2L / K long, from the start of the face in view (red first), so that a face
-  // holds whole stretches when it can; a tile where its colour unit is, one on a stretch's end in the stretch it starts
-  strip: {
-    parts: (K) => {
-      const g = walk.geo,
-        s0 = mobiusMiddle(g) - g.L / 2,
-        stretch = (2 * g.L) / K,
-        along = (t) => (((colourUnitPlaces(g)[2 * t] - s0) % (2 * g.L)) + 2 * g.L) % (2 * g.L);
-      return Int32Array.from({ length: g.n }, (_, t) => Math.min(K - 1, Math.floor(along(t) / stretch + 1e-9)));
-    },
-  },
-  // a torus, a Klein bottle: its blocks on the sheet (see torusBlocks), each tile in the one its colour unit's middle is in (a
-  // Klein bottle's by its own middle: its slices whole copies along, a glide's half a lattice cell, see kleinLength)
-  sheet: {
-    parts: (K) => {
-      const g = walk.geo,
-        [a, b] = torusBlocks(K),
-        at = (x, m, k) => Math.max(0, Math.min(k - 1, Math.floor((x * k) / m + 1e-6)));
-      return Int32Array.from({ length: g.n }, (_, t) => {
-        const [u, v] = g.klein ? sheetMiddle(g, t) : colourUnitPlaces(g).subarray(2 * t, 2 * t + 2);
-        return at(u, g.nu, a) * b + at(v, g.nv, b);
-      });
-    },
-  },
-  // a globe: K lunes between meridians, whole columns of every band (each a multiple of K), its two caps no one's; a Duel up
-  // and down, its hemispheres, its caps theirs; no patch (no frame to lay one on: its zones greyed, see huntFits)
-  globe: {
-    parts: (K) => {
-      const g = walk.geo,
-        up = K === 2 && !duelAcross();
-      return Int32Array.from({ length: g.n }, (_, t) =>
-        up ? (g.cen[3 * t + 2] > 0 ? 0 : 1) : t > 0 && t < g.n - 1 ? Math.floor(g.along[t] * K) : -1,
-      );
-    },
-    solo: true,
-  },
-  // a rosette sphere: its lunes, or its halves' (see rosetteParts)
-  rosette: { parts: (K) => rosetteParts(walk.geo, K), solo: true },
-  // a hull solid (see hullColourings): a colour's faces its own (two opposite faces a colour: its first, Opposite: both), the
-  // others' cells each to the nearest colour's face's middle, as near two none's
-  hull: {
-    parts: (K, opposite) => {
-      const g = walk.geo,
-        hull = hullColours(VARIANTS[walk.variant].surface, K),
-        mine = (gr) => (hull.pairs && !opposite ? [gr[0]] : gr),
-        own = hull.groups.flatMap((gr, k) => mine(gr).map((q) => [hull.mids[q], k])),
-        owner = new Map(hull.groups.flatMap((gr, k) => mine(gr).map((q) => [q, k])));
-      return Int32Array.from({ length: g.n }, (_, t) => {
-        const q = g.cellFaces[t];
-        if (owner.has(q)) return owner.get(q);
-        if (opposite) return -1; // (Opposite: its two opposite faces only)
-        const far = own.map(([m]) => Math.hypot(g.cen[3 * t] - m[0], g.cen[3 * t + 1] - m[1], g.cen[3 * t + 2] - m[2])),
-          least = Math.min(...far),
-          ks = new Set(own.flatMap(([, k], i) => (far[i] < least + 1e-9 ? [k] : [])));
-        return ks.size === 1 ? [...ks][0] : -1;
-      });
-    },
-  },
-  // a solid: its colouring by its groups, a cell by its middle's nearest spot (see colouring, spotColours); a patch round the
-  // open cells nearest each colour's spot
-  solid: {
-    parts: (K, opposite) => spotColours(colouring(VARIANTS[walk.variant].surface, K, opposite), walk.geo),
-    centre: (i, K, opposite) => {
-      const col = colouring(VARIANTS[walk.variant].surface, K, opposite);
-      return centreCells(col.items[col.patch[i]]);
-    },
-  },
-};
-// the figure built, its row of FIGURE_PARTS (K colours: the plane's walled grid's slices or blocks by them)
-const figureOf = (K) =>
-  walk.plane
-    ? planeTorus(walk.plane.kind)
-      ? 'lattice'
-      : wallSlices(K)
-        ? 'slices'
-        : 'blocks'
-    : walk.geo.mobius
-      ? 'strip'
-      : walk.geo.torus
-        ? 'sheet'
-        : walk.geo.globe
-          ? 'globe'
-          : walk.geo.rosette
-            ? 'rosette'
-            : hullColours(VARIANTS[walk.variant].surface, K)
-              ? 'hull'
-              : 'solid';
-// each colour's part (r = 0: its cells, by its figure's row, see FIGURE_PARTS; else a patch of radius r round its centre; one
-// colour, the whole figure or a patch at its middle); Mixed's, one colour's place dealt out at random; a reversible sheet's
-// one colour, Trio's second, in view (a torus's middle square, see lifeParts, patternFrame)
 function partPlaces(r, K, opposite, mixed) {
-  if (K === 1 && walk.life?.margolus && walk.geo?.torus) return [huntParts(r, 3, false, false)[1]];
+  if (K === 1 && walk.life?.margolus && walk.geo?.torus) return [huntParts(r, 3, false, false)[1]]; // (a reversible sheet: one colour's, Trio's second, in view: a torus's middle square, see lifeParts, patternFrame)
   if (mixed && K > 1) {
     // Mixed: one colour's place, its cells shuffled (by its seed) and dealt out in turn: each colour as many, give or take one
     const parts = Array.from({ length: K }, () => []);
@@ -31730,33 +31622,122 @@ function partPlaces(r, K, opposite, mixed) {
       .forEach(([, t], i) => parts[i % K].push(t));
     return parts;
   }
-  const row = FIGURE_PARTS[figureOf(K)],
-    n = walk.life.seed.length;
-  if (!r) {
-    const parts = Array.from({ length: K }, () => []),
-      own = K === 1 && !row.solo ? null : row.parts(K, opposite); // (one colour: every cell, but a solo row's)
-    for (let t = 0; t < n; t++) parts[own ? own[t] : 0]?.push(t);
-    return parts;
-  }
-  if (row === FIGURE_PARTS.globe) return Array.from({ length: K }, () => []); // (no patch: no frame to lay one on)
-  if (row.centre && K > 1) return Array.from({ length: K }, (_, i) => lifePatch(r, row.centre(i, K, opposite)));
-  if (K === 1) return [lifePatch(r)];
-  // (a rule whose colours meet only when they start side by side: on the plane's blocks, patches touching round the middle)
-  if ((row === FIGURE_PARTS.lattice || row === FIGURE_PARTS.blocks) && NEAR_RULES.includes(walk.life.ruleText)) {
-    const [cols, rows] = teamGrid(K),
+  const L = walk.life,
+    g = walk.geo,
+    n = L.seed.length;
+  const parts = Array.from({ length: K }, () => []);
+  if (walk.plane) {
+    const [cols, rows] = teamGrid(K), // (the plane's blocks only: a solid's counts its own, see solidCounts)
       F = planeFrame(),
+      block = (t) => (planeTorus(walk.plane.kind) ? F.lattice(K).part[t] : F.block(t, cols, rows));
+    if (wallSlices(K)) {
+      const { part } = planeSlices(K);
+      if (!r) {
+        for (let t = 0; t < n; t++) parts[part[t]]?.push(t);
+        return parts;
+      }
+      return parts.map((_, i) => lifePatch(r, middleCells(i, K)));
+    }
+    if (!r) {
+      for (let t = 0; t < n; t++) parts[block(t)].push(t);
+      return parts;
+    }
+    if (K === 1) return [lifePatch(r)];
+    const near = NEAR_RULES.includes(L.ruleText) || K === 1,
       side = 2 * r + 1;
-    return Array.from({ length: K }, (_, i) =>
+    return parts.map((_, i) =>
       lifePatch(
         r,
-        F.cell(
-          0.5 + ((2 * (i % cols) - (cols - 1)) * side) / 2 / F.across,
-          0.5 + ((2 * Math.floor(i / cols) - (rows - 1)) * side) / 2 / F.down,
-        ),
+        near
+          ? F.cell(
+              0.5 + ((2 * (i % cols) - (cols - 1)) * side) / 2 / F.across,
+              0.5 + ((2 * Math.floor(i / cols) - (rows - 1)) * side) / 2 / F.down,
+            )
+          : middleCells(i, K),
       ),
     );
   }
-  return Array.from({ length: K }, (_, i) => lifePatch(r, middleCells(i, K))); // (at its middle, see patternFrame)
+  // a Möbius strip: the colours' parts in turn along it twice round (its two sides one strip, 2L, see
+  // mobiusLoop: s and s + L are one place, its two sides), each its stretch, 2L / K long, a patch at its
+  // middle; from the start of the face in view (red first), so that a face holds whole stretches when it can
+  if (g.mobius) {
+    const s0 = mobiusMiddle(g) - g.L / 2,
+      stretch = (2 * g.L) / K,
+      along = (t) => (((colourUnitPlaces(g)[2 * t] - s0) % (2 * g.L)) + 2 * g.L) % (2 * g.L); // (a tile where its colour unit is)
+    // (a tile whose middle is on a stretch's end, the sheet's end for one: in the stretch it starts, whatever the rounding)
+    if (!r) {
+      for (let t = 0; t < n; t++) parts[Math.min(K - 1, Math.floor(along(t) / stretch + 1e-9))].push(t);
+      return parts;
+    }
+    if (K === 1) return [lifePatch(r)];
+    return parts.map((_, k) => lifePatch(r, middleCells(k, K))); // at their stretches' middles
+  }
+  if (g.torus) {
+    // a torus, a Klein bottle: its blocks on the sheet (see torusBlocks), each tile in the one its colour unit's middle is in
+    const [a, b] = torusBlocks(K),
+      at = (x, m, k) => Math.max(0, Math.min(k - 1, Math.floor((x * k) / m + 1e-6)));
+    // (a tile where its colour unit is; a Klein bottle's by its own middle: its slices whole copies along, a glide's half a lattice cell, the
+    // middles a copy apart alike, as many in each, see kleinLength)
+    const block = (t) => {
+      const [u, v] = g.klein ? sheetMiddle(g, t) : colourUnitPlaces(g).subarray(2 * t, 2 * t + 2);
+      return at(u, g.nu, a) * b + at(v, g.nv, b);
+    };
+    if (!r) {
+      for (let t = 0; t < n; t++) parts[block(t)].push(t);
+      return parts;
+    }
+    return parts.map((_, i) => lifePatch(r, middleCells(i, K))); // at their middles (a tile there, as on the plane)
+  }
+  // a globe: K quarters, each the cells between two meridians, whole columns of every band (each band's a multiple of K), its two
+  // caps no one's
+  if (g.globe) {
+    const up = K === 2 && !duelAcross(), // (a Duel up and down: its hemispheres, its caps theirs)
+      quarter = (t) => (up ? (g.cen[3 * t + 2] > 0 ? 0 : 1) : t > 0 && t < g.n - 1 ? Math.floor(g.along[t] * K) : -1); // (its middle's way round, as laid: see globeMesh)
+    if (!r) {
+      for (let t = 0; t < n; t++) if (quarter(t) >= 0) parts[quarter(t)].push(t);
+      return parts;
+    }
+    return parts; // (no patch: no frame to lay one on, its zones greyed, see huntFits)
+  }
+  if (g.rosette) {
+    // (its discs or its lunes, see rosetteParts)
+    const part = rosetteParts(g, K);
+    if (!r) {
+      for (let t = 0; t < n; t++) if (part[t] >= 0) parts[part[t]].push(t);
+      return parts;
+    }
+    return parts.map((_, i) => lifePatch(r, middleCells(i, K))); // (a patch at each colour's spot on its disc, see patternFrame)
+  }
+  const hull = hullColours(VARIANTS[walk.variant].surface, K);
+  if (hull) {
+    // a hull solid (see hullColourings): Wild, a colour's faces its own (two opposite faces a colour: its first), the others' cells each to the nearest colour's face's middle; Mirror, its two faces; a zone, round each colour's first face's middle
+    if (r) return hull.groups.map((_, i) => lifePatch(r, middleCells(i, K)));
+    if (opposite) return hull.groups.map((gr) => gr.flatMap((q) => faceCells(g, q))); // (Opposite: its two opposite faces only)
+    const own = hull.groups.flatMap((gr, k) => (hull.pairs ? [gr[0]] : gr).map((q) => [hull.mids[q], k])),
+      owner = new Map(hull.groups.flatMap((gr, k) => (hull.pairs ? [gr[0]] : gr).map((q) => [q, k])));
+    for (let t = 0; t < n; t++) {
+      const q = g.cellFaces[t];
+      if (owner.has(q)) {
+        parts[owner.get(q)].push(t);
+        continue;
+      }
+      const far = own.map(([m]) => Math.hypot(g.cen[3 * t] - m[0], g.cen[3 * t + 1] - m[1], g.cen[3 * t + 2] - m[2])),
+        least = Math.min(...far),
+        ks = new Set(own.flatMap(([, k], q) => (far[q] < least + 1e-9 ? [k] : [])));
+      if (ks.size === 1) parts[[...ks][0]].push(t); // (as near two colours: none's)
+    }
+    return parts;
+  }
+  const surface = VARIANTS[walk.variant].surface,
+    col = K === 1 ? null : colouring(surface, K, opposite);
+  // a cell by its middle's nearest spot (see spotColours)
+  const own = K === 1 ? null : spotColours(col, g);
+  if (!r) {
+    for (let t = 0; t < n; t++) parts[K === 1 ? 0 : own[t]]?.push(t);
+    return parts;
+  }
+  if (K === 1) return [lifePatch(r)];
+  return col.patch.map((i) => lifePatch(r, centreCells(col.items[i]))); // round the open cells nearest each spot
 }
 const zoneParts = (zone, K) =>
   zone === 'full' && wildOnFaces() ? faceParts(K) : huntParts(zoneRadius(zone), K, undefined, teamsMixed(zone)); // (Opposite's parts as its soups', see huntParts)

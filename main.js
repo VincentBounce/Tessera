@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.463';
+const VERSION = '0.5.464';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -19458,50 +19458,61 @@ function rotationGroups(g, K, enough = Infinity, good = null, mirrors = false) {
   const memo = (g[mirrors ? 'symmetryGroups' : 'rotationGroups'] ??= {});
   if (memo[K]) return good ? memo[K].filter(good).slice(0, enough) : memo[K].slice(0, enough);
   const R = mirrors ? surfaceSymmetries(g) : surfaceRotations(g),
-    I = IDENTITY3;
+    { times, order, id } = groupTable(R);
   if (R.length % K) return (memo[K] = []); // (a group's order divides its whole group's: Lagrange)
-  const key = (M) => roundedKey(M.flat()),
-    times = matMul;
   const close = (gens) => {
-    // (the group they make, if of K)
-    const list = [I],
-      keys = new Set([key(I)]);
+    // (the group they make, if of K: its turns by their places in R, as found)
+    const list = [id],
+      seen = new Uint8Array(R.length);
+    seen[id] = 1;
     for (let x = 0; x < list.length; x++)
       for (const h of gens) {
-        const y = times(list[x], h),
-          k = key(y);
-        if (keys.has(k)) continue;
+        const y = times[list[x]][h];
+        if (y < 0) return null; // (a product out of R: none of its groups)
+        if (seen[y]) continue;
         if (list.length === K) return null;
-        keys.add(k);
+        seen[y] = 1;
         list.push(y);
       }
-    return list.length === K ? { list, id: [...keys].sort().join('|') } : null;
+    return list.length === K ? { list, id: seen.join('') } : null;
   };
   // (only turns whose order divides K make one; a pair both in a group found makes it again, or less)
-  // (a turn's order: the least q with M^q the identity, a mirror's too)
-  const order = R.map((M) => {
-    let P = M;
-    for (let q = 1; q <= R.length; q++, P = times(P, M)) if (key(P) === key(I)) return q;
-    return 0;
-  });
-  const ok = R.map((_, a) => K % order[a] === 0),
+  const ok = order.map((q) => K % q === 0),
     seen = new Set(),
     out = [],
     inFound = R.map(() => []);
-  const index = new Map(R.map((M, a) => [key(M), a]));
   for (let a = 0; a < R.length; a++)
     for (let b = a; b < R.length; b++) {
       if (!ok[a] || !ok[b] || inFound[a].some((h) => inFound[b].includes(h))) continue;
-      const G = close(a === b ? [R[a]] : [R[a], R[b]]);
+      const G = close(a === b ? [a] : [a, b]);
       if (!G || seen.has(G.id)) continue;
       seen.add(G.id);
-      out.push(G.list);
-      if (out.filter((G) => !good || good(G)).length >= enough) return good ? out.filter(good).slice(0, enough) : out;
-      for (const M of G.list) inFound[index.get(key(M))]?.push(out.length - 1);
+      out.push(G.list.map((a) => R[a]));
+      if (out.filter((M) => !good || good(M)).length >= enough) return good ? out.filter(good).slice(0, enough) : out;
+      for (const a of G.list) inFound[a].push(out.length - 1);
     }
   memo[K] = out;
   return good ? out.filter(good) : out;
 }
+// a list of turns' (and mirrors') table, once a list (a group: each product one of them): times[a][b] the place of R[a]·R[b],
+// order[a] the least q with R[a]^q the identity, id the identity's place; its groups then sought by places, never a matrix
+// multiplied again
+const groupTables = new WeakMap();
+const groupTable = (R) => {
+  if (groupTables.has(R)) return groupTables.get(R);
+  const index = new Map(R.map((M, a) => [roundedKey(M.flat()), a])),
+    id = index.get(roundedKey(IDENTITY3.flat())),
+    times = R.map((A) => Int32Array.from(R, (B) => index.get(roundedKey(matMul(A, B).flat())) ?? -1)),
+    order = R.map((_, a) => {
+      let p = a,
+        q = 1;
+      for (; p !== id && p >= 0 && q <= R.length; q++) p = times[p][a];
+      return p === id ? q : 0;
+    });
+  const table = { times, order, id };
+  groupTables.set(R, table);
+  return table;
+};
 const IDENTITY3 = [
   [1, 0, 0],
   [0, 1, 0],

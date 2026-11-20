@@ -120,8 +120,10 @@ tiling, as `ringColours` makes it today) and round its tube by a whole period ac
   - So **the 12 odd bottles take 2, 3, 5, 6, 7, 9, 10** (an odd K along, twice one with the half turn), never 4, 8 or
     12; **the 41 others every K**.
   - With the half turn, a part is K / 2 slices along by 2 round the tube: its length made for K / 2 square blocks of half
-    the tube (as `ringLength`'s), gathered as a torus's are, not K long slices. Today Duel, Sextet and Decet are greyed on the 12: the half turn round the tube is
-    the walks' Duel already (`ringGroup`), never Life's.
+    the tube (as `ringLength`'s), gathered as a torus's are, not K long slices. Since v0.5.406 Life takes them on the 12
+    too. Their Duel (K = 2, one slice along) is two halves round the tube, each the bottle's whole length, about 5 times
+    longer than wide: squaring them would ask a bottle 5 times shorter, past the length's stretch. **Kept so, an
+    exception to the square blocks** (decided 2026-11-20).
 
 <p align="center"><br>* * *</p>
 

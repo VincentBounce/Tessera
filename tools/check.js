@@ -458,25 +458,22 @@
       ...panel(d, apart),
     };
   };
-  // the page as its link has it, its views closed while looked at, then open again: Draw open on a surface (a view of its
-  // rule's patterns, the start as it was, see surfaceDraw); Custom rule open (customOpen, Life's, a walk's or a creature's:
-  // a link opens it only on a rule no card has, a card's rule its card's)
+  // the page as its link has it, its views closed while looked at, then open again: Custom rule open (customOpen, Life's, a
+  // walk's or a creature's: a link opens it only on a rule no card has, a card's rule its card's)
   const linkedAgain = (apart = []) => {
-    const draw = surfaceDraw,
-      custom = customOpen,
+    const custom = customOpen,
       views = () => {
         renderPlaneRow();
         renderHunt();
         renderRuleSection();
         renderModePicker();
       };
-    if (!draw && !custom) return offered(window, apart);
-    surfaceDraw = customOpen = false;
+    if (!custom) return offered(window, apart);
+    customOpen = false;
     views();
     try {
       return offered(window, apart);
     } finally {
-      surfaceDraw = draw;
       customOpen = custom;
       views();
     }

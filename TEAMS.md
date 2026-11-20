@@ -87,6 +87,16 @@ faces' colourings), and the two disagree on 30 solids of 38:
 - [Icosa in 8](http://localhost:8321/#mode=life&shape=icosahedron&tiling=triangles&teams=8) is right, but only with mirrors:
   three half turns and the turn through its centre, 55 cells a part, 60 of 500 on the mirrors no one's.
 
+**Which parts: whole faces first** (decided 2026-11-20, v0.5.454). Where a count lets each part be whole faces (its
+spots the faces' middles), that colouring is kept before any other, then the fewest cells no one's, faces cut, pieces
+(see `colouring`). A solid's parts then the same on every tiling: the
+[tetrahedron of triangles](http://localhost:8321/#mode=life&shape=tetrahedron&tiling=triangles&teams=4) and the
+[tetrahedron of hexagons](http://localhost:8321/#mode=life&shape=tetrahedron&tiling=hex&gridSize=48&teams=4) in 4,
+each a face (the hexagons' before: its corners, 6 cells no one's against its faces' 70). Its price: on a solid of
+hexagons, kites or rhombi, the cells folded over an edge are as near both faces, no one's, a seam a cell wide between
+its parts (45 colourings of 213 changed, all their parts still alike; the Kites & darts sphere in 3 alike since, 21 / 18
+before).
+
 <p align="center"><br>* * *</p>
 
 ## Rings: torus, Möbius strip, Klein bottle

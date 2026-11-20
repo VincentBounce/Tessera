@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.453';
+const VERSION = '0.5.454';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -31092,9 +31092,10 @@ function colouring(surface, K, opposite = false, apart = piecesApart()) {
         }
       const pieces = new Set([...of.keys()].filter((t) => of[t] >= 0).map(root)).size,
         across = items.every((q, i) => colour.some((c, j) => c === colour[i] && dot3(items[j], q) < -1 + 1e-9)), // (its pieces each other's through the centre: Opposite's)
+        byFaces = items.every((q) => mids.some((m) => dot3(unit(m), q) > 1 - 1e-9)) ? 0 : 1, // (its parts whole faces: first)
         score = apart
-          ? [none, cut.size, across && !opposite ? 1 : 0, -pieces, -G.length, sides]
-          : [none, cut.size, pieces, -G.length, sides];
+          ? [byFaces, none, cut.size, across && !opposite ? 1 : 0, -pieces, -G.length, sides]
+          : [byFaces, none, cut.size, pieces, -G.length, sides];
       if (!best || lexicoLess(score, best.score)) best = { score, items, colour };
     }
   }
@@ -31103,7 +31104,7 @@ function colouring(surface, K, opposite = false, apart = piecesApart()) {
   return (colouringMemo[id] = {
     items: best.items,
     colour: best.colour,
-    pieces: apart ? -best.score[3] : best.score[2], // (its colours' pieces on the least mesh, see piecesOf)
+    pieces: apart ? -best.score[4] : best.score[3], // (its colours' pieces on the least mesh, see piecesOf)
     patch,
     faces: patch.every((i) => mids.some((m) => dot3(unit(m), best.items[i]) > 1 - 1e-9)),
   });

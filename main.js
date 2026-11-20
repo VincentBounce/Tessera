@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.452';
+const VERSION = '0.5.453';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -24382,6 +24382,8 @@ const PENROSE_RULES = {
   },
 };
 const PENROSE_SIDE = PENROSE_RULES.rhombi.side; // (the sphere's rhombi's)
+// the Penrose wheel's spokes' ways, (2i ± 1) times this: its 10 triangles between them, their mirrors along them
+const PENROSE_SPOKE = Math.PI / 10;
 const penroseTiles = (() => {
   const phi = (1 + Math.sqrt(5)) / 2,
     lerp = (p, q, t) => [p[0] + (q[0] - p[0]) * t, p[1] + (q[1] - p[1]) * t];
@@ -24393,8 +24395,8 @@ const penroseTiles = (() => {
     // its patterns found there at 43, n 9, see CENTRED; other n, another middle, none of them laid at 21 or 85 before)
     const R = rule.side * phi ** n; // (the wheel's: its tiles' sides rule.side)
     let tris = Array.from({ length: 10 }, (_, i) => {
-      const B = [R * Math.cos(((2 * i - 1) * Math.PI) / 10), R * Math.sin(((2 * i - 1) * Math.PI) / 10)],
-        C = [R * Math.cos(((2 * i + 1) * Math.PI) / 10), R * Math.sin(((2 * i + 1) * Math.PI) / 10)];
+      const B = [R * Math.cos((2 * i - 1) * PENROSE_SPOKE), R * Math.sin((2 * i - 1) * PENROSE_SPOKE)],
+        C = [R * Math.cos((2 * i + 1) * PENROSE_SPOKE), R * Math.sin((2 * i + 1) * PENROSE_SPOKE)];
       return rule.wheel[i] === '+' ? [0, [0, 0], B, C] : [0, [0, 0], C, B];
     });
     for (let k = 0; k < n; k++)
@@ -27519,7 +27521,17 @@ const TEAM_NAMES = {
   12: 'Dozen',
 }; // one colour, then battles
 // the counts of colours fair on the figure, every colour's part a copy of the others' (see teamsFair)
-const CORNER_DISCS = ['ammann', 'rhombs12', 'rhombs14', 'penrose', 'kitesDarts']; // the discs whose slices start at a corner, half a turn's step on (the rosettes turn as a spiral, none); those mirrored, DISC_MIRRORS
+// a disc's first mirror's way, by its construction: de Bruijn's multigrids' (Ammann's, Rhombs 12 and 14: a family's
+// normal's half, π over its turns, see DEBRUIJN), Penrose's wheel's spokes' (see PENROSE_SPOKE); its slices start there
+// (see planeSlices), its mirrors lay it on itself (see teamsFair); none else (the rosettes turn as a spiral, the hats and
+// spectres are chiral). Before v0.5.453 Penrose's was taken as π / 5, between two mirrors: its Duel 918 and 927 cells
+const DISC_FAMILIES = { deBruijn: ['ammann', 'rhombs12', 'rhombs14'], penrose: ['penrose', 'kitesDarts'] };
+const discMirrorWay = (kind) =>
+  DISC_FAMILIES.deBruijn.includes(kind)
+    ? Math.PI / figureTurns(kind)
+    : DISC_FAMILIES.penrose.includes(kind)
+      ? PENROSE_SPOKE
+      : null;
 // a walled figure's turns round its middle: those its grid (see figureTurns) and its outline have both, by construction;
 // an outline's own: a hexagon's 6, a square's 4 (a four-fold grid's made as square as can be, see sideW: Pythagoras' 4
 // colours 640 cells each; a rectangle, another grid's, keeps 2 of them), a rhombus's 2, a disc's every turn (a rhombus of a
@@ -27530,7 +27542,6 @@ const wallTurns = (kind) => {
     outline = OUTLINE_TURNS[outlineOf(kind)];
   return outline === Infinity ? n : gcd(n, outline);
 };
-const DISC_MIRRORS = ['ammann', 'rhombs12', 'rhombs14']; // (the discs whose mirrors lay them on themselves, measured; Penrose's and Kites & darts' pentagrids, shifted, not quite: Penrose's 2 halves 918 and 927 cells)
 const figureTurns = (kind) =>
   ROSETTES[kind]?.[0] ??
   { ammann: 8, rhombs12: 12, rhombs14: 14, penrose: 5, kitesDarts: 5, tubingen: 1, hat: 1, spectre: 1, pinwheel: 1 }[
@@ -27585,7 +27596,7 @@ const teamsFair = (K, { variant, g } = pickedFigure(tabVariant())) => {
     // slice between two mirrors, its cells on them no one's: see planeSlices); hexagons 1, 2, 3, 4, 6, 12, squares 1, 2, 4,
     // 8, Penrose 5; never 9, nor 12 on Florets, 8 on Pythagoras (no mirror), nor 3 on a rectangle (see wallTurns))
     const n = wallTurns(kind),
-      mirror = APERIODIC[kind] ? DISC_MIRRORS.includes(kind) : canMirror(kind);
+      mirror = APERIODIC[kind] ? discMirrorWay(kind) !== null : canMirror(kind);
     return [...Array(n).keys()].some((i) => n % (i + 1) === 0 && (K === i + 1 || (mirror && K === 2 * (i + 1))));
   }
   if (solidCounts(variant?.surface)) return solidCounts(variant.surface).includes(K); // (a solid: its groups', see colouring)
@@ -31173,8 +31184,8 @@ function planeSlices(K) {
       (APERIODIC[kind]
         ? {
             o: [(W - 1) / 2, (W - 1) / 2],
-            ...(CORNER_DISCS.includes(kind)
-              ? { corner: Math.PI / figureTurns(kind), step: (2 * Math.PI) / figureTurns(kind) }
+            ...(discMirrorWay(kind) !== null
+              ? { corner: discMirrorWay(kind), step: (2 * Math.PI) / figureTurns(kind) }
               : {}),
           }
         : null),

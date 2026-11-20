@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.469';
+const VERSION = '0.5.470';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -6729,7 +6729,7 @@ function renderViewModes() {
   };
   const from = (k) => {
     viewFrom = k;
-    for (const id of ['centered', 'upright', 'autoRotate']) $(id).checked = false;
+    for (const id of ['centered', 'upright']) $(id).checked = false; // (Auto-rotate kept: a view picked, not a drag)
     followed = -1;
     Object.assign(camera, VIEWS_FROM[k]);
     rotateView([0, 0, 0]);

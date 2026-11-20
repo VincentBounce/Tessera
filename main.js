@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.479';
+const VERSION = '0.5.480';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -22268,6 +22268,9 @@ function startParts(seed) {
     return;
   } // (Text: its word as a picture, each colour's, see iconLay)
   if (plane.start !== 'random') return;
+  // Seed's radius one that fits this grid when one does (the widest up to it): its tile judged by it, the same however the
+  // grid was reached (a radius left by a smaller grid before, or a link's default)
+  if (!huntFits().seed) seedThatFits(plane.seedRadius);
   // the zone picked, if it does not fit here: a smaller radius, else the soup (also for the link's start)
   const fits = huntFits(),
     r = hunt.zone === 'full' ? Infinity : zoneRadius(hunt.zone); // (Wild greyed, its parts unlike: the widest radius)

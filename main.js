@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.471';
+const VERSION = '0.5.472';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -6671,6 +6671,22 @@ const VIEW_TILES = [
   ['autoRotate', 'autoRotateRow', () => icon('autoRotate'), 'Auto-rotate'],
 ];
 let viewTiles = null;
+// The view freed by hand (a drag, Auto-rotate turned on): Free, no side looked from, no walker followed; Upright kept (it turns
+// round the vertical only); View's pills drawn as it is, when it was not free already
+function freeView() {
+  if (!$('centered').checked && viewFrom < 0 && followed < 0) return;
+  $('centered').checked = false;
+  viewFrom = -1;
+  followed = -1;
+  renderViewModes();
+}
+// Auto-rotate stopped (a view picked, a drag, a recentre, a walker followed, a card opened): its box unchecked and its tile
+// drawn as it is, one way for all
+function stopAutoRotate() {
+  if (!$('autoRotate').checked) return;
+  $('autoRotate').checked = false;
+  renderViewTiles();
+}
 function renderViewTiles() {
   viewTiles ??= VIEW_TILES.map(([id, row, pic, text, title]) =>
     tile({
@@ -6722,7 +6738,7 @@ let viewFrom = -1; // (the side looked from, VIEWS_FROM's; -1 none: freed by a d
 function renderViewModes() {
   const set = (centered, upright) => {
     viewFrom = -1;
-    if (!upright) $('autoRotate').checked = false; // (a view picked stops Auto-rotate; Upright turns on with it)
+    if (!upright) stopAutoRotate(); // (a view picked stops it; Upright turns on with it)
     $('centered').checked = centered;
     $('centered').dispatchEvent(new Event('change'));
     $('upright').checked = upright;
@@ -6730,7 +6746,8 @@ function renderViewModes() {
   };
   const from = (k) => {
     viewFrom = k;
-    for (const id of ['centered', 'upright', 'autoRotate']) $(id).checked = false;
+    for (const id of ['centered', 'upright']) $(id).checked = false;
+    stopAutoRotate();
     followed = -1;
     Object.assign(camera, VIEWS_FROM[k]);
     rotateView([0, 0, 0]);
@@ -6760,11 +6777,7 @@ function renderViewModes() {
     ],
     viewFrom >= 0 ? 3 + viewFrom : c ? 0 : u ? 2 : 1,
     first,
-    (k) => {
-      if (k < 3) set(...pairs[k]);
-      else from(k - 3);
-      renderViewTiles(); // (Auto-rotate's tile as it is now)
-    },
+    (k) => (k < 3 ? set(...pairs[k]) : from(k - 3)),
   );
   $('viewModes').hidden = $('centeredRow').hidden;
 }
@@ -36153,7 +36166,7 @@ let followed = -1;
 const follow = (s) => {
   followed = followed === s ? -1 : s;
   faced = false; // (the walk shown whole: turned to it at once, not to its middle)
-  $('autoRotate').checked = false;
+  stopAutoRotate();
   statsDirty = true;
 };
 // the walkers' names in the title, on a surface each a link (a link's look, see .gen-link): a click, the camera follows it
@@ -41336,7 +41349,9 @@ $('autoFit').addEventListener('change', () => {
   renderHeadTiles();
 });
 $('autoRotate').addEventListener('change', () => {
-  if ($('autoRotate').checked) fitNow();
+  if (!$('autoRotate').checked) return;
+  freeView(); // (turning: Free, as a drag; Upright kept)
+  fitNow();
 }); // turning starts framed
 
 function fitNow() {
@@ -41400,10 +41415,8 @@ stage.addEventListener('pointermove', (e) => {
   } else {
     // a hand rotation keeps auto-fit (the view stays centred, as while auto-rotating), but stops
     // auto-rotate, Centered and the walker followed (see followed); a pan or a zoom ends auto-fit
-    $('autoRotate').checked = false;
-    $('centered').checked = false;
-    followed = -1;
-    viewFrom = -1; // (a side's view freed: Free, see renderViewModes)
+    stopAutoRotate();
+    freeView();
     rotateView(
       $('upright').checked ? [0, 0, (camera.u[2] < 0 ? -1 : 1) * dx * 0.008] : screenTurn(dy * 0.008, dx * 0.008, 0),
     ); // a trackball: drag right turns around the screen's up; Upright: round the world's up only
@@ -41420,7 +41433,7 @@ stage.addEventListener('pointercancel', endDrag);
 // shown (turned towards it on a surface)
 function recentre() {
   if ($('autoFit').checked && walk.is3d) {
-    $('autoRotate').checked = false;
+    stopAutoRotate();
     $('centered').checked = true;
     $('upright').checked = false; // (the default view: free again)
     viewFrom = -1;
@@ -42797,7 +42810,7 @@ function setupRow(name, detail, x) {
         // (after the frame painted)
         if (cardShown !== x) return; // (another clicked meanwhile)
         $('autoFit').checked = true;
-        $('autoRotate').checked = false;
+        stopAutoRotate();
         const built = whenBuilt();
         if (!applySetup(setup)) preview.hidden = true;
         built.then(() => {

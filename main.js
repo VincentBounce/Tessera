@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.449';
+const VERSION = '0.5.450';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -22179,7 +22179,7 @@ function lifeReseed() {
 // round it, see ringColours; a Möbius strip's 3 stretches along it): Icon 24's and Punk 24's one each, the others' one
 // colour's, Trio's second, in view (see huntParts), Wild and Digits all over
 const lifeParts = () =>
-  walk.life.margolus && walk.surface.torus
+  walk.life.margolus && walk.surface?.torus
     ? plane.start === 'random' && /24$/.test(hunt.zone)
       ? 3
       : 1

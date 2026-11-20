@@ -350,7 +350,7 @@ function checker(fail) {
           .at(-1)
           .matchAll(/([\d,]+)\s+[a-z]+/gi),
       ].reduce((sum, m) => sum + Number(m[1].replace(/,/g, '')), 0); // (its cells, its terms summed: 1,910 hexagons + 12 pentagons)
-    const n = VARIANTS[w].surface && !VARIANTS[w].plane ? walk.geo?.n : null;
+    const n = VARIANTS[w].surface && !VARIANTS[w].plane ? walk.surface?.n : null;
     const nan = document.querySelectorAll('svg[viewBox*="NaN"], svg[viewBox*="Infinity"]').length; // (a picture with nothing to frame: no error thrown, drawn empty)
     const starts = $('startSection').hidden
       ? 2
@@ -1172,7 +1172,7 @@ async function battlesFair(fail) {
   let checked = 0;
   for (const w of Object.keys(VARIANTS).filter(battleVariant)) {
     location.hash = toHash({ ...variantWords(w), walkNumberA: 'pi' });
-    await until(shown(w, () => !walk.battle && walk.geo));
+    await until(shown(w, () => !walk.battle && walk.surface));
     const counts = battleCounts(w),
       grid = !!VARIANTS[w].edges;
     const built = (K, stops) =>
@@ -1189,7 +1189,7 @@ async function battlesFair(fail) {
       });
       for (let t = 0; t < 30 && !built(K, false); t++) await wait(300);
       const P = walk.battle?.player,
-        g = walk.geo;
+        g = walk.surface;
       checked++;
       if (P?.K !== K) {
         fail(`${w} ${K} walkers: no battle (${walkSaid})`);
@@ -1274,7 +1274,7 @@ async function battlesFair(fail) {
       fail(`${w} Snake cells: no battle (${slink})`);
       continue;
     }
-    const cap = Math.floor(walk.geo.n / 10),
+    const cap = Math.floor(walk.surface.n / 10),
       before = Array(K).fill(0);
     let fast = 0,
       over = 0,

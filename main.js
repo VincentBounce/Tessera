@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.440';
+const VERSION = '0.5.441';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -6194,7 +6194,7 @@ let numberWorker = null; // (the page's number's digits being computed, see comp
 // - state kept outside `walk` (fill, visitData, hunt, the layers…): reset with it in buildWalkOf, or moved into `walk`;
 // - the tab picked mixed with the walk shown: while a walk is made the tab (tabVariant()) is already the next
 //   one. What describes the walk shown reads walk.variant; what sets up the next one reads the tab, and only
-//   the tab's own figure (see pickedFigure), never walk.geo with the tab's variant.
+//   the tab's own figure (see pickedFigure), never walk.surface with the tab's variant.
 // Checked every night (CLAUDE.md, Night audits: clean transitions).
 const freshWalk = () => ({
   n: 0, // number of steps
@@ -6216,8 +6216,7 @@ const freshWalk = () => ({
   lines: false,
   skipZeros: false,
   points: false,
-  surface: false,
-  geo: null,
+  surface: null, // (a surface's mesh, its cells: see surfaceOf; on the plane, none)
   R: 1,
   tile: null,
   nodes: 0,
@@ -12247,7 +12246,6 @@ function buildWalkOf() {
     wormEnd: isWorm && step.end,
     wormMade: isWorm ? (step.made ?? 0) : 0,
     keys,
-    surface: false,
     life: null,
     rows,
     xs: is3d ? new Float64Array(len + 1) : wx,
@@ -13732,7 +13730,7 @@ function setWalkRule(w, rule) {
 /* Tiled surfaces. A mesh lists each tile's vertices counterclockwise seen from outside
  * (poly[sides·t + k]); nbr[sides·t + k] is the tile across edge k (vertex k to vertex k + 1)
  * and nbrEdge[…] the index of that same edge in the neighbour. */
-// meshCache: each mesh built once a size, kept while in use (walk.geo: the walk's own; all kept, a long visit of many
+// meshCache: each mesh built once a size, kept while in use (walk.surface: the walk's own; all kept, a long visit of many
 // surfaces and sizes filled the page's memory)
 const weakCache = () =>
   new Proxy(
@@ -16878,7 +16876,7 @@ function initShape(kind) {
   const surface = (w) => familyOf(w)?.F.name ?? VARIANTS[w].surface;
   const variant = digitsComputed.variant,
     keep = previousShape && surface(previousShape.variant) === surface(variant);
-  const g = walk.geo,
+  const g = walk.surface,
     m = keep ? previousShape.target : defaultOf('shape', variant),
     shape = shapeAt(g, m);
   // its flat and round forms' extents, once a mesh (the form shown one of them, mostly)
@@ -16904,9 +16902,9 @@ const cameFrom = (g, alongEdges, state) => (alongEdges ? state[1] : g.nbr[g.side
 function placePoint(p) {
   const sh = walk.shape,
     R = walk.R,
-    G = walk.geo.edgeGraph,
+    G = walk.surface.edgeGraph,
     X = walk.vert ? sh.corners : sh.cen;
-  const c = walk.vert ? 3 * (walk.geo.sides * G.tileOf[p] + G.cornerOf[p]) : 3 * p;
+  const c = walk.vert ? 3 * (walk.surface.sides * G.tileOf[p] + G.cornerOf[p]) : 3 * p;
   return [X[c] * R, X[c + 1] * R, X[c + 2] * R];
 }
 // Put the current shape in place: the walk's points on it (see placePoint), the frame and the view
@@ -16931,7 +16929,7 @@ function updateMorphButton() {
   const sh = walk.shape;
   $('shapeRow').hidden = !sh || !shows('shape', tabVariant());
   if (!sh) return;
-  [$('shapeFlat').textContent, $('shapeRound').textContent] = walk.geo.torus
+  [$('shapeFlat').textContent, $('shapeRound').textContent] = walk.surface.torus
     ? ['Unrolled', 'Rolled']
     : ['Flat', 'Inflated'];
   if (document.activeElement !== $('shapeM')) $('shapeM').value = sh.target;
@@ -16983,7 +16981,7 @@ $('shapeM').addEventListener('input', () => {
   const sh = walk.shape;
   if (!sh) return;
   const m = Number($('shapeM').value);
-  Object.assign(sh, shapeAt(walk.geo, m), { target: m });
+  Object.assign(sh, shapeAt(walk.surface, m), { target: m });
   applyShape();
 });
 $('shapeM').addEventListener('change', () => {
@@ -17002,7 +17000,7 @@ function morphStep(dt) {
   const sh = walk.shape;
   if (!sh || sh.m === sh.target) return;
   const m = sh.target > sh.m ? Math.min(sh.target, sh.m + dt / 0.7) : Math.max(sh.target, sh.m - dt / 0.7);
-  Object.assign(sh, shapeAt(walk.geo, m));
+  Object.assign(sh, shapeAt(walk.surface, m));
   applyShape();
 }
 
@@ -18895,8 +18893,7 @@ function walkRecorder(seq, ahead, base, R, nodes, len = seq.length) {
         lattice: 'surface',
         skipZeros: false,
         keys: seq,
-        surface: true,
-        geo: g,
+        surface: g,
         R,
         tile,
         nodes,
@@ -21006,7 +21003,7 @@ async function startBattleHunt() {
       if (run.stop) return;
     }
   const score = HUNT_RANKS[huntGoal()][5],
-    g = walk.geo,
+    g = walk.surface,
     { head, frac } = digitsInUse(),
     shownFs = BATTLE_FORMULAS.slice(0, K).map((id) => $(id).value);
   const cards = new Map(BATTLE_CARDS.map((f) => [f, knownDigits(formulaOf(f), base, n)]));
@@ -22160,7 +22157,7 @@ function lifeReseed() {
 // round it, see ringColours; a Möbius strip's 3 stretches along it): Icon 24's and Punk 24's one each, the others' one
 // colour's, Trio's second, in view (see huntParts), Wild and Digits all over
 const lifeParts = () =>
-  walk.life.margolus && walk.geo.torus
+  walk.life.margolus && walk.surface.torus
     ? plane.start === 'random' && /24$/.test(hunt.zone)
       ? 3
       : 1
@@ -22403,8 +22400,8 @@ const tilesPalette = () =>
 const tilesOn = () => !!tilesPalette() && shows('tiles', tabVariant());
 let groundMemo = {};
 function groundColours() {
-  if (!tilesOn() || !(walk.plane || walk.geo)) return null;
-  const g = walk.geo,
+  if (!tilesOn() || !(walk.plane || walk.surface)) return null;
+  const g = walk.surface,
     P = walk.plane,
     n = P ? P.n : g.n, // (its cells, then the plane's walls)
     of = walk.life ?? P ?? g,
@@ -22650,8 +22647,7 @@ function buildLife(seq, variant) {
   Object.assign(walk, {
     is3d: true,
     lattice: 'surface',
-    surface: true,
-    geo: g,
+    surface: g,
     R: radius(size),
     tile: new Int32Array(1),
     visits: new Int32Array(g.n),
@@ -23927,7 +23923,7 @@ const oppositeAllowed = (surface, K) =>
 const startSymmetry = () =>
   walk.plane
     ? symmetryOf(walk.plane.kind)
-    : plane.sym === 'opposite' && walk.geo && oppositeAllowed(VARIANTS[walk.variant].surface, lifeParts())
+    : plane.sym === 'opposite' && walk.surface && oppositeAllowed(VARIANTS[walk.variant].surface, lifeParts())
       ? 'opposite'
       : 'none';
 // a cell and its copies by the start's symmetry: the plane's (see cellCopies), a solid's cell and the one across its centre
@@ -23935,7 +23931,7 @@ const startCopies = (t) =>
   walk.plane
     ? cellCopies(walk.plane.kind, walk.plane.W, t)
     : startSymmetry() === 'opposite'
-      ? [t, oppositeCell(walk.geo, t)]
+      ? [t, oppositeCell(walk.surface, t)]
       : [t];
 // the cell across a solid's centre from cell t, once a mesh (its middle's opposite point's cell)
 const oppositeCell = (g, t) => {
@@ -25167,7 +25163,7 @@ for (const [w, n] of Object.entries(NAV))
 // the flat grid cells lie on: the plane's; a rosette sphere's, its disc's (its north half's cells numbered as the plane's: a start
 // laid on it as on the plane, see rosetteSphereMesh)
 function flatGrid() {
-  return walk.plane ?? walk.geo?.disc ?? null;
+  return walk.plane ?? walk.surface?.disc ?? null;
 }
 function planeCorners(kind, x, y) {
   // a cell's corners, in world units: its lattice's (see latticeCorners)
@@ -25482,7 +25478,7 @@ function iconWay(i, K) {
     // (as drawn: the plane turned by planeTurn; out, its bottom to its slice's wall, a rosette sphere's to its lune's way out from the pole)
     const w = roundWalls(K) && planeSlices(K),
       o = (flatGrid().W - 1) / 2,
-      c = !walk.plane && K > 1 && !poleColours(walk.geo, K) && frame.centre; // (at a pole: upright, as on the plane)
+      c = !walk.plane && K > 1 && !poleColours(walk.surface, K) && frame.centre; // (at a pole: upright, as on the plane)
     const out = w ? w.angles[i] : c ? Math.atan2(c[1] - o, c[0] - o) : null;
     return { ...frame, tilt: (out === null ? 0 : out - Math.PI / 2) - planeTurn(), mirror: false };
   }
@@ -25510,7 +25506,7 @@ function iconWay(i, K) {
 // against its side (its arm across it h = H tan(a/2) / (1 + tan(a/2)), H its height; no more than H / 2). Their least
 function iconRoom(K) {
   const kind = patternKind(),
-    g = walk.geo,
+    g = walk.surface,
     { part } = iconCellsOf(K);
   const cellSide = cellWidth(kind);
   const at = flatGrid()
@@ -25559,7 +25555,7 @@ function iconRoom(K) {
 function iconLay(N, P = 24) {
   const kind = patternKind(),
     K = lifeParts(),
-    g = walk.geo;
+    g = walk.surface;
   if (!patternsOn()) return null;
   const { part, of } = iconCellsOf(K),
     walled = roundWalls(K) && planeSlices(K),
@@ -25782,7 +25778,7 @@ function partMiddle(k, K) {
   if (t !== undefined) return t;
   if (K === 1) return frontCell();
   const part = huntParts(0, K)[k],
-    c = walk.geo.cen,
+    c = walk.surface.cen,
     mid = [0, 1, 2].map((d) => part.reduce((a, u) => a + c[3 * u + d], 0) / part.length);
   return part.reduce(
     (best, u) =>
@@ -27520,7 +27516,7 @@ const TEAM_GRID = {
 // ring 1 / TORUS_TUBE times as long as its tube): 12 colours 6 × 2 rather than 4 × 3; of those whose b divides its rows
 // first (its columns made for a, see ringColumns); a Klein bottle's its length's (see kleinLength: b = 1 or 2, its half turn
 // round the tube), Cairo's slices along the ring only
-function torusBlocks(K, g = walk.geo) {
+function torusBlocks(K, g = walk.surface) {
   let best = [K, 1],
     err = Infinity;
   if (g?.klein) return g.kindK ? kleinLength(g.kindK, g.size, K).blocks : best;
@@ -29167,7 +29163,7 @@ function battleCaseFigure(grid, way, scripts, cells = false) {
 // a battle's cases, under its walk's (see walkTutorial): its way's, along the edges or on cells, on the walk's tiles
 function battleTutorial(w) {
   const way = BATTLE_RULES[battleRuleInUse(w)][0],
-    g = walk.geo,
+    g = walk.surface,
     grid = { 4: 'square', 3: 'tri', 6: 'hex' }[g?.sides];
   if (!battleOn()) return '';
   const title = `<h2>Battle: ${BATTLE_RULES[battleRuleInUse(w)][1]}</h2>`,
@@ -30937,7 +30933,7 @@ let gridCount = 0;
 const gridKey = () =>
   walk.plane
     ? `${walk.plane.kind}|${walk.plane.W}|${walk.plane.row}|${walk.plane.torus}|${shaped(walk.plane.kind)}`
-    : `#${(walk.geo.gridId ??= ++gridCount)}`;
+    : `#${(walk.surface.gridId ??= ++gridCount)}`;
 const isIcon = (zone) => /^(?:icon|punk|emoji)/.test(zone); // (a picture: an icon, a punk, an emoji)
 // A picture laid two ways (each colour's: see iconLay, its part's cells sampled): on squares, an icon's or a punk's
 // 24 pixels each a whole count of cells, 24 × N wide (pixels whole); elsewhere, and an emoji or a word anywhere, its pixels
@@ -30948,7 +30944,7 @@ let iconMaxMemo = null;
 const iconMax = (set = ICON_SETS.icon) => {
   const key = `${gridKey()}|${lifeParts()}|${patternKind()}|${set.P}`,
     u = set.P === 24 && patternKind() === 'square' ? 24 : 1,
-    cells = walk.plane ? walk.plane.W * walk.plane.row : walk.geo.n;
+    cells = walk.plane ? walk.plane.W * walk.plane.row : walk.surface.n;
   if (iconMaxMemo?.key === key) return iconMaxMemo.N;
   const lo = u === 24 ? 1 : 16; // (in u's)
   if (!patternsOn()) return (iconMaxMemo = { key, N: 24 }).N;
@@ -31008,7 +31004,7 @@ function renderWild() {
 }
 function faceParts(K) {
   const surface = VARIANTS[walk.variant].surface,
-    g = walk.geo,
+    g = walk.surface,
     L = walk.life;
   if (K < 2 || walk.plane || !SOLIDS.includes(surface)) return null;
   if (hullSolidOf(surface)) return hullColours(surface, K)?.groups.map((gr) => faceCells(g, gr[0])) ?? null; // (a hull solid: each colour's first face, as the cube's, see hullColourings)
@@ -31612,7 +31608,7 @@ const rosetteParts = (g, K) =>
     return out;
   })());
 function partPlaces(r, K, opposite, mixed) {
-  if (K === 1 && walk.life?.margolus && walk.geo?.torus) return [huntParts(r, 3, false, false)[1]]; // (a reversible sheet: one colour's, Trio's second, in view: a torus's middle square, see lifeParts, patternFrame)
+  if (K === 1 && walk.life?.margolus && walk.surface?.torus) return [huntParts(r, 3, false, false)[1]]; // (a reversible sheet: one colour's, Trio's second, in view: a torus's middle square, see lifeParts, patternFrame)
   if (mixed && K > 1) {
     // Mixed: one colour's place, its cells shuffled (by its seed) and dealt out in turn: each colour as many, give or take one
     const parts = Array.from({ length: K }, () => []);
@@ -31623,7 +31619,7 @@ function partPlaces(r, K, opposite, mixed) {
     return parts;
   }
   const L = walk.life,
-    g = walk.geo,
+    g = walk.surface,
     n = L.seed.length;
   const parts = Array.from({ length: K }, () => []);
   if (walk.plane) {
@@ -31889,7 +31885,7 @@ function huntFits() {
   hunt.fits = Object.fromEntries(
     Object.keys(HUNT_ZONES).map((zone) => {
       const r = zoneRadius(zone);
-      if (walk.geo?.globe && zone !== 'full' && zone !== 'numbers') return [zone, false]; // (a globe: the zones on its whole grid only, a soup or a number's digits; no frame yet to lay a patch or pattern on, see patternPlace)
+      if (walk.surface?.globe && zone !== 'full' && zone !== 'numbers') return [zone, false]; // (a globe: the zones on its whole grid only, a soup or a number's digits; no frame yet to lay a patch or pattern on, see patternPlace)
       if (famousZone(zone))
         return [
           zone,
@@ -32278,10 +32274,10 @@ const patternsOn = () => {
     K = lifeParts(); // (the Life shown's own variant: another tab picked meanwhile, as Elementary, not built yet)
   return (
     !!flatGrid() ||
-    !!walk.geo?.torus ||
+    !!walk.surface?.torus ||
     (['cube', 'pits', 'bumps'].includes(m.surface.replace(/Tetrakis$/, '')) && CUBE_FACES.includes(K)) ||
     (!!hullSolidOf(m.surface) && (K === 1 || ['square', 'tri'].includes(hullColours(m.surface, K)?.kind))) || // (a cut's: its solid's)
-    (!!walk.geo?.hexagons && !m.plane) ||
+    (!!walk.surface?.hexagons && !m.plane) ||
     (!!TRI_FACES[m.surface] && (K === 1 || !!triFace(m.surface, K, 0)))
   );
 };
@@ -32289,7 +32285,9 @@ const patternsOn = () => {
 const cellKind = (g) => g.cells; // (a mesh's cells' kind, its surface's tab's, see surfaceCells)
 const patternKind = () => {
   const h = hullColours(VARIANTS[walk.variant].surface, walk.life && lifeParts());
-  return flatGrid()?.kind ?? (h && h.groups[0][0] >= h.squares && !walk.geo.tiling ? 'tri' : cellKind(walk.geo));
+  return (
+    flatGrid()?.kind ?? (h && h.groups[0][0] >= h.squares && !walk.surface.tiling ? 'tri' : cellKind(walk.surface))
+  );
 }; // (a hull solid's: its first colour's face's, a square or a triangle)
 // a face's level way (its normal n: across it, square to the world's up; a face looking straight up or down, east) and the
 // way down it, as a marble rolls (a face looking straight up or down: south)
@@ -32355,7 +32353,7 @@ function cellIndex(g) {
 // plane; a hull solid's: its colours' triangles), the face, its corners turned so that AB is its side most level (kites' not
 // turned: q its level side, AB, BC or CA); on a hull solid's square, a solid of hexagons' or the cube's face, its face
 function patternPlace(i, K) {
-  const g = walk.geo,
+  const g = walk.surface,
     surface = VARIANTS[walk.variant].surface; // (the walk shown's, as g)
   if (flatGrid()) return { on: 'plane' };
   if (g.torus) return { on: 'sheet' };
@@ -32397,7 +32395,7 @@ function patternPlace(i, K) {
 // (kites' not turned: q its level side, AB, BC or CA), its normal out (whichever way its corners run)
 const faceMid = (fc) => unit([0, 1, 2].map((a) => fc.corners.reduce((sum, c) => sum + c[a], 0)));
 function triPlace(face) {
-  const g = walk.geo,
+  const g = walk.surface,
     faces = g.triFaces ?? g.faces,
     perFace = g.triFaces ? g.size * g.size : g.perFace;
   const [A, B, C] = faces[face].corners,
@@ -32425,7 +32423,7 @@ function triPlace(face) {
 // triangle, a face of triangles, a solid of hexagons' plane: its middle cell, see hexSolidMesh; the cube's: its normal's
 // way); null on none (a solid of hexagons' cell folded over an edge)
 function cellPlace(t) {
-  const g = walk.geo;
+  const g = walk.surface;
   if (flatGrid()) return { on: 'plane' };
   if (g.torus) return { on: 'sheet' };
   if (g.squareFaces && t < g.triFirst) return { on: 'square', f: Math.floor(t / g.size ** 2) };
@@ -32457,7 +32455,7 @@ function cellPlace(t) {
 // a solid's face f of squares (the cube's, its pit's floor's on the cube with pits, a hull solid's), on the solid a cut cuts:
 // its squares' side, a square's index by its row and column, its middle in space
 function squaresFace(f) {
-  const g = walk.geo,
+  const g = walk.surface,
     S = g.uncut ?? g,
     a = S.floors ? S.floorSize : S.size;
   const square = (r, c) => (S.floors ? S.floors[f * a * a + r * a + c] : f * (S.perFace ?? a * a) + r * a + c);
@@ -32466,7 +32464,7 @@ function squaresFace(f) {
 // its frame round c0: its middle C, its normal n, a cell's step s, the plane's x along u (its rows: the most level of its 6
 // ways), its y along w
 function hexAxes(c0) {
-  const g = walk.geo,
+  const g = walk.surface,
     P3 = (t) => [g.cen[3 * t], g.cen[3 * t + 1], g.cen[3 * t + 2]],
     C = P3(c0),
     n = [g.nrm[3 * c0], g.nrm[3 * c0 + 1], g.nrm[3 * c0 + 2]],
@@ -32488,8 +32486,8 @@ function hexAxes(c0) {
 let boxMemo = null;
 function patternFrame(i, K, place = patternPlace(i, K)) {
   // place: another face's (see cellPlace)
-  if (K === 1 && walk.life?.margolus && walk.geo?.torus) return patternFrame(1, 3, place); // (a reversible sheet's one colour: Trio's second, see huntParts)
-  const g = walk.geo,
+  if (K === 1 && walk.life?.margolus && walk.surface?.torus) return patternFrame(1, 3, place); // (a reversible sheet's one colour: Trio's second, see huntParts)
+  const g = walk.surface,
     kind = patternKind(),
     holding = (F) => ({
       ...F,
@@ -33759,11 +33757,11 @@ function centredChoices(kind, K, rule, mine, any, centred = true) {
     n = figureTurns(kind),
     out = Array.from({ length: K }, () => []);
   // (a rosette sphere's two colours: one colour's, the same at each pole, see poleColours)
-  if (poleColours(walk.geo, K))
+  if (poleColours(walk.surface, K))
     return [0, 1].map((i) =>
       centredChoices(kind, 1, rule, mine, any, centred)[0].map((cs) =>
         cs.map((v, j) =>
-          j % 2 ? colourState(i, Math.floor((v - 1) / walk.life.colours) + 1) : v + i * walk.geo.south,
+          j % 2 ? colourState(i, Math.floor((v - 1) / walk.life.colours) + 1) : v + i * walk.surface.south,
         ),
       ),
     );
@@ -33835,14 +33833,14 @@ function patternChoices(centred = false) {
   const L = walk.life,
     id = `${flatGrid() ? `${gridKey()}|${planeTurn()}` : ''}|${L.colours}|${lifeParts()}|${L.ruleText}|${placementKey()}`, // (their parts' own spots)
     m = choicesMemo[centred]; // (its teams laid too: Newcomer's one fewer, see lifeParts)
-  if (m?.id !== id || m.g !== walk.geo)
-    choicesMemo[centred] = { id, g: walk.geo, choices: laidChoices(centred).map(namedChoices) };
+  if (m?.id !== id || m.g !== walk.surface)
+    choicesMemo[centred] = { id, g: walk.surface, choices: laidChoices(centred).map(namedChoices) };
   return choicesMemo[centred].choices;
 }
 function laidChoices(centred, any = false) {
   // any: the first one of each colour only (whether there are some)
   const L = walk.life,
-    g = walk.geo,
+    g = walk.surface,
     K = lifeParts(),
     kind = patternKind(),
     rule = L.ruleText,
@@ -33950,7 +33948,7 @@ function laidChoices(centred, any = false) {
 // a solid's cell that faces the default camera most (its face in front: one colour's, see patternPlace)
 function frontCell() {
   // (once a grid: the starting view's, CAMERA_START, never changes)
-  const g = walk.geo,
+  const g = walk.surface,
     dir = CAMERA_START.v;
   return (g.frontCell ??= (() => {
     let best = 0,
@@ -34021,7 +34019,7 @@ const middleMemo = remember('middleMemo', new Map());
 function middleCells(i = 0, K = 1) {
   const key = `${gridKey()}|${patternKind()}|${i}|${K}|${placementKey()}`;
   if (middleMemo.has(key)) return middleMemo.get(key);
-  const g = walk.geo,
+  const g = walk.surface,
     { start } = walk.life.nbr,
     n = walk.life.seed.length;
   if (K === 1 && !walk.plane && g.faceMids?.length < g.faces?.length)
@@ -34044,7 +34042,7 @@ function middleCells(i = 0, K = 1) {
 // The cells at the middle (one colour's: see middleCells); on a solid, the open cells nearest a direction d (a colour's spot)
 function centreCells(d) {
   if (!d) return middleCells();
-  const g = walk.geo;
+  const g = walk.surface;
   // (each direction once a grid: a hunt asks for the same few, at every radius; plain numbers, as it runs over every cell)
   const key = d.join(),
     known = (g.centres ??= new Map()).get(key);
@@ -34068,8 +34066,8 @@ function centreCells(d) {
 // square on square grids, a small disc of triangles on the polyhedra), or r − 1 steps from the cells
 // round a middle corner (on an even side: 2×2, 4×4, 6×6)
 function lifePatch(r, centre = centreCells()) {
-  const sq = walk.geo?.uncut, // (a cell cut again: the uncut cells' patch, so many cells each, see HULL_CUTS)
-    per = walk.geo?.per;
+  const sq = walk.surface?.uncut, // (a cell cut again: the uncut cells' patch, so many cells each, see HULL_CUTS)
+    per = walk.surface?.per;
   const { start, list } = sq ? cornerNeighbours(sq) : walk.life.nbr,
     seen = new Set([centre].flat().map((t) => (sq ? Math.floor(t / per) : t)));
   let ring = [...seen];
@@ -35935,7 +35933,7 @@ const squareTo = (v, n) => {
 // a surface's tile t: its outward normal, its area (its corners in space)
 const tileUp = (t) => [0, 1, 2].map((d) => walk.shape.nrm[3 * t + d]),
   tileArea = (t) => {
-    const k = walk.geo.sides,
+    const k = walk.surface.sides,
       sc = walk.shape.corners,
       c = (q) => [0, 1, 2].map((d) => sc[3 * (k * t + q) + d] * walk.R);
     let area = 0;
@@ -35980,8 +35978,8 @@ function walkersOf() {
   const B = walk.battle.player;
   B.to(stepShown);
   return B.places.map((Q, s) => ({
-    ...onPlaces((i) => placePoint(Q[i]), [Q[0], cameFrom(walk.geo, !!walk.vert, B.starts[s])]),
-    ...onTiles((i) => (walk.vert ? walk.geo.edgeGraph.tileOf[Q[i]] : Q[i])),
+    ...onPlaces((i) => placePoint(Q[i]), [Q[0], cameFrom(walk.surface, !!walk.vert, B.starts[s])]),
+    ...onTiles((i) => (walk.vert ? walk.surface.edgeGraph.tileOf[Q[i]] : Q[i])),
     colour: teamColour(s),
     living: B.dead[s] < 0 || B.dead[s] > stepShown,
   }));
@@ -36127,7 +36125,14 @@ const walkMiddle = () => {
 };
 function faceWalk() {
   faced = true;
-  if (startsShown || !walk.surface || walk.geo.torus || !$('centered').checked || $('autoRotate').checked || !walk.n)
+  if (
+    startsShown ||
+    !walk.surface ||
+    walk.surface.torus ||
+    !$('centered').checked ||
+    $('autoRotate').checked ||
+    !walk.n
+  )
     return;
   faceToward(walkMiddle(), 1);
 }
@@ -36143,7 +36148,7 @@ function followWalker() {
     k = f > 0 ? j + 1 : j,
     [p, q] = [W.P(j), W.P(k)];
   faceToward(
-    unit(walk.geo.torus && !walk.geo.mobius ? W.upAt(f < 0.5 ? j : k) : p.map((v, c) => v + (q[c] - v) * f)),
+    unit(walk.surface.torus && !walk.surface.mobius ? W.upAt(f < 0.5 ? j : k) : p.map((v, c) => v + (q[c] - v) * f)),
     0.12,
   );
 }
@@ -36207,7 +36212,7 @@ function drawSurface() {
   const ctx = layers.path;
   ctx.clearRect(0, 0, canvasWidth, canvasHeight);
   layers.line.clearRect(0, 0, canvasWidth, canvasHeight); // the 2D path over cells, if any was left
-  const { geo: g, visits, maxVisits } = walk;
+  const { surface: g, visits, maxVisits } = walk;
   const LEVELS = 32;
   // the rainbow of the tiles (lighter on a light page, see liftTile)
   const grad = Array.from({ length: LEVELS }, (_, i) => liftTile(gradientAt(i / (LEVELS - 1))));
@@ -36293,7 +36298,7 @@ function drawSurface() {
 let firstVisitData = null;
 function firstVisits() {
   if (firstVisitData) return firstVisitData;
-  const first = new Int32Array(walk.geo.n).fill(-1);
+  const first = new Int32Array(walk.surface.n).fill(-1);
   for (let i = 0; i <= walk.n; i++) if (first[walk.tile[i]] < 0) first[walk.tile[i]] = i;
   return (firstVisitData = first);
 }
@@ -36323,7 +36328,7 @@ const sweetSpot = () => {
     closed = new Map();
   for (const s of at) if (s >= 0) closed.set(s, (closed.get(s) ?? 0) + 1); // (the tiles each step closes off)
   let ocean = null,
-    most = SWEET_OCEAN * walk.geo.n;
+    most = SWEET_OCEAN * walk.surface.n;
   for (const [s, k] of closed)
     if (k > most) {
       most = k;
@@ -36338,7 +36343,7 @@ const patternAreaCap = () => (walk.stepTiles && digitsComputed?.patterned ? PATT
 let areaData = null;
 function areaSteps() {
   if (areaData) return areaData;
-  const g = walk.geo,
+  const g = walk.surface,
     G = edgeGraph(g),
     eu = [],
     ev = [],
@@ -36462,8 +36467,8 @@ function edgeAlpha(sh) {
   // square stretched 2.5 times: 1.43), over all the tiles, once per form of the surface
   if (sh.cellSizeAt !== sh.m || !sh.cellSize) {
     const c = sh.corners,
-      k = walk.geo.sides,
-      n = walk.geo.n;
+      k = walk.surface.sides,
+      n = walk.surface.n;
     let area = 0,
       edges = 0;
     for (let t = 0; t < n; t++) {
@@ -36561,7 +36566,7 @@ function ribbonSegments(count = 64) {
 // steps' lives (born the step before, gone when it leaves its body: see goneOf), at[s][q] the first segment of walker s's
 // step q (q to n + 1); Land edges 1 (lined): its lines' spans instead (see spans), at as Solo's
 function pathSegments(P = null) {
-  const g = walk.geo,
+  const g = walk.surface,
     sh = walk.shape,
     R = walk.R,
     k = g.sides,
@@ -38802,13 +38807,13 @@ function gpuSurface(paint, path) {
   const D = gpuDrawSetup();
   if (!D) return false;
   const { device } = D,
-    g = walk.geo,
+    g = walk.surface,
     sh = walk.shape,
     R = walk.R,
     k = g.sides,
     n = g.n;
-  const geoKey = `${n}|${k}|${R}|${sh.m}|${g.verts.length}|${walk.geo.torus ? g.nu + 'x' + g.nv : ''}`;
-  if (D.keys.geo !== geoKey || D.keys.geoObj !== g) {
+  const surfaceKey = `${n}|${k}|${R}|${sh.m}|${g.verts.length}|${walk.surface.torus ? g.nu + 'x' + g.nv : ''}`;
+  if (D.keys.surface !== surfaceKey || D.keys.surfaceMesh !== g) {
     const pos = new Float32Array(3 * k * n),
       nrm = new Float32Array(3 * k * n);
     for (let t = 0; t < n; t++)
@@ -38879,8 +38884,8 @@ function gpuSurface(paint, path) {
       D.groups = null;
       D.keys.topo = `${n}|${k}`;
     }
-    D.keys.geo = geoKey;
-    D.keys.geoObj = g;
+    D.keys.surface = surfaceKey;
+    D.keys.surfaceMesh = g;
     D.geoGen = (D.geoGen ?? 0) + 1;
   }
   paint({ put: (col) => device.queue.writeBuffer(D.tileCol, 0, col), buffer: D.tileCol, n }, n);
@@ -39248,7 +39253,7 @@ function gpuPickMiddle(D, enc, slot, tileBufs, cull) {
   }
   enc.copyBufferToBuffer(P.best, 0, P.read, 0, 8);
   D.picking = true;
-  const g = walk.geo;
+  const g = walk.surface;
   return () =>
     P.read.mapAsync(GPUMapMode.READ).then(() => {
       const found = new Uint32Array(P.read.getMappedRange())[1],

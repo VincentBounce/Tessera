@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.462';
+const VERSION = '0.5.463';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -31507,7 +31507,7 @@ function torusLattice(plane, K, spread = false) {
           [(a * cols) / K, (b * W) / K],
           [0, ((K / a) * W) / K],
         ];
-        if (!gens.every(fits)) continue;
+        if (!gens.flat().every(Number.isInteger) || !gens.every(fits)) continue; // (a shift of the grid by whole motifs and rows: a grid not made for K has none, its shifts never closing)
         const shifts = [[0, 0]];
         for (let s = 0; s < shifts.length; s++)
           for (const [i, j] of gens) {
@@ -31517,6 +31517,7 @@ function torusLattice(plane, K, spread = false) {
         const near = Math.min(...shifts.slice(1).map(([i, j]) => Math.hypot(...apart(at(0, 0), at(i, j)))));
         if (!best || near > best.near + 1e-9) best = { near, shifts };
       }
+  if (!best) return null; // (no lattice of K blocks: as Apart's none)
   const places = best.shifts.map(([i, j]) => at(i + 0.01, j + 0.003)),
     part = new Int32Array(n);
   for (let t = 0; t < n; t++) {

@@ -37,7 +37,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.437';
+const VERSION = '0.5.438';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -37894,8 +37894,15 @@ const CELLS_LIGHT_SOLO_LIGHT = {
   debugReach: 3,
   debugHalo: 0.84,
 };
+// the same on the plane: Panel's light white and dimmer, as the user tuned it there
+const CELLS_LIGHT_SOLO_LIGHT_PLANE = { ...CELLS_LIGHT_SOLO_LIGHT, panelLight: 0.47, panelColour: '#ffffff' };
 // the lamps' numbers now, the view's shader made with them (see gpuDrawSetup)
-const cellsLightNow = () => (lifeTeams === 1 && themeName() === 'light' ? CELLS_LIGHT_SOLO_LIGHT : CELLS_LIGHT);
+const cellsLightNow = () =>
+  lifeTeams !== 1 || themeName() !== 'light'
+    ? CELLS_LIGHT
+    : walk.plane
+      ? CELLS_LIGHT_SOLO_LIGHT_PLANE
+      : CELLS_LIGHT_SOLO_LIGHT;
 // the numbers each mode reads (Halo's halo is Neon's light: see lampsF)
 const CELLS_LIGHT_OF = {
   Off: [],

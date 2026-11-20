@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.476';
+const VERSION = '0.5.477';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -26352,8 +26352,9 @@ function renderPlaneRow() {
   $('startDigits').hidden = plane.start !== 'digits';
   renderBrushes(kind);
 }
-// Draw: the brushes on a grid (the plane's, or a surface's cells': see PLANE_OF_MARK): the rule's patterns, the colours and the
-// eraser, the turns (greyed for a cell); a note where the rule has none there
+// Draw: the brushes on a grid (the plane's, or a surface's cells': see PLANE_OF_MARK; none, a surface of cells no plane grid
+// has: its cell only, no pattern): the rule's patterns, the colours and the eraser, the turns (greyed for a cell); a note where
+// the rule has none there
 function renderBrushes(kind) {
   const rule = ruleBody(parseRule(ruleBody($('lifeRule').value))?.text ?? ''),
     mine = !ruleCard(rule, tabVariant());
@@ -26368,7 +26369,7 @@ function renderBrushes(kind) {
     b.hidden = !fits(p);
     b.querySelector('.mode-detail').innerHTML = htmlText(p[5]) + (mine && p[2].length ? ` · ${ruleSpan(p[2][0])}` : ''); // your own rule: which rule it is for
     if (!b.hidden) discCard(b, p);
-    if (p[0] === 'cell' && b.dataset.kind !== kind) {
+    if (p[0] === 'cell' && kind && b.dataset.kind !== kind) {
       // the cell: one of this grid's (a hat: its drawing), at the patterns' scale
       b.querySelector('.mode-icon').innerHTML = APERIODIC[kind] ? icon(kind) : cellsIcon(kind, 'A!');
       b.dataset.kind = kind;

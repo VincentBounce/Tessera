@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.446';
+const VERSION = '0.5.447';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -38281,11 +38281,13 @@ struct Col { @builtin(position) pos: vec4f, @location(0) col: vec4f }
 @fragment fn colF(i: Col) -> @location(0) vec4f { return vec4f(mix(i.col.rgb, u.fadeTo * i.col.a, u.fade), i.col.a); }  // (premultiplied)
 // Life on the plane: world (x, y) turned (turnC, turnS), then to pixels; a cell's colour
 // its texel's word (clear: off the screen); the outlines in plain (premultiplied)
-fn planeAt(p: vec2f) -> vec4f { return clipAt(u.view.yz + vec2f(u.turnC * p.x - u.turnS * p.y, u.turnS * p.x + u.turnC * p.y) * u.view.x); }
+fn planeTurned(p: vec2f) -> vec2f { return vec2f(u.turnC * p.x - u.turnS * p.y, u.turnS * p.x + u.turnC * p.y); }  // (the plane turned as the view shows it, see planeTurn)
+fn planeAt(p: vec2f) -> vec4f { return clipAt(u.view.yz + planeTurned(p) * u.view.x); }
+fn planeInk(c: vec4f) -> vec4f { return select(vec4f(c.rgb, 1.0), vec4f(c.rgb * c.a, c.a), c.a < ${SEEN_THROUGH}); }  // (a cell's colour as drawn, premultiplied: under SEEN_THROUGH an ink seen through, else whole)
 @vertex fn planeCellsV(@location(0) pos: vec2f, @location(1) id: u32) -> Col {
   var o: Col; let c = unpack4x8unorm(tileCol[id]);
   o.pos = select(planeAt(pos), vec4f(2.0, 2.0, 2.0, 1.0), c.a == 0.0);  // (its alpha: 0 not drawn; under ${SEEN_THROUGH} an ink seen through at that share, laid over the tile under it (a trail); else drawn whole, painted or its ground, see texelRgba)
-  o.col = select(vec4f(c.rgb, 1.0), vec4f(c.rgb * c.a, c.a), c.a < ${SEEN_THROUGH});  // (premultiplied)
+  o.col = planeInk(c);
   return o;
 }
 @vertex fn planeLinesV(@location(0) pos: vec2f) -> Col { var o: Col; o.col = u.plain; o.pos = planeAt(pos); return o; }
@@ -38300,10 +38302,10 @@ struct PlaneLamp { @builtin(position) pos: vec4f, @location(0) col: vec4f, @loca
   return o;
 }
 fn onScreen(d: vec3f) -> vec3f {  // (a way on the plane, turned, as the view's: right R, down −Uu, see planeAt)
-  return (u.turnC * d.x - u.turnS * d.y) * u.R - (u.turnS * d.x + u.turnC * d.y) * u.Uu;
+  let s = planeTurned(d.xy); return s.x * u.R - s.y * u.Uu;
 }
 @fragment fn planeLampF(i: PlaneLamp) -> @location(0) vec4f {
-  if (i.col.a < 0.75 || pieces.y == ${CELLS_FINISH.Halo}u) { return select(vec4f(i.col.rgb, 1.0), vec4f(i.col.rgb * i.col.a, i.col.a), i.col.a < ${SEEN_THROUGH}); }  // (a trail, a ground, or Halo's: as planeCellsV draws them)
+  if (i.col.a < 0.75 || pieces.y == ${CELLS_FINISH.Halo}u) { return planeInk(i.col); }  // (a trail, a ground, or Halo's: as planeCellsV draws them)
   let piece = inPiece(i.p, i.first);
   let lit = cellLit(i.col, piece.w, u.V, onScreen(piece.xyz - i.p), 1.0);
   if (pieces.y == ${CELLS_FINISH.Tessera}u) { return vec4f(lit, 1.0); }
@@ -39788,11 +39790,12 @@ function gpuPlane(paint) {
     D.keys.plane = key;
     D.keys.planeBase = null;
   }
-  const bg = getComputedStyle(document.documentElement).getPropertyValue('--page-background') || '#fff';
+  const bg = getComputedStyle(document.documentElement).getPropertyValue('--page-background') || '#fff',
+    blankCell = oceanOn() ? OCEAN : bg.trim(); // (a cell none has painted: Earth's sea, as a surface's (see blankTile), else the page's)
   const wallShown = !walk.life?.palette; // (Explore: no wall, its cells alone on the view)
   const ground = groundColours();
   if (D.keys.planeBase !== `${bg}|${wallShown}|${oceanOn()}` || D.planeGround !== ground) {
-    const page = texelRgba(oceanOn() ? OCEAN : bg.trim(), GROUND_ALPHA), // (Earth's: its cells none has painted the sea, as a surface's, see blankTile)
+    const page = texelRgba(blankCell, GROUND_ALPHA),
       walled = texelRgba(LIFE_WALL, GROUND_ALPHA);
     device.queue.writeBuffer(
       D.planeBase,
@@ -39844,7 +39847,7 @@ function gpuPlane(paint) {
     rp.drawIndexed(D.planeCount);
   };
   cells(D.planeBase, 0);
-  const lamps = cellsFinishOn() && planeLampsReady(D, F, texelRgba(oceanOn() ? OCEAN : bg.trim(), 1));
+  const lamps = cellsFinishOn() && planeLampsReady(D, F, texelRgba(blankCell, 1));
   if (lamps) drawPlaneLamps(D, rp, 'planeLampF', 3);
   else cells(D.planeCol, 2);
   if (outline) {

@@ -1083,7 +1083,7 @@
   // them) or its mode's (the same for each mode and its own choices there: a walk's kind, its side), none mixed; and the
   // variants as they were (VARIANTS_PRINT: their fields, the menu's places and order, the families, the page's options; the
   // variants made in any order)
-  const VARIANTS_PRINT = 1025489021; // (v0.5.232: the walks of v0.5.215 and v0.5.216 on the rhombic solids and the carved cubes, their ants)
+  const VARIANTS_PRINT = -1842478717; // (v0.5.452: lattice: 'surface' gone from the surfaces' variants, their surface alone)
   const variantsPrint = () => {
     const text = JSON.stringify([
       Object.keys(NAV)

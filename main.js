@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.451';
+const VERSION = '0.5.452';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -4244,7 +4244,6 @@ const VARIANTS = {
   antCubeSquaresCells: {
     label: "Cube ant — base 2 (Langton's ant)",
     base: 2,
-    lattice: 'surface',
     cells: true,
     surface: 'cube',
     initial: 48,
@@ -4257,7 +4256,6 @@ const VARIANTS = {
   antIcosahedronHexCells: {
     label: "Hexagon sphere ant — base 2 (Langton's ant)",
     base: 2,
-    lattice: 'surface',
     cells: true,
     surface: 'hexsphere',
     fill: false,
@@ -4269,7 +4267,6 @@ const VARIANTS = {
   antIcosahedronTrianglesCells: {
     label: "Triangle sphere ant — base 2 (Langton's ant)",
     base: 2,
-    lattice: 'surface',
     cells: true,
     surface: 'icosa',
     fill: false,
@@ -4313,7 +4310,6 @@ const VARIANTS = {
   },
   walkTetrahedronTrianglesTurtleCells: {
     label: 'Tetrahedron — base 2 (left / right)',
-    lattice: 'surface',
     cells: true,
     twin: 'walkTetrahedronTrianglesTurtleEdges',
     surface: 'tetra',
@@ -4323,7 +4319,6 @@ const VARIANTS = {
   },
   walkTorusSquaresTurtleCells: {
     label: 'Square torus — base 3 (left / forward / right)',
-    lattice: 'surface',
     cells: true,
     twin: 'walkTorusSquaresTurtleEdges',
     surface: 'torus',
@@ -4333,7 +4328,6 @@ const VARIANTS = {
   },
   walkTorusTrianglesTurtleCells: {
     label: 'Triangle torus — base 2 (left / right)',
-    lattice: 'surface',
     cells: true,
     twin: 'walkTorusTrianglesTurtleEdges',
     surface: 'torusTri',
@@ -4344,7 +4338,6 @@ const VARIANTS = {
   // Cairo pentagons: out through one of the 4 other edges, edge k + 1 the sharpest right (as the 2D walk)
   walkTorusCairoTurtleCells: {
     label: 'Cairo torus — base 4 (4 edges out)',
-    lattice: 'surface',
     cells: true,
     surface: 'torusCairo',
     initial: 32,
@@ -4354,7 +4347,6 @@ const VARIANTS = {
   // hexagons: entering through edge k, edge k + 1 is a sharp right, k + 2 right, k + 3 straight on
   walkTorusHexTurtleCells: {
     label: 'Hex torus — base 5 (5 relative turns)',
-    lattice: 'surface',
     cells: true,
     twin: 'walkTorusHexTurtleEdges',
     surface: 'torusHex',
@@ -4364,7 +4356,6 @@ const VARIANTS = {
   },
   walkMobiusStripSquaresTurtleCells: {
     label: 'Möbius strip — base 3 (left / forward / right)',
-    lattice: 'surface',
     cells: true,
     twin: 'walkMobiusStripSquaresTurtleEdges',
     surface: 'mobius',
@@ -4374,7 +4365,6 @@ const VARIANTS = {
   },
   walkMobiusStripHexTurtleCells: {
     label: 'Möbius strip of hexagons — base 5 (5 relative turns)',
-    lattice: 'surface',
     cells: true,
     twin: 'walkMobiusStripHexTurtleEdges',
     surface: 'mobiusHex',
@@ -4385,7 +4375,6 @@ const VARIANTS = {
   // a Klein bottle (its neck through its side, opening into its bottom): as the torus's walks
   walkKleinBottleSquaresTurtleCells: {
     label: 'Klein bottle — base 3 (left / forward / right)',
-    lattice: 'surface',
     cells: true,
     twin: 'walkKleinBottleSquaresTurtleEdges',
     surface: 'klein',
@@ -4394,7 +4383,6 @@ const VARIANTS = {
   },
   walkKleinBottleHexTurtleCells: {
     label: 'Klein bottle of hexagons — base 5 (5 relative turns)',
-    lattice: 'surface',
     cells: true,
     twin: 'walkKleinBottleHexTurtleEdges',
     surface: 'kleinHex',
@@ -4403,7 +4391,6 @@ const VARIANTS = {
   },
   walkKleinBottleTrianglesTurtleCells: {
     label: 'Klein bottle of triangles — base 2 (left / right)',
-    lattice: 'surface',
     cells: true,
     twin: 'walkKleinBottleTrianglesTurtleEdges',
     surface: 'kleinTri',
@@ -4412,7 +4399,6 @@ const VARIANTS = {
   },
   walkKleinBottleCairoTurtleCells: {
     label: 'Klein bottle of Cairo pentagons — base 4 (4 edges out)',
-    lattice: 'surface',
     cells: true,
     surface: 'kleinCairo',
     net: 'cairo',
@@ -4420,7 +4406,6 @@ const VARIANTS = {
   },
   walkMobiusStripCairoTurtleCells: {
     label: 'Möbius strip of Cairo pentagons — base 4 (4 edges out)',
-    lattice: 'surface',
     cells: true,
     surface: 'mobiusCairo',
     net: 'cairo',
@@ -4429,7 +4414,6 @@ const VARIANTS = {
   },
   walkMobiusStripTrianglesTurtleCells: {
     label: 'Möbius strip of triangles — base 2 (left / right)',
-    lattice: 'surface',
     cells: true,
     twin: 'walkMobiusStripTrianglesTurtleEdges',
     surface: 'mobiusTri',
@@ -4439,7 +4423,6 @@ const VARIANTS = {
   },
   walkCubeSquaresTurtleCells: {
     label: 'Cube — base 3 (left / forward / right)',
-    lattice: 'surface',
     cells: true,
     twin: 'walkCubeSquaresTurtleEdges',
     ant: 'antCubeSquaresCells',
@@ -4450,7 +4433,6 @@ const VARIANTS = {
   },
   walkOctahedronTrianglesTurtleCells: {
     label: 'Octahedron — base 2 (left / right)',
-    lattice: 'surface',
     cells: true,
     twin: 'walkOctahedronTrianglesTurtleEdges',
     surface: 'octa',
@@ -4461,7 +4443,6 @@ const VARIANTS = {
   // hexagons and pentagons alike: the edges two away from the one you came in through, on either side
   walkIcosahedronHexTurtleCells: {
     label: 'Hexagon sphere (icosahedron) — base 2 (front left / front right)',
-    lattice: 'surface',
     cells: true,
     twin: 'walkIcosahedronHexTurtleEdges',
     ant: 'antIcosahedronHexCells',
@@ -4471,7 +4452,6 @@ const VARIANTS = {
   },
   walkStellaOctangulaTrianglesTurtleCells: {
     label: 'Stella octangula (two tetrahedra) — base 2 (left / right)',
-    lattice: 'surface',
     cells: true,
     twin: 'walkStellaOctangulaTrianglesTurtleEdges',
     surface: 'stella',
@@ -4480,7 +4460,6 @@ const VARIANTS = {
   },
   walkDodecahedronTrianglesTurtleCells: {
     label: 'Dodecahedron (pentagons cut into 5 triangles) — base 2 (left / right)',
-    lattice: 'surface',
     cells: true,
     twin: 'walkDodecahedronTrianglesTurtleEdges',
     surface: 'dodeca',
@@ -4489,7 +4468,6 @@ const VARIANTS = {
   },
   walkIcosahedronTrianglesTurtleCells: {
     label: 'Triangle sphere (icosahedron) — base 2 (left / right)',
-    lattice: 'surface',
     cells: true,
     twin: 'walkIcosahedronTrianglesTurtleEdges',
     ant: 'antIcosahedronTrianglesCells',
@@ -4501,7 +4479,6 @@ const VARIANTS = {
   // to them as the edges at a corner allow
   walkTorusSquaresTurtleEdges: {
     label: 'Square torus — base 3 (left / forward / right)',
-    lattice: 'surface',
     twin: 'walkTorusSquaresTurtleCells',
     surface: 'torus',
     edges: true,
@@ -4511,7 +4488,6 @@ const VARIANTS = {
   },
   walkTorusTrianglesTurtleEdges: {
     label: 'Triangle torus — base 5 (5 relative turns)',
-    lattice: 'surface',
     twin: 'walkTorusTrianglesTurtleCells',
     surface: 'torusTri',
     edges: true,
@@ -4521,7 +4497,6 @@ const VARIANTS = {
   },
   walkTorusHexTurtleEdges: {
     label: 'Hex torus — base 2 (left / right)',
-    lattice: 'surface',
     twin: 'walkTorusHexTurtleCells',
     surface: 'torusHex',
     edges: true,
@@ -4531,7 +4506,6 @@ const VARIANTS = {
   },
   walkMobiusStripSquaresTurtleEdges: {
     label: 'Möbius strip — base 3 (left / forward / right)',
-    lattice: 'surface',
     twin: 'walkMobiusStripSquaresTurtleCells',
     surface: 'mobius',
     edges: true,
@@ -4541,7 +4515,6 @@ const VARIANTS = {
   },
   walkMobiusStripHexTurtleEdges: {
     label: 'Möbius strip of hexagons — base 2 (left / right)',
-    lattice: 'surface',
     twin: 'walkMobiusStripHexTurtleCells',
     surface: 'mobiusHex',
     edges: true,
@@ -4551,7 +4524,6 @@ const VARIANTS = {
   },
   walkMobiusStripTrianglesTurtleEdges: {
     label: 'Möbius strip of triangles — base 5 (5 relative turns)',
-    lattice: 'surface',
     twin: 'walkMobiusStripTrianglesTurtleCells',
     surface: 'mobiusTri',
     edges: true,
@@ -4561,7 +4533,6 @@ const VARIANTS = {
   },
   walkKleinBottleSquaresTurtleEdges: {
     label: 'Klein bottle — base 3 (left / forward / right)',
-    lattice: 'surface',
     twin: 'walkKleinBottleSquaresTurtleCells',
     surface: 'klein',
     edges: true,
@@ -4570,7 +4541,6 @@ const VARIANTS = {
   },
   walkKleinBottleHexTurtleEdges: {
     label: 'Klein bottle of hexagons — base 2 (left / right)',
-    lattice: 'surface',
     twin: 'walkKleinBottleHexTurtleCells',
     surface: 'kleinHex',
     edges: true,
@@ -4579,7 +4549,6 @@ const VARIANTS = {
   },
   walkKleinBottleTrianglesTurtleEdges: {
     label: 'Klein bottle of triangles — base 5 (5 relative turns)',
-    lattice: 'surface',
     twin: 'walkKleinBottleTrianglesTurtleCells',
     surface: 'kleinTri',
     edges: true,
@@ -4588,7 +4557,6 @@ const VARIANTS = {
   },
   walkCubeSquaresTurtleEdges: {
     label: 'Cube — base 3 (left / forward / right)',
-    lattice: 'surface',
     twin: 'walkCubeSquaresTurtleCells',
     surface: 'cube',
     edges: true,
@@ -4599,7 +4567,6 @@ const VARIANTS = {
   },
   walkTetrahedronTrianglesTurtleEdges: {
     label: 'Tetrahedron — base 5 (5 relative turns)',
-    lattice: 'surface',
     twin: 'walkTetrahedronTrianglesTurtleCells',
     surface: 'tetra',
     edges: true,
@@ -4610,7 +4577,6 @@ const VARIANTS = {
   },
   walkOctahedronTrianglesTurtleEdges: {
     label: 'Octahedron — base 5 (5 relative turns)',
-    lattice: 'surface',
     twin: 'walkOctahedronTrianglesTurtleCells',
     surface: 'octa',
     initial: 48,
@@ -4621,13 +4587,12 @@ const VARIANTS = {
   },
   // Set aside: on triangles, turns of ±60° only walk a hidden grid of hexagons (3 times fewer
   // corners), so they need many triangles for few patterns; the hexagon sphere does it directly.
-  // icosaGrid2: { base: 2, lattice: 'surface', surface: 'icosa', edges: true, turns: [60, -60],
+  // icosaGrid2: { base: 2, surface: 'icosa', edges: true, turns: [60, -60],
   //               rule: 'along the edges of an icosahedron of triangles: <b>0</b> front left, <b>1</b> front right (at a corner of the solid, the nearest edge)' },
-  // icosaGrid3: { base: 3, lattice: 'surface', surface: 'icosa', edges: true, turns: [60, 0, -60],
+  // icosaGrid3: { base: 3, surface: 'icosa', edges: true, turns: [60, 0, -60],
   //               rule: 'along the edges of an icosahedron of triangles: <b>0</b> front left, <b>1</b> forward, <b>2</b> front right (at a corner of the solid, the nearest edge)' },
   walkIcosahedronHexTurtleEdges: {
     label: 'Hexagon sphere (icosahedron) — base 2 (left / right)',
-    lattice: 'surface',
     twin: 'walkIcosahedronHexTurtleCells',
     surface: 'hexsphere',
     edges: true,
@@ -4636,7 +4601,6 @@ const VARIANTS = {
   },
   walkStellaOctangulaTrianglesTurtleEdges: {
     label: 'Stella octangula (two tetrahedra) — base 5 (5 relative turns)',
-    lattice: 'surface',
     twin: 'walkStellaOctangulaTrianglesTurtleCells',
     surface: 'stella',
     edges: true,
@@ -4646,7 +4610,6 @@ const VARIANTS = {
   },
   walkDodecahedronTrianglesTurtleEdges: {
     label: 'Dodecahedron (pentagons cut into 5 triangles) — base 5 (5 relative turns)',
-    lattice: 'surface',
     twin: 'walkDodecahedronTrianglesTurtleCells',
     surface: 'dodeca',
     edges: true,
@@ -4656,7 +4619,6 @@ const VARIANTS = {
   },
   walkIcosahedronTrianglesTurtleEdges: {
     label: 'Triangle sphere (icosahedron) — base 5 (5 relative turns)',
-    lattice: 'surface',
     twin: 'walkIcosahedronTrianglesTurtleCells',
     surface: 'icosa',
     edges: true,
@@ -6216,7 +6178,7 @@ const freshWalk = () => ({
   counts: null, // running count of each digit up to step i (base values per point)
   loop: null,
   coverStep: -1, // where it goes round (see loopWatch); the step it has visited every cell
-  lattice: 'square',
+  lattice: null, // (a lattice walk's own: square, hex, tri, cairo, cube…; none on a surface, the plane or Elementary's rows)
   lines: false,
   skipZeros: false,
   points: false,
@@ -9814,69 +9776,45 @@ const LIFE_GRIDS = [
       where: 'a grid of Cairo pentagons (the pentagons of types 4 and 8 tile as it does, and some of 2)',
     },
   ],
-  [
-    'lifeCubeSquares',
-    'Surfaces',
-    'Cube',
-    'cube',
-    { lattice: 'surface', surface: 'cube', where: 'the surface of a cube' },
-  ],
+  ['lifeCubeSquares', 'Surfaces', 'Cube', 'cube', { surface: 'cube', where: 'the surface of a cube' }],
   [
     'lifeCubePitsSquares',
     'Surfaces',
     'Pits',
     'pits',
-    { lattice: 'surface', surface: 'pits', where: 'the surface of a cube with a pit in each face' },
+    { surface: 'pits', where: 'the surface of a cube with a pit in each face' },
   ],
   [
     'lifeCubeBumpsSquares',
     'Surfaces',
     'Bumps',
     'bumps',
-    { lattice: 'surface', surface: 'bumps', where: 'the surface of a cube with a bump on each face' },
+    { surface: 'bumps', where: 'the surface of a cube with a bump on each face' },
   ],
   [
     'lifeCubeFrameSquares',
     'Surfaces',
     'Frame',
     'frame',
-    { lattice: 'surface', surface: 'frame', where: "the surface of a cube's frame (its edges as wide as its holes)" },
+    { surface: 'frame', where: "the surface of a cube's frame (its edges as wide as its holes)" },
   ],
   [
     'lifeCubeMengerSpongeSquares',
     'Surfaces',
     'Sponge',
     'menger',
-    { lattice: 'surface', surface: 'menger', where: "the surface of Menger's sponge (its holes down to one square)" },
+    { surface: 'menger', where: "the surface of Menger's sponge (its holes down to one square)" },
   ],
   [
     'lifeTorusSquares',
     'Surfaces',
     'Torus',
     'torus',
-    { lattice: 'surface', surface: 'torus', where: 'a torus of squares (a grid that wraps around both ways)' },
+    { surface: 'torus', where: 'a torus of squares (a grid that wraps around both ways)' },
   ],
-  [
-    'lifeTorusHex',
-    'Surfaces',
-    'Torus',
-    'torus',
-    { lattice: 'surface', surface: 'torusHex', where: 'a torus of hexagons' },
-  ],
-  [
-    'lifeTorusCairo',
-    'Surfaces',
-    'Torus',
-    'torus',
-    { lattice: 'surface', surface: 'torusCairo', where: 'a torus of Cairo pentagons' },
-  ],
-  [
-    'lifeTorusTriangles',
-    'Surfaces',
-    'Torus',
-    'torus',
-    { lattice: 'surface', surface: 'torusTri', where: 'a torus of triangles' },
-  ],
+  ['lifeTorusHex', 'Surfaces', 'Torus', 'torus', { surface: 'torusHex', where: 'a torus of hexagons' }],
+  ['lifeTorusCairo', 'Surfaces', 'Torus', 'torus', { surface: 'torusCairo', where: 'a torus of Cairo pentagons' }],
+  ['lifeTorusTriangles', 'Surfaces', 'Torus', 'torus', { surface: 'torusTri', where: 'a torus of triangles' }],
   // a Möbius strip: its two faces one surface, over its edge onto the face behind (2 colours: a face each)
   [
     'lifeMobiusStripSquares',
@@ -9884,7 +9822,6 @@ const LIFE_GRIDS = [
     'Möbius strip',
     'mobius',
     {
-      lattice: 'surface',
       surface: 'mobius',
       where: 'a Möbius strip of squares (both faces, over its edge onto the one behind)',
     },
@@ -9895,7 +9832,6 @@ const LIFE_GRIDS = [
     'Möbius strip',
     'mobius',
     {
-      lattice: 'surface',
       surface: 'mobiusHex',
       where: 'a Möbius strip of hexagons (both faces, over its edge onto the one behind)',
     },
@@ -9906,7 +9842,6 @@ const LIFE_GRIDS = [
     'Möbius strip',
     'mobius',
     {
-      lattice: 'surface',
       surface: 'mobiusTri',
       where: 'a Möbius strip of triangles (both faces, over its edge onto the one behind)',
     },
@@ -9917,7 +9852,6 @@ const LIFE_GRIDS = [
     'Möbius strip',
     'mobius',
     {
-      lattice: 'surface',
       surface: 'mobiusCairo',
       where: 'a Möbius strip of Cairo pentagons (both faces, over its edge onto the one behind)',
     },
@@ -9927,63 +9861,63 @@ const LIFE_GRIDS = [
     'Surfaces',
     'Klein bottle',
     'klein',
-    { lattice: 'surface', surface: 'klein', where: 'a Klein bottle of squares' },
+    { surface: 'klein', where: 'a Klein bottle of squares' },
   ],
   [
     'lifeKleinBottleHex',
     'Surfaces',
     'Klein bottle',
     'klein',
-    { lattice: 'surface', surface: 'kleinHex', where: 'a Klein bottle of hexagons' },
+    { surface: 'kleinHex', where: 'a Klein bottle of hexagons' },
   ],
   [
     'lifeKleinBottleTriangles',
     'Surfaces',
     'Klein bottle',
     'klein',
-    { lattice: 'surface', surface: 'kleinTri', where: 'a Klein bottle of triangles' },
+    { surface: 'kleinTri', where: 'a Klein bottle of triangles' },
   ],
   [
     'lifeKleinBottleCairo',
     'Surfaces',
     'Klein bottle',
     'klein',
-    { lattice: 'surface', surface: 'kleinCairo', where: 'a Klein bottle of Cairo pentagons' },
+    { surface: 'kleinCairo', where: 'a Klein bottle of Cairo pentagons' },
   ],
   [
     'lifeTetrahedronTriangles',
     'Surfaces',
     'Tetrahedron',
     'tetrahedron',
-    { lattice: 'surface', surface: 'tetra', where: 'a tetrahedron of triangles' },
+    { surface: 'tetra', where: 'a tetrahedron of triangles' },
   ],
   [
     'lifeOctahedronTriangles',
     'Surfaces',
     'Octahedron',
     'octahedron',
-    { lattice: 'surface', surface: 'octa', where: 'an octahedron of triangles' },
+    { surface: 'octa', where: 'an octahedron of triangles' },
   ],
   [
     'lifeStellaOctangulaTriangles',
     'Surfaces',
     'Stella octangula',
     'stella',
-    { lattice: 'surface', surface: 'stella', where: 'a stella octangula (two tetrahedra) of triangles' },
+    { surface: 'stella', where: 'a stella octangula (two tetrahedra) of triangles' },
   ],
   [
     'lifeDodecahedronTriangles',
     'Surfaces',
     'Dodecahedron',
     'dodecahedron',
-    { lattice: 'surface', surface: 'dodeca', where: 'a dodecahedron, its pentagons cut into triangles' },
+    { surface: 'dodeca', where: 'a dodecahedron, its pentagons cut into triangles' },
   ],
   [
     'lifeIcosahedronTriangles',
     'Surfaces',
     'Sphere',
     'icosahedron',
-    { lattice: 'surface', surface: 'icosa', where: 'an icosahedron of triangles' },
+    { surface: 'icosa', where: 'an icosahedron of triangles' },
   ],
   [
     'lifeIcosahedronHex',
@@ -9991,7 +9925,6 @@ const LIFE_GRIDS = [
     'Sphere',
     'hexagon',
     {
-      lattice: 'surface',
       surface: 'hexsphere',
       where: 'an icosahedron of hexagons, a Goldberg polyhedron (and its 12 pentagons)',
     },
@@ -10002,7 +9935,6 @@ const LIFE_GRIDS = [
     'Sphere',
     'tiling-twisttri',
     {
-      lattice: 'surface',
       surface: 'twistedsphere',
       where:
         'an icosahedron of hexagons (a Goldberg polyhedron) turned 15°, a triangle between each three (Twisted on a sphere, its 12 pentagons too)',
@@ -10014,7 +9946,6 @@ const LIFE_GRIDS = [
     'Dodecahedron',
     'penrose',
     {
-      lattice: 'surface',
       surface: 'penroseSphere',
       where:
         "Penrose's rhombi on a sphere: their pentagon round their five-fold middle laid on each of a dodecahedron's faces (Twarock and Konevtsova's tilings, as Hamish Todd builds them)",
@@ -10026,26 +9957,18 @@ const LIFE_GRIDS = [
     'Dodecahedron',
     'kitesDarts',
     {
-      lattice: 'surface',
       surface: 'kitesDartsSphere',
       where:
         "Penrose's kites and darts on a sphere, made from his rhombi's (see Penrose): a cell of its own round each of the dodecahedron's corners",
     },
   ],
-  [
-    'lifeTorusKites',
-    'Surfaces',
-    'Torus',
-    'torus',
-    { lattice: 'surface', surface: 'torusKite', where: 'a torus of kites' },
-  ],
+  ['lifeTorusKites', 'Surfaces', 'Torus', 'torus', { surface: 'torusKite', where: 'a torus of kites' }],
   [
     'lifeMobiusStripKites',
     'Surfaces',
     'Möbius strip',
     'mobius',
     {
-      lattice: 'surface',
       surface: 'mobiusKite',
       where: 'a Möbius strip of kites (both faces, over its edge onto the one behind)',
     },
@@ -10055,28 +9978,28 @@ const LIFE_GRIDS = [
     'Surfaces',
     'Klein bottle',
     'klein',
-    { lattice: 'surface', surface: 'kleinKite', where: 'a Klein bottle of kites' },
+    { surface: 'kleinKite', where: 'a Klein bottle of kites' },
   ],
   [
     'lifeTetrahedronKites',
     'Surfaces',
     'Tetrahedron',
     'tetrahedron',
-    { lattice: 'surface', surface: 'tetraKite', where: 'a tetrahedron of kites (each triangle cut in 3)' },
+    { surface: 'tetraKite', where: 'a tetrahedron of kites (each triangle cut in 3)' },
   ],
   [
     'lifeOctahedronKites',
     'Surfaces',
     'Octahedron',
     'octahedron',
-    { lattice: 'surface', surface: 'octaKite', where: 'an octahedron of kites (each triangle cut in 3)' },
+    { surface: 'octaKite', where: 'an octahedron of kites (each triangle cut in 3)' },
   ],
   [
     'lifeIcosahedronKites',
     'Surfaces',
     'Sphere',
     'icosahedron',
-    { lattice: 'surface', surface: 'icosaKite', where: 'an icosahedron of kites (each triangle cut in 3)' },
+    { surface: 'icosaKite', where: 'an icosahedron of kites (each triangle cut in 3)' },
   ],
   [
     'lifeStellaOctangulaKites',
@@ -10084,7 +10007,6 @@ const LIFE_GRIDS = [
     'Stella octangula',
     'stella',
     {
-      lattice: 'surface',
       surface: 'stellaKite',
       where: 'a stella octangula (two tetrahedra) of kites (each triangle cut in 3)',
     },
@@ -10095,7 +10017,6 @@ const LIFE_GRIDS = [
     'Dodecahedron',
     'dodecahedron',
     {
-      lattice: 'surface',
       surface: 'dodecaKite',
       where: 'a dodecahedron, its pentagons cut into triangles, of kites (each triangle cut in 3)',
     },
@@ -10106,7 +10027,6 @@ const LIFE_GRIDS = [
     'Globe',
     'globe',
     {
-      lattice: 'surface',
       surface: 'globe',
       where: 'a globe: squares between its parallels and meridians, one cell round each pole',
     },
@@ -10149,7 +10069,7 @@ const variantName = (kind, shape, tiling = null, rule = null, side = '') =>
 // infinite plane's, the 3D ones: the lattice walked its side's, along the edges or on the cells, not the grid's)
 const gridOf = (w) => {
   const v = VARIANTS[w];
-  return v.plane ? `plane:${v.plane}` : v.lattice === 'surface' ? `surface:${surfaceOf(v)}` : `lattice:${NAV[w][2]}`;
+  return v.plane ? `plane:${v.plane}` : v.surface ? `surface:${surfaceOf(v)}` : `lattice:${NAV[w][2]}`;
 };
 // The grids, each once: its menu's space and shape, its variants by mode (Life, Walk…), made once every variant is (see
 // the menu's order, 7.x)
@@ -10177,7 +10097,6 @@ for (const [k, name] of Object.entries(TETRAKIS_SOLIDS)) {
   // the solids of squares as tetrakis triangles (see tetrakisOf): Life, as theirs
   const base = Object.keys(VARIANTS).find((w) => VARIANTS[w].life && VARIANTS[w].surface === k);
   lifeGrid(variantName('Life', name, 'Tetrakis'), 'Surfaces', name, VARIANT_ICONS[base], {
-    lattice: 'surface',
     surface: `${k}Tetrakis`,
     where: `${VARIANTS[base].where}, its squares cut in 4 (tetrakis)`,
   });
@@ -10189,7 +10108,6 @@ for (const [k, { a, name, others }] of Object.entries(HEX_SOLIDS)) {
     alongEdges = variantName('Walk', name, 'Hexagons', 'Turtle', 'edges'),
     onCells = variantName('Walk', name, 'Hexagons', 'Turtle', 'cells');
   VARIANTS[alongEdges] = {
-    lattice: 'surface',
     twin: onCells,
     surface: `${k}Hex`,
     edges: true,
@@ -10198,7 +10116,6 @@ for (const [k, { a, name, others }] of Object.entries(HEX_SOLIDS)) {
     label: `${name} of hexagons — base 2 (left / right)`,
   }; // (as the sphere's walks, flat: not round, see walkIcosahedronHexTurtleEdges)
   VARIANTS[onCells] = {
-    lattice: 'surface',
     cells: true,
     twin: alongEdges,
     surface: `${k}Hex`,
@@ -10217,7 +10134,6 @@ for (const [k, { a, name, others }] of Object.entries(HEX_SOLIDS)) {
 for (const [k, { a, name }] of Object.entries(HEX_SOLIDS)) {
   // the solids of hexagons (see hexSolidMesh): Life, as their kites'
   lifeGrid(variantName('Life', name, 'Hexagons'), 'Surfaces', name, VARIANT_ICONS[variantName('Life', name, 'Kites')], {
-    lattice: 'surface',
     surface: `${k}Hex`,
     where: `${a} of hexagons (folded over its edges; and ${HEX_SOLIDS[k].others})`,
   });
@@ -10251,7 +10167,6 @@ for (const [k, S] of Object.entries(HULL_SOLIDS)) {
     ...(S.cuts ?? []).map((c) => [`${k}${HULL_CUTS[c].name}`, HULL_CUTS[c].name, `${S.where}, ${HULL_CUTS[c].words}`]),
   ]) {
     lifeGrid(variantName('Life', S.name, tiling), 'Surfaces', S.name, hullIcon(k), {
-      lattice: 'surface',
       surface,
       where,
     });
@@ -10307,15 +10222,13 @@ for (const [shape, tiling, surface] of [
 // in degrees, left to right
 const EDGE_TURNS = { tri: [60, -60], square: [90, 0, -90], hex: [120, 60, 0, -60, -120] };
 for (const [w, m] of Object.entries(VARIANTS))
-  if (NAV[w]?.[0] === 'Walk' && NAV[w][3] === 'Turtle' && m.lattice === 'surface' && m.edges)
-    m.turns = EDGE_TURNS[m.net];
+  if (NAV[w]?.[0] === 'Walk' && NAV[w][3] === 'Turtle' && !!m.surface && m.edges) m.turns = EDGE_TURNS[m.net];
 for (const [kind, t] of Object.entries(TILINGS)) {
   lifeGrid(variantName('Life', t.name), '2D', t.name, `tiling-${kind}`, { lattice: kind, plane: kind, where: t.where });
   for (const [fold, F] of Object.entries(FOLDS))
     if (F.has(kind)) {
       // folded (see FOLDS)
       lifeGrid(variantName('Life', F.name, t.name), 'Surfaces', F.name, fold, {
-        lattice: 'surface',
         surface: F.of(kind),
         where: `${F.a} of ${t.where.replace(/^a grid of /, '')}${F.tail}`,
       });
@@ -11120,7 +11033,7 @@ function choicesAt(s, reads = null, teamsMemo = new Map()) {
     m.life && !m.loops && !m.elementary && !m.margolus && w === walk.variant && walk.life && parseRule(s.rule);
   if (ruleShown && wants('rule'))
     for (const [name, byShare] of RULE_WAYS)
-      if (!!ruleShown.share !== byShare)
+      if (ruleShown.share !== byShare)
         set(`ruleWay:${name}`, 'rule', ruleWrittenBy(ruleShown, byShare, shownNeighbourCounts(w)[0]), '', name);
   if (m.net && wants('walkRule'))
     for (const r of (rulesForMemo[w] ??= rulesFor(w)))
@@ -11164,7 +11077,7 @@ const tilingNameOf = (w) => {
   const fam = familyPlace(w);
   return (tilingNames[w] = fam
     ? fam.F.tabs.find(([t]) => t === fam.m)[3]
-    : !['surface', 'cube'].includes(VARIANTS[w].lattice)
+    : !(VARIANTS[w].surface || VARIANTS[w].lattice === 'cube')
       ? NAV[w][2]
       : null);
 };
@@ -11832,7 +11745,7 @@ function compute() {
   } // (no hunt: a walk, or Elementary's rows, built by buildWalk)
   renderPlaneRow();
   // a new number, surface, size or rule ends any hunt: its champion would not fit any more
-  $('surfaceRow').hidden = $('sizeRow').hidden = variant.lattice !== 'surface'; // the size under the tiles; a walk's starts and loops further down
+  $('surfaceRow').hidden = $('sizeRow').hidden = !variant.surface; // the size under the tiles; a walk's starts and loops further down
   syncSizeStepper();
   updateRuleText();
   if (numberWorker) {
@@ -12123,7 +12036,7 @@ function buildWalkOf() {
   const loopCount = () => {
     syncDigitsStepper();
   };
-  if (VARIANTS[digitsComputed.variant].lattice === 'surface') {
+  if (VARIANTS[digitsComputed.variant].surface) {
     (VARIANTS[digitsComputed.variant].edges ? buildEdgesWalk : buildCellsWalk)(
       seq,
       VARIANTS[digitsComputed.variant],
@@ -12875,7 +12788,7 @@ const SURFACE_ANTS = Object.fromEntries(
       (w) =>
         NAV[w]?.[0] === 'Walk' &&
         NAV[w][4] === 'cells' &&
-        VARIANTS[w].lattice === 'surface' &&
+        !!VARIANTS[w].surface &&
         !Object.values(ANTS).some((a) => a.walk === w),
     )
     .map((w) => [`ant${w.slice(4).replace(/TurtleCells$/, 'Cells')}`, [w, NAV[w][2]]]),
@@ -12892,7 +12805,6 @@ for (const [w, [walkVariant, word]] of Object.entries(SURFACE_WORMS)) {
   VARIANTS[w] = {
     base: 5,
     arrows: '↙↖↑↗↘',
-    lattice: 'surface',
     edges: true,
     surface,
     initial,
@@ -12913,7 +12825,6 @@ for (const [w, [walkVariant, place]] of Object.entries(SURFACE_ANTS)) {
   const { surface, initial, turns } = VARIANTS[walkVariant];
   VARIANTS[w] = {
     base: 2,
-    lattice: 'surface',
     cells: true,
     surface,
     initial,
@@ -13588,7 +13499,7 @@ function commandStepper(net, commands) {
 }
 // a walk's rule's key: its network's, the plane's and the surfaces' apart (see walkRules)
 const walkKey = (m) =>
-  m.lattice === 'surface'
+  m.surface
     ? `${m.net} surface${m.net && surfaceCommands(m.net).some((t) => walkCommandWhy(m, t)) ? ` ${m.surface}` : ''}`
     : m.net; // (no network, no commands: a creature's)  // (a surface with fewer of its network's commands: its own)
 const surfaceCommands = (net) => Object.keys(WALK_NETS[net].turns).filter((t) => t !== 'U'); // (a surface's turns, left to right)
@@ -13634,9 +13545,9 @@ const cellSides = (kind) =>
   })());
 // why a command cannot go on a walk, or '': not its network's; a diagonal along the edges; on a surface, no fixed way (no north)
 const walkCommandWhy = (m, t) =>
-  m.lattice === 'surface' && !m.edges
+  !!m.surface && !m.edges
     ? cellCommandWhy(m, t)
-    : m.lattice === 'surface'
+    : m.surface
       ? (surfaceCommands(m.net).includes(t) && m.turns[surfaceCommands(m.net).indexOf(t)] != null) ||
         t === 'U' ||
         (t === 'B' && SURFACE_NOTCHES[m.net] % 2 === 0) ||
@@ -14918,7 +14829,6 @@ for (const k of Object.keys(ROSETTE_SPHERES)) {
     w = variantName('Life', 'Rosettes', name),
     F = FAMILIES.at(-1);
   lifeGrid(w, 'Surfaces', 'Rosettes', k, {
-    lattice: 'surface',
     surface: `${k}Sphere`,
     where: `a sphere of two ${name} rosettes, the south's teeth in the north's notches`,
   });
@@ -18912,7 +18822,6 @@ function walkRecorder(seq, ahead, base, R, nodes, len = seq.length) {
         maxDist,
         base,
         counts,
-        lattice: 'surface',
         skipZeros: false,
         keys: seq,
         surface: g,
@@ -19155,14 +19064,13 @@ const BATTLE_RULES = [
 const BATTLE_LINED = ['landEdges', 'landEdges3', 'landStop', 'landMerge'];
 // a walk that can be a battle: one on a surface (on cells or along the edges, its steps surfaceSteps'), with as many
 // walkers as its turns allow at its size (see battleCounts: its walkers start alike, see battleMaps)
-const battleVariant = (w) =>
-  NAV[w]?.[0] === 'Walk' && VARIANTS[w].lattice === 'surface' && !!SURFACES[surfaceOf(VARIANTS[w])];
+const battleVariant = (w) => NAV[w]?.[0] === 'Walk' && !!VARIANTS[w].surface && !!SURFACES[surfaceOf(VARIANTS[w])];
 // a battle at variant w with so many teams (at a size, or its own), the one in use's (battleOn): its teams a count its surface takes
 const battleAt = (w, teams = walkTeams, size = undefined) => battleFits(w, teams, size);
 const battleOn = () => battleAt(tabVariant());
 // Solo, Duel, Trio… (those the solid has no group of turns for greyed, see battleCounts), under the size and start
 // of a walk on a surface (Life's tiles, see renderTeams); then a battle's numbers in its Start section
-const walkTeamsHere = (w) => NAV[w]?.[0] === 'Walk' && VARIANTS[w].lattice === 'surface'; // (a walk's teams: on a surface)
+const walkTeamsHere = (w) => NAV[w]?.[0] === 'Walk' && !!VARIANTS[w].surface; // (a walk's teams: on a surface)
 function renderWalkTeams() {
   const w = tabVariant(),
     here = walkTeamsHere(w);
@@ -22668,7 +22576,6 @@ function buildLife(seq, variant) {
   });
   Object.assign(walk, {
     is3d: true,
-    lattice: 'surface',
     surface: g,
     R: radius(size),
     tile: new Int32Array(1),
@@ -28675,7 +28582,7 @@ function ruleTutorial(entry) {
 const walkTutorialFits = (w) =>
   NAV[w]?.[0] === 'Ant' ||
   (NAV[w]?.[0] === 'Walk' &&
-    (VARIANTS[w].lattice === 'surface'
+    (!!VARIANTS[w].surface
       ? !!(VARIANTS[w].turns || VARIANTS[w].net)
       : ['square', 'hex', 'tri', 'cairo'].includes(VARIANTS[w].lattice)));
 // a 2D walk's cell round its middle
@@ -28707,7 +28614,7 @@ const flatTwin = (w) =>
   Object.keys(VARIANTS).find(
     (v) =>
       NAV[v]?.[0] === 'Walk' &&
-      VARIANTS[v].lattice !== 'surface' &&
+      !VARIANTS[v].surface &&
       VARIANTS[v].net === VARIANTS[w].net &&
       !VARIANTS[v].cells === !!VARIANTS[w].edges,
   );
@@ -28715,7 +28622,7 @@ const flatTwin = (w) =>
 // a walk by a rule drawn by its words, then its straight step (S: the way in); words given: one figure each (a creature's, see
 // creatureFigures; a parity's at an odd digit)
 function walkFigures(w, given = null) {
-  if (VARIANTS[w].lattice === 'surface') return walkFigures(flatTwin(w), given ?? walkCommandsOf(w)); // (a surface: as its flat tiling, the same words)
+  if (VARIANTS[w].surface) return walkFigures(flatTwin(w), given ?? walkCommandsOf(w)); // (a surface: as its flat tiling, the same words)
   const variant = VARIANTS[w],
     N = WALK_NETS[variant.net];
   const ruled = N && [...(given ?? walkCommandsOf(w)), N.straight],
@@ -29266,8 +29173,7 @@ function walkTutorial(w) {
       `${f.ends.map((p) => dot(p, 'tut-end')).join('')}${dot(from(f), 'tut-here')}${still ? '' : dot(to, 'tut-to')}</svg>`
     );
   };
-  const how =
-    variant.lattice === 'surface' ? `, turning as on its flat ${variant.edges ? "tiling's edges" : 'tiling'}` : '';
+  const how = variant.surface ? `, turning as on its flat ${variant.edges ? "tiling's edges" : 'tiling'}` : '';
   $('ruleTuto').innerHTML =
     `<div class="tut-body">` +
     `<h2>${ruleTitleOf(w)}</h2><p>${creature ? `${variant.rule[0].toUpperCase()}${variant.rule.slice(1)}` : `The number read digit by digit in base ${variant.base}, each digit a step ${variant.rule.replace(/:.*/, '')}${how}`}` +
@@ -29427,7 +29333,7 @@ function renderRuleSection() {
       b.dataset.choice = `ruleWay:${name}`; // (its choice's key, see choicesAt)
       b.classList.toggle('active', !!rule.share === byShare);
       b.addEventListener('click', () => {
-        if (!!rule.share !== byShare) playOwnRule(ruleWrittenBy(rule, byShare, counts[0]));
+        if (rule.share !== byShare) playOwnRule(ruleWrittenBy(rule, byShare, counts[0]));
       });
       return b;
     }),
@@ -34258,7 +34164,7 @@ function getSetup() {
       ...(readsDigits(w) ? { [life ? 'popNumber' : 'walkNumberA']: formulaInUse } : {}),
     };
   if (!variant.life || gensShown()) s.maxSteps = lengthAsked(); // (the length asked: digits, or generations)
-  if (variant.lattice === 'surface') s.gridSize = $('gridSizeField').value;
+  if (variant.surface) s.gridSize = $('gridSizeField').value;
   if (variantStarts() && startsWayNow() === 'symmetric' && startNo() > 1) s.walkStart = startNo(); // (Symmetric's: Centred and Random place their own)
   if (torusTurned && TURNED[variant.surface]) s.gridTurned = 1;
   if (life) s.playRule = ruleBody($('lifeRule').value);
@@ -39565,7 +39471,7 @@ const VIEW_AXES = [
 ];
 const VIEW_AXES_AT = 44, // (their origin, pixels from the view's top left)
   VIEW_AXES_LENGTH = 26; // (a bar's, pixels)
-const axesShown = () => gridLinesShown() && !!walk.lattice && !!walk.is3d;
+const axesShown = () => gridLinesShown() && !!walk.is3d && !!(walk.lattice || walk.surface);
 function gpuAxes(D, rp, pass, slot) {
   if (!D.barMesh) gpuBuffer('barMesh', CELL_SHAPES.cube.triangles);
   gpuBuffer('axesFrom', new Float32Array(9));
